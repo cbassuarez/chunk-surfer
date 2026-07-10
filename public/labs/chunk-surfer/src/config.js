@@ -99,6 +99,36 @@ export const W_BIOME_FOREIGN = 0.25;  // different world
 export const AMBIENT_DRONE_GAIN = 0.028;
 export const AMBIENT_BIT_LEVELS = 8;   // 8 quantisation steps per side (~3-bit feel)
 export const AMBIENT_LOOP_SEC   = 4;
+// ── ROOM TONE ────────────────────────────────────────────────────────────────
+// The game's audio posture, and the inverse of the lab's. Walking the building
+// is near-silent: footsteps and a room-tone floor, nothing else. The catalog is
+// audible ONLY through the recorder's monitor — you must stop, put the light
+// away, and listen, which is exactly when you are helpless.
+//
+// Silence is the floor. Addition detonates.
+export const ROOM_TONE = {
+  bedGain: 0.010,        // the noise floor of an empty room
+  monitorRadius: 96,     // cells. The chunk field is sparse: a tight radius
+                         // finds nothing at all. Sparseness comes from
+                         // monitorPoly, not from the radius.
+  monitorNear: 38,       // falloff scale of the monitor's own curve
+  monitorPoly: 4,        // voices; the lab uses POLY_MAX = 24
+  monitorGain: 1.15,     // headphones are louder than the room
+  monitorFadeSec: 1.1,   // the monitor opens slowly, like a hand on a fader
+  takeSeconds: 45,       // an unbroken clean minute, near enough
+  spoilNoise: 0.18,      // noise above this ruins the take
+};
+
+// Noise is the axis the presence hunts on. Injury adds to it permanently.
+export const NOISE = {
+  still: 0.0,
+  slow: 0.06,            // Shift
+  walk: 0.22,
+  perInjury: 0.09,       // a limp is loud, and loud is what finds you
+  decayPerSec: 0.45,     // how fast the world forgets where you were. Slow
+                         // enough that a footfall hangs in the air for a second.
+};
+
 export const WORLD_LAYER = {
   range: 30,
   minGain: 0.0,

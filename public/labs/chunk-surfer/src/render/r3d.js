@@ -84,6 +84,7 @@ uniform sampler2D uRD;
 uniform sampler2D uFogTex;
 uniform vec2  uFogOrigin;
 uniform float uAudio;        // 0..1 field energy
+uniform float uLight;        // 0 = flashlight off, 1 = on
 uniform int   uChunkCount;
 uniform vec4  uChunkA[${MAX_CHUNKS}]; // x, z, radius, activity
 uniform vec3  uChunkC[${MAX_CHUNKS}]; // biome rgb
@@ -264,8 +265,11 @@ void main(){
     // grazing floor right at the feet would otherwise blow out: soften the
     // near field so the lamp reads as a pool of light, not a flashbulb
     float nearSoft = smoothstep(0.0, 1.4, dist) * 0.55 + 0.45;
-    float lamp = lambert * falloff * nearSoft * 3.1;
-    float ambient = 0.075;
+    // uLight: the flashlight. With it off you are not blind — you are worse
+    // than blind, because the room is still there. Light attracts, so this is
+    // a choice, not a setting.
+    float lamp = lambert * falloff * nearSoft * mix(0.22, 3.1, uLight);
+    float ambient = mix(0.018, 0.075, uLight);
 
     vec3 albedo;
     if(surf == 1)      albedo = mix(vec3(0.56, 0.55, 0.53), tint, 0.30) * (0.70 + 0.45 * rdv);
@@ -344,6 +348,7 @@ let yaw = 0, yawTarget = 0;
 let camX = 0, camZ = 0, camY = 3;
 let lastT = 0;
 let fogOrigin = [0, 0];
+let lightEase = 1;
 
 function compile(type, src) {
   const s = gl.createShader(type);
@@ -507,6 +512,8 @@ export function r3dFrame(state) {
   camZ += (state.py + 0.5 - camZ) * k;
   yaw += (yawTarget - yaw) * (1 - Math.exp(-dt * 12));
   camY = EYE;
+  const lightGoal = state.light === false ? 0 : 1;
+  lightEase += (lightGoal - lightEase) * (1 - Math.exp(-dt * (lightGoal ? 22 : 7)));
 
   gl.disable(gl.DEPTH_TEST);
 
@@ -556,6 +563,7 @@ export function r3dFrame(state) {
   gl.uniform1i(U('uFogTex'), 1);
   gl.uniform2f(U('uFogOrigin'), fogOrigin[0], fogOrigin[1]);
   gl.uniform1f(U('uAudio'), state.audio);
+  gl.uniform1f(U('uLight'), lightEase);
   const n = Math.min(state.chunks.length, MAX_CHUNKS);
   gl.uniform1i(U('uChunkCount'), n);
   if (n > 0) {

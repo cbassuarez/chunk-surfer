@@ -13,7 +13,7 @@ import {
   POLY_MAX, MOVE_MS, RMS_TARGET, ONBOARDING_PHASES, INTRO_SCENE,
   WORLD_BOUNDARY_FRICTION, VOID_TRUDGE, VOID_SINK,
   TERRAIN_R_MIN, TERRAIN_R_MAX, TERRAIN_EMITTERS,
-  WORLD_SCALE_X, WORLD_SCALE_Y, CHUNK_MIN_SEP, AUDIO_R,
+  WORLD_SCALE_X, WORLD_SCALE_Y, CHUNK_MIN_SEP, AUDIO_R, ROOM_TONE,
   WORLD_TILE_SCALE_X, WORLD_TILE_SCALE_Y, WORLD_SPREAD_MIN, WORLD_SPREAD_MAX,
   W_BIOME_SAME, W_BIOME_OTHER, W_BIOME_FOREIGN,
   AMBIENT_DRONE_GAIN, AMBIENT_BIT_LEVELS, AMBIENT_LOOP_SEC, WORLD_LAYER
@@ -31,6 +31,8 @@ import { makeTitleScene } from './game/title.js';
 import { makeMenuScene } from './game/menu.js';
 import { terrorInit, once, interpolate } from './game/terror.js';
 import { dialogue as PROLOGUE_DIALOGUE } from './data/prologue.js';
+import * as REC from './game/recordist.js';
+import * as RT from './audio/roomtone.js';
 export { fx } from './render/canvas.js';
 
 // M1: canvas glyph renderer is the default; `?renderer=dom` keeps the legacy
@@ -263,6 +265,7 @@ function ensureCtx(){
       limiter.release.setValueAtTime(0.06, actx.currentTime);
       master.connect(limiter);
       limiter.connect(actx.destination);
+      RT.roomToneInit(actx, master);
     }catch(err){
       audioInitFailed=true;
       console.error('AudioContext init failed', err);
@@ -311,6 +314,23 @@ function smoothBufferLoop(buffer, fadeMs=60){
 // cell), drops dramatically over the next ~12 cells, then leaves a long
 // quiet tail audible out to AUDIO_R for navigation/follow-the-sound.
 // Half-power at ~8 cells, 1/e at ~12 cells, ~1.5% at 50 cells.
+// Story mode replaces the lab's wide, dense field with a monitor you can only
+// open by kneeling in the dark. These return the active numbers.
+function audioRadius(){
+  if(!storyMode) return AUDIO_R;
+  return REC.isRecording() ? ROOM_TONE.monitorRadius : 0;
+}
+function audioPoly(){
+  if(!storyMode) return POLY_MAX;
+  return REC.isRecording() ? ROOM_TONE.monitorPoly : 0;
+}
+// The monitor is a microphone in headphones, not an ear in a room: it does not
+// obey the body's brutal exp(-d/12) falloff. Distant material stays present and
+// quiet, which is what makes a room sound like it contains something.
+function monitorProx(d, R){
+  if(d>=R) return 0;
+  return 0.30 + 0.70*Math.exp(-d/ROOM_TONE.monitorNear);
+}
 function proxFor(d, R){
   if(d>=R) return 0;
   return Math.exp(-d / 12);
@@ -320,11 +340,13 @@ function proxFor(d, R){
 // still hear nearby chunks bleeding in. World membership and biome weight
 // scale contribution but never gate to zero, so blends are smooth.
 function voiceGain(chunk, d, ctx, emitterGain=1){
-  const prox=proxFor(d, AUDIO_R);
+  const monitoring=storyMode && REC.isRecording();
+  const prox=monitoring ? monitorProx(d, audioRadius()) : proxFor(d, audioRadius());
   if(prox<=0) return 0;
   const bw=biomeWeightFor(ctx, chunk);
   const ww=Math.max(0.06, ctx.worldMembership[chunk.worldId]??0);
-  return prox*(chunk.baseVol||1)*bw*ww*emitterGain;
+  const monitor=monitoring ? ROOM_TONE.monitorGain : 1;
+  return prox*(chunk.baseVol||1)*bw*ww*emitterGain*monitor;
 }
 // Hierarchical biome weight: same biome > different biome same world > different world.
 function biomeWeightFor(ctx, chunk){
@@ -2522,12 +2544,16 @@ function introProgress(){
   const d=Math.max(introDistance, introForwardDistanceAt(px,py));
   return clamp(d/INTRO_SCENE.introDistanceSteps, 0, 1);
 }
+function storyMoveScale(){
+  if(!storyMode) return 1;
+  return REC.recState().slow ? 1.9 : 1;   // quiet means careful means slow
+}
 function currentMoveIntervalMs(){
   if(isIntroActive()){
     const p=introProgress();
     return Math.round(INTRO_SCENE.speedStartMs + (INTRO_SCENE.speedEndMs-INTRO_SCENE.speedStartMs)*p);
   }
-  let ms = MOVE_MS;
+  let ms = MOVE_MS * storyMoveScale();
   ms *= (1 + worldBoundaryFriction * (WORLD_BOUNDARY_FRICTION.maxMult - 1));
   if(curPlayerCtx && !curPlayerCtx.onTerrain){
     const trudge = VOID_TRUDGE.startPenalty + (VOID_TRUDGE.maxPenalty-VOID_TRUDGE.startPenalty)*voidFatigue;
@@ -2693,7 +2719,7 @@ function audibleCandidates(){
   const ctx=playerContext();
   const out=[];
   const center=tileCoordFor(px,py);
-  const tileR=Math.max(1, Math.ceil(AUDIO_R/Math.min(WORLD_TILE_W, WORLD_TILE_H))+1);
+  const tileR=Math.max(1, Math.ceil(Math.max(1,audioRadius())/Math.min(WORLD_TILE_W, WORLD_TILE_H))+1);
   const worldIds=[...worldTemplates.keys()];
   for(let ty=center.ty-tileR;ty<=center.ty+tileR;ty++){
     for(let tx=center.tx-tileR;tx<=center.tx+tileR;tx++){
@@ -2722,7 +2748,7 @@ function audibleCandidates(){
               bestY=vy;
             }
           }
-          if(bestD>=AUDIO_R) continue;
+          if(bestD>=audioRadius()) continue;
           const g=voiceGain(c,bestD,ctx,bestG);
           if(g>0) out.push({key:`${tx},${ty}:${idx}`, idx, d:bestD, g, wx:bestX, wy:bestY, worldId:c.worldId});
         }
@@ -2741,7 +2767,7 @@ function audibleCandidates(){
   }
   const deduped=[...byIdx.values()];
   deduped.sort((a,b)=>b.g-a.g);
-  return { ctx, audible: deduped.slice(0,POLY_MAX) };
+  return { ctx, audible: deduped.slice(0, audioPoly()) };
 }
 
 function updateAudio(){
@@ -2754,6 +2780,18 @@ function updateAudio(){
     if(voices.size>0) stopAllVoices();
     stopWorldLayerVoice();
     silenceAmbientDrone();
+    return;
+  }
+  // ROOM TONE: walking the building is silent. No chunk voices, no world
+  // drone — only the room's noise floor. The catalog exists solely on the
+  // other side of the recorder's monitor.
+  if(storyMode && !REC.isRecording()){
+    curPlayerCtx = { onTerrain:false, biomeId:null, worldId:worldIdAt(px,py), worldMembership:{} };
+    if(curChunkKey){ curChunkKey=''; curChunkIdx=-1; }
+    if(voices.size>0) stopAllVoices();
+    stopWorldLayerVoice();
+    silenceAmbientDrone();
+    RT.bedOn();
     return;
   }
   if(isOnboardingActive()){
@@ -2815,6 +2853,7 @@ function updateAudio(){
 }
 
 function step(dx,dy){
+  if(storyMode && REC.movementLocked()) return;   // you agreed to hold still
   const nowMs=performance.now();
   if(lastMoveAtMs>0 && !isOnboardingActive()){
     const needMs=currentMoveIntervalMs();
@@ -2823,6 +2862,12 @@ function step(dx,dy){
   // 3D architecture is solid: walls block the step (collision mirrors the
   // shader's integer wall logic exactly — see r3d.js r3dSolid).
   if(RENDERER==='3d' && depth===0 && R3.r3dSolid(px+dx, py+dy)) return;
+  // Your feet are the loudest thing in this building. The noise is left at the
+  // cell you are leaving: the presence hunts where you WERE.
+  if(storyMode){
+    const level=REC.emitStepNoise(px, py);
+    RT.footstep(level);
+  }
   let sx=dx, sy=dy;
   const preHushDx=(!isOnboardingActive() && depth<=1 && isHorrorActive() && hush.active) ? (hush.x-px) : 0;
   const preHushDy=(!isOnboardingActive() && depth<=1 && isHorrorActive() && hush.active) ? (hush.y-py) : 0;
@@ -3956,6 +4001,10 @@ function renderBoot(){
   ].filter(l=>l!==null).join('\n');
   if(RENDERER==='canvas'){
     CR.textScreen(bootText);
+  } else if(RENDERER==='3d'){
+    // NEVER wipe MAP_EL here: the ui glyph layer and the diffusion overlay are
+    // its children. The loading screen is drawn on the ui layer instead.
+    bootTextCache=bootText;
   } else {
     MAP_EL.innerHTML='';
     MAP_EL.textContent=bootText;
@@ -3972,6 +4021,9 @@ function renderBoot(){
 function loop(){
   try{
     tick++;
+    const nowLoopMs=performance.now();
+    const dt=Math.min(0.05, lastLoopMs ? (nowLoopMs-lastLoopMs)/1000 : 0.016);
+    lastLoopMs=nowLoopMs;
     if(inRogue){
       // Keep keyboard focus on the play surface to avoid intermittent movement deadlocks.
       if((tick % 10)===0) ensureInteractionFocus();
@@ -3990,6 +4042,7 @@ function loop(){
       if(!scenes.blocksWorld()){
         maybeSpawnScheduledKey();
         updateHorrorTick();
+        tickRecorder(dt);
       }
       if(RENDERER==='3d') render3d(); else renderMap();
       // Instrument readouts only exist in JUST SURF; in story mode they are
@@ -4001,11 +4054,9 @@ function loop(){
 
     // Scenes draw over whatever the world drew, on their own glyph layer —
     // and during boot too, so the title screen exists before the field does.
-    const nowMs=performance.now();
-    const dt=Math.min(0.05, lastLoopMs ? (nowMs-lastLoopMs)/1000 : 0.016);
-    lastLoopMs=nowMs;
     scenes.update(dt);
     uiClear();
+    if(!inRogue && RENDERER==='3d') drawBootText();
     drawStoryHud();
     scenes.render();
     if(storyMode && inRogue) saveTick(dt);
@@ -4124,6 +4175,44 @@ function enterJustSurf(){
   pushEvent('// just surf. no story. the field is the field.');
 }
 
+function toggleRecorder(){
+  if(REC.isRecording()){
+    const r=REC.stopRecording();
+    updateAudio();                    // monitor closes: the room goes silent
+    if(r.completed) pushEvent('// take complete. one clean minute.');
+    else if(r.spoiled) pushEvent(`// take spoiled — ${r.reason}.`);
+    else pushEvent(`// take aborted at ${r.elapsed.toFixed(0)}s.`);
+    return;
+  }
+  REC.startRecording();
+  ensureCtx();
+  updateAudio();                      // monitor opens: you can hear the room
+  pushEvent('// recording. hold still. light off.');
+}
+
+function tickRecorder(dt){
+  if(!storyMode) return;
+  REC.decayNoise(dt);
+  const st=REC.tickRecording(dt);
+  if(st==='complete'){
+    const room=worldIdAt(px,py);
+    REC.addTake(room);
+    saveCommit({ rec:REC.saveRecState() });
+    toggleRecorder();
+  } else if(st==='spoiled'){
+    // Let the player watch the meter die for a beat before it closes.
+    if(!spoilPendingMs) spoilPendingMs=performance.now()+900;
+    else if(performance.now()>spoilPendingMs){ spoilPendingMs=0; toggleRecorder(); }
+  }
+}
+let spoilPendingMs=0;
+let bootTextCache='';
+function drawBootText(){
+  if(!bootTextCache) return;
+  const lines=bootTextCache.split('\n');
+  for(let i=0;i<lines.length;i++) uiText(2, 1+i, lines[i].slice(0,140), 't-trail-2', 0.75);
+}
+
 // Autosave is cheap and the save doubles as a diegetic object (steps quoted
 // back at you in dialogue), so keep it current rather than checkpointed.
 let saveAcc=0;
@@ -4157,20 +4246,68 @@ function requestFullscreenSafe(){
   // Must be called from a user gesture; iframed labs need allowfullscreen.
   const el=document.documentElement;
   if(document.fullscreenElement || !el.requestFullscreen) return;
-  el.requestFullscreen().catch(()=>{});
+  el.requestFullscreen().then(ensureInteractionFocus).catch(()=>{});
 }
 
-// Bottom-left status on the glyph layer: the last event line, nothing else.
-// M3 adds the tape meter, the compass and the shitty minimap here.
+// The glyph layer is the only surface the diffusion lens cannot repaint, so
+// everything the player must be able to trust lives here. M3 adds the compass
+// and the shitty minimap alongside.
 function drawStoryHud(){
   if(!storyMode || scenes.blocksWorld()) return;
-  const { rows }=uiSize();
+  const { cols, rows }=uiSize();
   const msg=eventQueue[eventQueue.length-1];
   if(msg) uiText(2, rows-2, msg.slice(0,110), 't-trail-2', 0.55);
+
+  const rec=REC.recState();
+  if(!rec.light && !rec.recording) uiText(2, 2, '(dark)', 't-trail-3', 0.5);
+
+  if(rec.recording){
+    // A tape meter. It fills for forty-five seconds, and any noise kills it.
+    const w=Math.min(46, cols-8);
+    const x=Math.floor((cols-w)/2), y=rows-5;
+    const p=REC.takeProgress();
+    const filled=Math.round(p*(w-2));
+    const spoiled=rec.spoiled;
+    const cls=spoiled ? 't-hush-core' : 't-key';
+    uiText(x, y-1, spoiled ? `TAKE SPOILED — ${rec.spoilReason}` : '● REC', cls);
+    uiText(x, y, '[', 't-trail-2');
+    for(let i=0;i<w-2;i++){
+      uiText(x+1+i, y, i<filled ? '▓' : '░', i<filled ? cls : 't-trail-4',
+             i<filled ? 1 : 0.4);
+    }
+    uiText(x+w-1, y, ']', 't-trail-2');
+    const left=Math.max(0, ROOM_TONE.takeSeconds - rec.takeElapsed);
+    uiText(x+w+2, y, `${left.toFixed(0)}s`, 't-trail-2', 0.7);
+    // Noise is the thing that kills a take. Show it, so the fear is legible.
+    const nz=Math.min(1, REC.currentNoise()/ROOM_TONE.spoilNoise);
+    uiText(x, y+2, 'noise ', 't-trail-3', 0.6);
+    for(let i=0;i<12;i++){
+      uiText(x+6+i, y+2, i < Math.round(nz*12) ? '▮' : '▯',
+             nz>0.85 ? 't-hush-core' : 't-trail-2', nz>0.05?0.9:0.35);
+    }
+  }
+}
+
+// Test surface. Silence and noise are invisible, so acceptance has to assert
+// on the actual numbers rather than on screenshots.
+function installProbe(){
+  window.__probe={
+    voices:()=>voices.size,
+    pos:()=>({x:px,y:py}),
+    rec:()=>({...REC.recState()}),
+    floor:()=>REC.noiseFloor(),
+    noise:(v)=>REC.emitNoise(v, px, py, 'the room was not empty'),
+    injure:()=>REC.injure(),
+    world:()=>worldIdAt(px,py),
+    audible:()=>{ const a=audibleCandidates(); return {n:a.audible.length, r:audioRadius(), poly:audioPoly(), chunks:chunks.length, paused, depth, tpl:worldTemplates.size, ctx:!!actx}; },
+  };
 }
 
 function bootScenes(){
   window.__scenes=scenes;
+  installProbe();
+  // Focusable from the first frame, so the title screen answers the keyboard.
+  try{ MAP_EL.setAttribute('tabindex','0'); MAP_EL.focus({preventScroll:true}); }catch(_){}
   saveLoad();
   terrorInit();
   uiInit(MAP_EL);
@@ -4301,6 +4438,7 @@ function render3d(){
     door,
     hush:hush.active?{x:hush.x, y:hush.y, strength:1}:null,
     audio:clamp(voiceSum/3, 0, 1),
+    light: storyMode ? REC.lightOn() : true,
   });
 }
 
@@ -4357,6 +4495,7 @@ async function loadAll(){
 
 // ── Enter roguelike ────────────────────────────────────────────────────────────
 function enterRogue(){
+  bootTextCache='';
   // Never enter active mode until world build succeeds.
   try{
     // Set intro phase first so buildWorld's initial revealAround uses the tiny
@@ -4441,6 +4580,22 @@ function onKey(e){
     scenes.push(makeMenuScene({ onQuitToTitle:returnToTitle }));
     return;
   }
+  if(storyMode){
+    if(e.key==='f' || e.key==='F'){
+      e.preventDefault();
+      const on=REC.toggleLight();
+      pushEvent(on ? '// light on. it can see that.' : '// light off.');
+      return;
+    }
+    if(e.key==='r' || e.key==='R'){
+      e.preventDefault();
+      toggleRecorder();
+      return;
+    }
+    if(e.key==='Shift'){ REC.setSlow(true); return; }
+    // Recording locks you in place. That is the deal.
+    if(REC.movementLocked() && MOVE_KEYS.has(e.key)){ e.preventDefault(); return; }
+  }
   // Talk to whatever is in front of you. (M4 gives this real NPCs; for now
   // the Usher is wherever you started.)
   if(storyMode && (e.key==='Enter' || e.key==='z' || e.key==='Z')){
@@ -4501,6 +4656,7 @@ function onKey(e){
   }
 }
 function onKeyUp(e){
+  if(e.key==='Shift') REC.setSlow(false);
   if(MOVE_KEYS.has(e.key)) keysDown.delete(e.key);
 }
 function onBlur(){
@@ -4509,7 +4665,9 @@ function onBlur(){
   if(moveTimer){ clearTimeout(moveTimer); moveTimer=null; }
 }
 function ensureInteractionFocus(){
-  if(!inRogue) return;
+  // Must work before inRogue too: the title screen is keyboard-driven, and an
+  // iframed lab starts unfocused until something inside it takes focus.
+  if(!MAP_EL) return;
   try{
     if(document.activeElement!==MAP_EL){
       MAP_EL.focus({ preventScroll:true });
@@ -4548,9 +4706,10 @@ function boot(){
   // enterRogue path.
   window.addEventListener('keydown',onKey, {capture:true});
   window.addEventListener('keyup',onKeyUp, {capture:true});
-  window.addEventListener('pointerdown', ()=>{
-    ensureInteractionFocus();
-  }, {passive:true});
+  window.addEventListener('pointerdown', ensureInteractionFocus, {passive:true});
+  // Fullscreen and iframe transitions silently drop keyboard focus.
+  document.addEventListener('fullscreenchange', ensureInteractionFocus);
+  window.addEventListener('message', ensureInteractionFocus, {passive:true});
   window.addEventListener('focus', ensureInteractionFocus, {passive:true});
   document.addEventListener('visibilitychange', ()=>{
     if(!document.hidden) ensureInteractionFocus();
