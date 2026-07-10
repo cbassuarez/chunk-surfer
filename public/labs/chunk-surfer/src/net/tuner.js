@@ -14,6 +14,7 @@ const FIELDS = [
   { key: 'passes', min: 1, max: 5, step: 1, note: 'cost: linear' },
   { key: 'feedback', min: 0.0, max: 0.92, step: 0.01, note: 'high = self-converges' },
   { key: 'drift', min: 0.0, max: 4.0, step: 0.1, note: 'warp of the feedback' },
+  { key: 'smooth', min: 0.0, max: 0.9, step: 0.05, note: '0 = raw/flickery, .6 = settled' },
 ];
 
 export function mountTuner(hostEl, getDiffusion) {
@@ -26,7 +27,7 @@ export function mountTuner(hostEl, getDiffusion) {
     "font:11px 'Courier New',monospace", 'pointer-events:auto',
   ].join(';');
 
-  const state = { strength: 0.42, guidance: 1.2, passes: 1, feedback: 0.18, drift: 0.5 };
+  const state = { strength: 0.42, guidance: 1.2, passes: 1, feedback: 0.18, drift: 0.5, smooth: 0.6 };
   const rows = {};
 
   const h = (html) => { const d = document.createElement('div'); d.innerHTML = html; return d; };

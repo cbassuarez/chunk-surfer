@@ -13,7 +13,10 @@
 // Backpressure: at most MAX_INFLIGHT unacknowledged frames; the newest frame
 // always wins (stale frames are dropped, never queued).
 
-const MAX_INFLIGHT = 2;
+// Strict lockstep. With two frames in flight the model is denoising two
+// different conditioning images concurrently and their results interleave,
+// which reads as flicker.
+const MAX_INFLIGHT = 1;
 // Generous retry window: a cold-started GPU container (serverless scale-from-
 // zero) takes 1–2 minutes to accept its first session.
 const RETRIES = 20;
@@ -50,6 +53,12 @@ export function diffusionStart({
   // that are actually there. Low feedback = it does not wander off into its
   // own dream between frames.
   strength = 0.42, passes = 1, feedback = 0.18, drift = 0.5, guidance = 1.2,
+  // Temporal smoothing. The base render never holds perfectly still (the
+  // reaction-diffusion skin crawls, the glow breathes), so every conditioning
+  // frame differs slightly and the model re-dreams it. Persisting some of the
+  // previous styled frame integrates that churn instead of showing it.
+  // 0 = raw, every frame as returned. ~0.6 = the room stops boiling.
+  smooth = 0.6,
   // `seedMode:'fixed'` pins the noise so a place stays recognisably itself
   // between frames and between visits; the crawl then comes from feedback,
   // not from the room being reinvented. 'walk' is for scenes meant to come apart.
@@ -63,7 +72,7 @@ export function diffusionStart({
   hostEl.appendChild(overlay);
   const octx = overlay.getContext('2d');
 
-  const stats = { framesOut: 0, framesIn: 0, lastRttMs: 0, state: 'connecting' };
+  const stats = { framesOut: 0, framesIn: 0, lastRttMs: 0, state: 'connecting', skips: 0, blobNull: 0, notOpen: 0, inflight: 0 };
   let ws = null, sendTimer = null, inflight = 0, retriesLeft = RETRIES, stopped = false;
   let lastSentAt = 0;
 
@@ -75,6 +84,8 @@ export function diffusionStart({
   // last styled frame, kept for the feedback loop
   let lastStyled = null;
   let driftPhase = 0;
+  let firstFrame = true;
+  let moving = false;      // the player took a step recently
 
   function setState(s) { stats.state = s; onStatus({ ...stats }); }
 
@@ -89,13 +100,18 @@ export function diffusionStart({
       retriesLeft = RETRIES;
       setState('streaming');
       ws.send(JSON.stringify({ type: 'prompt', prompt, negative, strength, passes, guidance, seedMode, seed }));
-      sendTimer = setInterval(captureAndSend, Math.round(1000 / fps));
+      // Lockstep pacing: capture as soon as the last frame lands, with a timer
+      // only as a watchdog. Sending faster than the GPU returns just queues
+      // stale conditioning.
+      sendTimer = setInterval(captureAndSend, Math.max(60, Math.round(1000 / fps)));
+      captureAndSend();
     };
     ws.onmessage = async (ev) => {
       if (typeof ev.data === 'string') { try { onStatus({ ...stats, server: JSON.parse(ev.data) }); } catch (_) {} return; }
       inflight = Math.max(0, inflight - 1);
       stats.framesIn++;
       stats.lastRttMs = performance.now() - lastSentAt;
+      queueMicrotask(captureAndSend);   // next frame the instant this one lands
       try {
         const bmp = await createImageBitmap(new Blob([ev.data], { type: 'image/jpeg' }));
         if (overlay.width !== bmp.width || overlay.height !== bmp.height) {
@@ -106,7 +122,10 @@ export function diffusionStart({
         // double-exposes two misaligned images (hard black wedges over walls
         // that moved). Structure is preserved *upstream* instead — by keeping
         // strength and feedback low enough that the model tracks the geometry.
+        octx.globalAlpha = firstFrame ? 1 : (1 - smooth);
         octx.drawImage(bmp, 0, 0, overlay.width, overlay.height);
+        octx.globalAlpha = 1;
+        firstFrame = false;
         if (lastStyled) lastStyled.close();
         lastStyled = bmp;   // feeds the next conditioning frame
         if (overlay.style.opacity !== '1') overlay.style.opacity = '1';
@@ -133,8 +152,9 @@ export function diffusionStart({
   }
 
   function captureAndSend() {
-    if (!ws || ws.readyState !== WebSocket.OPEN || inflight >= MAX_INFLIGHT) return;
+    if (!ws || ws.readyState !== WebSocket.OPEN || inflight >= MAX_INFLIGHT) { stats.skips++; stats.inflight = inflight; return; }
     inflight++;
+    stats.inflight = inflight;
     lastSentAt = performance.now();
 
     const W = capture.width, H = capture.height;
@@ -147,10 +167,13 @@ export function diffusionStart({
     // where the walls actually are — which is exactly where the drifting,
     // non-Euclidean, boiling texture comes from.
     if (feedback > 0 && lastStyled) {
-      driftPhase += 0.013;
-      const zoom = 1 + 0.010 * drift;
-      const rot = Math.sin(driftPhase) * 0.004 * drift;
-      const sway = Math.cos(driftPhase * 0.7) * 3 * drift;
+      // A stationary player gets a stationary room: warping the feedback while
+      // nothing moves manufactures motion the player did not cause.
+      const d = moving ? drift : 0;
+      driftPhase += moving ? 0.013 : 0;
+      const zoom = 1 + 0.010 * d;
+      const rot = Math.sin(driftPhase) * 0.004 * d;
+      const sway = Math.cos(driftPhase * 0.7) * 3 * d;
       capCtx.globalAlpha = feedback;
       capCtx.translate(W / 2 + sway, H / 2);
       capCtx.rotate(rot);
@@ -161,7 +184,8 @@ export function diffusionStart({
     }
 
     capture.toBlob((blob) => {
-      if (!blob || !ws || ws.readyState !== WebSocket.OPEN) { inflight = Math.max(0, inflight - 1); return; }
+      if (!blob) { stats.blobNull++; inflight = Math.max(0, inflight - 1); return; }
+      if (!ws || ws.readyState !== WebSocket.OPEN) { stats.notOpen++; inflight = Math.max(0, inflight - 1); return; }
       blob.arrayBuffer().then((ab) => {
         if (ws && ws.readyState === WebSocket.OPEN) { ws.send(ab); stats.framesOut++; }
         else inflight = Math.max(0, inflight - 1);
@@ -194,14 +218,17 @@ export function diffusionStart({
       if (opts.strength != null) strength = opts.strength;
       if (opts.passes != null) passes = opts.passes;
       if (opts.guidance != null) guidance = opts.guidance;
+      if (opts.smooth != null) smooth = Math.max(0, Math.min(0.9, opts.smooth));
       if (opts.seedMode != null) seedMode = opts.seedMode;
       if (opts.seed != null) seed = opts.seed >>> 0;
       if (opts.prompt != null) prompt = opts.prompt;
       if (opts.negative != null) negative = opts.negative;
       send();
-      return { feedback, drift, strength, passes, guidance, seedMode, prompt, negative };
+      return { feedback, drift, strength, passes, guidance, smooth, seedMode, prompt, negative };
     },
-    resetFeedback() { if (lastStyled) { lastStyled.close(); lastStyled = null; } },
+    resetFeedback() { if (lastStyled) { lastStyled.close(); lastStyled = null; } firstFrame = true; },
+    // main.js reports movement; a still player must see a still room.
+    setMoving(v) { moving = !!v; },
     stop() {
       stopped = true;
       clearInterval(sendTimer);

@@ -2868,6 +2868,13 @@ function step(dx,dy){
     const level=REC.emitStepNoise(px, py);
     RT.footstep(level);
   }
+  // Tell the lens the world moved, so it may warp its feedback. Standing still
+  // must look like standing still.
+  if(window.__diffusion?.setMoving){
+    window.__diffusion.setMoving(true);
+    clearTimeout(movingTimer);
+    movingTimer=setTimeout(()=>window.__diffusion?.setMoving(false), 420);
+  }
   let sx=dx, sy=dy;
   const preHushDx=(!isOnboardingActive() && depth<=1 && isHorrorActive() && hush.active) ? (hush.x-px) : 0;
   const preHushDy=(!isOnboardingActive() && depth<=1 && isHorrorActive() && hush.active) ? (hush.y-py) : 0;
@@ -4162,6 +4169,7 @@ function enterStory(){
   ensureCtx();
   startAmbientDroneAt(currentAmbientTarget());
   // ?talk=<node> jumps straight into a conversation
+  pushEvent('// [f] flashlight · [r] recorder · [shift] move quietly');
   const talk=qp.get('talk');
   if(talk) startDialogue(talk);
   else if(!flagTest('prologueDone')) startDialogue('usher.intro');
@@ -4206,6 +4214,7 @@ function tickRecorder(dt){
   }
 }
 let spoilPendingMs=0;
+let movingTimer=null;
 let bootTextCache='';
 function drawBootText(){
   if(!bootTextCache) return;
@@ -4260,6 +4269,18 @@ function drawStoryHud(){
 
   const rec=REC.recState();
   if(!rec.light && !rec.recording) uiText(2, 2, '(dark)', 't-trail-3', 0.5);
+
+  // The verbs must be discoverable. A player should never have to guess that
+  // the recorder exists in a game about recording.
+  if(!rec.recording){
+    const hint = rec.light
+      ? '[f] light off   [r] record   [shift] slow   [esc] pause'
+      : '[f] light on    [r] record   [shift] slow   [esc] pause';
+    uiText(Math.max(2, cols - hint.length - 2), rows-2, hint, 't-trail-3', 0.45);
+  } else {
+    const hint='[r] stop recording';
+    uiText(Math.max(2, cols - hint.length - 2), rows-2, hint, 't-trail-3', 0.45);
+  }
 
   if(rec.recording){
     // A tape meter. It fills for forty-five seconds, and any noise kills it.
@@ -4346,6 +4367,7 @@ async function resolveLensConfig(qp){
   }
 }
 async function startLens(qp){
+  if(window.__diffusion) return;   // one lens, one socket
   const cfg=await resolveLensConfig(qp);
   if(!cfg?.url) return;
   const [{diffusionStart}, {PRESETS}, {mountTuner}] = await Promise.all([
@@ -4494,7 +4516,13 @@ async function loadAll(){
 }
 
 // ── Enter roguelike ────────────────────────────────────────────────────────────
+let enteringRogue=false;
 function enterRogue(){
+  // CONCURRENCY=8 loaders race here: several can pass the !inRogue check in
+  // fetchFile before any of them sets it. Re-entry built the world twice and
+  // opened two diffusion sockets, which then evicted each other (close 1012).
+  if(inRogue || enteringRogue) return;
+  enteringRogue=true;
   bootTextCache='';
   // Never enter active mode until world build succeeds.
   try{
@@ -4508,10 +4536,12 @@ function enterRogue(){
     inRogue=true;
   }catch(err){
     inRogue=false;
+    enteringRogue=false;
     pushEvent('// boot error: world init failed.');
     console.error('enterRogue failed', err);
     return;
   }
+  enteringRogue=false;
   if(RENDERER==='3d'){
     // 3D mode boots straight into the live field: the 2D funnel intro is a
     // top-down construction; its 3D replacement is an M4 cutscene.
