@@ -37,17 +37,30 @@ await key('r', 700);
 check('[r] in B3 opens the first-take tree', (await scene()) === 'thought:first-take', String(await scene()));
 check('...and did not start a take', !(await ev(() => window.__probe.rec())).recording);
 
+// It opens on a mistake: the rig is on the floor, and he knows better.
+n = 0; let opened = null;
+while (n++ < 12 && !(opened = (await convo())?.pending)) await key(' ', 300);
+check('it opens on the rig, on the floor', /floor|risers/i.test(JSON.stringify(opened?.options || [])),
+      JSON.stringify(opened?.options));
+check('and the lore is a choice you can miss', opened.options.length === 2);
+
 // It does not advance on its own.
 const a = await convo();
 await wait(6000);
 const c = await convo();
 check('a thought does not advance by itself', a.text === c.text && !c.typing, JSON.stringify(a.text.slice(0, 34)));
 
-// Walk it: every step is a picker. `roll` is the last one and it starts a take.
+// Walk it the short way. The last option is always the one that gets on with
+// it — `pick it up`, `kill the light and roll`, `roll` — so a player in a hurry
+// reaches the take and never learns what the risers are for. That is the design.
 n = 0;
-while ((await scene()) === 'thought:first-take' && n++ < 40) await key(' ', 200);
-check('the tree ends', (await scene()) !== 'thought:first-take', `${n} presses`);
-await wait(500);
+while ((await scene()) === 'thought:first-take' && n++ < 60) {
+  const v = await convo();
+  if (v?.pending?.kind === 'branch') await key(String(v.pending.options.length), 320);
+  else await key(' ', 300);
+}
+check('the hurried route reaches the take', (await scene()) !== 'thought:first-take', `${n} presses`);
+await wait(600);
 check('...and rolling actually rolls', (await ev(() => window.__probe.rec())).recording);
 
 // Never twice.

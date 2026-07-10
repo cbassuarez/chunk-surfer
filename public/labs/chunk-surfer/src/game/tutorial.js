@@ -30,7 +30,7 @@ const state = {
 };
 
 // ctx: { px, py, light, recording, takeElapsed, spoiled, spoilReason,
-//        workOrderRead, slow, steps }
+//        workOrderRead, marked, slow }
 const STEPS = [
   {
     id: 'light',
@@ -43,8 +43,19 @@ const STEPS = [
   {
     id: 'read',
     line: { who: 'you', text: "Work order's in my jacket. Five rooms, one clean minute each." },
-    prompt: '[b]  bag',
+    prompt: '[b]  bag  —  read the work order',
     done: (c) => c.workOrderRead,
+  },
+  {
+    // The one step that will not move until he has done it himself. Nothing is
+    // greyed out and nothing is refused — all five rooms are markable from the
+    // first minute. He simply does not get on with the night until he has used
+    // the verb once, on the room the work order told him to do first.
+    id: 'mark',
+    line: { who: 'you', text: 'Five rooms. I should mark them off as I go, like a grown man.' },
+    prompt: '[space]  mark studio B3',
+    done: (c) => c.marked === 'main_b3',
+    exit: { who: 'you', text: 'Down the west stair, behind the dock. Mark them off as you go and you never lose an hour.' },
   },
   {
     id: 'level',

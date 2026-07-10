@@ -26,23 +26,27 @@ export const STYLE = {
   direction: { cls: 't-trail-2', alpha: 0.70, label: '' },
 };
 
+// `ambient: false` is the scene that runs AFTER the title — the door, the dark
+// and the bag. The song has already gone and the booth is a hundred metres away
+// behind a fire door, so it starts nothing and it stops nothing.
 export function makeColdOpenScene({
-  beats = [], opening = null, slate = '', onDone, onChoice, cue, fx, audio, getAudio,
+  id = 'cold-open',
+  beats = [], opening = null, slate = '', ambient = true, lensPreset = 'booth',
+  onDone, onChoice, cue, fx, audio, getAudio,
 } = {}) {
   const convo = createConversation({
     nodes: opening, beats, onChoice, cue, fx, audio, getAudio,
-    onDone: () => { scenes.pop(); audio?.stopBoothTone?.({ fade: 0.8 }); onDone?.(); },
+    onDone: () => { scenes.pop(); if (ambient) audio?.stopBoothTone?.({ fade: 0.8 }); onDone?.(); },
   });
 
   return {
-    id: 'cold-open',
+    id,
     blocksInput: true,
     blocksWorld: true,
-    lensPreset: 'booth',
+    lensPreset,
 
     enter() {
-      audio?.startSoundtrack?.();
-      audio?.startBoothTone?.();
+      if (ambient) { audio?.startSoundtrack?.(); audio?.startBoothTone?.(); }
       convo.start();
     },
     exit() { convo.stop(); audio?.stopTyping?.(); },
@@ -124,7 +128,9 @@ export function makeColdOpenScene({
   };
 }
 
-export function makeWorldTitleScene({ onDone, audio, duration = 7.0 } = {}) {
+// Long enough that the song gets a verse and the reader gets to sit in it. The
+// fade takes the whole back half, so the door lands in a mix that has emptied.
+export function makeWorldTitleScene({ onDone, audio, duration = 12.0 } = {}) {
   let t = 0;
   let done = false;
 
@@ -141,7 +147,8 @@ export function makeWorldTitleScene({ onDone, audio, duration = 7.0 } = {}) {
     blocksWorld: false,
     lensPreset: 'calm',
 
-    enter() { audio?.fadeSoundtrack?.({ fade: duration + 0.8 }); },
+    // The song leaves before the title does, so the door slams into an empty mix.
+    enter() { audio?.fadeSoundtrack?.({ fade: Math.max(2, duration - 2.4) }); },
     update(dt) { t += dt; if (t >= duration) finish(); },
     key(e) {
       if (e.key === ' ' || e.key === 'Enter' || e.key === 'z' || e.key === 'Escape') { finish(); return true; }
@@ -149,25 +156,20 @@ export function makeWorldTitleScene({ onDone, audio, duration = 7.0 } = {}) {
     },
     exit() { audio?.stopTyping?.(); },
 
+    // Nothing but type, on black. No band, no box, no ornament — the song does
+    // the work, and the lens is asleep behind this, so the black is real black.
+    // Each line fades up on its own beat and they all leave together.
     render() {
       const { cols, rows } = uiSize();
-      const fadeIn = Math.min(1, t / 1.4);
-      const fadeOut = Math.min(1, Math.max(0, (duration - t) / 2.2));
-      const a = Math.max(0, Math.min(fadeIn, fadeOut));
-      const cy = Math.max(5, Math.floor(rows * 0.34));
-      const cx = Math.floor(cols / 2);
-      const band = '░▒▓▒░';
-      for (let r = -4; r <= 4; r++) {
-        const span = Math.max(18, Math.floor(cols * (0.34 + Math.abs(r) * 0.018)));
-        const x = Math.max(0, cx - Math.floor(span / 2));
-        const phase = Math.floor(t * 8 + r * 3);
-        let line = '';
-        for (let k = 0; k < span; k++) line += band[Math.abs(k + phase) % band.length];
-        uiText(x, cy + r, line, r === 0 ? 't-hush-edge' : 't-trail-2', a * (0.08 + (4 - Math.abs(r)) * 0.035));
-      }
-      uiCenter(cy, 'CHUNK SURFER', 't-player', a);
-      uiCenter(cy + 2, 'ELLERY CONSERVATORY OF MUSIC', 't-trail-1', a * 0.78);
-      uiCenter(cy + 4, 'FIVE ROOMS. ONE CLEAN MINUTE EACH.', 't-trail-3', a * 0.58);
+      uiFill(0, 0, cols, rows, 'rgba(0,0,0,1)');
+
+      const out = Math.min(1, Math.max(0, (duration - t) / 2.4));
+      const up = (at, over = 1.8) => Math.min(1, Math.max(0, (t - at) / over)) * out;
+
+      const cy = Math.max(4, Math.floor(rows * 0.40));
+      uiCenter(cy, 'C H U N K   S U R F E R', 't-player', up(0.5, 2.4));
+      uiCenter(cy + 3, 'ellery conservatory of music', 't-trail-1', up(2.4) * 0.72);
+      uiCenter(cy + 5, 'five rooms. one clean minute each.', 't-trail-3', up(3.6) * 0.50);
     },
   };
 }

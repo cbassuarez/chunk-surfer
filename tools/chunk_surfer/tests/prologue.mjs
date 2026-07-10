@@ -91,6 +91,10 @@ const branches = await walk('cold-open', 2);
 check('the cold open ends', (await scene()) !== 'cold-open', `${branches} branches`);
 
 n = 0; while ((await scene()) === 'world-title' && n++ < 8) await key(' ', 220);
+check('the title comes before the door', (await scene()) === 'after-title', String(await scene()));
+
+// The door shuts AFTER the title, into a mix the song has just vacated.
+n = 0; while ((await scene()) === 'after-title' && n++ < 60) await key(' ', 130);
 await wait(700);
 
 // ── the door, and what he says into the dark ────────────────────────────────
@@ -135,13 +139,50 @@ await key('b', 500);
 check('[b] opens the bag', (await scene()) === 'bag', String(await scene()));
 await ev(() => window.__probe.read());       // the work order, from the bag
 await wait(400);
-await key('Escape', 300); await key('Escape', 500);
-check('reading it satisfies the next step', (await tut()).step === 'level', (await tut()).step);
+await key('Escape', 300);
+check('reading it satisfies the next step', (await tut()).step === 'mark', (await tut()).step);
 
-// ── the level check: a real take, and it may fail ───────────────────────────
+// ── the one step he must do himself ─────────────────────────────────────────
+// Nothing is greyed out. He simply does not get on with the night until he has
+// used the only navigation verb the game has, on the room the order named first.
+check('the work order did not mark B3 for him', !(await ev(() => window.__probe.obj())).target);
+check('and the tutorial is waiting on it', (await tut()).prompt.includes('mark'), (await tut()).prompt);
+
+check('still in the bag', (await scene()) === 'bag', String(await scene()));
+
+// He will not write down another room until the basement is done. Not a locked
+// door: every door in the building is open. A man declining to plan.
+await key('ArrowDown', 200);                  // the work order note
+await key('ArrowDown', 200);                  // the natatorium
+await ev(() => window.__probe.hush());        // clear the queue so we hear HIM
+await key(' ', 600);
+check('BASEMENT FIRST: he refuses to mark another room', !(await ev(() => window.__probe.obj())).target);
+check('...and says why', /basement/i.test((await speech())?.text || ''), (await speech())?.text);
 await ev(() => window.__probe.hush());
-await key('r', 400);
-check('[r] rolls', (await ev(() => window.__probe.rec())).recording);
+
+await key('ArrowUp', 200); await key('ArrowUp', 200);   // back to studio B3
+await key(' ', 600);
+const obj = await ev(() => window.__probe.obj());
+check('MARKING IS A VERB HE USES: studio B3 is marked', obj.target === 'main_b3', JSON.stringify(obj.wp));
+await key('b', 500);
+check('marking satisfies the step', (await tut()).step === 'level', (await tut()).step);
+
+// ── the level check: a real tree, then a real take that may fail ────────────
+await ev(() => window.__probe.hush());
+await key('r', 700);
+check('[r] in the dock opens the level check', (await scene()) === 'thought:level-check', String(await scene()));
+check('...and does not roll yet', !(await ev(() => window.__probe.rec())).recording);
+
+// Walk it, always taking the last option, which is the one that rolls.
+n = 0;
+while ((await scene()) === 'thought:level-check' && n++ < 40) {
+  const v = await convo();
+  if (v?.pending?.kind === 'branch') await key(String(v.pending.options.length), 320);
+  else await key(' ', 300);
+}
+await wait(600);
+check('the level check ends by rolling', (await ev(() => window.__probe.rec())).recording, `${n} presses`);
+
 await walkKey('ArrowUp', 300);
 check('moving spoils the level check, as it will spoil every take',
       (await ev(() => window.__probe.rec())).spoiled, (await ev(() => window.__probe.rec())).spoilReason);

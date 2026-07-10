@@ -105,7 +105,7 @@ export const COLD_OPEN_DIALOGUE = {
       { who: 'guard', text: 'Ellery? Christ. They actually sent someone tonight.' },
       { who: 'me', text: "Sound. There should be a work order. Four four one seven?" },
       { who: 'guard', text: 'Came through about four.' },
-      { who: 'direction', text: "He finds a pen. It doesn't work. He puts it back in the pot with the others." },
+      { who: 'direction', text: "He finds a pen. It doesn't work. He puts it back in the pot with the others.", cue: 'pens' },
       { who: 'guard', text: 'My wife buys these. Twelve in a pack, and not one of them.' },
       { who: 'direction', text: 'Rain on the roof of the booth, and on the skips out in the yard.' },
       { who: 'guard', text: "Five rooms, it says. That's a lot of rooms." },
@@ -361,7 +361,7 @@ export const COLD_OPEN_DIALOGUE = {
     speaker: 'REFERENCE FILES · 04 (NO SLATE)',
     tape: true,
     lines: [
-      { who: 'direction', text: 'Back forty seconds. The room, the chair, the man standing up.' },
+      { who: 'direction', text: 'Back forty seconds. The room, the chair, the man standing up.', cue: 'rewind' },
       { who: 'surfer', text: 'Who did you lose.' },
       { who: 'you', text: 'Same words. Same level. Minus forty-one, both times.' },
       { who: 'direction', text: 'A voice in a room does not arrive at the same level twice. A voice in a room is never the same twice.' },
@@ -387,9 +387,9 @@ export const COLD_OPEN_DIALOGUE = {
     lines: [
       { who: 'direction', text: 'He turns the book around. Two boxes on the line with your name in it.' },
       { who: 'guard', text: 'Sign where it says received.' },
-      { who: 'direction', text: 'You sign the first box. The second one says returned, and it is the width of a fingernail, and it is empty all the way up the page.' },
+      { who: 'direction', text: 'You sign the first box. The second one says returned, and it is the width of a fingernail, and it is empty all the way up the page.', cue: 'signature' },
       { who: 'guard', text: "Don't sign the other one. That's for when you come back out." },
-      { who: 'direction', text: 'He slides the keys under the glass, and a radio, and the form back.' },
+      { who: 'direction', text: 'He slides the keys under the glass, and a radio, and the form back.', cue: 'slides' },
       { who: 'me', text: 'Channel two?' },
       { who: 'guard', text: 'Channel two. They said on the hour.' },
       { who: 'guard', text: "Grey door, end of the yard. I'll be here till ten." },
@@ -505,66 +505,229 @@ export const POST_DOOR = {
   },
 };
 
-// ── the first take ──────────────────────────────────────────────────────────
-// The only place the game says the rule out loud, at the one moment the player
-// is about to learn it the hard way. Fires once, in studio B3. Every take after
-// this is the bare verb.
-export const FIRST_TAKE = {
+// ── the level check, in the loading dock ────────────────────────────────────
+// The first time he touches the recorder. Nothing is hunting him, nothing is
+// at stake, and every rule of the game gets said out loud by a man explaining
+// his own trade to himself in the dark, which is what people do at 21:44.
+//
+// It ends by rolling, and then he has to hold still for six seconds, and the
+// six seconds are the point. He learns the posture before it is dangerous.
+export const LEVEL_CHECK = {
   start: {
     speaker: '',
     lines: [
-      { who: 'you', text: 'Studio B3. Foam on three walls, carpet, a dead ceiling. This is the quietest room in the building and it is going to be the hardest.' },
-      { who: 'direction', text: 'The recorder is in your hand. The room is doing nothing, loudly.' },
+      { who: 'you', text: 'Before anything. You never set a level in a room you have not listened to.' },
+      { who: 'direction', text: 'The recorder wakes up in your hand. A green LED, and eleven segments of a meter that is not moving.' },
     ],
     choices: [
-      { text: 'set the rig down on the case, not the floor', goto: 'rig' },
+      { text: 'what am I actually recording?', goto: 'what' },
+      { text: 'set the levels', goto: 'levels' },
     ],
   },
-  rig: {
+  what: {
     speaker: '',
     lines: [
-      { who: 'direction', text: 'The floor is a drum. The case is not. Thirty years of knowing that.' },
-      { who: 'you', text: 'Levels.' },
+      { who: 'you', text: 'Room tone. Sixty seconds of a room with nothing in it.' },
+      { who: 'you', text: 'Not silence — there is no such thing. The air handler, the glass, the size of the place.' },
+      { who: 'you', text: 'They cut it in under dialogue so a scene does not go dead between lines. Every room has one, and every one is different, and nobody has ever noticed a good one.' },
+      { who: 'direction', text: 'Five of them, in a building that comes down on Thursday.' },
     ],
-    choices: [
-      { text: 'check the levels', goto: 'levels' },
-    ],
+    goto: 'start',
   },
   levels: {
     speaker: '',
     lines: [
-      { who: 'direction', text: 'The meter finds the room. Minus sixty-one, and the last two decibels of that are you.' },
-      { who: 'you', text: 'Your jacket. Your knee. Your breathing, which you cannot switch off, only slow down.' },
-      { who: 'you', text: "And the torch, which is a filament, and a filament in a dead building is a bell." },
+      { who: 'direction', text: 'The meter finds the dock. Minus fifty-four, and it moves when you move.' },
+      { who: 'you', text: 'That is me. My jacket, my knee, my breathing.' },
     ],
     choices: [
-      { text: 'kill the light', goto: 'dark' },
-      { text: 'keep the light on a moment longer', goto: 'linger' },
+      { text: 'so what spoils a take?', goto: 'spoils' },
+      { text: 'kill the light and roll', goto: 'roll' },
     ],
   },
-  linger: {
+  spoils: {
     speaker: '',
     lines: [
-      { who: 'direction', text: 'Foam. Carpet. A music stand somebody folded and left. It is a room.' },
-      { who: 'you', text: 'Nothing in here. Right.' },
+      { who: 'you', text: 'Anything I do. A step. A hand on the torch. The radio, if it ever decides to speak.' },
+      { who: 'you', text: 'Their own words: if you can hear yourself on the take, the take is not the room.' },
+      { who: 'you', text: 'So: light off, feet still, and forty-five seconds of being furniture.' },
     ],
     choices: [
-      { text: 'kill the light', goto: 'dark' },
+      { text: 'and if I move?', goto: 'move' },
+      { text: 'kill the light and roll', goto: 'roll' },
     ],
   },
+  move: {
+    speaker: '',
+    lines: [
+      { who: 'you', text: 'Then the take is spoiled and I do it again. That is all. Nobody dies of a spoiled take.' },
+      { who: 'direction', text: 'He has done four hundred rooms and he has never once said that out loud in one.' },
+    ],
+    goto: 'levels',
+  },
+  roll: {
+    speaker: '',
+    lines: [
+      { who: 'you', text: 'Six seconds is enough to know the floor. Light off.' },
+      { who: 'direction', text: 'Dark. The monitor opens, and the dock is louder than it looks.' },
+      { who: 'you', text: 'Hold still.' },
+    ],
+  },
+};
+
+// ── the first take ──────────────────────────────────────────────────────────
+// The real one, in studio B3, and the largest tree in the game.
+//
+// It is a hub with a rig on the floor of it. Everything is exhaustible and
+// almost all of it is missable: a player who wants to press [space] four times
+// and roll can do that, and will never learn what the risers are for, or what a
+// music stand tells you about the night a building closed, or why he stopped
+// slating out loud in 2011.
+//
+// THE POINT OF THE RIG ON THE FLOOR. He put it down wrong. He knows better; he
+// has known better for thirty years; and the reason he did it is that this room
+// is so quiet that he is hurrying without noticing. Nothing has threatened him.
+// The building has not done anything. He is simply not himself in here, and the
+// first evidence of that is a piece of kit resting on a drum.
+export const FIRST_TAKE = {
+  start: {
+    speaker: 'STUDIO B3',
+    lines: [
+      { who: 'direction', text: 'Foam on three walls, carpet, a dead ceiling. The quietest room in the building.' },
+      { who: 'direction', text: 'You put the rig down and start unwinding the cable.' },
+      { who: 'you', text: '...' },
+      { who: 'you', text: 'I have set it on the floor.' },
+    ],
+    choices: [
+      { text: 'so what? it is a floor', goto: 'floor.so' },
+      { text: 'pick it up. it goes on its risers.', goto: 'floor.risers' },
+    ],
+  },
+  'floor.so': {
+    speaker: 'STUDIO B3',
+    lines: [
+      { who: 'you', text: 'A floor is a drum. A joist is a drumstick. Everything above it and everything under it goes into the mic as one long low nothing you cannot filter out afterwards.' },
+      { who: 'you', text: 'That is why the case has four gum rubber risers on it. Silicone under those. It cost more than the microphone.' },
+      { who: 'direction', text: 'You have known that since you were twenty-six.' },
+    ],
+    goto: 'floor.risers',
+  },
+  'floor.risers': {
+    speaker: 'STUDIO B3',
+    lines: [
+      { who: 'direction', text: 'You lift it, set it on the case, and feel the risers take it.' },
+      { who: 'you', text: 'So why did I do that.' },
+      { who: 'you', text: 'Because it is quiet in here, and I was hurrying, and I did not notice I was hurrying.' },
+      { who: 'direction', text: 'Nothing has happened. Nobody has touched you. It is 22:04 and you have made your first mistake in a decade.' },
+    ],
+    goto: 'hub',
+  },
+
+  // ── the hub. Everything here is optional, and most of it is lore. ─────────
+  hub: {
+    speaker: 'STUDIO B3',
+    lines: [
+      { who: 'you', text: 'Right. Do it properly. Set up, levels, light, roll.' },
+    ],
+    choices: [
+      { text: 'check the levels', goto: 'levels' },
+      { text: 'look at the room', goto: 'room' },
+      { text: 'the music stand', goto: 'stand' },
+      { text: 'slate it, out loud', goto: 'slate' },
+      { text: 'kill the light and roll', goto: 'dark' },
+    ],
+  },
+
+  levels: {
+    speaker: 'STUDIO B3',
+    lines: [
+      { who: 'direction', text: 'The meter finds the room. Minus sixty-one.' },
+      { who: 'you', text: 'And the last two decibels of that are me. Jacket, knee, breathing — which you cannot switch off, only slow down.' },
+      { who: 'you', text: 'Minus sixty-one in a room with a man in it. This place is a coffin with foam on it.' },
+    ],
+    choices: [
+      { text: 'what is a good floor?', goto: 'levels.floor' },
+      { text: 'back', goto: 'hub' },
+    ],
+  },
+  'levels.floor': {
+    speaker: 'STUDIO B3',
+    lines: [
+      { who: 'you', text: 'A live room is minus fifty. A church at four in the morning is minus fifty-five and you are proud of it.' },
+      { who: 'you', text: 'Minus sixty-one is a number I have seen twice. Once in an anechoic chamber in Salford.' },
+      { who: 'you', text: 'And once on a file the client sent me this afternoon.' },
+      { who: 'direction', text: 'Minus fifty-eight, that one. Close enough that it does not comfort you.' },
+    ],
+    goto: 'hub',
+  },
+
+  room: {
+    speaker: 'STUDIO B3',
+    lines: [
+      { who: 'direction', text: 'The torch goes round it. Cable snakes, coiled the way you coil them, which is the way everybody coils them.' },
+      { who: 'direction', text: 'A patchbay with every cable pulled. A chair. Foam gone brown at the edges where thirty years of hands went past it.' },
+      { who: 'you', text: 'Somebody worked in here for a long time and then one day they did not come back.' },
+      { who: 'you', text: 'That is not ominous. That is every building I have ever been paid to record.' },
+    ],
+    goto: 'hub',
+  },
+
+  stand: {
+    speaker: 'STUDIO B3',
+    lines: [
+      { who: 'direction', text: 'A music stand, folded down, leaning in the corner. Somebody folded it. Nobody folds a stand on the day a building is condemned.' },
+      { who: 'you', text: 'They thought they were coming back. Everyone in a condemned building thought they were coming back.' },
+      { who: 'direction', text: 'There is a sheet still clipped to it. Two bars of something, in pencil, in a hand you cannot read.' },
+    ],
+    choices: [
+      { text: 'take it', goto: 'stand.take' },
+      { text: 'leave it', goto: 'stand.leave' },
+    ],
+  },
+  'stand.take': {
+    speaker: 'STUDIO B3',
+    lines: [
+      { who: 'direction', text: 'You put it in the bag, behind the work order, and you could not tell anybody why.' },
+      { who: 'you', text: 'It comes down on Thursday. All of it. Somebody may as well have the two bars.' },
+    ],
+    goto: 'hub',
+  },
+  'stand.leave': {
+    speaker: 'STUDIO B3',
+    lines: [
+      { who: 'you', text: 'Not mine. None of this is mine. I am here for sixty seconds of the air.' },
+      { who: 'direction', text: 'You leave it exactly as you found it, which is a thing you are good at.' },
+    ],
+    goto: 'hub',
+  },
+
+  slate: {
+    speaker: 'STUDIO B3',
+    lines: [
+      { who: 'me', text: 'Ellery, studio B3, room tone, take one.', prompt: 'slate it: "Ellery, studio B3, room tone, take one."' },
+      { who: 'direction', text: 'Your own voice comes back off the foam with everything above four hundred hertz taken out of it.' },
+      { who: 'you', text: 'You slate out loud so that in eight months, when the file is a number, somebody knows what they are listening to.' },
+      { who: 'you', text: 'I stopped doing it in 2011, when the recorders started writing the metadata themselves.' },
+      { who: 'you', text: 'The last man slated three of his four.' },
+    ],
+    goto: 'hub',
+  },
+
   dark: {
-    speaker: '',
+    speaker: 'STUDIO B3',
     lines: [
-      { who: 'direction', text: 'Dark. The kind with no shape in it, because there is nothing to make a shape out of.' },
+      { who: 'you', text: 'The torch is a filament, and a filament in a dead building is a bell. Off it goes.' },
+      { who: 'direction', text: 'Dark. The kind with no shape in it, because there is nothing here to make a shape out of.' },
       { who: 'you', text: 'Forty-five seconds. Do not move. Do not touch the light.' },
-      { who: 'you', text: 'If I can hear myself on the take, the take is not the room. Their words. My words first.' },
+      { who: 'you', text: 'If I can hear myself on the take, the take is not the room. Their words. Mine first.' },
     ],
     choices: [
+      { text: 'wait — go back over the kit', goto: 'hub' },
       { text: 'roll', goto: 'roll' },
     ],
   },
   roll: {
-    speaker: '',
+    speaker: 'STUDIO B3',
     lines: [
       { who: 'direction', text: 'The monitor opens. The room is louder than it looks.' },
     ],
@@ -658,18 +821,25 @@ export const RADIO_DEAD = {
   },
 };
 
-// After the booth: the yard, the door, and the last ordinary sound of the night.
+// After the booth: the yard, in the rain, and a key going into a grey door.
+// It ends on the key, because the title card goes here — and the door does not
+// shut until the title has faded and the song has gone with it.
 export const COLD_OPEN = [
   { who: 'direction', text: 'The yard. Rain on the skips, and a hundred metres of nothing between the booth and the grey door.', hold: 2.6 },
   { who: 'you', text: 'Basement first. It will be the hardest and I want it behind me.', hold: 2.4 },
-  { who: 'direction', text: 'The key turns. The door is heavier than it looks, the way fire doors are.', hold: 2.4 },
+  { who: 'direction', text: 'The key turns. The door is heavier than it looks, the way fire doors are.', cue: 'keyturn', hold: 2.6 },
+];
+
+// ...and then the title. And THEN the door, into a silence the song has just
+// vacated. The loudest thing that happens all night lands on an empty mix.
+export const AFTER_TITLE = [
   { who: 'direction', text: 'The service door closes behind you.',
-    cue: 'door', shake: 2.2, shakeMs: 620, flash: true, flashMs: 220, hold: 3.2 },
+    cue: 'door', shake: 2.2, shakeMs: 620, flash: true, flashMs: 220, hold: 3.4 },
   { who: 'you', text: 'Darker than the yard. Which is stupid, because the yard was dark.', hold: 2.6 },
   { who: 'you', text: 'And quieter. No rain in here. No rain, no traffic, no plant, no lift.', hold: 2.8 },
   { who: 'you', text: 'Minus sixty, near enough, before I have taken the recorder out of the bag.', hold: 2.8 },
   { who: 'direction', text: 'You put the bag down and go through it by feel.', cue: 'bag', hold: 2.6 },
-  { who: 'you', text: 'Torch. Recorder. Headphones. Radio. Keys. The order, folded twice.', hold: 2.8 },
+  { who: 'you', text: 'Torch. Recorder. Headphones. Radio. Keys. The order, folded twice.', cue: 'kit', hold: 2.8 },
   { who: 'you', text: 'Five rooms, a minute each, and then I drive home.', hold: 3.2 },
 ];
 
@@ -695,7 +865,9 @@ export const TRANSMISSIONS = [
     { who: 'direction', text: 'The carrier opens. It stays open.', hold: 2.6 },
     { who: 'direction', text: 'Something is close to the microphone on the other end.', hold: 2.8 },
     { who: 'direction', text: 'Closer than a person sitting at a desk can be.', hold: 3.0 },
-    { who: 'direction', text: 'It is listening to you listen to it.', hold: 3.4 },
+    // Eight seconds of a man working out what is on the other end, and then it
+    // is not a jump scare, because he already knew.
+    { who: 'direction', text: 'It is listening to you listen to it.', cue: 'scream', shake: 2.6, shakeMs: 900, hold: 4.2 },
     { who: 'direction', text: 'The carrier drops.', hold: 2.2 },
   ],
 ];
@@ -936,6 +1108,9 @@ export const LINES = {
     ? 'It found me. That is going to be on every take from here.'
     : `It found me again. ${n} now. I am the loudest thing in this building.` }),
   guest: { who: 'direction', text: 'There is something on the tape that was not in the room.' },
+  // He will not write down another room until the basement is done. He is not
+  // being prevented from walking there; he is declining to plan it.
+  basementFirst: { who: 'you', text: "No. I really want the basement out of the way while I've still got my legs." },
 };
 
 // ── what the building does with what it heard ───────────────────────────────

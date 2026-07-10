@@ -72,6 +72,35 @@ export function bearingTo(px, py) {
   return { bearing, far, distance: d };
 }
 
+// ── the job, filed ──────────────────────────────────────────────────────────
+// The bag is not a pile of paper. It is five rooms, and the paper you have
+// found is filed under the room it talks about. A sheet that names no room
+// goes in UNFILED, where it is exactly as useful as it was on the floor.
+//
+// `rooms` is the client's list, in the client's order. `notes` are the pages
+// picked up so far. `hasTake` and `label` come from the caller, because this
+// module knows nothing about audio or about English.
+export function objectives({ rooms = [], notes = [], hasTake = () => false, label = (r) => r } = {}) {
+  const filed = new Map(rooms.map((r) => [r, []]));
+  const unfiled = [];
+  for (const n of notes) {
+    if (n.room && filed.has(n.room)) filed.get(n.room).push(n);
+    else unfiled.push(n);
+  }
+  return {
+    rooms: rooms.map((roomId) => ({
+      roomId,
+      label: label(roomId),
+      notes: filed.get(roomId) || [],
+      recorded: !!hasTake(roomId),
+      marked: state.target === roomId,
+    })),
+    unfiled,
+    done: rooms.filter((r) => hasTake(r)).length,
+    total: rooms.length,
+  };
+}
+
 export function loadObjState(saved = {}) {
   state.read = saved.read || [];
   state.waypoint = saved.waypoint || null;

@@ -59,8 +59,10 @@ check('...but you cannot walk while reading',
 await key('Escape', 500);
 check('esc closes the reader', (await ev(() => window.__probe.scene())) === null);
 
+// Reading the order does not mark anything. Marking is a verb HE uses, taught
+// once in the dock and his forever after (see prologue.mjs).
 const wp = await ev(() => window.__probe.obj());
-check('the work order points you at studio B3', wp.target === 'main_b3', JSON.stringify(wp.wp));
+check('reading the order marks nothing for him', !wp.target, JSON.stringify(wp.wp));
 
 // ── the radio ───────────────────────────────────────────────────────────────
 await wait(1600);   // transmission 1 fires 1.2s after the work order is read

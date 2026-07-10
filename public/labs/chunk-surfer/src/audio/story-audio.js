@@ -7,24 +7,55 @@
 export const STORY_AUDIO = {
   title: '/labs/chunk-surfer/audio/title_song.mp3',
   typing: '/labs/chunk-surfer/audio/typing.mp3',
+  booth: '/labs/chunk-surfer/audio/outside_room_tone.mp3',
+  rain: '/labs/chunk-surfer/audio/rain.mp3',
+  // Tape hiss and the transport running, recorded off a real machine. It plays
+  // under the cryptic take, and it is what you hear immediately after a rewind.
+  tape: '/labs/chunk-surfer/audio/tape_play.mp3',
 };
 
-// The mix, top to bottom, so this is decided in one place and never again:
+// THE MIX, top to bottom. Decided in one place, and never again:
 //
-//   0.95   the service door                (the loudest thing that happens)
+//   0.95   the radio, breaking             (the loudest thing that happens)
+//   0.95   the service door
+//   0.55   TYPE_GAIN — the typewriter      (a mind, at work)
 //   0.26   a voice                         (sam-voice.js)
-//   0.18   TYPE_GAIN — the typewriter      (a mind, at work)
-//   0.105  the title song                  (SOUNDTRACK_GAIN)
-//   0.055  the booth
+//   0.62-0.85  the foley                   (audio/cues.js — pens, keys, signature)
+//   0.16   the title song                  (SOUNDTRACK_GAIN)
+//   0.085  the title song, while anyone speaks   (SOUNDTRACK_DUCK)
+//   0.075  the booth
+//   0.060  the rain on the roof of it
 //   0.010  room tone                       (the floor of an empty room)
 //
-// Each typing slice peaks around 0.3 into this bus, so TYPE_GAIN is the height
-// of the loudest keystroke. It sat at 0.034 for a while, which put the whole
-// typewriter thirty decibels under the song and made it look broken.
-export const TYPE_GAIN = 0.18;
+// TYPE_GAIN is a BUS gain, and each keystroke peaks around 0.4 into it, so the
+// loudest key lands near 0.22 — under a voice, over the song. It sat at 0.034
+// and then 0.18, and at both it was inaudible, which is why the number is now
+// written down next to everything it competes with.
+//
+// The song is a BED and it must survive: it ducks under speech rather than
+// getting out of the way, because a bed that disappears is not a bed. Half its
+// level, not a tenth. `?typegain=` and `?songgain=` tune both by ear.
+// `Number(null)` is 0, and 0 is a perfectly finite gain, so an absent parameter
+// silently muted the entire story bus — the song and the typewriter both — for
+// about an hour. Ask whether the parameter is there before believing its value.
+function queryGain(name, fallback) {
+  try {
+    const qp = new URLSearchParams(globalThis.location?.search || '');
+    if (!qp.has(name)) return fallback;
+    const v = Number(qp.get(name));
+    return Number.isFinite(v) && v >= 0 ? v : fallback;
+  } catch (_) { return fallback; }
+}
+
+export const TYPE_GAIN = queryGain('typegain', 0.55);
 export const TYPE_LEVEL = { thought: 1.0, direction: 1.15 };   // narration types harder
-export const SOUNDTRACK_GAIN = 0.105;
-export const SOUNDTRACK_DUCK = 0.045;                          // while anyone speaks
+// The song is the piece. It is not background: it carries the booth and it
+// carries the title, and it is the last thing the player hears before the door.
+export const SOUNDTRACK_GAIN = queryGain('songgain', 0.42);
+export const SOUNDTRACK_DUCK = SOUNDTRACK_GAIN * 0.55;         // audible, out of the way
+export const BOOTH_GAIN = 0.075;
+export const RAIN_GAIN = 0.060;
+export const TAPE_GAIN = queryGain('tapegain', 0.46);
 
 let ctx = null;
 let bus = null;
@@ -137,7 +168,7 @@ function typingSlice() {
   src.playbackRate.setValueAtTime(0.92 + Math.random() * 0.18, now);
 
   const env = ctx.createGain();
-  const peak = 0.20 + Math.random() * 0.16;
+  const peak = 0.30 + Math.random() * 0.25;
   env.gain.setValueAtTime(0, now);
   env.gain.linearRampToValueAtTime(peak, now + 0.006);
   env.gain.exponentialRampToValueAtTime(0.0006, now + dur);
@@ -184,6 +215,26 @@ export function startTyping({ gain = TYPE_GAIN, fade = 0.06 } = {}) {
   if (!t.timer) scheduleTyping();
 }
 
+// For the headless suites and for the next time any of this goes quiet.
+export function audioState() {
+  return {
+    ctx: ctx ? ctx.state : 'none',
+    time: ctx ? +ctx.currentTime.toFixed(2) : 0,
+    busIsCtxDest: !!ctx && bus === ctx.destination,
+    song: soundtrack ? +soundtrack.gain.gain.value.toFixed(4) : null,
+    songLoaded: buffers.has(STORY_AUDIO.title),
+    booth: booth ? +booth.gain.gain.value.toFixed(4) : null,
+    typing: typingState(),
+  };
+}
+
+export function typingState() {
+  return typing
+    ? { active: typing.active, gain: typing.gain.gain.value, scheduled: !!typing.timer,
+        loaded: buffers.has(STORY_AUDIO.typing) }
+    : { active: false, gain: 0, scheduled: false, loaded: buffers.has(STORY_AUDIO.typing) };
+}
+
 export function stopTyping({ fade = 0.12 } = {}) {
   if (!typing) return;
   typing.active = false;
@@ -194,60 +245,61 @@ export function stopTyping({ fade = 0.12 } = {}) {
   setGain(typing.gain, 0, fade);
 }
 
-// ── the booth, and the tape ─────────────────────────────────────────────────
-// Two beds the cold open owns. The booth is a lit room at one in the morning:
-// a fluorescent tube, a fridge somewhere, the street. The tape is what you
-// hear instead of the booth when you press play on a file with no slate — the
-// room goes away, and a different, smaller room is around your head.
+// ── the booth, the rain, and the tape ───────────────────────────────────────
+// The booth is a lit room at twenty to ten, recorded: an air handler, a street,
+// a fluorescent tube. The rain is on the roof of it and on the skips out in the
+// yard, and it stops when the service door does. The tape is what you hear
+// INSTEAD of the booth when you press play on a file with no slate — the room
+// goes away, and a smaller one closes around your head.
 //
-// Both are synthesised. They cost nothing and they are exactly as long as the
-// scene that needs them.
+// Only the tape is synthesised, because tape hiss is the one sound in this game
+// that has no room in it.
 
 let booth = null;   // { nodes:[], gain }
 let tape = null;
 
-function noiseLoop(seconds = 2) {
-  const len = Math.floor(ctx.sampleRate * seconds);
-  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-  const d = buf.getChannelData(0);
-  let last = 0;
-  for (let i = 0; i < len; i++) {
-    const w = Math.random() * 2 - 1;
-    last = (last + 0.02 * w) / 1.02;
-    d[i] = last * 3.0;
-  }
-  return buf;
+// One looping file, one gain, faded in. Returns null (and retries) if the
+// buffer has not landed yet.
+function loopFile(url, gain, fade, out) {
+  const buf = buffers.get(url);
+  if (!buf) { preload(url); return null; }
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0, ctx.currentTime);
+  src.connect(g); g.connect(out);
+  try { src.start(ctx.currentTime); } catch (_) { return null; }
+  setGain(g, gain, fade);
+  return { src, g };
 }
 
-export function startBoothTone({ gain = 0.055, fade = 1.6 } = {}) {
+export function startBoothTone({ gain = BOOTH_GAIN, fade = 1.6 } = {}) {
   if (!ctx || !bus || booth) return;
-  const now = ctx.currentTime;
-  const nodes = [];
-  const out = ctx.createGain();
-  out.gain.setValueAtTime(0, now);
-  out.connect(bus);
-  nodes.push(out);
-
-  // the room: low, brown, unremarkable
-  const air = ctx.createBufferSource();
-  air.buffer = noiseLoop(3); air.loop = true;
-  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 240;
-  const ag = ctx.createGain(); ag.gain.value = 0.9;
-  air.connect(lp); lp.connect(ag); ag.connect(out);
-  try { air.start(now); } catch (_) {}
-  nodes.push(air, lp, ag);
-
-  // the tube: a hum with its own third harmonic, because tubes are not sine waves
-  for (const [f, g] of [[100, 0.020], [300, 0.008], [500, 0.003]]) {
-    const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = f;
-    const og = ctx.createGain(); og.gain.value = g;
-    o.connect(og); og.connect(out);
-    try { o.start(now); } catch (_) {}
-    nodes.push(o, og);
+  if (!buffers.has(STORY_AUDIO.booth) || !buffers.has(STORY_AUDIO.rain)) {
+    // The scene starts before the mp3s land. Come back when they have.
+    Promise.all([preload(STORY_AUDIO.booth), preload(STORY_AUDIO.rain)])
+      .then(() => { if (!booth) startBoothTone({ gain, fade }); });
+    return;
   }
+  const now = ctx.currentTime;
+  const out = ctx.createGain();
+  out.gain.setValueAtTime(1, now);
+  out.connect(bus);
 
-  booth = { nodes, gain: out };
-  setGain(out, gain, fade);
+  const nodes = [out];
+  const room = loopFile(STORY_AUDIO.booth, gain, fade, out);
+  const rain = loopFile(STORY_AUDIO.rain, RAIN_GAIN, fade, out);
+  if (room) nodes.push(room.src, room.g);
+  if (rain) nodes.push(rain.src, rain.g);
+
+  booth = { nodes, gain: out, rain: rain?.g || null };
+}
+
+// The rain stops at the door, and it stops before the booth does, because he
+// is the one who went inside.
+export function stopRain({ fade = 0.5 } = {}) {
+  if (booth?.rain) setGain(booth.rain, 0, fade);
 }
 
 export function stopBoothTone({ fade = 1.2 } = {}) {
@@ -259,27 +311,29 @@ export function stopBoothTone({ fade = 1.2 } = {}) {
   }, Math.max(60, fade * 1000 + 80));
 }
 
-// Ducks whatever else is playing and puts a small room around your head.
-export function startTapeHiss({ gain = 0.030, fade = 0.5 } = {}) {
+// Ducks whatever else is playing and puts a small room around your head. This
+// is a real machine running, not synthesised hiss: it is the sound the file has
+// under it, and it is the sound that comes back the instant a rewind stops.
+export function startTapeHiss({ gain = TAPE_GAIN, fade = 0.5 } = {}) {
   if (!ctx || !bus || tape) return;
+  const buf = buffers.get(STORY_AUDIO.tape);
+  if (!buf) { preload(STORY_AUDIO.tape).then(() => { if (!tape) startTapeHiss({ gain, fade }); }); return; }
   const now = ctx.currentTime;
   const src = ctx.createBufferSource();
-  src.buffer = noiseLoop(2); src.loop = true;
-  const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 900;
-  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 7000;
+  src.buffer = buf; src.loop = true;
   const g = ctx.createGain(); g.gain.setValueAtTime(0, now);
-  src.connect(hp); hp.connect(lp); lp.connect(g); g.connect(bus);
+  src.connect(g); g.connect(bus);
   try { src.start(now); } catch (_) { return; }
-  tape = { nodes: [src, hp, lp, g], gain: g };
+  tape = { nodes: [src, g], gain: g };
   setGain(g, gain, fade);
-  if (booth) setGain(booth.gain, 0.010, fade);      // the room recedes
+  if (booth) setGain(booth.gain, 0.16, fade);       // the room recedes
 }
 
 export function stopTapeHiss({ fade = 0.6 } = {}) {
   if (!tape) return;
   const t = tape; tape = null;
   setGain(t.gain, 0, fade);
-  if (booth) setGain(booth.gain, 0.055, fade);      // and comes back
+  if (booth) setGain(booth.gain, 1, fade);          // and comes back
   window.setTimeout(() => {
     for (const n of t.nodes) { try { n.stop?.(); } catch (_) {} try { n.disconnect(); } catch (_) {} }
   }, Math.max(60, fade * 1000 + 80));

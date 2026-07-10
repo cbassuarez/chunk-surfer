@@ -17,6 +17,7 @@ let bedTarget = 0;
 
 export function roomToneInit(audioCtx, masterBus) {
   ctx = audioCtx; bus = masterBus;
+  loadFootsteps();      // so the first step of a run is not the silent one
 }
 
 function makeNoiseBuffer(seconds = 3) {
@@ -69,29 +70,57 @@ export function setBed(target, rampSec = 1.5) {
 export function bedOn() { setBed(ROOM_TONE.bedGain); }
 export function bedOff() { setBed(0, 0.6); }
 
-// A footstep. Loudness is the noise level the recordist just emitted, so a
-// slow step is almost nothing and an injured step is a announcement.
+// ── footsteps ───────────────────────────────────────────────────────────────
+// One long recording of a man walking, sliced at random. The noise MODEL is
+// unchanged — `level` is exactly the number `recordist.js` just emitted, so a
+// slow step is almost nothing and an injured step is still an announcement.
+// Only the timbre changed: a filtered noise burst never sounded like a shoe.
+const STEPS_URL = '/labs/chunk-surfer/audio/bunch-of-footsteps-sounds.mp3';
+let stepsBuf = null;
+let stepsPending = null;
+
+export function loadFootsteps() {
+  if (!ctx || stepsBuf || stepsPending) return stepsPending;
+  stepsPending = fetch(STEPS_URL)
+    .then((r) => { if (!r.ok) throw new Error(`${r.status} ${STEPS_URL}`); return r.arrayBuffer(); })
+    .then((ab) => ctx.decodeAudioData(ab))
+    .then((buf) => { stepsBuf = buf; stepsPending = null; return buf; })
+    .catch((err) => { console.warn('footsteps failed to load', err); stepsPending = null; return null; });
+  return stepsPending;
+}
+
 export function footstep(level = 0.22) {
   if (!ctx || !bus || level <= 0.001) return;
+  if (!stepsBuf) { loadFootsteps(); return; }       // the first step of a run is silent
   const now = ctx.currentTime;
+
+  // A window somewhere in the file, long enough to contain one footfall.
+  const dur = 0.16 + Math.random() * 0.14;
+  const startMax = Math.max(0, stepsBuf.duration - dur - 0.02);
+  const offset = startMax > 0 ? Math.random() * startMax : 0;
+
   const src = ctx.createBufferSource();
-  const sr = ctx.sampleRate;
-  const len = Math.floor(sr * 0.06);
-  const buf = ctx.createBuffer(1, len, sr);
-  const d = buf.getChannelData(0);
-  for (let i = 0; i < len; i++) {
-    const env = Math.pow(1 - i / len, 3.2);         // hard scuff, fast decay
-    d[i] = (Math.random() * 2 - 1) * env;
+  src.buffer = stepsBuf;
+  src.playbackRate.setValueAtTime(0.90 + Math.random() * 0.20, now);
+
+  // A hard gate on both ends: we are cutting into the middle of a recording and
+  // must not bring its edges with us.
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0, now);
+  env.gain.linearRampToValueAtTime(Math.min(0.85, level * 1.4), now + 0.004);
+  env.gain.setValueAtTime(Math.min(0.85, level * 1.4), now + dur - 0.03);
+  env.gain.exponentialRampToValueAtTime(0.0006, now + dur);
+
+  let out = env;
+  let pan = null;
+  if (ctx.createStereoPanner) {
+    pan = ctx.createStereoPanner();
+    pan.pan.setValueAtTime((Math.random() * 2 - 1) * 0.22, now);
+    env.connect(pan);
+    out = pan;
   }
-  src.buffer = buf;
-  const filt = ctx.createBiquadFilter();
-  filt.type = 'bandpass';
-  filt.frequency.setValueAtTime(240 + Math.random() * 90, now);
-  filt.Q.setValueAtTime(0.8, now);
-  const g = ctx.createGain();
-  g.gain.setValueAtTime(Math.min(0.4, level * 0.5), now);
-  src.connect(filt); filt.connect(g); g.connect(bus);
-  src.start(now);
-  src.stop(now + 0.09);
-  setTimeout(() => { try { src.disconnect(); filt.disconnect(); g.disconnect(); } catch (_) {} }, 250);
+  src.connect(env);
+  out.connect(bus);
+  try { src.start(now, offset, dur); src.stop(now + dur + 0.02); } catch (_) { return; }
+  src.onended = () => { try { src.disconnect(); env.disconnect(); pan?.disconnect(); } catch (_) {} };
 }

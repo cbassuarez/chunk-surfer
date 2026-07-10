@@ -59,9 +59,26 @@ export function playCue(url, { gain = 1, rate = 1, pan = 0, delay = 0 } = {}) {
 
 export function isLoaded(url) { return buffers.has(url); }
 
+// A cue is a sound that a LINE makes. Most of these are named after the line
+// they belong to, and the name is the contract: `data/conservatory-script.js`
+// carries `cue: 'pens'` on the line about the pens, and the conversation
+// machine fires it. Nothing else decides when a pen is heard.
+const A = '/labs/chunk-surfer/audio/';
 export const CUE = {
-  light: '/labs/chunk-surfer/audio/light.mp3',
-  recorder: '/labs/chunk-surfer/audio/recorder.mp3',
-  door: '/labs/chunk-surfer/audio/door_close.mp3',
-  bag: '/labs/chunk-surfer/audio/bag_rummage.mp3',
+  light: `${A}light.mp3`,
+  recorder: `${A}recorder.mp3`,
+  door: `${A}door_close.mp3`,
+  bag: `${A}bag_rummage.mp3`,
+
+  pens: `${A}pens.mp3`,                       // "He finds a pen. It doesn't work."
+  signature: `${A}signature.mp3`,             // "You sign the first box."
+  slides: `${A}slides_keys_and_radio.mp3`,    // keys, a radio, and the form back
+  keyturn: `${A}the_key_turns.mp3`,           // the grey door, from the yard
+  keys: `${A}keys.mp3`,                       // the keyring, on a door, in the dark
+  kit: `${A}torch-recorder-headphones-radio-keys-the-order.mp3`,
+  rewind: `${A}tape_rewind.mp3`,              // "Back forty seconds."
+
+  // The loudest authored moment in the game. It is not a jump scare: it arrives
+  // at the end of eight seconds of a man realising what is on the other end.
+  scream: `${A}radio_breaks-scream.mp3`,
 };

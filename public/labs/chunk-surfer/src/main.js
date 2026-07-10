@@ -23,16 +23,18 @@ import { fft, analyze, biomeFrom } from './audio/analysis.js';
 import * as CR from './render/canvas.js';
 import * as R3 from './render/r3d.js';
 import * as FP from './world/floorplan.js';
+import { F as CELL_FLAGS } from './data/floorplan/legend.js';
 import * as MUT from './world/mutate.js';
 import * as scenes from './game/scenes.js';
 import { uiInit, uiClear, uiText, uiSize } from './render/ui.js';
 import { saveLoad, saveCommit, getSave, newGame, hasSave, metaCommit } from './game/save.js';
 import { flagApply, flagTest, flagGet } from './game/flags.js';
-import { dialogueInit, loadScript, startDialogue } from './game/dialogue.js';
+// The M2 dialogue runtime (game/dialogue.js, data/prologue.js, the Usher) is
+// gone. Conversations are game/conversation.js now, and there is nobody in this
+// building to talk to.
 import { makeTitleScene } from './game/title.js';
 import { makeMenuScene } from './game/menu.js';
 import { terrorInit, once, interpolate } from './game/terror.js';
-import { dialogue as PROLOGUE_DIALOGUE } from './data/prologue.js';
 import * as REC from './game/recordist.js';
 import * as RT from './audio/roomtone.js';
 import * as PRES from './game/presence.js';
@@ -52,8 +54,8 @@ import { makeColdOpenScene, makeWorldTitleScene } from './game/coldopen.js';
 import { makeThoughtScene, thoughtHad, markThought,
          loadThoughtState, saveThoughtState } from './game/thoughts.js';
 import { WORK_ORDER, TRANSMISSIONS, SQUELCH_LINES,
-         PAGES, ROOM_CELLS, COLD_OPEN, COLD_OPEN_DIALOGUE,
-         POST_DOOR, FIRST_TAKE, HUSH, RADIO_DEAD,
+         PAGES, ROOM_CELLS, TARGETS, COLD_OPEN, AFTER_TITLE, COLD_OPEN_DIALOGUE,
+         POST_DOOR, LEVEL_CHECK, FIRST_TAKE, HUSH, RADIO_DEAD,
          PROLOGUE_THOUGHTS, LINES, guestLines } from './data/conservatory-script.js';
 export { fx } from './render/canvas.js';
 
@@ -2919,6 +2921,9 @@ function step(dx,dy){
         else if(move.why==='bricked') pushEvent('// bricked up. it was a door once.');
         return;
       }
+      // A door is geometry, and opening one is a sound: a keyring, and then a
+      // building that knows which room you are in now.
+      if(storyMode && FP.hasFlag(px+dx, py+dy, CELL_FLAGS.DOOR)) fireCue('keys');
     } else if(R3.r3dSolid(px+dx, py+dy)) return;
   }
   // Your feet are the loudest thing in this building. The noise is left at the
@@ -4123,12 +4128,14 @@ function loop(){
         tickPages();
         tickRadio(dt);
         tickMutation(dt);
+        maybeWakeLens();
       }
       // Playback runs through scenes and through the document reader: the tape
       // does not stop because you looked at a piece of paper. Neither does he
       // stop thinking, and neither does the radio stop talking.
       tickPlayback();
-      if(storyMode && !scenes.has('cold-open')){
+      // The cold open and the beats after the title own the voice themselves.
+      if(storyMode && !scenes.has('cold-open') && !scenes.has('after-title')){
         SPEECH.updateSpeech(dt);
         TUT.tickTutorial(dt, tutorialCtx());
       }
@@ -4203,37 +4210,13 @@ function applyLensPreset(name){
   if(!d || !P || !P[name]) return;
   d.resetFeedback();
   d.tune(P[name]);
-  window.__lensPromptLocked=!!P[name].prompt;
-}
-
-// Effect strings from dialogue nodes (see data/script-schema.md).
-function runEffect(spec){
-  const [kind, arg]=String(spec).split(':');
-  switch(kind){
-    case 'fx':
-      if(arg==='glitch') CR.fx.glitch(1, 260);
-      else if(arg==='shake') CR.fx.shake(1, 240);
-      else if(arg==='flash') CR.fx.flash(90);
-      break;
-    case 'lens': applyLensPreset(arg); break;
-    case 'warp': { const [x,y]=arg.split(',').map(Number); px=x; py=y; trail=[]; revealAround(px,py); break; }
-    case 'battle': pushEvent(`// battle:${arg} — M3`); break;
-    case 'give': pushEvent(`// acquired: ${arg}`); break;
-    default: console.warn('unknown effect', spec);
-  }
-}
-
-let speakerTypingStopTimer = null;
-// A speaker's typewriter blip: the same granular typing bed used by the live
-// cold open, pulsed from the older dialogue runtime's per-character hook.
-function speakerBlip(speaker){
-  if(!actx || !master || paused) return;
-  STORY.startTyping({ gain: STORY.TYPE_GAIN * 0.85, fade: 0.02 });
-  if(speakerTypingStopTimer) clearTimeout(speakerTypingStopTimer);
-  speakerTypingStopTimer = setTimeout(()=>{
-    STORY.stopTyping({ fade: 0.08 });
-    speakerTypingStopTimer = null;
-  }, 130 + hashString01(String(speaker||''))*60);
+  const locked=!!P[name].prompt;
+  // A preset that carries a prompt (booth, battle, rupture, hush) OWNS the
+  // lens while it is up. Handing back means handing the zone its prompt again
+  // — and updateZonePrompt only fires on a zone CHANGE, so without this the
+  // booth's coffee cup and key hooks keep painting the loading dock forever.
+  if(window.__lensPromptLocked && !locked) lastZoneKey='';
+  window.__lensPromptLocked=locked;
 }
 
 // Which building is loaded. Content beats belong to the conservatory; the
@@ -4294,11 +4277,7 @@ function enterStory(){
   SPEECH.speechInit({
     audio:()=>{ ensureCtx(); return actx ? { ctx:actx, destination:master || actx.destination } : null; },
     typing:STORY,
-    cue:(name)=>{
-      ensureCtx();
-      if(name==='door') CUES.playCue(CUES.CUE.door, {gain:0.95});
-      else if(name==='bag') CUES.playCue(CUES.CUE.bag, {gain:0.75});
-    }
+    cue:fireCue,
   });
   TUT.tutorialInit({ say:SPEECH.say,
     // Six seconds is a level check. The recorder is handed straight back.
@@ -4318,9 +4297,6 @@ function enterStory(){
   const flagParam=qp.get('flags');
   if(flagParam) flagApply(flagParam.split(',').filter(Boolean));
   ensureCtx();
-  // ?talk=<node> jumps straight into a conversation
-  const talk=qp.get('talk');
-  if(talk){ startDialogue(talk); updateAudio(); return; }
   // The cold open, then a man doing his setup in the dark. `?skiptut=1` for
   // anyone who has to walk this building forty times today.
   if(!flagTest('prologueDone') && !qp.has('skiptut')){
@@ -4330,24 +4306,29 @@ function enterStory(){
       audio: STORY,
       slate: 'W. ELLERY HOLDINGS · WORK ORDER 4417-C · ARCHIVAL CAPTURE',
       getAudio: ()=>({ ctx:actx, destination:master }),
-      cue: (name)=>{ ensureCtx();
-        if(name==='door'){
-          CUES.playCue(CUES.CUE.door, {gain:0.95});
-          // The booth was the last lit room. It does not follow you in.
-          STORY.stopBoothTone({fade:0.35});
-        }
-        else if(name==='bag') CUES.playCue(CUES.CUE.bag, {gain:0.75}); },
+      cue: fireCue,
       fx: CR.fx,
       onChoice: (choice)=>{
         if(choice?.set || choice?.clear) flagApply(choice.set || [], choice.clear || []);
       },
       onDone: ()=>{
         flagApply(['prologueDone']);
+        // The key turns · THE TITLE · the door shuts · the push bar is gone ·
+        // he reaches for the torch. The song leaves during the title, so the
+        // loudest thing that happens all night lands on an empty mix.
         scenes.push(makeWorldTitleScene({
           audio: STORY,
-          // The door, then the first thing he says out loud in this building,
-          // then his hands find the torch and the job starts.
-          onDone:()=>postDoorThought(()=>TUT.startTutorial()),
+          onDone:()=>scenes.push(makeColdOpenScene({
+            id: 'after-title',
+            beats: AFTER_TITLE,
+            ambient: false,
+            lensPreset: 'calm',
+            audio: STORY,
+            getAudio: ()=>({ ctx:actx, destination:master }),
+            cue: fireCue,
+            fx: CR.fx,
+            onDone:()=>postDoorThought(()=>TUT.startTutorial()),
+          })),
         }));
       },
     }));
@@ -4368,6 +4349,54 @@ function enterJustSurf(){
   pushEvent('// just surf. no story. the field is the field.');
 }
 
+// ── one place a cue becomes a sound ─────────────────────────────────────────
+// A line in data/conservatory-script.js carries `cue: 'pens'`. Every runner —
+// the cold open, the thought trees, the speech band — hands the name here, and
+// this is the only file that knows a pen makes a noise.
+//
+// Levels live in audio/story-audio.js's mix comment. The two that matter: the
+// door and the scream are the loudest things that happen, and they are equal.
+function fireCue(name){
+  ensureCtx();
+  switch(name){
+    case 'door':
+      CUES.playCue(CUES.CUE.door, {gain:0.95});
+      // The booth was the last lit room, and the rain was on the roof of it.
+      // Neither follows him in.
+      STORY.stopBoothTone({fade:0.35});
+      break;
+    case 'scream':
+      // Not a jump scare. It arrives at the end of eight seconds of a man
+      // working out what is on the other end, and he already knew.
+      CUES.playCue(CUES.CUE.scream, {gain:0.95});
+      // The speech band has no `fx`, and this line is heard there. Shake here.
+      CR.fx.shake(2.6, 900);
+      STAB.reportThreat();
+      break;
+    case 'squelch':
+      // He shook it. The guard told him twice. The building is entitled to
+      // know that he did it anyway.
+      CUES.playCue(CUES.CUE.recorder, {gain:0.55, rate:0.4});
+      if(storyMode){
+        REC.emitNoise(RADIO.RADIO.noiseLevel, px, py, 'the radio');
+        MUT.markHeard(px, py, 1);
+        STAB.reportThreat();
+      }
+      break;
+    case 'keyturn': CUES.playCue(CUES.CUE.keyturn, {gain:0.85}); STORY.stopRain({fade:1.4}); break;
+    // The transport, running backwards. The bed underneath it is the same
+    // machine, and it is still there when the rewind stops.
+    case 'rewind':  CUES.playCue(CUES.CUE.rewind, {gain:0.80}); break;
+    case 'bag':     CUES.playCue(CUES.CUE.bag, {gain:0.75}); break;
+    case 'pens':    CUES.playCue(CUES.CUE.pens, {gain:0.62}); break;
+    case 'signature': CUES.playCue(CUES.CUE.signature, {gain:0.70}); break;
+    case 'slides':  CUES.playCue(CUES.CUE.slides, {gain:0.78}); break;
+    case 'keys':    CUES.playCue(CUES.CUE.keys, {gain:0.70}); break;
+    case 'kit':     CUES.playCue(CUES.CUE.kit, {gain:0.72}); break;
+    default: break;
+  }
+}
+
 // ── thinking, over a corridor that has not stopped ──────────────────────────
 // Every thought tree goes through here, so they all get the same voice, the
 // same typewriter, the same clicks — and none of them stop the building.
@@ -4386,15 +4415,7 @@ function think(id, nodes, { startAt='start', onChoice, onDone, force=false }={})
     audio: STORY,
     getAudio: ()=>({ ctx:actx, destination:master }),
     fx: CR.fx,
-    cue: (name)=>{ ensureCtx();
-      // He shook it. The building is entitled to know that.
-      if(name==='squelch'){
-        CUES.playCue(CUES.CUE.recorder, {gain:0.55, rate:0.4});
-        REC.emitNoise(RADIO.RADIO.noiseLevel, px, py, 'the radio');
-        MUT.markHeard(px, py, 1);
-        STAB.reportThreat();
-      }
-    },
+    cue: fireCue,
     onChoice: (c)=>{ if(c?.set || c?.clear) flagApply(c.set||[], c.clear||[]); onChoice?.(c); },
     onDone,
   }));
@@ -4433,8 +4454,17 @@ function framedLine(kind, fallback, ...args){
 // answers to `main_b3` and whose whole job is to let the mechanism suites
 // press [r] and get a recorder.
 function firstTakeIntercept(){
-  if(!storyMode || REC.isRecording() || TUT.tutorialActive()) return false;
+  if(!storyMode || REC.isRecording()) return false;
   if(planName!=='conservatory') return false;
+
+  // The very first press of [r], in the loading dock, with nothing hunting him.
+  // He explains his own trade to himself, and then he rolls, and then he has to
+  // hold still for six seconds. That is where the game is taught.
+  if(TUT.tutorialStep()==='level' && !thoughtHad('level-check')){
+    return !!think('level-check', LEVEL_CHECK, { onDone:()=>toggleRecorder() });
+  }
+  if(TUT.tutorialActive()) return false;
+
   if(!usingPlan() || currentWorld()!=='main_b3' || REC.hasTake('main_b3')) return false;
   if(thoughtHad('first-take')) return false;
   // If the tree declined to open, [r] must still record. Never swallow a verb.
@@ -4579,10 +4609,10 @@ function markWorkOrderRead(){
   once('work-order-read', ()=>{
     workOrderRead=true;
     // He gets back on the radio the moment he has read what he is here for.
+    // He does NOT mark studio B3 for himself: the tutorial's `mark` step is the
+    // one place the game teaches the only navigation verb it has, and doing it
+    // for him would teach nothing and skip the step.
     setTimeout(()=>radioTransmit(0), 1400);
-    const cell=ROOM_CELLS.main_b3;
-    OBJ.setWaypoint(cell.x, cell.y, 'main_b3');
-    saveCommit({ obj:OBJ.saveObjState() });
   });
 }
 function interact(){
@@ -4593,35 +4623,49 @@ function interact(){
   markWorkOrderRead();
 }
 
-function setWaypointFromDocument(entry){
-  const room=entry?.room || entry?.doc?.room;
+// The only navigation the game gives you: a room, not a route.
+//
+// Until studio B3 is in the bag, he will not write another room down. This is
+// not a locked door — every door in this building is open and he can walk into
+// any of them. It is a man who has read a work order and intends to do the
+// hardest room while he is still fresh, and who says so when you try to make
+// him do otherwise.
+function markRoom(room){
   if(!room) return false;
   const cell=ROOM_CELLS[room];
   if(!cell) return false;
+
+  if(room!=='main_b3' && !REC.hasTake('main_b3')){
+    SPEECH.say(LINES.basementFirst);
+    return false;
+  }
+
   OBJ.setWaypoint(cell.x, cell.y, room);
   saveCommit({ obj:OBJ.saveObjState() });
+  fireCue('bag');
   SPEECH.say({ who:'you', text:`${roomLabel(room)}. Marked.` });
   return true;
 }
 
-function bagDocuments(){
+// The paper, as the bag sees it: everything he has actually picked up, plus the
+// work order, which files under studio B3 because that is the room it tells him
+// to do first.
+function bagNotes(){
   const read=new Set(OBJ.objState().read);
-  const docs=[{
-    title: WORK_ORDER.title,
-    where: 'main B3 first',
-    room: 'main_b3',
-    doc: WORK_ORDER,
-  }];
+  const notes=[{ ...WORK_ORDER, title:WORK_ORDER.title, room:'main_b3' }];
   for(const pg of PAGES){
-    if(!read.has(pg.id)) continue;
-    docs.push({
-      title: pg.title || pg.id,
-      where: pg.room ? roomLabel(pg.room) : 'no room marked',
-      room: pg.room,
-      doc: pg,
-    });
+    if(read.has(pg.id)) notes.push(pg);
   }
-  return docs;
+  return notes;
+}
+
+function bagJob(){
+  return OBJ.objectives({
+    rooms: TARGETS,
+    notes: bagNotes(),
+    hasTake: (r)=>REC.hasTake(r),
+    label: roomLabel,
+  });
 }
 
 function openBag(){
@@ -4632,13 +4676,16 @@ function openBag(){
   REC.emitNoise(0.05, px, py, 'bag rummage');
   scenes.push(makeBagScene({
     equipment: ['light', 'recorder + headphones', 'radio', 'standard keyring'],
-    documents: bagDocuments(),
-    waypoint: OBJ.waypoint(),
+    job: bagJob(),
+    // The one instruction the bag ever gives, and only while he is learning it.
+    hint: TUT.tutorialStep()==='read' ? '[enter] on the work order — read what they want'
+        : TUT.tutorialStep()==='mark' ? '[space] on studio B3 — mark them off as you go'
+        : '',
     readDocument:(doc)=>{
       DOC.readDocument(doc);
       if(doc?.id==='work-order') markWorkOrderRead();
     },
-    setWaypoint:(entry)=>setWaypointFromDocument(entry),
+    markRoom,
   }));
 }
 
@@ -4651,12 +4698,6 @@ function radioTransmit(i){
   if(!lines || !RADIO.transmit(lines)) return;
   SPEECH.sayAll(lines);
   saveCommit({ radio:RADIO.saveRadioState() });
-  // It has stopped being a radio. Now it is a thing on his belt, and he gets
-  // to decide, once, whether to do the one thing he was told not to do.
-  if(RADIO.isDead()){
-    const wait = lines.length * 2400 + 1400;
-    setTimeout(()=>{ if(storyMode) think('radio-dead', RADIO_DEAD); }, wait);
-  }
 }
 
 // A dead radio that makes noise is not a prop. It is on your belt, it is the
@@ -4673,6 +4714,15 @@ function onSquelch(ev){
 
 function tickRadio(dt){
   if(!storyMode) return;
+  // It has stopped being a radio. The moment the scream has finished and the
+  // carrier line has been said, he is standing in a corridor holding a dead
+  // object, and he gets to decide once whether to do the thing he was told
+  // twice not to do. Waiting on the speech queue rather than on a stopwatch:
+  // a timeout guessed wrong every time the player hurried a line.
+  if(RADIO.isDead() && !thoughtHad('radio-dead') && !SPEECH.isSpeaking() && !scenes.blocksInput()){
+    think('radio-dead', RADIO_DEAD);
+    return;
+  }
   RADIO.tickRadio(dt, { expectation: STAB.expectation(), px, py });
 }
 
@@ -4706,11 +4756,22 @@ function tickPlayback(){
   if(PB.tickPlayback()==='ended') SPEECH.say(LINES.playbackEnd);
 }
 
+// Past the inner door, the building starts dreaming. `py > 15` is the same
+// line the tutorial's `go` step draws, because it is the same threshold.
+function maybeWakeLens(){
+  if(!storyMode || planName!=='conservatory') return;
+  const d=window.__diffusion;
+  if(!d?.isBypassed?.()) return;
+  if(py <= 15) return;
+  once('lens-wakes', ()=>{ d.setBypass(false); lastZoneKey=''; });
+}
+
 // What the tutorial is allowed to know: the state of a man and his kit.
 function tutorialCtx(){
   const r=REC.recState();
   return { px, py, light:r.light, recording:r.recording, takeElapsed:r.takeElapsed,
-           spoiled:r.spoiled, spoilReason:r.spoilReason, slow:r.slow, workOrderRead };
+           spoiled:r.spoiled, spoilReason:r.spoilReason, slow:r.slow, workOrderRead,
+           marked: OBJ.targetRoom() };
 }
 
 function tickMutation(dt){
@@ -4984,6 +5045,9 @@ function installProbe(){
     // ── M4.2: the reader, the radio, the tape ──────────────────────────────
     scene:()=>scenes.top()?.id||null,
     read:()=>interact(),
+    lensPreset:(n)=>{ applyLensPreset(n); return !!window.__lensPromptLocked; },
+    typing:()=>STORY.typingState(),
+    audio:()=>({ ...STORY.audioState(), actx: actx ? actx.state : 'none' }),
     // Whatever conversation is on top, as data: the line, who says it, how much
     // of it has been revealed, and what you are being offered.
     convo:()=>{ const v=scenes.top()?.view?.(); if(!v) return null;
@@ -5044,8 +5108,6 @@ function bootScenes(){
   terrorInit();
   uiInit(MAP_EL);
   scenes.scenesInit({ applyLensPreset });
-  dialogueInit({ effects:runEffect, blip:speakerBlip });
-  loadScript(PROLOGUE_DIALOGUE);
 
   const qp=new URLSearchParams(location.search);
   if(!qp.has('debug')){
@@ -5113,6 +5175,19 @@ async function startLens(qp){
     },
   });
 
+  // THE LENS SLEEPS IN THE DOCK.
+  //
+  // The title, the cold open, the door, and the whole of the setup run on the
+  // raymarcher's raw geometry: hard-edged, dark, honest. The loading dock is
+  // the last ordinary place the recordist stands in, and a building that has
+  // not met him yet has nothing to dream about. `setBypass` closes the socket
+  // and fades the overlay, so we do not pay a GPU for a black screen either.
+  //
+  // It wakes the first time he steps out of the dock, and never sleeps again.
+  if(storyMode && !new URLSearchParams(location.search).has('skiptut')){
+    window.__diffusion.setBypass(true);
+  }
+
   MAP_EL.style.position='relative';
   // lens HUD: always visible so fallback vs streaming is unambiguous
   const hud=document.createElement('div');
@@ -5123,7 +5198,9 @@ async function startLens(qp){
     const st=window.__diffusion?.stats;
     if(!st){ hud.textContent=''; return; }
     const fps=st.framesIn-lastIn; lastIn=st.framesIn;
-    if(st.state!=='streaming'){
+    if(st.bypassed){
+      hud.textContent = '';                       // asleep. say nothing.
+    } else if(st.state!=='streaming'){
       hud.textContent = `lens ○ ${st.state} — base render`;
     } else if(fps>0){
       hud.textContent = `lens ● ${fps}fps ${Math.round(st.lastRttMs)}ms   [t] tuner`;
@@ -5373,12 +5450,14 @@ function onKey(e){
     if(bare && is('KeyP','p')){ e.preventDefault(); playCurrentTake(); return; }
     if(e.key==='Shift'){ REC.setSlow(true); return; }
   }
-  // Talk to whatever is in front of you. (M4 gives this real NPCs; for now
-  // the Usher is wherever you started.)
+  // [enter] talks to nobody. There is nobody in this building.
+  //
+  // This used to summon the Usher — an M2 placeholder who told you "there is a
+  // 'you' in this story", which is the exact move ROOM TONE exists to refuse.
+  // It also bricked: `usher.again` was never written, so a second press pushed
+  // a dialogue scene with no node and swallowed every key after it.
   if(storyMode && (e.key==='Enter' || e.key==='z' || e.key==='Z')){
     e.preventDefault();
-    const nodeId = flagTest('prologueDone') ? 'usher.again' : 'usher.intro';
-    startDialogue(nodeId);
     return;
   }
   if(RENDERER==='3d' && (e.key==='ArrowLeft'||e.key==='a'||e.key==='A'||e.key==='ArrowRight'||e.key==='d'||e.key==='D')){
