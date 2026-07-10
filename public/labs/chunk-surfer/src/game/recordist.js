@@ -12,7 +12,8 @@
 import { ROOM_TONE, NOISE } from '../config.js';
 
 const state = {
-  light: true,          // flashlight on. Costs nothing but your safety.
+  light: false,         // you arrive in the dark. Turning it on costs nothing
+                        // but your safety.
   recording: false,
   takeElapsed: 0,       // seconds of unbroken quiet
   spoiled: false,
@@ -26,16 +27,17 @@ const state = {
 
 export function recState() { return state; }
 export function isRecording() { return state.recording; }
-export function lightOn() { return state.light && !state.recording; }
-export function movementLocked() { return state.recording; }
+export function lightOn() { return state.light; }
 
 // Noise floor rises with injury and never falls back. You get worse.
 export function noiseFloor() { return state.injuries * NOISE.perInjury; }
 export function currentNoise() { return state.noise; }
 
+// Reaching for the light mid-take is allowed, and it ruins the take. Every
+// rule in this game is a price, never a locked door.
 export function toggleLight() {
-  if (state.recording) return false;   // both hands are busy
   state.light = !state.light;
+  if (state.recording && state.light) spoil('you reached for the light');
   return state.light;
 }
 
@@ -77,7 +79,8 @@ export function stopRecording() {
   if (!state.recording) return null;
   const completed = state.takeElapsed >= ROOM_TONE.takeSeconds && !state.spoiled;
   state.recording = false;
-  state.light = true;           // you always turn it back on. every time.
+  // The light does NOT come back by itself. Reaching for it is a decision you
+  // make in the dark, every time, knowing what it costs.
   const result = { completed, elapsed: state.takeElapsed, spoiled: state.spoiled, reason: state.spoilReason };
   state.takeElapsed = 0;
   return result;

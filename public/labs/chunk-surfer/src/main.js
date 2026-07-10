@@ -34,11 +34,13 @@ import { dialogue as PROLOGUE_DIALOGUE } from './data/prologue.js';
 import * as REC from './game/recordist.js';
 import * as RT from './audio/roomtone.js';
 import * as PRES from './game/presence.js';
+import * as CUES from './audio/cues.js';
 export { fx } from './render/canvas.js';
 
 // M1: canvas glyph renderer is the default; `?renderer=dom` keeps the legacy
 // innerHTML path during the parity window (removed in M2).
 // M1b: `?renderer=3d` = first-person raymarched world (diffusion-lens base).
+const KEY_DEBUG = new URLSearchParams(location.search).has('keydebug');
 const RENDERER = (() => {
   const q = new URLSearchParams(location.search).get('renderer');
   return q === 'dom' ? 'dom' : q === '3d' ? '3d' : 'canvas';
@@ -267,6 +269,9 @@ function ensureCtx(){
       master.connect(limiter);
       limiter.connect(actx.destination);
       RT.roomToneInit(actx, master);
+      // Cues bypass the proximity mix: a switch is always as loud as a switch.
+      CUES.cuesInit(actx, limiter);
+      CUES.preloadAll(Object.values(CUES.CUE));
     }catch(err){
       audioInitFailed=true;
       console.error('AudioContext init failed', err);
@@ -2854,7 +2859,9 @@ function updateAudio(){
 }
 
 function step(dx,dy){
-  if(storyMode && REC.movementLocked()) return;   // you agreed to hold still
+  // You can always run. You simply cannot run and still have the take. The
+  // earlier version locked movement outright, which reads as broken input.
+  if(storyMode && REC.isRecording()) REC.spoilTake('you moved');
   const nowMs=performance.now();
   if(lastMoveAtMs>0 && !isOnboardingActive()){
     const needMs=currentMoveIntervalMs();
@@ -2873,8 +2880,16 @@ function step(dx,dy){
   // must look like standing still.
   if(window.__diffusion?.setMoving){
     window.__diffusion.setMoving(true);
+    // Which way did we actually go, relative to facing? Forward pushes the
+    // held image outward; backward pulls it in.
+    if(RENDERER==='3d'){
+      const [fx,fy]=R3.r3dDelta(1);
+      window.__diffusion.nudge({ forward: (dx*fx + dy*fy) >= 0 ? 1 : -1 });
+    } else {
+      window.__diffusion.nudge({ forward: 1 });
+    }
     clearTimeout(movingTimer);
-    movingTimer=setTimeout(()=>window.__diffusion?.setMoving(false), 420);
+    movingTimer=setTimeout(()=>window.__diffusion?.setMoving(false), 260);
   }
   let sx=dx, sy=dy;
   const preHushDx=(!isOnboardingActive() && depth<=1 && isHorrorActive() && hush.active) ? (hush.x-px) : 0;
@@ -2882,13 +2897,7 @@ function step(dx,dy){
   const prevHushDist=(!isOnboardingActive() && depth<=1 && isHorrorActive() && hush.active)
     ? Math.hypot(hush.x-px, hush.y-py)
     : Infinity;
-  if(shouldSinkLateral(sx, sy)){
-    sx=0;
-    if((stepCount-lastVoidSinkMsgStep) >= 28){
-      pushEvent('// void drag resists side-step.');
-      lastVoidSinkMsgStep=stepCount;
-    }
-  }
+  // (void-sink lateral resistance removed: a side-step is always a side-step)
   const nx=px+sx;
   const ny=py+sy;
   if(nx===px&&ny===py) return;
@@ -4190,6 +4199,7 @@ function enterJustSurf(){
 function toggleRecorder(){
   if(REC.isRecording()){
     const r=REC.stopRecording();
+    CUES.playCue(CUES.CUE.recorder, {gain:0.7, rate:0.88});
     updateAudio();                    // monitor closes: the room goes silent
     if(r.completed) pushEvent('// take complete. one clean minute.');
     else if(r.spoiled) pushEvent(`// take spoiled — ${r.reason}.`);
@@ -4198,6 +4208,7 @@ function toggleRecorder(){
   }
   REC.startRecording();
   ensureCtx();
+  CUES.playCue(CUES.CUE.recorder, {gain:0.8});
   updateAudio();                      // monitor opens: you can hear the room
   pushEvent('// recording. hold still. light off.');
   // The first take is what tells the building someone is in it.
@@ -4308,13 +4319,14 @@ function drawStoryHud(){
 
   const rec=REC.recState();
   if(!rec.light && !rec.recording) uiText(2, 2, '(dark)', 't-trail-3', 0.5);
+  if(KEY_DEBUG && lastKeyDebug) uiText(2, 4, lastKeyDebug.slice(0,120), 't-key', 0.9);
 
   // The verbs must be discoverable. A player should never have to guess that
   // the recorder exists in a game about recording.
   if(!rec.recording){
     const hint = rec.light
       ? '[f] light off   [r] record   [shift] slow   [esc] pause'
-      : '[f] light on    [r] record   [shift] slow   [esc] pause';
+      : '[f] light       [r] record   [shift] slow   [esc] pause';
     uiText(Math.max(2, cols - hint.length - 2), rows-2, hint, 't-trail-3', 0.45);
   } else {
     const hint='[r] stop recording';
@@ -4362,6 +4374,8 @@ function installProbe(){
     presence:()=>({...PRES.presenceState(), dist:PRES.distanceTo(px,py), pressure:PRES.pressure(px,py)}),
     spawnPresence:(d=6)=>PRES.spawnBehind(px,py,0,d/Math.abs(d||1)),
     placePresence:(x,y)=>{ const st=PRES.presenceState(); st.active=true; st.x=x; st.y=y; },
+    solid:(x,y)=>R3.r3dSolid(x,y),
+    facing:()=>R3.r3dDelta(1),
     audible:()=>{ const a=audibleCandidates(); return {n:a.audible.length, r:audioRadius(), poly:audioPoly(), chunks:chunks.length, paused, depth, tpl:worldTemplates.size, ctx:!!actx}; },
   };
 }
@@ -4637,7 +4651,12 @@ function forwardHeld(){ return keysDown.has('ArrowUp') || keysDown.has('w') || k
 function leftHeld(){ return keysDown.has('ArrowLeft') || keysDown.has('a') || keysDown.has('A'); }
 function rightHeld(){ return keysDown.has('ArrowRight') || keysDown.has('d') || keysDown.has('D'); }
 function backHeld(){ return keysDown.has('ArrowDown') || keysDown.has('s') || keysDown.has('S'); }
+let lastKeyDebug='';
 function onKey(e){
+  if(KEY_DEBUG){
+    lastKeyDebug=`key=${e.key} code=${e.code||'(none)'} meta=${e.metaKey?1:0} ctrl=${e.ctrlKey?1:0}`
+      + ` | story=${storyMode?1:0} rec=${REC.isRecording()?1:0} scenes=${scenes.depth()} rogue=${inRogue?1:0}`;
+  }
   // typing in the lens tuner must not drive the player
   if(e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
   if(e.key==='t' || e.key==='T') return; // owned by the tuner panel
@@ -4656,20 +4675,24 @@ function onKey(e){
     return;
   }
   if(storyMode){
-    if(e.key==='f' || e.key==='F'){
+    // Match on e.code AND e.key: e.code survives non-QWERTY layouts, e.key
+    // survives environments that don't populate code (remote input, some IMEs).
+    // Only Cmd/Ctrl are reserved for the browser (Cmd+F is Find).
+    const bare = !e.metaKey && !e.ctrlKey;
+    const is=(code,ch)=> e.code===code || e.key===ch || e.key===ch.toUpperCase();
+    if(bare && is('KeyF','f')){
       e.preventDefault();
       const on=REC.toggleLight();
+      CUES.playCue(CUES.CUE.light, {gain:0.7, rate: on ? 1 : 0.92});
       pushEvent(on ? '// light on. it can see that.' : '// light off.');
       return;
     }
-    if(e.key==='r' || e.key==='R'){
+    if(bare && is('KeyR','r')){
       e.preventDefault();
       toggleRecorder();
       return;
     }
     if(e.key==='Shift'){ REC.setSlow(true); return; }
-    // Recording locks you in place. That is the deal.
-    if(REC.movementLocked() && MOVE_KEYS.has(e.key)){ e.preventDefault(); return; }
   }
   // Talk to whatever is in front of you. (M4 gives this real NPCs; for now
   // the Usher is wherever you started.)
@@ -4682,7 +4705,17 @@ function onKey(e){
   if(RENDERER==='3d' && (e.key==='ArrowLeft'||e.key==='a'||e.key==='A'||e.key==='ArrowRight'||e.key==='d'||e.key==='D')){
     // First-person: left/right are quarter turns, not strafes.
     e.preventDefault();
-    if(!e.repeat) R3.r3dTurn((e.key==='ArrowRight'||e.key==='d'||e.key==='D') ? 1 : -1);
+    if(!e.repeat){
+      const dir=(e.key==='ArrowRight'||e.key==='d'||e.key==='D') ? 1 : -1;
+      R3.r3dTurn(dir);
+      const d=window.__diffusion;
+      if(d?.nudge){
+        d.setMoving(true);
+        d.nudge({ turn: dir });
+        clearTimeout(movingTimer);
+        movingTimer=setTimeout(()=>d.setMoving(false), 320);
+      }
+    }
     return;
   }
   if(MOVE_KEYS.has(e.key)){

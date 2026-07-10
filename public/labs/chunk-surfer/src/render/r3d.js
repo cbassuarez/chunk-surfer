@@ -265,11 +265,18 @@ void main(){
     // grazing floor right at the feet would otherwise blow out: soften the
     // near field so the lamp reads as a pool of light, not a flashbulb
     float nearSoft = smoothstep(0.0, 1.4, dist) * 0.55 + 0.45;
-    // uLight: the flashlight. With it off you are not blind — you are worse
-    // than blind, because the room is still there. Light attracts, so this is
-    // a choice, not a setting.
-    float lamp = lambert * falloff * nearSoft * mix(0.22, 3.1, uLight);
-    float ambient = mix(0.018, 0.075, uLight);
+    // The flashlight is a CONE, not a global dimmer: a circular pool of light
+    // thrown where you are looking, with everything outside it dark. fwd is
+    // the view axis, so the pool sits centred on screen and sweeps as you turn.
+    // Off: no cone at all, and the ambient drops to almost nothing. You are not
+    // blind — the room is still there, you simply cannot see it. Light attracts,
+    // so this is a choice, not a setting.
+    float axis = dot(normalize(-toEye), fwd);            // 1 = dead ahead
+    float cone = smoothstep(0.62, 0.90, axis);           // hot centre, soft edge
+    float spill = smoothstep(0.10, 0.70, axis) * 0.16;   // the lens is not perfect
+    float beam = (cone + spill) * uLight;
+    float lamp = lambert * falloff * nearSoft * 2.7 * beam;   // a torch, not a flare
+    float ambient = mix(0.010, 0.030, uLight);
 
     vec3 albedo;
     if(surf == 1)      albedo = mix(vec3(0.56, 0.55, 0.53), tint, 0.30) * (0.70 + 0.45 * rdv);
@@ -348,7 +355,7 @@ let yaw = 0, yawTarget = 0;
 let camX = 0, camZ = 0, camY = 3;
 let lastT = 0;
 let fogOrigin = [0, 0];
-let lightEase = 1;
+let lightEase = 0;   // the building starts dark, and so do you
 
 function compile(type, src) {
   const s = gl.createShader(type);
@@ -512,8 +519,10 @@ export function r3dFrame(state) {
   camZ += (state.py + 0.5 - camZ) * k;
   yaw += (yawTarget - yaw) * (1 - Math.exp(-dt * 12));
   camY = EYE;
+  // A flashlight snaps. The only easing is a filament's breath on the way out.
   const lightGoal = state.light === false ? 0 : 1;
-  lightEase += (lightGoal - lightEase) * (1 - Math.exp(-dt * (lightGoal ? 22 : 7)));
+  lightEase += (lightGoal - lightEase) * (1 - Math.exp(-dt * (lightGoal ? 90 : 45)));
+  if (Math.abs(lightGoal - lightEase) < 0.004) lightEase = lightGoal;
 
   gl.disable(gl.DEPTH_TEST);
 

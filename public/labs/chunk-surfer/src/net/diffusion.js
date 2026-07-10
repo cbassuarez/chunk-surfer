@@ -26,6 +26,7 @@
 const SEND_FPS = 16;             // comfortably above the GPU rate (~11fps at
                                  // 512²), so the server's newest-frame slot is
                                  // never empty and the GPU never idles
+const MAX_BACKLOG_FRAMES = 8;
 const MAX_BACKLOG = 8;           // frames sent with nothing coming back
 // Generous retry window: a cold-started GPU container (serverless scale-from-
 // zero) takes 1–2 minutes to accept its first session.
@@ -84,7 +85,7 @@ export function diffusionStart({
   hostEl.appendChild(overlay);
   const octx = overlay.getContext('2d');
 
-  const stats = { framesOut: 0, framesIn: 0, lastRttMs: 0, state: 'connecting', skips: 0, blobNull: 0, notOpen: 0, msDraw: 0, msEncode: 0, msDecode: 0 };
+  const stats = { framesOut: 0, framesIn: 0, lastRttMs: 0, state: 'connecting', skips: 0, held: 0, blobNull: 0, notOpen: 0, msDraw: 0, msEncode: 0, msDecode: 0 };
   let ws = null, sendTimer = null, retriesLeft = RETRIES, stopped = false;
   let lastSentAt = 0;
 
@@ -94,12 +95,59 @@ export function diffusionStart({
   capture.width = 512; capture.height = 512;   // match the server's SIZE (sd-turbo's native)
   const capCtx = capture.getContext('2d');
   // last styled frame, kept for the feedback loop
-  let lastStyled = null;
+  let lastStyled = null;   // conditioning feedback (raw, latest returned)
   let driftPhase = 0;
   let firstFrame = true;
   let moving = false;      // the player took a step recently
 
+  // Epoch state: what is on screen, what is fading in, and how the held image
+  // has been warped since it was diffused.
+  let shown = null;        // ImageBitmap currently displayed
+  let incoming = null;     // ImageBitmap fading in
+  let fadeStart = 0;
+  let warp = { x: 0, y: 0, scale: 1 };
+  let stillSince = performance.now();
+  let framesThisEpoch = 0;
+  let lastEpochAt = 0;
+  let rafId = 0;
+
   function setState(s) { stats.state = s; onStatus({ ...stats }); }
+
+  // Draw the held hallucination, warped by however far you have walked since
+  // it was made. This is the "procgen" half: no GPU, no network, just the last
+  // dream sliding to keep up with you.
+  function paint() {
+    if (!shown && !incoming) return;
+    const W = overlay.width, H = overlay.height;
+    octx.setTransform(1, 0, 0, 1, 0, 0);
+    octx.clearRect(0, 0, W, H);
+    const drawWarped = (bmp, alpha) => {
+      if (!bmp) return;
+      octx.globalAlpha = alpha;
+      octx.save();
+      octx.translate(W / 2 + warp.x, H / 2 + warp.y);
+      octx.scale(warp.scale, warp.scale);
+      octx.drawImage(bmp, -W / 2, -H / 2, W, H);
+      octx.restore();
+      octx.globalAlpha = 1;
+    };
+    if (incoming) {
+      const t = Math.min(1, (performance.now() - fadeStart) / fadeMs);
+      drawWarped(shown, 1);
+      // A new epoch arrives unwarped: it was dreamed from where you are now.
+      octx.globalAlpha = t;
+      octx.drawImage(incoming, 0, 0, W, H);
+      octx.globalAlpha = 1;
+      if (t >= 1) {
+        if (shown) shown.close();
+        shown = incoming; incoming = null;
+        warp = { x: 0, y: 0, scale: 1 };
+      }
+    } else {
+      drawWarped(shown, 1);
+    }
+    rafId = requestAnimationFrame(paint);
+  }
 
   function connect() {
     const u = new URL(url);
@@ -131,12 +179,19 @@ export function diffusionStart({
         // double-exposes two misaligned images (hard black wedges over walls
         // that moved). Structure is preserved *upstream* instead — by keeping
         // strength and feedback low enough that the model tracks the geometry.
-        octx.globalAlpha = firstFrame ? 1 : (1 - smooth);
-        octx.drawImage(bmp, 0, 0, overlay.width, overlay.height);
-        octx.globalAlpha = 1;
-        firstFrame = false;
-        if (lastStyled) lastStyled.close();
-        lastStyled = bmp;   // feeds the next conditioning frame
+        framesThisEpoch++;
+        if (firstFrame) {
+          shown = bmp; firstFrame = false;
+          warp = { x: 0, y: 0, scale: 1 };
+          if (!rafId) rafId = requestAnimationFrame(paint);
+        } else {
+          if (incoming) incoming.close();
+          incoming = bmp;
+          fadeStart = performance.now();
+        }
+        // feedback conditioning always uses the newest raw frame
+        if (lastStyled && lastStyled !== bmp && lastStyled !== shown) lastStyled.close();
+        lastStyled = bmp;
         if (overlay.style.opacity !== '1') overlay.style.opacity = '1';
       } catch (_) { /* corrupt frame: keep last */ }
     };
@@ -165,6 +220,18 @@ export function diffusionStart({
     // Backlog, not inflight: the server drops frames on purpose, so the only
     // meaningful signal is "we are shouting and nothing is coming back".
     if (stats.framesOut - stats.framesIn > MAX_BACKLOG) { stats.skips++; return; }
+
+    if (hold && shown) {
+      const now = performance.now();
+      // Moving: hold the epoch. The warp is doing the work; the GPU sleeps.
+      if (moving) { stats.held++; return; }
+      // Just stopped: dream the room again, a few frames, then settle.
+      if (framesThisEpoch >= settleFrames) {
+        if (now - lastEpochAt < idleMs) { stats.held++; return; }
+        framesThisEpoch = 0;             // a slow blink while you stand there
+      }
+      lastEpochAt = now;
+    }
     lastSentAt = performance.now();
 
     const W = capture.width, H = capture.height;
@@ -240,10 +307,31 @@ export function diffusionStart({
       return { feedback, drift, strength, passes, guidance, smooth, seedMode, prompt, negative };
     },
     resetFeedback() { if (lastStyled) { lastStyled.close(); lastStyled = null; } firstFrame = true; },
-    // main.js reports movement; a still player must see a still room.
-    setMoving(v) { moving = !!v; },
+
+    // main.js reports movement. Stopping opens a new epoch: the lens wakes and
+    // re-dreams the room from where you now stand.
+    setMoving(v) {
+      const was = moving;
+      moving = !!v;
+      if (was && !moving) { stillSince = performance.now(); framesThisEpoch = 0; lastEpochAt = 0; }
+    },
+
+    // A step or a turn. The held hallucination is warped to follow, so the
+    // world moves with you instead of boiling underneath you.
+    nudge({ forward = 0, turn = 0 } = {}) {
+      if (!hold) return;
+      warp.scale *= 1 + moveZoom * forward;
+      warp.x -= turn * overlay.width * moveTurn;
+      // Never let the held image shrink inside its own frame and show edges.
+      if (warp.scale < 1) warp.scale = 1;
+      const slack = (warp.scale - 1) * overlay.width * 0.5;
+      warp.x = Math.max(-slack, Math.min(slack, warp.x));
+    },
     stop() {
       stopped = true;
+      cancelAnimationFrame(rafId); rafId = 0;
+      if (shown) shown.close(); if (incoming) incoming.close();
+      shown = incoming = null;
       clearInterval(sendTimer);
       try { ws && ws.close(); } catch (_) {}
       if (lastStyled) lastStyled.close();
