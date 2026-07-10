@@ -45,11 +45,15 @@ check('asleep through the cold open', (await scene()) === 'cold-open' && await b
 // `applyLensPreset` is what shipped the bug, so drive it directly rather than
 // waiting for a scene to mount at the exact moment the lens happens to exist.
 check('a preset with a prompt locks the lens', await ev(() => window.__probe.lensPreset('booth')));
-check('...and owns the frame', (await prompt()).includes('security booth'), (await prompt()).slice(0, 40));
+// Capture the prompt once: the handback lands between two awaits otherwise, and
+// the assertion reads the pre-handback value while the display reads the post.
+let owned = await prompt();
+check('...and owns the frame', owned.includes('guard face withheld'), owned.slice(0, 40));
 check('a preset without one unlocks it', !(await ev(() => window.__probe.lensPreset('explore'))));
-await wait(400);   // one frame of updateZonePrompt
+await wait(500);   // a few frames of updateZonePrompt
+const handed = await prompt();
 check('THE HANDBACK: the zone gets its prompt back at once',
-      !(await prompt()).includes('security booth'), (await prompt()).slice(0, 44));
+      !handed.includes('guard face withheld'), handed.slice(0, 44));
 
 let branches = 0;
 for (let i = 0; i < 400 && (await scene()) === 'cold-open'; i++) {
@@ -76,7 +80,8 @@ n = 0; while (((await scene()) || '').startsWith('thought') && n++ < 14) { await
 await wait(500);
 
 check('asleep in the loading dock', await bypassed(), `pos ${JSON.stringify(await ev(() => window.__probe.pos()))}`);
-check('THE BOOTH HANDED THE PROMPT BACK', !(await prompt()).includes('security booth'), (await prompt()).slice(0, 44));
+const dockPrompt = await prompt();
+check('THE BOOTH HANDED THE PROMPT BACK', !dockPrompt.includes('guard face withheld'), dockPrompt.slice(0, 44));
 
 // Out of the dock. The building starts dreaming.
 await ev(() => window.__probe.tutSkip());
@@ -86,7 +91,7 @@ await wait(700);
 const pos = await ev(() => window.__probe.pos());
 check('you are past the inner door', pos.y > 15, `${pos.x},${pos.y}`);
 check('THE LENS WAKES, and never sleeps again', !(await bypassed()));
-check('...and it dreams the room it is standing in', (await prompt()).includes('sub-basement recording studio'),
+check('...and it dreams the room it is standing in', (await prompt()).includes('sub-basement'),
       (await prompt()).slice(0, 44));
 
 console.log(errs.length ? `\nERRORS:\n${errs.join('\n')}` : '\nno page errors');

@@ -141,6 +141,7 @@ const WHO = {
   guard: { tag: 'guard', cls: 't-key', alpha: 0.95 },
   recordist: { tag: 'take', cls: 't-trail-1', alpha: 0.9 },
   surfer: { tag: '', cls: 't-hush-core', alpha: 0.95 },
+  sarah: { tag: 'SARAH', cls: 't-hush-edge', alpha: 0.9 },
   direction: { tag: '', cls: 't-trail-3', alpha: 0.66 },
 };
 

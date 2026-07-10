@@ -52,12 +52,17 @@ for(let i=0;i<10;i++){ await p.evaluate(()=>window.__probe.stabRelief(1)); await
 const d1=await p.evaluate(()=>window.__probe.stabs());
 check('reduce-dread disables stabs', d1.trueCount+d1.falseCount===d0.trueCount+d0.falseCount);
 
-// 6. Pages set a waypoint and name a room.
+// 6. A page names a room. It does NOT move the mark.
+//
+// Picking a sheet off the floor and watching the minimap swing round to point
+// at the swimming pool is a game telling a man what he wants. Where he goes
+// next is a decision he makes in the bag, on purpose, with his own hands.
+const wpBefore=await p.evaluate(()=>window.__probe.obj());
 await p.evaluate(()=>window.__probe.placePage(0,-1,'lux_nova'));
 await key('ArrowUp',500);
 const o=await p.evaluate(()=>window.__probe.obj());
-check('walking over a page sets a waypoint', !!o.wp && o.target==='lux_nova', JSON.stringify(o));
-await p.screenshot({path:'stab-hud.png'});
+check('a page is picked up', (await p.evaluate(()=>window.__probe.obj())).read > 0);
+check('...and it does not steer the minimap', o.target===wpBefore.target, JSON.stringify(o));
 
 console.log(errs.length?'\nERRORS:\n'+[...new Set(errs)].slice(0,3).join('\n'):'\nno page errors');
 console.log(pass?'\n✅ DREAD DIRECTOR + OBJECTIVES PASSED':'\n❌ FAILURES');

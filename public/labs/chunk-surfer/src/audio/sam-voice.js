@@ -26,18 +26,42 @@ function shouldLoadSam() {
   return mode !== '0' && mode !== 'off' && mode !== 'fallback';
 }
 
+// SAM CANNOT DO A LEEDS ACCENT, and it is worth being honest about why: it is
+// a 1982 American formant synth (Software Automatic Mouth, Commodore 64), and
+// its reciter only knows American-English letter-to-phoneme rules. There is no
+// regional mode to switch on. What the constructor DOES expose is the shape of
+// the vocal tract — pitch, mouth, throat — so we build it lower and flatter
+// than the factory "announcer" preset, which pulls it away from California and
+// toward something you would not be surprised to hear in a portakabin. It is
+// not Yorkshire. It is just less Los Angeles. `?voice=pitch,mouth,throat`
+// overrides it for tuning by ear.
+//
+// SAM defaults are pitch 64 / mouth 128 / throat 128 / speed 72.
+const SAM_OPTS = (() => {
+  const d = { pitch: 72, mouth: 105, throat: 118, speed: 72 };
+  const raw = query().get('voice');
+  if (raw) {
+    const [pitch, mouth, throat, speed] = raw.split(',').map(Number);
+    if (Number.isFinite(pitch)) d.pitch = pitch;
+    if (Number.isFinite(mouth)) d.mouth = mouth;
+    if (Number.isFinite(throat)) d.throat = throat;
+    if (Number.isFinite(speed)) d.speed = speed;
+  }
+  return d;
+})();
+
 async function loadSamProvider() {
   if (!shouldLoadSam()) return null;
   if (providerPromise) return providerPromise;
   providerPromise = (async () => {
     try {
       const GlobalSam = globalThis.SamJs || globalThis.SAMJS || globalThis.Sam;
-      if (typeof GlobalSam === 'function') return new GlobalSam();
+      if (typeof GlobalSam === 'function') return new GlobalSam({ ...SAM_OPTS });
 
       const url = query().get('samUrl') || SAM_CDN;
       const mod = await import(/* @vite-ignore */ url);
       const SamJs = mod?.default || mod?.SamJs || mod?.SAM || mod;
-      return typeof SamJs === 'function' ? new SamJs() : null;
+      return typeof SamJs === 'function' ? new SamJs({ ...SAM_OPTS }) : null;
     } catch (err) {
       console.warn('SAM dialog voice unavailable; using local fallback.', err);
       return null;
@@ -220,6 +244,10 @@ export async function renderSamSamples(text, opts = {}) {
 // formant synth wants to be transposed anyway.
 export const VOICE_PROFILES = {
   me: { rate: 1.0, gain: 1.0, hp: 90, lp: 6000 },
+  // Sarah. Heard the way you hear someone you are straining to remember the
+  // sound of: a little band-limited, a little far, a smear on the tail so it
+  // does not quite land in the room with you. Never in front of him.
+  sarah: { rate: 1.02, gain: 0.95, hp: 200, lp: 3400, smear: { time: 0.11, feedback: 0.30, mix: 0.35 } },
   guard: { rate: 1.0, gain: 1.0, hp: 190, lp: 3600 },
   radio: { rate: 0.94, gain: 1.15, hp: 420, lp: 2600, drive: 0.55, squelch: 0.012 },
   recordist: { rate: 0.98, gain: 0.95, hp: 120, lp: 5200, hiss: 0.010, wobble: 0.006 },
@@ -462,5 +490,5 @@ export function createSamDialogVoice({ volume = 0.22, getAudio = null } = {}) {
 // can hear it. Stage directions are typed for the same reason: nobody is
 // saying them. A stage direction read aloud by a robot is the game explaining
 // itself, which is the one thing this game does not do.
-export const VOICED = new Set(['me', 'guard', 'radio', 'recordist', 'surfer', 'client']);
+export const VOICED = new Set(['me', 'guard', 'radio', 'recordist', 'surfer', 'client', 'sarah']);
 export const isVoiced = (who) => VOICED.has(who);

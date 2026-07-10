@@ -46,6 +46,8 @@ import * as OBJ from './game/objectives.js';
 import * as DOC from './game/document.js';
 import * as RADIO from './game/radio.js';
 import * as PB from './game/playback.js';
+import { makeBattleScene } from './game/battle.js';
+import { natatoriumBattle } from './data/battles.js';
 import { takeStamp, WORK_ORDER_STAMP } from './game/clock.js';
 import { drawMinimap } from './render/minimap.js';
 import { roomLabel, roomToneCharacter } from './audio/manifest-map.js';
@@ -4843,6 +4845,11 @@ function tickPresence(dt){
 function tickRecorder(dt){
   if(!storyMode) return;
   REC.decayNoise(dt);
+  // Partway through the natatorium take — never the first take of the night —
+  // the room starts playing an instrument that is not in it, and he has to
+  // decide, round by round, what he is actually hearing. The take is frozen
+  // while he does; win and it completes, lose and it dies.
+  maybeBattle();
   const st=REC.tickRecording(dt);
   if(st==='complete'){
     const room=currentWorld();
@@ -4861,6 +4868,62 @@ function tickRecorder(dt){
     else if(performance.now()>spoilPendingMs){ spoilPendingMs=0; toggleRecorder(); }
   }
 }
+// ── the battles: what's happening to me ─────────────────────────────────────
+// A sound from the composer's own catalogue, played FAR OFF — low, dark, and
+// behind you, because there are no instruments in this building and there is
+// nobody here to play them. The battle asks the only question this man has:
+// is it in the room?
+function playFarSound(round){
+  const chunk=STAB.drawFromPool(20);
+  if(!actx || !master || !chunk?.buffer) return;
+  const now=actx.currentTime;
+  const src=actx.createBufferSource();
+  src.buffer=chunk.buffer;
+  src.playbackRate.setValueAtTime(0.55 + Math.random()*0.2, now);   // slow, wrong
+  const lp=actx.createBiquadFilter(); lp.type='lowpass';
+  lp.frequency.setValueAtTime(700 + (round?.threat||0.3)*900, now);  // far things have no top
+  const g=actx.createGain();
+  const peak=0.05 + (round?.threat||0.3)*0.10;                       // quiet. always quiet.
+  g.gain.setValueAtTime(0, now);
+  g.gain.linearRampToValueAtTime(peak, now+0.4);
+  g.gain.exponentialRampToValueAtTime(0.0004, now+2.4);
+  const pan=actx.createStereoPanner();
+  pan.pan.setValueAtTime((Math.random()*2-1)*0.9, now);              // never in front
+  src.connect(lp); lp.connect(g); g.connect(pan); pan.connect(master);
+  src.start(now); src.stop(now+2.6);
+  STORY.startTapeHiss({ gain: 0.20, fade: 0.6 });                    // is it a recording?
+}
+
+function openBattle(battle, { onWin, onLose }={}){
+  ensureCtx();
+  return scenes.push(makeBattleScene({
+    battle,
+    audio: STORY,
+    getAudio: ()=>({ ctx:actx, destination:master }),
+    fx: { cue:fireCue },
+    playSound: playFarSound,
+    onWin: ()=>{ STORY.stopTapeHiss({fade:0.8}); onWin?.(); },
+    onLose:()=>{ STORY.stopTapeHiss({fade:0.8}); onLose?.(); },
+  }));
+}
+
+// During the natatorium take, once, after at least one clean take exists.
+function maybeBattle(){
+  if(NO_THINK || planName!=='conservatory') return;
+  if(!REC.isRecording() || scenes.blocksInput()) return;
+  if(currentWorld()!=='the_tub') return;
+  if(REC.recState().takes.length < 1) return;       // never the first take
+  if(thoughtHad('battle-natatorium')) return;
+  if(REC.takeProgress() < 0.45) return;             // forty seconds in
+  markThought('battle-natatorium');
+  saveCommit({ thoughts:saveThoughtState() });
+  const named = flagGet('confession.kind')==='name' && flagGet('confession.value')==='Sarah';
+  openBattle(natatoriumBattle(named), {
+    onWin: ()=>{ REC.recState().takeElapsed = ROOM_TONE.takeSeconds; },  // you held it
+    onLose:()=>{ REC.spoilTake('you moved'); },
+  });
+}
+
 let spoilPendingMs=0;
 let movingTimer=null;
 const playerKeys=new Set(['master']);   // the standard set. it does not open everything.
@@ -5101,6 +5164,10 @@ function installProbe(){
     hush:()=>SPEECH.clearSpeech(),
     tut:()=>({active:TUT.tutorialActive(), step:TUT.tutorialStep(), prompt:TUT.tutorialPrompt()}),
     tutSkip:()=>TUT.skipTutorial(),
+    // Drive a battle without recording two takes to get to it.
+    battle:(named)=>{ ensureCtx(); openBattle(natatoriumBattle(!!named),
+      { onWin:()=>{}, onLose:()=>{} }); return true; },
+    battleState:()=>{ const v=scenes.top()?.battleView?.(); return v||null; },
     radio:()=>RADIO.radioState(),
     radioTransmit:(i)=>radioTransmit(i),
     radioKill:()=>RADIO.killRadio(),

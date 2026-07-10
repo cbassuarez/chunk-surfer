@@ -562,7 +562,7 @@ export const LEVEL_CHECK = {
     speaker: '',
     lines: [
       { who: 'you', text: 'Then the take is spoiled and I do it again. That is all. Nobody dies of a spoiled take.' },
-      { who: 'direction', text: 'He has done four hundred rooms and he has never once said that out loud in one.' },
+      { who: 'direction', text: 'He has done this for six years and never once said it out loud in a room.' },
     ],
     goto: 'levels',
   },
@@ -583,11 +583,11 @@ export const LEVEL_CHECK = {
 // almost all of it is missable: a player who wants to press [space] four times
 // and roll can do that, and will never learn what the risers are for, or what a
 // music stand tells you about the night a building closed, or why he stopped
-// slating out loud in 2011.
+// slating out loud.
 //
 // THE POINT OF THE RIG ON THE FLOOR. He put it down wrong. He knows better; he
-// has known better for thirty years; and the reason he did it is that this room
-// is so quiet that he is hurrying without noticing. Nothing has threatened him.
+// has known better since his first week; and the reason he did it is that this
+// room is so quiet that he is hurrying without noticing. Nothing has threatened him.
 // The building has not done anything. He is simply not himself in here, and the
 // first evidence of that is a piece of kit resting on a drum.
 export const FIRST_TAKE = {
@@ -609,7 +609,7 @@ export const FIRST_TAKE = {
     lines: [
       { who: 'you', text: 'A floor is a drum. A joist is a drumstick. Everything above it and everything under it goes into the mic as one long low nothing you cannot filter out afterwards.' },
       { who: 'you', text: 'That is why the case has four gum rubber risers on it. Silicone under those. It cost more than the microphone.' },
-      { who: 'direction', text: 'You have known that since you were twenty-six.' },
+      { who: 'direction', text: 'You have known that since your first week on a rig.' },
     ],
     goto: 'floor.risers',
   },
@@ -708,7 +708,7 @@ export const FIRST_TAKE = {
       { who: 'me', text: 'Ellery, studio B3, room tone, take one.', prompt: 'slate it: "Ellery, studio B3, room tone, take one."' },
       { who: 'direction', text: 'Your own voice comes back off the foam with everything above four hundred hertz taken out of it.' },
       { who: 'you', text: 'You slate out loud so that in eight months, when the file is a number, somebody knows what they are listening to.' },
-      { who: 'you', text: 'I stopped doing it in 2011, when the recorders started writing the metadata themselves.' },
+      { who: 'you', text: 'I stopped doing it years ago, when the recorders started writing the metadata themselves.' },
       { who: 'you', text: 'The last man slated three of his four.' },
     ],
     goto: 'hub',
@@ -1109,7 +1109,7 @@ export const PAGES = [
       '',
       { raw: 'take 1' },
       '',
-      'I would like it on the record that I was not sad, and I was not haunted, and there was no one I was thinking about. I was on the clock. It asked. It was going to be rubble on Thursday and it asked, and I have spent thirty years being paid to record rooms that nobody will ever stand in again, and not one of them ever asked me for anything.',
+      'I would like it on the record that I was not sad, and I was not haunted, and there was no one I was thinking about. I was on the clock. It asked. It was going to be rubble on Thursday and it asked, and I have spent six years being paid to record rooms that nobody will ever stand in again, and not one of them ever asked me for anything.',
       '',
       { raw: 'rolling' },
     ],

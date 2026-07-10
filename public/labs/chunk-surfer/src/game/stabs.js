@@ -71,6 +71,13 @@ export function buildStabPool(chunks) {
 
 export function poolSize() { return state.pool.length; }
 
+// The battle draws its attacks from the same pool, because the thing that
+// attacks you in this game is always a sound the composer already made.
+export function drawFromPool(rank = 12) {
+  if (!state.pool.length) return null;
+  return state.pool[Math.floor(Math.random() * Math.min(rank, state.pool.length))];
+}
+
 // The world reports threat: the presence being near, a capture, a spoiled take.
 // Threat RESETS expectation — you cannot be startled while already afraid.
 export function reportThreat() {
