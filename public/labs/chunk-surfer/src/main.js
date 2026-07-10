@@ -4655,8 +4655,10 @@ async function startLens(qp){
     } else if(fps>0){
       hud.textContent = `lens ● ${fps}fps ${Math.round(st.lastRttMs)}ms   [t] tuner`;
     } else if(st.framesIn>0){
-      // Sample-and-hold: no frames is the design, not a stall.
-      hud.textContent = `lens ◍ held   [t] tuner`;
+      // No frames arriving. With sample-and-hold that is the design; without it
+      // the stream has stalled and the player should not be told it is fine.
+      hud.textContent = st.held>0 ? `lens ◍ held   [t] tuner`
+                                  : `lens ◍ stalled ${Math.round(st.lastRttMs)}ms`;
     } else {
       hud.textContent = `lens ○ warming — base render`;
     }

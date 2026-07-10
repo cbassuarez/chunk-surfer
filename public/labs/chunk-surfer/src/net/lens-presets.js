@@ -30,7 +30,7 @@ export const PRESETS = {
   // own dream between frames. Every visit to a world looks like that world
   // (seedMode fixed + per-zone seed). Nobody lives here (NO_CHARACTERS).
   explore: {
-    strength: 0.42, guidance: 1.2, passes: 1, feedback: 0.18, drift: 0.5,
+    strength: 0.33, guidance: 1.05, passes: 1, feedback: 0.10, drift: 0.28,
     seedMode: 'fixed', negative: NO_CHARACTERS,
     // prompt intentionally omitted: zone-prompts.js owns it per world
   },
@@ -38,7 +38,7 @@ export const PRESETS = {
   // Faithful: the raymarcher, restyled. For dialogue, where the player must
   // read a face and a box of text without the walls crawling.
   calm: {
-    strength: 0.30, guidance: 0.8, passes: 1, feedback: 0.10, drift: 0.3,
+    strength: 0.24, guidance: 0.8, passes: 1, feedback: 0.06, drift: 0.2,
     seedMode: 'fixed', negative: NO_CHARACTERS,
   },
 

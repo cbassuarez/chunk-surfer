@@ -210,7 +210,9 @@ void main(){
   vec3 fwd = normalize(vec3(sy, uPitch, -cy));
   vec3 rgt = normalize(vec3(cy, 0.0, sy));
   vec3 up  = normalize(cross(rgt, fwd));
-  vec3 rd = normalize(fwd + uv.x*rgt*0.72 + uv.y*up*0.72);
+  // FOV. Anything tighter than this and a real building feels like a coffin:
+  // you cannot see the floor at your feet or the ceiling above you at once.
+  vec3 rd = normalize(fwd + uv.x*rgt*0.95 + uv.y*up*0.95);
   vec3 ro = uCam;
 
   // SECTOR TRAVERSAL. Each cell carries its own floor and ceiling height, so a

@@ -62,24 +62,24 @@ export const ZONE_WORLD = {
 export const GLYPHS = {
   ' ': null,                                                   // outside the building
   '#': { solid: true },                                        // wall / rock
-  '.': { floor: 0.0, ceil: 3.0, mutable: true },               // corridor (may change)
-  ',': { floor: 0.0, ceil: 3.0 },                              // corridor, fixed
-  '+': { floor: 0.0, ceil: 2.4, door: true },                  // door
-  'x': { floor: 0.0, ceil: 2.4, door: true, bricked: true },   // door, filled in
-  '=': { floor: 0.0, ceil: 2.2 },                              // low duct / crawl
+  '.': { floor: 0.0, ceil: 3.6, mutable: true },               // corridor (may change)
+  ',': { floor: 0.0, ceil: 3.6 },                              // corridor, fixed
+  '+': { floor: 0.0, ceil: 2.9, door: true },                  // door
+  'x': { floor: 0.0, ceil: 2.9, door: true, bricked: true },   // door, filled in
+  '=': { floor: 0.0, ceil: 2.2 },                              // low duct: crouch and hate it
   '/': { floor: 0.0, ceil: 3.0, stair: true },                 // stair (height set per-run)
   'o': { floor: 0.0, ceil: 8.0, sky: true },                   // shaft, open above
 
   // Rooms. The letter is the zone; the height is the room.
-  'D': { floor: 0.0, ceil: 4.2, zone: 'dock' },
-  'F': { floor: 0.0, ceil: 4.0, zone: 'foyer' },
-  'B': { floor: 0.0, ceil: 2.5, zone: 'studio' },       // B3: low, dead, absorbent
+  'D': { floor: 0.0, ceil: 4.6, zone: 'dock' },
+  'F': { floor: 0.0, ceil: 4.5, zone: 'foyer' },
+  'B': { floor: 0.0, ceil: 3.2, zone: 'studio' },       // B3: low, dead, absorbent
   'T': { floor: 0.0, ceil: 6.5, zone: 'natatorium' },    // tiled volume
   'W': { floor: -1.6, ceil: 6.5, zone: 'natatorium' },   // the drained pool: you climb down
   'H': { floor: 0.0, ceil: 9.0, zone: 'hall' },          // the concert hall
-  'P': { floor: 0.0, ceil: 2.8, zone: 'practice' },
+  'P': { floor: 0.0, ceil: 3.4, zone: 'practice' },
   'C': { floor: 0.0, ceil: 11.0, zone: 'chapel' },       // the nave
-  'M': { floor: 0.0, ceil: 3.2, zone: 'plant' },         // plant room
+  'M': { floor: 0.0, ceil: 3.8, zone: 'plant' },         // plant room
 };
 
 // Resolve a glyph to a cell descriptor. `base` lifts a whole level (unfolding

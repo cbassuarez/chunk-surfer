@@ -63,7 +63,11 @@ export function diffusionStart({
   // the base render back on top. Low strength = the model repaints the walls
   // that are actually there. Low feedback = it does not wander off into its
   // own dream between frames.
-  strength = 0.42, passes = 1, feedback = 0.18, drift = 0.5, guidance = 1.2,
+  // Calmer than the corridor sweep wanted. Once the building is a real place
+  // with doors, stairs and objects in it, the lens has to let you READ the room
+  // rather than reinvent it: lower strength keeps the geometry, lower feedback
+  // stops it wandering, and the light stays where the flashlight put it.
+  strength = 0.33, passes = 1, feedback = 0.10, drift = 0.28, guidance = 1.05,
   // Temporal smoothing. The base render never holds perfectly still (the
   // reaction-diffusion skin crawls, the glow breathes), so every conditioning
   // frame differs slightly and the model re-dreams it. Persisting some of the
@@ -71,7 +75,7 @@ export function diffusionStart({
   // 0 = raw, every frame as returned. Persistence is per-FRAME, so the higher
   // the stream rate the more of it you need for the same settling in seconds.
   // At ~8fps, 0.72 holds the room still without smearing motion.
-  smooth = 0.72,
+  smooth = 0.78,
   // `seedMode:'fixed'` pins the noise so a place stays recognisably itself
   // between frames and between visits; the crawl then comes from feedback,
   // not from the room being reinvented. 'walk' is for scenes meant to come apart.
