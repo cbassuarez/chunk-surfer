@@ -7,7 +7,7 @@ const key=async(k,ms=220)=>{ await p.keyboard.press(k); await new Promise(r=>set
 const rec=()=>p.evaluate(()=>window.__probe.rec());
 const pos=()=>p.evaluate(()=>window.__probe.pos());
 
-await p.goto('http://localhost:5173/labs/chunk-surfer/index.html?mode=story&renderer=3d&at=4,5',{waitUntil:'domcontentloaded'});
+await p.goto('http://localhost:5173/labs/chunk-surfer/index.html?mode=story&renderer=3d&plan=testbed&skiptut=1&at=4,5',{waitUntil:'domcontentloaded'});
 await p.evaluate(()=>localStorage.clear()); await p.reload({waitUntil:'domcontentloaded'});
 await new Promise(r=>setTimeout(r,14000));
 let n=0; while(await p.evaluate(()=>window.__scenes.depth())>0 && n<40){ await key('Enter',120); n++; }

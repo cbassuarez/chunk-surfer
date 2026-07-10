@@ -11,6 +11,7 @@
 
 import { testbed } from '../../../public/labs/chunk-surfer/src/data/floorplan/testbed.js';
 import { conservatory } from '../../../public/labs/chunk-surfer/src/data/floorplan/conservatory.js';
+import { PAGES, ROOM_CELLS } from '../../../public/labs/chunk-surfer/src/data/conservatory-script.js';
 import * as FP from '../../../public/labs/chunk-surfer/src/world/floorplan.js';
 import { F, ZONE } from '../../../public/labs/chunk-surfer/src/data/floorplan/legend.js';
 
@@ -172,6 +173,22 @@ for (const k of walked) {
   if (c && c.ceil - c.floor < FP.HEADROOM - 1e-6) lowRoom++;
 }
 ck('you can stand up everywhere you can walk', lowRoom === 0, `${lowRoom} cells below ${FP.HEADROOM}m`);
+
+// Content lands on the floor, and the floor moves. Every page the previous
+// recordist dropped, and every cell a page's waypoint points at, must be a
+// place a body can stand and get to. A page inside a wall is a page nobody
+// ever reads, and nothing else in this codebase would ever say so.
+const strandedPages = PAGES.filter((pg) => !walked.has(`${pg.at.x},${pg.at.y}`))
+  .map((pg) => `${pg.id}@${pg.at.x},${pg.at.y}`);
+ck('every page lies somewhere you can walk', strandedPages.length === 0, strandedPages.join(' '));
+
+const strandedRooms = Object.entries(ROOM_CELLS).filter(([, c]) => !walked.has(`${c.x},${c.y}`))
+  .map(([n]) => n);
+ck('every take can be made where the waypoint points', strandedRooms.length === 0, strandedRooms.join(' '));
+
+const wrongZone = Object.entries(ROOM_CELLS).filter(([id, c]) => FP.worldAt(c.x, c.y) !== id)
+  .map(([id, c]) => `${id} is actually ${FP.worldAt(c.x, c.y)}`);
+ck('...and the waypoint points at the room it names', wrongZone.length === 0, wrongZone.join('; '));
 
 let croomMutable = 0;
 for (let i = 0; i < cp.w * cp.h; i++) {

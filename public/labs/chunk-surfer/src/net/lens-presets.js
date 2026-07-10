@@ -42,6 +42,15 @@ export const PRESETS = {
     seedMode: 'fixed', negative: NO_CHARACTERS,
   },
 
+  // Booth apparition: a large threshold image, using battle-scale permission
+  // to let the model dominate the frame without importing combat semantics.
+  booth: {
+    strength: 0.70, guidance: 2.4, passes: 3, feedback: 0.32, drift: 0.65,
+    seedMode: 'fixed',
+    negative: 'gore, injury, anatomical horror, monster, clean bright office, friendly face, clear face, smile, cartoon, neon poster',
+    prompt: `shadowed institutional security booth at night, fluorescent glass box, guard face withheld behind black reflections and sunglasses, coffee cup, key hooks, stamped forms, service gate threshold, bureaucratic occult, reflected paperwork, underexposed procedural dread, ${FILM}`,
+  },
+
   // ── BATTLE ──────────────────────────────────────────────────────────────
   // Geometry is ALLOWED TO LOSE. The room stops being a place and becomes an
   // over-recognised thing: split faces, eyes, iridescent viscera, electric

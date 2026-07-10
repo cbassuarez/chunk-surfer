@@ -19,16 +19,19 @@ import { NOISE } from '../config.js';
 import * as REC from './recordist.js';
 
 export const PRESENCE = {
-  spawnDistance: 22,       // cells behind you, out of sight
-  baseSpeed: 1.35,         // cells/sec while investigating
-  huntSpeed: 2.30,         // cells/sec when it has a fresh sound
-  catchRadius: 1.05,
-  hearingRadius: 30,       // it only registers noise within this
-  lightRadius: 16,         // and can sense a lit player, vaguely, this far
-  memorySec: 6.5,          // how long a sound stays interesting
-  loseInterestSec: 14,     // with nothing to chase, it drifts and settles
-  catchCooldownSec: 3.0,   // one touch is one injury, not one per frame
-  recoilCells: 9,          // and it withdraws, so the moment can land
+  spawnDistance: 34,       // cells behind you, out of sight
+  baseSpeed: 0.65,         // cells/sec while investigating
+  huntSpeed: 1.25,         // cells/sec when it has a fresh sound
+  catchRadius: 0.72,
+  hearingRadius: 22,       // it only registers noise within this
+  lightRadius: 11,         // and can sense a lit player, vaguely, this far
+  memorySec: 3.4,          // how long a sound stays interesting
+  loseInterestSec: 18,     // with nothing to chase, it drifts and settles
+  catchCooldownSec: 8.0,   // one touch is one injury, not one per frame
+  recoilCells: 16,         // and it withdraws, so the moment can land
+  spawnGraceSec: 4.0,      // enough time to understand it before it can touch
+  visibleRadius: 42,       // dread needs a body, not only a punishment
+  dreadRadius: 46,
 };
 
 const state = {
@@ -39,6 +42,7 @@ const state = {
   targetSetAt: 0,
   lastHeardAt: 0,
   lastCatchAt: -1e9,
+  spawnedAt: -1e9,
   awareness: 0,            // 0..1 — permanent, grows with every capture
   caughtCount: 0,
 };
@@ -52,6 +56,7 @@ export function spawnBehind(px, py, dirX = 0, dirY = 1) {
   state.y = py + dirY * PRESENCE.spawnDistance;
   state.hasTarget = false;
   state.lastHeardAt = performance.now();
+  state.spawnedAt = state.lastHeardAt;
 }
 
 export function despawn() { state.active = false; state.hasTarget = false; }
@@ -65,6 +70,16 @@ export function pressure(px, py) {
   if (!state.active) return 0;
   const d = distanceTo(px, py);
   return Math.max(0, Math.min(1, 1 - d / PRESENCE.hearingRadius));
+}
+
+export function dread(px, py) {
+  if (!state.active) return 0;
+  const d = distanceTo(px, py);
+  return Math.max(0, Math.min(1, 1 - d / PRESENCE.dreadRadius));
+}
+
+export function visibleFrom(px, py) {
+  return state.active && distanceTo(px, py) <= PRESENCE.visibleRadius;
 }
 
 // A sound happened at (x,y). If it is within earshot, that is now the target.
@@ -114,8 +129,9 @@ export function updatePresence(dt, px, py, onCatch) {
     ty = state.y + Math.sin(wander * 1.31) * 6;
     speed = PRESENCE.baseSpeed * 0.42;
   }
-  // Awareness makes it faster forever. It learns you.
-  speed *= 1 + state.awareness * 0.35;
+  // Awareness makes it faster forever, but not fast. It learns you, and still
+  // remains something you can get away from.
+  speed *= 1 + state.awareness * 0.12;
 
   const dx = tx - state.x, dy = ty - state.y;
   const d = Math.hypot(dx, dy);
@@ -130,10 +146,11 @@ export function updatePresence(dt, px, py, onCatch) {
   //    encounter becomes six injuries. It also withdraws afterwards, so the
   //    moment has an after.
   const cooling = (now - state.lastCatchAt) / 1000 < PRESENCE.catchCooldownSec;
-  if (!cooling && distanceTo(px, py) <= PRESENCE.catchRadius) {
+  const spawning = (now - state.spawnedAt) / 1000 < PRESENCE.spawnGraceSec;
+  if (!cooling && !spawning && distanceTo(px, py) <= PRESENCE.catchRadius) {
     state.lastCatchAt = now;
     state.caughtCount++;
-    state.awareness = Math.min(1, state.awareness + 0.34);
+    state.awareness = Math.min(1, state.awareness + 0.18);
     state.hasTarget = false;
     // Recoil away along the line between you. If it is standing exactly on you
     // there is no such line, so pick one.
@@ -150,6 +167,7 @@ export function updatePresence(dt, px, py, onCatch) {
 export function loadPresenceState(saved = {}) {
   state.awareness = saved.awareness || 0;
   state.caughtCount = saved.caughtCount || 0;
+  state.spawnedAt = -1e9;
 }
 export function savePresenceState() {
   return { awareness: state.awareness, caughtCount: state.caughtCount };

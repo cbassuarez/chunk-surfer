@@ -111,8 +111,8 @@ export function diffusionStart({
   hostEl.appendChild(overlay);
   const octx = overlay.getContext('2d');
 
-  const stats = { framesOut: 0, framesIn: 0, lastRttMs: 0, state: 'connecting', skips: 0, held: 0, blobNull: 0, notOpen: 0, msDraw: 0, msEncode: 0, msDecode: 0 };
-  let ws = null, sendTimer = null, retriesLeft = RETRIES, stopped = false;
+  const stats = { framesOut: 0, framesIn: 0, lastRttMs: 0, state: 'connecting', skips: 0, held: 0, blobNull: 0, notOpen: 0, msDraw: 0, msEncode: 0, msDecode: 0, bypassed: false };
+  let ws = null, sendTimer = null, retriesLeft = RETRIES, stopped = false, bypassed = false, socketSeq = 0;
   let lastSentAt = 0;
 
   // Downscale before encoding: the server diffuses at SIZE² regardless, and
@@ -135,7 +135,7 @@ export function diffusionStart({
   let lastEpochAt = 0;
   let rafId = 0;
 
-  function setState(s) { stats.state = s; onStatus({ ...stats }); }
+  function setState(s) { stats.state = s; stats.bypassed = bypassed; onStatus({ ...stats }); }
 
   // An ImageBitmap can be referenced by three things at once: what is on
   // screen, what is fading in, and what conditions the next frame. Closing one
@@ -167,6 +167,8 @@ export function diffusionStart({
   }
 
   function connect() {
+    if (stopped || bypassed) { setState(bypassed ? 'bypassed' : 'stopped'); return; }
+    const seq = ++socketSeq;
     const u = new URL(url);
     if (token) u.searchParams.set('token', token);
     ws = new WebSocket(u.toString());
@@ -174,6 +176,7 @@ export function diffusionStart({
     setState('connecting');
 
     ws.onopen = () => {
+      if (stopped || bypassed || seq !== socketSeq) { try { ws.close(); } catch (_) {} return; }
       retriesLeft = RETRIES;
       setState('streaming');
       ws.send(JSON.stringify({ type: 'prompt', prompt, negative, strength, passes, guidance, seedMode, seed }));
@@ -181,6 +184,7 @@ export function diffusionStart({
       captureAndSend();
     };
     ws.onmessage = async (ev) => {
+      if (stopped || bypassed || seq !== socketSeq) return;
       if (typeof ev.data === 'string') { try { onStatus({ ...stats, server: JSON.parse(ev.data) }); } catch (_) {} return; }
       stats.framesIn++;
       stats.lastRttMs = performance.now() - lastSentAt;
@@ -225,7 +229,7 @@ export function diffusionStart({
     // retry budget evaporates in seconds and the lens falls back for good.
     let closed = false;
     const onGone = (ev) => {
-      if (closed || stopped) return;
+      if (closed || stopped || bypassed || seq !== socketSeq) return;
       closed = true;
       clearInterval(sendTimer); sendTimer = null;
       overlay.style.opacity = '0';
@@ -241,6 +245,7 @@ export function diffusionStart({
   }
 
   function captureAndSend() {
+    if (bypassed) { stats.held++; return; }
     if (!ws || ws.readyState !== WebSocket.OPEN) { stats.skips++; return; }
     // Backlog, not inflight: the server drops frames on purpose, so the only
     // meaningful signal is "we are shouting and nothing is coming back".
@@ -333,6 +338,27 @@ export function diffusionStart({
       return { feedback, drift, strength, passes, guidance, smooth, seedMode, prompt, negative };
     },
     resetFeedback() { const b = lastStyled; lastStyled = null; release(b); firstFrame = true; },
+    setBypass(v) {
+      const next = !!v;
+      if (next === bypassed) return bypassed;
+      bypassed = next;
+      stats.bypassed = bypassed;
+      if (bypassed) {
+        socketSeq++;
+        clearInterval(sendTimer); sendTimer = null;
+        overlay.style.opacity = '0';
+        const old = ws; ws = null;
+        try { old && old.close(1000, 'client bypass'); } catch (_) {}
+        setState('bypassed');
+      } else {
+        firstFrame = true;
+        retriesLeft = RETRIES;
+        setState('connecting');
+        connect();
+      }
+      return bypassed;
+    },
+    isBypassed() { return bypassed; },
 
     // main.js reports movement. Stopping opens a new epoch: the lens wakes and
     // re-dreams the room from where you now stand.
@@ -347,6 +373,7 @@ export function diffusionStart({
 
     stop() {
       stopped = true;
+      socketSeq++;
       cancelAnimationFrame(rafId); rafId = 0;
       const a = shown, b = incoming, c = lastStyled;
       shown = incoming = lastStyled = null;

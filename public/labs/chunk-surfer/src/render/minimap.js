@@ -42,5 +42,19 @@ export function drawMinimap(px, py, waypoint, opts = {}) {
     }
   }
 
+  if (opts.presence) {
+    const dx = Math.round((opts.presence.x - px) / SCALE);
+    const dy = Math.round((opts.presence.y - py) / SCALE);
+    const mx = cx + dx, my = cy + dy;
+    const inside = mx > x0 && mx < x0 + W - 1 && my > y0 && my < y0 + H - 1;
+    if (inside) {
+      uiGlyph(mx, my, '☍', 't-hush-core', opts.presence.alpha ?? 0.95);
+    } else {
+      const ex = Math.max(x0 + 1, Math.min(x0 + W - 2, mx));
+      const ey = Math.max(y0 + 1, Math.min(y0 + H - 2, my));
+      uiGlyph(ex, ey, '☍', 't-hush-edge', opts.presence.alpha ?? 0.65);
+    }
+  }
+
   if (opts.label) uiText(x0 + 1, y0 + H - 1, opts.label.slice(0, W - 2), 't-trail-3', 0.6);
 }

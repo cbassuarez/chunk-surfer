@@ -27,7 +27,7 @@ import * as MUT from './world/mutate.js';
 import * as scenes from './game/scenes.js';
 import { uiInit, uiClear, uiText, uiSize } from './render/ui.js';
 import { saveLoad, saveCommit, getSave, newGame, hasSave, metaCommit } from './game/save.js';
-import { flagApply, flagTest } from './game/flags.js';
+import { flagApply, flagTest, flagGet } from './game/flags.js';
 import { dialogueInit, loadScript, startDialogue } from './game/dialogue.js';
 import { makeTitleScene } from './game/title.js';
 import { makeMenuScene } from './game/menu.js';
@@ -37,16 +37,31 @@ import * as REC from './game/recordist.js';
 import * as RT from './audio/roomtone.js';
 import * as PRES from './game/presence.js';
 import * as CUES from './audio/cues.js';
+import * as STORY from './audio/story-audio.js';
 import * as STAB from './game/stabs.js';
 import * as OBJ from './game/objectives.js';
+import * as DOC from './game/document.js';
+import * as RADIO from './game/radio.js';
+import * as PB from './game/playback.js';
 import { drawMinimap } from './render/minimap.js';
 import { roomLabel, roomToneCharacter } from './audio/manifest-map.js';
+import * as SPEECH from './game/speech.js';
+import * as TUT from './game/tutorial.js';
+import { makeBagScene } from './game/bag.js';
+import { makeColdOpenScene, makeWorldTitleScene } from './game/coldopen.js';
+import { makeThoughtScene, thoughtHad, markThought,
+         loadThoughtState, saveThoughtState } from './game/thoughts.js';
+import { WORK_ORDER, TRANSMISSIONS, SQUELCH_LINES,
+         PAGES, ROOM_CELLS, COLD_OPEN, COLD_OPEN_DIALOGUE,
+         POST_DOOR, FIRST_TAKE, HUSH, RADIO_DEAD,
+         PROLOGUE_THOUGHTS, LINES, guestLines } from './data/conservatory-script.js';
 export { fx } from './render/canvas.js';
 
 // M1: canvas glyph renderer is the default; `?renderer=dom` keeps the legacy
 // innerHTML path during the parity window (removed in M2).
 // M1b: `?renderer=3d` = first-person raymarched world (diffusion-lens base).
 const KEY_DEBUG = new URLSearchParams(location.search).has('keydebug');
+const NO_THINK = new URLSearchParams(location.search).has('nothink');
 const RENDERER = (() => {
   const q = new URLSearchParams(location.search).get('renderer');
   return q === 'dom' ? 'dom' : q === '3d' ? '3d' : 'canvas';
@@ -280,9 +295,11 @@ function ensureCtx(){
       master.connect(limiter);
       limiter.connect(actx.destination);
       RT.roomToneInit(actx, master);
+      STORY.storyAudioInit(actx, master);
       // Cues bypass the proximity mix: a switch is always as loud as a switch.
       CUES.cuesInit(actx, limiter);
       CUES.preloadAll(Object.values(CUES.CUE));
+      STORY.preloadAll();
     }catch(err){
       audioInitFailed=true;
       console.error('AudioContext init failed', err);
@@ -850,6 +867,19 @@ function silenceAmbientDrone(){
   ambientDrone.gain.gain.setValueAtTime(ambientDrone.gain.gain.value, now);
   ambientDrone.gain.gain.linearRampToValueAtTime(0, now+FADE_SEC);
   ambientDrone.target=0;
+}
+
+function sampleFieldSuppressed(){
+  return scenes.has('title') || scenes.has('cold-open') || scenes.has('world-title');
+}
+
+function silenceSampleField({ roomTone = false } = {}){
+  curPlayerCtx = { onTerrain:false, biomeId:null, worldId:(storyMode && inRogue) ? currentWorld() : null, worldMembership:{} };
+  if(curChunkKey){ curChunkKey=''; curChunkIdx=-1; }
+  if(voices.size>0) stopAllVoices();
+  stopWorldLayerVoice();
+  silenceAmbientDrone();
+  if(!roomTone) RT.bedOff();
 }
 
 
@@ -2788,15 +2818,16 @@ function audibleCandidates(){
 }
 
 function updateAudio(){
+  if(sampleFieldSuppressed()){
+    silenceSampleField();
+    return;
+  }
   if(depth > 0){
     // Void layer: shut down all chunk voices and the world drone. The
     // ambient pad is silenced too so the deeper level reads as a held
     // breath. Mirrors the onboarding gate's structure.
     curPlayerCtx = { onTerrain:false, biomeId:null, worldId:null, worldMembership:{} };
-    if(curChunkKey){ curChunkKey=''; curChunkIdx=-1; }
-    if(voices.size>0) stopAllVoices();
-    stopWorldLayerVoice();
-    silenceAmbientDrone();
+    silenceSampleField();
     return;
   }
   // ROOM TONE: walking the building is silent. No chunk voices, no world
@@ -2804,10 +2835,7 @@ function updateAudio(){
   // other side of the recorder's monitor.
   if(storyMode && !REC.isRecording()){
     curPlayerCtx = { onTerrain:false, biomeId:null, worldId:currentWorld(), worldMembership:{} };
-    if(curChunkKey){ curChunkKey=''; curChunkIdx=-1; }
-    if(voices.size>0) stopAllVoices();
-    stopWorldLayerVoice();
-    silenceAmbientDrone();
+    silenceSampleField({ roomTone:true });
     RT.bedOn();
     return;
   }
@@ -2816,9 +2844,7 @@ function updateAudio(){
     const membership={};
     for(const w of worldsConfig) membership[w.id]=(w.id===worldId?1:0);
     curPlayerCtx = { onTerrain:false, biomeId:null, worldId, worldMembership: membership };
-    if(curChunkKey){ curChunkKey=''; curChunkIdx=-1; }
-    if(voices.size>0) stopAllVoices();
-    stopWorldLayerVoice();
+    silenceSampleField();
     applyIntroAudioEnvelope();
     return;
   }
@@ -2848,6 +2874,10 @@ function updateAudio(){
     if(!want.has(voiceKey)){ stopVoice(v); voices.delete(voiceKey); }
   }
   for(const {key,idx,g,wx,wy} of audible){
+    // The tape. What the monitor passes is what the take contains — at the
+    // level it passed it. Everything else that ends up on the tape gets there
+    // without our help.
+    if(storyMode && REC.isRecording()) PB.noteAudible(currentWorld(), idx, g);
     // Stereo pan from chunk's relative X position. PAN_R sets how tight
     // localization is — chunks beyond ±PAN_R cells are fully panned.
     const PAN_R=18;
@@ -3449,8 +3479,11 @@ function renderMap(){
   const hushCell = (!introNow && hush.active)
     ? {x:Math.round(hush.x), y:Math.round(hush.y)}
     : null;
+  const presenceCell = (!introNow && storyMode && PRES.visibleFrom(px, py))
+    ? {x:Math.round(PRES.presenceState().x), y:Math.round(PRES.presenceState().y)}
+    : null;
   const hushBodyLookup = new Map();
-  if(hushCell){
+  for(const bodyCell of [hushCell, presenceCell].filter(Boolean)){
     const hushMask = [
       [0,1,1,0,0],
       [1,2,4,2,0],
@@ -3462,7 +3495,7 @@ function renderMap(){
       for(let mx=-2;mx<=2;mx++){
         const w=hushMask[my+2][mx+2];
         if(w<=0) continue;
-        const flicker=Math.floor((nowMs/92) + hushCell.x*0.43 + hushCell.y*0.37 + mx*1.9 + my*1.3);
+        const flicker=Math.floor((nowMs/92) + bodyCell.x*0.43 + bodyCell.y*0.37 + mx*1.9 + my*1.3);
         let cls='t-hush-aura';
         let glyph='░';
         if(w>=4){
@@ -3490,7 +3523,9 @@ function renderMap(){
           cls='t-hush-core';
           glyph=(Math.abs(flicker)%4===0) ? '█' : '╳';
         }
-        hushBodyLookup.set(`${hushCell.x+mx},${hushCell.y+my}`, {cls, glyph, w});
+        const k=`${bodyCell.x+mx},${bodyCell.y+my}`;
+        const prev=hushBodyLookup.get(k);
+        if(!prev || w>=prev.w) hushBodyLookup.set(k, {cls, glyph, w});
       }
     }
   }
@@ -3606,7 +3641,7 @@ function renderMap(){
         S.cell('█', playerCls);
         continue;
       }
-      if(hushCell){
+      if(hushBodyLookup.size){
         const hushTile=hushBodyLookup.get(`${wx},${wy}`);
         if(hushTile){
           S.cell(hushTile.glyph, hushTile.cls);
@@ -4086,12 +4121,22 @@ function loop(){
         tickPresence(dt);
         tickStabs(dt);
         tickPages();
+        tickRadio(dt);
         tickMutation(dt);
+      }
+      // Playback runs through scenes and through the document reader: the tape
+      // does not stop because you looked at a piece of paper. Neither does he
+      // stop thinking, and neither does the radio stop talking.
+      tickPlayback();
+      if(storyMode && !scenes.has('cold-open')){
+        SPEECH.updateSpeech(dt);
+        TUT.tickTutorial(dt, tutorialCtx());
       }
       if(RENDERER==='3d') render3d(); else renderMap();
       // Instrument readouts only exist in JUST SURF; in story mode they are
       // hidden by body.game, so don't pay to rebuild their DOM every frame.
-      if(!storyMode){ renderCatalog(); renderStatus(); renderSense(); renderKeymeter(); }
+      if(!storyMode && !sampleFieldSuppressed()){ renderCatalog(); renderStatus(); renderSense(); renderKeymeter(); }
+      else if(sampleFieldSuppressed()) clearFieldReadouts();
       if(hush.active) once('hush-met', ()=>metaCommit({hushMet:true}));
     }
     else renderBoot();
@@ -4178,31 +4223,31 @@ function runEffect(spec){
   }
 }
 
-// A speaker's typewriter blip: a short pitched tick through the master bus.
+let speakerTypingStopTimer = null;
+// A speaker's typewriter blip: the same granular typing bed used by the live
+// cold open, pulsed from the older dialogue runtime's per-character hook.
 function speakerBlip(speaker){
   if(!actx || !master || paused) return;
-  try{
-    const now=actx.currentTime;
-    const o=actx.createOscillator();
-    const g=actx.createGain();
-    const base=520 + (hashString01(String(speaker||'')) * 240);
-    o.frequency.setValueAtTime(base, now);
-    o.type='square';
-    g.gain.setValueAtTime(0.0, now);
-    g.gain.linearRampToValueAtTime(0.012, now+0.004);
-    g.gain.exponentialRampToValueAtTime(0.0005, now+0.045);
-    o.connect(g); g.connect(master);
-    o.start(now); o.stop(now+0.05);
-  }catch(_){}
+  STORY.startTyping({ gain: STORY.TYPE_GAIN * 0.85, fade: 0.02 });
+  if(speakerTypingStopTimer) clearTimeout(speakerTypingStopTimer);
+  speakerTypingStopTimer = setTimeout(()=>{
+    STORY.stopTyping({ fade: 0.08 });
+    speakerTypingStopTimer = null;
+  }, 130 + hashString01(String(speaker||''))*60);
 }
+
+// Which building is loaded. Content beats belong to the conservatory; the
+// testbed is a geometry proof and must stay free of them.
+let planName='';
 
 async function loadBuilding(){
   // The real building. `?plan=testbed` still loads the geometry proof.
   const which=new URLSearchParams(location.search).get('plan') || 'conservatory';
+  planName=which;
   try{
     const mod=await import(`./data/floorplan/${which}.js`);
     const data=mod[which] || mod.default;
-    FP.compile(data.levels, {width:data.width, height:data.height});
+    FP.compile(data.levels, {width:data.width, height:data.height, widenCorridors:data.widenCorridors});
     if(data.spawn) FP.setSpawn(data.spawn.x, data.spawn.y);
     // ?at= is a debug spawn and outranks the building's front door.
     const at=new URLSearchParams(location.search).get('at');
@@ -4211,9 +4256,18 @@ async function loadBuilding(){
     const p=FP.floorplan();
     R3.r3dSetPlan(p.rgba, p.w, p.h);
     MUT.mutateInit();
+    // He left them where he turned around. Pages already read stay picked up
+    // across a reload — the building may move, the paper does not come back.
+    if(which==='conservatory'){
+      const read=new Set(OBJ.objState().read);
+      for(const pg of PAGES){
+        if(read.has(pg.id) || FP.isSolid(pg.at.x, pg.at.y)) continue;
+        OBJ.placePage(pg.at.x, pg.at.y, pg.room, pg.id);
+      }
+    }
     revealAround(px,py);
     faceOpenDirection();
-    pushEvent(`// ${which}: ${p.w}×${p.h} cells.`);
+    if(KEY_DEBUG) pushEvent(`// ${which}: ${p.w}×${p.h} cells.`);
   }catch(err){
     console.error('floorplan failed to load', err);
   }
@@ -4226,47 +4280,191 @@ function enterStory(){
   PRES.loadPresenceState(getSave().presence);
   OBJ.loadObjState(getSave().obj);
   STAB.loadStabState(getSave().stabs);
+  RADIO.loadRadioState(getSave().radio);
+  loadThoughtState(getSave().thoughts);
   if(inRogue && RENDERER==='3d') loadBuilding();
   STAB.stabsInit({ onStab:playStab });
+  DOC.documentInit({
+    // Reading is not free. A sheet of paper turning is the quietest noise in
+    // the game, and it is still a noise, and something is listening for it.
+    turn:()=>{ if(storyMode) REC.emitNoise(0.06, px, py, 'a page turning'); },
+    close:()=>saveCommit({ obj:OBJ.saveObjState() }),
+  });
+  RADIO.radioInit({ squelch:onSquelch });
+  SPEECH.speechInit({
+    audio:()=>{ ensureCtx(); return actx ? { ctx:actx, destination:master || actx.destination } : null; },
+    typing:STORY,
+    cue:(name)=>{
+      ensureCtx();
+      if(name==='door') CUES.playCue(CUES.CUE.door, {gain:0.95});
+      else if(name==='bag') CUES.playCue(CUES.CUE.bag, {gain:0.75});
+    }
+  });
+  TUT.tutorialInit({ say:SPEECH.say,
+    // Six seconds is a level check. The recorder is handed straight back.
+    onLevelsGood:()=>setTimeout(()=>{ if(REC.isRecording()) toggleRecorder(); }, 700) });
+  PB.playbackInit({ chunkById:chunkAt, pickGuest,
+    // It heard what he said in the dark, eleven seconds after the door went.
+    // This is where it gives it back.
+    onGuest:()=>{
+      CR.fx.shake(0.35, 900);
+      STAB.reportThreat();
+      SPEECH.say(LINES.guest);
+      SPEECH.sayAll(guestLines(flagGet('confession.kind'), flagGet('confession.value')));
+    } });
   if(chunks.length) STAB.buildStabPool(chunks);
   const qp=new URLSearchParams(location.search);
   // ?flags=a,b=2 — force story state for testing
   const flagParam=qp.get('flags');
   if(flagParam) flagApply(flagParam.split(',').filter(Boolean));
   ensureCtx();
-  startAmbientDroneAt(currentAmbientTarget());
   // ?talk=<node> jumps straight into a conversation
-  pushEvent('// [f] flashlight · [r] recorder · [shift] move quietly');
   const talk=qp.get('talk');
-  if(talk) startDialogue(talk);
-  else if(!flagTest('prologueDone')) startDialogue('usher.intro');
+  if(talk){ startDialogue(talk); updateAudio(); return; }
+  // The cold open, then a man doing his setup in the dark. `?skiptut=1` for
+  // anyone who has to walk this building forty times today.
+  if(!flagTest('prologueDone') && !qp.has('skiptut')){
+    scenes.push(makeColdOpenScene({
+      beats: COLD_OPEN,
+      opening: COLD_OPEN_DIALOGUE,
+      audio: STORY,
+      slate: 'W. ELLERY HOLDINGS · WORK ORDER 4417-C · ARCHIVAL CAPTURE',
+      getAudio: ()=>({ ctx:actx, destination:master }),
+      cue: (name)=>{ ensureCtx();
+        if(name==='door'){
+          CUES.playCue(CUES.CUE.door, {gain:0.95});
+          // The booth was the last lit room. It does not follow you in.
+          STORY.stopBoothTone({fade:0.35});
+        }
+        else if(name==='bag') CUES.playCue(CUES.CUE.bag, {gain:0.75}); },
+      fx: CR.fx,
+      onChoice: (choice)=>{
+        if(choice?.set || choice?.clear) flagApply(choice.set || [], choice.clear || []);
+      },
+      onDone: ()=>{
+        flagApply(['prologueDone']);
+        scenes.push(makeWorldTitleScene({
+          audio: STORY,
+          // The door, then the first thing he says out loud in this building,
+          // then his hands find the torch and the job starts.
+          onDone:()=>postDoorThought(()=>TUT.startTutorial()),
+        }));
+      },
+    }));
+    silenceSampleField();
+  } else {
+    STORY.stopAll();
+    TUT.skipTutorial();
+    updateAudio();
+  }
 }
 
 function enterJustSurf(){
   storyMode=false;
+  STORY.stopAll();
   setGameChrome(false);
   ensureCtx();
   startAmbientDroneAt(currentAmbientTarget());
   pushEvent('// just surf. no story. the field is the field.');
 }
 
+// ── thinking, over a corridor that has not stopped ──────────────────────────
+// Every thought tree goes through here, so they all get the same voice, the
+// same typewriter, the same clicks — and none of them stop the building.
+function think(id, nodes, { startAt='start', onChoice, onDone, force=false }={}){
+  if(!storyMode) return null;
+  // Thought trees are conservatory content, and they block input while they are
+  // open. `?nothink=1` is how a mechanism suite presses [r] without being asked
+  // how it feels about the corridor.
+  if(!force && (NO_THINK || planName!=='conservatory')) return null;
+  if(!force && thoughtHad(id)) return null;
+  markThought(id);
+  ensureCtx();
+  saveCommit({ thoughts:saveThoughtState() });
+  return scenes.push(makeThoughtScene({
+    id, nodes, startAt,
+    audio: STORY,
+    getAudio: ()=>({ ctx:actx, destination:master }),
+    fx: CR.fx,
+    cue: (name)=>{ ensureCtx();
+      // He shook it. The building is entitled to know that.
+      if(name==='squelch'){
+        CUES.playCue(CUES.CUE.recorder, {gain:0.55, rate:0.4});
+        REC.emitNoise(RADIO.RADIO.noiseLevel, px, py, 'the radio');
+        MUT.markHeard(px, py, 1);
+        STAB.reportThreat();
+      }
+    },
+    onChoice: (c)=>{ if(c?.set || c?.clear) flagApply(c.set||[], c.clear||[]); onChoice?.(c); },
+    onDone,
+  }));
+}
+
+// The push bar is not where the push bar is. Which question he asks himself
+// depends entirely on what he did at the booth.
+function postDoorThought(onDone){
+  const frame=prologueKnowledgeFrame() || 'self';
+  think('post-door', POST_DOOR, {
+    startAt: frame,
+    onDone: ()=>{ saveCommit({ flags:getSave().flags }); onDone?.(); },
+  });
+}
+
+function prologueKnowledgeFrame(){
+  if(flagTest('prologue.knowledge.tape')) return 'tape';
+  if(flagTest('prologue.knowledge.guard')) return 'guard';
+  if(flagTest('prologue.knowledge.self')) return 'self';
+  return null;
+}
+
+function framedLine(kind, fallback, ...args){
+  const frame=prologueKnowledgeFrame();
+  const line=frame ? PROLOGUE_THOUGHTS[frame]?.[kind] : null;
+  const pick=line || fallback;
+  return typeof pick === 'function' ? pick(...args) : pick;
+}
+
+// The first take in studio B3 is the one moment the game gets to say the rule
+// out loud — do not move, do not touch the light — immediately before the
+// player learns it the hard way. It intercepts [r] exactly once.
+//
+// Three things it must never intercept: a take already running, the dock's
+// level check (which is not a take), and the testbed, whose studio also
+// answers to `main_b3` and whose whole job is to let the mechanism suites
+// press [r] and get a recorder.
+function firstTakeIntercept(){
+  if(!storyMode || REC.isRecording() || TUT.tutorialActive()) return false;
+  if(planName!=='conservatory') return false;
+  if(!usingPlan() || currentWorld()!=='main_b3' || REC.hasTake('main_b3')) return false;
+  if(thoughtHad('first-take')) return false;
+  // If the tree declined to open, [r] must still record. Never swallow a verb.
+  return !!think('first-take', FIRST_TAKE, { onDone:()=>toggleRecorder() });
+}
+
 function toggleRecorder(){
   if(REC.isRecording()){
+    const room=currentWorld();
     const r=REC.stopRecording();
     CUES.playCue(CUES.CUE.recorder, {gain:0.7, rate:0.88});
     updateAudio();                    // monitor closes: the room goes silent
-    if(r.completed) pushEvent('// take complete. one clean minute.');
-    else if(r.spoiled) pushEvent(`// take spoiled — ${r.reason}.`);
-    else pushEvent(`// take aborted at ${r.elapsed.toFixed(0)}s.`);
+    if(r.completed){
+      PB.sealTake(room);              // choose the guest once. a tape does not re-roll.
+      SPEECH.say(framedLine('recDone', LINES.recDone));
+    }
+    else { PB.abortTake(room);
+           if(r.spoiled) SPEECH.say(LINES.recSpoiled(r.reason));
+           else SPEECH.say(LINES.recAbort); }
     return;
   }
   REC.startRecording();
   ensureCtx();
+  PB.beginTake(currentWorld(), {x:px, y:py});
   CUES.playCue(CUES.CUE.recorder, {gain:0.8});
   updateAudio();                      // monitor opens: you can hear the room
-  pushEvent('// recording. hold still. light off.');
-  // The first take is what tells the building someone is in it.
-  once('presence-arrives', ()=>{
+  SPEECH.say(framedLine('recStart', LINES.recStart));
+  // The first take is what tells the building someone is in it. The level check
+  // in the dock is not that take: nothing is hunting a man who has not started.
+  if(!TUT.tutorialActive()) once('presence-arrives', ()=>{
     PRES.spawnBehind(px, py, -lastStepDx||0, -lastStepDy||1);
     metaCommit({hushMet:true});
   });
@@ -4280,7 +4478,7 @@ function onPresenceCatch(count){
   if(REC.isRecording()) REC.spoilTake('it found you');
   CR.fx.flash(140, 'rgba(10,10,12,0.9)');
   CR.fx.shake(1.4, 420);
-  pushEvent(`// it found you. you are hurt (${injuries}). you are louder now.`);
+  SPEECH.say(LINES.caught(injuries));
   // Shove the player away from it — not to safety, just away. Try the direction
   // that points away first, then the other cardinals: in a corridor the "away"
   // direction is often a wall, and standing still after being caught reads as
@@ -4344,15 +4542,175 @@ function tickStabs(dt){
 }
 
 // Pages: walk over one, read it, get a waypoint and a room to record.
+// ── the previous recordist's log ────────────────────────────────────────────
+// Walking over a page picks it up and hands you the sheet. It is the only
+// reading in the game that happens standing in the dark with the light off,
+// because the reader does not turn your light on for you.
+const pageById=new Map(PAGES.map(p=>[p.id,p]));
+
 function tickPages(){
   if(!storyMode) return;
-  const page=OBJ.tryPickup(px,py);
-  if(!page) return;
+  const found=OBJ.tryPickup(px,py);
+  if(!found) return;
+  const page=pageById.get(found.id);
   CUES.playCue(CUES.CUE.light, {gain:0.35, rate:1.4});
-  OBJ.setWaypoint(page.x + 40, page.y - 30, page.roomId);
-  pushEvent(`// a page. ${roomLabel(page.roomId)} still needs tone.`);
   STAB.reportRelief(0.3);    // finding something is a small exhale
+  // A page names a room and points at it. It never points at a route: the
+  // corridors between the rooms are the part the building has an opinion on.
+  // A page dropped by a test carries its own room; a page of his carries the
+  // room he wrote about.
+  const room=page?.room || found.roomId;
+  if(room && !REC.hasTake(room)){
+    const cell=ROOM_CELLS[room] || { x:found.x + 40, y:found.y - 30 };
+    OBJ.setWaypoint(cell.x, cell.y, room);
+    SPEECH.say(framedLine('pageRoom', LINES.pageRoom, roomLabel(room)));
+  } else {
+    SPEECH.say(framedLine('pageAny', LINES.pageAny));
+  }
   saveCommit({ obj:OBJ.saveObjState() });
+  if(page) DOC.readDocument(page);
+}
+
+// ── interaction: [e] ────────────────────────────────────────────────────────
+// One verb, and it reads whatever is at your feet. There is nothing else in
+// this building to do with your hands.
+let workOrderRead=false;
+function markWorkOrderRead(){
+  once('work-order-read', ()=>{
+    workOrderRead=true;
+    // He gets back on the radio the moment he has read what he is here for.
+    setTimeout(()=>radioTransmit(0), 1400);
+    const cell=ROOM_CELLS.main_b3;
+    OBJ.setWaypoint(cell.x, cell.y, 'main_b3');
+    saveCommit({ obj:OBJ.saveObjState() });
+  });
+}
+function interact(){
+  if(!storyMode) return;
+  if(PB.isPlaying()){ PB.stopPlayback(); return; }
+  // The work order lives in your pocket for the whole night.
+  DOC.readDocument(WORK_ORDER);
+  markWorkOrderRead();
+}
+
+function setWaypointFromDocument(entry){
+  const room=entry?.room || entry?.doc?.room;
+  if(!room) return false;
+  const cell=ROOM_CELLS[room];
+  if(!cell) return false;
+  OBJ.setWaypoint(cell.x, cell.y, room);
+  saveCommit({ obj:OBJ.saveObjState() });
+  SPEECH.say({ who:'you', text:`${roomLabel(room)}. Marked.` });
+  return true;
+}
+
+function bagDocuments(){
+  const read=new Set(OBJ.objState().read);
+  const docs=[{
+    title: WORK_ORDER.title,
+    where: 'main B3 first',
+    room: 'main_b3',
+    doc: WORK_ORDER,
+  }];
+  for(const pg of PAGES){
+    if(!read.has(pg.id)) continue;
+    docs.push({
+      title: pg.title || pg.id,
+      where: pg.room ? roomLabel(pg.room) : 'no room marked',
+      room: pg.room,
+      doc: pg,
+    });
+  }
+  return docs;
+}
+
+function openBag(){
+  if(!storyMode) return;
+  if(REC.isRecording()){ SPEECH.say({ who:'you', text:'Not while rolling.' }); return; }
+  ensureCtx();
+  CUES.playCue(CUES.CUE.bag, {gain:0.72});
+  REC.emitNoise(0.05, px, py, 'bag rummage');
+  scenes.push(makeBagScene({
+    equipment: ['light', 'recorder + headphones', 'radio', 'standard keyring'],
+    documents: bagDocuments(),
+    waypoint: OBJ.waypoint(),
+    readDocument:(doc)=>{
+      DOC.readDocument(doc);
+      if(doc?.id==='work-order') markWorkOrderRead();
+    },
+    setWaypoint:(entry)=>setWaypointFromDocument(entry),
+  }));
+}
+
+// ── the radio ───────────────────────────────────────────────────────────────
+// It speaks through the same band the recordist thinks in, at radio pace. The
+// player cannot hurry it, cannot answer it, and has to keep walking while it
+// talks — which is the entire relationship.
+function radioTransmit(i){
+  const lines=TRANSMISSIONS[i];
+  if(!lines || !RADIO.transmit(lines)) return;
+  SPEECH.sayAll(lines);
+  saveCommit({ radio:RADIO.saveRadioState() });
+  // It has stopped being a radio. Now it is a thing on his belt, and he gets
+  // to decide, once, whether to do the one thing he was told not to do.
+  if(RADIO.isDead()){
+    const wait = lines.length * 2400 + 1400;
+    setTimeout(()=>{ if(storyMode) think('radio-dead', RADIO_DEAD); }, wait);
+  }
+}
+
+// A dead radio that makes noise is not a prop. It is on your belt, it is the
+// only sound in the game made at the cell you are standing in, and the thing
+// that hunts noise does not care who owns the radio.
+function onSquelch(ev){
+  if(!actx || !master) return;
+  CUES.playCue(CUES.CUE.recorder, {gain:0.5, rate:0.42});
+  CR.fx.shake(0.5, 160);
+  SPEECH.say(SQUELCH_LINES[(ev.index-1) % SQUELCH_LINES.length]);
+  MUT.markHeard(px, py, 1);
+  STAB.reportThreat();
+}
+
+function tickRadio(dt){
+  if(!storyMode) return;
+  RADIO.tickRadio(dt, { expectation: STAB.expectation(), px, py });
+}
+
+// ── playback ────────────────────────────────────────────────────────────────
+// The guest: a voice from this room's own catalogue that the monitor never
+// passed. Same material as the room, and plainly not of it.
+function pickGuest(roomId, audibleIds){
+  if(!chunks.length) return null;
+  const heard=new Set(audibleIds);
+  const pool=chunks.filter(c=>c && c.buffer && !heard.has(c.idx));
+  if(!pool.length) return null;
+  // Prefer something long and low: it has to rise for nine seconds without
+  // ever becoming an event.
+  const scored=pool.map(c=>({c, s:(c.analysis?.length||1) * (1/(0.2+(c.analysis?.zcr||0.3)))}))
+    .sort((a,b)=>b.s-a.s).slice(0, 8);
+  return scored[Math.floor(Math.random()*scored.length)]?.c || null;
+}
+
+function playCurrentTake(){
+  const room=currentWorld();
+  if(!PB.hasTake(room)){ SPEECH.say(framedLine('playbackNone', LINES.playbackNone)); return; }
+  if(PB.isPlaying()){ PB.stopPlayback(); return; }
+  ensureCtx();
+  PB.playbackInit({ ctx:actx, bus:master });
+  PB.playTake(room, { character: roomToneCharacter(room) });
+  SPEECH.say(framedLine('playback', LINES.playback));
+}
+
+function tickPlayback(){
+  if(!storyMode) return;
+  if(PB.tickPlayback()==='ended') SPEECH.say(LINES.playbackEnd);
+}
+
+// What the tutorial is allowed to know: the state of a man and his kit.
+function tutorialCtx(){
+  const r=REC.recState();
+  return { px, py, light:r.light, recording:r.recording, takeElapsed:r.takeElapsed,
+           spoiled:r.spoiled, spoilReason:r.spoilReason, slow:r.slow, workOrderRead };
 }
 
 function tickMutation(dt){
@@ -4379,6 +4737,16 @@ function tickPresence(dt){
   PRES.updatePresence(dt, px, py, onPresenceCatch);
   // Its nearness bleeds into the room tone: the floor thickens as it closes.
   RT.setBed(ROOM_TONE.bedGain * (1 + PRES.pressure(px,py)*2.6), 0.4);
+
+  // The first time it gets close, he has a think about it. The world does not
+  // stop for that — it is still coming, and the three things he can tell
+  // himself take exactly as long as it takes to arrive. But we will not open
+  // the tree with it already on top of him: that is an ambush, not a thought.
+  if(!thoughtHad('hush') && !scenes.blocksInput()
+     && PRES.pressure(px,py) > 0.45
+     && PRES.distanceTo(px,py) > PRES.PRESENCE.recoilCells){
+    think('hush', HUSH);
+  }
 }
 
 function tickRecorder(dt){
@@ -4392,6 +4760,9 @@ function tickRecorder(dt){
     OBJ.clearWaypoint();
     saveCommit({ rec:REC.saveRecState() });
     toggleRecorder();
+    // The second transmission is bought with the first take, and it is the
+    // last thing the radio ever does for you.
+    once('radio-2', ()=>setTimeout(()=>radioTransmit(1), 2600));
   } else if(st==='spoiled'){
     STAB.reportThreat();
     // Let the player watch the meter die for a beat before it closes.
@@ -4403,6 +4774,13 @@ let spoilPendingMs=0;
 let movingTimer=null;
 const playerKeys=new Set(['master']);   // the standard set. it does not open everything.
 let bootTextCache='';
+function clearFieldReadouts(){
+  CATALOG_EL.textContent='';
+  CATALOG_EL.style.display='none';
+  STATUS_EL.textContent='';
+  if(SENSE_EL) SENSE_EL.innerHTML='';
+  if(KEYMETER_EL){ KEYMETER_EL.innerHTML=''; KEYMETER_EL.style.display='none'; }
+}
 function drawBootText(){
   if(!bootTextCache) return;
   const lines=bootTextCache.split('\n');
@@ -4473,15 +4851,19 @@ function requestFullscreenSafe(){
 function drawStoryHud(){
   if(!storyMode || scenes.blocksWorld()) return;
   const { cols, rows }=uiSize();
-  const msg=eventQueue[eventQueue.length-1];
-  if(msg) uiText(2, rows-2, msg.slice(0,110), 't-trail-2', 0.55);
+  // No system text. He speaks, the radio speaks, or nothing does.
+  SPEECH.drawSpeech();
 
   const rec=REC.recState();
   if(!rec.light && !rec.recording) uiText(2, 2, '(dark)', 't-trail-3', 0.5);
 
   // A very shitty map: you, and a waypoint. No walls, no routes.
   const wp=OBJ.waypoint();
-  drawMinimap(px, py, wp, { label: roomLabel(currentWorld()) });
+  const pst=PRES.isActive() ? PRES.presenceState() : null;
+  drawMinimap(px, py, wp, {
+    label: roomLabel(currentWorld()),
+    presence: pst ? { x:pst.x, y:pst.y, alpha:0.45 + PRES.dread(px, py)*0.5 } : null,
+  });
 
   // The compass line, the way a person estimates: a bearing and a vague sense.
   const bear=OBJ.bearingTo(px,py);
@@ -4501,14 +4883,31 @@ function drawStoryHud(){
 
   // The verbs must be discoverable. A player should never have to guess that
   // the recorder exists in a game about recording.
-  if(!rec.recording){
-    const hint = rec.light
-      ? '[f] light off   [r] record   [shift] slow   [esc] pause'
-      : '[f] light       [r] record   [shift] slow   [esc] pause';
+  // While he is setting up, the corner shows only the one key the room is
+  // asking for. Everything else is learned by having wanted it.
+  const teach=TUT.tutorialPrompt();
+  if(teach){
+    uiText(Math.max(2, Math.floor((cols-teach.length)/2)), rows-2, teach, 't-key', 0.7);
+  } else if(!rec.recording){
+    const back = PB.hasTake(currentWorld()) ? '   [p] play back' : '';
+    const hint = (rec.light
+      ? '[f] light off   [r] record   [b] bag'
+      : '[f] light       [r] record   [b] bag') + back + '   [esc] pause';
     uiText(Math.max(2, cols - hint.length - 2), rows-2, hint, 't-trail-3', 0.45);
   } else {
     const hint='[r] stop recording';
     uiText(Math.max(2, cols - hint.length - 2), rows-2, hint, 't-trail-3', 0.45);
+  }
+
+  // Playback has its own meter, and it is deliberately identical to the take
+  // meter. The one difference is that this one is safe, and the player has to
+  // remember which one they are looking at.
+  if(PB.isPlaying()){
+    const w=Math.min(46, cols-8);
+    const x=Math.floor((cols-w)/2), y=rows-5;
+    const filled=Math.round(PB.progress()*(w-2));
+    uiText(x, y-1, '▶ PLAYBACK', 't-trail-2');
+    for(let i=0;i<w-2;i++) uiText(x+1+i, y, i<filled ? '▓' : '░', 't-trail-2', i<filled ? 0.8 : 0.3);
   }
 
   if(rec.recording){
@@ -4578,7 +4977,43 @@ function installProbe(){
     stabThreat:()=>STAB.reportThreat(),
     setReduceDread:(v)=>{ const st=getSave(); st.settings.reduceDread=!!v; saveCommit({settings:st.settings}); },
     obj:()=>({wp:OBJ.waypoint(), target:OBJ.targetRoom(), read:OBJ.pagesRead()}),
-    placePage:(dx,dy,room)=>OBJ.placePage(px+dx,py+dy,room||'the_tub'),
+    // Its own id namespace: an auto id would collide with the previous
+    // recordist's sheets and a test page would inherit his waypoint.
+    placePage:(dx,dy,room)=>OBJ.placePage(px+dx,py+dy,room||'the_tub',
+      `probe-${OBJ.allPages().length+1}`),
+    // ── M4.2: the reader, the radio, the tape ──────────────────────────────
+    scene:()=>scenes.top()?.id||null,
+    read:()=>interact(),
+    // Whatever conversation is on top, as data: the line, who says it, how much
+    // of it has been revealed, and what you are being offered.
+    convo:()=>{ const v=scenes.top()?.view?.(); if(!v) return null;
+      return { speaker:v.speaker, who:v.who, text:v.line?.text||'', typed:v.typed,
+               typing:v.typing, node:v.nodeId,
+               pending:v.pending && { kind:v.pending.kind, index:v.pending.index,
+                                      options:v.pending.options.map(o=>o.text) } }; },
+    // ── thought trees ──────────────────────────────────────────────────────
+    thoughts:()=>({ had:saveThoughtState().had,
+                    confession:{ kind:flagGet('confession.kind')||null,
+                                 value:flagGet('confession.value')||null } }),
+    think:(id)=>{ const T={'post-door':POST_DOOR,'first-take':FIRST_TAKE,hush:HUSH,'radio-dead':RADIO_DEAD}[id];
+      return !!(T && think(id, T, {force:true, startAt: id==='post-door' ? (prologueKnowledgeFrame()||'self') : 'start'})); },
+    speech:()=>{ const s=SPEECH.speaking(); return s && {who:s.who, text:s.text}; },
+    hush:()=>SPEECH.clearSpeech(),
+    tut:()=>({active:TUT.tutorialActive(), step:TUT.tutorialStep(), prompt:TUT.tutorialPrompt()}),
+    tutSkip:()=>TUT.skipTutorial(),
+    radio:()=>RADIO.radioState(),
+    radioTransmit:(i)=>radioTransmit(i),
+    radioKill:()=>RADIO.killRadio(),
+    radioTune:(o)=>Object.assign(RADIO.RADIO,o),
+    radioTick:()=>RADIO.tickRadio(0.016,{expectation:STAB.expectation(),px,py}),
+    // Forty-five seconds is the game. It is not the test.
+    tuneRoomTone:(o)=>Object.assign(ROOM_TONE,o),
+    take:(room)=>{ const t=PB.takeFor(room||currentWorld());
+      return t && { sealed:t.sealed, audible:(t.audible||[]).map(([id,g])=>({id,g})),
+                    guest:t.guest?t.guest.idx:null }; },
+    playback:()=>({playing:PB.isPlaying(), progress:PB.progress()}),
+    play:()=>playCurrentTake(),
+    stopPlay:()=>PB.stopPlayback(),
     // Why did a step not happen? Report every gate, in order.
     why:()=>{
       const [dx,dy]=arrowDelta();
@@ -4595,6 +5030,8 @@ function installProbe(){
       };
     },
     audible:()=>{ const a=audibleCandidates(); return {n:a.audible.length, r:audioRadius(), poly:audioPoly(), chunks:chunks.length, paused, depth, tpl:worldTemplates.size, ctx:!!actx}; },
+    fieldAudio:()=>({ voices:voices.size, worldLayer:!!worldLayerVoice,
+      ambient:ambientDrone?.target || 0, suppressed:sampleFieldSuppressed() }),
   };
 }
 
@@ -4743,7 +5180,7 @@ function render3d(){
     door,
     hush: (storyMode && PRES.isActive())
       ? {x:PRES.presenceState().x, y:PRES.presenceState().y,
-         strength: 0.55 + PRES.pressure(px,py)*0.45}
+         strength: 0.65 + PRES.dread(px,py)*0.55}
       : (hush.active?{x:hush.x, y:hush.y, strength:1}:null),
     audio:clamp(voiceSum/3, 0, 1),
     light: storyMode ? REC.lightOn() : true,
@@ -4867,7 +5304,7 @@ function enterRogue(){
   }catch(_){}
   if(storyMode) disableOnboardingForSession();
   updateOnboardingButton();
-  startAmbientDroneAt(currentAmbientTarget());
+  if(!sampleFieldSuppressed()) startAmbientDroneAt(currentAmbientTarget());
   updateAudio();
   if(!storyMode) pushEvent('// onboarding: advance forward into the field.');
   // Aggressive initial focus lock for the first second of onboarding.
@@ -4917,14 +5354,23 @@ function onKey(e){
       e.preventDefault();
       const on=REC.toggleLight();
       CUES.playCue(CUES.CUE.light, {gain:0.7, rate: on ? 1 : 0.92});
-      pushEvent(on ? '// light on. it can see that.' : '// light off.');
+      // He says it the first time. After that a man who flicks his own torch
+      // on does not narrate it, and neither do we.
+      once(on ? 'said-light-on' : 'said-light-off', ()=>SPEECH.say(on ? framedLine('lightOn', LINES.lightOn) : LINES.lightOff));
       return;
     }
     if(bare && is('KeyR','r')){
       e.preventDefault();
-      toggleRecorder();
+      if(!firstTakeIntercept()) toggleRecorder();
       return;
     }
+    // [space] hurries the line he is currently thinking. It never skips one.
+    if(bare && (e.code==='Space' || e.key===' ') && SPEECH.isSpeaking()){
+      e.preventDefault(); SPEECH.skipSpeech(); return;
+    }
+    if(bare && is('KeyB','b')){ e.preventDefault(); openBag(); return; }
+    if(bare && is('KeyE','e')){ e.preventDefault(); interact(); return; }
+    if(bare && is('KeyP','p')){ e.preventDefault(); playCurrentTake(); return; }
     if(e.key==='Shift'){ REC.setSlow(true); return; }
   }
   // Talk to whatever is in front of you. (M4 gives this real NPCs; for now

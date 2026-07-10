@@ -33,6 +33,28 @@ export function mountTuner(hostEl, getDiffusion) {
   const h = (html) => { const d = document.createElement('div'); d.innerHTML = html; return d; };
   panel.appendChild(h('<div style="color:#e6ecf2;letter-spacing:.12em;margin-bottom:8px">LENS TUNER <span style="color:#5c6672">[t]</span></div>'));
 
+  const bypassRow = document.createElement('div');
+  bypassRow.style.cssText = 'display:flex;gap:4px;margin-bottom:10px';
+  const bypassBtn = document.createElement('button');
+  bypassBtn.type = 'button';
+  bypassBtn.style.cssText = 'flex:1;font:inherit;color:#9fb8a5;background:#12151a;border:1px solid #333a44;padding:4px 7px;cursor:pointer';
+  function syncBypass() {
+    const d = getDiffusion();
+    const off = !!(d?.stats?.bypassed || d?.isBypassed?.());
+    bypassBtn.textContent = off ? 'Stable Diffusion / Modal: off' : 'Stable Diffusion / Modal: on';
+    bypassBtn.style.color = off ? '#d7a37d' : '#9fb8a5';
+  }
+  bypassBtn.onclick = () => {
+    const d = getDiffusion();
+    if (!d?.setBypass) { status('diffusion bypass unavailable'); return; }
+    const next = !d.isBypassed?.() && !d.stats?.bypassed;
+    d.setBypass(next);
+    syncBypass();
+    status(next ? 'Modal rendering calls bypassed' : 'Modal rendering calls resumed');
+  };
+  bypassRow.appendChild(bypassBtn);
+  panel.appendChild(bypassRow);
+
   // presets
   const presetRow = document.createElement('div');
   presetRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px';
@@ -130,9 +152,12 @@ export function mountTuner(hostEl, getDiffusion) {
       rows[f.key].input.value = state[f.key];
       rows[f.key].val.textContent = state[f.key];
     }
+    syncBypass();
   }
 
   hostEl.appendChild(panel);
+  syncBypass();
+  setInterval(syncBypass, 1000);
   // Don't let the game's key handler eat typing in the textarea.
   panel.addEventListener('keydown', (e) => e.stopPropagation());
 

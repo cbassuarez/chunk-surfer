@@ -21,8 +21,10 @@
 export const conservatory = {
   width: 116,
   height: 80,
-  // The service entrance. A bag, a work order, and a radio that will fail.
-  spawn: { x: 65, y: 20 },
+  widenCorridors: true,
+  // Inside the loading dock, service door at your back. A bag, a work order,
+  // and a radio that will fail.
+  spawn: { x: 65, y: 10 },
   doors: [
     { x: 25, y: 12, key: 'master' },   // studio B3 → the plant room
     { x: 65, y: 16, key: 'master' },   // the dock's inner door

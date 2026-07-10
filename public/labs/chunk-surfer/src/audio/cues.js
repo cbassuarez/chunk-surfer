@@ -62,4 +62,6 @@ export function isLoaded(url) { return buffers.has(url); }
 export const CUE = {
   light: '/labs/chunk-surfer/audio/light.mp3',
   recorder: '/labs/chunk-surfer/audio/recorder.mp3',
+  door: '/labs/chunk-surfer/audio/door_close.mp3',
+  bag: '/labs/chunk-surfer/audio/bag_rummage.mp3',
 };

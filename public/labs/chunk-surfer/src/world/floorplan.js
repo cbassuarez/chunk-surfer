@@ -42,10 +42,11 @@ export function planSize() { return { w: plan.w, h: plan.h }; }
 
 const idx = (x, y) => y * plan.w + x;
 const inside = (x, y) => x >= 0 && y >= 0 && x < plan.w && y < plan.h;
+const isRoomZone = (z) => z !== ZONE.none && z !== ZONE.stair;
 
 // ── compile ──────────────────────────────────────────────────────────────────
 // `levels` is [{ rows:[string], origin:{x,y}, base:number, stairs?:[...] }]
-export function compile(levels, { width, height } = {}) {
+export function compile(levels, { width, height, widenCorridors = false } = {}) {
   const w = width || Math.max(...levels.map((l) => l.origin.x + Math.max(...l.rows.map((r) => r.length))));
   const h = height || Math.max(...levels.map((l) => l.origin.y + l.rows.length));
 
@@ -82,6 +83,8 @@ export function compile(levels, { width, height } = {}) {
     for (const s of level.stairs || []) rampStair(s);
   }
 
+  if (widenCorridors) widenCorridorRuns();
+
   plan.rgba = new Uint8Array(w * h * 4);
   for (let i = 0; i < w * h; i++) {
     const s = plan.solid[i];
@@ -93,6 +96,54 @@ export function compile(levels, { width, height } = {}) {
 
   plan.loaded = true;
   return plan;
+}
+
+function widenCorridorRuns() {
+  const originalSolid = plan.solid.slice();
+  const originalOpen = (x, y) => inside(x, y) && !originalSolid[idx(x, y)];
+  const corridorSource = (x, y) => {
+    if (!inside(x, y)) return false;
+    const i = idx(x, y);
+    return !originalSolid[i]
+      && plan.zone[i] === ZONE.none
+      && (plan.flags[i] & (F.DOOR | F.BRICKED | F.STAIR)) === 0;
+  };
+  const requests = [];
+  for (let y = 1; y < plan.h - 1; y++) for (let x = 1; x < plan.w - 1; x++) {
+    if (!corridorSource(x, y)) continue;
+    const left = originalOpen(x - 1, y), right = originalOpen(x + 1, y);
+    const up = originalOpen(x, y - 1), down = originalOpen(x, y + 1);
+    const src = idx(x, y);
+    if ((left || right) && !up && !down) {
+      requests.push([x, y - 1, src], [x, y + 1, src]);
+    } else if ((up || down) && !left && !right) {
+      requests.push([x - 1, y, src], [x + 1, y, src]);
+    }
+  }
+  for (const [x, y, src] of requests) openCorridorShoulder(x, y, src, originalSolid);
+}
+
+function touchesRoomOrDoor(x, y) {
+  for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    const nx = x + dx, ny = y + dy;
+    if (!inside(nx, ny)) continue;
+    const i = idx(nx, ny);
+    if (plan.solid[i]) continue;
+    if (isRoomZone(plan.zone[i]) || (plan.flags[i] & (F.DOOR | F.BRICKED))) return true;
+  }
+  return false;
+}
+
+function openCorridorShoulder(x, y, src, originalSolid) {
+  if (!inside(x, y)) return;
+  const i = idx(x, y);
+  if (!originalSolid[i] || !plan.solid[i]) return;
+  if (touchesRoomOrDoor(x, y)) return;
+  plan.solid[i] = 0;
+  plan.floor[i] = plan.floor[src];
+  plan.ceil[i] = plan.ceil[src];
+  plan.flags[i] = plan.flags[src] & F.MUTABLE;
+  plan.zone[i] = ZONE.none;
 }
 
 // Interpolate floor/ceiling along a stair run so the risers are even.
