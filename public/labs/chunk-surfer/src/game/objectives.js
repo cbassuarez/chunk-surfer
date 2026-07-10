@@ -80,7 +80,8 @@ export function bearingTo(px, py) {
 // `rooms` is the client's list, in the client's order. `notes` are the pages
 // picked up so far. `hasTake` and `label` come from the caller, because this
 // module knows nothing about audio or about English.
-export function objectives({ rooms = [], notes = [], hasTake = () => false, label = (r) => r } = {}) {
+export function objectives({ rooms = [], notes = [], hasTake = () => false, label = (r) => r,
+                             stamp = () => '' } = {}) {
   const filed = new Map(rooms.map((r) => [r, []]));
   const unfiled = [];
   for (const n of notes) {
@@ -94,6 +95,8 @@ export function objectives({ rooms = [], notes = [], hasTake = () => false, labe
       notes: filed.get(roomId) || [],
       recorded: !!hasTake(roomId),
       marked: state.target === roomId,
+      // What the file says it was taken at, as far as anyone can still read it.
+      stamp: hasTake(roomId) ? stamp(roomId) : '',
     })),
     unfiled,
     done: rooms.filter((r) => hasTake(r)).length,

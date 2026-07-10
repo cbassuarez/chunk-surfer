@@ -45,6 +45,7 @@ import * as OBJ from './game/objectives.js';
 import * as DOC from './game/document.js';
 import * as RADIO from './game/radio.js';
 import * as PB from './game/playback.js';
+import { takeStamp, WORK_ORDER_STAMP } from './game/clock.js';
 import { drawMinimap } from './render/minimap.js';
 import { roomLabel, roomToneCharacter } from './audio/manifest-map.js';
 import * as SPEECH from './game/speech.js';
@@ -56,6 +57,7 @@ import { makeThoughtScene, thoughtHad, markThought,
 import { WORK_ORDER, TRANSMISSIONS, SQUELCH_LINES,
          PAGES, ROOM_CELLS, TARGETS, COLD_OPEN, AFTER_TITLE, COLD_OPEN_DIALOGUE,
          POST_DOOR, LEVEL_CHECK, FIRST_TAKE, HUSH, RADIO_DEAD,
+         BENT_RIG, PLANT_RIG_CELL,
          PROLOGUE_THOUGHTS, LINES, guestLines } from './data/conservatory-script.js';
 export { fx } from './render/canvas.js';
 
@@ -4127,6 +4129,7 @@ function loop(){
         tickStabs(dt);
         tickPages();
         tickRadio(dt);
+        tickRig();
         tickMutation(dt);
         maybeWakeLens();
       }
@@ -4285,11 +4288,19 @@ function enterStory(){
   PB.playbackInit({ chunkById:chunkAt, pickGuest,
     // It heard what he said in the dark, eleven seconds after the door went.
     // This is where it gives it back.
-    onGuest:()=>{
+    onGuest:(room)=>{
       CR.fx.shake(0.35, 900);
       STAB.reportThreat();
+      // LISTENING IS THE WOUND. Recording a room costs you nothing. Hearing it
+      // back is what took the last man: four rooms, and then the chapel. The
+      // count only ever goes up, and nobody is ever told it exists.
+      const first=!flagTest(`listened.${room}`);
+      if(first) flagApply([`listened.${room}`, `listened.count=${(Number(flagGet('listened.count'))||0)+1}`]);
+      const n=Number(flagGet('listened.count'))||1;
+      if(n>=5) flagApply(['listened.all']);
       SPEECH.say(LINES.guest);
-      SPEECH.sayAll(guestLines(flagGet('confession.kind'), flagGet('confession.value')));
+      SPEECH.sayAll(guestLines(flagGet('confession.kind'), flagGet('confession.value'), n));
+      saveCommit({ flags:getSave().flags });
     } });
   if(chunks.length) STAB.buildStabPool(chunks);
   const qp=new URLSearchParams(location.search);
@@ -4652,7 +4663,8 @@ function markRoom(room){
 // to do first.
 function bagNotes(){
   const read=new Set(OBJ.objState().read);
-  const notes=[{ ...WORK_ORDER, title:WORK_ORDER.title, room:'main_b3' }];
+  // Print does not rot. His hand does, and so does yours.
+  const notes=[{ ...WORK_ORDER, title:`${WORK_ORDER.title}  ·  ${WORK_ORDER_STAMP}`, room:'main_b3' }];
   for(const pg of PAGES){
     if(read.has(pg.id)) notes.push(pg);
   }
@@ -4660,11 +4672,15 @@ function bagNotes(){
 }
 
 function bagJob(){
+  const takes=REC.recState().takes;
   return OBJ.objectives({
     rooms: TARGETS,
     notes: bagNotes(),
     hasTake: (r)=>REC.hasTake(r),
     label: roomLabel,
+    // The recorder wrote a timestamp on every file and the recorder was right.
+    // What rots is the reading of it. Nobody is ever told why. See game/clock.js.
+    stamp: (r)=>takeStamp(takes.indexOf(r)),
   });
 }
 
@@ -4754,6 +4770,15 @@ function playCurrentTake(){
 function tickPlayback(){
   if(!storyMode) return;
   if(PB.tickPlayback()==='ended') SPEECH.say(LINES.playbackEnd);
+}
+
+// The plant room has no objective, no take, and no reason to walk into it. The
+// only way out that does not cost you everything is on the floor of it.
+function tickRig(){
+  if(!storyMode || planName!=='conservatory') return;
+  if(thoughtHad('bent-rig') || scenes.blocksInput()) return;
+  if(Math.hypot(PLANT_RIG_CELL.x-px, PLANT_RIG_CELL.y-py) > 1.6) return;
+  think('bent-rig', BENT_RIG, { onDone:()=>saveCommit({ flags:getSave().flags }) });
 }
 
 // Past the inner door, the building starts dreaming. `py > 15` is the same
@@ -5058,8 +5083,13 @@ function installProbe(){
     // ── thought trees ──────────────────────────────────────────────────────
     thoughts:()=>({ had:saveThoughtState().had,
                     confession:{ kind:flagGet('confession.kind')||null,
-                                 value:flagGet('confession.value')||null } }),
-    think:(id)=>{ const T={'post-door':POST_DOOR,'first-take':FIRST_TAKE,hush:HUSH,'radio-dead':RADIO_DEAD}[id];
+                                 value:flagGet('confession.value')||null },
+                    // The two numbers that decide how this night ends.
+                    interface:!!flagTest('has.interface'),
+                    listened:Number(flagGet('listened.count'))||0 }),
+    job:()=>bagJob(),
+    think:(id)=>{ const T={'post-door':POST_DOOR,'level-check':LEVEL_CHECK,'first-take':FIRST_TAKE,
+                           hush:HUSH,'radio-dead':RADIO_DEAD,'bent-rig':BENT_RIG}[id];
       return !!(T && think(id, T, {force:true, startAt: id==='post-door' ? (prologueKnowledgeFrame()||'self') : 'start'})); },
     speech:()=>{ const s=SPEECH.speaking(); return s && {who:s.who, text:s.text}; },
     hush:()=>SPEECH.clearSpeech(),

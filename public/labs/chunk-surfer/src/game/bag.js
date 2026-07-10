@@ -138,6 +138,9 @@ export function makeBagScene({
           const st = r.room.recorded ? '✓ done' : r.room.marked ? 'marked' : '';
           const cls = r.room.recorded ? 't-key' : (on ? 't-chunk-on' : 't-trail-1');
           uiText(x + 3, yy, `${cursor} ${r.label}`, cls, r.room.recorded ? 0.8 : on ? 1 : 0.78);
+          // The time the file says it was taken at. It is right. You are the
+          // one who can no longer read it.
+          if (r.room.stamp) uiText(x + w - 14 - r.room.stamp.length, yy, r.room.stamp, 't-trail-3', 0.5);
           if (st) uiText(x + w - 3 - st.length, yy, st, r.room.recorded ? 't-key' : 't-trail-2', 0.7);
           yy++;
           continue;

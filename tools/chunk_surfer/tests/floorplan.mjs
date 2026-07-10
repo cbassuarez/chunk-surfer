@@ -11,7 +11,7 @@
 
 import { testbed } from '../../../public/labs/chunk-surfer/src/data/floorplan/testbed.js';
 import { conservatory } from '../../../public/labs/chunk-surfer/src/data/floorplan/conservatory.js';
-import { PAGES, ROOM_CELLS } from '../../../public/labs/chunk-surfer/src/data/conservatory-script.js';
+import { PAGES, ROOM_CELLS, PLANT_RIG_CELL } from '../../../public/labs/chunk-surfer/src/data/conservatory-script.js';
 import * as FP from '../../../public/labs/chunk-surfer/src/world/floorplan.js';
 import { F, ZONE } from '../../../public/labs/chunk-surfer/src/data/floorplan/legend.js';
 
@@ -189,6 +189,15 @@ ck('every take can be made where the waypoint points', strandedRooms.length === 
 const wrongZone = Object.entries(ROOM_CELLS).filter(([id, c]) => FP.worldAt(c.x, c.y) !== id)
   .map(([id, c]) => `${id} is actually ${FP.worldAt(c.x, c.y)}`);
 ck('...and the waypoint points at the room it names', wrongZone.length === 0, wrongZone.join('; '));
+
+// The only way out that does not cost you everything is on the floor of a room
+// the work order never mentions. It has to be a room you can actually stand in.
+ck('the bent rig lies somewhere you can walk',
+   walked.has(`${PLANT_RIG_CELL.x},${PLANT_RIG_CELL.y}`), `${PLANT_RIG_CELL.x},${PLANT_RIG_CELL.y}`);
+ck('...in the plant room, which has no objective on it',
+   FP.zoneAt(PLANT_RIG_CELL.x, PLANT_RIG_CELL.y) === ZONE.plant
+   && !Object.values(ROOM_CELLS).some((c) => c.x === PLANT_RIG_CELL.x && c.y === PLANT_RIG_CELL.y),
+   `zone=${FP.zoneAt(PLANT_RIG_CELL.x, PLANT_RIG_CELL.y)}`);
 
 let croomMutable = 0;
 for (let i = 0; i < cp.w * cp.h; i++) {

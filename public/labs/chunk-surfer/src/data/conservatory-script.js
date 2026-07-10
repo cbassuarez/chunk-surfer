@@ -189,8 +189,8 @@ export const COLD_OPEN_DIALOGUE = {
   'order.last': {
     speaker: 'THE WORK ORDER',
     lines: [
-      { who: 'you', text: '"The last contractor delivered four of the five. We have paid his invoice in full."' },
-      { who: 'you', text: 'Four out of five.' },
+      { who: 'you', text: '"The prior contractor delivered four accepted room tones. The packet was settled for four."' },
+      { who: 'you', text: 'Settled for four. So he got paid, and he stopped.' },
     ],
     choices: [
       { text: 'read that sentence again', goto: 'order.last.paid' },
@@ -200,10 +200,11 @@ export const COLD_OPEN_DIALOGUE = {
   'order.last.paid': {
     speaker: 'THE WORK ORDER',
     lines: [
-      { who: 'you', text: '"We have paid his invoice in full."' },
-      { who: 'you', text: 'Nobody pays for four fifths of anything. Not once, not ever, not without a phone call first.' },
-      { who: 'you', text: "That's a sentence written by somebody who did not want to write a longer one." },
-      { who: 'you', text: 'And then they sent it to me, in writing, before I said yes.' },
+      { who: 'you', text: '"The account remains open because five boxes were commissioned and five boxes close it."' },
+      { who: 'you', text: 'Nobody settles four fifths of anything. Not once, not ever, not without a phone call first.' },
+      { who: 'you', text: 'They paid a man for four rooms and then wrote to me about boxes.' },
+      { who: 'you', text: "That is a sentence by somebody who did not want to write a longer one." },
+      { who: 'direction', text: 'And they sent it to you, in writing, before you said yes.' },
     ],
     goto: 'order',
   },
@@ -734,6 +735,81 @@ export const FIRST_TAKE = {
   },
 };
 
+// ── the plant room ──────────────────────────────────────────────────────────
+// There is no objective here. There is no take here. The work order does not
+// name this room and there is no reason on earth to walk into it.
+//
+// Which is why the only way out that does not cost you everything is sitting on
+// the floor of it, with its lid off.
+//
+// He was bending it. You bend a machine by soldering across the parts that are
+// supposed to decide things — feeding the output back in before it has finished
+// being an output. You do it to make a machine sing. He was doing it to make
+// one stop singing, which is the same circuit run backwards, and he ran out of
+// night before he finished.
+//
+// Both options here are a choice the player will not understand for hours. Take
+// it and you have a second ending. Leave it and you have one.
+export const PLANT_RIG_CELL = { x: 38, y: 12 };
+
+export const BENT_RIG = {
+  start: {
+    speaker: 'THE PLANT ROOM',
+    lines: [
+      { who: 'direction', text: 'Chillers, a header tank, forty years of pipework lagged in something they do not let you touch any more.' },
+      { who: 'you', text: 'Nothing in here. No objective, no take, no reason to have come in.' },
+      { who: 'direction', text: 'The torch finds a recorder on the floor with its lid off.' },
+    ],
+    choices: [
+      { text: 'look at it', goto: 'look' },
+      { text: 'leave it. it is not yours.', goto: 'leave' },
+    ],
+  },
+  look: {
+    speaker: 'THE PLANT ROOM',
+    lines: [
+      { who: 'direction', text: 'The same model as yours, eleven years older. The lid is off and it has been off for a while.' },
+      { who: 'direction', text: 'Wires soldered across the converter. Out of the case, round, and back into its own input.' },
+      { who: 'you', text: 'He was bending it.' },
+      { who: 'you', text: 'You solder across the parts that decide things, and you feed the output back in before it has finished being an output.' },
+      { who: 'you', text: 'People do that to make a machine sing.' },
+    ],
+    choices: [
+      { text: 'why would he do that here?', goto: 'why' },
+      { text: 'take it', goto: 'take', set: ['has.interface'] },
+      { text: 'leave it', goto: 'leave' },
+    ],
+  },
+  why: {
+    speaker: 'THE PLANT ROOM',
+    lines: [
+      { who: 'you', text: 'Same circuit, run backwards, makes one stop.' },
+      { who: 'you', text: 'You would only build that if there were something in the signal you wanted out of the signal.' },
+      { who: 'direction', text: 'The solder on the last joint is grey and cracked. He did not have time to reflow it.' },
+      { who: 'you', text: 'He ran out of night.' },
+    ],
+    choices: [
+      { text: 'take it', goto: 'take', set: ['has.interface'] },
+      { text: 'leave it', goto: 'leave' },
+    ],
+  },
+  take: {
+    speaker: 'THE PLANT ROOM',
+    lines: [
+      { who: 'direction', text: 'It goes in the bag, against the work order, where it is the heaviest thing you are carrying.' },
+      { who: 'you', text: 'I do not know what I would do with it.' },
+      { who: 'direction', text: 'That is true when he says it.' },
+    ],
+  },
+  leave: {
+    speaker: 'THE PLANT ROOM',
+    lines: [
+      { who: 'you', text: 'Not mine. And I have four rooms to do.' },
+      { who: 'direction', text: 'You leave it exactly where he left it, which is a thing you are good at.' },
+    ],
+  },
+};
+
 // ── the first time it gets close ────────────────────────────────────────────
 // Nothing here has a mechanical effect. The world is running underneath: it is
 // still coming, and the three things he can tell himself take exactly as long
@@ -1123,35 +1199,63 @@ export const LINES = {
 // same four words, three times, at an identical level. `tape.run.again` already
 // taught the player that a voice in a room is never the same twice. So this is
 // not a voice in a room.
-export function guestLines(kind, value) {
+// LISTENING IS THE WOUND, and the game has never said so.
+//
+// Recording a room does nothing to you. Playing it back does. The previous
+// recordist listened to four of these rooms and then went up to the chapel and
+// listened to the fifth, and that is the entire mechanism of what happened to
+// him — not the takes, not the building, not a deed in his past. He heard all
+// five. The thing in the signal only needs an ear that has heard all of it.
+//
+// So `n` is how many rooms the player has now played back, and it is the only
+// number in this game that goes one way. The player is never told. They are
+// simply allowed to press [p] as often as they like.
+export function guestLines(kind, value, n = 1) {
+  const under = n >= 4
+    ? { who: 'direction', text: 'It is not under the noise floor. It is at the level of the room, and it always was.' }
+    : n >= 2
+      ? { who: 'direction', text: 'Under the noise floor, and closer up than it was in the last room.' }
+      : { who: 'direction', text: 'Under the noise floor, coming up. Not a word. Then a word.' };
+
+  const after = n >= 5
+    ? [
+      { who: 'you', text: 'Five rooms. I have listened to five rooms.' },
+      { who: 'recordist', text: 'So did I.' },
+    ]
+    : [];
+
   if (kind === 'name' && value && value !== 'nobody') {
     return [
-      { who: 'direction', text: 'Under the noise floor, coming up. Not a word. Then a word.' },
+      under,
       { who: 'surfer', text: `...${value}?`, rate: 0.9 },
       { who: 'you', text: 'I said that name in a room with nobody in it.' },
+      ...after,
     ];
   }
   if (kind === 'name') {
     return [
-      { who: 'direction', text: 'Under the noise floor, coming up.' },
+      under,
       { who: 'surfer', text: 'Nobody is expecting you.', rate: 0.9 },
       { who: 'you', text: 'That is my sentence. That is my sentence with the ends taken off.' },
+      ...after,
     ];
   }
   if (kind === 'reason' || kind === 'feeling') {
     return [
-      { who: 'direction', text: 'Under the noise floor, coming up. Your own voice, at a level you did not record it at.' },
+      under,
       { who: 'surfer', text: 'You finish, and you thank it.', rate: 0.88 },
       { who: 'direction', text: 'And again, four seconds later, at exactly the same level.' },
       { who: 'you', text: 'A voice in a room is never the same twice.' },
+      ...after,
     ];
   }
   // He gave it nothing, so it uses the last man.
   return [
-    { who: 'direction', text: 'Under the noise floor, coming up.' },
+    under,
     { who: 'recordist', text: 'Take four. Clean.' },
     { who: 'recordist', text: 'Take four. Clean.' },
     { who: 'recordist', text: 'Take four. Clean.' },
     { who: 'you', text: 'Minus forty-one. Three times. Not one decibel between them.' },
+    ...after,
   ];
 }
