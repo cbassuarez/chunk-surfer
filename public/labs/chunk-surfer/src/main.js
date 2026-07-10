@@ -23,6 +23,7 @@ import { fft, analyze, biomeFrom } from './audio/analysis.js';
 import * as CR from './render/canvas.js';
 import * as R3 from './render/r3d.js';
 import * as FP from './world/floorplan.js';
+import * as MUT from './world/mutate.js';
 import * as scenes from './game/scenes.js';
 import { uiInit, uiClear, uiText, uiSize } from './render/ui.js';
 import { saveLoad, saveCommit, getSave, newGame, hasSave, metaCommit } from './game/save.js';
@@ -2895,6 +2896,8 @@ function step(dx,dy){
   if(storyMode){
     const level=REC.emitStepNoise(px, py);
     RT.footstep(level);
+    // Sound pins the building. Where you were loud, it stays honest.
+    if(usingPlan()) MUT.markHeard(px, py, Math.min(1, level*3));
   }
   // Tell the lens the world moved, so it may warp its feedback. Standing still
   // must look like standing still.
@@ -4083,6 +4086,7 @@ function loop(){
         tickPresence(dt);
         tickStabs(dt);
         tickPages();
+        tickMutation(dt);
       }
       if(RENDERER==='3d') render3d(); else renderMap();
       // Instrument readouts only exist in JUST SURF; in story mode they are
@@ -4205,6 +4209,7 @@ async function loadBuilding(){
     for(const d of data.doors||[]) FP.setDoorKey(d.x, d.y, d.key);
     const p=FP.floorplan();
     R3.r3dSetPlan(p.rgba, p.w, p.h);
+    MUT.mutateInit();
     revealAround(px,py);
     faceOpenDirection();
     pushEvent(`// ${which}: ${p.w}×${p.h} cells.`);
@@ -4347,6 +4352,25 @@ function tickPages(){
   pushEvent(`// a page. ${roomLabel(page.roomId)} still needs tone.`);
   STAB.reportRelief(0.3);    // finding something is a small exhale
   saveCommit({ obj:OBJ.saveObjState() });
+}
+
+function tickMutation(dt){
+  if(!usingPlan()) return;
+  MUT.decayHeard(dt);
+  const facing = RENDERER==='3d' ? R3.r3dDelta(1) : [0,-1];
+  const anchors = [];
+  const wp = OBJ.waypoint();
+  if(wp) anchors.push({x:wp.x, y:wp.y});
+  const home = FP.spawn();
+  if(home) anchors.push({x:home.x, y:home.y});
+  const change = MUT.tryMutate(performance.now(),
+    { px, py, facing, light: REC.lightOn() }, anchors);
+  if(change){
+    // Patch only what moved. The building is silent when it does this — the
+    // presence makes noise, the building does not. Keep them separate.
+    const p=FP.floorplan();
+    for(const c of [change.seal, change.open]) R3.r3dPatchPlan(p.rgba, c.x, c.y, 1, 1);
+  }
 }
 
 function tickPresence(dt){
@@ -4533,6 +4557,17 @@ function installProbe(){
     canStep:(ax,ay,bx,by)=>FP.canStep(ax,ay,bx,by,{keys:playerKeys}),
     floorH:()=>floorHere(),
     rgbaAt:(x,y)=>{ const p=FP.floorplan(); const i=(y*p.w+x)*4; return [...p.rgba.slice(i,i+4)]; },
+    heardAt:(x,y)=>MUT.heardAt(x,y),
+    mutStats:()=>MUT.mutateStats(),
+    mutTune:(o)=>Object.assign(MUT.MUTATE,o),
+    forceMutate:()=>{
+      const facing = RENDERER==='3d' ? R3.r3dDelta(1) : [0,-1];
+      const wp=OBJ.waypoint(); const home=FP.spawn();
+      const anchors=[]; if(wp) anchors.push({x:wp.x,y:wp.y}); if(home) anchors.push({x:home.x,y:home.y});
+      const c=MUT.tryMutate(performance.now()+1e9, {px,py,facing,light:REC.lightOn()}, anchors);
+      if(c){ const p=FP.floorplan(); for(const q of [c.seal,c.open]) R3.r3dPatchPlan(p.rgba,q.x,q.y,1,1); }
+      return c;
+    },
     facing:()=>R3.r3dDelta(1),
     stabs:()=>STAB.stabStats(),
     stabFire:(k)=>STAB.stab(k),

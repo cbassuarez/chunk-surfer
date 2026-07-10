@@ -16,7 +16,8 @@ against `npm run dev`. Silence, noise and dread are invisible, so these assert o
 | `stabs.mjs` | no stab in the quiet opening however safe you feel · TRUE stabs precede FALSE ones · threat suppresses stabs · cooldown is a hard floor · `reduceDread` silences them · pages set a waypoint |
 | `flicker.mjs` | adjacent-frame pixel delta with the camera still (regression: 1.54 → 0.36) |
 | `fps.mjs` | lens throughput standing and moving (target 8–12fps) |
-| `floorplan.mjs` | **pure Node, no browser.** heights round-trip into the texture the shader samples · rooms are never mutable · every stair riser is climbable by a body · bricked vs locked doors refuse you differently · the building is walkable spawn → chapel → back |
+| `floorplan.mjs` | **pure Node.** heights round-trip into the texture the shader samples · rooms are never mutable · every stair riser is climbable by a body · bricked vs locked doors refuse you differently · the building is walkable spawn → chapel → back. `--map` prints reachability, which is how you find a silently impassable building |
+| `mutate.mjs` | **pure Node.** the three disciplines, hammered over hundreds of forced mutations: rooms (and their walls) never move · spawn ↔ chapel connectivity survives every change · nothing changes in your lit view cone, at arm's reach, or where you made noise |
 
 Three of these encode rules that are easy to erode and expensive to relearn:
 the presence must hunt **sound**, a stab must never be **random**, and the
