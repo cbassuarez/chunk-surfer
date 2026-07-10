@@ -35,6 +35,10 @@ import * as REC from './game/recordist.js';
 import * as RT from './audio/roomtone.js';
 import * as PRES from './game/presence.js';
 import * as CUES from './audio/cues.js';
+import * as STAB from './game/stabs.js';
+import * as OBJ from './game/objectives.js';
+import { drawMinimap } from './render/minimap.js';
+import { roomLabel, roomToneCharacter } from './audio/manifest-map.js';
 export { fx } from './render/canvas.js';
 
 // M1: canvas glyph renderer is the default; `?renderer=dom` keeps the legacy
@@ -4066,6 +4070,8 @@ function loop(){
         updateHorrorTick();
         tickRecorder(dt);
         tickPresence(dt);
+        tickStabs(dt);
+        tickPages();
       }
       if(RENDERER==='3d') render3d(); else renderMap();
       // Instrument readouts only exist in JUST SURF; in story mode they are
@@ -4180,6 +4186,10 @@ function enterStory(){
   setGameChrome(true);
   REC.loadRecState(getSave().rec);
   PRES.loadPresenceState(getSave().presence);
+  OBJ.loadObjState(getSave().obj);
+  STAB.loadStabState(getSave().stabs);
+  STAB.stabsInit({ onStab:playStab });
+  if(chunks.length) STAB.buildStabPool(chunks);
   const qp=new URLSearchParams(location.search);
   // ?flags=a,b=2 — force story state for testing
   const flagParam=qp.get('flags');
@@ -4226,6 +4236,7 @@ function toggleRecorder(){
 // Contact. No death: a spoiled take, a lasting injury, and a presence that
 // knows you a little better than it did. The world is worse now, permanently.
 function onPresenceCatch(count){
+  STAB.reportThreat();
   const injuries=REC.injure();
   if(REC.isRecording()) REC.spoilTake('it found you');
   CR.fx.flash(140, 'rgba(10,10,12,0.9)');
@@ -4256,6 +4267,55 @@ function onPresenceCatch(count){
   saveCommit({ rec:REC.saveRecState(), presence:PRES.savePresenceState() });
 }
 
+// A stab is a catalogue transient played once, loud, and never explained.
+// It bypasses the proximity mix: it is not "a sound in the room", it is the
+// room speaking. FALSE stabs are quieter and further away — a thing you are
+// not sure you heard.
+function playStab(ev){
+  if(!actx || !master || !ev?.chunk?.buffer) return;
+  const now=actx.currentTime;
+  const src=actx.createBufferSource();
+  src.buffer=ev.chunk.buffer;
+  src.playbackRate.setValueAtTime(ev.kind==='false' ? 0.82 : 1.0, now);
+  const g=actx.createGain();
+  const peak = ev.kind==='false' ? 0.22 : 0.62;
+  g.gain.setValueAtTime(0, now);
+  g.gain.linearRampToValueAtTime(peak, now+0.004);   // no attack. that is the point
+  g.gain.exponentialRampToValueAtTime(0.0004, now+ (ev.kind==='false'?0.5:0.9));
+  const pan=actx.createStereoPanner();
+  // behind you, or beside you. never in front.
+  pan.pan.setValueAtTime((Math.random()*2-1)*0.85, now);
+  src.connect(g); g.connect(pan); pan.connect(master);
+  src.start(now); src.stop(now+1.2);
+
+  if(ev.kind==='true'){
+    // Something really moved. The presence hears it too, and so should you.
+    CR.fx.shake(0.5, 180);
+    REC.emitNoise(0.5, px, py, 'something moved in the room');
+  } else {
+    CR.fx.glitch(0.4, 120);
+  }
+  pushEvent(ev.kind==='true' ? '// something moved.' : '// ...did you hear that?');
+}
+
+function tickStabs(dt){
+  if(!storyMode || !STAB.poolSize()) return;
+  const pressure = PRES.isActive() ? PRES.pressure(px,py) : 0;
+  STAB.updateStabs(dt, pressure);
+}
+
+// Pages: walk over one, read it, get a waypoint and a room to record.
+function tickPages(){
+  if(!storyMode) return;
+  const page=OBJ.tryPickup(px,py);
+  if(!page) return;
+  CUES.playCue(CUES.CUE.light, {gain:0.35, rate:1.4});
+  OBJ.setWaypoint(page.x + 40, page.y - 30, page.roomId);
+  pushEvent(`// a page. ${roomLabel(page.roomId)} still needs tone.`);
+  STAB.reportRelief(0.3);    // finding something is a small exhale
+  saveCommit({ obj:OBJ.saveObjState() });
+}
+
 function tickPresence(dt){
   if(!storyMode || !PRES.isActive()) return;
   PRES.updatePresence(dt, px, py, onPresenceCatch);
@@ -4270,9 +4330,12 @@ function tickRecorder(dt){
   if(st==='complete'){
     const room=worldIdAt(px,py);
     REC.addTake(room);
+    STAB.reportRelief(0.55);          // a clean take is the biggest exhale there is
+    OBJ.clearWaypoint();
     saveCommit({ rec:REC.saveRecState() });
     toggleRecorder();
   } else if(st==='spoiled'){
+    STAB.reportThreat();
     // Let the player watch the meter die for a beat before it closes.
     if(!spoilPendingMs) spoilPendingMs=performance.now()+900;
     else if(performance.now()>spoilPendingMs){ spoilPendingMs=0; toggleRecorder(); }
@@ -4343,6 +4406,18 @@ function drawStoryHud(){
 
   const rec=REC.recState();
   if(!rec.light && !rec.recording) uiText(2, 2, '(dark)', 't-trail-3', 0.5);
+
+  // A very shitty map: you, and a waypoint. No walls, no routes.
+  const wp=OBJ.waypoint();
+  drawMinimap(px, py, wp, { label: roomLabel(worldIdAt(px,py)) });
+
+  // The compass line, the way a person estimates: a bearing and a vague sense.
+  const bear=OBJ.bearingTo(px,py);
+  if(bear) uiText(2, 2 + (rec.light?0:1), `${roomLabel(OBJ.targetRoom())} lies ${bear.bearing} — ${bear.far}`, 't-trail-2', 0.6);
+
+  // Takes: the job, counted.
+  const takes=rec.takes.length;
+  uiText(2, 1, `takes ${takes}/5${rec.injuries?`   hurt ×${rec.injuries}`:''}`, takes?'t-key':'t-trail-3', 0.75);
   if(KEY_DEBUG){
     if(lastKeyDebug) uiText(2, 4, lastKeyDebug.slice(0,130), 't-key', 0.9);
     try{
@@ -4407,6 +4482,15 @@ function installProbe(){
     placePresence:(x,y)=>{ const st=PRES.presenceState(); st.active=true; st.x=x; st.y=y; },
     solid:(x,y)=>R3.r3dSolid(x,y),
     facing:()=>R3.r3dDelta(1),
+    stabs:()=>STAB.stabStats(),
+    stabFire:(k)=>STAB.stab(k),
+    stabPool:()=>STAB.poolSize(),
+    stabTune:(o)=>Object.assign(STAB.STABS,o),
+    stabRelief:(a)=>STAB.reportRelief(a),
+    stabThreat:()=>STAB.reportThreat(),
+    setReduceDread:(v)=>{ const st=getSave(); st.settings.reduceDread=!!v; saveCommit({settings:st.settings}); },
+    obj:()=>({wp:OBJ.waypoint(), target:OBJ.targetRoom(), read:OBJ.pagesRead()}),
+    placePage:(dx,dy,room)=>OBJ.placePage(px+dx,py+dy,room||'the_tub'),
     // Why did a step not happen? Report every gate, in order.
     why:()=>{
       const [dx,dy]=arrowDelta();
@@ -4619,6 +4703,7 @@ async function loadAll(){
   const worker=async()=>{while(qi<files.length)await fetchFile(files[qi++]);};
   await Promise.all(Array.from({length:CONCURRENCY},()=>worker()));
   allFilesLoaded=true;
+  if(storyMode) STAB.buildStabPool(chunks);
   if(inRogue){
     buildWorldTemplates();
     buildWorldDroneBanks();
