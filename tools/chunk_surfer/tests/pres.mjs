@@ -5,7 +5,7 @@ const errs=[]; p.on('pageerror',e=>errs.push(e.message));
 const key=async(k,ms=200)=>{ await p.keyboard.press(k); await new Promise(r=>setTimeout(r,ms)); };
 let pass=true; const check=(n,ok,x='')=>{ console.log(`${ok?'PASS':'FAIL'}  ${n}${x?'  '+x:''}`); if(!ok) pass=false; };
 
-await p.goto('http://localhost:5173/labs/chunk-surfer/index.html?mode=story&renderer=3d&at=0,8',{waitUntil:'domcontentloaded'});
+await p.goto('http://localhost:5173/labs/chunk-surfer/index.html?mode=story&renderer=3d&at=4,5',{waitUntil:'domcontentloaded'});
 await p.evaluate(()=>localStorage.clear()); await p.reload({waitUntil:'domcontentloaded'});
 await new Promise(r=>setTimeout(r,14000));
 let n=0; while(await p.evaluate(()=>window.__scenes.depth())>0 && n<40){ await key('Enter',120); n++; }

@@ -26,6 +26,21 @@ const BIOME_RGB = {
   pulse:     [0.47, 0.53, 0.47],
   resonance: [0.40, 0.53, 0.53],
 };
+// Zone → tint, indexed by the ZONE ids in data/floorplan/legend.js.
+// (none, dock, foyer, studio, natatorium, hall, practice, chapel, plant, stair)
+const ZONE_TINTS = new Float32Array([
+  0.60, 0.60, 0.58,   // none
+  0.62, 0.60, 0.55,   // dock: sodium and rust
+  0.72, 0.68, 0.62,   // foyer
+  0.67, 0.74, 0.63,   // studio B3
+  0.57, 0.69, 0.80,   // natatorium
+  0.79, 0.66, 0.90,   // concert hall
+  0.88, 0.73, 0.52,   // practice wing
+  0.88, 0.92, 1.00,   // chapel
+  0.55, 0.52, 0.48,   // plant room
+  0.58, 0.58, 0.60,   // stairs
+]);
+
 const WORLD_RGB = {
   main_b3:         [0.67, 0.74, 0.63],
   the_tub:         [0.57, 0.69, 0.80],
@@ -91,7 +106,19 @@ uniform vec3  uChunkC[${MAX_CHUNKS}]; // biome rgb
 uniform vec4  uKey;          // x, z, active, -
 uniform vec4  uDoor;
 uniform vec4  uHush;         // x, z, strength, -
+uniform sampler2D uPlan;     // the authored building: R=floor G=ceil B=flags A=zone
+uniform vec2  uPlanSize;
+uniform float uUsePlan;      // 0 = procedural lattice (JUST SURF), 1 = the conservatory
+uniform vec3  uZoneTint[10];
 out vec4 o;
+
+// Height encoding must match world/floorplan.js exactly.
+const float H_MIN = -8.0;
+const float H_RANGE = 32.0;
+const int FLAG_SOLID   = 1;
+const int FLAG_DOOR    = 2;
+const int FLAG_SKY     = 4;
+const int FLAG_BRICKED = 32;
 
 float hash01(float x, float y){ return fract(abs(sin(x*127.1 + y*311.7) * 43758.5)); }
 float noise2(vec2 p, float s, float seed){
@@ -133,6 +160,34 @@ bool solidCell(vec2 p){
   return true;
 }
 bool hasCeiling(vec2 p){ return !isExpanse(int(floor(p.x)), int(floor(p.y))); }
+
+// A cell of the world. In story mode it is read from the authored floorplan
+// texture — the SAME array JS collision reads, so the drawn wall and the solid
+// wall cannot disagree. In JUST SURF it is the old procedural lattice.
+struct Cell { bool solid; float f; float c; int flags; int zone; };
+
+Cell cellAtI(ivec2 p){
+  Cell r;
+  r.flags = 0; r.zone = 0;
+  if(uUsePlan < 0.5){
+    r.solid = solidCell(vec2(p) + 0.5);
+    r.f = 0.0;
+    r.c = hasCeiling(vec2(p) + 0.5) ? CEIL : 90.0;
+    return r;
+  }
+  if(p.x < 0 || p.y < 0 || p.x >= int(uPlanSize.x) || p.y >= int(uPlanSize.y)){
+    r.solid = true; r.f = 0.0; r.c = 0.0; r.flags = FLAG_SOLID;
+    return r;
+  }
+  vec4 t = texelFetch(uPlan, p, 0);
+  r.flags = int(t.b * 255.0 + 0.5);
+  r.solid = (r.flags & FLAG_SOLID) != 0;
+  r.f = t.r * H_RANGE + H_MIN;
+  r.c = t.g * H_RANGE + H_MIN;
+  r.zone = int(t.a * 255.0 + 0.5);
+  if((r.flags & FLAG_SKY) != 0) r.c = 90.0;
+  return r;
+}
 float worldIdx(vec2 p){
   float wx = p.x + (noise2(p, 0.006, 17.0) + 0.5*noise2(p, 0.015, 29.0)) * (uTile.x*0.95);
   float wy = p.y + (noise2(p, 0.007, 41.0) + 0.5*noise2(p, 0.018, 53.0)) * (uTile.y*0.95);
@@ -158,55 +213,72 @@ void main(){
   vec3 rd = normalize(fwd + uv.x*rgt*0.72 + uv.y*up*0.72);
   vec3 ro = uCam;
 
-  // DDA voxel traversal: exact wall faces, no sphere-march gaps. Floor and
-  // ceiling are planes, so they're solved analytically and compared per step.
-  const float MAXD = 78.0;
+  // SECTOR TRAVERSAL. Each cell carries its own floor and ceiling height, so a
+  // stair is a run of cells whose floors climb, and the chapel is a cell whose
+  // ceiling is eleven metres up. Doom solved this in 1993; the DDA below is the
+  // same idea with the ray clipped against the current cell's two planes, plus
+  // three kinds of wall at each boundary:
+  //
+  //   full  — the next cell is rock
+  //   riser — the next floor is above the ray (a step up, a stage, a kerb)
+  //   header— the next ceiling is below the ray (a lintel, a low duct)
+  //
+  // Wall normals come from the DDA's entry face, never from fract(pos): that
+  // was the salt-and-pepper flicker.
+  const float MAXD = 90.0;
   float tHit = -1.0;
-  int surf = 0;               // 1 wall · 2 floor · 3 ceiling
+  int surf = 0;                 // 1 wall · 2 floor · 3 ceiling
+  int hitZone = 0;
   vec3 n = vec3(0.0, 1.0, 0.0);
-
-  float tFloor = (rd.y < -1e-4) ? (0.0 - ro.y) / rd.y : 1e9;   // plane y=0
-  float tCeilP = (rd.y >  1e-4) ? (CEIL - ro.y) / rd.y : 1e9;  // plane y=CEIL
 
   ivec2 cell = ivec2(floor(ro.xz));
   vec2 drd = 1.0 / max(abs(rd.xz), vec2(1e-5));
   ivec2 stp = ivec2(rd.x < 0.0 ? -1 : 1, rd.z < 0.0 ? -1 : 1);
   vec2 sideT = (vec2(cell) + max(vec2(stp), 0.0) - ro.xz) / (rd.xz + 1e-9);
-  float tWall = -1.0;
-  float tCur = 0.0;
-  // Which face we entered the current cell through. The DDA knows this
-  // exactly; deriving it from fract(pos) at the boundary is numerically
-  // ambiguous and makes the normal flicker per pixel (salt-and-pepper walls).
-  bool enteredX = false;
-  vec3 wallN = vec3(0.0);
-  for(int i = 0; i < 128; i++){
-    if(tCur > MAXD) break;
-    // only wall cells count, and only where the ray is within the slab's span
-    if(solidCell(vec2(cell) + 0.5)){
-      float ty = ro.y + rd.y * tCur;
-      if(ty >= 0.0 && ty <= CEIL){
-        tWall = tCur;
-        wallN = enteredX ? vec3(float(-stp.x), 0.0, 0.0) : vec3(0.0, 0.0, float(-stp.y));
-        break;
+
+  Cell cur = cellAtI(cell);
+  float tEnter = 0.0;
+
+  for(int i = 0; i < 192; i++){
+    if(tEnter > MAXD) break;
+    bool xSide = sideT.x < sideT.y;
+    float tExit = min(sideT.x, sideT.y);
+
+    if(!cur.solid){
+      // the floor of the cell you are crossing
+      if(rd.y < -1e-4){
+        float tf = (cur.f - ro.y) / rd.y;
+        if(tf >= tEnter && tf <= tExit){
+          tHit = tf; surf = 2; n = vec3(0.0, 1.0, 0.0); hitZone = cur.zone; break;
+        }
+      }
+      // and its ceiling, unless it is open to the dark
+      if(rd.y > 1e-4 && (cur.flags & FLAG_SKY) == 0){
+        float tc = (cur.c - ro.y) / rd.y;
+        if(tc >= tEnter && tc <= tExit){
+          tHit = tc; surf = 3; n = vec3(0.0, -1.0, 0.0); hitZone = cur.zone; break;
+        }
       }
     }
-    bool xSide = sideT.x < sideT.y;
-    tCur = xSide ? sideT.x : sideT.y;
-    enteredX = xSide;
-    if(xSide){ sideT.x += drd.x; cell.x += stp.x; }
-    else     { sideT.y += drd.y; cell.y += stp.y; }
-  }
-  if(tWall < 0.0) tWall = 1e9;
 
-  // ceiling only exists over roofed cells; expanses are open to the sky
-  if(tCeilP < 1e8 && !hasCeiling((ro + rd * tCeilP).xz)) tCeilP = 1e9;
+    ivec2 nxt = xSide ? ivec2(cell.x + stp.x, cell.y) : ivec2(cell.x, cell.y + stp.y);
+    Cell nc = cellAtI(nxt);
+    float yB = ro.y + rd.y * tExit;
+    vec3 wn = xSide ? vec3(float(-stp.x), 0.0, 0.0) : vec3(0.0, 0.0, float(-stp.y));
 
-  float tBest = min(tWall, min(tFloor, tCeilP));
-  if(tBest < 1e8 && tBest <= MAXD){
-    tHit = tBest;
-    if(tBest == tWall){ surf = 1; n = wallN; }
-    else if(tBest == tFloor){ surf = 2; n = vec3(0.0, 1.0, 0.0); }
-    else { surf = 3; n = vec3(0.0, -1.0, 0.0); }
+    bool wall = false;
+    if(nc.solid){
+      wall = (yB >= cur.f - 0.001 && yB <= cur.c + 0.001);
+    } else {
+      if(yB < nc.f) wall = true;                                      // riser
+      else if(yB > nc.c && (nc.flags & FLAG_SKY) == 0) wall = true;   // header
+    }
+    if(wall && tExit <= MAXD){
+      tHit = tExit; surf = 1; n = wn; hitZone = nc.solid ? cur.zone : nc.zone; break;
+    }
+
+    cell = nxt; cur = nc; tEnter = tExit;
+    if(xSide) sideT.x += drd.x; else sideT.y += drd.y;
   }
 
   vec3 col;
@@ -218,8 +290,9 @@ void main(){
     col += texture(uRD, rd.xz * 0.4 + uTime * 0.004).g * 0.012;
   } else {
     vec3 pos = ro + rd * tHit;
-    float wid = worldIdx(pos.xz);
-    vec3 tint = uWorldTint[int(wid)];
+    // In the conservatory the tint comes from the room you are looking at; in
+    // JUST SURF it comes from the procedural world beneath your feet.
+    vec3 tint = (uUsePlan > 0.5) ? uZoneTint[hitZone] : uWorldTint[int(worldIdx(pos.xz))];
 
     // nearest-chunk biome blend + emissive glow
     vec3 biome = vec3(0.30, 0.36, 0.36);
@@ -353,6 +426,7 @@ let gl = null, canvas = null;
 let progRD, progMarch, progPost;
 let rdTexA, rdTexB, rdFboA, rdFboB, rdFlip = false, rdWarm = 0;
 let sceneTex, sceneFbo, fogTexture;
+let planTexture = null, planW = 0, planH = 0;
 let uniforms = {};
 let facing = 0; // 0=N(0,-1) 1=E 2=S 3=W
 let yaw = 0, yawTarget = 0;
@@ -468,6 +542,35 @@ export function r3dSetFacing(f) {
   yaw = yawTarget = facing * Math.PI / 2;
 }
 
+// The authored building, as the shader sees it. This is literally the array
+// JS collision reads (world/floorplan.js `rgba`), so there is nothing to keep
+// in sync — the drawn wall IS the solid wall.
+export function r3dSetPlan(rgba, w, h) {
+  if (!gl) return;
+  planW = w; planH = h;
+  if (planTexture) gl.deleteTexture(planTexture);
+  planTexture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, planTexture);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, rgba);
+  // NEAREST: a cell is a cell. Interpolating heights would smear the walls.
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+}
+
+// A mutation touched a few cells: re-upload only those.
+export function r3dPatchPlan(rgba, x, y, w, h) {
+  if (!gl || !planTexture) return;
+  const sub = new Uint8Array(w * h * 4);
+  for (let ry = 0; ry < h; ry++) {
+    const src = ((y + ry) * planW + x) * 4;
+    sub.set(rgba.subarray(src, src + w * 4), ry * w * 4);
+  }
+  gl.bindTexture(gl.TEXTURE_2D, planTexture);
+  gl.texSubImage2D(gl.TEXTURE_2D, 0, x, y, w, h, gl.RGBA, gl.UNSIGNED_BYTE, sub);
+}
+
 export function r3dUpdateFog(fogGet, px, py) {
   fogOrigin = [px - FOG_TEX / 2, py - FOG_TEX / 2];
   const buf = new Uint8Array(FOG_TEX * FOG_TEX);
@@ -529,7 +632,10 @@ export function r3dFrame(state) {
   camX += (state.px + 0.5 - camX) * k;
   camZ += (state.py + 0.5 - camZ) * k;
   yaw += (yawTarget - yaw) * (1 - Math.exp(-dt * 12));
-  camY = EYE;
+  // Eye height above whatever floor you are standing on. Eased, so a stair is
+  // a climb rather than a series of teleports.
+  const floorGoal = (state.floorH ?? 0) + EYE;
+  camY += (floorGoal - camY) * (1 - Math.exp(-dt * 14));
   // A flashlight snaps. The only easing is a filament's breath on the way out.
   const lightGoal = state.light === false ? 0 : 1;
   lightEase += (lightGoal - lightEase) * (1 - Math.exp(-dt * (lightGoal ? 90 : 45)));
@@ -584,6 +690,14 @@ export function r3dFrame(state) {
   gl.uniform2f(U('uFogOrigin'), fogOrigin[0], fogOrigin[1]);
   gl.uniform1f(U('uAudio'), state.audio);
   gl.uniform1f(U('uLight'), lightEase);
+  gl.uniform1f(U('uUsePlan'), state.plan ? 1 : 0);
+  if (state.plan && planTexture) {
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_2D, planTexture);
+    gl.uniform1i(U('uPlan'), 2);
+    gl.uniform2f(U('uPlanSize'), planW, planH);
+    gl.uniform3fv(U('uZoneTint[0]'), ZONE_TINTS);
+  }
   const n = Math.min(state.chunks.length, MAX_CHUNKS);
   gl.uniform1i(U('uChunkCount'), n);
   if (n > 0) {

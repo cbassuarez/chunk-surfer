@@ -11,7 +11,7 @@ let pass=true;
 const check=(name,ok,extra='')=>{ console.log(`${ok?'PASS':'FAIL'}  ${name}${extra?'  '+extra:''}`); if(!ok) pass=false; };
 
 // ── STORY: silent world ──────────────────────────────────────────────────────
-await page.goto('http://localhost:5173/labs/chunk-surfer/index.html?mode=story&renderer=3d&at=0,8',{waitUntil:'domcontentloaded',timeout:60000});
+await page.goto('http://localhost:5173/labs/chunk-surfer/index.html?mode=story&renderer=3d&at=4,5',{waitUntil:'domcontentloaded',timeout:60000});
 await page.evaluate(()=>localStorage.clear());
 await page.reload({waitUntil:'domcontentloaded'});
 await new Promise(r=>setTimeout(r,14000));

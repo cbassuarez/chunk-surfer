@@ -22,6 +22,7 @@ import { MANIFEST, PIECE_CATALOG, files, worldsConfig, SAMPLE_COUNT } from './ma
 import { fft, analyze, biomeFrom } from './audio/analysis.js';
 import * as CR from './render/canvas.js';
 import * as R3 from './render/r3d.js';
+import * as FP from './world/floorplan.js';
 import * as scenes from './game/scenes.js';
 import { uiInit, uiClear, uiText, uiSize } from './render/ui.js';
 import { saveLoad, saveCommit, getSave, newGame, hasSave, metaCommit } from './game/save.js';
@@ -2801,7 +2802,7 @@ function updateAudio(){
   // drone — only the room's noise floor. The catalog exists solely on the
   // other side of the recorder's monitor.
   if(storyMode && !REC.isRecording()){
-    curPlayerCtx = { onTerrain:false, biomeId:null, worldId:worldIdAt(px,py), worldMembership:{} };
+    curPlayerCtx = { onTerrain:false, biomeId:null, worldId:currentWorld(), worldMembership:{} };
     if(curChunkKey){ curChunkKey=''; curChunkIdx=-1; }
     if(voices.size>0) stopAllVoices();
     stopWorldLayerVoice();
@@ -2876,9 +2877,19 @@ function step(dx,dy){
     const needMs=currentMoveIntervalMs();
     if((nowMs-lastMoveAtMs) < needMs) return;
   }
-  // 3D architecture is solid: walls block the step (collision mirrors the
-  // shader's integer wall logic exactly — see r3d.js r3dSolid).
-  if(RENDERER==='3d' && depth===0 && R3.r3dSolid(px+dx, py+dy)) return;
+  // Geometry blocks the step. In the conservatory this is a body test — a wall,
+  // a lintel you would brain yourself on, a riser too tall to take — and it
+  // reads from the same array the shader draws from.
+  if(RENDERER==='3d' && depth===0){
+    if(usingPlan()){
+      const move=FP.canStep(px, py, px+dx, py+dy, { keys: playerKeys });
+      if(!move.ok){
+        if(move.why==='locked') pushEvent('// locked. none of your keys.');
+        else if(move.why==='bricked') pushEvent('// bricked up. it was a door once.');
+        return;
+      }
+    } else if(R3.r3dSolid(px+dx, py+dy)) return;
+  }
   // Your feet are the loudest thing in this building. The noise is left at the
   // cell you are leaving: the presence hunts where you WERE.
   if(storyMode){
@@ -4181,6 +4192,27 @@ function speakerBlip(speaker){
   }catch(_){}
 }
 
+async function loadBuilding(){
+  const which=new URLSearchParams(location.search).get('plan') || 'testbed';
+  try{
+    const mod=await import(`./data/floorplan/${which}.js`);
+    const data=mod[which] || mod.default;
+    FP.compile(data.levels, {width:data.width, height:data.height});
+    if(data.spawn) FP.setSpawn(data.spawn.x, data.spawn.y);
+    // ?at= is a debug spawn and outranks the building's front door.
+    const at=new URLSearchParams(location.search).get('at');
+    if(data.spawn && !(at && /^-?\d+,-?\d+$/.test(at))){ px=data.spawn.x; py=data.spawn.y; }
+    for(const d of data.doors||[]) FP.setDoorKey(d.x, d.y, d.key);
+    const p=FP.floorplan();
+    R3.r3dSetPlan(p.rgba, p.w, p.h);
+    revealAround(px,py);
+    faceOpenDirection();
+    pushEvent(`// ${which}: ${p.w}×${p.h} cells.`);
+  }catch(err){
+    console.error('floorplan failed to load', err);
+  }
+}
+
 function enterStory(){
   storyMode=true;
   setGameChrome(true);
@@ -4188,6 +4220,7 @@ function enterStory(){
   PRES.loadPresenceState(getSave().presence);
   OBJ.loadObjState(getSave().obj);
   STAB.loadStabState(getSave().stabs);
+  if(inRogue && RENDERER==='3d') loadBuilding();
   STAB.stabsInit({ onStab:playStab });
   if(chunks.length) STAB.buildStabPool(chunks);
   const qp=new URLSearchParams(location.search);
@@ -4254,7 +4287,7 @@ function onPresenceCatch(count){
   ax/=m; ay/=m;
   const dirs=[[0,-1],[1,0],[0,1],[-1,0]]
     .sort((u,v)=>(v[0]*ax+v[1]*ay)-(u[0]*ax+u[1]*ay));   // most "away" first
-  const open=(x,y)=> RENDERER!=='3d' || !R3.r3dSolid(x,y);
+  const open=(x,y)=> RENDERER!=='3d' || !solidAt(x,y);
   for(const [dx,dy] of dirs){
     if(!open(px+dx,py+dy)) continue;
     for(let k=0;k<5 && open(px+dx,py+dy);k++){ px+=dx; py+=dy; }
@@ -4328,7 +4361,7 @@ function tickRecorder(dt){
   REC.decayNoise(dt);
   const st=REC.tickRecording(dt);
   if(st==='complete'){
-    const room=worldIdAt(px,py);
+    const room=currentWorld();
     REC.addTake(room);
     STAB.reportRelief(0.55);          // a clean take is the biggest exhale there is
     OBJ.clearWaypoint();
@@ -4343,6 +4376,7 @@ function tickRecorder(dt){
 }
 let spoilPendingMs=0;
 let movingTimer=null;
+const playerKeys=new Set(['master']);   // the standard set. it does not open everything.
 let bootTextCache='';
 function drawBootText(){
   if(!bootTextCache) return;
@@ -4360,12 +4394,25 @@ function saveTick(dt){
   saveCommit({ px, py, steps:stepCount, playSeconds:(getSave().playSeconds||0)+4 });
 }
 
+// One question, two geometry providers: the authored conservatory in story
+// mode, the procedural lattice in JUST SURF. Everything downstream (collision,
+// spawn, the presence, mutation) asks this and never the shader.
+function solidAt(x,y){
+  if(RENDERER!=='3d') return false;
+  return usingPlan() ? FP.isSolid(x,y) : R3.r3dSolid(x,y);
+}
+function usingPlan(){ return storyMode && FP.isLoaded(); }
+// Which room am I in? One question, asked of the authored building when there
+// is one, and of the procedural field otherwise. Every consumer uses this.
+function currentWorld(){ return usingPlan() ? FP.worldAt(px,py) : worldIdAt(px,py); }
+function floorHere(){ return usingPlan() ? FP.floorAt(px,py) : 0; }
+
 function faceOpenDirection(){
   if(RENDERER!=='3d') return;
   const dirs=[[0,-1],[1,0],[0,1],[-1,0]];
   for(let f=0; f<4; f++){
     const [dx,dy]=dirs[f];
-    if(!R3.r3dSolid(px+dx, py+dy)){ R3.r3dSetFacing(f); return; }
+    if(!solidAt(px+dx, py+dy)){ R3.r3dSetFacing(f); return; }
   }
 }
 
@@ -4409,7 +4456,7 @@ function drawStoryHud(){
 
   // A very shitty map: you, and a waypoint. No walls, no routes.
   const wp=OBJ.waypoint();
-  drawMinimap(px, py, wp, { label: roomLabel(worldIdAt(px,py)) });
+  drawMinimap(px, py, wp, { label: roomLabel(currentWorld()) });
 
   // The compass line, the way a person estimates: a bearing and a vague sense.
   const bear=OBJ.bearingTo(px,py);
@@ -4476,11 +4523,16 @@ function installProbe(){
     floor:()=>REC.noiseFloor(),
     noise:(v)=>REC.emitNoise(v, px, py, 'the room was not empty'),
     injure:()=>REC.injure(),
-    world:()=>worldIdAt(px,py),
+    world:()=>currentWorld(),
     presence:()=>({...PRES.presenceState(), dist:PRES.distanceTo(px,py), pressure:PRES.pressure(px,py)}),
     spawnPresence:(d=6)=>PRES.spawnBehind(px,py,0,d/Math.abs(d||1)),
     placePresence:(x,y)=>{ const st=PRES.presenceState(); st.active=true; st.x=x; st.y=y; },
-    solid:(x,y)=>R3.r3dSolid(x,y),
+    solid:(x,y)=>solidAt(x,y),
+    plan:()=>({loaded:FP.isLoaded(), ...FP.planSize()}),
+    cell:(x,y)=>FP.cellAt(x,y),
+    canStep:(ax,ay,bx,by)=>FP.canStep(ax,ay,bx,by,{keys:playerKeys}),
+    floorH:()=>floorHere(),
+    rgbaAt:(x,y)=>{ const p=FP.floorplan(); const i=(y*p.w+x)*4; return [...p.rgba.slice(i,i+4)]; },
     facing:()=>R3.r3dDelta(1),
     stabs:()=>STAB.stabStats(),
     stabFire:(k)=>STAB.stab(k),
@@ -4623,8 +4675,8 @@ let lastZoneKey='';
 function updateZonePrompt(){
   const d=window.__diffusion;
   if(!d || !zonePromptFor || window.__lensPromptLocked) return;
-  const worldId=worldIdAt(px,py);
-  const expanse=R3.r3dIsExpanse(px,py);
+  const worldId=currentWorld();
+  const expanse=usingPlan() ? (FP.ceilAt(px,py)-FP.floorAt(px,py) > 6) : R3.r3dIsExpanse(px,py);
   const key=`${worldId}:${expanse?'e':'c'}`;
   if(key===lastZoneKey) return;
   lastZoneKey=key;
@@ -4657,6 +4709,8 @@ function render3d(){
       : (hush.active?{x:hush.x, y:hush.y, strength:1}:null),
     audio:clamp(voiceSum/3, 0, 1),
     light: storyMode ? REC.lightOn() : true,
+    plan: usingPlan(),
+    floorH: floorHere(),
   });
 }
 
@@ -4745,6 +4799,7 @@ function enterRogue(){
     // top-down construction; its 3D replacement is an M4 cutscene.
     try{ R3.r3dInit(MAP_EL); }catch(err){ console.error('r3d init failed', err); }
     disableOnboardingForSession();
+    if(storyMode) loadBuilding();
     // ?at=x,y — debug spawn (M2 will generalise this to ?warp=<room>)
     const atParam=new URLSearchParams(location.search).get('at');
     if(atParam && /^-?\d+,-?\d+$/.test(atParam)){
@@ -4754,10 +4809,10 @@ function enterRogue(){
     faceOpenDirection();   // never start facing a wall in a 2-wide lane
     // never spawn inside a wall slab
     if(R3.r3dSolid(px,py)){
-      outer: for(let r=1;r<8;r++){
+      outer: for(let r=1;r<12;r++){
         for(let oy2=-r;oy2<=r;oy2++) for(let ox2=-r;ox2<=r;ox2++){
           if(Math.max(Math.abs(ox2),Math.abs(oy2))!==r) continue;
-          if(!R3.r3dSolid(px+ox2,py+oy2)){ px+=ox2; py+=oy2; break outer; }
+          if(!solidAt(px+ox2,py+oy2)){ px+=ox2; py+=oy2; break outer; }
         }
       }
       revealAround(px,py);

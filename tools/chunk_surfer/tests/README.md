@@ -16,6 +16,13 @@ against `npm run dev`. Silence, noise and dread are invisible, so these assert o
 | `stabs.mjs` | no stab in the quiet opening however safe you feel · TRUE stabs precede FALSE ones · threat suppresses stabs · cooldown is a hard floor · `reduceDread` silences them · pages set a waypoint |
 | `flicker.mjs` | adjacent-frame pixel delta with the camera still (regression: 1.54 → 0.36) |
 | `fps.mjs` | lens throughput standing and moving (target 8–12fps) |
+| `floorplan.mjs` | **pure Node, no browser.** heights round-trip into the texture the shader samples · rooms are never mutable · every stair riser is climbable by a body · bricked vs locked doors refuse you differently · the building is walkable spawn → chapel → back |
 
-Two of these encode rules that are easy to erode and expensive to relearn:
-the presence must hunt **sound**, and a stab must never be **random**.
+Three of these encode rules that are easy to erode and expensive to relearn:
+the presence must hunt **sound**, a stab must never be **random**, and the
+building's **rooms must never move** (only its corridors may).
+
+`floorplan.mjs` needs no dev server: it compiles the ASCII maps and asks the
+same functions collision asks. The shader reads a texture built from that exact
+array, so "does the drawn wall match the solid wall" is not a question the
+engine can get wrong.
