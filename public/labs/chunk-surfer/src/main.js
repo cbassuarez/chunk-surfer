@@ -33,6 +33,7 @@ import { terrorInit, once, interpolate } from './game/terror.js';
 import { dialogue as PROLOGUE_DIALOGUE } from './data/prologue.js';
 import * as REC from './game/recordist.js';
 import * as RT from './audio/roomtone.js';
+import * as PRES from './game/presence.js';
 export { fx } from './render/canvas.js';
 
 // M1: canvas glyph renderer is the default; `?renderer=dom` keeps the legacy
@@ -4050,6 +4051,7 @@ function loop(){
         maybeSpawnScheduledKey();
         updateHorrorTick();
         tickRecorder(dt);
+        tickPresence(dt);
       }
       if(RENDERER==='3d') render3d(); else renderMap();
       // Instrument readouts only exist in JUST SURF; in story mode they are
@@ -4162,6 +4164,8 @@ function speakerBlip(speaker){
 function enterStory(){
   storyMode=true;
   setGameChrome(true);
+  REC.loadRecState(getSave().rec);
+  PRES.loadPresenceState(getSave().presence);
   const qp=new URLSearchParams(location.search);
   // ?flags=a,b=2 — force story state for testing
   const flagParam=qp.get('flags');
@@ -4196,6 +4200,41 @@ function toggleRecorder(){
   ensureCtx();
   updateAudio();                      // monitor opens: you can hear the room
   pushEvent('// recording. hold still. light off.');
+  // The first take is what tells the building someone is in it.
+  once('presence-arrives', ()=>{
+    PRES.spawnBehind(px, py, -lastStepDx||0, -lastStepDy||1);
+    metaCommit({hushMet:true});
+  });
+}
+
+// Contact. No death: a spoiled take, a lasting injury, and a presence that
+// knows you a little better than it did. The world is worse now, permanently.
+function onPresenceCatch(count){
+  const injuries=REC.injure();
+  if(REC.isRecording()) REC.spoilTake('it found you');
+  CR.fx.flash(140, 'rgba(10,10,12,0.9)');
+  CR.fx.shake(1.4, 420);
+  pushEvent(`// it found you. you are hurt (${injuries}). you are louder now.`);
+  // Shove the player away from it — not to safety, just away.
+  const st=PRES.presenceState();
+  const ax=px-st.x, ay=py-st.y;
+  const m=Math.hypot(ax,ay)||1;
+  for(let k=0;k<7;k++){
+    const nx=Math.round(px+(ax/m)), ny=Math.round(py+(ay/m));
+    if(RENDERER==='3d' && R3.r3dSolid(nx,ny)) break;
+    px=nx; py=ny;
+  }
+  trail=[]; revealAround(px,py);
+  applyLensPreset('hush');
+  setTimeout(()=>{ if(storyMode) applyLensPreset('explore'); }, 4200);
+  saveCommit({ rec:REC.saveRecState(), presence:PRES.savePresenceState() });
+}
+
+function tickPresence(dt){
+  if(!storyMode || !PRES.isActive()) return;
+  PRES.updatePresence(dt, px, py, onPresenceCatch);
+  // Its nearness bleeds into the room tone: the floor thickens as it closes.
+  RT.setBed(ROOM_TONE.bedGain * (1 + PRES.pressure(px,py)*2.6), 0.4);
 }
 
 function tickRecorder(dt){
@@ -4320,6 +4359,9 @@ function installProbe(){
     noise:(v)=>REC.emitNoise(v, px, py, 'the room was not empty'),
     injure:()=>REC.injure(),
     world:()=>worldIdAt(px,py),
+    presence:()=>({...PRES.presenceState(), dist:PRES.distanceTo(px,py), pressure:PRES.pressure(px,py)}),
+    spawnPresence:(d=6)=>PRES.spawnBehind(px,py,0,d/Math.abs(d||1)),
+    placePresence:(x,y)=>{ const st=PRES.presenceState(); st.active=true; st.x=x; st.y=y; },
     audible:()=>{ const a=audibleCandidates(); return {n:a.audible.length, r:audioRadius(), poly:audioPoly(), chunks:chunks.length, paused, depth, tpl:worldTemplates.size, ctx:!!actx}; },
   };
 }
@@ -4458,7 +4500,10 @@ function render3d(){
     chunks:r3dNearChunks(),
     key:firstKey,
     door,
-    hush:hush.active?{x:hush.x, y:hush.y, strength:1}:null,
+    hush: (storyMode && PRES.isActive())
+      ? {x:PRES.presenceState().x, y:PRES.presenceState().y,
+         strength: 0.55 + PRES.pressure(px,py)*0.45}
+      : (hush.active?{x:hush.x, y:hush.y, strength:1}:null),
     audio:clamp(voiceSum/3, 0, 1),
     light: storyMode ? REC.lightOn() : true,
   });
