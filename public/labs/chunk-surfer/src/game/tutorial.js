@@ -71,7 +71,7 @@ const STEPS = [
     // required — a player who strides out has learned the lesson the building
     // is about to teach them properly, and holding the prompt on screen until
     // they press shift would be the game locking a door.
-    done: (c) => c.py > 15,
+    done: (c) => c.leftDock,
     exit: { who: 'you', text: 'Quietly, then. Everything I do in here, the building keeps.' },
   },
 ];

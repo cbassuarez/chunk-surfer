@@ -16,7 +16,8 @@ import {
   WORLD_SCALE_X, WORLD_SCALE_Y, CHUNK_MIN_SEP, AUDIO_R, ROOM_TONE,
   WORLD_TILE_SCALE_X, WORLD_TILE_SCALE_Y, WORLD_SPREAD_MIN, WORLD_SPREAD_MAX,
   W_BIOME_SAME, W_BIOME_OTHER, W_BIOME_FOREIGN,
-  AMBIENT_DRONE_GAIN, AMBIENT_BIT_LEVELS, AMBIENT_LOOP_SEC, WORLD_LAYER
+  AMBIENT_DRONE_GAIN, AMBIENT_BIT_LEVELS, AMBIENT_LOOP_SEC, WORLD_LAYER,
+  CELL_SCALE
 } from './config.js';
 import { MANIFEST, PIECE_CATALOG, files, worldsConfig, SAMPLE_COUNT } from './manifest.js';
 import { fft, analyze, biomeFrom } from './audio/analysis.js';
@@ -66,6 +67,8 @@ export { fx } from './render/canvas.js';
 // M1b: `?renderer=3d` = first-person raymarched world (diffusion-lens base).
 const KEY_DEBUG = new URLSearchParams(location.search).has('keydebug');
 const NO_THINK = new URLSearchParams(location.search).has('nothink');
+const D = (n) => n * CELL_SCALE;
+const SCALED_MOVE_MIN = (n) => Math.max(1, Math.round(n / CELL_SCALE));
 const RENDERER = (() => {
   const q = new URLSearchParams(location.search).get('renderer');
   return q === 'dom' ? 'dom' : q === '3d' ? '3d' : 'canvas';
@@ -141,7 +144,7 @@ const HUSH_TUNE = {
   chaseSpeedRatio: 0.85,
   surgeMinRatio: 1.12,
   surgeMaxRatio: 1.82,
-  catchDistance: 0.78,
+  catchDistance: D(0.78),
   onsetMs: 1100,
   maxEyes: 56,
 };
@@ -155,22 +158,22 @@ const SW2_PHASE = {
 const SW2_TUNE = {
   bootSilenceMs: 2000,
   areaCount: 3,
-  areaDist: 16,
-  areaEnterRadius: 8,
-  grabMinRadius: 1.8,
-  grabMaxRadius: 3.8,
-  killRadiusBase: 1.05,
-  killRadiusFailStep: 0.18,
-  hubDepositRadius: 2.2,
+  areaDist: D(16),
+  areaEnterRadius: D(8),
+  grabMinRadius: D(1.8),
+  grabMaxRadius: D(3.8),
+  killRadiusBase: D(1.05),
+  killRadiusFailStep: D(0.18),
+  hubDepositRadius: D(2.2),
   approachFreshMs: 320,
   revealMs: 2200,
   darknessStep: 0.15,
   darknessMax: 0.9,
-  finalDoorDist: 22,
-  finalCatchRadius: 1.2,
-  finalDriftSpeed: 0.34,
+  finalDoorDist: D(22),
+  finalCatchRadius: D(1.2),
+  finalDriftSpeed: D(0.34),
   finalLossCooldownMs: 1400,
-  finalVisionRadius: 26,
+  finalVisionRadius: D(26),
   debugFastAreas: 2,
   punctuationMinMs: 1400,
   punctuationMaxMs: 2600,
@@ -371,7 +374,7 @@ function monitorProx(d, R){
 }
 function proxFor(d, R){
   if(d>=R) return 0;
-  return Math.exp(-d / 12);
+  return Math.exp(-d / D(12));
 }
 // Combined voice gain: proximity × per-chunk baseline × biome × world.
 // No terrain gate — proximity alone governs audibility, so wilderness/voids
@@ -516,8 +519,8 @@ const WORLD_MEMBERSHIP_SAMPLES = (() => {
   // Two rings of 8 directions each, weighted inversely with distance.
   const dirs=[[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]];
   for(const [dx,dy] of dirs){
-    out.push({dx:dx*6,  dy:dy*6,  w:0.55});
-    out.push({dx:dx*14, dy:dy*14, w:0.22});
+    out.push({dx:dx*D(6),  dy:dy*D(6),  w:0.55});
+    out.push({dx:dx*D(14), dy:dy*D(14), w:0.22});
   }
   return out;
 })();
@@ -1054,7 +1057,7 @@ function computeViewDims(){
 function assignTerrainRadii(){
   for(const c of chunks){
     const len=c.analysis?.length||1;
-    c.terrainRadius=clamp(TERRAIN_R_MIN+len*6, TERRAIN_R_MIN, TERRAIN_R_MAX);
+    c.terrainRadius=clamp(TERRAIN_R_MIN+len*6*CELL_SCALE, TERRAIN_R_MIN, TERRAIN_R_MAX);
   }
 }
 function assignEmittersForChunk(c){
@@ -1089,8 +1092,8 @@ function buildWorldTemplates(){
 
     const templateTerrain = Array.from({length:WORLD_TILE_H},()=>Array(WORLD_TILE_W).fill(null));
     const spread=worldSpreadFor(wc.id);
-    const spanX=Math.max(10, Math.round((WORLD_TILE_W-8)*spread.sx));
-    const spanY=Math.max(8, Math.round((WORLD_TILE_H-8)*spread.sy));
+    const spanX=Math.max(D(10), Math.round((WORLD_TILE_W-D(8))*spread.sx));
+    const spanY=Math.max(D(8), Math.round((WORLD_TILE_H-D(8))*spread.sy));
     const xPad=Math.max(2, Math.round((WORLD_TILE_W-spanX)/2));
     const yPad=Math.max(2, Math.round((WORLD_TILE_H-spanY)/2));
     // Stable placement: each chunk gets deterministic coordinates derived from
@@ -1107,8 +1110,8 @@ function buildWorldTemplates(){
       const yNorm = clamp(1 - h + jitterY, 0, 1);
       const wxRaw=xPad + xNorm * Math.max(1, spanX-1);
       const wyRaw=yPad + yNorm * Math.max(1, spanY-1);
-      c.wx=clamp(Number.isFinite(wxRaw)?Math.round(wxRaw):Math.round(WORLD_TILE_W/2),2,WORLD_TILE_W-3);
-      c.wy=clamp(Number.isFinite(wyRaw)?Math.round(wyRaw):Math.round(WORLD_TILE_H/2),2,WORLD_TILE_H-3);
+      c.wx=clamp(Number.isFinite(wxRaw)?Math.round(wxRaw):Math.round(WORLD_TILE_W/2),D(2),WORLD_TILE_W-D(3));
+      c.wy=clamp(Number.isFinite(wyRaw)?Math.round(wyRaw):Math.round(WORLD_TILE_H/2),D(2),WORLD_TILE_H-D(3));
       assignEmittersForChunk(c);
     }
 
@@ -1155,7 +1158,7 @@ function buildWorldTemplates(){
       const d=Math.hypot(s.wx-cx, s.wy-cy)+s.terrainRadius;
       if(d>maxD) maxD=d;
     }
-    const region={cx, cy, r:Math.max(maxD, 18)};
+    const region={cx, cy, r:Math.max(maxD, D(18))};
 
     const groups=new Map();
     for(const idx of sampleIdxs){
@@ -1221,10 +1224,10 @@ function buildWorld(){
 // Placement distance band — once a key is *allowed* to spawn, it lands
 // close enough to be findable within ~minute of walking from where the
 // player is at that moment, but not literally underfoot.
-const KEY_PLACEMENT_MIN = 90;
-const KEY_PLACEMENT_MAX = 220;
-const DOOR_MIN_DIST = 500;
-const DOOR_MAX_DIST = 1100;
+const KEY_PLACEMENT_MIN = D(90);
+const KEY_PLACEMENT_MAX = D(220);
+const DOOR_MIN_DIST = D(500);
+const DOOR_MAX_DIST = D(1100);
 // Time-based pacing. The first key materialises 15–30s after you land in
 // the live world; subsequent keys arrive 30–60s after each pickup. The
 // gating is what gives the universe its rhythm — keys aren't predeposited.
@@ -1445,8 +1448,8 @@ function makeSw2Areas(hx, hy){
     const a=(-Math.PI/2) + i*((Math.PI*2)/SW2_TUNE.areaCount);
     const anchorX=hx + Math.round(Math.cos(a)*SW2_TUNE.areaDist);
     const anchorY=hy + Math.round(Math.sin(a)*SW2_TUNE.areaDist);
-    const ox=Math.round(Math.cos(a+Math.PI*0.5) * 1.6);
-    const oy=Math.round(Math.sin(a+Math.PI*0.5) * 1.6);
+    const ox=Math.round(Math.cos(a+Math.PI*0.5) * D(1.6));
+    const oy=Math.round(Math.sin(a+Math.PI*0.5) * D(1.6));
     out.push({
       idx:i,
       x:anchorX,
@@ -1728,8 +1731,8 @@ function spawnHushBehindPlayer(){
   const ny=dy/len;
   const rx=-ny;
   const ry=nx;
-  const back=24 + Math.random()*9;
-  const lateral=(Math.random()-0.5)*14;
+  const back=D(24) + Math.random()*D(9);
+  const lateral=(Math.random()-0.5)*D(14);
   hush.x=px - nx*back + rx*lateral;
   hush.y=py - ny*back + ry*lateral;
   hush.vx=0;
@@ -1783,7 +1786,7 @@ function startDoorSwarm(){
 
 function canDescendThroughSwarm(nowMs=performance.now()){
   if(horrorPhase!==HORROR_SEQUENCE.DOOR_SWARM) return true;
-  const movingRecently=(nowMs-lastMoveAtMs) < Math.max(84, currentMoveIntervalMs()*1.2);
+  const movingRecently=(nowMs-lastMoveAtMs) < Math.max(SCALED_MOVE_MIN(84), currentMoveIntervalMs()*1.2);
   return nowMs>=doorSwarmArmMs && movingRecently && !hushBlinkActive;
 }
 
@@ -1810,8 +1813,8 @@ function startDoorRevealCutscene(nowMs=performance.now()){
   const nx=dx/len, ny=dy/len;
   const rx=-ny, ry=nx;
   doorRevealHushTarget={
-    x:px - nx*(36+Math.random()*8) + rx*((Math.random()-0.5)*8),
-    y:py - ny*(36+Math.random()*8) + ry*((Math.random()-0.5)*8),
+    x:px - nx*(D(36)+Math.random()*D(8)) + rx*((Math.random()-0.5)*D(8)),
+    y:py - ny*(D(36)+Math.random()*D(8)) + ry*((Math.random()-0.5)*D(8)),
   };
   hushLockedUntilMs=Math.max(hushLockedUntilMs, nowMs+1000);
   hushPingHeat=Math.max(hushPingHeat, 0.5);
@@ -1822,7 +1825,7 @@ function startDoorRevealCutscene(nowMs=performance.now()){
 
 function spawnPeripheralEye(nowMs){
   const a=Math.random()*Math.PI*2;
-  const r=18+Math.random()*26;
+  const r=D(18)+Math.random()*D(26);
   hushEyes.push({
     x:px+Math.cos(a)*r,
     y:py+Math.sin(a)*r,
@@ -1859,7 +1862,7 @@ function maybeLockHushFromInputKey(key, nowMs=performance.now()){
 
   const hold=3000 + Math.random()*1000; // explicit 3–4s confrontation freeze
   hushLockedUntilMs=Math.max(hushLockedUntilMs, nowMs+hold);
-  const minSafe=HUSH_TUNE.catchDistance + 0.9;
+  const minSafe=HUSH_TUNE.catchDistance + D(0.9);
   const d=Math.max(0.0001, hushDistance());
   if(d<minSafe){
     const ux=(hush.x-px)/d;
@@ -1902,10 +1905,10 @@ function computeHushStress(){
     const fail=clamp(sw2.failCount/6, 0, 1);
     return clamp(0.22 + progress*0.36 + darkness*0.32 + fail*0.28, 0, 1);
   }
-  const prox=clamp(1-(d/32), 0, 1);
+  const prox=clamp(1-(d/D(32)), 0, 1);
   const ping=clamp(hushPingHeat/2.4, 0, 1);
   const phaseBump=horrorPhase===HORROR_SEQUENCE.DOOR_SWARM ? 0.22 : horrorPhase===HORROR_SEQUENCE.CHASE_PRESSURE ? 0.14 : 0.08;
-  const doorBump=door ? clamp(1-(Math.hypot(door.x-px, door.y-py)/52), 0, 1)*0.2 : 0;
+  const doorBump=door ? clamp(1-(Math.hypot(door.x-px, door.y-py)/D(52)), 0, 1)*0.2 : 0;
   return clamp((prox*0.46) + (ping*0.28) + phaseBump + doorBump, 0, 1);
 }
 
@@ -1944,11 +1947,11 @@ function updateStatueCorridor(nowMs, dt){
   const len=Math.max(0.001, Math.hypot(dx,dy));
   const nx=dx/len, ny=dy/len;
   const rx=-ny, ry=nx;
-  const maxAlong=Math.max(8, Math.min(28, len*0.88));
+  const maxAlong=Math.max(D(8), Math.min(D(28), len*0.88));
   const lockHeld=isHushLocked(nowMs);
   for(const s of corridorStatues){
-    const along=1.6 + s.t*maxAlong;
-    const latMag=1.8 + s.t*2.6 + s.wobble*0.8;
+    const along=D(1.6) + s.t*maxAlong;
+    const latMag=D(1.8) + s.t*D(2.6) + s.wobble*D(0.8);
     const lat=s.side===0 ? 0 : s.side*latMag;
     const targetX=px + nx*along + rx*lat;
     const targetY=py + ny*along + ry*lat;
@@ -1994,9 +1997,9 @@ function updateSpyEyes(nowMs, dt){
     const eyeCount=Math.max(12, Math.min(26, hushEyes.length));
     for(let i=0;i<eyeCount;i++){
       const t=(i+1)/(eyeCount+1);
-      const lateral=((i%2===0)?1:-1) * (1.2 + ((i%4)*0.55));
-      const anchorX=px + nx*(2 + t*Math.min(18, len*0.6));
-      const anchorY=py + ny*(2 + t*Math.min(18, len*0.6));
+      const lateral=((i%2===0)?1:-1) * (D(1.2) + ((i%4)*D(0.55)));
+      const anchorX=px + nx*(D(2) + t*Math.min(D(18), len*0.6));
+      const anchorY=py + ny*(D(2) + t*Math.min(D(18), len*0.6));
       const eye=hushEyes[i];
       eye.x += (anchorX + rx*lateral - eye.x) * 0.14;
       eye.y += (anchorY + ry*lateral - eye.y) * 0.14;
@@ -2014,9 +2017,9 @@ function updateSpyEyes(nowMs, dt){
     const uy=dy/d;
     // Eyes hover at middle distance, drifting in an orbit while constantly
     // biasing toward the player.
-    const settle=(d>30?1:(d<9?-1:0.28));
-    eye.x += ux * settle * dt * 6.4;
-    eye.y += uy * settle * dt * 6.4;
+    const settle=(d>D(30)?1:(d<D(9)?-1:0.28));
+    eye.x += ux * settle * dt * D(6.4);
+    eye.y += uy * settle * dt * D(6.4);
     const tx=-uy, ty=ux;
     const orbitSpeed=2.8 + 1.2*Math.sin(nowMs*0.0018 + eye.phase);
     eye.x += tx * orbitSpeed * dt;
@@ -2031,11 +2034,11 @@ function updateSpyEyes(nowMs, dt){
         lastHushEventMs=nowMs;
       }
     }
-    if(d<7.5){
+    if(d<D(7.5)){
       hushPingHeat=clamp(hushPingHeat + dt*0.45, 0, 2.3);
     }
   }
-  hushEyes = hushEyes.filter((eye)=>Math.hypot(eye.x-px, eye.y-py) < 76);
+  hushEyes = hushEyes.filter((eye)=>Math.hypot(eye.x-px, eye.y-py) < D(76));
 }
 
 function updateSubWorld2RiteTick(nowMs, dt){
@@ -2071,13 +2074,13 @@ function updateSubWorld2RiteTick(nowMs, dt){
     }
     const dThreat=Math.hypot(px-area.threatX, py-area.threatY);
     if(!area.complete && nowMs>=area.caughtLockUntilMs && dThreat<=lossRadius){
-      const intensity=clamp((lossRadius+0.6-dThreat)/(lossRadius+0.6), 0.35, 1);
+      const intensity=clamp((lossRadius+D(0.6)-dThreat)/(lossRadius+D(0.6)), 0.35, 1);
       if(triggerSw2Loss(nowMs, intensity)){
         area.caughtLockUntilMs=nowMs + SW2_TUNE.finalLossCooldownMs;
         const bx=(area.threatX-px) || (Math.random()<0.5?-1:1);
         const by=(area.threatY-py) || (Math.random()<0.5?-1:1);
         const bl=Math.max(0.001, Math.hypot(bx, by));
-        const push=2.3 + Math.random()*1.2;
+        const push=D(2.3) + Math.random()*D(1.2);
         area.threatX=px + (bx/bl)*push;
         area.threatY=py + (by/bl)*push;
       }
@@ -2148,7 +2151,7 @@ function updateSubWorld2RiteTick(nowMs, dt){
       if(nowMs>=area.caughtLockUntilMs && d<=SW2_TUNE.finalCatchRadius){
         if(triggerSw2Loss(nowMs, 1)){
           area.caughtLockUntilMs=nowMs + SW2_TUNE.finalLossCooldownMs;
-          const push=3 + Math.random()*1.4;
+          const push=D(3) + Math.random()*D(1.4);
           area.threatX=px - ux*push;
           area.threatY=py - uy*push;
           sw2.caught=true;
@@ -2184,8 +2187,8 @@ function updateHushMotion(nowMs, dt){
       const dx=door.x-px, dy=door.y-py;
       const len=Math.max(0.001, Math.hypot(dx,dy));
       const nx=dx/len, ny=dy/len;
-      tx=px - nx*42;
-      ty=py - ny*42;
+      tx=px - nx*D(42);
+      ty=py - ny*D(42);
       doorRevealHushTarget={x:tx, y:ty};
     }
     const dx=tx-hush.x, dy=ty-hush.y;
@@ -2209,7 +2212,7 @@ function updateHushMotion(nowMs, dt){
       const dy=targetY-hush.y;
       const d=Math.max(0.0001, Math.hypot(dx,dy));
       const ux=dx/d, uy=dy/d;
-      const lurchDist=0.45 + hushBlinkStress*0.9 + (horrorPhase===HORROR_SEQUENCE.DOOR_SWARM ? 0.25 : 0);
+      const lurchDist=D(0.45 + hushBlinkStress*0.9 + (horrorPhase===HORROR_SEQUENCE.DOOR_SWARM ? 0.25 : 0));
       hush.x += ux*lurchDist;
       hush.y += uy*lurchDist;
       hush.vx=ux*lurchDist*8;
@@ -2259,7 +2262,7 @@ function resetSubWorld1AfterHush(msg='// the hush catches you. keys scatter back
   curChunkKey='';
   curChunkIdx=-1;
   resetHorrorState();
-  revealAroundWithRadius(px, py, Math.max(FOG_R, 9));
+  revealAroundWithRadius(px, py, Math.max(FOG_R, D(9)));
   initKeysForSession();
   updateAudio();
   hushPunishLockUntilMs=performance.now()+560;
@@ -2285,7 +2288,7 @@ function resetSubWorld2AfterHush(msg='// the hush tears through you. you wake at
   curChunkKey='';
   curChunkIdx=-1;
   resetHorrorState();
-  revealAroundWithRadius(px, py, 7);
+  revealAroundWithRadius(px, py, D(7));
   updateAudio();
   hushPunishLockUntilMs=performance.now()+560;
   startSubWorld2Sequence();
@@ -2413,14 +2416,14 @@ function spawnKeyNear(cx, cy, minDist, maxDist){
   keyMap.set(`${p.x},${p.y}`, p);
   // Pre-reveal a small halo so terrain context illuminates as the player
   // approaches the beacon, instead of the key floating against pure fog.
-  revealAroundWithRadius(p.x, p.y, 5);
+  revealAroundWithRadius(p.x, p.y, D(5));
 }
 
 // Place a single door far from current player position, using the same
 // scatter mechanic as keys. Called once when the final key is collected.
 function spawnDoor(){
   door = placeBeacon(px, py, DOOR_MIN_DIST, DOOR_MAX_DIST);
-  revealAroundWithRadius(door.x, door.y, 6);
+  revealAroundWithRadius(door.x, door.y, D(6));
 }
 
 // Step through the door: stop the overworld, drop the player into a
@@ -2430,7 +2433,7 @@ function spawnDoor(){
 function descendThroughDoor(){
   horrorPhase=HORROR_SEQUENCE.DESCENT_RUPTURE;
   triggerGateFlash(420, 720);
-  pulseRevealRings(px, py, [3, 6, 10, 16]);
+  pulseRevealRings(px, py, [D(3), D(6), D(10), D(16)]);
   if(navigator.vibrate) navigator.vibrate([60, 80, 100, 140]);
 
   depth++;
@@ -2459,7 +2462,7 @@ function descendThroughDoor(){
   curChunkIdx = -1;
   curChunkKey = '';
 
-  revealAroundWithRadius(px, py, 6);
+  revealAroundWithRadius(px, py, D(6));
   startSubWorld2Sequence();
 }
 
@@ -2496,7 +2499,7 @@ function playKeyPickupChime(isFinal){
 }
 
 function onKeyPickup(isFinal){
-  pulseRevealRings(px, py, [2, 4, 7, 11]);
+  pulseRevealRings(px, py, [D(2), D(4), D(7), D(11)]);
   triggerGateFlash(isFinal ? 320 : 180, isFinal ? 520 : 280);
   playKeyPickupChime(isFinal);
   if(navigator.vibrate) navigator.vibrate(isFinal ? [40, 60, 80] : 35);
@@ -2505,7 +2508,7 @@ function onKeyPickup(isFinal){
 function stampChunk(c){
   if(c.terrainRadius==null){
     const len=c.analysis?.length||1;
-    c.terrainRadius=clamp(TERRAIN_R_MIN+len*6, TERRAIN_R_MIN, TERRAIN_R_MAX);
+    c.terrainRadius=clamp(TERRAIN_R_MIN+len*6*CELL_SCALE, TERRAIN_R_MIN, TERRAIN_R_MAX);
   }
   if(!c.iconChar) c.iconChar=iconFor(c.analysis);
   // Deliberately no live template rebuild here; we finalize once at load end
@@ -2579,10 +2582,10 @@ function startFunnelIntro(){
 // ── Fog ───────────────────────────────────────────────────────────────────────
 function currentFovRadius(){
   if(!isOnboardingActive()) return FOG_R;
-  if(isPrelude()) return Math.max(8, INTRO_SCENE.primaryGateDist + 2);
+  if(isPrelude()) return Math.max(D(8), INTRO_SCENE.primaryGateDist + D(2));
   // Keep intro void feeling while always showing enough terrain for movement read.
   const p=introProgress();
-  return Math.max(6, Math.round(6 + (FOG_R-6) * Math.pow(p, 2.0)));
+  return Math.max(D(6), Math.round(D(6) + (FOG_R-D(6)) * Math.pow(p, 2.0)));
 }
 function revealAround(x,y){
   revealAroundWithRadius(x,y,currentFovRadius());
@@ -2614,34 +2617,34 @@ function currentMoveIntervalMs(){
     const span=Math.max(1, doorRevealEndsMs-doorRevealStartedMs);
     const t=clamp((performance.now()-doorRevealStartedMs)/span, 0, 1);
     ms *= (1.68 + 0.34*Math.sin(t*Math.PI));
-    return Math.round(clamp(ms, 90, 230));
+    return Math.round(clamp(ms, SCALED_MOVE_MIN(90), SCALED_MOVE_MIN(230)));
   }
   if(depth===0 && horrorPhase===HORROR_SEQUENCE.DOOR_SWARM){
-    const doorDist=door ? Math.hypot(door.x-px, door.y-py) : 22;
-    const nearGate=clamp(1-(doorDist/28), 0, 1);
+    const doorDist=door ? Math.hypot(door.x-px, door.y-py) : D(22);
+    const nearGate=clamp(1-(doorDist/D(28)), 0, 1);
     ms *= 1.22 + nearGate*0.58 + (hushBlinkActive ? 0.24 : 0);
-    return Math.round(clamp(ms, 92, 255));
+    return Math.round(clamp(ms, SCALED_MOVE_MIN(92), SCALED_MOVE_MIN(255)));
   }
   if(depth===1 && sw2.active){
     if(sw2.phase===SW2_PHASE.BOOT_SILENCE){
       ms *= 1.3;
-      return Math.round(clamp(ms, 84, 220));
+      return Math.round(clamp(ms, SCALED_MOVE_MIN(84), SCALED_MOVE_MIN(220)));
     }
     if(sw2.phase===SW2_PHASE.AREA_LOOP){
       ms *= 1.05 + sw2.darkness*0.22;
-      return Math.round(clamp(ms, 68, 184));
+      return Math.round(clamp(ms, SCALED_MOVE_MIN(68), SCALED_MOVE_MIN(184)));
     }
     if(sw2.phase===SW2_PHASE.FINAL_DARK){
       ms *= 1.34 + sw2.darkness*0.28 + (sw2.caught ? 0.16 : 0);
-      return Math.round(clamp(ms, 92, 245));
+      return Math.round(clamp(ms, SCALED_MOVE_MIN(92), SCALED_MOVE_MIN(245)));
     }
     if(sw2.phase===SW2_PHASE.POST_DOOR){
       ms *= 1.24;
-      return Math.round(clamp(ms, 84, 220));
+      return Math.round(clamp(ms, SCALED_MOVE_MIN(84), SCALED_MOVE_MIN(220)));
     }
   }
   // Keep motion responsive; difficulty is mostly handled by sink/lateral drag.
-  return Math.round(clamp(ms, 44, 120));
+  return Math.round(clamp(ms, SCALED_MOVE_MIN(44), SCALED_MOVE_MIN(120)));
 }
 function targetBoundaryFriction(){
   if(isOnboardingActive()) return 0;
@@ -2704,7 +2707,7 @@ function finalizeIntroTransition(targetPhase, reason='world'){
   const keepMove = forwardHeld() || leftHeld() || rightHeld();
   onboardingPhase=targetPhase;
   introDistance=INTRO_SCENE.introDistanceSteps;
-  const landing=nearestWildernessCell(px, py, 24);
+  const landing=nearestWildernessCell(px, py, D(24));
   px=landing.x; py=landing.y;
   lastStepDx=0;
   lastStepDy=0;
@@ -2748,9 +2751,9 @@ function triggerGateFlash(ms=220, vignetteMs=420){
 }
 function runGateFlashPulse(cx, cy){
   triggerGateFlash();
-  pulseRevealRings(cx, cy, [2,4,6,9]);
+  pulseRevealRings(cx, cy, [D(2),D(4),D(6),D(9)]);
 }
-function pulseRevealRings(cx, cy, radii=[2,4,6,9]){
+function pulseRevealRings(cx, cy, radii=[D(2),D(4),D(6),D(9)]){
   let i=0;
   const tickReveal=()=>{
     if(i>=radii.length) return;
@@ -2884,7 +2887,7 @@ function updateAudio(){
     if(storyMode && REC.isRecording()) PB.noteAudible(currentWorld(), idx, g);
     // Stereo pan from chunk's relative X position. PAN_R sets how tight
     // localization is — chunks beyond ±PAN_R cells are fully panned.
-    const PAN_R=18;
+    const PAN_R=D(18);
     const pan=Math.max(-1, Math.min(1, (wx-px)/PAN_R));
     const existing=voices.get(key);
     if(existing){
@@ -3061,7 +3064,7 @@ function teleport(){
   if(RENDERER==='3d'){
     // never land inside a wall: spiral out to the nearest open cell
     let r=0;
-    outer: for(; r<6; r++){
+    outer: for(; r<D(6); r++){
       for(let oy2=-r; oy2<=r; oy2++) for(let ox2=-r; ox2<=r; ox2++){
         if(Math.max(Math.abs(ox2),Math.abs(oy2))!==r) continue;
         if(!R3.r3dSolid(px+ox2, py+oy2)){ px+=ox2; py+=oy2; break outer; }
@@ -3158,7 +3161,7 @@ function jumpToSubWorld2(){
   stopWorldLayerVoice();
   silenceAmbientDrone();
   resetHorrorState();
-  revealAroundWithRadius(px, py, 6);
+  revealAroundWithRadius(px, py, D(6));
   updateAudio();
   startSubWorld2Sequence();
   pushEvent('// debug: dropped into sub world 2.');
@@ -3396,7 +3399,7 @@ function introSceneCell(wx, wy){
   return {char:fogGlyph(wx,wy), colorClass:'t-fog'};
 }
 
-function nearestWildernessCell(startX, startY, maxR=28){
+function nearestWildernessCell(startX, startY, maxR=D(28)){
   const startCell=getCellAt(startX,startY);
   if(startCell && !startCell.biomeId && !startCell.isChunk){
     return {x:startX,y:startY};
@@ -4237,18 +4240,22 @@ async function loadBuilding(){
     if(data.spawn) FP.setSpawn(data.spawn.x, data.spawn.y);
     // ?at= is a debug spawn and outranks the building's front door.
     const at=new URLSearchParams(location.search).get('at');
-    if(data.spawn && !(at && /^-?\d+,-?\d+$/.test(at))){ px=data.spawn.x; py=data.spawn.y; }
+    if(data.spawn && !(at && /^-?\d+,-?\d+$/.test(at))){
+      const spawn=FP.spawn();
+      px=spawn.x; py=spawn.y;
+    }
     for(const d of data.doors||[]) FP.setDoorKey(d.x, d.y, d.key);
     const p=FP.floorplan();
-    R3.r3dSetPlan(p.rgba, p.w, p.h);
+    R3.r3dSetPlan(p.rgba, p.w, p.h, p.material);
     MUT.mutateInit();
     // He left them where he turned around. Pages already read stay picked up
     // across a reload — the building may move, the paper does not come back.
     if(which==='conservatory'){
       const read=new Set(OBJ.objState().read);
       for(const pg of PAGES){
-        if(read.has(pg.id) || FP.isSolid(pg.at.x, pg.at.y)) continue;
-        OBJ.placePage(pg.at.x, pg.at.y, pg.room, pg.id);
+        const at=FP.toRuntimePoint(pg.at);
+        if(read.has(pg.id) || FP.isSolid(at.x, at.y)) continue;
+        OBJ.placePage(at.x, at.y, pg.room, pg.id);
       }
     }
     revealAround(px,py);
@@ -4596,18 +4603,14 @@ function tickPages(){
   const page=pageById.get(found.id);
   CUES.playCue(CUES.CUE.light, {gain:0.35, rate:1.4});
   STAB.reportRelief(0.3);    // finding something is a small exhale
-  // A page names a room and points at it. It never points at a route: the
-  // corridors between the rooms are the part the building has an opinion on.
-  // A page dropped by a test carries its own room; a page of his carries the
-  // room he wrote about.
+  // A PAGE NEVER MOVES THE MARK. It files itself under the room it talks about
+  // and it says which room that is; where you go next is a decision you make in
+  // the bag, on purpose, with your own hands. Picking a sheet off the floor and
+  // watching the minimap swing round to point at the swimming pool is a game
+  // telling a man what he wants, and this game does not do that.
   const room=page?.room || found.roomId;
-  if(room && !REC.hasTake(room)){
-    const cell=ROOM_CELLS[room] || { x:found.x + 40, y:found.y - 30 };
-    OBJ.setWaypoint(cell.x, cell.y, room);
-    SPEECH.say(framedLine('pageRoom', LINES.pageRoom, roomLabel(room)));
-  } else {
-    SPEECH.say(framedLine('pageAny', LINES.pageAny));
-  }
+  if(room && !REC.hasTake(room)) SPEECH.say(framedLine('pageRoom', LINES.pageRoom, roomLabel(room)));
+  else SPEECH.say(framedLine('pageAny', LINES.pageAny));
   saveCommit({ obj:OBJ.saveObjState() });
   if(page) DOC.readDocument(page);
 }
@@ -4651,7 +4654,8 @@ function markRoom(room){
     return false;
   }
 
-  OBJ.setWaypoint(cell.x, cell.y, room);
+  const waypoint = FP.toRuntimePoint(cell);
+  OBJ.setWaypoint(waypoint.x, waypoint.y, room);
   saveCommit({ obj:OBJ.saveObjState() });
   fireCue('bag');
   SPEECH.say({ who:'you', text:`${roomLabel(room)}. Marked.` });
@@ -4777,17 +4781,18 @@ function tickPlayback(){
 function tickRig(){
   if(!storyMode || planName!=='conservatory') return;
   if(thoughtHad('bent-rig') || scenes.blocksInput()) return;
-  if(Math.hypot(PLANT_RIG_CELL.x-px, PLANT_RIG_CELL.y-py) > 1.6) return;
+  const rig=FP.toRuntimePoint(PLANT_RIG_CELL);
+  if(Math.hypot(rig.x-px, rig.y-py) > D(1.6)) return;
   think('bent-rig', BENT_RIG, { onDone:()=>saveCommit({ flags:getSave().flags }) });
 }
 
-// Past the inner door, the building starts dreaming. `py > 15` is the same
-// line the tutorial's `go` step draws, because it is the same threshold.
+// Past the inner door, the building starts dreaming. Authored `y > 15` is the
+// same line the tutorial's `go` step draws, because it is the same threshold.
 function maybeWakeLens(){
   if(!storyMode || planName!=='conservatory') return;
   const d=window.__diffusion;
   if(!d?.isBypassed?.()) return;
-  if(py <= 15) return;
+  if(py <= FP.toRuntimeCoord(15)) return;
   once('lens-wakes', ()=>{ d.setBypass(false); lastZoneKey=''; });
 }
 
@@ -4796,7 +4801,7 @@ function tutorialCtx(){
   const r=REC.recState();
   return { px, py, light:r.light, recording:r.recording, takeElapsed:r.takeElapsed,
            spoiled:r.spoiled, spoilReason:r.spoilReason, slow:r.slow, workOrderRead,
-           marked: OBJ.targetRoom() };
+           marked: OBJ.targetRoom(), leftDock: py > FP.toRuntimeCoord(15) };
 }
 
 function tickMutation(dt){
@@ -4814,7 +4819,7 @@ function tickMutation(dt){
     // Patch only what moved. The building is silent when it does this — the
     // presence makes noise, the building does not. Keep them separate.
     const p=FP.floorplan();
-    for(const c of [change.seal, change.open]) R3.r3dPatchPlan(p.rgba, c.x, c.y, 1, 1);
+    for(const c of [change.seal, change.open]) R3.r3dPatchPlan(p.rgba, p.material, c.x, c.y, 1, 1);
   }
 }
 
@@ -5040,6 +5045,7 @@ function installProbe(){
     solid:(x,y)=>solidAt(x,y),
     plan:()=>({loaded:FP.isLoaded(), ...FP.planSize()}),
     cell:(x,y)=>FP.cellAt(x,y),
+    materialAt:(x,y)=>FP.materialAt(x,y),
     canStep:(ax,ay,bx,by)=>FP.canStep(ax,ay,bx,by,{keys:playerKeys}),
     floorH:()=>floorHere(),
     rgbaAt:(x,y)=>{ const p=FP.floorplan(); const i=(y*p.w+x)*4; return [...p.rgba.slice(i,i+4)]; },
@@ -5051,7 +5057,7 @@ function installProbe(){
       const wp=OBJ.waypoint(); const home=FP.spawn();
       const anchors=[]; if(wp) anchors.push({x:wp.x,y:wp.y}); if(home) anchors.push({x:home.x,y:home.y});
       const c=MUT.tryMutate(performance.now()+1e9, {px,py,facing,light:REC.lightOn()}, anchors);
-      if(c){ const p=FP.floorplan(); for(const q of [c.seal,c.open]) R3.r3dPatchPlan(p.rgba,q.x,q.y,1,1); }
+      if(c){ const p=FP.floorplan(); for(const q of [c.seal,c.open]) R3.r3dPatchPlan(p.rgba,p.material,q.x,q.y,1,1); }
       return c;
     },
     facing:()=>R3.r3dDelta(1),
@@ -5386,12 +5392,13 @@ function enterRogue(){
     const atParam=new URLSearchParams(location.search).get('at');
     if(atParam && /^-?\d+,-?\d+$/.test(atParam)){
       const [ax,ay]=atParam.split(',').map(Number);
-      px=ax; py=ay; trail=[]; revealAround(px,py);
+      const p=storyMode ? FP.toRuntimePoint({x:ax,y:ay}) : {x:ax,y:ay};
+      px=p.x; py=p.y; trail=[]; revealAround(px,py);
     }
     faceOpenDirection();   // never start facing a wall in a 2-wide lane
     // never spawn inside a wall slab
     if(R3.r3dSolid(px,py)){
-      outer: for(let r=1;r<12;r++){
+      outer: for(let r=1;r<D(12);r++){
         for(let oy2=-r;oy2<=r;oy2++) for(let ox2=-r;ox2<=r;ox2++){
           if(Math.max(Math.abs(ox2),Math.abs(oy2))!==r) continue;
           if(!solidAt(px+ox2,py+oy2)){ px+=ox2; py+=oy2; break outer; }

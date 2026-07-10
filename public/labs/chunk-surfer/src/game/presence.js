@@ -15,23 +15,25 @@
 // which already had the right shape: pursuit with a soft, non-lethal capture.
 // What changes is what it chases.
 
-import { NOISE } from '../config.js';
+import { CELL_SCALE, NOISE } from '../config.js';
 import * as REC from './recordist.js';
 
+const D = CELL_SCALE;
+
 export const PRESENCE = {
-  spawnDistance: 34,       // cells behind you, out of sight
-  baseSpeed: 0.65,         // cells/sec while investigating
-  huntSpeed: 1.25,         // cells/sec when it has a fresh sound
-  catchRadius: 0.72,
-  hearingRadius: 22,       // it only registers noise within this
-  lightRadius: 11,         // and can sense a lit player, vaguely, this far
+  spawnDistance: 34 * D,    // cells behind you, out of sight
+  baseSpeed: 0.65 * D,      // cells/sec while investigating
+  huntSpeed: 1.25 * D,      // cells/sec when it has a fresh sound
+  catchRadius: 0.72 * D,
+  hearingRadius: 22 * D,    // it only registers noise within this
+  lightRadius: 11 * D,      // and can sense a lit player, vaguely, this far
   memorySec: 3.4,          // how long a sound stays interesting
   loseInterestSec: 18,     // with nothing to chase, it drifts and settles
   catchCooldownSec: 8.0,   // one touch is one injury, not one per frame
-  recoilCells: 16,         // and it withdraws, so the moment can land
+  recoilCells: 16 * D,      // and it withdraws, so the moment can land
   spawnGraceSec: 4.0,      // enough time to understand it before it can touch
-  visibleRadius: 42,       // dread needs a body, not only a punishment
-  dreadRadius: 46,
+  visibleRadius: 42 * D,    // dread needs a body, not only a punishment
+  dreadRadius: 46 * D,
 };
 
 const state = {
@@ -109,7 +111,7 @@ export function updatePresence(dt, px, py, onCatch) {
   // 2. Light. A lit player is a smear on the dark, not an address: the target
   //    is offset, so it comes *near* you rather than *to* you.
   else if (REC.lightOn() && distanceTo(px, py) < PRESENCE.lightRadius) {
-    const jitter = 2.5;
+    const jitter = 2.5 * D;
     hear(px + (Math.random() * 2 - 1) * jitter,
          py + (Math.random() * 2 - 1) * jitter, 0.08, now);
   }

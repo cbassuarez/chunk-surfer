@@ -11,7 +11,9 @@
 // (x,z). The three levels therefore occupy three regions of one plane, and the
 // stairwells rise as they run. In first person this is invisible.
 
-export const CELL = 1.0;          // metres per cell
+export const AUTHOR_CELL = 1.0;   // metres per authored floorplan glyph
+export const CELL = 0.5;          // metres per runtime cell
+export const PLAN_SCALE = AUTHOR_CELL / CELL;
 export const EYE = 1.62;
 export const STEP_UP = 0.45;      // the tallest riser a person takes without thinking
 export const HEADROOM = 1.80;     // below this you do not fit
@@ -55,6 +57,33 @@ export const ZONE_WORLD = {
   [ZONE.stair]: 'main_b3',
 };
 
+// Surface identity is deliberately not packed into F. Flags are collision and
+// traversal. Materials are a parallel texture channel for the renderer.
+export const MATERIAL = {
+  none: 0,
+  serviceConcrete: 1,
+  acousticFoam: 2,
+  poolTile: 3,
+  wetTile: 4,
+  woodVelvet: 5,
+  practiceFoam: 6,
+  chapelStone: 7,
+  metalPlant: 8,
+  doorGlassDuct: 9,
+};
+
+export function materialForZone(zone) {
+  switch (zone) {
+    case ZONE.studio: return MATERIAL.acousticFoam;
+    case ZONE.natatorium: return MATERIAL.poolTile;
+    case ZONE.hall: return MATERIAL.woodVelvet;
+    case ZONE.practice: return MATERIAL.practiceFoam;
+    case ZONE.chapel: return MATERIAL.chapelStone;
+    case ZONE.plant: return MATERIAL.metalPlant;
+    default: return MATERIAL.serviceConcrete;
+  }
+}
+
 // The characters you draw with.
 //
 //   floor / ceil are metres. Room heights carry most of the sense of scale:
@@ -62,24 +91,24 @@ export const ZONE_WORLD = {
 export const GLYPHS = {
   ' ': null,                                                   // outside the building
   '#': { solid: true },                                        // wall / rock
-  '.': { floor: 0.0, ceil: 3.6, mutable: true },               // corridor (may change)
-  ',': { floor: 0.0, ceil: 3.6 },                              // corridor, fixed
-  '+': { floor: 0.0, ceil: 2.9, door: true },                  // door
-  'x': { floor: 0.0, ceil: 2.9, door: true, bricked: true },   // door, filled in
-  '=': { floor: 0.0, ceil: 2.2 },                              // low duct: crouch and hate it
-  '/': { floor: 0.0, ceil: 3.0, stair: true },                 // stair (height set per-run)
-  'o': { floor: 0.0, ceil: 8.0, sky: true },                   // shaft, open above
+  '.': { floor: 0.0, ceil: 3.6, mutable: true, material: 'serviceConcrete' }, // corridor (may change)
+  ',': { floor: 0.0, ceil: 3.6, material: 'serviceConcrete' },                // corridor, fixed
+  '+': { floor: 0.0, ceil: 2.9, door: true, material: 'doorGlassDuct' },       // door
+  'x': { floor: 0.0, ceil: 2.9, door: true, bricked: true, material: 'doorGlassDuct' },
+  '=': { floor: 0.0, ceil: 2.2, material: 'doorGlassDuct' },                  // low duct
+  '/': { floor: 0.0, ceil: 3.0, stair: true, material: 'serviceConcrete' },    // stair
+  'o': { floor: 0.0, ceil: 8.0, sky: true, material: 'metalPlant' },           // shaft, open above
 
   // Rooms. The letter is the zone; the height is the room.
-  'D': { floor: 0.0, ceil: 4.6, zone: 'dock' },
-  'F': { floor: 0.0, ceil: 4.5, zone: 'foyer' },
-  'B': { floor: 0.0, ceil: 3.2, zone: 'studio' },       // B3: low, dead, absorbent
-  'T': { floor: 0.0, ceil: 6.5, zone: 'natatorium' },    // tiled volume
-  'W': { floor: -1.6, ceil: 6.5, zone: 'natatorium' },   // the drained pool: you climb down
-  'H': { floor: 0.0, ceil: 9.0, zone: 'hall' },          // the concert hall
-  'P': { floor: 0.0, ceil: 3.4, zone: 'practice' },
-  'C': { floor: 0.0, ceil: 11.0, zone: 'chapel' },       // the nave
-  'M': { floor: 0.0, ceil: 3.8, zone: 'plant' },         // plant room
+  'D': { floor: 0.0, ceil: 4.6, zone: 'dock', material: 'serviceConcrete' },
+  'F': { floor: 0.0, ceil: 4.5, zone: 'foyer', material: 'serviceConcrete' },
+  'B': { floor: 0.0, ceil: 3.2, zone: 'studio', material: 'acousticFoam' },
+  'T': { floor: 0.0, ceil: 6.5, zone: 'natatorium', material: 'poolTile' },
+  'W': { floor: -1.6, ceil: 6.5, zone: 'natatorium', material: 'wetTile' },
+  'H': { floor: 0.0, ceil: 9.0, zone: 'hall', material: 'woodVelvet' },
+  'P': { floor: 0.0, ceil: 3.4, zone: 'practice', material: 'practiceFoam' },
+  'C': { floor: 0.0, ceil: 11.0, zone: 'chapel', material: 'chapelStone' },
+  'M': { floor: 0.0, ceil: 3.8, zone: 'plant', material: 'metalPlant' },
 };
 
 // Resolve a glyph to a cell descriptor. `base` lifts a whole level (unfolding
@@ -103,5 +132,6 @@ export function cellFor(ch, base = 0) {
     ceil: base + (g.ceil ?? 3.0),
     flags,
     zone: ZONE[g.zone ?? 'none'],
+    material: MATERIAL[g.material] || materialForZone(ZONE[g.zone ?? 'none']),
   };
 }

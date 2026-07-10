@@ -13,12 +13,16 @@
 // The old key/door system is recontextualised here rather than deleted: pages
 // spawn like keys did, and the descent opens when the room's work is done.
 
+import { PLAN_SCALE } from '../data/floorplan/legend.js';
+
+const D = (n) => n * PLAN_SCALE;
+
 const state = {
   pages: new Map(),        // "x,y" -> {x, y, roomId, id}
   read: [],                // page ids read this run
   waypoint: null,          // {x, y, roomId} — the only navigation you get
   target: null,            // roomId the client wants recorded next
-  pickupRadius: 1.4,
+  pickupRadius: D(1.4),
 };
 
 export function objState() { return state; }
@@ -68,7 +72,7 @@ export function bearingTo(px, py) {
   // screen coords: -y is north
   const ang = (Math.atan2(dx, -dy) + Math.PI * 2) % (Math.PI * 2);
   const bearing = BEARINGS[Math.round(ang / (Math.PI / 4)) % 8];
-  const far = d > 60 ? 'far off' : d > 28 ? 'some way off' : d > 12 ? 'nearby' : 'very close';
+  const far = d > D(60) ? 'far off' : d > D(28) ? 'some way off' : d > D(12) ? 'nearby' : 'very close';
   return { bearing, far, distance: d };
 }
 

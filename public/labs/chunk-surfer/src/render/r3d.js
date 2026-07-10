@@ -14,6 +14,8 @@
 // Game logic stays untouched: movement is still discrete grid steps; this
 // module only owns facing (N/E/S/W) and the camera.
 
+import { CELL, EYE as EYE_METERS, MATERIAL, PLAN_SCALE } from '../data/floorplan/legend.js';
+
 const MAX_CHUNKS = 48;
 const RD_SIZE = 256;
 const RENDER_SCALE = 0.6;  // half-ish res: perf + the soft 'dream' look
@@ -107,6 +109,7 @@ uniform vec4  uKey;          // x, z, active, -
 uniform vec4  uDoor;
 uniform vec4  uHush;         // x, z, strength, -
 uniform sampler2D uPlan;     // the authored building: R=floor G=ceil B=flags A=zone
+uniform sampler2D uMat;      // R=material id
 uniform vec2  uPlanSize;
 uniform float uUsePlan;      // 0 = procedural lattice (JUST SURF), 1 = the conservatory
 uniform vec3  uZoneTint[10];
@@ -115,10 +118,21 @@ out vec4 o;
 // Height encoding must match world/floorplan.js exactly.
 const float H_MIN = -8.0;
 const float H_RANGE = 32.0;
+const float CELL_METERS = ${CELL.toFixed(6)};
+const float PROC_CEIL = ${ (3.2 / CELL).toFixed(6) };
 const int FLAG_SOLID   = 1;
 const int FLAG_DOOR    = 2;
 const int FLAG_SKY     = 4;
 const int FLAG_BRICKED = 32;
+const int MAT_SERVICE = ${MATERIAL.serviceConcrete};
+const int MAT_ACOUSTIC = ${MATERIAL.acousticFoam};
+const int MAT_POOL = ${MATERIAL.poolTile};
+const int MAT_WET = ${MATERIAL.wetTile};
+const int MAT_WOOD = ${MATERIAL.woodVelvet};
+const int MAT_PRACTICE = ${MATERIAL.practiceFoam};
+const int MAT_CHAPEL = ${MATERIAL.chapelStone};
+const int MAT_METAL = ${MATERIAL.metalPlant};
+const int MAT_DOOR = ${MATERIAL.doorGlassDuct};
 
 float hash01(float x, float y){ return fract(abs(sin(x*127.1 + y*311.7) * 43758.5)); }
 float noise2(vec2 p, float s, float seed){
@@ -138,9 +152,9 @@ uint ihash2(int x, int y){ return ihash((uint(x)*1597334677u) ^ (uint(y)*2891336
 // connected by construction, since every lane meets every crossing lane — with
 // the interiors between them either open rooms or solid mass. Macro-zones of
 // 3x3 blocks open entirely into unroofed EXPANSES.
-const float CEIL = 3.2;
-const int BLOCK = 6;   // corridor pitch (cells)
-const int LANE  = 2;   // corridor width (cells)
+const float CEIL = PROC_CEIL;
+const int BLOCK = ${6 * PLAN_SCALE};   // corridor pitch (runtime cells)
+const int LANE  = ${2 * PLAN_SCALE};   // corridor width (runtime cells)
 
 bool isExpanse(int cx, int cz){
   int mx = int(floor(float(cx)/float(BLOCK*3)));
@@ -164,11 +178,11 @@ bool hasCeiling(vec2 p){ return !isExpanse(int(floor(p.x)), int(floor(p.y))); }
 // A cell of the world. In story mode it is read from the authored floorplan
 // texture — the SAME array JS collision reads, so the drawn wall and the solid
 // wall cannot disagree. In JUST SURF it is the old procedural lattice.
-struct Cell { bool solid; float f; float c; int flags; int zone; };
+struct Cell { bool solid; float f; float c; int flags; int zone; int mat; };
 
 Cell cellAtI(ivec2 p){
   Cell r;
-  r.flags = 0; r.zone = 0;
+  r.flags = 0; r.zone = 0; r.mat = MAT_SERVICE;
   if(uUsePlan < 0.5){
     r.solid = solidCell(vec2(p) + 0.5);
     r.f = 0.0;
@@ -182,10 +196,12 @@ Cell cellAtI(ivec2 p){
   vec4 t = texelFetch(uPlan, p, 0);
   r.flags = int(t.b * 255.0 + 0.5);
   r.solid = (r.flags & FLAG_SOLID) != 0;
-  r.f = t.r * H_RANGE + H_MIN;
-  r.c = t.g * H_RANGE + H_MIN;
+  r.f = (t.r * H_RANGE + H_MIN) / CELL_METERS;
+  r.c = (t.g * H_RANGE + H_MIN) / CELL_METERS;
   r.zone = int(t.a * 255.0 + 0.5);
-  if((r.flags & FLAG_SKY) != 0) r.c = 90.0;
+  r.mat = int(texelFetch(uMat, p, 0).r * 255.0 + 0.5);
+  if(r.mat == 0) r.mat = MAT_SERVICE;
+  if((r.flags & FLAG_SKY) != 0) r.c = 90.0 / CELL_METERS;
   return r;
 }
 float worldIdx(vec2 p){
@@ -202,6 +218,67 @@ float fogSeen(vec2 p){
   vec2 uv = (p - uFogOrigin) / ${FOG_TEX}.0;
   if(uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0) return 0.0;
   return texture(uFogTex, uv).r; // 0 unseen · ~0.5 remembered · 1 fresh
+}
+
+float line1(float v, float scale, float width){
+  float d = abs(fract(v * scale) - 0.5);
+  return 1.0 - smoothstep(width, width + 0.018, d);
+}
+float grid2(vec2 p, float scale, float width){
+  vec2 d = abs(fract(p * scale) - 0.5);
+  float g = min(d.x, d.y);
+  return 1.0 - smoothstep(width, width + 0.015, g);
+}
+float materialSeam(int mat, int surf, vec3 p){
+  if(mat == MAT_ACOUSTIC){
+    return surf == 1
+      ? max(line1(p.y, 1.65, 0.035), line1(mix(p.x, p.z, 0.5), 0.72, 0.030)) * 0.34
+      : grid2(p.xz, 0.62, 0.040) * 0.10;
+  }
+  if(mat == MAT_POOL || mat == MAT_WET){
+    return grid2(surf == 1 ? vec2(mix(p.x, p.z, 0.5), p.y) : p.xz, 1.75, 0.035) * (mat == MAT_WET ? 0.30 : 0.24);
+  }
+  if(mat == MAT_WOOD){
+    float boards = surf == 1 ? line1(p.y, 1.25, 0.030) : line1(p.x + p.z * 0.18, 1.45, 0.030);
+    return boards * 0.28;
+  }
+  if(mat == MAT_PRACTICE){
+    return max(line1(p.y, 1.10, 0.035), line1(p.x + p.z, 0.58, 0.020)) * 0.22;
+  }
+  if(mat == MAT_CHAPEL){
+    return max(line1(p.y, 0.52, 0.025), line1(mix(p.x, p.z, 0.5), 0.38, 0.018)) * 0.26;
+  }
+  if(mat == MAT_METAL){
+    return max(line1(p.y, 2.1, 0.030), line1(p.x - p.z, 0.42, 0.020)) * 0.30;
+  }
+  if(mat == MAT_DOOR){
+    return max(line1(p.y, 2.7, 0.030), line1(mix(p.x, p.z, 0.5), 1.1, 0.025)) * 0.38;
+  }
+  return (surf == 1 ? line1(p.y, 0.72, 0.026) : grid2(p.xz, 0.55, 0.040)) * 0.18;
+}
+vec3 materialBase(int mat, int surf, vec3 tint, vec3 biome, float rdv){
+  vec3 base = mix(vec3(0.48, 0.48, 0.46), tint, 0.22);
+  if(mat == MAT_ACOUSTIC) base = vec3(0.18, 0.20, 0.18);
+  else if(mat == MAT_POOL) base = vec3(0.40, 0.57, 0.62);
+  else if(mat == MAT_WET) base = vec3(0.22, 0.35, 0.38);
+  else if(mat == MAT_WOOD) base = vec3(0.34, 0.22, 0.16);
+  else if(mat == MAT_PRACTICE) base = vec3(0.50, 0.42, 0.31);
+  else if(mat == MAT_CHAPEL) base = vec3(0.60, 0.63, 0.60);
+  else if(mat == MAT_METAL) base = vec3(0.34, 0.35, 0.32);
+  else if(mat == MAT_DOOR) base = vec3(0.24, 0.28, 0.29);
+  if(surf == 3) base *= 0.58;
+  if(surf == 2) base = mix(base, mix(biome, tint, 0.35), 0.22);
+  return base * (0.56 + 0.55 * rdv);
+}
+float materialSpec(int mat){
+  if(mat == MAT_WET) return 0.95;
+  if(mat == MAT_POOL) return 0.42;
+  if(mat == MAT_DOOR) return 0.48;
+  if(mat == MAT_METAL) return 0.36;
+  if(mat == MAT_WOOD) return 0.16;
+  if(mat == MAT_CHAPEL) return 0.18;
+  if(mat == MAT_ACOUSTIC) return 0.035;
+  return 0.08;
 }
 void main(){
   vec2 uv = (gl_FragCoord.xy / uRes) * 2.0 - 1.0;
@@ -227,10 +304,11 @@ void main(){
   //
   // Wall normals come from the DDA's entry face, never from fract(pos): that
   // was the salt-and-pepper flicker.
-  const float MAXD = 90.0;
+  const float MAXD = 90.0 / CELL_METERS;
   float tHit = -1.0;
   int surf = 0;                 // 1 wall · 2 floor · 3 ceiling
   int hitZone = 0;
+  int hitMat = MAT_SERVICE;
   vec3 n = vec3(0.0, 1.0, 0.0);
 
   ivec2 cell = ivec2(floor(ro.xz));
@@ -251,14 +329,14 @@ void main(){
       if(rd.y < -1e-4){
         float tf = (cur.f - ro.y) / rd.y;
         if(tf >= tEnter && tf <= tExit){
-          tHit = tf; surf = 2; n = vec3(0.0, 1.0, 0.0); hitZone = cur.zone; break;
+          tHit = tf; surf = 2; n = vec3(0.0, 1.0, 0.0); hitZone = cur.zone; hitMat = cur.mat; break;
         }
       }
       // and its ceiling, unless it is open to the dark
       if(rd.y > 1e-4 && (cur.flags & FLAG_SKY) == 0){
         float tc = (cur.c - ro.y) / rd.y;
         if(tc >= tEnter && tc <= tExit){
-          tHit = tc; surf = 3; n = vec3(0.0, -1.0, 0.0); hitZone = cur.zone; break;
+          tHit = tc; surf = 3; n = vec3(0.0, -1.0, 0.0); hitZone = cur.zone; hitMat = cur.mat; break;
         }
       }
     }
@@ -276,7 +354,7 @@ void main(){
       else if(yB > nc.c && (nc.flags & FLAG_SKY) == 0) wall = true;   // header
     }
     if(wall && tExit <= MAXD){
-      tHit = tExit; surf = 1; n = wn; hitZone = nc.solid ? cur.zone : nc.zone; break;
+      tHit = tExit; surf = 1; n = wn; hitZone = nc.solid ? cur.zone : nc.zone; hitMat = nc.solid ? cur.mat : nc.mat; break;
     }
 
     cell = nxt; cur = nc; tEnter = tExit;
@@ -292,6 +370,8 @@ void main(){
     col += texture(uRD, rd.xz * 0.4 + uTime * 0.004).g * 0.012;
   } else {
     vec3 pos = ro + rd * tHit;
+    vec3 posM = pos * CELL_METERS;
+    vec3 roM = ro * CELL_METERS;
     // In the conservatory the tint comes from the room you are looking at; in
     // JUST SURF it comes from the procedural world beneath your feet.
     vec3 tint = (uUsePlan > 0.5) ? uZoneTint[hitZone] : uWorldTint[int(worldIdx(pos.xz))];
@@ -306,7 +386,7 @@ void main(){
       float dd = dot(d,d);
       float w = exp(-dd / max(uChunkA[i].z*uChunkA[i].z, 1.0));
       biome += uChunkC[i] * w; bw += w;
-      glow += uChunkC[i] * exp(-dd * 0.09) * uChunkA[i].w * (0.9 + 0.4 * sin(uTime * 1.7 + float(i) * 1.3));
+      glow += uChunkC[i] * exp(-(dd * CELL_METERS * CELL_METERS) * 0.09) * uChunkA[i].w * (0.9 + 0.4 * sin(uTime * 1.7 + float(i) * 1.3));
     }
     biome /= (1.0 + bw);
 
@@ -315,8 +395,8 @@ void main(){
     // Walls sample at low frequency (their UVs are magnified up close, and the
     // Gray-Scott field is pixel-fine — sampling it tight is pure salt-and-pepper).
     vec2 rdUv = (surf == 1)
-      ? vec2(mix(pos.z, pos.x, abs(n.z)), pos.y) * 0.030
-      : pos.xz * 0.05;
+      ? vec2(mix(posM.z, posM.x, abs(n.z)), posM.y) * 0.030
+      : posM.xz * 0.05;
     float rdv = texture(uRD, rdUv).g;
     float rdv2 = texture(uRD, rdUv * 0.28 + uTime * 0.002).g;
     rdv = max(rdv, rdv2 * 0.85);
@@ -324,17 +404,15 @@ void main(){
     float rim = smoothstep(0.16, 0.32, rdv) - smoothstep(0.32, 0.58, rdv);
 
     // tiling: floor slabs, wall courses — architecture needs a legible module
-    vec2 fr = abs(fract(pos.xz) - 0.5);
-    float slab = smoothstep(0.45, 0.5, max(fr.x, fr.y)) * 0.14;
-    float course = smoothstep(0.40, 0.5, abs(fract(pos.y * 2.0) - 0.5)) * 0.10;
-    float seam = (surf == 1) ? course : slab;
+    float seam = materialSeam(hitMat, surf, posM);
 
     // Interior lighting: a lamp the player carries. Inverse-square falloff with
     // Lambert on the true face normal — this is what makes a corridor read as
     // a corridor (near walls bright, the far end swallowed).
     vec3 toEye = ro - pos;
-    float dist = length(toEye);
-    vec3 ldir = toEye / max(dist, 1e-4);
+    vec3 toEyeM = roM - posM;
+    float dist = length(toEyeM);
+    vec3 ldir = normalize(toEye);
     float lambert = clamp(dot(n, ldir), 0.0, 1.0);
     float falloff = 1.0 / (1.0 + 0.10 * dist + 0.045 * dist * dist);
     // grazing floor right at the feet would otherwise blow out: soften the
@@ -357,13 +435,12 @@ void main(){
     float lamp = lambert * falloff * nearSoft * 3.0 * beam;   // a torch, not a flare
     float ambient = mix(0.010, 0.030, uLight);
 
-    vec3 albedo;
-    if(surf == 1)      albedo = mix(vec3(0.56, 0.55, 0.53), tint, 0.30) * (0.70 + 0.45 * rdv);
-    else if(surf == 3) albedo = mix(vec3(0.30, 0.30, 0.31), tint, 0.14) * (0.60 + 0.35 * rdv);
-    else               albedo = mix(mix(biome, tint, 0.42), vec3(0.36), 0.20) * (0.55 + 0.80 * rdv);
+    vec3 albedo = materialBase(hitMat, surf, tint, biome, rdv);
+    float spec = materialSpec(hitMat) * pow(clamp(lambert, 0.0, 1.0), 8.0) * lamp;
 
     float emis = (surf == 2) ? 0.55 : (surf == 1 ? 0.30 : 0.12);
     col = albedo * (ambient + lamp)
+        + vec3(0.55, 0.60, 0.62) * spec
         + rim * tint * (0.22 + uAudio * 0.45) * emis
         + glow * emis
         - seam * 0.30 * (ambient + lamp);
@@ -376,27 +453,27 @@ void main(){
     col = mix(vec3(0.014, 0.015, 0.02) + shimmer + col * 0.55, col, clamp(seen, 0.30, 1.0));
 
     // distance haze into the void (corridor ends go black)
-    col = mix(col, vec3(0.008, 0.008, 0.012), 1.0 - exp(-tHit * 0.055));
+    col = mix(col, vec3(0.008, 0.008, 0.012), 1.0 - exp(-(tHit * CELL_METERS) * 0.055));
   }
 
   // beacons: vertical light-beams for key/door (2D ray closest-approach)
   vec2 ro2 = ro.xz, rd2 = normalize(rd.xz + vec2(1e-5));
-  float span = (tHit > 0.0 ? tHit : 110.0) * length(rd.xz) / max(length(rd), 1e-4);
+  float span = (tHit > 0.0 ? tHit : 110.0 / CELL_METERS) * length(rd.xz) / max(length(rd), 1e-4);
   if(uKey.z > 0.5){
     float s = clamp(dot(uKey.xy - ro2, rd2), 0.0, span);
-    float d = length(ro2 + rd2*s - uKey.xy);
+    float d = length(ro2 + rd2*s - uKey.xy) * CELL_METERS;
     float pulse = 0.5 + 0.3*sin(uTime*2.6);
     col += vec3(1.0, 0.98, 0.9) * (exp(-d*d*6.0)*0.9 + exp(-d*d*0.3)*0.22) * pulse;
   }
   if(uDoor.z > 0.5){
     float s = clamp(dot(uDoor.xy - ro2, rd2), 0.0, span);
-    float d = length(ro2 + rd2*s - uDoor.xy);
+    float d = length(ro2 + rd2*s - uDoor.xy) * CELL_METERS;
     col += vec3(0.75, 0.85, 1.0) * (exp(-d*d*4.0)*0.8 + exp(-d*d*0.25)*0.2);
   }
   // the hush: an absence — darkens and destabilises everything near its line
   if(uHush.z > 0.001){
     float s = clamp(dot(uHush.xy - ro2, rd2), 0.0, span);
-    float d = length(ro2 + rd2*s - uHush.xy);
+    float d = length(ro2 + rd2*s - uHush.xy) * CELL_METERS;
     float reach = exp(-d*d*0.02) * uHush.z;
     float churn = texture(uRD, fract((ro2 + rd2*s) * 0.05 + uTime*0.01)).g;
     col = mix(col, vec3(0.0), clamp(reach * (0.75 + churn*0.5), 0.0, 0.97));
@@ -428,11 +505,11 @@ let gl = null, canvas = null;
 let progRD, progMarch, progPost;
 let rdTexA, rdTexB, rdFboA, rdFboB, rdFlip = false, rdWarm = 0;
 let sceneTex, sceneFbo, fogTexture;
-let planTexture = null, planW = 0, planH = 0;
+let planTexture = null, materialTexture = null, planW = 0, planH = 0;
 let uniforms = {};
 let facing = 0; // 0=N(0,-1) 1=E 2=S 3=W
 let yaw = 0, yawTarget = 0;
-let camX = 0, camZ = 0, camY = 3;
+let camX = 0, camZ = 0, camY = EYE_METERS / CELL;
 let lastT = 0;
 let fogOrigin = [0, 0];
 let lightEase = 0;   // the building starts dark, and so do you
@@ -547,10 +624,11 @@ export function r3dSetFacing(f) {
 // The authored building, as the shader sees it. This is literally the array
 // JS collision reads (world/floorplan.js `rgba`), so there is nothing to keep
 // in sync — the drawn wall IS the solid wall.
-export function r3dSetPlan(rgba, w, h) {
+export function r3dSetPlan(rgba, w, h, material = null) {
   if (!gl) return;
   planW = w; planH = h;
   if (planTexture) gl.deleteTexture(planTexture);
+  if (materialTexture) gl.deleteTexture(materialTexture);
   planTexture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, planTexture);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, rgba);
@@ -559,11 +637,26 @@ export function r3dSetPlan(rgba, w, h) {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+  const mat = material || new Uint8Array(w * h).fill(MATERIAL.serviceConcrete);
+  materialTexture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, materialTexture);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, w, h, 0, gl.RED, gl.UNSIGNED_BYTE, mat);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 }
 
 // A mutation touched a few cells: re-upload only those.
-export function r3dPatchPlan(rgba, x, y, w, h) {
+export function r3dPatchPlan(rgba, materialOrX, xOrY, yOrW, wOrH, maybeH) {
   if (!gl || !planTexture) return;
+  const hasMaterial = materialOrX && typeof materialOrX !== 'number';
+  const material = hasMaterial ? materialOrX : null;
+  const x = hasMaterial ? xOrY : materialOrX;
+  const y = hasMaterial ? yOrW : xOrY;
+  const w = hasMaterial ? wOrH : yOrW;
+  const h = hasMaterial ? maybeH : wOrH;
   const sub = new Uint8Array(w * h * 4);
   for (let ry = 0; ry < h; ry++) {
     const src = ((y + ry) * planW + x) * 4;
@@ -571,6 +664,15 @@ export function r3dPatchPlan(rgba, x, y, w, h) {
   }
   gl.bindTexture(gl.TEXTURE_2D, planTexture);
   gl.texSubImage2D(gl.TEXTURE_2D, 0, x, y, w, h, gl.RGBA, gl.UNSIGNED_BYTE, sub);
+  if (material && materialTexture) {
+    const mats = new Uint8Array(w * h);
+    for (let ry = 0; ry < h; ry++) {
+      const src = (y + ry) * planW + x;
+      mats.set(material.subarray(src, src + w), ry * w);
+    }
+    gl.bindTexture(gl.TEXTURE_2D, materialTexture);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, x, y, w, h, gl.RED, gl.UNSIGNED_BYTE, mats);
+  }
 }
 
 export function r3dUpdateFog(fogGet, px, py) {
@@ -589,7 +691,7 @@ export function r3dUpdateFog(fogGet, px, py) {
 // ── Collision mirror of the GLSL architecture (uint math: exact parity) ─────
 // Every branch here must match solidCell() in MARCH_FRAG exactly, or the
 // player walks through drawn walls / into invisible ones.
-const CEIL = 3.2, EYE = 1.62, BLOCK = 6, LANE = 2;
+const CEIL = 3.2 / CELL, BLOCK = 6 * PLAN_SCALE, LANE = 2 * PLAN_SCALE;
 let lastBeacons = { key: null, door: null };
 function ihashJs(a) {
   a = a >>> 0;
@@ -636,7 +738,7 @@ export function r3dFrame(state) {
   yaw += (yawTarget - yaw) * (1 - Math.exp(-dt * 12));
   // Eye height above whatever floor you are standing on. Eased, so a stair is
   // a climb rather than a series of teleports.
-  const floorGoal = (state.floorH ?? 0) + EYE;
+  const floorGoal = ((state.floorH ?? 0) + EYE_METERS) / CELL;
   camY += (floorGoal - camY) * (1 - Math.exp(-dt * 14));
   // A flashlight snaps. The only easing is a filament's breath on the way out.
   const lightGoal = state.light === false ? 0 : 1;
@@ -697,6 +799,9 @@ export function r3dFrame(state) {
     gl.activeTexture(gl.TEXTURE2);
     gl.bindTexture(gl.TEXTURE_2D, planTexture);
     gl.uniform1i(U('uPlan'), 2);
+    gl.activeTexture(gl.TEXTURE3);
+    gl.bindTexture(gl.TEXTURE_2D, materialTexture);
+    gl.uniform1i(U('uMat'), 3);
     gl.uniform2f(U('uPlanSize'), planW, planH);
     gl.uniform3fv(U('uZoneTint[0]'), ZONE_TINTS);
   }

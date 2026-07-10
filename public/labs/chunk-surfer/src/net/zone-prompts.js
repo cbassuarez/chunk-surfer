@@ -5,12 +5,9 @@
 // prompt behaves less like a texture map than a weather system: it decides
 // what the hallucination grows into as it eats its own output.
 //
-// So the prompt carries the horror. It names materials that should not be
-// architecture (flesh, hair, bone, faces), and the visual grammar of a model
-// failing to resolve — over-recognition, surfaces that keep almost deciding
-// what they are. What frightens is not a monster in the corridor; it is that
-// the corridor cannot settle on what it is made of. In testing, the model put
-// a standing figure at the end of the hall unasked. Leave room for that.
+// So the prompt carries the horror by corrupting architecture, not by adding a
+// cast. Materials should stay readable: concrete, foam, tile, wood, stone,
+// duct, glass, wetness. The model may make them unstable, but never generic.
 //
 // HARD-WON, DO NOT UNDO (see the sweep in diffusion_server/README.md):
 //   · No "psychedelic", "iridescent", "fractal", "neon" — sd-turbo hears those
@@ -31,9 +28,9 @@
 // In M4 these become the narrative registers (straight / ironic / decay /
 // refusal): each area will literally look like the mode of its dialogue.
 
-// The grammar of the lens — the model's failure to resolve, as material.
-// Note this describes *substance*, never inhabitants.
-const LENS = 'the surface cannot decide what it is made of, matter half-become something else, stone turning to meat and back';
+// The grammar of the lens — architectural material under pressure.
+// Note this describes surfaces, never inhabitants.
+const LENS = 'architectural surfaces stay legible but unstable, grime and water damage resolving into repeating room-tone striations, no figures, no faces, no bodies';
 
 // Photographic register — the P.T. lie: bad camera, real room, no color.
 const FILM = 'underexposed, black shadows, heavy film grain, found footage, handheld, desaturated, empty, deserted, dread';
@@ -60,28 +57,28 @@ export function seedFor(worldId, inExpanse) {
 const WORLD_PROMPTS = {
   // studio B3 — sub-basement. where it starts almost normal.
   main_b3: {
-    corridor: 'sub-basement recording studio corridor, peeling acoustic foam, coiled cable snakes on the floor, damp concrete, chalk bloom on the walls',
-    expanse: 'a dead live-room with no far wall, black acoustic absorption swallowing the light, fog on the floor, isolation booth glass',
+    corridor: 'sub-basement service concrete, loading dock threshold, security booth glass reflected in the dark, peeling acoustic foam, coiled cable trench, damp concrete, plant room lift shaft',
+    expanse: 'a dead live-room with black acoustic absorption, isolation booth glass, cable troughs in the floor, service concrete walls swallowed by darkness',
   },
   // the natatorium — drained, wet, bounded
   the_tub: {
-    corridor: 'natatorium passage, cracked pool tile, chlorine stains, algae in the grout, porcelain going soft, standing water underfoot',
-    expanse: 'a drained swimming pool from the deep end, black water still pooled at the bottom, tiled walls rising past the light, steam',
+    corridor: 'natatorium passage, cracked pool tile, chlorine stains, algae in the grout, coping stones, shallow puddles catching the flashlight',
+    expanse: 'a drained swimming pool from the deep end, black water pooled below the steps, mineral bloom on wet tile, tiled walls rising past the light',
   },
   // the concert hall — velvet, brass, dust
   amplifications: {
-    corridor: 'concert hall backstage passage, dark lacquered wood and tarnished brass, worn red velvet swelling out of the walls, dust',
-    expanse: 'an unlit auditorium seen from the stage, endless vacant seats receding past vanishing, dust suspended in the air, the hall lost in black',
+    corridor: 'concert hall backstage passage, bricked foyer door nearby, dark lacquered wood, tarnished brass, worn red velvet, dust along aisle thresholds',
+    expanse: 'an unlit auditorium seen from the stage, vacant seats and aisle breaks receding, backstage wing doors, dust suspended in black air',
   },
   // the practice wing — exhaustion, rot, static
   soundnoisemusic: {
-    corridor: 'practice wing corridor, soundproofed doors standing ajar, torn foam, water-stained lath, dim sodium light, rot',
-    expanse: 'a gutted rehearsal room stripped to bone, upended music stands, debris, the architecture decaying into grey noise',
+    corridor: 'practice wing corridor, repeated soundproof doors, bulletin glass, torn foam, water-stained drywall, low ductwork, dim sodium light',
+    expanse: 'a rehearsal room stripped to drywall and foam, upended music stands, bulletin glass reflecting the door repeats, grey dust',
   },
   // the chapel — the divine, the radiant, the unbearable
   lux_nova: {
-    corridor: 'chapel cloister passage, pale limestone and ribbed vault, organ pipes rising in the dark, cold light with no source, snow drifting indoors',
-    expanse: 'a ruined nave without end, hard shafts of light through a broken clerestory, snow on stone, radiant emptiness',
+    corridor: 'chapel side aisle, locked threshold, pale limestone, ribbed stone, organ pipes rising in darkness, cold clerestory light',
+    expanse: 'a ruined nave without end, organ loft and side aisle barely visible, hard shafts of light through broken clerestory, snow on stone',
   },
 };
 

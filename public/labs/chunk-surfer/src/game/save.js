@@ -1,6 +1,6 @@
 // Persistence, in two files with very different jobs.
 //
-// SAVE  (chunk-surfer:save:v1) — the run. Cleared by NEW GAME.
+// SAVE  (chunk-surfer:save:v2) — the run. Cleared by NEW GAME.
 // META  (chunk-surfer:meta:v1) — what the game remembers about *you*, across
 //        runs and deletions: endings seen, whether you have met the hush,
 //        whether you once quit in the middle. NEW GAME does not clear this.
@@ -10,9 +10,13 @@
 // Unknown/corrupt version → fall back to a fresh state and never throw. A
 // broken save must never brick the lab.
 
-const SAVE_KEY = 'chunk-surfer:save:v1';
+import { PLAN_SCALE } from '../data/floorplan/legend.js';
+
+const SAVE_KEY = 'chunk-surfer:save:v2';
+const LEGACY_SAVE_KEY = 'chunk-surfer:save:v1';
 const META_KEY = 'chunk-surfer:meta:v1';
-const SAVE_VERSION = 1;
+const SAVE_VERSION = 2;
+const META_VERSION = 1;
 
 const freshSave = () => ({
   version: SAVE_VERSION,
@@ -26,7 +30,7 @@ const freshSave = () => ({
 });
 
 const freshMeta = () => ({
-  version: SAVE_VERSION,
+  version: META_VERSION,
   endingsSeen: [],
   hushMet: false,
   leftMidRun: false,
@@ -34,13 +38,41 @@ const freshMeta = () => ({
   lastSeenAt: 0,
 });
 
-function read(key, fresh) {
+const scaleCoord = (v) => Number.isFinite(Number(v))
+  ? Math.round(Number(v) * PLAN_SCALE) + Math.floor(PLAN_SCALE / 2)
+  : v;
+const scalePoint = (p) => (p && Number.isFinite(Number(p.x)) && Number.isFinite(Number(p.y)))
+  ? { ...p, x: scaleCoord(p.x), y: scaleCoord(p.y) }
+  : p;
+
+function migrateSave(data) {
+  if (data?.version !== 1) return null;
+  const next = { ...freshSave(), ...data, version: SAVE_VERSION };
+  next.px = scaleCoord(data.px);
+  next.py = scaleCoord(data.py);
+  if (next.obj) {
+    next.obj = { ...next.obj };
+    next.obj.waypoint = scalePoint(next.obj.waypoint);
+    if (Array.isArray(next.obj.pages)) next.obj.pages = next.obj.pages.map(scalePoint);
+  }
+  return next;
+}
+
+function read(key, fresh, version, migrate = null, legacyKey = null) {
   try {
-    const raw = localStorage.getItem(key);
+    let raw = localStorage.getItem(key);
+    let fromLegacy = false;
+    if (!raw && legacyKey) {
+      raw = localStorage.getItem(legacyKey);
+      fromLegacy = !!raw;
+    }
     if (!raw) return fresh();
     const data = JSON.parse(raw);
-    if (data?.version !== SAVE_VERSION) return fresh();
-    return { ...fresh(), ...data };
+    if (data?.version === version) return { ...fresh(), ...data };
+    const migrated = migrate?.(data);
+    if (!migrated) return fresh();
+    if (fromLegacy) write(key, migrated);
+    return migrated;
   } catch (_) {
     return fresh();
   }
@@ -53,14 +85,14 @@ let save = freshSave();
 let meta = freshMeta();
 
 export function saveLoad() {
-  save = read(SAVE_KEY, freshSave);
-  meta = read(META_KEY, freshMeta);
+  save = read(SAVE_KEY, freshSave, SAVE_VERSION, migrateSave, LEGACY_SAVE_KEY);
+  meta = read(META_KEY, freshMeta, META_VERSION);
   return { save, meta };
 }
 export function getSave() { return save; }
 export function getMeta() { return meta; }
 export function hasSave() {
-  try { return !!localStorage.getItem(SAVE_KEY); } catch (_) { return false; }
+  try { return !!(localStorage.getItem(SAVE_KEY) || localStorage.getItem(LEGACY_SAVE_KEY)); } catch (_) { return false; }
 }
 export function saveCommit(patch = {}) {
   Object.assign(save, patch);
@@ -77,6 +109,9 @@ export function newGame() {
   return save;
 }
 export function clearSave() {
-  try { localStorage.removeItem(SAVE_KEY); } catch (_) {}
+  try {
+    localStorage.removeItem(SAVE_KEY);
+    localStorage.removeItem(LEGACY_SAVE_KEY);
+  } catch (_) {}
   save = freshSave();
 }

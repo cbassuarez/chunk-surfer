@@ -18,6 +18,7 @@ import { F, ZONE } from '../../../public/labs/chunk-surfer/src/data/floorplan/le
 
 let pass = true;
 const ck = (n, ok, x = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${x ? '  ' + x : ''}`); if (!ok) pass = false; };
+const rc = (x, y, opts) => FP.toRuntimePoint({ x, y }, opts);
 
 FP.compile(testbed.levels, { width: testbed.width, height: testbed.height });
 for (const d of testbed.doors || []) FP.setDoorKey(d.x, d.y, d.key);
@@ -26,8 +27,8 @@ MUT.mutateInit();
 MUT.MUTATE.cooldownSec = 0;       // hammer it
 
 const KEYS = new Set(['master']);
-const CHAPEL = { x: 48, y: 5 };
-const spawn = testbed.spawn;
+const CHAPEL = rc(48, 5);
+const spawn = FP.spawn();
 
 function walkReachable(from, to) {
   const seen = new Set([`${from.x},${from.y}`]);
@@ -88,16 +89,20 @@ MUT.MUTATE.cooldownSec = 0;
 
 // Be loud along a corridor, then hammer mutations from far away in the dark.
 const noisy = [];
-for (let x = 14; x <= 22; x++) { MUT.markHeard(x, 7, 1); noisy.push([x, 7]); }
+const noiseA = rc(14, 7, { center: false });
+const noiseB = rc(22, 7, { center: false });
+for (let x = noiseA.x; x <= noiseB.x; x++) { MUT.markHeard(x, noiseA.y, 1); noisy.push([x, noiseA.y]); }
 const before = new Map(noisy.map(([x, y]) => [`${x},${y}`, FP.isSolid(x, y)]));
 
-const farView = { px: 48, py: 5, facing: [1, 0], light: false };
+const farView = { px: CHAPEL.x, py: CHAPEL.y, facing: [1, 0], light: false };
 for (let i = 0; i < 400; i++) MUT.tryMutate(1e9 + i * 10000, farView, anchors);
 
 let heardChanged = 0;
 for (const [x, y] of noisy) if (FP.isSolid(x, y) !== before.get(`${x},${y}`)) heardChanged++;
 ck('NEVER MUTATE WHAT WAS HEARD: noisy cells are pinned', heardChanged === 0, `${heardChanged} changed`);
-ck('...and the noise really was recorded', MUT.heardAt(18, 7) > 0.5, `heard=${MUT.heardAt(18, 7).toFixed(2)}`);
+const heardProbe = rc(18, 7);
+ck('...and the noise really was recorded', MUT.heardAt(heardProbe.x, heardProbe.y) > 0.5,
+   `heard=${MUT.heardAt(heardProbe.x, heardProbe.y).toFixed(2)}`);
 
 // ── never mutate what is observed ───────────────────────────────────────────
 FP.compile(testbed.levels, { width: testbed.width, height: testbed.height });
@@ -105,9 +110,12 @@ MUT.mutateInit();
 MUT.MUTATE.cooldownSec = 0;
 
 // Stand in the corridor, light ON, staring east. Nothing ahead of you may move.
-const watcher = { px: 16, py: 7, facing: [1, 0], light: true };
+const watcherPoint = rc(16, 7);
+const watcher = { px: watcherPoint.x, py: watcherPoint.y, facing: [1, 0], light: true };
 const ahead = [];
-for (let x = 18; x <= 34; x++) for (let y = 6; y <= 8; y++) ahead.push([x, y, FP.isSolid(x, y)]);
+const aheadA = rc(18, 6, { center: false });
+const aheadB = rc(34, 8, { center: false });
+for (let x = aheadA.x; x <= aheadB.x; x++) for (let y = aheadA.y; y <= aheadB.y; y++) ahead.push([x, y, FP.isSolid(x, y)]);
 for (let i = 0; i < 400; i++) MUT.tryMutate(1e9 + i * 10000, watcher, anchors);
 
 let watchedChanged = 0;
@@ -122,9 +130,11 @@ ck('...while behind you, it does', st.applied > 0, `${st.applied} applied out of
 FP.compile(testbed.levels, { width: testbed.width, height: testbed.height });
 MUT.mutateInit();
 MUT.MUTATE.cooldownSec = 0;
-const blind = { px: 16, py: 7, facing: [1, 0], light: false };
+const blind = { px: watcherPoint.x, py: watcherPoint.y, facing: [1, 0], light: false };
 const near = [];
-for (let x = 14; x <= 18; x++) for (let y = 6; y <= 8; y++) near.push([x, y, FP.isSolid(x, y)]);
+const nearA = rc(14, 6, { center: false });
+const nearB = rc(18, 8, { center: false });
+for (let x = nearA.x; x <= nearB.x; x++) for (let y = nearA.y; y <= nearB.y; y++) near.push([x, y, FP.isSolid(x, y)]);
 for (let i = 0; i < 400; i++) MUT.tryMutate(1e9 + i * 10000, blind, anchors);
 let nearChanged = 0;
 for (const [x, y, was] of near) if (FP.isSolid(x, y) !== was) nearChanged++;

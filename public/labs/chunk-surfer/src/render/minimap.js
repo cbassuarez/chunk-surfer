@@ -8,9 +8,10 @@
 // destination, the building gives you nothing, and the dark does the rest.
 
 import { uiText, uiBox, uiGlyph, uiSize } from './ui.js';
+import { CELL_SCALE } from '../config.js';
 
 const W = 17, H = 9;        // cells
-const SCALE = 7;            // world cells per map cell
+const SCALE = 7 * CELL_SCALE; // runtime cells per map cell
 
 export function drawMinimap(px, py, waypoint, opts = {}) {
   const { cols } = uiSize();

@@ -1,12 +1,21 @@
 // ── Config ── extracted verbatim from index.html (M0 module split) ─────────
+import { CELL, PLAN_SCALE } from './data/floorplan/legend.js';
+
+export const CELL_METERS = CELL;
+export const CELL_SCALE = PLAN_SCALE;
+const D = CELL_SCALE;
+const T = 1 / CELL_SCALE;
+const dist = (n) => n * D;
+const ms = (n) => Math.max(1, Math.round(n * T));
+
 export const CONCURRENCY  = 8;
 export const SURF_AT      = 14;
 export const FADE_SEC     = 0.5;
-export const FOG_R        = 16;
+export const FOG_R        = dist(16);
 export const FULL_FIELD_VISIBLE = false;
 export const TRAIL_LEN    = 100;
 export const POLY_MAX     = 24;
-export const MOVE_MS      = 90;
+export const MOVE_MS      = ms(90);
 export const RMS_TARGET   = 0.12;
 export const ONBOARDING_PHASES = {
   INTRO_PRELUDE: 'intro_prelude',
@@ -18,18 +27,18 @@ export const INTRO_SCENE = {
   worldId: 'main_b3',
   forwardDx: 0,
   forwardDy: -1,
-  introDistanceSteps: 42,
-  speedStartMs: 220,
-  speedEndMs: 68,
+  introDistanceSteps: dist(42),
+  speedStartMs: ms(220),
+  speedEndMs: ms(68),
   ambientStart: 0.01,
   ambientEnd: 0.095,
-  primaryGateDist: 5,
-  finalGateDist: 42,
-  funnelStartDist: 6,
-  funnelLength: 36,
-  funnelWidthStart: 7,
+  primaryGateDist: dist(5),
+  finalGateDist: dist(42),
+  funnelStartDist: dist(6),
+  funnelLength: dist(36),
+  funnelWidthStart: dist(7),
   funnelWidthEnd: 0,
-  fogReleaseRadius: 6,
+  fogReleaseRadius: dist(6),
   // Phase boundaries as fractions of introProgress(); referenced by visuals/audio.
   voidEnd: 0.25,
   thresholdStart: 0.85
@@ -38,9 +47,9 @@ export const INTRO_SCENE = {
 // World-boundary friction: only active right at seams between worlds.
 // Hysteresis + dither keep it tactile without broad sluggish thresholds.
 export const WORLD_BOUNDARY_FRICTION = {
-  enterDist: 2,
-  exitDist: 5,
-  fullDist: 1,
+  enterDist: dist(2),
+  exitDist: dist(5),
+  fullDist: dist(1),
   maxMult: 1.42,
   rampIn: 0.34,
   rampOut: 0.16,
@@ -50,8 +59,8 @@ export const WORLD_BOUNDARY_FRICTION = {
 export const VOID_TRUDGE = {
   startPenalty: 1.02,
   maxPenalty: 1.45,
-  buildPerStep: 0.05,
-  decayPerStep: 0.22
+  buildPerStep: 0.05 * T,
+  decayPerStep: 0.22 * T
 };
 export const VOID_SINK = {
   startFatigue: 0.82,
@@ -62,8 +71,8 @@ export const VOID_SINK = {
 };
 
 // Per-sample visual terrain radius (renders glyphs around the chunk).
-export const TERRAIN_R_MIN = 10;
-export const TERRAIN_R_MAX = 26;
+export const TERRAIN_R_MIN = dist(10);
+export const TERRAIN_R_MAX = dist(26);
 export const TERRAIN_EMITTERS = {
   minSatellites: 1,
   maxSatellites: 5,
@@ -77,15 +86,15 @@ export const TERRAIN_EMITTERS = {
 // dense and biome transitions happen quickly.
 export const WORLD_SCALE_X = 2.2;
 export const WORLD_SCALE_Y = 2.2;
-export const CHUNK_MIN_SEP = 4;
+export const CHUNK_MIN_SEP = dist(4);
 
 // Audible radius (proximity falloff & candidate selection) — wide enough that
 // many samples overlap audibly wherever you stand. Big AUDIO_R + the cosine
 // falloff in proxFor() means many chunks contribute non-zero gain at once;
 // the per-chunk dedupe + POLY_MAX cap keeps total active voices bounded.
-export const AUDIO_R = 110;
-export const WORLD_TILE_SCALE_X = 2.8;
-export const WORLD_TILE_SCALE_Y = 2.2;
+export const AUDIO_R = dist(110);
+export const WORLD_TILE_SCALE_X = 2.8 * D;
+export const WORLD_TILE_SCALE_Y = 2.2 * D;
 export const WORLD_SPREAD_MIN = 0.2;
 export const WORLD_SPREAD_MAX = 0.68;
 
@@ -108,10 +117,10 @@ export const AMBIENT_LOOP_SEC   = 4;
 // Silence is the floor. Addition detonates.
 export const ROOM_TONE = {
   bedGain: 0.010,        // the noise floor of an empty room
-  monitorRadius: 96,     // cells. The chunk field is sparse: a tight radius
+  monitorRadius: dist(96), // cells. The chunk field is sparse: a tight radius
                          // finds nothing at all. Sparseness comes from
                          // monitorPoly, not from the radius.
-  monitorNear: 38,       // falloff scale of the monitor's own curve
+  monitorNear: dist(38), // falloff scale of the monitor's own curve
   monitorPoly: 4,        // voices; the lab uses POLY_MAX = 24
   monitorGain: 1.15,     // headphones are louder than the room
   monitorFadeSec: 1.1,   // the monitor opens slowly, like a hand on a fader
@@ -130,8 +139,7 @@ export const NOISE = {
 };
 
 export const WORLD_LAYER = {
-  range: 30,
+  range: dist(30),
   minGain: 0.0,
   maxGain: 0.14
 };
-

@@ -27,15 +27,16 @@ import { F, ZONE } from '../data/floorplan/legend.js';
 // A room is an organ: it never moves, and nothing may knock a new hole into it.
 // Corridors (zone none) and stairs are the connective tissue that may change.
 const isRoomZone = (z) => z !== ZONE.none && z !== ZONE.stair;
+const D = (n) => FP.toRuntimeDistance(n);
 
 export const MUTATE = {
   heardDecayPerSec: 0.06,    // a footfall pins a cell for ~16 seconds
-  heardRadius: 3,            // noise pins a small neighbourhood, not a point
+  heardRadius: D(3),         // noise pins a small neighbourhood, not a point
   cooldownSec: 2.2,          // between changes
   maxPerBurst: 3,            // how many cells one change may touch
   viewCos: 0.35,             // anything within this cone of your facing is watched
-  viewRange: 26,             // ...out to here
-  nearRange: 4,              // and this close, watched regardless of facing
+  viewRange: D(26),          // ...out to here
+  nearRange: D(4),           // and this close, watched regardless of facing
 };
 
 let heard = null;            // Float32Array, one per cell, 1 = just heard
@@ -118,7 +119,7 @@ function reachable(from, targets, solidOverride) {
 
 function mutableCandidates(view) {
   const out = [];
-  const R = 34;
+  const R = D(34);
   for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) {
     const x = Math.round(view.px) + dx, y = Math.round(view.py) + dy;
     if (x < 1 || y < 1 || x >= w - 1 || y >= h - 1) continue;
@@ -189,6 +190,7 @@ function findWallBeside(seal, view) {
     p.ceil[i] = src.ceil;
     p.flags[i] = F.MUTABLE;
     p.zone[i] = src.zone;
+    p.material[i] = src.material;
     return { x, y };
   }
   return null;
