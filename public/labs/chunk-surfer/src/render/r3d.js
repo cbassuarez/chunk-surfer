@@ -272,10 +272,14 @@ void main(){
     // blind — the room is still there, you simply cannot see it. Light attracts,
     // so this is a choice, not a setting.
     float axis = dot(normalize(-toEye), fwd);            // 1 = dead ahead
-    float cone = smoothstep(0.62, 0.90, axis);           // hot centre, soft edge
-    float spill = smoothstep(0.10, 0.70, axis) * 0.16;   // the lens is not perfect
-    float beam = (cone + spill) * uLight;
-    float lamp = lambert * falloff * nearSoft * 2.7 * beam;   // a torch, not a flare
+    // A torch throws a defined disc, not a gradient across the room: a hard
+    // edge with just enough diffusion at the rim to read as glass, plus a faint
+    // spill because no lens is perfect.
+    float cone     = smoothstep(0.880, 0.940, axis);        // the disc
+    float beamRim  = smoothstep(0.840, 0.895, axis) * 0.30; // soft edge
+    float spill    = smoothstep(0.30, 0.86, axis) * 0.05;   // lens leak
+    float beam = (cone + beamRim + spill) * uLight;
+    float lamp = lambert * falloff * nearSoft * 3.0 * beam;   // a torch, not a flare
     float ambient = mix(0.010, 0.030, uLight);
 
     vec3 albedo;
@@ -455,6 +459,13 @@ export function r3dTurn(dir) {
 export function r3dDelta(sign) {
   const v = [[0, -1], [1, 0], [0, 1], [-1, 0]][facing];
   return [v[0] * sign, v[1] * sign];
+}
+export function r3dFacing() { return facing; }
+// Corridors are two cells wide, so an arbitrary spawn facing can put a wall
+// both ahead of you and behind you — which reads exactly like broken arrow keys.
+export function r3dSetFacing(f) {
+  facing = ((f % 4) + 4) % 4;
+  yaw = yawTarget = facing * Math.PI / 2;
 }
 
 export function r3dUpdateFog(fogGet, px, py) {

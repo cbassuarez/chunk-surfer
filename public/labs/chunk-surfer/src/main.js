@@ -58,6 +58,11 @@ let bootLog=[];
 let chunks=[]; // {idx,label,charId,name,buffer,analysis,biome,worldId,biomeId,terrainRadius,baseVol,wx,wy,heard}
 let worlds=[]; // template metadata by world id
 let worldTemplates=new Map(); // worldId -> {id,label,width,height,terrain,sampleIdxs,region,biomes}
+// idx (file index) -> chunk. `chunks` is in LOAD order, so chunkAt(idx) is only
+// valid once all 300 files are in. Early callers (enterRogue fires at 14) were
+// reading undefined and taking the world build down with them.
+let chunkByIdx=new Map();
+const chunkAt=(i)=>chunkByIdx.get(i);
 let keysDown=new Set();
 let moveTimer=null;
 
@@ -695,7 +700,7 @@ function nearestWorldChunk(worldId){
     for(let tx=center.tx-tileR; tx<=center.tx+tileR; tx++){
       const ox=tx*WORLD_TILE_W, oy=ty*WORLD_TILE_H;
       for(const idx of tpl.sampleIdxs){
-        const c=chunks[idx];
+        const c=chunkAt(idx);
         const wx=ox+c.wx, wy=oy+c.wy;
         if(worldIdAt(wx,wy)!==worldId) continue;
         const d=Math.hypot(px-wx, py-wy);
@@ -1051,7 +1056,7 @@ function buildWorldTemplates(){
     // Stable placement: each chunk gets deterministic coordinates derived from
     // its own analysis + id. This prevents terrain "morphing" during async load.
     for(const idx of sampleIdxs){
-      const c=chunks[idx];
+      const c=chunkAt(idx);
       c.worldId=wc.id;
       c.biomeId=`${wc.id}:${c.biome}`;
       const z = clamp(((c.analysis?.zcr ?? 0) - 0.004) / 0.09, 0, 1);
@@ -1071,7 +1076,7 @@ function buildWorldTemplates(){
       for(let cx=0;cx<WORLD_TILE_W;cx++){
         let nd=Infinity, nc=null;
         for(const idx of sampleIdxs){
-          const ch=chunks[idx];
+          const ch=chunkAt(idx);
           const d=Math.hypot(cx-ch.wx, cy-ch.wy);
           if(d<nd){nd=d;nc=ch;}
         }
@@ -1090,7 +1095,7 @@ function buildWorldTemplates(){
     }
 
     for(const idx of sampleIdxs){
-      const c=chunks[idx];
+      const c=chunkAt(idx);
       if(!c.iconChar) c.iconChar=iconFor(c.analysis);
       templateTerrain[c.wy][c.wx]={
         char:c.iconChar,
@@ -1102,11 +1107,11 @@ function buildWorldTemplates(){
       };
     }
 
-    const cx=sampleIdxs.reduce((acc, idx)=>acc+chunks[idx].wx,0)/sampleIdxs.length;
-    const cy=sampleIdxs.reduce((acc, idx)=>acc+chunks[idx].wy,0)/sampleIdxs.length;
+    const cx=sampleIdxs.reduce((acc, idx)=>acc+chunkAt(idx).wx,0)/sampleIdxs.length;
+    const cy=sampleIdxs.reduce((acc, idx)=>acc+chunkAt(idx).wy,0)/sampleIdxs.length;
     let maxD=0;
     for(const idx of sampleIdxs){
-      const s=chunks[idx];
+      const s=chunkAt(idx);
       const d=Math.hypot(s.wx-cx, s.wy-cy)+s.terrainRadius;
       if(d>maxD) maxD=d;
     }
@@ -1114,7 +1119,7 @@ function buildWorldTemplates(){
 
     const groups=new Map();
     for(const idx of sampleIdxs){
-      const c=chunks[idx];
+      const c=chunkAt(idx);
       if(!groups.has(c.biome)) groups.set(c.biome,[]);
       groups.get(c.biome).push(idx);
     }
@@ -2735,7 +2740,7 @@ function audibleCandidates(){
         const tpl=worldTemplates.get(worldId);
         if(!tpl) continue;
         for(const idx of tpl.sampleIdxs){
-          const c=chunks[idx];
+          const c=chunkAt(idx);
           const emitters=(c.emitters && c.emitters.length>0)
             ? c.emitters
             : [{ x:c.wx, y:c.wy, g:1, id:'c' }];
@@ -2819,12 +2824,12 @@ function updateAudio(){
   const newCur=audible.length>0?audible[0]:null;
   const newCurKey=newCur?newCur.key:'';
   if(newCurKey!==curChunkKey){
-    if(newCur) pushEvent(`// ${chunks[newCur.idx].label} · ${chunks[newCur.idx].biome} · ${newCur.worldId}`);
+    if(newCur) pushEvent(`// ${chunkAt(newCur.idx).label} · ${chunkAt(newCur.idx).biome} · ${newCur.worldId}`);
     curChunkKey=newCurKey;
     curChunkIdx=newCur?newCur.idx:-1;
   }
   for(const {idx} of audible){
-    const c=chunks[idx];
+    const c=chunkAt(idx);
     if(!c.heard){c.heard=true;seenCount++;}
   }
 
@@ -2995,7 +3000,7 @@ function teleport(){
   const tpl=worldTemplates.get(worldId);
   if(!tpl || tpl.sampleIdxs.length===0) return;
   const idx=tpl.sampleIdxs[Math.floor(Math.random()*tpl.sampleIdxs.length)];
-  const c=chunks[idx];
+  const c=chunkAt(idx);
   px=tx*WORLD_TILE_W + c.wx;
   py=ty*WORLD_TILE_H + c.wy;
   if(RENDERER==='3d'){
@@ -3721,7 +3726,7 @@ function renderMap(){
 }
 
 function renderStatus(){
-  const c=curChunkIdx>=0?chunks[curChunkIdx]:null;
+  const c=curChunkIdx>=0?chunkAt(curChunkIdx):null;
   const v=curChunkKey?voices.get(curChunkKey):null;
   const dur=v?v.dur:0;
   const elapsed=(v&&actx)?((actx.currentTime-v.startedAt)%dur):0;
@@ -4098,7 +4103,7 @@ function r3dNearChunks(){
         const oxT=tx*WORLD_TILE_W, oyT=ty*WORLD_TILE_H;
         for(const [wid,tpl] of worldTemplates){
           for(const idx of tpl.sampleIdxs){
-            const c=chunks[idx];
+            const c=chunkAt(idx);
             if(!c) continue;
             const wx=oxT+c.wx, wy=oyT+c.wy;
             const d=Math.hypot(px-wx, py-wy);
@@ -4226,16 +4231,26 @@ function onPresenceCatch(count){
   CR.fx.flash(140, 'rgba(10,10,12,0.9)');
   CR.fx.shake(1.4, 420);
   pushEvent(`// it found you. you are hurt (${injuries}). you are louder now.`);
-  // Shove the player away from it — not to safety, just away.
+  // Shove the player away from it — not to safety, just away. Try the direction
+  // that points away first, then the other cardinals: in a corridor the "away"
+  // direction is often a wall, and standing still after being caught reads as
+  // nothing having happened.
   const st=PRES.presenceState();
-  const ax=px-st.x, ay=py-st.y;
-  const m=Math.hypot(ax,ay)||1;
-  for(let k=0;k<7;k++){
-    const nx=Math.round(px+(ax/m)), ny=Math.round(py+(ay/m));
-    if(RENDERER==='3d' && R3.r3dSolid(nx,ny)) break;
-    px=nx; py=ny;
+  let ax=px-st.x, ay=py-st.y;
+  let m=Math.hypot(ax,ay);
+  if(m<0.001 && st.escapeDir){ ax=-st.escapeDir[0]; ay=-st.escapeDir[1]; m=1; }
+  if(m<0.001){ ax=0; ay=1; m=1; }
+  ax/=m; ay/=m;
+  const dirs=[[0,-1],[1,0],[0,1],[-1,0]]
+    .sort((u,v)=>(v[0]*ax+v[1]*ay)-(u[0]*ax+u[1]*ay));   // most "away" first
+  const open=(x,y)=> RENDERER!=='3d' || !R3.r3dSolid(x,y);
+  for(const [dx,dy] of dirs){
+    if(!open(px+dx,py+dy)) continue;
+    for(let k=0;k<5 && open(px+dx,py+dy);k++){ px+=dx; py+=dy; }
+    break;
   }
   trail=[]; revealAround(px,py);
+  faceOpenDirection();
   applyLensPreset('hush');
   setTimeout(()=>{ if(storyMode) applyLensPreset('explore'); }, 4200);
   saveCommit({ rec:REC.saveRecState(), presence:PRES.savePresenceState() });
@@ -4282,6 +4297,15 @@ function saveTick(dt){
   saveCommit({ px, py, steps:stepCount, playSeconds:(getSave().playSeconds||0)+4 });
 }
 
+function faceOpenDirection(){
+  if(RENDERER!=='3d') return;
+  const dirs=[[0,-1],[1,0],[0,1],[-1,0]];
+  for(let f=0; f<4; f++){
+    const [dx,dy]=dirs[f];
+    if(!R3.r3dSolid(px+dx, py+dy)){ R3.r3dSetFacing(f); return; }
+  }
+}
+
 function returnToTitle(){
   storyMode=false;
   setGameChrome(false);
@@ -4319,7 +4343,14 @@ function drawStoryHud(){
 
   const rec=REC.recState();
   if(!rec.light && !rec.recording) uiText(2, 2, '(dark)', 't-trail-3', 0.5);
-  if(KEY_DEBUG && lastKeyDebug) uiText(2, 4, lastKeyDebug.slice(0,120), 't-key', 0.9);
+  if(KEY_DEBUG){
+    if(lastKeyDebug) uiText(2, 4, lastKeyDebug.slice(0,130), 't-key', 0.9);
+    try{
+      const w=window.__probe.why();
+      uiText(2, 5, `delta=[${w.arrowDelta}] wallAhead=${w.wallAhead} onboard=${w.onboardingActive}`
+        +` rec=${w.recording} interval=${Math.round(w.moveIntervalMs)}ms keys=${w.keysDown.join(',')||'-'}`, 't-key', 0.9);
+    }catch(_){}
+  }
 
   // The verbs must be discoverable. A player should never have to guess that
   // the recorder exists in a game about recording.
@@ -4376,6 +4407,21 @@ function installProbe(){
     placePresence:(x,y)=>{ const st=PRES.presenceState(); st.active=true; st.x=x; st.y=y; },
     solid:(x,y)=>R3.r3dSolid(x,y),
     facing:()=>R3.r3dDelta(1),
+    // Why did a step not happen? Report every gate, in order.
+    why:()=>{
+      const [dx,dy]=arrowDelta();
+      const fwd=RENDERER==='3d'?R3.r3dDelta(1):[0,-1];
+      return {
+        renderer:RENDERER, storyMode, inRogue, depth,
+        onboardingActive:isOnboardingActive(), onboardingPhase,
+        recording:REC.isRecording(),
+        keysDown:[...keysDown],
+        arrowDelta:[dx,dy],
+        wallAhead:RENDERER==='3d'?R3.r3dSolid(px+fwd[0],py+fwd[1]):false,
+        canMoveOnboarding:isOnboardingActive()?canMoveInOnboarding(px+fwd[0],py+fwd[1],fwd[0],fwd[1]):true,
+        moveIntervalMs:currentMoveIntervalMs(), sinceLastMoveMs:performance.now()-lastMoveAtMs,
+      };
+    },
     audible:()=>{ const a=audibleCandidates(); return {n:a.audible.length, r:audioRadius(), poly:audioPoly(), chunks:chunks.length, paused, depth, tpl:worldTemplates.size, ctx:!!actx}; },
   };
 }
@@ -4468,9 +4514,16 @@ async function startLens(qp){
     const st=window.__diffusion?.stats;
     if(!st){ hud.textContent=''; return; }
     const fps=st.framesIn-lastIn; lastIn=st.framesIn;
-    hud.textContent = st.state==='streaming' && fps>0
-      ? `lens ● ${fps}fps ${Math.round(st.lastRttMs)}ms   [t] tuner`
-      : `lens ○ ${st.state==='streaming'?'warming':st.state} — base render`;
+    if(st.state!=='streaming'){
+      hud.textContent = `lens ○ ${st.state} — base render`;
+    } else if(fps>0){
+      hud.textContent = `lens ● ${fps}fps ${Math.round(st.lastRttMs)}ms   [t] tuner`;
+    } else if(st.framesIn>0){
+      // Sample-and-hold: no frames is the design, not a stall.
+      hud.textContent = `lens ◍ held   [t] tuner`;
+    } else {
+      hud.textContent = `lens ○ warming — base render`;
+    }
   }, 1000);
 
   if(qp.get('tuner')!=='0'){
@@ -4554,6 +4607,7 @@ async function fetchFile(file){
                  baseVol:baseVolFor(file.analysis),
                  wx:0,wy:0,heard:false};
     chunks.push(chunk);
+    chunkByIdx.set(chunk.idx, chunk);
 
     if(!inRogue&&chunks.length>=SURF_AT) enterRogue();
     else if(inRogue) stampChunk(chunk); // late arrival
@@ -4612,6 +4666,7 @@ function enterRogue(){
       const [ax,ay]=atParam.split(',').map(Number);
       px=ax; py=ay; trail=[]; revealAround(px,py);
     }
+    faceOpenDirection();   // never start facing a wall in a 2-wide lane
     // never spawn inside a wall slab
     if(R3.r3dSolid(px,py)){
       outer: for(let r=1;r<8;r++){

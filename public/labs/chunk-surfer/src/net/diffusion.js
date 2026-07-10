@@ -77,6 +77,28 @@ export function diffusionStart({
   // not from the room being reinvented. 'walk' is for scenes meant to come apart.
   seedMode = 'fixed', seed = 7,
   negative = NO_CHARACTERS,
+
+  // ── SAMPLE AND HOLD — OFF BY DEFAULT, AND HERE IS WHY ─────────────────────
+  // Two variants were built, and both were worse than running continuously:
+  //
+  //   1. Hold the frame while moving and warp it to follow the player. A 2D
+  //      zoom cannot produce the perspective flow of walking down a corridor,
+  //      so it reads as zooming into a photograph — and the fresh frame on
+  //      stopping lands as a jump cut.
+  //   2. Trickle while moving, freeze while still. Cheaper, but it puts the
+  //      worst framerate exactly where the eye is looking, and the freeze
+  //      reads as stop-motion.
+  //
+  // Continuous diffusion with temporal smoothing and movement-gated drift beat
+  // both: ~10fps, no flicker, no stutter. The machinery below is kept because a
+  // *scripted* freeze is a good horror beat (M5), not because it should ever be
+  // the default.
+  hold = false,
+  moveFps = 4.5,
+  settleFrames = 6,
+  idleMs = 6000,
+  fadeMs = 380,
+
   onStatus = () => {},
 }) {
   const overlay = document.createElement('canvas');
@@ -100,12 +122,10 @@ export function diffusionStart({
   let firstFrame = true;
   let moving = false;      // the player took a step recently
 
-  // Epoch state: what is on screen, what is fading in, and how the held image
-  // has been warped since it was diffused.
+  // Epoch state: what is on screen, and what is fading in over it.
   let shown = null;        // ImageBitmap currently displayed
   let incoming = null;     // ImageBitmap fading in
   let fadeStart = 0;
-  let warp = { x: 0, y: 0, scale: 1 };
   let stillSince = performance.now();
   let framesThisEpoch = 0;
   let lastEpochAt = 0;
@@ -113,38 +133,31 @@ export function diffusionStart({
 
   function setState(s) { stats.state = s; onStatus({ ...stats }); }
 
-  // Draw the held hallucination, warped by however far you have walked since
-  // it was made. This is the "procgen" half: no GPU, no network, just the last
-  // dream sliding to keep up with you.
+  // An ImageBitmap can be referenced by three things at once: what is on
+  // screen, what is fading in, and what conditions the next frame. Closing one
+  // that is still referenced detaches it, and the next drawImage throws.
+  function release(bmp) {
+    if (bmp && bmp !== shown && bmp !== incoming && bmp !== lastStyled) bmp.close();
+  }
+
+  // Draw the current dream, crossfading whenever a new one arrives. No warping:
+  // a held frame is shown exactly as it was dreamed, from where you stood.
   function paint() {
-    if (!shown && !incoming) return;
+    if (!shown && !incoming) { rafId = requestAnimationFrame(paint); return; }
     const W = overlay.width, H = overlay.height;
     octx.setTransform(1, 0, 0, 1, 0, 0);
     octx.clearRect(0, 0, W, H);
-    const drawWarped = (bmp, alpha) => {
-      if (!bmp) return;
-      octx.globalAlpha = alpha;
-      octx.save();
-      octx.translate(W / 2 + warp.x, H / 2 + warp.y);
-      octx.scale(warp.scale, warp.scale);
-      octx.drawImage(bmp, -W / 2, -H / 2, W, H);
-      octx.restore();
-      octx.globalAlpha = 1;
-    };
+    if (shown) octx.drawImage(shown, 0, 0, W, H);
     if (incoming) {
       const t = Math.min(1, (performance.now() - fadeStart) / fadeMs);
-      drawWarped(shown, 1);
-      // A new epoch arrives unwarped: it was dreamed from where you are now.
       octx.globalAlpha = t;
       octx.drawImage(incoming, 0, 0, W, H);
       octx.globalAlpha = 1;
       if (t >= 1) {
-        if (shown) shown.close();
+        const old = shown;
         shown = incoming; incoming = null;
-        warp = { x: 0, y: 0, scale: 1 };
+        release(old);
       }
-    } else {
-      drawWarped(shown, 1);
     }
     rafId = requestAnimationFrame(paint);
   }
@@ -180,18 +193,26 @@ export function diffusionStart({
         // that moved). Structure is preserved *upstream* instead — by keeping
         // strength and feedback low enough that the model tracks the geometry.
         framesThisEpoch++;
-        if (firstFrame) {
+        const prevStyled = lastStyled;
+        lastStyled = bmp;                 // feedback always conditions on newest
+
+        if (!hold) {
+          // Continuous: draw straight to the overlay, persisting `smooth` of the
+          // previous frame so per-frame churn integrates instead of showing.
+          octx.globalAlpha = firstFrame ? 1 : (1 - smooth);
+          octx.drawImage(bmp, 0, 0, overlay.width, overlay.height);
+          octx.globalAlpha = 1;
+          firstFrame = false;
+        } else if (firstFrame) {
           shown = bmp; firstFrame = false;
-          warp = { x: 0, y: 0, scale: 1 };
           if (!rafId) rafId = requestAnimationFrame(paint);
         } else {
-          if (incoming) incoming.close();
+          const oldIncoming = incoming;
           incoming = bmp;
           fadeStart = performance.now();
+          release(oldIncoming);
         }
-        // feedback conditioning always uses the newest raw frame
-        if (lastStyled && lastStyled !== bmp && lastStyled !== shown) lastStyled.close();
-        lastStyled = bmp;
+        release(prevStyled);
         if (overlay.style.opacity !== '1') overlay.style.opacity = '1';
       } catch (_) { /* corrupt frame: keep last */ }
     };
@@ -223,12 +244,13 @@ export function diffusionStart({
 
     if (hold && shown) {
       const now = performance.now();
-      // Moving: hold the epoch. The warp is doing the work; the GPU sleeps.
-      if (moving) { stats.held++; return; }
-      // Just stopped: dream the room again, a few frames, then settle.
-      if (framesThisEpoch >= settleFrames) {
+      if (moving) {
+        // Walking: a slow trickle. The eye is busy; it will not notice.
+        if (now - lastEpochAt < 1000 / moveFps) { stats.held++; return; }
+      } else if (framesThisEpoch >= settleFrames) {
+        // Standing still and settled: the GPU stops entirely.
         if (now - lastEpochAt < idleMs) { stats.held++; return; }
-        framesThisEpoch = 0;             // a slow blink while you stand there
+        framesThisEpoch = 0;
       }
       lastEpochAt = now;
     }
@@ -306,35 +328,27 @@ export function diffusionStart({
       send();
       return { feedback, drift, strength, passes, guidance, smooth, seedMode, prompt, negative };
     },
-    resetFeedback() { if (lastStyled) { lastStyled.close(); lastStyled = null; } firstFrame = true; },
+    resetFeedback() { const b = lastStyled; lastStyled = null; release(b); firstFrame = true; },
 
     // main.js reports movement. Stopping opens a new epoch: the lens wakes and
     // re-dreams the room from where you now stand.
+    // main.js reports movement. Stopping wakes the lens: it dreams the room
+    // properly from where you now stand, then freezes.
     setMoving(v) {
       const was = moving;
       moving = !!v;
       if (was && !moving) { stillSince = performance.now(); framesThisEpoch = 0; lastEpochAt = 0; }
     },
+    nudge() {},   // retained for callers; warping was a mistake, see above
 
-    // A step or a turn. The held hallucination is warped to follow, so the
-    // world moves with you instead of boiling underneath you.
-    nudge({ forward = 0, turn = 0 } = {}) {
-      if (!hold) return;
-      warp.scale *= 1 + moveZoom * forward;
-      warp.x -= turn * overlay.width * moveTurn;
-      // Never let the held image shrink inside its own frame and show edges.
-      if (warp.scale < 1) warp.scale = 1;
-      const slack = (warp.scale - 1) * overlay.width * 0.5;
-      warp.x = Math.max(-slack, Math.min(slack, warp.x));
-    },
     stop() {
       stopped = true;
       cancelAnimationFrame(rafId); rafId = 0;
-      if (shown) shown.close(); if (incoming) incoming.close();
-      shown = incoming = null;
+      const a = shown, b = incoming, c = lastStyled;
+      shown = incoming = lastStyled = null;
+      for (const bmp of [a, b, c]) { try { bmp && bmp.close(); } catch (_) {} }
       clearInterval(sendTimer);
       try { ws && ws.close(); } catch (_) {}
-      if (lastStyled) lastStyled.close();
       overlay.remove();
       setState('stopped');
     },

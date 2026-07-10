@@ -27,6 +27,8 @@ export const PRESENCE = {
   lightRadius: 16,         // and can sense a lit player, vaguely, this far
   memorySec: 6.5,          // how long a sound stays interesting
   loseInterestSec: 14,     // with nothing to chase, it drifts and settles
+  catchCooldownSec: 3.0,   // one touch is one injury, not one per frame
+  recoilCells: 9,          // and it withdraws, so the moment can land
 };
 
 const state = {
@@ -36,6 +38,7 @@ const state = {
   hasTarget: false,
   targetSetAt: 0,
   lastHeardAt: 0,
+  lastCatchAt: -1e9,
   awareness: 0,            // 0..1 — permanent, grows with every capture
   caughtCount: 0,
 };
@@ -123,10 +126,23 @@ export function updatePresence(dt, px, py, onCatch) {
   }
 
   // 5. Contact. Not death — a spoiled take, an injury, and it knows you better.
-  if (distanceTo(px, py) <= PRESENCE.catchRadius) {
+  //    Guarded and cooled: without this it touches you on every frame and one
+  //    encounter becomes six injuries. It also withdraws afterwards, so the
+  //    moment has an after.
+  const cooling = (now - state.lastCatchAt) / 1000 < PRESENCE.catchCooldownSec;
+  if (!cooling && distanceTo(px, py) <= PRESENCE.catchRadius) {
+    state.lastCatchAt = now;
     state.caughtCount++;
     state.awareness = Math.min(1, state.awareness + 0.34);
     state.hasTarget = false;
+    // Recoil away along the line between you. If it is standing exactly on you
+    // there is no such line, so pick one.
+    let rx = state.x - px, ry = state.y - py;
+    let rm = Math.hypot(rx, ry);
+    if (rm < 0.001) { const a = Math.random() * Math.PI * 2; rx = Math.cos(a); ry = Math.sin(a); rm = 1; }
+    state.x += (rx / rm) * PRESENCE.recoilCells;
+    state.y += (ry / rm) * PRESENCE.recoilCells;
+    state.escapeDir = [rx / rm, ry / rm];   // the game shoves the player the other way
     onCatch?.(state.caughtCount);
   }
 }
