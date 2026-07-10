@@ -4197,7 +4197,8 @@ function speakerBlip(speaker){
 }
 
 async function loadBuilding(){
-  const which=new URLSearchParams(location.search).get('plan') || 'testbed';
+  // The real building. `?plan=testbed` still loads the geometry proof.
+  const which=new URLSearchParams(location.search).get('plan') || 'conservatory';
   try{
     const mod=await import(`./data/floorplan/${which}.js`);
     const data=mod[which] || mod.default;

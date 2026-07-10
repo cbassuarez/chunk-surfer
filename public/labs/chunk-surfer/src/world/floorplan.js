@@ -96,7 +96,9 @@ export function compile(levels, { width, height } = {}) {
 }
 
 // Interpolate floor/ceiling along a stair run so the risers are even.
-function rampStair({ from, to, fromH, toH, width = 1 }) {
+// `ceil` pins an absolute ceiling instead of a stairwell's low soffit — the
+// pool steps descend inside a six-metre hall and must not grow a lid.
+function rampStair({ from, to, fromH, toH, width = 1, ceil = null, head = 2.6 }) {
   const steps = Math.max(Math.abs(to.x - from.x), Math.abs(to.y - from.y));
   if (steps === 0) return;
   const dx = Math.sign(to.x - from.x), dy = Math.sign(to.y - from.y);
@@ -111,7 +113,7 @@ function rampStair({ from, to, fromH, toH, width = 1 }) {
       const i = idx(x, y);
       plan.solid[i] = 0;
       plan.floor[i] = fh;
-      plan.ceil[i] = fh + 2.6;
+      plan.ceil[i] = ceil != null ? ceil : fh + head;
       plan.flags[i] = F.STAIR;
       plan.zone[i] = ZONE.stair;
     }

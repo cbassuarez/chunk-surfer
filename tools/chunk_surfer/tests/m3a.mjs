@@ -11,7 +11,7 @@ let pass=true;
 const check=(name,ok,extra='')=>{ console.log(`${ok?'PASS':'FAIL'}  ${name}${extra?'  '+extra:''}`); if(!ok) pass=false; };
 
 // ── STORY: silent world ──────────────────────────────────────────────────────
-await page.goto('http://localhost:5173/labs/chunk-surfer/index.html?mode=story&renderer=3d&at=4,5',{waitUntil:'domcontentloaded',timeout:60000});
+await page.goto('http://localhost:5173/labs/chunk-surfer/index.html?mode=story&renderer=3d&at=6,7',{waitUntil:'domcontentloaded',timeout:60000});
 await page.evaluate(()=>localStorage.clear());
 await page.reload({waitUntil:'domcontentloaded'});
 await new Promise(r=>setTimeout(r,14000));
@@ -23,8 +23,8 @@ let s=await probe();
 check('story: walking world is silent (0 voices)', s.voices===0, `voices=${s.voices}`);
 check('story: starts dark (the building is dark and so are you)', s.rec.light===false);
 
-// walk: still silent, and noise is emitted
-for(let i=0;i<4;i++) await key('ArrowUp',260);
+// walk: still silent, and noise is emitted (probe immediately — noise decays)
+for(let i=0;i<2;i++) await key('ArrowUp',180);
 s=await probe();
 check('story: still silent after walking', s.voices===0, `voices=${s.voices}`);
 check('walking emits noise', s.rec.noise>0.05, `noise=${s.rec.noise.toFixed(3)} (decaying)`);
