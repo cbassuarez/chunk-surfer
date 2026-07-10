@@ -13,10 +13,20 @@
 // Backpressure: at most MAX_INFLIGHT unacknowledged frames; the newest frame
 // always wins (stale frames are dropped, never queued).
 
-// Strict lockstep. With two frames in flight the model is denoising two
-// different conditioning images concurrently and their results interleave,
-// which reads as flicker.
-const MAX_INFLIGHT = 1;
+// PACING. Do not count "frames in flight": the server keeps only the NEWEST
+// frame and silently discards the rest, so a discarded frame is never
+// acknowledged and any inflight counter leaks upward until it pins the client
+// to one send per response. That throttles throughput to 1/RTT (~4fps over a
+// 250ms round trip) while the GPU sits idle at 80ms/frame.
+//
+// Instead: send on a fixed cadence and let the server drop what it cannot use.
+// Its worker then always has the next frame waiting the instant it finishes
+// the last, so throughput becomes GPU-bound rather than latency-bound.
+// A backlog guard covers a genuinely dead server.
+const SEND_FPS = 16;             // comfortably above the GPU rate (~11fps at
+                                 // 512²), so the server's newest-frame slot is
+                                 // never empty and the GPU never idles
+const MAX_BACKLOG = 8;           // frames sent with nothing coming back
 // Generous retry window: a cold-started GPU container (serverless scale-from-
 // zero) takes 1–2 minutes to accept its first session.
 const RETRIES = 20;
@@ -42,7 +52,7 @@ export const NO_CHARACTERS = 'person, people, human, man, woman, child, figure, 
 // somewhere you can navigate, so explore keeps it low and the dramatic
 // presets spend it. Tunable live via URL params and window.__diffusion.
 export function diffusionStart({
-  sourceCanvas, hostEl, url, token, fps = 16,
+  sourceCanvas, hostEl, url, token, fps = 24,
   prompt = 'dark grimy concrete corridor, damp plaster, deserted, dread',
   // Tuned by sweep (see README): the narrow band where the corridor stays
   // legible but its material never settles. Push strength past ~0.6 and the
@@ -57,8 +67,10 @@ export function diffusionStart({
   // reaction-diffusion skin crawls, the glow breathes), so every conditioning
   // frame differs slightly and the model re-dreams it. Persisting some of the
   // previous styled frame integrates that churn instead of showing it.
-  // 0 = raw, every frame as returned. ~0.6 = the room stops boiling.
-  smooth = 0.6,
+  // 0 = raw, every frame as returned. Persistence is per-FRAME, so the higher
+  // the stream rate the more of it you need for the same settling in seconds.
+  // At ~8fps, 0.72 holds the room still without smearing motion.
+  smooth = 0.72,
   // `seedMode:'fixed'` pins the noise so a place stays recognisably itself
   // between frames and between visits; the crawl then comes from feedback,
   // not from the room being reinvented. 'walk' is for scenes meant to come apart.
@@ -72,14 +84,14 @@ export function diffusionStart({
   hostEl.appendChild(overlay);
   const octx = overlay.getContext('2d');
 
-  const stats = { framesOut: 0, framesIn: 0, lastRttMs: 0, state: 'connecting', skips: 0, blobNull: 0, notOpen: 0, inflight: 0 };
-  let ws = null, sendTimer = null, inflight = 0, retriesLeft = RETRIES, stopped = false;
+  const stats = { framesOut: 0, framesIn: 0, lastRttMs: 0, state: 'connecting', skips: 0, blobNull: 0, notOpen: 0, msDraw: 0, msEncode: 0, msDecode: 0 };
+  let ws = null, sendTimer = null, retriesLeft = RETRIES, stopped = false;
   let lastSentAt = 0;
 
-  // Downscale before encoding: the server diffuses at 512² regardless, and
+  // Downscale before encoding: the server diffuses at SIZE² regardless, and
   // toBlob on the full-res WebGL canvas is the fps bottleneck.
   const capture = document.createElement('canvas');
-  capture.width = 512; capture.height = 512;
+  capture.width = 512; capture.height = 512;   // match the server's SIZE (sd-turbo's native)
   const capCtx = capture.getContext('2d');
   // last styled frame, kept for the feedback loop
   let lastStyled = null;
@@ -100,20 +112,17 @@ export function diffusionStart({
       retriesLeft = RETRIES;
       setState('streaming');
       ws.send(JSON.stringify({ type: 'prompt', prompt, negative, strength, passes, guidance, seedMode, seed }));
-      // Lockstep pacing: capture as soon as the last frame lands, with a timer
-      // only as a watchdog. Sending faster than the GPU returns just queues
-      // stale conditioning.
-      sendTimer = setInterval(captureAndSend, Math.max(60, Math.round(1000 / fps)));
+      sendTimer = setInterval(captureAndSend, Math.round(1000 / SEND_FPS));
       captureAndSend();
     };
     ws.onmessage = async (ev) => {
       if (typeof ev.data === 'string') { try { onStatus({ ...stats, server: JSON.parse(ev.data) }); } catch (_) {} return; }
-      inflight = Math.max(0, inflight - 1);
       stats.framesIn++;
       stats.lastRttMs = performance.now() - lastSentAt;
-      queueMicrotask(captureAndSend);   // next frame the instant this one lands
       try {
+        const tDec = performance.now();
         const bmp = await createImageBitmap(new Blob([ev.data], { type: 'image/jpeg' }));
+        stats.msDecode = stats.msDecode * 0.8 + (performance.now() - tDec) * 0.2;
         if (overlay.width !== bmp.width || overlay.height !== bmp.height) {
           overlay.width = bmp.width; overlay.height = bmp.height;
         }
@@ -138,7 +147,7 @@ export function diffusionStart({
     const onGone = (ev) => {
       if (closed || stopped) return;
       closed = true;
-      clearInterval(sendTimer); sendTimer = null; inflight = 0;
+      clearInterval(sendTimer); sendTimer = null;
       overlay.style.opacity = '0';
       // 1013 = server busy with another session; back off longer, don't spin.
       const busy = ev && ev.code === 1013;
@@ -152,15 +161,18 @@ export function diffusionStart({
   }
 
   function captureAndSend() {
-    if (!ws || ws.readyState !== WebSocket.OPEN || inflight >= MAX_INFLIGHT) { stats.skips++; stats.inflight = inflight; return; }
-    inflight++;
-    stats.inflight = inflight;
+    if (!ws || ws.readyState !== WebSocket.OPEN) { stats.skips++; return; }
+    // Backlog, not inflight: the server drops frames on purpose, so the only
+    // meaningful signal is "we are shouting and nothing is coming back".
+    if (stats.framesOut - stats.framesIn > MAX_BACKLOG) { stats.skips++; return; }
     lastSentAt = performance.now();
 
     const W = capture.width, H = capture.height;
+    const t0 = performance.now();
     capCtx.setTransform(1, 0, 0, 1, 0, 0);
     capCtx.globalAlpha = 1;
     capCtx.drawImage(sourceCanvas, 0, 0, W, H);
+    stats.msDraw = stats.msDraw * 0.8 + (performance.now() - t0) * 0.2;
 
     // Feedback: the previous hallucination, slightly warped, laid back over
     // the geometry. The model then denoises its own dream plus a hint of
@@ -183,12 +195,13 @@ export function diffusionStart({
       capCtx.globalAlpha = 1;
     }
 
+    const tEnc = performance.now();
     capture.toBlob((blob) => {
-      if (!blob) { stats.blobNull++; inflight = Math.max(0, inflight - 1); return; }
-      if (!ws || ws.readyState !== WebSocket.OPEN) { stats.notOpen++; inflight = Math.max(0, inflight - 1); return; }
+      stats.msEncode = stats.msEncode * 0.8 + (performance.now() - tEnc) * 0.2;
+      if (!blob) { stats.blobNull++; return; }
+      if (!ws || ws.readyState !== WebSocket.OPEN) { stats.notOpen++; return; }
       blob.arrayBuffer().then((ab) => {
         if (ws && ws.readyState === WebSocket.OPEN) { ws.send(ab); stats.framesOut++; }
-        else inflight = Math.max(0, inflight - 1);
       });
     }, 'image/jpeg', 0.7);
   }

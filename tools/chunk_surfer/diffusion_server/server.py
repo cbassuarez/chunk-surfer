@@ -32,9 +32,14 @@ from PIL import Image
 
 MODEL = "stabilityai/sd-turbo"
 TINY_VAE = "madebyollin/taesd"  # ~10x faster encode/decode than the full VAE
-SIZE = 512
+SIZE = 512          # DO NOT LOWER. sd-turbo is trained at 512x512; at 384 the
+                    # output degrades and at 320 it leaves the distribution
+                    # entirely — photographs become cartoon line-art with
+                    # glowing filaments. Resolution is not a performance lever
+                    # here. (The real fps bottleneck was a client-side inflight
+                    # leak, not the GPU: see diffusion.js pacing.)
 JPEG_QUALITY = 72
-SERVER_REV = "r8-controlled"
+SERVER_REV = "r11-512"
 
 app = FastAPI()
 pipe = None
@@ -131,7 +136,7 @@ async def session(ws: WebSocket):
             try:
                 while True:
                     if latest_frame is None:
-                        await asyncio.sleep(0.005)
+                        await asyncio.sleep(0.001)  # idle here is idle GPU
                         continue
                     frame, latest_frame = latest_frame, None
                     if seed_mode == "walk":

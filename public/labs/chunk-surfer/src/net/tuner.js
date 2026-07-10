@@ -27,7 +27,7 @@ export function mountTuner(hostEl, getDiffusion) {
     "font:11px 'Courier New',monospace", 'pointer-events:auto',
   ].join(';');
 
-  const state = { strength: 0.42, guidance: 1.2, passes: 1, feedback: 0.18, drift: 0.5, smooth: 0.6 };
+  const state = { strength: 0.42, guidance: 1.2, passes: 1, feedback: 0.18, drift: 0.5, smooth: 0.72 };
   const rows = {};
 
   const h = (html) => { const d = document.createElement('div'); d.innerHTML = html; return d; };
