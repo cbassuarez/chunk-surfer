@@ -50,31 +50,38 @@ export function seedFor(worldId, inExpanse) {
   return (ZONE_SEEDS[worldId] || 1) + (inExpanse ? 7 : 0);
 }
 
+// The five zones are five rooms of one condemned conservatory. The building is
+// why the audio exists: a basement studio, a natatorium, a concert hall, a
+// practice wing, a chapel. Nothing here is invented — these are the rooms the
+// composer's material was made in, and the recordist has been hired to capture
+// each one's room tone before demolition.
+//
+// Every entry names materials and decay. None names an inhabitant.
 const WORLD_PROMPTS = {
-  // the composer's own room — starts almost normal
+  // studio B3 — sub-basement. where it starts almost normal.
   main_b3: {
-    corridor: 'dark grimy concrete corridor, damp plaster, chalk dust, hairline cracks spreading across the walls',
-    expanse: 'grey concrete chamber with no far wall, fog eating the floor, unfinished columns in the distance',
+    corridor: 'sub-basement recording studio corridor, peeling acoustic foam, coiled cable snakes on the floor, damp concrete, chalk bloom on the walls',
+    expanse: 'a dead live-room with no far wall, black acoustic absorption swallowing the light, fog on the floor, isolation booth glass',
   },
-  // wet, bounded, drowned
+  // the natatorium — drained, wet, bounded
   the_tub: {
-    corridor: 'dim green ceramic tile slick with black water, algae in the grout, porcelain going soft, drowned bathroom',
-    expanse: 'flooded dark hall, black mirror water without horizon, steam, slow swells crossing the surface',
+    corridor: 'natatorium passage, cracked pool tile, chlorine stains, algae in the grout, porcelain going soft, standing water underfoot',
+    expanse: 'a drained swimming pool from the deep end, black water still pooled at the bottom, tiled walls rising past the light, steam',
   },
-  // resonance, performance, velvet and bone
+  // the concert hall — velvet, brass, dust
   amplifications: {
-    corridor: 'dark lacquered wood and tarnished brass, worn red velvet swelling out of the walls like tissue, dust',
-    expanse: 'unlit empty auditorium, endless vacant seats receding past vanishing, dust suspended, the stage lost in black',
+    corridor: 'concert hall backstage passage, dark lacquered wood and tarnished brass, worn red velvet swelling out of the walls, dust',
+    expanse: 'an unlit auditorium seen from the stage, endless vacant seats receding past vanishing, dust suspended in the air, the hall lost in black',
   },
-  // exhaustion, rot, static
+  // the practice wing — exhaustion, rot, static
   soundnoisemusic: {
-    corridor: 'peeling wallpaper and torn lath, dark water stains spreading, dim sodium light, rot, walls dissolving into television static',
-    expanse: 'gutted interior stripped to bone, debris, architecture decaying into grey noise, nothing holding still',
+    corridor: 'practice wing corridor, soundproofed doors standing ajar, torn foam, water-stained lath, dim sodium light, rot',
+    expanse: 'a gutted rehearsal room stripped to bone, upended music stands, debris, the architecture decaying into grey noise',
   },
-  // the divine, the radiant, the unbearable
+  // the chapel — the divine, the radiant, the unbearable
   lux_nova: {
-    corridor: 'pale limestone and ribbed vault, snow drifting indoors, cold light with no source, bone-white stone',
-    expanse: 'ruined cathedral nave without end, shafts of hard light, snow on stone, radiant emptiness, the geometry of a god',
+    corridor: 'chapel cloister passage, pale limestone and ribbed vault, organ pipes rising in the dark, cold light with no source, snow drifting indoors',
+    expanse: 'a ruined nave without end, hard shafts of light through a broken clerestory, snow on stone, radiant emptiness',
   },
 };
 

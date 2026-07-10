@@ -3,6 +3,23 @@
     html,body{height:100%;background:#0d0d0d;color:#bbb;overflow:hidden;}
     #wrap{display:flex;flex-direction:column;height:100vh;padding:10px 14px;position:relative;}
     #map{flex:1;overflow:hidden;font-family:'Courier New',Courier,monospace;font-size:13px;line-height:1.38;white-space:pre;letter-spacing:0;background:transparent;transition:background 360ms ease-out;}
+
+    /* Story mode is a game, not a lab: the render surface is the whole screen
+       and every instrument readout moves onto the ui.js glyph layer — the one
+       surface the diffusion lens can never repaint. JUST SURF keeps its chrome,
+       because in that mode the instrument IS the piece. */
+    body.game{background:#000;}
+    body.game #wrap{padding:0;}
+    body.game #catalogCtl,
+    body.game #catalog,
+    body.game #event,
+    body.game #sense,
+    body.game #keymeter,
+    body.game #status{display:none !important;}
+    /* #map carries tabindex for keyboard focus; the focus ring is a border
+       around the game world. */
+    body.game #map:focus,
+    body.game #map:focus-visible{outline:none;}
     #map.flash{background:rgba(230,236,245,0.85);transition:background 80ms linear;}
     #map.hush-hit{
       filter:contrast(2.2) brightness(1.85) saturate(0.2);

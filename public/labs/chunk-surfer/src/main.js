@@ -23,7 +23,7 @@ import { fft, analyze, biomeFrom } from './audio/analysis.js';
 import * as CR from './render/canvas.js';
 import * as R3 from './render/r3d.js';
 import * as scenes from './game/scenes.js';
-import { uiInit, uiClear } from './render/ui.js';
+import { uiInit, uiClear, uiText, uiSize } from './render/ui.js';
 import { saveLoad, saveCommit, getSave, newGame, hasSave, metaCommit } from './game/save.js';
 import { flagApply, flagTest } from './game/flags.js';
 import { dialogueInit, loadScript, startDialogue } from './game/dialogue.js';
@@ -3992,7 +3992,9 @@ function loop(){
         updateHorrorTick();
       }
       if(RENDERER==='3d') render3d(); else renderMap();
-      renderCatalog(); renderStatus(); renderSense(); renderKeymeter();
+      // Instrument readouts only exist in JUST SURF; in story mode they are
+      // hidden by body.game, so don't pay to rebuild their DOM every frame.
+      if(!storyMode){ renderCatalog(); renderStatus(); renderSense(); renderKeymeter(); }
       if(hush.active) once('hush-met', ()=>metaCommit({hushMet:true}));
     }
     else renderBoot();
@@ -4004,6 +4006,7 @@ function loop(){
     lastLoopMs=nowMs;
     scenes.update(dt);
     uiClear();
+    drawStoryHud();
     scenes.render();
     if(storyMode && inRogue) saveTick(dt);
   }catch(err){
@@ -4100,6 +4103,7 @@ function speakerBlip(speaker){
 
 function enterStory(){
   storyMode=true;
+  setGameChrome(true);
   const qp=new URLSearchParams(location.search);
   // ?flags=a,b=2 — force story state for testing
   const flagParam=qp.get('flags');
@@ -4114,6 +4118,7 @@ function enterStory(){
 
 function enterJustSurf(){
   storyMode=false;
+  setGameChrome(false);
   ensureCtx();
   startAmbientDroneAt(currentAmbientTarget());
   pushEvent('// just surf. no story. the field is the field.');
@@ -4131,12 +4136,37 @@ function saveTick(dt){
 
 function returnToTitle(){
   storyMode=false;
+  setGameChrome(false);
   stopAllVoices();
   scenes.push(makeTitleScene({
     onNewGame:()=>{ newGame(); enterStory(); },
     onContinue:()=>{ enterStory(); },
     onJustSurf:enterJustSurf,
   }));
+}
+
+// Story mode hides every lab readout and fills the viewport (see styles.css
+// body.game). The essentials are redrawn on the glyph layer by drawStoryHud().
+function setGameChrome(on){
+  document.body.classList.toggle('game', on);
+  if(introTitleEl) introTitleEl.style.display = on ? 'none' : '';
+  if(INTRO_VIGNETTE_EL) INTRO_VIGNETTE_EL.style.display = on ? 'none' : '';
+}
+
+function requestFullscreenSafe(){
+  // Must be called from a user gesture; iframed labs need allowfullscreen.
+  const el=document.documentElement;
+  if(document.fullscreenElement || !el.requestFullscreen) return;
+  el.requestFullscreen().catch(()=>{});
+}
+
+// Bottom-left status on the glyph layer: the last event line, nothing else.
+// M3 adds the tape meter, the compass and the shitty minimap here.
+function drawStoryHud(){
+  if(!storyMode || scenes.blocksWorld()) return;
+  const { rows }=uiSize();
+  const msg=eventQueue[eventQueue.length-1];
+  if(msg) uiText(2, rows-2, msg.slice(0,110), 't-trail-2', 0.55);
 }
 
 function bootScenes(){
@@ -4149,13 +4179,18 @@ function bootScenes(){
   loadScript(PROLOGUE_DIALOGUE);
 
   const qp=new URLSearchParams(location.search);
+  if(!qp.has('debug')){
+    if(SUBWORLD2_BTN) SUBWORLD2_BTN.style.display='none';
+    if(DEBUG_KEYS_BTN) DEBUG_KEYS_BTN.style.display='none';
+  }
   const mode=qp.get('mode');
   if(mode==='surf'){ enterJustSurf(); return; }
   if(mode==='story' || qp.has('talk')){ enterStory(); return; }
 
+  const wantFs=qp.has('fullscreen');
   scenes.push(makeTitleScene({
-    onNewGame:()=>{ newGame(); enterStory(); },
-    onContinue:()=>{ enterStory(); },
+    onNewGame:()=>{ if(wantFs) requestFullscreenSafe(); newGame(); enterStory(); },
+    onContinue:()=>{ if(wantFs) requestFullscreenSafe(); enterStory(); },
     onJustSurf:enterJustSurf,
   }));
 }
