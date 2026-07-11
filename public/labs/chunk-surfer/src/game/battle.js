@@ -29,6 +29,8 @@
 
 import * as scenes from './scenes.js';
 import { uiSize, uiFill, uiText, uiWrap, uiCenter } from '../render/ui.js';
+import { drawMachinePanel, drawVfdMeter, drawVfdText } from '../render/presentation.js';
+import { UI_COLOR } from '../render/palette.js';
 import { createSamDialogVoice, isVoiced } from '../audio/sam-voice.js';
 import { TYPE_GAIN, TYPE_LEVEL } from '../audio/story-audio.js';
 
@@ -240,32 +242,36 @@ export function makeBattleScene({
 
       const w = Math.min(COL_W, cols - 8);
       const x = Math.floor((cols - w) / 2);
+      const panel = drawMachinePanel(x - 2, 2, w + 4, rows - 4, {
+        label: 'MONITOR', source: 'COMPOSURE',
+        footer: phase === 'menu' ? '[↑/↓] SELECT · [ENTER] CONFIRM' : '[SPACE] CONTINUE', meter: true,
+      });
 
       // The enemy has a name and it is at the top, because you are looking at
       // it even when you cannot see it.
-      uiCenter(3, battle.enemy || 'THE SOUND OF SILENCE', 't-hush-core', 0.9);
+      drawVfdText(panel.x, panel.y, battle.enemy || 'THE SOUND OF SILENCE', { color:UI_COLOR.danger, max:panel.w });
 
       // Composure: the take meter, worn as HP.
       const bw = Math.min(46, cols - 8);
       const bx = Math.floor((cols - bw) / 2);
       const filled = Math.round((composure / MAX) * (bw - 2));
       const low = composure / MAX < 0.34;
-      uiText(bx, 5, '[', 't-trail-2');
+      uiText(bx, 7, '[', 'ui-frame');
       for (let i = 0; i < bw - 2; i++) {
-        uiText(bx + 1 + i, 5, i < filled ? '▓' : '░', i < filled ? (low ? 't-hush-core' : 't-key') : 't-trail-4', i < filled ? 1 : 0.35);
+        uiText(bx + 1 + i, 7, i < filled ? '▓' : '░', i < filled ? (low ? 'ui-danger' : 'ui-amber') : 'ui-frame', i < filled ? 1 : 0.45);
       }
-      uiText(bx + bw - 1, 5, ']', 't-trail-2');
-      uiText(bx, 6, 'composure', 't-trail-3', 0.5);
-      if (known) uiText(bx + bw - 12, 6, known, 't-trail-2', 0.6);
+      uiText(bx + bw - 1, 7, ']', 'ui-frame');
+      uiText(bx, 8, 'COMPOSURE', 'ui-label');
+      if (known) uiText(bx + bw - 12, 8, known.toUpperCase(), 'ui-secondary');
 
       // the current line
       const lines = cur ? uiWrap(textOf(cur).slice(0, typed), w) : [];
-      let y = Math.max(9, Math.floor(rows * 0.42));
+      let y = Math.max(11, Math.floor(rows * 0.42));
       const st = STYLE[whoOf(cur)] || STYLE.direction;
-      if (cur && st.label) uiText(x, y++, st.label, 't-trail-4', 0.5);
+      if (cur && st.label) uiText(x, y++, `SOURCE  ${st.label}`, 'ui-label');
       lines.forEach((l, i) => {
         uiText(x, y, l, st.cls, 0.95);
-        if (i === lines.length - 1 && cur && typed < textOf(cur).length) uiText(x + l.length, y, '▌', st.cls, 0.55);
+        if (i === lines.length - 1 && cur && typed < textOf(cur).length) uiText(x + l.length, y, '▌', 'ui-amber');
         y++;
       });
 
@@ -278,11 +284,10 @@ export function makeBattleScene({
               : v === 'BREATHE' ? 'recover — but stop listening'
                 : known ? 'say what it is' : 'guess';
           uiText(x, y++, `${on ? '▸' : ' '} ${i + 1}  ${v.padEnd(11)}  ${on ? hint : ''}`,
-                 on ? 't-chunk-on' : 't-trail-2', on ? 1 : 0.6);
+                 on ? 'ui-amber' : 'ui-primary');
         });
       }
 
-      uiCenter(rows - 2, phase === 'menu' ? '↑ ↓ · enter' : '[space]', 't-trail-4', 0.24);
     },
   };
 }

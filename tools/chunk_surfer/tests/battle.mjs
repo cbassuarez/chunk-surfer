@@ -93,6 +93,38 @@ for (let i = 0; i < 40 && (await scene() || '').startsWith('battle'); i++) {
 }
 check('Sarah is in the room he cannot record', sawSarah);
 
+// ── it fires in play, during the natatorium take, never the first ───────────
+await ev(() => window.__scenes.top()?.id?.startsWith('battle') && window.__probe.stopPlay);
+// dismiss any open battle
+for (let i = 0; i < 40 && (await scene() || '').startsWith('battle'); i++) {
+  const s = await bs();
+  if (s?.phase === 'menu') await key(String(s.known ? 4 : 1), 280); else await key(' ', 150);
+}
+await ev(() => localStorage.clear());
+await p.goto('http://localhost:5173/labs/chunk-surfer/index.html?mode=story&renderer=3d&skiptut=1&nothink=1&sam=0&at=85,30', { waitUntil: 'domcontentloaded' });
+await wait(15000);
+n = 0; while (await ev(() => window.__scenes.depth()) > 0 && n++ < 20) await key('Enter', 110);
+check('spawned in the natatorium', (await ev(() => window.__probe.world())) === 'the_tub');
+
+// A first take alone summons nothing but the presence.
+await ev(() => window.__probe.tuneRoomTone({ takeSeconds: 2 }));
+await key('r', 300); await wait(1200); await key('r', 300); await wait(2600);
+check('the first take of the night has no battle in it', !(await scene() || '').startsWith('battle'));
+
+// Now a prior take exists (that one). The next natatorium... but it is done.
+// Seed a prior take in another room, and roll the natatorium: the set piece.
+await ev(() => window.__probe.seedTake('amplifications'));
+await ev(() => localStorage.clear());               // clear thoughtHad so it can fire
+await p.goto('http://localhost:5173/labs/chunk-surfer/index.html?mode=story&renderer=3d&skiptut=1&nothink=1&sam=0&at=85,30', { waitUntil: 'domcontentloaded' });
+await wait(15000);
+n = 0; while (await ev(() => window.__scenes.depth()) > 0 && n++ < 20) await key('Enter', 110);
+await ev(() => window.__probe.seedTake('main_b3'));
+await ev(() => window.__probe.tuneRoomTone({ takeSeconds: 45 }));
+await key('r', 400); await key('r', 500);           // listen, roll
+let fired = null;
+for (let i = 0; i < 18 && !fired; i++) { await wait(700); if ((await scene() || '').startsWith('battle')) fired = await scene(); }
+check('IT FIRES IN THE NATATORIUM TAKE, a few seconds in', fired === 'battle:natatorium', String(fired));
+
 console.log(errs.length ? `\nERRORS:\n${errs.join('\n')}` : '\nno page errors');
 console.log(pass ? '\n✅ BATTLE PASSED' : '\n❌ FAILURES');
 await b.close();

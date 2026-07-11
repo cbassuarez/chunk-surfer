@@ -4,7 +4,7 @@
 // Post passes (scanline/vignette/noise) and event FX (flash/shake/glitch,
 // frame-hold and dead-grid for the corruption register) live here.
 
-import { CELL_W, CELL_H, FONT_PX, atlasConfigure, atlasDpr, getTile } from './atlas.js';
+import { CELL_W, CELL_H, FONT_PX, MONO_STACK, atlasConfigure, atlasDpr, getTile } from './atlas.js';
 
 const REDUCED_MOTION = typeof matchMedia === 'function'
   && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -216,7 +216,7 @@ function composite(now) {
   }
   if (SHOW_STATS) {
     ctx.save();
-    ctx.font = `${11 * atlasDpr()}px 'Courier New', monospace`;
+    ctx.font = `${11 * atlasDpr()}px ${MONO_STACK}`;
     ctx.fillStyle = '#7f8';
     ctx.textAlign = 'right';
     ctx.fillText(`${frameMsEma.toFixed(1)}ms`, canvas.width - 8, 14 * atlasDpr());
@@ -230,7 +230,7 @@ export function textScreen(text) {
   ctx.fillStyle = '#0d0d0d';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   const dpr = atlasDpr();
-  ctx.font = `${FONT_PX * dpr}px 'Courier New', Courier, monospace`;
+  ctx.font = `${FONT_PX * dpr}px ${MONO_STACK}`;
   ctx.fillStyle = '#bbbbbb';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';

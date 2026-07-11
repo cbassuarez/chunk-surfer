@@ -14,7 +14,8 @@
 //
 // [space] hurries a line. It never skips one.
 
-import { uiText, uiWrap, uiSize, uiFill } from '../render/ui.js';
+import { uiText, uiWrap, uiSize } from '../render/ui.js';
+import { drawMachinePanel } from '../render/presentation.js';
 import { getSave } from './save.js';
 import { createSamDialogVoice, isVoiced } from '../audio/sam-voice.js';
 import { TYPE_GAIN, TYPE_LEVEL } from '../audio/story-audio.js';
@@ -135,14 +136,14 @@ export function skipSpeech() {
 }
 
 const WHO = {
-  me: { tag: '', cls: 't-chunk-on', alpha: 0.98 },
-  you: { tag: '', cls: 't-trail-1', alpha: 0.92 },
-  radio: { tag: 'radio', cls: 't-key', alpha: 1 },
-  guard: { tag: 'guard', cls: 't-key', alpha: 0.95 },
-  recordist: { tag: 'take', cls: 't-trail-1', alpha: 0.9 },
-  surfer: { tag: '', cls: 't-hush-core', alpha: 0.95 },
-  sarah: { tag: 'SARAH', cls: 't-hush-edge', alpha: 0.9 },
-  direction: { tag: '', cls: 't-trail-3', alpha: 0.66 },
+  me: { tag: 'VOICE', cls: 'ui-primary', alpha: 1 },
+  you: { tag: 'THOUGHT', cls: 'ui-primary', alpha: 1 },
+  radio: { tag: 'RADIO', cls: 'ui-amber', alpha: 1 },
+  guard: { tag: 'GUARD', cls: 'ui-amber', alpha: 1 },
+  recordist: { tag: 'TAKE', cls: 'ui-primary', alpha: 1 },
+  surfer: { tag: 'SURFER', cls: 'ui-danger', alpha: 1 },
+  sarah: { tag: 'SARAH', cls: 'ui-danger', alpha: 1 },
+  direction: { tag: 'DIRECTION', cls: 'ui-secondary', alpha: 1 },
 };
 
 export function drawSpeech() {
@@ -155,20 +156,21 @@ export function drawSpeech() {
   const shown = cur.text.slice(0, typed);
   const lines = uiWrap(shown, w - 2);
   const h = Math.max(1, lines.length);
-  const y = rows - 4 - h;
-
-  uiFill(x - 2, y - 1, w + 4, h + 2, 'rgba(6,7,9,0.86)');
-  if (style.tag) uiText(x - 2, y - 1, ` ${style.tag} `, 't-gate-frame', 0.8);
+  const panelH = h + 5;
+  const y = rows - panelH - 2;
+  const panel = drawMachinePanel(x - 2, y, w + 4, panelH, {
+    label: 'MONITOR', source: style.tag || 'VOICE', meter: true,
+  });
 
   lines.forEach((l, i) => {
     // a stage direction wears its parentheses; a thought does not announce
     // itself as one.
-    uiText(x, y + i, l, style.cls, style.alpha);
+    uiText(panel.x, panel.y + i, l, style.cls, style.alpha);
   });
 
   // The cursor: a recordist's blinking level LED, borrowed.
   if (typed < cur.text.length) {
     const last = lines[lines.length - 1] || '';
-    uiText(x + last.length, y + h - 1, '▌', style.cls, 0.6);
+    uiText(panel.x + last.length, panel.y + h - 1, '▌', 'ui-amber');
   }
 }

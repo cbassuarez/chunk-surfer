@@ -1,0 +1,108 @@
+{
+  "version": 1,
+  "atlas": {
+    "file": "portraits/portrait-atlas.webp",
+    "width": 768,
+    "height": 640,
+    "columns": 3,
+    "rows": 2
+  },
+  "license": "CC0 / Public Domain via The Met Open Access",
+  "works": [
+    {
+      "id": 437825,
+      "title": "Portrait of a Man",
+      "artist": "Titian (Tiziano Vecellio)",
+      "file": "437825.jpg",
+      "image": "https://images.metmuseum.org/CRDImages/ep/web-large/DP-23080-001.jpg",
+      "page": "https://www.metmuseum.org/art/collection/search/437825",
+      "slot": 0,
+      "atlasCell": [
+        0,
+        0
+      ],
+      "isPublicDomain": true,
+      "sourceSha256": "e59b3b05842bb1c52281312b6fde13046f4b513bc3fa651599e10eda0f72048f"
+    },
+    {
+      "id": 436574,
+      "title": "Portrait of an Old Man",
+      "artist": "El Greco (Domenikos Theotokopoulos)",
+      "file": "436574.jpg",
+      "image": "https://images.metmuseum.org/CRDImages/ep/web-large/DP-24083-001.jpg",
+      "page": "https://www.metmuseum.org/art/collection/search/436574",
+      "slot": 1,
+      "atlasCell": [
+        1,
+        0
+      ],
+      "isPublicDomain": true,
+      "sourceSha256": "23c17354c71cdc257eacca8fce641fcc2127f1a15f8a6c8afc337b5aecfd79ed"
+    },
+    {
+      "id": 643060,
+      "title": "Study of a Young Woman in Three-quarter Bust-Length",
+      "artist": "Bronzino (Agnolo di Cosimo di Mariano)",
+      "file": "643060.jpg",
+      "image": "https://images.metmuseum.org/CRDImages/dp/web-large/DP838058.jpg",
+      "page": "https://www.metmuseum.org/art/collection/search/643060",
+      "slot": 2,
+      "atlasCell": [
+        2,
+        0
+      ],
+      "isPublicDomain": true,
+      "sourceSha256": "286b190225eb465ec270d8cbf5669cc3acb037b6aaf58fef41152724546bb0d6"
+    },
+    {
+      "id": 436739,
+      "title": "Portrait of a Woman",
+      "artist": "Italian (Florentine) Painter",
+      "file": "436739.jpg",
+      "image": "https://images.metmuseum.org/CRDImages/ep/web-large/DP104987.jpg",
+      "page": "https://www.metmuseum.org/art/collection/search/436739",
+      "slot": 3,
+      "atlasCell": [
+        0,
+        1
+      ],
+      "isPublicDomain": true,
+      "sourceSha256": "2664cc9c7441adce5ab6c9d610065c451a6ecdf23fa257813bb27b6186403d30"
+    },
+    {
+      "id": 437322,
+      "title": "Portrait of a Woman",
+      "artist": "Piero del Pollaiuolo",
+      "file": "437322.jpg",
+      "image": "https://images.metmuseum.org/CRDImages/ep/web-large/DP-24116-001.jpg",
+      "page": "https://www.metmuseum.org/art/collection/search/437322",
+      "slot": 4,
+      "atlasCell": [
+        1,
+        1
+      ],
+      "isPublicDomain": true,
+      "sourceSha256": "22b0114ce3ef69602353351e0fd6af088770c7eed9d28a93a68a6ae5ec7596cc"
+    },
+    {
+      "id": 459071,
+      "title": "Portrait of a Woman",
+      "artist": "Netherlandish or French",
+      "file": "459071.jpg",
+      "image": "https://images.metmuseum.org/CRDImages/rl/web-large/SLP0129.jpg",
+      "page": "https://www.metmuseum.org/art/collection/search/459071",
+      "slot": 5,
+      "atlasCell": [
+        2,
+        1
+      ],
+      "isPublicDomain": true,
+      "sourceSha256": "2346808ea32621f717c9627c9c1b8f26682cf50c212e8ea30b31e4cd9ff627be"
+    }
+  ],
+  "frameSource": {
+    "source": "Gold frame.glb",
+    "accepted": false,
+    "reason": "The supplied GLB contains one two-triangle dark plane and no usable frame geometry or texture. Runtime uses project-native brass rail geometry."
+  }
+}

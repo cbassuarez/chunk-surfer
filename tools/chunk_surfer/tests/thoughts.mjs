@@ -61,14 +61,24 @@ while ((await scene()) === 'thought:first-take' && n++ < 60) {
 }
 check('the hurried route reaches the take', (await scene()) !== 'thought:first-take', `${n} presses`);
 await wait(600);
+// The first-take tree IS the guided listen and ends on "roll", so it hands
+// straight into a recording.
 check('...and rolling actually rolls', (await ev(() => window.__probe.rec())).recording);
 
-// Never twice.
-await key('r', 500);   // stop
+// Never twice. Stop the rolled take (aborts — it was only a moment). The
+// first-take tree does not reopen; [r] is now the ordinary LISTEN dialog.
+await key('r', 500);   // stop / abort
 await wait(1600);
 await key('r', 600);
-check('the second [r] is a bare take, no tree',
-      !(await scene()) && (await ev(() => window.__probe.rec())).recording, String(await scene()));
+check('the tree does not reopen — a plain LISTEN dialog', (await scene()) === 'thought:listen:main_b3', String(await scene()));
+// walk the listen dialog to the roll
+n = 0;
+while ((await scene() || '').startsWith('thought:listen') && n++ < 20) {
+  const v = await convo();
+  if (v?.pending?.kind === 'branch') await key(String(v.pending.options.length), 320);
+  else await key(' ', 300);
+}
+check('...and it rolls', (await ev(() => window.__probe.rec())).recording, String(await scene()));
 await key('r', 400);
 await wait(1400);
 

@@ -11,7 +11,7 @@ let pass=true;
 const check=(name,ok,extra='')=>{ console.log(`${ok?'PASS':'FAIL'}  ${name}${extra?'  '+extra:''}`); if(!ok) pass=false; };
 
 // ── STORY: silent world ──────────────────────────────────────────────────────
-await page.goto('http://localhost:5173/labs/chunk-surfer/index.html?mode=story&renderer=3d&plan=testbed&skiptut=1&at=6,7',{waitUntil:'domcontentloaded',timeout:60000});
+await page.goto('http://localhost:5173/labs/chunk-surfer/index.html?mode=story&renderer=3d&plan=testbed&skiptut=1&nothink=1&at=6,7',{waitUntil:'domcontentloaded',timeout:60000});
 await page.evaluate(()=>localStorage.clear());
 await page.reload({waitUntil:'domcontentloaded'});
 await new Promise(r=>setTimeout(r,14000));
@@ -41,14 +41,17 @@ await key('f',400);
 s=await probe();
 check('F toggles it back off', s.rec.light===false);
 
-// ── RECORD: monitor opens, movement locks, light forced off ─────────────────
+// ── LISTEN opens the monitor; RECORD closes it into silence ─────────────────
 await new Promise(r=>setTimeout(r,2500));   // let noise decay
-await key('r',1500);
+await key('r',1200);
 s=await probe();
-check('R starts recording', s.rec.recording===true);
-check('recording forces the light off', s.rec.light===false);
-check('recording opens the monitor (voices appear)', s.voices>0, `voices=${s.voices}`);
-check('monitor is sparse (<=4 voices)', s.voices<=4, `voices=${s.voices}`);
+check('R opens the monitor — LISTEN (voices appear)', s.rec.listening===true && s.voices>0, `voices=${s.voices}`);
+check('the monitor is sparse (<=4 voices)', s.voices<=4, `voices=${s.voices}`);
+await key('r',1200);
+s=await probe();
+check('a second R rolls the take', s.rec.recording===true);
+check('rolling forces the light off', s.rec.light===false);
+check('rolling CLOSES the monitor — a take is silent', s.voices===0, `voices=${s.voices}`);
 await page.screenshot({path:'m3-recording.png'});
 
 // take accrues while quiet (do NOT move: moving now spoils it by design)

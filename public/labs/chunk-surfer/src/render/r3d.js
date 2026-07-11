@@ -15,6 +15,7 @@
 // module only owns facing (N/E/S/W) and the camera.
 
 import { CELL, EYE as EYE_METERS, MATERIAL, PLAN_SCALE } from '../data/floorplan/legend.js';
+import * as P3 from './props3d.js';
 
 const MAX_CHUNKS = 48;
 const RD_SIZE = 256;
@@ -110,6 +111,13 @@ uniform vec4  uDoor;
 uniform vec4  uHush;         // x, z, strength, -
 uniform sampler2D uPlan;     // the authored building: R=floor G=ceil B=flags A=zone
 uniform sampler2D uMat;      // R=material id
+uniform sampler2D uPropColor;
+uniform sampler2D uPropDepth;
+uniform sampler2D uSurfaceAtlas;
+uniform float uSurfacesReady;
+uniform float uPropsReady;
+uniform float uPropNear;
+uniform float uPropFar;
 uniform vec2  uPlanSize;
 uniform float uUsePlan;      // 0 = procedural lattice (JUST SURF), 1 = the conservatory
 uniform vec3  uZoneTint[10];
@@ -228,6 +236,33 @@ float grid2(vec2 p, float scale, float width){
   vec2 d = abs(fract(p * scale) - 0.5);
   float g = min(d.x, d.y);
   return 1.0 - smoothstep(width, width + 0.015, g);
+}
+vec3 surfaceTile(int slot, vec2 worldUv, float metresPerTile){
+  // Fixed 4x2 atlas. Pull sampling inward by one percent so mip filtering can
+  // never bleed a neighbouring material into the tile edge.
+  vec2 cell=vec2(float(slot%4),float(slot/4));
+  vec2 local=fract(worldUv/metresPerTile)*.98+.01;
+  return texture(uSurfaceAtlas,(cell+local)/vec2(4.0,2.0)).rgb;
+}
+vec3 architecturalSurface(int mat,int surf,vec3 p,vec3 fallback){
+  if(uSurfacesReady<.5||surf==3)return fallback;
+  vec2 uv=surf==1?vec2(mix(p.z,p.x,.5),p.y):p.xz;
+  if(surf==1){
+    if(mat==MAT_POOL)return mix(fallback,surfaceTile(6,uv,1.5),.72);
+    if(mat==MAT_WET){
+      int slot=(int(floor(uv.x/.6)+floor(uv.y/.6))%7)==0?5:4;
+      return mix(fallback,surfaceTile(slot,uv,.6),.80);
+    }
+    int stone=(int(floor(uv.x/2.2)+floor(uv.y/2.2))%2)==0?0:1;
+    return mix(fallback,surfaceTile(stone,uv,stone==0?2.4:2.0),.74);
+  }
+  if(mat==MAT_CHAPEL)return mix(fallback,surfaceTile(3,uv,1.8),.88);
+  if(mat==MAT_POOL)return mix(fallback,surfaceTile(6,uv,1.5),.88);
+  if(mat==MAT_WET){
+    int slot=(int(floor(uv.x/.6)+floor(uv.y/.6))%9)==0?5:4;
+    return mix(fallback,surfaceTile(slot,uv,.6),.90);
+  }
+  return mix(fallback,surfaceTile(2,uv,1.2),.76);
 }
 float materialSeam(int mat, int surf, vec3 p){
   if(mat == MAT_ACOUSTIC){
@@ -436,6 +471,7 @@ void main(){
     float ambient = mix(0.010, 0.030, uLight);
 
     vec3 albedo = materialBase(hitMat, surf, tint, biome, rdv);
+    albedo = architecturalSurface(hitMat,surf,posM,albedo);
     float spec = materialSpec(hitMat) * pow(clamp(lambert, 0.0, 1.0), 8.0) * lamp;
 
     float emis = (surf == 2) ? 0.55 : (surf == 1 ? 0.30 : 0.12);
@@ -479,6 +515,23 @@ void main(){
     col = mix(col, vec3(0.0), clamp(reach * (0.75 + churn*0.5), 0.0, 0.97));
   }
 
+  // Mesh props were rasterised with the exact same camera before this pass.
+  // Reconstruct their view-space depth and compare it to the sector hit: a
+  // piano behind a wall stays behind the wall, while a desk in front of it is
+  // part of the same conditioning image the diffusion lens receives.
+  if(uPropsReady > 0.5){
+    vec2 propUv = gl_FragCoord.xy / uRes;
+    vec4 prop = texture(uPropColor, propUv);
+    float depth = texture(uPropDepth, propUv).r;
+    if(prop.a > 0.5 && depth < 0.999999){
+      float ndc = depth * 2.0 - 1.0;
+      float propView = (2.0 * uPropNear * uPropFar) /
+        (uPropFar + uPropNear - ndc * (uPropFar - uPropNear));
+      float archView = tHit < 0.0 ? uPropFar : tHit * CELL_METERS * max(0.001, dot(rd, fwd));
+      if(propView < archView + 0.015) col = prop.rgb;
+    }
+  }
+
   col += (grain - 0.5) * 0.035;             // film grain
   float vig = 1.0 - 0.42 * pow(length(uv * vec2(0.72, 0.9)), 2.2);
   col *= clamp(vig, 0.0, 1.0);
@@ -504,7 +557,7 @@ void main(){
 let gl = null, canvas = null;
 let progRD, progMarch, progPost;
 let rdTexA, rdTexB, rdFboA, rdFboB, rdFlip = false, rdWarm = 0;
-let sceneTex, sceneFbo, fogTexture;
+let sceneTex, sceneFbo, fogTexture, surfaceTexture=null;
 let planTexture = null, materialTexture = null, planW = 0, planH = 0;
 let uniforms = {};
 let facing = 0; // 0=N(0,-1) 1=E 2=S 3=W
@@ -552,6 +605,12 @@ function makeFbo(tex) {
   return f;
 }
 
+function loadImageTexture(url){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();img.onload=()=>{const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);gl.texImage2D(gl.TEXTURE_2D,0,gl.SRGB8_ALPHA8,gl.RGBA,gl.UNSIGNED_BYTE,img);gl.generateMipmap(gl.TEXTURE_2D);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);resolve(t);};img.onerror=reject;img.src=url.href||String(url);
+  });
+}
+
 export function r3dInit(mapEl) {
   canvas = document.createElement('canvas');
   canvas.style.cssText = 'display:block;width:100%;height:100%;';
@@ -566,6 +625,7 @@ export function r3dInit(mapEl) {
   progRD = program(RD_FRAG);
   progMarch = program(MARCH_FRAG);
   progPost = program(POST_FRAG);
+  P3.props3dInit(gl);
 
   gl.getExtension('EXT_color_buffer_float'); // render targets for the RD field
 
@@ -588,6 +648,13 @@ export function r3dInit(mapEl) {
   rdFboB = makeFbo(rdTexB);
   fogTexture = makeTex(FOG_TEX, FOG_TEX, new Uint8Array(FOG_TEX * FOG_TEX), 'r8');
   resize();
+  P3.loadPropPack(new URL('../../assets/conservatory-props.glb', import.meta.url))
+    .catch((err)=>console.warn('prop pack unavailable',err));
+  P3.loadPortraitAtlas(new URL('../../assets/portraits/portrait-atlas.webp',import.meta.url))
+    .catch((err)=>console.warn('portrait atlas unavailable',err));
+  loadImageTexture(new URL('../../assets/surfaces/surface-atlas.png',import.meta.url))
+    .then((t)=>{surfaceTexture=t;})
+    .catch((err)=>console.warn('surface atlas unavailable; using native material fallback',err));
   window.addEventListener('resize', resize);
 }
 
@@ -601,6 +668,7 @@ function resize() {
   if (sceneTex) { gl.deleteTexture(sceneTex); gl.deleteFramebuffer(sceneFbo); }
   sceneTex = makeTex(sw, sh);
   sceneFbo = makeFbo(sceneTex);
+  P3.props3dResize(sw, sh);
   uniforms.sceneW = sw; uniforms.sceneH = sh;
 }
 
@@ -647,6 +715,10 @@ export function r3dSetPlan(rgba, w, h, material = null) {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 }
+
+export function r3dSetProps(instances) { P3.setPropInstances(instances); }
+export function r3dSetHushProp(id) { P3.setHushProp(id); }
+export function r3dPropStats() { return P3.propPackStats(); }
 
 // A mutation touched a few cells: re-upload only those.
 export function r3dPatchPlan(rgba, materialOrX, xOrY, yOrW, wOrH, maybeH) {
@@ -772,6 +844,12 @@ export function r3dFrame(state) {
   gl.bindTexture(gl.TEXTURE_2D, rdTex);
   gl.generateMipmap(gl.TEXTURE_2D);
 
+  P3.renderPropPass({
+    camX: camX * CELL, camY: camY * CELL, camZ: camZ * CELL,
+    yaw, light: lightEase, fogTexture, fogOrigin, fogSize:FOG_TEX,
+    cellMeters:CELL, zoneTints:ZONE_TINTS,
+  });
+
   // march into low-res scene buffer
   gl.useProgram(progMarch);
   gl.bindFramebuffer(gl.FRAMEBUFFER, sceneFbo);
@@ -805,6 +883,16 @@ export function r3dFrame(state) {
     gl.uniform2f(U('uPlanSize'), planW, planH);
     gl.uniform3fv(U('uZoneTint[0]'), ZONE_TINTS);
   }
+  const propTargets=P3.propTargets();
+  gl.uniform1f(U('uPropsReady'),propTargets.ready?1:0);
+  gl.uniform1f(U('uPropNear'),propTargets.near);
+  gl.uniform1f(U('uPropFar'),propTargets.far);
+  if(propTargets.ready){
+    gl.activeTexture(gl.TEXTURE4);gl.bindTexture(gl.TEXTURE_2D,propTargets.color);gl.uniform1i(U('uPropColor'),4);
+    gl.activeTexture(gl.TEXTURE5);gl.bindTexture(gl.TEXTURE_2D,propTargets.depth);gl.uniform1i(U('uPropDepth'),5);
+  }
+  gl.uniform1f(U('uSurfacesReady'),surfaceTexture?1:0);
+  if(surfaceTexture){gl.activeTexture(gl.TEXTURE6);gl.bindTexture(gl.TEXTURE_2D,surfaceTexture);gl.uniform1i(U('uSurfaceAtlas'),6);}
   const n = Math.min(state.chunks.length, MAX_CHUNKS);
   gl.uniform1i(U('uChunkCount'), n);
   if (n > 0) {

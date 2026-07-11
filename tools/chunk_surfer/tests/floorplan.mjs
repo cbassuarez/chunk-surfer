@@ -35,7 +35,7 @@ ck('studio B3 has acoustic material', FP.materialAt(...Object.values(rc(5, 5))) 
 
 const c = FP.cellAt(...Object.values(rc(48, 5)));
 ck('chapel floor is four metres up', c && Math.abs(c.floor - 4.0) < 0.01, `floor=${c && c.floor}`);
-ck('chapel nave is eleven metres tall', c && Math.abs(c.ceil - 15.0) < 0.01, `ceil=${c && c.ceil}`);
+ck('chapel nave is thirteen metres tall', c && Math.abs(c.ceil - 17.0) < 0.01, `ceil=${c && c.ceil}`);
 ck('chapel has stone/glass material', FP.materialAt(...Object.values(rc(48, 5))) === MATERIAL.chapelStone);
 
 // Every riser on the stair must be one a person takes without thinking.
@@ -86,11 +86,12 @@ function reachable(from, to, keys = new Set(['master'])) {
   while (q.length) {
     const cur = q.shift();
     if (cur.x === to.x && cur.y === to.y) return true;
+    const portal=FP.connectorDestination(cur.x,cur.y);if(portal&&!seen.has(key(portal))){seen.add(key(portal));q.push(portal);}
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
       const nx = cur.x + dx, ny = cur.y + dy, k = `${nx},${ny}`;
       if (seen.has(k)) continue;
-      if (!FP.canStep(cur.x, cur.y, nx, ny, { keys }).ok) continue;
-      seen.add(k); q.push({ x: nx, y: ny });
+      const move=FP.canStep(cur.x,cur.y,nx,ny,{keys});if(!move.ok)continue;const p=move.redirect||{x:nx,y:ny},pk=key(p);if(seen.has(pk))continue;
+      seen.add(pk); q.push(p);
     }
   }
   return false;
@@ -101,7 +102,7 @@ ck('the bricked door seals the south branch', !reachable(rc(26, 10), rc(26, 12))
 
 // ── THE REAL BUILDING ───────────────────────────────────────────────────────
 console.log('\n── the conservatory ──');
-const cp = FP.compile(conservatory.levels, { width: conservatory.width, height: conservatory.height, widenCorridors: conservatory.widenCorridors });
+const cp = FP.compile(conservatory.levels, { width: conservatory.width, height: conservatory.height, widenCorridors: conservatory.widenCorridors,connectors:conservatory.connectors });
 for (const d of conservatory.doors || []) FP.setDoorKey(d.x, d.y, d.key);
 FP.setSpawn(conservatory.spawn.x, conservatory.spawn.y);
 
@@ -122,8 +123,8 @@ const walked = new Set([key(spawn)]);
     const cur = q.shift();
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
       const nx = cur.x + dx, ny = cur.y + dy, k = `${nx},${ny}`;
-      if (walked.has(k) || !FP.canStep(cur.x, cur.y, nx, ny, { keys: KEYRING }).ok) continue;
-      walked.add(k); q.push({ x: nx, y: ny });
+      const move=FP.canStep(cur.x,cur.y,nx,ny,{keys:KEYRING});if(!move.ok)continue;const p=move.redirect||{x:nx,y:ny},pk=key(p);if(walked.has(pk))continue;
+      walked.add(pk);q.push(p);
     }
   }
 }
@@ -147,7 +148,7 @@ const lv = (n, pnt, want) => {
 };
 lv('the sub-basement', probePoint('studio'), -4.0);
 lv('the ground', probePoint('foyer'), 0);
-lv('the upper', probePoint('chapel'), 4.0);
+lv('the upper', probePoint('chapel'), 4.8);
 lv('the drained pool', probePoint('pool'), -1.6);
 
 // Materials are a second map, not flag bits. The big zones need distinct
@@ -231,11 +232,24 @@ for (let i = 0; i < cp.w * cp.h; i++) {
 }
 ck('no room in the conservatory is mutable', croomMutable === 0, `${croomMutable} violations`);
 
+const volume=FP.physicalSpanData();
+ck('the physical compiler supports the three hall air spans',volume.maxSpans>=3,`max spans=${volume.maxSpans}`);
+const invalidOverlaps=volume.overlaps.filter((o)=>{
+  if(o.a.spaceId==='basement'||o.b.spaceId==='basement')return false; // lift/shaft is an intentional vertical void
+  if((o.a.flags|o.b.flags)&(F.STAIR|F.SKY))return false;
+  return o.a.renderGroup===o.b.renderGroup;
+});
+ck('walkable hall spans do not overlap',invalidOverlaps.length===0,`${invalidOverlaps.length} overlaps`);
+const orchestra=FP.logicalToPhysical(...Object.values(rc(102,15))),lower=FP.logicalToPhysical(...Object.values(rc(1,67))),upper=FP.logicalToPhysical(...Object.values(rc(28,114)));
+ck('orchestra and both balconies occupy one Euclidean hall footprint',orchestra.renderGroup==='hall'&&lower.renderGroup==='hall'&&upper.renderGroup==='hall'&&lower.y===4&&upper.y===7.5,`floors ${orchestra.y}/${lower.y}/${upper.y}`);
+ck('orchestra, lower balcony and upper balcony are mutually reachable',reachable(rc(102,15),rc(1,67),KEYRING)&&reachable(rc(1,67),rc(28,114),KEYRING)&&reachable(rc(28,114),rc(102,15),KEYRING));
+ck('the chapel is a long 13m pointed-vault volume',Math.abs(FP.ceilAt(...Object.values(rc(90,66)))-FP.floorAt(...Object.values(rc(90,66)))-13)<.01);
+
 // `--map` prints what is reachable from the spawn.
 //   node tools/chunk_surfer/tests/floorplan.mjs --map [--plan=testbed]
 if (process.argv.includes('--map')) {
   const which = process.argv.includes('--plan=testbed') ? testbed : conservatory;
-  const pp = FP.compile(which.levels, { width: which.width, height: which.height, widenCorridors: which.widenCorridors });
+  const pp = FP.compile(which.levels, { width: which.width, height: which.height, widenCorridors: which.widenCorridors,connectors:which.connectors||[] });
   for (const d of which.doors || []) FP.setDoorKey(d.x, d.y, d.key);
   FP.setSpawn(which.spawn.x, which.spawn.y);
   const home = FP.spawn();
@@ -245,8 +259,8 @@ if (process.argv.includes('--map')) {
     const cur = q.shift();
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
       const nx = cur.x + dx, ny = cur.y + dy, k = `${nx},${ny}`;
-      if (seen.has(k) || !FP.canStep(cur.x, cur.y, nx, ny, { keys: KEYRING }).ok) continue;
-      seen.add(k); q.push({ x: nx, y: ny });
+      const move=FP.canStep(cur.x,cur.y,nx,ny,{keys:KEYRING});if(!move.ok)continue;const p=move.redirect||{x:nx,y:ny},pk=key(p);if(seen.has(pk))continue;
+      seen.add(pk);q.push(p);
     }
   }
   console.log(`\nreachable: ${seen.size} cells   (o = reachable, . = open but stranded, # = rock)\n`);

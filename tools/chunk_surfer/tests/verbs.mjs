@@ -7,7 +7,7 @@ const key=async(k,ms=220)=>{ await p.keyboard.press(k); await new Promise(r=>set
 const rec=()=>p.evaluate(()=>window.__probe.rec());
 const pos=()=>p.evaluate(()=>window.__probe.pos());
 
-await p.goto('http://localhost:5173/labs/chunk-surfer/index.html?mode=story&renderer=3d&plan=testbed&skiptut=1&at=4,5',{waitUntil:'domcontentloaded'});
+await p.goto('http://localhost:5173/labs/chunk-surfer/index.html?mode=story&renderer=3d&plan=testbed&skiptut=1&nothink=1&at=4,5',{waitUntil:'domcontentloaded'});
 await p.evaluate(()=>localStorage.clear()); await p.reload({waitUntil:'domcontentloaded'});
 await new Promise(r=>setTimeout(r,14000));
 let n=0; while(await p.evaluate(()=>window.__scenes.depth())>0 && n<40){ await key('Enter',120); n++; }
@@ -29,9 +29,11 @@ check('back moves', p2.x!==p1.x || p2.y!==p1.y, `${p1.x},${p1.y} -> ${p2.x},${p2
 await key('ArrowRight',350); await key('ArrowUp',350); const p3=await pos();
 check('turn then forward moves in the new facing', p3.x!==p2.x || p3.y!==p2.y, `${p2.x},${p2.y} -> ${p3.x},${p3.y}`);
 
-// recorder: r starts it, moving aborts it rather than locking
-await key('r',900);
-check('bare r starts recording', (await rec()).recording===true);
+// recorder: [r] LISTENs (the room in the cans, you can move), [r] again ROLLs.
+await key('r',600);
+check('bare r opens the monitor — LISTEN', (await rec()).listening===true && (await rec()).recording===false);
+await key('r',600);
+check('a second r rolls the take', (await rec()).recording===true);
 const pr=await pos();
 await key('ArrowUp',600);
 const after=await rec();
@@ -45,8 +47,8 @@ check('and you actually move (or a wall is there)',
 await new Promise(r=>setTimeout(r,1600));
 check('spoiled take closes itself', (await rec()).recording===false);
 
-// r again, then reaching for the light spoils it
-await key('r',800);
+// listen + roll again, then reaching for the light spoils it
+await key('r',600); await key('r',600);
 await key('f',500);
 const l=await rec();
 check('light mid-take spoils it', l.spoiled===true && l.light===true, `reason="${l.spoilReason}"`);

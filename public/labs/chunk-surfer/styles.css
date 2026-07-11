@@ -1,8 +1,15 @@
     /* minimal — ADR-inspired dark shell. no kitsch. */
+    :root{
+      --cs-mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;
+      --cs-glass:#07090A;--cs-glass-soft:#0D1113;--cs-white:#EAF2F0;
+      --cs-amber:#FFC247;--cs-blue:#9FD4FF;--cs-green:#78E39A;
+      --cs-danger:#FF6A64;--cs-secondary:#A8B2B8;--cs-frame:#566168;
+      --cs-paper:#D8D0BE;--cs-paper-ink:#171512;--cs-paper-muted:#514B40;
+    }
     *{box-sizing:border-box;margin:0;padding:0;}
     html,body{height:100%;background:#0d0d0d;color:#bbb;overflow:hidden;}
     #wrap{display:flex;flex-direction:column;height:100vh;padding:10px 14px;position:relative;}
-    #map{flex:1;overflow:hidden;font-family:'Courier New',Courier,monospace;font-size:13px;line-height:1.38;white-space:pre;letter-spacing:0;background:transparent;transition:background 360ms ease-out;}
+    #map{flex:1;overflow:hidden;font-family:var(--cs-mono);font-size:13px;line-height:1.38;white-space:pre;letter-spacing:0;background:transparent;transition:background 360ms ease-out;}
 
     /* Story mode is a game, not a lab: the render surface is the whole screen
        and every instrument readout moves onto the ui.js glyph layer — the one
@@ -16,6 +23,16 @@
     body.game #sense,
     body.game #keymeter,
     body.game #status{display:none !important;}
+    body.title-screen{background:var(--cs-glass);}
+    body.title-screen #wrap{padding:0;}
+    body.title-screen #introTitle,
+    body.title-screen #introVignette,
+    body.title-screen #catalogCtl,
+    body.title-screen #catalog,
+    body.title-screen #event,
+    body.title-screen #sense,
+    body.title-screen #keymeter,
+    body.title-screen #status{display:none !important;}
     /* #map carries tabindex for keyboard focus; the focus ring is a border
        around the game world. */
     body.game #map:focus,
@@ -70,12 +87,12 @@
       68%  { opacity:0.88; filter:contrast(2.5) blur(1.6px); }
       100% { opacity:0.0; filter:contrast(1.0) blur(0px); }
     }
-    #catalog{display:none;border-top:1px solid #222;margin-top:6px;padding-top:6px;font-family:'Courier New',Courier,monospace;font-size:12px;line-height:1.4;white-space:pre-wrap;color:#8d8d8d;min-height:6.2em;}
-    #catalogCtl{margin-top:6px;font-family:'Courier New',Courier,monospace;font-size:12px;}
-    #catalogCtl button{font:inherit;color:#999;background:#111;border:1px solid #333;padding:2px 8px;cursor:pointer;}
-    #catalogCtl button:hover{color:#ccc;border-color:#4a4a4a;}
-    #status{border-top:1px solid #333;margin-top:6px;padding-top:5px;font-family:'Courier New',Courier,monospace;font-size:12px;line-height:1.5;white-space:pre;color:#888;}
-    #event{font-family:'Courier New',Courier,monospace;font-size:12px;line-height:1.5;white-space:pre;color:#666;min-height:1.5em;}
+    #catalog{display:none;border-top:1px solid var(--cs-frame);margin-top:6px;padding-top:6px;font-family:var(--cs-mono);font-size:12px;line-height:1.4;white-space:pre-wrap;color:var(--cs-secondary);min-height:6.2em;}
+    #catalogCtl{margin-top:6px;font-family:var(--cs-mono);font-size:12px;}
+    #catalogCtl button{font:inherit;color:var(--cs-secondary);background:var(--cs-glass-soft);border:1px solid var(--cs-frame);padding:2px 8px;cursor:pointer;}
+    #catalogCtl button:hover,#catalogCtl button:focus-visible{color:var(--cs-amber);border-color:var(--cs-amber);outline:none;}
+    #status{border-top:1px solid var(--cs-frame);margin-top:6px;padding-top:5px;font-family:var(--cs-mono);font-size:12px;line-height:1.5;white-space:pre;color:var(--cs-secondary);}
+    #event{font-family:var(--cs-mono);font-size:12px;line-height:1.5;white-space:pre;color:var(--cs-secondary);min-height:1.5em;}
 
     /* biome base colors — subtle, MUD-style */
     .t-drone    {color:#576;}   /* forest — cool green */
@@ -142,17 +159,17 @@
        distance descriptor. The glyph itself reuses the key's own bloom so
        it visually rhymes with the in-world beacon. */
     #sense{
-      font-family:'Courier New',Courier,monospace;
+      font-family:var(--cs-mono);
       font-size:12px;
       line-height:1.5;
-      color:#7e7e7e;
+      color:var(--cs-secondary);
       white-space:pre;
       min-height:1.5em;
       margin-top:2px;
     }
-    #sense .sense-prefix {color:#5a5a5a;}
-    #sense .sense-bearing {color:#aab2c4;}
-    #sense .sense-dist {color:#998a6b;font-style:italic;}
+    #sense .sense-prefix {color:var(--cs-secondary);}
+    #sense .sense-bearing {color:var(--cs-blue);}
+    #sense .sense-dist {color:var(--cs-amber);font-style:italic;}
     #sense .t-key-sense {
       color:#ffffff;
       font-weight:bold;
@@ -268,18 +285,18 @@
       color:rgba(225,236,252,0.58);
       text-shadow:0 0 8px rgba(188,214,248,0.36);
     }
-    #keymeter{display:none;border-top:1px solid #2a2418;margin-top:6px;padding:6px 2px 2px;font-family:'Courier New',Courier,monospace;font-size:14px;line-height:1.5;color:#888;letter-spacing:0.45em;}
-    #keymeter .km-label{letter-spacing:0.18em;font-size:12px;color:#998060;margin-left:0.6em;opacity:0.85;}
-    #keymeter .km-door {letter-spacing:0.18em;font-size:12px;color:#cfd6ee;margin-left:0.6em;text-shadow:0 0 6px rgba(200,220,255,0.5);}
-    #keymeter .km-danger {letter-spacing:0.18em;font-size:12px;color:#ffd8d8;margin-left:0.6em;text-shadow:0 0 5px rgba(255,180,180,0.65);}
+    #keymeter{display:none;border-top:1px solid var(--cs-frame);margin-top:6px;padding:6px 2px 2px;font-family:var(--cs-mono);font-size:14px;line-height:1.5;color:var(--cs-secondary);letter-spacing:0.45em;}
+    #keymeter .km-label{letter-spacing:0.18em;font-size:12px;color:var(--cs-amber);margin-left:0.6em;}
+    #keymeter .km-door {letter-spacing:0.18em;font-size:12px;color:var(--cs-blue);margin-left:0.6em;text-shadow:0 0 6px rgba(159,212,255,0.24);}
+    #keymeter .km-danger {letter-spacing:0.18em;font-size:12px;color:var(--cs-danger);margin-left:0.6em;text-shadow:0 0 5px rgba(255,106,100,0.28);}
     .km-lit{color:#ffffff;font-weight:bold;text-shadow:0 0 4px #ffffff,0 0 12px rgba(238,244,255,0.85),0 0 22px rgba(200,220,255,0.55);}
     .km-active{color:#ffffff;font-weight:bold;text-shadow:0 0 3px #ffffff,0 0 8px rgba(238,244,255,0.7),0 0 16px rgba(200,220,255,0.45);animation: key-pulse 1.6s ease-in-out infinite;}
-    .km-pending{color:#5d6373;letter-spacing:0.1em;animation: km-pending-pulse 2.2s ease-in-out infinite;}
+    .km-pending{color:var(--cs-secondary);letter-spacing:0.1em;animation: km-pending-pulse 2.2s ease-in-out infinite;}
     @keyframes km-pending-pulse {
-      0%, 100% { opacity: 0.35; }
+      0%, 100% { opacity: 0.72; }
       50%      { opacity: 0.85; }
     }
-    .km-dim{color:#2a2e36;}
+    .km-dim{color:var(--cs-secondary);}
     /* Player after-image trail: four density tiers fade with age, with a
        cool blue-white halo on the freshest cells so the wake reads as
        luminous residue rather than a dirty path. */
@@ -294,6 +311,16 @@
     .t-gate-frame {color:rgba(214,224,240,0.26);font-weight:bold;}
     .t-gate-mark  {color:#ffffff;font-weight:bold;text-shadow:0 0 2px rgba(255,255,255,0.95),0 0 7px rgba(228,242,255,0.36);}
     .t-gate-spectral {color:rgba(255,255,255,0.88);text-shadow:-1px 0 0 rgba(255,90,168,0.4),1px 0 0 rgba(120,236,255,0.4),0 0 6px rgba(238,244,255,0.35);}
+    .ui-primary{color:var(--cs-white);font-weight:bold;text-shadow:0 0 3px rgba(234,242,240,.34),0 0 8px rgba(234,242,240,.12);}
+    .ui-secondary{color:var(--cs-secondary);}
+    .ui-label{color:var(--cs-secondary);font-weight:bold;}
+    .ui-amber{color:var(--cs-amber);font-weight:bold;text-shadow:0 0 3px rgba(255,194,71,.72),0 0 9px rgba(255,194,71,.28);}
+    .ui-blue{color:var(--cs-blue);font-weight:bold;text-shadow:0 0 3px rgba(159,212,255,.58),0 0 9px rgba(159,212,255,.20);}
+    .ui-green{color:var(--cs-green);font-weight:bold;text-shadow:0 0 3px rgba(120,227,154,.58),0 0 9px rgba(120,227,154,.20);}
+    .ui-danger{color:var(--cs-danger);font-weight:bold;text-shadow:0 0 3px rgba(255,106,100,.62),0 0 10px rgba(255,106,100,.24);}
+    .ui-frame{color:var(--cs-frame);}
+    .paper-ink{color:var(--cs-paper-ink);}
+    .paper-muted{color:var(--cs-paper-muted);}
     #introVignette{
       position:absolute;
       top:0;left:0;right:0;bottom:0;
@@ -314,7 +341,7 @@
       top:18%;
       left:50%;
       transform:translate(-50%,calc(0px + var(--introLift,0px)));
-      font-family:'Courier New',Courier,monospace;
+      font-family:var(--cs-mono);
       pointer-events:none;
       user-select:none;
       z-index:2;
@@ -324,7 +351,7 @@
     #introTitleAuthor{
       font-size:12px;
       letter-spacing:0.32em;
-      color:rgba(196,204,218,0.62);
+      color:var(--cs-secondary);
       text-transform:lowercase;
     }
     #introTitleWork{
@@ -332,7 +359,7 @@
       font-size:30px;
       font-weight:bold;
       letter-spacing:0.42em;
-      color:rgba(238,244,252,0.96);
+      color:var(--cs-white);
       text-shadow:0 0 18px rgba(182,192,210,0.18);
       /* offset so the visual centre accounts for the trailing letter-spacing */
       padding-left:0.42em;
@@ -347,19 +374,19 @@
       margin-top:0.85em;
       font-size:13px;
       letter-spacing:0.06em;
-      color:rgba(214,220,232,0.78);
+      color:var(--cs-white);
     }
     #introTitleMeta{
       margin-top:0.4em;
       font-size:12px;
       letter-spacing:0.18em;
-      color:rgba(170,180,196,0.55);
+      color:var(--cs-secondary);
     }
     #introTitleSub{
       margin-top:2.4em;
       font-size:11px;
       letter-spacing:0.22em;
-      color:rgba(160,170,186,0.52);
+      color:var(--cs-secondary);
     }
     /* dimmed wilderness (void) palette — keep topology, drop brightness/chroma */
     .t-void-drone   {color:rgba(120,145,130,0.12);}

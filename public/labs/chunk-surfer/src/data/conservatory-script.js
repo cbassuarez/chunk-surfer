@@ -569,9 +569,9 @@ export const LEVEL_CHECK = {
   roll: {
     speaker: '',
     lines: [
-      { who: 'you', text: 'Six seconds is enough to know the floor. Light off.' },
-      { who: 'direction', text: 'Dark. The monitor opens, and the dock is louder than it looks.' },
-      { who: 'you', text: 'Hold still.' },
+      { who: 'you', text: 'Light off. The room comes up in the cans — the dock, the yard behind the door, the size of it.' },
+      { who: 'you', text: 'That is the level. That is the room. Now you keep sixty seconds of it with nothing added.' },
+      { who: 'direction', text: 'The headphones are on and the monitor is open. Press [r] to roll — and once you roll, do not move.' },
     ],
   },
 };
@@ -730,10 +730,109 @@ export const FIRST_TAKE = {
   roll: {
     speaker: 'STUDIO B3',
     lines: [
-      { who: 'direction', text: 'The monitor opens. The room is louder than it looks.' },
+      { who: 'direction', text: 'The monitor opens. The room comes up in the cans, close and quiet — the foam, the dead air, the size of it.' },
+      { who: 'direction', text: 'Headphones on. Press [r] to roll — and the moment you do, the room drops out, and you do not move.' },
     ],
   },
 };
+
+// ── LISTEN ──────────────────────────────────────────────────────────────────
+// Every take begins here: headphones on, the room up in the cans, described.
+// It is a dialog beat, not a mode — guided, short, and it ends by rolling, so
+// the player always knows what they are doing and is never left in a silent
+// limbo. The first take (studio B3) and the dock level check have their own,
+// longer trees; this is the quick one for every room after.
+//
+// The one choice is "roll", which is the forcing: you do not set a level and
+// walk away. Setting a level commits you to keeping the minute.
+// Per room: the ambience that comes up in the cans, and two things a recordist
+// would examine before he rolls — each a small vein of lore that greys out once
+// asked (conversation.js handles the greying). Roll is always there. A player
+// who wants to work fast rolls; a player who wants the building tells them
+// something about it listens first.
+const LISTEN_ROOMS = {
+  main_b3: {
+    amb: 'foam on three walls, carpet, dead air, and the size of a cupboard',
+    examine: [
+      { q: 'the foam', lines: [
+        { who: 'you', text: 'Wedge foam, going to powder at the edges. Somebody treated this room properly, once, and then stopped paying the heating.' },
+        { who: 'you', text: 'It eats everything above four hundred hertz. Which is why the only thing left on the take is me.' } ] },
+      { q: 'the patchbay', lines: [
+        { who: 'direction', text: 'Every cable pulled, coiled, hung. Somebody left this room tidy.' },
+        { who: 'you', text: 'You do not tidy a room you think is being knocked down. You tidy a room you are coming back to.' } ] },
+    ],
+  },
+  the_tub: {
+    amb: 'six metres of tile and no water, and every sound of yours handed back four times',
+    examine: [
+      { q: 'the acoustics', lines: [
+        { who: 'you', text: 'Hard tile, hard ceiling, nothing to soak it up. A cough in here is a chord.' },
+        { who: 'you', text: 'You do not record a room like this. You survive it, for sixty seconds, and you get the file.' } ] },
+      { q: 'the empty pool', lines: [
+        { who: 'direction', text: 'The deep end goes down into black. There is a ladder, and the ladder goes into the dark, and the dark has a floor to it somewhere.' },
+        { who: 'you', text: 'A pool with no water is just a very clean room that is the wrong shape.' } ] },
+    ],
+  },
+  amplifications: {
+    amb: 'nine metres of empty seats going back past the dark, dust hanging in it, a hall holding its breath',
+    examine: [
+      { q: 'the seats', lines: [
+        { who: 'direction', text: 'Row on row, receding past where the torch reaches. Horsehair and dust and the smell of a place that was warm for a hundred years.' },
+        { who: 'you', text: 'A full hall and an empty hall are the same room with a different amount of breathing in it.' } ] },
+      { q: 'the stage', lines: [
+        { who: 'you', text: 'I am standing where the sound was made for a hundred years, recording the one night nobody is making any.' },
+        { who: 'you', text: 'That is the job. Say it like that and it is almost a nice job.' } ] },
+    ],
+  },
+  soundnoisemusic: {
+    amb: 'eight practice rooms and an ensemble room with the doors open, seven uprights with their lids up and none in tune with any other',
+    examine: [
+      { q: 'the pianos', lines: [
+        { who: 'you', text: 'Seven lids up. A piano with the lid up is a hundred and eighty strings waiting for something to happen.' },
+        { who: 'you', text: 'Nothing is going to happen. I am going to record nothing happening to a hundred and eighty strings, seven times over.' } ] },
+      { q: 'the open doors', lines: [
+        { who: 'direction', text: 'Every practice room door standing open, which is how you leave a room you are coming back to after a coffee.' },
+        { who: 'you', text: 'Nobody came back from their coffee.' } ] },
+    ],
+  },
+  lux_nova: {
+    amb: 'stone, ribbed vault, cold you can hear, and somewhere overhead a broken pane letting the weather in',
+    examine: [
+      { q: 'the tail', lines: [
+        { who: 'you', text: 'Eleven seconds of reverb, maybe twelve. Stone gives everything back to you long after you have stopped saying it.' },
+        { who: 'you', text: 'You have to hold still a long time in a room like this. The room keeps talking after you stop.' } ] },
+      { q: 'the broken pane', lines: [
+        { who: 'direction', text: 'High up, a clerestory window gone, and the weather coming in through it — snow, tonight, indoors, drifting down onto stone.' },
+        { who: 'you', text: 'This is the fifth room. This is his room.' } ] },
+    ],
+  },
+};
+
+export function roomListen(room, label) {
+  const r = LISTEN_ROOMS[room] || { amb: 'the room', examine: [] };
+  const nodes = {
+    start: {
+      speaker: '',
+      lines: [
+        { who: 'direction', text: `Headphones on. ${label} comes up in the cans — ${r.amb}.` },
+        { who: 'you', text: 'That is the level. That is the room.' },
+      ],
+      choices: [
+        ...r.examine.map((e, i) => ({ text: e.q, goto: `ex${i}`, hideWhenAsked: false })),
+        { text: 'kill the light and roll', goto: 'roll' },
+      ],
+    },
+    roll: {
+      speaker: '',
+      lines: [
+        { who: 'direction', text: 'You kill the light. The room drops out of the cans, the tape hiss comes up, and there is you and forty-five seconds and nothing else.' },
+        { who: 'you', text: 'Sixty seconds of nothing, with nothing added. Do not move.' },
+      ],
+    },
+  };
+  r.examine.forEach((e, i) => { nodes[`ex${i}`] = { speaker: '', lines: e.lines, goto: 'start' }; });
+  return nodes;
+}
 
 // ── the plant room ──────────────────────────────────────────────────────────
 // There is no objective here. There is no take here. The work order does not
@@ -1025,7 +1124,7 @@ export const PAGES = [
     body: [
       { raw: 'PRAC  take 1. Clean. 60s.' },
       '',
-      'Eleven practice rooms, all with the door open, all with a piano in, none of them in tune with any of the others. In an empty room the pianos are still the loudest thing, because a piano with the lid up is a hundred and eighty strings waiting for something to happen.',
+      'Eight practice rooms and an ensemble room, all with the door open. Seven uprights with their lids up, none of them in tune with any of the others. Stands and cases in the rooms without them. In an empty room the pianos are still the loudest thing, because a piano with the lid up is a hundred and eighty strings waiting for something to happen.',
       '',
       'Something happened in the corridor while I was recording, and it is not on the take, and I was wearing the headphones, and the headphones are the only reason I would have heard it.',
       '',
@@ -1171,10 +1270,36 @@ export const PROLOGUE_THOUGHTS = {
 export const LINES = {
   lightOn: { who: 'you', text: 'On. Anything in here with eyes has me now.' },
   lightOff: { who: 'you', text: 'Off.' },
-  recStart: { who: 'direction', text: 'The monitor opens. The room is louder than it looks.' },
+  // LISTEN: the room comes up in the cans, and you can still move.
+  listen: { who: 'direction', text: 'Headphones on. The room comes up in the cans — the size of it, the drip somewhere, the hum in the walls. [r] again to roll.' },
+  listenOff: { who: 'you', text: 'Not yet. Off it comes.' },
+  mustRoll: { who: 'you', text: "No. Levels are set. You don't set a level and walk away — you roll. [r]." },
+  already: { who: 'you', text: "Done that one. Clean minute, in the bag. I'm not doing it twice." },
+  // ROLL: the room drops out and the hiss comes up, and you must not move.
+  recStart: { who: 'direction', text: 'The room drops out of the cans. Tape hiss, and under it nothing, and you have forty-five seconds to hold still inside it.' },
   recDone: { who: 'you', text: 'Clean. One minute of nothing, and the nothing is theirs.' },
   recSpoiled: (why) => ({ who: 'you', text: `Spoiled. ${why[0].toUpperCase()}${why.slice(1)}.` }),
   recAbort: { who: 'you', text: 'Stopped it.' },
+  // Moving in a take: he hears his own body on the tape, and now something
+  // heard where the body was.
+  flinch: [
+    { who: 'you', text: "My own knee. That's me on the take. Bloody hell." },
+    { who: 'you', text: 'I shifted. I actually shifted. Six years and I shifted.' },
+    { who: 'you', text: 'That was me. My jacket, my breathing, me.' },
+  ],
+  // The real room, through the real mic. His body on the take is yours.
+  micNoise: [
+    { who: 'you', text: 'That was me. In the room. On the take. Again.' },
+    { who: 'you', text: 'Something moved out there and it was me. Hold still. Actually hold still.' },
+  ],
+  // The player screamed. So does he. The two rooms are the same room now.
+  scream: { who: 'me', text: 'AH— no. No. That was — was that me? Was that me?', rate: 1.15 },
+  // A sound that is not yours, in a take. The one thing worse than being heard.
+  whatWasThat: [
+    { who: 'you', text: '...what was that.' },
+    { who: 'you', text: 'That was not the tape. That was not me.' },
+    { who: 'you', text: "Say it wasn't in the room. Say it out loud. — I can't." },
+  ],
   playback: { who: 'direction', text: 'Headphones on. Whatever plays now, the room cannot hear.' },
   playbackEnd: { who: 'direction', text: 'End of take.' },
   playbackNone: { who: 'you', text: 'Nothing recorded in this room.' },

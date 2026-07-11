@@ -18,7 +18,8 @@
 // The lens drops to `calm` so the paper does not crawl while it is read.
 
 import * as scenes from './scenes.js';
-import { uiScrim, uiFill, uiText, uiWrap, uiSize, uiCenter } from '../render/ui.js';
+import { uiScrim, uiInk, uiWrap, uiSize } from '../render/ui.js';
+import { drawPaperPanel } from '../render/presentation.js';
 import { interpolate } from './terror.js';
 
 const PAGE_W = 66;             // cells of body text. A sheet of A4 in monospace.
@@ -62,13 +63,13 @@ function erode(line, decay, seed) {
 function layout(doc, width) {
   const lines = [];
   for (const entry of doc.body) {
-    if (entry === '') { lines.push({ text: '', cls: 't-dim' }); continue; }
+    if (entry === '') { lines.push({ text: '', cls: 'paper-muted' }); continue; }
     if (typeof entry === 'string') {
-      for (const l of uiWrap(interpolate(entry), width)) lines.push({ text: l, cls: 't-chunk' });
+      for (const l of uiWrap(interpolate(entry), width)) lines.push({ text: l, cls: 'paper-ink' });
       continue;
     }
-    if (entry.rule) { lines.push({ text: '─'.repeat(width), cls: 't-dim' }); continue; }
-    if (entry.raw != null) { lines.push({ text: interpolate(entry.raw), cls: entry.cls || 't-dim' }); continue; }
+    if (entry.rule) { lines.push({ text: '─'.repeat(width), cls: 'paper-muted' }); continue; }
+    if (entry.raw != null) { lines.push({ text: interpolate(entry.raw), cls: entry.cls || 'paper-muted' }); continue; }
   }
   return lines;
 }
@@ -102,22 +103,29 @@ function makeDocumentScene(doc) {
       const x0 = Math.floor((cols - width) / 2);
       const view = rows - MARGIN_Y * 2 - 4;
 
-      uiFill(x0 - 2, MARGIN_Y - 1, width + 4, Math.min(lines.length - scroll, view) + 6, 'rgba(10,10,12,0.96)');
+      const paperH = Math.min(rows - MARGIN_Y, Math.min(lines.length - scroll, view) + 6);
+      drawPaperPanel(x0 - 2, MARGIN_Y - 1, width + 4, paperH);
 
+      // Typewriter ink, not phosphor. A letterhead rule under the title sells
+      // the stationery. The erosion stays: a struck ribbon that ran out.
+      const INK = '#241A0E', MUTED = '#6A5E49';
       let y = MARGIN_Y;
-      uiText(x0, y++, erode(doc.title.toUpperCase(), decay * 0.5, 1), 't-gate-frame');
-      if (doc.byline) uiText(x0, y, erode(doc.byline, decay * 0.7, 2), 't-dim');
+      uiInk(x0, y++, erode(doc.title, decay * 0.5, 1), { color: INK, weight: 'bold' });
+      if (doc.byline) uiInk(x0, y, erode(doc.byline, decay * 0.7, 2), { color: MUTED });
+      // the letterhead rule
+      uiInk(x0, y + 1, '─'.repeat(width), { color: MUTED, alpha: 0.5 });
       y += 2;
 
       const end = Math.min(lines.length, scroll + view);
       for (let i = scroll; i < end; i++) {
         const l = lines[i];
-        uiText(x0, y++, erode(l.text, decay, i + 3), l.cls);
+        uiInk(x0, y++, erode(l.text, decay, i + 3), { color: l.cls === 'paper-muted' ? MUTED : INK });
       }
 
       y += 1;
-      if (end < lines.length) uiText(x0, y, '↓ more', 't-dim');
-      else uiCenter(Math.min(rows - 2, y + 1), doc.dismiss || '[ esc ]', 't-dim');
+      if (end < lines.length) uiInk(x0, y, '↓ more', { color: MUTED });
+      else uiInk(x0 + Math.floor((width - String(doc.dismiss || '[esc]').length) / 2),
+                 Math.min(rows - 2, y + 1), String(doc.dismiss || '[esc]'), { color: MUTED });
     },
 
     key(e) {

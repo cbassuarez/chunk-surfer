@@ -6,7 +6,8 @@
 // Coordinates are cells, using the same metrics as the ASCII renderer, so a
 // dialogue box occupies the same visual module as the map it covers.
 
-import { CELL_W, CELL_H, FONT_PX, atlasConfigure, atlasDpr, getTile } from './atlas.js';
+import { UI_CELL_W as CELL_W, UI_CELL_H as CELL_H, atlasConfigure, atlasDpr, getTile } from './atlas.js';
+import { UI_COLOR } from './palette.js';
 
 let host = null, canvas = null, ctx = null;
 let cols = 0, rows = 0;
@@ -34,6 +35,14 @@ function resize() {
 
 export function uiSize() { return { cols, rows }; }
 export function uiClear() { if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height); }
+export function uiCanvasSize() { return { width: canvas?.width || 0, height: canvas?.height || 0 }; }
+
+// Low-level drawing hook for code-native instruments. The callback receives
+// device-pixel metrics; authored modules still express all geometry in cells.
+export function uiDraw(draw) {
+  if (!ctx || typeof draw !== 'function') return;
+  draw({ ctx, dpr: atlasDpr(), cellW: CELL_W, cellH: CELL_H, cols, rows });
+}
 
 // Dim the world behind a scene without hiding it — dread survives, text reads.
 export function uiScrim(alpha = 0.55) {
@@ -44,7 +53,7 @@ export function uiScrim(alpha = 0.55) {
 
 export function uiGlyph(cx, cy, ch, cls = 't-chunk', alpha = 1) {
   if (!ctx || ch == null || ch === ' ') return;
-  const tile = getTile(ch, cls);
+  const tile = getTile(ch, cls, 'ui');
   const dpr = atlasDpr();
   if (alpha !== 1) ctx.globalAlpha = alpha;
   ctx.drawImage(tile.canvas, cx * CELL_W * dpr - tile.ox, cy * CELL_H * dpr - tile.oy);
@@ -56,11 +65,59 @@ export function uiText(cx, cy, str, cls = 't-chunk', alpha = 1) {
   for (let i = 0; i < s.length; i++) uiGlyph(cx + i, cy, s[i], cls, alpha);
 }
 
+// Typewriter ink on paper. NOT the VFD dot-matrix: a real monospace face with
+// slightly uneven per-character ink, the way a struck ribbon lands. Drawn
+// directly (paper is static, so per-frame fillText is cheap) so it never
+// touches the phosphor atlas.
+export function uiInk(cx, cy, str, { color = '#20180F', alpha = 1, weight = '' } = {}) {
+  const s = String(str ?? '');
+  if (!ctx || !s) return;
+  const dpr = atlasDpr();
+  ctx.save();
+  ctx.font = `${weight ? weight + ' ' : ''}${Math.round(CELL_H * 0.62)}px "Courier New", Courier, ui-monospace, monospace`;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = color;
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (ch === ' ') continue;
+    // uneven ink: a stable, SUBTLE per-cell jitter — a struck ribbon, not a
+    // drunk one. Mostly the ink weight varies; the baseline barely moves.
+    const h = ((cx + i) * 2654435761 ^ cy * 40503) >>> 0;
+    const jA = 0.90 + ((h & 255) / 255) * 0.10;
+    const jx = (((h >> 8) & 7) - 3.5) * 0.014;
+    const jy = (((h >> 12) & 7) - 3.5) * 0.016;
+    ctx.globalAlpha = alpha * jA;
+    ctx.fillText(ch, ((cx + i) + jx) * CELL_W * dpr, (cy + 0.5 + jy) * CELL_H * dpr);
+  }
+  ctx.restore();
+}
+
 export function uiFill(cx, cy, w, h, color = 'rgba(6,7,9,0.92)') {
   if (!ctx) return;
   const dpr = atlasDpr();
   ctx.fillStyle = color;
   ctx.fillRect(cx * CELL_W * dpr, cy * CELL_H * dpr, w * CELL_W * dpr, h * CELL_H * dpr);
+}
+
+export function uiStrokeRect(cx, cy, w, h, color = UI_COLOR.frame, alpha = 1, lineWidth = 1) {
+  uiDraw(({ ctx: c, dpr, cellW, cellH }) => {
+    c.save();
+    c.globalAlpha = alpha;
+    c.strokeStyle = color;
+    c.lineWidth = lineWidth * dpr;
+    c.strokeRect((cx * cellW + 0.5) * dpr, (cy * cellH + 0.5) * dpr,
+      Math.max(0, w * cellW - 1) * dpr, Math.max(0, h * cellH - 1) * dpr);
+    c.restore();
+  });
+}
+
+export function uiLine(x1, y1, x2, y2, color = UI_COLOR.frame, alpha = 1, lineWidth = 1) {
+  uiDraw(({ ctx: c, dpr, cellW, cellH }) => {
+    c.save(); c.globalAlpha = alpha; c.strokeStyle = color; c.lineWidth = lineWidth * dpr;
+    c.beginPath(); c.moveTo(x1 * cellW * dpr, y1 * cellH * dpr);
+    c.lineTo(x2 * cellW * dpr, y2 * cellH * dpr); c.stroke(); c.restore();
+  });
 }
 
 export function uiBox(cx, cy, w, h, cls = 't-gate-frame', fill = 'rgba(6,7,9,0.92)') {

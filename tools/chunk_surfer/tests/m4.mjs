@@ -23,6 +23,9 @@ const check = (n, ok, x = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${x
 const key = async (k, ms = 200) => { await p.keyboard.press(k); await new Promise((r) => setTimeout(r, ms)); };
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const ev = (fn) => p.evaluate(fn);
+// [r] LISTENs; the room has to come up in the cans before the roll captures it,
+// so we hold the monitor open a beat, then [r] again to roll.
+const roll = async () => { await key('r', 300); await wait(1500); await key('r', 300); };
 
 // Spawn inside studio B3: this is where the first take is made, and the only
 // room deep enough that a two-second take can hear anything at all.
@@ -85,11 +88,28 @@ check('a dead radio squelches', !!sq, JSON.stringify(sq));
 const after = await ev(() => window.__probe.rec().noise);
 check('...and the squelch is noise, at you', after > before, `${before.toFixed(3)} → ${after.toFixed(3)}`);
 
-// It spoils takes. Same rule as your own knee.
-await ev(() => window.__probe.tuneRoomTone({ takeSeconds: 2 }));
-await key('r', 400);
+// THE REAL ROOM, through the real mic. Headless cannot grant one, so we inject
+// a level: your own room, loud, spoils the take exactly like his own knee.
+// (Put the radio's cooldown back first — left at zero it squelches every frame
+// and would spoil the take before the mic ever does.)
+await ev(() => window.__probe.radioTune({ cooldownSec: 600, duringTakeChance: 0 }));
+await ev(() => window.__probe.tuneRoomTone({ takeSeconds: 45 }));
+for (let i = 0; i < 40 && (await ev(() => window.__probe.rec().noise)) > 0.02; i++) await wait(250);
+await roll();
 check('recording', (await ev(() => window.__probe.rec())).recording);
-await ev(() => window.__probe.radioTune({ duringTakeChance: 1 }));
+await ev(() => window.__probe.micTest(0.4));   // a shout in your real room
+await wait(400);
+check('YOUR OWN ROOM spoils the take', (await ev(() => window.__probe.rec())).spoiled,
+      (await ev(() => window.__probe.rec())).spoilReason);
+check('...and it was you that did it', (await ev(() => window.__probe.rec())).spoilReason === 'you made a sound');
+await ev(() => window.__probe.micTest(null));
+await wait(1600);   // the spoiled meter closes itself
+
+// It spoils takes. Same rule as your own knee — the radio, this time.
+await ev(() => window.__probe.tuneRoomTone({ takeSeconds: 2 }));
+await roll();
+check('recording again', (await ev(() => window.__probe.rec())).recording);
+await ev(() => window.__probe.radioTune({ duringTakeChance: 1, squelchAfterSec: 0, cooldownSec: 0 }));
 await ev(() => window.__probe.radioTick());
 await wait(300);
 check('the radio on your belt spoils your take', (await ev(() => window.__probe.rec())).spoiled,
@@ -118,7 +138,7 @@ check('the room goes quiet again', (await ev(() => window.__probe.rec().noise)) 
 check('and the recorder is idle', !(await ev(() => window.__probe.rec())).recording);
 
 await ev(() => window.__probe.tuneRoomTone({ takeSeconds: 2 }));
-await key('r', 300);
+await roll();
 await wait(2600);   // hold still. the take completes and closes itself.
 const rec = await ev(() => window.__probe.rec());
 check('a clean take is a take', rec.takes.includes('main_b3'), rec.takes.join(','));

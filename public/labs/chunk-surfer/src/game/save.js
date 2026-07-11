@@ -24,9 +24,10 @@ const freshSave = () => ({
   area: 'prologue',
   px: 0, py: 0,
   takes: [], items: [],
+  props: { inspected: [], auditioned: [], cycles: {}, hushSeed: 0x43535552, hushCount: 0 },
   playSeconds: 0,
   steps: 0,
-  settings: { volume: 1, textCps: 42, fx: true, reduceDread: false },
+  settings: { volume: 1, music: 1, textCps: 42, fx: true, reduceDread: false, mic: 'on' },
 });
 
 const freshMeta = () => ({

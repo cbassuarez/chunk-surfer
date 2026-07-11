@@ -87,7 +87,8 @@ check('the interface survives a reload', (await lore()).interface);
 
 await ev(() => window.__probe.tuneRoomTone({ takeSeconds: 2 }));
 for (let i = 0; i < 40 && (await ev(() => window.__probe.rec().noise)) > 0.02; i++) await wait(250);
-await key('r', 400);
+// [r] LISTENs; hold the monitor open so the room comes up in the cans, then roll.
+await key('r', 300); await wait(1500); await key('r', 300);
 await wait(2800);
 check('a take is in the bag', (await ev(() => window.__probe.rec())).takes.includes('main_b3'));
 check('...and recording it cost him nothing', (await lore()).listened === 0, `listened=${(await lore()).listened}`);

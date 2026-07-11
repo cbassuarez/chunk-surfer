@@ -18,7 +18,8 @@
 
 import * as scenes from './scenes.js';
 import { flagTest, flagApply, flagGet, flagBump } from './flags.js';
-import { uiBox, uiText, uiWrap, uiGlyph, uiSize, uiScrim } from '../render/ui.js';
+import { uiText, uiWrap, uiGlyph, uiSize, uiScrim } from '../render/ui.js';
+import { drawMachinePanel, drawVfdText } from '../render/presentation.js';
 import { portrait, degrade } from '../render/portraits.js';
 import { getSave } from './save.js';
 import { interpolate } from './terror.js';
@@ -140,34 +141,37 @@ function makeDialogueScene(nodeId) {
       const boxH = 12;
       const boxY = rows - boxH - 1;
       const boxX = 1, boxW = cols - 2;
-      uiBox(boxX, boxY, boxW, boxH);
+      const panel = drawMachinePanel(boxX, boxY, boxW, boxH, {
+        label: 'MONITOR', source: node.speaker || 'DIALOGUE',
+        footer: done && choices().length ? '[↑/↓] SELECT · [ENTER] CONFIRM' : '[SPACE] CONTINUE', meter: true,
+      });
 
       // portrait pane
       const pid = node.portrait;
       let block = portrait(pid);
       if (block && node.register === 'decay') block = degrade(block, Math.min(0.85, visits(nodeId) * 0.22));
-      const textX = boxX + 2 + (block ? PORTRAIT_W + 2 : 0);
+      const textX = panel.x + (block ? PORTRAIT_W + 2 : 0);
       if (block) {
         for (let y = 0; y < Math.min(PORTRAIT_H, boxH - 2); y++) {
-          uiText(boxX + 2, boxY + 1 + y, block[y], 't-hush-edge');
+          uiText(panel.x, panel.y + y, block[y], 'ui-secondary');
         }
       }
 
-      if (node.speaker) uiText(textX, boxY + 1, node.speaker, 't-landmark');
+      if (node.speaker) drawVfdText(textX, panel.y, node.speaker);
 
       // lines: everything before the current one stays on screen
       const textW = boxX + boxW - textX - 2;
-      let y = boxY + 3;
+      let y = panel.y + 2;
       for (let i = 0; i <= li && y < boxY + boxH - 2; i++) {
         const line = lines[i];
         const isDirection = line.direction != null;
         const full = String(line.text ?? line.direction ?? '');
         const shown = i < li ? full : full.slice(0, chars);
-        const cls = line.struck ? 't-trail-3' : isDirection ? 't-eye' : 't-chunk';
+        const cls = line.struck ? 'ui-secondary' : isDirection ? 'ui-secondary' : 'ui-primary';
         for (const wrapped of uiWrap(shown, textW)) {
           if (y >= boxY + boxH - 2) break;
-          uiText(textX, y, wrapped, cls, line.struck ? 0.45 : 1);
-          if (line.struck) for (let k = 0; k < wrapped.length; k++) uiGlyph(textX + k, y, '─', 't-trail-4', 0.5);
+          uiText(textX, y, wrapped, cls, line.struck ? 0.58 : 1);
+          if (line.struck) for (let k = 0; k < wrapped.length; k++) uiGlyph(textX + k, y, '─', 'ui-frame', 0.65);
           y++;
         }
       }
@@ -179,17 +183,17 @@ function makeDialogueScene(nodeId) {
         list.slice(0, 3).forEach((c, i) => {
           const sel = i === choiceIdx;
           const label = `${sel ? '>' : ' '} ${c.text}`;
-          uiText(textX, cy, label, sel ? 't-chunk-on' : 't-trail-2');
+          uiText(textX, cy, label, sel ? 'ui-amber' : 'ui-primary');
           // ironic register: the choice comments on itself, in the margin
           if (node.register === 'ironic' && c.aside) {
-            uiText(textX + label.length + 2, cy, `— ${c.aside}`, 't-trail-3', 0.7);
+            uiText(textX + label.length + 2, cy, `— ${c.aside}`, 'ui-secondary');
           }
           cy++;
         });
       } else if (!done) {
         const line = lines[li];
         const full = String(line.text ?? line.direction ?? '');
-        if (chars >= full.length) uiText(boxX + boxW - 4, boxY + boxH - 2, '▾', 't-key');
+        if (chars >= full.length) uiText(boxX + boxW - 4, boxY + boxH - 3, '▾', 'ui-amber');
       }
     },
   };

@@ -126,6 +126,10 @@ export const ROOM_TONE = {
   monitorFadeSec: 1.1,   // the monitor opens slowly, like a hand on a fader
   takeSeconds: 45,       // an unbroken clean minute, near enough
   spoilNoise: 0.18,      // noise above this ruins the take
+  catchNoise: 0.40,      // noise above this doesn't just ruin the take — it
+                         // finds you. A footstep (0.22) or a lone squelch
+                         // (0.34) spoils; a shout (0.5), or a squelch stacked
+                         // on top of a step, is loud enough to be caught.
 };
 
 // Noise is the axis the presence hunts on. Injury adds to it permanently.

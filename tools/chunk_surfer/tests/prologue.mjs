@@ -181,6 +181,8 @@ while ((await scene()) === 'thought:level-check' && n++ < 40) {
   else await key(' ', 300);
 }
 await wait(600);
+// The level-check tree IS the guided listen and ends on "roll", so it hands
+// straight into a recording.
 check('the level check ends by rolling', (await ev(() => window.__probe.rec())).recording, `${n} presses`);
 
 await walkKey('ArrowUp', 300);
@@ -191,7 +193,9 @@ check('spoiling the level check costs nothing', (await tut()).step === 'level');
 
 await ev(() => window.__probe.hush());
 for (let i = 0; i < 40 && (await ev(() => window.__probe.rec().noise)) > 0.02; i++) await wait(250);
-await key('r', 400);
+// The tree is spent now; a retry in the dock rolls straight (the tutorial owns
+// the level check, and the dock is not a room you LISTEN in).
+await key('r', 500);
 await wait(7500);
 check('six clean seconds is a level check', (await tut()).step === 'go', (await tut()).step);
 check('and the recorder is handed back', !(await ev(() => window.__probe.rec())).recording);

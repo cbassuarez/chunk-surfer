@@ -6,22 +6,20 @@
 // story, no triggers. Nothing that already existed is lost to the game.
 
 import * as scenes from './scenes.js';
-import { uiSize, uiCenter, uiText, uiFill, uiScrim } from '../render/ui.js';
+import { uiSize, uiCenter, uiText, uiFill } from '../render/ui.js';
+import { drawMachinePanel, drawVfdText } from '../render/presentation.js';
+import { UI_COLOR } from '../render/palette.js';
 import { hasSave, getMeta } from './save.js';
 
-const LOGO = [
-  '  ██████ ██   ██ ██    ██ ███    ██ ██   ██',
-  ' ██      ██   ██ ██    ██ ████   ██ ██  ██ ',
-  ' ██      ███████ ██    ██ ██ ██  ██ █████  ',
-  ' ██      ██   ██ ██    ██ ██  ██ ██ ██  ██ ',
-  '  ██████ ██   ██  ██████  ██   ████ ██   ██',
-];
-
-export function makeTitleScene({ onNewGame, onContinue, onJustSurf }) {
+export function makeTitleScene({ onNewGame, onContinue, onJustSurf, onSettings }) {
   const items = [];
   if (hasSave()) items.push({ label: 'continue', run: onContinue });
   items.push({ label: 'new game', run: onNewGame });
   items.push({ label: 'just surf', run: onJustSurf });
+  // Settings sits OVER the title (does not leave it), so the machine you are
+  // tuning is the one behind the panel. main.js owns the scene (it has the audio
+  // and mic hooks); the title just opens it.
+  items.push({ label: 'settings', stay: true, run: onSettings });
 
   let sel = 0;
   let t = 0;
@@ -32,13 +30,24 @@ export function makeTitleScene({ onNewGame, onContinue, onJustSurf }) {
     blocksWorld: true,
     lensPreset: 'calm',
 
+    enter() {
+      document.body.classList.add('title-screen');
+      // A title reached after fullscreen, reload, or RETURN TO TITLE must take
+      // focus back from browser chrome / the lens tuner immediately.
+      const map=document.querySelector('.map')||document.querySelector('#map');
+      try{map?.setAttribute('tabindex','0');map?.focus({preventScroll:true});}catch(_){}
+    },
+    exit() { document.body.classList.remove('title-screen'); },
+
     update(dt) { t += dt; },
 
     key(e) {
-      if (e.key === 'ArrowUp' || e.key === 'w') { sel = (sel - 1 + items.length) % items.length; return true; }
-      if (e.key === 'ArrowDown' || e.key === 's') { sel = (sel + 1) % items.length; return true; }
-      if (e.key === 'Enter' || e.key === ' ' || e.key === 'z') {
+      const k=(e.key||'').toLowerCase(),code=e.code||'';
+      if (e.key === 'ArrowUp' || k === 'w' || code === 'KeyW') { sel = (sel - 1 + items.length) % items.length; return true; }
+      if (e.key === 'ArrowDown' || k === 's' || code === 'KeyS') { sel = (sel + 1) % items.length; return true; }
+      if (e.key === 'Enter' || code === 'Enter' || e.key === ' ' || code === 'Space' || k === 'z' || code === 'KeyZ') {
         const item = items[sel];
+        if (item.stay) { item.run(); return true; }
         scenes.pop();
         item.run();
         return true;
@@ -48,30 +57,29 @@ export function makeTitleScene({ onNewGame, onContinue, onJustSurf }) {
 
     render() {
       const { cols, rows } = uiSize();
-      uiFill(0, 0, cols, rows, 'rgba(4,4,6,0.97)');
-      uiScrim(0.2);
-
-      const top = Math.max(2, Math.floor(rows * 0.22));
-      LOGO.forEach((line, i) => {
-        const shimmer = 0.72 + 0.28 * Math.sin(t * 0.9 + i * 0.7);
-        uiCenter(top + i, line, 't-player', shimmer);
+      uiFill(0, 0, cols, rows, UI_COLOR.glass);
+      const w = Math.min(78, cols - 4);
+      const h = Math.min(24, rows - 4);
+      const x = Math.floor((cols - w) / 2), y = Math.floor((rows - h) / 2);
+      const body = drawMachinePanel(x, y, w, h, {
+        label: 'PROGRAM SELECT', source: 'ROOM TONE', footer: '[↑/↓] SELECT · [ENTER] CONFIRM', meter: true,
       });
-      uiCenter(top + LOGO.length + 2, 'surfer', 't-trail-1', 0.9);
-      uiCenter(top + LOGO.length + 4, 'cbassuarez', 't-trail-3', 0.7);
+
+      const display = 'CHUNK SURFER';
+      drawVfdText(Math.max(body.x, Math.floor((cols - display.length * 1.65) / 2)), body.y + 1, display, { color: UI_COLOR.amber, scale:1.72 });
+      uiCenter(body.y + 4, 'A HAUNTING AT ELLERY CONSERVATORY', 'ui-primary');
 
       // The meta file speaks before the game does.
       const meta = getMeta();
-      if (meta.hushMet) uiCenter(top + LOGO.length + 6, 'it is still here.', 't-hush-edge', 0.75);
-      else if (meta.leftMidRun) uiCenter(top + LOGO.length + 6, 'you left. it stayed.', 't-hush-edge', 0.7);
+      if (meta.hushMet) uiCenter(body.y + 6, 'it is still here.', 'ui-danger');
+      else if (meta.leftMidRun) uiCenter(body.y + 6, 'you left. it stayed.', 'ui-danger');
 
-      const menuY = top + LOGO.length + 9;
+      const menuY = body.y + 8;
       items.forEach((item, i) => {
         const on = i === sel;
-        const label = `${on ? '▸ ' : '  '}${item.label}`;
-        uiCenter(menuY + i * 2, label, on ? 't-chunk-on' : 't-trail-2', on ? 1 : 0.65);
+        const label = `${on ? '▸ ' : '  '}${item.label.toUpperCase()}`;
+        uiCenter(menuY + i * 2, label, on ? 'ui-amber' : 'ui-secondary');
       });
-
-      uiCenter(rows - 3, '↑ ↓ · enter', 't-trail-4', 0.6);
     },
   };
 }

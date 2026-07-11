@@ -7,9 +7,9 @@
 // A cell has: a floor height, a ceiling height, some flags, and a zone.
 // Heights are in metres. The eye sits 1.62m above the floor.
 //
-// UNFOLDING: a sector renderer cannot put one room above another at the same
-// (x,z). The three levels therefore occupy three regions of one plane, and the
-// stairwells rise as they run. In first person this is invisible.
+// Logical drawings may occupy separate regions, but each cell also compiles to
+// a Euclidean physical X/Z and vertical span. That keeps saves and pathfinding
+// stable without making the rendered building non-Euclidean.
 
 export const AUTHOR_CELL = 1.0;   // metres per authored floorplan glyph
 export const CELL = 0.5;          // metres per runtime cell
@@ -103,17 +103,21 @@ export const GLYPHS = {
   'D': { floor: 0.0, ceil: 4.6, zone: 'dock', material: 'serviceConcrete' },
   'F': { floor: 0.0, ceil: 4.5, zone: 'foyer', material: 'serviceConcrete' },
   'B': { floor: 0.0, ceil: 3.2, zone: 'studio', material: 'acousticFoam' },
-  'T': { floor: 0.0, ceil: 6.5, zone: 'natatorium', material: 'poolTile' },
-  'W': { floor: -1.6, ceil: 6.5, zone: 'natatorium', material: 'wetTile' },
-  'H': { floor: 0.0, ceil: 9.0, zone: 'hall', material: 'woodVelvet' },
+  'T': { floor: 0.0, ceil: 8.5, zone: 'natatorium', material: 'poolTile' },
+  'W': { floor: -1.6, ceil: 8.5, zone: 'natatorium', material: 'wetTile' },
+  'H': { floor: 0.0, ceil: 15.5, zone: 'hall', material: 'woodVelvet' },
+  'S': { floor: -2.5, ceil: 15.5, zone: 'hall', material: 'woodVelvet' },
+  'R': { floor: 2.5, ceil: 15.5, zone: 'hall', material: 'woodVelvet' },
+  'h': { floor: 0.0, ceil: 3.8, zone: 'hall', material: 'woodVelvet' },
+  'r': { floor: 2.5, ceil: 3.8, zone: 'hall', material: 'woodVelvet' },
+  'L': { floor: 4.0, ceil: 7.3, zone: 'hall', material: 'woodVelvet' },
+  'U': { floor: 7.5, ceil: 15.5, zone: 'hall', material: 'woodVelvet' },
   'P': { floor: 0.0, ceil: 3.4, zone: 'practice', material: 'practiceFoam' },
-  'C': { floor: 0.0, ceil: 11.0, zone: 'chapel', material: 'chapelStone' },
+  'C': { floor: 0.0, ceil: 13.0, zone: 'chapel', material: 'chapelStone' },
   'M': { floor: 0.0, ceil: 3.8, zone: 'plant', material: 'metalPlant' },
 };
 
-// Resolve a glyph to a cell descriptor. `base` lifts a whole level (unfolding
-// is horizontal, but the levels still sit at different heights, so the stairs
-// have somewhere to go).
+// Resolve a glyph to a cell descriptor. `base` lifts a whole physical level.
 export function cellFor(ch, base = 0) {
   const g = GLYPHS[ch];
   if (g === undefined) throw new Error(`floorplan: unknown glyph ${JSON.stringify(ch)}`);

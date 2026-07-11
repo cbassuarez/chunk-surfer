@@ -21,7 +21,10 @@ not, and four suites quietly stopped being runnable.)
 | `m4.mjs` | the reader does not freeze the world but does stop your feet · the work order raises the client once and the second transmission kills the radio · a dead radio squelches, and the squelch is noise **at the cell you stand in**, and it spoils takes, and `reduceDread` silences it · **the tape contains what you did not hear**: the guest is a voice the monitor never passed, sealed once, identical on every replay · playback is silent in the room |
 | `flicker.mjs` | adjacent-frame pixel delta with the camera still (regression: 1.54 → 0.36) |
 | `fps.mjs` | lens throughput standing and moving (target 8–12fps) |
-| `floorplan.mjs` | **pure Node.** heights round-trip into the texture the shader samples · rooms are never mutable · every stair riser is climbable by a body · bricked vs locked doors refuse you differently · the building is walkable spawn → chapel → back. `--map` prints reachability, which is how you find a silently impassable building |
+| `floorplan.mjs` | **pure Node.** height round-trip · logical→physical stacked spans · non-overlapping hall decks · walkable orchestra/lower/upper balconies · rooms never mutate · spawn → chapel → back connectivity |
+| `glb.mjs` | **pure Node.** strict GLB 2.0 subset · indexed geometry · seating/structure hero budgets · exact provenance hash |
+| `props.mjs` | **pure Node.** placement · proxy and seating-mask collision · physical slice transforms · visible picking · inspection · deterministic HUSH selection |
+| `hush.mjs` | **pure Node.** stalled timestamp · movement immunity · recorder-return gate · normal spoil restoration |
 | `mutate.mjs` | **pure Node.** the three disciplines, hammered over hundreds of forced mutations: rooms (and their walls) never move · spawn ↔ chapel connectivity survives every change · nothing changes in your lit view cone, at arm's reach, or where you made noise |
 
 Four of these encode rules that are easy to erode and expensive to relearn: the

@@ -17,7 +17,8 @@
 // first, and because a man learns a verb by using it.
 
 import * as scenes from './scenes.js';
-import { uiBox, uiCenter, uiScrim, uiSize, uiText } from '../render/ui.js';
+import { uiCenter, uiScrim, uiSize, uiText } from '../render/ui.js';
+import { drawMachinePanel, drawVfdText } from '../render/presentation.js';
 
 const W = 74;
 
@@ -116,54 +117,56 @@ export function makeBagScene({
       const scroll = Math.max(0, Math.min(Math.max(0, list.length - view), sel - Math.floor(view / 2)));
 
       uiScrim(0.72);
-      uiBox(x, y, w, h);
-      uiCenter(y + 1, 'BAG', 't-landmark');
+      const panel = drawMachinePanel(x, y, w, h, {
+        label: 'FILE / GEAR', source: 'BAG', footer: '', meter: true,
+      });
+      drawVfdText(panel.x, panel.y, 'BAG');
 
-      let yy = y + 3;
+      let yy = panel.y + 2;
       for (let i = scroll; i < Math.min(list.length, scroll + view); i++) {
         const r = list[i];
         if (r.kind === 'space') { yy++; continue; }
         if (r.kind === 'head') {
-          uiText(x + 3, yy, r.label, 't-gate-frame', 0.75);
-          if (r.right) uiText(x + w - 3 - r.right.length, yy, r.right, 't-trail-3', 0.55);
+          uiText(panel.x, yy, r.label, 'ui-label');
+          if (r.right) uiText(x + w - 3 - r.right.length, yy, r.right.toUpperCase(), 'ui-blue');
           yy++;
           continue;
         }
-        if (r.kind === 'item') { uiText(x + 5, yy++, r.label, 't-trail-3', 0.7); continue; }
+        if (r.kind === 'item') { uiText(panel.x + 2, yy++, r.label, 'ui-secondary'); continue; }
 
         const on = i === sel;
         const cursor = on ? '▸' : ' ';
 
         if (r.kind === 'room') {
-          const st = r.room.recorded ? '✓ done' : r.room.marked ? 'marked' : '';
-          const cls = r.room.recorded ? 't-key' : (on ? 't-chunk-on' : 't-trail-1');
-          uiText(x + 3, yy, `${cursor} ${r.label}`, cls, r.room.recorded ? 0.8 : on ? 1 : 0.78);
+          const st = r.room.recorded ? '✓ DONE' : r.room.marked ? 'MARKED' : '';
+          const cls = r.room.recorded ? 'ui-green' : (on ? 'ui-amber' : 'ui-primary');
+          uiText(panel.x, yy, `${cursor} ${r.label}`, cls);
           // The time the file says it was taken at. It is right. You are the
           // one who can no longer read it.
-          if (r.room.stamp) uiText(x + w - 14 - r.room.stamp.length, yy, r.room.stamp, 't-trail-3', 0.5);
-          if (st) uiText(x + w - 3 - st.length, yy, st, r.room.recorded ? 't-key' : 't-trail-2', 0.7);
+          if (r.room.stamp) uiText(x + w - 14 - r.room.stamp.length, yy, r.room.stamp, 'ui-blue');
+          if (st) uiText(x + w - 3 - st.length, yy, st, r.room.recorded ? 'ui-green' : 'ui-secondary');
           yy++;
           continue;
         }
         // a note, indented under the room it is about
-        uiText(x + 6, yy++, `${cursor} ${r.label}`.slice(0, w - 9),
-               on ? 't-chunk-on' : 't-trail-2', on ? 1 : 0.6);
+        uiText(panel.x + 3, yy++, `${cursor} ${r.label}`.slice(0, w - 9),
+               on ? 'ui-amber' : 'ui-secondary');
       }
 
       const r = selected();
       const keys = r?.kind === 'room'
-        ? '[space] mark · [b] close'
+        ? '[SPACE] MARK · [B] CLOSE'
         : r?.kind === 'note'
-          ? (r.doc.room ? '[enter] read · [space] mark · [b] close' : '[enter] read · [b] close')
-          : '[b] close';
+          ? (r.doc.room ? '[ENTER] READ · [SPACE] MARK · [B] CLOSE' : '[ENTER] READ · [B] CLOSE')
+          : '[B] CLOSE';
 
       // The night wants something. It blinks, because a man who has not marked
       // a room in thirty years does not need to be told twice.
       if (hint) {
         const pulse = 0.55 + 0.45 * Math.abs(Math.sin(t * 2.2));
-        uiCenter(y + h - 3, hint, 't-key', pulse);
+        uiCenter(y + h - 3, hint.toUpperCase(), 'ui-amber', Math.max(0.82, pulse));
       }
-      uiCenter(y + h - 2, keys, 't-trail-4', 0.62);
+      uiCenter(y + h - 2, keys, 'ui-secondary');
     },
   };
 }

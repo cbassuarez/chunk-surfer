@@ -95,7 +95,16 @@ function setGain(gainNode, value, rampSec = 0.5) {
   gainNode.gain.linearRampToValueAtTime(Math.max(0, value), now + Math.max(0.02, rampSec));
 }
 
-export function startSoundtrack({ gain = SOUNDTRACK_GAIN, fade = 2.8 } = {}) {
+// The player's music level, a scalar over SOUNDTRACK_GAIN. 1 is the mix as
+// authored; 0 is silence. Rides the live soundtrack when changed.
+let musicScale = 1;
+export function setMusicVolume(v) {
+  musicScale = Math.max(0, Math.min(1, Number(v)));
+  if (soundtrack && !soundtrack.stopping) setGain(soundtrack.gain, SOUNDTRACK_GAIN * musicScale, 0.15);
+}
+export function musicVolume() { return musicScale; }
+
+export function startSoundtrack({ gain = SOUNDTRACK_GAIN * musicScale, fade = 2.8 } = {}) {
   if (!ctx || !bus) return null;
   const buf = buffers.get(STORY_AUDIO.title);
   if (!buf) { preload(STORY_AUDIO.title).then(() => startSoundtrack({ gain, fade })); return null; }
@@ -224,6 +233,8 @@ export function audioState() {
     song: soundtrack ? +soundtrack.gain.gain.value.toFixed(4) : null,
     songLoaded: buffers.has(STORY_AUDIO.title),
     booth: booth ? +booth.gain.gain.value.toFixed(4) : null,
+    tape: +tapeHissGain().toFixed(4),
+    tapeLoaded: buffers.has(STORY_AUDIO.tape),
     typing: typingState(),
   };
 }
@@ -311,13 +322,41 @@ export function stopBoothTone({ fade = 1.2 } = {}) {
   }, Math.max(60, fade * 1000 + 80));
 }
 
+// A real tape file loops with a click: the sample at the end does not match the
+// sample at the start, and once per loop that discontinuity reads as a little
+// terrace of silence-then-hiss. So we bake a genuinely seamless version once —
+// the file's tail cross-faded (equal power) back over its head — and loop that.
+// The result is continuous hiss with no seam, which is what a real machine
+// idling actually sounds like. Cached per source buffer.
+const seamless = new Map();
+function seamlessLoop(buf) {
+  if (seamless.has(buf)) return seamless.get(buf);
+  const sr = buf.sampleRate;
+  const X = Math.min(Math.floor(sr * 0.30), Math.floor(buf.length * 0.25));   // crossfade length
+  if (X < 32) { seamless.set(buf, buf); return buf; }                         // too short to bother
+  const L = buf.length - X;                                                   // looped length
+  const out = ctx.createBuffer(buf.numberOfChannels, L, sr);
+  for (let c = 0; c < buf.numberOfChannels; c++) {
+    const src = buf.getChannelData(c);
+    const dst = out.getChannelData(c);
+    for (let i = 0; i < L; i++) dst[i] = src[i];
+    for (let i = 0; i < X; i++) {
+      const th = (i / X) * (Math.PI / 2);
+      dst[i] = src[i] * Math.sin(th) + src[L + i] * Math.cos(th);            // head fades in over the tail
+    }
+  }
+  seamless.set(buf, out);
+  return out;
+}
+
 // Ducks whatever else is playing and puts a small room around your head. This
 // is a real machine running, not synthesised hiss: it is the sound the file has
 // under it, and it is the sound that comes back the instant a rewind stops.
 export function startTapeHiss({ gain = TAPE_GAIN, fade = 0.5 } = {}) {
   if (!ctx || !bus || tape) return;
-  const buf = buffers.get(STORY_AUDIO.tape);
-  if (!buf) { preload(STORY_AUDIO.tape).then(() => { if (!tape) startTapeHiss({ gain, fade }); }); return; }
+  const raw = buffers.get(STORY_AUDIO.tape);
+  if (!raw) { preload(STORY_AUDIO.tape).then(() => { if (!tape) startTapeHiss({ gain, fade }); }); return; }
+  const buf = seamlessLoop(raw);
   const now = ctx.currentTime;
   const src = ctx.createBufferSource();
   src.buffer = buf; src.loop = true;
@@ -328,6 +367,14 @@ export function startTapeHiss({ gain = TAPE_GAIN, fade = 0.5 } = {}) {
   setGain(g, gain, fade);
   if (booth) setGain(booth.gain, 0.16, fade);       // the room recedes
 }
+
+// Ride the hiss live. A take is forty-five seconds of nothing that gets louder,
+// because the longer you hold still in a dead room the more the room is all
+// there is, and the hiss is the sound of the tape agreeing with you.
+export function setTapeHiss(gain, ramp = 0.25) {
+  if (tape) setGain(tape.gain, Math.max(0, gain), ramp);
+}
+export function tapeHissGain() { return tape ? tape.gain.gain.value : 0; }
 
 export function stopTapeHiss({ fade = 0.6 } = {}) {
   if (!tape) return;

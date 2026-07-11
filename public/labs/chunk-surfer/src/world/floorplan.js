@@ -42,6 +42,9 @@ const plan = {
   material: null,// Uint8Array
   solid: null,   // Uint8Array (1 = rock or void)
   rgba: null,    // Uint8Array, w*h*4 — exactly what the shader sees
+  physicalX: null, physicalY: null, // runtime-cell embedding, logical -> Euclidean X/Z
+  layer: null, space: null, renderGroup: null,
+  physical: null,
   spawn: { x: 0, y: 0 },
   loaded: false,
 };
@@ -67,8 +70,8 @@ export function toRuntimeDistance(v) { return Number(v) * PLAN_SCALE; }
 export function toAuthoredCoord(v) { return Number(v) / PLAN_SCALE; }
 
 // ── compile ──────────────────────────────────────────────────────────────────
-// `levels` is [{ rows:[string], origin:{x,y}, base:number, stairs?:[...] }]
-export function compile(levels, { width, height, widenCorridors = false } = {}) {
+// `levels` is [{ rows, origin, physicalOrigin?, base, layer?, renderGroup?, stairs? }]
+export function compile(levels, { width, height, widenCorridors = false, connectors = [] } = {}) {
   const authoredW = width || Math.max(...levels.map((l) => l.origin.x + Math.max(...l.rows.map((r) => r.length))));
   const authoredH = height || Math.max(...levels.map((l) => l.origin.y + l.rows.length));
   const w = authoredW * PLAN_SCALE;
@@ -84,9 +87,16 @@ export function compile(levels, { width, height, widenCorridors = false } = {}) 
   plan.zone = new Uint8Array(w * h);
   plan.material = new Uint8Array(w * h);
   plan.solid = new Uint8Array(w * h).fill(1);   // everything is rock until drawn
+  plan.physicalX = new Int32Array(w * h).fill(-1);
+  plan.physicalY = new Int32Array(w * h).fill(-1);
+  plan.layer = new Array(w * h).fill('');
+  plan.space = new Array(w * h).fill('');
+  plan.renderGroup = new Array(w * h).fill('');
 
   for (const level of levels) {
     const { rows, origin, base = 0 } = level;
+    const physicalOrigin=level.physicalOrigin||origin;
+    const layer=level.layer||level.id||'ground',space=level.space||level.id||layer,renderGroup=level.renderGroup||layer;
     for (let ry = 0; ry < rows.length; ry++) {
       const row = rows[ry];
       for (let rx = 0; rx < row.length; rx++) {
@@ -95,7 +105,11 @@ export function compile(levels, { width, height, widenCorridors = false } = {}) 
         const x0 = (origin.x + rx) * PLAN_SCALE;
         const y0 = (origin.y + ry) * PLAN_SCALE;
         for (let sy = 0; sy < PLAN_SCALE; sy++) for (let sx = 0; sx < PLAN_SCALE; sx++) {
-          writeCell(x0 + sx, y0 + sy, cell);
+          writeCell(x0 + sx, y0 + sy, cell,{
+            physicalX:(physicalOrigin.x+rx)*PLAN_SCALE+sx,
+            physicalY:(physicalOrigin.y+ry)*PLAN_SCALE+sy,
+            layer,space,renderGroup:cell.zone===ZONE.hall?'hall':renderGroup,
+          });
         }
       }
     }
@@ -106,6 +120,9 @@ export function compile(levels, { width, height, widenCorridors = false } = {}) 
   for (const level of levels) {
     for (const s of level.stairs || []) rampStair(s);
   }
+
+  connectorMap.clear();
+  for(const c of connectors) registerConnector(c);
 
   if (widenCorridors) widenCorridorRuns();
   inheritCorridorMaterials();
@@ -119,11 +136,13 @@ export function compile(levels, { width, height, widenCorridors = false } = {}) 
     plan.rgba[i * 4 + 3] = s ? 0 : plan.zone[i];
   }
 
+  buildPhysicalSpans();
+
   plan.loaded = true;
   return plan;
 }
 
-function writeCell(x, y, cell) {
+function writeCell(x, y, cell, meta=null) {
   if (!inside(x, y)) return;
   const i = idx(x, y);
   if (cell.solid) {
@@ -137,6 +156,7 @@ function writeCell(x, y, cell) {
   plan.flags[i] = cell.flags;
   plan.zone[i] = cell.zone;
   plan.material[i] = cell.material || materialForZone(cell.zone);
+  if(meta){plan.physicalX[i]=meta.physicalX;plan.physicalY[i]=meta.physicalY;plan.layer[i]=meta.layer;plan.space[i]=meta.space;plan.renderGroup[i]=meta.renderGroup;}
 }
 
 function widenCorridorRuns() {
@@ -189,6 +209,9 @@ function openCorridorShoulder(x, y, src, originalSolid) {
   plan.flags[i] = plan.flags[src] & F.MUTABLE;
   plan.zone[i] = ZONE.none;
   plan.material[i] = plan.material[src] || MATERIAL.serviceConcrete;
+  plan.physicalX[i]=plan.physicalX[src]+(x-(src%plan.w));
+  plan.physicalY[i]=plan.physicalY[src]+(y-Math.floor(src/plan.w));
+  plan.layer[i]=plan.layer[src];plan.space[i]=plan.space[src];plan.renderGroup[i]=plan.renderGroup[src];
 }
 
 function inheritCorridorMaterials() {
@@ -217,7 +240,7 @@ function inheritCorridorMaterials() {
 // Interpolate floor/ceiling along a stair run so the risers are even.
 // `ceil` pins an absolute ceiling instead of a stairwell's low soffit — the
 // pool steps descend inside a six-metre hall and must not grow a lid.
-function rampStair({ from, to, fromH, toH, width = 1, ceil = null, head = 2.6 }) {
+function rampStair({ from, to, fromH, toH, width = 1, ceil = null, head = 2.6, zone = null, material = null }) {
   const a = toRuntimePoint(from, { center: false });
   const b = toRuntimePoint(to, { center: false });
   const runWidth = Math.max(1, Math.round(width * PLAN_SCALE));
@@ -228,6 +251,11 @@ function rampStair({ from, to, fromH, toH, width = 1, ceil = null, head = 2.6 })
   };
   const steps = Math.max(Math.abs(end.x - a.x), Math.abs(end.y - a.y));
   if (steps === 0) return;
+  const ai=inside(a.x,a.y)?idx(a.x,a.y):-1,bi=inside(end.x,end.y)?idx(end.x,end.y):-1;
+  const p0=ai>=0&&plan.physicalX[ai]>=0?[plan.physicalX[ai],plan.physicalY[ai]]:[a.x,a.y];
+  const p1=bi>=0&&plan.physicalX[bi]>=0?[plan.physicalX[bi],plan.physicalY[bi]]:[end.x,end.y];
+  const meta0=ai>=0?{layer:plan.layer[ai],space:plan.space[ai],group:plan.renderGroup[ai]}:{layer:'stair',space:'stair',group:'ground'};
+  const meta1=bi>=0?{layer:plan.layer[bi],space:plan.space[bi],group:plan.renderGroup[bi]}:meta0;
   // perpendicular, for stairs wider than one cell
   const px = dy, py = -dx;
   for (let s = 0; s <= steps; s++) {
@@ -241,8 +269,11 @@ function rampStair({ from, to, fromH, toH, width = 1, ceil = null, head = 2.6 })
       plan.floor[i] = fh;
       plan.ceil[i] = ceil != null ? ceil : fh + head;
       plan.flags[i] = F.STAIR;
-      plan.zone[i] = ZONE.stair;
-      plan.material[i] = MATERIAL.serviceConcrete;
+      plan.zone[i] = zone?ZONE[zone]:ZONE.stair;
+      plan.material[i] = material?MATERIAL[material]:MATERIAL.serviceConcrete;
+      plan.physicalX[i]=Math.round(p0[0]+(p1[0]-p0[0])*t+px*k);
+      plan.physicalY[i]=Math.round(p0[1]+(p1[1]-p0[1])*t+py*k);
+      const meta=t<.5?meta0:meta1;plan.layer[i]=meta.layer||'stair';plan.space[i]=meta.space||'stair';plan.renderGroup[i]=zone==='hall'?'hall':(meta.group||'ground');
     }
   }
 }
@@ -289,7 +320,58 @@ export function canStep(fromX, fromY, toX, toY, { keys } = {}) {
   }
   if (b.ceil - b.floor < HEADROOM) return { ok: false, why: 'headroom' };
   if (a && Math.abs(b.floor - a.floor) > STEP_UP) return { ok: false, why: 'too high' };
-  return { ok: true, floor: b.floor };
+  const redirect=connectorMap.get(`${Math.floor(toX)},${Math.floor(toY)}`)||null;
+  return { ok: true, floor: b.floor, ...(redirect?{redirect:{...redirect}}:{}) };
+}
+
+// Logical cells stay unique for gameplay, while their physical embedding may
+// stack several levels over the same X/Z footprint.
+const connectorMap=new Map();
+export function connectorDestination(x,y){const p=connectorMap.get(`${Math.floor(x)},${Math.floor(y)}`);return p?{...p}:null;}
+function registerConnector({from,to,bidirectional=true}){
+  const a=toRuntimePoint(from),b=toRuntimePoint(to);
+  connectorMap.set(`${a.x},${a.y}`,{x:b.x,y:b.y});
+  if(bidirectional)connectorMap.set(`${b.x},${b.y}`,{x:a.x,y:a.y});
+}
+
+function buildPhysicalSpans(){
+  let maxX=0,maxY=0;const cells=new Map();
+  for(let y=0;y<plan.h;y++)for(let x=0;x<plan.w;x++){
+    const i=idx(x,y);if(plan.solid[i]||plan.physicalX[i]<0)continue;
+    const px=plan.physicalX[i],py=plan.physicalY[i],key=`${px},${py}`;maxX=Math.max(maxX,px);maxY=Math.max(maxY,py);
+    if(!cells.has(key))cells.set(key,[]);
+    cells.get(key).push({floor:plan.floor[i],ceil:plan.ceil[i],flags:plan.flags[i],zone:plan.zone[i],material:plan.material[i],logicalX:x,logicalY:y,layer:plan.layer[i],spaceId:plan.space[i],renderGroup:plan.renderGroup[i]});
+  }
+  let maxSpans=0,overlaps=[];
+  for(const [key,list] of cells){list.sort((a,b)=>a.floor-b.floor);maxSpans=Math.max(maxSpans,list.length);for(let i=1;i<list.length;i++)if(list[i].floor<list[i-1].ceil-.01)overlaps.push({key,a:list[i-1],b:list[i]});}
+  plan.physical={width:maxX+1,height:maxY+1,maxSpans,cells,overlaps,renderCache:new Map()};
+}
+
+export function logicalToPhysical(x,y){
+  const cx=Math.floor(x),cy=Math.floor(y);if(!inside(cx,cy))return{x,y,z:y,layer:'',spaceId:'',renderGroup:''};
+  const i=idx(cx,cy),ox=x-cx,oy=y-cy;
+  return{x:plan.physicalX[i]>=0?plan.physicalX[i]+ox:x,z:plan.physicalY[i]>=0?plan.physicalY[i]+oy:y,y:plan.floor[i],layer:plan.layer[i],spaceId:plan.space[i],renderGroup:plan.renderGroup[i]};
+}
+
+export function physicalSpanData(){return plan.physical;}
+
+export function logicalAtPhysical(x,z,{group=null,floor=null}={}){
+  const list=plan.physical?.cells.get(`${Math.floor(x)},${Math.floor(z)}`)||[];let choices=group?list.filter((s)=>s.renderGroup===group):list;if(!choices.length)choices=list;if(!choices.length)return null;
+  choices.sort((a,b)=>floor==null?0:Math.abs(a.floor-floor)-Math.abs(b.floor-floor));return{x:choices[0].logicalX+(x-Math.floor(x)),y:choices[0].logicalY+(z-Math.floor(z)),...choices[0]};
+}
+
+export function physicalRenderPlanFor(x,y){
+  const here=logicalToPhysical(x,y),group=here.renderGroup||here.layer||'ground',cacheKey=group;
+  if(plan.physical.renderCache.has(cacheKey))return plan.physical.renderCache.get(cacheKey);
+  const w=plan.physical.width,h=plan.physical.height,solid=new Uint8Array(w*h).fill(1),floor=new Float32Array(w*h),ceil=new Float32Array(w*h),flags=new Uint8Array(w*h),zone=new Uint8Array(w*h),material=new Uint8Array(w*h),rgba=new Uint8Array(w*h*4);
+  for(const [key,all] of plan.physical.cells){let list=all.filter((s)=>s.renderGroup===group);if(!list.length)continue;const [px,py]=key.split(',').map(Number),i=py*w+px;solid[i]=0;
+    // Hall decks are structural meshes. The sector envelope remains the full
+    // air volume so orchestra and both balconies retain reciprocal sightlines.
+    if(group==='hall'){floor[i]=Math.min(...list.map((s)=>s.floor));ceil[i]=Math.max(...list.map((s)=>s.ceil));const hall=list.find((s)=>s.zone===ZONE.hall)||list[0];flags[i]=hall.flags;zone[i]=hall.zone;material[i]=hall.material;}
+    else {const s=list.reduce((best,v)=>Math.abs(v.floor-here.y)<Math.abs(best.floor-here.y)?v:best,list[0]);floor[i]=s.floor;ceil[i]=s.ceil;flags[i]=s.flags;zone[i]=s.zone;material[i]=s.material;}
+  }
+  for(let i=0;i<w*h;i++){rgba[i*4]=solid[i]?0:encodeH(floor[i]);rgba[i*4+1]=solid[i]?0:encodeH(ceil[i]);rgba[i*4+2]=solid[i]?F.SOLID:flags[i];rgba[i*4+3]=solid[i]?0:zone[i];}
+  const out={rgba,material,solid,floor,ceil,flags,zone,w,h,group};plan.physical.renderCache.set(cacheKey,out);return out;
 }
 
 // Door → key. Kept out of the grid (a byte has no room) in a sparse map that
@@ -312,12 +394,14 @@ export function setSolid(x, y, solid) {
   plan.solid[i] = solid ? 1 : 0;
   if (solid) plan.material[i] = MATERIAL.none;
   else if (!plan.material[i]) plan.material[i] = materialForZone(plan.zone[i]);
+  if(!solid&&plan.physicalX[i]<0){for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(!inside(nx,ny))continue;const ni=idx(nx,ny);if(plan.solid[ni]||plan.physicalX[ni]<0)continue;plan.physicalX[i]=plan.physicalX[ni]-dx;plan.physicalY[i]=plan.physicalY[ni]-dy;plan.layer[i]=plan.layer[ni];plan.space[i]=plan.space[ni];plan.renderGroup[i]=plan.renderGroup[ni];plan.floor[i]=plan.floor[ni];plan.ceil[i]=plan.ceil[ni];plan.zone[i]=ZONE.none;break;}}
   plan.rgba[i * 4 + 2] = solid ? F.SOLID : plan.flags[i];
   if (!solid) {
     plan.rgba[i * 4 + 0] = encodeH(plan.floor[i]);
     plan.rgba[i * 4 + 1] = encodeH(plan.ceil[i]);
     plan.rgba[i * 4 + 3] = plan.zone[i];
   }
+  buildPhysicalSpans();
   return true;
 }
 

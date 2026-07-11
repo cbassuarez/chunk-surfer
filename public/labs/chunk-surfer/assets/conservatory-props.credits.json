@@ -1,0 +1,489 @@
+{
+  "pack": {
+    "filename": "conservatory-props.glb",
+    "author": "Chunk Surfer project",
+    "source": "tools/chunk_surfer/build-props.mjs",
+    "license": "project source (mixed: see meshes)",
+    "sha256": "6bd27d9d1ddf3562d3ab548a28d8e3c3d547f7a70e8d554c04a823d42384db32",
+    "modifications": "Metres, Y-up, ground-centred. Procedural fallback geometry plus user-supplied source meshes (unverified provenance) baked, re-axised, height-scaled, and vertex-cluster decimated under budget.",
+    "triangles": 24571,
+    "bytes": 956124
+  },
+  "meshes": [
+    {
+      "name": "school_desk",
+      "bounds": {
+        "min": [
+          -0.31,
+          0.02,
+          -0.28
+        ],
+        "max": [
+          0.31,
+          1.1,
+          0.297
+        ]
+      },
+      "triangles": 176,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "pew",
+      "bounds": {
+        "min": [
+          -1.35,
+          0,
+          -0.32
+        ],
+        "max": [
+          1.35,
+          1.28,
+          0.353
+        ]
+      },
+      "triangles": 108,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "chair",
+      "bounds": {
+        "min": [
+          -0.23,
+          0.02,
+          -0.23
+        ],
+        "max": [
+          0.23,
+          1.12,
+          0.23
+        ]
+      },
+      "triangles": 152,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "music_stand",
+      "bounds": {
+        "min": [
+          -0.275,
+          0.02,
+          -0.275
+        ],
+        "max": [
+          0.275,
+          1.35,
+          0.275
+        ]
+      },
+      "triangles": 68,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "instrument_case",
+      "bounds": {
+        "min": [
+          -0.6,
+          0.01,
+          -0.26
+        ],
+        "max": [
+          0.6,
+          0.358,
+          0.21
+        ]
+      },
+      "triangles": 36,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "equipment_cart",
+      "bounds": {
+        "min": [
+          -0.575,
+          0.025,
+          -0.325
+        ],
+        "max": [
+          0.575,
+          0.66,
+          0.325
+        ]
+      },
+      "triangles": 312,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "upright_piano",
+      "bounds": {
+        "min": [
+          -0.76,
+          0.01,
+          -0.665
+        ],
+        "max": [
+          0.76,
+          1.43,
+          0.29
+        ]
+      },
+      "triangles": 360,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "grand_piano",
+      "bounds": {
+        "min": [
+          -0.719,
+          0,
+          -0.435
+        ],
+        "max": [
+          0.719,
+          1,
+          0.435
+        ]
+      },
+      "triangles": 4197,
+      "provenance": {
+        "source": "grand_piano.glb",
+        "origin": "user-supplied (FabConvert/SketchUp conversion)",
+        "license": "unverified",
+        "sourceTriangles": 4717,
+        "modifications": "Re-axised to Y-up, floor-centred, height-scaled, vertex-cluster decimated, normals recomputed."
+      }
+    },
+    {
+      "name": "marimba",
+      "bounds": {
+        "min": [
+          -1.325,
+          0.08,
+          -0.26
+        ],
+        "max": [
+          1.325,
+          1.172,
+          0.66
+        ]
+      },
+      "triangles": 1540,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "timpani",
+      "bounds": {
+        "min": [
+          -0.44,
+          0.03,
+          -0.44
+        ],
+        "max": [
+          0.44,
+          1.012,
+          0.44
+        ]
+      },
+      "triangles": 360,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "cello",
+      "bounds": {
+        "min": [
+          -0.27,
+          -0.03,
+          -0.266
+        ],
+        "max": [
+          0.27,
+          1.825,
+          0.266
+        ]
+      },
+      "triangles": 200,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "violin",
+      "bounds": {
+        "min": [
+          -0.16,
+          0.012,
+          -0.28
+        ],
+        "max": [
+          0.16,
+          0.128,
+          0.53
+        ]
+      },
+      "triangles": 164,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "speaker_cabinet",
+      "bounds": {
+        "min": [
+          -0.29,
+          0,
+          -0.432
+        ],
+        "max": [
+          0.29,
+          0.92,
+          0.295
+        ]
+      },
+      "triangles": 152,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "organ_console",
+      "bounds": {
+        "min": [
+          -0.775,
+          0.02,
+          -0.74
+        ],
+        "max": [
+          0.775,
+          1.21,
+          0.425
+        ]
+      },
+      "triangles": 188,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "organ_pipes",
+      "bounds": {
+        "min": [
+          -1.015,
+          0,
+          -0.12
+        ],
+        "max": [
+          1.015,
+          2.45,
+          0.055
+        ]
+      },
+      "triangles": 780,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "equipment_rack",
+      "bounds": {
+        "min": [
+          -0.31,
+          0,
+          -0.343
+        ],
+        "max": [
+          0.31,
+          1.6,
+          0.29
+        ]
+      },
+      "triangles": 276,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "portrait_frame",
+      "bounds": {
+        "min": [
+          -0.39,
+          0,
+          -0.028
+        ],
+        "max": [
+          0.39,
+          1.02,
+          0.1
+        ]
+      },
+      "triangles": 62,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "hall_seating",
+      "bounds": {
+        "min": [
+          -12.763,
+          0,
+          -9.24
+        ],
+        "max": [
+          12.763,
+          5,
+          9.24
+        ]
+      },
+      "triangles": 14320,
+      "provenance": {
+        "source": "hall_seating.glb",
+        "origin": "user-supplied (FabConvert/SketchUp conversion)",
+        "license": "unverified",
+        "sourceTriangles": 14320,
+        "modifications": "Re-axised to Y-up, floor-centred, height-scaled, vertex-cluster decimated, normals recomputed."
+      }
+    },
+    {
+      "name": "hall_structure",
+      "bounds": {
+        "min": [
+          -14.1,
+          -2.5,
+          -19
+        ],
+        "max": [
+          14.1,
+          13.921,
+          17
+        ]
+      },
+      "triangles": 840,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "chapel_vault",
+      "bounds": {
+        "min": [
+          -6.036,
+          9.42,
+          -17.07
+        ],
+        "max": [
+          6.036,
+          13.08,
+          17.07
+        ]
+      },
+      "triangles": 280,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    }
+  ],
+  "rejectedIntake": [
+    {
+      "name": "school_desk",
+      "source": "school_desk.glb",
+      "license": "unverified",
+      "meshName": null,
+      "reason": "Offline preview retains detached metal strokes and reads less cleanly than the project-native desk."
+    },
+    {
+      "name": "pew",
+      "source": "pew.glb",
+      "license": "unverified",
+      "meshName": null,
+      "reason": "Source is an oversized chapel scene rather than one isolated pew."
+    },
+    {
+      "name": "chair",
+      "source": "chair.glb",
+      "license": "unverified",
+      "meshName": null,
+      "reason": "Source is a multi-object scene; the project-native chair instances read more cleanly."
+    },
+    {
+      "name": "marimba",
+      "source": "marimba.glb",
+      "license": "unverified",
+      "meshName": null,
+      "reason": "Source contains four instruments and the crop does not produce a clean standalone silhouette."
+    },
+    {
+      "name": "cello",
+      "source": "cello.glb",
+      "license": "unverified",
+      "meshName": null,
+      "reason": "Offline preview collapses to disconnected strings and hardware; native silhouette is materially better."
+    },
+    {
+      "name": "violin",
+      "source": "violin.glb",
+      "license": "unverified",
+      "meshName": null,
+      "reason": "Offline preview collapses to disconnected body fragments; native silhouette is materially better."
+    },
+    {
+      "name": "portrait_frame",
+      "source": "Gold frame.glb",
+      "license": "unverified",
+      "meshName": null,
+      "reason": "The supplied GLB contains one two-triangle dark plane and no usable frame geometry or texture; project-native brass rail frame used."
+    }
+  ]
+}

@@ -6,6 +6,8 @@
 // world tint's color but keeps t-drone's (absent) shadows.
 // Shadow layers: {dx, dy, blur, color} in CSS px.
 
+import { UI_COLOR } from './palette.js';
+
 const S = (color, shadows = null, bold = false, pulse = false) =>
   ({ color, shadows, bold, pulse });
 const g = (blur, color, dx = 0, dy = 0) => ({ dx, dy, blur, color });
@@ -74,6 +76,18 @@ export const GLYPH_STYLES = new Map(Object.entries({
   't-world-border-amplifications':  S('rgba(172,138,206,0.32)'),
   't-world-border-soundnoisemusic': S('rgba(210,162,108,0.3)'),
   't-world-border-lux_nova':        S('rgba(196,212,246,0.34)'),
+  // Authored UI. These are opaque by design: draw-time alpha is reserved for
+  // non-semantic frames and expired transcript history, never essential text.
+  'ui-primary':   S(UI_COLOR.primary, [g(3,'rgba(234,242,240,0.34)'),g(8,'rgba(234,242,240,0.12)')], true),
+  'ui-secondary': S(UI_COLOR.secondary),
+  'ui-label':     S(UI_COLOR.secondary, null, true),
+  'ui-amber':     S(UI_COLOR.amber, [g(3,'rgba(255,194,71,0.72)'),g(9,'rgba(255,194,71,0.28)')], true),
+  'ui-blue':      S(UI_COLOR.blue, [g(3,'rgba(159,212,255,0.58)'),g(9,'rgba(159,212,255,0.20)')], true),
+  'ui-green':     S(UI_COLOR.green, [g(3,'rgba(120,227,154,0.58)'),g(9,'rgba(120,227,154,0.20)')], true),
+  'ui-danger':    S(UI_COLOR.danger, [g(3,'rgba(255,106,100,0.62)'),g(10,'rgba(255,106,100,0.24)')], true),
+  'ui-frame':     S(UI_COLOR.frame),
+  'paper-ink':    S(UI_COLOR.paperInk),
+  'paper-muted':  S(UI_COLOR.paperSecondary),
 }));
 
 const CLASS_ORDER = new Map([...GLYPH_STYLES.keys()].map((k, i) => [k, i]));

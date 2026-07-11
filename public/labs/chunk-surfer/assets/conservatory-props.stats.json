@@ -1,0 +1,87 @@
+{
+  "generatedAt": "2026-07-11T07:29:01.673Z",
+  "bytes": 956124,
+  "totalTriangles": 24571,
+  "meshes": {
+    "school_desk": {
+      "triangles": 176,
+      "vertices": 248
+    },
+    "pew": {
+      "triangles": 108,
+      "vertices": 216
+    },
+    "chair": {
+      "triangles": 152,
+      "vertices": 200
+    },
+    "music_stand": {
+      "triangles": 68,
+      "vertices": 110
+    },
+    "instrument_case": {
+      "triangles": 36,
+      "vertices": 72
+    },
+    "equipment_cart": {
+      "triangles": 312,
+      "vertices": 384
+    },
+    "upright_piano": {
+      "triangles": 360,
+      "vertices": 564
+    },
+    "grand_piano": {
+      "triangles": 4197,
+      "vertices": 2619
+    },
+    "marimba": {
+      "triangles": 1540,
+      "vertices": 2092
+    },
+    "timpani": {
+      "triangles": 360,
+      "vertices": 402
+    },
+    "cello": {
+      "triangles": 200,
+      "vertices": 242
+    },
+    "violin": {
+      "triangles": 164,
+      "vertices": 212
+    },
+    "speaker_cabinet": {
+      "triangles": 152,
+      "vertices": 188
+    },
+    "organ_console": {
+      "triangles": 188,
+      "vertices": 272
+    },
+    "organ_pipes": {
+      "triangles": 780,
+      "vertices": 1014
+    },
+    "equipment_rack": {
+      "triangles": 276,
+      "vertices": 396
+    },
+    "portrait_frame": {
+      "triangles": 62,
+      "vertices": 124
+    },
+    "hall_seating": {
+      "triangles": 14320,
+      "vertices": 7491
+    },
+    "hall_structure": {
+      "triangles": 840,
+      "vertices": 1680
+    },
+    "chapel_vault": {
+      "triangles": 280,
+      "vertices": 560
+    }
+  }
+}

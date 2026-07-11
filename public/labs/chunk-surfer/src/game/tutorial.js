@@ -59,8 +59,8 @@ const STEPS = [
   },
   {
     id: 'level',
-    line: { who: 'you', text: 'Levels, before anything. Light off, feet still, forty-five seconds of nothing.' },
-    prompt: '[r]  record',
+    line: { who: 'you', text: 'Levels, before anything. Headphones on, hear the room — then roll, and hold still.' },
+    prompt: '[r]  listen, then [r] to roll',
     done: (c) => c.levelChecked,
   },
   {

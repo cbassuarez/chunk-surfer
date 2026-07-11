@@ -19,7 +19,8 @@
 //   RADIO_DEAD  the guard told you twice not to shake it
 
 import * as scenes from './scenes.js';
-import { uiSize, uiFill, uiText, uiWrap, uiScrim } from '../render/ui.js';
+import { uiSize, uiText, uiWrap, uiScrim } from '../render/ui.js';
+import { drawMachinePanel } from '../render/presentation.js';
 import { createConversation, textOf } from './conversation.js';
 import { STYLE } from './coldopen.js';
 
@@ -73,20 +74,21 @@ export function makeThoughtScene({
 
       const body = rendered.length + cur.length;
       const choiceRows = cs.length ? cs.length + 1 : 0;
-      const h = body + choiceRows;
-      const y0 = rows - 4 - h;
+      const h = Math.max(8, body + choiceRows + 5);
+      const y0 = rows - h - 2;
+      const panel = drawMachinePanel(x - 2, y0, w + 4, h, {
+        label: 'MONITOR', source: v.who || 'THOUGHT',
+        footer: cs.length ? '[↑/↓] SELECT · [ENTER] CONFIRM' : '[SPACE] CONTINUE', meter: true,
+      });
 
-      uiFill(x - 2, y0 - 1, w + 4, h + 2, 'rgba(6,7,9,0.88)');
-
-      let y = y0;
+      let y = panel.y;
       rendered.forEach((r) => {
-        const st = STYLE[r.who] || STYLE.direction;
-        uiText(x, y++, r.text, st.cls, 0.30);
+        uiText(panel.x, y++, r.text, 'ui-secondary', 0.58);
       });
       const stCur = STYLE[v.who] || STYLE.direction;
       cur.forEach((r, k) => {
-        uiText(x, y, r.text, stCur.cls, stCur.alpha);
-        if (k === cur.length - 1 && v.typing) uiText(x + r.text.length, y, '▌', stCur.cls, 0.55);
+        uiText(panel.x, y, r.text, stCur.cls, stCur.alpha);
+        if (k === cur.length - 1 && v.typing) uiText(panel.x + r.text.length, y, '▌', 'ui-amber');
         y++;
       });
 
@@ -94,11 +96,9 @@ export function makeThoughtScene({
         y += 1;
         cs.forEach((c, idx) => {
           const on = idx === v.pending.index;
-          uiText(x, y++, `${on ? '▸' : ' '} ${idx + 1}  ${c.text}`,
-                 on ? 't-chunk-on' : 't-trail-2', on ? 1 : 0.62);
+          uiText(panel.x, y++, `${on ? '▸' : ' '} ${idx + 1}  ${c.text}`,
+                 on ? 'ui-amber' : 'ui-primary');
         });
-      } else {
-        uiText(x + w - 8, rows - 2, '[space]', 't-trail-4', 0.22);
       }
     },
   };

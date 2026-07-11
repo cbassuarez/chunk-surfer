@@ -9,7 +9,9 @@
 // building forty times today.)
 
 import * as scenes from './scenes.js';
-import { uiSize, uiFill, uiText, uiWrap, uiCenter } from '../render/ui.js';
+import { uiSize, uiFill, uiText, uiWrap } from '../render/ui.js';
+import { drawMachinePanel, drawVfdText } from '../render/presentation.js';
+import { UI_COLOR } from '../render/palette.js';
 import { createConversation, textOf } from './conversation.js';
 
 const COL_W = 66;
@@ -17,13 +19,13 @@ const KEEP = 9;
 
 export const STYLE = {
   // No nameplate on your own line. You know who is talking.
-  me: { cls: 't-chunk-on', alpha: 0.98, label: '' },
-  you: { cls: 't-trail-1', alpha: 0.94, label: '' },
-  guard: { cls: 't-key', alpha: 0.96, label: 'GUARD' },
-  recordist: { cls: 't-trail-1', alpha: 0.90, label: 'TAKE' },
-  surfer: { cls: 't-hush-core', alpha: 0.96, label: '' },
-  radio: { cls: 't-key', alpha: 1, label: 'RADIO' },
-  direction: { cls: 't-trail-2', alpha: 0.70, label: '' },
+  me: { cls: 'ui-primary', alpha: 1, label: '' },
+  you: { cls: 'ui-primary', alpha: 1, label: '' },
+  guard: { cls: 'ui-amber', alpha: 1, label: 'GUARD' },
+  recordist: { cls: 'ui-primary', alpha: 1, label: 'TAKE' },
+  surfer: { cls: 'ui-danger', alpha: 1, label: '' },
+  radio: { cls: 'ui-amber', alpha: 1, label: 'RADIO' },
+  direction: { cls: 'ui-secondary', alpha: 1, label: '' },
 };
 
 // `ambient: false` is the scene that runs AFTER the title — the door, the dark
@@ -60,70 +62,69 @@ export function makeColdOpenScene({
     render() {
       const v = convo.view();
       const { cols, rows } = uiSize();
-      uiFill(0, 0, cols, rows, 'rgba(3,3,4,1)');
+      uiFill(0, 0, cols, rows, UI_COLOR.glass);
 
-      const w = Math.min(COL_W, cols - 10);
+      const w = Math.min(COL_W + 6, cols - 4);
       const x = Math.floor((cols - w) / 2);
       const cs = v.pending?.options || [];
 
+      const textW = Math.max(12, w - 4);
       const rendered = [];
       for (const h of v.history.slice(-KEEP)) {
-        for (const l of uiWrap(h.text, w)) rendered.push({ text: l, who: h.who });
+        for (const l of uiWrap(h.text, textW)) rendered.push({ text: l, who: h.who });
       }
       const cur = v.typed > 0 && v.line
-        ? uiWrap(textOf(v.line).slice(0, v.typed), w).map((t) => ({ text: t, who: v.who }))
+        ? uiWrap(textOf(v.line).slice(0, v.typed), textW).map((t) => ({ text: t, who: v.who }))
         : [];
 
+      const historyRows = [];
+      let historyWho = null;
+      rendered.forEach((r, k) => {
+        const st = STYLE[r.who] || STYLE.direction;
+        const prefix=st.label && r.who!==historyWho ? `${st.label}  ` : '';
+        historyWho = r.who;
+        const age = (rendered.length - k) / Math.max(1, rendered.length);
+        historyRows.push({ text:`${prefix}${r.text}`, cls:'ui-secondary', alpha:Math.max(0.50, 0.74-age*0.20), who:r.who });
+      });
+
       const choiceRows = cs.length ? cs.length + 2 : 0;
-      const total = rendered.length + cur.length + choiceRows + (v.speaker ? 2 : 0);
-      const top = Math.max(3, Math.floor((rows - total) / 2));
+      const fixedRows = (slate ? 2 : 0) + (v.speaker ? 2 : 0) + cur.length + choiceRows;
+      const total = historyRows.length + fixedRows;
+      const panelH = Math.min(rows - 4, Math.max(15, total + 7));
+      const top = Math.max(2, Math.floor((rows - panelH) / 2));
+      const body = drawMachinePanel(x, top, w, panelH, {
+        label: 'MONITOR', source: v.who || 'PROGRAM',
+        footer: cs.length ? '[↑/↓] SELECT · [ENTER] CONFIRM' : '[SPACE] CONTINUE', meter: true,
+      });
+      const tx = body.x, tw = body.w;
+      const visibleHistory = historyRows.slice(-Math.max(0, body.h - fixedRows));
 
       // The slate: the header of the form he is about to sign, and the only
       // thing on screen that never moves.
-      if (slate) uiText(x, Math.max(1, top - 3), slate, 't-gate-frame', 0.34);
+      if (slate) uiText(tx, body.y, slate.slice(0, tw), 'ui-label');
 
-      let y = top;
-      if (v.speaker) { uiText(x, y++, v.speaker, 't-gate-frame', 0.66); y++; }
+      let y = body.y + (slate ? 2 : 0);
+      if (v.speaker) { drawVfdText(tx, y++, v.speaker, {scale:1.22,max:tw}); y++; }
 
-      let lastWho = null;
-      rendered.forEach((r, k) => {
-        const age = (rendered.length - k) / Math.max(1, rendered.length);
-        const st = STYLE[r.who] || STYLE.direction;
-        if (st.label && r.who !== lastWho) uiText(x, y++, st.label, 't-trail-4', 0.18);
-        lastWho = r.who;
-        uiText(x, y++, r.text, st.cls, 0.12 + 0.26 * (1 - age));
-      });
+      visibleHistory.forEach((r) => { uiText(tx, y++, r.text.slice(0, tw), r.cls, r.alpha); });
 
       const stCur = STYLE[v.who] || STYLE.direction;
-      if (cur.length && stCur.label && v.who !== lastWho) uiText(x, y++, stCur.label, 't-trail-4', 0.5);
       cur.forEach((r, k) => {
-        uiText(x, y, r.text, stCur.cls, stCur.alpha);
-        if (k === cur.length - 1 && v.typing) uiText(x + r.text.length, y, '▌', stCur.cls, 0.55);
+        uiText(tx, y, r.text.slice(0, tw), stCur.cls, stCur.alpha);
+        if (k === cur.length - 1 && v.typing) uiText(tx + r.text.length, y, '▌', 'ui-amber');
         y++;
       });
-
-      // A voice is a level meter. This game has one iconography and it is the
-      // one on the front of a recorder.
-      if (v.voice != null) {
-        const bars = 10;
-        const on = Math.max(1, Math.round((0.35 + 0.65 * Math.abs(Math.sin(v.voice * 26))) * bars));
-        let m = '';
-        for (let k = 0; k < bars; k++) m += k < on ? '▮' : '▯';
-        uiText(x + w - bars, Math.max(1, top - 3), m, 't-trail-3', 0.35);
-      }
 
       if (cs.length) {
         y += 1;
         cs.forEach((c, idx) => {
           const on = idx === v.pending.index;
           const spent = v.spent(c);
-          const cls = spent ? 't-trail-4' : (on ? 't-chunk-on' : 't-trail-2');
-          const a = spent ? 0.34 : (on ? 1 : 0.66);
-          uiText(x, y++, `${on ? '▸' : ' '} ${idx + 1}  ${c.text}${spent ? '   ·' : ''}`, cls, a);
+          const cls = spent ? 'ui-secondary' : (on ? 'ui-amber' : 'ui-primary');
+          const a = spent ? 0.58 : 1;
+          uiText(tx, y++, `${on ? '▸' : ' '} ${idx + 1}  ${c.text}${spent ? '   ·' : ''}`.slice(0, tw), cls, a);
         });
       }
-
-      uiCenter(rows - 2, cs.length ? '↑ ↓ · enter' : '[space]', 't-trail-4', 0.24);
     },
   };
 }
@@ -161,15 +162,17 @@ export function makeWorldTitleScene({ onDone, audio, duration = 12.0 } = {}) {
     // Each line fades up on its own beat and they all leave together.
     render() {
       const { cols, rows } = uiSize();
-      uiFill(0, 0, cols, rows, 'rgba(0,0,0,1)');
+      uiFill(0, 0, cols, rows, UI_COLOR.glass);
 
       const out = Math.min(1, Math.max(0, (duration - t) / 2.4));
       const up = (at, over = 1.8) => Math.min(1, Math.max(0, (t - at) / over)) * out;
 
-      const cy = Math.max(4, Math.floor(rows * 0.40));
-      uiCenter(cy, 'C H U N K   S U R F E R', 't-player', up(0.5, 2.4));
-      uiCenter(cy + 3, 'ellery conservatory of music', 't-trail-1', up(2.4) * 0.72);
-      uiCenter(cy + 5, 'five rooms. one clean minute each.', 't-trail-3', up(3.6) * 0.50);
+      const w = Math.min(72, cols - 4), h = Math.min(17, rows - 4);
+      const x = Math.floor((cols - w) / 2), y = Math.floor((rows - h) / 2);
+      const body = drawMachinePanel(x, y, w, h, { label:'PROGRAM', source:'ELLERY', meter:true });
+      drawVfdText(Math.max(body.x, Math.floor((cols - 12) / 2)), body.y + 2, 'CHUNK SURFER', { color:UI_COLOR.primary });
+      uiText(Math.max(body.x, Math.floor((cols - 29) / 2)), body.y + 5, 'ELLERY CONSERVATORY OF MUSIC', 'ui-blue', up(2.4));
+      uiText(Math.max(body.x, Math.floor((cols - 31) / 2)), body.y + 7, '5 ROOMS / 1 CLEAN MINUTE EACH', 'ui-secondary', up(3.6));
     },
   };
 }
