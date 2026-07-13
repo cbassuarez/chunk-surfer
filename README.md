@@ -57,16 +57,41 @@ d75d9f189883ca4eb48008bb164d2c190afdc3f8
 
 History is partially preserved via a filtered clone containing the game, its toolchain, and required audio sample pools. The original repo remains untouched after the snapshot commit except for its pre-existing untracked ZIP snapshots.
 
-## Saves and settings
+## Native Desktop Storage
 
-The initial desktop port still uses the browser-compatible localStorage save path to minimize gameplay risk. The platform boundary is in `src/platform/` and is intended to move persistent data to app-data JSON files later:
+The game still renders as a web app, but persistence now goes through `src/platform/storage/`.
 
-- `settings.json`
-- `save.json`
-- `profile.json`
-- `logs/diagnostics.log`
+### Browser mode
 
-This layout is intended to be Steam Cloud friendly.
+Browser mode uses `localStorage` through `BrowserStorage`:
+
+- `chunk-surfer:settings:v1`
+- `chunk-surfer:profile:v1`
+- `chunk-surfer:save:autosave:v1`
+
+It also reads legacy keys such as `chunk-surfer:save:v3` and `chunk-surfer:meta:v2` once and leaves them in place for compatibility.
+
+### Desktop mode
+
+Tauri mode uses explicit JSON files in app directories:
+
+- AppConfig: `settings.json`
+- AppData: `profile.json` and `saves/*.json`
+- AppData: `saves/backup/*.previous.json` for recovery
+- AppData: `migration/localstorage-import-v1.json`
+- AppLog: `chunksurfer.log` / Tauri log target
+
+### Recovery
+
+JSON files use versioned envelopes. Saves are written through a temp-file + readback path and the previous primary file is copied to `saves/backup/` before replacement. If a primary save is corrupt, the app attempts to load and restore the previous backup. Unknown newer schema versions are not overwritten in that session.
+
+### Support
+
+The diagnostics service can export app version, schema versions, platform mode, renderer/lens query settings, storage layout, migration status, and recent storage/log errors. Desktop builds can reveal save/log folders through Tauri opener APIs.
+
+### Steam Cloud
+
+Cloud-sync `profile.json` and `saves/*.json` only. Do not sync `settings.json`, input/window state, migration logs, diagnostics logs, renderer caches, or temp files. See `docs/storage-and-cloud.md`.
 
 ## Troubleshooting
 

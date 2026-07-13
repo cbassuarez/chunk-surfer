@@ -68,7 +68,32 @@ The standalone Vite config uses `base: './'`. Runtime asset helpers live in `src
 
 ## Platform boundary
 
-`src/platform/` now has browser, desktop, Steam, path, and type modules. The initial Tauri port still uses localStorage-compatible persistence to avoid gameplay regressions. Future work should move settings/save/profile/logs to app-data JSON files through this boundary.
+`src/platform/` now has browser, desktop, Steam, path, storage, diagnostics, and support-operation modules. Browser mode is backed by localStorage. Tauri desktop mode is backed by app-directory JSON files through `@tauri-apps/plugin-fs`, with Tauri logging and folder reveal support through official plugins.
+
+## Storage keys found
+
+Legacy production keys found in the extracted source:
+
+- `chunk-surfer:save:v3`
+- `chunk-surfer:save:v2`
+- `chunk-surfer:save:v1`
+- `chunk-surfer:meta:v2`
+- `chunk-surfer:meta:v1`
+
+New browser keys:
+
+- `chunk-surfer:settings:v1`
+- `chunk-surfer:profile:v1`
+- `chunk-surfer:save:autosave:v1`
+- `chunk-surfer:migration:v1`
+
+## Desktop storage migration
+
+On first desktop launch, the storage service checks WebView localStorage for recognized legacy Chunk Surfer keys. If found, it imports settings, profile, and autosave into app-directory JSON files and writes `migration/localstorage-import-v1.json` with found/migrated/skipped/error lists. Old localStorage values are left intact. Migration failure is nonfatal.
+
+## Remaining direct storage calls
+
+Production localStorage access is centralized in `src/platform/storage/browserStorage.js`; `src/game/save.js` now calls the platform storage service and browser compatibility helpers instead of accessing localStorage directly. Browser smoke tests still clear/read localStorage intentionally.
 
 ## Audio unlock
 

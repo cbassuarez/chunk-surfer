@@ -21,10 +21,8 @@
   - macOS Intel depot if retained.
   - Linux depot: AppImage or unpacked binary bundle.
 - Save/cloud files:
-  - `settings.json`
-  - `save.json`
-  - `profile.json`
-  - `logs/diagnostics.log` optional/excluded from Cloud unless useful.
+  - Include: `profile.json`, `saves/autosave.json`, `saves/slot-1.json`, `saves/slot-2.json`
+  - Exclude: `settings.json`, input/window state, `migration/`, `logs/`, `cache/`, `*.tmp`, `saves/backup/` unless support recovery policy changes.
 - Steam Deck/Proton QA: controller mapping, text readability, WebView audio/mic permission, fullscreen, suspend/resume.
 - Achievements TODO: map progression achievement ids to Steam stats/achievements.
 - Steam Input TODO: controller remapping profiles.
