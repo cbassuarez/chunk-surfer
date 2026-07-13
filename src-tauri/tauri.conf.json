@@ -1,0 +1,42 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Chunk Surfer",
+  "version": "0.1.0",
+  "identifier": "com.cbassuarez.chunksurfer",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Chunk Surfer",
+        "width": 1280,
+        "height": 720,
+        "minWidth": 960,
+        "minHeight": 540,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "app",
+      "dmg",
+      "nsis",
+      "msi",
+      "appimage",
+      "deb"
+    ],
+    "category": "Game",
+    "shortDescription": "A haunting at Ellery Conservatory.",
+    "longDescription": "Chunk Surfer is a web-native horror game built around room tone, recording, and physical text systems."
+  }
+}
