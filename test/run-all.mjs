@@ -20,6 +20,9 @@ const tests = [
   'test/progression-migration.spec.mjs',
   'test/platform-sync.spec.mjs',
   'test/storage-platform.spec.mjs',
+  'test/launch-parity.spec.mjs',
+  'test/release-workflow.spec.mjs',
+  'test/menu-layout-contract.spec.mjs',
 ];
 
 for (const file of tests) {

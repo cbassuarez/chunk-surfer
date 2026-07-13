@@ -89,7 +89,7 @@ export function makeReturnReportScene({
     render() {
       const { cols, rows } = uiSize();
       uiFill(0, 0, cols, rows, UI_COLOR.glass);
-      const w = Math.min(88, cols - 4), h = Math.min(30, rows - 4);
+      const w = Math.min(88, cols - 4), h = Math.min(Math.max(30, rows - 8), rows - 4);
       const x = Math.floor((cols - w) / 2), y = Math.floor((rows - h) / 2);
       const currentStage = stages[stage];
       const current = currentStage.id;
@@ -104,7 +104,7 @@ export function makeReturnReportScene({
       if (current === 'report') {
         drawVfdText(body.x, body.y, 'RUN SUMMARY', { color: UI_COLOR.amber, max: body.w });
         let ry = body.y + 4;
-        for (const [label, value] of reportRows(summary)) {
+        for (const [label, value] of reportRows(summary).slice(0, Math.max(1, Math.floor((body.h - 5) / 2)))) {
           uiText(body.x, ry, label.padEnd(14), 'ui-secondary');
           uiText(body.x + 15, ry, value.slice(0, Math.max(1, body.w - 15)), label === 'ENDING' ? 'ui-amber' : 'ui-primary');
           ry += 2;
@@ -112,18 +112,22 @@ export function makeReturnReportScene({
         const cert = summary.rules.startedPreset === 'dead-air'
           ? summary.integrity.deadAir.eligible ? 'DEAD AIR CERTIFIED' : 'DEAD AIR CERTIFICATION ENDED'
           : 'RUN COMPLETE';
-        uiCenter(y + h - 3, cert, cert.includes('ENDED') ? 'ui-danger' : 'ui-green');
+        uiCenter(body.y + body.h - 1, cert, cert.includes('ENDED') ? 'ui-danger' : 'ui-green');
         return;
       }
 
       if (current === 'achievements') {
         drawVfdText(body.x, body.y, 'ACHIEVEMENTS UNLOCKED', { color: UI_COLOR.amber, max: body.w });
         let ry = body.y + 4;
+        const maxY = body.y + body.h - 1;
         for (const id of currentStage.ids || []) {
           const def = achievementDefinition(id);
-          if (!def) continue;
-          uiText(body.x, ry++, def.name.toUpperCase(), 'ui-amber');
-          uiWrap(def.description, body.w).slice(0, 2).forEach((line) => uiText(body.x + 2, ry++, line, 'ui-primary'));
+          if (!def || ry > maxY) continue;
+          uiText(body.x, ry++, def.name.toUpperCase().slice(0, body.w), 'ui-amber');
+          for (const line of uiWrap(def.description, body.w - 2).slice(0, 2)) {
+            if (ry > maxY) break;
+            uiText(body.x + 2, ry++, line, 'ui-primary');
+          }
           ry++;
         }
         return;
@@ -132,9 +136,11 @@ export function makeReturnReportScene({
       if (current === 'unlocks') {
         drawVfdText(body.x, body.y, 'NEW OPTIONS UNLOCKED', { color: UI_COLOR.danger, max: body.w });
         let ry = body.y + 4;
+        const maxY = body.y + body.h - 1;
         for (const id of currentStage.ids || []) {
+          if (ry > maxY) break;
           const text = id.startsWith('cosmetic:') ? `DISPLAY / ${id.slice(9).replaceAll('-', ' ').toUpperCase()}` : FEATURE_LABELS[id] || id.toUpperCase();
-          uiText(body.x, ry, `▸ ${text}`, id === 'deadAir' ? 'ui-danger' : 'ui-amber');
+          uiText(body.x, ry, `▸ ${text}`.slice(0, body.w), id === 'deadAir' ? 'ui-danger' : 'ui-amber');
           ry += 2;
         }
         return;

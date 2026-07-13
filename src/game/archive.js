@@ -40,7 +40,7 @@ export function makeArchiveScene({ meta, onClose = () => {} } = {}) {
       clamp();
       const { cols, rows } = uiSize();
       uiFill(0, 0, cols, rows, UI_COLOR.glass);
-      const w = Math.min(94, cols - 4), h = Math.min(32, rows - 4);
+      const w = Math.min(94, cols - 4), h = Math.min(Math.max(32, rows - 8), rows - 4);
       const x = Math.floor((cols - w) / 2), y = Math.floor((rows - h) / 2);
       const body = drawMachinePanel(x, y, w, h, {
         label: 'ACHIEVEMENTS', source: 'PROGRESS', footer: '[TAB] CATEGORY · [↑/↓] ENTRY · [ESC] CLOSE', meter: false,
@@ -71,14 +71,18 @@ export function makeArchiveScene({ meta, onClose = () => {} } = {}) {
       });
 
       const entry = list[sel];
-      if (!entry) return;
+      if (!entry) {
+        uiText(body.x, body.y + 6, 'NO ENTRIES FILED IN THIS CATEGORY', 'ui-secondary');
+        uiWrap('This index is available now. It will populate as the case records story progress, endings, and challenges.', body.w).slice(0, Math.max(0, body.h - 10)).forEach((line, i) => uiText(body.x, body.y + 8 + i, line, 'ui-secondary', .72));
+        return;
+      }
       const dx = divider + 3, dw = body.x + body.w - dx;
       const hidden = entry.hidden && !entry.unlocked;
       uiText(dx, body.y + 5, hidden ? 'LOCKED ACHIEVEMENT' : entry.name.toUpperCase(), entry.unlocked ? 'ui-amber' : 'ui-secondary');
       uiText(dx, body.y + 7, `CATEGORY  ${CATEGORY_LABEL[entry.category]}`, 'ui-label');
       uiText(dx, body.y + 9, `STATUS    ${entry.unlocked ? 'UNLOCKED' : 'LOCKED'}`, entry.unlocked ? 'ui-green' : 'ui-secondary');
       const description = hidden ? 'Unlock this achievement to reveal its name and requirement.' : entry.description;
-      uiWrap(description, dw).slice(0, 6).forEach((line, i) => uiText(dx, body.y + 12 + i, line, entry.unlocked ? 'ui-primary' : 'ui-secondary'));
+      uiWrap(description, dw).slice(0, Math.max(1, body.h - 13)).forEach((line, i) => uiText(dx, body.y + 12 + i, line, entry.unlocked ? 'ui-primary' : 'ui-secondary'));
     },
   };
 }

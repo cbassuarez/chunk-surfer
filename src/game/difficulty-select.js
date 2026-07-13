@@ -142,8 +142,9 @@ export function makeDifficultySelectScene({
     render() {
       const { cols, rows } = uiSize();
       uiFill(0, 0, cols, rows, UI_COLOR.glass);
-      const w = Math.min(92, cols - 4);
-      const h = Math.min(32, rows - 4);
+      const w = Math.min(96, cols - 4);
+      const detailRowsNeeded = 11 + RULE_ORDER.length * 2 + 3;
+      const h = Math.min(Math.max(36, detailRowsNeeded + 7), rows - 4);
       const x = Math.floor((cols - w) / 2);
       const y = Math.floor((rows - h) / 2);
       const body = drawMachinePanel(x, y, w, h, {

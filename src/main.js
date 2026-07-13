@@ -34,6 +34,7 @@ import { uiInit, uiClear, uiText, uiSize, uiFill, uiCenter, uiDraw, uiPointFromC
 import { drawVfdCounter, drawVfdMeter, drawMachinePanel, drawLocationIndicator, drawVfdText } from './render/presentation.js';
 import { applyVfdSettings } from './render/palette.js';
 import { saveLoadAsync, saveCommit, getSave, newGame, metaCommit, getMeta } from './game/save.js';
+import { currentStorage } from './platform/storage/storageService.js';
 import { flagApply, flagTest, flagGet } from './game/flags.js';
 // The M2 dialogue runtime (game/dialogue.js, data/prologue.js, the Usher) is
 // gone. Conversations are game/conversation.js now, and there is nobody in this
@@ -48,7 +49,8 @@ import * as PROPS from './game/props.js';
 import * as CUES from './audio/cues.js';
 import * as STORY from './audio/story-audio.js';
 import * as FEAR from './audio/fear.js';
-import { assetUrl } from './platform/paths.js';
+import { assetUrl, IS_TAURI } from './platform/paths.js';
+import { runtimeParams, runtimeSnapshot } from './platform/launch.js';
 import * as STAB from './game/stabs.js';
 import * as OBJ from './game/objectives.js';
 import * as DOC from './game/document.js';
@@ -118,12 +120,13 @@ export { fx } from './render/canvas.js';
 // M1: canvas glyph renderer is the default; `?renderer=dom` keeps the legacy
 // innerHTML path during the parity window (removed in M2).
 // M1b: `?renderer=3d` = first-person raymarched world (diffusion-lens base).
-const KEY_DEBUG = new URLSearchParams(location.search).has('keydebug');
-const NO_THINK = new URLSearchParams(location.search).has('nothink');
+const params = () => runtimeParams();
+const KEY_DEBUG = params().has('keydebug');
+const NO_THINK = params().has('nothink');
 const D = (n) => n * CELL_SCALE;
 const SCALED_MOVE_MIN = (n) => Math.max(1, Math.round(n / CELL_SCALE));
 const RENDERER = (() => {
-  const q = new URLSearchParams(location.search).get('renderer');
+  const q = params().get('renderer');
   return q === 'dom' ? 'dom' : q === '3d' ? '3d' : 'canvas';
 })();
 
@@ -4526,7 +4529,7 @@ function worldRenderInstances(group=null){
 
 async function loadBuilding(){
   // The real building. `?plan=testbed` still loads the geometry proof.
-  const which=new URLSearchParams(location.search).get('plan') || 'conservatory';
+  const which=params().get('plan') || 'conservatory';
   planName=which;
   try{
     const mod=await import(`./data/floorplan/${which}.js`);
@@ -4535,7 +4538,7 @@ async function loadBuilding(){
     facilityMapSource=null; facilityMapCache={key:'',model:null}; HUSH_MAP_TELEMETRY.reset();
     if(data.spawn) FP.setSpawn(data.spawn.x, data.spawn.y);
     // ?at= is a debug spawn and outranks the building's front door.
-    const at=new URLSearchParams(location.search).get('at');
+    const at=params().get('at');
     if(data.spawn && !(at && /^-?\d+,-?\d+$/.test(at))){
       const saved=getSave(),sx=Number(saved.px),sy=Number(saved.py);
       const canRestore=Number(saved.steps)>0&&Number.isFinite(sx)&&Number.isFinite(sy)&&!FP.isSolid(sx,sy);
@@ -4633,7 +4636,7 @@ function enterStory(){
       saveCommit({ flags:getSave().flags });
     } });
   if(chunks.length) STAB.buildStabPool(chunks);
-  const qp=new URLSearchParams(location.search);
+  const qp=params();
   // ?flags=a,b=2 — force story state for testing
   const flagParam=qp.get('flags');
   if(flagParam) flagApply(flagParam.split(',').filter(Boolean));
@@ -4937,7 +4940,7 @@ function roll(){
   // The recorder is not a metaphor. It opens the actual microphone, and from
   // here the real room you are sitting in can spoil the take. Fire-and-forget:
   // no permission, no mic, and the game is exactly as it was.
-  if(!new URLSearchParams(location.search).has('nomic') && getSave().settings?.mic !== 'off') MIC.micInit(actx);
+  if(!params().has('nomic') && getSave().settings?.mic !== 'off') MIC.micInit(actx);
   // The transport is our sound, not the player's. Keep it on the output meter
   // while preventing acoustic speaker bleed from invalidating the new take.
   MIC.micIgnoreSpoilFor(1400);
@@ -6813,7 +6816,7 @@ function faceOpenDirection(){
 // is the only place with the audio bus and the mic; the scene reads and writes
 // save.settings itself. `inGame` adds RETURN TO TITLE / RESUME.
 function exportProgressionProfile(){
-  const build=new URLSearchParams(location.search).get('build') || 'LOCAL';
+  const build=params().get('build') || 'LOCAL';
   const profile=exportProfile(getMeta(), getSave().settings, {build});
   const ok=downloadJsonFile(profile, `chunk-surfer-profile-${new Date().toISOString().slice(0,10)}.json`);
   pushEvent(ok ? '// profile exported.' : '// profile export unavailable.');
@@ -6890,7 +6893,7 @@ function openSettings({ inGame=false }={}){
       importProfile: importProgressionProfile,
       currentArea: () => storyMode && inRogue ? roomLabel(currentWorld()) : (getSave().area || 'prologue'),
       version: () => '0.1.0',
-      build: () => new URLSearchParams(location.search).get('build') || 'LOCAL',
+      build: () => params().get('build') || 'LOCAL',
     },
   }));
 }
@@ -6955,7 +6958,7 @@ function beginNewGameFlow(){
 function enterSelectedRun(){
   BINDINGS.setControllerBindings(getSave().settings?.controllerBindings);
   applyCurrentRunDifficulty();
-  const qp=new URLSearchParams(location.search);
+  const qp=params();
   if(qp.has('skipwarn')){ enterStory(); return; }
   scenes.push(makeWarningScene({
     onEnableMic:()=>{
@@ -7377,6 +7380,20 @@ function installProbe(){
     fieldAudio:()=>({ voices:voices.size, worldLayer:!!worldLayerVoice,
       ambient:ambientDrone?.target || 0, suppressed:sampleFieldSuppressed() }),
   };
+  window.__chunkParity=()=>({
+    launch: runtimeSnapshot(),
+    renderer: RENDERER,
+    lens: { enabled: !!window.__diffusion, stats: window.__diffusion?.stats || null, disabled: lensDisabled },
+    storageKind: currentStorage()?.kind || null,
+    save: { area:getSave()?.area||null, hasRun:!!getSave()?.run, runStatus:getSave()?.run?.status||null, steps:getSave()?.steps||0, takes:[...(getSave()?.takes||[])] },
+    profile: { endingsSeen:[...(getMeta()?.endingsSeen||[])], achievements:Object.keys(getMeta()?.achievements||{}).sort(), runs:getMeta()?.runs||0 },
+    settings: { ...getSave().settings },
+    screen: scenes.top()?.id || (inRogue ? 'game' : 'boot'),
+    sceneView: scenes.top()?.view?.() || null,
+    viewport: { innerWidth:window.innerWidth, innerHeight:window.innerHeight, dpr:window.devicePixelRatio||1, canvas:{ width:MAP_EL?.width||0, height:MAP_EL?.height||0 } },
+    audio: { story:STORY.audioState(), actx:actx ? actx.state : 'none', monitor:MONITOR.monitorSnapshot() },
+    build: params().get('build') || 'LOCAL',
+  });
 }
 
 
@@ -7394,7 +7411,7 @@ async function bootScenes(){
   window.__scenes=scenes;
   installProbe();
   try{ MAP_EL.setAttribute('tabindex','0'); MAP_EL.focus({preventScroll:true}); }catch(_){}
-  const qp=new URLSearchParams(location.search);
+  const qp=params();
   await saveLoadAsync({ gameVersion: qp.get('build') || 'LOCAL' });
   progressionInit({build:qp.get('build') || 'LOCAL'});
   BINDINGS.setControllerBindings(getSave().settings?.controllerBindings);
@@ -7469,7 +7486,7 @@ async function resolveLensConfig(qp){
     return {url};
   }
   if(qp.get('lens')==='0' || qp.has('nodiffusion')) return null;
-  const localPage=location.hostname==='127.0.0.1'||location.hostname==='localhost'||location.hostname==='[::1]'||location.hostname==='::1';
+  const localPage=IS_TAURI||location.hostname==='127.0.0.1'||location.hostname==='localhost'||location.hostname==='[::1]'||location.hostname==='::1';
   if(!localPage && !qp.has('lens')) return null;
   try{
     const res=await fetch('./lens.local.json', {cache:'no-store'});
@@ -7596,7 +7613,7 @@ async function startLens(qp){
     t.setState(surfaceOpts);
   }
 }
-function ensureLensStarted(qp=new URLSearchParams(location.search)){
+function ensureLensStarted(qp=params()){
   if(RENDERER!=='3d') return null;
   if(lensDisabled) return null;
   if(window.__diffusion) return window.__diffusion;
@@ -7672,13 +7689,7 @@ async function fetchFile(file){
     const cl=res.headers.get('content-length');
     file.total=cl?parseInt(cl):0;
     const reader=res.body.getReader(), parts=[];
-      while(true){
-           const chunk=await reader.read();
-           if(chunk.done) break;
-           const value=chunk.value;
-           parts.push(value);
-           file.recv+=value.length;
-         }
+    while(true){const{done,value}=await reader.read();if(done)break;parts.push(value);file.recv+=value.length;}
     const flat=new Uint8Array(file.recv);
     let off=0; for(const p of parts){flat.set(p,off);off+=p.length;}
     ensureCtx();
@@ -7756,7 +7767,7 @@ function enterRogue(){
     disableOnboardingForSession();
     if(storyMode) loadBuilding();
     // ?at=x,y — debug spawn (M2 will generalise this to ?warp=<room>)
-    const atParam=new URLSearchParams(location.search).get('at');
+    const atParam=params().get('at');
     if(atParam && /^-?\d+,-?\d+$/.test(atParam)){
       const [ax,ay]=atParam.split(',').map(Number);
       const p=storyMode ? FP.toRuntimePoint({x:ax,y:ay}) : {x:ax,y:ay};
@@ -7776,7 +7787,7 @@ function enterRogue(){
     // Diffusion lens. `?lens=1` reads the ignored loopback config; an explicit
     // `?diffusion=ws://127.0.0.1:...` is useful when testing another local port.
     // Remote endpoints are rejected. Any failure leaves the base render up.
-    const qp=new URLSearchParams(location.search);
+    const qp=params();
     ensureLensStarted(qp);
   }
   try{
@@ -8047,7 +8058,7 @@ async function boot(){
   updateOnboardingButton();
     await bootScenes();
     raf=requestAnimationFrame(loop);
-    const qp=new URLSearchParams(location.search);
+    const qp=params();
     if(!qp.has('baglab')&&!qp.has('progresslab')&&!qp.has('maplab')&&!qp.has('hushaudiolab')){
       loadAll();
       loadSw2DriverAudio();

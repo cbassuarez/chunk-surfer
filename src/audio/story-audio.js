@@ -1,4 +1,5 @@
 import { assetUrl } from '../platform/paths.js';
+import { runtimeParams } from '../platform/launch.js';
 
 // Story-only beds.
 //
@@ -42,7 +43,7 @@ export const STORY_AUDIO = {
 // about an hour. Ask whether the parameter is there before believing its value.
 function queryGain(name, fallback) {
   try {
-    const qp = new URLSearchParams(globalThis.location?.search || '');
+    const qp = runtimeParams();
     if (!qp.has(name)) return fallback;
     const v = Number(qp.get(name));
     return Number.isFinite(v) && v >= 0 ? v : fallback;

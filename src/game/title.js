@@ -2,15 +2,15 @@
 // has been pressed here, which satisfies browser autoplay policy and gives the
 // first sound of the piece a deliberate moment of silence to arrive out of.
 //
-// Replay systems are revealed only after the first filed return. Before that,
-// the title does not advertise missing endings, achievements, or locked modes.
+// The title keeps a stable case-file layout in every profile state. Empty
+// archives/endings are still available; their panels explain that nothing is
+// filed yet instead of changing the top-level menu shape.
 
 import * as scenes from './scenes.js';
 import { uiSize, uiCenter, uiFill, uiText } from '../render/ui.js';
 import { drawLocationIndicator, drawMachinePanel, drawVfdText } from '../render/presentation.js';
 import { UI_COLOR } from '../render/palette.js';
 import { getMeta, hasActiveRun } from './save.js';
-import { deriveUnlocks } from '../progression/unlocks.js';
 import * as AUDIO from '../audio/story-audio.js';
 
 export function makeTitleScene({
@@ -23,25 +23,19 @@ export function makeTitleScene({
   onAudioGate = () => {},
 } = {}) {
   const meta = getMeta();
-  const unlocks = deriveUnlocks(meta);
   const replay = (meta.endingsSeen?.length || 0) > 0;
-  const newRunLabel = replay ? 'new run' : 'new game';
+  const activeRun = hasActiveRun();
 
-  const items = [];
-  if (hasActiveRun()) {
-    items.push({ id: 'continue', label: 'continue', run: onContinue });
-  }
-  items.push({ id: 'new-run', label: newRunLabel, run: onNewGame, confirms: true, stay: true });
-  if (unlocks.archive) {
-    items.push({ id: 'archive', label: 'achievements', stay: true, run: onArchive });
-  }
-  if (unlocks.returnIndex) {
-    items.push({ id: 'return-index', label: 'endings', stay: true, run: onReturnIndex });
-  }
-  items.push({ id: 'just-surf', label: 'just surf', run: onJustSurf });
-  items.push({ id: 'settings', label: 'settings', stay: true, run: onSettings });
+  const items = [
+    { id: 'continue', label: 'continue', run: onContinue, disabled: !activeRun },
+    { id: 'new-run', label: 'new run', run: onNewGame, confirms: true, stay: true },
+    { id: 'archive', label: 'achievements', stay: true, run: onArchive },
+    { id: 'return-index', label: 'endings', stay: true, run: onReturnIndex },
+    { id: 'just-surf', label: 'just surf', run: onJustSurf },
+    { id: 'settings', label: 'settings', stay: true, run: onSettings },
+  ];
 
-  let sel = 0;
+  let sel = activeRun ? 0 : 1;
   let audioPrimed = false;
   let confirmNewRun = false;
   let t = 0;
@@ -131,6 +125,12 @@ export function makeTitleScene({
         const item = items[sel];
         if (!item) return true;
 
+        if (item.disabled) {
+          AUDIO.menuMove();
+          disarm();
+          return true;
+        }
+
         if (item.confirms && !confirmNewRun) {
           confirmNewRun = true;
           AUDIO.menuConfirm();
@@ -159,12 +159,16 @@ export function makeTitleScene({
       uiFill(0, 0, cols, rows, UI_COLOR.glass);
 
       const w = Math.min(78, cols - 4);
-      const h = Math.min(Math.max(24, 12 + items.length * 2), rows - 4);
+      const estimatedBodyW = Math.max(1, w - 6);
+      const estimatedColumns = estimatedBodyW >= 58 && items.length > 4 ? 2 : 1;
+      const estimatedRows = Math.ceil(items.length / estimatedColumns);
+      const bodyRowsNeeded = 13 + Math.max(0, estimatedRows - 1) * 2;
+      const h = Math.min(Math.max(26, bodyRowsNeeded + 7), rows - 4);
       const x = Math.floor((cols - w) / 2);
       const y = Math.floor((rows - h) / 2);
       const body = drawMachinePanel(x, y, w, h, {
-        label: replay ? 'CASE SELECT' : 'PROGRAM SELECT',
-        source: replay ? '4417-C' : 'ROOM TONE',
+        label: 'CASE SELECT',
+        source: '4417-C',
         footer: '[↑/↓] SELECT · [ENTER] CONFIRM',
         meter: true,
       });
@@ -207,6 +211,7 @@ export function makeTitleScene({
       if (meta.hushMet) uiCenter(body.y + 9, 'THE HUSH HAS YOUR SIGNAL.', 'ui-danger');
       else if (meta.leftMidRun) uiCenter(body.y + 9, 'UNFINISHED RUN SAVED.', 'ui-danger');
       else if (replay) uiCenter(body.y + 9, 'ENDINGS AND ACHIEVEMENTS ARE AVAILABLE.', 'ui-amber');
+      else uiCenter(body.y + 9, 'THE CASE FILE IS EMPTY.', 'ui-secondary');
 
       const menuY = body.y + 12;
       menuColumns = body.w >= 58 && items.length > 4 ? 2 : 1;
@@ -217,7 +222,7 @@ export function makeTitleScene({
       items.forEach((item, i) => {
         const on = i === sel;
         const armed = item.confirms && confirmNewRun;
-        const prompt = replay ? 'START NEW RUN? PRESS ENTER AGAIN' : 'NEW GAME? PRESS ENTER AGAIN';
+        const prompt = 'START NEW RUN? PRESS ENTER AGAIN';
         const labelText = armed ? prompt : item.label.toUpperCase();
         const col = Math.floor(i / rowCount);
         const row = i % rowCount;
@@ -225,7 +230,8 @@ export function makeTitleScene({
           menuX + col * colW,
           menuY + row * 2,
           `${on ? '▸ ' : '  '}${labelText}`,
-          armed ? 'ui-danger' : on ? 'ui-amber' : 'ui-secondary',
+          item.disabled ? (on ? 'ui-label' : 'ui-secondary') : armed ? 'ui-danger' : on ? 'ui-amber' : 'ui-secondary',
+          item.disabled ? 0.48 : 1,
         );
       });
     },

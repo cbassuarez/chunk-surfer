@@ -6,11 +6,12 @@
 
 import { CELL_W, CELL_H, FONT_PX, MONO_STACK, atlasConfigure, atlasDpr, getTile } from './atlas.js';
 import { flashMode, shakeMode, visualEffectsEnabled } from '../game/access.js';
+import { runtimeParams } from '../platform/launch.js';
 
 const REDUCED_MOTION = typeof matchMedia === 'function'
   && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-const params = new URLSearchParams(location.search);
+const params = runtimeParams();
 const SHOW_STATS = params.get('stats') === '1';
 const CRT_ON = params.get('crt') !== '0';
 

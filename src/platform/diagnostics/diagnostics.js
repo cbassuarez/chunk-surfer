@@ -1,4 +1,5 @@
 import { detectStorageBackendKind, isTauriRuntime } from '../detect.js';
+import { runtimeSnapshot } from '../launch.js';
 
 const recent = [];
 let logApi = null;
@@ -55,6 +56,7 @@ export function installGlobalErrorHandlers() {
 }
 
 export async function collectDiagnostics({ storage = null, build = 'LOCAL' } = {}) {
+  const launch = runtimeSnapshot();
   let storageInfo = null;
   try { storageInfo = storage?.getStorageInfo ? await storage.getStorageInfo() : null; } catch (error) { storageInfo = { error: String(error?.message || error) }; }
   return {
@@ -66,9 +68,10 @@ export async function collectDiagnostics({ storage = null, build = 'LOCAL' } = {
     platformMode: detectStorageBackendKind(),
     tauri: isTauriRuntime(),
     userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'node',
-    location: typeof location !== 'undefined' ? { protocol: location.protocol, search: location.search } : null,
-    renderer: typeof location !== 'undefined' ? new URLSearchParams(location.search).get('renderer') : null,
-    lens: typeof location !== 'undefined' ? new URLSearchParams(location.search).get('lens') : null,
+    location: launch.rawLocation,
+    launch,
+    renderer: launch.renderer,
+    lens: launch.lens,
     storage: storageInfo,
     recent,
   };

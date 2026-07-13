@@ -24,6 +24,21 @@ function dirname(path) {
   return i > 0 ? path.slice(0, i) : '';
 }
 
+
+function profileLooksEmpty(profile) {
+  return !profile
+    || ((profile.endingsSeen || []).length === 0
+      && Object.keys(profile.achievements || {}).length === 0
+      && Number(profile.runs || 0) === 0
+      && Number(profile.stats?.runsCompleted || 0) === 0
+      && Number(profile.stats?.endingsSeen || 0) === 0);
+}
+
+function settingsLookDefault(settings) {
+  const defaults = defaultSettings();
+  return !settings || JSON.stringify(normalizePersistedSettings(settings)) === JSON.stringify(defaults);
+}
+
 async function tauriAdapter() {
   const fs = await import('@tauri-apps/plugin-fs');
   const { BaseDirectory } = fs;
@@ -143,7 +158,10 @@ export class DesktopStorage {
 
   async migrateLocalStorageOnce() {
     const marker = 'migration/localstorage-import-v1.json';
-    if (await this.adapter.exists(marker, this.adapter.baseData).catch(() => false)) return;
+    if (await this.adapter.exists(marker, this.adapter.baseData).catch(() => false)) {
+      await this.repairEmptyDesktopStateFromLocalStorage();
+      return;
+    }
     const found = [...LEGACY_PROFILE_KEYS, ...LEGACY_SAVE_KEYS].filter((key) => readLocalStorage(key) != null);
     const migrated = [];
     const skipped = [];
@@ -168,6 +186,50 @@ export class DesktopStorage {
     }
     this.migration = { timestamp: new Date().toISOString(), oldKeysFound: found, keysMigrated: migrated, keysSkipped: skipped, errors };
     await this.writeEnvelopeSafe(marker, this.migration, { schemaVersion: 1, baseDir: this.adapter.baseData });
+  }
+
+  async repairEmptyDesktopStateFromLocalStorage() {
+    const metaStored = firstStored(LEGACY_PROFILE_KEYS);
+    const saveStored = firstStored(LEGACY_SAVE_KEYS);
+    if (!metaStored && !saveStored) return;
+
+    const legacyMeta = metaStored ? parseStoredJson(metaStored.raw) : null;
+    const legacySave = saveStored ? parseStoredJson(saveStored.raw) : null;
+    const repaired = [];
+
+    try {
+      if (legacySave?.settings && await this.adapter.exists('settings.json', this.adapter.baseConfig)) {
+        const current = await this.readEnvelopeWithBackup('settings.json', {
+          baseDir: this.adapter.baseConfig,
+          backupPath: 'settings.previous.json',
+          migrate: migrateSettingsEnvelope,
+          fallback: defaultSettings(),
+        });
+        if (settingsLookDefault(current)) {
+          await this.saveSettings(legacySave.settings);
+          repaired.push('settings');
+        }
+      }
+      if (legacyMeta && await this.adapter.exists('profile.json', this.adapter.baseData)) {
+        const current = await this.readEnvelopeWithBackup('profile.json', {
+          baseDir: this.adapter.baseData,
+          backupPath: 'profile.previous.json',
+          migrate: migrateProfileEnvelope,
+          fallback: defaultProfile(),
+        });
+        if (profileLooksEmpty(current)) {
+          await this.saveProfile(legacyMeta);
+          repaired.push('profile');
+        }
+      }
+      if (legacySave && !(await this.adapter.exists(saveSlotFile(SAVE_SLOT_AUTOSAVE), this.adapter.baseData))) {
+        await this.saveGame(SAVE_SLOT_AUTOSAVE, legacySave);
+        repaired.push('autosave');
+      }
+      if (repaired.length) await logInfo('desktop localStorage migration repaired empty state', repaired.join(','));
+    } catch (error) {
+      this.recordError('migration-repair', 'localStorage', error);
+    }
   }
 
   async loadSettings() {

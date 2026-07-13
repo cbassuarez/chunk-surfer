@@ -78,4 +78,17 @@ const exported = await desktop.exportAllData();
 assert.equal(exported.format, 'chunk-surfer-export');
 assert.equal(exported.storage.kind, 'desktop');
 
+// If an earlier desktop launch created the migration marker and an empty
+// profile, later availability of legacy WebView localStorage should still
+// repair the empty desktop profile without clobbering real progress.
+globalThis.localStorage = new MemoryStorage({
+  'chunk-surfer:meta:v2': JSON.stringify({ version: 2, endingsSeen: ['helped'], runs: 3, achievements: { ACH_FIRST_TAKE: { at: 1 } }, stats: { runsCompleted: 1, endingsSeen: 1 } }),
+});
+const repairAdapter = new MemoryFileAdapter();
+await repairAdapter.writeText('migration/localstorage-import-v1.json', serializeEnvelope(makeEnvelope({ done: true }, { schemaVersion: 1, gameVersion: 'TEST' })), repairAdapter.baseData);
+await repairAdapter.writeText('profile.json', serializeEnvelope(makeEnvelope({ version: 2, endingsSeen: [], runs: 0, achievements: {}, stats: { runsCompleted: 0, endingsSeen: 0 } }, { schemaVersion: 1, gameVersion: 'TEST' })), repairAdapter.baseData);
+const repairedDesktop = new DesktopStorage({ gameVersion: 'TEST', adapter: repairAdapter, paths: { appData: '/fake/data', appConfig: '/fake/config', appLog: '/fake/log' } });
+await repairedDesktop.init();
+assert.deepEqual((await repairedDesktop.loadProfile()).endingsSeen, ['helped']);
+
 console.log('storage platform tests ok');

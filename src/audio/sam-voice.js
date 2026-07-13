@@ -6,6 +6,8 @@
 // README does not publish a normal OSS license. If it is unavailable, a small
 // local formant fallback keeps story text timing deterministic instead of failing.
 
+import { runtimeParams } from '../platform/launch.js';
+
 const SAM_CDN = 'https://cdn.jsdelivr.net/npm/sam-js@0.3.1/dist/samjs.esm.min.js';
 const SAM_RATE = 22050;
 const LOAD_TIMEOUT_MS = 1200;
@@ -15,7 +17,7 @@ let providerPromise = null;
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
 function query() {
-  try { return new URLSearchParams(globalThis.location?.search || ''); }
+  try { return runtimeParams(); }
   catch (_) { return new URLSearchParams(); }
 }
 

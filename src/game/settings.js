@@ -416,7 +416,7 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
       const { cols, rows: R } = uiSize();
       uiScrim(1);
 
-      const w = Math.min(86, cols - 4), h = Math.min(24, R - 2);
+      const w = Math.min(90, cols - 4), h = Math.min(Math.max(28, R - 8), R - 2);
       const x = Math.floor((cols - w) / 2), y = Math.floor((R - h) / 2);
 
       const body = drawMachinePanel(x, y, w, h, {
@@ -443,7 +443,8 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
       const rows = rowsOf();
       const dense = rows.length > 7;
       const step = dense ? 1 : 2;
-      const maxRows = Math.max(1, body.h - 5);
+      const tipRows = cols >= 72 && h >= 22 ? 4 : 3;
+      const maxRows = Math.max(1, body.h - 5 - tipRows);
       const start = dense && sel >= maxRows ? Math.min(sel - maxRows + 1, rows.length - maxRows) : 0;
       const visible = dense ? rows.slice(start, start + maxRows) : rows;
 
@@ -468,7 +469,7 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
 
       if (dense && rows.length > visible.length) {
         const more = start > 0 ? '▲' : start + visible.length < rows.length ? '▼' : '';
-        if (more) uiText(x + w - 4, iy + body.h - 2, more, 'ui-secondary');
+        if (more) uiText(x + w - 4, iy + body.h - tipRows - 1, more, 'ui-secondary');
       }
 
         const selectedRow = rowsOf()[sel] || {};
@@ -484,8 +485,8 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
         const pro = tips.pro ? `PRO TIP: ${tips.pro}` : '';
 
         if (cols >= 72 && h >= 22 && help && pro) {
-          uiText(x + 3, y + h - 4, clipTip(help, footerW).toUpperCase(), 'ui-secondary');
-          uiText(x + 3, y + h - 3, clipTip(pro, footerW).toUpperCase(), 'ui-secondary');
+          uiText(body.x, body.y + body.h - 3, clipTip(help, Math.min(footerW, body.w)).toUpperCase(), 'ui-secondary');
+          uiText(body.x, body.y + body.h - 2, clipTip(pro, Math.min(footerW, body.w)).toUpperCase(), 'ui-secondary');
         } else {
           const showHelp = Math.floor(now() / 9000) % 2 === 0;
           const one = (showHelp && help) ? help : (pro || help);
