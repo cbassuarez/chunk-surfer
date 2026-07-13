@@ -8,19 +8,24 @@ on:
 
 jobs:
   tauri:
+    name: Build ${{ matrix.name }}
     permissions:
       contents: write
     strategy:
       fail-fast: false
       matrix:
         include:
-          - platform: macos-latest
+          - name: macOS Apple Silicon
+            platform: macos-latest
             args: --target aarch64-apple-darwin
-          - platform: macos-latest
+          - name: macOS Intel
+            platform: macos-latest
             args: --target x86_64-apple-darwin
-          - platform: windows-latest
+          - name: Windows x64
+            platform: windows-latest
             args: ''
-          - platform: ubuntu-22.04
+          - name: Linux x64
+            platform: ubuntu-22.04
             args: ''
     runs-on: ${{ matrix.platform }}
     steps:
@@ -45,7 +50,14 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
-      - run: npm install
+      - name: Install frontend dependencies
+        run: npm install
+
+      - name: Run frontend tests
+        run: npm test
+
+      - name: Run acoustic catalogue checks
+        run: npm run test:acoustic
 
       # TODO: Apple Developer ID signing and notarization.
       # TODO: Windows code signing certificate and timestamping.
@@ -56,9 +68,61 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: chunk-surfer-v__VERSION__
-          releaseName: Chunk Surfer v__VERSION__
-          releaseBody: Unsigned desktop builds for local testing. Signing and storefront packaging are tracked in STORE_PREP.md.
-          releaseDraft: true
-          prerelease: false
+          tagName: ${{ github.ref_name }}
+          releaseName: Chunk Surfer ${{ github.ref_name }}
+          releaseBody: |
+            Unsigned beta desktop builds for end-to-end download testing.
+
+            Expected assets:
+            - macOS: dmg
+            - Windows: exe and/or msi installer
+            - Linux: AppImage and deb bundle
+
+            Signing, notarization, Steam, and itch automation remain TODOs in STORE_PREP.md.
+          releaseDraft: false
+          prerelease: true
           args: ${{ matrix.args }}
+
+  verify-release-downloads:
+    name: Verify release downloads
+    needs: tauri
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Wait for release assets to settle
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 20); do
+            json=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isPrerelease,assets 2>/dev/null || true)
+            if [ -n "$json" ]; then
+              echo "$json" > release.json
+              dmg=$(jq '[.assets[].name | select(test("\\.dmg$"))] | length' release.json)
+              win=$(jq '[.assets[].name | select(test("\\.(exe|msi)$"))] | length' release.json)
+              linux=$(jq '[.assets[].name | select(test("\\.(AppImage|deb)$"))] | length' release.json)
+              pre=$(jq -r '.isPrerelease' release.json)
+              if [ "$pre" = "true" ] && [ "$dmg" -gt 0 ] && [ "$win" -gt 0 ] && [ "$linux" -gt 0 ]; then
+                exit 0
+              fi
+            fi
+            sleep 15
+          done
+          echo "Release assets did not settle with required dmg/windows/linux downloads" >&2
+          cat release.json 2>/dev/null || true
+          exit 1
+
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir release-assets --pattern '*.dmg' --pattern '*.exe' --pattern '*.msi' --pattern '*.AppImage' --pattern '*.deb'
+          find release-assets -type f -maxdepth 1 -print -exec test -s {} \;
+          test "$(find release-assets -maxdepth 1 -type f -name '*.dmg' | wc -l)" -gt 0
+          test "$(find release-assets -maxdepth 1 -type f \( -name '*.exe' -o -name '*.msi' \) | wc -l)" -gt 0
+          test "$(find release-assets -maxdepth 1 -type f \( -name '*.AppImage' -o -name '*.deb' \) | wc -l)" -gt 0
