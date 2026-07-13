@@ -1,12 +1,12 @@
 import fs from 'node:fs';
-import { conservatory } from '../../../public/labs/chunk-surfer/src/data/floorplan/conservatory.js';
-import { CHAPEL_KEY_CHECK, PAGES } from '../../../public/labs/chunk-surfer/src/data/conservatory-script.js';
-import * as FP from '../../../public/labs/chunk-surfer/src/world/floorplan.js';
-import { normalizeEquipment } from '../../../public/labs/chunk-surfer/src/game/bag-model.js';
+import { conservatory } from '../../../src/data/floorplan/conservatory.js';
+import { CHAPEL_KEY_CHECK, PAGES } from '../../../src/data/conservatory-script.js';
+import * as FP from '../../../src/world/floorplan.js';
+import { normalizeEquipment } from '../../../src/game/bag-model.js';
 
 let pass=true;
 const ck=(name,ok,detail='')=>{console.log(`${ok?'PASS':'FAIL'}  ${name}${detail?'  '+detail:''}`);if(!ok)pass=false;};
-const main=fs.readFileSync(new URL('../../../public/labs/chunk-surfer/src/main.js',import.meta.url),'utf8');
+const main=fs.readFileSync(new URL('../../../src/main.js',import.meta.url),'utf8');
 
 FP.compile(conservatory.levels,{width:conservatory.width,height:conservatory.height,widenCorridors:conservatory.widenCorridors,connectors:conservatory.connectors});
 for(const d of conservatory.doors||[])FP.setDoorKey(d.x,d.y,d.key);

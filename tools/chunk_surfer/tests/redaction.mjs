@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
-import { natatoriumBattle, practiceBattle, hallBattle, chapelBoss } from '../../../public/labs/chunk-surfer/src/data/battles.js';
+import { natatoriumBattle, practiceBattle, hallBattle, chapelBoss } from '../../../src/data/battles.js';
 import {
   applyOpponentMove, createRedactionState, layoutRedactionTokens,
   moveRedactionCursor, survivingText, toggleRedaction, undoRedaction,
   validateBattleDefinition, validateReading,
-} from '../../../public/labs/chunk-surfer/src/game/redaction.js';
+} from '../../../src/game/redaction.js';
 
 for(const battle of [natatoriumBattle(),practiceBattle(),hallBattle(),chapelBoss()]){
   assert.deepEqual(validateBattleDefinition(battle),[],`${battle.id} definition`);

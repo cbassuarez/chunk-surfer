@@ -1,3 +1,4 @@
+import { assetUrl } from '../platform/paths.js';
 // One-shot cue bus.
 //
 // The engine only ever knew how to loop voices. A game needs sounds that
@@ -64,7 +65,7 @@ export function isLoaded(url) { return buffers.has(url); }
 // they belong to, and the name is the contract: `data/conservatory-script.js`
 // carries `cue: 'pens'` on the line about the pens, and the conversation
 // machine fires it. Nothing else decides when a pen is heard.
-const A = '/labs/chunk-surfer/audio/';
+const A = assetUrl('audio/game/');
 export const CUE = {
   light: `${A}light.mp3`,
   recorder: `${A}recorder.mp3`,

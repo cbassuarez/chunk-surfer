@@ -8,7 +8,7 @@ console.log(`LOCAL SURFACE LENS  ${health.model} · ${health.device} · ${health
 const browser=await puppeteer.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:'new',args:['--use-angle=metal','--mute-audio']});
 const page=await browser.newPage();await page.setViewport({width:900,height:600});
 const errors=[];page.on('pageerror',(e)=>errors.push(String(e)));
-await page.goto('http://localhost:5173/labs/chunk-surfer/index.html?renderer=3d&mode=surf&lens=1&at=4,5&tuner=0',{waitUntil:'domcontentloaded'});
+await page.goto('http://localhost:5173/index.html?renderer=3d&mode=surf&lens=1&at=4,5&tuner=0',{waitUntil:'domcontentloaded'});
 
 const started=Date.now();let result=null;
 for(let i=0;i<90;i++){

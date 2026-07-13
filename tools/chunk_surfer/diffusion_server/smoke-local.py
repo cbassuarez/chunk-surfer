@@ -18,7 +18,7 @@ def jpeg(image: Image.Image) -> bytes:
 
 def surface_tile(size: int) -> bytes:
     root = Path(__file__).resolve().parents[3]
-    strip = Image.open(root / "public/labs/chunk-surfer/assets/surfaces/surface-albedo.jpg").convert("RGB")
+    strip = Image.open(root / "public/assets/surfaces/surface-albedo.jpg").convert("RGB")
     native = strip.width
     tile = strip.crop((0, 0, native, native)).resize((size, size))
     out = Path(__file__).with_name("bench-out")

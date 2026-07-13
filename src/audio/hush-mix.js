@@ -1,10 +1,11 @@
+import { assetUrl } from '../platform/paths.js';
 // Player-facing HUSH audio. The graph only transforms presentation; gameplay
 // hearing is handled by semantic acoustic events and never by these nodes.
 
 const FILES = Object.freeze({
-  hush: '/labs/chunk-surfer/audio/hush.mp3',
-  scream: '/labs/chunk-surfer/audio/radio_breaks-scream.mp3',
-  equipment: '/labs/chunk-surfer/audio/recorder.mp3',
+  hush: assetUrl('audio/game/hush.mp3'),
+  scream: assetUrl('audio/game/radio_breaks-scream.mp3'),
+  equipment: assetUrl('audio/game/recorder.mp3'),
 });
 
 const clamp01 = (value) => Math.max(0, Math.min(1, Number(value) || 0));

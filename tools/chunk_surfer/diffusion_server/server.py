@@ -1,6 +1,6 @@
 """Diffusion-lens GPU server for chunk-surfer (M1c).
 
-Protocol (must stay in sync with public/labs/chunk-surfer/src/net/diffusion.js):
+Protocol (must stay in sync with src/net/diffusion.js):
   client -> server  binary JPEG      conditioning frame (the r3d base render)
   client -> server  text JSON        {"type":"prompt","prompt":str,"strength":float}
   server -> client  binary JPEG      styled frame

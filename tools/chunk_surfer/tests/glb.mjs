@@ -1,9 +1,9 @@
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 
-const packUrl=new URL('../../../public/labs/chunk-surfer/assets/conservatory-props.glb',import.meta.url);
-const statsUrl=new URL('../../../public/labs/chunk-surfer/assets/conservatory-props.stats.json',import.meta.url);
-const creditsUrl=new URL('../../../public/labs/chunk-surfer/assets/conservatory-props.credits.json',import.meta.url);
+const packUrl=new URL('../../../public/assets/conservatory-props.glb',import.meta.url);
+const statsUrl=new URL('../../../public/assets/conservatory-props.stats.json',import.meta.url);
+const creditsUrl=new URL('../../../public/assets/conservatory-props.credits.json',import.meta.url);
 const bytes=fs.readFileSync(packUrl),stats=JSON.parse(fs.readFileSync(statsUrl,'utf8')),credits=JSON.parse(fs.readFileSync(creditsUrl,'utf8'));
 let pass=true;
 const ck=(name,ok,detail='')=>{console.log(`${ok?'PASS':'FAIL'}  ${name}${detail?'  '+detail:''}`);if(!ok)pass=false;};

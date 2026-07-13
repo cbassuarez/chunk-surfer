@@ -28,7 +28,7 @@ const bs = () => ev(() => window.__probe.battleState());
 const fin = () => ev(() => window.__probe.finale());
 
 async function boot(flags) {
-  const url = `http://localhost:5173/labs/chunk-surfer/index.html?mode=story&renderer=3d&skiptut=1&nothink=1&nomic=1&sam=0&at=90,66${flags ? `&flags=${flags}` : ''}`;
+  const url = `http://localhost:5173/index.html?mode=story&renderer=3d&skiptut=1&nothink=1&nomic=1&sam=0&at=90,66${flags ? `&flags=${flags}` : ''}`;
   await p.goto(url, { waitUntil: 'domcontentloaded' });
   await ev(() => localStorage.clear());
   await p.reload({ waitUntil: 'domcontentloaded' });

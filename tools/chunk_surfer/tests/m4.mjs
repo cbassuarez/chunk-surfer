@@ -29,7 +29,7 @@ const roll = async () => { await key('r', 300); await wait(1500); await key('r',
 
 // Spawn inside studio B3: this is where the first take is made, and the only
 // room deep enough that a two-second take can hear anything at all.
-await p.goto('http://localhost:5173/labs/chunk-surfer/index.html?mode=story&renderer=3d&skiptut=1&nothink=1&at=15,12', { waitUntil: 'domcontentloaded' });
+await p.goto('http://localhost:5173/index.html?mode=story&renderer=3d&skiptut=1&nothink=1&at=15,12', { waitUntil: 'domcontentloaded' });
 await ev(() => localStorage.clear());
 await p.reload({ waitUntil: 'domcontentloaded' });
 await wait(15000);

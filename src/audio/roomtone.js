@@ -1,3 +1,4 @@
+import { assetUrl } from '../platform/paths.js';
 // Room tone: what an empty room actually sounds like, and the footsteps you
 // put into it.
 //
@@ -75,7 +76,7 @@ export function bedOff() { setBed(0, 0.6); }
 // unchanged — `level` is exactly the number `recordist.js` just emitted, so a
 // slow step is almost nothing and an injured step is still an announcement.
 // Only the timbre changed: a filtered noise burst never sounded like a shoe.
-const STEPS_URL = '/labs/chunk-surfer/audio/bunch-of-footsteps-sounds.mp3';
+const STEPS_URL = assetUrl('audio/game/bunch-of-footsteps-sounds.mp3');
 let stepsBuf = null;
 let stepsPending = null;
 

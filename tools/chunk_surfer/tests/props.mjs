@@ -1,7 +1,7 @@
-import { conservatory } from '../../../public/labs/chunk-surfer/src/data/floorplan/conservatory.js';
-import { CONSERVATORY_PROPS, PROP_MESH } from '../../../public/labs/chunk-surfer/src/data/conservatory-props.js';
-import * as FP from '../../../public/labs/chunk-surfer/src/world/floorplan.js';
-import * as PROPS from '../../../public/labs/chunk-surfer/src/game/props.js';
+import { conservatory } from '../../../src/data/floorplan/conservatory.js';
+import { CONSERVATORY_PROPS, PROP_MESH } from '../../../src/data/conservatory-props.js';
+import * as FP from '../../../src/world/floorplan.js';
+import * as PROPS from '../../../src/game/props.js';
 
 let pass=true;
 const ck=(name,ok,detail='')=>{console.log(`${ok?'PASS':'FAIL'}  ${name}${detail?'  '+detail:''}`);if(!ok)pass=false;};

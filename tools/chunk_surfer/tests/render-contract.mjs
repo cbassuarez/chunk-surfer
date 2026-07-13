@@ -2,8 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const ROOT=path.resolve(import.meta.dirname,'../../..');
-const shader=fs.readFileSync(path.join(ROOT,'public/labs/chunk-surfer/src/render/r3d.js'),'utf8');
-const floorplan=fs.readFileSync(path.join(ROOT,'public/labs/chunk-surfer/src/world/floorplan.js'),'utf8');
+const shader=fs.readFileSync(path.join(ROOT,'src/render/r3d.js'),'utf8');
+const floorplan=fs.readFileSync(path.join(ROOT,'src/world/floorplan.js'),'utf8');
 let pass=true;const ck=(n,ok)=>{console.log(`${ok?'PASS':'FAIL'}  ${n}`);if(!ok)pass=false;};
 
 ck('authored architecture disables reaction-diffusion striping',shader.includes('if(uUsePlan>.5){rdv=.5;rim=0.0;}'));

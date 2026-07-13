@@ -1,10 +1,10 @@
 import {
   setControllerBindings, setControllerBinding, resetControllerBindings,
   controllerToken, controllerBindingLabel,
-} from '../../../public/labs/chunk-surfer/src/game/bindings.js';
+} from '../../../src/game/bindings.js';
 import {
   gamepadTick, beginControllerRemap, controllerResetForTest,
-} from '../../../public/labs/chunk-surfer/src/game/controller.js';
+} from '../../../src/game/controller.js';
 
 let pass=true;
 const ck=(name,ok,detail='')=>{console.log(`${ok?'PASS':'FAIL'}  ${name}${detail?'  '+detail:''}`);if(!ok)pass=false;};

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const ROOT=path.resolve(import.meta.dirname,'../../..'),dir=path.join(ROOT,'public/labs/chunk-surfer/assets/portraits');
+const ROOT=path.resolve(import.meta.dirname,'../../..'),dir=path.join(ROOT,'public/assets/portraits');
 const m=JSON.parse(fs.readFileSync(path.join(dir,'portraits.json'),'utf8')),atlas=fs.readFileSync(path.join(dir,'portrait-atlas.webp'));
 let pass=true;const ck=(name,ok,detail='')=>{console.log(`${ok?'PASS':'FAIL'}  ${name}${detail?'  '+detail:''}`);if(!ok)pass=false;};
 ck('portrait atlas is a nonempty WebP',atlas.length>25000&&atlas.subarray(0,4).toString()==='RIFF'&&atlas.subarray(8,12).toString()==='WEBP',`${Math.round(atlas.length/1024)} KB`);

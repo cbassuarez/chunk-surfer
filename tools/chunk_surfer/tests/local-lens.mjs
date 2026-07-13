@@ -7,14 +7,14 @@ const rel=(p)=>path.join(ROOT,p);
 let pass=true;
 const ck=(name,ok,detail='')=>{console.log(`${ok?'PASS':'FAIL'}  ${name}${detail?'  '+detail:''}`);if(!ok)pass=false;};
 
-const cfg=JSON.parse(fs.readFileSync(rel('public/labs/chunk-surfer/lens.local.example.json'),'utf8'));
+const cfg=JSON.parse(fs.readFileSync(rel('lens.local.example.json'),'utf8'));
 const endpoint=new URL(cfg.url);
 ck('tracked lens config is loopback WebSocket only',endpoint.protocol==='ws:'&&endpoint.hostname==='127.0.0.1',cfg.url);
 ck('local config has no cloud credential',!('token' in cfg));
 
-const main=fs.readFileSync(rel('public/labs/chunk-surfer/src/main.js'),'utf8');
-const tuner=fs.readFileSync(rel('public/labs/chunk-surfer/src/net/tuner.js'),'utf8');
-const client=fs.readFileSync(rel('public/labs/chunk-surfer/src/net/diffusion.js'),'utf8');
+const main=fs.readFileSync(rel('src/main.js'),'utf8');
+const tuner=fs.readFileSync(rel('src/net/tuner.js'),'utf8');
+const client=fs.readFileSync(rel('src/net/diffusion.js'),'utf8');
 const server=fs.readFileSync(rel('tools/chunk_surfer/diffusion_server/server.py'),'utf8');
 const pkg=JSON.parse(fs.readFileSync(rel('package.json'),'utf8'));
 ck('browser rejects non-loopback diffusion endpoints',main.includes("remote diffusion endpoint rejected — the lens is local-only")&&main.includes("u.hostname==='127.0.0.1'"));
@@ -36,8 +36,8 @@ ck('local launcher is executable',(fs.statSync(launcher).mode&0o111)!==0);
 ck('cloud deployment wrapper is gone',!fs.existsSync(path.join(serverDir,'modal_app.py')));
 
 const scanned=[
-  'public/labs/chunk-surfer/src/net/diffusion.js',
-  'public/labs/chunk-surfer/src/net/tuner.js',
+  'src/net/diffusion.js',
+  'src/net/tuner.js',
   'tools/chunk_surfer/diffusion_server/README.md',
   'tools/chunk_surfer/diffusion_server/server.py',
   'tools/chunk_surfer/diffusion_server/pipeline.py',

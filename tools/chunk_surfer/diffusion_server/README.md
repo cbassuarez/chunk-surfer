@@ -19,7 +19,7 @@ python3.12 -m venv .venv-local
 ./run-local.sh
 ```
 
-The browser reads `public/labs/chunk-surfer/lens.local.json` when `?lens=1` is
+The browser reads `lens.local.json` when `?lens=1` is
 present. That ignored file and the tracked example both point to
 `ws://127.0.0.1:8000`. Non-loopback WebSocket endpoints are rejected by the
 client; there is no cloud fallback, token, account, cold start, or usage bill.

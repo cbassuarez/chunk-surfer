@@ -6,7 +6,7 @@ const wait=(ms)=>new Promise((r)=>setTimeout(r,ms));
 const key=async(k,ms=100)=>{await p.keyboard.press(k);await wait(ms);};
 const ev=(fn,...args)=>p.evaluate(fn,...args);
 let pass=true;const ck=(n,ok,x='')=>{console.log(`${ok?'PASS':'FAIL'}  ${n}${x?'  '+x:''}`);if(!ok)pass=false;};
-const url='http://localhost:5173/labs/chunk-surfer/index.html?mode=story&renderer=3d&skiptut=1&skipwarn=1&nomic=1&sam=0';
+const url='http://localhost:5173/index.html?mode=story&renderer=3d&skiptut=1&skipwarn=1&nomic=1&sam=0';
 
 await p.goto(url,{waitUntil:'domcontentloaded'});await ev(()=>localStorage.clear());await p.reload({waitUntil:'domcontentloaded'});
 for(let i=0;i<160&&!await ev(()=>!!window.__probe?.plan?.().loaded);i++)await wait(100);

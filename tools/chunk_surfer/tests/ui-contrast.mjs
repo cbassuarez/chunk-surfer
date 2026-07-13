@@ -1,4 +1,4 @@
-import { UI_COLOR } from '../../../public/labs/chunk-surfer/src/render/palette.js';
+import { UI_COLOR } from '../../../src/render/palette.js';
 
 function rgb(hex) {
   const n = Number.parseInt(hex.slice(1), 16);

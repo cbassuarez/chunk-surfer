@@ -25,7 +25,7 @@ const ev = (fn, ...a) => p.evaluate(fn, ...a);
 const fear = () => ev(() => window.__probe.fear());
 const rec = () => ev(() => window.__probe.rec());
 
-await p.goto('http://localhost:5173/labs/chunk-surfer/index.html?mode=story&renderer=3d&skiptut=1&nothink=1&nomic=1&sam=0&at=15,12', { waitUntil: 'domcontentloaded' });
+await p.goto('http://localhost:5173/index.html?mode=story&renderer=3d&skiptut=1&nothink=1&nomic=1&sam=0&at=15,12', { waitUntil: 'domcontentloaded' });
 await ev(() => localStorage.clear());
 await p.reload({ waitUntil: 'domcontentloaded' });
 await wait(15000);

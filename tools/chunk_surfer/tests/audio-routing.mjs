@@ -1,12 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { renderSamSamples } from '../../../public/labs/chunk-surfer/src/audio/sam-voice.js';
+import { renderSamSamples } from '../../../src/audio/sam-voice.js';
 
 const ROOT=path.resolve(import.meta.dirname,'../../..');
 const read=(p)=>fs.readFileSync(path.join(ROOT,p),'utf8');
-const main=read('public/labs/chunk-surfer/src/main.js');
-const story=read('public/labs/chunk-surfer/src/audio/story-audio.js');
-const mic=read('public/labs/chunk-surfer/src/game/mic.js');
+const main=read('src/main.js');
+const story=read('src/audio/story-audio.js');
+const mic=read('src/game/mic.js');
 let pass=true;
 const ck=(name,ok,detail='')=>{console.log(`${ok?'PASS':'FAIL'}  ${name}${detail?'  '+detail:''}`);if(!ok)pass=false;};
 

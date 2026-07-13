@@ -48,6 +48,7 @@ import * as PROPS from './game/props.js';
 import * as CUES from './audio/cues.js';
 import * as STORY from './audio/story-audio.js';
 import * as FEAR from './audio/fear.js';
+import { assetUrl } from './platform/paths.js';
 import * as STAB from './game/stabs.js';
 import * as OBJ from './game/objectives.js';
 import * as DOC from './game/document.js';
@@ -230,7 +231,7 @@ const SW2_TUNE = {
   punctuationMinMs: 1400,
   punctuationMaxMs: 2600,
 };
-const SW2_AUDIO_URL = '/labs/chunk-surfer/audio/hapax-recording.mp3';
+const SW2_AUDIO_URL = assetUrl('audio/game/hapax-recording.mp3');
 let horrorPhase=HORROR_SEQUENCE.OFF;
 let horrorStartMs=0;
 let horrorLastTickMs=0;
@@ -7521,7 +7522,7 @@ async function startLens(qp){
 
   window.__diffusion=surfaceDiffusionStart({
     url:cfg.url,
-    sourceUrl:new URL('../assets/surfaces/surface-albedo.jpg',import.meta.url),
+    sourceUrl:assetUrl('assets/surfaces/surface-albedo.jpg'),
     applySurface:(slot,image,mix)=>R3.r3dSetSurfaceDream(slot,image,mix),
     commitSurfaces:(mix)=>R3.r3dCommitSurfaceDream(mix),
     setSurfaceMix:(mix)=>R3.r3dSetSurfaceDreamMix(mix),

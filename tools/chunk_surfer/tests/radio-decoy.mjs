@@ -2,8 +2,8 @@ globalThis.document={title:'chunk surfer',addEventListener(){},hidden:false};
 globalThis.window={addEventListener(){}};
 globalThis.localStorage={getItem(){return null;},setItem(){},removeItem(){}};
 
-const RADIO=await import('../../../public/labs/chunk-surfer/src/game/radio.js');
-const REC=await import('../../../public/labs/chunk-surfer/src/game/recordist.js');
+const RADIO=await import('../../../src/game/radio.js');
+const REC=await import('../../../src/game/recordist.js');
 let pass=true;const ck=(n,ok,x='')=>{console.log(`${ok?'PASS':'FAIL'}  ${n}${x?'  '+x:''}`);if(!ok)pass=false;};
 
 RADIO.loadRadioState({dead:true,dropped:null});

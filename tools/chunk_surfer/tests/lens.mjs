@@ -30,7 +30,7 @@ const walk = async (k, ms) => { await p.keyboard.down(k); await wait(ms); await 
 // `lens=1` so there is a lens at all. No token is needed: setBypass never
 // opens the socket, and after it wakes the connection simply fails to a base
 // render, which is the state we are asserting about anyway.
-await p.goto('http://localhost:5173/labs/chunk-surfer/index.html?mode=story&renderer=3d&lens=1&sam=0', { waitUntil: 'domcontentloaded' });
+await p.goto('http://localhost:5173/index.html?mode=story&renderer=3d&lens=1&sam=0', { waitUntil: 'domcontentloaded' });
 await ev(() => localStorage.clear());
 await p.reload({ waitUntil: 'domcontentloaded' });
 await wait(15000);

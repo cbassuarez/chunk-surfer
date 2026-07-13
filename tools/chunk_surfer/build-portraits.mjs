@@ -9,7 +9,7 @@ import sharp from 'sharp';
 
 const ROOT=path.resolve(import.meta.dirname,'../..');
 const SRC=path.join(ROOT,'tools/chunk_surfer/portrait-sources');
-const OUT=path.join(ROOT,'public/labs/chunk-surfer/assets/portraits');
+const OUT=path.join(ROOT,'public/assets/portraits');
 const W=256,H=320,COLS=3,ROWS=2;
 const WORKS=[
   {id:437825,title:'Portrait of a Man',artist:'Titian (Tiziano Vecellio)',file:'437825.jpg',image:'https://images.metmuseum.org/CRDImages/ep/web-large/DP-23080-001.jpg',page:'https://www.metmuseum.org/art/collection/search/437825'},

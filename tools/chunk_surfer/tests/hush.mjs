@@ -1,7 +1,7 @@
 // Recorder/HUSH contract without WebGL or audio: stalled time is exact,
 // movement is allowed, and resuming is gated by the original recorder mark.
-import * as REC from '../../../public/labs/chunk-surfer/src/game/recordist.js';
-import { atRecorder } from '../../../public/labs/chunk-surfer/src/game/props.js';
+import * as REC from '../../../src/game/recordist.js';
+import { atRecorder } from '../../../src/game/props.js';
 
 let pass=true;
 const ck=(name,ok,detail='')=>{console.log(`${ok?'PASS':'FAIL'}  ${name}${detail?'  '+detail:''}`);if(!ok)pass=false;};

@@ -48,7 +48,7 @@ async function walk(sceneId, trunk = 1, limit = 400) {
   return branches;
 }
 
-await p.goto('http://localhost:5173/labs/chunk-surfer/index.html?mode=story&renderer=3d&sam=0', { waitUntil: 'domcontentloaded' });
+await p.goto('http://localhost:5173/index.html?mode=story&renderer=3d&sam=0', { waitUntil: 'domcontentloaded' });
 await ev(() => localStorage.clear());
 await p.reload({ waitUntil: 'domcontentloaded' });
 await wait(15000);

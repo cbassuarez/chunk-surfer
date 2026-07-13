@@ -23,7 +23,7 @@ const scene = () => ev(() => window.__scenes.top()?.id || null);
 const convo = () => ev(() => window.__probe.convo());
 
 // Spawn in studio B3, past the prologue. Thought trees are armed.
-await p.goto('http://localhost:5173/labs/chunk-surfer/index.html?mode=story&renderer=3d&skiptut=1&sam=0&at=15,12', { waitUntil: 'domcontentloaded' });
+await p.goto('http://localhost:5173/index.html?mode=story&renderer=3d&skiptut=1&sam=0&at=15,12', { waitUntil: 'domcontentloaded' });
 await ev(() => localStorage.clear());
 await p.reload({ waitUntil: 'domcontentloaded' });
 await wait(15000);

@@ -16,7 +16,7 @@ import path from 'node:path';
 import sharp from 'sharp';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
-const OUT = path.join(ROOT, 'public/labs/chunk-surfer/assets/surfaces');
+const OUT = path.join(ROOT, 'public/assets/surfaces');
 const DL = path.join(process.env.HOME, 'Downloads');
 // Each surface is one 512px tile; the three maps are stacked as vertical strips
 // (tile per slot) and uploaded as WebGL2 texture arrays — proper mipmaps, REPEAT

@@ -14,7 +14,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const ROOT = path.resolve(import.meta.dirname, '../../..');
-const OUT = path.join(ROOT, 'public/labs/chunk-surfer/assets/surfaces');
+const OUT = path.join(ROOT, 'public/assets/surfaces');
 const m = JSON.parse(fs.readFileSync(path.join(OUT, 'surfaces.json'), 'utf8'));
 let pass = true;
 const ck = (name, ok, detail = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? '  ' + detail : ''}`); if (!ok) pass = false; };
@@ -54,7 +54,7 @@ ck('the normal strip is a lossless PNG', m.array.normal.endsWith('.png') && dims
 const height=dims(m.array.height);
 ck('every surface has real height/displacement and the height strip is lossless',
   surfaces.every(([,s])=>s.maps?.height)&&height.kind==='png'&&height.w===512&&height.h===512*m.array.layers);
-const shader=fs.readFileSync(path.join(ROOT,'public/labs/chunk-surfer/src/render/r3d.js'),'utf8');
+const shader=fs.readFileSync(path.join(ROOT,'src/render/r3d.js'),'utf8');
 ck('height, normal and roughness all alter lighting before final colour',
   shader.includes('uSurfHeight')&&shader.includes('viewTs*(h0-.5)')&&shader.includes('nm.xy+=vec2(hx,hy)')&&shader.includes('surfaceOcclusion')&&shader.includes('surfRough'));
 

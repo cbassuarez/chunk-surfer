@@ -11,11 +11,11 @@
 //   · the building is actually connected, walking, from spawn to the chapel
 //   · every major room/corridor class emits a non-default material id
 
-import { testbed } from '../../../public/labs/chunk-surfer/src/data/floorplan/testbed.js';
-import { conservatory } from '../../../public/labs/chunk-surfer/src/data/floorplan/conservatory.js';
-import { PAGES, ROOM_CELLS, PLANT_RIG_CELL } from '../../../public/labs/chunk-surfer/src/data/conservatory-script.js';
-import * as FP from '../../../public/labs/chunk-surfer/src/world/floorplan.js';
-import { F, ZONE, MATERIAL, PLAN_SCALE } from '../../../public/labs/chunk-surfer/src/data/floorplan/legend.js';
+import { testbed } from '../../../src/data/floorplan/testbed.js';
+import { conservatory } from '../../../src/data/floorplan/conservatory.js';
+import { PAGES, ROOM_CELLS, PLANT_RIG_CELL } from '../../../src/data/conservatory-script.js';
+import * as FP from '../../../src/world/floorplan.js';
+import { F, ZONE, MATERIAL, PLAN_SCALE } from '../../../src/data/floorplan/legend.js';
 
 let pass = true;
 const ck = (n, ok, x = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${x ? '  ' + x : ''}`); if (!ok) pass = false; };

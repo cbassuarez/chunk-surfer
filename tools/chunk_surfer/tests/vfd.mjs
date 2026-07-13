@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { vfdGlyph, VFD_COLS, VFD_ROWS } from '../../../public/labs/chunk-surfer/src/render/vfd-font.js';
+import { vfdGlyph, VFD_COLS, VFD_ROWS } from '../../../src/render/vfd-font.js';
 
 const dots=(glyph)=>vfdGlyph(glyph).reduce((n,row)=>n+row.toString(2).replaceAll('0','').length,0);
 assert.equal(VFD_COLS,5);assert.equal(VFD_ROWS,7);

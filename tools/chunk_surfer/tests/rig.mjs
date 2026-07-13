@@ -28,7 +28,7 @@ const top = () => ev(() => window.__scenes.top()?.id || null);
 // ── nobody is ambushed ───────────────────────────────────────────────────────
 // The unadorned boot, with no ?skipwarn: the first thing in the world is the
 // advisory, and the microphone is ASKED FOR, out loud, with a key that means yes.
-await p.goto('http://localhost:5173/labs/chunk-surfer/index.html', { waitUntil: 'domcontentloaded' });
+await p.goto('http://localhost:5173/index.html', { waitUntil: 'domcontentloaded' });
 await ev(() => localStorage.clear());
 await p.reload({ waitUntil: 'domcontentloaded' });
 await wait(2500);
@@ -42,7 +42,7 @@ check('and answering lets you into the title', (await top()) === 'title', String
 // SOLDER. It costs you nothing you can see, which is the point: the reward for
 // doing the job properly is that nothing happens.
 const boot = async (q = '') => {
-  await p.goto(`http://localhost:5173/labs/chunk-surfer/index.html?mode=story&renderer=3d&skiptut=1&skipwarn=1&nomic=1&sam=0&at=15,12${q}`, { waitUntil: 'domcontentloaded' });
+  await p.goto(`http://localhost:5173/index.html?mode=story&renderer=3d&skiptut=1&skipwarn=1&nomic=1&sam=0&at=15,12${q}`, { waitUntil: 'domcontentloaded' });
   await ev(() => localStorage.clear());
   await p.reload({ waitUntil: 'domcontentloaded' });
   await wait(15000);

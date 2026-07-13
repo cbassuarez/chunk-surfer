@@ -9,7 +9,7 @@ import crypto from 'node:crypto';
 import { importPropMesh } from './lib/glb-import.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
-const OUT_DIR = path.join(ROOT, 'public/labs/chunk-surfer/assets');
+const OUT_DIR = path.join(ROOT, 'public/assets');
 const OUT = path.join(OUT_DIR, 'conservatory-props.glb');
 const STATS = path.join(OUT_DIR, 'conservatory-props.stats.json');
 const CREDITS = path.join(OUT_DIR, 'conservatory-props.credits.json');

@@ -1,3 +1,4 @@
+import { assetUrl } from './platform/paths.js';
 // ── Manifest (worlds → samples) ── extracted verbatim from index.html ──────
 // Add worlds here and the engine auto-builds World > Biome > Sample hierarchy.
 // { id, label, files: [{label, url}, ...] }. The engine reads worldId off each
@@ -10,15 +11,15 @@ export const TUB_ULTRACHUNK_FILES = [
 ];
 export const AMPLIFICATIONS_FILES = Array.from({length: 64}, (_, i) => {
   const n = String(i + 1).padStart(3, '0');
-  return { label: `amp-${n}`, url: `/audio/amplifications/amp_${n}.mp3` };
+  return { label: `amp-${n}`, url: assetUrl(`audio/amplifications/amp_${n}.mp3`) };
 });
 export const SOUNDNOISEMUSIC_FILES = Array.from({length: 64}, (_, i) => {
   const n = String(i + 1).padStart(3, '0');
-  return { label: `snm-${n}`, url: `/audio/soundnoisemusic/snm_${n}.mp3` };
+  return { label: `snm-${n}`, url: assetUrl(`audio/soundnoisemusic/snm_${n}.mp3`) };
 });
 export const LUX_NOVA_FILES = Array.from({length: 64}, (_, i) => {
   const n = String(i + 1).padStart(3, '0');
-  return { label: `lux-${n}`, url: `/audio/lux_nova/lux_${n}.mp3` };
+  return { label: `lux-${n}`, url: assetUrl(`audio/lux_nova/lux_${n}.mp3`) };
 });
 
 export const MANIFEST = {
@@ -28,7 +29,7 @@ export const MANIFEST = {
       label: 'main b3',
       files: Array.from({length: 64}, (_, i) => {
         const n = String(i+1).padStart(2,'0');
-        return { label: n, url: `/audio/main_b3/main_b3_${n}.mp3` };
+        return { label: n, url: assetUrl(`audio/main_b3/main_b3_${n}.mp3`) };
       })
     },
     {
@@ -45,12 +46,12 @@ export const MANIFEST = {
           ];
           return {
             label: `tub-${n}`,
-            url: `/audio/the_tub/${n}_${names[i]}.wav`
+            url: assetUrl(`audio/the_tub/${n}_${names[i]}.wav`)
           };
         }),
         ...TUB_ULTRACHUNK_FILES.map((name) => ({
           label: `tub-${name.replace('.wav', '').toLowerCase()}`,
-          url: `/audio/the_tub/${name}`
+          url: assetUrl(`audio/the_tub/${name}`)
         }))
       ]
     },

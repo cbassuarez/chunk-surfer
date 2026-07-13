@@ -10,8 +10,8 @@
 //     at the cell where the take is made.
 //   · A recorded room says so.
 
-import * as OBJ from '../../../public/labs/chunk-surfer/src/game/objectives.js';
-import { PAGES, TARGETS, ROOM_CELLS } from '../../../public/labs/chunk-surfer/src/data/conservatory-script.js';
+import * as OBJ from '../../../src/game/objectives.js';
+import { PAGES, TARGETS, ROOM_CELLS } from '../../../src/data/conservatory-script.js';
 
 let pass = true;
 const ck = (n, ok, x = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${x ? '  ' + x : ''}`); if (!ok) pass = false; };

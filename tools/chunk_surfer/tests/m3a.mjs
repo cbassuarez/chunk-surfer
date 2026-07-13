@@ -11,7 +11,7 @@ let pass=true;
 const check=(name,ok,extra='')=>{ console.log(`${ok?'PASS':'FAIL'}  ${name}${extra?'  '+extra:''}`); if(!ok) pass=false; };
 
 // ── STORY: silent world ──────────────────────────────────────────────────────
-await page.goto('http://localhost:5173/labs/chunk-surfer/index.html?mode=story&renderer=3d&plan=testbed&skiptut=1&nothink=1&at=6,7',{waitUntil:'domcontentloaded',timeout:60000});
+await page.goto('http://localhost:5173/index.html?mode=story&renderer=3d&plan=testbed&skiptut=1&nothink=1&at=6,7',{waitUntil:'domcontentloaded',timeout:60000});
 await page.evaluate(()=>localStorage.clear());
 await page.reload({waitUntil:'domcontentloaded'});
 await new Promise(r=>setTimeout(r,14000));
@@ -79,7 +79,7 @@ const f1=await page.evaluate(()=>window.__probe.floor());
 check('injury raises the noise floor', f1>f0, `${f0.toFixed(3)} -> ${f1.toFixed(3)}`);
 
 // ── SURF: the lab is untouched ───────────────────────────────────────────────
-await page.goto('http://localhost:5173/labs/chunk-surfer/index.html?mode=surf&renderer=3d',{waitUntil:'domcontentloaded',timeout:60000});
+await page.goto('http://localhost:5173/index.html?mode=surf&renderer=3d',{waitUntil:'domcontentloaded',timeout:60000});
 await new Promise(r=>setTimeout(r,14000));
 for(let i=0;i<6;i++) await key('ArrowUp',200);
 await new Promise(r=>setTimeout(r,1500));

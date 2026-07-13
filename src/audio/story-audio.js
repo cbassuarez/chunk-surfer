@@ -1,3 +1,5 @@
+import { assetUrl } from '../platform/paths.js';
+
 // Story-only beds.
 //
 // Cues are loud by design. These are not cues: the title song is a low bed
@@ -5,13 +7,13 @@
 // that is active only while text is actually being revealed.
 
 export const STORY_AUDIO = {
-  title: '/labs/chunk-surfer/audio/title_song.mp3',
-  typing: '/labs/chunk-surfer/audio/typing.mp3',
-  booth: '/labs/chunk-surfer/audio/outside_room_tone.mp3',
-  rain: '/labs/chunk-surfer/audio/rain.mp3',
+  title: assetUrl('audio/game/title_song.mp3'),
+  typing: assetUrl('audio/game/typing.mp3'),
+  booth: assetUrl('audio/game/outside_room_tone.mp3'),
+  rain: assetUrl('audio/game/rain.mp3'),
   // Tape hiss and the transport running, recorded off a real machine. It plays
   // under the cryptic take, and it is what you hear immediately after a rewind.
-  tape: '/labs/chunk-surfer/audio/tape_play.mp3',
+  tape: assetUrl('audio/game/tape_play.mp3'),
 };
 
 // THE MIX, top to bottom. Decided in one place, and never again:

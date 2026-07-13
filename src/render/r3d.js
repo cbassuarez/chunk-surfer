@@ -14,6 +14,7 @@
 // Game logic stays untouched: movement is still discrete grid steps; this
 // module only owns facing (N/E/S/W) and the camera.
 
+import { assetUrl } from '../platform/paths.js';
 import { CELL, EYE as EYE_METERS, MATERIAL, PLAN_SCALE } from '../data/floorplan/legend.js';
 import * as P3 from './props3d.js';
 
@@ -859,16 +860,16 @@ export function r3dInit(mapEl) {
   rdFboB = makeFbo(rdTexB);
   fogTexture = makeTex(FOG_TEX, FOG_TEX, new Uint8Array(FOG_TEX * FOG_TEX).fill(255), 'r8');
   resize();
-  P3.loadPropPack(new URL('../../assets/conservatory-props.glb', import.meta.url))
-    .then(()=>P3.addPropPack(new URL('../../assets/metal-door.glb',import.meta.url)))
+  P3.loadPropPack(assetUrl('assets/conservatory-props.glb'))
+    .then(()=>P3.addPropPack(assetUrl('assets/metal-door.glb')))
     .catch((err)=>console.warn('prop pack unavailable',err));
-  P3.loadPortraitAtlas(new URL('../../assets/portraits/portrait-atlas.webp',import.meta.url))
+  P3.loadPortraitAtlas(assetUrl('assets/portraits/portrait-atlas.webp'))
     .catch((err)=>console.warn('portrait atlas unavailable',err));
   Promise.all([
-    loadTextureArray(new URL('../../assets/surfaces/surface-albedo.jpg',import.meta.url),{srgb:true}),
-    loadTextureArray(new URL('../../assets/surfaces/surface-normal.png',import.meta.url)),
-    loadTextureArray(new URL('../../assets/surfaces/surface-rough.jpg',import.meta.url)),
-    loadTextureArray(new URL('../../assets/surfaces/surface-height.png',import.meta.url)),
+    loadTextureArray(assetUrl('assets/surfaces/surface-albedo.jpg'),{srgb:true}),
+    loadTextureArray(assetUrl('assets/surfaces/surface-normal.png')),
+    loadTextureArray(assetUrl('assets/surfaces/surface-rough.jpg')),
+    loadTextureArray(assetUrl('assets/surfaces/surface-height.png')),
   ]).then(([a,n,r,h])=>{surfAlbedoTex=a;surfNormalTex=n;surfRoughTex=r;surfHeightTex=h;surfaceTexture=a;})
     .catch((err)=>console.warn('surface arrays unavailable; using native material fallback',err));
   window.addEventListener('resize', resize);

@@ -17,7 +17,7 @@
 //     recorder was right. What decays is the reading of it.
 
 import puppeteer from 'puppeteer-core';
-import { takeStamp } from '../../../public/labs/chunk-surfer/src/game/clock.js';
+import { takeStamp } from '../../../src/game/clock.js';
 
 const b = await puppeteer.launch({ executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: 'new', args: ['--use-angle=metal', '--autoplay-policy=no-user-gesture-required'] });
 const p = await b.newPage(); await p.setViewport({ width: 1100, height: 700 });
@@ -38,7 +38,7 @@ check('the colon survives, because a colon is not a number', takeStamp(4).includ
 
 // ── in the plant room ───────────────────────────────────────────────────────
 // The rig is at 38,12. Spawn beside it: nothing brought us here.
-await p.goto('http://localhost:5173/labs/chunk-surfer/index.html?mode=story&renderer=3d&skiptut=1&sam=0&at=36,12', { waitUntil: 'domcontentloaded' });
+await p.goto('http://localhost:5173/index.html?mode=story&renderer=3d&skiptut=1&sam=0&at=36,12', { waitUntil: 'domcontentloaded' });
 await ev(() => localStorage.clear());
 await p.reload({ waitUntil: 'domcontentloaded' });
 await wait(15000);
@@ -80,7 +80,7 @@ check('...and you may take it, and it weighs something', (await lore()).interfac
 // Record studio B3 fast, play it back, and watch the number that only goes up.
 await ev(() => window.__probe.tuneRoomTone({ takeSeconds: 2 }));
 await ev(() => { window.__probe.setReduceDread(false); });
-await p.goto('http://localhost:5173/labs/chunk-surfer/index.html?mode=story&renderer=3d&skiptut=1&nothink=1&sam=0&at=15,12', { waitUntil: 'domcontentloaded' });
+await p.goto('http://localhost:5173/index.html?mode=story&renderer=3d&skiptut=1&nothink=1&sam=0&at=15,12', { waitUntil: 'domcontentloaded' });
 await wait(15000);
 n = 0; while (await ev(() => window.__scenes.depth()) > 0 && n++ < 20) await key('Enter', 110);
 check('the interface survives a reload', (await lore()).interface);

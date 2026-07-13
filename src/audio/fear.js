@@ -1,3 +1,4 @@
+import { assetUrl } from '../platform/paths.js';
 // Fear: the heartbeat you cannot slow, and the hush you keep almost hearing.
 //
 // One 0..1 level drives both. The heartbeat is a real loop whose RATE and gain
@@ -10,8 +11,8 @@
 // never twice the same sound.
 
 const FILES = {
-  heart: '/labs/chunk-surfer/audio/heartbeat.mp3',
-  hush: '/labs/chunk-surfer/audio/hush.mp3',
+  heart: assetUrl('audio/game/heartbeat.mp3'),
+  hush: assetUrl('audio/game/hush.mp3'),
 };
 
 let ctx = null, bus = null;

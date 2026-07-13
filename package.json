@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "test": "node test/run-all.mjs",
     "test:acoustic": "node scripts/check-acoustic-catalogue.mjs",
-    "lens:local": "tools/diffusion_server/run-local.sh",
+    "lens:local": "tools/chunk_surfer/diffusion_server/run-local.sh",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build"

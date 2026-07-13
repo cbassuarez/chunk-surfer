@@ -6,11 +6,11 @@ const classes=new Set();const focus={count:0};
 globalThis.document={body:{classList:{add:(v)=>classes.add(v),remove:(v)=>classes.delete(v)}},querySelector:()=>({setAttribute(){},focus(){focus.count++;}})};
 globalThis.localStorage={getItem:()=>null,setItem(){},removeItem(){}};
 
-const scenes=await import('../../../public/labs/chunk-surfer/src/game/scenes.js');
-const {makeTitleScene}=await import('../../../public/labs/chunk-surfer/src/game/title.js');
-const {makeSettingsScene}=await import('../../../public/labs/chunk-surfer/src/game/settings.js');
-const {makeWorldTitleScene}=await import('../../../public/labs/chunk-surfer/src/game/coldopen.js');
-const {makeBagScene}=await import('../../../public/labs/chunk-surfer/src/game/bag.js');
+const scenes=await import('../../../src/game/scenes.js');
+const {makeTitleScene}=await import('../../../src/game/title.js');
+const {makeSettingsScene}=await import('../../../src/game/settings.js');
+const {makeWorldTitleScene}=await import('../../../src/game/coldopen.js');
+const {makeBagScene}=await import('../../../src/game/bag.js');
 let pass=true;const ck=(name,ok)=>{console.log(`${ok?'PASS':'FAIL'}  ${name}`);if(!ok)pass=false;};
 
 let selected='';
@@ -39,7 +39,7 @@ scenes.key({key:'Enter',code:'Enter'});
 ck('bag gear rows expose the confirmed radio drop action',dropped===1);
 scenes.pop();
 
-const main=fs.readFileSync(new URL('../../../public/labs/chunk-surfer/src/main.js',import.meta.url),'utf8');
+const main=fs.readFileSync(new URL('../../../src/main.js',import.meta.url),'utf8');
 const count=(needle)=>(main.match(new RegExp(`function ${needle}\\(`,'g'))||[]).length;
 ck('refactor retains the story and recorder authorities',
   ['fireCue','think','converse','recordAction','roll','stopTake'].every((name)=>count(name)===1));

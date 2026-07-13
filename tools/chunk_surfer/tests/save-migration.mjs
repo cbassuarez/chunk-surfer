@@ -6,7 +6,7 @@
 // runtime cells, and the progression layer stores the active night as v3.
 // Cross-run meta is migrated to the v2 progression profile.
 
-import { PLAN_SCALE } from '../../../public/labs/chunk-surfer/src/data/floorplan/legend.js';
+import { PLAN_SCALE } from '../../../src/data/floorplan/legend.js';
 
 let pass = true;
 const ck = (n, ok, x = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${x ? '  ' + x : ''}`); if (!ok) pass = false; };
@@ -39,7 +39,7 @@ store.set('chunk-surfer:meta:v1', JSON.stringify({
   lastSeenAt: 123,
 }));
 
-const SAVE = await import(`../../../public/labs/chunk-surfer/src/game/save.js?migration=${Date.now()}`);
+const SAVE = await import(`../../../src/game/save.js?migration=${Date.now()}`);
 ck('legacy save is visible before migration', SAVE.hasSave());
 
 const { save, meta } = SAVE.saveLoad();

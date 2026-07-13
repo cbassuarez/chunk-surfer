@@ -1,8 +1,8 @@
 import {
   MONITOR_THRESHOLDS, monitorInject, monitorReset, monitorSnapshot,
   monitorSetAuxInput, monitorSnapshotForRms,
-} from '../../../public/labs/chunk-surfer/src/audio/monitor.js';
-import { micIgnoreSpoilFor, micMaySpoil, micStop, micTest } from '../../../public/labs/chunk-surfer/src/game/mic.js';
+} from '../../../src/audio/monitor.js';
+import { micIgnoreSpoilFor, micMaySpoil, micStop, micTest } from '../../../src/game/mic.js';
 
 const ck = (name, ok, got='') => {
   if (!ok) throw new Error(`${name}${got ? `: ${got}` : ''}`);

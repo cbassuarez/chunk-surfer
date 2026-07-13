@@ -3,15 +3,15 @@ import path from 'node:path';
 globalThis.document={body:{classList:{add(){},remove(){}}},querySelector:()=>null};
 globalThis.localStorage={getItem:()=>null,setItem(){},removeItem(){}};
 
-const scenes=await import('../../../public/labs/chunk-surfer/src/game/scenes.js');
-const {makeWarningScene}=await import('../../../public/labs/chunk-surfer/src/game/warning.js');
-const {makeBagScene}=await import('../../../public/labs/chunk-surfer/src/game/bag.js');
-const {normalizeEquipment}=await import('../../../public/labs/chunk-surfer/src/game/bag-model.js');
+const scenes=await import('../../../src/game/scenes.js');
+const {makeWarningScene}=await import('../../../src/game/warning.js');
+const {makeBagScene}=await import('../../../src/game/bag.js');
+const {normalizeEquipment}=await import('../../../src/game/bag-model.js');
 const ROOT=path.resolve(import.meta.dirname,'../../..');
 const read=(p)=>fs.readFileSync(path.join(ROOT,p),'utf8');
-const main=read('public/labs/chunk-surfer/src/main.js'),warning=read('public/labs/chunk-surfer/src/game/warning.js');
-const settings=read('public/labs/chunk-surfer/src/game/settings.js'),minimap=read('public/labs/chunk-surfer/src/render/minimap.js');
-const transcript=read('public/labs/chunk-surfer/src/render/transcript.js');
+const main=read('src/main.js'),warning=read('src/game/warning.js');
+const settings=read('src/game/settings.js'),minimap=read('src/render/minimap.js');
+const transcript=read('src/render/transcript.js');
 let pass=true;const ck=(n,ok,d='')=>{console.log(`${ok?'PASS':'FAIL'}  ${n}${d?'  '+d:''}`);if(!ok)pass=false;};
 
 let yes=0,no=0;

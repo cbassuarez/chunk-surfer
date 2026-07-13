@@ -11,10 +11,10 @@
 //   3. it is never observed: not in the light, not in the frustum, not in a
 //      cell whose noise has not decayed
 
-import { testbed } from '../../../public/labs/chunk-surfer/src/data/floorplan/testbed.js';
-import * as FP from '../../../public/labs/chunk-surfer/src/world/floorplan.js';
-import * as MUT from '../../../public/labs/chunk-surfer/src/world/mutate.js';
-import { F, ZONE } from '../../../public/labs/chunk-surfer/src/data/floorplan/legend.js';
+import { testbed } from '../../../src/data/floorplan/testbed.js';
+import * as FP from '../../../src/world/floorplan.js';
+import * as MUT from '../../../src/world/mutate.js';
+import { F, ZONE } from '../../../src/data/floorplan/legend.js';
 
 let pass = true;
 const ck = (n, ok, x = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${x ? '  ' + x : ''}`); if (!ok) pass = false; };

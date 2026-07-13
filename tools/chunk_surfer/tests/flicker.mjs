@@ -6,7 +6,7 @@ if(!health?.ready){console.log('SKIP  local lens is not running and warm (`npm r
 
 const browser=await puppeteer.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:'new',args:['--use-angle=metal','--mute-audio']});
 const page=await browser.newPage();await page.setViewport({width:820,height:560});
-await page.goto('http://localhost:5173/labs/chunk-surfer/index.html?renderer=3d&mode=surf&lens=1&at=4,5&tuner=0',{waitUntil:'domcontentloaded'});
+await page.goto('http://localhost:5173/index.html?renderer=3d&mode=surf&lens=1&at=4,5&tuner=0',{waitUntil:'domcontentloaded'});
 let state=null;
 for(let i=0;i<90;i++){await new Promise((r)=>setTimeout(r,1000));state=await page.evaluate(()=>({lens:{...window.__diffusion?.stats},surfaces:window.__probe?.surfaceDream?.()}));if(state?.lens?.state==='ready')break;}
 const check=(name,ok,detail='')=>{console.log(`${ok?'PASS':'FAIL'}  ${name}${detail?'  '+detail:''}`);if(!ok)process.exitCode=1;};

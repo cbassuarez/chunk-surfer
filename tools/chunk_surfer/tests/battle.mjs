@@ -19,7 +19,7 @@ const ev=(fn,...args)=>p.evaluate(fn,...args);
 const scene=()=>ev(()=>window.__probe?.scene?.()||null);
 const state=()=>ev(()=>window.__probe?.battleState?.()||null);
 const gates=()=>ev(()=>window.__probe?.encounters?.()||null);
-const url='http://localhost:5173/labs/chunk-surfer/index.html?mode=story&renderer=3d&skiptut=1&nothink=1&sam=0&at=85,30';
+const url='http://localhost:5173/index.html?mode=story&renderer=3d&skiptut=1&nothink=1&sam=0&at=85,30';
 
 async function dismissScenes(limit=30){
   for(let i=0;i<limit&&(await ev(()=>window.__scenes?.depth?.()||0))>0;i++)await key('Enter',110);
