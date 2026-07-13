@@ -19,6 +19,7 @@ const tests = [
   'test/progression-runtime.spec.mjs',
   'test/progression-migration.spec.mjs',
   'test/platform-sync.spec.mjs',
+  'test/storage-platform.spec.mjs',
 ];
 
 for (const file of tests) {

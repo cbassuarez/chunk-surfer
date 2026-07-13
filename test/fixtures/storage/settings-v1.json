@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "gameVersion": "TEST",
+  "createdAt": "2026-07-12T00:00:00.000Z",
+  "updatedAt": "2026-07-12T00:00:00.000Z",
+  "data": { "volume": 0.4, "renderer": "3d", "mic": "off" }
+}
