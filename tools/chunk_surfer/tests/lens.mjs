@@ -62,7 +62,8 @@ for (let i = 0; i < 400 && (await scene()) === 'cold-open'; i++) {
   else await p.keyboard.press(' ');
   await wait(80);
 }
-n = 0; while ((await scene()) === 'world-title' && n++ < 8) { await p.keyboard.press(' '); await wait(200); }
+// The world-title is an authored ~12s cinematic and is un-skippable; wait it out.
+n = 0; while ((await scene()) === 'world-title' && n++ < 30) await wait(600);
 check('asleep through the title', await bypassed());
 n = 0; while ((await scene()) === 'after-title' && n++ < 60) { await p.keyboard.press(' '); await wait(130); }
 await wait(700);

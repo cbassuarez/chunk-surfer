@@ -106,7 +106,8 @@ const cp = FP.compile(conservatory.levels, { width: conservatory.width, height: 
 for (const d of conservatory.doors || []) FP.setDoorKey(d.x, d.y, d.key);
 FP.setSpawn(conservatory.spawn.x, conservatory.spawn.y);
 
-const KEYRING = new Set(['master']);      // what the client gave you. Note what is absent.
+const STANDARD_KEYS = new Set(['master']);
+const KEYRING = new Set(['master','chapel']); // after the front-of-house key check
 const PROBES = {
   studio:     [15, 12], plant:  [35, 10], lift:  [42, 9],
   dock:       [65, 9],  foyer:  [83, 10], hall:  [102, 15],
@@ -131,15 +132,59 @@ const walked = new Set([key(spawn)]);
 
 ck('the spawn is not inside rock', !!FP.cellAt(spawn.x, spawn.y));
 const stranded = Object.entries(PROBES).filter(([n]) => !walked.has(key(probePoint(n)))).map(([n]) => n);
-ck('every room is reachable from the dock, on the standard keyring',
+ck('every room is reachable from the dock after acquiring C-17',
    stranded.length === 0, stranded.length ? `stranded: ${stranded.join(', ')}` : `${walked.size} cells`);
 
 // The two deliberate refusals. Each must still refuse, and the room behind it
 // must still be reachable another way — proved by the walk above.
-const brickedHall = FP.canStep(...Object.values(rc(92, 10)), ...Object.values(rc(92, 11)), { keys: KEYRING });
+const brickedHall = FP.canStep(...Object.values(rc(96, 13)), ...Object.values(rc(97, 13)), { keys: KEYRING });
 ck('the concert hall door is still bricked up', !brickedHall.ok && brickedHall.why === 'bricked', JSON.stringify(brickedHall));
-const lockedChapel = FP.canStep(...Object.values(rc(87, 54)), ...Object.values(rc(87, 55)), { keys: KEYRING });
-ck('the chapel is still locked against your keyring', !lockedChapel.ok && lockedChapel.why === 'locked', JSON.stringify(lockedChapel));
+const lockedChapel = FP.canStep(...Object.values(rc(92, 57)), ...Object.values(rc(92, 58)), { keys: STANDARD_KEYS });
+const openedChapel = FP.canStep(...Object.values(rc(92, 57)), ...Object.values(rc(92, 58)), { keys: KEYRING });
+ck('the chapel is locked until C-17 is added to the ring', !lockedChapel.ok && lockedChapel.why === 'locked' && openedChapel.ok, JSON.stringify(lockedChapel));
+const boxOfficeLocked=FP.canStep(...Object.values(rc(88,20)),...Object.values(rc(89,20)),{keys:new Set()});
+const boxOfficeMaster=FP.canStep(...Object.values(rc(88,20)),...Object.values(rc(89,20)),{keys:STANDARD_KEYS});
+ck('the box-office staff leaf answers only to the building master',!boxOfficeLocked.ok&&boxOfficeLocked.why==='locked'&&boxOfficeMaster.ok,JSON.stringify(boxOfficeLocked));
+
+// Test the compiler contract globally, not a couple of hand-picked doors.
+// Every generated portal volume needs at least 3 m in both axes: one axis is
+// aperture width, the other is the clear throat through and beyond the wall.
+const thresholdVolumes=cp.doorVolumes.map(v=>{let blocked=0;for(let yy=v.minY;yy<=v.maxY;yy++)for(let xx=v.minX;xx<=v.maxX;xx++)if(FP.isSolid(xx,yy))blocked++;return{...v,blocked};});
+const shortThresholds=thresholdVolumes.filter(v=>v.maxX-v.minX+1<3*PLAN_SCALE||v.maxY-v.minY+1<3*PLAN_SCALE||v.blocked);
+ck('every threshold in the building is one clear 3m by 3m portal volume',shortThresholds.length===0,JSON.stringify(shortThresholds));
+let doorCells=0;for(let y=0;y<cp.h;y++)for(let x=0;x<cp.w;x++)if(FP.hasFlag(x,y,F.DOOR))doorCells++;
+ck('threshold normalization cannot cascade through the building',doorCells<1000,`${doorCells} door-plane cells in ${thresholdVolumes.length} volumes`);
+const chapelSeed=rc(92,58,{center:false}),chapelVolume=cp.doorVolumes.find(v=>chapelSeed.x+1>=v.minX&&chapelSeed.x+1<=v.maxX&&chapelSeed.y+1>=v.minY&&chapelSeed.y+1<=v.maxY&&v.mask!==F.BRICKED);
+let chapelUnkeyed=[];
+if(chapelVolume)for(let y=chapelVolume.minY;y<=chapelVolume.maxY;y++)for(let x=chapelVolume.minX;x<=chapelVolume.maxX;x++)if(FP.hasFlag(x,y,F.DOOR)&&!FP.hasFlag(x,y,F.BRICKED)&&FP.doorKeyAt(x,y)!=='chapel')chapelUnkeyed.push(`${x},${y}`);
+ck('a widened keyed threshold is locked across its entire aperture',!!chapelVolume&&chapelUnkeyed.length===0,chapelUnkeyed.slice(0,8).join(' '));
+
+const atriumView=FP.physicalRenderPlanFor(...Object.values(rc(83,10)));
+const hallPhysical=FP.logicalToPhysical(...Object.values(rc(99,24)));
+ck('the hall opening is visible from the atrium render slice',!atriumView.solid[Math.floor(hallPhysical.z)*atriumView.w+Math.floor(hallPhysical.x)]);
+const hallView=FP.physicalRenderPlanFor(...Object.values(rc(102,15)));
+const atriumPhysical=FP.logicalToPhysical(...Object.values(rc(96,24)));
+ck('the atrium opening is visible from the hall render slice',!hallView.solid[Math.floor(atriumPhysical.z)*hallView.w+Math.floor(atriumPhysical.x)]);
+
+const stairView=FP.physicalRenderPlanFor(...Object.values(rc(60,41)));
+let hiddenStair=[];
+for(let ay=41;ay<=52;ay++){
+  const lp=rc(60,ay),pp=FP.logicalToPhysical(lp.x,lp.y),pi=Math.floor(pp.z)*stairView.w+Math.floor(pp.x);
+  if(stairView.solid[pi])hiddenStair.push(ay);
+}
+ck('a stair renders as one continuous run with no transition slabs',hiddenStair.length===0,hiddenStair.join(','));
+const upperLanding=FP.logicalToPhysical(...Object.values(rc(60,53))),upperLandingIndex=Math.floor(upperLanding.z)*stairView.w+Math.floor(upperLanding.x);
+ck('the upper landing is already open from the foot of its stair',!stairView.solid[upperLandingIndex],`${upperLanding.x},${upperLanding.z}`);
+const basementView=FP.physicalRenderPlanFor(...Object.values(rc(57,22))),basementLanding=FP.logicalToPhysical(...Object.values(rc(46,22))),basementLandingIndex=Math.floor(basementLanding.z)*basementView.w+Math.floor(basementLanding.x);
+ck('the basement landing is already open from the foot of its stair',!basementView.solid[basementLandingIndex],`${basementLanding.x},${basementLanding.z}`);
+const mainStairPortal=cp.stairPortals.find(p=>p.group0==='ground'&&p.group1==='upper'),basementStairPortal=cp.stairPortals.find(p=>p.group0==='ground'&&p.group1==='basement');
+ck('stairs terminate on their physical destination floors',!!mainStairPortal&&!!basementStairPortal,JSON.stringify(cp.stairPortals.slice(0,3)));
+
+const partyWalls=[59,66,73,80];
+ck('practice rooms have continuous party walls',partyWalls.every((y)=>FP.isSolid(...Object.values(rc(60,y)))&&FP.isSolid(...Object.values(rc(72,y)))&&!FP.isSolid(...Object.values(rc(66,y)))));
+ck('practice wing is a double-loaded corridor, not an open floor',
+  [55,62,69,76].every((y)=>!FP.isSolid(...Object.values(rc(64,y)))&&!FP.isSolid(...Object.values(rc(68,y))))
+  && [53,58,60,65,67,72,74,79].every((y)=>FP.isSolid(...Object.values(rc(64,y)))&&FP.isSolid(...Object.values(rc(68,y)))));
 
 // The levels are really at their heights, not flattened onto base 0.
 const lv = (n, pnt, want) => {
@@ -150,6 +195,14 @@ lv('the sub-basement', probePoint('studio'), -4.0);
 lv('the ground', probePoint('foyer'), 0);
 lv('the upper', probePoint('chapel'), 4.8);
 lv('the drained pool', probePoint('pool'), -1.6);
+
+let tallAtrium=0;const heights=new Set();
+for(let y=0;y<cp.h;y++)for(let x=0;x<cp.w;x++){
+  const c=FP.cellAt(x,y);if(!c)continue;const clear=Math.round((c.ceil-c.floor)*10)/10;heights.add(clear);
+  if(c.zone===ZONE.foyer&&clear>=10)tallAtrium++;
+}
+ck('front circulation is a real open atrium, not another corridor',tallAtrium>=600,`${(tallAtrium/4).toFixed(0)} m² tall foyer`);
+ck('the building uses a legible hierarchy of ceiling heights',heights.size>=8,`${heights.size} distinct clearances`);
 
 // Materials are a second map, not flag bits. The big zones need distinct
 // signatures or the renderer cannot make the building legible.
@@ -185,11 +238,11 @@ ck('no riser anywhere in the building is a ladder', worstRiser <= FP.STEP_UP + 1
    `worst = ${worstRiser.toFixed(3)}m (max ${FP.STEP_UP})  at ${worstPair}`);
 
 // The recordist cannot jump and cannot fall. The pool steps are deliberate.
-const overTheEdge = FP.canStep(...Object.values(rc(83, 31)), ...Object.values(rc(83, 32)), { keys: KEYRING });
+const overTheEdge = FP.canStep(...Object.values(rc(82, 34)), ...Object.values(rc(82, 35)), { keys: KEYRING });
 ck('you cannot walk off the edge of the drained pool', !overTheEdge.ok && overTheEdge.why === 'too high', JSON.stringify(overTheEdge));
-ck('the pool steps are the way down', FP.canStep(...Object.values(rc(84, 31)), ...Object.values(rc(84, 32)), { keys: KEYRING }).ok);
+ck('the pool steps are the way down', FP.canStep(...Object.values(rc(84, 34)), ...Object.values(rc(84, 35)), { keys: KEYRING }).ok);
 ck('...and the only way down', [80, 81, 82, 83, 87, 88, 89, 90]
-  .every((x) => !FP.canStep(...Object.values(rc(x, 31)), ...Object.values(rc(x, 32)), { keys: KEYRING }).ok));
+  .every((x) => !FP.canStep(...Object.values(rc(x, 34)), ...Object.values(rc(x, 35)), { keys: KEYRING }).ok));
 
 let lowRoom = 0;
 for (const k of walked) {
@@ -231,15 +284,24 @@ for (let i = 0; i < cp.w * cp.h; i++) {
   if (z !== ZONE.none && z !== ZONE.stair && (cp.flags[i] & F.MUTABLE)) croomMutable++;
 }
 ck('no room in the conservatory is mutable', croomMutable === 0, `${croomMutable} violations`);
+const ownership=FP.ownershipData();
+ck('replacement public rooms own their final cells',
+  cp.owner[rc(102,15).y*cp.w+rc(102,15).x]==='hall_orchestra'
+  && cp.owner[rc(85,30).y*cp.w+rc(85,30).x]==='natatorium'
+  && cp.owner[rc(90,66).y*cp.w+rc(90,66).x]==='chapel_nave',
+  `${ownership.conflicts.length} explicit replacement writes`);
 
 const volume=FP.physicalSpanData();
 ck('the physical compiler supports the three hall air spans',volume.maxSpans>=3,`max spans=${volume.maxSpans}`);
-const invalidOverlaps=volume.overlaps.filter((o)=>{
-  if(o.a.spaceId==='basement'||o.b.spaceId==='basement')return false; // lift/shaft is an intentional vertical void
-  if((o.a.flags|o.b.flags)&(F.STAIR|F.SKY))return false;
-  return o.a.renderGroup===o.b.renderGroup;
-});
-ck('walkable hall spans do not overlap',invalidOverlaps.length===0,`${invalidOverlaps.length} overlaps`);
+ck('physical spans do not intersect, including galleria stair flights',volume.overlaps.length===0,`${volume.overlaps.length} overlaps`);
+let badSeams=[];
+for(let y=0;y<cp.h;y++)for(let x=0;x<cp.w;x++){
+  const to=FP.connectorDestination(x,y);if(!to)continue;
+  const a=FP.logicalToPhysical(x,y),b=FP.logicalToPhysical(to.x,to.y);
+  const planar=Math.hypot(a.x-b.x,a.z-b.z),vertical=Math.abs(a.y-b.y);
+  if(planar>1.01||vertical>FP.STEP_UP+1e-6)badSeams.push(`${x},${y}->${to.x},${to.y} (${planar.toFixed(2)}c/${vertical.toFixed(2)}m)`);
+}
+ck('level seams preserve physical position and walking height',badSeams.length===0,badSeams.join(' '));
 const orchestra=FP.logicalToPhysical(...Object.values(rc(102,15))),lower=FP.logicalToPhysical(...Object.values(rc(1,67))),upper=FP.logicalToPhysical(...Object.values(rc(28,114)));
 ck('orchestra and both balconies occupy one Euclidean hall footprint',orchestra.renderGroup==='hall'&&lower.renderGroup==='hall'&&upper.renderGroup==='hall'&&lower.y===4&&upper.y===7.5,`floors ${orchestra.y}/${lower.y}/${upper.y}`);
 ck('orchestra, lower balcony and upper balcony are mutually reachable',reachable(rc(102,15),rc(1,67),KEYRING)&&reachable(rc(1,67),rc(28,114),KEYRING)&&reachable(rc(28,114),rc(102,15),KEYRING));

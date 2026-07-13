@@ -16,9 +16,38 @@
 
 import { ROOM_TONE, NOISE } from '../config.js';
 
+let difficultyRules = {
+  spoilNoiseScale: 1,
+  minorNoise: 'spoil',
+  pauseSeconds: 0,
+  torchDrainScale: 1,
+};
+
+export function configureDifficulty(next = {}) {
+  difficultyRules = { ...difficultyRules, ...next };
+}
+
+export function recordistDifficulty() { return { ...difficultyRules }; }
+
+function spoilThreshold() {
+  return ROOM_TONE.spoilNoise * Math.max(0.25, Number(difficultyRules.spoilNoiseScale) || 1);
+}
+
+function handleRecordingNoise(level, reason) {
+  if (state.phase !== 'recording' || state.stalled) return;
+  const threshold = spoilThreshold();
+  if (level <= threshold) return;
+  if (difficultyRules.minorNoise === 'pause' && level <= threshold * 1.35) {
+    state.assistPause = Math.max(state.assistPause, Number(difficultyRules.pauseSeconds) || 0.7);
+    return;
+  }
+  spoil(reason);
+}
+
 const state = {
-  light: false,         // you arrive in the dark. Turning it on costs nothing
-                        // but your safety.
+  light: false,         // you arrive in the dark. Turning it on costs your safety
+                        // and, now, your battery. Light attracts, and light runs out.
+  battery: 1,           // 0..1. Drains only while it is actually burning.
   phase: 'idle',        // 'idle' | 'listening' | 'recording'
   takeElapsed: 0,       // seconds of unbroken quiet
   stalled: false,       // an instrument woke: the take is paused, not running,
@@ -27,9 +56,11 @@ const state = {
   spoilReason: '',
   injuries: 0,          // permanent within a run; each one makes you louder
   noise: 0,             // current, decaying
+  worldNoise: 0,        // remote sources the presence hears but this mic does not
   lastNoiseAt: { x: 0, y: 0, t: 0 },   // where the presence goes looking
   slow: false,          // Shift held
   takes: [],            // completed room ids
+  assistPause: 0,       // Story mode can hold the clock for small handling noise
 };
 
 export function recState() { return state; }
@@ -41,14 +72,45 @@ export function lightOn() { return state.light; }
 // Noise floor rises with injury and never falls back. You get worse.
 export function noiseFloor() { return state.injuries * NOISE.perInjury; }
 export function currentNoise() { return state.noise; }
+export function currentWorldNoise() { return Math.max(state.noise, state.worldNoise); }
 
 // Reaching for the light mid-take is allowed, and it ruins the take. Every
-// rule in this game is a price, never a locked door.
+// rule in this game is a price, never a locked door — except a flat battery,
+// which is not a rule and does not care what you have decided.
 export function toggleLight() {
+  if (!state.light && state.battery <= 0) return false;      // nothing to turn on
   state.light = !state.light;
   if (state.phase === 'recording' && state.light) spoil('you reached for the light');
   return state.light;
 }
+
+// Light attracts, and light runs out. The torch burns only while it is burning:
+// a man who works in the dark keeps his battery, and keeps nothing else.
+// Twelve minutes of burning, across a night that takes an hour and a half. It is
+// not a resource that runs out early — you will never be groping around the first
+// room in the dark because a bar emptied. It is a resource you have to SPEND: a
+// man who leaves it on to cross a corridor he already knows arrives at the chapel
+// with nothing, and a man who works dark, the way he told the guard he does,
+// arrives with light in hand for the one place he will actually want it.
+const TORCH_SECONDS = 720;
+export function drainLight(dt) {
+  if (!state.light || state.battery <= 0) return false;
+  state.battery = Math.max(0, state.battery - (dt * Math.max(0.05, Number(difficultyRules.torchDrainScale) || 1)) / TORCH_SECONDS);
+  if (state.battery <= 0) { state.light = false; return true; }   // it just died
+  return false;
+}
+// Where the light starts telling you it is going. A torch does not simply stop;
+// it browns out, and you get to watch it decide.
+export function torchLow() { return state.light && state.battery > 0 && state.battery <= 0.22; }
+export function batteryLevel() { return state.battery; }
+// Measured in torch-fulls, and you can carry more than one. This matters: the
+// torch leaves the flat FULL, so if the ceiling were 1 then the two good cells in
+// the dead man's tray would be worth precisely nothing, and the whole trade would
+// be a lie. There are no other cells in the building. These are the only spares
+// that exist, and they cost you the way out.
+const BATTERY_MAX = 2;
+export function addBattery(v) { state.battery = Math.max(0, Math.min(BATTERY_MAX, state.battery + v)); }
+export function killTorch() { state.light = false; state.battery = 0; }
 
 // A step emits noise at the cell you stepped from. That cell is what the
 // presence investigates — not you. You are only ever where you were.
@@ -56,16 +118,18 @@ export function emitStepNoise(x, y) {
   const level = (state.slow ? NOISE.slow : NOISE.walk) + noiseFloor();
   state.noise = Math.max(state.noise, level);
   state.lastNoiseAt = { x, y, t: performance.now() };
-  if (state.phase === 'recording' && !state.stalled && level > ROOM_TONE.spoilNoise) spoil('you moved');
+  handleRecordingNoise(level, 'you moved');
   return level;
 }
 
 // Anything else that makes a sound in the world: a dropped page, a door, the
 // presence itself. Spoils a take the same way your own footfall would.
-export function emitNoise(level, x, y, reason = 'something moved') {
-  state.noise = Math.max(state.noise, level + noiseFloor());
+export function emitNoise(level, x, y, reason = 'something moved', { spoils = true } = {}) {
+  const heard = level + noiseFloor();
+  if (spoils) state.noise = Math.max(state.noise, heard);
+  else state.worldNoise = Math.max(state.worldNoise, heard);
   if (x != null) state.lastNoiseAt = { x, y, t: performance.now() };
-  if (state.phase === 'recording' && !state.stalled && state.noise > ROOM_TONE.spoilNoise) spoil(reason);
+  if (spoils) handleRecordingNoise(state.noise, reason);
 }
 
 // A discrete burst that STACKS on whatever noise is already in the air, rather
@@ -76,11 +140,12 @@ export function emitNoise(level, x, y, reason = 'something moved') {
 export function addNoise(level, x, y, reason = 'something moved') {
   state.noise = Math.min(1, state.noise + level + noiseFloor());
   if (x != null) state.lastNoiseAt = { x, y, t: performance.now() };
-  if (state.phase === 'recording' && !state.stalled && state.noise > ROOM_TONE.spoilNoise) spoil(reason);
+  handleRecordingNoise(state.noise, reason);
 }
 
 export function decayNoise(dt) {
   state.noise = Math.max(0, state.noise - NOISE.decayPerSec * dt);
+  state.worldNoise = Math.max(0, state.worldNoise - NOISE.decayPerSec * dt);
 }
 
 // ── The recorder ─────────────────────────────────────────────────────────────
@@ -109,6 +174,7 @@ export function startRecording() {
   state.light = false;
   state.takeElapsed = 0;
   state.stalled = false;
+  state.assistPause = 0;
   state.spoiled = false;
   state.spoilReason = '';
   return true;
@@ -125,6 +191,7 @@ export function resumeTake() {
   state.noise = noiseFloor();
 }
 export function isStalled() { return state.stalled; }
+export function isAssistPaused() { return state.phase === 'recording' && state.assistPause > 0; }
 
 export function stopRecording() {
   if (state.phase !== 'recording') return null;
@@ -135,6 +202,7 @@ export function stopRecording() {
   const result = { completed, elapsed: state.takeElapsed, spoiled: state.spoiled, reason: state.spoilReason };
   state.takeElapsed = 0;
   state.stalled = false;
+  state.assistPause = 0;
   return result;
 }
 
@@ -149,10 +217,18 @@ export { spoil as spoilTake };
 export function tickRecording(dt) {
   if (state.phase !== 'recording') return 'idle';
   if (state.spoiled) return 'spoiled';
+  if (state.assistPause > 0) {
+    state.assistPause = Math.max(0, state.assistPause - dt);
+    return 'paused';
+  }
   // While an instrument sounds the take is held: the clock stops and noise does
   // not spoil it. Silence the instrument (resumeTake) to let it run again.
   if (state.stalled) return 'stalled';
-  if (state.noise > ROOM_TONE.spoilNoise) { spoil('the room was not empty'); return 'spoiled'; }
+  if (state.noise > spoilThreshold()) {
+    handleRecordingNoise(state.noise, 'the room was not empty');
+    if (state.spoiled) return 'spoiled';
+    if (state.assistPause > 0) return 'paused';
+  }
   state.takeElapsed += dt;
   return state.takeElapsed >= ROOM_TONE.takeSeconds ? 'complete' : 'running';
 }
@@ -169,13 +245,22 @@ export function injure() {
 export function setSlow(on) { state.slow = !!on; }
 export function addTake(roomId) { if (!state.takes.includes(roomId)) state.takes.push(roomId); }
 export function hasTake(roomId) { return state.takes.includes(roomId); }
+export function setTake(roomId, present = true) {
+  if (!roomId) return false;
+  if (present) addTake(roomId);
+  else state.takes = state.takes.filter((id) => id !== roomId);
+  return hasTake(roomId) === !!present;
+}
 
 export function loadRecState(saved = {}) {
   Object.assign(state, {
     injuries: saved.injuries || 0,
     takes: saved.takes || [],
+    assistPause: 0,
+    battery: saved.battery == null ? 1 : saved.battery,
+    worldNoise: 0,
   });
 }
 export function saveRecState() {
-  return { injuries: state.injuries, takes: state.takes };
+  return { injuries: state.injuries, takes: state.takes, battery: state.battery };
 }

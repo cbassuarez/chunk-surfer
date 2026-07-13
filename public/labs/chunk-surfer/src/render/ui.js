@@ -6,8 +6,8 @@
 // Coordinates are cells, using the same metrics as the ASCII renderer, so a
 // dialogue box occupies the same visual module as the map it covers.
 
-import { UI_CELL_W as CELL_W, UI_CELL_H as CELL_H, atlasConfigure, atlasDpr, getTile } from './atlas.js';
-import { UI_COLOR } from './palette.js';
+import { UI_CELL_W as CELL_W, UI_CELL_H as CELL_H, UI_FONT_PX, MONO_STACK, atlasConfigure, atlasDpr, getTile } from './atlas.js';
+import { UI_COLOR, uiFlickerAlpha, uiRoleColor } from './palette.js';
 
 let host = null, canvas = null, ctx = null;
 let cols = 0, rows = 0;
@@ -36,6 +36,11 @@ function resize() {
 export function uiSize() { return { cols, rows }; }
 export function uiClear() { if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height); }
 export function uiCanvasSize() { return { width: canvas?.width || 0, height: canvas?.height || 0 }; }
+export function uiPointFromClient(clientX, clientY) {
+  const rect = host?.getBoundingClientRect?.();
+  if (!rect) return { cellX:-1, cellY:-1 };
+  return { cellX:(clientX - rect.left) / CELL_W, cellY:(clientY - rect.top) / CELL_H };
+}
 
 // Low-level drawing hook for code-native instruments. The callback receives
 // device-pixel metrics; authored modules still express all geometry in cells.
@@ -53,16 +58,39 @@ export function uiScrim(alpha = 0.55) {
 
 export function uiGlyph(cx, cy, ch, cls = 't-chunk', alpha = 1) {
   if (!ctx || ch == null || ch === ' ') return;
-  const tile = getTile(ch, cls, 'ui');
+  const tile = getTile(ch, cls, 'ui', cx, cols);
   const dpr = atlasDpr();
-  if (alpha !== 1) ctx.globalAlpha = alpha;
+  const a = alpha * uiFlickerAlpha(cx, cy, cls);
+
+  if (a !== 1) ctx.globalAlpha = a;
   ctx.drawImage(tile.canvas, cx * CELL_W * dpr - tile.ox, cy * CELL_H * dpr - tile.oy);
-  if (alpha !== 1) ctx.globalAlpha = 1;
+  if (a !== 1) ctx.globalAlpha = 1;
 }
 
 export function uiText(cx, cy, str, cls = 't-chunk', alpha = 1) {
   const s = String(str ?? '');
   for (let i = 0; i < s.length; i++) uiGlyph(cx + i, cy, s[i], cls, alpha);
+}
+
+// Direction/system copy is prose spoken by the machine, not another VFD
+// legend. Give it a real italic monospace face instead of decorating the words
+// with // marks. It keeps the same authored cell grid and phosphor colour.
+export function uiItalicText(cx, cy, str, cls = 'ui-secondary', alpha = 1) {
+  const s = String(str ?? '');
+  if (!ctx || !s) return;
+  const dpr = atlasDpr();
+  ctx.save();
+  ctx.font = `italic ${UI_FONT_PX * dpr}px ${MONO_STACK}`;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = uiRoleColor(cls, cx, cols);
+  ctx.globalAlpha = alpha;
+  ctx.shadowColor = uiRoleColor(cls, cx, cols);
+  ctx.shadowBlur = 2.2 * dpr;
+  for (let i = 0; i < s.length; i++) {
+    if (s[i] !== ' ') ctx.fillText(s[i], (cx + i) * CELL_W * dpr, (cy + 0.5) * CELL_H * dpr);
+  }
+  ctx.restore();
 }
 
 // Typewriter ink on paper. NOT the VFD dot-matrix: a real monospace face with

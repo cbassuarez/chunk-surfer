@@ -21,7 +21,7 @@ import { flagTest, flagApply, flagGet, flagBump } from './flags.js';
 import { uiText, uiWrap, uiGlyph, uiSize, uiScrim } from '../render/ui.js';
 import { drawMachinePanel, drawVfdText } from '../render/presentation.js';
 import { portrait, degrade } from '../render/portraits.js';
-import { getSave } from './save.js';
+import { textCps } from './access.js';
 import { interpolate } from './terror.js';
 
 const PORTRAIT_W = 22, PORTRAIT_H = 13;
@@ -72,7 +72,7 @@ function visibleLines(node, id) {
 function makeDialogueScene(nodeId) {
   const node = script[nodeId];
   const lines = visibleLines(node, nodeId);
-  const cps = () => getSave().settings.textCps || 42;
+  const cps = () => textCps(42);
 
   let li = 0;             // line index
   let chars = 0;          // typed characters of the current line
@@ -125,6 +125,7 @@ function makeDialogueScene(nodeId) {
     key(e) {
       const list = choices();
       if (done && list.length) {
+        choiceIdx = Math.max(0, Math.min(choiceIdx, list.length - 1));
         if (e.key === 'ArrowUp' || e.key === 'w') { choiceIdx = (choiceIdx - 1 + list.length) % list.length; return true; }
         if (e.key === 'ArrowDown' || e.key === 's') { choiceIdx = (choiceIdx + 1) % list.length; return true; }
         if (e.key === 'Enter' || e.key === ' ' || e.key === 'z') { finish(list[choiceIdx]); return true; }
@@ -150,7 +151,7 @@ function makeDialogueScene(nodeId) {
       const pid = node.portrait;
       let block = portrait(pid);
       if (block && node.register === 'decay') block = degrade(block, Math.min(0.85, visits(nodeId) * 0.22));
-      const textX = panel.x + (block ? PORTRAIT_W + 2 : 0);
+      const textX = panel.x + 1 + (block ? PORTRAIT_W + 2 : 0);
       if (block) {
         for (let y = 0; y < Math.min(PORTRAIT_H, boxH - 2); y++) {
           uiText(panel.x, panel.y + y, block[y], 'ui-secondary');
@@ -160,7 +161,7 @@ function makeDialogueScene(nodeId) {
       if (node.speaker) drawVfdText(textX, panel.y, node.speaker);
 
       // lines: everything before the current one stays on screen
-      const textW = boxX + boxW - textX - 2;
+      const textW = Math.max(8, boxX + boxW - textX - 3);
       let y = panel.y + 2;
       for (let i = 0; i <= li && y < boxY + boxH - 2; i++) {
         const line = lines[i];
@@ -183,7 +184,7 @@ function makeDialogueScene(nodeId) {
         list.slice(0, 3).forEach((c, i) => {
           const sel = i === choiceIdx;
           const label = `${sel ? '>' : ' '} ${c.text}`;
-          uiText(textX, cy, label, sel ? 'ui-amber' : 'ui-primary');
+          uiText(textX, cy, label.slice(0, textW), sel ? 'ui-amber' : 'ui-primary');
           // ironic register: the choice comments on itself, in the margin
           if (node.register === 'ironic' && c.aside) {
             uiText(textX + label.length + 2, cy, `— ${c.aside}`, 'ui-secondary');

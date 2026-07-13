@@ -1,0 +1,28 @@
+hello.
+
+this is cbassuarez.com from the command line.
+i'm seb. i make cybernetic music systems.
+
+the live surfaces:
+  /labs/string    a shared string instrument
+  /labs/repl      a live-coding repl in score-grid notation
+  /labs/feed      everything i did online today
+  /labs/guestbook a place to leave a small mark
+
+the offline ones:
+  let go / letting go · THE TUB · String · Praetorius
+
+if you want to talk:  contact@cbassuarez.com
+if you want to read:  this came from /humans.txt
+
+curl /feed       see what's happening today
+curl /string     /labs/string state
+curl /room       /404 anteroom state
+curl /works      list of works
+curl /version    build label
+curl /contact    how to reach me
+curl /repl       what /labs/repl is + ssh-render usage
+
+ssh ssh.cbassuarez.com repl < patch.txt | mpv -    actually plays the patch
+
+— seb

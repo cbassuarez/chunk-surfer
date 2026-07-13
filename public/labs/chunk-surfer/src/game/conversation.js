@@ -29,7 +29,7 @@
 
 import { createSamDialogVoice, isVoiced } from '../audio/sam-voice.js';
 import { TYPE_GAIN, TYPE_LEVEL } from '../audio/story-audio.js';
-
+import { textCps } from './access.js';
 const CPS = 38;
 const MIN_DWELL = 0.25;         // before [space] is heard at all
 
@@ -45,7 +45,7 @@ function sayLabel(l) {
 }
 
 export function createConversation({
-  nodes = null, beats = [], startAt = 'start',
+  nodes = null, beats = [], startAt = 'start', sceneId = 'conversation', replay = null,
   onChoice, onLine, onDone, cue, fx, audio, getAudio, volume = 0.26,
 } = {}) {
   const voice = createSamDialogVoice({ volume, getAudio });
@@ -60,8 +60,13 @@ export function createConversation({
   let handle = null;            // the voice, mid-sentence
   let pending = null;           // { kind:'branch'|'say', options, line }
   let choiceIdx = 0;
-  let finished = false;
-  const history = [];
+  let activeLineId = '';
+  let activeLineSeenBefore = false;
+  let accelerateHeld = false;
+  let accelerateStartedAt = 0;
+    let finished = false;
+    let lineSerial = 0;
+    const history = [];
   const asked = new Set();
   const visited = new Set();
 
@@ -69,17 +74,35 @@ export function createConversation({
   const nodeLines = () => node()?.lines || [];
   const line = () => (mode === 'nodes' ? nodeLines()[lineIdx] : beats[beatIdx]);
 
-  const choiceKey = (c) => `${nodeId}:${c.text}`;
+  const lineContentId = (l = line()) => replay?.lineId?.({
+    nodeId: mode === 'nodes' ? nodeId : 'beats',
+    line: l,
+    index: mode === 'nodes' ? lineIdx : beatIdx,
+  }) || `${sceneId}:${mode === 'nodes' ? nodeId : 'beats'}:line:${mode === 'nodes' ? lineIdx : beatIdx}`;
+  const choiceContentId = (c, index = branchOptions().indexOf(c)) => replay?.choiceId?.({
+    nodeId, choice: c, index: Math.max(0, index),
+  }) || `${sceneId}:${nodeId}:choice:${Math.max(0, index)}`;
+  const choiceKey = (c) => choiceContentId(c);
   const branchOptions = () => node()?.choices || [];
 
   function stopVoice() { handle?.stop?.(); handle = null; }
-  function resetLine() { typed = 0; acc = 0; held = 0; stopVoice(); }
-
-  function pushHistory(text, who) {
-    if (!text) return;
-    history.push({ text, who });
-    while (history.length > 24) history.shift();
+  function resetLine() {
+    typed = 0; acc = 0; held = 0;
+    accelerateHeld = false; accelerateStartedAt = 0;
+    stopVoice();
   }
+
+    function pushHistory(text, who) {
+      if (!text) return;
+
+      history.push({
+        text,
+        who,
+        serial: lineSerial,
+      });
+
+      while (history.length > 24) history.shift();
+    }
 
   function fire(l) {
     if (!l) return;
@@ -104,10 +127,14 @@ export function createConversation({
   }
 
   // Before he speaks, you decide that he speaks.
-  function beginLine() {
-    const l = line();
-    if (!l) return;
-    resetLine();
+    function beginLine() {
+      const l = line();
+      if (!l) return;
+
+      resetLine();
+      lineSerial++;
+      activeLineId = lineContentId(l);
+      activeLineSeenBefore = replay?.lineStatus?.(activeLineId) === 'seen-before-run';
     if (mode === 'nodes' && whoOf(l) === 'me' && l.say !== false) {
       pending = { kind: 'say', line: l, options: [{ text: sayLabel(l), say: true }] };
       choiceIdx = 0;
@@ -175,7 +202,9 @@ export function createConversation({
 
   function commitLine() {
     const l = line();
-    if (l) pushHistory(textOf(l), whoOf(l));
+    if (!l) return;
+    pushHistory(textOf(l), whoOf(l));
+    if (activeLineId) replay?.markLine?.(activeLineId);
   }
 
   function advance() {
@@ -210,7 +239,9 @@ export function createConversation({
       return;
     }
     audio?.confirm?.();
-    asked.add(choiceKey(c));
+    const key = choiceKey(c);
+    asked.add(key);
+    replay?.markChoice?.(key);
     onChoice?.(c);
     pending = null;
     if (c.goto) gotoNode(c.goto);
@@ -234,13 +265,26 @@ export function createConversation({
       const text = textOf(l);
       held += dt;
 
+      const accelerating = activeLineSeenBefore && accelerateHeld
+        && performance.now() - accelerateStartedAt >= 180;
+      if (accelerating) replay?.noteSeenTextAssist?.();
+
       if (handle) {
+        if (accelerating) {
+          handle.finish?.();
+          handle = null;
+          typed = text.length;
+          return;
+        }
         typed = handle.done() ? text.length : Math.min(text.length, handle.charsFor());
         return;
       }
       if (typed < text.length) {
-        acc += dt;
-        typed = Math.min(text.length, Math.floor(acc * CPS * (l.rate || 1)));
+        const mode = replay?.seenTextMode?.() || 'normal';
+        const scale = accelerating && mode === 'instant' ? 1e6
+          : accelerating && mode === 'fast' ? 4 : 1;
+        acc += dt * scale;
+        typed = Math.min(text.length, Math.floor(acc * textCps(CPS) * (l.rate || 1)));
         if (typed >= text.length) audio?.stopTyping?.();
       }
     },
@@ -251,6 +295,13 @@ export function createConversation({
 
       if (pending) {
         const cs = visibleOptions();
+        if (!cs.length) {
+          pending = null;
+          const n = node();
+          if (n?.goto) gotoNode(n.goto);
+          else startBeats();
+          return true;
+        }
         if (e.key === 'ArrowUp' || e.key === 'w') { choiceIdx = (choiceIdx - 1 + cs.length) % cs.length; audio?.tick?.(); return true; }
         if (e.key === 'ArrowDown' || e.key === 's') { choiceIdx = (choiceIdx + 1) % cs.length; audio?.tick?.(); return true; }
         const num = Number(e.key);
@@ -263,8 +314,15 @@ export function createConversation({
         const l = line();
         const text = textOf(l);
         const minDwell = l?.hold != null ? Math.min(l.hold, 0.9) : MIN_DWELL;
-        // Hurry the line. Press again — after it has been on screen a moment —
-        // and it goes.
+        const replayMode = replay?.seenTextMode?.() || 'normal';
+        if (typed < text.length && activeLineSeenBefore && replayMode !== 'normal') {
+          if (!accelerateHeld) {
+            accelerateHeld = true;
+            accelerateStartedAt = performance.now();
+          }
+          return true;
+        }
+        // Unseen text retains the original tap-to-reveal behavior.
         if (typed < text.length) {
           typed = text.length;
           acc = 1e6;
@@ -280,6 +338,23 @@ export function createConversation({
       return true;
     },
 
+    keyup(e) {
+      if (!(e.key === ' ' || e.key === 'Enter' || e.key === 'z')) return false;
+      if (!accelerateHeld) return false;
+      const heldMs = performance.now() - accelerateStartedAt;
+      accelerateHeld = false;
+      if (heldMs < 180) {
+        const l = line();
+        const text = textOf(l);
+        if (typed < text.length) {
+          typed = text.length; acc = 1e6;
+          handle?.finish?.(); handle = null;
+          audio?.stopTyping?.();
+        }
+      }
+      return true;
+    },
+
     // ── what a presenter needs to draw ───────────────────────────────────────
     view() {
       const l = line();
@@ -289,9 +364,14 @@ export function createConversation({
         history: history.slice(),
         line: l || null,
         who: whoOf(l),
-        typed,
-        typing: !!l && typed < textOf(l).length,
-        voice: handle && !handle.done() ? handle.progress() : null,
+          typed,
+          typing: !!l && typed < textOf(l).length,
+          lineAge: held,
+          lineSerial,
+          lineContentId: activeLineId,
+          seenBeforeRun: activeLineSeenBefore,
+          accelerating: accelerateHeld,
+          voice: handle && !handle.done() ? handle.progress() : null,
         pending: pending ? { kind: pending.kind, options: visibleOptions(), index: choiceIdx } : null,
         spent: (c) => asked.has(choiceKey(c)),
       };
@@ -301,6 +381,16 @@ export function createConversation({
   function visibleOptions() {
     if (!pending) return [];
     if (pending.kind === 'say') return pending.options;
-    return pending.options.filter((c) => !(c.hideWhenAsked && asked.has(choiceKey(c))));
+    return pending.options
+      .filter((c) => !(c.hideWhenAsked && asked.has(choiceKey(c))))
+      .map((c) => {
+        const id = choiceKey(c);
+        return {
+          ...c,
+          contentId: id,
+          replayState: replay?.choiceStatus?.(id) || 'unseen',
+          archiveSignal: !!replay?.archiveSignalsEnabled?.() && (replay?.choiceStatus?.(id) || 'unseen') === 'unseen',
+        };
+      });
   }
 }

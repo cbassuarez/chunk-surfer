@@ -1,172 +1,301 @@
-// The bag.
+// AUDIOCORP field case.
 //
-// It is not a pause menu, and it is no longer a pile of paper. It is the job:
-// five rooms in the order the client listed them, with whatever the previous
-// recordist wrote about each one filed underneath it. A sheet that names no
-// room goes in UNFILED, where it is exactly as useful as it was on the floor.
-//
-// TWO VERBS, and the game teaches the second one in the loading dock using the
-// one room the work order insists on:
-//
-//   [enter]  read a note
-//   [space]  mark a room — the waypoint, which is the only navigation you get
-//
-// Nothing here is greyed out and nothing is refused. All five rooms are
-// markable from the first minute. The tutorial simply does not move on until
-// he has marked studio B3, because the work order told him to do that one
-// first, and because a man learns a verb by using it.
+// One scrolling index, one persistent detail pane, three stable sections:
+// KIT, MANIFEST, and FILES. The world continues behind it.
 
 import * as scenes from './scenes.js';
-import { uiCenter, uiScrim, uiSize, uiText } from '../render/ui.js';
-import { drawMachinePanel, drawVfdText } from '../render/presentation.js';
+import * as AUDIO from '../audio/story-audio.js';
+import { uiScrim, uiSize } from '../render/ui.js';
+import { drawMachinePanel } from '../render/presentation.js';
+import { buildBagModel, bagEntry, EMPTY_JOB } from './bag-model.js';
+import {
+  currentBagEntry,
+  ensureBagSelectionVisible,
+  initialBagState,
+  reduceBagNav,
+  repairBagSelection,
+} from './bag-navigation.js';
+import { bagLayout, bagPanelBounds } from '../render/bag-layout.js';
+import { bagListCapacity, drawBagView } from '../render/bag-view.js';
 
-const W = 74;
+let rememberedNav = null;
+
+function actionContext(entry, action) {
+  return {
+    entryId: entry?.id,
+    actionId: action?.id,
+    confirm: action?.confirm || null,
+  };
+}
 
 export function makeBagScene({
   equipment = [],
-  job = { rooms: [], unfiled: [], done: 0, total: 5 },
-  hint = '',                       // what the night wants from him, right now
+  job = EMPTY_JOB,
+  getEquipment = null,
+  getJob = null,
+  hint = '',
+  getHint = null,
+  focus = null,
+  getFocus = null,
   readDocument = () => {},
   markRoom = () => false,
   onClose = () => {},
+  forceLayout = null,
+  debug = null,
+  memory = null,
+  onRemember = () => {},
+  getMonitorSource = null,
 } = {}) {
-  let sel = 0;
+  const equipmentSource = typeof getEquipment === 'function' ? getEquipment : () => equipment;
+  const jobSource = typeof getJob === 'function' ? getJob : () => job;
+  const hintSource = typeof getHint === 'function' ? getHint : () => hint;
+  const focusSource = typeof getFocus === 'function' ? getFocus : () => focus;
+
+  let model = buildBagModel({ equipment: equipmentSource(), job: jobSource() });
+  let nav = (memory || rememberedNav) ? repairBagSelection(memory || rememberedNav, model) : initialBagState(model, focus || {});
   let t = 0;
+  let appliedFocusKey = '';
+  const motion = { openedAt: 0, sectionChangedAt: 0, selectionChangedAt: 0, actionAt: 0 };
 
-  // One flat list of rows, because that is what a cursor walks.
-  function rows() {
-    const out = [];
-    out.push({ kind: 'head', label: 'GEAR' });
-    for (const item of equipment) out.push({ kind: 'item', label: item });
-    out.push({ kind: 'space' });
-    out.push({ kind: 'head', label: 'OBJECTIVES', right: `takes ${job.done}/${job.total}` });
+  function applyFocus(nextFocus) {
+    if (!nextFocus?.sectionId) return;
+    const key = `${nextFocus.sectionId}:${nextFocus.entryId || ''}`;
+    if (key === appliedFocusKey) return;
 
-    for (const r of job.rooms) {
-      out.push({ kind: 'room', room: r, label: r.label });
-      for (const n of r.notes) out.push({ kind: 'note', doc: n, label: n.title || n.id });
+    nav = reduceBagNav(nav, { type: 'SELECT_SECTION', sectionId: nextFocus.sectionId }, model);
+    if (nextFocus.entryId) nav = reduceBagNav(nav, {
+      type: 'SELECT_ENTRY',
+      sectionId: nextFocus.sectionId,
+      entryId: nextFocus.entryId,
+    }, model);
+    appliedFocusKey = key;
+    motion.sectionChangedAt = t;
+    motion.selectionChangedAt = t;
+    remember();
+  }
+
+  applyFocus(focusSource());
+
+  function remember() {
+    rememberedNav = {
+      ...nav,
+      selected: { ...nav.selected },
+      scroll: { ...nav.scroll },
+      mode: 'browse',
+      pendingAction: null,
+    };
+    onRemember(rememberedNav);
+  }
+
+  function refresh() {
+    model = buildBagModel({ equipment: equipmentSource(), job: jobSource() });
+    nav = reduceBagNav(nav, { type: 'MODEL_REFRESH' }, model);
+    remember();
+  }
+
+  function close() {
+    remember();
+    scenes.pop();
+    onClose();
+  }
+
+  function selectSection(delta) {
+    nav = reduceBagNav(nav, { type: delta > 0 ? 'NEXT_SECTION' : 'PREV_SECTION' }, model);
+    motion.sectionChangedAt = t;
+    motion.selectionChangedAt = t;
+    AUDIO.menuMove();
+    remember();
+  }
+
+  function move(delta) {
+    const before = currentBagEntry(nav, model)?.id;
+    nav = reduceBagNav(nav, { type: 'MOVE_SELECTION', delta }, model);
+    if (currentBagEntry(nav, model)?.id !== before) {
+      motion.selectionChangedAt = t;
+      AUDIO.menuMove();
+      remember();
+    }
+  }
+
+  function execute(entry, actionId) {
+    if (!entry || !actionId) return false;
+    let ok = false;
+
+    if (entry.kind === 'file' && actionId === 'read') {
+      readDocument(entry.source);
+      ok = true;
+    } else if (entry.kind === 'file' && (actionId === 'mark-room' || actionId === 'unmark-room')) {
+      ok = entry.roomId ? markRoom(entry.roomId) : false;
+    } else if (entry.kind === 'room' && (actionId === 'mark' || actionId === 'unmark')) {
+      ok = markRoom(entry.roomId);
+    } else if (entry.kind === 'room' && actionId === 'read-attached') {
+      if (entry.attached) {
+        readDocument(entry.attached);
+        ok = true;
+      }
+    } else if (entry.kind === 'gear' && typeof entry.source?.action === 'function') {
+      entry.source.action();
+      ok = true;
     }
 
-    if (job.unfiled.length) {
-      out.push({ kind: 'space' });
-      out.push({ kind: 'head', label: 'UNFILED' });
-      for (const n of job.unfiled) out.push({ kind: 'note', doc: n, label: n.title || n.id });
+    if (ok) {
+      motion.actionAt = t;
+      AUDIO.menuConfirm();
+      refresh();
     }
-    return out;
+
+    return ok;
   }
 
-  const selectable = () => rows()
-    .map((r, i) => (r.kind === 'room' || r.kind === 'note' ? i : -1))
-    .filter((i) => i >= 0);
+  function activatePrimary() {
+    const entry = currentBagEntry(nav, model);
+    const action = entry?.actions?.primary;
+    if (!action) return;
 
-  function clampSel() {
-    const picks = selectable();
-    if (!picks.length) { sel = 0; return; }
-    if (!picks.includes(sel)) sel = picks[0];
+    if (action.destructive) {
+      nav = reduceBagNav(nav, {
+        type: 'OPEN_CONFIRM',
+        action: actionContext(entry, action),
+      }, model);
+      AUDIO.menuConfirm();
+      return;
+    }
+
+    execute(entry, action.id);
   }
 
-  function move(d) {
-    const picks = selectable();
-    if (!picks.length) return;
-    const at = Math.max(0, picks.indexOf(sel));
-    sel = picks[(at + d + picks.length) % picks.length];
+  function activateSecondary() {
+    const entry = currentBagEntry(nav, model);
+    const action = entry?.actions?.secondary;
+    if (action) execute(entry, action.id);
   }
 
-  const selected = () => rows()[sel] || null;
+  function confirmPending() {
+    const pending = nav.pendingAction;
+    if (!pending) return;
+    const entry = bagEntry(model, nav.sectionId, pending.entryId);
+    nav = reduceBagNav(nav, { type: 'CANCEL' }, model);
+    execute(entry, pending.actionId);
+  }
 
-  return {
+  const scene = {
     id: 'bag',
     blocksInput: true,
-    blocksWorld: false,      // the building does not wait while you do paperwork
+    blocksWorld: false,
     lensPreset: 'calm',
 
-    enter() { clampSel(); },
+    enter() {
+      motion.openedAt = t;
+      motion.sectionChangedAt = t;
+      motion.selectionChangedAt = t;
+      refresh();
+    },
+
     update(dt) { t += dt; },
 
+    refresh,
+
+    debugState() {
+      return {
+        model,
+        nav,
+        selected: currentBagEntry(nav, model),
+      };
+    },
+
     key(e) {
-      if (e.key === 'Escape' || e.key === 'b' || e.key === 'B') {
-        scenes.pop();
-        onClose();
+      const raw = e.key || '';
+      const k = raw.toLowerCase();
+      const code = e.code || '';
+
+      if (nav.mode === 'confirm') {
+        if (raw === 'Enter' || code === 'Enter' || raw === ' ' || code === 'Space') {
+          confirmPending();
+          return true;
+        }
+        if (raw === 'Escape') {
+          nav = reduceBagNav(nav, { type: 'CANCEL' }, model);
+          AUDIO.menuMove();
+          return true;
+        }
+        if (k === 'b' || code === 'KeyB') {
+          close();
+          return true;
+        }
         return true;
       }
-      if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') { move(-1); return true; }
-      if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') { move(1); return true; }
-      if (e.key === 'Enter' || e.key === 'e' || e.key === 'E') {
-        const r = selected();
-        if (r?.kind === 'note') readDocument(r.doc);
+
+      if (raw === 'Escape' || k === 'b' || code === 'KeyB') {
+        close();
         return true;
       }
-      if (e.key === ' ' || e.key === 'z' || e.key === 'Z') {
-        const r = selected();
-        // Marking from a note marks the room the note is about. The note is the
-        // reason you know the room is there at all.
-        if (r?.kind === 'room') markRoom(r.room.roomId);
-        else if (r?.kind === 'note' && r.doc.room) markRoom(r.doc.room);
+
+      if (raw === 'Tab') {
+        selectSection(e.shiftKey ? -1 : 1);
         return true;
       }
+      if (raw === 'ArrowLeft' || raw === '[') { selectSection(-1); return true; }
+      if (raw === 'ArrowRight' || raw === ']') { selectSection(1); return true; }
+
+      if (raw === '1' || code === 'Digit1') {
+        nav = reduceBagNav(nav, { type: 'SELECT_SECTION', sectionId: 'kit' }, model);
+        motion.sectionChangedAt = motion.selectionChangedAt = t; AUDIO.menuMove(); remember(); return true;
+      }
+      if (raw === '2' || code === 'Digit2') {
+        nav = reduceBagNav(nav, { type: 'SELECT_SECTION', sectionId: 'manifest' }, model);
+        motion.sectionChangedAt = motion.selectionChangedAt = t; AUDIO.menuMove(); remember(); return true;
+      }
+      if (raw === '3' || code === 'Digit3') {
+        nav = reduceBagNav(nav, { type: 'SELECT_SECTION', sectionId: 'files' }, model);
+        motion.sectionChangedAt = motion.selectionChangedAt = t; AUDIO.menuMove(); remember(); return true;
+      }
+
+      if (raw === 'ArrowUp' || k === 'w' || code === 'KeyW') { move(-1); return true; }
+      if (raw === 'ArrowDown' || k === 's' || code === 'KeyS') { move(1); return true; }
+
+      if (raw === 'Enter' || code === 'Enter' || k === 'e' || code === 'KeyE') {
+        activatePrimary();
+        return true;
+      }
+
+      if (raw === ' ' || code === 'Space' || k === 'z' || code === 'KeyZ') {
+        activateSecondary();
+        return true;
+      }
+
       return true;
     },
 
     render() {
-      const { cols, rows: screenRows } = uiSize();
-      const list = rows();
-      const w = Math.min(W, cols - 4);
-      const h = Math.min(screenRows - 4, list.length + 7);
-      const x = Math.floor((cols - w) / 2);
-      const y = Math.floor((screenRows - h) / 2);
-      const view = h - 6;
-      const scroll = Math.max(0, Math.min(Math.max(0, list.length - view), sel - Math.floor(view / 2)));
+      applyFocus(focusSource());
+      const size = uiSize();
+      const outer = bagPanelBounds(size);
 
-      uiScrim(0.72);
-      const panel = drawMachinePanel(x, y, w, h, {
-        label: 'FILE / GEAR', source: 'BAG', footer: '', meter: true,
+      uiScrim(0.74);
+      const body = drawMachinePanel(outer.x, outer.y, outer.w, outer.h, {
+        label: 'FIELD CASE / 4417-C',
+        source: getMonitorSource?.() || 'FIELD LIVE',
+        footer: '',
+        meter: true,
+        theme: 'amber',
       });
-      drawVfdText(panel.x, panel.y, 'BAG');
 
-      let yy = panel.y + 2;
-      for (let i = scroll; i < Math.min(list.length, scroll + view); i++) {
-        const r = list[i];
-        if (r.kind === 'space') { yy++; continue; }
-        if (r.kind === 'head') {
-          uiText(panel.x, yy, r.label, 'ui-label');
-          if (r.right) uiText(x + w - 3 - r.right.length, yy, r.right.toUpperCase(), 'ui-blue');
-          yy++;
-          continue;
-        }
-        if (r.kind === 'item') { uiText(panel.x + 2, yy++, r.label, 'ui-secondary'); continue; }
+      const layout = bagLayout({ body, forceMode: typeof forceLayout === 'function' ? forceLayout() : forceLayout });
+      const capacity = bagListCapacity(layout, nav.sectionId);
+      nav = ensureBagSelectionVisible(nav, model, capacity);
 
-        const on = i === sel;
-        const cursor = on ? '▸' : ' ';
+      drawBagView({
+        model,
+        nav,
+        layout,
+        hint: hintSource(),
+        motion,
+        now: t,
+      });
 
-        if (r.kind === 'room') {
-          const st = r.room.recorded ? '✓ DONE' : r.room.marked ? 'MARKED' : '';
-          const cls = r.room.recorded ? 'ui-green' : (on ? 'ui-amber' : 'ui-primary');
-          uiText(panel.x, yy, `${cursor} ${r.label}`, cls);
-          // The time the file says it was taken at. It is right. You are the
-          // one who can no longer read it.
-          if (r.room.stamp) uiText(x + w - 14 - r.room.stamp.length, yy, r.room.stamp, 'ui-blue');
-          if (st) uiText(x + w - 3 - st.length, yy, st, r.room.recorded ? 'ui-green' : 'ui-secondary');
-          yy++;
-          continue;
-        }
-        // a note, indented under the room it is about
-        uiText(panel.x + 3, yy++, `${cursor} ${r.label}`.slice(0, w - 9),
-               on ? 'ui-amber' : 'ui-secondary');
-      }
-
-      const r = selected();
-      const keys = r?.kind === 'room'
-        ? '[SPACE] MARK · [B] CLOSE'
-        : r?.kind === 'note'
-          ? (r.doc.room ? '[ENTER] READ · [SPACE] MARK · [B] CLOSE' : '[ENTER] READ · [B] CLOSE')
-          : '[B] CLOSE';
-
-      // The night wants something. It blinks, because a man who has not marked
-      // a room in thirty years does not need to be told twice.
-      if (hint) {
-        const pulse = 0.55 + 0.45 * Math.abs(Math.sin(t * 2.2));
-        uiCenter(y + h - 3, hint.toUpperCase(), 'ui-amber', Math.max(0.82, pulse));
-      }
-      uiCenter(y + h - 2, keys, 'ui-secondary');
+      debug?.({ model, nav, layout, selected: currentBagEntry(nav, model), t });
     },
   };
+
+  return scene;
 }

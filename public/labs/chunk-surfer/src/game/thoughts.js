@@ -19,21 +19,28 @@
 //   RADIO_DEAD  the guard told you twice not to shake it
 
 import * as scenes from './scenes.js';
-import { uiSize, uiText, uiWrap, uiScrim } from '../render/ui.js';
+import { uiSize, uiScrim } from '../render/ui.js';
 import { drawMachinePanel } from '../render/presentation.js';
-import { createConversation, textOf } from './conversation.js';
-import { STYLE } from './coldopen.js';
+import { createConversation } from './conversation.js';
+import {
+  drawTranscript,
+  drawTranscriptChoices,
+  drawTranscriptHeader,
+  layoutTranscript,
+  layoutTranscriptChoices,
+  transcriptSource,
+} from '../render/transcript.js';
 
 const BAND_W = 74;
 
 // A thought tree is a scene like any other. `onDone` fires once, when he stops
 // thinking and the building is his problem again.
 export function makeThoughtScene({
-  id = 'thought', nodes, startAt = 'start', onDone, onChoice, cue, fx, audio, getAudio,
+  id = 'thought', nodes, startAt = 'start', onDone, onChoice, cue, fx, audio, getAudio, replay = null,
   scrim = 0.62, lensPreset = 'calm',
 } = {}) {
   const convo = createConversation({
-    nodes, startAt, onChoice, cue, fx, audio, getAudio,
+    nodes, startAt, sceneId: `thought:${id}`, replay, onChoice, cue, fx, audio, getAudio,
     volume: 0.24,
     onDone: () => { scenes.pop(); onDone?.(); },
   });
@@ -48,59 +55,113 @@ export function makeThoughtScene({
     exit() { convo.stop(); audio?.stopTyping?.(); },
     update(dt) { convo.update(dt); },
     view() { return convo.view(); },        // for the headless suites
+    keyup(e) { return convo.keyup?.(e) || false; },
     key(e) {
       if (e.key === 'Escape') return true;   // you do not get to stop thinking
       return convo.key(e);
     },
 
-    render() {
-      const v = convo.view();
-      const { cols, rows } = uiSize();
-      uiScrim(scrim);
+      render() {
+        const v = convo.view();
+        const { cols, rows } = uiSize();
 
-      const w = Math.min(BAND_W, cols - 8);
-      const x = Math.floor((cols - w) / 2);
-      const cs = v.pending?.options || [];
+        uiScrim(scrim);
 
-      // Only the last couple of lines: this is a thought, not a transcript,
-      // and there is a corridor behind it that the player needs to see.
-      const rendered = [];
-      for (const h of v.history.slice(-2)) {
-        for (const l of uiWrap(h.text, w - 2)) rendered.push({ text: l, who: h.who });
-      }
-      const cur = v.typed > 0 && v.line
-        ? uiWrap(textOf(v.line).slice(0, v.typed), w - 2).map((t) => ({ text: t, who: v.who }))
-        : [];
+        const w = Math.min(BAND_W, cols - 8);
+        const x = Math.floor((cols - w) / 2);
 
-      const body = rendered.length + cur.length;
-      const choiceRows = cs.length ? cs.length + 1 : 0;
-      const h = Math.max(8, body + choiceRows + 5);
-      const y0 = rows - h - 2;
-      const panel = drawMachinePanel(x - 2, y0, w + 4, h, {
-        label: 'MONITOR', source: v.who || 'THOUGHT',
-        footer: cs.length ? '[↑/↓] SELECT · [ENTER] CONFIRM' : '[SPACE] CONTINUE', meter: true,
-      });
+        const choices = layoutTranscriptChoices(
+          v,
+          Math.max(12, w - 6),
+        );
 
-      let y = panel.y;
-      rendered.forEach((r) => {
-        uiText(panel.x, y++, r.text, 'ui-secondary', 0.58);
-      });
-      const stCur = STYLE[v.who] || STYLE.direction;
-      cur.forEach((r, k) => {
-        uiText(panel.x, y, r.text, stCur.cls, stCur.alpha);
-        if (k === cur.length - 1 && v.typing) uiText(panel.x + r.text.length, y, '▌', 'ui-amber');
-        y++;
-      });
+        const panelH = Math.min(
+          rows - 4,
+          Math.max(
+            12,
+            Math.min(21, 12 + choices.height),
+          ),
+        );
 
-      if (cs.length) {
-        y += 1;
-        cs.forEach((c, idx) => {
-          const on = idx === v.pending.index;
-          uiText(panel.x, y++, `${on ? '▸' : ' '} ${idx + 1}  ${c.text}`,
-                 on ? 'ui-amber' : 'ui-primary');
+        const y0 = rows - panelH - 2;
+
+        const sourceWho =
+          v.pending?.kind === 'say'
+            ? 'me'
+            : v.who;
+
+        const panel = drawMachinePanel(
+          x - 2,
+          y0,
+          w + 4,
+          panelH,
+          {
+            label: 'MONITOR',
+            source: transcriptSource(sourceWho),
+            footer: v.pending?.options?.length
+              ? '[↑/↓] SELECT · [ENTER] TRANSMIT'
+              : '[SPACE] CONTINUE',
+            meter: true,
+          },
+        );
+
+        const contentX = panel.x + 1;
+        const contentW = Math.max(8, panel.w - 2);
+
+        const header = drawTranscriptHeader({
+          x: contentX,
+          y: panel.y,
+          width: contentW,
+          system: v.speaker,
         });
-      }
-    },
+
+        const choiceLayout = layoutTranscriptChoices(
+          v,
+          contentW,
+        );
+
+        const reserve = choiceLayout.height
+          ? choiceLayout.height + 1
+          : 0;
+
+        const transcriptY =
+          header.y + (header.rows ? 1 : 0);
+
+        const availableRows = Math.max(
+          1,
+          panel.y +
+            panel.h -
+            transcriptY -
+            reserve,
+        );
+
+        // Thoughts remain a compact overlay. Only recent signal blocks survive so
+        // the moving corridor behind them stays readable.
+        const transcript = layoutTranscript(v, {
+          width: contentW,
+          maxRows: availableRows,
+          keep: 3,
+        });
+
+        drawTranscript(transcript, {
+          x: contentX,
+          y: transcriptY,
+          width: contentW,
+          maxRows: availableRows,
+        });
+
+        if (choiceLayout.height) {
+          drawTranscriptChoices(choiceLayout, {
+            x: contentX,
+            y:
+              panel.y +
+              panel.h -
+              choiceLayout.height,
+            width: contentW,
+            maxRows: choiceLayout.height,
+          });
+        }
+      },
   };
 }
 

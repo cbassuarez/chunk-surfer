@@ -9,19 +9,28 @@
 // building forty times today.)
 
 import * as scenes from './scenes.js';
-import { uiSize, uiFill, uiText, uiWrap } from '../render/ui.js';
+import { uiSize, uiFill, uiText } from '../render/ui.js';
 import { drawMachinePanel, drawVfdText } from '../render/presentation.js';
+import {
+  drawTranscript,
+  drawTranscriptChoices,
+  drawTranscriptHeader,
+  layoutTranscript,
+  layoutTranscriptChoices,
+  transcriptSource,
+} from '../render/transcript.js';
 import { UI_COLOR } from '../render/palette.js';
-import { createConversation, textOf } from './conversation.js';
+import { createConversation } from './conversation.js';
 
-const COL_W = 66;
-const KEEP = 9;
+const COL_W = 86;
+const KEEP = 12;
 
 export const STYLE = {
   // No nameplate on your own line. You know who is talking.
   me: { cls: 'ui-primary', alpha: 1, label: '' },
   you: { cls: 'ui-primary', alpha: 1, label: '' },
   guard: { cls: 'ui-amber', alpha: 1, label: 'GUARD' },
+  client: { cls: 'ui-blue', alpha: 1, label: 'CLIENT' },
   recordist: { cls: 'ui-primary', alpha: 1, label: 'TAKE' },
   surfer: { cls: 'ui-danger', alpha: 1, label: '' },
   radio: { cls: 'ui-amber', alpha: 1, label: 'RADIO' },
@@ -33,11 +42,11 @@ export const STYLE = {
 // behind a fire door, so it starts nothing and it stops nothing.
 export function makeColdOpenScene({
   id = 'cold-open',
-  beats = [], opening = null, slate = '', ambient = true, lensPreset = 'booth',
-  onDone, onChoice, cue, fx, audio, getAudio,
+  beats = [], opening = null, startAt = 'start', slate = '', ambient = true, lensPreset = 'booth',
+  onDone, onChoice, cue, fx, audio, getAudio, replay = null,
 } = {}) {
   const convo = createConversation({
-    nodes: opening, beats, onChoice, cue, fx, audio, getAudio,
+    nodes: opening, beats, startAt, sceneId: id, replay, onChoice, cue, fx, audio, getAudio,
     onDone: () => { scenes.pop(); if (ambient) audio?.stopBoothTone?.({ fade: 0.8 }); onDone?.(); },
   });
 
@@ -54,78 +63,110 @@ export function makeColdOpenScene({
     exit() { convo.stop(); audio?.stopTyping?.(); },
     update(dt) { convo.update(dt); },
     view() { return convo.view(); },        // for the headless suites
+    keyup(e) { return convo.keyup?.(e) || false; },
     key(e) {
       if (e.key === 'Escape') return true;   // no way out of a conversation
       return convo.key(e);
     },
 
-    render() {
-      const v = convo.view();
-      const { cols, rows } = uiSize();
-      uiFill(0, 0, cols, rows, UI_COLOR.glass);
+      render() {
+        const v = convo.view();
+        const { cols, rows } = uiSize();
 
-      const w = Math.min(COL_W + 6, cols - 4);
-      const x = Math.floor((cols - w) / 2);
-      const cs = v.pending?.options || [];
+        uiFill(0, 0, cols, rows, UI_COLOR.glass);
 
-      const textW = Math.max(12, w - 4);
-      const rendered = [];
-      for (const h of v.history.slice(-KEEP)) {
-        for (const l of uiWrap(h.text, textW)) rendered.push({ text: l, who: h.who });
-      }
-      const cur = v.typed > 0 && v.line
-        ? uiWrap(textOf(v.line).slice(0, v.typed), textW).map((t) => ({ text: t, who: v.who }))
-        : [];
+        // A two-channel monitor needs enough width for two distinct lanes. It
+        // remains centered and capped, but no longer crushes the transcript into
+        // one terminal column.
+        const w = Math.min(COL_W, cols - 4);
+        const x = Math.floor((cols - w) / 2);
 
-      const historyRows = [];
-      let historyWho = null;
-      rendered.forEach((r, k) => {
-        const st = STYLE[r.who] || STYLE.direction;
-        const prefix=st.label && r.who!==historyWho ? `${st.label}  ` : '';
-        historyWho = r.who;
-        const age = (rendered.length - k) / Math.max(1, rendered.length);
-        historyRows.push({ text:`${prefix}${r.text}`, cls:'ui-secondary', alpha:Math.max(0.50, 0.74-age*0.20), who:r.who });
-      });
+        const panelH = Math.min(
+          rows - 4,
+          Math.max(
+            18,
+            Math.min(30, Math.floor(rows * 0.64)),
+          ),
+        );
 
-      const choiceRows = cs.length ? cs.length + 2 : 0;
-      const fixedRows = (slate ? 2 : 0) + (v.speaker ? 2 : 0) + cur.length + choiceRows;
-      const total = historyRows.length + fixedRows;
-      const panelH = Math.min(rows - 4, Math.max(15, total + 7));
-      const top = Math.max(2, Math.floor((rows - panelH) / 2));
-      const body = drawMachinePanel(x, top, w, panelH, {
-        label: 'MONITOR', source: v.who || 'PROGRAM',
-        footer: cs.length ? '[↑/↓] SELECT · [ENTER] CONFIRM' : '[SPACE] CONTINUE', meter: true,
-      });
-      const tx = body.x, tw = body.w;
-      const visibleHistory = historyRows.slice(-Math.max(0, body.h - fixedRows));
+        const top = Math.max(
+          2,
+          Math.floor((rows - panelH) / 2),
+        );
 
-      // The slate: the header of the form he is about to sign, and the only
-      // thing on screen that never moves.
-      if (slate) uiText(tx, body.y, slate.slice(0, tw), 'ui-label');
+        const sourceWho =
+          v.pending?.kind === 'say'
+            ? 'me'
+            : v.who;
 
-      let y = body.y + (slate ? 2 : 0);
-      if (v.speaker) { drawVfdText(tx, y++, v.speaker, {scale:1.22,max:tw}); y++; }
+        const body = drawMachinePanel(
+          x,
+          top,
+          w,
+          panelH,
+          {
+            label: 'MONITOR',
+            source: transcriptSource(sourceWho),
+            footer: v.pending?.options?.length
+              ? '[↑/↓] SELECT · [ENTER] TRANSMIT'
+              : '[SPACE] CONTINUE',
+            meter: true,
+          },
+        );
 
-      visibleHistory.forEach((r) => { uiText(tx, y++, r.text.slice(0, tw), r.cls, r.alpha); });
+        const contentX = body.x + 1;
+        const contentW = Math.max(8, body.w - 2);
 
-      const stCur = STYLE[v.who] || STYLE.direction;
-      cur.forEach((r, k) => {
-        uiText(tx, y, r.text.slice(0, tw), stCur.cls, stCur.alpha);
-        if (k === cur.length - 1 && v.typing) uiText(tx + r.text.length, y, '▌', 'ui-amber');
-        y++;
-      });
-
-      if (cs.length) {
-        y += 1;
-        cs.forEach((c, idx) => {
-          const on = idx === v.pending.index;
-          const spent = v.spent(c);
-          const cls = spent ? 'ui-secondary' : (on ? 'ui-amber' : 'ui-primary');
-          const a = spent ? 0.58 : 1;
-          uiText(tx, y++, `${on ? '▸' : ' '} ${idx + 1}  ${c.text}${spent ? '   ·' : ''}`.slice(0, tw), cls, a);
+        const header = drawTranscriptHeader({
+          x: contentX,
+          y: body.y,
+          width: contentW,
+          slate,
+          system: v.speaker,
         });
-      }
-    },
+
+        const choices = layoutTranscriptChoices(
+          v,
+          contentW,
+        );
+
+        const choiceReserve = choices.height
+          ? choices.height + 1
+          : 0;
+
+        const transcriptY =
+          header.y + (header.rows ? 1 : 0);
+
+        const availableRows = Math.max(
+          1,
+          body.y +
+            body.h -
+            transcriptY -
+            choiceReserve,
+        );
+
+        const transcript = layoutTranscript(v, {
+          width: contentW,
+          maxRows: availableRows,
+          keep: KEEP,
+        });
+
+        drawTranscript(transcript, {
+          x: contentX,
+          y: transcriptY,
+          width: contentW,
+          maxRows: availableRows,
+        });
+
+        if (choices.height) {
+          drawTranscriptChoices(choices, {
+            x: contentX,
+            y: body.y + body.h - choices.height,
+            width: contentW,
+            maxRows: choices.height,
+          });
+        }
+      },
   };
 }
 
@@ -151,10 +192,9 @@ export function makeWorldTitleScene({ onDone, audio, duration = 12.0 } = {}) {
     // The song leaves before the title does, so the door slams into an empty mix.
     enter() { audio?.fadeSoundtrack?.({ fade: Math.max(2, duration - 2.4) }); },
     update(dt) { t += dt; if (t >= duration) finish(); },
-    key(e) {
-      if (e.key === ' ' || e.key === 'Enter' || e.key === 'z' || e.key === 'Escape') { finish(); return true; }
-      return true;
-    },
+    // This is an authored twelve-second scene, not a text line. Input is
+    // swallowed until the song and title complete; no key can collapse it.
+    key() { return true; },
     exit() { audio?.stopTyping?.(); },
 
     // Nothing but type, on black. No band, no box, no ornament — the song does

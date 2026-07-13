@@ -28,10 +28,10 @@ import * as FP from './world/floorplan.js';
 import { F as CELL_FLAGS, ZONE, CELL } from './data/floorplan/legend.js';
 import * as MUT from './world/mutate.js';
 import * as scenes from './game/scenes.js';
-import { uiInit, uiClear, uiText, uiSize, uiFill, uiCenter } from './render/ui.js';
+import { uiInit, uiClear, uiText, uiSize, uiFill, uiCenter, uiDraw, uiPointFromClient } from './render/ui.js';
 import { drawVfdCounter, drawVfdMeter, drawMachinePanel, drawLocationIndicator } from './render/presentation.js';
 import { applyVfdSettings } from './render/palette.js';
-import { saveLoad, saveCommit, getSave, newGame, hasSave, metaCommit } from './game/save.js';
+import { saveLoad, saveCommit, getSave, newGame, metaCommit, getMeta } from './game/save.js';
 import { flagApply, flagTest, flagGet } from './game/flags.js';
 // The M2 dialogue runtime (game/dialogue.js, data/prologue.js, the Usher) is
 // gone. Conversations are game/conversation.js now, and there is nobody in this
@@ -45,28 +45,65 @@ import * as PRES from './game/presence.js';
 import * as PROPS from './game/props.js';
 import * as CUES from './audio/cues.js';
 import * as STORY from './audio/story-audio.js';
+import * as FEAR from './audio/fear.js';
 import * as STAB from './game/stabs.js';
 import * as OBJ from './game/objectives.js';
 import * as DOC from './game/document.js';
 import * as RADIO from './game/radio.js';
 import * as PB from './game/playback.js';
 import { makeBattleScene } from './game/battle.js';
-import { natatoriumBattle, practiceBattle, hallPlayback, practicePlayback } from './data/battles.js';
+import * as ENCOUNTERS from './game/encounters.js';
+import { natatoriumBattle, practiceBattle, hallBattle, hallPlayback, practicePlayback, natatoriumPlayback, chapelBoss } from './data/battles.js';
 import * as MIC from './game/mic.js';
 import { takeStamp, WORK_ORDER_STAMP } from './game/clock.js';
 import { drawMinimap } from './render/minimap.js';
 import { roomLabel, roomToneCharacter } from './audio/manifest-map.js';
 import * as SPEECH from './game/speech.js';
 import * as TUT from './game/tutorial.js';
+import { objectiveHintsMode, pauseWhenBlurEnabled, tutorialPromptsEnabled } from './game/access.js';
 import { makeBagScene } from './game/bag.js';
 import { makeColdOpenScene, makeWorldTitleScene } from './game/coldopen.js';
+import { makeWarningScene } from './game/warning.js';
+import * as CONTROLLER from './game/controller.js';
+import * as BINDINGS from './game/bindings.js';
 import { makeThoughtScene, thoughtHad, markThought,
          loadThoughtState, saveThoughtState } from './game/thoughts.js';
+import { makeBagLabScene } from './game/bag-lab.js';
+import { makeDifficultySelectScene } from './game/difficulty-select.js';
+import { makeArchiveScene } from './game/archive.js';
+import { makeReturnIndexScene } from './game/return-index.js';
+import { makeReturnReportScene } from './game/return-report.js';
+import { makeAchievementNoticeScene } from './game/achievement-notice.js';
+import { makeProgressionLabScene } from './game/progression-lab.js';
+import { chooseJsonFile, downloadJsonFile } from './game/profile-io.js';
+import {
+  applyCurrentRuleChange,
+  assertProgressionInvariants,
+  beginRunProgression,
+  commitReturn,
+  currentDifficulty,
+  emitProgress,
+  pendingReturnReport,
+  previewCurrentRuleChange,
+  progressionInit,
+  progressionSnapshot,
+} from './progression/runtime.js';
+import { EVENT_TYPES } from './progression/events.js';
+import { createReplayService } from './progression/knowledge.js';
+import { deriveUnlocks } from './progression/unlocks.js';
+import { consumeNotice, noticePolicy, peekNotice } from './progression/notifications.js';
+import { syncPlatform } from './progression/platform-sync.js';
+import { exportProfile, mergeImportedProfile } from './progression/profile.js';
+import { currentPlatform } from './platform/index.js';
 import { WORK_ORDER, TRANSMISSIONS, SQUELCH_LINES,
-         PAGES, ROOM_CELLS, TARGETS, COLD_OPEN, AFTER_TITLE, COLD_OPEN_DIALOGUE,
+         PAGES, ROOM_CELLS, MAIN_EXIT_CELL, TARGETS, COLD_OPEN, AFTER_TITLE, COLD_OPEN_DIALOGUE,
          POST_DOOR, LEVEL_CHECK, FIRST_TAKE, HUSH, RADIO_DEAD,
-         BENT_RIG, PLANT_RIG_CELL, roomListen,
-         PROLOGUE_THOUGHTS, LINES, guestLines } from './data/conservatory-script.js';
+         BENT_RIG, PLANT_RIG_CELL, TALISMAN, TALISMAN_CELL, roomListen,
+         PROLOGUE_THOUGHTS, LINES, HIM_LINES, guestLines,
+         CHAPEL_KEY_CHECK,
+         endingChoice, sacrificeEnding, INVERT_START, FALSE_DOOR, rescueEnding,
+         INVERSION_FINAL, guardEpilogue, helpedEnding, druggedReveal,
+         takenLines, foundLine } from './data/conservatory-script.js';
 export { fx } from './render/canvas.js';
 
 // M1: canvas glyph renderer is the default; `?renderer=dom` keeps the legacy
@@ -99,7 +136,7 @@ let worldTemplates=new Map(); // worldId -> {id,label,width,height,terrain,sampl
 let chunkByIdx=new Map();
 const chunkAt=(i)=>chunkByIdx.get(i);
 let keysDown=new Set();
-let moveTimer=null;
+let nextMoveAtMs=0;
 
 // world grid
 let WORLD_TILE_W=0, WORLD_TILE_H=0;
@@ -123,6 +160,7 @@ let voidFatigue=0;             // 0..1, increases while trudging wilderness
 let worldBoundaryLatch=false;   // hysteresis latch for seam resistance
 let worldBoundaryFriction=0;    // 0..1 smoothed seam resistance
 let lastMoveAtMs=0;            // throttles tap/hold movement uniformly
+let renderMove=null;            // frame interpolation between collision cells
 let lastStepDx=0;
 let lastStepDy=0;
 let allFilesLoaded=false;
@@ -135,7 +173,6 @@ let keysFound=0;
 let door=null;          // {x,y} once spawned (after final key)
 let nextSpawnAt=0;      // ms timestamp for next scheduled key spawn (0 = none)
 let depth=0;            // 0 = overworld; each door descent increments by 1
-let onboardingHoldLastMs=0;
 let subWorld1Start={x:0,y:0};
 let subWorld2Start={x:0,y:0};
 let subWorld2HasKeys=false;
@@ -284,13 +321,48 @@ function makeCharId(n) {
 // ── Audio ─────────────────────────────────────────────────────────────────────
 let master=null;
 let outGain=null;
+let dialogGain=null;
+let sfxGain=null;
+let sfxDirectGain=null;
+let musicGain=null;
+let menuGain=null;
 let outputMonitor=null;
 let audioInitFailed=false;
-// The one knob the player actually owns. Sits at the very end of the bus so it
-// scales everything — hiss, cues, voices, the lot — without touching the mix.
-function setOutputVolume(v){
-  const g=Math.max(0, Math.min(1, Number(v)));
-  if(outGain && actx) outGain.gain.setTargetAtTime(g, actx.currentTime, 0.02);
+
+const clamp01 = (v, fallback = 1) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : fallback;
+};
+
+function setGainNode(node, v, ramp = 0.02) {
+  if (!node || !actx) return;
+  node.gain.setTargetAtTime(clamp01(v), actx.currentTime, ramp);
+}
+
+// GLOBAL. Sits at the very end of the bus so it scales everything without
+// changing the authored relationship between dialog, SFX, and music.
+function setOutputVolume(v){ setGainNode(outGain, v); }
+function setGlobalVolume(v){ setOutputVolume(v); }
+
+// SPOKEN / DIALOG: SAM voice and type/dialog ticks.
+function setDialogVolume(v){ setGainNode(dialogGain, paused ? 0 : v); }
+
+// SFX: page turns, stabs, hushes, room tone, object sounds, menu sounds.
+function setSfxVolume(v){
+  setGainNode(sfxGain, paused ? 0 : v);
+  setGainNode(sfxDirectGain, paused ? 0 : v);
+  setGainNode(menuGain, v);
+}
+
+// MUSIC: title/intro music only.
+function setMusicVolume(v){ setGainNode(musicGain, paused ? 0 : v); }
+
+function applyAudioSettings() {
+  const st = getSave().settings || {};
+  setOutputVolume(st.volume ?? 1);
+  setDialogVolume(st.dialog ?? 1);
+  setSfxVolume(st.sfx ?? 1);
+  setMusicVolume(st.music ?? 1);
 }
 function ensureCtx(){
   if(audioInitFailed) return;
@@ -314,19 +386,45 @@ function ensureCtx(){
       limiter.ratio.setValueAtTime(20, actx.currentTime);
       limiter.attack.setValueAtTime(0.001, actx.currentTime);
       limiter.release.setValueAtTime(0.06, actx.currentTime);
-      outputMonitor=MONITOR.monitorInit(actx, actx.destination);
-      outGain=actx.createGain();
-      const vol=getSave().settings?.volume;
-      outGain.gain.setValueAtTime(vol==null ? 1 : Math.max(0, Math.min(1, vol)), actx.currentTime);
-      master.connect(limiter);
-      limiter.connect(outGain);
-      outGain.connect(outputMonitor || actx.destination);
-      RT.roomToneInit(actx, master);
-      STORY.storyAudioInit(actx, master);
-      // Cues bypass the proximity mix: a switch is always as loud as a switch.
-      CUES.cuesInit(actx, limiter);
-      CUES.preloadAll(Object.values(CUES.CUE));
-      STORY.preloadAll();
+        outputMonitor=MONITOR.monitorInit(actx, actx.destination);
+
+        outGain=actx.createGain();
+        dialogGain=actx.createGain();
+        sfxGain=actx.createGain();
+        sfxDirectGain=actx.createGain();
+        musicGain=actx.createGain();
+        menuGain=actx.createGain();
+
+        // Dialog, world SFX, and music go through the glue compressor. Direct cue
+        // SFX still bypass the glue stage and hit the limiter, preserving the old
+        // "a switch is as loud as a switch" behavior while adding an SFX slider.
+        dialogGain.connect(master);
+        sfxGain.connect(master);
+        musicGain.connect(master);
+        sfxDirectGain.connect(limiter);
+        menuGain.connect(limiter);
+
+        master.connect(limiter);
+        limiter.connect(outGain);
+        outGain.connect(outputMonitor || actx.destination);
+
+        applyAudioSettings();
+
+        RT.roomToneInit(actx, sfxGain);
+        STORY.storyAudioInit(actx, sfxGain, {
+          dialog: dialogGain,
+          sfx: sfxGain,
+          music: musicGain,
+          menu: menuGain,
+        });
+        CUES.cuesInit(actx, sfxDirectGain);
+        FEAR.fearAudioInit(actx, sfxGain);
+        // The final-output analyser remains in the audible graph. The physical
+        // room mic joins its display as RMS only and is never routed to output.
+        MONITOR.monitorSetAuxInput(()=>MIC.micActive()?MIC.micLevel():0);
+
+        CUES.preloadAll([...Object.values(CUES.CUE), ...CUES.PAGE_TURNS]);
+        STORY.preloadAll();
     }catch(err){
       audioInitFailed=true;
       console.error('AudioContext init failed', err);
@@ -2598,7 +2696,6 @@ function startFunnelIntro(){
   introDistance=Math.max(introDistance, introForwardDistanceAt(px,py));
   pushEvent('// gate open: follow the funnel.');
   runGateFlashPulse(px, py);
-  onboardingHoldLastMs=0;
   updateOnboardingButton();
 }
 
@@ -2736,8 +2833,7 @@ function finalizeIntroTransition(targetPhase, reason='world'){
   lastStepDy=0;
   trail=[];
   fog = new Map();
-  if(moveTimer){ clearTimeout(moveTimer); moveTimer=null; }
-  if(keepMove) startMoveTimer();
+  nextMoveAtMs=keepMove ? performance.now()+currentMoveIntervalMs() : 0;
   pushEvent(`// release: ${reason}.`);
   applyIntroAudioEnvelope();
   updateAudio();
@@ -2933,14 +3029,14 @@ function updateAudio(){
 }
 
 function step(dx,dy){
+  // A blocking scene (title, settings, bag, a dialogue) owns input: a key held
+  // when it opened must not keep driving the player behind it. This is the guard
+  // that keeps the title screen from walking you around the basement.
+  if(scenes.blocksInput()) return;
   // You can always run. You simply cannot run and still have the take. The
   // earlier version locked movement outright, which reads as broken input.
   if(storyMode && REC.isRecording() && !REC.isStalled()) REC.spoilTake('you moved');
   const nowMs=performance.now();
-  if(lastMoveAtMs>0 && !isOnboardingActive()){
-    const needMs=currentMoveIntervalMs();
-    if((nowMs-lastMoveAtMs) < needMs) return;
-  }
   // Geometry blocks the step. In the conservatory this is a body test — a wall,
   // a lintel you would brain yourself on, a riser too tall to take — and it
   // reads from the same array the shader draws from.
@@ -2950,15 +3046,13 @@ function step(dx,dy){
       const move=FP.canStep(px, py, px+dx, py+dy, { keys: playerKeys });
       if(!move.ok){
         if(move.why==='locked') pushEvent('// locked. none of your keys.');
+        else if(move.why==='closed') pushEvent('// closed. [E] open.');
         else if(move.why==='bricked') pushEvent('// bricked up. it was a door once.');
         return;
       }
       planRedirect=move.redirect||null;
       const tx=planRedirect?.x??px+dx,ty=planRedirect?.y??py+dy;
       if(!PROPS.propCanOccupy(tx,ty)) return;
-      // A door is geometry, and opening one is a sound: a keyring, and then a
-      // building that knows which room you are in now.
-      if(storyMode && FP.hasFlag(px+dx, py+dy, CELL_FLAGS.DOOR)) fireCue('keys');
     } else if(R3.r3dSolid(px+dx, py+dy)) return;
   }
   // Your feet are the loudest thing in this building. The noise is left at the
@@ -2995,8 +3089,19 @@ function step(dx,dy){
   const ny=planRedirect?.y??py+sy;
   if(nx===px&&ny===py) return;
   if(isOnboardingActive() && !canMoveInOnboarding(nx,ny,sx,sy)) return;
+  beginRenderStep(nx,ny,nowMs);
   lastMoveAtMs=nowMs;
   px=nx; py=ny; stepCount++;
+  if(storyMode&&usingPlan()){
+    const closedDoors=FP.closePassedDoors(px,py);
+    if(closedDoors.length){
+      fireCue('door');
+      REC.emitNoise(.13,px,py,'a door closed behind you');
+      saveCommit({doors:FP.saveDoorState()});
+      R3.r3dSetProps(worldRenderInstances(FP.logicalToPhysical(px,py).renderGroup));
+    }
+  }
+  if(storyMode&&usingPlan())saveCommit({px,py,steps:stepCount,area:'conservatory'});
   lastStepDx=sx;
   lastStepDy=sy;
 
@@ -3139,27 +3244,72 @@ function arrowDelta(){
   if(backHeld()) dy+=1;
   return [dx,dy];
 }
-function startMoveTimer(){
-  if(moveTimer) return;
-  const run=()=>{
-    const [dx,dy]=arrowDelta();
-    if(dx===0&&dy===0){ moveTimer=null; return; }
-    step(dx,dy);
-    // High-frequency polling + in-step interval gating avoids double-throttle lag.
-    moveTimer=setTimeout(run, 16);
+function physicalPointFor(x,y){
+  if(usingPlan()){
+    const p=FP.logicalToPhysical(x,y);
+    return{x:p.x,z:p.z};
+  }
+  return{x,z:y};
+}
+function renderedPlayerPoint(now=performance.now()){
+  const base=physicalPointFor(px,py);
+  if(!renderMove)return base;
+  // Any position change that did not come through step() is a teleport, load,
+  // wake-up, or floor repair. It must not inherit a stale walking segment.
+  if(Math.hypot(base.x-renderMove.to.x,base.z-renderMove.to.z)>.001){renderMove=null;return base;}
+  const t=Math.max(0,Math.min(1,(now-renderMove.startedAt)/renderMove.durationMs));
+  const point={
+    x:renderMove.from.x+(renderMove.to.x-renderMove.from.x)*t,
+    z:renderMove.from.z+(renderMove.to.z-renderMove.from.z)*t,
   };
-  moveTimer=setTimeout(run, 16);
+  if(t>=1)renderMove=null;
+  return point;
+}
+function beginRenderStep(nx,ny,now){
+  renderMove={
+    from:renderedPlayerPoint(now),
+    to:physicalPointFor(nx,ny),
+    startedAt:now,
+    durationMs:Math.max(16,currentMoveIntervalMs()),
+  };
+}
+function armHeldMovement(now=performance.now()){
+  const [dx,dy]=arrowDelta();
+  nextMoveAtMs=(dx||dy) ? now+currentMoveIntervalMs() : 0;
+}
+function tickHeldMovement(now){
+  if(paused||scenes.blocksInput()){nextMoveAtMs=0;return;}
+  const [dx,dy]=arrowDelta();
+  if(dx===0&&dy===0){nextMoveAtMs=0;return;}
+  if(nextMoveAtMs<=0){armHeldMovement(now);return;}
+  if(now<nextMoveAtMs)return;
+  step(dx,dy);
+  const interval=currentMoveIntervalMs();
+  // Preserve the time cadence, but never burst several grid steps after a
+  // dropped frame or a background-tab pause.
+  nextMoveAtMs+=interval;
+  if(nextMoveAtMs<now-interval)nextMoveAtMs=now+interval;
 }
 
-function togglePause(){
-  paused=!paused;
-  if(paused){ stopAllVoices(); stopWorldLayerVoice(); silenceAmbientDrone(); pushEvent('// paused.'); }
+function setGameplayPaused(next, { announce=true }={}){
+  next=!!next;
+  if(paused===next) return;
+  paused=next;
+  keysDown.clear();
+  nextMoveAtMs=0;
+  if(paused){
+    stopAllVoices(); stopWorldLayerVoice(); silenceAmbientDrone();
+    setGainNode(dialogGain,0);setGainNode(sfxGain,0);setGainNode(sfxDirectGain,0);setGainNode(musicGain,0);
+    if(announce) pushEvent('// paused.');
+  }
   else {
+    applyAudioSettings();
     startAmbientDroneAt(currentAmbientTarget());
-    pushEvent('// resumed.');
+    if(announce) pushEvent('// resumed.');
     updateAudio();
   }
 }
+function togglePause(){ setGameplayPaused(!paused); }
 
 function jumpToSubWorld2(){
   if(!inRogue) return;
@@ -3250,7 +3400,8 @@ function grantAllKeysForCurrentLevel(){
 function pushEvent(msg){
   eventQueue.push(msg);
   if(eventQueue.length>3) eventQueue.shift();
-  document.getElementById('event').textContent=eventQueue[eventQueue.length-1]||'';
+  const el=document.getElementById('event');
+  if(el) el.textContent=eventQueue[eventQueue.length-1]||'';
 }
 
 // ── Render ─────────────────────────────────────────────────────────────────────
@@ -3819,6 +3970,7 @@ function renderMap(){
 }
 
 function renderStatus(){
+  if(!STATUS_EL) return;
   const c=curChunkIdx>=0?chunkAt(curChunkIdx):null;
   const v=curChunkKey?voices.get(curChunkKey):null;
   const dur=v?v.dur:0;
@@ -4051,6 +4203,7 @@ function renderKeymeter(){
 }
 
 function renderCatalog(){
+  if(!CATALOG_EL) return;
   if(!showCatalog){
     CATALOG_EL.style.display='none';
     return;
@@ -4071,6 +4224,7 @@ function renderCatalog(){
 }
 
 function toggleCatalog(){
+  if(!CATALOG_EL||!CATALOG_TOGGLE_BTN) return;
   showCatalog=!showCatalog;
   CATALOG_TOGGLE_BTN.textContent = showCatalog ? '[C] CATALOG · ON' : '[C] CATALOG';
   if(!showCatalog){
@@ -4124,12 +4278,35 @@ function renderBoot(){
     MAP_EL.innerHTML='';
     MAP_EL.textContent=bootText;
   }
-  CATALOG_EL.textContent='';
-  CATALOG_EL.style.display='none';
-  STATUS_EL.textContent='';
-  document.getElementById('event').textContent='';
+  if(CATALOG_EL){CATALOG_EL.textContent='';CATALOG_EL.style.display='none';}
+  if(STATUS_EL) STATUS_EL.textContent='';
+  const eventEl=document.getElementById('event');
+  if(eventEl) eventEl.textContent='';
   if(SENSE_EL) SENSE_EL.innerHTML='';
   if(KEYMETER_EL){ KEYMETER_EL.innerHTML=''; KEYMETER_EL.style.display='none'; }
+}
+
+function tickProgressionNotices(){
+  const notice=peekNotice();
+  if(!notice || scenes.has(`achievement-notice:${notice.id}`)) return;
+  const top=scenes.top();
+  if(top?.blocksInput || top?.blocksWorld) return;
+  const dialoguePending=!!top?.view?.()?.pending;
+  const policy=noticePolicy({
+    recording:REC.isRecording(),
+    battle:!!activeBattleId,
+    finale:finaleActive || !!pendingReturnReport(),
+    dialoguePending,
+    threat:PRES.isActive()?PRES.pressure(px,py):0,
+    platformKind:currentPlatform().kind,
+  });
+  if(policy==='defer') return;
+  if(policy==='pulse'){
+    pushEvent('// archive updated.');
+    consumeNotice(notice.id);
+    return;
+  }
+  scenes.push(makeAchievementNoticeScene({notice}));
 }
 
 // ── Main loop ─────────────────────────────────────────────────────────────────
@@ -4139,21 +4316,18 @@ function loop(){
     const nowLoopMs=performance.now();
     const dt=Math.min(0.05, lastLoopMs ? (nowLoopMs-lastLoopMs)/1000 : 0.016);
     lastLoopMs=nowLoopMs;
+    CONTROLLER.gamepadTick({
+      menuContext: scenes.blocksInput(),
+      onPress: controllerPress,
+      onRelease: controllerRelease,
+    });
     if(inRogue){
       // Keep keyboard focus on the play surface to avoid intermittent movement deadlocks.
       if((tick % 10)===0) ensureInteractionFocus();
-      // Onboarding fail-safe: movement should continue while key is held,
-      // independent of timer/focus edge cases.
-      if(isOnboardingActive()){
-        const [dx,dy]=arrowDelta();
-        if(dx!==0 || dy!==0){
-          const now=performance.now();
-          if((now - onboardingHoldLastMs) >= currentMoveIntervalMs()){
-            step(dx,dy);
-            onboardingHoldLastMs=now;
-          }
-        }
-      }
+      // One clock owns held movement. Browser key-repeat and independent
+      // setTimeout polling used to race this frame loop and produce uneven
+      // half-cell advances even while the camera itself was smoothly eased.
+      tickHeldMovement(nowLoopMs);
       if(!scenes.blocksWorld()){
         maybeSpawnScheduledKey();
         updateHorrorTick();
@@ -4162,18 +4336,24 @@ function loop(){
         tickStabs(dt);
         tickPages();
         tickRadio(dt);
-        tickRig();
+        tickFinale();
+        tickLensOnset(dt);
+        tickFear(dt);
+        tickTorch(dt);
+        tickLostItem();
         tickMutation(dt);
         maybeWakeLens();
       }
       // Playback runs through scenes and through the document reader: the tape
       // does not stop because you looked at a piece of paper. Neither does he
       // stop thinking, and neither does the radio stop talking.
-      tickPlayback();
-      // The cold open and the beats after the title own the voice themselves.
-      if(storyMode && !scenes.has('cold-open') && !scenes.has('after-title')){
-        SPEECH.updateSpeech(dt);
-        TUT.tickTutorial(dt, tutorialCtx());
+      if(!paused){
+        tickPlayback();
+        // The cold open and the beats after the title own the voice themselves.
+        if(storyMode && !scenes.has('cold-open') && !scenes.has('after-title')){
+          SPEECH.updateSpeech(dt);
+          TUT.tickTutorial(dt, tutorialCtx());
+        }
       }
       if(RENDERER==='3d') render3d(); else renderMap();
       // Instrument readouts only exist in JUST SURF; in story mode they are
@@ -4184,9 +4364,13 @@ function loop(){
     }
     else renderBoot();
 
+    // Progress notices wait until dialogue, danger, recording, and finales have
+    // cleared. They never interrupt the authoritative action that unlocked them.
+    tickProgressionNotices();
+
     // Scenes draw over whatever the world drew, on their own glyph layer —
     // and during boot too, so the title screen exists before the field does.
-    scenes.update(dt);
+    scenes.update(paused ? 0 : dt);
     uiClear();
     if(!inRogue && RENDERER==='3d') drawBootText();
     drawStoryHud();
@@ -4202,7 +4386,7 @@ function loop(){
 
 // ── 3D world-state bridge (M1b) ───────────────────────────────────────────────
 // Positions cached per player cell; voice activity refreshed every frame.
-let r3dCache={px:null,py:null,list:[],fogSize:-1,physicalGroup:''};
+let r3dCache={px:null,py:null,list:[],fogSize:-1,physicalGroup:'',physicalKey:''};
 function r3dNearChunks(){
   if(r3dCache.px!==px || r3dCache.py!==py){
     const list=[];
@@ -4226,7 +4410,7 @@ function r3dNearChunks(){
       }
     }
     list.sort((a,b)=>a.d-b.d);
-    r3dCache={px, py, list:list.slice(0,48), fogSize:r3dCache.fogSize,physicalGroup:r3dCache.physicalGroup};
+    r3dCache={px, py, list:list.slice(0,48), fogSize:r3dCache.fogSize,physicalGroup:r3dCache.physicalGroup,physicalKey:r3dCache.physicalKey};
   }
   for(const ch of r3dCache.list){
     const v=voices.get(ch.instKey);
@@ -4239,6 +4423,17 @@ function r3dNearChunks(){
 // original lab exactly as it was: a walkable field of audio, no triggers.
 let storyMode=false;
 let lastLoopMs=0;
+let activeDifficulty=currentDifficulty();
+
+function applyCurrentRunDifficulty(){
+  activeDifficulty=currentDifficulty();
+  PRES.configurePresence(activeDifficulty.presence);
+  REC.configureDifficulty({
+    ...activeDifficulty.recording,
+    torchDrainScale:activeDifficulty.torch.drainScale,
+  });
+  return activeDifficulty;
+}
 
 function applyLensPreset(name){
   const d=window.__diffusion;
@@ -4259,6 +4454,39 @@ function applyLensPreset(name){
 // testbed is a geometry proof and must stay free of them.
 let planName='';
 
+const METAL_DOOR_WIDTH=1.2162;
+function doorRenderInstances(group=null){
+  if(!FP.isLoaded())return[];
+  const out=[];
+  for(const door of FP.doorState()){
+    const center=FP.logicalToPhysical(door.cx,door.cy);
+    if(group&&center.renderGroup!==group)continue;
+    const width=Math.max(CELL,door.cells.length*CELL);
+    const count=Math.max(1,Math.round(width/METAL_DOOR_WIDTH));
+    const bay=width/count;
+    for(let i=0;i<count;i++){
+      const offset=(i-(count-1)/2)*bay;
+      out.push({
+        id:`door:${door.id}:${i}`,
+        mesh:door.open?'metal_door_open':'metal_door_closed',
+        x:center.x*CELL+(door.widthAxis==='x'?offset:0),
+        y:center.y,
+        z:center.z*CELL+(door.widthAxis==='y'?offset:0),
+        yaw:door.widthAxis==='x'?0:Math.PI/2,
+        scaleX:bay/METAL_DOOR_WIDTH,
+        scaleY:1.25,
+        zone:FP.zoneAt(Math.floor(door.cx),Math.floor(door.cy)),
+        structural:true,
+      });
+    }
+  }
+  return out;
+}
+
+function worldRenderInstances(group=null){
+  return[...PROPS.renderInstances({group}),...doorRenderInstances(group)];
+}
+
 async function loadBuilding(){
   // The real building. `?plan=testbed` still loads the geometry proof.
   const which=new URLSearchParams(location.search).get('plan') || 'conservatory';
@@ -4271,25 +4499,32 @@ async function loadBuilding(){
     // ?at= is a debug spawn and outranks the building's front door.
     const at=new URLSearchParams(location.search).get('at');
     if(data.spawn && !(at && /^-?\d+,-?\d+$/.test(at))){
-      const spawn=FP.spawn();
-      px=spawn.x; py=spawn.y;
+      const saved=getSave(),sx=Number(saved.px),sy=Number(saved.py);
+      const canRestore=Number(saved.steps)>0&&Number.isFinite(sx)&&Number.isFinite(sy)&&!FP.isSolid(sx,sy);
+      const start=canRestore?{x:sx,y:sy}:FP.spawn();
+      px=start.x;py=start.y;
     }
-    for(const d of data.doors||[]) FP.setDoorKey(d.x, d.y, d.key);
+    for(const d of data.doors||[]) FP.setDoorKey(d.x,d.y,d.key,{open:d.open===true});
+    FP.loadDoorState(getSave().doors);
     const p=FP.floorplan(),physicalPlan=FP.physicalRenderPlanFor(px,py);
     R3.r3dSetPlan(physicalPlan.rgba,physicalPlan.w,physicalPlan.h,physicalPlan.material);
     r3dCache.physicalGroup=physicalPlan.group;
+    r3dCache.physicalKey=physicalPlan.key;
     MUT.mutateInit();
     // He left them where he turned around. Pages already read stay picked up
     // across a reload — the building may move, the paper does not come back.
     if(which==='conservatory'){
       PROPS.propsInit(FP);
-      R3.r3dSetProps(PROPS.renderInstances({group:physicalPlan.group}));
+      syncDroppedRadioProp();
+      R3.r3dSetProps(worldRenderInstances(physicalPlan.group));
       const read=new Set(OBJ.objState().read);
       for(const pg of PAGES){
         const at=FP.toRuntimePoint(pg.at);
         if(read.has(pg.id) || FP.isSolid(at.x, at.y)) continue;
         OBJ.placePage(at.x, at.y, pg.room, pg.id);
       }
+      syncVisiblePages();
+      R3.r3dSetProps(worldRenderInstances(physicalPlan.group));
     } else R3.r3dSetProps([]);
     revealAround(px,py);
     faceOpenDirection();
@@ -4301,25 +4536,37 @@ async function loadBuilding(){
 
 function enterStory(){
   storyMode=true;
+  applyCurrentRunDifficulty();
+  ensureCtx();
+  if(actx && getSave().settings?.mic==='on') MIC.micInit(actx);
   setGameChrome(true);
+  playerKeys.clear();playerKeys.add('master');
+  if((getSave().items||[]).includes('chapel_key'))playerKeys.add('chapel');
   REC.loadRecState(getSave().rec);
   PRES.loadPresenceState(getSave().presence);
   OBJ.loadObjState(getSave().obj);
   STAB.loadStabState(getSave().stabs);
   RADIO.loadRadioState(getSave().radio);
   PROPS.loadPropState(getSave().props);
+  ENCOUNTERS.loadEncounterState(getSave().encounters);
   loadThoughtState(getSave().thoughts);
+  stepCount=Math.max(0,Number(getSave().steps)||0);
+  himIdx = getSave().him || 0;
   if(inRogue && RENDERER==='3d') loadBuilding();
   STAB.stabsInit({ onStab:playStab });
-  DOC.documentInit({
-    // Reading is not free. A sheet of paper turning is the quietest noise in
-    // the game, and it is still a noise, and something is listening for it.
-    turn:()=>{ if(storyMode) REC.emitNoise(0.06, px, py, 'a page turning'); },
-    close:()=>saveCommit({ obj:OBJ.saveObjState() }),
-  });
+    DOC.documentInit({
+      // Reading is not free. A sheet of paper turning is the quietest noise in
+      // the game, and it is still a noise, and something is listening for it.
+      turn:({ dir = 1 } = {})=>{
+        ensureCtx();
+        CUES.playPageTurn({ dir });
+        if(storyMode) REC.emitNoise(0.06, px, py, 'a page turning');
+      },
+      close:()=>saveCommit({ obj:OBJ.saveObjState() }),
+    });
   RADIO.radioInit({ squelch:onSquelch });
   SPEECH.speechInit({
-    audio:()=>{ ensureCtx(); return actx ? { ctx:actx, destination:master || actx.destination } : null; },
+    audio:()=>{ ensureCtx(); return actx ? { ctx:actx, destination:dialogGain || master || actx.destination } : null; },
     typing:STORY,
     cue:fireCue,
   });
@@ -4349,20 +4596,27 @@ function enterStory(){
   const flagParam=qp.get('flags');
   if(flagParam) flagApply(flagParam.split(',').filter(Boolean));
   ensureCtx();
+  if(inRogue&&RENDERER==='3d') ensureLensStarted(qp);
   // The cold open, then a man doing his setup in the dark. `?skiptut=1` for
   // anyone who has to walk this building forty times today.
   if(!flagTest('prologueDone') && !qp.has('skiptut')){
+    const run=getSave().run;
+    const condensedCheckIn=!!run?.replay?.isReplay && !!run?.replay?.condensedCheckIn;
+    if(condensedCheckIn && !run.replay.condensedCheckInUsed){
+      run.replay.condensedCheckInUsed=true;
+      saveCommit({run});
+    }
     scenes.push(makeColdOpenScene({
       beats: COLD_OPEN,
       opening: COLD_OPEN_DIALOGUE,
+      startAt: condensedCheckIn ? 'replay-condensed' : 'start',
       audio: STORY,
       slate: 'W. ELLERY HOLDINGS · WORK ORDER 4417-C · ARCHIVAL CAPTURE',
-      getAudio: ()=>({ ctx:actx, destination:master }),
+      getAudio: ()=>({ ctx:actx, destination:dialogGain || master }),
       cue: fireCue,
       fx: CR.fx,
-      onChoice: (choice)=>{
-        if(choice?.set || choice?.clear) flagApply(choice.set || [], choice.clear || []);
-      },
+      replay: createReplayService('cold-open'),
+      onChoice: applyStoryChoice,
       onDone: ()=>{
         flagApply(['prologueDone']);
         // The key turns · THE TITLE · the door shuts · the push bar is gone ·
@@ -4376,9 +4630,10 @@ function enterStory(){
             ambient: false,
             lensPreset: 'calm',
             audio: STORY,
-            getAudio: ()=>({ ctx:actx, destination:master }),
+            getAudio: ()=>({ ctx:actx, destination:dialogGain || master }),
             cue: fireCue,
             fx: CR.fx,
+            replay: createReplayService('after-title'),
             onDone:()=>postDoorThought(()=>TUT.startTutorial()),
           })),
         }));
@@ -4392,25 +4647,15 @@ function enterStory(){
   }
 }
 
-function enterJustSurf(){
-  storyMode=false;
-  STORY.stopAll();
-  setGameChrome(false);
-  ensureCtx();
-  startAmbientDroneAt(currentAmbientTarget());
-  pushEvent('// just surf. no story. the field is the field.');
-}
-
-// ── one place a cue becomes a sound ─────────────────────────────────────────
-// A line in data/conservatory-script.js carries `cue: 'pens'`. Every runner —
-// the cold open, the thought trees, the speech band — hands the name here, and
-// this is the only file that knows a pen makes a noise.
-//
-// Levels live in audio/story-audio.js's mix comment. The two that matter: the
-// door and the scream are the loudest things that happen, and they are equal.
 function fireCue(name){
   ensureCtx();
   switch(name){
+    case 'freeze':
+      // The moment it arrives. Spend the lens sample-and-hold: the frame stops
+      // being a frame and starts being a held sample of the last true one.
+      CR.fx.flash(120, 'rgba(6,6,8,0.85)'); CR.fx.shake(1.6, 700);
+      applyLensPreset('rupture');
+      break;
     case 'door':
       CUES.playCue(CUES.CUE.door, {gain:0.95});
       // The booth was the last lit room, and the rain was on the roof of it.
@@ -4436,6 +4681,7 @@ function fireCue(name){
         REC.addNoise(RADIO.RADIO.noiseLevel, px, py, 'the radio');
         MUT.markHeard(px, py, 1);
         STAB.reportThreat();
+        bumpFear(0.22, { stinger:0.5 });   // your own belt gave you away
       }
       break;
     case 'keyturn': CUES.playCue(CUES.CUE.keyturn, {gain:0.85}); STORY.stopRain({fade:1.4}); break;
@@ -4449,6 +4695,18 @@ function fireCue(name){
     case 'keys':    CUES.playCue(CUES.CUE.keys, {gain:0.70}); break;
     case 'kit':     CUES.playCue(CUES.CUE.kit, {gain:0.72}); break;
     default: break;
+  }
+}
+
+function applyStoryChoice(choice){
+  if(choice?.set || choice?.clear) flagApply(choice.set || [], choice.clear || []);
+  const touched = [...(choice?.set || []), ...(choice?.clear || [])]
+    .some((entry)=>String(entry).startsWith('confession.'));
+  if(!touched) return;
+  const kind=flagGet('confession.kind');
+  const value=flagGet('confession.value');
+  if(kind==='nothing' || (kind==='name' && value)){
+    emitProgress(EVENT_TYPES.CONFESSION_COMMITTED, { kind, value:value || null }, 'main.applyStoryChoice');
   }
 }
 
@@ -4468,10 +4726,11 @@ function think(id, nodes, { startAt='start', onChoice, onDone, force=false }={})
   return scenes.push(makeThoughtScene({
     id, nodes, startAt,
     audio: STORY,
-    getAudio: ()=>({ ctx:actx, destination:master }),
+    getAudio: ()=>({ ctx:actx, destination:dialogGain || master }),
     fx: CR.fx,
     cue: fireCue,
-    onChoice: (c)=>{ if(c?.set || c?.clear) flagApply(c.set||[], c.clear||[]); onChoice?.(c); },
+    replay: createReplayService(`thought:${id}`),
+    onChoice: (c)=>{ applyStoryChoice(c); onChoice?.(c); },
     onDone,
   }));
 }
@@ -4487,9 +4746,10 @@ function converse(id, nodes, { startAt='start', onChoice, onDone }={}){
   ensureCtx();
   return scenes.push(makeThoughtScene({
     id, nodes, startAt,
-    audio: STORY, getAudio: ()=>({ ctx:actx, destination:master }), fx: CR.fx, cue: fireCue,
+    audio: STORY, getAudio: ()=>({ ctx:actx, destination:dialogGain || master }), fx: CR.fx, cue: fireCue,
+    replay: createReplayService(`conversation:${id}`),
     scrim: 0.5,
-    onChoice: (c)=>{ if(c?.set || c?.clear) flagApply(c.set||[], c.clear||[]); onChoice?.(c); },
+    onChoice: (c)=>{ applyStoryChoice(c); onChoice?.(c); },
     onDone,
   }));
 }
@@ -4522,21 +4782,17 @@ function framedLine(kind, fallback, ...args){
 // out loud — do not move, do not touch the light — immediately before the
 // player learns it the hard way. It intercepts [r] exactly once.
 //
-// Three things it must never intercept: a take already running, the dock's
-// level check (which is not a take), and the testbed, whose studio also
-// answers to `main_b3` and whose whole job is to let the mechanism suites
-// press [r] and get a recorder.
+// Three things it must never intercept: a take already running, a non-B3
+// tutorial room, and the testbed, whose studio also answers to `main_b3` and
+// whose whole job is to let the mechanism suites press [r] and get a recorder.
 function firstTakeIntercept(){
   if(!storyMode || REC.isMonitoring()) return false;
   if(planName!=='conservatory') return false;
 
-  // The very first press of [r], in the loading dock, with nothing hunting him.
-  // He explains his own trade to himself, and then he rolls, and then he has to
-  // hold still for six seconds. That is where the game is taught.
-  if(TUT.tutorialStep()==='level'){
-    // The dock is not a recordable room, so bare [r] would refuse it. The
-    // tutorial owns the level check: the first press opens the tree, and every
-    // retry after a spoil rolls straight, so the lesson can actually be passed.
+  // The level check belongs to Studio B3. Elsewhere [r] is just the recorder.
+  if(TUT.tutorialStep()==='level' && currentWorld()==='main_b3'){
+    // The tutorial owns this specific check: the first press opens the tree,
+    // and every retry after a spoil rolls straight, so the lesson can pass.
     if(!thoughtHad('level-check')) return !!think('level-check', LEVEL_CHECK, { onDone:()=>beginTakeNow() });
     beginTakeNow();
     return true;
@@ -4558,11 +4814,20 @@ function recordAction(){
     if(REC.isStalled()){ resumeInstrumentTake(); return; }
     stopTake(); return;
   }
+  // It took the one thing the job is made of. Nothing happens until you find it.
+  if(itemLost('recorder')){ SPEECH.say({ who:'you', text:'No recorder. There is no job until I have it back.' }); return; }
   // Already listening (the dialog closed, or there was no dialog): the second
   // press is the roll. If a LISTEN dialog is still up, its scene has the key.
   if(REC.isListening()){ if(!scenes.blocksInput()) roll(); return; }
   const room=recordableRoomAt(px,py);
   if(!room){ SPEECH.say(LINES.notARoom); return; }
+  // The chapel is the fifth room, and it is not a take. It is locked until the
+  // other four are on the card, and rolling it opens the confrontation.
+  if(room==='lux_nova'){
+    if(finaleActive) return;
+    if(REC.recState().takes.length < 4){ SPEECH.say(LINES.chapelLocked); return; }
+    beginConfrontation(); return;
+  }
   if(REC.hasTake(room)){ SPEECH.say(LINES.already); return; }
   openListen(room);
 }
@@ -4604,23 +4869,28 @@ function cancelListen(){
 // someone is in it.
 function roll(){
   if(!REC.startRecording()) return;
+  emitProgress(EVENT_TYPES.TAKE_STARTED, { roomId:currentWorld() }, 'main.roll');
   committedListen=false;
   screamedThisTake=false;
   takeOrigin={x:px,y:py};
-  instrArmedThisTake=PROPS.shouldArmHush({tutorial:TUT.tutorialActive()});
+  const takeSlot=REC.recState().takes.length+1;
+  instrArmedThisTake=takeSlot===3 && PROPS.shouldArmHush({tutorial:TUT.tutorialActive()});
   saveCommit({props:PROPS.savePropState()});
   ensureCtx();
   // The recorder is not a metaphor. It opens the actual microphone, and from
   // here the real room you are sitting in can spoil the take. Fire-and-forget:
   // no permission, no mic, and the game is exactly as it was.
   if(!new URLSearchParams(location.search).has('nomic') && getSave().settings?.mic !== 'off') MIC.micInit(actx);
+  // The transport is our sound, not the player's. Keep it on the output meter
+  // while preventing acoustic speaker bleed from invalidating the new take.
+  MIC.micIgnoreSpoilFor(1400);
   CUES.playCue(CUES.CUE.recorder, {gain:0.85});
   updateAudio();                      // monitor closes: the room goes silent
   STORY.startTapeHiss({ gain: TAKE_HISS.min, fade: 1.2 });
   SPEECH.say(framedLine('recStart', LINES.recStart));
   if(!TUT.tutorialActive()) once('presence-arrives', ()=>{
     PRES.spawnBehind(px, py, -lastStepDx||0, -lastStepDy||1);
-    metaCommit({hushMet:true});
+    emitProgress(EVENT_TYPES.HUSH_MET, {}, 'main.presenceArrives');
   });
 }
 
@@ -4635,12 +4905,19 @@ function stopTake(){
   STORY.stopTapeHiss({ fade: 0.6 });
   updateAudio();
   if(r.completed){
+    emitProgress(EVENT_TYPES.TAKE_COMPLETED, { roomId:room, elapsed:r.elapsed }, 'main.stopTake');
     PB.sealTake(room);              // choose the guest once. a tape does not re-roll.
     SPEECH.say(framedLine('recDone', LINES.recDone));
+    himBeat();                      // he held a clean minute here too, and then he did not
   } else {
     PB.abortTake(room);
-    if(r.spoiled) SPEECH.say(LINES.recSpoiled(r.reason));
-    else SPEECH.say(LINES.recAbort);
+    if(r.spoiled){
+      emitProgress(EVENT_TYPES.TAKE_SPOILED, { roomId:room, reason:r.reason || 'noise' }, 'main.stopTake');
+      SPEECH.say(LINES.recSpoiled(r.reason));
+    } else {
+      emitProgress(EVENT_TYPES.TAKE_ABORTED, { roomId:room }, 'main.stopTake');
+      SPEECH.say(LINES.recAbort);
+    }
   }
 }
 
@@ -4656,11 +4933,140 @@ function beginTakeNow(){
   roll();
 }
 
+
 // Contact. No death: a spoiled take, a lasting injury, and a presence that
 // knows you a little better than it did. The world is worse now, permanently.
+// ── TAKEN ───────────────────────────────────────────────────────────────────
+// It does not always hurt you. Half the time it TAKES you, and the taking is the
+// one thing in this game you are not allowed to watch: a light too bright to be a
+// light, in a colour that is nowhere in this building, and then nothing.
+//
+// You come to somewhere you did not walk to, with time gone out of the night and
+// one of your things gone out of the bag. What it took decides the next hour: the
+// recorder stops the job dead, the torch takes the light, the map takes the plan,
+// and the radio takes nothing at all — which is somehow the worst of the four.
+const LOSABLE=['recorder','torch','map','radio'];
+let takenActive=false;
+let lostItem=null, lostAt=null;
+let takenRecoveryUntil=0;
+const itemLost=(id)=> lostItem===id;
+
+function makeTakenFlashScene(onBlack){
+  let t=0,finished=false;
+  return {
+    id:'taken-flash',blocksInput:true,blocksWorld:true,lensPreset:'rupture',
+    update(dt){
+      t+=dt;
+      if(t<1.75||finished)return;
+      finished=true;scenes.pop();onBlack?.();
+    },
+    key(){return true;},
+    render(){
+      const {cols,rows}=uiSize();
+      uiFill(0,0,cols,rows,'#000');
+      if(t>=.18)return;
+      // A single, unavoidable close contact. The field presence is deliberately
+      // illegible at range; here its two highlights and split mouth consume the
+      // camera for six frames before the signal collapses to black.
+      uiDraw(({ctx,dpr})=>{
+        const w=ctx.canvas.width,h=ctx.canvas.height,p=1-Math.min(1,t/.18);
+        ctx.save();ctx.globalCompositeOperation='screen';
+        ctx.fillStyle=`rgba(225,244,238,${.48+.48*p})`;
+        ctx.shadowColor='rgba(210,255,244,.95)';ctx.shadowBlur=42*dpr;
+        ctx.beginPath();ctx.ellipse(w*.5,h*.48,w*.24*(1+p*.18),h*.55,0,0,Math.PI*2);ctx.fill();
+        ctx.globalCompositeOperation='source-over';ctx.shadowBlur=10*dpr;ctx.fillStyle='rgba(0,0,0,.98)';
+        ctx.fillRect(w*.365,h*.31,w*.09,h*.075);ctx.fillRect(w*.545,h*.31,w*.09,h*.075);
+        ctx.fillRect(w*.485,h*.44,w*.03,h*.44);
+        for(let i=0;i<11;i++){
+          const x=w*(.29+i*.042),j=((i*37)%9-4)*dpr;
+          ctx.fillRect(x+j,h*.58,w*.012,h*(.22+(i%3)*.055));
+        }
+        ctx.restore();
+      });
+    },
+  };
+}
+
+function beginTaken(){
+  takenActive=true;
+  if(REC.isRecording()) REC.spoilTake('it took you');
+  REC.injure();
+  fear=1; FEAR.setFear(1); FEAR.hushStinger(1);
+  const hue=Math.floor(Math.random()*360);
+  CR.fx.flash(110, `hsla(${hue},95%,74%,0.94)`);   // a colour that is not in the building
+  CR.fx.shake(3.2, 700); CR.fx.glitch(1, 520);
+  applyLensPreset('rupture');
+  scenes.push(makeTakenFlashScene(wakeUp));
+}
+
+function wakeUp(){
+  PRES.despawn();                                   // it is not standing over you. it has gone.
+  // Never choose the room the player already occupies. The public-room rebuild
+  // made B3 a valid destination as well as the most common test start; waking
+  // on the same cell makes the taking read as a time skip instead of transport.
+  const elsewhere=TARGETS.filter((r)=>{
+    if(r==='lux_nova')return false;
+    const at=FP.toRuntimePoint(ROOM_CELLS[r]);
+    return Math.hypot(at.x-px,at.y-py)>4;
+  });
+  const room=pick(elsewhere.length?elsewhere:TARGETS.filter(r=>r!=='lux_nova'));
+  const c=FP.toRuntimePoint(ROOM_CELLS[room]);
+  px=c.x; py=c.y; trail=[]; revealAround(px,py); faceOpenDirection();
+  const minutes=6+Math.floor(Math.random()*9);      // the night is shorter than it was
+  saveCommit({ playSeconds:(getSave().playSeconds||0)+minutes*60 });
+  takeAnItem();
+  fear=0.55;
+  scenes.push(makeColdOpenScene({
+    id:'taken-dialogue',beats:takenLines(minutes,lostItem,roomLabel(room)),
+    slate:'SIGNAL LOSS / RECOVERY',ambient:false,lensPreset:'hush',
+    audio:STORY,getAudio:()=>actx?{ctx:actx,destination:dialogGain||master||actx.destination}:null,
+    cue:fireCue,fx:CR.fx,
+    onDone:()=>{
+      takenActive=false;applyLensPreset('explore');
+      saveCommit({flags:getSave().flags,rec:REC.saveRecState(),presence:PRES.savePresenceState()});
+    },
+  }));
+}
+
+// It puts your thing somewhere real. He then GUESSES where, like a professional,
+// and he is usually wrong, because a man who has just been taken is not a reliable
+// witness to where he has been. The waypoint is his guess, not the answer.
+function takeAnItem(){
+  lostItem=pick(LOSABLE.filter(id=> id!=='radio' || !RADIO.isDropped()));
+  const where=pick(TARGETS.filter(r=>r!=='lux_nova'));
+  const c=FP.toRuntimePoint(ROOM_CELLS[where]);
+  lostAt={ x:c.x+(Math.random()<0.5?-2:2), y:c.y+(Math.random()<0.5?-2:2) };
+  flagApply([`lost.${lostItem}`]);
+  const guessRoom = Math.random()<0.25 ? where : pick(TARGETS.filter(r=>r!=='lux_nova' && r!==where));
+  const g=FP.toRuntimePoint(ROOM_CELLS[guessRoom]);
+  OBJ.setWaypoint(g.x, g.y, `your ${lostItem}?`);
+}
+
+// Walk over it and it is yours again. Nothing marks it. You simply find it.
+function tickLostItem(){
+  if(!lostItem || !lostAt || scenes.blocksWorld()) return;
+  if(Math.hypot(px-lostAt.x, py-lostAt.y) > 2.0) return;
+  const id=lostItem;
+  lostItem=null; lostAt=null;
+  takenRecoveryUntil=performance.now()+12000;
+  flagApply([], [`lost.${id}`]);
+  OBJ.clearWaypoint();
+  fireCue('bag');
+  SPEECH.say(foundLine(id));
+  saveCommit({ flags:getSave().flags });
+  emitProgress(EVENT_TYPES.EQUIPMENT_RECOVERED, { id }, 'main.tickLostItem');
+}
+
 function onPresenceCatch(count){
   STAB.reportThreat();
+  bumpFear(0.55, { stinger:1 });
+  // Half the time it hurts you. Half the time it TAKES you — and you do not get
+  // to watch that happen. Never during the tutorial: nothing hunts a man who has
+  // not started.
+  if(!takenActive && !lostItem && performance.now()>=takenRecoveryUntil
+     && !TUT.tutorialActive() && Math.random() < 0.5){ beginTaken(); return; }
   const injuries=REC.injure();
+  emitProgress(EVENT_TYPES.PLAYER_INJURED, { count:injuries }, 'main.onPresenceCatch');
   if(REC.isRecording()) REC.spoilTake('it found you');
   CR.fx.flash(140, 'rgba(10,10,12,0.9)');
   CR.fx.shake(1.4, 420);
@@ -4718,8 +5124,10 @@ function playStab(ev){
   if(REC.isRecording()) return;
   if(ev.kind==='true'){
     CR.fx.shake(0.5, 180);
+    bumpFear(0.30, { stinger:0.9 });    // something really moved
   } else {
     CR.fx.glitch(0.4, 120);
+    bumpFear(0.16, { stinger:0.45 });   // a thing you are not sure you heard
   }
   pushEvent(ev.kind==='true' ? '// something moved.' : '// ...did you hear that?');
 }
@@ -4739,10 +5147,25 @@ function tickStabs(dt){
 // because the reader does not turn your light on for you.
 const pageById=new Map(PAGES.map(p=>[p.id,p]));
 
+// Walking over a dead man's paperwork does not put it in your bag. The tick only
+// notices it is there; taking it is a thing you do with your hand, on purpose,
+// with [e], and the HUD says so.
 function tickPages(){
-  if(!storyMode) return;
+  if(!storyMode){ pageHere=null; return; }
+  pageHere = OBJ.pageNear(px,py);
+}
+let pageHere=null;
+
+// [e], standing on a sheet of paper.
+function pickUpPage(){
   const found=OBJ.tryPickup(px,py);
-  if(!found) return;
+  if(!found) return false;
+  pageHere=null;
+  PROPS.setLooseProp(`loose-page:${found.id}`,null);
+  if(RENDERER==='3d'){
+    const group=FP.logicalToPhysical(px,py).renderGroup;
+    R3.r3dSetProps(worldRenderInstances(group));
+  }
   const page=pageById.get(found.id);
   CUES.playCue(CUES.CUE.light, {gain:0.35, rate:1.4});
   STAB.reportRelief(0.3);    // finding something is a small exhale
@@ -4755,7 +5178,22 @@ function tickPages(){
   if(room && !REC.hasTake(room)) SPEECH.say(framedLine('pageRoom', LINES.pageRoom, roomLabel(room)));
   else SPEECH.say(framedLine('pageAny', LINES.pageAny));
   saveCommit({ obj:OBJ.saveObjState() });
-  if(page) DOC.readDocument(page);
+  if(page) readDocumentTracked(page);
+  himBeat();     // you read his handwriting, and then you think about him
+  return true;
+}
+
+// ── him ─────────────────────────────────────────────────────────────────────
+// One rung of the ladder at a time, on the beats the player is already hitting:
+// reading his logs, finishing a take he also finished, and being abandoned by
+// the dark. Ten lines across a whole run, so he accumulates rather than lectures.
+function himBeat(){
+  if(!storyMode || planName!=='conservatory') return false;
+  if(himIdx >= HIM_LINES.length) return false;
+  const line=HIM_LINES[himIdx++];
+  saveCommit({ him:himIdx });
+  SPEECH.say(line);
+  return true;
 }
 
 // ── interaction: [e] ────────────────────────────────────────────────────────
@@ -4779,6 +5217,26 @@ function playPropSample(prop,ref){
   src.connect(gain);gain.connect(pan);pan.connect(master);src.start(now);
   return true;
 }
+function progressionDocumentId(doc){
+  return String(doc?.id || doc?.title || 'document').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+}
+function readDocumentTracked(doc){
+  if(!doc) return false;
+  DOC.readDocument(doc);
+  emitProgress(EVENT_TYPES.DOCUMENT_READ, { id:progressionDocumentId(doc) }, 'main.readDocumentTracked');
+  return true;
+}
+function inspectPropTracked(id){
+  const line=PROPS.inspectProp(id);
+  emitProgress(EVENT_TYPES.PROP_INSPECTED, { id }, 'main.inspectPropTracked');
+  return line;
+}
+function auditionPropTracked(id){
+  const ref=PROPS.auditionProp(id);
+  emitProgress(EVENT_TYPES.PROP_AUDITIONED, { id }, 'main.auditionPropTracked');
+  return ref;
+}
+
 let workOrderRead=false;
 function markWorkOrderRead(){
   once('work-order-read', ()=>{
@@ -4793,16 +5251,79 @@ function markWorkOrderRead(){
 function interact(){
   if(!storyMode) return;
   if(PB.isPlaying()){ PB.stopPlayback(); return; }
+  // A sheet at your feet. Crouching for it is not free — a man bending down in a
+  // coat is the second quietest noise in this game, and something is listening.
+  if(pageHere){
+    if(REC.isRecording() && !REC.isStalled()){
+      SPEECH.say({who:'you',text:'Not mid-take. It has been on that floor for three weeks; it will keep.'});
+      return;
+    }
+    REC.emitNoise(0.08, px, py, 'you crouched for a page');
+    if(pickUpPage()) return;
+  }
+  const doorHit=usingPlan()?FP.interactDoor(px,py,R3.r3dDelta(1),playerKeys):null;
+  if(doorHit){
+    if(!doorHit.ok){
+      SPEECH.say({who:'you',text:doorHit.keyId==='chapel'?'Replacement core. Not on the standard ring.':'Locked. None of these.'});
+      return;
+    }
+    if(doorHit.opened){
+      fireCue(doorHit.keyId?'keyturn':'door');
+      REC.emitNoise(doorHit.keyId?.length ? .20 : .13,px,py,'a door opened');
+      saveCommit({doors:FP.saveDoorState()});
+      const p=FP.physicalRenderPlanFor(px,py);R3.r3dSetPlan(p.rgba,p.w,p.h,p.material);
+      r3dCache.physicalGroup=p.group;r3dCache.physicalKey=p.key;r3dCache.fogSize=-1;
+      R3.r3dSetProps(worldRenderInstances(p.group));
+    }
+    return;
+  }
+  // Proximity reveals these objects; [E] is what makes the recordist touch
+  // them. Walking across their cells never opens their scene or makes a choice.
+  if(interactRig()||interactTalisman())return;
   const hit=usingPlan() ? PROPS.pickProp(px,py,R3.r3dFacing(),2) : null;
   if(hit){
+    if(hit.id==='dropped-radio'){
+      if(RADIO.pickUpRadio(px,py)){
+        syncDroppedRadioProp();saveCommit({radio:RADIO.saveRadioState()});fireCue('bag');
+        emitProgress(EVENT_TYPES.EQUIPMENT_RECOVERED, { id:'radio' }, 'main.radioPickup');
+        SPEECH.say({who:'you',text:'Back on the belt. Still dead.'});
+      }
+      return;
+    }
     if(instr&&!instr.silenced&&hit.id===instr.propId){silenceInstrument(hit.id);return;}
     if(REC.isRecording()){
       SPEECH.say({who:'you',text:'Not while the take is held. Find the source.'});
       return;
     }
-    const line=PROPS.inspectProp(hit.id);
+    if(hit.action==='rekey-ledger'){
+      const line=inspectPropTracked(hit.id);
+      flagApply(['chapel.clue.ledger']);
+      saveCommit({flags:getSave().flags,props:PROPS.savePropState()});
+      if(line)SPEECH.say({who:'you',text:line});
+      return;
+    }
+    if(hit.action==='chapel-key-cabinet'){
+      if(playerKeys.has('chapel')){SPEECH.say({who:'you',text:'C-17. Already on the ring.'});return;}
+      if(!flagTest('chapel.clue.log')||!flagTest('chapel.clue.ledger')){
+        SPEECH.say({who:'you',text:'Three tags, two generations of lock. I need the rekey sheet and the office ledger before I guess.'});return;
+      }
+      converse('chapel-key-check',CHAPEL_KEY_CHECK,{
+        onChoice:(choice)=>{
+          if(choice?.keyTag==='C-17'){
+            const items=new Set(getSave().items||[]);items.add('chapel_key');
+            playerKeys.add('chapel');flagApply(['chapel.keyTaken']);
+            saveCommit({items:[...items],flags:getSave().flags});fireCue('keys');
+            emitProgress(EVENT_TYPES.ITEM_OBTAINED, { id:'chapel_key' }, 'main.chapelKey');
+          }else if(choice?.keyTag){
+            fireCue('keys');REC.emitNoise(.46,hit.rx,hit.ry,'keys struck the cabinet');STAB.reportThreat();
+          }
+        },
+      });
+      return;
+    }
+    const line=inspectPropTracked(hit.id);
     if(hit.sampleFamily?.length){
-      const ref=PROPS.auditionProp(hit.id);
+      const ref=auditionPropTracked(hit.id);
       playPropSample(hit,ref);
       REC.emitNoise(.16,hit.rx,hit.ry,`the ${propLabel(hit).toLowerCase()} sounded`);
     }
@@ -4811,7 +5332,7 @@ function interact(){
     return;
   }
   // The work order lives in your pocket for the whole night.
-  DOC.readDocument(WORK_ORDER);
+  readDocumentTracked(WORK_ORDER);
   markWorkOrderRead();
 }
 
@@ -4826,6 +5347,16 @@ function markRoom(room){
   if(!room) return false;
   const cell=ROOM_CELLS[room];
   if(!cell) return false;
+
+  // Marking is reversible. The bag calls the same authority for MARK and
+  // CLEAR, so waypoint state and save commits cannot diverge from the world.
+  if(OBJ.targetRoom()===room){
+    OBJ.clearWaypoint();
+    saveCommit({ obj:OBJ.saveObjState() });
+    fireCue('bag');
+    SPEECH.say({ who:'you', text:`${roomLabel(room)}. Clear.` });
+    return true;
+  }
 
   if(room!=='main_b3' && !REC.hasTake('main_b3')){
     SPEECH.say(LINES.basementFirst);
@@ -4845,8 +5376,17 @@ function markRoom(room){
 // to do first.
 function bagNotes(){
   const read=new Set(OBJ.objState().read);
-  // Print does not rot. His hand does, and so does yours.
-  const notes=[{ ...WORK_ORDER, title:`${WORK_ORDER.title}  ·  ${WORK_ORDER_STAMP}`, room:'main_b3' }];
+  // Print does not rot. His hand does, and so does yours. Keep issue time as
+  // metadata so the field-case renderer does not have to parse it from title.
+  const notes=[{
+    ...WORK_ORDER,
+    title:WORK_ORDER.title,
+    issued:WORK_ORDER_STAMP,
+    type:'ARCHIVAL CAPTURE',
+    preview:'Five room tones. Sixty seconds each. Unbroken.',
+    read:workOrderRead,
+    room:'main_b3',
+  }];
   for(const pg of PAGES){
     if(read.has(pg.id)) notes.push(pg);
   }
@@ -4866,6 +5406,70 @@ function bagJob(){
   });
 }
 
+
+function bagEquipment(){
+  const torchMissing=itemLost('torch');
+  const recorderMissing=itemLost('recorder');
+  const radioDropped=RADIO.isDropped();
+  const radioMissing=itemLost('radio');
+
+  return [
+    {
+      id:'light',label:'light',present:!torchMissing,
+      value:torchMissing?'MISSING':'READY',
+      statusTone:torchMissing?'danger':'active',
+      location:torchMissing?'UNKNOWN':'CARRIED',
+    },
+    {
+      id:'recorder',label:'recorder + headphones',present:!recorderMissing,
+      value:recorderMissing?'MISSING':'READY',
+      statusTone:recorderMissing?'danger':'active',
+      location:recorderMissing?'UNKNOWN':'CARRIED',
+    },
+    {
+      id:'map',label:'location indicator',present:!itemLost('map'),
+      value:itemLost('map')?'MISSING':'LIVE',statusTone:itemLost('map')?'danger':'active',
+      location:itemLost('map')?'UNKNOWN':'CARRIED',action:itemLost('map')?null:openMapFromBag,
+      actionLabel:'OPEN',destructive:false,
+    },
+    {
+      id:'radio',label:'radio',present:!radioDropped&&!radioMissing,
+      value:radioDropped?'DROPPED':radioMissing?'MISSING':RADIO.isDead()?'DEAD / DECOY':'LIVE',
+      statusTone:radioDropped||radioMissing?'danger':'active',
+      location:radioDropped?'IN FIELD':radioMissing?'UNKNOWN':'CARRIED',
+      action:(!radioDropped&&!radioMissing)?dropRadioFromBag:null,
+      actionLabel:'SET DOWN',
+      destructive:true,
+      confirm:{title:'SET DOWN RADIO?',body:'THE RADIO WILL REMAIN IN THIS ROOM.'},
+    },
+    {
+      id:'keyring',label:'standard keyring',value:'CARRIED',statusTone:'dim',
+    },
+    ...(playerKeys.has('chapel')?[{
+      id:'chapel-key',label:'chapel key · C-17',value:'ADDED',statusTone:'complete',
+    }]:[]),
+    ...(flagTest('has.coffee') && !flagTest('drank.coffee')?[{
+      id:'coffee',label:"the guard's coffee",value:'GET COLD',statusTone:'metadata',
+      action:drinkCoffee,actionLabel:'DRINK',destructive:true,
+      confirm:{title:'DRINK THE COFFEE?',body:'THIS CANNOT BE UNDONE.'},
+    }]:[]),
+  ];
+}
+
+function bagHint(){
+  return TUT.tutorialStep()==='read'
+    ? '[ENTER] READ THE WORK ORDER — FIND WHAT THEY WANT'
+    : TUT.tutorialStep()==='mark'
+      ? '[SPACE] MARK STUDIO B3 — SET THE WAYPOINT'
+      : '';
+}
+
+function bagFocus(){
+  if(TUT.tutorialStep()==='read') return {sectionId:'files',entryId:'file:work-order'};
+  if(TUT.tutorialStep()==='mark') return {sectionId:'manifest',entryId:'room:main_b3'};
+  return null;
+}
+
 function openBag(){
   if(!storyMode) return;
   if(REC.isRecording()){ SPEECH.say({ who:'you', text:'Not while rolling.' }); return; }
@@ -4873,18 +5477,74 @@ function openBag(){
   CUES.playCue(CUES.CUE.bag, {gain:0.72});
   REC.emitNoise(0.05, px, py, 'bag rummage');
   scenes.push(makeBagScene({
-    equipment: ['light', 'recorder + headphones', 'radio', 'standard keyring'],
-    job: bagJob(),
-    // The one instruction the bag ever gives, and only while he is learning it.
-    hint: TUT.tutorialStep()==='read' ? '[enter] on the work order — read what they want'
-        : TUT.tutorialStep()==='mark' ? '[space] on studio B3 — mark them off as you go'
-        : '',
+    getEquipment:bagEquipment,
+    getJob:bagJob,
+    getHint:bagHint,
+    focus:bagFocus(),
+    getFocus:bagFocus,
+    memory:getSave().bagNav,
+    onRemember:(bagNav)=>saveCommit({bagNav}),
+    getMonitorSource:()=>MIC.micActive()?'ROOM MIC LIVE':'FIELD LIVE',
     readDocument:(doc)=>{
-      DOC.readDocument(doc);
+      readDocumentTracked(doc);
       if(doc?.id==='work-order') markWorkOrderRead();
+      if(doc?.id==='page-6'){
+        flagApply(['chapel.clue.log']);saveCommit({flags:getSave().flags});
+      }
     },
     markRoom,
   }));
+}
+
+function openMapFromBag(){
+  scenes.pop();
+  scenes.push({
+    id:'field-map',blocksInput:true,blocksWorld:false,lensPreset:'calm',
+    key(e){const k=(e.key||'').toLowerCase();if(e.key==='Escape'||k==='b'){scenes.pop();return true;}return true;},
+    render(){
+      const {cols,rows}=uiSize();uiFill(0,0,cols,rows,'rgba(2,3,3,.88)');
+      drawMinimap(px,py,OBJ.waypoint(),{
+        ...minimapOptions({expanded:true}),
+        bounds:{x:2,y:2,w:Math.max(24,cols-4),h:Math.max(12,rows-6)},
+      });
+      uiText(3,rows-2,'[B / ESC] RETURN TO FIELD CASE','ui-label');
+    },
+  });
+}
+
+function syncDroppedRadioProp(){
+  if(!FP.isLoaded())return;
+  const at=RADIO.radioLocation();
+  PROPS.setLooseProp('dropped-radio',at?{
+    mesh:'equipment_rack',rx:at.x,ry:at.y,scale:.22,yaw:0,
+    inspect:{first:'The radio lies where you put it.',again:'Still there. Still listening.'},
+  }:null);
+  if(RENDERER==='3d'){
+    const group=FP.logicalToPhysical(px,py).renderGroup;
+    R3.r3dSetProps(worldRenderInstances(group));
+  }
+}
+
+function syncVisiblePages(){
+  if(!FP.isLoaded())return;
+  const live=new Set(OBJ.allPages().map((p)=>`loose-page:${p.id}`));
+  for(const p of PROPS.allProps()){
+    if(p.id.startsWith('loose-page:')&&!live.has(p.id))PROPS.setLooseProp(p.id,null);
+  }
+  OBJ.allPages().forEach((p,i)=>PROPS.setLooseProp(`loose-page:${p.id}`,{
+    mesh:'loose_note',rx:p.x,ry:p.y,elevation:.025,scale:1,
+    yaw:(i%5-2)*.17,interactive:false,
+  }));
+}
+
+function dropRadioFromBag(){
+  if(!RADIO.dropRadio(px,py))return;
+  scenes.pop();
+  syncDroppedRadioProp();
+  saveCommit({radio:RADIO.saveRadioState()});
+  fireCue('bag');REC.emitNoise(.08,px,py,'radio set on the floor');
+  emitProgress(EVENT_TYPES.EQUIPMENT_DROPPED, { id:'radio' }, 'main.dropRadioFromBag');
+  SPEECH.say({who:'you',text:RADIO.isDead()?'Leave it here. If it opens again, it opens here.':'Radio down. I can come back for it.'});
 }
 
 // ── the radio ───────────────────────────────────────────────────────────────
@@ -4898,15 +5558,24 @@ function radioTransmit(i){
   saveCommit({ radio:RADIO.saveRadioState() });
 }
 
-// A dead radio that makes noise is not a prop. It is on your belt, it is the
-// only sound in the game made at the cell you are standing in, and the thing
-// that hunts noise does not care who owns the radio.
+// A dead radio that makes noise is a hazard. On the belt it is local; on the
+// floor it is a spatial source the presence hears without forging a hit on the
+// recorder at the player's body.
 function onSquelch(ev){
   if(!actx || !master) return;
-  CUES.playCue(CUES.CUE.recorder, {gain:0.5, rate:0.42});
-  CR.fx.shake(0.5, 160);
-  SPEECH.say(SQUELCH_LINES[(ev.index-1) % SQUELCH_LINES.length]);
-  MUT.markHeard(px, py, 1);
+  if(ev.dropped){
+    const dx=(ev.x??px)-px,dy=(ev.y??py)-py,d=Math.hypot(dx,dy);
+    const [fx,fy]=RENDERER==='3d'?R3.r3dDelta(1):[0,-1];
+    const pan=d>.001?Math.max(-1,Math.min(1,(dx*(-fy)+dy*fx)/d)):0;
+    // Still audible across a large wing, but plainly attached to the radio on
+    // the floor rather than to the player's head or transcript.
+    CUES.playCue(CUES.CUE.recorder,{gain:Math.max(.045,.46/(1+d*.035)),rate:.42,pan});
+  }else{
+    CUES.playCue(CUES.CUE.recorder, {gain:0.5, rate:0.42});
+    CR.fx.shake(0.5, 160);
+    SPEECH.say(SQUELCH_LINES[(ev.index-1) % SQUELCH_LINES.length]);
+  }
+  MUT.markHeard(ev.x??px, ev.y??py, 1);
   STAB.reportThreat();
 }
 
@@ -4945,7 +5614,7 @@ function playCurrentTake(){
   if(!PB.hasTake(room)){ SPEECH.say(framedLine('playbackNone', LINES.playbackNone)); return; }
   if(PB.isPlaying()){ PB.stopPlayback(); return; }
   ensureCtx();
-  PB.playbackInit({ ctx:actx, bus:master });
+    PB.playbackInit({ ctx:actx, bus:sfxGain || master });
   PB.playTake(room, { character: roomToneCharacter(room) });
   playbackRoom=room;
   SPEECH.say(framedLine('playback', LINES.playback));
@@ -4964,12 +5633,111 @@ function tickPlayback(){
 
 // The plant room has no objective, no take, and no reason to walk into it. The
 // only way out that does not cost you everything is on the floor of it.
-function tickRig(){
-  if(!storyMode || planName!=='conservatory') return;
-  if(thoughtHad('bent-rig') || scenes.blocksInput()) return;
+function interactRig(){
+  if(!storyMode || planName!=='conservatory') return false;
+  if(thoughtHad('bent-rig') || scenes.blocksInput()) return false;
   const rig=FP.toRuntimePoint(PLANT_RIG_CELL);
-  if(Math.hypot(rig.x-px, rig.y-py) > D(1.6)) return;
-  think('bent-rig', BENT_RIG, { onDone:()=>saveCommit({ flags:getSave().flags }) });
+  if(Math.hypot(rig.x-px, rig.y-py) > D(1.6)) return false;
+  think('bent-rig', BENT_RIG, { onDone:()=>{ reconcileRig(); } });
+  return true;
+}
+
+// Gutting it buys light: two good cells the last man never got to use, and the
+// circuit that would have let you out goes slack in the tray.
+//
+// The grant hangs off the FLAG, not off the callback of the one function that
+// happens to open the tree. A consequence that only fires when it is asked
+// politely is a consequence you will one day forget to ask for.
+function reconcileRig(){
+  if(flagTest('rig.gutted') && !flagTest('rig.cells')){
+    flagApply(['rig.cells']);
+    REC.addBattery(0.75);          // the only spare cells in the building
+  }
+  saveCommit({ flags:getSave().flags, rec:REC.saveRecState() });
+}
+
+// The tuning fork. The one object in the building that is only ever a sound —
+// and the only place the thing in the walls is named out loud, by a man reading
+// an engraving, which is the only kind of lore this game is willing to hand you.
+function interactTalisman(){
+  if(!storyMode || planName!=='conservatory') return false;
+  if(thoughtHad('talisman') || scenes.blocksInput()) return false;
+  const t=FP.toRuntimePoint(TALISMAN_CELL);
+  if(Math.hypot(t.x-px, t.y-py) > D(1.6)) return false;
+  think('talisman', TALISMAN, {
+    onChoice:(c)=>{
+      // It is struck once and it does not stop. The tone is real, it is A, and
+      // it outlives the line that says a struck fork cannot.
+      if(c?.goto==='strike') strikeFork();
+      if(c?.goto==='damp' || c?.goto==='pocket' || c?.goto==='leave') dampFork();
+    },
+    onDone:()=>{ dampFork(); saveCommit({ flags:getSave().flags }); },
+  });
+  return true;
+}
+
+// A=440, held by the room rather than by the steel, which is why damping the
+// steel does nothing and why the building has to decide to let it go.
+let forkOsc=null, forkGain=null;
+function strikeFork(){
+  ensureCtx(); if(!actx || forkOsc) return;
+  forkOsc=actx.createOscillator(); forkGain=actx.createGain();
+  forkOsc.type='sine'; forkOsc.frequency.value=440;
+  forkGain.gain.setValueAtTime(0.0001, actx.currentTime);
+  forkGain.gain.exponentialRampToValueAtTime(0.09, actx.currentTime+0.01);
+  forkOsc.connect(forkGain).connect(master);
+  forkOsc.start();
+  bumpFear(0.18);
+}
+function dampFork(){
+  if(!forkOsc) return;
+  const o=forkOsc, g=forkGain; forkOsc=null; forkGain=null;
+  try{
+    g.gain.setTargetAtTime(0.0001, actx.currentTime, 0.35);
+    o.stop(actx.currentTime+2);
+  }catch{ try{ o.stop(); }catch{} }
+}
+
+// The torch burns only while it is burning, and light is the one thing the dark
+// is also asking for. When it dies, it dies mid-sentence.
+function tickTorch(dt){
+  if(!storyMode) return;
+  if(flagTest('rig.gutted') && !flagTest('rig.cells')) reconcileRig();
+  // It browns out before it dies. Two warnings, once each per run, so that a flat
+  // torch is always something you watched happen and chose not to prevent.
+  const bat=REC.batteryLevel();
+  if(REC.lightOn() && bat<=0.22 && !flagTest('torch.low')){
+    flagApply(['torch.low']);
+    SPEECH.say({who:'you',text:'The beam has gone yellow. That is the cells going, and there are no more cells.'});
+    saveCommit({flags:getSave().flags});
+  }
+  if(REC.lightOn() && bat<=0.07 && !flagTest('torch.dying')){
+    flagApply(['torch.dying']);
+    bumpFear(0.2);
+    SPEECH.say({who:'you',text:'Minutes. I have got minutes of light left and I am going to want them later. Off it goes.'});
+    saveCommit({flags:getSave().flags});
+  }
+  if(REC.drainLight(dt)){
+    CUES.playCue(CUES.CUE.light, {gain:0.5, rate:0.72});
+    bumpFear(0.35, { stinger:0.7 });
+    SPEECH.say({ who:'you', text:'...no. No, no — come on. Come ON.' });
+    SPEECH.say({ who:'direction', text:'The torch dies in your hand, and the room does not go dark so much as stop pretending it was ever anything else.' });
+    himBeat();     // he worked in the dark too. that is the thought you did not want.
+  }
+  // If you stripped the rig for its cells, the light you bought with the good
+  // ending abandons you at the door of the last room. It was always going to.
+  if(flagTest('rig.gutted') && !flagTest('torch.betrayed')
+     && REC.recState().takes.length >= 4 && recordableRoomAt(px,py)==='lux_nova'){
+    flagApply(['torch.betrayed']);
+    REC.killTorch();
+    CR.fx.flash(90, 'rgba(0,0,0,0.9)'); bumpFear(0.5, { stinger:0.9 });
+    SPEECH.sayAll([
+      { who: 'direction', text: 'At the chapel door, with four rooms on the card and one to go, the torch goes out.' },
+      { who: 'you', text: 'The cells. The good cells. Of course.' },
+      { who: 'direction', text: 'You traded a way out for a few hours of light, and the light has just handed the hours back, at the door, in front of the thing you are about to meet.' },
+    ]);
+    saveCommit({ flags:getSave().flags, rec:REC.saveRecState() });
+  }
 }
 
 // Past the inner door, the building starts dreaming. Authored `y > 15` is the
@@ -4979,7 +5747,114 @@ function maybeWakeLens(){
   const d=window.__diffusion;
   if(!d?.isBypassed?.()) return;
   if(py <= FP.toRuntimeCoord(15)) return;
-  once('lens-wakes', ()=>{ d.setBypass(false); lastZoneKey=''; });
+  once('lens-wakes', ()=>{ d.setBypass(false); R3.r3dSetLocalDiffusionLevel(Math.max(0.16, 0.18 + (window.__lensOnset ?? LENS_FLOOR) * 0.46)); lastZoneKey=''; });
+}
+
+// ── the lens onset (scaffold) ────────────────────────────────────────────────
+// The diffusion is not a switch. It comes on gradually and it never fully leaves
+// — a dark-adapted eye makes its own snow (phosphenes, eigengrau). One 0..1 level
+// holds it: a phosphene FLOOR at all times, a slow drift over the night, and a
+// bloom to full once the guard's coffee is in you. Whether that cup was a drug
+// or a stimulant is answered only by the ending, never by the mechanic.
+//
+// NOTE: the visual hookup here is deliberately thin. We are moving to bundled
+// LOCAL diffusion; applyLensOnset() is the single seam that work plugs into. For
+// now it rides the diffusion strength when a lens is present and publishes the
+// level (window.__lensOnset) for the phosphene grain the local pass will own.
+const LENS_FLOOR = 0.12;
+let lensOnset = LENS_FLOOR;
+let lensTarget = LENS_FLOOR;
+let lensTau = 240;                       // seconds; the sober drift is slow
+function lensDrink(){                     // the bloom begins the moment you swallow
+  lensTarget = 1.0; lensTau = 90;        // ~a minute and a half to come up full
+  applyLensPreset('hush');
+}
+function tickLensOnset(dt){
+  if(!storyMode) return;
+  // Sober, the building still works on you — slowly, and only a little.
+  if(!flagTest('drank.coffee')) lensTarget = Math.min(0.34, LENS_FLOOR + (getSave().playSeconds||0)/1800*0.22);
+  lensOnset += (lensTarget - lensOnset) * Math.min(1, dt / lensTau);
+  applyLensOnset(lensOnset);
+}
+function applyLensOnset(v){
+  window.__lensOnset = v;                                    // the phosphene grain reads this
+  const d = window.__diffusion;
+  if(d?.tune && !d.isBypassed?.()){
+    const strength = Math.max(0.10, Math.min(0.45, 0.18 + v * 0.27));
+    const local = Math.max(0.12, Math.min(0.72, 0.18 + v * 0.46));
+    d.tune({ strength, mix: Math.max(0.62, Math.min(0.92, 0.72 + v * 0.18)) });
+    R3.r3dSetLocalDiffusionLevel(local);
+  } else {
+    R3.r3dSetLocalDiffusionLevel(0);
+  }
+}
+
+// The guard's coffee. Drinking it is the hinge of the whole ending, and it is
+// offered like nothing at all. It starts the bloom; the ending decides what it was.
+function drinkCoffee(){
+  if(flagTest('drank.coffee')) return;
+  flagApply(['drank.coffee']); saveCommit({ flags:getSave().flags });
+  emitProgress(EVENT_TYPES.COFFEE_DRUNK, {}, 'main.drinkCoffee');
+  if(scenes.top()?.id==='bag') scenes.pop();
+  CUES.playCue(CUES.CUE.recorder, {gain:0.35, rate:0.6});
+  SPEECH.say({ who:'you', text:'Cold, bitter, gone in three swallows. There. Whatever that was.' });
+  lensDrink();
+}
+
+// ── fear ────────────────────────────────────────────────────────────────────
+// You are frightened, and the game knows the number. It rises when you HEAR
+// something — a stab, a squelch, the thing coming closer — and it falls slowly,
+// because a body takes far longer to calm down than it takes to startle.
+//
+// It is not cosmetic. Past the top of the scale the recordist breathes audibly,
+// and a breath is a noise in a room he is being paid to keep silent. Being
+// frightened spoils takes. You cannot roll until you have got hold of yourself.
+let fear=0;
+let breathAcc=0;
+let hushArtifactAcc=0;
+// How far up the ladder of thinking about the dead man you have climbed.
+let himIdx=0;
+const FEAR_DECAY=0.085;                 // per second. slow.
+
+function bumpFear(amount, { stinger=0 }={}){
+  if(!storyMode) return;
+  fear=Math.min(1, fear+amount);
+  if(stinger>0) FEAR.hushStinger(Math.min(1, stinger*(0.5+fear*0.7)));
+}
+
+function tickFear(dt){
+  if(!storyMode){ FEAR.setFear(0); R3.r3dSetFear(0); return; }
+  FEAR.startHeartbeat();                // a heart does not need to be asked twice
+  // Proximity is its own dread: the closer it is, the less the number falls.
+  const near = PRES.isActive() ? PRES.pressure(px,py) : 0;
+  fear = Math.max(0, Math.min(1, fear + near*0.22*dt - FEAR_DECAY*activeDifficulty.fear.fearDecayScale*dt));
+  FEAR.setFear(fear);
+  R3.r3dSetFear(fear);                  // vignette, grain, desaturation
+  window.__fear = fear;
+
+  // The HUSH acquires bandwidth as it approaches: sparse, low-passed fragments
+  // at the edge of the map become frequent full-spectrum tears at contact.
+  if(PRES.isActive()&&near>.04){
+    hushArtifactAcc+=dt;
+    const every=Math.max(.55,5.8-near*5.0);
+    if(hushArtifactAcc>=every){
+      hushArtifactAcc=0;FEAR.hushStinger(.08+near*.72);
+      CR.fx.glitch(.08+near*.24,55+near*135);
+    }
+  }else hushArtifactAcc=0;
+
+  // Breathing you cannot control. Past the threshold he is audible, and audible
+  // is noise, and noise in a take is a dead take.
+  const breath=activeDifficulty.fear;
+  if(breath.enabled && fear > breath.threshold){
+    breathAcc += dt;
+    const every = 3.4 - fear*1.6;       // the worse it is, the harder he breathes
+    if(breathAcc >= every){
+      breathAcc = 0;
+      const level=(0.10 + Math.max(0,fear-breath.threshold)*0.5)*breath.noiseScale;
+      REC.emitNoise(level, px, py, 'you could not keep your breath quiet');
+    }
+  } else breathAcc = 0;
 }
 
 // What the tutorial is allowed to know: the state of a man and his kit.
@@ -5004,7 +5879,7 @@ function tickMutation(dt){
   if(change){
     // Patch only what moved. The building is silent when it does this — the
     // presence makes noise, the building does not. Keep them separate.
-    const p=FP.physicalRenderPlanFor(px,py);R3.r3dSetPlan(p.rgba,p.w,p.h,p.material);r3dCache.physicalGroup=p.group;r3dCache.fogSize=-1;
+    const p=FP.physicalRenderPlanFor(px,py);R3.r3dSetPlan(p.rgba,p.w,p.h,p.material);r3dCache.physicalGroup=p.group;r3dCache.physicalKey=p.key;r3dCache.fogSize=-1;
   }
 }
 
@@ -5032,10 +5907,9 @@ const TAKE_HISS = { min: 0.10, max: 0.60 };
 function tickRecorder(dt){
   if(!storyMode) return;
   REC.decayNoise(dt);
-  // Partway through the natatorium take — never the first take of the night —
-  // the room starts playing an instrument that is not in it, and he has to
-  // decide, round by round, what he is actually hearing. The take is frozen
-  // while he does; win and it completes, lose and it dies.
+  // The job has an authored encounter cadence. These are not random stabs and
+  // they do not share the thought-once registry: only winning consumes one.
+  maybeIndependentBattle();
   maybeBattle();
   tickInstrument();
   if(REC.isRecording()){
@@ -5047,6 +5921,10 @@ function tickRecorder(dt){
   if(st==='complete'){
     const room=currentWorld();
     REC.addTake(room);
+    if(!PRES.isActive()) once('presence-arrives',()=>{
+      PRES.spawnBehind(px,py,-lastStepDx||0,-lastStepDy||1);
+      emitProgress(EVENT_TYPES.HUSH_MET, {}, 'main.presenceArrives');
+    });
     STAB.reportRelief(0.55);          // a clean take is the biggest exhale there is
     OBJ.clearWaypoint();
     saveCommit({ rec:REC.saveRecState() });
@@ -5069,6 +5947,7 @@ let screamedThisTake=false;
 function tickMic(){
   if(!MIC.micActive()) return;
   const m=MIC.micLevel();
+  if(!MIC.micMaySpoil()) return;
   if(m < MIC_LEVEL.spoil) return;
   if(m >= MIC_LEVEL.scream && !screamedThisTake){
     screamedThisTake=true;
@@ -5246,53 +6125,215 @@ function playFarSound(round){
   STORY.startTapeHiss({ gain: 0.20, fade: 0.6 });                    // is it a recording?
 }
 
-function openBattle(battle, { onWin, onLose }={}){
+function openBattle(battle, { onWin, onLose, onAbort }={}){
   ensureCtx();
   return scenes.push(makeBattleScene({
     battle,
+    difficulty: currentDifficulty().redaction,
     audio: STORY,
-    getAudio: ()=>({ ctx:actx, destination:master }),
+    getAudio: ()=>({ ctx:actx, destination:dialogGain || master }),
     fx: { cue:fireCue },
     playSound: playFarSound,
-    onWin: ()=>{ STORY.stopTapeHiss({fade:0.8}); onWin?.(); },
-    onLose:()=>{ STORY.stopTapeHiss({fade:0.8}); onLose?.(); },
+    onWin: (metrics)=>{ STORY.stopTapeHiss({fade:0.8}); onWin?.(metrics); },
+    onLose:(metrics)=>{ STORY.stopTapeHiss({fade:0.8}); onLose?.(metrics); },
+    onAbort:()=>{ STORY.stopTapeHiss({fade:0.3}); onAbort?.(); },
   }));
 }
 
-// The during-take battles: what's happening to me, room by room. The
-// natatorium (take 2) and the practice wing (take 4). Each fires once, a few
-// seconds into that room's take, and never on the first take of the night.
-const DURING_BATTLES={ the_tub:natatoriumBattle, soundnoisemusic:practiceBattle };
+let activeBattleId=null;
+function openEncounterBattle(id,battle,{onWin,onLose}={}){
+  if(activeBattleId||ENCOUNTERS.encounterCleared(id))return false;
+  activeBattleId=id;
+  emitProgress(EVENT_TYPES.BATTLE_STARTED, { id }, 'main.openEncounterBattle');
+  openBattle(battle,{
+    onWin:(metrics={})=>{
+      emitProgress(EVENT_TYPES.BATTLE_FINISHED, {
+        id, result:'win', attempts:Math.max(1,Number(metrics.attempts)||1), firstPass:Number(metrics.failedSubmissions||0)===0,
+      }, 'main.openEncounterBattle');
+      ENCOUNTERS.clearEncounter(id);
+      saveCommit({encounters:ENCOUNTERS.saveEncounterState()});
+      activeBattleId=null;
+      onWin?.(metrics);
+    },
+    onLose:(metrics={})=>{
+      emitProgress(EVENT_TYPES.BATTLE_FINISHED, {
+        id, result:'lose', attempts:Math.max(1,Number(metrics.attempts)||1), firstPass:false,
+      }, 'main.openEncounterBattle');
+      activeBattleId=null;
+      onLose?.(metrics);
+    },
+    onAbort:()=>{
+      emitProgress(EVENT_TYPES.BATTLE_FINISHED, { id, result:'abort', attempts:1, firstPass:false }, 'main.openEncounterBattle');
+      activeBattleId=null;
+    },
+  });
+  return true;
+}
+
+// ── M5: the confrontation and the two endings ───────────────────────────────
+let finaleActive=false;
+let escape=null;   // the playable escape state: { stage, doorCell, rescueCell, deadlineMs }
+const isNamed=()=> flagGet('confession.kind')==='name' && flagGet('confession.value')==='Sarah';
+
+// Put a finale beat sequence (array) or node tree (object) on the cold-open
+// surface — the same presenter the guard and the tape use.
+function presentFinale(content, { slate='', replayId='finale', onDone=()=>{}, onChoice }={}){
+  ensureCtx();
+  const nodes = content && !Array.isArray(content);
+  scenes.push(makeColdOpenScene({
+    id:'finale',
+    ...(nodes ? { opening: content } : { beats: content }),
+    ambient:false, lensPreset:'battle', slate,
+    audio: STORY, getAudio: ()=>({ ctx:actx, destination:dialogGain || master }),
+    cue: fireCue, fx: CR.fx,
+    replay: createReplayService(`finale:${replayId}`),
+    onChoice: (choice)=>{ applyStoryChoice(choice); onChoice?.(choice); }, onDone,
+  }));
+}
+
+// The fifth room. It wears whatever you confessed; it plays turn-based; and on
+// the far side of survival it hands to the ending choice.
+function beginConfrontation(){
+  finaleActive=true;
+  if(ENCOUNTERS.encounterCleared('chapel')){openEndingChoice();return;}
+  const kind=flagGet('confession.kind')||'nothing';
+  const value=flagGet('confession.value')||null;
+  const listened=Number(flagGet('listened.count'))||5;
+  REC.addTake('lux_nova'); saveCommit({ rec:REC.saveRecState() });   // the chapel is done, however it ends
+  openEncounterBattle('chapel',chapelBoss({ kind, value, listened }), {
+    onWin: openEndingChoice,
+    onLose: ()=> endSacrifice(),    // taken → you stay, which is the sacrifice
+  });
+}
+
+function openEndingChoice(){
+  presentFinale(endingChoice(flagTest('has.interface')), {
+    slate:'THE CHAPEL',
+    onDone:()=>{ if(flagGet('ending.choice')==='inversion') beginInversion(); else endSacrifice(); },
+  });
+}
+
+// Ending A — you stay. If you never drank, the seal (the demolition) closes and
+// it was all real. If you drank, it was a real guard who tried to help and could
+// not: the same staying, reframed by a paper cup.
+function endSacrifice(){
+  escape=null; OBJ.clearWaypoint();
+  const drank=flagTest('drank.coffee');
+  const beats = drank ? helpedEnding({ named:isNamed() })
+                      : sacrificeEnding({ injuries:REC.recState().injuries, named:isNamed() });
+  presentFinale(beats, { slate:'THE CHAPEL', onDone:()=> finishEnding(drank?'helped':'sacrifice') });
+}
+
+// Ending B — the inversion. The invert, then the playable run for a door that
+// will not be where the door is, then a way out you did not open.
+function beginInversion(){
+  presentFinale(INVERT_START, { slate:'THE PLANT ROOM · REVERSED', onDone: startEscape });
+}
+function startEscape(){
+  const door=FP.spawn();                                   // the grey door you came in through
+  const resc=FP.toRuntimePoint(MAIN_EXIT_CELL);            // the public door the guard named
+  const seconds=currentDifficulty().escape.seconds;
+  escape={ stage:'door', doorCell:door, rescueCell:resc,
+    deadlineMs:seconds==null?null:performance.now()+seconds*1000 };
+  OBJ.setWaypoint(door.x, door.y, 'grey door');
+  applyLensPreset('rupture');
+  SPEECH.say({ who:'direction', text:'The floor is going. Get to the door you came in through.' });
+}
+// Called each frame from the world tick. Advances the escape as you reach each
+// waypoint; running out of time takes Ending A by default.
+function tickFinale(){
+  if(!escape || scenes.blocksWorld()) return;
+  if(escape.deadlineMs!=null && performance.now() > escape.deadlineMs){ escape=null; OBJ.clearWaypoint(); endSacrifice(); return; }
+  const wp = escape.stage==='door' ? escape.doorCell : escape.rescueCell;
+  if(Math.hypot(px-wp.x, py-wp.y) > 2.4) return;
+  if(escape.stage==='door'){
+    escape.stage='at-door';
+    presentFinale(FALSE_DOOR, { slate:'THE GREY DOOR', onDone:()=>{
+      escape.stage='rescue';
+      OBJ.setWaypoint(escape.rescueCell.x, escape.rescueCell.y, 'main entrance');
+    }});
+  } else if(escape.stage==='rescue'){
+    escape=null; OBJ.clearWaypoint();
+    // You got out. Sober, the yard is not there and the clock restarts. Drunk,
+    // the yard is exactly there, the building stands, and the takes are ruined.
+    const drank=flagTest('drank.coffee');
+    const beats = drank ? druggedReveal({ takes:REC.recState().takes.length })
+                        : [ ...rescueEnding(isNamed()), ...INVERSION_FINAL ];
+    presentFinale(beats, { onDone:()=> finishEnding(drank?'drugged':'inversion') });
+  }
+}
+
+// Commit the return before the epilogue so a crash cannot erase it, but defer
+// all report/achievement presentation until the guard has finished writing.
+function finishEnding(id){
+  finaleActive=false;
+  const missingEquipment=LOSABLE.filter((item)=>itemLost(item));
+  if(RADIO.isDropped() && !missingEquipment.includes('radio')) missingEquipment.push('radio');
+  const summary=commitReturn(id, {
+    rec:REC.saveRecState(),
+    presence:PRES.savePresenceState(),
+    encounters:ENCOUNTERS.saveEncounterState(),
+    missingEquipment,
+  });
+  const variant =
+    id==='drugged' ? 'drugged' :
+    id==='helped' ? 'helped' :
+    id==='inversion' ? 'out' :
+    (flagGet('confession.kind')==='nothing' ? 'nobody' : 'client');
+  presentFinale(guardEpilogue(variant), {
+    slate:'W. ELLERY HOLDINGS · GATE',
+    replayId:`guard-epilogue:${id}`,
+    onDone:()=>showReturnReport(summary),
+  });
+}
+
+const RECORDING_BATTLES={the_tub:natatoriumBattle,amplifications:hallBattle,soundnoisemusic:practiceBattle};
+function battleForRoom(room,named){return RECORDING_BATTLES[room]?.(named)||null;}
+
+// Take two is a redaction sheet in whichever public room the player chose. It
+// is keyed to recording ordinal, not room or thought history.
 function maybeBattle(){
-  // A battle is gameplay, not a thought tree, so `?nothink=1` does not disable
-  // it — that flag only silences the interior monologue.
   if(planName!=='conservatory') return;
   if(!REC.isRecording() || scenes.blocksInput()) return;
-  const room=currentWorld();
-  const factory=DURING_BATTLES[room];
-  if(!factory) return;
-  if(REC.recState().takes.length < 1) return;       // never the first take
-  if(thoughtHad(`battle-${room}`)) return;
-  // A few seconds in — early enough that the player reliably meets it before a
-  // flinch could spoil the take out from under the set piece.
+  const room=recordableRoomAt(px,py),factory=RECORDING_BATTLES[room];
+  if(!factory||REC.recState().takes.length!==1)return;
+  if(ENCOUNTERS.encounterCleared('recording-2'))return;
   if(REC.takeProgress() < 0.18) return;
-  markThought(`battle-${room}`);
-  saveCommit({ thoughts:saveThoughtState() });
   const named = flagGet('confession.kind')==='name' && flagGet('confession.value')==='Sarah';
-  openBattle(factory(named), {
+  openEncounterBattle('recording-2',factory(named), {
     onWin: ()=>{ REC.recState().takeElapsed = ROOM_TONE.takeSeconds; },  // you held it
     onLose:()=>{ REC.spoilTake('you moved'); },
+  });
+}
+
+// A second fight waits between takes three and four, in whichever unfinished
+// room the player approaches. Losing requires leaving that room before retry.
+let routeBattleRetryRoom=null;
+function maybeIndependentBattle(){
+  if(planName!=='conservatory'||REC.isMonitoring()||scenes.blocksInput())return;
+  const room=recordableRoomAt(px,py),factory=RECORDING_BATTLES[room];
+  if(routeBattleRetryRoom&&room!==routeBattleRetryRoom)routeBattleRetryRoom=null;
+  if(!factory||routeBattleRetryRoom===room||REC.recState().takes.length!==3||REC.hasTake(room))return;
+  if(ENCOUNTERS.encounterCleared('pre-recording-4'))return;
+  const named=flagGet('confession.kind')==='name'&&flagGet('confession.value')==='Sarah';
+  openEncounterBattle('pre-recording-4',battleForRoom(room,named),{
+    onLose:()=>{
+      routeBattleRetryRoom=room;
+      REC.injure();
+      saveCommit({rec:REC.saveRecState()});
+    },
   });
 }
 
 // The playback dialogs: the concert hall (take 3) and the practice wing (take
 // 4) each get a scene when you play them back — the "contains what you did not
 // hear" beat, extended. Fires once per room.
-const PLAYBACK_DIALOGS={ amplifications:hallPlayback, soundnoisemusic:practicePlayback };
+const PLAYBACK_DIALOGS={ the_tub:natatoriumPlayback, amplifications:hallPlayback, soundnoisemusic:practicePlayback };
 function maybePlaybackDialog(room){
   const factory=PLAYBACK_DIALOGS[room];
   if(!factory || thoughtHad(`playback-${room}`)) return;
   const named = flagGet('confession.kind')==='name' && flagGet('confession.value')==='Sarah';
+  emitProgress(EVENT_TYPES.PLAYBACK_DISCOVERED, { id:room }, 'main.maybePlaybackDialog');
   think(`playback-${room}`, factory(named));
 }
 
@@ -5301,9 +6342,8 @@ let movingTimer=null;
 const playerKeys=new Set(['master']);   // the standard set. it does not open everything.
 let bootTextCache='';
 function clearFieldReadouts(){
-  CATALOG_EL.textContent='';
-  CATALOG_EL.style.display='none';
-  STATUS_EL.textContent='';
+  if(CATALOG_EL){CATALOG_EL.textContent='';CATALOG_EL.style.display='none';}
+  if(STATUS_EL) STATUS_EL.textContent='';
   if(SENSE_EL) SENSE_EL.innerHTML='';
   if(KEYMETER_EL){ KEYMETER_EL.innerHTML=''; KEYMETER_EL.style.display='none'; }
 }
@@ -5320,7 +6360,7 @@ function saveTick(dt){
   saveAcc+=dt;
   if(saveAcc<4) return;
   saveAcc=0;
-  saveCommit({ px, py, steps:stepCount, playSeconds:(getSave().playSeconds||0)+4 });
+  saveCommit({ px, py, steps:stepCount, area:storyMode?'conservatory':getSave().area, playSeconds:(getSave().playSeconds||0)+4 });
 }
 
 // One question, two geometry providers: the authored conservatory in story
@@ -5344,7 +6384,26 @@ function floorHere(){ return usingPlan() ? FP.floorAt(px,py) : 0; }
 // only the room you are actually in.
 const ZONE_ROOM={ [ZONE.studio]:'main_b3', [ZONE.natatorium]:'the_tub', [ZONE.hall]:'amplifications',
                   [ZONE.practice]:'soundnoisemusic', [ZONE.chapel]:'lux_nova' };
+const ZONE_AREA={ [ZONE.dock]:'loading dock', [ZONE.foyer]:'front atrium', [ZONE.studio]:'studio B3',
+  [ZONE.natatorium]:'the natatorium', [ZONE.hall]:'the concert hall', [ZONE.practice]:'the practice wing',
+  [ZONE.chapel]:'the chapel', [ZONE.plant]:'plant room', [ZONE.stair]:'building stair' };
 function recordableRoomAt(x,y){ return usingPlan() ? (ZONE_ROOM[FP.zoneAt(x,y)] || null) : currentWorld(); }
+function currentAreaLabel(){return usingPlan()?(ZONE_AREA[FP.zoneAt(px,py)]||FP.logicalToPhysical(px,py).spaceId||'circulation'):roomLabel(currentWorld());}
+
+function minimapOptions({expanded=false}={}){
+  const physical=FP.logicalToPhysical(px,py),slice=FP.physicalRenderPlanFor(px,py);
+  const pst=PRES.isActive()?PRES.presenceState():null;
+  let hushPoint=null;
+  if(instr?.prop&&!instr.silenced&&Math.hypot(instr.prop.rx-px,instr.prop.ry-py)<=D(18))hushPoint={x:instr.prop.rx,y:instr.prop.ry};
+  return {
+    label:currentAreaLabel(),
+    targetLabel:OBJ.targetRoom()?roomLabel(OBJ.targetRoom()).toUpperCase().slice(0,12):'NO TARGET',
+    project:(x,y)=>{const p=FP.logicalToPhysical(x,y);return{x:p.x,y:p.z,layer:p.layer,floor:p.y};},
+    layer:physical.layer,plan:slice,scale:expanded?D(2):CELL_SCALE,
+    presence:pst?{x:pst.x,y:pst.y,alpha:.58+PRES.pressure(px,py)*.4}:null,
+    hush:hushPoint,expanded,
+  };
+}
 
 function faceOpenDirection(){
   if(RENDERER!=='3d') return;
@@ -5358,30 +6417,162 @@ function faceOpenDirection(){
 // The service menu, opened over whatever called it. main.js owns it because it
 // is the only place with the audio bus and the mic; the scene reads and writes
 // save.settings itself. `inGame` adds RETURN TO TITLE / RESUME.
+function exportProgressionProfile(){
+  const build=new URLSearchParams(location.search).get('build') || 'LOCAL';
+  const profile=exportProfile(getMeta(), getSave().settings, {build});
+  const ok=downloadJsonFile(profile, `chunk-surfer-profile-${new Date().toISOString().slice(0,10)}.json`);
+  pushEvent(ok ? '// profile exported.' : '// profile export unavailable.');
+  return ok;
+}
+
+async function importProgressionProfile(){
+  const picked=await chooseJsonFile();
+  if(!picked.ok){
+    if(picked.error!=='CANCELLED') pushEvent(`// profile import failed: ${picked.error.toLowerCase().replaceAll('_',' ')}.`);
+    return false;
+  }
+  const merged=mergeImportedProfile(getMeta(), getSave().settings, picked.value);
+  if(!merged.ok){
+    pushEvent(`// profile import rejected: ${merged.error.toLowerCase().replaceAll('_',' ')}.`);
+    return false;
+  }
+  metaCommit(merged.meta);
+  saveCommit({settings:merged.settings});
+  BINDINGS.setControllerBindings(getSave().settings?.controllerBindings);
+  pushEvent('// profile imported. current run unchanged.');
+  syncPlatform().catch(()=>{});
+  return true;
+}
+
 function openSettings({ inGame=false }={}){
   ensureCtx();
   scenes.push(makeSettingsScene({
     inGame,
-    initialTab: inGame ? 'game' : 'display',
+    initialTab: null,
     hooks: {
-      setOutputVolume,
-      setMusicVolume: (v)=>STORY.setMusicVolume(v),
+      setGlobalVolume,
+      setDialogVolume,
+      setSfxVolume,
+      setMusicVolume,
       micStatus: ()=>MIC.micState(),
       enableMic: ()=>{ ensureCtx(); if(actx) MIC.micInit(actx); },
       onQuitToTitle: returnToTitle,
+      requestFullscreen: requestFullscreenSafe,
+      focusPanel: ensureInteractionFocus,
+      pauseGame: ()=>setGameplayPaused(true, {announce:false}),
+      resumeGame: ()=>setGameplayPaused(false, {announce:false}),
+      challengeRules: ()=>getSave().run?.rules || null,
+      challengeIntegrity: ()=>getSave().run?.integrity?.deadAir || null,
+      previewChallengeChange: (key,nextValue)=>previewCurrentRuleChange(key,nextValue),
+      applyChallengeChange: (change)=>{
+        applyCurrentRuleChange(change);
+        applyCurrentRunDifficulty();
+      },
+      replayUnlocks: ()=>deriveUnlocks(getMeta()),
+      setReplaySetting: (key,value)=>{
+        const run=getSave().run;
+        if(!run) return;
+        if(key==='seenTextMode') run.replay.seenTextMode=value;
+        else if(key==='archiveSignals') run.replay.archiveSignals=value!=='off';
+        else if(key==='condensedCheckIn') run.replay.condensedCheckIn=!!value;
+        saveCommit({run});
+      },
+      controllerName: CONTROLLER.controllerName,
+      controllerRemapAction: CONTROLLER.controllerRemapAction,
+      beginControllerRemap: (action)=>CONTROLLER.beginControllerRemap(action, (token)=>{
+        if(!BINDINGS.setControllerBinding(action, token)) return;
+        const st=getSave().settings||{};
+        saveCommit({settings:{...st,controllerBindings:BINDINGS.controllerBindings()}});
+      }),
+      cancelControllerRemap: CONTROLLER.cancelControllerRemap,
+      resetControllerBindings: ()=>{
+        const controllerBindings=BINDINGS.resetControllerBindings();
+        const st=getSave().settings||{};
+        saveCommit({settings:{...st,controllerBindings}});
+      },
+      exportProfile: exportProgressionProfile,
+      importProfile: importProgressionProfile,
+      currentArea: () => storyMode && inRogue ? roomLabel(currentWorld()) : (getSave().area || 'prologue'),
+      version: () => '0.1.0',
+      build: () => new URLSearchParams(location.search).get('build') || 'LOCAL',
     },
   }));
+}
+
+function openArchive(){
+  scenes.push(makeArchiveScene({ meta:getMeta() }));
+}
+
+function openReturnIndex(){
+  scenes.push(makeReturnIndexScene({ meta:getMeta() }));
+}
+
+function makeTitle({wantFullscreen=false}={}){
+  return makeTitleScene({
+    onAudioGate:ensureCtx,
+    onNewGame:()=>{ if(wantFullscreen) requestFullscreenSafe(); beginNewGameFlow(); },
+    onContinue:()=>{ if(wantFullscreen) requestFullscreenSafe(); enterStory(); },
+    onJustSurf:enterJustSurf,
+    onSettings:()=>openSettings({inGame:false}),
+    onArchive:openArchive,
+    onReturnIndex:openReturnIndex,
+  });
 }
 
 function returnToTitle(){
   storyMode=false;
   setGameChrome(false);
   stopAllVoices();
-  scenes.push(makeTitleScene({
-    onNewGame:()=>{ newGame(); enterStory(); },
-    onContinue:()=>{ enterStory(); },
-    onJustSurf:enterJustSurf,
-    onSettings:()=>openSettings({inGame:false}),
+  scenes.replace(makeTitle());
+}
+
+function showReturnReport(summary){
+  if(!summary){ returnToTitle(); return; }
+  scenes.push(makeReturnReportScene({
+    summary,
+    onReopen:()=>{ returnToTitle(); beginNewGameFlow(); },
+    onArchive:()=>{ returnToTitle(); openArchive(); },
+    onTitle:returnToTitle,
+  }));
+}
+
+function beginNewGameFlow(){
+  const meta=getMeta();
+  const initialPreset=getSave().settings?.lastDifficulty || 'contract';
+  scenes.push(makeDifficultySelectScene({
+    meta,
+    initialPreset,
+    initialCustomValues:getSave().settings?.customShiftRules,
+    onCancel:()=>{},
+    onConfirm:({preset,values})=>{
+      // The title remains beneath the selector until authorization is complete.
+      // Only now is the previous run replaced.
+      if(scenes.top()?.id==='title') scenes.pop();
+      newGame({preset,values});
+      beginRunProgression();
+      enterSelectedRun();
+    },
+  }));
+}
+
+function enterSelectedRun(){
+  BINDINGS.setControllerBindings(getSave().settings?.controllerBindings);
+  applyCurrentRunDifficulty();
+  const qp=new URLSearchParams(location.search);
+  if(qp.has('skipwarn')){ enterStory(); return; }
+  scenes.push(makeWarningScene({
+    onEnableMic:()=>{
+      ensureCtx();
+      const st=getSave().settings||{};
+      saveCommit({settings:{...st,mic:'on'}});
+      if(actx)MIC.micInit(actx);
+    },
+    onDisableMic:()=>{
+      const st=getSave().settings||{};
+      saveCommit({settings:{...st,mic:'off'}});
+      MIC.micStop();
+    },
+    onDone:enterStory,
   }));
 }
 
@@ -5414,21 +6605,34 @@ function drawStoryHud(){
 
   const rec=REC.recState();
   if(!rec.light && !REC.isListening()) uiText(2, 3, 'LIGHT  OFF', 'ui-secondary');
+  // The battery only becomes a fact when it starts being a problem.
+  {
+    const b=REC.batteryLevel();
+    if(b<=0) uiText(14, 3, 'CELL  FLAT', 'ui-danger');
+    else if(b<0.35) uiText(14, 3, `CELL  ${Math.round(b*100)}%`, b<0.15?'ui-danger':'ui-amber');
+  }
 
   // A very shitty map: you, and a waypoint. No walls, no routes.
+  // Unless it has taken the plan, in which case you have no map at all, and the
+  // building is exactly as large as it always was.
   const wp=OBJ.waypoint();
-  const pst=PRES.isActive() ? PRES.presenceState() : null;
-  drawMinimap(px, py, wp, {
-    label: roomLabel(currentWorld()),
-    project:(x,y)=>{const p=FP.logicalToPhysical(x,y);return{x:p.x,y:p.z,layer:p.layer,floor:p.y};},
-    layer:FP.logicalToPhysical(px,py).layer,
-    presence: pst ? { x:pst.x, y:pst.y, alpha:0.45 + PRES.dread(px, py)*0.5 } : null,
-  });
+  const nav=activeDifficulty.navigation;
+  if(itemLost('map')){
+    uiText(2, 5, 'PLAN  MISSING', 'ui-danger');
+  } else if(nav.showMap){
+    drawMinimap(px, py, wp, minimapOptions());
+  } else if(wp){
+    uiText(2, 5, 'PLAN  SIGNAL MINIMAL', 'ui-secondary');
+  }
 
-  // The compass line, the way a person estimates: a bearing and a vague sense.
+  // The compass line exposes only the fields authorized by the current shift.
   const bear=OBJ.bearingTo(px,py);
-  if(bear){
-    const loc=`TARGET  ${roomLabel(OBJ.targetRoom())} / ${bear.bearing} / ${bear.far}`.toUpperCase();
+  if(bear && nav.showBearing){
+    const parts=['TARGET'];
+    if(nav.showRoom) parts.push(roomLabel(OBJ.targetRoom()));
+    parts.push(bear.bearing);
+    if(nav.showDistance) parts.push(bear.far);
+    const loc=parts.join(' / ').toUpperCase();
     uiText(2, 4, loc.slice(0, Math.max(12, cols-28)), 'ui-blue');
   }
 
@@ -5451,6 +6655,7 @@ function drawStoryHud(){
   // add here — the monitor is open under it and the room is in the cans.
   if(REC.isListening()) return;
 
+  const doorHud=usingPlan()?FP.doorNear(px,py,R3.r3dDelta(1)):null;
   const propHit=usingPlan()?PROPS.pickProp(px,py,R3.r3dFacing(),2):null;
   if(propHit){
     const verb=propHit.sampleFamily?.length?'PLAY':'INSPECT';
@@ -5461,21 +6666,35 @@ function drawStoryHud(){
   // the recorder exists in a game about recording.
   // While he is setting up, the corner shows only the one key the room is
   // asking for. Everything else is learned by having wanted it.
-  const teach=TUT.tutorialPrompt();
-  if(teach){
+  const hintMode=objectiveHintsMode();
+const teach=tutorialPromptsEnabled() ? TUT.tutorialPrompt() : null;
+  // Paper at your feet outranks everything the corner has to say. It is the only
+  // thing in the building anyone has left behind on purpose.
+  if(pageHere && !REC.isRecording()){
+    const prompt='[E] PICK UP THE SHEET';
+    uiText(Math.max(2, Math.floor((cols-prompt.length)/2)), rows-2, prompt, 'ui-amber');
+  } else if(doorHud){
+    const hasKey=!doorHud.portal.keyId||playerKeys.has(doorHud.portal.keyId);
+    const prompt=hasKey?'[E] OPEN DOOR':'[E] TRY LOCKED DOOR';
+    uiText(Math.max(2,Math.floor((cols-prompt.length)/2)),rows-2,prompt,hasKey?'ui-amber':'ui-secondary');
+  } else if(teach){
     const prompt=teach.toUpperCase().slice(0,Math.max(1,cols-4));
     uiText(Math.max(2, Math.floor((cols-prompt.length)/2)), rows-2, prompt, 'ui-amber');
-  } else {
+  } else if(hintMode !== 'off') {
     const done = REC.hasTake(currentWorld());
-    const back = PB.hasTake(currentWorld()) ? ' · [P] PLAYBACK' : '';
+    const back = hintMode === 'full' && PB.hasTake(currentWorld()) ? ' · [P] PLAYBACK' : '';
     const rk = done ? '' : ' · [R] LISTEN';
-    const hint = (rec.light ? '[F] LIGHT OFF' : '[F] LIGHT') + rk + ' · [B] BAG' + back + ' · [ESC] PAUSE';
+    const pause = hintMode === 'full' ? ' · [ESC] PAUSE' : '';
+    const hint = (rec.light ? '[F] LIGHT OFF' : '[F] LIGHT') + rk + ' · [B] BAG' + back + pause;
+
     if(cols<72){
       const first=((rec.light?'[F] LIGHT OFF':'[F] LIGHT')+rk).slice(0,cols-4);
-      const second=('[B] BAG'+back+' · [ESC] PAUSE').slice(0,cols-4);
+      const second=('[B] BAG'+back+pause).slice(0,cols-4);
       uiText(2,rows-3,first,'ui-secondary');
       uiText(2,rows-2,second,'ui-secondary');
-    } else uiText(Math.max(2, cols - hint.length - 2), rows-2, hint, 'ui-secondary');
+    } else {
+      uiText(Math.max(2, cols - hint.length - 2), rows-2, hint, 'ui-secondary');
+    }
   }
 
   // Playback has its own meter, and it is deliberately identical to the take
@@ -5490,6 +6709,10 @@ function drawStoryHud(){
   }
 
   const monitorY=cols<72?rows-5:rows-4;
+  if(MIC.micActive()){
+    uiText(2,monitorY-1,'ROOM MIC','ui-label');
+    drawVfdMeter(11,monitorY-1,12,MONITOR.monitorSnapshotForRms(MIC.micLevel()),{theme:'green',thresholdDb:-12});
+  }
   uiText(2, monitorY, 'MONITOR', 'ui-label');
   drawVfdMeter(11, monitorY, 12, MONITOR.monitorSnapshot());
   SPEECH.drawSpeech();
@@ -5499,7 +6722,7 @@ function drawStoryHud(){
 // are still in it, and the only thing you can do is not move. Letterbox bars
 // close in as the seconds pass; a pulse; a noise gauge that is the whole of the
 // fear made legible; and, everywhere, do not move.
-// The take screen IS a Hitachi DA-1000: a green LOCATION INDICATOR for the
+// The take screen IS a hi ta chi DA-1000: a green LOCATION INDICATOR for the
 // progress of the minute, a pale-cyan TIME COUNTER, a level meter, and a
 // dread-closing letterbox around it. The dark room stays visible behind.
 function drawTakeOverlay(cols, rows){
@@ -5507,6 +6730,7 @@ function drawTakeOverlay(cols, rows){
   const p=REC.takeProgress();
   const spoiled=rec.spoiled;
   const held=REC.isStalled();
+  const assisted=REC.isAssistPaused();
   const t=performance.now()/1000;
 
   // The dark closes in as the seconds run.
@@ -5522,17 +6746,23 @@ function drawTakeOverlay(cols, rows){
   const y=Math.max(bar+1, Math.floor((rows-h)/2));
   const dot=(Math.floor(t*2)%2===0);
   const body=drawMachinePanel(x, y, w, h, {
-    theme:'green', wordmark:'HITACHI', model:'DA-1000', label:held?'TAKE HOLD':'RECORD',
+    theme:'green', wordmark:'hi ta chi', model:'DA-1000', label:held?'TAKE HOLD':assisted?'CLOCK HOLD':'RECORD',
     footer: spoiled ? `— ${rec.spoilReason.toUpperCase()} —`
       : held ? (instr?.silenced?'RETURN TO RECORDER · [R] RESUME':'SOURCE ACTIVE · [E] SILENCE')
+      : assisted ? 'MINOR HANDLING NOISE · CLOCK HELD'
       : "DON'T MOVE",
     meter:false,
-    buttons:{ w:6, keys:[ {label:held?'HOLD':'REC', lit: spoiled||held?null:'rec'}, {label:'STOP'} ] },
+    buttons:{ w:6, keys:[ {label:held||assisted?'HOLD':'REC', lit: spoiled||held||assisted?null:'rec'}, {label:'STOP'} ] },
   });
   const bx=body.x, by=body.y;
 
   // ● REC, blinking. SPOILED takes the red.
-  uiText(bx, by, spoiled ? 'X SPOILED' : held?'Ⅱ TAKE HELD':(dot?'● REC':'  REC'), spoiled?'ui-danger':held?'ui-blue':'ui-marker');
+  uiText(
+    bx,
+    by,
+    spoiled ? 'X SPOILED' : held ? 'Ⅱ TAKE HELD' : assisted ? 'Ⅱ CLOCK HELD' : (dot ? '● REC' : '  REC'),
+    spoiled ? 'ui-danger' : held || assisted ? 'ui-blue' : 'ui-marker',
+  );
 
   // LOCATION INDICATOR — the minute, as a bargraph with a red position marker.
   uiText(bx, by+2, 'LOCATION INDICATOR', 'ui-label');
@@ -5556,7 +6786,7 @@ function drawTakeOverlay(cols, rows){
     uiCenter(y-1, '● YOUR ROOM IS LIVE', 'ui-danger');
   }
   if(held&&instr?.silenced&&takeOrigin){
-    drawMinimap(px,py,null,{label:'RECORDER RETURN',returnPoint:takeOrigin,project:(x,y)=>{const p=FP.logicalToPhysical(x,y);return{x:p.x,y:p.z,layer:p.layer,floor:p.y};},layer:FP.logicalToPhysical(px,py).layer});
+    drawMinimap(px,py,null,{...minimapOptions(),label:'RECORDER RETURN',returnPoint:takeOrigin});
   }
 }
 
@@ -5580,8 +6810,32 @@ function installProbe(){
     materialAt:(x,y)=>FP.materialAt(x,y),
     canStep:(ax,ay,bx,by)=>FP.canStep(ax,ay,bx,by,{keys:playerKeys}),
     props:()=>({pack:R3.r3dPropStats(),instances:PROPS.allProps().map((p)=>({id:p.id,mesh:p.mesh,x:p.x,y:p.y,zone:p.zone,blocks:p.blocks})),learned:PROPS.learnedPlayable().map((p)=>p.id)}),
+    surfaceDream:()=>R3.r3dSurfaceDreamStats(),
+    surfaces:()=>R3.r3dSurfaceStats(),
     pickProp:()=>PROPS.pickProp(px,py,R3.r3dFacing(),2),
     warp:(x,y,f)=>{ px=x; py=y; if(f!=null) R3.r3dSetFacing(f); trail=[]; revealAround(px,py); },
+    // ── M5 finale test surface ──
+    beginConfrontation:()=>beginConfrontation(),
+    finale:()=>({ active:finaleActive, escape:escape&&escape.stage, ending:flagGet('ending.choice')||null, endingsSeen:getMeta().endingsSeen||[] }),
+    coffee:()=>({ has:flagTest('has.coffee'), drank:flagTest('drank.coffee'), lensOnset:+lensOnset.toFixed(3), target:+lensTarget.toFixed(3) }),
+    drinkCoffee:()=>drinkCoffee(),
+    // ── fear + taken ──
+    fear:()=>({ level:+fear.toFixed(3), taken:takenActive, lost:lostItem, lostAt }),
+    torch:()=>({ on:REC.lightOn(), battery:+REC.batteryLevel().toFixed(3),
+                 soldered:flagTest('has.interface'), gutted:flagTest('rig.gutted'), betrayed:flagTest('torch.betrayed') }),
+    drainTorch:(s)=>{ REC.drainLight(Number(s)||0); return REC.batteryLevel(); },
+    setFear:(v)=>{ fear=Math.max(0,Math.min(1,Number(v)||0)); return fear; },
+    bumpFear:(a)=>bumpFear(Number(a)||0),
+    takeMe:()=>beginTaken(),
+    itemLost:(id)=>itemLost(id),
+    warpToLost:()=>{ if(!lostAt) return false; px=lostAt.x; py=lostAt.y; trail=[]; revealAround(px,py); return true; },
+    escapeWarp:()=>{ if(!escape) return false; const wp=escape.stage==='door'?escape.doorCell:escape.rescueCell; px=wp.x; py=wp.y; trail=[]; revealAround(px,py); return escape.stage; },
+    setFlags:(arr)=>flagApply(arr||[]),
+    flag:(k)=>flagTest(k),
+    him:()=>himIdx,
+    // The plan is authored in cells; the player lives in runtime metres. A suite
+    // that wants to stand in the chapel should say so in the language of the map.
+    warpCell:(x,y)=>{ const r=FP.toRuntimePoint({x,y}); px=r.x; py=r.y; trail=[]; revealAround(px,py); return {x:px,y:py}; },
     hushInstrument:()=>instr?{propId:instr.propId,silenced:instr.silenced,origin:takeOrigin,pathLength:instr.path?.length||0}:null,
     wakeHush:()=>wakeInstrument(),
     silenceHush:()=>silenceInstrument(instr?.propId),
@@ -5595,7 +6849,7 @@ function installProbe(){
       const wp=OBJ.waypoint(); const home=FP.spawn();
       const anchors=[]; if(wp) anchors.push({x:wp.x,y:wp.y}); if(home) anchors.push({x:home.x,y:home.y});
       const c=MUT.tryMutate(performance.now()+1e9, {px,py,facing,light:REC.lightOn()}, anchors);
-      if(c){const p=FP.physicalRenderPlanFor(px,py);R3.r3dSetPlan(p.rgba,p.w,p.h,p.material);r3dCache.physicalGroup=p.group;r3dCache.fogSize=-1;}
+      if(c){const p=FP.physicalRenderPlanFor(px,py);R3.r3dSetPlan(p.rgba,p.w,p.h,p.material);r3dCache.physicalGroup=p.group;r3dCache.physicalKey=p.key;r3dCache.fogSize=-1;}
       return c;
     },
     facing:()=>R3.r3dDelta(1),
@@ -5616,7 +6870,10 @@ function installProbe(){
     read:()=>interact(),
     lensPreset:(n)=>{ applyLensPreset(n); return !!window.__lensPromptLocked; },
     typing:()=>STORY.typingState(),
-    audio:()=>({ ...STORY.audioState(), actx: actx ? actx.state : 'none' }),
+    audio:()=>({ ...STORY.audioState(), actx: actx ? actx.state : 'none',
+      buses:{global:outGain?.gain.value??null,dialog:dialogGain?.gain.value??null,sfx:sfxGain?.gain.value??null,direct:sfxDirectGain?.gain.value??null,music:musicGain?.gain.value??null},
+      mic:{state:MIC.micState(),level:MIC.micLevel(),maySpoil:MIC.micMaySpoil()},
+      monitor:MONITOR.monitorSnapshot() }),
     monitor:()=>MONITOR.monitorSnapshot(),
     monitorTest:(level)=>MONITOR.monitorInject(level),
     // Whatever conversation is on top, as data: the line, who says it, how much
@@ -5635,7 +6892,8 @@ function installProbe(){
                     listened:Number(flagGet('listened.count'))||0 }),
     job:()=>bagJob(),
     think:(id)=>{ const T={'post-door':POST_DOOR,'level-check':LEVEL_CHECK,'first-take':FIRST_TAKE,
-                           hush:HUSH,'radio-dead':RADIO_DEAD,'bent-rig':BENT_RIG}[id];
+                           hush:HUSH,'radio-dead':RADIO_DEAD,'bent-rig':BENT_RIG,
+                           talisman:TALISMAN}[id];
       return !!(T && think(id, T, {force:true, startAt: id==='post-door' ? (prologueKnowledgeFrame()||'self') : 'start'})); },
     speech:()=>{ const s=SPEECH.speaking(); return s && {who:s.who, text:s.text}; },
     hush:()=>SPEECH.clearSpeech(),
@@ -5648,6 +6906,12 @@ function installProbe(){
       if(!F) return false; ensureCtx(); openBattle(F(!!named), { onWin:()=>{}, onLose:()=>{} }); return true; },
     playbackDialog:(room)=>{ maybePlaybackDialog(room); return scenes.top()?.id||null; },
     battleState:()=>{ const v=scenes.top()?.battleView?.(); return v||null; },
+    encounters:()=>({
+      ...ENCOUNTERS.encounterState(),active:activeBattleId,
+      gates:{planName,recording:REC.isRecording(),monitoring:REC.isMonitoring(),room:currentWorld(),
+        takes:[...REC.recState().takes],progress:REC.takeProgress(),scene:scenes.top()?.id||null,
+        blocksInput:scenes.blocksInput()},
+    }),
     seedTake:(room)=>REC.addTake(room||'main_b3'),
     // The real mic. Headless cannot grant one, so inject a level to prove that
     // your own room spoils the take, and a scream makes him scream.
@@ -5688,57 +6952,114 @@ function installProbe(){
   };
 }
 
+
+function enterJustSurf(){
+  storyMode=false;
+  STORY.stopAll();
+  setGameChrome(false);
+  ensureCtx();
+  startAmbientDroneAt(currentAmbientTarget());
+  pushEvent('// just surf. no story. the field is the field.');
+}
+
 function bootScenes(){
   window.__scenes=scenes;
   installProbe();
-  // Focusable from the first frame, so the title screen answers the keyboard.
   try{ MAP_EL.setAttribute('tabindex','0'); MAP_EL.focus({preventScroll:true}); }catch(_){}
   saveLoad();
-  // Restore the player's VFD display settings before anything draws.
+  const qp=new URLSearchParams(location.search);
+  progressionInit({build:qp.get('build') || 'LOCAL'});
+  BINDINGS.setControllerBindings(getSave().settings?.controllerBindings);
   { const vs=getSave().settings?.vfd; if(vs) applyVfdSettings(vs); }
   terrorInit();
   uiInit(MAP_EL);
   scenes.scenesInit({ applyLensPreset });
 
-  const qp=new URLSearchParams(location.search);
+  if(qp.has('debug') || qp.has('progresslab')){
+    window.__progress={
+      snapshot:progressionSnapshot,
+      emit:(type,payload={})=>emitProgress(type,payload,'dev.console'),
+      finalize:(endingId)=>commitReturn(endingId,{rec:REC.saveRecState()}),
+      assert:()=>assertProgressionInvariants(),
+      sync:()=>syncPlatform(),
+    };
+  }
+
   if(!qp.has('debug')){
     if(SUBWORLD2_BTN) SUBWORLD2_BTN.style.display='none';
     if(DEBUG_KEYS_BTN) DEBUG_KEYS_BTN.style.display='none';
   }
+
+  if(qp.has('progresslab')){ scenes.push(makeProgressionLabScene()); return; }
+  if(qp.has('baglab')){ scenes.push(makeBagLabScene()); return; }
+
   const mode=qp.get('mode');
   if(mode==='surf'){ enterJustSurf(); return; }
-  if(mode==='story' || qp.has('talk')){ enterStory(); return; }
+  if(mode==='story' || qp.has('talk')){
+    if(!getSave().run){ newGame({preset:'contract'}); beginRunProgression(); }
+    enterStory();
+    return;
+  }
 
-  const wantFs=qp.has('fullscreen');
-  scenes.push(makeTitleScene({
-    onNewGame:()=>{ if(wantFs) requestFullscreenSafe(); newGame(); enterStory(); },
-    onContinue:()=>{ if(wantFs) requestFullscreenSafe(); enterStory(); },
-    onJustSurf:enterJustSurf,
-    onSettings:()=>openSettings({inGame:false}),
-  }));
+  const wantFullscreen=qp.has('fullscreen');
+  scenes.push(makeTitle({wantFullscreen}));
+  const pending=pendingReturnReport();
+  if(pending) showReturnReport(pending);
+  syncPlatform().catch(()=>{});
 }
 
+
 // ── Diffusion lens bootstrap (dev + demo) ─────────────────────────────────────
+const LOCAL_LENS_DEFAULT='ws://127.0.0.1:8000';
+let lensStarting=null;
+let lensDisabled=false;
+function localLensEndpoint(raw){
+  try{
+    const u=new URL(raw||LOCAL_LENS_DEFAULT, location.href);
+    const loopback=u.hostname==='127.0.0.1'||u.hostname==='localhost'||u.hostname==='[::1]'||u.hostname==='::1';
+    if(!loopback || (u.protocol!=='ws:'&&u.protocol!=='wss:')) return null;
+    return u.toString();
+  }catch(_){ return null; }
+}
 async function resolveLensConfig(qp){
-  if(qp.get('diffusion')) return { url:qp.get('diffusion'), token:qp.get('dtoken')||'' };
-  if(!qp.has('lens')) return null;
+  if(qp.get('diffusion')){
+    const url=localLensEndpoint(qp.get('diffusion'));
+    if(!url){ console.warn('remote diffusion endpoint rejected — the lens is local-only'); return null; }
+    return {url};
+  }
+  if(qp.get('lens')==='0' || qp.has('nodiffusion')) return null;
+  const localPage=location.hostname==='127.0.0.1'||location.hostname==='localhost'||location.hostname==='[::1]'||location.hostname==='::1';
+  if(!localPage && !qp.has('lens')) return null;
   try{
     const res=await fetch('./lens.local.json', {cache:'no-store'});
     if(!res.ok) throw new Error(res.status);
-    return await res.json();
+    const cfg=await res.json(),url=localLensEndpoint(cfg?.url);
+    if(!url) throw new Error('lens.local.json must name a loopback WebSocket');
+    return {url};
   }catch(err){
-    console.warn('lens.local.json missing — base render only. See tools/chunk_surfer/diffusion_server/README.md');
-    return null;
+    console.info(`local lens config unavailable (${err.message||err}); trying ${LOCAL_LENS_DEFAULT}`);
+    return {url:LOCAL_LENS_DEFAULT};
   }
 }
 async function startLens(qp){
-  if(window.__diffusion) return;   // one lens, one socket
+  if(window.__diffusion){
+    if(storyMode&&!qp.has('skiptut')&&FP.isLoaded()&&py<=FP.toRuntimeCoord(15)){
+      window.__diffusion.setBypass(true);
+      R3.r3dSetLocalDiffusionLevel(0);
+    } else if(!window.__diffusion.isBypassed?.()){
+      R3.r3dSetLocalDiffusionLevel(Math.max(0.16, Math.min(0.72, 0.18 + (window.__lensOnset ?? LENS_FLOOR) * 0.46)));
+    }
+    return window.__diffusion;
+  }   // one lens, one socket
   const cfg=await resolveLensConfig(qp);
-  if(!cfg?.url) return;
-  const [{diffusionStart}, {PRESETS}, {mountTuner}] = await Promise.all([
+  if(!cfg?.url){ lensDisabled=true; R3.r3dSetLocalDiffusionLevel(0); return null; }
+  const [diffusionModule={}, presetsModule={}, tunerModule={}] = await Promise.all([
     import('./net/diffusion.js'), import('./net/lens-presets.js'), import('./net/tuner.js'),
   ]).catch((err)=>{ console.error('lens modules failed', err); return []; });
-  if(!diffusionStart) return;
+  const {surfaceDiffusionStart}=diffusionModule;
+  const {PRESETS={}}=presetsModule;
+  const {mountTuner}=tunerModule;
+  if(!surfaceDiffusionStart){ lensDisabled=true; R3.r3dSetLocalDiffusionLevel(0); return null; }
   window.__lensPresets=PRESETS;
 
   const preset=PRESETS[qp.get('preset')||'explore'] || PRESETS.explore;
@@ -5750,22 +7071,32 @@ async function startLens(qp){
     drift:num('ddrift', preset.drift),
     guidance:num('dguidance', preset.guidance),
   };
+  // Generate enough variation to recover physical detail, then transfer only
+  // that detail in the shader; broad generated colour/lighting never replaces
+  // the authored material.
+  const surfaceOpts={strength:num('dstrength',.32),passes:1,guidance:num('dguidance',1.0),mix:num('dmix',.88)};
   // undefined (not '') so the zone prompt owns it from the first frame
   const prompt=qp.get('dprompt') || preset.prompt || undefined;
   if(prompt) window.__lensPromptLocked=true;
 
-  window.__diffusion=diffusionStart({
-    sourceCanvas:R3.r3dCanvas(),
-    hostEl:MAP_EL,
+  window.__diffusion=surfaceDiffusionStart({
     url:cfg.url,
-    token:cfg.token||'',
+    sourceUrl:new URL('../assets/surfaces/surface-albedo.jpg',import.meta.url),
+    applySurface:(slot,image,mix)=>R3.r3dSetSurfaceDream(slot,image,mix),
+    commitSurfaces:(mix)=>R3.r3dCommitSurfaceDream(mix),
+    setSurfaceMix:(mix)=>R3.r3dSetSurfaceDreamMix(mix),
+    clearSurfaces:()=>R3.r3dClearSurfaceDream(),
     prompt,
     ...opts,
+    ...surfaceOpts,
     onStatus:(s)=>{
       if(s.server) console.info('diffusion server:', JSON.stringify(s.server));
       if(s.state!=='streaming') console.info('diffusion:', s.state);
+      if(s.bypassed) R3.r3dSetLocalDiffusionLevel(0);
+      else R3.r3dSetLocalDiffusionLevel(Math.max(0.16, Math.min(0.72, 0.18 + (window.__lensOnset ?? LENS_FLOOR) * 0.46)));
     },
   });
+  R3.r3dSetLocalDiffusionLevel(Math.max(0.16, Math.min(0.72, 0.18 + (window.__lensOnset ?? LENS_FLOOR) * 0.46)));
 
   // THE LENS SLEEPS IN THE DOCK.
   //
@@ -5776,8 +7107,9 @@ async function startLens(qp){
   // and fades the overlay, so we do not pay a GPU for a black screen either.
   //
   // It wakes the first time he steps out of the dock, and never sleeps again.
-  if(storyMode && !new URLSearchParams(location.search).has('skiptut')){
+  if(storyMode && !qp.has('skiptut') && FP.isLoaded() && py<=FP.toRuntimeCoord(15)){
     window.__diffusion.setBypass(true);
+    R3.r3dSetLocalDiffusionLevel(0);
   }
 
   MAP_EL.style.position='relative';
@@ -5792,6 +7124,10 @@ async function startLens(qp){
     const fps=st.framesIn-lastIn; lastIn=st.framesIn;
     if(st.bypassed){
       hud.textContent = '';                       // asleep. say nothing.
+    } else if(st.mode==='surfaces'&&st.state==='ready'&&st.resident){
+      hud.textContent = `lens ● surfaces ${st.framesIn}/${st.total}   [t] tuner`;
+    } else if(st.mode==='surfaces'&&st.state==='generating'){
+      hud.textContent = `lens ◐ material ${Math.max(1,st.slot+1)}/${st.total} · visible`;
     } else if(st.state!=='streaming'){
       hud.textContent = `lens ○ ${st.state} — base render`;
     } else if(fps>0){
@@ -5807,14 +7143,32 @@ async function startLens(qp){
   }, 1000);
 
   if(qp.get('tuner')!=='0'){
-    const t=mountTuner(MAP_EL, ()=>window.__diffusion);
-    t.setState(opts);
+    const t=mountTuner(MAP_EL, ()=>window.__diffusion, {
+      keys:()=>[
+        {id:'master',label:'STANDARD / FOH',granted:playerKeys.has('master'),defaultGranted:true},
+        {id:'chapel',label:'CHAPEL · C-17',granted:playerKeys.has('chapel'),defaultGranted:false},
+      ],
+      setKey:(id,granted)=>{ if(granted) playerKeys.add(id); else playerKeys.delete(id); },
+      takes:()=>TARGETS.map((id)=>({id,label:roomLabel(id).toUpperCase(),taken:REC.hasTake(id)})),
+      setTake:(id,taken)=>{REC.setTake(id,taken);saveCommit({rec:REC.saveRecState()});},
+    });
+    t.setState(surfaceOpts);
   }
 }
+function ensureLensStarted(qp=new URLSearchParams(location.search)){
+  if(RENDERER!=='3d') return null;
+  if(lensDisabled) return null;
+  if(window.__diffusion) return window.__diffusion;
+  if(lensStarting) return lensStarting;
+  lensStarting=startLens(qp)
+    .catch((err)=>{ console.error('lens start failed', err); lensDisabled=true; R3.r3dSetLocalDiffusionLevel(0); return null; })
+    .finally(()=>{ lensStarting=null; });
+  return lensStarting;
+}
 
-// The lens repaints per zone: crossing into another world, or in/out of an
-// expanse, swaps the prompt (see net/zone-prompts.js). A manual prompt from
-// the tuner or ?dprompt/preset takes precedence until cleared.
+// Zone changes update the authored prompt but never repaint resident surfaces.
+// A material regeneration is an explicit tuner/preset operation, so ordinary
+// walking cannot produce texture swaps or camera-relative jitter.
 let lastZoneKey='';
 function updateZonePrompt(){
   const d=window.__diffusion;
@@ -5831,9 +7185,12 @@ let zonePromptFor=null, zoneSeedFor=()=>undefined;
 import('./net/zone-prompts.js').then((m)=>{ zonePromptFor=m.promptFor; zoneSeedFor=m.seedFor; }).catch(()=>{});
 
 function render3d(){
+  ensureLensStarted();
   const physical=usingPlan()?FP.logicalToPhysical(px,py):{x:px,z:py,y:floorHere(),renderGroup:''};
-  if(usingPlan()&&physical.renderGroup!==r3dCache.physicalGroup){
-    const slice=FP.physicalRenderPlanFor(px,py);R3.r3dSetPlan(slice.rgba,slice.w,slice.h,slice.material);r3dCache.physicalGroup=slice.group;r3dCache.fogSize=-1;R3.r3dSetProps(PROPS.renderInstances({group:slice.group}));
+  const rendered=renderedPlayerPoint();
+  const slice=usingPlan()?FP.physicalRenderPlanFor(px,py):null;
+  if(slice&&slice.key!==r3dCache.physicalKey){
+    R3.r3dSetPlan(slice.rgba,slice.w,slice.h,slice.material);r3dCache.physicalGroup=slice.group;r3dCache.physicalKey=slice.key;r3dCache.fogSize=-1;R3.r3dSetProps(worldRenderInstances(slice.group));
   }
   if(fog.size!==r3dCache.fogSize){
     if(usingPlan())R3.r3dUpdateFog((fx,fy)=>{const l=FP.logicalAtPhysical(fx,fy,{group:physical.renderGroup,floor:physical.y});return l?fogGet(l.x,l.y):0;},physical.x,physical.z);
@@ -5846,7 +7203,7 @@ function render3d(){
   const firstKey=keyMap.size>0 ? keyMap.values().next().value : null;
   const mapPoint=(p)=>{if(!p||!usingPlan())return p;const q=FP.logicalToPhysical(p.x,p.y);return{...p,x:q.x,y:q.z};};
   R3.r3dFrame({
-    px:physical.x, py:physical.z,
+    px:rendered.x, py:rendered.z,
     tileW:WORLD_TILE_W, tileH:WORLD_TILE_H,
     worldCount:worldsConfig.length,
     worldTints:worldsConfig.map(w=>R3.WORLD_RGB[w.id]||[0.6,0.6,0.6]),
@@ -5861,6 +7218,7 @@ function render3d(){
     light: storyMode ? REC.lightOn() : true,
     plan: usingPlan(),
     floorH: floorHere(),
+    moveIntervalMs:currentMoveIntervalMs(),
   });
 }
 
@@ -5922,7 +7280,7 @@ let enteringRogue=false;
 function enterRogue(){
   // CONCURRENCY=8 loaders race here: several can pass the !inRogue check in
   // fetchFile before any of them sets it. Re-entry built the world twice and
-  // opened two diffusion sockets, which then evicted each other (close 1012).
+  // opened duplicate local lens sessions.
   if(inRogue || enteringRogue) return;
   enteringRogue=true;
   bootTextCache='';
@@ -5968,11 +7326,11 @@ function enterRogue(){
       }
       revealAround(px,py);
     }
-    // Diffusion lens. Either explicit (?diffusion=<wss>&dtoken=<tok>) or, for
-    // local work, ?lens=1 which reads lens.local.json (gitignored) so the
-    // token never lives in a URL. Any failure leaves the base render up.
+    // Diffusion lens. `?lens=1` reads the ignored loopback config; an explicit
+    // `?diffusion=ws://127.0.0.1:...` is useful when testing another local port.
+    // Remote endpoints are rejected. Any failure leaves the base render up.
     const qp=new URLSearchParams(location.search);
-    startLens(qp);
+    ensureLensStarted(qp);
   }
   try{
     MAP_EL.setAttribute('tabindex','0');
@@ -5993,6 +7351,25 @@ function enterRogue(){
 // ── Keys ──────────────────────────────────────────────────────────────────────
 const ARROW_KEYS=new Set(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown']);
 const MOVE_KEYS=new Set(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','a','A','d','D','w','W','s','S']);
+const MOVE_CODE=Object.freeze({KeyA:'a',KeyD:'d',KeyW:'w',KeyS:'s',ArrowLeft:'ArrowLeft',ArrowRight:'ArrowRight',ArrowUp:'ArrowUp',ArrowDown:'ArrowDown'});
+const CONTROLLER_KEY=Object.freeze({
+  move_up:['ArrowUp','ArrowUp'], move_down:['ArrowDown','ArrowDown'],
+  move_left:['ArrowLeft','ArrowLeft'], move_right:['ArrowRight','ArrowRight'],
+  quiet:['Shift','ShiftLeft'], light:['f','KeyF'], bag:['b','KeyB'], recorder:['r','KeyR'],
+  interact:['e','KeyE'], playback:['p','KeyP'], menu:['Escape','Escape'],
+  confirm:['Enter','Enter'], back:['Escape','Escape'],
+});
+function controllerEvent(action, repeat=false){
+  const [key,code]=CONTROLLER_KEY[action]||['',''];
+  return {key,code,repeat,metaKey:false,ctrlKey:false,altKey:false,shiftKey:action==='quiet',target:null,
+    preventDefault(){},stopPropagation(){},controller:true,controllerAction:action};
+}
+function controllerPress(action,repeat=false){ if(CONTROLLER_KEY[action]) onKey(controllerEvent(action,repeat)); }
+function controllerRelease(action){ if(CONTROLLER_KEY[action]) onKeyUp(controllerEvent(action,false)); }
+function movementKey(e){
+  const key=MOVE_KEYS.has(e?.key)?e.key:(MOVE_CODE[e?.code]||null);
+  return key&&key.length===1?key.toLowerCase():key;
+}
 function forwardHeld(){ return keysDown.has('ArrowUp') || keysDown.has('w') || keysDown.has('W'); }
 function leftHeld(){ return keysDown.has('ArrowLeft') || keysDown.has('a') || keysDown.has('A'); }
 function rightHeld(){ return keysDown.has('ArrowRight') || keysDown.has('d') || keysDown.has('D'); }
@@ -6006,12 +7383,17 @@ function onKey(e){
   // typing in the lens tuner must not drive the player
   if(e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
   if(e.key==='t' || e.key==='T') return; // owned by the tuner panel
+  const moveKey=movementKey(e);
 
   // Scenes (title, dialogue, menus) get first refusal on every key — before
   // inRogue, so the title screen works while the field is still loading.
-  if(scenes.depth()>0){
+  if(scenes.depth()>0 && scenes.key(e)){
     e.preventDefault();
-    scenes.key(e);
+    // A scene now owns input: drop any movement key held from before it opened,
+    // so the player does not keep walking behind the title/menu. Non-modal
+    // scenes may decline the key and allow normal world input to continue.
+    keysDown.clear();
+    nextMoveAtMs=0;
     return;
   }
   if(!inRogue) return;
@@ -6030,6 +7412,8 @@ function onKey(e){
     const is=(code,ch)=> e.code===code || e.key===ch || e.key===ch.toUpperCase();
     if(bare && is('KeyF','f')){
       e.preventDefault();
+      if(itemLost('torch')){ SPEECH.say({ who:'you', text:'No torch. It has the torch.' }); return; }
+      if(!REC.lightOn() && REC.batteryLevel()<=0){ SPEECH.say({ who:'you', text:'Flat. It is flat, and I have nothing to put in it.' }); return; }
       const on=REC.toggleLight();
       CUES.playCue(CUES.CUE.light, {gain:0.7, rate: on ? 1 : 0.92});
       // He says it the first time. After that a man who flicks his own torch
@@ -6061,11 +7445,11 @@ function onKey(e){
     e.preventDefault();
     return;
   }
-  if(RENDERER==='3d' && (e.key==='ArrowLeft'||e.key==='a'||e.key==='A'||e.key==='ArrowRight'||e.key==='d'||e.key==='D')){
+  if(RENDERER==='3d' && (moveKey==='ArrowLeft'||moveKey==='a'||moveKey==='A'||moveKey==='ArrowRight'||moveKey==='d'||moveKey==='D')){
     // First-person: left/right are quarter turns, not strafes.
     e.preventDefault();
     if(!e.repeat){
-      const dir=(e.key==='ArrowRight'||e.key==='d'||e.key==='D') ? 1 : -1;
+      const dir=(moveKey==='ArrowRight'||moveKey==='d'||moveKey==='D') ? 1 : -1;
       R3.r3dTurn(dir);
       const d=window.__diffusion;
       if(d?.nudge){
@@ -6077,17 +7461,21 @@ function onKey(e){
     }
     return;
   }
-  if(MOVE_KEYS.has(e.key)){
+  if(moveKey){
     e.preventDefault();
-    if(isOnboardingActive() && (e.key==='ArrowDown' || e.key==='s' || e.key==='S')) return;
-    keysDown.add(e.key);
-    if(!e.repeat) maybeLockHushFromInputKey(e.key, performance.now());
-    const [dx,dy]=arrowDelta();
-    if(dx||dy){
-      step(dx,dy);
-      onboardingHoldLastMs=performance.now();
+    if(isOnboardingActive() && (moveKey==='ArrowDown' || moveKey==='s' || moveKey==='S')) return;
+    const alreadyHeld=keysDown.has(moveKey);
+    keysDown.add(moveKey);
+    // Native key-repeat is OS/browser timed and must never become a second
+    // movement clock. A new press gets one immediate, responsive step; the RAF
+    // cadence owns every held step after it.
+    if(!e.repeat&&!alreadyHeld){
+      const now=performance.now();
+      maybeLockHushFromInputKey(moveKey,now);
+      const [dx,dy]=arrowDelta();
+      if(dx||dy)step(dx,dy);
+      armHeldMovement(now);
     }
-    if(!isOnboardingActive()) startMoveTimer();
     return;
   }
   switch(e.key){
@@ -6123,13 +7511,20 @@ function onKey(e){
   }
 }
 function onKeyUp(e){
+  if(scenes.depth() && scenes.keyup(e)) e.preventDefault?.();
   if(e.key==='Shift') REC.setSlow(false);
-  if(MOVE_KEYS.has(e.key)) keysDown.delete(e.key);
+  const moveKey=movementKey(e);
+  if(moveKey){
+    keysDown.delete(moveKey);
+    const [dx,dy]=arrowDelta();
+    if(dx===0&&dy===0)nextMoveAtMs=0;
+  }
 }
 function onBlur(){
   // Releasing focus mid-press would otherwise leave keys "stuck".
   keysDown.clear();
-  if(moveTimer){ clearTimeout(moveTimer); moveTimer=null; }
+  nextMoveAtMs=0;
+  if(storyMode && inRogue && !paused && pauseWhenBlurEnabled()) togglePause();
 }
 function ensureInteractionFocus(){
   // Must work before inRogue too: the title screen is keyboard-driven, and an
@@ -6140,6 +7535,18 @@ function ensureInteractionFocus(){
       MAP_EL.focus({ preventScroll:true });
     }
   }catch(_){}
+}
+
+function onScenePointer(e){
+  if(!scenes.depth()) return;
+  const point=uiPointFromClient(e.clientX,e.clientY);
+  if(!scenes.pointer({
+    type:e.type,clientX:e.clientX,clientY:e.clientY,
+    cellX:point.cellX,cellY:point.cellY,
+    pointerId:e.pointerId,buttons:e.buttons,pointerType:e.pointerType,
+  })) return;
+  e.preventDefault();
+  if(e.type==='pointerdown') ensureInteractionFocus();
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
@@ -6156,7 +7563,7 @@ function boot(){
   let i=0;
   const next=()=>{if(i<lines.length){bootLog.push(lines[i++]);setTimeout(next,i<3?40:100);}};
   next();
-  CATALOG_TOGGLE_BTN.addEventListener('click', ()=>toggleCatalog());
+  if(CATALOG_TOGGLE_BTN) CATALOG_TOGGLE_BTN.addEventListener('click', ()=>toggleCatalog());
   if(ONBOARDING_TOGGLE_BTN){
     ONBOARDING_TOGGLE_BTN.addEventListener('click', ()=>{
       if(isIntroActive()) disableOnboardingForSession();
@@ -6174,6 +7581,10 @@ function boot(){
   window.addEventListener('keydown',onKey, {capture:true});
   window.addEventListener('keyup',onKeyUp, {capture:true});
   window.addEventListener('pointerdown', ensureInteractionFocus, {passive:true});
+  window.addEventListener('pointerdown', onScenePointer, {capture:true,passive:false});
+  window.addEventListener('pointermove', onScenePointer, {capture:true,passive:false});
+  window.addEventListener('pointerup', onScenePointer, {capture:true,passive:false});
+  window.addEventListener('pointercancel', onScenePointer, {capture:true,passive:false});
   // Fullscreen and iframe transitions silently drop keyboard focus.
   document.addEventListener('fullscreenchange', ensureInteractionFocus);
   window.addEventListener('message', ensureInteractionFocus, {passive:true});
@@ -6183,10 +7594,13 @@ function boot(){
   });
   window.addEventListener('blur',onBlur);
   updateOnboardingButton();
-  bootScenes();
-  raf=requestAnimationFrame(loop);
-  loadAll();
-  loadSw2DriverAudio();
+    bootScenes();
+    raf=requestAnimationFrame(loop);
+    const qp=new URLSearchParams(location.search);
+    if(!qp.has('baglab')&&!qp.has('progresslab')){
+      loadAll();
+      loadSw2DriverAudio();
+    }
 }
 
 boot();

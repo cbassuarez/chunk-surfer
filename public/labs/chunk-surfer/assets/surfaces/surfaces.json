@@ -1,128 +1,153 @@
 {
-  "version": 1,
-  "atlas": {
-    "file": "surfaces/surface-atlas.png",
-    "width": 1024,
-    "height": 512,
-    "tileSize": 256,
-    "columns": 4,
-    "rows": 2
+  "version": 4,
+  "array": {
+    "tileSize": 512,
+    "layers": 10,
+    "albedo": "surfaces/surface-albedo.jpg",
+    "normal": "surfaces/surface-normal.png",
+    "rough": "surfaces/surface-rough.jpg",
+    "height": "surfaces/surface-height.png"
   },
   "surfaces": {
-    "wall_stone_a": {
-      "file": "surfaces/wall_stone_a.png",
-      "slot": 0,
-      "atlasCell": [
-        0,
-        0
-      ],
+    "wall_brick": {
+      "layer": 0,
+      "kind": "wall",
+      "tileMeters": 3,
+      "source": "Poliigon_BrickWallReclaimed_8320",
+      "maps": {
+        "color": "Poliigon_BrickWallReclaimed_8320_BaseColor.jpg",
+        "normal": "Poliigon_BrickWallReclaimed_8320_Normal.png",
+        "rough": "Poliigon_BrickWallReclaimed_8320_Roughness.jpg",
+        "height": "Poliigon_BrickWallReclaimed_8320_Displacement.tiff"
+      },
+      "present": true,
+      "variance": 238.6
+    },
+    "wall_stonebrick": {
+      "layer": 1,
+      "kind": "wall",
+      "tileMeters": 2.6,
+      "source": "StoneBricksSplitface001",
+      "maps": {
+        "color": "StoneBricksSplitface001_COL_4K.jpg",
+        "normal": "StoneBricksSplitface001_NRM_4K.jpg",
+        "rough": "StoneBricksSplitface001_GLOSS_4K.jpg (from gloss)",
+        "height": "StoneBricksSplitface001_BUMP_4K.jpg"
+      },
+      "present": true,
+      "variance": 371.5
+    },
+    "floor_wood": {
+      "layer": 2,
+      "kind": "floor",
       "tileMeters": 2.4,
-      "source": "walls.glb",
-      "sourceSha256": "cb9883ac582589d5613a80b356cf50a0f2ce84a95faca2c03f1a730f4700be5a",
-      "sourceImages": 0,
-      "sourceTextures": 0,
-      "sourceMaterials": 4,
-      "mode": "source-geometry+source-palette",
-      "variance": 775.75
+      "source": "Poliigon_WoodFloorAsh_4186",
+      "maps": {
+        "color": "Poliigon_WoodFloorAsh_4186_BaseColor.jpg",
+        "normal": "Poliigon_WoodFloorAsh_4186_Normal.png",
+        "rough": "Poliigon_WoodFloorAsh_4186_Roughness.jpg",
+        "height": "Poliigon_WoodFloorAsh_4186_Displacement.tiff"
+      },
+      "present": true,
+      "variance": 39
     },
-    "wall_stone_b": {
-      "file": "surfaces/wall_stone_b.png",
-      "slot": 1,
-      "atlasCell": [
-        1,
-        0
-      ],
-      "tileMeters": 2,
-      "source": "walls.glb",
-      "sourceSha256": "cb9883ac582589d5613a80b356cf50a0f2ce84a95faca2c03f1a730f4700be5a",
-      "sourceImages": 0,
-      "sourceTextures": 0,
-      "sourceMaterials": 4,
-      "mode": "source-geometry+source-palette",
-      "variance": 847.75
+    "floor_quartzite": {
+      "layer": 3,
+      "kind": "floor",
+      "tileMeters": 2.8,
+      "source": "Poliigon_StoneQuartzite_8060",
+      "maps": {
+        "color": "Poliigon_StoneQuartzite_8060_BaseColor.jpg",
+        "normal": "Poliigon_StoneQuartzite_8060_Normal.png",
+        "rough": "Poliigon_StoneQuartzite_8060_Roughness.jpg",
+        "height": "Poliigon_StoneQuartzite_8060_Displacement.tiff"
+      },
+      "present": true,
+      "variance": 36.1
     },
-    "floor_interfloor": {
-      "file": "surfaces/floor_interfloor.png",
-      "slot": 2,
-      "atlasCell": [
-        2,
-        0
-      ],
+    "floor_pooltile": {
+      "layer": 4,
+      "kind": "floor",
       "tileMeters": 1.2,
-      "source": "floor_interfloor.glb",
-      "sourceSha256": "d83934b500d57dedaa2ac02532a987634027f4da0efd92eb514ca0ed604dca19",
-      "sourceImages": 0,
-      "sourceTextures": 0,
-      "sourceMaterials": 1,
-      "mode": "source-geometry+source-palette",
-      "variance": 842.15
+      "source": "TilesSquarePoolMixed001",
+      "maps": {
+        "color": "TilesSquarePoolMixed001_COL_4K.jpg",
+        "normal": "TilesSquarePoolMixed001_NRM_4K.jpg",
+        "rough": "TilesSquarePoolMixed001_GLOSS_4K.jpg (from gloss)",
+        "height": "TilesSquarePoolMixed001_DISP_4K.jpg"
+      },
+      "present": true,
+      "variance": 952.5
     },
-    "floor_carrara": {
-      "file": "surfaces/floor_carrara.png",
-      "slot": 3,
-      "atlasCell": [
-        3,
-        0
-      ],
-      "tileMeters": 1.8,
-      "source": "floor_carrara.glb",
-      "sourceSha256": "b31a25eddfc79ea41c11259cb164f5fb37eae0ebae63349d7dd850e4f78017ad",
-      "sourceImages": 0,
-      "sourceTextures": 0,
-      "sourceMaterials": 3,
-      "mode": "source-palette+fallback-detail",
-      "variance": 279.18,
-      "fallbackReason": "The GLB contains four plain slabs and no image or marble veining."
+    "floor_ceramic": {
+      "layer": 5,
+      "kind": "floor",
+      "tileMeters": 1.2,
+      "source": "Poliigon_TilesCeramicWhite_6956",
+      "maps": {
+        "color": "Poliigon_TilesCeramicWhite_6956_BaseColor.jpg",
+        "normal": "Poliigon_TilesCeramicWhite_6956_Normal.png",
+        "rough": "Poliigon_TilesCeramicWhite_6956_Roughness.jpg",
+        "height": "Poliigon_TilesCeramicWhite_6956_Displacement.tiff"
+      },
+      "present": true,
+      "variance": 8.1
     },
-    "floor_pool_geo": {
-      "file": "surfaces/floor_pool_geo.png",
-      "slot": 4,
-      "atlasCell": [
-        0,
-        1
-      ],
-      "tileMeters": 0.6,
-      "source": "floor_pool_geo.glb",
-      "sourceSha256": "b56eb9c08116451dbed1dc2e444c0457ccfb7dd7e702baad5ab86f36d57da323",
-      "sourceImages": 0,
-      "sourceTextures": 0,
-      "sourceMaterials": 3,
-      "mode": "source-palette+fallback-detail",
-      "variance": 387.86,
-      "fallbackReason": "The GLB contains a plain six-face box and no geometric image."
+    "floor_terrazzo": {
+      "layer": 6,
+      "kind": "floor",
+      "tileMeters": 2.2,
+      "source": "Poliigon_TerrazzoTilePolished_4818",
+      "maps": {
+        "color": "Poliigon_TerrazzoTilePolished_4818_BaseColor.jpg",
+        "normal": "Poliigon_TerrazzoTilePolished_4818_Normal.png",
+        "rough": "Poliigon_TerrazzoTilePolished_4818_Roughness.jpg",
+        "height": "Poliigon_TerrazzoTilePolished_4818_Displacement.tiff"
+      },
+      "present": true,
+      "variance": 156.6
     },
-    "floor_pool_floral": {
-      "file": "surfaces/floor_pool_floral.png",
-      "slot": 5,
-      "atlasCell": [
-        1,
-        1
-      ],
-      "tileMeters": 0.6,
-      "source": "floor_pool_floral.glb",
-      "sourceSha256": "dd722d07e362f65e19b94e01906c50257dac6758e74d6e8579b765388c9dc641",
-      "sourceImages": 0,
-      "sourceTextures": 0,
-      "sourceMaterials": 3,
-      "mode": "source-palette+fallback-detail",
-      "variance": 306.02,
-      "fallbackReason": "The GLB contains a plain six-face box and no floral image."
+    "wall_travertine": {
+      "layer": 7,
+      "kind": "wall",
+      "tileMeters": 2.8,
+      "source": "TilesTravertine001",
+      "maps": {
+        "color": "TilesTravertine001_COL_4K.jpg",
+        "normal": "TilesTravertine001_NRM_4K.jpg",
+        "rough": "TilesTravertine001_GLOSS_4K.jpg (from gloss)",
+        "height": "TilesTravertine001_DISP_4K.jpg"
+      },
+      "present": true,
+      "variance": 53.8
     },
-    "floor_concrete": {
-      "file": "surfaces/floor_concrete.png",
-      "slot": 6,
-      "atlasCell": [
-        2,
-        1
-      ],
-      "tileMeters": 1.5,
-      "source": "concrete.glb",
-      "sourceSha256": "5dd74b0e6f9ea4d444c8350cefb9c0311720cf71a3d4a214d51108aaed826045",
-      "sourceImages": 0,
-      "sourceTextures": 0,
-      "sourceMaterials": 14,
-      "mode": "source-geometry+source-palette",
-      "variance": 42.21
+    "wall_rammedearth": {
+      "layer": 8,
+      "kind": "wall",
+      "tileMeters": 3.2,
+      "source": "RammedEarth018",
+      "maps": {
+        "color": "RammedEarth018_COL_4K_METALNESS.png",
+        "normal": "RammedEarth018_NRM_4K_METALNESS.png",
+        "rough": "RammedEarth018_ROUGHNESS_4K_METALNESS.png",
+        "height": "RammedEarth018_DISP_4K_METALNESS.png"
+      },
+      "present": true,
+      "variance": 35.1
+    },
+    "wall_concrete": {
+      "layer": 9,
+      "kind": "wall",
+      "tileMeters": 2.8,
+      "source": "Poliigon_ConcreteWallCladding_7856",
+      "maps": {
+        "color": "Poliigon_ConcreteWallCladding_7856_BaseColor.jpg",
+        "normal": "Poliigon_ConcreteWallCladding_7856_Normal.png",
+        "rough": "Poliigon_ConcreteWallCladding_7856_Roughness.jpg",
+        "height": "Poliigon_ConcreteWallCladding_7856_Displacement.tiff"
+      },
+      "present": true,
+      "variance": 7
     }
   }
 }

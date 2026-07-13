@@ -11,15 +11,14 @@
 //   AFTER                          dead. And it squelches.
 //
 // The squelch is the design. A dead radio is a prop; a dead radio that emits
-// noise on its own schedule is a HAZARD, and it is clipped to your belt. You
-// cannot discard it — not because the game forbids it (nothing here is
-// forbidden) but because there is nothing in the code that lets you, and the
-// player will try. The one object that was supposed to connect you to the
-// client is now the reason the building can hear you.
+// noise on its own schedule is a HAZARD. It begins clipped to your belt, but the
+// bag lets you put it down: after that its noise remains at the drop point and
+// can pull the building away from you. [E] recovers it if you return.
 //
 // It is not random. A squelch is a stab you are carrying: it fires when the
-// player has decided they are safe. And it spoils takes, because it is noise,
-// and noise is noise no matter who owns it.
+// player has decided they are safe. On the belt it spoils a take. On the floor
+// it belongs to the building: the presence still hears it, but the recorder at
+// the player's body does not pretend a distant squelch happened in its room.
 //
 // `reduceDread` silences it. The radio still dies. It just stops hunting you.
 
@@ -31,7 +30,7 @@ export const RADIO = {
   cooldownSec: 55,          // hard floor between squelches
   expectThreshold: 0.72,    // fires below the stab director's bar: a squelch is
                             // smaller than a stab, so it may be cheaper
-  noiseLevel: 0.34,         // well above ROOM_TONE.spoilNoise. It ruins takes.
+  noiseLevel: 0.34,         // above spoilNoise on the belt; a floor source is remote
   duringTakeChance: 0.55,   // and it prefers to
 };
 
@@ -41,6 +40,7 @@ const state = {
   diedAt: 0,
   lastSquelchAt: -1e9,
   squelches: 0,
+  dropped: null,
   onSquelch: null,
   onLine: null,
 };
@@ -53,6 +53,17 @@ export function radioInit({ squelch, line } = {}) {
 export function radioState() { return { ...state, onSquelch: undefined, onLine: undefined }; }
 export function isDead() { return state.dead; }
 export function squelchCount() { return state.squelches; }
+export function isDropped(){return !!state.dropped;}
+export function radioLocation(){return state.dropped?{...state.dropped}:null;}
+export function dropRadio(x,y){
+  if(state.dropped)return false;
+  state.dropped={x:Math.round(x),y:Math.round(y)};
+  return true;
+}
+export function pickUpRadio(x,y,maxCells=4){
+  if(!state.dropped||Math.hypot(state.dropped.x-x,state.dropped.y-y)>maxCells)return false;
+  state.dropped=null;return true;
+}
 
 // The two scripted transmissions. `TRANSMISSIONS` is content and lives in
 // data/conservatory-script.js; this just counts them and then kills the thing.
@@ -101,8 +112,9 @@ export function tickRadio(dt, { expectation = 0, px = 0, py = 0 } = {}) {
 
   state.lastSquelchAt = now;
   state.squelches++;
-  REC.emitNoise(RADIO.noiseLevel, px, py, 'the radio');
-  const event = { at: now, duringTake: recording, index: state.squelches };
+  const at=state.dropped||{x:px,y:py};
+  REC.emitNoise(RADIO.noiseLevel, at.x, at.y, 'the radio', { spoils: !state.dropped });
+  const event = { at: now, duringTake: recording, index: state.squelches, x:at.x, y:at.y, dropped:!!state.dropped };
   state.onSquelch?.(event);
   return event;
 }
@@ -111,8 +123,10 @@ export function loadRadioState(saved = {}) {
   state.transmissions = saved.transmissions || 0;
   state.dead = !!saved.dead;
   state.squelches = saved.squelches || 0;
+  state.dropped = saved.dropped && Number.isFinite(saved.dropped.x) && Number.isFinite(saved.dropped.y)
+    ? {x:Math.round(saved.dropped.x),y:Math.round(saved.dropped.y)} : null;
   if (state.dead) state.diedAt = performance.now();
 }
 export function saveRadioState() {
-  return { transmissions: state.transmissions, dead: state.dead, squelches: state.squelches };
+  return { transmissions: state.transmissions, dead: state.dead, squelches: state.squelches, dropped:state.dropped?{...state.dropped}:null };
 }

@@ -18,6 +18,7 @@ let peak = 0;
 let peakUntil = 0;
 let lastAt = 0;
 let injected = null;
+let auxiliaryInput = null;
 
 export function monitorInit(audioCtx, destination) {
   if (!audioCtx) return null;
@@ -44,14 +45,19 @@ export function monitorSnapshotForRms(rms) {
 }
 
 export function monitorSnapshot(nowMs = performance.now()) {
-  let rms = 0;
-  if (injected != null) rms = Math.max(0, Math.min(1, injected));
+  let programRms = 0;
+  if (injected != null) programRms = Math.max(0, Math.min(1, injected));
   else if (analyser && data) {
     analyser.getFloatTimeDomainData(data);
     let sum = 0;
     for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
-    rms = Math.sqrt(sum / data.length);
+    programRms = Math.sqrt(sum / data.length);
   }
+  let auxiliaryRms = 0;
+  try { auxiliaryRms = Math.max(0, Math.min(1, Number(auxiliaryInput?.()) || 0)); } catch (_) {}
+  // Auxiliary RMS is display-only. In particular, the room microphone never
+  // connects to this AudioNode or to the speakers.
+  const rms = Math.min(1, Math.hypot(programRms, auxiliaryRms));
 
   const dt = lastAt ? Math.min(0.25, Math.max(0, (nowMs - lastAt) / 1000)) : 1 / 60;
   lastAt = nowMs;
@@ -71,10 +77,12 @@ export function monitorSnapshot(nowMs = performance.now()) {
 
 // Test-only injection. `null` reconnects the readout to the real analyser.
 export function monitorInject(level = null) { injected = level == null ? null : Number(level); }
+export function monitorSetAuxInput(provider = null) { auxiliaryInput = typeof provider === 'function' ? provider : null; }
 
 export function monitorReset() {
   ctx = analyser = data = null;
   envelope = peak = 0;
   peakUntil = lastAt = 0;
   injected = null;
+  auxiliaryInput = null;
 }

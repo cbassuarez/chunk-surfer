@@ -30,8 +30,9 @@ export async function preload(url) {
   return job;
 }
 
-export function preloadAll(urls) { return Promise.all(urls.map(preload)); }
-
+export function preloadAll(urls) {
+  return Promise.all(urls.flat().map(preload));
+}
 // gain: linear. rate: playbackRate (a tired switch is a slower switch).
 // pan: -1..1. Returns the source, so a caller can stop a long cue early.
 export function playCue(url, { gain = 1, rate = 1, pan = 0, delay = 0 } = {}) {
@@ -82,3 +83,37 @@ export const CUE = {
   // at the end of eight seconds of a man realising what is on the other end.
   scream: `${A}radio_breaks-scream.mp3`,
 };
+export const PAGE_TURNS = Object.freeze([
+  `${A}pageturn.mp3`,
+  `${A}pageturn1.mp3`,
+  `${A}pageturn2.mp3`,
+  `${A}pageturn3.mp3`,
+  `${A}pageturn4.mp3`,
+  `${A}pageturn5.mp3`,
+]);
+
+let lastPageTurn = -1;
+let lastPageTurnAt = 0;
+
+export function playPageTurn({ dir = 1 } = {}) {
+  const now = (typeof performance !== 'undefined' && performance.now)
+    ? performance.now()
+    : Date.now();
+
+  // Prevent key-repeat from stacking six 2.8s paper sounds into a wash.
+  if (now - lastPageTurnAt < 85) return null;
+  lastPageTurnAt = now;
+
+  let i = Math.floor(Math.random() * PAGE_TURNS.length);
+  if (PAGE_TURNS.length > 1 && i === lastPageTurn) {
+    i = (i + 1 + Math.floor(Math.random() * (PAGE_TURNS.length - 1))) % PAGE_TURNS.length;
+  }
+  lastPageTurn = i;
+
+  const forward = dir >= 0;
+  return playCue(PAGE_TURNS[i], {
+    gain: 0.16 + Math.random() * 0.06,
+    rate: (forward ? 0.98 : 0.94) + Math.random() * 0.08,
+    pan: (Math.random() * 2 - 1) * 0.10,
+  });
+}

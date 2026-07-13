@@ -3,10 +3,11 @@
 // so the browser suites can prove gameplay without WebGL.
 
 import { CELL, PLAN_SCALE } from '../data/floorplan/legend.js';
-import { CONSERVATORY_PROPS, PROP_MESH } from '../data/conservatory-props.js';
+import { CONSERVATORY_PROPS, PROP_MESH, STRUCTURAL_COLLIDERS } from '../data/conservatory-props.js';
 
 let floorplan=null;
 let instances=[];
+let colliders=[];
 const state={ inspected:new Set(), auditioned:new Set(), cycles:{}, hushSeed:0x43535552, hushCount:0 };
 
 const rt=(m)=>Math.round(m*PLAN_SCALE);
@@ -21,10 +22,20 @@ export function propsInit(fp, placements=CONSERVATORY_PROPS){
     const physical=fp.logicalToPhysical?.(rx,ry);
     return {...mesh,...p,rx,ry,floor:fp.floorAt(rx,ry),zone:fp.zoneAt(rx,ry),renderGroup:physical?.renderGroup||'',blocks:p.blocks??mesh.blocks??false};
   }).filter((p)=>!fp.isSolid(p.rx,p.ry));
+  colliders=STRUCTURAL_COLLIDERS.map(c=>({...c,rx:rt(c.x),ry:rt(c.y)}));
   return instances;
 }
 export function allProps(){return instances;}
 export function propById(id){return instances.find((p)=>p.id===id)||null;}
+export function setLooseProp(id, placement=null){
+  instances=instances.filter((p)=>p.id!==id);
+  if(!placement||!floorplan)return null;
+  const mesh=PROP_MESH[placement.mesh]||{};
+  const rx=Math.round(placement.rx),ry=Math.round(placement.ry),physical=floorplan.logicalToPhysical?.(rx,ry);
+  if(floorplan.isSolid(rx,ry))return null;
+  const prop={...mesh,...placement,id,rx,ry,x:meters(rx+.5),y:meters(ry+.5),floor:floorplan.floorAt(rx,ry),zone:floorplan.zoneAt(rx,ry),renderGroup:physical?.renderGroup||'',blocks:false};
+  instances.push(prop);return prop;
+}
 export function renderInstances({group=null}={}){return instances.filter((p)=>!group||p.renderGroup===group).map((p)=>{const at=floorplan.logicalToPhysical?.(p.rx,p.ry);return{id:p.id,mesh:p.mesh,x:at?at.x*CELL:p.x,y:(p.floor||0)+(p.elevation||0),z:at?at.z*CELL:p.y,yaw:p.yaw||0,scale:p.scale||1,zone:p.zone||0,portraitIndex:p.portraitIndex||0,structural:!!p.structural};});}
 
 function pointInProp(mx,mz,p,pad=.20){
@@ -34,6 +45,8 @@ function pointInProp(mx,mz,p,pad=.20){
 }
 export function propCanOccupy(toX,toY,{ignoreId=null}={}){
   const mx=meters(toX+.5),mz=meters(toY+.5);
+  const floor=floorplan?.floorAt?.(toX,toY)??0;
+  if(colliders.some((c)=>floor>=c.minElevation-.05&&floor<=c.maxElevation+.05&&pointInProp(mx,mz,{...c,w:c.width,d:c.depth},0)))return false;
   return !instances.some((p)=>{
     if(p.id===ignoreId)return false;
     if(p.collisionMask==='hall-seating'){
@@ -44,6 +57,7 @@ export function propCanOccupy(toX,toY,{ignoreId=null}={}){
     return p.blocks&&pointInProp(mx,mz,p);
   });
 }
+export function structuralColliders(){return colliders.map(c=>({...c}));}
 
 function clearLine(ax,ay,bx,by){
   const d=Math.hypot(bx-ax,by-ay),steps=Math.max(1,Math.ceil(d*4));

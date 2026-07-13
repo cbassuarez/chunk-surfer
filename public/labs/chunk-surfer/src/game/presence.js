@@ -36,6 +36,19 @@ export const PRESENCE = {
   dreadRadius: 46 * D,
 };
 
+let difficultyRules = {
+  baseSpeedScale: 1,
+  huntSpeedScale: 1,
+  hearingScale: 1,
+  memoryScale: 1,
+};
+
+export function configurePresence(next = {}) {
+  difficultyRules = { ...difficultyRules, ...next };
+}
+
+export function presenceDifficulty() { return { ...difficultyRules }; }
+
 const state = {
   active: false,
   x: 0, y: 0,
@@ -71,7 +84,7 @@ export function distanceTo(px, py) {
 export function pressure(px, py) {
   if (!state.active) return 0;
   const d = distanceTo(px, py);
-  return Math.max(0, Math.min(1, 1 - d / PRESENCE.hearingRadius));
+  return Math.max(0, Math.min(1, 1 - d / (PRESENCE.hearingRadius * difficultyRules.hearingScale)));
 }
 
 export function dread(px, py) {
@@ -88,7 +101,7 @@ export function visibleFrom(px, py) {
 // This is the ONLY way it learns where to go — noise, never the player.
 function hear(x, y, level, now) {
   const d = Math.hypot(state.x - x, state.y - y);
-  const range = PRESENCE.hearingRadius * (0.55 + level * 2.2);
+  const range = PRESENCE.hearingRadius * difficultyRules.hearingScale * (0.55 + level * 2.2);
   if (d > range) return false;
   state.targetX = x; state.targetY = y;
   state.hasTarget = true;
@@ -104,8 +117,8 @@ export function updatePresence(dt, px, py, onCatch) {
   const rec = REC.recState();
 
   // 1. Noise. The cell you left, not the cell you occupy.
-  if (REC.currentNoise() > 0.02) {
-    hear(rec.lastNoiseAt.x, rec.lastNoiseAt.y, REC.currentNoise(), now);
+  if (REC.currentWorldNoise() > 0.02) {
+    hear(rec.lastNoiseAt.x, rec.lastNoiseAt.y, REC.currentWorldNoise(), now);
   }
 
   // 2. Light. A lit player is a smear on the dark, not an address: the target
@@ -118,18 +131,20 @@ export function updatePresence(dt, px, py, onCatch) {
 
   // 3. Interest decays. A sound is only interesting for a few seconds.
   const sinceTarget = (now - state.targetSetAt) / 1000;
-  if (state.hasTarget && sinceTarget > PRESENCE.memorySec) state.hasTarget = false;
+  if (state.hasTarget && sinceTarget > PRESENCE.memorySec * difficultyRules.memoryScale) state.hasTarget = false;
 
   // 4. Move. Toward the last sound if it has one; otherwise drift, slowly, in
   //    a way that is not quite random and is never toward you.
-  let tx = state.targetX, ty = state.targetY, speed = PRESENCE.baseSpeed;
+  let tx = state.targetX, ty = state.targetY, speed = PRESENCE.baseSpeed * difficultyRules.baseSpeedScale;
   if (state.hasTarget) {
-    speed = sinceTarget < 1.5 ? PRESENCE.huntSpeed : PRESENCE.baseSpeed;
+    speed = sinceTarget < 1.5
+      ? PRESENCE.huntSpeed * difficultyRules.huntSpeedScale
+      : PRESENCE.baseSpeed * difficultyRules.baseSpeedScale;
   } else {
     const wander = (now / 2400) + state.awareness * 3;
     tx = state.x + Math.cos(wander) * 6;
     ty = state.y + Math.sin(wander * 1.31) * 6;
-    speed = PRESENCE.baseSpeed * 0.42;
+    speed = PRESENCE.baseSpeed * difficultyRules.baseSpeedScale * 0.42;
   }
   // Awareness makes it faster forever, but not fast. It learns you, and still
   // remains something you can get away from.

@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-11T07:29:01.673Z",
-  "bytes": 956124,
-  "totalTriangles": 24571,
+  "generatedAt": "2026-07-12T19:53:39.764Z",
+  "bytes": 1038312,
+  "totalTriangles": 25579,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -66,6 +66,50 @@
     "equipment_rack": {
       "triangles": 276,
       "vertices": 396
+    },
+    "ticket_counter": {
+      "triangles": 108,
+      "vertices": 216
+    },
+    "key_cabinet": {
+      "triangles": 408,
+      "vertices": 504
+    },
+    "notice_board": {
+      "triangles": 24,
+      "vertices": 48
+    },
+    "loose_note": {
+      "triangles": 24,
+      "vertices": 48
+    },
+    "pool_start_block": {
+      "triangles": 24,
+      "vertices": 48
+    },
+    "lifeguard_chair": {
+      "triangles": 72,
+      "vertices": 144
+    },
+    "lane_reel": {
+      "triangles": 108,
+      "vertices": 150
+    },
+    "drain_grille": {
+      "triangles": 120,
+      "vertices": 240
+    },
+    "altar_table": {
+      "triangles": 36,
+      "vertices": 72
+    },
+    "lectern": {
+      "triangles": 36,
+      "vertices": 72
+    },
+    "hymn_board": {
+      "triangles": 48,
+      "vertices": 96
     },
     "portrait_frame": {
       "triangles": 62,

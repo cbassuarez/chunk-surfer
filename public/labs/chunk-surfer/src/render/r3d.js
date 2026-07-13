@@ -54,6 +54,7 @@ const WORLD_RGB = {
 
 const COMMON_GLSL = `#version 300 es
 precision highp float;
+precision highp sampler2DArray;
 `;
 
 const VERT = COMMON_GLSL + `
@@ -113,7 +114,11 @@ uniform sampler2D uPlan;     // the authored building: R=floor G=ceil B=flags A=
 uniform sampler2D uMat;      // R=material id
 uniform sampler2D uPropColor;
 uniform sampler2D uPropDepth;
-uniform sampler2D uSurfaceAtlas;
+uniform sampler2DArray uSurfAlbedo, uSurfNormal, uSurfRough, uSurfHeight; // PBR surface layers
+uniform sampler2DArray uSurfDream;                             // locally restyled albedo
+uniform float uDreamMix[10];
+uniform float uDreamReady;
+uniform float uLocalDiffusion;
 uniform float uSurfacesReady;
 uniform float uPropsReady;
 uniform float uPropNear;
@@ -132,6 +137,7 @@ const int FLAG_SOLID   = 1;
 const int FLAG_DOOR    = 2;
 const int FLAG_SKY     = 4;
 const int FLAG_BRICKED = 32;
+const int FLAG_CLOSED  = 64;
 const int MAT_SERVICE = ${MATERIAL.serviceConcrete};
 const int MAT_ACOUSTIC = ${MATERIAL.acousticFoam};
 const int MAT_POOL = ${MATERIAL.poolTile};
@@ -222,12 +228,6 @@ float worldIdx(vec2 p){
 // in geometry, so walking is level and the camera never bobs.
 float height(vec2 p){ return solidCell(p) ? CEIL : 0.0; }
 
-float fogSeen(vec2 p){
-  vec2 uv = (p - uFogOrigin) / ${FOG_TEX}.0;
-  if(uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0) return 0.0;
-  return texture(uFogTex, uv).r; // 0 unseen · ~0.5 remembered · 1 fresh
-}
-
 float line1(float v, float scale, float width){
   float d = abs(fract(v * scale) - 0.5);
   return 1.0 - smoothstep(width, width + 0.018, d);
@@ -237,41 +237,82 @@ float grid2(vec2 p, float scale, float width){
   float g = min(d.x, d.y);
   return 1.0 - smoothstep(width, width + 0.015, g);
 }
+// 4×3 atlas of real PBR tiles. Slots:
+//   0 brick   1 stonebrick   2 wood     3 quartzite  4 pool-mosaic  5 ceramic
+//   6 terrazzo 7 travertine   8 rammed-earth          9 concrete-cladding
+// Texture array + REPEAT wrap: true seamless tiling with mipmaps and anisotropy,
+// no atlas-edge inset needed.
 vec3 surfaceTile(int slot, vec2 worldUv, float metresPerTile){
-  // Fixed 4x2 atlas. Pull sampling inward by one percent so mip filtering can
-  // never bleed a neighbouring material into the tile edge.
-  vec2 cell=vec2(float(slot%4),float(slot/4));
-  vec2 local=fract(worldUv/metresPerTile)*.98+.01;
-  return texture(uSurfaceAtlas,(cell+local)/vec2(4.0,2.0)).rgb;
+  vec3 tc=vec3(worldUv/metresPerTile,float(slot));
+  vec3 base=texture(uSurfAlbedo,tc).rgb;
+  if(uLocalDiffusion>.001){
+    // A local, material-space reaction-diffusion pass. It is sampled from
+    // world UVs, not screen UVs, so the change sticks to brick, wood, concrete,
+    // and tile instead of washing over the camera.
+    vec2 rdUv=fract(worldUv/(metresPerTile*3.6) + vec2(float(slot)*0.071,float(slot)*0.113));
+    vec3 rd=texture(uRD,rdUv).rgb;
+    float vein=smoothstep(0.18,0.82,rd.g);
+    float pit=smoothstep(0.62,0.96,rd.r-rd.g);
+    vec3 oxidized=base*(0.66+0.48*vein) + vec3(0.060,0.050,0.032)*rd.g;
+    vec3 etched=base*(0.86-0.28*pit);
+    base=mix(base,clamp(mix(oxidized,etched,pit),vec3(0.0),vec3(1.0)),clamp(uLocalDiffusion,0.0,1.0));
+  }
+  if(uDreamReady<.5)return base;
+  vec3 dream=texture(uSurfDream,tc).rgb;
+  // Transfer material detail, not the generated image's illumination or
+  // palette. Dividing by a coarse mip extracts local grain/mortar/weathering;
+  // multiplying that into the authored albedo keeps the room from becoming a
+  // flat img2img wash while remaining fixed in world-space UVs.
+  vec3 dreamLow=textureLod(uSurfDream,tc,4.0).rgb;
+  vec3 detail=clamp(dream/max(dreamLow,vec3(.055)),vec3(.46),vec3(1.86));
+  float baseLum=max(.035,dot(base,vec3(.2126,.7152,.0722)));
+  float dreamLum=max(.035,dot(dreamLow,vec3(.2126,.7152,.0722)));
+  vec3 generatedTone=clamp(dreamLow*(baseLum/dreamLum),vec3(0.0),vec3(1.0));
+  // Most of the result is generated grain/weathering, but retain enough of the
+  // local generated tone that ON and OFF are perceptually distinct. Both are
+  // sampled from world UVs, so neither can swim with the camera.
+  vec3 detailed=mix(clamp(base*detail,vec3(0.0),vec3(1.0)),generatedTone,.38);
+  return mix(base,detailed,uDreamMix[slot]);
 }
-vec3 architecturalSurface(int mat,int surf,vec3 p,vec3 fallback){
+// One texture per surface, chosen by the room's material and whether we hit a
+// wall or a floor. No cross-slot mixing — that is what smeared every texture
+// across every surface.
+void surfaceSlot(int mat,int surf,vec2 uv,out int slot,out float tileM,out float blend){
+  if(surf==1){                                                  // walls — one texture per wall
+    if(mat==MAT_ACOUSTIC){slot=9;tileM=1.6;blend=.84;}          // basement (studio) → concrete cladding
+    else if(mat==MAT_PRACTICE){slot=8;tileM=1.8;blend=.84;}     // classroom → rammed earth
+    else if(mat==MAT_WOOD){slot=7;tileM=1.6;blend=.86;}         // concert hall → travertine
+    else if(mat==MAT_POOL||mat==MAT_WET){slot=5;tileM=1.0;blend=.84;} // natatorium → white ceramic
+    else if(mat==MAT_METAL){slot=9;tileM=1.6;blend=.82;}        // plant → concrete cladding
+    else if(mat==MAT_CHAPEL){slot=1;tileM=1.4;blend=.82;}       // chapel → split-face stone
+    else {slot=0;tileM=1.4;blend=.80;}                          // general → reclaimed brick
+  } else {                                                      // floor (surf==2)
+    if(mat==MAT_ACOUSTIC||mat==MAT_PRACTICE){slot=6;tileM=1.8;blend=.88;} // basement/classroom → terrazzo
+    else if(mat==MAT_WOOD||mat==MAT_CHAPEL){slot=3;tileM=2.0;blend=.90;}  // hall/chapel → quartzite
+    else if(mat==MAT_WET){slot=4;tileM=0.9;blend=.92;}          // pool interior → blue mosaic
+    else if(mat==MAT_POOL){slot=5;tileM=1.0;blend=.90;}         // pool deck → white ceramic
+    else {slot=2;tileM=1.8;blend=.84;}                          // general → ash wood
+  }
+}
+vec2 surfaceUv(int surf,vec3 p,vec3 n){
+  if(surf!=1)return p.xz;
+  return abs(n.x)>.5?vec2(p.z,p.y):vec2(p.x,p.y);
+}
+vec3 architecturalSurface(int mat,int surf,vec3 p,vec3 n,vec3 fallback){
   if(uSurfacesReady<.5||surf==3)return fallback;
-  vec2 uv=surf==1?vec2(mix(p.z,p.x,.5),p.y):p.xz;
-  if(surf==1){
-    if(mat==MAT_POOL)return mix(fallback,surfaceTile(6,uv,1.5),.72);
-    if(mat==MAT_WET){
-      int slot=(int(floor(uv.x/.6)+floor(uv.y/.6))%7)==0?5:4;
-      return mix(fallback,surfaceTile(slot,uv,.6),.80);
-    }
-    int stone=(int(floor(uv.x/2.2)+floor(uv.y/2.2))%2)==0?0:1;
-    return mix(fallback,surfaceTile(stone,uv,stone==0?2.4:2.0),.74);
-  }
-  if(mat==MAT_CHAPEL)return mix(fallback,surfaceTile(3,uv,1.8),.88);
-  if(mat==MAT_POOL)return mix(fallback,surfaceTile(6,uv,1.5),.88);
-  if(mat==MAT_WET){
-    int slot=(int(floor(uv.x/.6)+floor(uv.y/.6))%9)==0?5:4;
-    return mix(fallback,surfaceTile(slot,uv,.6),.90);
-  }
-  return mix(fallback,surfaceTile(2,uv,1.2),.76);
+  vec2 uv=surfaceUv(surf,p,n);
+  int slot; float tileM; float blend; surfaceSlot(mat,surf,uv,slot,tileM,blend);
+  return mix(fallback,surfaceTile(slot,uv,tileM),blend);
 }
-float materialSeam(int mat, int surf, vec3 p){
+float materialSeam(int mat, int surf, vec3 p, vec3 n){
+  vec2 faceUv=surfaceUv(surf,p,n);
   if(mat == MAT_ACOUSTIC){
     return surf == 1
-      ? max(line1(p.y, 1.65, 0.035), line1(mix(p.x, p.z, 0.5), 0.72, 0.030)) * 0.34
+      ? max(line1(p.y, 1.65, 0.035), line1(faceUv.x, 0.72, 0.030)) * 0.34
       : grid2(p.xz, 0.62, 0.040) * 0.10;
   }
   if(mat == MAT_POOL || mat == MAT_WET){
-    return grid2(surf == 1 ? vec2(mix(p.x, p.z, 0.5), p.y) : p.xz, 1.75, 0.035) * (mat == MAT_WET ? 0.30 : 0.24);
+    return grid2(faceUv, 1.75, 0.035) * (mat == MAT_WET ? 0.30 : 0.24);
   }
   if(mat == MAT_WOOD){
     float boards = surf == 1 ? line1(p.y, 1.25, 0.030) : line1(p.x + p.z * 0.18, 1.45, 0.030);
@@ -281,13 +322,13 @@ float materialSeam(int mat, int surf, vec3 p){
     return max(line1(p.y, 1.10, 0.035), line1(p.x + p.z, 0.58, 0.020)) * 0.22;
   }
   if(mat == MAT_CHAPEL){
-    return max(line1(p.y, 0.52, 0.025), line1(mix(p.x, p.z, 0.5), 0.38, 0.018)) * 0.26;
+    return max(line1(p.y, 0.52, 0.025), line1(faceUv.x, 0.38, 0.018)) * 0.26;
   }
   if(mat == MAT_METAL){
     return max(line1(p.y, 2.1, 0.030), line1(p.x - p.z, 0.42, 0.020)) * 0.30;
   }
   if(mat == MAT_DOOR){
-    return max(line1(p.y, 2.7, 0.030), line1(mix(p.x, p.z, 0.5), 1.1, 0.025)) * 0.38;
+    return max(line1(p.y, 2.7, 0.030), line1(faceUv.x, 1.1, 0.025)) * 0.38;
   }
   return (surf == 1 ? line1(p.y, 0.72, 0.026) : grid2(p.xz, 0.55, 0.040)) * 0.18;
 }
@@ -381,15 +422,23 @@ void main(){
     float yB = ro.y + rd.y * tExit;
     vec3 wn = xSide ? vec3(float(-stp.x), 0.0, 0.0) : vec3(0.0, 0.0, float(-stp.y));
 
+    // Door collision remains in the logical grid, but the visible leaf is a
+    // textured mesh in the depth pass. Treating CLOSED as architecture made a
+    // one-cell masonry slab appear in front of that model, with walkable-looking
+    // slots at both jambs.
+    bool closedLeaf = false;
     bool wall = false;
-    if(nc.solid){
+    if(nc.solid || closedLeaf){
       wall = (yB >= cur.f - 0.001 && yB <= cur.c + 0.001);
     } else {
       if(yB < nc.f) wall = true;                                      // riser
       else if(yB > nc.c && (nc.flags & FLAG_SKY) == 0) wall = true;   // header
     }
     if(wall && tExit <= MAXD){
-      tHit = tExit; surf = 1; n = wn; hitZone = nc.solid ? cur.zone : nc.zone; hitMat = nc.solid ? cur.mat : nc.mat; break;
+      tHit = tExit; surf = 1; n = wn;
+      hitZone = nc.solid ? cur.zone : nc.zone;
+      hitMat = closedLeaf ? MAT_DOOR : (nc.solid ? cur.mat : nc.mat);
+      break;
     }
 
     cell = nxt; cur = nc; tEnter = tExit;
@@ -437,15 +486,50 @@ void main(){
     rdv = max(rdv, rdv2 * 0.85);
     if(surf == 1) rdv = mix(0.5, rdv, 0.45);   // mottling on walls, not marble
     float rim = smoothstep(0.16, 0.32, rdv) - smoothstep(0.32, 0.58, rdv);
+    // The authored conservatory has real surface textures. Reaction-diffusion
+    // belongs to JUST SURF; on architecture it reads as rolling fog bands.
+    if(uUsePlan>.5){rdv=.5;rim=0.0;}
 
-    // tiling: floor slabs, wall courses — architecture needs a legible module
-    float seam = materialSeam(hitMat, surf, posM);
+    // Procedural courses are fallback geometry only. Drawing them over real
+    // PBR mortar/board joints produces the wireframe bands visible at grazing
+    // angles.
+    float seam = 0.0;
+
+    // PBR surface relief: perturb the face normal by the surface's normal map so
+    // brick mortar, wood grain and tile bevels catch the flashlight, and take the
+    // per-texel roughness for the specular term. Sampled BEFORE lighting so the
+    // Lambert term below sees the bumped normal.
+    float surfRough = -1.0, surfaceOcclusion=1.0;
+    bool pbrReady=false;int pbrSlot=0;float pbrTile=1.0,pbrBlend=0.0;vec2 pbrUv=vec2(0.0);
+    vec3 toEye = ro - pos;
+    vec3 toEyeM = roM - posM;
+    if(uSurfacesReady > 0.5 && surf != 3){
+      int sslot; float stile, sblend;
+      vec2 suv = surfaceUv(surf,posM,n);
+      surfaceSlot(hitMat, surf, suv, sslot, stile, sblend);
+      vec3 sc = vec3(suv / stile, float(sslot));
+      // Height drives actual view-dependent parallax and reinforces the source
+      // normal map. This is still a flat collision plane, but no longer a flat
+      // picture pasted onto it: mortar, board joints and tile bevels shift and
+      // self-shade as the eye crosses them.
+      vec3 T = (surf == 1) ? normalize(vec3(-n.z, 0.0, n.x)) : vec3(1.0, 0.0, 0.0);
+      if(dot(T, T) < 0.01) T = vec3(1.0, 0.0, 0.0);
+      vec3 B = (surf == 1) ? vec3(0.0, 1.0, 0.0) : vec3(0.0, 0.0, 1.0);
+      vec3 viewDir=normalize(toEyeM);
+      float h0=texture(uSurfHeight,sc).r;
+      vec2 viewTs=vec2(dot(viewDir,T),dot(viewDir,B))/max(.30,abs(dot(viewDir,n)));
+      sc.xy+=viewTs*(h0-.5)*(surf==1 ? .030 : .018);
+      vec3 nm = texture(uSurfNormal, sc).rgb * 2.0 - 1.0;
+      surfRough = texture(uSurfRough, sc).r;
+      n = normalize(n + (T * nm.x + B * nm.y) * 0.58);
+      surfaceOcclusion=mix(.68,1.0,smoothstep(.12,.88,h0));
+      pbrReady=true;pbrSlot=sslot;pbrTile=stile;pbrBlend=sblend;pbrUv=sc.xy*stile;
+    }
+    if(!pbrReady)seam=materialSeam(hitMat,surf,posM,n);
 
     // Interior lighting: a lamp the player carries. Inverse-square falloff with
     // Lambert on the true face normal — this is what makes a corridor read as
     // a corridor (near walls bright, the far end swallowed).
-    vec3 toEye = ro - pos;
-    vec3 toEyeM = roM - posM;
     float dist = length(toEyeM);
     vec3 ldir = normalize(toEye);
     float lambert = clamp(dot(n, ldir), 0.0, 1.0);
@@ -468,28 +552,31 @@ void main(){
     float spill    = smoothstep(0.30, 0.86, axis) * 0.05;   // lens leak
     float beam = (cone + beamRim + spill) * uLight;
     float lamp = lambert * falloff * nearSoft * 3.0 * beam;   // a torch, not a flare
-    float ambient = mix(0.010, 0.030, uLight);
+    // The unlit floor is deliberately lifted. With the torch off — or taken — a
+    // dark-adapted eye still resolves a room: you are not blind, you simply
+    // cannot see WELL. A black screen is not horror, it is a bug you cannot play.
+    float ambient = mix(0.034, 0.048, uLight);
 
     vec3 albedo = materialBase(hitMat, surf, tint, biome, rdv);
-    albedo = architecturalSurface(hitMat,surf,posM,albedo);
-    float spec = materialSpec(hitMat) * pow(clamp(lambert, 0.0, 1.0), 8.0) * lamp;
+    albedo = pbrReady?mix(albedo,surfaceTile(pbrSlot,pbrUv,pbrTile),pbrBlend):architecturalSurface(hitMat,surf,posM,n,albedo);
+    // Roughness drives the highlight: a wet/polished tile (low roughness) throws
+    // a tight bright spec; brick and wood stay matte. Tighten the lobe as it
+    // smooths, so marble and ceramic actually glint under the torch.
+    float gloss = (surfRough >= 0.0) ? (1.0 - surfRough) : 0.0;
+    float specStr = (surfRough >= 0.0) ? (0.04 + 0.9 * gloss * gloss) : materialSpec(hitMat);
+    float spec = specStr * pow(clamp(lambert, 0.0, 1.0), mix(6.0, 48.0, gloss)) * lamp;
 
     float emis = (surf == 2) ? 0.55 : (surf == 1 ? 0.30 : 0.12);
-    col = albedo * (ambient + lamp)
+    col = albedo * (ambient*surfaceOcclusion + lamp)
         + vec3(0.55, 0.60, 0.62) * spec
         + rim * tint * (0.22 + uAudio * 0.45) * emis
         + glow * emis
         - seam * 0.30 * (ambient + lamp);
     col = col / (1.0 + col * 0.30);  // filmic-ish rolloff, tames the near field
 
-    // fog of war dims the unvisited, but never overrules the lamp — you always
-    // see the wall in front of your face; memory only enriches it
-    float seen = fogSeen(pos.xz);
-    float shimmer = rim * 0.05;
-    col = mix(vec3(0.014, 0.015, 0.02) + shimmer + col * 0.55, col, clamp(seen, 0.30, 1.0));
-
-    // distance haze into the void (corridor ends go black)
-    col = mix(col, vec3(0.008, 0.008, 0.012), 1.0 - exp(-(tHit * CELL_METERS) * 0.055));
+    // No exploration fog and no distance haze. Darkness now comes only from
+    // actual lighting, occlusion and material response, so doorways and the far
+    // side of an atrium remain readable before the player crosses them.
   }
 
   // beacons: vertical light-beams for key/door (2D ray closest-approach)
@@ -519,6 +606,10 @@ void main(){
   // Reconstruct their view-space depth and compare it to the sector hit: a
   // piano behind a wall stays behind the wall, while a desk in front of it is
   // part of the same conditioning image the diffusion lens receives.
+  // The metres to whatever this pixel actually hit. We have marched for it
+  // already; before now we threw it away. ControlNet wants it.
+  float zView = tHit < 0.0 ? uPropFar : tHit * CELL_METERS * max(0.001, dot(rd, fwd));
+
   if(uPropsReady > 0.5){
     vec2 propUv = gl_FragCoord.xy / uRes;
     vec4 prop = texture(uPropColor, propUv);
@@ -527,37 +618,152 @@ void main(){
       float ndc = depth * 2.0 - 1.0;
       float propView = (2.0 * uPropNear * uPropFar) /
         (uPropFar + uPropNear - ndc * (uPropFar - uPropNear));
-      float archView = tHit < 0.0 ? uPropFar : tHit * CELL_METERS * max(0.001, dot(rd, fwd));
-      if(propView < archView + 0.015) col = prop.rgb;
+      float archView = zView;
+      if(propView < archView + 0.015){ col = prop.rgb; zView = propView; }
     }
   }
 
   col += (grain - 0.5) * 0.035;             // film grain
   float vig = 1.0 - 0.42 * pow(length(uv * vec2(0.72, 0.9)), 2.2);
   col *= clamp(vig, 0.0, 1.0);
-  o = vec4(col, 1.0);
+
+  // DEPTH RIDES IN THE ALPHA CHANNEL. The post pass reads .rgb and writes 1.0,
+  // so nothing on screen can see this; the diffusion lens resolves it back out
+  // (see r3dDepthInto). Stored as INVERSE depth — near is bright — because that
+  // is the convention every SD depth ControlNet was trained on (MiDaS), and
+  // handing a depth ControlNet a linear far-is-bright map inverts the room.
+  o = vec4(col, 1.0 / (1.0 + zView * 0.14));
 }`;
 
-// ── Post: upscale with slight chromatic drift ────────────────────────────────
-const POST_FRAG = COMMON_GLSL + `
+// ── Depth resolve ───────────────────────────────────────────────────────────
+// Pulls the depth back out of the scene texture's alpha as a grey image. This
+// is the whole reason a raymarcher beats a screenshot: we do not have to
+// *estimate* depth with MiDaS like everyone else, we already know it exactly.
+const DEPTH_FRAG = COMMON_GLSL + `
 uniform sampler2D uSrc;
 uniform vec2 uRes;
 out vec4 o;
 void main(){
+  float d = texture(uSrc, gl_FragCoord.xy / uRes).a;
+  o = vec4(vec3(d), 1.0);
+}`;
+
+// ── Post: upscale with slight chromatic drift ────────────────────────────────
+// Fear is not a number on a bar; it is what the room starts doing to you. It
+// tightens a vignette (tunnel vision), pulls the colour out (a frightened man
+// stops seeing in colour), adds a grain that is the eye's own noise, and pushes
+// the chromatic split — the picture stops holding itself together.
+const POST_FRAG = COMMON_GLSL + `
+uniform sampler2D uSrc;
+uniform vec2 uRes;
+uniform float uFear;      // 0..1
+uniform float uTimeP;
+out vec4 o;
+float h21(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+void main(){
   vec2 uv = gl_FragCoord.xy / uRes;
-  vec2 cd = (uv - 0.5) * 0.0035;
-  o = vec4(
+  float f = clamp(uFear, 0.0, 1.0);
+  // the picture stops holding itself together
+  vec2 cd = (uv - 0.5) * (0.0035 + f * 0.0075);
+  vec3 c = vec3(
     texture(uSrc, uv + cd).r,
     texture(uSrc, uv).g,
-    texture(uSrc, uv - cd).b,
-    1.0);
+    texture(uSrc, uv - cd).b);
+  // tunnel vision
+  float d = length(uv - 0.5);
+  c *= 1.0 - smoothstep(0.34 - f * 0.16, 0.80 - f * 0.30, d) * (0.25 + f * 0.65);
+  // a frightened man stops seeing in colour
+  float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
+  c = mix(c, vec3(lum), f * 0.55);
+  // the eye's own noise, which is always there and which you notice when afraid
+  float g = h21(gl_FragCoord.xy + fract(uTimeP) * 91.7) - 0.5;
+  c += g * (0.012 + f * 0.055);
+  o = vec4(c, 1.0);
 }`;
 
 // ── GL plumbing ──────────────────────────────────────────────────────────────
 let gl = null, canvas = null;
-let progRD, progMarch, progPost;
+let progRD, progMarch, progPost, progDepth;
+// How frightened he is, 0..1. main.js owns the number; the post pass spends it.
+let fearLevel = 0;
+export function r3dSetFear(v) { fearLevel = Math.max(0, Math.min(1, v || 0)); }
 let rdTexA, rdTexB, rdFboA, rdFboB, rdFlip = false, rdWarm = 0;
 let sceneTex, sceneFbo, fogTexture, surfaceTexture=null;
+let surfAlbedoTex=null, surfNormalTex=null, surfRoughTex=null, surfHeightTex=null, surfDreamTex=null, surfDreamStageTex=null, anisoExt=null, anisoMax=1;
+const SURFACE_LAYERS=10,SURFACE_TILE=512;
+const surfDreamMix=new Float32Array(SURFACE_LAYERS);
+let localDiffusionLevel = 0;
+// Load a vertical strip PNG/JPG (one tile per layer) as a WebGL2 texture array:
+// mipmaps, REPEAT wrap and anisotropy — the quality an atlas cannot give a
+// tiled surface. sRGB decode for colour, linear for normal/roughness.
+function loadTextureArray(url, { srgb=false }={}){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>{
+      const size=img.width, layers=Math.round(img.height/size);
+      const cv=document.createElement('canvas'); cv.width=size; cv.height=img.height;
+      const cx=cv.getContext('2d'); cx.drawImage(img,0,0);
+      const data=new Uint8Array(cx.getImageData(0,0,size,img.height).data.buffer);
+      const t=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D_ARRAY,t);
+      gl.texImage3D(gl.TEXTURE_2D_ARRAY,0,srgb?gl.SRGB8_ALPHA8:gl.RGBA8,size,size,layers,0,gl.RGBA,gl.UNSIGNED_BYTE,data);
+      gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
+      gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_S,gl.REPEAT);
+      gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_T,gl.REPEAT);
+      if(anisoExt) gl.texParameterf(gl.TEXTURE_2D_ARRAY,anisoExt.TEXTURE_MAX_ANISOTROPY_EXT,Math.min(8,anisoMax));
+      resolve(t);
+    };
+    img.onerror=reject; img.src=url.href||String(url);
+  });
+}
+function initSurfaceDream(){
+  const make=()=>{
+    const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D_ARRAY,t);
+    gl.texImage3D(gl.TEXTURE_2D_ARRAY,0,gl.SRGB8_ALPHA8,SURFACE_TILE,SURFACE_TILE,SURFACE_LAYERS,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_S,gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_T,gl.REPEAT);
+    if(anisoExt)gl.texParameterf(gl.TEXTURE_2D_ARRAY,anisoExt.TEXTURE_MAX_ANISOTROPY_EXT,Math.min(8,anisoMax));
+    gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
+    return t;
+  };
+  surfDreamTex=make();surfDreamStageTex=make();
+}
+export function r3dSetSurfaceDream(slot,image,mix=.68){
+  if(!gl||!surfDreamStageTex||slot<0||slot>=SURFACE_LAYERS||!image)return false;
+  const cv=document.createElement('canvas');cv.width=SURFACE_TILE;cv.height=SURFACE_TILE;
+  cv.getContext('2d').drawImage(image,0,0,SURFACE_TILE,SURFACE_TILE);
+  // Match loadTextureArray's orientation so generated mortar/grain lands on
+  // the exact source texels it was conditioned from.
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+  // Stage for the atomic final swap, but also update the resident texture now.
+  // A ten-tile local batch can take minutes on MPS; hiding all evidence until
+  // tile ten made a healthy lens indistinguishable from a dead one.
+  for(const tex of [surfDreamStageTex,surfDreamTex]){
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY,tex);
+    gl.texSubImage3D(gl.TEXTURE_2D_ARRAY,0,0,0,slot,SURFACE_TILE,SURFACE_TILE,1,gl.RGBA,gl.UNSIGNED_BYTE,cv);
+  }
+  gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfDreamTex);gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
+  surfDreamMix[slot]=Math.max(0,Math.min(.92,Number(mix)||0));
+  return true;
+}
+export function r3dCommitSurfaceDream(mix=.68){
+  if(!gl||!surfDreamStageTex)return false;
+  gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfDreamStageTex);
+  gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
+  [surfDreamTex,surfDreamStageTex]=[surfDreamStageTex,surfDreamTex];
+  surfDreamMix.fill(Math.max(0,Math.min(.92,Number(mix)||0)));
+  return true;
+}
+export function r3dSetSurfaceDreamMix(mix=.68){
+  surfDreamMix.fill(Math.max(0,Math.min(.92,Number(mix)||0)));
+}
+export function r3dClearSurfaceDream(){surfDreamMix.fill(0);}
+export function r3dSetLocalDiffusionLevel(v=0){localDiffusionLevel=Math.max(0,Math.min(1,Number(v)||0));}
+export function r3dSurfaceDreamStats(){return{active:[...surfDreamMix].filter((v)=>v>0).length,mix:[...surfDreamMix],local:localDiffusionLevel};}
+export function r3dSurfaceStats(){return{albedo:!!surfAlbedoTex,normal:!!surfNormalTex,roughness:!!surfRoughTex,height:!!surfHeightTex,ready:!!(surfAlbedoTex&&surfNormalTex&&surfRoughTex&&surfHeightTex)};}
 let planTexture = null, materialTexture = null, planW = 0, planH = 0;
 let uniforms = {};
 let facing = 0; // 0=N(0,-1) 1=E 2=S 3=W
@@ -565,6 +771,7 @@ let yaw = 0, yawTarget = 0;
 let camX = 0, camZ = 0, camY = EYE_METERS / CELL;
 let lastT = 0;
 let fogOrigin = [0, 0];
+const marchUniformCache=new Map();
 let lightEase = 0;   // the building starts dark, and so do you
 
 function compile(type, src) {
@@ -625,9 +832,13 @@ export function r3dInit(mapEl) {
   progRD = program(RD_FRAG);
   progMarch = program(MARCH_FRAG);
   progPost = program(POST_FRAG);
+  progDepth = program(DEPTH_FRAG);
   P3.props3dInit(gl);
 
   gl.getExtension('EXT_color_buffer_float'); // render targets for the RD field
+  anisoExt = gl.getExtension('EXT_texture_filter_anisotropic');
+  if(anisoExt) anisoMax = gl.getParameter(anisoExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
+  initSurfaceDream();
 
   // RD seed: mostly A=1, scattered B blots
   const seed = new Float32Array(RD_SIZE * RD_SIZE * 4);
@@ -646,15 +857,20 @@ export function r3dInit(mapEl) {
   }
   rdFboA = makeFbo(rdTexA);
   rdFboB = makeFbo(rdTexB);
-  fogTexture = makeTex(FOG_TEX, FOG_TEX, new Uint8Array(FOG_TEX * FOG_TEX), 'r8');
+  fogTexture = makeTex(FOG_TEX, FOG_TEX, new Uint8Array(FOG_TEX * FOG_TEX).fill(255), 'r8');
   resize();
   P3.loadPropPack(new URL('../../assets/conservatory-props.glb', import.meta.url))
+    .then(()=>P3.addPropPack(new URL('../../assets/metal-door.glb',import.meta.url)))
     .catch((err)=>console.warn('prop pack unavailable',err));
   P3.loadPortraitAtlas(new URL('../../assets/portraits/portrait-atlas.webp',import.meta.url))
     .catch((err)=>console.warn('portrait atlas unavailable',err));
-  loadImageTexture(new URL('../../assets/surfaces/surface-atlas.png',import.meta.url))
-    .then((t)=>{surfaceTexture=t;})
-    .catch((err)=>console.warn('surface atlas unavailable; using native material fallback',err));
+  Promise.all([
+    loadTextureArray(new URL('../../assets/surfaces/surface-albedo.jpg',import.meta.url),{srgb:true}),
+    loadTextureArray(new URL('../../assets/surfaces/surface-normal.png',import.meta.url)),
+    loadTextureArray(new URL('../../assets/surfaces/surface-rough.jpg',import.meta.url)),
+    loadTextureArray(new URL('../../assets/surfaces/surface-height.png',import.meta.url)),
+  ]).then(([a,n,r,h])=>{surfAlbedoTex=a;surfNormalTex=n;surfRoughTex=r;surfHeightTex=h;surfaceTexture=a;})
+    .catch((err)=>console.warn('surface arrays unavailable; using native material fallback',err));
   window.addEventListener('resize', resize);
 }
 
@@ -748,16 +964,9 @@ export function r3dPatchPlan(rgba, materialOrX, xOrY, yOrW, wOrH, maybeH) {
 }
 
 export function r3dUpdateFog(fogGet, px, py) {
+  // Retained as a compatibility no-op for the 2D exploration map. The 3D
+  // architecture and prop passes receive a permanently clear texture.
   fogOrigin = [px - FOG_TEX / 2, py - FOG_TEX / 2];
-  const buf = new Uint8Array(FOG_TEX * FOG_TEX);
-  for (let y = 0; y < FOG_TEX; y++) {
-    for (let x = 0; x < FOG_TEX; x++) {
-      const v = fogGet(fogOrigin[0] + x, fogOrigin[1] + y);
-      buf[y * FOG_TEX + x] = v === 2 ? 255 : v === 1 ? 120 : 0;
-    }
-  }
-  gl.bindTexture(gl.TEXTURE_2D, fogTexture);
-  gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, FOG_TEX, FOG_TEX, gl.RED, gl.UNSIGNED_BYTE, buf);
 }
 
 // ── Collision mirror of the GLSL architecture (uint math: exact parity) ─────
@@ -803,10 +1012,10 @@ export function r3dFrame(state) {
   const dt = Math.min(0.1, now - (lastT || now));
   lastT = now;
 
-  // camera: glide to the player cell, fixed eye height over the flat floor
-  const k = 1 - Math.exp(-dt * 11);
-  camX += (state.px + 0.5 - camX) * k;
-  camZ += (state.py + 0.5 - camZ) * k;
+  // main.js supplies a frame-interpolated physical player position. The camera
+  // is that position—never a follower with its own lag or acceleration state.
+  camX=state.px+0.5;
+  camZ=state.py+0.5;
   yaw += (yawTarget - yaw) * (1 - Math.exp(-dt * 12));
   // Eye height above whatever floor you are standing on. Eased, so a stair is
   // a climb rather than a series of teleports.
@@ -854,7 +1063,7 @@ export function r3dFrame(state) {
   gl.useProgram(progMarch);
   gl.bindFramebuffer(gl.FRAMEBUFFER, sceneFbo);
   gl.viewport(0, 0, uniforms.sceneW, uniforms.sceneH);
-  const U = (n) => gl.getUniformLocation(progMarch, n);
+  const U = (n) => {if(!marchUniformCache.has(n))marchUniformCache.set(n,gl.getUniformLocation(progMarch,n));return marchUniformCache.get(n);};
   gl.uniform2f(U('uRes'), uniforms.sceneW, uniforms.sceneH);
   gl.uniform1f(U('uTime'), now);
   gl.uniform3f(U('uCam'), camX, camY, camZ);
@@ -891,8 +1100,17 @@ export function r3dFrame(state) {
     gl.activeTexture(gl.TEXTURE4);gl.bindTexture(gl.TEXTURE_2D,propTargets.color);gl.uniform1i(U('uPropColor'),4);
     gl.activeTexture(gl.TEXTURE5);gl.bindTexture(gl.TEXTURE_2D,propTargets.depth);gl.uniform1i(U('uPropDepth'),5);
   }
-  gl.uniform1f(U('uSurfacesReady'),surfaceTexture?1:0);
-  if(surfaceTexture){gl.activeTexture(gl.TEXTURE6);gl.bindTexture(gl.TEXTURE_2D,surfaceTexture);gl.uniform1i(U('uSurfaceAtlas'),6);}
+  gl.uniform1f(U('uSurfacesReady'),surfAlbedoTex&&surfNormalTex&&surfRoughTex&&surfHeightTex?1:0);
+  if(surfAlbedoTex&&surfNormalTex&&surfRoughTex&&surfHeightTex){
+    gl.activeTexture(gl.TEXTURE6);gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfAlbedoTex);gl.uniform1i(U('uSurfAlbedo'),6);
+    gl.activeTexture(gl.TEXTURE7);gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfNormalTex);gl.uniform1i(U('uSurfNormal'),7);
+    gl.activeTexture(gl.TEXTURE8);gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfRoughTex);gl.uniform1i(U('uSurfRough'),8);
+    gl.activeTexture(gl.TEXTURE9);gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfDreamTex);gl.uniform1i(U('uSurfDream'),9);
+    gl.activeTexture(gl.TEXTURE10);gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfHeightTex);gl.uniform1i(U('uSurfHeight'),10);
+  }
+  gl.uniform1f(U('uDreamReady'),surfDreamMix.some((v)=>v>0)?1:0);
+  gl.uniform1f(U('uLocalDiffusion'),localDiffusionLevel);
+  gl.uniform1fv(U('uDreamMix[0]'),surfDreamMix);
   const n = Math.min(state.chunks.length, MAX_CHUNKS);
   gl.uniform1i(U('uChunkCount'), n);
   if (n > 0) {
@@ -918,9 +1136,74 @@ export function r3dFrame(state) {
   gl.bindTexture(gl.TEXTURE_2D, sceneTex);
   gl.uniform1i(gl.getUniformLocation(progPost, 'uSrc'), 0);
   gl.uniform2f(gl.getUniformLocation(progPost, 'uRes'), canvas.width, canvas.height);
+  gl.uniform1f(gl.getUniformLocation(progPost, 'uFear'), fearLevel);
+  gl.uniform1f(gl.getUniformLocation(progPost, 'uTimeP'), performance.now() * 0.001);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 }
 
 export function r3dCanvas() { return canvas; }
+
+// ── The depth the lens gets ─────────────────────────────────────────────────
+// Resolves the alpha channel of the last rendered frame into a grey depth image
+// on a 2D canvas the diffusion client can encode. Pulled ON DEMAND — only when
+// a frame is actually being sent to the GPU (~10fps), never once per rAF —
+// because readPixels is a stall, and a stall in the render loop is a stutter in
+// a horror game.
+//
+// Exact, not estimated. Every other img2img pipeline in the world runs MiDaS to
+// GUESS the depth of a picture. We marched the room; we know.
+let depthTex=null, depthFbo=null, depthSize=0, depthCanvas=null, depthCtx=null, depthPix=null, depthImg=null;
+export function r3dDepthCanvas(size = 512) {
+  if (!gl || !sceneTex) return null;
+  if (depthSize !== size) {
+    if (depthTex) { gl.deleteTexture(depthTex); gl.deleteFramebuffer(depthFbo); }
+    depthTex = makeTex(size, size);
+    depthFbo = makeFbo(depthTex);
+    depthCanvas = document.createElement('canvas');
+    depthCanvas.width = depthCanvas.height = size;
+    depthCtx = depthCanvas.getContext('2d');
+    depthPix = new Uint8Array(size * size * 4);
+    depthImg = depthCtx.createImageData(size, size);
+    depthSize = size;
+  }
+
+  gl.useProgram(progDepth);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, depthFbo);
+  gl.viewport(0, 0, size, size);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, sceneTex);
+  gl.uniform1i(gl.getUniformLocation(progDepth, 'uSrc'), 0);
+  gl.uniform2f(gl.getUniformLocation(progDepth, 'uRes'), size, size);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  gl.readPixels(0, 0, size, size, gl.RGBA, gl.UNSIGNED_BYTE, depthPix);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+  // NORMALISE. Raw inverse depth inside one small room occupies a narrow slice
+  // of the range — a wall at five metres and a wall at nine are both "mid grey",
+  // and a ControlNet handed a low-contrast map politely ignores it. Every depth
+  // map these things were trained on (MiDaS) is rescaled to fill the range, so
+  // we fill the range: the CONTRAST is the signal, not the metres.
+  let lo = 255, hi = 0;
+  for (let i = 0; i < depthPix.length; i += 4) {
+    const v = depthPix[i];
+    if (v < lo) lo = v;
+    if (v > hi) hi = v;
+  }
+  const k = 255 / Math.max(1, hi - lo);
+
+  // GL is bottom-up and a canvas is top-down. Flip, or the lens is handed a
+  // room standing on its head and dutifully paints one.
+  const row = size * 4, out = depthImg.data;
+  for (let y = 0; y < size; y++) {
+    let s = (size - 1 - y) * row, d = y * row;
+    for (let x = 0; x < size; x++, s += 4, d += 4) {
+      const v = (depthPix[s] - lo) * k;
+      out[d] = out[d + 1] = out[d + 2] = v;
+      out[d + 3] = 255;
+    }
+  }
+  depthCtx.putImageData(depthImg, 0, 0);
+  return depthCanvas;
+}
 
 export { BIOME_RGB, WORLD_RGB };

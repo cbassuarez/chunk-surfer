@@ -4,10 +4,10 @@
     "author": "Chunk Surfer project",
     "source": "tools/chunk_surfer/build-props.mjs",
     "license": "project source (mixed: see meshes)",
-    "sha256": "6bd27d9d1ddf3562d3ab548a28d8e3c3d547f7a70e8d554c04a823d42384db32",
+    "sha256": "e38d12170163213c9838991df4d46179eeefb77522b9750b4651dc0bfc96fc3e",
     "modifications": "Metres, Y-up, ground-centred. Procedural fallback geometry plus user-supplied source meshes (unverified provenance) baked, re-axised, height-scaled, and vertex-cluster decimated under budget.",
-    "triangles": 24571,
-    "bytes": 956124
+    "triangles": 25579,
+    "bytes": 1038312
   },
   "meshes": [
     {
@@ -342,6 +342,237 @@
         ]
       },
       "triangles": 276,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "ticket_counter",
+      "bounds": {
+        "min": [
+          -1.5,
+          0,
+          -0.41
+        ],
+        "max": [
+          1.5,
+          2.25,
+          0.41
+        ]
+      },
+      "triangles": 108,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "key_cabinet",
+      "bounds": {
+        "min": [
+          -0.45,
+          0,
+          -0.162
+        ],
+        "max": [
+          0.45,
+          1.16,
+          0.11
+        ]
+      },
+      "triangles": 408,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "notice_board",
+      "bounds": {
+        "min": [
+          -0.6,
+          0,
+          -0.045
+        ],
+        "max": [
+          0.6,
+          0.9,
+          0.03
+        ]
+      },
+      "triangles": 24,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "loose_note",
+      "bounds": {
+        "min": [
+          -0.16,
+          0,
+          -0.21
+        ],
+        "max": [
+          0.16,
+          0.022,
+          0.21
+        ]
+      },
+      "triangles": 24,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "pool_start_block",
+      "bounds": {
+        "min": [
+          -0.345,
+          0,
+          -0.425
+        ],
+        "max": [
+          0.345,
+          0.765,
+          0.265
+        ]
+      },
+      "triangles": 24,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "lifeguard_chair",
+      "bounds": {
+        "min": [
+          -0.31,
+          0.005,
+          -0.23
+        ],
+        "max": [
+          0.31,
+          1.99,
+          0.38
+        ]
+      },
+      "triangles": 72,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "lane_reel",
+      "bounds": {
+        "min": [
+          -0.46,
+          0.09,
+          -0.355
+        ],
+        "max": [
+          0.46,
+          0.98,
+          0.355
+        ]
+      },
+      "triangles": 108,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "drain_grille",
+      "bounds": {
+        "min": [
+          -0.6,
+          0,
+          -0.09
+        ],
+        "max": [
+          0.6,
+          0.07,
+          0.09
+        ]
+      },
+      "triangles": 120,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "altar_table",
+      "bounds": {
+        "min": [
+          -0.9,
+          0,
+          -0.39
+        ],
+        "max": [
+          0.9,
+          0.9,
+          0.39
+        ]
+      },
+      "triangles": 36,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "lectern",
+      "bounds": {
+        "min": [
+          -0.353,
+          0,
+          -0.372
+        ],
+        "max": [
+          0.353,
+          1.32,
+          0.275
+        ]
+      },
+      "triangles": 36,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "hymn_board",
+      "bounds": {
+        "min": [
+          -0.4,
+          0,
+          -0.05
+        ],
+        "max": [
+          0.4,
+          0.96,
+          0.03
+        ]
+      },
+      "triangles": 48,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",

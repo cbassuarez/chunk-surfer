@@ -1,54 +1,61 @@
-// Persistence, in two files with very different jobs.
+// Persistence, in two files with different lifetimes.
 //
-// SAVE  (chunk-surfer:save:v2) — the run. Cleared by NEW GAME.
-// META  (chunk-surfer:meta:v1) — what the game remembers about *you*, across
-//        runs and deletions: endings seen, whether you have met the hush,
-//        whether you once quit in the middle. NEW GAME does not clear this.
-//        The horror of the meta file is that it survives the reset offered
-//        as mercy.
+// SAVE v3 — the current night. NEW GAME replaces this record.
+// META v2 — knowledge, returns, achievements, and platform sync state. NEW
+// GAME never clears it.
 //
-// Unknown/corrupt version → fall back to a fresh state and never throw. A
-// broken save must never brick the lab.
+// Every read is defensive. Unknown/corrupt data falls back to a usable state;
+// a bad localStorage value must never brick the game.
 
 import { PLAN_SCALE } from '../data/floorplan/legend.js';
+import {
+  SAVE_VERSION,
+  META_VERSION,
+  DEFAULT_SETTINGS,
+  freshMeta,
+  freshRunRecord,
+  normalizeMeta,
+  normalizeRun,
+  normalizeSettings,
+} from '../progression/schema.js';
+import { normalizeRuleValues } from '../progression/difficulty.js';
+import { DIFFICULTY_PRESETS } from '../progression/difficulty-defs.js';
+import { ACHIEVEMENT_BY_ID } from '../progression/achievement-defs.js';
+import { queueChangedStats } from '../progression/stat-defs.js';
 
-const SAVE_KEY = 'chunk-surfer:save:v2';
-const LEGACY_SAVE_KEY = 'chunk-surfer:save:v1';
-const META_KEY = 'chunk-surfer:meta:v1';
-const SAVE_VERSION = 2;
-const META_VERSION = 1;
+const SAVE_KEY = 'chunk-surfer:save:v3';
+const LEGACY_SAVE_KEYS = ['chunk-surfer:save:v2', 'chunk-surfer:save:v1'];
+const META_KEY = 'chunk-surfer:meta:v2';
+const LEGACY_META_KEYS = ['chunk-surfer:meta:v1'];
 
-const freshSave = () => ({
+export const freshSave = ({ settings = DEFAULT_SETTINGS, run = null } = {}) => ({
   version: SAVE_VERSION,
   flags: {},
   area: 'prologue',
-  px: 0, py: 0,
-  takes: [], items: [],
+  px: 0,
+  py: 0,
+  takes: [],
+  items: [],
   props: { inspected: [], auditioned: [], cycles: {}, hushSeed: 0x43535552, hushCount: 0 },
+  encounters: { cleared: [] },
+  doors: { open: [] },
   playSeconds: 0,
   steps: 0,
-  settings: { volume: 1, music: 1, textCps: 42, fx: true, reduceDread: false, mic: 'on' },
-});
-
-const freshMeta = () => ({
-  version: META_VERSION,
-  endingsSeen: [],
-  hushMet: false,
-  leftMidRun: false,
-  runs: 0,
-  lastSeenAt: 0,
+  bagNav: null,
+  settings: normalizeSettings(settings),
+  run,
 });
 
 const scaleCoord = (v) => Number.isFinite(Number(v))
   ? Math.round(Number(v) * PLAN_SCALE) + Math.floor(PLAN_SCALE / 2)
   : v;
+
 const scalePoint = (p) => (p && Number.isFinite(Number(p.x)) && Number.isFinite(Number(p.y)))
   ? { ...p, x: scaleCoord(p.x), y: scaleCoord(p.y) }
   : p;
 
-function migrateSave(data) {
-  if (data?.version !== 1) return null;
-  const next = { ...freshSave(), ...data, version: SAVE_VERSION };
+function migrateSaveV1ToV2(data) {
+  const next = { ...freshSave(), ...data, version: 2 };
   next.px = scaleCoord(data.px);
   next.py = scaleCoord(data.py);
   if (next.obj) {
@@ -59,25 +66,115 @@ function migrateSave(data) {
   return next;
 }
 
-function read(key, fresh, version, migrate = null, legacyKey = null) {
-  try {
-    let raw = localStorage.getItem(key);
-    let fromLegacy = false;
-    if (!raw && legacyKey) {
-      raw = localStorage.getItem(legacyKey);
-      fromLegacy = !!raw;
-    }
-    if (!raw) return fresh();
-    const data = JSON.parse(raw);
-    if (data?.version === version) return { ...fresh(), ...data };
-    const migrated = migrate?.(data);
-    if (!migrated) return fresh();
-    if (fromLegacy) write(key, migrated);
-    return migrated;
-  } catch (_) {
-    return fresh();
-  }
+function migrateSaveToV3(data, meta) {
+  let old = data;
+  if (old?.version === 1) old = migrateSaveV1ToV2(old);
+  if (old?.version !== 2) return null;
+
+  const settings = normalizeSettings(old.settings);
+  return normalizeSaveV3({
+    ...old,
+    version: SAVE_VERSION,
+    settings,
+    run: freshRunRecord({
+      preset: settings.lastDifficulty || 'contract',
+      meta,
+      settings,
+      now: Date.now(),
+    }),
+  }, meta);
 }
+
+function normalizeSaveV3(data, meta = null) {
+  const base = freshSave();
+  const source = data && typeof data === 'object' ? data : {};
+  const settings = normalizeSettings(source.settings);
+  const hasOldRunState = source.version < SAVE_VERSION && (
+    Number(source.steps) > 0 || Object.keys(source.flags || {}).length > 0 || (source.takes || []).length > 0
+  );
+
+  return {
+    ...base,
+    ...source,
+    version: SAVE_VERSION,
+    flags: source.flags && typeof source.flags === 'object' ? source.flags : {},
+    takes: Array.isArray(source.takes) ? source.takes : [],
+    items: Array.isArray(source.items) ? source.items : [],
+    props: { ...base.props, ...(source.props && typeof source.props === 'object' ? source.props : {}) },
+    encounters: { ...base.encounters, ...(source.encounters && typeof source.encounters === 'object' ? source.encounters : {}) },
+    doors: { ...base.doors, ...(source.doors && typeof source.doors === 'object' ? source.doors : {}) },
+    settings,
+    run: sanitizeRun(normalizeRun(source.run, {
+      meta,
+      settings,
+      activeFallback: hasOldRunState,
+    })),
+  };
+}
+
+function sanitizeRun(run) {
+  if (!run) return null;
+  const knownPreset = run.rules?.startedPreset === 'custom' || !!DIFFICULTY_PRESETS[run.rules?.startedPreset];
+  if (!knownPreset) {
+    run.rules.startedPreset = 'contract';
+    if (!run.rules.custom) run.rules.currentPreset = 'contract';
+  }
+  if (run.rules.currentPreset !== 'custom' && !DIFFICULTY_PRESETS[run.rules.currentPreset]) {
+    run.rules.currentPreset = run.rules.startedPreset;
+  }
+  run.rules.values = normalizeRuleValues(run.rules.values);
+  if (run.integrity?.deadAir?.eligible && run.rules.startedPreset !== 'dead-air') {
+    run.integrity.deadAir.eligible = false;
+    run.integrity.deadAir.invalidations.push({
+      at: Date.now(),
+      reason: 'REPAIRED_INVALID_CERTIFICATION',
+    });
+  }
+  return run;
+}
+
+function sanitizeMeta(metaValue) {
+  const clean = normalizeMeta(metaValue);
+  clean.achievements = Object.fromEntries(
+    Object.entries(clean.achievements || {}).filter(([id, record]) => (
+      !!ACHIEVEMENT_BY_ID[id] && record && typeof record === 'object'
+    )),
+  );
+  clean.platform.pendingAchievements = (clean.platform.pendingAchievements || [])
+    .filter((id) => !!ACHIEVEMENT_BY_ID[id]);
+  return clean;
+}
+
+function migrateMetaToV2(data) {
+  if (data?.version !== 1) return null;
+  return sanitizeMeta({
+    ...freshMeta(),
+    ...data,
+    version: META_VERSION,
+    achievements: {},
+    knowledge: {},
+    challengeCompletions: { deadAir: false },
+    stats: {
+      runsStarted: Number(data.runs) || 0,
+      endingsSeen: Array.isArray(data.endingsSeen) ? data.endingsSeen.length : 0,
+    },
+  });
+}
+
+function safeParse(raw) {
+  try { return JSON.parse(raw); } catch (_) { return null; }
+}
+
+function firstStored(keys) {
+  try {
+    for (const key of keys) {
+      const raw = localStorage.getItem(key);
+      if (raw != null) return { key, raw };
+    }
+  } catch (_) {}
+  return null;
+}
+
 function write(key, data) {
   try { localStorage.setItem(key, JSON.stringify(data)); } catch (_) { /* private mode */ }
 }
@@ -86,33 +183,106 @@ let save = freshSave();
 let meta = freshMeta();
 
 export function saveLoad() {
-  save = read(SAVE_KEY, freshSave, SAVE_VERSION, migrateSave, LEGACY_SAVE_KEY);
-  meta = read(META_KEY, freshMeta, META_VERSION);
+  const metaStored = firstStored([META_KEY, ...LEGACY_META_KEYS]);
+  if (!metaStored) {
+    meta = freshMeta();
+  } else {
+    const raw = safeParse(metaStored.raw);
+    if (raw?.version === META_VERSION) meta = sanitizeMeta(raw);
+    else meta = migrateMetaToV2(raw) || freshMeta();
+    if (metaStored.key !== META_KEY) write(META_KEY, meta);
+  }
+
+  const saveStored = firstStored([SAVE_KEY, ...LEGACY_SAVE_KEYS]);
+  if (!saveStored) {
+    save = freshSave();
+  } else {
+    const raw = safeParse(saveStored.raw);
+    if (raw?.version === SAVE_VERSION) save = normalizeSaveV3(raw, meta);
+    else save = migrateSaveToV3(raw, meta) || freshSave();
+    if (saveStored.key !== SAVE_KEY) write(SAVE_KEY, save);
+  }
+
   return { save, meta };
 }
+
 export function getSave() { return save; }
 export function getMeta() { return meta; }
+
 export function hasSave() {
-  try { return !!(localStorage.getItem(SAVE_KEY) || localStorage.getItem(LEGACY_SAVE_KEY)); } catch (_) { return false; }
+  return !!firstStored([SAVE_KEY, ...LEGACY_SAVE_KEYS]);
 }
+
+export function hasActiveRun() {
+  // The in-memory run remains authoritative when storage is unavailable (for
+  // example private browsing with a blocked localStorage write).
+  return save?.run?.status === 'active';
+}
+
 export function saveCommit(patch = {}) {
   Object.assign(save, patch);
+  save = normalizeSaveV3(save, meta);
   write(SAVE_KEY, save);
-}
-export function metaCommit(patch = {}) {
-  Object.assign(meta, patch);
-  write(META_KEY, meta);
-}
-export function newGame() {
-  save = freshSave();
-  write(SAVE_KEY, save);
-  metaCommit({ runs: meta.runs + 1 });
   return save;
 }
+
+export function metaCommit(patch = {}) {
+  Object.assign(meta, patch);
+  meta = sanitizeMeta(meta);
+  write(META_KEY, meta);
+  return meta;
+}
+
+export function newGame({ preset = null, values = null, now = Date.now() } = {}) {
+  const settings = normalizeSettings(save?.settings);
+  const selectedPreset = preset || settings.lastDifficulty || 'contract';
+  settings.lastDifficulty = selectedPreset;
+  if (selectedPreset === 'custom') settings.customShiftRules = normalizeRuleValues(values || settings.customShiftRules || {});
+
+  save = freshSave({
+    settings,
+    run: freshRunRecord({
+      preset: selectedPreset,
+      values: values || undefined,
+      meta,
+      settings,
+      now,
+    }),
+  });
+
+  write(SAVE_KEY, save);
+  const nextStats = {
+    ...meta.stats,
+    runsStarted: (meta.stats?.runsStarted || 0) + 1,
+  };
+  metaCommit({
+    runs: meta.runs + 1,
+    stats: nextStats,
+    platform: {
+      ...meta.platform,
+      pendingStats: queueChangedStats(meta.stats, nextStats, meta.platform?.pendingStats),
+    },
+  });
+  return save;
+}
+
 export function clearSave() {
   try {
     localStorage.removeItem(SAVE_KEY);
-    localStorage.removeItem(LEGACY_SAVE_KEY);
+    for (const key of LEGACY_SAVE_KEYS) localStorage.removeItem(key);
   } catch (_) {}
-  save = freshSave();
+  save = freshSave({ settings: save?.settings });
+}
+
+export function clearMeta() {
+  try {
+    localStorage.removeItem(META_KEY);
+    for (const key of LEGACY_META_KEYS) localStorage.removeItem(key);
+  } catch (_) {}
+  meta = freshMeta();
+}
+
+export function clearAllData() {
+  clearSave();
+  clearMeta();
 }

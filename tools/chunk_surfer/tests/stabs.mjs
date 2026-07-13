@@ -60,8 +60,13 @@ check('reduce-dread disables stabs', d1.trueCount+d1.falseCount===d0.trueCount+d
 const wpBefore=await p.evaluate(()=>window.__probe.obj());
 await p.evaluate(()=>window.__probe.placePage(0,-1,'lux_nova'));
 await key('ArrowUp',500);
+// Standing on it is not having it. A dead man's paperwork is picked up with a
+// hand, on purpose, or it stays on the floor where he dropped it.
+check('walking over a page does NOT pick it up', (await p.evaluate(()=>window.__probe.obj())).read === wpBefore.read,
+  JSON.stringify(await p.evaluate(()=>window.__probe.obj())));
+await key('e',500);
 const o=await p.evaluate(()=>window.__probe.obj());
-check('a page is picked up', (await p.evaluate(()=>window.__probe.obj())).read > 0);
+check('...[e] does', o.read > wpBefore.read, JSON.stringify(o));
 check('...and it does not steer the minimap', o.target===wpBefore.target, JSON.stringify(o));
 
 console.log(errs.length?'\nERRORS:\n'+[...new Set(errs)].slice(0,3).join('\n'):'\nno page errors');

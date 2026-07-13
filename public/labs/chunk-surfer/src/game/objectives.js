@@ -38,16 +38,22 @@ export function placePage(x, y, roomId, id) {
 export function pageAt(x, y) { return state.pages.get(key(x, y)) || null; }
 export function allPages() { return [...state.pages.values()]; }
 
-// Walk over it. Returns the page if one was taken.
-export function tryPickup(px, py) {
-  for (const [k, p] of state.pages) {
-    if (Math.hypot(p.x - px, p.y - py) <= state.pickupRadius) {
-      state.pages.delete(k);
-      state.read.push(p.id);
-      return p;
-    }
-  }
+// What is at your feet, if anything. Looking is free; it does not take it.
+export function pageNear(px, py) {
+  for (const p of state.pages.values())
+    if (Math.hypot(p.x - px, p.y - py) <= state.pickupRadius) return p;
   return null;
+}
+
+// You do not hoover up a dead man's paperwork by walking across it. You stop,
+// you crouch, and you pick it up with your hand — which in this game is [e].
+// Returns the page if one was taken.
+export function tryPickup(px, py) {
+  const p = pageNear(px, py);
+  if (!p) return null;
+  state.pages.delete(key(p.x, p.y));
+  state.read.push(p.id);
+  return p;
 }
 
 // A page sets the waypoint. Deliberately coarse: it tells you where the room

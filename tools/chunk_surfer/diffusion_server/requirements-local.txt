@@ -1,0 +1,17 @@
+# The local half. `python -m venv .venv-local && .venv-local/bin/pip install -r
+# requirements-local.txt`, then `.venv-local/bin/python server.py`.
+#
+# The local runtime is the production inference path. peft is not optional:
+# load_lora_weights(adapter_name=...) and set_adapters() are peft.
+torch>=2.4
+diffusers==0.31.0
+transformers==4.46.3
+huggingface_hub==0.26.5
+accelerate==1.1.1
+peft==0.13.2
+safetensors
+pillow
+torchvision
+fastapi
+uvicorn[standard]
+websockets

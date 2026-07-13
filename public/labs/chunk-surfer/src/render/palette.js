@@ -1,8 +1,8 @@
 // The interface palette, modelled on three real machines.
 //
-//   AMBER  — the Akai AM-M5 amp / HX-M5 deck. Warm gold-amber phosphor on flat
+//   AMBER  — the A k a i AM M5 amp / HX M5 deck. Warm gold-amber phosphor on flat
 //            black glass. Menus, the bag, dialogue, document chrome.
-//   GREEN  — the Hitachi DA-1000 CD player. FL green bargraphs, a pale-cyan time
+//   GREEN  — the hi ta chi DA-1000 CD player. FL green bargraphs, a pale-cyan time
 //            counter, a red position marker, a blue POWER accent. Record and
 //            playback.
 //
@@ -44,16 +44,31 @@ export const THEMES = Object.freeze({
 export const vfdSettings = {
   phosphor: 'faithful',                  // 'faithful' | 'amber' | 'green' | 'cyan' | custom hex
   brightness: 1.0,                       // 0.55 .. 1.25
-  flicker: false,
+  flicker: 'off',
 };
 let version = 1;
 export function vfdVersion() { return version; }
+export const FLICKER_LEVELS = Object.freeze(['off', 'low', 'full']);
+export const FLICKER_LABEL = Object.freeze({ off: 'OFF', low: 'LOW', full: 'FULL' });
+
+export function normalizeFlicker(value) {
+  if (value === true) return 'low';       // migrate old boolean saves tastefully
+  if (value === false || value == null) return 'off';
+  const v = String(value).toLowerCase();
+  return FLICKER_LEVELS.includes(v) ? v : 'off';
+}
+
+export function vfdFlickerLevel() {
+  return normalizeFlicker(vfdSettings.flicker);
+}
 
 export function applyVfdSettings(patch = {}) {
   let changed = false;
-  for (const k of ['phosphor', 'brightness', 'flicker']) {
-    if (patch[k] !== undefined && patch[k] !== vfdSettings[k]) { vfdSettings[k] = patch[k]; changed = true; }
-  }
+    for (const k of ['phosphor', 'brightness', 'flicker']) {
+      if (patch[k] === undefined) continue;
+      const next = k === 'flicker' ? normalizeFlicker(patch[k]) : patch[k];
+      if (next !== vfdSettings[k]) { vfdSettings[k] = next; changed = true; }
+    }
   if (changed) version++;
   return changed;
 }
@@ -65,8 +80,130 @@ function monoTheme(base) {
     wordmark: lighten(base, 0.3), strip: '#8A8F94', danger: '#FF6A5A',
   };
 }
-const FORCED = { amber: THEMES.amber, green: THEMES.green, cyan: monoTheme('#59E7E7') };
+const FILTER_BANDS = Object.freeze([
+  { at: 0.00, color: '#ECA51E' }, // warm amber glass
+  { at: 0.30, color: '#7AF0A0' }, // green phosphor/filter overlap
+  { at: 0.62, color: '#6BE8D4' }, // aqua VFD region
+  { at: 0.84, color: '#8FD8FF' }, // blue edge filter
+]);
 
+const FORCED = Object.freeze({
+  amber: THEMES.amber,
+  green: THEMES.green,
+
+  aqua: {
+    name: 'aqua',
+    phosphor: '#66FFD4',
+    dim: 'rgba(102,255,212,0.055)',
+    counter: '#D8FFFF',
+    marker: '#FF4A38',
+    accent: '#8FEAFF',
+    glass: '#030707',
+    silkscreen: 'rgba(102,255,212,0.24)',
+    wordmark: '#B7FFF0',
+    strip: '#78918D',
+    danger: '#FF6A5A',
+  },
+
+  filterBlue: {
+    name: 'filterBlue',
+    phosphor: '#7FD7FF',
+    dim: 'rgba(127,215,255,0.045)',
+    counter: '#DDF7FF',
+    marker: '#FF513C',
+    accent: '#B2E9FF',
+    glass: '#020608',
+    silkscreen: 'rgba(127,215,255,0.20)',
+    wordmark: '#B9E8FF',
+    strip: '#607B86',
+    danger: '#FF6A5A',
+  },
+
+  gold: {
+    name: 'gold',
+    phosphor: '#FFE06A',
+    dim: 'rgba(255,224,106,0.050)',
+    counter: '#FFF1A8',
+    marker: '#FF5A3C',
+    accent: '#FFD36A',
+    glass: '#060502',
+    silkscreen: 'rgba(255,224,106,0.22)',
+    wordmark: '#D8C17A',
+    strip: '#9B8754',
+    danger: '#FF6A5A',
+  },
+
+  warmWhite: {
+    name: 'warmWhite',
+    phosphor: '#EAF8F2',
+    dim: 'rgba(234,248,242,0.040)',
+    counter: '#FFFFFF',
+    marker: '#FF473A',
+    accent: '#BFDFFF',
+    glass: '#050606',
+    silkscreen: 'rgba(234,248,242,0.18)',
+    wordmark: '#E6EEE8',
+    strip: '#8A928C',
+    danger: '#FF6A5A',
+  },
+
+  ember: {
+    name: 'ember',
+    phosphor: '#FF6A38',
+    dim: 'rgba(255,106,56,0.045)',
+    counter: '#FFB08A',
+    marker: '#FFFFFF',
+    accent: '#FF8C4A',
+    glass: '#070302',
+    silkscreen: 'rgba(255,106,56,0.20)',
+    wordmark: '#E79A76',
+    strip: '#8A5A4A',
+    danger: '#FFEEE6',
+  },
+
+  cyan: monoTheme('#59E7E7'),
+
+  filterBands: {
+    name: 'filterBands',
+    phosphor: '#70F7B0',
+    dim: 'rgba(112,247,176,0.040)',
+    counter: '#CFF6FF',
+    marker: '#FF3B30',
+    accent: '#FFC247',
+    glass: '#030505',
+    silkscreen: 'rgba(170,210,190,0.20)',
+    wordmark: '#D8EAD8',
+    strip: '#8A8F94',
+    danger: '#FF6A5A',
+    bands: FILTER_BANDS,
+  },
+});
+
+export const PHOSPHOR_THEMES = Object.freeze([
+  'faithful',
+  'green',
+  'amber',
+  'aqua',
+  'filterBlue',
+  'gold',
+  'warmWhite',
+  'ember',
+  'cyan',
+  'filterBands',
+]);
+
+export const PHOSPHOR_LABEL = Object.freeze({
+  faithful: 'FAITHFUL',
+  green: 'GREEN',
+  amber: 'AMBER',
+  aqua: 'AQUA',
+  filterBlue: 'FILTER BLUE',
+  gold: 'GOLD',
+  warmWhite: 'WHITE',
+  ember: 'EMBER',
+  cyan: 'CYAN',
+  filterBands: 'FILTER BANDS',
+});
 // The active surface. Presenters call setActiveSurface('amber'|'green') before
 // drawing; `ui-*` glyph classes resolve against whatever is active.
 let active = 'amber';
@@ -86,20 +223,107 @@ const ROLE = {
   'ui-counter': 'counter', 'ui-danger': 'danger', 'ui-marker': 'marker',
   'ui-strip': 'glass', 'ui-wordmark': 'wordmark',
 };
-export function uiRoleColor(cls) {
-  const t = activeTheme();
-  return t[ROLE[cls] || 'phosphor'] || t.phosphor;
+const BANDED_ROLES = new Set(['phosphor', 'counter', 'accent']);
+const DIM_ROLES = new Set(['phosphor', 'counter']);
+
+function bandIndexFor(t, x, cols) {
+  if (!t?.bands || !Number.isFinite(x) || !Number.isFinite(cols) || cols <= 1) return -1;
+
+  const p = Math.max(0, Math.min(1, x / Math.max(1, cols - 1)));
+  let index = 0;
+
+  for (let i = 0; i < t.bands.length; i++) {
+    if (p >= t.bands[i].at) index = i;
+  }
+
+  return index;
 }
-export function uiRoleDim(cls) {
-  if (cls === 'ui-primary' || cls === 'ui-green' || cls === 'ui-counter') return activeTheme().dim;
-  return null;
+
+function bandColorFor(t, x, cols, fallback) {
+  const index = bandIndexFor(t, x, cols);
+  return index >= 0 ? t.bands[index].color : fallback;
+}
+
+export function themeRoleColor(role = 'phosphor', x = null, cols = null) {
+  const t = activeTheme();
+  const base = t[role] || t.phosphor;
+
+  return t.bands && BANDED_ROLES.has(role)
+    ? bandColorFor(t, x, cols, base)
+    : base;
+}
+
+export function themeRoleDim(role = 'phosphor', x = null, cols = null) {
+  const t = activeTheme();
+
+  if (!DIM_ROLES.has(role)) return null;
+
+  if (t.bands && BANDED_ROLES.has(role)) {
+    return withAlpha(themeRoleColor(role, x, cols), 0.040);
+  }
+
+  return t.dim;
+}
+
+export function uiRoleColor(cls, x = null, cols = null) {
+  return themeRoleColor(ROLE[cls] || 'phosphor', x, cols);
+}
+
+export function uiRoleDim(cls, x = null, cols = null) {
+  return themeRoleDim(ROLE[cls] || 'phosphor', x, cols);
+}
+
+export function uiBandKey(x = null, cols = null) {
+  const index = bandIndexFor(activeTheme(), x, cols);
+  return index >= 0 ? `band:${index}` : '';
 }
 export function uiBrightness() { return Math.max(0.4, Math.min(1.4, vfdSettings.brightness)); }
 
+
+const FLICKER_ROLES = new Set(['phosphor', 'counter', 'accent', 'danger', 'marker']);
+const TAU = Math.PI * 2;
+
+function hashCell(x = 0, y = 0) {
+  let h = ((Math.floor(x) * 374761393) ^ (Math.floor(y) * 668265263)) >>> 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0;
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
+}
+
+function clamp01ish(v, lo = 0.88, hi = 1.04) {
+  return Math.max(lo, Math.min(hi, v));
+}
+
+export function uiFlickerAlpha(x = 0, y = 0, clsOrRole = 'phosphor') {
+  const level = vfdFlickerLevel();
+  if (level === 'off') return 1;
+
+  const role = ROLE[clsOrRole] || clsOrRole || 'phosphor';
+  if (!FLICKER_ROLES.has(role)) return 1;
+
+  const now = (typeof performance !== 'undefined' && performance.now)
+    ? performance.now() * 0.001
+    : Date.now() * 0.001;
+  const h = hashCell(x, y);
+  const strength = level === 'full' ? 1 : 0.45;
+
+  // Real-ish display instability: mostly a settled mains/driver shimmer, with
+  // a little panel drift and rare cell fatigue. LOW is a tasteful living panel;
+  // FULL is the haunted-service-bench version.
+  const mains = 1 - 0.012 * strength + 0.012 * strength * Math.sin(TAU * 59.94 * now + y * 0.71);
+  const driver = 1 - 0.018 * strength + 0.018 * strength * Math.sin(TAU * 7.35 * now + h * TAU);
+  const scan = 1 - 0.006 * strength + 0.006 * strength * Math.sin(TAU * 16.8 * now + y * 0.29 + x * 0.047);
+  const fatigueGate = level === 'full' ? 0.988 : 0.997;
+  const fatigueDrop = level === 'full' ? 0.94 : 0.975;
+  const fatigue = Math.sin(TAU * 0.19 * now + h * TAU) > fatigueGate ? fatigueDrop : 1;
+
+  return clamp01ish(mains * driver * scan * fatigue, level === 'full' ? 0.86 : 0.94, 1.04);
+}
+
 // The active-state cache key: theme + settings version. The atlas mixes this
 // into its keys so a phosphor/brightness change re-renders the glyph tiles.
-export function paletteKey() { return `${active}:${version}`; }
-
+export function paletteKey() {
+  return `${active}:${vfdSettings.phosphor}:${version}`;
+}
 // Back-compat flat surface list. `primary/amber/blue/green/...` now point at the
 // active theme so any lingering direct reads still track it; paper is fixed.
 export const UI_COLOR = Object.freeze({

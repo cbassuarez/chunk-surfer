@@ -14,14 +14,25 @@ PROPS.loadPropState({hushSeed:0x12345678});
 const placed=PROPS.propsInit(FP);
 ck('every authored prop has an open centre',placed.length===CONSERVATORY_PROPS.length,`${placed.length}/${CONSERVATORY_PROPS.length}`);
 ck('every placement names a packed mesh',placed.every((p)=>PROP_MESH[p.mesh]),`${new Set(placed.map((p)=>p.mesh)).size} meshes used`);
+ck('floor notes have a dedicated visible mesh',!!PROP_MESH.loose_note);
 ck('render placements preserve authored metres',PROPS.renderInstances().every((p)=>Number.isFinite(p.x)&&Number.isFinite(p.y)&&Number.isFinite(p.z)));
 
 const blocker=placed.find((p)=>p.blocks);
 ck('large props block through proxy footprints',blocker&&!PROPS.propCanOccupy(blocker.rx,blocker.ry),blocker?.id);
+const lowerRail={x:Math.round(4.7*2),y:Math.round(61*2)};
+ck('visible structural rails share height-aware collision',PROPS.structuralColliders().length>=8&&!PROPS.propCanOccupy(lowerRail.x,lowerRail.y),`${PROPS.structuralColliders().length} authored OBBs`);
 const seat=placed.find((p)=>p.id==='hall-seating'),seatCenter=FP.toRuntimePoint({x:113,y:20}),seatAisle=FP.toRuntimePoint({x:113,y:24});
+ck('accepted hall seating faces the proscenium',Math.abs((seat?.yaw||0)-Math.PI)<.001,`yaw=${seat?.yaw}`);
 ck('seat banks block but authored hall aisles remain open',seat&&!PROPS.propCanOccupy(seatCenter.x+4,seatCenter.y)&&PROPS.propCanOccupy(seatAisle.x,seatAisle.y));
 const hallRender=PROPS.renderInstances({group:'hall'});
 ck('hall slice receives seating and structure in physical metres',hallRender.some((p)=>p.mesh==='hall_seating')&&hallRender.some((p)=>p.mesh==='hall_structure'));
+const portraits=placed.filter((p)=>p.mesh==='portrait_frame');
+const mounted=portraits.every((p)=>{
+  const behindX=p.rx-Math.round(Math.sin(p.yaw||0));
+  const behindY=p.ry-Math.round(Math.cos(p.yaw||0));
+  return FP.isSolid(behindX,behindY);
+});
+ck('portrait frames are mounted against their authored wall plane',portraits.length===6&&mounted,`${portraits.length}/6`);
 
 // A small deterministic fixture isolates picking from the production dressing.
 const testProp={id:'test-upright',mesh:'upright_piano',x:65,y:9,yaw:0,blocks:true,interaction:'play',

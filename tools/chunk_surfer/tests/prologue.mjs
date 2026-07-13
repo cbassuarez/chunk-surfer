@@ -90,7 +90,9 @@ check('...until you choose it', said.who === 'me' && said.typed > 0, `typed=${sa
 const branches = await walk('cold-open', 2);
 check('the cold open ends', (await scene()) !== 'cold-open', `${branches} branches`);
 
-n = 0; while ((await scene()) === 'world-title' && n++ < 8) await key(' ', 220);
+// The world-title is an authored ~12s cinematic and is now un-skippable: no key
+// collapses it, so we wait it out rather than pressing through.
+n = 0; while ((await scene()) === 'world-title' && n++ < 30) await wait(600);
 check('the title comes before the door', (await scene()) === 'after-title', String(await scene()));
 
 // The door shuts AFTER the title, into a mix the song has just vacated.
@@ -152,6 +154,10 @@ check('still in the bag', (await scene()) === 'bag', String(await scene()));
 
 // He will not write down another room until the basement is done. Not a locked
 // door: every door in the building is open. A man declining to plan.
+// Cursor order is now [radio] → studio B3 → work-order note → the natatorium: the
+// live radio is a selectable GEAR item, so it takes one more step down to reach
+// a room that is not the basement.
+await key('ArrowDown', 200);                  // studio B3 (room)
 await key('ArrowDown', 200);                  // the work order note
 await key('ArrowDown', 200);                  // the natatorium
 await ev(() => window.__probe.hush());        // clear the queue so we hear HIM

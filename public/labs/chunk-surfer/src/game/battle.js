@@ -1,84 +1,74 @@
-// What's happening to me.
+// Physical redaction battles.
 //
-// He has no weapons. He has a recorder and thirty years of ears, and the thing
-// attacking him is the sound of a room that is supposed to be empty. So the
-// fight is the only fight this man could ever have: not "kill it" but "is it in
-// the room?" — the exact question the whole piece is about, made into a verb.
-//
-// TURN-BASED, and the meter is his COMPOSURE, drawn with the same iconography
-// as the take meter because it is the same thing: the moment it empties, the
-// take is spoiled and he is hurt. Each round a sound arrives — a chunk from the
-// stab pool, played far off and low, because there are no instruments in this
-// building and there is nobody here to play them. Is it a recording? Whose?
-//
-// His four verbs:
-//   LISTEN     the professional move. It costs almost nothing and it REVEALS
-//              what the sound is — in the room, on the tape, or not there. A
-//              man who has recorded four hundred rooms should always know.
-//              He doesn't any more. That is the horror, and listening is how
-//              he claws it back.
-//   HOLD STILL brace. Halves the next blow. Does nothing else.
-//   BREATHE    recovers composure, but the next thing is louder, because you
-//              stopped listening to take a breath.
-//   NAME IT    end it. If you have LISTENed and you say what it truly is, it
-//              loses its hold. If you are guessing, it costs you everything.
-//
-// Between the sounds, Sarah. She is not an attack. She is who he stops being a
-// recordist long enough to talk to, and every round he spends on her is a round
-// he did not spend listening — which is the whole story of them.
+// The sheet is the fight. There are no dialogue answers and no abstract combat
+// verbs: the player blacks out words, reads what remains, and the other hand
+// works on the same text when the reading does not hold.
 
 import * as scenes from './scenes.js';
-import { uiSize, uiFill, uiText, uiWrap, uiCenter } from '../render/ui.js';
-import { drawMachinePanel, drawVfdMeter, drawVfdText } from '../render/presentation.js';
+import { uiSize, uiFill, uiText, uiWrap, uiStrokeRect, uiLine } from '../render/ui.js';
+import { drawMachinePanel, drawVfdText } from '../render/presentation.js';
 import { UI_COLOR } from '../render/palette.js';
 import { createSamDialogVoice, isVoiced } from '../audio/sam-voice.js';
 import { TYPE_GAIN, TYPE_LEVEL } from '../audio/story-audio.js';
+import { textCps } from './access.js';
+import {
+  applyOpponentMove,
+  beginRedactionStroke,
+  createRedactionState,
+  layoutRedactionTokens,
+  moveRedactionCursor,
+  paintRedaction,
+  survivingText,
+  toggleRedaction,
+  undoRedaction,
+  validateBattleDefinition,
+  validateReading,
+} from './redaction.js';
 
-const COL_W = 70;
+const COL_W = 82;
 const CPS = 40;
-const NATURES = ['in the room', 'on the tape', 'not there'];
+const DEFAULT_MAX_ATTEMPTS = 2;
+const textOf = (line) => String(line?.text ?? line ?? '');
+const whoOf = (line) => line?.who || 'direction';
 
-const STYLE = {
-  me: { cls: 't-chunk-on', label: '' },
-  you: { cls: 't-trail-1', label: '' },
-  sarah: { cls: 't-hush-edge', label: 'SARAH' },
-  surfer: { cls: 't-hush-core', label: '' },
-  recordist: { cls: 't-trail-1', label: 'TAKE' },
-  direction: { cls: 't-trail-2', label: '' },
-};
-
-const textOf = (l) => String(l?.text ?? l ?? '');
-const whoOf = (l) => l?.who || 'direction';
-
-// A battle definition (see data/battles.js):
-//   { id, composure, intro:[line], rounds:[{ nature, threat, before:[line],
-//     onListen:[line], after:[line] }], win:[line], lose:[line] }
 export function makeBattleScene({
-  battle, drawSound, playSound, fx, audio, getAudio,
-  onWin = () => {}, onLose = () => {},
+  battle, playSound, fx, audio, getAudio, difficulty = null,
+  onWin = () => {}, onLose = () => {}, onAbort = () => {},
 } = {}) {
+  const definitionErrors = validateBattleDefinition(battle);
+  if (definitionErrors.length) throw new Error(`invalid redaction battle: ${definitionErrors.join('; ')}`);
+
   const voice = createSamDialogVoice({ volume: 0.26, getAudio });
   voice.warm?.();
 
-  const MAX = battle.composure ?? 1;
-  let composure = MAX;
-  let roundIdx = -1;                 // -1 = intro
-  let phase = 'talk';                // talk | menu | resolve | done
-  let queue = [];                    // lines still to type this beat
+  const baseHealth = Math.max(1, Number(battle.health) || Math.ceil(battle.challenges.length / 2));
+  const maxHealth = Math.max(1, baseHealth + (Number(difficulty?.healthBonus) || 0));
+  const maxAttempts = Math.max(1, Number(difficulty?.maxAttempts) || DEFAULT_MAX_ATTEMPTS);
+  let playerHealth = maxHealth;
+  let enemyHealth = maxHealth;
+  let challengeIndex = -1;
+  let sheet = null;
+  let phase = 'talk';                 // talk | puzzle | counter | done
+  let queue = [];
   let cur = null, typed = 0, acc = 0, held = 0, handle = null;
-  let known = null;                  // the revealed nature of THIS round's sound
-  let braced = false, exposed = false;
-  let menuIdx = 0;
-  let result = null;                 // 'win' | 'lose'
-  let onEnd = () => {};
-
-  const round = () => battle.rounds[roundIdx] || null;
+  let onTalkEnd = () => {};
+  let result = null;
+  let notice = '';
+  let noticeUntil = 0;
+  let counterUntil = 0;
+  let afterCounter = null;
+  let lastLayout = [];
+  let pointerDown = false;
+  let pointerPaint = true;
+  let pointerSeen = new Set();
+  let submissions = 0;
+  let failedSubmissions = 0;
 
   function stopVoice() { handle?.stop?.(); handle = null; }
 
   function speak(lines, then) {
     queue = (lines || []).slice();
-    onEnd = then || (() => {});
+    onTalkEnd = then || (() => {});
     phase = 'talk';
     nextLine();
   }
@@ -88,9 +78,8 @@ export function makeBattleScene({
     audio?.stopTyping?.();
     cur = queue.shift() || null;
     typed = 0; acc = 0; held = 0;
-    if (!cur) { onEnd(); return; }
-    const who = whoOf(cur);
-    const text = textOf(cur);
+    if (!cur) { onTalkEnd(); return; }
+    const who = whoOf(cur), text = textOf(cur);
     if (cur.cue) fx?.cue?.(cur.cue);
     if (text && isVoiced(who) && cur.voice !== false) {
       handle = voice.start(text, { speaker: who, rate: cur.rate || 1 });
@@ -99,197 +88,233 @@ export function makeBattleScene({
     }
   }
 
-  // ── the round ──────────────────────────────────────────────────────────────
-  function beginRound() {
-    roundIdx++;
-    if (roundIdx >= battle.rounds.length) { finish('win'); return; }
-    known = null; braced = false; exposed = false;
-    const r = round();
-    // A sound arrives, far off. It is one of the composer's own chunks, and it
-    // is the wrong thing to be hearing in a drained pool.
-    playSound?.(r);
-    speak(r.before, openMenu);
-  }
-
-  function openMenu() { phase = 'menu'; menuIdx = 0; }
-
-  const VERBS = ['LISTEN', 'HOLD STILL', 'BREATHE', 'NAME IT'];
-
-  function damage(base) {
-    let d = base;
-    if (braced) d *= 0.5;
-    if (exposed) d *= 1.5;
-    composure = Math.max(0, composure - d);
-  }
-
-  // Only LISTEN keeps the turn — you may listen and THEN act. Everything else
-  // ends the round and moves the sound on, so a breath cannot be farmed and a
-  // man cannot stand in a drained pool holding still forever.
-  const step = () => (composure <= 0 ? finish('lose') : beginRound());
-  const stay = () => (composure <= 0 ? finish('lose') : openMenu());
-
-  function choose(verb) {
-    const r = round();
-    phase = 'resolve';
-    if (verb === 'LISTEN') {
-      known = r.nature;
-      damage(r.threat * 0.15);          // leaning toward it to hear it costs a little
-      const rev = r.onListen || [{ who: 'you', text: natureLine(r.nature) }];
-      speak(rev, stay);
+  function beginChallenge() {
+    challengeIndex++;
+    if (challengeIndex >= battle.challenges.length) {
+      finish(enemyHealth < playerHealth ? 'win' : 'lose');
       return;
     }
-    if (verb === 'HOLD STILL') {
-      damage(r.threat * 0.5);           // brace: the honest, expensive, safe move
-      speak(r.after || [{ who: 'direction', text: 'You are furniture. You are very good at it.' }], step);
-      return;
-    }
-    if (verb === 'BREATHE') {
-      // A breath buys composure and costs attention: the sound lands full while
-      // you are not listening to it, and then the round is over.
-      composure = Math.min(MAX, composure + 0.16);
-      damage(r.threat * 1.1);
-      speak([{ who: 'direction', text: 'You take a breath, and for as long as it lasts you are not listening to anything.' }], step);
-      return;
-    }
-    // NAME IT — the finisher. Right if you listened; a full blow if you guessed.
-    if (known === r.nature) {
-      speak(r.after || [{ who: 'me', text: nameLine(r.nature) }], step);
-    } else {
-      damage(r.threat);
-      speak([{ who: 'you', text: 'You say what it is. You are wrong, and it knows you are wrong.' }], step);
-    }
+    sheet = createRedactionState(battle.challenges[challengeIndex]);
+    notice = 'BLACK OUT THE WORDS THAT MAKE THE READING LIE.';
+    noticeUntil = performance.now() + 1900;
+    phase = 'puzzle';
+    playSound?.({ threat: 0.36 + challengeIndex * 0.11 });
   }
 
-  function natureLine(n) {
-    if (n === 'in the room') return 'That is in the room. That is actually in the room.';
-    if (n === 'on the tape') return 'It is on the tape. It is on a tape that is not running.';
-    return 'There is nothing there. There is nothing there and I can hear it.';
+  function counter(move, then) {
+    const blacked = move.blackout?.length || 0;
+    const scraped = move.scrape?.length || 0;
+    notice = blacked && scraped ? 'THE OTHER HAND BLACKS OUT ONE WORD AND SCRAPES ANOTHER CLEAN.'
+      : blacked ? 'THE OTHER HAND BLACKS OUT A WORD.'
+        : scraped ? 'THE OTHER HAND SCRAPES A WORD CLEAN.'
+          : 'THE OTHER HAND WAITS INSIDE THE TEXT.';
+    noticeUntil = performance.now() + 1500;
+    counterUntil = performance.now() + 850;
+    afterCounter = then;
+    phase = 'counter';
+    audio?.menuMove?.();
   }
-  function nameLine(n) {
-    if (n === 'in the room') return "You're in the room. All right. I know you're in the room.";
-    if (n === 'on the tape') return "You're on the tape. I recorded you. I did this.";
-    return 'There is nothing there. Say it and mean it. There is nothing there.';
+
+  function submitReading() {
+    if (phase !== 'puzzle' || !sheet) return;
+    const verdict = validateReading(sheet);
+    submissions++;
+    if (!verdict.ok) failedSubmissions++;
+    audio?.menuConfirm?.();
+    if (verdict.ok) {
+      enemyHealth = Math.max(0, enemyHealth - 1);
+      notice = `READING HOLDS · ${verdict.text}`;
+      noticeUntil = performance.now() + 1700;
+      if (enemyHealth <= 0) { finish('win'); return; }
+      counter({ blackout:[], scrape:[] }, beginChallenge);
+      return;
+    }
+
+    const move = applyOpponentMove(sheet);
+    if (sheet.attempts >= maxAttempts) {
+      playerHealth = Math.max(0, playerHealth - 1);
+      if (playerHealth <= 0) { counter(move, () => finish('lose')); return; }
+      counter(move, beginChallenge);
+    } else counter(move, () => { phase = 'puzzle'; });
   }
 
   function finish(kind) {
+    if (result) return;
     result = kind;
     phase = 'done';
     speak(kind === 'win' ? battle.win : battle.lose, () => {
       stopVoice(); audio?.stopTyping?.();
       scenes.pop();
-      (kind === 'win' ? onWin : onLose)();
+      const metrics = {
+        attempts: Math.max(1, submissions),
+        failedSubmissions,
+        challenges: battle.challenges.length,
+        playerHealth,
+        enemyHealth,
+      };
+      (kind === 'win' ? onWin : onLose)(metrics);
     });
+  }
+
+  function hitToken(cx, cy) {
+    return lastLayout.find((p) => cy === p.y && cx >= p.x && cx < p.x + p.w) || null;
+  }
+
+  function pointerCell(e) {
+    return { x: Math.floor(Number(e.cellX)), y: Math.floor(Number(e.cellY)) };
+  }
+
+  function paintAt(e) {
+    if (!sheet) return false;
+    const p = pointerCell(e), hit = hitToken(p.x, p.y);
+    if (!hit || pointerSeen.has(hit.id)) return false;
+    pointerSeen.add(hit.id);
+    sheet.cursor = hit.index;
+    return paintRedaction(sheet, hit.id, pointerPaint);
   }
 
   return {
     id: `battle:${battle.id}`,
     blocksInput: true,
-    blocksWorld: true,           // this is self against self. the building waits.
+    blocksWorld: true,
     lensPreset: 'battle',
 
-    enter() { speak(battle.intro, beginRound); },
-    exit() { stopVoice(); audio?.stopTyping?.(); },
+    enter() { speak(battle.intro, beginChallenge); },
+    exit() { pointerDown = false; stopVoice(); audio?.stopTyping?.(); if (!result) onAbort(); },
 
-    // for the headless suite
     battleView() {
       return {
-        phase, round: roundIdx, rounds: battle.rounds.length,
-        composure: +(composure / MAX).toFixed(3), known, result,
-        line: cur ? textOf(cur) : '', who: whoOf(cur), typed,
-        verbs: phase === 'menu' ? VERBS : null,
+        phase,
+        challenge: challengeIndex,
+        challenges: battle.challenges.length,
+        playerHealth,
+        enemyHealth,
+        result,
+        attempts: sheet?.attempts || 0,
+        submissions,
+        failedSubmissions,
+        cursor: sheet?.cursor || 0,
+        surviving: sheet ? survivingText(sheet) : '',
+        tokens: sheet ? sheet.challenge.tokens.map((t) => ({...t})) : [],
+        readings: sheet ? sheet.challenge.readings.map((r) => ({required:[...r.required],forbidden:[...r.forbidden],maxVisible:r.maxVisible})) : [],
+        playerRedacted: sheet ? [...sheet.player] : [],
+        opponentRedacted: sheet ? [...sheet.opponent] : [],
+        line: cur ? textOf(cur) : '',
+        who: cur ? whoOf(cur) : null,
+        typed,
       };
     },
 
     update(dt) {
-      if (!cur) return;
+      if (phase === 'counter' && performance.now() >= counterUntil) {
+        const next = afterCounter; afterCounter = null;
+        next?.();
+      }
+      if (!cur || phase !== 'talk') return;
       const text = textOf(cur);
       held += dt;
       if (handle) { typed = handle.done() ? text.length : Math.min(text.length, handle.charsFor()); return; }
       if (typed < text.length) {
         acc += dt;
-        typed = Math.min(text.length, Math.floor(acc * CPS * (cur.rate || 1)));
+        typed = Math.min(text.length, Math.floor(acc * textCps(CPS) * (cur.rate || 1)));
         if (typed >= text.length) audio?.stopTyping?.();
       }
     },
 
     key(e) {
-      if (e.key === 'Escape') return true;    // you do not get to leave
-
-      if (phase === 'menu') {
-        if (e.key === 'ArrowUp' || e.key === 'w') { menuIdx = (menuIdx - 1 + VERBS.length) % VERBS.length; return true; }
-        if (e.key === 'ArrowDown' || e.key === 's') { menuIdx = (menuIdx + 1) % VERBS.length; return true; }
-        const num = Number(e.key);
-        if (num >= 1 && num <= VERBS.length) { choose(VERBS[num - 1]); return true; }
-        if (e.key === 'Enter' || e.key === ' ' || e.key === 'z') { choose(VERBS[menuIdx]); return true; }
+      if (phase === 'talk') {
+        if (e.key === ' ' || e.key === 'Enter' || e.key === 'z') {
+          if (!cur) return true;
+          const text = textOf(cur);
+          if (typed < text.length) { typed = text.length; handle?.finish?.(); handle = null; audio?.stopTyping?.(); return true; }
+          if (held >= 0.2) nextLine();
+        }
         return true;
       }
+      if (phase !== 'puzzle' || !sheet) return true;
 
-      // during dialogue, [space] hurries then advances
-      if (e.key === ' ' || e.key === 'Enter' || e.key === 'z') {
-        if (!cur) return true;
-        const text = textOf(cur);
-        if (typed < text.length) { typed = text.length; handle?.finish?.(); handle = null; audio?.stopTyping?.(); return true; }
-        if (held < 0.2) return true;
-        nextLine();
+      const layout = layoutRedactionTokens(sheet.challenge, Math.max(24, Math.min(COL_W - 8, uiSize().cols - 14)));
+      if (e.key === 'ArrowLeft' || e.key === 'a') moveRedactionCursor(sheet, 'left', layout);
+      else if (e.key === 'ArrowRight' || e.key === 'd') moveRedactionCursor(sheet, 'right', layout);
+      else if (e.key === 'ArrowUp' || e.key === 'w') moveRedactionCursor(sheet, 'up', layout);
+      else if (e.key === 'ArrowDown' || e.key === 's') moveRedactionCursor(sheet, 'down', layout);
+      else if (e.key === 'Enter' || e.key === ' ' || e.key === 'z' || e.controllerAction === 'confirm') {
+        toggleRedaction(sheet, sheet.challenge.tokens[sheet.cursor]?.id); audio?.menuMove?.();
+      } else if (e.key === 'r' || e.key === 'R' || e.controllerAction === 'recorder') submitReading();
+      else if (e.key === 'Backspace' || (e.controller && e.controllerAction === 'back')) undoRedaction(sheet);
+      // Escape is deliberately swallowed. A keyboard Escape is not an undo.
+      return true;
+    },
+
+    pointer(e) {
+      if (phase !== 'puzzle' || !sheet) return true;
+      if (e.type === 'pointerdown') {
+        const p = pointerCell(e), hit = hitToken(p.x, p.y);
+        if (!hit) return true;
+        pointerDown = true;
+        pointerSeen = new Set();
+        pointerPaint = !sheet.player.has(hit.id);
+        beginRedactionStroke(sheet);
+        paintAt(e);
         return true;
       }
+      if (e.type === 'pointermove' && pointerDown) { paintAt(e); return true; }
+      if (e.type === 'pointerup' || e.type === 'pointercancel') { pointerDown = false; pointerSeen.clear(); return true; }
       return true;
     },
 
     render() {
       const { cols, rows } = uiSize();
-      uiScrimBlack(cols, rows);
-
-      const w = Math.min(COL_W, cols - 8);
-      const x = Math.floor((cols - w) / 2);
-      const panel = drawMachinePanel(x - 2, 2, w + 4, rows - 4, {
-        label: 'MONITOR', source: 'COMPOSURE',
-        footer: phase === 'menu' ? '[↑/↓] SELECT · [ENTER] CONFIRM' : '[SPACE] CONTINUE', meter: true,
+      uiFill(0, 0, cols, rows, 'rgba(2,2,3,0.95)');
+      const w = Math.min(COL_W, cols - 6), x = Math.floor((cols - w) / 2);
+      const panel = drawMachinePanel(x - 2, 1, w + 4, rows - 2, {
+        label:'TRANSCRIPT', source:'REDACTION', meter:true,
+        footer: phase === 'puzzle'
+          ? '[ARROWS] MOVE · [ENTER] BLACKOUT · [R] READ · [BACKSPACE] UNDO'
+          : '[SPACE] CONTINUE',
       });
 
-      // The enemy has a name and it is at the top, because you are looking at
-      // it even when you cannot see it.
       drawVfdText(panel.x, panel.y, battle.enemy || 'THE SOUND OF SILENCE', { color:UI_COLOR.danger, max:panel.w });
+      const hp = (n) => `${'■'.repeat(n)}${'□'.repeat(Math.max(0, maxHealth - n))}`;
+      uiText(panel.x, panel.y + 2, `YOU  ${hp(playerHealth)}`, 'ui-primary');
+      const enemy = `IT  ${hp(enemyHealth)}`;
+      uiText(panel.x + Math.max(0, panel.w - enemy.length), panel.y + 2, enemy, 'ui-danger');
+      uiLine(panel.x, panel.y + 3.2, panel.x + panel.w, panel.y + 3.2, UI_COLOR.frame, 0.7);
 
-      // Composure: the take meter, worn as HP.
-      const bw = Math.min(46, cols - 8);
-      const bx = Math.floor((cols - bw) / 2);
-      const filled = Math.round((composure / MAX) * (bw - 2));
-      const low = composure / MAX < 0.34;
-      uiText(bx, 7, '[', 'ui-frame');
-      for (let i = 0; i < bw - 2; i++) {
-        uiText(bx + 1 + i, 7, i < filled ? '▓' : '░', i < filled ? (low ? 'ui-danger' : 'ui-amber') : 'ui-frame', i < filled ? 1 : 0.45);
-      }
-      uiText(bx + bw - 1, 7, ']', 'ui-frame');
-      uiText(bx, 8, 'COMPOSURE', 'ui-label');
-      if (known) uiText(bx + bw - 12, 8, known.toUpperCase(), 'ui-secondary');
-
-      // the current line
-      const lines = cur ? uiWrap(textOf(cur).slice(0, typed), w) : [];
-      let y = Math.max(11, Math.floor(rows * 0.42));
-      const st = STYLE[whoOf(cur)] || STYLE.direction;
-      if (cur && st.label) uiText(x, y++, `SOURCE  ${st.label}`, 'ui-label');
-      lines.forEach((l, i) => {
-        uiText(x, y, l, st.cls, 0.95);
-        if (i === lines.length - 1 && cur && typed < textOf(cur).length) uiText(x + l.length, y, '▌', 'ui-amber');
-        y++;
-      });
-
-      if (phase === 'menu') {
-        y += 1;
-        VERBS.forEach((v, i) => {
-          const on = i === menuIdx;
-          const hint = v === 'LISTEN' ? 'what is it?'
-            : v === 'HOLD STILL' ? 'brace'
-              : v === 'BREATHE' ? 'recover — but stop listening'
-                : known ? 'say what it is' : 'guess';
-          uiText(x, y++, `${on ? '▸' : ' '} ${i + 1}  ${v.padEnd(11)}  ${on ? hint : ''}`,
-                 on ? 'ui-amber' : 'ui-primary');
-        });
+      if (phase === 'talk' && cur) {
+        const label = whoOf(cur).toUpperCase();
+        uiText(panel.x, panel.y + 5, label, 'ui-label');
+        const lines = uiWrap(textOf(cur).slice(0, typed), panel.w);
+        lines.slice(0, Math.max(2, rows - 12)).forEach((line, i) =>
+          uiText(panel.x, panel.y + 7 + i, line, whoOf(cur) === 'direction' ? 'ui-secondary' : 'ui-primary'));
+        return;
       }
 
+      if (!sheet) return;
+      uiText(panel.x, panel.y + 5, `SHEET ${challengeIndex + 1}/${battle.challenges.length} · ATTEMPT ${Math.min(maxAttempts, sheet.attempts + 1)}/${maxAttempts}`, 'ui-label');
+      const local = layoutRedactionTokens(sheet.challenge, panel.w);
+      const startY = panel.y + 7;
+      lastLayout = local.map((p) => ({ ...p, x:p.x + panel.x, y:p.y + startY }));
+      for (const p of lastLayout) {
+        const token = sheet.challenge.tokens[p.index];
+        const playerBar = sheet.player.has(token.id), opponentBar = sheet.opponent.has(token.id);
+        if (!playerBar && !opponentBar) uiText(p.x, p.y, token.text, 'ui-primary');
+        else {
+          uiFill(p.x, p.y + 0.18, p.w, 0.64, 'rgba(0,0,0,0.98)');
+          uiLine(p.x, p.y + 0.52, p.x + p.w, p.y + 0.52,
+            opponentBar ? UI_COLOR.danger : UI_COLOR.amber, opponentBar ? 0.92 : 0.62, 1);
+        }
+        if (phase === 'puzzle' && p.index === sheet.cursor) uiStrokeRect(p.x - 0.2, p.y - 0.05, p.w + 0.4, 1, UI_COLOR.primary, 0.9, 1);
+      }
+
+      const tokenRows = lastLayout.reduce((m, p) => Math.max(m, p.y - startY + 1), 1);
+      const readY = startY + tokenRows + 2;
+      uiText(panel.x, readY, 'READBACK', 'ui-label');
+      const readback = survivingText(sheet) || '[SILENCE]';
+      uiWrap(readback, panel.w).slice(0, 3).forEach((line, i) => uiText(panel.x, readY + 2 + i, line, 'ui-counter'));
+      if (notice && performance.now() < noticeUntil) {
+        uiText(panel.x, Math.min(panel.y + panel.h - 2, readY + 6), uiWrap(notice, panel.w)[0], phase === 'counter' ? 'ui-danger' : 'ui-amber');
+      }
     },
   };
 }
-
-function uiScrimBlack(cols, rows) { uiFill(0, 0, cols, rows, 'rgba(2,2,3,0.93)'); }

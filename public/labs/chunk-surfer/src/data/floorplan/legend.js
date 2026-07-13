@@ -26,6 +26,7 @@ export const F = {
   MUTABLE:  1 << 3,   // the building may rearrange this cell — corridors only
   STAIR:    1 << 4,   // never mutates, never bricked
   BRICKED:  1 << 5,   // a door that has been filled in since he came through
+  CLOSED:   1 << 6,   // a real leaf is present; [E] must open the whole portal
 };
 
 // Zones map to rooms (audio/manifest-map.js) → lens prompt, seed, room tone.
@@ -91,20 +92,21 @@ export function materialForZone(zone) {
 export const GLYPHS = {
   ' ': null,                                                   // outside the building
   '#': { solid: true },                                        // wall / rock
-  '.': { floor: 0.0, ceil: 3.6, mutable: true, material: 'serviceConcrete' }, // corridor (may change)
-  ',': { floor: 0.0, ceil: 3.6, material: 'serviceConcrete' },                // corridor, fixed
-  '+': { floor: 0.0, ceil: 2.9, door: true, material: 'doorGlassDuct' },       // door
-  'x': { floor: 0.0, ceil: 2.9, door: true, bricked: true, material: 'doorGlassDuct' },
+  '.': { floor: 0.0, ceil: 4.5, mutable: true, material: 'serviceConcrete' }, // corridor (may change)
+  ',': { floor: 0.0, ceil: 4.5, material: 'serviceConcrete' },                // corridor, fixed
+  '+': { floor: 0.0, ceil: 3.4, door: true, material: 'doorGlassDuct' },       // door centre; compiler widens aperture
+  'x': { floor: 0.0, ceil: 3.4, door: true, bricked: true, material: 'doorGlassDuct' },
   '=': { floor: 0.0, ceil: 2.2, material: 'doorGlassDuct' },                  // low duct
   '/': { floor: 0.0, ceil: 3.0, stair: true, material: 'serviceConcrete' },    // stair
   'o': { floor: 0.0, ceil: 8.0, sky: true, material: 'metalPlant' },           // shaft, open above
 
   // Rooms. The letter is the zone; the height is the room.
-  'D': { floor: 0.0, ceil: 4.6, zone: 'dock', material: 'serviceConcrete' },
-  'F': { floor: 0.0, ceil: 4.5, zone: 'foyer', material: 'serviceConcrete' },
+  'D': { floor: 0.0, ceil: 5.5, zone: 'dock', material: 'serviceConcrete' },
+  'F': { floor: 0.0, ceil: 6.5, zone: 'foyer', material: 'serviceConcrete' },
+  'A': { floor: 0.0, ceil: 11.5, zone: 'foyer', material: 'serviceConcrete' },
   'B': { floor: 0.0, ceil: 3.2, zone: 'studio', material: 'acousticFoam' },
-  'T': { floor: 0.0, ceil: 8.5, zone: 'natatorium', material: 'poolTile' },
-  'W': { floor: -1.6, ceil: 8.5, zone: 'natatorium', material: 'wetTile' },
+  'T': { floor: 0.0, ceil: 9.5, zone: 'natatorium', material: 'poolTile' },
+  'W': { floor: -1.6, ceil: 9.5, zone: 'natatorium', material: 'wetTile' },
   'H': { floor: 0.0, ceil: 15.5, zone: 'hall', material: 'woodVelvet' },
   'S': { floor: -2.5, ceil: 15.5, zone: 'hall', material: 'woodVelvet' },
   'R': { floor: 2.5, ceil: 15.5, zone: 'hall', material: 'woodVelvet' },
@@ -112,7 +114,7 @@ export const GLYPHS = {
   'r': { floor: 2.5, ceil: 3.8, zone: 'hall', material: 'woodVelvet' },
   'L': { floor: 4.0, ceil: 7.3, zone: 'hall', material: 'woodVelvet' },
   'U': { floor: 7.5, ceil: 15.5, zone: 'hall', material: 'woodVelvet' },
-  'P': { floor: 0.0, ceil: 3.4, zone: 'practice', material: 'practiceFoam' },
+  'P': { floor: 0.0, ceil: 4.2, zone: 'practice', material: 'practiceFoam' },
   'C': { floor: 0.0, ceil: 13.0, zone: 'chapel', material: 'chapelStone' },
   'M': { floor: 0.0, ceil: 3.8, zone: 'plant', material: 'metalPlant' },
 };

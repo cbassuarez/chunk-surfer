@@ -16,7 +16,7 @@
 
 import { uiText, uiWrap, uiSize } from '../render/ui.js';
 import { drawMachinePanel } from '../render/presentation.js';
-import { getSave } from './save.js';
+import { textCps } from './access.js';
 import { createSamDialogVoice, isVoiced } from '../audio/sam-voice.js';
 import { TYPE_GAIN, TYPE_LEVEL } from '../audio/story-audio.js';
 
@@ -62,10 +62,7 @@ export function clearSpeech() {
 export function isSpeaking() { return !!cur || q.length > 0; }
 export function speaking() { return cur; }
 
-function cps() {
-  const c = getSave().settings?.textCps || 42;
-  return Math.max(8, c);
-}
+function cps() { return textCps(42); }
 
 function begin(line) {
   cur = line;
@@ -154,7 +151,7 @@ export function drawSpeech() {
 
   const style = WHO[cur.who] || WHO.you;
   const shown = cur.text.slice(0, typed);
-  const lines = uiWrap(shown, w - 2);
+  const lines = uiWrap(shown, w - 4);
   const h = Math.max(1, lines.length);
   const panelH = h + 5;
   const y = rows - panelH - 2;
@@ -165,12 +162,12 @@ export function drawSpeech() {
   lines.forEach((l, i) => {
     // a stage direction wears its parentheses; a thought does not announce
     // itself as one.
-    uiText(panel.x, panel.y + i, l, style.cls, style.alpha);
+    uiText(panel.x + 1, panel.y + i, l, style.cls, style.alpha);
   });
 
   // The cursor: a recordist's blinking level LED, borrowed.
   if (typed < cur.text.length) {
     const last = lines[lines.length - 1] || '';
-    uiText(panel.x + last.length, panel.y + h - 1, '▌', 'ui-amber');
+    uiText(panel.x + 1 + last.length, panel.y + h - 1, '▌', 'ui-amber');
   }
 }

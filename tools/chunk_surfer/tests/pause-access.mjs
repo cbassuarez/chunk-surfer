@@ -1,0 +1,17 @@
+import fs from 'node:fs';
+import path from 'node:path';
+const ROOT=path.resolve(import.meta.dirname,'../../..');
+const read=(p)=>fs.readFileSync(path.join(ROOT,p),'utf8');
+const main=read('public/labs/chunk-surfer/src/main.js');
+const settings=read('public/labs/chunk-surfer/src/game/settings.js');
+const tuner=read('public/labs/chunk-surfer/src/net/tuner.js');
+const audio=read('public/labs/chunk-surfer/src/audio/story-audio.js');
+let pass=true;const ck=(n,ok)=>{console.log(`${ok?'PASS':'FAIL'}  ${n}`);if(!ok)pass=false;};
+ck('opening the in-game service menu enters the gameplay pause authority',settings.includes("if(inGame) hooks.pauseGame?.()")&&main.includes("pauseGame: ()=>setGameplayPaused(true"));
+ck('closing the menu resumes through the same authority',settings.includes("hooks.resumeGame?.()")&&main.includes("resumeGame: ()=>setGameplayPaused(false"));
+ck('pause freezes scene clocks, speech, playback and held movement',main.includes('scenes.update(paused ? 0 : dt)')&&main.includes('if(!paused){\n        tickPlayback();')&&main.includes('if(paused||scenes.blocksInput())'));
+ck('gameplay buses mute while the menu bus remains audible',main.includes('setGainNode(dialogGain,0)')&&main.includes('menuGain.connect(limiter)')&&audio.includes("g.connect(outBus('menu'))"));
+ck('tuner exposes the actual standard and chapel key authorities',main.includes("label:'STANDARD / FOH'")&&main.includes("label:'CHAPEL · C-17'")&&tuner.includes('ACCESS KEYS'));
+ck('tuner access is session-only and changes the carried key set',main.includes("if(granted) playerKeys.add(id); else playerKeys.delete(id)")&&!tuner.includes('saveCommit'));
+ck('tuner grants or removes each real room take',tuner.includes('ROOM TAKES')&&main.includes('REC.setTake(id,taken)')&&main.includes('saveCommit({rec:REC.saveRecState()})'));
+if(!pass)process.exit(1);console.log('\n✅ PAUSE / ACCESS PASSED');

@@ -5,6 +5,7 @@
 // frame-hold and dead-grid for the corruption register) live here.
 
 import { CELL_W, CELL_H, FONT_PX, MONO_STACK, atlasConfigure, atlasDpr, getTile } from './atlas.js';
+import { flashMode, shakeMode, visualEffectsEnabled } from '../game/access.js';
 
 const REDUCED_MOTION = typeof matchMedia === 'function'
   && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -32,19 +33,39 @@ const fxState = {
 };
 
 export const fx = {
-  flash(ms = 90, color = 'rgba(230,236,245,0.85)') {
-    fxState.flashColor = color; fxState.flashDur = ms;
-    fxState.flashUntil = performance.now() + ms;
-  },
-  shake(intensity = 1, ms = 220) {
-    if (REDUCED_MOTION) return;
-    fxState.shakeAmp = intensity; fxState.shakeUntil = performance.now() + ms;
-  },
-  glitch(intensity = 1, ms = 240) {
-    if (REDUCED_MOTION) return;
-    fxState.glitchAmp = intensity; fxState.glitchUntil = performance.now() + ms;
-  },
-  hold(ms = 400) { fxState.holdUntil = performance.now() + ms; },
+    flash(ms = 90, color = 'rgba(230,236,245,0.85)') {
+      const mode = flashMode();
+      if (mode === 'off') return;
+
+      const dur = mode === 'reduced' ? Math.min(ms, 80) : ms;
+      fxState.flashColor = color;
+      fxState.flashDur = dur;
+      fxState.flashUntil = performance.now() + dur;
+    },
+
+    shake(intensity = 1, ms = 220) {
+      const mode = shakeMode();
+      if (REDUCED_MOTION || mode === 'off') return;
+
+      const k = mode === 'reduced' ? 0.35 : 1;
+      fxState.shakeAmp = Math.max(0, intensity * k);
+      fxState.shakeUntil = performance.now() + (mode === 'reduced' ? Math.min(ms, 220) : ms);
+    },
+
+    glitch(intensity = 1, ms = 240) {
+      if (REDUCED_MOTION || !visualEffectsEnabled()) return;
+
+      const mode = shakeMode();
+      if (mode === 'off') return;
+
+      const k = mode === 'reduced' ? 0.45 : 1;
+      fxState.glitchAmp = Math.max(0, intensity * k);
+      fxState.glitchUntil = performance.now() + (mode === 'reduced' ? Math.min(ms, 180) : ms);
+    },
+
+    hold(ms = 400) {
+      if (visualEffectsEnabled()) fxState.holdUntil = performance.now() + ms;
+    },
   dead(on = true) { fxState.dead = on; },
 };
 

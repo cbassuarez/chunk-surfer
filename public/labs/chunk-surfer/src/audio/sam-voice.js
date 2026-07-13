@@ -192,8 +192,11 @@ function fallbackRender(text, { speaker } = {}) {
     const f = FORMANTS[u.ph] || FORMANTS.stop;
     for (let i = 0; i < len && p + i < samples.length; i++) {
       const t = i / SAM_RATE;
-      const a = Math.sin(Math.PI * clamp(i / Math.min(120, len), 0, 1))
-        * Math.sin(Math.PI * clamp((len - i) / Math.min(180, len), 0, 1));
+      // Half-sine attack/release reaches and sustains 1. The previous full-sine
+      // used sin(PI*1), making every sample after the short attack exactly zero;
+      // the offline fallback therefore had duration but effectively no sound.
+      const a = Math.sin(Math.PI * 0.5 * clamp(i / Math.min(120, len), 0, 1))
+        * Math.sin(Math.PI * 0.5 * clamp((len - 1 - i) / Math.min(180, len), 0, 1));
       if (u.kind === 'pause') {
         samples[p + i] = 0;
         continue;

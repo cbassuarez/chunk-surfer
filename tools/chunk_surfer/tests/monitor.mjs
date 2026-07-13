@@ -1,7 +1,8 @@
 import {
   MONITOR_THRESHOLDS, monitorInject, monitorReset, monitorSnapshot,
-  monitorSnapshotForRms,
+  monitorSetAuxInput, monitorSnapshotForRms,
 } from '../../../public/labs/chunk-surfer/src/audio/monitor.js';
+import { micIgnoreSpoilFor, micMaySpoil, micStop, micTest } from '../../../public/labs/chunk-surfer/src/game/mic.js';
 
 const ck = (name, ok, got='') => {
   if (!ok) throw new Error(`${name}${got ? `: ${got}` : ''}`);
@@ -31,3 +32,13 @@ const expired = monitorSnapshot(2000);
 ck('peak hold expires', Math.abs(expired.peakDb - expired.db) < 0.001);
 monitorInject(null); monitorReset();
 
+monitorInject(0); monitorSetAuxInput(() => 0.1);
+monitorSnapshot(3000);
+const aux = monitorSnapshot(3100);
+ck('room mic contributes to the always-live monitor without an audio connection', aux.rms > 0.05);
+monitorReset();
+
+micTest(0.2); micIgnoreSpoilFor(1400);
+const micNow = performance.now();
+ck('recorder transport guard suppresses only spoil evaluation', !micMaySpoil(micNow) && micMaySpoil(micNow + 1500));
+micStop(); micTest(null);

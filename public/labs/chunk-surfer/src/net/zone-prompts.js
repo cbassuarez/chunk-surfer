@@ -30,7 +30,7 @@
 
 // The grammar of the lens — architectural material under pressure.
 // Note this describes surfaces, never inhabitants.
-const LENS = 'architectural surfaces stay legible but unstable, grime and water damage resolving into repeating room-tone striations, no figures, no faces, no bodies';
+const LENS = 'architectural surfaces stay legible but unstable, grime and water damage resolving into repeating room-tone striations, clear dry air, crisp unobstructed visibility, no atmospheric haze, no fog, no mist, no smoke, no figures, no faces, no bodies';
 
 // Photographic register — the P.T. lie: bad camera, real room, no color.
 const FILM = 'underexposed, black shadows, heavy film grain, found footage, handheld, desaturated, empty, deserted, dread';
@@ -68,17 +68,17 @@ const WORLD_PROMPTS = {
   // the concert hall — velvet, brass, dust
   amplifications: {
     corridor: 'concert hall backstage passage, bricked foyer door nearby, dark lacquered wood, tarnished brass, worn red velvet, dust along aisle thresholds',
-    expanse: 'an unlit auditorium seen from the stage, vacant seats and aisle breaks receding, backstage wing doors, dust suspended in black air',
+    expanse: 'an unlit auditorium seen from the stage, vacant seats and aisle breaks clearly receding, backstage wing doors, clear black air',
   },
   // the practice wing — exhaustion, rot, static
   soundnoisemusic: {
     corridor: 'practice wing corridor, repeated soundproof doors, bulletin glass, torn foam, water-stained drywall, low ductwork, dim sodium light',
-    expanse: 'a rehearsal room stripped to drywall and foam, upended music stands, bulletin glass reflecting the door repeats, grey dust',
+    expanse: 'a rehearsal room stripped to drywall and foam, upended music stands, bulletin glass reflecting the door repeats, dry stained floor',
   },
   // the chapel — the divine, the radiant, the unbearable
   lux_nova: {
     corridor: 'chapel side aisle, locked threshold, pale limestone, ribbed stone, organ pipes rising in darkness, cold clerestory light',
-    expanse: 'a ruined nave without end, organ loft and side aisle barely visible, hard shafts of light through broken clerestory, snow on stone',
+    expanse: 'a ruined nave with a clearly visible organ loft and side aisles, cold clerestory openings, pale mineral stains on stone',
   },
 };
 

@@ -6,116 +6,98 @@ Protocol (must stay in sync with public/labs/chunk-surfer/src/net/diffusion.js):
   server -> client  binary JPEG      styled frame
   server -> client  text JSON        {"type":"status", ...}
 
-Single-session, newest-client-wins: a new connection evicts the previous one
-(a crashed tab must never hold the only slot). Newest-frame-wins too: if
-frames arrive while the GPU is busy, only the latest is diffused.
+Each browser session has a newest-frame slot. Hidden tabs disconnect client-side;
+visible tabs may coexist without evict/reconnect loops, and the shared device lock
+serializes inference. If frames arrive while that device is busy, only the latest
+frame for that session is diffused.
 
 Seed policy is the client's: `fixed` (default) pins a place's identity across
 frames and visits, `walk` lets it come apart. Character-suppressing negative
 prompts are the client's job too — nothing appears in this world unless the
 game puts it there.
 
-Status: verified live on Modal (A10G): ~90ms/frame server-side with TAESD.
-Deploy via modal_app.py; Dockerfile kept for other providers.
+The model lives in pipeline.py and is chosen by $LENS_MODEL (default sd15-hyper4).
+This file owns the protocol and nothing else: it must not learn what a scheduler
+is. It binds to loopback by default and is launched with `python server.py`.
 """
 
 import asyncio
-import io
 import json
-import math
 import os
 
-import torch
-from diffusers import AutoencoderTiny, AutoPipelineForImage2Image
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from PIL import Image
 
-MODEL = "stabilityai/sd-turbo"
-TINY_VAE = "madebyollin/taesd"  # ~10x faster encode/decode than the full VAE
-SIZE = 512          # DO NOT LOWER. sd-turbo is trained at 512x512; at 384 the
-                    # output degrades and at 320 it leaves the distribution
-                    # entirely — photographs become cartoon line-art with
-                    # glowing filaments. Resolution is not a performance lever
-                    # here. (The real fps bottleneck was a client-side inflight
-                    # leak, not the GPU: see diffusion.js pacing.)
+import pipeline
+
 JPEG_QUALITY = 72
-SERVER_REV = "r11-512"
+SERVER_REV = "r13-sd15-depth"
 
 app = FastAPI()
-pipe = None
+lens = None
 busy_lock = asyncio.Lock()
-# Newest client wins. Refusing the second connection meant a crashed or
-# half-closed browser tab could hold the only session slot until the container
-# scaled down, and every later attempt fell back to the base render.
-active_ws: WebSocket | None = None
 
 
-def load_pipe():
-    global pipe
-    if pipe is None:
-        pipe = AutoPipelineForImage2Image.from_pretrained(
-            MODEL, torch_dtype=torch.float16, variant="fp16"
-        ).to("cuda")
-        pipe.vae = AutoencoderTiny.from_pretrained(
-            TINY_VAE, torch_dtype=torch.float16
-        ).to("cuda")
-        pipe.set_progress_bar_config(disable=True)
-        # one warmup pass so the first client frame isn't multi-second
-        warm = Image.new("RGB", (SIZE, SIZE), (10, 10, 12))
-        pipe(prompt="warmup", image=warm, strength=0.5, num_inference_steps=2,
-             guidance_scale=0.0)
-    return pipe
+@app.get("/healthz")
+def healthz():
+    """Cheap readiness metadata. Never downloads or boots model weights."""
+    device, _dtype = pipeline.pick_device()
+    return {
+        "ok": True,
+        "service": "chunk-surfer-local-lens",
+        "rev": SERVER_REV,
+        "model": pipeline.DEFAULT_MODEL,
+        "size": pipeline.SIZE,
+        "device": device,
+        "ready": lens is not None,
+        "transport": "loopback",
+    }
+
+
+def load_lens():
+    """Boot the model once. Which model is $LENS_MODEL's business, not ours."""
+    global lens
+    if lens is None:
+        depth_env = os.environ.get("LENS_DEPTH")
+        depth = None if depth_env is None else depth_env not in {"0", "false", "off"}
+        lens = pipeline.build(style_lora=os.environ.get("LENS_STYLE_LORA") or None, depth=depth)
+        print(f"lens up: {lens.status()}")
+    return lens
+
+
+# A frame, and the exact depth of THAT frame, in one message:
+#
+#     b'L2' | uint32 le frame length | frame JPEG | depth JPEG
+#
+# One message and never two. Sent separately they could desync by a frame under
+# load, and a depth map one frame stale is a depth map of a room you have already
+# left — worse than no depth at all, because the model believes it. A JPEG always
+# begins FF D8 FF, so this magic can never be mistaken for a bare frame from an
+# older client, which is what makes the change backward-compatible.
+def unpack(data: bytes) -> tuple[bytes, bytes | None]:
+    if len(data) > 6 and data[0:2] == b"L2":
+        n = int.from_bytes(data[2:6], "little")
+        if 0 < n <= len(data) - 6:
+            return data[6:6 + n], data[6 + n:] or None
+    return data, None
 
 
 def diffuse(jpeg_bytes: bytes, prompt: str, strength: float, passes: int,
-            seed: int, guidance: float, negative: str) -> bytes:
-    img = Image.open(io.BytesIO(jpeg_bytes)).convert("RGB")
-    src_size = img.size
-    img = img.resize((SIZE, SIZE))
-    # sd-turbo executes int(num_inference_steps * strength) UNet passes, and
-    # that product must be >= 1 or the scheduler yields zero timesteps.
-    # `passes` is the hallucination knob: more passes = further departure from
-    # the conditioning geometry.
-    steps = max(1, math.ceil(passes / max(strength, 0.05)))
-    while int(steps * strength) < passes:
-        steps += 1
+            seed: int, guidance: float, negative: str,
+            depth_bytes: bytes | None = None, depth_scale: float | None = None) -> bytes:
     # Seed policy is the client's call (seed_mode). Pinned per zone: the place
     # keeps its identity frame to frame, and the crawl comes from the client's
     # feedback loop instead. Walking: the surfaces boil and the place forgets
     # itself — reserved for battle/rupture.
-    gen = torch.Generator("cuda").manual_seed(seed)
-    # sd-turbo is distilled for guidance_scale=0. Pushing CFG above that is
-    # off-distribution and it *breaks* — oversaturation, latent smearing, the
-    # over-recognition that turns plaster into faces. That failure is the
-    # aesthetic. guidance≈0 gives a tidy interior; 2-4 gives the abyss.
-    kwargs = {}
-    if guidance > 0.05 and negative:
-        kwargs["negative_prompt"] = negative
-    out = load_pipe()(
-        prompt=prompt, image=img, strength=strength,
-        num_inference_steps=steps, guidance_scale=guidance, generator=gen, **kwargs,
-    ).images[0]
-    out = out.resize(src_size)
-    buf = io.BytesIO()
-    out.save(buf, format="JPEG", quality=JPEG_QUALITY)
-    return buf.getvalue()
+    return pipeline.diffuse(
+        load_lens(), jpeg_bytes, prompt, strength, passes, seed, guidance,
+        negative, quality=JPEG_QUALITY,
+        depth_bytes=depth_bytes, depth_scale=depth_scale,
+    )
 
 
 @app.websocket("/")
 async def session(ws: WebSocket):
-    global active_ws
-    expected = os.environ.get("LENS_TOKEN", "")
-    if expected and ws.query_params.get("token") != expected:
-        await ws.close(code=4401)
-        return
-    # evict whoever holds the slot; a stale tab must not lock the lens out
-    if active_ws is not None:
-        try:
-            await active_ws.close(code=1012)  # service restart
-        except Exception:
-            pass
     await ws.accept()
-    active_ws = ws
     prompt = "dark grimy concrete corridor, damp plaster, dread"
     negative = "person, people, human, figure, face, creature, clean, bright"
     strength = 0.5
@@ -123,31 +105,38 @@ async def session(ws: WebSocket):
     guidance = 1.2
     seed_mode = "fixed"  # fixed = a place stays itself | walk = it comes apart
     seed = 7
-    latest_frame: bytes | None = None
+    depth_scale = None                     # None = pipeline's LENS_DEPTH_SCALE
+    # The frame and its depth are one thing and are dropped as one thing. Holding
+    # them in a single slot is what makes "newest wins" unable to pair a frame
+    # with the depth of a different frame.
+    latest: tuple[bytes, bytes | None] | None = None
     task = None
     try:
-        await ws.send_text(json.dumps({"type": "status", "model": MODEL, "rev": SERVER_REV, "ok": True}))
+        await ws.send_text(json.dumps({
+            "type": "status", "rev": SERVER_REV, "ok": True, **load_lens().status(),
+        }))
         loop = asyncio.get_event_loop()
 
         async def worker():
-            nonlocal latest_frame, seed
+            nonlocal latest, seed
             import time
             import traceback
             try:
                 while True:
-                    if latest_frame is None:
+                    if latest is None:
                         await asyncio.sleep(0.001)  # idle here is idle GPU
                         continue
-                    frame, latest_frame = latest_frame, None
+                    (frame, dep), latest = latest, None
                     if seed_mode == "walk":
                         seed = (seed + 1) % 2_000_000_000
                     t0 = time.time()
                     async with busy_lock:
                         styled = await loop.run_in_executor(
                             None, diffuse, frame, prompt, strength, passes,
-                            seed, guidance, negative
+                            seed, guidance, negative, dep, depth_scale
                         )
-                    print(f"frame diffused in {time.time() - t0:.2f}s ({len(frame)}B -> {len(styled)}B)")
+                    d = f" +{len(dep)}B depth" if dep else " (blind)"
+                    print(f"frame diffused in {time.time() - t0:.2f}s ({len(frame)}B{d} -> {len(styled)}B)")
                     await ws.send_bytes(styled)
             except asyncio.CancelledError:
                 raise
@@ -164,14 +153,20 @@ async def session(ws: WebSocket):
             if msg.get("type") == "websocket.disconnect":
                 break
             if msg.get("bytes"):
-                latest_frame = msg["bytes"]  # newest wins
+                latest = unpack(msg["bytes"])  # newest wins, frame+depth together
             elif msg.get("text"):
                 data = json.loads(msg["text"])
                 if data.get("type") == "prompt":
+                    # How hard the geometry is allowed to insist. A live knob,
+                    # because the right answer is a matter of taste and the
+                    # tuner is where taste gets decided.
+                    if data.get("depthScale") is not None:
+                        depth_scale = min(1.5, max(0.0, float(data["depthScale"])))
                     prompt = str(data.get("prompt", prompt))[:400]
                     negative = str(data.get("negative", negative))[:400]
                     strength = min(0.95, max(0.1, float(data.get("strength", strength))))
-                    passes = min(6, max(1, int(data.get("passes", passes))))
+                    requested_passes = min(6, max(1, int(data.get("passes", passes))))
+                    passes = 1 if load_lens().device == "mps" else requested_passes
                     guidance = min(8.0, max(0.0, float(data.get("guidance", guidance))))
                     seed_mode = "walk" if data.get("seedMode") == "walk" else "fixed"
                     # A seed pinned per zone keeps a *place* recognisably itself
@@ -183,9 +178,19 @@ async def session(ws: WebSocket):
     except WebSocketDisconnect:
         pass
     except RuntimeError:
-        pass  # evicted mid-receive by a newer session
+        pass  # socket closed while a worker was returning its newest frame
     finally:
-        if active_ws is ws:
-            active_ws = None
         if task:
             task.cancel()
+
+
+# Local GPU: `python server.py`; lens.local.json points at ws://127.0.0.1:8000.
+if __name__ == "__main__":
+    import uvicorn
+
+    host = os.environ.get("LENS_HOST", "127.0.0.1")
+    if host not in {"127.0.0.1", "localhost", "::1"}:
+        raise SystemExit("LENS_HOST must be loopback; the diffusion service is local-only")
+    if os.environ.get("LENS_EAGER", "1") != "0":
+        load_lens()
+    uvicorn.run(app, host=host, port=int(os.environ.get("LENS_PORT", "8000")))

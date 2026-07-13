@@ -1,9 +1,8 @@
-// Diffusion-lens streaming client (M1c).
-// Captures the r3d base render, ships JPEG frames over a WebSocket to a GPU
-// worker running img2img restyling, and composites returned frames on an
-// overlay canvas above the base render. The base render stays live
-// underneath: any stall, disconnect, or missing token degrades to it
-// seamlessly — the lens is optional by construction.
+// Local material-diffusion client. The production path sends each source
+// albedo tile once and uploads the returned detail into r3d's texture array.
+// It never captures or replaces the camera image: lighting, depth, normals,
+// motion and perspective remain native WebGL. The older camera-stream client
+// remains below only as a dormant development comparison.
 //
 // Protocol v1 (provider-agnostic):
 //   client → server: binary JPEG (the conditioning frame)
@@ -23,13 +22,13 @@
 // Its worker then always has the next frame waiting the instant it finishes
 // the last, so throughput becomes GPU-bound rather than latency-bound.
 // A backlog guard covers a genuinely dead server.
-const SEND_FPS = 16;             // comfortably above the GPU rate (~11fps at
-                                 // 512²), so the server's newest-frame slot is
+const SEND_FPS = 8;              // comfortably above the local MPS rate, so
+                                 // the server's newest-frame slot is
                                  // never empty and the GPU never idles
 const MAX_BACKLOG_FRAMES = 8;
 const MAX_BACKLOG = 8;           // frames sent with nothing coming back
-// Generous retry window: a cold-started GPU container (serverless scale-from-
-// zero) takes 1–2 minutes to accept its first session.
+// Generous retry window: loading local weights and warming the selected device
+// can take 1–2 minutes before the loopback service accepts its first session.
 const RETRIES = 20;
 const RETRY_MS = 6000;
 
@@ -37,7 +36,110 @@ const RETRY_MS = 6000;
 // happily hallucinate a figure at the end of a corridor — it did, unasked —
 // and an author-controlled game cannot have its cast introduced by a sampler.
 // Scenes that *want* a presence (battle, rupture) override this explicitly.
-export const NO_CHARACTERS = 'person, people, human, man, woman, child, figure, silhouette, face, portrait, eyes, creature, animal, monster, statue, mannequin, doll, crowd, neon, saturated, poster art, cartoon, bright';
+export const NO_CHARACTERS = 'person, people, human, man, woman, child, figure, silhouette, face, portrait, eyes, creature, animal, monster, statue, mannequin, doll, crowd, neon, saturated, poster art, cartoon, bright, fog, mist, haze, smoke, steam, dust cloud, atmospheric veil, volumetric fog';
+
+const SURFACE_NAMES=[
+  'reclaimed brick wall','split-face stone wall','ash wood floor','quartzite floor',
+  'blue pool mosaic','white ceramic tile','polished terrazzo','travertine wall',
+  'rammed-earth plaster wall','concrete wall cladding',
+];
+
+function surfaceTiles(url){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>{
+      const size=img.width,layers=Math.min(SURFACE_NAMES.length,Math.floor(img.height/size)),out=[];
+      for(let slot=0;slot<layers;slot++){
+        const cv=document.createElement('canvas');cv.width=size;cv.height=size;
+        cv.getContext('2d').drawImage(img,0,slot*size,size,size,0,0,size,size);out.push(cv);
+      }
+      resolve(out);
+    };
+    img.onerror=reject;img.src=url.href||String(url);
+  });
+}
+
+// The local lens restyles material tiles, not camera frames. Returned albedo is
+// uploaded into r3d's texture array; the original world UVs, normal maps and
+// roughness maps remain authoritative, so the result is attached to masonry.
+export function surfaceDiffusionStart({
+  url,sourceUrl,applySurface,commitSurfaces=()=>{},setSurfaceMix=()=>{},clearSurfaces=()=>{},
+  prompt='dark condemned conservatory, underexposed, material decay',
+  negative='person, face, figure, object, furniture, room, corridor, perspective, lamp, text, fog',
+  strength=.20,passes=1,guidance=1.05,mix=.72,
+  onStatus=()=>{},
+}){
+  const stats={mode:'surfaces',state:'connecting',framesOut:0,framesIn:0,lastRttMs:0,bypassed:false,resident:false,slot:-1,total:SURFACE_NAMES.length};
+  let ws=null,stopped=false,bypassed=false,resident=false,seq=0,retries=RETRIES,active=-1,lastSent=0,regenTimer=0,batchDirty=false;
+  let queue=[],tiles=[],serverSize=512,pageHidden=document.hidden;
+  const setState=(state)=>{stats.state=state;stats.bypassed=bypassed;onStatus({...stats});};
+  const tilePromise=surfaceTiles(sourceUrl).then((v)=>(tiles=v,v));
+
+  function surfacePrompt(slot){
+    return `seamless tileable ${SURFACE_NAMES[slot]} material, ${prompt}, orthographic flat albedo texture, fine physical detail, even illumination, no perspective`;
+  }
+  function sendNext(){
+    if(stopped||bypassed||pageHidden||active>=0||!ws||ws.readyState!==WebSocket.OPEN)return;
+    if(!queue.length){
+      if(batchDirty){commitSurfaces(mix);batchDirty=false;resident=true;stats.resident=true;}
+      stats.slot=-1;setState('ready');return;
+    }
+    active=queue.shift();stats.slot=active;setState('generating');
+    ws.send(JSON.stringify({type:'prompt',prompt:surfacePrompt(active),negative,strength,passes,guidance,seedMode:'fixed',seed:7000+active*977}));
+    const tile=tiles[active],cv=document.createElement('canvas');cv.width=serverSize;cv.height=serverSize;
+    cv.getContext('2d').drawImage(tile,0,0,serverSize,serverSize);lastSent=performance.now();
+    cv.toBlob(async(blob)=>{if(blob&&ws?.readyState===WebSocket.OPEN){ws.send(await blob.arrayBuffer());stats.framesOut++;}},'image/jpeg',.86);
+  }
+  function queueAll(){
+    clearTimeout(regenTimer);
+    regenTimer=setTimeout(async()=>{
+      await tilePromise;queue=tiles.map((_,i)=>i);if(active<0)sendNext();
+    },120);
+  }
+  function connect(){
+    if(stopped||bypassed||pageHidden){setState(bypassed?'bypassed':pageHidden?'paused':'stopped');return;}
+    const mine=++seq;ws=new WebSocket(url);ws.binaryType='arraybuffer';setState('connecting');
+    ws.onopen=async()=>{if(mine!==seq)return;retries=RETRIES;await tilePromise;queueAll();};
+    ws.onmessage=async(ev)=>{
+      if(mine!==seq||stopped||bypassed)return;
+      if(typeof ev.data==='string'){
+        try{const st=JSON.parse(ev.data);if(Number.isFinite(st.size))serverSize=Math.max(256,Math.min(512,st.size));onStatus({...stats,server:st});}catch(_){}
+        return;
+      }
+      if(active<0)return;
+      const slot=active;active=-1;stats.framesIn++;stats.lastRttMs=performance.now()-lastSent;
+      try{const bmp=await createImageBitmap(new Blob([ev.data],{type:'image/jpeg'}));batchDirty=applySurface(slot,bmp,mix)!==false||batchDirty;bmp.close();}catch(_){}
+      sendNext();
+    };
+    let gone=false;const onGone=()=>{if(gone||mine!==seq||stopped||bypassed||pageHidden)return;gone=true;active=-1;if(retries-->0){setState('reconnecting');setTimeout(connect,RETRY_MS);}else setState('fallback');};
+    ws.onclose=onGone;ws.onerror=onGone;
+  }
+  const onVisibility=()=>{pageHidden=document.hidden;if(pageHidden){seq++;try{ws?.close(1000,'page hidden');}catch(_){}ws=null;active=-1;setState('paused');}else if(!stopped&&!bypassed){retries=RETRIES;connect();}};
+  document.addEventListener('visibilitychange',onVisibility);connect();
+
+  return{
+    stats,
+    // Room changes must not repaint the building under the player's feet.
+    // Remember the authored prompt for a later explicit regeneration, but keep
+    // the currently resident material set stable while the player moves.
+    setZone(p){if(p)prompt=p;},
+    setPrompt(p,s=strength){prompt=p||prompt;strength=s;queueAll();},
+    tune(opts={}){
+      let regenerate=false,next;
+      if(opts.prompt!=null&&opts.prompt!==prompt){prompt=opts.prompt;regenerate=true;}
+      if(opts.negative!=null&&opts.negative!==negative){negative=opts.negative;regenerate=true;}
+      if(opts.strength!=null){next=Math.max(.1,Math.min(.45,opts.strength));regenerate=regenerate||next!==strength;strength=next;}
+      if(opts.passes!=null){next=Math.max(1,Math.min(2,opts.passes));regenerate=regenerate||next!==passes;passes=next;}
+      if(opts.guidance!=null){next=Math.max(0,Math.min(2,opts.guidance));regenerate=regenerate||next!==guidance;guidance=next;}
+      if(opts.mix!=null){next=Math.max(0,Math.min(.92,opts.mix));if(next!==mix){mix=next;if(resident)setSurfaceMix(mix);}}
+      if(regenerate)queueAll();return{prompt,negative,strength,passes,guidance,mix};
+    },
+    resetFeedback(){queueAll();},setMoving(){},nudge(){},
+    setBypass(v){bypassed=!!v;stats.bypassed=bypassed;seq++;try{ws?.close(1000,'local bypass');}catch(_){}ws=null;active=-1;queue=[];if(bypassed){resident=false;stats.resident=false;clearSurfaces();setState('bypassed');}else{retries=RETRIES;connect();}return bypassed;},
+    isBypassed(){return bypassed;},
+    stop(){stopped=true;seq++;clearTimeout(regenTimer);try{ws?.close();}catch(_){}document.removeEventListener('visibilitychange',onVisibility);},
+  };
+}
 
 // The lens is a feedback instrument, not a filter.
 //
@@ -53,7 +155,13 @@ export const NO_CHARACTERS = 'person, people, human, man, woman, child, figure, 
 // somewhere you can navigate, so explore keeps it low and the dramatic
 // presets spend it. Tunable live via URL params and window.__diffusion.
 export function diffusionStart({
-  sourceCanvas, hostEl, url, token, fps = 24,
+  sourceCanvas, hostEl, url, fps = 24,
+  // Hands back a server-sized grey depth image of the frame that was just drawn. The
+  // raymarcher KNOWS the depth of every pixel — nobody else running img2img
+  // does; they all guess it with MiDaS — and a depth ControlNet turns that
+  // knowledge into geometry the hallucination cannot wander away from.
+  // Absent (or a server too old to want it) = the old img2img path, unchanged.
+  depthCanvas = null, depth = true, depthScale = 0.6,
   prompt = 'dark grimy concrete corridor, damp plaster, deserted, dread',
   // Tuned by sweep (see README): the narrow band where the corridor stays
   // legible but its material never settles. Push strength past ~0.6 and the
@@ -75,7 +183,7 @@ export function diffusionStart({
   // 0 = raw, every frame as returned. Persistence is per-FRAME, so the higher
   // the stream rate the more of it you need for the same settling in seconds.
   // At ~8fps, 0.72 holds the room still without smearing motion.
-  smooth = 0.78,
+  smooth = 0.0,
   // `seedMode:'fixed'` pins the noise so a place stays recognisably itself
   // between frames and between visits; the crawl then comes from feedback,
   // not from the room being reinvented. 'walk' is for scenes meant to come apart.
@@ -114,17 +222,21 @@ export function diffusionStart({
   const stats = { framesOut: 0, framesIn: 0, lastRttMs: 0, state: 'connecting', skips: 0, held: 0, blobNull: 0, notOpen: 0, msDraw: 0, msEncode: 0, msDecode: 0, bypassed: false };
   let ws = null, sendTimer = null, retriesLeft = RETRIES, stopped = false, bypassed = false, socketSeq = 0;
   let lastSentAt = 0;
+  // Until a server says it can take depth, it cannot: an older one handed our
+  // six-byte header would diffuse the header as though it were a picture.
+  let serverWantsDepth = false;
 
   // Downscale before encoding: the server diffuses at SIZE² regardless, and
   // toBlob on the full-res WebGL canvas is the fps bottleneck.
   const capture = document.createElement('canvas');
-  capture.width = 512; capture.height = 512;   // match the server's SIZE (sd-turbo's native)
+  capture.width = 256; capture.height = 256;   // corrected from server status on connect
   const capCtx = capture.getContext('2d');
   // last styled frame, kept for the feedback loop
   let lastStyled = null;   // conditioning feedback (raw, latest returned)
   let driftPhase = 0;
   let firstFrame = true;
   let moving = false;      // the player took a step recently
+  let pageHidden = document.hidden;
 
   // Epoch state: what is on screen, and what is fading in over it.
   let shown = null;        // ImageBitmap currently displayed
@@ -167,10 +279,9 @@ export function diffusionStart({
   }
 
   function connect() {
-    if (stopped || bypassed) { setState(bypassed ? 'bypassed' : 'stopped'); return; }
+    if (stopped || bypassed || pageHidden) { setState(bypassed ? 'bypassed' : pageHidden ? 'paused' : 'stopped'); return; }
     const seq = ++socketSeq;
     const u = new URL(url);
-    if (token) u.searchParams.set('token', token);
     ws = new WebSocket(u.toString());
     ws.binaryType = 'arraybuffer';
     setState('connecting');
@@ -185,7 +296,21 @@ export function diffusionStart({
     };
     ws.onmessage = async (ev) => {
       if (stopped || bypassed || seq !== socketSeq) return;
-      if (typeof ev.data === 'string') { try { onStatus({ ...stats, server: JSON.parse(ev.data) }); } catch (_) {} return; }
+      if (typeof ev.data === 'string') {
+        try {
+          const st = JSON.parse(ev.data);
+          // Only a server that says it can take depth gets sent any. An older
+          // one would be handed six bytes it has never heard of and would
+          // diffuse the header as if it were a picture.
+          if (st.type === 'status') serverWantsDepth = !!st.depth;
+          if (st.type === 'status' && Number.isFinite(st.size)) {
+            const size = Math.max(256, Math.min(512, Math.round(st.size / 64) * 64));
+            capture.width = size; capture.height = size; stats.serverSize = size;
+          }
+          onStatus({ ...stats, server: st });
+        } catch (_) {}
+        return;
+      }
       stats.framesIn++;
       stats.lastRttMs = performance.now() - lastSentAt;
       try {
@@ -221,7 +346,8 @@ export function diffusionStart({
           release(oldIncoming);
         }
         release(prevStyled);
-        if (overlay.style.opacity !== '1') overlay.style.opacity = '1';
+        const opacity = moving ? '0.42' : '1';
+        if (overlay.style.opacity !== opacity) overlay.style.opacity = opacity;
       } catch (_) { /* corrupt frame: keep last */ }
     };
     // onerror and onclose BOTH fire on a failed handshake. Without this guard
@@ -229,7 +355,7 @@ export function diffusionStart({
     // retry budget evaporates in seconds and the lens falls back for good.
     let closed = false;
     const onGone = (ev) => {
-      if (closed || stopped || bypassed || seq !== socketSeq) return;
+      if (closed || stopped || bypassed || pageHidden || seq !== socketSeq) return;
       closed = true;
       clearInterval(sendTimer); sendTimer = null;
       overlay.style.opacity = '0';
@@ -277,10 +403,12 @@ export function diffusionStart({
     // where the walls actually are — which is exactly where the drifting,
     // non-Euclidean, boiling texture comes from.
     if (feedback > 0 && lastStyled) {
-      // A stationary player gets a stationary room: warping the feedback while
-      // nothing moves manufactures motion the player did not cause.
-      const d = moving ? drift : 0;
-      driftPhase += moving ? 0.013 : 0;
+      // Keep the place identifiable without freezing it into a photograph.
+      // At rest the feedback creeps by a fraction of the authored drift; while
+      // moving it follows the full value. The seed stays pinned per zone, so
+      // this is phosphor-like material motion rather than a different room.
+      const d = moving ? drift : drift * 0.16;
+      driftPhase += moving ? 0.013 : 0.0025;
       const zoom = 1 + 0.010 * d;
       const rot = Math.sin(driftPhase) * 0.004 * d;
       const sway = Math.cos(driftPhase * 0.7) * 3 * d;
@@ -293,22 +421,61 @@ export function diffusionStart({
       capCtx.globalAlpha = 1;
     }
 
+    // The depth of THIS frame, resolved now, before anything else can move the
+    // camera. Pulled here and nowhere else: readPixels is a stall, and it must
+    // cost us once per SENT frame (~10fps), never once per rendered frame.
+    let depthBlobP = null;
+    if (depth && depthCanvas && serverWantsDepth) {
+      try {
+        const dc = depthCanvas(capture.width);
+        if (dc) depthBlobP = new Promise((res) => dc.toBlob(res, 'image/jpeg', 0.7));
+      } catch (e) { stats.depthErr = (stats.depthErr || 0) + 1; }
+    }
+
     const tEnc = performance.now();
     capture.toBlob((blob) => {
       stats.msEncode = stats.msEncode * 0.8 + (performance.now() - tEnc) * 0.2;
       if (!blob) { stats.blobNull++; return; }
       if (!ws || ws.readyState !== WebSocket.OPEN) { stats.notOpen++; return; }
-      blob.arrayBuffer().then((ab) => {
-        if (ws && ws.readyState === WebSocket.OPEN) { ws.send(ab); stats.framesOut++; }
-      });
+
+      // Frame and depth ride in ONE message. Sending them as two would let them
+      // desync by a frame under load, and a depth map one frame stale is a
+      // depth map of a room you have already left — worse than none, because
+      // the model believes it.
+      Promise.all([blob.arrayBuffer(), depthBlobP ? depthBlobP.then((b) => b && b.arrayBuffer()) : null])
+        .then(([frame, dep]) => {
+          if (!ws || ws.readyState !== WebSocket.OPEN) { stats.notOpen++; return; }
+          if (!dep) { ws.send(frame); stats.framesOut++; return; }
+          const head = new ArrayBuffer(6);
+          const dv = new DataView(head);
+          dv.setUint8(0, 0x4c); dv.setUint8(1, 0x32);      // 'L2' — a JPEG never starts this way
+          dv.setUint32(2, frame.byteLength, true);
+          ws.send(new Blob([head, frame, dep]));
+          stats.framesOut++; stats.depthOut = (stats.depthOut || 0) + 1;
+        });
     }, 'image/jpeg', 0.7);
   }
 
   connect();
 
+  const onVisibility = () => {
+    pageHidden = document.hidden;
+    if (pageHidden) {
+      socketSeq++;
+      clearInterval(sendTimer); sendTimer = null;
+      overlay.style.opacity = '0';
+      const old = ws; ws = null;
+      try { old && old.close(1000, 'page hidden'); } catch (_) {}
+      setState('paused');
+    } else if (!stopped && !bypassed) {
+      firstFrame = true; retriesLeft = RETRIES; connect();
+    }
+  };
+  document.addEventListener('visibilitychange', onVisibility);
+
   const send = () => {
     if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'prompt', prompt, negative, strength, passes, guidance, seedMode, seed }));
+      ws.send(JSON.stringify({ type: 'prompt', prompt, negative, strength, passes, guidance, seedMode, seed, depthScale }));
     }
   };
 
@@ -334,8 +501,12 @@ export function diffusionStart({
       if (opts.seed != null) seed = opts.seed >>> 0;
       if (opts.prompt != null) prompt = opts.prompt;
       if (opts.negative != null) negative = opts.negative;
+      // How hard the real geometry is allowed to insist. 1 pins the walls exactly
+      // and the lens becomes a texture pass; 0 is the old blind smear. Around
+      // 0.6 the room stays a room while its material goes wrong.
+      if (opts.depthScale != null) depthScale = Math.max(0, Math.min(1.5, opts.depthScale));
       send();
-      return { feedback, drift, strength, passes, guidance, smooth, seedMode, prompt, negative };
+      return { feedback, drift, strength, passes, guidance, smooth, seedMode, depthScale, prompt, negative };
     },
     resetFeedback() { const b = lastStyled; lastStyled = null; release(b); firstFrame = true; },
     setBypass(v) {
@@ -367,6 +538,7 @@ export function diffusionStart({
     setMoving(v) {
       const was = moving;
       moving = !!v;
+      overlay.style.opacity = moving ? '0.42' : (stats.framesIn ? '1' : '0');
       if (was && !moving) { stillSince = performance.now(); framesThisEpoch = 0; lastEpochAt = 0; }
     },
     nudge() {},   // retained for callers; warping was a mistake, see above
@@ -380,6 +552,7 @@ export function diffusionStart({
       for (const bmp of [a, b, c]) { try { bmp && bmp.close(); } catch (_) {} }
       clearInterval(sendTimer);
       try { ws && ws.close(); } catch (_) {}
+      document.removeEventListener('visibilitychange', onVisibility);
       overlay.remove();
       setState('stopped');
     },

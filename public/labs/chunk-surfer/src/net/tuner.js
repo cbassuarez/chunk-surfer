@@ -9,15 +9,13 @@
 import { PRESETS } from './lens-presets.js';
 
 const FIELDS = [
-  { key: 'strength', min: 0.1, max: 0.95, step: 0.01, note: '>0.6 dissolves geometry' },
-  { key: 'guidance', min: 0.0, max: 6.0, step: 0.1, note: '>2 goes neon/kitsch' },
-  { key: 'passes', min: 1, max: 5, step: 1, note: 'cost: linear' },
-  { key: 'feedback', min: 0.0, max: 0.92, step: 0.01, note: 'high = self-converges' },
-  { key: 'drift', min: 0.0, max: 4.0, step: 0.1, note: 'warp of the feedback' },
-  { key: 'smooth', min: 0.0, max: 0.9, step: 0.05, note: '0 = raw/flickery, .6 = settled' },
+  { key: 'strength', min: 0.1, max: 0.45, step: 0.01, note: 'local material variation' },
+  { key: 'guidance', min: 0.0, max: 2.0, step: 0.1, note: 'prompt pressure on the tile' },
+  { key: 'passes', min: 1, max: 2, step: 1, note: 'one-time material generation cost' },
+  { key: 'mix', min: 0.0, max: 0.92, step: 0.01, note: 'world-locked generated material' },
 ];
 
-export function mountTuner(hostEl, getDiffusion) {
+export function mountTuner(hostEl, getDiffusion, access = {}) {
   const panel = document.createElement('div');
   panel.style.cssText = [
     'position:absolute', 'top:0', 'right:0', 'z-index:20', 'display:none',
@@ -27,7 +25,7 @@ export function mountTuner(hostEl, getDiffusion) {
     "font:11px 'Courier New',monospace", 'pointer-events:auto',
   ].join(';');
 
-  const state = { strength: 0.42, guidance: 1.2, passes: 1, feedback: 0.18, drift: 0.5, smooth: 0.72 };
+  const state = { strength: 0.28, guidance: 1.0, passes: 1, mix: 0.76 };
   const rows = {};
 
   const h = (html) => { const d = document.createElement('div'); d.innerHTML = html; return d; };
@@ -41,8 +39,12 @@ export function mountTuner(hostEl, getDiffusion) {
   function syncBypass() {
     const d = getDiffusion();
     const off = !!(d?.stats?.bypassed || d?.isBypassed?.());
-    bypassBtn.textContent = off ? 'Stable Diffusion / Modal: off' : 'Stable Diffusion / Modal: on';
-    bypassBtn.style.color = off ? '#d7a37d' : '#9fb8a5';
+    const st=d?.stats?.state||'unavailable',resident=!!d?.stats?.resident;
+    if(off)bypassBtn.textContent='LOCAL DIFFUSION: OFF';
+    else if(resident)bypassBtn.textContent='LOCAL DIFFUSION: ON · VISIBLE';
+    else if(st==='fallback')bypassBtn.textContent='LOCAL DIFFUSION: UNAVAILABLE';
+    else bypassBtn.textContent=`LOCAL DIFFUSION: ${String(st).toUpperCase()}`;
+    bypassBtn.style.color = off||st==='fallback' ? '#d7a37d' : '#9fb8a5';
   }
   bypassBtn.onclick = () => {
     const d = getDiffusion();
@@ -50,10 +52,48 @@ export function mountTuner(hostEl, getDiffusion) {
     const next = !d.isBypassed?.() && !d.stats?.bypassed;
     d.setBypass(next);
     syncBypass();
-    status(next ? 'Modal rendering calls bypassed' : 'Modal rendering calls resumed');
+    status(next ? 'local rendering paused' : 'local rendering resumed');
   };
   bypassRow.appendChild(bypassBtn);
   panel.appendChild(bypassRow);
+
+  // Session-only access overrides. These operate on the same carried-key set
+  // collision uses; they do not rewrite saves or door geometry.
+  const accessBox = document.createElement('div');
+  accessBox.style.cssText = 'border-top:1px solid #2a2f38;border-bottom:1px solid #2a2f38;padding:7px 0;margin-bottom:10px';
+  accessBox.appendChild(h('<div style="color:#8b95a1;letter-spacing:.08em;margin-bottom:5px">ACCESS KEYS</div>'));
+  const accessButtons = new Map();
+  function syncAccess() {
+    const rows = access.keys?.() || [];
+    for (const row of rows) {
+      let b = accessButtons.get(row.id);
+      if (!b) {
+        b = document.createElement('button');
+        b.type = 'button';
+        b.style.cssText = 'display:block;width:100%;text-align:left;font:inherit;color:#9fb8a5;background:#12151a;border:1px solid #333a44;padding:3px 7px;margin:3px 0;cursor:pointer';
+        b.onclick = () => { const cur=(access.keys?.()||[]).find((v)=>v.id===row.id); access.setKey?.(row.id,!cur?.granted); syncAccess(); status(`${row.label}: ${cur?.granted?'closed':'open'}`); };
+        accessButtons.set(row.id,b);accessBox.appendChild(b);
+      }
+      b.textContent = `${row.label}: ${row.granted ? 'OPEN' : 'LOCKED'}`;
+      b.style.color = row.granted ? '#9fb8a5' : '#d7a37d';
+    }
+  }
+  const accessActions=document.createElement('div');accessActions.style.cssText='display:flex;gap:4px;margin-top:4px';
+  for(const [label,value] of [['GRANT ALL',true],['RESET LOCKS',false]]){
+    const b=document.createElement('button');b.type='button';b.textContent=label;b.style.cssText='flex:1;font:inherit;color:#9fb8a5;background:#12151a;border:1px solid #333a44;padding:3px 6px;cursor:pointer';
+    b.onclick=()=>{for(const row of access.keys?.()||[])access.setKey?.(row.id,value || row.defaultGranted);syncAccess();status(value?'all keys granted':'authored locks restored');};accessActions.appendChild(b);
+  }
+  accessBox.appendChild(accessActions);panel.appendChild(accessBox);syncAccess();
+
+  const takeBox=document.createElement('div');takeBox.style.cssText='border-bottom:1px solid #2a2f38;padding:0 0 7px;margin-bottom:10px';
+  takeBox.appendChild(h('<div style="color:#8b95a1;letter-spacing:.08em;margin-bottom:5px">ROOM TAKES</div>'));
+  const takeButtons=new Map();
+  function syncTakes(){
+    for(const row of access.takes?.()||[]){
+      let b=takeButtons.get(row.id);if(!b){b=document.createElement('button');b.type='button';b.style.cssText='display:block;width:100%;text-align:left;font:inherit;color:#9fb8a5;background:#12151a;border:1px solid #333a44;padding:3px 7px;margin:3px 0;cursor:pointer';b.onclick=()=>{const cur=(access.takes?.()||[]).find((v)=>v.id===row.id);access.setTake?.(row.id,!cur?.taken);syncTakes();status(`${row.label}: ${cur?.taken?'removed':'granted'}`);};takeButtons.set(row.id,b);takeBox.appendChild(b);}b.textContent=`${row.label}: ${row.taken?'YES':'NO'}`;b.style.color=row.taken?'#9fb8a5':'#d7a37d';
+    }
+  }
+  panel.appendChild(takeBox);syncTakes();
 
   // presets
   const presetRow = document.createElement('div');
@@ -157,7 +197,7 @@ export function mountTuner(hostEl, getDiffusion) {
 
   hostEl.appendChild(panel);
   syncBypass();
-  setInterval(syncBypass, 1000);
+  setInterval(()=>{syncBypass();syncAccess();syncTakes();}, 1000);
   // Don't let the game's key handler eat typing in the textarea.
   panel.addEventListener('keydown', (e) => e.stopPropagation());
 

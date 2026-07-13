@@ -195,6 +195,27 @@ function addQuad(m,a,b,c,d,mat){const g=group(m,mat),base=g.positions.length/3,u
   const m=mesh('equipment_rack'); addBox(m,[0,.80,0],[.62,1.60,.58],MAT.black);for(let i=0;i<6;i++){addBox(m,[0,.28+i*.22,-.302],[.54,.14,.025],MAT.steel);addCylinder(m,[.20,.28+i*.22,-.325],.018,.022,i===4?MAT.brass:MAT.paper,8);}
 }
 {
+  const m=mesh('ticket_counter');addBox(m,[0,.46,0],[2.8,.92,.72],MAT.dark);addBox(m,[0,.97,0],[3.0,.10,.82],MAT.wood);for(let x=-1.25;x<=1.25;x+=.5)addBox(m,[x,1.62,.30],[.025,1.25,.025],MAT.brass);addBox(m,[0,2.23,.30],[2.8,.04,.04],MAT.brass);
+}
+{
+  const m=mesh('key_cabinet');addBox(m,[0,.58,0],[.9,1.16,.22],MAT.steel);addBox(m,[0,.58,-.12],[.82,1.08,.025],MAT.dark);for(let y=.28;y<.98;y+=.22)for(let x=-.28;x<=.28;x+=.28)addCylinder(m,[x,y,-.15],.012,.04,MAT.brass,8);
+}
+{const m=mesh('notice_board');addBox(m,[0,.45,0],[1.2,.9,.06],MAT.dark);addBox(m,[0,.45,-.035],[1.08,.78,.02],MAT.paper);}
+{
+  const m=mesh('loose_note');
+  // A sheet with an imperfect folded corner, kept thick enough to survive the
+  // low-resolution depth pass without becoming a z-fighting floor decal.
+  addBox(m,[0,.008,0],[.32,.016,.42],MAT.paper);
+  addBox(m,[.115,.019,-.155],[.07,.006,.07],MAT.ivory,.16);
+}
+{const m=mesh('pool_start_block');addBox(m,[0,.34,0],[.50,.68,.48],MAT.steel);addBox(m,[0,.72,-.08],[.62,.09,.62],MAT.ivory,.12);}
+{const m=mesh('lifeguard_chair');addBox(m,[0,1.35,.1],[.62,.08,.55],MAT.wood);addBox(m,[0,1.68,.34],[.62,.62,.08],MAT.wood);for(const x of[-.27,.27])for(const z of[-.2,.35])addBox(m,[x,.68,z],[.055,1.35,.055],MAT.steel,.08);}
+{const m=mesh('lane_reel');addCylinder(m,[0,.72,0],.36,.52,MAT.steel,18);addBox(m,[0,.25,0],[.92,.08,.50],MAT.steel);for(const x of[-.38,.38])addBox(m,[x,.45,0],[.06,.72,.06],MAT.steel);}
+{const m=mesh('drain_grille');addBox(m,[0,.025,0],[1.2,.05,.18],MAT.steel);for(let x=-.52;x<=.52;x+=.13)addBox(m,[x,.055,0],[.025,.03,.15],MAT.dark);}
+{const m=mesh('altar_table');addBox(m,[0,.84,0],[1.8,.12,.78],MAT.ivory);for(const x of[-.68,.68])addBox(m,[x,.42,0],[.14,.84,.58],MAT.wood);}
+{const m=mesh('lectern');addBox(m,[0,.08,0],[.58,.16,.55],MAT.wood);addBox(m,[0,.68,.08],[.12,1.2,.12],MAT.wood);addBox(m,[0,1.28,-.08],[.62,.08,.46],MAT.wood,-.22);}
+{const m=mesh('hymn_board');addBox(m,[0,.48,0],[.8,.96,.06],MAT.dark);for(let y=.2;y<=.7;y+=.25)addBox(m,[0,y,-.04],[.65,.03,.02],MAT.ivory);}
+{
   const m=mesh('portrait_frame');
   addBox(m,[0,.51,0],[.76,1.02,.055],MAT.dark);
   addPortraitSurface(m);

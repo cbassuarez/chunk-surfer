@@ -20,6 +20,7 @@ let data = null;
 let stream = null;
 let state = 'idle';          // 'idle' | 'asking' | 'on' | 'denied'
 let testLevel = null;        // headless override
+let spoilMutedUntil = 0;     // recorder transport cannot spoil its own take
 
 export function micState() { return testLevel != null ? 'test' : state; }
 // A headless-injected level is authoritative: it means "on", whatever the real
@@ -35,7 +36,9 @@ export function micInit(audioCtx) {
   ctx = audioCtx;
   state = 'asking';
   navigator.mediaDevices.getUserMedia({
-    audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+    // Preserve the physical room while removing the game's own loudspeaker
+    // return. Without AEC, the recorder click can spoil the take it starts.
+    audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: false, channelCount: 1 },
   }).then((s) => {
     stream = s;
     const src = ctx.createMediaStreamSource(stream);
@@ -59,11 +62,18 @@ export function micLevel() {
   return Math.sqrt(sum / data.length);
 }
 
+// Known transport sounds remain visible on both meters, but cannot invalidate
+// the take. The real room is still analysed throughout this narrow guard.
+export function micIgnoreSpoilFor(ms = 1200) {
+  spoilMutedUntil = Math.max(spoilMutedUntil, performance.now() + Math.max(0, Number(ms) || 0));
+}
+export function micMaySpoil(now = performance.now()) { return now >= spoilMutedUntil; }
+
 // Headless suites cannot grant a mic, so they inject a level instead. It is
 // authoritative (see micActive): a real getUserMedia rejection cannot clear it.
 export function micTest(level) { testLevel = level; }
 
 export function micStop() {
   try { stream?.getTracks().forEach((t) => t.stop()); } catch (_) {}
-  stream = null; analyser = null; state = 'idle';
+  stream = null; analyser = null; state = 'idle'; spoilMutedUntil = 0;
 }

@@ -5,7 +5,7 @@
 
 import { resolveStyle } from './styles-map.js';
 import { drawVfdGlyph, vfdGlyph } from './vfd-font.js';
-import { uiRoleColor, uiRoleDim, uiBrightness, paletteKey } from './palette.js';
+import { uiRoleColor, uiRoleDim, uiBrightness, paletteKey, uiBandKey } from './palette.js';
 
 export const CELL_W = 7.84;          // matches computeViewDims cw
 export const CELL_H = 13 * 1.38;     // matches computeViewDims ch
@@ -41,7 +41,7 @@ function fontString(bold, fontPx) {
 // not a font. Lit dots glow; a faint dormant grid shows where the unlit dots
 // are, which is the single thing that separates a VFD from glowing text. Colour
 // comes from the active theme (amber for menus, green for the recorder).
-function renderUiTile(glyph, cls) {
+function renderUiTile(glyph, cls, x = 0, cols = 80) {
   const { cellW, cellH } = metricsFor('ui');
   const padX = Math.ceil(cellW * PAD_CELLS * dpr);
   const padY = Math.ceil(cellH * PAD_CELLS * dpr);
@@ -52,9 +52,9 @@ function renderUiTile(glyph, cls) {
   const ctx = c.getContext('2d');
 
   const isVfd = cls.startsWith('ui-');
-  const color = isVfd ? uiRoleColor(cls) : (resolveStyle(cls).color || '#F2A81E');
-  const dim = isVfd ? uiRoleDim(cls) : null;
-  const b = uiBrightness();
+    const color = isVfd ? uiRoleColor(cls, x, cols) : (resolveStyle(cls).color || '#F2A81E');
+    const dim = isVfd ? uiRoleDim(cls, x, cols) : null;
+    const b = uiBrightness();
 
   // A 5×7 character keeps a real aspect (~5:7); the tall UI cell is generous
   // line spacing, so the glyph lives in a box the width of the cell, centred.
@@ -74,8 +74,8 @@ function renderUiTile(glyph, cls) {
   return { canvas: c, ox: padX, oy: padY, pulse: false };
 }
 
-function renderTile(glyph, cls, role) {
-  if (role === 'ui') return renderUiTile(glyph, cls);
+function renderTile(glyph, cls, role, x = 0, cols = 80) {
+  if (role === 'ui') return renderUiTile(glyph, cls, x, cols);
   const style = resolveStyle(cls);
   const { cellW, cellH, fontPx } = metricsFor(role);
   const padX = Math.ceil(cellW * PAD_CELLS * dpr);
@@ -110,14 +110,21 @@ function renderTile(glyph, cls, role) {
   return { canvas: c, ox: padX, oy: padY, pulse: style.pulse };
 }
 
-export function getTile(glyph, cls, role = 'world') {
+export function getTile(glyph, cls, role = 'world', x = 0, cols = 80) {
   // UI tiles depend on the active theme and the player's settings, so their key
   // carries the palette version; a phosphor/brightness change re-renders them.
+  // Filter-band phosphor also depends on horizontal screen position. Cache by
+  // band, not raw x, so the atlas stays small.
   const key = role === 'ui'
-    ? JSON.stringify(['ui', paletteKey(), cls || '', glyph])
+    ? JSON.stringify(['ui', paletteKey(), uiBandKey(x, cols), cls || '', glyph])
     : JSON.stringify([role, cls || '', glyph]);
+
   let t = tiles.get(key);
-  if (!t) { t = renderTile(glyph, cls || '', role); tiles.set(key, t); }
+  if (!t) {
+    t = renderTile(glyph, cls || '', role, x, cols);
+    tiles.set(key, t);
+  }
+
   return t;
 }
 

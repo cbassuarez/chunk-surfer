@@ -28,23 +28,24 @@ void main(){
   vec4 texel=uUseTex>.5?texture(uTex,vUv):vec4(1.0);
   if(uUsePortrait>.5){int slot=clamp(vPortrait,0,5);vec2 cell=vec2(float(slot%3),float(slot/3));vec2 local=clamp(vUv,.006,.994);texel=texture(uPortraitAtlas,(cell+local)/vec2(3.0,2.0));}
   if(texel.a*uBaseAlpha<uAlphaCut)discard;
-  vec2 fogUv=(vWorld.xz/uCellMeters-uFogOrigin+.5)/uFogSize;float memory=texture(uFogTex,fogUv).r;if(memory<.04&&vStructural==0)discard;if(vStructural!=0)memory=max(memory,.22);
+  float memory=1.0;
   vec3 n=normalize(vNormal),toEye=uEye-vWorld;float dist=length(toEye);vec3 ldir=normalize(toEye);
   n=dot(n,ldir)<0.0?-n:n;   // two-sided: imported meshes have arbitrary winding, light whichever face we see
   float lambert=max(dot(n,ldir),0.12);vec3 fromEye=normalize(vWorld-uEye);float axis=dot(fromEye,uForward);
   float cone=smoothstep(.86,.94,axis)*uLight;float falloff=1.0/(1.0+.10*dist+.045*dist*dist);
   float lamp=lambert*falloff*(.35+3.2*cone);float ambient=mix(.012,.035,uLight);
-  vec3 base=uBase*texel.rgb*uZoneTint[clamp(vZone,0,9)];vec3 col=base*(ambient+lamp)*mix(.25,1.0,memory);
+  vec3 base=uBase*texel.rgb*uZoneTint[clamp(vZone,0,9)];vec3 col=base*(ambient+lamp);
   col=col/(1.0+col*.30);o=vec4(col,1.0);
 }`;
 
 let gl=null,program=null,pack=null,instances=[],portraitAtlas=null;
 let colorTex=null,depthTex=null,fbo=null,width=0,height=0;
 const NEAR=.05,FAR=90;
+const uniformCache=new Map();
 
 function shader(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(`prop shader: ${gl.getShaderInfoLog(s)}`);return s;}
 function makeProgram(){const p=gl.createProgram();gl.attachShader(p,shader(gl.VERTEX_SHADER,VERT));gl.attachShader(p,shader(gl.FRAGMENT_SHADER,FRAG));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(`prop link: ${gl.getProgramInfoLog(p)}`);return p;}
-const U=(n)=>gl.getUniformLocation(program,n);
+const U=(n)=>{if(!uniformCache.has(n))uniformCache.set(n,gl.getUniformLocation(program,n));return uniformCache.get(n);};
 
 export function props3dInit(context){gl=context;program=makeProgram();}
 export function loadPortraitAtlas(url){return new Promise((resolve,reject)=>{if(!gl){reject(new Error('props3dInit first'));return;}const img=new Image();img.onload=()=>{const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);gl.texImage2D(gl.TEXTURE_2D,0,gl.SRGB8_ALPHA8,gl.RGBA,gl.UNSIGNED_BYTE,img);gl.generateMipmap(gl.TEXTURE_2D);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);portraitAtlas=t;resolve(t);};img.onerror=reject;img.src=url.href||String(url);});}
@@ -81,7 +82,7 @@ async function makeTexture(json,bin,textureIndex){
   const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,bmp);gl.generateMipmap(gl.TEXTURE_2D);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);return t;
 }
 
-export async function loadPropPack(url){
+async function parsePropPack(url){
   if(!gl)throw new Error('props3dInit first');const res=await fetch(url);if(!res.ok)throw new Error(`prop pack ${res.status}`);const ab=await res.arrayBuffer(),dv=new DataView(ab);if(dv.getUint32(0,true)!==0x46546c67||dv.getUint32(4,true)!==2)throw new Error('prop pack is not GLB 2');
   let at=12,json=null,bin=null;while(at<ab.byteLength){const len=dv.getUint32(at,true),type=dv.getUint32(at+4,true),bytes=new Uint8Array(ab,at+8,len);if(type===0x4e4f534a)json=JSON.parse(new TextDecoder().decode(bytes));else if(type===0x004e4942)bin=bytes;at+=8+len;}
   if(!json||!bin)throw new Error('prop pack missing JSON/BIN');
@@ -102,12 +103,28 @@ export async function loadPropPack(url){
     }
     catalog.set(entry.name,entry);
   }
-  gl.bindVertexArray(null);pack={json,catalog};return pack;
+  gl.bindVertexArray(null);return{json,catalog};
+}
+
+export async function loadPropPack(url){pack=await parsePropPack(url);return pack;}
+
+// Small authored hero packs can be loaded alongside the conservative shared
+// prop pack without rebuilding or flattening their embedded textures. Catalog
+// names remain the runtime contract, so instances do not care which GLB owns a
+// mesh.
+export async function addPropPack(url){
+  const extra=await parsePropPack(url);
+  if(!pack){pack=extra;return pack;}
+  for(const[name,entry]of extra.catalog)pack.catalog.set(name,entry);
+  return pack;
 }
 
 function identity(){return new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);}
 function multiply(a,b){const o=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++)o[c*4+r]=a[r]*b[c*4]+a[4+r]*b[c*4+1]+a[8+r]*b[c*4+2]+a[12+r]*b[c*4+3];return o;}
-function modelMatrix(i,base=identity()){const s=i.scale||1,c=Math.cos(i.yaw||0),n=Math.sin(i.yaw||0);return multiply(new Float32Array([c*s,0,n*s,0,0,s,0,0,-n*s,0,c*s,0,i.x,i.y||0,i.z,1]),base);}
+function modelMatrix(i,base=identity()){
+  const s=i.scale||1,sx=(i.scaleX??1)*s,sy=(i.scaleY??1)*s,sz=(i.scaleZ??1)*s,c=Math.cos(i.yaw||0),n=Math.sin(i.yaw||0);
+  return multiply(new Float32Array([c*sx,0,n*sx,0,0,sy,0,0,-n*sz,0,c*sz,0,i.x,i.y||0,i.z,1]),base);
+}
 function perspective(aspect){const f=1/.95,n=NEAR,fa=FAR;return new Float32Array([f/aspect,0,0,0,0,f,0,0,0,0,(fa+n)/(n-fa),-1,0,0,(2*fa*n)/(n-fa),0]);}
 function view(eye,yaw){const f=[Math.sin(yaw),0,-Math.cos(yaw)],z=[-f[0],0,-f[2]],x=[z[2],0,-z[0]],y=[0,1,0];return new Float32Array([x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-x[0]*eye[0]-x[2]*eye[2],-eye[1],-z[0]*eye[0]-z[2]*eye[2],1]);}
 

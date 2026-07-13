@@ -59,15 +59,27 @@ export const TAPE_GAIN = queryGain('tapegain', 0.46);
 
 let ctx = null;
 let bus = null;
+let audioBuses = { dialog: null, sfx: null, music: null, menu: null };
 const buffers = new Map();
 const pending = new Map();
 
 let soundtrack = null; // { src, gain, startedAt, stopping }
 let typing = null;     // { gain, hp, lp, active, timer, targetGain }
+let menuHiss = null;
 
-export function storyAudioInit(audioCtx, destination) {
+export function storyAudioInit(audioCtx, destination, buses = {}) {
   ctx = audioCtx;
   bus = destination;
+  audioBuses = {
+    dialog: buses.dialog || destination,
+    sfx: buses.sfx || destination,
+    music: buses.music || destination,
+    menu: buses.menu || buses.sfx || destination,
+  };
+}
+
+function outBus(name = 'sfx') {
+  return audioBuses[name] || bus;
 }
 
 export async function preload(url) {
@@ -120,7 +132,7 @@ export function startSoundtrack({ gain = SOUNDTRACK_GAIN * musicScale, fade = 2.
   const g = ctx.createGain();
   g.gain.setValueAtTime(0, now);
   src.connect(g);
-  g.connect(bus);
+    g.connect(outBus('music'));
   try { src.start(now); } catch (_) { return null; }
   soundtrack = { src, gain: g, startedAt: now, stopping: false };
   setGain(g, gain, fade);
@@ -158,7 +170,7 @@ function ensureTyping() {
   gain.gain.setValueAtTime(0, ctx.currentTime);
   hp.connect(lp);
   lp.connect(gain);
-  gain.connect(bus);
+    gain.connect(outBus('dialog'));
   typing = { gain, hp, lp, active: false, timer: null, targetGain: 0.034 };
   return typing;
 }
@@ -296,8 +308,8 @@ export function startBoothTone({ gain = BOOTH_GAIN, fade = 1.6 } = {}) {
   const now = ctx.currentTime;
   const out = ctx.createGain();
   out.gain.setValueAtTime(1, now);
-  out.connect(bus);
-
+    out.connect(outBus('sfx'));
+    
   const nodes = [out];
   const room = loopFile(STORY_AUDIO.booth, gain, fade, out);
   const rain = loopFile(STORY_AUDIO.rain, RAIN_GAIN, fade, out);
@@ -361,7 +373,7 @@ export function startTapeHiss({ gain = TAPE_GAIN, fade = 0.5 } = {}) {
   const src = ctx.createBufferSource();
   src.buffer = buf; src.loop = true;
   const g = ctx.createGain(); g.gain.setValueAtTime(0, now);
-  src.connect(g); g.connect(bus);
+    src.connect(g); g.connect(outBus('sfx'));
   try { src.start(now); } catch (_) { return; }
   tape = { nodes: [src, g], gain: g };
   setGain(g, gain, fade);
@@ -388,23 +400,42 @@ export function stopTapeHiss({ fade = 0.6 } = {}) {
 
 // The two clicks of choosing. Not cues: they are UI, and UI should be felt
 // rather than heard.
-export function click({ freq = 1800, gain = 0.05, dur = 0.018 } = {}) {
+export function click({ freq = 1800, gain = 0.05, dur = 0.018, destination = 'sfx' } = {}) {
   if (!ctx || !bus) return;
   const now = ctx.currentTime;
   const o = ctx.createOscillator(); o.type = 'square'; o.frequency.value = freq;
   const g = ctx.createGain();
   g.gain.setValueAtTime(gain, now);
   g.gain.exponentialRampToValueAtTime(0.0005, now + dur);
-  o.connect(g); g.connect(bus);
+    o.connect(g); g.connect(outBus(destination));
   o.start(now); o.stop(now + dur + 0.01);
   o.onended = () => { try { o.disconnect(); g.disconnect(); } catch (_) {} };
 }
 export const tick = () => click({ freq: 2100, gain: 0.035, dur: 0.012 });
 export const confirm = () => { click({ freq: 900, gain: 0.055, dur: 0.03 }); click({ freq: 1400, gain: 0.03, dur: 0.02 }); };
 
+// The menus are a tape machine at idle, not a silent overlay. A filtered noise
+// loop supplies the constant transport hiss; selection and confirmation are
+// short, mechanical head/relay sounds rather than arcade bleeps.
+export function startMenuHiss(){
+  if(!ctx||!bus||menuHiss)return;
+  const length=Math.max(1,Math.floor(ctx.sampleRate*1.5)),buf=ctx.createBuffer(1,length,ctx.sampleRate),d=buf.getChannelData(0);
+  let brown=0;for(let i=0;i<length;i++){brown=(brown*.985)+(Math.random()*2-1)*.06;d[i]=(Math.random()*2-1)*.34+brown*.22;}
+  const src=ctx.createBufferSource(),hp=ctx.createBiquadFilter(),lp=ctx.createBiquadFilter(),g=ctx.createGain();
+  src.buffer=buf;src.loop=true;hp.type='highpass';hp.frequency.value=900;lp.type='lowpass';lp.frequency.value=7800;g.gain.value=.018;
+    src.connect(hp);hp.connect(lp);lp.connect(g);g.connect(outBus('menu'));src.start();menuHiss={src,hp,lp,g};
+}
+export function stopMenuHiss(){
+  if(!menuHiss)return;const m=menuHiss;menuHiss=null;setGain(m.g,0,.12);
+  globalThis.setTimeout?.(()=>{try{m.src.stop();}catch(_){}for(const n of [m.src,m.hp,m.lp,m.g])try{n.disconnect();}catch(_){}},180);
+}
+export function menuMove(){click({freq:640,gain:.04,dur:.022,destination:'menu'});click({freq:1120,gain:.018,dur:.011,destination:'menu'});}
+export function menuConfirm(){click({freq:380,gain:.055,dur:.045,destination:'menu'});globalThis.setTimeout?.(()=>click({freq:760,gain:.025,dur:.025,destination:'menu'}),32);}
+
 export function stopAll() {
   stopTyping({ fade: 0.04 });
   stopTapeHiss({ fade: 0.2 });
   stopBoothTone({ fade: 0.4 });
   fadeSoundtrack({ fade: 0.5 });
+  stopMenuHiss();
 }

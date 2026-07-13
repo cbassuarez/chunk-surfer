@@ -32,27 +32,33 @@ export const WORK_ORDER = {
   title: 'Work Order 4417-C',
   byline: 'ARCHIVAL CAPTURE — issued to the contractor named below',
   decay: 0,
-  dismiss: '[ esc — fold it and put it in your pocket ]',
-  body: [
+    dismiss: '[ esc — fold it and put it in your pocket ]',
+    paper: {
+      marks: [
+        { page: 2, type: 'underline', x: 0.145, y: 0.505, w: 0.43, alpha: 0.50 },
+        { page: 2, type: 'note', x: 0.705, y: 0.555, text: '5?', rotate: -7, alpha: 0.58 },
+      ],
+    },
+    body: [
     { raw: 'SITE      Ellery Conservatory of Music (condemned)' },
     { raw: 'WINDOW    one night. Demolition begins 06:00 Thursday.' },
     { raw: 'DELIVER   five room tones. Sixty seconds each, unbroken.' },
     '',
     { rule: true },
     '',
-    'The building is powered down at the street. Take a light.',
+    'The building has already been powered down. Bring a light.',
     '',
     'We need the rooms as they are. One clean minute of each, with nothing in it. No handling noise, no clothing, no breath. If you can hear yourself on the take, the take is not the room, and we will not accept it.',
     '',
-    'Record: studio B3, the natatorium, the concert hall, the practice wing, and the chapel. Work in whatever order the building permits. It has been altered since the drawings were filed and we do not have current drawings.',
+    'Record: studio B3, the natatorium, the concert hall, the practice wing, and the chapel. Work in whatever order the building permits. It has been altered since the drawings were filed and we do not have current drawings, our apologies.',
     '',
-    'You carry the standard keyring. Where it does not open a door, there will be another way, because there always is in a building of this age. Do not force anything. Everything here is due to come down regardless, and we are not paying for a wall.',
+    'You carry the standard keyring. Where it does not open a door, try another route; we concede these buildings are rather old, you may be able to find other pathways where a key does not open a particular door. Do not force anything. Everything here is due to come down regardless, and we are most definitely not paying for a wall.',
     '',
     'Check in on the hour by radio.',
     '',
     { rule: true },
     '',
-    'The prior contractor delivered four accepted room tones. The packet was settled for four. The account remains open because five boxes were commissioned and five boxes close it.',
+    'The prior contractor delivered four accepted room tones. The packet was settled for four. The account remains open. We want 5 clean recordings, and it seems the fifth was undelivered.',
     '',
     'Do not provide supplemental material. Do not annotate the takes. Do not describe the building. Acceptance is based on clean minutes received, not on conditions encountered.',
     '',
@@ -102,44 +108,164 @@ export const COLD_OPEN_DIALOGUE = {
     speaker: 'SERVICE BOOTH · 21:38',
     lines: [
       { who: 'direction', text: 'A lit booth at the vehicle gate. Coffee, key hooks, a stack of forms, a small television with the sound off.' },
-      { who: 'guard', text: 'Ellery? Christ. They actually sent someone tonight.' },
-      { who: 'me', text: "Sound. There should be a work order. Four four one seven?" },
-      { who: 'guard', text: 'Came through about four.' },
-      { who: 'direction', text: "He finds a pen. It doesn't work. He puts it back in the pot with the others.", cue: 'pens' },
-      { who: 'guard', text: 'My wife buys these. Twelve in a pack, and not one of them.' },
-      { who: 'direction', text: 'Rain on the roof of the booth, and on the skips out in the yard.' },
+      { who: 'direction', text: 'There is a little perch by the booth window covered by a small roof; you stand on it so as to keep from the rain.' },
+      { who: 'direction', text: 'Uncomfortable to say the least.' },
+      { who: 'guard', text: 'You here for the Ellery gig? Christ. They actually sent someone tonight.' },
+      { who: 'me', text: "Yeah, the sound job. Should be a work order there for me? Requisition number 4-4-1-7." },
+      { who: 'guard', text: 'Came through around five today.' },
+      { who: 'direction', text: "He finds a pen... it doesn't work. He puts it back in the pot with the others.", cue: 'pens' },
+      { who: 'guard', text: 'My wife buys these. Twelve in a pack, and not one of them works.' },
+      { who: 'direction', text: 'Rain bounces off the roof of the booth, and on the skips out in the yard; you keep closer to the window.' },
       { who: 'guard', text: "Five rooms, it says. That's a lot of rooms." },
-      { who: 'me', text: "It's a minute each. It's the waiting about that takes the night." },
+      { who: 'me', text: "It's only a minute each. Really it's the waiting about that takes the night." },
       { who: 'guard', text: 'You brought a torch? Nobody brings a torch.' },
-      { who: 'me', text: 'I brought a torch.' },
+      { who: 'me', text: 'Not my first gig.' },
+      { who: 'guard', text: "There's coffee if you want it. I made too much. It's not good but it's hot, and it's a long night you have ahead." },
     ],
     choices: [
       {
+        knowledgeId: 'coldopen.route.order',
         text: 'look at the work order again',
         goto: 'order',
         set: ['prologue.knowledge.self'],
         clear: ['prologue.knowledge.guard', 'prologue.knowledge.tape'],
       },
       {
+        knowledgeId: 'coldopen.route.guard',
         text: 'ask him about the building',
         goto: 'guard',
         set: ['prologue.knowledge.guard'],
         clear: ['prologue.knowledge.self', 'prologue.knowledge.tape'],
       },
       {
+        knowledgeId: 'coldopen.route.tape',
         text: "put the headphones on — the client sent the last man's takes",
         goto: 'tape',
         set: ['prologue.knowledge.tape'],
         clear: ['prologue.knowledge.self', 'prologue.knowledge.guard'],
       },
+      // Orthogonal to the three knowledge trunks and one-shot (greyed once taken).
+      // The whole ending hinges on it, and it is offered like nothing at all.
+      { knowledgeId: 'coldopen.route.coffee', text: 'take the coffee he offered.', goto: 'coffee', set: ['has.coffee'] },
+      // Also orthogonal, also load-bearing: the only light in the game, and the
+      // only place its batteries are a subject before they are a decision.
+      { knowledgeId: 'coldopen.route.torch', text: 'the torch. check the torch.', goto: 'torch' },
     ],
+  },
+
+  // Replay-only administrative compression. This skips only the already-known
+  // greeting and preserves every branch, side effect, and route-bearing choice.
+  // It is authored rather than simulated so no stateful choice is silently made.
+  'replay-condensed': {
+    speaker: 'SERVICE BOOTH · RETURN CHECK-IN',
+    lines: [
+      { id: 'coldopen.condensed.01', who: 'direction', text: 'The same booth. The same rain. Work order 4417-C is already on the glass.' },
+      { id: 'coldopen.condensed.02', who: 'guard', text: 'You know the form. Five rooms, one clean minute each. Anything you need before I turn you loose?' },
+    ],
+    choices: [
+      {
+        id: 'coldopen.condensed.order', knowledgeId: 'coldopen.route.order',
+        text: 'review the work order', goto: 'order',
+        set: ['prologue.knowledge.self'],
+        clear: ['prologue.knowledge.guard', 'prologue.knowledge.tape'],
+      },
+      {
+        id: 'coldopen.condensed.guard', knowledgeId: 'coldopen.route.guard',
+        text: 'ask about the building', goto: 'guard',
+        set: ['prologue.knowledge.guard'],
+        clear: ['prologue.knowledge.self', 'prologue.knowledge.tape'],
+      },
+      {
+        id: 'coldopen.condensed.tape', knowledgeId: 'coldopen.route.tape',
+        text: "play the previous contractor's takes", goto: 'tape',
+        set: ['prologue.knowledge.tape'],
+        clear: ['prologue.knowledge.self', 'prologue.knowledge.guard'],
+      },
+      {
+        id: 'coldopen.condensed.coffee', knowledgeId: 'coldopen.route.coffee',
+        text: 'take the coffee he offered.', goto: 'coffee', set: ['has.coffee'],
+      },
+      {
+        id: 'coldopen.condensed.torch', knowledgeId: 'coldopen.route.torch',
+        text: 'check the torch', goto: 'torch',
+      },
+      {
+        id: 'coldopen.condensed.threshold',
+        text: 'finish check-in and enter the building', goto: 'threshold',
+      },
+    ],
+  },
+
+  // ── the torch ─────────────────────────────────────────────────────────────
+  // Our protagonist is going to spend the night deciding, over and over, whether to be able to
+  // see. Every one of those decisions is cheaper if he has already said out loud,
+  // in a lit booth, in front of a witness, what light costs him.
+  torch: {
+    speaker: 'SERVICE BOOTH · 21:38',
+    lines: [
+      { who: 'direction', text: 'A standard Maglite three-cell torch, the anodising worn back to bare metal where a hand goes. You thumb it on against your palm and off again.' },
+      { who: 'you', text: "Working. Cells are good. I'm pretty sure I remembered to push in fresh ones in earlier today." },
+      { who: 'guard', text: 'Most of them turn up with a phone. A phone! in there...' },
+    ],
+    choices: [
+      { text: 'how long will it last?', goto: 'torch.cells' },
+      { text: 'why you will not use it', goto: 'torch.dark' },
+      { text: 'did the last recordist have one?', goto: 'torch.him' },
+      { text: 'put the torch back in the bag', goto: 'start' },
+    ],
+  },
+  'torch.cells': {
+    speaker: 'SERVICE BOOTH · 21:38',
+    lines: [
+      { who: 'you', text: "Alkalines. I've got a good, continuous four or five hours of light on standby, but I don't want to get anywhere near an empty charge." },
+      { who: 'guard', text: "I'd have brought spares." },
+      { who: 'me', text: "Everyone should bring spares... nobody really ever does though." },
+    ],
+    goto: 'torch',
+  },
+  'torch.dark': {
+    speaker: 'SERVICE BOOTH · 21:38',
+    lines: [
+      { who: 'guard', text: "You'll want it on in there. It's black as anything past the foyer." },
+      { who: 'me', text: 'It goes off when the tape rolls.' },
+      { who: 'guard', text: 'Off? Why off? A torch makes no noise, it–' },
+      { who: 'me', text: 'It makes a noise like a hand moving or a filament buzzing. It clicks. I mean, you cannot hold still with a torch on. You sweep it, and the sweep is on the tape, in your shoulder, in your coat, on your breath.' },
+      { who: 'guard', text: '...right.' },
+      { who: 'me', text: "I work in the dark. It's part the job. It's really most of the job." },
+    ],
+    goto: 'torch',
+  },
+  'torch.him': {
+    speaker: 'SERVICE BOOTH · 21:38',
+    lines: [
+      { who: 'guard', text: 'The last one? Had a head torch. Little red one, for the night vision, he said.' },
+      { who: 'me', text: 'That is a good bit of kit yeah.' },
+      { who: 'guard', text: 'He came out the first two nights. Third night he went in at ten and I did my rounds and the gate was shut and his van was still there Thursday.' },
+      { who: 'direction', text: "The rain gets briefly heavier and then lifts. It comes in patches, it's soothing white noise waxing and waning as the night slowly drags on." },
+      { who: 'guard', text: 'Van was gone come Friday though. Who knows.' },
+      { who: 'you', text: 'Who knows indeed... but why are you telling me this right before I head inside?' },
+    ],
+    goto: 'torch',
+  },
+
+  // Take it or leave it. A paper cup from a stranger in a hi-vis jacket, and the
+  // game will not tell you for hours whether that was a mistake.
+  coffee: {
+    speaker: 'SERVICE BOOTH · 21:38',
+    lines: [
+      { who: 'direction', text: 'He fills a second cup without asking how you take it and slides it across the form.' },
+      { who: 'guard', text: 'There. You look like you need it more than I do.' },
+      { who: 'you', text: 'Thanks?' },
+    ],
+    goto: 'start',
   },
 
   // ── trunk one: the paperwork ──────────────────────────────────────────────
   order: {
     speaker: 'THE WORK ORDER',
     lines: [
-      { who: 'direction', text: 'One page. A letterhead, a list, and a signature photocopied enough times to be a smudge.' },
+      { who: 'direction', text: "A letterhead, a list, and a signature. That signature block has been photocopied so many times it barely passes for a smudge." },
+      { who: 'direction', text: "You don't argue with the pay though." },
       { who: 'you', text: "Four hundred, half on acceptance. That's fine. That's more than fine." },
     ],
     choices: [
@@ -155,16 +281,15 @@ export const COLD_OPEN_DIALOGUE = {
     speaker: 'THE WORK ORDER',
     lines: [
       { who: 'you', text: "Four hundred for a night's work in a building with no power in it." },
-      { who: 'you', text: "It's about double. I noticed that at four o'clock and I said yes at five past." },
+      { who: 'you', text: "It's about double what I usually get. I saw the dispatch call come up on my job board at four and I said yes almost as soon as I saw it." },
     ],
     goto: 'order',
   },
   'order.words': {
     speaker: 'THE WORK ORDER',
     lines: [
-      { who: 'you', text: '"The room as it is." "One clean minute." "If you can hear yourself on the take, the take is not the room."' },
-      { who: 'you', text: "That's my own language, back at me." },
-      { who: 'you', text: "Somebody there has talked to a recordist before. Which is fine. It only means they know what they are asking for." },
+      { who: 'you', text: '"The room as it is." "One clean minute." "If you can hear yourself on the take, you must start again."' },
+      { who: 'you', text: "That's fair." },
     ],
     goto: 'order',
   },
@@ -180,9 +305,9 @@ export const COLD_OPEN_DIALOGUE = {
   'order.deadline': {
     speaker: 'THE WORK ORDER',
     lines: [
-      { who: 'you', text: 'Thursday, six in the morning. After that there is no building to be in.' },
+      { who: 'you', text: 'Thursday, six in the morning. After that there is no building to be in, only dust and the land rights to a new development project.' },
       { who: 'you', text: "So there's no coming back on Friday to pick up the ones I missed." },
-      { who: 'you', text: "Five, or four, or none. Tonight is the whole job." },
+      { who: 'you', text: "Five or none. Tonight is the whole job." },
     ],
     goto: 'order',
   },
@@ -190,7 +315,7 @@ export const COLD_OPEN_DIALOGUE = {
     speaker: 'THE WORK ORDER',
     lines: [
       { who: 'you', text: '"The prior contractor delivered four accepted room tones. The packet was settled for four."' },
-      { who: 'you', text: 'Settled for four. So he got paid, and he stopped.' },
+      { who: 'you', text: "Settled for four. So they got paid, and they stopped. Maybe they just couldn't bare the dark? Happens all the time." },
     ],
     choices: [
       { text: 'read that sentence again', goto: 'order.last.paid' },
@@ -200,11 +325,9 @@ export const COLD_OPEN_DIALOGUE = {
   'order.last.paid': {
     speaker: 'THE WORK ORDER',
     lines: [
-      { who: 'you', text: '"The account remains open because five boxes were commissioned and five boxes close it."' },
-      { who: 'you', text: 'Nobody settles four fifths of anything. Not once, not ever, not without a phone call first.' },
-      { who: 'you', text: 'They paid a man for four rooms and then wrote to me about boxes.' },
-      { who: 'you', text: "That is a sentence by somebody who did not want to write a longer one." },
-      { who: 'direction', text: 'And they sent it to you, in writing, before you said yes.' },
+      { who: 'you', text: "The account remains open. We want 5 clean recordings, and it seems the fifth was undelivered." },
+      { who: 'you', text: 'Nobody settles for 80% of work for anything. Not once, not ever, not without a phone call first.' },
+      { who: 'direction', text: 'And they sent it to you, in writing, before you said yes. First class mail; by the looks of the stationery it was waiting to be mailed out.' },
     ],
     goto: 'order',
   },
@@ -213,14 +336,14 @@ export const COLD_OPEN_DIALOGUE = {
   guard: {
     speaker: 'NIGHT GUARD',
     lines: [
-      { who: 'me', text: "You know the building at all?" },
+      { who: 'me', text: "You know anything about the building at all?" },
       { who: 'guard', text: 'Keys and forms. Past the door is nothing to do with me.' },
-      { who: 'direction', text: 'He turns the television down. It was already off.' },
+      { who: 'direction', text: 'He turns the television down, but the sound was already off.' },
     ],
     choices: [
       { text: 'have you ever been inside?', goto: 'guard.inside' },
       { text: 'was there someone here before me?', goto: 'guard.last' },
-      { text: "what was his name?", goto: 'guard.name' },
+      { text: "what was the other recordist's name?", goto: 'guard.name' },
       { text: "who's on after ten?", goto: 'guard.shift' },
       { text: 'anything I should know?', goto: 'guard.know' },
       { text: 'take the keys', goto: 'threshold' },
@@ -233,7 +356,7 @@ export const COLD_OPEN_DIALOGUE = {
       { who: 'guard', text: 'No.' },
       { who: 'me', text: 'Not allowed?' },
       { who: 'guard', text: 'Not interested.' },
-      { who: 'direction', text: 'He says it the way people say they do not like olives.' },
+      { who: 'direction', text: 'He says it the way people say they do not like anchovies.' },
     ],
     choices: [
       { text: 'push him on it', goto: 'guard.inside.why' },
@@ -245,41 +368,41 @@ export const COLD_OPEN_DIALOGUE = {
     lines: [
       { who: 'me', text: 'Eleven years on the gate and you have never once had a look?' },
       { who: 'guard', text: 'Not interested.' },
-      { who: 'direction', text: 'He says it exactly the same way. Same three words, same speed. It is not a wall. There is nothing behind it.' },
-      { who: 'guard', text: "It's a building, mate. I've got a chair." },
+      { who: 'direction', text: "He says it exactly the same way. Same three words, same speed. It's not quite a façade." },
+      { who: 'guard', text: "It's a building, mate. I've got me chair here, and me 'telly. No need to go inside, they had other people for that." },
     ],
     goto: 'guard',
   },
   'guard.last': {
     speaker: 'NIGHT GUARD',
     lines: [
-      { who: 'me', text: 'There was a bloke before me. Few weeks back.' },
+      { who: 'me', text: 'There was someone before me. Few weeks back.' },
       { who: 'guard', text: 'Yeah. Nice enough. Kept his own hours.' },
       { who: 'me', text: 'Did he come out?' },
       { who: 'direction', text: 'The guard turns the form around and taps a box near the bottom.' },
       { who: 'guard', text: 'Initial there as well. They want it twice now.' },
       { who: 'me', text: '...' },
-      { who: 'guard', text: 'My shift ends at ten. I was home.' },
+      { who: 'guard', text: 'My shift ended at ten. I was home...' },
     ],
     goto: 'guard',
   },
   'guard.name': {
     speaker: 'NIGHT GUARD',
     lines: [
-      { who: 'me', text: "What was he called, the last one?" },
+      { who: 'me', text: "What was he called, the last bloke?" },
       { who: 'guard', text: 'Hang on.' },
       { who: 'direction', text: 'He turns the book around and runs a finger up the column, past tonight, past the rain, into September.' },
       { who: 'guard', text: 'There. Received, that one. And the box next to it is empty.' },
-      { who: 'direction', text: 'It is the same book you are about to sign.' },
-      { who: 'guard', text: "Can't read his writing. Nobody can read anybody's writing." },
+      { who: 'direction', text: 'It is the same ledger you are about to sign.' },
+      { who: 'guard', text: "Can't read his writing. Nobody can read anybody's writing anymore." },
     ],
     goto: 'guard',
   },
   'guard.shift': {
     speaker: 'NIGHT GUARD',
     lines: [
-      { who: 'me', text: "Who's on the gate after you?" },
-      { who: 'guard', text: "Nobody. Site's condemned. They stopped paying for the night after they stopped paying for the power." },
+      { who: 'me', text: "So who's on the gate after you?" },
+      { who: 'guard', text: "Nobody. Site's condemned. They stopped paying for the night after they stopped paying for the power. Tonight is my last night on the job." },
       { who: 'me', text: 'So I ring the bell at three in the morning and.' },
       { who: 'guard', text: 'And nothing. Gate code is on your sheet.' },
       { who: 'guard', text: "It's a demolition, not a bank." },
@@ -289,7 +412,7 @@ export const COLD_OPEN_DIALOGUE = {
   'guard.know': {
     speaker: 'NIGHT GUARD',
     lines: [
-      { who: 'guard', text: "Light's gone in the basement stair. Which you knew, because you brought a torch." },
+      { who: 'guard', text: "Light's gone in the basement stair. Which you knew by the looks of it, seeing as you brought yer torch." },
       { who: 'guard', text: 'And the radio. If it goes funny, do not shake it.' },
       { who: 'me', text: 'What happens if I shake it?' },
       { who: 'guard', text: 'Nothing. That is why I said do not.' },
@@ -303,10 +426,10 @@ export const COLD_OPEN_DIALOGUE = {
     speaker: 'REFERENCE FILES · 04 (NO SLATE)',
     tape: true,
     lines: [
-      { who: 'direction', text: 'Four files on the card. Three are slated and clean. The fourth begins already running.' },
-      { who: 'recordist', text: 'Take four.' },
-      { who: 'direction', text: 'Forty seconds of a room.' },
-      { who: 'recordist', text: "That's clean. That's four." },
+      { who: 'direction', text: 'Four files on the card. Three are slated and clean: the previous recordist clearly announced the take number and room for each take. Take three is already running.' },
+      { who: 'recordist', text: 'Take three.' },
+      { who: 'direction', text: 'Sixty clean seconds of bare room noise.' },
+      { who: 'recordist', text: "That's clean. That's three." },
       { who: 'direction', text: 'A chair. He stands up.' },
     ],
     choices: [
@@ -320,9 +443,9 @@ export const COLD_OPEN_DIALOGUE = {
     speaker: 'REFERENCE FILES · 04 (NO SLATE)',
     tape: true,
     lines: [
-      { who: 'you', text: 'Floor sits at fifty-eight. No hum, no traffic, no handling.' },
+      { who: 'you', text: 'Floor sits at fifty-eight decibels. No hum, no traffic, no weird handling.' },
       { who: 'you', text: "It's a beautiful take. I would have sent it." },
-      { who: 'you', text: 'He was better than me.' },
+      { who: 'you', text: 'He was better than me. I need to make these recordings count.' },
     ],
     goto: 'tape',
   },
@@ -330,8 +453,9 @@ export const COLD_OPEN_DIALOGUE = {
     speaker: 'REFERENCE FILES · 04 (NO SLATE)',
     tape: true,
     lines: [
-      { who: 'you', text: 'You slate everything. Room, take, date. You say it out loud before you roll.' },
+      { who: 'you', text: 'You slate everything. Room, take, date. You say it out loud after you roll the take.' },
       { who: 'you', text: "You do it so that in eight months, when the file is a number, somebody knows what they're listening to." },
+      { who: 'direction', text: 'You flip the tape over to the reverse side. Take four, unslated.' },
       { who: 'you', text: 'He slated the other three.' },
       { who: 'you', text: 'So either he stopped bothering, or he did not start this one.' },
     ],
@@ -343,14 +467,23 @@ export const COLD_OPEN_DIALOGUE = {
     lines: [
       { who: 'recordist', text: "One more and I'm out of here." },
       { who: 'direction', text: 'The file does not end. It goes on not ending for a while.' },
-      { who: 'surfer', text: 'Who did you lose.' },
-      { who: 'recordist', text: '...say again?' },
-      { who: 'surfer', text: 'It is how this goes. You lost her. I am her. You come in and you look for her.' },
+      { who: 'surfer', text: 'Who did you lose?' },
+      { who: 'recordist', text: 'the fuck? ...say again?' },
+      { who: 'surfer', text: "It is how this goes. You lost her. You lost me. Now come in and look for her." },
       { who: 'recordist', text: "I haven't lost anybody." },
       { who: 'surfer', text: 'Everybody has lost somebody.' },
-      { who: 'recordist', text: 'No.' },
+      { who: 'recordist', text: "Not m-." },
+      { who: 'surfer', text: "You did everything you could to keep from losing her. It drove her away, didn't it?." },
+      { who: 'recordist', text: 'No! Why do you know this?! Who are you?' },
       { who: 'direction', text: 'Thirty seconds of the room, at the same level as before.' },
-      { who: 'surfer', text: 'Then bring me one.' },
+      { who: 'surfer', text: 'Come closer.' },
+      { who: 'direction', text: 'Vague nothings you cannot make out.' },
+      { who: 'surfer', text: 'Closer. Bring forth to me your body.' },
+      { who: 'direction', text: '.' },
+      { who: 'direction', text: '..' },
+      { who: 'direction', text: '...' },
+      { who: 'surfer', text: 'You will bring me another, and will lose them together.' },
+
     ],
     choices: [
       { text: 'wind it back', goto: 'tape.run.again' },
@@ -364,10 +497,8 @@ export const COLD_OPEN_DIALOGUE = {
     lines: [
       { who: 'direction', text: 'Back forty seconds. The room, the chair, the man standing up.', cue: 'rewind' },
       { who: 'surfer', text: 'Who did you lose.' },
-      { who: 'you', text: 'Same words. Same level. Minus forty-one, both times.' },
-      { who: 'direction', text: 'A voice in a room does not arrive at the same level twice. A voice in a room is never the same twice.' },
-      { who: 'you', text: "That is not a person in a room. That is on the file." },
-      { who: 'you', text: 'Which is worse, and I have not worked out why yet.' },
+      { who: 'you', text: 'Same words. Same level. Minus forty-one decibels, both times.' },
+      { who: 'direction', text: "You have a feeling you're going to need to check your recordings extra carefully tonight." },
     ],
     goto: 'tape.run',
   },
@@ -375,8 +506,8 @@ export const COLD_OPEN_DIALOGUE = {
     speaker: 'REFERENCE FILES · 04 (NO SLATE)',
     tape: true,
     lines: [
-      { who: 'direction', text: 'The rest of the file is a room. Nine minutes of it. He does not speak again, and neither does anything else.' },
-      { who: 'you', text: 'That is the best room tone I have ever heard.' },
+      { who: 'direction', text: 'The rest of the file is pure, clean ambient room sounds. Nine minutes of it. He does not speak again, and neither does anything else.' },
+      { who: 'you', text: 'That is the best goddamned room tone I have ever heard.' },
       { who: 'direction', text: 'The file ends. It does not end on anything.' },
     ],
     goto: 'threshold',
@@ -388,12 +519,13 @@ export const COLD_OPEN_DIALOGUE = {
     lines: [
       { who: 'direction', text: 'He turns the book around. Two boxes on the line with your name in it.' },
       { who: 'guard', text: 'Sign where it says received.' },
-      { who: 'direction', text: 'You sign the first box. The second one says returned, and it is the width of a fingernail, and it is empty all the way up the page.', cue: 'signature' },
+      { who: 'direction', text: 'You sign the first box. The second one says returned, and it is about the width of a fingernail; it is empty all the way up the page.', cue: 'signature' },
       { who: 'guard', text: "Don't sign the other one. That's for when you come back out." },
-      { who: 'direction', text: 'He slides the keys under the glass, and a radio, and the form back.', cue: 'slides' },
+      { who: 'direction', text: 'In one single gesture (likely the toughest amount of labor for him this evening), he slides the keys under the glass along with a radio in one hand, and takes form back with the other.', cue: 'slides' },
       { who: 'me', text: 'Channel two?' },
-      { who: 'guard', text: 'Channel two. They said on the hour.' },
-      { who: 'guard', text: "Grey door, end of the yard. I'll be here till ten." },
+      { who: 'guard', text: 'Aye. Check in on the hour.' },
+      { who: 'guard', text: "Grey door, end of the yard is the service entrance. I'll be here till ten." },
+      { who: 'guard', text: "If the service leaf sticks, don't shoulder it. Main doors are through the front foyer, past the box office. Longer walk, same yard." },
       { who: 'direction', text: 'He is already looking at the television.' },
     ],
   },
@@ -421,18 +553,20 @@ export const COLD_OPEN_DIALOGUE = {
 // uses it later, in the playback, under the noise floor.
 
 const PUSH_BAR = [
-  { who: 'direction', text: 'You reach back for the push bar. You always do, the way you check a door you have just come through.' },
-  { who: 'direction', text: 'Painted breeze block, cold, and a seam of mortar where your thumb expects steel.' },
-  { who: 'you', text: 'Hm.' },
-  { who: 'direction', text: 'You go along the wall with the flat of your hand. Two metres left. Two metres right.' },
-  { who: 'you', text: "It's a dark room and I came in eleven seconds ago and I have already lost a door." },
-  { who: 'you', text: 'Which is what happens in a dark room. It is the oldest thing that happens in a dark room.' },
-  { who: 'you', text: 'My pulse is up. That is the actual news here. Not the door. The pulse.' },
+  { who: 'direction', text: 'You reach back for the push bar instinctively.' },
+  { who: 'direction', text: 'Painted breeze block, cold, and a seam of mortar where your thumb expects a steel push bar.' },
+  { who: 'you', text: 'Hmmph.' },
+  { who: 'direction', text: 'You go along the wall with the flat of your hand. Two metres to the left, and back to the right.' },
+  { who: 'you', text: "Oh Christ oh fuck oh God I came in eleven seconds ago and I have already lost my exit, great great great great grea-" },
+  { who: 'direction', text: "Don't panic." },
+  { who: 'you', text: "Alright, let's take a breath." },
 ];
 
 const STEEL_YOURSELF = [
-  { who: 'you', text: "I'll find it on the way out, when I'm not standing here like this." },
-  { who: 'direction', text: 'Which is true. It is also exactly the reasoning that keeps a man inside a building.' },
+  { who: 'you', text: "I'll find it on the way out, when I'm not standing here like this. When I'm not in the middle of a room with my flashlight off." },
+  { who: 'direction', text: 'Which is true. It is also exactly the reasoning that keeps a man *inside* a building and not darting back home to the kind of cotidian safety only jaffa cakes and Mr. Whiskers can provide.' },
+  { who: 'direction', text: 'But for now, you trudge along in the dark.' },
+  { who: 'you', text: "Speaking of, let's find that flashlight. It should be in my bag, I just had it a second ago." },
 ];
 
 export const POST_DOOR = {
@@ -482,17 +616,17 @@ export const POST_DOOR = {
       ...PUSH_BAR,
       ...STEEL_YOURSELF,
       { who: 'you', text: 'Who did you lose.' },
-      { who: 'you', text: "That's his sentence. That is a sentence off a file, in a booth, with the rain on it." },
-      { who: 'you', text: 'I am not answering a wav.' },
+      { who: 'you', text: "..." },
+      { who: 'you', text: 'I am not actually considering that was someone else, right?.' },
     ],
     choices: [
-      { text: '"I\'m frightened. Fine. Noted. Moving on."',
+      { text: "Must be him that was sayin' all that. It's the easiest explanation. Nobody else in the room.",
         goto: 'done', set: ['confession.kind=feeling', 'confession.value=named'] },
-      { text: '"I\'m tired. I\'ve been up since five. That is all this is."',
+      { text: '"I\'m tired. I\'ve been up since five. That is all this is. Get on with the job"',
         goto: 'done', set: ['confession.kind=feeling', 'confession.value=denied'] },
       { text: '"Levels. Slate. Roll. Levels. Slate. Roll."',
         goto: 'done', set: ['confession.kind=feeling', 'confession.value=procedure'] },
-      { text: '(say nothing at all.)',
+      { text: '(say nothing at all. this has nothing to do with your job anyway)',
         goto: 'done', set: ['confession.kind=nothing'] },
     ],
   },
@@ -500,8 +634,7 @@ export const POST_DOOR = {
   done: {
     speaker: '',
     lines: [
-      { who: 'direction', text: 'The room takes it, the way a room takes anything.' },
-      { who: 'you', text: 'Right. Torch.' },
+      { who: 'direction', text: 'Sure, tell yourself that.' },
     ],
   },
 };
@@ -518,7 +651,7 @@ export const LEVEL_CHECK = {
     speaker: '',
     lines: [
       { who: 'you', text: 'Before anything. You never set a level in a room you have not listened to.' },
-      { who: 'direction', text: 'The recorder wakes up in your hand. A green LED, and eleven segments of a meter that is not moving.' },
+      { who: 'direction', text: 'The recorder wakes up in your hand. A nifty fluorescent display, and an eleven segment meter that shows how loud your recording is.' },
     ],
     choices: [
       { text: 'what am I actually recording?', goto: 'what' },
@@ -529,17 +662,17 @@ export const LEVEL_CHECK = {
     speaker: '',
     lines: [
       { who: 'you', text: 'Room tone. Sixty seconds of a room with nothing in it.' },
-      { who: 'you', text: 'Not silence — there is no such thing. The air handler, the glass, the size of the place.' },
+      { who: 'you', text: 'Not silence; there is no such thing. The air handler, the glass, the size of the place.' },
       { who: 'you', text: 'They cut it in under dialogue so a scene does not go dead between lines. Every room has one, and every one is different, and nobody has ever noticed a good one.' },
-      { who: 'direction', text: 'Five of them, in a building that comes down on Thursday.' },
+      { who: 'direction', text: 'Five recordings of a building that comes down on Thursday.' },
     ],
     goto: 'start',
   },
   levels: {
     speaker: '',
     lines: [
-      { who: 'direction', text: 'The meter finds the dock. Minus fifty-four, and it moves when you move.' },
-      { who: 'you', text: 'That is me. My jacket, my knee, my breathing.' },
+      { who: 'direction', text: 'The meter finds the dock. Minus fifty-four decibels. As you move, the recorder picks up your ruffling.' },
+      { who: 'you', text: 'My jacket, my knee, my breathing can all ruin this recording.' },
     ],
     choices: [
       { text: 'so what spoils a take?', goto: 'spoils' },
@@ -550,32 +683,32 @@ export const LEVEL_CHECK = {
     speaker: '',
     lines: [
       { who: 'you', text: 'Anything I do. A step. A hand on the torch. The radio, if it ever decides to speak.' },
-      { who: 'you', text: 'Their own words: if you can hear yourself on the take, the take is not the room.' },
+      { who: 'you', text: 'Their own words: if you can hear yourself on the take, try again.' },
       { who: 'you', text: 'So: light off, feet still, and forty-five seconds of being furniture.' },
     ],
     choices: [
       { text: 'and if I move?', goto: 'move' },
-      { text: 'kill the light and roll', goto: 'roll' },
+      { text: 'kill the light and roll sound', goto: 'roll' },
     ],
   },
   move: {
     speaker: '',
     lines: [
-      { who: 'you', text: 'Then the take is spoiled and I do it again. That is all. Nobody dies of a spoiled take.' },
-      { who: 'direction', text: 'He has done this for six years and never once said it out loud in a room.' },
+      { who: 'you', text: "Then the take is spoiled and I just have to do it again. That is all. That's what I like about audio work and the arts; nobody ever dies because of a spoiled take." },
+      { who: 'direction', text: 'You have done this for six years and never once said that out loud in a room.' },
     ],
     goto: 'levels',
   },
   roll: {
     speaker: '',
     lines: [
-      { who: 'you', text: 'Light off. The room comes up in the cans — the dock, the yard behind the door, the size of it.' },
+      { who: 'you', text: 'Light off. Easier that way.' },
       { who: 'you', text: 'That is the level. That is the room. Now you keep sixty seconds of it with nothing added.' },
-      { who: 'direction', text: 'The headphones are on and the monitor is open. Press [r] to roll — and once you roll, do not move.' },
+      { who: 'direction', text: 'The headphones are on and the monitor is open. Press [r] to roll sound and start recording — and once you roll: do not move.' },
     ],
   },
 };
-
+// todo
 // ── the first take ──────────────────────────────────────────────────────────
 // The real one, in studio B3, and the largest tree in the game.
 //
@@ -875,7 +1008,8 @@ export const BENT_RIG = {
     ],
     choices: [
       { text: 'why would he do that here?', goto: 'why' },
-      { text: 'take it', goto: 'take', set: ['has.interface'] },
+      { text: 'reflow the joint. finish what he started.', goto: 'solder', set: ['has.interface'] },
+      { text: 'strip it. those are good cells, and my torch is not immortal.', goto: 'gut', set: ['rig.gutted'] },
       { text: 'leave it', goto: 'leave' },
     ],
   },
@@ -886,18 +1020,35 @@ export const BENT_RIG = {
       { who: 'you', text: 'You would only build that if there were something in the signal you wanted out of the signal.' },
       { who: 'direction', text: 'The solder on the last joint is grey and cracked. He did not have time to reflow it.' },
       { who: 'you', text: 'He ran out of night.' },
+      { who: 'direction', text: 'There is an iron in your bag, because there is always an iron in your bag. And there are two good cells in the tray, because he never got to use them either.' },
     ],
     choices: [
-      { text: 'take it', goto: 'take', set: ['has.interface'] },
+      { text: 'reflow the joint. finish what he started.', goto: 'solder', set: ['has.interface'] },
+      { text: 'strip it. those are good cells, and my torch is not immortal.', goto: 'gut', set: ['rig.gutted'] },
       { text: 'leave it', goto: 'leave' },
     ],
   },
-  take: {
+  // The good ending is not FOUND. It is BUILT, by hand, on a plant-room floor, out
+  // of a dead man's homework — and it takes the one resource the dark is also
+  // asking for. You cannot have both. Nobody gets to have both.
+  solder: {
     speaker: 'THE PLANT ROOM',
     lines: [
-      { who: 'direction', text: 'It goes in the bag, against the work order, where it is the heaviest thing you are carrying.' },
+      { who: 'direction', text: 'You kneel on a plant-room floor at two in the morning and reflow a joint a dead man left grey, because that is the job, and it was always the job.' },
+      { who: 'you', text: 'There. That is a circuit. That is a horrible, beautiful, working circuit.' },
+      { who: 'direction', text: 'It goes in the bag, against the work order, where it is the heaviest thing you are carrying. The cells stay in it, because a rig with no cells is a paperweight.' },
       { who: 'you', text: 'I do not know what I would do with it.' },
-      { who: 'direction', text: 'That is true when he says it.' },
+      { who: 'direction', text: 'That is true when he says it. It will not be true later.' },
+    ],
+  },
+  gut: {
+    speaker: 'THE PLANT ROOM',
+    lines: [
+      { who: 'direction', text: 'You take the cells and you leave the rig, which is the practical thing, and you are a practical man.' },
+      { who: 'you', text: 'Two good cells. That is another few hours of light, and light is the only thing in here that has ever helped me.' },
+      { who: 'direction', text: 'The wires he soldered go slack in the tray. You cannot reflow a circuit you have taken the heart out of, and you have taken the heart out of it.' },
+      { who: 'you', text: 'He would have understood. He ran out of night too.' },
+      { who: 'direction', text: 'He would not have understood. He spent his last hours building this instead of lighting his way, and that is the whole difference between you.' },
     ],
   },
   leave: {
@@ -905,6 +1056,104 @@ export const BENT_RIG = {
     lines: [
       { who: 'you', text: 'Not mine. And I have four rooms to do.' },
       { who: 'direction', text: 'You leave it exactly where he left it, which is a thing you are good at.' },
+    ],
+  },
+};
+
+// ── the talisman: a tuning fork ─────────────────────────────────────────────
+// The one object in the building whose entire purpose is to be a pure sound. You
+// strike it and it gives you the truth, which is A, 440, and nothing else — and
+// in here it will not stop giving it, because in here nothing that starts
+// sounding has ever worked out how to finish.
+//
+// This is where the lore lives. It is the only place the Chunk Surfer is said out
+// loud, and it is said by a man reading an engraving, not by a ghost.
+// On the sill of the practice wing, one cell off the mark you have been sent to
+// stand on. You cannot set up for that take without coming within arm's reach.
+export const TALISMAN_CELL = { x: 66, y: 65 };
+export const TALISMAN = {
+  start: {
+    speaker: 'THE PRACTICE WING',
+    lines: [
+      { who: 'direction', text: 'On the sill, in the dust, a tuning fork. Steel, stamped, older than the last refit.' },
+      { who: 'you', text: 'Somebody left a fork on a windowsill. That is the least mysterious object I have ever found.' },
+    ],
+    choices: [
+      { text: 'pick it up', goto: 'read' },
+      { text: 'leave it. it is a fork.', goto: 'leave' },
+    ],
+  },
+  read: {
+    speaker: 'THE PRACTICE WING',
+    lines: [
+      { who: 'direction', text: 'It is engraved, badly, by hand, with a knife rather than a tool: A=440. And under that, smaller: AND NOTHING ELSE.' },
+      { who: 'you', text: '"And nothing else."' },
+      { who: 'you', text: 'That is not a joke a tuner makes. That is a joke a man makes at three in the morning about the only thing he still believes.' },
+    ],
+    choices: [
+      { text: 'strike it', goto: 'strike' },
+      { text: 'whose was it?', goto: 'whose' },
+      { text: 'pocket it and get on', goto: 'pocket', set: ['has.fork'] },
+    ],
+  },
+  whose: {
+    speaker: 'THE PRACTICE WING',
+    lines: [
+      { who: 'you', text: 'A répétiteur, maybe. Somebody who tuned this room every morning for thirty years and never once got to play in it.' },
+      { who: 'direction', text: 'There is a name scratched under the stamp, worn to nothing but the shape of a name.' },
+      { who: 'you', text: 'They all end up as the shape of a name.' },
+    ],
+    choices: [
+      { text: 'strike it', goto: 'strike' },
+      { text: 'pocket it and get on', goto: 'pocket', set: ['has.fork'] },
+    ],
+  },
+  // The lore, delivered the only honest way this game has: as a professional
+  // reading a decay curve and not liking the answer.
+  strike: {
+    speaker: 'THE PRACTICE WING',
+    lines: [
+      { who: 'direction', text: 'You strike it on your knee and hold it up, the way you have ten thousand times, and it gives you A.' },
+      { who: 'you', text: 'Four-forty. Clean as anything.' },
+      { who: 'direction', text: 'A struck fork dies in about ninety seconds. You count, because counting is what you are.' },
+      { who: 'you', text: 'Ninety. A hundred. A hundred and forty.' },
+      { who: 'direction', text: 'It does not decay. It sits exactly where it was struck, at exactly the level it was struck, and it goes on being A.' },
+      { who: 'you', text: 'That is not possible. Energy leaves a system. That is not an opinion, that is the whole of physics.' },
+      { who: 'surfer', text: '...unless the system likes it.', rate: 0.94 },
+      { who: 'you', text: 'What.' },
+      { who: 'direction', text: 'The building has been holding this note. Not making it — HOLDING it, the way a man holds a breath, and it has been holding it for a very long time.' },
+      { who: 'you', text: 'Something in here listened to a sound so hard it would not let it stop.' },
+      { who: 'direction', text: 'And a thing that will not let a sound stop is a thing that has stopped being a listener and started being the sound. That is not a ghost. That is worse. A ghost was a person.' },
+    ],
+    choices: [
+      { text: 'stop it. damp it with your hand.', goto: 'damp' },
+      { text: 'pocket it and get on', goto: 'pocket', set: ['has.fork'] },
+    ],
+  },
+  damp: {
+    speaker: 'THE PRACTICE WING',
+    lines: [
+      { who: 'direction', text: 'You close your hand around it. The steel is cold and perfectly still, and it has been perfectly still the whole time.' },
+      { who: 'you', text: '...it was not the fork.' },
+      { who: 'direction', text: 'The A goes on, in the room, without it. Then it stops, all at once, the way a held breath stops.' },
+      { who: 'you', text: 'That was not the fork. That was in here with me and it was being polite.' },
+    ],
+    choices: [
+      { text: 'pocket it and get on', goto: 'pocket', set: ['has.fork'] },
+    ],
+  },
+  pocket: {
+    speaker: 'THE PRACTICE WING',
+    lines: [
+      { who: 'direction', text: 'It goes in the top pocket, where a professional keeps the one tool he trusts.' },
+      { who: 'you', text: 'A=440. And nothing else. Right.' },
+    ],
+  },
+  leave: {
+    speaker: 'THE PRACTICE WING',
+    lines: [
+      { who: 'you', text: 'It is a fork on a sill. I have four rooms.' },
+      { who: 'direction', text: 'You leave the one object in this building that would have told you the truth.' },
     ],
   },
 };
@@ -1010,9 +1259,9 @@ export const COLD_OPEN = [
 export const AFTER_TITLE = [
   { who: 'direction', text: 'The service door closes behind you.',
     cue: 'door', shake: 2.2, shakeMs: 620, flash: true, flashMs: 220, hold: 3.4 },
-  { who: 'you', text: 'Darker than the yard. Which is stupid, because the yard was dark.', hold: 2.6 },
+  { who: 'you', text: 'Darker than the yard. Which is not great, because the yard was dark.', hold: 2.6 },
   { who: 'you', text: 'And quieter. No rain in here. No rain, no traffic, no plant, no lift.', hold: 2.8 },
-  { who: 'you', text: 'Minus sixty, near enough, before I have taken the recorder out of the bag.', hold: 2.8 },
+  { who: 'you', text: 'Minus sixty decibels, near enough, before I have taken the recorder out of the bag.', hold: 2.8 },
   { who: 'direction', text: 'You put the bag down and go through it by feel.', cue: 'bag', hold: 2.6 },
   { who: 'you', text: 'Torch. Recorder. Headphones. Radio. Keys. The order, folded twice.', cue: 'kit', hold: 2.8 },
   { who: 'you', text: 'Five rooms, a minute each, and then I drive home.', hold: 3.2 },
@@ -1121,6 +1370,12 @@ export const PAGES = [
   {
     id: 'page-5', at: { x: 65, y: 60 }, room: 'lux_nova', decay: 0.20,
     title: 'log — 01:35', byline: 'sheet 5',
+    paper: {
+      marks: [
+        { page: 0, type: 'underline', x: 0.160, y: 0.795, w: 0.48, alpha: 0.44 },
+        { page: 0, type: 'note', x: 0.670, y: 0.820, text: 'key', rotate: -5, alpha: 0.50 },
+      ],
+    },
     body: [
       { raw: 'PRAC  take 1. Clean. 60s.' },
       '',
@@ -1137,11 +1392,11 @@ export const PAGES = [
     id: 'page-6', at: { x: 61, y: 30 }, room: 'lux_nova', decay: 0.28,
     title: 'log — 02:10', byline: 'sheet 6',
     body: [
-      'Rang the client. Told them the chapel is locked and the key on the ring is for a lock that is not on that door any more. They asked whether there was another way in. I said in a building this old there is always another way in. They said good.',
+      'Rang the client. Told them the chapel is locked and the key on the ring is for the original ward, not the replacement core.',
       '',
-      'There is a duct. It runs from the upper corridor east of the chapel door, and it is a metre square, and it comes out somewhere in the nave.',
+      'Front of house kept the new spare under key control. Box office cabinet, according to the rekey invoice. The tag is in their ledger, not on this sheet.',
       '',
-      'I have been up here for forty minutes finding a way into a room that I could open in nine seconds with a bar off the truck, and I am not allowed to touch the walls of a building that is going to be rubble on Thursday.',
+      'The box office staff leaf should still answer to the building master. That is the useful key on the ring, if the lock has not swollen.',
       '',
       { raw: 'I have started leaving these where I turn around. The plan I was given does not match the floor.' },
     ],
@@ -1183,9 +1438,9 @@ export const PAGES = [
     id: 'page-9', at: { x: 95, y: 56 }, room: 'lux_nova', decay: 0.64,
     title: 'log — ??:??', byline: 'sheet 9',
     body: [
-      'The duct is open. I did not open it.',
+      'The box-office key cabinet is open. I did not open it.',
       '',
-      'I have four clean takes and one room and the room is on the other side of a metre of ductwork and I have been sitting outside it for what the recorder says is fifty minutes and what my legs say is longer.',
+      'I have four clean takes and one room and three nearly identical keys under three different tags. The rekey sheet says the answer is in the front-of-house ledger. I have been sitting outside the chapel for what the recorder says is fifty minutes and what my legs say is longer.',
       '',
       'The client has not answered since midnight. I do not think they have gone home. I think this is what the contract is.',
       '',
@@ -1215,6 +1470,36 @@ export const PAGES = [
   },
 ];
 
+export const CHAPEL_KEY_CHECK = {
+  start: {
+    speaker:'FRONT OF HOUSE · KEY CONTROL',
+    lines:[
+      {who:'direction',text:'Three hooks still carry keys. The ledger gives the replacement core one tag.'},
+      {who:'you',text:'Replacement core. Chapel. C-seventeen.'},
+    ],
+    choices:[
+      {text:'CH-04 / ORIGINAL WARD',keyTag:'CH-04',goto:'wrong'},
+      {text:'C-17 / REPLACEMENT CORE',keyTag:'C-17',goto:'right'},
+      {text:'FOH-M / MASTER',keyTag:'FOH-M',goto:'wrong'},
+    ],
+  },
+  wrong:{
+    speaker:'FRONT OF HOUSE · KEY CONTROL',
+    lines:[
+      {who:'direction',text:'The wrong ring drops against the steel cabinet. The sound leaves the office before you do.'},
+      {who:'you',text:'No. Read it properly.'},
+    ],
+    goto:'start',
+  },
+  right:{
+    speaker:'FRONT OF HOUSE · KEY CONTROL',
+    lines:[
+      {who:'direction',text:'C-17 comes off its hook. Brass, two cuts newer than everything else on the ring.'},
+      {who:'you',text:'Chapel key. Replacement core.'},
+    ],
+  },
+};
+
 // The room the client wants, in the order the work order names them. The
 // building decides the order you actually get them in.
 export const TARGETS = ['main_b3', 'the_tub', 'amplifications', 'soundnoisemusic', 'lux_nova'];
@@ -1227,6 +1512,7 @@ export const ROOM_CELLS = {
   soundnoisemusic: { x: 65, y: 65 },
   lux_nova: { x: 90, y: 66 },
 };
+export const MAIN_EXIT_CELL = { x:79, y:4 };
 
 // What he thinks when the game has to tell the player something. All of it is
 // in his voice, all of it is what a professional would actually notice, and
@@ -1257,7 +1543,7 @@ export const PROLOGUE_THOUGHTS = {
   },
   // He listened to the tape. He is not frightened. He is arguing with it.
   tape: {
-    lightOn: { who: 'you', text: 'On. Nothing has asked me anything.' },
+    lightOn: { who: 'you', text: 'On.' },
     recStart: { who: 'you', text: "Roll. It's a room. It has always just been a room." },
     recDone: { who: 'you', text: "That's one, and there was nobody in it." },
     playback: { who: 'you', text: 'Listen back. Listen properly.' },
@@ -1267,6 +1553,31 @@ export const PROLOGUE_THOUGHTS = {
   },
 };
 
+// ── him ─────────────────────────────────────────────────────────────────────
+// The man who did this job three weeks ago and did not come out of it. He is the
+// only other person in the building and he is not in the building.
+//
+// The protagonist thinks about him the way one tradesman thinks about another
+// who died on a site: not with grief, which would be a lie, but with the far
+// more frightening thing, which is PROFESSIONAL INTEREST. He wants to know where
+// the man's technique failed, because if the technique failed then the man was
+// careless, and if the man was careless then this cannot happen to him.
+//
+// It escalates: respect → identification → the arithmetic → refusal. The last
+// rung is the whole thesis of the game, and he says it to nobody, in a corridor.
+export const HIM_LINES = [
+  { who: 'you', text: "Three weeks ago a man stood exactly here with better mics than mine and did not finish. I keep wanting to know what he did wrong. There is a reason I want that." },
+  { who: 'you', text: 'His logs are good. That is the problem. A sloppy log I could dismiss. This is a man who wrote down his floor in dBFS at four in the morning because it was true and it mattered.' },
+  { who: 'you', text: 'Six years he had on me. He would have heard this room before he was in it.' },
+  { who: 'you', text: 'He slated every take. Take three. Take four. Even at the end, when — no. Especially at the end. Slating is what you do instead of panicking.' },
+  { who: 'you', text: 'I have started walking the way he walked. Heel down slow, weight to the outside. I did not decide to do that.' },
+  { who: 'you', text: 'The client did not say he died. The client said the job was incomplete. Those are different sentences and they picked the second one on purpose.' },
+  { who: 'you', text: 'Here is the arithmetic. He was better than me and it got him. So being better is not the axis. Something else is the axis, and I have been walking around inside it for two hours looking for a fault in his mic technique.' },
+  { who: 'you', text: "It wanted something off him. It got it. I have listened to enough of him tonight to know he had it to give — whatever it was, he had lost somebody, or he could be talked into believing he had, and in this place that is the same thing." },
+  { who: 'surfer', text: 'he gave it to me. he gave it and gave it and gave it.', rate: 0.9 },
+  { who: 'you', text: "Then he was generous and I am not. I have nothing in me it wants. No sister, no wife, no boy on a bike. I have a job, a torch, and a card with four minutes of nothing on it, and it can starve." },
+];
+
 export const LINES = {
   lightOn: { who: 'you', text: 'On. Anything in here with eyes has me now.' },
   lightOff: { who: 'you', text: 'Off.' },
@@ -1275,6 +1586,7 @@ export const LINES = {
   listenOff: { who: 'you', text: 'Not yet. Off it comes.' },
   mustRoll: { who: 'you', text: "No. Levels are set. You don't set a level and walk away — you roll. [r]." },
   already: { who: 'you', text: "Done that one. Clean minute, in the bag. I'm not doing it twice." },
+  chapelLocked: { who: 'you', text: 'Not the chapel. Not yet. You do the chapel last, when the other four are on the card.' },
   // ROLL: the room drops out and the hiss comes up, and you must not move.
   recStart: { who: 'direction', text: 'The room drops out of the cans. Tape hiss, and under it nothing, and you have forty-five seconds to hold still inside it.' },
   recDone: { who: 'you', text: 'Clean. One minute of nothing, and the nothing is theirs.' },
@@ -1382,5 +1694,198 @@ export function guestLines(kind, value, n = 1) {
     { who: 'recordist', text: 'Take four. Clean.' },
     { who: 'you', text: 'Minus forty-one. Three times. Not one decibel between them.' },
     ...after,
+  ];
+}
+
+// ── TAKEN ────────────────────────────────────────────────────────────────────
+// You wake where you did not lie down, short of time and short of kit. He does
+// not panic. He inventories, which is worse, because a man doing an inventory in
+// a condemned building at four in the morning has decided to carry on.
+const LOST_LINE = {
+  recorder: [
+    { who: 'you', text: 'The recorder. It has taken the recorder.' },
+    { who: 'you', text: 'Without it I am a man standing in the dark for no money at all. I have to find it. There is no version of the night where I do not find it.' },
+  ],
+  torch: [
+    { who: 'you', text: 'The torch is gone.' },
+    { who: 'you', text: 'Fine. The eyes come up in twenty minutes. They always do. You can work in this — you can just about work in this.' },
+  ],
+  map: [
+    { who: 'you', text: 'The plan. It has taken the plan out of the bag.' },
+    { who: 'you', text: 'Which is a joke, because the drawings were wrong anyway. Now I have got nothing to be wrong with.' },
+  ],
+  radio: [
+    { who: 'you', text: 'It has taken the radio.' },
+    { who: 'you', text: 'The dead radio. The one thing in the bag that does nothing.' },
+    { who: 'direction', text: 'That is not a theft. That is a message, and he has understood it.' },
+  ],
+};
+const FOUND_LINE = {
+  recorder: { who: 'you', text: 'There. On the floor, lid open, still running. It has been recording the whole time it had it.' },
+  torch: { who: 'you', text: 'The torch. Still on. Pointing at nothing, the way it was left.' },
+  map: { who: 'you', text: 'The plan, folded the way I do not fold it.' },
+  radio: { who: 'you', text: 'The radio. Squelching, for nobody. Back on the belt.' },
+};
+export function takenLines(minutes, item, roomLabel) {
+  return [
+    { who: 'direction', text: `You come to on the floor of ${roomLabel}, which is not a room you walked into.` },
+    { who: 'you', text: `${minutes} minutes. I have lost ${minutes} minutes and they were not mine to lose.` },
+    { who: 'direction', text: 'The bag is open. He goes through it on his knees, in the dark, the way you check for a wallet.' },
+    ...(LOST_LINE[item] || []),
+    { who: 'you', text: 'It went that way. I think it went that way. I am going to mark it and I am going to be wrong.' },
+  ];
+}
+export function foundLine(item) { return FOUND_LINE[item] || { who: 'you', text: 'Got it.' }; }
+
+// ── M5 · the endings ─────────────────────────────────────────────────────────
+// After the confrontation you survive: it stops wearing faces and it waits. This
+// is the fork. `ending.choice` is set here and read by main.js. The rig option
+// only exists if you took the bent recorder from the plant room (`has.interface`).
+export function endingChoice(hasRig) {
+  const invert = hasRig ? [{ text: '[take the bent rig out of the bag]', goto: 'invert', set: ['ending.choice=inversion'] }] : [];
+  return {
+    start: {
+      speaker: 'THE CHAPEL',
+      lines: [
+        { who: 'direction', text: 'It is not attacking any more. It is waiting, the recorder still running on the floor between the three of you.' },
+        { who: 'surfer', text: 'Well. Bring me one.' },
+      ],
+      choices: [
+        { text: 'Give it what it is asking for.', goto: 'feed', set: ['ending.choice=sacrifice'] },
+        ...invert,
+        { text: 'Say nothing. There is nothing to say.', goto: 'nothing' },
+      ],
+    },
+    nothing: {
+      speaker: 'THE CHAPEL',
+      lines: [
+        { who: 'you', text: 'There is nothing there.' },
+        { who: 'direction', text: 'You hold it. A room can wait longer than a man can, and it knows the number.' },
+      ],
+      choices: [
+        { text: 'Give it what it is asking for.', goto: 'feed', set: ['ending.choice=sacrifice'] },
+        ...invert,
+      ],
+    },
+    feed: { speaker: 'THE CHAPEL', lines: [{ who: 'you', text: 'All right. All right. Here — take it.' }], goto: 'done' },
+    invert: { speaker: 'THE CHAPEL', lines: [{ who: 'you', text: 'He soldered across the parts that decide things. Somebody did that for me, once, and ran out of night.' }], goto: 'done' },
+  };
+}
+
+// Ending A — the sacrifice. You stay; the seal (the demolition) closes. Graded
+// by whether you named it and how badly the night used you.
+export function sacrificeEnding({ injuries = 0, named = false } = {}) {
+  const ordinal = ['', 'first', 'second', 'third', 'fourth', 'fifth'][Math.min(5, injuries)] || 'newest';
+  return [
+    { who: 'direction', text: 'You agree with it. It does not take the shape of a blow. It takes the shape of a sentence you finish for it.' },
+    named
+      ? { who: 'me', text: 'I lost Sarah. There. Is that what you wanted. I lost Sarah.' }
+      : { who: 'me', text: 'I lost somebody. Everybody has lost somebody. There. Take it.' },
+    { who: 'surfer', text: 'Thank you. That is all it ever wanted — somebody to say it out loud in a room.' },
+    { who: 'direction', text: 'The recorder clicks off. The seal was never the five takes. The seal was always a building coming down on a recordist, and now the building has one.' },
+    injuries > 0
+      ? { who: 'direction', text: `You are the ${ordinal} thing it caught tonight, and the last.` }
+      : { who: 'direction', text: 'It never caught you, not once, all night. It did not need to. It only needed you to stay for the end.' },
+    { who: 'direction', text: 'Demolition is booked for 06:00. The clock reads 05:5?, and the clock was always the seal, and it is nearly closed.' },
+  ];
+}
+
+// Ending B — the inversion. Needs the rig. The invert, then the collapse (the one
+// real clock), then a run for a door that will not be where the door is, then a
+// way out you did not open — and a yard that is not there.
+export const INVERT_START = [
+  { who: 'direction', text: 'You feed the output back into its own input before it has finished being an output. The oldest trick there is: run the circuit that makes a machine sing, backwards, to make one stop.' },
+  { who: 'you', text: 'He built this to get something OUT of the signal.' },
+  { who: 'surfer', text: 'That is cheating.' },
+  { who: 'you', text: 'It is engineering. You would not know the difference. Nobody in here ever did.' },
+  { who: 'direction', text: 'The organ chokes off. Somewhere below, the first wall lets go. The only clock in this building that was ever real starts to run.' },
+];
+export const FALSE_DOOR = [
+  { who: 'direction', text: 'The grey service door. The one you came in through, where the plan says it is.' },
+  { who: 'you', text: 'There you are. Fine. I was tired. I was anxious and I walked past it.' },
+  { who: 'direction', text: 'Relief arrives all at once: the guard, the returned box, the wet yard eleven seconds away. Your exit is incoming.' },
+  { who: 'direction', text: 'It is right there and it does not open. And then it is not right there — a foot to the left, and then a wall.' },
+  { who: 'surfer', text: 'You did not vanquish me. There is no version of this where you vanquish me. I am the room.' },
+  { who: 'direction', text: 'The door goes on not being where the door is. Your waypoint blinks out, and re-draws, pointing somewhere you never marked.' },
+];
+export function rescueEnding(named) {
+  return [
+    { who: 'direction', text: 'The new mark is a door you never wrote down. It is open. A shape holds it open, backlit, and you do not get to see the face.' },
+    named ? { who: 'me', text: '...Sarah?' } : { who: 'you', text: 'Who is that. Who is holding the door.' },
+    { who: 'direction', text: 'It could be her. It could be the man who did the first four rooms and did not come out. It could be nobody, and the door simply failed open. You go through it, because it is open and the building is coming down.' },
+  ];
+}
+export const INVERSION_FINAL = [
+  { who: 'direction', text: 'You come out into the yard. The yard is not there.' },
+  { who: 'direction', text: 'A clock restarts in front of you: --:--. Further off there is another grey door, exactly like the one you just came out of.' },
+  { who: 'recordist', text: 'Ha.' },
+  { who: 'direction', text: 'The recordist begins to laugh, low, and it does not stop when he stops, because the Chunk Surfer is sounding out of him now. You did not save him. Somebody saved you. You will spend a while working out who — and whether they got out either.' },
+];
+
+// If you drank the guard's coffee, the ending is reframed — and the mechanic
+// never says which reading is true. You stayed: he was a real guard who put a
+// stimulant in a hot drink to hold the thing off, and it was kind, and it was
+// real, and it was not enough.
+export function helpedEnding({ named = false } = {}) {
+  return [
+    { who: 'direction', text: 'You agree with it, and the coffee is still somewhere behind your teeth, and it did not save you, because it was only ever coffee with something kind in it.' },
+    { who: 'you', text: 'He put something in it. A stimulant. To hold the thing off, to buy me the night.' },
+    { who: 'direction', text: 'A guard on a gate read a work order for a building that eats recordists, and he did the one thing a man in a booth can do — he made you a hot drink and he hoped.' },
+    { who: named ? 'me' : 'direction', text: named ? 'It was real. He tried. And I still said her name.' : 'It was real, and it was kind, and it was not enough. The seal closes at 06:00 with you inside it.' },
+  ];
+}
+
+// You got out — but you drank it, so there was never anything to get out of. A
+// psychedelic night in an empty building; the takes are ruined and the job is a
+// faux pas. Do not take the coffee from the man in the hi-vis jacket.
+export function druggedReveal({ takes = 5 } = {}) {
+  return [
+    { who: 'direction', text: 'You are in the car park. It is the car park. The skips are where the skips are, and the building stands, unlit, four storeys of nothing, and there was never anything in it but you.' },
+    { who: 'you', text: '...what was in that coffee.' },
+    { who: 'direction', text: 'You put the headphones on, out of thirty years of habit, and you play the night back.' },
+    { who: 'recordist', text: 'Take one.' },
+    { who: 'you', text: 'That is me. Breathing. Talking to a room. Take two is footsteps. Take three is a man saying a name into a space with nobody in it.' },
+    { who: 'direction', text: `${takes >= 5 ? 'Five files' : 'Every file'}, and not one clean minute among them. You did not record five rooms. You wandered a condemned building for eight hours, off your face on a stranger's coffee, narrating.` },
+    { who: 'you', text: 'No money. No takes. A note in a file somewhere: this contractor could not be relied upon.' },
+    { who: 'direction', text: 'Do not take the coffee from the man in the hi-vis jacket. That is the whole of it. That is the only thing the night had to teach.' },
+  ];
+}
+
+// The frame closes on the guard's ledger. Variant:
+//   'out' | 'client' | 'nobody' (the supernatural readings), or
+//   'helped' | 'drugged' (if you drank the coffee).
+export function guardEpilogue(variant) {
+  if (variant === 'drugged') return [
+    { who: 'direction', text: 'The gate booth, lit, at dawn. The same bored man. He does not ask how it went; he watches the little television with the sound off.' },
+    { who: 'you', text: 'What did you put in it.' },
+    { who: 'guard', text: 'In what?' },
+    { who: 'direction', text: 'There is one paper cup in the bin by his foot, and it is not yours — yours is still in your hand, empty, and you do not remember finishing it.' },
+    { who: 'guard', text: 'Long night. You signing out, or not.' },
+  ];
+  if (variant === 'helped') return [
+    { who: 'direction', text: 'The gate booth. The bored man is not bored now. He has been up all night, and he keeps looking at the door you went in by.' },
+    { who: 'guard', text: '...that is longer than the last one lasted.' },
+    { who: 'direction', text: 'He made you a coffee with something in it to hold the thing off, because it was the only help a man in a booth had to give, and he knew when he did it that it might not be enough.' },
+    { who: 'guard', text: 'I did what I could think of. I am sorry. I am.' },
+  ];
+  if (variant === 'out') return [
+    { who: 'direction', text: 'The gate booth. The same bored man, the same book, the two columns he never explained.' },
+    { who: 'guard', text: 'You came back.' },
+    { who: 'you', text: 'I came back.' },
+    { who: 'guard', text: 'Huh.' },
+    { who: 'direction', text: 'He turns the book around. The left column is full of names, all the way up the page. The right column — RETURNED — has been empty the whole time. He writes in it. Yours is the first.' },
+    { who: 'guard', text: 'Sign here. And here. The second one is new. I have never once had to use it.' },
+  ];
+  if (variant === 'client') return [
+    { who: 'direction', text: 'The gate booth. The bored man is not alone. Someone in a good coat is at the desk who was not here when you went in.' },
+    { who: 'client', text: 'Is it done?' },
+    { who: 'guard', text: 'It is done.' },
+    { who: 'direction', text: 'The client signs the account closed. Nobody at W. Ellery has ever seen a ghost. They have seen a schedule of consent and an open account, and now a closed one. The left column got one more name. The right stays empty.' },
+    { who: 'client', text: 'Good. Book the machines for 06:00.' },
+  ];
+  return [
+    { who: 'direction', text: 'The gate booth. The bored man, the book, and nobody else. Not the client, who did not need to come. Not you, who did not come out.' },
+    { who: 'direction', text: 'He writes the date and the time in the left column, beside a name, and he leaves the right column empty, the way it has been empty all the way up the page. The building took a man and gave back a file with nothing on it.' },
+    { who: 'guard', text: 'Next.' },
   ];
 }

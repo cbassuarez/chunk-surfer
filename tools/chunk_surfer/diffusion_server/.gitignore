@@ -1,2 +1,4 @@
 .venv/
-.lens-token
+# local torch stack + bench artefacts (weights, venv, contact sheets)
+.venv-local/
+bench-out/

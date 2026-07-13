@@ -1,0 +1,5 @@
+# Training images are somebody else's photographs, and a git repository is not
+# where they go. Keep the README, keep nothing else.
+*
+!.gitignore
+!README.md
