@@ -113,7 +113,14 @@ export function tickRadio(dt, { expectation = 0, px = 0, py = 0 } = {}) {
   state.lastSquelchAt = now;
   state.squelches++;
   const at=state.dropped||{x:px,y:py};
-  REC.emitNoise(RADIO.noiseLevel, at.x, at.y, 'the radio', { spoils: !state.dropped });
+  REC.emitNoise(RADIO.noiseLevel, at.x, at.y, 'the radio', {
+    spoils: !state.dropped,
+    kind: 'radio_squelch',
+    sourceKind: 'equipment',
+    sourceId: 'radio',
+    playerGenerated: false,
+    deliberate: false,
+  });
   const event = { at: now, duringTake: recording, index: state.squelches, x:at.x, y:at.y, dropped:!!state.dropped };
   state.onSquelch?.(event);
   return event;

@@ -105,6 +105,7 @@ export function vfdGlyph(ch) {
 // text. `dim` is the dormant colour (may be null to omit the grid).
 export function drawVfdGlyph(ctx, ch, px, py, cellW, cellH, {
   color = '#F2A81E', dim = null, blur = 3, dpr = 1, alpha = 1,
+  scan = 1, ghost = 0.14, dimAlpha = 0.78,
 } = {}) {
   const rows = vfdGlyph(ch);
   if (!rows) return;
@@ -115,6 +116,22 @@ export function drawVfdGlyph(ctx, ch, px, py, cellW, cellH, {
   const r = Math.max(0.7 * dpr, Math.min(stepX, stepY) * 0.42);
 
   ctx.save();
+  if (dim) {
+    // A real character VFD never becomes a clean font on black. The unlit dot
+    // matrix and a faint support-grid remain visible under the glass.
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, Math.min(0.12, alpha * dimAlpha * 0.18));
+    ctx.strokeStyle = dim;
+    ctx.lineWidth = Math.max(0.45 * dpr, 0.6);
+    for (let cx = 1; cx < VFD_COLS; cx++) {
+      const gx = px + padX + stepX * cx;
+      ctx.beginPath();
+      ctx.moveTo(gx, py + padY);
+      ctx.lineTo(gx, py + padY + gh);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
   for (let ry = 0; ry < VFD_ROWS; ry++) {
     const bits = rows[ry] | 0;
     for (let cx = 0; cx < VFD_COLS; cx++) {
@@ -125,13 +142,25 @@ export function drawVfdGlyph(ctx, ch, px, py, cellW, cellH, {
       ctx.beginPath();
       ctx.arc(dx, dy, r, 0, Math.PI * 2);
       if (on) {
+        if (ghost > 0) {
+          // Phosphor afterglow: a wider, dimmer dot under the addressed one.
+          ctx.save();
+          ctx.fillStyle = color;
+          ctx.globalAlpha = Math.max(0, Math.min(0.28, alpha * ghost * scan));
+          ctx.shadowColor = color;
+          ctx.shadowBlur = blur * 2.7 * dpr;
+          ctx.beginPath();
+          ctx.arc(dx, dy, r * 1.18, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
         ctx.fillStyle = color;
-        ctx.globalAlpha = alpha;
+        ctx.globalAlpha = alpha * scan;
         ctx.shadowColor = color;
         ctx.shadowBlur = blur * dpr;
       } else {
         ctx.fillStyle = dim;
-        ctx.globalAlpha = alpha;
+        ctx.globalAlpha = alpha * dimAlpha;
         ctx.shadowBlur = 0;
       }
       ctx.fill();

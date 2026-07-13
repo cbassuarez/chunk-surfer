@@ -60,7 +60,7 @@ export function top({ includeOverlay = false } = {}) {
   for (let i = stack.length - 1; i >= 0; i--) {
     if (!stack[i]?.overlay) return stack[i];
   }
-  return stack[stack.length - 1] || null;
+  return null;
 }
 export function depth() { return stack.length; }
 export function has(id) { return stack.some((s) => s.id === id); }

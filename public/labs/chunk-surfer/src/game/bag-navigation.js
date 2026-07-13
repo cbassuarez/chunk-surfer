@@ -7,7 +7,7 @@
 
 // Pure navigation for the field case. No canvas, scenes, saves, or audio.
 
-import { bagEntry, bagSection } from './bag-model.js';
+import { bagEntry, bagSection, normalizeBagSectionId } from './bag-model.js';
 
 function sectionIds(model) {
   return (model?.sections || []).map((section) => section.id);
@@ -20,7 +20,8 @@ function firstEntryId(model, sectionId) {
 export function initialBagState(model, focus = {}) {
   const ids = sectionIds(model);
   const fallbackSection = ids.includes('kit') ? 'kit' : (ids[0] || 'kit');
-  const sectionId = ids.includes(focus.sectionId) ? focus.sectionId : fallbackSection;
+  const requestedSection = normalizeBagSectionId(focus.sectionId);
+  const sectionId = ids.includes(requestedSection) ? requestedSection : fallbackSection;
 
   const selected = {};
   const scroll = {};
@@ -40,6 +41,7 @@ export function initialBagState(model, focus = {}) {
     scroll,
     mode: 'browse',
     pendingAction: null,
+    map: focus.map || null,
   };
 }
 
@@ -56,9 +58,14 @@ export function repairBagSelection(state, model) {
   const ids = sectionIds(model);
   if (!ids.length) return initialBagState(model);
 
-  let sectionId = ids.includes(state?.sectionId) ? state.sectionId : ids[0];
+  let requested = normalizeBagSectionId(state?.sectionId);
+  let sectionId = ids.includes(requested) ? requested : ids[0];
   const selected = { ...(state?.selected || {}) };
   const scroll = { ...(state?.scroll || {}) };
+  if (selected.manifest && !selected.map) selected.map = selected.manifest;
+  if (scroll.manifest != null && scroll.map == null) scroll.map = scroll.manifest;
+  delete selected.manifest;
+  delete scroll.manifest;
 
   for (const id of ids) {
     const section = bagSection(model, id);
@@ -76,6 +83,7 @@ export function repairBagSelection(state, model) {
     scroll,
     mode: state?.mode || 'browse',
     pendingAction: state?.pendingAction || null,
+    map: state?.map || null,
   };
 }
 
@@ -105,11 +113,13 @@ function moveSelection(state, delta, model) {
 }
 
 function selectSection(state, sectionId, model) {
+  sectionId = normalizeBagSectionId(sectionId);
   if (!bagSection(model, sectionId)) return state;
   return { ...state, sectionId, mode: 'browse', pendingAction: null };
 }
 
 function selectEntry(state, sectionId, entryId, model) {
+  sectionId = normalizeBagSectionId(sectionId);
   if (!bagEntry(model, sectionId, entryId)) return state;
   return {
     ...state,
@@ -154,7 +164,8 @@ export function reduceBagNav(state, event, model) {
     case 'SELECT_SECTION': return selectSection(state, event.sectionId, model);
     case 'MOVE_SELECTION': return moveSelection(state, event.delta, model);
     case 'SELECT_ENTRY': return selectEntry(state, event.sectionId, event.entryId, model);
-    case 'SET_SCROLL': return setScroll(state, event.sectionId, event.value);
+    case 'SET_SCROLL': return setScroll(state, normalizeBagSectionId(event.sectionId), event.value);
+    case 'SET_MAP_NAV': return { ...state, map: event.map || null };
     case 'OPEN_CONFIRM':
       return { ...state, mode: 'confirm', pendingAction: event.action || null };
     case 'CANCEL':

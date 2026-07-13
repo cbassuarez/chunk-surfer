@@ -10,6 +10,7 @@
 import { uiSize, uiText } from '../render/ui.js';
 import { makeBagScene } from './bag.js';
 import { BAG_LAB_CASES } from './bag-fixtures.js';
+import { mapLabModel } from './map-fixtures.js';
 
 function cloneFixture(source) {
   const copy = JSON.parse(JSON.stringify(source));
@@ -29,6 +30,7 @@ export function makeBagLabScene() {
   const bag = makeBagScene({
     getEquipment: () => fixture.equipment,
     getJob: () => fixture.job,
+    getMap: () => mapLabModel({ id: fixture.id, policy:'directional', player:{floorId:'b1',roomId:'main_b3',position:{x:7,y:11}}, target:(fixture.job.rooms||[]).find((room)=>room.marked)?.roomId||null, done:fixture.job.done||0 }),
     getHint: () => `BAG LAB · ${fixture.id}`,
     forceLayout: () => compact ? 'compact' : null,
     readDocument: () => {},

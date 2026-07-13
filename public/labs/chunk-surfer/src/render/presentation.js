@@ -16,6 +16,20 @@ import { MONITOR_THRESHOLDS, monitorSnapshot } from '../audio/monitor.js';
 
 export const PANEL = Object.freeze({ padX: 2, headerRows: 2, footerRows: 2 });
 
+const clamp01 = (v) => Math.max(0, Math.min(1, Number.isFinite(Number(v)) ? Number(v) : 0));
+const nowSec = () => ((typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now()) * 0.001;
+const pwm16 = (a) => Math.round(clamp01(a) * 16) / 16;
+function scanDuty(x = 0, y = 0, strength = 1) {
+  // Multiplex scan artifact: subtle, fast, and column-biased. It is not a
+  // decorative wobble; it is the display being addressed grid by grid.
+  const phase = (nowSec() * 112 + x * 0.37 + y * 0.61) % 1;
+  const blank = phase < 0.045 ? 0.90 : phase > 0.955 ? 0.94 : 1;
+  return 1 - (1 - blank) * Math.max(0, Math.min(1, strength));
+}
+function litDuty(x, y, role = 'phosphor', alpha = 1) {
+  return pwm16(alpha * uiBrightness() * uiFlickerAlpha(x, y, role) * scanDuty(x, y));
+}
+
 // A flat rectangle in device px, no gradient.
 function rect(ctx, x, y, w, h, color, alpha = 1) {
   ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.fillRect(x, y, w, h); ctx.globalAlpha = 1;
@@ -105,9 +119,9 @@ export function drawVfdMeter(x, y, width = 14, snapshot = monitorSnapshot(), {
       ctx.save();
       if (on) {
         ctx.fillStyle = db >= thresholdDb ? t.danger : phosphor;
-        ctx.globalAlpha = Math.min(1, b * uiFlickerAlpha(x + i, y, db >= thresholdDb ? 'danger' : 'phosphor'));
+        ctx.globalAlpha = litDuty(x + i, y, db >= thresholdDb ? 'danger' : 'phosphor', 1);
         ctx.shadowColor = ctx.fillStyle;
-        ctx.shadowBlur = 3 * dpr;
+        ctx.shadowBlur = 4.5 * dpr;
       } else {
         ctx.fillStyle = phosphor;
         ctx.globalAlpha = 0.10;
@@ -166,7 +180,7 @@ export function drawLocationIndicator(x, y, width, p, { theme = 'green' } = {}) 
     // the red marker
     const mx = x * cellW * dpr + mark * (segW + gap);
     ctx.save();
-    ctx.globalAlpha = uiFlickerAlpha(x + mark, y, 'marker');
+    ctx.globalAlpha = litDuty(x + mark, y, 'marker', 1);
     ctx.fillStyle = t.marker;
     ctx.shadowColor = t.marker;
     ctx.shadowBlur = 5 * dpr;
@@ -205,13 +219,13 @@ export function drawVfdCounter(x, y, value, { scale = 1, theme = null, color = n
       const cellX = x + i * 1.15 * scale;
       const col = color || themeRoleColor('counter', cellX, cols);
       const dim = themeRoleDim('counter', cellX, cols) || 'rgba(255,255,255,0.05)';
-      const flicker = uiFlickerAlpha(cellX, y, 'counter');
+      const duty = litDuty(cellX, y, 'counter', 1);
 
       if (ch === ':' || ch === '.') {
         ctx.fillStyle = col;
         ctx.shadowColor = col;
         ctx.shadowBlur = 4 * dpr;
-        ctx.globalAlpha = Math.min(1, b * flicker);
+        ctx.globalAlpha = duty;
 
         const dots = ch === ':' ? [.34, .66] : [.9];
         for (const dy of dots) {
@@ -228,9 +242,9 @@ export function drawVfdCounter(x, y, value, { scale = 1, theme = null, color = n
         const on = active.includes(name);
 
         ctx.strokeStyle = on ? col : dim;
-        ctx.globalAlpha = on ? Math.min(1, b * flicker) : 1;
+        ctx.globalAlpha = on ? duty : 1;
         ctx.shadowColor = on ? col : 'transparent';
-        ctx.shadowBlur = on ? 4 * dpr : 0;
+        ctx.shadowBlur = on ? 5.5 * dpr : 0;
 
         ctx.beginPath();
         ctx.moveTo(bx + p[0] * uw * dpr, by + p[1] * uh * dpr);
@@ -245,7 +259,7 @@ export function drawVfdCounter(x, y, value, { scale = 1, theme = null, color = n
 }
 
 // Big dot-matrix text (the title, a speaker name) at an arbitrary scale.
-export function drawVfdText(x, y, text, { scale = 2, theme = null, role = 'ui-primary' } = {}) {
+export function drawVfdText(x, y, text, { scale = 2, theme = null, role = 'ui-primary', alpha = 1 } = {}) {
   if (theme) setActiveSurface(theme);
 
   const value = String(text).toUpperCase();
@@ -258,12 +272,15 @@ export function drawVfdText(x, y, text, { scale = 2, theme = null, role = 'ui-pr
 
     for (let i = 0; i < value.length; i++) {
       const cellX = x + i * scale;
+      const duty = litDuty(cellX, y, colorRole, alpha);
       drawVfdGlyph(ctx, value[i], (x * cellW * dpr) + i * cw, oy, cw, ch, {
         color: themeRoleColor(colorRole, cellX, cols),
         dim: themeRoleDim(colorRole, cellX, cols),
-        blur: 3.5,
+        blur: 4.25,
         dpr,
-        alpha: Math.min(1, uiBrightness() * uiFlickerAlpha(cellX, y, colorRole)),
+        alpha: duty,
+        scan: scanDuty(cellX, y),
+        ghost: 0.18,
       });
     }
   });

@@ -52,21 +52,21 @@ const job = {
 };
 
 const model = buildBagModel({ equipment, job });
-assert.deepEqual(model.sections.map((section) => section.id), ['kit', 'manifest', 'files']);
+assert.deepEqual(model.sections.map((section) => section.id), ['kit', 'map', 'files']);
 assert.equal(model.progress.done, 1);
 assert.equal(model.sections[0].entries[1].sourceId, 'recorder');
-assert.equal(bagEntry(model, 'manifest', 'room:main_b3').state, 'recorded');
+assert.equal(bagEntry(model, 'map', 'room:main_b3').state, 'recorded');
 assert.equal(bagEntry(model, 'files', 'file:work-order').roomId, 'main_b3');
 assert.equal(bagEntry(model, 'files', 'file:work-order').actions.secondary.id, 'unmark-room');
 
 let nav = initialBagState(model, { sectionId: 'manifest', entryId: 'room:main_b3' });
-assert.equal(nav.sectionId, 'manifest');
-assert.equal(nav.selected.manifest, 'room:main_b3');
+assert.equal(nav.sectionId, 'map');
+assert.equal(nav.selected.map, 'room:main_b3');
 
 nav = reduceBagNav(nav, { type: 'MOVE_SELECTION', delta: 1 }, model);
-assert.equal(nav.selected.manifest, 'room:natatorium');
+assert.equal(nav.selected.map, 'room:natatorium');
 nav = ensureBagSelectionVisible(nav, model, 1);
-assert.equal(nav.scroll.manifest, 1);
+assert.equal(nav.scroll.map, 1);
 
 const withoutRadio = buildBagModel({ equipment: equipment.slice(0, 2), job });
 nav = reduceBagNav(nav, { type: 'SELECT_SECTION', sectionId: 'kit' }, model);

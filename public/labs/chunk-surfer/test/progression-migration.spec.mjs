@@ -47,6 +47,9 @@ assert.deepEqual(loaded.save.items, ['chapel_key']);
 assert.equal(loaded.save.settings.volume, 0.5);
 assert.equal(loaded.save.settings.instantText, true);
 assert.equal(loaded.save.settings.dialog, 1);
+assert.equal(loaded.save.settings.monitorGain, 1);
+assert.equal(loaded.save.settings.hushAudioDistortion, 'full');
+assert.equal(loaded.save.hushAudio, null);
 assert.equal(loaded.save.run.status, 'active');
 assert.equal(loaded.save.run.replay.isReplay, true);
 assert.equal(globalThis.localStorage.getItem('chunk-surfer:meta:v2') != null, true);
@@ -61,6 +64,7 @@ globalThis.localStorage.setItem('chunk-surfer:meta:v2', JSON.stringify({
 globalThis.localStorage.setItem('chunk-surfer:save:v3', JSON.stringify({
   version: 3,
   settings: null,
+  hushAudio: 'corrupt',
   run: {
     id: 'run_bad',
     status: 'active',
@@ -82,5 +86,28 @@ assert.equal(repaired.save.run.rules.values.escapeTimer, 'standard');
 assert.equal(repaired.save.run.rules.values.presencePressure, 'severe');
 assert.equal(repaired.save.run.integrity.deadAir.eligible, false);
 assert.equal(repaired.save.run.integrity.deadAir.invalidations.at(-1).reason, 'REPAIRED_INVALID_CERTIFICATION');
+assert.equal(repaired.save.hushAudio, null);
+
+// Bounded semantic HUSH state survives; runtime AudioNodes and buffers never
+// enter the save schema.
+globalThis.localStorage.setItem('chunk-surfer:save:v3', JSON.stringify({
+  ...repaired.save,
+  hushAudio: {
+    schema: 1,
+    audition: {
+      interest: .4,
+      certainty: .5,
+      rawAudio: [1, 2, 3],
+      noiseMemory: [{ kind: 'footstep_walk', sampleId: null, position: { x: 1, y: 2 }, rawBuffer: 'forbidden' }],
+    },
+    mischief: { cueCounts: { 'mischief.monitor-return': 1 } },
+  },
+}));
+const hushState = saveApi.saveLoad().save.hushAudio;
+assert.equal(hushState.schema, 1);
+assert.equal(hushState.audition.interest, .4);
+assert.equal(hushState.mischief.cueCounts['mischief.monitor-return'], 1);
+assert.equal(hushState.audition.rawAudio, undefined);
+assert.equal(hushState.audition.noiseMemory[0].rawBuffer, undefined);
 
 console.log('progression migration tests ok');

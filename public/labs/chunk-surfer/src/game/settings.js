@@ -22,6 +22,9 @@ const HINT_MODES = ['off', 'reduced', 'full'];
 const HINT_LABEL = { off: 'OFF', reduced: 'SPARSE', full: 'FULL' };
 const SEEN_TEXT_MODES = ['normal', 'fast', 'instant'];
 const SEEN_TEXT_LABEL = { normal: 'NORMAL', fast: 'FAST WHEN HELD', instant: 'INSTANT WHEN HELD' };
+const HUSH_AUDIO_MODES = ['reduced', 'full'];
+const HUSH_AUDIO_LABEL = { reduced: 'REDUCED', full: 'FULL' };
+const HUSH_LIGHT_MODES = ['off', 'reduced', 'full'];
 
 // A bar like ◀▮▮▮▯▯▶ for a 0..1 value.
 function bar(v, n = 10) {
@@ -206,6 +209,9 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           { id: 'music', label: 'MUSIC',
             value: () => pct('music', 1), bar: () => setting('music', 1),
             adjust: (d) => setAudioLevel('music', 'setMusicVolume', d) },
+          { id: 'monitorGain', label: 'MONITOR GAIN',
+            value: () => pct('monitorGain', 1), bar: () => setting('monitorGain', 1),
+            adjust: (d) => setAudioLevel('monitorGain', 'setMonitorVolume', d) },
         ],
       },
       {
@@ -250,6 +256,24 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           { id: 'dread', label: 'DREAD SPIKES',
             value: () => setting('reduceDread', false) ? 'REDUCED' : 'FULL',
             adjust: () => set('reduceDread', !setting('reduceDread', false)) },
+          { id: 'hushDistortion', label: 'HUSH DISTORTION',
+            value: () => HUSH_AUDIO_LABEL[setting('hushAudioDistortion', 'full')] || 'FULL',
+            adjust: (d) => cycleSetting('hushAudioDistortion', HUSH_AUDIO_MODES, d, 'full') },
+          { id: 'hushSilence', label: 'HUSH SILENCE DEPTH',
+            value: () => HUSH_AUDIO_LABEL[setting('hushSilence', 'full')] || 'FULL',
+            adjust: (d) => cycleSetting('hushSilence', HUSH_AUDIO_MODES, d, 'full') },
+          { id: 'hushHiss', label: 'HUSH HISS',
+            value: () => HUSH_AUDIO_LABEL[setting('hushHiss', 'full')] || 'FULL',
+            adjust: (d) => cycleSetting('hushHiss', HUSH_AUDIO_MODES, d, 'full') },
+          { id: 'hushCuts', label: 'SUDDEN AUDIO CUTS',
+            value: () => setting('hushSuddenCuts', 'full') === 'softened' ? 'SOFTENED' : 'FULL',
+            adjust: () => set('hushSuddenCuts', setting('hushSuddenCuts', 'full') === 'softened' ? 'full' : 'softened') },
+          { id: 'hushLight', label: 'HUSH LIGHT FLICKER',
+            value: () => FX_LABEL[setting('hushLightFlicker', 'full')] || 'FULL',
+            adjust: (d) => cycleSetting('hushLightFlicker', HUSH_LIGHT_MODES, d, 'full') },
+          { id: 'hushCaptions', label: 'HUSH CUE CAPTIONS',
+            value: () => setting('hushCueCaptions', false) ? 'ON' : 'OFF',
+            adjust: () => set('hushCueCaptions', !setting('hushCueCaptions', false)) },
         ],
       },
       ...(inGame && hooks.challengeRules ? [{

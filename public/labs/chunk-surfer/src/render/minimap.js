@@ -1,107 +1,127 @@
-// A very shitty map.
+// AUDIOCORP local navigation display.
 //
-// It shows you where you are, and a waypoint. It does not show walls, doors, or
-// routes, because the previous recordist did not draw any — he wrote down where
-// the rooms were and assumed whoever came after him could find a corridor.
-//
-// This is deliberate and it is the whole navigation design: pages give you a
-// destination, the building gives you nothing, and the dark does the rest.
+// This is a projection of the same map model used by the field case. It never
+// reads AI state directly; the only presence information it may draw is an
+// evidence-derived acoustic contact supplied by hush-telemetry.js.
 
-import { uiText, uiGlyph, uiSize } from './ui.js';
+import { uiDraw, uiGlyph, uiText, uiSize } from './ui.js';
 import { drawMachinePanel } from './presentation.js';
-import { CELL_SCALE } from '../config.js';
-import { F } from '../data/floorplan/legend.js';
+import { themeRoleColor } from './palette.js';
+import { buildMinimapCommands } from './map-commands.js';
+import { drawAnomalyMarker, drawObjectiveMarker, drawPlayerMarker, drawWaypointMarker } from './map-icons.js';
+import { newestMapContact } from '../game/map-model.js';
 
-const W = 22, H = 11;       // cells
+const clip = (value, width) => {
+  const text = String(value ?? '');
+  return text.length <= width ? text : width <= 1 ? '…' : `${text.slice(0, width - 1)}…`;
+};
 
-export function drawMinimap(px, py, waypoint, opts = {}) {
-  const project=opts.project||((x,y)=>({x,y,layer:''})),player=project(px,py);px=player.x;py=player.y;
-  const { cols,rows } = uiSize();
-  const width=Math.max(18,Math.floor(opts.bounds?.w||W)),height=Math.max(9,Math.floor(opts.bounds?.h||H));
-  const x0 = Math.floor(opts.bounds?.x ?? (cols-width-2)), y0 = Math.floor(opts.bounds?.y ?? 2);
-  const panel = drawMachinePanel(x0, y0, width, height, { label:'LOCATION', source:opts.targetLabel||'N', meter:false });
-
-  const left = panel.x, right = panel.x + panel.w - 1;
-  const top = panel.y, bottom = panel.y + panel.h - 1;
-  const cx = Math.floor((left + right) / 2), cy = Math.floor((top + bottom) / 2);
-  const scale=Math.max(1,Math.floor(opts.scale||CELL_SCALE));
-
-  // The physical slice the renderer and collision both consume. Open floor,
-  // walls and doors are sampled in physical coordinates, so stacked hall
-  // levels never appear on top of one another and the map cannot lie about a
-  // threshold.
-  const plan=opts.plan;
-  if(plan?.solid&&plan.w&&plan.h){
-    for(let my=top;my<=bottom;my++)for(let mx=left;mx<=right;mx++){
-      const sx=Math.round(px+(mx-cx)*scale),sy=Math.round(py+(my-cy)*scale);
-      if(sx<0||sy<0||sx>=plan.w||sy>=plan.h)continue;
-      const i=sy*plan.w+sx,solid=!!plan.solid[i],flags=plan.flags?.[i]||0;
-      if(flags&F.DOOR)uiGlyph(mx,my,'╫',flags&F.BRICKED?'ui-danger':'ui-amber',.58);
-      else if(solid)uiGlyph(mx,my,'■','ui-frame',.34);
-      else uiGlyph(mx,my,'·','ui-secondary',.18);
-    }
-  }
-
-  // north mark, because a compass is the one honest thing on this page
-  uiGlyph(cx, top, '│', 'ui-green');
-  uiText(left, top, 'N', 'ui-green');
-
-  // you
-  uiGlyph(cx, cy, '+', 'ui-green', 1);
-
-  if (waypoint) {
-    waypoint=project(waypoint.x,waypoint.y);
-    const dx = Math.round((waypoint.x - px) / scale);
-    const dy = Math.round((waypoint.y - py) / scale);
-    const mx = cx + dx, my = cy + dy;
-    const inside = mx >= left && mx <= right && my >= top && my <= bottom;
-    if (inside) {
-      const mark=waypoint.layer&&player.layer&&waypoint.layer!==player.layer?(waypoint.floor>player.floor?'↑':'↓'):'×';
-      uiGlyph(mx, my, mark, 'ui-blue', 1);
+function drawLocalTopology(command) {
+  const { open, runs, transform, viewport, center, radius } = command;
+  if (!Array.isArray(runs) && !(open instanceof Set)) return;
+  const minX = Number(center?.x || 0) - Number(radius || 0) - 1;
+  const maxX = Number(center?.x || 0) + Number(radius || 0) + 1;
+  const minY = Number(center?.y || 0) - Number(radius || 0) - 1;
+  const maxY = Number(center?.y || 0) + Number(radius || 0) + 1;
+  uiDraw(({ ctx, dpr, cellW, cellH }) => {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(viewport.x * cellW * dpr, viewport.y * cellH * dpr, viewport.w * cellW * dpr, viewport.h * cellH * dpr);
+    ctx.clip();
+    ctx.fillStyle = themeRoleColor('silkscreen');
+    ctx.globalAlpha = 0.22;
+    if (Array.isArray(runs)) {
+      for (const run of runs) {
+        if (run.y < minY || run.y > maxY || run.x1 < minX || run.x0 > maxX) continue;
+        const x0 = Math.max(run.x0, minX);
+        const x1 = Math.min(run.x1 + 1, maxX);
+        const a = transform.point({ x: x0, y: run.y });
+        const b = transform.point({ x: x1, y: run.y + 1 });
+        ctx.fillRect(
+          a.x * cellW * dpr,
+          a.y * cellH * dpr,
+          Math.max(1, b.x - a.x) * cellW * dpr,
+          Math.max(1, b.y - a.y) * cellH * dpr,
+        );
+      }
     } else {
-      // off the edge of the page: pin it to the rim, the way you would with a
-      // thumb held against a paper map
-      const ex = Math.max(left, Math.min(right, mx));
-      const ey = Math.max(top, Math.min(bottom, my));
-      const mark=waypoint.layer&&player.layer&&waypoint.layer!==player.layer?(waypoint.floor>player.floor?'↑':'↓'):'×';uiGlyph(ex,ey,mark,'ui-blue');
+      for (const key of open) {
+        const [x, y] = key.split(',').map(Number);
+        if (x < minX || x > maxX || y < minY || y > maxY) continue;
+        const point = transform.point({ x, y });
+        ctx.fillRect(point.x * cellW * dpr, point.y * cellH * dpr, Math.max(1, cellW * 0.48) * dpr, Math.max(1, cellH * 0.48) * dpr);
+      }
+    }
+    ctx.restore();
+  });
+}
+
+function drawCommands(commands, now) {
+  for (const command of commands) {
+    if (command.kind === 'local-topology') drawLocalTopology(command);
+    else if (command.kind === 'player') drawPlayerMarker(command.point, command.heading, 1);
+    else if (command.kind === 'waypoint' || command.kind === 'connector-target') drawWaypointMarker(command.point, .95);
+    else if (command.kind === 'waypoint-edge' || command.kind === 'connector-edge') {
+      drawWaypointMarker(command.point, .92);
+      if (command.floorDelta) uiGlyph(Math.round(command.point.x), Math.round(command.point.y) + 1, command.floorDelta > 0 ? '↑' : '↓', 'ui-blue', .78);
+    }
+    else if (command.kind === 'anomaly-contact' || command.kind === 'anomaly-edge') {
+      drawAnomalyMarker(command, .80 + Math.sin(now * 12) * .14);
     }
   }
+}
 
-  // The recorder return is shown only after the HUSH source has been silenced.
-  // The source itself never receives a mark: it must be found by its sound.
-  if (opts.returnPoint) {
-    opts.returnPoint=project(opts.returnPoint.x,opts.returnPoint.y);
-    const dx = Math.round((opts.returnPoint.x - px) / scale);
-    const dy = Math.round((opts.returnPoint.y - py) / scale);
-    const mx = cx + dx, my = cy + dy;
-    const ex = Math.max(left, Math.min(right, mx));
-    const ey = Math.max(top, Math.min(bottom, my));
-    uiGlyph(ex, ey, '◎', 'ui-blue', 1);
-  }
+function contactHeader(model) {
+  const contact = newestMapContact(model);
+  if (!contact?.observation) return null;
+  if (contact.state === 'decaying') return 'SOURCE / LAST RETURN';
+  if (contact.state === 'acquiring') return 'SOURCE / ACQUIRING';
+  if (contact.state === 'unresolved') return 'SOURCE / UNRESOLVED';
+  if (contact.state === 'saturated') return 'SOURCE / SATURATED';
+  return 'SOURCE / LOCKED';
+}
 
-  if (opts.presence) {
-    opts.presence={...opts.presence,...project(opts.presence.x,opts.presence.y)};
-    const dx = Math.round((opts.presence.x - px) / scale);
-    const dy = Math.round((opts.presence.y - py) / scale);
-    const mx = cx + dx, my = cy + dy;
-    const inside = mx >= left && mx <= right && my >= top && my <= bottom;
-    if (inside) {
-      uiGlyph(mx,my,'H','ui-danger',Math.max(0.72,opts.presence.alpha??0.95));
-    } else {
-      const ex = Math.max(left, Math.min(right, mx));
-      const ey = Math.max(top, Math.min(bottom, my));
-      uiGlyph(ex, ey, 'H', 'ui-danger', Math.max(0.72, opts.presence.alpha ?? 0.65));
-    }
-  }
+export function drawMinimap(model, opts = {}) {
+  if (!model || typeof model !== 'object' || !model.player) return;
+  const { cols } = uiSize();
+  const width = Math.max(18, Math.floor(opts.bounds?.w || 22));
+  const height = Math.max(9, Math.floor(opts.bounds?.h || 11));
+  const x0 = Math.floor(opts.bounds?.x ?? (cols - width - 2));
+  const y0 = Math.floor(opts.bounds?.y ?? 2);
+  const targetLabel = model.waypoint
+    ? (model.spaces.find((space) => space.roomId === model.waypoint.roomId)?.label || 'TARGET')
+    : 'NO TARGET';
+  const source = opts.source || contactHeader(model) || `NAV / ${clip(targetLabel, 12)}`;
+  const panel = drawMachinePanel(x0, y0, width, height, { label: 'LOCATION', source, meter: false });
+  const viewport = {
+    x: panel.x + 1,
+    y: panel.y + 2,
+    w: Math.max(7, panel.w - 2),
+    h: Math.max(4, panel.h - 3),
+  };
 
-  if(opts.hush){
-    opts.hush={...opts.hush,...project(opts.hush.x,opts.hush.y)};
-    const mx=cx+Math.round((opts.hush.x-px)/scale),my=cy+Math.round((opts.hush.y-py)/scale);
-    if(mx>=left&&mx<=right&&my>=top&&my<=bottom)uiGlyph(mx,my,'S','ui-amber',.92);
-  }
+  uiText(panel.x, panel.y, 'N', 'ui-green', .82);
+  const commands = buildMinimapCommands({ model, viewport, radius: opts.radius || 18, now: opts.now || 0 });
+  drawCommands(commands, opts.now || 0);
 
-  const layer=String(opts.layer||player.layer||'').replace('hall_','').toUpperCase();
-  if(layer&&layer!=='GROUND')uiText(right-Math.min(right-left,layer.length+2),top,`${layer==='LOWER'?'↓↑':layer==='UPPER'?'↓':'↑'} ${layer}`,'ui-green');
-  if (opts.label) uiText(left, bottom, opts.label.toUpperCase().slice(0, panel.w), 'ui-blue');
-  if(opts.expanded)uiText(left,Math.min(rows-2,bottom+1),'[GREEN] YOU · [BLUE] TARGET · [RED] HUSH', 'ui-secondary',.72);
+  const floor = model.floors.find((candidate) => candidate.id === model.player.floorId);
+  const floorTarget = commands.find((command) => command.kind === 'floor-target');
+  const anomalyFloor = commands.find((command) => command.kind === 'anomaly-floor');
+  let footer = floor?.label || 'POSITION UNRESOLVED';
+  if (anomalyFloor?.delta) footer = `SOURCE RETURN ${anomalyFloor.delta > 0 ? '+' : ''}${anomalyFloor.delta} FLOOR`;
+  else if (floorTarget?.delta) footer = `TARGET ${floorTarget.delta > 0 ? '+' : ''}${floorTarget.delta} FLOOR`;
+  uiText(panel.x, panel.y + panel.h - 1, clip(footer, panel.w), anomalyFloor ? 'ui-danger' : 'ui-blue', .78);
+  if (opts.expanded) uiText(panel.x, panel.y + panel.h, '[GREEN] YOU · [BLUE] TARGET · [BRACKETS] RETURN', 'ui-secondary', .66);
+}
+
+// Small explicit marker used only for recorder playback origin. It is not part
+// of the navigation or HUSH telemetry model.
+export function drawRecorderReturn(model, point, opts = {}) {
+  if (!model?.player?.resolved || !point) return;
+  const clone = {
+    ...model,
+    waypoint: { roomId: null, floorId: model.player.floorId, position: point },
+    contacts: [],
+  };
+  drawMinimap(clone, { ...opts, source: 'RECORDER RETURN' });
 }

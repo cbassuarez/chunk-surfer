@@ -1022,7 +1022,9 @@ export function r3dFrame(state) {
   const floorGoal = ((state.floorH ?? 0) + EYE_METERS) / CELL;
   camY += (floorGoal - camY) * (1 - Math.exp(-dt * 14));
   // A flashlight snaps. The only easing is a filament's breath on the way out.
-  const lightGoal = state.light === false ? 0 : 1;
+  const lightGoal = typeof state.light === 'number'
+    ? Math.max(0, Math.min(1, state.light))
+    : state.light === false ? 0 : 1;
   lightEase += (lightGoal - lightEase) * (1 - Math.exp(-dt * (lightGoal ? 90 : 45)));
   if (Math.abs(lightGoal - lightEase) < 0.004) lightEase = lightGoal;
 

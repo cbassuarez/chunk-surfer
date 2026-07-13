@@ -60,21 +60,55 @@ const state = {
   spawnedAt: -1e9,
   awareness: 0,            // 0..1 — permanent, grows with every capture
   caughtCount: 0,
+  externalTargetUntil: 0,
+  externalTargetPriority: 0,
 };
 
 export function presenceState() { return state; }
 export function isActive() { return state.active; }
+
+// Sanitized bridge for sensory systems. It intentionally exposes no search
+// mode, attack cooldown, or pathfinding internals.
+export function publicSnapshot() {
+  return {
+    active: state.active,
+    position: { x: state.x, y: state.y },
+    x: state.x, y: state.y,
+    hasTarget: state.hasTarget,
+    targetAgeMs: state.hasTarget ? Math.max(0, performance.now() - state.targetSetAt) : Infinity,
+    awareness: state.awareness,
+  };
+}
+
+// Acoustic systems may offer a remembered source location. The presence module
+// remains the authority for movement and decides how long that offer matters.
+export function offerSoundTarget({ position, level = 0.2, confidence = 0.5, expiresAt = 0, priority = 0.5 } = {}) {
+  if (!state.active || !position || !Number.isFinite(position.x) || !Number.isFinite(position.y)) return false;
+  const now = performance.now();
+  const p = Math.max(0, Math.min(1, Number(priority) || 0));
+  if (now < state.externalTargetUntil && p < state.externalTargetPriority) return false;
+  state.targetX = position.x;
+  state.targetY = position.y;
+  state.hasTarget = true;
+  state.targetSetAt = now;
+  state.lastHeardAt = now;
+  state.externalTargetUntil = Math.max(now + 450, Number(expiresAt) || 0);
+  state.externalTargetPriority = p;
+  return true;
+}
 
 export function spawnBehind(px, py, dirX = 0, dirY = 1) {
   state.active = true;
   state.x = px + dirX * PRESENCE.spawnDistance;
   state.y = py + dirY * PRESENCE.spawnDistance;
   state.hasTarget = false;
+  state.externalTargetUntil = 0;
+  state.externalTargetPriority = 0;
   state.lastHeardAt = performance.now();
   state.spawnedAt = state.lastHeardAt;
 }
 
-export function despawn() { state.active = false; state.hasTarget = false; }
+export function despawn() { state.active = false; state.hasTarget = false; state.externalTargetUntil = 0; state.externalTargetPriority = 0; }
 
 export function distanceTo(px, py) {
   return state.active ? Math.hypot(state.x - px, state.y - py) : Infinity;
@@ -116,8 +150,11 @@ export function updatePresence(dt, px, py, onCatch) {
   const now = performance.now();
   const rec = REC.recState();
 
-  // 1. Noise. The cell you left, not the cell you occupy.
-  if (REC.currentWorldNoise() > 0.02) {
+  // 1. Noise. Semantic acoustic events may already have supplied an exact
+  // remembered source. The legacy envelope remains as a fail-safe so old and
+  // partially initialized builds preserve their authored behaviour.
+  const externalFresh = now < state.externalTargetUntil;
+  if (!externalFresh && REC.currentWorldNoise() > 0.02) {
     hear(rec.lastNoiseAt.x, rec.lastNoiseAt.y, REC.currentWorldNoise(), now);
   }
 
@@ -131,7 +168,10 @@ export function updatePresence(dt, px, py, onCatch) {
 
   // 3. Interest decays. A sound is only interesting for a few seconds.
   const sinceTarget = (now - state.targetSetAt) / 1000;
-  if (state.hasTarget && sinceTarget > PRESENCE.memorySec * difficultyRules.memoryScale) state.hasTarget = false;
+  if (state.hasTarget && !externalFresh && sinceTarget > PRESENCE.memorySec * difficultyRules.memoryScale) {
+    state.hasTarget = false;
+    state.externalTargetPriority = 0;
+  }
 
   // 4. Move. Toward the last sound if it has one; otherwise drift, slowly, in
   //    a way that is not quite random and is never toward you.
@@ -169,6 +209,8 @@ export function updatePresence(dt, px, py, onCatch) {
     state.caughtCount++;
     state.awareness = Math.min(1, state.awareness + 0.18);
     state.hasTarget = false;
+    state.externalTargetUntil = 0;
+    state.externalTargetPriority = 0;
     // Recoil away along the line between you. If it is standing exactly on you
     // there is no such line, so pick one.
     let rx = state.x - px, ry = state.y - py;
@@ -185,6 +227,8 @@ export function loadPresenceState(saved = {}) {
   state.awareness = saved.awareness || 0;
   state.caughtCount = saved.caughtCount || 0;
   state.spawnedAt = -1e9;
+  state.externalTargetUntil = 0;
+  state.externalTargetPriority = 0;
 }
 export function savePresenceState() {
   return { awareness: state.awareness, caughtCount: state.caughtCount };

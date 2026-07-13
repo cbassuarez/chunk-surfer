@@ -151,23 +151,28 @@ export function drawSpeech() {
 
   const style = WHO[cur.who] || WHO.you;
   const shown = cur.text.slice(0, typed);
-  const lines = uiWrap(shown, w - 4);
+  const lines = uiWrap(shown, Math.max(12, w - 8));
   const h = Math.max(1, lines.length);
-  const panelH = h + 5;
+  const panelH = h + 7;
   const y = rows - panelH - 2;
   const panel = drawMachinePanel(x - 2, y, w + 4, panelH, {
     label: 'MONITOR', source: style.tag || 'VOICE', meter: true,
   });
+  const textX = panel.x + 1;
+  const textY = Math.max(y + 3, panel.y - 1);
+  const textW = Math.max(8, panel.w - 2);
+  const safeLines = uiWrap(shown, textW);
 
-  lines.forEach((l, i) => {
+  safeLines.slice(0, Math.max(1, panel.h)).forEach((l, i) => {
     // a stage direction wears its parentheses; a thought does not announce
     // itself as one.
-    uiText(panel.x + 1, panel.y + i, l, style.cls, style.alpha);
+    uiText(textX, textY + i, l, style.cls, style.alpha);
   });
 
   // The cursor: a recordist's blinking level LED, borrowed.
   if (typed < cur.text.length) {
-    const last = lines[lines.length - 1] || '';
-    uiText(panel.x + 1 + last.length, panel.y + h - 1, '▌', 'ui-amber');
+    const visible = safeLines.slice(0, Math.max(1, panel.h));
+    const last = visible[visible.length - 1] || '';
+    uiText(textX + last.length, textY + visible.length - 1, '▌', 'ui-amber');
   }
 }

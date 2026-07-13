@@ -133,9 +133,27 @@ export const REDACTION_RULES = Object.freeze({
 });
 
 export const NAVIGATION_RULES = Object.freeze({
-  full: Object.freeze({ showMap: true, showBearing: true, showDistance: true, showRoom: true }),
-  directional: Object.freeze({ showMap: true, showBearing: true, showDistance: true, showRoom: true }),
-  minimal: Object.freeze({ showMap: false, showBearing: true, showDistance: false, showRoom: false }),
+  full: Object.freeze({
+    id:'full', showMap:true, showBearing:true, showDistance:true, showRoom:true,
+    showMapTopology:true, showExactPlayer:true, showAllTargetLabels:true,
+    showWaypoint:true, showCrossFloorConnector:true, showRoute:true,
+    showRouteStatus:true, minimapMode:'topology', contactHoldScale:1.35,
+    contactResolveBias:0.10, contactShowRoom:true,
+  }),
+  directional: Object.freeze({
+    id:'directional', showMap:true, showBearing:true, showDistance:true, showRoom:true,
+    showMapTopology:true, showExactPlayer:true, showAllTargetLabels:false,
+    showWaypoint:true, showCrossFloorConnector:true, showRoute:false,
+    showRouteStatus:false, minimapMode:'topology', contactHoldScale:1,
+    contactResolveBias:0, contactShowRoom:true,
+  }),
+  minimal: Object.freeze({
+    id:'minimal', showMap:true, showBearing:true, showDistance:false, showRoom:false,
+    showMapTopology:false, showExactPlayer:true, showAllTargetLabels:false,
+    showWaypoint:true, showCrossFloorConnector:false, showRoute:false,
+    showRouteStatus:false, minimapMode:'compass', contactHoldScale:0.72,
+    contactResolveBias:-0.04, contactShowRoom:false,
+  }),
 });
 
 export const ESCAPE_RULES = Object.freeze({

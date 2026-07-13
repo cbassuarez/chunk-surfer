@@ -170,28 +170,45 @@ export function makeTitleScene({
       });
 
       const display = 'CHUNK SURFER';
-      const drift = Math.round(Math.sin(t * 1.3) * 1);
-      const pulse = 1.56 + Math.sin(t * 0.9) * 0.08;
-      drawVfdText(
-        Math.max(body.x, Math.floor((cols - display.length * 1.65) / 2)) + drift,
-        body.y + 1,
-        display,
-        { color: UI_COLOR.amber, scale: pulse },
-      );
+      const titleScale = cols < 82 ? 1.42 : 1.58;
+      const titleX = Math.max(body.x, Math.floor((cols - display.length * titleScale) / 2));
+      const warmStep = Math.min(16, Math.floor(t * 38));
+      const pwm = Math.pow(warmStep / 16, 0.78);
+      const scanPhase = (Math.floor(t * 120) % 9) === 0 ? 0.92 : 1;
+      const blank = (t % 4.25) < 0.035 ? 0.68 : 1;
+      if (t < 1.0) {
+        drawVfdText(titleX, body.y + 1, display, {
+          scale: titleScale,
+          alpha: Math.max(0.10, pwm * 0.24),
+        });
+      }
+      drawVfdText(titleX, body.y + 1, display, {
+        scale: titleScale,
+        alpha: Math.max(0.18, pwm) * scanPhase * blank,
+      });
+      const sweep = (Math.floor(t * 8) % (display.length + 8)) - 4;
+      for (let i = 0; i < display.length; i++) {
+        const d = Math.abs(i - sweep);
+        const ch = d === 0 ? '▓' : d === 1 ? '▒' : '░';
+        uiText(Math.round(titleX + i * titleScale), body.y + 4, ch, 'ui-amber', d < 2 ? 0.82 : 0.20);
+      }
+      const phase = (t * 0.32) % 1;
+      const tri = phase < 0.5 ? phase * 2 : (1 - phase) * 2;
+      const stepped = Math.floor(tri * 16) / 16;
       drawLocationIndicator(
         Math.max(body.x + 8, Math.floor((cols - 28) / 2)),
-        body.y + 4,
+        body.y + 5,
         28,
-        (Math.sin(t * 0.42) + 1) / 2,
+        stepped,
         { theme: 'amber' },
       );
-      uiCenter(body.y + 6, 'FIVE ROOM TONES. ONE BUILDING LISTENING.', 'ui-primary');
+      uiCenter(body.y + 7, 'FIVE ROOM TONES. ONE BUILDING LISTENING.', 'ui-primary');
 
-      if (meta.hushMet) uiCenter(body.y + 8, 'THE HUSH HAS YOUR SIGNAL.', 'ui-danger');
-      else if (meta.leftMidRun) uiCenter(body.y + 8, 'UNFINISHED RUN SAVED.', 'ui-danger');
-      else if (replay) uiCenter(body.y + 8, 'ENDINGS AND ACHIEVEMENTS ARE AVAILABLE.', 'ui-amber');
+      if (meta.hushMet) uiCenter(body.y + 9, 'THE HUSH HAS YOUR SIGNAL.', 'ui-danger');
+      else if (meta.leftMidRun) uiCenter(body.y + 9, 'UNFINISHED RUN SAVED.', 'ui-danger');
+      else if (replay) uiCenter(body.y + 9, 'ENDINGS AND ACHIEVEMENTS ARE AVAILABLE.', 'ui-amber');
 
-      const menuY = body.y + 11;
+      const menuY = body.y + 12;
       menuColumns = body.w >= 58 && items.length > 4 ? 2 : 1;
       const colCount = columns();
       const rowCount = rowsPerColumn();

@@ -3,6 +3,17 @@ import process from 'node:process';
 
 const tests = [
   'test/bag.spec.mjs',
+  'test/map-core.spec.mjs',
+  'test/map-live-data.spec.mjs',
+  'test/hush-telemetry.spec.mjs',
+  'test/acoustic-core.spec.mjs',
+  'test/recordist-acoustics.spec.mjs',
+  'test/hush-audio-pure.spec.mjs',
+  'test/hush-audio-runtime.spec.mjs',
+  'test/hush-mix.spec.mjs',
+  'test/hush-audio-firewall.spec.mjs',
+  'test/map-bag-integration.spec.mjs',
+  'test/map-information-firewall.spec.mjs',
   'test/progression-pure.spec.mjs',
   'test/progression-profile.spec.mjs',
   'test/progression-runtime.spec.mjs',

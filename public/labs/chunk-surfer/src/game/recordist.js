@@ -15,6 +15,41 @@
 // main.js wires it to the engine, and roomtone.js answers its questions.
 
 import { ROOM_TONE, NOISE } from '../config.js';
+import { inferAcousticKind } from '../audio/acoustic-catalogue.js';
+
+let acousticEmitter = null;
+
+export function setAcousticEmitter(emitter = null) {
+  acousticEmitter = typeof emitter === 'function' ? emitter : null;
+}
+
+function reportAcoustic({
+  kind,
+  level,
+  x,
+  y,
+  reason,
+  sourceKind = 'player',
+  sourceId = 'player',
+  playerGenerated = sourceKind === 'player',
+  spoils = true,
+  deliberate = false,
+  sampleId = null,
+  audibleToHush = true,
+} = {}) {
+  if (!acousticEmitter) return null;
+  try {
+    return acousticEmitter({
+      kind: kind || inferAcousticKind(reason, level),
+      level, x, y, reason, spoils, deliberate, sampleId,
+      playerGenerated, audibleToHush,
+      source: { kind: sourceKind, id: sourceId },
+    });
+  } catch (error) {
+    console.error('[recordist] acoustic emitter failed', error);
+    return null;
+  }
+}
 
 let difficultyRules = {
   spoilNoiseScale: 1,
@@ -119,17 +154,38 @@ export function emitStepNoise(x, y) {
   state.noise = Math.max(state.noise, level);
   state.lastNoiseAt = { x, y, t: performance.now() };
   handleRecordingNoise(level, 'you moved');
+  reportAcoustic({
+    kind: inferAcousticKind('you moved', level, { step: true, slow: state.slow, injured: state.injuries > 0 }),
+    level, x, y, reason: 'you moved', sourceKind: 'player', sourceId: 'player', spoils: true, deliberate: true,
+  });
   return level;
 }
 
 // Anything else that makes a sound in the world: a dropped page, a door, the
 // presence itself. Spoils a take the same way your own footfall would.
-export function emitNoise(level, x, y, reason = 'something moved', { spoils = true } = {}) {
+export function emitNoise(level, x, y, reason = 'something moved', options = {}) {
+  const {
+    spoils = true,
+    kind = null,
+    sourceKind = spoils ? 'player' : 'environment',
+    sourceId = spoils ? 'player' : 'world',
+    playerGenerated = sourceKind === 'player',
+    deliberate = false,
+    sampleId = null,
+    audibleToHush = true,
+  } = options || {};
+  // Preserve the pre-acoustic-system gameplay envelope exactly. Noise-floor
+  // injury is a property of the operator/take, not of semantic source labels.
   const heard = level + noiseFloor();
   if (spoils) state.noise = Math.max(state.noise, heard);
   else state.worldNoise = Math.max(state.worldNoise, heard);
   if (x != null) state.lastNoiseAt = { x, y, t: performance.now() };
   if (spoils) handleRecordingNoise(state.noise, reason);
+  reportAcoustic({
+    kind: kind || inferAcousticKind(reason, heard),
+    level: heard, x, y, reason, sourceKind, sourceId, playerGenerated,
+    spoils, deliberate, sampleId, audibleToHush,
+  });
 }
 
 // A discrete burst that STACKS on whatever noise is already in the air, rather
@@ -137,10 +193,19 @@ export function emitNoise(level, x, y, reason = 'something moved', { spoils = tr
 // to a footstep you are already making — one alone spoils the take, the two
 // together are loud enough to be caught. Continuous sources (your own body, the
 // live mic) keep using emitNoise so they don't runaway-accumulate each frame.
-export function addNoise(level, x, y, reason = 'something moved') {
+export function addNoise(level, x, y, reason = 'something moved', options = {}) {
   state.noise = Math.min(1, state.noise + level + noiseFloor());
   if (x != null) state.lastNoiseAt = { x, y, t: performance.now() };
   handleRecordingNoise(state.noise, reason);
+  reportAcoustic({
+    kind: options.kind || inferAcousticKind(reason, state.noise),
+    level: state.noise, x, y, reason,
+    sourceKind: options.sourceKind || 'equipment',
+    sourceId: options.sourceId || 'equipment',
+    playerGenerated: options.playerGenerated ?? false,
+    spoils: true, deliberate: !!options.deliberate, sampleId: options.sampleId || null,
+    audibleToHush: options.audibleToHush !== false,
+  });
 }
 
 export function decayNoise(dt) {

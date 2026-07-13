@@ -24,12 +24,14 @@ import { fft, analyze, biomeFrom } from './audio/analysis.js';
 import * as CR from './render/canvas.js';
 import * as R3 from './render/r3d.js';
 import * as MONITOR from './audio/monitor.js';
+import { emitAcousticEvent } from './audio/acoustic-events.js';
+import { createHushMix } from './audio/hush-mix.js';
 import * as FP from './world/floorplan.js';
 import { F as CELL_FLAGS, ZONE, CELL } from './data/floorplan/legend.js';
 import * as MUT from './world/mutate.js';
 import * as scenes from './game/scenes.js';
-import { uiInit, uiClear, uiText, uiSize, uiFill, uiCenter, uiDraw, uiPointFromClient } from './render/ui.js';
-import { drawVfdCounter, drawVfdMeter, drawMachinePanel, drawLocationIndicator } from './render/presentation.js';
+import { uiInit, uiClear, uiText, uiSize, uiFill, uiCenter, uiDraw, uiPointFromClient, uiWrap } from './render/ui.js';
+import { drawVfdCounter, drawVfdMeter, drawMachinePanel, drawLocationIndicator, drawVfdText } from './render/presentation.js';
 import { applyVfdSettings } from './render/palette.js';
 import { saveLoad, saveCommit, getSave, newGame, metaCommit, getMeta } from './game/save.js';
 import { flagApply, flagTest, flagGet } from './game/flags.js';
@@ -56,7 +58,11 @@ import * as ENCOUNTERS from './game/encounters.js';
 import { natatoriumBattle, practiceBattle, hallBattle, hallPlayback, practicePlayback, natatoriumPlayback, chapelBoss } from './data/battles.js';
 import * as MIC from './game/mic.js';
 import { takeStamp, WORK_ORDER_STAMP } from './game/clock.js';
-import { drawMinimap } from './render/minimap.js';
+import { drawMinimap, drawRecorderReturn } from './render/minimap.js';
+import { BUILDING_MAP } from './data/building-map.js';
+import { captureDoorMapState, captureFloorplanMapSource, buildMapModel } from './game/map-model.js';
+import { createHushTelemetry } from './game/hush-telemetry.js';
+import { createHushAudioRuntime } from './game/hush-audio-runtime.js';
 import { roomLabel, roomToneCharacter } from './audio/manifest-map.js';
 import * as SPEECH from './game/speech.js';
 import * as TUT from './game/tutorial.js';
@@ -69,6 +75,8 @@ import * as BINDINGS from './game/bindings.js';
 import { makeThoughtScene, thoughtHad, markThought,
          loadThoughtState, saveThoughtState } from './game/thoughts.js';
 import { makeBagLabScene } from './game/bag-lab.js';
+import { makeMapLabScene } from './game/map-lab.js';
+import { makeHushAudioLabScene } from './game/hush-audio-lab.js';
 import { makeDifficultySelectScene } from './game/difficulty-select.js';
 import { makeArchiveScene } from './game/archive.js';
 import { makeReturnIndexScene } from './game/return-index.js';
@@ -327,6 +335,9 @@ let sfxDirectGain=null;
 let musicGain=null;
 let menuGain=null;
 let outputMonitor=null;
+let hushAudioMix=null;
+let hushAudioRuntime=null;
+let hushLightScale=1;
 let audioInitFailed=false;
 
 const clamp01 = (v, fallback = 1) => {
@@ -356,6 +367,14 @@ function setSfxVolume(v){
 
 // MUSIC: title/intro music only.
 function setMusicVolume(v){ setGainNode(musicGain, paused ? 0 : v); }
+function setMonitorVolume(v){
+  const st=getSave().settings||{};
+  if(hushAudioMix) hushAudioMix.applyField(
+    hushAudioRuntime?.currentField?.() || null,
+    st,
+    {monitorGain:v,monitorOpen:storyMode&&!itemLost('recorder')},
+  );
+}
 
 function applyAudioSettings() {
   const st = getSave().settings || {};
@@ -363,6 +382,7 @@ function applyAudioSettings() {
   setDialogVolume(st.dialog ?? 1);
   setSfxVolume(st.sfx ?? 1);
   setMusicVolume(st.music ?? 1);
+  setMonitorVolume(st.monitorGain ?? 1);
 }
 function ensureCtx(){
   if(audioInitFailed) return;
@@ -395,13 +415,14 @@ function ensureCtx(){
         musicGain=actx.createGain();
         menuGain=actx.createGain();
 
-        // Dialog, world SFX, and music go through the glue compressor. Direct cue
-        // SFX still bypass the glue stage and hit the limiter, preserving the old
-        // "a switch is as loud as a switch" behavior while adding an SFX slider.
+        // The HUSH field sits between physical SFX and the output stages. It is
+        // neutral at zero pressure, so the existing mix is unchanged until the
+        // presence is near. Dialog and UI remain trustworthy and bypass it.
+        hushAudioMix=createHushMix(actx,{worldDestination:master,directDestination:limiter});
         dialogGain.connect(master);
-        sfxGain.connect(master);
+        sfxGain.connect(hushAudioMix?.worldInput || master);
         musicGain.connect(master);
-        sfxDirectGain.connect(limiter);
+        sfxDirectGain.connect(hushAudioMix?.directInput || limiter);
         menuGain.connect(limiter);
 
         master.connect(limiter);
@@ -507,6 +528,9 @@ function voiceGain(chunk, d, ctx, emitterGain=1){
   if(prox<=0) return 0;
   const bw=biomeWeightFor(ctx, chunk);
   const ww=Math.max(0.06, ctx.worldMembership[chunk.worldId]??0);
+  // User MONITOR GAIN lives in the monitor bus. Keeping it out of the voice
+  // calculation avoids applying the fader twice and keeps HUSH hearing wholly
+  // independent from what the operator chooses to hear.
   const monitor=monitoring ? ROOM_TONE.monitorGain : 1;
   return prox*(chunk.baseVol||1)*bw*ww*emitterGain*monitor;
 }
@@ -685,7 +709,7 @@ function startVoice(chunkIdx, target, initialPan=0){
   // Stereo panner so the user can localize chunks left/right and follow them.
   const panner=actx.createStereoPanner();
   panner.pan.setValueAtTime(Math.max(-1, Math.min(1, initialPan)), now);
-  panner.connect(master);
+  panner.connect(hushAudioMix?.programInput || hushAudioMix?.worldInput || master);
 
   const g=actx.createGain();
   g.gain.setValueAtTime(0, now);
@@ -2944,6 +2968,7 @@ function audibleCandidates(){
 }
 
 function updateAudio(){
+  hushAudioMix?.setProgramMode?.(storyMode&&REC.isListening()?'monitor':'world');
   if(sampleFieldSuppressed()){
     silenceSampleField();
     return;
@@ -3096,7 +3121,9 @@ function step(dx,dy){
     const closedDoors=FP.closePassedDoors(px,py);
     if(closedDoors.length){
       fireCue('door');
-      REC.emitNoise(.13,px,py,'a door closed behind you');
+      REC.emitNoise(.13,px,py,'a door closed behind you',{
+        kind:'door_close',sourceKind:'environment',sourceId:'passed-door',playerGenerated:false,
+      });
       saveCommit({doors:FP.saveDoorState()});
       R3.r3dSetProps(worldRenderInstances(FP.logicalToPhysical(px,py).renderGroup));
     }
@@ -4332,6 +4359,8 @@ function loop(){
         maybeSpawnScheduledKey();
         updateHorrorTick();
         tickRecorder(dt);
+        tickRoomMicAcoustics(dt);
+        tickHushAudio(dt);
         tickPresence(dt);
         tickStabs(dt);
         tickPages();
@@ -4370,7 +4399,11 @@ function loop(){
 
     // Scenes draw over whatever the world drew, on their own glyph layer —
     // and during boot too, so the title screen exists before the field does.
-    scenes.update(paused ? 0 : dt);
+    // Gameplay pause freezes movement, presence, recording, and world audio
+    // above. Scene clocks are UI/authored presentation clocks: freezing them
+    // traps blocking scenes such as the post-prologue title on screen forever
+    // after a blur/settings pause.
+    scenes.update(dt);
     uiClear();
     if(!inRogue && RENDERER==='3d') drawBootText();
     drawStoryHud();
@@ -4424,6 +4457,9 @@ function r3dNearChunks(){
 let storyMode=false;
 let lastLoopMs=0;
 let activeDifficulty=currentDifficulty();
+let facilityMapSource=null;
+let facilityMapCache={key:'',model:null};
+const HUSH_MAP_TELEMETRY=createHushTelemetry({label:BUILDING_MAP.contact.label});
 
 function applyCurrentRunDifficulty(){
   activeDifficulty=currentDifficulty();
@@ -4495,6 +4531,7 @@ async function loadBuilding(){
     const mod=await import(`./data/floorplan/${which}.js`);
     const data=mod[which] || mod.default;
     FP.compile(data.levels, {width:data.width, height:data.height, widenCorridors:data.widenCorridors,connectors:data.connectors||[]});
+    facilityMapSource=null; facilityMapCache={key:'',model:null}; HUSH_MAP_TELEMETRY.reset();
     if(data.spawn) FP.setSpawn(data.spawn.x, data.spawn.y);
     // ?at= is a debug spawn and outranks the building's front door.
     const at=new URLSearchParams(location.search).get('at');
@@ -4524,6 +4561,7 @@ async function loadBuilding(){
         OBJ.placePage(at.x, at.y, pg.room, pg.id);
       }
       syncVisiblePages();
+      syncStoryObjectProps();
       R3.r3dSetProps(worldRenderInstances(physicalPlan.group));
     } else R3.r3dSetProps([]);
     revealAround(px,py);
@@ -4553,6 +4591,7 @@ function enterStory(){
   stepCount=Math.max(0,Number(getSave().steps)||0);
   himIdx = getSave().him || 0;
   if(inRogue && RENDERER==='3d') loadBuilding();
+  initHushAudioRuntime();
   STAB.stabsInit({ onStab:playStab });
     DOC.documentInit({
       // Reading is not free. A sheet of paper turning is the quietest noise in
@@ -4560,7 +4599,9 @@ function enterStory(){
       turn:({ dir = 1 } = {})=>{
         ensureCtx();
         CUES.playPageTurn({ dir });
-        if(storyMode) REC.emitNoise(0.06, px, py, 'a page turning');
+        if(storyMode) REC.emitNoise(0.06, px, py, 'a page turning',{
+          kind:'page_turn',sourceKind:'equipment',sourceId:'document',playerGenerated:true,deliberate:true,
+        });
       },
       close:()=>saveCommit({ obj:OBJ.saveObjState() }),
     });
@@ -4678,7 +4719,9 @@ function fireCue(name){
         // The squelch STACKS on whatever noise is already in the air. Alone it
         // spoils the take; on top of a footstep you were already making, the two
         // together are loud enough to be caught.
-        REC.addNoise(RADIO.RADIO.noiseLevel, px, py, 'the radio');
+        REC.addNoise(RADIO.RADIO.noiseLevel, px, py, 'the radio',{
+          kind:'radio_squelch',sourceKind:'equipment',sourceId:'radio',playerGenerated:true,deliberate:true,
+        });
         MUT.markHeard(px, py, 1);
         STAB.reportThreat();
         bumpFear(0.22, { stinger:0.5 });   // your own belt gave you away
@@ -4832,6 +4875,17 @@ function recordAction(){
   openListen(room);
 }
 
+function emitRecorderTransport(action='transport'){
+  REC.emitNoise(.025,px,py,`recorder ${action}`,{
+    spoils:false,
+    kind:'recorder_transport',
+    sourceKind:'equipment',
+    sourceId:'recorder',
+    playerGenerated:true,
+    deliberate:true,
+  });
+}
+
 // Headphones on. The monitor opens, the room comes up under the dialog, and the
 // tape (for playback) starts collecting what you can hear. The dialog ends on
 // "roll", and there is no other way out of it: setting a level commits you.
@@ -4840,6 +4894,7 @@ function openListen(room){
   ensureCtx();
   PB.beginTake(room, {x:px, y:py});
   CUES.playCue(CUES.CUE.recorder, {gain:0.7, rate:1.02});
+  emitRecorderTransport('monitor-on');
   updateAudio();                                 // the monitor opens: room in the cans
   committedListen=true;
   converse(`listen:${room}`, roomListen(room, roomLabel(room)), { onDone:()=>roll() });
@@ -4859,6 +4914,7 @@ function cancelListen(){
   REC.stopListening();
   PB.abortTake(room);
   CUES.playCue(CUES.CUE.recorder, {gain:0.5, rate:0.9});
+  emitRecorderTransport('monitor-off');
   updateAudio();
   SPEECH.say(LINES.listenOff);
   return true;
@@ -4885,6 +4941,7 @@ function roll(){
   // while preventing acoustic speaker bleed from invalidating the new take.
   MIC.micIgnoreSpoilFor(1400);
   CUES.playCue(CUES.CUE.recorder, {gain:0.85});
+  emitRecorderTransport('roll');
   updateAudio();                      // monitor closes: the room goes silent
   STORY.startTapeHiss({ gain: TAKE_HISS.min, fade: 1.2 });
   SPEECH.say(framedLine('recStart', LINES.recStart));
@@ -4902,6 +4959,7 @@ function stopTake(){
   clearInstrument();
   instrArmedThisTake=false;
   CUES.playCue(CUES.CUE.recorder, {gain:0.7, rate:0.88});
+  emitRecorderTransport('stop');
   STORY.stopTapeHiss({ fade: 0.6 });
   updateAudio();
   if(r.completed){
@@ -5199,7 +5257,7 @@ function himBeat(){
 // ── interaction: [e] ────────────────────────────────────────────────────────
 // One verb, and it reads whatever is at your feet. There is nothing else in
 // this building to do with your hands.
-function propLabel(prop){ return String(prop?.mesh||'object').replaceAll('_',' ').toUpperCase(); }
+function propLabel(prop){ return String(prop?.label || prop?.mesh || 'object').replaceAll('_',' ').toUpperCase(); }
 function propChunk(ref){
   if(!ref)return null;
   const file=files.find((f)=>f.worldId===ref.worldId&&f.label===ref.fileLabel);
@@ -5237,6 +5295,62 @@ function auditionPropTracked(id){
   return ref;
 }
 
+function makeObjectDetailScene({ id, title, source = 'OBJECT', body = '', onContinue } = {}) {
+  let closed = false;
+  const scene = {
+    id: `object-detail:${id || source}`,
+    blocksInput: true,
+    blocksWorld: false,
+    lensPreset: 'calm',
+    key(e) {
+      const k = String(e.key || '').toLowerCase();
+      const code = e.code || '';
+      if (e.key === 'Escape') {
+        e.preventDefault?.();
+        if (!closed) { closed = true; scenes.remove(scene); }
+        return true;
+      }
+      if (e.key === 'Enter' || code === 'Enter' || e.key === ' ' || code === 'Space' || k === 'z' || code === 'KeyZ' || k === 'e' || code === 'KeyE') {
+        e.preventDefault?.();
+        if (!closed) {
+          closed = true;
+          scenes.remove(scene);
+          onContinue?.();
+        }
+        return true;
+      }
+      return true;
+    },
+    render() {
+      const { cols, rows } = uiSize();
+      const text = String(body || '').trim();
+      const w = Math.min(66, cols - 6);
+      const lines = uiWrap(text, Math.max(12, w - 8));
+      const h = Math.min(rows - 4, Math.max(14, 9 + lines.length));
+      const x = Math.floor((cols - w) / 2);
+      const y = Math.floor((rows - h) / 2);
+      const panel = drawMachinePanel(x, y, w, h, {
+        label: 'INSPECT',
+        source,
+        footer: '[ENTER] INSPECT · [ESC] CLOSE',
+        meter: true,
+      });
+      drawVfdText(panel.x + 1, panel.y - 1, String(title || source).toUpperCase(), {
+        scale: 0.82,
+        alpha: 0.94,
+      });
+      lines.slice(0, Math.max(1, panel.h - 4)).forEach((line, i) => {
+        uiText(panel.x + 1, panel.y + 3 + i, line, 'ui-primary');
+      });
+    },
+  };
+  return scene;
+}
+
+function openObjectDetail(opts) {
+  scenes.push(makeObjectDetailScene(opts));
+}
+
 let workOrderRead=false;
 function markWorkOrderRead(){
   once('work-order-read', ()=>{
@@ -5258,7 +5372,9 @@ function interact(){
       SPEECH.say({who:'you',text:'Not mid-take. It has been on that floor for three weeks; it will keep.'});
       return;
     }
-    REC.emitNoise(0.08, px, py, 'you crouched for a page');
+    REC.emitNoise(0.08, px, py, 'you crouched for a page',{
+      kind:'handling_noise',sourceKind:'player',sourceId:'player',playerGenerated:true,deliberate:true,
+    });
     if(pickUpPage()) return;
   }
   const doorHit=usingPlan()?FP.interactDoor(px,py,R3.r3dDelta(1),playerKeys):null;
@@ -5269,7 +5385,9 @@ function interact(){
     }
     if(doorHit.opened){
       fireCue(doorHit.keyId?'keyturn':'door');
-      REC.emitNoise(doorHit.keyId?.length ? .20 : .13,px,py,'a door opened');
+      REC.emitNoise(doorHit.keyId?.length ? .20 : .13,px,py,'a door opened',{
+        kind:'door_open',sourceKind:'environment',sourceId:doorHit.id||'door',playerGenerated:true,deliberate:true,
+      });
       saveCommit({doors:FP.saveDoorState()});
       const p=FP.physicalRenderPlanFor(px,py);R3.r3dSetPlan(p.rgba,p.w,p.h,p.material);
       r3dCache.physicalGroup=p.group;r3dCache.physicalKey=p.key;r3dCache.fogSize=-1;
@@ -5277,14 +5395,14 @@ function interact(){
     }
     return;
   }
-  // Proximity reveals these objects; [E] is what makes the recordist touch
-  // them. Walking across their cells never opens their scene or makes a choice.
-  if(interactRig()||interactTalisman())return;
   const hit=usingPlan() ? PROPS.pickProp(px,py,R3.r3dFacing(),2) : null;
   if(hit){
     if(hit.id==='dropped-radio'){
       if(RADIO.pickUpRadio(px,py)){
         syncDroppedRadioProp();saveCommit({radio:RADIO.saveRadioState()});fireCue('bag');
+        REC.emitNoise(.04,px,py,'radio recovered',{
+          spoils:false,kind:'handling_noise',sourceKind:'equipment',sourceId:'radio',playerGenerated:true,deliberate:true,
+        });
         emitProgress(EVENT_TYPES.EQUIPMENT_RECOVERED, { id:'radio' }, 'main.radioPickup');
         SPEECH.say({who:'you',text:'Back on the belt. Still dead.'});
       }
@@ -5293,6 +5411,26 @@ function interact(){
     if(instr&&!instr.silenced&&hit.id===instr.propId){silenceInstrument(hit.id);return;}
     if(REC.isRecording()){
       SPEECH.say({who:'you',text:'Not while the take is held. Find the source.'});
+      return;
+    }
+    if(hit.action==='story-bent-rig'){
+      openObjectDetail({
+        id:'bent-rig',
+        title:'CIRCUIT-BENT RECORDER',
+        source:'INTERFACE',
+        body:'The case is open. The converter output is patched back into its own input, a feedback circuit built to make a machine stop singing.',
+        onContinue:()=>interactRig(true),
+      });
+      return;
+    }
+    if(hit.action==='story-tuning-fork'){
+      openObjectDetail({
+        id:'tuning-fork',
+        title:'TUNING FORK',
+        source:'A=440',
+        body:'A thin steel fork lies on the sill. The stamp is old. The hand-cut engraving below it reads: A=440. AND NOTHING ELSE.',
+        onContinue:()=>interactTalisman(true),
+      });
       return;
     }
     if(hit.action==='rekey-ledger'){
@@ -5315,7 +5453,9 @@ function interact(){
             saveCommit({items:[...items],flags:getSave().flags});fireCue('keys');
             emitProgress(EVENT_TYPES.ITEM_OBTAINED, { id:'chapel_key' }, 'main.chapelKey');
           }else if(choice?.keyTag){
-            fireCue('keys');REC.emitNoise(.46,hit.rx,hit.ry,'keys struck the cabinet');STAB.reportThreat();
+            fireCue('keys');REC.emitNoise(.46,hit.rx,hit.ry,'keys struck the cabinet',{
+              kind:'keys_impact',sourceKind:'equipment',sourceId:'key-cabinet',playerGenerated:true,deliberate:true,
+            });STAB.reportThreat();
           }
         },
       });
@@ -5325,12 +5465,17 @@ function interact(){
     if(hit.sampleFamily?.length){
       const ref=auditionPropTracked(hit.id);
       playPropSample(hit,ref);
-      REC.emitNoise(.16,hit.rx,hit.ry,`the ${propLabel(hit).toLowerCase()} sounded`);
+      REC.emitNoise(.16,hit.rx,hit.ry,`the ${propLabel(hit).toLowerCase()} sounded`,{
+        kind:'instrument_note',sourceKind:'environment',sourceId:hit.id,playerGenerated:true,deliberate:true,
+      });
     }
     saveCommit({props:PROPS.savePropState()});
     if(line)SPEECH.say({who:'you',text:line});
     return;
   }
+  // Safety net for old saves/debug positions: the story objects are visible
+  // props now, but proximity still opens them if a loose prop failed to load.
+  if(interactRig()||interactTalisman())return;
   // The work order lives in your pocket for the whole night.
   readDocumentTracked(WORK_ORDER);
   markWorkOrderRead();
@@ -5466,7 +5611,7 @@ function bagHint(){
 
 function bagFocus(){
   if(TUT.tutorialStep()==='read') return {sectionId:'files',entryId:'file:work-order'};
-  if(TUT.tutorialStep()==='mark') return {sectionId:'manifest',entryId:'room:main_b3'};
+  if(TUT.tutorialStep()==='mark') return {sectionId:'map',roomId:'main_b3',entryId:'room:main_b3',onceKey:'tutorial:mark-main-b3'};
   return null;
 }
 
@@ -5475,10 +5620,13 @@ function openBag(){
   if(REC.isRecording()){ SPEECH.say({ who:'you', text:'Not while rolling.' }); return; }
   ensureCtx();
   CUES.playCue(CUES.CUE.bag, {gain:0.72});
-  REC.emitNoise(0.05, px, py, 'bag rummage');
+  REC.emitNoise(0.05, px, py, 'bag rummage',{
+    kind:'bag_rummage',sourceKind:'player',sourceId:'field-case',playerGenerated:true,deliberate:true,
+  });
   scenes.push(makeBagScene({
     getEquipment:bagEquipment,
     getJob:bagJob,
+    getMap:currentFacilityMapModel,
     getHint:bagHint,
     focus:bagFocus(),
     getFocus:bagFocus,
@@ -5497,19 +5645,12 @@ function openBag(){
 }
 
 function openMapFromBag(){
-  scenes.pop();
-  scenes.push({
-    id:'field-map',blocksInput:true,blocksWorld:false,lensPreset:'calm',
-    key(e){const k=(e.key||'').toLowerCase();if(e.key==='Escape'||k==='b'){scenes.pop();return true;}return true;},
-    render(){
-      const {cols,rows}=uiSize();uiFill(0,0,cols,rows,'rgba(2,3,3,.88)');
-      drawMinimap(px,py,OBJ.waypoint(),{
-        ...minimapOptions({expanded:true}),
-        bounds:{x:2,y:2,w:Math.max(24,cols-4),h:Math.max(12,rows-6)},
-      });
-      uiText(3,rows-2,'[B / ESC] RETURN TO FIELD CASE','ui-label');
-    },
-  });
+  const bag=scenes.top();
+  if(bag?.id==='bag'&&typeof bag.selectSection==='function'){
+    bag.selectSection('map');
+    return true;
+  }
+  return false;
 }
 
 function syncDroppedRadioProp(){
@@ -5525,6 +5666,12 @@ function syncDroppedRadioProp(){
   }
 }
 
+function refreshWorldProps(){
+  if(RENDERER!=='3d' || !FP.isLoaded())return;
+  const group=FP.logicalToPhysical(px,py).renderGroup;
+  R3.r3dSetProps(worldRenderInstances(group));
+}
+
 function syncVisiblePages(){
   if(!FP.isLoaded())return;
   const live=new Set(OBJ.allPages().map((p)=>`loose-page:${p.id}`));
@@ -5537,12 +5684,49 @@ function syncVisiblePages(){
   }));
 }
 
+function syncStoryObjectProps(){
+  if(!FP.isLoaded() || planName!=='conservatory')return;
+  const rig=FP.toRuntimePoint(PLANT_RIG_CELL);
+  const rigResolved=flagTest('has.interface') || flagTest('rig.gutted');
+  PROPS.setLooseProp('story-bent-rig', rigResolved ? null : {
+    mesh:'equipment_rack',
+    label:'circuit-bent recorder',
+    rx:rig.x,ry:rig.y,
+    elevation:.02,
+    scale:.24,
+    yaw:Math.PI/2,
+    blocks:false,
+    action:'story-bent-rig',
+    inspect:{
+      first:'A portable recorder with its lid off. Wires loop from output back into input.',
+      again:'The feedback loop waits for a hand.',
+    },
+  });
+  const fork=FP.toRuntimePoint(TALISMAN_CELL);
+  PROPS.setLooseProp('story-tuning-fork', flagTest('has.fork') ? null : {
+    mesh:'loose_note',
+    label:'tuning fork',
+    rx:fork.x,ry:fork.y,
+    elevation:.04,
+    scale:.82,
+    yaw:-0.24,
+    blocks:false,
+    action:'story-tuning-fork',
+    inspect:{
+      first:'A tuning fork on the sill. The steel catches the torch as a thin line.',
+      again:'A=440. And nothing else.',
+    },
+  });
+}
+
 function dropRadioFromBag(){
   if(!RADIO.dropRadio(px,py))return;
   scenes.pop();
   syncDroppedRadioProp();
   saveCommit({radio:RADIO.saveRadioState()});
-  fireCue('bag');REC.emitNoise(.08,px,py,'radio set on the floor');
+  fireCue('bag');REC.emitNoise(.08,px,py,'radio set on the floor',{
+    kind:'radio_drop',sourceKind:'equipment',sourceId:'radio',playerGenerated:true,deliberate:true,
+  });
   emitProgress(EVENT_TYPES.EQUIPMENT_DROPPED, { id:'radio' }, 'main.dropRadioFromBag');
   SPEECH.say({who:'you',text:RADIO.isDead()?'Leave it here. If it opens again, it opens here.':'Radio down. I can come back for it.'});
 }
@@ -5633,11 +5817,11 @@ function tickPlayback(){
 
 // The plant room has no objective, no take, and no reason to walk into it. The
 // only way out that does not cost you everything is on the floor of it.
-function interactRig(){
+function interactRig(force=false){
   if(!storyMode || planName!=='conservatory') return false;
-  if(thoughtHad('bent-rig') || scenes.blocksInput()) return false;
+  if(thoughtHad('bent-rig') || (!force && scenes.blocksInput())) return false;
   const rig=FP.toRuntimePoint(PLANT_RIG_CELL);
-  if(Math.hypot(rig.x-px, rig.y-py) > D(1.6)) return false;
+  if(!force && Math.hypot(rig.x-px, rig.y-py) > D(1.6)) return false;
   think('bent-rig', BENT_RIG, { onDone:()=>{ reconcileRig(); } });
   return true;
 }
@@ -5654,16 +5838,18 @@ function reconcileRig(){
     REC.addBattery(0.75);          // the only spare cells in the building
   }
   saveCommit({ flags:getSave().flags, rec:REC.saveRecState() });
+  syncStoryObjectProps();
+  refreshWorldProps();
 }
 
 // The tuning fork. The one object in the building that is only ever a sound —
 // and the only place the thing in the walls is named out loud, by a man reading
 // an engraving, which is the only kind of lore this game is willing to hand you.
-function interactTalisman(){
+function interactTalisman(force=false){
   if(!storyMode || planName!=='conservatory') return false;
-  if(thoughtHad('talisman') || scenes.blocksInput()) return false;
+  if(thoughtHad('talisman') || (!force && scenes.blocksInput())) return false;
   const t=FP.toRuntimePoint(TALISMAN_CELL);
-  if(Math.hypot(t.x-px, t.y-py) > D(1.6)) return false;
+  if(!force && Math.hypot(t.x-px, t.y-py) > D(1.6)) return false;
   think('talisman', TALISMAN, {
     onChoice:(c)=>{
       // It is struck once and it does not stop. The tone is real, it is A, and
@@ -5671,7 +5857,7 @@ function interactTalisman(){
       if(c?.goto==='strike') strikeFork();
       if(c?.goto==='damp' || c?.goto==='pocket' || c?.goto==='leave') dampFork();
     },
-    onDone:()=>{ dampFork(); saveCommit({ flags:getSave().flags }); },
+    onDone:()=>{ dampFork(); saveCommit({ flags:getSave().flags }); syncStoryObjectProps(); refreshWorldProps(); },
   });
   return true;
 }
@@ -5834,7 +6020,7 @@ function tickFear(dt){
 
   // The HUSH acquires bandwidth as it approaches: sparse, low-passed fragments
   // at the edge of the map become frequent full-spectrum tears at contact.
-  if(PRES.isActive()&&near>.04){
+  if(PRES.isActive()&&near>.04&&!hushAudioRuntime){
     hushArtifactAcc+=dt;
     const every=Math.max(.55,5.8-near*5.0);
     if(hushArtifactAcc>=every){
@@ -5852,7 +6038,9 @@ function tickFear(dt){
     if(breathAcc >= every){
       breathAcc = 0;
       const level=(0.10 + Math.max(0,fear-breath.threshold)*0.5)*breath.noiseScale;
-      REC.emitNoise(level, px, py, 'you could not keep your breath quiet');
+      REC.emitNoise(level, px, py, 'you could not keep your breath quiet',{
+        kind:'breath_fear',sourceKind:'player',sourceId:'player',playerGenerated:true,
+      });
     }
   } else breathAcc = 0;
 }
@@ -5887,7 +6075,8 @@ function tickPresence(dt){
   if(!storyMode || !PRES.isActive()) return;
   PRES.updatePresence(dt, px, py, onPresenceCatch);
   // Its nearness bleeds into the room tone: the floor thickens as it closes.
-  RT.setBed(ROOM_TONE.bedGain * (1 + PRES.pressure(px,py)*2.6), 0.4);
+  const fieldAudio=hushAudioRuntime?.currentField?.()?.absorption?.audio||0;
+  RT.setBed(ROOM_TONE.bedGain * (1 + PRES.pressure(px,py)*0.65) * (1-fieldAudio*.72), 0.4);
 
   // The first time it gets close, he has a think about it. The world does not
   // stop for that — it is still coming, and the three things he can tell
@@ -5944,6 +6133,27 @@ function tickRecorder(dt){
 // and the room you are sitting in have stopped being two rooms.
 const MIC_LEVEL = { spoil: 0.06, scream: 0.26 };
 let screamedThisTake=false;
+let roomMicAcousticAt=0;
+function tickRoomMicAcoustics(dt){
+  if(!storyMode||REC.isRecording()||!MIC.micActive()||!MIC.micMaySpoil()) return;
+  const level=MIC.micLevel();
+  if(level<0.035) return;
+  const now=performance.now();
+  if(now-roomMicAcousticAt<520) return;
+  roomMicAcousticAt=now;
+  emitAcousticEvent({
+    kind:'operator_voice_activity',
+    source:{kind:'player',id:'room-mic'},
+    spatial:acousticSpatialAt(px,py),
+    acoustic:{levelDb:Math.max(-48,Math.min(-12,-46+level*105)),durationMs:420},
+    semantics:{
+      playerGenerated:true,deliberate:false,audibleToHush:true,
+      audibleToMonitor:false,audibleInWorld:true,canBeMimicked:false,canSpoilTake:false,
+      family:'voice',tags:['optional-mic','rms-only'],
+    },
+    provenance:{system:'room-mic',activityOnly:true},
+  });
+}
 function tickMic(){
   if(!MIC.micActive()) return;
   const m=MIC.micLevel();
@@ -5959,7 +6169,9 @@ function tickMic(){
   // level clears catchNoise and finds you. It spoils exactly like his body does.
   const t=(m - MIC_LEVEL.spoil)/(MIC_LEVEL.scream - MIC_LEVEL.spoil);
   const level=Math.max(0.20, Math.min(0.6, 0.20 + t*0.30));
-  REC.emitNoise(level, px, py, 'you made a sound');
+  REC.emitNoise(level, px, py, 'you made a sound',{
+    kind:'operator_voice_activity',sourceKind:'player',sourceId:'room-mic',playerGenerated:true,
+  });
 }
 
 // ── HUSH instrument hunt ─────────────────────────────────────────────────────
@@ -6040,7 +6252,9 @@ function tickInstrument(){
     updateInstrumentAcoustics();
     if(performance.now()-instr.lastNoiseAt>2000){
       instr.lastNoiseAt=performance.now();
-      REC.emitNoise(.34,instr.prop.rx,instr.prop.ry,`the ${propLabel(instr.prop).toLowerCase()} sounded`);
+      REC.emitNoise(.34,instr.prop.rx,instr.prop.ry,`the ${propLabel(instr.prop).toLowerCase()} sounded`,{
+        kind:'instrument_note',sourceKind:'hush',sourceId:instr.propId,playerGenerated:false,audibleToHush:false,
+      });
     }
     return;
   }
@@ -6064,7 +6278,7 @@ function onTakeBroken(reason){
   // It heard where you are. It goes there: the presence hunts the cell the
   // last noise was made in, so make the last noise here.
   MUT.markHeard(px, py, 1);
-  REC.emitNoise(0.6, px, py, reason);
+  REC.emitNoise(0.6, px, py, reason,{audibleToHush:false});
   if(!PRES.isActive()) once('presence-arrives', ()=>PRES.spawnBehind(px, py, -lastStepDx||0, -lastStepDy||1));
   // A quiet spoil only turns the presence toward the sound. A loud one is a
   // catch: an injury, a flash and a shake, and — if it is already in the room —
@@ -6360,7 +6574,7 @@ function saveTick(dt){
   saveAcc+=dt;
   if(saveAcc<4) return;
   saveAcc=0;
-  saveCommit({ px, py, steps:stepCount, area:storyMode?'conservatory':getSave().area, playSeconds:(getSave().playSeconds||0)+4 });
+  saveCommit({ px, py, steps:stepCount, area:storyMode?'conservatory':getSave().area, playSeconds:(getSave().playSeconds||0)+4, hushAudio:hushAudioRuntime?.save?.()||getSave().hushAudio||null });
 }
 
 // One question, two geometry providers: the authored conservatory in story
@@ -6390,20 +6604,200 @@ const ZONE_AREA={ [ZONE.dock]:'loading dock', [ZONE.foyer]:'front atrium', [ZONE
 function recordableRoomAt(x,y){ return usingPlan() ? (ZONE_ROOM[FP.zoneAt(x,y)] || null) : currentWorld(); }
 function currentAreaLabel(){return usingPlan()?(ZONE_AREA[FP.zoneAt(px,py)]||FP.logicalToPhysical(px,py).spaceId||'circulation'):roomLabel(currentWorld());}
 
-function minimapOptions({expanded=false}={}){
-  const physical=FP.logicalToPhysical(px,py),slice=FP.physicalRenderPlanFor(px,py);
-  const pst=PRES.isActive()?PRES.presenceState():null;
-  let hushPoint=null;
-  if(instr?.prop&&!instr.silenced&&Math.hypot(instr.prop.rx-px,instr.prop.ry-py)<=D(18))hushPoint={x:instr.prop.rx,y:instr.prop.ry};
+
+function acousticFloorIdAt(x,y){
+  if(!usingPlan()) return null;
+  const physical=FP.logicalToPhysical(x,y);
+  return BUILDING_MAP.floors.find((floor)=>physical.y>=floor.minHeight&&physical.y<floor.maxHeight)?.id||null;
+}
+
+function acousticSpatialAt(x=px,y=py){
   return {
-    label:currentAreaLabel(),
-    targetLabel:OBJ.targetRoom()?roomLabel(OBJ.targetRoom()).toUpperCase().slice(0,12):'NO TARGET',
-    project:(x,y)=>{const p=FP.logicalToPhysical(x,y);return{x:p.x,y:p.z,layer:p.layer,floor:p.y};},
-    layer:physical.layer,plan:slice,scale:expanded?D(2):CELL_SCALE,
-    presence:pst?{x:pst.x,y:pst.y,alpha:.58+PRES.pressure(px,py)*.4}:null,
-    hush:hushPoint,expanded,
+    areaId:storyMode?'conservatory':currentWorld(),
+    roomId:usingPlan()?(ZONE_ROOM[FP.zoneAt(x,y)]||null):currentWorld(),
+    floorId:acousticFloorIdAt(x,y),
+    position:{x,y},
   };
 }
+
+function acousticOcclusionDb(source,listener){
+  if(!usingPlan()||!source?.position||!listener?.position) return 0;
+  if(source.floorId&&listener.floorId&&source.floorId!==listener.floorId) return 15;
+  const a=source.position,b=listener.position;
+  const distance=Math.hypot(b.x-a.x,b.y-a.y);
+  const steps=Math.max(2,Math.min(40,Math.ceil(distance/1.5)));
+  let blocked=0;
+  for(let i=1;i<steps;i++){
+    const t=i/steps;
+    const x=Math.round(a.x+(b.x-a.x)*t),y=Math.round(a.y+(b.y-a.y)*t);
+    if(FP.isSolid(x,y)) blocked++;
+  }
+  const roomPenalty=source.roomId&&listener.roomId&&source.roomId!==listener.roomId?4:0;
+  return Math.min(24,roomPenalty+blocked*2.8);
+}
+
+function emitRecordistAcoustic(raw={}){
+  const spatial=acousticSpatialAt(raw.x??px,raw.y??py);
+  return emitAcousticEvent({
+    kind:raw.kind,
+    level:raw.level,
+    source:raw.source||{kind:'player',id:'player'},
+    spatial,
+    semantics:{
+      playerGenerated:raw.playerGenerated ?? (raw.source?.kind||'player')==='player',
+      deliberate:!!raw.deliberate,
+      audibleToHush:raw.audibleToHush!==false,
+      audibleToMonitor:true,
+      audibleInWorld:true,
+      canSpoilTake:!!raw.spoils,
+    },
+    provenance:{system:'recordist',reason:raw.reason||'',sampleId:raw.sampleId||null},
+  });
+}
+
+function hushPresenceSnapshot(){
+  const base=PRES.publicSnapshot();
+  const room=usingPlan()?(ZONE_ROOM[FP.zoneAt(base.x,base.y)]||null):currentWorld();
+  return {...base,roomId:room,floorId:acousticFloorIdAt(base.x,base.y)};
+}
+
+let lastHushFieldStage='none';
+function initHushAudioRuntime(){
+  hushAudioRuntime?.destroy?.();
+  REC.setAcousticEmitter(emitRecordistAcoustic);
+  roomMicAcousticAt=0;
+  hushLightScale=1;
+  lastHushFieldStage='none';
+  hushAudioRuntime=createHushAudioRuntime({
+    presence:{
+      publicSnapshot:hushPresenceSnapshot,
+      offerSoundTarget:(offer)=>PRES.offerSoundTarget(offer),
+    },
+    playerSpatial:()=>({...acousticSpatialAt(px,py)}),
+    occlusionDb:acousticOcclusionDb,
+    difficulty:()=>activeDifficulty,
+    settings:()=>getSave().settings||{},
+    context:()=>({
+      allowMischief:storyMode&&!scenes.blocksInput()&&!REC.isRecording()&&!finaleActive&&!activeBattleId,
+      recording:REC.isRecording(),
+      blocked:scenes.blocksInput(),
+      finale:finaleActive,
+      battle:!!activeBattleId,
+      // The field case monitor is continuously live unless the recorder itself
+      // has been lost. LISTEN raises the program feed, not the HUSH's hearing.
+      monitorOpen:!itemLost('recorder'),
+    }),
+    effects:hushAudioMix,
+    onField:({field,torchScale})=>{
+      hushLightScale=REC.lightOn()?torchScale:0;
+      const stage=field.stage||'none';
+      if(stage!==lastHushFieldStage){
+        const captions=!!getSave().settings?.hushCueCaptions;
+        if(captions&&['near','engulf','contact'].includes(stage)){
+          pushEvent(stage==='contact'?'// [monitor signal collapses]':'// [monitor bandwidth narrows]');
+        }
+        lastHushFieldStage=stage;
+      }
+    },
+    onMischief:({cue,pan})=>{
+      if(!getSave().settings?.hushCueCaptions||!cue?.caption?.text)return;
+      const direction=!cue.caption.spatial?'':pan<-.28?' · LEFT':pan>.28?' · RIGHT':' · NEAR';
+      pushEvent(`// [${cue.caption.text}${direction}]`);
+    },
+  });
+  hushAudioRuntime.load(getSave().hushAudio);
+  return hushAudioRuntime;
+}
+
+function stopHushAudioRuntime(){
+  hushAudioRuntime?.destroy?.();
+  hushAudioRuntime=null;
+  REC.setAcousticEmitter(null);
+  hushLightScale=1;
+  lastHushFieldStage='none';
+  hushAudioMix?.reset?.();
+}
+
+function tickHushAudio(dt){
+  if(!storyMode||!hushAudioRuntime){hushLightScale=REC.lightOn()?1:0;return;}
+  hushAudioRuntime.tick(dt);
+}
+
+function mapProjectLogical(point,{authored=true}={}){
+  const q=authored?FP.toRuntimePoint(point):point;
+  const p=FP.logicalToPhysical(q.x,q.y);
+  return{x:p.x,z:p.z,height:p.y,layer:p.layer,roomId:ZONE_ROOM[FP.zoneAt(q.x,q.y)]||null};
+}
+
+function currentFacilityMapSource(){
+  if(!usingPlan()||planName!=='conservatory')return null;
+  if(facilityMapSource)return facilityMapSource;
+  try{
+    facilityMapSource=captureFloorplanMapSource({
+      definition:BUILDING_MAP,
+      physical:FP.physicalSpanData(),
+      stairPortals:FP.floorplan().stairPortals||[],
+      projectLogical:mapProjectLogical,
+      labelForRoom:roomLabel,
+    });
+  }catch(error){
+    console.error('[map] source capture failed',error);
+    facilityMapSource=null;
+  }
+  return facilityMapSource;
+}
+
+function currentMapContact(source){
+  if(!source||!PRES.isActive()){
+    return HUSH_MAP_TELEMETRY.sample({story:{contactDisplayEnabled:false},policy:activeDifficulty.navigation});
+  }
+  const playerPhysical=FP.logicalToPhysical(px,py);
+  const pst=PRES.presenceState();
+  const hushPhysical=FP.logicalToPhysical(pst.x,pst.y);
+  const floor=BUILDING_MAP.floors.find((candidate)=>hushPhysical.y>=candidate.minHeight&&hushPhysical.y<candidate.maxHeight);
+  const pressure=PRES.pressure(px,py);
+  const sensoryField=hushAudioRuntime?.currentField?.();
+  const sensoryAudition=hushAudioRuntime?.currentAudition?.();
+  return HUSH_MAP_TELEMETRY.sample({
+    hush:{
+      active:true,
+      position:{x:hushPhysical.x,y:hushPhysical.z},
+      floorId:floor?.id||null,
+      roomId:ZONE_ROOM[FP.zoneAt(pst.x,pst.y)]||null,
+      emittedEnergy:Math.min(1,.44+pressure*.34+(pst.hasTarget ? .08 : 0)+(sensoryAudition?.interest||0)*.18),
+      detectionRadius:92,
+      forceLock:pressure>.74&&(REC.isListening()||(sensoryField?.absorption?.monitor||0)>.72),
+    },
+    player:{position:{x:playerPhysical.x,y:playerPhysical.z}},
+    recorder:{monitorOpen:!itemLost('recorder'),available:!itemLost('recorder')},
+    story:{contactDisplayEnabled:true},
+    policy:activeDifficulty.navigation,
+  });
+}
+
+function currentFacilityMapModel(){
+  const source=currentFacilityMapSource();
+  if(!source)return buildMapModel({source:null,job:bagJob(),navigation:activeDifficulty.navigation});
+  const physical=FP.logicalToPhysical(px,py);
+  const contact=currentMapContact(source);
+  const doors=captureDoorMapState({
+    doors:FP.doorState(),source,projectLogical:mapProjectLogical,
+    hasKey:(keyId)=>playerKeys.has(keyId),
+  });
+  const job=bagJob();
+  const objective=OBJ.objState();
+  const doorKey=doors.map((door)=>`${door.id}:${door.state}`).join('|');
+  const contactKey=`${contact.state}:${contact.observation?.observedAt||0}:${contact.observation?.floorId||''}`;
+  const key=[Math.round(physical.x/2),Math.round(physical.z/2),Math.round(physical.y*4),recordableRoomAt(px,py)||'',objective.target||'',job.rooms.map((room)=>room.recorded?'1':'0').join(''),doorKey,activeDifficulty.navigation.id||'',contactKey].join('~');
+  if(facilityMapCache.key===key&&facilityMapCache.model)return facilityMapCache.model;
+  const model=buildMapModel({
+    source,job,objectiveState:objective,doors,contacts:[contact],navigation:activeDifficulty.navigation,
+    player:{x:physical.x,y:physical.z,height:physical.y,roomId:recordableRoomAt(px,py),heading:RENDERER==='3d'?R3.r3dFacing()*Math.PI/2:0},
+  });
+  facilityMapCache={key,model};
+  return model;
+}
+
 
 function faceOpenDirection(){
   if(RENDERER!=='3d') return;
@@ -6454,6 +6848,7 @@ function openSettings({ inGame=false }={}){
       setDialogVolume,
       setSfxVolume,
       setMusicVolume,
+      setMonitorVolume,
       micStatus: ()=>MIC.micState(),
       enableMic: ()=>{ ensureCtx(); if(actx) MIC.micInit(actx); },
       onQuitToTitle: returnToTitle,
@@ -6520,6 +6915,7 @@ function makeTitle({wantFullscreen=false}={}){
 }
 
 function returnToTitle(){
+  stopHushAudioRuntime();
   storyMode=false;
   setGameChrome(false);
   stopAllVoices();
@@ -6593,7 +6989,7 @@ function requestFullscreenSafe(){
 
 // The glyph layer is the only surface the diffusion lens cannot repaint, so
 // everything the player must be able to trust lives here. M3 adds the compass
-// and the shitty minimap alongside.
+// and the facility navigator alongside.
 function drawStoryHud(){
   if(!storyMode || scenes.blocksWorld()) return;
   const { cols, rows }=uiSize();
@@ -6612,15 +7008,15 @@ function drawStoryHud(){
     else if(b<0.35) uiText(14, 3, `CELL  ${Math.round(b*100)}%`, b<0.15?'ui-danger':'ui-amber');
   }
 
-  // A very shitty map: you, and a waypoint. No walls, no routes.
-  // Unless it has taken the plan, in which case you have no map at all, and the
-  // building is exactly as large as it always was.
+  // The field navigator projects the same facility model used by the bag MAP.
+  // If the issued plan is lost, the building remains but its instrumented
+  // representation does not.
   const wp=OBJ.waypoint();
   const nav=activeDifficulty.navigation;
   if(itemLost('map')){
     uiText(2, 5, 'PLAN  MISSING', 'ui-danger');
   } else if(nav.showMap){
-    drawMinimap(px, py, wp, minimapOptions());
+    drawMinimap(currentFacilityMapModel(),{now:performance.now()});
   } else if(wp){
     uiText(2, 5, 'PLAN  SIGNAL MINIMAL', 'ui-secondary');
   }
@@ -6657,10 +7053,6 @@ function drawStoryHud(){
 
   const doorHud=usingPlan()?FP.doorNear(px,py,R3.r3dDelta(1)):null;
   const propHit=usingPlan()?PROPS.pickProp(px,py,R3.r3dFacing(),2):null;
-  if(propHit){
-    const verb=propHit.sampleFamily?.length?'PLAY':'INSPECT';
-    uiText(2,rows-6,(`[E] ${verb} ${propLabel(propHit)}`).slice(0,Math.max(1,cols-4)),'ui-amber');
-  }
 
   // The verbs must be discoverable. A player should never have to guess that
   // the recorder exists in a game about recording.
@@ -6677,6 +7069,10 @@ const teach=tutorialPromptsEnabled() ? TUT.tutorialPrompt() : null;
     const hasKey=!doorHud.portal.keyId||playerKeys.has(doorHud.portal.keyId);
     const prompt=hasKey?'[E] OPEN DOOR':'[E] TRY LOCKED DOOR';
     uiText(Math.max(2,Math.floor((cols-prompt.length)/2)),rows-2,prompt,hasKey?'ui-amber':'ui-secondary');
+  } else if(propHit){
+    const verb=propHit.sampleFamily?.length?'PLAY':'INSPECT';
+    const prompt=(`[E] ${verb} ${propLabel(propHit)}`).slice(0,Math.max(1,cols-4));
+    uiText(Math.max(2,Math.floor((cols-prompt.length)/2)),rows-2,prompt,'ui-amber');
   } else if(teach){
     const prompt=teach.toUpperCase().slice(0,Math.max(1,cols-4));
     uiText(Math.max(2, Math.floor((cols-prompt.length)/2)), rows-2, prompt, 'ui-amber');
@@ -6786,7 +7182,7 @@ function drawTakeOverlay(cols, rows){
     uiCenter(y-1, '● YOUR ROOM IS LIVE', 'ui-danger');
   }
   if(held&&instr?.silenced&&takeOrigin){
-    drawMinimap(px,py,null,{...minimapOptions(),label:'RECORDER RETURN',returnPoint:takeOrigin});
+    {const q=FP.logicalToPhysical(takeOrigin.x,takeOrigin.y);drawRecorderReturn(currentFacilityMapModel(),{x:q.x/(currentFacilityMapSource()?.topologyStride||1),y:q.z/(currentFacilityMapSource()?.topologyStride||1)},{now:performance.now()});}
   }
 }
 
@@ -6806,6 +7202,36 @@ function installProbe(){
     placePresence:(x,y)=>{ const st=PRES.presenceState(); st.active=true; st.x=x; st.y=y; },
     solid:(x,y)=>solidAt(x,y),
     plan:()=>({loaded:FP.isLoaded(), ...FP.planSize()}),
+    map:()=>currentFacilityMapModel(),
+    mapSource:()=>currentFacilityMapSource(),
+    mapContact:()=>HUSH_MAP_TELEMETRY.snapshot(),
+    hushAudio:()=>hushAudioRuntime?.snapshot?.()||null,
+    hushAudioSave:()=>hushAudioRuntime?.save?.()||null,
+    hushNoise:(kind='bag_rummage',level=null)=>emitAcousticEvent({
+      kind,
+      source:{kind:'player',id:'probe'},
+      spatial:acousticSpatialAt(px,py),
+      ...(level==null?{}:{acoustic:{levelDb:Number(level)}}),
+      semantics:{playerGenerated:true,deliberate:true,audibleToHush:true,audibleToMonitor:true,audibleInWorld:true},
+      provenance:{system:'probe'},
+    }),
+    forceMapContact:(roomId='main_b3', duration=1600)=>{
+      const source=currentFacilityMapSource();
+      const target=source?.targets?.find((entry)=>entry.roomId===roomId);
+      if(!target?.position||!target.floorId)return false;
+      const beatId=`probe:${roomId}:${Date.now()}`;
+      const stride=source.topologyStride||1;
+      const ok=HUSH_MAP_TELEMETRY.forceLock({
+        beatId,
+        floorId:target.floorId,
+        roomId,
+        position:{x:target.position.x*stride,y:target.position.y*stride},
+        duration:Number(duration)||1600,
+      });
+      facilityMapCache={key:null,model:null};
+      return ok;
+    },
+    clearMapContact:()=>{ HUSH_MAP_TELEMETRY.reset(); facilityMapCache={key:null,model:null}; return true; },
     cell:(x,y)=>FP.cellAt(x,y),
     materialAt:(x,y)=>FP.materialAt(x,y),
     canStep:(ax,ay,bx,by)=>FP.canStep(ax,ay,bx,by,{keys:playerKeys}),
@@ -6954,6 +7380,7 @@ function installProbe(){
 
 
 function enterJustSurf(){
+  stopHushAudioRuntime();
   storyMode=false;
   STORY.stopAll();
   setGameChrome(false);
@@ -6992,6 +7419,19 @@ function bootScenes(){
 
   if(qp.has('progresslab')){ scenes.push(makeProgressionLabScene()); return; }
   if(qp.has('baglab')){ scenes.push(makeBagLabScene()); return; }
+  if(qp.has('maplab')){ scenes.push(makeMapLabScene()); return; }
+  if(qp.has('hushaudiolab')){
+    ensureCtx();
+    scenes.push(makeHushAudioLabScene({
+      playCue:(intent,field)=>{
+        const cue={delivery:'monitor',audio:{sound:intent?.kind==='PLAY'?'hush-fragment':'instrument',gain:.22,pitchRange:[.78,.96]}};
+        hushAudioMix?.playMischief?.(cue,{intensity:intent?.intensity||field?.absorption?.monitor||.6,pan:.55});
+      },
+      applyField:(field,{settings,monitorGain})=>hushAudioMix?.applyField?.(field,settings,{monitorGain,monitorOpen:true}),
+      resetField:()=>hushAudioMix?.reset?.(),
+    }));
+    return;
+  }
 
   const mode=qp.get('mode');
   if(mode==='surf'){ enterJustSurf(); return; }
@@ -7215,7 +7655,7 @@ function render3d(){
          strength: 0.65 + PRES.dread(px,py)*0.55}
       : (hush.active?{...mapPoint({x:hush.x,y:hush.y}),strength:1}:null),
     audio:clamp(voiceSum/3, 0, 1),
-    light: storyMode ? REC.lightOn() : true,
+    light: storyMode ? (REC.lightOn()?hushLightScale:0) : true,
     plan: usingPlan(),
     floorH: floorHere(),
     moveIntervalMs:currentMoveIntervalMs(),
@@ -7416,6 +7856,9 @@ function onKey(e){
       if(!REC.lightOn() && REC.batteryLevel()<=0){ SPEECH.say({ who:'you', text:'Flat. It is flat, and I have nothing to put in it.' }); return; }
       const on=REC.toggleLight();
       CUES.playCue(CUES.CUE.light, {gain:0.7, rate: on ? 1 : 0.92});
+      REC.emitNoise(.02,px,py,'torch switch',{
+        spoils:false,kind:'handling_noise',sourceKind:'equipment',sourceId:'torch',playerGenerated:true,deliberate:true,
+      });
       // He says it the first time. After that a man who flicks his own torch
       // on does not narrate it, and neither do we.
       once(on ? 'said-light-on' : 'said-light-off', ()=>SPEECH.say(on ? framedLine('lightOn', LINES.lightOn) : LINES.lightOff));
@@ -7426,8 +7869,9 @@ function onKey(e){
       if(!firstTakeIntercept()) recordAction();
       return;
     }
-    // [space] hurries the line he is currently thinking. It never skips one.
-    if(bare && (e.code==='Space' || e.key===' ') && SPEECH.isSpeaking()){
+    // [space]/[enter] hurries or clears the line he is currently thinking.
+    // Enter remains inert only when there is no active inspection/speech band.
+    if(bare && (e.code==='Space' || e.key===' ' || e.key==='Enter' || e.code==='Enter' || e.key==='z' || e.key==='Z') && SPEECH.isSpeaking()){
       e.preventDefault(); SPEECH.skipSpeech(); return;
     }
     if(bare && is('KeyB','b')){ e.preventDefault(); openBag(); return; }
@@ -7597,7 +8041,7 @@ function boot(){
     bootScenes();
     raf=requestAnimationFrame(loop);
     const qp=new URLSearchParams(location.search);
-    if(!qp.has('baglab')&&!qp.has('progresslab')){
+    if(!qp.has('baglab')&&!qp.has('progresslab')&&!qp.has('maplab')&&!qp.has('hushaudiolab')){
       loadAll();
       loadSw2DriverAudio();
     }

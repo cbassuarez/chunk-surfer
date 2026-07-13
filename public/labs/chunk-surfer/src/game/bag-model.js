@@ -202,7 +202,7 @@ function roomState(room) {
   return room?.visited === false ? 'unvisited' : 'available';
 }
 
-function manifestStatus(state) {
+function mapStatus(state) {
   switch (state) {
     case 'recorded': return { label: 'RECORDED', tone: 'complete', glyph: '✓' };
     case 'current': return { label: 'IN ROOM', tone: 'active', glyph: '●' };
@@ -217,12 +217,12 @@ export function normalizeRoom(room, index = 0, total = 5) {
   const roomId = raw.roomId || `room-${index + 1}`;
   const state = roomState(raw);
   const notes = Array.isArray(raw.notes) ? raw.notes : [];
-  const status = manifestStatus(state);
+  const status = mapStatus(state);
   const timestamp = raw.stamp || '--:--';
 
   return {
     id: `room:${roomId}`,
-    section: 'manifest',
+    section: 'map',
     kind: 'room',
     roomId,
     sequence: index + 1,
@@ -356,7 +356,13 @@ function normalizeFile(doc, { roomId, folder, marked = false }) {
   };
 }
 
-export function buildBagModel({ equipment = [], job = EMPTY_JOB } = {}) {
+export const BAG_SECTION_ALIASES = Object.freeze({ manifest: 'map' });
+
+export function normalizeBagSectionId(sectionId) {
+  return BAG_SECTION_ALIASES[sectionId] || sectionId;
+}
+
+export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null } = {}) {
   const safeJob = {
     ...EMPTY_JOB,
     ...(job || {}),
@@ -366,23 +372,38 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB } = {}) {
 
   const kit = (Array.isArray(equipment) ? equipment : []).map(normalizeEquipment);
   const total = Math.max(0, Number(safeJob.total) || safeJob.rooms.length || 0);
-  const manifest = safeJob.rooms.map((room, index) => normalizeRoom(room, index, total || safeJob.rooms.length || 5));
+  const mapEntries = safeJob.rooms.map((room, index) => {
+    const entry = normalizeRoom(room, index, total || safeJob.rooms.length || 5);
+    const space = map?.spaces?.find((candidate) => candidate.roomId === entry.roomId) || null;
+    return space ? {
+      ...entry,
+      floorId: space.floorId,
+      mapPosition: space.position,
+      current: !!space.current,
+      marked: !!space.waypoint,
+      state: space.objective?.state || entry.state,
+      status: mapStatus(space.objective?.state || entry.state),
+      source: { ...entry.source, mapSpace: space },
+    } : entry;
+  });
   const files = normalizeFiles(safeJob);
   const done = clampInt(safeJob.done, 0, total || Math.max(0, safeJob.done || 0));
 
   return {
     sections: [
       { id: 'kit', label: 'KIT', countLabel: String(kit.filter((e) => e.present).length).padStart(2, '0'), entries: kit },
-      { id: 'manifest', label: 'MANIFEST', countLabel: `${done}/${total}`, entries: manifest },
+      { id: 'map', label: 'MAP', countLabel: `${done}/${total}`, entries: mapEntries, map },
       { id: 'files', label: 'FILES', countLabel: String(files.length).padStart(2, '0'), entries: files },
     ],
     progress: { done, total },
     job: safeJob,
+    map,
   };
 }
 
 export function bagSection(model, sectionId) {
-  return model?.sections?.find((section) => section.id === sectionId) || null;
+  const normalized = normalizeBagSectionId(sectionId);
+  return model?.sections?.find((section) => section.id === normalized) || null;
 }
 
 export function bagEntry(model, sectionId, entryId) {

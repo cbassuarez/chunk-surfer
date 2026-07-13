@@ -10,6 +10,7 @@
 import { uiLine, uiText, uiWrap } from './ui.js';
 import { drawBagIcon } from './bag-icons.js';
 import { bagEntry, bagSection } from '../game/bag-model.js';
+import { drawMapView } from './map-view.js';
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
@@ -56,7 +57,7 @@ function drawTabs(model, nav, layout, pulse) {
   const gap = compact ? 1 : 2;
 
   const labels = tabs.map((tab) => {
-    const short = tab.id === 'kit' ? 'K' : tab.id === 'manifest' ? 'M' : 'F';
+    const short = tab.id === 'kit' ? 'K' : tab.id === 'map' ? 'M' : 'F';
     const core = compact ? `${short} ${tab.countLabel}` : `${tab.label} ${tab.countLabel}`;
     return tab.id === active ? `[${compact ? '' : ' '}${core}${compact ? '' : ' '}]` : core;
   });
@@ -79,7 +80,7 @@ function drawTabs(model, nav, layout, pulse) {
 
 function sectionHeader(sectionId) {
   if (sectionId === 'kit') return 'CASE INDEX';
-  if (sectionId === 'manifest') return 'TAKE MANIFEST';
+  if (sectionId === 'map') return 'FACILITY MAP';
   return 'FILE INDEX';
 }
 
@@ -168,7 +169,7 @@ function drawList(model, nav, layout, motion, now) {
   if (scroll > 0) rightText(layout.list.x, layout.list.y + 1, layout.list.w, '▲ MORE', 'ui-secondary', .48);
 
   if (section.id === 'kit') drawKitList(section.entries, selectedId, layout.list, scroll, capacity, pulse);
-  else if (section.id === 'manifest') drawManifestList(section.entries, selectedId, layout.list, scroll, capacity, pulse);
+  else if (section.id === 'map') drawManifestList(section.entries, selectedId, layout.list, scroll, capacity, pulse);
   else drawFilesList(section.entries, selectedId, layout.list, scroll, capacity, pulse);
 
   if (scroll + capacity < section.entries.length) {
@@ -177,7 +178,7 @@ function drawList(model, nav, layout, motion, now) {
 }
 
 function drawProgress(model, x, y, width) {
-  const rooms = bagSection(model, 'manifest')?.entries || [];
+  const rooms = bagSection(model, 'map')?.entries || [];
   if (!rooms.length || width < 18) return;
 
   const parts = rooms.map((room) => {
@@ -325,25 +326,29 @@ export function bagTaskText({ hint, model, entry }) {
   return `TASK: RECORD FIVE CLEAN MINUTES · ${model.progress.done}/${model.progress.total} COMPLETE`;
 }
 
-export function drawBagView({ model, nav, layout, hint = '', motion, now }) {
+export function drawBagView({ model, nav, mapNav = null, layout, hint = '', motion, now }) {
   const selected = bagEntry(model, nav.sectionId, nav.selected?.[nav.sectionId]);
   const sectionPulse = acquire(now, motion.sectionChangedAt);
-
   drawTabs(model, nav, layout, sectionPulse);
 
-  if (layout.mode === 'wide') {
-    uiLine(layout.dividerX, layout.list.y - 1, layout.dividerX, layout.list.y + layout.list.h, undefined, .36);
+  let actions = null;
+  if (nav.sectionId === 'map' && model.map && mapNav) {
+    const rendered = drawMapView({ model: model.map, nav: mapNav, bagLayout: layout, now });
+    actions = rendered.actions;
   } else {
-    uiLine(layout.list.x, layout.list.y - 1, layout.list.x + layout.list.w, layout.list.y - 1, undefined, .30);
+    if (layout.mode === 'wide') {
+      uiLine(layout.dividerX, layout.list.y - 1, layout.dividerX, layout.list.y + layout.list.h, undefined, .36);
+    } else {
+      uiLine(layout.list.x, layout.list.y - 1, layout.list.x + layout.list.w, layout.list.y - 1, undefined, .30);
+    }
+    drawList(model, nav, layout, motion, now);
+    drawDetail(model, nav, layout, motion, now);
   }
-
-  drawList(model, nav, layout, motion, now);
-  drawDetail(model, nav, layout, motion, now);
 
   uiLine(layout.taskRail.x, layout.taskRail.y - .35, layout.taskRail.x + layout.taskRail.w, layout.taskRail.y - .35, undefined, .24);
   uiText(layout.taskRail.x, layout.taskRail.y, clip(bagTaskText({ hint, model, entry: selected }), layout.taskRail.w), hint ? 'ui-amber' : 'ui-secondary', hint ? .92 : .62);
 
-  const actions = bagActionRail(selected, nav.mode);
+  actions = nav.mode === 'confirm' ? bagActionRail(selected, nav.mode) : (actions || bagActionRail(selected, nav.mode));
   const actionText = clip(actionRailText(actions, layout.actionRail.w), layout.actionRail.w);
   uiText(layout.actionRail.x, layout.actionRail.y, actionText, nav.mode === 'confirm' ? 'ui-danger' : 'ui-label', nav.mode === 'confirm' ? .92 : .72);
 }
