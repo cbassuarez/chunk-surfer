@@ -1,0 +1,13 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Main game window access to app-scoped saves, logs, and folder reveal support.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "log:default",
+    "opener:default",
+    "fs:allow-app-read-recursive",
+    "fs:allow-app-write-recursive"
+  ]
+}

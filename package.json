@@ -22,5 +22,10 @@
     "meshoptimizer": "^1.2.0",
     "puppeteer-core": "^25.3.0",
     "vite": "^8.1.4"
+  },
+  "dependencies": {
+    "@tauri-apps/plugin-fs": "^2.5.1",
+    "@tauri-apps/plugin-log": "^2.8.0",
+    "@tauri-apps/plugin-opener": "^2.5.4"
   }
 }

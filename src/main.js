@@ -33,7 +33,7 @@ import * as scenes from './game/scenes.js';
 import { uiInit, uiClear, uiText, uiSize, uiFill, uiCenter, uiDraw, uiPointFromClient, uiWrap } from './render/ui.js';
 import { drawVfdCounter, drawVfdMeter, drawMachinePanel, drawLocationIndicator, drawVfdText } from './render/presentation.js';
 import { applyVfdSettings } from './render/palette.js';
-import { saveLoad, saveCommit, getSave, newGame, metaCommit, getMeta } from './game/save.js';
+import { saveLoadAsync, saveCommit, getSave, newGame, metaCommit, getMeta } from './game/save.js';
 import { flagApply, flagTest, flagGet } from './game/flags.js';
 // The M2 dialogue runtime (game/dialogue.js, data/prologue.js, the Usher) is
 // gone. Conversations are game/conversation.js now, and there is nobody in this
@@ -7390,12 +7390,12 @@ function enterJustSurf(){
   pushEvent('// just surf. no story. the field is the field.');
 }
 
-function bootScenes(){
+async function bootScenes(){
   window.__scenes=scenes;
   installProbe();
   try{ MAP_EL.setAttribute('tabindex','0'); MAP_EL.focus({preventScroll:true}); }catch(_){}
-  saveLoad();
   const qp=new URLSearchParams(location.search);
+  await saveLoadAsync({ gameVersion: qp.get('build') || 'LOCAL' });
   progressionInit({build:qp.get('build') || 'LOCAL'});
   BINDINGS.setControllerBindings(getSave().settings?.controllerBindings);
   { const vs=getSave().settings?.vfd; if(vs) applyVfdSettings(vs); }
@@ -7995,7 +7995,7 @@ function onScenePointer(e){
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
-function boot(){
+async function boot(){
   const worldSummary = MANIFEST.worlds.map((w) => `${w.label}:${w.files.length}`).join(' · ');
   const lines=[
     'chunk surfer // cbassuarez.com',
@@ -8039,7 +8039,7 @@ function boot(){
   });
   window.addEventListener('blur',onBlur);
   updateOnboardingButton();
-    bootScenes();
+    await bootScenes();
     raf=requestAnimationFrame(loop);
     const qp=new URLSearchParams(location.search);
     if(!qp.has('baglab')&&!qp.has('progresslab')&&!qp.has('maplab')&&!qp.has('hushaudiolab')){
@@ -8048,4 +8048,6 @@ function boot(){
     }
 }
 
-boot();
+boot().catch((err)=>{
+  console.error('boot failed', err);
+});

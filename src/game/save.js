@@ -22,11 +22,27 @@ import { normalizeRuleValues } from '../progression/difficulty.js';
 import { DIFFICULTY_PRESETS } from '../progression/difficulty-defs.js';
 import { ACHIEVEMENT_BY_ID } from '../progression/achievement-defs.js';
 import { queueChangedStats } from '../progression/stat-defs.js';
+import {
+  firstStored,
+  parseStoredJson,
+  writeJson,
+  removeKeys,
+} from '../platform/storage/browserStorage.js';
+import {
+  initGameStorage,
+  loadGameState,
+  saveSettingsQueued,
+  saveProfileQueued,
+  saveGameQueued,
+  deleteSaveQueued,
+  deleteProfileQueued,
+} from '../platform/storage/storageService.js';
+import { LEGACY_SAVE_KEYS as STORAGE_LEGACY_SAVE_KEYS, LEGACY_PROFILE_KEYS } from '../platform/storage/types.js';
 
 const SAVE_KEY = 'chunk-surfer:save:v3';
-const LEGACY_SAVE_KEYS = ['chunk-surfer:save:v2', 'chunk-surfer:save:v1'];
+const LEGACY_SAVE_KEYS = STORAGE_LEGACY_SAVE_KEYS.filter((key) => key !== SAVE_KEY);
 const META_KEY = 'chunk-surfer:meta:v2';
-const LEGACY_META_KEYS = ['chunk-surfer:meta:v1'];
+const LEGACY_META_KEYS = LEGACY_PROFILE_KEYS.filter((key) => key !== META_KEY);
 
 export const freshSave = ({ settings = DEFAULT_SETTINGS, run = null } = {}) => ({
   version: SAVE_VERSION,
@@ -247,21 +263,11 @@ function migrateMetaToV2(data) {
 }
 
 function safeParse(raw) {
-  try { return JSON.parse(raw); } catch (_) { return null; }
-}
-
-function firstStored(keys) {
-  try {
-    for (const key of keys) {
-      const raw = localStorage.getItem(key);
-      if (raw != null) return { key, raw };
-    }
-  } catch (_) {}
-  return null;
+  return parseStoredJson(raw);
 }
 
 function write(key, data) {
-  try { localStorage.setItem(key, JSON.stringify(data)); } catch (_) { /* private mode */ }
+  writeJson(key, data);
 }
 
 let save = freshSave();
@@ -291,6 +297,29 @@ export function saveLoad() {
   return { save, meta };
 }
 
+
+export async function saveLoadAsync({ gameVersion = 'LOCAL', kind = null, adapter = null } = {}) {
+  try {
+    await initGameStorage({ gameVersion, kind, adapter });
+    const loaded = await loadGameState({ gameVersion });
+    meta = sanitizeMeta(loaded.profile || freshMeta());
+    if (loaded.save) {
+      const withSettings = { ...loaded.save, settings: loaded.settings || loaded.save.settings };
+      save = withSettings.version === SAVE_VERSION
+        ? normalizeSaveV3(withSettings, meta)
+        : (migrateSaveToV3(withSettings, meta) || normalizeSaveV3(withSettings, meta));
+    } else {
+      save = freshSave({ settings: loaded.settings || DEFAULT_SETTINGS });
+    }
+    await saveSettingsQueued(save.settings);
+    await saveProfileQueued(meta);
+    await saveGameQueued(save);
+    return { save, meta };
+  } catch (_) {
+    return saveLoad();
+  }
+}
+
 export function getSave() { return save; }
 export function getMeta() { return meta; }
 
@@ -308,6 +337,8 @@ export function saveCommit(patch = {}) {
   Object.assign(save, patch);
   save = normalizeSaveV3(save, meta);
   write(SAVE_KEY, save);
+  saveSettingsQueued(save.settings);
+  saveGameQueued(save);
   return save;
 }
 
@@ -315,6 +346,7 @@ export function metaCommit(patch = {}) {
   Object.assign(meta, patch);
   meta = sanitizeMeta(meta);
   write(META_KEY, meta);
+  saveProfileQueued(meta);
   return meta;
 }
 
@@ -336,6 +368,8 @@ export function newGame({ preset = null, values = null, now = Date.now() } = {})
   });
 
   write(SAVE_KEY, save);
+  saveSettingsQueued(save.settings);
+  saveGameQueued(save);
   const nextStats = {
     ...meta.stats,
     runsStarted: (meta.stats?.runsStarted || 0) + 1,
@@ -352,19 +386,15 @@ export function newGame({ preset = null, values = null, now = Date.now() } = {})
 }
 
 export function clearSave() {
-  try {
-    localStorage.removeItem(SAVE_KEY);
-    for (const key of LEGACY_SAVE_KEYS) localStorage.removeItem(key);
-  } catch (_) {}
+  removeKeys([SAVE_KEY, ...LEGACY_SAVE_KEYS]);
   save = freshSave({ settings: save?.settings });
+  deleteSaveQueued();
 }
 
 export function clearMeta() {
-  try {
-    localStorage.removeItem(META_KEY);
-    for (const key of LEGACY_META_KEYS) localStorage.removeItem(key);
-  } catch (_) {}
+  removeKeys([META_KEY, ...LEGACY_META_KEYS]);
   meta = freshMeta();
+  deleteProfileQueued();
 }
 
 export function clearAllData() {
