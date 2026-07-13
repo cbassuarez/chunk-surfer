@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, room-tone]
+  workflow_dispatch:
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+          cache: npm
+      - run: npm install
+      - run: npm test
+      - run: npm run test:acoustic
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chunk-surfer-web-dist
+          path: dist
+          if-no-files-found: error
