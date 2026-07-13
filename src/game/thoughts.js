@@ -22,6 +22,8 @@ import * as scenes from './scenes.js';
 import { uiSize, uiScrim } from '../render/ui.js';
 import { drawMachinePanel } from '../render/presentation.js';
 import { createConversation } from './conversation.js';
+import { drawStoryArtCard, planStoryArtInPanel, planStoryArtSideBySide, storyArtSideBySidePanelRows } from './story-art-card.js';
+import { resolveStoryArt } from './story-art.js';
 import {
   drawTranscript,
   drawTranscriptChoices,
@@ -75,11 +77,19 @@ export function makeThoughtScene({
           Math.max(12, w - 6),
         );
 
+        const art = resolveStoryArt(v.art || null);
+        const fixedArtPanelH = art
+          ? storyArtSideBySidePanelRows({
+              choicesRows: choices.height ? choices.height + 1 : 0,
+              bottomPadRows: 2,
+            })
+          : 0;
         const panelH = Math.min(
           rows - 4,
           Math.max(
             12,
             Math.min(21, 12 + choices.height),
+            fixedArtPanelH,
           ),
         );
 
@@ -124,29 +134,84 @@ export function makeThoughtScene({
           ? choiceLayout.height + 1
           : 0;
 
-        const transcriptY =
+        let transcriptY =
           header.y + (header.rows ? 1 : 0);
 
-        const availableRows = Math.max(
+        const beforeTextRows = Math.max(
           1,
           panel.y +
             panel.h -
             transcriptY -
             reserve,
         );
+        const sidePlan = planStoryArtSideBySide({
+          art,
+          mode: art?.mode || 'compact',
+          panelRows: beforeTextRows,
+          panelCols: contentW,
+          textRowsMin: 3,
+          choicesRows: 0,
+          minTextCols: 28,
+          bottomPadRows: 2,
+        });
+
+        let transcriptX = contentX;
+        let transcriptW = contentW;
+        let availableRows = beforeTextRows;
+
+        if (sidePlan.show) {
+          drawStoryArtCard(art, {
+            x: contentX,
+            y: transcriptY,
+            w: sidePlan.artCols,
+            rows: sidePlan.rows,
+            mode: sidePlan.mode || art.mode,
+            lockRows: true,
+          });
+          transcriptX = contentX + sidePlan.artCols + sidePlan.gap;
+          transcriptW = sidePlan.textCols;
+          availableRows = sidePlan.rows;
+        } else {
+          const artPlan = planStoryArtInPanel({
+            art,
+            mode: art?.mode || 'compact',
+            panelRows: beforeTextRows,
+            textRowsMin: 3,
+            choicesRows: reserve,
+          });
+
+          if (artPlan.show) {
+            drawStoryArtCard(art, {
+              x: contentX,
+              y: transcriptY,
+              w: contentW,
+              rows: artPlan.rows,
+              mode: artPlan.mode || art.mode,
+            });
+            transcriptY += artPlan.rows + 1;
+          }
+
+          availableRows = Math.max(
+            1,
+            panel.y +
+              panel.h -
+              transcriptY -
+              reserve,
+          );
+        }
 
         // Thoughts remain a compact overlay. Only recent signal blocks survive so
         // the moving corridor behind them stays readable.
         const transcript = layoutTranscript(v, {
-          width: contentW,
+          width: transcriptW,
           maxRows: availableRows,
           keep: 3,
         });
 
         drawTranscript(transcript, {
-          x: contentX,
+          x: transcriptX,
           y: transcriptY,
-          width: contentW,
+          width: transcriptW,
           maxRows: availableRows,
         });
 

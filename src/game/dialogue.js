@@ -22,6 +22,8 @@ import { uiText, uiWrap, uiGlyph, uiSize, uiScrim } from '../render/ui.js';
 import { drawMachinePanel, drawVfdText } from '../render/presentation.js';
 import { portrait, degrade } from '../render/portraits.js';
 import { textCps } from './access.js';
+import { drawStoryArtCard, planStoryArtInPanel, planStoryArtSideBySide, storyArtRows, storyArtSideBySidePanelRows } from './story-art-card.js';
+import { resolveStoryArt } from './story-art.js';
 import { interpolate } from './terror.js';
 
 const PORTRAIT_W = 22, PORTRAIT_H = 13;
@@ -139,7 +141,14 @@ function makeDialogueScene(nodeId) {
       const { cols, rows } = uiSize();
       uiScrim(0.5);
 
-      const boxH = 12;
+      const currentLine = lines[li] || null;
+      const art = resolveStoryArt(currentLine?.art || node.art || null);
+      const choicesReserve = done && choices().length ? Math.min(choices().length, 3) + 1 : 1;
+      const wantedArtRows = art ? storyArtRows(art.mode, Math.floor(rows * 0.28)) + 1 : 0;
+      const fixedSideBySideRows = art
+        ? storyArtSideBySidePanelRows({ choicesRows: choicesReserve, headerRows: 1, bottomPadRows: 2 })
+        : 0;
+      const boxH = Math.min(rows - 2, Math.max(12 + wantedArtRows, fixedSideBySideRows));
       const boxY = rows - boxH - 1;
       const boxX = 1, boxW = cols - 2;
       const panel = drawMachinePanel(boxX, boxY, boxW, boxH, {
@@ -147,30 +156,82 @@ function makeDialogueScene(nodeId) {
         footer: done && choices().length ? '[↑/↓] SELECT · [ENTER] CONFIRM' : '[SPACE] CONTINUE', meter: true,
       });
 
-      // portrait pane
-      const pid = node.portrait;
-      let block = portrait(pid);
-      if (block && node.register === 'decay') block = degrade(block, Math.min(0.85, visits(nodeId) * 0.22));
-      const textX = panel.x + 1 + (block ? PORTRAIT_W + 2 : 0);
-      if (block) {
-        for (let y = 0; y < Math.min(PORTRAIT_H, boxH - 2); y++) {
-          uiText(panel.x, panel.y + y, block[y], 'ui-secondary');
+      let contentY = panel.y;
+      let contentX = panel.x;
+      let contentW = panel.w;
+      let artShown = false;
+      let textBottomY = boxY + boxH - 2;
+
+      const sidePlan = planStoryArtSideBySide({
+        art,
+        mode: art?.mode || 'compact',
+        panelRows: panel.h,
+        panelCols: panel.w,
+        textRowsMin: 5,
+        choicesRows: choicesReserve,
+        minTextCols: 34,
+        bottomPadRows: 2,
+      });
+
+      if (sidePlan.show) {
+        drawStoryArtCard(art, {
+          x: panel.x,
+          y: contentY,
+          w: sidePlan.artCols,
+          rows: sidePlan.rows,
+          mode: sidePlan.mode || art.mode,
+          lockRows: true,
+        });
+        contentX = panel.x + sidePlan.artCols + sidePlan.gap;
+        contentW = sidePlan.textCols;
+        textBottomY = Math.min(textBottomY, contentY + sidePlan.rows);
+        artShown = true;
+      } else {
+        const artPlan = planStoryArtInPanel({
+          art,
+          mode: art?.mode || 'compact',
+          panelRows: panel.h,
+          textRowsMin: 5,
+          choicesRows: choicesReserve,
+        });
+
+        if (artPlan.show) {
+          drawStoryArtCard(art, {
+            x: panel.x,
+            y: contentY,
+            w: panel.w,
+            rows: artPlan.rows,
+            mode: artPlan.mode || art.mode,
+          });
+          contentY += artPlan.rows + 1;
+          artShown = true;
         }
       }
 
-      if (node.speaker) drawVfdText(textX, panel.y, node.speaker);
+      // portrait pane. Story art supersedes the old portrait block when present.
+      const pid = artShown ? null : node.portrait;
+      let block = portrait(pid);
+      if (block && node.register === 'decay') block = degrade(block, Math.min(0.85, visits(nodeId) * 0.22));
+      const textX = contentX + 1 + (block ? PORTRAIT_W + 2 : 0);
+      if (block) {
+        for (let yy = 0; yy < Math.min(PORTRAIT_H, boxH - 2); yy++) {
+          uiText(contentX, contentY + yy, block[yy], 'ui-secondary');
+        }
+      }
+
+      if (node.speaker) drawVfdText(textX, contentY, node.speaker);
 
       // lines: everything before the current one stays on screen
-      const textW = Math.max(8, boxX + boxW - textX - 3);
-      let y = panel.y + 2;
-      for (let i = 0; i <= li && y < boxY + boxH - 2; i++) {
+      const textW = Math.max(8, contentX + contentW - textX - 2);
+      let y = contentY + 2;
+      for (let i = 0; i <= li && y < textBottomY; i++) {
         const line = lines[i];
         const isDirection = line.direction != null;
         const full = String(line.text ?? line.direction ?? '');
         const shown = i < li ? full : full.slice(0, chars);
         const cls = line.struck ? 'ui-secondary' : isDirection ? 'ui-secondary' : 'ui-primary';
         for (const wrapped of uiWrap(shown, textW)) {
-          if (y >= boxY + boxH - 2) break;
+          if (y >= textBottomY) break;
           uiText(textX, y, wrapped, cls, line.struck ? 0.58 : 1);
           if (line.struck) for (let k = 0; k < wrapped.length; k++) uiGlyph(textX + k, y, '─', 'ui-frame', 0.65);
           y++;

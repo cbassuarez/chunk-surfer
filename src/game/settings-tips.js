@@ -25,6 +25,7 @@ const SETTING_HELP = Object.freeze({
     brightness: 'BRIGHTNESS changes the simulated display panel, not your monitor.',
     flicker: 'LOW flicker adds panel life. FULL makes the display less stable.',
     visualFx: 'VISUAL FX is the master switch for intense screen effects.',
+    pixelMeshMode: 'VFD PIXEL MESH changes how much of the world is interpreted through the instrument display.',
     resetDisplaySettings: 'RESET DISPLAY SETTINGS restores window, UI, and render defaults.',
     default: 'Display settings change the service panel, not the save file.',
   },

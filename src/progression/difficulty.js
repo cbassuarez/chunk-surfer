@@ -26,6 +26,13 @@ export function availablePresets(meta) {
     .map((id) => DIFFICULTY_PRESETS[id]);
 }
 
+export function visiblePresets(meta) {
+  return PRESET_ORDER.map((id) => Object.freeze({
+    ...DIFFICULTY_PRESETS[id],
+    locked: !presetUnlocked(id, meta),
+  }));
+}
+
 export function presetById(id, meta = null) {
   const requested = DIFFICULTY_PRESETS[id];
   if (requested && presetUnlocked(id, meta)) return requested;

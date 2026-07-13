@@ -17,6 +17,8 @@
 import { assetUrl } from '../platform/paths.js';
 import { CELL, EYE as EYE_METERS, MATERIAL, PLAN_SCALE } from '../data/floorplan/legend.js';
 import * as P3 from './props3d.js';
+import { PIXEL_MESH_MODES, normalizePixelMeshSettings, pixelMeshModeUniforms } from './pixel-mesh/settings.js';
+import { PIXEL_MESH_FRAG } from './pixel-mesh/shader.js';
 
 const MAX_CHUNKS = 48;
 const RD_SIZE = 256;
@@ -684,16 +686,64 @@ void main(){
 
 // ── GL plumbing ──────────────────────────────────────────────────────────────
 let gl = null, canvas = null;
-let progRD, progMarch, progPost, progDepth;
+let progRD, progMarch, progPost, progDepth, progPixelMesh;
 // How frightened he is, 0..1. main.js owns the number; the post pass spends it.
 let fearLevel = 0;
 export function r3dSetFear(v) { fearLevel = Math.max(0, Math.min(1, v || 0)); }
+export function r3dSetPixelMesh(settings = {}) {
+  pixelMeshSettings = normalizePixelMeshSettings({ ...pixelMeshSettings, ...settings });
+  if (Number.isFinite(Number(settings.forceSignalUntil))) {
+    pixelMeshStatus.forceSignalUntil = Math.max(pixelMeshStatus.forceSignalUntil, Number(settings.forceSignalUntil));
+  }
+  if (Number.isFinite(Number(settings.forceSignalMs))) {
+    pixelMeshStatus.forceSignalUntil = Math.max(pixelMeshStatus.forceSignalUntil, pixelMeshNow() + Number(settings.forceSignalMs) / 1000);
+  }
+  pixelMeshStatus.lastMode = pixelMeshSettings.mode;
+  pixelMeshStatus.enabled = pixelMeshSettings.mode !== 'off' || pixelMeshStatus.forceSignalUntil > pixelMeshNow();
+  return pixelMeshSettings;
+}
+export function r3dPixelMeshSettings() { return pixelMeshSettings; }
+export function r3dPulsePixelMesh(ms = 1800) {
+  pixelMeshStatus.forceSignalUntil = pixelMeshNow() + Math.max(250, Number(ms) || 1800) / 1000;
+  if (pixelMeshSettings.mode === 'off') {
+    pixelMeshSettings = normalizePixelMeshSettings({ ...pixelMeshSettings, mode: 'standard' });
+  }
+  pixelMeshStatus.enabled = true;
+  pixelMeshStatus.lastMode = pixelMeshSettings.mode;
+  return r3dPixelMeshStatus();
+}
+export function r3dPixelMeshStatus() {
+  return {
+    ...pixelMeshStatus,
+    settings: pixelMeshSettings,
+    forced: pixelMeshStatus.forceSignalUntil > pixelMeshNow(),
+  };
+}
 let rdTexA, rdTexB, rdFboA, rdFboB, rdFlip = false, rdWarm = 0;
 let sceneTex, sceneFbo, fogTexture, surfaceTexture=null;
+let meshTexA=null, meshTexB=null, meshFboA=null, meshFboB=null, meshFlip=false;
 let surfAlbedoTex=null, surfNormalTex=null, surfRoughTex=null, surfHeightTex=null, surfDreamTex=null, surfDreamStageTex=null, anisoExt=null, anisoMax=1;
 const SURFACE_LAYERS=10,SURFACE_TILE=512;
 const surfDreamMix=new Float32Array(SURFACE_LAYERS);
 let localDiffusionLevel = 0;
+let pixelMeshSettings = normalizePixelMeshSettings();
+const pixelMeshUniformCache = new Map();
+const pixelMeshStatus = {
+  supported: false,
+  shaderReady: false,
+  enabled: false,
+  framesSeen: 0,
+  framesRendered: 0,
+  lastMode: 'off',
+  lastError: null,
+  lastGlError: 0,
+  forceSignalUntil: 0,
+  sceneWidth: 0,
+  sceneHeight: 0,
+};
+function pixelMeshNow() {
+  return (globalThis.performance?.now?.() || Date.now()) / 1000;
+}
 // Load a vertical strip PNG/JPG (one tile per layer) as a WebGL2 texture array:
 // mipmaps, REPEAT wrap and anisotropy — the quality an atlas cannot give a
 // tiled surface. sRGB decode for colour, linear for normal/roughness.
@@ -791,6 +841,16 @@ function program(fragSrc) {
     throw new Error('link: ' + gl.getProgramInfoLog(p));
   return p;
 }
+function reportGlError(label) {
+  const code = gl?.getError?.() || 0;
+  if (code) {
+    const msg = `${label}: WebGL error ${code}`;
+    pixelMeshStatus.lastGlError = code;
+    pixelMeshStatus.lastError = msg;
+    console.warn('[pixel-mesh]', msg);
+  }
+  return code;
+}
 function makeTex(w, h, data = null, format = 'rgba8') {
   const t = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, t);
@@ -809,10 +869,104 @@ function makeFbo(tex) {
   const f = gl.createFramebuffer();
   gl.bindFramebuffer(gl.FRAMEBUFFER, f);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+  const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+  if (status !== gl.FRAMEBUFFER_COMPLETE) {
+    console.warn('[r3d] framebuffer incomplete', status);
+  }
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   return f;
 }
 
+function makeMeshTex(w, h) {
+  const t = makeTex(w, h);
+  gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  return t;
+}
+
+function debugSourceToNumber(source) {
+  if (source === 'world') return 1;
+  if (source === 'signal') return 2;
+  if (source === 'memory') return 3;
+  if (source === 'edge') return 4;
+  return 0;
+}
+
+function resolvePixelMeshCellScenePx() {
+  const raw = pixelMeshSettings.cellSize;
+  const cssCell = raw === 'auto' ? 8 : Math.max(4, Math.min(24, Number(raw) || 8));
+  return Math.max(1, cssCell * (globalThis.devicePixelRatio || 1) * RENDER_SCALE);
+}
+
+function pixelMeshU(name) {
+  if (!pixelMeshUniformCache.has(name)) pixelMeshUniformCache.set(name, gl.getUniformLocation(progPixelMesh, name));
+  return pixelMeshUniformCache.get(name);
+}
+
+function runPixelMeshPass(state, now) {
+  pixelMeshStatus.framesSeen += 1;
+  pixelMeshStatus.shaderReady = !!progPixelMesh;
+  pixelMeshStatus.supported = !!(gl && progPixelMesh && meshTexA && meshTexB && meshFboA && meshFboB);
+  pixelMeshStatus.sceneWidth = uniforms.sceneW || 0;
+  pixelMeshStatus.sceneHeight = uniforms.sceneH || 0;
+
+  const forceSignal = Math.max(0, Math.min(1, pixelMeshStatus.forceSignalUntil > now ? 1 : 0));
+  const effectiveSettings = forceSignal > 0 && pixelMeshSettings.mode === 'off'
+    ? normalizePixelMeshSettings({ ...pixelMeshSettings, mode: 'standard' })
+    : pixelMeshSettings;
+  const mode = pixelMeshModeUniforms(effectiveSettings) || PIXEL_MESH_MODES.off;
+  pixelMeshStatus.lastMode = effectiveSettings.mode;
+  pixelMeshStatus.enabled = effectiveSettings.mode !== 'off' || forceSignal > 0;
+
+  if (!pixelMeshStatus.supported) {
+    if (pixelMeshStatus.enabled) pixelMeshStatus.lastError = pixelMeshStatus.lastError || 'pixel mesh WebGL resources unavailable';
+    return sceneTex;
+  }
+  if (effectiveSettings.mode === 'off' && forceSignal <= 0) return sceneTex;
+  if (!mode.worldAmount && !mode.signalAmount && forceSignal <= 0) return sceneTex;
+
+  const dstFbo = meshFlip ? meshFboA : meshFboB;
+  const dstTex = meshFlip ? meshTexA : meshTexB;
+  const prevTex = meshFlip ? meshTexB : meshTexA;
+  meshFlip = !meshFlip;
+
+  gl.useProgram(progPixelMesh);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, dstFbo);
+  gl.viewport(0, 0, uniforms.sceneW, uniforms.sceneH);
+
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, sceneTex);
+  gl.uniform1i(pixelMeshU('uSrc'), 0);
+
+  gl.activeTexture(gl.TEXTURE1);
+  gl.bindTexture(gl.TEXTURE_2D, prevTex);
+  gl.uniform1i(pixelMeshU('uPrev'), 1);
+
+  gl.uniform2f(pixelMeshU('uRes'), uniforms.sceneW, uniforms.sceneH);
+  gl.uniform1f(pixelMeshU('uTime'), now);
+  gl.uniform1f(pixelMeshU('uCellPx'), resolvePixelMeshCellScenePx());
+  gl.uniform1f(pixelMeshU('uWorldAmount'), forceSignal > 0 ? Math.max(mode.worldAmount || 0, 0.9) : (mode.worldAmount || 0));
+  gl.uniform1f(pixelMeshU('uSignalAmount'), forceSignal > 0 ? Math.max(mode.signalAmount || 0, 1.15) : (mode.signalAmount || 0));
+  gl.uniform1f(pixelMeshU('uGlowAmount'), forceSignal > 0 ? Math.max(mode.glowAmount || 0, 0.36) : (mode.glowAmount || 0));
+  gl.uniform1f(pixelMeshU('uMemoryAmount'), effectiveSettings.memory ? (mode.memoryAmount || 0) : 0);
+  gl.uniform1f(pixelMeshU('uAudio'), Math.max(0, Math.min(1, Number(state?.audio) || 0)));
+  gl.uniform1f(pixelMeshU('uFear'), fearLevel);
+  gl.uniform1f(pixelMeshU('uLocalDiffusion'), localDiffusionLevel);
+  gl.uniform1f(pixelMeshU('uReduceFlash'), effectiveSettings.reduceFlash ? 1 : 0);
+  gl.uniform1f(pixelMeshU('uReduceMotion'), effectiveSettings.reduceMotion ? 1 : 0);
+  gl.uniform1f(pixelMeshU('uDebugSource'), debugSourceToNumber(effectiveSettings.debugSource));
+  gl.uniform1f(pixelMeshU('uForceSignal'), forceSignal);
+
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  pixelMeshStatus.framesRendered += 1;
+  pixelMeshStatus.lastError = null;
+  reportGlError('pixel mesh pass');
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  return dstTex;
+}
 function loadImageTexture(url){
   return new Promise((resolve,reject)=>{
     const img=new Image();img.onload=()=>{const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);gl.texImage2D(gl.TEXTURE_2D,0,gl.SRGB8_ALPHA8,gl.RGBA,gl.UNSIGNED_BYTE,img);gl.generateMipmap(gl.TEXTURE_2D);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);resolve(t);};img.onerror=reject;img.src=url.href||String(url);
@@ -834,6 +988,18 @@ export function r3dInit(mapEl) {
   progMarch = program(MARCH_FRAG);
   progPost = program(POST_FRAG);
   progDepth = program(DEPTH_FRAG);
+  try {
+    progPixelMesh = program(PIXEL_MESH_FRAG);
+    pixelMeshStatus.shaderReady = true;
+    pixelMeshStatus.supported = true;
+    pixelMeshStatus.lastError = null;
+  } catch (err) {
+    progPixelMesh = null;
+    pixelMeshStatus.shaderReady = false;
+    pixelMeshStatus.supported = false;
+    pixelMeshStatus.lastError = err?.message || String(err);
+    console.error('pixel mesh shader unavailable; continuing without VFD mesh', err);
+  }
   P3.props3dInit(gl);
 
   gl.getExtension('EXT_color_buffer_float'); // render targets for the RD field
@@ -883,8 +1049,20 @@ function resize() {
   const sw = Math.max(64, Math.round(canvas.width * RENDER_SCALE));
   const sh = Math.max(64, Math.round(canvas.height * RENDER_SCALE));
   if (sceneTex) { gl.deleteTexture(sceneTex); gl.deleteFramebuffer(sceneFbo); }
+  if (meshTexA) {
+    gl.deleteTexture(meshTexA); gl.deleteTexture(meshTexB);
+    gl.deleteFramebuffer(meshFboA); gl.deleteFramebuffer(meshFboB);
+  }
   sceneTex = makeTex(sw, sh);
   sceneFbo = makeFbo(sceneTex);
+  meshTexA = makeMeshTex(sw, sh);
+  meshTexB = makeMeshTex(sw, sh);
+  meshFboA = makeFbo(meshTexA);
+  meshFboB = makeFbo(meshTexB);
+  meshFlip = false;
+  pixelMeshStatus.sceneWidth = sw;
+  pixelMeshStatus.sceneHeight = sh;
+  pixelMeshStatus.supported = !!progPixelMesh;
   P3.props3dResize(sw, sh);
   uniforms.sceneW = sw; uniforms.sceneH = sh;
 }
@@ -1131,12 +1309,14 @@ export function r3dFrame(state) {
   gl.uniform4f(U('uHush'), state.hush?.x ?? 0, state.hush?.y ?? 0, state.hush?.strength ?? 0, 0);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 
+  const postSourceTex = runPixelMeshPass(state, now);
+
   // post upscale to screen
   gl.useProgram(progPost);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.viewport(0, 0, canvas.width, canvas.height);
   gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, sceneTex);
+  gl.bindTexture(gl.TEXTURE_2D, postSourceTex);
   gl.uniform1i(gl.getUniformLocation(progPost, 'uSrc'), 0);
   gl.uniform2f(gl.getUniformLocation(progPost, 'uRes'), canvas.width, canvas.height);
   gl.uniform1f(gl.getUniformLocation(progPost, 'uFear'), fearLevel);

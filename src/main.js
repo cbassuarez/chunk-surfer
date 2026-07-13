@@ -42,6 +42,8 @@ import { flagApply, flagTest, flagGet } from './game/flags.js';
 import { makeTitleScene } from './game/title.js';
 import { makeSettingsScene } from './game/settings.js';
 import { makeCreditsScene } from './game/credits.js';
+import { makeStoryArtPreviewScene } from './game/story-art-preview.js';
+import { preloadStoryArt, resolveStoryArt, storyArtCacheSnapshot } from './game/story-art.js';
 import { terrorInit, once, interpolate } from './game/terror.js';
 import * as REC from './game/recordist.js';
 import * as RT from './audio/roomtone.js';
@@ -88,6 +90,7 @@ import { makeColdOpenScene, makeWorldTitleScene } from './game/coldopen.js';
 import { makeWarningScene } from './game/warning.js';
 import * as CONTROLLER from './game/controller.js';
 import * as BINDINGS from './game/bindings.js';
+import { InputManager, movementCodeForEvent } from './input/input-manager.js';
 import { makeThoughtScene, thoughtHad, markThought,
          loadThoughtState, saveThoughtState } from './game/thoughts.js';
 import { makeBagLabScene } from './game/bag-lab.js';
@@ -161,8 +164,11 @@ let worldTemplates=new Map(); // worldId -> {id,label,width,height,terrain,sampl
 // reading undefined and taking the world build down with them.
 let chunkByIdx=new Map();
 const chunkAt=(i)=>chunkByIdx.get(i);
-let keysDown=new Set();
+const motionInput = new InputManager();
+let keysDown=motionInput.held;
 let nextMoveAtMs=0;
+let nextTurnAtMs=0;
+let motionResetReason='boot';
 let desktopGameMode={enabled:false,previousWindowPreset:'1280x800',enteredAt:null};
 let desktopMuteRestoreVolume=null;
 
@@ -189,6 +195,7 @@ let worldBoundaryLatch=false;   // hysteresis latch for seam resistance
 let worldBoundaryFriction=0;    // 0..1 smoothed seam resistance
 let lastMoveAtMs=0;            // throttles tap/hold movement uniformly
 let renderMove=null;            // frame interpolation between collision cells
+let motionRig=null;              // spring-smoothed first-person camera rig
 let lastStepDx=0;
 let lastStepDy=0;
 let allFilesLoaded=false;
@@ -2012,10 +2019,10 @@ function lockHushForMercy(nowMs=performance.now(), bonusMs=0){
 function maybeLockHushFromInputKey(key, nowMs=performance.now()){
   if(!isHorrorActive() || !hush.active || depth>1 || isOnboardingActive() || doorRevealCutscene) return false;
   let dx=0, dy=0;
-  if(key==='ArrowUp' || key==='w' || key==='W') dy=-1;
-  else if(key==='ArrowDown' || key==='s' || key==='S') dy=1;
-  else if(key==='ArrowLeft' || key==='a' || key==='A') dx=-1;
-  else if(key==='ArrowRight' || key==='d' || key==='D') dx=1;
+  if(key==='ArrowUp' || key==='KeyW') dy=-1;
+  else if(key==='ArrowDown' || key==='KeyS') dy=1;
+  else if(key==='ArrowLeft' || key==='KeyA') dx=-1;
+  else if(key==='ArrowRight' || key==='KeyD') dx=1;
   else return false;
 
   const toHushX=hush.x-px;
@@ -2810,6 +2817,52 @@ function currentMoveIntervalMs(){
   // Keep motion responsive; difficulty is mostly handled by sink/lateral drag.
   return Math.round(clamp(ms, SCALED_MOVE_MIN(44), SCALED_MOVE_MIN(120)));
 }
+
+function currentTurnIntervalMs({ initial=false }={}){
+  const base=storyMode ? 185 : 150;
+  return initial ? Math.max(260, Math.round(base*1.85)) : base;
+}
+function resetMotionInput(reason='reset-motion', { stopRenderMove=false }={}){
+  motionInput.reset(reason);
+  keysDown=motionInput.held;
+  nextMoveAtMs=0;
+  nextTurnAtMs=0;
+  motionResetReason=reason;
+  lastLoopMs=0;
+  if(stopRenderMove){
+    renderMove=null;
+    snapMotionRig(reason);
+  }
+  REC.setSlow(false);
+}
+function clearMotionClock(reason='clear-motion-clock'){
+  nextMoveAtMs=0;
+  nextTurnAtMs=0;
+  motionResetReason=reason;
+}
+function motionHasHeldMove(){
+  return !!(forwardHeld()||backHeld()||leftHeld()||rightHeld());
+}
+function shouldPreserveFreshHeldMotion(){
+  const reason=motionInput.lastResetReason||'';
+  const fromFocusLoss=/blur|hidden|pagehide|pointerlock-lost/.test(reason);
+  return !!(fromFocusLoss && motionHasHeldMove() && motionInput.lastKeyAt > (motionInput.lastResetAt||0));
+}
+function recoverMotionFocus(reason='motion-focus'){
+  // Some WebViews deliver the keydown that re-enters play before the delayed
+  // window focus event. A destructive focus reset then collapses held movement
+  // into one-cell taps. Blur/hidden/pagehide already clear stale keys; focus
+  // only resets if there is no fresh post-blur movement key to preserve.
+  lastLoopMs=0;
+  renderMove=null;
+  snapMotionRig(reason);
+  if(shouldPreserveFreshHeldMotion()){
+    clearMotionClock(`${reason}-preserve-held`);
+    armHeldMovement(performance.now());
+    return;
+  }
+  resetMotionInput(reason,{stopRenderMove:true});
+}
 function targetBoundaryFriction(){
   if(isOnboardingActive()) return 0;
   const worldId = (curPlayerCtx && curPlayerCtx.worldId) ? curPlayerCtx.worldId : worldIdAt(px, py);
@@ -3298,23 +3351,61 @@ function physicalPointFor(x,y){
   }
   return{x,z:y};
 }
+function motionTargetPoint(){
+  return renderMove?.to || physicalPointFor(px,py);
+}
+function snapMotionRig(reason='snap-motion-rig'){
+  const p=physicalPointFor(px,py);
+  motionRig={x:p.x,z:p.z,vx:0,vz:0,lastMs:performance.now(),reason};
+  return motionRig;
+}
+function ensureMotionRig(now=performance.now()){
+  if(!motionRig) return snapMotionRig('init-motion-rig');
+  if(!Number.isFinite(motionRig.x)||!Number.isFinite(motionRig.z)) return snapMotionRig('invalid-motion-rig');
+  if(!Number.isFinite(motionRig.lastMs)) motionRig.lastMs=now;
+  return motionRig;
+}
 function renderedPlayerPoint(now=performance.now()){
-  const base=physicalPointFor(px,py);
-  if(!renderMove)return base;
-  // Any position change that did not come through step() is a teleport, load,
-  // wake-up, or floor repair. It must not inherit a stale walking segment.
-  if(Math.hypot(base.x-renderMove.to.x,base.z-renderMove.to.z)>.001){renderMove=null;return base;}
-  const t=Math.max(0,Math.min(1,(now-renderMove.startedAt)/renderMove.durationMs));
-  const point={
-    x:renderMove.from.x+(renderMove.to.x-renderMove.from.x)*t,
-    z:renderMove.from.z+(renderMove.to.z-renderMove.from.z)*t,
-  };
-  if(t>=1)renderMove=null;
-  return point;
+  const target=motionTargetPoint();
+  const rig=ensureMotionRig(now);
+  const jumpDist=Math.hypot(target.x-rig.x,target.z-rig.z);
+  // Teleports, level repairs, scene exits and save restores must snap. Inertia
+  // is a camera feel layer, not permission to coast through walls.
+  if(jumpDist>D(3.25)){
+    renderMove=null;
+    return snapMotionRig('motion-target-jump');
+  }
+  const dt=Math.max(0,Math.min(0.05,(now-rig.lastMs)/1000));
+  rig.lastMs=now;
+
+  const held=!!(forwardHeld()||backHeld()||leftHeld()||rightHeld());
+  const dx=target.x-rig.x;
+  const dz=target.z-rig.z;
+  const stiffness=held ? 92 : 62;
+  const damping=held ? 15.5 : 18.5;
+  rig.vx += dx*stiffness*dt;
+  rig.vz += dz*stiffness*dt;
+  const damp=Math.exp(-damping*dt);
+  rig.vx *= damp;
+  rig.vz *= damp;
+  rig.x += rig.vx*dt;
+  rig.z += rig.vz*dt;
+
+  const remaining=Math.hypot(target.x-rig.x,target.z-rig.z);
+  const speed=Math.hypot(rig.vx,rig.vz);
+  if(remaining<0.002&&speed<0.004){
+    rig.x=target.x; rig.z=target.z; rig.vx=0; rig.vz=0;
+    if(renderMove) renderMove=null;
+  } else if(renderMove && now-renderMove.startedAt>renderMove.durationMs*4){
+    // The spring is now the source of visual motion; don't let stale metadata
+    // make future teleports look like walking.
+    renderMove=null;
+  }
+  return{x:rig.x,z:rig.z};
 }
 function beginRenderStep(nx,ny,now){
+  ensureMotionRig(now);
   renderMove={
-    from:renderedPlayerPoint(now),
     to:physicalPointFor(nx,ny),
     startedAt:now,
     durationMs:Math.max(16,currentMoveIntervalMs()),
@@ -3342,8 +3433,7 @@ function setGameplayPaused(next, { announce=true }={}){
   next=!!next;
   if(paused===next) return;
   paused=next;
-  keysDown.clear();
-  nextMoveAtMs=0;
+  resetMotionInput(paused ? 'pause-enter' : 'pause-exit', {stopRenderMove:paused});
   if(paused){
     stopAllVoices(); stopWorldLayerVoice(); silenceAmbientDrone();
     setGainNode(dialogGain,0);setGainNode(sfxGain,0);setGainNode(sfxDirectGain,0);setGainNode(musicGain,0);
@@ -4372,9 +4462,9 @@ function loop(){
     if(inRogue){
       // Keep keyboard focus on the play surface to avoid intermittent movement deadlocks.
       if((tick % 10)===0) ensureInteractionFocus();
-      // One clock owns held movement. Browser key-repeat and independent
-      // setTimeout polling used to race this frame loop and produce uneven
-      // half-cell advances even while the camera itself was smoothly eased.
+      // One frame clock owns held turning and movement. Browser key-repeat
+      // and focus transitions never become hidden locomotion timers.
+      tickHeldTurning(nowLoopMs);
       tickHeldMovement(nowLoopMs);
       if(!scenes.blocksWorld()){
         maybeSpawnScheduledKey();
@@ -6990,6 +7080,8 @@ function openSettings({ inGame=false, initialTab=null }={}){
       restartAudioEngine: restartDesktopAudio,
       openCredits,
       resetDisplaySettings: resetDisplaySettingsFromMenu,
+      pixelMeshMode: () => currentPixelMeshSettings().mode,
+      onPixelMeshChange: setPixelMeshMode,
       onDisplayChange: updateDisplaySettings,
     },
   }));
@@ -6998,6 +7090,53 @@ function openSettings({ inGame=false, initialTab=null }={}){
 
 function currentDisplaySettings(){
   return normalizeDisplaySettings(getSave().settings?.display || {});
+}
+
+function currentPixelMeshSettings(){
+  const qp=params();
+  const st=getSave().settings||{};
+  const display=st.display||{};
+  const pixelMeshParam=qp.get('pixelMesh');
+  const urlMode=qp.get('pixelMeshMode')
+    || (pixelMeshParam==='1' ? 'standard' : pixelMeshParam==='0' ? 'off' : null);
+  const savedMode=Object.prototype.hasOwnProperty.call(st,'pixelMeshMode')
+    ? st.pixelMeshMode
+    : display.pixelMeshMode;
+  const defaultMode=RENDERER==='3d' ? 'standard' : 'off';
+  return {
+    mode:urlMode || savedMode || defaultMode,
+    cellSize:qp.get('pixelMeshCell') || display.pixelMeshCell || 'auto',
+    debugSource:qp.get('pixelMeshSource') || (qp.has('pixelMeshDebug') ? 'signal' : 'final'),
+    reduceFlash:(st.flash||'full')!=='full',
+    reduceMotion:(st.shake||'full')!=='full',
+  };
+}
+
+function applyPixelMeshSettings(extra={}){
+  if(RENDERER!=='3d') return null;
+  const applied=R3.r3dSetPixelMesh?.({...currentPixelMeshSettings(),...extra}) || null;
+  if(params().has('pixelMeshDebug')){
+    console.info('[pixel-mesh] settings', applied, R3.r3dPixelMeshStatus?.());
+  }
+  return applied;
+}
+
+function setPixelMeshMode(mode){
+  const st=getSave().settings||{};
+  saveCommit({settings:{...st,pixelMeshMode:mode}});
+  applyPixelMeshSettings();
+  pushEvent(`// vfd pixel mesh: ${String(mode||'off').toUpperCase()}.`);
+  return R3.r3dPixelMeshStatus?.() || currentPixelMeshSettings();
+}
+
+function pulsePixelMesh(ms=1800){
+  if(RENDERER!=='3d'){
+    pushEvent('// vfd pixel mesh is only active in 3D renderer.');
+    return null;
+  }
+  const status=R3.r3dPulsePixelMesh?.(ms) || applyPixelMeshSettings({forceSignalMs:ms});
+  pushEvent('// vfd pixel mesh test pulse.');
+  return status;
 }
 
 function applyRenderScale(renderScale){
@@ -7027,6 +7166,7 @@ async function updateDisplaySettings(patch={}, nextMaybe=null){
   saveCommit({settings:{...st,display:next}});
   applyDisplayCssVars(next);
   applyRenderScale(next.renderScale);
+  applyPixelMeshSettings();
   refreshStageLayoutSoon();
 
   try{
@@ -7059,7 +7199,9 @@ async function resetDisplaySettingsFromMenu(){
   applyGameModeDom(false,document);
   document.body.classList.remove('desktop-fullscreen','desktop-high-contrast');
   if(!IS_TAURI) exitFullscreenSafe();
+  { const st=getSave().settings||{}; saveCommit({settings:{...st,pixelMeshMode:RENDERER==='3d'?'standard':'off'}}); }
   await updateDisplaySettings({displayMode:'windowed',windowPreset:'1280x800',uiScale:1,renderScale:'auto'});
+  applyPixelMeshSettings();
   try{ await resetNativeWindow(); }catch(err){ console.warn('[display] reset defaults failed',err); }
   refreshStageLayoutSoon();
   ensureInteractionFocus();
@@ -7267,6 +7409,7 @@ function setDesktopReduceMotion(checked){
   const current=(st.shake||'full')!=='full';
   const on=typeof checked==='boolean' ? checked : !current;
   saveCommit({settings:{...st,shake:on?'reduced':'full'}});
+  applyPixelMeshSettings();
   pushEvent(`// reduce motion: ${on?'on':'off'}.`);
 }
 
@@ -7275,6 +7418,7 @@ function setDesktopReduceFlash(checked){
   const current=(st.flash||'full')!=='full';
   const on=typeof checked==='boolean' ? checked : !current;
   saveCommit({settings:{...st,flash:on?'reduced':'full'}});
+  applyPixelMeshSettings();
   pushEvent(`// reduce flash: ${on?'on':'off'}.`);
 }
 
@@ -7816,6 +7960,7 @@ async function bootScenes(){
   const displaySettings=currentDisplaySettings();
   applyDisplayCssVars(displaySettings);
   applyRenderScale(displaySettings.renderScale);
+  applyPixelMeshSettings();
   installViewportGuard({allowUpscale:true});
   refreshStageLayoutSoon();
   { const vs=getSave().settings?.vfd; if(vs) applyVfdSettings(vs); }
@@ -8166,7 +8311,7 @@ function enterRogue(){
   if(RENDERER==='3d'){
     // 3D mode boots straight into the live field: the 2D funnel intro is a
     // top-down construction; its 3D replacement is an M4 cutscene.
-    try{ R3.r3dInit(MAP_EL); }catch(err){ console.error('r3d init failed', err); }
+    try{ R3.r3dInit(MAP_EL); applyPixelMeshSettings(); }catch(err){ console.error('r3d init failed', err); }
     disableOnboardingForSession();
     if(storyMode) loadBuilding();
     // ?at=x,y — debug spawn (M2 will generalise this to ?warp=<room>)
@@ -8211,8 +8356,6 @@ function enterRogue(){
 
 // ── Keys ──────────────────────────────────────────────────────────────────────
 const ARROW_KEYS=new Set(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown']);
-const MOVE_KEYS=new Set(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','a','A','d','D','w','W','s','S']);
-const MOVE_CODE=Object.freeze({KeyA:'a',KeyD:'d',KeyW:'w',KeyS:'s',ArrowLeft:'ArrowLeft',ArrowRight:'ArrowRight',ArrowUp:'ArrowUp',ArrowDown:'ArrowDown'});
 const CONTROLLER_KEY=Object.freeze({
   move_up:['ArrowUp','ArrowUp'], move_down:['ArrowDown','ArrowDown'],
   move_left:['ArrowLeft','ArrowLeft'], move_right:['ArrowRight','ArrowRight'],
@@ -8227,14 +8370,41 @@ function controllerEvent(action, repeat=false){
 }
 function controllerPress(action,repeat=false){ if(CONTROLLER_KEY[action]) onKey(controllerEvent(action,repeat)); }
 function controllerRelease(action){ if(CONTROLLER_KEY[action]) onKeyUp(controllerEvent(action,false)); }
-function movementKey(e){
-  const key=MOVE_KEYS.has(e?.key)?e.key:(MOVE_CODE[e?.code]||null);
-  return key&&key.length===1?key.toLowerCase():key;
+function movementKey(e){ return movementCodeForEvent(e); }
+function forwardHeld(){ return keysDown.has('ArrowUp') || keysDown.has('KeyW'); }
+function leftHeld(){ return keysDown.has('ArrowLeft') || keysDown.has('KeyA'); }
+function rightHeld(){ return keysDown.has('ArrowRight') || keysDown.has('KeyD'); }
+function backHeld(){ return keysDown.has('ArrowDown') || keysDown.has('KeyS'); }
+function turnHeldDir(){
+  const right=rightHeld();
+  const left=leftHeld();
+  if(right&&!left) return 1;
+  if(left&&!right) return -1;
+  return 0;
 }
-function forwardHeld(){ return keysDown.has('ArrowUp') || keysDown.has('w') || keysDown.has('W'); }
-function leftHeld(){ return keysDown.has('ArrowLeft') || keysDown.has('a') || keysDown.has('A'); }
-function rightHeld(){ return keysDown.has('ArrowRight') || keysDown.has('d') || keysDown.has('D'); }
-function backHeld(){ return keysDown.has('ArrowDown') || keysDown.has('s') || keysDown.has('S'); }
+function performQuarterTurn(dir, now=performance.now()){
+  if(!dir || RENDERER!=='3d') return false;
+  R3.r3dTurn(dir);
+  const d=window.__diffusion;
+  if(d?.nudge){
+    d.setMoving(true);
+    d.nudge({ turn: dir });
+    clearTimeout(movingTimer);
+    movingTimer=setTimeout(()=>d.setMoving(false), 320);
+  }
+  nextTurnAtMs=now+currentTurnIntervalMs({initial:true});
+  return true;
+}
+function tickHeldTurning(now){
+  if(RENDERER!=='3d') return;
+  if(paused||scenes.blocksInput()){nextTurnAtMs=0;return;}
+  const dir=turnHeldDir();
+  if(!dir){nextTurnAtMs=0;return;}
+  if(nextTurnAtMs<=0){nextTurnAtMs=now+currentTurnIntervalMs({initial:true});return;}
+  if(now<nextTurnAtMs)return;
+  performQuarterTurn(dir, now);
+  nextTurnAtMs=now+currentTurnIntervalMs();
+}
 let lastKeyDebug='';
 function onKey(e){
   if(KEY_DEBUG){
@@ -8250,16 +8420,23 @@ function onKey(e){
   }
   if(e.key==='t' || e.key==='T') return; // owned by the tuner panel
   const moveKey=movementKey(e);
+  const onboardingBlocksMove=!!(moveKey && isOnboardingActive() && (moveKey==='ArrowDown' || moveKey==='KeyS'));
+  const worldCanTrackMotion=!!(moveKey && inRogue && !paused && !scenes.blocksInput() && !onboardingBlocksMove);
+  const motionAlreadyHeld=worldCanTrackMotion ? motionInput.isHeld(moveKey) : false;
+  // Capture movement intent before non-modal overlays see the key. Several
+  // overlay scenes render above the world without blocking it; a browser
+  // key-repeat that they happen to consume must never clear the held key and
+  // reduce motion to one-cell taps. Blocking/modal scenes still reset below.
+  if(worldCanTrackMotion) motionInput.keyDown(e);
 
   // Scenes (title, dialogue, menus) get first refusal on every key — before
   // inRogue, so the title screen works while the field is still loading.
   if(scenes.depth()>0 && scenes.key(e)){
     e.preventDefault();
-    // A scene now owns input: drop any movement key held from before it opened,
-    // so the player does not keep walking behind the title/menu. Non-modal
-    // scenes may decline the key and allow normal world input to continue.
-    keysDown.clear();
-    nextMoveAtMs=0;
+    // Only blocking scenes own locomotion. Non-modal overlays may consume a
+    // keyboard edge for their own UI, but they must not destroy held movement.
+    if(scenes.blocksInput()) resetMotionInput('scene-consumed', {stopRenderMove:true});
+    else if(!moveKey) clearMotionClock('scene-consumed-action');
     return;
   }
   if(!inRogue) return;
@@ -8302,7 +8479,7 @@ function onKey(e){
     if(bare && is('KeyB','b')){ e.preventDefault(); openBag(); return; }
     if(bare && is('KeyE','e')){ e.preventDefault(); interact(); return; }
     if(bare && is('KeyP','p')){ e.preventDefault(); playCurrentTake(); return; }
-    if(e.key==='Shift'){ REC.setSlow(true); return; }
+    if(e.key==='Shift' || e.code==='ShiftLeft' || e.code==='ShiftRight'){ motionInput.keyDown(e); REC.setSlow(true); return; }
   }
   // [enter] talks to nobody. There is nobody in this building.
   //
@@ -8314,27 +8491,27 @@ function onKey(e){
     e.preventDefault();
     return;
   }
-  if(RENDERER==='3d' && (moveKey==='ArrowLeft'||moveKey==='a'||moveKey==='A'||moveKey==='ArrowRight'||moveKey==='d'||moveKey==='D')){
-    // First-person: left/right are quarter turns, not strafes.
+  if(RENDERER==='3d' && (moveKey==='ArrowLeft'||moveKey==='KeyA'||moveKey==='ArrowRight'||moveKey==='KeyD')){
+    // First-person: left/right are quarter turns. They are still stateful: a
+    // held key repeats on our frame clock, never on the browser's repeat clock.
     e.preventDefault();
-    if(!e.repeat){
-      const dir=(moveKey==='ArrowRight'||moveKey==='d'||moveKey==='D') ? 1 : -1;
-      R3.r3dTurn(dir);
-      const d=window.__diffusion;
-      if(d?.nudge){
-        d.setMoving(true);
-        d.nudge({ turn: dir });
-        clearTimeout(movingTimer);
-        movingTimer=setTimeout(()=>d.setMoving(false), 320);
-      }
+    if(isOnboardingActive()) return;
+    const alreadyHeld=worldCanTrackMotion ? motionAlreadyHeld : motionInput.isHeld(moveKey);
+    if(!worldCanTrackMotion) motionInput.keyDown(e);
+    if(!e.repeat&&!alreadyHeld){
+      const dir=(moveKey==='ArrowRight'||moveKey==='KeyD') ? 1 : -1;
+      performQuarterTurn(dir, performance.now());
     }
     return;
   }
   if(moveKey){
     e.preventDefault();
-    if(isOnboardingActive() && (moveKey==='ArrowDown' || moveKey==='s' || moveKey==='S')) return;
-    const alreadyHeld=keysDown.has(moveKey);
-    keysDown.add(moveKey);
+    if(onboardingBlocksMove){
+      motionInput.keyUp({code:moveKey,target:e.target});
+      return;
+    }
+    const alreadyHeld=worldCanTrackMotion ? motionAlreadyHeld : motionInput.isHeld(moveKey);
+    if(!worldCanTrackMotion) motionInput.keyDown(e);
     // Native key-repeat is OS/browser timed and must never become a second
     // movement clock. A new press gets one immediate, responsive step; the RAF
     // cadence owns every held step after it.
@@ -8381,18 +8558,18 @@ function onKey(e){
 }
 function onKeyUp(e){
   if(scenes.depth() && scenes.keyup(e)) e.preventDefault?.();
-  if(e.key==='Shift') REC.setSlow(false);
+  if(e.key==='Shift' || e.code==='ShiftLeft' || e.code==='ShiftRight'){ motionInput.keyUp(e); REC.setSlow(false); }
   const moveKey=movementKey(e);
   if(moveKey){
-    keysDown.delete(moveKey);
+    motionInput.keyUp(e);
     const [dx,dy]=arrowDelta();
     if(dx===0&&dy===0)nextMoveAtMs=0;
+    if(turnHeldDir()===0)nextTurnAtMs=0;
   }
 }
 function onBlur(){
   // Releasing focus mid-press would otherwise leave keys "stuck".
-  keysDown.clear();
-  nextMoveAtMs=0;
+  resetMotionInput('window-blur', {stopRenderMove:true});
   if(storyMode && inRogue && !paused && pauseWhenBlurEnabled()) togglePause();
 }
 function ensureInteractionFocus(){
@@ -8457,10 +8634,16 @@ async function boot(){
   // Fullscreen and iframe transitions silently drop keyboard focus.
   document.addEventListener('fullscreenchange', ()=>{ refreshStageLayoutSoon(); ensureInteractionFocus(); });
   window.addEventListener('message', ensureInteractionFocus, {passive:true});
-  window.addEventListener('focus', ()=>{ refreshStageLayoutSoon(); ensureInteractionFocus(); }, {passive:true});
+  window.addEventListener('focus', ()=>{ recoverMotionFocus('window-focus'); refreshStageLayoutSoon(); ensureInteractionFocus(); }, {passive:true});
   document.addEventListener('visibilitychange', ()=>{
-    if(!document.hidden) ensureInteractionFocus();
+    if(document.hidden){
+      resetMotionInput('visibility-hidden', {stopRenderMove:true});
+    } else {
+      recoverMotionFocus('visibility-visible');
+      ensureInteractionFocus();
+    }
   });
+  window.addEventListener('pagehide',()=>resetMotionInput('pagehide', {stopRenderMove:true}));
   window.addEventListener('blur',onBlur);
   await installDesktopMenuBridge({
     isInGame: isDesktopMenuInGame,
@@ -8493,15 +8676,28 @@ async function boot(){
     beginNewGameFlow,
     toggleMute:toggleDesktopMute,
   });
+  preloadStoryArt();
   if(typeof window!=='undefined'){
     window.__chunkSurferDisplay={
       setWindowPreset:(id)=>updateDisplaySettings({windowPreset:id}),
       setUiScale:(value)=>updateDisplaySettings({uiScale:value}),
       setRenderScale:(value)=>updateDisplaySettings({renderScale:value}),
       setDisplayMode:(id)=>updateDisplaySettings({displayMode:id}),
+      setPixelMeshMode,
+      pixelMesh:()=>currentPixelMeshSettings(),
+      pixelMeshStatus:()=>R3.r3dPixelMeshStatus?.() || null,
+      pulsePixelMesh,
       openPause:openPauseMenu,
       openSettings:(tab='display')=>openSettings({initialTab:tab}),
       resetWindow:resetWindowFromMenu,
+    };
+    window.__chunkSurferPixelMesh={
+      settings:()=>currentPixelMeshSettings(),
+      status:()=>R3.r3dPixelMeshStatus?.() || null,
+      setMode:setPixelMeshMode,
+      setDebugSource:(debugSource='final')=>applyPixelMeshSettings({debugSource}),
+      pulse:pulsePixelMesh,
+      forceOn:(mode='standard')=>{ setPixelMeshMode(mode); return pulsePixelMesh(2200); },
     };
     window.__chunkSurferAbout={
       snapshot:collectAboutSnapshot,
@@ -8511,6 +8707,45 @@ async function boot(){
       openWebsite:()=>openExternalUrl(APP_LINKS.website),
       reportProblem:()=>openExternalUrl(APP_LINKS.reportProblem),
     };
+    window.__chunkSurferMotion={
+      status:()=>({
+        input:motionInput.debugState(),
+        renderer:RENDERER,
+        storyMode,
+        inRogue,
+        paused,
+        scene:scenes.top()?.id||null,
+        blocksInput:scenes.blocksInput(),
+        blocksWorld:scenes.blocksWorld(),
+        nextMoveInMs:nextMoveAtMs>0?Math.max(0,Math.round(nextMoveAtMs-performance.now())):0,
+        nextTurnInMs:nextTurnAtMs>0?Math.max(0,Math.round(nextTurnAtMs-performance.now())):0,
+        motionResetReason,
+        px,py,
+        rendered:renderedPlayerPoint(),
+        arrowDelta:arrowDelta(),
+        turnHeldDir:turnHeldDir(),
+        facing:RENDERER==='3d'?R3.r3dFacing?.():null,
+        facingDelta:RENDERER==='3d'?R3.r3dDelta?.(1):null,
+        moveIntervalMs:currentMoveIntervalMs(),
+        sinceLastMoveMs:Math.round(performance.now()-lastMoveAtMs),
+        lastLoopMs,
+        preserveFreshHeldMotion:shouldPreserveFreshHeldMotion(),
+        motionRig:motionRig?{x:motionRig.x,z:motionRig.z,vx:motionRig.vx,vz:motionRig.vz,reason:motionRig.reason}:null,
+      }),
+      reset:(reason='manual-reset')=>resetMotionInput(reason,{stopRenderMove:true}),
+      press:(code)=>onKey({key:code?.startsWith?.('Key')?code.slice(3).toLowerCase():code,code,repeat:false,metaKey:false,ctrlKey:false,altKey:false,target:null,preventDefault(){},stopPropagation(){}}),
+      release:(code)=>onKeyUp({key:code?.startsWith?.('Key')?code.slice(3).toLowerCase():code,code,repeat:false,target:null,preventDefault(){},stopPropagation(){}}),
+      blur:()=>resetMotionInput('manual-blur',{stopRenderMove:true}),
+      why:()=>window.__probe?.why?.()||null,
+    };
+    if(import.meta.env?.DEV || params().has('storyArtDebug')){
+      window.__chunkSurferStoryArt={
+        resolve:resolveStoryArt,
+        cache:storyArtCacheSnapshot,
+        preload:preloadStoryArt,
+        start:(id='guard',mode='hero')=>scenes.push(makeStoryArtPreviewScene({art:id,mode})),
+      };
+    }
   }
   updateOnboardingButton();
     await bootScenes();

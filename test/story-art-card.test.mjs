@@ -1,0 +1,142 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  planStoryArtInPanel,
+  planStoryArtSideBySide,
+  storyArtCols,
+  storyArtSideBySideCols,
+  storyArtSideBySidePanelRows,
+  storyArtSideBySideRows,
+  storyArtFits,
+  storyArtRows,
+} from '../src/game/story-art-card.js';
+
+test('story art row planning keeps minimum readable heights', () => {
+  assert.ok(storyArtRows('compact', 20) >= 8);
+  assert.ok(storyArtRows('hero', 20) >= 13);
+  assert.ok(storyArtRows('boss', 20) >= 14);
+});
+
+test('story art hides when panel cannot preserve text and choices', () => {
+  const plan = planStoryArtInPanel({
+    art: { id: 'guard', mode: 'hero' },
+    mode: 'hero',
+    panelRows: 12,
+    textRowsMin: 6,
+    choicesRows: 3,
+  });
+  assert.equal(plan.show, false);
+});
+
+test('story art downgrades large modes before hiding', () => {
+  const plan = planStoryArtInPanel({
+    art: { id: 'door', mode: 'boss' },
+    mode: 'boss',
+    panelRows: 15,
+    textRowsMin: 4,
+    choicesRows: 2,
+  });
+  assert.equal(plan.show, true);
+  assert.equal(plan.mode, 'compact');
+});
+
+test('story art shows when enough panel space exists', () => {
+  const plan = planStoryArtInPanel({
+    art: { id: 'door', mode: 'hero' },
+    mode: 'hero',
+    panelRows: 24,
+    textRowsMin: 5,
+    choicesRows: 3,
+  });
+  assert.equal(plan.show, true);
+  assert.ok(plan.rows >= 13);
+});
+
+test('storyArtFits checks exact minima', () => {
+  assert.equal(storyArtFits({ availableRows: 8, mode: 'compact' }), true);
+  assert.equal(storyArtFits({ availableRows: 7, mode: 'compact' }), false);
+});
+
+
+test('story art side-by-side uses one fixed authored card size', () => {
+  const plan = planStoryArtSideBySide({
+    art: { id: 'guard', mode: 'hero' },
+    mode: 'hero',
+    panelRows: 24,
+    panelCols: 82,
+    textRowsMin: 5,
+    choicesRows: 3,
+    minTextCols: 32,
+  });
+  assert.equal(plan.show, true);
+  assert.equal(plan.rows, storyArtSideBySideRows());
+  assert.equal(plan.artCols, storyArtSideBySideCols());
+  assert.equal(plan.fixed, true);
+  assert.ok(plan.textCols >= 32);
+});
+
+test('story art side-by-side hides instead of shrinking the card when narrow', () => {
+  const plan = planStoryArtSideBySide({
+    art: { id: 'guard', mode: 'hero' },
+    mode: 'hero',
+    panelRows: 24,
+    panelCols: storyArtSideBySideCols() + 2 + 33,
+    minTextCols: 34,
+  });
+  assert.equal(plan.show, false);
+  assert.equal(plan.reason, 'not-enough-fixed-art-width');
+});
+
+test('story art side-by-side hides instead of shrinking the card when short', () => {
+  const plan = planStoryArtSideBySide({
+    art: { id: 'guard', mode: 'hero' },
+    mode: 'hero',
+    panelRows: storyArtSideBySideRows() + 1,
+    panelCols: 82,
+    minTextCols: 32,
+    bottomPadRows: 2,
+  });
+  assert.equal(plan.show, false);
+  assert.equal(plan.reason, 'not-enough-fixed-art-height');
+});
+
+test('story art columns clamp to the available side bay for vertical fallback only', () => {
+  assert.ok(storyArtCols('compact', 80) <= 30);
+  assert.ok(storyArtCols('hero', 80) <= 38);
+  assert.ok(storyArtCols('boss', 80) <= 40);
+});
+
+test('outer panel reserve includes fixed story art size and footer clearance', () => {
+  const base = storyArtSideBySidePanelRows({ choicesRows: 0, headerRows: 4, bottomPadRows: 2 });
+  const withChoices = storyArtSideBySidePanelRows({ choicesRows: 5, headerRows: 4, bottomPadRows: 2 });
+  assert.equal(base, 28);
+  assert.equal(withChoices, base + 5);
+});
+
+test('side-by-side art size is invariant under long text and choices', () => {
+  const shortText = planStoryArtSideBySide({
+    art: { id: 'door', mode: 'hero' },
+    mode: 'hero',
+    panelRows: 28,
+    panelCols: 82,
+    textRowsMin: 4,
+    choicesRows: 0,
+    minTextCols: 32,
+    bottomPadRows: 2,
+  });
+  const longText = planStoryArtSideBySide({
+    art: { id: 'door', mode: 'hero' },
+    mode: 'hero',
+    panelRows: 28,
+    panelCols: 82,
+    textRowsMin: 99,
+    choicesRows: 12,
+    minTextCols: 32,
+    bottomPadRows: 2,
+  });
+  assert.equal(shortText.show, true);
+  assert.equal(longText.show, true);
+  assert.equal(longText.rows, shortText.rows);
+  assert.equal(longText.artCols, shortText.artCols);
+  assert.equal(longText.textCols, shortText.textCols);
+});

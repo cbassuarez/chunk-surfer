@@ -3,9 +3,9 @@ import { uiCenter, uiFill, uiLine, uiSize, uiText, uiWrap } from '../render/ui.j
 import { drawLocationIndicator, drawMachinePanel, drawVfdText } from '../render/presentation.js';
 import { UI_COLOR } from '../render/palette.js';
 import {
-  availablePresets,
   cycleRuleValue,
   normalizeRuleValues,
+  visiblePresets,
 } from '../progression/difficulty.js';
 import { RULE_LABELS, VALUE_LABELS } from '../progression/difficulty-defs.js';
 import { deriveUnlocks } from '../progression/unlocks.js';
@@ -39,7 +39,7 @@ export function makeDifficultySelectScene({
 } = {}) {
   const customUnlocked = deriveUnlocks(meta).customShift;
   const presets = [
-    ...availablePresets(meta),
+    ...visiblePresets(meta),
     ...(customUnlocked ? [{ ...CUSTOM_PRESET, values: normalizeRuleValues(initialCustomValues || {}) }] : []),
   ];
   const requested = presets.findIndex((preset) => preset.id === initialPreset);
@@ -55,6 +55,10 @@ export function makeDifficultySelectScene({
   function confirmPreset() {
     const preset = selectedPreset();
     if (!preset) return;
+    if (preset.locked) {
+      AUDIO.menuMove();
+      return;
+    }
     if (preset.id === 'custom' && mode === 'select') {
       mode = 'custom';
       ruleSel = 0;
@@ -170,8 +174,19 @@ export function makeDifficultySelectScene({
       const menuY = body.y + 4;
       presets.forEach((preset, index) => {
         const on = index === sel;
-        uiText(body.x, menuY + index * 3, `${on ? '▸' : ' '} ${preset.name}`, on ? 'ui-amber' : 'ui-primary');
-        uiText(body.x + 3, menuY + index * 3 + 1, preset.subtitle, on ? 'ui-primary' : 'ui-secondary', on ? 0.9 : 0.55);
+        const locked = !!preset.locked;
+        const rowStyle = locked ? 'ui-secondary' : on ? 'ui-amber' : 'ui-primary';
+        const subStyle = locked ? 'ui-secondary' : on ? 'ui-primary' : 'ui-secondary';
+        const mark = on ? '▸' : ' ';
+        const lock = locked ? ' ◇' : '';
+        uiText(body.x, menuY + index * 3, `${mark} ${preset.name}${lock}`, rowStyle, locked ? 0.52 : 1);
+        uiText(
+          body.x + 3,
+          menuY + index * 3 + 1,
+          locked ? 'LOCKED' : preset.subtitle,
+          subStyle,
+          locked ? 0.42 : on ? 0.9 : 0.55,
+        );
       });
 
       const preset = selectedPreset();
@@ -179,11 +194,13 @@ export function makeDifficultySelectScene({
       const detailW = body.x + body.w - detailX;
       const values = preset.id === 'custom' ? customValues : preset.values;
       const danger = preset.id === 'dead-air';
-      uiText(detailX, body.y + 3, `${preset.name} / ${preset.subtitle}`, danger ? 'ui-danger' : 'ui-amber');
-      if (preset.intended) uiText(detailX, body.y + 4, 'THE INTENDED FIRST RUN.', 'ui-blue');
+      const locked = !!preset.locked;
+      uiText(detailX, body.y + 3, `${preset.name} / ${locked ? 'LOCKED' : preset.subtitle}`, locked ? 'ui-secondary' : danger ? 'ui-danger' : 'ui-amber', locked ? 0.6 : 1);
+      if (locked) uiText(detailX, body.y + 4, 'COMPLETE ANY ENDING TO UNLOCK.', 'ui-blue', 0.78);
+      else if (preset.intended) uiText(detailX, body.y + 4, 'THE INTENDED FIRST RUN.', 'ui-blue');
       else if (preset.id === 'custom') uiText(detailX, body.y + 4, 'NO DEAD AIR CERTIFICATION.', 'ui-blue');
-      uiWrap(preset.description, detailW).slice(0, 3).forEach((line, i) =>
-        uiText(detailX, body.y + 6 + i, line, 'ui-primary'));
+      uiWrap(locked ? `${preset.description} Locked until the building has been survived once.` : preset.description, detailW).slice(0, 3).forEach((line, i) =>
+        uiText(detailX, body.y + 6 + i, line, locked ? 'ui-secondary' : 'ui-primary', locked ? 0.58 : 1));
 
       let ry = body.y + 11;
       for (let index = 0; index < RULE_ORDER.length; index++) {
@@ -191,10 +208,10 @@ export function makeDifficultySelectScene({
         const active = mode === 'custom' && index === ruleSel;
         const label = RULE_LABELS[key];
         const value = VALUE_LABELS[values[key]] || String(values[key]).toUpperCase();
-        uiText(detailX, ry, `${active ? '▸' : ' '} ${label}`.slice(0, 25), active ? 'ui-amber' : 'ui-secondary');
+        uiText(detailX, ry, `${active ? '▸' : ' '} ${label}`.slice(0, 25), active ? 'ui-amber' : 'ui-secondary', locked ? 0.42 : 1);
         const vx = detailX + Math.max(26, Math.floor(detailW * 0.56));
         const rendered = active ? `◀ ${value} ▶` : value;
-        uiText(vx, ry, rendered.slice(0, Math.max(1, detailX + detailW - vx)), danger ? 'ui-danger' : active ? 'ui-amber' : 'ui-blue');
+        uiText(vx, ry, rendered.slice(0, Math.max(1, detailX + detailW - vx)), locked ? 'ui-secondary' : danger ? 'ui-danger' : active ? 'ui-amber' : 'ui-blue', locked ? 0.46 : 1);
         ry += 2;
       }
 
@@ -202,7 +219,9 @@ export function makeDifficultySelectScene({
       drawLocationIndicator(detailX, Math.min(body.y + body.h - 2, ry), Math.max(10, detailW - 2), p, {
         theme: danger ? 'amber' : 'green',
       });
-      if (danger && Math.floor(t * 3) % 2 === 0) {
+      if (preset.locked) {
+        uiCenter(y + h - 3, 'LOCKED · COMPLETE ANY ENDING TO UNLOCK DEAD AIR', 'ui-secondary');
+      } else if (danger && Math.floor(t * 3) % 2 === 0) {
         uiCenter(y + h - 3, 'DEAD AIR CERTIFICATION ENDS IF GAMEPLAY RULES ARE MADE EASIER', 'ui-danger');
       }
     },

@@ -20,6 +20,7 @@ import {
   normalizeDisplaySettings,
 } from '../platform/display-policy.js';
 import { formatFps } from '../platform/about-system.js';
+import { cyclePixelMeshMode, labelPixelMeshMode } from '../render/pixel-mesh/settings.js';
 
 const MIC_LABEL = { idle: 'OFF', asking: 'ASKING…', on: 'LIVE', denied: 'BLOCKED', test: 'TEST' };
 const FX_MODES = ['off', 'reduced', 'full'];
@@ -108,6 +109,16 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
 
   function displayLabel(key, contractKey) {
     return labelDisplayOption(contractKey, displaySettings()[key]);
+  }
+
+  function pixelMeshMode() {
+    return hooks.pixelMeshMode?.() || setting('pixelMeshMode', 'off');
+  }
+
+  function cyclePixelMesh(d) {
+    const next = cyclePixelMeshMode(pixelMeshMode(), d);
+    set('pixelMeshMode', next);
+    hooks.onPixelMeshChange?.(next);
   }
 
   const controlValue = (action) => hooks.controllerRemapAction?.() === action
@@ -248,6 +259,9 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           { id: 'renderScale', label: 'RENDER SCALE',
             value: () => displayLabel('renderScale', 'renderScalePresets').toUpperCase(),
             adjust: (d) => cycleDisplay('renderScale', 'renderScalePresets', d) },
+          { id: 'pixelMeshMode', label: 'VFD PIXEL MESH',
+            value: () => labelPixelMeshMode(pixelMeshMode()).toUpperCase(),
+            adjust: (d) => cyclePixelMesh(d) },
           { id: 'phosphor', label: 'PHOSPHOR',
             value: () => PHOSPHOR_LABEL[vfdSettings.phosphor] ?? String(vfdSettings.phosphor).toUpperCase(),
             adjust: (d) => cycleVfd('phosphor', PHOSPHOR_THEMES, d) },

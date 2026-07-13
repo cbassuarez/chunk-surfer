@@ -106,6 +106,7 @@ export const WORK_ORDER = {
 export const COLD_OPEN_DIALOGUE = {
   start: {
     speaker: 'SERVICE BOOTH · 21:38',
+    art: { id: 'guard', mode: 'hero', caption: 'Gate booth / 21:38', status: 'STILL' },
     lines: [
       { who: 'direction', text: 'A lit booth at the vehicle gate. Coffee, key hooks, a stack of forms, a small television with the sound off.' },
       { who: 'direction', text: 'There is a little perch by the booth window covered by a small roof; you stand on it so as to keep from the rain.' },
@@ -158,6 +159,7 @@ export const COLD_OPEN_DIALOGUE = {
   // It is authored rather than simulated so no stateful choice is silently made.
   'replay-condensed': {
     speaker: 'SERVICE BOOTH · RETURN CHECK-IN',
+    art: { id: 'guard', mode: 'hero', caption: 'Gate booth / return check-in', status: 'STILL' },
     lines: [
       { id: 'coldopen.condensed.01', who: 'direction', text: 'The same booth. The same rain. Work order 4417-C is already on the glass.' },
       { id: 'coldopen.condensed.02', who: 'guard', text: 'You know the form. Five rooms, one clean minute each. Anything you need before I turn you loose?' },
@@ -202,6 +204,7 @@ export const COLD_OPEN_DIALOGUE = {
   // in a lit booth, in front of a witness, what light costs him.
   torch: {
     speaker: 'SERVICE BOOTH · 21:38',
+    art: { id: 'tuningFork', mode: 'compact', caption: 'Reference object / kit check', status: 'STILL' },
     lines: [
       { who: 'direction', text: 'A standard Maglite three-cell torch, the anodising worn back to bare metal where a hand goes. You thumb it on against your palm and off again.' },
       { who: 'you', text: "Working. Cells are good. I'm pretty sure I remembered to push in fresh ones in earlier today." },
@@ -252,6 +255,7 @@ export const COLD_OPEN_DIALOGUE = {
   // game will not tell you for hours whether that was a mistake.
   coffee: {
     speaker: 'SERVICE BOOTH · 21:38',
+    art: { id: 'guard', mode: 'hero', caption: 'Gate booth / coffee on the form', status: 'STILL' },
     lines: [
       { who: 'direction', text: 'He fills a second cup without asking how you take it and slides it across the form.' },
       { who: 'guard', text: 'There. You look like you need it more than I do.' },
@@ -263,6 +267,7 @@ export const COLD_OPEN_DIALOGUE = {
   // ── trunk one: the paperwork ──────────────────────────────────────────────
   order: {
     speaker: 'THE WORK ORDER',
+    art: { id: 'guard', mode: 'hero', caption: 'Work order under the booth glass', status: 'STILL' },
     lines: [
       { who: 'direction', text: "A letterhead, a list, and a signature. That signature block has been photocopied so many times it barely passes for a smudge." },
       { who: 'direction', text: "You don't argue with the pay though." },
@@ -335,6 +340,7 @@ export const COLD_OPEN_DIALOGUE = {
   // ── trunk two: the guard ──────────────────────────────────────────────────
   guard: {
     speaker: 'NIGHT GUARD',
+    art: { id: 'guard', mode: 'hero', caption: 'The booth window / night guard', status: 'STILL' },
     lines: [
       { who: 'me', text: "You know anything about the building at all?" },
       { who: 'guard', text: 'Keys and forms. Past the door is nothing to do with me.' },
@@ -424,6 +430,7 @@ export const COLD_OPEN_DIALOGUE = {
   // ── trunk three: the tape ─────────────────────────────────────────────────
   tape: {
     speaker: 'REFERENCE FILES · 04 (NO SLATE)',
+    art: { id: 'surfer', mode: 'hero', caption: 'Previous take / transferred signal', status: 'PLAYBACK' },
     tape: true,
     lines: [
       { who: 'direction', text: 'Four files on the card. Three are slated and clean: the previous recordist clearly announced the take number and room for each take. Take three is already running.' },
@@ -516,6 +523,7 @@ export const COLD_OPEN_DIALOGUE = {
   // ── the threshold ─────────────────────────────────────────────────────────
   threshold: {
     speaker: 'SERVICE BOOTH · 21:44',
+    art: { id: 'guard', mode: 'hero', caption: 'Gate booth / keys and radio', status: 'STILL' },
     lines: [
       { who: 'direction', text: 'He turns the book around. Two boxes on the line with your name in it.' },
       { who: 'guard', text: 'Sign where it says received.' },
@@ -573,6 +581,7 @@ export const POST_DOOR = {
   // ── he read the paperwork: why he does not leave ─────────────────────────
   self: {
     speaker: '',
+    art: { id: 'door', mode: 'hero', caption: 'The push bar is not where the push bar is.', status: 'THRESHOLD' },
     lines: [
       ...PUSH_BAR,
       ...STEEL_YOURSELF,
@@ -593,6 +602,7 @@ export const POST_DOOR = {
   // ── he talked to the guard: who would notice ─────────────────────────────
   guard: {
     speaker: '',
+    art: { id: 'door', mode: 'hero', caption: 'The door is behind you now.', status: 'THRESHOLD' },
     lines: [
       ...PUSH_BAR,
       ...STEEL_YOURSELF,
@@ -612,6 +622,7 @@ export const POST_DOOR = {
   // ── he heard the tape: what he admits he is feeling ──────────────────────
   tape: {
     speaker: '',
+    art: { id: 'surfer', mode: 'hero', caption: 'The previous take keeps playing back.', status: 'PLAYBACK' },
     lines: [
       ...PUSH_BAR,
       ...STEEL_YOURSELF,
@@ -1249,7 +1260,7 @@ export const RADIO_DEAD = {
 // It ends on the key, because the title card goes here — and the door does not
 // shut until the title has faded and the song has gone with it.
 export const COLD_OPEN = [
-  { who: 'direction', text: 'The yard. Rain on the skips, and a hundred metres of nothing between the booth and the grey door.', hold: 2.6 },
+  { who: 'direction', art: { id: 'door', mode: 'hero', caption: 'The grey service door in the yard.', status: 'THRESHOLD' }, text: 'The yard. Rain on the skips, and a hundred metres of nothing between the booth and the grey door.', hold: 2.6 },
   { who: 'you', text: 'Basement first. It will be the hardest and I want it behind me.', hold: 2.4 },
   { who: 'direction', text: 'The key turns. The door is heavier than it looks, the way fire doors are.', cue: 'keyturn', hold: 2.6 },
 ];
@@ -1257,7 +1268,7 @@ export const COLD_OPEN = [
 // ...and then the title. And THEN the door, into a silence the song has just
 // vacated. The loudest thing that happens all night lands on an empty mix.
 export const AFTER_TITLE = [
-  { who: 'direction', text: 'The service door closes behind you.',
+  { who: 'direction', art: { id: 'door', mode: 'hero', caption: 'The door closes behind you.', status: 'THRESHOLD' }, text: 'The service door closes behind you.',
     cue: 'door', shake: 2.2, shakeMs: 620, flash: true, flashMs: 220, hold: 3.4 },
   { who: 'you', text: 'Darker than the yard. Which is not great, because the yard was dark.', hold: 2.6 },
   { who: 'you', text: 'And quieter. No rain in here. No rain, no traffic, no plant, no lift.', hold: 2.8 },
@@ -1856,20 +1867,20 @@ export function druggedReveal({ takes = 5 } = {}) {
 //   'helped' | 'drugged' (if you drank the coffee).
 export function guardEpilogue(variant) {
   if (variant === 'drugged') return [
-    { who: 'direction', text: 'The gate booth, lit, at dawn. The same bored man. He does not ask how it went; he watches the little television with the sound off.' },
+    { who: 'direction', art: { id: 'guard', mode: 'hero', caption: 'Gate booth / dawn', status: 'STILL' }, text: 'The gate booth, lit, at dawn. The same bored man. He does not ask how it went; he watches the little television with the sound off.' },
     { who: 'you', text: 'What did you put in it.' },
     { who: 'guard', text: 'In what?' },
     { who: 'direction', text: 'There is one paper cup in the bin by his foot, and it is not yours — yours is still in your hand, empty, and you do not remember finishing it.' },
     { who: 'guard', text: 'Long night. You signing out, or not.' },
   ];
   if (variant === 'helped') return [
-    { who: 'direction', text: 'The gate booth. The bored man is not bored now. He has been up all night, and he keeps looking at the door you went in by.' },
+    { who: 'direction', art: { id: 'guard', mode: 'hero', caption: 'Gate booth / dawn', status: 'STILL' }, text: 'The gate booth. The bored man is not bored now. He has been up all night, and he keeps looking at the door you went in by.' },
     { who: 'guard', text: '...that is longer than the last one lasted.' },
     { who: 'direction', text: 'He made you a coffee with something in it to hold the thing off, because it was the only help a man in a booth had to give, and he knew when he did it that it might not be enough.' },
     { who: 'guard', text: 'I did what I could think of. I am sorry. I am.' },
   ];
   if (variant === 'out') return [
-    { who: 'direction', text: 'The gate booth. The same bored man, the same book, the two columns he never explained.' },
+    { who: 'direction', art: { id: 'guard', mode: 'hero', caption: 'Gate booth / dawn', status: 'STILL' }, text: 'The gate booth. The same bored man, the same book, the two columns he never explained.' },
     { who: 'guard', text: 'You came back.' },
     { who: 'you', text: 'I came back.' },
     { who: 'guard', text: 'Huh.' },
@@ -1877,14 +1888,14 @@ export function guardEpilogue(variant) {
     { who: 'guard', text: 'Sign here. And here. The second one is new. I have never once had to use it.' },
   ];
   if (variant === 'client') return [
-    { who: 'direction', text: 'The gate booth. The bored man is not alone. Someone in a good coat is at the desk who was not here when you went in.' },
+    { who: 'direction', art: { id: 'guard', mode: 'hero', caption: 'Gate booth / account closed', status: 'STILL' }, text: 'The gate booth. The bored man is not alone. Someone in a good coat is at the desk who was not here when you went in.' },
     { who: 'client', text: 'Is it done?' },
     { who: 'guard', text: 'It is done.' },
     { who: 'direction', text: 'The client signs the account closed. Nobody at W. Ellery has ever seen a ghost. They have seen a schedule of consent and an open account, and now a closed one. The left column got one more name. The right stays empty.' },
     { who: 'client', text: 'Good. Book the machines for 06:00.' },
   ];
   return [
-    { who: 'direction', text: 'The gate booth. The bored man, the book, and nobody else. Not the client, who did not need to come. Not you, who did not come out.' },
+    { who: 'direction', art: { id: 'guard', mode: 'hero', caption: 'Gate booth / morning', status: 'STILL' }, text: 'The gate booth. The bored man, the book, and nobody else. Not the client, who did not need to come. Not you, who did not come out.' },
     { who: 'direction', text: 'He writes the date and the time in the left column, beside a name, and he leaves the right column empty, the way it has been empty all the way up the page. The building took a man and gave back a file with nothing on it.' },
     { who: 'guard', text: 'Next.' },
   ];

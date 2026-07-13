@@ -21,6 +21,8 @@ import {
 } from '../render/transcript.js';
 import { UI_COLOR } from '../render/palette.js';
 import { createConversation } from './conversation.js';
+import { drawStoryArtCard, planStoryArtInPanel, planStoryArtSideBySide, storyArtSideBySidePanelRows } from './story-art-card.js';
+import { resolveStoryArt } from './story-art.js';
 
 const COL_W = 86;
 const KEEP = 12;
@@ -49,6 +51,7 @@ export function makeColdOpenScene({
     nodes: opening, beats, startAt, sceneId: id, replay, onChoice, cue, fx, audio, getAudio,
     onDone: () => { scenes.pop(); if (ambient) audio?.stopBoothTone?.({ fade: 0.8 }); onDone?.(); },
   });
+  let lastBeatArt = null;
 
   return {
     id,
@@ -81,11 +84,21 @@ export function makeColdOpenScene({
         const w = Math.min(COL_W, cols - 4);
         const x = Math.floor((cols - w) / 2);
 
+        if (v.art) lastBeatArt = v.art;
+        const art = resolveStoryArt(v.art || (v.mode === 'beats' ? lastBeatArt : null));
+        const preliminaryChoices = layoutTranscriptChoices(v, Math.max(12, w - 8));
+        const fixedArtPanelH = art
+          ? storyArtSideBySidePanelRows({
+              choicesRows: preliminaryChoices.height ? preliminaryChoices.height + 1 : 0,
+              bottomPadRows: 2,
+            })
+          : 0;
         const panelH = Math.min(
           rows - 4,
           Math.max(
             18,
             Math.min(30, Math.floor(rows * 0.64)),
+            fixedArtPanelH,
           ),
         );
 
@@ -134,28 +147,83 @@ export function makeColdOpenScene({
           ? choices.height + 1
           : 0;
 
-        const transcriptY =
+        let transcriptY =
           header.y + (header.rows ? 1 : 0);
 
-        const availableRows = Math.max(
+        const beforeTextRows = Math.max(
           1,
           body.y +
             body.h -
             transcriptY -
             choiceReserve,
         );
+        const sidePlan = planStoryArtSideBySide({
+          art,
+          mode: art?.mode || 'compact',
+          panelRows: beforeTextRows,
+          panelCols: contentW,
+          textRowsMin: choices.height ? 4 : 5,
+          choicesRows: 0,
+          minTextCols: 32,
+          bottomPadRows: 2,
+        });
+
+        let transcriptX = contentX;
+        let transcriptW = contentW;
+        let transcriptMaxRows = beforeTextRows;
+
+        if (sidePlan.show) {
+          drawStoryArtCard(art, {
+            x: contentX,
+            y: transcriptY,
+            w: sidePlan.artCols,
+            rows: sidePlan.rows,
+            mode: sidePlan.mode || art.mode,
+            lockRows: true,
+          });
+          transcriptX = contentX + sidePlan.artCols + sidePlan.gap;
+          transcriptW = sidePlan.textCols;
+          transcriptMaxRows = sidePlan.rows;
+        } else {
+          const artPlan = planStoryArtInPanel({
+            art,
+            mode: art?.mode || 'compact',
+            panelRows: beforeTextRows,
+            textRowsMin: choices.height ? 4 : 5,
+            choicesRows: choiceReserve,
+          });
+
+          if (artPlan.show) {
+            drawStoryArtCard(art, {
+              x: contentX,
+              y: transcriptY,
+              w: contentW,
+              rows: artPlan.rows,
+              mode: artPlan.mode || art.mode,
+            });
+            transcriptY += artPlan.rows + 1;
+          }
+
+          transcriptMaxRows = Math.max(
+            1,
+            body.y +
+              body.h -
+              transcriptY -
+              choiceReserve,
+          );
+        }
 
         const transcript = layoutTranscript(v, {
-          width: contentW,
-          maxRows: availableRows,
+          width: transcriptW,
+          maxRows: transcriptMaxRows,
           keep: KEEP,
         });
 
         drawTranscript(transcript, {
-          x: contentX,
+          x: transcriptX,
           y: transcriptY,
-          width: contentW,
-          maxRows: availableRows,
+          width: transcriptW,
+          maxRows: transcriptMaxRows,
         });
 
         if (choices.height) {

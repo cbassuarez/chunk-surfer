@@ -146,6 +146,7 @@ export function natatoriumBattle(named = false) {
   return {
     id: 'natatorium',
     enemy: 'THE SOUND OF SILENCE',
+    art: { id: 'surfer', mode: 'boss', caption: 'Signal subject / empty room', status: 'STILL' },
     composure: 1,
     health: 2,
     challenges: natatoriumChallenges(),
@@ -224,6 +225,7 @@ export function practiceBattle(named = false) {
   return {
     id: 'practice',
     enemy: 'THE SOUND OF SILENCE',
+    art: { id: 'tuningFork', mode: 'boss', caption: 'Reference tone / wrong music', status: 'REFERENCE' },
     composure: 1,
     health: 2,
     challenges: practiceChallenges(),
@@ -292,7 +294,7 @@ export function practiceBattle(named = false) {
 
 export function hallBattle(named = false) {
   return {
-    id:'hall',enemy:'THE HOUSE RETURN',composure:1,health:2,challenges:hallChallenges(),
+    id:'hall',enemy:'THE HOUSE RETURN',art:{ id:'circuitBentInterface', mode:'boss', caption:'House return / monitor path', status:'SIGNAL' },composure:1,health:2,challenges:hallChallenges(),
     intro:[
       {who:'direction',text:'The hall takes your silence and returns it from the stage, the balconies, and the empty seats.'},
       {who:'you',text:'That is a return. That is architecture. Keep it architecture.'},
@@ -322,6 +324,7 @@ export function hallPlayback(named = false) {
   return {
     start: {
       speaker: 'PLAYBACK · THE CONCERT HALL',
+      art: { id: 'surfer', mode: 'hero', caption: 'Playback / a room behind glass', status: 'PLAYBACK' },
       lines: [
         { who: 'direction', text: 'The take rolls. A hall holding its breath, minus fifty-four, and then, under the noise floor, coming up, her.' },
         { who: 'sarah', text: 'You’re not even here. You’re behind the glass. You’re always behind the glass.', rate: 0.96 },
@@ -480,6 +483,7 @@ export function chapelBoss({ kind = 'nothing', value = null, listened = 5 } = {}
   return {
     id: 'chapel',
     enemy: face.label,
+    art: { id: 'circuitBentInterface', mode: 'boss', caption: 'Damaged monitor path / chapel', status: 'SIGNAL' },
     composure: 1.25,                 // longer than the others: this is the last one
     health: 3,
     challenges: chapelChallenges(face.label),

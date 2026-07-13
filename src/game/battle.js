@@ -11,6 +11,8 @@ import { UI_COLOR } from '../render/palette.js';
 import { createSamDialogVoice, isVoiced } from '../audio/sam-voice.js';
 import { TYPE_GAIN, TYPE_LEVEL } from '../audio/story-audio.js';
 import { textCps } from './access.js';
+import { drawStoryArtCard, planStoryArtInPanel, planStoryArtSideBySide } from './story-art-card.js';
+import { resolveStoryArt } from './story-art.js';
 import {
   applyOpponentMove,
   beginRedactionStroke,
@@ -281,20 +283,71 @@ export function makeBattleScene({
       uiText(panel.x + Math.max(0, panel.w - enemy.length), panel.y + 2, enemy, 'ui-danger');
       uiLine(panel.x, panel.y + 3.2, panel.x + panel.w, panel.y + 3.2, UI_COLOR.frame, 0.7);
 
+      let contentY = panel.y + 5;
+      let contentX = panel.x;
+      let contentW = panel.w;
+      const currentRound = battle.rounds?.[Math.max(0, challengeIndex)] || null;
+      const art = resolveStoryArt(cur?.art || currentRound?.art || battle.art || null);
+      const sidePlan = planStoryArtSideBySide({
+        art,
+        mode: art?.mode || 'boss',
+        panelRows: Math.max(0, panel.y + panel.h - contentY),
+        panelCols: panel.w,
+        textRowsMin: phase === 'puzzle' ? 12 : 5,
+        choicesRows: 0,
+        minTextCols: phase === 'puzzle' ? 44 : 32,
+        bottomPadRows: 2,
+      });
+
+      if (sidePlan.show) {
+        drawStoryArtCard(art, {
+          x: panel.x,
+          y: contentY,
+          w: sidePlan.artCols,
+          rows: sidePlan.rows,
+          mode: sidePlan.mode || art.mode,
+          lockRows: true,
+        });
+        contentX = panel.x + sidePlan.artCols + sidePlan.gap;
+        contentW = sidePlan.textCols;
+      } else {
+        const artPlan = planStoryArtInPanel({
+          art,
+          mode: art?.mode || 'boss',
+          panelRows: Math.max(0, panel.y + panel.h - contentY),
+          textRowsMin: phase === 'puzzle' ? 12 : 5,
+          choicesRows: 0,
+        });
+
+        if (artPlan.show) {
+          drawStoryArtCard(art, {
+            x: panel.x,
+            y: contentY,
+            w: panel.w,
+            rows: artPlan.rows,
+            mode: artPlan.mode || art.mode,
+          });
+          contentY += artPlan.rows + 1;
+        }
+      }
+
       if (phase === 'talk' && cur) {
         const label = whoOf(cur).toUpperCase();
-        uiText(panel.x, panel.y + 5, label, 'ui-label');
-        const lines = uiWrap(textOf(cur).slice(0, typed), panel.w);
-        lines.slice(0, Math.max(2, rows - 12)).forEach((line, i) =>
-          uiText(panel.x, panel.y + 7 + i, line, whoOf(cur) === 'direction' ? 'ui-secondary' : 'ui-primary'));
+        uiText(contentX, contentY, label, 'ui-label');
+        const lines = uiWrap(textOf(cur).slice(0, typed), contentW);
+        const talkRows = sidePlan.show
+          ? Math.max(2, sidePlan.rows - 2)
+          : Math.max(2, panel.y + panel.h - contentY - 3);
+        lines.slice(0, talkRows).forEach((line, i) =>
+          uiText(contentX, contentY + 2 + i, line, whoOf(cur) === 'direction' ? 'ui-secondary' : 'ui-primary'));
         return;
       }
 
       if (!sheet) return;
-      uiText(panel.x, panel.y + 5, `SHEET ${challengeIndex + 1}/${battle.challenges.length} · ATTEMPT ${Math.min(maxAttempts, sheet.attempts + 1)}/${maxAttempts}`, 'ui-label');
-      const local = layoutRedactionTokens(sheet.challenge, panel.w);
-      const startY = panel.y + 7;
-      lastLayout = local.map((p) => ({ ...p, x:p.x + panel.x, y:p.y + startY }));
+      uiText(contentX, contentY, `SHEET ${challengeIndex + 1}/${battle.challenges.length} · ATTEMPT ${Math.min(maxAttempts, sheet.attempts + 1)}/${maxAttempts}`, 'ui-label');
+      const local = layoutRedactionTokens(sheet.challenge, contentW);
+      const startY = contentY + 2;
+      lastLayout = local.map((p) => ({ ...p, x:p.x + contentX, y:p.y + startY }));
       for (const p of lastLayout) {
         const token = sheet.challenge.tokens[p.index];
         const playerBar = sheet.player.has(token.id), opponentBar = sheet.opponent.has(token.id);
@@ -309,11 +362,11 @@ export function makeBattleScene({
 
       const tokenRows = lastLayout.reduce((m, p) => Math.max(m, p.y - startY + 1), 1);
       const readY = startY + tokenRows + 2;
-      uiText(panel.x, readY, 'READBACK', 'ui-label');
+      uiText(contentX, readY, 'READBACK', 'ui-label');
       const readback = survivingText(sheet) || '[SILENCE]';
-      uiWrap(readback, panel.w).slice(0, 3).forEach((line, i) => uiText(panel.x, readY + 2 + i, line, 'ui-counter'));
+      uiWrap(readback, contentW).slice(0, 3).forEach((line, i) => uiText(contentX, readY + 2 + i, line, 'ui-counter'));
       if (notice && performance.now() < noticeUntil) {
-        uiText(panel.x, Math.min(panel.y + panel.h - 2, readY + 6), uiWrap(notice, panel.w)[0], phase === 'counter' ? 'ui-danger' : 'ui-amber');
+        uiText(contentX, Math.min(panel.y + panel.h - 2, readY + 6), uiWrap(notice, contentW)[0], phase === 'counter' ? 'ui-danger' : 'ui-amber');
       }
     },
   };

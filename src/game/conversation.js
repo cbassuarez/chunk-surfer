@@ -74,6 +74,18 @@ export function createConversation({
   const nodeLines = () => node()?.lines || [];
   const line = () => (mode === 'nodes' ? nodeLines()[lineIdx] : beats[beatIdx]);
 
+  function artRefOf(obj) {
+    if (!obj) return null;
+    if (obj.art) return obj.art;
+    if (obj.artId) return { id: obj.artId, mode: obj.artMode };
+    return null;
+  }
+
+  function currentArtRef() {
+    const l = line();
+    return artRefOf(l) || (mode === 'nodes' ? artRefOf(node()) : null);
+  }
+
   const lineContentId = (l = line()) => replay?.lineId?.({
     nodeId: mode === 'nodes' ? nodeId : 'beats',
     line: l,
@@ -373,6 +385,7 @@ export function createConversation({
           accelerating: accelerateHeld,
           voice: handle && !handle.done() ? handle.progress() : null,
         pending: pending ? { kind: pending.kind, options: visibleOptions(), index: choiceIdx } : null,
+        art: currentArtRef(),
         spent: (c) => asked.has(choiceKey(c)),
       };
     },
