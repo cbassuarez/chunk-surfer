@@ -7672,7 +7672,13 @@ async function fetchFile(file){
     const cl=res.headers.get('content-length');
     file.total=cl?parseInt(cl):0;
     const reader=res.body.getReader(), parts=[];
-    while(true){const{done,value}=await reader.read();if(done)break;parts.push(value);file.recv+=value.length;}
+      while(true){
+           const chunk=await reader.read();
+           if(chunk.done) break;
+           const value=chunk.value;
+           parts.push(value);
+           file.recv+=value.length;
+         }
     const flat=new Uint8Array(file.recv);
     let off=0; for(const p of parts){flat.set(p,off);off+=p.length;}
     ensureCtx();
