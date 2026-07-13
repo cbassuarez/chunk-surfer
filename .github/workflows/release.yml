@@ -75,6 +75,12 @@ jobs:
       - name: Run acoustic catalogue checks
         run: npm run test:acoustic
 
+      - name: Run desktop menu tests
+        run: npm run test:desktop-menu
+
+      - name: Check Tauri Rust
+        run: npm run tauri:check
+
       - name: Build Tauri bundles
         run: npm run tauri:build -- ${{ matrix.args }}
 

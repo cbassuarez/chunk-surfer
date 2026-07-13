@@ -32,15 +32,16 @@ import * as MUT from './world/mutate.js';
 import * as scenes from './game/scenes.js';
 import { uiInit, uiClear, uiText, uiSize, uiFill, uiCenter, uiDraw, uiPointFromClient, uiWrap } from './render/ui.js';
 import { drawVfdCounter, drawVfdMeter, drawMachinePanel, drawLocationIndicator, drawVfdText } from './render/presentation.js';
-import { applyVfdSettings } from './render/palette.js';
+import { applyVfdSettings, vfdSettings } from './render/palette.js';
 import { saveLoadAsync, saveCommit, getSave, newGame, metaCommit, getMeta } from './game/save.js';
-import { currentStorage } from './platform/storage/storageService.js';
+import { currentStorage, exportAllData, exportDiagnosticsForSupport } from './platform/storage/storageService.js';
 import { flagApply, flagTest, flagGet } from './game/flags.js';
 // The M2 dialogue runtime (game/dialogue.js, data/prologue.js, the Usher) is
 // gone. Conversations are game/conversation.js now, and there is nobody in this
 // building to talk to.
 import { makeTitleScene } from './game/title.js';
 import { makeSettingsScene } from './game/settings.js';
+import { makeCreditsScene } from './game/credits.js';
 import { terrorInit, once, interpolate } from './game/terror.js';
 import * as REC from './game/recordist.js';
 import * as RT from './audio/roomtone.js';
@@ -50,7 +51,19 @@ import * as CUES from './audio/cues.js';
 import * as STORY from './audio/story-audio.js';
 import * as FEAR from './audio/fear.js';
 import { assetUrl, IS_TAURI } from './platform/paths.js';
+import { installDesktopMenuBridge } from './platform/desktop-menu-bridge.js';
+import { installDesktopGlobalShortcuts } from './platform/desktop-global-shortcuts.js';
+import { isReservedDesktopShortcut } from './platform/desktop-menu-actions.js';
+import { applyGameModeDom, nextGameModeState } from './platform/game-mode.js';
+import { makePauseScene } from './game/pause.js';
+import { applyDisplayCssVars, normalizeDisplaySettings, resolveRenderScale } from './platform/display-policy.js';
+import { minimizeNativeWindow, quitNativeApp, resetNativeWindow, setNativeGameMode, setNativeWindowPreset } from './platform/desktop-window.js';
+import { applyCurrentStageLayout, installViewportGuard } from './platform/viewport-guard.js';
+import { resolveDesktopPaths } from './platform/paths/desktopPaths.js';
+import { revealPath } from './platform/diagnostics/desktopDiagnostics.js';
 import { runtimeParams, runtimeSnapshot } from './platform/launch.js';
+import { APP_COPYRIGHT, APP_LINKS, copyText, formatDiagnosticReport, formatLens, normalizeAboutSnapshot } from './platform/about-system.js';
+import { createPerformanceMeter } from './platform/performance-meter.js';
 import * as STAB from './game/stabs.js';
 import * as OBJ from './game/objectives.js';
 import * as DOC from './game/document.js';
@@ -138,6 +151,7 @@ let worldLayerVoice=null; // {srcA,srcB,gain,dur,startedAt,target,chunkIdx,world
 let worldDroneBanks=new Map(); // worldId -> {all:[chunkIdx], byBiome:{biome:[chunkIdx]}}
 let paused=false, looping=true;
 let inRogue=false, raf=null, tick=0;
+const perfMeter=createPerformanceMeter();
 let bootLog=[];
 let chunks=[]; // {idx,label,charId,name,buffer,analysis,biome,worldId,biomeId,terrainRadius,baseVol,wx,wy,heard}
 let worlds=[]; // template metadata by world id
@@ -149,6 +163,8 @@ let chunkByIdx=new Map();
 const chunkAt=(i)=>chunkByIdx.get(i);
 let keysDown=new Set();
 let nextMoveAtMs=0;
+let desktopGameMode={enabled:false,previousWindowPreset:'1280x800',enteredAt:null};
+let desktopMuteRestoreVolume=null;
 
 // world grid
 let WORLD_TILE_W=0, WORLD_TILE_H=0;
@@ -4345,6 +4361,7 @@ function loop(){
   try{
     tick++;
     const nowLoopMs=performance.now();
+    perfMeter.frame(nowLoopMs);
     const dt=Math.min(0.05, lastLoopMs ? (nowLoopMs-lastLoopMs)/1000 : 0.016);
     lastLoopMs=nowLoopMs;
     CONTROLLER.gamepadTick({
@@ -6842,11 +6859,81 @@ async function importProgressionProfile(){
   return true;
 }
 
-function openSettings({ inGame=false }={}){
+function rendererLabel(){
+  if(RENDERER==='3d') return '3D';
+  if(RENDERER==='dom') return 'DOM';
+  return '2D';
+}
+
+function collectAboutSnapshot(){
+  const root=document.documentElement;
+  const story=STORY.audioState?.() || {};
+  const storage=currentStorage();
+  return normalizeAboutSnapshot({
+    version:'0.1.0',
+    build:params().get('build') || import.meta.env?.MODE || 'LOCAL',
+    copyright:APP_COPYRIGHT,
+    runtime:{
+      mode:IS_TAURI?'desktop':'web',
+      platform:currentPlatform().kind || (IS_TAURI?'desktop':'browser'),
+      renderer:rendererLabel(),
+      lens:!!window.__diffusion && !lensDisabled,
+    },
+    performance:perfMeter.snapshot(),
+    display:{
+      width:window.innerWidth,
+      height:window.innerHeight,
+      dpr:window.devicePixelRatio || 1,
+      stageScale:root.dataset.stageScale || getComputedStyle(root).getPropertyValue('--stage-scale') || '1',
+      uiScale:getComputedStyle(root).getPropertyValue('--ui-scale') || '1',
+      renderScale:root.dataset.renderScale || root.style.getPropertyValue('--render-scale') || 'auto',
+    },
+    audio:{
+      state:actx?.state || story.ctx || 'none',
+      sampleRate:actx?.sampleRate || null,
+    },
+    storage:{
+      backend:storage?.kind || (IS_TAURI?'desktop':'browser'),
+      healthy:true,
+    },
+  });
+}
+
+async function copyDiagnosticReport(){
+  let diagnostics=null;
+  try{ diagnostics=await exportDiagnosticsForSupport(); }
+  catch(err){ console.warn('[about] diagnostics failed',err); }
+  const report=formatDiagnosticReport(collectAboutSnapshot(),{recent:diagnostics?.recent || []});
+  const ok=await copyText(report).catch(()=>false);
+  pushEvent(ok ? '// diagnostic report copied.' : '// diagnostic report could not access clipboard.');
+  return ok;
+}
+
+async function exportSaveBackup(){
+  let data=null;
+  try{ data=await exportAllData(); }
+  catch(err){ console.warn('[about] save backup failed',err); }
+  if(!data){ pushEvent('// save backup unavailable.'); return false; }
+  const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+  const ok=downloadJsonFile(data,`chunk-surfer-save-backup-${stamp}.json`);
+  pushEvent(ok ? '// save backup exported.' : '// save backup unavailable.');
+  return ok;
+}
+
+function resetInputBindings(){
+  const controllerBindings=BINDINGS.resetControllerBindings();
+  const st=getSave().settings||{};
+  saveCommit({settings:{...st,controllerBindings}});
+  CONTROLLER.cancelControllerRemap?.();
+  pushEvent('// input bindings reset.');
+  return controllerBindings;
+}
+
+function openSettings({ inGame=false, initialTab=null }={}){
   ensureCtx();
   scenes.push(makeSettingsScene({
     inGame,
-    initialTab: null,
+    initialTab,
     hooks: {
       setGlobalVolume,
       setDialogVolume,
@@ -6884,22 +6971,152 @@ function openSettings({ inGame=false }={}){
         saveCommit({settings:{...st,controllerBindings:BINDINGS.controllerBindings()}});
       }),
       cancelControllerRemap: CONTROLLER.cancelControllerRemap,
-      resetControllerBindings: ()=>{
-        const controllerBindings=BINDINGS.resetControllerBindings();
-        const st=getSave().settings||{};
-        saveCommit({settings:{...st,controllerBindings}});
-      },
+      resetControllerBindings: resetInputBindings,
+      resetInputBindings,
       exportProfile: exportProgressionProfile,
       importProfile: importProgressionProfile,
       currentArea: () => storyMode && inRogue ? roomLabel(currentWorld()) : (getSave().area || 'prologue'),
       version: () => '0.1.0',
-      build: () => params().get('build') || 'LOCAL',
+      build: () => params().get('build') || import.meta.env?.MODE || 'LOCAL',
+      copyright: () => APP_COPYRIGHT,
+      runtimeLabel: () => IS_TAURI ? 'Desktop' : 'Web',
+      rendererLabel,
+      lensLabel: () => formatLens(!!window.__diffusion && !lensDisabled),
+      performanceSnapshot: () => perfMeter.snapshot(),
+      openWebsite: () => openExternalUrl(APP_LINKS.website),
+      reportProblem: () => openExternalUrl(APP_LINKS.reportProblem),
+      copyDiagnosticReport,
+      exportSaveBackup,
+      restartAudioEngine: restartDesktopAudio,
+      openCredits,
+      resetDisplaySettings: resetDisplaySettingsFromMenu,
+      onDisplayChange: updateDisplaySettings,
     },
   }));
 }
 
+
+function currentDisplaySettings(){
+  return normalizeDisplaySettings(getSave().settings?.display || {});
+}
+
+function applyRenderScale(renderScale){
+  const effective=resolveRenderScale(renderScale,{devicePixelRatio:window.devicePixelRatio||1});
+  document.documentElement.dataset.renderScale=String(renderScale);
+  document.documentElement.style.setProperty('--effective-render-scale',String(effective));
+  window.dispatchEvent(new CustomEvent('chunk-surfer:render-scale',{detail:{renderScale,effective}}));
+}
+
+function refreshStageLayout(){
+  applyCurrentStageLayout({allowUpscale:true});
+}
+
+function refreshStageLayoutSoon(){
+  refreshStageLayout();
+  requestAnimationFrame(()=>{
+    refreshStageLayout();
+    setTimeout(refreshStageLayout, 80);
+    setTimeout(refreshStageLayout, 240);
+  });
+}
+
+async function updateDisplaySettings(patch={}, nextMaybe=null){
+  const st=getSave().settings||{};
+  const current=normalizeDisplaySettings(st.display||{});
+  const next=normalizeDisplaySettings(nextMaybe || {...current,...patch});
+  saveCommit({settings:{...st,display:next}});
+  applyDisplayCssVars(next);
+  applyRenderScale(next.renderScale);
+  refreshStageLayoutSoon();
+
+  try{
+    if(Object.prototype.hasOwnProperty.call(patch,'windowPreset')){
+      await setNativeWindowPreset(next.windowPreset);
+    }
+    if(Object.prototype.hasOwnProperty.call(patch,'displayMode')){
+      await setNativeGameMode(next.displayMode==='game-mode');
+    }
+  }catch(err){
+    console.warn('[display] native display change failed',err);
+  }
+  return next;
+}
+
+async function resetWindowFromMenu(){
+  desktopGameMode={enabled:false,previousWindowPreset:'1280x800',enteredAt:null};
+  applyGameModeDom(false,document);
+  document.body.classList.remove('desktop-fullscreen');
+  if(!IS_TAURI) exitFullscreenSafe();
+  try{ await resetNativeWindow(); }catch(err){ console.warn('[display] reset window failed',err); }
+  await updateDisplaySettings({displayMode:'windowed',windowPreset:'1280x800'});
+  refreshStageLayoutSoon();
+  ensureInteractionFocus();
+  pushEvent('// window profile reset: adaptive 1280×800.');
+}
+
+async function resetDisplaySettingsFromMenu(){
+  desktopGameMode={enabled:false,previousWindowPreset:'1280x800',enteredAt:null};
+  applyGameModeDom(false,document);
+  document.body.classList.remove('desktop-fullscreen','desktop-high-contrast');
+  if(!IS_TAURI) exitFullscreenSafe();
+  await updateDisplaySettings({displayMode:'windowed',windowPreset:'1280x800',uiScale:1,renderScale:'auto'});
+  try{ await resetNativeWindow(); }catch(err){ console.warn('[display] reset defaults failed',err); }
+  refreshStageLayoutSoon();
+  ensureInteractionFocus();
+  pushEvent('// display settings reset.');
+}
+
+function openSettingsFromPause(initialTab='display'){
+  openSettings({inGame:false,initialTab});
+}
+
+async function requestQuitDesktop(){
+  if(IS_TAURI){
+    await quitNativeApp().catch((err)=>console.warn('[desktop] quit failed',err));
+    return;
+  }
+  pushEvent('// quit to desktop is available in the desktop build.');
+}
+
+function closePauseMenu(){
+  if(scenes.top()?.id==='pause') scenes.pop();
+  setGameplayPaused(false,{announce:false});
+}
+
+function openPauseMenu(){
+  if(!storyMode || !inRogue){
+    togglePause();
+    return false;
+  }
+  if(scenes.top()?.id==='pause'){
+    closePauseMenu();
+    return true;
+  }
+  setGameplayPaused(true,{announce:false});
+  scenes.push(makePauseScene({
+    onResume: closePauseMenu,
+    onSettings: ()=>openSettingsFromPause('display'),
+    onControls: ()=>openSettingsFromPause('input'),
+    onAudio: ()=>openSettingsFromPause('audio'),
+    onObjectives: openBag,
+    onArchive: openArchive,
+    onRestartRun: beginNewGameFlow,
+    onReturnToTitle: returnToTitle,
+    onQuitDesktop: requestQuitDesktop,
+  }));
+  return true;
+}
+
 function openArchive(){
   scenes.push(makeArchiveScene({ meta:getMeta() }));
+}
+
+function openCredits(){
+  ensureCtx();
+  scenes.push(makeCreditsScene({
+    onClose:()=>scenes.pop(),
+    onWebsite:()=>openExternalUrl(APP_LINKS.website),
+  }));
 }
 
 function openReturnIndex(){
@@ -6989,6 +7206,187 @@ function requestFullscreenSafe(){
   const el=document.documentElement;
   if(document.fullscreenElement || !el.requestFullscreen) return;
   el.requestFullscreen().then(ensureInteractionFocus).catch(()=>{});
+}
+
+
+function exitFullscreenSafe(){
+  try{
+    if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch?.(()=>{});
+  }catch(_){}
+}
+
+function isDesktopMenuInGame(){ return storyMode && inRogue; }
+
+function continueRunFromDesktopMenu(){
+  if(getSave().run){
+    if(scenes.top()?.id==='title') scenes.pop();
+    enterStory();
+    return;
+  }
+  beginNewGameFlow();
+}
+
+function openAboutPanel(){
+  ensureCtx();
+  openSettings({inGame:isDesktopMenuInGame(), initialTab:'system'});
+  pushEvent('// Chunk Surfer 0.1.0. AUDIOCORP field monitor ready.');
+}
+
+async function toggleDesktopGameMode(force){
+  const current=currentDisplaySettings();
+  desktopGameMode=nextGameModeState(desktopGameMode,{
+    enabled:typeof force==='boolean'?force:undefined,
+    previousWindowPreset:current.windowPreset,
+    now:performance.now?.()||Date.now(),
+  });
+  applyGameModeDom(desktopGameMode.enabled, document);
+  if(desktopGameMode.enabled){
+    ensureCtx();
+    if(!IS_TAURI) requestFullscreenSafe();
+    pushEvent('// game mode: focus profile engaged. [F11] to leave.');
+  } else {
+    if(!IS_TAURI) exitFullscreenSafe();
+    pushEvent('// game mode: window profile restored.');
+  }
+  await updateDisplaySettings({displayMode:desktopGameMode.enabled?'game-mode':'windowed'});
+  refreshStageLayoutSoon();
+  ensureInteractionFocus();
+}
+
+function syncNativeFullscreenState(){
+  refreshStageLayoutSoon();
+  ensureInteractionFocus();
+}
+
+function resetDesktopWindowState(){
+  resetWindowFromMenu();
+}
+
+function setDesktopReduceMotion(checked){
+  const st=getSave().settings||{};
+  const current=(st.shake||'full')!=='full';
+  const on=typeof checked==='boolean' ? checked : !current;
+  saveCommit({settings:{...st,shake:on?'reduced':'full'}});
+  pushEvent(`// reduce motion: ${on?'on':'off'}.`);
+}
+
+function setDesktopReduceFlash(checked){
+  const st=getSave().settings||{};
+  const current=(st.flash||'full')!=='full';
+  const on=typeof checked==='boolean' ? checked : !current;
+  saveCommit({settings:{...st,flash:on?'reduced':'full'}});
+  pushEvent(`// reduce flash: ${on?'on':'off'}.`);
+}
+
+function setDesktopHighContrast(checked){
+  const st=getSave().settings||{};
+  const current=!!st.desktopHighContrast;
+  const on=typeof checked==='boolean' ? checked : !current;
+  const nextVfd={...(st.vfd||{}),brightness:on?Math.max(1.12,vfdSettings.brightness||1):(st.vfd?.brightness||1)};
+  applyVfdSettings(nextVfd);
+  saveCommit({settings:{...st,desktopHighContrast:on,vfd:nextVfd}});
+  document.body.classList.toggle('desktop-high-contrast',on);
+  pushEvent(`// VFD boost: ${on?'on':'off'}.`);
+}
+
+function toggleDesktopMute(){
+  const st=getSave().settings||{};
+  const cur=clamp01(st.volume ?? 1,1);
+  if(cur>0){
+    desktopMuteRestoreVolume=cur;
+    saveCommit({settings:{...st,volume:0}});
+    setGlobalVolume(0);
+    pushEvent('// audio muted.');
+  } else {
+    const next=clamp01(desktopMuteRestoreVolume ?? 1,1);
+    saveCommit({settings:{...st,volume:next}});
+    setGlobalVolume(next);
+    pushEvent('// audio restored.');
+  }
+}
+
+function restartDesktopAudio(){
+  STORY.stopAll?.();
+  stopAllVoices();
+  stopWorldLayerVoice();
+  silenceAmbientDrone();
+  applyAudioSettings();
+  if(!paused && storyMode && inRogue){
+    startAmbientDroneAt(currentAmbientTarget());
+    updateAudio();
+  }
+  pushEvent('// audio engine restarted.');
+}
+
+async function openExternalUrl(url){
+  try{
+    if(IS_TAURI){
+      const opener=await import('@tauri-apps/plugin-opener');
+      await opener.openUrl(url);
+      return true;
+    }
+  }catch(err){ console.warn('open url failed',err); }
+  try{ window.open(url,'_blank','noopener,noreferrer'); return true; }catch(_){ return false; }
+}
+
+async function openDesktopSaveFolder(){
+  try{
+    const paths=await resolveDesktopPaths();
+    if(paths?.appData){
+      const res=await revealPath(paths.appData);
+      if(res?.ok){ pushEvent('// save folder opened.'); return; }
+    }
+  }catch(err){ console.warn('open save folder failed',err); }
+  openSettings({inGame:isDesktopMenuInGame(),initialTab:'memory'});
+  pushEvent('// save folder unavailable; memory panel opened.');
+}
+
+function openReleasePage(){
+  openExternalUrl('https://github.com/cbassuarez/chunk-surfer/releases');
+}
+
+function reportDesktopIssue(){
+  openExternalUrl(APP_LINKS.reportProblem);
+}
+
+
+async function handleReservedDesktopShortcut(e){
+  const key=String(e.key||'').toLowerCase();
+  const code=String(e.code||'').toLowerCase();
+  const primary=!!(e.metaKey||e.ctrlKey);
+
+  if(!primary && (key==='f11'||code==='f11')){
+    await toggleDesktopGameMode();
+    return true;
+  }
+  if(!primary) return false;
+
+  if(key==='q'){
+    await quitNativeApp().catch((err)=>console.warn('[desktop] quit shortcut failed',err));
+    return true;
+  }
+  if(key==='m'){
+    if(e.shiftKey){ toggleDesktopMute(); return true; }
+    await minimizeNativeWindow().catch((err)=>console.warn('[desktop] minimize shortcut failed',err));
+    return true;
+  }
+  if(key===','){
+    openSettings({inGame:false,initialTab:'display'});
+    return true;
+  }
+  if(key==='f'){
+    await toggleDesktopGameMode();
+    return true;
+  }
+  if(key==='p'){
+    openPauseMenu();
+    return true;
+  }
+  if(key==='n'){
+    beginNewGameFlow();
+    return true;
+  }
+  return false;
 }
 
 // The glyph layer is the only surface the diffusion lens cannot repaint, so
@@ -7415,6 +7813,11 @@ async function bootScenes(){
   await saveLoadAsync({ gameVersion: qp.get('build') || 'LOCAL' });
   progressionInit({build:qp.get('build') || 'LOCAL'});
   BINDINGS.setControllerBindings(getSave().settings?.controllerBindings);
+  const displaySettings=currentDisplaySettings();
+  applyDisplayCssVars(displaySettings);
+  applyRenderScale(displaySettings.renderScale);
+  installViewportGuard({allowUpscale:true});
+  refreshStageLayoutSoon();
   { const vs=getSave().settings?.vfd; if(vs) applyVfdSettings(vs); }
   terrorInit();
   uiInit(MAP_EL);
@@ -7840,6 +8243,11 @@ function onKey(e){
   }
   // typing in the lens tuner must not drive the player
   if(e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+  if(IS_TAURI && isReservedDesktopShortcut(e)){
+    e.preventDefault();
+    handleReservedDesktopShortcut(e);
+    return;
+  }
   if(e.key==='t' || e.key==='T') return; // owned by the tuner panel
   const moveKey=movementKey(e);
 
@@ -7857,9 +8265,8 @@ function onKey(e){
   if(!inRogue) return;
   if(storyMode && e.key==='Escape'){
     e.preventDefault();
-    // Esc is the service menu — settings and the way back to the title. It does
-    // NOT stop a take: once you have rolled, the only way out is [r].
-    openSettings({inGame:true});
+    // Esc is the run-level AUDIOCORP service menu. Preferences remain app-level.
+    openPauseMenu();
     return;
   }
   if(storyMode){
@@ -8048,13 +8455,63 @@ async function boot(){
   window.addEventListener('pointerup', onScenePointer, {capture:true,passive:false});
   window.addEventListener('pointercancel', onScenePointer, {capture:true,passive:false});
   // Fullscreen and iframe transitions silently drop keyboard focus.
-  document.addEventListener('fullscreenchange', ensureInteractionFocus);
+  document.addEventListener('fullscreenchange', ()=>{ refreshStageLayoutSoon(); ensureInteractionFocus(); });
   window.addEventListener('message', ensureInteractionFocus, {passive:true});
-  window.addEventListener('focus', ensureInteractionFocus, {passive:true});
+  window.addEventListener('focus', ()=>{ refreshStageLayoutSoon(); ensureInteractionFocus(); }, {passive:true});
   document.addEventListener('visibilitychange', ()=>{
     if(!document.hidden) ensureInteractionFocus();
   });
   window.addEventListener('blur',onBlur);
+  await installDesktopMenuBridge({
+    isInGame: isDesktopMenuInGame,
+    openAbout: openAboutPanel,
+    openSettings,
+    beginNewGameFlow,
+    continueRun: continueRunFromDesktopMenu,
+    openDifficulty: beginNewGameFlow,
+    openAchievements: openArchive,
+    returnToTitle,
+    togglePauseMenu: openPauseMenu,
+    toggleGameMode: toggleDesktopGameMode,
+    onNativeFullscreenToggled: syncNativeFullscreenState,
+    resetWindow: resetDesktopWindowState,
+    setReduceMotion: setDesktopReduceMotion,
+    setReduceFlash: setDesktopReduceFlash,
+    setHighContrast: setDesktopHighContrast,
+    toggleMute: toggleDesktopMute,
+    restartAudio: restartDesktopAudio,
+    openSaveFolder: openDesktopSaveFolder,
+    openReleasePage,
+    reportIssue: reportDesktopIssue,
+  });
+  await installDesktopGlobalShortcuts({
+    quit:()=>quitNativeApp().catch((err)=>console.warn('[desktop-shortcuts] quit failed',err)),
+    minimize:()=>minimizeNativeWindow().catch((err)=>console.warn('[desktop-shortcuts] minimize failed',err)),
+    openPreferences:()=>openSettings({inGame:false,initialTab:'display'}),
+    toggleGameMode:toggleDesktopGameMode,
+    togglePauseMenu:openPauseMenu,
+    beginNewGameFlow,
+    toggleMute:toggleDesktopMute,
+  });
+  if(typeof window!=='undefined'){
+    window.__chunkSurferDisplay={
+      setWindowPreset:(id)=>updateDisplaySettings({windowPreset:id}),
+      setUiScale:(value)=>updateDisplaySettings({uiScale:value}),
+      setRenderScale:(value)=>updateDisplaySettings({renderScale:value}),
+      setDisplayMode:(id)=>updateDisplaySettings({displayMode:id}),
+      openPause:openPauseMenu,
+      openSettings:(tab='display')=>openSettings({initialTab:tab}),
+      resetWindow:resetWindowFromMenu,
+    };
+    window.__chunkSurferAbout={
+      snapshot:collectAboutSnapshot,
+      copyReport:copyDiagnosticReport,
+      exportSave:exportSaveBackup,
+      restartAudio:restartDesktopAudio,
+      openWebsite:()=>openExternalUrl(APP_LINKS.website),
+      reportProblem:()=>openExternalUrl(APP_LINKS.reportProblem),
+    };
+  }
   updateOnboardingButton();
     await bootScenes();
     raf=requestAnimationFrame(loop);

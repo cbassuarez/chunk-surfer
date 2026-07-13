@@ -1,25 +1,119 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="cs-awaiting-styles">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
   <title>chunk surfer // cbassuarez.com</title>
-  <link rel="stylesheet" href="./styles.css?v=20260710vfd2">
+  <style>
+    :root {
+      color-scheme: dark;
+      background: #020807;
+      --critical-bg: #020807;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      min-width: 100%;
+      min-height: 100%;
+      background: var(--critical-bg);
+      color: #dce8e5;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    #wrap {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      background: var(--critical-bg);
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    html.cs-styles-ready #wrap {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    #map,
+    #introVignette,
+    #hushJump {
+      position: absolute;
+      inset: 0;
+    }
+
+    #map {
+      white-space: pre;
+      font: inherit;
+    }
+
+    #introVignette,
+    #hushJump {
+      pointer-events: none;
+    }
+
+    .critical-noscript {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: #020807;
+      color: #dce8e5;
+      font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      letter-spacing: 0.08em;
+      text-align: center;
+    }
+  </style>
+  <link id="mainStyles" rel="stylesheet" href="./styles.css?v=20260710vfd2">
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var sheet = document.getElementById('mainStyles');
+      var marked = false;
+      function markStylesReady() {
+        if (marked) return;
+        marked = true;
+        root.classList.remove('cs-awaiting-styles');
+        root.classList.add('cs-styles-ready');
+      }
+      if (!sheet) {
+        markStylesReady();
+        return;
+      }
+      sheet.addEventListener('load', markStylesReady, { once: true });
+      sheet.addEventListener('error', function () {
+        root.classList.add('cs-style-error');
+        markStylesReady();
+      }, { once: true });
+      try {
+        if (sheet.sheet) markStylesReady();
+      } catch (_) {}
+      window.setTimeout(function () {
+        if (!marked) root.classList.add('cs-style-waiting');
+      }, 600);
+      window.setTimeout(markStylesReady, 4000);
+    }());
+  </script>
 </head>
 <body>
+<noscript><div class="critical-noscript">Chunk Surfer requires JavaScript.</div></noscript>
 <div id="wrap">
   <div id="introTitle">
-    <div id="introTitleAuthor">cbassuarez</div>
-    <div id="introTitleWork">CHUNK SURFER</div>
-    <div id="introTitleRule"></div>
-    <div id="introTitleDesc">a haunting at Ellery Conservatory</div>
-    <div id="introTitleSub">&uarr; to step into the field</div>
+    <div id="introTitleAuthor"></div>
+    <div id="introTitleWork"></div>
+    <div id="introTitleDesc"></div>
+    <div id="introTitleSub"></div>
   </div>
   <div id="map"></div>
   <div id="introVignette"></div>
   <div id="hushJump"></div>
 </div>
-
 
 <script type="module" src="./src/main.js?v=20260710vfd2"></script>
 </body>

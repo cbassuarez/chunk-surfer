@@ -14,6 +14,12 @@ import {
 } from '../render/palette.js';
 import * as AUDIO from '../audio/story-audio.js';
 import { RULE_LABELS, RULE_OPTIONS, VALUE_LABELS } from '../progression/difficulty-defs.js';
+import {
+  cycleDisplayOption,
+  labelDisplayOption,
+  normalizeDisplaySettings,
+} from '../platform/display-policy.js';
+import { formatFps } from '../platform/about-system.js';
 
 const MIC_LABEL = { idle: 'OFF', asking: 'ASKING…', on: 'LIVE', denied: 'BLOCKED', test: 'TEST' };
 const FX_MODES = ['off', 'reduced', 'full'];
@@ -79,6 +85,31 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
     set(key, list[(Math.max(0, i) + d + list.length) % list.length]);
   }
 
+  function displaySettings() {
+    return normalizeDisplaySettings(s().display || {});
+  }
+
+  function patchDisplaySettings(patch) {
+    const current = displaySettings();
+    const next = normalizeDisplaySettings({ ...current, ...patch });
+    if (hooks.onDisplayChange) {
+      hooks.onDisplayChange(patch, next);
+      return;
+    }
+    saveCommit({ settings: { ...s(), display: next } });
+  }
+
+  function cycleDisplay(key, contractKey, d) {
+    const current = displaySettings()[key];
+    patchDisplaySettings({
+      [key]: cycleDisplayOption(contractKey, current, d),
+    });
+  }
+
+  function displayLabel(key, contractKey) {
+    return labelDisplayOption(contractKey, displaySettings()[key]);
+  }
+
   const controlValue = (action) => hooks.controllerRemapAction?.() === action
     ? 'PRESS A CONTROLLER BUTTON…'
     : `${bindingLabel(action)} · ${controllerBindingLabel(action)}`;
@@ -113,6 +144,31 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
     
     function pct(key, fallback = 1) {
       return `${Math.round(setting(key, fallback) * 100)}%`;
+    }
+
+    function section(label) {
+      return { kind: 'section', label, selectable: false };
+    }
+
+    function isSelectable(row) {
+      return !!row && row.kind !== 'section' && row.selectable !== false;
+    }
+
+    function firstSelectableIndex(rows = rowsOf()) {
+      const at = rows.findIndex(isSelectable);
+      return at >= 0 ? at : 0;
+    }
+
+    function moveSelection(delta) {
+      const rows = rowsOf();
+      if (!rows.length) { sel = 0; return; }
+      for (let n = 0; n < rows.length; n++) {
+        sel = (sel + delta + rows.length) % rows.length;
+        if (isSelectable(rows[sel])) break;
+      }
+      armed = null;
+      pendingChallenge = null;
+      AUDIO.menuMove();
     }
 
     function setAudioLevel(key, hookName, d) {
@@ -180,18 +236,33 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
       {
         id: 'display', name: 'DISPLAY',
         rows: [
+          { id: 'displayMode', label: 'DISPLAY MODE',
+            value: () => displayLabel('displayMode', 'displayModes').toUpperCase(),
+            adjust: (d) => cycleDisplay('displayMode', 'displayModes', d) },
+          { id: 'windowPreset', label: 'WINDOW SIZE',
+            value: () => displayLabel('windowPreset', 'windowPresets'),
+            adjust: (d) => cycleDisplay('windowPreset', 'windowPresets', d) },
+          { id: 'uiScale', label: 'UI SCALE',
+            value: () => displayLabel('uiScale', 'uiScalePresets'),
+            adjust: (d) => cycleDisplay('uiScale', 'uiScalePresets', d) },
+          { id: 'renderScale', label: 'RENDER SCALE',
+            value: () => displayLabel('renderScale', 'renderScalePresets').toUpperCase(),
+            adjust: (d) => cycleDisplay('renderScale', 'renderScalePresets', d) },
           { id: 'phosphor', label: 'PHOSPHOR',
             value: () => PHOSPHOR_LABEL[vfdSettings.phosphor] ?? String(vfdSettings.phosphor).toUpperCase(),
             adjust: (d) => cycleVfd('phosphor', PHOSPHOR_THEMES, d) },
-          { id: 'brightness', label: 'BRIGHTNESS',
+          { id: 'brightness', label: 'VFD BRIGHTNESS',
             value: () => `${Math.round(vfdSettings.brightness * 100)}%`,
             adjust: (d) => setVfd({ brightness: clamp(vfdSettings.brightness + d * 0.05, 0.55, 1.25) }) },
-          { id: 'flicker', label: 'FLICKER',
+          { id: 'flicker', label: 'VFD FLICKER',
             value: () => FLICKER_LABEL[vfdFlickerLevel()],
             adjust: (d) => cycleVfd('flicker', FLICKER_LEVELS, d) },
           { id: 'visualFx', label: 'VISUAL FX',
             value: () => setting('fx', true) ? 'ON' : 'OFF',
             adjust: () => set('fx', !setting('fx', true)) },
+          { id: 'resetDisplaySettings', label: 'RESET DISPLAY SETTINGS',
+            value: () => armedValue('resetDisplaySettings'),
+            activate: () => arm('resetDisplaySettings', () => hooks.resetDisplaySettings?.()) },
         ],
       },
       {
@@ -217,7 +288,7 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
       {
         id: 'input', name: 'INPUT',
         rows: [
-          { id: 'controlMap', label: 'CONTROLLER', value: () => hooks.controllerName?.() || 'NO CONTROLLER' },
+          { id: 'controlMap', label: 'CONTROLLER DETECTED', value: () => hooks.controllerName?.() || 'NO CONTROLLER' },
           { id: 'move', label: 'MOVE / TURN', value: () => controlValue('move') },
           { id: 'quiet', label: 'QUIET', value: () => controlValue('quiet'), activate: () => remap('quiet') },
           { id: 'light', label: 'LIGHT', value: () => controlValue('light'), activate: () => remap('light') },
@@ -228,7 +299,9 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           { id: 'menu', label: 'MENU / PAUSE', value: () => controlValue('menu'), activate: () => remap('menu') },
           { id: 'confirm', label: 'CONFIRM', value: () => controlValue('confirm'), activate: () => remap('confirm') },
           { id: 'back', label: 'BACK', value: () => controlValue('back'), activate: () => remap('back') },
-          { id: 'resetController', label: 'RESET PAD MAP', value: () => '[ENTER]', activate: () => hooks.resetControllerBindings?.() },
+          { id: 'resetInputBindings', label: 'RESET INPUT BINDINGS',
+            value: () => armedValue('resetInputBindings'),
+            activate: () => arm('resetInputBindings', () => hooks.resetInputBindings?.() || hooks.resetControllerBindings?.()) },
           { id: 'micStatus', label: 'MIC STATUS',
             value: () => MIC_LABEL[hooks.micStatus?.() || 'idle'] || 'OFF' },
           { id: 'mic', label: 'USE ROOM MIC',
@@ -350,14 +423,28 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
         ],
       },
       {
-        id: 'system', name: 'SYSTEM',
+        id: 'system', name: 'ABOUT',
         rows: [
-          { id: 'fullscreen', label: 'FULLSCREEN',
-            value: () => document.fullscreenElement ? 'ON' : '[ENTER]', activate: () => hooks.requestFullscreen?.() },
-          { id: 'panelFocus', label: 'PANEL FOCUS',
-            value: () => '[ENTER]', activate: () => hooks.focusPanel?.() },
-          { id: 'version', label: 'VERSION', value: () => hooks.version?.() || '0.1.0' },
-          { id: 'build', label: 'BUILD', value: () => hooks.build?.() || 'LOCAL' },
+          section('Chunk Surfer'),
+          { id: 'about:version', label: 'VERSION', value: () => hooks.version?.() || '0.1.0' },
+          { id: 'about:build', label: 'BUILD', value: () => hooks.build?.() || 'LOCAL' },
+          { id: 'about:website', label: 'WEBSITE', value: () => 'cbassuarez.com', activate: () => hooks.openWebsite?.() },
+          { id: 'about:report', label: 'REPORT A PROBLEM', value: () => '[ENTER]', activate: () => hooks.reportProblem?.() },
+          { id: 'about:copyright', label: 'COPYRIGHT', value: () => hooks.copyright?.() || '© 2026 Sebastian Suarez-Solis' },
+
+          section('Performance'),
+          { id: 'about:fps', label: 'FPS', value: () => formatFps(hooks.performanceSnapshot?.()?.fps) },
+          { id: 'about:runtime', label: 'RUNTIME', value: () => hooks.runtimeLabel?.() || 'Web' },
+          { id: 'about:renderer', label: 'RENDERER', value: () => hooks.rendererLabel?.() || 'Default' },
+          { id: 'about:lens', label: 'LENS', value: () => hooks.lensLabel?.() || 'Unknown' },
+
+          section('Support'),
+          { id: 'about:copyReport', label: 'COPY DIAGNOSTIC REPORT', value: () => '[ENTER]', activate: () => hooks.copyDiagnosticReport?.() },
+          { id: 'about:exportSave', label: 'EXPORT SAVE BACKUP', value: () => '[ENTER]', activate: () => hooks.exportSaveBackup?.() },
+          { id: 'about:restartAudio', label: 'RESTART AUDIO ENGINE', value: () => '[ENTER]', activate: () => hooks.restartAudioEngine?.() },
+
+          section('Credits'),
+          { id: 'about:credits', label: 'CREDITS', value: () => '[ENTER]', activate: () => hooks.openCredits?.() },
         ],
       },
     ];
@@ -367,7 +454,11 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
   if (tab < 0) tab = 0;
   let sel = 0;
   const rowsOf = () => tabs[tab].rows;
-  const clampSel = () => { sel = Math.max(0, Math.min(rowsOf().length - 1, sel)); };
+  const clampSel = () => {
+    const rows = rowsOf();
+    sel = Math.max(0, Math.min(rows.length - 1, sel));
+    if (!isSelectable(rows[sel])) sel = firstSelectableIndex(rows);
+  };
 
   return {
     id: 'settings',
@@ -380,7 +471,7 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
 
     key(e) {
       const raw=e.key||'', k=raw.toLowerCase(), code=e.code||'';
-      const changeTab = (d) => { tab = (tab + d + tabs.length) % tabs.length; sel = 0; armed = null; pendingChallenge = null; set('menuTab',tabs[tab].id); AUDIO.menuMove(); };
+      const changeTab = (d) => { tab = (tab + d + tabs.length) % tabs.length; sel = firstSelectableIndex(); armed = null; pendingChallenge = null; set('menuTab',tabs[tab].id); AUDIO.menuMove(); };
 
         if (raw === 'Tab') {
           changeTab(e.shiftKey ? -1 : 1);
@@ -389,17 +480,18 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
         if (raw === ']' || k === 'e' || code === 'KeyE') { changeTab(1); return true; }
         if (raw === '[' || k === 'q' || code === 'KeyQ') { changeTab(-1); return true; }
         
-      if (raw === 'ArrowUp' || k === 'w' || code === 'KeyW') { sel = (sel - 1 + rowsOf().length) % rowsOf().length; armed = null; pendingChallenge = null; AUDIO.menuMove(); return true; }
-      if (raw === 'ArrowDown' || k === 's' || code === 'KeyS') { sel = (sel + 1) % rowsOf().length; armed = null; pendingChallenge = null; AUDIO.menuMove(); return true; }
+      if (raw === 'ArrowUp' || k === 'w' || code === 'KeyW') { moveSelection(-1); return true; }
+      if (raw === 'ArrowDown' || k === 's' || code === 'KeyS') { moveSelection(1); return true; }
 
       clampSel();
       const row = rowsOf()[sel];
 
-      if (raw === 'ArrowLeft' || k === 'a' || code === 'KeyA') { if(row.adjust){ row.adjust(-1); armed = null; AUDIO.menuMove(); } return true; }
-      if (raw === 'ArrowRight' || k === 'd' || code === 'KeyD') { if(row.adjust){ row.adjust(1); armed = null; AUDIO.menuMove(); } return true; }
+      if (raw === 'ArrowLeft' || k === 'a' || code === 'KeyA') { if(isSelectable(row) && row.adjust){ row.adjust(-1); armed = null; AUDIO.menuMove(); } return true; }
+      if (raw === 'ArrowRight' || k === 'd' || code === 'KeyD') { if(isSelectable(row) && row.adjust){ row.adjust(1); armed = null; AUDIO.menuMove(); } return true; }
 
       if (raw === 'Enter' || code === 'Enter' || raw === ' ' || code === 'Space' || k === 'z' || code === 'KeyZ') {
         AUDIO.menuConfirm();
+        if (!isSelectable(row)) return true;
         if (row.challengeKey && confirmPendingChallenge(row.challengeKey)) return true;
         if (row.activate) row.activate();
         else if (row.adjust) { row.adjust(1); armed = null; }
@@ -453,9 +545,17 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
         const on = i === sel;
         const ry = iy + 3 + j * step;
 
+        if (row.kind === 'section') {
+          const label = String(row.label || '').toUpperCase();
+          uiText(ix + 1, ry, label, 'ui-amber');
+          const ruleStart = ix + 3 + label.length;
+          if (ruleStart < x + w - 4) uiText(ruleStart, ry, '─'.repeat(Math.max(1, x + w - ruleStart - 4)), 'ui-secondary');
+          return;
+        }
+
         uiText(ix, ry, `${on ? '▸' : ' '} ${row.label}`, on ? 'ui-primary' : 'ui-secondary');
 
-        const vx = ix + 22;
+        const vx = ix + 25;
         const cls = on ? 'ui-amber' : 'ui-secondary';
 
         if (row.bar) {

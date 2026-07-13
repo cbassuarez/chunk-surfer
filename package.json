@@ -12,7 +12,11 @@
     "lens:local": "tools/chunk_surfer/diffusion_server/run-local.sh",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build",
+    "test:desktop-menu": "node --test test/desktop-menu-actions.test.mjs test/desktop-menu-bridge.test.mjs test/desktop-global-shortcuts.test.mjs test/game-mode.test.mjs test/desktop-menu-contract.test.mjs",
+    "tauri:check": "cargo check --manifest-path src-tauri/Cargo.toml --all-targets",
+    "test:display": "node --test test/display-policy.test.mjs test/display-contract.test.mjs test/viewport-guard.test.mjs test/settings-vs-pause.test.mjs test/desktop-window-contract.test.mjs test/about-system.test.mjs test/performance-meter.test.mjs test/settings-about-tab.test.mjs test/credits-data.test.mjs test/critical-title-paint.test.mjs",
+    "test:desktop": "npm run test:desktop-menu && npm run test:display"
   },
   "devDependencies": {
     "@gltf-transform/core": "^4.4.1",
@@ -27,6 +31,8 @@
   "dependencies": {
     "@tauri-apps/plugin-fs": "^2.5.1",
     "@tauri-apps/plugin-log": "^2.8.0",
-    "@tauri-apps/plugin-opener": "^2.5.4"
+    "@tauri-apps/plugin-opener": "^2.5.4",
+    "@tauri-apps/api": "^2.11.0",
+    "@tauri-apps/plugin-global-shortcut": "^2.3.0"
   }
 }

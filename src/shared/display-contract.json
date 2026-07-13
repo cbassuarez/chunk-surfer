@@ -1,0 +1,41 @@
+{
+  "version": 2,
+  "design": {
+    "width": 1280,
+    "height": 800
+  },
+  "minimum": {
+    "width": 1280,
+    "height": 800
+  },
+  "safeMinimum": {
+    "width": 960,
+    "height": 600
+  },
+  "defaultWindow": {
+    "width": 1280,
+    "height": 800
+  },
+  "windowPresets": [
+    { "id": "1280x800", "width": 1280, "height": 800, "label": "1280×800" },
+    { "id": "1440x900", "width": 1440, "height": 900, "label": "1440×900" },
+    { "id": "1600x900", "width": 1600, "height": 900, "label": "1600×900" },
+    { "id": "1920x1080", "width": 1920, "height": 1080, "label": "1920×1080" }
+  ],
+  "uiScalePresets": [
+    { "id": "90", "value": 0.9, "label": "90%" },
+    { "id": "100", "value": 1, "label": "100%" },
+    { "id": "110", "value": 1.1, "label": "110%" },
+    { "id": "125", "value": 1.25, "label": "125%" }
+  ],
+  "renderScalePresets": [
+    { "id": "auto", "value": "auto", "label": "Auto" },
+    { "id": "75", "value": 0.75, "label": "75%" },
+    { "id": "100", "value": 1, "label": "100%" },
+    { "id": "125", "value": 1.25, "label": "125%" }
+  ],
+  "displayModes": [
+    { "id": "windowed", "label": "Windowed" },
+    { "id": "game-mode", "label": "Game Mode Fullscreen" }
+  ]
+}

@@ -25,6 +25,7 @@ const SETTING_HELP = Object.freeze({
     brightness: 'BRIGHTNESS changes the simulated display panel, not your monitor.',
     flicker: 'LOW flicker adds panel life. FULL makes the display less stable.',
     visualFx: 'VISUAL FX is the master switch for intense screen effects.',
+    resetDisplaySettings: 'RESET DISPLAY SETTINGS restores window, UI, and render defaults.',
     default: 'Display settings change the service panel, not the save file.',
   },
 
@@ -37,7 +38,7 @@ const SETTING_HELP = Object.freeze({
   },
 
   input: {
-    controlMap: 'CONTROL MAP is a reference for the current keyboard layout.',
+    controlMap: 'CONTROLLER DETECTED shows the active controller, if one is connected.',
     move: 'MOVE walks the building.',
     quiet: 'QUIET lowers your movement noise.',
     light: 'LIGHT toggles the torch.',
@@ -47,6 +48,7 @@ const SETTING_HELP = Object.freeze({
     menu: 'MENU opens this service panel.',
     micStatus: 'MIC STATUS shows whether the room microphone is available.',
     mic: 'USE ROOM MIC can be disabled. The game remains playable without it.',
+    resetInputBindings: 'RESET INPUT BINDINGS restores the default control map.',
     enableMic: 'ENABLE MIC asks the browser for microphone access.',
     default: 'Input rows are references for the current control map.',
   },
@@ -98,11 +100,20 @@ const SETTING_HELP = Object.freeze({
   },
 
   system: {
-    fullscreen: 'FULLSCREEN may require a fresh click if the browser blocks it.',
-    panelFocus: 'PANEL FOCUS restores keyboard control to the game.',
-    version: 'VERSION helps identify bug reports.',
-    build: 'BUILD identifies the local or deployed build label.',
-    default: 'SYSTEM rows control browser-facing shell behavior.',
+    'about:version': 'VERSION helps identify the build when reporting a problem.',
+    'about:build': 'BUILD identifies whether this is a local, web, or packaged release.',
+    'about:website': 'WEBSITE opens the project page.',
+    'about:report': 'REPORT A PROBLEM opens the issue/report page.',
+    'about:copyright': 'COPYRIGHT identifies the game copyright notice.',
+    'about:fps': 'FPS is a rough performance reading for this session.',
+    'about:runtime': 'RUNTIME identifies whether this is the desktop or web build.',
+    'about:renderer': 'RENDERER shows the active renderer mode.',
+    'about:lens': 'LENS shows whether the optional lens layer is active.',
+    'about:copyReport': 'COPY DIAGNOSTIC REPORT copies non-spoiler support details.',
+    'about:exportSave': 'EXPORT SAVE BACKUP downloads your save/profile data.',
+    'about:restartAudio': 'RESTART AUDIO ENGINE rebuilds the audio path if sound gets stuck.',
+    'about:credits': 'CREDITS opens the release record and project acknowledgements.',
+    default: 'ABOUT shows version, support, and non-spoiler runtime information.',
   },
 });
 
