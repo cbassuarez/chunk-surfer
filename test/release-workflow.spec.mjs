@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const yml = fs.readFileSync('.github/workflows/release.yml', 'utf8');
+const releaseMatrix = fs.readFileSync('scripts/release-matrix.mjs', 'utf8');
+const featureSmoke = fs.readFileSync('tools/chunk_surfer/tests/feature-regression-smoke.mjs', 'utf8');
 const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 const tauri = JSON.parse(fs.readFileSync('src-tauri/tauri.conf.json', 'utf8'));
 const lensTauri = JSON.parse(fs.readFileSync('src-tauri/tauri.lens.conf.json', 'utf8'));
@@ -14,8 +16,10 @@ assert.match(pkg.scripts['itch:preview'], /scripts\/itch-release\.mjs preview/, 
 assert.match(pkg.scripts['itch:push'], /scripts\/itch-release\.mjs push/, 'itch publish script exists for Butler channel pushes');
 assert.match(pkg.scripts['test:feature-smoke'], /run-feature-regression-smoke\.mjs/, 'cross-platform visual smoke has one portable entrypoint');
 assert.match(yml, /publish:[\s\S]*default: false[\s\S]*type: boolean/, 'manual release validation does not publish unless explicitly requested');
-assert.match(yml, /Windows x64[\s\S]*args: --no-bundle/, 'windows release skips installer bundling for large offline lens builds');
-assert.match(yml, /release\/windows\/\*\.zip/, 'windows portable zip artifact path is uploaded');
+assert.match(yml, /platform:[\s\S]*type: choice[\s\S]*- linux/, 'manual validation can target only the failed native platform');
+assert.match(yml, /matrix: \$\{\{ fromJSON\(needs\.configure\.outputs\.matrix\) \}\}/, 'release jobs consume the selected platform matrix');
+assert.match(releaseMatrix, /Windows x64[\s\S]*args: '--no-bundle'/, 'windows release skips installer bundling for large offline lens builds');
+assert.match(releaseMatrix, /release\/windows\/\*\.zip/, 'windows portable zip artifact path is uploaded');
 assert.match(yml, /scripts\/package-windows-portable\.mjs/, 'windows release stages a portable app directory');
 assert.doesNotMatch(yml, /Windows x64[\s\S]*args: --bundles (?:nsis|msi)/, 'windows release does not invoke NSIS or MSI installer linkers');
 assert.match(yml, /Prepare release upload assets[\s\S]*split -b 1900M/, 'release upload splits assets larger than GitHub release limits');
@@ -32,7 +36,7 @@ assert.match(yml, /gh release delete-asset/, 'release upload clears stale beta a
 assert.ok(!tauri.bundle.targets.includes('nsis'), 'default Tauri bundle targets do not include NSIS');
 assert.ok(!lensTauri.bundle.targets.includes('nsis'), 'lens bundle overlay never enables NSIS');
 assert.deepEqual(windowsTauri.bundle.targets, ['app'], 'Windows Tauri config avoids installer targets; release CI zips the portable app');
-assert.match(yml, /Linux x64[\s\S]*args: --bundles appimage,deb/, 'linux release builds explicit AppImage and deb bundles');
+assert.match(releaseMatrix, /Linux x64[\s\S]*args: '--bundles appimage,deb'/, 'linux release builds explicit AppImage and deb bundles');
 assert.match(yml, /libwebkit2gtk-4\.1-dev libayatana-appindicator3-dev/, 'linux runner installs current Tauri WebKit dependencies');
 assert.match(yml, /Free Linux runner disk[\s\S]*\/usr\/share\/dotnet[\s\S]*\/usr\/local\/lib\/android[\s\S]*docker system prune -af/, 'linux release frees hosted-runner disk before large lens packaging');
 assert.match(yml, /pip install --no-cache-dir/, 'release install avoids retaining pip wheel cache during lens packaging');
@@ -46,6 +50,8 @@ assert.match(yml, /gh release download[\s\S]*'\*\.dmg'[\s\S]*'\*\.zip'[\s\S]*'\*
 assert.match(yml, /build_bundle\.py --target \$\{\{ matrix\.target \}\}/, 'each target packages its own lens executable and model resources');
 assert.match(yml, /Run cross-platform visual smoke[\s\S]*npm run test:feature-smoke[\s\S]*Upload visual parity captures/, 'each native build job captures the same visual regression path');
 assert.match(yml, /Run cross-platform visual smoke[\s\S]*timeout-minutes: 6/, 'visual parity validation cannot hang a release runner indefinitely');
+assert.match(featureSmoke, /enable-unsafe-swiftshader/, 'linux visual parity explicitly enables Chromium software WebGL');
+assert.match(featureSmoke, /fs\.rmSync\(output/, 'visual parity cannot upload stale captures after a failed boot');
 assert.match(yml, /npm ci/, 'release installs the exact locked frontend dependency graph');
 assert.match(yml, /release-preflight\.mjs/, 'release validates source versions against its tag');
 assert.doesNotMatch(yml, /args: --config src-tauri\/tauri\.lens\.conf\.json/, 'release matrix does not duplicate the mandatory lens config flag');

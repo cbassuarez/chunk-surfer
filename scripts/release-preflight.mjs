@@ -15,6 +15,7 @@ const windowsTauri = JSON.parse(readFileSync('src-tauri/tauri.windows.conf.json'
 const cargo = readFileSync('src-tauri/Cargo.toml', 'utf8');
 const cargoVersion = cargo.match(/^version = "([^"]+)"/m)?.[1];
 const workflow = readFileSync('.github/workflows/release.yml', 'utf8');
+const releaseMatrix = readFileSync('scripts/release-matrix.mjs', 'utf8');
 const vite = readFileSync('vite.config.js', 'utf8');
 
 const versions = { package: pkg.version, tauri: tauri.version, cargo: cargoVersion };
@@ -32,8 +33,8 @@ if (!workflow.includes('build_bundle.py --target')) {
 if (!workflow.includes('npm run tauri:build --')) {
   throw new Error('release workflow does not call the mandatory bundled Tauri build script');
 }
-const windowsJob = workflow.match(/- name: Windows x64[\s\S]*?(?=\n          - name: Linux x64)/)?.[0] || '';
-if (!windowsJob.includes('args: --no-bundle')) {
+const windowsJob = releaseMatrix.match(/windows: \{[\s\S]*?(?=\n  linux: \{)/)?.[0] || '';
+if (!windowsJob.includes("args: '--no-bundle'")) {
   throw new Error('Windows release workflow must skip installer bundling and package the portable zip');
 }
 if (windowsJob.includes('nsis') || windowsJob.includes('msi')) {

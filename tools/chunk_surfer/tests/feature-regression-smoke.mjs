@@ -8,6 +8,7 @@ if(!chrome)throw new Error('CHROME_PATH must point to the platform Chrome execut
 const base=process.env.CHUNK_SURFER_URL||'http://127.0.0.1:5173';
 const lens=process.env.MOCK_LENS_URL||'ws://127.0.0.1:8765';
 const output=path.resolve('artifacts/feature-regression-smoke');
+fs.rmSync(output,{recursive:true,force:true});
 fs.mkdirSync(output,{recursive:true});
 
 const browser=await puppeteer.launch({
@@ -16,6 +17,12 @@ const browser=await puppeteer.launch({
   args:[
     '--autoplay-policy=no-user-gesture-required',
     ...(process.platform==='darwin'?['--use-angle=metal']:[]),
+    ...(process.platform==='linux'?[
+      '--disable-dev-shm-usage',
+      '--enable-unsafe-swiftshader',
+      '--use-gl=angle',
+      '--use-angle=swiftshader',
+    ]:[]),
   ],
 });
 const page=await browser.newPage();
@@ -23,7 +30,15 @@ const desktopViewport={width:1280,height:800,deviceScaleFactor:1};
 const compactViewport={width:960,height:600,deviceScaleFactor:1};
 await page.setViewport(desktopViewport);
 const errors=[];
-page.on('pageerror',(error)=>errors.push(error.message));
+page.on('pageerror',(error)=>{
+  errors.push(error.message);
+  console.error(`visual smoke: page error: ${error.message}`);
+});
+page.on('console',(message)=>{
+  if(message.type()==='error'||message.type()==='warning'){
+    console.error(`visual smoke: page ${message.type()}: ${message.text()}`);
+  }
+});
 
 async function settleViewport(){
   // Hosted Windows runners can suspend requestAnimationFrame for headless tabs
@@ -50,7 +65,19 @@ try {
   await page.goto(`${base}/index.html?skiptut=1&nomic=1&sam=0&diffusion=${encodeURIComponent(lens)}`,{
     waitUntil:'domcontentloaded',timeout:60000,
   });
-  await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='opening-credits',{timeout:120000});
+  try{
+    await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='opening-credits',{timeout:120000});
+  }catch(error){
+    await page.screenshot({path:path.join(output,'00-boot-failure.png')}).catch(()=>{});
+    const state=await page.evaluate(()=>({
+      scene:window.__scenes?.top?.()?.id||null,
+      sceneView:window.__scenes?.top?.()?.view?.()||null,
+      diffusion:window.__diffusion?.stats||null,
+      renderer:window.__chunkParity?.()?.renderer||null,
+    })).catch((cause)=>({diagnosticError:cause.message}));
+    console.error(`visual smoke: opening did not start: ${JSON.stringify(state)}`);
+    throw error;
+  }
   console.log('visual smoke: opening credits ready');
   await page.evaluate(()=>window.__scenes.top().update(.35));
   await capturePair('01-opening-credits.png','01-opening-credits-compact.png');
