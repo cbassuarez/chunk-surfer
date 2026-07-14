@@ -34,6 +34,7 @@ const SETTING_HELP = Object.freeze({
     dialog: 'SPOKEN / DIALOG controls voices, speech synthesis, and dialogue ticks.',
     sfx: 'SFX controls page turns, stabs, hushes, room tone, and object sounds.',
     music: 'MUSIC controls title and intro music only, not stabs or hushes.',
+    backgroundAudio: 'BACKGROUND AUDIO can continue while you use another app, or pause until you return.',
     default: 'Separate audio levels let you tune the mix without changing the game.',
   },
 

@@ -134,7 +134,7 @@ npm run preview
 
 The Vite build uses `base: './'` so generated assets are safe for static preview and Tauri packaging.
 
-### Package the macOS Beta 5 Candidate
+### Package the macOS Beta 6 Candidate
 
 ```sh
 npm run beta:build:mac
@@ -149,8 +149,8 @@ large and can take a long time on its first run.
 does not contain `src-tauri/lens-resources/lens/` and a `chunk-lens` sidecar, it
 is not a release candidate.
 
-The Beta 5 source version is `0.1.0-beta.5`; the release tag is
-`v0.1.0-beta.5`. Before creating that tag, run:
+The Beta 6 source version is `0.1.0-beta.6`; the release tag is
+`v0.1.0-beta.6`. Before creating that tag, run:
 
 ```sh
 npm test

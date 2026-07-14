@@ -6,6 +6,7 @@ export const AUDIO_RECOVERY_DELAYS_MS = Object.freeze([0, 80, 240, 720, 1600]);
 export function createAudioContextRecovery({
   getContext,
   ensureContext = () => {},
+  shouldRecover = () => true,
   onRunning = () => {},
   onError = () => {},
   delays = AUDIO_RECOVERY_DELAYS_MS,
@@ -33,7 +34,7 @@ export function createAudioContextRecovery({
   }
 
   function scheduleRetry(reason) {
-    if (disposed || retryTimer != null || retryIndex >= delays.length) return;
+    if (disposed || !shouldRecover?.(reason) || retryTimer != null || retryIndex >= delays.length) return;
     const delay = Math.max(0, Number(delays[retryIndex++]) || 0);
     retryTimer = setTimer(() => {
       retryTimer = null;
@@ -44,6 +45,11 @@ export function createAudioContextRecovery({
   function onStateChange() {
     const context = getContext?.();
     if (!context || context !== boundContext) return;
+    if (!shouldRecover?.('statechange')) {
+      clearRetry();
+      retryIndex = 0;
+      return;
+    }
     if (context.state === 'running') {
       markRunning(context, 'statechange');
     } else if (context.state !== 'closed') {
@@ -66,6 +72,7 @@ export function createAudioContextRecovery({
       clearRetry();
       retryIndex = 0;
     }
+    if (!shouldRecover?.(lastReason)) return false;
 
     try {
       ensureContext?.();
@@ -110,6 +117,7 @@ export function createAudioContextRecovery({
   }
 
   function watchdog(reason = 'audio-watchdog') {
+    if (!shouldRecover?.(reason)) return false;
     const context = bind(getContext?.());
     if (!context || context.state === 'closed') return false;
     if (context.state === 'running') return true;

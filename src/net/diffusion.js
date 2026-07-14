@@ -1,6 +1,8 @@
 // Mandatory local material-bank client. It never replaces the camera image:
-// authored geometry/PBR stay authoritative while six complete generated banks
-// provide high-frequency material response to the native renderer.
+// authored geometry/PBR stay authoritative while six generated banks provide
+// high-frequency material response to the native renderer. Boot waits only for
+// the calm bank; the remaining banks stream during the opening and menu, with
+// any bank requested by a scene promoted to the front of the queue.
 import { profileBankRecipes } from '../render/look-profiles.js';
 
 const RETRIES = 20;
@@ -16,28 +18,39 @@ export const SURFACE_NAMES = Object.freeze([
   'rammed-earth plaster wall', 'concrete wall cladding',
 ]);
 
-function surfaceTiles(url) {
+function canvasJpeg(canvas) {
   return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => {
-      const size = image.width;
-      const layers = Math.min(SURFACE_NAMES.length, Math.floor(image.height / size));
-      if (layers !== SURFACE_NAMES.length) {
-        reject(new Error(`source atlas has ${layers} material tiles; expected ${SURFACE_NAMES.length}`));
-        return;
-      }
-      const output = [];
-      for (let slot = 0; slot < layers; slot += 1) {
-        const canvas = document.createElement('canvas');
-        canvas.width = size; canvas.height = size;
-        canvas.getContext('2d').drawImage(image, 0, slot * size, size, size, 0, 0, size, size);
-        output.push(canvas);
-      }
-      resolve(output);
-    };
-    image.onerror = () => reject(new Error('source material atlas could not be decoded'));
-    image.src = url.href || String(url);
+    canvas.toBlob(async (blob) => {
+      if (!blob) { reject(new Error('source material tile could not be encoded')); return; }
+      resolve(await blob.arrayBuffer());
+    }, 'image/jpeg', 0.90);
   });
+}
+
+async function surfacePayloads(url) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`source atlas unavailable (${response.status})`);
+  const atlas = await response.arrayBuffer();
+  const [atlasSha256, image] = await Promise.all([
+    sha256(atlas),
+    createImageBitmap(new Blob([atlas])),
+  ]);
+  try {
+    const size = image.width;
+    const layers = Math.min(SURFACE_NAMES.length, Math.floor(image.height / size));
+    if (layers !== SURFACE_NAMES.length) {
+      throw new Error(`source atlas has ${layers} material tiles; expected ${SURFACE_NAMES.length}`);
+    }
+    const payloads = await Promise.all(Array.from({ length: layers }, (_, slot) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = size; canvas.height = size;
+      canvas.getContext('2d').drawImage(image, 0, slot * size, size, size, 0, 0, size, size);
+      return canvasJpeg(canvas);
+    }));
+    return { atlasSha256, payloads };
+  } finally {
+    image.close?.();
+  }
 }
 
 async function sha256(buffer) {
@@ -62,11 +75,14 @@ export function surfaceDiffusionStart({
   onStatus = () => {},
 }) {
   if (profiles.length !== 6) throw new Error('critical diffusion requires exactly six authored profiles');
+  const criticalBank = profiles[0]?.bankId;
+  if (!criticalBank) throw new Error('critical diffusion requires a boot material bank');
   const total = profiles.length * SURFACE_NAMES.length;
   const stats = {
     mode: 'surface-banks', state: 'connecting', framesOut: 0, framesIn: 0,
     lastRttMs: 0, resident: false, bank: null, slot: -1, total, completed: 0,
-    banksReady: 0, activeBank: null,
+    banksReady: 0, activeBank: null, criticalBank, criticalTotal: SURFACE_NAMES.length,
+    criticalCompleted: 0, criticalReady: false,
   };
   const banks = new Map();
   let endpoint = url;
@@ -81,22 +97,27 @@ export function surfaceDiffusionStart({
   let sentAt = 0;
   let pendingResult = null;
   let queue = [];
-  let tiles = [];
+  let payloads = [];
   let atlasSha256 = null;
   let readyResolve;
   let readyReject;
+  let allReadyResolve;
+  let allReadyReject;
+  const bankWaiters = new Map();
 
-  const tilePromise = surfaceTiles(sourceUrl).then((value) => { tiles = value; return value; });
-  const atlasHashPromise = fetch(sourceUrl).then(async (response) => {
-    if (!response.ok) throw new Error(`source atlas unavailable (${response.status})`);
-    atlasSha256 = await sha256(await response.arrayBuffer());
-    return atlasSha256;
+  const sourcePromise = surfacePayloads(sourceUrl).then((source) => {
+    payloads = source.payloads;
+    atlasSha256 = source.atlasSha256;
+    return source;
   });
 
-  function makeReadyPromise() {
-    return new Promise((resolve, reject) => { readyResolve = resolve; readyReject = reject; });
+  function makeReadyPromises() {
+    const ready = new Promise((resolve, reject) => { readyResolve = resolve; readyReject = reject; });
+    const allReady = new Promise((resolve, reject) => { allReadyResolve = resolve; allReadyReject = reject; });
+    allReady.catch(() => {});
+    return { ready, allReady };
   }
-  let ready = makeReadyPromise();
+  let readyPromises = makeReadyPromises();
 
   function setState(state, extra = {}) {
     Object.assign(stats, extra, { state });
@@ -108,7 +129,12 @@ export function surfaceDiffusionStart({
     const message = error?.message || String(error || 'lens calibration failed');
     setState('error', { error: message });
     readyReject?.(new Error(message));
-    readyReject = null;
+    allReadyReject?.(new Error(message));
+    readyReject = null; allReadyReject = null;
+    for (const waiters of bankWaiters.values()) {
+      for (const waiter of waiters) waiter.reject(new Error(message));
+    }
+    bankWaiters.clear();
   }
 
   async function buildQueue() {
@@ -137,7 +163,10 @@ export function surfaceDiffusionStart({
       stats.slot = -1; stats.bank = null; stats.banksReady = completeBankCount(banks);
       stats.resident = stats.banksReady === profiles.length;
       if (!stats.resident) { fail('incomplete material bank set'); return; }
-      setState('ready'); readyResolve?.(api); readyResolve = null;
+      stats.criticalReady = true; stats.criticalCompleted = SURFACE_NAMES.length;
+      setState('ready');
+      readyResolve?.(api); readyResolve = null;
+      allReadyResolve?.(api); allReadyResolve = null;
       return;
     }
     active = queue.shift(); pendingResult = null;
@@ -152,12 +181,34 @@ export function surfaceDiffusionStart({
       seedMode: 'fixed', seed: recipe.seedBase + active.slot * 977,
       size: 512, cacheSchema: CACHE_SCHEMA,
     }));
-    const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 512;
-    canvas.getContext('2d').drawImage(tiles[active.slot], 0, 0, 512, 512);
     sentAt = performance.now();
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.90));
-    if (!blob) throw new Error(`could not encode material ${active.requestId}`);
-    socket.send(await blob.arrayBuffer()); stats.framesOut += 1;
+    const payload = payloads[active.slot];
+    if (!payload) throw new Error(`source material ${active.slot + 1} is unavailable`);
+    socket.send(payload); stats.framesOut += 1;
+  }
+
+  function resolveBank(bankId) {
+    const waiters = bankWaiters.get(bankId) || [];
+    bankWaiters.delete(bankId);
+    for (const waiter of waiters) waiter.resolve();
+  }
+
+  function prioritizeBank(bankId) {
+    const requested = queue.filter((item) => item.bankId === bankId);
+    if (!requested.length) return;
+    queue = [...requested, ...queue.filter((item) => item.bankId !== bankId)];
+  }
+
+  function waitForBank(bankId) {
+    const bank = banks.get(bankId);
+    if (bank?.filter(Boolean).length === SURFACE_NAMES.length) return Promise.resolve();
+    if (fatal) return Promise.reject(new Error(stats.error || `material bank ${bankId} failed`));
+    prioritizeBank(bankId);
+    return new Promise((resolve, reject) => {
+      const waiters = bankWaiters.get(bankId) || [];
+      waiters.push({ resolve, reject });
+      bankWaiters.set(bankId, waiters);
+    });
   }
 
   function connect() {
@@ -170,9 +221,10 @@ export function surfaceDiffusionStart({
     socket.onopen = async () => {
       if (mine !== sequence) return;
       try {
-        await Promise.all([tilePromise, atlasHashPromise]);
+        await sourcePromise;
         await buildQueue();
-        stats.completed = 0; stats.banksReady = 0; banks.clear();
+        stats.completed = 0; stats.banksReady = 0; stats.resident = false;
+        stats.criticalCompleted = 0; stats.criticalReady = false; banks.clear();
         await sendNext();
       } catch (error) { fail(error); }
     };
@@ -207,6 +259,15 @@ export function surfaceDiffusionStart({
       bank[active.slot] = new Blob([bytes], { type: 'image/jpeg' }); banks.set(active.bankId, bank);
       stats.framesIn += 1; stats.completed += 1; stats.lastRttMs = performance.now() - sentAt;
       stats.banksReady = completeBankCount(banks);
+      stats.criticalCompleted = (banks.get(criticalBank) || []).filter(Boolean).length;
+      if (bank.filter(Boolean).length === SURFACE_NAMES.length) {
+        resolveBank(active.bankId);
+        if (active.bankId === criticalBank && !stats.criticalReady) {
+          stats.criticalReady = true;
+          setState('ready');
+          readyResolve?.(api); readyResolve = null;
+        }
+      }
       active = null; pendingResult = null;
       sendNext().catch(fail);
     };
@@ -224,6 +285,8 @@ export function surfaceDiffusionStart({
   }
 
   async function activateBank(bankId, { transitionMs = 0, shouldCommit = () => true } = {}) {
+    if (!profiles.some((entry) => entry.bankId === bankId)) return false;
+    await waitForBank(bankId);
     const images = banks.get(bankId);
     const profile = profiles.find((entry) => entry.bankId === bankId);
     if (!images || images.filter(Boolean).length !== SURFACE_NAMES.length || !profile) return false;
@@ -245,17 +308,18 @@ export function surfaceDiffusionStart({
     reconnectTimer = null;
     try { socket?.close(1000, 'calibration retry'); } catch (_) {}
     socket = null; active = null; pendingResult = null; retries = RETRIES;
-    ready = makeReadyPromise(); api.ready = ready;
+    readyPromises = makeReadyPromises();
+    api.ready = readyPromises.ready; api.allReady = readyPromises.allReady;
     if (restartService) {
       const config = await restartService();
       if (!config?.url) throw new Error('diffusion service restart returned no endpoint');
       endpoint = config.url; launchToken = config.token || null;
     }
-    connect(); return ready;
+    connect(); return api.ready;
   }
 
   const api = {
-    stats, ready, banks, activateBank, retry,
+    stats, ready: readyPromises.ready, allReady: readyPromises.allReady, banks, activateBank, retry,
     setMoving() {}, nudge() {}, resetFeedback() {},
     stop() {
       stopped = true; sequence += 1;

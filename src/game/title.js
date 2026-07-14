@@ -7,85 +7,12 @@
 // filed yet instead of changing the top-level menu shape.
 
 import * as scenes from './scenes.js';
-import { uiSize, uiText, uiDraw } from '../render/ui.js';
+import { uiSize, uiCenter, uiFill, uiText } from '../render/ui.js';
+import { drawLocationIndicator, drawMachinePanel, drawVfdText } from '../render/presentation.js';
+import { UI_COLOR } from '../render/palette.js';
 import { getMeta, hasActiveRun } from './save.js';
 import * as AUDIO from '../audio/story-audio.js';
 import { promptLine } from './bindings.js';
-import {
-  cinematicConservatoryFrame,
-  cinematicConservatoryLayout,
-  renderCinematicConservatory,
-} from './cinematic-conservatory.js';
-
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, Number(value) || 0));
-}
-
-function clampRange(value, min, max) {
-  const lo = Math.min(min, max);
-  const hi = Math.max(min, max);
-  return Math.max(lo, Math.min(hi, Number(value) || 0));
-}
-
-function fit(text, width) {
-  const s = String(text ?? '');
-  const w = Math.max(1, Math.floor(width));
-  return s.length <= w ? s : s.slice(0, w);
-}
-
-function centerX(text, cols) {
-  return Math.max(0, Math.floor((cols - String(text).length) / 2));
-}
-
-export function titleScreenLayout({ cols = 80, rows = 30, itemCount = 6, frame = cinematicConservatoryFrame(0) } = {}) {
-  const c = Math.max(20, Math.floor(cols));
-  const r = Math.max(8, Math.floor(rows));
-  const scene = cinematicConservatoryLayout({ cols: c, rows: r, frame });
-  const columns = c >= 78 && itemCount > 4 ? 2 : 1;
-  const rowCount = Math.ceil(itemCount / columns);
-  const menuW = Math.min(c - 6, columns === 2 ? 70 : 36);
-  const colW = Math.max(18, Math.floor(menuW / columns));
-  const menuX = Math.max(2, Math.floor((c - menuW) / 2));
-  const titleY = clampRange(Math.round(r * 0.28 + frame.camera.y), 2, Math.max(2, scene.lowerBand.y - 5));
-  const statusY = clampRange(scene.lowerBand.y + 1, Math.min(r - 3, titleY + 3), r - 3);
-  const menuY = clampRange(statusY + 2, 2, r - Math.max(2, rowCount * 2));
-  return {
-    cols: c,
-    rows: r,
-    lowerBand: scene.lowerBand,
-    title: { x: centerX('CHUNK SURFER', c), y: titleY },
-    tagline: { x: centerX('FIVE ROOM TONES. ONE BUILDING LISTENING.', c), y: clamp(titleY + 3, 2, r - 2) },
-    status: { x: 0, y: statusY },
-    menu: { x: menuX, y: menuY, w: menuW, columns, rowCount, colW },
-    footer: { x: Math.max(2, menuX), y: r - 2, w: Math.max(1, c - Math.max(2, menuX) * 2) },
-  };
-}
-
-function drawTitleWordmark(layout, alpha = 1) {
-  uiDraw(({ ctx, dpr, cellW, cellH, cols }) => {
-    const text = 'CHUNK SURFER';
-    const px = cols * cellW * dpr * 0.5;
-    const py = (layout.title.y + 0.45) * cellH * dpr;
-    const size = clamp(Math.min(cols * cellW * 0.055, cellH * 3.2), cellH * 1.5, cellH * 3.1) * dpr;
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.font = `600 ${size}px Georgia, "Times New Roman", serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#d9d5bf';
-    ctx.shadowColor = 'rgba(207,194,144,0.34)';
-    ctx.shadowBlur = 14 * dpr;
-    ctx.fillText(text, px, py);
-    ctx.globalAlpha = alpha * 0.38;
-    ctx.strokeStyle = 'rgba(242,168,30,0.42)';
-    ctx.lineWidth = Math.max(1, dpr);
-    ctx.beginPath();
-    ctx.moveTo(px - text.length * size * 0.19, py + size * 0.68);
-    ctx.lineTo(px + text.length * size * 0.19, py + size * 0.68);
-    ctx.stroke();
-    ctx.restore();
-  });
-}
 
 export function makeTitleScene({
   buildLabel = '',
@@ -231,29 +158,78 @@ export function makeTitleScene({
 
     render() {
       const { cols, rows } = uiSize();
-      const frame = cinematicConservatoryFrame(t, { duration: 24, variant: 'title' });
-      const layout = titleScreenLayout({ cols, rows, itemCount: items.length, frame });
-      renderCinematicConservatory(frame, { band: true });
-      drawTitleWordmark(layout, Math.min(1, 0.28 + t * 0.9));
-      uiText(layout.tagline.x, layout.tagline.y, 'FIVE ROOM TONES. ONE BUILDING LISTENING.', 'ui-primary', 0.90);
+      uiFill(0, 0, cols, rows, UI_COLOR.glass);
 
-      let status = 'THE CASE FILE IS EMPTY.';
-      let statusCls = 'ui-secondary';
-      if (meta.hushMet) { status = 'THE HUSH HAS YOUR SIGNAL.'; statusCls = 'ui-danger'; }
-      else if (meta.leftMidRun) { status = 'UNFINISHED RUN SAVED.'; statusCls = 'ui-danger'; }
-      else if (replay) { status = 'ENDINGS AND ACHIEVEMENTS ARE AVAILABLE.'; statusCls = 'ui-amber'; }
-      uiText(centerX(status, cols), layout.status.y, status, statusCls, 0.92);
+      const w = Math.min(78, cols - 4);
+      const estimatedBodyW = Math.max(1, w - 6);
+      const estimatedColumns = estimatedBodyW >= 58 && items.length > 4 ? 2 : 1;
+      const estimatedRows = Math.ceil(items.length / estimatedColumns);
+      const bodyRowsNeeded = 13 + Math.max(0, estimatedRows - 1) * 2;
+      const h = Math.min(Math.max(26, bodyRowsNeeded + 7), rows - 4);
+      const x = Math.floor((cols - w) / 2);
+      const y = Math.floor((rows - h) / 2);
+      const body = drawMachinePanel(x, y, w, h, {
+        label: 'CASE SELECT',
+        source: '4417-C',
+        footer: promptLine([{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: 'CONFIRM' }]),
+        meter: true,
+      });
 
-      menuColumns = layout.menu.columns;
+      const display = 'CHUNK SURFER';
+      const titleScale = cols < 82 ? 1.42 : 1.58;
+      const titleX = Math.max(body.x, Math.floor((cols - display.length * titleScale) / 2));
+      const warmStep = Math.min(16, Math.floor(t * 38));
+      const pwm = Math.pow(warmStep / 16, 0.78);
+      const scanPhase = (Math.floor(t * 120) % 9) === 0 ? 0.92 : 1;
+      const blank = (t % 4.25) < 0.035 ? 0.68 : 1;
+      if (t < 1.0) {
+        drawVfdText(titleX, body.y + 1, display, {
+          scale: titleScale,
+          alpha: Math.max(0.10, pwm * 0.24),
+        });
+      }
+      drawVfdText(titleX, body.y + 1, display, {
+        scale: titleScale,
+        alpha: Math.max(0.18, pwm) * scanPhase * blank,
+      });
+      const sweep = (Math.floor(t * 8) % (display.length + 8)) - 4;
+      for (let i = 0; i < display.length; i++) {
+        const d = Math.abs(i - sweep);
+        const ch = d === 0 ? '▓' : d === 1 ? '▒' : '░';
+        uiText(Math.round(titleX + i * titleScale), body.y + 4, ch, 'ui-amber', d < 2 ? 0.82 : 0.20);
+      }
+      const phase = (t * 0.32) % 1;
+      const tri = phase < 0.5 ? phase * 2 : (1 - phase) * 2;
+      const stepped = Math.floor(tri * 16) / 16;
+      drawLocationIndicator(
+        Math.max(body.x + 8, Math.floor((cols - 28) / 2)),
+        body.y + 5,
+        28,
+        stepped,
+        { theme: 'amber' },
+      );
+      uiCenter(body.y + 7, 'FIVE ROOM TONES. ONE BUILDING LISTENING.', 'ui-primary');
+
+      if (meta.hushMet) uiCenter(body.y + 9, 'THE HUSH HAS YOUR SIGNAL.', 'ui-danger');
+      else if (meta.leftMidRun) uiCenter(body.y + 9, 'UNFINISHED RUN SAVED.', 'ui-danger');
+      else if (replay) uiCenter(body.y + 9, 'ENDINGS AND ACHIEVEMENTS ARE AVAILABLE.', 'ui-amber');
+      else uiCenter(body.y + 9, 'THE CASE FILE IS EMPTY.', 'ui-secondary');
+
+      if (buildLabel) {
+        uiText(body.x + 1, body.y + body.h - 2, String(buildLabel).toUpperCase().slice(0, body.w - 2), 'ui-label', 0.62);
+      }
+
+      const menuY = body.y + 12;
+      menuColumns = body.w >= 58 && items.length > 4 ? 2 : 1;
+      const colCount = columns();
       const rowCount = rowsPerColumn();
-      const colW = layout.menu.colW;
-      const menuX = layout.menu.x;
-      const menuY = layout.menu.y;
+      const colW = Math.floor((body.w - 12) / colCount);
+      const menuX = body.x + 7;
       items.forEach((item, i) => {
         const on = i === sel;
         const armed = item.confirms && confirmNewRun;
         const prompt = 'START NEW RUN? PRESS ENTER AGAIN';
-        const labelText = fit(armed ? prompt : item.label.toUpperCase(), Math.max(8, colW - 4));
+        const labelText = armed ? prompt : item.label.toUpperCase();
         const col = Math.floor(i / rowCount);
         const row = i % rowCount;
         uiText(
@@ -264,12 +240,6 @@ export function makeTitleScene({
           item.disabled ? 0.48 : 1,
         );
       });
-
-      const footer = promptLine([{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: 'CONFIRM' }]);
-      uiText(layout.footer.x, layout.footer.y, fit(footer, layout.footer.w), 'ui-label', 0.64);
-      if (buildLabel) {
-        uiText(layout.footer.x, Math.max(0, layout.footer.y - 1), fit(String(buildLabel).toUpperCase(), layout.footer.w), 'ui-label', 0.52);
-      }
     },
   };
 }

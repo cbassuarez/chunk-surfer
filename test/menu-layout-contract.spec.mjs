@@ -6,10 +6,12 @@ for (const id of ['continue', 'new-run', 'archive', 'return-index', 'just-surf',
 assert.match(title, new RegExp(`id: '${id}'`), `title keeps stable ${id} slot`);
 }
 assert.match(title, /let sel = activeRun \? 0 : 1/, 'title defaults to NEW RUN when CONTINUE is unavailable');
-assert.match(title, /renderCinematicConservatory/, 'title uses fullscreen cinematic conservatory shell');
-assert.match(title, /titleScreenLayout/, 'title has an explicit responsive layout model');
+assert.match(title, /drawMachinePanel/, 'title uses the AUDIOCORP case-select panel');
+assert.match(title, /drawVfdText/, 'title uses the established VFD wordmark');
+assert.match(title, /drawLocationIndicator/, 'title keeps the case-select signal instrument');
+assert.doesNotMatch(title, /renderCinematicConservatory/, 'title does not share credit-sequence geometry');
 assert.match(title, /THE CASE FILE IS EMPTY/, 'title has empty-profile copy instead of disappearing menu sections');
-assert.match(title, /rowCount = Math\.ceil\(itemCount \/ columns\)/, 'title computes menu rows from stable menu item count');
+assert.match(title, /rowsPerColumn = \(\) => Math\.ceil\(items\.length \/ columns\(\)\)/, 'title computes menu rows from stable menu item count');
 
 const archive = fs.readFileSync('src/game/archive.js', 'utf8');
 assert.match(archive, /NO ENTRIES FILED IN THIS CATEGORY/, 'archive has an empty category state');

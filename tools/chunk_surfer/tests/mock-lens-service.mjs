@@ -5,6 +5,7 @@ import { WebSocketServer } from 'ws';
 
 const port=Number(process.env.MOCK_LENS_PORT||8765);
 const server=new WebSocketServer({host:'127.0.0.1',port});
+server.on('listening',()=>console.log(`mock lens ready ws://127.0.0.1:${port}`));
 server.on('connection',(socket)=>{
   let request=null;
   socket.send(JSON.stringify({
@@ -23,5 +24,3 @@ server.on('connection',(socket)=>{
     socket.send(bytes);
   });
 });
-console.log(`mock lens ready ws://127.0.0.1:${port}`);
-

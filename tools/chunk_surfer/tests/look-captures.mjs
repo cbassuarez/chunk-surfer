@@ -23,8 +23,8 @@ const page=await browser.newPage();
 await page.setViewport({width:1280,height:800,deviceScaleFactor:1});
 await page.goto(`${BASE}/index.html?mode=story&renderer=3d&skiptut=1&nothink=1&nomic=1&sam=0`,{waitUntil:'domcontentloaded',timeout:60000});
 
-// This waits through mandatory service validation, 60-bank calibration, and
-// the complete opening credit clock before the fixed-camera run begins.
+// This waits through mandatory service validation, the startup material bank,
+// and the complete opening credit clock before the fixed-camera run begins.
 await page.waitForFunction(()=>{
   const status=window.__chunkSurferPixelMesh?.status?.();
   return status?.framesRendered>4 && !['lens-calibration','opening-credits'].includes(window.__scenes?.top?.()?.id);

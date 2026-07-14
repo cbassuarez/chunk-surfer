@@ -12,6 +12,8 @@ assert.match(pkg.scripts['beta:build:mac'], /npm run tauri:build -- --target aar
 assert.match(pkg.scripts['itch:stage'], /scripts\/itch-release\.mjs stage/, 'itch staging script exists for public beta uploads');
 assert.match(pkg.scripts['itch:preview'], /scripts\/itch-release\.mjs preview/, 'itch preview script exists for Butler channel diffs');
 assert.match(pkg.scripts['itch:push'], /scripts\/itch-release\.mjs push/, 'itch publish script exists for Butler channel pushes');
+assert.match(pkg.scripts['test:feature-smoke'], /run-feature-regression-smoke\.mjs/, 'cross-platform visual smoke has one portable entrypoint');
+assert.match(yml, /publish:[\s\S]*default: false[\s\S]*type: boolean/, 'manual release validation does not publish unless explicitly requested');
 assert.match(yml, /Windows x64[\s\S]*args: --no-bundle/, 'windows release skips installer bundling for large offline lens builds');
 assert.match(yml, /release\/windows\/\*\.zip/, 'windows portable zip artifact path is uploaded');
 assert.match(yml, /scripts\/package-windows-portable\.mjs/, 'windows release stages a portable app directory');
@@ -20,6 +22,7 @@ assert.match(yml, /Prepare release upload assets[\s\S]*split -b 1900M/, 'release
 assert.match(yml, /Public beta downloads are staged on itch\.io first/, 'GitHub release notes point players to itch first');
 assert.match(yml, /developer mirror/, 'GitHub release notes identify split assets as a developer mirror');
 assert.match(yml, /publish-itch:[\s\S]*needs: build[\s\S]*BUTLER_API_KEY: \$\{\{ secrets\.BUTLER_API_KEY \}\}/, 'itch publish job runs after platform builds with Butler secret');
+assert.match(yml, /publish-itch:[\s\S]*if: github\.event_name == 'push' \|\| inputs\.publish == true/, 'tag pushes publish automatically while manual validation remains safe');
 assert.match(yml, /publish-itch:[\s\S]*ITCH_TARGET: \$\{\{ vars\.ITCH_TARGET \}\}/, 'itch publish job reads the target from repository variables');
 assert.match(yml, /curl -L -o butler\.zip https:\/\/broth\.itch\.zone\/butler\/linux-amd64\/LATEST\/archive\/default/, 'itch publish job installs Butler on Ubuntu');
 assert.match(yml, /publish-itch:[\s\S]*npm run itch:stage[\s\S]*npm run itch:preview[\s\S]*npm run itch:push/, 'itch publish job stages, previews, and pushes all channels');
@@ -41,6 +44,7 @@ assert.match(yml, /TAG: \${\{ steps\.tag\.outputs\.tag \}\}/, 'release publish s
 assert.match(yml, /gh release upload[\s\S]*--clobber/, 'single release job uploads all assets with clobber');
 assert.match(yml, /gh release download[\s\S]*'\*\.dmg'[\s\S]*'\*\.zip'[\s\S]*'\*\.AppImage'[\s\S]*'\*\.deb'[\s\S]*'\*\.part-\*'[\s\S]*'\*\.sha256'/, 'release job verifies downloadable mac/windows/linux assets and split parts');
 assert.match(yml, /build_bundle\.py --target \$\{\{ matrix\.target \}\}/, 'each target packages its own lens executable and model resources');
+assert.match(yml, /Run cross-platform visual smoke[\s\S]*npm run test:feature-smoke[\s\S]*Upload visual parity captures/, 'each native build job captures the same visual regression path');
 assert.match(yml, /npm ci/, 'release installs the exact locked frontend dependency graph');
 assert.match(yml, /release-preflight\.mjs/, 'release validates source versions against its tag');
 assert.doesNotMatch(yml, /args: --config src-tauri\/tauri\.lens\.conf\.json/, 'release matrix does not duplicate the mandatory lens config flag');

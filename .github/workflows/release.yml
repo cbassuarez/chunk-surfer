@@ -7,6 +7,11 @@ on:
         description: 'Release tag to publish, for example v0.1.0-beta.1'
         required: true
         type: string
+      publish:
+        description: 'Publish validated artifacts to itch and GitHub'
+        required: true
+        default: false
+        type: boolean
   push:
     tags:
       - 'v*'
@@ -117,6 +122,17 @@ jobs:
       - name: Run desktop menu tests
         run: npm run test:desktop-menu
 
+      - name: Run cross-platform visual smoke
+        run: npm run test:feature-smoke
+
+      - name: Upload visual parity captures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-smoke-${{ matrix.target }}
+          path: artifacts/feature-regression-smoke
+          if-no-files-found: warn
+
       - name: Check Tauri Rust
         run: npm run tauri:check
 
@@ -141,6 +157,7 @@ jobs:
   publish-itch:
     name: Publish itch beta channels
     needs: build
+    if: github.event_name == 'push' || inputs.publish == true
     runs-on: ubuntu-latest
     env:
       BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}

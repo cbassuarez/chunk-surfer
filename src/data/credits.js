@@ -15,6 +15,8 @@ export const CREDITS = Object.freeze([
       'Writing — Sebastian Suarez-Solis',
       'Programming — Sebastian Suarez-Solis',
       'Audio — Sebastian Suarez-Solis',
+      'Sound Design — Sebastian Suarez-Solis',
+      'Sound Design — Paul Yorke',
       'Visual Systems — Sebastian Suarez-Solis',
       'Interface — Sebastian Suarez-Solis',
     ]),
@@ -26,12 +28,6 @@ export const CREDITS = Object.freeze([
       'Vite',
       'JavaScript',
       'Rust',
-    ]),
-  }),
-  Object.freeze({
-    heading: 'Credits',
-    lines: Object.freeze([
-      'Additional credits coming soon.',
     ]),
   }),
   Object.freeze({

@@ -3,7 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import puppeteer from 'puppeteer-core';
 
-const chrome=process.env.CHROME_PATH||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const chrome=process.env.CHROME_PATH;
+if(!chrome)throw new Error('CHROME_PATH must point to the platform Chrome executable');
 const base=process.env.CHUNK_SURFER_URL||'http://127.0.0.1:5173';
 const lens=process.env.MOCK_LENS_URL||'ws://127.0.0.1:8765';
 const output=path.resolve('artifacts/feature-regression-smoke');
@@ -12,12 +13,30 @@ fs.mkdirSync(output,{recursive:true});
 const browser=await puppeteer.launch({
   executablePath:chrome,
   headless:'new',
-  args:['--use-angle=metal','--autoplay-policy=no-user-gesture-required'],
+  args:[
+    '--autoplay-policy=no-user-gesture-required',
+    ...(process.platform==='darwin'?['--use-angle=metal']:[]),
+  ],
 });
 const page=await browser.newPage();
-await page.setViewport({width:1280,height:800,deviceScaleFactor:1});
+const desktopViewport={width:1280,height:800,deviceScaleFactor:1};
+const compactViewport={width:960,height:600,deviceScaleFactor:1};
+await page.setViewport(desktopViewport);
 const errors=[];
 page.on('pageerror',(error)=>errors.push(error.message));
+
+async function settleViewport(){
+  await page.evaluate(()=>new Promise((resolve)=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+}
+
+async function capturePair(desktopName,compactName){
+  await page.screenshot({path:path.join(output,desktopName)});
+  await page.setViewport(compactViewport);
+  await settleViewport();
+  await page.screenshot({path:path.join(output,compactName)});
+  await page.setViewport(desktopViewport);
+  await settleViewport();
+}
 
 try {
   await page.evaluateOnNewDocument(()=>{
@@ -27,11 +46,17 @@ try {
     waitUntil:'domcontentloaded',timeout:60000,
   });
   await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='opening-credits',{timeout:120000});
-  await page.evaluate(()=>window.__scenes.top().update(2));
-  await page.screenshot({path:path.join(output,'01-opening-credits.png')});
-  await page.evaluate(()=>window.__scenes.top().update(18));
+  await page.evaluate(()=>window.__scenes.top().update(.35));
+  await capturePair('01-opening-credits.png','01-opening-credits-compact.png');
+  await page.evaluate(()=>window.__scenes.top().update(1.65));
+  await capturePair('01b-opening-creator.png','01b-opening-creator-compact.png');
+  await page.evaluate(()=>window.__scenes.top().update(6.5));
+  await capturePair('01c-opening-sound-design.png','01c-opening-sound-design-compact.png');
+  await page.evaluate(()=>window.__scenes.top().update(7.5));
+  await capturePair('01d-opening-quotation.png','01d-opening-quotation-compact.png');
+  await page.evaluate(()=>window.__scenes.top().update(6));
   await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='title',{timeout:10000});
-  await page.screenshot({path:path.join(output,'02-title-current-build.png')});
+  await capturePair('02-title-current-build.png','02-title-compact.png');
 
   await page.keyboard.press('Enter');
   await page.keyboard.press('Enter');
@@ -89,12 +114,26 @@ try {
   await page.screenshot({path:path.join(output,'08-chunk-surf-source-fault.png')});
 
   assert.equal(await page.evaluate(()=>window.__probe.openCredits()),true);
-  await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='credits-intro',{timeout:5000});
-  await page.evaluate(()=>window.__scenes.top().update?.(2.1));
-  await page.screenshot({path:path.join(output,'09-credits-intro.png')});
-  await page.keyboard.press('Enter');
   await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='credits',{timeout:5000});
-  await page.screenshot({path:path.join(output,'10-release-record-panel.png')});
+  await page.evaluate(()=>window.__scenes.top().update?.(1.8));
+  await capturePair('09-credits-opening-card.png','09-credits-opening-card-compact.png');
+  await page.evaluate(()=>window.__scenes.top().update?.(2.3));
+  await capturePair('10-credits-roll-early.png','10-credits-roll-early-compact.png');
+  await page.evaluate(()=>window.__scenes.top().update?.(12));
+  await capturePair('11-credits-roll-mid.png','11-credits-roll-mid-compact.png');
+  await page.keyboard.press('End');
+  await capturePair('12-credits-closing-card.png','12-credits-closing-card-compact.png');
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(()=>window.__scenes?.top?.()?.id!=='credits',{timeout:5000});
+
+  const endingSummary=await page.evaluate(()=>window.__probe.endingCredits('sacrifice'));
+  assert.equal(endingSummary.endingId,'sacrifice');
+  await page.waitForFunction(()=>window.__scenes?.top?.()?.view?.()?.context==='ending',{timeout:5000});
+  await page.keyboard.press('End');
+  await page.keyboard.press('Space');
+  await page.evaluate(()=>window.__scenes.top().update?.(4.1));
+  await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='return-report',{timeout:5000});
+  await capturePair('13-return-report-after-credits.png','13-return-report-after-credits-compact.png');
 
   assert.deepEqual(errors,[]);
   console.log(JSON.stringify({

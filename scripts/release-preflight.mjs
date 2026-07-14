@@ -3,7 +3,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 
-const expectedTag = process.argv[2] || 'v0.1.0-beta.5';
+const expectedTag = process.argv[2] || 'v0.1.0-beta.6';
 if (!/^v\d+\.\d+\.\d+-beta\.\d+$/.test(expectedTag)) {
   throw new Error(`Expected a beta SemVer tag, received ${expectedTag}`);
 }
@@ -67,7 +67,7 @@ if (!vite.includes('__APP_VERSION__') || !vite.includes('package.json')) {
 if (process.env.CI !== 'true') {
   const dirty = execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim();
   if (dirty) {
-    throw new Error('worktree is not clean; commit the verified Beta 3 source before tagging');
+    throw new Error(`worktree is not clean; commit the verified ${expectedTag} source before tagging`);
   }
 }
 
