@@ -8622,6 +8622,7 @@ function installProbe(){
       entered:flagTest(CHUNK_SURF_FLAGS.entered),
     }),
     chunkSurfStart:()=>beginChunkSurf({forced:true}),
+    openCredits:()=>{ openCredits(); return true; },
     cell:(x,y)=>FP.cellAt(x,y),
     materialAt:(x,y)=>FP.materialAt(x,y),
     canStep:(ax,ay,bx,by)=>FP.canStep(ax,ay,bx,by,{keys:playerKeys}),

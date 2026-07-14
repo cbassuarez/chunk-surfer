@@ -46,6 +46,9 @@ test('credits intro auto-advances after authored duration', () => {
   assert.equal(frame.canContinue, true);
   assert.equal(frame.progress, 1);
   assert.ok(frame.roll > 0.99);
+  assert.equal(frame.cinematic.variant, 'credits-intro');
+  assert.ok(Number.isFinite(frame.cinematic.camera.x));
+  assert.ok(Number.isFinite(frame.exposure));
 });
 
 test('credits panel controls, website, and close behavior remain intact', () => {

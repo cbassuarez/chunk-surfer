@@ -8,22 +8,24 @@ keeps listening back.
 
 ## Download the Latest Beta
 
-Get the newest public beta from [GitHub Releases](https://github.com/cbassuarez/chunk-surfer/releases/latest).
+Get the newest public beta from the [Chunk Surfer itch.io page](https://cbassuarez.itch.io/chunk-surfer).
+Itch is the recommended download path because it presents normal platform
+builds instead of split release-file parts.
 
 | Platform | Architecture | Download |
 | --- | --- | --- |
-| macOS | Apple Silicon | `Chunk Surfer_0.1.0-beta.5_aarch64.dmg` or the newest `.dmg` asset |
-| Windows | x64 | `chunk-surfer-v0.1.0-beta.5-windows-x64.zip` or the newest Windows `.zip` asset |
-| Linux | x64 | newest `.AppImage` or `.deb` asset |
+| macOS | Apple Silicon | itch channel `mac-arm64-beta` |
+| Windows | x64 | itch channel `win-beta` |
+| Linux | x64 | itch channels `linux-appimage-beta` and `linux-deb-beta` |
 
 The beta downloads are intentionally large. Release builds include the offline
 lens sidecar and pinned diffusion model resources up front, so the game should
 not ask players to download model weights after first launch.
 
-GitHub limits individual release files to 2 GiB. If an asset is split into
-`.part-00`, `.part-01`, and later parts, download every part plus its `.sha256`
-file, concatenate the parts in order, then verify the checksum before opening
-the app.
+GitHub Releases remain available as a developer mirror at
+[github.com/cbassuarez/chunk-surfer/releases/latest](https://github.com/cbassuarez/chunk-surfer/releases/latest).
+Large GitHub assets may be split into `.part-*` files to stay under GitHub's
+per-file release limit, so use itch unless you specifically need the mirror.
 
 ### Before You Install
 
@@ -110,7 +112,7 @@ npm run play:latest
 
 `play:latest` and `tauri:dev` start the separately managed development lens and
 the native Tauri app together. On a fresh cache the calibration screen generates
-all six ten-tile material banks. The authored 18-second opening credits begin
+all six ten-tile material banks. The authored 22-second opening credits begin
 only after calibration succeeds, and their clock pauses whenever the game is
 hidden or unfocused so the opening cannot expire behind another app.
 
@@ -171,6 +173,36 @@ GitHub-hosted Windows runners, so the beta release artifact keeps
 `chunk-surfer.exe`, `chunk-lens.exe`, and the `lens/` resources together in one
 folder. GitHub-hosted beta assets larger than 2 GiB are uploaded as split
 `.part-*` files with checksum manifests.
+
+### Stage and Publish itch Builds
+
+Release builds should be staged to itch before treating GitHub Releases as
+public-facing. Butler reads credentials from the environment; never commit API
+keys.
+
+```sh
+export BUTLER_API_KEY='your itch Butler API key'
+export ITCH_TARGET='cbassuarez/chunk-surfer'
+npm run itch:stage
+npm run itch:preview
+export ITCH_CONFIRM_PUSH=1
+npm run itch:push
+```
+
+`itch:preview` runs Butler previews for `win-beta`, `mac-arm64-beta`,
+`linux-appimage-beta`, and `linux-deb-beta`. `itch:push` publishes the same
+channels with `--userversion` taken from `package.json`.
+
+For a full public beta, let GitHub Actions publish itch. The release workflow
+builds all platform artifacts, stages them to Butler, runs a preview, pushes
+the four itch channels, and only then updates the GitHub developer mirror. The
+workflow requires repository secret `BUTLER_API_KEY` and repository variable
+`ITCH_TARGET`.
+
+Local `itch:*` commands are mainly for checking already-downloaded artifacts.
+If your machine only has one platform build, publish just that channel with
+`ITCH_CHANNELS=mac-arm64-beta npm run itch:preview`; otherwise download the CI
+artifacts into `release-assets/` first.
 
 ### Tests
 

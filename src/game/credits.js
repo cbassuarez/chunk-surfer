@@ -1,8 +1,8 @@
-import { uiDraw, uiScrim, uiText, uiSize, uiCenter, uiWrap } from '../render/ui.js';
+import { uiText, uiSize, uiCenter, uiWrap } from '../render/ui.js';
 import { drawMachinePanel } from '../render/presentation.js';
-import { UI_COLOR } from '../render/palette.js';
 import { CREDITS, CREDIT_RECORD_TITLE, flattenCredits } from '../data/credits.js';
 import { activeInputPromptDevice, promptLine } from './bindings.js';
+import { cinematicConservatoryFrame, renderCinematicConservatory } from './cinematic-conservatory.js';
 
 const AUTO_SCROLL_DELAY_MS = 1000;
 const AUTO_SCROLL_ROWS_PER_SEC = 0.82;
@@ -36,7 +36,13 @@ export function creditsIntroFrame(elapsed, duration = CREDITS_INTRO_DURATION, mi
     title: smooth01(time / 0.9) * (1 - smooth01((time - total + 1.0) / 1.0)),
     record: smooth01((time - 0.75) / 1.0) * (1 - smooth01((time - total + 0.7) / 0.7)),
     prompt: time >= minDwell ? smooth01((time - minDwell) / 0.7) : 0,
-    scan: 0.12 + 0.12 * Math.sin(time * 1.4),
+    cinematic: cinematicConservatoryFrame(time, {
+      duration: total,
+      intensity: 0.78,
+      reveal: smooth01(time / 1.4),
+      variant: 'credits-intro',
+    }),
+    exposure: 0.18 + 0.10 * Math.sin(time * 0.45),
   };
 }
 
@@ -54,39 +60,6 @@ export function creditPanelLayout({ cols = 80, rows = 30 } = {}) {
   const y = Math.max(0, Math.floor((r - h) / 2));
   const compact = w < 74;
   return { cols: c, rows: r, x, y, w, h, compact };
-}
-
-function renderIntroLayers(frame, cols, rows) {
-  uiScrim(0.90);
-  uiDraw(({ ctx, dpr, cellW, cellH }) => {
-    const width = cols * cellW * dpr;
-    const height = rows * cellH * dpr;
-    ctx.save();
-    const g = ctx.createLinearGradient(0, 0, 0, height);
-    g.addColorStop(0, 'rgba(0,0,0,0.84)');
-    g.addColorStop(0.45, 'rgba(10,10,8,0.46)');
-    g.addColorStop(1, 'rgba(0,0,0,0.92)');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, width, height);
-
-    ctx.globalAlpha = 0.18 + Math.max(0, frame.scan);
-    ctx.strokeStyle = UI_COLOR.secondary;
-    ctx.lineWidth = Math.max(1, dpr);
-    const railY = (rows * (0.32 + frame.roll * 0.36)) * cellH * dpr;
-    ctx.beginPath();
-    ctx.moveTo(width * 0.12, railY);
-    ctx.lineTo(width * 0.88, railY);
-    ctx.stroke();
-
-    ctx.globalAlpha = 0.08;
-    for (let y = ((frame.time * 2.2) % 4) * cellH * dpr; y < height; y += cellH * dpr * 4) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(width, y);
-      ctx.stroke();
-    }
-    ctx.restore();
-  });
 }
 
 export function makeCreditsIntroScene({
@@ -133,7 +106,7 @@ export function makeCreditsIntroScene({
     render() {
       const { cols, rows } = uiSize();
       const frame = creditsIntroFrame(time, duration, minDwell);
-      renderIntroLayers(frame, cols, rows);
+      renderCinematicConservatory(frame.cinematic);
       const center = (text) => Math.max(0, Math.floor((cols - String(text).length) / 2));
       const y = Math.max(2, Math.min(rows - 6, Math.floor(rows * 0.40 - frame.roll * 2)));
       uiText(center('CHUNK SURFER'), y, 'CHUNK SURFER', 'ui-primary', frame.title);
@@ -210,7 +183,13 @@ export function makeCreditsScene({
 
     render() {
       const { cols, rows } = uiSize();
-      uiScrim(0.82);
+      const sceneTime = Math.max(0, (now() - enteredAtMs) / 1000);
+      renderCinematicConservatory(cinematicConservatoryFrame(sceneTime, {
+        duration: 18,
+        intensity: 0.62,
+        reveal: 1,
+        variant: 'credits-panel',
+      }), { panel: true });
 
       const { x, y, w, h, compact } = creditPanelLayout({ cols, rows });
       const footer = activeInputPromptDevice() === 'controller'

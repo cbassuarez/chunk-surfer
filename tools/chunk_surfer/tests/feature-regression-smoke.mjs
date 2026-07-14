@@ -88,6 +88,14 @@ try {
   assert.ok(chunkSurf?.roomId,'Chunk Surf source-fault scene must expose its authored room state');
   await page.screenshot({path:path.join(output,'08-chunk-surf-source-fault.png')});
 
+  assert.equal(await page.evaluate(()=>window.__probe.openCredits()),true);
+  await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='credits-intro',{timeout:5000});
+  await page.evaluate(()=>window.__scenes.top().update?.(2.1));
+  await page.screenshot({path:path.join(output,'09-credits-intro.png')});
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='credits',{timeout:5000});
+  await page.screenshot({path:path.join(output,'10-release-record-panel.png')});
+
   assert.deepEqual(errors,[]);
   console.log(JSON.stringify({
     ok:true,

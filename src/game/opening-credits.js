@@ -1,6 +1,6 @@
 import * as scenes from './scenes.js';
-import { uiDraw, uiFill, uiSize, uiText, uiWrap } from '../render/ui.js';
-import { UI_COLOR } from '../render/palette.js';
+import { uiSize, uiText, uiWrap } from '../render/ui.js';
+import { cinematicConservatoryFrame, renderCinematicConservatory } from './cinematic-conservatory.js';
 
 export const OPENING_CREDITS_DURATION = 22;
 
@@ -70,7 +70,7 @@ export function openingCreditFrame(time, duration = OPENING_CREDITS_DURATION) {
     (best, [key, alpha]) => (alpha > best.alpha ? { key, alpha } : best),
     { key: 'black', alpha: 0.05 },
   ).key;
-  const scanPulse = 0.45 + 0.55 * Math.sin(t * 0.86);
+  const reveal = smooth((t - 0.35) / 2.2) * (1 - smooth((t - AUTHORED_DURATION + 0.6) / 0.6));
   return {
     time: Math.max(0, Number(time) || 0),
     duration,
@@ -87,18 +87,17 @@ export function openingCreditFrame(time, duration = OPENING_CREDITS_DURATION) {
       quote: beat(quote, t, 4.1, 0.08),
       attribution: beat(attribution, t, 4.8, 0.08),
     },
+    cinematic: cinematicConservatoryFrame(t, {
+      duration: AUTHORED_DURATION,
+      intensity: 0.82,
+      reveal,
+      variant: 'opening',
+    }),
     layers: {
-      glass: { alpha: 0.95 },
-      vignette: { alpha: 0.42 + 0.08 * scanPulse },
-      scan: {
-        alpha: 0.10 + 0.10 * scanPulse,
-        offset: (t * 1.7) % 6,
-        intensity: 0.18 + 0.18 * scanPulse,
-      },
-      rail: {
-        alpha: 0.12 + 0.08 * clamp01(title + creator + sound + quote),
-        offset: drift(t, 0.9, 1.8),
-      },
+      scene: { alpha: reveal },
+      light: { alpha: 0.18 + 0.20 * reveal, x: 0.46 + drift(t, 0.4, 0.02), y: 0.39 + drift(t, 1.1, 0.01) },
+      grain: { alpha: 0.07 + 0.05 * reveal },
+      fog: { alpha: 0.24 + 0.16 * reveal },
     },
   };
 }
@@ -169,52 +168,6 @@ export function openingCreditLayout({ cols = 80, rows = 30, frame = openingCredi
   };
 }
 
-function renderOpeningLayers(frame, cols, rows) {
-  uiFill(0, 0, cols, rows, UI_COLOR.glass);
-  uiDraw(({ ctx, dpr, cellW, cellH }) => {
-    const width = cols * cellW * dpr;
-    const height = rows * cellH * dpr;
-    ctx.save();
-    const vignette = ctx.createRadialGradient(
-      width * 0.5,
-      height * 0.46,
-      Math.min(width, height) * 0.16,
-      width * 0.5,
-      height * 0.5,
-      Math.max(width, height) * 0.66,
-    );
-    vignette.addColorStop(0, `rgba(12,14,15,${0.18 * frame.layers.vignette.alpha})`);
-    vignette.addColorStop(1, `rgba(0,0,0,${frame.layers.vignette.alpha})`);
-    ctx.fillStyle = vignette;
-    ctx.fillRect(0, 0, width, height);
-
-    ctx.globalAlpha = frame.layers.scan.alpha;
-    ctx.strokeStyle = UI_COLOR.secondary;
-    ctx.lineWidth = Math.max(1, dpr);
-    const step = cellH * dpr * 3;
-    const offset = frame.layers.scan.offset * cellH * dpr;
-    for (let y = -step + offset; y < height + step; y += step) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(width, y);
-      ctx.stroke();
-    }
-
-    ctx.globalAlpha = frame.layers.rail.alpha;
-    ctx.strokeStyle = UI_COLOR.amber;
-    ctx.lineWidth = Math.max(1, dpr);
-    const left = (cols * 0.18 + frame.layers.rail.offset) * cellW * dpr;
-    const right = (cols * 0.82 + frame.layers.rail.offset * 0.35) * cellW * dpr;
-    ctx.beginPath();
-    ctx.moveTo(left, 0);
-    ctx.lineTo(left, height);
-    ctx.moveTo(right, 0);
-    ctx.lineTo(right, height);
-    ctx.stroke();
-    ctx.restore();
-  });
-}
-
 // This is part of app boot, not an optional credits page. It deliberately owns
 // every key and ends only on its authored clock before the title menu is made.
 export function makeOpeningCreditsScene({
@@ -252,7 +205,7 @@ export function makeOpeningCreditsScene({
     render() {
       const { cols, rows } = uiSize();
       const frame = openingCreditFrame(time, duration);
-      renderOpeningLayers(frame, cols, rows);
+      renderCinematicConservatory(frame.cinematic);
       const layout = openingCreditLayout({ cols, rows, frame });
       for (const entry of layout.entries) {
         if (entry.alpha <= 0.01 || !entry.text) continue;

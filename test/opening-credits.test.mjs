@@ -28,8 +28,12 @@ test('opening credit timeline exposes compositing layers and subtle motion', () 
   const frame = openingCreditFrame(12);
   assert.equal(frame.duration, OPENING_CREDITS_DURATION);
   assert.equal(frame.activeBeat, 'sound');
-  assert.ok(frame.layers.scan.intensity > 0);
-  assert.ok(Number.isFinite(frame.layers.scan.offset));
+  assert.equal(frame.cinematic.variant, 'opening');
+  assert.ok(frame.layers.scene.alpha > 0);
+  assert.ok(frame.layers.light.alpha > 0);
+  assert.ok(frame.layers.fog.alpha > 0);
+  assert.ok(Number.isFinite(frame.layers.light.x));
+  assert.ok(Number.isFinite(frame.cinematic.camera.x));
   assert.ok(Number.isFinite(frame.beats.sound.xOffset));
   assert.notEqual(frame.beats.sound.xOffset, 0);
 });

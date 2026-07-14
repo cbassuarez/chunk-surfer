@@ -138,9 +138,57 @@ jobs:
           path: ${{ matrix.bundle_glob }}
           if-no-files-found: error
 
+  publish-itch:
+    name: Publish itch beta channels
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+      ITCH_TARGET: ${{ vars.ITCH_TARGET }}
+      ITCH_CONFIRM_PUSH: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Download built bundles
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Verify itch environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$BUTLER_API_KEY"
+          test -n "$ITCH_TARGET"
+
+      - name: Install Butler
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -L -o butler.zip https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default
+          unzip -q butler.zip -d .butler
+          chmod +x .butler/butler
+          echo "$PWD/.butler" >> "$GITHUB_PATH"
+          .butler/butler version
+
+      - name: Stage itch builds
+        run: npm run itch:stage
+
+      - name: Preview itch channel changes
+        run: npm run itch:preview
+
+      - name: Push itch channels
+        run: npm run itch:push
+
   publish-prerelease:
     name: Publish beta prerelease
-    needs: build
+    needs: [build, publish-itch]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -212,16 +260,20 @@ jobs:
           cat > "$notes_file" <<'EOF'
           Unsigned beta desktop builds for end-to-end download testing.
 
+          Public beta downloads are staged on itch.io first. Use these GitHub
+          assets as a developer mirror when testing CI output or recovering a
+          specific build artifact.
+
           Expected assets:
           - macOS: dmg
           - Windows: portable zip
           - Linux: AppImage and deb bundle
 
           Assets larger than GitHub's 2 GiB per-file release limit are split as
-          .part-00, .part-01, ... files with a matching .sha256 manifest. Rejoin
-          parts in lexical order before running the checksum.
+          .part-00, .part-01, ... files with a matching .sha256 manifest. These
+          split files are not the recommended player download path.
 
-          Signing, notarization, Steam, and itch automation remain TODOs in STORE_PREP.md.
+          Signing, notarization, and Steam automation remain TODOs in STORE_PREP.md.
           EOF
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --title "Chunk Surfer $TAG" --notes-file "$notes_file" --prerelease

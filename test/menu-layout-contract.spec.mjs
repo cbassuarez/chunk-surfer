@@ -3,12 +3,13 @@ import fs from 'node:fs';
 
 const title = fs.readFileSync('src/game/title.js', 'utf8');
 for (const id of ['continue', 'new-run', 'archive', 'return-index', 'just-surf', 'settings']) {
-  assert.match(title, new RegExp(`id: '${id}'`), `title keeps stable ${id} slot`);
+assert.match(title, new RegExp(`id: '${id}'`), `title keeps stable ${id} slot`);
 }
 assert.match(title, /let sel = activeRun \? 0 : 1/, 'title defaults to NEW RUN when CONTINUE is unavailable');
-assert.match(title, /label: 'CASE SELECT'/, 'title uses stable case-select shell');
+assert.match(title, /renderCinematicConservatory/, 'title uses fullscreen cinematic conservatory shell');
+assert.match(title, /titleScreenLayout/, 'title has an explicit responsive layout model');
 assert.match(title, /THE CASE FILE IS EMPTY/, 'title has empty-profile copy instead of disappearing menu sections');
-assert.match(title, /bodyRowsNeeded/, 'title computes panel height from menu rows');
+assert.match(title, /rowCount = Math\.ceil\(itemCount \/ columns\)/, 'title computes menu rows from stable menu item count');
 
 const archive = fs.readFileSync('src/game/archive.js', 'utf8');
 assert.match(archive, /NO ENTRIES FILED IN THIS CATEGORY/, 'archive has an empty category state');

@@ -9,11 +9,21 @@ const windowsTauri = JSON.parse(fs.readFileSync('src-tauri/tauri.windows.conf.js
 
 assert.match(pkg.scripts['tauri:build'], /tauri build --config src-tauri\/tauri\.lens\.conf\.json/, 'tauri builds always merge the offline lens bundle config');
 assert.match(pkg.scripts['beta:build:mac'], /npm run tauri:build -- --target aarch64-apple-darwin --bundles dmg/, 'local mac beta build uses the mandatory bundled Tauri build');
+assert.match(pkg.scripts['itch:stage'], /scripts\/itch-release\.mjs stage/, 'itch staging script exists for public beta uploads');
+assert.match(pkg.scripts['itch:preview'], /scripts\/itch-release\.mjs preview/, 'itch preview script exists for Butler channel diffs');
+assert.match(pkg.scripts['itch:push'], /scripts\/itch-release\.mjs push/, 'itch publish script exists for Butler channel pushes');
 assert.match(yml, /Windows x64[\s\S]*args: --no-bundle/, 'windows release skips installer bundling for large offline lens builds');
 assert.match(yml, /release\/windows\/\*\.zip/, 'windows portable zip artifact path is uploaded');
 assert.match(yml, /scripts\/package-windows-portable\.mjs/, 'windows release stages a portable app directory');
 assert.doesNotMatch(yml, /Windows x64[\s\S]*args: --bundles (?:nsis|msi)/, 'windows release does not invoke NSIS or MSI installer linkers');
 assert.match(yml, /Prepare release upload assets[\s\S]*split -b 1900M/, 'release upload splits assets larger than GitHub release limits');
+assert.match(yml, /Public beta downloads are staged on itch\.io first/, 'GitHub release notes point players to itch first');
+assert.match(yml, /developer mirror/, 'GitHub release notes identify split assets as a developer mirror');
+assert.match(yml, /publish-itch:[\s\S]*needs: build[\s\S]*BUTLER_API_KEY: \$\{\{ secrets\.BUTLER_API_KEY \}\}/, 'itch publish job runs after platform builds with Butler secret');
+assert.match(yml, /publish-itch:[\s\S]*ITCH_TARGET: \$\{\{ vars\.ITCH_TARGET \}\}/, 'itch publish job reads the target from repository variables');
+assert.match(yml, /curl -L -o butler\.zip https:\/\/broth\.itch\.zone\/butler\/linux-amd64\/LATEST\/archive\/default/, 'itch publish job installs Butler on Ubuntu');
+assert.match(yml, /publish-itch:[\s\S]*npm run itch:stage[\s\S]*npm run itch:preview[\s\S]*npm run itch:push/, 'itch publish job stages, previews, and pushes all channels');
+assert.match(yml, /publish-prerelease:[\s\S]*needs: \[build, publish-itch\]/, 'GitHub mirror waits for itch publication');
 assert.match(yml, /sha256sum "\$file" > "release-upload-assets\/\$name\.sha256"/, 'split release assets get checksum manifests');
 assert.match(yml, /gh release delete-asset/, 'release upload clears stale beta assets before uploading current assets');
 assert.ok(!tauri.bundle.targets.includes('nsis'), 'default Tauri bundle targets do not include NSIS');
@@ -35,4 +45,8 @@ assert.match(yml, /npm ci/, 'release installs the exact locked frontend dependen
 assert.match(yml, /release-preflight\.mjs/, 'release validates source versions against its tag');
 assert.doesNotMatch(yml, /args: --config src-tauri\/tauri\.lens\.conf\.json/, 'release matrix does not duplicate the mandatory lens config flag');
 assert.doesNotMatch(yml, /macOS Intel|x86_64-apple-darwin/, 'unsupported macOS Intel package is not built');
+const readme = fs.readFileSync('README.md', 'utf8');
+assert.match(readme, /Chunk Surfer itch\.io page/, 'README presents itch as the public beta download path');
+assert.match(readme, /GitHub Releases remain available as a developer mirror/, 'README demotes GitHub split assets to mirror status');
+assert.doesNotMatch(readme, /Download the Latest Beta[\s\S]*concatenate the parts/, 'README no longer makes split-part concatenation the primary user path');
 console.log('release workflow contract tests ok');
