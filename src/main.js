@@ -4532,6 +4532,18 @@ function tickProgressionNotices(){
 // ── Main loop ─────────────────────────────────────────────────────────────────
 let developmentWindowMarker='';
 let developmentWindowMarkerPending=false;
+const WORLD_HIDDEN_SCENES=Object.freeze([
+  'lens-calibration',
+  'opening-credits',
+  'title',
+  'credits',
+  'return-report',
+]);
+
+function scenePresentationHidesWorld(){
+  return WORLD_HIDDEN_SCENES.some((id)=>scenes.has(id));
+}
+
 function updateDevelopmentWindowMarker(){
   if(!import.meta.env?.DEV)return;
   const scene=scenes.top()?.id || (inRogue?'game':'boot');
@@ -4604,7 +4616,14 @@ function loop(){
           TUT.tickTutorial(dt, tutorialCtx());
         }
       }
-      if(RENDERER==='3d') render3d(); else renderMap();
+      // Calibration, opening/title presentation, and credits fully cover the
+      // playfield. Rendering the hidden WebGL world here steals the same GPU
+      // time needed to upload the critical material bank, which made startup
+      // dramatically slower on software/fallback renderers. Keep the world
+      // state frozen as before, and resume drawing when the presentation ends.
+      if(RENDERER==='3d'){
+        if(!scenePresentationHidesWorld()) render3d();
+      }else renderMap();
       // Instrument readouts only exist in JUST SURF; in story mode they are
       // hidden by body.game, so don't pay to rebuild their DOM every frame.
       if(!storyMode && !sampleFieldSuppressed()){ renderCatalog(); renderStatus(); renderSense(); renderKeymeter(); }

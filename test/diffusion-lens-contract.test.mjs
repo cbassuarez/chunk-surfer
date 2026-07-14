@@ -22,6 +22,7 @@ test('boot hard-gates credits and title behind mandatory calibration', () => {
 
 test('production material client stages one boot bank and streams all six complete banks', () => {
   const client = read('src/net/diffusion.js');
+  const main = read('src/main.js');
   assert.match(client, /profiles\.length !== 6/);
   assert.match(client, /SURFACE_NAMES\.length/);
   assert.match(client, /criticalBank/);
@@ -34,7 +35,9 @@ test('production material client stages one boot bank and streams all six comple
   assert.match(client, /for \(let slot = 0; slot < SURFACE_NAMES\.length; slot \+= 1\)/);
   assert.match(client, /commitSurfaces\([\s\S]*bankId, transitionMs/);
   assert.match(client, /if \(!shouldCommit\(\)\) return false/);
-  assert.match(read('src/main.js'), /lookApplyQueue=lookApplyQueue/);
+  assert.match(main, /lookApplyQueue=lookApplyQueue/);
+  assert.match(main, /WORLD_HIDDEN_SCENES[\s\S]*lens-calibration[\s\S]*opening-credits[\s\S]*title[\s\S]*credits/);
+  assert.match(main, /if\(!scenePresentationHidesWorld\(\)\) render3d\(\)/);
   assert.doesNotMatch(client, /export function diffusionStart|setBypass|tune\(/);
 });
 
