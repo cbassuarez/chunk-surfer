@@ -41,7 +41,7 @@ import { flagApply, flagTest, flagGet } from './game/flags.js';
 // building to talk to.
 import { makeTitleScene } from './game/title.js';
 import { makeSettingsScene } from './game/settings.js';
-import { makeCreditsScene } from './game/credits.js';
+import { makeCreditsIntroScene, makeCreditsScene } from './game/credits.js';
 import { makeStoryArtPreviewScene } from './game/story-art-preview.js';
 import { preloadStoryArt, resolveStoryArt, storyArtCacheSnapshot } from './game/story-art.js';
 import { terrorInit, once, interpolate } from './game/terror.js';
@@ -101,8 +101,10 @@ import { computeFearPressure } from './game/fear-pressure.js';
 import * as CONTROLLER from './game/controller.js';
 import * as BINDINGS from './game/bindings.js';
 import { InputManager, movementCodeForEvent } from './input/input-manager.js';
+import { makeControllerSettingsScene } from './game/controller-settings.js';
 import { makeThoughtScene, thoughtHad, markThought,
          loadThoughtState, saveThoughtState } from './game/thoughts.js';
+import * as WATER from './game/natatorium-water.js';
 import { makeBagLabScene } from './game/bag-lab.js';
 import { makeMapLabScene } from './game/map-lab.js';
 import { makeHushAudioLabScene } from './game/hush-audio-lab.js';
@@ -161,15 +163,15 @@ const RADIO_DEAD=runtimeTree('conservatory.radio_dead');
 const BENT_RIG=runtimeTree('conservatory.bent_rig');
 const TALISMAN=runtimeTree('conservatory.talisman');
 const CHAPEL_KEY_CHECK=runtimeTree('conservatory.chapel_key_check');
-const roomListen=(room,label)=>runtimeTree(`room-listen.${room}`,{label});
+const roomListen=(room,label)=>WATER.applyNatatoriumWaterTextVariant(runtimeTree(`room-listen.${room}`,{label}), room === 'the_tub' ? getSave()?.run : null);
 const radioDialogue=(cueId,{roomLabel='the next room'}={})=>runtimeTree(`radio.${cueId}`,{roomLabel,ROOMLABEL:String(roomLabel).toUpperCase()});
 const authoredVariant=(named)=>named?'named':'unnamed';
-const natatoriumBattle=(named=false)=>runtimeBattle(`battle.natatoriumbattle.${authoredVariant(named)}`);
+const natatoriumBattle=(named=false)=>WATER.applyNatatoriumWaterTextVariant(runtimeBattle(`battle.natatoriumbattle.${authoredVariant(named)}`), getSave()?.run);
 const practiceBattle=(named=false)=>runtimeBattle(`battle.practicebattle.${authoredVariant(named)}`);
 const hallBattle=(named=false)=>runtimeBattle(`battle.hallbattle.${authoredVariant(named)}`);
 const hallPlayback=(named=false)=>runtimeTree(`playback.hallplayback.${authoredVariant(named)}`);
 const practicePlayback=(named=false)=>runtimeTree(`playback.practiceplayback.${authoredVariant(named)}`);
-const natatoriumPlayback=(named=false)=>runtimeTree(`playback.natatoriumplayback.${authoredVariant(named)}`);
+const natatoriumPlayback=(named=false)=>WATER.applyNatatoriumWaterTextVariant(runtimeTree(`playback.natatoriumplayback.${authoredVariant(named)}`), getSave()?.run);
 const endingLines=(id)=>runtimeEndingTree(id).start.lines;
 const chapelBoss=({kind='nothing',value=null}={})=>{
   let variant='nothing';
@@ -222,6 +224,7 @@ let worldTemplates=new Map(); // worldId -> {id,label,width,height,terrain,sampl
 let chunkByIdx=new Map();
 const chunkAt=(i)=>chunkByIdx.get(i);
 const motionInput = new InputManager();
+motionInput.setControllerStateProvider(()=>CONTROLLER.controllerMotionAxes());
 let keysDown=motionInput.held;
 let nextMoveAtMs=0;
 let nextTurnAtMs=0;
@@ -3219,6 +3222,7 @@ function step(dx,dy){
       }
       planRedirect=move.redirect||null;
       const tx=planRedirect?.x??px+dx,ty=planRedirect?.y??py+dy;
+      if(natatoriumWaterBlocksAt(tx,ty)) return;
       if(!PROPS.propCanOccupy(tx,ty)) return;
     } else if(R3.r3dSolid(px+dx, py+dy)) return;
   }
@@ -4541,8 +4545,16 @@ function loop(){
     perfMeter.frame(nowLoopMs);
     const dt=Math.min(0.05, lastLoopMs ? (nowLoopMs-lastLoopMs)/1000 : 0.016);
     lastLoopMs=nowLoopMs;
+    const modal = scenes.top?.();
+    const modalControllerActions = (() => {
+      const id = modal?.id || '';
+      if (id.startsWith('battle:')) return ['recorder'];
+      if (id === 'chunk-surf') return ['light', 'recorder', 'interact'];
+      return [];
+    })();
     CONTROLLER.gamepadTick({
       menuContext: scenes.blocksInput(),
+      modalActions: modalControllerActions,
       onPress: controllerPress,
       onRelease: controllerRelease,
     });
@@ -4660,6 +4672,38 @@ let activeDifficulty=currentDifficulty();
 let facilityMapSource=null;
 let facilityMapCache={key:'',model:null};
 const HUSH_MAP_TELEMETRY=createHushTelemetry({label:BUILDING_MAP.contact.label});
+let natatoriumBasinBounds=null;
+
+function currentNatatoriumWaterRun(){
+  return getSave()?.run || null;
+}
+
+function natatoriumWaterActive(){
+  return WATER.natatoriumWaterActive(currentNatatoriumWaterRun()) && !!natatoriumBasinBounds;
+}
+
+function natatoriumWaterBlocksAt(x,y){
+  return WATER.natatoriumWaterBlocks(currentNatatoriumWaterRun(), x, y, natatoriumBasinBounds);
+}
+
+function currentNatatoriumWaterRenderState({ audio = 0 } = {}){
+  if(!natatoriumWaterActive()) return { active:false };
+  return {
+    active:true,
+    basinBounds:natatoriumBasinBounds,
+    levelM:-0.06,
+    murk:0.86,
+    rippleSources:WATER.makeNatatoriumRippleSources({
+      run:currentNatatoriumWaterRun(),
+      player:{x:px,y:py},
+      bounds:natatoriumBasinBounds,
+      now:performance.now(),
+      audio,
+      reduceMotion:(getSave().settings?.shake||'full')!=='full',
+    }),
+    reduceMotion:(getSave().settings?.shake||'full')!=='full',
+  };
+}
 
 function applyCurrentRunDifficulty(){
   activeDifficulty=currentDifficulty();
@@ -4752,6 +4796,7 @@ async function loadBuilding(){
     const mod=await BUILDING_LOADERS[which]();
     const data=mod[which] || mod.default;
     FP.compile(data.levels, {width:data.width, height:data.height, widenCorridors:data.widenCorridors,connectors:data.connectors||[]});
+    natatoriumBasinBounds = which === 'conservatory' ? WATER.computeNatatoriumBasinBounds(FP) : null;
     facilityMapSource=null; facilityMapCache={key:'',model:null}; HUSH_MAP_TELEMETRY.reset();
     if(data.spawn) FP.setSpawn(data.spawn.x, data.spawn.y);
     // ?at= is a debug spawn and outranks the building's front door.
@@ -4799,7 +4844,7 @@ function enterStory(){
   silenceSampleField();
   applyCurrentRunDifficulty();
   ensureCtx();
-  if(actx && getSave().settings?.mic==='on') MIC.micInit(actx);
+  if(actx && getSave().settings?.mic==='on') startRoomMic();
   setGameChrome(true);
   playerKeys.clear();playerKeys.add('master');
   if((getSave().items||[]).includes('chapel_key'))playerKeys.add('chapel');
@@ -4934,6 +4979,16 @@ function fireCue(name){
       if(spec.markHeard) MUT.markHeard(px, py, 1);
     },
   });
+}
+
+function roomMicInputOptions(extra = {}) {
+  return { ...(getSave().settings?.micInput || {}), ...extra };
+}
+
+function startRoomMic(options = {}) {
+  ensureCtx();
+  if (!actx) return null;
+  return MIC.micInit(actx, roomMicInputOptions(options));
 }
 
 function applyStoryChoice(choice){
@@ -5133,7 +5188,7 @@ function roll(){
   // The recorder is not a metaphor. It opens the actual microphone, and from
   // here the real room you are sitting in can spoil the take. Fire-and-forget:
   // no permission, no mic, and the game is exactly as it was.
-  if(!params().has('nomic') && getSave().settings?.mic !== 'off') MIC.micInit(actx);
+  if(!params().has('nomic') && getSave().settings?.mic !== 'off') startRoomMic();
   // The transport is our sound, not the player's. Keep it on the output meter
   // while preventing acoustic speaker bleed from invalidating the new take.
   MIC.micIgnoreSpoilFor(1400);
@@ -5531,7 +5586,7 @@ function makeObjectDetailScene({ id, title, source = 'OBJECT', body = '', onCont
       const panel = drawMachinePanel(x, y, w, h, {
         label: 'INSPECT',
         source,
-        footer: '[ENTER] INSPECT · [ESC] CLOSE',
+        footer: BINDINGS.promptLine([{ action: 'confirm', label: 'INSPECT' }, { action: 'back', label: 'CLOSE' }]),
         meter: true,
       });
       drawVfdText(panel.x + 1, panel.y - 1, String(title || source).toUpperCase(), {
@@ -5561,6 +5616,74 @@ function markWorkOrderRead(){
     setTimeout(()=>queueRadioStoryCue(RADIO.RADIO_CUES.INITIAL, { reason:'work-order-read' }), 1400);
   });
 }
+
+const NATATORIUM_WATER_THOUGHT = {
+  start: {
+    speaker: 'THE NATATORIUM',
+    lines: [
+      { who:'direction', text:'The water is too dark to reflect the ceiling. It keeps a shape anyway, low and patient, as if something under it has leaned forward.' },
+      { who:'surfer', text:'Come here.' },
+      { who:'you', text:'No. That is not how rooms work.' },
+    ],
+    choices: [
+      { text:'step closer to the coping', goto:'approach', waterChoice:'approach', set:['natatorium.water.bias.seal'] },
+      { text:'hold the recorder over the water', goto:'record', waterChoice:'record', set:['natatorium.water.bias.surface'] },
+      { text:'step back and name it as only water', goto:'refuse', waterChoice:'refuse', set:['natatorium.water.bias.inversion'] },
+    ],
+  },
+  approach: {
+    speaker: 'THE NATATORIUM',
+    lines: [
+      { who:'direction', text:'The surface dimples in a line from the deep end to your shoes. Not a wave. A finger drawing a route.' },
+      { who:'surfer', text:'It was full when I left it.' },
+    ],
+  },
+  record: {
+    speaker: 'THE NATATORIUM',
+    lines: [
+      { who:'direction', text:'The recorder meter rises before you arm it. The water answers with one wet click, close enough to be inside the case.' },
+      { who:'you', text:'That is not signal. That is pressure.' },
+    ],
+  },
+  refuse: {
+    speaker: 'THE NATATORIUM',
+    lines: [
+      { who:'direction', text:'You take one step back. The water follows by exactly one step and then remembers it has no legs.' },
+      { who:'you', text:'A room. A pool. A bad memory of a pool.' },
+    ],
+  },
+};
+
+function waterEdgeInReach(){
+  if(!natatoriumWaterActive() || !usingPlan() || FP.zoneAt(px,py)!==ZONE.natatorium) return false;
+  if(WATER.pointInNatatoriumBasin(px,py,natatoriumBasinBounds)) return false;
+  const [dx,dy]=R3.r3dDelta(1);
+  if(WATER.pointInNatatoriumBasin(px+dx,py+dy,natatoriumBasinBounds)) return true;
+  for(const [ox,oy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+    if(WATER.pointInNatatoriumBasin(px+ox,py+oy,natatoriumBasinBounds)) return true;
+  }
+  return false;
+}
+
+function interactNatatoriumWater(){
+  if(!waterEdgeInReach()) return false;
+  const run=currentNatatoriumWaterRun();
+  const water=WATER.normalizeNatatoriumWaterLedger(run?.ledger?.natatoriumWater);
+  if(water.seen){
+    SPEECH.say({who:'you',text:'The water moves like it is still listening.'});
+    return true;
+  }
+  think('natatorium-water', NATATORIUM_WATER_THOUGHT, {
+    force:true,
+    onChoice:(choice)=>{
+      const nextRun=WATER.recordNatatoriumWaterChoice(getSave().run, choice?.waterChoice || 'approach');
+      saveCommit({run:nextRun, flags:getSave().flags});
+      CR.fx.shake(choice?.waterChoice==='refuse'?0.25:0.55, 380);
+    },
+  });
+  return true;
+}
+
 function interact(){
   if(!storyMode) return;
   if(PB.isPlaying()){ PB.stopPlayback(); return; }
@@ -5594,6 +5717,7 @@ function interact(){
     }
     return;
   }
+  if(interactNatatoriumWater()) return;
   const hit=usingPlan() ? PROPS.pickProp(px,py,R3.r3dFacing(),2) : null;
   if(hit){
     if(hit.id==='dropped-radio'){
@@ -5806,9 +5930,9 @@ function bagEquipment(){
 
 function bagHint(){
   return TUT.tutorialStep()==='read'
-    ? '[ENTER] READ THE WORK ORDER — FIND WHAT THEY WANT'
+    ? `${BINDINGS.inputPrompt('confirm')} READ THE WORK ORDER - FIND WHAT THEY WANT`
     : TUT.tutorialStep()==='mark'
-      ? '[SPACE] MARK STUDIO B3 — SET THE WAYPOINT'
+      ? `${BINDINGS.inputPrompt('mark')} MARK STUDIO B3 - SET THE WAYPOINT`
       : '';
 }
 
@@ -5907,11 +6031,11 @@ function syncStoryObjectProps(){
   });
   const fork=FP.toRuntimePoint(TALISMAN_CELL);
   PROPS.setLooseProp('story-tuning-fork', flagTest('has.fork') ? null : {
-    mesh:'loose_note',
+    mesh:'tuning_fork',
     label:'tuning fork',
     rx:fork.x,ry:fork.y,
     elevation:.04,
-    scale:.82,
+    scale:.74,
     yaw:-0.24,
     blocks:false,
     action:'story-tuning-fork',
@@ -6763,6 +6887,7 @@ function openBattle(battle, { onWin, onLose, onAbort }={}){
 }
 
 let activeBattleId=null;
+let godBattleOpen=false;
 function openEncounterBattle(id,battle,{onWin,onLose}={}){
   if(activeBattleId||ENCOUNTERS.encounterCleared(id))return false;
   activeBattleId=id;
@@ -6790,6 +6915,33 @@ function openEncounterBattle(id,battle,{onWin,onLose}={}){
     },
   });
   return true;
+}
+
+function openGodBattle(battle){
+  godBattleOpen=true;
+  return openBattle(battle,{
+    onWin:()=>{ godBattleOpen=false; },
+    onLose:()=>{ godBattleOpen=false; },
+    onAbort:()=>{ godBattleOpen=false; },
+  });
+}
+
+function godAbortBattle(){
+  let removed=false;
+  while(String(scenes.top()?.id || '').startsWith('battle:')){
+    scenes.pop();
+    removed=true;
+  }
+  if(activeBattleId){
+    activeBattleId=null;
+    removed=true;
+  }
+  godBattleOpen=false;
+  STORY.stopTapeHiss({fade:0.3});
+  resetMotionInput('god-abort-battle', {stopRenderMove:true});
+  if(removed) pushEvent('// god: battle aborted.');
+  else pushEvent('// god: no active battle.');
+  return removed;
 }
 
 // ── M5: the confrontation and the two endings ───────────────────────────────
@@ -7058,6 +7210,7 @@ function saveTick(dt){
 // spawn, the presence, mutation) asks this and never the shader.
 function solidAt(x,y){
   if(RENDERER!=='3d') return false;
+  if(natatoriumWaterBlocksAt(x,y)) return true;
   return usingPlan() ? FP.isSolid(x,y) : R3.r3dSolid(x,y);
 }
 function usingPlan(){ return storyMode && FP.isLoaded(); }
@@ -7308,10 +7461,17 @@ async function importProgressionProfile(){
   }
   metaCommit(merged.meta);
   saveCommit({settings:merged.settings});
-  BINDINGS.setControllerBindings(getSave().settings?.controllerBindings);
+  syncControllerSettingsFromSave();
   pushEvent('// profile imported. current run unchanged.');
   syncPlatform().catch(()=>{});
   return true;
+}
+
+function syncControllerSettingsFromSave(){
+  const st=getSave().settings||{};
+  const controller=BINDINGS.setControllerSettings(st.controller || {}, st.controllerBindings);
+  CONTROLLER.setControllerSettings(controller);
+  return controller;
 }
 
 function rendererLabel(){
@@ -7376,16 +7536,37 @@ async function exportSaveBackup(){
 }
 
 function resetInputBindings(){
-  const controllerBindings=BINDINGS.resetControllerBindings();
+  const controller=BINDINGS.resetControllerSettings();
   const st=getSave().settings||{};
-  saveCommit({settings:{...st,controllerBindings}});
+  saveCommit({settings:{...st,controller}});
+  CONTROLLER.setControllerSettings(controller);
   CONTROLLER.cancelControllerRemap?.();
-  pushEvent('// input bindings reset.');
-  return controllerBindings;
+  pushEvent('// controller settings reset.');
+  return controller;
+}
+
+function saveControllerSettings(controller){
+  const next=BINDINGS.setControllerSettings(controller);
+  const st=getSave().settings||{};
+  saveCommit({settings:{...st,controller:next}});
+  CONTROLLER.setControllerSettings(next);
+  return next;
+}
+
+function openControllerSettings(){
+  ensureCtx();
+  scenes.push(makeControllerSettingsScene({
+    onSave:saveControllerSettings,
+    getPadName:CONTROLLER.controllerName,
+    beginControllerRemap:CONTROLLER.beginControllerRemap,
+    cancelControllerRemap:CONTROLLER.cancelControllerRemap,
+    controllerRemapAction:CONTROLLER.controllerRemapAction,
+  }));
 }
 
 function openSettings({ inGame=false, initialTab=null }={}){
   ensureCtx();
+  MIC.micRefreshDevices?.();
   scenes.push(makeSettingsScene({
     inGame,
     initialTab,
@@ -7396,7 +7577,14 @@ function openSettings({ inGame=false, initialTab=null }={}){
       setMusicVolume,
       setMonitorVolume,
       micStatus: ()=>MIC.micState(),
-      enableMic: ()=>{ ensureCtx(); if(actx) MIC.micInit(actx); },
+      micSnapshot: ()=>MIC.micSnapshot(),
+      enableMic: ()=>startRoomMic({ force:true }),
+      refreshMicDevices: ()=>MIC.micRefreshDevices(),
+      onMicInputChange: (input)=>{
+        if(!MIC.micActive()) return;
+        MIC.micStop();
+        startRoomMic({ force:true, ...input });
+      },
       onQuitToTitle: returnToTitle,
       requestFullscreen: requestFullscreenSafe,
       focusPanel: ensureInteractionFocus,
@@ -7420,14 +7608,11 @@ function openSettings({ inGame=false, initialTab=null }={}){
       },
       controllerName: CONTROLLER.controllerName,
       controllerRemapAction: CONTROLLER.controllerRemapAction,
-      beginControllerRemap: (action)=>CONTROLLER.beginControllerRemap(action, (token)=>{
-        if(!BINDINGS.setControllerBinding(action, token)) return;
-        const st=getSave().settings||{};
-        saveCommit({settings:{...st,controllerBindings:BINDINGS.controllerBindings()}});
-      }),
       cancelControllerRemap: CONTROLLER.cancelControllerRemap,
       resetControllerBindings: resetInputBindings,
       resetInputBindings,
+      openControllerSettings,
+      onControllerSettingsChange: saveControllerSettings,
       exportProfile: exportProgressionProfile,
       importProfile: importProgressionProfile,
       currentArea: () => storyMode && inRogue ? roomLabel(currentWorld()) : (getSave().area || 'prologue'),
@@ -7602,6 +7787,10 @@ function godResetFx(){
 
 function godEnsureTestRun(){
   while(scenes.depth()) scenes.pop();
+  activeBattleId=null;
+  godBattleOpen=false;
+  STORY.stopTapeHiss({fade:0.2});
+  resetMotionInput('god-test-run', {stopRenderMove:true});
   setGameplayPaused(false,{announce:false});
   if(!getSave().run){
     newGame({preset:'contract'});
@@ -7690,12 +7879,22 @@ function godColdOpen(){
   }));
 }
 
+function godPostDoorRuntime(){
+  godEnsureTestRun();
+  think('post-door', POST_DOOR, {
+    force:true,
+    startAt: prologueKnowledgeFrame() || 'self',
+    onDone:()=>{ saveCommit({ flags:getSave().flags }); TUT.startTutorial(); },
+  });
+  pushEvent('// god: post-door 3D runtime.');
+}
+
 function godTabs(){
   const section=(label)=>({kind:'section',label});
   const ready=()=>storyMode&&inRogue&&FP.isLoaded();
   const warp=(id,label,zone)=>({id,label,value:()=>ready()?'[WARP]':'START TEST RUN',closeMenu:true,activate:()=>{if(!ready())godEnsureTestRun();else godWarpToZone(zone);}});
   const toggleFlag=(id,label,flag)=>({id,label,value:()=>flagTest(flag)?'ON':'OFF',adjust:()=>godSetFlag(flag,!flagTest(flag))});
-  const battle=(id,label,factory)=>({id,label,value:'[OPEN]',closeMenu:true,activate:()=>openBattle(factory(isNamed()))});
+  const battle=(id,label,factory)=>({id,label,value:'[OPEN]',closeMenu:true,activate:()=>openGodBattle(factory(isNamed()))});
   return [
     {id:'session',name:'SESSION',rows:[
       section('Run'),
@@ -7760,8 +7959,10 @@ function godTabs(){
       {id:'opening-credits',label:'OPENING CREDITS',value:'[PLAY]',closeMenu:true,activate:()=>scenes.push(makeOpeningCreditsScene())},
       {id:'cold-open',label:'COLD OPEN',value:'[PLAY]',closeMenu:true,activate:godColdOpen},
       {id:'world-title',label:'WORLD TITLE',value:'[PLAY]',closeMenu:true,activate:()=>scenes.push(makeWorldTitleScene({audio:STORY}))},
+      {id:'post-door-runtime',label:'POST-DOOR 3D RUNTIME',value:'[DROP IN]',closeMenu:true,activate:godPostDoorRuntime},
       {id:'credits',label:'RELEASE CREDITS',value:'[OPEN]',closeMenu:true,activate:openCredits},
       section('Encounters'),
+      {id:'battle-abort',label:'ABORT ACTIVE BATTLE',value:()=>activeBattleId||godBattleOpen?'[ABORT]':'NONE',danger:()=>!!(activeBattleId||godBattleOpen),closeMenu:true,activate:godAbortBattle},
       battle('battle-natatorium','NATATORIUM BATTLE',natatoriumBattle),
       battle('battle-practice','PRACTICE BATTLE',practiceBattle),
       battle('battle-hall','CONCERT HALL BATTLE',hallBattle),
@@ -7786,6 +7987,7 @@ function godTabs(){
 
 function closeGodMenu(){
   if(scenes.top()?.id==='god-menu') scenes.pop();
+  resetMotionInput('god-menu-close', {stopRenderMove:true});
   if(!godMenuWasPaused) setGameplayPaused(false,{announce:false});
 }
 
@@ -7847,9 +8049,19 @@ function openArchive(){
 
 function openCredits(){
   ensureCtx();
-  scenes.push(makeCreditsScene({
-    onClose:()=>scenes.pop(),
-    onWebsite:()=>openExternalUrl(APP_LINKS.website),
+  emitProgress(EVENT_TYPES.CREDITS_VIEWED, {}, 'main.openCredits');
+  let opened = false;
+  const panel = () => {
+    if (opened) return;
+    opened = true;
+    scenes.remove('credits-intro');
+    scenes.push(makeCreditsScene({
+      onClose:()=>scenes.pop(),
+      onWebsite:()=>openExternalUrl(APP_LINKS.website),
+    }));
+  };
+  scenes.push(makeCreditsIntroScene({
+    onDone:panel,
   }));
 }
 
@@ -7872,6 +8084,8 @@ function makeTitle({wantFullscreen=false}={}){
 
 function returnToTitle(){
   stopHushAudioRuntime();
+  activeBattleId=null;
+  godBattleOpen=false;
   sampleFieldEnabled=false;
   storyMode=false;
   setGameplayPaused(false,{announce:false});
@@ -7906,6 +8120,10 @@ function beginNewGameFlow(){
     onConfirm:({preset,values})=>{
       // The title remains beneath the selector until authorization is complete.
       // Only now is the previous run replaced.
+      activeBattleId=null;
+      godBattleOpen=false;
+      STORY.stopTapeHiss({fade:0.2});
+      resetMotionInput('new-run', {stopRenderMove:true});
       scenes.remove('title');
       newGame({preset,values});
       beginRunProgression();
@@ -7915,16 +8133,16 @@ function beginNewGameFlow(){
 }
 
 function enterSelectedRun(){
-  BINDINGS.setControllerBindings(getSave().settings?.controllerBindings);
+  syncControllerSettingsFromSave();
   applyCurrentRunDifficulty();
   const qp=params();
   if(qp.has('skipwarn')){ enterStory(); return; }
+  MIC.micRefreshDevices?.();
   scenes.push(makeWarningScene({
     onEnableMic:()=>{
-      ensureCtx();
       const st=getSave().settings||{};
       saveCommit({settings:{...st,mic:'on'}});
-      if(actx)MIC.micInit(actx);
+      startRoomMic({ force:true });
     },
     onDisableMic:()=>{
       const st=getSave().settings||{};
@@ -8214,29 +8432,33 @@ const teach=tutorialPromptsEnabled() ? TUT.tutorialPrompt() : null;
   // Paper at your feet outranks everything the corner has to say. It is the only
   // thing in the building anyone has left behind on purpose.
   if(pageHere && !REC.isRecording()){
-    const prompt='[E] PICK UP THE SHEET';
+    const prompt=`${BINDINGS.inputPrompt('interact')} PICK UP THE SHEET`;
     uiText(Math.max(2, Math.floor((cols-prompt.length)/2)), rows-2, prompt, 'ui-amber');
   } else if(doorHud){
     const hasKey=!doorHud.portal.keyId||playerKeys.has(doorHud.portal.keyId);
-    const prompt=hasKey?'[E] OPEN DOOR':'[E] TRY LOCKED DOOR';
+    const prompt=hasKey?`${BINDINGS.inputPrompt('interact')} OPEN DOOR`:`${BINDINGS.inputPrompt('interact')} TRY LOCKED DOOR`;
     uiText(Math.max(2,Math.floor((cols-prompt.length)/2)),rows-2,prompt,hasKey?'ui-amber':'ui-secondary');
   } else if(propHit){
     const verb=propHit.sampleFamily?.length?'PLAY':'INSPECT';
-    const prompt=(`[E] ${verb} ${propLabel(propHit)}`).slice(0,Math.max(1,cols-4));
+    const prompt=(`${BINDINGS.inputPrompt('interact')} ${verb} ${propLabel(propHit)}`).slice(0,Math.max(1,cols-4));
     uiText(Math.max(2,Math.floor((cols-prompt.length)/2)),rows-2,prompt,'ui-amber');
   } else if(teach){
     const prompt=teach.toUpperCase().slice(0,Math.max(1,cols-4));
     uiText(Math.max(2, Math.floor((cols-prompt.length)/2)), rows-2, prompt, 'ui-amber');
   } else if(hintMode !== 'off') {
     const done = REC.hasTake(currentWorld());
-    const back = hintMode === 'full' && PB.hasTake(currentWorld()) ? ' · [P] PLAYBACK' : '';
-    const rk = done ? '' : ' · [R] LISTEN';
-    const pause = hintMode === 'full' ? ' · [ESC] PAUSE' : '';
-    const hint = (rec.light ? '[F] LIGHT OFF' : '[F] LIGHT') + rk + ' · [B] BAG' + back + pause;
+    const parts = [
+      { action: 'light', label: rec.light ? 'LIGHT OFF' : 'LIGHT' },
+      ...(done ? [] : [{ action: 'recorder', label: 'LISTEN' }]),
+      { action: 'bag', label: 'BAG' },
+      ...(hintMode === 'full' && PB.hasTake(currentWorld()) ? [{ action: 'playback', label: 'PLAYBACK' }] : []),
+      ...(hintMode === 'full' ? [{ action: 'menu', label: 'PAUSE' }] : []),
+    ];
+    const hint = BINDINGS.promptLine(parts);
 
     if(cols<72){
-      const first=((rec.light?'[F] LIGHT OFF':'[F] LIGHT')+rk).slice(0,cols-4);
-      const second=('[B] BAG'+back+pause).slice(0,cols-4);
+      const first=BINDINGS.promptLine(parts.slice(0, 2)).slice(0,cols-4);
+      const second=BINDINGS.promptLine(parts.slice(2)).slice(0,cols-4);
       uiText(2,rows-3,first,'ui-secondary');
       uiText(2,rows-2,second,'ui-secondary');
     } else {
@@ -8295,7 +8517,9 @@ function drawTakeOverlay(cols, rows){
   const body=drawMachinePanel(x, y, w, h, {
     theme:'green', wordmark:'hi ta chi', model:'DA-1000', label:held?'TAKE HOLD':assisted?'CLOCK HOLD':'RECORD',
     footer: spoiled ? `— ${rec.spoilReason.toUpperCase()} —`
-      : held ? (instr?.silenced?'RETURN TO RECORDER · [R] RESUME':'SOURCE ACTIVE · [E] SILENCE')
+      : held ? (instr?.silenced
+        ? BINDINGS.promptLine(['RETURN TO RECORDER', { action: 'recorder', label: 'RESUME' }])
+        : BINDINGS.promptLine(['SOURCE ACTIVE', { action: 'interact', label: 'SILENCE' }]))
       : assisted ? 'MINOR HANDLING NOISE · CLOCK HELD'
       : "DON'T MOVE",
     meter:false,
@@ -8361,6 +8585,7 @@ function installProbe(){
     map:()=>currentFacilityMapModel(),
     mapSource:()=>currentFacilityMapSource(),
     mapContact:()=>HUSH_MAP_TELEMETRY.snapshot(),
+    natatoriumWater:()=>currentNatatoriumWaterRenderState({audio:0}),
     hushAudio:()=>hushAudioRuntime?.snapshot?.()||null,
     hushAudioSave:()=>hushAudioRuntime?.save?.()||null,
     hushNoise:(kind='bag_rummage',level=null)=>emitAcousticEvent({
@@ -8551,6 +8776,13 @@ function installProbe(){
     storageKind: currentStorage()?.kind || null,
     save: { area:getSave()?.area||null, hasRun:!!getSave()?.run, runStatus:getSave()?.run?.status||null, steps:getSave()?.steps||0, takes:[...(getSave()?.takes||[])] },
     profile: { endingsSeen:[...(getMeta()?.endingsSeen||[])], achievements:Object.keys(getMeta()?.achievements||{}).sort(), runs:getMeta()?.runs||0 },
+    natatoriumWater: {
+      active:natatoriumWaterActive(),
+      environment:getSave()?.run?.environment||null,
+      ledger:getSave()?.run?.ledger?.natatoriumWater||null,
+      basin:natatoriumBasinBounds,
+      ripples:currentNatatoriumWaterRenderState({audio:0}).rippleSources?.length||0,
+    },
     settings: { ...getSave().settings },
     screen: scenes.top()?.id || (inRogue ? 'game' : 'boot'),
     sceneView: scenes.top()?.view?.() || null,
@@ -8579,7 +8811,7 @@ async function bootScenes(){
   const qp=params();
   await saveLoadAsync({ gameVersion: qp.get('build') || 'LOCAL' });
   progressionInit({build:qp.get('build') || 'LOCAL'});
-  BINDINGS.setControllerBindings(getSave().settings?.controllerBindings);
+  syncControllerSettingsFromSave();
   const displaySettings=currentDisplaySettings();
   applyDisplayCssVars(displaySettings);
   applyRenderScale(displaySettings.renderScale);
@@ -8782,6 +9014,7 @@ function render3d(){
   for(const [,v] of voices) voiceSum+=v.target||0;
   const firstKey=keyMap.size>0 ? keyMap.values().next().value : null;
   const mapPoint=(p)=>{if(!p||!usingPlan())return p;const q=FP.logicalToPhysical(p.x,p.y);return{...p,x:q.x,y:q.z};};
+  const waterAudio=clamp(voiceSum/3, 0, 1);
   R3.r3dFrame({
     px:rendered.x, py:rendered.z,
     tileW:WORLD_TILE_W, tileH:WORLD_TILE_H,
@@ -8794,11 +9027,12 @@ function render3d(){
       ? {...mapPoint({x:PRES.presenceState().x,y:PRES.presenceState().y}),
          strength: 0.65 + PRES.dread(px,py)*0.55}
       : (hush.active?{...mapPoint({x:hush.x,y:hush.y}),strength:1}:null),
-    audio:clamp(voiceSum/3, 0, 1),
+    audio:waterAudio,
     light: storyMode ? (REC.lightOn()?hushLightScale:0) : true,
     plan: usingPlan(),
     floorH: floorHere(),
     moveIntervalMs:currentMoveIntervalMs(),
+    water:currentNatatoriumWaterRenderState({audio:waterAudio}),
   });
 }
 
@@ -8939,7 +9173,7 @@ const CONTROLLER_KEY=Object.freeze({
   move_left:['ArrowLeft','ArrowLeft'], move_right:['ArrowRight','ArrowRight'],
   quiet:['Shift','ShiftLeft'], light:['f','KeyF'], bag:['b','KeyB'], recorder:['r','KeyR'],
   interact:['e','KeyE'], playback:['p','KeyP'], menu:['Escape','Escape'],
-  confirm:['Enter','Enter'], back:['Escape','Escape'],
+  confirm:['Enter','Enter'], back:['Escape','Escape'], tabPrev:['q','KeyQ'], tabNext:['e','KeyE'],
 });
 function controllerEvent(action, repeat=false){
   const [key,code]=CONTROLLER_KEY[action]||['',''];
@@ -8990,6 +9224,7 @@ function onKey(e){
       + ` | story=${storyMode?1:0} rec=${REC.isRecording()?1:0} scenes=${scenes.depth()} rogue=${inRogue?1:0}`;
   }
   if(e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+  if(!e.controller) BINDINGS.setActiveInputDevice('keyboard');
   if(!e.metaKey && !e.ctrlKey && !e.altKey && (e.key==='F10' || e.code==='F10')){
     e.preventDefault();
     openGodMenu();
@@ -9022,11 +9257,12 @@ function onKey(e){
 
   // Scenes (title, dialogue, menus) get first refusal on every key — before
   // inRogue, so the title screen works while the field is still loading.
+  const wasBlockingScene = scenes.blocksInput();
   if(scenes.depth()>0 && scenes.key(e)){
     e.preventDefault();
     // Only blocking scenes own locomotion. Non-modal overlays may consume a
     // keyboard edge for their own UI, but they must not destroy held movement.
-    if(scenes.blocksInput()) resetMotionInput('scene-consumed', {stopRenderMove:true});
+    if(wasBlockingScene) resetMotionInput('scene-consumed', {stopRenderMove:true});
     else if(!moveKey) clearMotionClock('scene-consumed-action');
     return;
   }
@@ -9212,6 +9448,7 @@ async function boot(){
   window.addEventListener('keydown',onKey, {capture:true});
   window.addEventListener('keyup',onKeyUp, {capture:true});
   window.addEventListener('pointerdown', ()=>{
+    BINDINGS.setActiveInputDevice('keyboard');
     void recoverInteractionAudio('pointerdown');
     ensureInteractionFocus();
   }, {passive:true});

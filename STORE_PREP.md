@@ -3,10 +3,15 @@
 ## itch.io
 
 - Zip artifacts per OS after unsigned build validation.
+- Storefront uploads must include the offline lens sidecar and pinned diffusion
+  model resources in the initial download. Do not publish a build that downloads
+  model weights on first launch.
+- List the full installed size plainly on the project page/release notes once
+  measured from the final artifact.
 - Recommended filenames:
   - `chunk-surfer-macos-arm64.zip`
   - `chunk-surfer-macos-x64.zip`
-  - `chunk-surfer-windows-x64.zip`
+  - `chunk-surfer-windows-x64.msi`
   - `chunk-surfer-linux-x64.AppImage`
   - `chunk-surfer-linux-x64.deb`
 - Butler TODO: add channel naming for `mac`, `mac-intel`, `win`, `linux`.
@@ -16,10 +21,16 @@
 
 - App id placeholder: TBD.
 - Depot layout proposal:
-  - Windows depot: NSIS/MSI or unpacked bundle.
-  - macOS Apple Silicon depot.
-  - macOS Intel depot if retained.
-  - Linux depot: AppImage or unpacked binary bundle.
+  - Windows depot: MSI or unpacked bundle, including `chunk-lens` and
+    `lens/` resources.
+  - macOS Apple Silicon depot, including `chunk-lens` and `lens/` resources.
+  - macOS Intel depot if retained; do not ship until an offline lens package is
+    supported for that target.
+  - Linux depot: AppImage or unpacked binary bundle, including `chunk-lens` and
+    `lens/` resources.
+- Prefer predictable depot/download size over first-launch model downloads. If
+  model resources become optional later, ship them as a clearly named Steam
+  depot/DLC, not as an implicit runtime fetch.
 - Save/cloud files:
   - Include: `profile.json`, `saves/autosave.json`, `saves/slot-1.json`, `saves/slot-2.json`
   - Exclude: `settings.json`, input/window state, `migration/`, `logs/`, `cache/`, `*.tmp`, `saves/backup/` unless support recovery policy changes.

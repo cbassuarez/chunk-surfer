@@ -113,6 +113,54 @@ export type AudioProject = {
   acousticCatalogue: Record<string, unknown>;
 };
 
+export type MediaAsset = {
+  id: string;
+  kind: 'image' | 'placeholder';
+  path?: string;
+  tags?: string[];
+};
+
+export type StoryArtSlot = {
+  id: string;
+  assetId?: string;
+  label: string;
+  caption: string;
+  status: string;
+  tone: string;
+  mode: string;
+  alt: string;
+  transform?: {
+    focalPoint?: { x: number; y: number };
+    crop?: { x: number; y: number; width: number; height: number };
+    fit?: string;
+  };
+};
+
+export type MediaProject = {
+  schemaVersion: number;
+  id: string;
+  title: string;
+  assets: MediaAsset[];
+  storyArt: StoryArtSlot[];
+};
+
+export type TimelineEntry = {
+  id: string;
+  title: string;
+  kind: string;
+  documents: string[];
+};
+
+export type ProjectManifest = {
+  schemaVersion: number;
+  id: string;
+  narrative: string[];
+  audio: string[];
+  media: string[];
+  runtimeEntrypoints?: string[];
+  timeline?: TimelineEntry[];
+};
+
 export type DocumentEnvelope = {
   path: string;
   revision: string;
@@ -123,7 +171,9 @@ export type DocumentEnvelope = {
 };
 
 export type ProjectSnapshot = {
-  project: { id: string; schemaVersion: number };
+  project: ProjectManifest;
+  projectRevision: string;
   documents: DocumentEnvelope[];
   audio: { path: string; revision: string; document: AudioProject };
+  media: { path: string; revision: string; document: MediaProject };
 };

@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-12T19:53:39.764Z",
-  "bytes": 1038312,
-  "totalTriangles": 25579,
+  "generatedAt": "2026-07-14T11:57:16.970Z",
+  "bytes": 850204,
+  "totalTriangles": 11858,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -32,8 +32,8 @@
       "vertices": 564
     },
     "grand_piano": {
-      "triangles": 4197,
-      "vertices": 2619
+      "triangles": 308,
+      "vertices": 410
     },
     "marimba": {
       "triangles": 1540,
@@ -71,6 +71,22 @@
       "triangles": 108,
       "vertices": 216
     },
+    "box_office_desk": {
+      "triangles": 176,
+      "vertices": 248
+    },
+    "program_stack": {
+      "triangles": 72,
+      "vertices": 144
+    },
+    "cash_terminal": {
+      "triangles": 48,
+      "vertices": 96
+    },
+    "queue_stanchion": {
+      "triangles": 180,
+      "vertices": 210
+    },
     "key_cabinet": {
       "triangles": 408,
       "vertices": 504
@@ -99,6 +115,22 @@
       "triangles": 120,
       "vertices": 240
     },
+    "plant_pipe_straight": {
+      "triangles": 84,
+      "vertices": 168
+    },
+    "plant_pipe_bank": {
+      "triangles": 156,
+      "vertices": 312
+    },
+    "plant_pipe_elbow": {
+      "triangles": 92,
+      "vertices": 134
+    },
+    "plant_pipe_valve": {
+      "triangles": 140,
+      "vertices": 188
+    },
     "altar_table": {
       "triangles": 36,
       "vertices": 72
@@ -116,12 +148,12 @@
       "vertices": 124
     },
     "hall_seating": {
-      "triangles": 14320,
-      "vertices": 7491
+      "triangles": 3828,
+      "vertices": 7656
     },
     "hall_structure": {
-      "triangles": 840,
-      "vertices": 1680
+      "triangles": 552,
+      "vertices": 1104
     },
     "chapel_vault": {
       "triangles": 280,

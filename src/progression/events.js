@@ -23,6 +23,7 @@ export const EVENT_TYPES = Object.freeze({
   PLAYBACK_DISCOVERED: 'playback.discovered',
   CONFESSION_COMMITTED: 'confession.committed',
   COFFEE_DRUNK: 'coffee.drunk',
+  CREDITS_VIEWED: 'credits.viewed',
   ENDING_COMMITTED: 'ending.committed',
   RUN_FINISHED: 'run.finished',
 });
@@ -53,6 +54,7 @@ const validators = Object.freeze({
   [EVENT_TYPES.PLAYBACK_DISCOVERED]: (p) => stringId(p),
   [EVENT_TYPES.CONFESSION_COMMITTED]: (p) => typeof p?.kind === 'string',
   [EVENT_TYPES.COFFEE_DRUNK]: () => true,
+  [EVENT_TYPES.CREDITS_VIEWED]: () => true,
   [EVENT_TYPES.ENDING_COMMITTED]: (p) => ENDING_IDS.includes(p?.endingId),
   [EVENT_TYPES.RUN_FINISHED]: (p) => !!p?.summary && typeof p.summary === 'object',
 });

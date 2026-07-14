@@ -46,6 +46,7 @@ export class InputManager {
     this.lastResetAt = 0;
     this.lastKeyCode = '';
     this.lastKeyAt = 0;
+    this.controllerStateProvider = null;
     this._listeners = [];
 
     if (attachEvents) this.attach();
@@ -155,6 +156,10 @@ export class InputManager {
   isHeld(code) { return this.held.has(code); }
   wasPressed(code) { return this.justPressed.has(code); }
   wasReleased(code) { return this.justReleased.has(code); }
+  setControllerStateProvider(fn) {
+    this.controllerStateProvider = typeof fn === 'function' ? fn : null;
+    return this;
+  }
 
   snapshot() {
     const keyboard = keyboardAxes(this.held);
@@ -180,6 +185,15 @@ export class InputManager {
   }
 
   pollGamepadAxes() {
+    const controllerAxes = this.controllerStateProvider?.();
+    if (controllerAxes) {
+      return {
+        moveX: clampAxis(controllerAxes.moveX),
+        moveY: clampAxis(controllerAxes.moveY),
+        turnX: clampAxis(controllerAxes.turnX),
+        lookY: clampAxis(controllerAxes.lookY),
+      };
+    }
     const getGamepads = this.navigatorRef?.getGamepads;
     const pads = typeof getGamepads === 'function' ? [...(getGamepads.call(this.navigatorRef) || [])].filter(Boolean) : [];
     let moveX = 0;

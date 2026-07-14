@@ -1,5 +1,7 @@
 // Contextual MAP actions. Gameplay authorities remain outside this module.
 
+import { activeInputPromptDevice, inputPromptLabel } from './bindings.js';
+
 export function resolveMapAction(selected, actionId, api = {}) {
   if (!selected || !actionId) return false;
 
@@ -25,12 +27,20 @@ export function resolveMapAction(selected, actionId, api = {}) {
 }
 
 export function mapActionRail(selected, { floorCount = 1 } = {}) {
-  const actions = [['ARROWS/WASD', 'SELECT ROOM']];
+  if (activeInputPromptDevice() === 'controller') {
+    const actions = [[inputPromptLabel('select'), 'SELECT ROOM']];
+    if (selected?.objective?.notes?.length || selected?.attached) actions.push([inputPromptLabel('confirm'), 'OPEN FILE']);
+    if (selected?.waypoint || selected?.marked) actions.push([inputPromptLabel('interact'), 'CLEAR TARGET']);
+    else if (selected && selected.waypointable !== false) actions.push([inputPromptLabel('interact'), 'SET TARGET']);
+    actions.push([inputPromptLabel('back'), 'CLOSE']);
+    return actions;
+  }
+  const actions = [[inputPromptLabel('move'), 'SELECT ROOM']];
   if (floorCount > 1) actions.push(['[ / ]', 'CHANGE FLOOR']);
   actions.push(['C', 'CENTER ON YOU']);
-  if (selected?.objective?.notes?.length || selected?.attached) actions.push(['ENTER', 'OPEN FILE']);
-  if (selected?.waypoint || selected?.marked) actions.push(['SPACE', 'CLEAR TARGET']);
-  else if (selected && selected.waypointable !== false) actions.push(['SPACE', 'SET TARGET']);
-  actions.push(['B', 'CLOSE']);
+  if (selected?.objective?.notes?.length || selected?.attached) actions.push([inputPromptLabel('confirm'), 'OPEN FILE']);
+  if (selected?.waypoint || selected?.marked) actions.push([inputPromptLabel('mark'), 'CLEAR TARGET']);
+  else if (selected && selected.waypointable !== false) actions.push([inputPromptLabel('mark'), 'SET TARGET']);
+  actions.push([inputPromptLabel('bag'), 'CLOSE']);
   return actions;
 }

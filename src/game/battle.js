@@ -13,6 +13,7 @@ import { TYPE_GAIN, TYPE_LEVEL } from '../audio/story-audio.js';
 import { textCps } from './access.js';
 import { drawStoryArtCard, planStoryArtInPanel, planStoryArtSideBySide } from './story-art-card.js';
 import { resolveStoryArt } from './story-art.js';
+import { activeInputPromptDevice, promptLine } from './bindings.js';
 import {
   applyOpponentMove,
   beginRedactionStroke,
@@ -319,11 +320,21 @@ export function makeBattleScene({
       const { cols, rows } = uiSize();
       uiFill(0, 0, cols, rows, 'rgba(2,2,3,0.95)');
       const w = Math.min(COL_W, cols - 6), x = Math.floor((cols - w) / 2);
+      const battleFooter = () => {
+        if (phase !== 'puzzle') return promptLine([{ action: 'continue', label: 'CONTINUE' }]);
+        if (activeInputPromptDevice() === 'controller') {
+          return promptLine([
+            { action: 'select', label: 'MOVE' },
+            { action: 'confirm', label: 'BLACKOUT' },
+            { action: 'recorder', label: 'READ' },
+            { action: 'back', label: 'UNDO' },
+          ]);
+        }
+        return '[ARROWS] MOVE · [ENTER] BLACKOUT · [T] TUNE · [G] GRAFT · [R] READ';
+      };
       const panel = drawMachinePanel(x - 2, 1, w + 4, rows - 2, {
         label:'TRANSCRIPT', source:'REDACTION', meter:true,
-        footer: phase === 'puzzle'
-          ? '[ARROWS] MOVE · [ENTER] BLACKOUT · [T] TUNE · [G] GRAFT · [R] READ'
-          : '[SPACE] CONTINUE',
+        footer: battleFooter(),
       });
 
       drawVfdText(panel.x, panel.y, battle.enemy || 'THE SOUND OF SILENCE', { color:UI_COLOR.danger, max:panel.w });

@@ -13,6 +13,7 @@ import * as scenes from './scenes.js';
 import { uiSize, uiFill, uiText, uiCenter, uiWrap } from '../render/ui.js';
 import { drawMachinePanel, drawVfdText } from '../render/presentation.js';
 import { UI_COLOR } from '../render/palette.js';
+import { promptLine } from './bindings.js';
 
 const WARNINGS = [
   'This is a horror game. It contains sustained dread, sudden loud sounds, and',
@@ -31,8 +32,12 @@ const MIC = [
   'if the room YOU are sitting in makes a noise the',
   'take is spoiled, exactly as if the recordist had made it himself.',
   '',
+  'Do you want to allow microphone access?',
+  '',
   'Nothing is ever recorded. Nothing is uploaded.',
   'Nothing leaves this machine: the audio is only used for loudness.',
+  '',
+  'If no microphone is available, you can continue without it.',
   '',
   'It is better with it.',
 ];
@@ -83,7 +88,7 @@ export function makeWarningScene({ onDone = () => {}, onEnableMic = () => {}, on
       const out = [];
       for (const l of lines) {
         if (!l) { out.push({ text: '', cls: 'ui-secondary' }); continue; }
-        const cls = /^(It does not|Nothing is|It is better)/.test(l) ? 'ui-blue' : 'ui-secondary';
+        const cls = /^Do you want/.test(l) ? 'ui-amber' : /^(It does not|Nothing is|It is better)/.test(l) ? 'ui-blue' : 'ui-secondary';
         for (const t of uiWrap(l, textW)) out.push({ text: t, cls });
       }
 
@@ -93,7 +98,9 @@ export function makeWarningScene({ onDone = () => {}, onEnableMic = () => {}, on
         theme: 'amber', wordmark: 'AUDIOCORP',
         label: card === 0 ? 'ADVISORY' : 'INPUT',
         source: card === 0 ? 'READ THIS' : 'MICROPHONE',
-        footer: card === 0 ? '[ENTER / A] CONTINUE' : '[Y / A] ALLOW THE MIC · [N / B] PLAY WITHOUT IT',
+        footer: card === 0
+          ? promptLine([{ action: 'continue', label: 'CONTINUE' }])
+          : promptLine([{ action: 'allow', label: 'ALLOW THE MIC' }, { action: 'deny', label: 'PLAY WITHOUT IT' }]),
         meter: false,
       });
 

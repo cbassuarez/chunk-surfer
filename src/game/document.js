@@ -10,6 +10,7 @@ import * as scenes from './scenes.js';
 import { uiScrim, uiDraw, uiSize } from '../render/ui.js';
 import { paperProfile, drawPaperSheet, drawPaperOverlay, applyPaperTransform } from '../render/paper.js';
 import { interpolate } from './terror.js';
+import { promptLine } from './bindings.js';
 
 const PAPER_MIN_W = 48;
 const PAPER_MAX_W = 74;
@@ -516,12 +517,12 @@ function makeDocumentScene(doc) {
 
           const left = total > 1 ? `${page + 1} / ${total}` : 'ARCHIVAL COPY';
           const nav = total <= 1
-            ? '[ESC] CLOSE'
+            ? promptLine([{ action: 'back', label: 'CLOSE' }])
             : page === 0
-              ? '[→] NEXT · [ESC] CLOSE'
+              ? promptLine([{ action: 'confirm', label: 'NEXT' }, { action: 'back', label: 'CLOSE' }])
               : page === total - 1
-                ? '[←] BACK · [ESC] CLOSE'
-                : '[←→] PAGE · [ESC] CLOSE';
+                ? promptLine([{ action: 'select', label: 'BACK' }, { action: 'back', label: 'CLOSE' }])
+                : promptLine([{ action: 'select', label: 'PAGE' }, { action: 'back', label: 'CLOSE' }]);
 
           ctx.save();
           ctx.font = m.footerFont;

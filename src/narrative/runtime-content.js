@@ -1,46 +1,17 @@
-// Vite bundles the canonical authoring documents directly into the game. The
-// adapter temporarily rehydrates the existing conversation shape while the
-// presenters migrate to NarrativeDocument natively.
+// Generated registry bundles the canonical authoring manifest directly into
+// the game. This adapter temporarily rehydrates the existing conversation
+// shape while presenters migrate to NarrativeDocument natively.
 
-import coldOpen from '../../content/narrative/conservatory.cold_open_dialogue.story.json' with { type: 'json' };
-import postDoor from '../../content/narrative/conservatory.post_door.story.json' with { type: 'json' };
-import levelCheck from '../../content/narrative/conservatory.level_check.story.json' with { type: 'json' };
-import firstTake from '../../content/narrative/conservatory.first_take.story.json' with { type: 'json' };
-import hush from '../../content/narrative/conservatory.hush.story.json' with { type: 'json' };
-import radioDead from '../../content/narrative/conservatory.radio_dead.story.json' with { type: 'json' };
-import bentRig from '../../content/narrative/conservatory.bent_rig.story.json' with { type: 'json' };
-import talisman from '../../content/narrative/conservatory.talisman.story.json' with { type: 'json' };
-import chapelKey from '../../content/narrative/conservatory.chapel_key_check.story.json' with { type: 'json' };
-import roomMain from '../../content/narrative/room-listen.main_b3.story.json' with { type: 'json' };
-import roomTub from '../../content/narrative/room-listen.the_tub.story.json' with { type: 'json' };
-import roomAmp from '../../content/narrative/room-listen.amplifications.story.json' with { type: 'json' };
-import roomPractice from '../../content/narrative/room-listen.soundnoisemusic.story.json' with { type: 'json' };
-import roomChapel from '../../content/narrative/room-listen.lux_nova.story.json' with { type: 'json' };
-import radioInitial from '../../content/narrative/radio.initial_checkin.story.json' with { type: 'json' };
-import radioSecond from '../../content/narrative/radio.post_second_take_warning.story.json' with { type: 'json' };
-import radioThird from '../../content/narrative/radio.pre_third_room_breakdown.story.json' with { type: 'json' };
-import hallPlaybackNamed from '../../content/narrative/playback.hallplayback.named.story.json' with { type: 'json' };
-import hallPlaybackUnnamed from '../../content/narrative/playback.hallplayback.unnamed.story.json' with { type: 'json' };
-import practicePlaybackNamed from '../../content/narrative/playback.practiceplayback.named.story.json' with { type: 'json' };
-import practicePlaybackUnnamed from '../../content/narrative/playback.practiceplayback.unnamed.story.json' with { type: 'json' };
-import natatoriumPlaybackNamed from '../../content/narrative/playback.natatoriumplayback.named.story.json' with { type: 'json' };
-import natatoriumPlaybackUnnamed from '../../content/narrative/playback.natatoriumplayback.unnamed.story.json' with { type: 'json' };
-import hallBattleNamed from '../../content/narrative/battle.hallbattle.named.story.json' with { type: 'json' };
-import hallBattleUnnamed from '../../content/narrative/battle.hallbattle.unnamed.story.json' with { type: 'json' };
-import practiceBattleNamed from '../../content/narrative/battle.practicebattle.named.story.json' with { type: 'json' };
-import practiceBattleUnnamed from '../../content/narrative/battle.practicebattle.unnamed.story.json' with { type: 'json' };
-import natatoriumBattleNamed from '../../content/narrative/battle.natatoriumbattle.named.story.json' with { type: 'json' };
-import natatoriumBattleUnnamed from '../../content/narrative/battle.natatoriumbattle.unnamed.story.json' with { type: 'json' };
-import audioProject from '../../content/audio/audio-project.audio.json' with { type: 'json' };
+import {
+  authoringAudioProject,
+  authoringDocumentsById,
+  authoringNarrative,
+  authoringProject,
+} from './generated-content.js';
 import { interpolateStoryText } from './conditions.js';
 
-const documents = new Map([
-  coldOpen, postDoor, levelCheck, firstTake, hush, radioDead, bentRig, talisman, chapelKey,
-  roomMain, roomTub, roomAmp, roomPractice, roomChapel,
-  radioInitial, radioSecond, radioThird,
-  hallPlaybackNamed, hallPlaybackUnnamed, practicePlaybackNamed, practicePlaybackUnnamed, natatoriumPlaybackNamed, natatoriumPlaybackUnnamed,
-  hallBattleNamed, hallBattleUnnamed, practiceBattleNamed, practiceBattleUnnamed, natatoriumBattleNamed, natatoriumBattleUnnamed,
-].map((document) => [document.id, document]));
+const documents = authoringDocumentsById;
+const audioProject = authoringAudioProject || { triggers: [] };
 
 const cueTriggers = new Map();
 for (const trigger of audioProject.triggers || []) {
@@ -88,6 +59,8 @@ function runtimeNode(node, context = {}, documentId = '') {
 
 export function narrativeDocument(id) { return documents.get(id) || null; }
 export function narrativeDocuments() { return [...documents.values()]; }
+export function narrativeTimeline() { return authoringProject.timeline || []; }
+export function runtimeEntrypoints() { return authoringProject.runtimeEntrypoints || authoringNarrative.map((document) => document.id); }
 export function rehydrateTree(document, context = {}) {
   return Object.fromEntries(Object.entries(document.nodes).map(([nodeId, node]) => [nodeId, runtimeNode(node, context, document.id)]));
 }

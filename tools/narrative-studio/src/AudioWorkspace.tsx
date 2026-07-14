@@ -6,7 +6,7 @@ import Minimap from 'wavesurfer.js/dist/plugins/minimap.esm.js';
 import Envelope from 'wavesurfer.js/dist/plugins/envelope.esm.js';
 import { createCuePlayer } from '../../../src/audio/cue-player.js';
 import { assetUrl } from './api';
-import type { AudioAsset, AudioProject, CueDefinition, CueLayer } from './types';
+import type { AudioAsset, AudioProject, CueDefinition, CueLayer, DocumentEnvelope } from './types';
 
 function Waveform({ asset, layer, onLayer }: { asset: AudioAsset | null; layer: CueLayer | null; onLayer: (next: CueLayer) => void }) {
   const root = useRef<HTMLDivElement>(null);
@@ -52,8 +52,8 @@ function AutomationLane({ layer, onLayer }: { layer: CueLayer; onLayer: (next: C
   </div>;
 }
 
-export function AudioWorkspace({ project, selectedCueId, onSelectedCue, onProject }: {
-  project: AudioProject; selectedCueId: string | null; onSelectedCue: (id: string) => void; onProject: (project: AudioProject) => void;
+export function AudioWorkspace({ project, selectedCueId, documents, onSelectedCue, onProject }: {
+  project: AudioProject; selectedCueId: string | null; documents?: DocumentEnvelope[]; onSelectedCue: (id: string) => void; onProject: (project: AudioProject) => void;
 }) {
   const [search, setSearch] = useState('');
   const cue = project.cues.find((item) => item.id === selectedCueId) || project.cues[0];
@@ -66,6 +66,18 @@ export function AudioWorkspace({ project, selectedCueId, onSelectedCue, onProjec
 
   const cues = useMemo(() => project.cues.filter((item) => `${item.id} ${item.title}`.toLowerCase().includes(search.toLowerCase())), [project.cues, search]);
   const assets = useMemo(() => project.assets.filter((item) => `${item.id} ${item.path || item.generator}`.toLowerCase().includes(search.toLowerCase())), [project.assets, search]);
+  const backlinks = useMemo(() => {
+    if (!cue?.id) return [];
+    const refs: Array<{ documentId: string; nodeId: string; label: string }> = [];
+    for (const envelope of documents || []) {
+      for (const [nodeId, node] of Object.entries(envelope.document.nodes || {})) {
+        if ((node.cues || []).includes(cue.id)) refs.push({ documentId: envelope.document.id, nodeId, label: 'node' });
+        for (const line of node.lines || []) if ((line.cues || []).includes(cue.id)) refs.push({ documentId: envelope.document.id, nodeId, label: line.id || 'line' });
+        for (const choice of node.choices || []) if ((choice.cues || []).includes(cue.id)) refs.push({ documentId: envelope.document.id, nodeId, label: choice.id || 'choice' });
+      }
+    }
+    return refs;
+  }, [cue?.id, documents]);
 
   const updateCue = (next: CueDefinition) => onProject({ ...project, cues: project.cues.map((item) => item.id === cue.id ? next : item) });
   const updateLayer = (next: CueLayer) => updateCue({ ...cue, layers: cue.layers.map((item) => item.id === next.id ? next : item) });
@@ -136,7 +148,8 @@ export function AudioWorkspace({ project, selectedCueId, onSelectedCue, onProjec
           <input value={trigger.event} onChange={(event) => onProject({ ...project, triggers: project.triggers.map((item) => item.id === trigger.id ? { ...item, event: event.target.value } : item) })} />
           <input value={trigger.when || ''} placeholder="condition" onChange={(event) => onProject({ ...project, triggers: project.triggers.map((item) => item.id === trigger.id ? { ...item, when: event.target.value || undefined } : item) })} />
           <button onClick={() => onProject({ ...project, triggers: project.triggers.filter((item) => item.id !== trigger.id) })}>×</button>
-        </div>)}</div>
+        </div>)}
+        <div className="cue-backlinks">{backlinks.map((ref) => <span key={`${ref.documentId}:${ref.nodeId}:${ref.label}`}>{ref.documentId} · {ref.nodeId} · {ref.label}</span>)}</div></div>
       </> : <div className="empty-state">Create or select a cue.</div>}
     </main>
   </div>;

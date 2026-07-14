@@ -1,6 +1,15 @@
 // Versioned progression schemas. This module is deliberately pure: it owns
 // defaults and normalization, but never touches localStorage or game systems.
 
+import { DEFAULT_CONTROLLER_SETTINGS, normalizeControllerSettings } from '../game/bindings.js';
+import {
+  DEFAULT_NATATORIUM_WATER_ENVIRONMENT,
+  DEFAULT_NATATORIUM_WATER_LEDGER,
+  decideNatatoriumWaterEnvironment,
+  normalizeNatatoriumWaterEnvironment,
+  normalizeNatatoriumWaterLedger,
+} from '../game/natatorium-water.js';
+
 export const SAVE_VERSION = 3;
 export const META_VERSION = 2;
 export const RUN_SCHEMA_VERSION = 1;
@@ -37,6 +46,14 @@ export const DEFAULT_SETTINGS = Object.freeze({
   objectiveHints: 'full',
   pauseOnBlur: true,
   mic: 'ask',
+  micInput: {
+    deviceId: 'default',
+    channelMode: 'mono',
+    echoCancellation: true,
+    noiseSuppression: false,
+    autoGainControl: false,
+    lastDeviceLabel: '',
+  },
   lastDifficulty: 'contract',
   seenTextMode: 'fast',
   archiveSignals: 'subtle',
@@ -49,6 +66,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
     localSpeech: false,
     intensity: 'standard',
   },
+  controller: DEFAULT_CONTROLLER_SETTINGS,
   customShiftRules: null,
 });
 
@@ -75,6 +93,24 @@ const finiteOr = (value, fallback = 0) => {
   return Number.isFinite(n) ? n : fallback;
 };
 
+export function normalizeMicInputSettings(value) {
+  const source = objectOr(value);
+  const deviceId = typeof source.deviceId === 'string' && source.deviceId.trim()
+    ? source.deviceId.slice(0, 256)
+    : 'default';
+  const channelMode = ['mono', 'left', 'right'].includes(source.channelMode)
+    ? source.channelMode
+    : 'mono';
+  return {
+    deviceId,
+    channelMode,
+    echoCancellation: source.echoCancellation !== false,
+    noiseSuppression: !!source.noiseSuppression,
+    autoGainControl: !!source.autoGainControl,
+    lastDeviceLabel: typeof source.lastDeviceLabel === 'string' ? source.lastDeviceLabel.slice(0, 96) : '',
+  };
+}
+
 export function makeRunId(now = Date.now(), random = Math.random) {
   const suffix = Math.floor(random() * 0xffffff).toString(36).padStart(5, '0');
   return `run_${Math.floor(now)}_${suffix}`;
@@ -93,6 +129,7 @@ export function freshLedger() {
     itemsObtained: [],
     choices: { drankCoffee: false, namedSarah: false },
     equipment: { dropped: [], recovered: [] },
+    natatoriumWater: { ...DEFAULT_NATATORIUM_WATER_LEDGER },
   };
 }
 
@@ -107,10 +144,12 @@ export function freshRunRecord({
   const endingsAtStart = uniqueStrings(meta?.endingsSeen).filter((id) => ENDING_IDS.includes(id)).length;
   const deadAir = preset === 'dead-air';
   const s = { ...DEFAULT_SETTINGS, ...objectOr(settings) };
+  const runId = id || makeRunId(now);
+  const environment = decideNatatoriumWaterEnvironment({ meta, runId, now });
 
   return {
     schema: RUN_SCHEMA_VERSION,
-    id: id || makeRunId(now),
+    id: runId,
     status: 'active',
     startedAt: now,
     completedAt: null,
@@ -136,6 +175,7 @@ export function freshRunRecord({
       seenTextAssistUsed: false,
       condensedCheckInUsed: false,
     },
+    environment,
     ledger: freshLedger(),
     pendingReturn: null,
     finalizedReturn: null,
@@ -180,6 +220,7 @@ export function normalizeSettings(value) {
   const source = objectOr(value);
   const personalSource = objectOr(source.personalInterference);
   const personalDefault = DEFAULT_SETTINGS.personalInterference;
+  const controller = normalizeControllerSettings(source.controller, source.controllerBindings);
   const intensity = ['low', 'standard', 'hostile'].includes(personalSource.intensity)
     ? personalSource.intensity
     : personalDefault.intensity;
@@ -194,6 +235,8 @@ export function normalizeSettings(value) {
       localSpeech: !!personalSource.localSpeech,
       intensity,
     },
+    controller,
+    micInput: normalizeMicInputSettings(source.micInput),
   };
 }
 
@@ -233,6 +276,7 @@ export function normalizeLedger(value) {
       dropped: uniqueStrings(equipment.dropped),
       recovered: uniqueStrings(equipment.recovered),
     },
+    natatoriumWater: normalizeNatatoriumWaterLedger(source.natatoriumWater),
   };
 }
 
@@ -246,10 +290,12 @@ export function normalizeRun(value, { meta = null, settings = null, activeFallba
   const deadAir = objectOr(integrity.deadAir);
   const replay = objectOr(source.replay);
   const startedPreset = typeof rules.startedPreset === 'string' ? rules.startedPreset : 'contract';
+  const runId = typeof source.id === 'string' && source.id ? source.id : makeRunId(source.startedAt || Date.now());
+  const fallbackEnvironment = DEFAULT_NATATORIUM_WATER_ENVIRONMENT;
 
   return {
     schema: RUN_SCHEMA_VERSION,
-    id: typeof source.id === 'string' && source.id ? source.id : makeRunId(source.startedAt || Date.now()),
+    id: runId,
     status: ['active', 'return-committed', 'complete'].includes(source.status) ? source.status : 'active',
     startedAt: finiteOr(source.startedAt, Date.now()),
     completedAt: source.completedAt == null ? null : finiteOr(source.completedAt, null),
@@ -275,6 +321,7 @@ export function normalizeRun(value, { meta = null, settings = null, activeFallba
       seenTextAssistUsed: !!replay.seenTextAssistUsed,
       condensedCheckInUsed: !!replay.condensedCheckInUsed,
     },
+    environment: normalizeNatatoriumWaterEnvironment(source.environment, fallbackEnvironment),
     ledger: normalizeLedger(source.ledger),
     pendingReturn: source.pendingReturn && typeof source.pendingReturn === 'object' ? source.pendingReturn : null,
     finalizedReturn: source.finalizedReturn && typeof source.finalizedReturn === 'object' ? source.finalizedReturn : null,

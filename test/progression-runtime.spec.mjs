@@ -39,12 +39,14 @@ runtime.emitProgress(EVENT_TYPES.CONFESSION_COMMITTED, { kind: 'name', value: 'S
 runtime.emitProgress(EVENT_TYPES.PLAYBACK_DISCOVERED, { id: 'the_tub' }, 'test', { at: 1410 });
 runtime.emitProgress(EVENT_TYPES.PLAYBACK_DISCOVERED, { id: 'amplifications' }, 'test', { at: 1420 });
 runtime.emitProgress(EVENT_TYPES.PLAYBACK_DISCOVERED, { id: 'soundnoisemusic' }, 'test', { at: 1430 });
+runtime.emitProgress(EVENT_TYPES.CREDITS_VIEWED, {}, 'test', { at: 1440 });
 
 assert.ok(saveApi.getMeta().achievements.ACH_WORK_ORDER);
 assert.ok(saveApi.getMeta().achievements.ACH_FIRST_TAKE);
 assert.ok(saveApi.getMeta().achievements.ACH_FIVE_ROOMS);
 assert.ok(saveApi.getMeta().achievements.ACH_NAME_SARAH);
 assert.ok(saveApi.getMeta().achievements.ACH_ALL_PLAYBACK);
+assert.ok(saveApi.getMeta().achievements.ACH_RELEASE_RECORD);
 assert.deepEqual(saveApi.getSave().run.ledger.takes.rooms, ['main_b3', 'the_tub', 'amplifications', 'soundnoisemusic', 'lux_nova']);
 
 const summary = runtime.commitReturn('inversion', {

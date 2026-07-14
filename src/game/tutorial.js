@@ -16,6 +16,7 @@
 // first REAL take, which is the first one that counts toward the job.
 
 import * as REC from './recordist.js';
+import { inputPrompt, promptLine } from './bindings.js';
 
 export const LEVEL_CHECK_SECONDS = 6;
 
@@ -36,14 +37,14 @@ const STEPS = [
     id: 'light',
     // He is standing in a loading dock with the door shut. There is nothing.
     line: { who: 'you', text: "Can't see my hand." },
-    prompt: '[f]  light',
+    prompt: () => `${inputPrompt('light')}  light`,
     done: (c) => c.light,
     exit: { who: 'you', text: 'Light attracts. Everything in here that can hear, can see.' },
   },
   {
     id: 'read',
     line: { who: 'you', text: "Work order's in my jacket. Five rooms, one clean minute each." },
-    prompt: '[b]  bag  —  read the work order',
+    prompt: () => `${inputPrompt('bag')}  bag  -  read the work order`,
     done: (c) => c.workOrderRead,
   },
   {
@@ -53,20 +54,20 @@ const STEPS = [
     // the verb once, on the room the work order told him to do first.
     id: 'mark',
     line: { who: 'you', text: 'Five rooms. I should mark them off as I go, like a grown man.' },
-    prompt: '[space]  mark studio B3',
+    prompt: () => `${inputPrompt('mark')}  mark studio B3`,
     done: (c) => c.marked === 'main_b3',
     exit: { who: 'you', text: 'Down the west stair, behind the dock. Mark them off as you go and you never lose an hour.' },
   },
   {
     id: 'level',
     line: { who: 'you', text: 'Levels, before anything. Headphones on, hear the room — then roll, and hold still.' },
-    prompt: '[r]  listen, then [r] to roll',
+    prompt: () => `${inputPrompt('recorder')}  listen, then ${inputPrompt('recorder')} to roll`,
     done: (c) => c.levelChecked,
   },
   {
     id: 'go',
     line: { who: 'you', text: 'Inner door, south end. Down to B3.' },
-    prompt: '[w a s d]  move     [shift]  quietly',
+    prompt: () => promptLine([{ action: 'move', label: 'move' }, { action: 'quiet', label: 'quietly' }], { separator: '     ' }),
     // Leaving the dock ends the setup. Walking softly is offered, never
     // required — a player who strides out has learned the lesson the building
     // is about to teach them properly, and holding the prompt on screen until
@@ -91,7 +92,11 @@ export function startTutorial() {
 export function skipTutorial() { state.active = false; state.step = STEPS.length; }
 export function tutorialActive() { return state.active && state.step < STEPS.length; }
 export function tutorialStep() { return tutorialActive() ? STEPS[state.step].id : null; }
-export function tutorialPrompt() { return tutorialActive() ? STEPS[state.step].prompt : null; }
+export function tutorialPrompt() {
+  if (!tutorialActive()) return null;
+  const prompt = STEPS[state.step].prompt;
+  return typeof prompt === 'function' ? prompt() : prompt;
+}
 
 // The level check owns the recorder for six seconds and then hands it back.
 // Spoiling it is allowed, costs nothing, and teaches the whole game.

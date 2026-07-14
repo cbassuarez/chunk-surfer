@@ -1,6 +1,7 @@
-import AUDIO_PROJECT from '../../content/audio/audio-project.audio.json' with { type: 'json' };
+import { authoringAudioProject } from '../narrative/generated-content.js';
 import { assetUrl } from '../platform/paths.js';
 
+const AUDIO_PROJECT = authoringAudioProject || { assets: [], cues: [] };
 const assets = new Map(AUDIO_PROJECT.assets.map((asset) => [asset.id, asset]));
 const cues = new Map(AUDIO_PROJECT.cues.map((cue) => [cue.id, cue]));
 

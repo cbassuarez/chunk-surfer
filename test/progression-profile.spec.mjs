@@ -18,12 +18,20 @@ const exported = exportProfile(local, {
   seenTextMode: 'instant',
   archiveSignals: 'off',
   condensedCheckIn: true,
+  controller: {
+    lookSensitivity: 1.4,
+    invertLookY: true,
+    bindings: { interact: { kind: 'button', id: 'north' } },
+  },
   customShiftRules: { presencePressure: 'severe', escapeTimer: 'off' },
 }, { build: 'TEST', now: 1000 });
 assert.equal(exported.format, 'chunk-surfer-profile');
 assert.equal(exported.version, 1);
 assert.equal(exported.settings.lastDifficulty, 'night');
 assert.equal(exported.settings.customShiftRules.escapeTimer, 'off');
+assert.equal(exported.settings.controller.lookSensitivity, 1.4);
+assert.equal(exported.settings.controller.invertLookY, true);
+assert.equal(exported.settings.controller.bindings.interact.id, 'north');
 assert.equal('platform' in exported.meta, false);
 assert.equal('presentation' in exported.meta, false);
 assert.equal(validateProfileImport(exported).ok, true);
@@ -54,6 +62,7 @@ assert.deepEqual(merged.meta.platform.pendingAchievements, ['ACH_FIRST_TAKE']);
 assert.deepEqual(merged.meta.presentation.pendingNotices, [{ id: 'local-notice' }]);
 assert.equal(merged.settings.seenTextMode, 'instant');
 assert.equal(merged.settings.volume, 0.8);
+assert.equal(merged.settings.controller.bindings.interact.id, 'north');
 
 const remote = mergeRemoteProfile(local, {
   achievements: ['ACH_NAME_SARAH', 'ACH_NOT_REAL'],

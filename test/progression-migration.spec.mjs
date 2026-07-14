@@ -24,7 +24,7 @@ const legacySave = {
   takes: ['main_b3'],
   items: ['chapel_key'],
   steps: 44,
-  settings: { volume: 0.5, instantText: true },
+  settings: { volume: 0.5, instantText: true, controllerBindings: { interact: 'button2', menu: 'button9' } },
 };
 
 globalThis.localStorage = new MemoryStorage({
@@ -49,6 +49,8 @@ assert.equal(loaded.save.settings.instantText, true);
 assert.equal(loaded.save.settings.dialog, 1);
 assert.equal(loaded.save.settings.monitorGain, 1);
 assert.equal(loaded.save.settings.hushAudioDistortion, 'full');
+assert.equal(loaded.save.settings.controller.bindings.interact.id, 'west');
+assert.equal(loaded.save.settings.controller.bindings.menu.id, 'menu');
 assert.equal(loaded.save.hushAudio, null);
 assert.equal(loaded.save.run.status, 'active');
 assert.equal(loaded.save.run.replay.isReplay, true);

@@ -72,5 +72,147 @@
   ],
   "audio": [
     "audio/audio-project.audio.json"
+  ],
+  "media": [
+    "media/story-art.media.json"
+  ],
+  "runtimeEntrypoints": [
+    "conservatory.cold_open_dialogue",
+    "conservatory.post_door",
+    "conservatory.level_check",
+    "conservatory.first_take",
+    "conservatory.hush",
+    "conservatory.radio_dead",
+    "conservatory.bent_rig",
+    "conservatory.talisman",
+    "conservatory.chapel_key_check",
+    "room-listen.main_b3",
+    "radio.initial_checkin",
+    "ending.choice.base"
+  ],
+  "timeline": [
+    {
+      "id": "opening",
+      "title": "Opening and title flow",
+      "kind": "sequence",
+      "documents": [
+        "conservatory.cold_open_dialogue",
+        "conservatory.post_door",
+        "conservatory.level_check",
+        "conservatory.first_take"
+      ]
+    },
+    {
+      "id": "runtime",
+      "title": "Runtime conservatory scenes",
+      "kind": "sequence",
+      "documents": [
+        "conservatory.bent_rig",
+        "conservatory.talisman",
+        "conservatory.hush",
+        "conservatory.radio_dead",
+        "conservatory.chapel_key_check"
+      ]
+    },
+    {
+      "id": "room-listens",
+      "title": "Room listen branches",
+      "kind": "branch",
+      "documents": [
+        "room-listen.main_b3",
+        "room-listen.the_tub",
+        "room-listen.amplifications",
+        "room-listen.soundnoisemusic",
+        "room-listen.lux_nova"
+      ]
+    },
+    {
+      "id": "radio",
+      "title": "Radio calls",
+      "kind": "branch",
+      "documents": [
+        "radio.initial_checkin",
+        "radio.post_second_take_warning",
+        "radio.pre_third_room_breakdown"
+      ]
+    },
+    {
+      "id": "playback",
+      "title": "Recorder playback branches",
+      "kind": "branch",
+      "documents": [
+        "playback.hallplayback.unnamed",
+        "playback.practiceplayback.unnamed",
+        "playback.natatoriumplayback.unnamed",
+        "playback.hallplayback.named",
+        "playback.practiceplayback.named",
+        "playback.natatoriumplayback.named"
+      ]
+    },
+    {
+      "id": "battles",
+      "title": "Battle branches",
+      "kind": "branch",
+      "documents": [
+        "battle.natatoriumbattle.unnamed",
+        "battle.practicebattle.unnamed",
+        "battle.hallbattle.unnamed",
+        "battle.natatoriumbattle.named",
+        "battle.practicebattle.named",
+        "battle.hallbattle.named",
+        "battle.chapel.nothing",
+        "battle.chapel.name-sarah",
+        "battle.chapel.name-other",
+        "battle.chapel.reason-money",
+        "battle.chapel.reason-superstition",
+        "battle.chapel.reason-other",
+        "battle.chapel.feeling"
+      ]
+    },
+    {
+      "id": "endings",
+      "title": "Endings and epilogues",
+      "kind": "branch",
+      "documents": [
+        "ending.choice.base",
+        "ending.choice.rig",
+        "ending.choice.surface",
+        "ending.choice.all",
+        "ending.sacrifice.unnamed.injuries-0",
+        "ending.sacrifice.unnamed.injuries-1",
+        "ending.sacrifice.unnamed.injuries-2",
+        "ending.sacrifice.unnamed.injuries-3",
+        "ending.sacrifice.unnamed.injuries-4",
+        "ending.sacrifice.unnamed.injuries-5",
+        "ending.rescue.unnamed",
+        "ending.helped.unnamed",
+        "ending.sacrifice.named.injuries-0",
+        "ending.sacrifice.named.injuries-1",
+        "ending.sacrifice.named.injuries-2",
+        "ending.sacrifice.named.injuries-3",
+        "ending.sacrifice.named.injuries-4",
+        "ending.sacrifice.named.injuries-5",
+        "ending.rescue.named",
+        "ending.helped.named",
+        "ending.inversion-start",
+        "ending.false-door",
+        "ending.inversion-final",
+        "ending.drugged.complete",
+        "ending.drugged.partial",
+        "ending.epilogue.out",
+        "ending.epilogue.client",
+        "ending.epilogue.nobody",
+        "ending.epilogue.helped",
+        "ending.epilogue.drugged"
+      ]
+    },
+    {
+      "id": "legacy-reference",
+      "title": "Legacy reference material",
+      "kind": "reference",
+      "documents": [
+        "legacy.prologue"
+      ]
+    }
   ]
 }

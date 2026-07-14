@@ -24,6 +24,7 @@ import { UI_COLOR } from '../render/palette.js';
 import { createConversation } from './conversation.js';
 import { drawStoryArtCard, planStoryArtInPanel, planStoryArtSideBySide, storyArtSideBySidePanelRows } from './story-art-card.js';
 import { resolveStoryArt } from './story-art.js';
+import { promptLine } from './bindings.js';
 
 const COL_W = 86;
 const KEEP = 12;
@@ -122,8 +123,8 @@ export function makeColdOpenScene({
             label: 'MONITOR',
             source: transcriptSource(sourceWho),
             footer: v.pending?.options?.length
-              ? '[↑/↓] SELECT · [ENTER] TRANSMIT'
-              : '[SPACE] CONTINUE',
+              ? promptLine([{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: 'TRANSMIT' }])
+              : promptLine([{ action: 'continue', label: 'CONTINUE' }]),
             meter: true,
           },
         );
@@ -216,7 +217,7 @@ export function makeColdOpenScene({
             choicesRows: choiceReserve,
           });
 
-          if (artPlan.show) {
+          if (!choices.height && artPlan.show) {
             drawStoryArtCard(art, {
               x: contentX,
               y: transcriptY,

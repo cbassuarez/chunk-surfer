@@ -3,7 +3,6 @@ import {
   Background, Connection, Controls, Edge, Handle, MarkerType, MiniMap, Node, NodeProps,
   Position, ReactFlow, ReactFlowProvider, useNodesState,
 } from '@xyflow/react';
-import ELK from 'elkjs/lib/elk.bundled.js';
 import type { NarrativeDocument, StoryLayout, StoryNode } from './types';
 
 type GraphNodeData = { story: StoryNode; label: string; entry: boolean; highlighted: boolean; searchHit: boolean };
@@ -113,14 +112,22 @@ function StoryGraphInner({ document, layout, selectedId, search, onSelect, onDoc
   }, [layout, onLayout]);
 
   const autoLayout = useCallback(async () => {
-    const elk = new ELK();
-    const result = await elk.layout({
-      id: 'root', layoutOptions: { 'elk.algorithm': 'layered', 'elk.direction': 'RIGHT', 'elk.spacing.nodeNode': '70', 'elk.layered.spacing.nodeNodeBetweenLayers': '150' },
-      children: Object.keys(document.nodes).map((id) => ({ id, width: 290, height: 190 })),
-      edges: edges.map((edge) => ({ id: edge.id, sources: [edge.source], targets: [edge.target] })),
-    });
+    const adjacency = new Map<string, string[]>();
+    for (const edge of edges) adjacency.set(edge.source, [...(adjacency.get(edge.source) || []), edge.target]);
+    const entries = [...new Set([document.entry, ...(document.entries || [])].filter(Boolean))];
+    const levels = new Map<string, number>();
+    const pending = entries.map((id) => [id, 0] as const);
+    while (pending.length) {
+      const [id, level] = pending.shift()!;
+      if (levels.has(id) && levels.get(id)! <= level) continue;
+      levels.set(id, level);
+      for (const next of adjacency.get(id) || []) pending.push([next, level + 1]);
+    }
+    for (const id of Object.keys(document.nodes)) if (!levels.has(id)) levels.set(id, Math.max(0, levels.size));
+    const buckets = new Map<number, string[]>();
+    for (const [id, level] of levels) buckets.set(level, [...(buckets.get(level) || []), id]);
     const positions = { ...layout.positions };
-    for (const child of result.children || []) positions[child.id] = { x: child.x || 0, y: child.y || 0 };
+    for (const [level, ids] of buckets) ids.sort().forEach((id, index) => { positions[id] = { x: 80 + level * 430, y: 90 + index * 250 }; });
     onLayout({ ...layout, positions });
   }, [document.nodes, edges, layout, onLayout]);
 

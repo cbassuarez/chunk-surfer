@@ -1,0 +1,6676 @@
+{
+  "schemaVersion": 1,
+  "id": "chunk-surf.source-atlas",
+  "generatedFrom": [
+    "src/game/chunk-surf-state.js",
+    "src/game/chunk-surf-scene.js",
+    "src/data/chunk-surf-script.js",
+    "src/game/recordist.js",
+    "src/game/playback.js",
+    "src/game/radio.js",
+    "src/game/battle.js",
+    "src/progression/runtime.js",
+    "src/progression/events.js",
+    "src/data/battles.js",
+    "src/data/conservatory-script.js"
+  ],
+  "leakGuard": {
+    "policy": [
+      "network-addresses",
+      "local-machine-paths",
+      "credential-like-terms",
+      "environment-reads",
+      "shipping-tooling",
+      "diagnostic-links"
+    ]
+  },
+  "sectors": {
+    "approach": {
+      "id": "approach",
+      "title": "CALL CHAIN INTO SOURCE FAULT",
+      "anchors": [
+        "beginChunkSurf",
+        "chunkSurfAvailable",
+        "chunkSurfMandatory",
+        "moveChunkSurf",
+        "approach"
+      ],
+      "sourceLines": [
+        {
+          "line": 14,
+          "text": "export function canOfferChunkSurf({",
+          "tokens": [
+            "canOfferChunkSurf"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2668386505
+        },
+        {
+          "line": 15,
+          "text": "  completedTakes = 0,",
+          "tokens": [
+            "completedTakes"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1877029048
+        },
+        {
+          "line": 16,
+          "text": "  roomId = '',",
+          "tokens": [
+            "roomId"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1682699628
+        },
+        {
+          "line": 17,
+          "text": "  alreadyCompleted = false,",
+          "tokens": [
+            "alreadyCompleted"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3699676873
+        },
+        {
+          "line": 18,
+          "text": "} = {}) {",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2333103393
+        },
+        {
+          "line": 19,
+          "text": "  if (alreadyCompleted) return false;",
+          "tokens": [
+            "alreadyCompleted"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 454314051
+        },
+        {
+          "line": 20,
+          "text": "  if (Number(completedTakes) < 4) return false;",
+          "tokens": [
+            "Number",
+            "completedTakes"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3730635985
+        },
+        {
+          "line": 21,
+          "text": "  if (roomId && roomId !== 'lux_nova' && roomId !== 'chapel' && roomId !== 'chapel_approach') return false;",
+          "tokens": [
+            "roomId",
+            "lux_nova",
+            "chapel",
+            "chapel_approach"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1217827469
+        },
+        {
+          "line": 22,
+          "text": "  return true;",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2162630789
+        },
+        {
+          "line": 23,
+          "text": "}",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3214882894
+        },
+        {
+          "line": 25,
+          "text": "export function createChunkSurfState({",
+          "tokens": [
+            "createChunkSurfState"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1937063672
+        },
+        {
+          "line": 26,
+          "text": "  drankCoffee = false,",
+          "tokens": [
+            "drankCoffee"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4073207096
+        },
+        {
+          "line": 27,
+          "text": "  hasRig = false,",
+          "tokens": [
+            "hasRig"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 691942671
+        },
+        {
+          "line": 28,
+          "text": "  endingsSeen = [],",
+          "tokens": [
+            "endingsSeen"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2097527392
+        },
+        {
+          "line": 29,
+          "text": "  seed = 4417,",
+          "tokens": [
+            "seed"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1880210507
+        },
+        {
+          "line": 30,
+          "text": "} = {}) {",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 400503
+        },
+        {
+          "line": 31,
+          "text": "  const profile = chunkSurfRouteProfile({ drankCoffee, hasRig, endingsSeen });",
+          "tokens": [
+            "profile",
+            "chunkSurfRouteProfile",
+            "drankCoffee",
+            "hasRig",
+            "endingsSeen"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3396922003
+        },
+        {
+          "line": 32,
+          "text": "  return {",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 539633310
+        },
+        {
+          "line": 33,
+          "text": "    active: true,",
+          "tokens": [
+            "active"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2461917520
+        },
+        {
+          "line": 34,
+          "text": "    profile,",
+          "tokens": [
+            "profile"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2024556596
+        },
+        {
+          "line": 35,
+          "text": "    seed: Number(seed) || 4417,",
+          "tokens": [
+            "seed",
+            "Number"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1643934800
+        },
+        {
+          "line": 36,
+          "text": "    roomId: 'approach',",
+          "tokens": [
+            "roomId",
+            "approach"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2895403437
+        },
+        {
+          "line": 37,
+          "text": "    facing: 'north',",
+          "tokens": [
+            "facing",
+            "north"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3816591631
+        },
+        {
+          "line": 38,
+          "text": "    hasFork: false,",
+          "tokens": [
+            "hasFork"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1281926462
+        },
+        {
+          "line": 39,
+          "text": "    tuned: [],",
+          "tokens": [
+            "tuned"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1074928678
+        },
+        {
+          "line": 40,
+          "text": "    inspected: [],",
+          "tokens": [
+            "inspected"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3526278267
+        },
+        {
+          "line": 41,
+          "text": "    recorded: [],",
+          "tokens": [
+            "recorded"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3795086667
+        },
+        {
+          "line": 42,
+          "text": "    visited: ['approach'],",
+          "tokens": [
+            "visited",
+            "approach"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2484596150
+        },
+        {
+          "line": 43,
+          "text": "    redacted: null,",
+          "tokens": [
+            "redacted",
+            "null"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2837716798
+        },
+        {
+          "line": 44,
+          "text": "    completed: false,",
+          "tokens": [
+            "completed"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1015417240
+        },
+        {
+          "line": 45,
+          "text": "    scare: null,",
+          "tokens": [
+            "scare",
+            "null"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1973862054
+        },
+        {
+          "line": 46,
+          "text": "    log: [],",
+          "tokens": [
+            "log"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3669645900
+        },
+        {
+          "line": 47,
+          "text": "  };",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2983618173
+        },
+        {
+          "line": 48,
+          "text": "}",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 821837893
+        },
+        {
+          "line": 54,
+          "text": "    hasRig: value.profile?.bestEligible,",
+          "tokens": [
+            "hasRig",
+            "value",
+            "profile",
+            "bestEligible"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4016743361
+        },
+        {
+          "line": 55,
+          "text": "    seed: value.seed,",
+          "tokens": [
+            "seed",
+            "value"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2259530725
+        },
+        {
+          "line": 56,
+          "text": "  });",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3008477094
+        },
+        {
+          "line": 57,
+          "text": "  return {",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 949906073
+        },
+        {
+          "line": 58,
+          "text": "    ...state,",
+          "tokens": [
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2891526914
+        },
+        {
+          "line": 59,
+          "text": "    ...value,",
+          "tokens": [
+            "value"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1254306993
+        },
+        {
+          "line": 60,
+          "text": "    profile: value.profile || state.profile,",
+          "tokens": [
+            "profile",
+            "value",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2557030729
+        },
+        {
+          "line": 61,
+          "text": "    roomId: chunkSurfRoom(value.roomId)?.id || 'approach',",
+          "tokens": [
+            "roomId",
+            "chunkSurfRoom",
+            "value",
+            "approach"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2706184331
+        },
+        {
+          "line": 62,
+          "text": "    facing: DIRS.includes(value.facing) ? value.facing : 'north',",
+          "tokens": [
+            "facing",
+            "DIRS",
+            "includes",
+            "value",
+            "north"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1433349650
+        },
+        {
+          "line": 63,
+          "text": "    hasFork: !!value.hasFork,",
+          "tokens": [
+            "hasFork",
+            "value"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4250323504
+        },
+        {
+          "line": 64,
+          "text": "    tuned: unique(value.tuned),",
+          "tokens": [
+            "tuned",
+            "unique",
+            "value"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3942554723
+        },
+        {
+          "line": 65,
+          "text": "    inspected: unique(value.inspected),",
+          "tokens": [
+            "inspected",
+            "unique",
+            "value"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3802984136
+        },
+        {
+          "line": 66,
+          "text": "    recorded: unique(value.recorded),",
+          "tokens": [
+            "recorded",
+            "unique",
+            "value"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3335704705
+        },
+        {
+          "line": 67,
+          "text": "    visited: unique(value.visited).length ? unique(value.visited) : ['approach'],",
+          "tokens": [
+            "visited",
+            "unique",
+            "value",
+            "length",
+            "approach"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4226765500
+        },
+        {
+          "line": 68,
+          "text": "    redacted: value.redacted || null,",
+          "tokens": [
+            "redacted",
+            "value",
+            "null"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1558298438
+        },
+        {
+          "line": 69,
+          "text": "    completed: !!value.completed,",
+          "tokens": [
+            "completed",
+            "value"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 726154684
+        },
+        {
+          "line": 70,
+          "text": "    scare: value.scare || null,",
+          "tokens": [
+            "scare",
+            "value",
+            "null"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1461046657
+        },
+        {
+          "line": 71,
+          "text": "    log: Array.isArray(value.log) ? value.log.slice(-12) : [],",
+          "tokens": [
+            "log",
+            "Array",
+            "isArray",
+            "value",
+            "slice"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1444118821
+        },
+        {
+          "line": 72,
+          "text": "  };",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2953188481
+        },
+        {
+          "line": 73,
+          "text": "}",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4253569735
+        },
+        {
+          "line": 93,
+          "text": "  const idx = DIRS.indexOf(s.facing);",
+          "tokens": [
+            "idx",
+            "DIRS",
+            "indexOf",
+            "facing"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1885610095
+        },
+        {
+          "line": 94,
+          "text": "  if (dir === 'left') return { ...s, facing: DIRS[(idx + 3) % 4] };",
+          "tokens": [
+            "dir",
+            "left",
+            "facing",
+            "DIRS",
+            "idx"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3255117089
+        },
+        {
+          "line": 95,
+          "text": "  if (dir === 'right') return { ...s, facing: DIRS[(idx + 1) % 4] };",
+          "tokens": [
+            "dir",
+            "right",
+            "facing",
+            "DIRS",
+            "idx"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3947065615
+        },
+        {
+          "line": 96,
+          "text": "  if (DIRS.includes(dir)) return { ...s, facing: dir };",
+          "tokens": [
+            "DIRS",
+            "includes",
+            "dir",
+            "facing"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 490013965
+        },
+        {
+          "line": 97,
+          "text": "  return s;",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 210376618
+        },
+        {
+          "line": 98,
+          "text": "}",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3398044948
+        },
+        {
+          "line": 100,
+          "text": "export function moveChunkSurf(state, dir = 'forward') {",
+          "tokens": [
+            "moveChunkSurf",
+            "state",
+            "dir",
+            "forward"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4031805983
+        },
+        {
+          "line": 101,
+          "text": "  let s = normalizeChunkSurfState(state);",
+          "tokens": [
+            "normalizeChunkSurfState",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3719575657
+        },
+        {
+          "line": 102,
+          "text": "  if (!s || s.completed) return s;",
+          "tokens": [
+            "completed"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1801160371
+        },
+        {
+          "line": 103,
+          "text": "  const facing = dir === 'back' ? opposite[s.facing] : s.facing;",
+          "tokens": [
+            "facing",
+            "dir",
+            "back",
+            "opposite"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2439803154
+        },
+        {
+          "line": 104,
+          "text": "  const room = currentChunkSurfRoom(s);",
+          "tokens": [
+            "room",
+            "currentChunkSurfRoom"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2856105998
+        },
+        {
+          "line": 105,
+          "text": "  const next = room.exits?.[facing];",
+          "tokens": [
+            "next",
+            "room",
+            "exits",
+            "facing"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2523474849
+        },
+        {
+          "line": 106,
+          "text": "  if (!next) {",
+          "tokens": [
+            "next"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1137995854
+        },
+        {
+          "line": 107,
+          "text": "    if (s.roomId === 'approach' && dir === 'back') {",
+          "tokens": [
+            "roomId",
+            "approach",
+            "dir",
+            "back"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1825709978
+        },
+        {
+          "line": 108,
+          "text": "      return {",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2899468160
+        },
+        {
+          "line": 109,
+          "text": "        ...pushLog(s, 'Behind you, the corridor breathes in.', 'danger'),",
+          "tokens": [
+            "pushLog",
+            "Behind",
+            "you",
+            "the",
+            "corridor",
+            "breathes",
+            "danger"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2048813780
+        },
+        {
+          "line": 110,
+          "text": "        scare: { reason: 'turned-back', atRoom: s.roomId },",
+          "tokens": [
+            "scare",
+            "reason",
+            "turned",
+            "back",
+            "atRoom",
+            "roomId"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2694918733
+        },
+        {
+          "line": 111,
+          "text": "      };",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 842753185
+        },
+        {
+          "line": 112,
+          "text": "    }",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3143397157
+        },
+        {
+          "line": 113,
+          "text": "    return pushLog(s, 'The text is solid here.', 'secondary');",
+          "tokens": [
+            "pushLog",
+            "The",
+            "text",
+            "solid",
+            "here",
+            "secondary"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2823775785
+        },
+        {
+          "line": 114,
+          "text": "  }",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2258686595
+        },
+        {
+          "line": 153,
+          "text": "export function redactChunkSurf(state, redactionId) {",
+          "tokens": [
+            "redactChunkSurf",
+            "state",
+            "redactionId"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 93712250
+        },
+        {
+          "line": 154,
+          "text": "  let s = normalizeChunkSurfState(state);",
+          "tokens": [
+            "normalizeChunkSurfState",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2754995423
+        },
+        {
+          "line": 155,
+          "text": "  if (!s || s.completed) return s;",
+          "tokens": [
+            "completed"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4004328695
+        },
+        {
+          "line": 156,
+          "text": "  const room = currentChunkSurfRoom(s);",
+          "tokens": [
+            "room",
+            "currentChunkSurfRoom"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3144050365
+        },
+        {
+          "line": 157,
+          "text": "  if (room.kind !== 'final') return pushLog(s, 'There is nothing here stable enough to redact.', 'secondary');",
+          "tokens": [
+            "room",
+            "kind",
+            "final",
+            "pushLog",
+            "There",
+            "nothing",
+            "here",
+            "stable"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2675598298
+        },
+        {
+          "line": 158,
+          "text": "  const redaction = room.redactions?.find((entry) => entry.id === redactionId) || room.redactions?.[0];",
+          "tokens": [
+            "redaction",
+            "room",
+            "redactions",
+            "find",
+            "entry",
+            "redactionId"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3554983308
+        },
+        {
+          "line": 159,
+          "text": "  if (!redaction) return s;",
+          "tokens": [
+            "redaction"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2335422673
+        },
+        {
+          "line": 160,
+          "text": "  const requiredDone = CHUNK_SURF_REQUIRED_ROOMS.every((id) => s.tuned.includes(id) || id === 'approach');",
+          "tokens": [
+            "requiredDone",
+            "CHUNK_SURF_REQUIRED_ROOMS",
+            "every",
+            "tuned",
+            "includes",
+            "approach"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 422780823
+        },
+        {
+          "line": 161,
+          "text": "  const optionalDone = ['recordist-loop', 'surfer-origin', 'work-order-loop'].filter((id) => s.tuned.includes(id) || s.recorded.incl",
+          "tokens": [
+            "optionalDone",
+            "recordist",
+            "loop",
+            "surfer",
+            "origin",
+            "work",
+            "order",
+            "filter"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1014290489
+        },
+        {
+          "line": 162,
+          "text": "  const bestEligible = !!(",
+          "tokens": [
+            "bestEligible"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 619248444
+        },
+        {
+          "line": 163,
+          "text": "    redaction.correct &&",
+          "tokens": [
+            "redaction",
+            "correct"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2301164849
+        },
+        {
+          "line": 164,
+          "text": "    s.profile?.bestEligible &&",
+          "tokens": [
+            "profile",
+            "bestEligible"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2054663513
+        },
+        {
+          "line": 165,
+          "text": "    s.hasFork &&",
+          "tokens": [
+            "hasFork"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3756449209
+        },
+        {
+          "line": 166,
+          "text": "    requiredDone &&",
+          "tokens": [
+            "requiredDone"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2573781030
+        },
+        {
+          "line": 167,
+          "text": "    optionalDone.length >= 2 &&",
+          "tokens": [
+            "optionalDone",
+            "length"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3975110113
+        }
+      ]
+    },
+    "fork-room": {
+      "id": "fork-room",
+      "title": "OBJECT: TUNING_FORK",
+      "anchors": [
+        "tuneChunkSurf",
+        "hasFork",
+        "givesFork",
+        "fork-room",
+        "TUNING_FORK"
+      ],
+      "sourceLines": [
+        {
+          "line": 31,
+          "text": "  const profile = chunkSurfRouteProfile({ drankCoffee, hasRig, endingsSeen });",
+          "tokens": [
+            "profile",
+            "chunkSurfRouteProfile",
+            "drankCoffee",
+            "hasRig",
+            "endingsSeen"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3396922003
+        },
+        {
+          "line": 32,
+          "text": "  return {",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 539633310
+        },
+        {
+          "line": 33,
+          "text": "    active: true,",
+          "tokens": [
+            "active"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2461917520
+        },
+        {
+          "line": 34,
+          "text": "    profile,",
+          "tokens": [
+            "profile"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2024556596
+        },
+        {
+          "line": 35,
+          "text": "    seed: Number(seed) || 4417,",
+          "tokens": [
+            "seed",
+            "Number"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1643934800
+        },
+        {
+          "line": 36,
+          "text": "    roomId: 'approach',",
+          "tokens": [
+            "roomId",
+            "approach"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2895403437
+        },
+        {
+          "line": 37,
+          "text": "    facing: 'north',",
+          "tokens": [
+            "facing",
+            "north"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3816591631
+        },
+        {
+          "line": 38,
+          "text": "    hasFork: false,",
+          "tokens": [
+            "hasFork"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1281926462
+        },
+        {
+          "line": 39,
+          "text": "    tuned: [],",
+          "tokens": [
+            "tuned"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1074928678
+        },
+        {
+          "line": 40,
+          "text": "    inspected: [],",
+          "tokens": [
+            "inspected"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3526278267
+        },
+        {
+          "line": 41,
+          "text": "    recorded: [],",
+          "tokens": [
+            "recorded"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3795086667
+        },
+        {
+          "line": 42,
+          "text": "    visited: ['approach'],",
+          "tokens": [
+            "visited",
+            "approach"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2484596150
+        },
+        {
+          "line": 43,
+          "text": "    redacted: null,",
+          "tokens": [
+            "redacted",
+            "null"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2837716798
+        },
+        {
+          "line": 44,
+          "text": "    completed: false,",
+          "tokens": [
+            "completed"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1015417240
+        },
+        {
+          "line": 45,
+          "text": "    scare: null,",
+          "tokens": [
+            "scare",
+            "null"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1973862054
+        },
+        {
+          "line": 56,
+          "text": "  });",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3008477094
+        },
+        {
+          "line": 57,
+          "text": "  return {",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 949906073
+        },
+        {
+          "line": 58,
+          "text": "    ...state,",
+          "tokens": [
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2891526914
+        },
+        {
+          "line": 59,
+          "text": "    ...value,",
+          "tokens": [
+            "value"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1254306993
+        },
+        {
+          "line": 60,
+          "text": "    profile: value.profile || state.profile,",
+          "tokens": [
+            "profile",
+            "value",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2557030729
+        },
+        {
+          "line": 61,
+          "text": "    roomId: chunkSurfRoom(value.roomId)?.id || 'approach',",
+          "tokens": [
+            "roomId",
+            "chunkSurfRoom",
+            "value",
+            "approach"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2706184331
+        },
+        {
+          "line": 62,
+          "text": "    facing: DIRS.includes(value.facing) ? value.facing : 'north',",
+          "tokens": [
+            "facing",
+            "DIRS",
+            "includes",
+            "value",
+            "north"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1433349650
+        },
+        {
+          "line": 63,
+          "text": "    hasFork: !!value.hasFork,",
+          "tokens": [
+            "hasFork",
+            "value"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4250323504
+        },
+        {
+          "line": 64,
+          "text": "    tuned: unique(value.tuned),",
+          "tokens": [
+            "tuned",
+            "unique",
+            "value"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3942554723
+        },
+        {
+          "line": 65,
+          "text": "    inspected: unique(value.inspected),",
+          "tokens": [
+            "inspected",
+            "unique",
+            "value"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3802984136
+        },
+        {
+          "line": 66,
+          "text": "    recorded: unique(value.recorded),",
+          "tokens": [
+            "recorded",
+            "unique",
+            "value"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3335704705
+        },
+        {
+          "line": 67,
+          "text": "    visited: unique(value.visited).length ? unique(value.visited) : ['approach'],",
+          "tokens": [
+            "visited",
+            "unique",
+            "value",
+            "length",
+            "approach"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4226765500
+        },
+        {
+          "line": 68,
+          "text": "    redacted: value.redacted || null,",
+          "tokens": [
+            "redacted",
+            "value",
+            "null"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1558298438
+        },
+        {
+          "line": 69,
+          "text": "    completed: !!value.completed,",
+          "tokens": [
+            "completed",
+            "value"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 726154684
+        },
+        {
+          "line": 70,
+          "text": "    scare: value.scare || null,",
+          "tokens": [
+            "scare",
+            "value",
+            "null"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1461046657
+        },
+        {
+          "line": 125,
+          "text": "  let s = normalizeChunkSurfState(state);",
+          "tokens": [
+            "normalizeChunkSurfState",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 299107007
+        },
+        {
+          "line": 126,
+          "text": "  if (!s || s.completed) return s;",
+          "tokens": [
+            "completed"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4187886429
+        },
+        {
+          "line": 127,
+          "text": "  const room = currentChunkSurfRoom(s);",
+          "tokens": [
+            "room",
+            "currentChunkSurfRoom"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2810728989
+        },
+        {
+          "line": 128,
+          "text": "  s = mark(s, 'inspected');",
+          "tokens": [
+            "mark",
+            "inspected"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3831385774
+        },
+        {
+          "line": 129,
+          "text": "  return pushLog(s, room.inspect || 'The line has no comment.', 'primary');",
+          "tokens": [
+            "pushLog",
+            "room",
+            "inspect",
+            "The",
+            "line",
+            "has",
+            "comment",
+            "primary"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 567204223
+        },
+        {
+          "line": 130,
+          "text": "}",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1181321345
+        },
+        {
+          "line": 132,
+          "text": "export function tuneChunkSurf(state) {",
+          "tokens": [
+            "tuneChunkSurf",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 201999554
+        },
+        {
+          "line": 133,
+          "text": "  let s = normalizeChunkSurfState(state);",
+          "tokens": [
+            "normalizeChunkSurfState",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1377421200
+        },
+        {
+          "line": 134,
+          "text": "  if (!s || s.completed) return s;",
+          "tokens": [
+            "completed"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 132510892
+        },
+        {
+          "line": 135,
+          "text": "  const room = currentChunkSurfRoom(s);",
+          "tokens": [
+            "room",
+            "currentChunkSurfRoom"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2632839030
+        },
+        {
+          "line": 136,
+          "text": "  if (!s.hasFork && !room.givesFork) {",
+          "tokens": [
+            "hasFork",
+            "room",
+            "givesFork"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1463535651
+        },
+        {
+          "line": 137,
+          "text": "    return pushLog(s, 'Nothing in your hand can make the false line vibrate.', 'secondary');",
+          "tokens": [
+            "pushLog",
+            "Nothing",
+            "your",
+            "hand",
+            "can",
+            "make",
+            "the",
+            "line"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4158251199
+        },
+        {
+          "line": 138,
+          "text": "  }",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3430540121
+        },
+        {
+          "line": 139,
+          "text": "  s = mark(s, 'tuned');",
+          "tokens": [
+            "mark",
+            "tuned"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3136245993
+        },
+        {
+          "line": 140,
+          "text": "  if (room.givesFork) s = { ...s, hasFork: true };",
+          "tokens": [
+            "room",
+            "givesFork",
+            "hasFork"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 95721878
+        },
+        {
+          "line": 141,
+          "text": "  return pushLog(s, room.tune || 'The line vibrates and refuses to become clearer.', room.givesFork ? 'green' : 'primary');",
+          "tokens": [
+            "pushLog",
+            "room",
+            "tune",
+            "The",
+            "line",
+            "vibrates",
+            "and",
+            "refuses"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3693485706
+        },
+        {
+          "line": 142,
+          "text": "}",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 862784040
+        },
+        {
+          "line": 144,
+          "text": "export function recordChunkSurf(state) {",
+          "tokens": [
+            "recordChunkSurf",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1458874898
+        },
+        {
+          "line": 145,
+          "text": "  let s = normalizeChunkSurfState(state);",
+          "tokens": [
+            "normalizeChunkSurfState",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3858256209
+        },
+        {
+          "line": 146,
+          "text": "  if (!s || s.completed) return s;",
+          "tokens": [
+            "completed"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 289192315
+        },
+        {
+          "line": 147,
+          "text": "  const room = currentChunkSurfRoom(s);",
+          "tokens": [
+            "room",
+            "currentChunkSurfRoom"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4275218187
+        },
+        {
+          "line": 148,
+          "text": "  if (!s.hasFork) return pushLog(s, 'The recorder clicks. Something behind the click screams.', 'danger');",
+          "tokens": [
+            "hasFork",
+            "pushLog",
+            "The",
+            "recorder",
+            "clicks",
+            "Something",
+            "behind",
+            "the"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 67514630
+        },
+        {
+          "line": 149,
+          "text": "  s = mark(s, 'recorded');",
+          "tokens": [
+            "mark",
+            "recorded"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3490796114
+        },
+        {
+          "line": 150,
+          "text": "  return pushLog(s, room.record || 'The take comes back wrong.', 'blue');",
+          "tokens": [
+            "pushLog",
+            "room",
+            "record",
+            "The",
+            "take",
+            "comes",
+            "back",
+            "wrong"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3260612272
+        },
+        {
+          "line": 151,
+          "text": "}",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2846327156
+        },
+        {
+          "line": 153,
+          "text": "export function redactChunkSurf(state, redactionId) {",
+          "tokens": [
+            "redactChunkSurf",
+            "state",
+            "redactionId"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 93712250
+        },
+        {
+          "line": 154,
+          "text": "  let s = normalizeChunkSurfState(state);",
+          "tokens": [
+            "normalizeChunkSurfState",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2754995423
+        },
+        {
+          "line": 155,
+          "text": "  if (!s || s.completed) return s;",
+          "tokens": [
+            "completed"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4004328695
+        },
+        {
+          "line": 158,
+          "text": "  const redaction = room.redactions?.find((entry) => entry.id === redactionId) || room.redactions?.[0];",
+          "tokens": [
+            "redaction",
+            "room",
+            "redactions",
+            "find",
+            "entry",
+            "redactionId"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3554983308
+        },
+        {
+          "line": 159,
+          "text": "  if (!redaction) return s;",
+          "tokens": [
+            "redaction"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2335422673
+        },
+        {
+          "line": 160,
+          "text": "  const requiredDone = CHUNK_SURF_REQUIRED_ROOMS.every((id) => s.tuned.includes(id) || id === 'approach');",
+          "tokens": [
+            "requiredDone",
+            "CHUNK_SURF_REQUIRED_ROOMS",
+            "every",
+            "tuned",
+            "includes",
+            "approach"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 422780823
+        },
+        {
+          "line": 161,
+          "text": "  const optionalDone = ['recordist-loop', 'surfer-origin', 'work-order-loop'].filter((id) => s.tuned.includes(id) || s.recorded.incl",
+          "tokens": [
+            "optionalDone",
+            "recordist",
+            "loop",
+            "surfer",
+            "origin",
+            "work",
+            "order",
+            "filter"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1014290489
+        },
+        {
+          "line": 162,
+          "text": "  const bestEligible = !!(",
+          "tokens": [
+            "bestEligible"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 619248444
+        },
+        {
+          "line": 163,
+          "text": "    redaction.correct &&",
+          "tokens": [
+            "redaction",
+            "correct"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2301164849
+        },
+        {
+          "line": 164,
+          "text": "    s.profile?.bestEligible &&",
+          "tokens": [
+            "profile",
+            "bestEligible"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2054663513
+        },
+        {
+          "line": 165,
+          "text": "    s.hasFork &&",
+          "tokens": [
+            "hasFork"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3756449209
+        },
+        {
+          "line": 166,
+          "text": "    requiredDone &&",
+          "tokens": [
+            "requiredDone"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2573781030
+        },
+        {
+          "line": 167,
+          "text": "    optionalDone.length >= 2 &&",
+          "tokens": [
+            "optionalDone",
+            "length"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3975110113
+        },
+        {
+          "line": 168,
+          "text": "    s.recorded.includes('body-room')",
+          "tokens": [
+            "recorded",
+            "includes",
+            "body",
+            "room"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3921820006
+        },
+        {
+          "line": 169,
+          "text": "  );",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3265370304
+        },
+        {
+          "line": 170,
+          "text": "  s = {",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2128091053
+        },
+        {
+          "line": 171,
+          "text": "    ...s,",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1168937340
+        },
+        {
+          "line": 172,
+          "text": "    redacted: redaction.id,",
+          "tokens": [
+            "redacted",
+            "redaction"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2463470134
+        },
+        {
+          "line": 179,
+          "text": "export function chunkSurfFlagsForState(state) {",
+          "tokens": [
+            "chunkSurfFlagsForState",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 644203766
+        },
+        {
+          "line": 180,
+          "text": "  const s = normalizeChunkSurfState(state);",
+          "tokens": [
+            "normalizeChunkSurfState",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 455309784
+        },
+        {
+          "line": 181,
+          "text": "  if (!s) return [];",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 256601323
+        },
+        {
+          "line": 182,
+          "text": "  return [",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2785596198
+        },
+        {
+          "line": 183,
+          "text": "    CHUNK_SURF_FLAGS.entered,",
+          "tokens": [
+            "CHUNK_SURF_FLAGS",
+            "entered"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 447895817
+        },
+        {
+          "line": 184,
+          "text": "    ...(s.completed ? [CHUNK_SURF_FLAGS.completed] : []),",
+          "tokens": [
+            "completed",
+            "CHUNK_SURF_FLAGS"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1205110118
+        },
+        {
+          "line": 185,
+          "text": "    ...(s.hasFork ? [CHUNK_SURF_FLAGS.fork] : []),",
+          "tokens": [
+            "hasFork",
+            "CHUNK_SURF_FLAGS",
+            "fork"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3612761567
+        },
+        {
+          "line": 186,
+          "text": "    ...(s.tuned.includes('body-room') ? [CHUNK_SURF_FLAGS.trueLine] : []),",
+          "tokens": [
+            "tuned",
+            "includes",
+            "body",
+            "room",
+            "CHUNK_SURF_FLAGS",
+            "trueLine"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3311923002
+        },
+        {
+          "line": 187,
+          "text": "    ...(s.tuned.includes('recordist-loop') || s.recorded.includes('recordist-loop') ? [CHUNK_SURF_FLAGS.optionalRecordist] : []),",
+          "tokens": [
+            "tuned",
+            "includes",
+            "recordist",
+            "loop",
+            "recorded",
+            "CHUNK_SURF_FLAGS",
+            "optionalRecordist"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 39301377
+        },
+        {
+          "line": 188,
+          "text": "    ...(s.tuned.includes('surfer-origin') || s.recorded.includes('surfer-origin') ? [CHUNK_SURF_FLAGS.optionalSurfer] : []),",
+          "tokens": [
+            "tuned",
+            "includes",
+            "surfer",
+            "origin",
+            "recorded",
+            "CHUNK_SURF_FLAGS",
+            "optionalSurfer"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 278466568
+        },
+        {
+          "line": 189,
+          "text": "    ...(s.tuned.includes('work-order-loop') || s.recorded.includes('work-order-loop') ? [CHUNK_SURF_FLAGS.optionalWorkOrder] : []),",
+          "tokens": [
+            "tuned",
+            "includes",
+            "work",
+            "order",
+            "loop",
+            "recorded",
+            "CHUNK_SURF_FLAGS",
+            "optionalWorkOrder"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2190435201
+        },
+        {
+          "line": 190,
+          "text": "    ...(s.redacted === 'body' ? [CHUNK_SURF_FLAGS.correctRedaction] : []),",
+          "tokens": [
+            "redacted",
+            "body",
+            "CHUNK_SURF_FLAGS",
+            "correctRedaction"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2530158389
+        },
+        {
+          "line": 191,
+          "text": "    ...(s.bestEligible ? [CHUNK_SURF_FLAGS.bestEligible] : []),",
+          "tokens": [
+            "bestEligible",
+            "CHUNK_SURF_FLAGS"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1181373638
+        },
+        {
+          "line": 192,
+          "text": "  ];",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3670448450
+        },
+        {
+          "line": 208,
+          "text": "  const s = normalizeChunkSurfState(state);",
+          "tokens": [
+            "normalizeChunkSurfState",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3066748137
+        },
+        {
+          "line": 209,
+          "text": "  if (!s) return null;",
+          "tokens": [
+            "null"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3569699011
+        },
+        {
+          "line": 210,
+          "text": "  const room = currentChunkSurfRoom(s);",
+          "tokens": [
+            "room",
+            "currentChunkSurfRoom"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2952169798
+        }
+      ]
+    },
+    "recordist-loop": {
+      "id": "recordist-loop",
+      "title": "PREVIOUS CONTRACTOR",
+      "anchors": [
+        "recordChunkSurf",
+        "recordist-loop",
+        "REC",
+        "takes",
+        "previousRecordist"
+      ],
+      "sourceLines": [
+        {
+          "line": 9,
+          "text": "const DIRS = Object.freeze(['north', 'east', 'south', 'west']);",
+          "tokens": [
+            "DIRS",
+            "Object",
+            "freeze",
+            "north",
+            "east",
+            "south",
+            "west"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1368423343
+        },
+        {
+          "line": 10,
+          "text": "const opposite = Object.freeze({ north: 'south', east: 'west', south: 'north', west: 'east' });",
+          "tokens": [
+            "opposite",
+            "Object",
+            "freeze",
+            "north",
+            "south",
+            "east",
+            "west"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2797290690
+        },
+        {
+          "line": 12,
+          "text": "const unique = (values) => [...new Set((Array.isArray(values) ? values : []).filter(Boolean))];",
+          "tokens": [
+            "unique",
+            "values",
+            "new",
+            "Set",
+            "Array",
+            "isArray",
+            "filter",
+            "Boolean"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2775820360
+        },
+        {
+          "line": 14,
+          "text": "export function canOfferChunkSurf({",
+          "tokens": [
+            "canOfferChunkSurf"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2668386505
+        },
+        {
+          "line": 15,
+          "text": "  completedTakes = 0,",
+          "tokens": [
+            "completedTakes"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1877029048
+        },
+        {
+          "line": 16,
+          "text": "  roomId = '',",
+          "tokens": [
+            "roomId"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1682699628
+        },
+        {
+          "line": 17,
+          "text": "  alreadyCompleted = false,",
+          "tokens": [
+            "alreadyCompleted"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3699676873
+        },
+        {
+          "line": 18,
+          "text": "} = {}) {",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2333103393
+        },
+        {
+          "line": 19,
+          "text": "  if (alreadyCompleted) return false;",
+          "tokens": [
+            "alreadyCompleted"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 454314051
+        },
+        {
+          "line": 20,
+          "text": "  if (Number(completedTakes) < 4) return false;",
+          "tokens": [
+            "Number",
+            "completedTakes"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3730635985
+        },
+        {
+          "line": 21,
+          "text": "  if (roomId && roomId !== 'lux_nova' && roomId !== 'chapel' && roomId !== 'chapel_approach') return false;",
+          "tokens": [
+            "roomId",
+            "lux_nova",
+            "chapel",
+            "chapel_approach"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1217827469
+        },
+        {
+          "line": 22,
+          "text": "  return true;",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2162630789
+        },
+        {
+          "line": 23,
+          "text": "}",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3214882894
+        },
+        {
+          "line": 25,
+          "text": "export function createChunkSurfState({",
+          "tokens": [
+            "createChunkSurfState"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1937063672
+        },
+        {
+          "line": 26,
+          "text": "  drankCoffee = false,",
+          "tokens": [
+            "drankCoffee"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4073207096
+        },
+        {
+          "line": 27,
+          "text": "  hasRig = false,",
+          "tokens": [
+            "hasRig"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 691942671
+        },
+        {
+          "line": 34,
+          "text": "    profile,",
+          "tokens": [
+            "profile"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2024556596
+        },
+        {
+          "line": 35,
+          "text": "    seed: Number(seed) || 4417,",
+          "tokens": [
+            "seed",
+            "Number"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1643934800
+        },
+        {
+          "line": 36,
+          "text": "    roomId: 'approach',",
+          "tokens": [
+            "roomId",
+            "approach"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2895403437
+        },
+        {
+          "line": 37,
+          "text": "    facing: 'north',",
+          "tokens": [
+            "facing",
+            "north"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3816591631
+        },
+        {
+          "line": 38,
+          "text": "    hasFork: false,",
+          "tokens": [
+            "hasFork"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1281926462
+        },
+        {
+          "line": 39,
+          "text": "    tuned: [],",
+          "tokens": [
+            "tuned"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1074928678
+        },
+        {
+          "line": 40,
+          "text": "    inspected: [],",
+          "tokens": [
+            "inspected"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3526278267
+        },
+        {
+          "line": 41,
+          "text": "    recorded: [],",
+          "tokens": [
+            "recorded"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3795086667
+        },
+        {
+          "line": 42,
+          "text": "    visited: ['approach'],",
+          "tokens": [
+            "visited",
+            "approach"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2484596150
+        },
+        {
+          "line": 43,
+          "text": "    redacted: null,",
+          "tokens": [
+            "redacted",
+            "null"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2837716798
+        },
+        {
+          "line": 44,
+          "text": "    completed: false,",
+          "tokens": [
+            "completed"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1015417240
+        },
+        {
+          "line": 45,
+          "text": "    scare: null,",
+          "tokens": [
+            "scare",
+            "null"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1973862054
+        },
+        {
+          "line": 46,
+          "text": "    log: [],",
+          "tokens": [
+            "log"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3669645900
+        },
+        {
+          "line": 47,
+          "text": "  };",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2983618173
+        },
+        {
+          "line": 48,
+          "text": "}",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 821837893
+        },
+        {
+          "line": 59,
+          "text": "    ...value,",
+          "tokens": [
+            "value"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1254306993
+        },
+        {
+          "line": 60,
+          "text": "    profile: value.profile || state.profile,",
+          "tokens": [
+            "profile",
+            "value",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2557030729
+        },
+        {
+          "line": 61,
+          "text": "    roomId: chunkSurfRoom(value.roomId)?.id || 'approach',",
+          "tokens": [
+            "roomId",
+            "chunkSurfRoom",
+            "value",
+            "approach"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2706184331
+        },
+        {
+          "line": 62,
+          "text": "    facing: DIRS.includes(value.facing) ? value.facing : 'north',",
+          "tokens": [
+            "facing",
+            "DIRS",
+            "includes",
+            "value",
+            "north"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1433349650
+        },
+        {
+          "line": 63,
+          "text": "    hasFork: !!value.hasFork,",
+          "tokens": [
+            "hasFork",
+            "value"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4250323504
+        },
+        {
+          "line": 64,
+          "text": "    tuned: unique(value.tuned),",
+          "tokens": [
+            "tuned",
+            "unique",
+            "value"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3942554723
+        },
+        {
+          "line": 65,
+          "text": "    inspected: unique(value.inspected),",
+          "tokens": [
+            "inspected",
+            "unique",
+            "value"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3802984136
+        },
+        {
+          "line": 66,
+          "text": "    recorded: unique(value.recorded),",
+          "tokens": [
+            "recorded",
+            "unique",
+            "value"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3335704705
+        },
+        {
+          "line": 67,
+          "text": "    visited: unique(value.visited).length ? unique(value.visited) : ['approach'],",
+          "tokens": [
+            "visited",
+            "unique",
+            "value",
+            "length",
+            "approach"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4226765500
+        },
+        {
+          "line": 68,
+          "text": "    redacted: value.redacted || null,",
+          "tokens": [
+            "redacted",
+            "value",
+            "null"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1558298438
+        },
+        {
+          "line": 69,
+          "text": "    completed: !!value.completed,",
+          "tokens": [
+            "completed",
+            "value"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 726154684
+        },
+        {
+          "line": 70,
+          "text": "    scare: value.scare || null,",
+          "tokens": [
+            "scare",
+            "value",
+            "null"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1461046657
+        },
+        {
+          "line": 71,
+          "text": "    log: Array.isArray(value.log) ? value.log.slice(-12) : [],",
+          "tokens": [
+            "log",
+            "Array",
+            "isArray",
+            "value",
+            "slice"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1444118821
+        },
+        {
+          "line": 72,
+          "text": "  };",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2953188481
+        },
+        {
+          "line": 73,
+          "text": "}",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4253569735
+        },
+        {
+          "line": 137,
+          "text": "    return pushLog(s, 'Nothing in your hand can make the false line vibrate.', 'secondary');",
+          "tokens": [
+            "pushLog",
+            "Nothing",
+            "your",
+            "hand",
+            "can",
+            "make",
+            "the",
+            "line"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4158251199
+        },
+        {
+          "line": 138,
+          "text": "  }",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3430540121
+        },
+        {
+          "line": 139,
+          "text": "  s = mark(s, 'tuned');",
+          "tokens": [
+            "mark",
+            "tuned"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3136245993
+        },
+        {
+          "line": 140,
+          "text": "  if (room.givesFork) s = { ...s, hasFork: true };",
+          "tokens": [
+            "room",
+            "givesFork",
+            "hasFork"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 95721878
+        },
+        {
+          "line": 141,
+          "text": "  return pushLog(s, room.tune || 'The line vibrates and refuses to become clearer.', room.givesFork ? 'green' : 'primary');",
+          "tokens": [
+            "pushLog",
+            "room",
+            "tune",
+            "The",
+            "line",
+            "vibrates",
+            "and",
+            "refuses"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3693485706
+        },
+        {
+          "line": 142,
+          "text": "}",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 862784040
+        },
+        {
+          "line": 144,
+          "text": "export function recordChunkSurf(state) {",
+          "tokens": [
+            "recordChunkSurf",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1458874898
+        },
+        {
+          "line": 145,
+          "text": "  let s = normalizeChunkSurfState(state);",
+          "tokens": [
+            "normalizeChunkSurfState",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3858256209
+        },
+        {
+          "line": 146,
+          "text": "  if (!s || s.completed) return s;",
+          "tokens": [
+            "completed"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 289192315
+        },
+        {
+          "line": 147,
+          "text": "  const room = currentChunkSurfRoom(s);",
+          "tokens": [
+            "room",
+            "currentChunkSurfRoom"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4275218187
+        },
+        {
+          "line": 148,
+          "text": "  if (!s.hasFork) return pushLog(s, 'The recorder clicks. Something behind the click screams.', 'danger');",
+          "tokens": [
+            "hasFork",
+            "pushLog",
+            "The",
+            "recorder",
+            "clicks",
+            "Something",
+            "behind",
+            "the"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 67514630
+        },
+        {
+          "line": 149,
+          "text": "  s = mark(s, 'recorded');",
+          "tokens": [
+            "mark",
+            "recorded"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3490796114
+        },
+        {
+          "line": 150,
+          "text": "  return pushLog(s, room.record || 'The take comes back wrong.', 'blue');",
+          "tokens": [
+            "pushLog",
+            "room",
+            "record",
+            "The",
+            "take",
+            "comes",
+            "back",
+            "wrong"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3260612272
+        },
+        {
+          "line": 151,
+          "text": "}",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2846327156
+        },
+        {
+          "line": 153,
+          "text": "export function redactChunkSurf(state, redactionId) {",
+          "tokens": [
+            "redactChunkSurf",
+            "state",
+            "redactionId"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 93712250
+        },
+        {
+          "line": 154,
+          "text": "  let s = normalizeChunkSurfState(state);",
+          "tokens": [
+            "normalizeChunkSurfState",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2754995423
+        },
+        {
+          "line": 155,
+          "text": "  if (!s || s.completed) return s;",
+          "tokens": [
+            "completed"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4004328695
+        },
+        {
+          "line": 156,
+          "text": "  const room = currentChunkSurfRoom(s);",
+          "tokens": [
+            "room",
+            "currentChunkSurfRoom"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3144050365
+        },
+        {
+          "line": 157,
+          "text": "  if (room.kind !== 'final') return pushLog(s, 'There is nothing here stable enough to redact.', 'secondary');",
+          "tokens": [
+            "room",
+            "kind",
+            "final",
+            "pushLog",
+            "There",
+            "nothing",
+            "here",
+            "stable"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2675598298
+        },
+        {
+          "line": 158,
+          "text": "  const redaction = room.redactions?.find((entry) => entry.id === redactionId) || room.redactions?.[0];",
+          "tokens": [
+            "redaction",
+            "room",
+            "redactions",
+            "find",
+            "entry",
+            "redactionId"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3554983308
+        },
+        {
+          "line": 159,
+          "text": "  if (!redaction) return s;",
+          "tokens": [
+            "redaction"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2335422673
+        },
+        {
+          "line": 160,
+          "text": "  const requiredDone = CHUNK_SURF_REQUIRED_ROOMS.every((id) => s.tuned.includes(id) || id === 'approach');",
+          "tokens": [
+            "requiredDone",
+            "CHUNK_SURF_REQUIRED_ROOMS",
+            "every",
+            "tuned",
+            "includes",
+            "approach"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 422780823
+        },
+        {
+          "line": 161,
+          "text": "  const optionalDone = ['recordist-loop', 'surfer-origin', 'work-order-loop'].filter((id) => s.tuned.includes(id) || s.recorded.incl",
+          "tokens": [
+            "optionalDone",
+            "recordist",
+            "loop",
+            "surfer",
+            "origin",
+            "work",
+            "order",
+            "filter"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1014290489
+        },
+        {
+          "line": 162,
+          "text": "  const bestEligible = !!(",
+          "tokens": [
+            "bestEligible"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 619248444
+        },
+        {
+          "line": 163,
+          "text": "    redaction.correct &&",
+          "tokens": [
+            "redaction",
+            "correct"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2301164849
+        },
+        {
+          "line": 164,
+          "text": "    s.profile?.bestEligible &&",
+          "tokens": [
+            "profile",
+            "bestEligible"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2054663513
+        },
+        {
+          "line": 165,
+          "text": "    s.hasFork &&",
+          "tokens": [
+            "hasFork"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3756449209
+        },
+        {
+          "line": 166,
+          "text": "    requiredDone &&",
+          "tokens": [
+            "requiredDone"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2573781030
+        },
+        {
+          "line": 167,
+          "text": "    optionalDone.length >= 2 &&",
+          "tokens": [
+            "optionalDone",
+            "length"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3975110113
+        },
+        {
+          "line": 168,
+          "text": "    s.recorded.includes('body-room')",
+          "tokens": [
+            "recorded",
+            "includes",
+            "body",
+            "room"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3921820006
+        },
+        {
+          "line": 169,
+          "text": "  );",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3265370304
+        },
+        {
+          "line": 170,
+          "text": "  s = {",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2128091053
+        },
+        {
+          "line": 171,
+          "text": "    ...s,",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1168937340
+        },
+        {
+          "line": 172,
+          "text": "    redacted: redaction.id,",
+          "tokens": [
+            "redacted",
+            "redaction"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2463470134
+        },
+        {
+          "line": 173,
+          "text": "    completed: true,",
+          "tokens": [
+            "completed"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1577047164
+        },
+        {
+          "line": 174,
+          "text": "    bestEligible,",
+          "tokens": [
+            "bestEligible"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1771654183
+        },
+        {
+          "line": 175,
+          "text": "  };",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3920951075
+        },
+        {
+          "line": 176,
+          "text": "  return pushLog(s, redaction.result, redaction.correct ? 'green' : 'danger');",
+          "tokens": [
+            "pushLog",
+            "redaction",
+            "result",
+            "correct",
+            "green",
+            "danger"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4201269679
+        },
+        {
+          "line": 177,
+          "text": "}",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 564962684
+        },
+        {
+          "line": 179,
+          "text": "export function chunkSurfFlagsForState(state) {",
+          "tokens": [
+            "chunkSurfFlagsForState",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 644203766
+        },
+        {
+          "line": 180,
+          "text": "  const s = normalizeChunkSurfState(state);",
+          "tokens": [
+            "normalizeChunkSurfState",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 455309784
+        },
+        {
+          "line": 181,
+          "text": "  if (!s) return [];",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 256601323
+        },
+        {
+          "line": 182,
+          "text": "  return [",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2785596198
+        },
+        {
+          "line": 183,
+          "text": "    CHUNK_SURF_FLAGS.entered,",
+          "tokens": [
+            "CHUNK_SURF_FLAGS",
+            "entered"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 447895817
+        }
+      ]
+    },
+    "surfer-origin": {
+      "id": "surfer-origin",
+      "title": "STUDENT FILE / SURFER ORIGIN",
+      "anchors": [
+        "surfer-origin",
+        "chapel-surfer",
+        "route.surfaced",
+        "SURFER",
+        "student"
+      ],
+      "sourceLines": [
+        {
+          "line": 154,
+          "text": "  let s = normalizeChunkSurfState(state);",
+          "tokens": [
+            "normalizeChunkSurfState",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2754995423
+        },
+        {
+          "line": 155,
+          "text": "  if (!s || s.completed) return s;",
+          "tokens": [
+            "completed"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4004328695
+        },
+        {
+          "line": 156,
+          "text": "  const room = currentChunkSurfRoom(s);",
+          "tokens": [
+            "room",
+            "currentChunkSurfRoom"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3144050365
+        },
+        {
+          "line": 157,
+          "text": "  if (room.kind !== 'final') return pushLog(s, 'There is nothing here stable enough to redact.', 'secondary');",
+          "tokens": [
+            "room",
+            "kind",
+            "final",
+            "pushLog",
+            "There",
+            "nothing",
+            "here",
+            "stable"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2675598298
+        },
+        {
+          "line": 158,
+          "text": "  const redaction = room.redactions?.find((entry) => entry.id === redactionId) || room.redactions?.[0];",
+          "tokens": [
+            "redaction",
+            "room",
+            "redactions",
+            "find",
+            "entry",
+            "redactionId"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3554983308
+        },
+        {
+          "line": 159,
+          "text": "  if (!redaction) return s;",
+          "tokens": [
+            "redaction"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2335422673
+        },
+        {
+          "line": 160,
+          "text": "  const requiredDone = CHUNK_SURF_REQUIRED_ROOMS.every((id) => s.tuned.includes(id) || id === 'approach');",
+          "tokens": [
+            "requiredDone",
+            "CHUNK_SURF_REQUIRED_ROOMS",
+            "every",
+            "tuned",
+            "includes",
+            "approach"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 422780823
+        },
+        {
+          "line": 161,
+          "text": "  const optionalDone = ['recordist-loop', 'surfer-origin', 'work-order-loop'].filter((id) => s.tuned.includes(id) || s.recorded.incl",
+          "tokens": [
+            "optionalDone",
+            "recordist",
+            "loop",
+            "surfer",
+            "origin",
+            "work",
+            "order",
+            "filter"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1014290489
+        },
+        {
+          "line": 162,
+          "text": "  const bestEligible = !!(",
+          "tokens": [
+            "bestEligible"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 619248444
+        },
+        {
+          "line": 163,
+          "text": "    redaction.correct &&",
+          "tokens": [
+            "redaction",
+            "correct"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2301164849
+        },
+        {
+          "line": 164,
+          "text": "    s.profile?.bestEligible &&",
+          "tokens": [
+            "profile",
+            "bestEligible"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2054663513
+        },
+        {
+          "line": 165,
+          "text": "    s.hasFork &&",
+          "tokens": [
+            "hasFork"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3756449209
+        },
+        {
+          "line": 166,
+          "text": "    requiredDone &&",
+          "tokens": [
+            "requiredDone"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2573781030
+        },
+        {
+          "line": 167,
+          "text": "    optionalDone.length >= 2 &&",
+          "tokens": [
+            "optionalDone",
+            "length"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3975110113
+        },
+        {
+          "line": 168,
+          "text": "    s.recorded.includes('body-room')",
+          "tokens": [
+            "recorded",
+            "includes",
+            "body",
+            "room"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3921820006
+        },
+        {
+          "line": 181,
+          "text": "  if (!s) return [];",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 256601323
+        },
+        {
+          "line": 182,
+          "text": "  return [",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2785596198
+        },
+        {
+          "line": 183,
+          "text": "    CHUNK_SURF_FLAGS.entered,",
+          "tokens": [
+            "CHUNK_SURF_FLAGS",
+            "entered"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 447895817
+        },
+        {
+          "line": 184,
+          "text": "    ...(s.completed ? [CHUNK_SURF_FLAGS.completed] : []),",
+          "tokens": [
+            "completed",
+            "CHUNK_SURF_FLAGS"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1205110118
+        },
+        {
+          "line": 185,
+          "text": "    ...(s.hasFork ? [CHUNK_SURF_FLAGS.fork] : []),",
+          "tokens": [
+            "hasFork",
+            "CHUNK_SURF_FLAGS",
+            "fork"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3612761567
+        },
+        {
+          "line": 186,
+          "text": "    ...(s.tuned.includes('body-room') ? [CHUNK_SURF_FLAGS.trueLine] : []),",
+          "tokens": [
+            "tuned",
+            "includes",
+            "body",
+            "room",
+            "CHUNK_SURF_FLAGS",
+            "trueLine"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3311923002
+        },
+        {
+          "line": 187,
+          "text": "    ...(s.tuned.includes('recordist-loop') || s.recorded.includes('recordist-loop') ? [CHUNK_SURF_FLAGS.optionalRecordist] : []),",
+          "tokens": [
+            "tuned",
+            "includes",
+            "recordist",
+            "loop",
+            "recorded",
+            "CHUNK_SURF_FLAGS",
+            "optionalRecordist"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 39301377
+        },
+        {
+          "line": 188,
+          "text": "    ...(s.tuned.includes('surfer-origin') || s.recorded.includes('surfer-origin') ? [CHUNK_SURF_FLAGS.optionalSurfer] : []),",
+          "tokens": [
+            "tuned",
+            "includes",
+            "surfer",
+            "origin",
+            "recorded",
+            "CHUNK_SURF_FLAGS",
+            "optionalSurfer"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 278466568
+        },
+        {
+          "line": 189,
+          "text": "    ...(s.tuned.includes('work-order-loop') || s.recorded.includes('work-order-loop') ? [CHUNK_SURF_FLAGS.optionalWorkOrder] : []),",
+          "tokens": [
+            "tuned",
+            "includes",
+            "work",
+            "order",
+            "loop",
+            "recorded",
+            "CHUNK_SURF_FLAGS",
+            "optionalWorkOrder"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2190435201
+        },
+        {
+          "line": 190,
+          "text": "    ...(s.redacted === 'body' ? [CHUNK_SURF_FLAGS.correctRedaction] : []),",
+          "tokens": [
+            "redacted",
+            "body",
+            "CHUNK_SURF_FLAGS",
+            "correctRedaction"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2530158389
+        },
+        {
+          "line": 191,
+          "text": "    ...(s.bestEligible ? [CHUNK_SURF_FLAGS.bestEligible] : []),",
+          "tokens": [
+            "bestEligible",
+            "CHUNK_SURF_FLAGS"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1181373638
+        },
+        {
+          "line": 192,
+          "text": "  ];",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3670448450
+        },
+        {
+          "line": 193,
+          "text": "}",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3766932182
+        },
+        {
+          "line": 195,
+          "text": "export function chunkSurfCompletion(state) {",
+          "tokens": [
+            "chunkSurfCompletion",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3500054291
+        },
+        {
+          "line": 4,
+          "text": "export const CHUNK_SURF_FLAGS = Object.freeze({",
+          "tokens": [
+            "CHUNK_SURF_FLAGS",
+            "Object",
+            "freeze"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3980408517
+        },
+        {
+          "line": 5,
+          "text": "  offered: 'chunkSurf.offered',",
+          "tokens": [
+            "offered",
+            "chunkSurf"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 160227232
+        },
+        {
+          "line": 6,
+          "text": "  entered: 'chunkSurf.entered',",
+          "tokens": [
+            "entered",
+            "chunkSurf"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 393410985
+        },
+        {
+          "line": 7,
+          "text": "  completed: 'chunkSurf.completed',",
+          "tokens": [
+            "completed",
+            "chunkSurf"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1943654662
+        },
+        {
+          "line": 8,
+          "text": "  fork: 'chunkSurf.fork',",
+          "tokens": [
+            "fork",
+            "chunkSurf"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 2806536315
+        },
+        {
+          "line": 9,
+          "text": "  trueLine: 'chunkSurf.trueLine',",
+          "tokens": [
+            "trueLine",
+            "chunkSurf"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 2758766436
+        },
+        {
+          "line": 10,
+          "text": "  optionalRecordist: 'chunkSurf.optional.recordist',",
+          "tokens": [
+            "optionalRecordist",
+            "chunkSurf",
+            "optional",
+            "recordist"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3706475124
+        },
+        {
+          "line": 11,
+          "text": "  optionalSurfer: 'chunkSurf.optional.surfer',",
+          "tokens": [
+            "optionalSurfer",
+            "chunkSurf",
+            "optional",
+            "surfer"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1802666903
+        },
+        {
+          "line": 12,
+          "text": "  optionalWorkOrder: 'chunkSurf.optional.workOrder',",
+          "tokens": [
+            "optionalWorkOrder",
+            "chunkSurf",
+            "optional",
+            "workOrder"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 2109091558
+        },
+        {
+          "line": 13,
+          "text": "  correctRedaction: 'chunkSurf.correctRedaction',",
+          "tokens": [
+            "correctRedaction",
+            "chunkSurf"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3722123341
+        },
+        {
+          "line": 14,
+          "text": "  bestEligible: 'chunkSurf.bestEligible',",
+          "tokens": [
+            "bestEligible",
+            "chunkSurf"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 4238231620
+        },
+        {
+          "line": 15,
+          "text": "});",
+          "tokens": [],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 845335651
+        },
+        {
+          "line": 17,
+          "text": "export const CHUNK_SURF_ROOMS = Object.freeze([",
+          "tokens": [
+            "CHUNK_SURF_ROOMS",
+            "Object",
+            "freeze"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 307742102
+        },
+        {
+          "line": 18,
+          "text": "  {",
+          "tokens": [],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 936748990
+        },
+        {
+          "line": 19,
+          "text": "    id: 'approach',",
+          "tokens": [
+            "approach"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3375581235
+        },
+        {
+          "line": 20,
+          "text": "    required: true,",
+          "tokens": [
+            "required"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 4144802961
+        },
+        {
+          "line": 21,
+          "text": "    title: 'THE LONG HALL',",
+          "tokens": [
+            "title",
+            "THE",
+            "LONG",
+            "HALL"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 892047085
+        },
+        {
+          "line": 22,
+          "text": "    kind: 'corridor',",
+          "tokens": [
+            "kind",
+            "corridor"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 715739438
+        },
+        {
+          "line": 23,
+          "text": "    exits: { north: 'fork-room', east: 'work-order-loop', west: 'surfer-origin' },",
+          "tokens": [
+            "exits",
+            "north",
+            "fork",
+            "room",
+            "east",
+            "work",
+            "order",
+            "loop"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 309898724
+        },
+        {
+          "line": 24,
+          "text": "    lines: [",
+          "tokens": [
+            "lines"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3511866362
+        },
+        {
+          "line": 25,
+          "text": "      'CORRIDOR.LENGTH = CORRIDOR.LENGTH + STEP;',",
+          "tokens": [
+            "CORRIDOR",
+            "LENGTH",
+            "STEP"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3195471888
+        },
+        {
+          "line": 26,
+          "text": "      'WORK_ORDER[4417-C].PAGES += 1;',",
+          "tokens": [
+            "WORK_ORDER",
+            "PAGES"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1208095396
+        },
+        {
+          "line": 27,
+          "text": "      'if (operator.turns_back) hush(operator);',",
+          "tokens": [
+            "operator",
+            "turns_back",
+            "hush"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1965557563
+        },
+        {
+          "line": 28,
+          "text": "      'THE CHAPEL IS STILL AHEAD. IT HAS BEEN AHEAD FOR TOO LONG.',",
+          "tokens": [
+            "THE",
+            "CHAPEL",
+            "STILL",
+            "AHEAD",
+            "HAS",
+            "BEEN",
+            "FOR",
+            "TOO"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 810138018
+        },
+        {
+          "line": 29,
+          "text": "    ],",
+          "tokens": [],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1118531908
+        },
+        {
+          "line": 30,
+          "text": "    inspect: 'The hallway is still the hallway, except the walls are made of clauses from the job.',",
+          "tokens": [
+            "inspect",
+            "The",
+            "hallway",
+            "still",
+            "the",
+            "except",
+            "walls",
+            "are"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1001134768
+        },
+        {
+          "line": 69,
+          "text": "      'recordist.returned = false;',",
+          "tokens": [
+            "recordist",
+            "returned"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3690177224
+        },
+        {
+          "line": 70,
+          "text": "      'recordist.body = \"available\";',",
+          "tokens": [
+            "recordist",
+            "body",
+            "available"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3137777729
+        },
+        {
+          "line": 71,
+          "text": "    ],",
+          "tokens": [],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 817527883
+        },
+        {
+          "line": 72,
+          "text": "    tunedLines: [",
+          "tokens": [
+            "tunedLines"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 980158199
+        },
+        {
+          "line": 73,
+          "text": "      'const recordist = file(\"4417-C.previous\");',",
+          "tokens": [
+            "recordist",
+            "file",
+            "previous"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3034294616
+        },
+        {
+          "line": 74,
+          "text": "      'recordist.delivered = 4;',",
+          "tokens": [
+            "recordist",
+            "delivered"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1993023692
+        },
+        {
+          "line": 75,
+          "text": "      'recordist.returned = false;',",
+          "tokens": [
+            "recordist",
+            "returned"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1687999923
+        },
+        {
+          "line": 76,
+          "text": "      'recordist.body = surfer.form;',",
+          "tokens": [
+            "recordist",
+            "body",
+            "surfer",
+            "form"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 2619396095
+        },
+        {
+          "line": 77,
+          "text": "      'HE DID NOT VANISH. HE AGREED.',",
+          "tokens": [
+            "DID",
+            "NOT",
+            "VANISH",
+            "AGREED"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3703498657
+        },
+        {
+          "line": 78,
+          "text": "    ],",
+          "tokens": [],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3306770222
+        },
+        {
+          "line": 79,
+          "text": "    inspect: 'Four accepted room tones are stacked in the floor like tiles. The fifth tile is a mouth.',",
+          "tokens": [
+            "inspect",
+            "Four",
+            "accepted",
+            "room",
+            "tones",
+            "are",
+            "stacked",
+            "the"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3589055082
+        },
+        {
+          "line": 80,
+          "text": "    tune: 'The variable name lengthens until it becomes a job title, then a man.',",
+          "tokens": [
+            "tune",
+            "The",
+            "variable",
+            "name",
+            "lengthens",
+            "until",
+            "becomes",
+            "job"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 2025686051
+        },
+        {
+          "line": 81,
+          "text": "    record: 'The recorder takes: \"One more and I am out of here.\" Then the sentence corrects itself like a machine correcting a man.",
+          "tokens": [
+            "record",
+            "The",
+            "recorder",
+            "takes",
+            "One",
+            "more",
+            "and",
+            "out"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3244268101
+        },
+        {
+          "line": 82,
+          "text": "  },",
+          "tokens": [],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 2545655381
+        },
+        {
+          "line": 83,
+          "text": "  {",
+          "tokens": [],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3000191006
+        },
+        {
+          "line": 84,
+          "text": "    id: 'surfer-origin',",
+          "tokens": [
+            "surfer",
+            "origin"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 413610157
+        },
+        {
+          "line": 85,
+          "text": "    required: false,",
+          "tokens": [
+            "required"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 793330813
+        },
+        {
+          "line": 86,
+          "text": "    title: 'STUDENT FILE',",
+          "tokens": [
+            "title",
+            "STUDENT",
+            "FILE"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1596099913
+        },
+        {
+          "line": 87,
+          "text": "    kind: 'loop',",
+          "tokens": [
+            "kind",
+            "loop"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 340776659
+        },
+        {
+          "line": 88,
+          "text": "    exits: { east: 'approach', north: 'body-room' },",
+          "tokens": [
+            "exits",
+            "east",
+            "approach",
+            "north",
+            "body",
+            "room"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1605987361
+        },
+        {
+          "line": 89,
+          "text": "    optionalFlag: CHUNK_SURF_FLAGS.optionalSurfer,",
+          "tokens": [
+            "optionalFlag",
+            "CHUNK_SURF_FLAGS",
+            "optionalSurfer"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 267597222
+        },
+        {
+          "line": 90,
+          "text": "    lines: [",
+          "tokens": [
+            "lines"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 492919875
+        },
+        {
+          "line": 91,
+          "text": "      'student.practice(hours++);',",
+          "tokens": [
+            "student",
+            "practice",
+            "hours"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1962600249
+        },
+        {
+          "line": 92,
+          "text": "      'student.listen(music);',",
+          "tokens": [
+            "student",
+            "listen",
+            "music"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3542537656
+        },
+        {
+          "line": 93,
+          "text": "      'student = music;',",
+          "tokens": [
+            "student",
+            "music"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 719390036
+        },
+        {
+          "line": 94,
+          "text": "      'music.needs(body);',",
+          "tokens": [
+            "music",
+            "needs",
+            "body"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3653700321
+        },
+        {
+          "line": 95,
+          "text": "    ],",
+          "tokens": [],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3268949513
+        },
+        {
+          "line": 96,
+          "text": "    tunedLines: [",
+          "tokens": [
+            "tunedLines"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 685010585
+        },
+        {
+          "line": 97,
+          "text": "      'student.practice(hours++);',",
+          "tokens": [
+            "student",
+            "practice",
+            "hours"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 4170174139
+        },
+        {
+          "line": 98,
+          "text": "      'student.listen(music);',",
+          "tokens": [
+            "student",
+            "listen",
+            "music"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 4059421194
+        },
+        {
+          "line": 99,
+          "text": "      'student = music INSIDE THE FILES;',",
+          "tokens": [
+            "student",
+            "music",
+            "INSIDE",
+            "THE",
+            "FILES"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 405468962
+        },
+        {
+          "line": 100,
+          "text": "      'music.needs(body);',",
+          "tokens": [
+            "music",
+            "needs",
+            "body"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 2836173723
+        },
+        {
+          "line": 101,
+          "text": "      'THE SURFER WAS NOT BORN IN THE BUILDING. IT WAS TRAINED THERE.',",
+          "tokens": [
+            "THE",
+            "SURFER",
+            "WAS",
+            "NOT",
+            "BORN",
+            "BUILDING",
+            "TRAINED",
+            "THERE"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1435449932
+        },
+        {
+          "line": 102,
+          "text": "      'THE MACHINE BOASTED NO LANGUAGE. THEN IT LEARNED TO ASK.',",
+          "tokens": [
+            "THE",
+            "MACHINE",
+            "BOASTED",
+            "LANGUAGE",
+            "THEN",
+            "LEARNED",
+            "ASK"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3267127537
+        },
+        {
+          "line": 103,
+          "text": "    ],",
+          "tokens": [],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3685427157
+        }
+      ]
+    },
+    "work-order-loop": {
+      "id": "work-order-loop",
+      "title": "WORK ORDER SOURCE",
+      "anchors": [
+        "work-order-loop",
+        "WORK_ORDER",
+        "DELIVER",
+        "ACCEPTANCE",
+        "five clean minutes"
+      ],
+      "sourceLines": [
+        {
+          "line": 154,
+          "text": "  let s = normalizeChunkSurfState(state);",
+          "tokens": [
+            "normalizeChunkSurfState",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2754995423
+        },
+        {
+          "line": 155,
+          "text": "  if (!s || s.completed) return s;",
+          "tokens": [
+            "completed"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4004328695
+        },
+        {
+          "line": 156,
+          "text": "  const room = currentChunkSurfRoom(s);",
+          "tokens": [
+            "room",
+            "currentChunkSurfRoom"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3144050365
+        },
+        {
+          "line": 157,
+          "text": "  if (room.kind !== 'final') return pushLog(s, 'There is nothing here stable enough to redact.', 'secondary');",
+          "tokens": [
+            "room",
+            "kind",
+            "final",
+            "pushLog",
+            "There",
+            "nothing",
+            "here",
+            "stable"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2675598298
+        },
+        {
+          "line": 158,
+          "text": "  const redaction = room.redactions?.find((entry) => entry.id === redactionId) || room.redactions?.[0];",
+          "tokens": [
+            "redaction",
+            "room",
+            "redactions",
+            "find",
+            "entry",
+            "redactionId"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3554983308
+        },
+        {
+          "line": 159,
+          "text": "  if (!redaction) return s;",
+          "tokens": [
+            "redaction"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2335422673
+        },
+        {
+          "line": 160,
+          "text": "  const requiredDone = CHUNK_SURF_REQUIRED_ROOMS.every((id) => s.tuned.includes(id) || id === 'approach');",
+          "tokens": [
+            "requiredDone",
+            "CHUNK_SURF_REQUIRED_ROOMS",
+            "every",
+            "tuned",
+            "includes",
+            "approach"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 422780823
+        },
+        {
+          "line": 161,
+          "text": "  const optionalDone = ['recordist-loop', 'surfer-origin', 'work-order-loop'].filter((id) => s.tuned.includes(id) || s.recorded.incl",
+          "tokens": [
+            "optionalDone",
+            "recordist",
+            "loop",
+            "surfer",
+            "origin",
+            "work",
+            "order",
+            "filter"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1014290489
+        },
+        {
+          "line": 162,
+          "text": "  const bestEligible = !!(",
+          "tokens": [
+            "bestEligible"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 619248444
+        },
+        {
+          "line": 163,
+          "text": "    redaction.correct &&",
+          "tokens": [
+            "redaction",
+            "correct"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2301164849
+        },
+        {
+          "line": 164,
+          "text": "    s.profile?.bestEligible &&",
+          "tokens": [
+            "profile",
+            "bestEligible"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2054663513
+        },
+        {
+          "line": 165,
+          "text": "    s.hasFork &&",
+          "tokens": [
+            "hasFork"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3756449209
+        },
+        {
+          "line": 166,
+          "text": "    requiredDone &&",
+          "tokens": [
+            "requiredDone"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2573781030
+        },
+        {
+          "line": 167,
+          "text": "    optionalDone.length >= 2 &&",
+          "tokens": [
+            "optionalDone",
+            "length"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3975110113
+        },
+        {
+          "line": 168,
+          "text": "    s.recorded.includes('body-room')",
+          "tokens": [
+            "recorded",
+            "includes",
+            "body",
+            "room"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3921820006
+        },
+        {
+          "line": 182,
+          "text": "  return [",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2785596198
+        },
+        {
+          "line": 183,
+          "text": "    CHUNK_SURF_FLAGS.entered,",
+          "tokens": [
+            "CHUNK_SURF_FLAGS",
+            "entered"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 447895817
+        },
+        {
+          "line": 184,
+          "text": "    ...(s.completed ? [CHUNK_SURF_FLAGS.completed] : []),",
+          "tokens": [
+            "completed",
+            "CHUNK_SURF_FLAGS"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1205110118
+        },
+        {
+          "line": 185,
+          "text": "    ...(s.hasFork ? [CHUNK_SURF_FLAGS.fork] : []),",
+          "tokens": [
+            "hasFork",
+            "CHUNK_SURF_FLAGS",
+            "fork"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3612761567
+        },
+        {
+          "line": 186,
+          "text": "    ...(s.tuned.includes('body-room') ? [CHUNK_SURF_FLAGS.trueLine] : []),",
+          "tokens": [
+            "tuned",
+            "includes",
+            "body",
+            "room",
+            "CHUNK_SURF_FLAGS",
+            "trueLine"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3311923002
+        },
+        {
+          "line": 187,
+          "text": "    ...(s.tuned.includes('recordist-loop') || s.recorded.includes('recordist-loop') ? [CHUNK_SURF_FLAGS.optionalRecordist] : []),",
+          "tokens": [
+            "tuned",
+            "includes",
+            "recordist",
+            "loop",
+            "recorded",
+            "CHUNK_SURF_FLAGS",
+            "optionalRecordist"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 39301377
+        },
+        {
+          "line": 188,
+          "text": "    ...(s.tuned.includes('surfer-origin') || s.recorded.includes('surfer-origin') ? [CHUNK_SURF_FLAGS.optionalSurfer] : []),",
+          "tokens": [
+            "tuned",
+            "includes",
+            "surfer",
+            "origin",
+            "recorded",
+            "CHUNK_SURF_FLAGS",
+            "optionalSurfer"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 278466568
+        },
+        {
+          "line": 189,
+          "text": "    ...(s.tuned.includes('work-order-loop') || s.recorded.includes('work-order-loop') ? [CHUNK_SURF_FLAGS.optionalWorkOrder] : []),",
+          "tokens": [
+            "tuned",
+            "includes",
+            "work",
+            "order",
+            "loop",
+            "recorded",
+            "CHUNK_SURF_FLAGS",
+            "optionalWorkOrder"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2190435201
+        },
+        {
+          "line": 190,
+          "text": "    ...(s.redacted === 'body' ? [CHUNK_SURF_FLAGS.correctRedaction] : []),",
+          "tokens": [
+            "redacted",
+            "body",
+            "CHUNK_SURF_FLAGS",
+            "correctRedaction"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2530158389
+        },
+        {
+          "line": 191,
+          "text": "    ...(s.bestEligible ? [CHUNK_SURF_FLAGS.bestEligible] : []),",
+          "tokens": [
+            "bestEligible",
+            "CHUNK_SURF_FLAGS"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1181373638
+        },
+        {
+          "line": 192,
+          "text": "  ];",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3670448450
+        },
+        {
+          "line": 193,
+          "text": "}",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3766932182
+        },
+        {
+          "line": 195,
+          "text": "export function chunkSurfCompletion(state) {",
+          "tokens": [
+            "chunkSurfCompletion",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3500054291
+        },
+        {
+          "line": 196,
+          "text": "  const s = normalizeChunkSurfState(state);",
+          "tokens": [
+            "normalizeChunkSurfState",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 849506879
+        },
+        {
+          "line": 17,
+          "text": "export const CHUNK_SURF_ROOMS = Object.freeze([",
+          "tokens": [
+            "CHUNK_SURF_ROOMS",
+            "Object",
+            "freeze"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 307742102
+        },
+        {
+          "line": 18,
+          "text": "  {",
+          "tokens": [],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 936748990
+        },
+        {
+          "line": 19,
+          "text": "    id: 'approach',",
+          "tokens": [
+            "approach"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3375581235
+        },
+        {
+          "line": 20,
+          "text": "    required: true,",
+          "tokens": [
+            "required"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 4144802961
+        },
+        {
+          "line": 21,
+          "text": "    title: 'THE LONG HALL',",
+          "tokens": [
+            "title",
+            "THE",
+            "LONG",
+            "HALL"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 892047085
+        },
+        {
+          "line": 22,
+          "text": "    kind: 'corridor',",
+          "tokens": [
+            "kind",
+            "corridor"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 715739438
+        },
+        {
+          "line": 23,
+          "text": "    exits: { north: 'fork-room', east: 'work-order-loop', west: 'surfer-origin' },",
+          "tokens": [
+            "exits",
+            "north",
+            "fork",
+            "room",
+            "east",
+            "work",
+            "order",
+            "loop"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 309898724
+        },
+        {
+          "line": 24,
+          "text": "    lines: [",
+          "tokens": [
+            "lines"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3511866362
+        },
+        {
+          "line": 25,
+          "text": "      'CORRIDOR.LENGTH = CORRIDOR.LENGTH + STEP;',",
+          "tokens": [
+            "CORRIDOR",
+            "LENGTH",
+            "STEP"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3195471888
+        },
+        {
+          "line": 26,
+          "text": "      'WORK_ORDER[4417-C].PAGES += 1;',",
+          "tokens": [
+            "WORK_ORDER",
+            "PAGES"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1208095396
+        },
+        {
+          "line": 27,
+          "text": "      'if (operator.turns_back) hush(operator);',",
+          "tokens": [
+            "operator",
+            "turns_back",
+            "hush"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1965557563
+        },
+        {
+          "line": 28,
+          "text": "      'THE CHAPEL IS STILL AHEAD. IT HAS BEEN AHEAD FOR TOO LONG.',",
+          "tokens": [
+            "THE",
+            "CHAPEL",
+            "STILL",
+            "AHEAD",
+            "HAS",
+            "BEEN",
+            "FOR",
+            "TOO"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 810138018
+        },
+        {
+          "line": 29,
+          "text": "    ],",
+          "tokens": [],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1118531908
+        },
+        {
+          "line": 30,
+          "text": "    inspect: 'The hallway is still the hallway, except the walls are made of clauses from the job.',",
+          "tokens": [
+            "inspect",
+            "The",
+            "hallway",
+            "still",
+            "the",
+            "except",
+            "walls",
+            "are"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1001134768
+        },
+        {
+          "line": 31,
+          "text": "    tune: 'The paper edges tremble. One page refuses the draft.',",
+          "tokens": [
+            "tune",
+            "The",
+            "paper",
+            "edges",
+            "tremble",
+            "One",
+            "page",
+            "refuses"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1294262892
+        },
+        {
+          "line": 32,
+          "text": "    record: 'The recorder takes the hall and plays back shoe leather over wet paper.',",
+          "tokens": [
+            "record",
+            "The",
+            "recorder",
+            "takes",
+            "the",
+            "hall",
+            "and",
+            "plays"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1559482010
+        },
+        {
+          "line": 33,
+          "text": "  },",
+          "tokens": [],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 885378693
+        },
+        {
+          "line": 57,
+          "text": "    record: 'The recorder catches a clean A, then a man trying not to breathe under it.',",
+          "tokens": [
+            "record",
+            "The",
+            "recorder",
+            "catches",
+            "clean",
+            "then",
+            "man",
+            "trying"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3694790801
+        },
+        {
+          "line": 58,
+          "text": "  },",
+          "tokens": [],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 2698650804
+        },
+        {
+          "line": 59,
+          "text": "  {",
+          "tokens": [],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 4094007633
+        },
+        {
+          "line": 60,
+          "text": "    id: 'recordist-loop',",
+          "tokens": [
+            "recordist",
+            "loop"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 419810159
+        },
+        {
+          "line": 61,
+          "text": "    required: true,",
+          "tokens": [
+            "required"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1206631266
+        },
+        {
+          "line": 62,
+          "text": "    title: 'PREVIOUS CONTRACTOR',",
+          "tokens": [
+            "title",
+            "PREVIOUS",
+            "CONTRACTOR"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 601716746
+        },
+        {
+          "line": 63,
+          "text": "    kind: 'room',",
+          "tokens": [
+            "kind",
+            "room"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1128212204
+        },
+        {
+          "line": 64,
+          "text": "    exits: { south: 'fork-room', east: 'body-room', west: 'work-order-loop' },",
+          "tokens": [
+            "exits",
+            "south",
+            "fork",
+            "room",
+            "east",
+            "body",
+            "west",
+            "work"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 336986039
+        },
+        {
+          "line": 65,
+          "text": "    optionalFlag: CHUNK_SURF_FLAGS.optionalRecordist,",
+          "tokens": [
+            "optionalFlag",
+            "CHUNK_SURF_FLAGS",
+            "optionalRecordist"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1272689726
+        },
+        {
+          "line": 66,
+          "text": "    lines: [",
+          "tokens": [
+            "lines"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 2864754520
+        },
+        {
+          "line": 67,
+          "text": "      'const recordist = file(\"4417-C.previous\");',",
+          "tokens": [
+            "recordist",
+            "file",
+            "previous"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1804797941
+        },
+        {
+          "line": 68,
+          "text": "      'recordist.delivered = 4;',",
+          "tokens": [
+            "recordist",
+            "delivered"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 158467321
+        },
+        {
+          "line": 69,
+          "text": "      'recordist.returned = false;',",
+          "tokens": [
+            "recordist",
+            "returned"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3690177224
+        },
+        {
+          "line": 70,
+          "text": "      'recordist.body = \"available\";',",
+          "tokens": [
+            "recordist",
+            "body",
+            "available"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3137777729
+        },
+        {
+          "line": 71,
+          "text": "    ],",
+          "tokens": [],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 817527883
+        },
+        {
+          "line": 72,
+          "text": "    tunedLines: [",
+          "tokens": [
+            "tunedLines"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 980158199
+        },
+        {
+          "line": 73,
+          "text": "      'const recordist = file(\"4417-C.previous\");',",
+          "tokens": [
+            "recordist",
+            "file",
+            "previous"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3034294616
+        },
+        {
+          "line": 74,
+          "text": "      'recordist.delivered = 4;',",
+          "tokens": [
+            "recordist",
+            "delivered"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1993023692
+        },
+        {
+          "line": 75,
+          "text": "      'recordist.returned = false;',",
+          "tokens": [
+            "recordist",
+            "returned"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1687999923
+        },
+        {
+          "line": 76,
+          "text": "      'recordist.body = surfer.form;',",
+          "tokens": [
+            "recordist",
+            "body",
+            "surfer",
+            "form"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 2619396095
+        },
+        {
+          "line": 77,
+          "text": "      'HE DID NOT VANISH. HE AGREED.',",
+          "tokens": [
+            "DID",
+            "NOT",
+            "VANISH",
+            "AGREED"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3703498657
+        },
+        {
+          "line": 78,
+          "text": "    ],",
+          "tokens": [],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3306770222
+        },
+        {
+          "line": 79,
+          "text": "    inspect: 'Four accepted room tones are stacked in the floor like tiles. The fifth tile is a mouth.',",
+          "tokens": [
+            "inspect",
+            "Four",
+            "accepted",
+            "room",
+            "tones",
+            "are",
+            "stacked",
+            "the"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3589055082
+        },
+        {
+          "line": 80,
+          "text": "    tune: 'The variable name lengthens until it becomes a job title, then a man.',",
+          "tokens": [
+            "tune",
+            "The",
+            "variable",
+            "name",
+            "lengthens",
+            "until",
+            "becomes",
+            "job"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 2025686051
+        },
+        {
+          "line": 81,
+          "text": "    record: 'The recorder takes: \"One more and I am out of here.\" Then the sentence corrects itself like a machine correcting a man.",
+          "tokens": [
+            "record",
+            "The",
+            "recorder",
+            "takes",
+            "One",
+            "more",
+            "and",
+            "out"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3244268101
+        },
+        {
+          "line": 102,
+          "text": "      'THE MACHINE BOASTED NO LANGUAGE. THEN IT LEARNED TO ASK.',",
+          "tokens": [
+            "THE",
+            "MACHINE",
+            "BOASTED",
+            "LANGUAGE",
+            "THEN",
+            "LEARNED",
+            "ASK"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3267127537
+        },
+        {
+          "line": 103,
+          "text": "    ],",
+          "tokens": [],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3685427157
+        },
+        {
+          "line": 104,
+          "text": "    inspect: 'A rehearsal room made of staff lines. Every measure is a rule about endurance.',",
+          "tokens": [
+            "inspect",
+            "rehearsal",
+            "room",
+            "made",
+            "staff",
+            "lines",
+            "Every",
+            "measure"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3625997915
+        },
+        {
+          "line": 105,
+          "text": "    tune: 'The room does not become clearer. It becomes more willing to accuse itself.',",
+          "tokens": [
+            "tune",
+            "The",
+            "room",
+            "does",
+            "not",
+            "become",
+            "clearer",
+            "becomes"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 345303387
+        },
+        {
+          "line": 106,
+          "text": "    record: 'The take is scales, then knuckles, then a sermon on useful silence.',",
+          "tokens": [
+            "record",
+            "The",
+            "take",
+            "scales",
+            "then",
+            "knuckles",
+            "sermon",
+            "useful"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 392830662
+        },
+        {
+          "line": 107,
+          "text": "  },",
+          "tokens": [],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 2101838585
+        },
+        {
+          "line": 108,
+          "text": "  {",
+          "tokens": [],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 182383920
+        },
+        {
+          "line": 109,
+          "text": "    id: 'work-order-loop',",
+          "tokens": [
+            "work",
+            "order",
+            "loop"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 2569021140
+        },
+        {
+          "line": 110,
+          "text": "    required: false,",
+          "tokens": [
+            "required"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1958650914
+        },
+        {
+          "line": 111,
+          "text": "    title: 'WORK ORDER SOURCE',",
+          "tokens": [
+            "title",
+            "WORK",
+            "ORDER",
+            "SOURCE"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 2376806993
+        },
+        {
+          "line": 112,
+          "text": "    kind: 'loop',",
+          "tokens": [
+            "kind",
+            "loop"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 565090874
+        },
+        {
+          "line": 113,
+          "text": "    exits: { west: 'approach', east: 'recordist-loop', north: 'body-room' },",
+          "tokens": [
+            "exits",
+            "west",
+            "approach",
+            "east",
+            "recordist",
+            "loop",
+            "north",
+            "body"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3045139729
+        },
+        {
+          "line": 114,
+          "text": "    optionalFlag: CHUNK_SURF_FLAGS.optionalWorkOrder,",
+          "tokens": [
+            "optionalFlag",
+            "CHUNK_SURF_FLAGS",
+            "optionalWorkOrder"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1355498841
+        },
+        {
+          "line": 115,
+          "text": "    lines: [",
+          "tokens": [
+            "lines"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 479414427
+        },
+        {
+          "line": 116,
+          "text": "      'DELIVER: five clean minutes;',",
+          "tokens": [
+            "DELIVER",
+            "five",
+            "clean",
+            "minutes"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1369858520
+        },
+        {
+          "line": 117,
+          "text": "      'ACCEPTANCE: no breath, no handling noise;',",
+          "tokens": [
+            "ACCEPTANCE",
+            "breath",
+            "handling",
+            "noise"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 4202115056
+        },
+        {
+          "line": 118,
+          "text": "      'IF fifth == missing: send another body;',",
+          "tokens": [
+            "fifth",
+            "missing",
+            "send",
+            "another",
+            "body"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3852881010
+        },
+        {
+          "line": 119,
+          "text": "      'ACCOUNT: open;',",
+          "tokens": [
+            "ACCOUNT",
+            "open"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 2515803503
+        },
+        {
+          "line": 120,
+          "text": "    ],",
+          "tokens": [],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 849847720
+        }
+      ]
+    },
+    "body-room": {
+      "id": "body-room",
+      "title": "BODY RETURN",
+      "anchors": [
+        "body-room",
+        "BODY",
+        "RETURN",
+        "previousRecordist.body",
+        "savedRecordist"
+      ],
+      "sourceLines": [
+        {
+          "line": 12,
+          "text": "const unique = (values) => [...new Set((Array.isArray(values) ? values : []).filter(Boolean))];",
+          "tokens": [
+            "unique",
+            "values",
+            "new",
+            "Set",
+            "Array",
+            "isArray",
+            "filter",
+            "Boolean"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2775820360
+        },
+        {
+          "line": 14,
+          "text": "export function canOfferChunkSurf({",
+          "tokens": [
+            "canOfferChunkSurf"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2668386505
+        },
+        {
+          "line": 15,
+          "text": "  completedTakes = 0,",
+          "tokens": [
+            "completedTakes"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1877029048
+        },
+        {
+          "line": 16,
+          "text": "  roomId = '',",
+          "tokens": [
+            "roomId"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1682699628
+        },
+        {
+          "line": 17,
+          "text": "  alreadyCompleted = false,",
+          "tokens": [
+            "alreadyCompleted"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3699676873
+        },
+        {
+          "line": 18,
+          "text": "} = {}) {",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2333103393
+        },
+        {
+          "line": 19,
+          "text": "  if (alreadyCompleted) return false;",
+          "tokens": [
+            "alreadyCompleted"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 454314051
+        },
+        {
+          "line": 20,
+          "text": "  if (Number(completedTakes) < 4) return false;",
+          "tokens": [
+            "Number",
+            "completedTakes"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3730635985
+        },
+        {
+          "line": 21,
+          "text": "  if (roomId && roomId !== 'lux_nova' && roomId !== 'chapel' && roomId !== 'chapel_approach') return false;",
+          "tokens": [
+            "roomId",
+            "lux_nova",
+            "chapel",
+            "chapel_approach"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1217827469
+        },
+        {
+          "line": 22,
+          "text": "  return true;",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2162630789
+        },
+        {
+          "line": 23,
+          "text": "}",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3214882894
+        },
+        {
+          "line": 25,
+          "text": "export function createChunkSurfState({",
+          "tokens": [
+            "createChunkSurfState"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1937063672
+        },
+        {
+          "line": 26,
+          "text": "  drankCoffee = false,",
+          "tokens": [
+            "drankCoffee"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4073207096
+        },
+        {
+          "line": 27,
+          "text": "  hasRig = false,",
+          "tokens": [
+            "hasRig"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 691942671
+        },
+        {
+          "line": 28,
+          "text": "  endingsSeen = [],",
+          "tokens": [
+            "endingsSeen"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2097527392
+        },
+        {
+          "line": 29,
+          "text": "  seed = 4417,",
+          "tokens": [
+            "seed"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1880210507
+        },
+        {
+          "line": 30,
+          "text": "} = {}) {",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 400503
+        },
+        {
+          "line": 31,
+          "text": "  const profile = chunkSurfRouteProfile({ drankCoffee, hasRig, endingsSeen });",
+          "tokens": [
+            "profile",
+            "chunkSurfRouteProfile",
+            "drankCoffee",
+            "hasRig",
+            "endingsSeen"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3396922003
+        },
+        {
+          "line": 32,
+          "text": "  return {",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 539633310
+        },
+        {
+          "line": 33,
+          "text": "    active: true,",
+          "tokens": [
+            "active"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2461917520
+        },
+        {
+          "line": 34,
+          "text": "    profile,",
+          "tokens": [
+            "profile"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2024556596
+        },
+        {
+          "line": 35,
+          "text": "    seed: Number(seed) || 4417,",
+          "tokens": [
+            "seed",
+            "Number"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1643934800
+        },
+        {
+          "line": 36,
+          "text": "    roomId: 'approach',",
+          "tokens": [
+            "roomId",
+            "approach"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2895403437
+        },
+        {
+          "line": 37,
+          "text": "    facing: 'north',",
+          "tokens": [
+            "facing",
+            "north"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3816591631
+        },
+        {
+          "line": 38,
+          "text": "    hasFork: false,",
+          "tokens": [
+            "hasFork"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1281926462
+        },
+        {
+          "line": 39,
+          "text": "    tuned: [],",
+          "tokens": [
+            "tuned"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1074928678
+        },
+        {
+          "line": 44,
+          "text": "    completed: false,",
+          "tokens": [
+            "completed"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1015417240
+        },
+        {
+          "line": 45,
+          "text": "    scare: null,",
+          "tokens": [
+            "scare",
+            "null"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1973862054
+        },
+        {
+          "line": 46,
+          "text": "    log: [],",
+          "tokens": [
+            "log"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3669645900
+        },
+        {
+          "line": 47,
+          "text": "  };",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2983618173
+        },
+        {
+          "line": 48,
+          "text": "}",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 821837893
+        },
+        {
+          "line": 50,
+          "text": "export function normalizeChunkSurfState(value = null) {",
+          "tokens": [
+            "normalizeChunkSurfState",
+            "value",
+            "null"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4149888063
+        },
+        {
+          "line": 51,
+          "text": "  if (!value || typeof value !== 'object') return null;",
+          "tokens": [
+            "value",
+            "typeof",
+            "object",
+            "null"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2045545896
+        },
+        {
+          "line": 52,
+          "text": "  const state = createChunkSurfState({",
+          "tokens": [
+            "state",
+            "createChunkSurfState"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3400019271
+        },
+        {
+          "line": 53,
+          "text": "    drankCoffee: value.profile?.mandatory,",
+          "tokens": [
+            "drankCoffee",
+            "value",
+            "profile",
+            "mandatory"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 823390080
+        },
+        {
+          "line": 54,
+          "text": "    hasRig: value.profile?.bestEligible,",
+          "tokens": [
+            "hasRig",
+            "value",
+            "profile",
+            "bestEligible"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4016743361
+        },
+        {
+          "line": 55,
+          "text": "    seed: value.seed,",
+          "tokens": [
+            "seed",
+            "value"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2259530725
+        },
+        {
+          "line": 56,
+          "text": "  });",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3008477094
+        },
+        {
+          "line": 57,
+          "text": "  return {",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 949906073
+        },
+        {
+          "line": 58,
+          "text": "    ...state,",
+          "tokens": [
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2891526914
+        },
+        {
+          "line": 59,
+          "text": "    ...value,",
+          "tokens": [
+            "value"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1254306993
+        },
+        {
+          "line": 60,
+          "text": "    profile: value.profile || state.profile,",
+          "tokens": [
+            "profile",
+            "value",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2557030729
+        },
+        {
+          "line": 61,
+          "text": "    roomId: chunkSurfRoom(value.roomId)?.id || 'approach',",
+          "tokens": [
+            "roomId",
+            "chunkSurfRoom",
+            "value",
+            "approach"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2706184331
+        },
+        {
+          "line": 62,
+          "text": "    facing: DIRS.includes(value.facing) ? value.facing : 'north',",
+          "tokens": [
+            "facing",
+            "DIRS",
+            "includes",
+            "value",
+            "north"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1433349650
+        },
+        {
+          "line": 63,
+          "text": "    hasFork: !!value.hasFork,",
+          "tokens": [
+            "hasFork",
+            "value"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4250323504
+        },
+        {
+          "line": 64,
+          "text": "    tuned: unique(value.tuned),",
+          "tokens": [
+            "tuned",
+            "unique",
+            "value"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3942554723
+        },
+        {
+          "line": 69,
+          "text": "    completed: !!value.completed,",
+          "tokens": [
+            "completed",
+            "value"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 726154684
+        },
+        {
+          "line": 70,
+          "text": "    scare: value.scare || null,",
+          "tokens": [
+            "scare",
+            "value",
+            "null"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1461046657
+        },
+        {
+          "line": 71,
+          "text": "    log: Array.isArray(value.log) ? value.log.slice(-12) : [],",
+          "tokens": [
+            "log",
+            "Array",
+            "isArray",
+            "value",
+            "slice"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1444118821
+        },
+        {
+          "line": 72,
+          "text": "  };",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2953188481
+        },
+        {
+          "line": 73,
+          "text": "}",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4253569735
+        },
+        {
+          "line": 75,
+          "text": "export function currentChunkSurfRoom(state) {",
+          "tokens": [
+            "currentChunkSurfRoom",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 454223422
+        },
+        {
+          "line": 76,
+          "text": "  return chunkSurfRoom(state?.roomId);",
+          "tokens": [
+            "chunkSurfRoom",
+            "state",
+            "roomId"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1144639183
+        },
+        {
+          "line": 77,
+          "text": "}",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1245451731
+        },
+        {
+          "line": 79,
+          "text": "function pushLog(state, text, tone = 'primary') {",
+          "tokens": [
+            "pushLog",
+            "state",
+            "text",
+            "tone",
+            "primary"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2124936603
+        },
+        {
+          "line": 80,
+          "text": "  return {",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1317689993
+        },
+        {
+          "line": 81,
+          "text": "    ...state,",
+          "tokens": [
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 860333100
+        },
+        {
+          "line": 82,
+          "text": "    log: [...(state.log || []), { text: String(text || ''), tone }].slice(-12),",
+          "tokens": [
+            "log",
+            "state",
+            "text",
+            "String",
+            "tone",
+            "slice"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2511829271
+        },
+        {
+          "line": 83,
+          "text": "  };",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2176595229
+        },
+        {
+          "line": 84,
+          "text": "}",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4241749517
+        },
+        {
+          "line": 86,
+          "text": "function mark(state, key, roomId = state.roomId) {",
+          "tokens": [
+            "mark",
+            "state",
+            "key",
+            "roomId"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 149651581
+        },
+        {
+          "line": 87,
+          "text": "  return { ...state, [key]: unique([...(state[key] || []), roomId]) };",
+          "tokens": [
+            "state",
+            "key",
+            "unique",
+            "roomId"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1391038215
+        },
+        {
+          "line": 88,
+          "text": "}",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2954797057
+        },
+        {
+          "line": 90,
+          "text": "export function turnChunkSurf(state, dir) {",
+          "tokens": [
+            "turnChunkSurf",
+            "state",
+            "dir"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1321647031
+        },
+        {
+          "line": 91,
+          "text": "  const s = normalizeChunkSurfState(state);",
+          "tokens": [
+            "normalizeChunkSurfState",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3335431353
+        },
+        {
+          "line": 92,
+          "text": "  if (!s || s.completed) return s;",
+          "tokens": [
+            "completed"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 602821577
+        },
+        {
+          "line": 93,
+          "text": "  const idx = DIRS.indexOf(s.facing);",
+          "tokens": [
+            "idx",
+            "DIRS",
+            "indexOf",
+            "facing"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1885610095
+        },
+        {
+          "line": 94,
+          "text": "  if (dir === 'left') return { ...s, facing: DIRS[(idx + 3) % 4] };",
+          "tokens": [
+            "dir",
+            "left",
+            "facing",
+            "DIRS",
+            "idx"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3255117089
+        },
+        {
+          "line": 95,
+          "text": "  if (dir === 'right') return { ...s, facing: DIRS[(idx + 1) % 4] };",
+          "tokens": [
+            "dir",
+            "right",
+            "facing",
+            "DIRS",
+            "idx"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3947065615
+        },
+        {
+          "line": 96,
+          "text": "  if (DIRS.includes(dir)) return { ...s, facing: dir };",
+          "tokens": [
+            "DIRS",
+            "includes",
+            "dir",
+            "facing"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 490013965
+        },
+        {
+          "line": 97,
+          "text": "  return s;",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 210376618
+        },
+        {
+          "line": 98,
+          "text": "}",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3398044948
+        },
+        {
+          "line": 100,
+          "text": "export function moveChunkSurf(state, dir = 'forward') {",
+          "tokens": [
+            "moveChunkSurf",
+            "state",
+            "dir",
+            "forward"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4031805983
+        },
+        {
+          "line": 101,
+          "text": "  let s = normalizeChunkSurfState(state);",
+          "tokens": [
+            "normalizeChunkSurfState",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3719575657
+        },
+        {
+          "line": 102,
+          "text": "  if (!s || s.completed) return s;",
+          "tokens": [
+            "completed"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1801160371
+        },
+        {
+          "line": 103,
+          "text": "  const facing = dir === 'back' ? opposite[s.facing] : s.facing;",
+          "tokens": [
+            "facing",
+            "dir",
+            "back",
+            "opposite"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2439803154
+        },
+        {
+          "line": 104,
+          "text": "  const room = currentChunkSurfRoom(s);",
+          "tokens": [
+            "room",
+            "currentChunkSurfRoom"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2856105998
+        },
+        {
+          "line": 105,
+          "text": "  const next = room.exits?.[facing];",
+          "tokens": [
+            "next",
+            "room",
+            "exits",
+            "facing"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2523474849
+        },
+        {
+          "line": 106,
+          "text": "  if (!next) {",
+          "tokens": [
+            "next"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1137995854
+        },
+        {
+          "line": 107,
+          "text": "    if (s.roomId === 'approach' && dir === 'back') {",
+          "tokens": [
+            "roomId",
+            "approach",
+            "dir",
+            "back"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1825709978
+        },
+        {
+          "line": 108,
+          "text": "      return {",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2899468160
+        },
+        {
+          "line": 109,
+          "text": "        ...pushLog(s, 'Behind you, the corridor breathes in.', 'danger'),",
+          "tokens": [
+            "pushLog",
+            "Behind",
+            "you",
+            "the",
+            "corridor",
+            "breathes",
+            "danger"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2048813780
+        },
+        {
+          "line": 110,
+          "text": "        scare: { reason: 'turned-back', atRoom: s.roomId },",
+          "tokens": [
+            "scare",
+            "reason",
+            "turned",
+            "back",
+            "atRoom",
+            "roomId"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2694918733
+        },
+        {
+          "line": 111,
+          "text": "      };",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 842753185
+        },
+        {
+          "line": 112,
+          "text": "    }",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3143397157
+        },
+        {
+          "line": 113,
+          "text": "    return pushLog(s, 'The text is solid here.', 'secondary');",
+          "tokens": [
+            "pushLog",
+            "The",
+            "text",
+            "solid",
+            "here",
+            "secondary"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2823775785
+        },
+        {
+          "line": 114,
+          "text": "  }",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2258686595
+        },
+        {
+          "line": 115,
+          "text": "  s = {",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3012860204
+        },
+        {
+          "line": 116,
+          "text": "    ...s,",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2927586299
+        },
+        {
+          "line": 117,
+          "text": "    roomId: next,",
+          "tokens": [
+            "roomId",
+            "next"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2848879274
+        }
+      ]
+    },
+    "final-page": {
+      "id": "final-page",
+      "title": "FINAL PAGE / REDACTION",
+      "anchors": [
+        "final-page",
+        "redactChunkSurf",
+        "redactions",
+        "correctRedaction",
+        "BODY BORROWED"
+      ],
+      "sourceLines": [
+        {
+          "line": 146,
+          "text": "  if (!s || s.completed) return s;",
+          "tokens": [
+            "completed"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 289192315
+        },
+        {
+          "line": 147,
+          "text": "  const room = currentChunkSurfRoom(s);",
+          "tokens": [
+            "room",
+            "currentChunkSurfRoom"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4275218187
+        },
+        {
+          "line": 148,
+          "text": "  if (!s.hasFork) return pushLog(s, 'The recorder clicks. Something behind the click screams.', 'danger');",
+          "tokens": [
+            "hasFork",
+            "pushLog",
+            "The",
+            "recorder",
+            "clicks",
+            "Something",
+            "behind",
+            "the"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 67514630
+        },
+        {
+          "line": 149,
+          "text": "  s = mark(s, 'recorded');",
+          "tokens": [
+            "mark",
+            "recorded"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3490796114
+        },
+        {
+          "line": 150,
+          "text": "  return pushLog(s, room.record || 'The take comes back wrong.', 'blue');",
+          "tokens": [
+            "pushLog",
+            "room",
+            "record",
+            "The",
+            "take",
+            "comes",
+            "back",
+            "wrong"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3260612272
+        },
+        {
+          "line": 151,
+          "text": "}",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2846327156
+        },
+        {
+          "line": 153,
+          "text": "export function redactChunkSurf(state, redactionId) {",
+          "tokens": [
+            "redactChunkSurf",
+            "state",
+            "redactionId"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 93712250
+        },
+        {
+          "line": 154,
+          "text": "  let s = normalizeChunkSurfState(state);",
+          "tokens": [
+            "normalizeChunkSurfState",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2754995423
+        },
+        {
+          "line": 155,
+          "text": "  if (!s || s.completed) return s;",
+          "tokens": [
+            "completed"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 4004328695
+        },
+        {
+          "line": 156,
+          "text": "  const room = currentChunkSurfRoom(s);",
+          "tokens": [
+            "room",
+            "currentChunkSurfRoom"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3144050365
+        },
+        {
+          "line": 157,
+          "text": "  if (room.kind !== 'final') return pushLog(s, 'There is nothing here stable enough to redact.', 'secondary');",
+          "tokens": [
+            "room",
+            "kind",
+            "final",
+            "pushLog",
+            "There",
+            "nothing",
+            "here",
+            "stable"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2675598298
+        },
+        {
+          "line": 158,
+          "text": "  const redaction = room.redactions?.find((entry) => entry.id === redactionId) || room.redactions?.[0];",
+          "tokens": [
+            "redaction",
+            "room",
+            "redactions",
+            "find",
+            "entry",
+            "redactionId"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3554983308
+        },
+        {
+          "line": 159,
+          "text": "  if (!redaction) return s;",
+          "tokens": [
+            "redaction"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2335422673
+        },
+        {
+          "line": 160,
+          "text": "  const requiredDone = CHUNK_SURF_REQUIRED_ROOMS.every((id) => s.tuned.includes(id) || id === 'approach');",
+          "tokens": [
+            "requiredDone",
+            "CHUNK_SURF_REQUIRED_ROOMS",
+            "every",
+            "tuned",
+            "includes",
+            "approach"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 422780823
+        },
+        {
+          "line": 161,
+          "text": "  const optionalDone = ['recordist-loop', 'surfer-origin', 'work-order-loop'].filter((id) => s.tuned.includes(id) || s.recorded.incl",
+          "tokens": [
+            "optionalDone",
+            "recordist",
+            "loop",
+            "surfer",
+            "origin",
+            "work",
+            "order",
+            "filter"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1014290489
+        },
+        {
+          "line": 162,
+          "text": "  const bestEligible = !!(",
+          "tokens": [
+            "bestEligible"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 619248444
+        },
+        {
+          "line": 163,
+          "text": "    redaction.correct &&",
+          "tokens": [
+            "redaction",
+            "correct"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2301164849
+        },
+        {
+          "line": 164,
+          "text": "    s.profile?.bestEligible &&",
+          "tokens": [
+            "profile",
+            "bestEligible"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2054663513
+        },
+        {
+          "line": 165,
+          "text": "    s.hasFork &&",
+          "tokens": [
+            "hasFork"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3756449209
+        },
+        {
+          "line": 183,
+          "text": "    CHUNK_SURF_FLAGS.entered,",
+          "tokens": [
+            "CHUNK_SURF_FLAGS",
+            "entered"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 447895817
+        },
+        {
+          "line": 184,
+          "text": "    ...(s.completed ? [CHUNK_SURF_FLAGS.completed] : []),",
+          "tokens": [
+            "completed",
+            "CHUNK_SURF_FLAGS"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1205110118
+        },
+        {
+          "line": 185,
+          "text": "    ...(s.hasFork ? [CHUNK_SURF_FLAGS.fork] : []),",
+          "tokens": [
+            "hasFork",
+            "CHUNK_SURF_FLAGS",
+            "fork"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3612761567
+        },
+        {
+          "line": 186,
+          "text": "    ...(s.tuned.includes('body-room') ? [CHUNK_SURF_FLAGS.trueLine] : []),",
+          "tokens": [
+            "tuned",
+            "includes",
+            "body",
+            "room",
+            "CHUNK_SURF_FLAGS",
+            "trueLine"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3311923002
+        },
+        {
+          "line": 187,
+          "text": "    ...(s.tuned.includes('recordist-loop') || s.recorded.includes('recordist-loop') ? [CHUNK_SURF_FLAGS.optionalRecordist] : []),",
+          "tokens": [
+            "tuned",
+            "includes",
+            "recordist",
+            "loop",
+            "recorded",
+            "CHUNK_SURF_FLAGS",
+            "optionalRecordist"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 39301377
+        },
+        {
+          "line": 188,
+          "text": "    ...(s.tuned.includes('surfer-origin') || s.recorded.includes('surfer-origin') ? [CHUNK_SURF_FLAGS.optionalSurfer] : []),",
+          "tokens": [
+            "tuned",
+            "includes",
+            "surfer",
+            "origin",
+            "recorded",
+            "CHUNK_SURF_FLAGS",
+            "optionalSurfer"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 278466568
+        },
+        {
+          "line": 189,
+          "text": "    ...(s.tuned.includes('work-order-loop') || s.recorded.includes('work-order-loop') ? [CHUNK_SURF_FLAGS.optionalWorkOrder] : []),",
+          "tokens": [
+            "tuned",
+            "includes",
+            "work",
+            "order",
+            "loop",
+            "recorded",
+            "CHUNK_SURF_FLAGS",
+            "optionalWorkOrder"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2190435201
+        },
+        {
+          "line": 190,
+          "text": "    ...(s.redacted === 'body' ? [CHUNK_SURF_FLAGS.correctRedaction] : []),",
+          "tokens": [
+            "redacted",
+            "body",
+            "CHUNK_SURF_FLAGS",
+            "correctRedaction"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 2530158389
+        },
+        {
+          "line": 191,
+          "text": "    ...(s.bestEligible ? [CHUNK_SURF_FLAGS.bestEligible] : []),",
+          "tokens": [
+            "bestEligible",
+            "CHUNK_SURF_FLAGS"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1181373638
+        },
+        {
+          "line": 192,
+          "text": "  ];",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3670448450
+        },
+        {
+          "line": 193,
+          "text": "}",
+          "tokens": [],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3766932182
+        },
+        {
+          "line": 195,
+          "text": "export function chunkSurfCompletion(state) {",
+          "tokens": [
+            "chunkSurfCompletion",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 3500054291
+        },
+        {
+          "line": 196,
+          "text": "  const s = normalizeChunkSurfState(state);",
+          "tokens": [
+            "normalizeChunkSurfState",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 849506879
+        },
+        {
+          "line": 197,
+          "text": "  if (!s?.completed) return { completed: false, bestEligible: false, savedRecordist: false };",
+          "tokens": [
+            "completed",
+            "bestEligible",
+            "savedRecordist"
+          ],
+          "file": "src/game/chunk-surf-state.js",
+          "hash": 1682726631
+        },
+        {
+          "line": 2,
+          "text": "import { uiDraw, uiSize } from '../render/ui.js';",
+          "tokens": [
+            "uiDraw",
+            "uiSize",
+            "render"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 3066915243
+        },
+        {
+          "line": 3,
+          "text": "import {",
+          "tokens": [],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 730991388
+        },
+        {
+          "line": 4,
+          "text": "  createChunkSurfState,",
+          "tokens": [
+            "createChunkSurfState"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 503666247
+        },
+        {
+          "line": 5,
+          "text": "  currentChunkSurfRoom,",
+          "tokens": [
+            "currentChunkSurfRoom"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 4263081285
+        },
+        {
+          "line": 6,
+          "text": "  inspectChunkSurf,",
+          "tokens": [
+            "inspectChunkSurf"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 3473742896
+        },
+        {
+          "line": 7,
+          "text": "  moveChunkSurf,",
+          "tokens": [
+            "moveChunkSurf"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 827439118
+        },
+        {
+          "line": 8,
+          "text": "  recordChunkSurf,",
+          "tokens": [
+            "recordChunkSurf"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 822022557
+        },
+        {
+          "line": 9,
+          "text": "  redactChunkSurf,",
+          "tokens": [
+            "redactChunkSurf"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 2919781684
+        },
+        {
+          "line": 10,
+          "text": "  tuneChunkSurf,",
+          "tokens": [
+            "tuneChunkSurf"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 535536579
+        },
+        {
+          "line": 11,
+          "text": "  turnChunkSurf,",
+          "tokens": [
+            "turnChunkSurf"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 3418932331
+        },
+        {
+          "line": 12,
+          "text": "  chunkSurfCompletion,",
+          "tokens": [
+            "chunkSurfCompletion"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 690630181
+        },
+        {
+          "line": 13,
+          "text": "  chunkSurfProbe,",
+          "tokens": [
+            "chunkSurfProbe"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 1452915464
+        },
+        {
+          "line": 14,
+          "text": "} from './chunk-surf-state.js';",
+          "tokens": [
+            "chunk",
+            "surf",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 319307084
+        },
+        {
+          "line": 15,
+          "text": "import { activeInputPromptDevice, promptLine } from './bindings.js';",
+          "tokens": [
+            "activeInputPromptDevice",
+            "promptLine",
+            "bindings"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 1342794281
+        },
+        {
+          "line": 16,
+          "text": "import { chunkSurfVisualModel } from './chunk-surf-visual.js';",
+          "tokens": [
+            "chunkSurfVisualModel",
+            "chunk",
+            "surf",
+            "visual"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 2350050235
+        },
+        {
+          "line": 338,
+          "text": "      }",
+          "tokens": [],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 3829755276
+        },
+        {
+          "line": 339,
+          "text": "    },",
+          "tokens": [],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 1216905741
+        },
+        {
+          "line": 340,
+          "text": "    key(e) {",
+          "tokens": [
+            "key"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 722650066
+        },
+        {
+          "line": 341,
+          "text": "      const k = inputName(e);",
+          "tokens": [
+            "inputName"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 978484958
+        },
+        {
+          "line": 342,
+          "text": "      const room = currentChunkSurfRoom(state);",
+          "tokens": [
+            "room",
+            "currentChunkSurfRoom",
+            "state"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 2242429669
+        },
+        {
+          "line": 343,
+          "text": "      if (state.scare) return true;",
+          "tokens": [
+            "state",
+            "scare"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 2157995969
+        },
+        {
+          "line": 344,
+          "text": "      if (room.kind === 'final') {",
+          "tokens": [
+            "room",
+            "kind",
+            "final"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 2531857253
+        },
+        {
+          "line": 345,
+          "text": "        if (k === 'arrowup' || k === 'w' || k === 'keyw') { redactionIndex = (redactionIndex - 1 + room.redactions.length) % room.re",
+          "tokens": [
+            "arrowup",
+            "keyw",
+            "redactionIndex",
+            "room",
+            "redactions",
+            "length"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 1978458114
+        },
+        {
+          "line": 346,
+          "text": "        if (k === 'arrowdown' || k === 's' || k === 'keys') { redactionIndex = (redactionIndex + 1) % room.redactions.length; return",
+          "tokens": [
+            "arrowdown",
+            "keys",
+            "redactionIndex",
+            "room",
+            "redactions",
+            "length"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 1403739174
+        },
+        {
+          "line": 347,
+          "text": "        const direct = redactionKeys.indexOf(k);",
+          "tokens": [
+            "direct",
+            "redactionKeys",
+            "indexOf"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 2184070139
+        },
+        {
+          "line": 348,
+          "text": "        if (direct >= 0 && room.redactions[direct]) redactionIndex = direct;",
+          "tokens": [
+            "direct",
+            "room",
+            "redactions",
+            "redactionIndex"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 3325116984
+        },
+        {
+          "line": 349,
+          "text": "        if (k === 'enter' || k === ' ' || k === 'space' || direct >= 0) {",
+          "tokens": [
+            "enter",
+            "space",
+            "direct"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 386451434
+        },
+        {
+          "line": 350,
+          "text": "          apply(redactChunkSurf(state, room.redactions[redactionIndex]?.id));",
+          "tokens": [
+            "apply",
+            "redactChunkSurf",
+            "state",
+            "room",
+            "redactions",
+            "redactionIndex"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 1041954773
+        },
+        {
+          "line": 351,
+          "text": "          if (state.completed) finish();",
+          "tokens": [
+            "state",
+            "completed",
+            "finish"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 3518387957
+        },
+        {
+          "line": 352,
+          "text": "          return true;",
+          "tokens": [],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 1866189138
+        },
+        {
+          "line": 353,
+          "text": "        }",
+          "tokens": [],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 3586023551
+        },
+        {
+          "line": 354,
+          "text": "      }",
+          "tokens": [],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 792441354
+        },
+        {
+          "line": 355,
+          "text": "      if (k === 'arrowleft' || k === 'a' || k === 'keya') { state = turnChunkSurf(state, 'left'); return true; }",
+          "tokens": [
+            "arrowleft",
+            "keya",
+            "state",
+            "turnChunkSurf",
+            "left"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 3821377772
+        },
+        {
+          "line": 356,
+          "text": "      if (k === 'arrowright' || k === 'd' || k === 'keyd') { state = turnChunkSurf(state, 'right'); return true; }",
+          "tokens": [
+            "arrowright",
+            "keyd",
+            "state",
+            "turnChunkSurf",
+            "right"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 3978067803
+        },
+        {
+          "line": 357,
+          "text": "      if (k === 'arrowup' || k === 'w' || k === 'keyw') { apply(moveChunkSurf(state, 'forward')); return true; }",
+          "tokens": [
+            "arrowup",
+            "keyw",
+            "apply",
+            "moveChunkSurf",
+            "state",
+            "forward"
+          ],
+          "file": "src/game/chunk-surf-scene.js",
+          "hash": 3592779315
+        },
+        {
+          "line": 6,
+          "text": "  entered: 'chunkSurf.entered',",
+          "tokens": [
+            "entered",
+            "chunkSurf"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 393410985
+        },
+        {
+          "line": 7,
+          "text": "  completed: 'chunkSurf.completed',",
+          "tokens": [
+            "completed",
+            "chunkSurf"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1943654662
+        },
+        {
+          "line": 8,
+          "text": "  fork: 'chunkSurf.fork',",
+          "tokens": [
+            "fork",
+            "chunkSurf"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 2806536315
+        },
+        {
+          "line": 9,
+          "text": "  trueLine: 'chunkSurf.trueLine',",
+          "tokens": [
+            "trueLine",
+            "chunkSurf"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 2758766436
+        },
+        {
+          "line": 10,
+          "text": "  optionalRecordist: 'chunkSurf.optional.recordist',",
+          "tokens": [
+            "optionalRecordist",
+            "chunkSurf",
+            "optional",
+            "recordist"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3706475124
+        },
+        {
+          "line": 11,
+          "text": "  optionalSurfer: 'chunkSurf.optional.surfer',",
+          "tokens": [
+            "optionalSurfer",
+            "chunkSurf",
+            "optional",
+            "surfer"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1802666903
+        },
+        {
+          "line": 12,
+          "text": "  optionalWorkOrder: 'chunkSurf.optional.workOrder',",
+          "tokens": [
+            "optionalWorkOrder",
+            "chunkSurf",
+            "optional",
+            "workOrder"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 2109091558
+        },
+        {
+          "line": 13,
+          "text": "  correctRedaction: 'chunkSurf.correctRedaction',",
+          "tokens": [
+            "correctRedaction",
+            "chunkSurf"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3722123341
+        },
+        {
+          "line": 14,
+          "text": "  bestEligible: 'chunkSurf.bestEligible',",
+          "tokens": [
+            "bestEligible",
+            "chunkSurf"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 4238231620
+        },
+        {
+          "line": 15,
+          "text": "});",
+          "tokens": [],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 845335651
+        },
+        {
+          "line": 17,
+          "text": "export const CHUNK_SURF_ROOMS = Object.freeze([",
+          "tokens": [
+            "CHUNK_SURF_ROOMS",
+            "Object",
+            "freeze"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 307742102
+        },
+        {
+          "line": 18,
+          "text": "  {",
+          "tokens": [],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 936748990
+        },
+        {
+          "line": 19,
+          "text": "    id: 'approach',",
+          "tokens": [
+            "approach"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3375581235
+        },
+        {
+          "line": 20,
+          "text": "    required: true,",
+          "tokens": [
+            "required"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 4144802961
+        },
+        {
+          "line": 130,
+          "text": "    record: 'The recorder captures a pen failing, twelve in a pack, not one of them works.',",
+          "tokens": [
+            "record",
+            "The",
+            "recorder",
+            "captures",
+            "pen",
+            "failing",
+            "twelve",
+            "pack"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3702694327
+        },
+        {
+          "line": 131,
+          "text": "  },",
+          "tokens": [],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 2599292746
+        },
+        {
+          "line": 132,
+          "text": "  {",
+          "tokens": [],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 2399738917
+        },
+        {
+          "line": 133,
+          "text": "    id: 'body-room',",
+          "tokens": [
+            "body",
+            "room"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 258473218
+        },
+        {
+          "line": 134,
+          "text": "    required: true,",
+          "tokens": [
+            "required"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 22544175
+        },
+        {
+          "line": 135,
+          "text": "    title: 'BODY RETURN',",
+          "tokens": [
+            "title",
+            "BODY",
+            "RETURN"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 1835041163
+        },
+        {
+          "line": 136,
+          "text": "    kind: 'room',",
+          "tokens": [
+            "kind",
+            "room"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 433177657
+        },
+        {
+          "line": 137,
+          "text": "    exits: { south: 'surfer-origin', west: 'recordist-loop', east: 'final-page' },",
+          "tokens": [
+            "exits",
+            "south",
+            "surfer",
+            "origin",
+            "west",
+            "recordist",
+            "loop",
+            "east"
+          ],
+          "file": "src/data/chunk-surf-script.js",
+          "hash": 3748450285
+        }
+      ]
+    }
+  },
+  "stats": {
+    "files": 11,
+    "sectors": 7,
+    "sourceLines": 630
+  }
+}

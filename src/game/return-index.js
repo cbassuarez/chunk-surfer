@@ -4,6 +4,7 @@ import { drawMachinePanel, drawVfdText } from '../render/presentation.js';
 import { UI_COLOR } from '../render/palette.js';
 import { returnIndexEntries } from '../progression/report.js';
 import * as AUDIO from '../audio/story-audio.js';
+import { promptLine } from './bindings.js';
 
 export function makeReturnIndexScene({ meta } = {}) {
   const entries = returnIndexEntries(meta);
@@ -25,7 +26,10 @@ export function makeReturnIndexScene({ meta } = {}) {
       const w = Math.min(88, cols - 4), h = Math.min(Math.max(30, 13 + entries.length * 3), rows - 4);
       const x = Math.floor((cols - w) / 2), y = Math.floor((rows - h) / 2);
       const body = drawMachinePanel(x, y, w, h, {
-        label: 'ENDINGS', source: `${meta?.endingsSeen?.length || 0} / ${entries.length}`, footer: '[↑/↓] ENDING · [ESC] CLOSE', meter: false,
+        label: 'ENDINGS',
+        source: `${meta?.endingsSeen?.length || 0} / ${entries.length}`,
+        footer: promptLine([{ action: 'select', label: 'ENDING' }, { action: 'back', label: 'CLOSE' }]),
+        meter: false,
       });
       drawVfdText(body.x, body.y, 'ENDINGS', { color: UI_COLOR.amber, max: body.w });
       const listW = Math.max(30, Math.floor(body.w * 0.44));

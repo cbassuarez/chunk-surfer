@@ -11,8 +11,22 @@ import {
 test('story art manifest contains required ids', () => {
   for (const id of ['guard', 'door', 'surfer', 'circuitBentInterface', 'tuningFork', 'walkie']) {
     assert.ok(STORY_ART[id], id);
-    assert.ok(STORY_ART[id].src.includes('story-art/'), id);
     assert.ok(STORY_ART[id].alt, id);
+  }
+  assert.ok(STORY_ART.guard.src.includes('story-art/'));
+  assert.ok(STORY_ART.door.src.includes('story-art/'));
+});
+
+test('unverified story art slots render placeholders instead of unrelated pictures', () => {
+  for (const [id, caption] of [
+    ['surfer', '[recordist] placeholder'],
+    ['circuitBentInterface', '[interface] placeholder'],
+    ['tuningFork', '[tuning fork] placeholder'],
+    ['walkie', '[radio] placeholder'],
+  ]) {
+    assert.equal(STORY_ART[id].src, null, id);
+    assert.equal(STORY_ART[id].caption, caption, id);
+    assert.equal(STORY_ART[id].status, 'PLACEHOLDER', id);
   }
 });
 

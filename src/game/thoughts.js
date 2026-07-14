@@ -33,6 +33,7 @@ import {
   layoutTranscriptChoices,
   transcriptSource,
 } from '../render/transcript.js';
+import { promptLine } from './bindings.js';
 
 const BAND_W = 74;
 
@@ -110,8 +111,8 @@ export function makeThoughtScene({
             label: 'MONITOR',
             source: transcriptSource(sourceWho),
             footer: v.pending?.options?.length
-              ? '[↑/↓] SELECT · [ENTER] TRANSMIT'
-              : '[SPACE] CONTINUE',
+              ? promptLine([{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: 'TRANSMIT' }])
+              : promptLine([{ action: 'continue', label: 'CONTINUE' }]),
             meter: true,
           },
         );
@@ -203,7 +204,7 @@ export function makeThoughtScene({
             choicesRows: reserve,
           });
 
-          if (artPlan.show) {
+          if (!choiceLayout.height && artPlan.show) {
             drawStoryArtCard(art, {
               x: contentX,
               y: transcriptY,

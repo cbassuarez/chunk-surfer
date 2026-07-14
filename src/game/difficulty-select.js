@@ -10,6 +10,7 @@ import {
 import { RULE_LABELS, VALUE_LABELS } from '../progression/difficulty-defs.js';
 import { deriveUnlocks } from '../progression/unlocks.js';
 import * as AUDIO from '../audio/story-audio.js';
+import { promptLine } from './bindings.js';
 
 const RULE_ORDER = Object.freeze([
   'presencePressure',
@@ -156,8 +157,8 @@ export function makeDifficultySelectScene({
         label: mode === 'custom' ? 'CUSTOM DIFFICULTY' : 'DIFFICULTY',
         source: 'SETUP',
         footer: mode === 'custom'
-          ? '[↑/↓] RULE · [←/→] SET · [ENTER] START · [ESC] DIFFICULTY'
-          : '[↑/↓] DIFFICULTY · [ENTER] START · [ESC] BACK',
+          ? promptLine([{ action: 'select', label: 'RULE' }, { action: 'set', label: 'SET' }, { action: 'start', label: 'START' }, { action: 'back', label: 'DIFFICULTY' }])
+          : promptLine([{ action: 'select', label: 'DIFFICULTY' }, { action: 'start', label: 'START' }, { action: 'back', label: 'BACK' }]),
         meter: true,
       });
 

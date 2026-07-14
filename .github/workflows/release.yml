@@ -23,7 +23,7 @@ jobs:
             artifact: chunk-surfer-macos-arm64
             target: aarch64-apple-darwin
             rust_target: aarch64-apple-darwin
-            args: --config src-tauri/tauri.lens.conf.json --target aarch64-apple-darwin --bundles dmg
+            args: --target aarch64-apple-darwin --bundles dmg
             bundle_glob: |
               src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
           - name: Windows x64
@@ -31,15 +31,15 @@ jobs:
             artifact: chunk-surfer-windows-x64
             target: x86_64-pc-windows-msvc
             rust_target: x86_64-pc-windows-msvc
-            args: --config src-tauri/tauri.lens.conf.json --bundles nsis
+            args: --bundles msi
             bundle_glob: |
-              src-tauri/target/release/bundle/nsis/*.exe
+              src-tauri/target/release/bundle/msi/*.msi
           - name: Linux x64
             platform: ubuntu-22.04
             artifact: chunk-surfer-linux-x64
             target: x86_64-unknown-linux-gnu
             rust_target: x86_64-unknown-linux-gnu
-            args: --config src-tauri/tauri.lens.conf.json --bundles appimage,deb
+            args: --bundles appimage,deb
             bundle_glob: |
               src-tauri/target/release/bundle/appimage/*.AppImage
               src-tauri/target/release/bundle/deb/*.deb
@@ -160,7 +160,7 @@ jobs:
 
           Expected assets:
           - macOS: dmg
-          - Windows: exe and/or msi installer
+          - Windows: msi installer
           - Linux: AppImage and deb bundle
 
           Signing, notarization, Steam, and itch automation remain TODOs in STORE_PREP.md.

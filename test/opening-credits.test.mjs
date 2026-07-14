@@ -6,20 +6,32 @@ import {
   makeOpeningCreditsScene,
   openingCreditsArePresentable,
   openingCreditFrame,
+  openingCreditLayout,
 } from '../src/game/opening-credits.js';
 
 test('opening credits use four separate fade slates with black beats', () => {
   const title = openingCreditFrame(2);
-  const black = openingCreditFrame(4.4);
-  const creator = openingCreditFrame(6);
-  const sound = openingCreditFrame(10);
-  const quote = openingCreditFrame(15);
+  const black = openingCreditFrame(5.25);
+  const creator = openingCreditFrame(7);
+  const sound = openingCreditFrame(12);
+  const quote = openingCreditFrame(18.5);
 
+  assert.equal(OPENING_CREDITS_DURATION, 22);
   assert.ok(title.title > 0.9 && title.creator === 0);
-  assert.ok(Object.values(black).filter((value) => typeof value === 'number' && value > 0.05).length <= 2);
+  assert.ok(['title', 'creator', 'sound', 'quote', 'attribution'].every((key) => black[key] <= 0.05));
   assert.ok(creator.creator > 0.9 && creator.sound === 0);
   assert.ok(sound.sound > 0.9 && sound.quote === 0);
   assert.ok(quote.quote > 0.9 && quote.attribution > 0.9);
+});
+
+test('opening credit timeline exposes compositing layers and subtle motion', () => {
+  const frame = openingCreditFrame(12);
+  assert.equal(frame.duration, OPENING_CREDITS_DURATION);
+  assert.equal(frame.activeBeat, 'sound');
+  assert.ok(frame.layers.scan.intensity > 0);
+  assert.ok(Number.isFinite(frame.layers.scan.offset));
+  assert.ok(Number.isFinite(frame.beats.sound.xOffset));
+  assert.notEqual(frame.beats.sound.xOffset, 0);
 });
 
 test('opening credits are authored, blocking, and not key-skippable', () => {
@@ -82,4 +94,18 @@ test('normal app boot always places credits before the title menu', () => {
   assert.ok(calibration > credits, 'calibration push is authored after the deferred credit callback declaration');
   assert.match(source, /onReady:afterCalibration/);
   assert.doesNotMatch(source, /skipcredits/);
+});
+
+test('opening credit layout keeps narrow and wide frames inside the viewport', () => {
+  for (const size of [{ cols: 34, rows: 18 }, { cols: 132, rows: 54 }]) {
+    const frame = openingCreditFrame(18.5);
+    const layout = openingCreditLayout({ ...size, frame });
+    assert.ok(layout.quoteBand.width <= size.cols - 2);
+    assert.ok(layout.entries.length > 0);
+    for (const entry of layout.entries) {
+      assert.ok(entry.x >= 0, `${size.cols} col entry starts before viewport`);
+      assert.ok(entry.y >= 0 && entry.y < size.rows, `${size.rows} row entry outside viewport`);
+      assert.ok(entry.x + entry.text.length <= size.cols, `${entry.text} overflows ${size.cols} cols`);
+    }
+  }
 });

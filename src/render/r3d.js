@@ -22,6 +22,9 @@ import { getLookProfile } from './look-profiles.js';
 
 const MAX_CHUNKS = 48;
 const RD_SIZE = 256;
+const WATER_W = 96;
+const WATER_H = 54;
+const MAX_WATER_SOURCES = 4;
 let RENDER_SCALE = 1;
 
 export function r3dSetRenderScale(value = 1) {
@@ -102,6 +105,39 @@ void main(){
   o = vec4(clamp(A,0.0,1.0), clamp(B,0.0,1.0), 0.0, 1.0);
 }`;
 
+const WATER_FRAG = COMMON_GLSL + `
+uniform sampler2D uPrev;
+uniform vec2 uTexel;
+uniform float uDt;
+uniform float uDamping;
+uniform float uReduceMotion;
+uniform int uSourceCount;
+uniform vec4 uSources[${MAX_WATER_SOURCES}]; // u, v, strength, radius
+out vec4 o;
+void main(){
+  vec2 uv=gl_FragCoord.xy*uTexel;
+  vec4 p=texture(uPrev,uv);
+  float cur=p.r-.5;
+  float prev=p.g-.5;
+  float l=texture(uPrev,uv-vec2(uTexel.x,0.0)).r-.5;
+  float r=texture(uPrev,uv+vec2(uTexel.x,0.0)).r-.5;
+  float d=texture(uPrev,uv-vec2(0.0,uTexel.y)).r-.5;
+  float u=texture(uPrev,uv+vec2(0.0,uTexel.y)).r-.5;
+  float lap=(l+r+d+u-cur*4.0);
+  float motion=mix(1.0,.18,clamp(uReduceMotion,0.0,1.0));
+  float next=cur+(cur-prev)*uDamping*motion+lap*(0.42*uDt)*motion;
+  for(int i=0;i<${MAX_WATER_SOURCES};i++){
+    if(i>=uSourceCount)break;
+    vec4 s=uSources[i];
+    float dist=length((uv-s.xy)/max(vec2(.001),vec2(s.w)));
+    next+=exp(-dist*dist*3.2)*s.z*motion;
+  }
+  float edge=min(min(uv.x,1.0-uv.x),min(uv.y,1.0-uv.y));
+  next*=smoothstep(0.0,0.08,edge);
+  next=clamp(next,-.48,.48);
+  o=vec4(next+.5,cur+.5,0.0,1.0);
+}`;
+
 // ── World raymarcher ──────────────────────────────────────────────────────────
 const MARCH_FRAG = COMMON_GLSL + `
 uniform vec2  uRes;
@@ -127,6 +163,7 @@ uniform sampler2D uPlan;     // the authored building: R=floor G=ceil B=flags A=
 uniform sampler2D uMat;      // R=material id
 uniform sampler2D uPropColor;
 uniform sampler2D uPropDepth;
+uniform sampler2D uWaterHeight;
 uniform sampler2DArray uSurfAlbedo, uSurfNormal, uSurfRough, uSurfHeight; // PBR surface layers
 uniform sampler2DArray uSurfDream, uSurfDreamNext;             // current + staged generated albedo
 uniform float uDreamMix[10];
@@ -145,6 +182,8 @@ uniform float uPropFar;
 uniform vec2  uPlanSize;
 uniform float uUsePlan;      // 0 = procedural lattice (JUST SURF), 1 = the conservatory
 uniform vec3  uZoneTint[10];
+uniform vec4  uWaterBounds;  // min x, min z, max x, max z in runtime cells
+uniform vec4  uWaterParams;  // active, level metres, murk, reduce motion
 out vec4 o;
 
 // Height encoding must match world/floorplan.js exactly.
@@ -166,6 +205,27 @@ const int MAT_PRACTICE = ${MATERIAL.practiceFoam};
 const int MAT_CHAPEL = ${MATERIAL.chapelStone};
 const int MAT_METAL = ${MATERIAL.metalPlant};
 const int MAT_DOOR = ${MATERIAL.doorGlassDuct};
+
+bool waterActive(){ return uWaterParams.x > 0.5 && uUsePlan > 0.5; }
+bool inWaterBounds(vec2 p){
+  return waterActive()
+    && p.x >= uWaterBounds.x && p.x < uWaterBounds.z
+    && p.y >= uWaterBounds.y && p.y < uWaterBounds.w;
+}
+vec2 waterUv(vec2 p){
+  return clamp((p - uWaterBounds.xy) / max(vec2(0.001), uWaterBounds.zw - uWaterBounds.xy), vec2(0.0), vec2(1.0));
+}
+float waterHeightAt(vec2 p){
+  if(!inWaterBounds(p)) return 0.0;
+  float h = texture(uWaterHeight, waterUv(p)).r - 0.5;
+  return h * (uWaterParams.w > 0.5 ? 0.06 : 0.20);
+}
+float waterEdge(vec2 p){
+  if(!inWaterBounds(p)) return 0.0;
+  vec2 uv=waterUv(p);
+  float d=min(min(uv.x,1.0-uv.x),min(uv.y,1.0-uv.y));
+  return 1.0-smoothstep(0.012,0.090,d);
+}
 
 float hash01(float x, float y){ return fract(abs(sin(x*127.1 + y*311.7) * 43758.5)); }
 float noise2(vec2 p, float s, float seed){
@@ -440,6 +500,16 @@ void main(){
     float tExit = min(sideT.x, sideT.y);
 
     if(!cur.solid){
+      if(inWaterBounds(vec2(cell) + 0.5) && cur.mat == MAT_WET && abs(rd.y) > 1e-4){
+        float waterY = (uWaterParams.y / CELL_METERS) + waterHeightAt(vec2(cell) + 0.5);
+        float tw = (waterY - ro.y) / rd.y;
+        if(tw >= tEnter && tw <= tExit){
+          vec3 wp = ro + rd * tw;
+          if(inWaterBounds(wp.xz)){
+            tHit = tw; surf = 4; n = vec3(0.0, 1.0, 0.0); hitZone = cur.zone; hitMat = MAT_WET; break;
+          }
+        }
+      }
       // the floor of the cell you are crossing
       if(rd.y < -1e-4){
         float tf = (cur.f - ro.y) / rd.y;
@@ -542,7 +612,7 @@ void main(){
     bool pbrReady=false;int pbrSlot=0;float pbrTile=1.0,pbrBlend=0.0;vec2 pbrUv=vec2(0.0);
     vec3 toEye = ro - pos;
     vec3 toEyeM = roM - posM;
-    if(uSurfacesReady > 0.5 && surf != 3){
+    if(uSurfacesReady > 0.5 && surf != 3 && surf != 4){
       int sslot; float stile, sblend;
       vec2 suv = surfaceUv(surf,posM,n);
       surfaceSlot(hitMat, surf, suv, sslot, stile, sblend);
@@ -580,6 +650,15 @@ void main(){
       surfaceOcclusion=mix(.68,1.0,smoothstep(.12,.88,h0));
       pbrReady=true;pbrSlot=sslot;pbrTile=stile;pbrBlend=sblend;pbrUv=sc.xy*stile;
     }
+    if(surf == 4){
+      vec2 wuv=waterUv(pos.xz);
+      vec2 texel=vec2(1.0/${WATER_W.toFixed(1)},1.0/${WATER_H.toFixed(1)});
+      float hL=texture(uWaterHeight,clamp(wuv-vec2(texel.x,0.0),vec2(0.0),vec2(1.0))).r;
+      float hR=texture(uWaterHeight,clamp(wuv+vec2(texel.x,0.0),vec2(0.0),vec2(1.0))).r;
+      float hD=texture(uWaterHeight,clamp(wuv-vec2(0.0,texel.y),vec2(0.0),vec2(1.0))).r;
+      float hU=texture(uWaterHeight,clamp(wuv+vec2(0.0,texel.y),vec2(0.0),vec2(1.0))).r;
+      n=normalize(vec3(-(hR-hL)*2.8,1.0,-(hU-hD)*2.8));
+    }
     if(!pbrReady)seam=materialSeam(hitMat,surf,posM,n);
 
     // Interior lighting: a lamp the player carries. Inverse-square falloff with
@@ -612,21 +691,43 @@ void main(){
     // cannot see WELL. A black screen is not horror, it is a bug you cannot play.
     float ambient = mix(0.034, 0.048, uLight);
 
-    vec3 albedo = materialBase(hitMat, surf, tint, biome, rdv);
-    albedo = pbrReady?mix(albedo,surfaceTile(pbrSlot,pbrUv,pbrTile),pbrBlend):architecturalSurface(hitMat,surf,posM,n,albedo);
-    // Roughness drives the highlight: a wet/polished tile (low roughness) throws
-    // a tight bright spec; brick and wood stay matte. Tighten the lobe as it
-    // smooths, so marble and ceramic actually glint under the torch.
-    float gloss = (surfRough >= 0.0) ? (1.0 - surfRough) : 0.0;
-    float specStr = (surfRough >= 0.0) ? (0.04 + 0.9 * gloss * gloss) : materialSpec(hitMat);
-    float spec = specStr * pow(clamp(lambert, 0.0, 1.0), mix(6.0, 48.0, gloss)) * lamp;
+    if(surf == 4){
+      vec2 wuv=waterUv(pos.xz);
+      float film=texture(uRD,wuv*1.8+vec2(uTime*.006,-uTime*.004)).g;
+      float slow=sin((wuv.x*2.7+wuv.y*1.9+uTime*.11)*6.28318)*.5+.5;
+      float scum=waterEdge(pos.xz);
+      vec3 deep=vec3(0.010,0.026,0.018);
+      vec3 mold=vec3(0.045,0.092,0.050);
+      vec3 skin=mix(deep,mold,clamp(film*.75+slow*.18+scum*.52,0.0,1.0));
+      float fres=pow(1.0-clamp(dot(normalize(toEye),n),0.0,1.0),3.0);
+      float glitter=pow(clamp(dot(reflect(normalize(-toEye),n),normalize(fwd+vec3(0.0,.15,0.0))),0.0,1.0),34.0);
+      float murk=clamp(uWaterParams.z,0.0,1.0);
+      col=skin*(ambient*.82+lamp*.34)
+        + vec3(.36,.48,.42)*glitter*beam*(1.0-uWaterParams.w*.65)
+        + vec3(.09,.16,.13)*fres*(.22+lamp*.22)
+        + vec3(.035,.070,.045)*scum*(.45+.35*film);
+      col=mix(col,deep,murk*.34);
+    } else {
+      vec3 albedo = materialBase(hitMat, surf, tint, biome, rdv);
+      albedo = pbrReady?mix(albedo,surfaceTile(pbrSlot,pbrUv,pbrTile),pbrBlend):architecturalSurface(hitMat,surf,posM,n,albedo);
+      // Roughness drives the highlight: a wet/polished tile (low roughness) throws
+      // a tight bright spec; brick and wood stay matte. Tighten the lobe as it
+      // smooths, so marble and ceramic actually glint under the torch.
+      float gloss = (surfRough >= 0.0) ? (1.0 - surfRough) : 0.0;
+      float specStr = (surfRough >= 0.0) ? (0.04 + 0.9 * gloss * gloss) : materialSpec(hitMat);
+      float spec = specStr * pow(clamp(lambert, 0.0, 1.0), mix(6.0, 48.0, gloss)) * lamp;
 
-    float emis = (surf == 2) ? 0.55 : (surf == 1 ? 0.30 : 0.12);
-    col = albedo * (ambient*surfaceOcclusion + lamp)
-        + vec3(0.55, 0.60, 0.62) * spec
-        + rim * tint * (0.22 + uAudio * 0.45) * emis
-        + glow * emis
-        - seam * 0.30 * (ambient + lamp);
+      float emis = (surf == 2) ? 0.55 : (surf == 1 ? 0.30 : 0.12);
+      col = albedo * (ambient*surfaceOcclusion + lamp)
+          + vec3(0.55, 0.60, 0.62) * spec
+          + rim * tint * (0.22 + uAudio * 0.45) * emis
+          + glow * emis
+          - seam * 0.30 * (ambient + lamp);
+      if(waterActive() && surf == 1 && hitMat == MAT_WET){
+        float caustic=(sin(posM.x*9.0+uTime*.9)+sin(posM.z*7.0-uTime*.7))*.5+.5;
+        col+=vec3(.05,.08,.07)*caustic*lamp*.18*(1.0-uWaterParams.w*.75);
+      }
+    }
     col = col / (1.0 + col * 0.30);  // filmic-ish rolloff, tames the near field
 
     // No exploration fog and no distance haze. Darkness now comes only from
@@ -757,7 +858,7 @@ void main(){
 
 // ── GL plumbing ──────────────────────────────────────────────────────────────
 let gl = null, canvas = null;
-let progRD, progMarch, progPost, progDepth, progPixelMesh;
+let progRD, progWater, progMarch, progPost, progDepth, progPixelMesh;
 // How frightened he is, 0..1. main.js owns the number; the post pass spends it.
 let fearLevel = 0;
 export function r3dSetFear(v) { fearLevel = Math.max(0, Math.min(1, v || 0)); }
@@ -852,6 +953,7 @@ export function r3dPixelMeshStatus() {
   };
 }
 let rdTexA, rdTexB, rdFboA, rdFboB, rdFlip = false, rdWarm = 0;
+let waterTexA, waterTexB, waterFboA, waterFboB, waterFlip = false, waterWasActive = false;
 let sceneTex, sceneFbo, fogTexture, surfaceTexture=null;
 let meshTexA=null, meshTexB=null, meshFboA=null, meshFboB=null, meshFlip=false;
 let surfAlbedoTex=null, surfNormalTex=null, surfRoughTex=null, surfHeightTex=null, surfDreamTex=null, surfDreamStageTex=null, anisoExt=null, anisoMax=1;
@@ -1177,6 +1279,7 @@ export function r3dInit(mapEl) {
   if (!gl) throw new Error('webgl2 unavailable');
 
   progRD = program(RD_FRAG);
+  progWater = program(WATER_FRAG);
   progMarch = program(MARCH_FRAG);
   progPost = program(POST_FRAG);
   progDepth = program(DEPTH_FRAG);
@@ -1216,10 +1319,28 @@ export function r3dInit(mapEl) {
   }
   rdFboA = makeFbo(rdTexA);
   rdFboB = makeFbo(rdTexB);
+  const waterSeed = new Float32Array(WATER_W * WATER_H * 4);
+  for (let i = 0; i < WATER_W * WATER_H; i += 1) {
+    waterSeed[i * 4] = 0.5;
+    waterSeed[i * 4 + 1] = 0.5;
+    waterSeed[i * 4 + 3] = 1;
+  }
+  waterTexA = makeTex(WATER_W, WATER_H, waterSeed, 'rgba16f');
+  waterTexB = makeTex(WATER_W, WATER_H, waterSeed, 'rgba16f');
+  for (const t of [waterTexA, waterTexB]) {
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  }
+  waterFboA = makeFbo(waterTexA);
+  waterFboB = makeFbo(waterTexB);
   fogTexture = makeTex(FOG_TEX, FOG_TEX, new Uint8Array(FOG_TEX * FOG_TEX).fill(255), 'r8');
   resize();
   P3.loadPropPack(assetUrl('assets/conservatory-props.glb'))
     .then(()=>P3.addPropPack(assetUrl('assets/metal-door.glb')))
+    .then(()=>P3.addPropPack(assetUrl('assets/tuning-fork.glb')))
     .catch((err)=>console.warn('prop pack unavailable',err));
   P3.loadPortraitAtlas(assetUrl('assets/portraits/portrait-atlas.webp'))
     .catch((err)=>console.warn('portrait atlas unavailable',err));
@@ -1377,6 +1498,57 @@ export function r3dSolid(x, y) {
 }
 export function r3dIsExpanse(x, y) { return isExpanseJs(Math.floor(x), Math.floor(y)); }
 
+function resetWaterField() {
+  if (!gl || !waterFboA || !waterFboB) return;
+  const previous = gl.getParameter(gl.FRAMEBUFFER_BINDING);
+  gl.clearColor(0.5, 0.5, 0, 1);
+  for (const fbo of [waterFboA, waterFboB]) {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+  }
+  gl.bindFramebuffer(gl.FRAMEBUFFER, previous);
+  waterFlip = false;
+}
+
+function updateWaterField(water, dt) {
+  const active = !!water?.active;
+  if (active !== waterWasActive) {
+    resetWaterField();
+    waterWasActive = active;
+  }
+  if (!gl || !progWater || !waterTexA || !waterTexB || !active) return waterFlip ? waterTexB : waterTexA;
+  const src = waterFlip ? waterTexB : waterTexA;
+  const dst = waterFlip ? waterFboA : waterFboB;
+  gl.useProgram(progWater);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, dst);
+  gl.viewport(0, 0, WATER_W, WATER_H);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, src);
+  gl.uniform1i(gl.getUniformLocation(progWater, 'uPrev'), 0);
+  gl.uniform2f(gl.getUniformLocation(progWater, 'uTexel'), 1 / WATER_W, 1 / WATER_H);
+  gl.uniform1f(gl.getUniformLocation(progWater, 'uDt'), Math.max(0.05, Math.min(1.6, dt * 60)));
+  gl.uniform1f(gl.getUniformLocation(progWater, 'uDamping'), 0.985);
+  gl.uniform1f(gl.getUniformLocation(progWater, 'uReduceMotion'), water.reduceMotion ? 1 : 0);
+  const rawSources = Array.isArray(water.rippleSources) ? water.rippleSources : [];
+  const n = Math.min(MAX_WATER_SOURCES, rawSources.length);
+  const packed = new Float32Array(MAX_WATER_SOURCES * 4);
+  for (let i = 0; i < n; i += 1) {
+    const source = rawSources[i] || {};
+    packed.set([
+      Math.max(0, Math.min(1, Number(source.u) || 0)),
+      Math.max(0, Math.min(1, Number(source.v) || 0)),
+      Math.max(-0.5, Math.min(0.5, Number(source.strength) || 0)),
+      Math.max(0.015, Math.min(0.75, Number(source.radius) || 0.1)),
+    ], i * 4);
+  }
+  gl.uniform1i(gl.getUniformLocation(progWater, 'uSourceCount'), n);
+  gl.uniform4fv(gl.getUniformLocation(progWater, 'uSources[0]'), packed);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  waterFlip = !waterFlip;
+  return waterFlip ? waterTexB : waterTexA;
+}
+
 // state: { px, py, tileW, tileH, worldCount, worldTints:[[r,g,b]×5],
 //          chunks:[{x,y,r,act,col}], key:{x,y}|null, door:{x,y}|null,
 //          hush:{x,y,strength}|null, audio:0..1 }
@@ -1434,6 +1606,7 @@ export function r3dFrame(state) {
   // floors shimmer into salt-and-pepper as the camera moves
   gl.bindTexture(gl.TEXTURE_2D, rdTex);
   gl.generateMipmap(gl.TEXTURE_2D);
+  const waterTex = updateWaterField(state.water, dt);
 
   P3.renderPropPass({
     camX: camX * CELL, camY: camY * CELL, camZ: camZ * CELL,
@@ -1482,6 +1655,11 @@ export function r3dFrame(state) {
     gl.activeTexture(gl.TEXTURE4);gl.bindTexture(gl.TEXTURE_2D,propTargets.color);gl.uniform1i(U('uPropColor'),4);
     gl.activeTexture(gl.TEXTURE5);gl.bindTexture(gl.TEXTURE_2D,propTargets.depth);gl.uniform1i(U('uPropDepth'),5);
   }
+  gl.activeTexture(gl.TEXTURE12);gl.bindTexture(gl.TEXTURE_2D,waterTex || waterTexA);gl.uniform1i(U('uWaterHeight'),12);
+  const water=state.water||{};
+  const bounds=water.basinBounds||{};
+  gl.uniform4f(U('uWaterBounds'), bounds.minX||0, bounds.minY||0, bounds.maxX||0, bounds.maxY||0);
+  gl.uniform4f(U('uWaterParams'), water.active?1:0, Number(water.levelM ?? -0.06), Number(water.murk ?? 0.85), water.reduceMotion?1:0);
   const look=currentLook();
   const bankBlend=surfaceDreamBlend();
   gl.uniform1f(U('uSurfacesReady'),surfAlbedoTex&&surfNormalTex&&surfRoughTex&&surfHeightTex?1:0);

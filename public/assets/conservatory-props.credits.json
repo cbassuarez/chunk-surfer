@@ -4,10 +4,10 @@
     "author": "Chunk Surfer project",
     "source": "tools/chunk_surfer/build-props.mjs",
     "license": "project source (mixed: see meshes)",
-    "sha256": "e38d12170163213c9838991df4d46179eeefb77522b9750b4651dc0bfc96fc3e",
+    "sha256": "e22ed22db4171b72e4af7f31c09481e12ef2b29273df1f0a9414d464046c3411",
     "modifications": "Metres, Y-up, ground-centred. Procedural fallback geometry plus user-supplied source meshes (unverified provenance) baked, re-axised, height-scaled, and vertex-cluster decimated under budget.",
-    "triangles": 25579,
-    "bytes": 1038312
+    "triangles": 11858,
+    "bytes": 850204
   },
   "meshes": [
     {
@@ -161,23 +161,21 @@
       "name": "grand_piano",
       "bounds": {
         "min": [
-          -0.719,
-          0,
-          -0.435
+          -0.81,
+          0.005,
+          -1.55
         ],
         "max": [
-          0.719,
-          1,
-          0.435
+          0.987,
+          1.138,
+          1.048
         ]
       },
-      "triangles": 4197,
+      "triangles": 308,
       "provenance": {
-        "source": "grand_piano.glb",
-        "origin": "user-supplied (FabConvert/SketchUp conversion)",
-        "license": "unverified",
-        "sourceTriangles": 4717,
-        "modifications": "Re-axised to Y-up, floor-centred, height-scaled, vertex-cluster decimated, normals recomputed."
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
       }
     },
     {
@@ -370,6 +368,90 @@
       }
     },
     {
+      "name": "box_office_desk",
+      "bounds": {
+        "min": [
+          -0.56,
+          0.02,
+          -0.29
+        ],
+        "max": [
+          0.56,
+          0.53,
+          0.29
+        ]
+      },
+      "triangles": 176,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "program_stack",
+      "bounds": {
+        "min": [
+          -0.215,
+          0.026,
+          -0.161
+        ],
+        "max": [
+          0.215,
+          0.179,
+          0.161
+        ]
+      },
+      "triangles": 72,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "cash_terminal",
+      "bounds": {
+        "min": [
+          -0.17,
+          0.02,
+          -0.154
+        ],
+        "max": [
+          0.2,
+          0.258,
+          0.12
+        ]
+      },
+      "triangles": 48,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "queue_stanchion",
+      "bounds": {
+        "min": [
+          -0.421,
+          0.02,
+          -0.15
+        ],
+        "max": [
+          0.421,
+          0.98,
+          0.15
+        ]
+      },
+      "triangles": 180,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
       "name": "key_cabinet",
       "bounds": {
         "min": [
@@ -517,6 +599,90 @@
       }
     },
     {
+      "name": "plant_pipe_straight",
+      "bounds": {
+        "min": [
+          -1.18,
+          0.03,
+          -0.15
+        ],
+        "max": [
+          1.18,
+          0.33,
+          0.11
+        ]
+      },
+      "triangles": 84,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "plant_pipe_bank",
+      "bounds": {
+        "min": [
+          -1.35,
+          0.05,
+          -0.1
+        ],
+        "max": [
+          1.35,
+          0.77,
+          0.1
+        ]
+      },
+      "triangles": 156,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "plant_pipe_elbow",
+      "bounds": {
+        "min": [
+          -0.42,
+          0.22,
+          -0.175
+        ],
+        "max": [
+          0.38,
+          0.92,
+          0.175
+        ]
+      },
+      "triangles": 92,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "plant_pipe_valve",
+      "bounds": {
+        "min": [
+          -0.3,
+          0.16,
+          -0.24
+        ],
+        "max": [
+          0.3,
+          0.752,
+          0.24
+        ]
+      },
+      "triangles": 140,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
       "name": "altar_table",
       "bounds": {
         "min": [
@@ -604,40 +770,38 @@
       "name": "hall_seating",
       "bounds": {
         "min": [
-          -12.763,
-          0,
-          -9.24
+          -12,
+          -0.1,
+          -8.725
         ],
         "max": [
-          12.763,
-          5,
-          9.24
+          12,
+          5.24,
+          8.225
         ]
       },
-      "triangles": 14320,
+      "triangles": 3828,
       "provenance": {
-        "source": "hall_seating.glb",
-        "origin": "user-supplied (FabConvert/SketchUp conversion)",
-        "license": "unverified",
-        "sourceTriangles": 14320,
-        "modifications": "Re-axised to Y-up, floor-centred, height-scaled, vertex-cluster decimated, normals recomputed."
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
       }
     },
     {
       "name": "hall_structure",
       "bounds": {
         "min": [
-          -14.1,
+          -13.75,
           -2.5,
           -19
         ],
         "max": [
-          14.1,
+          13.75,
           13.921,
           17
         ]
       },
-      "triangles": 840,
+      "triangles": 552,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",

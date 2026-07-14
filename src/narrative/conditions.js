@@ -3,6 +3,7 @@
 // which makes the same content deterministic in the game, tests, and studio.
 
 const CMP = /^([A-Za-z_][\w.]*)\s*(>=|<=|==|!=|>|<)\s*(.+)$/;
+const PATH = /^[A-Za-z_][\w.]*$/;
 
 export function contextValue(context, path) {
   const parts = String(path || '').split('.');
@@ -46,6 +47,31 @@ export function evaluateCondition(expression, context = {}) {
   if (expression == null || expression === '') return true;
   return String(expression).split('||').some((clause) =>
     clause.split('&&').every((part) => atom(part, context)));
+}
+
+export function validateConditionExpression(expression) {
+  const errors = [];
+  const source = String(expression || '').trim();
+  if (!source) return errors;
+  for (const [clauseIndex, clause] of source.split('||').entries()) {
+    if (!clause.trim()) errors.push(`clause ${clauseIndex + 1} is empty`);
+    for (const [partIndex, raw] of clause.split('&&').entries()) {
+      let part = raw.trim();
+      if (!part) {
+        errors.push(`clause ${clauseIndex + 1}, part ${partIndex + 1} is empty`);
+        continue;
+      }
+      while (part.startsWith('!')) part = part.slice(1).trim();
+      const match = CMP.exec(part);
+      if (match) {
+        if (!PATH.test(match[1])) errors.push(`${match[1]} is not a valid context path`);
+        if (!String(match[3] || '').trim()) errors.push(`${part} is missing a comparison value`);
+      } else if (!PATH.test(part)) {
+        errors.push(`${part} is not a valid condition atom`);
+      }
+    }
+  }
+  return errors;
 }
 
 export function applyMutations(context = {}, mutations = {}) {

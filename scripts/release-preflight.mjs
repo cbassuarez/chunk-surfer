@@ -3,7 +3,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 
-const expectedTag = process.argv[2] || 'v0.1.0-beta.3';
+const expectedTag = process.argv[2] || 'v0.1.0-beta.5';
 if (!/^v\d+\.\d+\.\d+-beta\.\d+$/.test(expectedTag)) {
   throw new Error(`Expected a beta SemVer tag, received ${expectedTag}`);
 }
@@ -21,11 +21,21 @@ for (const [source, version] of Object.entries(versions)) {
     throw new Error(`${source} version is ${version}; ${expectedTag} requires ${expectedVersion}`);
   }
 }
-if (!workflow.includes('src-tauri/tauri.lens.conf.json')) {
-  throw new Error('release workflow does not merge the mandatory lens bundle config');
+if (!pkg.scripts?.['tauri:build']?.includes('src-tauri/tauri.lens.conf.json')) {
+  throw new Error('tauri:build does not merge the mandatory lens bundle config');
 }
 if (!workflow.includes('build_bundle.py --target')) {
   throw new Error('release workflow does not build target-specific lens sidecars');
+}
+if (!workflow.includes('npm run tauri:build --')) {
+  throw new Error('release workflow does not call the mandatory bundled Tauri build script');
+}
+const windowsJob = workflow.match(/- name: Windows x64[\s\S]*?(?=\n          - name: Linux x64)/)?.[0] || '';
+if (!windowsJob.includes('args: --bundles msi')) {
+  throw new Error('Windows release workflow must build the MSI bundle');
+}
+if (windowsJob.includes('nsis')) {
+  throw new Error('Windows release workflow must not build NSIS; makensis cannot package the current offline lens payload reliably');
 }
 if (!vite.includes('__APP_VERSION__') || !vite.includes('package.json')) {
   throw new Error('runtime About/version display is not sourced from the package release version');

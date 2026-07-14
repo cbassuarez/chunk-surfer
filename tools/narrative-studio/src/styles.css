@@ -95,8 +95,41 @@ kbd { color: #a8c5c2; font-size: 10px; margin-left: 7px; }
 .line-card, .choice-card { padding: 8px; border: 1px solid #294043; background: #0d1b1d; border-radius: 4px; margin-bottom: 8px; }
 .line-card__head { display: flex; gap: 5px; margin-bottom: 5px; }.line-card__head button { padding: 2px 7px; }.line-card__head input { color: var(--amber); }
 .line-meta { display: grid; grid-template-columns: 1fr 1fr auto; gap: 5px; margin-top: 5px; }.line-meta button { font-size: 9px; }
+.line-meta--wide { grid-template-columns: 1fr 80px 80px; }
+.cue-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }.cue-chips button { color: #bfe5e1; font: 9px/1 ui-monospace, monospace; padding: 4px 6px; }
 .choice-card { display: grid; grid-template-columns: 1fr auto; gap: 5px; }.choice-card input:first-child { grid-column: 1 / -1; }
+.choice-card textarea { grid-column: 1 / -1; font: 10px/1.35 ui-monospace, monospace; }
+.choice-actions { display: flex; gap: 4px; }.choice-actions button { padding: 4px 7px; }
 .region-row { display: grid; grid-template-columns: 31px 1fr 25px; gap: 6px; align-items: center; margin-bottom: 5px; }.region-row input[type=color] { padding: 2px; height: 30px; }
+
+/* Global timeline */
+.timeline-workspace { min-height: 0; display: grid; grid-template-columns: 260px minmax(0, 1fr); background: #071012; }
+.timeline-summary { border-right: 1px solid var(--line); background: var(--panel); }
+.timeline-stat { display: grid; grid-template-columns: 58px 1fr; align-items: baseline; gap: 8px; padding: 13px 14px; border-bottom: 1px solid #1a3033; }
+.timeline-stat b { color: var(--cyan); font-size: 22px; }.timeline-stat span { color: var(--muted); font: 9px/1 ui-monospace, monospace; text-transform: uppercase; letter-spacing: .12em; }
+.timeline-map { overflow: auto; padding: 18px; display: grid; gap: 14px; align-content: start; }
+.timeline-group { border: 1px solid #294143; background: #0b1719; border-radius: 6px; overflow: hidden; }
+.timeline-group header { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 13px 15px; border-bottom: 1px solid #21383a; background: #102124; }
+.timeline-group header span { color: var(--amber); font: 9px/1 ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; }
+.timeline-group h2 { margin: 4px 0 0; font-size: 15px; }.timeline-group header strong { color: #91bbb7; }
+.timeline-docs { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 7px; padding: 10px; }
+.timeline-docs button { text-align: left; padding: 9px; background: #0d1d1f; }
+.timeline-docs button.is-active { border-color: var(--cyan); box-shadow: inset 2px 0 var(--cyan); }
+.timeline-docs span { display: block; font-weight: 650; font-size: 11px; }.timeline-docs small { display: block; color: var(--muted); font: 9px/1.4 ui-monospace, monospace; margin-top: 4px; }
+.timeline-group--warning { border-color: #7d5630; }
+
+/* Media */
+.media-workspace { min-height: 0; display: grid; grid-template-columns: 280px minmax(0, 1fr); }
+.media-browser { border-right: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
+.browser-list--media { max-height: none; flex: 1; }
+.media-editor { overflow: auto; background: #081214; }
+.media-preview { display: grid; grid-template-columns: minmax(240px, 40%) 1fr; gap: 22px; align-items: end; min-height: 300px; padding: 24px; border-bottom: 1px solid var(--line); background: radial-gradient(circle at 22% 20%, #183538, #081214 68%); }
+.media-preview img, .media-placeholder { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border: 1px solid #36595d; background: #0b1719; }
+.media-placeholder { display: grid; place-items: center; color: #9db6b3; font: 15px/1.4 ui-monospace, monospace; text-align: center; padding: 20px; }
+.media-preview span { color: var(--amber); font: 10px/1 ui-monospace, monospace; letter-spacing: .14em; }
+.media-preview h1 { margin: 8px 0 7px; font-size: 24px; }.media-preview p { color: #a7bbb8; margin: 0; }
+.media-fields { padding: 14px 10px 24px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.media-fields .field--wide { grid-column: 1 / -1; }
 
 /* Preview */
 .preview-panel { grid-column: 2 / 4; border-top: 1px solid #355457; background: #091416; overflow: auto; }
@@ -127,10 +160,14 @@ kbd { color: #a8c5c2; font-size: 10px; margin-left: 7px; }
 .layer-heading { display: flex; align-items: center; justify-content: space-between; }.layer-heading button { padding: 4px 7px; }
 .automation-lane { padding: 0 12px 12px; }.automation-lane svg { width: 100%; height: 95px; background: repeating-linear-gradient(0deg, transparent 0, transparent 24px, #203437 25px); border: 1px solid #294143; }.automation-lane svg path { stroke: #2d4649; }.automation-lane svg polyline { stroke: var(--amber); stroke-width: 1.5; fill: none; vector-effect: non-scaling-stroke; }.automation-points { display: flex; gap: 5px; margin-top: 6px; }.automation-points > div { display: flex; gap: 3px; }.automation-points input { width: 62px; padding: 4px; }
 .acoustic-editor, .trigger-index { margin: 14px 20px; border-top: 1px solid var(--line); }.acoustic-editor textarea { font: 10px/1.45 ui-monospace, monospace; }.trigger-row { display: grid; grid-template-columns: 1fr 230px auto; gap: 6px; margin-bottom: 5px; }.trigger-row button { padding: 3px 8px; }
+.cue-backlinks { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }.cue-backlinks span { color: #9bb8b5; border: 1px solid #294143; background: #0b1719; padding: 4px 6px; font: 9px/1 ui-monospace, monospace; }
 .empty-state { min-height: 400px; display: grid; place-items: center; color: var(--muted); }
 
 @media (max-width: 1100px) {
   .story-workspace { grid-template-columns: 210px minmax(350px, 1fr) 300px; }
   .brand { min-width: 220px; }.brand span { display: none; }
   .field-grid--audio { grid-template-columns: repeat(3, 1fr); }
+  .timeline-workspace, .media-workspace { grid-template-columns: 220px minmax(0, 1fr); }
+  .media-preview { grid-template-columns: 1fr; }
+  .media-fields { grid-template-columns: 1fr 1fr; }
 }

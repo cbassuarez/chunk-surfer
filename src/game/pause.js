@@ -1,5 +1,6 @@
 import { uiSize, uiText, uiCenter, uiScrim } from '../render/ui.js';
 import { drawMachinePanel } from '../render/presentation.js';
+import { promptLine } from './bindings.js';
 
 function clip(text, width) {
   const s = String(text || '');
@@ -76,7 +77,7 @@ export function makePauseScene({
       wordmark: 'CHUNK SURFER',
       label: 'FIELD HOLD',
       source: 'RUN PAUSED',
-      footer: '[↑↓] SELECT · [ENTER] CONFIRM · [ESC] RESUME',
+      footer: promptLine([{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: 'CONFIRM' }, { action: 'back', label: 'RESUME' }]),
       meter: false,
     });
 

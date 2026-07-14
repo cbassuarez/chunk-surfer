@@ -1,11 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { makeGodMenuScene, resolveGodRowValue } from '../src/game/god-menu.js';
+import { makeGodMenuScene, resolveGodRowDanger, resolveGodRowValue } from '../src/game/god-menu.js';
 
 test('god menu accepts both dynamic and literal row values', () => {
   assert.equal(resolveGodRowValue({value:()=> 'READY'}),'READY');
   assert.equal(resolveGodRowValue({value:'[RESUME]'}),'[RESUME]');
   assert.equal(resolveGodRowValue({activate(){}}),'[FIRE]');
+});
+
+test('god menu accepts dynamic danger rows', () => {
+  let active = false;
+  assert.equal(resolveGodRowDanger({danger:()=>active}), false);
+  active = true;
+  assert.equal(resolveGodRowDanger({danger:()=>active}), true);
+  assert.equal(resolveGodRowDanger({danger:true}), true);
 });
 
 test('god menu exposes tabbed conditions and closes with F10', () => {

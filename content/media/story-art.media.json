@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "id": "story-art",
+  "title": "Story Art",
+  "assets": [
+    {
+      "id": "guard.still",
+      "kind": "image",
+      "path": "story-art/guard.png",
+      "tags": [
+        "person",
+        "opening"
+      ]
+    },
+    {
+      "id": "door.still",
+      "kind": "image",
+      "path": "story-art/door.png",
+      "tags": [
+        "threshold",
+        "opening"
+      ]
+    }
+  ],
+  "storyArt": [
+    {
+      "id": "guard",
+      "assetId": "guard.still",
+      "label": "Guard",
+      "caption": "Gate booth / Ellery Conservatory",
+      "status": "STILL",
+      "tone": "person",
+      "mode": "hero",
+      "alt": "A portrait image representing the guard at Ellery Conservatory.",
+      "transform": {
+        "focalPoint": {
+          "x": 0.5,
+          "y": 0.45
+        },
+        "fit": "cover"
+      }
+    },
+    {
+      "id": "door",
+      "assetId": "door.still",
+      "label": "Door",
+      "caption": "Service entrance",
+      "status": "THRESHOLD",
+      "tone": "threshold",
+      "mode": "hero",
+      "alt": "A dark service door at the threshold of Ellery Conservatory.",
+      "transform": {
+        "focalPoint": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "fit": "cover"
+      }
+    },
+    {
+      "id": "surfer",
+      "label": "Recordist",
+      "caption": "[recordist] placeholder",
+      "status": "PLACEHOLDER",
+      "tone": "subject",
+      "mode": "hero",
+      "alt": "[recordist] placeholder"
+    },
+    {
+      "id": "circuitBentInterface",
+      "label": "Interface",
+      "caption": "[interface] placeholder",
+      "status": "PLACEHOLDER",
+      "tone": "device",
+      "mode": "boss",
+      "alt": "[interface] placeholder"
+    },
+    {
+      "id": "tuningFork",
+      "label": "Tuning Fork",
+      "caption": "[tuning fork] placeholder",
+      "status": "PLACEHOLDER",
+      "tone": "signal",
+      "mode": "boss",
+      "alt": "[tuning fork] placeholder"
+    },
+    {
+      "id": "walkie",
+      "label": "Radio",
+      "caption": "[radio] placeholder",
+      "status": "PLACEHOLDER",
+      "tone": "device",
+      "mode": "hero",
+      "alt": "[radio] placeholder"
+    }
+  ]
+}

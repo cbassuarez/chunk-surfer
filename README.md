@@ -1,10 +1,81 @@
 # Chunk Surfer
 
-Chunk Surfer is a web-native horror game about recording room tone inside Ellery Conservatory. This repository is the standalone extraction from `cbassuarez.github.io` with a Tauri v2 desktop shell for macOS, Windows, and Linux.
+Chunk Surfer is a horror game about recording room tone inside Ellery
+Conservatory: five rooms, one minute of clean silence each, and a building that
+keeps listening back.
 
-Status: desktop port in progress. The browser game remains the canonical runtime, and the desktop shell packages that web build rather than rewriting the game in another engine.
+![Chunk Surfer title screen](docs/media/title-screen.png)
 
-## Run the latest playable desktop build
+## Download the Latest Beta
+
+Get the newest public beta from [GitHub Releases](https://github.com/cbassuarez/chunk-surfer/releases/latest).
+
+| Platform | Architecture | Download |
+| --- | --- | --- |
+| macOS | Apple Silicon | `Chunk Surfer_0.1.0-beta.5_aarch64.dmg` or the newest `.dmg` asset |
+| Windows | x64 | `Chunk Surfer_0.1.0-beta.5_x64_en-US.msi` or the newest `.msi` asset |
+| Linux | x64 | newest `.AppImage` or `.deb` asset |
+
+The beta downloads are intentionally large. Release builds include the offline
+lens sidecar and pinned diffusion model resources up front, so the game should
+not ask players to download model weights after first launch.
+
+### Before You Install
+
+- macOS builds currently target Apple Silicon.
+- Windows and Linux builds target x64 machines with NVIDIA/CUDA-capable
+  hardware for the bundled lens runtime.
+- Desktop betas are unsigned while release testing is in progress, so your OS
+  may show an unsigned-app warning.
+- The microphone feature is optional. If enabled, the game only uses local
+  loudness to decide whether a room is quiet enough; it does not record or
+  upload audio.
+
+## Feedback and Bug Reports
+
+Use the repo issue tracker for beta feedback:
+
+- [Report a bug](https://github.com/cbassuarez/chunk-surfer/issues/new?labels=bug)
+- [Send playtest feedback](https://github.com/cbassuarez/chunk-surfer/issues/new?labels=feedback)
+- [Browse open issues](https://github.com/cbassuarez/chunk-surfer/issues)
+
+Useful reports include your OS, CPU/GPU, controller model if relevant, the beta
+version, what you expected, what happened, and any diagnostic report exported
+from the in-game About/Support panel.
+
+## About the Game
+
+You are sent into Ellery Conservatory to capture five clean room tones. Movement,
+breath, equipment handling, and your own room can spoil the take. The work order
+starts as a technical job and becomes a case file about sound, consent, and a
+recordist who may still be in the building.
+
+Core systems:
+
+- First-person exploration through a hostile, audio-reactive conservatory.
+- Room-tone recording where silence is a resource and a rule.
+- Physical redaction battles built around blacking out words and defending a
+  reading of the transcript.
+- A field bag with map, documents, equipment, records, and return reports.
+- Full keyboard/mouse and controller-oriented input paths for normal play.
+- Optional local microphone loudness checks for the room-silence mechanic.
+
+## Screenshots
+
+![Facility map and field HUD](docs/media/facility-map.png)
+
+![Redaction battle transcript](docs/media/redaction-battle.png)
+
+![Source fault scene](docs/media/source-fault.png)
+
+## For Developers
+
+This repository is the standalone extraction from `cbassuarez.github.io` with a
+Tauri v2 desktop shell for macOS, Windows, and Linux. The browser game remains
+the canonical runtime, and the desktop shell packages that web build rather than
+rewriting the game in another engine.
+
+### Run the Latest Playable Desktop Build
 
 ```sh
 npm install
@@ -12,21 +83,22 @@ npm run lens:setup       # one time; installs the local GPU lens runtime
 npm run play:latest
 ```
 
-`play:latest` starts the separately managed development lens and the native
-Tauri app together. On a fresh cache the calibration screen generates all six
-ten-tile material banks. The authored 18-second opening credits begin only
-after calibration succeeds, and their clock pauses whenever the game is hidden
-or unfocused so the opening cannot expire behind another app.
+`play:latest` and `tauri:dev` start the separately managed development lens and
+the native Tauri app together. On a fresh cache the calibration screen generates
+all six ten-tile material banks. The authored 18-second opening credits begin
+only after calibration succeeds, and their clock pauses whenever the game is
+hidden or unfocused so the opening cannot expire behind another app.
 
-Do not use plain `npm run tauri:dev` for normal playtesting. Production owns a
-bundled sidecar; development deliberately supplies the same service protocol
-from the local Python environment. Plain Tauri development does not start that
-service, so calibration cannot complete.
+Development deliberately supplies the same service protocol from the local
+Python environment so iteration can stay fast. Storefront and release builds do
+not use that runtime-download path: they ship the pinned model resources inside
+the app bundle so the download size honestly reflects the storage required to
+play.
 
 For browser-only work, run `npm run lens:local` in one terminal and `npm run
 dev` in another, then open the Vite URL.
 
-## Web build
+### Web Build
 
 ```sh
 npm run build
@@ -35,19 +107,23 @@ npm run preview
 
 The Vite build uses `base: './'` so generated assets are safe for static preview and Tauri packaging.
 
-## Package the macOS Beta 3 candidate
+### Package the macOS Beta 5 Candidate
 
 ```sh
 npm run beta:build:mac
 ```
 
-This downloads the pinned model resources, builds the Apple Silicon sidecar,
-merges `src-tauri/tauri.lens.conf.json`, and creates the DMG under
+This downloads the pinned model resources at build time, builds the Apple
+Silicon sidecar, merges `src-tauri/tauri.lens.conf.json`, and creates the DMG under
 `src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/`. It is intentionally
 large and can take a long time on its first run.
 
-The Beta 3 source version is `0.1.0-beta.3`; the release tag is
-`v0.1.0-beta.3`. Before creating that tag, run:
+`npm run tauri:build` always merges the lens bundle config. If a packaged build
+does not contain `src-tauri/lens-resources/lens/` and a `chunk-lens` sidecar, it
+is not a release candidate.
+
+The Beta 5 source version is `0.1.0-beta.5`; the release tag is
+`v0.1.0-beta.5`. Before creating that tag, run:
 
 ```sh
 npm test
@@ -64,7 +140,11 @@ publishes a GitHub prerelease. Unsigned local bundles are expected at this
 stage. Signing, notarization, and storefront automation are tracked in
 `STORE_PREP.md`.
 
-## Tests
+Windows release CI builds MSI only. The offline lens payload is large enough
+that NSIS/makensis can fail while memory-mapping the installer payload on
+GitHub-hosted Windows runners, so NSIS is intentionally not a release target.
+
+### Tests
 
 ```sh
 npm test
@@ -73,7 +153,7 @@ npm run test:acoustic
 
 Browser smoke tests under `tools/chunk_surfer/tests/` expect a running Vite dev server and a local Chrome/Chromium compatible with `puppeteer-core`.
 
-## Migration note
+### Migration Note
 
 Extracted from `/Users/seb/cbassuarez.github.io` after source snapshot commit:
 

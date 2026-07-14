@@ -1,4 +1,5 @@
 import { assetUrl } from '../platform/paths.js';
+import mediaProject from '../../content/media/story-art.media.json' with { type: 'json' };
 
 export const STORY_ART_TONES = Object.freeze([
   'person',
@@ -15,68 +16,22 @@ export const STORY_ART_MODES = Object.freeze([
   'boss',
 ]);
 
-export const STORY_ART = Object.freeze({
-  guard: {
-    id: 'guard',
-    src: assetUrl('story-art/guard.png'),
-    label: 'Guard',
-    caption: 'Gate booth / Ellery Conservatory',
-    status: 'STILL',
-    tone: 'person',
-    mode: 'hero',
-    alt: 'A portrait image representing the guard at Ellery Conservatory.',
-  },
-  door: {
-    id: 'door',
-    src: assetUrl('story-art/door.png'),
-    label: 'Door',
-    caption: 'Service entrance',
-    status: 'THRESHOLD',
-    tone: 'threshold',
-    mode: 'hero',
-    alt: 'A dark service door at the threshold of Ellery Conservatory.',
-  },
-  surfer: {
-    id: 'surfer',
-    src: assetUrl('story-art/surfer.png'),
-    label: 'Recordist',
-    caption: 'Signal subject',
-    status: 'STILL',
-    tone: 'subject',
-    mode: 'hero',
-    alt: 'A figure associated with the recordist and the signal subject.',
-  },
-  circuitBentInterface: {
-    id: 'circuitBentInterface',
-    src: assetUrl('story-art/circuit-bent-interface.png'),
-    label: 'Interface',
-    caption: 'Damaged monitor path',
-    status: 'SIGNAL',
-    tone: 'device',
-    mode: 'boss',
-    alt: 'A circuit-bent interface used as a corrupted monitor image.',
-  },
-  tuningFork: {
-    id: 'tuningFork',
-    src: assetUrl('story-art/tuningfork.png'),
-    label: 'Tuning Fork',
-    caption: 'Reference tone',
-    status: 'REFERENCE',
-    tone: 'signal',
-    mode: 'boss',
-    alt: 'A tuning fork used as a reference tone image.',
-  },
-  walkie: {
-    id: 'walkie',
-    src: assetUrl('story-art/walkie.png'),
-    label: 'Radio',
-    caption: 'Client radio / issued equipment',
-    status: 'LIVE',
-    tone: 'device',
-    mode: 'hero',
-    alt: 'A handheld radio used for client check-ins.',
-  },
-});
+function buildStoryArtManifest(project) {
+  const assets = new Map((project.assets || []).map((asset) => [asset.id, asset]));
+  return Object.freeze(Object.fromEntries((project.storyArt || []).map((slot) => {
+    const asset = slot.assetId ? assets.get(slot.assetId) : null;
+    return [slot.id, {
+      ...slot,
+      src: asset?.path ? assetUrl(asset.path) : null,
+      mode: normalizeStoryArtMode(slot.mode),
+      tone: normalizeStoryArtTone(slot.tone),
+      transform: slot.transform || asset?.transform || null,
+    }];
+  })));
+}
+
+export const STORY_ART_PROJECT = Object.freeze(mediaProject);
+export const STORY_ART = buildStoryArtManifest(STORY_ART_PROJECT);
 
 const imageCache = new Map();
 

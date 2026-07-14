@@ -6,7 +6,7 @@ import * as scenes from './scenes.js';
 import { uiSize, uiText, uiCenter, uiScrim } from '../render/ui.js';
 import { drawMachinePanel } from '../render/presentation.js';
 import { getSave, saveCommit, clearSave, clearAllData } from './save.js';
-import { bindingLabel, controllerBindingLabel } from './bindings.js';
+import { controllerSettings, inputPrompt, promptLine } from './bindings.js';
 import { settingsFooterTips, clipTip } from './settings-tips.js';
 import {
   applyVfdSettings, vfdSettings, PHOSPHOR_THEMES, PHOSPHOR_LABEL,
@@ -26,7 +26,17 @@ import {
   normalizePersonalInterferenceSettings,
 } from './personalized-interference.js';
 
-const MIC_LABEL = { idle: 'OFF', asking: 'ASKING…', on: 'LIVE', denied: 'BLOCKED', test: 'TEST' };
+const MIC_LABEL = {
+  idle: 'OFF',
+  asking: 'ASKING…',
+  on: 'LIVE',
+  denied: 'BLOCKED',
+  unavailable: 'NO INPUT',
+  error: 'ERROR',
+  test: 'TEST',
+};
+const MIC_CHANNEL_MODES = ['mono', 'left', 'right'];
+const MIC_CHANNEL_LABEL = { mono: 'MONO MIX', left: 'LEFT', right: 'RIGHT' };
 const FX_MODES = ['off', 'reduced', 'full'];
 const FX_LABEL = { off: 'OFF', reduced: 'REDUCED', full: 'FULL' };
 const HINT_MODES = ['off', 'reduced', 'full'];
@@ -115,10 +125,71 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
     return labelDisplayOption(contractKey, displaySettings()[key]);
   }
 
-  const controlValue = (action) => hooks.controllerRemapAction?.() === action
-    ? 'PRESS A CONTROLLER BUTTON…'
-    : `${bindingLabel(action)} · ${controllerBindingLabel(action)}`;
-  const remap = (action) => hooks.beginControllerRemap?.(action);
+  const controllerPrefs = () => setting('controller', controllerSettings());
+  const controllerPatch = (patch) => {
+    const next = { ...controllerPrefs(), ...patch };
+    set('controller', next);
+    hooks.onControllerSettingsChange?.(next);
+  };
+  const pctController = (key, fallback = 1) => `${Math.round(Number(controllerPrefs()[key] ?? fallback) * 100)}%`;
+  const micSnapshot = () => hooks.micSnapshot?.() || { state: hooks.micStatus?.() || 'idle', devices: [], devicesKnown: false };
+  const micInputPrefs = () => {
+    const source = setting('micInput', {});
+    return {
+      deviceId: typeof source.deviceId === 'string' && source.deviceId ? source.deviceId : 'default',
+      channelMode: MIC_CHANNEL_MODES.includes(source.channelMode) ? source.channelMode : 'mono',
+      echoCancellation: source.echoCancellation !== false,
+      noiseSuppression: !!source.noiseSuppression,
+      autoGainControl: !!source.autoGainControl,
+      lastDeviceLabel: typeof source.lastDeviceLabel === 'string' ? source.lastDeviceLabel : '',
+    };
+  };
+  const micDeviceChoices = () => {
+    const seen = new Set(['default']);
+    const choices = [{ deviceId: 'default', label: 'SYSTEM DEFAULT' }];
+    for (const device of micSnapshot().devices || []) {
+      if (!device.deviceId || seen.has(device.deviceId)) continue;
+      seen.add(device.deviceId);
+      choices.push({
+        deviceId: device.deviceId,
+        label: String(device.label || 'MICROPHONE').toUpperCase(),
+      });
+    }
+    return choices;
+  };
+  const patchMicInput = (patch) => {
+    const next = { ...micInputPrefs(), ...patch };
+    set('micInput', next);
+    hooks.onMicInputChange?.(next);
+  };
+  const micInputLabel = () => {
+    const snap = micSnapshot();
+    if (snap.devicesKnown && !(snap.devices || []).length) return 'NO INPUT FOUND';
+    const prefs = micInputPrefs();
+    if (prefs.deviceId === 'default') {
+      if (!snap.devicesKnown && snap.state !== 'on' && snap.state !== 'test') return 'SYSTEM DEFAULT';
+      return 'SYSTEM DEFAULT';
+    }
+    const match = (snap.devices || []).find((d) => d.deviceId === prefs.deviceId);
+    if (match?.label) return String(match.label).toUpperCase().slice(0, 28);
+    return String(prefs.lastDeviceLabel || 'SELECTED INPUT').toUpperCase().slice(0, 28);
+  };
+  const cycleMicInput = (d) => {
+    const choices = micDeviceChoices();
+    if (choices.length <= 1) {
+      hooks.refreshMicDevices?.();
+      return;
+    }
+    const prefs = micInputPrefs();
+    const at = Math.max(0, choices.findIndex((choice) => choice.deviceId === prefs.deviceId));
+    const next = choices[(at + d + choices.length) % choices.length];
+    patchMicInput({ deviceId: next.deviceId, lastDeviceLabel: next.deviceId === 'default' ? '' : next.label });
+  };
+  const cycleMicChannel = (d) => {
+    const prefs = micInputPrefs();
+    const at = Math.max(0, MIC_CHANNEL_MODES.indexOf(prefs.channelMode));
+    patchMicInput({ channelMode: MIC_CHANNEL_MODES[(at + d + MIC_CHANNEL_MODES.length) % MIC_CHANNEL_MODES.length] });
+  };
 
   function personalInterference() {
     return normalizePersonalInterferenceSettings(s().personalInterference);
@@ -315,27 +386,48 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
       {
         id: 'input', name: 'INPUT',
         rows: [
-          { id: 'controlMap', label: 'CONTROLLER DETECTED', value: () => hooks.controllerName?.() || 'NO CONTROLLER' },
-          { id: 'move', label: 'MOVE / TURN', value: () => controlValue('move') },
-          { id: 'quiet', label: 'QUIET', value: () => controlValue('quiet'), activate: () => remap('quiet') },
-          { id: 'light', label: 'LIGHT', value: () => controlValue('light'), activate: () => remap('light') },
-          { id: 'bag', label: 'BAG', value: () => controlValue('bag'), activate: () => remap('bag') },
-          { id: 'recorder', label: 'RECORDER', value: () => controlValue('recorder'), activate: () => remap('recorder') },
-          { id: 'interact', label: 'INTERACT', value: () => controlValue('interact'), activate: () => remap('interact') },
-          { id: 'playback', label: 'PLAYBACK', value: () => controlValue('playback'), activate: () => remap('playback') },
-          { id: 'menu', label: 'MENU / PAUSE', value: () => controlValue('menu'), activate: () => remap('menu') },
-          { id: 'confirm', label: 'CONFIRM', value: () => controlValue('confirm'), activate: () => remap('confirm') },
-          { id: 'back', label: 'BACK', value: () => controlValue('back'), activate: () => remap('back') },
-          { id: 'resetInputBindings', label: 'RESET INPUT BINDINGS',
+          { id: 'controlMap', label: 'CONTROLLER', value: () => controllerPrefs().enabled === false ? 'OFF' : (hooks.controllerName?.() || 'NO CONTROLLER'),
+            adjust: () => controllerPatch({ enabled: controllerPrefs().enabled === false }) },
+          { id: 'configureController', label: 'CONFIGURE CONTROLLER', value: () => inputPrompt('confirm'), activate: () => hooks.openControllerSettings?.() },
+          { id: 'controllerLookSensitivity', label: 'LOOK SENSITIVITY',
+            value: () => pctController('lookSensitivity', 1),
+            adjust: (d) => controllerPatch({ lookSensitivity: clamp(Number(controllerPrefs().lookSensitivity ?? 1) + d * 0.1, 0.25, 2.5) }) },
+          { id: 'controllerMoveDeadzone', label: 'MOVE DEADZONE',
+            value: () => pctController('moveDeadzone', 0.12),
+            adjust: (d) => controllerPatch({ moveDeadzone: clamp(Number(controllerPrefs().moveDeadzone ?? 0.12) + d * 0.02, 0, 0.6) }) },
+          { id: 'controllerLookDeadzone', label: 'LOOK DEADZONE',
+            value: () => pctController('lookDeadzone', 0.16),
+            adjust: (d) => controllerPatch({ lookDeadzone: clamp(Number(controllerPrefs().lookDeadzone ?? 0.16) + d * 0.02, 0, 0.7) }) },
+          { id: 'controllerInvertLookY', label: 'INVERT LOOK Y',
+            value: () => controllerPrefs().invertLookY ? 'ON' : 'OFF',
+            adjust: () => controllerPatch({ invertLookY: !controllerPrefs().invertLookY }) },
+          { id: 'resetInputBindings', label: 'RESET CONTROLLER',
             value: () => armedValue('resetInputBindings'),
             activate: () => arm('resetInputBindings', () => hooks.resetInputBindings?.() || hooks.resetControllerBindings?.()) },
           { id: 'micStatus', label: 'MIC STATUS',
-            value: () => MIC_LABEL[hooks.micStatus?.() || 'idle'] || 'OFF' },
+            value: () => MIC_LABEL[micSnapshot().state || 'idle'] || 'OFF' },
           { id: 'mic', label: 'USE ROOM MIC',
             value: () => setting('mic', 'ask') === 'ask' ? 'ASK AT NEW GAME' : setting('mic', 'ask') === 'off' ? 'OFF' : 'ON',
             adjust: () => set('mic', setting('mic', 'ask') === 'on' ? 'off' : 'on') },
+          { id: 'micInput', label: 'MIC INPUT',
+            value: micInputLabel,
+            adjust: cycleMicInput,
+            activate: () => hooks.refreshMicDevices?.() },
+          { id: 'micChannel', label: 'MIC CHANNEL',
+            value: () => MIC_CHANNEL_LABEL[micInputPrefs().channelMode] || 'MONO MIX',
+            adjust: cycleMicChannel },
           { id: 'enableMic', label: 'ENABLE MIC',
-            value: () => '[ENTER]', activate: () => hooks.enableMic?.() },
+            value: () => inputPrompt('confirm'), activate: () => hooks.enableMic?.() },
+          { id: 'testMic', label: 'TEST MIC',
+            value: () => {
+              const snap = micSnapshot();
+              if (snap.state === 'on' || snap.state === 'test') return `${Math.round(Number(snap.level || 0) * 100)}%`;
+              if (snap.state === 'unavailable') return 'NO INPUT';
+              return inputPrompt('confirm');
+            },
+            activate: () => hooks.enableMic?.() },
+          { id: 'rescanMic', label: 'RESCAN INPUTS',
+            value: () => inputPrompt('confirm'), activate: () => hooks.refreshMicDevices?.() },
         ],
       },
       {
@@ -443,8 +535,8 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
               adjust: () => setReplaySetting('condensedCheckIn', !setting('condensedCheckIn', false)) },
           ] : []),
           ...(inGame ? [
-            { id: 'returnTitle', label: 'RETURN TO TITLE', value: () => '[ENTER]', activate: returnToTitle },
-            { id: 'resume', label: 'RESUME', value: () => '[ENTER]', activate: () => scenes.pop() },
+            { id: 'returnTitle', label: 'RETURN TO TITLE', value: () => inputPrompt('confirm'), activate: returnToTitle },
+            { id: 'resume', label: 'RESUME', value: () => inputPrompt('confirm'), activate: () => scenes.pop() },
           ] : []),
         ],
       },
@@ -456,9 +548,9 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           { id: 'steps', label: 'STEPS', value: () => String(getSave().steps || 0).padStart(6, '0') },
           { id: 'area', label: 'CURRENT AREA',
             value: () => String(hooks.currentArea?.() || getSave().area || 'PROLOGUE').toUpperCase().slice(0, 22) },
-          { id: 'exportProfile', label: 'EXPORT PROFILE', value: () => '[ENTER]',
+          { id: 'exportProfile', label: 'EXPORT PROFILE', value: () => inputPrompt('confirm'),
             activate: () => hooks.exportProfile?.() },
-          { id: 'importProfile', label: 'IMPORT PROFILE', value: () => '[ENTER]',
+          { id: 'importProfile', label: 'IMPORT PROFILE', value: () => inputPrompt('confirm'),
             activate: () => hooks.importProfile?.() },
           { id: 'clearRun', label: 'CLEAR RUN',
             value: () => armedValue('clearRun'),
@@ -475,7 +567,7 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           { id: 'about:version', label: 'VERSION', value: () => hooks.version?.() || '0.1.0' },
           { id: 'about:build', label: 'BUILD', value: () => hooks.build?.() || 'LOCAL' },
           { id: 'about:website', label: 'WEBSITE', value: () => 'cbassuarez.com', activate: () => hooks.openWebsite?.() },
-          { id: 'about:report', label: 'REPORT A PROBLEM', value: () => '[ENTER]', activate: () => hooks.reportProblem?.() },
+          { id: 'about:report', label: 'REPORT A PROBLEM', value: () => inputPrompt('confirm'), activate: () => hooks.reportProblem?.() },
           { id: 'about:copyright', label: 'COPYRIGHT', value: () => hooks.copyright?.() || '© 2026 Sebastian Suarez-Solis' },
 
           section('Performance'),
@@ -483,12 +575,12 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           { id: 'about:runtime', label: 'RUNTIME', value: () => hooks.runtimeLabel?.() || 'Web' },
 
           section('Support'),
-          { id: 'about:copyReport', label: 'COPY DIAGNOSTIC REPORT', value: () => '[ENTER]', activate: () => hooks.copyDiagnosticReport?.() },
-          { id: 'about:exportSave', label: 'EXPORT SAVE BACKUP', value: () => '[ENTER]', activate: () => hooks.exportSaveBackup?.() },
-          { id: 'about:restartAudio', label: 'RESTART AUDIO ENGINE', value: () => '[ENTER]', activate: () => hooks.restartAudioEngine?.() },
+          { id: 'about:copyReport', label: 'COPY DIAGNOSTIC REPORT', value: () => inputPrompt('confirm'), activate: () => hooks.copyDiagnosticReport?.() },
+          { id: 'about:exportSave', label: 'EXPORT SAVE BACKUP', value: () => inputPrompt('confirm'), activate: () => hooks.exportSaveBackup?.() },
+          { id: 'about:restartAudio', label: 'RESTART AUDIO ENGINE', value: () => inputPrompt('confirm'), activate: () => hooks.restartAudioEngine?.() },
 
           section('Credits'),
-          { id: 'about:credits', label: 'CREDITS', value: () => '[ENTER]', activate: () => hooks.openCredits?.() },
+          { id: 'about:credits', label: 'CREDITS', value: () => inputPrompt('confirm'), activate: () => hooks.openCredits?.() },
         ],
       },
     ];
@@ -560,7 +652,13 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
         wordmark: 'AUDIOCORP',
         label: inGame ? 'SERVICE MENU' : 'MAIN MENU',
         source: 'SETUP',
-        footer: `[TAB] SECTION · [↑↓] ROW · [←→] SET · [ENTER] RUN${inGame ? '' : ' · [ESC] DONE'}`,
+        footer: promptLine([
+          { action: 'tabNext', label: 'SECTION' },
+          { action: 'select', label: 'ROW' },
+          { action: 'set', label: 'SET' },
+          { action: 'confirm', label: 'RUN' },
+          ...(inGame ? [] : [{ action: 'back', label: 'DONE' }]),
+        ]),
         meter: false,
       });
 

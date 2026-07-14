@@ -53,6 +53,7 @@ export function exportProfile(meta, settings, { build = 'LOCAL', now = Date.now(
       seenTextMode: settings?.seenTextMode || 'fast',
       archiveSignals: settings?.archiveSignals || 'subtle',
       condensedCheckIn: !!settings?.condensedCheckIn,
+      controller: normalizeSettings(settings).controller,
       customShiftRules: settings?.customShiftRules && typeof settings.customShiftRules === 'object'
         ? { ...settings.customShiftRules }
         : null,

@@ -4,6 +4,16 @@
 export function createCuePlayer({ context, destination, loadBuffer, buses = {} } = {}) {
   const active = new Map();
   const output = (name) => buses[name] || destination || context?.destination;
+  const scheduleAutomation = (param, automation, now, fallbackScale = 1) => {
+    if (!param || !automation?.points?.length) return;
+    param.cancelScheduledValues?.(now);
+    for (const [index, point] of automation.points.entries()) {
+      const time = now + Math.max(0, Number(point.time || 0));
+      const value = Number(point.value ?? 0) * fallbackScale;
+      if (index === 0) param.setValueAtTime(value, time);
+      else param.linearRampToValueAtTime(value, time);
+    }
+  };
 
   async function play(cue, assets, { seed = Math.random, gainScale = 1 } = {}) {
     if (!context || !cue) return null;
@@ -34,6 +44,12 @@ export function createCuePlayer({ context, destination, loadBuffer, buses = {} }
         panner = context.createStereoPanner();
         panner.pan.setValueAtTime(Math.max(-1, Math.min(1, panValue)), now);
         gain.connect(panner); tail = panner;
+      }
+      for (const automation of layer.automation || []) {
+        if (automation.parameter === 'gain') scheduleAutomation(gain.gain, automation, now, gainScale);
+        if (automation.parameter === 'pan' && panner) scheduleAutomation(panner.pan, automation, now);
+        if (automation.parameter === 'playbackRate') scheduleAutomation(source.playbackRate, automation, now);
+        if (automation.parameter === 'detune' && source.detune) scheduleAutomation(source.detune, automation, now);
       }
       source.connect(gain); tail.connect(output(layer.bus || cue.bus || 'sfx'));
       const start = Math.max(0, Number(layer.trimStart || 0));

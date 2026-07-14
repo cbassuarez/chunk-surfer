@@ -94,7 +94,7 @@ export function createConversation({
   const choiceContentId = (c, index = branchOptions().indexOf(c)) => replay?.choiceId?.({
     nodeId, choice: c, index: Math.max(0, index),
   }) || `${sceneId}:${nodeId}:choice:${Math.max(0, index)}`;
-  const choiceKey = (c) => choiceContentId(c);
+  const choiceKey = (c, index) => c?.contentId || c?.__choiceKey || choiceContentId(c, index);
   const branchOptions = () => node()?.choices || [];
 
   function stopVoice() { handle?.stop?.(); handle = null; }
@@ -395,12 +395,13 @@ export function createConversation({
     if (!pending) return [];
     if (pending.kind === 'say') return pending.options;
     return pending.options
-      .filter((c) => !(c.hideWhenAsked && asked.has(choiceKey(c))))
-      .map((c) => {
-        const id = choiceKey(c);
+      .map((c, index) => ({ choice: c, index, id: choiceKey(c, index) }))
+      .filter(({ choice, id }) => !(choice.hideWhenAsked && asked.has(id)))
+      .map(({ choice, id }) => {
         return {
-          ...c,
+          ...choice,
           contentId: id,
+          __choiceKey: id,
           replayState: replay?.choiceStatus?.(id) || 'unseen',
           archiveSignal: !!replay?.archiveSignalsEnabled?.() && (replay?.choiceStatus?.(id) || 'unseen') === 'unseen',
         };

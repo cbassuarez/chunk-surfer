@@ -6,6 +6,7 @@ import { achievementDefinition } from '../progression/achievements.js';
 import { consumeReturnReport } from '../progression/runtime.js';
 import { formatDuration, returnDefinition } from '../progression/report.js';
 import * as AUDIO from '../audio/story-audio.js';
+import { promptLine } from './bindings.js';
 
 const chunk = (values, size) => {
   const out = [];
@@ -97,7 +98,9 @@ export function makeReturnReportScene({
       const body = drawMachinePanel(x, y, w, h, {
         label: current === 'report' ? 'RUN SUMMARY' : current === 'achievements' ? 'ACHIEVEMENTS' : current === 'unlocks' ? 'UNLOCKS' : 'NEXT',
         source: pageSource,
-        footer: current === 'actions' ? '[↑/↓] SELECT · [ENTER] CONFIRM' : '[ENTER] CONTINUE',
+        footer: current === 'actions'
+          ? promptLine([{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: 'CONFIRM' }])
+          : promptLine([{ action: 'continue', label: 'CONTINUE' }]),
         meter: current !== 'actions',
       });
 

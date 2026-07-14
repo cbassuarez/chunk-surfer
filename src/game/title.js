@@ -12,6 +12,7 @@ import { drawLocationIndicator, drawMachinePanel, drawVfdText } from '../render/
 import { UI_COLOR } from '../render/palette.js';
 import { getMeta, hasActiveRun } from './save.js';
 import * as AUDIO from '../audio/story-audio.js';
+import { promptLine } from './bindings.js';
 
 export function makeTitleScene({
   buildLabel = '',
@@ -170,7 +171,7 @@ export function makeTitleScene({
       const body = drawMachinePanel(x, y, w, h, {
         label: 'CASE SELECT',
         source: '4417-C',
-        footer: '[↑/↓] SELECT · [ENTER] CONFIRM',
+        footer: promptLine([{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: 'CONFIRM' }]),
         meter: true,
       });
 

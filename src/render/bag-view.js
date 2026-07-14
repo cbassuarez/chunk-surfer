@@ -11,6 +11,7 @@ import { uiLine, uiText, uiWrap } from './ui.js';
 import { drawBagIcon } from './bag-icons.js';
 import { bagEntry, bagSection } from '../game/bag-model.js';
 import { drawMapView } from './map-view.js';
+import { inputPrompt, inputPromptLabel } from '../game/bindings.js';
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
@@ -73,8 +74,8 @@ function drawTabs(model, nav, layout, pulse) {
   });
 
   const help = layout.tabs.w >= 64
-    ? '[TAB / SHIFT+TAB] SECTION'
-    : '[TAB] SECTION';
+    ? `${inputPrompt('tabNext')} / ${inputPrompt('tabPrev')} SECTION`
+    : `${inputPrompt('tabNext')} SECTION`;
   uiText(layout.tabs.x, layout.tabs.y + 1, clip(help, layout.tabs.w), 'ui-label', .58);
 }
 
@@ -301,13 +302,13 @@ function drawDetail(model, nav, layout, motion, now) {
 
 export function bagActionRail(entry, mode) {
   if (mode === 'confirm') {
-    return [['ENTER', 'CONFIRM'], ['ESC', 'CANCEL'], ['B', 'CLOSE']];
+    return [[inputPromptLabel('confirm'), 'CONFIRM'], [inputPromptLabel('back'), 'CANCEL'], [inputPromptLabel('bag'), 'CLOSE']];
   }
 
   const out = [];
-  if (entry?.actions?.primary) out.push(['ENTER', entry.actions.primary.label]);
-  if (entry?.actions?.secondary) out.push(['SPACE', entry.actions.secondary.label]);
-  out.push(['B', 'CLOSE']);
+  if (entry?.actions?.primary) out.push([inputPromptLabel('confirm'), entry.actions.primary.label]);
+  if (entry?.actions?.secondary) out.push([inputPromptLabel('mark'), entry.actions.secondary.label]);
+  out.push([inputPromptLabel('bag'), 'CLOSE']);
   return out;
 }
 

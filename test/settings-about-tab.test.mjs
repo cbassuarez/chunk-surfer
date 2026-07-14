@@ -45,8 +45,9 @@ test('display and input own their reset actions', () => {
   assert.match(settings, /resetDisplaySettings/);
   assert.match(settings, /RESET DISPLAY SETTINGS/);
   assert.match(settings, /resetInputBindings/);
-  assert.match(settings, /RESET INPUT BINDINGS/);
-  assert.match(settings, /CONTROLLER DETECTED/);
+  assert.match(settings, /RESET CONTROLLER/);
+  assert.match(settings, /CONFIGURE CONTROLLER/);
+  assert.match(settings, /LOOK SENSITIVITY/);
 });
 
 test('settings renderer supports non-selectable section rows', () => {

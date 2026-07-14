@@ -10,6 +10,10 @@ export function resolveGodRowValue(row) {
   return row?.activate ? '[FIRE]' : '';
 }
 
+export function resolveGodRowDanger(row) {
+  return typeof row?.danger === 'function' ? !!row.danger() : !!row?.danger;
+}
+
 export function makeGodMenuScene({ tabs = [], onClose = () => {} } = {}) {
   const availableTabs = tabs.filter((tab) => Array.isArray(tab?.rows) && tab.rows.length);
   let tabIndex = 0;
@@ -138,8 +142,9 @@ export function makeGodMenuScene({ tabs = [], onClose = () => {} } = {}) {
       }
       const active = rowIndex === selected;
       const value = resolveGodRowValue(row);
+      const danger = resolveGodRowDanger(row);
       const label = `${active ? '▸' : ' '} ${String(row.label || row.id || '').toUpperCase()}`;
-      uiText(body.x, rowY, label.slice(0, 34), row.danger ? 'ui-danger' : active ? 'ui-primary' : 'ui-secondary');
+      uiText(body.x, rowY, label.slice(0, 34), danger ? 'ui-danger' : active ? 'ui-primary' : 'ui-secondary');
       const valueX = body.x + 37;
       const rendered = row.adjust ? `◀ ${value} ▶` : String(value);
       uiText(valueX, rowY, rendered.slice(0, Math.max(1, body.x + body.w - valueX)), active ? 'ui-danger' : 'ui-secondary');

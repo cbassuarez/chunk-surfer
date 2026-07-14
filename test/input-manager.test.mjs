@@ -86,6 +86,20 @@ test('deadzone renormalizes analog input', () => {
   assert.ok(deadzone(-0.5) < 0);
 });
 
+test('controller state provider feeds movement axes without direct polling', () => {
+  let polled = 0;
+  const input = new InputManager({
+    navigatorRef: { getGamepads: () => { polled += 1; return []; } },
+  });
+  input.setControllerStateProvider(() => ({ moveX: 0.25, moveY: 0.5, turnX: -0.75, lookY: 0.2 }));
+  const snap = input.snapshot();
+  assert.equal(snap.moveX, 0.25);
+  assert.equal(snap.moveY, 0.5);
+  assert.equal(snap.turnX, -0.75);
+  assert.equal(snap.lookY, 0.2);
+  assert.equal(polled, 0);
+});
+
 test('reset timestamps identify a fresh post-blur keydown', async () => {
   const input = new InputManager();
   input.reset('window-blur');

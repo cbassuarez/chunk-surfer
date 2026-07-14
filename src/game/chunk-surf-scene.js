@@ -1,10 +1,6 @@
 import * as scenes from './scenes.js';
-import { uiCenter, uiDraw, uiFill, uiLine, uiScrim, uiSize, uiText, uiWrap } from '../render/ui.js';
-import { drawMachinePanel, drawVfdText } from '../render/presentation.js';
-import { UI_COLOR } from '../render/palette.js';
-import { loadStoryArtImage, resolveStoryArt } from './story-art.js';
+import { uiDraw, uiSize } from '../render/ui.js';
 import {
-  CHUNK_SURF_ROOMS,
   createChunkSurfState,
   currentChunkSurfRoom,
   inspectChunkSurf,
@@ -16,114 +12,295 @@ import {
   chunkSurfCompletion,
   chunkSurfProbe,
 } from './chunk-surf-state.js';
-
-const TONE = Object.freeze({
-  primary: 'ui-primary',
-  secondary: 'ui-secondary',
-  danger: 'ui-danger',
-  green: 'ui-green',
-  blue: 'ui-blue',
-});
+import { activeInputPromptDevice, promptLine } from './bindings.js';
+import { chunkSurfVisualModel } from './chunk-surf-visual.js';
 
 const redactionKeys = ['1', '2', '3'];
+const TONE = Object.freeze({
+  cold: '#8b8f95',
+  visited: '#c8c2ad',
+  tuned: '#1dff70',
+  recorded: '#22baff',
+  redaction: '#ff6358',
+  schematic: '#f6f0df',
+});
 
 function inputName(e) {
   return String(e.key || e.code || '').toLowerCase();
 }
 
-function drawVoid({ t, state, room, cols, rows }) {
-  uiFill(0, 0, cols, rows, '#020304');
-  const depth = Math.min(1, (state.visited.length - 1) / Math.max(1, CHUNK_SURF_ROOMS.length - 1));
-  uiDraw(({ ctx, dpr, cellW, cellH }) => {
-    ctx.save();
-    ctx.globalCompositeOperation = 'source-over';
-    for (let i = 0; i < 70; i++) {
-      const h = ((i * 2654435761) ^ Math.floor(t * 18) * 40503 ^ state.roomId.length * 911) >>> 0;
-      const z = ((h & 255) / 255);
-      const x = ((h >>> 8) % Math.max(1, cols)) * cellW * dpr;
-      const y = ((h >>> 17) % Math.max(1, rows)) * cellH * dpr;
-      const w = (1 + ((h >>> 27) % 9)) * cellW * dpr * (0.2 + depth);
-      const a = 0.025 + z * 0.055 + depth * 0.03;
-      ctx.globalAlpha = a;
-      ctx.fillStyle = room.kind === 'final' ? '#ff6a64' : depth > 0.55 ? '#78e39a' : '#ffc247';
-      ctx.fillRect(x, y, w, Math.max(1, dpr));
-    }
-    ctx.restore();
-  });
+function paintText(ctx, text, x, y, {
+  color = '#d8dedc',
+  alpha = 1,
+  size = 15,
+  weight = 700,
+  align = 'left',
+  maxWidth = undefined,
+  blur = 0,
+  rotate = 0,
+} = {}) {
+  const s = String(text || '');
+  if (!s) return;
+  ctx.save();
+  ctx.translate(x, y);
+  if (rotate) ctx.rotate(rotate);
+  ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+  ctx.fillStyle = color;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = blur;
+  ctx.font = `${weight} ${Math.max(7, size)}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
+  ctx.textAlign = align;
+  ctx.textBaseline = 'middle';
+  ctx.fillText(s, 0, 0, maxWidth);
+  ctx.restore();
 }
 
-function drawPerspectiveText({ body, state, room, t }) {
-  const tuned = state.tuned.includes(room.id);
-  const lines = tuned && room.tunedLines ? room.tunedLines : room.lines;
-  const cx = body.x + Math.floor(body.w / 2);
-  const top = body.y + 2;
-  const wallW = Math.max(24, Math.min(body.w - 6, 54));
-  const wallX = cx - Math.floor(wallW / 2);
-  const shimmer = state.hasFork ? 0.08 + Math.sin(t * 11) * 0.035 : 0.035;
-
-  uiLine(body.x + 1, body.y + body.h - 3, cx - 4, body.y + Math.floor(body.h * 0.52), UI_COLOR.frame, 0.42);
-  uiLine(body.x + body.w - 1, body.y + body.h - 3, cx + 4, body.y + Math.floor(body.h * 0.52), UI_COLOR.frame, 0.42);
-  uiLine(cx - 4, body.y + Math.floor(body.h * 0.52), cx + 4, body.y + Math.floor(body.h * 0.52), UI_COLOR.frame, 0.3);
-
-  uiText(wallX, top, `ROOM ${room.id.toUpperCase()}`.slice(0, wallW), 'ui-label', 0.75);
-  lines.slice(0, Math.max(1, body.h - 9)).forEach((line, i) => {
-    const cls = tuned ? (line.includes('SURFER') || line.includes('BODY') ? 'ui-danger' : 'ui-primary') : 'ui-secondary';
-    const drift = Math.round(Math.sin(t * 2.7 + i * 1.9) * shimmer * 4);
-    uiText(wallX + Math.max(-2, Math.min(2, drift)), top + 2 + i * 2, String(line).slice(0, wallW), cls, tuned ? 0.96 : 0.64);
-  });
-
-  const exits = Object.entries(room.exits || {});
-  const y = body.y + body.h - 4;
-  const exitText = exits.length
-    ? exits.map(([dir, id]) => `${dir.toUpperCase()}:${id}`).join('  ')
-    : 'NO EXIT DECLARED';
-  uiText(body.x + 2, y, exitText.slice(0, body.w - 4), exits.length ? 'ui-blue' : 'ui-danger', 0.82);
+function paintChromaticText(ctx, text, x, y, options = {}) {
+  const spread = options.spread || 3;
+  paintText(ctx, text, x - spread, y, { ...options, color: '#ff234a', alpha: (options.alpha ?? 1) * 0.38, blur: 0 });
+  paintText(ctx, text, x + spread, y + spread * 0.25, { ...options, color: '#00f6ff', alpha: (options.alpha ?? 1) * 0.42, blur: 0 });
+  paintText(ctx, text, x, y, options);
 }
 
-function drawLog(body, log) {
-  const start = body.y + body.h - 11;
-  uiLine(body.x, start - 1, body.x + body.w, start - 1, UI_COLOR.frame, 0.42);
-  const lines = (log || []).slice(-5);
-  lines.forEach((entry, i) => {
-    uiWrap(entry.text, body.w - 2).slice(0, 1).forEach((line) => {
-      uiText(body.x + 1, start + i * 2, line.slice(0, body.w - 2), TONE[entry.tone] || 'ui-primary', 0.92);
+function paintVoid(ctx, model, w, h, time) {
+  ctx.save();
+  ctx.fillStyle = '#000102';
+  ctx.fillRect(0, 0, w, h);
+  const gradient = ctx.createRadialGradient(w * 0.5, h * 0.76, h * 0.05, w * 0.5, h * 0.45, h * 0.9);
+  gradient.addColorStop(0, 'rgba(22,38,42,.52)');
+  gradient.addColorStop(0.42, 'rgba(2,5,7,.76)');
+  gradient.addColorStop(1, 'rgba(0,0,0,1)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, w, h);
+
+  for (let i = 0; i < 54; i++) {
+    const phase = (i * 0.618 + time * 0.025) % 1;
+    const y = h * phase;
+    ctx.globalAlpha = 0.025 + (i % 7 === 0 ? 0.065 : 0);
+    ctx.fillStyle = model.glitch.bsod > 0.18 && i % 11 === 0 ? '#1027d8' : '#d7f3ef';
+    ctx.fillRect(0, y, w, Math.max(1, h * 0.0016));
+  }
+
+  if (model.glitch.bsod > 0.08) {
+    ctx.globalAlpha = model.glitch.bsod;
+    ctx.fillStyle = '#061fbd';
+    ctx.fillRect(w * 0.66, 0, w * 0.34, h);
+    paintText(ctx, 'A FATAL EXCEPTION HAS OCCURRED IN SOURCE SPACE', w * 0.70, h * 0.43, {
+      color: '#dbe5ff', alpha: 0.72, size: Math.max(12, h * 0.018), weight: 800, maxWidth: w * 0.27,
     });
+  }
+  ctx.restore();
+}
+
+function paintSchematics(ctx, model) {
+  for (const plane of model.schematics) {
+    ctx.save();
+    ctx.globalAlpha = plane.alpha;
+    ctx.translate(plane.x, plane.y);
+    ctx.rotate(plane.kind === 'bsod-plane' ? -0.08 : 0.11);
+    const size = 190 * plane.scale;
+    ctx.strokeStyle = plane.kind === 'bsod-plane' ? '#f4f6ff' : '#fbf7df';
+    ctx.lineWidth = Math.max(1, 2 * plane.scale);
+    ctx.strokeRect(-size * 0.5, -size * 0.32, size, size * 0.64);
+    for (let i = 0; i < 7; i++) {
+      const yy = -size * 0.24 + i * size * 0.08;
+      ctx.beginPath();
+      ctx.moveTo(-size * 0.45, yy);
+      ctx.lineTo(-size * 0.12, yy);
+      ctx.lineTo(-size * 0.06, yy - size * 0.045);
+      ctx.lineTo(size * 0.38, yy - size * 0.045);
+      ctx.stroke();
+      ctx.strokeRect(-size * 0.05 + i * size * 0.06, yy - size * 0.09, size * 0.07, size * 0.07);
+    }
+    paintText(ctx, plane.label, -size * 0.45, size * 0.38, { color: '#fbf7df', alpha: 0.8, size: 12 * plane.scale, maxWidth: size });
+    ctx.restore();
+  }
+}
+
+function paintCodeArchitecture(ctx, model, time) {
+  for (const row of model.floor) {
+    const color = TONE[row.tone] || TONE.cold;
+    const size = 22 * row.scale;
+    const x = row.x - row.width * 0.5;
+    const wave = Math.sin(time * 3.2 + row.z) * model.glitch.chromatic * 8;
+    paintChromaticText(ctx, row.text, x + wave, row.y, {
+      color,
+      alpha: row.alpha,
+      size,
+      maxWidth: row.width,
+      spread: model.glitch.chromatic * 5,
+      rotate: -0.02 + row.z * 0.002,
+    });
+  }
+
+  for (const wall of [...model.leftWall, ...model.rightWall]) {
+    const color = TONE[wall.tone] || TONE.cold;
+    paintChromaticText(ctx, wall.text, wall.x, wall.y, {
+      color,
+      alpha: wall.alpha,
+      size: 17 * wall.scale,
+      maxWidth: model.viewport.width * 0.34,
+      rotate: wall.side === 'left' ? -0.28 : 0.28,
+      spread: model.glitch.chromatic * 3,
+    });
+  }
+
+  for (const tower of model.towers) {
+    const color = TONE[tower.tone] || TONE.visited;
+    const lineStep = 15 * tower.scale;
+    const x = tower.x;
+    const y = tower.y;
+    paintText(ctx, tower.token, x, y - lineStep * (tower.height + 0.6), {
+      color,
+      alpha: 0.86,
+      size: Math.max(12, 24 * tower.scale),
+      align: 'center',
+      blur: tower.tone === 'tuned' ? 8 : 2,
+      maxWidth: 260 * tower.scale,
+    });
+    tower.lines.slice(0, tower.height).forEach((line, index) => {
+      paintChromaticText(ctx, line, x, y - index * lineStep, {
+        color,
+        alpha: Math.max(0.16, 0.72 - index * 0.06),
+        size: Math.max(8, 13 * tower.scale),
+        align: 'center',
+        maxWidth: 230 * tower.scale,
+        spread: tower.tone === 'tuned' ? 4 : 1.8,
+      });
+    });
+  }
+}
+
+function paintPortals(ctx, model, time) {
+  for (const portal of model.portals) {
+    const isForward = portal.kind === 'forward';
+    const width = (isForward ? 290 : 210) * portal.scale;
+    const height = (isForward ? 145 : 110) * portal.scale;
+    const pulse = 0.6 + Math.sin(time * 5 + portal.x * 0.01) * 0.15;
+    ctx.save();
+    ctx.globalAlpha = portal.alpha;
+    ctx.translate(portal.x, portal.y);
+    ctx.strokeStyle = portal.visited ? '#1dff70' : isForward ? '#f6f0df' : '#22baff';
+    ctx.fillStyle = isForward ? 'rgba(246,240,223,.045)' : 'rgba(34,186,255,.035)';
+    ctx.lineWidth = Math.max(1, 3 * portal.scale);
+    ctx.beginPath();
+    ctx.moveTo(-width * 0.5, height * 0.5);
+    ctx.lineTo(-width * 0.32, -height * 0.5);
+    ctx.lineTo(width * 0.32, -height * 0.5);
+    ctx.lineTo(width * 0.5, height * 0.5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.globalAlpha = Math.max(0.18, pulse);
+    ctx.beginPath();
+    ctx.moveTo(0, height * 0.48);
+    ctx.lineTo(0, -height * 0.48);
+    ctx.stroke();
+    ctx.restore();
+    paintChromaticText(ctx, portal.label, portal.x - width * 0.5, portal.y + height * 0.68, {
+      color: portal.visited ? '#1dff70' : '#f6f0df',
+      alpha: portal.alpha,
+      size: Math.max(9, 13 * portal.scale),
+      maxWidth: width * 1.15,
+      spread: 2.2,
+    });
+  }
+}
+
+function paintFinalRedaction(ctx, model) {
+  if (!model.finalChoices.length) return;
+  const w = model.viewport.width;
+  const h = model.viewport.height;
+  paintText(ctx, 'FINAL REDACTION: BLACK OUT THE COMFORTING LINE', w * 0.5, h * 0.22, {
+    color: '#ff6358', alpha: 0.92, size: Math.max(18, h * 0.036), weight: 900, align: 'center', maxWidth: w * 0.92, blur: 10,
+  });
+  for (const choice of model.finalChoices) {
+    const cardW = Math.min(w * 0.27, 380);
+    const cardH = Math.min(h * 0.22, 170);
+    ctx.save();
+    ctx.globalAlpha = choice.selected ? 0.94 : 0.48;
+    ctx.fillStyle = choice.selected ? 'rgba(255,99,88,.15)' : 'rgba(246,240,223,.05)';
+    ctx.strokeStyle = choice.selected ? '#ff6358' : '#786f6a';
+    ctx.lineWidth = choice.selected ? 3 : 1.5;
+    ctx.fillRect(choice.x - cardW * 0.5, choice.y - cardH * 0.5, cardW, cardH);
+    ctx.strokeRect(choice.x - cardW * 0.5, choice.y - cardH * 0.5, cardW, cardH);
+    ctx.restore();
+    paintText(ctx, choice.label, choice.x - cardW * 0.45, choice.y - cardH * 0.28, {
+      color: choice.selected ? '#ffaaa4' : '#d8dedc', alpha: 0.92, size: Math.max(10, h * 0.018), maxWidth: cardW * 0.9,
+    });
+    paintChromaticText(ctx, choice.sourceText, choice.x - cardW * 0.45, choice.y + cardH * 0.10, {
+      color: choice.selected ? '#f6f0df' : '#8b8f95', alpha: choice.selected ? 0.95 : 0.62, size: Math.max(9, h * 0.015), maxWidth: cardW * 0.9,
+      spread: choice.selected ? 5 : 1.5,
+    });
+  }
+}
+
+function paintHud(ctx, model, state, inputDevice, log) {
+  const w = model.viewport.width;
+  const h = model.viewport.height;
+  const controls = inputDevice === 'controller'
+    ? promptLine([{ action: 'select', label: 'MOVE/TURN' }, { action: 'light', label: 'TUNE' }, { action: 'recorder', label: 'RECORD' }, { action: 'interact', label: 'INSPECT' }])
+    : '[W/S] MOVE  [A/D] TURN  [F] TUNE  [R] RECORD  [E] INSPECT';
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,.58)';
+  ctx.fillRect(0, h - 78, w, 78);
+  ctx.restore();
+  paintText(ctx, `${model.room.title} :: ${model.sector.title}`, 22, h - 54, {
+    color: model.status.hasFork ? '#1dff70' : '#f6f0df', alpha: 0.92, size: 16, maxWidth: w * 0.58,
+  });
+  paintText(ctx, `FACING ${model.camera.facing.toUpperCase()}  FORK ${model.status.hasFork ? 'LIVE' : 'ABSENT'}  SOURCE LINES ${model.sector.sourceLineCount}`, 22, h - 30, {
+    color: '#8b8f95', alpha: 0.9, size: 12, maxWidth: w * 0.58,
+  });
+  paintText(ctx, controls, w - 24, h - 30, {
+    color: '#22baff', alpha: 0.9, size: 12, align: 'right', maxWidth: w * 0.38,
+  });
+  const lines = (log || state.log || []).slice(-2);
+  lines.forEach((entry, index) => paintText(ctx, entry.text, w * 0.50, h - 55 + index * 18, {
+    color: entry.tone === 'danger' ? '#ff6358' : entry.tone === 'green' ? '#1dff70' : entry.tone === 'blue' ? '#22baff' : '#d8dedc',
+    alpha: 0.88,
+    size: 12,
+    maxWidth: w * 0.46,
+  }));
+}
+
+function paintScare(ctx, model, time) {
+  const w = model.viewport.width;
+  const h = model.viewport.height;
+  ctx.save();
+  ctx.globalAlpha = 0.88;
+  ctx.fillStyle = '#050000';
+  ctx.fillRect(0, 0, w, h);
+  ctx.globalCompositeOperation = 'screen';
+  for (let i = 0; i < 38; i++) {
+    const x = (i * 97 + Math.sin(time * 31 + i) * 50) % w;
+    const y = (i * 43 + time * 800) % h;
+    paintChromaticText(ctx, 'return hush(operator);', x, y, {
+      color: i % 3 === 0 ? '#ff6358' : '#f6f0df',
+      alpha: 0.52,
+      size: 12 + (i % 5) * 2,
+      spread: 8,
+      rotate: (i % 2 ? -1 : 1) * 0.08,
+    });
+  }
+  ctx.restore();
+  paintText(ctx, 'IT FOUND THE BACK OF YOU.', w * 0.5, h * 0.76, {
+    color: '#ff6358', alpha: 0.98, size: Math.max(22, h * 0.055), weight: 900, align: 'center', maxWidth: w * 0.9, blur: 14,
   });
 }
 
-function drawScare({ cols, rows, t }) {
-  uiScrim(0.88);
-  const art = resolveStoryArt({ id: 'surfer', mode: 'boss' });
-  const rec = loadStoryArtImage(art?.src);
+function paintChunkSurf({ state, time, redactionIndex }) {
+  const { cols, rows } = uiSize();
   uiDraw(({ ctx, dpr, cellW, cellH }) => {
-    const w = cols * cellW * dpr;
-    const h = rows * cellH * dpr;
-    ctx.save();
-    if (rec?.loaded && rec.image) {
-      const scale = Math.max(w / rec.image.naturalWidth, h / rec.image.naturalHeight) * (1.08 + Math.sin(t * 28) * 0.025);
-      const iw = rec.image.naturalWidth * scale;
-      const ih = rec.image.naturalHeight * scale;
-      const x = (w - iw) / 2 + Math.sin(t * 53) * 12 * dpr;
-      const y = (h - ih) / 2 + Math.cos(t * 47) * 8 * dpr;
-      ctx.globalAlpha = 0.82;
-      ctx.drawImage(rec.image, x, y, iw, ih);
-      ctx.globalCompositeOperation = 'screen';
-      ctx.globalAlpha = 0.30;
-      ctx.drawImage(rec.image, x + 8 * dpr, y, iw, ih);
-      ctx.globalCompositeOperation = 'multiply';
-      ctx.globalAlpha = 0.28;
-      ctx.fillStyle = '#ff2219';
-      ctx.fillRect(0, 0, w, h);
-    }
-    ctx.globalCompositeOperation = 'source-over';
-    for (let y = 0; y < rows; y += 2) {
-      ctx.globalAlpha = 0.18 + ((y + Math.floor(t * 90)) % 7 === 0 ? 0.32 : 0);
-      ctx.fillStyle = '#ff6a64';
-      ctx.fillRect(0, y * cellH * dpr, w, Math.max(1, dpr));
-    }
-    ctx.restore();
+    const viewport = { width: cols * cellW * dpr, height: rows * cellH * dpr };
+    const model = chunkSurfVisualModel({ state, viewport, time, redactionIndex });
+    paintVoid(ctx, model, viewport.width, viewport.height, time);
+    paintSchematics(ctx, model);
+    paintCodeArchitecture(ctx, model, time);
+    paintPortals(ctx, model, time);
+    paintFinalRedaction(ctx, model);
+    if (state.scare) paintScare(ctx, model, time);
+    paintHud(ctx, model, state, activeInputPromptDevice(), state.log);
   });
-  uiCenter(Math.floor(rows * 0.78), 'IT FOUND THE BACK OF YOU.', 'ui-danger', 0.96);
 }
 
 export function makeChunkSurfScene({
@@ -154,7 +331,6 @@ export function makeChunkSurfScene({
     blocksInput: true,
     blocksWorld: true,
     lensPreset: 'rupture',
-    enter() { loadStoryArtImage(resolveStoryArt('surfer')?.src); },
     update(dt) {
       t += dt;
       if (state.scare && t > 1.15) {
@@ -186,38 +362,6 @@ export function makeChunkSurfScene({
       return true;
     },
     view() { return chunkSurfProbe(state); },
-    render() {
-      const { cols, rows } = uiSize();
-      const room = currentChunkSurfRoom(state);
-      drawVoid({ t, state, room, cols, rows });
-      if (state.scare) {
-        drawScare({ cols, rows, t });
-        return;
-      }
-      const w = Math.min(98, cols - 4);
-      const h = Math.min(42, rows - 4);
-      const x = Math.floor((cols - w) / 2);
-      const y = Math.floor((rows - h) / 2);
-      const body = drawMachinePanel(x, y, w, h, {
-        label: 'SOURCE FAULT',
-        source: state.profile?.mandatory ? 'COFFEE' : 'OPTIONAL',
-        footer: '[W/S] MOVE · [A/D] TURN · [F] TUNE · [R] RECORD · [E] INSPECT',
-        theme: state.hasFork ? 'green' : 'amber',
-        meter: true,
-        scrim: false,
-      });
-      drawVfdText(body.x, body.y, room.title, { color: room.kind === 'final' ? UI_COLOR.danger : UI_COLOR.amber, max: body.w });
-      uiText(body.x, body.y + 2, `FACING ${state.facing.toUpperCase()} · FORK ${state.hasFork ? 'LIVE' : 'ABSENT'}`, state.hasFork ? 'ui-green' : 'ui-secondary', 0.82);
-      drawPerspectiveText({ body, state, room, t });
-      if (room.kind === 'final') {
-        const ry = body.y + body.h - 18;
-        uiText(body.x + 2, ry, 'FINAL REDACTION', 'ui-danger');
-        room.redactions.forEach((entry, i) => {
-          uiText(body.x + 4, ry + 2 + i * 2, `${i === redactionIndex ? '▸' : ' '} ${i + 1} ${entry.label}`.slice(0, body.w - 8), i === redactionIndex ? 'ui-amber' : 'ui-secondary');
-        });
-        uiText(body.x + 2, ry + 9, '[ENTER] BLACK OUT SELECTED LINE', 'ui-label', 0.82);
-      }
-      drawLog(body, state.log);
-    },
+    render() { paintChunkSurf({ state, time: t, redactionIndex }); },
   };
 }

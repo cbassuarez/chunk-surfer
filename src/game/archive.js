@@ -4,6 +4,7 @@ import { drawMachinePanel, drawVfdText } from '../render/presentation.js';
 import { UI_COLOR } from '../render/palette.js';
 import { achievementEntries } from '../progression/achievements.js';
 import * as AUDIO from '../audio/story-audio.js';
+import { promptLine } from './bindings.js';
 
 const CATEGORY_ORDER = ['work', 'disclosures', 'returns', 'method'];
 const CATEGORY_LABEL = { work: 'STORY', disclosures: 'SECRETS', returns: 'ENDINGS', method: 'CHALLENGES' };
@@ -43,7 +44,10 @@ export function makeArchiveScene({ meta, onClose = () => {} } = {}) {
       const w = Math.min(94, cols - 4), h = Math.min(Math.max(32, rows - 8), rows - 4);
       const x = Math.floor((cols - w) / 2), y = Math.floor((rows - h) / 2);
       const body = drawMachinePanel(x, y, w, h, {
-        label: 'ACHIEVEMENTS', source: 'PROGRESS', footer: '[TAB] CATEGORY · [↑/↓] ENTRY · [ESC] CLOSE', meter: false,
+        label: 'ACHIEVEMENTS',
+        source: 'PROGRESS',
+        footer: promptLine([{ action: 'tabNext', label: 'CATEGORY' }, { action: 'select', label: 'ENTRY' }, { action: 'back', label: 'CLOSE' }]),
+        meter: false,
       });
       drawVfdText(body.x, body.y, 'ACHIEVEMENTS', { color: UI_COLOR.amber, max: body.w });
       let tx = body.x;

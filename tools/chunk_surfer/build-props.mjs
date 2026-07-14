@@ -198,6 +198,33 @@ function addQuad(m,a,b,c,d,mat){const g=group(m,mat),base=g.positions.length/3,u
   const m=mesh('ticket_counter');addBox(m,[0,.46,0],[2.8,.92,.72],MAT.dark);addBox(m,[0,.97,0],[3.0,.10,.82],MAT.wood);for(let x=-1.25;x<=1.25;x+=.5)addBox(m,[x,1.62,.30],[.025,1.25,.025],MAT.brass);addBox(m,[0,2.23,.30],[2.8,.04,.04],MAT.brass);
 }
 {
+  const m=mesh('box_office_desk');
+  addBox(m,[0,.43,0],[1.12,.08,.58],MAT.wood);
+  addBox(m,[0,.23,.18],[.92,.36,.18],MAT.dark);
+  addBox(m,[0,.23,-.18],[1.02,.36,.16],MAT.dark);
+  addLegs(m,0,0,.92,.46,.02,.42,MAT.steel,.018);
+  addBox(m,[.38,.50,-.18],[.28,.06,.18],MAT.paper);
+}
+{
+  const m=mesh('program_stack');
+  for(let i=0;i<5;i++)addBox(m,[0,.035+i*.024,0],[.42,.018,.31],i%2?MAT.paper:MAT.ivory,(i-2)*.015);
+  addBox(m,[.02,.17,-.02],[.35,.018,.25],MAT.paper,.05);
+}
+{
+  const m=mesh('cash_terminal');
+  addBox(m,[0,.08,0],[.34,.12,.24],MAT.black);
+  addBox(m,[0,.19,-.05],[.28,.08,.16],MAT.steel,-.18);
+  addBox(m,[0,.245,-.07],[.20,.025,.10],MAT.paper,-.18);
+  addBox(m,[.17,.10,.04],[.06,.035,.08],MAT.brass);
+}
+{
+  const m=mesh('queue_stanchion');
+  addCylinder(m,[0,.48,0],.035,.92,MAT.brass,12);
+  addCylinder(m,[0,.05,0],.15,.06,MAT.brass,16);
+  addCylinder(m,[0,.95,0],.07,.06,MAT.brass,14);
+  addBeam(m,[-.42,.84,0],[.42,.80,0],.055,MAT.cloth);
+}
+{
   const m=mesh('key_cabinet');addBox(m,[0,.58,0],[.9,1.16,.22],MAT.steel);addBox(m,[0,.58,-.12],[.82,1.08,.025],MAT.dark);for(let y=.28;y<.98;y+=.22)for(let x=-.28;x<=.28;x+=.28)addCylinder(m,[x,y,-.15],.012,.04,MAT.brass,8);
 }
 {const m=mesh('notice_board');addBox(m,[0,.45,0],[1.2,.9,.06],MAT.dark);addBox(m,[0,.45,-.035],[1.08,.78,.02],MAT.paper);}
@@ -212,6 +239,35 @@ function addQuad(m,a,b,c,d,mat){const g=group(m,mat),base=g.positions.length/3,u
 {const m=mesh('lifeguard_chair');addBox(m,[0,1.35,.1],[.62,.08,.55],MAT.wood);addBox(m,[0,1.68,.34],[.62,.62,.08],MAT.wood);for(const x of[-.27,.27])for(const z of[-.2,.35])addBox(m,[x,.68,z],[.055,1.35,.055],MAT.steel,.08);}
 {const m=mesh('lane_reel');addCylinder(m,[0,.72,0],.36,.52,MAT.steel,18);addBox(m,[0,.25,0],[.92,.08,.50],MAT.steel);for(const x of[-.38,.38])addBox(m,[x,.45,0],[.06,.72,.06],MAT.steel);}
 {const m=mesh('drain_grille');addBox(m,[0,.025,0],[1.2,.05,.18],MAT.steel);for(let x=-.52;x<=.52;x+=.13)addBox(m,[x,.055,0],[.025,.03,.15],MAT.dark);}
+{
+  const m=mesh('plant_pipe_straight');
+  addBeam(m,[-1.18,.18,0],[1.18,.18,0],.12,MAT.steel);
+  for(const x of[-.82,0,.82]){addBox(m,[x,.18,0],[.08,.30,.22],MAT.dark);addBox(m,[x,.18,-.13],[.18,.12,.04],MAT.brass);}
+}
+{
+  const m=mesh('plant_pipe_bank');
+  for(let i=0;i<3;i++){
+    const y=.18+i*.18;
+    addBeam(m,[-1.35,y,0],[1.35,y,0],.095,i===1?MAT.brass:MAT.steel);
+    for(const x of[-.92,.02,.94])addBox(m,[x,y,0],[.055,.26,.20],MAT.dark);
+  }
+  addBox(m,[0,.72,.04],[2.65,.10,.08],MAT.steel);
+}
+{
+  const m=mesh('plant_pipe_elbow');
+  addBeam(m,[-.42,.28,0],[.20,.28,0],.12,MAT.steel);
+  addBeam(m,[.20,.28,0],[.20,.88,0],.12,MAT.steel);
+  addCylinder(m,[.20,.28,0],.18,.08,MAT.brass,14);
+  addBox(m,[.20,.88,0],[.28,.08,.28],MAT.dark);
+}
+{
+  const m=mesh('plant_pipe_valve');
+  addBeam(m,[-.30,.22,0],[.30,.22,0],.11,MAT.steel);
+  addCylinder(m,[0,.23,0],.15,.14,MAT.brass,16);
+  addCylinder(m,[0,.50,0],.035,.38,MAT.steel,10);
+  addBox(m,[0,.73,0],[.48,.045,.07],MAT.brass);
+  addBox(m,[0,.73,0],[.07,.045,.48],MAT.brass);
+}
 {const m=mesh('altar_table');addBox(m,[0,.84,0],[1.8,.12,.78],MAT.ivory);for(const x of[-.68,.68])addBox(m,[x,.42,0],[.14,.84,.58],MAT.wood);}
 {const m=mesh('lectern');addBox(m,[0,.08,0],[.58,.16,.55],MAT.wood);addBox(m,[0,.68,.08],[.12,1.2,.12],MAT.wood);addBox(m,[0,1.28,-.08],[.62,.08,.46],MAT.wood,-.22);}
 {const m=mesh('hymn_board');addBox(m,[0,.48,0],[.8,.96,.06],MAT.dark);for(let y=.2;y<=.7;y+=.25)addBox(m,[0,y,-.04],[.65,.03,.02],MAT.ivory);}
@@ -235,8 +291,9 @@ function addQuad(m,a,b,c,d,mat){const g=group(m,mat),base=g.positions.length/3,u
   addBox(m,[-10.3,3.5,-10.8],[3.4,12,.9],MAT.wood);addBox(m,[10.3,3.5,-10.8],[3.4,12,.9],MAT.wood);addBox(m,[0,-.6,-11.15],[15.5,3.8,.22],MAT.cloth);
   // Continuous lower and upper side/rear balconies.
   for(const y of [3.9,7.4]){addBox(m,[-12.0,y,3.0],[3.5,.22,28],MAT.wood);addBox(m,[12.0,y,3.0],[3.5,.22,28],MAT.wood);addBox(m,[0,y,14.5],[24,.22,4.5],MAT.wood);for(const x of[-10.25,10.25])addBox(m,[x,y+.58,3.0],[.08,1.12,28],MAT.brass);addBox(m,[0,y+.58,12.25],[20.5,1.12,.08],MAT.brass);}
-  // The galleria's two stair flights at physically identical landings.
-  for(let i=0;i<12;i++){addBox(m,[-13.1,.17+i*.33,-2+i*.82],[2.0,.18,.86],MAT.steel);addBox(m,[13.1,4.17+i*.29,7-i*.82],[2.0,.18,.86],MAT.steel);}
+  // Stair surfaces are authored by the floorplan. Keeping them out of this
+  // structural mesh prevents duplicate visible flights from blocking the entry
+  // read from the box-office vestibule.
   // Acoustic reflector ribbons and two technical bridges.
   for(let i=0;i<11;i++)addBox(m,[0,13.2+Math.sin(i*.7)*.65,-8+i*2.2],[20-i*.24,.16,.48],MAT.wood,(i-5)*.018);
   addBox(m,[0,11.6,-2.5],[24,.18,1.0],MAT.steel);addBox(m,[0,12.0,7.5],[24,.18,1.0],MAT.steel);

@@ -120,6 +120,7 @@ assert.equal(cannotRequalify.integrity.deadAir.invalidations.length, 1);
 // Event validation and bus isolation.
 assert.equal(validateEvent(event(EVENT_TYPES.TAKE_COMPLETED, { roomId: 'main_b3', elapsed: 45 })), true);
 assert.equal(validateEvent(event(EVENT_TYPES.TAKE_COMPLETED, { roomId: 'main_b3' })), false);
+assert.equal(validateEvent(event(EVENT_TYPES.CREDITS_VIEWED)), true);
 assert.equal(validateEvent(event('made.up', {})), false);
 const seen = [];
 const errors = [];
@@ -182,6 +183,14 @@ assert.deepEqual(
     run: achievementRun,
   }).sort(),
   ['ACH_FIRST_TAKE', 'ACH_FIVE_ROOMS'].sort(),
+);
+assert.deepEqual(
+  evaluateAchievements({
+    event: event(EVENT_TYPES.CREDITS_VIEWED),
+    profile,
+    run: achievementRun,
+  }),
+  ['ACH_RELEASE_RECORD'],
 );
 const deadAirSummary = {
   rules: { startedPreset: 'dead-air' },

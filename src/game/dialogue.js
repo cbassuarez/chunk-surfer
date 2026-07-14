@@ -25,6 +25,7 @@ import { textCps } from './access.js';
 import { drawStoryArtCard, planStoryArtInPanel, planStoryArtSideBySide, storyArtRows, storyArtSideBySidePanelRows } from './story-art-card.js';
 import { resolveStoryArt } from './story-art.js';
 import { interpolate } from './terror.js';
+import { promptLine } from './bindings.js';
 
 const PORTRAIT_W = 22, PORTRAIT_H = 13;
 
@@ -154,7 +155,10 @@ function makeDialogueScene(nodeId) {
       const boxX = 1, boxW = cols - 2;
       const panel = drawMachinePanel(boxX, boxY, boxW, boxH, {
         label: 'MONITOR', source: node.speaker || 'DIALOGUE',
-        footer: done && choices().length ? '[↑/↓] SELECT · [ENTER] CONFIRM' : '[SPACE] CONTINUE', meter: true,
+        footer: done && choices().length
+          ? promptLine([{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: 'CONFIRM' }])
+          : promptLine([{ action: 'continue', label: 'CONTINUE' }]),
+        meter: true,
       });
 
       let contentY = panel.y;
@@ -196,7 +200,7 @@ function makeDialogueScene(nodeId) {
           choicesRows: choicesReserve,
         });
 
-        if (artPlan.show) {
+        if (!(done && choiceList.length) && artPlan.show) {
           drawStoryArtCard(art, {
             x: panel.x,
             y: contentY,

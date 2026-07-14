@@ -2,11 +2,14 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { applyMutations, evaluateCondition, interpolateStoryText } from '../src/narrative/conditions.js';
 import { createNarrativeExecutor } from '../src/narrative/executor.js';
-import { reachableNodeIds, validateAudioProject, validateNarrativeDocument } from '../src/narrative/contracts.js';
+import { reachableNodeIds, validateAudioProject, validateMediaProject, validateNarrativeDocument, validateProjectManifest } from '../src/narrative/contracts.js';
+import { createCuePlayer } from '../src/audio/cue-player.js';
 import { authoredCue, dispatchAuthoredCue } from '../src/audio/authored-cues.js';
 import { COLD_OPEN_DIALOGUE, sacrificeEnding, rescueEnding, helpedEnding, druggedReveal, guardEpilogue } from '../src/data/conservatory-script.js';
 import { natatoriumBattle, practiceBattle, hallBattle, chapelBoss } from '../src/data/battles.js';
 import { rehydrateBattle, rehydrateTree, runtimeBattle, runtimeCuesForLine, runtimeTree } from '../src/narrative/runtime-content.js';
+import { authoringMedia, authoringNarrative, authoringProject, authoringRegistryPaths } from '../src/narrative/generated-content.js';
+import { STORY_ART } from '../src/game/story-art.js';
 
 assert.equal(evaluateCondition('met && keys>=3', { met: true, keys: 3 }), true);
 assert.equal(evaluateCondition('missing || keys<2', { keys: 3 }), false);
@@ -25,6 +28,7 @@ const fixture = {
   },
 };
 assert.equal(validateNarrativeDocument(fixture).ok, true);
+assert.equal(validateNarrativeDocument(fixture, { cueIds: new Set(['pens']), mediaIds: new Set(['guard']) }).ok, true);
 assert.deepEqual([...reachableNodeIds(fixture)].sort(), ['end', 'start']);
 const executor = createNarrativeExecutor(fixture, { flags: {} });
 executor.advance();
@@ -38,6 +42,16 @@ assert.equal(executor.view().finished, true);
 const dangling = structuredClone(fixture);
 dangling.nodes.start.choices[0].goto = 'missing';
 assert.equal(validateNarrativeDocument(dangling).ok, false);
+const invalidAuthoring = structuredClone(fixture);
+delete invalidAuthoring.nodes.end.lines[0].id;
+invalidAuthoring.nodes.start.when = 'flags. &&';
+invalidAuthoring.nodes.start.lines[0].cues = ['missing-cue'];
+invalidAuthoring.nodes.start.lines[0].art = { id: 'missing-art' };
+const invalidResult = validateNarrativeDocument(invalidAuthoring, { cueIds: new Set(['pens']), mediaIds: new Set(['guard']) });
+assert.equal(invalidResult.ok, false);
+assert.ok(invalidResult.errors.some((item) => item.path.endsWith('.id')));
+assert.ok(invalidResult.errors.some((item) => item.message.includes('unknown cue')));
+assert.ok(invalidResult.errors.some((item) => item.message.includes('unknown media')));
 
 const authored = JSON.parse(await readFile('content/narrative/conservatory.cold_open_dialogue.story.json', 'utf8'));
 assert.equal(Object.keys(authored.nodes).length, Object.keys(COLD_OPEN_DIALOGUE).length, 'cold-open import preserves every runtime node');
@@ -83,6 +97,18 @@ for (const fixture of [
 
 const audio = JSON.parse(await readFile('content/audio/audio-project.audio.json', 'utf8'));
 assert.equal(validateAudioProject(audio).ok, true);
+const badAudio = structuredClone(audio);
+badAudio.cues[0].layers[0].trimStart = 5;
+badAudio.cues[0].layers[0].trimEnd = 1;
+assert.equal(validateAudioProject(badAudio).ok, false);
+const media = JSON.parse(await readFile('content/media/story-art.media.json', 'utf8'));
+assert.equal(validateMediaProject(media).ok, true);
+assert.equal(STORY_ART.guard.caption, 'Gate booth / Ellery Conservatory');
+assert.equal(STORY_ART.surfer.src, null);
+assert.equal(authoringMedia[0].id, 'story-art');
+assert.equal(authoringNarrative.length, authoringProject.narrative.length);
+assert.equal(authoringRegistryPaths.media[0], 'media/story-art.media.json');
+assert.equal(validateProjectManifest(authoringProject, { documents: authoringNarrative, documentIds: authoringNarrative.map((doc) => doc.id) }).ok, true);
 assert.deepEqual(runtimeCuesForLine('conservatory.cold_open_dialogue', {id:'start.line.7'}), ['pens'], 'audio-project event triggers drive runtime story lines');
 assert.ok(audio.assets.length >= 300, 'complete sample bank is indexed');
 assert.equal(authoredCue('pens').layers[0].gain, .62);
@@ -95,5 +121,23 @@ assert.equal(dispatchAuthoredCue('squelch', {
 assert.equal(playback[0].options.rate, .4);
 assert.equal(acoustics[0].kind, 'radio_squelch');
 assert.ok(effects.includes('fear:bump:.22:.5'));
+
+const automationCalls = [];
+const fakeParam = () => ({
+  value: 1,
+  cancelScheduledValues: (time) => automationCalls.push(['cancel', time]),
+  setValueAtTime: (value, time) => automationCalls.push(['set', value, time]),
+  linearRampToValueAtTime: (value, time) => automationCalls.push(['ramp', value, time]),
+});
+const fakeContext = {
+  currentTime: 10,
+  destination: { connect() {} },
+  createBufferSource: () => ({ playbackRate: fakeParam(), detune: fakeParam(), connect() {}, start() {}, stop() {} }),
+  createGain: () => ({ gain: fakeParam(), connect() {} }),
+  createStereoPanner: () => ({ pan: fakeParam(), connect() {} }),
+};
+const player = createCuePlayer({ context: fakeContext, destination: fakeContext.destination, loadBuffer: async () => ({ duration: 3 }) });
+await player.play({ id: 'automation-test', layers: [{ id: 'automation-test.layer.1', assetId: 'asset', automation: [{ parameter: 'gain', points: [{ time: 0, value: .25 }, { time: .5, value: .75 }] }] }] }, new Map([['asset', { id: 'asset', kind: 'file', path: 'x.wav' }]]));
+assert.ok(automationCalls.some((call) => call[0] === 'ramp' && call[1] === .75 && call[2] === 10.5));
 
 console.log('narrative studio contracts tests ok');

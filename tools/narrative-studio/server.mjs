@@ -7,7 +7,13 @@ import { createServer as createViteServer } from 'vite';
 import react from '@vitejs/plugin-react';
 import chokidar from 'chokidar';
 import { WebSocketServer } from 'ws';
-import { stableJson, validateAudioProject, validateNarrativeDocument } from '../../src/narrative/contracts.js';
+import {
+  stableJson,
+  validateAudioProject,
+  validateMediaProject,
+  validateNarrativeDocument,
+  validateProjectManifest,
+} from '../../src/narrative/contracts.js';
 
 const ROOT = resolve(import.meta.dirname, '../..');
 const STUDIO_ROOT = resolve(ROOT, 'tools/narrative-studio');
@@ -16,7 +22,7 @@ const PUBLIC_ROOT = resolve(ROOT, 'public');
 const HOST = '127.0.0.1';
 const PORT = Number(process.env.STUDIO_PORT || 4317);
 const TOKEN = randomUUID();
-const writableRoots = [resolve(CONTENT_ROOT, 'narrative'), resolve(CONTENT_ROOT, 'audio'), resolve(CONTENT_ROOT, 'layout')];
+const writableRoots = [resolve(CONTENT_ROOT, 'narrative'), resolve(CONTENT_ROOT, 'audio'), resolve(CONTENT_ROOT, 'layout'), resolve(CONTENT_ROOT, 'media')];
 const hash = (text) => createHash('sha256').update(text).digest('hex');
 const json = (res, status, data) => { res.statusCode = status; res.setHeader('content-type', 'application/json'); res.end(JSON.stringify(data)); };
 
@@ -27,8 +33,9 @@ function authorized(reqUrl, req) {
 
 function safeContentPath(relativePath) {
   const full = resolve(CONTENT_ROOT, String(relativePath || ''));
+  if (full === resolve(CONTENT_ROOT, 'project.json')) return full;
   if (!writableRoots.some((root) => full === root || full.startsWith(`${root}${sep}`))) throw new Error('path is outside the authoring roots');
-  if (!/\.(story|audio|layout)\.json$/.test(full)) throw new Error('unsupported authoring file');
+  if (!/\.(story|audio|layout|media)\.json$/.test(full)) throw new Error('unsupported authoring file');
   return full;
 }
 
@@ -43,8 +50,10 @@ async function listFiles(dir, suffix) {
 }
 
 async function projectSnapshot() {
+  const projectLoaded = await readDocument(resolve(CONTENT_ROOT, 'project.json'));
   const documents = [];
-  for (const name of await listFiles(resolve(CONTENT_ROOT, 'narrative'), '.story.json')) {
+  for (const documentPath of projectLoaded.data.narrative || []) {
+    const name = documentPath.split('/').pop();
     const path = `narrative/${name}`;
     const loaded = await readDocument(safeContentPath(path));
     const layoutName = name.replace(/\.story\.json$/, '.layout.json');
@@ -53,9 +62,19 @@ async function projectSnapshot() {
     try { layout = await readDocument(safeContentPath(layoutPath)); } catch (_) {}
     documents.push({ path, revision: loaded.revision, document: loaded.data, layoutPath, layoutRevision: layout.revision, layout: layout.data });
   }
-  const audioName = (await listFiles(resolve(CONTENT_ROOT, 'audio'), '.audio.json'))[0];
-  const audio = audioName ? await readDocument(safeContentPath(`audio/${audioName}`)) : { data: null, revision: '' };
-  return { project: JSON.parse(await readFile(resolve(CONTENT_ROOT, 'project.json'), 'utf8')), documents, audio: { path: `audio/${audioName}`, document: audio.data, revision: audio.revision } };
+  const fallbackAudio = (await listFiles(resolve(CONTENT_ROOT, 'audio'), '.audio.json'))[0];
+  const audioPath = projectLoaded.data.audio?.[0] || (fallbackAudio ? `audio/${fallbackAudio}` : '');
+  const audio = audioPath ? await readDocument(safeContentPath(audioPath)) : { data: null, revision: '' };
+  const fallbackMedia = (await listFiles(resolve(CONTENT_ROOT, 'media'), '.media.json'))[0];
+  const mediaPath = projectLoaded.data.media?.[0] || (fallbackMedia ? `media/${fallbackMedia}` : '');
+  const media = mediaPath ? await readDocument(safeContentPath(mediaPath)) : { data: null, revision: '' };
+  return {
+    project: projectLoaded.data,
+    projectRevision: projectLoaded.revision,
+    documents,
+    audio: { path: audioPath, document: audio.data, revision: audio.revision },
+    media: { path: mediaPath, document: media.data, revision: media.revision },
+  };
 }
 
 async function body(req) {
@@ -115,7 +134,10 @@ const studioApi = {
           try { current = await readFile(full, 'utf8'); } catch (_) {}
           if (input.revision && hash(current) !== input.revision) return json(res, 409, { error: 'file changed outside the studio', revision: hash(current) });
           const validation = input.path.endsWith('.story.json') ? validateNarrativeDocument(input.data)
-            : input.path.endsWith('.audio.json') ? validateAudioProject(input.data) : { ok: true, errors: [] };
+            : input.path.endsWith('.audio.json') ? validateAudioProject(input.data)
+            : input.path.endsWith('.media.json') ? validateMediaProject(input.data)
+            : input.path === 'project.json' ? validateProjectManifest(input.data)
+            : { ok: true, errors: [] };
           if (!validation.ok) return json(res, 422, { error: 'validation failed', validation });
           await mkdir(resolve(full, '..'), { recursive: true });
           const output = stableJson(input.data);
@@ -127,7 +149,10 @@ const studioApi = {
         }
         if (req.method === 'POST' && url.pathname === '/api/validate') {
           const input = await body(req);
-          const validation = input.kind === 'audio' ? validateAudioProject(input.data) : validateNarrativeDocument(input.data);
+          const validation = input.kind === 'audio' ? validateAudioProject(input.data)
+            : input.kind === 'media' ? validateMediaProject(input.data)
+            : input.kind === 'project' ? validateProjectManifest(input.data)
+            : validateNarrativeDocument(input.data);
           return json(res, validation.ok ? 200 : 422, validation);
         }
         return json(res, 404, { error: 'unknown studio endpoint' });

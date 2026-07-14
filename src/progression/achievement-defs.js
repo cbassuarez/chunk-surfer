@@ -62,6 +62,11 @@ export const ACHIEVEMENT_DEFS = Object.freeze([
     test: ({ event, run }) => event.type === EVENT_TYPES.RUN_FINISHED && (run?.ledger?.propsInspected?.length || 0) >= 8,
   },
   {
+    id: 'ACH_RELEASE_RECORD', name: 'Release Record',
+    description: 'Open the release record.', category: 'method', hidden: false,
+    events: [EVENT_TYPES.CREDITS_VIEWED], test: () => true,
+  },
+  {
     id: 'ACH_ALL_PLAYBACK', name: 'Playback Log',
     description: 'Hear every available recorded disclosure.', category: 'disclosures', hidden: false,
     events: [EVENT_TYPES.PLAYBACK_DISCOVERED],
