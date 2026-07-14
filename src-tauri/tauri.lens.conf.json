@@ -1,5 +1,12 @@
 {
   "bundle": {
+    "targets": [
+      "app",
+      "dmg",
+      "msi",
+      "appimage",
+      "deb"
+    ],
     "externalBin": [
       "binaries/chunk-lens"
     ],

@@ -10,6 +10,8 @@ if (!/^v\d+\.\d+\.\d+-beta\.\d+$/.test(expectedTag)) {
 const expectedVersion = expectedTag.slice(1);
 const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
 const tauri = JSON.parse(readFileSync('src-tauri/tauri.conf.json', 'utf8'));
+const lensTauri = JSON.parse(readFileSync('src-tauri/tauri.lens.conf.json', 'utf8'));
+const windowsTauri = JSON.parse(readFileSync('src-tauri/tauri.windows.conf.json', 'utf8'));
 const cargo = readFileSync('src-tauri/Cargo.toml', 'utf8');
 const cargoVersion = cargo.match(/^version = "([^"]+)"/m)?.[1];
 const workflow = readFileSync('.github/workflows/release.yml', 'utf8');
@@ -36,6 +38,18 @@ if (!windowsJob.includes('args: --bundles msi')) {
 }
 if (windowsJob.includes('nsis')) {
   throw new Error('Windows release workflow must not build NSIS; makensis cannot package the current offline lens payload reliably');
+}
+const defaultTargets = tauri.bundle?.targets || [];
+const lensTargets = lensTauri.bundle?.targets || [];
+const windowsTargets = windowsTauri.bundle?.targets || [];
+if (!defaultTargets.includes('msi') || defaultTargets.includes('nsis')) {
+  throw new Error('Default Tauri bundle targets must include MSI and exclude NSIS');
+}
+if (!lensTargets.includes('msi') || lensTargets.includes('nsis')) {
+  throw new Error('Lens Tauri bundle overlay must include MSI and exclude NSIS');
+}
+if (windowsTargets.length !== 1 || windowsTargets[0] !== 'msi') {
+  throw new Error('Windows Tauri config must be MSI-only so release CI never invokes makensis');
 }
 if (!vite.includes('__APP_VERSION__') || !vite.includes('package.json')) {
   throw new Error('runtime About/version display is not sourced from the package release version');

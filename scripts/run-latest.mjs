@@ -49,7 +49,7 @@ const devConfig=JSON.stringify({
 });
 
 console.log('Starting the current game with the local critical lens.');
-console.log(`Build: 0.1.0-beta.4 · frontend: http://127.0.0.1:${frontendPort}`);
+console.log(`Build: 0.1.0-beta.5 · frontend: http://127.0.0.1:${frontendPort}`);
 console.log('The first calibration generates 60 material tiles before the 18-second opening credits.');
 
 const lensChild = spawn(lens, [], {

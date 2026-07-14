@@ -60,13 +60,33 @@ Core systems:
 - Full keyboard/mouse and controller-oriented input paths for normal play.
 - Optional local microphone loudness checks for the room-silence mechanic.
 
-## Screenshots
-
-![Facility map and field HUD](docs/media/facility-map.png)
-
-![Redaction battle transcript](docs/media/redaction-battle.png)
-
-![Source fault scene](docs/media/source-fault.png)
+<table>
+  <tr>
+    <td width="50%">
+      <img src="docs/media/conservatory-lit.png" alt="Flashlight beam on a basement conservatory door with the field HUD active">
+    </td>
+    <td width="50%">
+      <strong>Field work.</strong><br>Move through the conservatory with the light on only when you can afford what it attracts. Room tone is recorded in the dark, but the building is easier to understand when you risk being seen.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <video src="docs/media/chunk-surf-source-space.webm" controls muted loop playsinline width="100%"></video>
+      <br><a href="docs/media/chunk-surf-source-space.webm">Watch the Chunk Surf clip</a>
+    </td>
+    <td width="50%">
+      <strong>Chunk Surf.</strong><br>Some routes rupture into fullscreen source-code space: literal game files become floors, walls, portals, and redaction surfaces.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/media/redaction-battle.png" alt="A redaction battle transcript with a line selected for blackout">
+    </td>
+    <td width="50%">
+      <strong>Transcript fights.</strong><br>Redaction battles make the argument physical: choose what to black out, defend the reading, and live with what the tape says back.
+    </td>
+  </tr>
+</table>
 
 ## For Developers
 
