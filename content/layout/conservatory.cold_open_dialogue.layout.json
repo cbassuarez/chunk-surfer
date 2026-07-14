@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "documentId": "conservatory.cold_open_dialogue",
+  "positions": {
+    "start": {
+      "x": 80,
+      "y": 100
+    },
+    "replay-condensed": {
+      "x": 440,
+      "y": 100
+    },
+    "torch": {
+      "x": 800,
+      "y": 100
+    },
+    "torch.cells": {
+      "x": 1160,
+      "y": 100
+    },
+    "torch.dark": {
+      "x": 80,
+      "y": 360
+    },
+    "torch.him": {
+      "x": 440,
+      "y": 360
+    },
+    "coffee": {
+      "x": 800,
+      "y": 360
+    },
+    "order": {
+      "x": 1160,
+      "y": 360
+    },
+    "order.money": {
+      "x": 80,
+      "y": 620
+    },
+    "order.words": {
+      "x": 440,
+      "y": 620
+    },
+    "order.client": {
+      "x": 800,
+      "y": 620
+    },
+    "order.deadline": {
+      "x": 1160,
+      "y": 620
+    },
+    "order.last": {
+      "x": 80,
+      "y": 880
+    },
+    "order.last.paid": {
+      "x": 440,
+      "y": 880
+    },
+    "guard": {
+      "x": 800,
+      "y": 880
+    },
+    "guard.inside": {
+      "x": 1160,
+      "y": 880
+    },
+    "guard.inside.why": {
+      "x": 80,
+      "y": 1140
+    },
+    "guard.last": {
+      "x": 440,
+      "y": 1140
+    },
+    "guard.name": {
+      "x": 800,
+      "y": 1140
+    },
+    "guard.shift": {
+      "x": 1160,
+      "y": 1140
+    },
+    "guard.know": {
+      "x": 80,
+      "y": 1400
+    },
+    "tape": {
+      "x": 440,
+      "y": 1400
+    },
+    "tape.levels": {
+      "x": 800,
+      "y": 1400
+    },
+    "tape.slate": {
+      "x": 1160,
+      "y": 1400
+    },
+    "tape.run": {
+      "x": 80,
+      "y": 1660
+    },
+    "tape.run.again": {
+      "x": 440,
+      "y": 1660
+    },
+    "tape.end": {
+      "x": 800,
+      "y": 1660
+    },
+    "threshold": {
+      "x": 1160,
+      "y": 1660
+    }
+  },
+  "regions": {}
+}

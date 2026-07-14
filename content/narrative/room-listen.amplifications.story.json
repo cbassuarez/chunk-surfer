@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "id": "room-listen.amplifications",
+  "title": "Room Listen · amplifications",
+  "status": "active",
+  "entry": "start",
+  "entries": [],
+  "tags": [
+    "room-listen"
+  ],
+  "notes": "",
+  "regions": [
+    {
+      "id": "room-listen.amplifications.region",
+      "title": "Room Listen · amplifications",
+      "kind": "scene",
+      "color": "#245c62",
+      "nodeIds": [
+        "start",
+        "roll",
+        "ex0",
+        "ex1"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "Headphones on. {label} comes up in the cans — nine metres of empty seats going back past the dark, dust hanging in it, a hall holding its breath.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "you",
+          "text": "That is the level. That is the room.",
+          "id": "start.line.2"
+        }
+      ],
+      "choices": [
+        {
+          "text": "the seats",
+          "goto": "ex0",
+          "hideWhenAsked": false,
+          "id": "start.choice.1"
+        },
+        {
+          "text": "the stage",
+          "goto": "ex1",
+          "hideWhenAsked": false,
+          "id": "start.choice.2"
+        },
+        {
+          "text": "kill the light and roll",
+          "goto": "roll",
+          "id": "start.choice.3"
+        }
+      ],
+      "id": "start",
+      "type": "choice"
+    },
+    "roll": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You kill the light. The room drops out of the cans, the tape hiss comes up, and there is you and forty-five seconds and nothing else.",
+          "id": "roll.line.1"
+        },
+        {
+          "who": "you",
+          "text": "Sixty seconds of nothing, with nothing added. Do not move.",
+          "id": "roll.line.2"
+        }
+      ],
+      "id": "roll",
+      "type": "dialogue"
+    },
+    "ex0": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "Row on row, receding past where the torch reaches. Horsehair and dust and the smell of a place that was warm for a hundred years.",
+          "id": "ex0.line.1"
+        },
+        {
+          "who": "you",
+          "text": "A full hall and an empty hall are the same room with a different amount of breathing in it.",
+          "id": "ex0.line.2"
+        }
+      ],
+      "goto": "start",
+      "id": "ex0",
+      "type": "dialogue"
+    },
+    "ex1": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "you",
+          "text": "I am standing where the sound was made for a hundred years, recording the one night nobody is making any.",
+          "id": "ex1.line.1"
+        },
+        {
+          "who": "you",
+          "text": "That is the job. Say it like that and it is almost a nice job.",
+          "id": "ex1.line.2"
+        }
+      ],
+      "goto": "start",
+      "id": "ex1",
+      "type": "dialogue"
+    }
+  }
+}

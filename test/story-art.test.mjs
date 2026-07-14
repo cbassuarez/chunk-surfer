@@ -9,7 +9,7 @@ import {
 } from '../src/game/story-art.js';
 
 test('story art manifest contains required ids', () => {
-  for (const id of ['guard', 'door', 'surfer', 'circuitBentInterface', 'tuningFork']) {
+  for (const id of ['guard', 'door', 'surfer', 'circuitBentInterface', 'tuningFork', 'walkie']) {
     assert.ok(STORY_ART[id], id);
     assert.ok(STORY_ART[id].src.includes('story-art/'), id);
     assert.ok(STORY_ART[id].alt, id);

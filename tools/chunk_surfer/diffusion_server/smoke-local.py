@@ -1,9 +1,11 @@
 """One real loopback frame through the running local lens."""
 
 import asyncio
+import argparse
 import io
 import json
 import time
+import os
 from pathlib import Path
 
 import websockets
@@ -27,9 +29,37 @@ def surface_tile(size: int) -> bytes:
     return jpeg(tile)
 
 
-async def main():
+def direct_gpu_smoke(size: int) -> None:
+    os.environ["LENS_SIZE"] = str(size)
+    import pipeline
+    device, _dtype = pipeline.pick_device()
+    if device not in {"mps", "cuda"}:
+        raise SystemExit(f"accelerated backend required; detected {device}")
+    lens = pipeline.build()
+    source = surface_tile(size)
+    started = time.perf_counter()
+    styled = pipeline.diffuse(
+        lens, source,
+        "seamless tileable reclaimed brick wall material, damp mineral detail, orthographic flat albedo",
+        0.20, 1, 10411, 0.8,
+        "person, face, figure, room, corridor, perspective, text, fog",
+        quality=90,
+    )
+    if not styled.startswith(b"\xff\xd8\xff"):
+        raise SystemExit("GPU lens did not return a JPEG")
+    print(json.dumps({"ok": True, "model": lens.model.key, "device": device, "size": size,
+                      "elapsedMs": round((time.perf_counter() - started) * 1000), "bytes": len(styled)}))
+
+
+async def loopback_main():
     async with websockets.connect("ws://127.0.0.1:8000", max_size=16_000_000) as ws:
-        status = json.loads(await ws.recv())
+        status = None
+        while status is None:
+            message = json.loads(await ws.recv())
+            if message.get("type") == "error":
+                raise SystemExit(f"lens refused session: {message}")
+            if message.get("type") == "status":
+                status = message
         if not status.get("ok"):
             raise SystemExit(f"lens refused session: {status}")
         await ws.send(json.dumps({
@@ -63,4 +93,11 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--require-accelerator", action="store_true")
+    parser.add_argument("--size", type=int, default=512)
+    args = parser.parse_args()
+    if args.require_accelerator:
+        direct_gpu_smoke(args.size)
+    else:
+        asyncio.run(loopback_main())

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "documentId": "legacy.prologue",
+  "positions": {
+    "usher.intro": {
+      "x": 80,
+      "y": 100
+    },
+    "usher.who": {
+      "x": 440,
+      "y": 100
+    },
+    "usher.silence": {
+      "x": 800,
+      "y": 100
+    },
+    "usher.after": {
+      "x": 1160,
+      "y": 100
+    },
+    "usher.again": {
+      "x": 80,
+      "y": 360
+    }
+  },
+  "regions": {}
+}

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "documentId": "conservatory.radio_dead",
+  "positions": {
+    "start": {
+      "x": 80,
+      "y": 100
+    },
+    "again": {
+      "x": 440,
+      "y": 100
+    },
+    "shake": {
+      "x": 800,
+      "y": 100
+    },
+    "clip": {
+      "x": 1160,
+      "y": 100
+    }
+  },
+  "regions": {}
+}

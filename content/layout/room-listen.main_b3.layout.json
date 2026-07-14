@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "documentId": "room-listen.main_b3",
+  "positions": {
+    "start": {
+      "x": 80,
+      "y": 100
+    },
+    "roll": {
+      "x": 440,
+      "y": 100
+    },
+    "ex0": {
+      "x": 800,
+      "y": 100
+    },
+    "ex1": {
+      "x": 1160,
+      "y": 100
+    }
+  },
+  "regions": {}
+}

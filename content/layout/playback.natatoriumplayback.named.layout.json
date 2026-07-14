@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "documentId": "playback.natatoriumplayback.named",
+  "positions": {
+    "start": {
+      "x": 80,
+      "y": 100
+    },
+    "again": {
+      "x": 440,
+      "y": 100
+    },
+    "off": {
+      "x": 800,
+      "y": 100
+    }
+  },
+  "regions": {}
+}

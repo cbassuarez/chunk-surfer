@@ -1,0 +1,400 @@
+{
+  "schemaVersion": 1,
+  "id": "conservatory.post_door",
+  "title": "After the Door",
+  "status": "active",
+  "entry": "self",
+  "entries": [
+    "self",
+    "guard",
+    "tape"
+  ],
+  "tags": [],
+  "notes": "",
+  "regions": [
+    {
+      "id": "conservatory.post_door.region",
+      "title": "After the Door",
+      "kind": "scene",
+      "color": "#245c62",
+      "nodeIds": [
+        "self",
+        "guard",
+        "tape",
+        "done"
+      ]
+    }
+  ],
+  "nodes": {
+    "self": {
+      "speaker": "",
+      "art": {
+        "id": "door",
+        "mode": "hero",
+        "caption": "The push bar is not where the push bar is.",
+        "status": "THRESHOLD"
+      },
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You reach back for the push bar instinctively.",
+          "id": "self.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "Painted breeze block, cold, and a seam of mortar where your thumb expects a steel push bar.",
+          "id": "self.line.2"
+        },
+        {
+          "who": "you",
+          "text": "Hmmph.",
+          "id": "self.line.3"
+        },
+        {
+          "who": "direction",
+          "text": "You go along the wall with the flat of your hand. Two metres to the left, and back to the right.",
+          "id": "self.line.4"
+        },
+        {
+          "who": "you",
+          "text": "Oh Christ oh fuck oh God I came in eleven seconds ago and I have already lost my exit, great great great great grea-",
+          "id": "self.line.5"
+        },
+        {
+          "who": "direction",
+          "text": "Don't panic.",
+          "id": "self.line.6"
+        },
+        {
+          "who": "you",
+          "text": "Alright, let's take a breath.",
+          "id": "self.line.7"
+        },
+        {
+          "who": "you",
+          "text": "I'll find it on the way out, when I'm not standing here like this. When I'm not in the middle of a room with my flashlight off.",
+          "id": "self.line.8"
+        },
+        {
+          "who": "direction",
+          "text": "Which is true. It is also exactly the reasoning that keeps a man *inside* a building and not darting back home to the kind of cotidian safety only jaffa cakes and Mr. Whiskers can provide.",
+          "id": "self.line.9"
+        },
+        {
+          "who": "direction",
+          "text": "But for now, you trudge along in the dark.",
+          "id": "self.line.10"
+        },
+        {
+          "who": "you",
+          "text": "Speaking of, let's find that flashlight. It should be in my bag, I just had it a second ago.",
+          "id": "self.line.11"
+        },
+        {
+          "who": "you",
+          "text": "Say it out loud. It works. It has always worked, and there is nobody here to hear it.",
+          "id": "self.line.12"
+        }
+      ],
+      "choices": [
+        {
+          "text": "\"I want to hear that natatorium. Six metres of tile and no water.\"",
+          "goto": "done",
+          "id": "self.choice.1",
+          "mutations": {
+            "set": [
+              "confession.kind=reason",
+              "confession.value=craft"
+            ]
+          }
+        },
+        {
+          "text": "\"Four hundred quid. I am not walking out on a paid job.\"",
+          "goto": "done",
+          "id": "self.choice.2",
+          "mutations": {
+            "set": [
+              "confession.kind=reason",
+              "confession.value=money"
+            ]
+          }
+        },
+        {
+          "text": "\"You don't leave a building angry. You finish, and you thank it.\"",
+          "goto": "done",
+          "id": "self.choice.3",
+          "mutations": {
+            "set": [
+              "confession.kind=reason",
+              "confession.value=superstition"
+            ]
+          }
+        },
+        {
+          "text": "(say nothing. get the torch.)",
+          "goto": "done",
+          "id": "self.choice.4",
+          "mutations": {
+            "set": [
+              "confession.kind=nothing"
+            ]
+          }
+        }
+      ],
+      "id": "self",
+      "type": "choice"
+    },
+    "guard": {
+      "speaker": "",
+      "art": {
+        "id": "door",
+        "mode": "hero",
+        "caption": "The door is behind you now.",
+        "status": "THRESHOLD"
+      },
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You reach back for the push bar instinctively.",
+          "id": "guard.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "Painted breeze block, cold, and a seam of mortar where your thumb expects a steel push bar.",
+          "id": "guard.line.2"
+        },
+        {
+          "who": "you",
+          "text": "Hmmph.",
+          "id": "guard.line.3"
+        },
+        {
+          "who": "direction",
+          "text": "You go along the wall with the flat of your hand. Two metres to the left, and back to the right.",
+          "id": "guard.line.4"
+        },
+        {
+          "who": "you",
+          "text": "Oh Christ oh fuck oh God I came in eleven seconds ago and I have already lost my exit, great great great great grea-",
+          "id": "guard.line.5"
+        },
+        {
+          "who": "direction",
+          "text": "Don't panic.",
+          "id": "guard.line.6"
+        },
+        {
+          "who": "you",
+          "text": "Alright, let's take a breath.",
+          "id": "guard.line.7"
+        },
+        {
+          "who": "you",
+          "text": "I'll find it on the way out, when I'm not standing here like this. When I'm not in the middle of a room with my flashlight off.",
+          "id": "guard.line.8"
+        },
+        {
+          "who": "direction",
+          "text": "Which is true. It is also exactly the reasoning that keeps a man *inside* a building and not darting back home to the kind of cotidian safety only jaffa cakes and Mr. Whiskers can provide.",
+          "id": "guard.line.9"
+        },
+        {
+          "who": "direction",
+          "text": "But for now, you trudge along in the dark.",
+          "id": "guard.line.10"
+        },
+        {
+          "who": "you",
+          "text": "Speaking of, let's find that flashlight. It should be in my bag, I just had it a second ago.",
+          "id": "guard.line.11"
+        },
+        {
+          "who": "you",
+          "text": "There is a box in that book with his name on it and nothing written in it.",
+          "id": "guard.line.12"
+        },
+        {
+          "who": "you",
+          "text": "Say something. Out loud. Your own voice in a room is the oldest trick there is.",
+          "id": "guard.line.13"
+        }
+      ],
+      "choices": [
+        {
+          "text": "\"Nobody's expecting me till Thursday. That's fine. That has always been fine.\"",
+          "goto": "done",
+          "id": "guard.choice.1",
+          "mutations": {
+            "set": [
+              "confession.kind=name",
+              "confession.value=nobody"
+            ]
+          }
+        },
+        {
+          "text": "\"Sarah'll have gone up. She won't check the drive till morning.\"",
+          "goto": "done",
+          "id": "guard.choice.2",
+          "mutations": {
+            "set": [
+              "confession.kind=name",
+              "confession.value=Sarah"
+            ]
+          }
+        },
+        {
+          "text": "(close your mouth. finish the job.)",
+          "goto": "done",
+          "id": "guard.choice.3",
+          "mutations": {
+            "set": [
+              "confession.kind=nothing"
+            ]
+          }
+        }
+      ],
+      "id": "guard",
+      "type": "choice"
+    },
+    "tape": {
+      "speaker": "",
+      "art": {
+        "id": "surfer",
+        "mode": "hero",
+        "caption": "The previous take keeps playing back.",
+        "status": "PLAYBACK"
+      },
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You reach back for the push bar instinctively.",
+          "id": "tape.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "Painted breeze block, cold, and a seam of mortar where your thumb expects a steel push bar.",
+          "id": "tape.line.2"
+        },
+        {
+          "who": "you",
+          "text": "Hmmph.",
+          "id": "tape.line.3"
+        },
+        {
+          "who": "direction",
+          "text": "You go along the wall with the flat of your hand. Two metres to the left, and back to the right.",
+          "id": "tape.line.4"
+        },
+        {
+          "who": "you",
+          "text": "Oh Christ oh fuck oh God I came in eleven seconds ago and I have already lost my exit, great great great great grea-",
+          "id": "tape.line.5"
+        },
+        {
+          "who": "direction",
+          "text": "Don't panic.",
+          "id": "tape.line.6"
+        },
+        {
+          "who": "you",
+          "text": "Alright, let's take a breath.",
+          "id": "tape.line.7"
+        },
+        {
+          "who": "you",
+          "text": "I'll find it on the way out, when I'm not standing here like this. When I'm not in the middle of a room with my flashlight off.",
+          "id": "tape.line.8"
+        },
+        {
+          "who": "direction",
+          "text": "Which is true. It is also exactly the reasoning that keeps a man *inside* a building and not darting back home to the kind of cotidian safety only jaffa cakes and Mr. Whiskers can provide.",
+          "id": "tape.line.9"
+        },
+        {
+          "who": "direction",
+          "text": "But for now, you trudge along in the dark.",
+          "id": "tape.line.10"
+        },
+        {
+          "who": "you",
+          "text": "Speaking of, let's find that flashlight. It should be in my bag, I just had it a second ago.",
+          "id": "tape.line.11"
+        },
+        {
+          "who": "you",
+          "text": "Who did you lose.",
+          "id": "tape.line.12"
+        },
+        {
+          "who": "you",
+          "text": "...",
+          "id": "tape.line.13"
+        },
+        {
+          "who": "you",
+          "text": "I am not actually considering that was someone else, right?.",
+          "id": "tape.line.14"
+        }
+      ],
+      "choices": [
+        {
+          "text": "Must be him that was sayin' all that. It's the easiest explanation. Nobody else in the room.",
+          "goto": "done",
+          "id": "tape.choice.1",
+          "mutations": {
+            "set": [
+              "confession.kind=feeling",
+              "confession.value=named"
+            ]
+          }
+        },
+        {
+          "text": "\"I'm tired. I've been up since five. That is all this is. Get on with the job\"",
+          "goto": "done",
+          "id": "tape.choice.2",
+          "mutations": {
+            "set": [
+              "confession.kind=feeling",
+              "confession.value=denied"
+            ]
+          }
+        },
+        {
+          "text": "\"Levels. Slate. Roll. Levels. Slate. Roll.\"",
+          "goto": "done",
+          "id": "tape.choice.3",
+          "mutations": {
+            "set": [
+              "confession.kind=feeling",
+              "confession.value=procedure"
+            ]
+          }
+        },
+        {
+          "text": "(say nothing at all. this has nothing to do with your job anyway)",
+          "goto": "done",
+          "id": "tape.choice.4",
+          "mutations": {
+            "set": [
+              "confession.kind=nothing"
+            ]
+          }
+        }
+      ],
+      "id": "tape",
+      "type": "choice"
+    },
+    "done": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "Sure, tell yourself that.",
+          "id": "done.line.1"
+        }
+      ],
+      "id": "done",
+      "type": "dialogue"
+    }
+  }
+}

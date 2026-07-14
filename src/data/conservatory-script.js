@@ -1752,21 +1752,47 @@ export function foundLine(item) { return FOUND_LINE[item] || { who: 'you', text:
 // After the confrontation you survive: it stops wearing faces and it waits. This
 // is the fork. `ending.choice` is set here and read by main.js. The rig option
 // only exists if you took the bent recorder from the plant room (`has.interface`).
-export function endingChoice(hasRig) {
-  const invert = hasRig ? [{ text: '[take the bent rig out of the bag]', goto: 'invert', set: ['ending.choice=inversion'] }] : [];
+export function endingChoice(options = {}, legacyCanSurface = false) {
+  const opts = typeof options === 'object' && options !== null
+    ? options
+    : { hasRig: !!options, canInvert: !!options, canSurface: !!legacyCanSurface };
+  const readings = Array.isArray(opts.readings) ? opts.readings : [];
+  const locks = new Set(Array.isArray(opts.locks) ? opts.locks : []);
+  const source = opts.sourceReading || readings.find((r) => /source/i.test(r.challengeId || '')) || null;
+  const byChallenge = (needle) => readings.find((r) => String(r.challengeId || '').includes(needle));
+  const sourceLine = source?.text
+    ? `The last page still reads: ${source.text}.`
+    : 'The last page is legible only where the marker did not touch it.';
+  const lines = [
+    { who: 'direction', text: readings.length
+      ? 'The five pages keep the shape you gave them. The recorder is still running on the floor between the three of you.'
+      : 'It is not attacking any more. It is waiting, the recorder still running on the floor between the three of you.' },
+    { who: 'direction', text: sourceLine },
+  ];
+  const recordist = byChallenge('recordist');
+  if (recordist?.meaning) lines.push({ who: 'recordist', text: recordist.meaning === 'The prior recordist is still recoverable.'
+    ? 'I am still in here. That is what the page says now. Do not let it scrape that line clean.'
+    : 'Careful. The sentence it likes best is the sentence where I agreed.' });
+  if (opts.canSurface) lines.push({ who: 'direction', text: 'The fork and the rig answer the same line. The borrowed body is not sealed.' });
+  else if (locks.has('route.surfaced')) lines.push({ who: 'direction', text: 'RETURN is missing from too many pages. Something could still be saved, but not cleanly.' });
+  if (opts.canInvert) lines.push({ who: 'direction', text: 'The bent rig has enough of the source to feed the signal back into itself.' });
+  lines.push({ who: 'surfer', text: 'Well. Bring me one.' });
+
+  const invert = opts.canInvert
+    ? [{ text: 'Play the room back to itself through the broken rig.', goto: 'invert', set: ['ending.choice=inversion'] }]
+    : [];
+  const surface = opts.canSurface
+    ? [{ text: 'Tune the borrowed body loose from the source.', goto: 'surface', set: ['ending.choice=surfaced'] }]
+    : [];
+  const choices = [
+    { text: 'Give the room the agreement it is asking for.', goto: 'feed', set: ['ending.choice=sacrifice'] },
+    ...invert,
+    ...surface,
+    { text: 'Refuse to author another line.', goto: 'nothing' },
+  ];
+
   return {
-    start: {
-      speaker: 'THE CHAPEL',
-      lines: [
-        { who: 'direction', text: 'It is not attacking any more. It is waiting, the recorder still running on the floor between the three of you.' },
-        { who: 'surfer', text: 'Well. Bring me one.' },
-      ],
-      choices: [
-        { text: 'Give it what it is asking for.', goto: 'feed', set: ['ending.choice=sacrifice'] },
-        ...invert,
-        { text: 'Say nothing. There is nothing to say.', goto: 'nothing' },
-      ],
-    },
+    start: { speaker: 'THE CHAPEL', lines, choices },
     nothing: {
       speaker: 'THE CHAPEL',
       lines: [
@@ -1774,12 +1800,24 @@ export function endingChoice(hasRig) {
         { who: 'direction', text: 'You hold it. A room can wait longer than a man can, and it knows the number.' },
       ],
       choices: [
-        { text: 'Give it what it is asking for.', goto: 'feed', set: ['ending.choice=sacrifice'] },
+        { text: 'Give the room the agreement it is asking for.', goto: 'feed', set: ['ending.choice=sacrifice'] },
         ...invert,
+        ...surface,
       ],
     },
-    feed: { speaker: 'THE CHAPEL', lines: [{ who: 'you', text: 'All right. All right. Here — take it.' }], goto: 'done' },
-    invert: { speaker: 'THE CHAPEL', lines: [{ who: 'you', text: 'He soldered across the parts that decide things. Somebody did that for me, once, and ran out of night.' }], goto: 'done' },
+    feed: { speaker: 'THE CHAPEL', lines: [
+      { who: 'you', text: 'All right. All right. Here — take it.' },
+      { who: 'surfer', text: 'There. See. A clear reading.' },
+    ], goto: 'done' },
+    invert: { speaker: 'THE CHAPEL', lines: [
+      { who: 'you', text: 'No. The source is not a body. It is a signal with a habit of asking.' },
+      { who: 'direction', text: 'The bent recorder plays the room back to itself, and the agreement loses its addressee.' },
+    ], goto: 'done' },
+    surface: { speaker: 'THE CHAPEL', lines: [
+      { who: 'you', text: 'No. That body is not an instrument.' },
+      { who: 'recordist', text: 'Then make the room read it.' },
+      { who: 'direction', text: 'The tuning fork sounds once, and the room loses the line it was using to stand upright.' },
+    ], goto: 'done' },
   };
 }
 
@@ -1878,6 +1916,13 @@ export function guardEpilogue(variant) {
     { who: 'guard', text: '...that is longer than the last one lasted.' },
     { who: 'direction', text: 'He made you a coffee with something in it to hold the thing off, because it was the only help a man in a booth had to give, and he knew when he did it that it might not be enough.' },
     { who: 'guard', text: 'I did what I could think of. I am sorry. I am.' },
+  ];
+  if (variant === 'surfaced') return [
+    { who: 'direction', art: { id: 'guard', mode: 'hero', caption: 'Gate booth / returned', status: 'RETURNED' }, text: 'The gate booth. The same bored man, the same book, and a second man standing behind you with no shoes on.' },
+    { who: 'guard', text: 'Two of you.' },
+    { who: 'recordist', text: 'I am going to sit down now.' },
+    { who: 'direction', text: 'The guard opens the right column. RETURNED. He writes your name first, because you can still hold the pen. Then he writes the other name from memory.' },
+    { who: 'guard', text: 'I kept a place for it. I thought that was superstition. It was filing.' },
   ];
   if (variant === 'out') return [
     { who: 'direction', art: { id: 'guard', mode: 'hero', caption: 'Gate booth / dawn', status: 'STILL' }, text: 'The gate booth. The same bored man, the same book, the two columns he never explained.' },

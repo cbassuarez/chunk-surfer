@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "documentId": "radio.post_second_take_warning",
+  "positions": {
+    "start": {
+      "x": 80,
+      "y": 100
+    },
+    "report": {
+      "x": 440,
+      "y": 100
+    },
+    "interference": {
+      "x": 800,
+      "y": 100
+    },
+    "other": {
+      "x": 1160,
+      "y": 100
+    }
+  },
+  "regions": {}
+}

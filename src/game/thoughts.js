@@ -28,6 +28,7 @@ import {
   drawTranscript,
   drawTranscriptChoices,
   drawTranscriptHeader,
+  fixedTranscriptLanes,
   layoutTranscript,
   layoutTranscriptChoices,
   transcriptSource,
@@ -125,14 +126,8 @@ export function makeThoughtScene({
           system: v.speaker,
         });
 
-        const choiceLayout = layoutTranscriptChoices(
-          v,
-          contentW,
-        );
-
-        const reserve = choiceLayout.height
-          ? choiceLayout.height + 1
-          : 0;
+        let choiceLayout = layoutTranscriptChoices(v, contentW);
+        let reserve = choiceLayout.height ? choiceLayout.height + 1 : 0;
 
         let transcriptY =
           header.y + (header.rows ? 1 : 0);
@@ -160,6 +155,10 @@ export function makeThoughtScene({
         let availableRows = beforeTextRows;
 
         if (sidePlan.show) {
+          const lanes = fixedTranscriptLanes(contentW, { split: sidePlan });
+          choiceLayout = layoutTranscriptChoices(v, contentW, { lane: lanes.right });
+          reserve = choiceLayout.height ? choiceLayout.height + 1 : 0;
+
           drawStoryArtCard(art, {
             x: contentX,
             y: transcriptY,
@@ -171,6 +170,30 @@ export function makeThoughtScene({
           transcriptX = contentX + sidePlan.artCols + sidePlan.gap;
           transcriptW = sidePlan.textCols;
           availableRows = sidePlan.rows;
+          const transcript = layoutTranscript(v, {
+            width: contentW,
+            maxRows: availableRows,
+            keep: 3,
+            lanes,
+          });
+
+          drawTranscript(transcript, {
+            x: contentX,
+            y: transcriptY,
+            width: contentW,
+            maxRows: availableRows,
+          });
+
+          if (choiceLayout.height) {
+            drawTranscriptChoices(choiceLayout, {
+              x: contentX,
+              y: panel.y + panel.h - choiceLayout.height,
+              width: contentW,
+              maxRows: choiceLayout.height,
+            });
+          }
+
+          return;
         } else {
           const artPlan = planStoryArtInPanel({
             art,

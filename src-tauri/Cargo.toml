@@ -1,6 +1,6 @@
 [package]
 name = "chunk-surfer"
-version = "0.1.0"
+version = "0.1.0-beta.3"
 description = "Chunk Surfer desktop shell"
 authors = ["cbassuarez"]
 edition = "2021"
@@ -14,6 +14,7 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
+rand = "0.8.7"
 tauri = { version = "2", features = [] }
 tauri-plugin-fs = "2"
 tauri-plugin-global-shortcut = "2"

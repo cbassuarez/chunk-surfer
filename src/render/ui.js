@@ -11,6 +11,9 @@ import { UI_COLOR, uiFlickerAlpha, uiRoleColor } from './palette.js';
 
 let host = null, canvas = null, ctx = null;
 let cols = 0, rows = 0;
+let uiScale = 1;
+let scaledCellW = CELL_W;
+let scaledCellH = CELL_H;
 
 export function uiInit(hostEl) {
   host = hostEl;
@@ -25,13 +28,25 @@ export function uiInit(hostEl) {
 }
 
 function resize() {
+  if (!host || !canvas) return;
   atlasConfigure(window.devicePixelRatio);
   const dpr = atlasDpr();
   canvas.width = Math.round(host.clientWidth * dpr);
   canvas.height = Math.round(host.clientHeight * dpr);
-  cols = Math.max(20, Math.floor(host.clientWidth / CELL_W));
-  rows = Math.max(8, Math.floor(host.clientHeight / CELL_H));
+  cols = Math.max(20, Math.floor(host.clientWidth / scaledCellW));
+  rows = Math.max(8, Math.floor(host.clientHeight / scaledCellH));
 }
+
+export function uiSetScale(value = 1) {
+  const next = Math.max(0.8, Math.min(1.5, Number(value) || 1));
+  uiScale = next;
+  scaledCellW = CELL_W * uiScale;
+  scaledCellH = CELL_H * uiScale;
+  resize();
+  return uiScale;
+}
+
+export function uiCurrentScale() { return uiScale; }
 
 export function uiSize() { return { cols, rows }; }
 export function uiClear() { if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height); }
@@ -39,14 +54,14 @@ export function uiCanvasSize() { return { width: canvas?.width || 0, height: can
 export function uiPointFromClient(clientX, clientY) {
   const rect = host?.getBoundingClientRect?.();
   if (!rect) return { cellX:-1, cellY:-1 };
-  return { cellX:(clientX - rect.left) / CELL_W, cellY:(clientY - rect.top) / CELL_H };
+  return { cellX:(clientX - rect.left) / scaledCellW, cellY:(clientY - rect.top) / scaledCellH };
 }
 
 // Low-level drawing hook for code-native instruments. The callback receives
 // device-pixel metrics; authored modules still express all geometry in cells.
 export function uiDraw(draw) {
   if (!ctx || typeof draw !== 'function') return;
-  draw({ ctx, dpr: atlasDpr(), cellW: CELL_W, cellH: CELL_H, cols, rows });
+  draw({ ctx, dpr: atlasDpr(), cellW: scaledCellW, cellH: scaledCellH, cols, rows });
 }
 
 // Dim the world behind a scene without hiding it — dread survives, text reads.
@@ -63,7 +78,13 @@ export function uiGlyph(cx, cy, ch, cls = 't-chunk', alpha = 1) {
   const a = alpha * uiFlickerAlpha(cx, cy, cls);
 
   if (a !== 1) ctx.globalAlpha = a;
-  ctx.drawImage(tile.canvas, cx * CELL_W * dpr - tile.ox, cy * CELL_H * dpr - tile.oy);
+  ctx.drawImage(
+    tile.canvas,
+    cx * scaledCellW * dpr - tile.ox * uiScale,
+    cy * scaledCellH * dpr - tile.oy * uiScale,
+    tile.canvas.width * uiScale,
+    tile.canvas.height * uiScale,
+  );
   if (a !== 1) ctx.globalAlpha = 1;
 }
 
@@ -80,7 +101,7 @@ export function uiItalicText(cx, cy, str, cls = 'ui-secondary', alpha = 1) {
   if (!ctx || !s) return;
   const dpr = atlasDpr();
   ctx.save();
-  ctx.font = `italic ${UI_FONT_PX * dpr}px ${MONO_STACK}`;
+  ctx.font = `italic ${UI_FONT_PX * dpr * uiScale}px ${MONO_STACK}`;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = uiRoleColor(cls, cx, cols);
@@ -88,7 +109,7 @@ export function uiItalicText(cx, cy, str, cls = 'ui-secondary', alpha = 1) {
   ctx.shadowColor = uiRoleColor(cls, cx, cols);
   ctx.shadowBlur = 2.2 * dpr;
   for (let i = 0; i < s.length; i++) {
-    if (s[i] !== ' ') ctx.fillText(s[i], (cx + i) * CELL_W * dpr, (cy + 0.5) * CELL_H * dpr);
+    if (s[i] !== ' ') ctx.fillText(s[i], (cx + i) * scaledCellW * dpr, (cy + 0.5) * scaledCellH * dpr);
   }
   ctx.restore();
 }
@@ -102,7 +123,7 @@ export function uiInk(cx, cy, str, { color = '#20180F', alpha = 1, weight = '' }
   if (!ctx || !s) return;
   const dpr = atlasDpr();
   ctx.save();
-  ctx.font = `${weight ? weight + ' ' : ''}${Math.round(CELL_H * 0.62)}px "Courier New", Courier, ui-monospace, monospace`;
+  ctx.font = `${weight ? weight + ' ' : ''}${Math.round(scaledCellH * 0.62 * dpr)}px "Courier New", Courier, ui-monospace, monospace`;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = color;
@@ -116,7 +137,7 @@ export function uiInk(cx, cy, str, { color = '#20180F', alpha = 1, weight = '' }
     const jx = (((h >> 8) & 7) - 3.5) * 0.014;
     const jy = (((h >> 12) & 7) - 3.5) * 0.016;
     ctx.globalAlpha = alpha * jA;
-    ctx.fillText(ch, ((cx + i) + jx) * CELL_W * dpr, (cy + 0.5 + jy) * CELL_H * dpr);
+    ctx.fillText(ch, ((cx + i) + jx) * scaledCellW * dpr, (cy + 0.5 + jy) * scaledCellH * dpr);
   }
   ctx.restore();
 }
@@ -125,7 +146,7 @@ export function uiFill(cx, cy, w, h, color = 'rgba(6,7,9,0.92)') {
   if (!ctx) return;
   const dpr = atlasDpr();
   ctx.fillStyle = color;
-  ctx.fillRect(cx * CELL_W * dpr, cy * CELL_H * dpr, w * CELL_W * dpr, h * CELL_H * dpr);
+  ctx.fillRect(cx * scaledCellW * dpr, cy * scaledCellH * dpr, w * scaledCellW * dpr, h * scaledCellH * dpr);
 }
 
 export function uiStrokeRect(cx, cy, w, h, color = UI_COLOR.frame, alpha = 1, lineWidth = 1) {

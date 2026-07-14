@@ -1,9 +1,13 @@
 node_modules/
 dist/
+dist-studio/
 .DS_Store
 .env
 .env.*
 lens.local.json
 src-tauri/target/
 src-tauri/gen/
+src-tauri/binaries/
+src-tauri/lens-resources/
+.lens-build/
 *.log

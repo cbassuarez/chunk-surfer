@@ -128,8 +128,42 @@ export function transcriptSource(who) {
   return 'RX';
 }
 
-function laneFor(role, width) {
+function normalizeLane(lane, width, fallbackRole = transcriptRole('me')) {
+  if (!lane) return laneFor(fallbackRole, width);
+  const w = Math.max(12, Math.floor(Number(width) || 12));
+  const lx = clamp(Math.floor(Number(lane.x) || 0), 0, Math.max(0, w - 1));
+  const lw = clamp(Math.floor(Number(lane.w) || 0), 8, Math.max(8, w - lx));
+  return {
+    x: lx,
+    w: lw,
+    align: lane.align || 'left',
+  };
+}
+
+export function fixedTranscriptLanes(width, { split = null, gap = 2 } = {}) {
+  const w = Math.max(12, Math.floor(Number(width) || 12));
+  const g = Math.max(1, Math.floor(Number(split?.gap ?? gap) || 1));
+  const artW = Math.max(0, Math.floor(Number(split?.artCols) || Math.floor((w - g) / 2)));
+  const textX = clamp(artW + g, 0, Math.max(0, w - 8));
+  const textW = Math.max(8, w - textX);
+  return {
+    // With a fixed story-art split the left half is not a transcript lane.
+    // Incoming speakers normally live on the left, but here they must join the
+    // other roles in the right text pane or their copy paints over the image.
+    left: { x: textX, w: textW, align: 'left' },
+    right: { x: textX, w: textW, align: 'left' },
+    center: { x: textX, w: textW, align: 'center' },
+  };
+}
+
+function laneFor(role, width, explicitLanes = null) {
   const w = Math.max(12, Math.floor(width));
+
+  if (explicitLanes) {
+    if (role.side === 'right') return normalizeLane(explicitLanes.right, w, role);
+    if (role.side === 'center') return normalizeLane(explicitLanes.center || explicitLanes.right, w, role);
+    if (role.side === 'left') return normalizeLane(explicitLanes.left || explicitLanes.right, w, role);
+  }
 
   // Narrow layouts retain the spatial distinction through indentation without
   // sacrificing most of the line length.
@@ -332,8 +366,8 @@ function preparedRows(block, lane) {
   return rows;
 }
 
-function prepareBlock(block, width) {
-  const lane = laneFor(block.role, width);
+function prepareBlock(block, width, lanes = null) {
+  const lane = laneFor(block.role, width, lanes);
   const rows = preparedRows(block, lane);
   const labelRows = block.role.side === 'center' ? 0 : 1;
 
@@ -350,9 +384,10 @@ export function layoutTranscript(view, {
   width,
   maxRows,
   keep = 12,
+  lanes = null,
 } = {}) {
   const all = transcriptBlocks(view, { keep })
-    .map((block) => prepareBlock(block, width));
+    .map((block) => prepareBlock(block, width, lanes));
 
   const limit = Math.max(1, Math.floor(maxRows || 1));
   const visible = [];
@@ -622,29 +657,31 @@ function wrappedChoice(text, width, maxLines = 2) {
   return out;
 }
 
-export function layoutTranscriptChoices(view, width) {
+export function layoutTranscriptChoices(view, width, { lane = null } = {}) {
   const options = view?.pending?.options || [];
 
   if (!options.length) {
     return {
       rows: [],
       height: 0,
-      lane: laneFor(transcriptRole('me'), width),
+      lane: normalizeLane(lane, width, transcriptRole('me')),
     };
   }
 
   const role = transcriptRole('me');
 
-  const lane = width < 52
-    ? laneFor(role, width)
-    : {
-        x: Math.max(
-          1,
-          width - Math.floor(width * 0.80) - 1,
-        ),
-        w: Math.floor(width * 0.80),
-        align: 'left',
-      };
+  const choiceLane = lane
+    ? normalizeLane(lane, width, role)
+    : width < 52
+      ? laneFor(role, width)
+      : {
+          x: Math.max(
+            1,
+            width - Math.floor(width * 0.80) - 1,
+          ),
+          w: Math.floor(width * 0.80),
+          align: 'left',
+        };
 
   const rows = [];
 
@@ -667,7 +704,7 @@ export function layoutTranscriptChoices(view, width) {
 
     const parts = wrappedChoice(
       `${String(choice.text || '')}`,
-      Math.max(8, lane.w - prefix.length),
+        Math.max(8, choiceLane.w - prefix.length),
       2,
     );
 
@@ -687,7 +724,7 @@ export function layoutTranscriptChoices(view, width) {
   return {
     rows,
     height: rows.length + 1,
-    lane,
+    lane: choiceLane,
   };
 }
 

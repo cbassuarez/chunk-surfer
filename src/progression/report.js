@@ -7,6 +7,7 @@ export const RETURN_DEFS = Object.freeze([
   Object.freeze({ id: 'helped', order: 2, title: 'HE TRIED TO HELP', classification: 'INTERVENTION', hiddenUntilSeen: true }),
   Object.freeze({ id: 'inversion', order: 3, title: 'THE OTHER DOOR', classification: 'INVERSION', hiddenUntilSeen: true }),
   Object.freeze({ id: 'drugged', order: 4, title: 'COLD, BITTER, GONE', classification: 'CONTAMINATION', hiddenUntilSeen: true }),
+  Object.freeze({ id: 'surfaced', order: 5, title: 'THE OTHER RECORDIST', classification: 'EXTRACTION', hiddenUntilSeen: true }),
 ]);
 
 export function returnDefinition(id) {

@@ -14,6 +14,7 @@ import { getMeta, hasActiveRun } from './save.js';
 import * as AUDIO from '../audio/story-audio.js';
 
 export function makeTitleScene({
+  buildLabel = '',
   onNewGame,
   onContinue,
   onJustSurf,
@@ -212,6 +213,10 @@ export function makeTitleScene({
       else if (meta.leftMidRun) uiCenter(body.y + 9, 'UNFINISHED RUN SAVED.', 'ui-danger');
       else if (replay) uiCenter(body.y + 9, 'ENDINGS AND ACHIEVEMENTS ARE AVAILABLE.', 'ui-amber');
       else uiCenter(body.y + 9, 'THE CASE FILE IS EMPTY.', 'ui-secondary');
+
+      if (buildLabel) {
+        uiText(body.x + 1, body.y + body.h - 1, String(buildLabel).toUpperCase().slice(0, body.w - 2), 'ui-label', 0.62);
+      }
 
       const menuY = body.y + 12;
       menuColumns = body.w >= 58 && items.length > 4 ? 2 : 1;

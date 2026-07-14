@@ -86,7 +86,7 @@ test('deadzone renormalizes analog input', () => {
   assert.ok(deadzone(-0.5) < 0);
 });
 
-test('reset timestamps allow focus recovery to preserve fresh post-blur keydown', async () => {
+test('reset timestamps identify a fresh post-blur keydown', async () => {
   const input = new InputManager();
   input.reset('window-blur');
   const resetAt = input.lastResetAt;
@@ -94,4 +94,25 @@ test('reset timestamps allow focus recovery to preserve fresh post-blur keydown'
   input.keyDown({ code: 'ArrowUp', target: {} });
   assert.ok(input.lastKeyAt > resetAt);
   assert.ok(input.lastKeyAt > input.lastResetAt);
+});
+
+test('visible focus recovery clears stale movement and accepts the next real press', () => {
+  const target = fakeTarget();
+  const doc = fakeTarget();
+  const input = new InputManager({ target, documentRef: doc, attachEvents: true });
+
+  target.dispatch('keydown', { code: 'ArrowUp', target: {} });
+  assert.equal(input.snapshot().moveY, 1);
+
+  doc.visibilityState = 'hidden';
+  doc.dispatch('visibilitychange');
+  assert.equal(input.snapshot().moveY, 0);
+
+  doc.visibilityState = 'visible';
+  doc.dispatch('visibilitychange');
+  assert.equal(input.snapshot().moveY, 0);
+  assert.equal(input.focused, true);
+
+  target.dispatch('keydown', { code: 'ArrowUp', target: {} });
+  assert.equal(input.snapshot().moveY, 1);
 });

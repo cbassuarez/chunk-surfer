@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "documentId": "battle.chapel.feeling",
+  "positions": {
+    "start": {
+      "x": 80,
+      "y": 100
+    },
+    "round-1": {
+      "x": 440,
+      "y": 100
+    },
+    "round-2": {
+      "x": 800,
+      "y": 100
+    },
+    "round-3": {
+      "x": 1160,
+      "y": 100
+    },
+    "round-4": {
+      "x": 80,
+      "y": 360
+    },
+    "outcome": {
+      "x": 440,
+      "y": 360
+    },
+    "win": {
+      "x": 800,
+      "y": 360
+    },
+    "lose": {
+      "x": 1160,
+      "y": 360
+    }
+  },
+  "regions": {}
+}

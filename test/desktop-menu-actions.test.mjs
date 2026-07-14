@@ -78,6 +78,7 @@ test('desktop shortcuts are reserved before game shortcuts', () => {
   assert.equal(isReservedDesktopShortcut({ key: 'm', ctrlKey: true }), true);
   assert.equal(isReservedDesktopShortcut({ key: 'f', ctrlKey: true }), true);
   assert.equal(isReservedDesktopShortcut({ key: 'p', ctrlKey: true }), true);
+  assert.equal(isReservedDesktopShortcut({ key: 'g', metaKey: true, shiftKey: true }), true);
   assert.equal(isReservedDesktopShortcut({ key: 'F11' }), true);
   assert.equal(isReservedDesktopShortcut({ key: 'f' }), false);
 });

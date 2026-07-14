@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "id": "ending.epilogue.drugged",
+  "title": "Guard Epilogue · drugged",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "ending",
+    "epilogue"
+  ],
+  "notes": "",
+  "regions": [
+    {
+      "id": "ending.epilogue.drugged.region",
+      "title": "Guard Epilogue · drugged",
+      "kind": "ending",
+      "color": "#ad6a3b",
+      "nodeIds": [
+        "start"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "type": "ending",
+      "lines": [
+        {
+          "who": "direction",
+          "art": {
+            "id": "guard",
+            "mode": "hero",
+            "caption": "Gate booth / dawn",
+            "status": "STILL"
+          },
+          "text": "The gate booth, lit, at dawn. The same bored man. He does not ask how it went; he watches the little television with the sound off.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "you",
+          "text": "What did you put in it.",
+          "id": "start.line.2"
+        },
+        {
+          "who": "guard",
+          "text": "In what?",
+          "id": "start.line.3"
+        },
+        {
+          "who": "direction",
+          "text": "There is one paper cup in the bin by his foot, and it is not yours — yours is still in your hand, empty, and you do not remember finishing it.",
+          "id": "start.line.4"
+        },
+        {
+          "who": "guard",
+          "text": "Long night. You signing out, or not.",
+          "id": "start.line.5"
+        }
+      ],
+      "id": "start"
+    }
+  }
+}

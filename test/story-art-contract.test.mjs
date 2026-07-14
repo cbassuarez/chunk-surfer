@@ -9,6 +9,7 @@ test('story art assets are present in public directory', () => {
     'public/story-art/surfer.png',
     'public/story-art/circuit-bent-interface.png',
     'public/story-art/tuningfork.png',
+    'public/story-art/walkie.png',
   ]) {
     assert.ok(existsSync(file), file);
   }
@@ -21,6 +22,7 @@ test('story art assets are optimized for fast decode', () => {
     'public/story-art/surfer.png',
     'public/story-art/circuit-bent-interface.png',
     'public/story-art/tuningfork.png',
+    'public/story-art/walkie.png',
   ]) {
     const { size } = statSync(file);
     assert.ok(size < 300_000, `${file} should stay below 300KB, got ${size}`);

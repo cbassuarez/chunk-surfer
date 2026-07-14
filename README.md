@@ -4,14 +4,27 @@ Chunk Surfer is a web-native horror game about recording room tone inside Ellery
 
 Status: desktop port in progress. The browser game remains the canonical runtime, and the desktop shell packages that web build rather than rewriting the game in another engine.
 
-## Local web development
+## Run the latest playable desktop build
 
 ```sh
 npm install
-npm run dev
+npm run lens:setup       # one time; installs the local GPU lens runtime
+npm run play:latest
 ```
 
-Open the local Vite URL. Query parameters such as `?renderer=3d&lens=1` are preserved.
+`play:latest` starts the separately managed development lens and the native
+Tauri app together. On a fresh cache the calibration screen generates all six
+ten-tile material banks. The authored 18-second opening credits begin only
+after calibration succeeds, and their clock pauses whenever the game is hidden
+or unfocused so the opening cannot expire behind another app.
+
+Do not use plain `npm run tauri:dev` for normal playtesting. Production owns a
+bundled sidecar; development deliberately supplies the same service protocol
+from the local Python environment. Plain Tauri development does not start that
+service, so calibration cannot complete.
+
+For browser-only work, run `npm run lens:local` in one terminal and `npm run
+dev` in another, then open the Vite URL.
 
 ## Web build
 
@@ -22,21 +35,34 @@ npm run preview
 
 The Vite build uses `base: './'` so generated assets are safe for static preview and Tauri packaging.
 
-## Desktop development
+## Package the macOS Beta 3 candidate
 
 ```sh
-npm run tauri:dev
+npm run beta:build:mac
 ```
 
-The Tauri shell uses the Vite dev server at `http://localhost:5173` and packages `dist/` for production.
+This downloads the pinned model resources, builds the Apple Silicon sidecar,
+merges `src-tauri/tauri.lens.conf.json`, and creates the DMG under
+`src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/`. It is intentionally
+large and can take a long time on its first run.
 
-## Desktop build
+The Beta 3 source version is `0.1.0-beta.3`; the release tag is
+`v0.1.0-beta.3`. Before creating that tag, run:
 
 ```sh
-npm run tauri:build
+npm test
+npm run test:acoustic
+npm run test:desktop
+npm run tauri:check
+npm run beta:preflight
 ```
 
-Unsigned local bundles are expected at this stage. Signing, notarization, and storefront automation are tracked in `STORE_PREP.md`.
+`beta:preflight` intentionally requires a clean worktree. Pushing the tag starts
+the release workflow, which builds the mandatory lens package independently on
+macOS Apple Silicon, Windows x64/NVIDIA, and Linux x64/NVIDIA runners and
+publishes a GitHub prerelease. Unsigned local bundles are expected at this
+stage. Signing, notarization, and storefront automation are tracked in
+`STORE_PREP.md`.
 
 ## Tests
 

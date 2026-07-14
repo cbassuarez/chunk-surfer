@@ -1,0 +1,416 @@
+{
+  "schemaVersion": 1,
+  "id": "conservatory.first_take",
+  "title": "First Take",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [],
+  "notes": "",
+  "regions": [
+    {
+      "id": "conservatory.first_take.region",
+      "title": "First Take",
+      "kind": "scene",
+      "color": "#245c62",
+      "nodeIds": [
+        "start",
+        "floor.so",
+        "floor.risers",
+        "hub",
+        "levels",
+        "levels.floor",
+        "room",
+        "stand",
+        "stand.take",
+        "stand.leave",
+        "slate",
+        "dark",
+        "roll"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "speaker": "STUDIO B3",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "Foam on three walls, carpet, a dead ceiling. The quietest room in the building.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "You put the rig down and start unwinding the cable.",
+          "id": "start.line.2"
+        },
+        {
+          "who": "you",
+          "text": "...",
+          "id": "start.line.3"
+        },
+        {
+          "who": "you",
+          "text": "I have set it on the floor.",
+          "id": "start.line.4"
+        }
+      ],
+      "choices": [
+        {
+          "text": "so what? it is a floor",
+          "goto": "floor.so",
+          "id": "start.choice.1"
+        },
+        {
+          "text": "pick it up. it goes on its risers.",
+          "goto": "floor.risers",
+          "id": "start.choice.2"
+        }
+      ],
+      "id": "start",
+      "type": "choice"
+    },
+    "floor.so": {
+      "speaker": "STUDIO B3",
+      "lines": [
+        {
+          "who": "you",
+          "text": "A floor is a drum. A joist is a drumstick. Everything above it and everything under it goes into the mic as one long low nothing you cannot filter out afterwards.",
+          "id": "floor.so.line.1"
+        },
+        {
+          "who": "you",
+          "text": "That is why the case has four gum rubber risers on it. Silicone under those. It cost more than the microphone.",
+          "id": "floor.so.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "You have known that since your first week on a rig.",
+          "id": "floor.so.line.3"
+        }
+      ],
+      "goto": "floor.risers",
+      "id": "floor.so",
+      "type": "dialogue"
+    },
+    "floor.risers": {
+      "speaker": "STUDIO B3",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You lift it, set it on the case, and feel the risers take it.",
+          "id": "floor.risers.line.1"
+        },
+        {
+          "who": "you",
+          "text": "So why did I do that.",
+          "id": "floor.risers.line.2"
+        },
+        {
+          "who": "you",
+          "text": "Because it is quiet in here, and I was hurrying, and I did not notice I was hurrying.",
+          "id": "floor.risers.line.3"
+        },
+        {
+          "who": "direction",
+          "text": "Nothing has happened. Nobody has touched you. It is 22:04 and you have made your first mistake in a decade.",
+          "id": "floor.risers.line.4"
+        }
+      ],
+      "goto": "hub",
+      "id": "floor.risers",
+      "type": "dialogue"
+    },
+    "hub": {
+      "speaker": "STUDIO B3",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Right. Do it properly. Set up, levels, light, roll.",
+          "id": "hub.line.1"
+        }
+      ],
+      "choices": [
+        {
+          "text": "check the levels",
+          "goto": "levels",
+          "id": "hub.choice.1"
+        },
+        {
+          "text": "look at the room",
+          "goto": "room",
+          "id": "hub.choice.2"
+        },
+        {
+          "text": "the music stand",
+          "goto": "stand",
+          "id": "hub.choice.3"
+        },
+        {
+          "text": "slate it, out loud",
+          "goto": "slate",
+          "id": "hub.choice.4"
+        },
+        {
+          "text": "kill the light and roll",
+          "goto": "dark",
+          "id": "hub.choice.5"
+        }
+      ],
+      "id": "hub",
+      "type": "choice"
+    },
+    "levels": {
+      "speaker": "STUDIO B3",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "The meter finds the room. Minus sixty-one.",
+          "id": "levels.line.1"
+        },
+        {
+          "who": "you",
+          "text": "And the last two decibels of that are me. Jacket, knee, breathing — which you cannot switch off, only slow down.",
+          "id": "levels.line.2"
+        },
+        {
+          "who": "you",
+          "text": "Minus sixty-one in a room with a man in it. This place is a coffin with foam on it.",
+          "id": "levels.line.3"
+        }
+      ],
+      "choices": [
+        {
+          "text": "what is a good floor?",
+          "goto": "levels.floor",
+          "id": "levels.choice.1"
+        },
+        {
+          "text": "back",
+          "goto": "hub",
+          "id": "levels.choice.2"
+        }
+      ],
+      "id": "levels",
+      "type": "choice"
+    },
+    "levels.floor": {
+      "speaker": "STUDIO B3",
+      "lines": [
+        {
+          "who": "you",
+          "text": "A live room is minus fifty. A church at four in the morning is minus fifty-five and you are proud of it.",
+          "id": "levels.floor.line.1"
+        },
+        {
+          "who": "you",
+          "text": "Minus sixty-one is a number I have seen twice. Once in an anechoic chamber in Salford.",
+          "id": "levels.floor.line.2"
+        },
+        {
+          "who": "you",
+          "text": "And once on a file the client sent me this afternoon.",
+          "id": "levels.floor.line.3"
+        },
+        {
+          "who": "direction",
+          "text": "Minus fifty-eight, that one. Close enough that it does not comfort you.",
+          "id": "levels.floor.line.4"
+        }
+      ],
+      "goto": "hub",
+      "id": "levels.floor",
+      "type": "dialogue"
+    },
+    "room": {
+      "speaker": "STUDIO B3",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "The torch goes round it. Cable snakes, coiled the way you coil them, which is the way everybody coils them.",
+          "id": "room.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "A patchbay with every cable pulled. A chair. Foam gone brown at the edges where thirty years of hands went past it.",
+          "id": "room.line.2"
+        },
+        {
+          "who": "you",
+          "text": "Somebody worked in here for a long time and then one day they did not come back.",
+          "id": "room.line.3"
+        },
+        {
+          "who": "you",
+          "text": "That is not ominous. That is every building I have ever been paid to record.",
+          "id": "room.line.4"
+        }
+      ],
+      "goto": "hub",
+      "id": "room",
+      "type": "dialogue"
+    },
+    "stand": {
+      "speaker": "STUDIO B3",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "A music stand, folded down, leaning in the corner. Somebody folded it. Nobody folds a stand on the day a building is condemned.",
+          "id": "stand.line.1"
+        },
+        {
+          "who": "you",
+          "text": "They thought they were coming back. Everyone in a condemned building thought they were coming back.",
+          "id": "stand.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "There is a sheet still clipped to it. Two bars of something, in pencil, in a hand you cannot read.",
+          "id": "stand.line.3"
+        }
+      ],
+      "choices": [
+        {
+          "text": "take it",
+          "goto": "stand.take",
+          "id": "stand.choice.1"
+        },
+        {
+          "text": "leave it",
+          "goto": "stand.leave",
+          "id": "stand.choice.2"
+        }
+      ],
+      "id": "stand",
+      "type": "choice"
+    },
+    "stand.take": {
+      "speaker": "STUDIO B3",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You put it in the bag, behind the work order, and you could not tell anybody why.",
+          "id": "stand.take.line.1"
+        },
+        {
+          "who": "you",
+          "text": "It comes down on Thursday. All of it. Somebody may as well have the two bars.",
+          "id": "stand.take.line.2"
+        }
+      ],
+      "goto": "hub",
+      "id": "stand.take",
+      "type": "dialogue"
+    },
+    "stand.leave": {
+      "speaker": "STUDIO B3",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Not mine. None of this is mine. I am here for sixty seconds of the air.",
+          "id": "stand.leave.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "You leave it exactly as you found it, which is a thing you are good at.",
+          "id": "stand.leave.line.2"
+        }
+      ],
+      "goto": "hub",
+      "id": "stand.leave",
+      "type": "dialogue"
+    },
+    "slate": {
+      "speaker": "STUDIO B3",
+      "lines": [
+        {
+          "who": "me",
+          "text": "Ellery, studio B3, room tone, take one.",
+          "prompt": "slate it: \"Ellery, studio B3, room tone, take one.\"",
+          "id": "slate.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "Your own voice comes back off the foam with everything above four hundred hertz taken out of it.",
+          "id": "slate.line.2"
+        },
+        {
+          "who": "you",
+          "text": "You slate out loud so that in eight months, when the file is a number, somebody knows what they are listening to.",
+          "id": "slate.line.3"
+        },
+        {
+          "who": "you",
+          "text": "I stopped doing it years ago, when the recorders started writing the metadata themselves.",
+          "id": "slate.line.4"
+        },
+        {
+          "who": "you",
+          "text": "The last man slated three of his four.",
+          "id": "slate.line.5"
+        }
+      ],
+      "goto": "hub",
+      "id": "slate",
+      "type": "dialogue"
+    },
+    "dark": {
+      "speaker": "STUDIO B3",
+      "lines": [
+        {
+          "who": "you",
+          "text": "The torch is a filament, and a filament in a dead building is a bell. Off it goes.",
+          "id": "dark.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "Dark. The kind with no shape in it, because there is nothing here to make a shape out of.",
+          "id": "dark.line.2"
+        },
+        {
+          "who": "you",
+          "text": "Forty-five seconds. Do not move. Do not touch the light.",
+          "id": "dark.line.3"
+        },
+        {
+          "who": "you",
+          "text": "If I can hear myself on the take, the take is not the room. Their words. Mine first.",
+          "id": "dark.line.4"
+        }
+      ],
+      "choices": [
+        {
+          "text": "wait — go back over the kit",
+          "goto": "hub",
+          "id": "dark.choice.1"
+        },
+        {
+          "text": "roll",
+          "goto": "roll",
+          "id": "dark.choice.2"
+        }
+      ],
+      "id": "dark",
+      "type": "choice"
+    },
+    "roll": {
+      "speaker": "STUDIO B3",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "The monitor opens. The room comes up in the cans, close and quiet — the foam, the dead air, the size of it.",
+          "id": "roll.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "Headphones on. Press [r] to roll — and the moment you do, the room drops out, and you do not move.",
+          "id": "roll.line.2"
+        }
+      ],
+      "id": "roll",
+      "type": "dialogue"
+    }
+  }
+}

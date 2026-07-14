@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "id": "playback.hallplayback.named",
+  "title": "Concert Hall Playback · named",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "playback",
+    "named"
+  ],
+  "notes": "",
+  "regions": [
+    {
+      "id": "playback.hallplayback.named.region",
+      "title": "Concert Hall Playback · named",
+      "kind": "scene",
+      "color": "#245c62",
+      "nodeIds": [
+        "start",
+        "recording",
+        "off"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "speaker": "PLAYBACK · THE CONCERT HALL",
+      "art": {
+        "id": "surfer",
+        "mode": "hero",
+        "caption": "Playback / a room behind glass",
+        "status": "PLAYBACK"
+      },
+      "lines": [
+        {
+          "who": "direction",
+          "text": "The take rolls. A hall holding its breath, minus fifty-four, and then, under the noise floor, coming up, her.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "sarah",
+          "text": "You’re not even here. You’re behind the glass. You’re always behind the glass.",
+          "rate": 0.96,
+          "id": "start.line.2"
+        },
+        {
+          "who": "you",
+          "text": "She said that to me in a hall like this. Row F. I had the recorder on my knee.",
+          "id": "start.line.3"
+        },
+        {
+          "who": "you",
+          "text": "I have it. I have the exact sentence, at minus fifty-four, and I have never once been able to tell you what it was about.",
+          "id": "start.line.4"
+        }
+      ],
+      "choices": [
+        {
+          "text": "because you were recording it",
+          "goto": "recording",
+          "id": "start.choice.1"
+        },
+        {
+          "text": "turn it off",
+          "goto": "off",
+          "id": "start.choice.2"
+        }
+      ],
+      "id": "start",
+      "type": "choice"
+    },
+    "recording": {
+      "speaker": "PLAYBACK · THE CONCERT HALL",
+      "lines": [
+        {
+          "who": "you",
+          "text": "I was setting a level. She was telling me something that mattered and I was watching a meter.",
+          "id": "recording.line.1"
+        },
+        {
+          "who": "sarah",
+          "text": "You got a beautiful take of it. You always do.",
+          "rate": 0.95,
+          "id": "recording.line.2"
+        },
+        {
+          "who": "you",
+          "text": "It is the best recording I own. I could not tell you a word she said.",
+          "id": "recording.line.3"
+        }
+      ],
+      "goto": "off",
+      "id": "recording",
+      "type": "dialogue"
+    },
+    "off": {
+      "speaker": "PLAYBACK · THE CONCERT HALL",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You take the headphones off. The hall is exactly as empty as it was.",
+          "id": "off.line.1"
+        },
+        {
+          "who": "you",
+          "text": "Two rooms left.",
+          "id": "off.line.2"
+        }
+      ],
+      "id": "off",
+      "type": "dialogue"
+    }
+  }
+}

@@ -6,6 +6,6 @@ export function pixelMeshTestbedSnapshot(settings = {}) {
   return Object.freeze({
     settings: normalized,
     bayerHalfCoverage: ditherCoverage(0.5),
-    note: 'Use renderer=3d&pixelMesh=1&pixelMeshMode=standard for the live WebGL pass.',
+    note: 'Use renderer=3d&pixelMeshDebug=1 and an authored look profile for the live WebGL pass.',
   });
 }

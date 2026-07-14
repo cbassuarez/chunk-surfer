@@ -1,11 +1,10 @@
-// First-person 3D renderer (`?renderer=3d`) — the world view for the
-// diffusion-lens architecture, and the no-GPU fallback when the lens is off.
+// First-person 3D renderer — the only shipped world view.
 //
 // Geometry is architecture, not terrain: a flat floor at y=0, a flat ceiling
 // at CEIL, and full-height wall slabs on a corridor lattice (see solidCell).
 // Walls are traversed by DDA so faces are exact; floor and ceiling are planes
 // solved analytically. Surfaces wear a live Gray-Scott reaction-diffusion skin
-// and the world's biome/world tints; fog-of-war dims unvisited ground.
+// without exposing the retired 2D world's zone-navigation palette.
 //
 // solidCell() is mirrored bit-for-bit in JS as r3dSolid() for collision —
 // both sides use uint hashing only, since float noise diverges between GLSL
@@ -17,12 +16,23 @@
 import { assetUrl } from '../platform/paths.js';
 import { CELL, EYE as EYE_METERS, MATERIAL, PLAN_SCALE } from '../data/floorplan/legend.js';
 import * as P3 from './props3d.js';
-import { PIXEL_MESH_MODES, normalizePixelMeshSettings, pixelMeshModeUniforms } from './pixel-mesh/settings.js';
+import { normalizePixelMeshSettings } from './pixel-mesh/settings.js';
 import { PIXEL_MESH_FRAG } from './pixel-mesh/shader.js';
+import { getLookProfile } from './look-profiles.js';
 
 const MAX_CHUNKS = 48;
 const RD_SIZE = 256;
-const RENDER_SCALE = 0.6;  // half-ish res: perf + the soft 'dream' look
+let RENDER_SCALE = 1;
+
+export function r3dSetRenderScale(value = 1) {
+  const next = Math.max(0.5, Math.min(1, Number(value) || 1));
+  if (Math.abs(next - RENDER_SCALE) < 0.001) return RENDER_SCALE;
+  RENDER_SCALE = next;
+  if (canvas && gl) resize();
+  return RENDER_SCALE;
+}
+
+export function r3dRenderScale() { return RENDER_SCALE; }
 const FOG_TEX = 128;
 
 const BIOME_RGB = {
@@ -118,9 +128,15 @@ uniform sampler2D uMat;      // R=material id
 uniform sampler2D uPropColor;
 uniform sampler2D uPropDepth;
 uniform sampler2DArray uSurfAlbedo, uSurfNormal, uSurfRough, uSurfHeight; // PBR surface layers
-uniform sampler2DArray uSurfDream;                             // locally restyled albedo
+uniform sampler2DArray uSurfDream, uSurfDreamNext;             // current + staged generated albedo
 uniform float uDreamMix[10];
 uniform float uDreamReady;
+uniform float uDreamNextReady;
+uniform float uDreamBankBlend;
+uniform float uDreamDetailGain;
+uniform float uDreamChromaDrift;
+uniform float uDreamRoughnessResponse;
+uniform float uDreamNormalResponse;
 uniform float uLocalDiffusion;
 uniform float uSurfacesReady;
 uniform float uPropsReady;
@@ -245,6 +261,20 @@ float grid2(vec2 p, float scale, float width){
 //   6 terrazzo 7 travertine   8 rammed-earth          9 concrete-cladding
 // Texture array + REPEAT wrap: true seamless tiling with mipmaps and anisotropy,
 // no atlas-edge inset needed.
+vec4 dreamSlotResponse(int slot){
+  // detail, chroma, roughness, normal. Material identity is authored here;
+  // glazed ceramic cannot react like timber or porous masonry.
+  if(slot==0)return vec4(1.00,.48,1.00,.92); // brick
+  if(slot==1)return vec4(.96,.38,1.08,1.00); // stone
+  if(slot==2)return vec4(.82,.34,.72,.86);   // wood grain
+  if(slot==3)return vec4(.74,.28,.58,.70);   // quartzite
+  if(slot==4)return vec4(.68,.56,.34,.46);   // pool mosaic glaze
+  if(slot==5)return vec4(.62,.22,.24,.38);   // white ceramic
+  if(slot==6)return vec4(.78,.44,.62,.68);   // terrazzo
+  if(slot==7)return vec4(.84,.36,.74,.80);   // travertine
+  if(slot==8)return vec4(1.06,.42,1.14,.96); // rammed earth
+  return vec4(.88,.30,.96,.78);              // concrete
+}
 vec3 surfaceTile(int slot, vec2 worldUv, float metresPerTile){
   vec3 tc=vec3(worldUv/metresPerTile,float(slot));
   vec3 base=texture(uSurfAlbedo,tc).rgb;
@@ -256,26 +286,32 @@ vec3 surfaceTile(int slot, vec2 worldUv, float metresPerTile){
     vec3 rd=texture(uRD,rdUv).rgb;
     float vein=smoothstep(0.18,0.82,rd.g);
     float pit=smoothstep(0.62,0.96,rd.r-rd.g);
-    vec3 oxidized=base*(0.66+0.48*vein) + vec3(0.060,0.050,0.032)*rd.g;
-    vec3 etched=base*(0.86-0.28*pit);
-    base=mix(base,clamp(mix(oxidized,etched,pit),vec3(0.0),vec3(1.0)),clamp(uLocalDiffusion,0.0,1.0));
+    vec3 oxidized=base*(0.78+0.30*vein) + vec3(0.045,0.040,0.030)*rd.g;
+    vec3 etched=base*(0.92-0.18*pit);
+    vec4 response=dreamSlotResponse(slot);
+    base=mix(base,clamp(mix(oxidized,etched,pit),vec3(0.0),vec3(1.0)),clamp(uLocalDiffusion*response.x,0.0,1.0));
   }
   if(uDreamReady<.5)return base;
-  vec3 dream=texture(uSurfDream,tc).rgb;
+  vec3 dreamA=texture(uSurfDream,tc).rgb;
+  vec3 dreamB=texture(uSurfDreamNext,tc).rgb;
+  vec3 dream=mix(dreamA,dreamB,uDreamNextReady>.5?uDreamBankBlend:0.0);
   // Transfer material detail, not the generated image's illumination or
   // palette. Dividing by a coarse mip extracts local grain/mortar/weathering;
   // multiplying that into the authored albedo keeps the room from becoming a
   // flat img2img wash while remaining fixed in world-space UVs.
-  vec3 dreamLow=textureLod(uSurfDream,tc,4.0).rgb;
+  vec3 dreamLowA=textureLod(uSurfDream,tc,4.0).rgb;
+  vec3 dreamLowB=textureLod(uSurfDreamNext,tc,4.0).rgb;
+  vec3 dreamLow=mix(dreamLowA,dreamLowB,uDreamNextReady>.5?uDreamBankBlend:0.0);
   vec3 detail=clamp(dream/max(dreamLow,vec3(.055)),vec3(.46),vec3(1.86));
   float baseLum=max(.035,dot(base,vec3(.2126,.7152,.0722)));
   float dreamLum=max(.035,dot(dreamLow,vec3(.2126,.7152,.0722)));
+  vec3 neutralTone=vec3(baseLum);
   vec3 generatedTone=clamp(dreamLow*(baseLum/dreamLum),vec3(0.0),vec3(1.0));
-  // Most of the result is generated grain/weathering, but retain enough of the
-  // local generated tone that ON and OFF are perceptually distinct. Both are
-  // sampled from world UVs, so neither can swim with the camera.
-  vec3 detailed=mix(clamp(base*detail,vec3(0.0),vec3(1.0)),generatedTone,.38);
-  return mix(base,detailed,uDreamMix[slot]);
+  generatedTone=mix(neutralTone,generatedTone,clamp(uDreamChromaDrift,0.0,1.0));
+  vec4 response=dreamSlotResponse(slot);
+  vec3 detailed=clamp(base*mix(vec3(1.0),detail,clamp(uDreamDetailGain*response.x,0.0,1.7)),vec3(0.0),vec3(1.0));
+  detailed=mix(detailed,generatedTone,clamp(uDreamChromaDrift*response.y*.42,0.0,.42));
+  return mix(base,detailed,uDreamMix[slot]*response.x);
 }
 // One texture per surface, chosen by the room's material and whether we hit a
 // wall or a floor. No cross-slot mixing — that is what smeared every texture
@@ -459,9 +495,9 @@ void main(){
     vec3 pos = ro + rd * tHit;
     vec3 posM = pos * CELL_METERS;
     vec3 roM = ro * CELL_METERS;
-    // In the conservatory the tint comes from the room you are looking at; in
-    // JUST SURF it comes from the procedural world beneath your feet.
-    vec3 tint = (uUsePlan > 0.5) ? uZoneTint[hitZone] : uWorldTint[int(worldIdx(pos.xz))];
+    // Architecture is differentiated by material and light, never by the old
+    // zone-navigation colors. JUST SURF may keep its procedural world tint.
+    vec3 tint = (uUsePlan > 0.5) ? vec3(0.62) : uWorldTint[int(worldIdx(pos.xz))];
 
     // nearest-chunk biome blend + emissive glow
     vec3 biome = vec3(0.30, 0.36, 0.36);
@@ -524,6 +560,22 @@ void main(){
       sc.xy+=viewTs*(h0-.5)*(surf==1 ? .030 : .018);
       vec3 nm = texture(uSurfNormal, sc).rgb * 2.0 - 1.0;
       surfRough = texture(uSurfRough, sc).r;
+      // The native reaction field and generated detail participate in the
+      // physical response, not only in albedo. Geometry remains a flat,
+      // authoritative collision plane; only micro-normal and roughness move.
+      vec4 slotResponse=dreamSlotResponse(sslot);
+      vec2 materialRdUv=fract(suv/(stile*3.6)+vec2(float(sslot)*.071,float(sslot)*.113));
+      float materialRd=texture(uRD,materialRdUv).g-.5;
+      vec3 dc=vec3(sc.xy,float(sslot));
+      vec2 dtex=vec2(1.0/512.0,0.0);
+      float dl=dot(texture(uSurfDream,dc-vec3(dtex.x,0.0,0.0)).rgb,vec3(.2126,.7152,.0722));
+      float dr=dot(texture(uSurfDream,dc+vec3(dtex.x,0.0,0.0)).rgb,vec3(.2126,.7152,.0722));
+      float dd=dot(texture(uSurfDream,dc-vec3(0.0,dtex.x,0.0)).rgb,vec3(.2126,.7152,.0722));
+      float du=dot(texture(uSurfDream,dc+vec3(0.0,dtex.x,0.0)).rgb,vec3(.2126,.7152,.0722));
+      vec2 dreamSlope=vec2(dr-dl,du-dd);
+      nm.xy+=dreamSlope*uDreamNormalResponse*slotResponse.w*2.4;
+      nm.xy+=materialRd*uLocalDiffusion*uDreamNormalResponse*slotResponse.w;
+      surfRough=clamp(surfRough+materialRd*uLocalDiffusion*uDreamRoughnessResponse*slotResponse.z,0.04,1.0);
       n = normalize(n + (T * nm.x + B * nm.y) * 0.58);
       surfaceOcclusion=mix(.68,1.0,smoothstep(.12,.88,h0));
       pbrReady=true;pbrSlot=sslot;pbrTile=stile;pbrBlend=sblend;pbrUv=sc.xy*stile;
@@ -661,17 +713,35 @@ uniform sampler2D uSrc;
 uniform vec2 uRes;
 uniform float uFear;      // 0..1
 uniform float uTimeP;
+uniform float uGlassStrength;
+uniform float uGlassFringe;
+uniform float uGlassBloom;
+uniform float uGlassGrain;
+uniform float uReduceFlash;
+uniform float uReduceMotion;
 out vec4 o;
 float h21(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 void main(){
   vec2 uv = gl_FragCoord.xy / uRes;
   float f = clamp(uFear, 0.0, 1.0);
-  // the picture stops holding itself together
-  vec2 cd = (uv - 0.5) * (0.0035 + f * 0.0075);
+  float glass=clamp(uGlassStrength,0.0,1.0);
+  // Phosphor behind thick instrument glass: restrained RGB separation rather
+  // than a generic full-frame glitch.
+  vec2 cd = (uv - 0.5) * ((0.0012*uGlassFringe) + f * 0.0075);
   vec3 c = vec3(
     texture(uSrc, uv + cd).r,
     texture(uSrc, uv).g,
     texture(uSrc, uv - cd).b);
+  vec2 py=vec2(0.0,1.5/uRes.y);
+  vec3 halo=(texture(uSrc,uv+py).rgb+texture(uSrc,uv-py).rgb)*0.5;
+  float haloLum=dot(halo,vec3(.2126,.7152,.0722));
+  c+=halo*haloLum*uGlassBloom*(1.0-uReduceFlash*.65)*.18;
+  // A very fine aperture/grille modulation. It should read as hardware only
+  // after the selective cell pass has already established the image.
+  float grille=.985+.015*sin(gl_FragCoord.y*3.14159265);
+  c*=mix(1.0,grille,glass);
+  float reflection=pow(clamp(1.0-length((uv-vec2(.28,.08))*vec2(.72,1.8)),0.0,1.0),6.0);
+  c+=vec3(.12,.24,.22)*reflection*glass*.055;
   // tunnel vision
   float d = length(uv - 0.5);
   c *= 1.0 - smoothstep(0.34 - f * 0.16, 0.80 - f * 0.30, d) * (0.25 + f * 0.65);
@@ -679,8 +749,9 @@ void main(){
   float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
   c = mix(c, vec3(lum), f * 0.55);
   // the eye's own noise, which is always there and which you notice when afraid
-  float g = h21(gl_FragCoord.xy + fract(uTimeP) * 91.7) - 0.5;
-  c += g * (0.012 + f * 0.055);
+  float noiseTime=mix(fract(uTimeP),0.0,uReduceMotion);
+  float g = h21(gl_FragCoord.xy + noiseTime * 91.7) - 0.5;
+  c += g * (0.008*uGlassGrain + f * 0.055);
   o = vec4(c, 1.0);
 }`;
 
@@ -690,6 +761,72 @@ let progRD, progMarch, progPost, progDepth, progPixelMesh;
 // How frightened he is, 0..1. main.js owns the number; the post pass spends it.
 let fearLevel = 0;
 export function r3dSetFear(v) { fearLevel = Math.max(0, Math.min(1, v || 0)); }
+let lookFrom = getLookProfile('explore');
+let lookTarget = lookFrom;
+let lookStartedAt = 0;
+let lookTransitionMs = 0;
+
+function blendLayer(a, b, t) {
+  const out = {};
+  for (const key of new Set([...Object.keys(a || {}), ...Object.keys(b || {})])) {
+    const av = a?.[key], bv = b?.[key];
+    out[key] = Number.isFinite(av) && Number.isFinite(bv) ? av + (bv - av) * t : (t < 1 ? av : bv);
+  }
+  return out;
+}
+
+function lookNowMs(override) {
+  if (Number.isFinite(override)) return Number(override);
+  return globalThis.performance?.now?.() ?? Date.now();
+}
+
+function currentLook(nowMs = lookNowMs()) {
+  if (!lookTransitionMs || lookFrom === lookTarget) return lookTarget;
+  const t = Math.max(0, Math.min(1, (nowMs - lookStartedAt) / lookTransitionMs));
+  if (t >= 1) { lookFrom = lookTarget; lookTransitionMs = 0; return lookTarget; }
+  return {
+    ...lookTarget,
+    material: blendLayer(lookFrom.material, lookTarget.material, t),
+    vfd: blendLayer(lookFrom.vfd, lookTarget.vfd, t),
+    glass: blendLayer(lookFrom.glass, lookTarget.glass, t),
+  };
+}
+
+export function r3dSetLookProfile(id = 'explore', options = {}) {
+  const now = lookNowMs(options.nowMs);
+  const next = getLookProfile(id);
+  const active = currentLook(now);
+  const changed = next.id !== lookTarget.id;
+  const transitionMs = Math.max(0, Number(options.transitionMs ?? next.transitionMs) || 0);
+
+  // Scene-stack synchronization and completed material-bank uploads can both
+  // reaffirm the current profile. Treat that as idempotent: restarting the
+  // transition here can otherwise leave the compositor permanently between
+  // two profiles. An explicit zero duration still acts as a useful snap/reset.
+  if (!changed) {
+    if (Object.hasOwn(options, 'transitionMs') && transitionMs === 0) {
+      lookFrom = next;
+      lookTarget = next;
+      lookStartedAt = now;
+      lookTransitionMs = 0;
+    }
+    if (options.resetMemory) r3dResetVfdMemory();
+    return r3dLookStatus(now);
+  }
+
+  lookFrom = active;
+  lookTarget = next;
+  lookStartedAt = now;
+  lookTransitionMs = transitionMs;
+  if (changed || options.resetMemory) r3dResetVfdMemory();
+  return r3dLookStatus(now);
+}
+
+export function r3dLookStatus(nowMs) {
+  const profile = currentLook(lookNowMs(nowMs));
+  return { id: lookTarget.id, bankId: lookTarget.bankId, transitioning: lookTransitionMs > 0, profile };
+}
+
 export function r3dSetPixelMesh(settings = {}) {
   pixelMeshSettings = normalizePixelMeshSettings({ ...pixelMeshSettings, ...settings });
   if (Number.isFinite(Number(settings.forceSignalUntil))) {
@@ -698,18 +835,13 @@ export function r3dSetPixelMesh(settings = {}) {
   if (Number.isFinite(Number(settings.forceSignalMs))) {
     pixelMeshStatus.forceSignalUntil = Math.max(pixelMeshStatus.forceSignalUntil, pixelMeshNow() + Number(settings.forceSignalMs) / 1000);
   }
-  pixelMeshStatus.lastMode = pixelMeshSettings.mode;
-  pixelMeshStatus.enabled = pixelMeshSettings.mode !== 'off' || pixelMeshStatus.forceSignalUntil > pixelMeshNow();
+  pixelMeshStatus.enabled = true;
   return pixelMeshSettings;
 }
 export function r3dPixelMeshSettings() { return pixelMeshSettings; }
 export function r3dPulsePixelMesh(ms = 1800) {
   pixelMeshStatus.forceSignalUntil = pixelMeshNow() + Math.max(250, Number(ms) || 1800) / 1000;
-  if (pixelMeshSettings.mode === 'off') {
-    pixelMeshSettings = normalizePixelMeshSettings({ ...pixelMeshSettings, mode: 'standard' });
-  }
   pixelMeshStatus.enabled = true;
-  pixelMeshStatus.lastMode = pixelMeshSettings.mode;
   return r3dPixelMeshStatus();
 }
 export function r3dPixelMeshStatus() {
@@ -725,16 +857,22 @@ let meshTexA=null, meshTexB=null, meshFboA=null, meshFboB=null, meshFlip=false;
 let surfAlbedoTex=null, surfNormalTex=null, surfRoughTex=null, surfHeightTex=null, surfDreamTex=null, surfDreamStageTex=null, anisoExt=null, anisoMax=1;
 const SURFACE_LAYERS=10,SURFACE_TILE=512;
 const surfDreamMix=new Float32Array(SURFACE_LAYERS);
-let localDiffusionLevel = 0;
+let localDiffusionAvailability = 1;
+let surfDreamReady=false,surfDreamNextReady=false,surfDreamTransitionStart=0,surfDreamTransitionMs=0;
+let surfDreamActiveBank=null,surfDreamPendingBank=null;
 let pixelMeshSettings = normalizePixelMeshSettings();
+let lastPixelMeshAt = 0;
+let vfdMovement = 0;
+let vfdPreviousX = null, vfdPreviousZ = null;
 const pixelMeshUniformCache = new Map();
+const postUniformCache = new Map();
 const pixelMeshStatus = {
   supported: false,
   shaderReady: false,
   enabled: false,
   framesSeen: 0,
   framesRendered: 0,
-  lastMode: 'off',
+  lastProfile: 'explore',
   lastError: null,
   lastGlError: 0,
   forceSignalUntil: 0,
@@ -743,6 +881,19 @@ const pixelMeshStatus = {
 };
 function pixelMeshNow() {
   return (globalThis.performance?.now?.() || Date.now()) / 1000;
+}
+
+export function r3dResetVfdMemory() {
+  if (!gl || !meshFboA || !meshFboB) return false;
+  const previous = gl.getParameter(gl.FRAMEBUFFER_BINDING);
+  gl.clearColor(0, 0, 0, 0);
+  for (const fbo of [meshFboA, meshFboB]) {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+  }
+  gl.bindFramebuffer(gl.FRAMEBUFFER, previous);
+  meshFlip = false;
+  return true;
 }
 // Load a vertical strip PNG/JPG (one tile per layer) as a WebGL2 texture array:
 // mipmaps, REPEAT wrap and anisotropy — the quality an atlas cannot give a
@@ -768,19 +919,28 @@ function loadTextureArray(url, { srgb=false }={}){
     img.onerror=reject; img.src=url.href||String(url);
   });
 }
+function makeSurfaceDreamTexture(){
+  const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D_ARRAY,t);
+  gl.texImage3D(gl.TEXTURE_2D_ARRAY,0,gl.SRGB8_ALPHA8,SURFACE_TILE,SURFACE_TILE,SURFACE_LAYERS,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+  gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_S,gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_T,gl.REPEAT);
+  if(anisoExt)gl.texParameterf(gl.TEXTURE_2D_ARRAY,anisoExt.TEXTURE_MAX_ANISOTROPY_EXT,Math.min(8,anisoMax));
+  gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
+  return t;
+}
 function initSurfaceDream(){
-  const make=()=>{
-    const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D_ARRAY,t);
-    gl.texImage3D(gl.TEXTURE_2D_ARRAY,0,gl.SRGB8_ALPHA8,SURFACE_TILE,SURFACE_TILE,SURFACE_LAYERS,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
-    gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_S,gl.REPEAT);
-    gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_T,gl.REPEAT);
-    if(anisoExt)gl.texParameterf(gl.TEXTURE_2D_ARRAY,anisoExt.TEXTURE_MAX_ANISOTROPY_EXT,Math.min(8,anisoMax));
-    gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
-    return t;
-  };
-  surfDreamTex=make();surfDreamStageTex=make();
+  surfDreamTex=makeSurfaceDreamTexture();surfDreamStageTex=makeSurfaceDreamTexture();
+}
+export function r3dBeginSurfaceDreamBank(bankId=null){
+  if(!gl)return false;
+  if(surfDreamStageTex)gl.deleteTexture(surfDreamStageTex);
+  surfDreamStageTex=makeSurfaceDreamTexture();
+  surfDreamPendingBank=bankId;
+  surfDreamNextReady=false;
+  surfDreamTransitionMs=0;
+  return true;
 }
 export function r3dSetSurfaceDream(slot,image,mix=.68){
   if(!gl||!surfDreamStageTex||slot<0||slot>=SURFACE_LAYERS||!image)return false;
@@ -789,31 +949,45 @@ export function r3dSetSurfaceDream(slot,image,mix=.68){
   // Match loadTextureArray's orientation so generated mortar/grain lands on
   // the exact source texels it was conditioned from.
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
-  // Stage for the atomic final swap, but also update the resident texture now.
-  // A ten-tile local batch can take minutes on MPS; hiding all evidence until
-  // tile ten made a healthy lens indistinguishable from a dead one.
-  for(const tex of [surfDreamStageTex,surfDreamTex]){
-    gl.bindTexture(gl.TEXTURE_2D_ARRAY,tex);
-    gl.texSubImage3D(gl.TEXTURE_2D_ARRAY,0,0,0,slot,SURFACE_TILE,SURFACE_TILE,1,gl.RGBA,gl.UNSIGNED_BYTE,cv);
-  }
-  gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfDreamTex);gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
+  gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfDreamStageTex);
+  gl.texSubImage3D(gl.TEXTURE_2D_ARRAY,0,0,0,slot,SURFACE_TILE,SURFACE_TILE,1,gl.RGBA,gl.UNSIGNED_BYTE,cv);
   surfDreamMix[slot]=Math.max(0,Math.min(.92,Number(mix)||0));
   return true;
 }
-export function r3dCommitSurfaceDream(mix=.68){
+export function r3dCommitSurfaceDream(mix=.68,options={}){
   if(!gl||!surfDreamStageTex)return false;
   gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfDreamStageTex);
   gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
-  [surfDreamTex,surfDreamStageTex]=[surfDreamStageTex,surfDreamTex];
   surfDreamMix.fill(Math.max(0,Math.min(.92,Number(mix)||0)));
+  const bankId=options.bankId??surfDreamPendingBank;
+  const transitionMs=Math.max(0,Number(options.transitionMs)||0);
+  if(!surfDreamReady||transitionMs<=0){
+    [surfDreamTex,surfDreamStageTex]=[surfDreamStageTex,surfDreamTex];
+    surfDreamReady=true;surfDreamNextReady=false;surfDreamActiveBank=bankId;surfDreamPendingBank=null;
+    surfDreamTransitionMs=0;
+  }else{
+    surfDreamNextReady=true;surfDreamPendingBank=bankId;
+    surfDreamTransitionStart=globalThis.performance?.now?.()||Date.now();
+    surfDreamTransitionMs=transitionMs;
+  }
   return true;
 }
 export function r3dSetSurfaceDreamMix(mix=.68){
   surfDreamMix.fill(Math.max(0,Math.min(.92,Number(mix)||0)));
 }
-export function r3dClearSurfaceDream(){surfDreamMix.fill(0);}
-export function r3dSetLocalDiffusionLevel(v=0){localDiffusionLevel=Math.max(0,Math.min(1,Number(v)||0));}
-export function r3dSurfaceDreamStats(){return{active:[...surfDreamMix].filter((v)=>v>0).length,mix:[...surfDreamMix],local:localDiffusionLevel};}
+export function r3dClearSurfaceDream(){surfDreamMix.fill(0);surfDreamReady=false;surfDreamNextReady=false;surfDreamActiveBank=null;surfDreamPendingBank=null;}
+export function r3dSetLocalDiffusionLevel(v=1){localDiffusionAvailability=Math.max(0,Math.min(1,Number(v)||0));}
+function surfaceDreamBlend(nowMs=globalThis.performance?.now?.()||Date.now()){
+  if(!surfDreamNextReady||!surfDreamTransitionMs)return 0;
+  const t=Math.max(0,Math.min(1,(nowMs-surfDreamTransitionStart)/surfDreamTransitionMs));
+  if(t>=1){
+    [surfDreamTex,surfDreamStageTex]=[surfDreamStageTex,surfDreamTex];
+    surfDreamReady=true;surfDreamNextReady=false;surfDreamActiveBank=surfDreamPendingBank;surfDreamPendingBank=null;surfDreamTransitionMs=0;
+    return 0;
+  }
+  return t*t*(3-2*t);
+}
+export function r3dSurfaceDreamStats(){const look=currentLook();return{active:[...surfDreamMix].filter((v)=>v>0).length,mix:[...surfDreamMix],local:look.material.localDiffusion*localDiffusionAvailability,bank:surfDreamActiveBank,pendingBank:surfDreamPendingBank,transitioning:surfDreamNextReady};}
 export function r3dSurfaceStats(){return{albedo:!!surfAlbedoTex,normal:!!surfNormalTex,roughness:!!surfRoughTex,height:!!surfHeightTex,ready:!!(surfAlbedoTex&&surfNormalTex&&surfRoughTex&&surfHeightTex)};}
 let planTexture = null, materialTexture = null, planW = 0, planH = 0;
 let uniforms = {};
@@ -850,6 +1024,10 @@ function reportGlError(label) {
     console.warn('[pixel-mesh]', msg);
   }
   return code;
+}
+function clearGlErrors() {
+  if (!gl?.getError) return;
+  while (gl.getError()) {}
 }
 function makeTex(w, h, data = null, format = 'rgba8') {
   const t = gl.createTexture();
@@ -892,18 +1070,25 @@ function debugSourceToNumber(source) {
   if (source === 'signal') return 2;
   if (source === 'memory') return 3;
   if (source === 'edge') return 4;
+  if (source === 'mask') return 5;
   return 0;
 }
 
 function resolvePixelMeshCellScenePx() {
   const raw = pixelMeshSettings.cellSize;
-  const cssCell = raw === 'auto' ? 8 : Math.max(4, Math.min(24, Number(raw) || 8));
+  const authored = currentLook().vfd.cellPx || 8;
+  const cssCell = raw === 'auto' ? authored : Math.max(4, Math.min(24, Number(raw) || authored));
   return Math.max(1, cssCell * (globalThis.devicePixelRatio || 1) * RENDER_SCALE);
 }
 
 function pixelMeshU(name) {
   if (!pixelMeshUniformCache.has(name)) pixelMeshUniformCache.set(name, gl.getUniformLocation(progPixelMesh, name));
   return pixelMeshUniformCache.get(name);
+}
+
+function postU(name) {
+  if (!postUniformCache.has(name)) postUniformCache.set(name, gl.getUniformLocation(progPost, name));
+  return postUniformCache.get(name);
 }
 
 function runPixelMeshPass(state, now) {
@@ -914,25 +1099,23 @@ function runPixelMeshPass(state, now) {
   pixelMeshStatus.sceneHeight = uniforms.sceneH || 0;
 
   const forceSignal = Math.max(0, Math.min(1, pixelMeshStatus.forceSignalUntil > now ? 1 : 0));
-  const effectiveSettings = forceSignal > 0 && pixelMeshSettings.mode === 'off'
-    ? normalizePixelMeshSettings({ ...pixelMeshSettings, mode: 'standard' })
-    : pixelMeshSettings;
-  const mode = pixelMeshModeUniforms(effectiveSettings) || PIXEL_MESH_MODES.off;
-  pixelMeshStatus.lastMode = effectiveSettings.mode;
-  pixelMeshStatus.enabled = effectiveSettings.mode !== 'off' || forceSignal > 0;
+  const effectiveSettings = pixelMeshSettings;
+  const look = currentLook();
+  pixelMeshStatus.lastProfile = look.id;
+  pixelMeshStatus.enabled = true;
 
   if (!pixelMeshStatus.supported) {
     if (pixelMeshStatus.enabled) pixelMeshStatus.lastError = pixelMeshStatus.lastError || 'pixel mesh WebGL resources unavailable';
     return sceneTex;
   }
-  if (effectiveSettings.mode === 'off' && forceSignal <= 0) return sceneTex;
-  if (!mode.worldAmount && !mode.signalAmount && forceSignal <= 0) return sceneTex;
-
   const dstFbo = meshFlip ? meshFboA : meshFboB;
   const dstTex = meshFlip ? meshTexA : meshTexB;
   const prevTex = meshFlip ? meshTexB : meshTexA;
   meshFlip = !meshFlip;
 
+  // Other passes may leave a WebGL diagnostic behind. Clear before the pixel
+  // pass so __chunkSurferPixelMesh.status() reports this layer, not stale GL.
+  clearGlErrors();
   gl.useProgram(progPixelMesh);
   gl.bindFramebuffer(gl.FRAMEBUFFER, dstFbo);
   gl.viewport(0, 0, uniforms.sceneW, uniforms.sceneH);
@@ -947,18 +1130,26 @@ function runPixelMeshPass(state, now) {
 
   gl.uniform2f(pixelMeshU('uRes'), uniforms.sceneW, uniforms.sceneH);
   gl.uniform1f(pixelMeshU('uTime'), now);
+  const dt = lastPixelMeshAt > 0 ? Math.max(0, Math.min(0.25, now - lastPixelMeshAt)) : 1 / 60;
+  lastPixelMeshAt = now;
+  gl.uniform1f(pixelMeshU('uDt'), dt);
   gl.uniform1f(pixelMeshU('uCellPx'), resolvePixelMeshCellScenePx());
-  gl.uniform1f(pixelMeshU('uWorldAmount'), forceSignal > 0 ? Math.max(mode.worldAmount || 0, 0.9) : (mode.worldAmount || 0));
-  gl.uniform1f(pixelMeshU('uSignalAmount'), forceSignal > 0 ? Math.max(mode.signalAmount || 0, 1.15) : (mode.signalAmount || 0));
-  gl.uniform1f(pixelMeshU('uGlowAmount'), forceSignal > 0 ? Math.max(mode.glowAmount || 0, 0.36) : (mode.glowAmount || 0));
-  gl.uniform1f(pixelMeshU('uMemoryAmount'), effectiveSettings.memory ? (mode.memoryAmount || 0) : 0);
+  gl.uniform1f(pixelMeshU('uBaseRetention'), look.vfd.baseRetention);
+  gl.uniform1f(pixelMeshU('uPaletteAmount'), look.vfd.paletteAmount);
+  gl.uniform1f(pixelMeshU('uSignalAmount'), forceSignal > 0 ? Math.max(look.vfd.signalGain, 1.15) : look.vfd.signalGain);
+  gl.uniform1f(pixelMeshU('uEdgeGain'), look.vfd.edgeGain);
+  gl.uniform1f(pixelMeshU('uCoverage'), look.vfd.coverage);
+  gl.uniform1f(pixelMeshU('uGlowAmount'), forceSignal > 0 ? Math.max(look.vfd.glow, 0.48) : look.vfd.glow);
+  gl.uniform1f(pixelMeshU('uPersistenceMs'), effectiveSettings.memory ? look.vfd.persistenceMs : 16);
+  gl.uniform1f(pixelMeshU('uAperture'), look.vfd.aperture);
+  gl.uniform1f(pixelMeshU('uAmberAmount'), look.vfd.amber);
   gl.uniform1f(pixelMeshU('uAudio'), Math.max(0, Math.min(1, Number(state?.audio) || 0)));
   gl.uniform1f(pixelMeshU('uFear'), fearLevel);
-  gl.uniform1f(pixelMeshU('uLocalDiffusion'), localDiffusionLevel);
   gl.uniform1f(pixelMeshU('uReduceFlash'), effectiveSettings.reduceFlash ? 1 : 0);
   gl.uniform1f(pixelMeshU('uReduceMotion'), effectiveSettings.reduceMotion ? 1 : 0);
   gl.uniform1f(pixelMeshU('uDebugSource'), debugSourceToNumber(effectiveSettings.debugSource));
   gl.uniform1f(pixelMeshU('uForceSignal'), forceSignal);
+  gl.uniform1f(pixelMeshU('uMovement'), vfdMovement);
 
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   pixelMeshStatus.framesRendered += 1;
@@ -975,6 +1166,7 @@ function loadImageTexture(url){
 
 export function r3dInit(mapEl) {
   canvas = document.createElement('canvas');
+  canvas.className = 'r3d';
   canvas.style.cssText = 'display:block;width:100%;height:100%;';
   // Insert beneath, never wipe: the UI glyph layer and the diffusion overlay
   // are siblings that may already be mounted here.
@@ -1060,17 +1252,20 @@ function resize() {
   meshFboA = makeFbo(meshTexA);
   meshFboB = makeFbo(meshTexB);
   meshFlip = false;
+  lastPixelMeshAt = 0;
   pixelMeshStatus.sceneWidth = sw;
   pixelMeshStatus.sceneHeight = sh;
   pixelMeshStatus.supported = !!progPixelMesh;
   P3.props3dResize(sw, sh);
   uniforms.sceneW = sw; uniforms.sceneH = sh;
+  r3dResetVfdMemory();
 }
 
 // ── Facing / input hooks (main.js calls these in 3d mode) ────────────────────
 export function r3dTurn(dir) {
   facing = (facing + dir + 4) % 4;
   yawTarget += dir * Math.PI / 2;
+  r3dResetVfdMemory();
 }
 export function r3dDelta(sign) {
   const v = [[0, -1], [1, 0], [0, 1], [-1, 0]][facing];
@@ -1082,6 +1277,7 @@ export function r3dFacing() { return facing; }
 export function r3dSetFacing(f) {
   facing = ((f % 4) + 4) % 4;
   yaw = yawTarget = facing * Math.PI / 2;
+  r3dResetVfdMemory();
 }
 
 // The authored building, as the shader sees it. This is literally the array
@@ -1193,8 +1389,13 @@ export function r3dFrame(state) {
 
   // main.js supplies a frame-interpolated physical player position. The camera
   // is that position—never a follower with its own lag or acceleration state.
-  camX=state.px+0.5;
-  camZ=state.py+0.5;
+  const nextCamX=state.px+0.5, nextCamZ=state.py+0.5;
+  const travel=vfdPreviousX==null?0:Math.hypot(nextCamX-vfdPreviousX,nextCamZ-vfdPreviousZ);
+  if(travel>1.25)r3dResetVfdMemory();
+  vfdMovement=Math.max(0,Math.min(1,travel/Math.max(dt*3.0,0.001)));
+  vfdPreviousX=nextCamX;vfdPreviousZ=nextCamZ;
+  camX=nextCamX;
+  camZ=nextCamZ;
   yaw += (yawTarget - yaw) * (1 - Math.exp(-dt * 12));
   // Eye height above whatever floor you are standing on. Eased, so a stair is
   // a climb rather than a series of teleports.
@@ -1281,6 +1482,8 @@ export function r3dFrame(state) {
     gl.activeTexture(gl.TEXTURE4);gl.bindTexture(gl.TEXTURE_2D,propTargets.color);gl.uniform1i(U('uPropColor'),4);
     gl.activeTexture(gl.TEXTURE5);gl.bindTexture(gl.TEXTURE_2D,propTargets.depth);gl.uniform1i(U('uPropDepth'),5);
   }
+  const look=currentLook();
+  const bankBlend=surfaceDreamBlend();
   gl.uniform1f(U('uSurfacesReady'),surfAlbedoTex&&surfNormalTex&&surfRoughTex&&surfHeightTex?1:0);
   if(surfAlbedoTex&&surfNormalTex&&surfRoughTex&&surfHeightTex){
     gl.activeTexture(gl.TEXTURE6);gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfAlbedoTex);gl.uniform1i(U('uSurfAlbedo'),6);
@@ -1288,9 +1491,16 @@ export function r3dFrame(state) {
     gl.activeTexture(gl.TEXTURE8);gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfRoughTex);gl.uniform1i(U('uSurfRough'),8);
     gl.activeTexture(gl.TEXTURE9);gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfDreamTex);gl.uniform1i(U('uSurfDream'),9);
     gl.activeTexture(gl.TEXTURE10);gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfHeightTex);gl.uniform1i(U('uSurfHeight'),10);
+    gl.activeTexture(gl.TEXTURE11);gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfDreamStageTex);gl.uniform1i(U('uSurfDreamNext'),11);
   }
-  gl.uniform1f(U('uDreamReady'),surfDreamMix.some((v)=>v>0)?1:0);
-  gl.uniform1f(U('uLocalDiffusion'),localDiffusionLevel);
+  gl.uniform1f(U('uDreamReady'),surfDreamReady&&surfDreamMix.some((v)=>v>0)?1:0);
+  gl.uniform1f(U('uDreamNextReady'),surfDreamNextReady?1:0);
+  gl.uniform1f(U('uDreamBankBlend'),bankBlend);
+  gl.uniform1f(U('uDreamDetailGain'),look.material.detailGain);
+  gl.uniform1f(U('uDreamChromaDrift'),look.material.chromaDrift);
+  gl.uniform1f(U('uDreamRoughnessResponse'),look.material.roughnessResponse);
+  gl.uniform1f(U('uDreamNormalResponse'),look.material.normalResponse);
+  gl.uniform1f(U('uLocalDiffusion'),look.material.localDiffusion*localDiffusionAvailability);
   gl.uniform1fv(U('uDreamMix[0]'),surfDreamMix);
   const n = Math.min(state.chunks.length, MAX_CHUNKS);
   gl.uniform1i(U('uChunkCount'), n);
@@ -1317,10 +1527,17 @@ export function r3dFrame(state) {
   gl.viewport(0, 0, canvas.width, canvas.height);
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, postSourceTex);
-  gl.uniform1i(gl.getUniformLocation(progPost, 'uSrc'), 0);
-  gl.uniform2f(gl.getUniformLocation(progPost, 'uRes'), canvas.width, canvas.height);
-  gl.uniform1f(gl.getUniformLocation(progPost, 'uFear'), fearLevel);
-  gl.uniform1f(gl.getUniformLocation(progPost, 'uTimeP'), performance.now() * 0.001);
+  gl.uniform1i(postU('uSrc'), 0);
+  gl.uniform2f(postU('uRes'), canvas.width, canvas.height);
+  gl.uniform1f(postU('uFear'), fearLevel);
+  gl.uniform1f(postU('uTimeP'), performance.now() * 0.001);
+  const postLook=currentLook();
+  gl.uniform1f(postU('uGlassStrength'), postLook.glass.strength);
+  gl.uniform1f(postU('uGlassFringe'), postLook.glass.fringe);
+  gl.uniform1f(postU('uGlassBloom'), postLook.glass.bloom);
+  gl.uniform1f(postU('uGlassGrain'), postLook.glass.grain);
+  gl.uniform1f(postU('uReduceFlash'), pixelMeshSettings.reduceFlash?1:0);
+  gl.uniform1f(postU('uReduceMotion'), pixelMeshSettings.reduceMotion?1:0);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 }
 

@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "id": "ending.rescue.named",
+  "title": "Rescue · named",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "ending"
+  ],
+  "notes": "",
+  "regions": [
+    {
+      "id": "ending.rescue.named.region",
+      "title": "Rescue · named",
+      "kind": "ending",
+      "color": "#ad6a3b",
+      "nodeIds": [
+        "start"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "type": "ending",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "The new mark is a door you never wrote down. It is open. A shape holds it open, backlit, and you do not get to see the face.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "me",
+          "text": "...Sarah?",
+          "id": "start.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "It could be her. It could be the man who did the first four rooms and did not come out. It could be nobody, and the door simply failed open. You go through it, because it is open and the building is coming down.",
+          "id": "start.line.3"
+        }
+      ],
+      "id": "start"
+    }
+  }
+}

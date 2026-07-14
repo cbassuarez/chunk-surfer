@@ -21,7 +21,6 @@ test('about tab contains player-facing support rows', () => {
     'about:copyright',
     'about:fps',
     'about:runtime',
-    'about:renderer',
     'about:copyReport',
     'about:exportSave',
     'about:restartAudio',
@@ -29,6 +28,8 @@ test('about tab contains player-facing support rows', () => {
   ]) {
     assert.match(aboutBlock, new RegExp(id.replace(':', ':')));
   }
+  assert.doesNotMatch(aboutBlock, /about:renderer/);
+  assert.doesNotMatch(aboutBlock, /about:lens/);
 });
 
 test('about tab does not own display or input controls', () => {

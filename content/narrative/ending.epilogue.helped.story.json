@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "id": "ending.epilogue.helped",
+  "title": "Guard Epilogue · helped",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "ending",
+    "epilogue"
+  ],
+  "notes": "",
+  "regions": [
+    {
+      "id": "ending.epilogue.helped.region",
+      "title": "Guard Epilogue · helped",
+      "kind": "ending",
+      "color": "#ad6a3b",
+      "nodeIds": [
+        "start"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "type": "ending",
+      "lines": [
+        {
+          "who": "direction",
+          "art": {
+            "id": "guard",
+            "mode": "hero",
+            "caption": "Gate booth / dawn",
+            "status": "STILL"
+          },
+          "text": "The gate booth. The bored man is not bored now. He has been up all night, and he keeps looking at the door you went in by.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "guard",
+          "text": "...that is longer than the last one lasted.",
+          "id": "start.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "He made you a coffee with something in it to hold the thing off, because it was the only help a man in a booth had to give, and he knew when he did it that it might not be enough.",
+          "id": "start.line.3"
+        },
+        {
+          "who": "guard",
+          "text": "I did what I could think of. I am sorry. I am.",
+          "id": "start.line.4"
+        }
+      ],
+      "id": "start"
+    }
+  }
+}

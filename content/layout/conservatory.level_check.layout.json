@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "documentId": "conservatory.level_check",
+  "positions": {
+    "start": {
+      "x": 80,
+      "y": 100
+    },
+    "what": {
+      "x": 440,
+      "y": 100
+    },
+    "levels": {
+      "x": 800,
+      "y": 100
+    },
+    "spoils": {
+      "x": 1160,
+      "y": 100
+    },
+    "move": {
+      "x": 80,
+      "y": 360
+    },
+    "roll": {
+      "x": 440,
+      "y": 360
+    }
+  },
+  "regions": {}
+}

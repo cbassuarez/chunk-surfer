@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "documentId": "ending.choice.base",
+  "positions": {
+    "start": {
+      "x": 80,
+      "y": 100
+    },
+    "nothing": {
+      "x": 440,
+      "y": 100
+    },
+    "feed": {
+      "x": 800,
+      "y": 100
+    },
+    "invert": {
+      "x": 1160,
+      "y": 100
+    },
+    "surface": {
+      "x": 80,
+      "y": 360
+    }
+  },
+  "regions": {}
+}

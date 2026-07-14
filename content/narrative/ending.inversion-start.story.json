@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "id": "ending.inversion-start",
+  "title": "Inversion · Start",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "ending"
+  ],
+  "notes": "",
+  "regions": [
+    {
+      "id": "ending.inversion-start.region",
+      "title": "Inversion · Start",
+      "kind": "ending",
+      "color": "#ad6a3b",
+      "nodeIds": [
+        "start"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "type": "ending",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You feed the output back into its own input before it has finished being an output. The oldest trick there is: run the circuit that makes a machine sing, backwards, to make one stop.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "you",
+          "text": "He built this to get something OUT of the signal.",
+          "id": "start.line.2"
+        },
+        {
+          "who": "surfer",
+          "text": "That is cheating.",
+          "id": "start.line.3"
+        },
+        {
+          "who": "you",
+          "text": "It is engineering. You would not know the difference. Nobody in here ever did.",
+          "id": "start.line.4"
+        },
+        {
+          "who": "direction",
+          "text": "The organ chokes off. Somewhere below, the first wall lets go. The only clock in this building that was ever real starts to run.",
+          "id": "start.line.5"
+        }
+      ],
+      "id": "start"
+    }
+  }
+}

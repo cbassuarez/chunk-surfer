@@ -22,123 +22,174 @@ import { authorRedactionChallenge } from '../game/redaction.js';
 
 const her = (named) => (named ? 'Sarah' : 'she');
 const Her = (named) => (named ? 'Sarah' : 'She');
-const reading = (required, forbidden = [], maxVisible = required.length) => ({ required, forbidden, maxVisible });
-const challenge = (id, source, readings, opponentMoves = []) =>
-  authorRedactionChallenge(id, source, { readings, opponentMoves });
+const H = (text, id = '') => ({ text, id, kind: 'hidden' });
+const G = (text, id = '') => ({ text, id, kind: 'graft' });
+const reading = (id, required, forbidden = [], maxVisible = required.length, meta = {}) => ({
+  id, required, forbidden, maxVisible, meaning: meta.meaning || id.replace(/[-_]/g, ' '),
+  routeBias: meta.routeBias || null, grants: meta.grants || [], locks: meta.locks || [], pressureDelta: meta.pressureDelta || 0,
+});
+const challenge = (id, title, source, readings, opponentMoves = [], opts = {}) =>
+  authorRedactionChallenge(id, source, { title, claim: opts.claim || '', readings, opponentMoves, terminal: !!opts.terminal });
 
 function natatoriumChallenges() {
   return [
-    challenge('natatorium-room',
-      'THE ROOM IS EMPTY BUT THE TAPE INSISTS SOMEONE IS STANDING IN THE WATER WAITING FOR YOU TO NAME THEM', [
-        reading(['THE#1', 'ROOM', 'IS', 'EMPTY'], ['SOMEONE', 'WAITING', 'NAME'], 4),
-        reading(['THE#2', 'TAPE', 'INSISTS'], ['SOMEONE', 'YOU'], 3),
+    challenge('natatorium-room', 'THE ROOM',
+      'THE ROOM IS EMPTY BUT THE TAPE INSISTS SOMEONE IS WAITING IN WATER', [
+        reading('empty-room', ['THE#1', 'ROOM', 'IS', 'EMPTY'], ['SOMEONE', 'WAITING', 'WATER'], 4, { meaning:'The room is empty; the tape is lying.' }),
+        reading('tape-insists', ['THE#2', 'TAPE', 'INSISTS'], ['ROOM'], 3, { meaning:'The tape is making the claim, not the room.' }),
+        reading('someone-waiting', ['SOMEONE', 'IS#2', 'WAITING'], ['EMPTY'], 3, { meaning:'You let the room contain somebody.', routeBias:'sacrifice', locks:['route.surfaced'], pressureDelta:1 }),
       ], [
-        { blackout:['BUT'], scrape:['SOMEONE'] },
-        { blackout:['WATER'], scrape:['WAITING'] },
+        { blackout:['BUT'], scrape:['SOMEONE'], notice:'THE OTHER HAND RESTORES SOMEBODY TO THE EMPTY ROOM.' },
+        { blackout:['EMPTY'], scrape:['WAITING'], notice:'THE OTHER HAND REMOVES EMPTY AND LEAVES WAITING.' },
       ]),
-    challenge('natatorium-voice',
-      'HER VOICE IS ON THE TAPE AND THE TAPE IS NOT HER VOICE IS ONLY PRESSURE IN AN EMPTY ROOM', [
-        reading(['HER#1', 'VOICE#1', 'IS#1', 'ON', 'THE#1', 'TAPE#1'], ['HER#2'], 6),
-        reading(['VOICE#2', 'IS#3', 'ONLY', 'PRESSURE'], ['HER#2'], 4),
+    challenge('natatorium-voice', 'THE VOICE',
+      'HER VOICE IS ON THE TAPE AND THE TAPE IS NOT HER VOICE IS ONLY PRESSURE', [
+        reading('voice-on-tape', ['HER#1', 'VOICE#1', 'IS#1', 'ON', 'THE#1', 'TAPE#1'], ['HER#2'], 6, { meaning:'The voice is on the tape; it is not her.' }),
+        reading('only-pressure', ['VOICE#2', 'IS#3', 'ONLY', 'PRESSURE'], ['HER#2'], 4, { meaning:'The room is producing pressure, not a person.' }),
+        reading('not-her', ['THE#2', 'TAPE#2', 'IS#2', 'NOT', 'HER#2'], ['VOICE#1'], 5, { meaning:'The tape is not her.' }),
       ], [
-        { blackout:['AND'], scrape:['HER#2'] },
-        { blackout:['NOT'], scrape:['EMPTY'] },
+        { blackout:['NOT'], scrape:['HER#2'], notice:'THE OTHER HAND SCRAPES HER CLEAN.' },
+        { blackout:['AND'], scrape:['VOICE#2'], notice:'THE OTHER HAND SCRAPES VOICE CLEAN AND LEAVES THE CLAIM OPEN.' },
       ]),
-    challenge('natatorium-hold',
-      'NOTHING MOVED EXCEPT YOU TOWARD A PIANO THAT WAS NEVER THERE HOLD THE TAKE HOLD THE ROOM HOLD YOURSELF', [
-        reading(['NOTHING', 'MOVED'], ['YOU', 'PIANO'], 2),
-        reading(['PIANO', 'WAS', 'NEVER', 'THERE'], ['YOU'], 4),
-        reading(['HOLD#1', 'THE#1', 'TAKE'], ['YOU'], 3),
+    challenge('natatorium-hold', 'THE TAKE',
+      'NOTHING MOVED EXCEPT YOU TOWARD A PIANO THAT WAS NEVER THERE HOLD THE TAKE HOLD YOURSELF', [
+        reading('nothing-moved', ['NOTHING', 'MOVED'], ['YOU', 'PIANO'], 2, { meaning:'Nothing moved.' }),
+        reading('piano-never-there', ['PIANO', 'WAS', 'NEVER', 'THERE'], ['YOU'], 4, { meaning:'The piano was never there.' }),
+        reading('hold-take', ['HOLD#1', 'THE#1', 'TAKE'], ['YOU'], 3, { meaning:'Hold the take.' }),
       ], [
-        { blackout:['EXCEPT'], scrape:['YOU'] },
-        { blackout:['TOWARD'], scrape:['PIANO'] },
+        { blackout:['NEVER'], scrape:['PIANO'], notice:'THE OTHER HAND MAKES THE PIANO POSSIBLE.' },
+        { blackout:['EXCEPT'], scrape:['YOU'], notice:'THE OTHER HAND MAKES YOU THE MOVING THING.' },
       ]),
   ];
 }
 
 function practiceChallenges() {
   return [
-    challenge('practice-file',
-      'THE MUSIC COMES FROM A FILE YOU KEPT EVERY ROOM EVERY BREATH EVERY ACCIDENT AND CALLED THE KEEPING SILENCE', [
-        reading(['THE#1', 'MUSIC', 'COMES', 'FROM', 'A', 'FILE'], ['YOU'], 6),
-        reading(['YOU', 'KEPT', 'SILENCE'], ['MUSIC'], 3),
-      ], [
-        { blackout:['ACCIDENT'], scrape:['YOU'] },
-        { blackout:['CALLED'], scrape:['KEPT'] },
-      ]),
-    challenge('practice-heard',
-      'YOU ACCEPTED HER NAME BUT YOU DID NOT HEAR HER YOU KEPT THE SOUND AND LOST WHAT SHE SAID', [
-        reading(['YOU#2', 'DID', 'NOT', 'HEAR', 'HER#2'], ['ACCEPTED'], 5),
-        reading(['YOU#3', 'KEPT', 'THE', 'SOUND'], ['ACCEPTED'], 4),
-        reading(['LOST', 'WHAT', 'SHE', 'SAID'], ['NAME'], 4),
-      ], [
-        { blackout:['BUT'], scrape:['ACCEPTED'] },
-        { blackout:['NAME'], scrape:['HER#2'] },
-      ]),
-    challenge('practice-pianos',
+    challenge('practice-file', 'THE FILE', [
+      'THE','MUSIC','COMES','FROM','A','FILE',H('NOT','not1'),'A','ROOM','YOU','KEPT','EVERY','BREATH','AND','CALLED','THE','KEEPING','SILENCE',
+    ], [
+      reading('music-from-file', ['THE#1', 'MUSIC', 'COMES', 'FROM', 'A#1', 'FILE'], ['YOU'], 6, { meaning:'The music is a file.' }),
+      reading('not-a-room', ['NOT', 'A#2', 'ROOM'], ['MUSIC'], 3, { meaning:'The fork reveals: this is not a room.' }),
+      reading('you-kept-silence', ['YOU', 'KEPT', 'SILENCE'], ['MUSIC'], 3, { meaning:'You kept silence and called that care.', routeBias:'sacrifice', pressureDelta:1 }),
+    ], [
+      { blackout:['NOT'], scrape:['YOU'], notice:'THE OTHER HAND BLACKS OUT NOT AND RESTORES YOU.' },
+      { blackout:['CALLED'], scrape:['KEPT'], notice:'THE OTHER HAND LEAVES KEPT IN PLACE.' },
+    ], { claim:'THE FORK CAN MAKE THE FALSE WORD VISIBLE.' }),
+    challenge('practice-heard', 'THE KEPT VOICE', [
+      'YOU','ACCEPTED','HER','NAME','BUT','YOU','DID','NOT','HEAR','HER','YOU','KEPT','THE','SOUND','AND','LOST','WHAT','SHE','SAID',H('CONSENT','consent'),
+    ], [
+      reading('did-not-hear', ['YOU#2', 'DID', 'NOT', 'HEAR', 'HER#2'], ['ACCEPTED'], 5, { meaning:'Acceptance was not listening.' }),
+      reading('kept-sound', ['YOU#3', 'KEPT', 'THE', 'SOUND'], ['CONSENT'], 4, { meaning:'You kept the sound.' }),
+      reading('lost-what-she-said', ['LOST', 'WHAT', 'SHE', 'SAID'], ['NAME'], 4, { meaning:'The content was lost.' }),
+      reading('consent-missing', ['CONSENT'], ['KEPT'], 1, { meaning:'The missing word is consent.', grants:['finale.knowsConsent'] }),
+    ], [
+      { blackout:['CONSENT'], scrape:['KEPT'], notice:'THE OTHER HAND REMOVES CONSENT AND RESTORES KEPT.' },
+      { blackout:['NOT'], scrape:['HEAR'], notice:'THE OTHER HAND TAKES AWAY NOT.' },
+    ]),
+    challenge('practice-pianos', 'THE INSTRUMENTS',
       'SEVEN PIANOS WAIT WITH BROKEN STRINGS SOME STILL SOUND LIKE PIANOS NONE OF THEM KNOW THE MUSIC YOU HEAR', [
-        reading(['SEVEN', 'PIANOS#1', 'WAIT'], ['YOU'], 3),
-        reading(['SOME', 'STILL', 'SOUND', 'LIKE', 'PIANOS#2'], ['MUSIC'], 5),
-        reading(['NONE', 'OF', 'THEM', 'KNOW'], ['YOU'], 4),
+        reading('pianos-wait', ['SEVEN', 'PIANOS#1', 'WAIT'], ['YOU'], 3, { meaning:'The pianos wait; they are not playing.' }),
+        reading('some-still-sound', ['SOME', 'STILL', 'SOUND', 'LIKE', 'PIANOS#2'], ['MUSIC'], 5, { meaning:'Some things still sound like themselves.' }),
+        reading('none-know', ['NONE', 'OF', 'THEM', 'KNOW'], ['YOU'], 4, { meaning:'The instruments do not know the music.' }),
       ], [
-        { blackout:['BROKEN'], scrape:['MUSIC'] },
-        { blackout:['STRINGS'], scrape:['YOU'] },
+        { blackout:['NONE'], scrape:['MUSIC'], notice:'THE OTHER HAND GIVES THE MUSIC BACK TO THE PIANOS.' },
+        { blackout:['BROKEN'], scrape:['YOU'], notice:'THE OTHER HAND RESTORES YOU TO THE MUSIC.' },
       ]),
   ];
 }
 
 function hallChallenges() {
   return [
-    challenge('hall-seat',
+    challenge('hall-seat', 'THE AUDIENCE',
       'THE EMPTY HALL APPLAUDS BEFORE THE TAKE ENDS NOBODY IS SEATED NOBODY HAS HEARD YOU FINISH', [
-        reading(['THE', 'EMPTY', 'HALL'], ['APPLAUDS'], 3),
-        reading(['NOBODY#1', 'IS', 'SEATED'], ['APPLAUDS'], 3),
-        reading(['NOBODY#2', 'HAS', 'HEARD', 'YOU', 'FINISH'], ['APPLAUDS'], 5),
-      ], [{blackout:['BEFORE'],scrape:['APPLAUDS']},{blackout:['ENDS'],scrape:['YOU']}]),
-    challenge('hall-stage',
-      'A GRAND PIANO WAITS ON THE STAGE THE LID IS OPEN THE STRINGS ANSWER ONLY WHAT ENTERS THE ROOM', [
-        reading(['A', 'GRAND', 'PIANO', 'WAITS'], ['ANSWER'], 4),
-        reading(['THE#2', 'LID', 'IS', 'OPEN'], ['ANSWER'], 4),
-        reading(['THE#4', 'ROOM'], ['STRINGS'], 2),
-      ], [{blackout:['STAGE'],scrape:['ANSWER']},{blackout:['ONLY'],scrape:['STRINGS']}]),
-    challenge('hall-return',
+        reading('empty-hall', ['THE', 'EMPTY', 'HALL'], ['APPLAUDS'], 3, { meaning:'The hall is empty.' }),
+        reading('nobody-seated', ['NOBODY#1', 'IS', 'SEATED'], ['APPLAUDS'], 3, { meaning:'Nobody is seated.' }),
+        reading('nobody-heard', ['NOBODY#2', 'HAS', 'HEARD', 'YOU', 'FINISH'], ['APPLAUDS'], 5, { meaning:'Nobody heard you finish.' }),
+      ], [
+        { blackout:['EMPTY'], scrape:['APPLAUDS'], notice:'THE OTHER HAND RESTORES APPLAUSE.' },
+        { blackout:['BEFORE'], scrape:['YOU'], notice:'THE OTHER HAND MAKES YOU AUDIBLE.' },
+      ]),
+    challenge('hall-stage', 'THE STAGE', [
+      'A','GRAND','PIANO','WAITS','ON','THE','STAGE','THE','LID','IS','OPEN','THE','STRINGS','ANSWER','ONLY','WHAT','ENTERS','THE','ROOM',G('RETURN','return'),G('REVERSED','reversed'),
+    ], [
+      reading('piano-waits', ['A', 'GRAND', 'PIANO', 'WAITS'], ['ANSWER'], 4, { meaning:'The piano waits.' }),
+      reading('lid-open', ['THE#2', 'LID', 'IS', 'OPEN'], ['ANSWER'], 4, { meaning:'The lid is open; that is not action.' }),
+      reading('return-reversed', ['RETURN', 'REVERSED'], ['STRINGS'], 2, { meaning:'The rig can reverse a return.', grants:['route.inversion'] }),
+    ], [
+      { insert:['RETURN'], blackout:['ONLY'], scrape:['ANSWER'], notice:'THE OTHER HAND WRITES RETURN AND RESTORES ANSWER.' },
+      { blackout:['REVERSED'], scrape:['STRINGS'], notice:'THE OTHER HAND BLACKS OUT REVERSED.' },
+    ], { claim:'THE BENT RIG CAN GRAFT SIGNAL WORDS.' }),
+    challenge('hall-return', 'THE RETURN',
       'THE ROOM RETURNS EVERY SOUND SMALLER EXCEPT YOUR VOICE WHICH COMES BACK AT THE SAME LEVEL', [
-        reading(['THE', 'ROOM', 'RETURNS', 'EVERY', 'SOUND'], ['VOICE'], 5),
-        reading(['YOUR', 'VOICE', 'COMES', 'BACK'], ['SAME'], 4),
-        reading(['THE#2', 'SAME', 'LEVEL'], ['VOICE'], 3),
-      ], [{blackout:['SMALLER'],scrape:['VOICE']},{blackout:['EXCEPT'],scrape:['SAME']}]),
+        reading('room-returns-sound', ['THE', 'ROOM', 'RETURNS', 'EVERY', 'SOUND'], ['VOICE'], 5, { meaning:'The room returns sound.' }),
+        reading('voice-comes-back', ['YOUR', 'VOICE', 'COMES', 'BACK'], ['SAME'], 4, { meaning:'Your voice comes back.' }),
+        reading('same-level', ['THE#2', 'SAME', 'LEVEL'], ['VOICE'], 3, { meaning:'The same level is the trap.', routeBias:'sacrifice', pressureDelta:1 }),
+      ], [
+        { blackout:['SMALLER'], scrape:['VOICE'], notice:'THE OTHER HAND RESTORES VOICE.' },
+        { blackout:['EXCEPT'], scrape:['SAME'], notice:'THE OTHER HAND LEAVES SAME LEVEL.' },
+      ]),
   ];
 }
 
 function chapelChallenges(faceLabel) {
   const face = String(faceLabel || 'THE PREVIOUS RECORDIST').replace(/[^A-Z ]/g, '') || 'THE PREVIOUS RECORDIST';
+  const faceWords = face.split(/\s+/).filter(Boolean);
   return [
-    challenge('chapel-body',
-      `${face} SAYS THE RECORDING NEEDS A BODY BUT A RECORDING NEEDS ONLY A ROOM AND TIME`, [
-        reading(['A#2', 'RECORDING#2', 'NEEDS#2', 'ONLY', 'A#3', 'ROOM'], ['BODY'], 6),
-        reading(['A#1', 'RECORDING#1', 'NEEDS#1', 'TIME'], ['BODY'], 4),
-      ], [{ blackout:['SAYS'], scrape:['BODY'] }, { blackout:['BUT'], scrape:['NEEDS#1'] }]),
-    challenge('chapel-face',
-      'A FACE IN THE SIGNAL IS STILL A SIGNAL A VOICE IN THE ROOM IS STILL A ROOM', [
-        reading(['A#1', 'FACE', 'IN#1', 'THE#1', 'SIGNAL#1', 'IS#1', 'STILL#1', 'A#2', 'SIGNAL#2'], ['VOICE'], 9),
-        reading(['A#3', 'VOICE', 'IN#2', 'THE#2', 'ROOM#1', 'IS#2', 'STILL#2', 'A#4', 'ROOM#2'], ['FACE'], 9),
-      ], [{ blackout:['FACE'], scrape:['VOICE'] }, { blackout:['IS#1'], scrape:['FACE'] }]),
-    challenge('chapel-loss',
-      'EVERYBODY HAS LOST SOMEBODY IT SAYS NOBODY IS REQUIRED FOR AN EMPTY ROOM TO REMAIN EMPTY', [
-        reading(['NOBODY', 'IS', 'REQUIRED'], ['LOST', 'SOMEBODY'], 3),
-        reading(['AN', 'EMPTY#1', 'ROOM', 'TO', 'REMAIN', 'EMPTY#2'], ['SOMEBODY'], 6),
-      ], [{ blackout:['EVERYBODY'], scrape:['SOMEBODY'] }, { blackout:['SAYS'], scrape:['LOST'] }]),
-    challenge('chapel-five',
-      'FIVE ROOMS WERE RECORDED FOUR BY HIM ONE BY YOU THE FIFTH CONTAINS ONLY THE PERSON HOLDING THE RECORDER', [
-        reading(['FIVE', 'ROOMS', 'WERE', 'RECORDED'], ['HIM', 'YOU'], 4),
-        reading(['THE#1', 'FIFTH', 'CONTAINS', 'ONLY', 'THE#2', 'PERSON', 'HOLDING', 'THE#3', 'RECORDER'], ['HIM'], 9),
-      ], [{ blackout:['FOUR'], scrape:['HIM'] }, { blackout:['ONE'], scrape:['YOU'] }]),
-    challenge('chapel-nothing',
-      'THE ORGAN SOUNDS WITHOUT WIND THE METER READS NOTHING HOLD NOTHING LONG ENOUGH AND NOTHING HAS TO ANSWER', [
-        reading(['THE#2', 'METER', 'READS', 'NOTHING#1'], ['ORGAN'], 4),
-        reading(['HOLD', 'NOTHING#2', 'LONG', 'ENOUGH'], ['ANSWER'], 4),
-        reading(['NOTHING#3', 'HAS', 'TO', 'ANSWER'], ['ORGAN'], 4),
-      ], [{ blackout:['WIND'], scrape:['ORGAN'] }, { blackout:['WITHOUT'], scrape:['ANSWER'] }]),
+    challenge('chapel-room', 'THE ROOM', [
+      'THE','ROOM','IS','EMPTY','THE','SIGNAL','SAYS','BODY','THE','ORGAN','SAYS','INSTRUMENT',H('NOT','not'),G('PROCESS','process'),
+    ], [
+      reading('room-empty', ['THE#1', 'ROOM', 'IS', 'EMPTY'], ['BODY'], 4, { meaning:'The chapel is still a room.' }),
+      reading('signal-not-body', ['SIGNAL', 'NOT', 'BODY'], ['INSTRUMENT'], 3, { meaning:'The signal is not a body.', grants:['route.inversion'] }),
+      reading('body-instrument', ['BODY', 'INSTRUMENT'], ['EMPTY'], 2, { meaning:'You let the body become the instrument.', routeBias:'sacrifice', locks:['route.surfaced'], pressureDelta:1 }),
+      reading('signal-process', ['SIGNAL', 'PROCESS'], ['BODY'], 2, { meaning:'The source is a process in signal.', grants:['route.inversion'] }),
+    ], [
+      { insert:['PROCESS'], blackout:['NOT'], scrape:['BODY'], notice:'THE OTHER HAND REMOVES NOT AND MAKES BODY SPEAK AGAIN.' },
+      { blackout:['EMPTY'], scrape:['INSTRUMENT'], notice:'THE OTHER HAND TAKES AWAY EMPTY.' },
+    ], { claim:'THE CHAPEL CLAIMS A BODY IS AN INSTRUMENT.' }),
+    challenge('chapel-recordist', 'THE PREVIOUS RECORDIST', [
+      ...faceWords,'VANISHED','BECAUSE','HE','AGREED','THE','BODY','IS','BORROWED','AND','RETURN','IS','POSSIBLE',H('NOT','not'),G('STILL','still'),G('HERE','here'),
+    ], [
+      reading('recordist-vanished', ['VANISHED'], ['BORROWED', 'RETURN'], 1, { meaning:'You accept the old absence.', locks:['route.surfaced'], routeBias:'sacrifice', pressureDelta:1 }),
+      reading('he-agreed', ['HE', 'AGREED'], ['BORROWED'], 2, { meaning:'You accept the Surfer’s consent story.', locks:['route.surfaced'], routeBias:'sacrifice', pressureDelta:1 }),
+      reading('body-borrowed-return', ['BODY', 'BORROWED', 'RETURN', 'POSSIBLE'], ['AGREED'], 4, { meaning:'The body is borrowed and can be returned.', grants:['route.surfaced'] }),
+      reading('still-here', ['STILL', 'HERE'], ['VANISHED'], 2, { meaning:'The prior recordist is still recoverable.', grants:['route.surfaced'] }),
+    ], [
+      { blackout:['RETURN'], scrape:['AGREED'], notice:'THE OTHER HAND BLACKS OUT RETURN AND RESTORES AGREED.' },
+      { blackout:['BORROWED'], scrape:['VANISHED'], notice:'THE OTHER HAND REMOVES BORROWED.' },
+    ], { claim:'THE OTHER HAND WANTS VANISHED TO BE CLEANER THAN BORROWED.' }),
+    challenge('chapel-surfer', 'THE SURFER', [
+      'THE','SURFER','WAS','A','STUDENT','TRAINED','INTO','MUSIC','INSIDE','THE','FILES','MUSIC','WANTS','BODY','MACHINE','WANTS','LANGUAGE',H('NOT','not'),H('GHOST','ghost'),G('PROCESS','process'),
+    ], [
+      reading('student-trained', ['SURFER', 'WAS', 'A', 'STUDENT'], ['GHOST'], 4, { meaning:'The Surfer was trained, not born supernatural.' }),
+      reading('music-inside-files', ['MUSIC#1', 'INSIDE', 'THE#2', 'FILES'], ['GHOST'], 4, { meaning:'The haunting lives inside files.' }),
+      reading('not-ghost-process', ['NOT', 'GHOST', 'PROCESS'], ['BODY'], 3, { meaning:'Not ghost: process.', grants:['route.inversion'] }),
+      reading('music-wants-body', ['MUSIC#2', 'WANTS#1', 'BODY'], ['PROCESS'], 3, { meaning:'You leave the appetite intact.', routeBias:'sacrifice', pressureDelta:1 }),
+    ], [
+      { blackout:['NOT'], scrape:['GHOST'], notice:'THE OTHER HAND RESTORES GHOST AND REMOVES NOT.' },
+      { blackout:['PROCESS'], scrape:['BODY'], notice:'THE OTHER HAND BLACKS OUT PROCESS.' },
+    ], { claim:'IT ARGUES THAT A GHOST IS EASIER THAN A MACHINE.' }),
+    challenge('chapel-contract', 'THE CONTRACT', [
+      'FIVE','ROOMS','CLEAN','MINUTE','SEAL','CLIENT','ACCOUNT','FEEDS','ANOTHER','BODY',H('NOT','not'),H('WORK','work'),H('ORDER','order'),G('MOUTH','mouth'),
+    ], [
+      reading('five-rooms', ['FIVE', 'ROOMS', 'CLEAN', 'MINUTE'], ['BODY'], 4, { meaning:'The job was five clean minutes.' }),
+      reading('account-feeds-body', ['ACCOUNT', 'FEEDS', 'ANOTHER', 'BODY'], ['NOT'], 4, { meaning:'The account feeds another body.', routeBias:'sacrifice', pressureDelta:1 }),
+      reading('not-work-order', ['NOT', 'WORK', 'ORDER'], ['BODY'], 3, { meaning:'The work order is not the work.', grants:['finale.knowsContract'] }),
+      reading('contract-mouth', ['ACCOUNT', 'MOUTH'], ['CLEAN'], 2, { meaning:'The account is a mouth.', grants:['finale.knowsContract'] }),
+    ], [
+      { blackout:['NOT'], scrape:['BODY'], notice:'THE OTHER HAND MAKES BODY THE CLEANEST WORD.' },
+      { insert:['MOUTH'], blackout:['CLEAN'], scrape:['ACCOUNT'], notice:'THE OTHER HAND WRITES MOUTH BUT BLACKS OUT CLEAN.' },
+    ], { claim:'THE CONTRACT CLAIMS IT WAS ONLY WORK.' }),
+    challenge('chapel-source', 'THE SOURCE', [
+      'SOURCE','IS','ROOM','SOURCE','IS','BODY','SOURCE','IS','YOU','SILENCE','AGREES',H('NOT','not'),H('BORROWED','borrowed'),H('RETURN','return'),G('SIGNAL','signal'),G('PROCESS','process'),G('RELEASE','release'),
+    ], [
+      reading('source-not-body', ['SOURCE#2', 'IS#2', 'NOT', 'BODY'], ['YOU'], 4, { meaning:'The source is not the body.', grants:['route.inversion'] }),
+      reading('borrowed-body-return', ['BODY', 'BORROWED', 'RETURN'], ['AGREES'], 3, { meaning:'The borrowed body can be returned.', grants:['route.surfaced'] }),
+      reading('source-you', ['SOURCE#3', 'IS#3', 'YOU'], ['NOT'], 3, { meaning:'You leave yourself as the source.', routeBias:'sacrifice', locks:['route.surfaced'], pressureDelta:2 }),
+      reading('signal-process-release', ['SIGNAL', 'PROCESS', 'RELEASE'], ['BODY'], 3, { meaning:'Signal process release.', grants:['route.inversion','route.surfaced'] }),
+    ], [
+      { blackout:['NOT'], scrape:['YOU'], notice:'THE OTHER HAND TAKES AWAY NOT AND RESTORES YOU.' },
+      { blackout:['RETURN'], scrape:['BODY'], notice:'THE OTHER HAND BLACKS OUT RETURN.' },
+    ], { claim:'THE SOURCE PAGE IS TRYING TO DECIDE WHAT REALITY OBEYS.', terminal:true }),
   ];
 }
 
@@ -471,7 +522,7 @@ export function chapelBoss({ kind = 'nothing', value = null, listened = 5 } = {}
     ],
   );
   const secondCheckpoint = CP(
-    [{ who: 'surfer', text: 'It listened to the music so hard it became the music. Then it wanted a body back. You are a body.' },
+    [{ who: 'surfer', text: 'It listened until language was an encumbrance. It became the music. Then it wanted a body back. You are a body.' },
      { who: 'direction', text: 'The organ blower is off and the organ is sounding anyway.' }],
     [
       { text: 'That is on the file. That is not a person in a room.', harder: 1.0 },
@@ -485,7 +536,8 @@ export function chapelBoss({ kind = 'nothing', value = null, listened = 5 } = {}
     enemy: face.label,
     art: { id: 'circuitBentInterface', mode: 'boss', caption: 'Damaged monitor path / chapel', status: 'SIGNAL' },
     composure: 1.25,                 // longer than the others: this is the last one
-    health: 3,
+    health: 5,
+    tools: { fork:true, rig:true },
     challenges: chapelChallenges(face.label),
     intro: [
       { who: 'direction', text: 'The chapel. Two banks of pews, an organ with the wind isolated, and the fifth room tone you were sent for.', cue: 'freeze' },

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "documentId": "conservatory.post_door",
+  "positions": {
+    "self": {
+      "x": 80,
+      "y": 100
+    },
+    "guard": {
+      "x": 440,
+      "y": 100
+    },
+    "tape": {
+      "x": 800,
+      "y": 100
+    },
+    "done": {
+      "x": 1160,
+      "y": 100
+    }
+  },
+  "regions": {}
+}

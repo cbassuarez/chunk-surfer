@@ -43,12 +43,12 @@ test('3d camera has a spring motion rig for visual inertia', () => {
   assert.match(src, /motionRig:\s*motionRig\?/);
 });
 
-test('focus recovery preserves a fresh movement key that arrived after blur', () => {
+test('focus recovery clears stale movement and resumes interaction systems', () => {
   const src = readFileSync('src/main.js', 'utf8');
-  assert.match(src, /function shouldPreserveFreshHeldMotion/);
-  assert.match(src, /motionInput\.lastKeyAt > \(motionInput\.lastResetAt\|\|0\)/);
   assert.match(src, /function recoverMotionFocus/);
-  assert.match(src, /recoverMotionFocus\('window-focus'\)/);
-  assert.match(src, /recoverMotionFocus\('visibility-visible'\)/);
-  assert.match(src, /preserveFreshHeldMotion:shouldPreserveFreshHeldMotion\(\)/);
+  assert.match(src, /function recoverInteractionAudio/);
+  assert.match(src, /function recoverInteractionFocus/);
+  assert.match(src, /recoverInteractionFocus\('window-focus'\)/);
+  assert.match(src, /recoverInteractionFocus\('visibility-visible'\)/);
+  assert.match(src, /focusRecovery:'reset-and-reacquire'/);
 });

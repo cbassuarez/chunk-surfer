@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "id": "ending.drugged.partial",
+  "title": "Drugged Reveal · partial",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "ending"
+  ],
+  "notes": "",
+  "regions": [
+    {
+      "id": "ending.drugged.partial.region",
+      "title": "Drugged Reveal · partial",
+      "kind": "ending",
+      "color": "#ad6a3b",
+      "nodeIds": [
+        "start"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "type": "ending",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You are in the car park. It is the car park. The skips are where the skips are, and the building stands, unlit, four storeys of nothing, and there was never anything in it but you.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "you",
+          "text": "...what was in that coffee.",
+          "id": "start.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "You put the headphones on, out of thirty years of habit, and you play the night back.",
+          "id": "start.line.3"
+        },
+        {
+          "who": "recordist",
+          "text": "Take one.",
+          "id": "start.line.4"
+        },
+        {
+          "who": "you",
+          "text": "That is me. Breathing. Talking to a room. Take two is footsteps. Take three is a man saying a name into a space with nobody in it.",
+          "id": "start.line.5"
+        },
+        {
+          "who": "direction",
+          "text": "Every file, and not one clean minute among them. You did not record five rooms. You wandered a condemned building for eight hours, off your face on a stranger's coffee, narrating.",
+          "id": "start.line.6"
+        },
+        {
+          "who": "you",
+          "text": "No money. No takes. A note in a file somewhere: this contractor could not be relied upon.",
+          "id": "start.line.7"
+        },
+        {
+          "who": "direction",
+          "text": "Do not take the coffee from the man in the hi-vis jacket. That is the whole of it. That is the only thing the night had to teach.",
+          "id": "start.line.8"
+        }
+      ],
+      "id": "start"
+    }
+  }
+}

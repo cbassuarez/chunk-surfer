@@ -30,7 +30,7 @@ import * as FP from './world/floorplan.js';
 import { F as CELL_FLAGS, ZONE, CELL } from './data/floorplan/legend.js';
 import * as MUT from './world/mutate.js';
 import * as scenes from './game/scenes.js';
-import { uiInit, uiClear, uiText, uiSize, uiFill, uiCenter, uiDraw, uiPointFromClient, uiWrap } from './render/ui.js';
+import { uiInit, uiSetScale, uiClear, uiText, uiSize, uiFill, uiCenter, uiDraw, uiPointFromClient, uiWrap } from './render/ui.js';
 import { drawVfdCounter, drawVfdMeter, drawMachinePanel, drawLocationIndicator, drawVfdText } from './render/presentation.js';
 import { applyVfdSettings, vfdSettings } from './render/palette.js';
 import { saveLoadAsync, saveCommit, getSave, newGame, metaCommit, getMeta } from './game/save.js';
@@ -50,22 +50,29 @@ import * as RT from './audio/roomtone.js';
 import * as PRES from './game/presence.js';
 import * as PROPS from './game/props.js';
 import * as CUES from './audio/cues.js';
+import { authoredCueUrls, dispatchAuthoredCue } from './audio/authored-cues.js';
 import * as STORY from './audio/story-audio.js';
 import * as FEAR from './audio/fear.js';
+import { createAudioContextRecovery } from './audio/context-recovery.js';
+import { runtimeBattle, runtimeTree } from './narrative/runtime-content.js';
+import { runtimeChapelBattle, runtimeEndingTree } from './narrative/runtime-endings.js';
 import { assetUrl, IS_TAURI } from './platform/paths.js';
 import { installDesktopMenuBridge } from './platform/desktop-menu-bridge.js';
-import { installDesktopGlobalShortcuts } from './platform/desktop-global-shortcuts.js';
 import { isReservedDesktopShortcut } from './platform/desktop-menu-actions.js';
 import { applyGameModeDom, nextGameModeState } from './platform/game-mode.js';
 import { makePauseScene } from './game/pause.js';
+import { makeGodMenuScene } from './game/god-menu.js';
+import { drawFearOverlay } from './game/fear-overlay.js';
 import { applyDisplayCssVars, normalizeDisplaySettings, resolveRenderScale } from './platform/display-policy.js';
 import { minimizeNativeWindow, quitNativeApp, resetNativeWindow, setNativeGameMode, setNativeWindowPreset } from './platform/desktop-window.js';
 import { applyCurrentStageLayout, installViewportGuard } from './platform/viewport-guard.js';
 import { resolveDesktopPaths } from './platform/paths/desktopPaths.js';
 import { revealPath } from './platform/diagnostics/desktopDiagnostics.js';
 import { runtimeParams, runtimeSnapshot } from './platform/launch.js';
-import { APP_COPYRIGHT, APP_LINKS, copyText, formatDiagnosticReport, formatLens, normalizeAboutSnapshot } from './platform/about-system.js';
+import { APP_COPYRIGHT, APP_LINKS, copyText, formatDiagnosticReport, normalizeAboutSnapshot } from './platform/about-system.js';
 import { createPerformanceMeter } from './platform/performance-meter.js';
+import { LOOK_PROFILE_IDS } from './render/look-profiles.js';
+import { resolveRenderer } from './render/renderer-policy.js';
 import * as STAB from './game/stabs.js';
 import * as OBJ from './game/objectives.js';
 import * as DOC from './game/document.js';
@@ -73,7 +80,6 @@ import * as RADIO from './game/radio.js';
 import * as PB from './game/playback.js';
 import { makeBattleScene } from './game/battle.js';
 import * as ENCOUNTERS from './game/encounters.js';
-import { natatoriumBattle, practiceBattle, hallBattle, hallPlayback, practicePlayback, natatoriumPlayback, chapelBoss } from './data/battles.js';
 import * as MIC from './game/mic.js';
 import { takeStamp, WORK_ORDER_STAMP } from './game/clock.js';
 import { drawMinimap, drawRecorderReturn } from './render/minimap.js';
@@ -84,10 +90,14 @@ import { createHushAudioRuntime } from './game/hush-audio-runtime.js';
 import { roomLabel, roomToneCharacter } from './audio/manifest-map.js';
 import * as SPEECH from './game/speech.js';
 import * as TUT from './game/tutorial.js';
-import { objectiveHintsMode, pauseWhenBlurEnabled, tutorialPromptsEnabled } from './game/access.js';
+import { objectiveHintsMode, tutorialPromptsEnabled } from './game/access.js';
 import { makeBagScene } from './game/bag.js';
 import { makeColdOpenScene, makeWorldTitleScene } from './game/coldopen.js';
+import { makeOpeningCreditsScene } from './game/opening-credits.js';
+import { makeLensCalibrationScene } from './game/lens-calibration.js';
 import { makeWarningScene } from './game/warning.js';
+import { createPersonalizedInterference } from './game/personalized-interference.js';
+import { computeFearPressure } from './game/fear-pressure.js';
 import * as CONTROLLER from './game/controller.js';
 import * as BINDINGS from './game/bindings.js';
 import { InputManager, movementCodeForEvent } from './input/input-manager.js';
@@ -102,6 +112,8 @@ import { makeReturnIndexScene } from './game/return-index.js';
 import { makeReturnReportScene } from './game/return-report.js';
 import { makeAchievementNoticeScene } from './game/achievement-notice.js';
 import { makeProgressionLabScene } from './game/progression-lab.js';
+import { makeChunkSurfScene } from './game/chunk-surf-scene.js';
+import { canOfferChunkSurf } from './game/chunk-surf-state.js';
 import { chooseJsonFile, downloadJsonFile } from './game/profile-io.js';
 import {
   applyCurrentRuleChange,
@@ -122,39 +134,84 @@ import { consumeNotice, noticePolicy, peekNotice } from './progression/notificat
 import { syncPlatform } from './progression/platform-sync.js';
 import { exportProfile, mergeImportedProfile } from './progression/profile.js';
 import { currentPlatform } from './platform/index.js';
-import { WORK_ORDER, TRANSMISSIONS, SQUELCH_LINES,
-         PAGES, ROOM_CELLS, MAIN_EXIT_CELL, TARGETS, COLD_OPEN, AFTER_TITLE, COLD_OPEN_DIALOGUE,
-         POST_DOOR, LEVEL_CHECK, FIRST_TAKE, HUSH, RADIO_DEAD,
-         BENT_RIG, PLANT_RIG_CELL, TALISMAN, TALISMAN_CELL, roomListen,
+
+const APP_VERSION=__APP_VERSION__;
+import { WORK_ORDER, SQUELCH_LINES,
+         PAGES, ROOM_CELLS, MAIN_EXIT_CELL, TARGETS, COLD_OPEN, AFTER_TITLE,
+         PLANT_RIG_CELL, TALISMAN_CELL,
          PROLOGUE_THOUGHTS, LINES, HIM_LINES, guestLines,
-         CHAPEL_KEY_CHECK,
-         endingChoice, sacrificeEnding, INVERT_START, FALSE_DOOR, rescueEnding,
-         INVERSION_FINAL, guardEpilogue, helpedEnding, druggedReveal,
+         endingChoice,
          takenLines, foundLine } from './data/conservatory-script.js';
+import {
+  CHUNK_SURF_ENDING_ID,
+  CHUNK_SURF_FLAGS,
+  chunkSurfCompletionLines,
+  surfacedEnding,
+} from './data/chunk-surf-script.js';
 export { fx } from './render/canvas.js';
 
-// M1: canvas glyph renderer is the default; `?renderer=dom` keeps the legacy
-// innerHTML path during the parity window (removed in M2).
-// M1b: `?renderer=3d` = first-person raymarched world (diffusion-lens base).
+// Canonical studio-authored trees. Only the final choice builder remains on a
+// compatibility adapter because it derives prose from live redaction readings.
+const COLD_OPEN_DIALOGUE=runtimeTree('conservatory.cold_open_dialogue');
+const POST_DOOR=runtimeTree('conservatory.post_door');
+const LEVEL_CHECK=runtimeTree('conservatory.level_check');
+const FIRST_TAKE=runtimeTree('conservatory.first_take');
+const HUSH=runtimeTree('conservatory.hush');
+const RADIO_DEAD=runtimeTree('conservatory.radio_dead');
+const BENT_RIG=runtimeTree('conservatory.bent_rig');
+const TALISMAN=runtimeTree('conservatory.talisman');
+const CHAPEL_KEY_CHECK=runtimeTree('conservatory.chapel_key_check');
+const roomListen=(room,label)=>runtimeTree(`room-listen.${room}`,{label});
+const radioDialogue=(cueId,{roomLabel='the next room'}={})=>runtimeTree(`radio.${cueId}`,{roomLabel,ROOMLABEL:String(roomLabel).toUpperCase()});
+const authoredVariant=(named)=>named?'named':'unnamed';
+const natatoriumBattle=(named=false)=>runtimeBattle(`battle.natatoriumbattle.${authoredVariant(named)}`);
+const practiceBattle=(named=false)=>runtimeBattle(`battle.practicebattle.${authoredVariant(named)}`);
+const hallBattle=(named=false)=>runtimeBattle(`battle.hallbattle.${authoredVariant(named)}`);
+const hallPlayback=(named=false)=>runtimeTree(`playback.hallplayback.${authoredVariant(named)}`);
+const practicePlayback=(named=false)=>runtimeTree(`playback.practiceplayback.${authoredVariant(named)}`);
+const natatoriumPlayback=(named=false)=>runtimeTree(`playback.natatoriumplayback.${authoredVariant(named)}`);
+const endingLines=(id)=>runtimeEndingTree(id).start.lines;
+const chapelBoss=({kind='nothing',value=null}={})=>{
+  let variant='nothing';
+  if(kind==='name') variant=value==='Sarah'?'name-sarah':'name-other';
+  else if(kind==='reason') variant=value==='money'?'reason-money':value==='superstition'?'reason-superstition':'reason-other';
+  else if(kind==='feeling') variant='feeling';
+  return runtimeChapelBattle(`battle.chapel.${variant}`);
+};
+const sacrificeEnding=({injuries=0,named=false}={})=>endingLines(`ending.sacrifice.${authoredVariant(named)}.injuries-${Math.max(0,Math.min(5,Math.floor(Number(injuries)||0)))}`);
+const INVERT_START=endingLines('ending.inversion-start');
+const FALSE_DOOR=endingLines('ending.false-door');
+const rescueEnding=(named=false)=>endingLines(`ending.rescue.${authoredVariant(named)}`);
+const INVERSION_FINAL=endingLines('ending.inversion-final');
+const helpedEnding=({named=false}={})=>endingLines(`ending.helped.${authoredVariant(named)}`);
+const druggedReveal=({takes=5}={})=>endingLines(`ending.drugged.${Number(takes)>=5?'complete':'partial'}`);
+const guardEpilogue=(variant='out')=>endingLines(`ending.epilogue.${['out','client','nobody','helped','drugged'].includes(variant)?variant:'out'}`);
+
+// The authored game is always first-person 3D. Canvas/DOM survive only as
+// explicit development diagnostics and cannot be selected in a release.
 const params = () => runtimeParams();
 const KEY_DEBUG = params().has('keydebug');
 const NO_THINK = params().has('nothink');
 const D = (n) => n * CELL_SCALE;
 const SCALED_MOVE_MIN = (n) => Math.max(1, Math.round(n / CELL_SCALE));
-const RENDERER = (() => {
-  const q = params().get('renderer');
-  return q === 'dom' ? 'dom' : q === '3d' ? '3d' : 'canvas';
-})();
+const RENDERER = resolveRenderer(params().get('renderer'), {development:!!import.meta.env?.DEV});
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let actx=null;
+let audioRecovery=null;
 let voices=new Map(); // chunkIdx -> {src,gain,dur,startedAt,target}
 let ambientDrone=null; // {src,lfo,filt,gain,target}
 let worldLayerVoice=null; // {srcA,srcB,gain,dur,startedAt,target,chunkIdx,worldId}
 let worldDroneBanks=new Map(); // worldId -> {all:[chunkIdx], byBiome:{biome:[chunkIdx]}}
 let paused=false, looping=true;
 let inRogue=false, raf=null, tick=0;
+// Asset loading may construct the retired field, but only the explicit JUST
+// SURF lab can authorize it. Story uses authored room/cue systems.
+let sampleFieldEnabled=false;
+const godFxOverride={heartbeat:null,monitorHiss:null,visualDread:null};
+let godMenuWasPaused=false;
 const perfMeter=createPerformanceMeter();
+const personalInterference=createPersonalizedInterference();
 let bootLog=[];
 let chunks=[]; // {idx,label,charId,name,buffer,analysis,biome,worldId,biomeId,terrainRadius,baseVol,wx,wy,heard}
 let worlds=[]; // template metadata by world id
@@ -411,7 +468,7 @@ function applyAudioSettings() {
   setMusicVolume(st.music ?? 1);
   setMonitorVolume(st.monitorGain ?? 1);
 }
-function ensureCtx(){
+function ensureCtx({resume=true}={}){
   if(audioInitFailed) return;
   if(!actx){
     try{
@@ -471,20 +528,29 @@ function ensureCtx(){
         // room mic joins its display as RMS only and is never routed to output.
         MONITOR.monitorSetAuxInput(()=>MIC.micActive()?MIC.micLevel():0);
 
-        CUES.preloadAll([...Object.values(CUES.CUE), ...CUES.PAGE_TURNS]);
+        CUES.preloadAll(authoredCueUrls());
         STORY.preloadAll();
+        audioRecovery?.bind(actx);
     }catch(err){
       audioInitFailed=true;
       console.error('AudioContext init failed', err);
       return;
     }
   }
-  if(actx && actx.state==='suspended'){
+  if(resume && actx && actx.state!=='running' && actx.state!=='closed'){
     actx.resume().catch((err)=>{
       console.warn('AudioContext resume blocked', err);
     });
   }
+  return actx;
 }
+
+audioRecovery=createAudioContextRecovery({
+  getContext:()=>actx,
+  ensureContext:()=>ensureCtx({resume:false}),
+  onRunning:()=>{ if(!paused) applyAudioSettings(); },
+  onError:(err,reason)=>console.warn(`${reason}: audio resume blocked`,err),
+});
 // Per-chunk baseline volume from analysis — quiet chunks (low RMS) get a boost,
 // loud percussive ones get a slight cut, so the polyphonic mix stays balanced.
 function baseVolFor(analysis){
@@ -1049,7 +1115,12 @@ function silenceAmbientDrone(){
 }
 
 function sampleFieldSuppressed(){
-  return scenes.has('title') || scenes.has('cold-open') || scenes.has('world-title');
+  return !sampleFieldEnabled
+    || scenes.has('opening-credits')
+    || scenes.has('title')
+    || scenes.has('cold-open')
+    || scenes.has('world-title')
+    || scenes.has('credits');
 }
 
 function silenceSampleField({ roomTone = false } = {}){
@@ -2840,28 +2911,26 @@ function clearMotionClock(reason='clear-motion-clock'){
   nextTurnAtMs=0;
   motionResetReason=reason;
 }
-function motionHasHeldMove(){
-  return !!(forwardHeld()||backHeld()||leftHeld()||rightHeld());
-}
-function shouldPreserveFreshHeldMotion(){
-  const reason=motionInput.lastResetReason||'';
-  const fromFocusLoss=/blur|hidden|pagehide|pointerlock-lost/.test(reason);
-  return !!(fromFocusLoss && motionHasHeldMove() && motionInput.lastKeyAt > (motionInput.lastResetAt||0));
-}
 function recoverMotionFocus(reason='motion-focus'){
-  // Some WebViews deliver the keydown that re-enters play before the delayed
-  // window focus event. A destructive focus reset then collapses held movement
-  // into one-cell taps. Blur/hidden/pagehide already clear stale keys; focus
-  // only resets if there is no fresh post-blur movement key to preserve.
+  // Focus transitions are not locomotion. Always discard stale held state and
+  // let the next real keydown rebuild movement from scratch; preserving a key
+  // across WebView focus ordering is what made alt-tab recovery intermittent.
   lastLoopMs=0;
   renderMove=null;
   snapMotionRig(reason);
-  if(shouldPreserveFreshHeldMotion()){
-    clearMotionClock(`${reason}-preserve-held`);
-    armHeldMovement(performance.now());
-    return;
-  }
   resetMotionInput(reason,{stopRenderMove:true});
+}
+
+function recoverInteractionAudio(reason='interaction-focus'){
+  if(audioInitFailed) return;
+  return audioRecovery?.recover(reason);
+}
+
+function recoverInteractionFocus(reason='interaction-focus'){
+  recoverMotionFocus(reason);
+  recoverInteractionAudio(reason);
+  refreshStageLayoutSoon();
+  ensureInteractionFocus();
 }
 function targetBoundaryFriction(){
   if(isOnboardingActive()) return 0;
@@ -4447,9 +4516,27 @@ function tickProgressionNotices(){
 }
 
 // ── Main loop ─────────────────────────────────────────────────────────────────
+let developmentWindowMarker='';
+let developmentWindowMarkerPending=false;
+function updateDevelopmentWindowMarker(){
+  if(!import.meta.env?.DEV)return;
+  const scene=scenes.top()?.id || (inRogue?'game':'boot');
+  const marker=`Chunk Surfer · ${APP_VERSION} DEV · ${scene}`;
+  if(marker===developmentWindowMarker || developmentWindowMarkerPending)return;
+  developmentWindowMarker=marker;
+  document.title=marker;
+  if(!IS_TAURI)return;
+  developmentWindowMarkerPending=true;
+  import('@tauri-apps/api/window')
+    .then(({getCurrentWindow})=>getCurrentWindow().setTitle(marker))
+    .catch((error)=>console.warn('[desktop] development title marker failed',error))
+    .finally(()=>{developmentWindowMarkerPending=false;});
+}
+
 function loop(){
   try{
     tick++;
+    if(IS_TAURI && (tick % 120)===0) audioRecovery?.watchdog('tauri-frame-watchdog');
     const nowLoopMs=performance.now();
     perfMeter.frame(nowLoopMs);
     const dt=Math.min(0.05, lastLoopMs ? (nowLoopMs-lastLoopMs)/1000 : 0.016);
@@ -4518,7 +4605,9 @@ function loop(){
     uiClear();
     if(!inRogue && RENDERER==='3d') drawBootText();
     drawStoryHud();
+    if(storyMode && inRogue) drawFearOverlay(presentedFearPressure(), nowLoopMs);
     scenes.render();
+    updateDevelopmentWindowMarker();
     if(storyMode && inRogue) saveTick(dt);
   }catch(err){
     console.error('loop error', err);
@@ -4582,24 +4671,44 @@ function applyCurrentRunDifficulty(){
   return activeDifficulty;
 }
 
-function applyLensPreset(name){
-  const d=window.__diffusion;
-  const P=window.__lensPresets;
-  if(!d || !P || !P[name]) return;
-  d.resetFeedback();
-  d.tune(P[name]);
-  const locked=!!P[name].prompt;
-  // A preset that carries a prompt (booth, battle, rupture, hush) OWNS the
-  // lens while it is up. Handing back means handing the zone its prompt again
-  // — and updateZonePrompt only fires on a zone CHANGE, so without this the
-  // booth's coffee cup and key hooks keep painting the loading dock forever.
-  if(window.__lensPromptLocked && !locked) lastZoneKey='';
-  window.__lensPromptLocked=locked;
+let activeLookProfile='explore';
+let lookApplySerial=0;
+let lookApplyQueue=Promise.resolve();
+function applyLookProfile(name='explore',options={}){
+  const profiles=window.__lookProfiles||{};
+  const profile=profiles[name]||profiles.explore;
+  if(!profile)return null;
+  const serial=++lookApplySerial;
+  activeLookProfile=profile.id||name;
+  const transitionMs=Number(options.transitionMs??profile.transitionMs)||0;
+  const applyLayers=()=>{
+    if(serial!==lookApplySerial)return;
+    R3.r3dSetLookProfile?.(activeLookProfile,{transitionMs,resetMemory:!!options.resetMemory});
+  };
+  const diffusion=window.__diffusion;
+  if(diffusion?.activateBank){
+    lookApplyQueue=lookApplyQueue.catch(()=>{}).then(async()=>{
+      if(serial!==lookApplySerial)return false;
+      const committed=await diffusion.activateBank(profile.bankId||activeLookProfile,{
+        transitionMs,
+        shouldCommit:()=>serial===lookApplySerial,
+      });
+      if(serial===lookApplySerial)applyLayers();
+      return committed;
+    }).catch((error)=>console.error(`look bank ${profile.bankId} failed`,error));
+  }else applyLayers();
+  return profile;
 }
+// One-release compatibility for probes and older scene metadata.
+function applyLensPreset(name){ return applyLookProfile(name); }
 
 // Which building is loaded. Content beats belong to the conservatory; the
 // testbed is a geometry proof and must stay free of them.
 let planName='';
+const BUILDING_LOADERS=Object.freeze({
+  conservatory:()=>import('./data/floorplan/conservatory.js'),
+  testbed:()=>import('./data/floorplan/testbed.js'),
+});
 
 const METAL_DOOR_WIDTH=1.2162;
 function doorRenderInstances(group=null){
@@ -4636,10 +4745,11 @@ function worldRenderInstances(group=null){
 
 async function loadBuilding(){
   // The real building. `?plan=testbed` still loads the geometry proof.
-  const which=params().get('plan') || 'conservatory';
+  const requested=params().get('plan') || 'conservatory';
+  const which=Object.hasOwn(BUILDING_LOADERS,requested) ? requested : 'conservatory';
   planName=which;
   try{
-    const mod=await import(`./data/floorplan/${which}.js`);
+    const mod=await BUILDING_LOADERS[which]();
     const data=mod[which] || mod.default;
     FP.compile(data.levels, {width:data.width, height:data.height, widenCorridors:data.widenCorridors,connectors:data.connectors||[]});
     facilityMapSource=null; facilityMapCache={key:'',model:null}; HUSH_MAP_TELEMETRY.reset();
@@ -4684,7 +4794,9 @@ async function loadBuilding(){
 }
 
 function enterStory(){
+  sampleFieldEnabled=false;
   storyMode=true;
+  silenceSampleField();
   applyCurrentRunDifficulty();
   ensureCtx();
   if(actx && getSave().settings?.mic==='on') MIC.micInit(actx);
@@ -4801,55 +4913,27 @@ function enterStory(){
 
 function fireCue(name){
   ensureCtx();
-  switch(name){
-    case 'freeze':
-      // The moment it arrives. Spend the lens sample-and-hold: the frame stops
-      // being a frame and starts being a held sample of the last true one.
-      CR.fx.flash(120, 'rgba(6,6,8,0.85)'); CR.fx.shake(1.6, 700);
-      applyLensPreset('rupture');
-      break;
-    case 'door':
-      CUES.playCue(CUES.CUE.door, {gain:0.95});
-      // The booth was the last lit room, and the rain was on the roof of it.
-      // Neither follows him in.
-      STORY.stopBoothTone({fade:0.35});
-      break;
-    case 'scream':
-      // Not a jump scare. It arrives at the end of eight seconds of a man
-      // working out what is on the other end, and he already knew.
-      CUES.playCue(CUES.CUE.scream, {gain:0.95});
-      // The speech band has no `fx`, and this line is heard there. Shake here.
-      CR.fx.shake(2.6, 900);
-      STAB.reportThreat();
-      break;
-    case 'squelch':
-      // He shook it. The guard told him twice. The building is entitled to
-      // know that he did it anyway.
-      CUES.playCue(CUES.CUE.recorder, {gain:0.55, rate:0.4});
-      if(storyMode){
-        // The squelch STACKS on whatever noise is already in the air. Alone it
-        // spoils the take; on top of a footstep you were already making, the two
-        // together are loud enough to be caught.
-        REC.addNoise(RADIO.RADIO.noiseLevel, px, py, 'the radio',{
-          kind:'radio_squelch',sourceKind:'equipment',sourceId:'radio',playerGenerated:true,deliberate:true,
-        });
-        MUT.markHeard(px, py, 1);
-        STAB.reportThreat();
-        bumpFear(0.22, { stinger:0.5 });   // your own belt gave you away
-      }
-      break;
-    case 'keyturn': CUES.playCue(CUES.CUE.keyturn, {gain:0.85}); STORY.stopRain({fade:1.4}); break;
-    // The transport, running backwards. The bed underneath it is the same
-    // machine, and it is still there when the rewind stops.
-    case 'rewind':  CUES.playCue(CUES.CUE.rewind, {gain:0.80}); break;
-    case 'bag':     CUES.playCue(CUES.CUE.bag, {gain:0.75}); break;
-    case 'pens':    CUES.playCue(CUES.CUE.pens, {gain:0.62}); break;
-    case 'signature': CUES.playCue(CUES.CUE.signature, {gain:0.70}); break;
-    case 'slides':  CUES.playCue(CUES.CUE.slides, {gain:0.78}); break;
-    case 'keys':    CUES.playCue(CUES.CUE.keys, {gain:0.70}); break;
-    case 'kit':     CUES.playCue(CUES.CUE.kit, {gain:0.72}); break;
-    default: break;
-  }
+  return dispatchAuthoredCue(name, {
+    play:(url, options)=>CUES.playCue(url, options),
+    effect:(event)=>{
+      const [scope, action, a, b]=String(event).split(':');
+      if(scope==='fx' && action==='flash') CR.fx.flash(Number(a)||120, 'rgba(6,6,8,0.85)');
+      else if(scope==='fx' && action==='shake') CR.fx.shake(Number(a)||1, Number(b)||420);
+      else if(scope==='look') applyLensPreset(action);
+      else if(scope==='story' && action==='stop-booth') STORY.stopBoothTone({fade:0.35});
+      else if(scope==='story' && action==='stop-rain') STORY.stopRain({fade:1.4});
+      else if(scope==='threat' && action==='report') STAB.reportThreat();
+      else if(scope==='fear' && action==='bump' && storyMode) bumpFear(Number(a)||0, {stinger:Number(b)||0});
+    },
+    acoustic:(spec)=>{
+      if(!storyMode || !spec.emitsWorldNoise) return;
+      REC.addNoise(Number(spec.level)||0, px, py, spec.reason||name, {
+        kind:spec.kind, sourceKind:spec.sourceKind, sourceId:spec.sourceId,
+        playerGenerated:true, deliberate:true,
+      });
+      if(spec.markHeard) MUT.markHeard(px, py, 1);
+    },
+  });
 }
 
 function applyStoryChoice(choice){
@@ -4980,9 +5064,11 @@ function recordAction(){
   if(room==='lux_nova'){
     if(finaleActive) return;
     if(REC.recState().takes.length < 4){ SPEECH.say(LINES.chapelLocked); return; }
+    if(chunkSurfMandatory() && beginChunkSurf({ forced:true })) return;
     beginConfrontation(); return;
   }
   if(REC.hasTake(room)){ SPEECH.say(LINES.already); return; }
+  if(maybeForceRadioBreakdownForRoom(room)) return;
   openListen(room);
 }
 
@@ -5055,6 +5141,7 @@ function roll(){
   emitRecorderTransport('roll');
   updateAudio();                      // monitor closes: the room goes silent
   STORY.startTapeHiss({ gain: TAKE_HISS.min, fade: 1.2 });
+  personalInterference.clear();
   SPEECH.say(framedLine('recStart', LINES.recStart));
   if(!TUT.tutorialActive()) once('presence-arrives', ()=>{
     PRES.spawnBehind(px, py, -lastStepDx||0, -lastStepDy||1);
@@ -5072,6 +5159,7 @@ function stopTake(){
   CUES.playCue(CUES.CUE.recorder, {gain:0.7, rate:0.88});
   emitRecorderTransport('stop');
   STORY.stopTapeHiss({ fade: 0.6 });
+  personalInterference.clear();
   updateAudio();
   if(r.completed){
     emitProgress(EVENT_TYPES.TAKE_COMPLETED, { roomId:room, elapsed:r.elapsed }, 'main.stopTake');
@@ -5470,7 +5558,7 @@ function markWorkOrderRead(){
     // He does NOT mark studio B3 for himself: the tutorial's `mark` step is the
     // one place the game teaches the only navigation verb it has, and doing it
     // for him would teach nothing and skip the step.
-    setTimeout(()=>radioTransmit(0), 1400);
+    setTimeout(()=>queueRadioStoryCue(RADIO.RADIO_CUES.INITIAL, { reason:'work-order-read' }), 1400);
   });
 }
 function interact(){
@@ -5587,6 +5675,10 @@ function interact(){
   // Safety net for old saves/debug positions: the story objects are visible
   // props now, but proximity still opens them if a loose prop failed to load.
   if(interactRig()||interactTalisman())return;
+  if(chunkSurfAvailable() && /chapel/i.test(currentAreaLabel())){
+    beginChunkSurf({ forced: flagTest('drank.coffee') });
+    return;
+  }
   // The work order lives in your pocket for the whole night.
   readDocumentTracked(WORK_ORDER);
   markWorkOrderRead();
@@ -5843,14 +5935,120 @@ function dropRadioFromBag(){
 }
 
 // ── the radio ───────────────────────────────────────────────────────────────
-// It speaks through the same band the recordist thinks in, at radio pace. The
-// player cannot hurry it, cannot answer it, and has to keep walking while it
-// talks — which is the entire relationship.
-function radioTransmit(i){
-  const lines=TRANSMISSIONS[i];
-  if(!lines || !RADIO.transmit(lines)) return;
-  SPEECH.sayAll(lines);
+// It now has three authored cue points instead of two linear transmissions.
+// The old speech-band chatter became dialogue trees because "go ahead" is only
+// interesting when the player chooses how to answer.
+function radioCueBlocked(){
+  return scenes.blocksInput() || REC.isRecording() || REC.isListening() || SPEECH.isSpeaking();
+}
+
+function completedRecordingTakes(){
+  return REC.recState().takes.filter((room)=>room && room!=='lux_nova').length;
+}
+
+function nearestUnrecordedRecordingTarget(){
+  let best=null;
+  for(const room of TARGETS){
+    if(room==='lux_nova' || REC.hasTake(room) || !ROOM_CELLS[room]) continue;
+    const at=FP.toRuntimePoint(ROOM_CELLS[room]);
+    const cells=Math.hypot(at.x-px, at.y-py);
+    const meters=FP.toAuthoredCoord(cells);
+    if(!best || meters<best.distanceMeters) best={roomId:room, x:at.x, y:at.y, distanceMeters:meters};
+  }
+  return best;
+}
+
+function emitRadioCue(type, cue, source){
+  emitProgress(type, {
+    id:cue.id,
+    roomId:cue.roomId || null,
+    reason:cue.reason || null,
+  }, source);
+}
+
+function queueRadioStoryCue(id, { roomId=null, reason='' } = {}){
+  const queued=RADIO.queueRadioCue(id, { roomId, reason });
+  const cue=RADIO.pendingRadioCue();
+  if(queued && cue) emitRadioCue(EVENT_TYPES.RADIO_CUE_QUEUED, cue, 'main.queueRadioStoryCue');
+  if(queued) saveCommit({ radio:RADIO.saveRadioState() });
+  return maybeStartPendingRadioCue() || queued;
+}
+
+function maybeStartPendingRadioCue(){
+  if(radioCueBlocked()) return false;
+  const pending=RADIO.pendingRadioCue();
+  if(!pending) return false;
+  const cue=RADIO.consumeRadioCue();
+  if(!cue) return false;
+  if(!RADIO.transmit([])){
+    RADIO.resolveRadioCue(cue.id);
+    saveCommit({ radio:RADIO.saveRadioState() });
+    return false;
+  }
+  emitRadioCue(EVENT_TYPES.RADIO_CUE_STARTED, cue, 'main.maybeStartPendingRadioCue');
   saveCommit({ radio:RADIO.saveRadioState() });
+  const nodes=radioDialogue(cue.id, { roomLabel: cue.roomId ? roomLabel(cue.roomId) : 'the next room' });
+  const scene=converse(`radio:${cue.id}`, nodes, {
+    onDone:()=>{
+      const wasDead=RADIO.isDead();
+      RADIO.resolveRadioCue(cue.id);
+      emitRadioCue(EVENT_TYPES.RADIO_CUE_RESOLVED, cue, 'main.radioCueDone');
+      if(!wasDead && RADIO.isDead()){
+        emitProgress(EVENT_TYPES.RADIO_DEAD, { id:'radio' }, 'main.radioCueDone');
+      }
+      saveCommit({ radio:RADIO.saveRadioState() });
+    },
+  });
+  if(!scene){
+    const wasDead=RADIO.isDead();
+    RADIO.resolveRadioCue(cue.id);
+    emitRadioCue(EVENT_TYPES.RADIO_CUE_RESOLVED, cue, 'main.radioCueBypassed');
+    if(!wasDead && RADIO.isDead()) emitProgress(EVENT_TYPES.RADIO_DEAD, { id:'radio' }, 'main.radioCueBypassed');
+    saveCommit({ radio:RADIO.saveRadioState() });
+    return false;
+  }
+  return true;
+}
+
+function maybeQueueRadioProgressionCue(){
+  if(!storyMode || RADIO.isDead()) return false;
+  const completedTakes=completedRecordingTakes();
+  if(RADIO.shouldQueuePostSecondTake({ completedTakes, isRecording:REC.isRecording() })){
+    return queueRadioStoryCue(RADIO.RADIO_CUES.POST_SECOND, { reason:'second-take-complete' });
+  }
+  const target=nearestUnrecordedRecordingTarget();
+  if(RADIO.shouldQueuePreThirdBreakdown({
+    completedTakes,
+    isRecording:REC.isRecording(),
+    nearestRoom:target?.roomId || null,
+    distanceMeters:target?.distanceMeters ?? Infinity,
+  })){
+    return queueRadioStoryCue(RADIO.RADIO_CUES.PRE_THIRD, {
+      roomId:target.roomId,
+      reason:'approaching-third-room',
+    });
+  }
+  return maybeStartPendingRadioCue();
+}
+
+function maybeForceRadioBreakdownForRoom(room){
+  if(room==='lux_nova') return false;
+  if(maybeStartPendingRadioCue()) return true;
+  const pending=RADIO.pendingRadioCue();
+  if(pending?.id===RADIO.RADIO_CUES.PRE_THIRD) return true;
+  if(!RADIO.shouldQueuePreThirdBreakdown({
+    completedTakes:completedRecordingTakes(),
+    isRecording:REC.isRecording(),
+    nearestRoom:room,
+    distanceMeters:0,
+  })) return false;
+  queueRadioStoryCue(RADIO.RADIO_CUES.PRE_THIRD, { roomId:room, reason:'record-at-third-room' });
+  return true;
+}
+
+function radioTransmit(i){
+  const cue=[RADIO.RADIO_CUES.INITIAL, RADIO.RADIO_CUES.POST_SECOND, RADIO.RADIO_CUES.PRE_THIRD][Number(i)||0];
+  return cue ? queueRadioStoryCue(cue, { reason:'debug-transmit' }) : false;
 }
 
 // A dead radio that makes noise is a hazard. On the belt it is local; on the
@@ -5876,6 +6074,7 @@ function onSquelch(ev){
 
 function tickRadio(dt){
   if(!storyMode) return;
+  maybeQueueRadioProgressionCue();
   // It has stopped being a radio. The moment the scream has finished and the
   // carrier line has been said, he is standing in a corridor holding a dead
   // object, and he gets to decide once whether to do the thing he was told
@@ -6040,11 +6239,7 @@ function tickTorch(dt){
 // Past the inner door, the building starts dreaming. Authored `y > 15` is the
 // same line the tutorial's `go` step draws, because it is the same threshold.
 function maybeWakeLens(){
-  if(!storyMode || planName!=='conservatory') return;
-  const d=window.__diffusion;
-  if(!d?.isBypassed?.()) return;
-  if(py <= FP.toRuntimeCoord(15)) return;
-  once('lens-wakes', ()=>{ d.setBypass(false); R3.r3dSetLocalDiffusionLevel(Math.max(0.16, 0.18 + (window.__lensOnset ?? LENS_FLOOR) * 0.46)); lastZoneKey=''; });
+  if(storyMode&&planName==='conservatory') setLocalDiffusionActive(true);
 }
 
 // ── the lens onset (scaffold) ────────────────────────────────────────────────
@@ -6066,6 +6261,12 @@ function lensDrink(){                     // the bloom begins the moment you swa
   lensTarget = 1.0; lensTau = 90;        // ~a minute and a half to come up full
   applyLensPreset('hush');
 }
+function localDiffusionLevelForOnset(v=window.__lensOnset ?? LENS_FLOOR){
+  return Math.max(0,Math.min(1,Number(v)||0));
+}
+function setLocalDiffusionActive(active=true){
+  R3.r3dSetLocalDiffusionLevel(active ? 1 : 0);
+}
 function tickLensOnset(dt){
   if(!storyMode) return;
   // Sober, the building still works on you — slowly, and only a little.
@@ -6074,16 +6275,8 @@ function tickLensOnset(dt){
   applyLensOnset(lensOnset);
 }
 function applyLensOnset(v){
-  window.__lensOnset = v;                                    // the phosphene grain reads this
-  const d = window.__diffusion;
-  if(d?.tune && !d.isBypassed?.()){
-    const strength = Math.max(0.10, Math.min(0.45, 0.18 + v * 0.27));
-    const local = Math.max(0.12, Math.min(0.72, 0.18 + v * 0.46));
-    d.tune({ strength, mix: Math.max(0.62, Math.min(0.92, 0.72 + v * 0.18)) });
-    R3.r3dSetLocalDiffusionLevel(local);
-  } else {
-    R3.r3dSetLocalDiffusionLevel(0);
-  }
+  window.__lensOnset = v;
+  if(window.__diffusion?.stats) setLocalDiffusionActive(true);
 }
 
 // The guard's coffee. Drinking it is the hinge of the whole ending, and it is
@@ -6096,6 +6289,60 @@ function drinkCoffee(){
   CUES.playCue(CUES.CUE.recorder, {gain:0.35, rate:0.6});
   SPEECH.say({ who:'you', text:'Cold, bitter, gone in three swallows. There. Whatever that was.' });
   lensDrink();
+}
+
+function chunkSurfRouteProfile(){
+  return {
+    drankCoffee: flagTest('drank.coffee'),
+    hasRig: flagTest('has.interface'),
+    endingsSeen: getMeta().endingsSeen || [],
+  };
+}
+
+function chunkSurfCompleted(){
+  return flagTest(CHUNK_SURF_FLAGS.completed);
+}
+
+function chunkSurfMandatory(){
+  return flagTest('drank.coffee') && !chunkSurfCompleted();
+}
+
+function chunkSurfAvailable(){
+  return storyMode
+    && planName === 'conservatory'
+    && canOfferChunkSurf({
+      completedTakes: REC.recState().takes.length,
+      roomId: recordableRoomAt(px, py) || (currentAreaLabel().toLowerCase().includes('chapel') ? 'chapel_approach' : ''),
+      alreadyCompleted: chunkSurfCompleted(),
+    });
+}
+
+function beginChunkSurf({ forced=false } = {}){
+  if(!chunkSurfAvailable() && !forced) return false;
+  if(scenes.has('chunk-surf')) return true;
+  ensureCtx();
+  flagApply([CHUNK_SURF_FLAGS.offered, CHUNK_SURF_FLAGS.entered]);
+  saveCommit({ flags:getSave().flags });
+  STORY.stopAll();
+  applyLensPreset('rupture');
+  scenes.push(makeChunkSurfScene({
+    ...chunkSurfRouteProfile(),
+    seed: getSave().run?.startedAt || Date.now(),
+    onScare:()=>{
+      STAB.reportThreat();
+      bumpFear(0.35);
+      CUES.playCue(CUES.CUE.scream, { gain:0.48, rate:0.72 });
+    },
+    onComplete:(completion)=>{
+      flagApply(completion.flags || []);
+      saveCommit({ flags:getSave().flags });
+      const lines=chunkSurfCompletionLines(completion);
+      if(lines?.length){
+        presentFinale(lines, { slate:'SOURCE FAULT', replayId:'chunk-surf-complete' });
+      }
+    },
+  }));
+  return true;
 }
 
 // ── fear ────────────────────────────────────────────────────────────────────
@@ -6119,14 +6366,44 @@ function bumpFear(amount, { stinger=0 }={}){
   if(stinger>0) FEAR.hushStinger(Math.min(1, stinger*(0.5+fear*0.7)));
 }
 
+function currentFearPressure({ recordingProgress=REC.isRecording()?REC.takeProgress():0 }={}){
+  const pressure=computeFearPressure({
+    fear,
+    recordingProgress,
+    recording:REC.isRecording(),
+    hushField:hushAudioRuntime?.currentField?.()||null,
+    hushAudition:hushAudioRuntime?.currentAudition?.()||null,
+    personalInterference:!!personalInterference.active(),
+    radio:{dead:RADIO.isDead(),dropped:RADIO.isDropped()},
+  });
+  window.__fearPressure=pressure;
+  return pressure;
+}
+
+function presentedFearPressure(pressure=currentFearPressure()){
+  const presented={...pressure};
+  for(const key of Object.keys(godFxOverride)){
+    if(Number.isFinite(godFxOverride[key])) presented[key]=godFxOverride[key];
+  }
+  presented.overall=Math.max(
+    Number(presented.overall)||0,
+    Number(presented.heartbeat)||0,
+    Number(presented.monitorHiss)||0,
+    Number(presented.visualDread)||0,
+  );
+  window.__presentedFearPressure=presented;
+  return presented;
+}
+
 function tickFear(dt){
   if(!storyMode){ FEAR.setFear(0); R3.r3dSetFear(0); return; }
   FEAR.startHeartbeat();                // a heart does not need to be asked twice
   // Proximity is its own dread: the closer it is, the less the number falls.
   const near = PRES.isActive() ? PRES.pressure(px,py) : 0;
   fear = Math.max(0, Math.min(1, fear + near*0.22*dt - FEAR_DECAY*activeDifficulty.fear.fearDecayScale*dt));
-  FEAR.setFear(fear);
-  R3.r3dSetFear(fear);                  // vignette, grain, desaturation
+  const pressure=presentedFearPressure();
+  FEAR.setFear(pressure.heartbeat);
+  R3.r3dSetFear(pressure.visualDread);  // vignette, grain, desaturation
   window.__fear = fear;
 
   // The HUSH acquires bandwidth as it approaches: sparse, low-passed fragments
@@ -6214,7 +6491,17 @@ function tickRecorder(dt){
   tickInstrument();
   if(REC.isRecording()){
     const p=REC.takeProgress();
-    STORY.setTapeHiss(TAKE_HISS.min + (TAKE_HISS.max-TAKE_HISS.min)*p, 0.3);
+    personalInterference.tick({
+      settings:getSave().settings?.personalInterference,
+      recording:true,
+      takeSlot:REC.recState().takes.length+1,
+      takeProgress:p,
+      runSeconds:getSave().playSeconds||0,
+      stalled:REC.isStalled()||REC.isAssistPaused(),
+      spoiled:REC.recState().spoiled,
+      roomId:recordableRoomAt(px,py)||currentWorld(),
+    });
+    STORY.setTapeHissPressure(currentFearPressure({recordingProgress:p}).tapeHiss, { ...TAKE_HISS, ramp: 0.3 });
     tickMic();
   }
   const st=REC.tickRecording(dt);
@@ -6229,9 +6516,15 @@ function tickRecorder(dt){
     OBJ.clearWaypoint();
     saveCommit({ rec:REC.saveRecState() });
     stopTake();
-    // The second transmission is bought with the first take, and it is the
-    // last thing the radio ever does for you.
-    once('radio-2', ()=>setTimeout(()=>radioTransmit(1), 2600));
+    // The radio survives one more room than it used to. After the second clean
+    // recording it gets unreliable, but it does not die until the third room is
+    // close enough to take the channel.
+    if(REC.recState().takes.length===2){
+      once('radio-post-second', ()=>setTimeout(
+        ()=>queueRadioStoryCue(RADIO.RADIO_CUES.POST_SECOND, { reason:'second-take-complete', roomId:room }),
+        1800,
+      ));
+    }
   } else if(st==='spoiled'){
     if(!spoilPendingMs){ spoilPendingMs=performance.now()+900; onTakeBroken(REC.recState().spoilReason); }
     else if(performance.now()>spoilPendingMs){ spoilPendingMs=0; stopTake(); }
@@ -6419,7 +6712,7 @@ function maybeJumpscare(){
   CR.fx.shake(2.2, 260);
   CR.fx.glitch(1, 320);
   const d=window.__diffusion;
-  if(d && !d.isBypassed?.()){
+  if(d){
     applyLensPreset('rupture');
     setTimeout(()=>{ if(storyMode) applyLensPreset('explore'); }, 700);
   }
@@ -6455,6 +6748,10 @@ function openBattle(battle, { onWin, onLose, onAbort }={}){
   return scenes.push(makeBattleScene({
     battle,
     difficulty: currentDifficulty().redaction,
+    capabilities: {
+      fork: flagTest('has.fork') || flagTest(CHUNK_SURF_FLAGS.fork),
+      rig: flagTest('has.interface'),
+    },
     audio: STORY,
     getAudio: ()=>({ ctx:actx, destination:dialogGain || master }),
     fx: { cue:fireCue },
@@ -6516,6 +6813,38 @@ function presentFinale(content, { slate='', replayId='finale', onDone=()=>{}, on
   }));
 }
 
+function finaleHasFork(){
+  return flagTest('has.fork') || flagTest(CHUNK_SURF_FLAGS.fork);
+}
+function finaleGrant(id){
+  return flagTest(`finale.grant.${id}`);
+}
+function finaleLock(id){
+  return flagTest(`finale.lock.${id}`);
+}
+function applyFinaleConsequences(metrics={}){
+  const finale = metrics.finale || {};
+  const flags = getSave().flags;
+  const readings = Array.isArray(finale.readings) ? finale.readings : [];
+  const grants = Array.isArray(finale.grants) ? finale.grants : [];
+  const locks = Array.isArray(finale.locks) ? finale.locks : [];
+  const routeBiases = Array.isArray(finale.routeBiases) ? finale.routeBiases : [];
+  flags['finale.readings'] = readings;
+  flags['finale.grants'] = grants;
+  flags['finale.locks'] = locks;
+  flags['finale.routeBiases'] = routeBiases;
+  flags['finale.composure'] = Math.max(0, Number(finale.composure) || 0);
+  flags['finale.pressure'] = Number(finale.pressure) || 0;
+  flags['finale.sourceReading'] = finale.sourceReading || null;
+  for (const r of readings) {
+    if (r?.readingId) flags[`finale.reading.${r.readingId}`] = true;
+    if (r?.routeBias) flags[`finale.bias.${r.routeBias}`] = true;
+  }
+  for (const id of grants) flags[`finale.grant.${id}`] = true;
+  for (const id of locks) flags[`finale.lock.${id}`] = true;
+  saveCommit({ flags });
+}
+
 // The fifth room. It wears whatever you confessed; it plays turn-based; and on
 // the far side of survival it hands to the ending choice.
 function beginConfrontation(){
@@ -6526,15 +6855,50 @@ function beginConfrontation(){
   const listened=Number(flagGet('listened.count'))||5;
   REC.addTake('lux_nova'); saveCommit({ rec:REC.saveRecState() });   // the chapel is done, however it ends
   openEncounterBattle('chapel',chapelBoss({ kind, value, listened }), {
-    onWin: openEndingChoice,
+    onWin: (metrics)=>{ applyFinaleConsequences(metrics); openEndingChoice(); },
     onLose: ()=> endSacrifice(),    // taken → you stay, which is the sacrifice
   });
 }
 
 function openEndingChoice(){
-  presentFinale(endingChoice(flagTest('has.interface')), {
+  const hasRig = flagTest('has.interface');
+  const canInvert = hasRig && finaleGrant('route.inversion') && !finaleLock('route.inversion');
+  const canSurface = flagTest(CHUNK_SURF_FLAGS.bestEligible)
+    && hasRig
+    && finaleHasFork()
+    && finaleGrant('route.surfaced')
+    && !finaleLock('route.surfaced');
+  presentFinale(endingChoice({
+    hasRig,
+    canInvert,
+    canSurface,
+    readings: flagGet('finale.readings') || [],
+    grants: flagGet('finale.grants') || [],
+    locks: flagGet('finale.locks') || [],
+    sourceReading: flagGet('finale.sourceReading') || null,
+    composure: flagGet('finale.composure'),
+    pressure: flagGet('finale.pressure'),
+  }), {
     slate:'THE CHAPEL',
-    onDone:()=>{ if(flagGet('ending.choice')==='inversion') beginInversion(); else endSacrifice(); },
+    onDone:()=>{
+      const choice = flagGet('ending.choice');
+      if(choice===CHUNK_SURF_ENDING_ID) endSurfaced();
+      else if(choice==='inversion') beginInversion();
+      else endSacrifice();
+    },
+  });
+}
+
+function endSurfaced(){
+  escape=null; OBJ.clearWaypoint();
+  presentFinale(surfacedEnding({
+    drankCoffee:flagTest('drank.coffee'),
+    sourceReading: flagGet('finale.sourceReading') || null,
+    readings: flagGet('finale.readings') || [],
+  }), {
+    slate:'THE SERVICE ROAD',
+    replayId:'surfaced-ending',
+    onDone:()=> finishEnding(CHUNK_SURF_ENDING_ID),
   });
 }
 
@@ -6603,6 +6967,7 @@ function finishEnding(id){
   const variant =
     id==='drugged' ? 'drugged' :
     id==='helped' ? 'helped' :
+    id===CHUNK_SURF_ENDING_ID ? 'out' :
     id==='inversion' ? 'out' :
     (flagGet('confession.kind')==='nothing' ? 'nobody' : 'client');
   presentFinale(guardEpilogue(variant), {
@@ -6960,7 +7325,7 @@ function collectAboutSnapshot(){
   const story=STORY.audioState?.() || {};
   const storage=currentStorage();
   return normalizeAboutSnapshot({
-    version:'0.1.0',
+    version:APP_VERSION,
     build:params().get('build') || import.meta.env?.MODE || 'LOCAL',
     copyright:APP_COPYRIGHT,
     runtime:{
@@ -7066,12 +7431,11 @@ function openSettings({ inGame=false, initialTab=null }={}){
       exportProfile: exportProgressionProfile,
       importProfile: importProgressionProfile,
       currentArea: () => storyMode && inRogue ? roomLabel(currentWorld()) : (getSave().area || 'prologue'),
-      version: () => '0.1.0',
+      version: () => APP_VERSION,
       build: () => params().get('build') || import.meta.env?.MODE || 'LOCAL',
       copyright: () => APP_COPYRIGHT,
       runtimeLabel: () => IS_TAURI ? 'Desktop' : 'Web',
       rendererLabel,
-      lensLabel: () => formatLens(!!window.__diffusion && !lensDisabled),
       performanceSnapshot: () => perfMeter.snapshot(),
       openWebsite: () => openExternalUrl(APP_LINKS.website),
       reportProblem: () => openExternalUrl(APP_LINKS.reportProblem),
@@ -7080,9 +7444,8 @@ function openSettings({ inGame=false, initialTab=null }={}){
       restartAudioEngine: restartDesktopAudio,
       openCredits,
       resetDisplaySettings: resetDisplaySettingsFromMenu,
-      pixelMeshMode: () => currentPixelMeshSettings().mode,
-      onPixelMeshChange: setPixelMeshMode,
       onDisplayChange: updateDisplaySettings,
+      onPersonalInterferenceChange: () => personalInterference.clearIdentity(),
     },
   }));
 }
@@ -7096,16 +7459,8 @@ function currentPixelMeshSettings(){
   const qp=params();
   const st=getSave().settings||{};
   const display=st.display||{};
-  const pixelMeshParam=qp.get('pixelMesh');
-  const urlMode=qp.get('pixelMeshMode')
-    || (pixelMeshParam==='1' ? 'standard' : pixelMeshParam==='0' ? 'off' : null);
-  const savedMode=Object.prototype.hasOwnProperty.call(st,'pixelMeshMode')
-    ? st.pixelMeshMode
-    : display.pixelMeshMode;
-  const defaultMode=RENDERER==='3d' ? 'standard' : 'off';
   return {
-    mode:urlMode || savedMode || defaultMode,
-    cellSize:qp.get('pixelMeshCell') || display.pixelMeshCell || 'auto',
+    cellSize:'auto',
     debugSource:qp.get('pixelMeshSource') || (qp.has('pixelMeshDebug') ? 'signal' : 'final'),
     reduceFlash:(st.flash||'full')!=='full',
     reduceMotion:(st.shake||'full')!=='full',
@@ -7119,14 +7474,6 @@ function applyPixelMeshSettings(extra={}){
     console.info('[pixel-mesh] settings', applied, R3.r3dPixelMeshStatus?.());
   }
   return applied;
-}
-
-function setPixelMeshMode(mode){
-  const st=getSave().settings||{};
-  saveCommit({settings:{...st,pixelMeshMode:mode}});
-  applyPixelMeshSettings();
-  pushEvent(`// vfd pixel mesh: ${String(mode||'off').toUpperCase()}.`);
-  return R3.r3dPixelMeshStatus?.() || currentPixelMeshSettings();
 }
 
 function pulsePixelMesh(ms=1800){
@@ -7143,6 +7490,7 @@ function applyRenderScale(renderScale){
   const effective=resolveRenderScale(renderScale,{devicePixelRatio:window.devicePixelRatio||1});
   document.documentElement.dataset.renderScale=String(renderScale);
   document.documentElement.style.setProperty('--effective-render-scale',String(effective));
+  R3.r3dSetRenderScale?.(effective);
   window.dispatchEvent(new CustomEvent('chunk-surfer:render-scale',{detail:{renderScale,effective}}));
 }
 
@@ -7165,16 +7513,17 @@ async function updateDisplaySettings(patch={}, nextMaybe=null){
   const next=normalizeDisplaySettings(nextMaybe || {...current,...patch});
   saveCommit({settings:{...st,display:next}});
   applyDisplayCssVars(next);
+  uiSetScale(next.uiScale);
   applyRenderScale(next.renderScale);
   applyPixelMeshSettings();
   refreshStageLayoutSoon();
 
   try{
-    if(Object.prototype.hasOwnProperty.call(patch,'windowPreset')){
-      await setNativeWindowPreset(next.windowPreset);
-    }
     if(Object.prototype.hasOwnProperty.call(patch,'displayMode')){
       await setNativeGameMode(next.displayMode==='game-mode');
+      if(next.displayMode==='windowed') await setNativeWindowPreset(next.windowPreset);
+    }else if(Object.prototype.hasOwnProperty.call(patch,'windowPreset')){
+      await setNativeWindowPreset(next.windowPreset);
     }
   }catch(err){
     console.warn('[display] native display change failed',err);
@@ -7199,7 +7548,6 @@ async function resetDisplaySettingsFromMenu(){
   applyGameModeDom(false,document);
   document.body.classList.remove('desktop-fullscreen','desktop-high-contrast');
   if(!IS_TAURI) exitFullscreenSafe();
-  { const st=getSave().settings||{}; saveCommit({settings:{...st,pixelMeshMode:RENDERER==='3d'?'standard':'off'}}); }
   await updateDisplaySettings({displayMode:'windowed',windowPreset:'1280x800',uiScale:1,renderScale:'auto'});
   applyPixelMeshSettings();
   try{ await resetNativeWindow(); }catch(err){ console.warn('[display] reset defaults failed',err); }
@@ -7212,8 +7560,247 @@ function openSettingsFromPause(initialTab='display'){
   openSettings({inGame:false,initialTab});
 }
 
+const GOD_LEVELS=[null,0,0.25,0.5,0.75,1];
+const GOD_LEVEL_LABEL=new Map([[null,'AUTO'],[0,'OFF'],[0.25,'LOW'],[0.5,'MED'],[0.75,'HIGH'],[1,'MAX']]);
+const GOD_LOOK_DEBUG=['final','world','signal','memory','edge','mask'];
+let godLookDebug='final';
+
+function godLevelLabel(value){
+  return GOD_LEVEL_LABEL.get(value) || `${Math.round((Number(value)||0)*100)}%`;
+}
+
+function godCycleLevel(key,delta){
+  const current=godFxOverride[key];
+  const at=Math.max(0,GOD_LEVELS.findIndex((value)=>Object.is(value,current)));
+  const next=GOD_LEVELS[(at+delta+GOD_LEVELS.length)%GOD_LEVELS.length];
+  godFxOverride[key]=next;
+  ensureCtx();
+  if(key==='heartbeat'){
+    FEAR.startHeartbeat();
+    FEAR.setFear(next==null ? currentFearPressure().heartbeat : next);
+  }
+  if(key==='visualDread') R3.r3dSetFear(next==null ? currentFearPressure().visualDread : next);
+  if(key==='monitorHiss'){
+    if(next==null || next<=0){
+      if(!REC.isRecording()) STORY.stopTapeHiss({fade:0.12});
+    }else{
+      STORY.startTapeHiss({gain:0.08+next*0.42,fade:0.08});
+      STORY.setTapeHissPressure(next,{min:0.08,max:0.5,ramp:0.08});
+    }
+  }
+  return next;
+}
+
+function godResetFx(){
+  godFxOverride.heartbeat=null;
+  godFxOverride.monitorHiss=null;
+  godFxOverride.visualDread=null;
+  if(!REC.isRecording()) STORY.stopTapeHiss({fade:0.12});
+  FEAR.setFear(storyMode ? currentFearPressure().heartbeat : 0);
+  R3.r3dSetFear(storyMode ? currentFearPressure().visualDread : 0);
+}
+
+function godEnsureTestRun(){
+  while(scenes.depth()) scenes.pop();
+  setGameplayPaused(false,{announce:false});
+  if(!getSave().run){
+    newGame({preset:'contract'});
+    beginRunProgression();
+  }
+  flagApply(['prologueDone']);
+  saveCommit({flags:getSave().flags});
+  if(!storyMode) enterStory();
+  else {
+    sampleFieldEnabled=false;
+    silenceSampleField();
+    setGameChrome(true);
+  }
+}
+
+function godFindZonePoint(zone){
+  if(!FP.isLoaded()) return null;
+  const plan=FP.floorplan();
+  const candidates=[];
+  for(let y=0;y<plan.h;y++){
+    for(let x=0;x<plan.w;x++){
+      const point=FP.toRuntimePoint({x,y});
+      if(FP.zoneAt(point.x,point.y)!==zone || FP.isSolid(point.x,point.y)) continue;
+      const score=Math.hypot(x-plan.w/2,y-plan.h/2);
+      candidates.push({x:point.x,y:point.y,score});
+    }
+  }
+  candidates.sort((a,b)=>a.score-b.score);
+  return candidates[0] || null;
+}
+
+function godWarpToZone(zone){
+  const point=godFindZonePoint(zone);
+  if(!point){ pushEvent('// god: area is not loaded yet.'); return false; }
+  px=point.x;py=point.y;trail=[];
+  revealAround(px,py);faceOpenDirection();
+  pushEvent(`// god warp: ${currentAreaLabel()}.`);
+  return true;
+}
+
+function godSetFlag(id,on){
+  flagApply(on?[id]:[],on?[]:[id]);
+  saveCommit({flags:getSave().flags});
+  return !!on;
+}
+
+function godSetChapelKey(on){
+  const items=new Set(getSave().items||[]);
+  if(on){items.add('chapel_key');playerKeys.add('chapel');flagApply(['chapel.keyTaken']);}
+  else {items.delete('chapel_key');playerKeys.delete('chapel');flagApply([],['chapel.keyTaken']);}
+  saveCommit({items:[...items],flags:getSave().flags});
+}
+
+function godSetLostItem(id,on){
+  for(const candidate of LOSABLE) flagApply([], [`lost.${candidate}`]);
+  if(on){
+    lostItem=id;
+    lostAt={x:px+1,y:py};
+    flagApply([`lost.${id}`]);
+  }else if(lostItem===id){
+    lostItem=null;lostAt=null;
+  }
+  saveCommit({flags:getSave().flags});
+}
+
+function godCycleBattery(delta){
+  const levels=[0,0.25,0.5,1,1.5,2];
+  const current=REC.batteryLevel();
+  let at=levels.findIndex((value)=>Math.abs(value-current)<0.01);
+  if(at<0) at=levels.reduce((best,value,index)=>Math.abs(value-current)<Math.abs(levels[best]-current)?index:best,0);
+  const next=levels[(at+delta+levels.length)%levels.length];
+  REC.addBattery(next-current);
+  saveCommit({rec:REC.saveRecState()});
+}
+
+function godSetAllTakes(on){
+  for(const id of TARGETS) REC.setTake(id,on);
+  saveCommit({rec:REC.saveRecState()});
+}
+
+function godColdOpen(){
+  scenes.push(makeColdOpenScene({
+    id:'god-cold-open',beats:COLD_OPEN,opening:COLD_OPEN_DIALOGUE,
+    audio:STORY,getAudio:()=>actx?{ctx:actx,destination:dialogGain||master||actx.destination}:null,
+    cue:fireCue,fx:CR.fx,replay:createReplayService('god-cold-open'),onChoice:applyStoryChoice,
+  }));
+}
+
+function godTabs(){
+  const section=(label)=>({kind:'section',label});
+  const ready=()=>storyMode&&inRogue&&FP.isLoaded();
+  const warp=(id,label,zone)=>({id,label,value:()=>ready()?'[WARP]':'START TEST RUN',closeMenu:true,activate:()=>{if(!ready())godEnsureTestRun();else godWarpToZone(zone);}});
+  const toggleFlag=(id,label,flag)=>({id,label,value:()=>flagTest(flag)?'ON':'OFF',adjust:()=>godSetFlag(flag,!flagTest(flag))});
+  const battle=(id,label,factory)=>({id,label,value:'[OPEN]',closeMenu:true,activate:()=>openBattle(factory(isNamed()))});
+  return [
+    {id:'session',name:'SESSION',rows:[
+      section('Run'),
+      {id:'test-run',label:'ENTER / RESET TEST RUN',value:()=>ready()?'READY':'[START]',danger:!ready(),closeMenu:true,activate:godEnsureTestRun},
+      {id:'resume',label:'CLOSE GOD MENU',value:'[RESUME]',activate:closeGodMenu},
+      section('Locations'),
+      warp('warp-dock','LOADING DOCK',ZONE.dock),
+      warp('warp-foyer','FRONT ATRIUM',ZONE.foyer),
+      warp('warp-studio','STUDIO B3',ZONE.studio),
+      warp('warp-natatorium','NATATORIUM',ZONE.natatorium),
+      warp('warp-hall','CONCERT HALL',ZONE.hall),
+      warp('warp-practice','PRACTICE WING',ZONE.practice),
+      warp('warp-chapel','CHAPEL',ZONE.chapel),
+      warp('warp-plant','PLANT ROOM',ZONE.plant),
+    ]},
+    {id:'conditions',name:'CONDITIONS',rows:[
+      section('Fear pressure'),
+      {id:'fear',label:'BASE FEAR',value:()=>`${Math.round(fear*100)}%`,adjust:(d)=>{fear=Math.max(0,Math.min(1,fear+d*0.25));}},
+      {id:'heartbeat',label:'HEARTBEAT',value:()=>godLevelLabel(godFxOverride.heartbeat),adjust:(d)=>godCycleLevel('heartbeat',d)},
+      {id:'screen-hiss',label:'HISS / STATIC OVERLAY',value:()=>godLevelLabel(godFxOverride.monitorHiss),adjust:(d)=>godCycleLevel('monitorHiss',d)},
+      {id:'visual-dread',label:'DREAD VIGNETTE',value:()=>godLevelLabel(godFxOverride.visualDread),adjust:(d)=>godCycleLevel('visualDread',d)},
+      {id:'reset-fx',label:'RESET FEAR FX TO GAME',value:'[RESET]',activate:godResetFx},
+      section('Threats'),
+      {id:'presence',label:'HUSH / PRESENCE',value:()=>PRES.isActive()?'SPAWNED':'CLEAR',adjust:()=>{if(PRES.isActive())PRES.despawn();else PRES.spawnBehind(px,py,...R3.r3dDelta(-1));}},
+      {id:'taken',label:'TAKEN SEQUENCE',value:'[FIRE]',closeMenu:true,activate:beginTaken},
+      {id:'injury',label:'ADD INJURY',value:()=>String(REC.recState().injuries),activate:()=>{REC.injure();saveCommit({rec:REC.saveRecState()});}},
+      {id:'stinger',label:'HUSH STINGER',value:'[FIRE]',activate:()=>FEAR.hushStinger(1)},
+      {id:'flash',label:'FULL SCREEN FLASH',value:'[FIRE]',activate:()=>CR.fx.flash(180,'rgba(210,255,244,.95)')},
+      {id:'shake',label:'CAMERA SHAKE',value:'[FIRE]',activate:()=>CR.fx.shake(2.2,700)},
+    ]},
+    {id:'look',name:'LOOK STACK',rows:[
+      section('Authored profiles'),
+      {id:'look-current',label:'ACTIVE PROFILE',value:()=>activeLookProfile.toUpperCase()},
+      ...LOOK_PROFILE_IDS.map((id)=>({
+        id:`look-${id}`,label:id,value:()=>activeLookProfile===id?'ACTIVE':'[APPLY]',
+        activate:()=>applyLookProfile(id),
+      })),
+      section('Read-only layer diagnostics'),
+      {id:'look-debug',label:'DISPLAY SOURCE',value:()=>godLookDebug.toUpperCase(),adjust:(d)=>{
+        const at=Math.max(0,GOD_LOOK_DEBUG.indexOf(godLookDebug));
+        godLookDebug=GOD_LOOK_DEBUG[(at+d+GOD_LOOK_DEBUG.length)%GOD_LOOK_DEBUG.length];
+        applyPixelMeshSettings({debugSource:godLookDebug});
+      }},
+      {id:'look-pulse',label:'PHOSPHOR TEST PULSE',value:'[FIRE]',activate:()=>pulsePixelMesh(1800)},
+      {id:'look-reset-memory',label:'CLEAR AFTERIMAGE MEMORY',value:'[RESET]',activate:()=>R3.r3dResetVfdMemory?.()},
+    ]},
+    {id:'inventory',name:'ITEMS',rows:[
+      section('Equipment'),
+      {id:'chapel-key',label:'CHAPEL KEY C-17',value:()=>playerKeys.has('chapel')?'OWNED':'MISSING',adjust:()=>godSetChapelKey(!playerKeys.has('chapel'))},
+      toggleFlag('interface','BENT RIG INTERFACE','has.interface'),
+      toggleFlag('cells','SPARE CELLS','rig.cells'),
+      toggleFlag('coffee','COFFEE CONSUMED','drank.coffee'),
+      {id:'battery',label:'TORCH BATTERY',value:()=>`${Math.round(REC.batteryLevel()*100)}%`,adjust:godCycleBattery},
+      section('Lost equipment'),
+      ...LOSABLE.map((id)=>({id:`lost-${id}`,label:`LOST ${id}`,value:()=>itemLost(id)?'LOST':'HELD',adjust:()=>godSetLostItem(id,!itemLost(id))})),
+      section('Room takes'),
+      {id:'all-takes',label:'ALL WORK ORDER TAKES',value:()=>`${REC.recState().takes.length} / ${TARGETS.length}`,adjust:(d)=>godSetAllTakes(d>0)},
+      ...TARGETS.map((id)=>({id:`take-${id}`,label:roomLabel(id),value:()=>REC.hasTake(id)?'SEALED':'EMPTY',adjust:()=>{REC.setTake(id,!REC.hasTake(id));saveCommit({rec:REC.saveRecState()});}})),
+    ]},
+    {id:'scenes',name:'GAME PARTS',rows:[
+      section('Presentation'),
+      {id:'opening-credits',label:'OPENING CREDITS',value:'[PLAY]',closeMenu:true,activate:()=>scenes.push(makeOpeningCreditsScene())},
+      {id:'cold-open',label:'COLD OPEN',value:'[PLAY]',closeMenu:true,activate:godColdOpen},
+      {id:'world-title',label:'WORLD TITLE',value:'[PLAY]',closeMenu:true,activate:()=>scenes.push(makeWorldTitleScene({audio:STORY}))},
+      {id:'credits',label:'RELEASE CREDITS',value:'[OPEN]',closeMenu:true,activate:openCredits},
+      section('Encounters'),
+      battle('battle-natatorium','NATATORIUM BATTLE',natatoriumBattle),
+      battle('battle-practice','PRACTICE BATTLE',practiceBattle),
+      battle('battle-hall','CONCERT HALL BATTLE',hallBattle),
+      {id:'battle-chapel',label:'CHAPEL CONFRONTATION',value:'[OPEN]',closeMenu:true,activate:beginConfrontation},
+      {id:'ending-choice',label:'ENDING CHOICE',value:'[OPEN]',closeMenu:true,activate:openEndingChoice},
+      {id:'chunk-surf',label:'CHUNK SURF',value:'[OPEN]',closeMenu:true,activate:()=>beginChunkSurf({forced:true})},
+    ]},
+    {id:'audio',name:'AUDIO',rows:[
+      section('Engine'),
+      {id:'audio-state',label:'AUDIO CONTEXT',value:()=>String(actx?.state||'NOT CREATED').toUpperCase()},
+      {id:'restart-audio',label:'RESTART AUDIO ENGINE',value:'[RESTART]',activate:restartDesktopAudio},
+      {id:'legacy-voices',label:'LEGACY SAMPLE VOICES',value:()=>`${voices.size} ACTIVE`,activate:()=>{sampleFieldEnabled=false;silenceSampleField();}},
+      {id:'sample-gate',label:'SAMPLE FIELD AUTHORIZATION',value:()=>sampleFieldEnabled?'GAME MODE':'BOOT LOCKED'},
+      {id:'room-tone',label:'ROOM TONE BED',value:()=>RT.roomToneState().active?'ON':'OFF',adjust:()=>{if(RT.roomToneState().active)RT.bedOff();else RT.bedOn();}},
+      section('Horror mix'),
+      {id:'audio-heartbeat',label:'HEARTBEAT',value:()=>godLevelLabel(godFxOverride.heartbeat),adjust:(d)=>godCycleLevel('heartbeat',d)},
+      {id:'audio-hiss',label:'TAPE HISS + OVERLAY',value:()=>godLevelLabel(godFxOverride.monitorHiss),adjust:(d)=>godCycleLevel('monitorHiss',d)},
+      {id:'audio-stop',label:'STOP STORY / HISS AUDIO',value:'[STOP]',activate:()=>STORY.stopAll()},
+    ]},
+  ];
+}
+
+function closeGodMenu(){
+  if(scenes.top()?.id==='god-menu') scenes.pop();
+  if(!godMenuWasPaused) setGameplayPaused(false,{announce:false});
+}
+
+function openGodMenu(){
+  if(scenes.top()?.id==='god-menu'){closeGodMenu();return true;}
+  godMenuWasPaused=paused;
+  setGameplayPaused(true,{announce:false});
+  scenes.push(makeGodMenuScene({tabs:godTabs(),onClose:closeGodMenu}));
+  return true;
+}
+
 async function requestQuitDesktop(){
   if(IS_TAURI){
+    const {stopNativeLens}=await import('./platform/lens-service.js');
+    await stopNativeLens().catch((err)=>console.warn('[desktop] lens stop failed',err));
     await quitNativeApp().catch((err)=>console.warn('[desktop] quit failed',err));
     return;
   }
@@ -7238,13 +7825,18 @@ function openPauseMenu(){
   scenes.push(makePauseScene({
     onResume: closePauseMenu,
     onSettings: ()=>openSettingsFromPause('display'),
-    onControls: ()=>openSettingsFromPause('input'),
-    onAudio: ()=>openSettingsFromPause('audio'),
     onObjectives: openBag,
     onArchive: openArchive,
-    onRestartRun: beginNewGameFlow,
+    onRestartRun: ()=>{closePauseMenu();beginNewGameFlow();},
     onReturnToTitle: returnToTitle,
     onQuitDesktop: requestQuitDesktop,
+    status:()=>({
+      area:currentAreaLabel(),
+      takes:REC.recState().takes.length,
+      light:REC.lightOn(),
+      hush:PRES.isActive()?(PRES.pressure(px,py)>0.82?'CONTACT':'TRACKING'):'QUIET',
+      time:(()=>{const total=Math.max(0,Math.floor(getSave().playSeconds||0));const h=Math.floor(total/3600);const m=Math.floor(total%3600/60);const s=total%60;return [h,m,s].map((v)=>String(v).padStart(2,'0')).join(':');})(),
+    }),
   }));
   return true;
 }
@@ -7267,6 +7859,7 @@ function openReturnIndex(){
 
 function makeTitle({wantFullscreen=false}={}){
   return makeTitleScene({
+    buildLabel: import.meta.env?.DEV ? `BUILD ${APP_VERSION} · CURRENT SOURCE` : '',
     onAudioGate:ensureCtx,
     onNewGame:()=>{ if(wantFullscreen) requestFullscreenSafe(); beginNewGameFlow(); },
     onContinue:()=>{ if(wantFullscreen) requestFullscreenSafe(); enterStory(); },
@@ -7279,9 +7872,16 @@ function makeTitle({wantFullscreen=false}={}){
 
 function returnToTitle(){
   stopHushAudioRuntime();
+  sampleFieldEnabled=false;
   storyMode=false;
+  setGameplayPaused(false,{announce:false});
   setGameChrome(false);
-  stopAllVoices();
+  silenceSampleField();
+  STORY.stopAll();
+  FEAR.setFear(0);
+  godFxOverride.heartbeat=null;
+  godFxOverride.monitorHiss=null;
+  godFxOverride.visualDread=null;
   scenes.replace(makeTitle());
 }
 
@@ -7306,7 +7906,7 @@ function beginNewGameFlow(){
     onConfirm:({preset,values})=>{
       // The title remains beneath the selector until authorization is complete.
       // Only now is the previous run replaced.
-      if(scenes.top()?.id==='title') scenes.pop();
+      scenes.remove('title');
       newGame({preset,values});
       beginRunProgression();
       enterSelectedRun();
@@ -7371,7 +7971,7 @@ function continueRunFromDesktopMenu(){
 function openAboutPanel(){
   ensureCtx();
   openSettings({inGame:isDesktopMenuInGame(), initialTab:'system'});
-  pushEvent('// Chunk Surfer 0.1.0. AUDIOCORP field monitor ready.');
+  pushEvent(`// Chunk Surfer ${APP_VERSION}. AUDIOCORP field monitor ready.`);
 }
 
 async function toggleDesktopGameMode(force){
@@ -7450,6 +8050,7 @@ function toggleDesktopMute(){
 }
 
 function restartDesktopAudio(){
+  void recoverInteractionAudio('menu-restart-audio');
   STORY.stopAll?.();
   stopAllVoices();
   stopWorldLayerVoice();
@@ -7528,6 +8129,10 @@ async function handleReservedDesktopShortcut(e){
   }
   if(key==='n'){
     beginNewGameFlow();
+    return true;
+  }
+  if(key==='g' && e.shiftKey){
+    openGodMenu();
     return true;
   }
   return false;
@@ -7727,6 +8332,11 @@ function drawTakeOverlay(cols, rows){
     drawVfdMeter(bx+9, by+9, 12, MONITOR.monitorSnapshotForRms(MIC.micLevel()), { theme:'green', thresholdDb:-12 });
     uiCenter(y-1, '● YOUR ROOM IS LIVE', 'ui-danger');
   }
+  const interference=personalInterference.active();
+  if(interference && getSave().settings?.personalInterference?.vfdText !== false){
+    const msg=String(interference.text||'').toUpperCase().slice(0, Math.max(12, body.w - 2));
+    uiCenter(by+11, msg, interference.tone || 'ui-danger');
+  }
   if(held&&instr?.silenced&&takeOrigin){
     {const q=FP.logicalToPhysical(takeOrigin.x,takeOrigin.y);drawRecorderReturn(currentFacilityMapModel(),{x:q.x/(currentFacilityMapSource()?.topologyStride||1),y:q.z/(currentFacilityMapSource()?.topologyStride||1)},{now:performance.now()});}
   }
@@ -7778,6 +8388,15 @@ function installProbe(){
       return ok;
     },
     clearMapContact:()=>{ HUSH_MAP_TELEMETRY.reset(); facilityMapCache={key:null,model:null}; return true; },
+    chunkSurf:()=>({
+      available:chunkSurfAvailable(),
+      mandatory:chunkSurfMandatory(),
+      completed:chunkSurfCompleted(),
+      bestEligible:flagTest(CHUNK_SURF_FLAGS.bestEligible),
+      offered:flagTest(CHUNK_SURF_FLAGS.offered),
+      entered:flagTest(CHUNK_SURF_FLAGS.entered),
+    }),
+    chunkSurfStart:()=>beginChunkSurf({forced:true}),
     cell:(x,y)=>FP.cellAt(x,y),
     materialAt:(x,y)=>FP.materialAt(x,y),
     canStep:(ax,ay,bx,by)=>FP.canStep(ax,ay,bx,by,{keys:playerKeys}),
@@ -7840,12 +8459,14 @@ function installProbe(){
     // ── M4.2: the reader, the radio, the tape ──────────────────────────────
     scene:()=>scenes.top()?.id||null,
     read:()=>interact(),
-    lensPreset:(n)=>{ applyLensPreset(n); return !!window.__lensPromptLocked; },
+    lensPreset:(n)=>!!applyLensPreset(n),
     typing:()=>STORY.typingState(),
     audio:()=>({ ...STORY.audioState(), actx: actx ? actx.state : 'none',
       buses:{global:outGain?.gain.value??null,dialog:dialogGain?.gain.value??null,sfx:sfxGain?.gain.value??null,direct:sfxDirectGain?.gain.value??null,music:musicGain?.gain.value??null},
       mic:{state:MIC.micState(),level:MIC.micLevel(),maySpoil:MIC.micMaySpoil()},
-      monitor:MONITOR.monitorSnapshot() }),
+      monitor:MONITOR.monitorSnapshot(), recovery:audioRecovery?.snapshot?.()||null }),
+    audioSuspend:()=>actx?.suspend?.(),
+    audioRecover:(reason='probe')=>recoverInteractionAudio(reason),
     monitor:()=>MONITOR.monitorSnapshot(),
     monitorTest:(level)=>MONITOR.monitorInject(level),
     // Whatever conversation is on top, as data: the line, who says it, how much
@@ -7878,6 +8499,7 @@ function installProbe(){
       if(!F) return false; ensureCtx(); openBattle(F(!!named), { onWin:()=>{}, onLose:()=>{} }); return true; },
     playbackDialog:(room)=>{ maybePlaybackDialog(room); return scenes.top()?.id||null; },
     battleState:()=>{ const v=scenes.top()?.battleView?.(); return v||null; },
+    coldOpen:()=>{godColdOpen();return true;},
     encounters:()=>({
       ...ENCOUNTERS.encounterState(),active:activeBattleId,
       gates:{planName,recording:REC.isRecording(),monitoring:REC.isMonitoring(),room:currentWorld(),
@@ -7941,6 +8563,7 @@ function installProbe(){
 
 function enterJustSurf(){
   stopHushAudioRuntime();
+  sampleFieldEnabled=true;
   storyMode=false;
   STORY.stopAll();
   setGameChrome(false);
@@ -7966,7 +8589,20 @@ async function bootScenes(){
   { const vs=getSave().settings?.vfd; if(vs) applyVfdSettings(vs); }
   terrorInit();
   uiInit(MAP_EL);
-  scenes.scenesInit({ applyLensPreset });
+  uiSetScale(displaySettings.uiScale);
+  scenes.scenesInit({ applyLookProfile, applyLensPreset });
+
+  // The shipped 3D renderer and its material-bank upload target must exist
+  // before calibration completes. Do not make the native game wait for a
+  // threshold of retired 2D audio samples before it can render, pause, or
+  // accept a complete generated bank.
+  if(RENDERER==='3d' && !inRogue) enterRogue();
+  // The authored facility is part of the critical boot payload, not a lazy
+  // gameplay enhancement. Starting a run before this import completed made
+  // navigation fall back to an unresolved/legacy-looking map for the opening
+  // seconds (and indefinitely if the import failed). Calibration and credits
+  // now remain ahead of the title until the real plan is resident.
+  if(RENDERER==='3d') await loadBuilding();
 
   if(qp.has('debug') || qp.has('progresslab')){
     window.__progress={
@@ -7983,35 +8619,56 @@ async function bootScenes(){
     if(DEBUG_KEYS_BTN) DEBUG_KEYS_BTN.style.display='none';
   }
 
-  if(qp.has('progresslab')){ scenes.push(makeProgressionLabScene()); return; }
-  if(qp.has('baglab')){ scenes.push(makeBagLabScene()); return; }
-  if(qp.has('maplab')){ scenes.push(makeMapLabScene()); return; }
-  if(qp.has('hushaudiolab')){
-    ensureCtx();
-    scenes.push(makeHushAudioLabScene({
-      playCue:(intent,field)=>{
-        const cue={delivery:'monitor',audio:{sound:intent?.kind==='PLAY'?'hush-fragment':'instrument',gain:.22,pitchRange:[.78,.96]}};
-        hushAudioMix?.playMischief?.(cue,{intensity:intent?.intensity||field?.absorption?.monitor||.6,pan:.55});
-      },
-      applyField:(field,{settings,monitorGain})=>hushAudioMix?.applyField?.(field,settings,{monitorGain,monitorOpen:true}),
-      resetField:()=>hushAudioMix?.reset?.(),
-    }));
-    return;
-  }
-
-  const mode=qp.get('mode');
-  if(mode==='surf'){ enterJustSurf(); return; }
-  if(mode==='story' || qp.has('talk')){
-    if(!getSave().run){ newGame({preset:'contract'}); beginRunProgression(); }
-    enterStory();
-    return;
-  }
-
-  const wantFullscreen=qp.has('fullscreen');
-  scenes.push(makeTitle({wantFullscreen}));
-  const pending=pendingReturnReport();
-  if(pending) showReturnReport(pending);
-  syncPlatform().catch(()=>{});
+  const afterCredits=()=>{
+    if(qp.has('progresslab')){ scenes.push(makeProgressionLabScene()); return; }
+    if(qp.has('baglab')){ scenes.push(makeBagLabScene()); return; }
+    if(qp.has('maplab')){ scenes.push(makeMapLabScene()); return; }
+    if(qp.has('hushaudiolab')){
+      ensureCtx();
+      scenes.push(makeHushAudioLabScene({
+        playCue:(intent,field)=>{
+          const cue={delivery:'monitor',audio:{sound:intent?.kind==='PLAY'?'hush-fragment':'instrument',gain:.22,pitchRange:[.78,.96]}};
+          hushAudioMix?.playMischief?.(cue,{intensity:intent?.intensity||field?.absorption?.monitor||.6,pan:.55});
+        },
+        applyField:(field,{settings,monitorGain})=>hushAudioMix?.applyField?.(field,settings,{monitorGain,monitorOpen:true}),
+        resetField:()=>hushAudioMix?.reset?.(),
+      }));
+      return;
+    }
+    const mode=qp.get('mode');
+    if(mode==='surf'){ enterJustSurf(); return; }
+    if(mode==='story' || qp.has('talk')){
+      if(!getSave().run){ newGame({preset:'contract'}); beginRunProgression(); }
+      enterStory();
+      return;
+    }
+    const wantFullscreen=qp.has('fullscreen');
+    const pending=pendingReturnReport();
+    scenes.push(makeTitle({wantFullscreen}));
+    if(pending)showReturnReport(pending);
+  };
+  const afterCalibration=()=>{
+    // Every launch gets the authored opening. Debug/lab destinations may change
+    // what follows it, never the calibration -> credits ordering.
+    scenes.push(makeOpeningCreditsScene({onDone:afterCredits}));
+    syncPlatform().catch(()=>{});
+  };
+  const calibrate=async()=>{
+    const lens=await ensureLensStarted(qp);
+    if(!lens)throw new Error('critical diffusion service unavailable');
+    await lens.ready;
+    return lens;
+  };
+  scenes.push(makeLensCalibrationScene({
+    start:calibrate,
+    retry:async()=>{
+      const lens=window.__diffusion;
+      if(lens?.retry)await lens.retry();
+      else await calibrate();
+    },
+    onReady:afterCalibration,
+    onQuit:requestQuitDesktop,
+  }));
 }
 
 
@@ -8028,6 +8685,23 @@ function localLensEndpoint(raw){
   }catch(_){ return null; }
 }
 async function resolveLensConfig(qp){
+  // An explicit loopback endpoint is the strongest development/test signal.
+  // It must not be shadowed by the one-command runner's default port.
+  if(import.meta.env?.DEV && qp.get('diffusion')){
+    const explicit=localLensEndpoint(qp.get('diffusion'));
+    if(!explicit)throw new Error('diffusion endpoint must be a loopback WebSocket');
+    return {url:explicit,ownedByShell:false};
+  }
+  // Native development uses the same separately launched loopback service as
+  // browser development. Production never receives this Vite-only variable
+  // and therefore remains owned, authenticated, and hard-gated by Tauri.
+  const configuredDevUrl=import.meta.env?.VITE_LENS_DEV_URL;
+  const devUrl=import.meta.env?.DEV && configuredDevUrl ? localLensEndpoint(configuredDevUrl) : null;
+  if(devUrl) return {url:devUrl,token:import.meta.env?.VITE_LENS_DEV_TOKEN||'',ownedByShell:false};
+  if(IS_TAURI){
+    const {bootstrapNativeLens}=await import('./platform/lens-service.js');
+    return {...await bootstrapNativeLens(),ownedByShell:true};
+  }
   if(qp.get('diffusion')){
     const url=localLensEndpoint(qp.get('diffusion'));
     if(!url){ console.warn('remote diffusion endpoint rejected — the lens is local-only'); return null; }
@@ -8048,147 +8722,48 @@ async function resolveLensConfig(qp){
   }
 }
 async function startLens(qp){
-  if(window.__diffusion){
-    if(storyMode&&!qp.has('skiptut')&&FP.isLoaded()&&py<=FP.toRuntimeCoord(15)){
-      window.__diffusion.setBypass(true);
-      R3.r3dSetLocalDiffusionLevel(0);
-    } else if(!window.__diffusion.isBypassed?.()){
-      R3.r3dSetLocalDiffusionLevel(Math.max(0.16, Math.min(0.72, 0.18 + (window.__lensOnset ?? LENS_FLOOR) * 0.46)));
-    }
-    return window.__diffusion;
-  }   // one lens, one socket
+  if(window.__diffusion)return window.__diffusion;
   const cfg=await resolveLensConfig(qp);
-  if(!cfg?.url){ lensDisabled=true; R3.r3dSetLocalDiffusionLevel(0); return null; }
-  const [diffusionModule={}, presetsModule={}, tunerModule={}] = await Promise.all([
-    import('./net/diffusion.js'), import('./net/lens-presets.js'), import('./net/tuner.js'),
-  ]).catch((err)=>{ console.error('lens modules failed', err); return []; });
+  if(!cfg?.url)throw new Error('critical diffusion endpoint unavailable');
+  const [diffusionModule={},presetsModule={}] = await Promise.all([
+    import('./net/diffusion.js'),import('./net/lens-presets.js'),
+  ]);
   const {surfaceDiffusionStart}=diffusionModule;
-  const {PRESETS={}}=presetsModule;
-  const {mountTuner}=tunerModule;
-  if(!surfaceDiffusionStart){ lensDisabled=true; R3.r3dSetLocalDiffusionLevel(0); return null; }
-  window.__lensPresets=PRESETS;
-
-  const preset=PRESETS[qp.get('preset')||'explore'] || PRESETS.explore;
-  const num=(k,d)=>qp.has(k)?parseFloat(qp.get(k)):d;
-  const opts={
-    strength:num('dstrength', preset.strength),
-    passes:qp.has('dpasses')?parseInt(qp.get('dpasses'),10):preset.passes,
-    feedback:num('dfeedback', preset.feedback),
-    drift:num('ddrift', preset.drift),
-    guidance:num('dguidance', preset.guidance),
-  };
-  // Generate enough variation to recover physical detail, then transfer only
-  // that detail in the shader; broad generated colour/lighting never replaces
-  // the authored material.
-  const surfaceOpts={strength:num('dstrength',.32),passes:1,guidance:num('dguidance',1.0),mix:num('dmix',.88)};
-  // undefined (not '') so the zone prompt owns it from the first frame
-  const prompt=qp.get('dprompt') || preset.prompt || undefined;
-  if(prompt) window.__lensPromptLocked=true;
-
+  const {LOOK_PROFILES={},profileBankRecipes}=presetsModule;
+  if(!surfaceDiffusionStart||!profileBankRecipes)throw new Error('look profile modules unavailable');
+  window.__lookProfiles=LOOK_PROFILES;
+  window.__lensPresets=presetsModule.PRESETS||{};
   window.__diffusion=surfaceDiffusionStart({
-    url:cfg.url,
+    url:cfg.url,token:cfg.token,
+    restartService:cfg.ownedByShell?async()=>{
+      const {bootstrapNativeLens}=await import('./platform/lens-service.js');
+      return bootstrapNativeLens({restart:true});
+    }:null,
     sourceUrl:assetUrl('assets/surfaces/surface-albedo.jpg'),
+    profiles:profileBankRecipes(),
+    beginBank:(bankId)=>R3.r3dBeginSurfaceDreamBank?.(bankId),
     applySurface:(slot,image,mix)=>R3.r3dSetSurfaceDream(slot,image,mix),
-    commitSurfaces:(mix)=>R3.r3dCommitSurfaceDream(mix),
-    setSurfaceMix:(mix)=>R3.r3dSetSurfaceDreamMix(mix),
-    clearSurfaces:()=>R3.r3dClearSurfaceDream(),
-    prompt,
-    ...opts,
-    ...surfaceOpts,
+    commitSurfaces:(mix,options)=>R3.r3dCommitSurfaceDream(mix,options),
     onStatus:(s)=>{
-      if(s.server) console.info('diffusion server:', JSON.stringify(s.server));
-      if(s.state!=='streaming') console.info('diffusion:', s.state);
-      if(s.bypassed) R3.r3dSetLocalDiffusionLevel(0);
-      else R3.r3dSetLocalDiffusionLevel(Math.max(0.16, Math.min(0.72, 0.18 + (window.__lensOnset ?? LENS_FLOOR) * 0.46)));
+      if(s.server?.type==='status')console.info('diffusion server:',JSON.stringify(s.server));
+      if(s.state==='error')console.error('diffusion calibration:',s.error);
     },
   });
-  R3.r3dSetLocalDiffusionLevel(Math.max(0.16, Math.min(0.72, 0.18 + (window.__lensOnset ?? LENS_FLOOR) * 0.46)));
-
-  // THE LENS SLEEPS IN THE DOCK.
-  //
-  // The title, the cold open, the door, and the whole of the setup run on the
-  // raymarcher's raw geometry: hard-edged, dark, honest. The loading dock is
-  // the last ordinary place the recordist stands in, and a building that has
-  // not met him yet has nothing to dream about. `setBypass` closes the socket
-  // and fades the overlay, so we do not pay a GPU for a black screen either.
-  //
-  // It wakes the first time he steps out of the dock, and never sleeps again.
-  if(storyMode && !qp.has('skiptut') && FP.isLoaded() && py<=FP.toRuntimeCoord(15)){
-    window.__diffusion.setBypass(true);
-    R3.r3dSetLocalDiffusionLevel(0);
-  }
-
-  MAP_EL.style.position='relative';
-  // lens HUD: always visible so fallback vs streaming is unambiguous
-  const hud=document.createElement('div');
-  hud.style.cssText='position:absolute;top:6px;right:10px;z-index:5;font:11px "Courier New",monospace;color:#9fb8a5;opacity:0.85;pointer-events:none;text-shadow:0 0 4px #000;';
-  MAP_EL.appendChild(hud);
-  let lastIn=0;
-  setInterval(()=>{
-    const st=window.__diffusion?.stats;
-    if(!st){ hud.textContent=''; return; }
-    const fps=st.framesIn-lastIn; lastIn=st.framesIn;
-    if(st.bypassed){
-      hud.textContent = '';                       // asleep. say nothing.
-    } else if(st.mode==='surfaces'&&st.state==='ready'&&st.resident){
-      hud.textContent = `lens ● surfaces ${st.framesIn}/${st.total}   [t] tuner`;
-    } else if(st.mode==='surfaces'&&st.state==='generating'){
-      hud.textContent = `lens ◐ material ${Math.max(1,st.slot+1)}/${st.total} · visible`;
-    } else if(st.state!=='streaming'){
-      hud.textContent = `lens ○ ${st.state} — base render`;
-    } else if(fps>0){
-      hud.textContent = `lens ● ${fps}fps ${Math.round(st.lastRttMs)}ms   [t] tuner`;
-    } else if(st.framesIn>0){
-      // No frames arriving. With sample-and-hold that is the design; without it
-      // the stream has stalled and the player should not be told it is fine.
-      hud.textContent = st.held>0 ? `lens ◍ held   [t] tuner`
-                                  : `lens ◍ stalled ${Math.round(st.lastRttMs)}ms`;
-    } else {
-      hud.textContent = `lens ○ warming — base render`;
-    }
-  }, 1000);
-
-  if(qp.get('tuner')!=='0'){
-    const t=mountTuner(MAP_EL, ()=>window.__diffusion, {
-      keys:()=>[
-        {id:'master',label:'STANDARD / FOH',granted:playerKeys.has('master'),defaultGranted:true},
-        {id:'chapel',label:'CHAPEL · C-17',granted:playerKeys.has('chapel'),defaultGranted:false},
-      ],
-      setKey:(id,granted)=>{ if(granted) playerKeys.add(id); else playerKeys.delete(id); },
-      takes:()=>TARGETS.map((id)=>({id,label:roomLabel(id).toUpperCase(),taken:REC.hasTake(id)})),
-      setTake:(id,taken)=>{REC.setTake(id,taken);saveCommit({rec:REC.saveRecState()});},
-    });
-    t.setState(surfaceOpts);
-  }
+  setLocalDiffusionActive(true);
+  return window.__diffusion;
 }
 function ensureLensStarted(qp=params()){
-  if(RENDERER!=='3d') return null;
-  if(lensDisabled) return null;
   if(window.__diffusion) return window.__diffusion;
   if(lensStarting) return lensStarting;
   lensStarting=startLens(qp)
-    .catch((err)=>{ console.error('lens start failed', err); lensDisabled=true; R3.r3dSetLocalDiffusionLevel(0); return null; })
+    .catch((err)=>{
+      console.error('lens start failed', err);
+      lensDisabled=true;
+      throw err;
+    })
     .finally(()=>{ lensStarting=null; });
   return lensStarting;
 }
-
-// Zone changes update the authored prompt but never repaint resident surfaces.
-// A material regeneration is an explicit tuner/preset operation, so ordinary
-// walking cannot produce texture swaps or camera-relative jitter.
-let lastZoneKey='';
-function updateZonePrompt(){
-  const d=window.__diffusion;
-  if(!d || !zonePromptFor || window.__lensPromptLocked) return;
-  const worldId=currentWorld();
-  const expanse=usingPlan() ? (FP.ceilAt(px,py)-FP.floorAt(px,py) > 6) : R3.r3dIsExpanse(px,py);
-  const key=`${worldId}:${expanse?'e':'c'}`;
-  if(key===lastZoneKey) return;
-  lastZoneKey=key;
-  // prompt AND seed: a world is the same world every time you walk into it
-  d.setZone(zonePromptFor(worldId, expanse), zoneSeedFor(worldId, expanse));
-}
-let zonePromptFor=null, zoneSeedFor=()=>undefined;
-import('./net/zone-prompts.js').then((m)=>{ zonePromptFor=m.promptFor; zoneSeedFor=m.seedFor; }).catch(()=>{});
 
 function render3d(){
   ensureLensStarted();
@@ -8203,7 +8778,6 @@ function render3d(){
     else R3.r3dUpdateFog(fogGet,px,py);
     r3dCache.fogSize=fog.size;
   }
-  updateZonePrompt();
   let voiceSum=0;
   for(const [,v] of voices) voiceSum+=v.target||0;
   const firstKey=keyMap.size>0 ? keyMap.values().next().value : null;
@@ -8311,7 +8885,11 @@ function enterRogue(){
   if(RENDERER==='3d'){
     // 3D mode boots straight into the live field: the 2D funnel intro is a
     // top-down construction; its 3D replacement is an M4 cutscene.
-    try{ R3.r3dInit(MAP_EL); applyPixelMeshSettings(); }catch(err){ console.error('r3d init failed', err); }
+    try{
+      R3.r3dInit(MAP_EL);
+      applyPixelMeshSettings();
+      applyLookProfile(activeLookProfile,{transitionMs:0,resetMemory:true});
+    }catch(err){ console.error('r3d init failed', err); }
     disableOnboardingForSession();
     if(storyMode) loadBuilding();
     // ?at=x,y — debug spawn (M2 will generalise this to ?warp=<room>)
@@ -8411,14 +8989,27 @@ function onKey(e){
     lastKeyDebug=`key=${e.key} code=${e.code||'(none)'} meta=${e.metaKey?1:0} ctrl=${e.ctrlKey?1:0}`
       + ` | story=${storyMode?1:0} rec=${REC.isRecording()?1:0} scenes=${scenes.depth()} rogue=${inRogue?1:0}`;
   }
-  // typing in the lens tuner must not drive the player
   if(e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+  if(!e.metaKey && !e.ctrlKey && !e.altKey && (e.key==='F10' || e.code==='F10')){
+    e.preventDefault();
+    openGodMenu();
+    return;
+  }
   if(IS_TAURI && isReservedDesktopShortcut(e)){
     e.preventDefault();
     handleReservedDesktopShortcut(e);
     return;
   }
-  if(e.key==='t' || e.key==='T') return; // owned by the tuner panel
+  if(!e.repeat) recoverInteractionAudio('keydown');
+  // Pause is a run-level command, including during authored dialogue and
+  // cutscenes. It must be offered before a blocking scene swallows Escape.
+  // Settings/God overlays own their own back behavior above an existing pause.
+  const topSceneId=scenes.top()?.id;
+  if(storyMode && e.key==='Escape' && !['pause','settings','god-menu'].includes(topSceneId)){
+    e.preventDefault();
+    openPauseMenu();
+    return;
+  }
   const moveKey=movementKey(e);
   const onboardingBlocksMove=!!(moveKey && isOnboardingActive() && (moveKey==='ArrowDown' || moveKey==='KeyS'));
   const worldCanTrackMotion=!!(moveKey && inRogue && !paused && !scenes.blocksInput() && !onboardingBlocksMove);
@@ -8440,12 +9031,6 @@ function onKey(e){
     return;
   }
   if(!inRogue) return;
-  if(storyMode && e.key==='Escape'){
-    e.preventDefault();
-    // Esc is the run-level AUDIOCORP service menu. Preferences remain app-level.
-    openPauseMenu();
-    return;
-  }
   if(storyMode){
     // Match on e.code AND e.key: e.code survives non-QWERTY layouts, e.key
     // survives environments that don't populate code (remote input, some IMEs).
@@ -8570,7 +9155,7 @@ function onKeyUp(e){
 function onBlur(){
   // Releasing focus mid-press would otherwise leave keys "stuck".
   resetMotionInput('window-blur', {stopRenderMove:true});
-  if(storyMode && inRogue && !paused && pauseWhenBlurEnabled()) togglePause();
+  void recoverInteractionAudio('window-blur');
 }
 function ensureInteractionFocus(){
   // Must work before inRogue too: the title screen is keyboard-driven, and an
@@ -8626,7 +9211,10 @@ async function boot(){
   // enterRogue path.
   window.addEventListener('keydown',onKey, {capture:true});
   window.addEventListener('keyup',onKeyUp, {capture:true});
-  window.addEventListener('pointerdown', ensureInteractionFocus, {passive:true});
+  window.addEventListener('pointerdown', ()=>{
+    void recoverInteractionAudio('pointerdown');
+    ensureInteractionFocus();
+  }, {passive:true});
   window.addEventListener('pointerdown', onScenePointer, {capture:true,passive:false});
   window.addEventListener('pointermove', onScenePointer, {capture:true,passive:false});
   window.addEventListener('pointerup', onScenePointer, {capture:true,passive:false});
@@ -8634,15 +9222,16 @@ async function boot(){
   // Fullscreen and iframe transitions silently drop keyboard focus.
   document.addEventListener('fullscreenchange', ()=>{ refreshStageLayoutSoon(); ensureInteractionFocus(); });
   window.addEventListener('message', ensureInteractionFocus, {passive:true});
-  window.addEventListener('focus', ()=>{ recoverMotionFocus('window-focus'); refreshStageLayoutSoon(); ensureInteractionFocus(); }, {passive:true});
+  window.addEventListener('focus', ()=>{ recoverInteractionFocus('window-focus'); }, {passive:true});
   document.addEventListener('visibilitychange', ()=>{
     if(document.hidden){
       resetMotionInput('visibility-hidden', {stopRenderMove:true});
+      void recoverInteractionAudio('visibility-hidden');
     } else {
-      recoverMotionFocus('visibility-visible');
-      ensureInteractionFocus();
+      recoverInteractionFocus('visibility-visible');
     }
   });
+  window.addEventListener('pageshow', ()=>{ recoverInteractionFocus('pageshow'); }, {passive:true});
   window.addEventListener('pagehide',()=>resetMotionInput('pagehide', {stopRenderMove:true}));
   window.addEventListener('blur',onBlur);
   await installDesktopMenuBridge({
@@ -8655,6 +9244,7 @@ async function boot(){
     openAchievements: openArchive,
     returnToTitle,
     togglePauseMenu: openPauseMenu,
+    openGodMenu,
     toggleGameMode: toggleDesktopGameMode,
     onNativeFullscreenToggled: syncNativeFullscreenState,
     resetWindow: resetDesktopWindowState,
@@ -8667,15 +9257,6 @@ async function boot(){
     openReleasePage,
     reportIssue: reportDesktopIssue,
   });
-  await installDesktopGlobalShortcuts({
-    quit:()=>quitNativeApp().catch((err)=>console.warn('[desktop-shortcuts] quit failed',err)),
-    minimize:()=>minimizeNativeWindow().catch((err)=>console.warn('[desktop-shortcuts] minimize failed',err)),
-    openPreferences:()=>openSettings({inGame:false,initialTab:'display'}),
-    toggleGameMode:toggleDesktopGameMode,
-    togglePauseMenu:openPauseMenu,
-    beginNewGameFlow,
-    toggleMute:toggleDesktopMute,
-  });
   preloadStoryArt();
   if(typeof window!=='undefined'){
     window.__chunkSurferDisplay={
@@ -8683,21 +9264,25 @@ async function boot(){
       setUiScale:(value)=>updateDisplaySettings({uiScale:value}),
       setRenderScale:(value)=>updateDisplaySettings({renderScale:value}),
       setDisplayMode:(id)=>updateDisplaySettings({displayMode:id}),
-      setPixelMeshMode,
       pixelMesh:()=>currentPixelMeshSettings(),
       pixelMeshStatus:()=>R3.r3dPixelMeshStatus?.() || null,
       pulsePixelMesh,
       openPause:openPauseMenu,
+      openGodMenu,
       openSettings:(tab='display')=>openSettings({initialTab:tab}),
       resetWindow:resetWindowFromMenu,
     };
-    window.__chunkSurferPixelMesh={
-      settings:()=>currentPixelMeshSettings(),
-      status:()=>R3.r3dPixelMeshStatus?.() || null,
-      setMode:setPixelMeshMode,
-      setDebugSource:(debugSource='final')=>applyPixelMeshSettings({debugSource}),
+      window.__chunkSurferPixelMesh={
+        settings:()=>currentPixelMeshSettings(),
+        status:()=>R3.r3dPixelMeshStatus?.() || null,
+        lookStatus:()=>R3.r3dLookStatus?.() || null,
+        bankStatus:()=>R3.r3dSurfaceDreamStats?.() || null,
+        setDebugSource:(debugSource='final')=>applyPixelMeshSettings({debugSource}),
+        setAccessibility:({reduceFlash=false,reduceMotion=false}={})=>applyPixelMeshSettings({reduceFlash,reduceMotion}),
+      setProfile:(id='explore')=>applyLookProfile(id),
       pulse:pulsePixelMesh,
-      forceOn:(mode='standard')=>{ setPixelMeshMode(mode); return pulsePixelMesh(2200); },
+      resetMemory:()=>R3.r3dResetVfdMemory?.(),
+      forceOn:()=>pulsePixelMesh(2200),
     };
     window.__chunkSurferAbout={
       snapshot:collectAboutSnapshot,
@@ -8729,7 +9314,7 @@ async function boot(){
         moveIntervalMs:currentMoveIntervalMs(),
         sinceLastMoveMs:Math.round(performance.now()-lastMoveAtMs),
         lastLoopMs,
-        preserveFreshHeldMotion:shouldPreserveFreshHeldMotion(),
+        focusRecovery:'reset-and-reacquire',
         motionRig:motionRig?{x:motionRig.x,z:motionRig.z,vx:motionRig.vx,vz:motionRig.vz,reason:motionRig.reason}:null,
       }),
       reset:(reason='manual-reset')=>resetMotionInput(reason,{stopRenderMove:true}),

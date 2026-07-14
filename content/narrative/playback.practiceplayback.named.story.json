@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 1,
+  "id": "playback.practiceplayback.named",
+  "title": "Practice Wing Playback · named",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "playback",
+    "named"
+  ],
+  "notes": "",
+  "regions": [
+    {
+      "id": "playback.practiceplayback.named.region",
+      "title": "Practice Wing Playback · named",
+      "kind": "scene",
+      "color": "#245c62",
+      "nodeIds": [
+        "start",
+        "listen",
+        "never",
+        "off"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "speaker": "PLAYBACK · THE PRACTICE WING",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "The take rolls. Eight practice rooms and an ensemble room of nothing, and then, rising, a kitchen. A tap. Her, humming, not knowing she is on.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "you",
+          "text": "That is the box in the spare room. That is a Tuesday. She is doing the washing up.",
+          "id": "start.line.2"
+        }
+      ],
+      "choices": [
+        {
+          "text": "listen to it",
+          "goto": "listen",
+          "id": "start.choice.1"
+        },
+        {
+          "text": "you never let her hear these",
+          "goto": "never",
+          "id": "start.choice.2"
+        },
+        {
+          "text": "turn it off",
+          "goto": "off",
+          "id": "start.choice.3"
+        }
+      ],
+      "id": "start",
+      "type": "choice"
+    },
+    "listen": {
+      "speaker": "PLAYBACK · THE PRACTICE WING",
+      "lines": [
+        {
+          "who": "sarah",
+          "text": "This is nice. You’re not recording, are you.",
+          "rate": 0.97,
+          "id": "listen.line.1"
+        },
+        {
+          "who": "me",
+          "text": "No.",
+          "id": "listen.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "He was recording. It is why he can hear her now.",
+          "id": "listen.line.3"
+        },
+        {
+          "who": "you",
+          "text": "I have hundreds of these. She is on hundreds of these and she is gone and I still have her voice and she never once got to decide that.",
+          "id": "listen.line.4"
+        }
+      ],
+      "goto": "off",
+      "id": "listen",
+      "type": "dialogue"
+    },
+    "never": {
+      "speaker": "PLAYBACK · THE PRACTICE WING",
+      "lines": [
+        {
+          "who": "you",
+          "text": "She hated being played back. Hearing herself. So I never did it in front of her. I told myself that was kindness.",
+          "id": "never.line.1"
+        },
+        {
+          "who": "you",
+          "text": "It was not kindness. It was that I got to keep her the way I keep a room — exactly, forever, and without ever having to ask.",
+          "id": "never.line.2"
+        }
+      ],
+      "goto": "off",
+      "id": "never",
+      "type": "dialogue"
+    },
+    "off": {
+      "speaker": "PLAYBACK · THE PRACTICE WING",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You take the headphones off. There is one room left, and it is the fifth room, and it is his.",
+          "id": "off.line.1"
+        }
+      ],
+      "id": "off",
+      "type": "dialogue"
+    }
+  }
+}

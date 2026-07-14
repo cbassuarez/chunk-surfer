@@ -15,6 +15,7 @@ import {
   drawTranscript,
   drawTranscriptChoices,
   drawTranscriptHeader,
+  fixedTranscriptLanes,
   layoutTranscript,
   layoutTranscriptChoices,
   transcriptSource,
@@ -138,14 +139,8 @@ export function makeColdOpenScene({
           system: v.speaker,
         });
 
-        const choices = layoutTranscriptChoices(
-          v,
-          contentW,
-        );
-
-        const choiceReserve = choices.height
-          ? choices.height + 1
-          : 0;
+        let choices = layoutTranscriptChoices(v, contentW);
+        let choiceReserve = choices.height ? choices.height + 1 : 0;
 
         let transcriptY =
           header.y + (header.rows ? 1 : 0);
@@ -173,6 +168,10 @@ export function makeColdOpenScene({
         let transcriptMaxRows = beforeTextRows;
 
         if (sidePlan.show) {
+          const lanes = fixedTranscriptLanes(contentW, { split: sidePlan });
+          choices = layoutTranscriptChoices(v, contentW, { lane: lanes.right });
+          choiceReserve = choices.height ? choices.height + 1 : 0;
+
           drawStoryArtCard(art, {
             x: contentX,
             y: transcriptY,
@@ -184,6 +183,30 @@ export function makeColdOpenScene({
           transcriptX = contentX + sidePlan.artCols + sidePlan.gap;
           transcriptW = sidePlan.textCols;
           transcriptMaxRows = sidePlan.rows;
+          const transcript = layoutTranscript(v, {
+            width: contentW,
+            maxRows: transcriptMaxRows,
+            keep: KEEP,
+            lanes,
+          });
+
+          drawTranscript(transcript, {
+            x: contentX,
+            y: transcriptY,
+            width: contentW,
+            maxRows: transcriptMaxRows,
+          });
+
+          if (choices.height) {
+            drawTranscriptChoices(choices, {
+              x: contentX,
+              y: body.y + body.h - choices.height,
+              width: contentW,
+              maxRows: choices.height,
+            });
+          }
+
+          return;
         } else {
           const artPlan = planStoryArtInPanel({
             art,
@@ -237,7 +260,6 @@ export function makeColdOpenScene({
       },
   };
 }
-
 // Long enough that the song gets a verse and the reader gets to sit in it. The
 // fade takes the whole back half, so the door lands in a mix that has emptied.
 export function makeWorldTitleScene({ onDone, audio, duration = 12.0 } = {}) {

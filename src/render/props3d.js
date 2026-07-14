@@ -34,7 +34,7 @@ void main(){
   float lambert=max(dot(n,ldir),0.12);vec3 fromEye=normalize(vWorld-uEye);float axis=dot(fromEye,uForward);
   float cone=smoothstep(.86,.94,axis)*uLight;float falloff=1.0/(1.0+.10*dist+.045*dist*dist);
   float lamp=lambert*falloff*(.35+3.2*cone);float ambient=mix(.012,.035,uLight);
-  vec3 base=uBase*texel.rgb*uZoneTint[clamp(vZone,0,9)];vec3 col=base*(ambient+lamp);
+  vec3 base=uBase*texel.rgb;vec3 col=base*(ambient+lamp);
   col=col/(1.0+col*.30);o=vec4(col,1.0);
 }`;
 

@@ -20,6 +20,15 @@ test('pause routes to pause menu, not settings', () => {
   assert.deepEqual(calls, ['pause']);
 });
 
+test('god menu has its own desktop route', () => {
+  const calls=[];
+  routeDesktopMenuAction('god_menu', {
+    openGodMenu:()=>calls.push('god'),
+    togglePauseMenu:()=>calls.push('pause'),
+  });
+  assert.deepEqual(calls,['god']);
+});
+
 test('audio diagnostics opens settings audio tab', () => {
   const calls = [];
   routeDesktopMenuAction('audio_diagnostics', {

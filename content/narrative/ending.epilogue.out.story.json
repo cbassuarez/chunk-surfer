@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "id": "ending.epilogue.out",
+  "title": "Guard Epilogue · out",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "ending",
+    "epilogue"
+  ],
+  "notes": "",
+  "regions": [
+    {
+      "id": "ending.epilogue.out.region",
+      "title": "Guard Epilogue · out",
+      "kind": "ending",
+      "color": "#ad6a3b",
+      "nodeIds": [
+        "start"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "type": "ending",
+      "lines": [
+        {
+          "who": "direction",
+          "art": {
+            "id": "guard",
+            "mode": "hero",
+            "caption": "Gate booth / dawn",
+            "status": "STILL"
+          },
+          "text": "The gate booth. The same bored man, the same book, the two columns he never explained.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "guard",
+          "text": "You came back.",
+          "id": "start.line.2"
+        },
+        {
+          "who": "you",
+          "text": "I came back.",
+          "id": "start.line.3"
+        },
+        {
+          "who": "guard",
+          "text": "Huh.",
+          "id": "start.line.4"
+        },
+        {
+          "who": "direction",
+          "text": "He turns the book around. The left column is full of names, all the way up the page. The right column — RETURNED — has been empty the whole time. He writes in it. Yours is the first.",
+          "id": "start.line.5"
+        },
+        {
+          "who": "guard",
+          "text": "Sign here. And here. The second one is new. I have never once had to use it.",
+          "id": "start.line.6"
+        }
+      ],
+      "id": "start"
+    }
+  }
+}

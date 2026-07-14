@@ -1,0 +1,268 @@
+{
+  "schemaVersion": 1,
+  "id": "conservatory.bent_rig",
+  "title": "Bent Rig",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [],
+  "notes": "",
+  "regions": [
+    {
+      "id": "conservatory.bent_rig.region",
+      "title": "Bent Rig",
+      "kind": "scene",
+      "color": "#245c62",
+      "nodeIds": [
+        "start",
+        "look",
+        "why",
+        "solder",
+        "gut",
+        "leave"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "speaker": "THE PLANT ROOM",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "Chillers, a header tank, forty years of pipework lagged in something they do not let you touch any more.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "you",
+          "text": "Nothing in here. No objective, no take, no reason to have come in.",
+          "id": "start.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "The torch finds a recorder on the floor with its lid off.",
+          "id": "start.line.3"
+        }
+      ],
+      "choices": [
+        {
+          "text": "look at it",
+          "goto": "look",
+          "id": "start.choice.1"
+        },
+        {
+          "text": "leave it. it is not yours.",
+          "goto": "leave",
+          "id": "start.choice.2"
+        }
+      ],
+      "id": "start",
+      "type": "choice"
+    },
+    "look": {
+      "speaker": "THE PLANT ROOM",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "The same model as yours, eleven years older. The lid is off and it has been off for a while.",
+          "id": "look.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "Wires soldered across the converter. Out of the case, round, and back into its own input.",
+          "id": "look.line.2"
+        },
+        {
+          "who": "you",
+          "text": "He was bending it.",
+          "id": "look.line.3"
+        },
+        {
+          "who": "you",
+          "text": "You solder across the parts that decide things, and you feed the output back in before it has finished being an output.",
+          "id": "look.line.4"
+        },
+        {
+          "who": "you",
+          "text": "People do that to make a machine sing.",
+          "id": "look.line.5"
+        }
+      ],
+      "choices": [
+        {
+          "text": "why would he do that here?",
+          "goto": "why",
+          "id": "look.choice.1"
+        },
+        {
+          "text": "reflow the joint. finish what he started.",
+          "goto": "solder",
+          "id": "look.choice.2",
+          "mutations": {
+            "set": [
+              "has.interface"
+            ]
+          }
+        },
+        {
+          "text": "strip it. those are good cells, and my torch is not immortal.",
+          "goto": "gut",
+          "id": "look.choice.3",
+          "mutations": {
+            "set": [
+              "rig.gutted"
+            ]
+          }
+        },
+        {
+          "text": "leave it",
+          "goto": "leave",
+          "id": "look.choice.4"
+        }
+      ],
+      "id": "look",
+      "type": "choice"
+    },
+    "why": {
+      "speaker": "THE PLANT ROOM",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Same circuit, run backwards, makes one stop.",
+          "id": "why.line.1"
+        },
+        {
+          "who": "you",
+          "text": "You would only build that if there were something in the signal you wanted out of the signal.",
+          "id": "why.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "The solder on the last joint is grey and cracked. He did not have time to reflow it.",
+          "id": "why.line.3"
+        },
+        {
+          "who": "you",
+          "text": "He ran out of night.",
+          "id": "why.line.4"
+        },
+        {
+          "who": "direction",
+          "text": "There is an iron in your bag, because there is always an iron in your bag. And there are two good cells in the tray, because he never got to use them either.",
+          "id": "why.line.5"
+        }
+      ],
+      "choices": [
+        {
+          "text": "reflow the joint. finish what he started.",
+          "goto": "solder",
+          "id": "why.choice.1",
+          "mutations": {
+            "set": [
+              "has.interface"
+            ]
+          }
+        },
+        {
+          "text": "strip it. those are good cells, and my torch is not immortal.",
+          "goto": "gut",
+          "id": "why.choice.2",
+          "mutations": {
+            "set": [
+              "rig.gutted"
+            ]
+          }
+        },
+        {
+          "text": "leave it",
+          "goto": "leave",
+          "id": "why.choice.3"
+        }
+      ],
+      "id": "why",
+      "type": "choice"
+    },
+    "solder": {
+      "speaker": "THE PLANT ROOM",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You kneel on a plant-room floor at two in the morning and reflow a joint a dead man left grey, because that is the job, and it was always the job.",
+          "id": "solder.line.1"
+        },
+        {
+          "who": "you",
+          "text": "There. That is a circuit. That is a horrible, beautiful, working circuit.",
+          "id": "solder.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "It goes in the bag, against the work order, where it is the heaviest thing you are carrying. The cells stay in it, because a rig with no cells is a paperweight.",
+          "id": "solder.line.3"
+        },
+        {
+          "who": "you",
+          "text": "I do not know what I would do with it.",
+          "id": "solder.line.4"
+        },
+        {
+          "who": "direction",
+          "text": "That is true when he says it. It will not be true later.",
+          "id": "solder.line.5"
+        }
+      ],
+      "id": "solder",
+      "type": "dialogue"
+    },
+    "gut": {
+      "speaker": "THE PLANT ROOM",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You take the cells and you leave the rig, which is the practical thing, and you are a practical man.",
+          "id": "gut.line.1"
+        },
+        {
+          "who": "you",
+          "text": "Two good cells. That is another few hours of light, and light is the only thing in here that has ever helped me.",
+          "id": "gut.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "The wires he soldered go slack in the tray. You cannot reflow a circuit you have taken the heart out of, and you have taken the heart out of it.",
+          "id": "gut.line.3"
+        },
+        {
+          "who": "you",
+          "text": "He would have understood. He ran out of night too.",
+          "id": "gut.line.4"
+        },
+        {
+          "who": "direction",
+          "text": "He would not have understood. He spent his last hours building this instead of lighting his way, and that is the whole difference between you.",
+          "id": "gut.line.5"
+        }
+      ],
+      "id": "gut",
+      "type": "dialogue"
+    },
+    "leave": {
+      "speaker": "THE PLANT ROOM",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Not mine. And I have four rooms to do.",
+          "id": "leave.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "You leave it exactly where he left it, which is a thing you are good at.",
+          "id": "leave.line.2"
+        }
+      ],
+      "id": "leave",
+      "type": "dialogue"
+    }
+  }
+}

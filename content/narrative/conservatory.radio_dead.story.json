@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "id": "conservatory.radio_dead",
+  "title": "Dead Radio",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [],
+  "notes": "",
+  "regions": [
+    {
+      "id": "conservatory.radio_dead.region",
+      "title": "Dead Radio",
+      "kind": "scene",
+      "color": "#245c62",
+      "nodeIds": [
+        "start",
+        "again",
+        "shake",
+        "clip"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "The carrier is gone. No hiss, no channel, not even the sound of a channel with nobody on it.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "you",
+          "text": "Dead. And it stays clipped to my belt, because it is their radio.",
+          "id": "start.line.2"
+        }
+      ],
+      "choices": [
+        {
+          "text": "try channel two again",
+          "goto": "again",
+          "id": "start.choice.1"
+        },
+        {
+          "text": "shake it",
+          "goto": "shake",
+          "id": "start.choice.2"
+        },
+        {
+          "text": "clip it back on and get on with it",
+          "goto": "clip",
+          "id": "start.choice.3"
+        }
+      ],
+      "id": "start",
+      "type": "choice"
+    },
+    "again": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "me",
+          "text": "Four four one seven, radio check.",
+          "id": "again.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "Nothing. Not silence — nothing. A silence would have a floor to it.",
+          "id": "again.line.2"
+        },
+        {
+          "who": "me",
+          "text": "Four four one seven.",
+          "id": "again.line.3"
+        }
+      ],
+      "choices": [
+        {
+          "text": "shake it",
+          "goto": "shake",
+          "id": "again.choice.1"
+        },
+        {
+          "text": "clip it back on",
+          "goto": "clip",
+          "id": "again.choice.2"
+        }
+      ],
+      "id": "again",
+      "type": "choice"
+    },
+    "shake": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You shake it. Everybody shakes it.",
+          "shake": 1.1,
+          "shakeMs": 260,
+          "id": "shake.line.1",
+          "cues": [
+            "squelch"
+          ]
+        },
+        {
+          "who": "direction",
+          "text": "A squelch, one syllable long, at about ninety decibels, in a building where the loudest thing all night has been your own knee.",
+          "id": "shake.line.2"
+        },
+        {
+          "who": "you",
+          "text": "He told me not to do that.",
+          "id": "shake.line.3"
+        },
+        {
+          "who": "you",
+          "text": "He told me twice, and he thought it was funny, and it was.",
+          "id": "shake.line.4"
+        }
+      ],
+      "goto": "clip",
+      "id": "shake",
+      "type": "dialogue"
+    },
+    "clip": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "It goes back on your belt, where it will stay, because it is not yours to leave anywhere.",
+          "id": "clip.line.1"
+        }
+      ],
+      "id": "clip",
+      "type": "dialogue"
+    }
+  }
+}

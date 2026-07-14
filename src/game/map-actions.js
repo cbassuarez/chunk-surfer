@@ -25,11 +25,12 @@ export function resolveMapAction(selected, actionId, api = {}) {
 }
 
 export function mapActionRail(selected, { floorCount = 1 } = {}) {
-  const actions = [['ARROWS', 'SELECT']];
-  if (floorCount > 1) actions.push(['[ / ]', 'FLOOR']);
-  if (selected?.objective?.notes?.length || selected?.attached) actions.push(['ENTER', 'READ FILE']);
-  if (selected?.waypoint || selected?.marked) actions.push(['SPACE', 'CLEAR WAYPOINT']);
-  else if (selected?.waypointable !== false) actions.push(['SPACE', 'MARK WAYPOINT']);
+  const actions = [['ARROWS/WASD', 'SELECT ROOM']];
+  if (floorCount > 1) actions.push(['[ / ]', 'CHANGE FLOOR']);
+  actions.push(['C', 'CENTER ON YOU']);
+  if (selected?.objective?.notes?.length || selected?.attached) actions.push(['ENTER', 'OPEN FILE']);
+  if (selected?.waypoint || selected?.marked) actions.push(['SPACE', 'CLEAR TARGET']);
+  else if (selected && selected.waypointable !== false) actions.push(['SPACE', 'SET TARGET']);
   actions.push(['B', 'CLOSE']);
   return actions;
 }

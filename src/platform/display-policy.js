@@ -1,30 +1,36 @@
 export const DISPLAY_CONTRACT = Object.freeze({
-  version: 2,
+  version: 3,
   design: Object.freeze({ width: 1280, height: 800 }),
-  minimum: Object.freeze({ width: 1280, height: 800 }),
+  minimum: Object.freeze({ width: 960, height: 600 }),
   safeMinimum: Object.freeze({ width: 960, height: 600 }),
   defaultWindow: Object.freeze({ width: 1280, height: 800 }),
   windowPresets: Object.freeze([
-    Object.freeze({ id: '1280x800', width: 1280, height: 800, label: '1280×800' }),
-    Object.freeze({ id: '1440x900', width: 1440, height: 900, label: '1440×900' }),
-    Object.freeze({ id: '1600x900', width: 1600, height: 900, label: '1600×900' }),
-    Object.freeze({ id: '1920x1080', width: 1920, height: 1080, label: '1920×1080' }),
+    Object.freeze({ id: '960x600', width: 960, height: 600, label: '960×600 · 16:10' }),
+    Object.freeze({ id: '1280x720', width: 1280, height: 720, label: '1280×720 · 16:9' }),
+    Object.freeze({ id: '1280x800', width: 1280, height: 800, label: '1280×800 · 16:10 · Recommended' }),
+    Object.freeze({ id: '1440x900', width: 1440, height: 900, label: '1440×900 · 16:10' }),
+    Object.freeze({ id: '1600x900', width: 1600, height: 900, label: '1600×900 · 16:9' }),
+    Object.freeze({ id: '1680x1050', width: 1680, height: 1050, label: '1680×1050 · 16:10' }),
+    Object.freeze({ id: '1920x1080', width: 1920, height: 1080, label: '1920×1080 · 16:9' }),
+    Object.freeze({ id: '1920x1200', width: 1920, height: 1200, label: '1920×1200 · 16:10' }),
   ]),
   uiScalePresets: Object.freeze([
+    Object.freeze({ id: '80', value: 0.8, label: '80%' }),
     Object.freeze({ id: '90', value: 0.9, label: '90%' }),
-    Object.freeze({ id: '100', value: 1, label: '100%' }),
+    Object.freeze({ id: '100', value: 1, label: '100% · Recommended' }),
     Object.freeze({ id: '110', value: 1.1, label: '110%' }),
     Object.freeze({ id: '125', value: 1.25, label: '125%' }),
+    Object.freeze({ id: '150', value: 1.5, label: '150%' }),
   ]),
   renderScalePresets: Object.freeze([
-    Object.freeze({ id: 'auto', value: 'auto', label: 'Auto' }),
+    Object.freeze({ id: 'auto', value: 'auto', label: 'Auto · Recommended' }),
+    Object.freeze({ id: '50', value: 0.5, label: 'Performance · 50%' }),
     Object.freeze({ id: '75', value: 0.75, label: '75%' }),
-    Object.freeze({ id: '100', value: 1, label: '100%' }),
-    Object.freeze({ id: '125', value: 1.25, label: '125%' }),
+    Object.freeze({ id: '100', value: 1, label: 'Native · 100%' }),
   ]),
   displayModes: Object.freeze([
     Object.freeze({ id: 'windowed', label: 'Windowed' }),
-    Object.freeze({ id: 'game-mode', label: 'Game Mode Fullscreen' }),
+    Object.freeze({ id: 'game-mode', label: 'Fullscreen' }),
   ]),
 });
 
@@ -59,7 +65,9 @@ function finitePositive(value, fallback) {
 }
 
 export function findWindowPreset(id, contract = DISPLAY_CONTRACT) {
-  return contract.windowPresets.find((preset) => preset.id === id) || contract.windowPresets[0];
+  return contract.windowPresets.find((preset) => preset.id === id)
+    || contract.windowPresets.find((preset) => preset.id === DEFAULT_DISPLAY_SETTINGS.windowPreset)
+    || contract.windowPresets[0];
 }
 
 export function findDisplayOption(key, value, contract = DISPLAY_CONTRACT) {

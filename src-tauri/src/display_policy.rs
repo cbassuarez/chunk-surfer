@@ -5,8 +5,10 @@ const DESIGN_WIDTH: f64 = 1280.0;
 const DESIGN_HEIGHT: f64 = 800.0;
 const CONFIG_MIN_WIDTH: f64 = 960.0;
 const CONFIG_MIN_HEIGHT: f64 = 600.0;
-const MONITOR_SAFE_WIDTH: f64 = 0.92;
-const MONITOR_SAFE_HEIGHT: f64 = 0.90;
+// Predictable logical margins for the menu bar, Dock/taskbar, title bar, and
+// resize affordances. Percentage clamps behave badly on ultrawide displays.
+const MONITOR_MARGIN_X: f64 = 48.0;
+const MONITOR_MARGIN_Y: f64 = 112.0;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct WindowMetrics {
@@ -30,7 +32,10 @@ fn main_window(app: &AppHandle) -> Result<WebviewWindow, String> {
 }
 
 fn monitor_safe_logical_size(window: &WebviewWindow) -> Option<(f64, f64)> {
-    let monitor = window.current_monitor().ok().flatten()
+    let monitor = window
+        .current_monitor()
+        .ok()
+        .flatten()
         .or_else(|| window.primary_monitor().ok().flatten())?;
     let size = monitor.size();
     let scale = monitor.scale_factor();
@@ -38,14 +43,50 @@ fn monitor_safe_logical_size(window: &WebviewWindow) -> Option<(f64, f64)> {
         return None;
     }
     Some((
-        size.width as f64 / scale * MONITOR_SAFE_WIDTH,
-        size.height as f64 / scale * MONITOR_SAFE_HEIGHT,
+        (size.width as f64 / scale - MONITOR_MARGIN_X).max(320.0),
+        (size.height as f64 / scale - MONITOR_MARGIN_Y).max(240.0),
     ))
+}
+
+fn fit_size_preserving_aspect(
+    width: f64,
+    height: f64,
+    min_w: f64,
+    min_h: f64,
+    max_w: f64,
+    max_h: f64,
+) -> (f64, f64) {
+    let requested_w = if width.is_finite() && width > 0.0 {
+        width
+    } else {
+        DESIGN_WIDTH
+    };
+    let requested_h = if height.is_finite() && height > 0.0 {
+        height
+    } else {
+        DESIGN_HEIGHT
+    };
+    let down = 1.0_f64.min(max_w / requested_w).min(max_h / requested_h);
+    let mut fitted_w = requested_w * down;
+    let mut fitted_h = requested_h * down;
+    let up = 1.0_f64.max(min_w / fitted_w).max(min_h / fitted_h);
+    if fitted_w * up <= max_w + 0.5 && fitted_h * up <= max_h + 0.5 {
+        fitted_w *= up;
+        fitted_h *= up;
+    }
+    (fitted_w.round(), fitted_h.round())
 }
 
 fn effective_default_size(window: &WebviewWindow) -> (f64, f64) {
     if let Some((safe_w, safe_h)) = monitor_safe_logical_size(window) {
-        (DESIGN_WIDTH.min(safe_w), DESIGN_HEIGHT.min(safe_h))
+        fit_size_preserving_aspect(
+            DESIGN_WIDTH,
+            DESIGN_HEIGHT,
+            CONFIG_MIN_WIDTH.min(safe_w),
+            CONFIG_MIN_HEIGHT.min(safe_h),
+            safe_w,
+            safe_h,
+        )
     } else {
         (DESIGN_WIDTH, DESIGN_HEIGHT)
     }
@@ -53,24 +94,23 @@ fn effective_default_size(window: &WebviewWindow) -> (f64, f64) {
 
 fn effective_min_size(window: &WebviewWindow) -> (f64, f64) {
     if let Some((safe_w, safe_h)) = monitor_safe_logical_size(window) {
-        // On normal displays this is the authored 1280x800 floor. On constrained
-        // displays it becomes screen-relative, and the frontend stage scales the
-        // authored output down cleanly instead of cropping.
-        (
-            DESIGN_WIDTH.min(safe_w).max(CONFIG_MIN_WIDTH.min(safe_w)),
-            DESIGN_HEIGHT.min(safe_h).max(CONFIG_MIN_HEIGHT.min(safe_h)),
-        )
+        (CONFIG_MIN_WIDTH.min(safe_w), CONFIG_MIN_HEIGHT.min(safe_h))
     } else {
-        (DESIGN_WIDTH, DESIGN_HEIGHT)
+        (CONFIG_MIN_WIDTH, CONFIG_MIN_HEIGHT)
     }
 }
 
 fn clamp_window_size(window: &WebviewWindow, width: f64, height: f64) -> (f64, f64) {
     let (min_w, min_h) = effective_min_size(window);
-    let (max_w, max_h) = monitor_safe_logical_size(window).unwrap_or((width.max(min_w), height.max(min_h)));
-    (
-        width.max(min_w).min(max_w.max(min_w)),
-        height.max(min_h).min(max_h.max(min_h)),
+    let (max_w, max_h) =
+        monitor_safe_logical_size(window).unwrap_or((width.max(min_w), height.max(min_h)));
+    fit_size_preserving_aspect(
+        width,
+        height,
+        min_w,
+        min_h,
+        max_w.max(min_w),
+        max_h.max(min_h),
     )
 }
 
@@ -120,7 +160,9 @@ pub fn reset_main_window(app: &AppHandle) -> Result<(), String> {
 
 pub fn set_game_mode(app: &AppHandle, enabled: bool) -> Result<(), String> {
     let window = main_window(app)?;
-    window.set_fullscreen(enabled).map_err(|err| err.to_string())
+    window
+        .set_fullscreen(enabled)
+        .map_err(|err| err.to_string())
 }
 
 #[tauri::command]
@@ -185,4 +227,21 @@ pub fn chunk_window_is_focused(app: AppHandle) -> Result<bool, String> {
 pub fn chunk_quit(app: AppHandle) -> Result<(), String> {
     app.exit(0);
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::fit_size_preserving_aspect;
+
+    #[test]
+    fn clamps_with_one_uniform_scale() {
+        let size = fit_size_preserving_aspect(1920.0, 1080.0, 960.0, 600.0, 1440.0, 900.0);
+        assert_eq!(size, (1440.0, 810.0));
+    }
+
+    #[test]
+    fn preserves_a_valid_requested_size() {
+        let size = fit_size_preserving_aspect(1280.0, 800.0, 960.0, 600.0, 1600.0, 1000.0);
+        assert_eq!(size, (1280.0, 800.0));
+    }
 }

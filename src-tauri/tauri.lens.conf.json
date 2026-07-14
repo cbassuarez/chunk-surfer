@@ -1,0 +1,10 @@
+{
+  "bundle": {
+    "externalBin": [
+      "binaries/chunk-lens"
+    ],
+    "resources": {
+      "lens-resources/lens/": "lens/"
+    }
+  }
+}

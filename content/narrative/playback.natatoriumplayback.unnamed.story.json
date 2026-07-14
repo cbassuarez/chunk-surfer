@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "id": "playback.natatoriumplayback.unnamed",
+  "title": "Natatorium Playback · unnamed",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "playback",
+    "unnamed"
+  ],
+  "notes": "",
+  "regions": [
+    {
+      "id": "playback.natatoriumplayback.unnamed.region",
+      "title": "Natatorium Playback · unnamed",
+      "kind": "scene",
+      "color": "#245c62",
+      "nodeIds": [
+        "start",
+        "again",
+        "off"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "speaker": "PLAYBACK · THE NATATORIUM",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "The drained pool plays back as six metres of tile and a noise floor with nowhere to go.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "Under it: one wet footstep from the bottom of a basin that has been dry since April.",
+          "id": "start.line.2"
+        },
+        {
+          "who": "you",
+          "text": "I was on the deck. I never went down there.",
+          "id": "start.line.3"
+        },
+        {
+          "who": "direction",
+          "text": "The footstep happens again without the transport moving.",
+          "id": "start.line.4"
+        }
+      ],
+      "choices": [
+        {
+          "text": "play the step once more",
+          "goto": "again",
+          "id": "start.choice.1"
+        },
+        {
+          "text": "stop playback",
+          "goto": "off",
+          "id": "start.choice.2"
+        }
+      ],
+      "id": "start",
+      "type": "choice"
+    },
+    "again": {
+      "speaker": "PLAYBACK · THE NATATORIUM",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "One step. Then the small sound of somebody deciding not to take another.",
+          "id": "again.line.1"
+        },
+        {
+          "who": "you",
+          "text": "That is not in the room. It is on the take. Those are different problems.",
+          "id": "again.line.2"
+        }
+      ],
+      "goto": "off",
+      "id": "again",
+      "type": "dialogue"
+    },
+    "off": {
+      "speaker": "PLAYBACK · THE NATATORIUM",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You stop the tape. The basin remains empty.",
+          "id": "off.line.1"
+        }
+      ],
+      "id": "off",
+      "type": "dialogue"
+    }
+  }
+}

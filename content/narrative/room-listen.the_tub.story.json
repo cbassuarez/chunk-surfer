@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "id": "room-listen.the_tub",
+  "title": "Room Listen · the tub",
+  "status": "active",
+  "entry": "start",
+  "entries": [],
+  "tags": [
+    "room-listen"
+  ],
+  "notes": "",
+  "regions": [
+    {
+      "id": "room-listen.the_tub.region",
+      "title": "Room Listen · the tub",
+      "kind": "scene",
+      "color": "#245c62",
+      "nodeIds": [
+        "start",
+        "roll",
+        "ex0",
+        "ex1"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "Headphones on. {label} comes up in the cans — six metres of tile and no water, and every sound of yours handed back four times.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "you",
+          "text": "That is the level. That is the room.",
+          "id": "start.line.2"
+        }
+      ],
+      "choices": [
+        {
+          "text": "the acoustics",
+          "goto": "ex0",
+          "hideWhenAsked": false,
+          "id": "start.choice.1"
+        },
+        {
+          "text": "the empty pool",
+          "goto": "ex1",
+          "hideWhenAsked": false,
+          "id": "start.choice.2"
+        },
+        {
+          "text": "kill the light and roll",
+          "goto": "roll",
+          "id": "start.choice.3"
+        }
+      ],
+      "id": "start",
+      "type": "choice"
+    },
+    "roll": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You kill the light. The room drops out of the cans, the tape hiss comes up, and there is you and forty-five seconds and nothing else.",
+          "id": "roll.line.1"
+        },
+        {
+          "who": "you",
+          "text": "Sixty seconds of nothing, with nothing added. Do not move.",
+          "id": "roll.line.2"
+        }
+      ],
+      "id": "roll",
+      "type": "dialogue"
+    },
+    "ex0": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Hard tile, hard ceiling, nothing to soak it up. A cough in here is a chord.",
+          "id": "ex0.line.1"
+        },
+        {
+          "who": "you",
+          "text": "You do not record a room like this. You survive it, for sixty seconds, and you get the file.",
+          "id": "ex0.line.2"
+        }
+      ],
+      "goto": "start",
+      "id": "ex0",
+      "type": "dialogue"
+    },
+    "ex1": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "The deep end goes down into black. There is a ladder, and the ladder goes into the dark, and the dark has a floor to it somewhere.",
+          "id": "ex1.line.1"
+        },
+        {
+          "who": "you",
+          "text": "A pool with no water is just a very clean room that is the wrong shape.",
+          "id": "ex1.line.2"
+        }
+      ],
+      "goto": "start",
+      "id": "ex1",
+      "type": "dialogue"
+    }
+  }
+}

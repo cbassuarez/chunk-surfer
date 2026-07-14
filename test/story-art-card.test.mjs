@@ -5,6 +5,7 @@ import {
   planStoryArtSideBySide,
   storyArtCols,
   storyArtSideBySideCols,
+  storyArtSideBySideSplit,
   storyArtSideBySidePanelRows,
   storyArtSideBySideRows,
   storyArtFits,
@@ -70,9 +71,16 @@ test('story art side-by-side uses one fixed authored card size', () => {
   });
   assert.equal(plan.show, true);
   assert.equal(plan.rows, storyArtSideBySideRows());
-  assert.equal(plan.artCols, storyArtSideBySideCols());
+  assert.equal(plan.artCols, 40);
+  assert.equal(plan.textCols, 40);
   assert.equal(plan.fixed, true);
   assert.ok(plan.textCols >= 32);
+});
+
+test('story art side-by-side splits the body into stable 50/50 lanes', () => {
+  assert.deepEqual(storyArtSideBySideSplit(82), { artCols: 40, textCols: 40, gap: 2 });
+  assert.deepEqual(storyArtSideBySideSplit(83), { artCols: 40, textCols: 41, gap: 2 });
+  assert.ok(storyArtSideBySideCols() <= 40);
 });
 
 test('story art side-by-side hides instead of shrinking the card when narrow', () => {

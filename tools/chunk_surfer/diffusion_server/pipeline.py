@@ -41,6 +41,8 @@ the disagreement is exactly what a naive swap gets wrong. So a Model states it:
 from __future__ import annotations
 
 import io
+import hashlib
+import json
 import math
 import os
 from dataclasses import dataclass, field
@@ -56,6 +58,72 @@ from diffusers import (
 )
 from PIL import Image
 
+BUNDLED = os.environ.get("LENS_BUNDLED") == "1"
+MODEL_ROOT = os.environ.get("LENS_MODEL_ROOT")
+RESOURCE_ROOT = os.environ.get("LENS_RESOURCE_DIR")
+_validated_weights_sha256: str | None = None
+
+
+def _model_ref(remote: str, folder: str) -> str:
+    if not BUNDLED:
+        return remote
+    if not MODEL_ROOT:
+        raise RuntimeError("LENS_MODEL_ROOT is required for the bundled service")
+    local = os.path.join(MODEL_ROOT, folder)
+    if not os.path.isdir(local):
+        raise RuntimeError(f"bundled model resource is missing: {local}")
+    return local
+
+
+def validate_bundled_resources() -> str | None:
+    """Verify every packaged model byte before the first credit can appear."""
+    global _validated_weights_sha256
+    if not BUNDLED:
+        return None
+    if _validated_weights_sha256:
+        return _validated_weights_sha256
+    if not RESOURCE_ROOT:
+        raise RuntimeError("LENS_RESOURCE_DIR is required for the bundled service")
+    root = os.path.realpath(RESOURCE_ROOT)
+    with open(os.path.join(root, "manifest.json"), "r", encoding="utf-8") as handle:
+        manifest = json.load(handle)
+    if manifest.get("schema") != 1 or manifest.get("serviceSchema") != 2:
+        raise RuntimeError("bundled model manifest schema is incompatible")
+    if manifest.get("modelId") != "sd15-hyper4" or manifest.get("resolution") != 512:
+        raise RuntimeError("bundled model manifest describes the wrong runtime")
+    actual = {}
+    for relative, expected in manifest.get("files", {}).items():
+        path = os.path.realpath(os.path.join(root, relative))
+        if os.path.commonpath((root, path)) != root:
+            raise RuntimeError("bundled model manifest contains an unsafe path")
+        digest = hashlib.sha256()
+        with open(path, "rb") as handle:
+            for block in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(block)
+        value = digest.hexdigest()
+        if value != expected:
+            raise RuntimeError(f"bundled model checksum mismatch: {relative}")
+        actual[relative] = value
+    aggregate = hashlib.sha256(
+        json.dumps(actual, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    if aggregate != manifest.get("weightsSha256"):
+        raise RuntimeError("bundled aggregate weight checksum mismatch")
+    _validated_weights_sha256 = aggregate
+    return aggregate
+
+
+def bundled_weights_sha256() -> str | None:
+    if _validated_weights_sha256:
+        return _validated_weights_sha256
+    if not BUNDLED or not RESOURCE_ROOT:
+        return None
+    try:
+        with open(os.path.join(RESOURCE_ROOT, "manifest.json"), "r", encoding="utf-8") as handle:
+            return json.load(handle).get("weightsSha256")
+    except (OSError, json.JSONDecodeError):
+        return None
+
 # The depth ControlNet, and the whole argument for leaving SD2.1.
 #
 # Every other img2img pipeline in the world has to ESTIMATE the depth of its
@@ -67,12 +135,15 @@ from PIL import Image
 # What it buys: the hallucination can no longer wander off the geometry. Walls
 # stay where the walls are. That is the difference between a horror lens and a
 # smear, and it is worth more than any amount of GPU.
-CONTROLNET_DEPTH = "lllyasviel/control_v11f1p_sd15_depth"
+CONTROLNET_DEPTH = _model_ref("lllyasviel/control_v11f1p_sd15_depth", "controlnet-depth")
 
 # TAESD is the SD1.x tiny autoencoder — the same one sd-turbo used, because
 # sd-turbo is SD2.1-shaped and shares the 4-channel latent space. Nothing to
 # change here on the way to 1.5, which is a small mercy.
-TINY_VAE = "madebyollin/taesd"
+TINY_VAE = _model_ref("madebyollin/taesd", "taesd")
+
+SD15_BASE = _model_ref("stable-diffusion-v1-5/stable-diffusion-v1-5", "sd15")
+HYPER_SD = _model_ref("ByteDance/Hyper-SD", "hyper-sd")
 
 # 512² is not a performance lever, it is the distribution. SD1.5, like sd-turbo,
 # is trained at 512 and falls out of the world below ~448: photographs become
@@ -141,9 +212,9 @@ MODELS: dict[str, Model] = {
     # the LoRA is buying us a better *one pass*, not fewer passes.
     "sd15-hyper4": Model(
         key="sd15-hyper4",
-        base="stable-diffusion-v1-5/stable-diffusion-v1-5",
+        base=SD15_BASE,
         label="SD1.5 + Hyper-SD 4-step LoRA",
-        lora="ByteDance/Hyper-SD:Hyper-SD15-4steps-lora.safetensors",
+        lora=f"{HYPER_SD}#Hyper-SD15-4steps-lora.safetensors" if BUNDLED else "ByteDance/Hyper-SD:Hyper-SD15-4steps-lora.safetensors",
         scheduler="tcd",
         native_guidance=0.0,
         distilled_steps=4,
@@ -154,9 +225,9 @@ MODELS: dict[str, Model] = {
     # the A/B on a machine that cannot hold frame rate at four.
     "sd15-hyper1": Model(
         key="sd15-hyper1",
-        base="stable-diffusion-v1-5/stable-diffusion-v1-5",
+        base=SD15_BASE,
         label="SD1.5 + Hyper-SD 1-step LoRA",
-        lora="ByteDance/Hyper-SD:Hyper-SD15-1step-lora.safetensors",
+        lora=f"{HYPER_SD}#Hyper-SD15-1step-lora.safetensors" if BUNDLED else "ByteDance/Hyper-SD:Hyper-SD15-1step-lora.safetensors",
         scheduler="tcd",
         native_guidance=0.0,
         distilled_steps=1,
@@ -167,7 +238,7 @@ MODELS: dict[str, Model] = {
     # is the distillation or the prompt.
     "sd15-lcm": Model(
         key="sd15-lcm",
-        base="stable-diffusion-v1-5/stable-diffusion-v1-5",
+        base=SD15_BASE,
         label="SD1.5 + LCM-LoRA",
         lora="latent-consistency/lcm-lora-sdv1-5",
         scheduler="lcm",
@@ -177,7 +248,7 @@ MODELS: dict[str, Model] = {
     ),
     "sd15": Model(
         key="sd15",
-        base="stable-diffusion-v1-5/stable-diffusion-v1-5",
+        base=SD15_BASE,
         label="SD1.5 (no distillation — quality ceiling, not playable)",
         native_guidance=7.0,
         distilled_steps=20,
@@ -191,6 +262,8 @@ DEFAULT_MODEL = os.environ.get("LENS_MODEL", "sd15-hyper4")
 def pick_device() -> tuple[str, torch.dtype]:
     """CUDA, then Apple, then the couch. fp16 everywhere it is real."""
     if torch.cuda.is_available():
+        if getattr(torch.version, "hip", None):
+            return "rocm", torch.float16
         return "cuda", torch.float16
     if getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
         # MPS does fp16, and at 512² with a tiny VAE it is the difference between
@@ -224,7 +297,8 @@ class Lens:
 
 
 def _load_lora(pipe, spec: str, adapter: str) -> None:
-    repo, _, weight = spec.partition(":")
+    delimiter = "#" if "#" in spec else ":"
+    repo, _, weight = spec.partition(delimiter)
     kwargs = {"weight_name": weight} if weight else {}
     pipe.load_lora_weights(repo, adapter_name=adapter, **kwargs)
 
@@ -232,7 +306,10 @@ def _load_lora(pipe, spec: str, adapter: str) -> None:
 def build(model_key: str | None = None, style_lora: str | None = None,
           depth: bool | None = None) -> Lens:
     """Load once, at boot. Everything here is slow and none of it is per-frame."""
+    validate_bundled_resources()
     model = MODELS[model_key or DEFAULT_MODEL]
+    if BUNDLED and model.key != "sd15-hyper4":
+        raise RuntimeError("the bundled service permits only the pinned sd15-hyper4 model")
     device, dtype = pick_device()
     lens = Lens(model=model, device=device, dtype=dtype, style_lora=style_lora)
 
@@ -246,6 +323,8 @@ def build(model_key: str | None = None, style_lora: str | None = None,
     # ~1GB of CLIP weights it stops us loading, not for speed. Do not go looking
     # for a frame budget in it.) The lens only ever sees frames we rendered.
     kw = {"torch_dtype": dtype, "safety_checker": None, "requires_safety_checker": False}
+    if BUNDLED:
+        kw["local_files_only"] = True
     if model.variant and device == "cuda":
         kw["variant"] = model.variant
 
@@ -263,10 +342,12 @@ def build(model_key: str | None = None, style_lora: str | None = None,
 
     if want_depth:
         try:
-            cn = ControlNetModel.from_pretrained(CONTROLNET_DEPTH, torch_dtype=dtype)
+            cn = ControlNetModel.from_pretrained(CONTROLNET_DEPTH, torch_dtype=dtype, local_files_only=BUNDLED)
             pipe = _open(controlnet=cn)
             lens.depth = True
         except Exception as e:
+            if BUNDLED:
+                raise RuntimeError(f"bundled depth ControlNet failed validation: {e}") from e
             # Blind is a worse lens; a dead lens is no lens. Say so and carry on.
             lens.degraded = f"depth ControlNet unavailable ({str(e)[:100]}) — running blind"
             pipe = _open()
@@ -276,7 +357,7 @@ def build(model_key: str | None = None, style_lora: str | None = None,
 
     # The tiny VAE. At one UNet pass the full VAE decode is a real slice of the
     # frame, and this image is being smeared by a horror lens regardless.
-    pipe.vae = AutoencoderTiny.from_pretrained(TINY_VAE, torch_dtype=dtype).to(device)
+    pipe.vae = AutoencoderTiny.from_pretrained(TINY_VAE, torch_dtype=dtype, local_files_only=BUNDLED).to(device)
 
     # A distilled model wants its own scheduler. Loading the LoRA without it
     # gives you a grey wash and a bad afternoon.
@@ -292,6 +373,8 @@ def build(model_key: str | None = None, style_lora: str | None = None,
             adapters.append("distill")
             weights.append(1.0)
         except Exception as e:
+            if BUNDLED:
+                raise RuntimeError(f"bundled distillation LoRA failed validation: {e}") from e
             # Degrade loudly and keep serving. A missing LoRA means "slow", and
             # slow is a thing a player can see through; a crash is not.
             lens.degraded = f"distillation LoRA unavailable ({str(e)[:120]}) — running the base at {model.distilled_steps * 4} steps"

@@ -1,0 +1,28 @@
+name: Lens GPU Smoke
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate:
+    name: ${{ matrix.backend }} generation smoke
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - backend: MPS
+            labels: '["self-hosted", "macOS", "ARM64", "mps"]'
+          - backend: CUDA Windows
+            labels: '["self-hosted", "Windows", "X64", "cuda"]'
+          - backend: CUDA Linux
+            labels: '["self-hosted", "Linux", "X64", "cuda"]'
+    runs-on: ${{ fromJSON(matrix.labels) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned inference runtime
+        run: python -m pip install -r tools/chunk_surfer/diffusion_server/requirements-local.txt
+      - name: Verify backend and generate 512px material
+        run: python tools/chunk_surfer/diffusion_server/smoke-local.py --require-accelerator --size 512

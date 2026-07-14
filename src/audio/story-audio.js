@@ -375,12 +375,35 @@ export function startTapeHiss({ gain = TAPE_GAIN, fade = 0.5 } = {}) {
   const now = ctx.currentTime;
   const src = ctx.createBufferSource();
   src.buffer = buf; src.loop = true;
+  const hp = ctx.createBiquadFilter();
+  hp.type = 'highpass';
+  hp.frequency.setValueAtTime(90, now);
+  hp.Q.setValueAtTime(0.45, now);
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.setValueAtTime(9200, now);
+  lp.Q.setValueAtTime(0.52, now);
+  const shaper = ctx.createWaveShaper();
+  shaper.oversample = '2x';
+  shaper.curve = tapeDriveCurve(0);
   const g = ctx.createGain(); g.gain.setValueAtTime(0, now);
-    src.connect(g); g.connect(outBus('sfx'));
+    src.connect(hp); hp.connect(lp); lp.connect(shaper); shaper.connect(g); g.connect(outBus('sfx'));
   try { src.start(now); } catch (_) { return; }
-  tape = { nodes: [src, g], gain: g };
+  tape = { nodes: [src, hp, lp, shaper, g], gain: g, hp, lp, shaper, driveBucket: 0 };
   setGain(g, gain, fade);
   if (booth) setGain(booth.gain, 0.16, fade);       // the room recedes
+}
+
+function tapeDriveCurve(intensity = 0) {
+  const p = Math.max(0, Math.min(1, Number(intensity) || 0));
+  const amount = 0.6 + p * 4.4;
+  const n = 512;
+  const curve = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const x = (i / (n - 1)) * 2 - 1;
+    curve[i] = Math.tanh(x * amount) / Math.tanh(amount);
+  }
+  return curve;
 }
 
 // Ride the hiss live. A take is forty-five seconds of nothing that gets louder,
@@ -388,6 +411,27 @@ export function startTapeHiss({ gain = TAPE_GAIN, fade = 0.5 } = {}) {
 // there is, and the hiss is the sound of the tape agreeing with you.
 export function setTapeHiss(gain, ramp = 0.25) {
   if (tape) setGain(tape.gain, Math.max(0, gain), ramp);
+}
+export function setTapeHissPressure(intensity, { min = 0.10, max = 0.60, ramp = 0.25 } = {}) {
+  if (!tape || !ctx) return;
+  const p = Math.max(0, Math.min(1, Number(intensity) || 0));
+  const eased = p * p * (3 - 2 * p);
+  setGain(tape.gain, min + (max - min) * eased, ramp);
+  const now = ctx.currentTime;
+  tape.hp.frequency.cancelScheduledValues(now);
+  tape.lp.frequency.cancelScheduledValues(now);
+  tape.lp.Q.cancelScheduledValues(now);
+  tape.hp.frequency.setValueAtTime(tape.hp.frequency.value, now);
+  tape.lp.frequency.setValueAtTime(tape.lp.frequency.value, now);
+  tape.lp.Q.setValueAtTime(tape.lp.Q.value, now);
+  tape.hp.frequency.linearRampToValueAtTime(90 + eased * 1320, now + Math.max(0.02, ramp));
+  tape.lp.frequency.linearRampToValueAtTime(9200 - eased * 5200, now + Math.max(0.02, ramp));
+  tape.lp.Q.linearRampToValueAtTime(0.52 + eased * 2.4, now + Math.max(0.02, ramp));
+  const bucket = Math.round(eased * 16);
+  if (bucket !== tape.driveBucket) {
+    tape.driveBucket = bucket;
+    tape.shaper.curve = tapeDriveCurve(bucket / 16);
+  }
 }
 export function tapeHissGain() { return tape ? tape.gain.gain.value : 0; }
 

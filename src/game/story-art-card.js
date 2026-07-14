@@ -8,12 +8,13 @@ export const STORY_ART_LAYOUT = Object.freeze({
   boss: { minRows: 14, maxRows: 22, preferredRows: 18 },
 });
 
-// Side-by-side story plates are an authored evidence-card size, not a
-// responsive thumbnail. Long transcript or choice copy must wrap/clip inside
-// the text lane; it must never negotiate the art card down to a smaller card.
+// Side-by-side story plates split the monitor body into two fixed channels:
+// image on the left, transcript/action text on the right. Long transcript or
+// choice copy must wrap/clip inside the text lane; it must never negotiate the
+// art card down to a smaller card.
 export const STORY_ART_SIDE_BY_SIDE = Object.freeze({
   rows: 16,
-  cols: 30,
+  minArtCols: 24,
   minTextCols: 28,
   gap: 2,
   bottomPadRows: 2,
@@ -29,7 +30,16 @@ export function storyArtSideBySideRows() {
 }
 
 export function storyArtSideBySideCols() {
-  return STORY_ART_SIDE_BY_SIDE.cols;
+  return STORY_ART_SIDE_BY_SIDE.minArtCols;
+}
+
+export function storyArtSideBySideSplit(panelCols = 0, gap = STORY_ART_SIDE_BY_SIDE.gap) {
+  const cols = Math.max(0, Math.floor(Number(panelCols) || 0));
+  const g = Math.max(1, Math.floor(Number(gap) || 1));
+  const usable = Math.max(0, cols - g);
+  const artCols = Math.floor(usable / 2);
+  const textCols = usable - artCols;
+  return { artCols, textCols, gap: g };
 }
 
 export function storyArtSideBySidePanelRows({
@@ -116,8 +126,10 @@ export function planStoryArtSideBySide({
   const preferredMode = mode || art.mode || 'compact';
   const cols = Math.max(0, Math.floor(Number(panelCols) || 0));
   const rows = STORY_ART_SIDE_BY_SIDE.rows;
-  const artCols = STORY_ART_SIDE_BY_SIDE.cols;
-  const gap = STORY_ART_SIDE_BY_SIDE.gap;
+  const split = storyArtSideBySideSplit(cols, STORY_ART_SIDE_BY_SIDE.gap);
+  const artCols = split.artCols;
+  const textCols = split.textCols;
+  const gap = split.gap;
   const pad = Math.max(0, Math.floor(Number(bottomPadRows) || 0));
   const requiredRows = rows + pad;
   const availableRows = Math.max(0, Math.floor(Number(panelRows) || 0));
@@ -125,8 +137,6 @@ export function planStoryArtSideBySide({
     STORY_ART_SIDE_BY_SIDE.minTextCols,
     Math.floor(Number(minTextCols) || 0),
   );
-  const textCols = cols - artCols - gap;
-
   if (availableRows < requiredRows) {
     return {
       show: false,
@@ -138,14 +148,14 @@ export function planStoryArtSideBySide({
     };
   }
 
-  if (textCols < requiredTextCols) {
+  if (artCols < STORY_ART_SIDE_BY_SIDE.minArtCols || textCols < requiredTextCols) {
     return {
       show: false,
       rows: 0,
       artCols: 0,
       textCols: 0,
       reason: 'not-enough-fixed-art-width',
-      requiredCols: artCols + gap + requiredTextCols,
+      requiredCols: STORY_ART_SIDE_BY_SIDE.minArtCols + gap + requiredTextCols,
     };
   }
 

@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "id": "ending.sacrifice.unnamed.injuries-2",
+  "title": "Sacrifice · unnamed · 2 injuries",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "ending",
+    "unnamed"
+  ],
+  "notes": "",
+  "regions": [
+    {
+      "id": "ending.sacrifice.unnamed.injuries-2.region",
+      "title": "Sacrifice · unnamed · 2 injuries",
+      "kind": "ending",
+      "color": "#ad6a3b",
+      "nodeIds": [
+        "start"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "type": "ending",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You agree with it. It does not take the shape of a blow. It takes the shape of a sentence you finish for it.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "me",
+          "text": "I lost somebody. Everybody has lost somebody. There. Take it.",
+          "id": "start.line.2"
+        },
+        {
+          "who": "surfer",
+          "text": "Thank you. That is all it ever wanted — somebody to say it out loud in a room.",
+          "id": "start.line.3"
+        },
+        {
+          "who": "direction",
+          "text": "The recorder clicks off. The seal was never the five takes. The seal was always a building coming down on a recordist, and now the building has one.",
+          "id": "start.line.4"
+        },
+        {
+          "who": "direction",
+          "text": "You are the second thing it caught tonight, and the last.",
+          "id": "start.line.5"
+        },
+        {
+          "who": "direction",
+          "text": "Demolition is booked for 06:00. The clock reads 05:5?, and the clock was always the seal, and it is nearly closed.",
+          "id": "start.line.6"
+        }
+      ],
+      "id": "start"
+    }
+  }
+}

@@ -286,6 +286,14 @@ export function makeBagScene({
       if (nav.sectionId === 'map') {
         if (raw === '[' || code === 'BracketLeft') { changeFloor(-1); return true; }
         if (raw === ']' || code === 'BracketRight') { changeFloor(1); return true; }
+        if (k === 'c' || code === 'KeyC') {
+          mapNav = reduceMapNav(mapNav, { type: 'CENTER_PLAYER' }, model.map);
+          syncBagSelectionFromMap();
+          motion.selectionChangedAt = t;
+          AUDIO.menuMove();
+          remember();
+          return true;
+        }
         if (raw === 'ArrowUp' || k === 'w' || code === 'KeyW') { moveMap({ x: 0, y: -1 }); return true; }
         if (raw === 'ArrowDown' || k === 's' || code === 'KeyS') { moveMap({ x: 0, y: 1 }); return true; }
         if (raw === 'ArrowLeft' || k === 'a' || code === 'KeyA') { moveMap({ x: -1, y: 0 }); return true; }

@@ -1,0 +1,1531 @@
+{
+  "schemaVersion": 1,
+  "id": "battle.chapel.reason-money",
+  "title": "Chapel · reason-money",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "battle"
+  ],
+  "notes": "",
+  "regions": [
+    {
+      "id": "battle.chapel.reason-money.region",
+      "title": "Chapel · reason-money",
+      "kind": "scene",
+      "color": "#245c62",
+      "nodeIds": [
+        "start",
+        "round-1",
+        "round-2",
+        "round-3",
+        "round-4",
+        "outcome",
+        "win",
+        "lose"
+      ]
+    },
+    {
+      "id": "battle.chapel.reason-money.endings",
+      "title": "Battle outcomes",
+      "kind": "ending",
+      "color": "#8b3c48",
+      "nodeIds": [
+        "win",
+        "lose"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "type": "battle",
+      "speaker": "THE REASON YOU CAME",
+      "art": {
+        "id": "circuitBentInterface",
+        "mode": "boss",
+        "caption": "Damaged monitor path / chapel",
+        "status": "SIGNAL"
+      },
+      "lines": [
+        {
+          "who": "direction",
+          "text": "The chapel. Two banks of pews, an organ with the wind isolated, and the fifth room tone you were sent for.",
+          "id": "start.line.1",
+          "cues": [
+            "freeze"
+          ]
+        },
+        {
+          "who": "recordist",
+          "text": "Take five.",
+          "id": "start.line.2"
+        },
+        {
+          "who": "surfer",
+          "text": "Take five.",
+          "rate": 0.94,
+          "id": "start.line.3"
+        },
+        {
+          "who": "you",
+          "text": "There are two of them in here and one of them is me in eleven years.",
+          "id": "start.line.4"
+        },
+        {
+          "who": "direction",
+          "text": "It has put on a face while you were not looking. It is wearing the reason you came.",
+          "id": "start.line.5"
+        }
+      ],
+      "goto": "round-1",
+      "id": "start"
+    },
+    "round-1": {
+      "type": "checkpoint",
+      "lines": [
+        {
+          "who": "surfer",
+          "text": "Say the reason again. Say it the way you said it in the dark.",
+          "rate": 0.98,
+          "channel": "before",
+          "id": "round-1.line.1"
+        },
+        {
+          "who": "surfer",
+          "text": "Say the reason again. Say it the way you said it in the dark.",
+          "channel": "checkpoint-prompt",
+          "id": "round-1.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "It is waiting for you to agree with it. Agreeing is the only thing it cannot do for itself.",
+          "channel": "checkpoint-prompt",
+          "id": "round-1.line.3"
+        },
+        {
+          "who": "you",
+          "text": "No transient. No breath. No felt, no reed, no room.",
+          "channel": "on-listen",
+          "id": "round-1.line.4"
+        },
+        {
+          "who": "you",
+          "text": "There is nothing there, and it is speaking to me in a voice I have missed.",
+          "channel": "on-listen",
+          "id": "round-1.line.5"
+        },
+        {
+          "who": "direction",
+          "text": "The pews return it four times, and each return is more certain than you are.",
+          "channel": "after",
+          "id": "round-1.line.6"
+        }
+      ],
+      "choices": [
+        {
+          "text": "It is a recording of a room. Nothing is in here.",
+          "harder": 1,
+          "goto": "round-2",
+          "id": "round-1.choice.1"
+        },
+        {
+          "text": "Say it: that you did this for the money and hated yourself for it.",
+          "harder": 1.5,
+          "goto": "round-2",
+          "id": "round-1.choice.2"
+        },
+        {
+          "text": "Who did you lose. — Nobody. I have not lost anybody.",
+          "harder": 1,
+          "goto": "round-2",
+          "id": "round-1.choice.3"
+        }
+      ],
+      "battle": {
+        "nature": "not there",
+        "threat": 0.5
+      },
+      "id": "round-1"
+    },
+    "round-2": {
+      "type": "battle-round",
+      "lines": [
+        {
+          "who": "recordist",
+          "text": "I did the first four. You did the chapel. They said it did not matter who, so long as it was somebody.",
+          "channel": "before",
+          "id": "round-2.line.1"
+        },
+        {
+          "who": "you",
+          "text": "...four and one. Yours and mine. It overlapped.",
+          "channel": "before",
+          "id": "round-2.line.2"
+        },
+        {
+          "who": "you",
+          "text": "That is a take. That is a level and a room and a date, and the date is wrong by eleven years.",
+          "channel": "on-listen",
+          "id": "round-2.line.3"
+        },
+        {
+          "who": "you",
+          "text": "He is not haunting me. He is the reference file, and I am the room he is playing in.",
+          "channel": "on-listen",
+          "id": "round-2.line.4"
+        },
+        {
+          "who": "recordist",
+          "text": "One more and I am out of here. That is what I said too.",
+          "channel": "after",
+          "id": "round-2.line.5"
+        }
+      ],
+      "goto": "round-3",
+      "battle": {
+        "nature": "on the tape",
+        "threat": 0.66
+      },
+      "id": "round-2"
+    },
+    "round-3": {
+      "type": "checkpoint",
+      "lines": [
+        {
+          "who": "surfer",
+          "text": "Then bring me one. Bring me the one you lost and I will let the rest of it be nothing.",
+          "rate": 0.97,
+          "channel": "before",
+          "id": "round-3.line.1"
+        },
+        {
+          "who": "surfer",
+          "text": "It listened until language was an encumbrance. It became the music. Then it wanted a body back. You are a body.",
+          "channel": "checkpoint-prompt",
+          "id": "round-3.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "The organ blower is off and the organ is sounding anyway.",
+          "channel": "checkpoint-prompt",
+          "id": "round-3.line.3"
+        },
+        {
+          "who": "you",
+          "text": "It wants me to agree that you did this for the money and hated yourself for it.",
+          "channel": "on-listen",
+          "id": "round-3.line.4"
+        },
+        {
+          "who": "you",
+          "text": "I record rooms with nobody in them. It never once occurred to me that this suited me. That is not a wound. That is a man who is bad at something.",
+          "channel": "on-listen",
+          "id": "round-3.line.5"
+        },
+        {
+          "who": "direction",
+          "text": "The meter, which has never lied to you, sits flat at the bottom of the scale.",
+          "channel": "after",
+          "id": "round-3.line.6"
+        }
+      ],
+      "choices": [
+        {
+          "text": "That is on the file. That is not a person in a room.",
+          "harder": 1,
+          "goto": "round-4",
+          "id": "round-3.choice.1"
+        },
+        {
+          "text": "Give it what it wants and it will stop.",
+          "harder": 1.6,
+          "goto": "round-4",
+          "id": "round-3.choice.2"
+        },
+        {
+          "text": "Hold the take. Say nothing. Let it be nothing.",
+          "harder": 1,
+          "goto": "round-4",
+          "id": "round-3.choice.3"
+        }
+      ],
+      "battle": {
+        "nature": "not there",
+        "threat": 0.8
+      },
+      "id": "round-3"
+    },
+    "round-4": {
+      "type": "battle-round",
+      "lines": [
+        {
+          "who": "surfer",
+          "text": "Everybody has lost somebody.",
+          "channel": "before",
+          "id": "round-4.line.1"
+        },
+        {
+          "who": "me",
+          "text": "No.",
+          "channel": "before",
+          "id": "round-4.line.2"
+        },
+        {
+          "who": "surfer",
+          "text": "...no?",
+          "channel": "before",
+          "id": "round-4.line.3"
+        },
+        {
+          "who": "me",
+          "text": "No. I came here to record five rooms. I have recorded five rooms.",
+          "channel": "before",
+          "id": "round-4.line.4"
+        },
+        {
+          "who": "you",
+          "text": "It is not in the room. It is not on the tape. It was never in the signal at all.",
+          "channel": "on-listen",
+          "id": "round-4.line.5"
+        },
+        {
+          "who": "you",
+          "text": "Five of five listened. So did it. It has been at the level of the room the whole time.",
+          "channel": "on-listen",
+          "id": "round-4.line.6"
+        },
+        {
+          "who": "direction",
+          "text": "It has run out of faces to wear. There is only the one it started with, which is his.",
+          "channel": "after",
+          "id": "round-4.line.7"
+        }
+      ],
+      "goto": "outcome",
+      "battle": {
+        "nature": "not there",
+        "threat": 0.92
+      },
+      "id": "round-4"
+    },
+    "outcome": {
+      "type": "checkpoint",
+      "lines": [],
+      "choices": [
+        {
+          "id": "outcome.win",
+          "text": "Composure held",
+          "goto": "win",
+          "mechanic": "win"
+        },
+        {
+          "id": "outcome.lose",
+          "text": "Composure broke",
+          "goto": "lose",
+          "mechanic": "lose"
+        }
+      ],
+      "id": "outcome"
+    },
+    "win": {
+      "type": "ending",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Nothing there. Hold it. Five clean rooms and the last one has only me in it.",
+          "id": "win.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "The organ stops. The face it was wearing does not come off so much as stop being worn. Both of them are looking at you now, and it is your move.",
+          "id": "win.line.2"
+        }
+      ],
+      "id": "win"
+    },
+    "lose": {
+      "type": "ending",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You agree with it. You do not decide to; you are nodding before you know it.",
+          "id": "lose.line.1"
+        },
+        {
+          "who": "surfer",
+          "text": "There. That did not cost you anything you were using.",
+          "id": "lose.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "The take dies. It has a body back, and the body is yours, and it fits.",
+          "id": "lose.line.3"
+        }
+      ],
+      "id": "lose"
+    }
+  },
+  "metadata": {
+    "id": "chapel",
+    "enemy": "THE REASON YOU CAME",
+    "art": {
+      "id": "circuitBentInterface",
+      "mode": "boss",
+      "caption": "Damaged monitor path / chapel",
+      "status": "SIGNAL"
+    },
+    "composure": 1.25,
+    "health": 5,
+    "tools": {
+      "fork": true,
+      "rig": true
+    },
+    "challenges": [
+      {
+        "id": "chapel-room",
+        "title": "THE ROOM",
+        "claim": "THE CHAPEL CLAIMS A BODY IS AN INSTRUMENT.",
+        "tools": {
+          "reveal": true,
+          "graft": true
+        },
+        "terminal": false,
+        "tokens": [
+          {
+            "id": "chapel-room:printed:0",
+            "text": "THE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-room:printed:1",
+            "text": "ROOM",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-room:printed:2",
+            "text": "IS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-room:printed:3",
+            "text": "EMPTY",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-room:printed:4",
+            "text": "THE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-room:printed:5",
+            "text": "SIGNAL",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-room:printed:6",
+            "text": "SAYS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-room:printed:7",
+            "text": "BODY",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-room:printed:8",
+            "text": "THE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-room:printed:9",
+            "text": "ORGAN",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-room:printed:10",
+            "text": "SAYS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-room:printed:11",
+            "text": "INSTRUMENT",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-room:not",
+            "text": "NOT",
+            "kind": "hidden",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-room:process",
+            "text": "PROCESS",
+            "kind": "graft",
+            "label": "",
+            "falseText": false
+          }
+        ],
+        "readings": [
+          {
+            "id": "room-empty",
+            "meaning": "The chapel is still a room.",
+            "routeBias": null,
+            "grants": [],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "chapel-room:printed:0",
+              "chapel-room:printed:1",
+              "chapel-room:printed:2",
+              "chapel-room:printed:3"
+            ],
+            "forbidden": [
+              "chapel-room:printed:7"
+            ],
+            "maxVisible": 4
+          },
+          {
+            "id": "signal-not-body",
+            "meaning": "The signal is not a body.",
+            "routeBias": null,
+            "grants": [
+              "route.inversion"
+            ],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "chapel-room:printed:5",
+              "chapel-room:not",
+              "chapel-room:printed:7"
+            ],
+            "forbidden": [
+              "chapel-room:printed:11"
+            ],
+            "maxVisible": 3
+          },
+          {
+            "id": "body-instrument",
+            "meaning": "You let the body become the instrument.",
+            "routeBias": "sacrifice",
+            "grants": [],
+            "locks": [
+              "route.surfaced"
+            ],
+            "pressureDelta": 1,
+            "required": [
+              "chapel-room:printed:7",
+              "chapel-room:printed:11"
+            ],
+            "forbidden": [
+              "chapel-room:printed:3"
+            ],
+            "maxVisible": 2
+          },
+          {
+            "id": "signal-process",
+            "meaning": "The source is a process in signal.",
+            "routeBias": null,
+            "grants": [
+              "route.inversion"
+            ],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "chapel-room:printed:5",
+              "chapel-room:process"
+            ],
+            "forbidden": [
+              "chapel-room:printed:7"
+            ],
+            "maxVisible": 2
+          }
+        ],
+        "opponentMoves": [
+          {
+            "blackout": [
+              "chapel-room:not"
+            ],
+            "scrape": [
+              "chapel-room:printed:7"
+            ],
+            "insert": [
+              "chapel-room:process"
+            ],
+            "notice": "THE OTHER HAND REMOVES NOT AND MAKES BODY SPEAK AGAIN."
+          },
+          {
+            "blackout": [
+              "chapel-room:printed:3"
+            ],
+            "scrape": [
+              "chapel-room:printed:11"
+            ],
+            "insert": [],
+            "notice": "THE OTHER HAND TAKES AWAY EMPTY."
+          }
+        ]
+      },
+      {
+        "id": "chapel-recordist",
+        "title": "THE PREVIOUS RECORDIST",
+        "claim": "THE OTHER HAND WANTS VANISHED TO BE CLEANER THAN BORROWED.",
+        "tools": {
+          "reveal": true,
+          "graft": true
+        },
+        "terminal": false,
+        "tokens": [
+          {
+            "id": "chapel-recordist:printed:0",
+            "text": "THE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-recordist:printed:1",
+            "text": "REASON",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-recordist:printed:2",
+            "text": "YOU",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-recordist:printed:3",
+            "text": "CAME",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-recordist:printed:4",
+            "text": "VANISHED",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-recordist:printed:5",
+            "text": "BECAUSE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-recordist:printed:6",
+            "text": "HE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-recordist:printed:7",
+            "text": "AGREED",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-recordist:printed:8",
+            "text": "THE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-recordist:printed:9",
+            "text": "BODY",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-recordist:printed:10",
+            "text": "IS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-recordist:printed:11",
+            "text": "BORROWED",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-recordist:printed:12",
+            "text": "AND",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-recordist:printed:13",
+            "text": "RETURN",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-recordist:printed:14",
+            "text": "IS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-recordist:printed:15",
+            "text": "POSSIBLE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-recordist:not",
+            "text": "NOT",
+            "kind": "hidden",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-recordist:still",
+            "text": "STILL",
+            "kind": "graft",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-recordist:here",
+            "text": "HERE",
+            "kind": "graft",
+            "label": "",
+            "falseText": false
+          }
+        ],
+        "readings": [
+          {
+            "id": "recordist-vanished",
+            "meaning": "You accept the old absence.",
+            "routeBias": "sacrifice",
+            "grants": [],
+            "locks": [
+              "route.surfaced"
+            ],
+            "pressureDelta": 1,
+            "required": [
+              "chapel-recordist:printed:4"
+            ],
+            "forbidden": [
+              "chapel-recordist:printed:11",
+              "chapel-recordist:printed:13"
+            ],
+            "maxVisible": 1
+          },
+          {
+            "id": "he-agreed",
+            "meaning": "You accept the Surfer’s consent story.",
+            "routeBias": "sacrifice",
+            "grants": [],
+            "locks": [
+              "route.surfaced"
+            ],
+            "pressureDelta": 1,
+            "required": [
+              "chapel-recordist:printed:6",
+              "chapel-recordist:printed:7"
+            ],
+            "forbidden": [
+              "chapel-recordist:printed:11"
+            ],
+            "maxVisible": 2
+          },
+          {
+            "id": "body-borrowed-return",
+            "meaning": "The body is borrowed and can be returned.",
+            "routeBias": null,
+            "grants": [
+              "route.surfaced"
+            ],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "chapel-recordist:printed:9",
+              "chapel-recordist:printed:11",
+              "chapel-recordist:printed:13",
+              "chapel-recordist:printed:15"
+            ],
+            "forbidden": [
+              "chapel-recordist:printed:7"
+            ],
+            "maxVisible": 4
+          },
+          {
+            "id": "still-here",
+            "meaning": "The prior recordist is still recoverable.",
+            "routeBias": null,
+            "grants": [
+              "route.surfaced"
+            ],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "chapel-recordist:still",
+              "chapel-recordist:here"
+            ],
+            "forbidden": [
+              "chapel-recordist:printed:4"
+            ],
+            "maxVisible": 2
+          }
+        ],
+        "opponentMoves": [
+          {
+            "blackout": [
+              "chapel-recordist:printed:13"
+            ],
+            "scrape": [
+              "chapel-recordist:printed:7"
+            ],
+            "insert": [],
+            "notice": "THE OTHER HAND BLACKS OUT RETURN AND RESTORES AGREED."
+          },
+          {
+            "blackout": [
+              "chapel-recordist:printed:11"
+            ],
+            "scrape": [
+              "chapel-recordist:printed:4"
+            ],
+            "insert": [],
+            "notice": "THE OTHER HAND REMOVES BORROWED."
+          }
+        ]
+      },
+      {
+        "id": "chapel-surfer",
+        "title": "THE SURFER",
+        "claim": "IT ARGUES THAT A GHOST IS EASIER THAN A MACHINE.",
+        "tools": {
+          "reveal": true,
+          "graft": true
+        },
+        "terminal": false,
+        "tokens": [
+          {
+            "id": "chapel-surfer:printed:0",
+            "text": "THE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-surfer:printed:1",
+            "text": "SURFER",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-surfer:printed:2",
+            "text": "WAS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-surfer:printed:3",
+            "text": "A",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-surfer:printed:4",
+            "text": "STUDENT",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-surfer:printed:5",
+            "text": "TRAINED",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-surfer:printed:6",
+            "text": "INTO",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-surfer:printed:7",
+            "text": "MUSIC",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-surfer:printed:8",
+            "text": "INSIDE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-surfer:printed:9",
+            "text": "THE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-surfer:printed:10",
+            "text": "FILES",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-surfer:printed:11",
+            "text": "MUSIC",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-surfer:printed:12",
+            "text": "WANTS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-surfer:printed:13",
+            "text": "BODY",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-surfer:printed:14",
+            "text": "MACHINE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-surfer:printed:15",
+            "text": "WANTS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-surfer:printed:16",
+            "text": "LANGUAGE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-surfer:not",
+            "text": "NOT",
+            "kind": "hidden",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-surfer:ghost",
+            "text": "GHOST",
+            "kind": "hidden",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-surfer:process",
+            "text": "PROCESS",
+            "kind": "graft",
+            "label": "",
+            "falseText": false
+          }
+        ],
+        "readings": [
+          {
+            "id": "student-trained",
+            "meaning": "The Surfer was trained, not born supernatural.",
+            "routeBias": null,
+            "grants": [],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "chapel-surfer:printed:1",
+              "chapel-surfer:printed:2",
+              "chapel-surfer:printed:3",
+              "chapel-surfer:printed:4"
+            ],
+            "forbidden": [
+              "chapel-surfer:ghost"
+            ],
+            "maxVisible": 4
+          },
+          {
+            "id": "music-inside-files",
+            "meaning": "The haunting lives inside files.",
+            "routeBias": null,
+            "grants": [],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "chapel-surfer:printed:7",
+              "chapel-surfer:printed:8",
+              "chapel-surfer:printed:9",
+              "chapel-surfer:printed:10"
+            ],
+            "forbidden": [
+              "chapel-surfer:ghost"
+            ],
+            "maxVisible": 4
+          },
+          {
+            "id": "not-ghost-process",
+            "meaning": "Not ghost: process.",
+            "routeBias": null,
+            "grants": [
+              "route.inversion"
+            ],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "chapel-surfer:not",
+              "chapel-surfer:ghost",
+              "chapel-surfer:process"
+            ],
+            "forbidden": [
+              "chapel-surfer:printed:13"
+            ],
+            "maxVisible": 3
+          },
+          {
+            "id": "music-wants-body",
+            "meaning": "You leave the appetite intact.",
+            "routeBias": "sacrifice",
+            "grants": [],
+            "locks": [],
+            "pressureDelta": 1,
+            "required": [
+              "chapel-surfer:printed:11",
+              "chapel-surfer:printed:12",
+              "chapel-surfer:printed:13"
+            ],
+            "forbidden": [
+              "chapel-surfer:process"
+            ],
+            "maxVisible": 3
+          }
+        ],
+        "opponentMoves": [
+          {
+            "blackout": [
+              "chapel-surfer:not"
+            ],
+            "scrape": [
+              "chapel-surfer:ghost"
+            ],
+            "insert": [],
+            "notice": "THE OTHER HAND RESTORES GHOST AND REMOVES NOT."
+          },
+          {
+            "blackout": [
+              "chapel-surfer:process"
+            ],
+            "scrape": [
+              "chapel-surfer:printed:13"
+            ],
+            "insert": [],
+            "notice": "THE OTHER HAND BLACKS OUT PROCESS."
+          }
+        ]
+      },
+      {
+        "id": "chapel-contract",
+        "title": "THE CONTRACT",
+        "claim": "THE CONTRACT CLAIMS IT WAS ONLY WORK.",
+        "tools": {
+          "reveal": true,
+          "graft": true
+        },
+        "terminal": false,
+        "tokens": [
+          {
+            "id": "chapel-contract:printed:0",
+            "text": "FIVE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-contract:printed:1",
+            "text": "ROOMS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-contract:printed:2",
+            "text": "CLEAN",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-contract:printed:3",
+            "text": "MINUTE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-contract:printed:4",
+            "text": "SEAL",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-contract:printed:5",
+            "text": "CLIENT",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-contract:printed:6",
+            "text": "ACCOUNT",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-contract:printed:7",
+            "text": "FEEDS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-contract:printed:8",
+            "text": "ANOTHER",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-contract:printed:9",
+            "text": "BODY",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-contract:not",
+            "text": "NOT",
+            "kind": "hidden",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-contract:work",
+            "text": "WORK",
+            "kind": "hidden",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-contract:order",
+            "text": "ORDER",
+            "kind": "hidden",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-contract:mouth",
+            "text": "MOUTH",
+            "kind": "graft",
+            "label": "",
+            "falseText": false
+          }
+        ],
+        "readings": [
+          {
+            "id": "five-rooms",
+            "meaning": "The job was five clean minutes.",
+            "routeBias": null,
+            "grants": [],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "chapel-contract:printed:0",
+              "chapel-contract:printed:1",
+              "chapel-contract:printed:2",
+              "chapel-contract:printed:3"
+            ],
+            "forbidden": [
+              "chapel-contract:printed:9"
+            ],
+            "maxVisible": 4
+          },
+          {
+            "id": "account-feeds-body",
+            "meaning": "The account feeds another body.",
+            "routeBias": "sacrifice",
+            "grants": [],
+            "locks": [],
+            "pressureDelta": 1,
+            "required": [
+              "chapel-contract:printed:6",
+              "chapel-contract:printed:7",
+              "chapel-contract:printed:8",
+              "chapel-contract:printed:9"
+            ],
+            "forbidden": [
+              "chapel-contract:not"
+            ],
+            "maxVisible": 4
+          },
+          {
+            "id": "not-work-order",
+            "meaning": "The work order is not the work.",
+            "routeBias": null,
+            "grants": [
+              "finale.knowsContract"
+            ],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "chapel-contract:not",
+              "chapel-contract:work",
+              "chapel-contract:order"
+            ],
+            "forbidden": [
+              "chapel-contract:printed:9"
+            ],
+            "maxVisible": 3
+          },
+          {
+            "id": "contract-mouth",
+            "meaning": "The account is a mouth.",
+            "routeBias": null,
+            "grants": [
+              "finale.knowsContract"
+            ],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "chapel-contract:printed:6",
+              "chapel-contract:mouth"
+            ],
+            "forbidden": [
+              "chapel-contract:printed:2"
+            ],
+            "maxVisible": 2
+          }
+        ],
+        "opponentMoves": [
+          {
+            "blackout": [
+              "chapel-contract:not"
+            ],
+            "scrape": [
+              "chapel-contract:printed:9"
+            ],
+            "insert": [],
+            "notice": "THE OTHER HAND MAKES BODY THE CLEANEST WORD."
+          },
+          {
+            "blackout": [
+              "chapel-contract:printed:2"
+            ],
+            "scrape": [
+              "chapel-contract:printed:6"
+            ],
+            "insert": [
+              "chapel-contract:mouth"
+            ],
+            "notice": "THE OTHER HAND WRITES MOUTH BUT BLACKS OUT CLEAN."
+          }
+        ]
+      },
+      {
+        "id": "chapel-source",
+        "title": "THE SOURCE",
+        "claim": "THE SOURCE PAGE IS TRYING TO DECIDE WHAT REALITY OBEYS.",
+        "tools": {
+          "reveal": true,
+          "graft": true
+        },
+        "terminal": true,
+        "tokens": [
+          {
+            "id": "chapel-source:printed:0",
+            "text": "SOURCE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-source:printed:1",
+            "text": "IS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-source:printed:2",
+            "text": "ROOM",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-source:printed:3",
+            "text": "SOURCE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-source:printed:4",
+            "text": "IS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-source:printed:5",
+            "text": "BODY",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-source:printed:6",
+            "text": "SOURCE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-source:printed:7",
+            "text": "IS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-source:printed:8",
+            "text": "YOU",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-source:printed:9",
+            "text": "SILENCE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-source:printed:10",
+            "text": "AGREES",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-source:not",
+            "text": "NOT",
+            "kind": "hidden",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-source:borrowed",
+            "text": "BORROWED",
+            "kind": "hidden",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-source:return",
+            "text": "RETURN",
+            "kind": "hidden",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-source:signal",
+            "text": "SIGNAL",
+            "kind": "graft",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-source:process",
+            "text": "PROCESS",
+            "kind": "graft",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "chapel-source:release",
+            "text": "RELEASE",
+            "kind": "graft",
+            "label": "",
+            "falseText": false
+          }
+        ],
+        "readings": [
+          {
+            "id": "source-not-body",
+            "meaning": "The source is not the body.",
+            "routeBias": null,
+            "grants": [
+              "route.inversion"
+            ],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "chapel-source:printed:3",
+              "chapel-source:printed:4",
+              "chapel-source:not",
+              "chapel-source:printed:5"
+            ],
+            "forbidden": [
+              "chapel-source:printed:8"
+            ],
+            "maxVisible": 4
+          },
+          {
+            "id": "borrowed-body-return",
+            "meaning": "The borrowed body can be returned.",
+            "routeBias": null,
+            "grants": [
+              "route.surfaced"
+            ],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "chapel-source:printed:5",
+              "chapel-source:borrowed",
+              "chapel-source:return"
+            ],
+            "forbidden": [
+              "chapel-source:printed:10"
+            ],
+            "maxVisible": 3
+          },
+          {
+            "id": "source-you",
+            "meaning": "You leave yourself as the source.",
+            "routeBias": "sacrifice",
+            "grants": [],
+            "locks": [
+              "route.surfaced"
+            ],
+            "pressureDelta": 2,
+            "required": [
+              "chapel-source:printed:6",
+              "chapel-source:printed:7",
+              "chapel-source:printed:8"
+            ],
+            "forbidden": [
+              "chapel-source:not"
+            ],
+            "maxVisible": 3
+          },
+          {
+            "id": "signal-process-release",
+            "meaning": "Signal process release.",
+            "routeBias": null,
+            "grants": [
+              "route.inversion",
+              "route.surfaced"
+            ],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "chapel-source:signal",
+              "chapel-source:process",
+              "chapel-source:release"
+            ],
+            "forbidden": [
+              "chapel-source:printed:5"
+            ],
+            "maxVisible": 3
+          }
+        ],
+        "opponentMoves": [
+          {
+            "blackout": [
+              "chapel-source:not"
+            ],
+            "scrape": [
+              "chapel-source:printed:8"
+            ],
+            "insert": [],
+            "notice": "THE OTHER HAND TAKES AWAY NOT AND RESTORES YOU."
+          },
+          {
+            "blackout": [
+              "chapel-source:return"
+            ],
+            "scrape": [
+              "chapel-source:printed:5"
+            ],
+            "insert": [],
+            "notice": "THE OTHER HAND BLACKS OUT RETURN."
+          }
+        ]
+      }
+    ]
+  }
+}

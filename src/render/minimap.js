@@ -8,13 +8,43 @@ import { uiDraw, uiGlyph, uiText, uiSize } from './ui.js';
 import { drawMachinePanel } from './presentation.js';
 import { themeRoleColor } from './palette.js';
 import { buildMinimapCommands } from './map-commands.js';
-import { drawAnomalyMarker, drawObjectiveMarker, drawPlayerMarker, drawWaypointMarker } from './map-icons.js';
-import { newestMapContact } from '../game/map-model.js';
+import { drawAnomalyMarker, drawPlayerMarker, drawWaypointMarker } from './map-icons.js';
+import { mapFloor, newestMapContact } from '../game/map-model.js';
 
 const clip = (value, width) => {
   const text = String(value ?? '');
-  return text.length <= width ? text : width <= 1 ? '…' : `${text.slice(0, width - 1)}…`;
+  const w = Math.max(1, Math.floor(width || 1));
+  return text.length <= w ? text : w <= 1 ? '…' : `${text.slice(0, w - 1)}…`;
 };
+
+function roomLabel(model, roomId, fallback = 'UNKNOWN') {
+  return (model?.spaces || []).find((space) => space.roomId === roomId)?.label || fallback;
+}
+
+function targetLabel(model) {
+  if (!model?.waypoint) return 'NONE';
+  return roomLabel(model, model.waypoint.roomId, 'TARGET');
+}
+
+function currentLabel(model) {
+  if (model?.player?.roomId) return roomLabel(model, model.player.roomId, model.player.roomId);
+  return mapFloor(model, model?.player?.floorId)?.label || 'POSITION UNKNOWN';
+}
+
+export function hushStatus(model, now = 0) {
+  const contact = newestMapContact(model);
+  if (!contact?.observation) return { label: 'NONE', cls: 'ui-secondary', detail: 'NO CONTACT', floorDelta: 0 };
+  const state = String(contact.state || 'unresolved').toLowerCase();
+  const age = Math.max(0, (now - Number(contact.observation.observedAt || now)) / 1000);
+  const confidence = Math.round(Math.max(0, Math.min(1, Number(contact.observation.confidence) || 0)) * 100);
+  const here = contact.observation.floorId === model?.player?.floorId;
+  const floor = mapFloor(model, contact.observation.floorId);
+  if (state === 'decaying') return { label: 'LAST SEEN', cls: 'ui-secondary', detail: `${age.toFixed(1)}S AGO`, floorDelta: 0 };
+  if (state === 'acquiring') return { label: 'TRACING', cls: 'ui-amber', detail: `${confidence}%`, floorDelta: 0 };
+  if (state === 'saturated') return { label: 'VERY NEAR', cls: 'ui-danger', detail: here ? `${confidence}%` : floor?.label || 'OTHER FLOOR', floorDelta: 0 };
+  if (state === 'locked') return { label: 'NEARBY', cls: 'ui-danger', detail: here ? `${confidence}%` : floor?.label || 'OTHER FLOOR', floorDelta: 0 };
+  return { label: 'UNCLEAR', cls: 'ui-blue', detail: floor?.label || `${confidence}%`, floorDelta: 0 };
+}
 
 function drawLocalTopology(command) {
   const { open, runs, transform, viewport, center, radius } = command;
@@ -71,47 +101,45 @@ function drawCommands(commands, now) {
   }
 }
 
-function contactHeader(model) {
-  const contact = newestMapContact(model);
-  if (!contact?.observation) return null;
-  if (contact.state === 'decaying') return 'SOURCE / LAST RETURN';
-  if (contact.state === 'acquiring') return 'SOURCE / ACQUIRING';
-  if (contact.state === 'unresolved') return 'SOURCE / UNRESOLVED';
-  if (contact.state === 'saturated') return 'SOURCE / SATURATED';
-  return 'SOURCE / LOCKED';
-}
-
 export function drawMinimap(model, opts = {}) {
   if (!model || typeof model !== 'object' || !model.player) return;
   const { cols } = uiSize();
-  const width = Math.max(18, Math.floor(opts.bounds?.w || 22));
-  const height = Math.max(9, Math.floor(opts.bounds?.h || 11));
+  const width = Math.max(24, Math.floor(opts.bounds?.w || 28));
+  const height = Math.max(12, Math.floor(opts.bounds?.h || 14));
   const x0 = Math.floor(opts.bounds?.x ?? (cols - width - 2));
   const y0 = Math.floor(opts.bounds?.y ?? 2);
-  const targetLabel = model.waypoint
-    ? (model.spaces.find((space) => space.roomId === model.waypoint.roomId)?.label || 'TARGET')
-    : 'NO TARGET';
-  const source = opts.source || contactHeader(model) || `NAV / ${clip(targetLabel, 12)}`;
-  const panel = drawMachinePanel(x0, y0, width, height, { label: 'LOCATION', source, meter: false });
+  const now = opts.now || 0;
+  const target = targetLabel(model);
+  const here = currentLabel(model);
+  const hush = hushStatus(model, now);
+  const panel = drawMachinePanel(x0, y0, width, height, {
+    label: 'MAP',
+    source: opts.source || `TARGET ${clip(target, 10)}`,
+    meter: false,
+    theme: hush.cls === 'ui-danger' ? 'green' : 'amber',
+  });
   const viewport = {
     x: panel.x + 1,
-    y: panel.y + 2,
-    w: Math.max(7, panel.w - 2),
-    h: Math.max(4, panel.h - 3),
+    y: panel.y + 3,
+    w: Math.max(8, panel.w - 2),
+    h: Math.max(4, panel.h - 6),
   };
 
-  uiText(panel.x, panel.y, 'N', 'ui-green', .82);
-  const commands = buildMinimapCommands({ model, viewport, radius: opts.radius || 18, now: opts.now || 0 });
-  drawCommands(commands, opts.now || 0);
+  uiText(panel.x, panel.y, `YOU ${clip(here, Math.max(4, panel.w - 4))}`, 'ui-green', .78);
+  uiText(panel.x, panel.y + 1, `TARGET ${clip(target, Math.max(4, panel.w - 7))}`, model.waypoint ? 'ui-blue' : 'ui-secondary', .74);
+  uiText(panel.x, panel.y + 2, `HUSH ${clip(hush.label, 8)} ${clip(hush.detail, Math.max(3, panel.w - 16))}`, hush.cls, .76);
+
+  const commands = buildMinimapCommands({ model, viewport, radius: opts.radius || 18, now });
+  drawCommands(commands, now);
 
   const floor = model.floors.find((candidate) => candidate.id === model.player.floorId);
   const floorTarget = commands.find((command) => command.kind === 'floor-target');
   const anomalyFloor = commands.find((command) => command.kind === 'anomaly-floor');
-  let footer = floor?.label || 'POSITION UNRESOLVED';
-  if (anomalyFloor?.delta) footer = `SOURCE RETURN ${anomalyFloor.delta > 0 ? '+' : ''}${anomalyFloor.delta} FLOOR`;
+  let footer = floor?.label || 'POSITION UNKNOWN';
+  if (anomalyFloor?.delta) footer = `HUSH ${anomalyFloor.delta > 0 ? '+' : ''}${anomalyFloor.delta} FLOOR`;
   else if (floorTarget?.delta) footer = `TARGET ${floorTarget.delta > 0 ? '+' : ''}${floorTarget.delta} FLOOR`;
-  uiText(panel.x, panel.y + panel.h - 1, clip(footer, panel.w), anomalyFloor ? 'ui-danger' : 'ui-blue', .78);
-  if (opts.expanded) uiText(panel.x, panel.y + panel.h, '[GREEN] YOU · [BLUE] TARGET · [BRACKETS] RETURN', 'ui-secondary', .66);
+  uiText(panel.x, panel.y + panel.h - 1, clip(footer, panel.w), floorTarget?.delta || anomalyFloor?.delta ? 'ui-blue' : 'ui-label', .72);
+  if (opts.expanded) uiText(panel.x, panel.y + panel.h, '[GREEN] YOU · [BLUE] TARGET · [RED] HUSH', 'ui-secondary', .66);
 }
 
 // Small explicit marker used only for recorder playback origin. It is not part

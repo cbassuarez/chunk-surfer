@@ -36,7 +36,8 @@ export function preloadAll(urls) {
 }
 // gain: linear. rate: playbackRate (a tired switch is a slower switch).
 // pan: -1..1. Returns the source, so a caller can stop a long cue early.
-export function playCue(url, { gain = 1, rate = 1, pan = 0, delay = 0 } = {}) {
+export function playCue(url, { gain = 1, rate = 1, pan = 0, delay = 0,
+  trimStart = 0, trimEnd = null, fadeIn = 0, fadeOut = 0, loop = false } = {}) {
   if (!ctx || !bus) return null;
   const buf = buffers.get(url);
   if (!buf) { preload(url); return null; }   // first press may be silent; warm it
@@ -45,7 +46,9 @@ export function playCue(url, { gain = 1, rate = 1, pan = 0, delay = 0 } = {}) {
   src.buffer = buf;
   src.playbackRate.setValueAtTime(rate, now);
   const g = ctx.createGain();
-  g.gain.setValueAtTime(gain, now);
+  const targetGain = Math.max(0, gain);
+  g.gain.setValueAtTime(fadeIn > 0 ? 0 : targetGain, now);
+  if (fadeIn > 0) g.gain.linearRampToValueAtTime(targetGain, now + fadeIn);
   let node = g;
   if (pan !== 0 && ctx.createStereoPanner) {
     const p = ctx.createStereoPanner();
@@ -54,7 +57,20 @@ export function playCue(url, { gain = 1, rate = 1, pan = 0, delay = 0 } = {}) {
   }
   src.connect(g);
   node.connect(bus);
-  src.start(now);
+  const start = Math.max(0, Math.min(buf.duration, Number(trimStart) || 0));
+  const duration = Math.max(0, Math.min(buf.duration - start, trimEnd == null ? buf.duration - start : Number(trimEnd) - start));
+  src.loop = !!loop;
+  if (loop) {
+    src.loopStart = start;
+    src.loopEnd = trimEnd == null ? buf.duration : Math.max(start, Math.min(buf.duration, Number(trimEnd)));
+    src.start(now, start);
+  } else {
+    if (fadeOut > 0 && duration > fadeOut) {
+      g.gain.setValueAtTime(targetGain, now + duration - fadeOut);
+      g.gain.linearRampToValueAtTime(0, now + duration);
+    }
+    src.start(now, start, duration);
+  }
   src.onended = () => { try { src.disconnect(); g.disconnect(); node.disconnect(); } catch (_) {} };
   return src;
 }

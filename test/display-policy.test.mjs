@@ -32,11 +32,11 @@ test('normalizes invalid display settings', () => {
 test('cycles display options by id or value', () => {
   assert.equal(cycleDisplayOption('windowPresets', '1280x800', 1), '1440x900');
   assert.equal(cycleDisplayOption('uiScalePresets', 1, 1), 1.1);
-  assert.equal(cycleDisplayOption('renderScalePresets', 'auto', 1), 0.75);
+  assert.equal(cycleDisplayOption('renderScalePresets', 'auto', 1), 0.5);
 });
 
 test('labels display options', () => {
-  assert.equal(labelDisplayOption('windowPresets', '1920x1080'), '1920×1080');
+  assert.equal(labelDisplayOption('windowPresets', '1920x1080'), '1920×1080 · 16:9');
   assert.equal(labelDisplayOption('renderScalePresets', 0.75), '75%');
 });
 
@@ -52,5 +52,5 @@ test('finds known window preset', () => {
 
 test('auto render scale resolves conservatively', () => {
   assert.equal(resolveRenderScale('auto', { devicePixelRatio: 3 }), 0.75);
-  assert.equal(resolveRenderScale(1.25), 1.25);
+  assert.equal(resolveRenderScale(1), 1);
 });

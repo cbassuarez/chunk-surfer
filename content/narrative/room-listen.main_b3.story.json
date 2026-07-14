@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "id": "room-listen.main_b3",
+  "title": "Room Listen · main b3",
+  "status": "active",
+  "entry": "start",
+  "entries": [],
+  "tags": [
+    "room-listen"
+  ],
+  "notes": "",
+  "regions": [
+    {
+      "id": "room-listen.main_b3.region",
+      "title": "Room Listen · main b3",
+      "kind": "scene",
+      "color": "#245c62",
+      "nodeIds": [
+        "start",
+        "roll",
+        "ex0",
+        "ex1"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "Headphones on. {label} comes up in the cans — foam on three walls, carpet, dead air, and the size of a cupboard.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "you",
+          "text": "That is the level. That is the room.",
+          "id": "start.line.2"
+        }
+      ],
+      "choices": [
+        {
+          "text": "the foam",
+          "goto": "ex0",
+          "hideWhenAsked": false,
+          "id": "start.choice.1"
+        },
+        {
+          "text": "the patchbay",
+          "goto": "ex1",
+          "hideWhenAsked": false,
+          "id": "start.choice.2"
+        },
+        {
+          "text": "kill the light and roll",
+          "goto": "roll",
+          "id": "start.choice.3"
+        }
+      ],
+      "id": "start",
+      "type": "choice"
+    },
+    "roll": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You kill the light. The room drops out of the cans, the tape hiss comes up, and there is you and forty-five seconds and nothing else.",
+          "id": "roll.line.1"
+        },
+        {
+          "who": "you",
+          "text": "Sixty seconds of nothing, with nothing added. Do not move.",
+          "id": "roll.line.2"
+        }
+      ],
+      "id": "roll",
+      "type": "dialogue"
+    },
+    "ex0": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Wedge foam, going to powder at the edges. Somebody treated this room properly, once, and then stopped paying the heating.",
+          "id": "ex0.line.1"
+        },
+        {
+          "who": "you",
+          "text": "It eats everything above four hundred hertz. Which is why the only thing left on the take is me.",
+          "id": "ex0.line.2"
+        }
+      ],
+      "goto": "start",
+      "id": "ex0",
+      "type": "dialogue"
+    },
+    "ex1": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "Every cable pulled, coiled, hung. Somebody left this room tidy.",
+          "id": "ex1.line.1"
+        },
+        {
+          "who": "you",
+          "text": "You do not tidy a room you think is being knocked down. You tidy a room you are coming back to.",
+          "id": "ex1.line.2"
+        }
+      ],
+      "goto": "start",
+      "id": "ex1",
+      "type": "dialogue"
+    }
+  }
+}

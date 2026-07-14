@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "id": "conservatory.hush",
+  "title": "The HUSH",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [],
+  "notes": "",
+  "regions": [
+    {
+      "id": "conservatory.hush.region",
+      "title": "The HUSH",
+      "kind": "scene",
+      "color": "#245c62",
+      "nodeIds": [
+        "start",
+        "settle",
+        "steps",
+        "still"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "Something in the corridor behind you. Not a sound, exactly. A change in what the silence is shaped like.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "you",
+          "text": "Right.",
+          "id": "start.line.2"
+        }
+      ],
+      "choices": [
+        {
+          "text": "\"That is a building settling. They do that.\"",
+          "goto": "settle",
+          "id": "start.choice.1"
+        },
+        {
+          "text": "\"That is footsteps.\"",
+          "goto": "steps",
+          "id": "start.choice.2"
+        },
+        {
+          "text": "(do not turn around.)",
+          "goto": "still",
+          "id": "start.choice.3"
+        }
+      ],
+      "id": "start",
+      "type": "choice"
+    },
+    "settle": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Brick lets go of heat all night. Timber moves. Everything in here is on its way down anyway.",
+          "id": "settle.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "All of that is true, and none of it is what you heard.",
+          "id": "settle.line.2"
+        }
+      ],
+      "id": "settle",
+      "type": "dialogue"
+    },
+    "steps": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Twenty metres. Slow. Not looking for anything, because it already knows.",
+          "id": "steps.line.1"
+        },
+        {
+          "who": "you",
+          "text": "Say it properly: it went to where I made a noise. It did not come to me.",
+          "id": "steps.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "That is worse, and it is also the only useful thing anybody has said tonight.",
+          "id": "steps.line.3"
+        }
+      ],
+      "id": "steps",
+      "type": "dialogue"
+    },
+    "still": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You do not turn around. You stand in a dead building with your back to a corridor and you are perfectly, professionally still.",
+          "id": "still.line.1"
+        },
+        {
+          "who": "you",
+          "text": "This is the job. This is literally the job.",
+          "id": "still.line.2"
+        }
+      ],
+      "id": "still",
+      "type": "dialogue"
+    }
+  }
+}

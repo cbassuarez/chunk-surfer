@@ -30,13 +30,15 @@ export function drawAnomalyMarker(command, alpha = 1) {
   const x = Math.round(p.x), y = Math.round(p.y);
   const stale = command.state === 'decaying';
   const acquiring = command.state === 'acquiring';
+  const danger = command.state === 'locked' || command.state === 'saturated';
   const a = alpha * (stale ? 0.48 : acquiring ? 0.66 : 0.92);
+  const cls = stale ? 'ui-secondary' : danger ? 'ui-danger' : acquiring ? 'ui-amber' : 'ui-blue';
   // Four brackets around deliberately empty space. The centre is not a body.
-  uiGlyph(x - 1, y - 1, '⌜', 'ui-danger', a);
-  uiGlyph(x + 1, y - 1, '⌝', 'ui-danger', a);
-  uiGlyph(x - 1, y + 1, '⌞', 'ui-danger', a);
-  uiGlyph(x + 1, y + 1, '⌟', 'ui-danger', a);
-  if (!stale && !acquiring) uiGlyph(x, y, 'Ø', 'ui-danger', a);
+  uiGlyph(x - 1, y - 1, '⌜', cls, a);
+  uiGlyph(x + 1, y - 1, '⌝', cls, a);
+  uiGlyph(x - 1, y + 1, '⌞', cls, a);
+  uiGlyph(x + 1, y + 1, '⌟', cls, a);
+  if (!stale && !acquiring) uiGlyph(x, y, 'Ø', 'ui-secondary', a * 0.82);
 }
 
 export function drawAnomalyRegion(command, alpha = 1) {
@@ -44,7 +46,7 @@ export function drawAnomalyRegion(command, alpha = 1) {
   uiDraw(({ ctx, dpr, cellW, cellH }) => {
     ctx.save();
     ctx.globalAlpha = alpha * 0.52;
-    ctx.strokeStyle = themeRoleColor('danger');
+    ctx.strokeStyle = themeRoleColor('counter');
     ctx.lineWidth = 1.1 * dpr;
     ctx.setLineDash([2 * dpr, 3 * dpr]);
     ctx.beginPath();

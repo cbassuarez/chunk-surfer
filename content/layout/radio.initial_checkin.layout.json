@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "documentId": "radio.initial_checkin",
+  "positions": {
+    "start": {
+      "x": 80,
+      "y": 100
+    },
+    "identify": {
+      "x": 440,
+      "y": 100
+    },
+    "work": {
+      "x": 800,
+      "y": 100
+    },
+    "channel": {
+      "x": 1160,
+      "y": 100
+    }
+  },
+  "regions": {}
+}

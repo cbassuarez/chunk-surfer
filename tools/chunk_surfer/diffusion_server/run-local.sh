@@ -14,7 +14,7 @@ fi
 export LENS_HOST=127.0.0.1
 export LENS_PORT="${LENS_PORT:-8000}"
 export LENS_MODEL="${LENS_MODEL:-sd15-hyper4}"
-export LENS_SIZE="${LENS_SIZE:-256}"
+export LENS_SIZE="${LENS_SIZE:-512}"
 # ControlNet is the expensive half on this Mac. Opt back in explicitly when
 # testing geometry fidelity: LENS_DEPTH=1 npm run lens:local
 export LENS_DEPTH="${LENS_DEPTH:-0}"

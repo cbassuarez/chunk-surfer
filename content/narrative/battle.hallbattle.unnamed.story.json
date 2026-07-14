@@ -1,0 +1,777 @@
+{
+  "schemaVersion": 1,
+  "id": "battle.hallbattle.unnamed",
+  "title": "Concert Hall Battle · unnamed",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "battle"
+  ],
+  "notes": "",
+  "regions": [
+    {
+      "id": "battle.hallbattle.unnamed.region",
+      "title": "Concert Hall Battle · unnamed",
+      "kind": "scene",
+      "color": "#245c62",
+      "nodeIds": [
+        "start",
+        "outcome",
+        "win",
+        "lose"
+      ]
+    },
+    {
+      "id": "battle.hallbattle.unnamed.endings",
+      "title": "Battle outcomes",
+      "kind": "ending",
+      "color": "#8b3c48",
+      "nodeIds": [
+        "win",
+        "lose"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "type": "battle",
+      "speaker": "THE HOUSE RETURN",
+      "art": {
+        "id": "circuitBentInterface",
+        "mode": "boss",
+        "caption": "House return / monitor path",
+        "status": "SIGNAL"
+      },
+      "lines": [
+        {
+          "who": "direction",
+          "text": "The hall takes your silence and returns it from the stage, the balconies, and the empty seats.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "you",
+          "text": "That is a return. That is architecture. Keep it architecture.",
+          "id": "start.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "A voice uses the return without entering the room.",
+          "id": "start.line.3"
+        }
+      ],
+      "goto": "outcome",
+      "id": "start"
+    },
+    "outcome": {
+      "type": "checkpoint",
+      "lines": [],
+      "choices": [
+        {
+          "id": "outcome.win",
+          "text": "Composure held",
+          "goto": "win",
+          "mechanic": "win"
+        },
+        {
+          "id": "outcome.lose",
+          "text": "Composure broke",
+          "goto": "lose",
+          "mechanic": "lose"
+        }
+      ],
+      "id": "outcome"
+    },
+    "win": {
+      "type": "ending",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Empty hall. Empty stage. A long return and nothing inside it.",
+          "id": "win.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "The last reflection decays below the machine noise.",
+          "id": "win.line.2"
+        }
+      ],
+      "id": "win"
+    },
+    "lose": {
+      "type": "ending",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You answer the return. The hall keeps the answer.",
+          "id": "lose.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "The take dies with a full house listening.",
+          "id": "lose.line.2"
+        }
+      ],
+      "id": "lose"
+    }
+  },
+  "metadata": {
+    "id": "hall",
+    "enemy": "THE HOUSE RETURN",
+    "art": {
+      "id": "circuitBentInterface",
+      "mode": "boss",
+      "caption": "House return / monitor path",
+      "status": "SIGNAL"
+    },
+    "composure": 1,
+    "health": 2,
+    "tools": null,
+    "challenges": [
+      {
+        "id": "hall-seat",
+        "title": "THE AUDIENCE",
+        "claim": "",
+        "tools": {
+          "reveal": false,
+          "graft": false
+        },
+        "terminal": false,
+        "tokens": [
+          {
+            "id": "hall-seat:printed:0",
+            "text": "THE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-seat:printed:1",
+            "text": "EMPTY",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-seat:printed:2",
+            "text": "HALL",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-seat:printed:3",
+            "text": "APPLAUDS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-seat:printed:4",
+            "text": "BEFORE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-seat:printed:5",
+            "text": "THE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-seat:printed:6",
+            "text": "TAKE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-seat:printed:7",
+            "text": "ENDS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-seat:printed:8",
+            "text": "NOBODY",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-seat:printed:9",
+            "text": "IS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-seat:printed:10",
+            "text": "SEATED",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-seat:printed:11",
+            "text": "NOBODY",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-seat:printed:12",
+            "text": "HAS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-seat:printed:13",
+            "text": "HEARD",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-seat:printed:14",
+            "text": "YOU",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-seat:printed:15",
+            "text": "FINISH",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          }
+        ],
+        "readings": [
+          {
+            "id": "empty-hall",
+            "meaning": "The hall is empty.",
+            "routeBias": null,
+            "grants": [],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "hall-seat:printed:0",
+              "hall-seat:printed:1",
+              "hall-seat:printed:2"
+            ],
+            "forbidden": [
+              "hall-seat:printed:3"
+            ],
+            "maxVisible": 3
+          },
+          {
+            "id": "nobody-seated",
+            "meaning": "Nobody is seated.",
+            "routeBias": null,
+            "grants": [],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "hall-seat:printed:8",
+              "hall-seat:printed:9",
+              "hall-seat:printed:10"
+            ],
+            "forbidden": [
+              "hall-seat:printed:3"
+            ],
+            "maxVisible": 3
+          },
+          {
+            "id": "nobody-heard",
+            "meaning": "Nobody heard you finish.",
+            "routeBias": null,
+            "grants": [],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "hall-seat:printed:11",
+              "hall-seat:printed:12",
+              "hall-seat:printed:13",
+              "hall-seat:printed:14",
+              "hall-seat:printed:15"
+            ],
+            "forbidden": [
+              "hall-seat:printed:3"
+            ],
+            "maxVisible": 5
+          }
+        ],
+        "opponentMoves": [
+          {
+            "blackout": [
+              "hall-seat:printed:1"
+            ],
+            "scrape": [
+              "hall-seat:printed:3"
+            ],
+            "insert": [],
+            "notice": "THE OTHER HAND RESTORES APPLAUSE."
+          },
+          {
+            "blackout": [
+              "hall-seat:printed:4"
+            ],
+            "scrape": [
+              "hall-seat:printed:14"
+            ],
+            "insert": [],
+            "notice": "THE OTHER HAND MAKES YOU AUDIBLE."
+          }
+        ]
+      },
+      {
+        "id": "hall-stage",
+        "title": "THE STAGE",
+        "claim": "THE BENT RIG CAN GRAFT SIGNAL WORDS.",
+        "tools": {
+          "reveal": false,
+          "graft": true
+        },
+        "terminal": false,
+        "tokens": [
+          {
+            "id": "hall-stage:printed:0",
+            "text": "A",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-stage:printed:1",
+            "text": "GRAND",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-stage:printed:2",
+            "text": "PIANO",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-stage:printed:3",
+            "text": "WAITS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-stage:printed:4",
+            "text": "ON",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-stage:printed:5",
+            "text": "THE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-stage:printed:6",
+            "text": "STAGE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-stage:printed:7",
+            "text": "THE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-stage:printed:8",
+            "text": "LID",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-stage:printed:9",
+            "text": "IS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-stage:printed:10",
+            "text": "OPEN",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-stage:printed:11",
+            "text": "THE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-stage:printed:12",
+            "text": "STRINGS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-stage:printed:13",
+            "text": "ANSWER",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-stage:printed:14",
+            "text": "ONLY",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-stage:printed:15",
+            "text": "WHAT",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-stage:printed:16",
+            "text": "ENTERS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-stage:printed:17",
+            "text": "THE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-stage:printed:18",
+            "text": "ROOM",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-stage:return",
+            "text": "RETURN",
+            "kind": "graft",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-stage:reversed",
+            "text": "REVERSED",
+            "kind": "graft",
+            "label": "",
+            "falseText": false
+          }
+        ],
+        "readings": [
+          {
+            "id": "piano-waits",
+            "meaning": "The piano waits.",
+            "routeBias": null,
+            "grants": [],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "hall-stage:printed:0",
+              "hall-stage:printed:1",
+              "hall-stage:printed:2",
+              "hall-stage:printed:3"
+            ],
+            "forbidden": [
+              "hall-stage:printed:13"
+            ],
+            "maxVisible": 4
+          },
+          {
+            "id": "lid-open",
+            "meaning": "The lid is open; that is not action.",
+            "routeBias": null,
+            "grants": [],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "hall-stage:printed:7",
+              "hall-stage:printed:8",
+              "hall-stage:printed:9",
+              "hall-stage:printed:10"
+            ],
+            "forbidden": [
+              "hall-stage:printed:13"
+            ],
+            "maxVisible": 4
+          },
+          {
+            "id": "return-reversed",
+            "meaning": "The rig can reverse a return.",
+            "routeBias": null,
+            "grants": [
+              "route.inversion"
+            ],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "hall-stage:return",
+              "hall-stage:reversed"
+            ],
+            "forbidden": [
+              "hall-stage:printed:12"
+            ],
+            "maxVisible": 2
+          }
+        ],
+        "opponentMoves": [
+          {
+            "blackout": [
+              "hall-stage:printed:14"
+            ],
+            "scrape": [
+              "hall-stage:printed:13"
+            ],
+            "insert": [
+              "hall-stage:return"
+            ],
+            "notice": "THE OTHER HAND WRITES RETURN AND RESTORES ANSWER."
+          },
+          {
+            "blackout": [
+              "hall-stage:reversed"
+            ],
+            "scrape": [
+              "hall-stage:printed:12"
+            ],
+            "insert": [],
+            "notice": "THE OTHER HAND BLACKS OUT REVERSED."
+          }
+        ]
+      },
+      {
+        "id": "hall-return",
+        "title": "THE RETURN",
+        "claim": "",
+        "tools": {
+          "reveal": false,
+          "graft": false
+        },
+        "terminal": false,
+        "tokens": [
+          {
+            "id": "hall-return:printed:0",
+            "text": "THE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-return:printed:1",
+            "text": "ROOM",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-return:printed:2",
+            "text": "RETURNS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-return:printed:3",
+            "text": "EVERY",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-return:printed:4",
+            "text": "SOUND",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-return:printed:5",
+            "text": "SMALLER",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-return:printed:6",
+            "text": "EXCEPT",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-return:printed:7",
+            "text": "YOUR",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-return:printed:8",
+            "text": "VOICE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-return:printed:9",
+            "text": "WHICH",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-return:printed:10",
+            "text": "COMES",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-return:printed:11",
+            "text": "BACK",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-return:printed:12",
+            "text": "AT",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-return:printed:13",
+            "text": "THE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-return:printed:14",
+            "text": "SAME",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "hall-return:printed:15",
+            "text": "LEVEL",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          }
+        ],
+        "readings": [
+          {
+            "id": "room-returns-sound",
+            "meaning": "The room returns sound.",
+            "routeBias": null,
+            "grants": [],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "hall-return:printed:0",
+              "hall-return:printed:1",
+              "hall-return:printed:2",
+              "hall-return:printed:3",
+              "hall-return:printed:4"
+            ],
+            "forbidden": [
+              "hall-return:printed:8"
+            ],
+            "maxVisible": 5
+          },
+          {
+            "id": "voice-comes-back",
+            "meaning": "Your voice comes back.",
+            "routeBias": null,
+            "grants": [],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "hall-return:printed:7",
+              "hall-return:printed:8",
+              "hall-return:printed:10",
+              "hall-return:printed:11"
+            ],
+            "forbidden": [
+              "hall-return:printed:14"
+            ],
+            "maxVisible": 4
+          },
+          {
+            "id": "same-level",
+            "meaning": "The same level is the trap.",
+            "routeBias": "sacrifice",
+            "grants": [],
+            "locks": [],
+            "pressureDelta": 1,
+            "required": [
+              "hall-return:printed:13",
+              "hall-return:printed:14",
+              "hall-return:printed:15"
+            ],
+            "forbidden": [
+              "hall-return:printed:8"
+            ],
+            "maxVisible": 3
+          }
+        ],
+        "opponentMoves": [
+          {
+            "blackout": [
+              "hall-return:printed:5"
+            ],
+            "scrape": [
+              "hall-return:printed:8"
+            ],
+            "insert": [],
+            "notice": "THE OTHER HAND RESTORES VOICE."
+          },
+          {
+            "blackout": [
+              "hall-return:printed:6"
+            ],
+            "scrape": [
+              "hall-return:printed:14"
+            ],
+            "insert": [],
+            "notice": "THE OTHER HAND LEAVES SAME LEVEL."
+          }
+        ]
+      }
+    ]
+  }
+}

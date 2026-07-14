@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "id": "conservatory.level_check",
+  "title": "Level Check",
+  "status": "active",
+  "entry": "start",
+  "entries": [],
+  "tags": [],
+  "notes": "",
+  "regions": [
+    {
+      "id": "conservatory.level_check.region",
+      "title": "Level Check",
+      "kind": "scene",
+      "color": "#245c62",
+      "nodeIds": [
+        "start",
+        "what",
+        "levels",
+        "spoils",
+        "move",
+        "roll"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Before anything. You never set a level in a room you have not listened to.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "The recorder wakes up in your hand. A nifty fluorescent display, and an eleven segment meter that shows how loud your recording is.",
+          "id": "start.line.2"
+        }
+      ],
+      "choices": [
+        {
+          "text": "what am I actually recording?",
+          "goto": "what",
+          "id": "start.choice.1"
+        },
+        {
+          "text": "set the levels",
+          "goto": "levels",
+          "id": "start.choice.2"
+        }
+      ],
+      "id": "start",
+      "type": "choice"
+    },
+    "what": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Room tone. Sixty seconds of a room with nothing in it.",
+          "id": "what.line.1"
+        },
+        {
+          "who": "you",
+          "text": "Not silence; there is no such thing. The air handler, the glass, the size of the place.",
+          "id": "what.line.2"
+        },
+        {
+          "who": "you",
+          "text": "They cut it in under dialogue so a scene does not go dead between lines. Every room has one, and every one is different, and nobody has ever noticed a good one.",
+          "id": "what.line.3"
+        },
+        {
+          "who": "direction",
+          "text": "Five recordings of a building that comes down on Thursday.",
+          "id": "what.line.4"
+        }
+      ],
+      "goto": "start",
+      "id": "what",
+      "type": "dialogue"
+    },
+    "levels": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "The meter finds the dock. Minus fifty-four decibels. As you move, the recorder picks up your ruffling.",
+          "id": "levels.line.1"
+        },
+        {
+          "who": "you",
+          "text": "My jacket, my knee, my breathing can all ruin this recording.",
+          "id": "levels.line.2"
+        }
+      ],
+      "choices": [
+        {
+          "text": "so what spoils a take?",
+          "goto": "spoils",
+          "id": "levels.choice.1"
+        },
+        {
+          "text": "kill the light and roll",
+          "goto": "roll",
+          "id": "levels.choice.2"
+        }
+      ],
+      "id": "levels",
+      "type": "choice"
+    },
+    "spoils": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Anything I do. A step. A hand on the torch. The radio, if it ever decides to speak.",
+          "id": "spoils.line.1"
+        },
+        {
+          "who": "you",
+          "text": "Their own words: if you can hear yourself on the take, try again.",
+          "id": "spoils.line.2"
+        },
+        {
+          "who": "you",
+          "text": "So: light off, feet still, and forty-five seconds of being furniture.",
+          "id": "spoils.line.3"
+        }
+      ],
+      "choices": [
+        {
+          "text": "and if I move?",
+          "goto": "move",
+          "id": "spoils.choice.1"
+        },
+        {
+          "text": "kill the light and roll sound",
+          "goto": "roll",
+          "id": "spoils.choice.2"
+        }
+      ],
+      "id": "spoils",
+      "type": "choice"
+    },
+    "move": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Then the take is spoiled and I just have to do it again. That is all. That's what I like about audio work and the arts; nobody ever dies because of a spoiled take.",
+          "id": "move.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "You have done this for six years and never once said that out loud in a room.",
+          "id": "move.line.2"
+        }
+      ],
+      "goto": "levels",
+      "id": "move",
+      "type": "dialogue"
+    },
+    "roll": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Light off. Easier that way.",
+          "id": "roll.line.1"
+        },
+        {
+          "who": "you",
+          "text": "That is the level. That is the room. Now you keep sixty seconds of it with nothing added.",
+          "id": "roll.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "The headphones are on and the monitor is open. Press [r] to roll sound and start recording — and once you roll: do not move.",
+          "id": "roll.line.3"
+        }
+      ],
+      "id": "roll",
+      "type": "dialogue"
+    }
+  }
+}

@@ -1,6 +1,9 @@
 export function updateMemory(previous, signal, dt, options = {}) {
   const attackPerSec = Number.isFinite(options.attackPerSec) ? options.attackPerSec : 14;
-  const decayPerSec = Number.isFinite(options.decayPerSec) ? options.decayPerSec : 1.8;
+  const halfLifeMs = Number.isFinite(options.halfLifeMs) ? Math.max(16, options.halfLifeMs) : null;
+  const decayPerSec = halfLifeMs
+    ? Math.log(2) / (halfLifeMs / 1000)
+    : (Number.isFinite(options.decayPerSec) ? options.decayPerSec : 1.8);
   const p = Math.max(0, Math.min(1, Number(previous) || 0));
   const s = Math.max(0, Math.min(1, Number(signal) || 0));
   const safeDt = Math.max(0, Math.min(0.25, Number(dt) || 0));

@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "documentId": "conservatory.talisman",
+  "positions": {
+    "start": {
+      "x": 80,
+      "y": 100
+    },
+    "read": {
+      "x": 440,
+      "y": 100
+    },
+    "whose": {
+      "x": 800,
+      "y": 100
+    },
+    "strike": {
+      "x": 1160,
+      "y": 100
+    },
+    "damp": {
+      "x": 80,
+      "y": 360
+    },
+    "pocket": {
+      "x": 440,
+      "y": 360
+    },
+    "leave": {
+      "x": 800,
+      "y": 360
+    }
+  },
+  "regions": {}
+}

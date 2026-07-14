@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "documentId": "battle.hallbattle.unnamed",
+  "positions": {
+    "start": {
+      "x": 80,
+      "y": 100
+    },
+    "outcome": {
+      "x": 440,
+      "y": 100
+    },
+    "win": {
+      "x": 800,
+      "y": 100
+    },
+    "lose": {
+      "x": 1160,
+      "y": 100
+    }
+  },
+  "regions": {}
+}

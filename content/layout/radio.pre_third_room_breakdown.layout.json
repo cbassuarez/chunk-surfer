@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "documentId": "radio.pre_third_room_breakdown",
+  "positions": {
+    "start": {
+      "x": 80,
+      "y": 100
+    },
+    "normal": {
+      "x": 440,
+      "y": 100
+    },
+    "room": {
+      "x": 800,
+      "y": 100
+    },
+    "listen": {
+      "x": 1160,
+      "y": 100
+    }
+  },
+  "regions": {}
+}

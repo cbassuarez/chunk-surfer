@@ -5,8 +5,17 @@ const recent = [];
 let logApi = null;
 let logApiLoaded = false;
 
+const SENSITIVE_WORD = /\b(username|persona|identity|operator)\b|display\s*name|display_name|displayName/i;
+
+function redact(value) {
+  const text = String(value ?? '');
+  if (!text) return '';
+  if (SENSITIVE_WORD.test(text)) return '[redacted local identity detail]';
+  return text.slice(0, 500);
+}
+
 function remember(level, message, detail = null) {
-  recent.push({ at: new Date().toISOString(), level, message: String(message || ''), detail: detail ? String(detail).slice(0, 500) : null });
+  recent.push({ at: new Date().toISOString(), level, message: redact(message || ''), detail: detail ? redact(detail) : null });
   while (recent.length > 80) recent.shift();
 }
 
@@ -35,7 +44,7 @@ async function logWith(level, message, detail = null) {
   remember(level, message, detail);
   try {
     const api = await loadLogApi();
-    const text = detail ? `${message} ${String(detail).slice(0, 500)}` : String(message);
+    const text = detail ? `${redact(message)} ${redact(detail)}` : redact(message);
     if (api?.[level]) await api[level](text);
     else console[level === 'debug' ? 'debug' : level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'info'](text);
   } catch (_) {

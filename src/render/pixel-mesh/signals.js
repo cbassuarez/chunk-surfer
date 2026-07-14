@@ -10,7 +10,6 @@ export function sampleFallbackSignal({
   pressure = 0,
   audio = 0,
   fear = 0,
-  localDiffusion = 0,
   time = 0,
   reduceMotion = false,
 } = {}) {
@@ -20,7 +19,6 @@ export function sampleFallbackSignal({
   const raw = Number(pressure || 0) * 0.28
     + Number(audio || 0) * 0.22
     + Number(fear || 0) * 0.18
-    + Number(localDiffusion || 0) * 0.38
     + n * 0.10
     + band * 0.10;
   return Math.max(0, Math.min(1, raw));

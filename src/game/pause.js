@@ -9,22 +9,19 @@ function clip(text, width) {
 export function makePauseScene({
   onResume,
   onSettings,
-  onControls,
-  onAudio,
   onObjectives,
   onArchive,
   onRestartRun,
   onReturnToTitle,
   onQuitDesktop,
+  status = () => ({}),
 } = {}) {
   let selected = 0;
   const items = [
     { id: 'resume', label: 'RESUME', detail: 'Return to live monitoring.', action: onResume },
-    { id: 'objectives', label: 'OBJECTIVES', detail: 'Review work order and route.', action: onObjectives },
+    { id: 'objectives', label: 'WORK ORDER / BAG', detail: 'Review the job, map, and carried equipment.', action: onObjectives },
     { id: 'archive', label: 'ARCHIVE / RECORDS', detail: 'Open long-term records.', action: onArchive },
-    { id: 'audio', label: 'AUDIO QUICK SETTINGS', detail: 'Jump to levels and monitor controls.', action: onAudio },
-    { id: 'controls', label: 'CONTROLS', detail: 'Review keyboard and controller map.', action: onControls },
-    { id: 'settings', label: 'SETTINGS…', detail: 'Open full AUDIOCORP configuration.', action: onSettings },
+    { id: 'settings', label: 'SETTINGS…', detail: 'Open display, audio, input, and accessibility.', action: onSettings },
     { id: 'restart', label: 'RESTART RUN…', detail: 'Begin setup again.', danger: true, action: onRestartRun },
     { id: 'title', label: 'RETURN TO TITLE…', detail: 'Leave the current field session.', danger: true, action: onReturnToTitle },
     { id: 'quit', label: 'QUIT TO DESKTOP', detail: 'Close Chunk Surfer.', danger: true, action: onQuitDesktop },
@@ -70,23 +67,34 @@ export function makePauseScene({
     const { cols, rows } = uiSize();
     uiScrim(0.88);
 
-    const w = Math.min(78, cols - 4);
-    const h = Math.min(25, rows - 4);
+    const w = Math.min(88, cols - 4);
+    const h = Math.min(27, rows - 4);
     const x = Math.floor((cols - w) / 2);
     const y = Math.floor((rows - h) / 2);
     const body = drawMachinePanel(x, y, w, h, {
-      theme: 'amber',
-      wordmark: 'AUDIOCORP',
-      label: 'SERVICE MENU',
-      source: 'RUN INTERRUPT',
+      theme: 'green',
+      wordmark: 'CHUNK SURFER',
+      label: 'FIELD HOLD',
+      source: 'RUN PAUSED',
       footer: '[↑↓] SELECT · [ENTER] CONFIRM · [ESC] RESUME',
       meter: false,
     });
 
     const ix = body.x;
     const iy = body.y;
-    uiText(ix, iy, 'FIELD SESSION SUSPENDED', 'ui-primary');
-    uiText(ix, iy + 1, 'NO NEW TAKE IS WRITTEN WHILE THIS PANEL IS OPEN.', 'ui-secondary');
+    const live = status() || {};
+    uiText(ix, iy, 'FIELD SESSION HELD', 'ui-primary');
+    uiText(ix, iy + 1, 'THE BUILDING, TAKE CLOCK, AND HUSH ARE FROZEN.', 'ui-secondary');
+
+    const statusX = ix + Math.max(42, Math.floor(body.w * 0.56));
+    if (body.w >= 70) {
+      uiText(statusX, iy + 3, 'RUN STATUS', 'ui-label');
+      uiText(statusX, iy + 5, `AREA   ${clip(live.area || 'UNKNOWN', 20)}`, 'ui-secondary');
+      uiText(statusX, iy + 7, `TAKES  ${live.takes ?? 0} / 5`, 'ui-secondary');
+      uiText(statusX, iy + 9, `LIGHT  ${live.light ? 'ON' : 'OFF'}`, live.light ? 'ui-amber' : 'ui-secondary');
+      uiText(statusX, iy + 11, `HUSH   ${live.hush || 'QUIET'}`, live.hush === 'CONTACT' ? 'ui-danger' : 'ui-secondary');
+      uiText(statusX, iy + 13, `TIME   ${live.time || '00:00:00'}`, 'ui-secondary');
+    }
 
     const maxItems = Math.max(1, body.h - 7);
     const start = selected >= maxItems ? Math.min(selected - maxItems + 1, items.length - maxItems) : 0;
@@ -96,8 +104,8 @@ export function makePauseScene({
       const on = index === selected;
       const cls = item.danger ? (on ? 'ui-danger' : 'ui-amber') : (on ? 'ui-primary' : 'ui-secondary');
       const prefix = on ? '▸' : ' ';
-      uiText(ix, iy + 3 + j, `${prefix} ${clip(item.label, 24)}`, cls);
-      if (cols >= 86) uiText(ix + 29, iy + 3 + j, clip(item.detail, Math.max(8, body.w - 31)), on ? 'ui-amber' : 'ui-secondary');
+      uiText(ix, iy + 3 + j * 2, `${prefix} ${clip(item.label, 26)}`, cls);
+      if (body.w < 70) uiText(ix + 2, iy + 4 + j * 2, clip(item.detail, Math.max(8, body.w - 4)), 'ui-secondary', on ? 0.9 : 0.56);
     });
 
     if (items.length > visible.length) {
@@ -105,7 +113,7 @@ export function makePauseScene({
       if (more) uiText(x + w - 4, iy + body.h - 4, more, 'ui-secondary');
     }
 
-    uiCenter(y + h - 3, 'SERVICE MENU · CONFIGURATION IS AVAILABLE UNDER SETTINGS…', 'ui-secondary');
+    uiCenter(y + h - 3, 'PAUSE HOLDS THE RUN · SETTINGS CONFIGURE THE APPLICATION', 'ui-secondary');
   }
 
   return {
@@ -114,9 +122,10 @@ export function makePauseScene({
     blocksInput: true,
     blocksWorld: true,
     lensPreset: 'calm',
-    enter() { document?.body?.classList?.add('pause-open'); },
-    exit() { document?.body?.classList?.remove('pause-open'); },
+    enter() { globalThis.document?.body?.classList?.add('pause-open'); },
+    exit() { globalThis.document?.body?.classList?.remove('pause-open'); },
     key,
     render,
+    view() { return { selected: items[selected]?.id, items: items.map((item) => item.id), status: status() }; },
   };
 }

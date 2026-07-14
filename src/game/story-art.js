@@ -66,6 +66,16 @@ export const STORY_ART = Object.freeze({
     mode: 'boss',
     alt: 'A tuning fork used as a reference tone image.',
   },
+  walkie: {
+    id: 'walkie',
+    src: assetUrl('story-art/walkie.png'),
+    label: 'Radio',
+    caption: 'Client radio / issued equipment',
+    status: 'LIVE',
+    tone: 'device',
+    mode: 'hero',
+    alt: 'A handheld radio used for client check-ins.',
+  },
 });
 
 const imageCache = new Map();

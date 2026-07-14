@@ -1,0 +1,3444 @@
+{
+  "schemaVersion": 1,
+  "id": "chunk-surfer.audio",
+  "assets": [
+    {
+      "id": "asset.amplifications.amp_001",
+      "kind": "file",
+      "path": "audio/amplifications/amp_001.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_002",
+      "kind": "file",
+      "path": "audio/amplifications/amp_002.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_003",
+      "kind": "file",
+      "path": "audio/amplifications/amp_003.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_004",
+      "kind": "file",
+      "path": "audio/amplifications/amp_004.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_005",
+      "kind": "file",
+      "path": "audio/amplifications/amp_005.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_006",
+      "kind": "file",
+      "path": "audio/amplifications/amp_006.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_007",
+      "kind": "file",
+      "path": "audio/amplifications/amp_007.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_008",
+      "kind": "file",
+      "path": "audio/amplifications/amp_008.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_009",
+      "kind": "file",
+      "path": "audio/amplifications/amp_009.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_010",
+      "kind": "file",
+      "path": "audio/amplifications/amp_010.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_011",
+      "kind": "file",
+      "path": "audio/amplifications/amp_011.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_012",
+      "kind": "file",
+      "path": "audio/amplifications/amp_012.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_013",
+      "kind": "file",
+      "path": "audio/amplifications/amp_013.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_014",
+      "kind": "file",
+      "path": "audio/amplifications/amp_014.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_015",
+      "kind": "file",
+      "path": "audio/amplifications/amp_015.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_016",
+      "kind": "file",
+      "path": "audio/amplifications/amp_016.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_017",
+      "kind": "file",
+      "path": "audio/amplifications/amp_017.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_018",
+      "kind": "file",
+      "path": "audio/amplifications/amp_018.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_019",
+      "kind": "file",
+      "path": "audio/amplifications/amp_019.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_020",
+      "kind": "file",
+      "path": "audio/amplifications/amp_020.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_021",
+      "kind": "file",
+      "path": "audio/amplifications/amp_021.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_022",
+      "kind": "file",
+      "path": "audio/amplifications/amp_022.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_023",
+      "kind": "file",
+      "path": "audio/amplifications/amp_023.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_024",
+      "kind": "file",
+      "path": "audio/amplifications/amp_024.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_025",
+      "kind": "file",
+      "path": "audio/amplifications/amp_025.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_026",
+      "kind": "file",
+      "path": "audio/amplifications/amp_026.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_027",
+      "kind": "file",
+      "path": "audio/amplifications/amp_027.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_028",
+      "kind": "file",
+      "path": "audio/amplifications/amp_028.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_029",
+      "kind": "file",
+      "path": "audio/amplifications/amp_029.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_030",
+      "kind": "file",
+      "path": "audio/amplifications/amp_030.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_031",
+      "kind": "file",
+      "path": "audio/amplifications/amp_031.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_032",
+      "kind": "file",
+      "path": "audio/amplifications/amp_032.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_033",
+      "kind": "file",
+      "path": "audio/amplifications/amp_033.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_034",
+      "kind": "file",
+      "path": "audio/amplifications/amp_034.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_035",
+      "kind": "file",
+      "path": "audio/amplifications/amp_035.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_036",
+      "kind": "file",
+      "path": "audio/amplifications/amp_036.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_037",
+      "kind": "file",
+      "path": "audio/amplifications/amp_037.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_038",
+      "kind": "file",
+      "path": "audio/amplifications/amp_038.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_039",
+      "kind": "file",
+      "path": "audio/amplifications/amp_039.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_040",
+      "kind": "file",
+      "path": "audio/amplifications/amp_040.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_041",
+      "kind": "file",
+      "path": "audio/amplifications/amp_041.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_042",
+      "kind": "file",
+      "path": "audio/amplifications/amp_042.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_043",
+      "kind": "file",
+      "path": "audio/amplifications/amp_043.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_044",
+      "kind": "file",
+      "path": "audio/amplifications/amp_044.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_045",
+      "kind": "file",
+      "path": "audio/amplifications/amp_045.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_046",
+      "kind": "file",
+      "path": "audio/amplifications/amp_046.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_047",
+      "kind": "file",
+      "path": "audio/amplifications/amp_047.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_048",
+      "kind": "file",
+      "path": "audio/amplifications/amp_048.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_049",
+      "kind": "file",
+      "path": "audio/amplifications/amp_049.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_050",
+      "kind": "file",
+      "path": "audio/amplifications/amp_050.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_051",
+      "kind": "file",
+      "path": "audio/amplifications/amp_051.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_052",
+      "kind": "file",
+      "path": "audio/amplifications/amp_052.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_053",
+      "kind": "file",
+      "path": "audio/amplifications/amp_053.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_054",
+      "kind": "file",
+      "path": "audio/amplifications/amp_054.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_055",
+      "kind": "file",
+      "path": "audio/amplifications/amp_055.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_056",
+      "kind": "file",
+      "path": "audio/amplifications/amp_056.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_057",
+      "kind": "file",
+      "path": "audio/amplifications/amp_057.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_058",
+      "kind": "file",
+      "path": "audio/amplifications/amp_058.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_059",
+      "kind": "file",
+      "path": "audio/amplifications/amp_059.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_060",
+      "kind": "file",
+      "path": "audio/amplifications/amp_060.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_061",
+      "kind": "file",
+      "path": "audio/amplifications/amp_061.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_062",
+      "kind": "file",
+      "path": "audio/amplifications/amp_062.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_063",
+      "kind": "file",
+      "path": "audio/amplifications/amp_063.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.amplifications.amp_064",
+      "kind": "file",
+      "path": "audio/amplifications/amp_064.mp3",
+      "tags": [
+        "amplifications"
+      ]
+    },
+    {
+      "id": "asset.game.bag_rummage",
+      "kind": "file",
+      "path": "audio/game/bag_rummage.mp3",
+      "tags": [
+        "game"
+      ]
+    },
+    {
+      "id": "asset.game.bunch-of-footsteps-sounds",
+      "kind": "file",
+      "path": "audio/game/bunch-of-footsteps-sounds.mp3",
+      "tags": [
+        "game"
+      ]
+    },
+    {
+      "id": "asset.game.door_close",
+      "kind": "file",
+      "path": "audio/game/door_close.mp3",
+      "tags": [
+        "game"
+      ]
+    },
+    {
+      "id": "asset.game.hapax-recording",
+      "kind": "file",
+      "path": "audio/game/hapax-recording.mp3",
+      "tags": [
+        "game"
+      ]
+    },
+    {
+      "id": "asset.game.heartbeat",
+      "kind": "file",
+      "path": "audio/game/heartbeat.mp3",
+      "tags": [
+        "game"
+      ]
+    },
+    {
+      "id": "asset.game.hush",
+      "kind": "file",
+      "path": "audio/game/hush.mp3",
+      "tags": [
+        "game"
+      ]
+    },
+    {
+      "id": "asset.game.keys",
+      "kind": "file",
+      "path": "audio/game/keys.mp3",
+      "tags": [
+        "game"
+      ]
+    },
+    {
+      "id": "asset.game.light",
+      "kind": "file",
+      "path": "audio/game/light.mp3",
+      "tags": [
+        "game"
+      ]
+    },
+    {
+      "id": "asset.game.outside_room_tone",
+      "kind": "file",
+      "path": "audio/game/outside_room_tone.mp3",
+      "tags": [
+        "game"
+      ]
+    },
+    {
+      "id": "asset.game.pageturn",
+      "kind": "file",
+      "path": "audio/game/pageturn.mp3",
+      "tags": [
+        "game"
+      ]
+    },
+    {
+      "id": "asset.game.pageturn1",
+      "kind": "file",
+      "path": "audio/game/pageturn1.mp3",
+      "tags": [
+        "game"
+      ]
+    },
+    {
+      "id": "asset.game.pageturn2",
+      "kind": "file",
+      "path": "audio/game/pageturn2.mp3",
+      "tags": [
+        "game"
+      ]
+    },
+    {
+      "id": "asset.game.pageturn3",
+      "kind": "file",
+      "path": "audio/game/pageturn3.mp3",
+      "tags": [
+        "game"
+      ]
+    },
+    {
+      "id": "asset.game.pageturn4",
+      "kind": "file",
+      "path": "audio/game/pageturn4.mp3",
+      "tags": [
+        "game"
+      ]
+    },
+    {
+      "id": "asset.game.pageturn5",
+      "kind": "file",
+      "path": "audio/game/pageturn5.mp3",
+      "tags": [
+        "game"
+      ]
+    },
+    {
+      "id": "asset.game.pens",
+      "kind": "file",
+      "path": "audio/game/pens.mp3",
+      "tags": [
+        "game"
+      ]
+    },
+    {
+      "id": "asset.game.radio_breaks-scream",
+      "kind": "file",
+      "path": "audio/game/radio_breaks-scream.mp3",
+      "tags": [
+        "game"
+      ]
+    },
+    {
+      "id": "asset.game.rain",
+      "kind": "file",
+      "path": "audio/game/rain.mp3",
+      "tags": [
+        "game"
+      ]
+    },
+    {
+      "id": "asset.game.recorder",
+      "kind": "file",
+      "path": "audio/game/recorder.mp3",
+      "tags": [
+        "game"
+      ]
+    },
+    {
+      "id": "asset.game.signature",
+      "kind": "file",
+      "path": "audio/game/signature.mp3",
+      "tags": [
+        "game"
+      ]
+    },
+    {
+      "id": "asset.game.slides_keys_and_radio",
+      "kind": "file",
+      "path": "audio/game/slides_keys_and_radio.mp3",
+      "tags": [
+        "game"
+      ]
+    },
+    {
+      "id": "asset.game.tape_play",
+      "kind": "file",
+      "path": "audio/game/tape_play.mp3",
+      "tags": [
+        "game"
+      ]
+    },
+    {
+      "id": "asset.game.tape_rewind",
+      "kind": "file",
+      "path": "audio/game/tape_rewind.mp3",
+      "tags": [
+        "game"
+      ]
+    },
+    {
+      "id": "asset.game.the_key_turns",
+      "kind": "file",
+      "path": "audio/game/the_key_turns.mp3",
+      "tags": [
+        "game"
+      ]
+    },
+    {
+      "id": "asset.game.title_song",
+      "kind": "file",
+      "path": "audio/game/title_song.mp3",
+      "tags": [
+        "game"
+      ]
+    },
+    {
+      "id": "asset.game.torch-recorder-headphones-radio-keys-the-order",
+      "kind": "file",
+      "path": "audio/game/torch-recorder-headphones-radio-keys-the-order.mp3",
+      "tags": [
+        "game"
+      ]
+    },
+    {
+      "id": "asset.game.typing",
+      "kind": "file",
+      "path": "audio/game/typing.mp3",
+      "tags": [
+        "game"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_001",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_001.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_002",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_002.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_003",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_003.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_004",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_004.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_005",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_005.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_006",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_006.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_007",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_007.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_008",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_008.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_009",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_009.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_010",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_010.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_011",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_011.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_012",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_012.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_013",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_013.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_014",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_014.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_015",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_015.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_016",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_016.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_017",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_017.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_018",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_018.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_019",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_019.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_020",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_020.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_021",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_021.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_022",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_022.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_023",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_023.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_024",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_024.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_025",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_025.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_026",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_026.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_027",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_027.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_028",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_028.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_029",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_029.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_030",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_030.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_031",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_031.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_032",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_032.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_033",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_033.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_034",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_034.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_035",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_035.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_036",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_036.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_037",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_037.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_038",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_038.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_039",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_039.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_040",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_040.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_041",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_041.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_042",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_042.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_043",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_043.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_044",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_044.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_045",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_045.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_046",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_046.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_047",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_047.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_048",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_048.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_049",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_049.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_050",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_050.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_051",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_051.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_052",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_052.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_053",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_053.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_054",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_054.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_055",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_055.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_056",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_056.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_057",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_057.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_058",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_058.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_059",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_059.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_060",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_060.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_061",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_061.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_062",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_062.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_063",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_063.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.lux_nova.lux_064",
+      "kind": "file",
+      "path": "audio/lux_nova/lux_064.mp3",
+      "tags": [
+        "lux_nova"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_01",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_01.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_02",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_02.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_03",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_03.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_04",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_04.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_05",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_05.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_06",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_06.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_07",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_07.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_08",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_08.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_09",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_09.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_10",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_10.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_11",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_11.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_12",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_12.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_13",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_13.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_14",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_14.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_15",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_15.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_16",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_16.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_17",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_17.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_18",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_18.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_19",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_19.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_20",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_20.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_21",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_21.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_22",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_22.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_23",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_23.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_24",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_24.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_25",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_25.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_26",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_26.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_27",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_27.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_28",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_28.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_29",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_29.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_30",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_30.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_31",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_31.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_32",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_32.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_33",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_33.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_34",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_34.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_35",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_35.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_36",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_36.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_37",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_37.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_38",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_38.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_39",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_39.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_40",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_40.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_41",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_41.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_42",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_42.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_43",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_43.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_44",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_44.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_45",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_45.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_46",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_46.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_47",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_47.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_48",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_48.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_49",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_49.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_50",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_50.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_51",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_51.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_52",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_52.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_53",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_53.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_54",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_54.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_55",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_55.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_56",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_56.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_57",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_57.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_58",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_58.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_59",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_59.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_60",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_60.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_61",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_61.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_62",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_62.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_63",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_63.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.main_b3.main_b3_64",
+      "kind": "file",
+      "path": "audio/main_b3/main_b3_64.mp3",
+      "tags": [
+        "main_b3"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_001",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_001.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_002",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_002.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_003",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_003.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_004",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_004.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_005",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_005.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_006",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_006.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_007",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_007.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_008",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_008.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_009",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_009.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_010",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_010.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_011",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_011.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_012",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_012.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_013",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_013.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_014",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_014.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_015",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_015.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_016",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_016.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_017",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_017.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_018",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_018.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_019",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_019.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_020",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_020.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_021",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_021.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_022",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_022.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_023",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_023.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_024",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_024.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_025",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_025.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_026",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_026.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_027",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_027.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_028",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_028.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_029",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_029.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_030",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_030.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_031",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_031.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_032",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_032.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_033",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_033.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_034",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_034.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_035",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_035.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_036",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_036.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_037",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_037.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_038",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_038.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_039",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_039.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_040",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_040.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_041",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_041.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_042",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_042.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_043",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_043.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_044",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_044.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_045",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_045.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_046",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_046.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_047",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_047.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_048",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_048.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_049",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_049.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_050",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_050.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_051",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_051.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_052",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_052.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_053",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_053.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_054",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_054.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_055",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_055.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_056",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_056.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_057",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_057.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_058",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_058.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_059",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_059.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_060",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_060.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_061",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_061.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_062",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_062.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_063",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_063.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.soundnoisemusic.snm_064",
+      "kind": "file",
+      "path": "audio/soundnoisemusic/snm_064.mp3",
+      "tags": [
+        "soundnoisemusic"
+      ]
+    },
+    {
+      "id": "asset.the_tub.00_xither_forge",
+      "kind": "file",
+      "path": "audio/the_tub/00_xither_forge.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.01_wetair_veil",
+      "kind": "file",
+      "path": "audio/the_tub/01_wetair_veil.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.02_trillion_hull",
+      "kind": "file",
+      "path": "audio/the_tub/02_trillion_hull.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.03_acharia_arc",
+      "kind": "file",
+      "path": "audio/the_tub/03_acharia_arc.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.04_xemf_mass",
+      "kind": "file",
+      "path": "audio/the_tub/04_xemf_mass.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.05_xither_glass",
+      "kind": "file",
+      "path": "audio/the_tub/05_xither_glass.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.06_wetair_core",
+      "kind": "file",
+      "path": "audio/the_tub/06_wetair_core.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.07_trillion_air",
+      "kind": "file",
+      "path": "audio/the_tub/07_trillion_air.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.08_acharia_depth",
+      "kind": "file",
+      "path": "audio/the_tub/08_acharia_depth.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.09_xemf_sheen",
+      "kind": "file",
+      "path": "audio/the_tub/09_xemf_sheen.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.10_xither_floor",
+      "kind": "file",
+      "path": "audio/the_tub/10_xither_floor.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.11_wetair_shine",
+      "kind": "file",
+      "path": "audio/the_tub/11_wetair_shine.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.12_trillion_low",
+      "kind": "file",
+      "path": "audio/the_tub/12_trillion_low.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.13_acharia_spark",
+      "kind": "file",
+      "path": "audio/the_tub/13_acharia_spark.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.14_xemf_grain",
+      "kind": "file",
+      "path": "audio/the_tub/14_xemf_grain.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.15_xither_lift",
+      "kind": "file",
+      "path": "audio/the_tub/15_xither_lift.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.16_wetair_drift",
+      "kind": "file",
+      "path": "audio/the_tub/16_wetair_drift.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.17_trillion_fog",
+      "kind": "file",
+      "path": "audio/the_tub/17_trillion_fog.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.18_acharia_haze",
+      "kind": "file",
+      "path": "audio/the_tub/18_acharia_haze.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.19_xemf_bloom",
+      "kind": "file",
+      "path": "audio/the_tub/19_xemf_bloom.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.s0001",
+      "kind": "file",
+      "path": "audio/the_tub/S0001.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.s0004",
+      "kind": "file",
+      "path": "audio/the_tub/S0004.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.s0006",
+      "kind": "file",
+      "path": "audio/the_tub/S0006.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.s0008",
+      "kind": "file",
+      "path": "audio/the_tub/S0008.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.s0009",
+      "kind": "file",
+      "path": "audio/the_tub/S0009.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.s0012",
+      "kind": "file",
+      "path": "audio/the_tub/S0012.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.s0014",
+      "kind": "file",
+      "path": "audio/the_tub/S0014.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.s0016",
+      "kind": "file",
+      "path": "audio/the_tub/S0016.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.s0017",
+      "kind": "file",
+      "path": "audio/the_tub/S0017.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.s0020",
+      "kind": "file",
+      "path": "audio/the_tub/S0020.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.s0022",
+      "kind": "file",
+      "path": "audio/the_tub/S0022.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.s0024",
+      "kind": "file",
+      "path": "audio/the_tub/S0024.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.s0025",
+      "kind": "file",
+      "path": "audio/the_tub/S0025.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.s0028",
+      "kind": "file",
+      "path": "audio/the_tub/S0028.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.s0030",
+      "kind": "file",
+      "path": "audio/the_tub/S0030.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.s0032",
+      "kind": "file",
+      "path": "audio/the_tub/S0032.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.s0033",
+      "kind": "file",
+      "path": "audio/the_tub/S0033.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.s0036",
+      "kind": "file",
+      "path": "audio/the_tub/S0036.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.s0038",
+      "kind": "file",
+      "path": "audio/the_tub/S0038.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.s0040",
+      "kind": "file",
+      "path": "audio/the_tub/S0040.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.s0041",
+      "kind": "file",
+      "path": "audio/the_tub/S0041.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.s0044",
+      "kind": "file",
+      "path": "audio/the_tub/S0044.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.s0046",
+      "kind": "file",
+      "path": "audio/the_tub/S0046.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "asset.the_tub.s0048",
+      "kind": "file",
+      "path": "audio/the_tub/S0048.wav",
+      "tags": [
+        "the_tub"
+      ]
+    },
+    {
+      "id": "procedural.hush-fragment",
+      "kind": "procedural",
+      "generator": "hush-fragment",
+      "tags": [
+        "procedural"
+      ]
+    },
+    {
+      "id": "procedural.instrument",
+      "kind": "procedural",
+      "generator": "instrument",
+      "tags": [
+        "procedural"
+      ]
+    },
+    {
+      "id": "procedural.equipment",
+      "kind": "procedural",
+      "generator": "equipment",
+      "tags": [
+        "procedural"
+      ]
+    },
+    {
+      "id": "procedural.negative",
+      "kind": "procedural",
+      "generator": "negative",
+      "tags": [
+        "procedural"
+      ]
+    },
+    {
+      "id": "procedural.menu-hiss",
+      "kind": "procedural",
+      "generator": "menu-hiss",
+      "tags": [
+        "procedural"
+      ]
+    },
+    {
+      "id": "procedural.ui-click",
+      "kind": "procedural",
+      "generator": "ui-click",
+      "tags": [
+        "procedural"
+      ]
+    }
+  ],
+  "cues": [
+    {
+      "id": "light",
+      "title": "light",
+      "bus": "sfx",
+      "concurrency": "overlap",
+      "layers": [
+        {
+          "id": "light.layer",
+          "assetId": "asset.game.light",
+          "gain": 1,
+          "playbackRate": 1,
+          "pan": 0
+        }
+      ]
+    },
+    {
+      "id": "recorder",
+      "title": "recorder",
+      "bus": "sfx",
+      "concurrency": "overlap",
+      "layers": [
+        {
+          "id": "recorder.layer",
+          "assetId": "asset.game.recorder",
+          "gain": 1,
+          "playbackRate": 1,
+          "pan": 0
+        }
+      ]
+    },
+    {
+      "id": "door",
+      "title": "door",
+      "bus": "sfx",
+      "concurrency": "overlap",
+      "layers": [
+        {
+          "id": "door.layer",
+          "assetId": "asset.game.door_close",
+          "gain": 0.95,
+          "playbackRate": 1,
+          "pan": 0
+        }
+      ],
+      "effects": [
+        "story:stop-booth"
+      ]
+    },
+    {
+      "id": "bag",
+      "title": "bag",
+      "bus": "sfx",
+      "concurrency": "overlap",
+      "layers": [
+        {
+          "id": "bag.layer",
+          "assetId": "asset.game.bag_rummage",
+          "gain": 0.75,
+          "playbackRate": 1,
+          "pan": 0
+        }
+      ]
+    },
+    {
+      "id": "pens",
+      "title": "pens",
+      "bus": "sfx",
+      "concurrency": "overlap",
+      "layers": [
+        {
+          "id": "pens.layer",
+          "assetId": "asset.game.pens",
+          "gain": 0.62,
+          "playbackRate": 1,
+          "pan": 0
+        }
+      ]
+    },
+    {
+      "id": "signature",
+      "title": "signature",
+      "bus": "sfx",
+      "concurrency": "overlap",
+      "layers": [
+        {
+          "id": "signature.layer",
+          "assetId": "asset.game.signature",
+          "gain": 0.7,
+          "playbackRate": 1,
+          "pan": 0
+        }
+      ]
+    },
+    {
+      "id": "slides",
+      "title": "slides",
+      "bus": "sfx",
+      "concurrency": "overlap",
+      "layers": [
+        {
+          "id": "slides.layer",
+          "assetId": "asset.game.slides_keys_and_radio",
+          "gain": 0.78,
+          "playbackRate": 1,
+          "pan": 0
+        }
+      ]
+    },
+    {
+      "id": "keyturn",
+      "title": "keyturn",
+      "bus": "sfx",
+      "concurrency": "overlap",
+      "layers": [
+        {
+          "id": "keyturn.layer",
+          "assetId": "asset.game.the_key_turns",
+          "gain": 0.85,
+          "playbackRate": 1,
+          "pan": 0
+        }
+      ],
+      "effects": [
+        "story:stop-rain"
+      ]
+    },
+    {
+      "id": "keys",
+      "title": "keys",
+      "bus": "sfx",
+      "concurrency": "overlap",
+      "layers": [
+        {
+          "id": "keys.layer",
+          "assetId": "asset.game.keys",
+          "gain": 0.7,
+          "playbackRate": 1,
+          "pan": 0
+        }
+      ]
+    },
+    {
+      "id": "kit",
+      "title": "kit",
+      "bus": "sfx",
+      "concurrency": "overlap",
+      "layers": [
+        {
+          "id": "kit.layer",
+          "assetId": "asset.game.torch-recorder-headphones-radio-keys-the-order",
+          "gain": 0.72,
+          "playbackRate": 1,
+          "pan": 0
+        }
+      ]
+    },
+    {
+      "id": "rewind",
+      "title": "rewind",
+      "bus": "sfx",
+      "concurrency": "overlap",
+      "layers": [
+        {
+          "id": "rewind.layer",
+          "assetId": "asset.game.tape_rewind",
+          "gain": 0.8,
+          "playbackRate": 1,
+          "pan": 0
+        }
+      ]
+    },
+    {
+      "id": "scream",
+      "title": "scream",
+      "bus": "sfx",
+      "concurrency": "overlap",
+      "layers": [
+        {
+          "id": "scream.layer",
+          "assetId": "asset.game.radio_breaks-scream",
+          "gain": 0.95,
+          "playbackRate": 1,
+          "pan": 0
+        }
+      ],
+      "effects": [
+        "fx:shake:2.6:900",
+        "threat:report"
+      ]
+    },
+    {
+      "id": "page-turn.1",
+      "title": "Page turn 1",
+      "bus": "sfx",
+      "concurrency": "overlap",
+      "layers": [
+        {
+          "id": "page-turn.1.layer",
+          "assetId": "asset.game.pageturn",
+          "gain": 0.2,
+          "playbackRate": 1,
+          "pan": 0
+        }
+      ]
+    },
+    {
+      "id": "page-turn.2",
+      "title": "Page turn 2",
+      "bus": "sfx",
+      "concurrency": "overlap",
+      "layers": [
+        {
+          "id": "page-turn.2.layer",
+          "assetId": "asset.game.pageturn1",
+          "gain": 0.2,
+          "playbackRate": 1,
+          "pan": 0
+        }
+      ]
+    },
+    {
+      "id": "page-turn.3",
+      "title": "Page turn 3",
+      "bus": "sfx",
+      "concurrency": "overlap",
+      "layers": [
+        {
+          "id": "page-turn.3.layer",
+          "assetId": "asset.game.pageturn2",
+          "gain": 0.2,
+          "playbackRate": 1,
+          "pan": 0
+        }
+      ]
+    },
+    {
+      "id": "page-turn.4",
+      "title": "Page turn 4",
+      "bus": "sfx",
+      "concurrency": "overlap",
+      "layers": [
+        {
+          "id": "page-turn.4.layer",
+          "assetId": "asset.game.pageturn3",
+          "gain": 0.2,
+          "playbackRate": 1,
+          "pan": 0
+        }
+      ]
+    },
+    {
+      "id": "page-turn.5",
+      "title": "Page turn 5",
+      "bus": "sfx",
+      "concurrency": "overlap",
+      "layers": [
+        {
+          "id": "page-turn.5.layer",
+          "assetId": "asset.game.pageturn4",
+          "gain": 0.2,
+          "playbackRate": 1,
+          "pan": 0
+        }
+      ]
+    },
+    {
+      "id": "page-turn.6",
+      "title": "Page turn 6",
+      "bus": "sfx",
+      "concurrency": "overlap",
+      "layers": [
+        {
+          "id": "page-turn.6.layer",
+          "assetId": "asset.game.pageturn5",
+          "gain": 0.2,
+          "playbackRate": 1,
+          "pan": 0
+        }
+      ]
+    },
+    {
+      "id": "story.title",
+      "title": "Story title",
+      "bus": "music",
+      "concurrency": "replace",
+      "layers": [
+        {
+          "id": "story.title.layer",
+          "assetId": "asset.game.title_song",
+          "gain": 1,
+          "playbackRate": 1,
+          "pan": 0,
+          "loop": true
+        }
+      ]
+    },
+    {
+      "id": "story.typing",
+      "title": "Story typing",
+      "bus": "dialog",
+      "concurrency": "replace",
+      "layers": [
+        {
+          "id": "story.typing.layer",
+          "assetId": "asset.game.typing",
+          "gain": 1,
+          "playbackRate": 1,
+          "pan": 0,
+          "loop": false
+        }
+      ]
+    },
+    {
+      "id": "story.booth",
+      "title": "Story booth",
+      "bus": "dialog",
+      "concurrency": "replace",
+      "layers": [
+        {
+          "id": "story.booth.layer",
+          "assetId": "asset.game.outside_room_tone",
+          "gain": 1,
+          "playbackRate": 1,
+          "pan": 0,
+          "loop": true
+        }
+      ]
+    },
+    {
+      "id": "story.rain",
+      "title": "Story rain",
+      "bus": "dialog",
+      "concurrency": "replace",
+      "layers": [
+        {
+          "id": "story.rain.layer",
+          "assetId": "asset.game.rain",
+          "gain": 1,
+          "playbackRate": 1,
+          "pan": 0,
+          "loop": true
+        }
+      ]
+    },
+    {
+      "id": "story.tape",
+      "title": "Story tape",
+      "bus": "dialog",
+      "concurrency": "replace",
+      "layers": [
+        {
+          "id": "story.tape.layer",
+          "assetId": "asset.game.tape_play",
+          "gain": 1,
+          "playbackRate": 1,
+          "pan": 0,
+          "loop": true
+        }
+      ]
+    },
+    {
+      "id": "freeze",
+      "title": "Rupture freeze",
+      "bus": "sfx",
+      "concurrency": "replace",
+      "layers": [],
+      "effects": [
+        "fx:flash:120",
+        "fx:shake:1.6:700",
+        "look:rupture"
+      ]
+    },
+    {
+      "id": "squelch",
+      "title": "Radio squelch",
+      "bus": "sfx",
+      "concurrency": "overlap",
+      "layers": [
+        {
+          "id": "squelch.layer",
+          "assetId": "asset.game.recorder",
+          "gain": 0.55,
+          "playbackRate": 0.4,
+          "pan": 0
+        }
+      ],
+      "effects": [
+        "threat:report",
+        "fear:bump:.22:.5"
+      ],
+      "acoustic": {
+        "kind": "radio_squelch",
+        "sourceKind": "equipment",
+        "sourceId": "radio",
+        "reason": "the radio",
+        "level": 0.34,
+        "emitsWorldNoise": true,
+        "maySpoilTake": true,
+        "markHeard": true
+      }
+    },
+    {
+      "id": "mischief.monitor-return",
+      "title": "A VOICE BREAKS INSIDE THE MONITOR",
+      "bus": "monitor",
+      "concurrency": "overlap",
+      "layers": [
+        {
+          "id": "mischief.monitor-return.layer",
+          "assetId": "procedural.hush-fragment",
+          "gain": 0.22,
+          "playbackRateRange": [
+            0.7,
+            0.94
+          ]
+        }
+      ],
+      "acoustic": {
+        "emittedAsWorldNoise": false,
+        "maySpoilTake": false,
+        "mayCreateMapContact": true,
+        "sourcePolicy": "monitor-nonspatial"
+      }
+    },
+    {
+      "id": "mischief.instrument-single",
+      "title": "A SINGLE NOTE SOUNDS",
+      "bus": "world",
+      "concurrency": "overlap",
+      "layers": [
+        {
+          "id": "mischief.instrument-single.layer",
+          "assetId": "procedural.instrument",
+          "gain": 0.2,
+          "playbackRateRange": [
+            0.82,
+            1.04
+          ]
+        }
+      ],
+      "acoustic": {
+        "emittedAsWorldNoise": false,
+        "maySpoilTake": false,
+        "mayCreateMapContact": true,
+        "sourcePolicy": "adjacent-bearing"
+      }
+    },
+    {
+      "id": "mischief.transport-echo",
+      "title": "A RECORDER CLICKS",
+      "bus": "world",
+      "concurrency": "overlap",
+      "layers": [
+        {
+          "id": "mischief.transport-echo.layer",
+          "assetId": "procedural.equipment",
+          "gain": 0.18,
+          "playbackRateRange": [
+            0.78,
+            0.96
+          ]
+        }
+      ],
+      "acoustic": {
+        "emittedAsWorldNoise": false,
+        "maySpoilTake": false,
+        "mayCreateMapContact": false,
+        "sourcePolicy": "behind-player"
+      }
+    },
+    {
+      "id": "mischief.negative-drop",
+      "title": "THE ROOM LOSES ITS RETURN",
+      "bus": "monitor",
+      "concurrency": "overlap",
+      "layers": [
+        {
+          "id": "mischief.negative-drop.layer",
+          "assetId": "procedural.negative",
+          "gain": 0.16,
+          "playbackRateRange": [
+            1,
+            1
+          ]
+        }
+      ],
+      "acoustic": {
+        "emittedAsWorldNoise": false,
+        "maySpoilTake": false,
+        "mayCreateMapContact": true,
+        "sourcePolicy": "monitor-nonspatial"
+      }
+    }
+  ],
+  "triggers": [
+    {
+      "id": "trigger.conservatory.cold_open_dialogue.start.line.7.pens",
+      "event": "story.line:conservatory.cold_open_dialogue:start.line.7",
+      "cueId": "pens"
+    },
+    {
+      "id": "trigger.conservatory.cold_open_dialogue.tape.run.again.line.1.rewind",
+      "event": "story.line:conservatory.cold_open_dialogue:tape.run.again.line.1",
+      "cueId": "rewind"
+    },
+    {
+      "id": "trigger.conservatory.cold_open_dialogue.threshold.line.3.signature",
+      "event": "story.line:conservatory.cold_open_dialogue:threshold.line.3",
+      "cueId": "signature"
+    },
+    {
+      "id": "trigger.conservatory.cold_open_dialogue.threshold.line.5.slides",
+      "event": "story.line:conservatory.cold_open_dialogue:threshold.line.5",
+      "cueId": "slides"
+    },
+    {
+      "id": "trigger.conservatory.radio_dead.shake.line.1.squelch",
+      "event": "story.line:conservatory.radio_dead:shake.line.1",
+      "cueId": "squelch"
+    },
+    {
+      "id": "trigger.radio.pre_third_room_breakdown.normal.line.5.scream",
+      "event": "story.line:radio.pre_third_room_breakdown:normal.line.5",
+      "cueId": "scream"
+    },
+    {
+      "id": "trigger.radio.pre_third_room_breakdown.room.line.5.scream",
+      "event": "story.line:radio.pre_third_room_breakdown:room.line.5",
+      "cueId": "scream"
+    },
+    {
+      "id": "trigger.radio.pre_third_room_breakdown.listen.line.4.scream",
+      "event": "story.line:radio.pre_third_room_breakdown:listen.line.4",
+      "cueId": "scream"
+    },
+    {
+      "id": "trigger.battle.chapel.nothing.start.line.1.freeze",
+      "event": "story.line:battle.chapel.nothing:start.line.1",
+      "cueId": "freeze"
+    },
+    {
+      "id": "trigger.battle.chapel.name-sarah.start.line.1.freeze",
+      "event": "story.line:battle.chapel.name-sarah:start.line.1",
+      "cueId": "freeze"
+    },
+    {
+      "id": "trigger.battle.chapel.name-other.start.line.1.freeze",
+      "event": "story.line:battle.chapel.name-other:start.line.1",
+      "cueId": "freeze"
+    },
+    {
+      "id": "trigger.battle.chapel.reason-money.start.line.1.freeze",
+      "event": "story.line:battle.chapel.reason-money:start.line.1",
+      "cueId": "freeze"
+    },
+    {
+      "id": "trigger.battle.chapel.reason-superstition.start.line.1.freeze",
+      "event": "story.line:battle.chapel.reason-superstition:start.line.1",
+      "cueId": "freeze"
+    },
+    {
+      "id": "trigger.battle.chapel.reason-other.start.line.1.freeze",
+      "event": "story.line:battle.chapel.reason-other:start.line.1",
+      "cueId": "freeze"
+    },
+    {
+      "id": "trigger.battle.chapel.feeling.start.line.1.freeze",
+      "event": "story.line:battle.chapel.feeling:start.line.1",
+      "cueId": "freeze"
+    }
+  ],
+  "acousticCatalogue": {
+    "footstep_slow": {
+      "levelDb": -43,
+      "durationMs": 170,
+      "spectrum": {
+        "low": 0.48,
+        "mid": 0.46,
+        "high": 0.16
+      },
+      "impulsiveness": 0.4,
+      "family": "movement",
+      "canBeMimicked": true
+    },
+    "footstep_walk": {
+      "levelDb": -34,
+      "durationMs": 170,
+      "spectrum": {
+        "low": 0.64,
+        "mid": 0.54,
+        "high": 0.2
+      },
+      "impulsiveness": 0.58,
+      "family": "movement",
+      "canBeMimicked": true
+    },
+    "footstep_injured": {
+      "levelDb": -27,
+      "durationMs": 220,
+      "spectrum": {
+        "low": 0.72,
+        "mid": 0.62,
+        "high": 0.26
+      },
+      "impulsiveness": 0.64,
+      "family": "movement",
+      "canBeMimicked": true
+    },
+    "breath_fear": {
+      "levelDb": -39,
+      "durationMs": 780,
+      "spectrum": {
+        "low": 0.12,
+        "mid": 0.76,
+        "high": 0.42
+      },
+      "impulsiveness": 0.08,
+      "family": "body",
+      "canBeMimicked": true
+    },
+    "page_turn": {
+      "levelDb": -45,
+      "durationMs": 420,
+      "spectrum": {
+        "low": 0.04,
+        "mid": 0.38,
+        "high": 0.86
+      },
+      "impulsiveness": 0.24,
+      "family": "paper",
+      "canBeMimicked": false
+    },
+    "bag_rummage": {
+      "levelDb": -25,
+      "durationMs": 620,
+      "spectrum": {
+        "low": 0.18,
+        "mid": 0.76,
+        "high": 0.48
+      },
+      "impulsiveness": 0.42,
+      "family": "equipment",
+      "canBeMimicked": true
+    },
+    "recorder_transport": {
+      "levelDb": -38,
+      "durationMs": 120,
+      "spectrum": {
+        "low": 0.12,
+        "mid": 0.58,
+        "high": 0.74
+      },
+      "impulsiveness": 0.84,
+      "family": "equipment",
+      "canBeMimicked": true
+    },
+    "radio_squelch": {
+      "levelDb": -12,
+      "durationMs": 920,
+      "spectrum": {
+        "low": 0.22,
+        "mid": 0.84,
+        "high": 0.92
+      },
+      "impulsiveness": 0.72,
+      "family": "radio",
+      "canBeMimicked": true
+    },
+    "radio_drop": {
+      "levelDb": -8,
+      "durationMs": 680,
+      "spectrum": {
+        "low": 0.88,
+        "mid": 0.74,
+        "high": 0.52
+      },
+      "impulsiveness": 0.96,
+      "family": "impact",
+      "canBeMimicked": true
+    },
+    "door_open": {
+      "levelDb": -24,
+      "durationMs": 420,
+      "spectrum": {
+        "low": 0.58,
+        "mid": 0.62,
+        "high": 0.38
+      },
+      "impulsiveness": 0.62,
+      "family": "architecture",
+      "canBeMimicked": true
+    },
+    "door_close": {
+      "levelDb": -18,
+      "durationMs": 480,
+      "spectrum": {
+        "low": 0.76,
+        "mid": 0.66,
+        "high": 0.34
+      },
+      "impulsiveness": 0.78,
+      "family": "architecture",
+      "canBeMimicked": true
+    },
+    "keys_impact": {
+      "levelDb": -10,
+      "durationMs": 520,
+      "spectrum": {
+        "low": 0.18,
+        "mid": 0.78,
+        "high": 0.94
+      },
+      "impulsiveness": 0.94,
+      "family": "metal",
+      "canBeMimicked": true
+    },
+    "instrument_note": {
+      "levelDb": -20,
+      "durationMs": 1100,
+      "spectrum": {
+        "low": 0.36,
+        "mid": 0.88,
+        "high": 0.62
+      },
+      "impulsiveness": 0.54,
+      "family": "instrument",
+      "canBeMimicked": true
+    },
+    "handling_noise": {
+      "levelDb": -31,
+      "durationMs": 360,
+      "spectrum": {
+        "low": 0.28,
+        "mid": 0.68,
+        "high": 0.46
+      },
+      "impulsiveness": 0.48,
+      "family": "handling",
+      "canBeMimicked": true
+    },
+    "impact_loud": {
+      "levelDb": -6,
+      "durationMs": 560,
+      "spectrum": {
+        "low": 0.9,
+        "mid": 0.78,
+        "high": 0.44
+      },
+      "impulsiveness": 1,
+      "family": "impact",
+      "canBeMimicked": true
+    },
+    "operator_voice_activity": {
+      "levelDb": -30,
+      "durationMs": 480,
+      "spectrum": {
+        "low": 0.18,
+        "mid": 0.84,
+        "high": 0.52
+      },
+      "impulsiveness": 0.14,
+      "family": "voice",
+      "canBeMimicked": false
+    }
+  },
+  "buses": [
+    "dialog",
+    "sfx",
+    "music",
+    "menu",
+    "monitor",
+    "world"
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "documentId": "conservatory.first_take",
+  "positions": {
+    "start": {
+      "x": 80,
+      "y": 100
+    },
+    "floor.so": {
+      "x": 440,
+      "y": 100
+    },
+    "floor.risers": {
+      "x": 800,
+      "y": 100
+    },
+    "hub": {
+      "x": 1160,
+      "y": 100
+    },
+    "levels": {
+      "x": 80,
+      "y": 360
+    },
+    "levels.floor": {
+      "x": 440,
+      "y": 360
+    },
+    "room": {
+      "x": 800,
+      "y": 360
+    },
+    "stand": {
+      "x": 1160,
+      "y": 360
+    },
+    "stand.take": {
+      "x": 80,
+      "y": 620
+    },
+    "stand.leave": {
+      "x": 440,
+      "y": 620
+    },
+    "slate": {
+      "x": 800,
+      "y": 620
+    },
+    "dark": {
+      "x": 1160,
+      "y": 620
+    },
+    "roll": {
+      "x": 80,
+      "y": 880
+    }
+  },
+  "regions": {}
+}

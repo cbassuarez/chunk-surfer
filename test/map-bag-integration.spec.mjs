@@ -25,6 +25,9 @@ const calls = [];
 const selected = map.spaces.find((space) => space.roomId === 'main_b3');
 assert.equal(resolveMapAction(selected, 'clear-waypoint', { markRoom: (id) => { calls.push(['mark', id]); return true; } }), true);
 assert.deepEqual(calls, [['mark', 'main_b3']]);
-assert.ok(mapActionRail(selected, { floorCount: 3 }).some(([key, label]) => key === '[ / ]' && label === 'FLOOR'));
+const rail = mapActionRail(selected, { floorCount: 3 });
+assert.ok(rail.some(([key, label]) => key === '[ / ]' && label === 'CHANGE FLOOR'));
+assert.ok(rail.some(([key, label]) => key === 'C' && label === 'CENTER ON YOU'));
+assert.ok(rail.some(([key, label]) => key === 'SPACE' && /TARGET/.test(label)));
 
 console.log('map bag integration tests ok');

@@ -1,26 +1,14 @@
 use crate::display_policy;
-use tauri::{menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder}, App, AppHandle, Emitter, Manager};
+use tauri::{
+    menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder},
+    App, AppHandle, Emitter, Manager,
+};
 
 const DESKTOP_MENU_EVENT: &str = "chunk-surfer://desktop-menu";
 
 fn emit_frontend(app: &AppHandle, id: &str) {
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.emit(DESKTOP_MENU_EVENT, id.to_string());
-    }
-}
-
-fn toggle_fullscreen(app: &AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
-        let next = !window.is_fullscreen().unwrap_or(false);
-        let _ = window.set_fullscreen(next);
-        emit_frontend(app, "fullscreen");
-    }
-}
-
-fn minimize(app: &AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.minimize();
-        emit_frontend(app, "minimize");
     }
 }
 
@@ -39,10 +27,6 @@ pub fn install(app: &mut App) -> tauri::Result<()> {
         .accelerator("CmdOrCtrl+,")
         .build(app)?;
     let diagnostics = MenuItemBuilder::with_id("diagnostics", "Diagnostics…").build(app)?;
-    let quit = MenuItemBuilder::with_id("quit", "Quit Chunk Surfer")
-        .accelerator("CmdOrCtrl+Q")
-        .build(app)?;
-
     let app_menu = SubmenuBuilder::new(app, "Chunk Surfer")
         .item(&about)
         .item(&preferences)
@@ -52,7 +36,7 @@ pub fn install(app: &mut App) -> tauri::Result<()> {
         .hide_others_with_text("Hide Others")
         .show_all_with_text("Show All")
         .separator()
-        .item(&quit)
+        .quit_with_text("Quit Chunk Surfer")
         .build()?;
 
     let new_game = MenuItemBuilder::with_id("new_game", "New Game…")
@@ -63,15 +47,20 @@ pub fn install(app: &mut App) -> tauri::Result<()> {
     let pause = MenuItemBuilder::with_id("pause", "Pause / Resume")
         .accelerator("CmdOrCtrl+P")
         .build(app)?;
+    let god_menu = MenuItemBuilder::with_id("god_menu", "God / Testing Menu…")
+        .accelerator("CmdOrCtrl+Shift+G")
+        .build(app)?;
     let difficulty = MenuItemBuilder::with_id("difficulty", "Difficulty…").build(app)?;
     let achievements = MenuItemBuilder::with_id("achievements", "Achievements").build(app)?;
-    let return_to_title = MenuItemBuilder::with_id("return_to_title", "Return to Title").build(app)?;
+    let return_to_title =
+        MenuItemBuilder::with_id("return_to_title", "Return to Title").build(app)?;
 
     let game_menu = SubmenuBuilder::new(app, "Game")
         .item(&new_game)
         .item(&continue_game)
         .item(&restart_run)
         .item(&pause)
+        .item(&god_menu)
         .separator()
         .item(&difficulty)
         .item(&achievements)
@@ -84,18 +73,16 @@ pub fn install(app: &mut App) -> tauri::Result<()> {
     let fullscreen = MenuItemBuilder::with_id("fullscreen", "Toggle Fullscreen")
         .accelerator("CmdOrCtrl+F")
         .build(app)?;
-    let minimize_item = MenuItemBuilder::with_id("minimize", "Minimize")
-        .accelerator("CmdOrCtrl+M")
-        .build(app)?;
     let reset_window_item = MenuItemBuilder::with_id("reset_window", "Reset Window").build(app)?;
     let reduce_motion = MenuItemBuilder::with_id("reduce_motion", "Reduce Motion").build(app)?;
     let reduce_flash = MenuItemBuilder::with_id("reduce_flash", "Reduce Flash").build(app)?;
-    let high_contrast = MenuItemBuilder::with_id("high_contrast", "High Contrast / VFD Boost").build(app)?;
+    let high_contrast =
+        MenuItemBuilder::with_id("high_contrast", "High Contrast / VFD Boost").build(app)?;
 
     let view_menu = SubmenuBuilder::new(app, "View")
         .item(&game_mode)
         .item(&fullscreen)
-        .item(&minimize_item)
+        .minimize_with_text("Minimize")
         .item(&reset_window_item)
         .separator()
         .item(&reduce_motion)
@@ -106,8 +93,10 @@ pub fn install(app: &mut App) -> tauri::Result<()> {
     let mute = MenuItemBuilder::with_id("mute", "Mute")
         .accelerator("CmdOrCtrl+Shift+M")
         .build(app)?;
-    let restart_audio = MenuItemBuilder::with_id("restart_audio", "Restart Audio Engine").build(app)?;
-    let audio_diagnostics = MenuItemBuilder::with_id("audio_diagnostics", "Audio Diagnostics").build(app)?;
+    let restart_audio =
+        MenuItemBuilder::with_id("restart_audio", "Restart Audio Engine").build(app)?;
+    let audio_diagnostics =
+        MenuItemBuilder::with_id("audio_diagnostics", "Audio Diagnostics").build(app)?;
 
     let audio_menu = SubmenuBuilder::new(app, "Audio")
         .item(&mute)
@@ -116,8 +105,10 @@ pub fn install(app: &mut App) -> tauri::Result<()> {
         .build()?;
 
     let controls = MenuItemBuilder::with_id("controls", "Controls").build(app)?;
-    let open_save_folder = MenuItemBuilder::with_id("open_save_folder", "Open Save Folder").build(app)?;
-    let open_release_page = MenuItemBuilder::with_id("open_release_page", "Open Release Page").build(app)?;
+    let open_save_folder =
+        MenuItemBuilder::with_id("open_save_folder", "Open Save Folder").build(app)?;
+    let open_release_page =
+        MenuItemBuilder::with_id("open_release_page", "Open Release Page").build(app)?;
     let report_issue = MenuItemBuilder::with_id("report_issue", "Report Issue").build(app)?;
 
     let help_menu = SubmenuBuilder::new(app, "Help")
@@ -140,31 +131,14 @@ pub fn install(app: &mut App) -> tauri::Result<()> {
     app.on_menu_event(|app, event| {
         let id = event.id().as_ref();
         match id {
-            "quit" => app.exit(0),
-            "minimize" => minimize(app),
             // Route fullscreen through the same frontend game-mode path so the
             // DOM stage, focus profile, and native fullscreen state stay in sync.
             "fullscreen" | "game_mode" => emit_frontend(app, "game_mode"),
             "reset_window" => reset_window(app),
-            "about"
-            | "preferences"
-            | "diagnostics"
-            | "new_game"
-            | "continue"
-            | "restart_run"
-            | "pause"
-            | "difficulty"
-            | "achievements"
-            | "return_to_title"
-            | "reduce_motion"
-            | "reduce_flash"
-            | "high_contrast"
-            | "mute"
-            | "restart_audio"
-            | "audio_diagnostics"
-            | "controls"
-            | "open_save_folder"
-            | "open_release_page"
+            "about" | "preferences" | "diagnostics" | "new_game" | "continue" | "restart_run"
+            | "pause" | "god_menu" | "difficulty" | "achievements" | "return_to_title"
+            | "reduce_motion" | "reduce_flash" | "high_contrast" | "mute" | "restart_audio"
+            | "audio_diagnostics" | "controls" | "open_save_folder" | "open_release_page"
             | "report_issue" => emit_frontend(app, id),
             _ => {}
         }

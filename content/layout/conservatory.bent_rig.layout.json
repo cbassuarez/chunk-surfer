@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "documentId": "conservatory.bent_rig",
+  "positions": {
+    "start": {
+      "x": 80,
+      "y": 100
+    },
+    "look": {
+      "x": 440,
+      "y": 100
+    },
+    "why": {
+      "x": 800,
+      "y": 100
+    },
+    "solder": {
+      "x": 1160,
+      "y": 100
+    },
+    "gut": {
+      "x": 80,
+      "y": 360
+    },
+    "leave": {
+      "x": 440,
+      "y": 360
+    }
+  },
+  "regions": {}
+}

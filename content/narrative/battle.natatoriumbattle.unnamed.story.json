@@ -1,0 +1,868 @@
+{
+  "schemaVersion": 1,
+  "id": "battle.natatoriumbattle.unnamed",
+  "title": "Natatorium Battle · unnamed",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "battle"
+  ],
+  "notes": "",
+  "regions": [
+    {
+      "id": "battle.natatoriumbattle.unnamed.region",
+      "title": "Natatorium Battle · unnamed",
+      "kind": "scene",
+      "color": "#245c62",
+      "nodeIds": [
+        "start",
+        "round-1",
+        "round-2",
+        "round-3",
+        "outcome",
+        "win",
+        "lose"
+      ]
+    },
+    {
+      "id": "battle.natatoriumbattle.unnamed.endings",
+      "title": "Battle outcomes",
+      "kind": "ending",
+      "color": "#8b3c48",
+      "nodeIds": [
+        "win",
+        "lose"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "type": "battle",
+      "speaker": "THE SOUND OF SILENCE",
+      "art": {
+        "id": "surfer",
+        "mode": "boss",
+        "caption": "Signal subject / empty room",
+        "status": "STILL"
+      },
+      "lines": [
+        {
+          "who": "direction",
+          "text": "Forty seconds into the take. Six metres of tile, no water, and the meter dead flat at the bottom of the scale.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "And then, far off, a piano. Two notes. The wrong two notes.",
+          "id": "start.line.2"
+        },
+        {
+          "who": "you",
+          "text": "There is no piano in a natatorium.",
+          "id": "start.line.3"
+        },
+        {
+          "who": "you",
+          "text": "There is no piano in a building that has had its power off since April.",
+          "id": "start.line.4"
+        }
+      ],
+      "goto": "round-1",
+      "id": "start"
+    },
+    "round-1": {
+      "type": "battle-round",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "It comes again. Closer, or louder, or you are leaning toward it — you cannot tell which, and not being able to tell which is the whole of the problem.",
+          "channel": "before",
+          "id": "round-1.line.1"
+        },
+        {
+          "who": "you",
+          "text": "No transient. No air moving. No felt on a string.",
+          "channel": "on-listen",
+          "id": "round-1.line.2"
+        },
+        {
+          "who": "you",
+          "text": "There is nothing there. There is nothing there and I can hear it.",
+          "channel": "on-listen",
+          "id": "round-1.line.3"
+        },
+        {
+          "who": "direction",
+          "text": "The tile gives it back to you four times and each return is thinner than the last.",
+          "channel": "after",
+          "id": "round-1.line.4"
+        }
+      ],
+      "goto": "round-2",
+      "battle": {
+        "nature": "not there",
+        "threat": 0.42
+      },
+      "id": "round-1"
+    },
+    "round-2": {
+      "type": "battle-round",
+      "lines": [
+        {
+          "who": "sarah",
+          "text": "Don’t record this.",
+          "rate": 0.98,
+          "channel": "before",
+          "id": "round-2.line.1"
+        },
+        {
+          "who": "me",
+          "text": "I'm not recording.",
+          "channel": "before",
+          "id": "round-2.line.2"
+        },
+        {
+          "who": "sarah",
+          "text": "You're always recording.",
+          "channel": "before",
+          "id": "round-2.line.3"
+        },
+        {
+          "who": "direction",
+          "text": "She is right. The meter is moving.",
+          "channel": "before",
+          "id": "round-2.line.4"
+        },
+        {
+          "who": "you",
+          "text": "That is a take. That is a level and a room and a date, and I made it, and I do not remember making it.",
+          "channel": "on-listen",
+          "id": "round-2.line.5"
+        },
+        {
+          "who": "you",
+          "text": "She hated the playback. Six years of rooms with nobody in them, and I never once asked myself why that suited me.",
+          "channel": "on-listen",
+          "id": "round-2.line.6"
+        },
+        {
+          "who": "you",
+          "text": "I recorded she for three years and I called it not recording.",
+          "channel": "after",
+          "id": "round-2.line.7"
+        }
+      ],
+      "goto": "round-3",
+      "battle": {
+        "nature": "on the tape",
+        "threat": 0.6
+      },
+      "id": "round-2"
+    },
+    "round-3": {
+      "type": "battle-round",
+      "lines": [
+        {
+          "who": "sarah",
+          "text": "You never played me back. Not once. I used to think it was kindness.",
+          "rate": 0.97,
+          "channel": "before",
+          "id": "round-3.line.1"
+        },
+        {
+          "who": "me",
+          "text": "It was. You hated it.",
+          "channel": "before",
+          "id": "round-3.line.2"
+        },
+        {
+          "who": "sarah",
+          "text": "I hated hearing myself. You liked that I hated it. It meant you got to keep me the way you kept a room.",
+          "channel": "before",
+          "id": "round-3.line.3"
+        },
+        {
+          "who": "you",
+          "text": "She is not in the room. She is not on the tape. She was never in the signal at all.",
+          "channel": "on-listen",
+          "id": "round-3.line.4"
+        },
+        {
+          "who": "you",
+          "text": "I brought her in here. This is the one recording I have ever made that has me all over it.",
+          "channel": "on-listen",
+          "id": "round-3.line.5"
+        },
+        {
+          "who": "direction",
+          "text": "The meter, which has never lied to you, sits at the bottom of the scale, and there is nobody in the room but you.",
+          "channel": "after",
+          "id": "round-3.line.6"
+        }
+      ],
+      "goto": "outcome",
+      "battle": {
+        "nature": "not there",
+        "threat": 0.72
+      },
+      "id": "round-3"
+    },
+    "outcome": {
+      "type": "checkpoint",
+      "lines": [],
+      "choices": [
+        {
+          "id": "outcome.win",
+          "text": "Composure held",
+          "goto": "win",
+          "mechanic": "win"
+        },
+        {
+          "id": "outcome.lose",
+          "text": "Composure broke",
+          "goto": "lose",
+          "mechanic": "lose"
+        }
+      ],
+      "id": "outcome"
+    },
+    "win": {
+      "type": "ending",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Nothing there. Hold the take. Forty-five seconds, and the last five are the ones that count.",
+          "id": "win.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "The tile stops answering. The meter holds. You have a clean minute of a room with only you in it, which is the job, which was always the job.",
+          "id": "win.line.2"
+        }
+      ],
+      "id": "win"
+    },
+    "lose": {
+      "type": "ending",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You move. You do not decide to; you are moving before you know it, toward a piano that is not there.",
+          "id": "lose.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "The take dies. Somewhere far off, satisfied, the room stops playing.",
+          "id": "lose.line.2"
+        }
+      ],
+      "id": "lose"
+    }
+  },
+  "metadata": {
+    "id": "natatorium",
+    "enemy": "THE SOUND OF SILENCE",
+    "art": {
+      "id": "surfer",
+      "mode": "boss",
+      "caption": "Signal subject / empty room",
+      "status": "STILL"
+    },
+    "composure": 1,
+    "health": 2,
+    "tools": null,
+    "challenges": [
+      {
+        "id": "natatorium-room",
+        "title": "THE ROOM",
+        "claim": "",
+        "tools": {
+          "reveal": false,
+          "graft": false
+        },
+        "terminal": false,
+        "tokens": [
+          {
+            "id": "natatorium-room:printed:0",
+            "text": "THE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-room:printed:1",
+            "text": "ROOM",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-room:printed:2",
+            "text": "IS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-room:printed:3",
+            "text": "EMPTY",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-room:printed:4",
+            "text": "BUT",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-room:printed:5",
+            "text": "THE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-room:printed:6",
+            "text": "TAPE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-room:printed:7",
+            "text": "INSISTS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-room:printed:8",
+            "text": "SOMEONE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-room:printed:9",
+            "text": "IS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-room:printed:10",
+            "text": "WAITING",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-room:printed:11",
+            "text": "IN",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-room:printed:12",
+            "text": "WATER",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          }
+        ],
+        "readings": [
+          {
+            "id": "empty-room",
+            "meaning": "The room is empty; the tape is lying.",
+            "routeBias": null,
+            "grants": [],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "natatorium-room:printed:0",
+              "natatorium-room:printed:1",
+              "natatorium-room:printed:2",
+              "natatorium-room:printed:3"
+            ],
+            "forbidden": [
+              "natatorium-room:printed:8",
+              "natatorium-room:printed:10",
+              "natatorium-room:printed:12"
+            ],
+            "maxVisible": 4
+          },
+          {
+            "id": "tape-insists",
+            "meaning": "The tape is making the claim, not the room.",
+            "routeBias": null,
+            "grants": [],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "natatorium-room:printed:5",
+              "natatorium-room:printed:6",
+              "natatorium-room:printed:7"
+            ],
+            "forbidden": [
+              "natatorium-room:printed:1"
+            ],
+            "maxVisible": 3
+          },
+          {
+            "id": "someone-waiting",
+            "meaning": "You let the room contain somebody.",
+            "routeBias": "sacrifice",
+            "grants": [],
+            "locks": [
+              "route.surfaced"
+            ],
+            "pressureDelta": 1,
+            "required": [
+              "natatorium-room:printed:8",
+              "natatorium-room:printed:9",
+              "natatorium-room:printed:10"
+            ],
+            "forbidden": [
+              "natatorium-room:printed:3"
+            ],
+            "maxVisible": 3
+          }
+        ],
+        "opponentMoves": [
+          {
+            "blackout": [
+              "natatorium-room:printed:4"
+            ],
+            "scrape": [
+              "natatorium-room:printed:8"
+            ],
+            "insert": [],
+            "notice": "THE OTHER HAND RESTORES SOMEBODY TO THE EMPTY ROOM."
+          },
+          {
+            "blackout": [
+              "natatorium-room:printed:3"
+            ],
+            "scrape": [
+              "natatorium-room:printed:10"
+            ],
+            "insert": [],
+            "notice": "THE OTHER HAND REMOVES EMPTY AND LEAVES WAITING."
+          }
+        ]
+      },
+      {
+        "id": "natatorium-voice",
+        "title": "THE VOICE",
+        "claim": "",
+        "tools": {
+          "reveal": false,
+          "graft": false
+        },
+        "terminal": false,
+        "tokens": [
+          {
+            "id": "natatorium-voice:printed:0",
+            "text": "HER",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-voice:printed:1",
+            "text": "VOICE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-voice:printed:2",
+            "text": "IS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-voice:printed:3",
+            "text": "ON",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-voice:printed:4",
+            "text": "THE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-voice:printed:5",
+            "text": "TAPE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-voice:printed:6",
+            "text": "AND",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-voice:printed:7",
+            "text": "THE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-voice:printed:8",
+            "text": "TAPE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-voice:printed:9",
+            "text": "IS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-voice:printed:10",
+            "text": "NOT",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-voice:printed:11",
+            "text": "HER",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-voice:printed:12",
+            "text": "VOICE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-voice:printed:13",
+            "text": "IS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-voice:printed:14",
+            "text": "ONLY",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-voice:printed:15",
+            "text": "PRESSURE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          }
+        ],
+        "readings": [
+          {
+            "id": "voice-on-tape",
+            "meaning": "The voice is on the tape; it is not her.",
+            "routeBias": null,
+            "grants": [],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "natatorium-voice:printed:0",
+              "natatorium-voice:printed:1",
+              "natatorium-voice:printed:2",
+              "natatorium-voice:printed:3",
+              "natatorium-voice:printed:4",
+              "natatorium-voice:printed:5"
+            ],
+            "forbidden": [
+              "natatorium-voice:printed:11"
+            ],
+            "maxVisible": 6
+          },
+          {
+            "id": "only-pressure",
+            "meaning": "The room is producing pressure, not a person.",
+            "routeBias": null,
+            "grants": [],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "natatorium-voice:printed:12",
+              "natatorium-voice:printed:13",
+              "natatorium-voice:printed:14",
+              "natatorium-voice:printed:15"
+            ],
+            "forbidden": [
+              "natatorium-voice:printed:11"
+            ],
+            "maxVisible": 4
+          },
+          {
+            "id": "not-her",
+            "meaning": "The tape is not her.",
+            "routeBias": null,
+            "grants": [],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "natatorium-voice:printed:7",
+              "natatorium-voice:printed:8",
+              "natatorium-voice:printed:9",
+              "natatorium-voice:printed:10",
+              "natatorium-voice:printed:11"
+            ],
+            "forbidden": [
+              "natatorium-voice:printed:1"
+            ],
+            "maxVisible": 5
+          }
+        ],
+        "opponentMoves": [
+          {
+            "blackout": [
+              "natatorium-voice:printed:10"
+            ],
+            "scrape": [
+              "natatorium-voice:printed:11"
+            ],
+            "insert": [],
+            "notice": "THE OTHER HAND SCRAPES HER CLEAN."
+          },
+          {
+            "blackout": [
+              "natatorium-voice:printed:6"
+            ],
+            "scrape": [
+              "natatorium-voice:printed:12"
+            ],
+            "insert": [],
+            "notice": "THE OTHER HAND SCRAPES VOICE CLEAN AND LEAVES THE CLAIM OPEN."
+          }
+        ]
+      },
+      {
+        "id": "natatorium-hold",
+        "title": "THE TAKE",
+        "claim": "",
+        "tools": {
+          "reveal": false,
+          "graft": false
+        },
+        "terminal": false,
+        "tokens": [
+          {
+            "id": "natatorium-hold:printed:0",
+            "text": "NOTHING",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-hold:printed:1",
+            "text": "MOVED",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-hold:printed:2",
+            "text": "EXCEPT",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-hold:printed:3",
+            "text": "YOU",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-hold:printed:4",
+            "text": "TOWARD",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-hold:printed:5",
+            "text": "A",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-hold:printed:6",
+            "text": "PIANO",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-hold:printed:7",
+            "text": "THAT",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-hold:printed:8",
+            "text": "WAS",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-hold:printed:9",
+            "text": "NEVER",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-hold:printed:10",
+            "text": "THERE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-hold:printed:11",
+            "text": "HOLD",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-hold:printed:12",
+            "text": "THE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-hold:printed:13",
+            "text": "TAKE",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-hold:printed:14",
+            "text": "HOLD",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          },
+          {
+            "id": "natatorium-hold:printed:15",
+            "text": "YOURSELF",
+            "kind": "printed",
+            "label": "",
+            "falseText": false
+          }
+        ],
+        "readings": [
+          {
+            "id": "nothing-moved",
+            "meaning": "Nothing moved.",
+            "routeBias": null,
+            "grants": [],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "natatorium-hold:printed:0",
+              "natatorium-hold:printed:1"
+            ],
+            "forbidden": [
+              "natatorium-hold:printed:3",
+              "natatorium-hold:printed:6"
+            ],
+            "maxVisible": 2
+          },
+          {
+            "id": "piano-never-there",
+            "meaning": "The piano was never there.",
+            "routeBias": null,
+            "grants": [],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "natatorium-hold:printed:6",
+              "natatorium-hold:printed:8",
+              "natatorium-hold:printed:9",
+              "natatorium-hold:printed:10"
+            ],
+            "forbidden": [
+              "natatorium-hold:printed:3"
+            ],
+            "maxVisible": 4
+          },
+          {
+            "id": "hold-take",
+            "meaning": "Hold the take.",
+            "routeBias": null,
+            "grants": [],
+            "locks": [],
+            "pressureDelta": 0,
+            "required": [
+              "natatorium-hold:printed:11",
+              "natatorium-hold:printed:12",
+              "natatorium-hold:printed:13"
+            ],
+            "forbidden": [
+              "natatorium-hold:printed:3"
+            ],
+            "maxVisible": 3
+          }
+        ],
+        "opponentMoves": [
+          {
+            "blackout": [
+              "natatorium-hold:printed:9"
+            ],
+            "scrape": [
+              "natatorium-hold:printed:6"
+            ],
+            "insert": [],
+            "notice": "THE OTHER HAND MAKES THE PIANO POSSIBLE."
+          },
+          {
+            "blackout": [
+              "natatorium-hold:printed:2"
+            ],
+            "scrape": [
+              "natatorium-hold:printed:3"
+            ],
+            "insert": [],
+            "notice": "THE OTHER HAND MAKES YOU THE MOVING THING."
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "id": "ending.epilogue.client",
+  "title": "Guard Epilogue · client",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "ending",
+    "epilogue"
+  ],
+  "notes": "",
+  "regions": [
+    {
+      "id": "ending.epilogue.client.region",
+      "title": "Guard Epilogue · client",
+      "kind": "ending",
+      "color": "#ad6a3b",
+      "nodeIds": [
+        "start"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "type": "ending",
+      "lines": [
+        {
+          "who": "direction",
+          "art": {
+            "id": "guard",
+            "mode": "hero",
+            "caption": "Gate booth / account closed",
+            "status": "STILL"
+          },
+          "text": "The gate booth. The bored man is not alone. Someone in a good coat is at the desk who was not here when you went in.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "client",
+          "text": "Is it done?",
+          "id": "start.line.2"
+        },
+        {
+          "who": "guard",
+          "text": "It is done.",
+          "id": "start.line.3"
+        },
+        {
+          "who": "direction",
+          "text": "The client signs the account closed. Nobody at W. Ellery has ever seen a ghost. They have seen a schedule of consent and an open account, and now a closed one. The left column got one more name. The right stays empty.",
+          "id": "start.line.4"
+        },
+        {
+          "who": "client",
+          "text": "Good. Book the machines for 06:00.",
+          "id": "start.line.5"
+        }
+      ],
+      "id": "start"
+    }
+  }
+}

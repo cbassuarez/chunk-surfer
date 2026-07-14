@@ -21,6 +21,10 @@
     body.title-screen #wrap{padding:0;}
     body.title-screen #introTitle,
     body.title-screen #introVignette{display:none !important;}
+    body.opening-credits-screen{background:var(--cs-glass);}
+    body.opening-credits-screen #wrap{padding:0;}
+    body.opening-credits-screen #introTitle,
+    body.opening-credits-screen #introVignette{display:none !important;}
     /* #map carries tabindex for keyboard focus; the focus ring is a border
        around the game world. */
     body.game #map:focus,

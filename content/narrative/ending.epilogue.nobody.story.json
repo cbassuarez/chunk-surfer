@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "id": "ending.epilogue.nobody",
+  "title": "Guard Epilogue · nobody",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "ending",
+    "epilogue"
+  ],
+  "notes": "",
+  "regions": [
+    {
+      "id": "ending.epilogue.nobody.region",
+      "title": "Guard Epilogue · nobody",
+      "kind": "ending",
+      "color": "#ad6a3b",
+      "nodeIds": [
+        "start"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "type": "ending",
+      "lines": [
+        {
+          "who": "direction",
+          "art": {
+            "id": "guard",
+            "mode": "hero",
+            "caption": "Gate booth / morning",
+            "status": "STILL"
+          },
+          "text": "The gate booth. The bored man, the book, and nobody else. Not the client, who did not need to come. Not you, who did not come out.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "He writes the date and the time in the left column, beside a name, and he leaves the right column empty, the way it has been empty all the way up the page. The building took a man and gave back a file with nothing on it.",
+          "id": "start.line.2"
+        },
+        {
+          "who": "guard",
+          "text": "Next.",
+          "id": "start.line.3"
+        }
+      ],
+      "id": "start"
+    }
+  }
+}

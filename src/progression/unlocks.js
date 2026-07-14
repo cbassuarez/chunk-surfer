@@ -5,6 +5,7 @@ export const ENDING_REPLAY_UNLOCKS = Object.freeze({
   helped: Object.freeze({ archiveEntry: 'operator-annotation', titleDetail: 'returned-key' }),
   inversion: Object.freeze({ archiveEntry: 'engineering-appendix', cosmetic: 'reverse-phase', titleDetail: 'reversed-waveform' }),
   drugged: Object.freeze({ archiveEntry: 'contaminant-report', titleDetail: 'coffee-ring' }),
+  surfaced: Object.freeze({ archiveEntry: 'other-recordist', cosmetic: 'source-clean', titleDetail: 'returned-body' }),
 });
 
 export function deriveUnlocks(meta) {

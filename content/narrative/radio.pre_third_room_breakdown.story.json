@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 1,
+  "id": "radio.pre_third_room_breakdown",
+  "title": "Radio · pre_third_room_breakdown",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "radio"
+  ],
+  "notes": "",
+  "regions": [
+    {
+      "id": "radio.pre_third_room_breakdown.region",
+      "title": "Radio · pre_third_room_breakdown",
+      "kind": "scene",
+      "color": "#245c62",
+      "nodeIds": [
+        "start",
+        "normal",
+        "room",
+        "listen"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Client radio / carrier open",
+        "status": "CARRIER"
+      },
+      "lines": [
+        {
+          "who": "radio",
+          "text": "4417-C, go ahead.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "You are close enough to {ROOMLABEL} for the room to take the channel.",
+          "hold": 1.8,
+          "id": "start.line.2"
+        }
+      ],
+      "choices": [
+        {
+          "text": "Answer normally.",
+          "goto": "normal",
+          "id": "start.choice.1"
+        },
+        {
+          "text": "Ask what room they mean.",
+          "goto": "room",
+          "id": "start.choice.2"
+        },
+        {
+          "text": "Stay quiet and listen.",
+          "goto": "listen",
+          "id": "start.choice.3"
+        }
+      ],
+      "id": "start",
+      "type": "choice"
+    },
+    "normal": {
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Client radio / issued equipment",
+        "status": "LIVE"
+      },
+      "lines": [
+        {
+          "who": "me",
+          "text": "4417-C. Receiving.",
+          "id": "normal.line.1"
+        },
+        {
+          "who": "radio",
+          "text": "Receiving receiving receiving.",
+          "id": "normal.line.2"
+        },
+        {
+          "who": "direction",
+          "art": {
+            "id": "walkie",
+            "mode": "hero",
+            "caption": "Client radio / carrier open",
+            "status": "LOOP"
+          },
+          "text": "Your own last word returns three times, each one smaller and wetter than the last.",
+          "hold": 2.6,
+          "id": "normal.line.3"
+        },
+        {
+          "who": "radio",
+          "text": "Go ahead.",
+          "id": "normal.line.4"
+        },
+        {
+          "who": "direction",
+          "art": {
+            "id": "walkie",
+            "mode": "hero",
+            "caption": "Client radio / carrier open",
+            "status": "DEAD"
+          },
+          "text": "The speaker pops once. The carrier drops into a dead click.",
+          "shake": 1.2,
+          "shakeMs": 520,
+          "hold": 3,
+          "id": "normal.line.5",
+          "cues": [
+            "scream"
+          ]
+        }
+      ],
+      "id": "normal",
+      "type": "dialogue"
+    },
+    "room": {
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Client radio / issued equipment",
+        "status": "LIVE"
+      },
+      "lines": [
+        {
+          "who": "me",
+          "text": "Which room are you calling from?",
+          "id": "room.line.1"
+        },
+        {
+          "who": "radio",
+          "text": "{ROOMLABEL}. {ROOMLABEL}. {ROOMLABEL}.",
+          "id": "room.line.2"
+        },
+        {
+          "who": "direction",
+          "art": {
+            "id": "walkie",
+            "mode": "hero",
+            "caption": "Client radio / carrier open",
+            "status": "WRONG ROOM"
+          },
+          "text": "It says the room before you enter it. It says it with your mouth.",
+          "hold": 2.8,
+          "id": "room.line.3"
+        },
+        {
+          "who": "radio",
+          "text": "Go ahead.",
+          "id": "room.line.4"
+        },
+        {
+          "who": "direction",
+          "art": {
+            "id": "walkie",
+            "mode": "hero",
+            "caption": "Client radio / carrier open",
+            "status": "DEAD"
+          },
+          "text": "The radio gives one clipped syllable and shuts itself.",
+          "shake": 1.2,
+          "shakeMs": 520,
+          "hold": 3,
+          "id": "room.line.5",
+          "cues": [
+            "scream"
+          ]
+        }
+      ],
+      "id": "room",
+      "type": "dialogue"
+    },
+    "listen": {
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Client radio / issued equipment",
+        "status": "LIVE"
+      },
+      "lines": [
+        {
+          "who": "direction",
+          "art": {
+            "id": "walkie",
+            "mode": "hero",
+            "caption": "Client radio / carrier open",
+            "status": "OPEN"
+          },
+          "text": "You do not answer. The open channel keeps working anyway.",
+          "hold": 2.4,
+          "id": "listen.line.1"
+        },
+        {
+          "who": "radio",
+          "text": "Go ahead.",
+          "id": "listen.line.2"
+        },
+        {
+          "who": "radio",
+          "text": "Go ahead.",
+          "id": "listen.line.3"
+        },
+        {
+          "who": "direction",
+          "art": {
+            "id": "walkie",
+            "mode": "hero",
+            "caption": "Client radio / carrier open",
+            "status": "DEAD"
+          },
+          "text": "The second one is not a request. It is a door closing inside the radio.",
+          "shake": 1.2,
+          "shakeMs": 520,
+          "hold": 3,
+          "id": "listen.line.4",
+          "cues": [
+            "scream"
+          ]
+        }
+      ],
+      "id": "listen",
+      "type": "dialogue"
+    }
+  }
+}

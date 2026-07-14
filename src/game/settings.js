@@ -20,7 +20,11 @@ import {
   normalizeDisplaySettings,
 } from '../platform/display-policy.js';
 import { formatFps } from '../platform/about-system.js';
-import { cyclePixelMeshMode, labelPixelMeshMode } from '../render/pixel-mesh/settings.js';
+import {
+  PERSONAL_INTERFERENCE_INTENSITIES,
+  PERSONAL_INTERFERENCE_LABEL,
+  normalizePersonalInterferenceSettings,
+} from './personalized-interference.js';
 
 const MIC_LABEL = { idle: 'OFF', asking: 'ASKING…', on: 'LIVE', denied: 'BLOCKED', test: 'TEST' };
 const FX_MODES = ['off', 'reduced', 'full'];
@@ -111,20 +115,28 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
     return labelDisplayOption(contractKey, displaySettings()[key]);
   }
 
-  function pixelMeshMode() {
-    return hooks.pixelMeshMode?.() || setting('pixelMeshMode', 'off');
-  }
-
-  function cyclePixelMesh(d) {
-    const next = cyclePixelMeshMode(pixelMeshMode(), d);
-    set('pixelMeshMode', next);
-    hooks.onPixelMeshChange?.(next);
-  }
-
   const controlValue = (action) => hooks.controllerRemapAction?.() === action
     ? 'PRESS A CONTROLLER BUTTON…'
     : `${bindingLabel(action)} · ${controllerBindingLabel(action)}`;
   const remap = (action) => hooks.beginControllerRemap?.(action);
+
+  function personalInterference() {
+    return normalizePersonalInterferenceSettings(s().personalInterference);
+  }
+
+  function setPersonalInterference(patch) {
+    const current = personalInterference();
+    set('personalInterference', normalizePersonalInterferenceSettings({ ...current, ...patch }));
+    hooks.onPersonalInterferenceChange?.();
+  }
+
+  function cyclePersonalInterferenceIntensity(d) {
+    const cur = personalInterference().intensity;
+    const i = Math.max(0, PERSONAL_INTERFERENCE_INTENSITIES.indexOf(cur));
+    setPersonalInterference({
+      intensity: PERSONAL_INTERFERENCE_INTENSITIES[(i + d + PERSONAL_INTERFERENCE_INTENSITIES.length) % PERSONAL_INTERFERENCE_INTENSITIES.length],
+    });
+  }
 
   // Display settings live in vfdSettings (applied live) AND in save.settings.vfd
   // (so they survive a reload). Write both every time.
@@ -250,18 +262,19 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           { id: 'displayMode', label: 'DISPLAY MODE',
             value: () => displayLabel('displayMode', 'displayModes').toUpperCase(),
             adjust: (d) => cycleDisplay('displayMode', 'displayModes', d) },
-          { id: 'windowPreset', label: 'WINDOW SIZE',
-            value: () => displayLabel('windowPreset', 'windowPresets'),
-            adjust: (d) => cycleDisplay('windowPreset', 'windowPresets', d) },
-          { id: 'uiScale', label: 'UI SCALE',
+          { id: 'windowPreset', label: 'RESOLUTION',
+            value: () => displaySettings().displayMode === 'game-mode'
+              ? 'DESKTOP NATIVE'
+              : displayLabel('windowPreset', 'windowPresets'),
+            adjust: (d) => {
+              if (displaySettings().displayMode !== 'game-mode') cycleDisplay('windowPreset', 'windowPresets', d);
+            } },
+          { id: 'uiScale', label: 'INTERFACE SCALE',
             value: () => displayLabel('uiScale', 'uiScalePresets'),
             adjust: (d) => cycleDisplay('uiScale', 'uiScalePresets', d) },
-          { id: 'renderScale', label: 'RENDER SCALE',
+          { id: 'renderScale', label: 'RENDER QUALITY',
             value: () => displayLabel('renderScale', 'renderScalePresets').toUpperCase(),
             adjust: (d) => cycleDisplay('renderScale', 'renderScalePresets', d) },
-          { id: 'pixelMeshMode', label: 'VFD PIXEL MESH',
-            value: () => labelPixelMeshMode(pixelMeshMode()).toUpperCase(),
-            adjust: (d) => cyclePixelMesh(d) },
           { id: 'phosphor', label: 'PHOSPHOR',
             value: () => PHOSPHOR_LABEL[vfdSettings.phosphor] ?? String(vfdSettings.phosphor).toUpperCase(),
             adjust: (d) => cycleVfd('phosphor', PHOSPHOR_THEMES, d) },
@@ -343,6 +356,25 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           { id: 'dread', label: 'DREAD SPIKES',
             value: () => setting('reduceDread', false) ? 'REDUCED' : 'FULL',
             adjust: () => set('reduceDread', !setting('reduceDread', false)) },
+          section('Privacy & Horror'),
+          { id: 'personalInterference', label: 'PERSONALIZED INTERFERENCE',
+            value: () => personalInterference().enabled ? 'ON' : 'OFF',
+            adjust: () => setPersonalInterference({ enabled: !personalInterference().enabled }) },
+          { id: 'personalSourcesSteam', label: 'USE STEAM NAME',
+            value: () => personalInterference().sourceSteam ? 'ON' : 'OFF',
+            adjust: () => setPersonalInterference({ sourceSteam: !personalInterference().sourceSteam }) },
+          { id: 'personalSourcesOs', label: 'USE OS USERNAME',
+            value: () => personalInterference().sourceOs ? 'ON' : 'OFF',
+            adjust: () => setPersonalInterference({ sourceOs: !personalInterference().sourceOs }) },
+          { id: 'personalVfdText', label: 'USE IN VFD TEXT',
+            value: () => personalInterference().vfdText ? 'ON' : 'OFF',
+            adjust: () => setPersonalInterference({ vfdText: !personalInterference().vfdText }) },
+          { id: 'personalSpeech', label: 'USE LOCAL SPEECH',
+            value: () => personalInterference().localSpeech ? 'ON' : 'OFF',
+            adjust: () => setPersonalInterference({ localSpeech: !personalInterference().localSpeech }) },
+          { id: 'personalIntensity', label: 'INTERFERENCE INTENSITY',
+            value: () => PERSONAL_INTERFERENCE_LABEL[personalInterference().intensity] || 'STANDARD',
+            adjust: (d) => cyclePersonalInterferenceIntensity(d) },
           { id: 'hushDistortion', label: 'HUSH DISTORTION',
             value: () => HUSH_AUDIO_LABEL[setting('hushAudioDistortion', 'full')] || 'FULL',
             adjust: (d) => cycleSetting('hushAudioDistortion', HUSH_AUDIO_MODES, d, 'full') },
@@ -449,8 +481,6 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           section('Performance'),
           { id: 'about:fps', label: 'FPS', value: () => formatFps(hooks.performanceSnapshot?.()?.fps) },
           { id: 'about:runtime', label: 'RUNTIME', value: () => hooks.runtimeLabel?.() || 'Web' },
-          { id: 'about:renderer', label: 'RENDERER', value: () => hooks.rendererLabel?.() || 'Default' },
-          { id: 'about:lens', label: 'LENS', value: () => hooks.lensLabel?.() || 'Unknown' },
 
           section('Support'),
           { id: 'about:copyReport', label: 'COPY DIAGNOSTIC REPORT', value: () => '[ENTER]', activate: () => hooks.copyDiagnosticReport?.() },

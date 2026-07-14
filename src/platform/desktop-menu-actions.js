@@ -9,6 +9,7 @@ export const DESKTOP_MENU_ACTION = Object.freeze({
   CONTINUE: 'continue',
   RESTART_RUN: 'restart_run',
   PAUSE: 'pause',
+  GOD_MENU: 'god_menu',
   DIFFICULTY: 'difficulty',
   ACHIEVEMENTS: 'achievements',
   RETURN_TO_TITLE: 'return_to_title',
@@ -76,6 +77,10 @@ export function routeDesktopMenuAction(payload, handlers = {}) {
 
     case DESKTOP_MENU_ACTION.PAUSE:
       handlers.togglePauseMenu?.();
+      return true;
+
+    case DESKTOP_MENU_ACTION.GOD_MENU:
+      handlers.openGodMenu?.();
       return true;
 
     case DESKTOP_MENU_ACTION.DIFFICULTY:
@@ -167,6 +172,7 @@ export function isReservedDesktopShortcut(event) {
   if (key === 'f') return true;
   if (key === 'p') return true;
   if (key === 'n') return true;
+  if (key === 'g' && event.shiftKey) return true;
 
   return false;
 }

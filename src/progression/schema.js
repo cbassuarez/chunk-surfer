@@ -12,6 +12,7 @@ export const ENDING_IDS = Object.freeze([
   'helped',
   'inversion',
   'drugged',
+  'surfaced',
 ]);
 
 export const DEFAULT_SETTINGS = Object.freeze({
@@ -40,6 +41,14 @@ export const DEFAULT_SETTINGS = Object.freeze({
   seenTextMode: 'fast',
   archiveSignals: 'subtle',
   condensedCheckIn: false,
+  personalInterference: {
+    enabled: false,
+    sourceSteam: true,
+    sourceOs: true,
+    vfdText: true,
+    localSpeech: false,
+    intensity: 'standard',
+  },
   customShiftRules: null,
 });
 
@@ -168,7 +177,24 @@ export function freshMeta() {
 }
 
 export function normalizeSettings(value) {
-  return { ...DEFAULT_SETTINGS, ...objectOr(value) };
+  const source = objectOr(value);
+  const personalSource = objectOr(source.personalInterference);
+  const personalDefault = DEFAULT_SETTINGS.personalInterference;
+  const intensity = ['low', 'standard', 'hostile'].includes(personalSource.intensity)
+    ? personalSource.intensity
+    : personalDefault.intensity;
+  return {
+    ...DEFAULT_SETTINGS,
+    ...source,
+    personalInterference: {
+      enabled: !!personalSource.enabled,
+      sourceSteam: personalSource.sourceSteam !== false,
+      sourceOs: personalSource.sourceOs !== false,
+      vfdText: personalSource.vfdText !== false,
+      localSpeech: !!personalSource.localSpeech,
+      intensity,
+    },
+  };
 }
 
 export function normalizeLedger(value) {

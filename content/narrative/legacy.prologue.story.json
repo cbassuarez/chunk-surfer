@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "id": "legacy.prologue",
+  "title": "Legacy Prologue",
+  "status": "legacy",
+  "entry": "usher.intro",
+  "entries": [
+    "usher.intro",
+    "usher.again"
+  ],
+  "tags": [
+    "legacy"
+  ],
+  "notes": "Retained for reference; not an active runtime entry.",
+  "regions": [
+    {
+      "id": "legacy.prologue.region",
+      "title": "Legacy Prologue",
+      "kind": "legacy",
+      "color": "#245c62",
+      "nodeIds": [
+        "usher.intro",
+        "usher.who",
+        "usher.silence",
+        "usher.after",
+        "usher.again"
+      ]
+    }
+  ],
+  "nodes": {
+    "usher.intro": {
+      "speaker": "THE USHER",
+      "portrait": "usher.neutral",
+      "register": "straight",
+      "lines": [
+        {
+          "text": "you came in through the fog again.",
+          "id": "usher.intro.line.1"
+        },
+        {
+          "text": "the usher does not look up. the usher never looks up. you knew that before you arrived.",
+          "role": "direction",
+          "id": "usher.intro.line.2"
+        },
+        {
+          "text": "there is a \"you\" in this story. someone lost, someone owed.",
+          "id": "usher.intro.line.3"
+        },
+        {
+          "text": "we have stopped checking whose.",
+          "id": "usher.intro.line.4"
+        }
+      ],
+      "choices": [
+        {
+          "text": "ask who \"you\" is",
+          "goto": "usher.who",
+          "id": "usher.intro.choice.1",
+          "mutations": {
+            "set": [
+              "askedWho"
+            ]
+          }
+        },
+        {
+          "text": "say nothing",
+          "goto": "usher.silence",
+          "aside": "the game expected this",
+          "id": "usher.intro.choice.2"
+        }
+      ],
+      "id": "usher.intro",
+      "type": "choice",
+      "mutations": {
+        "set": [
+          "metUsher"
+        ]
+      }
+    },
+    "usher.who": {
+      "speaker": "THE USHER",
+      "portrait": "usher.averted",
+      "register": "ironic",
+      "lines": [
+        {
+          "text": "that is the question the door is for.",
+          "id": "usher.who.line.1"
+        },
+        {
+          "text": "a pause of exactly the length this genre requires.",
+          "role": "direction",
+          "id": "usher.who.line.2"
+        },
+        {
+          "text": "you have walked {steps} steps. mostly in circles. that is not a criticism; it is the shape of the building.",
+          "id": "usher.who.line.3"
+        }
+      ],
+      "goto": "usher.after",
+      "id": "usher.who",
+      "type": "dialogue"
+    },
+    "usher.silence": {
+      "speaker": "THE USHER",
+      "portrait": "usher.averted",
+      "register": "ironic",
+      "lines": [
+        {
+          "text": "good. the silence is doing most of the work anyway.",
+          "id": "usher.silence.line.1"
+        }
+      ],
+      "goto": "usher.after",
+      "id": "usher.silence",
+      "type": "dialogue"
+    },
+    "usher.after": {
+      "speaker": "THE USHER",
+      "portrait": "usher.neutral",
+      "register": "straight",
+      "lines": [
+        {
+          "text": "go on, then. it is only a corridor.",
+          "id": "usher.after.line.1"
+        },
+        {
+          "text": "it is not only a corridor.",
+          "role": "direction",
+          "id": "usher.after.line.2"
+        }
+      ],
+      "id": "usher.after",
+      "type": "dialogue",
+      "mutations": {
+        "set": [
+          "prologueDone"
+        ]
+      }
+    },
+    "usher.again": {
+      "speaker": "THE USHER",
+      "portrait": "usher.neutral",
+      "register": "decay",
+      "lines": [
+        {
+          "text": "you came in through the fog again.",
+          "id": "usher.again.line.1"
+        },
+        {
+          "text": "there is a \"you\" in this story.",
+          "id": "usher.again.line.2"
+        },
+        {
+          "text": "we have stopped checking whose.",
+          "id": "usher.again.line.3"
+        },
+        {
+          "text": "the usher says all of it again, and less of it each time.",
+          "role": "direction",
+          "id": "usher.again.line.4"
+        }
+      ],
+      "id": "usher.again",
+      "type": "dialogue",
+      "when": "prologueDone"
+    }
+  }
+}

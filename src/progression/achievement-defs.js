@@ -72,6 +72,7 @@ export const ACHIEVEMENT_DEFS = Object.freeze([
   endingDef('helped', 'He Tried to Help'),
   endingDef('inversion', 'The Other Door'),
   endingDef('drugged', 'Cold, Bitter, Gone'),
+  endingDef('surfaced', 'The Other Recordist'),
   {
     id: 'ACH_ALL_ENDINGS', name: 'All Returns Filed',
     description: 'Complete every ending.', category: 'returns', hidden: true,

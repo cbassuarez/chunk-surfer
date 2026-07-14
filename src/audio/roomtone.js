@@ -70,6 +70,7 @@ export function setBed(target, rampSec = 1.5) {
 
 export function bedOn() { setBed(ROOM_TONE.bedGain); }
 export function bedOff() { setBed(0, 0.6); }
+export function roomToneState() { return { active:bedTarget>0, target:bedTarget }; }
 
 // ── footsteps ───────────────────────────────────────────────────────────────
 // One long recording of a man walking, sliced at random. The noise MODEL is

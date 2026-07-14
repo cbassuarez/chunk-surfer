@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "id": "ending.false-door",
+  "title": "Inversion · False Door",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "ending"
+  ],
+  "notes": "",
+  "regions": [
+    {
+      "id": "ending.false-door.region",
+      "title": "Inversion · False Door",
+      "kind": "ending",
+      "color": "#ad6a3b",
+      "nodeIds": [
+        "start"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "type": "ending",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "The grey service door. The one you came in through, where the plan says it is.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "you",
+          "text": "There you are. Fine. I was tired. I was anxious and I walked past it.",
+          "id": "start.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "Relief arrives all at once: the guard, the returned box, the wet yard eleven seconds away. Your exit is incoming.",
+          "id": "start.line.3"
+        },
+        {
+          "who": "direction",
+          "text": "It is right there and it does not open. And then it is not right there — a foot to the left, and then a wall.",
+          "id": "start.line.4"
+        },
+        {
+          "who": "surfer",
+          "text": "You did not vanquish me. There is no version of this where you vanquish me. I am the room.",
+          "id": "start.line.5"
+        },
+        {
+          "who": "direction",
+          "text": "The door goes on not being where the door is. Your waypoint blinks out, and re-draws, pointing somewhere you never marked.",
+          "id": "start.line.6"
+        }
+      ],
+      "id": "start"
+    }
+  }
+}

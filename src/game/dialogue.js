@@ -143,7 +143,8 @@ function makeDialogueScene(nodeId) {
 
       const currentLine = lines[li] || null;
       const art = resolveStoryArt(currentLine?.art || node.art || null);
-      const choicesReserve = done && choices().length ? Math.min(choices().length, 3) + 1 : 1;
+      const choiceList = choices();
+      const choicesReserve = done && choiceList.length ? Math.min(choiceList.length * 2, 8) + 1 : 1;
       const wantedArtRows = art ? storyArtRows(art.mode, Math.floor(rows * 0.28)) + 1 : 0;
       const fixedSideBySideRows = art
         ? storyArtSideBySidePanelRows({ choicesRows: choicesReserve, headerRows: 1, bottomPadRows: 2 })
@@ -239,16 +240,29 @@ function makeDialogueScene(nodeId) {
       }
 
       // choices
-      const list = choices();
+      const list = choiceList;
       if (done && list.length) {
-        let cy = boxY + boxH - 2 - Math.min(list.length, 3);
-        list.slice(0, 3).forEach((c, i) => {
+        const rowsOut = [];
+        const visible = list.slice(0, 5);
+        visible.forEach((c, i) => {
           const sel = i === choiceIdx;
-          const label = `${sel ? '>' : ' '} ${c.text}`;
-          uiText(textX, cy, label.slice(0, textW), sel ? 'ui-amber' : 'ui-primary');
+          const prefix = `${sel ? '>' : ' '} `;
+          const continuation = ' '.repeat(prefix.length);
+          const wrapped = uiWrap(c.text, Math.max(8, textW - prefix.length)).slice(0, 2);
+          wrapped.forEach((part, j) => rowsOut.push({
+            text: `${j === 0 ? prefix : continuation}${part}`,
+            cls: sel ? 'ui-amber' : 'ui-primary',
+            aside: j === 0 && node.register === 'ironic' && c.aside ? `— ${c.aside}` : '',
+          }));
+        });
+        const clipped = rowsOut.slice(-Math.max(1, Math.min(8, textBottomY - contentY - 1)));
+        let cy = Math.max(contentY, boxY + boxH - 2 - clipped.length);
+        clipped.forEach((row) => {
+          uiText(textX, cy, row.text.slice(0, textW), row.cls);
           // ironic register: the choice comments on itself, in the margin
-          if (node.register === 'ironic' && c.aside) {
-            uiText(textX + label.length + 2, cy, `— ${c.aside}`, 'ui-secondary');
+          if (row.aside) {
+            const ax = textX + Math.min(row.text.length + 2, Math.max(0, textW - 8));
+            uiText(ax, cy, row.aside.slice(0, Math.max(0, textX + textW - ax)), 'ui-secondary');
           }
           cy++;
         });

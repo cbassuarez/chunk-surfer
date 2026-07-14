@@ -17,9 +17,11 @@ import {
   applyOpponentMove,
   beginRedactionStroke,
   createRedactionState,
+  graftSignal,
   layoutRedactionTokens,
   moveRedactionCursor,
   paintRedaction,
+  revealHidden,
   survivingText,
   toggleRedaction,
   undoRedaction,
@@ -34,7 +36,7 @@ const textOf = (line) => String(line?.text ?? line ?? '');
 const whoOf = (line) => line?.who || 'direction';
 
 export function makeBattleScene({
-  battle, playSound, fx, audio, getAudio, difficulty = null,
+  battle, playSound, fx, audio, getAudio, difficulty = null, capabilities = {},
   onWin = () => {}, onLose = () => {}, onAbort = () => {},
 } = {}) {
   const definitionErrors = validateBattleDefinition(battle);
@@ -65,6 +67,30 @@ export function makeBattleScene({
   let pointerSeen = new Set();
   let submissions = 0;
   let failedSubmissions = 0;
+  const consequences = { readings: [], grants: new Set(), locks: new Set(), routeBiases: [], pressure: 0 };
+
+  const hasFork = () => !!(capabilities.fork || battle.capabilities?.fork || battle.tools?.fork);
+  const hasRig = () => !!(capabilities.rig || battle.capabilities?.rig || battle.tools?.rig);
+
+  function recordVerdict(verdict, challenge) {
+    if (!verdict?.ok) return;
+    consequences.readings.push({
+      challengeId: challenge?.id || '',
+      readingId: verdict.readingId,
+      meaning: verdict.meaning,
+      routeBias: verdict.routeBias,
+      text: verdict.text,
+    });
+    for (const grant of verdict.grants || []) consequences.grants.add(grant);
+    for (const lock of verdict.locks || []) consequences.locks.add(lock);
+    if (verdict.routeBias) consequences.routeBiases.push(verdict.routeBias);
+    consequences.pressure += Number(verdict.pressureDelta) || 0;
+  }
+
+  function degradeRoute(reason) {
+    consequences.pressure += 1;
+    consequences.locks.add(`degraded.${reason || 'reading'}`);
+  }
 
   function stopVoice() { handle?.stop?.(); handle = null; }
 
@@ -97,7 +123,7 @@ export function makeBattleScene({
       return;
     }
     sheet = createRedactionState(battle.challenges[challengeIndex]);
-    notice = 'BLACK OUT THE WORDS THAT MAKE THE READING LIE.';
+    notice = sheet.challenge.claim || 'BLACK OUT THE WORDS THAT MAKE THE READING LIE.';
     noticeUntil = performance.now() + 1900;
     phase = 'puzzle';
     playSound?.({ threat: 0.36 + challengeIndex * 0.11 });
@@ -106,10 +132,12 @@ export function makeBattleScene({
   function counter(move, then) {
     const blacked = move.blackout?.length || 0;
     const scraped = move.scrape?.length || 0;
-    notice = blacked && scraped ? 'THE OTHER HAND BLACKS OUT ONE WORD AND SCRAPES ANOTHER CLEAN.'
+    const inserted = move.insert?.length || 0;
+    notice = move.notice || (inserted ? 'THE OTHER HAND WRITES A WORD INTO THE PAGE.'
+      : blacked && scraped ? 'THE OTHER HAND BLACKS OUT ONE WORD AND SCRAPES ANOTHER CLEAN.'
       : blacked ? 'THE OTHER HAND BLACKS OUT A WORD.'
         : scraped ? 'THE OTHER HAND SCRAPES A WORD CLEAN.'
-          : 'THE OTHER HAND WAITS INSIDE THE TEXT.';
+          : 'THE OTHER HAND WAITS INSIDE THE TEXT.');
     noticeUntil = performance.now() + 1500;
     counterUntil = performance.now() + 850;
     afterCounter = then;
@@ -124,17 +152,19 @@ export function makeBattleScene({
     if (!verdict.ok) failedSubmissions++;
     audio?.menuConfirm?.();
     if (verdict.ok) {
+      recordVerdict(verdict, sheet.challenge);
       enemyHealth = Math.max(0, enemyHealth - 1);
-      notice = `READING HOLDS · ${verdict.text}`;
-      noticeUntil = performance.now() + 1700;
+      notice = `READING HOLDS · ${verdict.meaning || verdict.text}`;
+      noticeUntil = performance.now() + 2100;
       if (enemyHealth <= 0) { finish('win'); return; }
-      counter({ blackout:[], scrape:[] }, beginChallenge);
+      counter({ blackout:[], scrape:[], insert:[] }, beginChallenge);
       return;
     }
 
     const move = applyOpponentMove(sheet);
     if (sheet.attempts >= maxAttempts) {
       playerHealth = Math.max(0, playerHealth - 1);
+      degradeRoute(sheet.challenge.id);
       if (playerHealth <= 0) { counter(move, () => finish('lose')); return; }
       counter(move, beginChallenge);
     } else counter(move, () => { phase = 'puzzle'; });
@@ -153,6 +183,15 @@ export function makeBattleScene({
         challenges: battle.challenges.length,
         playerHealth,
         enemyHealth,
+        finale: {
+          readings: consequences.readings.map((r) => ({...r})),
+          grants: [...consequences.grants],
+          locks: [...consequences.locks],
+          routeBiases: [...consequences.routeBiases],
+          composure: playerHealth,
+          sourceReading: consequences.readings.find((r) => /source/i.test(r.challengeId)) || consequences.readings.at(-1) || null,
+          pressure: consequences.pressure,
+        },
       };
       (kind === 'win' ? onWin : onLose)(metrics);
     });
@@ -198,9 +237,13 @@ export function makeBattleScene({
         cursor: sheet?.cursor || 0,
         surviving: sheet ? survivingText(sheet) : '',
         tokens: sheet ? sheet.challenge.tokens.map((t) => ({...t})) : [],
-        readings: sheet ? sheet.challenge.readings.map((r) => ({required:[...r.required],forbidden:[...r.forbidden],maxVisible:r.maxVisible})) : [],
+        readings: sheet ? sheet.challenge.readings.map((r) => ({id:r.id,meaning:r.meaning,routeBias:r.routeBias,grants:[...r.grants],locks:[...r.locks],required:[...r.required],forbidden:[...r.forbidden],maxVisible:r.maxVisible})) : [],
         playerRedacted: sheet ? [...sheet.player] : [],
         opponentRedacted: sheet ? [...sheet.opponent] : [],
+        revealed: sheet ? [...sheet.revealed] : [],
+        grafted: sheet ? [...sheet.grafted] : [],
+        inserted: sheet ? [...sheet.inserted] : [],
+        consequences: { readings: consequences.readings.map((r)=>({...r})), grants:[...consequences.grants], locks:[...consequences.locks], routeBiases:[...consequences.routeBiases] },
         line: cur ? textOf(cur) : '',
         who: cur ? whoOf(cur) : null,
         typed,
@@ -235,7 +278,7 @@ export function makeBattleScene({
       }
       if (phase !== 'puzzle' || !sheet) return true;
 
-      const layout = layoutRedactionTokens(sheet.challenge, Math.max(24, Math.min(COL_W - 8, uiSize().cols - 14)));
+      const layout = layoutRedactionTokens(sheet, Math.max(24, Math.min(COL_W - 8, uiSize().cols - 14)));
       if (e.key === 'ArrowLeft' || e.key === 'a') moveRedactionCursor(sheet, 'left', layout);
       else if (e.key === 'ArrowRight' || e.key === 'd') moveRedactionCursor(sheet, 'right', layout);
       else if (e.key === 'ArrowUp' || e.key === 'w') moveRedactionCursor(sheet, 'up', layout);
@@ -243,6 +286,13 @@ export function makeBattleScene({
       else if (e.key === 'Enter' || e.key === ' ' || e.key === 'z' || e.controllerAction === 'confirm') {
         toggleRedaction(sheet, sheet.challenge.tokens[sheet.cursor]?.id); audio?.menuMove?.();
       } else if (e.key === 'r' || e.key === 'R' || e.controllerAction === 'recorder') submitReading();
+      else if (e.key === 't' || e.key === 'T') {
+        if (hasFork() && revealHidden(sheet)) { notice = 'THE FORK MAKES THE FALSE TEXT VIBRATE INTO VIEW.'; noticeUntil = performance.now() + 1600; audio?.menuMove?.(); }
+        else { notice = hasFork() ? 'NO HIDDEN TEXT ANSWERS.' : 'THE FORK IS NOT IN YOUR HAND.'; noticeUntil = performance.now() + 1300; }
+      } else if (e.key === 'g' || e.key === 'G') {
+        if (hasRig() && graftSignal(sheet)) { notice = 'THE BENT RIG RESTORES WORDS FROM THE SIGNAL PATH.'; noticeUntil = performance.now() + 1600; audio?.menuMove?.(); }
+        else { notice = hasRig() ? 'NO SIGNAL WORD WILL TAKE.' : 'THE BENT RIG IS NOT READY.'; noticeUntil = performance.now() + 1300; }
+      }
       else if (e.key === 'Backspace' || (e.controller && e.controllerAction === 'back')) undoRedaction(sheet);
       // Escape is deliberately swallowed. A keyboard Escape is not an undo.
       return true;
@@ -272,14 +322,14 @@ export function makeBattleScene({
       const panel = drawMachinePanel(x - 2, 1, w + 4, rows - 2, {
         label:'TRANSCRIPT', source:'REDACTION', meter:true,
         footer: phase === 'puzzle'
-          ? '[ARROWS] MOVE · [ENTER] BLACKOUT · [R] READ · [BACKSPACE] UNDO'
+          ? '[ARROWS] MOVE · [ENTER] BLACKOUT · [T] TUNE · [G] GRAFT · [R] READ'
           : '[SPACE] CONTINUE',
       });
 
       drawVfdText(panel.x, panel.y, battle.enemy || 'THE SOUND OF SILENCE', { color:UI_COLOR.danger, max:panel.w });
       const hp = (n) => `${'■'.repeat(n)}${'□'.repeat(Math.max(0, maxHealth - n))}`;
-      uiText(panel.x, panel.y + 2, `YOU  ${hp(playerHealth)}`, 'ui-primary');
-      const enemy = `IT  ${hp(enemyHealth)}`;
+      uiText(panel.x, panel.y + 2, `COMPOSURE  ${hp(playerHealth)}`, 'ui-primary');
+      const enemy = `CLAIM  ${hp(enemyHealth)}`;
       uiText(panel.x + Math.max(0, panel.w - enemy.length), panel.y + 2, enemy, 'ui-danger');
       uiLine(panel.x, panel.y + 3.2, panel.x + panel.w, panel.y + 3.2, UI_COLOR.frame, 0.7);
 
@@ -344,14 +394,18 @@ export function makeBattleScene({
       }
 
       if (!sheet) return;
-      uiText(contentX, contentY, `SHEET ${challengeIndex + 1}/${battle.challenges.length} · ATTEMPT ${Math.min(maxAttempts, sheet.attempts + 1)}/${maxAttempts}`, 'ui-label');
-      const local = layoutRedactionTokens(sheet.challenge, contentW);
-      const startY = contentY + 2;
+      uiText(contentX, contentY, `${sheet.challenge.title || 'SHEET'} · ${challengeIndex + 1}/${battle.challenges.length} · ATTEMPT ${Math.min(maxAttempts, sheet.attempts + 1)}/${maxAttempts}`, 'ui-label');
+      if (sheet.challenge.claim) uiWrap(sheet.challenge.claim, contentW).slice(0, 2).forEach((line, i) => uiText(contentX, contentY + 1 + i, line, 'ui-danger', 0.82));
+      const local = layoutRedactionTokens(sheet, contentW);
+      const startY = contentY + (sheet.challenge.claim ? 4 : 2);
       lastLayout = local.map((p) => ({ ...p, x:p.x + contentX, y:p.y + startY }));
       for (const p of lastLayout) {
         const token = sheet.challenge.tokens[p.index];
         const playerBar = sheet.player.has(token.id), opponentBar = sheet.opponent.has(token.id);
-        if (!playerBar && !opponentBar) uiText(p.x, p.y, token.text, 'ui-primary');
+        if (!playerBar && !opponentBar) {
+          const cls = token.kind === 'hidden' ? 'ui-blue' : token.kind === 'graft' ? 'ui-amber' : token.kind === 'insertion' || sheet.opponentInserted.has(token.id) ? 'ui-danger' : 'ui-primary';
+          uiText(p.x, p.y, token.text, cls);
+        }
         else {
           uiFill(p.x, p.y + 0.18, p.w, 0.64, 'rgba(0,0,0,0.98)');
           uiLine(p.x, p.y + 0.52, p.x + p.w, p.y + 0.52,
@@ -362,11 +416,14 @@ export function makeBattleScene({
 
       const tokenRows = lastLayout.reduce((m, p) => Math.max(m, p.y - startY + 1), 1);
       const readY = startY + tokenRows + 2;
-      uiText(contentX, readY, 'READBACK', 'ui-label');
+      uiText(contentX, readY, 'CURRENT READING', 'ui-label');
       const readback = survivingText(sheet) || '[SILENCE]';
-      uiWrap(readback, contentW).slice(0, 3).forEach((line, i) => uiText(contentX, readY + 2 + i, line, 'ui-counter'));
+      uiWrap(readback, contentW).slice(0, 3).forEach((line, i) => uiText(contentX, readY + 1 + i, line, 'ui-counter'));
+      const tools = [`MARKER:${'READY'}`, `FORK:${hasFork() && sheet.challenge.tools?.reveal ? 'TUNE' : '—'}`, `RIG:${hasRig() && sheet.challenge.tools?.graft ? 'GRAFT' : '—'}`].join(' · ');
+      uiText(contentX, Math.min(panel.y + panel.h - 5, readY + 5), tools, 'ui-secondary', 0.75);
       if (notice && performance.now() < noticeUntil) {
-        uiText(contentX, Math.min(panel.y + panel.h - 2, readY + 6), uiWrap(notice, contentW)[0], phase === 'counter' ? 'ui-danger' : 'ui-amber');
+        uiWrap(notice, contentW).slice(0, 2).forEach((line, i) =>
+          uiText(contentX, Math.min(panel.y + panel.h - 2, readY + 7 + i), line, phase === 'counter' ? 'ui-danger' : 'ui-amber'));
       }
     },
   };

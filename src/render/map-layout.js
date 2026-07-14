@@ -25,7 +25,7 @@ export function mapLayoutFromBag(layout) {
   }
 
   const floorH = 1;
-  const mapW = clamp(Math.floor(w * 0.66), 38, w - 24);
+  const mapW = clamp(Math.floor(w * 0.72), 42, w - 24);
   return {
     mode: 'wide',
     floorRail: { x: left, y: top, w, h: floorH },

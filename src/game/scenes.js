@@ -2,7 +2,8 @@
 //
 // A scene is { id, enter?, exit?, update?(dt), render?(), key?(e)->bool,
 //              pointer?(e)->bool,
-//              blocksInput?:bool, blocksWorld?:bool, lensPreset?:string }
+//              blocksInput?:bool, blocksWorld?:bool,
+//              lookProfile?:string, lensPreset?:string (legacy alias) }
 //
 // `blocksInput` stops the player walking (dialogue, menus). `blocksWorld`
 // additionally freezes world simulation (the hush keeps hunting during
@@ -10,15 +11,21 @@
 // once, on purpose, in M4).
 
 const stack = [];
-let onLensPreset = () => {};
+let onLookProfile = () => {};
+let appliedLookProfile = null;
 
-export function scenesInit({ applyLensPreset } = {}) {
-  if (applyLensPreset) onLensPreset = applyLensPreset;
+export function scenesInit({ applyLookProfile, applyLensPreset } = {}) {
+  onLookProfile = applyLookProfile || applyLensPreset || onLookProfile;
+  appliedLookProfile = null;
+  syncLens();
 }
 
 function syncLens() {
-  const preset = [...stack].reverse().find((s) => s.lensPreset)?.lensPreset || 'explore';
-  onLensPreset(preset);
+  const scene = [...stack].reverse().find((s) => s.lookProfile || s.lensPreset);
+  const profile = scene?.lookProfile || scene?.lensPreset || 'explore';
+  if (profile === appliedLookProfile) return;
+  appliedLookProfile = profile;
+  onLookProfile(profile);
 }
 
 export function push(scene, params) {
@@ -51,8 +58,14 @@ export function remove(sceneOrId) {
 }
 
 export function replace(scene, params) {
-  while (stack.length) pop();
-  return push(scene, params);
+  // Replacement is one scene transaction. Calling pop()/push() here used to
+  // publish an intermediate `explore` profile, enqueueing a needless material
+  // bank switch before the replacement scene's actual look was known.
+  while (stack.length) stack.pop()?.exit?.();
+  stack.push(scene);
+  scene.enter?.(params);
+  syncLens();
+  return scene;
 }
 
 export function top({ includeOverlay = false } = {}) {
@@ -69,12 +82,25 @@ export function blocksInput() { return stack.some((s) => s.blocksInput); }
 export function blocksWorld() { return stack.some((s) => s.blocksWorld); }
 
 export function update(dt) {
-  for (const s of stack) s.update?.(dt);
+  // A pause overlay freezes authored clocks beneath it as well as the world.
+  // Settings opened from pause remain live because they sit above this index.
+  const pauseIndex = stack.findIndex((scene) => scene.id === 'pause');
+  const start = pauseIndex >= 0 ? pauseIndex : 0;
+  // Scenes may complete/remove themselves from update(). Iterate a stable
+  // frame snapshot so that shifting the live stack cannot skip the next scene,
+  // and a newly-pushed replacement does not inherit the old scene's frame.
+  const frameScenes = stack.slice(start);
+  for (const scene of frameScenes) {
+    if (stack.includes(scene)) scene.update?.(dt);
+  }
 }
 
 // Render bottom-up so a menu can sit over a dialogue box over the world.
 export function render() {
-  for (const s of stack) s.render?.();
+  const frameScenes = [...stack];
+  for (const scene of frameScenes) {
+    if (stack.includes(scene)) scene.render?.();
+  }
 }
 
 // Top scene gets first refusal on every key.

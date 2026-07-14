@@ -1,0 +1,181 @@
+{
+  "schemaVersion": 1,
+  "id": "radio.post_second_take_warning",
+  "title": "Radio · post_second_take_warning",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "radio"
+  ],
+  "notes": "",
+  "regions": [
+    {
+      "id": "radio.post_second_take_warning.region",
+      "title": "Radio · post_second_take_warning",
+      "kind": "scene",
+      "color": "#245c62",
+      "nodeIds": [
+        "start",
+        "report",
+        "interference",
+        "other"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Client radio / carrier open",
+        "status": "OPEN"
+      },
+      "lines": [
+        {
+          "who": "radio",
+          "text": "4417-C, go ahead.",
+          "id": "start.line.1"
+        }
+      ],
+      "choices": [
+        {
+          "text": "Report the second room.",
+          "goto": "report",
+          "id": "start.choice.1"
+        },
+        {
+          "text": "Ask about the interference.",
+          "goto": "interference",
+          "id": "start.choice.2"
+        },
+        {
+          "text": "Ask if anyone else is transmitting.",
+          "goto": "other",
+          "id": "start.choice.3"
+        }
+      ],
+      "id": "start",
+      "type": "choice"
+    },
+    "report": {
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Client radio / issued equipment",
+        "status": "LIVE"
+      },
+      "lines": [
+        {
+          "who": "me",
+          "text": "Second room is clean. Two on the card.",
+          "id": "report.line.1"
+        },
+        {
+          "who": "radio",
+          "text": "Copy. Tw— two on—",
+          "id": "report.line.2"
+        },
+        {
+          "who": "direction",
+          "art": {
+            "id": "walkie",
+            "mode": "hero",
+            "caption": "Client radio / carrier open",
+            "status": "OPEN"
+          },
+          "text": "The carrier stays open after the word should have ended.",
+          "hold": 2.2,
+          "id": "report.line.3"
+        },
+        {
+          "who": "radio",
+          "text": "Do not tap the set. If it drifts, let it drift.",
+          "id": "report.line.4"
+        }
+      ],
+      "id": "report",
+      "type": "dialogue"
+    },
+    "interference": {
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Client radio / issued equipment",
+        "status": "LIVE"
+      },
+      "lines": [
+        {
+          "who": "me",
+          "text": "I am getting another signal under you.",
+          "id": "interference.line.1"
+        },
+        {
+          "who": "radio",
+          "text": "No other channel assigned.",
+          "id": "interference.line.2"
+        },
+        {
+          "who": "direction",
+          "art": {
+            "id": "walkie",
+            "mode": "hero",
+            "caption": "Client radio / carrier open",
+            "status": "BEAT"
+          },
+          "text": "A dry click answers from inside the radio before the person does.",
+          "hold": 2,
+          "id": "interference.line.3"
+        },
+        {
+          "who": "radio",
+          "text": "Keep the next room short.",
+          "id": "interference.line.4"
+        }
+      ],
+      "id": "interference",
+      "type": "dialogue"
+    },
+    "other": {
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Client radio / issued equipment",
+        "status": "LIVE"
+      },
+      "lines": [
+        {
+          "who": "me",
+          "text": "Is anyone else on this channel?",
+          "id": "other.line.1"
+        },
+        {
+          "who": "radio",
+          "text": "Negative.",
+          "id": "other.line.2"
+        },
+        {
+          "who": "direction",
+          "art": {
+            "id": "walkie",
+            "mode": "hero",
+            "caption": "Client radio / carrier open",
+            "status": "OPEN"
+          },
+          "text": "Behind the negative, a breath arrives too close to the grille.",
+          "hold": 2.4,
+          "id": "other.line.3"
+        },
+        {
+          "who": "radio",
+          "text": "If you hear yourself, stop answering.",
+          "id": "other.line.4"
+        }
+      ],
+      "id": "other",
+      "type": "dialogue"
+    }
+  }
+}

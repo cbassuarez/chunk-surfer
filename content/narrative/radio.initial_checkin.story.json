@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "id": "radio.initial_checkin",
+  "title": "Radio · initial_checkin",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "radio"
+  ],
+  "notes": "",
+  "regions": [
+    {
+      "id": "radio.initial_checkin.region",
+      "title": "Radio · initial_checkin",
+      "kind": "scene",
+      "color": "#245c62",
+      "nodeIds": [
+        "start",
+        "identify",
+        "work",
+        "channel"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Client radio / issued equipment",
+        "status": "LIVE"
+      },
+      "lines": [
+        {
+          "who": "radio",
+          "text": "4417-C, go ahead.",
+          "id": "start.line.1"
+        }
+      ],
+      "choices": [
+        {
+          "text": "Identify yourself.",
+          "goto": "identify",
+          "id": "start.choice.1"
+        },
+        {
+          "text": "Ask about the work order.",
+          "goto": "work",
+          "id": "start.choice.2"
+        },
+        {
+          "text": "Ask who is on the channel.",
+          "goto": "channel",
+          "id": "start.choice.3"
+        }
+      ],
+      "id": "start",
+      "type": "choice"
+    },
+    "identify": {
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Client radio / issued equipment",
+        "status": "LIVE"
+      },
+      "lines": [
+        {
+          "who": "me",
+          "text": "4417-C on site. Starting the basement rooms.",
+          "id": "identify.line.1"
+        },
+        {
+          "who": "radio",
+          "text": "Copy. Top of the hour.",
+          "id": "identify.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "A chair moves somewhere behind the voice. Someone laughs at something that is not you.",
+          "hold": 2.2,
+          "id": "identify.line.3"
+        }
+      ],
+      "id": "identify",
+      "type": "dialogue"
+    },
+    "work": {
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Client radio / issued equipment",
+        "status": "LIVE"
+      },
+      "lines": [
+        {
+          "who": "me",
+          "text": "Confirming the order. Five room tones, one minute each.",
+          "id": "work.line.1"
+        },
+        {
+          "who": "radio",
+          "text": "Five rooms. No handling noise. No light on the tape.",
+          "id": "work.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "The carrier closes cleanly enough to sound rehearsed.",
+          "hold": 1.8,
+          "id": "work.line.3"
+        }
+      ],
+      "id": "work",
+      "type": "dialogue"
+    },
+    "channel": {
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Client radio / issued equipment",
+        "status": "LIVE"
+      },
+      "lines": [
+        {
+          "who": "me",
+          "text": "Who am I speaking to?",
+          "id": "channel.line.1"
+        },
+        {
+          "who": "radio",
+          "text": "Front desk relay. Do the rooms in whatever order the building gives you.",
+          "id": "channel.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "That should be a joke. It does not land like one.",
+          "hold": 2,
+          "id": "channel.line.3"
+        }
+      ],
+      "id": "channel",
+      "type": "dialogue"
+    }
+  }
+}

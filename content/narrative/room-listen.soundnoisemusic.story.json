@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "id": "room-listen.soundnoisemusic",
+  "title": "Room Listen · soundnoisemusic",
+  "status": "active",
+  "entry": "start",
+  "entries": [],
+  "tags": [
+    "room-listen"
+  ],
+  "notes": "",
+  "regions": [
+    {
+      "id": "room-listen.soundnoisemusic.region",
+      "title": "Room Listen · soundnoisemusic",
+      "kind": "scene",
+      "color": "#245c62",
+      "nodeIds": [
+        "start",
+        "roll",
+        "ex0",
+        "ex1"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "Headphones on. {label} comes up in the cans — eight practice rooms and an ensemble room with the doors open, seven uprights with their lids up and none in tune with any other.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "you",
+          "text": "That is the level. That is the room.",
+          "id": "start.line.2"
+        }
+      ],
+      "choices": [
+        {
+          "text": "the pianos",
+          "goto": "ex0",
+          "hideWhenAsked": false,
+          "id": "start.choice.1"
+        },
+        {
+          "text": "the open doors",
+          "goto": "ex1",
+          "hideWhenAsked": false,
+          "id": "start.choice.2"
+        },
+        {
+          "text": "kill the light and roll",
+          "goto": "roll",
+          "id": "start.choice.3"
+        }
+      ],
+      "id": "start",
+      "type": "choice"
+    },
+    "roll": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You kill the light. The room drops out of the cans, the tape hiss comes up, and there is you and forty-five seconds and nothing else.",
+          "id": "roll.line.1"
+        },
+        {
+          "who": "you",
+          "text": "Sixty seconds of nothing, with nothing added. Do not move.",
+          "id": "roll.line.2"
+        }
+      ],
+      "id": "roll",
+      "type": "dialogue"
+    },
+    "ex0": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Seven lids up. A piano with the lid up is a hundred and eighty strings waiting for something to happen.",
+          "id": "ex0.line.1"
+        },
+        {
+          "who": "you",
+          "text": "Nothing is going to happen. I am going to record nothing happening to a hundred and eighty strings, seven times over.",
+          "id": "ex0.line.2"
+        }
+      ],
+      "goto": "start",
+      "id": "ex0",
+      "type": "dialogue"
+    },
+    "ex1": {
+      "speaker": "",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "Every practice room door standing open, which is how you leave a room you are coming back to after a coffee.",
+          "id": "ex1.line.1"
+        },
+        {
+          "who": "you",
+          "text": "Nobody came back from their coffee.",
+          "id": "ex1.line.2"
+        }
+      ],
+      "goto": "start",
+      "id": "ex1",
+      "type": "dialogue"
+    }
+  }
+}
