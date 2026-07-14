@@ -38,4 +38,7 @@ test('feature smoke runner is portable across release operating systems', () => 
   assert.match(source, /mock-lens-service\.mjs/);
   assert.match(source, /feature-regression-smoke\.mjs/);
   assert.match(source, /process\.platform/);
+  assert.match(source, /Visual smoke exceeded/);
+  const capture = readFileSync('tools/chunk_surfer/tests/feature-regression-smoke.mjs', 'utf8');
+  assert.doesNotMatch(capture, /page\.evaluate\([^\n]*requestAnimationFrame/);
 });

@@ -26,7 +26,11 @@ const errors=[];
 page.on('pageerror',(error)=>errors.push(error.message));
 
 async function settleViewport(){
-  await page.evaluate(()=>new Promise((resolve)=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  // Hosted Windows runners can suspend requestAnimationFrame for headless tabs
+  // after a viewport change. setViewport already waits for the CDP resize; a
+  // short wall-clock settle lets the canvas compositor catch up without an
+  // unbounded dependency on page visibility.
+  await new Promise((resolve)=>setTimeout(resolve,100));
 }
 
 async function capturePair(desktopName,compactName){
@@ -39,6 +43,7 @@ async function capturePair(desktopName,compactName){
 }
 
 try {
+  console.log(`visual smoke: launching ${process.platform} capture with ${chrome}`);
   await page.evaluateOnNewDocument(()=>{
     Object.defineProperty(document,'hasFocus',{configurable:true,value:()=>true});
   });
@@ -46,6 +51,7 @@ try {
     waitUntil:'domcontentloaded',timeout:60000,
   });
   await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='opening-credits',{timeout:120000});
+  console.log('visual smoke: opening credits ready');
   await page.evaluate(()=>window.__scenes.top().update(.35));
   await capturePair('01-opening-credits.png','01-opening-credits-compact.png');
   await page.evaluate(()=>window.__scenes.top().update(1.65));
@@ -57,6 +63,7 @@ try {
   await page.evaluate(()=>window.__scenes.top().update(6));
   await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='title',{timeout:10000});
   await capturePair('02-title-current-build.png','02-title-compact.png');
+  console.log('visual smoke: opening and title captured');
 
   await page.keyboard.press('Enter');
   await page.keyboard.press('Enter');
@@ -112,6 +119,7 @@ try {
   const chunkSurf=await page.evaluate(()=>window.__scenes.top().view());
   assert.ok(chunkSurf?.roomId,'Chunk Surf source-fault scene must expose its authored room state');
   await page.screenshot({path:path.join(output,'08-chunk-surf-source-fault.png')});
+  console.log('visual smoke: gameplay path captured');
 
   assert.equal(await page.evaluate(()=>window.__probe.openCredits()),true);
   await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='credits',{timeout:5000});
@@ -134,6 +142,7 @@ try {
   await page.evaluate(()=>window.__scenes.top().update?.(4.1));
   await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='return-report',{timeout:5000});
   await capturePair('13-return-report-after-credits.png','13-return-report-after-credits-compact.png');
+  console.log('visual smoke: credit and ending path captured');
 
   assert.deepEqual(errors,[]);
   console.log(JSON.stringify({

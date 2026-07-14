@@ -45,6 +45,7 @@ assert.match(yml, /gh release upload[\s\S]*--clobber/, 'single release job uploa
 assert.match(yml, /gh release download[\s\S]*'\*\.dmg'[\s\S]*'\*\.zip'[\s\S]*'\*\.AppImage'[\s\S]*'\*\.deb'[\s\S]*'\*\.part-\*'[\s\S]*'\*\.sha256'/, 'release job verifies downloadable mac/windows/linux assets and split parts');
 assert.match(yml, /build_bundle\.py --target \$\{\{ matrix\.target \}\}/, 'each target packages its own lens executable and model resources');
 assert.match(yml, /Run cross-platform visual smoke[\s\S]*npm run test:feature-smoke[\s\S]*Upload visual parity captures/, 'each native build job captures the same visual regression path');
+assert.match(yml, /Run cross-platform visual smoke[\s\S]*timeout-minutes: 6/, 'visual parity validation cannot hang a release runner indefinitely');
 assert.match(yml, /npm ci/, 'release installs the exact locked frontend dependency graph');
 assert.match(yml, /release-preflight\.mjs/, 'release validates source versions against its tag');
 assert.doesNotMatch(yml, /args: --config src-tauri\/tauri\.lens\.conf\.json/, 'release matrix does not duplicate the mandatory lens config flag');

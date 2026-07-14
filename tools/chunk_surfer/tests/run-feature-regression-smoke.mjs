@@ -99,10 +99,15 @@ async function waitForOutput(child,pattern,timeoutMs=30000){
   });
 }
 
-function waitForExit(child){
+function waitForExit(child,timeoutMs=300000){
   return new Promise((resolve,reject)=>{
-    child.once('error',reject);
+    const timer=setTimeout(()=>{
+      if(child.exitCode===null&&!child.killed)child.kill('SIGKILL');
+      reject(new Error(`Visual smoke exceeded ${timeoutMs}ms`));
+    },timeoutMs);
+    child.once('error',(error)=>{clearTimeout(timer);reject(error);});
     child.once('exit',(code,signal)=>{
+      clearTimeout(timer);
       code===0?resolve():reject(new Error(`Visual smoke exited with ${signal||code}`));
     });
   });

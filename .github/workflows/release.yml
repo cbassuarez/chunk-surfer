@@ -123,6 +123,7 @@ jobs:
         run: npm run test:desktop-menu
 
       - name: Run cross-platform visual smoke
+        timeout-minutes: 6
         run: npm run test:feature-smoke
 
       - name: Upload visual parity captures
