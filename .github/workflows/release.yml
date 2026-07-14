@@ -47,6 +47,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Free Linux runner disk
+        if: matrix.platform == 'ubuntu-22.04'
+        shell: bash
+        run: |
+          set -euo pipefail
+          df -h
+          sudo rm -rf \
+            /usr/share/dotnet \
+            /usr/local/lib/android \
+            /opt/ghc \
+            /opt/hostedtoolcache/CodeQL \
+            /usr/local/.ghcup
+          docker system prune -af || true
+          sudo apt-get clean
+          df -h
+
       - name: Install Linux Tauri dependencies
         if: matrix.platform == 'ubuntu-22.04'
         run: |
@@ -79,10 +95,18 @@ jobs:
         run: node scripts/release-preflight.mjs "$RELEASE_TAG"
 
       - name: Install pinned lens bundler dependencies
-        run: python -m pip install -r tools/chunk_surfer/diffusion_server/requirements-local.txt pyinstaller==6.16.0
+        run: python -m pip install --no-cache-dir -r tools/chunk_surfer/diffusion_server/requirements-local.txt pyinstaller==6.16.0
 
       - name: Build offline lens sidecar and pinned resources
         run: python tools/chunk_surfer/diffusion_server/build_bundle.py --target ${{ matrix.target }}
+
+      - name: Trim Linux lens build scratch space
+        if: matrix.platform == 'ubuntu-22.04'
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .lens-build ~/.cache/huggingface ~/.cache/pip
+          df -h
 
       - name: Run frontend tests
         run: npm test
