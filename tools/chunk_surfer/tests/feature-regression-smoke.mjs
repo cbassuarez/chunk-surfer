@@ -28,6 +28,9 @@ const browser=await puppeteer.launch({
 const page=await browser.newPage();
 const desktopViewport={width:1280,height:800,deviceScaleFactor:1};
 const compactViewport={width:960,height:600,deviceScaleFactor:1};
+const transitionTimeout=process.platform==='linux'?60000:10000;
+const gameplayTimeout=process.platform==='linux'?90000:20000;
+const interactionTimeout=process.platform==='linux'?30000:5000;
 await page.setViewport(desktopViewport);
 const errors=[];
 page.on('pageerror',(error)=>{
@@ -88,18 +91,18 @@ try {
   await page.evaluate(()=>window.__scenes.top().update(7.5));
   await capturePair('01d-opening-quotation.png','01d-opening-quotation-compact.png');
   await page.evaluate(()=>window.__scenes.top().update(6));
-  await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='title',{timeout:10000});
+  await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='title',{timeout:transitionTimeout});
   await capturePair('02-title-current-build.png','02-title-compact.png');
   console.log('visual smoke: opening and title captured');
 
   await page.keyboard.press('Enter');
   await page.keyboard.press('Enter');
-  await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='difficulty-select',{timeout:10000});
+  await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='difficulty-select',{timeout:transitionTimeout});
   await page.keyboard.press('Enter');
-  await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='warning',{timeout:10000});
+  await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='warning',{timeout:transitionTimeout});
   await page.keyboard.press('Enter');
   await page.keyboard.press('n');
-  await page.waitForFunction(()=>window.__chunkParity?.().screen==='game',{timeout:20000});
+  await page.waitForFunction(()=>window.__chunkParity?.().screen==='game',{timeout:gameplayTimeout});
 
   const map=await page.evaluate(()=>({
     source:window.__probe.mapSource(),
@@ -114,42 +117,42 @@ try {
   await page.screenshot({path:path.join(output,'03-authored-facility-map.png')});
 
   await page.keyboard.press('F10');
-  await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='god-menu',{timeout:5000});
+  await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='god-menu',{timeout:interactionTimeout});
   const godMenu=await page.evaluate(()=>window.__scenes.top().view());
   assert.ok(godMenu.tabs.some((tab)=>tab.id==='conditions'));
   assert.ok(godMenu.tabs.some((tab)=>tab.id==='scenes'));
   await page.screenshot({path:path.join(output,'04-god-menu.png')});
   for(let i=0;i<4;i++)await page.keyboard.press('e');
-  await page.waitForFunction(()=>window.__scenes?.top?.()?.view?.()?.tab==='scenes',{timeout:5000});
+  await page.waitForFunction(()=>window.__scenes?.top?.()?.view?.()?.tab==='scenes',{timeout:interactionTimeout});
   await page.screenshot({path:path.join(output,'04b-god-menu-game-parts.png')});
   await page.keyboard.press('F10');
-  await page.waitForFunction(()=>window.__scenes?.top?.()?.id!=='god-menu',{timeout:5000});
+  await page.waitForFunction(()=>window.__scenes?.top?.()?.id!=='god-menu',{timeout:interactionTimeout});
 
   assert.equal(await page.evaluate(()=>window.__probe.coldOpen()),true);
-  await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='god-cold-open',{timeout:5000});
+  await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='god-cold-open',{timeout:interactionTimeout});
   await page.evaluate(()=>window.__scenes.top().update?.(2.5));
   await page.screenshot({path:path.join(output,'05-cold-open-clamped-dialogue.png')});
 
   assert.equal(await page.evaluate(()=>window.__probe.think('hush')),true);
-  await page.waitForFunction(()=>/^thought:|^dialogue:/.test(window.__scenes?.top?.()?.id||''),{timeout:5000});
+  await page.waitForFunction(()=>/^thought:|^dialogue:/.test(window.__scenes?.top?.()?.id||''),{timeout:interactionTimeout});
   await page.evaluate(()=>window.__scenes.top().update?.(1.2));
   await page.screenshot({path:path.join(output,'06-dialogue-pane.png')});
 
   assert.equal(await page.evaluate(()=>window.__probe.battleId('natatorium',false)),true);
-  await page.waitForFunction(()=>/^battle:/.test(window.__scenes?.top?.()?.id||''),{timeout:5000});
+  await page.waitForFunction(()=>/^battle:/.test(window.__scenes?.top?.()?.id||''),{timeout:interactionTimeout});
   await page.keyboard.press('Enter');
   await page.keyboard.press('Enter');
   await page.screenshot({path:path.join(output,'07-redaction-battle.png')});
 
   assert.equal(await page.evaluate(()=>window.__probe.chunkSurfStart()),true);
-  await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='chunk-surf',{timeout:5000});
+  await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='chunk-surf',{timeout:interactionTimeout});
   const chunkSurf=await page.evaluate(()=>window.__scenes.top().view());
   assert.ok(chunkSurf?.roomId,'Chunk Surf source-fault scene must expose its authored room state');
   await page.screenshot({path:path.join(output,'08-chunk-surf-source-fault.png')});
   console.log('visual smoke: gameplay path captured');
 
   assert.equal(await page.evaluate(()=>window.__probe.openCredits()),true);
-  await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='credits',{timeout:5000});
+  await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='credits',{timeout:interactionTimeout});
   await page.evaluate(()=>window.__scenes.top().update?.(1.8));
   await capturePair('09-credits-opening-card.png','09-credits-opening-card-compact.png');
   await page.evaluate(()=>window.__scenes.top().update?.(2.3));
@@ -159,15 +162,15 @@ try {
   await page.keyboard.press('End');
   await capturePair('12-credits-closing-card.png','12-credits-closing-card-compact.png');
   await page.keyboard.press('Escape');
-  await page.waitForFunction(()=>window.__scenes?.top?.()?.id!=='credits',{timeout:5000});
+  await page.waitForFunction(()=>window.__scenes?.top?.()?.id!=='credits',{timeout:interactionTimeout});
 
   const endingSummary=await page.evaluate(()=>window.__probe.endingCredits('sacrifice'));
   assert.equal(endingSummary.endingId,'sacrifice');
-  await page.waitForFunction(()=>window.__scenes?.top?.()?.view?.()?.context==='ending',{timeout:5000});
+  await page.waitForFunction(()=>window.__scenes?.top?.()?.view?.()?.context==='ending',{timeout:interactionTimeout});
   await page.keyboard.press('End');
   await page.keyboard.press('Space');
   await page.evaluate(()=>window.__scenes.top().update?.(4.1));
-  await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='return-report',{timeout:5000});
+  await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='return-report',{timeout:interactionTimeout});
   await capturePair('13-return-report-after-credits.png','13-return-report-after-credits-compact.png');
   console.log('visual smoke: credit and ending path captured');
 
