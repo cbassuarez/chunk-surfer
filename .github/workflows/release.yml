@@ -31,9 +31,9 @@ jobs:
             artifact: chunk-surfer-windows-x64
             target: x86_64-pc-windows-msvc
             rust_target: x86_64-pc-windows-msvc
-            args: --bundles msi
+            args: --no-bundle
             bundle_glob: |
-              src-tauri/target/release/bundle/msi/*.msi
+              release/windows/*.zip
           - name: Linux x64
             platform: ubuntu-22.04
             artifact: chunk-surfer-linux-x64
@@ -99,6 +99,14 @@ jobs:
       - name: Build Tauri bundles
         run: npm run tauri:build -- ${{ matrix.args }}
 
+      - name: Package Windows portable zip
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        run: |
+          node scripts/package-windows-portable.mjs
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          Compress-Archive -Path "release/windows/Chunk Surfer" -DestinationPath "release/windows/chunk-surfer-v$version-windows-x64.zip" -Force
+
       - name: Upload desktop bundles
         uses: actions/upload-artifact@v4
         with:
@@ -143,7 +151,7 @@ jobs:
           set -euo pipefail
           find release-assets -maxdepth 2 -type f -print
           test "$(find release-assets -type f -name '*.dmg' | wc -l)" -gt 0
-          test "$(find release-assets -type f \( -name '*.exe' -o -name '*.msi' \) | wc -l)" -gt 0
+          test "$(find release-assets -type f -name '*windows-x64.zip' | wc -l)" -gt 0
           test "$(find release-assets -type f \( -name '*.AppImage' -o -name '*.deb' \) | wc -l)" -gt 0
           while IFS= read -r file; do test -s "$file"; done < <(find release-assets -type f)
 
@@ -160,7 +168,7 @@ jobs:
 
           Expected assets:
           - macOS: dmg
-          - Windows: msi installer
+          - Windows: portable zip
           - Linux: AppImage and deb bundle
 
           Signing, notarization, Steam, and itch automation remain TODOs in STORE_PREP.md.
@@ -170,7 +178,7 @@ jobs:
           else
             gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "Chunk Surfer $TAG" --notes-file "$notes_file" --prerelease
           fi
-          find release-assets -type f \( -name '*.dmg' -o -name '*.exe' -o -name '*.msi' -o -name '*.AppImage' -o -name '*.deb' \) -print0 \
+          find release-assets -type f \( -name '*.dmg' -o -name '*.zip' -o -name '*.AppImage' -o -name '*.deb' \) -print0 \
             | xargs -0 gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber
 
       - name: Verify release downloads
@@ -182,8 +190,8 @@ jobs:
           set -euo pipefail
           mkdir -p downloaded-release-assets
           gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir downloaded-release-assets \
-            --pattern '*.dmg' --pattern '*.exe' --pattern '*.msi' --pattern '*.AppImage' --pattern '*.deb'
+            --pattern '*.dmg' --pattern '*.zip' --pattern '*.AppImage' --pattern '*.deb'
           find downloaded-release-assets -maxdepth 1 -type f -print -exec test -s {} \;
           test "$(find downloaded-release-assets -maxdepth 1 -type f -name '*.dmg' | wc -l)" -gt 0
-          test "$(find downloaded-release-assets -maxdepth 1 -type f \( -name '*.exe' -o -name '*.msi' \) | wc -l)" -gt 0
+          test "$(find downloaded-release-assets -maxdepth 1 -type f -name '*windows-x64.zip' | wc -l)" -gt 0
           test "$(find downloaded-release-assets -maxdepth 1 -type f \( -name '*.AppImage' -o -name '*.deb' \) | wc -l)" -gt 0

@@ -123,6 +123,28 @@ fn sidecar_path(app: &AppHandle) -> Result<PathBuf, String> {
     Err("bundled diffusion sidecar is missing; rebuild with tauri.lens.conf.json".into())
 }
 
+fn lens_resource_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    let resource = app
+        .path()
+        .resource_dir()
+        .map_err(|error| error.to_string())?
+        .join("lens");
+    if resource.is_dir() {
+        return Ok(resource);
+    }
+
+    let executable = std::env::current_exe().map_err(|error| error.to_string())?;
+    let portable = executable
+        .parent()
+        .unwrap_or(Path::new("."))
+        .join("lens");
+    if portable.is_dir() {
+        return Ok(portable);
+    }
+
+    Ok(resource)
+}
+
 fn health_ready(port: u16) -> bool {
     let Ok(mut stream) = TcpStream::connect_timeout(
         &format!("127.0.0.1:{port}").parse().expect("literal loopback address"),
@@ -222,11 +244,7 @@ fn launch(app: &AppHandle, state: &LensServiceState, replace: bool) -> Result<Le
         .app_cache_dir()
         .map_err(|error| error.to_string())?
         .join("lens-v2");
-    let resource_dir = app
-        .path()
-        .resource_dir()
-        .map_err(|error| error.to_string())?
-        .join("lens");
+    let resource_dir = lens_resource_dir(app)?;
     fs::create_dir_all(&cache_dir).map_err(|error| format!("lens cache: {error}"))?;
     let log_path = app
         .path()

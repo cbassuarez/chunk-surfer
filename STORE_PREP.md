@@ -11,7 +11,7 @@
 - Recommended filenames:
   - `chunk-surfer-macos-arm64.zip`
   - `chunk-surfer-macos-x64.zip`
-  - `chunk-surfer-windows-x64.msi`
+  - `chunk-surfer-windows-x64.zip`
   - `chunk-surfer-linux-x64.AppImage`
   - `chunk-surfer-linux-x64.deb`
 - Butler TODO: add channel naming for `mac`, `mac-intel`, `win`, `linux`.
@@ -21,7 +21,7 @@
 
 - App id placeholder: TBD.
 - Depot layout proposal:
-  - Windows depot: MSI or unpacked bundle, including `chunk-lens` and
+  - Windows depot: portable/unpacked bundle, including `chunk-lens` and
     `lens/` resources.
   - macOS Apple Silicon depot, including `chunk-lens` and `lens/` resources.
   - macOS Intel depot if retained; do not ship until an offline lens package is
@@ -41,7 +41,7 @@
 
 ## Microsoft Store
 
-- MSIX/AppX notes: Tauri can be packaged later, but current release pipeline targets unsigned desktop installers first.
+- MSIX/AppX notes: Tauri can be packaged later, but current release pipeline targets unsigned desktop bundles first.
 - Identity/publisher TODO.
 - Signing TODO.
 - Certification risks: microphone permission, WebView runtime, unsigned native shell, content warnings.

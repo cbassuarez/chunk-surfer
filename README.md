@@ -13,7 +13,7 @@ Get the newest public beta from [GitHub Releases](https://github.com/cbassuarez/
 | Platform | Architecture | Download |
 | --- | --- | --- |
 | macOS | Apple Silicon | `Chunk Surfer_0.1.0-beta.5_aarch64.dmg` or the newest `.dmg` asset |
-| Windows | x64 | `Chunk Surfer_0.1.0-beta.5_x64_en-US.msi` or the newest `.msi` asset |
+| Windows | x64 | `chunk-surfer-v0.1.0-beta.5-windows-x64.zip` or the newest Windows `.zip` asset |
 | Linux | x64 | newest `.AppImage` or `.deb` asset |
 
 The beta downloads are intentionally large. Release builds include the offline
@@ -160,9 +160,11 @@ publishes a GitHub prerelease. Unsigned local bundles are expected at this
 stage. Signing, notarization, and storefront automation are tracked in
 `STORE_PREP.md`.
 
-Windows release CI builds MSI only. The offline lens payload is large enough
-that NSIS/makensis can fail while memory-mapping the installer payload on
-GitHub-hosted Windows runners, so NSIS is intentionally not a release target.
+Windows release CI ships a portable zip instead of an installer. The offline
+lens payload is large enough that both NSIS and WiX/MSI can fail on
+GitHub-hosted Windows runners, so the beta release artifact keeps
+`chunk-surfer.exe`, `chunk-lens.exe`, and the `lens/` resources together in one
+folder.
 
 ### Tests
 
