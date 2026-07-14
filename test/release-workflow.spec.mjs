@@ -16,6 +16,8 @@ assert.ok(tauri.bundle.targets.includes('msi'), 'default Tauri bundle targets in
 assert.ok(!tauri.bundle.targets.includes('nsis'), 'default Tauri bundle targets do not include NSIS');
 assert.ok(lensTauri.bundle.targets.includes('msi'), 'lens bundle overlay preserves MSI as an allowed target');
 assert.ok(!lensTauri.bundle.targets.includes('nsis'), 'lens bundle overlay never enables NSIS');
+assert.equal(windowsTauri.version, pkg.version.replace(/-beta\.(\d+)$/, '-$1'), 'Windows MSI package version maps beta tags to numeric prerelease syntax');
+assert.doesNotMatch(windowsTauri.version, /[A-Za-z]/, 'Windows MSI package version does not use alphabetic prerelease labels');
 assert.deepEqual(windowsTauri.bundle.targets, ['msi'], 'Windows Tauri config is MSI-only to avoid makensis on large offline lens builds');
 assert.match(yml, /Linux x64[\s\S]*args: --bundles appimage,deb/, 'linux release builds explicit AppImage and deb bundles');
 assert.match(yml, /libwebkit2gtk-4\.1-dev libayatana-appindicator3-dev/, 'linux runner installs current Tauri WebKit dependencies');

@@ -23,6 +23,13 @@ for (const [source, version] of Object.entries(versions)) {
     throw new Error(`${source} version is ${version}; ${expectedTag} requires ${expectedVersion}`);
   }
 }
+const expectedWindowsMsiVersion = expectedVersion.replace(/-beta\.(\d+)$/, '-$1');
+if (windowsTauri.version !== expectedWindowsMsiVersion) {
+  throw new Error(`Windows MSI package version is ${windowsTauri.version}; ${expectedTag} requires ${expectedWindowsMsiVersion}`);
+}
+if (!/^\d+\.\d+\.\d+-\d+$/.test(windowsTauri.version)) {
+  throw new Error('Windows MSI package version must use numeric-only prerelease syntax, for example 0.1.0-5');
+}
 if (!pkg.scripts?.['tauri:build']?.includes('src-tauri/tauri.lens.conf.json')) {
   throw new Error('tauri:build does not merge the mandatory lens bundle config');
 }
