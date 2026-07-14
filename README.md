@@ -46,8 +46,8 @@ merges `src-tauri/tauri.lens.conf.json`, and creates the DMG under
 `src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/`. It is intentionally
 large and can take a long time on its first run.
 
-The Beta 3 source version is `0.1.0-beta.3`; the release tag is
-`v0.1.0-beta.3`. Before creating that tag, run:
+The Beta 3 source version is `0.1.0-beta.4`; the release tag is
+`v0.1.0-beta.4`. Before creating that tag, run:
 
 ```sh
 npm test

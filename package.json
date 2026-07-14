@@ -1,7 +1,7 @@
 {
   "name": "chunk-surfer",
   "private": true,
-  "version": "0.1.0-beta.3",
+  "version": "0.1.0-beta.4",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -23,7 +23,7 @@
     "lens:bundle": "python3 tools/chunk_surfer/diffusion_server/build_bundle.py",
     "lens:bundle:mac": "tools/chunk_surfer/diffusion_server/.venv-local/bin/python tools/chunk_surfer/diffusion_server/build_bundle.py --target aarch64-apple-darwin",
     "beta:build:mac": "npm run lens:bundle:mac && tauri build --config src-tauri/tauri.lens.conf.json --target aarch64-apple-darwin --bundles dmg",
-    "beta:preflight": "node scripts/release-preflight.mjs v0.1.0-beta.3",
+    "beta:preflight": "node scripts/release-preflight.mjs v0.1.0-beta.4",
     "test:look-captures": "node tools/chunk_surfer/tests/look-captures.mjs",
     "test:desktop-menu": "node --test test/desktop-menu-actions.test.mjs test/desktop-menu-bridge.test.mjs test/desktop-global-shortcuts.test.mjs test/game-mode.test.mjs test/desktop-menu-contract.test.mjs",
     "tauri:check": "cargo check --manifest-path src-tauri/Cargo.toml --all-targets",

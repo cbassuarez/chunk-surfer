@@ -3,7 +3,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 
-const expectedTag = process.argv[2] || 'v0.1.0-beta.3';
+const expectedTag = process.argv[2] || 'v0.1.0-beta.4';
 if (!/^v\d+\.\d+\.\d+-beta\.\d+$/.test(expectedTag)) {
   throw new Error(`Expected a beta SemVer tag, received ${expectedTag}`);
 }
