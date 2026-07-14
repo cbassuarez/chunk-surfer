@@ -42,6 +42,12 @@ if (windowsJob.includes('nsis') || windowsJob.includes('msi')) {
 if (!workflow.includes('scripts/package-windows-portable.mjs') || !workflow.includes('*windows-x64.zip')) {
   throw new Error('Windows release workflow must upload and verify the portable zip artifact');
 }
+if (!workflow.includes('Prepare release upload assets') || !workflow.includes('split -b 1900M')) {
+  throw new Error('release workflow must split assets that exceed GitHub release file limits');
+}
+if (!workflow.includes('gh release delete-asset')) {
+  throw new Error('release workflow must clear stale prerelease assets before uploading the current set');
+}
 const defaultTargets = tauri.bundle?.targets || [];
 const lensTargets = lensTauri.bundle?.targets || [];
 const windowsTargets = windowsTauri.bundle?.targets || [];

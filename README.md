@@ -20,6 +20,11 @@ The beta downloads are intentionally large. Release builds include the offline
 lens sidecar and pinned diffusion model resources up front, so the game should
 not ask players to download model weights after first launch.
 
+GitHub limits individual release files to 2 GiB. If an asset is split into
+`.part-00`, `.part-01`, and later parts, download every part plus its `.sha256`
+file, concatenate the parts in order, then verify the checksum before opening
+the app.
+
 ### Before You Install
 
 - macOS builds currently target Apple Silicon.
@@ -164,7 +169,8 @@ Windows release CI ships a portable zip instead of an installer. The offline
 lens payload is large enough that both NSIS and WiX/MSI can fail on
 GitHub-hosted Windows runners, so the beta release artifact keeps
 `chunk-surfer.exe`, `chunk-lens.exe`, and the `lens/` resources together in one
-folder.
+folder. GitHub-hosted beta assets larger than 2 GiB are uploaded as split
+`.part-*` files with checksum manifests.
 
 ### Tests
 

@@ -13,6 +13,9 @@ assert.match(yml, /Windows x64[\s\S]*args: --no-bundle/, 'windows release skips 
 assert.match(yml, /release\/windows\/\*\.zip/, 'windows portable zip artifact path is uploaded');
 assert.match(yml, /scripts\/package-windows-portable\.mjs/, 'windows release stages a portable app directory');
 assert.doesNotMatch(yml, /Windows x64[\s\S]*args: --bundles (?:nsis|msi)/, 'windows release does not invoke NSIS or MSI installer linkers');
+assert.match(yml, /Prepare release upload assets[\s\S]*split -b 1900M/, 'release upload splits assets larger than GitHub release limits');
+assert.match(yml, /sha256sum "\$file" > "release-upload-assets\/\$name\.sha256"/, 'split release assets get checksum manifests');
+assert.match(yml, /gh release delete-asset/, 'release upload clears stale beta assets before uploading current assets');
 assert.ok(!tauri.bundle.targets.includes('nsis'), 'default Tauri bundle targets do not include NSIS');
 assert.ok(!lensTauri.bundle.targets.includes('nsis'), 'lens bundle overlay never enables NSIS');
 assert.deepEqual(windowsTauri.bundle.targets, ['app'], 'Windows Tauri config avoids installer targets; release CI zips the portable app');
@@ -23,7 +26,7 @@ assert.match(yml, /actions\/download-artifact@v4/, 'single release job downloads
 assert.match(yml, /name: Resolve release tag[\s\S]*id: tag[\s\S]*echo \"tag=\$tag\" >> \"\$GITHUB_OUTPUT\"/, 'release job resolves a publish tag before using steps.tag outputs');
 assert.match(yml, /TAG: \${\{ steps\.tag\.outputs\.tag \}\}/, 'release publish steps consume the resolved tag output');
 assert.match(yml, /gh release upload[\s\S]*--clobber/, 'single release job uploads all assets with clobber');
-assert.match(yml, /gh release download[\s\S]*'\*\.dmg'[\s\S]*'\*\.zip'[\s\S]*'\*\.AppImage'[\s\S]*'\*\.deb'/, 'release job verifies downloadable mac/windows/linux assets');
+assert.match(yml, /gh release download[\s\S]*'\*\.dmg'[\s\S]*'\*\.zip'[\s\S]*'\*\.AppImage'[\s\S]*'\*\.deb'[\s\S]*'\*\.part-\*'[\s\S]*'\*\.sha256'/, 'release job verifies downloadable mac/windows/linux assets and split parts');
 assert.match(yml, /build_bundle\.py --target \$\{\{ matrix\.target \}\}/, 'each target packages its own lens executable and model resources');
 assert.match(yml, /npm ci/, 'release installs the exact locked frontend dependency graph');
 assert.match(yml, /release-preflight\.mjs/, 'release validates source versions against its tag');
