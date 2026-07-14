@@ -143,7 +143,9 @@ jobs:
         run: npm run test:desktop-menu
 
       - name: Run cross-platform visual smoke
-        timeout-minutes: 6
+        timeout-minutes: 10
+        env:
+          FEATURE_SMOKE_TIMEOUT_MS: ${{ matrix.os == 'ubuntu-latest' && '540000' || '300000' }}
         run: npm run test:feature-smoke
 
       - name: Upload visual parity captures

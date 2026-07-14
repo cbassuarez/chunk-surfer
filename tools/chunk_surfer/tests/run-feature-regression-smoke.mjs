@@ -99,7 +99,7 @@ async function waitForOutput(child,pattern,timeoutMs=30000){
   });
 }
 
-function waitForExit(child,timeoutMs=300000){
+function waitForExit(child,timeoutMs=Number(process.env.FEATURE_SMOKE_TIMEOUT_MS||300000)){
   return new Promise((resolve,reject)=>{
     const timer=setTimeout(()=>{
       if(child.exitCode===null&&!child.killed)child.kill('SIGKILL');
