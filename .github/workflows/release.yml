@@ -99,11 +99,31 @@ jobs:
           RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag }}
         run: node scripts/release-preflight.mjs "$RELEASE_TAG"
 
+      - name: Restore packaged lens bundle
+        id: lens-bundle-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            src-tauri/binaries/chunk-lens-${{ matrix.target }}*
+            src-tauri/lens-resources/lens
+          key: lens-bundle-v1-${{ matrix.target }}-py312-${{ hashFiles('tools/chunk_surfer/diffusion_server/*.py', 'tools/chunk_surfer/diffusion_server/requirements-local.txt', 'THIRD_PARTY_LENS_NOTICES.md') }}
+
       - name: Install pinned lens bundler dependencies
+        if: steps.lens-bundle-cache.outputs.cache-hit != 'true'
         run: python -m pip install --no-cache-dir -r tools/chunk_surfer/diffusion_server/requirements-local.txt pyinstaller==6.16.0
 
       - name: Build offline lens sidecar and pinned resources
+        if: steps.lens-bundle-cache.outputs.cache-hit != 'true'
         run: python tools/chunk_surfer/diffusion_server/build_bundle.py --target ${{ matrix.target }}
+
+      - name: Cache packaged lens bundle
+        if: steps.lens-bundle-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            src-tauri/binaries/chunk-lens-${{ matrix.target }}*
+            src-tauri/lens-resources/lens
+          key: ${{ steps.lens-bundle-cache.outputs.cache-primary-key }}
 
       - name: Trim Linux lens build scratch space
         if: matrix.platform == 'ubuntu-22.04'

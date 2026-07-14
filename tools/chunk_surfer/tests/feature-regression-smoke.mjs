@@ -7,7 +7,7 @@ const chrome=process.env.CHROME_PATH;
 if(!chrome)throw new Error('CHROME_PATH must point to the platform Chrome executable');
 const base=process.env.CHUNK_SURFER_URL||'http://127.0.0.1:5173';
 const lens=process.env.MOCK_LENS_URL||'ws://127.0.0.1:8765';
-const output=path.resolve('artifacts/feature-regression-smoke');
+const output=path.resolve(process.env.FEATURE_SMOKE_OUTPUT||'artifacts/feature-regression-smoke');
 fs.rmSync(output,{recursive:true,force:true});
 fs.mkdirSync(output,{recursive:true});
 

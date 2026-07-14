@@ -40,6 +40,9 @@ assert.match(releaseMatrix, /Linux x64[\s\S]*args: '--bundles appimage,deb'/, 'l
 assert.match(yml, /libwebkit2gtk-4\.1-dev libayatana-appindicator3-dev/, 'linux runner installs current Tauri WebKit dependencies');
 assert.match(yml, /Free Linux runner disk[\s\S]*\/usr\/share\/dotnet[\s\S]*\/usr\/local\/lib\/android[\s\S]*docker system prune -af/, 'linux release frees hosted-runner disk before large lens packaging');
 assert.match(yml, /pip install --no-cache-dir/, 'release install avoids retaining pip wheel cache during lens packaging');
+assert.match(yml, /actions\/cache\/restore@v4[\s\S]*lens-bundle-v1-\$\{\{ matrix\.target \}\}/, 'release restores the immutable per-target lens bundle cache');
+assert.match(yml, /Build offline lens sidecar and pinned resources[\s\S]*if: steps\.lens-bundle-cache\.outputs\.cache-hit != 'true'/, 'release rebuilds the lens payload only on a cache miss');
+assert.match(yml, /actions\/cache\/save@v4[\s\S]*cache-primary-key/, 'release saves a completed lens bundle immediately for retries and tagged builds');
 assert.match(yml, /Trim Linux lens build scratch space[\s\S]*rm -rf \.lens-build ~\/\.cache\/huggingface ~\/\.cache\/pip/, 'linux release removes sidecar build scratch space before Tauri bundling');
 assert.match(yml, /actions\/upload-artifact@v4/, 'matrix jobs upload local bundles first');
 assert.match(yml, /actions\/download-artifact@v4/, 'single release job downloads built bundles');
@@ -52,6 +55,7 @@ assert.match(yml, /Run cross-platform visual smoke[\s\S]*npm run test:feature-sm
 assert.match(yml, /Run cross-platform visual smoke[\s\S]*timeout-minutes: 6/, 'visual parity validation cannot hang a release runner indefinitely');
 assert.match(featureSmoke, /enable-unsafe-swiftshader/, 'linux visual parity explicitly enables Chromium software WebGL');
 assert.match(featureSmoke, /fs\.rmSync\(output/, 'visual parity cannot upload stale captures after a failed boot');
+assert.match(featureSmoke, /FEATURE_SMOKE_OUTPUT/, 'local smoke validation can write outside the tracked visual evidence directory');
 assert.match(yml, /npm ci/, 'release installs the exact locked frontend dependency graph');
 assert.match(yml, /release-preflight\.mjs/, 'release validates source versions against its tag');
 assert.doesNotMatch(yml, /args: --config src-tauri\/tauri\.lens\.conf\.json/, 'release matrix does not duplicate the mandatory lens config flag');
