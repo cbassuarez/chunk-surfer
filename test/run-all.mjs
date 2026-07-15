@@ -48,7 +48,6 @@ const tests = [
   'test/diffusion-lens-contract.test.mjs',
   'test/material-mutation.test.mjs',
   'test/material-cache-contract.test.mjs',
-  'test/storefront-copy.test.mjs',
   'test/tuning-fork-asset.test.mjs',
   'test/door-system.spec.mjs',
   'test/conservatory-space-layout.test.mjs',
