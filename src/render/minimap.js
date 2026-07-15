@@ -9,7 +9,7 @@ import { drawMachinePanel } from './presentation.js';
 import { themeRoleColor } from './palette.js';
 import { buildMinimapCommands } from './map-commands.js';
 import { drawAnomalyMarker, drawPlayerMarker, drawWaypointMarker } from './map-icons.js';
-import { mapFloor, newestMapContact } from '../game/map-model.js';
+import { mapCurrentAreaLabel, mapFloor, newestMapContact } from '../game/map-model.js';
 
 const clip = (value, width) => {
   const text = String(value ?? '');
@@ -27,8 +27,7 @@ function targetLabel(model) {
 }
 
 function currentLabel(model) {
-  if (model?.player?.roomId) return roomLabel(model, model.player.roomId, model.player.roomId);
-  return mapFloor(model, model?.player?.floorId)?.label || 'POSITION UNKNOWN';
+  return mapCurrentAreaLabel(model);
 }
 
 export function hushStatus(model, now = 0) {

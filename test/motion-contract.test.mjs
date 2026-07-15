@@ -31,7 +31,7 @@ test('non-modal scene consumption cannot destroy held movement state', () => {
   assert.match(src, /worldCanTrackMotion/);
   assert.match(src, /if\(worldCanTrackMotion\) motionInput\.keyDown\(e\)/);
   assert.match(src, /const wasBlockingScene = scenes\.blocksInput\(\)/);
-  assert.match(src, /if\(wasBlockingScene\) resetMotionInput\('scene-consumed'/);
+  assert.match(src, /if\(wasBlockingScene&&!scenes\.tracksMotion\(\)\) resetMotionInput\('scene-consumed'/);
   assert.match(src, /else if\(!moveKey\) clearMotionClock\('scene-consumed-action'\)/);
 });
 

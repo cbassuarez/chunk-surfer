@@ -78,7 +78,7 @@
       "lines": [
         {
           "who": "direction",
-          "text": "It comes again. Closer, or louder, or you are leaning toward it — you cannot tell which, and not being able to tell which is the whole of the problem.",
+          "text": "It comes again. Closer, or louder, or you are leaning towards it — you cannot tell which, and not being able to tell which is the whole of the problem.",
           "channel": "before",
           "id": "round-1.line.1"
         },
@@ -250,7 +250,7 @@
       "lines": [
         {
           "who": "direction",
-          "text": "You move. You do not decide to; you are moving before you know it, toward a piano that is not there.",
+          "text": "You move. You do not decide to; you are moving before you know it, towards a piano that is not there.",
           "id": "lose.line.1"
         },
         {
@@ -703,7 +703,7 @@
           },
           {
             "id": "natatorium-hold:printed:4",
-            "text": "TOWARD",
+            "text": "TOWARDS",
             "kind": "printed",
             "label": "",
             "falseText": false

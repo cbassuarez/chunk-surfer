@@ -17,6 +17,7 @@ export const CREDITS = Object.freeze([
       'Audio — Sebastian Suarez-Solis',
       'Sound Design — Sebastian Suarez-Solis',
       'Sound Design — Paul Yorke',
+      'Bell recordings — Joseph SARDIN & Axeline T. (CC0)',
       'Visual Systems — Sebastian Suarez-Solis',
       'Interface — Sebastian Suarez-Solis',
     ]),

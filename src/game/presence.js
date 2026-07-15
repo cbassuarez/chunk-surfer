@@ -62,6 +62,10 @@ const state = {
   caughtCount: 0,
   externalTargetUntil: 0,
   externalTargetPriority: 0,
+  velocityX: 0,
+  velocityY: 0,
+  speed: 0,
+  motionMode: 'idle',
 };
 
 export function presenceState() { return state; }
@@ -77,6 +81,9 @@ export function publicSnapshot() {
     hasTarget: state.hasTarget,
     targetAgeMs: state.hasTarget ? Math.max(0, performance.now() - state.targetSetAt) : Infinity,
     awareness: state.awareness,
+    velocity: { x: state.velocityX, y: state.velocityY },
+    speed: state.speed,
+    motionMode: state.motionMode,
   };
 }
 
@@ -106,6 +113,7 @@ export function spawnBehind(px, py, dirX = 0, dirY = 1) {
   state.externalTargetPriority = 0;
   state.lastHeardAt = performance.now();
   state.spawnedAt = state.lastHeardAt;
+  state.velocityX = 0; state.velocityY = 0; state.speed = 0; state.motionMode = 'idle';
 }
 
 export function despawn() { state.active = false; state.hasTarget = false; state.externalTargetUntil = 0; state.externalTargetPriority = 0; }
@@ -145,7 +153,7 @@ function hear(x, y, level, now) {
 }
 
 // `onCatch` is the game's, not ours: spoil the take, injure, degrade.
-export function updatePresence(dt, px, py, onCatch) {
+export function updatePresence(dt, px, py, onCatch, { navigation = null, catchMode = 'normal' } = {}) {
   if (!state.active) return;
   const now = performance.now();
   const rec = REC.recState();
@@ -192,11 +200,21 @@ export function updatePresence(dt, px, py, onCatch) {
 
   const dx = tx - state.x, dy = ty - state.y;
   const d = Math.hypot(dx, dy);
+  const beforeX=state.x,beforeY=state.y;
   if (d > 0.001) {
     const step = Math.min(d, speed * dt);
-    state.x += (dx / d) * step;
-    state.y += (dy / d) * step;
+    const destination={x:state.x+(dx/d)*step,y:state.y+(dy/d)*step};
+    const resolved=navigation?.resolveMove?.({x:state.x,y:state.y},{x:tx,y:ty},step);
+    if(resolved&&Number.isFinite(resolved.x)&&Number.isFinite(resolved.y)){
+      state.x=resolved.x;state.y=resolved.y;
+    }else{
+      state.x=destination.x;state.y=destination.y;
+    }
   }
+  const frameDt=Math.max(.0001,dt);
+  state.velocityX=(state.x-beforeX)/frameDt;state.velocityY=(state.y-beforeY)/frameDt;
+  state.speed=Math.hypot(state.velocityX,state.velocityY);
+  state.motionMode=state.speed<.02?'idle':state.hasTarget&&sinceTarget<1.5?'run':state.hasTarget?'walk':'stalk';
 
   // 5. Contact. Not death — a spoiled take, an injury, and it knows you better.
   //    Guarded and cooled: without this it touches you on every frame and one
@@ -216,8 +234,10 @@ export function updatePresence(dt, px, py, onCatch) {
     let rx = state.x - px, ry = state.y - py;
     let rm = Math.hypot(rx, ry);
     if (rm < 0.001) { const a = Math.random() * Math.PI * 2; rx = Math.cos(a); ry = Math.sin(a); rm = 1; }
-    state.x += (rx / rm) * PRESENCE.recoilCells;
-    state.y += (ry / rm) * PRESENCE.recoilCells;
+    if(catchMode!=='source-checkpoint'){
+      state.x += (rx / rm) * PRESENCE.recoilCells;
+      state.y += (ry / rm) * PRESENCE.recoilCells;
+    }
     state.escapeDir = [rx / rm, ry / rm];   // the game shoves the player the other way
     onCatch?.(state.caughtCount);
   }

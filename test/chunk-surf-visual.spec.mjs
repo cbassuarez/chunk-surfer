@@ -1,111 +1,95 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { CHUNK_SURF_ROOMS } from '../src/data/chunk-surf-script.js';
+import { CELL, MATERIAL, ZONE } from '../src/data/floorplan/legend.js';
 import {
-  CHUNK_SURF_SOURCE_ATLAS,
-  chunkSurfPortalModel,
-  chunkSurfSector,
-  chunkSurfVisualModel,
-  validateChunkSurfAtlas,
-} from '../src/game/chunk-surf-visual.js';
-import {
-  CHUNK_SURF_FLAGS,
-  CHUNK_SURF_ROOMS,
-} from '../src/data/chunk-surf-script.js';
-import {
-  createChunkSurfState,
-  tuneChunkSurf,
+  freshChunkSurfState,
+  reduceChunkSurf,
 } from '../src/game/chunk-surf-state.js';
-import { makeChunkSurfScene } from '../src/game/chunk-surf-scene.js';
+import {
+  SOURCE_ATLAS,
+  SOURCE_PLAN_SNAP,
+  SOURCE_PLAN_WINDOW,
+  createSourceSpaceRuntime,
+  validateSourceAtlas,
+} from '../src/game/source-space-runtime.js';
 
-const finite = (value) => Number.isFinite(Number(value));
-
-assert.equal(validateChunkSurfAtlas(CHUNK_SURF_SOURCE_ATLAS).ok, true, 'generated atlas validates');
-assert.equal(CHUNK_SURF_SOURCE_ATLAS.stats.sectors, CHUNK_SURF_ROOMS.length, 'atlas maps every chunk-surf room');
-for (const room of CHUNK_SURF_ROOMS) {
-  const sector = chunkSurfSector(room.id);
-  assert.ok(sector.sourceLines.length >= 8, `${room.id} has literal source lines`);
-  assert.ok(sector.sourceLines.some((line) => line.file.startsWith('src/')), `${room.id} points at source files`);
-  assert.doesNotMatch(JSON.stringify(sector.sourceLines), /\b(Floor|Wall)\b/, `${room.id} does not use fallback world labels`);
+function hash(text) {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i += 1) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
 }
-assert.doesNotMatch(JSON.stringify(CHUNK_SURF_SOURCE_ATLAS), /https?:\/\//i, 'atlas does not leak URLs');
-assert.doesNotMatch(JSON.stringify(CHUNK_SURF_SOURCE_ATLAS), /\/Users\//, 'atlas does not leak local machine paths');
-assert.doesNotMatch(JSON.stringify(CHUNK_SURF_SOURCE_ATLAS), /\b(process\.env|import\.meta\.env)\b/, 'atlas does not leak env reads');
 
-for (const viewport of [{ width: 640, height: 360 }, { width: 1920, height: 1080 }]) {
-  const state = { ...createChunkSurfState(), roomId: 'recordist-loop', visited: ['approach', 'fork-room', 'recordist-loop'], facing: 'east' };
-  const model = chunkSurfVisualModel({ state, viewport, time: 4.25 });
-  assert.equal(model.viewport.width, viewport.width);
-  assert.equal(model.viewport.height, viewport.height);
-  assert.ok(model.floor.length >= 20, 'floor is source-code geometry');
-  assert.ok(model.leftWall.length > 0 && model.rightWall.length > 0, 'side walls exist');
-  assert.ok(model.towers.length > 0, 'function towers exist');
-  for (const item of [...model.floor, ...model.leftWall, ...model.rightWall, ...model.towers, ...model.portals]) {
-    assert.ok(finite(item.x) && finite(item.y), 'projected geometry is finite');
-    assert.ok(item.x > -viewport.width && item.x < viewport.width * 2, `x in broad viewport bounds: ${item.x}`);
-    assert.ok(item.y > -viewport.height && item.y < viewport.height * 2, `y in broad viewport bounds: ${item.y}`);
+function hallState(distance = 0) {
+  let state = freshChunkSurfState({ seed: 4417, returnPoint: { x: 86, y: 58 } });
+  state = reduceChunkSurf(state, { type: 'SOURCE_ENTERED', returnPoint: state.returnPoint });
+  return reduceChunkSurf(state, { type: 'HALL_ADVANCED', distance });
+}
+
+assert.equal(validateSourceAtlas(SOURCE_ATLAS).ok, true);
+assert.equal(SOURCE_ATLAS.schemaVersion, 2);
+assert.equal(SOURCE_ATLAS.exactSource, true);
+assert.equal(SOURCE_ATLAS.stats.sectors, 8);
+assert.doesNotMatch(JSON.stringify(SOURCE_ATLAS), /https?:\/\//i);
+assert.doesNotMatch(JSON.stringify(SOURCE_ATLAS), /\/Users\//);
+assert.doesNotMatch(JSON.stringify(SOURCE_ATLAS), /\b(process\.env|import\.meta\.env)\b/);
+assert.ok(CHUNK_SURF_ROOMS.every((room) => !('lines' in room) && !('tunedLines' in room)), 'visible pseudo-code was removed from authored narrative data');
+
+for (const entry of Object.values(SOURCE_ATLAS.entries)) {
+  const file = await readFile(resolve(entry.file), 'utf8');
+  const exact = file.split(/\n/)[entry.line - 1];
+  assert.equal(exact, entry.text, `${entry.file}:${entry.line} is exact`);
+  assert.equal(hash(exact), entry.hash, `${entry.file}:${entry.line} hash matches`);
+  assert.ok(entry.tokens.every((token) => exact.slice(token.start, token.end) === token.text), 'token offsets refer to exact text');
+}
+
+{
+  const runtime = createSourceSpaceRuntime({ initialState: hallState(0) });
+  const plan = runtime.geometry.renderPlanFor(0, 0);
+  assert.equal(plan.w, SOURCE_PLAN_WINDOW);
+  assert.equal(plan.h, SOURCE_PLAN_WINDOW);
+  assert.equal(Math.abs(plan.originX % SOURCE_PLAN_SNAP), 0);
+  assert.equal(Math.abs(plan.originY % SOURCE_PLAN_SNAP), 0);
+  for (const [x, y] of [[0, 0], [5, -40], [-5, -80], [7, -20]]) {
+    const localX = Math.floor(x - plan.originX), localY = Math.floor(y - plan.originY);
+    const flags = plan.rgba[(localY * plan.w + localX) * 4 + 2];
+    assert.equal(Boolean(flags & 1), runtime.geometry.isSolid(x, y), `render/collision parity at ${x},${y}`);
   }
-  assert.ok(model.forwardPortal, 'wayfinding exposes a forward/primary portal');
-  assert.ok(model.portals.every((portal) => portal.label.includes('::')), 'portals use source anchors');
+  assert.equal(runtime.geometry.zoneAt(0, -50), ZONE.sourceSpace);
 }
 
 {
-  const base = { ...createChunkSurfState(), roomId: 'fork-room', visited: ['approach', 'fork-room'] };
-  const cold = chunkSurfVisualModel({ state: base, viewport: { width: 1280, height: 720 } });
-  const tunedState = tuneChunkSurf(base);
-  const tuned = chunkSurfVisualModel({ state: tunedState, viewport: { width: 1280, height: 720 } });
-  assert.equal(cold.status.tuned, false);
-  assert.equal(tuned.status.tuned, true);
-  assert.equal(tuned.status.hasFork, true);
-  assert.notEqual(cold.status.tone, tuned.status.tone);
+  const counts=[];
+  for (const distance of [0, 28, 56, 84, 112]) {
+    const runtime=createSourceSpaceRuntime({initialState:hallState(distance)});
+    counts.push(runtime.propInstances(0,-distance/CELL).length);
+  }
+  assert.ok(counts.every((count,index)=>index===0||count>=counts[index-1]), 'page population is monotonic');
+  assert.ok(counts.at(-1) >= 600, 'haystack population reaches the authored cap');
 }
 
 {
-  const state = { ...createChunkSurfState(), roomId: 'final-page', facing: 'east', hasFork: true, tuned: ['body-room'], visited: ['approach', 'fork-room', 'recordist-loop', 'body-room', 'final-page'] };
-  const model = chunkSurfVisualModel({ state, viewport: { width: 1280, height: 720 }, redactionIndex: 1 });
-  assert.deepEqual(model.finalChoices.map((choice) => choice.id), ['comfort', 'body', 'source']);
-  assert.equal(model.finalChoices[1].selected, true);
-  assert.ok(model.finalChoices[1].sourceText.length > 0, 'final redaction choices are backed by source text');
+  let state=hallState(112);
+  state=reduceChunkSurf(state,{type:'HAYSTACK_REACHED',origin:{x:0,y:-224},slot:3});
+  const runtime=createSourceSpaceRuntime({initialState:state});
+  const pages=runtime.propInstances(0,-224);
+  assert.equal(pages.filter((page)=>page.interactiveId==='source-page').length,1,'exactly one page is interactive');
+  assert.ok(pages.every((page)=>page.matrix?.length===16),'all pages use complete matrices');
+  assert.ok(runtime.textInstances({px:0,py:-224}).every((text)=>SOURCE_ATLAS.entries[text.sourceId]),'page decals carry provenance-backed source');
 }
 
 {
-  const state = createChunkSurfState();
-  const portals = chunkSurfPortalModel(state);
-  assert.ok(portals.some((portal) => portal.kind === 'forward' && portal.target === 'fork-room'));
-  assert.ok(portals.some((portal) => portal.kind === 'left' && portal.target === 'surfer-origin'));
-  assert.ok(portals.some((portal) => portal.kind === 'right' && portal.target === 'work-order-loop'));
+  let state=hallState(112);
+  state=reduceChunkSurf(state,{type:'HAYSTACK_REACHED',origin:{x:0,y:-224},slot:0});
+  state=reduceChunkSurf(state,{type:'HAYSTACK_PAGE_FOUND',landscapeOrigin:{x:0,y:-246}});
+  const runtime=createSourceSpaceRuntime({initialState:state});
+  const before=runtime.geometry.logicalToPhysical(0,-238);
+  runtime.tick(5.5,{px:0,py:-238,facing:0});
+  const after=runtime.geometry.logicalToPhysical(0,-238);
+  assert.deepEqual({x:after.x,z:after.z},{x:before.x,z:before.z},'transformation never teleports the player');
+  assert.equal(runtime.state().phase,'landscape');
+  assert.ok([MATERIAL.sourceField,MATERIAL.sourcePath,MATERIAL.sourceFault].includes(runtime.geometry.materialAt(0,-250)));
 }
 
-{
-  const seen = [];
-  const scene = makeChunkSurfScene({
-    drankCoffee: true,
-    hasRig: true,
-    endingsSeen: ['sacrifice', 'inversion'],
-    onScare: (scare) => seen.push(['scare', scare.reason]),
-    onComplete: (completion) => seen.push(['complete', completion]),
-  });
-  scene.key({ key: 'ArrowDown' });
-  assert.deepEqual(seen[0], ['scare', 'turned-back']);
-  scene.update(1.2);
-  assert.equal(scene.view().roomId, 'approach', 'scare returns to approach');
-}
-
-{
-  const seen = [];
-  const scene = makeChunkSurfScene({
-    drankCoffee: true,
-    hasRig: true,
-    endingsSeen: ['sacrifice', 'inversion'],
-    onComplete: (completion) => seen.push(completion),
-  });
-  for (const key of [
-    'w', 'f', 'w', 'f', 'd', 'w', 'f', 'r',
-    'd', 'w', 'f', 'a', 'w', 'w', 'f', 'a', 'w', 'd', 'w', 'f',
-    'ArrowDown', 'Enter',
-  ]) scene.key({ key });
-  assert.equal(seen.length, 1, 'scene emits completion once');
-  assert.equal(seen[0].completed, true);
-  assert.equal(seen[0].bestEligible, true);
-  assert.ok(seen[0].flags.includes(CHUNK_SURF_FLAGS.correctRedaction));
-}
-
-console.log('chunk-surf visual specs passed');
+console.log('chunk-surf 3d source-space specs passed');

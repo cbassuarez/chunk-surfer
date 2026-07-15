@@ -57,12 +57,14 @@ ck('outside the map is solid', FP.isSolid(-1, 5) && FP.isSolid(999, 999));
 ck('corridor is open', !FP.isSolid(...Object.values(rc(20, 6))));
 
 const brick = FP.canStep(...Object.values(rc(26, 10)), ...Object.values(rc(26, 11)));
-ck('a bricked door refuses passage', !brick.ok && brick.why === 'bricked', JSON.stringify(brick));
+ck('a sealed doorway is permanent masonry', !brick.ok && brick.why === 'wall', JSON.stringify(brick));
 
-const locked = FP.canStep(...Object.values(rc(11, 6)), ...Object.values(rc(12, 6)), { keys: new Set() });
+const testDoor=FP.doorState()[0],testCell=testDoor.cells[0];
+const locked = FP.canStep(testCell.x-1,testCell.y,testCell.x,testCell.y,{ keys: new Set() });
 ck('a locked door refuses you without the key', !locked.ok && locked.why === 'locked');
-const unlocked = FP.canStep(...Object.values(rc(11, 6)), ...Object.values(rc(12, 6)), { keys: new Set(['master']) });
-ck('and opens with it', unlocked.ok);
+FP.setDoorOpen(testDoor.id,true);
+const unlocked = FP.canStep(testCell.x-1,testCell.y,testCell.x,testCell.y,{ keys: new Set(['master']) });
+ck('and is traversable after its keyed leaf opens', unlocked.ok);
 
 let roomMutable = 0;
 for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) {
@@ -102,8 +104,7 @@ ck('the bricked door seals the south branch', !reachable(rc(26, 10), rc(26, 12))
 
 // ── THE REAL BUILDING ───────────────────────────────────────────────────────
 console.log('\n── the conservatory ──');
-const cp = FP.compile(conservatory.levels, { width: conservatory.width, height: conservatory.height, widenCorridors: conservatory.widenCorridors,connectors:conservatory.connectors });
-for (const d of conservatory.doors || []) FP.setDoorKey(d.x, d.y, d.key);
+const cp = FP.compile(conservatory.levels, { width: conservatory.width, height: conservatory.height, widenCorridors: conservatory.widenCorridors,connectors:conservatory.connectors,doors:conservatory.doors });
 FP.setSpawn(conservatory.spawn.x, conservatory.spawn.y);
 
 const STANDARD_KEYS = new Set(['master']);
@@ -116,6 +117,7 @@ const PROBES = {
 };
 const probePoint = (name) => rc(...PROBES[name]);
 const spawn = FP.spawn();
+for(const door of FP.doorState())if(!door.keyId||KEYRING.has(door.keyId))FP.setDoorOpen(door.id,true);
 
 const walked = new Set([key(spawn)]);
 {
@@ -138,26 +140,29 @@ ck('every room is reachable from the dock after acquiring C-17',
 // The two deliberate refusals. Each must still refuse, and the room behind it
 // must still be reachable another way — proved by the walk above.
 const brickedHall = FP.canStep(...Object.values(rc(96, 13)), ...Object.values(rc(97, 13)), { keys: KEYRING });
-ck('the concert hall door is still bricked up', !brickedHall.ok && brickedHall.why === 'bricked', JSON.stringify(brickedHall));
-const lockedChapel = FP.canStep(...Object.values(rc(92, 57)), ...Object.values(rc(92, 58)), { keys: STANDARD_KEYS });
-const openedChapel = FP.canStep(...Object.values(rc(92, 57)), ...Object.values(rc(92, 58)), { keys: KEYRING });
+ck('the concert hall doorway is still sealed in masonry', !brickedHall.ok && brickedHall.why === 'wall', JSON.stringify(brickedHall));
+const doorStep=(id)=>{const door=FP.doorState().find((entry)=>entry.id===id),to=door.cells[0],dirs=door.widthAxis==='x'?[[0,-1],[0,1]]:[[-1,0],[1,0]];let from=null;for(const[dx,dy]of dirs)for(let d=1;d<=4;d++){const p={x:to.x+dx*d,y:to.y+dy*d};if(FP.cellAt(p.x,p.y)&&!FP.hasFlag(p.x,p.y,F.DOOR)){from=p;break;}if(from)break;}return{door,from:from||{x:to.x,y:to.y},to};};
+const chapelStep=doorStep('chapel-c17');FP.setDoorOpen('chapel-c17',false);
+const lockedChapel = FP.canStep(chapelStep.from.x,chapelStep.from.y,chapelStep.to.x,chapelStep.to.y,{ keys: STANDARD_KEYS });
+FP.setDoorOpen('chapel-c17',true);const openedChapel = FP.canStep(chapelStep.from.x,chapelStep.from.y,chapelStep.to.x,chapelStep.to.y,{ keys: KEYRING });
 ck('the chapel is locked until C-17 is added to the ring', !lockedChapel.ok && lockedChapel.why === 'locked' && openedChapel.ok, JSON.stringify(lockedChapel));
-const boxOfficeLocked=FP.canStep(...Object.values(rc(88,20)),...Object.values(rc(89,20)),{keys:new Set()});
-const boxOfficeMaster=FP.canStep(...Object.values(rc(88,20)),...Object.values(rc(89,20)),{keys:STANDARD_KEYS});
+const officeStep=doorStep('foh-office');FP.setDoorOpen('foh-office',false);
+const boxOfficeLocked=FP.canStep(officeStep.from.x,officeStep.from.y,officeStep.to.x,officeStep.to.y,{keys:new Set()});
+FP.setDoorOpen('foh-office',true);const boxOfficeMaster=FP.canStep(officeStep.from.x,officeStep.from.y,officeStep.to.x,officeStep.to.y,{keys:STANDARD_KEYS});
 ck('the box-office staff leaf answers only to the building master',!boxOfficeLocked.ok&&boxOfficeLocked.why==='locked'&&boxOfficeMaster.ok,JSON.stringify(boxOfficeLocked));
 
-// Test the compiler contract globally, not a couple of hand-picked doors.
-// Every generated portal volume needs at least 3 m in both axes: one axis is
-// aperture width, the other is the clear throat through and beyond the wall.
+// One glyph is one metre; only the three authored pairs have two leaves.
 const thresholdVolumes=cp.doorVolumes.map(v=>{let blocked=0;for(let yy=v.minY;yy<=v.maxY;yy++)for(let xx=v.minX;xx<=v.maxX;xx++)if(FP.isSolid(xx,yy))blocked++;return{...v,blocked};});
-const shortThresholds=thresholdVolumes.filter(v=>v.maxX-v.minX+1<3*PLAN_SCALE||v.maxY-v.minY+1<3*PLAN_SCALE||v.blocked);
-ck('every threshold in the building is one clear 3m by 3m portal volume',shortThresholds.length===0,JSON.stringify(shortThresholds));
+const scheduled=FP.doorState();
+ck('all current portals have explicit stable definitions',scheduled.length===25&&scheduled.every((door)=>door.archetype!=='legacy'));
+ck('exactly three openings contain paired leaves',scheduled.filter((door)=>door.leafCount===2).length===3);
+ck('single glyphs remain one-metre apertures',scheduled.filter((door)=>door.leafCount===1).every((door)=>door.aperture.width<=1.05));
 let doorCells=0;for(let y=0;y<cp.h;y++)for(let x=0;x<cp.w;x++)if(FP.hasFlag(x,y,F.DOOR))doorCells++;
-ck('threshold normalization cannot cascade through the building',doorCells<1000,`${doorCells} door-plane cells in ${thresholdVolumes.length} volumes`);
+ck('door authoring cannot cascade through the building',doorCells<160,`${doorCells} door cells in ${thresholdVolumes.length} volumes`);
 const chapelSeed=rc(92,58,{center:false}),chapelVolume=cp.doorVolumes.find(v=>chapelSeed.x+1>=v.minX&&chapelSeed.x+1<=v.maxX&&chapelSeed.y+1>=v.minY&&chapelSeed.y+1<=v.maxY&&v.mask!==F.BRICKED);
-let chapelUnkeyed=[];
-if(chapelVolume)for(let y=chapelVolume.minY;y<=chapelVolume.maxY;y++)for(let x=chapelVolume.minX;x<=chapelVolume.maxX;x++)if(FP.hasFlag(x,y,F.DOOR)&&!FP.hasFlag(x,y,F.BRICKED)&&FP.doorKeyAt(x,y)!=='chapel')chapelUnkeyed.push(`${x},${y}`);
-ck('a widened keyed threshold is locked across its entire aperture',!!chapelVolume&&chapelUnkeyed.length===0,chapelUnkeyed.slice(0,8).join(' '));
+const chapelDoor=FP.doorState().find((door)=>door.id==='chapel-c17');
+const chapelUnkeyed=(chapelDoor?.cells||[]).filter(({x,y})=>FP.doorKeyAt(x,y)!=='chapel').map(({x,y})=>`${x},${y}`);
+ck('the keyed chapel pair is locked across its active aperture',!!chapelVolume&&chapelUnkeyed.length===0,chapelUnkeyed.slice(0,8).join(' '));
 
 const atriumView=FP.physicalRenderPlanFor(...Object.values(rc(83,10)));
 const hallPhysical=FP.logicalToPhysical(...Object.values(rc(99,24)));
@@ -183,7 +188,7 @@ ck('stairs terminate on their physical destination floors',!!mainStairPortal&&!!
 const partyWalls=[59,66,73,80];
 ck('practice rooms have continuous party walls',partyWalls.every((y)=>FP.isSolid(...Object.values(rc(60,y)))&&FP.isSolid(...Object.values(rc(72,y)))&&!FP.isSolid(...Object.values(rc(66,y)))));
 ck('practice wing is a double-loaded corridor, not an open floor',
-  [55,62,69,76].every((y)=>!FP.isSolid(...Object.values(rc(64,y)))&&!FP.isSolid(...Object.values(rc(68,y))))
+  [56,63,70,77].every((y)=>!FP.isSolid(...Object.values(rc(64,y)))&&!FP.isSolid(...Object.values(rc(68,y))))
   && [53,58,60,65,67,72,74,79].every((y)=>FP.isSolid(...Object.values(rc(64,y)))&&FP.isSolid(...Object.values(rc(68,y)))));
 
 // The levels are really at their heights, not flattened onto base 0.
@@ -305,14 +310,15 @@ ck('level seams preserve physical position and walking height',badSeams.length==
 const orchestra=FP.logicalToPhysical(...Object.values(rc(102,15))),lower=FP.logicalToPhysical(...Object.values(rc(1,67))),upper=FP.logicalToPhysical(...Object.values(rc(28,114)));
 ck('orchestra and both balconies occupy one Euclidean hall footprint',orchestra.renderGroup==='hall'&&lower.renderGroup==='hall'&&upper.renderGroup==='hall'&&lower.y===4&&upper.y===7.5,`floors ${orchestra.y}/${lower.y}/${upper.y}`);
 ck('orchestra, lower balcony and upper balcony are mutually reachable',reachable(rc(102,15),rc(1,67),KEYRING)&&reachable(rc(1,67),rc(28,114),KEYRING)&&reachable(rc(28,114),rc(102,15),KEYRING));
-ck('the chapel is a long 13m pointed-vault volume',Math.abs(FP.ceilAt(...Object.values(rc(90,66)))-FP.floorAt(...Object.values(rc(90,66)))-13)<.01);
+ck('the chapel opens into a long 13m pointed-vault volume',Math.abs(FP.ceilAt(...Object.values(rc(90,82)))-FP.floorAt(...Object.values(rc(90,82)))-13)<.01);
 
 // `--map` prints what is reachable from the spawn.
 //   node tools/chunk_surfer/tests/floorplan.mjs --map [--plan=testbed]
 if (process.argv.includes('--map')) {
   const which = process.argv.includes('--plan=testbed') ? testbed : conservatory;
-  const pp = FP.compile(which.levels, { width: which.width, height: which.height, widenCorridors: which.widenCorridors,connectors:which.connectors||[] });
-  for (const d of which.doors || []) FP.setDoorKey(d.x, d.y, d.key);
+  const pp = FP.compile(which.levels, { width: which.width, height: which.height, widenCorridors: which.widenCorridors,connectors:which.connectors||[],doors:which===conservatory?which.doors:[] });
+  if(which===testbed)for (const d of which.doors || []) FP.setDoorKey(d.x, d.y, d.key,{open:true});
+  else for(const door of FP.doorState())if(!door.keyId||KEYRING.has(door.keyId))FP.setDoorOpen(door.id,true);
   FP.setSpawn(which.spawn.x, which.spawn.y);
   const home = FP.spawn();
   const seen = new Set([key(home)]);

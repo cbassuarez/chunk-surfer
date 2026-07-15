@@ -2,7 +2,7 @@
 //
 // A scene is { id, enter?, exit?, update?(dt), render?(), key?(e)->bool,
 //              pointer?(e)->bool,
-//              blocksInput?:bool, blocksWorld?:bool,
+//              blocksInput?:bool, blocksWorld?:bool, tracksMotion?:bool,
 //              lookProfile?:string, lensPreset?:string (legacy alias) }
 //
 // `blocksInput` stops the player walking (dialogue, menus). `blocksWorld`
@@ -80,6 +80,8 @@ export function has(id) { return stack.some((s) => s.id === id); }
 
 export function blocksInput() { return stack.some((s) => s.blocksInput); }
 export function blocksWorld() { return stack.some((s) => s.blocksWorld); }
+export function tracksMotion() { return !!top()?.tracksMotion; }
+export function worldView() { return top()?.worldView?.() || null; }
 
 export function update(dt) {
   // A pause overlay freezes authored clocks beneath it as well as the world.

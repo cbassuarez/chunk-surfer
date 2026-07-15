@@ -52,7 +52,7 @@ function natatoriumChallenges() {
         { blackout:['AND'], scrape:['VOICE#2'], notice:'THE OTHER HAND SCRAPES VOICE CLEAN AND LEAVES THE CLAIM OPEN.' },
       ]),
     challenge('natatorium-hold', 'THE TAKE',
-      'NOTHING MOVED EXCEPT YOU TOWARD A PIANO THAT WAS NEVER THERE HOLD THE TAKE HOLD YOURSELF', [
+      'NOTHING MOVED EXCEPT YOU TOWARDS A PIANO THAT WAS NEVER THERE HOLD THE TAKE HOLD YOURSELF', [
         reading('nothing-moved', ['NOTHING', 'MOVED'], ['YOU', 'PIANO'], 2, { meaning:'Nothing moved.' }),
         reading('piano-never-there', ['PIANO', 'WAS', 'NEVER', 'THERE'], ['YOU'], 4, { meaning:'The piano was never there.' }),
         reading('hold-take', ['HOLD#1', 'THE#1', 'TAKE'], ['YOU'], 3, { meaning:'Hold the take.' }),
@@ -212,7 +212,7 @@ export function natatoriumBattle(named = false) {
         nature: 'not there',
         threat: 0.42,
         before: [
-          { who: 'direction', text: 'It comes again. Closer, or louder, or you are leaning toward it — you cannot tell which, and not being able to tell which is the whole of the problem.' },
+          { who: 'direction', text: 'It comes again. Closer, or louder, or you are leaning towards it — you cannot tell which, and not being able to tell which is the whole of the problem.' },
         ],
         onListen: [
           { who: 'you', text: 'No transient. No air moving. No felt on a string.' },
@@ -261,7 +261,7 @@ export function natatoriumBattle(named = false) {
       { who: 'direction', text: 'The tile stops answering. The meter holds. You have a clean minute of a room with only you in it, which is the job, which was always the job.' },
     ],
     lose: [
-      { who: 'direction', text: 'You move. You do not decide to; you are moving before you know it, toward a piano that is not there.' },
+      { who: 'direction', text: 'You move. You do not decide to; you are moving before you know it, towards a piano that is not there.' },
       { who: 'direction', text: 'The take dies. Somewhere far off, satisfied, the room stops playing.' },
     ],
   };
@@ -337,7 +337,7 @@ export function practiceBattle(named = false) {
       { who: 'direction', text: 'The far room stops playing. The pianos are pianos. The empty rooms are empty. You have a clean minute of a wing with only you in it, and a box at home you are going to open when you get back, and delete.' },
     ],
     lose: [
-      { who: 'direction', text: 'Your hand is already moving toward the recorder, toward playback, toward her. You stop it. Almost.' },
+      { who: 'direction', text: 'Your hand is already moving towards the recorder, towards playback, towards her. You stop it. Almost.' },
       { who: 'direction', text: 'The take dies. Somewhere, a phrase you know finishes, and is not played again.' },
     ],
   };

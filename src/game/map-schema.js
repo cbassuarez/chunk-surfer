@@ -31,6 +31,7 @@ export function validateBuildingMap(definition, { requiredRooms = [] } = {}) {
   const floorIds = uniqueIds(definition.floors, 'floor', errors);
   const targetIds = uniqueIds(definition.targets, 'target', errors);
   void targetIds;
+  uniqueIds(definition.landmarks, 'landmark', errors);
 
   for (const floor of definition.floors || []) {
     if (!finite(floor.order)) errors.push(`${floor.id}: invalid floor order`);
@@ -50,6 +51,10 @@ export function validateBuildingMap(definition, { requiredRooms = [] } = {}) {
 
   for (const roomId of requiredRooms) {
     if (!rooms.has(roomId)) errors.push(`required target has no map entry: ${roomId}`);
+  }
+  for(const landmark of definition.landmarks||[]){
+    if(!String(landmark.label||'').trim())errors.push(`${landmark.id}: missing label`);
+    if(!point(landmark.logical))errors.push(`${landmark.id}: invalid logical anchor`);
   }
 
   if (!floorIds.size) errors.push('map definition contains no floors');
@@ -76,6 +81,10 @@ export function validateMapSource(source) {
   for (const target of source.targets || []) {
     if (!floorIds.has(target.floorId)) errors.push(`${target.id}: unknown floor ${target.floorId}`);
     if (!point(target.position)) errors.push(`${target.id}: invalid projected position`);
+  }
+  for(const landmark of source.landmarks||[]){
+    if(!floorIds.has(landmark.floorId))errors.push(`${landmark.id}: unknown floor ${landmark.floorId}`);
+    if(!point(landmark.position))errors.push(`${landmark.id}: invalid projected position`);
   }
 
   for (const connector of source.connectors || []) {

@@ -1,11 +1,13 @@
 {
   "name": "chunk-surfer",
   "private": true,
-  "version": "0.1.0-beta.6",
+  "version": "0.1.1-beta.1",
   "type": "module",
   "scripts": {
+    "assets:doors": "node scripts/build-door-pack.mjs",
     "dev": "vite",
     "assets:tuning-fork": "node scripts/generate-tuning-fork-glb.mjs",
+    "assets:bell-stems": "node scripts/build-bell-stem-bank.mjs",
     "studio": "node tools/narrative-studio/server.mjs",
     "studio:build": "vite build --config tools/narrative-studio/vite.config.ts",
     "studio:registry": "node scripts/generate-content-registry.mjs",
@@ -27,7 +29,7 @@
     "lens:bundle": "python3 tools/chunk_surfer/diffusion_server/build_bundle.py",
     "lens:bundle:mac": "tools/chunk_surfer/diffusion_server/.venv-local/bin/python tools/chunk_surfer/diffusion_server/build_bundle.py --target aarch64-apple-darwin",
     "beta:build:mac": "npm run lens:bundle:mac && npm run tauri:build -- --target aarch64-apple-darwin --bundles dmg",
-    "beta:preflight": "node scripts/release-preflight.mjs v0.1.0-beta.6",
+    "beta:preflight": "node scripts/release-preflight.mjs v0.1.1-beta.1",
     "itch:stage": "node scripts/itch-release.mjs stage",
     "itch:preview": "node scripts/itch-release.mjs preview",
     "itch:push": "node scripts/itch-release.mjs push",

@@ -6,6 +6,7 @@ import {
   isViewportTooSmall,
 } from './display-policy.js';
 import { IS_TAURI } from './paths.js';
+import { applyVfdDomTheme } from '../render/vfd-dom.js';
 
 let styleInstalled = false;
 let lastLayout = null;
@@ -27,13 +28,15 @@ body.pause-open{cursor:default;}
 body.desktop-game-mode{cursor:none;background:#000;}
 body.desktop-game-mode #wrap{box-shadow:0 0 0 1px rgba(112,255,230,.08),0 0 48px rgba(112,255,230,.08);}
 body.viewport-too-small #wrap{filter:brightness(.74) saturate(.88);}
-.viewport-fault{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;background:rgba(0,8,7,.86);color:var(--vfd-cyan,#70ffe6);font-family:var(--vfd-font,"Courier New",monospace);pointer-events:auto;letter-spacing:.08em;text-transform:uppercase;}
+.viewport-fault{z-index:99999;}
 .viewport-fault[hidden]{display:none;}
-.viewport-fault__panel{width:min(720px,calc(100vw - 48px));border:1px solid rgba(112,255,230,.35);background:rgba(3,14,12,.92);padding:28px;box-shadow:0 0 28px rgba(112,255,230,.12),inset 0 0 32px rgba(112,255,230,.06);}
-.viewport-fault__kicker{opacity:.62;margin-bottom:12px;font-size:13px;}
-.viewport-fault__title{font-size:24px;margin-bottom:18px;text-shadow:0 0 10px currentColor;}
-.viewport-fault__body,.viewport-fault__hint{opacity:.82;line-height:1.5;}
-.viewport-fault__hint{margin-top:14px;color:#ffb74a;}
+.viewport-fault__panel{width:min(680px,calc(100vw - 20px));max-height:calc(100vh - 20px);min-height:min(330px,calc(100vh - 20px));}
+.viewport-fault__glass{display:grid;align-content:center;gap:clamp(10px,2vh,18px);padding:clamp(18px,4vw,36px);}
+.viewport-fault__title{font-size:clamp(17px,3.1vw,28px);font-weight:700;line-height:1.1;letter-spacing:0;}
+.viewport-fault__body,.viewport-fault__hint{font-size:clamp(11px,1.6vw,14px);line-height:1.5;}
+.viewport-fault__body{color:var(--cs-vfd-silkscreen);}
+.viewport-fault__hint{color:var(--cs-vfd-danger);font-weight:700;filter:brightness(var(--cs-vfd-brightness));}
+@media (max-height:360px){.viewport-fault__panel{min-height:calc(100vh - 16px)}.viewport-fault__glass{padding-top:12px;padding-bottom:12px;gap:8px}.viewport-fault__hint{display:none}}
 `;
   doc.head.appendChild(style);
 }
@@ -47,16 +50,23 @@ export function ensureViewportFaultOverlay(doc = globalThis.document) {
 
   el = doc.createElement('div');
   el.dataset.viewportFault = 'true';
-  el.className = 'viewport-fault';
+  el.className = 'viewport-fault cs-machine-overlay';
   el.hidden = true;
   el.innerHTML = `
-    <div class="viewport-fault__panel" role="status" aria-live="polite">
-      <div class="viewport-fault__kicker">AUDIOCORP DISPLAY FAULT</div>
-      <div class="viewport-fault__title">VIEWPORT BELOW SAFE SIZE</div>
-      <div class="viewport-fault__body">Minimum safe signal frame: ${MINIMUM_VIEWPORT.width}×${MINIMUM_VIEWPORT.height}</div>
-      <div class="viewport-fault__hint">Use fullscreen or a larger display.</div>
-    </div>
+    <section class="viewport-fault__panel cs-machine-panel" role="status" aria-live="polite">
+      <header class="cs-machine-header">
+        <div class="cs-machine-header__identity"><span class="cs-machine-wordmark">AUDIOCORP</span><span>DISPLAY FAULT</span></div>
+        <div class="cs-machine-header__source"><span>SOURCE</span><strong>VIEWPORT</strong></div>
+      </header>
+      <div class="viewport-fault__glass cs-machine-glass">
+        <div class="viewport-fault__title cs-machine-phosphor">VIEWPORT BELOW SAFE SIZE</div>
+        <div class="viewport-fault__body">MINIMUM SAFE SIGNAL FRAME&nbsp;&nbsp;${MINIMUM_VIEWPORT.width} × ${MINIMUM_VIEWPORT.height}</div>
+        <div class="viewport-fault__hint cs-machine-danger">USE FULLSCREEN OR A LARGER DISPLAY.</div>
+      </div>
+      <footer class="cs-machine-footer"><span>SIGNAL FRAME HOLD</span><span>RESTORES AUTOMATICALLY</span></footer>
+    </section>
   `;
+  applyVfdDomTheme(el, 'amber');
   doc.body.appendChild(el);
   return el;
 }
@@ -92,6 +102,7 @@ export function installViewportGuard(options = {}) {
 
   const runUpdate = () => {
     frame = 0;
+    applyVfdDomTheme(overlay, 'amber');
     applyCurrentStageLayout({ window: win, document: doc, allowUpscale: options.allowUpscale !== false });
     const tooSmall = isViewportTooSmall(win.innerWidth, win.innerHeight, min);
     doc.body.classList.toggle('viewport-too-small', tooSmall);

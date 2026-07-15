@@ -1,0 +1,153 @@
+{
+  "schema": 1,
+  "sampleRate": 48000,
+  "contactAlignment": "sample-offset",
+  "status": "prototype-clock-strike-derived",
+  "provenanceFile": "credits.json",
+  "entries": [
+    {
+      "bell": 1,
+      "stroke": "hand",
+      "variation": 0,
+      "url": "bell-01-hand-01.wav",
+      "contactOffsetSamples": 0,
+      "gainDb": -14,
+      "licenseId": "cc0-bigsoundbank-3445-3446"
+    },
+    {
+      "bell": 1,
+      "stroke": "back",
+      "variation": 0,
+      "url": "bell-01-back-01.wav",
+      "contactOffsetSamples": 0,
+      "gainDb": -14,
+      "licenseId": "cc0-bigsoundbank-3445-3446"
+    },
+    {
+      "bell": 2,
+      "stroke": "hand",
+      "variation": 0,
+      "url": "bell-02-hand-01.wav",
+      "contactOffsetSamples": 0,
+      "gainDb": -13.5,
+      "licenseId": "cc0-bigsoundbank-3445-3446"
+    },
+    {
+      "bell": 2,
+      "stroke": "back",
+      "variation": 0,
+      "url": "bell-02-back-01.wav",
+      "contactOffsetSamples": 0,
+      "gainDb": -13.5,
+      "licenseId": "cc0-bigsoundbank-3445-3446"
+    },
+    {
+      "bell": 3,
+      "stroke": "hand",
+      "variation": 0,
+      "url": "bell-03-hand-01.wav",
+      "contactOffsetSamples": 0,
+      "gainDb": -13,
+      "licenseId": "cc0-bigsoundbank-3445-3446"
+    },
+    {
+      "bell": 3,
+      "stroke": "back",
+      "variation": 0,
+      "url": "bell-03-back-01.wav",
+      "contactOffsetSamples": 0,
+      "gainDb": -13,
+      "licenseId": "cc0-bigsoundbank-3445-3446"
+    },
+    {
+      "bell": 4,
+      "stroke": "hand",
+      "variation": 0,
+      "url": "bell-04-hand-01.wav",
+      "contactOffsetSamples": 0,
+      "gainDb": -12.5,
+      "licenseId": "cc0-bigsoundbank-3445-3446"
+    },
+    {
+      "bell": 4,
+      "stroke": "back",
+      "variation": 0,
+      "url": "bell-04-back-01.wav",
+      "contactOffsetSamples": 0,
+      "gainDb": -12.5,
+      "licenseId": "cc0-bigsoundbank-3445-3446"
+    },
+    {
+      "bell": 5,
+      "stroke": "hand",
+      "variation": 0,
+      "url": "bell-05-hand-01.wav",
+      "contactOffsetSamples": 0,
+      "gainDb": -12,
+      "licenseId": "cc0-bigsoundbank-3445-3446"
+    },
+    {
+      "bell": 5,
+      "stroke": "back",
+      "variation": 0,
+      "url": "bell-05-back-01.wav",
+      "contactOffsetSamples": 0,
+      "gainDb": -12,
+      "licenseId": "cc0-bigsoundbank-3445-3446"
+    },
+    {
+      "bell": 6,
+      "stroke": "hand",
+      "variation": 0,
+      "url": "bell-06-hand-01.wav",
+      "contactOffsetSamples": 0,
+      "gainDb": -11.5,
+      "licenseId": "cc0-bigsoundbank-3445-3446"
+    },
+    {
+      "bell": 6,
+      "stroke": "back",
+      "variation": 0,
+      "url": "bell-06-back-01.wav",
+      "contactOffsetSamples": 0,
+      "gainDb": -11.5,
+      "licenseId": "cc0-bigsoundbank-3445-3446"
+    },
+    {
+      "bell": 7,
+      "stroke": "hand",
+      "variation": 0,
+      "url": "bell-07-hand-01.wav",
+      "contactOffsetSamples": 0,
+      "gainDb": -11,
+      "licenseId": "cc0-bigsoundbank-3445-3446"
+    },
+    {
+      "bell": 7,
+      "stroke": "back",
+      "variation": 0,
+      "url": "bell-07-back-01.wav",
+      "contactOffsetSamples": 0,
+      "gainDb": -11,
+      "licenseId": "cc0-bigsoundbank-3445-3446"
+    },
+    {
+      "bell": 8,
+      "stroke": "hand",
+      "variation": 0,
+      "url": "bell-08-hand-01.wav",
+      "contactOffsetSamples": 0,
+      "gainDb": -10.5,
+      "licenseId": "cc0-bigsoundbank-3445-3446"
+    },
+    {
+      "bell": 8,
+      "stroke": "back",
+      "variation": 0,
+      "url": "bell-08-back-01.wav",
+      "contactOffsetSamples": 0,
+      "gainDb": -10.5,
+      "licenseId": "cc0-bigsoundbank-3445-3446"
+    }
+  ]
+}

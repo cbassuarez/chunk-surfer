@@ -163,6 +163,7 @@ const studioApi = {
 
 await access(CONTENT_ROOT);
 const server = await createViteServer({
+  configFile: false,
   root: STUDIO_ROOT,
   publicDir: false,
   plugins: [react(), studioApi],

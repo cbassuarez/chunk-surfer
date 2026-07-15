@@ -25,7 +25,11 @@ const RD_SIZE = 256;
 const WATER_W = 96;
 const WATER_H = 54;
 const MAX_WATER_SOURCES = 4;
+const MAX_LOCAL_LIGHTS = 8;
 let RENDER_SCALE = 1;
+let localLightCount=0;
+const localLightPositions=new Float32Array(MAX_LOCAL_LIGHTS*4);
+const localLightColors=new Float32Array(MAX_LOCAL_LIGHTS*4);
 
 export function r3dSetRenderScale(value = 1) {
   const next = Math.max(0.5, Math.min(1, Number(value) || 1));
@@ -46,7 +50,8 @@ const BIOME_RGB = {
   resonance: [0.40, 0.53, 0.53],
 };
 // Zone → tint, indexed by the ZONE ids in data/floorplan/legend.js.
-// (none, dock, foyer, studio, natatorium, hall, practice, chapel, plant, stair)
+// (none, dock, foyer, studio, natatorium, hall, practice, chapel, plant, stair,
+// source-space, outer chapel, bell tower)
 const ZONE_TINTS = new Float32Array([
   0.60, 0.60, 0.58,   // none
   0.62, 0.60, 0.55,   // dock: sodium and rust
@@ -58,6 +63,9 @@ const ZONE_TINTS = new Float32Array([
   0.88, 0.92, 1.00,   // chapel
   0.55, 0.52, 0.48,   // plant room
   0.58, 0.58, 0.60,   // stairs
+  0.10, 0.92, 0.24,   // source-space: executable green against the void
+  0.72, 0.75, 0.78,   // outer chapel: colder, lower stone
+  0.73, 0.61, 0.42,   // bell tower: timber, bronze and dust
 ]);
 
 const WORLD_RGB = {
@@ -153,6 +161,9 @@ uniform sampler2D uFogTex;
 uniform vec2  uFogOrigin;
 uniform float uAudio;        // 0..1 field energy
 uniform float uLight;        // 0 = flashlight off, 1 = on
+uniform int uLocalLightCount;
+uniform vec4 uLocalLightPos[${MAX_LOCAL_LIGHTS}];
+uniform vec4 uLocalLightColor[${MAX_LOCAL_LIGHTS}];
 uniform int   uChunkCount;
 uniform vec4  uChunkA[${MAX_CHUNKS}]; // x, z, radius, activity
 uniform vec3  uChunkC[${MAX_CHUNKS}]; // biome rgb
@@ -161,6 +172,8 @@ uniform vec4  uDoor;
 uniform vec4  uHush;         // x, z, strength, -
 uniform sampler2D uPlan;     // the authored building: R=floor G=ceil B=flags A=zone
 uniform sampler2D uMat;      // R=material id
+uniform sampler2D uSourceLayer; // R=source corpus layer for this runtime cell
+uniform sampler2D uSourceSurface; // exact repository source rendered as a code-native surface
 uniform sampler2D uPropColor;
 uniform sampler2D uPropDepth;
 uniform sampler2D uWaterHeight;
@@ -180,8 +193,10 @@ uniform float uPropsReady;
 uniform float uPropNear;
 uniform float uPropFar;
 uniform vec2  uPlanSize;
+uniform vec2  uPlanOrigin;
 uniform float uUsePlan;      // 0 = procedural lattice (JUST SURF), 1 = the conservatory
-uniform vec3  uZoneTint[10];
+uniform vec3  uZoneTint[13];
+uniform float uSourceReady;
 uniform vec4  uWaterBounds;  // min x, min z, max x, max z in runtime cells
 uniform vec4  uWaterParams;  // active, level metres, murk, reduce motion
 out vec4 o;
@@ -205,6 +220,10 @@ const int MAT_PRACTICE = ${MATERIAL.practiceFoam};
 const int MAT_CHAPEL = ${MATERIAL.chapelStone};
 const int MAT_METAL = ${MATERIAL.metalPlant};
 const int MAT_DOOR = ${MATERIAL.doorGlassDuct};
+const int MAT_SOURCE_FIELD = ${MATERIAL.sourceField};
+const int MAT_SOURCE_PATH = ${MATERIAL.sourcePath};
+const int MAT_SOURCE_PAGE = ${MATERIAL.sourcePage};
+const int MAT_SOURCE_FAULT = ${MATERIAL.sourceFault};
 
 bool waterActive(){ return uWaterParams.x > 0.5 && uUsePlan > 0.5; }
 bool inWaterBounds(vec2 p){
@@ -282,17 +301,18 @@ Cell cellAtI(ivec2 p){
     r.c = hasCeiling(vec2(p) + 0.5) ? CEIL : 90.0;
     return r;
   }
-  if(p.x < 0 || p.y < 0 || p.x >= int(uPlanSize.x) || p.y >= int(uPlanSize.y)){
+  ivec2 local = p - ivec2(uPlanOrigin);
+  if(local.x < 0 || local.y < 0 || local.x >= int(uPlanSize.x) || local.y >= int(uPlanSize.y)){
     r.solid = true; r.f = 0.0; r.c = 0.0; r.flags = FLAG_SOLID;
     return r;
   }
-  vec4 t = texelFetch(uPlan, p, 0);
+  vec4 t = texelFetch(uPlan, local, 0);
   r.flags = int(t.b * 255.0 + 0.5);
   r.solid = (r.flags & FLAG_SOLID) != 0;
   r.f = (t.r * H_RANGE + H_MIN) / CELL_METERS;
   r.c = (t.g * H_RANGE + H_MIN) / CELL_METERS;
   r.zone = int(t.a * 255.0 + 0.5);
-  r.mat = int(texelFetch(uMat, p, 0).r * 255.0 + 0.5);
+  r.mat = int(texelFetch(uMat, local, 0).r * 255.0 + 0.5);
   if(r.mat == 0) r.mat = MAT_SERVICE;
   if((r.flags & FLAG_SKY) != 0) r.c = 90.0 / CELL_METERS;
   return r;
@@ -396,6 +416,24 @@ void surfaceSlot(int mat,int surf,vec2 uv,out int slot,out float tileM,out float
 vec2 surfaceUv(int surf,vec3 p,vec3 n){
   if(surf!=1)return p.xz;
   return abs(n.x)>.5?vec2(p.z,p.y):vec2(p.x,p.y);
+}
+bool isSourceMaterial(int mat){
+  return mat==MAT_SOURCE_FIELD||mat==MAT_SOURCE_PATH||mat==MAT_SOURCE_PAGE||mat==MAT_SOURCE_FAULT;
+}
+vec3 sourceSyntaxTint(int mat){
+  if(mat==MAT_SOURCE_PATH)return vec3(.03,.70,1.00);
+  if(mat==MAT_SOURCE_PAGE)return vec3(.86,.91,.82);
+  if(mat==MAT_SOURCE_FAULT)return vec3(1.00,.10,.07);
+  return vec3(.03,.92,.18);
+}
+float sourceGlyph(vec2 uv){
+  if(uSourceReady<.5)return 0.0;
+  return dot(texture(uSourceSurface,fract(uv)).rgb,vec3(.2126,.7152,.0722));
+}
+float sourceLayerAt(vec2 worldCell){
+  ivec2 local=ivec2(floor(worldCell))-ivec2(uPlanOrigin);
+  if(local.x<0||local.y<0||local.x>=int(uPlanSize.x)||local.y>=int(uPlanSize.y))return 0.0;
+  return texelFetch(uSourceLayer,local,0).r*255.0;
 }
 vec3 architecturalSurface(int mat,int surf,vec3 p,vec3 n,vec3 fallback){
   if(uSurfacesReady<.5||surf==3)return fallback;
@@ -612,7 +650,24 @@ void main(){
     bool pbrReady=false;int pbrSlot=0;float pbrTile=1.0,pbrBlend=0.0;vec2 pbrUv=vec2(0.0);
     vec3 toEye = ro - pos;
     vec3 toEyeM = roM - posM;
-    if(uSurfacesReady > 0.5 && surf != 3 && surf != 4){
+    bool sourceMaterial=isSourceMaterial(hitMat);
+    vec2 sourceUv=surfaceUv(surf,posM,n)*vec2(.34,.46);
+    float sourceLayer=clamp(sourceLayerAt(pos.xz)-1.0,0.0,7.0);
+    sourceUv=vec2(sourceUv.x,fract(sourceUv.y)/8.0+sourceLayer/8.0);
+    float sourceHeight=0.0;
+    if(sourceMaterial){
+      sourceHeight=sourceGlyph(sourceUv);
+      float eps=1.0/2048.0;
+      vec2 grad=vec2(
+        sourceGlyph(sourceUv+vec2(eps,0.0))-sourceGlyph(sourceUv-vec2(eps,0.0)),
+        sourceGlyph(sourceUv+vec2(0.0,eps))-sourceGlyph(sourceUv-vec2(0.0,eps))
+      );
+      vec3 T=(surf==1)?normalize(vec3(-n.z,0.0,n.x)):vec3(1.0,0.0,0.0);
+      vec3 B=(surf==1)?vec3(0.0,1.0,0.0):vec3(0.0,0.0,1.0);
+      n=normalize(n+T*grad.x*1.8+B*grad.y*1.8);
+      surfRough=mix(.96,.48,smoothstep(.08,.82,sourceHeight));
+      surfaceOcclusion=mix(.58,1.0,sourceHeight);
+    } else if(uSurfacesReady > 0.5 && surf != 3 && surf != 4){
       int sslot; float stile, sblend;
       vec2 suv = surfaceUv(surf,posM,n);
       surfaceSlot(hitMat, surf, suv, sslot, stile, sblend);
@@ -659,7 +714,7 @@ void main(){
       float hU=texture(uWaterHeight,clamp(wuv+vec2(0.0,texel.y),vec2(0.0),vec2(1.0))).r;
       n=normalize(vec3(-(hR-hL)*2.8,1.0,-(hU-hD)*2.8));
     }
-    if(!pbrReady)seam=materialSeam(hitMat,surf,posM,n);
+    if(!pbrReady&&!sourceMaterial)seam=materialSeam(hitMat,surf,posM,n);
 
     // Interior lighting: a lamp the player carries. Inverse-square falloff with
     // Lambert on the true face normal — this is what makes a corridor read as
@@ -686,6 +741,15 @@ void main(){
     float spill    = smoothstep(0.30, 0.86, axis) * 0.05;   // lens leak
     float beam = (cone + beamRim + spill) * uLight;
     float lamp = lambert * falloff * nearSoft * 3.0 * beam;   // a torch, not a flare
+    vec3 localLight=vec3(0.0);
+    for(int li=0;li<${MAX_LOCAL_LIGHTS};li++){
+      if(li>=uLocalLightCount)break;
+      vec3 delta=uLocalLightPos[li].xyz-posM;
+      float localDistance=length(delta),radius=max(.01,uLocalLightPos[li].w);
+      float attenuation=pow(clamp(1.0-localDistance/radius,0.0,1.0),2.0);
+      float localLambert=max(dot(n,normalize(delta)),0.0);
+      localLight+=uLocalLightColor[li].rgb*uLocalLightColor[li].w*attenuation*(.18+.82*localLambert);
+    }
     // The unlit floor is deliberately lifted. With the torch off — or taken — a
     // dark-adapted eye still resolves a room: you are not blind, you simply
     // cannot see WELL. A black screen is not horror, it is a bug you cannot play.
@@ -708,8 +772,14 @@ void main(){
         + vec3(.035,.070,.045)*scum*(.45+.35*film);
       col=mix(col,deep,murk*.34);
     } else {
-      vec3 albedo = materialBase(hitMat, surf, tint, biome, rdv);
-      albedo = pbrReady?mix(albedo,surfaceTile(pbrSlot,pbrUv,pbrTile),pbrBlend):architecturalSurface(hitMat,surf,posM,n,albedo);
+      vec3 albedo;
+      if(sourceMaterial){
+        vec3 ink=sourceSyntaxTint(hitMat);
+        albedo=ink*(.06+1.18*smoothstep(.035,.46,sourceHeight));
+      }else{
+        albedo=materialBase(hitMat, surf, tint, biome, rdv);
+        albedo=pbrReady?mix(albedo,surfaceTile(pbrSlot,pbrUv,pbrTile),pbrBlend):architecturalSurface(hitMat,surf,posM,n,albedo);
+      }
       // Roughness drives the highlight: a wet/polished tile (low roughness) throws
       // a tight bright spec; brick and wood stay matte. Tighten the lobe as it
       // smooths, so marble and ceramic actually glint under the torch.
@@ -718,7 +788,7 @@ void main(){
       float spec = specStr * pow(clamp(lambert, 0.0, 1.0), mix(6.0, 48.0, gloss)) * lamp;
 
       float emis = (surf == 2) ? 0.55 : (surf == 1 ? 0.30 : 0.12);
-      col = albedo * (ambient*surfaceOcclusion + lamp)
+      col = albedo * (ambient*surfaceOcclusion + lamp + localLight)
           + vec3(0.55, 0.60, 0.62) * spec
           + rim * tint * (0.22 + uAudio * 0.45) * emis
           + glow * emis
@@ -858,10 +928,21 @@ void main(){
 
 // ── GL plumbing ──────────────────────────────────────────────────────────────
 let gl = null, canvas = null;
-let progRD, progWater, progMarch, progPost, progDepth, progPixelMesh;
+let progRD, progWater, progMarch, progPost, progDepth, progPixelMesh, progDatamosh;
 // How frightened he is, 0..1. main.js owns the number; the post pass spends it.
 let fearLevel = 0;
 export function r3dSetFear(v) { fearLevel = Math.max(0, Math.min(1, v || 0)); }
+
+export function r3dSetLocalLights(lights=[]){
+  localLightPositions.fill(0);localLightColors.fill(0);
+  localLightCount=Math.min(MAX_LOCAL_LIGHTS,Array.isArray(lights)?lights.length:0);
+  for(let i=0;i<localLightCount;i++){
+    const light=lights[i]||{},p=i*4,color=light.color||[1,.78,.52];
+    localLightPositions[p]=Number(light.x)||0;localLightPositions[p+1]=Number(light.y)||0;localLightPositions[p+2]=Number(light.z)||0;localLightPositions[p+3]=Math.max(.01,Number(light.radius)||4);
+    localLightColors[p]=Number(color[0])||0;localLightColors[p+1]=Number(color[1])||0;localLightColors[p+2]=Number(color[2])||0;localLightColors[p+3]=Math.max(0,Number(light.intensity)||0);
+  }
+  return localLightCount;
+}
 let lookFrom = getLookProfile('explore');
 let lookTarget = lookFrom;
 let lookStartedAt = 0;
@@ -956,6 +1037,8 @@ let rdTexA, rdTexB, rdFboA, rdFboB, rdFlip = false, rdWarm = 0;
 let waterTexA, waterTexB, waterFboA, waterFboB, waterFlip = false, waterWasActive = false;
 let sceneTex, sceneFbo, fogTexture, surfaceTexture=null;
 let meshTexA=null, meshTexB=null, meshFboA=null, meshFboB=null, meshFlip=false;
+let datamoshSourceTex=null,datamoshSourceFbo=null,datamoshTexA=null,datamoshTexB=null,datamoshFboA=null,datamoshFboB=null,datamoshFlip=false;
+let datamoshActive=false,datamoshProgress=0,datamoshReducedMotion=false,lastPostSourceFbo=null;
 let surfAlbedoTex=null, surfNormalTex=null, surfRoughTex=null, surfHeightTex=null, surfDreamTex=null, surfDreamStageTex=null, anisoExt=null, anisoMax=1;
 const SURFACE_LAYERS=10,SURFACE_TILE=512;
 const surfDreamMix=new Float32Array(SURFACE_LAYERS);
@@ -1091,7 +1174,8 @@ function surfaceDreamBlend(nowMs=globalThis.performance?.now?.()||Date.now()){
 }
 export function r3dSurfaceDreamStats(){const look=currentLook();return{active:[...surfDreamMix].filter((v)=>v>0).length,mix:[...surfDreamMix],local:look.material.localDiffusion*localDiffusionAvailability,bank:surfDreamActiveBank,pendingBank:surfDreamPendingBank,transitioning:surfDreamNextReady};}
 export function r3dSurfaceStats(){return{albedo:!!surfAlbedoTex,normal:!!surfNormalTex,roughness:!!surfRoughTex,height:!!surfHeightTex,ready:!!(surfAlbedoTex&&surfNormalTex&&surfRoughTex&&surfHeightTex)};}
-let planTexture = null, materialTexture = null, planW = 0, planH = 0;
+let planTexture = null, materialTexture = null, sourceLayerTexture = null, planW = 0, planH = 0;
+let planOriginX = 0, planOriginY = 0, sourceSurfaceTexture = null;
 let uniforms = {};
 let facing = 0; // 0=N(0,-1) 1=E 2=S 3=W
 let yaw = 0, yawTarget = 0;
@@ -1193,6 +1277,62 @@ function postU(name) {
   return postUniformCache.get(name);
 }
 
+const DATAMOSH_FRAG=`#version 300 es
+precision highp float;
+uniform sampler2D uSource;
+uniform sampler2D uTower;
+uniform sampler2D uPrevious;
+uniform vec2 uResolution;
+uniform float uProgress;
+uniform float uTime;
+uniform float uReducedMotion;
+out vec4 outColor;
+float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
+void main(){
+  vec2 uv=gl_FragCoord.xy/uResolution;
+  vec2 blockId=floor(uv*vec2(40.0,23.0));
+  float seed=hash(blockId+floor(uProgress*36.0));
+  vec2 motion=vec2(hash(blockId+11.0)-.5,hash(blockId+29.0)-.5);
+  motion*=mix(.002,.045,uProgress)*(1.0-uReducedMotion);
+  motion.x+=sin(uTime*1.7+blockId.y)*.006*uProgress*(1.0-uReducedMotion);
+  vec3 source=texture(uSource,uv+motion*.25).rgb;
+  vec3 tower=texture(uTower,uv-motion).rgb;
+  vec3 previous=texture(uPrevious,uv-motion*.7).rgb;
+  float reveal=smoothstep(seed-.12,seed+.12,uProgress);
+  vec3 current=mix(source,tower,reveal);
+  float retention=(1.0-uReducedMotion)*mix(.15,.78,uProgress)*step(.18,seed);
+  vec3 carried=mix(current,previous,retention);
+  float chroma=.009*uProgress*(1.0-uReducedMotion);
+  carried.r=mix(carried.r,texture(uTower,uv+vec2(chroma,0)).r,reveal);
+  carried.b=mix(carried.b,texture(uSource,uv-vec2(chroma,0)).b,1.0-reveal);
+  outColor=vec4(carried,1.0);
+}`;
+
+export function r3dBeginDatamosh({reducedMotion=false}={}){
+  if(!gl||!lastPostSourceFbo||!datamoshSourceFbo)return false;
+  gl.bindFramebuffer(gl.READ_FRAMEBUFFER,lastPostSourceFbo);
+  gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER,datamoshSourceFbo);
+  gl.blitFramebuffer(0,0,uniforms.sceneW,uniforms.sceneH,0,0,uniforms.sceneW,uniforms.sceneH,gl.COLOR_BUFFER_BIT,gl.NEAREST);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+  datamoshActive=true;datamoshProgress=0;datamoshReducedMotion=!!reducedMotion;datamoshFlip=false;
+  return true;
+}
+export function r3dSetDatamoshProgress(value){datamoshProgress=Math.max(0,Math.min(1,Number(value)||0));return datamoshProgress;}
+export function r3dEndDatamosh(){datamoshActive=false;datamoshProgress=0;return true;}
+export function r3dDatamoshStatus(){return{active:datamoshActive,progress:datamoshProgress,reducedMotion:datamoshReducedMotion};}
+
+function runDatamoshPass(towerTex,now){
+  if(!datamoshActive||!progDatamosh||!datamoshSourceTex)return towerTex;
+  const dstFbo=datamoshFlip?datamoshFboA:datamoshFboB,dstTex=datamoshFlip?datamoshTexA:datamoshTexB,previous=datamoshFlip?datamoshTexB:datamoshTexA;datamoshFlip=!datamoshFlip;
+  gl.useProgram(progDatamosh);gl.bindFramebuffer(gl.FRAMEBUFFER,dstFbo);gl.viewport(0,0,uniforms.sceneW,uniforms.sceneH);
+  const u=(name)=>gl.getUniformLocation(progDatamosh,name);
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,datamoshSourceTex);gl.uniform1i(u('uSource'),0);
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,towerTex);gl.uniform1i(u('uTower'),1);
+  gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,previous||datamoshSourceTex);gl.uniform1i(u('uPrevious'),2);
+  gl.uniform2f(u('uResolution'),uniforms.sceneW,uniforms.sceneH);gl.uniform1f(u('uProgress'),datamoshProgress);gl.uniform1f(u('uTime'),now);gl.uniform1f(u('uReducedMotion'),datamoshReducedMotion?1:0);
+  gl.drawArrays(gl.TRIANGLES,0,3);gl.bindFramebuffer(gl.FRAMEBUFFER,null);return dstTex;
+}
+
 function runPixelMeshPass(state, now) {
   pixelMeshStatus.framesSeen += 1;
   pixelMeshStatus.shaderReady = !!progPixelMesh;
@@ -1258,6 +1398,7 @@ function runPixelMeshPass(state, now) {
   pixelMeshStatus.lastError = null;
   reportGlError('pixel mesh pass');
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  lastPostSourceFbo=dstFbo;
   return dstTex;
 }
 function loadImageTexture(url){
@@ -1283,6 +1424,7 @@ export function r3dInit(mapEl) {
   progMarch = program(MARCH_FRAG);
   progPost = program(POST_FRAG);
   progDepth = program(DEPTH_FRAG);
+  progDatamosh = program(DATAMOSH_FRAG);
   try {
     progPixelMesh = program(PIXEL_MESH_FRAG);
     pixelMeshStatus.shaderReady = true;
@@ -1339,7 +1481,7 @@ export function r3dInit(mapEl) {
   fogTexture = makeTex(FOG_TEX, FOG_TEX, new Uint8Array(FOG_TEX * FOG_TEX).fill(255), 'r8');
   resize();
   P3.loadPropPack(assetUrl('assets/conservatory-props.glb'))
-    .then(()=>P3.addPropPack(assetUrl('assets/metal-door.glb')))
+    .then(()=>P3.addPropPack(assetUrl('assets/conservatory-doors.glb')))
     .then(()=>P3.addPropPack(assetUrl('assets/tuning-fork.glb')))
     .catch((err)=>console.warn('prop pack unavailable',err));
   P3.loadPortraitAtlas(assetUrl('assets/portraits/portrait-atlas.webp'))
@@ -1366,12 +1508,15 @@ function resize() {
     gl.deleteTexture(meshTexA); gl.deleteTexture(meshTexB);
     gl.deleteFramebuffer(meshFboA); gl.deleteFramebuffer(meshFboB);
   }
+  for(const item of [[datamoshSourceTex,datamoshSourceFbo],[datamoshTexA,datamoshFboA],[datamoshTexB,datamoshFboB]]){if(item[0])gl.deleteTexture(item[0]);if(item[1])gl.deleteFramebuffer(item[1]);}
   sceneTex = makeTex(sw, sh);
   sceneFbo = makeFbo(sceneTex);
   meshTexA = makeMeshTex(sw, sh);
   meshTexB = makeMeshTex(sw, sh);
   meshFboA = makeFbo(meshTexA);
   meshFboB = makeFbo(meshTexB);
+  datamoshSourceTex=makeMeshTex(sw,sh);datamoshSourceFbo=makeFbo(datamoshSourceTex);
+  datamoshTexA=makeMeshTex(sw,sh);datamoshTexB=makeMeshTex(sw,sh);datamoshFboA=makeFbo(datamoshTexA);datamoshFboB=makeFbo(datamoshTexB);
   meshFlip = false;
   lastPixelMeshAt = 0;
   pixelMeshStatus.sceneWidth = sw;
@@ -1404,11 +1549,14 @@ export function r3dSetFacing(f) {
 // The authored building, as the shader sees it. This is literally the array
 // JS collision reads (world/floorplan.js `rgba`), so there is nothing to keep
 // in sync — the drawn wall IS the solid wall.
-export function r3dSetPlan(rgba, w, h, material = null) {
+export function r3dSetPlan(rgba, w, h, material = null, options = {}) {
   if (!gl) return;
   planW = w; planH = h;
+  planOriginX = Number(options.originX) || 0;
+  planOriginY = Number(options.originY) || 0;
   if (planTexture) gl.deleteTexture(planTexture);
   if (materialTexture) gl.deleteTexture(materialTexture);
+  if (sourceLayerTexture) gl.deleteTexture(sourceLayerTexture);
   planTexture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, planTexture);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, rgba);
@@ -1426,11 +1574,58 @@ export function r3dSetPlan(rgba, w, h, material = null) {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+  const sourceLayer = options.sourceLayer || new Uint8Array(w * h);
+  sourceLayerTexture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, sourceLayerTexture);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, w, h, 0, gl.RED, gl.UNSIGNED_BYTE, sourceLayer);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 }
 
 export function r3dSetProps(instances) { P3.setPropInstances(instances); }
+export function r3dSetDynamicProps(instances) { P3.setDynamicPropInstances(instances); }
+export function r3dSetSourceTextInstances(instances) { P3.setSourceTextInstances(instances); }
 export function r3dSetHushProp(id) { P3.setHushProp(id); }
 export function r3dPropStats() { return P3.propPackStats(); }
+
+// Rasterise only exact corpus lines into the material atlas. The texture is a
+// data source for albedo, glyph-edge normals and roughness; source materials do
+// not sample the conventional surface arrays.
+export function r3dSetSourceSurface(lines = []) {
+  if (!gl || typeof document === 'undefined') return false;
+  const canvas = document.createElement('canvas');
+  canvas.width = 2048; canvas.height = 2048;
+  const ctx = canvas.getContext('2d', { alpha: false });
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.font = '20px monospace'; ctx.textBaseline = 'top';
+  const exact = (Array.isArray(lines) ? lines : []).map((line) => String(line?.text ?? line)).filter(Boolean);
+  const palette = ['#08ef43', '#06bfff', '#eff3df', '#ff3028'];
+  const grouped=new Map();
+  for(const line of Array.isArray(lines)?lines:[]){const layer=Math.max(1,Math.min(8,Number(line?.sourceLayer)||1));if(!grouped.has(layer))grouped.set(layer,[]);grouped.get(layer).push(String(line?.text??line));}
+  for(let layer=1;layer<=8;layer+=1){
+    const layerLines=grouped.get(layer)||exact;
+    for(let row=0;row<11;row+=1){
+      const text=layerLines.length?layerLines[row%layerLines.length]:'';
+      ctx.fillStyle=palette[(layer+row)%palette.length];
+      ctx.fillText(text,4,(layer-1)*256+row*22+4);
+    }
+  }
+  if (sourceSurfaceTexture) gl.deleteTexture(sourceSurfaceTexture);
+  sourceSurfaceTexture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, sourceSurfaceTexture);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
+  gl.generateMipmap(gl.TEXTURE_2D);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+  return true;
+}
 
 // A mutation touched a few cells: re-upload only those.
 export function r3dPatchPlan(rgba, materialOrX, xOrY, yOrW, wOrH, maybeH) {
@@ -1612,6 +1807,7 @@ export function r3dFrame(state) {
     camX: camX * CELL, camY: camY * CELL, camZ: camZ * CELL,
     yaw, light: lightEase, fogTexture, fogOrigin, fogSize:FOG_TEX,
     cellMeters:CELL, zoneTints:ZONE_TINTS,
+    localLightCount,localLightPositions,localLightColors,
   });
 
   // march into low-res scene buffer
@@ -1636,6 +1832,9 @@ export function r3dFrame(state) {
   gl.uniform2f(U('uFogOrigin'), fogOrigin[0], fogOrigin[1]);
   gl.uniform1f(U('uAudio'), state.audio);
   gl.uniform1f(U('uLight'), lightEase);
+  gl.uniform1i(U('uLocalLightCount'),localLightCount);
+  gl.uniform4fv(U('uLocalLightPos[0]'),localLightPositions);
+  gl.uniform4fv(U('uLocalLightColor[0]'),localLightColors);
   gl.uniform1f(U('uUsePlan'), state.plan ? 1 : 0);
   if (state.plan && planTexture) {
     gl.activeTexture(gl.TEXTURE2);
@@ -1645,8 +1844,12 @@ export function r3dFrame(state) {
     gl.bindTexture(gl.TEXTURE_2D, materialTexture);
     gl.uniform1i(U('uMat'), 3);
     gl.uniform2f(U('uPlanSize'), planW, planH);
+    gl.uniform2f(U('uPlanOrigin'), planOriginX, planOriginY);
     gl.uniform3fv(U('uZoneTint[0]'), ZONE_TINTS);
   }
+  gl.uniform1f(U('uSourceReady'), sourceSurfaceTexture ? 1 : 0);
+  gl.activeTexture(gl.TEXTURE13);gl.bindTexture(gl.TEXTURE_2D,sourceSurfaceTexture);gl.uniform1i(U('uSourceSurface'),13);
+  gl.activeTexture(gl.TEXTURE14);gl.bindTexture(gl.TEXTURE_2D,sourceLayerTexture);gl.uniform1i(U('uSourceLayer'),14);
   const propTargets=P3.propTargets();
   gl.uniform1f(U('uPropsReady'),propTargets.ready?1:0);
   gl.uniform1f(U('uPropNear'),propTargets.near);
@@ -1697,7 +1900,8 @@ export function r3dFrame(state) {
   gl.uniform4f(U('uHush'), state.hush?.x ?? 0, state.hush?.y ?? 0, state.hush?.strength ?? 0, 0);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 
-  const postSourceTex = runPixelMeshPass(state, now);
+  const pixelSourceTex = runPixelMeshPass(state, now);
+  const postSourceTex = runDatamoshPass(pixelSourceTex,now);
 
   // post upscale to screen
   gl.useProgram(progPost);

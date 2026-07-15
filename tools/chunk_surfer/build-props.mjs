@@ -308,6 +308,107 @@ function addQuad(m,a,b,c,d,mat){const g=group(m,mat),base=g.positions.length/3,u
   addBeam(m,[0,13.02,z0],[0,13.02,z1],.12,MAT.brass);
 }
 
+// Ellery's fictional 1908 ring. Each moving assembly has its own pivoted mesh;
+// these are project-native component silhouettes, not scans or recordings from
+// a real foundry. Local origin is the gudgeon axis used by the runtime matrix.
+for(let id=1;id<=8;id++){
+  const suffix=String(id).padStart(2,'0'),r=.45+id*.035;
+  {
+    const m=mesh(`tower_bell_${suffix}`);
+    addCylinder(m,[0,-.34,0],r*.52,.40,MAT.brass,24);
+    addCylinder(m,[0,-.66,0],r*.72,.30,MAT.brass,24);
+    addCylinder(m,[0,-.88,0],r,.18,MAT.brass,24);
+    addCylinder(m,[0,-.98,0],r*1.08,.08,MAT.brass,24);
+    addBox(m,[0,.04,0],[.92,.18,.18],MAT.steel);
+    addCylinder(m,[-.56,.04,0],.08,.20,MAT.steel,12);
+    addCylinder(m,[.56,.04,0],.08,.20,MAT.steel,12);
+  }
+  {
+    const m=mesh(`tower_wheel_${suffix}`),wr=1.02;
+    for(let i=0;i<16;i++){const a=i*Math.PI*2/16,b=(i+1)*Math.PI*2/16;addBeam(m,[Math.cos(a)*wr,Math.sin(a)*wr,.16],[Math.cos(b)*wr,Math.sin(b)*wr,.16],.075,MAT.wood);}
+    for(let i=0;i<8;i++){const a=i*Math.PI/4;addBeam(m,[0,0,.16],[Math.cos(a)*wr,Math.sin(a)*wr,.16],.055,MAT.wood);}
+    addCylinder(m,[0,0,.16],.14,.12,MAT.steel,14);
+  }
+  {
+    const m=mesh(`tower_clapper_${suffix}`);
+    addCylinder(m,[0,-.62,0],.045,1.12,MAT.steel,10);
+    addCylinder(m,[0,-1.18,0],.13,.20,MAT.steel,14);
+  }
+  {
+    const m=mesh(`tower_stay_${suffix}`);
+    addBeam(m,[0,.02,.18],[0,1.22,.18],.075,MAT.wood);
+    addBox(m,[0,1.22,.18],[.18,.14,.14],MAT.wood);
+  }
+  {
+    const m=mesh(`tower_slider_${suffix}`);
+    addBeam(m,[-.46,1.34,.20],[.46,1.34,.20],.055,MAT.steel);
+    addBox(m,[-.46,1.34,.20],[.12,.12,.18],MAT.steel);
+    addBox(m,[.46,1.34,.20],[.12,.12,.18],MAT.steel);
+  }
+}
+{
+  const m=mesh('tower_frame');
+  // Low cast-iron H sides on a steel grillage: individual bell pits remain
+  // legible, with no generic cage enclosing the whole chamber.
+  for(const z of[-2.35,2.35]){
+    for(const x of[-4.15,-2.08,0,2.08,4.15]){
+      addBox(m,[x,1.38,z],[.24,2.76,.24],MAT.steel);
+      addBox(m,[x,2.68,z],[.62,.18,.24],MAT.steel);
+      addBox(m,[x,.12,z],[.62,.18,.34],MAT.steel);
+    }
+    for(const x of[-3.12,-1.04,1.04,3.12])addBox(m,[x,2.45,z],[1.82,.20,.22],MAT.steel);
+  }
+  for(const x of[-4.15,-2.08,0,2.08,4.15])addBox(m,[x,.10,0],[.22,.20,5.0],MAT.steel);
+  for(const z of[-2.35,2.35])addBox(m,[0,.10,z],[9.0,.20,.28],MAT.steel);
+}
+{const m=mesh('tower_rope');addCylinder(m,[0,1.7,0],.025,3.4,MAT.paper,10);addCylinder(m,[0,.55,0],.075,.62,MAT.paper,12);}
+{const m=mesh('tower_rope_mat');addCylinder(m,[0,.025,0],.52,.05,MAT.cloth,24);addCylinder(m,[0,.055,0],.19,.018,MAT.dark,18);}
+{const m=mesh('tower_clock_hammer');addBeam(m,[0,.1,0],[.55,.95,0],.10,MAT.steel);addCylinder(m,[.62,1.02,0],.18,.24,MAT.steel,14);}
+{const m=mesh('tower_winch');addCylinder(m,[0,.72,0],.42,.34,MAT.steel,18);addCylinder(m,[0,.72,0],.10,.70,MAT.brass,12);addBeam(m,[0,.72,-.28],[.58,1.18,-.28],.07,MAT.brass);addCylinder(m,[.62,1.22,-.28],.09,.22,MAT.wood,12);}
+{const m=mesh('tower_shutters');for(let i=0;i<9;i++)addBox(m,[0,.25+i*.38,0],[3.4,.12,.16],MAT.wood,-.16);}
+{
+  const m=mesh('tower_catwalk');
+  // Four protected perimeter runs plus a single four-metre maintenance strip.
+  addBox(m,[0,.10,-3.25],[11.8,.20,1.35],MAT.steel);
+  addBox(m,[0,.10,3.25],[11.8,.20,1.35],MAT.steel);
+  addBox(m,[-5.25,.10,0],[1.30,.20,5.2],MAT.steel);
+  addBox(m,[5.25,.10,0],[1.30,.20,5.2],MAT.steel);
+  addBox(m,[0,.13,0],[4.0,.16,.82],MAT.steel);
+  for(const z of[-3.92,3.92]){addBeam(m,[-5.8,1.08,z],[5.8,1.08,z],.055,MAT.steel);for(let x=-5.8;x<=5.8;x+=1.45)addCylinder(m,[x,.55,z],.035,1.1,MAT.steel,8);}
+  for(const x of[-5.9,5.9]){addBeam(m,[x,1.08,-3.8],[x,1.08,3.8],.055,MAT.steel);for(let z=-3.8;z<=3.8;z+=1.25)addCylinder(m,[x,.55,z],.035,1.1,MAT.steel,8);}
+}
+{const m=mesh('tower_louvres');for(let i=-7;i<=7;i++)addBox(m,[i*.39,1.75,0],[.24,3.5,.14],MAT.wood,.38);addBox(m,[0,.10,0],[6,.20,.24],MAT.stone);addBox(m,[0,3.4,0],[6,.20,.24],MAT.stone);}
+{const m=mesh('tower_peal_board');addBox(m,[0,.62,0],[1.8,1.24,.07],MAT.dark);addBox(m,[0,.62,-.045],[1.62,1.06,.025],MAT.black);for(let y=.28;y<=.96;y+=.17)addBox(m,[0,y,-.065],[1.35,.018,.012],MAT.brass);}
+{
+  const m=mesh('tower_organ_case');addBox(m,[0,2.1,.35],[5.8,4.2,.70],MAT.dark);
+  for(let i=-13;i<=13;i++){const h=1.6+(1-Math.abs(i)/14)*2.0;addCylinder(m,[i*.19,1.0+h/2,-.08],.055,h,MAT.steel,10);}
+  for(const x of[-2.65,0,2.65])addBox(m,[x,2.2,-.10],[.18,4.1,.22],MAT.wood);
+  addBox(m,[0,.32,-.16],[5.45,.42,.20],MAT.wood);
+}
+{const m=mesh('tower_loft_rail');for(let x=-5;x<=5;x+=1.25)addCylinder(m,[x,.58,0],.035,1.16,MAT.steel,8);for(const y of[.12,.62,1.12])addBeam(m,[-5,y,0],[5,y,0],.05,MAT.steel);}
+{const m=mesh('tower_bulkhead');addBox(m,[0,.18,.08],[.30,.20,.18],MAT.steel);addCylinder(m,[0,.18,-.07],.12,.08,MAT.ivory,14);}
+
+function addDoglegRail(name,rise,rises,down=false){
+  const m=mesh(name),sign=down?-1:1,half=rise/2,run=rises===12?6:5,end=2+run;
+  const a0=[2,sign*.08,0],a1=[end,sign*half,0],b0=[end,sign*half,3],b1=[2,sign*rise,3];
+  for(const z of[-.65,.65])addBeam(m,[a0[0],a0[1]+.92,a0[2]+z],[a1[0],a1[1]+.92,a1[2]+z],.055,MAT.steel);
+  for(const z of[-.65,.65])addBeam(m,[b0[0],b0[1]+.92,b0[2]+z],[b1[0],b1[1]+.92,b1[2]+z],.055,MAT.steel);
+  for(const p of[a0,a1,b0,b1])addCylinder(m,[p[0],p[1]+.48,p[2]],.045,.96,MAT.steel,8);
+  addBeam(m,[end,sign*half+.92,0],[end,sign*half+.92,3],.055,MAT.steel);
+  for(let i=0;i<=rises;i++){
+    const t=i/rises,x=2+run*t,y=sign*half*t;
+    addBox(m,[x,y+.015,0],[.08,.03,1.48],MAT.ivory);
+    addBox(m,[end-run*t,sign*(half+half*t)+.015,3],[.08,.03,1.48],MAT.ivory);
+  }
+  for(const [x,z,y] of[[0,0,0],[end,0,half],[end,3,half],[0,3,rise]])addCylinder(m,[x,sign*y+.55,z],.075,1.10,MAT.stone,10);
+}
+addDoglegRail('tower_stair_rail_low_up',3.8,10,false);
+addDoglegRail('tower_stair_rail_high_up',4.6,12,false);
+addDoglegRail('tower_stair_rail_high_down',4.6,12,true);
+addDoglegRail('tower_stair_rail_low_down',3.8,10,true);
+{const m=mesh('chapel_inner_screen');for(const x of[-2.8,-1.4,0,1.4,2.8])addBox(m,[x,1.8,0],[.16,3.6,.18],MAT.wood);for(const y of[.15,1.8,3.45])addBox(m,[0,y,0],[6,.15,.18],MAT.wood);}
+{const m=mesh('tower_plaque');addBox(m,[0,.38,0],[1.35,.76,.05],MAT.brass);addBox(m,[0,.38,-.03],[1.18,.59,.025],MAT.dark);}
+
 // Real source models replace (or add) named meshes. Each overwrites the
 // procedural mesh of the same name; new names (violin, plant_pipes) are added.
 // A missing file leaves the procedural fallback in place.

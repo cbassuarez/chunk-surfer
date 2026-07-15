@@ -123,6 +123,10 @@ export function captureFloorplanMapSource({
       height: Number(projected.height ?? projected.y) || 0,
     };
   });
+  const landmarks=(definition.landmarks||[]).map((landmark)=>{
+    const projected=projectLogical(landmark.logical),floor=floorForHeight(definition,projected.height??projected.y);
+    return{...landmark,floorId:floor?.id||null,position:{x:Number(projected.x)/stride,y:Number(projected.z??projected.mapY??projected.y)/stride},height:Number(projected.height??projected.y)||0};
+  });
 
   const connectors = [];
   for (let index = 0; index < stairPortals.length; index++) {
@@ -145,11 +149,11 @@ export function captureFloorplanMapSource({
   }
 
   const source = {
-    version: 1,
+    version: definition.version,
     definition,
     topologyStride: stride,
     floors,
-    targets,
+    targets,landmarks,
     connectors,
     physicalWidth: Math.ceil((physical.width || 1) / stride),
     physicalHeight: Math.ceil((physical.height || 1) / stride),
@@ -192,6 +196,7 @@ function normalizePlayer(source, player) {
       || !Number.isFinite(player.height)) {
     return {
       resolved: false, floorId: null, roomId: player?.roomId || null,
+      areaLabel: player?.areaLabel || null,
       position: null, heading: Number(player?.heading) || 0,
     };
   }
@@ -200,6 +205,7 @@ function normalizePlayer(source, player) {
     resolved: !!floor,
     floorId: floor?.id || null,
     roomId: player.roomId || null,
+    areaLabel: player.areaLabel || null,
     position: { x: player.x / stride, y: player.y / stride },
     heading: Number(player.heading) || 0,
   };
@@ -220,6 +226,7 @@ export function buildMapModel({
   doors = [],
   contacts = [],
   navigation = null,
+  landmarkState = {},
 } = {}) {
   if (!source) {
     const rooms = Array.isArray(job?.rooms) ? job.rooms : [];
@@ -237,7 +244,7 @@ export function buildMapModel({
     const waypointSpace = spaces.find((space) => space.roomId === objective?.target) || null;
     return {
       version:1, floors:[fallbackFloor], connectors:[], doors:[], spaces,
-      player:{resolved:false,floorId:'unknown',roomId:player?.roomId||null,position:null,heading:Number(player?.heading)||0},
+      player:{resolved:false,floorId:'unknown',roomId:player?.roomId||null,areaLabel:player?.areaLabel||null,position:null,heading:Number(player?.heading)||0},
       waypoint:waypointSpace?{roomId:waypointSpace.roomId,spaceId:waypointSpace.id,floorId:'unknown',position:null}:null,
       route:{status:'unresolved',points:[],nextConnectorId:null,floorDelta:0}, contacts:[],
       progress:{done:Number(job?.done)||0,total:Number(job?.total)||spaces.length},
@@ -279,6 +286,11 @@ export function buildMapModel({
       },
     };
   });
+  for(const landmark of source.landmarks||[]){
+    const live=landmarkState?.[landmark.id]||{};
+    if(!live.visible)continue;
+    spaces.push({id:landmark.id,kind:'landmark',roomId:null,floorId:landmark.floorId,label:String(live.label||landmark.label).toUpperCase(),shortLabel:landmark.shortLabel||'LAND',position:landmark.position,selectable:landmark.selectable!==false,waypointable:false,visibility:'discovered',current:false,waypoint:false,objective:null});
+  }
 
   const waypointSpace = spaces.find((space) => space.roomId === objective?.target) || null;
   const waypoint = waypointSpace ? {
@@ -305,7 +317,7 @@ export function buildMapModel({
   for (const space of spaces) if (!space.floorId || !space.position) warnings.push(`${space.label}: POSITION UNAVAILABLE`);
 
   return {
-    version: 1,
+    version: 2,
     sourceVersion: source.version,
     topologyStride: source.topologyStride,
     floors: source.floors,
@@ -327,6 +339,13 @@ export function buildMapModel({
 
 export function mapFloor(model, floorId) {
   return model?.floors?.find((floor) => floor.id === floorId) || null;
+}
+
+export function mapCurrentAreaLabel(model) {
+  const roomId = model?.player?.roomId;
+  if (roomId) return mapSpaceByRoom(model, roomId)?.label || roomId;
+  if (model?.player?.areaLabel) return String(model.player.areaLabel).toUpperCase();
+  return mapFloor(model, model?.player?.floorId)?.label || 'POSITION UNKNOWN';
 }
 
 export function mapSpace(model, spaceId) {

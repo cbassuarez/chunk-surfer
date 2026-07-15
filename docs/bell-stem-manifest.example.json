@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "sampleRate": 48000,
+  "contactAlignment": "sample-offset",
+  "entries": [
+    { "bell": 1, "stroke": "hand", "variation": 0, "url": "/assets/audio/bell-tower/bell-01-hand-01.wav", "contactOffsetSamples": 0, "gainDb": 0, "licenseId": null },
+    { "bell": 1, "stroke": "back", "variation": 0, "url": "/assets/audio/bell-tower/bell-01-back-01.wav", "contactOffsetSamples": 0, "gainDb": 0, "licenseId": null },
+    { "bell": 2, "stroke": "hand", "variation": 0, "url": "/assets/audio/bell-tower/bell-02-hand-01.wav", "contactOffsetSamples": 0, "gainDb": 0, "licenseId": null },
+    { "bell": 2, "stroke": "back", "variation": 0, "url": "/assets/audio/bell-tower/bell-02-back-01.wav", "contactOffsetSamples": 0, "gainDb": 0, "licenseId": null },
+    { "bell": 3, "stroke": "hand", "variation": 0, "url": "/assets/audio/bell-tower/bell-03-hand-01.wav", "contactOffsetSamples": 0, "gainDb": 0, "licenseId": null },
+    { "bell": 3, "stroke": "back", "variation": 0, "url": "/assets/audio/bell-tower/bell-03-back-01.wav", "contactOffsetSamples": 0, "gainDb": 0, "licenseId": null },
+    { "bell": 4, "stroke": "hand", "variation": 0, "url": "/assets/audio/bell-tower/bell-04-hand-01.wav", "contactOffsetSamples": 0, "gainDb": 0, "licenseId": null },
+    { "bell": 4, "stroke": "back", "variation": 0, "url": "/assets/audio/bell-tower/bell-04-back-01.wav", "contactOffsetSamples": 0, "gainDb": 0, "licenseId": null },
+    { "bell": 5, "stroke": "hand", "variation": 0, "url": "/assets/audio/bell-tower/bell-05-hand-01.wav", "contactOffsetSamples": 0, "gainDb": 0, "licenseId": null },
+    { "bell": 5, "stroke": "back", "variation": 0, "url": "/assets/audio/bell-tower/bell-05-back-01.wav", "contactOffsetSamples": 0, "gainDb": 0, "licenseId": null },
+    { "bell": 6, "stroke": "hand", "variation": 0, "url": "/assets/audio/bell-tower/bell-06-hand-01.wav", "contactOffsetSamples": 0, "gainDb": 0, "licenseId": null },
+    { "bell": 6, "stroke": "back", "variation": 0, "url": "/assets/audio/bell-tower/bell-06-back-01.wav", "contactOffsetSamples": 0, "gainDb": 0, "licenseId": null },
+    { "bell": 7, "stroke": "hand", "variation": 0, "url": "/assets/audio/bell-tower/bell-07-hand-01.wav", "contactOffsetSamples": 0, "gainDb": 0, "licenseId": null },
+    { "bell": 7, "stroke": "back", "variation": 0, "url": "/assets/audio/bell-tower/bell-07-back-01.wav", "contactOffsetSamples": 0, "gainDb": 0, "licenseId": null },
+    { "bell": 8, "stroke": "hand", "variation": 0, "url": "/assets/audio/bell-tower/bell-08-hand-01.wav", "contactOffsetSamples": 0, "gainDb": 0, "licenseId": null },
+    { "bell": 8, "stroke": "back", "variation": 0, "url": "/assets/audio/bell-tower/bell-08-back-01.wav", "contactOffsetSamples": 0, "gainDb": 0, "licenseId": null }
+  ]
+}

@@ -1,94 +1,109 @@
 import assert from 'node:assert/strict';
+import { CHUNK_SURF_FLAGS } from '../src/data/chunk-surf-script.js';
+import { buildChunkSurfGodPreset, CHUNK_SURF_GOD_PRESET } from '../src/game/chunk-surf-god.js';
 import {
-  CHUNK_SURF_FLAGS,
-} from '../src/data/chunk-surf-script.js';
-import {
+  CHUNK_SURF_PHASE,
   canOfferChunkSurf,
-  createChunkSurfState,
-  moveChunkSurf,
-  tuneChunkSurf,
-  turnChunkSurf,
-  recordChunkSurf,
-  redactChunkSurf,
   chunkSurfCompletion,
   chunkSurfFlagsForState,
+  freshChunkSurfState,
+  inferLegacyChunkSurf,
+  normalizeChunkSurfState,
+  pageStageForDistance,
+  reduceChunkSurf,
 } from '../src/game/chunk-surf-state.js';
 
-function face(state, dir) {
-  return turnChunkSurf(state, dir);
+const event = (state, type, details = {}) => reduceChunkSurf(state, { type, ...details });
+
+function landscapeState({ best = true } = {}) {
+  let state = freshChunkSurfState({ drankCoffee: true, hasRig: best, seed: 4417, returnPoint: { x: 86, y: 58, facing: 2 } });
+  state = event(state, 'SOURCE_ENTERED', { returnPoint: state.returnPoint });
+  state = event(state, 'HALL_ADVANCED', { distance: 112 });
+  state = event(state, 'HAYSTACK_REACHED', { origin: { x: 0, y: -224 }, slot: 5 });
+  state = event(state, 'HAYSTACK_PAGE_FOUND', { landscapeOrigin: { x: 0, y: -246 } });
+  return event(state, 'TRANSFORMATION_COMPLETED');
 }
 
-function go(state, dir = 'forward') {
-  return moveChunkSurf(state, dir);
+function completeCandidate(redaction = 'body', { best = true } = {}) {
+  let state = landscapeState({ best });
+  for (const id of ['fork-room', 'recordist-loop', 'surfer-origin', 'work-order-loop', 'body-room']) {
+    state = event(state, 'LANDMARK_VISITED', { id });
+    state = event(state, 'LANDMARK_TUNED', { id });
+  }
+  state = event(state, 'LANDMARK_RECORDED', { id: 'body-room' });
+  state = event(state, 'FINAL_REACHED');
+  state = event(state, 'REDACTION_ARMED', { id: redaction });
+  state = event(state, 'REDACTION_CONFIRMED', { id: redaction });
+  return event(state, 'SOURCE_COMPLETED');
 }
 
-function routeToBestCandidate() {
-  let s = createChunkSurfState({ drankCoffee: true, hasRig: true, endingsSeen: ['sacrifice', 'inversion'] });
-  s = go(s); // fork-room
-  s = tuneChunkSurf(s);
-  s = go(s); // recordist-loop
-  s = tuneChunkSurf(s);
-  s = face(s, 'east');
-  s = go(s); // body-room
-  s = tuneChunkSurf(s);
-  s = recordChunkSurf(s);
-  s = face(s, 'south');
-  s = go(s); // surfer-origin
-  s = tuneChunkSurf(s);
-  s = face(s, 'east');
-  s = go(s); // approach
-  s = go(s); // work-order-loop
-  s = tuneChunkSurf(s);
-  s = face(s, 'north');
-  s = go(s); // body-room
-  s = face(s, 'east');
-  s = go(s); // final-page
-  s = tuneChunkSurf(s);
-  return s;
-}
+assert.equal(canOfferChunkSurf({ completedTakes: 3, roomId: 'lux_nova' }), false);
+assert.equal(canOfferChunkSurf({ completedTakes: 4, roomId: 'studio_b3' }), false);
+assert.equal(canOfferChunkSurf({ completedTakes: 4, roomId: 'lux_nova' }), true);
+assert.equal(canOfferChunkSurf({ completedTakes: 4, roomId: 'chapel_approach', alreadyCompleted: true }), false);
 
-assert.equal(canOfferChunkSurf({ completedTakes: 3, roomId: 'lux_nova' }), false, 'does not offer before four takes');
-assert.equal(canOfferChunkSurf({ completedTakes: 4, roomId: 'studio_b3' }), false, 'does not offer away from chapel approach');
-assert.equal(canOfferChunkSurf({ completedTakes: 4, roomId: 'lux_nova' }), true, 'offers at chapel after four takes');
-assert.equal(canOfferChunkSurf({ completedTakes: 4, roomId: 'chapel_approach', alreadyCompleted: true }), false, 'does not offer after completion');
+assert.deepEqual([0, 27.9, 28, 56, 84, 112].map(pageStageForDistance), [0, 0, 1, 2, 3, 4]);
+assert.equal(inferLegacyChunkSurf({flags:{[CHUNK_SURF_FLAGS.entered]:true}}).active,true,'incomplete legacy source saves restart in the Hall');
 
 {
-  let s = createChunkSurfState({ drankCoffee: true, hasRig: true });
-  s = moveChunkSurf(s, 'back');
-  assert.equal(s.scare?.reason, 'turned-back', 'backing out of the first corridor produces the scare');
+  let state = freshChunkSurfState();
+  state = event(state, 'SOURCE_ENTERED', { returnPoint: { x: 4, y: 5 } });
+  state = event(state, 'HALL_ADVANCED', { distance: 84 });
+  state = event(state, 'HALL_ADVANCED', { distance: 20 });
+  assert.equal(state.hallMaxDistance, 84, 'retreat never reverses page escalation');
+  assert.equal(state.pageStage, 3);
+  assert.equal(event(state, 'HAYSTACK_REACHED', { origin: { x: 0, y: -20 } }).phase, CHUNK_SURF_PHASE.HALL, 'haystack cannot begin early');
 }
 
 {
-  let s = createChunkSurfState({ drankCoffee: false, hasRig: true });
-  s = go(s, 'forward');
-  s = tuneChunkSurf(s);
-  assert.equal(s.hasFork, true, 'tuning fork room grants the fork/tool');
-  assert.ok(chunkSurfFlagsForState(s).includes(CHUNK_SURF_FLAGS.fork), 'fork flag is exported');
+  const state = landscapeState();
+  assert.equal(state.phase, CHUNK_SURF_PHASE.LANDSCAPE);
+  assert.equal(state.active, true);
+  assert.deepEqual(state.returnPoint, { x: 86, y: 58, facing: 2 });
 }
 
 {
-  let s = routeToBestCandidate();
-  s = redactChunkSurf(s, 'source');
-  const complete = chunkSurfCompletion(s);
-  assert.equal(complete.completed, true, 'wrong final redaction still completes the rupture');
-  assert.equal(complete.bestEligible, false, 'wrong final redaction does not unlock the fifth ending');
+  const wrong = chunkSurfCompletion(completeCandidate('source'));
+  assert.equal(wrong.completed, true);
+  assert.equal(wrong.bestEligible, false);
 }
 
 {
-  let s = routeToBestCandidate();
-  s = redactChunkSurf(s, 'body');
-  const complete = chunkSurfCompletion(s);
-  assert.equal(complete.completed, true, 'correct final redaction completes the rupture');
-  assert.equal(complete.bestEligible, true, 'full route unlocks the fifth ending');
-  assert.ok(complete.flags.includes(CHUNK_SURF_FLAGS.bestEligible), 'best-ending flag is exported');
-  assert.ok(complete.flags.includes(CHUNK_SURF_FLAGS.correctRedaction), 'correct-redaction flag is exported');
+  const complete = chunkSurfCompletion(completeCandidate('body'));
+  assert.equal(complete.completed, true);
+  assert.equal(complete.bestEligible, true);
+  assert.ok(complete.flags.includes(CHUNK_SURF_FLAGS.bestEligible));
+  assert.ok(complete.flags.includes(CHUNK_SURF_FLAGS.correctRedaction));
 }
 
 {
-  let s = routeToBestCandidate();
-  s = { ...s, profile: { ...s.profile, bestEligible: false } };
-  s = redactChunkSurf(s, 'body');
-  assert.equal(chunkSurfCompletion(s).bestEligible, false, 'no-rig/nonqualified route can learn truth without fifth ending');
+  const complete = chunkSurfCompletion(completeCandidate('body', { best: false }));
+  assert.equal(complete.bestEligible, false, 'route qualification remains part of ending eligibility');
+}
+
+{
+  let state = landscapeState();
+  state = event(state, 'HUSH_CONTACT');
+  assert.equal(state.attempts, 1);
+  assert.equal(state.phase, CHUNK_SURF_PHASE.LANDSCAPE, 'contact preserves spatial progress');
+  assert.equal(normalizeChunkSurfState({ ...state, phase: 'invalid' }).phase, CHUNK_SURF_PHASE.HALL);
+  assert.ok(chunkSurfFlagsForState(event(state, 'LANDMARK_TUNED', { id: 'fork-room' })).includes(CHUNK_SURF_FLAGS.fork));
+}
+
+{
+  const entry=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.HALL_ENTRY);
+  const storm=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.HALL_STORM);
+  const haystack=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.HAYSTACK);
+  const landscape=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.LANDSCAPE);
+  const hunt=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.HUNT);
+  const final=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FINAL);
+  assert.equal(entry.state.phase,CHUNK_SURF_PHASE.HALL);
+  assert.equal(storm.state.pageStage,3);
+  assert.equal(haystack.state.phase,CHUNK_SURF_PHASE.HAYSTACK);
+  assert.equal(landscape.state.phase,CHUNK_SURF_PHASE.LANDSCAPE);
+  assert.equal(hunt.state.hushStage,'hunt');
+  assert.equal(final.state.phase,CHUNK_SURF_PHASE.FINAL);
+  assert.equal(final.state.active,true);
 }
 
 console.log('chunk-surf-state specs passed');

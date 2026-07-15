@@ -36,7 +36,7 @@ export function setLooseProp(id, placement=null){
   const prop={...mesh,...placement,id,rx,ry,x:meters(rx+.5),y:meters(ry+.5),floor:floorplan.floorAt(rx,ry),zone:floorplan.zoneAt(rx,ry),renderGroup:physical?.renderGroup||'',blocks:false};
   instances.push(prop);return prop;
 }
-export function renderInstances({group=null}={}){return instances.filter((p)=>!group||p.renderGroup===group).map((p)=>{const at=floorplan.logicalToPhysical?.(p.rx,p.ry);return{id:p.id,mesh:p.mesh,x:at?at.x*CELL:p.x,y:(p.floor||0)+(p.elevation||0),z:at?at.z*CELL:p.y,yaw:p.yaw||0,scale:p.scale||1,zone:p.zone||0,portraitIndex:p.portraitIndex||0,structural:!!p.structural};});}
+export function renderInstances({group=null}={}){return instances.filter((p)=>!group||p.renderGroup===group).map((p)=>{const at=floorplan.logicalToPhysical?.(p.rx,p.ry);return{id:p.id,mesh:p.mesh,x:at?at.x*CELL:p.x,y:(p.floor||0)+(p.elevation||0),z:at?at.z*CELL:p.y,yaw:p.yaw||0,scale:p.scale||1,scaleX:p.scaleX,scaleY:p.scaleY,scaleZ:p.scaleZ,zone:p.zone||0,portraitIndex:p.portraitIndex||0,structural:!!p.structural};});}
 
 function pointInProp(mx,mz,p,pad=.20){
   const dx=mx-p.x,dz=mz-p.y,c=Math.cos(-(p.yaw||0)),s=Math.sin(-(p.yaw||0));

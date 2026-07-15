@@ -38,6 +38,13 @@ import {
   deleteProfileQueued,
 } from '../platform/storage/storageService.js';
 import { LEGACY_SAVE_KEYS as STORAGE_LEGACY_SAVE_KEYS, LEGACY_PROFILE_KEYS } from '../platform/storage/types.js';
+import { freshChunkSurfState, inferLegacyChunkSurf, normalizeChunkSurfState } from './chunk-surf-state.js';
+import {
+  freshChapelTowerState,
+  inferLegacyChapelTower,
+  normalizeChapelTowerState,
+} from './chapel-tower-state.js';
+import { normalizeDoorSave } from './door-runtime.js';
 
 const SAVE_KEY = 'chunk-surfer:save:v3';
 const LEGACY_SAVE_KEYS = STORAGE_LEGACY_SAVE_KEYS.filter((key) => key !== SAVE_KEY);
@@ -54,11 +61,13 @@ export const freshSave = ({ settings = DEFAULT_SETTINGS, run = null } = {}) => (
   items: [],
   props: { inspected: [], auditioned: [], cycles: {}, hushSeed: 0x43535552, hushCount: 0 },
   encounters: { cleared: [] },
-  doors: { open: [] },
+  doors: { schema: 2, states: {} },
   playSeconds: 0,
   steps: 0,
   bagNav: null,
   hushAudio: null,
+  chunkSurf: freshChunkSurfState(),
+  chapelTower: freshChapelTowerState(),
   settings: normalizeSettings(settings),
   run,
 });
@@ -192,6 +201,14 @@ function normalizeSaveV3(data, meta = null) {
   const hasOldRunState = source.version < SAVE_VERSION && (
     Number(source.steps) > 0 || Object.keys(source.flags || {}).length > 0 || (source.takes || []).length > 0
   );
+  const chunkSurf = source.chunkSurf && typeof source.chunkSurf === 'object'
+    ? normalizeChunkSurfState(source.chunkSurf)
+    : inferLegacyChunkSurf(source);
+  let chapelTower = source.chapelTower && typeof source.chapelTower === 'object'
+    ? normalizeChapelTowerState(source.chapelTower)
+    : inferLegacyChapelTower(source);
+  const inferredTower=inferLegacyChapelTower(source);
+  if(chapelTower.phase==='foreshadow'&&inferredTower.phase!=='foreshadow')chapelTower={...chapelTower,...inferredTower,ropeRoomVisited:chapelTower.ropeRoomVisited,hatchInspected:chapelTower.hatchInspected,hammerIsolated:chapelTower.hammerIsolated,attempts:chapelTower.attempts};
 
   return {
     ...base,
@@ -202,8 +219,10 @@ function normalizeSaveV3(data, meta = null) {
     items: Array.isArray(source.items) ? source.items : [],
     props: { ...base.props, ...(source.props && typeof source.props === 'object' ? source.props : {}) },
     encounters: { ...base.encounters, ...(source.encounters && typeof source.encounters === 'object' ? source.encounters : {}) },
-    doors: { ...base.doors, ...(source.doors && typeof source.doors === 'object' ? source.doors : {}) },
+    doors: normalizeDoorSave(source.doors),
     hushAudio: normalizeHushAudioSave(source.hushAudio),
+    chunkSurf,
+    chapelTower,
     settings,
     run: sanitizeRun(normalizeRun(source.run, {
       meta,

@@ -6,11 +6,12 @@
 // walls the player actually collides with.
 
 import { ROOM_CELLS, TARGETS } from './conservatory-script.js';
+import { BELL_CHAMBER_ANCHOR, ORGAN_LOFT_ANCHOR, RINGING_ROOM_ANCHOR } from './bell-tower-layout.js';
 
 const freezePoint = (point) => Object.freeze({ x: Number(point.x), y: Number(point.y) });
 
 export const BUILDING_MAP = Object.freeze({
-  version: 1,
+  version: 2,
   id: 'ellery-conservatory',
   topologyStride: 2,
   north: Object.freeze({ x: 0, y: -1 }),
@@ -29,8 +30,12 @@ export const BUILDING_MAP = Object.freeze({
       minHeight: 3.25, maxHeight: 6.25,
     }),
     Object.freeze({
-      id: 'u2', order: 2, label: 'UPPER GALLERY', shortLabel: 'U2',
-      minHeight: 6.25, maxHeight: Infinity,
+      id: 'u2', order: 2, label: 'RINGING ROOM / ORGAN LOFT', shortLabel: 'U2',
+      minHeight: 6.25, maxHeight: 11.5,
+    }),
+    Object.freeze({
+      id: 'u3', order: 3, label: 'BELL CHAMBER', shortLabel: 'U3',
+      minHeight: 11.5, maxHeight: Infinity,
     }),
   ]),
 
@@ -43,6 +48,12 @@ export const BUILDING_MAP = Object.freeze({
     selectable: true,
     waypointable: true,
   }))),
+
+  landmarks:Object.freeze([
+    Object.freeze({id:'landmark:ringing-room',label:'RINGING ROOM',shortLabel:'RING',logical:freezePoint(RINGING_ROOM_ANCHOR),visibility:'discovered',selectable:true,waypointable:false}),
+    Object.freeze({id:'landmark:bell-chamber',label:'BELL CHAMBER',shortLabel:'BELL',logical:freezePoint(BELL_CHAMBER_ANCHOR),visibility:'discovered',selectable:true,waypointable:false}),
+    Object.freeze({id:'landmark:organ-loft',label:'ORGAN LOFT',shortLabel:'ORGAN',logical:freezePoint(ORGAN_LOFT_ANCHOR),visibility:'discovered',selectable:true,waypointable:false}),
+  ]),
 
   contact: Object.freeze({
     id: 'contact:hush',

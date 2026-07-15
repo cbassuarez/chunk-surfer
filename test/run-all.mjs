@@ -48,6 +48,7 @@ const tests = [
   'test/diffusion-lens-contract.test.mjs',
   'test/material-cache-contract.test.mjs',
   'test/tuning-fork-asset.test.mjs',
+  'test/door-system.spec.mjs',
   'test/conservatory-space-layout.test.mjs',
   'test/natatorium-water.test.mjs',
   'test/radio-progression.spec.mjs',
@@ -55,6 +56,10 @@ const tests = [
   'test/personalized-interference.spec.mjs',
   'test/chunk-surf-state.spec.mjs',
   'test/chunk-surf-visual.spec.mjs',
+  'test/chapel-tower-state.spec.mjs',
+  'test/bell-tower.spec.mjs',
+  'test/bell-stem-assets.test.mjs',
+  'test/source-tower-transition.spec.mjs',
   'test/narrative-studio.spec.mjs',
 ];
 

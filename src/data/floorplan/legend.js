@@ -41,6 +41,9 @@ export const ZONE = {
   chapel: 7,        // lux_nova
   plant: 8,
   stair: 9,
+  sourceSpace: 10,
+  chapelOuter: 11,
+  bellTower: 12,
 };
 
 // Which world (audio + prompt) a zone belongs to. Corridors borrow the room
@@ -56,6 +59,9 @@ export const ZONE_WORLD = {
   [ZONE.chapel]: 'lux_nova',
   [ZONE.plant]: 'main_b3',
   [ZONE.stair]: 'main_b3',
+  [ZONE.sourceSpace]: 'source_space',
+  [ZONE.chapelOuter]: 'chapel_outer',
+  [ZONE.bellTower]: 'bell_tower',
 };
 
 // Surface identity is deliberately not packed into F. Flags are collision and
@@ -71,6 +77,10 @@ export const MATERIAL = {
   chapelStone: 7,
   metalPlant: 8,
   doorGlassDuct: 9,
+  sourceField: 10,
+  sourcePath: 11,
+  sourcePage: 12,
+  sourceFault: 13,
 };
 
 export function materialForZone(zone) {
@@ -80,7 +90,10 @@ export function materialForZone(zone) {
     case ZONE.hall: return MATERIAL.woodVelvet;
     case ZONE.practice: return MATERIAL.practiceFoam;
     case ZONE.chapel: return MATERIAL.chapelStone;
+    case ZONE.chapelOuter: return MATERIAL.chapelStone;
+    case ZONE.bellTower: return MATERIAL.chapelStone;
     case ZONE.plant: return MATERIAL.metalPlant;
+    case ZONE.sourceSpace: return MATERIAL.sourceField;
     default: return MATERIAL.serviceConcrete;
   }
 }
@@ -116,6 +129,8 @@ export const GLYPHS = {
   'U': { floor: 7.5, ceil: 15.5, zone: 'hall', material: 'woodVelvet' },
   'P': { floor: 0.0, ceil: 4.2, zone: 'practice', material: 'practiceFoam' },
   'C': { floor: 0.0, ceil: 13.0, zone: 'chapel', material: 'chapelStone' },
+  'N': { floor: 0.0, ceil: 3.4, zone: 'chapelOuter', material: 'chapelStone' },
+  'G': { floor: 0.0, ceil: 4.2, zone: 'bellTower', material: 'chapelStone' },
   'M': { floor: 0.0, ceil: 3.8, zone: 'plant', material: 'metalPlant' },
 };
 

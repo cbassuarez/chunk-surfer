@@ -112,7 +112,7 @@ export const PAGE_TURNS = Object.freeze([
 let lastPageTurn = -1;
 let lastPageTurnAt = 0;
 
-export function playPageTurn({ dir = 1 } = {}) {
+export function playPageTurn({ dir = 1, gain = null, pan = null } = {}) {
   const now = (typeof performance !== 'undefined' && performance.now)
     ? performance.now()
     : Date.now();
@@ -129,8 +129,8 @@ export function playPageTurn({ dir = 1 } = {}) {
 
   const forward = dir >= 0;
   return playCue(PAGE_TURNS[i], {
-    gain: 0.16 + Math.random() * 0.06,
+    gain: gain == null ? 0.16 + Math.random() * 0.06 : Math.max(0,Number(gain)||0),
     rate: (forward ? 0.98 : 0.94) + Math.random() * 0.08,
-    pan: (Math.random() * 2 - 1) * 0.10,
+    pan: pan == null ? (Math.random() * 2 - 1) * 0.10 : Math.max(-1,Math.min(1,Number(pan)||0)),
   });
 }

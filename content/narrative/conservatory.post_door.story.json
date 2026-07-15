@@ -72,7 +72,7 @@
         },
         {
           "who": "you",
-          "text": "I'll find it on the way out, when I'm not standing here like this. When I'm not in the middle of a room with my flashlight off.",
+          "text": "I'll find it on the way out, when I'm not standing here like this. When I'm not in the middle of a room with my torch off.",
           "id": "self.line.8"
         },
         {
@@ -87,7 +87,7 @@
         },
         {
           "who": "you",
-          "text": "Speaking of, let's find that flashlight. It should be in my bag, I just had it a second ago.",
+          "text": "Speaking of, let's find that torch. It should be in my bag, I just had it a second ago.",
           "id": "self.line.11"
         },
         {
@@ -190,7 +190,7 @@
         },
         {
           "who": "you",
-          "text": "I'll find it on the way out, when I'm not standing here like this. When I'm not in the middle of a room with my flashlight off.",
+          "text": "I'll find it on the way out, when I'm not standing here like this. When I'm not in the middle of a room with my torch off.",
           "id": "guard.line.8"
         },
         {
@@ -205,7 +205,7 @@
         },
         {
           "who": "you",
-          "text": "Speaking of, let's find that flashlight. It should be in my bag, I just had it a second ago.",
+          "text": "Speaking of, let's find that torch. It should be in my bag, I just had it a second ago.",
           "id": "guard.line.11"
         },
         {
@@ -302,7 +302,7 @@
         },
         {
           "who": "you",
-          "text": "I'll find it on the way out, when I'm not standing here like this. When I'm not in the middle of a room with my flashlight off.",
+          "text": "I'll find it on the way out, when I'm not standing here like this. When I'm not in the middle of a room with my torch off.",
           "id": "tape.line.8"
         },
         {
@@ -317,7 +317,7 @@
         },
         {
           "who": "you",
-          "text": "Speaking of, let's find that flashlight. It should be in my bag, I just had it a second ago.",
+          "text": "Speaking of, let's find that torch. It should be in my bag, I just had it a second ago.",
           "id": "tape.line.11"
         },
         {

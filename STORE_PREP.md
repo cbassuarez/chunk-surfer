@@ -1,5 +1,11 @@
 # Storefront Prep
 
+## Canonical storefront copy
+
+Use [`docs/storefront-copy.md`](docs/storefront-copy.md) as the canonical source for manual itch.io and Steam updates. It contains paste-ready descriptions, the research rationale, release-managed beta and privacy notices, media order, and the pre-publication verification checklist.
+
+Publication remains a webmaster action. After updating itch.io, verify the page while logged out and on a mobile viewport; preview the Steam short description and About section in Steamworks before submission.
+
 ## itch.io
 
 - Zip artifacts per OS after unsigned build validation.

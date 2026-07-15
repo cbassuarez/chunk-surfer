@@ -12,6 +12,7 @@ import {
   resetControllerSettings,
   setControllerBinding,
 } from './bindings.js';
+import { applyVfdDomTheme } from '../render/vfd-dom.js';
 
 function esc(text) {
   return String(text ?? '').replace(/[&<>"']/g, (ch) => ({
@@ -47,18 +48,19 @@ export function renderControllerOverlayHtml(model, { padName = 'NO CONTROLLER' }
     ? promptLine([{ action: 'select', label: 'ACTION' }, { action: 'confirm', label: 'REMAP' }, { action: 'back', label: 'BACK' }])
     : '[UP / DOWN] ACTION · [ENTER / SPACE] REMAP · [R] RESET · [ESC] BACK';
   return `
-    <div class="cs-controller-panel ${model.mode === 'stacked' ? 'is-stacked' : 'is-split'}">
-      <header class="cs-controller-header">
+    <div class="cs-controller-panel cs-machine-panel ${model.mode === 'stacked' ? 'is-stacked' : 'is-split'}">
+      <header class="cs-controller-header cs-machine-header">
         <div>
-          <div class="cs-controller-eyebrow">AUDIOCORP INPUT SERVICE</div>
-          <h1>Controller Setup</h1>
+          <div class="cs-controller-eyebrow"><span class="cs-machine-wordmark">AUDIOCORP</span> INPUT SERVICE</div>
+          <h1 class="cs-machine-phosphor">Controller Setup</h1>
         </div>
-        <div class="cs-controller-status">
+        <div class="cs-controller-status cs-machine-header__source">
+          <span>SOURCE</span>
           <span>${esc(padName || 'NO CONTROLLER')}</span>
           <strong>${esc(model.family.toUpperCase())}</strong>
         </div>
       </header>
-      <main class="cs-controller-main">
+      <main class="cs-controller-main cs-machine-glass">
         <section class="cs-controller-diagram" aria-label="Controller diagram">
           <svg viewBox="0 0 100 86" role="img" aria-label="Controller map">
             <path class="cs-pad-shell" d="M18 33 C23 21 36 27 43 30 L57 30 C64 27 77 21 82 33 C88 47 91 67 82 72 C76 76 68 65 61 62 L39 62 C32 65 24 76 18 72 C9 67 12 47 18 33 Z"/>
@@ -72,7 +74,7 @@ export function renderControllerOverlayHtml(model, { padName = 'NO CONTROLLER' }
           ${actions}
         </section>
       </main>
-      <footer class="cs-controller-footer">
+      <footer class="cs-controller-footer cs-machine-footer">
         ${footer.split(' · ').map((part) => `<span>${esc(part)}</span>`).join('')}
       </footer>
     </div>
@@ -141,6 +143,7 @@ export function makeControllerSettingsScene({
 
   function renderHtml() {
     if (!host) return;
+    applyVfdDomTheme(host, 'amber');
     host.innerHTML = renderControllerOverlayHtml(model(), { padName: getPadName() });
   }
 
@@ -154,7 +157,7 @@ export function makeControllerSettingsScene({
       const doc = globalThis.document;
       if (!doc?.body) return;
       host = doc.createElement('div');
-      host.className = 'cs-controller-overlay';
+      host.className = 'cs-controller-overlay cs-machine-overlay';
       host.setAttribute('role', 'dialog');
       host.setAttribute('aria-modal', 'true');
       doc.body.appendChild(host);

@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-14T11:57:16.970Z",
-  "bytes": 850204,
-  "totalTriangles": 11858,
+  "generatedAt": "2026-07-15T06:17:35.652Z",
+  "bytes": 1782320,
+  "totalTriangles": 26486,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -158,6 +158,238 @@
     "chapel_vault": {
       "triangles": 280,
       "vertices": 560
+    },
+    "tower_bell_01": {
+      "triangles": 492,
+      "vertices": 540
+    },
+    "tower_wheel_01": {
+      "triangles": 344,
+      "vertices": 638
+    },
+    "tower_clapper_01": {
+      "triangles": 96,
+      "vertices": 108
+    },
+    "tower_stay_01": {
+      "triangles": 24,
+      "vertices": 48
+    },
+    "tower_slider_01": {
+      "triangles": 36,
+      "vertices": 72
+    },
+    "tower_bell_02": {
+      "triangles": 492,
+      "vertices": 540
+    },
+    "tower_wheel_02": {
+      "triangles": 344,
+      "vertices": 638
+    },
+    "tower_clapper_02": {
+      "triangles": 96,
+      "vertices": 108
+    },
+    "tower_stay_02": {
+      "triangles": 24,
+      "vertices": 48
+    },
+    "tower_slider_02": {
+      "triangles": 36,
+      "vertices": 72
+    },
+    "tower_bell_03": {
+      "triangles": 492,
+      "vertices": 540
+    },
+    "tower_wheel_03": {
+      "triangles": 344,
+      "vertices": 638
+    },
+    "tower_clapper_03": {
+      "triangles": 96,
+      "vertices": 108
+    },
+    "tower_stay_03": {
+      "triangles": 24,
+      "vertices": 48
+    },
+    "tower_slider_03": {
+      "triangles": 36,
+      "vertices": 72
+    },
+    "tower_bell_04": {
+      "triangles": 492,
+      "vertices": 540
+    },
+    "tower_wheel_04": {
+      "triangles": 344,
+      "vertices": 638
+    },
+    "tower_clapper_04": {
+      "triangles": 96,
+      "vertices": 108
+    },
+    "tower_stay_04": {
+      "triangles": 24,
+      "vertices": 48
+    },
+    "tower_slider_04": {
+      "triangles": 36,
+      "vertices": 72
+    },
+    "tower_bell_05": {
+      "triangles": 492,
+      "vertices": 540
+    },
+    "tower_wheel_05": {
+      "triangles": 344,
+      "vertices": 638
+    },
+    "tower_clapper_05": {
+      "triangles": 96,
+      "vertices": 108
+    },
+    "tower_stay_05": {
+      "triangles": 24,
+      "vertices": 48
+    },
+    "tower_slider_05": {
+      "triangles": 36,
+      "vertices": 72
+    },
+    "tower_bell_06": {
+      "triangles": 492,
+      "vertices": 540
+    },
+    "tower_wheel_06": {
+      "triangles": 344,
+      "vertices": 638
+    },
+    "tower_clapper_06": {
+      "triangles": 96,
+      "vertices": 108
+    },
+    "tower_stay_06": {
+      "triangles": 24,
+      "vertices": 48
+    },
+    "tower_slider_06": {
+      "triangles": 36,
+      "vertices": 72
+    },
+    "tower_bell_07": {
+      "triangles": 492,
+      "vertices": 540
+    },
+    "tower_wheel_07": {
+      "triangles": 344,
+      "vertices": 638
+    },
+    "tower_clapper_07": {
+      "triangles": 96,
+      "vertices": 108
+    },
+    "tower_stay_07": {
+      "triangles": 24,
+      "vertices": 48
+    },
+    "tower_slider_07": {
+      "triangles": 36,
+      "vertices": 72
+    },
+    "tower_bell_08": {
+      "triangles": 492,
+      "vertices": 540
+    },
+    "tower_wheel_08": {
+      "triangles": 344,
+      "vertices": 638
+    },
+    "tower_clapper_08": {
+      "triangles": 96,
+      "vertices": 108
+    },
+    "tower_stay_08": {
+      "triangles": 24,
+      "vertices": 48
+    },
+    "tower_slider_08": {
+      "triangles": 36,
+      "vertices": 72
+    },
+    "tower_frame": {
+      "triangles": 540,
+      "vertices": 1080
+    },
+    "tower_rope": {
+      "triangles": 88,
+      "vertices": 100
+    },
+    "tower_rope_mat": {
+      "triangles": 168,
+      "vertices": 180
+    },
+    "tower_clock_hammer": {
+      "triangles": 68,
+      "vertices": 86
+    },
+    "tower_winch": {
+      "triangles": 180,
+      "vertices": 210
+    },
+    "tower_shutters": {
+      "triangles": 108,
+      "vertices": 216
+    },
+    "tower_catwalk": {
+      "triangles": 1068,
+      "vertices": 1356
+    },
+    "tower_louvres": {
+      "triangles": 204,
+      "vertices": 408
+    },
+    "tower_peal_board": {
+      "triangles": 72,
+      "vertices": 144
+    },
+    "tower_organ_case": {
+      "triangles": 1140,
+      "vertices": 1362
+    },
+    "tower_loft_rail": {
+      "triangles": 324,
+      "vertices": 414
+    },
+    "tower_bulkhead": {
+      "triangles": 68,
+      "vertices": 86
+    },
+    "tower_stair_rail_low_up": {
+      "triangles": 612,
+      "vertices": 984
+    },
+    "tower_stair_rail_high_up": {
+      "triangles": 660,
+      "vertices": 1080
+    },
+    "tower_stair_rail_high_down": {
+      "triangles": 660,
+      "vertices": 1080
+    },
+    "tower_stair_rail_low_down": {
+      "triangles": 612,
+      "vertices": 984
+    },
+    "chapel_inner_screen": {
+      "triangles": 96,
+      "vertices": 192
+    },
+    "tower_plaque": {
+      "triangles": 24,
+      "vertices": 48
     }
   }
 }

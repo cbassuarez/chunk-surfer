@@ -1,6 +1,6 @@
 [package]
 name = "chunk-surfer"
-version = "0.1.0-beta.6"
+version = "0.1.1-beta.1"
 description = "Chunk Surfer desktop shell"
 authors = ["cbassuarez"]
 edition = "2021"

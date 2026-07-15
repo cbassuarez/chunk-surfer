@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
+import { createServer } from 'node:net';
+import { transform } from 'esbuild';
 import { applyMutations, evaluateCondition, interpolateStoryText } from '../src/narrative/conditions.js';
 import { createNarrativeExecutor } from '../src/narrative/executor.js';
 import { reachableNodeIds, validateAudioProject, validateMediaProject, validateNarrativeDocument, validateProjectManifest } from '../src/narrative/contracts.js';
@@ -139,5 +142,48 @@ const fakeContext = {
 const player = createCuePlayer({ context: fakeContext, destination: fakeContext.destination, loadBuffer: async () => ({ duration: 3 }) });
 await player.play({ id: 'automation-test', layers: [{ id: 'automation-test.layer.1', assetId: 'asset', automation: [{ parameter: 'gain', points: [{ time: 0, value: .25 }, { time: .5, value: .75 }] }] }] }, new Map([['asset', { id: 'asset', kind: 'file', path: 'x.wav' }]]));
 assert.ok(automationCalls.some((call) => call[0] === 'ramp' && call[1] === .75 && call[2] === 10.5));
+
+const port = await new Promise((resolve, reject) => {
+  const probe = createServer();
+  probe.once('error', reject);
+  probe.listen(0, '127.0.0.1', () => {
+    const address = probe.address();
+    probe.close((error) => error ? reject(error) : resolve(address.port));
+  });
+});
+const studio = spawn(process.execPath, ['tools/narrative-studio/server.mjs'], {
+  cwd: process.cwd(),
+  env: { ...process.env, STUDIO_PORT: String(port), STUDIO_NO_OPEN: '1' },
+  stdio: ['ignore', 'pipe', 'pipe'],
+});
+let studioOutput = '';
+studio.stdout.on('data', (chunk) => { studioOutput += chunk; });
+studio.stderr.on('data', (chunk) => { studioOutput += chunk; });
+try {
+  await new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error(`studio did not start\n${studioOutput}`)), 10_000);
+    const poll = setInterval(() => {
+      if (!studioOutput.includes('Narrative Studio:')) return;
+      clearTimeout(timeout); clearInterval(poll); resolve();
+    }, 25);
+    studio.once('exit', (code) => {
+      clearTimeout(timeout); clearInterval(poll);
+      reject(new Error(`studio exited before startup (${code})\n${studioOutput}`));
+    });
+  });
+  const pageResponse = await fetch(`http://127.0.0.1:${port}/`);
+  assert.equal(pageResponse.status, 200, 'studio serves the development page');
+  const page = await pageResponse.text();
+  assert.equal((page.match(/from "\/@react-refresh"/g) || []).length, 1, 'React refresh is injected exactly once');
+  const moduleResponse = await fetch(`http://127.0.0.1:${port}/src/App.tsx`);
+  assert.equal(moduleResponse.status, 200, 'studio transforms the development App module');
+  await transform(await moduleResponse.text(), { loader: 'js', sourcefile: 'App.tsx' });
+} finally {
+  if (studio.exitCode === null && studio.signalCode === null) {
+    const exited = new Promise((resolve) => studio.once('exit', resolve));
+    studio.kill('SIGTERM');
+    await exited;
+  }
+}
 
 console.log('narrative studio contracts tests ok');

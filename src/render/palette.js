@@ -210,11 +210,13 @@ let active = 'amber';
 export function setActiveSurface(name) { active = THEMES[name] ? name : 'amber'; }
 export function activeSurface() { return active; }
 
-export function activeTheme() {
+export function themeForSurface(name = 'amber') {
   const p = vfdSettings.phosphor;
   if (p !== 'faithful') return FORCED[p] || monoTheme(p);
-  return THEMES[active] || THEMES.amber;
+  return THEMES[name] || THEMES.amber;
 }
+
+export function activeTheme() { return themeForSurface(active); }
 
 // The colour a `ui-*` role should draw at, given the active theme.
 const ROLE = {

@@ -63,6 +63,10 @@ test('controller overlay html highlights selected mapping and capture state', ()
   });
   const html = renderControllerOverlayHtml(model, { padName: 'Xbox Controller' });
   assert.match(html, /Controller Setup/);
+  assert.match(html, /cs-machine-panel/);
+  assert.match(html, /cs-machine-glass/);
+  assert.match(html, /cs-machine-header/);
+  assert.match(html, /cs-machine-footer/);
   assert.match(html, /data-action="interact"/);
   assert.match(html, /is-selected/);
   assert.match(html, /is-capturing/);

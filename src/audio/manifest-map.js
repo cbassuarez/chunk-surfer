@@ -38,6 +38,24 @@ export const ROOMS = {
     roomTone: { character: 1.9 },     // stone: a long tail on everything
     stabs: 'auto',
   },
+  chapel_outer: {
+    label: 'the outer chapel',
+    world: 'lux_nova',
+    roomTone: { character: 1.75 },
+    stabs: 'auto',
+  },
+  bell_tower: {
+    label: 'the bell tower',
+    world: 'lux_nova',
+    roomTone: { character: 2.2 },
+    stabs: 'auto',
+  },
+  source_space: {
+    label: 'source space',
+    world: 'main_b3',
+    roomTone: { character: 1.6 },
+    stabs: 'auto',
+  },
 };
 
 export function roomFor(worldId) { return ROOMS[worldId] || ROOMS.main_b3; }

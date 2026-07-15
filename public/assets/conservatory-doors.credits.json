@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "file": "conservatory-doors.glb",
+  "sha256": "3cb4fd9941fba3c3cf684c8d7082d8aaab0dfe2cb3932f0cd48da4af81c5ef26",
+  "geometry": {
+    "license": "Project-authored",
+    "description": "Modular frames, pivoted leaves, heads, hardware and sealed-frame scar generated in-house."
+  },
+  "textures": {
+    "license": "CC0",
+    "source": "Poly Haven",
+    "assets": [
+      {
+        "id": "oak_veneer_01",
+        "url": "https://polyhaven.com/a/oak_veneer_01"
+      },
+      {
+        "id": "dark_wood",
+        "url": "https://polyhaven.com/a/dark_wood"
+      },
+      {
+        "id": "green_metal_rust",
+        "url": "https://polyhaven.com/a/green_metal_rust"
+      }
+    ],
+    "licenseUrl": "https://polyhaven.com/license",
+    "modifications": "Diffuse, OpenGL normal and ARM maps downsampled from 1K to 512px, packed into one 1536x512 door atlas set, and embedded in the GLB. Wired glass, rubber, brass, iron, kick plate and masonry are project-authored flat PBR materials."
+  }
+}

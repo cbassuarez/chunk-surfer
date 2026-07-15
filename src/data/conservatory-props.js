@@ -61,6 +61,15 @@ export const PROP_MESH = Object.freeze({
   lectern:{w:.62,d:.62,blocks:true}, hymn_board:{w:.8,d:.12,blocks:false},
   plant_pipe_straight:{w:2.4,d:.16,blocks:false}, plant_pipe_bank:{w:2.8,d:.34,blocks:false},
   plant_pipe_elbow:{w:.92,d:.92,blocks:false}, plant_pipe_valve:{w:.62,d:.32,blocks:false},
+  tower_frame:{w:9,d:4.6,blocks:false}, tower_rope:{w:.18,d:.18,blocks:false},
+  tower_clock_hammer:{w:.9,d:.5,blocks:false}, tower_winch:{w:1.2,d:.8,blocks:false},
+  tower_shutters:{w:3.4,d:.2,blocks:false}, chapel_inner_screen:{w:6,d:.2,blocks:false},
+  tower_plaque:{w:1.35,d:.12,blocks:false}, tower_rope_mat:{w:1.05,d:1.05,blocks:false},
+  tower_catwalk:{w:11.8,d:8.2,blocks:false}, tower_louvres:{w:6,d:.25,blocks:false},
+  tower_peal_board:{w:1.8,d:.12,blocks:false}, tower_organ_case:{w:5.8,d:1.2,blocks:true},
+  tower_loft_rail:{w:10,d:.16,blocks:false}, tower_bulkhead:{w:.3,d:.18,blocks:false},
+  tower_stair_rail_low_up:{w:9,d:4,blocks:false}, tower_stair_rail_high_up:{w:10,d:4,blocks:false},
+  tower_stair_rail_high_down:{w:10,d:4,blocks:false}, tower_stair_rail_low_down:{w:9,d:4,blocks:false},
 });
 
 // Visible structure has matching height-aware collision. Coordinates are
@@ -74,6 +83,15 @@ export const STRUCTURAL_COLLIDERS = Object.freeze([
   {id:'hall-upper-right-rail',kind:'obb',x:25.3,y:103,width:.18,depth:27,yaw:0,minElevation:7.5,maxElevation:8.8,spaceId:'hall'},
   {id:'chapel-chancel-rail-left',kind:'obb',x:89.5,y:88,width:3.2,depth:.16,yaw:0,minElevation:5.1,maxElevation:6.2,spaceId:'chapel'},
   {id:'chapel-chancel-rail-right',kind:'obb',x:95.5,y:88,width:3.2,depth:.16,yaw:0,minElevation:5.1,maxElevation:6.2,spaceId:'chapel'},
+  ...[57.9,59.9,61.9,63.9].flatMap((x,i)=>[
+    {id:`tower-frame-post-n-${i+1}`,kind:'obb',x,y:155.9,width:.28,depth:.28,yaw:0,minElevation:13.2,maxElevation:16.4,spaceId:'bell_chamber'},
+    {id:`tower-frame-post-s-${i+1}`,kind:'obb',x,y:160.1,width:.28,depth:.28,yaw:0,minElevation:13.2,maxElevation:16.4,spaceId:'bell_chamber'},
+  ]),
+  ...[56.9,65].flatMap((x,side)=>[
+    {id:`tower-frame-${side?'east':'west'}-tie-n`,kind:'obb',x,y:156.6,width:.22,depth:1.7,yaw:0,minElevation:13.2,maxElevation:15.9,spaceId:'bell_chamber'},
+    {id:`tower-frame-${side?'east':'west'}-tie-s`,kind:'obb',x,y:159.4,width:.22,depth:1.7,yaw:0,minElevation:13.2,maxElevation:15.9,spaceId:'bell_chamber'},
+  ]),
+  {id:'tower-loft-rail',kind:'obb',x:94,y:156.7,width:10,depth:.16,yaw:0,minElevation:8.6,maxElevation:9.75,spaceId:'organ_loft'},
 ]);
 
 export const CONSERVATORY_PROPS = [
@@ -86,14 +104,14 @@ export const CONSERVATORY_PROPS = [
   P('box-office-counter','ticket_counter',90.55,18.85,Math.PI/2,{scale:.75,inspect:inspect('The ticket counter was built to keep a queue outside and cash inside. The grille is still locked down.','Nothing has been sold here for years.')}),
   P('box-office-desk','box_office_desk',94.05,19.1,0,{inspect:inspect('The staff desk is squared to the ticket window. A blotter has been pressed flat by damp.','Front of house, stopped mid-week.')}),
   P('box-office-chair','chair',93.25,19.15,Math.PI/2,{inspect:inspect('A staff chair tucked under the ticket desk, not abandoned in the queue path.','Its casters have made a small grey ring.')}),
-  P('box-office-program-stack','program_stack',91.05,18.15,Math.PI/2,{elevation:1.05,inspect:inspect('A stack of folded programs for a season that never opened.','The top program has curled at both corners.')}),
+  P('box-office-program-stack','program_stack',91.05,18.15,Math.PI/2,{elevation:1.05,inspect:inspect('A stack of folded programmes for a season that never opened.','The top programme has curled at both corners.')}),
   P('box-office-cash-terminal','cash_terminal',90.95,19.45,Math.PI/2,{elevation:1.05,inspect:inspect('A dead card terminal beside a cash drawer. The receipt paper is still threaded.','No signal. No float.')}),
   P('box-office-ledger','notice_board',94.8,18.05,Math.PI,{elevation:1.1,interaction:'action',action:'rekey-ledger',inspect:inspect('A rekey ledger: REPLACEMENT CORE — CHAPEL — CABINET C-17.','CHAPEL. REPLACEMENT CORE. C-17.')}),
   P('box-office-key-cabinet','key_cabinet',96.25,21.55,Math.PI/2,{elevation:1.0,blocks:false,interaction:'action',action:'chapel-key-cabinet',inspect:inspect('A shallow steel cabinet of tagged keys.','One hook is empty.')}),
-  P('box-office-shelf','equipment_rack',95.25,21.75,0,{scale:.82,inspect:inspect('Programs, float envelopes, and ticket stock boxed by week.','The labels are more orderly than the room.')}),
+  P('box-office-shelf','equipment_rack',95.25,21.75,0,{scale:.82,inspect:inspect('Programmes, float envelopes, and ticket stock boxed by week.','The labels are more orderly than the room.')}),
   P('box-office-notice-board','notice_board',96.2,19.0,Math.PI/2,{elevation:1.15,inspect:inspect('A notice board with staffing rotas, emergency contacts, and one hand-written refund policy.','The refund policy is underlined twice.')}),
   ...[[87.15,17.35],[87.15,19.05],[88.25,17.35],[88.25,19.05]].map(([x,y],i)=>
-    P(`box-office-queue-${i+1}`,'queue_stanchion',x,y,0,{inspect:inspect('A brass queue post with its rope still clipped in.','The rope sags toward the ticket window.')})),
+    P(`box-office-queue-${i+1}`,'queue_stanchion',x,y,0,{inspect:inspect('A brass queue post with its rope still clipped in.','The rope sags towards the ticket window.')})),
 
   // Studio B3: equipment, teaching overflow, and stacked desks against walls.
   P('b3-desk-1','school_desk',8.0,8.0,Math.PI/2,{inspect:inspect('A desk pushed into the dead corner, its writing surface stippled with old tape marks.','Nothing is written on it now.')}),
@@ -144,6 +162,49 @@ export const CONSERVATORY_PROPS = [
   P('chapel-portrait-pollaiuolo','portrait_frame',88.0,59.0,0,{elevation:1.55,portraitIndex:4,inspect:inspect('Piero del Pollaiuolo. Portrait of a Woman. Profile, tempera, gold held quietly at the edge.','Her profile is exact and unreachable.')}),
   P('chapel-portrait-netherlandish','portrait_frame',96.0,59.0,0,{elevation:1.55,portraitIndex:5,inspect:inspect('Portrait of a Woman, Netherlandish or French. The old label cannot decide.','The frame can decide nothing either.')}),
   P('chapel-vault','chapel_vault',92.5,75.5,0,{interactive:false,structural:true}),
+  P('chapel-inner-screen','chapel_inner_screen',92.5,67.5,0,{interactive:false,structural:true}),
+  P('tower-history-plaque','tower_plaque',88.0,62.0,Math.PI/2,{elevation:1.0,inspect:inspect('J. VALE & SONS — CAST FOR ELLERY COLLEGIATE CHAPEL — 1908. Eight bells. Tenor: 2,200 kg.','Ellery Collegiate Chapel. 1908. No county is given.')}),
+
+  // The ringing chamber contains people and ropes, never bell machinery. Pitch
+  // order proceeds clockwise from the treble at the north of the circle.
+  ...Array.from({length:8},(_,i)=>{
+    const a=-Math.PI/2+i*Math.PI/4,x=25+Math.cos(a)*4,y=158+Math.sin(a)*4;
+    return[
+      P(`tower-rope-${i+1}`,'tower_rope',x,y,a+Math.PI/2,{inspect:inspect('A full-circle rope, tied off above the sally. The bell above is down.','Still tied. Still down.')}),
+      P(`tower-rope-mat-${i+1}`,'tower_rope_mat',x,y,a,{interactive:false,structural:true}),
+    ];
+  }).flat(),
+  P('tower-ringing-bench-west','pew',18.2,162.5,Math.PI/2,{scale:.72,inspect:inspect('A ringing bench polished by coats and waiting hands.','Eight places. No ringers.')}),
+  P('tower-ringing-bench-east','pew',31.5,162.5,Math.PI/2,{scale:.72,inspect:inspect('The second bench leaves the rope circle entirely clear.','Nothing is stored inside the circle.')}),
+  P('tower-peal-board','tower_peal_board',18.0,151.1,0,{elevation:1.25,inspect:inspect('ELLERY COLLEGIATE CHAPEL — STEDMAN TRIPLES — 1908. A touch, not a peal.','The gilt names have gone brown.')}),
+  P('tower-tenor-clock-hammer','tower_clock_hammer',31.0,153.0,0,{elevation:.4,...play(CHAPEL,'The clock hammer lifts and strikes the tenor while the bell is down. The stone keeps it for nine seconds.','One stationary hammer. One bell down.'),acousticKind:'bell_tenor_toll',hushPlayback:{mode:'interval',minMs:4200,maxMs:6800}}),
+  P('tower-hammer-isolator','equipment_rack',18.0,153.0,0,{interaction:'action',action:'tower-hammer-isolator',inspect:inspect('CLOCK HAMMER ISOLATOR. A red lever, mechanically linked.','ISOLATE / SERVICE.')}),
+  P('tower-sign-ringing','tower_plaque',32.0,159.0,Math.PI/2,{elevation:1.05,inspect:inspect('RINGING ROOM. The enamel letters are older than the electrical conduit.','RINGING ROOM.')}),
+  P('tower-access-lower-rail','tower_stair_rail_low_up',0.0,151.0,0,{interactive:false,structural:true}),
+  P('tower-access-upper-rail','tower_stair_rail_high_up',36.0,151.0,0,{interactive:false,structural:true}),
+  P('tower-light-lower','tower_bulkhead',1.0,151.0,Math.PI/2,{elevation:1.85,interactive:false,structural:true}),
+  P('tower-light-upper','tower_bulkhead',37.0,151.0,Math.PI/2,{elevation:1.85,interactive:false,structural:true}),
+  P('tower-light-ringing','tower_bulkhead',25.0,152.0,0,{elevation:2.7,interactive:false,structural:true}),
+
+  // Above: a low two-row H frame and perimeter catwalk in a monumental English
+  // belfry. The temporary French recording affects audio only, never form.
+  P('tower-bell-frame','tower_frame',61.0,158.0,0,{interactive:false,structural:true}),
+  P('tower-catwalk','tower_catwalk',61.0,158.0,0,{interactive:false,structural:true}),
+  P('tower-louvres-east','tower_louvres',68.3,158.0,Math.PI/2,{interactive:false,structural:true,elevation:2.5}),
+  P('tower-sign-belfry','tower_plaque',67.8,158.0,Math.PI/2,{elevation:1.1,inspect:inspect('BELLS — AUTHORISED ACCESS. The final word has been underlined by hand.','BELLS — AUTHORISED ACCESS.')}),
+  P('tower-light-entry','tower_bulkhead',67.0,158.0,Math.PI/2,{elevation:1.9,interactive:false,structural:true}),
+  P('tower-shutters','tower_shutters',68.0,158.0,Math.PI/2,{interactive:false,structural:true,elevation:.1}),
+  P('tower-shutter-winch','tower_winch',68.0,163.0,0,{interaction:'action',action:'tower-shutter-winch',inspect:inspect('The shutter winch is taking the whole frame through its pawl.','Under load.')}),
+  P('tower-light-winch','tower_bulkhead',67.5,163.0,Math.PI/2,{elevation:1.8,interactive:false,structural:true}),
+
+  P('tower-organ-case','tower_organ_case',94.0,152.0,0,{interactive:false,structural:true}),
+  P('tower-organ-console','organ_console',94.0,154.5,Math.PI,{...play(CHAPEL,'The loft console faces east over the nave. The blower remains isolated.','No wind. The descent door is beside it.')}),
+  P('tower-loft-rail','tower_loft_rail',94.0,156.7,0,{interactive:false,structural:true}),
+  P('tower-sign-organ-exit','tower_plaque',100.0,156.0,Math.PI/2,{elevation:1.0,inspect:inspect('ORGAN LOFT / NAVE. An arrow follows the service stair down.','ORGAN LOFT / NAVE.')}),
+  P('tower-service-upper-rail','tower_stair_rail_high_down',72.0,151.0,0,{interactive:false,structural:true}),
+  P('tower-service-lower-rail','tower_stair_rail_low_down',105.0,152.0,0,{interactive:false,structural:true}),
+  P('tower-light-service','tower_bulkhead',73.0,151.0,Math.PI/2,{elevation:1.85,interactive:false,structural:true}),
+  P('tower-light-organ-exit','tower_bulkhead',100.0,156.0,Math.PI/2,{elevation:1.85,interactive:false,structural:true}),
 
   // Utility spaces remain believable but are not playable instruments.
   P('pool-bench-1','pew',73.4,31.2,0,{mesh:'pew',scale:.62,inspect:inspect('A timber changing bench, grey from chlorine.','The grain has lifted.')}),
@@ -155,9 +216,9 @@ export const CONSERVATORY_PROPS = [
   ...[77,81,87,91].map((x,i)=>P(`pool-drain-${i+1}`,'drain_grille',x,42.6,0,{inspect:inspect('A basin drain furred white with old pool salts.','Dry all the way down.')})),
   P('plant-rack-1','equipment_rack',38.5,8.0,Math.PI/2,{inspect:inspect('A controls rack beside equipment too old to report to it.','The indicators are mechanical.')}),
   P('plant-pipe-bank-north','plant_pipe_bank',33.7,7.1,0,{elevation:1.85,inspect:inspect('Three insulated pipe runs clipped to the plant-room wall.','The paint has bubbled under old heat.')}),
-  P('plant-pipe-bank-east','plant_pipe_bank',40.8,10.8,Math.PI/2,{elevation:1.95,inspect:inspect('A wall bank of service pipes turns toward the ceiling.','One clamp is newer than the others.')}),
+  P('plant-pipe-bank-east','plant_pipe_bank',40.8,10.8,Math.PI/2,{elevation:1.95,inspect:inspect('A wall bank of service pipes turns towards the ceiling.','One clamp is newer than the others.')}),
   P('plant-pipe-overhead-1','plant_pipe_straight',34.8,13.8,0,{elevation:2.55,inspect:inspect('An overhead service line crosses the room above head height.','It ticks once after the lights settle.')}),
-  P('plant-pipe-overhead-2','plant_pipe_straight',35.2,15.2,Math.PI/2,{elevation:2.65,inspect:inspect('A second overhead run dives toward the old riser.','Cold to the touch from below.')}),
+  P('plant-pipe-overhead-2','plant_pipe_straight',35.2,15.2,Math.PI/2,{elevation:2.65,inspect:inspect('A second overhead run dives towards the old riser.','Cold to the touch from below.')}),
   P('plant-pipe-elbow-1','plant_pipe_elbow',40.2,13.6,Math.PI/2,{elevation:2.25,inspect:inspect('A ninety-degree elbow with old flux burned dark at the seam.','The bend was fitted in a hurry.')}),
   P('plant-pipe-valve-1','plant_pipe_valve',36.1,7.35,0,{elevation:1.45,inspect:inspect('A red handwheel valve in the pipe bank. It has been wired open.','The tag says DO NOT ISOLATE.')}),
   P('plant-pipe-valve-2','plant_pipe_valve',40.55,12.4,Math.PI/2,{elevation:1.55,inspect:inspect('A small drain cock below the vertical run.','Green crust at the threads.')}),

@@ -11,3 +11,5 @@ src-tauri/binaries/
 src-tauri/lens-resources/
 .lens-build/
 *.log
+__pycache__/
+*.pyc

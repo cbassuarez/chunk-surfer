@@ -654,7 +654,7 @@
         },
         {
           "who": "direction",
-          "text": "And they sent it to you, in writing, before you said yes. First class mail; by the looks of the stationery it was waiting to be mailed out.",
+          "text": "And they sent it to you, in writing, before you said yes. First-class post; by the looks of the stationery it was waiting to be posted.",
           "id": "order.last.paid.line.3"
         }
       ],
@@ -1265,7 +1265,7 @@
         },
         {
           "who": "direction",
-          "text": "In one single gesture (likely the toughest amount of labor for him this evening), he slides the keys under the glass along with a radio in one hand, and takes form back with the other.",
+          "text": "In one single gesture (likely the toughest amount of labour for him this evening), he slides the keys under the glass along with a radio in one hand, and takes form back with the other.",
           "id": "threshold.line.5",
           "cues": [
             "slides"

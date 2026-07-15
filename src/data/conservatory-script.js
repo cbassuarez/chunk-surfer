@@ -41,6 +41,7 @@ export const WORK_ORDER = {
     },
     body: [
     { raw: 'SITE      Ellery Conservatory of Music (condemned)' },
+    { raw: 'ADDRESS   Ellery Collegiate Buildings — ENGLAND' },
     { raw: 'WINDOW    one night. Demolition begins 06:00 Thursday.' },
     { raw: 'DELIVER   five room tones. Sixty seconds each, unbroken.' },
     '',
@@ -332,7 +333,7 @@ export const COLD_OPEN_DIALOGUE = {
     lines: [
       { who: 'you', text: "The account remains open. We want 5 clean recordings, and it seems the fifth was undelivered." },
       { who: 'you', text: 'Nobody settles for 80% of work for anything. Not once, not ever, not without a phone call first.' },
-      { who: 'direction', text: 'And they sent it to you, in writing, before you said yes. First class mail; by the looks of the stationery it was waiting to be mailed out.' },
+      { who: 'direction', text: 'And they sent it to you, in writing, before you said yes. First-class post; by the looks of the stationery it was waiting to be posted.' },
     ],
     goto: 'order',
   },
@@ -529,7 +530,7 @@ export const COLD_OPEN_DIALOGUE = {
       { who: 'guard', text: 'Sign where it says received.' },
       { who: 'direction', text: 'You sign the first box. The second one says returned, and it is about the width of a fingernail; it is empty all the way up the page.', cue: 'signature' },
       { who: 'guard', text: "Don't sign the other one. That's for when you come back out." },
-      { who: 'direction', text: 'In one single gesture (likely the toughest amount of labor for him this evening), he slides the keys under the glass along with a radio in one hand, and takes form back with the other.', cue: 'slides' },
+      { who: 'direction', text: 'In one single gesture (likely the toughest amount of labour for him this evening), he slides the keys under the glass along with a radio in one hand, and takes form back with the other.', cue: 'slides' },
       { who: 'me', text: 'Channel two?' },
       { who: 'guard', text: 'Aye. Check in on the hour.' },
       { who: 'guard', text: "Grey door, end of the yard is the service entrance. I'll be here till ten." },
@@ -571,10 +572,10 @@ const PUSH_BAR = [
 ];
 
 const STEEL_YOURSELF = [
-  { who: 'you', text: "I'll find it on the way out, when I'm not standing here like this. When I'm not in the middle of a room with my flashlight off." },
+  { who: 'you', text: "I'll find it on the way out, when I'm not standing here like this. When I'm not in the middle of a room with my torch off." },
   { who: 'direction', text: 'Which is true. It is also exactly the reasoning that keeps a man *inside* a building and not darting back home to the kind of cotidian safety only jaffa cakes and Mr. Whiskers can provide.' },
   { who: 'direction', text: 'But for now, you trudge along in the dark.' },
-  { who: 'you', text: "Speaking of, let's find that flashlight. It should be in my bag, I just had it a second ago." },
+  { who: 'you', text: "Speaking of, let's find that torch. It should be in my bag, I just had it a second ago." },
 ];
 
 export const POST_DOOR = {
@@ -1521,7 +1522,7 @@ export const ROOM_CELLS = {
   the_tub: { x: 85, y: 30 },
   amplifications: { x: 102, y: 15 },
   soundnoisemusic: { x: 65, y: 65 },
-  lux_nova: { x: 90, y: 66 },
+  lux_nova: { x: 92, y: 74 },
 };
 export const MAIN_EXIT_CELL = { x:79, y:4 };
 

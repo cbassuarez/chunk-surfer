@@ -4,10 +4,10 @@
     "author": "Chunk Surfer project",
     "source": "tools/chunk_surfer/build-props.mjs",
     "license": "project source (mixed: see meshes)",
-    "sha256": "e22ed22db4171b72e4af7f31c09481e12ef2b29273df1f0a9414d464046c3411",
+    "sha256": "ca74d83085a9683e21e448ddac65654d49488899b490e1c86dc970594b7fe226",
     "modifications": "Metres, Y-up, ground-centred. Procedural fallback geometry plus user-supplied source meshes (unverified provenance) baked, re-axised, height-scaled, and vertex-cluster decimated under budget.",
-    "triangles": 11858,
-    "bytes": 850204
+    "triangles": 26486,
+    "bytes": 1782320
   },
   "meshes": [
     {
@@ -823,6 +823,1224 @@
         ]
       },
       "triangles": 280,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_bell_01",
+      "bounds": {
+        "min": [
+          -0.64,
+          -1.02,
+          -0.524
+        ],
+        "max": [
+          0.64,
+          0.14,
+          0.524
+        ]
+      },
+      "triangles": 492,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_wheel_01",
+      "bounds": {
+        "min": [
+          -1.057,
+          -1.057,
+          0.024
+        ],
+        "max": [
+          1.057,
+          1.057,
+          0.296
+        ]
+      },
+      "triangles": 344,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_clapper_01",
+      "bounds": {
+        "min": [
+          -0.13,
+          -1.28,
+          -0.127
+        ],
+        "max": [
+          0.13,
+          -0.06,
+          0.127
+        ]
+      },
+      "triangles": 96,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_stay_01",
+      "bounds": {
+        "min": [
+          -0.09,
+          0.02,
+          0.11
+        ],
+        "max": [
+          0.09,
+          1.29,
+          0.25
+        ]
+      },
+      "triangles": 24,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_slider_01",
+      "bounds": {
+        "min": [
+          -0.52,
+          1.28,
+          0.11
+        ],
+        "max": [
+          0.52,
+          1.4,
+          0.29
+        ]
+      },
+      "triangles": 36,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_bell_02",
+      "bounds": {
+        "min": [
+          -0.64,
+          -1.02,
+          -0.562
+        ],
+        "max": [
+          0.64,
+          0.14,
+          0.562
+        ]
+      },
+      "triangles": 492,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_wheel_02",
+      "bounds": {
+        "min": [
+          -1.057,
+          -1.057,
+          0.024
+        ],
+        "max": [
+          1.057,
+          1.057,
+          0.296
+        ]
+      },
+      "triangles": 344,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_clapper_02",
+      "bounds": {
+        "min": [
+          -0.13,
+          -1.28,
+          -0.127
+        ],
+        "max": [
+          0.13,
+          -0.06,
+          0.127
+        ]
+      },
+      "triangles": 96,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_stay_02",
+      "bounds": {
+        "min": [
+          -0.09,
+          0.02,
+          0.11
+        ],
+        "max": [
+          0.09,
+          1.29,
+          0.25
+        ]
+      },
+      "triangles": 24,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_slider_02",
+      "bounds": {
+        "min": [
+          -0.52,
+          1.28,
+          0.11
+        ],
+        "max": [
+          0.52,
+          1.4,
+          0.29
+        ]
+      },
+      "triangles": 36,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_bell_03",
+      "bounds": {
+        "min": [
+          -0.64,
+          -1.02,
+          -0.599
+        ],
+        "max": [
+          0.64,
+          0.14,
+          0.599
+        ]
+      },
+      "triangles": 492,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_wheel_03",
+      "bounds": {
+        "min": [
+          -1.057,
+          -1.057,
+          0.024
+        ],
+        "max": [
+          1.057,
+          1.057,
+          0.296
+        ]
+      },
+      "triangles": 344,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_clapper_03",
+      "bounds": {
+        "min": [
+          -0.13,
+          -1.28,
+          -0.127
+        ],
+        "max": [
+          0.13,
+          -0.06,
+          0.127
+        ]
+      },
+      "triangles": 96,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_stay_03",
+      "bounds": {
+        "min": [
+          -0.09,
+          0.02,
+          0.11
+        ],
+        "max": [
+          0.09,
+          1.29,
+          0.25
+        ]
+      },
+      "triangles": 24,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_slider_03",
+      "bounds": {
+        "min": [
+          -0.52,
+          1.28,
+          0.11
+        ],
+        "max": [
+          0.52,
+          1.4,
+          0.29
+        ]
+      },
+      "triangles": 36,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_bell_04",
+      "bounds": {
+        "min": [
+          -0.64,
+          -1.02,
+          -0.637
+        ],
+        "max": [
+          0.64,
+          0.14,
+          0.637
+        ]
+      },
+      "triangles": 492,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_wheel_04",
+      "bounds": {
+        "min": [
+          -1.057,
+          -1.057,
+          0.024
+        ],
+        "max": [
+          1.057,
+          1.057,
+          0.296
+        ]
+      },
+      "triangles": 344,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_clapper_04",
+      "bounds": {
+        "min": [
+          -0.13,
+          -1.28,
+          -0.127
+        ],
+        "max": [
+          0.13,
+          -0.06,
+          0.127
+        ]
+      },
+      "triangles": 96,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_stay_04",
+      "bounds": {
+        "min": [
+          -0.09,
+          0.02,
+          0.11
+        ],
+        "max": [
+          0.09,
+          1.29,
+          0.25
+        ]
+      },
+      "triangles": 24,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_slider_04",
+      "bounds": {
+        "min": [
+          -0.52,
+          1.28,
+          0.11
+        ],
+        "max": [
+          0.52,
+          1.4,
+          0.29
+        ]
+      },
+      "triangles": 36,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_bell_05",
+      "bounds": {
+        "min": [
+          -0.675,
+          -1.02,
+          -0.675
+        ],
+        "max": [
+          0.675,
+          0.14,
+          0.675
+        ]
+      },
+      "triangles": 492,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_wheel_05",
+      "bounds": {
+        "min": [
+          -1.057,
+          -1.057,
+          0.024
+        ],
+        "max": [
+          1.057,
+          1.057,
+          0.296
+        ]
+      },
+      "triangles": 344,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_clapper_05",
+      "bounds": {
+        "min": [
+          -0.13,
+          -1.28,
+          -0.127
+        ],
+        "max": [
+          0.13,
+          -0.06,
+          0.127
+        ]
+      },
+      "triangles": 96,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_stay_05",
+      "bounds": {
+        "min": [
+          -0.09,
+          0.02,
+          0.11
+        ],
+        "max": [
+          0.09,
+          1.29,
+          0.25
+        ]
+      },
+      "triangles": 24,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_slider_05",
+      "bounds": {
+        "min": [
+          -0.52,
+          1.28,
+          0.11
+        ],
+        "max": [
+          0.52,
+          1.4,
+          0.29
+        ]
+      },
+      "triangles": 36,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_bell_06",
+      "bounds": {
+        "min": [
+          -0.713,
+          -1.02,
+          -0.713
+        ],
+        "max": [
+          0.713,
+          0.14,
+          0.713
+        ]
+      },
+      "triangles": 492,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_wheel_06",
+      "bounds": {
+        "min": [
+          -1.057,
+          -1.057,
+          0.024
+        ],
+        "max": [
+          1.057,
+          1.057,
+          0.296
+        ]
+      },
+      "triangles": 344,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_clapper_06",
+      "bounds": {
+        "min": [
+          -0.13,
+          -1.28,
+          -0.127
+        ],
+        "max": [
+          0.13,
+          -0.06,
+          0.127
+        ]
+      },
+      "triangles": 96,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_stay_06",
+      "bounds": {
+        "min": [
+          -0.09,
+          0.02,
+          0.11
+        ],
+        "max": [
+          0.09,
+          1.29,
+          0.25
+        ]
+      },
+      "triangles": 24,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_slider_06",
+      "bounds": {
+        "min": [
+          -0.52,
+          1.28,
+          0.11
+        ],
+        "max": [
+          0.52,
+          1.4,
+          0.29
+        ]
+      },
+      "triangles": 36,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_bell_07",
+      "bounds": {
+        "min": [
+          -0.751,
+          -1.02,
+          -0.751
+        ],
+        "max": [
+          0.751,
+          0.14,
+          0.751
+        ]
+      },
+      "triangles": 492,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_wheel_07",
+      "bounds": {
+        "min": [
+          -1.057,
+          -1.057,
+          0.024
+        ],
+        "max": [
+          1.057,
+          1.057,
+          0.296
+        ]
+      },
+      "triangles": 344,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_clapper_07",
+      "bounds": {
+        "min": [
+          -0.13,
+          -1.28,
+          -0.127
+        ],
+        "max": [
+          0.13,
+          -0.06,
+          0.127
+        ]
+      },
+      "triangles": 96,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_stay_07",
+      "bounds": {
+        "min": [
+          -0.09,
+          0.02,
+          0.11
+        ],
+        "max": [
+          0.09,
+          1.29,
+          0.25
+        ]
+      },
+      "triangles": 24,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_slider_07",
+      "bounds": {
+        "min": [
+          -0.52,
+          1.28,
+          0.11
+        ],
+        "max": [
+          0.52,
+          1.4,
+          0.29
+        ]
+      },
+      "triangles": 36,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_bell_08",
+      "bounds": {
+        "min": [
+          -0.788,
+          -1.02,
+          -0.788
+        ],
+        "max": [
+          0.788,
+          0.14,
+          0.788
+        ]
+      },
+      "triangles": 492,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_wheel_08",
+      "bounds": {
+        "min": [
+          -1.057,
+          -1.057,
+          0.024
+        ],
+        "max": [
+          1.057,
+          1.057,
+          0.296
+        ]
+      },
+      "triangles": 344,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_clapper_08",
+      "bounds": {
+        "min": [
+          -0.13,
+          -1.28,
+          -0.127
+        ],
+        "max": [
+          0.13,
+          -0.06,
+          0.127
+        ]
+      },
+      "triangles": 96,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_stay_08",
+      "bounds": {
+        "min": [
+          -0.09,
+          0.02,
+          0.11
+        ],
+        "max": [
+          0.09,
+          1.29,
+          0.25
+        ]
+      },
+      "triangles": 24,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_slider_08",
+      "bounds": {
+        "min": [
+          -0.52,
+          1.28,
+          0.11
+        ],
+        "max": [
+          0.52,
+          1.4,
+          0.29
+        ]
+      },
+      "triangles": 36,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_frame",
+      "bounds": {
+        "min": [
+          -4.5,
+          0,
+          -2.52
+        ],
+        "max": [
+          4.5,
+          2.77,
+          2.52
+        ]
+      },
+      "triangles": 540,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_rope",
+      "bounds": {
+        "min": [
+          -0.075,
+          0,
+          -0.075
+        ],
+        "max": [
+          0.075,
+          3.4,
+          0.075
+        ]
+      },
+      "triangles": 88,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_rope_mat",
+      "bounds": {
+        "min": [
+          -0.52,
+          0,
+          -0.52
+        ],
+        "max": [
+          0.52,
+          0.064,
+          0.52
+        ]
+      },
+      "triangles": 168,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_clock_hammer",
+      "bounds": {
+        "min": [
+          -0.042,
+          0.073,
+          -0.175
+        ],
+        "max": [
+          0.8,
+          1.14,
+          0.175
+        ]
+      },
+      "triangles": 68,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_winch",
+      "bounds": {
+        "min": [
+          -0.42,
+          0.37,
+          -0.414
+        ],
+        "max": [
+          0.71,
+          1.33,
+          0.414
+        ]
+      },
+      "triangles": 180,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_shutters",
+      "bounds": {
+        "min": [
+          -1.691,
+          0.19,
+          -0.35
+        ],
+        "max": [
+          1.691,
+          3.35,
+          0.35
+        ]
+      },
+      "triangles": 108,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_catwalk",
+      "bounds": {
+        "min": [
+          -5.935,
+          0,
+          -3.955
+        ],
+        "max": [
+          5.935,
+          1.108,
+          3.955
+        ]
+      },
+      "triangles": 1068,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_louvres",
+      "bounds": {
+        "min": [
+          -3,
+          0,
+          -0.12
+        ],
+        "max": [
+          3,
+          3.5,
+          0.12
+        ]
+      },
+      "triangles": 204,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_peal_board",
+      "bounds": {
+        "min": [
+          -0.9,
+          0,
+          -0.071
+        ],
+        "max": [
+          0.9,
+          1.24,
+          0.035
+        ]
+      },
+      "triangles": 72,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_organ_case",
+      "bounds": {
+        "min": [
+          -2.9,
+          0,
+          -0.26
+        ],
+        "max": [
+          2.9,
+          4.6,
+          0.7
+        ]
+      },
+      "triangles": 1140,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_loft_rail",
+      "bounds": {
+        "min": [
+          -5.035,
+          0,
+          -0.035
+        ],
+        "max": [
+          5.035,
+          1.16,
+          0.035
+        ]
+      },
+      "triangles": 324,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_bulkhead",
+      "bounds": {
+        "min": [
+          -0.15,
+          0.08,
+          -0.187
+        ],
+        "max": [
+          0.15,
+          0.28,
+          0.17
+        ]
+      },
+      "triangles": 68,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_stair_rail_low_up",
+      "bounds": {
+        "min": [
+          -0.075,
+          0,
+          -0.74
+        ],
+        "max": [
+          7.075,
+          4.9,
+          3.74
+        ]
+      },
+      "triangles": 612,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_stair_rail_high_up",
+      "bounds": {
+        "min": [
+          -0.075,
+          0,
+          -0.74
+        ],
+        "max": [
+          8.075,
+          5.7,
+          3.74
+        ]
+      },
+      "triangles": 660,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_stair_rail_high_down",
+      "bounds": {
+        "min": [
+          -0.075,
+          -4.6,
+          -0.74
+        ],
+        "max": [
+          8.075,
+          1.1,
+          3.74
+        ]
+      },
+      "triangles": 660,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_stair_rail_low_down",
+      "bounds": {
+        "min": [
+          -0.075,
+          -3.8,
+          -0.74
+        ],
+        "max": [
+          7.075,
+          1.1,
+          3.74
+        ]
+      },
+      "triangles": 612,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "chapel_inner_screen",
+      "bounds": {
+        "min": [
+          -3,
+          0,
+          -0.09
+        ],
+        "max": [
+          3,
+          3.6,
+          0.09
+        ]
+      },
+      "triangles": 96,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "tower_plaque",
+      "bounds": {
+        "min": [
+          -0.675,
+          0,
+          -0.042
+        ],
+        "max": [
+          0.675,
+          0.76,
+          0.025
+        ]
+      },
+      "triangles": 24,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",

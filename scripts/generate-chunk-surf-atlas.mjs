@@ -1,162 +1,218 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
+import { dirname, extname, resolve } from 'node:path';
+import {
+  LanguageVariant,
+  SyntaxKind,
+  isKeywordKind,
+  isLiteralKind,
+  isPunctuationKind,
+  isTriviaKind,
+} from 'typescript/unstable/ast';
+import { createScanner } from 'typescript/unstable/ast/scanner';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const OUT = 'content/chunk-surf/source-atlas.json';
 
+// Only committed, shipped runtime and authoring sources may become visible.
+// Lines are copied byte-for-byte: unsafe candidates are omitted, never
+// rewritten into source that does not actually exist.
 const SOURCE_FILES = Object.freeze([
   'src/game/chunk-surf-state.js',
-  'src/game/chunk-surf-scene.js',
-  'src/data/chunk-surf-script.js',
+  'src/game/presence.js',
+  'src/game/hush-field.js',
+  'src/game/hush-audio-runtime.js',
+  'src/game/hush-director.js',
+  'src/audio/acoustic-propagation.js',
   'src/game/recordist.js',
   'src/game/playback.js',
   'src/game/radio.js',
   'src/game/battle.js',
+  'src/data/battles.js',
   'src/progression/runtime.js',
   'src/progression/events.js',
-  'src/data/battles.js',
-  'src/data/conservatory-script.js',
+  'content/narrative/battle.chapel.feeling.story.json',
+  'content/narrative/conservatory.cold_open_dialogue.story.json',
 ]);
 
-const ROOM_SECTORS = Object.freeze({
-  approach: {
-    title: 'CALL CHAIN INTO SOURCE FAULT',
-    anchors: ['beginChunkSurf', 'chunkSurfAvailable', 'chunkSurfMandatory', 'moveChunkSurf', 'approach'],
+const SECTORS = Object.freeze({
+  hall: {
+    title: 'LONG HALL / CALL CHAIN',
+    anchors: ['canOfferChunkSurf', 'chunkSurfCompletion', 'TAKE_COMPLETED', 'beginTake', 'returnPoint'],
   },
-  'fork-room': {
-    title: 'OBJECT: TUNING_FORK',
-    anchors: ['tuneChunkSurf', 'hasFork', 'givesFork', 'fork-room', 'TUNING_FORK'],
+  fork: {
+    title: 'TUNING FORK',
+    anchors: ['LANDMARK_TUNED', 'hasFork', 'tune', 'lightOn', 'currentWorldNoise'],
   },
-  'recordist-loop': {
+  recordist: {
     title: 'PREVIOUS CONTRACTOR',
-    anchors: ['recordChunkSurf', 'recordist-loop', 'REC', 'takes', 'previousRecordist'],
+    anchors: ['recordist', 'takeProgress', 'sealTake', 'takes', 'recording'],
   },
-  'surfer-origin': {
-    title: 'STUDENT FILE / SURFER ORIGIN',
-    anchors: ['surfer-origin', 'chapel-surfer', 'route.surfaced', 'SURFER', 'student'],
+  student: {
+    title: 'STUDENT FILE',
+    anchors: ['chapel-surfer', 'student-trained', 'music-inside-files', 'PROCESS'],
   },
-  'work-order-loop': {
-    title: 'WORK ORDER SOURCE',
-    anchors: ['work-order-loop', 'WORK_ORDER', 'DELIVER', 'ACCEPTANCE', 'five clean minutes'],
+  workOrder: {
+    title: 'WORK ORDER',
+    anchors: ['chapel-contract', 'five-rooms', 'account-feeds-body', 'TAKE_COMPLETED'],
   },
-  'body-room': {
+  body: {
     title: 'BODY RETURN',
-    anchors: ['body-room', 'BODY', 'RETURN', 'previousRecordist.body', 'savedRecordist'],
+    anchors: ['borrowed-body-return', 'BODY', 'RETURN', 'caughtCount', 'awareness'],
   },
-  'final-page': {
-    title: 'FINAL PAGE / REDACTION',
-    anchors: ['final-page', 'redactChunkSurf', 'redactions', 'correctRedaction', 'BODY BORROWED'],
+  final: {
+    title: 'FINAL REDACTION',
+    anchors: ['source-not-body', 'borrowed-body-return', 'source-you', 'REDACTION_CONFIRMED'],
+  },
+  hush: {
+    title: 'HUSH / PRESENCE',
+    anchors: ['updatePresence', 'offerSoundTarget', 'publicSnapshot', 'targetX', 'huntSpeed', 'visibleFrom'],
   },
 });
 
-const BANNED = [
+const UNSAFE = [
   /https?:\/\//i,
   /\/Users\//,
-  /\b[A-Z0-9_]*(SECRET|TOKEN|PASSWORD|PRIVATE|KEY|AUTH)[A-Z0-9_]*\b/,
   /\b(process\.env|import\.meta\.env)\b/,
-  /\b(GITHUB_|TAURI_SIGNING|APPLE_|CODESIGN|NOTAR)/i,
-  /\b(release-preflight|diagnostics|support|issues\/new)\b/i,
+  /\b(?:password|secret|private[_-]?key|auth[_-]?token)\b\s*[:=]/i,
+  /\b(?:TAURI_SIGNING|APPLE_|CODESIGN|NOTAR|GITHUB_TOKEN)\b/i,
 ];
 
-function sanitizeLine(line) {
-  let text = String(line || '')
-    .replace(/\t/g, '  ')
-    .replace(/\s+$/g, '')
-    .slice(0, 132);
-  for (const pattern of BANNED) text = text.replace(pattern, '[REDACTED]');
-  return text;
-}
-
-function safeLine(line) {
-  const text = sanitizeLine(line);
-  if (!text.trim()) return false;
-  if (BANNED.some((pattern) => pattern.test(text))) return false;
-  return true;
+function safeExactLine(line) {
+  const text = String(line ?? '').replace(/\r$/, '');
+  return !!text.trim() && text.length <= 240 && !UNSAFE.some((pattern) => pattern.test(text));
 }
 
 function hash(text) {
   let h = 2166136261;
-  for (let i = 0; i < text.length; i++) {
+  for (let i = 0; i < text.length; i += 1) {
     h ^= text.charCodeAt(i);
     h = Math.imul(h, 16777619);
   }
   return h >>> 0;
 }
 
-function identifiers(line) {
-  return [...new Set(String(line).match(/[A-Za-z_$][A-Za-z0-9_$]{2,}/g) || [])]
-    .filter((item) => !['const', 'let', 'var', 'return', 'function', 'export', 'import', 'from', 'true', 'false'].includes(item))
-    .slice(0, 8);
-}
-
-function takeContext(lines, index, radius = 5) {
+function jsTokens(text) {
   const out = [];
-  for (let i = Math.max(0, index - radius); i <= Math.min(lines.length - 1, index + radius); i++) {
-    if (!safeLine(lines[i])) continue;
-    out.push({ line: i + 1, text: sanitizeLine(lines[i]), tokens: identifiers(lines[i]) });
+  const scanner = createScanner(false, LanguageVariant.Standard, text);
+  for (;;) {
+    const token = scanner.scan();
+    if (token === SyntaxKind.EndOfFile) break;
+    const value = scanner.getTokenText();
+    if (!value || /^\s+$/.test(value)) continue;
+    const start = scanner.getTokenStart(), end = scanner.getTokenEnd();
+    const kind = isTriviaKind(token) ? 'comment'
+      : isKeywordKind(token) ? 'keyword'
+        : token === SyntaxKind.Identifier || token === SyntaxKind.PrivateIdentifier ? 'identifier'
+          : token === SyntaxKind.NumericLiteral || token === SyntaxKind.BigIntLiteral ? 'number'
+            : isLiteralKind(token) ? 'string'
+              : isPunctuationKind(token) ? 'punctuation' : 'text';
+    out.push({ text: value, kind, start, end });
   }
   return out;
 }
 
-function selectSectorLines(files, roomId, spec) {
-  const matches = [];
-  for (const file of files) {
-    for (const [index, line] of file.lines.entries()) {
-      const lower = line.toLowerCase();
-      const hit = spec.anchors.some((anchor) => lower.includes(String(anchor).toLowerCase()));
-      if (!hit) continue;
-      matches.push({ file: file.path, anchorLine: index + 1, context: takeContext(file.lines, index, 7) });
-    }
+function jsonTokens(text) {
+  const out = [];
+  const re = /"(?:\\.|[^"\\])*"|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|true|false|null|[{}\[\],:]/g;
+  for (const match of text.matchAll(re)) {
+    const value = match[0];
+    const after = text.slice((match.index || 0) + value.length);
+    const kind = value[0] === '"'
+      ? (/^\s*:/.test(after) ? 'property' : 'string')
+      : /^-?\d/.test(value) ? 'number'
+        : /^(true|false|null)$/.test(value) ? 'keyword' : 'punctuation';
+    out.push({ text: value, kind, start: match.index || 0, end: (match.index || 0) + value.length });
   }
-  const sourceLines = [];
+  return out;
+}
+
+function takeContext(file, index, radius = 7) {
+  const out = [];
+  for (let i = Math.max(0, index - radius); i <= Math.min(file.lines.length - 1, index + radius); i += 1) {
+    const text = file.lines[i];
+    if (!safeExactLine(text)) continue;
+    const language = file.language;
+    out.push({
+      id: `${file.path}:${i + 1}:${hash(text)}`,
+      file: file.path,
+      line: i + 1,
+      text,
+      hash: hash(text),
+      referenceHash: hash(`${file.path}:${i + 1}:${text}`),
+      language,
+      tokens: language === 'json' ? jsonTokens(text) : jsTokens(text),
+    });
+  }
+  return out;
+}
+
+function selectSector(files, id, spec) {
+  const lines = [];
   const seen = new Set();
-  for (const match of matches) {
-    for (const item of match.context) {
-      const key = `${match.file}:${item.line}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      sourceLines.push({ ...item, file: match.file, hash: hash(`${match.file}:${item.line}:${item.text}`) });
+  for (const file of files) {
+    for (let index = 0; index < file.lines.length; index += 1) {
+      const lower = file.lines[index].toLowerCase();
+      if (!spec.anchors.some((anchor) => lower.includes(String(anchor).toLowerCase()))) continue;
+      for (const entry of takeContext(file, index)) {
+        const key = `${entry.file}:${entry.line}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        lines.push(entry);
+      }
     }
   }
-  return {
-    id: roomId,
-    title: spec.title,
-    anchors: spec.anchors,
-    sourceLines: sourceLines.slice(0, 90),
-  };
+  return { id, title: spec.title, anchors: spec.anchors, sourceLines: lines.slice(0, 120) };
 }
 
 const files = [];
 for (const path of SOURCE_FILES) {
   const raw = await readFile(resolve(ROOT, path), 'utf8');
-  files.push({ path, lines: raw.split(/\r?\n/) });
+  files.push({ path, language: extname(path) === '.json' ? 'json' : 'javascript', lines: raw.split(/\n/) });
 }
 
-const sectors = Object.fromEntries(Object.entries(ROOM_SECTORS).map(([roomId, spec]) => [roomId, selectSectorLines(files, roomId, spec)]));
-const sourceLineCount = Object.values(sectors).reduce((sum, sector) => sum + sector.sourceLines.length, 0);
+const sectors = Object.fromEntries(
+  Object.entries(SECTORS).map(([id, spec]) => [id, selectSector(files, id, spec)]),
+);
+
+for (const [id, sector] of Object.entries(sectors)) {
+  if (sector.sourceLines.length < 8) throw new Error(`${id} has too few exact source lines`);
+  for (const entry of sector.sourceLines) {
+    const file = files.find((candidate) => candidate.path === entry.file);
+    const exact = file?.lines?.[entry.line - 1];
+    if (exact !== entry.text || hash(exact) !== entry.hash) {
+      throw new Error(`${entry.file}:${entry.line} failed exact provenance validation`);
+    }
+  }
+}
+
+const all = new Map();
+for (const sector of Object.values(sectors)) {
+  for (const entry of sector.sourceLines) all.set(entry.id, entry);
+}
+
 const atlas = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   id: 'chunk-surf.source-atlas',
   generatedFrom: SOURCE_FILES,
+  exactSource: true,
   leakGuard: {
-    policy: ['network-addresses', 'local-machine-paths', 'credential-like-terms', 'environment-reads', 'shipping-tooling', 'diagnostic-links'],
+    policy: ['reject-network-addresses', 'reject-local-machine-paths', 'reject-credential-literals', 'reject-environment-reads'],
   },
   sectors,
+  entries: Object.fromEntries([...all].sort(([a], [b]) => a.localeCompare(b))),
   stats: {
     files: SOURCE_FILES.length,
     sectors: Object.keys(sectors).length,
-    sourceLines: sourceLineCount,
+    sourceLines: all.size,
+    javascriptLines: [...all.values()].filter((entry) => entry.language === 'javascript').length,
+    jsonLines: [...all.values()].filter((entry) => entry.language === 'json').length,
   },
 };
 
-for (const [roomId, sector] of Object.entries(sectors)) {
-  if (sector.sourceLines.length < 8) throw new Error(`${roomId} has too few literal source lines`);
-}
-
 const json = `${JSON.stringify(atlas, null, 2)}\n`;
-if (BANNED.some((pattern) => pattern.test(json))) throw new Error('generated atlas contains banned content');
+if (UNSAFE.some((pattern) => pattern.test(json))) throw new Error('generated atlas contains unsafe content');
 
 const fullOut = resolve(ROOT, OUT);
 await mkdir(dirname(fullOut), { recursive: true });
 await writeFile(fullOut, json, 'utf8');
-console.log(`Generated ${OUT}: ${atlas.stats.sectors} sectors, ${atlas.stats.sourceLines} source lines.`);
+console.log(`Generated ${OUT}: ${atlas.stats.sectors} sectors, ${atlas.stats.sourceLines} exact source lines.`);

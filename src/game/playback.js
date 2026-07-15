@@ -34,6 +34,7 @@ const state = {
   pickGuest: null,           // (roomId, audibleIds) -> chunk
   chunkById: null,           // (id) -> chunk
   onGuest: null,             // fired when the guest crosses audibility
+  scheduleDiscrete: null,
 };
 
 export const PLAYBACK = {
@@ -46,12 +47,13 @@ export const PLAYBACK = {
   guestCutoff: 1600,
 };
 
-export function playbackInit({ ctx, bus, pickGuest, chunkById, onGuest } = {}) {
+export function playbackInit({ ctx, bus, pickGuest, chunkById, onGuest, scheduleDiscrete } = {}) {
   state.ctx = ctx || state.ctx;
   state.bus = bus || state.bus;
   if (pickGuest) state.pickGuest = pickGuest;
   if (chunkById) state.chunkById = chunkById;
   if (onGuest) state.onGuest = onGuest;
+  if(scheduleDiscrete)state.scheduleDiscrete=scheduleDiscrete;
 }
 
 // ── the tape ────────────────────────────────────────────────────────────────
@@ -66,8 +68,13 @@ export function noteAudible(roomId, chunkId, gain) {
   if (gain > prev) t.levels.set(chunkId, gain);
 }
 
+export function noteDiscrete(roomId,event={}){
+  const take=state.takes.get(roomId);if(!take||take.sealed)return;
+  take.discrete.push({cueId:String(event.cueId||''),atSec:Math.max(0,Number(event.atSec)||0),gain:Number.isFinite(Number(event.gain))?Number(event.gain):1,pan:Math.max(-1,Math.min(1,Number(event.pan)||0)),provenance:{...(event.provenance||{})}});
+}
+
 export function beginTake(roomId, cell) {
-  state.takes.set(roomId, { roomId, cell: { ...cell }, levels: new Map(), sealed: false, at: 0 });
+  state.takes.set(roomId, { roomId, cell: { ...cell }, levels: new Map(), discrete:[], sealed: false, at: 0 });
 }
 
 export function abortTake(roomId) { state.takes.delete(roomId); }
@@ -157,6 +164,14 @@ export function playTake(roomId, { character = 1 } = {}) {
     // Tell the game when it becomes deniable-no-longer, so the HUD can not
     // mention it. Nothing in the interface ever acknowledges the guest.
     state.guestAt = enter + PLAYBACK.guestRiseSec * 0.55;
+  }
+
+  for(const event of t.discrete||[]){
+    const playbackAt=t0+Math.max(0,Math.min(1,event.atSec/60))*(PLAYBACK.seconds-1);
+    if(state.scheduleDiscrete){state.scheduleDiscrete(event.cueId,playbackAt,{gain:event.gain,pan:event.pan,output:out,nodes});continue;}
+    if(event.cueId==='bell.tenor.clock'){
+      const osc=ctx.createOscillator(),gain=ctx.createGain(),panner=ctx.createStereoPanner();osc.type='sine';osc.frequency.value=233.08;gain.gain.setValueAtTime(.0001,playbackAt);gain.gain.exponentialRampToValueAtTime(.14*Math.max(.1,event.gain),playbackAt+.012);gain.gain.exponentialRampToValueAtTime(.0001,playbackAt+5.8);panner.pan.value=event.pan;osc.connect(gain);gain.connect(panner);panner.connect(out);osc.start(playbackAt);osc.stop(playbackAt+6);nodes.push(osc,gain,panner);
+    }
   }
 
   const endsAt = t0 + PLAYBACK.seconds;

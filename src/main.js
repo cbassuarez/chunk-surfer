@@ -115,8 +115,39 @@ import { makeReturnIndexScene } from './game/return-index.js';
 import { makeReturnReportScene } from './game/return-report.js';
 import { makeAchievementNoticeScene } from './game/achievement-notice.js';
 import { makeProgressionLabScene } from './game/progression-lab.js';
-import { makeChunkSurfScene } from './game/chunk-surf-scene.js';
-import { canOfferChunkSurf } from './game/chunk-surf-state.js';
+import {
+  CHUNK_SURF_HUSH_STAGE,
+  canOfferChunkSurf,
+  freshChunkSurfState,
+  normalizeChunkSurfState,
+  reduceChunkSurf,
+} from './game/chunk-surf-state.js';
+import { createSourceSpaceRuntime, SOURCE_ENTRY } from './game/source-space-runtime.js';
+import { buildChunkSurfGodPreset, CHUNK_SURF_GOD_PRESET } from './game/chunk-surf-god.js';
+import {
+  CHAPEL_TOWER_PHASE,
+  freshChapelTowerState,
+  normalizeChapelTowerState,
+  reduceChapelTower,
+} from './game/chapel-tower-state.js';
+import { createSourceTowerTransitionScene } from './game/source-tower-transition-scene.js';
+import { createBellTowerRuntime, createInertBellAssemblyInstances } from './game/bell-tower-runtime.js';
+import { createBellTowerAudio } from './audio/bell-tower-audio.js';
+import { ELLERY_BELLS } from './data/bell-tower.js';
+import { DOOR_ARCHETYPE } from './data/conservatory-doors.js';
+import {
+  BELL_FRAME_AUTHORED,
+  BELL_CHAMBER_ANCHOR,
+  CHAPEL_OUTER_CHECKPOINT,
+  CHAPEL_SCREEN_AUTHORED,
+  ORGAN_LOFT_ANCHOR,
+  SHUTTER_WINCH_AUTHORED,
+  TOWER_ENTRY,
+  TOWER_ENTRY_VIEW,
+  TOWER_ROUTE_ANCHORS,
+  createBellFrameLayout,
+  nearAuthoredRuntime,
+} from './data/bell-tower-layout.js';
 import { chooseJsonFile, downloadJsonFile } from './game/profile-io.js';
 import {
   applyCurrentRuleChange,
@@ -149,6 +180,7 @@ import {
   CHUNK_SURF_ENDING_ID,
   CHUNK_SURF_FLAGS,
   chunkSurfCompletionLines,
+  chunkSurfRoom,
   surfacedEnding,
 } from './data/chunk-surf-script.js';
 export { fx } from './render/canvas.js';
@@ -214,6 +246,7 @@ let inRogue=false, raf=null, tick=0;
 let sampleFieldEnabled=false;
 const godFxOverride={heartbeat:null,monitorHiss:null,visualDread:null};
 let godMenuWasPaused=false;
+let godDoorDebug=false;
 const perfMeter=createPerformanceMeter();
 const personalInterference=createPersonalizedInterference();
 let bootLog=[];
@@ -3222,8 +3255,17 @@ function step(dx,dy){
   // reads from the same array the shader draws from.
   let planRedirect=null;
   if(RENDERER==='3d' && depth===0){
-    if(usingPlan()){
-      const move=FP.canStep(px, py, px+dx, py+dy, { keys: playerKeys });
+    if(usingPlan()&&!usingSourceSpace()){
+      const fromZone=FP.zoneAt(px,py),toZone=FP.zoneAt(px+dx,py+dy),tower=chapelTowerState();
+      const crossesInnerScreen=(fromZone===ZONE.chapelOuter&&toZone===ZONE.chapel)||(fromZone===ZONE.chapel&&toZone===ZONE.chapelOuter);
+      if(crossesInnerScreen&&![CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(tower.phase)){
+        pushEvent('// the inner chapel screen is secured from the tower side.');
+        return;
+      }
+    }
+    if(activeGeometry()){
+      const geometry=activeGeometry();
+      const move=geometry.canStep(px, py, px+dx, py+dy, { keys: playerKeys });
       if(!move.ok){
         if(move.why==='locked') pushEvent('// locked. none of your keys.');
         else if(move.why==='closed') pushEvent('// closed. [E] open.');
@@ -3232,8 +3274,8 @@ function step(dx,dy){
       }
       planRedirect=move.redirect||null;
       const tx=planRedirect?.x??px+dx,ty=planRedirect?.y??py+dy;
-      if(natatoriumWaterBlocksAt(tx,ty)) return;
-      if(!PROPS.propCanOccupy(tx,ty)) return;
+      if(!usingSourceSpace()&&natatoriumWaterBlocksAt(tx,ty)) return;
+      if(!usingSourceSpace()&&!PROPS.propCanOccupy(tx,ty)) return;
     } else if(R3.r3dSolid(px+dx, py+dy)) return;
   }
   // Your feet are the loudest thing in this building. The noise is left at the
@@ -3242,7 +3284,7 @@ function step(dx,dy){
     const level=REC.emitStepNoise(px, py);
     RT.footstep(level);
     // Sound pins the building. Where you were loud, it stays honest.
-    if(usingPlan()) MUT.markHeard(px, py, Math.min(1, level*3));
+    if(usingPlan()&&!usingSourceSpace()) MUT.markHeard(px, py, Math.min(1, level*3));
   }
   // Tell the lens the world moved, so it may warp its feedback. Standing still
   // must look like standing still.
@@ -3273,16 +3315,15 @@ function step(dx,dy){
   beginRenderStep(nx,ny,nowMs);
   lastMoveAtMs=nowMs;
   px=nx; py=ny; stepCount++;
-  if(storyMode&&usingPlan()){
-    const closedDoors=FP.closePassedDoors(px,py);
-    if(closedDoors.length){
-      fireCue('door');
-      REC.emitNoise(.13,px,py,'a door closed behind you',{
-        kind:'door_close',sourceKind:'environment',sourceId:'passed-door',playerGenerated:false,
-      });
-      saveCommit({doors:FP.saveDoorState()});
-      R3.r3dSetProps(worldRenderInstances(FP.logicalToPhysical(px,py).renderGroup));
-    }
+  if(usingSourceSpace()){
+    chunkSurfRuntime.onStep({x:px-sx,y:py-sy},{x:px,y:py,facing:R3.r3dFacing()});
+    chunkSurfRuntime.setPlayerPosition({x:px,y:py,facing:R3.r3dFacing()});
+    lastStepDx=sx;lastStepDy=sy;
+    trail.push({x:px,y:py});if(trail.length>TRAIL_LEN)trail.shift();
+    syncSourceRender();
+    saveCommit({px,py,steps:stepCount,area:'source-space',chunkSurf:chunkSurfRuntime.state()});
+    updateAudio();
+    return;
   }
   if(storyMode&&usingPlan())saveCommit({px,py,steps:stepCount,area:'conservatory'});
   lastStepDx=sx;
@@ -3428,6 +3469,10 @@ function arrowDelta(){
   return [dx,dy];
 }
 function physicalPointFor(x,y){
+  if(usingSourceSpace()){
+    const p=chunkSurfRuntime.geometry.logicalToPhysical(x,y);
+    return{x:p.x,z:p.z};
+  }
   if(usingPlan()){
     const p=FP.logicalToPhysical(x,y);
     return{x:p.x,z:p.z};
@@ -4593,6 +4638,9 @@ function loop(){
         tickRecorder(dt);
         tickRoomMicAcoustics(dt);
         tickHushAudio(dt);
+        tickSourceSpace(dt);
+        tickDoorRuntime(dt);
+        tickBellTower(dt);
         tickPresence(dt);
         tickStabs(dt);
         tickPages();
@@ -4778,42 +4826,357 @@ function applyLensPreset(name){ return applyLookProfile(name); }
 // Which building is loaded. Content beats belong to the conservatory; the
 // testbed is a geometry proof and must stay free of them.
 let planName='';
+let chunkSurfRuntime=null;
+let sourceExitSnapshot=null;
+let sourcePaperToneAt=0;
+let sourcePresenceWasActive=false;
+let bellTowerRuntime=null;
+let bellTowerAudio=null;
+let inertBellTowerInstances=null;
+let bellTowerImpactActive=false;
+let bellTowerCollisionEnabled=true;
+let towerPreviousPlayerCapsule=null;
+const towerPlayerCapsules=[
+  {x:0,z:0,minY:0,maxY:0,radius:.28},
+  {x:0,z:0,minY:0,maxY:0,radius:.28},
+];
+const towerPlayerSweep={previous:null,current:null};
+let towerCapsuleWriteIndex=0;
+let sourceTowerTransition=null;
 const BUILDING_LOADERS=Object.freeze({
   conservatory:()=>import('./data/floorplan/conservatory.js'),
   testbed:()=>import('./data/floorplan/testbed.js'),
 });
 
-const METAL_DOOR_WIDTH=1.2162;
-function doorRenderInstances(group=null){
+function doorMatMultiply(a,b){const o=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++)o[c*4+r]=a[r]*b[c*4]+a[4+r]*b[c*4+1]+a[8+r]*b[c*4+2]+a[12+r]*b[c*4+3];return o;}
+function doorTransform(x,y,z,yaw=0,scaleX=1){const c=Math.cos(yaw),s=Math.sin(yaw);return new Float32Array([c*scaleX,0,s*scaleX,0,0,1,0,0,-s,0,c,0,x,y,z,1]);}
+function doorLeafMatrix(door,center,leafIndex,fraction){
+  const pair=door.leafCount===2,left=pair?leafIndex===0:door.hinge!=='right';
+  const hingeLocal=left?-door.aperture.width/2:door.aperture.width/2;
+  const yaw=door.widthAxis==='x'?0:Math.PI/2,hingeX=center.x*CELL+Math.cos(yaw)*hingeLocal,hingeZ=center.z*CELL+Math.sin(yaw)*hingeLocal;
+  const inward=String(door.swing).includes('in')?-1:1,angle=(left?-1:1)*inward*Math.PI*.49*fraction;
+  return doorMatMultiply(doorTransform(hingeX,center.y,hingeZ,yaw),doorTransform(0,0,0,angle,left?1:-1));
+}
+const doorLeafVisualCache={group:null,entries:[]};
+const doorDynamicCombined=[];
+function writeDoorLeafMatrix(entry){
+  const {portal,definition,center,leafIndex,matrix}=entry,pair=definition.leafCount===2,left=pair?leafIndex===0:definition.hinge!=='right';
+  const hingeLocal=left?-definition.aperture.width/2:definition.aperture.width/2,yaw=portal.widthAxis==='x'?0:Math.PI/2;
+  const active=definition.activeLeaves.includes(leafIndex),fraction=active?portal.runtime.openFraction:0;
+  const inward=String(definition.swing).includes('in')?-1:1,angle=(left?-1:1)*inward*Math.PI*.49*fraction,theta=yaw+angle,reflect=left?1:-1,c=Math.cos(theta),s=Math.sin(theta);
+  matrix[0]=c*reflect;matrix[1]=0;matrix[2]=s*reflect;matrix[3]=0;matrix[4]=0;matrix[5]=1;matrix[6]=0;matrix[7]=0;matrix[8]=-s;matrix[9]=0;matrix[10]=c;matrix[11]=0;
+  matrix[12]=center.x*CELL+Math.cos(yaw)*hingeLocal;matrix[13]=center.y;matrix[14]=center.z*CELL+Math.sin(yaw)*hingeLocal;matrix[15]=1;
+}
+function rebuildDoorLeafVisuals(group){
+  doorLeafVisualCache.group=group;doorLeafVisualCache.entries.length=0;
+  FP.forEachDoor((portal)=>{
+    const center=FP.logicalToPhysical(portal.cx,portal.cy);if(group&&center.renderGroup!==group)return;
+    const definition=portal.definition||{leafCount:1,activeLeaves:[0],leaf:{width:1},aperture:{width:1},hinge:'left',swing:'escape',mesh:'door_leaf_service'};
+    const zone=FP.zoneAt(Math.floor(portal.cx),Math.floor(portal.cy));
+    for(let leafIndex=0;leafIndex<definition.leafCount;leafIndex++){
+      const matrix=new Float32Array(16),instance={id:`door-leaf:${portal.id}:${leafIndex}`,doorId:portal.id,mesh:definition.mesh,matrix,zone,structural:true};
+      const entry={portal,definition,center,leafIndex,matrix,instance};writeDoorLeafMatrix(entry);doorLeafVisualCache.entries.push(entry);
+    }
+  });
+}
+function doorRenderInstances(group=null,{leaves=false}={}){
   if(!FP.isLoaded())return[];
   const out=[];
   for(const door of FP.doorState()){
     const center=FP.logicalToPhysical(door.cx,door.cy);
     if(group&&center.renderGroup!==group)continue;
-    const width=Math.max(CELL,door.cells.length*CELL);
-    const count=Math.max(1,Math.round(width/METAL_DOOR_WIDTH));
-    const bay=width/count;
-    for(let i=0;i<count;i++){
-      const offset=(i-(count-1)/2)*bay;
-      out.push({
-        id:`door:${door.id}:${i}`,
-        mesh:door.open?'metal_door_open':'metal_door_closed',
-        x:center.x*CELL+(door.widthAxis==='x'?offset:0),
-        y:center.y,
-        z:center.z*CELL+(door.widthAxis==='y'?offset:0),
-        yaw:door.widthAxis==='x'?0:Math.PI/2,
-        scaleX:bay/METAL_DOOR_WIDTH,
-        scaleY:1.25,
-        zone:FP.zoneAt(Math.floor(door.cx),Math.floor(door.cy)),
-        structural:true,
-      });
+    const yaw=door.widthAxis==='x'?0:Math.PI/2,zone=FP.zoneAt(Math.floor(door.cx),Math.floor(door.cy));
+    if(!leaves){
+      const matrix=doorTransform(center.x*CELL,center.y,center.z*CELL,yaw);
+      out.push({id:`door-frame:${door.id}`,doorId:door.id,mesh:door.frameMesh,matrix,zone,structural:true});
+      out.push({id:`door-head:${door.id}`,doorId:door.id,mesh:door.headMesh,matrix,zone,structural:true});
+      if(godDoorDebug){
+        out.push({id:`door-debug-aperture:${door.id}`,mesh:'door_debug_aperture',x:center.x*CELL,y:center.y,z:center.z*CELL,yaw,scaleX:door.aperture.width/1.06,scaleY:door.aperture.height/1.70,zone,structural:true});
+        out.push({id:`door-debug-hinge:${door.id}`,mesh:'door_debug_hinge',x:center.x*CELL,y:center.y,z:center.z*CELL,yaw,scaleX:door.hinge==='right'?-1:1,zone,structural:true});
+        out.push({id:`door-debug-swing:${door.id}`,mesh:'door_debug_swing',x:center.x*CELL,y:center.y,z:center.z*CELL,yaw,scaleX:door.leaf.width,scaleZ:door.leaf.width,zone,structural:true});
+      }
+    }else{
+      for(let leaf=0;leaf<door.leafCount;leaf++){
+        const active=door.activeLeaves.includes(leaf),fraction=active?door.openFraction:0;
+        out.push({id:`door-leaf:${door.id}:${leaf}`,doorId:door.id,mesh:door.mesh,matrix:doorLeafMatrix(door,center,leaf,fraction),zone,structural:true});
+      }
     }
+  }
+  if(!leaves)for(const scar of FP.sealedDoorways()){
+    const center=FP.logicalToPhysical(scar.cx,scar.cy);if(group&&center.renderGroup!==group)continue;
+    out.push({id:scar.id,mesh:'door_sealed_scar',matrix:doorTransform(center.x*CELL,center.y,center.z*CELL,scar.widthAxis==='x'?0:Math.PI/2),zone:FP.zoneAt(scar.cx,scar.cy),structural:true});
   }
   return out;
 }
 
+function syncDoorDynamicProps(){
+  if(usingSourceSpace()||!FP.isLoaded()){R3.r3dSetDynamicProps([]);return;}
+  const group=FP.logicalToPhysical(px,py).renderGroup;
+  if(doorLeafVisualCache.group!==group)rebuildDoorLeafVisuals(group);
+  let count=0;for(const entry of doorLeafVisualCache.entries){writeDoorLeafMatrix(entry);doorDynamicCombined[count++]=entry.instance;}
+  if(group==='tower'&&!inertBellTowerInstances)inertBellTowerInstances=createInertBellAssemblyInstances(towerBellLayout());
+  const bells=group!=='tower'?[]:chapelTowerState().phase===CHAPEL_TOWER_PHASE.TOWER_ACTIVE&&bellTowerRuntime?bellTowerRuntime.renderInstances():(inertBellTowerInstances||[]);
+  for(const bell of bells)doorDynamicCombined[count++]=bell;doorDynamicCombined.length=count;
+  R3.r3dSetDynamicProps(doorDynamicCombined);
+}
+
+function syncTowerLocalLights(group){
+  if(group!=='tower'){R3.r3dSetLocalLights?.([]);return;}
+  const cleared=[CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(chapelTowerState().phase);
+  const lights=[
+    {id:'access-low',x:100,z:62,y:6.65,color:[1,.68,.38],intensity:1.35,radius:5.2},
+    {id:'access-high',x:106,z:63,y:11.45,color:[1,.70,.42],intensity:1.20,radius:5.0},
+    {id:'ringing-pendant',x:90,z:64,y:11.55,color:[1,.72,.46],intensity:1.05,radius:7.5},
+    {id:'chamber-entry',x:97,z:64,y:15.65,color:[.92,.80,.61],intensity:1.00,radius:5.0},
+    {id:'louvre-spill',x:97,z:61,y:17.4,color:[.50,.66,.82],intensity:1.22,radius:8.2},
+    {id:'winch-lamp',x:97,z:69,y:15.25,color:[1,.74,.43],intensity:1.35,radius:5.4},
+    {id:'service-landing',x:106,z:70,y:11.45,color:[1,.69,.40],intensity:1.10,radius:5.0},
+  ];
+  if(cleared)lights.push(
+    {id:'organ-exit',x:98,z:79,y:10.25,color:[.78,.88,1],intensity:1.25,radius:7},
+    {id:'nave-exit',x:100.5,z:82,y:6.45,color:[1,.73,.42],intensity:1.18,radius:5.8},
+  );
+  R3.r3dSetLocalLights?.(lights);
+}
+
 function worldRenderInstances(group=null){
-  return[...PROPS.renderInstances({group}),...doorRenderInstances(group)];
+  if(usingSourceSpace()){R3.r3dSetLocalLights?.([]);return chunkSurfRuntime.propInstances(px,py,{time:performance.now()/1000,reducedMotion:(getSave().settings?.shake||'full')!=='full'});}
+  syncTowerLocalLights(group);
+  const tower=chapelTowerState();
+  const screenOpen=[CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(tower.phase);
+  const props=PROPS.renderInstances({group}).filter((instance)=>!(screenOpen&&instance.id==='chapel-inner-screen'));
+  return[...props,...doorRenderInstances(group)];
+}
+
+function usingSourceSpace(){ return !!chunkSurfRuntime; }
+function sourceGeometry(){ return usingSourceSpace() ? chunkSurfRuntime.geometry : null; }
+function activeGeometry(){ return sourceGeometry() || (usingPlan() ? FP : null); }
+
+function chapelTowerState(){return normalizeChapelTowerState(getSave().chapelTower);}
+function commitChapelTower(event,patch={}){
+  const next=reduceChapelTower(chapelTowerState(),event);
+  saveCommit({chapelTower:next,...patch});
+  return next;
+}
+
+function towerBellLayout(){
+  const logical=FP.toRuntimePoint(BELL_FRAME_AUTHORED);
+  const anchor=FP.logicalToPhysical(logical.x,logical.y);
+  return createBellFrameLayout(ELLERY_BELLS,{
+    centerX:anchor.x*CELL,
+    centerZ:anchor.z*CELL,
+    chamberFloorY:FP.floorAt(logical.x,logical.y),
+  });
+}
+
+function resetTowerPlayerSweep(){
+  towerPreviousPlayerCapsule=null;towerCapsuleWriteIndex=0;towerPlayerSweep.previous=null;towerPlayerSweep.current=null;
+}
+
+function towerPlayerCapsule(out=towerPlayerCapsules[towerCapsuleWriteIndex]){
+  if(!usingPlan())return null;
+  const physical=FP.logicalToPhysical(px,py),at=motionRig||physical,floor=FP.floorAt(px,py);
+  out.x=at.x*CELL;out.z=at.z*CELL;out.minY=floor+.05;out.maxY=floor+1.78;out.radius=.28;
+  return out;
+}
+
+function stopBellTowerRuntime(){
+  bellTowerRuntime?.destroy?.();bellTowerRuntime=null;bellTowerAudio=null;resetTowerPlayerSweep();syncDoorDynamicProps();
+}
+
+function emitDoorArchitecture(portal,type,{playerGenerated=false}={}){
+  const opening=type==='door_open';
+  fireCue(opening&&portal.keyId?'keyturn':'door');
+  emitAcousticEvent({
+    kind:type,
+    source:{kind:playerGenerated?'player':'environment',id:`door:${portal.id}`},
+    spatial:acousticSpatialAt(portal.cx,portal.cy),
+    semantics:{playerGenerated,deliberate:playerGenerated,audibleToHush:true,audibleToMonitor:true,audibleInWorld:true,canSpoilTake:true,family:'architecture'},
+    provenance:{system:'door-runtime',doorId:portal.id,archetype:portal.definition?.archetype||portal.archetype||'legacy',construction:portal.definition?.construction||portal.construction||'legacy'},
+  });
+}
+
+function tickDoorRuntime(dt){
+  if(!usingPlan()||usingSourceSpace())return;
+  const events=FP.tickDoors(dt,{playerX:px,playerY:py});
+  for(const event of events){
+    if(event.type==='closing')emitDoorArchitecture(event.portal,'door_close',{playerGenerated:false});
+  }
+  if(events.some((event)=>event.type==='opened'||event.type==='closed')){
+    saveCommit({doors:FP.saveDoorState()});facilityMapCache={key:null,model:null};
+  }
+  syncDoorDynamicProps();
+}
+
+function failBellTower({hazardId='machinery'}={}){
+  if(!bellTowerCollisionEnabled||bellTowerImpactActive||chapelTowerState().phase!==CHAPEL_TOWER_PHASE.TOWER_ACTIVE)return;
+  bellTowerImpactActive=true;bellTowerRuntime?.stopImmediately?.();
+  const next=commitChapelTower({type:'TOWER_COLLISION',hazardId});
+  CR.fx.shake(.8,420);
+  let elapsed=0;
+  scenes.push({
+    id:'tower-impact',blocksInput:true,blocksWorld:true,lookProfile:'rupture',
+    update(dt){elapsed+=dt;if(elapsed<.6)return;scenes.pop();px=TOWER_ENTRY.x;py=TOWER_ENTRY.y;R3.r3dSetFacing(TOWER_ENTRY.facing);renderMove=null;motionRig=null;trail=[];resetTowerPlayerSweep();saveCommit({chapelTower:next,px,py,area:'bell-tower'});bellTowerImpactActive=false;bellTowerRuntime?.start?.({retry:true});},
+  });
+}
+
+function completeBellTower(){
+  if(chapelTowerState().phase!==CHAPEL_TOWER_PHASE.TOWER_ACTIVE)return;
+  const next=commitChapelTower({type:'BELLS_STOOD'});
+  playerKeys.add('tower-cleared');
+  for(const id of ['tower-hatch','bell-chamber-entry','organ-loft-service','organ-loft-nave'])FP.setDoorOpen(id,true);
+  saveCommit({chapelTower:next,doors:FP.saveDoorState(),px,py,area:'bell-tower'});syncDoorDynamicProps();
+  SPEECH.say({who:'direction',text:'The last bell reaches the balance and comes down. The silence is larger than the ringing. A service leaf releases towards the organ loft.'});
+}
+
+function startBellTowerRuntime({retry=false,collisions=true,offsetMs=0}={}){
+  ensureCtx();
+  bellTowerCollisionEnabled=!!collisions;
+  if(!bellTowerAudio)bellTowerAudio=createBellTowerAudio({context:actx,destination:master||actx?.destination});
+  if(!bellTowerRuntime)bellTowerRuntime=createBellTowerRuntime({
+    bells:towerBellLayout(),audio:bellTowerAudio,emitAcousticEvent,
+    onCollision:failBellTower,onCleared:completeBellTower,
+  });
+  playerKeys.add('tower-live');
+  resetTowerPlayerSweep();
+  const resolvedOffset=offsetMs==='stop-ready'?bellTowerRuntime.timing().finiteEndMs+25:Math.max(0,Number(offsetMs)||0);
+  bellTowerRuntime.start({retry,offsetMs:resolvedOffset});
+  syncDoorDynamicProps();
+  return bellTowerRuntime;
+}
+
+function tickBellTower(dt){
+  if(usingPlan()&&!usingSourceSpace()&&FP.zoneAt(px,py)===ZONE.bellTower&&!chapelTowerState().ropeRoomVisited&&FP.floorAt(px,py)<12){
+    const next=reduceChapelTower(chapelTowerState(),{type:'ROPE_ROOM_VISITED'});saveCommit({chapelTower:next});
+  }
+  if(chapelTowerState().phase!==CHAPEL_TOWER_PHASE.TOWER_ACTIVE||!bellTowerRuntime)return;
+  const current=towerPlayerCapsule();
+  if(current){towerPlayerSweep.previous=towerPreviousPlayerCapsule||current;towerPlayerSweep.current=current;}
+  bellTowerRuntime.tick(dt,current?towerPlayerSweep:null);
+  if(current){towerPreviousPlayerCapsule=current;towerCapsuleWriteIndex=(towerCapsuleWriteIndex+1)%towerPlayerCapsules.length;}
+  syncDoorDynamicProps();
+}
+
+function chapelTowerDiagnostics(){
+  if(!FP.isLoaded())return{currentRoom:null,staircase:null,flight:null,physicalFloor:null,nearbyDoor:null,routePhase:'unloaded',activeCompoundHazards:[]};
+  const physical=FP.logicalToPhysical(px,py),stairs=(FP.floorplan().stairPortals||[]).filter((entry)=>entry.id);
+  const segmentDistance=(entry)=>{
+    const ax=entry.p0[0],az=entry.p0[1],bx=entry.p1[0],bz=entry.p1[1],vx=bx-ax,vz=bz-az;
+    const t=Math.max(0,Math.min(1,((physical.x-ax)*vx+(physical.z-az)*vz)/Math.max(.0001,vx*vx+vz*vz)));
+    return Math.hypot(physical.x-(ax+vx*t),physical.z-(az+vz*t));
+  };
+  const stair=stairs.sort((a,b)=>segmentDistance(a)-segmentDistance(b))[0];
+  const door=FP.doorState().map((entry)=>({...entry,distance:Math.hypot(px-entry.cx,py-entry.cy)})).sort((a,b)=>a.distance-b.distance)[0];
+  const tower=chapelTowerState();
+  return{
+    currentRoom:physical.renderGroup==='tower'?currentAreaLabel():null,
+    staircase:stair&&segmentDistance(stair)<=8?stair.id.split(':')[0]:null,
+    flight:stair&&segmentDistance(stair)<=8?stair.flight:null,
+    physicalFloor:+Number(physical.y||0).toFixed(3),
+    nearbyDoor:door&&door.distance<=8?door.id:null,
+    routePhase:tower.phase===CHAPEL_TOWER_PHASE.TOWER_ACTIVE?'live-crossing':[CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(tower.phase)?'physical-descent':'quiet-access',
+    activeCompoundHazards:(bellTowerRuntime?.hazardVolumes?.()||[]).filter((hazard)=>hazard.moving).map((hazard)=>({id:hazard.id,bell:hazard.bell,component:hazard.component,kind:hazard.kind,x:+hazard.x.toFixed(3),y:[+hazard.minY.toFixed(3),+hazard.maxY.toFixed(3)],z:+hazard.z.toFixed(3)})),
+  };
+}
+
+function syncSourceRender({ force=false }={}){
+  if(!usingSourceSpace()) return false;
+  const plan=chunkSurfRuntime.geometry.renderPlanFor(px,py);
+  const key=`source:${plan.key}`;
+  if(force||key!==r3dCache.physicalKey){
+    R3.r3dSetPlan(plan.rgba,plan.w,plan.h,plan.material,{originX:plan.originX,originY:plan.originY,sourceLayer:plan.sourceLayer});
+    r3dCache.physicalGroup='source-space';r3dCache.physicalKey=key;r3dCache.fogSize=-1;
+  }
+  const reducedMotion=(getSave().settings?.shake||'full')!=='full';
+  R3.r3dSetProps(chunkSurfRuntime.propInstances(px,py,{time:performance.now()/1000,reducedMotion}));
+  R3.r3dSetDynamicProps([]);
+  R3.r3dSetSourceTextInstances(chunkSurfRuntime.textInstances({
+    px,py,presence:PRES.publicSnapshot(),time:performance.now()/1000,reducedMotion,
+  }));
+  return true;
+}
+
+function beginSourceTowerTransition(){
+  if(sourceTowerTransition||chapelTowerState().phase!==CHAPEL_TOWER_PHASE.TRANSITION_READY)return false;
+  const reducedMotion=(getSave().settings?.shake||'full')!=='full';
+  sourceTowerTransition=createSourceTowerTransitionScene({
+    motionInput,renderer:R3,reducedMotion,worldView:()=>TOWER_ENTRY_VIEW,
+    onCommit:()=>{
+      const next=commitChapelTower({type:'TRANSITION_COMMITTED'});
+      px=TOWER_ENTRY.x;py=TOWER_ENTRY.y;R3.r3dSetFacing(TOWER_ENTRY.facing);renderMove=null;motionRig=null;trail=[];
+      saveCommit({chapelTower:next,px,py,area:'bell-tower'});
+      scenes.remove(sourceTowerTransition);sourceTowerTransition=null;
+      startBellTowerRuntime({retry:false});
+      SPEECH.say({who:'direction',text:'Eight ropes. Above them, the tenor begins alone. Then the frame takes the building.'});
+    },
+    onExit:()=>{sourceTowerTransition=null;},
+  });
+  scenes.push(sourceTowerTransition);
+  chunkSurfRuntime=null;PRES.despawn();R3.r3dSetSourceTextInstances([]);
+  px=CHAPEL_OUTER_CHECKPOINT.x;py=CHAPEL_OUTER_CHECKPOINT.y;R3.r3dSetFacing(CHAPEL_OUTER_CHECKPOINT.facing);renderMove=null;motionRig=null;trail=[];
+  saveCommit({px,py,area:'conservatory'});
+  return true;
+}
+
+function restoreFromSourceSpace(completion,exitSnapshot){
+  const finalState=chunkSurfRuntime?.state?.()||normalizeChunkSurfState(getSave().chunkSurf);
+  sourceExitSnapshot=exitSnapshot||chunkSurfRuntime?.exitSnapshot?.()||null;
+  flagApply(completion.flags||[]);
+  let tower=chapelTowerState();
+  if(tower.phase===CHAPEL_TOWER_PHASE.SOURCE_READY)tower=reduceChapelTower(tower,{type:'SOURCE_COMPLETED'});
+  saveCommit({chunkSurf:finalState,chapelTower:tower,flags:getSave().flags,area:'source-space',presence:PRES.savePresenceState()});
+  const lines=chunkSurfCompletionLines(completion);
+  if(lines?.length)presentFinale(lines,{slate:'SOURCE FAULT',replayId:'chunk-surf-complete',onDone:beginSourceTowerTransition});
+  else beginSourceTowerTransition();
+}
+
+function activateSourceSpace(state,{position=null}={}){
+  const normalized=normalizeChunkSurfState(state);
+  sourcePresenceWasActive=PRES.isActive();
+  PRES.despawn();
+  chunkSurfRuntime=createSourceSpaceRuntime({
+    initialState:normalized,
+    onState:(next,{immediate=false}={})=>{
+      saveCommit({chunkSurf:next,px,py,area:'source-space',...(immediate?{presence:PRES.savePresenceState()}:{})});
+    },
+    onScare:()=>{
+      STAB.reportThreat();bumpFear(.35);CUES.playCue(CUES.CUE.scream,{gain:.48,rate:.72});
+    },
+    onComplete:restoreFromSourceSpace,
+  });
+  const at=position||chunkSurfRuntime.checkpointPosition(normalized.checkpointId);
+  px=Number(at?.x)||0;py=Number(at?.y)||0;
+  R3.r3dSetFacing(Number.isFinite(at?.facing)?at.facing:SOURCE_ENTRY.facing);
+  chunkSurfRuntime.setPlayerPosition({x:px,y:py,facing:R3.r3dFacing()});
+  renderMove=null;motionRig=null;trail=[];
+  applyLensPreset('rupture');
+  R3.r3dSetSourceSurface(chunkSurfRuntime.sourceSurfaceLines());
+  syncSourceRender({force:true});
+  return chunkSurfRuntime;
+}
+
+function resumeSourceSpaceFromSave(){
+  const state=normalizeChunkSurfState(getSave().chunkSurf);
+  if(!state.active)return false;
+  const sx=Number(getSave().px),sy=Number(getSave().py);
+  activateSourceSpace(state,{position:Number.isFinite(sx)&&Number.isFinite(sy)?{x:sx,y:sy,facing:state.returnPoint?.facing??0}:null});
+  return true;
+}
+
+function repairLegacyTowerLayout(tower){
+  if(!tower.legacyLayout)return tower;
+  const ax=FP.toAuthoredCoord(px),ay=FP.toAuthoredCoord(py);
+  let destination=null;
+  if(tower.phase===CHAPEL_TOWER_PHASE.TOWER_ACTIVE)destination=TOWER_ENTRY;
+  else if([CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(tower.phase)){
+    if(ax>=44&&ax<=59&&ay>=129&&ay<=141)destination={...FP.toRuntimePoint(TOWER_ROUTE_ANCHORS.organLoft),facing:TOWER_ROUTE_ANCHORS.organLoft.facing};
+    else if(ax>=27&&ax<=43&&ay>=129&&ay<=141)destination={...FP.toRuntimePoint(TOWER_ROUTE_ANCHORS.chamberEntry),facing:TOWER_ROUTE_ANCHORS.chamberEntry.facing};
+    else if(getSave().area==='bell-tower')destination={...FP.toRuntimePoint(TOWER_ROUTE_ANCHORS.ringingEntry),facing:TOWER_ROUTE_ANCHORS.ringingEntry.facing};
+  }
+  if(destination){px=destination.x;py=destination.y;R3.r3dSetFacing(destination.facing??0);renderMove=null;motionRig=null;trail=[];}
+  const repaired={...tower,legacyLayout:false};
+  saveCommit({chapelTower:repaired,px,py,area:getSave().area});
+  return repaired;
 }
 
 async function loadBuilding(){
@@ -4824,7 +5187,9 @@ async function loadBuilding(){
   try{
     const mod=await BUILDING_LOADERS[which]();
     const data=mod[which] || mod.default;
-    FP.compile(data.levels, {width:data.width, height:data.height, widenCorridors:data.widenCorridors,connectors:data.connectors||[]});
+    FP.compile(data.levels, {width:data.width, height:data.height, widenCorridors:data.widenCorridors,connectors:data.connectors||[],doors:data.doors||[]});
+    inertBellTowerInstances=null;
+    doorLeafVisualCache.group=null;doorLeafVisualCache.entries.length=0;
     natatoriumBasinBounds = which === 'conservatory' ? WATER.computeNatatoriumBasinBounds(FP) : null;
     facilityMapSource=null; facilityMapCache={key:'',model:null}; HUSH_MAP_TELEMETRY.reset();
     if(data.spawn) FP.setSpawn(data.spawn.x, data.spawn.y);
@@ -4836,8 +5201,14 @@ async function loadBuilding(){
       const start=canRestore?{x:sx,y:sy}:FP.spawn();
       px=start.x;py=start.y;
     }
-    for(const d of data.doors||[]) FP.setDoorKey(d.x,d.y,d.key,{open:d.open===true});
     FP.loadDoorState(getSave().doors);
+    if(which==='conservatory'&&!normalizeChunkSurfState(getSave().chunkSurf).active){
+      const tower=repairLegacyTowerLayout(chapelTowerState());
+      if(tower.phase===CHAPEL_TOWER_PHASE.TRANSITION_READY){px=CHAPEL_OUTER_CHECKPOINT.x;py=CHAPEL_OUTER_CHECKPOINT.y;}
+      else if(tower.phase===CHAPEL_TOWER_PHASE.TOWER_ACTIVE){px=TOWER_ENTRY.x;py=TOWER_ENTRY.y;playerKeys.add('tower-live');}
+      else if([CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(tower.phase)){playerKeys.add('tower-live');playerKeys.add('tower-cleared');for(const id of ['tower-hatch','bell-chamber-entry','organ-loft-service','organ-loft-nave'])FP.setDoorOpen(id,true);}
+      else if(FP.zoneAt(px,py)===ZONE.chapel){px=CHAPEL_OUTER_CHECKPOINT.x;py=CHAPEL_OUTER_CHECKPOINT.y;}
+    }
     const p=FP.floorplan(),physicalPlan=FP.physicalRenderPlanFor(px,py);
     R3.r3dSetPlan(physicalPlan.rgba,physicalPlan.w,physicalPlan.h,physicalPlan.material);
     r3dCache.physicalGroup=physicalPlan.group;
@@ -4849,6 +5220,7 @@ async function loadBuilding(){
       PROPS.propsInit(FP);
       syncDroppedRadioProp();
       R3.r3dSetProps(worldRenderInstances(physicalPlan.group));
+      syncDoorDynamicProps();
       const read=new Set(OBJ.objState().read);
       for(const pg of PAGES){
         const at=FP.toRuntimePoint(pg.at);
@@ -4859,8 +5231,11 @@ async function loadBuilding(){
       syncStoryObjectProps();
       R3.r3dSetProps(worldRenderInstances(physicalPlan.group));
     } else R3.r3dSetProps([]);
-    revealAround(px,py);
-    faceOpenDirection();
+    if(!resumeSourceSpaceFromSave()){
+      revealAround(px,py);
+      faceOpenDirection();
+      if(chapelTowerState().phase===CHAPEL_TOWER_PHASE.TOWER_ACTIVE)startBellTowerRuntime({retry:true});
+    }
     if(KEY_DEBUG) pushEvent(`// ${which}: ${p.w}×${p.h} cells.`);
   }catch(err){
     console.error('floorplan failed to load', err);
@@ -4877,6 +5252,8 @@ function enterStory(){
   setGameChrome(true);
   playerKeys.clear();playerKeys.add('master');
   if((getSave().items||[]).includes('chapel_key'))playerKeys.add('chapel');
+  if([CHAPEL_TOWER_PHASE.TOWER_ACTIVE,CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(chapelTowerState().phase))playerKeys.add('tower-live');
+  if([CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(chapelTowerState().phase))playerKeys.add('tower-cleared');
   REC.loadRecState(getSave().rec);
   PRES.loadPresenceState(getSave().presence);
   OBJ.loadObjState(getSave().obj);
@@ -5136,6 +5513,18 @@ function recordAction(){
     if(REC.isStalled()){ resumeInstrumentTake(); return; }
     stopTake(); return;
   }
+  if(usingSourceSpace()){
+    if(itemLost('recorder')){SPEECH.say({who:'you',text:'No recorder. The source waits without me.'});return;}
+    const result=chunkSurfRuntime.recordFocused(px,py,R3.r3dFacing());
+    if(result.handled){
+      emitRecorderTransport('source capture');
+      if(result.text)SPEECH.say({who:'you',text:result.text});
+      syncSourceRender();
+      return;
+    }
+    SPEECH.say({who:'you',text:'The recorder runs. No work-order room answers here.'});
+    return;
+  }
   // It took the one thing the job is made of. Nothing happens until you find it.
   if(itemLost('recorder')){ SPEECH.say({ who:'you', text:'No recorder. There is no job until I have it back.' }); return; }
   // Already listening (the dialog closed, or there was no dialog): the second
@@ -5148,7 +5537,7 @@ function recordAction(){
   if(room==='lux_nova'){
     if(finaleActive) return;
     if(REC.recState().takes.length < 4){ SPEECH.say(LINES.chapelLocked); return; }
-    if(chunkSurfMandatory() && beginChunkSurf({ forced:true })) return;
+    if(chapelTowerState().phase!==CHAPEL_TOWER_PHASE.TOWER_CLEARED&&chapelTowerState().phase!==CHAPEL_TOWER_PHASE.CHAPEL_FINAL){SPEECH.say({who:'you',text:'The nave is not the way in yet. The tower route is still live.'});return;}
     beginConfrontation(); return;
   }
   if(REC.hasTake(room)){ SPEECH.say(LINES.already); return; }
@@ -5211,6 +5600,7 @@ function roll(){
   screamedThisTake=false;
   takeOrigin={x:px,y:py};
   const takeSlot=REC.recState().takes.length+1;
+  environmentalTenorFired=false;
   instrArmedThisTake=takeSlot===3 && PROPS.shouldArmHush({tutorial:TUT.tutorialActive()});
   saveCommit({props:PROPS.savePropState()});
   ensureCtx();
@@ -5385,6 +5775,7 @@ function takeAnItem(){
 
 // Walk over it and it is yours again. Nothing marks it. You simply find it.
 function tickLostItem(){
+  if(usingSourceSpace())return;
   if(!lostItem || !lostAt || scenes.blocksWorld()) return;
   if(Math.hypot(px-lostAt.x, py-lostAt.y) > 2.0) return;
   const id=lostItem;
@@ -5492,6 +5883,7 @@ const pageById=new Map(PAGES.map(p=>[p.id,p]));
 // notices it is there; taking it is a thing you do with your hand, on purpose,
 // with [e], and the HUD says so.
 function tickPages(){
+  if(usingSourceSpace()){pageHere=null;return;}
   if(!storyMode){ pageHere=null; return; }
   pageHere = OBJ.pageNear(px,py);
 }
@@ -5713,9 +6105,31 @@ function interactNatatoriumWater(){
   return true;
 }
 
+function interactChapelScreen(){
+  if(!nearAuthoredRuntime(px,py,CHAPEL_SCREEN_AUTHORED,7))return false;
+  const tower=chapelTowerState(),ordinary=REC.recState().takes.filter((id)=>id&&id!=='lux_nova').length;
+  if(ordinary<4){SPEECH.say({who:'you',text:'The collegiate chapel screen is locked from within. Four rooms remain the only honest work.'});return true;}
+  if(tower.phase===CHAPEL_TOWER_PHASE.SOURCE_READY){beginChunkSurf({forced:true});return true;}
+  if(tower.phase===CHAPEL_TOWER_PHASE.TRANSITION_READY){beginSourceTowerTransition();return true;}
+  if(tower.phase===CHAPEL_TOWER_PHASE.TOWER_ACTIVE){SPEECH.say({who:'direction',text:'The screen holds. Above it, the tower is already moving.'});return true;}
+  return false;
+}
+
 function interact(){
   if(!storyMode) return;
   if(PB.isPlaying()){ PB.stopPlayback(); return; }
+  if(usingSourceSpace()){
+    const result=chunkSurfRuntime.inspectFocused(px,py,R3.r3dFacing());
+    if(result.handled){
+      REC.emitNoise(.05,px,py,'source handled',{spoils:false,kind:'handling_noise',sourceKind:'player',sourceId:'source',playerGenerated:true,deliberate:true});
+      if(result.text)SPEECH.say({who:result.event==='completed'?'direction':'you',text:result.text});
+      syncSourceRender({force:result.event==='page-found'||result.event==='completed'});
+      return;
+    }
+    SPEECH.say({who:'you',text:'The source has no interaction at this address.'});
+    return;
+  }
+  if(interactChapelScreen())return;
   // A sheet at your feet. Crouching for it is not free — a man bending down in a
   // coat is the second quietest noise in this game, and something is listening.
   if(pageHere){
@@ -5731,18 +6145,18 @@ function interact(){
   const doorHit=usingPlan()?FP.interactDoor(px,py,R3.r3dDelta(1),playerKeys):null;
   if(doorHit){
     if(!doorHit.ok){
-      SPEECH.say({who:'you',text:doorHit.keyId==='chapel'?'Replacement core. Not on the standard ring.':'Locked. None of these.'});
+      if(doorHit.keyId==='tower-live'){
+        const next=reduceChapelTower(chapelTowerState(),{type:'BELL_HATCH_INSPECTED'});saveCommit({chapelTower:next});
+        SPEECH.say({who:'you',text:'Bell chamber. ACCESS RESTRICTED. The maintenance hasp is linked to the inner screen.'});
+      }else SPEECH.say({who:'you',text:doorHit.keyId==='chapel'?'Replacement core. Not on the standard ring.':'Locked. None of these.'});
       return;
     }
-    if(doorHit.opened){
-      fireCue(doorHit.keyId?'keyturn':'door');
-      REC.emitNoise(doorHit.keyId?.length ? .20 : .13,px,py,'a door opened',{
-        kind:'door_open',sourceKind:'environment',sourceId:doorHit.id||'door',playerGenerated:true,deliberate:true,
-      });
+    if(doorHit.opened||doorHit.closed||doorHit.removedWedge){
+      const portal=FP.doorState().find((door)=>door.id===doorHit.id)||{...doorHit,cx:px,cy:py};
+      emitDoorArchitecture(portal,doorHit.opened?'door_open':'door_close',{playerGenerated:true});
+      if(doorHit.removedWedge)SPEECH.say({who:'you',text:'The rubber wedge comes free. The closer takes the weight.'});
       saveCommit({doors:FP.saveDoorState()});
-      const p=FP.physicalRenderPlanFor(px,py);R3.r3dSetPlan(p.rgba,p.w,p.h,p.material);
-      r3dCache.physicalGroup=p.group;r3dCache.physicalKey=p.key;r3dCache.fogSize=-1;
-      R3.r3dSetProps(worldRenderInstances(p.group));
+      facilityMapCache={key:null,model:null};syncDoorDynamicProps();
     }
     return;
   }
@@ -5813,12 +6227,26 @@ function interact(){
       });
       return;
     }
+    if(hit.action==='tower-hammer-isolator'){
+      const next=reduceChapelTower(chapelTowerState(),{type:'CLOCK_HAMMER_ISOLATED'});saveCommit({chapelTower:next});
+      if(instr?.propId==='tower-tenor-clock-hammer')silenceInstrument(instr.propId);
+      SPEECH.say({who:'you',text:'CLOCK HAMMER — ISOLATED. The linkage falls out of tension.'});
+      return;
+    }
+    if(hit.action==='tower-shutter-winch'){
+      if([CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(chapelTowerState().phase)){SPEECH.say({who:'you',text:'The pawl is released. The service stairs are open in both directions.'});return;}
+      const result=bellTowerRuntime?.requestStop?.()||{ok:false};
+      if(!result.ok){SPEECH.say({who:'you',text:'Under load. The pawl will not lift until the touch reaches a boundary.'});return;}
+      if(!chapelTowerState().shuttersReleased){const next=reduceChapelTower(chapelTowerState(),{type:'SHUTTERS_RELEASED'});saveCommit({chapelTower:next});}
+      SPEECH.say({who:'direction',text:'The shutters begin to open. The ring finishes what it is saying, finds rounds, and starts to stand.'});
+      return;
+    }
     const line=inspectPropTracked(hit.id);
     if(hit.sampleFamily?.length){
       const ref=auditionPropTracked(hit.id);
       playPropSample(hit,ref);
       REC.emitNoise(.16,hit.rx,hit.ry,`the ${propLabel(hit).toLowerCase()} sounded`,{
-        kind:'instrument_note',sourceKind:'environment',sourceId:hit.id,playerGenerated:true,deliberate:true,
+        kind:hit.acousticKind||'instrument_note',sourceKind:'environment',sourceId:hit.id,playerGenerated:true,deliberate:true,
       });
     }
     saveCommit({props:PROPS.savePropState()});
@@ -5828,10 +6256,6 @@ function interact(){
   // Safety net for old saves/debug positions: the story objects are visible
   // props now, but proximity still opens them if a loose prop failed to load.
   if(interactRig()||interactTalisman())return;
-  if(chunkSurfAvailable() && /chapel/i.test(currentAreaLabel())){
-    beginChunkSurf({ forced: flagTest('drank.coffee') });
-    return;
-  }
   // The work order lives in your pocket for the whole night.
   readDocumentTracked(WORK_ORDER);
   markWorkOrderRead();
@@ -6457,12 +6881,14 @@ function chunkSurfCompleted(){
 }
 
 function chunkSurfMandatory(){
-  return flagTest('drank.coffee') && !chunkSurfCompleted();
+  return [CHAPEL_TOWER_PHASE.SOURCE_READY,CHAPEL_TOWER_PHASE.TRANSITION_READY].includes(chapelTowerState().phase);
 }
 
 function chunkSurfAvailable(){
   return storyMode
     && planName === 'conservatory'
+    && chapelTowerState().phase===CHAPEL_TOWER_PHASE.SOURCE_READY
+    && nearAuthoredRuntime(px,py,CHAPEL_SCREEN_AUTHORED,7)
     && canOfferChunkSurf({
       completedTakes: REC.recState().takes.length,
       roomId: recordableRoomAt(px, py) || (currentAreaLabel().toLowerCase().includes('chapel') ? 'chapel_approach' : ''),
@@ -6472,29 +6898,20 @@ function chunkSurfAvailable(){
 
 function beginChunkSurf({ forced=false } = {}){
   if(!chunkSurfAvailable() && !forced) return false;
-  if(scenes.has('chunk-surf')) return true;
+  if(usingSourceSpace()) return true;
   ensureCtx();
   flagApply([CHUNK_SURF_FLAGS.offered, CHUNK_SURF_FLAGS.entered]);
-  saveCommit({ flags:getSave().flags });
   STORY.stopAll();
-  applyLensPreset('rupture');
-  scenes.push(makeChunkSurfScene({
-    ...chunkSurfRouteProfile(),
-    seed: getSave().run?.startedAt || Date.now(),
-    onScare:()=>{
-      STAB.reportThreat();
-      bumpFear(0.35);
-      CUES.playCue(CUES.CUE.scream, { gain:0.48, rate:0.72 });
-    },
-    onComplete:(completion)=>{
-      flagApply(completion.flags || []);
-      saveCommit({ flags:getSave().flags });
-      const lines=chunkSurfCompletionLines(completion);
-      if(lines?.length){
-        presentFinale(lines, { slate:'SOURCE FAULT', replayId:'chunk-surf-complete' });
-      }
-    },
-  }));
+  const profile=chunkSurfRouteProfile();
+  const returnPoint={x:px,y:py,facing:R3.r3dFacing()};
+  let state=freshChunkSurfState({
+    ...profile,
+    seed:getSave().run?.startedAt||Date.now(),
+    returnPoint,
+  });
+  state=reduceChunkSurf(state,{type:'SOURCE_ENTERED',returnPoint});
+  saveCommit({flags:getSave().flags,chunkSurf:state,px:SOURCE_ENTRY.x,py:SOURCE_ENTRY.y,area:'source-space'});
+  activateSourceSpace(state,{position:SOURCE_ENTRY});
   return true;
 }
 
@@ -6595,7 +7012,7 @@ function tutorialCtx(){
 }
 
 function tickMutation(dt){
-  if(!usingPlan()) return;
+  if(!usingPlan()||usingSourceSpace()) return;
   MUT.decayHeard(dt);
   const facing = RENDERER==='3d' ? R3.r3dDelta(1) : [0,-1];
   const anchors = [];
@@ -6612,12 +7029,52 @@ function tickMutation(dt){
   }
 }
 
+function tickSourceSpace(dt){
+  if(!usingSourceSpace())return;
+  chunkSurfRuntime.tick(dt,{px,py,facing:R3.r3dFacing()});
+  const state=chunkSurfRuntime.state();
+  const paper=chunkSurfRuntime.paperTonePoint();
+  const now=performance.now();
+  if(paper&&now>=sourcePaperToneAt){
+    const dx=paper.x-px,dy=paper.y-py,distance=Math.hypot(dx,dy);
+    if(distance<32){
+      const facing=R3.r3dFacing(),right=[[1,0],[0,1],[-1,0],[0,-1]][facing];
+      const pan=Math.max(-1,Math.min(1,(dx*right[0]+dy*right[1])/Math.max(1,distance)));
+      CUES.playPageTurn({gain:.045,pan});
+      pushEvent(`// paper tone · ${Math.abs(pan)<.2?'ahead':pan<0?'left':'right'}`);
+      sourcePaperToneAt=now+4200;
+    }
+  }
+  if([CHUNK_SURF_HUSH_STAGE.HUNT,CHUNK_SURF_HUSH_STAGE.FINAL].includes(state.hushStage)&&!PRES.isActive()){
+    const body=chunkSurfRuntime.checkpointPosition(state.hushStage===CHUNK_SURF_HUSH_STAGE.FINAL?'final-page':'body-room');
+    PRES.spawnBehind(px,py,0,1);
+    const actor=PRES.presenceState();actor.x=body.x-18;actor.y=body.y+9;
+  }
+  syncSourceRender();
+}
+
+function onSourcePresenceCatch(){
+  if(!usingSourceSpace())return;
+  const checkpoint=chunkSurfRuntime.handleHushContact();
+  px=checkpoint.x;py=checkpoint.y;R3.r3dSetFacing(checkpoint.facing||0);
+  const actor=PRES.presenceState();actor.x=px-14;actor.y=py+10;actor.hasTarget=false;
+  renderMove=null;motionRig=null;trail=[];
+  CR.fx.flash(100,'rgba(255,255,255,.72)');CR.fx.shake(.55,240);
+  SPEECH.say({who:'direction',text:'Contact. The source keeps what you resolved and returns both bodies to the last stable address.'});
+  syncSourceRender({force:true});
+  saveCommit({px,py,chunkSurf:chunkSurfRuntime.state(),presence:PRES.savePresenceState(),area:'source-space'});
+}
+
 function tickPresence(dt){
   if(!storyMode || !PRES.isActive()) return;
-  PRES.updatePresence(dt, px, py, onPresenceCatch);
+  if(chapelTowerState().phase===CHAPEL_TOWER_PHASE.TOWER_ACTIVE)return;
+  PRES.updatePresence(dt,px,py,usingSourceSpace()?onSourcePresenceCatch:onPresenceCatch,
+    usingSourceSpace()?{navigation:chunkSurfRuntime.navigation,catchMode:'source-checkpoint'}:{});
   // Its nearness bleeds into the room tone: the floor thickens as it closes.
   const fieldAudio=hushAudioRuntime?.currentField?.()?.absorption?.audio||0;
   RT.setBed(ROOM_TONE.bedGain * (1 + PRES.pressure(px,py)*0.65) * (1-fieldAudio*.72), 0.4);
+
+  if(usingSourceSpace())return;
 
   // The first time it gets close, he has a think about it. The world does not
   // stop for that — it is still coming, and the three things he can tell
@@ -6633,10 +7090,26 @@ function tickPresence(dt){
 // A take of nothing that gets louder. The hiss rises with the seconds, because
 // the longer you hold still in a dead room the more the room is all there is.
 const TAKE_HISS = { min: 0.10, max: 0.60 };
+let environmentalTenorFired=false;
+
+function playEnvironmentalTenorStrike(){
+  ensureCtx();
+  if(actx){
+    const when=actx.currentTime+.02;
+    for(const [ratio,gain,duration] of [[1,.15,8.2],[2.01,.045,5.2],[2.4,.03,4.2],[3.02,.018,3.1]]){
+      const osc=actx.createOscillator(),amp=actx.createGain();osc.type='sine';osc.frequency.value=233.08*ratio;amp.gain.setValueAtTime(.0001,when);amp.gain.exponentialRampToValueAtTime(gain,when+.012);amp.gain.exponentialRampToValueAtTime(.0001,when+duration);osc.connect(amp);amp.connect(master||actx.destination);osc.start(when);osc.stop(when+duration+.1);
+    }
+  }
+  const room=recordableRoomAt(px,py)||currentWorld(),atSec=REC.recState().takeElapsed||20;
+  PB.noteDiscrete(room,{cueId:'bell.tenor.clock',atSec,gain:1,pan:.34,provenance:{system:'chapel-clock',bell:8}});
+  emitAcousticEvent({kind:'bell_tenor_toll',source:{kind:'environment',id:'tower-tenor-clock-hammer'},spatial:acousticSpatialAt(px,py),semantics:{audibleToHush:true,audibleToMonitor:true,audibleInWorld:true,canBeMimicked:true,canSpoilTake:false,family:'bell',tags:['environmental','tenor']},provenance:{system:'chapel-clock',takeSlot:2}});
+  pushEvent('// [one deep bell, somewhere above the chapel]');
+}
 
 function tickRecorder(dt){
   if(!storyMode) return;
   REC.decayNoise(dt);
+  if(usingSourceSpace())return;
   // The job has an authored encounter cadence. These are not random stabs and
   // they do not share the thought-once registry: only winning consumes one.
   maybeIndependentBattle();
@@ -6644,6 +7117,9 @@ function tickRecorder(dt){
   tickInstrument();
   if(REC.isRecording()){
     const p=REC.takeProgress();
+    if(!environmentalTenorFired&&REC.recState().takes.length===1&&p>=.33&&!REC.isStalled()&&!REC.isAssistPaused()){
+      environmentalTenorFired=true;playEnvironmentalTenorStrike();
+    }
     personalInterference.tick({
       settings:getSave().settings?.personalInterference,
       recording:true,
@@ -6661,6 +7137,10 @@ function tickRecorder(dt){
   if(st==='complete'){
     const room=currentWorld();
     REC.addTake(room);
+    if(REC.recState().takes.filter((id)=>id&&id!=='lux_nova').length===4&&chapelTowerState().phase===CHAPEL_TOWER_PHASE.FORESHADOW){
+      const chapelTower=reduceChapelTower(chapelTowerState(),{type:'FOURTH_TAKE_COMPLETED'});
+      saveCommit({chapelTower});
+    }
     if(!PRES.isActive()) once('presence-arrives',()=>{
       PRES.spawnBehind(px,py,-lastStepDx||0,-lastStepDy||1);
       emitProgress(EVENT_TYPES.HUSH_MET, {}, 'main.presenceArrives');
@@ -6742,12 +7222,15 @@ let instrArmedThisTake=false;
 function startInstrumentSound(prop,ref){
   ensureCtx();
   const chunk=propChunk(ref);if(!actx||!master||!chunk?.buffer)return false;
-  const now=actx.currentTime,src=actx.createBufferSource();src.buffer=chunk.buffer;src.loop=true;
+  const now=actx.currentTime;
   const lp=actx.createBiquadFilter();lp.type='lowpass';lp.frequency.setValueAtTime(900,now);
   const gain=actx.createGain();gain.gain.setValueAtTime(0,now);
   const pan=actx.createStereoPanner();pan.pan.setValueAtTime(0,now);
-  src.connect(lp);lp.connect(gain);gain.connect(pan);pan.connect(master);src.start(now);
-  instr.src=src;instr.nodes=[src,lp,gain,pan];instr.filter=lp;instr.gain=gain;instr.pan=pan;
+  lp.connect(gain);gain.connect(pan);pan.connect(master);
+  const interval=prop.hushPlayback?.mode==='interval';
+  let src=null;
+  if(!interval){src=actx.createBufferSource();src.buffer=chunk.buffer;src.loop=true;src.connect(lp);src.start(now);}
+  instr.src=src;instr.nodes=[...(src?[src]:[]),lp,gain,pan];instr.filter=lp;instr.gain=gain;instr.pan=pan;instr.sampleRef=ref;instr.nextTriggerAt=interval?performance.now()+350:null;
   return true;
 }
 function stopInstrumentSound(fade=.35){
@@ -6807,8 +7290,16 @@ function tickInstrument(){
   if(instr){
     if(instr.silenced)return;
     updateInstrumentAcoustics();
-    if(performance.now()-instr.lastNoiseAt>2000){
-      instr.lastNoiseAt=performance.now();
+    const interval=instr.prop.hushPlayback?.mode==='interval',nowMs=performance.now();
+    if(interval&&nowMs>=instr.nextTriggerAt){
+      const chunk=propChunk(instr.sampleRef),src=actx?.createBufferSource();
+      if(src&&chunk?.buffer){src.buffer=chunk.buffer;src.connect(instr.filter);src.start();src.stop(actx.currentTime+Math.min(10,chunk.buffer.duration));}
+      const range=instr.prop.hushPlayback,seed=PROPS.propState().hushSeed>>>0,span=Math.max(0,(range.maxMs||6800)-(range.minMs||4200));
+      instr.nextTriggerAt=nowMs+(range.minMs||4200)+(seed%Math.max(1,span));
+      instr.lastNoiseAt=nowMs;
+      REC.emitNoise(.34,instr.prop.rx,instr.prop.ry,`the ${propLabel(instr.prop).toLowerCase()} sounded`,{kind:instr.prop.acousticKind||'instrument_note',sourceKind:'hush',sourceId:instr.propId,playerGenerated:false,audibleToHush:false,canSpoilTake:false});
+    }else if(!interval&&nowMs-instr.lastNoiseAt>2000){
+      instr.lastNoiseAt=nowMs;
       REC.emitNoise(.34,instr.prop.rx,instr.prop.ry,`the ${propLabel(instr.prop).toLowerCase()} sounded`,{
         kind:'instrument_note',sourceKind:'hush',sourceId:instr.propId,playerGenerated:false,audibleToHush:false,
       });
@@ -7029,6 +7520,9 @@ function applyFinaleConsequences(metrics={}){
 // The fifth room. It wears whatever you confessed; it plays turn-based; and on
 // the far side of survival it hands to the ending choice.
 function beginConfrontation(){
+  if(chapelTowerState().phase===CHAPEL_TOWER_PHASE.TOWER_CLEARED){
+    const chapelTower=reduceChapelTower(chapelTowerState(),{type:'CHAPEL_FINALE_STARTED'});saveCommit({chapelTower});
+  }
   finaleActive=true;
   if(ENCOUNTERS.encounterCleared('chapel')){openEndingChoice();return;}
   const kind=flagGet('confession.kind')||'nothing';
@@ -7231,7 +7725,10 @@ function saveTick(dt){
   saveAcc+=dt;
   if(saveAcc<4) return;
   saveAcc=0;
-  saveCommit({ px, py, steps:stepCount, area:storyMode?'conservatory':getSave().area, playSeconds:(getSave().playSeconds||0)+4, hushAudio:hushAudioRuntime?.save?.()||getSave().hushAudio||null });
+  const towerActive=chapelTowerState().phase===CHAPEL_TOWER_PHASE.TOWER_ACTIVE;
+  saveCommit({ px:towerActive?TOWER_ENTRY.x:px, py:towerActive?TOWER_ENTRY.y:py, steps:stepCount, area:usingSourceSpace()?'source-space':towerActive?'bell-tower':storyMode?'conservatory':getSave().area,
+    ...(usingSourceSpace()?{chunkSurf:chunkSurfRuntime.state()}:{}),
+    playSeconds:(getSave().playSeconds||0)+4, hushAudio:hushAudioRuntime?.save?.()||getSave().hushAudio||null });
 }
 
 // One question, two geometry providers: the authored conservatory in story
@@ -7239,14 +7736,15 @@ function saveTick(dt){
 // spawn, the presence, mutation) asks this and never the shader.
 function solidAt(x,y){
   if(RENDERER!=='3d') return false;
+  if(usingSourceSpace()) return chunkSurfRuntime.geometry.isSolid(x,y);
   if(natatoriumWaterBlocksAt(x,y)) return true;
   return usingPlan() ? FP.isSolid(x,y) : R3.r3dSolid(x,y);
 }
 function usingPlan(){ return storyMode && FP.isLoaded(); }
 // Which room am I in? One question, asked of the authored building when there
 // is one, and of the procedural field otherwise. Every consumer uses this.
-function currentWorld(){ return usingPlan() ? FP.worldAt(px,py) : worldIdAt(px,py); }
-function floorHere(){ return usingPlan() ? FP.floorAt(px,py) : 0; }
+function currentWorld(){ return usingSourceSpace()?'source_space':usingPlan() ? FP.worldAt(px,py) : worldIdAt(px,py); }
+function floorHere(){ return usingSourceSpace()?chunkSurfRuntime.geometry.floorAt(px,py):usingPlan() ? FP.floorAt(px,py) : 0; }
 
 // Which of the five rooms on the work order am I standing IN — the actual room
 // zone, not the audio-world map. `worldAt` folds every corridor, the dock, the
@@ -7254,25 +7752,38 @@ function floorHere(){ return usingPlan() ? FP.floorAt(px,py) : 0; }
 // for "can I record here": once B3 was done, standing in any corridor read as
 // "already did that one". You can only roll a take inside one of the five, and
 // only the room you are actually in.
-const ZONE_ROOM={ [ZONE.studio]:'main_b3', [ZONE.natatorium]:'the_tub', [ZONE.hall]:'amplifications',
+const ZONE_RECORDING_ROOM={ [ZONE.studio]:'main_b3', [ZONE.natatorium]:'the_tub', [ZONE.hall]:'amplifications',
                   [ZONE.practice]:'soundnoisemusic', [ZONE.chapel]:'lux_nova' };
+const ZONE_ACOUSTIC_ROOM={...ZONE_RECORDING_ROOM,[ZONE.chapelOuter]:'chapel_outer',[ZONE.bellTower]:'bell_tower'};
 const ZONE_AREA={ [ZONE.dock]:'loading dock', [ZONE.foyer]:'front atrium', [ZONE.studio]:'studio B3',
   [ZONE.natatorium]:'the natatorium', [ZONE.hall]:'the concert hall', [ZONE.practice]:'the practice wing',
-  [ZONE.chapel]:'the chapel', [ZONE.plant]:'plant room', [ZONE.stair]:'building stair' };
-function recordableRoomAt(x,y){ return usingPlan() ? (ZONE_ROOM[FP.zoneAt(x,y)] || null) : currentWorld(); }
-function currentAreaLabel(){return usingPlan()?(ZONE_AREA[FP.zoneAt(px,py)]||FP.logicalToPhysical(px,py).spaceId||'circulation'):roomLabel(currentWorld());}
+  [ZONE.chapel]:'chapel nave', [ZONE.chapelOuter]:'outer chapel', [ZONE.bellTower]:'bell tower', [ZONE.plant]:'plant room', [ZONE.stair]:'building stair' };
+function recordableRoomAt(x,y){ return usingSourceSpace()?null:usingPlan() ? (ZONE_RECORDING_ROOM[FP.zoneAt(x,y)] || null) : currentWorld(); }
+function acousticRoomAt(x,y){return usingSourceSpace()?'source_space':usingPlan()?(ZONE_ACOUSTIC_ROOM[FP.zoneAt(x,y)]||FP.worldAt(x,y)):currentWorld();}
+function currentAreaLabel(){
+  if(usingSourceSpace())return'SOURCE FAULT / NO BUILDING PLAN';
+  if(!usingPlan())return roomLabel(currentWorld());
+  const physical=FP.logicalToPhysical(px,py);
+  if(physical.renderGroup==='tower'){
+    if(physical.spaceId==='ringing_room')return'RINGING ROOM';
+    if(physical.spaceId==='bell_chamber')return'BELL CHAMBER';
+    if(physical.spaceId==='organ_loft')return'ORGAN LOFT';
+    if(physical.spaceId==='stair_turret')return'STAIR TURRET';
+  }
+  return ZONE_AREA[FP.zoneAt(px,py)]||physical.spaceId||'circulation';
+}
 
 
 function acousticFloorIdAt(x,y){
-  if(!usingPlan()) return null;
+  if(!usingPlan()||usingSourceSpace()) return null;
   const physical=FP.logicalToPhysical(x,y);
   return BUILDING_MAP.floors.find((floor)=>physical.y>=floor.minHeight&&physical.y<floor.maxHeight)?.id||null;
 }
 
 function acousticSpatialAt(x=px,y=py){
   return {
-    areaId:storyMode?'conservatory':currentWorld(),
-    roomId:usingPlan()?(ZONE_ROOM[FP.zoneAt(x,y)]||null):currentWorld(),
+    areaId:usingSourceSpace()?'source-space':storyMode?'conservatory':currentWorld(),
+    roomId:acousticRoomAt(x,y),
     floorId:acousticFloorIdAt(x,y),
     position:{x,y},
   };
@@ -7288,10 +7799,11 @@ function acousticOcclusionDb(source,listener){
   for(let i=1;i<steps;i++){
     const t=i/steps;
     const x=Math.round(a.x+(b.x-a.x)*t),y=Math.round(a.y+(b.y-a.y)*t);
-    if(FP.isSolid(x,y)) blocked++;
+    if(solidAt(x,y)) blocked++;
   }
   const roomPenalty=source.roomId&&listener.roomId&&source.roomId!==listener.roomId?4:0;
-  return Math.min(24,roomPenalty+blocked*2.8);
+  const doorLoss=FP.doorAcousticLossBetween(a,b);
+  return Math.min(36,roomPenalty+blocked*2.8+doorLoss);
 }
 
 function emitRecordistAcoustic(raw={}){
@@ -7315,7 +7827,7 @@ function emitRecordistAcoustic(raw={}){
 
 function hushPresenceSnapshot(){
   const base=PRES.publicSnapshot();
-  const room=usingPlan()?(ZONE_ROOM[FP.zoneAt(base.x,base.y)]||null):currentWorld();
+  const room=usingPlan()?(ZONE_RECORDING_ROOM[FP.zoneAt(base.x,base.y)]||null):currentWorld();
   return {...base,roomId:room,floorId:acousticFloorIdAt(base.x,base.y)};
 }
 
@@ -7333,10 +7845,11 @@ function initHushAudioRuntime(){
     },
     playerSpatial:()=>({...acousticSpatialAt(px,py)}),
     occlusionDb:acousticOcclusionDb,
+    maskingDb:()=>bellTowerRuntime?.isRinging?.()?bellTowerRuntime.maskingDb():0,
     difficulty:()=>activeDifficulty,
     settings:()=>getSave().settings||{},
     context:()=>({
-      allowMischief:storyMode&&!scenes.blocksInput()&&!REC.isRecording()&&!finaleActive&&!activeBattleId,
+      allowMischief:storyMode&&chapelTowerState().phase!==CHAPEL_TOWER_PHASE.TOWER_ACTIVE&&!scenes.blocksInput()&&!REC.isRecording()&&!finaleActive&&!activeBattleId,
       recording:REC.isRecording(),
       blocked:scenes.blocksInput(),
       finale:finaleActive,
@@ -7384,11 +7897,11 @@ function tickHushAudio(dt){
 function mapProjectLogical(point,{authored=true}={}){
   const q=authored?FP.toRuntimePoint(point):point;
   const p=FP.logicalToPhysical(q.x,q.y);
-  return{x:p.x,z:p.z,height:p.y,layer:p.layer,roomId:ZONE_ROOM[FP.zoneAt(q.x,q.y)]||null};
+  return{x:p.x,z:p.z,height:p.y,layer:p.layer,roomId:ZONE_RECORDING_ROOM[FP.zoneAt(q.x,q.y)]||null};
 }
 
 function currentFacilityMapSource(){
-  if(!usingPlan()||planName!=='conservatory')return null;
+  if(usingSourceSpace()||!usingPlan()||planName!=='conservatory')return null;
   if(facilityMapSource)return facilityMapSource;
   try{
     facilityMapSource=captureFloorplanMapSource({
@@ -7421,7 +7934,7 @@ function currentMapContact(source){
       active:true,
       position:{x:hushPhysical.x,y:hushPhysical.z},
       floorId:floor?.id||null,
-      roomId:ZONE_ROOM[FP.zoneAt(pst.x,pst.y)]||null,
+      roomId:ZONE_RECORDING_ROOM[FP.zoneAt(pst.x,pst.y)]||null,
       emittedEnergy:Math.min(1,.44+pressure*.34+(pst.hasTarget ? .08 : 0)+(sensoryAudition?.interest||0)*.18),
       detectionRadius:92,
       forceLock:pressure>.74&&(REC.isListening()||(sensoryField?.absorption?.monitor||0)>.72),
@@ -7434,6 +7947,10 @@ function currentMapContact(source){
 }
 
 function currentFacilityMapModel(){
+  if(usingSourceSpace()){
+    const model=buildMapModel({source:null,job:bagJob(),navigation:activeDifficulty.navigation});
+    return{...model,title:'SOURCE FAULT',subtitle:'NO BUILDING PLAN',fault:'SOURCE FAULT / NO BUILDING PLAN'};
+  }
   const source=currentFacilityMapSource();
   if(!source)return buildMapModel({source:null,job:bagJob(),navigation:activeDifficulty.navigation});
   const physical=FP.logicalToPhysical(px,py);
@@ -7446,11 +7963,18 @@ function currentFacilityMapModel(){
   const objective=OBJ.objState();
   const doorKey=doors.map((door)=>`${door.id}:${door.state}`).join('|');
   const contactKey=`${contact.state}:${contact.observation?.observedAt||0}:${contact.observation?.floorId||''}`;
-  const key=[Math.round(physical.x/2),Math.round(physical.z/2),Math.round(physical.y*4),recordableRoomAt(px,py)||'',objective.target||'',job.rooms.map((room)=>room.recorded?'1':'0').join(''),doorKey,activeDifficulty.navigation.id||'',contactKey].join('~');
+  const tower=chapelTowerState(),towerKey=`${tower.phase}:${tower.ropeRoomVisited?1:0}:${tower.hatchInspected?1:0}`;
+  const areaLabel=currentAreaLabel();
+  const key=[Math.round(physical.x/2),Math.round(physical.z/2),Math.round(physical.y*4),recordableRoomAt(px,py)||'',areaLabel,objective.target||'',job.rooms.map((room)=>room.recorded?'1':'0').join(''),doorKey,activeDifficulty.navigation.id||'',contactKey,towerKey].join('~');
   if(facilityMapCache.key===key&&facilityMapCache.model)return facilityMapCache.model;
   const model=buildMapModel({
     source,job,objectiveState:objective,doors,contacts:[contact],navigation:activeDifficulty.navigation,
-    player:{x:physical.x,y:physical.z,height:physical.y,roomId:recordableRoomAt(px,py),heading:RENDERER==='3d'?R3.r3dFacing()*Math.PI/2:0},
+    landmarkState:{
+      'landmark:ringing-room':{visible:tower.ropeRoomVisited},
+      'landmark:bell-chamber':{visible:tower.hatchInspected||[CHAPEL_TOWER_PHASE.TOWER_ACTIVE,CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(tower.phase),label:tower.phase===CHAPEL_TOWER_PHASE.FORESHADOW||tower.phase===CHAPEL_TOWER_PHASE.SOURCE_READY?'ACCESS RESTRICTED':'BELL CHAMBER'},
+      'landmark:organ-loft':{visible:[CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(tower.phase)},
+    },
+    player:{x:physical.x,y:physical.z,height:physical.y,roomId:recordableRoomAt(px,py),areaLabel,heading:RENDERER==='3d'?R3.r3dFacing()*Math.PI/2:0},
   });
   facilityMapCache={key,model};
   return model;
@@ -7815,8 +8339,33 @@ function godResetFx(){
   R3.r3dSetFear(storyMode ? currentFearPressure().visualDread : 0);
 }
 
+function godClearSpecialWorlds(){
+  chunkSurfRuntime=null;
+  sourceTowerTransition=null;
+  sourceExitSnapshot=null;
+  sourcePresenceWasActive=false;
+  PRES.despawn();
+  stopBellTowerRuntime();
+  bellTowerImpactActive=false;
+  bellTowerCollisionEnabled=true;
+  R3.r3dSetSourceTextInstances([]);
+  R3.r3dSetSourceSurface([]);
+}
+
+function godSyncBuildingRender(){
+  if(!FP.isLoaded()||usingSourceSpace())return false;
+  const plan=FP.physicalRenderPlanFor(px,py);
+  R3.r3dSetPlan(plan.rgba,plan.w,plan.h,plan.material);
+  r3dCache.physicalGroup=plan.group;r3dCache.physicalKey=plan.key;r3dCache.fogSize=-1;
+  R3.r3dSetProps(worldRenderInstances(plan.group));
+  R3.r3dSetSourceTextInstances([]);
+  revealAround(px,py);
+  return true;
+}
+
 function godEnsureTestRun(){
   while(scenes.depth()) scenes.pop();
+  godClearSpecialWorlds();
   activeBattleId=null;
   godBattleOpen=false;
   STORY.stopTapeHiss({fade:0.2});
@@ -7834,6 +8383,11 @@ function godEnsureTestRun(){
     silenceSampleField();
     setGameChrome(true);
   }
+  if(FP.isLoaded()&&FP.isSolid(px,py)){
+    const spawn=FP.spawn();px=spawn.x;py=spawn.y;trail=[];renderMove=null;motionRig=null;
+    R3.r3dSetFacing(0);saveCommit({px,py,area:'conservatory'});
+  }
+  godSyncBuildingRender();
 }
 
 function godFindZonePoint(zone){
@@ -7857,6 +8411,9 @@ function godWarpToZone(zone){
   if(!point){ pushEvent('// god: area is not loaded yet.'); return false; }
   px=point.x;py=point.y;trail=[];
   revealAround(px,py);faceOpenDirection();
+  renderMove=null;motionRig=null;
+  godSyncBuildingRender();
+  saveCommit({px,py,area:'conservatory'});
   pushEvent(`// god warp: ${currentAreaLabel()}.`);
   return true;
 }
@@ -7919,6 +8476,104 @@ function godPostDoorRuntime(){
   pushEvent('// god: post-door 3D runtime.');
 }
 
+function godEnterSourcePreset(preset){
+  godEnsureTestRun();
+  const returnPoint={x:CHAPEL_OUTER_CHECKPOINT.x,y:CHAPEL_OUTER_CHECKPOINT.y,facing:CHAPEL_OUTER_CHECKPOINT.facing};
+  const built=buildChunkSurfGodPreset(preset,{
+    drankCoffee:flagTest('drank.coffee'),
+    hasRig:flagTest('has.interface'),
+    seed:normalizeChunkSurfState(getSave().chunkSurf).seed||4417,
+    returnPoint,
+  });
+  activateSourceSpace(built.state,{position:built.position});
+  saveCommit({chunkSurf:built.state,px:built.position.x,py:built.position.y,area:'source-space'});
+  if(!REC.lightOn())REC.toggleLight();
+  pushEvent(`// god: source-space ${preset}.`);
+}
+
+function godEnterTowerPreset(preset){
+  godEnsureTestRun();
+  let phase=CHAPEL_TOWER_PHASE.FORESHADOW;
+  let point={...CHAPEL_OUTER_CHECKPOINT};
+  let live=false,offsetMs=0;
+  const route=(id)=>{const anchor=TOWER_ROUTE_ANCHORS[id];return{...FP.toRuntimePoint(anchor),facing:anchor.facing??0};};
+  if(preset==='lower-stair')point=route('lowerStair');
+  else if(preset==='lower-turn')point=route('lowerTurn');
+  else if(preset==='ringing-room')point=route('ringingEntry');
+  else if(preset==='tower-arrival'){phase=CHAPEL_TOWER_PHASE.TOWER_ACTIVE;point={...TOWER_ENTRY};live=true;}
+  else if(preset==='belfry-door'){phase=CHAPEL_TOWER_PHASE.TOWER_ACTIVE;point=route('belfryDoor');live=true;}
+  else if(preset==='upper-turn'){phase=CHAPEL_TOWER_PHASE.TOWER_ACTIVE;point=route('upperTurn');live=true;}
+  else if(preset==='chamber-entry'){phase=CHAPEL_TOWER_PHASE.TOWER_ACTIVE;point=route('chamberEntry');live=true;}
+  else if(preset==='bell-frame'||preset==='crossing'){phase=CHAPEL_TOWER_PHASE.TOWER_ACTIVE;point=route('crossing');live=true;}
+  else if(preset==='stop-ready'||preset==='winch'){phase=CHAPEL_TOWER_PHASE.TOWER_ACTIVE;point=route('winch');live=true;offsetMs='stop-ready';}
+  else if(preset==='service-stair'){phase=CHAPEL_TOWER_PHASE.TOWER_CLEARED;point=route('serviceStair');}
+  else if(preset==='organ-loft'){phase=CHAPEL_TOWER_PHASE.TOWER_CLEARED;point=route('organLoft');}
+  else if(preset==='nave-door'){phase=CHAPEL_TOWER_PHASE.TOWER_CLEARED;point=route('naveDoor');}
+  else if(preset==='nave-exit'){phase=CHAPEL_TOWER_PHASE.TOWER_CLEARED;point=route('naveExit');}
+  else if(preset==='chapel-final'){phase=CHAPEL_TOWER_PHASE.CHAPEL_FINAL;point={...(godFindZonePoint(ZONE.chapel)||CHAPEL_OUTER_CHECKPOINT),facing:0};}
+  else if(preset!=='outer-chapel')throw new Error(`unknown tower God preset ${preset}`);
+
+  const chapelTower={
+    ...freshChapelTowerState(),
+    phase,
+    ropeRoomVisited:preset!=='outer-chapel',
+    shuttersReleased:[CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(phase),
+  };
+  px=point.x;py=point.y;trail=[];renderMove=null;motionRig=null;
+  playerKeys.add('chapel');
+  if(phase!==CHAPEL_TOWER_PHASE.FORESHADOW)playerKeys.add('tower-live');
+  if([CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(phase))playerKeys.add('tower-cleared');
+  if([CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(phase))for(const id of ['tower-hatch','bell-chamber-entry','organ-loft-service','organ-loft-nave'])FP.setDoorOpen(id,true);
+  R3.r3dSetFacing(point.facing??0);
+  if(!REC.lightOn())REC.toggleLight();
+  saveCommit({chapelTower,px,py,area:'bell-tower'});
+  godSyncBuildingRender();
+  if(live)startBellTowerRuntime({retry:false,collisions:true,offsetMs});
+  pushEvent(`// god: bell tower ${preset}. collisions enabled.`);
+}
+
+function godToggleTowerCollision(){
+  bellTowerCollisionEnabled=!bellTowerCollisionEnabled;
+  pushEvent(`// god: tower collision ${bellTowerCollisionEnabled?'enabled':'disabled'}.`);
+  return bellTowerCollisionEnabled;
+}
+
+function godSourceTowerCrossing(){
+  godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.FINAL);
+  const chapelTower={...freshChapelTowerState(),phase:CHAPEL_TOWER_PHASE.TRANSITION_READY};
+  saveCommit({chapelTower});
+  beginSourceTowerTransition();
+  pushEvent('// god: source-to-tower crossing. hold forward or backward.');
+}
+
+function godBellTowerLive(){
+  godEnterTowerPreset('bell-frame');
+}
+
+function godRefreshDoors(){
+  saveCommit({doors:FP.saveDoorState()});facilityMapCache={key:null,model:null};
+  const group=FP.logicalToPhysical(px,py).renderGroup;R3.r3dSetProps(worldRenderInstances(group));syncDoorDynamicProps();
+}
+
+function godWarpToDoorArchetype(archetype){
+  godEnsureTestRun();const door=FP.doorState().find((entry)=>entry.archetype===archetype);
+  if(!door){pushEvent(`// god: no ${archetype} door.`);return false;}
+  const offsets=door.widthAxis==='x'?[[0,-4],[0,4]]:[[-4,0],[4,0]];
+  const at=offsets.map(([dx,dy])=>({x:Math.round(door.cx+dx),y:Math.round(door.cy+dy),dx,dy})).find((point)=>!FP.isSolid(point.x,point.y));
+  if(!at)return false;px=at.x;py=at.y;trail=[];renderMove=null;motionRig=null;
+  const vx=door.cx-px,vy=door.cy-py;R3.r3dSetFacing(Math.abs(vx)>Math.abs(vy)?(vx>0?1:3):(vy>0?2:0));
+  godSyncBuildingRender();syncDoorDynamicProps();saveCommit({px,py,area:'conservatory'});pushEvent(`// god door: ${door.id}.`);return true;
+}
+
+function godToggleFocusedDoor(){
+  const hit=FP.doorNear(px,py,R3.r3dDelta(1),7);if(!hit){pushEvent('// god: no focused door.');return false;}
+  FP.setDoorOpen(hit.portal.id,!hit.portal.open);godRefreshDoors();return true;
+}
+function godSetAllDoors(open){FP.setAllDoorsOpen(open);godRefreshDoors();}
+function godRunDoorClosers(){const ids=FP.runDoorCloserCycles();godRefreshDoors();pushEvent(`// god: ${ids.length} closer cycles.`);}
+function godResetDoors(){FP.resetDoors();godRefreshDoors();}
+function godToggleDoorDebug(){godDoorDebug=!godDoorDebug;godRefreshDoors();return godDoorDebug;}
+
 function godTabs(){
   const section=(label)=>({kind:'section',label});
   const ready=()=>storyMode&&inRogue&&FP.isLoaded();
@@ -7928,6 +8583,7 @@ function godTabs(){
   return [
     {id:'session',name:'SESSION',rows:[
       section('Run'),
+      {id:'bell-tower-live',label:'BELL TOWER LIVE',value:'[OPEN]',closeMenu:true,activate:godBellTowerLive},
       {id:'test-run',label:'ENTER / RESET TEST RUN',value:()=>ready()?'READY':'[START]',danger:!ready(),closeMenu:true,activate:godEnsureTestRun},
       {id:'resume',label:'CLOSE GOD MENU',value:'[RESUME]',activate:closeGodMenu},
       section('Locations'),
@@ -7939,6 +8595,57 @@ function godTabs(){
       warp('warp-practice','PRACTICE WING',ZONE.practice),
       warp('warp-chapel','CHAPEL',ZONE.chapel),
       warp('warp-plant','PLANT ROOM',ZONE.plant),
+    ]},
+    {id:'source-space',name:'SOURCE',rows:[
+      section('Infinite Long Hall'),
+      {id:'source-hall-entry',label:'LONG HALL / ENTRY',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.HALL_ENTRY)},
+      {id:'source-hall-storm',label:'LONG HALL / PAGE STORM',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.HALL_STORM)},
+      {id:'source-haystack',label:'HAYSTACK / SEARCH',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.HAYSTACK)},
+      section('Open Text Landscape'),
+      {id:'source-landscape',label:'LANDSCAPE / ENTRY',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.LANDSCAPE)},
+      {id:'source-hunt',label:'LANDSCAPE / HUSH HUNT',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.HUNT)},
+      {id:'source-final',label:'FINAL REDACTION',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.FINAL)},
+    ]},
+    {id:'bell-tower',name:'TOWER',rows:[
+      section('Quiet access'),
+      {id:'tower-outer',label:'OUTER CHAPEL / NARTHEX',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterTowerPreset('outer-chapel')},
+      {id:'tower-lower-stair',label:'LOWER STAIR / FIRST FLIGHT',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterTowerPreset('lower-stair')},
+      {id:'tower-lower-turn',label:'LOWER STAIR / TURN',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterTowerPreset('lower-turn')},
+      {id:'tower-ringing-room',label:'RINGING ROOM / QUIET',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterTowerPreset('ringing-room')},
+      {id:'tower-crossing',label:'SOURCE → TOWER CROSSING',value:'[PLAY]',closeMenu:true,activate:godSourceTowerCrossing},
+      section('Live machinery'),
+      {id:'tower-arrival',label:'TOWER ARRIVAL / LIVE',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterTowerPreset('tower-arrival')},
+      {id:'tower-belfry-door',label:'BELFRY STAIR / DOOR',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterTowerPreset('belfry-door')},
+      {id:'tower-upper-turn',label:'BELFRY STAIR / TURN',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterTowerPreset('upper-turn')},
+      {id:'tower-chamber-entry',label:'BELL CHAMBER / VESTIBULE',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterTowerPreset('chamber-entry')},
+      {id:'tower-frame',label:'EXPOSED FRAME CROSSING',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterTowerPreset('crossing')},
+      {id:'tower-stop-ready',label:'WINCH / STOP READY',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterTowerPreset('stop-ready')},
+      section('Cleared route'),
+      {id:'tower-service-stair',label:'SERVICE STAIR / CHAMBER',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterTowerPreset('service-stair')},
+      {id:'tower-organ-loft',label:'ORGAN LOFT / CLEARED',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterTowerPreset('organ-loft')},
+      {id:'tower-nave-door',label:'ORGAN LOFT / NAVE DOOR',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterTowerPreset('nave-door')},
+      {id:'tower-nave-exit',label:'NAVE EXIT / LOWER LANDING',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterTowerPreset('nave-exit')},
+      {id:'tower-chapel-final',label:'CHAPEL NAVE / FINALE',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterTowerPreset('chapel-final')},
+      section('Collision'),
+      {id:'tower-collision',label:'MOVING MACHINERY COLLISION',value:()=>bellTowerCollisionEnabled?'ENABLED':'DISABLED',adjust:godToggleTowerCollision,activate:godToggleTowerCollision},
+    ]},
+    {id:'doors',name:'DOORS',rows:[
+      section('Archetype warps'),
+      {id:'door-public',label:'PUBLIC GLAZED PAIR',value:'[WARP]',closeMenu:true,activate:()=>godWarpToDoorArchetype(DOOR_ARCHETYPE.PUBLIC_GLAZED_PAIR)},
+      {id:'door-hall',label:'HALL ACOUSTIC PAIR',value:'[WARP]',closeMenu:true,activate:()=>godWarpToDoorArchetype(DOOR_ARCHETYPE.HALL_ACOUSTIC_PAIR)},
+      {id:'door-chapel',label:'CHAPEL OAK PAIR',value:'[WARP]',closeMenu:true,activate:()=>godWarpToDoorArchetype(DOOR_ARCHETYPE.CHAPEL_OAK_PAIR)},
+      {id:'door-practice',label:'PRACTICE ACOUSTIC SINGLE',value:'[WARP]',closeMenu:true,activate:()=>godWarpToDoorArchetype(DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE)},
+      {id:'door-fire',label:'SERVICE / FIRE SINGLE',value:'[WARP]',closeMenu:true,activate:()=>godWarpToDoorArchetype(DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE)},
+      {id:'door-staff',label:'STAFF HALF-GLAZED',value:'[WARP]',closeMenu:true,activate:()=>godWarpToDoorArchetype(DOOR_ARCHETYPE.STAFF_HALF_GLAZED)},
+      {id:'door-pool',label:'POOL FIRE DOOR',value:'[WARP]',closeMenu:true,activate:()=>godWarpToDoorArchetype(DOOR_ARCHETYPE.POOL_FIRE_SINGLE)},
+      {id:'door-tower',label:'TOWER SERVICE DOOR',value:'[WARP]',closeMenu:true,activate:()=>godWarpToDoorArchetype(DOOR_ARCHETYPE.TOWER_SERVICE_SINGLE)},
+      section('Runtime controls'),
+      {id:'door-focused',label:'TOGGLE FOCUSED DOOR',value:'[TOGGLE]',activate:godToggleFocusedDoor},
+      {id:'door-open-all',label:'OPEN ALL',value:'[OPEN]',activate:()=>godSetAllDoors(true)},
+      {id:'door-close-all',label:'CLOSE ALL',value:'[CLOSE]',activate:()=>godSetAllDoors(false)},
+      {id:'door-closers',label:'RUN CLOSER CYCLES',value:'[RUN]',activate:godRunDoorClosers},
+      {id:'door-volumes',label:'APERTURE / HINGE / SWING',value:()=>godDoorDebug?'VISIBLE':'HIDDEN',adjust:godToggleDoorDebug,activate:godToggleDoorDebug},
+      {id:'door-reset',label:'RESET INITIAL STATES',value:'[RESET]',activate:godResetDoors},
     ]},
     {id:'conditions',name:'CONDITIONS',rows:[
       section('Fear pressure'),
@@ -8460,8 +9167,9 @@ function drawStoryHud(){
   // add here — the monitor is open under it and the room is in the cans.
   if(REC.isListening()) return;
 
-  const doorHud=usingPlan()?FP.doorNear(px,py,R3.r3dDelta(1)):null;
-  const propHit=usingPlan()?PROPS.pickProp(px,py,R3.r3dFacing(),2):null;
+  const sourceFocus=usingSourceSpace()?chunkSurfRuntime.focusAt(px,py,R3.r3dFacing()):null;
+  const doorHud=usingPlan()&&!usingSourceSpace()?FP.doorNear(px,py,R3.r3dDelta(1)):null;
+  const propHit=usingPlan()&&!usingSourceSpace()?PROPS.pickProp(px,py,R3.r3dFacing(),2):null;
 
   // The verbs must be discoverable. A player should never have to guess that
   // the recorder exists in a game about recording.
@@ -8471,12 +9179,22 @@ function drawStoryHud(){
 const teach=tutorialPromptsEnabled() ? TUT.tutorialPrompt() : null;
   // Paper at your feet outranks everything the corner has to say. It is the only
   // thing in the building anyone has left behind on purpose.
-  if(pageHere && !REC.isRecording()){
+  if(sourceFocus){
+    const label=sourceFocus.kind==='haystack-page'?'INSPECT STILL PAGE'
+      :sourceFocus.kind==='redaction'?'REDACT SOURCE CLAUSE'
+        :sourceFocus.available===false?'SOURCE UNAVAILABLE':`INSPECT ${(chunkSurfRoom(sourceFocus.id)?.title||sourceFocus.id).toUpperCase()}`;
+    const prompt=sourceFocus.kind==='landmark'&&sourceFocus.available!==false
+      ?BINDINGS.promptLine([{action:'interact',label},{action:'light',label:'TUNE'},{action:'recorder',label:'RECORD'}])
+      :`${BINDINGS.inputPrompt('interact')} ${label}`;
+    uiText(Math.max(2,Math.floor((cols-prompt.length)/2)),rows-2,prompt.slice(0,Math.max(1,cols-4)),sourceFocus.available===false?'ui-secondary':'ui-amber');
+  } else if(pageHere && !REC.isRecording()){
     const prompt=`${BINDINGS.inputPrompt('interact')} PICK UP THE SHEET`;
     uiText(Math.max(2, Math.floor((cols-prompt.length)/2)), rows-2, prompt, 'ui-amber');
   } else if(doorHud){
     const hasKey=!doorHud.portal.keyId||playerKeys.has(doorHud.portal.keyId);
-    const prompt=hasKey?`${BINDINGS.inputPrompt('interact')} OPEN DOOR`:`${BINDINGS.inputPrompt('interact')} TRY LOCKED DOOR`;
+    const runtime=doorHud.portal.runtime;
+    const action=runtime.wedge?'REMOVE WEDGE':runtime.state==='open'||runtime.state==='opening'?'CLOSE DOOR':hasKey?'OPEN DOOR':'TRY LOCKED DOOR';
+    const prompt=`${BINDINGS.inputPrompt('interact')} ${action}`;
     uiText(Math.max(2,Math.floor((cols-prompt.length)/2)),rows-2,prompt,hasKey?'ui-amber':'ui-secondary');
   } else if(propHit){
     const verb=propHit.sampleFamily?.length?'PLAY':'INSPECT';
@@ -8660,17 +9378,36 @@ function installProbe(){
       bestEligible:flagTest(CHUNK_SURF_FLAGS.bestEligible),
       offered:flagTest(CHUNK_SURF_FLAGS.offered),
       entered:flagTest(CHUNK_SURF_FLAGS.entered),
+      ...(chunkSurfRuntime?.probe?.()||normalizeChunkSurfState(getSave().chunkSurf)),
+      exitSnapshot:sourceExitSnapshot,
     }),
     chunkSurfStart:()=>beginChunkSurf({forced:true}),
+    chapelTower:()=>({
+      ...chapelTowerState(),
+      ...chapelTowerDiagnostics(),
+      runtimeState:bellTowerRuntime?.state?.()||'idle',
+      scoreSection:bellTowerRuntime?.snapshot?.().scoreSection||null,
+      scoreRow:bellTowerRuntime?.snapshot?.().scoreRow??-1,
+      transitionProgress:sourceTowerTransition?.progress?.()??0,
+      activeBellAngles:bellTowerRuntime?.snapshot?.().activeBellAngles||[],
+      collisionEnabled:bellTowerCollisionEnabled,
+      bellPivots:FP.isLoaded()?towerBellLayout().map((bell)=>({id:bell.id,...bell.pivot,visualScale:bell.visualScale})):[],
+      audio:bellTowerAudio?.snapshot?.()||null,
+    }),
+    doors:()=>FP.doorState().map((door)=>({
+      id:door.id,archetype:door.archetype,state:door.state,openFraction:door.openFraction,
+      leafCount:door.leafCount,aperture:{...door.aperture},hinge:door.hinge,swing:door.swing,
+      closer:door.closer,key:door.keyId,wedgeState:door.wedge,acousticLossDb:door.acousticLossDb,
+    })),
     openCredits:()=>{ openCredits(); return true; },
     endingCredits:(endingId='sacrifice')=>{
       const summary=commitReturn(endingId,{rec:REC.saveRecState()});
       openEndingCredits(summary);
       return summary;
     },
-    cell:(x,y)=>FP.cellAt(x,y),
-    materialAt:(x,y)=>FP.materialAt(x,y),
-    canStep:(ax,ay,bx,by)=>FP.canStep(ax,ay,bx,by,{keys:playerKeys}),
+    cell:(x,y)=>usingSourceSpace()?chunkSurfRuntime.geometry.cellAt(x,y):FP.cellAt(x,y),
+    materialAt:(x,y)=>usingSourceSpace()?chunkSurfRuntime.geometry.materialAt(x,y):FP.materialAt(x,y),
+    canStep:(ax,ay,bx,by)=>usingSourceSpace()?chunkSurfRuntime.geometry.canStep(ax,ay,bx,by):FP.canStep(ax,ay,bx,by,{keys:playerKeys}),
     props:()=>({pack:R3.r3dPropStats(),instances:PROPS.allProps().map((p)=>({id:p.id,mesh:p.mesh,x:p.x,y:p.y,zone:p.zone,blocks:p.blocks})),learned:PROPS.learnedPlayable().map((p)=>p.id)}),
     surfaceDream:()=>R3.r3dSurfaceDreamStats(),
     surfaces:()=>R3.r3dSurfaceStats(),
@@ -9047,40 +9784,44 @@ function ensureLensStarted(qp=params()){
 
 function render3d(){
   ensureLensStarted();
-  const physical=usingPlan()?FP.logicalToPhysical(px,py):{x:px,z:py,y:floorHere(),renderGroup:''};
-  const rendered=renderedPlayerPoint();
-  const slice=usingPlan()?FP.physicalRenderPlanFor(px,py):null;
-  if(slice&&slice.key!==r3dCache.physicalKey){
-    R3.r3dSetPlan(slice.rgba,slice.w,slice.h,slice.material);r3dCache.physicalGroup=slice.group;r3dCache.physicalKey=slice.key;r3dCache.fogSize=-1;R3.r3dSetProps(worldRenderInstances(slice.group));
+  const worldView=scenes.worldView(),viewX=worldView?.x??px,viewY=worldView?.y??py;
+  const physical=usingSourceSpace()?chunkSurfRuntime.geometry.logicalToPhysical(viewX,viewY):usingPlan()?FP.logicalToPhysical(viewX,viewY):{x:viewX,z:viewY,y:worldView?.floorH??floorHere(),renderGroup:''};
+  const rendered=worldView?{x:physical.x,z:physical.z}:renderedPlayerPoint();
+  const slice=usingSourceSpace()?chunkSurfRuntime.geometry.renderPlanFor(viewX,viewY):usingPlan()?FP.physicalRenderPlanFor(viewX,viewY):null;
+  const sliceKey=usingSourceSpace()&&slice?`source:${slice.key}`:slice?.key;
+  if(slice&&sliceKey!==r3dCache.physicalKey){
+    if(usingSourceSpace())syncSourceRender({force:true});
+    else{R3.r3dSetPlan(slice.rgba,slice.w,slice.h,slice.material);r3dCache.physicalGroup=slice.group;r3dCache.physicalKey=slice.key;r3dCache.fogSize=-1;R3.r3dSetProps(worldRenderInstances(slice.group));}
   }
   if(fog.size!==r3dCache.fogSize){
-    if(usingPlan())R3.r3dUpdateFog((fx,fy)=>{const l=FP.logicalAtPhysical(fx,fy,{group:physical.renderGroup,floor:physical.y});return l?fogGet(l.x,l.y):0;},physical.x,physical.z);
+    if(usingSourceSpace())R3.r3dUpdateFog(()=>2,physical.x,physical.z);
+    else if(usingPlan())R3.r3dUpdateFog((fx,fy)=>{const l=FP.logicalAtPhysical(fx,fy,{group:physical.renderGroup,floor:physical.y});return l?fogGet(l.x,l.y):0;},physical.x,physical.z);
     else R3.r3dUpdateFog(fogGet,px,py);
     r3dCache.fogSize=fog.size;
   }
   let voiceSum=0;
   for(const [,v] of voices) voiceSum+=v.target||0;
   const firstKey=keyMap.size>0 ? keyMap.values().next().value : null;
-  const mapPoint=(p)=>{if(!p||!usingPlan())return p;const q=FP.logicalToPhysical(p.x,p.y);return{...p,x:q.x,y:q.z};};
+  const mapPoint=(p)=>{if(!p||!usingPlan()||usingSourceSpace())return p;const q=FP.logicalToPhysical(p.x,p.y);return{...p,x:q.x,y:q.z};};
   const waterAudio=clamp(voiceSum/3, 0, 1);
   R3.r3dFrame({
     px:rendered.x, py:rendered.z,
     tileW:WORLD_TILE_W, tileH:WORLD_TILE_H,
     worldCount:worldsConfig.length,
     worldTints:worldsConfig.map(w=>R3.WORLD_RGB[w.id]||[0.6,0.6,0.6]),
-    chunks:r3dNearChunks().map(mapPoint),
-    key:mapPoint(firstKey),
-    door:mapPoint(door),
-    hush: (storyMode && PRES.isActive())
+    chunks:worldView?.suppressActors?[]:r3dNearChunks().map(mapPoint),
+    key:worldView?.suppressActors?null:mapPoint(firstKey),
+    door:worldView?.suppressActors?null:mapPoint(door),
+    hush: (!worldView?.suppressActors && !usingSourceSpace() && storyMode && PRES.isActive() && chapelTowerState().phase!==CHAPEL_TOWER_PHASE.TOWER_ACTIVE)
       ? {...mapPoint({x:PRES.presenceState().x,y:PRES.presenceState().y}),
          strength: 0.65 + PRES.dread(px,py)*0.55}
       : (hush.active?{...mapPoint({x:hush.x,y:hush.y}),strength:1}:null),
     audio:waterAudio,
     light: storyMode ? (REC.lightOn()?hushLightScale:0) : true,
     plan: usingPlan(),
-    floorH: floorHere(),
+    floorH: worldView?.floorH??(usingSourceSpace()?chunkSurfRuntime.geometry.floorAt(viewX,viewY):usingPlan()?FP.floorAt(viewX,viewY):floorHere()),
     moveIntervalMs:currentMoveIntervalMs(),
-    water:currentNatatoriumWaterRenderState({audio:waterAudio}),
+    water:usingSourceSpace()?{active:false}:currentNatatoriumWaterRenderState({audio:waterAudio}),
   });
 }
 
@@ -9295,7 +10036,7 @@ function onKey(e){
   }
   const moveKey=movementKey(e);
   const onboardingBlocksMove=!!(moveKey && isOnboardingActive() && (moveKey==='ArrowDown' || moveKey==='KeyS'));
-  const worldCanTrackMotion=!!(moveKey && inRogue && !paused && !scenes.blocksInput() && !onboardingBlocksMove);
+  const worldCanTrackMotion=!!(moveKey && inRogue && !paused && (!scenes.blocksInput()||scenes.tracksMotion()) && !onboardingBlocksMove);
   const motionAlreadyHeld=worldCanTrackMotion ? motionInput.isHeld(moveKey) : false;
   // Capture movement intent before non-modal overlays see the key. Several
   // overlay scenes render above the world without blocking it; a browser
@@ -9310,7 +10051,7 @@ function onKey(e){
     e.preventDefault();
     // Only blocking scenes own locomotion. Non-modal overlays may consume a
     // keyboard edge for their own UI, but they must not destroy held movement.
-    if(wasBlockingScene) resetMotionInput('scene-consumed', {stopRenderMove:true});
+    if(wasBlockingScene&&!scenes.tracksMotion()) resetMotionInput('scene-consumed', {stopRenderMove:true});
     else if(!moveKey) clearMotionClock('scene-consumed-action');
     return;
   }
@@ -9323,6 +10064,15 @@ function onKey(e){
     const is=(code,ch)=> e.code===code || e.key===ch || e.key===ch.toUpperCase();
     if(bare && is('KeyF','f')){
       e.preventDefault();
+      if(usingSourceSpace()){
+        const result=chunkSurfRuntime.tuneFocused(px,py,R3.r3dFacing());
+        if(result.handled){
+          REC.emitNoise(.09,px,py,'the tuning fork answered',{spoils:false,kind:'instrument_note',sourceKind:'equipment',sourceId:'source-tuning-fork',playerGenerated:true,deliberate:true});
+          if(result.text)SPEECH.say({who:'you',text:result.text});
+          syncSourceRender();
+          return;
+        }
+      }
       if(itemLost('torch')){ SPEECH.say({ who:'you', text:'No torch. It has the torch.' }); return; }
       if(!REC.lightOn() && REC.batteryLevel()<=0){ SPEECH.say({ who:'you', text:'Flat. It is flat, and I have nothing to put in it.' }); return; }
       const on=REC.toggleLight();

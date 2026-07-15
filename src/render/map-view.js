@@ -5,7 +5,7 @@ import { themeRoleColor } from './palette.js';
 import { buildMapCommands } from './map-commands.js';
 import { drawAnomalyMarker, drawAnomalyRegion, drawObjectiveMarker, drawPlayerMarker } from './map-icons.js';
 import { mapLayoutFromBag } from './map-layout.js';
-import { mapFloor, newestMapContact } from '../game/map-model.js';
+import { mapCurrentAreaLabel, mapFloor, newestMapContact } from '../game/map-model.js';
 import { selectedMapSpace } from '../game/map-navigation.js';
 import { mapActionRail } from '../game/map-actions.js';
 import { hushStatus } from './minimap.js';
@@ -26,8 +26,7 @@ function roomLabel(model, roomId, fallback = 'NONE') {
 }
 
 function currentRoomLabel(model) {
-  if (model?.player?.roomId) return roomLabel(model, model.player.roomId, model.player.roomId);
-  return mapFloor(model, model?.player?.floorId)?.label || 'POSITION UNKNOWN';
+  return mapCurrentAreaLabel(model);
 }
 
 function targetRoomLabel(model) {

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { conservatory } from '../src/data/floorplan/conservatory.js';
 import * as FP from '../src/world/floorplan.js';
 import { BUILDING_MAP } from '../src/data/building-map.js';
-import { captureFloorplanMapSource, buildMapModel } from '../src/game/map-model.js';
+import { captureFloorplanMapSource, buildMapModel, mapCurrentAreaLabel } from '../src/game/map-model.js';
 import { ROOM_CELLS, TARGETS } from '../src/data/conservatory-script.js';
 
 FP.compile(conservatory.levels, {
@@ -41,5 +41,13 @@ const model = buildMapModel({
 assert.equal(model.route.status, 'ok');
 assert.ok(model.route.nextConnectorId);
 assert.equal(model.route.floorDelta, 2);
+
+const towerPlayer = buildMapModel({
+  source, job, objectiveState:{target:'lux_nova'}, doors:[], contacts:[], navigation:{id:'directional'},
+  player:{x:start.x,y:start.z,height:8.6,roomId:null,areaLabel:'stair turret',heading:0},
+});
+assert.equal(towerPlayer.player.areaLabel, 'stair turret');
+assert.equal(mapCurrentAreaLabel(towerPlayer), 'STAIR TURRET');
+assert.equal(towerPlayer.progress.total, 5);
 
 console.log('live map data tests ok');

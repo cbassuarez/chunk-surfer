@@ -23,6 +23,20 @@ import {
   F, ZONE, ZONE_WORLD, MATERIAL, cellFor, materialForZone,
   EYE, STEP_UP, HEADROOM, PLAN_SCALE
 } from '../data/floorplan/legend.js';
+import {
+  DOOR_STATE,
+  advanceDoor,
+  beginDoorClose,
+  beginDoorOpen,
+  doorBlocksPassage,
+  freshDoorRuntime,
+  normalizeDoorEndpoint,
+  normalizeDoorSave,
+  pointInDoorSweep,
+  requestCloser,
+  stableDoorEndpoint,
+} from '../game/door-runtime.js';
+import { doorDefinitionWithArchetype } from '../data/conservatory-doors.js';
 
 export const H_MIN = -8;
 export const H_MAX = 24;
@@ -54,6 +68,7 @@ const plan = {
 };
 let doorPortals=[];
 const doorCellToPortal=new Map();
+const doorTickEvents=[];
 
 export function floorplan() { return plan; }
 export function isLoaded() { return plan.loaded; }
@@ -77,7 +92,7 @@ export function toAuthoredCoord(v) { return Number(v) / PLAN_SCALE; }
 
 // ── compile ──────────────────────────────────────────────────────────────────
 // `levels` is [{ rows, origin, physicalOrigin?, base, layer?, renderGroup?, stairs? }]
-export function compile(levels, { width, height, widenCorridors = false, connectors = [] } = {}) {
+export function compile(levels, { width, height, widenCorridors = false, connectors = [], doors = [] } = {}) {
   plan.loaded = false;
   plan.physical = null;
   const authoredW = width || Math.max(...levels.map((l) => l.origin.x + Math.max(...l.rows.map((r) => r.length))));
@@ -135,12 +150,18 @@ export function compile(levels, { width, height, widenCorridors = false, connect
   // Stairs: a run of STAIR cells given an explicit start and end height. The
   // legend cannot know which way a stair climbs, so the level data says.
   for (const level of levels) {
-    for (const s of level.stairs || []) rampStair(s);
+    for (const s of level.stairs || []) rampStair({
+      layer:level.layer||level.id||'stair',
+      space:level.space||level.id||'stair',
+      renderGroup:level.renderGroup||level.layer||'ground',
+      ...s,
+    });
   }
 
   if (widenCorridors) widenCorridorRuns();
-  widenDoorThresholds();
+  authorDoorThresholds();
   initDoorPortals();
+  if(doors.length)configureDoors(doors);
   inheritCorridorMaterials();
 
   // A logical seam is permitted only at a physically continuous landing.
@@ -165,13 +186,10 @@ export function compile(levels, { width, height, widenCorridors = false, connect
   return plan;
 }
 
-// Door glyphs are authored as a centre mark, not as their final aperture. A
-// one-metre opening becomes a blind slot in first person, so every threshold is
-// expanded along its wall to at least three authored metres (six runtime
-// cells). The centre cell's height, material and lock flag remain authoritative.
-function widenDoorThresholds() {
-  // Discover from a snapshot. Newly carved cells must never become new seeds;
-  // doing so dilates a door repeatedly until it becomes a building-wide wall.
+// A single authored glyph is a one-metre aperture; adjacent glyphs are a real
+// pair. Nothing here widens the opening. The volume is only a shallow detector
+// used to locate the leaf plane and preserve render/collision parity.
+function authorDoorThresholds() {
   const originalFlags=plan.flags.slice(),originalSolid=plan.solid.slice();
   const visited=new Set(),isThreshold=(x,y,mask)=>{
     if(!inside(x,y)||originalSolid[idx(x,y)])return false;
@@ -184,27 +202,15 @@ function widenDoorThresholds() {
     const cluster=[],q=[[sx,sy]];visited.add(key0);
     while(q.length){const [x,y]=q.shift();cluster.push([x,y]);for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy,k=`${nx},${ny}`;if(!visited.has(k)&&isThreshold(nx,ny,mask)){visited.add(k);q.push([nx,ny]);}}}
     const xs=cluster.map(p=>p[0]),ys=cluster.map(p=>p[1]),minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
-    const cx=Math.round((minX+maxX)/2),cy=Math.round((minY+maxY)/2),src=idx(cx,cy);
+    const cx=(minX+maxX)/2,cy=(minY+maxY)/2;
     const openLR=!isSolid(minX-1,cy)&&!isSolid(maxX+1,cy),openUD=!isSolid(cx,minY-1)&&!isSolid(cx,maxY+1);
     const widthAxis=(maxX-minX)>(maxY-minY)?'x':(maxY-minY)>(maxX-minX)?'y':openLR&&!openUD?'y':'x';
-    const passageAxis=widthAxis==='x'?'y':'x',width=Math.max(3*PLAN_SCALE,widthAxis==='x'?maxX-minX+1:maxY-minY+1),depth=3*PLAN_SCALE;
-    const widthStart=(widthAxis==='x'?cx:cy)-Math.floor(width/2),depthStart=(passageAxis==='x'?cx:cy)-Math.floor(depth/2);
-    const volume=widthAxis==='x'
-      ?{minX:widthStart,maxX:widthStart+width-1,minY:depthStart,maxY:depthStart+depth-1,mask,widthAxis,cx,cy}
-      :{minX:depthStart,maxX:depthStart+depth-1,minY:widthStart,maxY:widthStart+width-1,mask,widthAxis,cx,cy};
+    const volume={minX,maxX,minY,maxY,mask,widthAxis,cx,cy,cells:cluster.map(([x,y])=>({x,y}))};
     plan.doorVolumes.push(volume);
-    for(let wd=0;wd<width;wd++)for(let dd=0;dd<depth;dd++){
-      const nx=widthAxis==='x'?widthStart+wd:depthStart+dd,ny=widthAxis==='y'?widthStart+wd:depthStart+dd;if(!inside(nx,ny))continue;
-      const ni=idx(nx,ny);
-      // Existing room/corridor air keeps its own floor, ceiling, material and
-      // zone. Only masonry inside the portal volume is removed. Repainting all
-      // 3 m as a door made a low tunnel/header protrude into both rooms.
-      if(!plan.solid[ni])continue;
-      plan.solid[ni]=0;plan.floor[ni]=plan.floor[src];plan.ceil[ni]=Math.max(plan.ceil[src],plan.floor[src]+3.0);
-      plan.flags[ni]=plan.flags[src];plan.zone[ni]=plan.zone[src];plan.material[ni]=plan.material[src];
-      plan.physicalX[ni]=plan.physicalX[src]+(nx-cx);plan.physicalY[ni]=plan.physicalY[src]+(ny-cy);
-      plan.physicalReplace[ni]=plan.physicalReplace[src];
-      plan.layer[ni]=plan.layer[src];plan.space[ni]=plan.space[src];plan.renderGroup[ni]=plan.renderGroup[src];
+    if(mask===F.BRICKED){
+      // The old frame survives as metadata, but the infill is masonry and the
+      // route is permanently solid.
+      for(const [x,y] of cluster){const i=idx(x,y);plan.solid[i]=1;plan.flags[i]=F.SOLID|F.BRICKED;plan.material[i]=MATERIAL.serviceConcrete;}
     }
   }
 }
@@ -213,31 +219,55 @@ function initDoorPortals(){
   doorPortals=[];doorCellToPortal.clear();
   for(const volume of plan.doorVolumes){
     if(volume.mask===F.BRICKED)continue;
-    const candidates=[];
-    for(let y=volume.minY;y<=volume.maxY;y++)for(let x=volume.minX;x<=volume.maxX;x++){
-      if(!inside(x,y))continue;const i=idx(x,y);
-      // The leaf owns the whole widened cross-section, including cells that
-      // were already corridor air before dilation. Restricting this to the
-      // original DOOR glyph left fake walkable slots beside the visible door.
-      if(!plan.solid[i]&&!(plan.flags[i]&F.BRICKED))candidates.push({x,y});
-    }
-    // A portal volume is three metres deep so thresholds never flash or
-    // teleport. The actual leaf is one half-metre plane through its centre,
-    // not a six-cell-deep block of door material.
-    const centerX=Math.round(volume.cx),centerY=Math.round(volume.cy);
-    const cells=candidates.filter((c)=>volume.widthAxis==='x'?c.y===centerY:c.x===centerX);
+    const centerX=Math.floor(volume.cx),centerY=Math.floor(volume.cy);
+    const cells=volume.cells.filter((c)=>volume.widthAxis==='x'?c.y===centerY:c.x===centerX);
     if(!cells.length)continue;
     const cx=cells.reduce((n,c)=>n+c.x,0)/cells.length,cy=cells.reduce((n,c)=>n+c.y,0)/cells.length;
-    const portal={id:`${Math.round(cx)},${Math.round(cy)}`,cells,cx,cy,widthAxis:volume.widthAxis,keyId:null,open:true,autoCloseSide:0};
+    const portal={id:`${Math.round(cx)},${Math.round(cy)}`,legacyId:`${Math.round(cx)},${Math.round(cy)}`,cells,cx,cy,widthAxis:volume.widthAxis,volume,keyId:null,open:true,autoCloseSide:0,definition:null,runtime:{state:DOOR_STATE.OPEN,openFraction:1,wedge:false,closerArmed:false,closeRequested:false}};
     doorPortals.push(portal);for(const c of cells)doorCellToPortal.set(`${c.x},${c.y}`,portal);
   }
 }
 
-function setPortalOpen(portal,open){
+function setPortalPassable(portal,open){
   if(!portal)return false;portal.open=!!open;
   for(const {x,y} of portal.cells){const i=idx(x,y);plan.flags[i]=portal.open?(plan.flags[i]&~F.CLOSED):(plan.flags[i]|F.CLOSED);if(plan.rgba)plan.rgba[i*4+2]=plan.flags[i];}
   buildPhysicalSpans();
   return true;
+}
+
+function setPortalOpen(portal,open,{preserveWedge=true}={}){
+  if(!portal)return false;
+  portal.runtime.state=open?DOOR_STATE.OPEN:DOOR_STATE.CLOSED;
+  portal.runtime.openFraction=open?1:0;
+  portal.runtime.closeRequested=false;
+  if(!preserveWedge&&!open)portal.runtime.wedge=false;
+  return setPortalPassable(portal,open);
+}
+
+export function configureDoors(definitions=[]){
+  const unmatched=new Set(doorPortals);
+  for(const raw of definitions){
+    const definition=doorDefinitionWithArchetype(raw);
+    const targetX=Number(definition.at?.x)*PLAN_SCALE,targetY=Number(definition.at?.y)*PLAN_SCALE;
+    const candidates=[...unmatched].sort((a,b)=>Math.hypot(a.cx-targetX,a.cy-targetY)-Math.hypot(b.cx-targetX,b.cy-targetY));
+    const portal=candidates[0];
+    if(!portal||Math.hypot(portal.cx-targetX,portal.cy-targetY)>5)throw new Error(`floorplan: no portal for door ${definition.id} near ${targetX},${targetY}`);
+    unmatched.delete(portal);
+    portal.legacyId=portal.id;portal.id=definition.id;portal.definition=definition;portal.keyId=definition.key||null;
+    if(definition.widthAxis&&definition.widthAxis!==portal.widthAxis){
+      for(const c of portal.cells)doorCellToPortal.delete(`${c.x},${c.y}`);
+      portal.widthAxis=definition.widthAxis;
+      const centerX=Math.floor(portal.volume.cx),centerY=Math.floor(portal.volume.cy);
+      portal.cells=portal.volume.cells.filter((c)=>portal.widthAxis==='x'?c.y===centerY:c.x===centerX);
+      portal.cx=portal.cells.reduce((n,c)=>n+c.x,0)/portal.cells.length;portal.cy=portal.cells.reduce((n,c)=>n+c.y,0)/portal.cells.length;
+    }
+    portal.runtime=freshDoorRuntime(definition);
+    portal.aperture={...definition.aperture};portal.leaf={...definition.leaf};portal.activeLeaves=[...definition.activeLeaves];
+    for(const c of portal.cells){doorCellToPortal.set(`${c.x},${c.y}`,portal);if(portal.keyId)doorKeys.set(`${c.x},${c.y}`,portal.keyId);}
+    setPortalPassable(portal,!doorBlocksPassage(portal.runtime));
+  }
+  if(unmatched.size)throw new Error(`floorplan: ${unmatched.size} door portal(s) lack explicit definitions: ${[...unmatched].map((p)=>p.legacyId).join(', ')}`);
+  return doorState();
 }
 
 function writeCell(x, y, cell, meta=null) {
@@ -345,7 +375,104 @@ function inheritCorridorMaterials() {
 // Interpolate floor/ceiling along a stair run so the risers are even.
 // `ceil` pins an absolute ceiling instead of a stairwell's low soffit — the
 // pool steps descend inside a six-metre hall and must not grow a lid.
-function rampStair({ from, to, fromH, toH, width = 1, ceil = null, head = 2.6, zone = null, material = null }) {
+function writeStairCell(x,y,{
+  floor,ceil,zone,material,physicalX,physicalY,layer,space,renderGroup,owner,
+}){
+  if(!inside(x,y))return;
+  const i=idx(x,y);
+  plan.solid[i]=0;
+  plan.floor[i]=floor;
+  plan.ceil[i]=ceil;
+  plan.flags[i]=F.STAIR;
+  plan.zone[i]=zone?ZONE[zone]:ZONE.stair;
+  plan.material[i]=material?MATERIAL[material]:MATERIAL.serviceConcrete;
+  plan.physicalX[i]=Math.round(physicalX);
+  plan.physicalY[i]=Math.round(physicalY);
+  plan.layer[i]=layer||'stair';
+  plan.space[i]=space||'stair';
+  plan.renderGroup[i]=renderGroup||'ground';
+  plan.owner[i]=owner||space||'stair';
+}
+
+function authoredPhysicalPoint(point){
+  if(!point)return null;
+  return{
+    x:toRuntimeCoord(point.x,{center:false}),
+    y:toRuntimeCoord(point.z??point.y,{center:false}),
+  };
+}
+
+// Tower stairs use an explicit compound contract. Flights and landing slabs
+// author both the collision cells and their Euclidean embedding, so the visual
+// risers, map connectors and movement manager all consume the same geometry.
+function compoundStair({
+  id='stair',flights=[],landings=[],zone=null,material=null,
+  layer='stair',space='stair',renderGroup='ground',head=2.6,
+}){
+  const portals=[];
+  for(const flight of flights){
+    const a=toRuntimePoint(flight.from,{center:false});
+    const b=toRuntimePoint(flight.to,{center:false});
+    const p0=authoredPhysicalPoint(flight.physicalFrom);
+    const p1=authoredPhysicalPoint(flight.physicalTo);
+    if(!p0||!p1)throw new Error(`${id}/${flight.id||'flight'} requires physicalFrom and physicalTo`);
+    const dx=Math.sign(b.x-a.x),dy=Math.sign(b.y-a.y);
+    const steps=Math.max(Math.abs(b.x-a.x),Math.abs(b.y-a.y));
+    const rises=Math.max(1,Math.round(flight.rises??steps));
+    if(!steps)throw new Error(`${id}/${flight.id||'flight'} has no run`);
+    const runWidth=Math.max(1,Math.round((flight.width??1.5)*PLAN_SCALE));
+    const logicalPx=Math.abs(dy),logicalPy=Math.abs(dx);
+    const physicalDx=(p1.x-p0.x)/steps,physicalDy=(p1.y-p0.y)/steps;
+    const physicalLength=Math.hypot(p1.x-p0.x,p1.y-p0.y)||1;
+    const physicalPx=-(p1.y-p0.y)/physicalLength;
+    const physicalPy=(p1.x-p0.x)/physicalLength;
+    for(let s=0;s<=steps;s++){
+      const rise=Math.min(rises,Math.floor(s*rises/steps));
+      const t=rise/rises;
+      const floor=flight.fromH+(flight.toH-flight.fromH)*t;
+      for(let k=0;k<runWidth;k++)writeStairCell(
+        a.x+dx*s+logicalPx*k,
+        a.y+dy*s+logicalPy*k,
+        {
+          floor,
+          ceil:flight.ceil!=null?flight.ceil:floor+(flight.head??head),
+          zone:flight.zone||zone,material:flight.material||material,
+          physicalX:p0.x+physicalDx*s+physicalPx*k,
+          physicalY:p0.y+physicalDy*s+physicalPy*k,
+          layer:flight.layer||layer,space:flight.space||space,
+          renderGroup:flight.renderGroup||renderGroup,owner:id,
+        },
+      );
+    }
+    const portal={
+      id:`${id}:${flight.id||portals.length+1}`,flight:flight.id||null,
+      p0:[p0.x,p0.y],p1:[p1.x,p1.y],group0:renderGroup,group1:renderGroup,
+      floor0:flight.fromH,floor1:flight.toH,radius:Math.max(6,runWidth*2),
+      rises,riseHeight:Math.abs(flight.toH-flight.fromH)/rises,
+      physicalFrom:{...flight.physicalFrom},physicalTo:{...flight.physicalTo},
+    };
+    plan.stairPortals.push(portal);portals.push(portal);
+  }
+  for(const landing of landings){
+    const at=toRuntimePoint(landing.at,{center:false});
+    const size={x:Math.max(1,Math.round(landing.size.x*PLAN_SCALE)),y:Math.max(1,Math.round(landing.size.y*PLAN_SCALE))};
+    const p=authoredPhysicalPoint(landing.physicalAt);
+    if(!p)throw new Error(`${id}/${landing.id||'landing'} requires physicalAt`);
+    for(let oy=0;oy<size.y;oy++)for(let ox=0;ox<size.x;ox++)writeStairCell(at.x+ox,at.y+oy,{
+      floor:landing.height,
+      ceil:landing.ceil!=null?landing.ceil:landing.height+(landing.head??head),
+      zone:landing.zone||zone,material:landing.material||material,
+      physicalX:p.x+ox,physicalY:p.y+oy,
+      layer:landing.layer||layer,space:landing.space||space,
+      renderGroup:landing.renderGroup||renderGroup,owner:id,
+    });
+  }
+  return portals;
+}
+
+function rampStair(spec) {
+  if(spec.flights?.length)return compoundStair(spec);
+  const { from, to, fromH, toH, width = 1, ceil = null, head = 2.6, zone = null, material = null }=spec;
   const a = toRuntimePoint(from, { center: false });
   const b = toRuntimePoint(to, { center: false });
   const runWidth = Math.max(1, Math.round(width * PLAN_SCALE));
@@ -493,6 +620,13 @@ function buildPhysicalSpans(){
     for(const candidate of ordered){
       const hit=resolved.findIndex((span)=>intersects(candidate,span));
       if(hit<0){resolved.push(candidate);continue;}
+      // A dog-leg's flight edge and its turn landing deliberately share one
+      // tread. They are two authored views of the same stair cell, not two
+      // intersecting structures. Resolve that seam without physicalReplace.
+      if(candidate.owner&&candidate.owner===resolved[hit].owner&&(candidate.flags&F.STAIR)&&(resolved[hit].flags&F.STAIR)){
+        if(candidate.floor<resolved[hit].floor)resolved[hit]=candidate;
+        continue;
+      }
       if(candidate.physicalReplace&&!resolved[hit].physicalReplace){resolved.splice(hit,1,candidate);continue;}
       if(resolved[hit].physicalReplace&&!candidate.physicalReplace)continue;
       overlaps.push({key,a:resolved[hit],b:candidate});
@@ -583,7 +717,6 @@ export function doorAt(x,y){return doorCellToPortal.get(`${Math.floor(x)},${Math
 export function doorNear(px,py,facing=[0,-1],maxCells=5){
   let best=null;
   for(const portal of doorPortals){
-    if(portal.open)continue;
     const dx=portal.cx-px,dy=portal.cy-py,d=Math.hypot(dx,dy);if(d>maxCells)continue;
     const dot=d>.001?(dx*facing[0]+dy*facing[1])/d:1;if(dot<.12)continue;
     if(!best||d<best.distance)best={portal,distance:d};
@@ -593,33 +726,92 @@ export function doorNear(px,py,facing=[0,-1],maxCells=5){
 export function interactDoor(px,py,facing,keys){
   const hit=doorNear(px,py,facing);if(!hit)return null;
   const {portal}=hit;
-  if(portal.open)return null;
-  if(portal.keyId&&!(keys&&keys.has(portal.keyId)))return{ok:false,why:'locked',id:portal.id,keyId:portal.keyId};
-  setPortalOpen(portal,true);
+  const opening=portal.runtime.state===DOOR_STATE.CLOSED||portal.runtime.state===DOOR_STATE.CLOSING;
+  if(opening&&portal.keyId&&!(keys&&keys.has(portal.keyId)))return{ok:false,why:'locked',id:portal.id,keyId:portal.keyId,archetype:portal.definition?.archetype||null};
   const along=portal.widthAxis==='x'?py:px,plane=portal.widthAxis==='x'?portal.cy:portal.cx;
   portal.autoCloseSide=Math.sign(along-plane)||-1;
-  return{ok:true,opened:true,id:portal.id,keyId:portal.keyId};
+  if(opening){
+    const opened=beginDoorOpen(portal.runtime);
+    if(portal.definition?.closer!=='none')portal.runtime.closerArmed=true;
+    return{ok:true,opened,id:portal.id,keyId:portal.keyId,archetype:portal.definition?.archetype||null,construction:portal.definition?.construction||'steel'};
+  }
+  const removedWedge=portal.runtime.wedge;
+  const closed=beginDoorClose(portal.runtime,{removeWedge:true});
+  if(portal.definition?.closer!=='none')portal.runtime.closerArmed=true;
+  return{ok:true,closed,removedWedge,id:portal.id,keyId:portal.keyId,archetype:portal.definition?.archetype||null,construction:portal.definition?.construction||'steel'};
 }
-export function closePassedDoors(px,py){
-  const closed=[];
+export function tickDoors(dt,{playerX=Infinity,playerY=Infinity}={}){
+  const events=doorTickEvents;events.length=0;
   for(const portal of doorPortals){
-    if(!portal.open||!portal.autoCloseSide)continue;
-    const along=portal.widthAxis==='x'?py:px,plane=portal.widthAxis==='x'?portal.cy:portal.cx;
-    const side=Math.sign(along-plane);
-    if(side&&side!==portal.autoCloseSide&&Math.abs(along-plane)>=1.1){
-      setPortalOpen(portal,false);portal.autoCloseSide=0;closed.push(portal.id);
+    const sweepOccupied=pointInDoorSweep(portal,playerX,playerY);
+    const along=portal.widthAxis==='x'?playerY:playerX,plane=portal.widthAxis==='x'?portal.cy:portal.cx;
+    const side=Math.sign(along-plane),cleared=portal.autoCloseSide&&side&&side!==portal.autoCloseSide&&Math.abs(along-plane)>=2.2;
+    if(portal.runtime.state===DOOR_STATE.OPEN&&portal.definition?.closer!=='none'&&portal.runtime.closerArmed&&!portal.runtime.wedge&&cleared){
+      requestCloser(portal.runtime);beginDoorClose(portal.runtime,{removeWedge:false});
+      events.push({type:'closing',id:portal.id,portal});
+    }
+    const beforePassable=portal.open;
+    const transition=advanceDoor(portal.runtime,portal.definition||{openSeconds:.6,closeSeconds:.6},dt,{sweepOccupied});
+    const passable=!doorBlocksPassage(portal.runtime);
+    if(passable!==beforePassable)setPortalPassable(portal,passable);
+    if(transition){
+      if(transition===DOOR_STATE.OPEN)events.push({type:'opened',id:portal.id,portal});
+      else if(transition===DOOR_STATE.CLOSED){portal.autoCloseSide=0;events.push({type:'closed',id:portal.id,portal});}
     }
   }
-  return closed;
+  return events;
 }
+// Compatibility for older callers: closers are now advanced by tickDoors.
+export function closePassedDoors(){return[];}
 export function setDoorOpen(id,open){
   const portal=doorPortals.find((p)=>p.id===id);if(!portal)return false;
   portal.autoCloseSide=0;return setPortalOpen(portal,open);
 }
-export function loadDoorState(saved={}){const opened=new Set(saved.open||[]);for(const p of doorPortals)if(opened.has(p.id))setPortalOpen(p,true);}
-export function saveDoorState(){return{open:doorPortals.filter((p)=>p.open).map((p)=>p.id)};}
-export function resetDoors(){for(const p of doorPortals)setPortalOpen(p,!p.keyId);return saveDoorState();}
-export function doorState(){return doorPortals.map((p)=>({id:p.id,keyId:p.keyId,open:p.open,cx:p.cx,cy:p.cy,widthAxis:p.widthAxis,cells:p.cells.map((c)=>({...c}))}));}
+export function setAllDoorsOpen(open){for(const portal of doorPortals)setPortalOpen(portal,open,{preserveWedge:false});return saveDoorState();}
+export function runDoorCloserCycles(){
+  const started=[];
+  for(const portal of doorPortals){
+    if(portal.definition?.closer==='none')continue;
+    portal.runtime.wedge=false;portal.runtime.closerArmed=true;setPortalOpen(portal,true,{preserveWedge:false});beginDoorClose(portal.runtime,{removeWedge:false});started.push(portal.id);
+  }
+  return started;
+}
+export function loadDoorState(saved={}){
+  const normalized=normalizeDoorSave(saved),legacyOpen=new Set(normalized.legacyOpen);
+  for(const portal of doorPortals){
+    const aliases=new Set([portal.id,portal.legacyId,...(portal.definition?.legacyIds||[])]);
+    const endpoint=normalized.states[portal.id]||[...aliases].map((id)=>normalized.states[id]).find(Boolean);
+    portal.runtime=endpoint?normalizeDoorEndpoint(endpoint,portal.definition):freshDoorRuntime(portal.definition||{initialState:legacyOpen.has(portal.id)?'open':'closed'});
+    if(!endpoint&&[...aliases].some((id)=>legacyOpen.has(id)))portal.runtime=normalizeDoorEndpoint({state:DOOR_STATE.OPEN,wedge:portal.definition?.wedged,closerArmed:portal.definition?.closerArmed},portal.definition);
+    setPortalPassable(portal,!doorBlocksPassage(portal.runtime));
+  }
+}
+export function saveDoorState(){return{schema:2,states:Object.fromEntries(doorPortals.map((portal)=>[portal.id,stableDoorEndpoint(portal.runtime)]))};}
+export function resetDoors(){for(const portal of doorPortals){portal.runtime=freshDoorRuntime(portal.definition||{initialState:portal.keyId?'closed':'open'});portal.autoCloseSide=0;setPortalPassable(portal,!doorBlocksPassage(portal.runtime));}return saveDoorState();}
+export function doorState(){return doorPortals.map((portal)=>({
+  id:portal.id,legacyId:portal.legacyId,archetype:portal.definition?.archetype||'legacy',state:portal.runtime.state,openFraction:portal.runtime.openFraction,
+  keyId:portal.keyId,open:portal.open,wedge:portal.runtime.wedge,closer:portal.definition?.closer||'none',closerArmed:portal.runtime.closerArmed,
+  acousticLossDb:portal.definition?.acousticLossDb||0,construction:portal.definition?.construction||'legacy',leafCount:portal.definition?.leafCount||1,
+  activeLeaves:[...(portal.activeLeaves||[0])],aperture:{...(portal.aperture||{width:portal.cells.length/PLAN_SCALE,height:3.4})},leaf:{...(portal.leaf||{width:1,height:2.1,depth:.05})},
+  hinge:portal.definition?.hinge||'left',swing:portal.definition?.swing||'escape',head:portal.definition?.head||'masonry-infill',
+  mesh:portal.definition?.mesh||'door_leaf_service',frameMesh:portal.definition?.frameMesh||'door_frame_single',headMesh:portal.definition?.headMesh||'door_head_infill',
+  cx:portal.cx,cy:portal.cy,widthAxis:portal.widthAxis,cells:portal.cells.map((c)=>({...c})),
+}));}
+export function forEachDoor(visitor){for(const portal of doorPortals)visitor(portal);return doorPortals.length;}
+
+export function doorAcousticLossBetween(source,listener){
+  if(!source||!listener)return 0;
+  const distance=Math.hypot(listener.x-source.x,listener.y-source.y),steps=Math.max(2,Math.ceil(distance/.5));
+  const crossed=new Set();let loss=0;
+  for(let i=1;i<steps;i++){
+    const t=i/steps,portal=doorAt(source.x+(listener.x-source.x)*t,source.y+(listener.y-source.y)*t);
+    if(!portal||portal.open||crossed.has(portal.id))continue;
+    crossed.add(portal.id);loss+=portal.definition?.acousticLossDb||0;
+  }
+  return loss;
+}
+
+export function sealedDoorways(){return plan.doorVolumes.filter((volume)=>volume.mask===F.BRICKED).map((volume)=>({id:`sealed:${Math.round(volume.cx)},${Math.round(volume.cy)}`,cx:volume.cx,cy:volume.cy,widthAxis:volume.widthAxis}));}
 
 // ── mutation support (M4.1 writes through these) ────────────────────────────
 export function setSolid(x, y, solid) {

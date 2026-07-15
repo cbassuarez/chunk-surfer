@@ -22,6 +22,8 @@ export const ACOUSTIC_CATALOGUE = Object.freeze({
   handling_noise: D({ levelDb: -31, durationMs: 360, spectrum: S(.28, .68, .46), impulsiveness: .48, family: 'handling', canBeMimicked: true }),
   impact_loud: D({ levelDb: -6, durationMs: 560, spectrum: S(.90, .78, .44), impulsiveness: 1, family: 'impact', canBeMimicked: true }),
   operator_voice_activity: D({ levelDb: -30, durationMs: 480, spectrum: S(.18, .84, .52), impulsiveness: .14, family: 'voice', canBeMimicked: false }),
+  bell_tenor_toll: D({ levelDb: -4, durationMs: 9000, spectrum: S(1, .78, .34), impulsiveness: .82, family: 'bell', canBeMimicked: true }),
+  bell_change_strike: D({ levelDb: -2, durationMs: 11000, spectrum: S(.94, .86, .52), impulsiveness: .88, family: 'bell', canBeMimicked: false }),
 });
 
 export function catalogueEntry(kind) {
