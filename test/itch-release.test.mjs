@@ -58,7 +58,7 @@ test('itch payload lookup prefers Windows portable directory over zipped mirror 
   const spec = ITCH_CHANNELS.find((entry) => entry.channel === 'win-beta');
   mkdirSync(path.join(root, 'release', 'windows', 'Chunk Surfer'), { recursive: true });
   writeFileSync(path.join(root, 'release', 'windows', 'Chunk Surfer', 'chunk-surfer.exe'), 'exe');
-  const payload = findItchPayload(root, spec, [path.join(root, 'release-assets', 'chunk-surfer-v0.1.1-beta.5-windows-x64.zip')]);
+  const payload = findItchPayload(root, spec, [path.join(root, 'release-assets', 'chunk-surfer-v0.1.1-beta.7-windows-x64.zip')]);
   assert.equal(payload.type, 'directory');
   assert.match(payload.path, /Chunk Surfer$/);
 });
