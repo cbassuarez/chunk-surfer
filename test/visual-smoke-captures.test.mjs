@@ -15,6 +15,7 @@ test('feature smoke captures the restored title, authored slates, cinematic roll
     '01d-opening-quotation-compact.png',
     '02-title-current-build.png',
     '02-title-compact.png',
+    '08-chunk-surf-long-hall.png',
     '09-credits-opening-card.png',
     '09-credits-opening-card-compact.png',
     '10-credits-roll-early.png',
@@ -30,6 +31,8 @@ test('feature smoke captures the restored title, authored slates, cinematic roll
   }
   assert.match(source, /__probe\.openCredits\(\)/);
   assert.match(source, /__probe\.endingCredits\('sacrifice'\)/);
+  assert.match(source, /chunkSurf\.state\.phase,'hall'/);
+  assert.doesNotMatch(source, /08-chunk-surf-source-fault\.png/);
 });
 
 test('feature smoke runner is portable across release operating systems', () => {

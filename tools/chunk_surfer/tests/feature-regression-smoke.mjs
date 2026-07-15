@@ -122,7 +122,10 @@ try {
   assert.ok(godMenu.tabs.some((tab)=>tab.id==='conditions'));
   assert.ok(godMenu.tabs.some((tab)=>tab.id==='scenes'));
   await page.screenshot({path:path.join(output,'04-god-menu.png')});
-  for(let i=0;i<4;i++)await page.keyboard.press('e');
+  const currentTab=godMenu.tabs.findIndex((tab)=>tab.id===godMenu.tab);
+  const scenesTab=godMenu.tabs.findIndex((tab)=>tab.id==='scenes');
+  const tabSteps=(scenesTab-currentTab+godMenu.tabs.length)%godMenu.tabs.length;
+  for(let i=0;i<tabSteps;i++)await page.keyboard.press('e');
   await page.waitForFunction(()=>window.__scenes?.top?.()?.view?.()?.tab==='scenes',{timeout:interactionTimeout});
   await page.screenshot({path:path.join(output,'04b-god-menu-game-parts.png')});
   await page.keyboard.press('F10');
@@ -137,18 +140,28 @@ try {
   await page.waitForFunction(()=>/^thought:|^dialogue:/.test(window.__scenes?.top?.()?.id||''),{timeout:interactionTimeout});
   await page.evaluate(()=>window.__scenes.top().update?.(1.2));
   await page.screenshot({path:path.join(output,'06-dialogue-pane.png')});
+  assert.equal(await page.evaluate(()=>window.__probe.clearDiagnosticScenes()),true);
+  await page.waitForFunction(()=>window.__chunkParity?.().screen==='game',{timeout:interactionTimeout});
 
   assert.equal(await page.evaluate(()=>window.__probe.battleId('natatorium',false)),true);
   await page.waitForFunction(()=>/^battle:/.test(window.__scenes?.top?.()?.id||''),{timeout:interactionTimeout});
   await page.keyboard.press('Enter');
   await page.keyboard.press('Enter');
   await page.screenshot({path:path.join(output,'07-redaction-battle.png')});
+  assert.equal(await page.evaluate(()=>window.__probe.battleAbort()),true);
+  await page.waitForFunction(()=>!/^battle:/.test(window.__scenes?.top?.()?.id||''),{timeout:interactionTimeout});
 
   assert.equal(await page.evaluate(()=>window.__probe.chunkSurfStart()),true);
-  await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='chunk-surf',{timeout:interactionTimeout});
-  const chunkSurf=await page.evaluate(()=>window.__scenes.top().view());
-  assert.ok(chunkSurf?.roomId,'Chunk Surf source-fault scene must expose its authored room state');
-  await page.screenshot({path:path.join(output,'08-chunk-surf-source-fault.png')});
+  await page.waitForFunction(()=>window.__probe?.chunkSurf?.().active===true,{timeout:interactionTimeout});
+  const chunkSurf=await page.evaluate(()=>({
+    state:window.__probe.chunkSurf(),
+    parity:window.__chunkParity(),
+    scene:window.__scenes?.top?.()?.id||null,
+  }));
+  assert.equal(chunkSurf.state.phase,'hall','Chunk Surf must enter the real Long Hall world');
+  assert.equal(chunkSurf.parity.screen,'game','source-space remains in the normal gameplay renderer');
+  assert.notEqual(chunkSurf.scene,'chunk-surf','source-space must not restore the obsolete blocking scene');
+  await page.screenshot({path:path.join(output,'08-chunk-surf-long-hall.png')});
   console.log('visual smoke: gameplay path captured');
 
   assert.equal(await page.evaluate(()=>window.__probe.openCredits()),true);
@@ -180,7 +193,7 @@ try {
     renderer:map.parity.renderer,
     authoredFloors:map.source.definition.floors.length,
     mapTargets:map.source.targets.length,
-    chunkSurfRoom:chunkSurf.roomId,
+    chunkSurfPhase:chunkSurf.state.phase,
     output,
   }));
 } finally {

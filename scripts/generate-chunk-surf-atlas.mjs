@@ -167,7 +167,7 @@ function selectSector(files, id, spec) {
 const files = [];
 for (const path of SOURCE_FILES) {
   const raw = await readFile(resolve(ROOT, path), 'utf8');
-  files.push({ path, language: extname(path) === '.json' ? 'json' : 'javascript', lines: raw.split(/\n/) });
+  files.push({ path, language: extname(path) === '.json' ? 'json' : 'javascript', lines: raw.split(/\r?\n/) });
 }
 
 const sectors = Object.fromEntries(

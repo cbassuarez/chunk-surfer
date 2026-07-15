@@ -38,7 +38,7 @@ assert.ok(CHUNK_SURF_ROOMS.every((room) => !('lines' in room) && !('tunedLines' 
 
 for (const entry of Object.values(SOURCE_ATLAS.entries)) {
   const file = await readFile(resolve(entry.file), 'utf8');
-  const exact = file.split(/\n/)[entry.line - 1];
+  const exact = file.split(/\r?\n/)[entry.line - 1];
   assert.equal(exact, entry.text, `${entry.file}:${entry.line} is exact`);
   assert.equal(hash(exact), entry.hash, `${entry.file}:${entry.line} hash matches`);
   assert.ok(entry.tokens.every((token) => exact.slice(token.start, token.end) === token.text), 'token offsets refer to exact text');

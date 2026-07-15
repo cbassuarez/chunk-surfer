@@ -9466,6 +9466,12 @@ function installProbe(){
       `probe-${OBJ.allPages().length+1}`),
     // ── M4.2: the reader, the radio, the tape ──────────────────────────────
     scene:()=>scenes.top()?.id||null,
+    clearDiagnosticScenes:()=>{
+      while(scenes.depth()) scenes.pop();
+      setGameplayPaused(false,{announce:false});
+      resetMotionInput('probe-clear-scenes',{stopRenderMove:true});
+      return true;
+    },
     read:()=>interact(),
     lensPreset:(n)=>!!applyLensPreset(n),
     typing:()=>STORY.typingState(),
@@ -9505,6 +9511,7 @@ function installProbe(){
       { onWin:()=>{}, onLose:()=>{} }); return true; },
     battleId:(id, named)=>{ const F={natatorium:natatoriumBattle, practice:practiceBattle}[id||'natatorium'];
       if(!F) return false; ensureCtx(); openBattle(F(!!named), { onWin:()=>{}, onLose:()=>{} }); return true; },
+    battleAbort:()=>godAbortBattle(),
     playbackDialog:(room)=>{ maybePlaybackDialog(room); return scenes.top()?.id||null; },
     battleState:()=>{ const v=scenes.top()?.battleView?.(); return v||null; },
     coldOpen:()=>{godColdOpen();return true;},

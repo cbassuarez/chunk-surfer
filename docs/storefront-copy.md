@@ -2,7 +2,7 @@
 
 This is the canonical source for manual itch.io and Steam storefront updates. The copy blocks are paste-ready; the positioning, research, release notes, and verification sections are internal publishing guidance.
 
-**Ground-truth audit:** July 14, 2026 against repository version `0.1.1-beta.1`.
+**Ground-truth audit:** July 14, 2026 against repository version `0.1.1-beta.2`.
 
 ## Publishing status
 
