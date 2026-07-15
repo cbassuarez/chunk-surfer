@@ -41,7 +41,7 @@ import { flagApply, flagTest, flagGet } from './game/flags.js';
 // building to talk to.
 import { makeTitleScene } from './game/title.js';
 import { makeSettingsScene } from './game/settings.js';
-import { makeCreditsIntroScene, makeCreditsScene } from './game/credits.js';
+import { makeCreditsScene } from './game/credits.js';
 import { makeStoryArtPreviewScene } from './game/story-art-preview.js';
 import { preloadStoryArt, resolveStoryArt, storyArtCacheSnapshot } from './game/story-art.js';
 import { terrorInit, once, interpolate } from './game/terror.js';
@@ -54,6 +54,7 @@ import { authoredCueUrls, dispatchAuthoredCue } from './audio/authored-cues.js';
 import * as STORY from './audio/story-audio.js';
 import * as FEAR from './audio/fear.js';
 import { createAudioContextRecovery } from './audio/context-recovery.js';
+import { createBackgroundAudioFocusPolicy } from './audio/background-audio.js';
 import { runtimeBattle, runtimeTree } from './narrative/runtime-content.js';
 import { runtimeChapelBattle, runtimeEndingTree } from './narrative/runtime-endings.js';
 import { assetUrl, IS_TAURI } from './platform/paths.js';
@@ -201,6 +202,7 @@ const RENDERER = resolveRenderer(params().get('renderer'), {development:!!import
 // ── State ─────────────────────────────────────────────────────────────────────
 let actx=null;
 let audioRecovery=null;
+let backgroundAudioPolicy=null;
 let voices=new Map(); // chunkIdx -> {src,gain,dur,startedAt,target}
 let ambientDrone=null; // {src,lfo,filt,gain,target}
 let worldLayerVoice=null; // {srcA,srcB,gain,dur,startedAt,target,chunkIdx,worldId}
@@ -551,8 +553,16 @@ function ensureCtx({resume=true}={}){
 audioRecovery=createAudioContextRecovery({
   getContext:()=>actx,
   ensureContext:()=>ensureCtx({resume:false}),
+  shouldRecover:()=>backgroundAudioPolicy?.shouldRecover() ?? true,
   onRunning:()=>{ if(!paused) applyAudioSettings(); },
   onError:(err,reason)=>console.warn(`${reason}: audio resume blocked`,err),
+});
+backgroundAudioPolicy=createBackgroundAudioFocusPolicy({
+  getContext:()=>actx,
+  getMode:()=>getSave().settings?.backgroundAudio,
+  getDocument:()=>document,
+  recover:(reason)=>audioRecovery?.recover(reason),
+  onError:(err,reason)=>console.warn(`${reason}: audio suspend blocked`,err),
 });
 // Per-chunk baseline volume from analysis — quiet chunks (low RMS) get a boost,
 // loud percussive ones get a slight cut, so the polyphonic mix stays balanced.
@@ -2926,7 +2936,7 @@ function recoverMotionFocus(reason='motion-focus'){
 
 function recoverInteractionAudio(reason='interaction-focus'){
   if(audioInitFailed) return;
-  return audioRecovery?.recover(reason);
+  return backgroundAudioPolicy?.sync(reason) ?? audioRecovery?.recover(reason);
 }
 
 function recoverInteractionFocus(reason='interaction-focus'){
@@ -4522,6 +4532,18 @@ function tickProgressionNotices(){
 // ── Main loop ─────────────────────────────────────────────────────────────────
 let developmentWindowMarker='';
 let developmentWindowMarkerPending=false;
+const WORLD_HIDDEN_SCENES=Object.freeze([
+  'lens-calibration',
+  'opening-credits',
+  'title',
+  'credits',
+  'return-report',
+]);
+
+function scenePresentationHidesWorld(){
+  return WORLD_HIDDEN_SCENES.some((id)=>scenes.has(id));
+}
+
 function updateDevelopmentWindowMarker(){
   if(!import.meta.env?.DEV)return;
   const scene=scenes.top()?.id || (inRogue?'game':'boot');
@@ -4594,7 +4616,14 @@ function loop(){
           TUT.tickTutorial(dt, tutorialCtx());
         }
       }
-      if(RENDERER==='3d') render3d(); else renderMap();
+      // Calibration, opening/title presentation, and credits fully cover the
+      // playfield. Rendering the hidden WebGL world here steals the same GPU
+      // time needed to upload the critical material bank, which made startup
+      // dramatically slower on software/fallback renderers. Keep the world
+      // state frozen as before, and resume drawing when the presentation ends.
+      if(RENDERER==='3d'){
+        if(!scenePresentationHidesWorld()) render3d();
+      }else renderMap();
       // Instrument readouts only exist in JUST SURF; in story mode they are
       // hidden by body.game, so don't pay to rebuild their DOM every frame.
       if(!storyMode && !sampleFieldSuppressed()){ renderCatalog(); renderStatus(); renderSense(); renderKeymeter(); }
@@ -7125,7 +7154,7 @@ function finishEnding(id){
   presentFinale(guardEpilogue(variant), {
     slate:'W. ELLERY HOLDINGS · GATE',
     replayId:`guard-epilogue:${id}`,
-    onDone:()=>showReturnReport(summary),
+    onDone:()=>openEndingCredits(summary),
   });
 }
 
@@ -7576,6 +7605,7 @@ function openSettings({ inGame=false, initialTab=null }={}){
       setSfxVolume,
       setMusicVolume,
       setMonitorVolume,
+      onBackgroundAudioChange: ()=>{ void recoverInteractionAudio('background-audio-setting'); },
       micStatus: ()=>MIC.micState(),
       micSnapshot: ()=>MIC.micSnapshot(),
       enableMic: ()=>startRoomMic({ force:true }),
@@ -8047,22 +8077,32 @@ function openArchive(){
   scenes.push(makeArchiveScene({ meta:getMeta() }));
 }
 
+function presentCredits({context='menu',onDone=()=>{}}={}){
+  let finished=false;
+  const finish=()=>{
+    if(finished)return;
+    finished=true;
+    if(scenes.top()?.id==='credits')scenes.pop();
+    else scenes.remove('credits');
+    onDone();
+  };
+  scenes.push(makeCreditsScene({
+    context,
+    onDone:finish,
+    onWebsite:()=>openExternalUrl(APP_LINKS.website),
+  }));
+}
+
 function openCredits(){
   ensureCtx();
   emitProgress(EVENT_TYPES.CREDITS_VIEWED, {}, 'main.openCredits');
-  let opened = false;
-  const panel = () => {
-    if (opened) return;
-    opened = true;
-    scenes.remove('credits-intro');
-    scenes.push(makeCreditsScene({
-      onClose:()=>scenes.pop(),
-      onWebsite:()=>openExternalUrl(APP_LINKS.website),
-    }));
-  };
-  scenes.push(makeCreditsIntroScene({
-    onDone:panel,
-  }));
+  presentCredits({context:'menu'});
+}
+
+function openEndingCredits(summary){
+  ensureCtx();
+  emitProgress(EVENT_TYPES.CREDITS_VIEWED, {}, 'main.openEndingCredits');
+  presentCredits({context:'ending',onDone:()=>showReturnReport(summary)});
 }
 
 function openReturnIndex(){
@@ -8623,6 +8663,11 @@ function installProbe(){
     }),
     chunkSurfStart:()=>beginChunkSurf({forced:true}),
     openCredits:()=>{ openCredits(); return true; },
+    endingCredits:(endingId='sacrifice')=>{
+      const summary=commitReturn(endingId,{rec:REC.saveRecState()});
+      openEndingCredits(summary);
+      return summary;
+    },
     cell:(x,y)=>FP.cellAt(x,y),
     materialAt:(x,y)=>FP.materialAt(x,y),
     canStep:(ax,ay,bx,by)=>FP.canStep(ax,ay,bx,by,{keys:playerKeys}),
@@ -8890,6 +8935,8 @@ async function bootScenes(){
     const lens=await ensureLensStarted(qp);
     if(!lens)throw new Error('critical diffusion service unavailable');
     await lens.ready;
+    const bank=lens.stats?.criticalBank||'calm';
+    if(!await lens.activateBank?.(bank,{transitionMs:0}))throw new Error('startup materials could not be activated');
     return lens;
   };
   scenes.push(makeLensCalibrationScene({
@@ -9470,7 +9517,10 @@ async function boot(){
     }
   });
   window.addEventListener('pageshow', ()=>{ recoverInteractionFocus('pageshow'); }, {passive:true});
-  window.addEventListener('pagehide',()=>resetMotionInput('pagehide', {stopRenderMove:true}));
+  window.addEventListener('pagehide',()=>{
+    resetMotionInput('pagehide', {stopRenderMove:true});
+    void recoverInteractionAudio('pagehide');
+  });
   window.addEventListener('blur',onBlur);
   await installDesktopMenuBridge({
     isInGame: isDesktopMenuInGame,

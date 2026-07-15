@@ -46,6 +46,8 @@ const SEEN_TEXT_LABEL = { normal: 'NORMAL', fast: 'FAST WHEN HELD', instant: 'IN
 const HUSH_AUDIO_MODES = ['reduced', 'full'];
 const HUSH_AUDIO_LABEL = { reduced: 'REDUCED', full: 'FULL' };
 const HUSH_LIGHT_MODES = ['off', 'reduced', 'full'];
+const BACKGROUND_AUDIO_MODES = ['continue', 'pause'];
+const BACKGROUND_AUDIO_LABEL = { continue: 'CONTINUE', pause: 'PAUSE WHEN UNFOCUSED' };
 
 // A bar like ◀▮▮▮▯▯▶ for a 0..1 value.
 function bar(v, n = 10) {
@@ -381,6 +383,12 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           { id: 'monitorGain', label: 'MONITOR GAIN',
             value: () => pct('monitorGain', 1), bar: () => setting('monitorGain', 1),
             adjust: (d) => setAudioLevel('monitorGain', 'setMonitorVolume', d) },
+          { id: 'backgroundAudio', label: 'BACKGROUND AUDIO',
+            value: () => BACKGROUND_AUDIO_LABEL[setting('backgroundAudio', 'continue')] || 'CONTINUE',
+            adjust: (d) => {
+              cycleSetting('backgroundAudio', BACKGROUND_AUDIO_MODES, d, 'continue');
+              hooks.onBackgroundAudioChange?.();
+            } },
         ],
       },
       {

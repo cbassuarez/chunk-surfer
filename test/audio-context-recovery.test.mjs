@@ -78,3 +78,26 @@ test('closed contexts are not placed in an endless retry loop', async () => {
   assert.equal(await recovery.recover('pageshow'), false);
   assert.deepEqual(timers, []);
 });
+
+test('intentional background suspension does not fight the player setting', async () => {
+  const context = fakeContext();
+  context.state = 'running';
+  const timers = [];
+  let allowed = false;
+  const recovery = createAudioContextRecovery({
+    getContext: () => context,
+    shouldRecover: () => allowed,
+    setTimer: (fn) => { timers.push(fn); return timers.length; },
+    clearTimer: () => {},
+  });
+
+  recovery.bind(context);
+  context.suspend();
+  assert.deepEqual(timers, []);
+  assert.equal(await recovery.recover('window-focus'), false);
+  assert.equal(context.state, 'suspended');
+
+  allowed = true;
+  assert.equal(await recovery.recover('window-focus'), true);
+  assert.equal(context.state, 'running');
+});

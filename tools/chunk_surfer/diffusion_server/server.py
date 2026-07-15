@@ -45,6 +45,7 @@ app = FastAPI()
 lens = None
 busy_lock = asyncio.Lock()
 manifest_lock = threading.Lock()
+manifest_cache: dict[str, dict] = {}
 
 
 def compatibility_error() -> str | None:
@@ -103,12 +104,16 @@ def manifest_path(bank_id: str) -> Path:
 
 
 def read_manifest(bank_id: str) -> dict:
+    if bank_id in manifest_cache:
+        return manifest_cache[bank_id]
     path = manifest_path(bank_id)
     try:
         data = json.loads(path.read_text("utf-8"))
-        return data if data.get("schema") == CACHE_SCHEMA else {}
+        result = data if data.get("schema") == CACHE_SCHEMA else {}
     except (FileNotFoundError, json.JSONDecodeError, OSError):
-        return {}
+        result = {}
+    manifest_cache[bank_id] = result
+    return result
 
 
 def cached_result(bank_id: str, slot: int, cache_key: str, cache_path: Path) -> bytes | None:
@@ -150,6 +155,7 @@ def record_manifest(bank_id: str, slot: int, cache_key: str, cache_path: Path,
         temp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
         temp.write_text(json.dumps(document, sort_keys=True, separators=(",", ":")), "utf-8")
         os.replace(temp, path)
+        manifest_cache[bank_id] = document
 
 
 # A frame, and the exact depth of THAT frame, in one message:
@@ -212,27 +218,29 @@ async def session(ws: WebSocket):
             }))
             await ws.close(code=1011, reason="unsupported GPU")
             return
-        await ws.send_text(json.dumps({
-            "type": "progress", "phase": "model", "state": "loading",
-            "modelId": pipeline.DEFAULT_MODEL,
-        }))
         loop = asyncio.get_event_loop()
         try:
-            active_lens = await loop.run_in_executor(None, load_lens)
+            await loop.run_in_executor(None, pipeline.validate_bundled_resources)
         except Exception as exc:
             await ws.send_text(json.dumps({
-                "type": "error", "phase": "model", "code": "MODEL_VALIDATION_FAILED",
+                "type": "error", "phase": "resources", "code": "MODEL_VALIDATION_FAILED",
                 "modelId": pipeline.DEFAULT_MODEL, "error": str(exc)[:300],
             }))
             await ws.close(code=1011, reason="model validation failed")
             return
+        device, _dtype = pipeline.pick_device()
+        model = pipeline.MODELS[pipeline.DEFAULT_MODEL]
         await ws.send_text(json.dumps({
             "type": "status", "rev": SERVER_REV, "ok": True,
             "supported": True,
             "cacheSchema": CACHE_SCHEMA,
             "weightsSha256": pipeline.bundled_weights_sha256() or os.environ.get("LENS_WEIGHTS_SHA256") or None,
             "modelId": pipeline.DEFAULT_MODEL,
-            **active_lens.status(),
+            "model": model.key, "label": model.label, "device": device,
+            "steps": model.distilled_steps, "size": pipeline.SIZE,
+            "depth": lens.depth if lens is not None else False,
+            "degraded": (lens.degraded or None) if lens is not None else None,
+            "ready": lens is not None,
         }))
 
         async def worker():
@@ -279,12 +287,26 @@ async def session(ws: WebSocket):
                     if cached_payload is not None:
                         styled = cached_payload
                     else:
-                        await ws.send_text(json.dumps({
-                            "type": "progress", "phase": "generating",
-                            "requestId": work.get("requestId"), "bankId": work.get("bankId"),
-                            "slot": work.get("slot"), "modelId": pipeline.DEFAULT_MODEL,
-                        }))
                         async with busy_lock:
+                            if lens is None:
+                                await ws.send_text(json.dumps({
+                                    "type": "progress", "phase": "model", "state": "loading",
+                                    "modelId": pipeline.DEFAULT_MODEL,
+                                }))
+                                active_lens = await loop.run_in_executor(None, load_lens)
+                                await ws.send_text(json.dumps({
+                                    "type": "status", "rev": SERVER_REV, "ok": True,
+                                    "supported": True, "ready": True,
+                                    "cacheSchema": CACHE_SCHEMA,
+                                    "weightsSha256": pipeline.bundled_weights_sha256() or os.environ.get("LENS_WEIGHTS_SHA256") or None,
+                                    "modelId": pipeline.DEFAULT_MODEL,
+                                    **active_lens.status(),
+                                }))
+                            await ws.send_text(json.dumps({
+                                "type": "progress", "phase": "generating",
+                                "requestId": work.get("requestId"), "bankId": work.get("bankId"),
+                                "slot": work.get("slot"), "modelId": pipeline.DEFAULT_MODEL,
+                            }))
                             styled = await loop.run_in_executor(
                                 None, diffuse, frame, prompt, strength, passes,
                                 seed, guidance, negative, dep, depth_scale
@@ -295,7 +317,7 @@ async def session(ws: WebSocket):
                             temp_path.write_bytes(styled)
                             os.replace(temp_path, cache_path)
                     payload_sha256 = hashlib.sha256(styled).hexdigest()
-                    if cache_path:
+                    if cache_path and not cached:
                         record_manifest(bank_id, int(work["slot"]), cache_key, cache_path, payload_sha256, work)
                     d = f" +{len(dep)}B depth" if dep else " (blind)"
                     print(f"frame diffused in {time.time() - t0:.2f}s ({len(frame)}B{d} -> {len(styled)}B)")
@@ -360,6 +382,7 @@ async def session(ws: WebSocket):
     finally:
         if task:
             task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
 
 
 # Local GPU: `python server.py`; lens.local.json points at ws://127.0.0.1:8000.

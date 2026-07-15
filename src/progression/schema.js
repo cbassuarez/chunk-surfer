@@ -2,6 +2,7 @@
 // defaults and normalization, but never touches localStorage or game systems.
 
 import { DEFAULT_CONTROLLER_SETTINGS, normalizeControllerSettings } from '../game/bindings.js';
+import { normalizeBackgroundAudioMode } from '../audio/background-audio.js';
 import {
   DEFAULT_NATATORIUM_WATER_ENVIRONMENT,
   DEFAULT_NATATORIUM_WATER_LEDGER,
@@ -30,6 +31,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   sfx: 1,
   music: 1,
   monitorGain: 1,
+  backgroundAudio: 'continue',
   textCps: 42,
   instantText: false,
   fx: true,
@@ -227,6 +229,7 @@ export function normalizeSettings(value) {
   return {
     ...DEFAULT_SETTINGS,
     ...source,
+    backgroundAudio: normalizeBackgroundAudioMode(source.backgroundAudio),
     personalInterference: {
       enabled: !!personalSource.enabled,
       sourceSteam: personalSource.sourceSteam !== false,

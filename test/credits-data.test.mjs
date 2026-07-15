@@ -4,7 +4,7 @@ import { CREDITS, CREDIT_RECORD_TITLE, flattenCredits } from '../src/data/credit
 
 test('credits release record has required public sections', () => {
   const headings = CREDITS.map((section) => section.heading);
-  for (const required of ['Chunk Surfer', 'Production', 'Tools & Libraries', 'Credits', 'Website', 'Copyright']) {
+  for (const required of ['Chunk Surfer', 'Production', 'Tools & Libraries', 'Website', 'Copyright']) {
     assert.ok(headings.includes(required), required);
   }
   assert.equal(CREDIT_RECORD_TITLE, 'RELEASE RECORD');
@@ -21,8 +21,10 @@ test('credits data has no empty headings or lines', () => {
 test('credits data is public and non-spoilery', () => {
   const flat = flattenCredits().map((entry) => entry.text).join('\n');
   assert.match(flat, /Sebastian Suarez-Solis/);
+  assert.match(flat, /Sound Design — Paul Yorke/);
   assert.match(flat, /cbassuarez\.com/);
   assert.match(flat, /© 2026/);
+  assert.doesNotMatch(flat, /coming soon/i);
   assert.doesNotMatch(flat, /ending/i);
   assert.doesNotMatch(flat, /seed/i);
   assert.doesNotMatch(flat, /unlock/i);

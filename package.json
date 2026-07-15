@@ -1,7 +1,7 @@
 {
   "name": "chunk-surfer",
   "private": true,
-  "version": "0.1.0-beta.5",
+  "version": "0.1.0-beta.6",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -27,11 +27,12 @@
     "lens:bundle": "python3 tools/chunk_surfer/diffusion_server/build_bundle.py",
     "lens:bundle:mac": "tools/chunk_surfer/diffusion_server/.venv-local/bin/python tools/chunk_surfer/diffusion_server/build_bundle.py --target aarch64-apple-darwin",
     "beta:build:mac": "npm run lens:bundle:mac && npm run tauri:build -- --target aarch64-apple-darwin --bundles dmg",
-    "beta:preflight": "node scripts/release-preflight.mjs v0.1.0-beta.5",
+    "beta:preflight": "node scripts/release-preflight.mjs v0.1.0-beta.6",
     "itch:stage": "node scripts/itch-release.mjs stage",
     "itch:preview": "node scripts/itch-release.mjs preview",
     "itch:push": "node scripts/itch-release.mjs push",
     "test:look-captures": "node tools/chunk_surfer/tests/look-captures.mjs",
+    "test:feature-smoke": "node tools/chunk_surfer/tests/run-feature-regression-smoke.mjs",
     "test:desktop-menu": "node --test test/desktop-menu-actions.test.mjs test/desktop-menu-bridge.test.mjs test/desktop-global-shortcuts.test.mjs test/game-mode.test.mjs test/desktop-menu-contract.test.mjs",
     "tauri:check": "cargo check --manifest-path src-tauri/Cargo.toml --all-targets",
     "test:display": "npm run test:pixel-mesh && npm run test:story-art && npm run test:motion && node --test test/diffusion-lens-contract.test.mjs test/display-policy.test.mjs test/display-contract.test.mjs test/viewport-guard.test.mjs test/settings-vs-pause.test.mjs test/desktop-window-contract.test.mjs test/about-system.test.mjs test/performance-meter.test.mjs test/settings-about-tab.test.mjs test/credits-data.test.mjs test/critical-title-paint.test.mjs test/difficulty-visible.test.mjs",

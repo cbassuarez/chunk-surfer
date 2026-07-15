@@ -56,7 +56,15 @@ from diffusers import (
     StableDiffusionControlNetImg2ImgPipeline,
     TCDScheduler,
 )
+from diffusers.utils import logging as diffusers_logging
 from PIL import Image
+
+# Diffusers' component-loading progress bar constructs tqdm's multiprocessing
+# RLock even though this service has no worker processes. If the sidecar is
+# stopped before tqdm's module finalizer runs, Python reports that lock as a
+# leaked semaphore. The game has its own loading UI, so prevent the unused
+# progress machinery (and its semaphore) from being created at all.
+diffusers_logging.disable_progress_bar()
 
 BUNDLED = os.environ.get("LENS_BUNDLED") == "1"
 MODEL_ROOT = os.environ.get("LENS_MODEL_ROOT")

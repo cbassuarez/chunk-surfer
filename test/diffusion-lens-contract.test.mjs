@@ -9,23 +9,35 @@ test('boot hard-gates credits and title behind mandatory calibration', () => {
   const calibration = read('src/game/lens-calibration.js');
   assert.match(main, /makeLensCalibrationScene\(\{[\s\S]*start:calibrate[\s\S]*onReady:afterCalibration/);
   assert.match(main, /await lens\.ready/);
+  assert.match(main, /await lens\.activateBank\?\.\(bank,\{transitionMs:0\}\)/);
   assert.match(main, /scenes\.push\(makeOpeningCreditsScene\(\{onDone:afterCredits\}\)\)/);
-  assert.match(calibration, /RETRY CALIBRATION/);
+  assert.match(calibration, /LOADING MATERIALS/);
+  assert.match(calibration, /PREPARING TEXTURES/);
+  assert.match(calibration, /RETRY/);
   assert.match(calibration, /QUIT/);
+  assert.doesNotMatch(calibration, /AUDIOCORP|GENERATIVE LENS|BANKS VERIFIED/);
   assert.doesNotMatch(calibration, /continue without|bypass|skip/i);
   assert.doesNotMatch(main, /createLocalDiffusionFallback|THE LENS SLEEPS IN THE DOCK/);
 });
 
-test('production material client requires six complete ten-tile banks', () => {
+test('production material client stages one boot bank and streams all six complete banks', () => {
   const client = read('src/net/diffusion.js');
+  const main = read('src/main.js');
   assert.match(client, /profiles\.length !== 6/);
   assert.match(client, /SURFACE_NAMES\.length/);
+  assert.match(client, /criticalBank/);
+  assert.match(client, /criticalTotal: SURFACE_NAMES\.length/);
+  assert.match(client, /allReady/);
+  assert.match(client, /prioritizeBank\(bankId\)/);
+  assert.match(client, /await waitForBank\(bankId\)/);
   assert.match(client, /completeBankCount\(banks\)/);
   assert.match(client, /beginBank\(bankId\)/);
   assert.match(client, /for \(let slot = 0; slot < SURFACE_NAMES\.length; slot \+= 1\)/);
   assert.match(client, /commitSurfaces\([\s\S]*bankId, transitionMs/);
   assert.match(client, /if \(!shouldCommit\(\)\) return false/);
-  assert.match(read('src/main.js'), /lookApplyQueue=lookApplyQueue/);
+  assert.match(main, /lookApplyQueue=lookApplyQueue/);
+  assert.match(main, /WORLD_HIDDEN_SCENES[\s\S]*lens-calibration[\s\S]*opening-credits[\s\S]*title[\s\S]*credits/);
+  assert.match(main, /if\(!scenePresentationHidesWorld\(\)\) render3d\(\)/);
   assert.doesNotMatch(client, /export function diffusionStart|setBypass|tune\(/);
 });
 
@@ -47,6 +59,9 @@ test('protocol binds result bytes to request, bank, slot, model, and checksum id
   assert.match(client, /pendingResult\.sha256 !== checksum/);
   assert.match(server, /record_manifest/);
   assert.match(server, /cached_result/);
+  assert.ok(server.indexOf('cached_result(bank_id') < server.indexOf('await loop.run_in_executor(None, load_lens)'),
+    'cache lookup must happen before the model is loaded');
+  assert.match(server, /if cache_path and not cached:/);
 });
 
 test('desktop shell owns random authenticated sidecar lifecycle and cleanup', () => {
@@ -82,6 +97,7 @@ test('bundled model path is offline, checksum-verified, and GPU-only', () => {
   const bundle = read('tools/chunk_surfer/diffusion_server/build_bundle.py');
   assert.match(pipeline, /local_files_only/);
   assert.match(pipeline, /validate_bundled_resources/);
+  assert.match(pipeline, /diffusers_logging\.disable_progress_bar\(\)/);
   assert.match(server, /device not in \{"cuda", "mps"\}/);
   assert.match(server, /UNSUPPORTED_GPU/);
   assert.match(bundle, /aarch64-apple-darwin/);

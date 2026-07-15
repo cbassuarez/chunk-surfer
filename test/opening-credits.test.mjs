@@ -9,33 +9,43 @@ import {
   openingCreditLayout,
 } from '../src/game/opening-credits.js';
 
-test('opening credits use four separate fade slates with black beats', () => {
-  const title = openingCreditFrame(2);
-  const black = openingCreditFrame(5.25);
-  const creator = openingCreditFrame(7);
-  const sound = openingCreditFrame(12);
-  const quote = openingCreditFrame(18.5);
+test('opening credits use three fixed fade slates with deliberate black beats', () => {
+  const creator = openingCreditFrame(2);
+  const blackOne = openingCreditFrame(6.8);
+  const sound = openingCreditFrame(9);
+  const blackTwo = openingCreditFrame(13.2);
+  const quote = openingCreditFrame(17);
 
   assert.equal(OPENING_CREDITS_DURATION, 22);
-  assert.ok(title.title > 0.9 && title.creator === 0);
-  assert.ok(['title', 'creator', 'sound', 'quote', 'attribution'].every((key) => black[key] <= 0.05));
+  assert.equal(creator.title, undefined);
+  for (const frame of [blackOne, blackTwo]) {
+    assert.ok(['creator', 'sound', 'quote', 'attribution'].every((key) => frame[key] <= 0.05));
+  }
   assert.ok(creator.creator > 0.9 && creator.sound === 0);
   assert.ok(sound.sound > 0.9 && sound.quote === 0);
   assert.ok(quote.quote > 0.9 && quote.attribution > 0.9);
 });
 
-test('opening credit timeline exposes compositing layers and subtle motion', () => {
+test('opening credit atmosphere is soft and text coordinates never drift', () => {
   const frame = openingCreditFrame(12);
   assert.equal(frame.duration, OPENING_CREDITS_DURATION);
   assert.equal(frame.activeBeat, 'sound');
-  assert.equal(frame.cinematic.variant, 'opening');
-  assert.ok(frame.layers.scene.alpha > 0);
-  assert.ok(frame.layers.light.alpha > 0);
-  assert.ok(frame.layers.fog.alpha > 0);
-  assert.ok(Number.isFinite(frame.layers.light.x));
-  assert.ok(Number.isFinite(frame.cinematic.camera.x));
-  assert.ok(Number.isFinite(frame.beats.sound.xOffset));
-  assert.notEqual(frame.beats.sound.xOffset, 0);
+  assert.ok(frame.atmosphere.exposure > 0);
+  assert.ok(frame.atmosphere.bloom > 0);
+  assert.ok(frame.atmosphere.grain > 0);
+  assert.ok(Number.isFinite(frame.atmosphere.vignette));
+  assert.equal(frame.beats, undefined);
+
+  const first = openingCreditLayout({ cols: 80, rows: 30, frame: openingCreditFrame(11.5) });
+  const second = openingCreditLayout({ cols: 80, rows: 30, frame: openingCreditFrame(12.5) });
+  assert.deepEqual(
+    first.entries.map(({ key, text, x, y }) => ({ key, text, x, y })),
+    second.entries.map(({ key, text, x, y }) => ({ key, text, x, y })),
+  );
+  const source = readFileSync('src/game/opening-credits.js', 'utf8');
+  assert.doesNotMatch(source, /xOffset|yOffset|\bdrift\s*\(/);
+  assert.doesNotMatch(source, /cinematicConservatory/);
+  assert.doesNotMatch(source, /CHUNK SURFER|drawVfdText/);
 });
 
 test('opening credits are authored, blocking, and not key-skippable', () => {
@@ -105,6 +115,7 @@ test('opening credit layout keeps narrow and wide frames inside the viewport', (
     const frame = openingCreditFrame(18.5);
     const layout = openingCreditLayout({ ...size, frame });
     assert.ok(layout.quoteBand.width <= size.cols - 2);
+    assert.equal(layout.title, undefined);
     assert.ok(layout.entries.length > 0);
     for (const entry of layout.entries) {
       assert.ok(entry.x >= 0, `${size.cols} col entry starts before viewport`);

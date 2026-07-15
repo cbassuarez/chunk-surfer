@@ -7,10 +7,12 @@ replaces the camera image; geometry, PBR lighting, depth, silhouettes, UI, and
 motion stay native to the game renderer.
 
 Production boot is a hard gate. The Tauri shell starts its own bundled service
-on a random loopback port with a random per-launch token. Calibration verifies
-the GPU, packaged weight manifest, all cached checksums, and all 60 resident
-tiles before opening credits. There is no CPU path, remote endpoint, cloud
-fallback, player tuning panel, or “continue without lens” action.
+on a random loopback port with a random per-launch token. Loading verifies the
+GPU and packaged weight manifest, then makes the ten-tile `calm` bank resident
+before opening credits. The other five banks stream during the opening and menu;
+a bank requested by a scene moves to the front of that queue. There is no CPU
+path, remote endpoint, cloud fallback, player tuning panel, or “continue without
+lens” action.
 
 Supported packages:
 
@@ -46,6 +48,11 @@ The cache is outside the save/Steam Cloud tree. A content key includes source
 atlas checksum, profile recipe, service/cache schema, model, resolution, fixed
 seed, and bundled weight checksum. Each bank manifest is replaced atomically.
 Corrupt or mismatched entries are regenerated.
+
+Cached tiles are checked before model construction, so a fully cached launch
+does not pay to load or warm Stable Diffusion. The source atlas is fetched and
+decoded once, and its ten JPEG payloads are encoded once for reuse across all
+six banks.
 
 ## Packaging
 

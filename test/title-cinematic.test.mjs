@@ -2,19 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { cinematicConservatoryFrame } from '../src/game/cinematic-conservatory.js';
-import { titleScreenLayout } from '../src/game/title.js';
+const source = readFileSync('src/game/title.js', 'utf8');
 
-test('title screen uses fullscreen cinematic conservatory layout, not machine panel chrome', () => {
-  const source = readFileSync('src/game/title.js', 'utf8');
-  assert.match(source, /renderCinematicConservatory/);
-  assert.doesNotMatch(source, /drawMachinePanel/);
-  assert.doesNotMatch(source, /drawVfdText/);
-  assert.doesNotMatch(source, /drawLocationIndicator/);
+test('title screen restores the AUDIOCORP case-select machine panel', () => {
+  assert.match(source, /drawMachinePanel/);
+  assert.match(source, /drawVfdText/);
+  assert.match(source, /drawLocationIndicator/);
+  assert.match(source, /label: 'CASE SELECT'/);
+  assert.match(source, /source: '4417-C'/);
+  assert.doesNotMatch(source, /renderCinematicConservatory/);
+  assert.doesNotMatch(source, /Georgia|Times New Roman/);
 });
 
 test('title screen keeps canonical menu items and keyboard activation paths', () => {
-  const source = readFileSync('src/game/title.js', 'utf8');
   for (const id of ['continue', 'new-run', 'archive', 'return-index', 'just-surf', 'settings']) {
     assert.match(source, new RegExp(`id: '${id}'`));
   }
@@ -23,16 +23,11 @@ test('title screen keeps canonical menu items and keyboard activation paths', ()
   }
 });
 
-test('title cinematic layout keeps title, status, menu, and footer in bounds', () => {
-  for (const size of [{ cols: 34, rows: 16 }, { cols: 80, rows: 30 }, { cols: 144, rows: 64 }]) {
-    const frame = cinematicConservatoryFrame(7.25, { duration: 24, variant: 'title' });
-    const layout = titleScreenLayout({ ...size, itemCount: 6, frame });
-    assert.ok(layout.title.y >= 0 && layout.title.y < size.rows);
-    assert.ok(layout.tagline.y >= 0 && layout.tagline.y < size.rows);
-    assert.ok(layout.status.y >= 0 && layout.status.y < size.rows);
-    assert.ok(layout.menu.x >= 0 && layout.menu.x + layout.menu.w <= size.cols);
-    assert.ok(layout.menu.y >= 0 && layout.menu.y + layout.menu.rowCount * 2 <= size.rows);
-    assert.ok(layout.footer.x >= 0 && layout.footer.x + layout.footer.w <= size.cols);
-    assert.ok(layout.footer.y >= 0 && layout.footer.y < size.rows);
-  }
+test('title screen keeps the default selection and two-step new-run confirmation', () => {
+  assert.match(source, /let sel = activeRun \? 0 : 1/);
+  assert.match(source, /item\.confirms && !confirmNewRun/);
+  assert.match(source, /START NEW RUN\? PRESS ENTER AGAIN/);
+  assert.match(source, /menuColumns = body\.w >= 58/);
+  assert.match(source, /BUILD.*CURRENT SOURCE|buildLabel/);
+  assert.match(source, /body\.y \+ body\.h - 2/, 'build label keeps a blank row above the footer');
 });

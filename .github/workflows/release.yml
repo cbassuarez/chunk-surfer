@@ -7,42 +7,47 @@ on:
         description: 'Release tag to publish, for example v0.1.0-beta.1'
         required: true
         type: string
+      publish:
+        description: 'Publish validated artifacts to itch and GitHub'
+        required: true
+        default: false
+        type: boolean
+      platform:
+        description: 'Platform to validate; publishing always requires all platforms'
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - macos
+          - windows
+          - linux
   push:
     tags:
       - 'v*'
 
 jobs:
+  configure:
+    name: Configure release matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select release platforms
+        id: matrix
+        env:
+          RELEASE_PLATFORM: ${{ github.event_name == 'push' && 'all' || inputs.platform }}
+          RELEASE_PUBLISH: ${{ github.event_name == 'push' || inputs.publish == true }}
+        run: node scripts/release-matrix.mjs
+
   build:
     name: Build ${{ matrix.name }}
+    needs: configure
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - name: macOS Apple Silicon
-            platform: macos-14
-            artifact: chunk-surfer-macos-arm64
-            target: aarch64-apple-darwin
-            rust_target: aarch64-apple-darwin
-            args: --target aarch64-apple-darwin --bundles dmg
-            bundle_glob: |
-              src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
-          - name: Windows x64
-            platform: windows-latest
-            artifact: chunk-surfer-windows-x64
-            target: x86_64-pc-windows-msvc
-            rust_target: x86_64-pc-windows-msvc
-            args: --no-bundle
-            bundle_glob: |
-              release/windows/*.zip
-          - name: Linux x64
-            platform: ubuntu-22.04
-            artifact: chunk-surfer-linux-x64
-            target: x86_64-unknown-linux-gnu
-            rust_target: x86_64-unknown-linux-gnu
-            args: --bundles appimage,deb
-            bundle_glob: |
-              src-tauri/target/release/bundle/appimage/*.AppImage
-              src-tauri/target/release/bundle/deb/*.deb
+      matrix: ${{ fromJSON(needs.configure.outputs.matrix) }}
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
@@ -94,11 +99,31 @@ jobs:
           RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag }}
         run: node scripts/release-preflight.mjs "$RELEASE_TAG"
 
+      - name: Restore packaged lens bundle
+        id: lens-bundle-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            src-tauri/binaries/chunk-lens-${{ matrix.target }}*
+            src-tauri/lens-resources/lens
+          key: lens-bundle-v1-${{ matrix.target }}-py312-${{ hashFiles('tools/chunk_surfer/diffusion_server/*.py', 'tools/chunk_surfer/diffusion_server/requirements-local.txt', 'THIRD_PARTY_LENS_NOTICES.md') }}
+
       - name: Install pinned lens bundler dependencies
+        if: steps.lens-bundle-cache.outputs.cache-hit != 'true'
         run: python -m pip install --no-cache-dir -r tools/chunk_surfer/diffusion_server/requirements-local.txt pyinstaller==6.16.0
 
       - name: Build offline lens sidecar and pinned resources
+        if: steps.lens-bundle-cache.outputs.cache-hit != 'true'
         run: python tools/chunk_surfer/diffusion_server/build_bundle.py --target ${{ matrix.target }}
+
+      - name: Cache packaged lens bundle
+        if: steps.lens-bundle-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            src-tauri/binaries/chunk-lens-${{ matrix.target }}*
+            src-tauri/lens-resources/lens
+          key: ${{ steps.lens-bundle-cache.outputs.cache-primary-key }}
 
       - name: Trim Linux lens build scratch space
         if: matrix.platform == 'ubuntu-22.04'
@@ -116,6 +141,20 @@ jobs:
 
       - name: Run desktop menu tests
         run: npm run test:desktop-menu
+
+      - name: Run cross-platform visual smoke
+        timeout-minutes: 10
+        env:
+          FEATURE_SMOKE_TIMEOUT_MS: ${{ matrix.os == 'ubuntu-latest' && '540000' || '300000' }}
+        run: npm run test:feature-smoke
+
+      - name: Upload visual parity captures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-smoke-${{ matrix.target }}
+          path: artifacts/feature-regression-smoke
+          if-no-files-found: warn
 
       - name: Check Tauri Rust
         run: npm run tauri:check
@@ -141,6 +180,7 @@ jobs:
   publish-itch:
     name: Publish itch beta channels
     needs: build
+    if: github.event_name == 'push' || inputs.publish == true
     runs-on: ubuntu-latest
     env:
       BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
