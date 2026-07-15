@@ -29,7 +29,7 @@
     "lens:bundle": "python3 tools/chunk_surfer/diffusion_server/build_bundle.py",
     "lens:bundle:mac": "tools/chunk_surfer/diffusion_server/.venv-local/bin/python tools/chunk_surfer/diffusion_server/build_bundle.py --target aarch64-apple-darwin",
     "beta:build:mac": "npm run lens:bundle:mac && npm run tauri:build -- --target aarch64-apple-darwin --bundles dmg",
-    "beta:preflight": "node scripts/release-preflight.mjs v0.1.1-beta.3",
+    "beta:preflight": "node scripts/release-preflight.mjs v0.1.1-beta.5",
     "itch:stage": "node scripts/itch-release.mjs stage",
     "itch:preview": "node scripts/itch-release.mjs preview",
     "itch:push": "node scripts/itch-release.mjs push",
