@@ -6,6 +6,14 @@ bank contains ten deterministic 512px surface tiles. It never receives or
 replaces the camera image; geometry, PBR lighting, depth, silhouettes, UI, and
 motion stay native to the game renderer.
 
+After all six banks are resident, gameplay may request one currently visible
+material tile every 5–15 seconds. Runtime requests are one-pass, low-strength
+img2img mutations anchored mostly to the authored albedo and are never written to
+the persistent cache. The client rejects large luminance, colour, and seam
+outliers, crossfades accepted tiles over 6–12 seconds, and disables further
+mutation for the session if generation—or the first observed frames after its
+result—overlaps a frame longer than 33ms.
+
 Production boot is a hard gate. The Tauri shell starts its own bundled service
 on a random loopback port with a random per-launch token. Loading verifies the
 GPU and packaged weight manifest, then makes the ten-tile `calm` bank resident
@@ -48,6 +56,9 @@ The cache is outside the save/Steam Cloud tree. A content key includes source
 atlas checksum, profile recipe, service/cache schema, model, resolution, fixed
 seed, and bundled weight checksum. Each bank manifest is replaced atomically.
 Corrupt or mismatched entries are regenerated.
+
+Only authored `generate` requests enter this cache. Ephemeral gameplay `mutate`
+requests never create manifests or files, so play time cannot grow the lens cache.
 
 Cached tiles are checked before model construction, so a fully cached launch
 does not pay to load or warm Stable Diffusion. The source atlas is fetched and

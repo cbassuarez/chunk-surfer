@@ -2,6 +2,8 @@
 
 <p><em>Chunk Surfer</em> is a short first-person psychological horror game about professional listening. As a field recordist in the condemned Ellery Conservatory, capture five clean room tones: the ambient sound of apparently empty rooms. Monitor each space, roll the recorder, then stay still and silent. Movement or noise can invalidate the take. An optional computer microphone adds noise from your real room through local loudness analysis only; audio is never recorded or uploaded.</p>
 
+<p><strong>A 3D horror game with a local Stable Diffusion material renderer: authored surfaces remain underneath while visible materials re-hallucinate and crossfade during play.</strong></p>
+
 <blockquote>
   <p><strong>SITE</strong> &mdash; Ellery Conservatory of Music. Condemned.</p>
   <p><strong>DELIVER</strong> &mdash; Five clean room-tone recordings.</p>
@@ -16,6 +18,10 @@
 <h2>Spend light. Leave noise.</h2>
 
 <p>Your torch makes the conservatory legible, but its battery is finite and its beam attracts attention. Footsteps, handling, and injuries make noise. Balance seeing the route ahead against announcing where you are. Corridors outside your sight and hearing can change, so a remembered route may not remain the route you return to.</p>
+
+<h2>Watch the materials remember wrong.</h2>
+
+<p><em>Chunk Surfer</em> is, to our knowledge, the only 3D psychological horror game with a local Stable Diffusion material renderer that keeps generating during play. It does not redraw the camera image or replace the game&rsquo;s regular 3D texture maps. Instead, it layers AI-generated hallucinations over authored PBR materials; every 5&ndash;15 seconds, when the frame budget permits, one visible surface is re-hallucinated and crossfaded into the building over 6&ndash;12 seconds. Geometry, lighting, depth, movement, and UI remain native, while reaction-diffusion, VFD pixel-mesh, datamosh, and glass shaders complete the stack. The entire visual lens runs locally and offline on the player&rsquo;s GPU. No image is uploaded to a cloud service.</p>
 
 <h2>Read what comes back.</h2>
 

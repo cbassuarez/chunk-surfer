@@ -4,6 +4,14 @@ Chunk Surfer is a horror game about recording room tone inside Ellery
 Conservatory: five rooms, one minute of clean silence each, and a building that
 keeps listening back.
 
+It is also, to our knowledge, the only 3D psychological horror game with a
+local Stable Diffusion material renderer that keeps generating during play.
+Authored PBR textures remain underneath while one visible surface is
+re-hallucinated every 5–15 seconds, when the frame budget permits, and
+crossfaded into the building over 6–12 seconds. Geometry, lighting, depth,
+movement, and UI remain native. The visual lens runs locally and offline on the
+player's GPU; no image is uploaded to a cloud service.
+
 ![Chunk Surfer title screen](docs/media/title-screen.png)
 
 ## Download the Latest Beta
@@ -66,6 +74,8 @@ Core systems:
 - A field bag with map, documents, equipment, records, and return reports.
 - Full keyboard/mouse and controller-oriented input paths for normal play.
 - Optional local microphone loudness checks for the room-silence mechanic.
+- A local Stable Diffusion material layer that periodically re-hallucinates
+  visible authored surfaces without redrawing the camera image.
 
 <table>
   <tr>

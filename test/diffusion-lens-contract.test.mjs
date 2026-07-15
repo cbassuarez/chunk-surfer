@@ -49,6 +49,29 @@ test('material service reconnects are bounded and cancellable', () => {
   assert.match(client, /stop\(\) \{[\s\S]*clearTimeout\(reconnectTimer\)/);
 });
 
+test('runtime hallucination mutates one visible material ephemerally and fails closed on frame pressure', () => {
+  const client = read('src/net/diffusion.js');
+  const policy = read('src/net/material-mutation.js');
+  const server = read('tools/chunk_surfer/diffusion_server/server.py');
+  const main = read('src/main.js');
+  assert.match(policy, /MUTATION_INTERVAL_MIN_MS = 5_000/);
+  assert.match(policy, /MUTATION_INTERVAL_MAX_MS = 15_000/);
+  assert.match(policy, /MUTATION_CROSSFADE_MIN_MS = 6_000/);
+  assert.match(policy, /MUTATION_CROSSFADE_MAX_MS = 12_000/);
+  assert.match(policy, /MUTATION_MIN_FPS = 58/);
+  assert.match(client, /type: mutation \? 'mutate' : 'generate'/);
+  assert.match(client, /anchoredMutationPayload/);
+  assert.match(client, /mutationCandidateSafe/);
+  assert.match(client, /lastFrameMs > 33/);
+  assert.match(client, /MUTATION_OBSERVE_MS = 2_000/);
+  assert.match(client, /observingResult && !active && !mutationPreparing/);
+  assert.match(client, /disableMutations\('frame-budget'|mutationSoftFailure\('frame-budget'/);
+  assert.match(main, /visibleSurfaceSlots/);
+  assert.match(main, /tickMutation/);
+  assert.match(server, /\{"generate", "mutate"\}/);
+  assert.match(server, /if work\.get\("type"\) == "generate":\s+cache_key = material_cache_key/);
+});
+
 test('protocol binds result bytes to request, bank, slot, model, and checksum identifiers', () => {
   const client = read('src/net/diffusion.js');
   const server = read('tools/chunk_surfer/diffusion_server/server.py');
@@ -73,6 +96,7 @@ test('desktop shell owns random authenticated sidecar lifecycle and cleanup', ()
   assert.match(rust, /impl Drop for ManagedLens/);
   assert.match(main, /bootstrapNativeLens/);
   assert.match(clientSource(), /searchParams\.set\('token'/);
+  assert.match(rust, /\.env\("LENS_DEPTH", "0"\)/);
 });
 
 test('native development has an explicit loopback service path without weakening production ownership', () => {

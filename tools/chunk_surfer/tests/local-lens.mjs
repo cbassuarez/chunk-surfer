@@ -27,7 +27,8 @@ ck('hardware support is MPS or CUDA only',server.includes('device not in {"cuda"
 ck('game selects material-bank diffusion instead of camera diffusion',main.includes('surfaceDiffusionStart({')&&!client.includes('export function diffusionStart'));
 ck('all six ten-tile banks are mandatory',client.includes('profiles.length !== 6')&&client.includes('completeBankCount(banks)'));
 ck('material bank commits after all ten staged tiles',client.includes('for (let slot = 0; slot < SURFACE_NAMES.length; slot += 1)')&&client.includes('commitSurfaces(profile.generation.mix'));
-ck('walking cannot regenerate material tiles',!client.includes('setZone')&&!client.includes('zonePrompt'));
+ck('gameplay mutation is visible-material, performance-gated, and not camera-driven',client.includes('tickMutation')&&client.includes("type: mutation ? 'mutate' : 'generate'")&&!client.includes('setZone')&&!client.includes('zonePrompt'));
+ck('runtime mutation is ephemeral and never expands the authored cache',server.includes('new seed every few seconds would create unbounded disk use'));
 ck('request/result identifiers and checksum are enforced',client.includes('pendingResult.checksumId')&&server.includes('"checksumId"')&&server.includes('record_manifest'));
 ck('bundled models are offline and byte-verified',pipeline.includes('local_files_only')&&pipeline.includes('validate_bundled_resources'));
 ck('sidecar package supports only the three approved target triples',bundle.includes('aarch64-apple-darwin')&&bundle.includes('x86_64-pc-windows-msvc')&&bundle.includes('x86_64-unknown-linux-gnu')&&!bundle.includes('x86_64-apple-darwin'));

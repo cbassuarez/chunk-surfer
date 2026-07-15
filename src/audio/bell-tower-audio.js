@@ -5,30 +5,40 @@ import { loadBellStemBank, loadBellStemBankFromUrl } from './bell-stem-manifest.
 const clamp01 = (value) => Math.max(0, Math.min(1, Number(value) || 0));
 const dbToGain = (db) => 10 ** ((Number(db) || 0) / 20);
 
-// Procedural synthesis remains the release-safe fallback until a licensed stem
-// manifest is supplied. The owner-provided long recording stays dev-only.
+// Licensed bell stems are preferred when available. Procedural synthesis is the
+// release-safe fallback when the stem manifest is absent or fails to load.
 export function createBellTowerAudio({
   context,
   destination = null,
   origin = { x: 0, z: 0 },
-  devBedUrl = import.meta.env?.DEV ? '/__dev/change-ringing-peal.wav' : null,
   stemManifest = null,
   stemManifestUrl = BELL_TOWER_STEM_MANIFEST_URL,
   fetchImpl = globalThis.fetch,
 } = {}) {
   const ctx = context;
   if (!ctx) return { start() {}, strike() {}, setShutters() {}, releaseShutters() {}, stand() {}, cut() {}, destroy() {}, loadStems: async () => null, maskingDb: () => 0, snapshot: () => ({ audioMode: 'unavailable', stemStatus: 'unavailable' }) };
-  const master = ctx.createGain(), internal = ctx.createGain(), exterior = ctx.createGain(), bedInternal=ctx.createGain(),bedExterior=ctx.createGain();
-  master.gain.value = .72; internal.gain.value = 1; exterior.gain.value = 0;
-  internal.connect(master); exterior.connect(master);bedInternal.gain.value=.42;bedExterior.gain.value=0;bedInternal.connect(master);bedExterior.connect(master);master.connect(destination || ctx.destination);
-  let active = new Set(), masking = 0, shutters = 0;
-  let bed=null,bedSource=null;
-  let stemSource=stemManifest||stemManifestUrl;
-  let stemBank=null,stemStatus=stemSource?'loading':'absent',stemError=null,stemPromise=null,loadingSource=null;
-  if(devBedUrl&&typeof Audio!=='undefined'){
-    bed=new Audio(devBedUrl);bed.preload='metadata';bed.loop=true;bed.crossOrigin='anonymous';
-    try{bedSource=ctx.createMediaElementSource(bed);bedSource.connect(bedInternal);bedSource.connect(bedExterior);}catch{bed=null;bedSource=null;}
-  }
+    const master = ctx.createGain();
+    const internal = ctx.createGain();
+    const exterior = ctx.createGain();
+
+    master.gain.value = .72;
+    internal.gain.value = 1;
+    exterior.gain.value = 0;
+
+    internal.connect(master);
+    exterior.connect(master);
+    master.connect(destination || ctx.destination);
+
+    const active = new Set();
+    let masking = 0;
+    let shutters = 0;
+
+    let stemSource = stemManifest || stemManifestUrl;
+    let stemBank = null;
+    let stemStatus = stemSource ? 'loading' : 'absent';
+    let stemError = null;
+    let stemPromise = null;
+    let loadingSource = null;
 
   function loadStems(nextSource=stemSource) {
     if(!nextSource){stemStatus='absent';stemBank=null;stemSource=null;return Promise.resolve(null);}
@@ -37,9 +47,11 @@ export function createBellTowerAudio({
     const loader=typeof nextSource==='string'
       ? loadBellStemBankFromUrl(ctx,nextSource,{fetchImpl})
       : loadBellStemBank(ctx,nextSource,{fetchImpl});
-    stemPromise=loader.then((bank)=>{
-      stemBank=bank;stemStatus='ready';if(bed)bed.pause();return bank;
-    }).catch((error)=>{
+      stemPromise=loader.then((bank)=>{
+        stemBank=bank;
+        stemStatus='ready';
+        return bank;
+      }).catch((error)=>{
       stemBank=null;stemStatus='error';stemError=String(error?.message||error);console.warn('bell stems unavailable; using synthesis fallback',error);return null;
     });
     return stemPromise;
@@ -74,20 +86,81 @@ export function createBellTowerAudio({
   function strike(record, bell = ELLERY_BELLS[record.bell - 1], {delaySec=0}={}) {
     const when = ctx.currentTime + Math.max(0,Number(delaySec)||0), stem=stemBank?.pick?.(record);
     if(stem){stemVoice(stem,bell,when);mechanical(when-.025,.018+record.bell*.0015);masking=Math.min(24,masking+2.8);return;}
-    if(bed){masking=Math.min(24,masking+2.8);return;}
     const base = Number(bell?.frequency) || 116.54, weight = 1 - (record.bell - 1) * .045;
     const partials = [[1, .18, 8.2], [2.01, .055, 5.4], [2.41, .038, 4.1], [3.00, .025, 3.2], [4.17, .015, 2.5]];
     for (const [ratio, gain, duration] of partials) oscillator(base * ratio, when, gain * weight, duration, record.stroke === 'hand' ? -2 : 2, internal);
     oscillator(base, when + .018, .065 * weight * shutters, 9.5, 0, exterior);
     mechanical(when - .025, .018 + record.bell * .0015); masking = Math.min(24, masking + 2.8);
   }
-  function setShutters(value) { shutters = clamp01(value); const t = ctx.currentTime; internal.gain.setTargetAtTime(1 - shutters * .34, t, .12); exterior.gain.setTargetAtTime(shutters * .9, t, .12);bedInternal.gain.setTargetAtTime(.42*(1-shutters*.45),t,.12);bedExterior.gain.setTargetAtTime(.38*shutters,t,.12); }
-  function cut() { const t = ctx.currentTime; master.gain.cancelScheduledValues(t); master.gain.setTargetAtTime(.0001, t, .006);if(bed)bed.pause(); for (const node of active) { try { node.stop(t + .012); } catch {} } active.clear(); masking = 0; }
-  function start({offsetMs=0}={}) { const t = ctx.currentTime; master.gain.cancelScheduledValues(t); master.gain.setValueAtTime(Math.max(.0001, master.gain.value), t); master.gain.linearRampToValueAtTime(.72, t + .08); setShutters(0); masking = 0;if(bed&&!stemBank){try{const seek=()=>{if(Number.isFinite(bed.duration)&&bed.duration>0)bed.currentTime=(Math.max(0,Number(offsetMs)||0)/1000)%bed.duration;};seek();if(!Number.isFinite(bed.duration))bed.addEventListener('loadedmetadata',seek,{once:true});void bed.play().catch(()=>{});}catch{}} }
-  return {
-    start, strike, loadStems, setShutters, releaseShutters: () => setShutters(.02), stand: () => { masking = 0; }, cut,
-    maskingDb: () => { masking *= .985; return masking; },
-    destroy() { cut(); try { bedSource?.disconnect();internal.disconnect(); exterior.disconnect();bedInternal.disconnect();bedExterior.disconnect();master.disconnect(); } catch {} },
-    snapshot: () => ({ activeVoices: active.size, shutters, maskingDb: masking, origin,devBed:!!bed,devBedUrl,stemStatus,stemCount:stemBank?.size||0,stemError,audioMode:stemBank?'stems':bed?'dev-bed':'synthesis' }),
-  };
+    function setShutters(value) {
+      shutters = clamp01(value);
+      const t = ctx.currentTime;
+
+      internal.gain.setTargetAtTime(1 - shutters * .34, t, .12);
+      exterior.gain.setTargetAtTime(shutters * .9, t, .12);
+    }
+
+    function cut() {
+      const t = ctx.currentTime;
+
+      master.gain.cancelScheduledValues(t);
+      master.gain.setTargetAtTime(.0001, t, .006);
+
+      for (const node of active) {
+        try {
+          node.stop(t + .012);
+        } catch {}
+      }
+
+      active.clear();
+      masking = 0;
+    }
+
+    function start() {
+      const t = ctx.currentTime;
+
+      master.gain.cancelScheduledValues(t);
+      master.gain.setValueAtTime(Math.max(.0001, master.gain.value), t);
+      master.gain.linearRampToValueAtTime(.72, t + .08);
+
+      setShutters(0);
+      masking = 0;
+    }
+    return {
+      start,
+      strike,
+      loadStems,
+      setShutters,
+      releaseShutters: () => setShutters(.02),
+      stand: () => {
+        masking = 0;
+      },
+      cut,
+
+      maskingDb: () => {
+        masking *= .985;
+        return masking;
+      },
+
+      destroy() {
+        cut();
+
+        try {
+          internal.disconnect();
+          exterior.disconnect();
+          master.disconnect();
+        } catch {}
+      },
+
+      snapshot: () => ({
+        activeVoices: active.size,
+        shutters,
+        maskingDb: masking,
+        origin,
+        stemStatus,
+        stemCount: stemBank?.size || 0,
+        stemError,
+        audioMode: stemBank ? 'stems' : 'synthesis',
+      }),
+    };
 }

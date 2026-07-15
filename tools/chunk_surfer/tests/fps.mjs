@@ -11,19 +11,20 @@ const errors=[];page.on('pageerror',(e)=>errors.push(String(e)));
 await page.goto('http://localhost:5173/index.html?renderer=3d&mode=surf&lens=1&at=4,5&tuner=0',{waitUntil:'domcontentloaded'});
 
 const started=Date.now();let result=null;
-for(let i=0;i<90;i++){
+for(let i=0;i<120;i++){
   await new Promise((r)=>setTimeout(r,1000));
   result=await page.evaluate(()=>({lens:{...window.__diffusion?.stats},surfaces:window.__probe?.surfaceDream?.()}));
-  if(result?.lens?.state==='ready'&&result?.surfaces?.active===10)break;
+  if(result?.lens?.state==='ready'&&result?.lens?.resident&&result?.surfaces?.active===10)break;
 }
 const elapsed=(Date.now()-started)/1000;
 const check=(name,ok,detail='')=>{console.log(`${ok?'PASS':'FAIL'}  ${name}${detail?'  '+detail:''}`);if(!ok)process.exitCode=1;};
-check('lens operates on material tiles, not camera frames',result?.lens?.mode==='surfaces',JSON.stringify(result?.lens));
+check('lens operates on material tiles, not camera frames',result?.lens?.mode==='surface-banks',JSON.stringify(result?.lens));
 check('all ten PBR albedo layers receive a local dream',result?.surfaces?.active===10,JSON.stringify(result?.surfaces));
 check('one detailed surface sweep completes',result?.lens?.framesIn>=10,`${result?.lens?.framesIn||0} tiles in ${elapsed.toFixed(1)}s`);
 
-const before=result.lens.framesIn;await new Promise((r)=>setTimeout(r,3000));
-const after=await page.evaluate(()=>window.__diffusion?.stats.framesIn||0);
-check('camera idling sends no frames after the material sweep',after===before,`${before} → ${after}`);
+const before=result.lens.framesIn;await new Promise((r)=>setTimeout(r,22000));
+const after=await page.evaluate(()=>({...window.__diffusion?.stats}));
+check('runtime work stays inside the low-duty visible-tile budget',(after.framesIn-before)>=1&&(after.framesIn-before)<=4,`${before} → ${after.framesIn}`);
+check('mutation either crossfades safely or fails closed on measured frame pressure',after.mutationsAccepted>=1||after.mutationDisabled==='frame-budget',JSON.stringify(after));
 check('surface shader compiled without page errors',errors.length===0,errors.join(' | '));
 await browser.close();

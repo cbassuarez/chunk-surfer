@@ -2,9 +2,7 @@
 
 ## Development ringing bed
 
-- Runtime route: `/__dev/change-ringing-peal.wav`
-- Local source: `/Users/paul/Desktop/change-ringing-peal.wav`
-- Override: `CHUNK_SURFER_CHANGE_RINGING_WAV`
+- Bell-tower audio uses the licensed individual bell-stem manifest when available. If the manifest cannot be loaded, the runtime falls back to procedural bell synthesis. The obsolete continuous development peal is no longer supported.
 - SHA-256: `3c919418ae4e23a02751e87bcf0366c0046d2fd8450f58a37f17c28ea348e639`
 - Format: stereo, 48 kHz, 32-bit float WAV
 - Duration: 815.306708 seconds

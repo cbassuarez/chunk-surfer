@@ -14,7 +14,7 @@ server.on('connection',(socket)=>{
   }));
   socket.on('message',(data,isBinary)=>{
     if(!isBinary){request=JSON.parse(data.toString());return;}
-    if(request?.type!=='generate')return;
+    if(!['generate','mutate'].includes(request?.type))return;
     const bytes=Buffer.from(data);
     const sha256=createHash('sha256').update(bytes).digest('hex');
     socket.send(JSON.stringify({

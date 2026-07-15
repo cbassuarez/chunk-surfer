@@ -7,15 +7,17 @@ export function createPerformanceMeter({
   let last = 0;
   let fps = null;
   let frameMs = null;
+  let lastFrameMs = null;
 
   function snapshot() {
-    return { fps, frameMs, samples: frames.length };
+    return { fps, frameMs, lastFrameMs, samples: frames.length };
   }
 
   function frame(t = now()) {
     const current = Number(t) || 0;
     if (last > 0) {
       const dt = Math.max(0.001, current - last);
+      lastFrameMs = dt;
       frames.push(dt);
       while (frames.length > maxSamples) frames.shift();
 
@@ -32,6 +34,7 @@ export function createPerformanceMeter({
     last = 0;
     fps = null;
     frameMs = null;
+    lastFrameMs = null;
   }
 
   return { frame, snapshot, reset };

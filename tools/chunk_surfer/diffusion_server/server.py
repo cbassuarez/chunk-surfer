@@ -259,7 +259,7 @@ async def session(ws: WebSocket):
                     cache_path = None
                     cache_key = None
                     bank_id = None
-                    if work.get("type") == "generate":
+                    if work.get("type") in {"generate", "mutate"}:
                         bank_id = safe_bank_id(work.get("bankId"))
                         if work.get("modelId") != pipeline.DEFAULT_MODEL:
                             raise ValueError(f"modelId must be {pipeline.DEFAULT_MODEL}")
@@ -272,16 +272,20 @@ async def session(ws: WebSocket):
                             raise ValueError("slot must be between 0 and 9")
                         if work.get("cacheSchema") != CACHE_SCHEMA:
                             raise ValueError(f"cacheSchema must be {CACHE_SCHEMA}")
-                        cache_key = material_cache_key(
-                            work=work,
-                            source_sha256=hashlib.sha256(frame).hexdigest(),
-                            model_id=pipeline.DEFAULT_MODEL,
-                            resolution=pipeline.SIZE,
-                            weights_sha256=pipeline.bundled_weights_sha256() or os.environ.get("LENS_WEIGHTS_SHA256"),
-                            service_revision=SERVER_REV,
-                            cache_schema=CACHE_SCHEMA,
-                        )
-                        cache_path = CACHE_DIR / bank_id / f"{work.get('slot', -1)}-{cache_key}.jpg"
+                        # Authored boot banks are content-addressed and persistent.
+                        # Runtime mutations are intentionally ephemeral: caching a
+                        # new seed every few seconds would create unbounded disk use.
+                        if work.get("type") == "generate":
+                            cache_key = material_cache_key(
+                                work=work,
+                                source_sha256=hashlib.sha256(frame).hexdigest(),
+                                model_id=pipeline.DEFAULT_MODEL,
+                                resolution=pipeline.SIZE,
+                                weights_sha256=pipeline.bundled_weights_sha256() or os.environ.get("LENS_WEIGHTS_SHA256"),
+                                service_revision=SERVER_REV,
+                                cache_schema=CACHE_SCHEMA,
+                            )
+                            cache_path = CACHE_DIR / bank_id / f"{work.get('slot', -1)}-{cache_key}.jpg"
                     cached_payload = cached_result(bank_id, int(work["slot"]), cache_key, cache_path) if cache_path else None
                     cached = cached_payload is not None
                     if cached_payload is not None:
@@ -321,7 +325,7 @@ async def session(ws: WebSocket):
                         record_manifest(bank_id, int(work["slot"]), cache_key, cache_path, payload_sha256, work)
                     d = f" +{len(dep)}B depth" if dep else " (blind)"
                     print(f"frame diffused in {time.time() - t0:.2f}s ({len(frame)}B{d} -> {len(styled)}B)")
-                    if work.get("type") == "generate":
+                    if work.get("type") in {"generate", "mutate"}:
                         await ws.send_text(json.dumps({
                             "type": "result", "requestId": work.get("requestId"),
                             "bankId": work.get("bankId"), "slot": work.get("slot"),
@@ -355,7 +359,7 @@ async def session(ws: WebSocket):
                 latest = (frame, dep, dict(request))
             elif msg.get("text"):
                 data = json.loads(msg["text"])
-                if data.get("type") in {"prompt", "generate"}:
+                if data.get("type") in {"prompt", "generate", "mutate"}:
                     request = dict(data)
                     # How hard the geometry is allowed to insist. A live knob,
                     # because the right answer is a matter of taste and the

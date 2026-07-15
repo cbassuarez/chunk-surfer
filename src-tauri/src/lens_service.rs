@@ -190,6 +190,10 @@ fn spawn_child(spec: &LaunchSpec) -> Result<Child, String> {
         .env("LENS_BUNDLED", "1")
         .env("LENS_EXPECT_BACKEND", spec.backend)
         .env("LENS_EAGER", "0")
+        // The production lens receives authored material tiles, never camera
+        // depth. Loading ControlNet here would consume GPU memory and inference
+        // time while its conditioning scale remains zero.
+        .env("LENS_DEPTH", "0")
         .stdin(Stdio::null())
         .stdout(Stdio::from(stdout))
         .stderr(Stdio::from(stderr))

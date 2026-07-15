@@ -76,7 +76,15 @@ const audioContext={
   createBuffer:(_channels,length)=>({getChannelData:()=>new Float32Array(length)}),
   decodeAudioData:()=>Promise.resolve(decodedBuffer),
 };
-const towerAudio=createBellTowerAudio({context:audioContext,stemManifest:manifest,stemManifestUrl:null,devBedUrl:'/dev-bed.wav',fetchImpl:async()=>({ok:true,arrayBuffer:async()=>new ArrayBuffer(8)})});
+const towerAudio=createBellTowerAudio({
+  context:audioContext,
+  stemManifest:manifest,
+  stemManifestUrl:null,
+  fetchImpl:async()=>({
+    ok:true,
+    arrayBuffer:async()=>new ArrayBuffer(8),
+  }),
+});
 try{
   await towerAudio.loadStems(manifest);
   towerAudio.start();

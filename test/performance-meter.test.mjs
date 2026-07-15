@@ -11,6 +11,7 @@ test('performance meter estimates fps from frame deltas', () => {
 
   const snapshot = meter.snapshot();
   assert.ok(snapshot.fps > 55 && snapshot.fps < 65, String(snapshot.fps));
+  assert.ok(snapshot.lastFrameMs > 16 && snapshot.lastFrameMs < 17);
   assert.equal(snapshot.samples, 2);
 });
 
@@ -20,5 +21,5 @@ test('performance meter can reset', () => {
   meter.frame(17);
   meter.reset();
 
-  assert.deepEqual(meter.snapshot(), { fps: null, frameMs: null, samples: 0 });
+  assert.deepEqual(meter.snapshot(), { fps: null, frameMs: null, lastFrameMs: null, samples: 0 });
 });

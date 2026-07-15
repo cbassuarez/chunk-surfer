@@ -20,7 +20,7 @@ not, and four suites quietly stopped being runnable.)
 | `thoughts.mjs` | `[r]` in studio B3 opens the first-take tree once, and rolling actually rolls · **the building does not wait**: the presence keeps closing while a thought tree is open (`blocksWorld: false`) · shaking the dead radio emits noise at the cell you stand in and pins it in the heard map |
 | `m4.mjs` | the reader does not freeze the world but does stop your feet · the work order raises the client once and the second transmission kills the radio · a dead radio squelches, and the squelch is noise **at the cell you stand in**, and it spoils takes, and `reduceDread` silences it · **the tape contains what you did not hear**: the guest is a voice the monitor never passed, sealed once, identical on every replay · playback is silent in the room |
 | `flicker.mjs` | adjacent-frame pixel delta with the camera still (regression: 1.54 → 0.36) |
-| `fps.mjs` | lens throughput standing and moving (target 8–12fps) |
+| `fps.mjs` | all authored material banks become resident · gameplay inference stays within the one-visible-tile/5–15s budget · accepted hallucinations crossfade or fail closed on frame pressure |
 | `floorplan.mjs` | **pure Node.** height round-trip · logical→physical stacked spans · non-overlapping hall decks · walkable orchestra/lower/upper balconies · rooms never mutate · spawn → chapel → back connectivity |
 | `glb.mjs` | **pure Node.** strict GLB 2.0 subset · indexed geometry · seating/structure hero budgets · exact provenance hash |
 | `props.mjs` | **pure Node.** placement · proxy and seating-mask collision · physical slice transforms · visible picking · inspection · deterministic HUSH selection |

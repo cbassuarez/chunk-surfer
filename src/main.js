@@ -27,7 +27,7 @@ import * as MONITOR from './audio/monitor.js';
 import { emitAcousticEvent } from './audio/acoustic-events.js';
 import { createHushMix } from './audio/hush-mix.js';
 import * as FP from './world/floorplan.js';
-import { F as CELL_FLAGS, ZONE, CELL } from './data/floorplan/legend.js';
+import { F as CELL_FLAGS, ZONE, CELL, MATERIAL } from './data/floorplan/legend.js';
 import * as MUT from './world/mutate.js';
 import * as scenes from './game/scenes.js';
 import { uiInit, uiSetScale, uiClear, uiText, uiSize, uiFill, uiCenter, uiDraw, uiPointFromClient, uiWrap } from './render/ui.js';
@@ -72,6 +72,7 @@ import { revealPath } from './platform/diagnostics/desktopDiagnostics.js';
 import { runtimeParams, runtimeSnapshot } from './platform/launch.js';
 import { APP_COPYRIGHT, APP_LINKS, copyText, formatDiagnosticReport, normalizeAboutSnapshot } from './platform/about-system.js';
 import { createPerformanceMeter } from './platform/performance-meter.js';
+import { visibleSurfaceSlots } from './net/material-mutation.js';
 import { LOOK_PROFILE_IDS } from './render/look-profiles.js';
 import { resolveRenderer } from './render/renderer-policy.js';
 import * as STAB from './game/stabs.js';
@@ -5234,7 +5235,12 @@ async function loadBuilding(){
     if(!resumeSourceSpaceFromSave()){
       revealAround(px,py);
       faceOpenDirection();
-      if(chapelTowerState().phase===CHAPEL_TOWER_PHASE.TOWER_ACTIVE)startBellTowerRuntime({retry:true});
+        if(
+          storyMode &&
+          chapelTowerState().phase === CHAPEL_TOWER_PHASE.TOWER_ACTIVE
+        ){
+          startBellTowerRuntime({retry:true});
+        }
     }
     if(KEY_DEBUG) pushEvent(`// ${which}: ${p.w}×${p.h} cells.`);
   }catch(err){
@@ -8830,6 +8836,10 @@ function makeTitle({wantFullscreen=false}={}){
 }
 
 function returnToTitle(){
+  stopBellTowerRuntime();
+  bellTowerImpactActive=false;
+  bellTowerCollisionEnabled=true;
+
   stopHushAudioRuntime();
   activeBattleId=null;
   godBattleOpen=false;
@@ -8864,8 +8874,12 @@ function beginNewGameFlow(){
     initialPreset,
     initialCustomValues:getSave().settings?.customShiftRules,
     onCancel:()=>{},
-    onConfirm:({preset,values})=>{
-      // The title remains beneath the selector until authorization is complete.
+      onConfirm:({preset,values})=>{
+        stopBellTowerRuntime();
+        bellTowerImpactActive=false;
+        bellTowerCollisionEnabled=true;
+
+        // The title remains beneath the selector until authorization is complete.
       // Only now is the previous run replaced.
       activeBattleId=null;
       godBattleOpen=false;
@@ -9015,16 +9029,29 @@ function toggleDesktopMute(){
 }
 
 function restartDesktopAudio(){
+  const resumeBellTowerAudio =
+    chapelTowerState().phase === CHAPEL_TOWER_PHASE.TOWER_ACTIVE &&
+    !!bellTowerRuntime &&
+    !!bellTowerAudio;
+
+  bellTowerAudio?.cut?.();
+
   void recoverInteractionAudio('menu-restart-audio');
   STORY.stopAll?.();
   stopAllVoices();
   stopWorldLayerVoice();
   silenceAmbientDrone();
   applyAudioSettings();
+
+  if(resumeBellTowerAudio){
+    bellTowerAudio?.start?.();
+  }
+
   if(!paused && storyMode && inRogue){
     startAmbientDroneAt(currentAmbientTarget());
     updateAudio();
   }
+
   pushEvent('// audio engine restarted.');
 }
 
@@ -9789,6 +9816,16 @@ function ensureLensStarted(qp=params()){
   return lensStarting;
 }
 
+function visibleMaterialSlotsAt(x,y){
+  if(!usingPlan())return visibleSurfaceSlots([MATERIAL.serviceConcrete]);
+  const materialAt=usingSourceSpace()
+    ? (mx,my)=>chunkSurfRuntime.geometry.materialAt(mx,my)
+    : (mx,my)=>FP.materialAt(mx,my);
+  const [fx,fy]=R3.r3dDelta(1);
+  const offsets=[[0,0],[fx,fy],[-fy,fx],[fy,-fx],[-fx,-fy]];
+  return visibleSurfaceSlots(offsets.map(([dx,dy])=>materialAt(x+dx,y+dy)));
+}
+
 function render3d(){
   ensureLensStarted();
   const worldView=scenes.worldView(),viewX=worldView?.x??px,viewY=worldView?.y??py;
@@ -9829,6 +9866,13 @@ function render3d(){
     floorH: worldView?.floorH??(usingSourceSpace()?chunkSurfRuntime.geometry.floorAt(viewX,viewY):usingPlan()?FP.floorAt(viewX,viewY):floorHere()),
     moveIntervalMs:currentMoveIntervalMs(),
     water:usingSourceSpace()?{active:false}:currentNatatoriumWaterRenderState({audio:waterAudio}),
+  });
+  window.__diffusion?.tickMutation?.({
+    now:performance.now(),
+    allowed:!paused && !scenes.blocksWorld() && document.visibilityState!=='hidden',
+    visibleSlots:visibleMaterialSlotsAt(viewX,viewY),
+    performance:perfMeter.snapshot(),
+    transitioning:!!R3.r3dSurfaceDreamStats?.().transitioning,
   });
 }
 
