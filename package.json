@@ -1,7 +1,7 @@
 {
   "name": "chunk-surfer",
   "private": true,
-  "version": "0.1.1-beta.8",
+  "version": "0.1.1-beta.10",
   "type": "module",
   "scripts": {
     "assets:doors": "node scripts/build-door-pack.mjs",
@@ -29,7 +29,7 @@
     "lens:bundle": "python3 tools/chunk_surfer/diffusion_server/build_bundle.py",
     "lens:bundle:mac": "tools/chunk_surfer/diffusion_server/.venv-local/bin/python tools/chunk_surfer/diffusion_server/build_bundle.py --target aarch64-apple-darwin",
     "beta:build:mac": "npm run lens:bundle:mac && npm run tauri:build -- --target aarch64-apple-darwin --bundles dmg",
-    "beta:preflight": "node scripts/release-preflight.mjs v0.1.1-beta.8",
+    "beta:preflight": "node scripts/release-preflight.mjs v0.1.1-beta.10",
     "itch:stage": "node scripts/itch-release.mjs stage",
     "itch:preview": "node scripts/itch-release.mjs preview",
     "itch:push": "node scripts/itch-release.mjs push",
