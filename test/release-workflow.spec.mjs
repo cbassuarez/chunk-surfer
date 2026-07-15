@@ -36,7 +36,9 @@ assert.match(yml, /gh release delete-asset/, 'release upload clears stale beta a
 assert.ok(!tauri.bundle.targets.includes('nsis'), 'default Tauri bundle targets do not include NSIS');
 assert.ok(!lensTauri.bundle.targets.includes('nsis'), 'lens bundle overlay never enables NSIS');
 assert.deepEqual(windowsTauri.bundle.targets, ['app'], 'Windows Tauri config avoids installer targets; release CI zips the portable app');
-assert.match(releaseMatrix, /Linux x64[\s\S]*args: '--bundles appimage,deb'/, 'linux release builds explicit AppImage and deb bundles');
+assert.match(yml, /Build Tauri bundles[\s\S]*if: matrix\.platform != 'ubuntu-22\.04'/, 'generic bundle build excludes Linux');
+assert.match(yml, /Build Linux AppImage[\s\S]*--bundles appimage[\s\S]*Upload Linux AppImage[\s\S]*Reclaim Linux AppImage staging space[\s\S]*rm -rf src-tauri\/target\/release\/bundle\/appimage[\s\S]*Build Linux deb[\s\S]*--bundles deb[\s\S]*Upload Linux deb/, 'linux uploads and clears AppImage staging before building deb');
+assert.match(yml, /Upload desktop bundles[\s\S]*if: matrix\.platform != 'ubuntu-22\.04'/, 'generic artifact upload excludes separately uploaded Linux bundles');
 assert.match(yml, /libwebkit2gtk-4\.1-dev libayatana-appindicator3-dev/, 'linux runner installs current Tauri WebKit dependencies');
 assert.match(yml, /Free Linux runner disk[\s\S]*\/usr\/share\/dotnet[\s\S]*\/usr\/local\/lib\/android[\s\S]*docker system prune -af/, 'linux release frees hosted-runner disk before large lens packaging');
 assert.match(yml, /pip install --no-cache-dir/, 'release install avoids retaining pip wheel cache during lens packaging');

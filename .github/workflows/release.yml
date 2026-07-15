@@ -160,7 +160,43 @@ jobs:
         run: npm run tauri:check
 
       - name: Build Tauri bundles
+        if: matrix.platform != 'ubuntu-22.04'
         run: npm run tauri:build -- ${{ matrix.args }}
+
+      # The offline lens makes each Linux bundle several gigabytes while Tauri is
+      # staging it. Upload and remove the AppImage tree before staging the deb so
+      # both expanded package trees never compete for hosted-runner disk space.
+      - name: Build Linux AppImage
+        if: matrix.platform == 'ubuntu-22.04'
+        run: npm run tauri:build -- --bundles appimage
+
+      - name: Upload Linux AppImage
+        if: matrix.platform == 'ubuntu-22.04'
+        uses: actions/upload-artifact@v4
+        with:
+          name: chunk-surfer-linux-appimage-x64
+          path: src-tauri/target/release/bundle/appimage/*.AppImage
+          if-no-files-found: error
+
+      - name: Reclaim Linux AppImage staging space
+        if: matrix.platform == 'ubuntu-22.04'
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf src-tauri/target/release/bundle/appimage
+          df -h
+
+      - name: Build Linux deb
+        if: matrix.platform == 'ubuntu-22.04'
+        run: npm run tauri:build -- --bundles deb
+
+      - name: Upload Linux deb
+        if: matrix.platform == 'ubuntu-22.04'
+        uses: actions/upload-artifact@v4
+        with:
+          name: chunk-surfer-linux-deb-x64
+          path: src-tauri/target/release/bundle/deb/*.deb
+          if-no-files-found: error
 
       - name: Package Windows portable zip
         if: matrix.platform == 'windows-latest'
@@ -171,6 +207,7 @@ jobs:
           Compress-Archive -Path "release/windows/Chunk Surfer" -DestinationPath "release/windows/chunk-surfer-v$version-windows-x64.zip" -Force
 
       - name: Upload desktop bundles
+        if: matrix.platform != 'ubuntu-22.04'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
