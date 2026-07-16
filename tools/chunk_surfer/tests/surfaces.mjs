@@ -6,6 +6,7 @@
 // layer, built from real seam-tileable PBR sets. Five claims:
 //   · surfaces.json is the v4 texture-array manifest.
 //   · every architectural surface has a layer, a tile scale, and a real source.
+//   · every architectural surface is documented as a Poly Haven CC0 replacement.
 //   · the albedo strip is a real PNG/JPEG, 512 wide, one square tile per layer.
 //   · no surface collapsed to a flat swatch (each albedo tile has real variance).
 //   · the normal strip is a lossless PNG (JPEG would wreck a normal map).
@@ -45,6 +46,10 @@ ck('the albedo strip is 512 wide, one square tile per layer',
 ck('every surface records the real source maps it was built from',
   surfaces.every(([, s]) => s.maps?.color), surfaces.map(([n, s]) => `${n}:${s.maps?.color ? '✓' : '✗'}`).join(' '));
 
+ck('every surface is documented as a Poly Haven CC0 replacement',
+  surfaces.every(([, s]) => s.source?.startsWith('Poly Haven: ') && s.license === 'CC0' && s.licenseUrl === 'https://polyhaven.com/license'),
+  surfaces.map(([n, s]) => `${n}:${s.source}/${s.license}`).join(' '));
+
 // A truly flat swatch reads ~0; smooth real textures (white ceramic, plain
 // concrete) sit around 7–8, which is still real luminance detail.
 ck('no surface collapsed to a flat swatch',
@@ -56,7 +61,7 @@ ck('every surface has real height/displacement and the height strip is lossless'
   surfaces.every(([,s])=>s.maps?.height)&&height.kind==='png'&&height.w===512&&height.h===512*m.array.layers);
 const shader=fs.readFileSync(path.join(ROOT,'src/render/r3d.js'),'utf8');
 ck('height, normal and roughness all alter lighting before final colour',
-  shader.includes('uSurfHeight')&&shader.includes('viewTs*(h0-.5)')&&shader.includes('nm.xy+=vec2(hx,hy)')&&shader.includes('surfaceOcclusion')&&shader.includes('surfRough'));
+  shader.includes('uSurfHeight')&&shader.includes('viewTs*(h0-.5)')&&shader.includes('texture(uSurfNormal')&&shader.includes('n = normalize(n + (T * nm.x + B * nm.y)')&&shader.includes('surfaceOcclusion')&&shader.includes('surfRough'));
 
 console.log(pass ? '\n✅ SURFACES PASSED' : '\n❌ SURFACE FAILURES');
 process.exit(pass ? 0 : 1);

@@ -67,6 +67,10 @@ await adapter.writeText('saves/backup/autosave.previous.json', serializeEnvelope
 assert.equal((await desktop.loadSave()).area, 'backup_room');
 assert.match(await adapter.readText('saves/autosave.json', adapter.baseData), /backup_room/);
 assert.ok(desktop.errors.some((e) => e.op === 'schema'));
+await desktop.deleteSave(SAVE_SLOT_AUTOSAVE);
+assert.equal(await adapter.exists('saves/autosave.json', adapter.baseData), false);
+assert.equal(await adapter.exists('saves/backup/autosave.previous.json', adapter.baseData), false);
+assert.equal(await desktop.loadSave(), null);
 
 await adapter.writeText('settings.json', serializeEnvelope(makeEnvelope({ volume: 0.99 }, { schemaVersion: 99, gameVersion: 'FUTURE' })), adapter.baseConfig);
 const before = await adapter.readText('settings.json', adapter.baseConfig);

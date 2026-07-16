@@ -278,7 +278,15 @@ export class DesktopStorage {
     await this.writeEnvelopeSafe(saveSlotFile(slot), normalizePersistedSave(save, { profile, settings }), { schemaVersion: SAVE_SCHEMA_VERSION, baseDir: this.adapter.baseData });
   }
 
-  async deleteSave(slot = SAVE_SLOT_AUTOSAVE) { await this.adapter.remove(saveSlotFile(slot), this.adapter.baseData).catch(() => {}); }
+  async deleteSave(slot = SAVE_SLOT_AUTOSAVE) {
+    // A cleared run must not be reconstructed from the safety copy on the next
+    // launch. The backup belongs to the same save slot and therefore shares
+    // the slot's deletion lifetime.
+    await Promise.all([
+      this.adapter.remove(saveSlotFile(slot), this.adapter.baseData).catch(() => {}),
+      this.adapter.remove(saveSlotBackupFile(slot), this.adapter.baseData).catch(() => {}),
+    ]);
+  }
 
   async listSaves() {
     const out = [];
