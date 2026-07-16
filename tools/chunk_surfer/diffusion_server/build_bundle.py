@@ -83,6 +83,8 @@ def main() -> None:
 
     notices = root / "THIRD_PARTY_LENS_NOTICES.md"
     shutil.copy2(notices, resource_root / notices.name)
+    taesd_license = root / "third_party" / "licenses" / "TAESD-MIT.txt"
+    shutil.copy2(taesd_license, resource_root / taesd_license.name)
     license_bytes = urlopen(SD15_LICENSE_URL, timeout=60).read()
     if hashlib.sha256(license_bytes).hexdigest() != SD15_LICENSE_SHA256:
         raise SystemExit("Stable Diffusion license checksum changed")

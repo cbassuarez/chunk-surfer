@@ -1935,6 +1935,19 @@ function resetHorrorState(){
   }
 }
 
+function showSurferJumpscare(durationMs=460){
+  if(!HUSH_JUMP_EL) return;
+  HUSH_JUMP_EL.classList.remove('blink');
+  HUSH_JUMP_EL.classList.remove('active');
+  void HUSH_JUMP_EL.offsetWidth;
+  HUSH_JUMP_EL.classList.add('active');
+  if(hushJumpTimer!==null) clearTimeout(hushJumpTimer);
+  hushJumpTimer=setTimeout(()=>{
+    if(HUSH_JUMP_EL) HUSH_JUMP_EL.classList.remove('active');
+    hushJumpTimer=null;
+  }, Math.max(100, Number(durationMs)||460));
+}
+
 function playHushRupture(){
   triggerGateFlash(100, 260);
   setTimeout(()=>triggerGateFlash(80, 180), 70);
@@ -1950,16 +1963,7 @@ function playHushRupture(){
       hushHitTimer=null;
     }, 240);
   }
-  if(HUSH_JUMP_EL){
-    HUSH_JUMP_EL.classList.remove('active');
-    void HUSH_JUMP_EL.offsetWidth;
-    HUSH_JUMP_EL.classList.add('active');
-    if(hushJumpTimer!==null) clearTimeout(hushJumpTimer);
-    hushJumpTimer=setTimeout(()=>{
-      if(HUSH_JUMP_EL) HUSH_JUMP_EL.classList.remove('active');
-      hushJumpTimer=null;
-    }, 460);
-  }
+  showSurferJumpscare();
   if(navigator.vibrate) navigator.vibrate([14, 24, 170, 34, 220, 18, 160]);
   if(!actx) return;
   const t0=actx.currentTime;
@@ -4639,6 +4643,7 @@ function loop(){
         tickRecorder(dt);
         tickRoomMicAcoustics(dt);
         tickHushAudio(dt);
+        tickChunkSurfOffer();
         tickSourceSpace(dt);
         tickDoorRuntime(dt);
         tickBellTower(dt);
@@ -6617,16 +6622,7 @@ function maybeQueueRadioProgressionCue(){
 function maybeForceRadioBreakdownForRoom(room){
   if(room==='lux_nova') return false;
   if(maybeStartPendingRadioCue()) return true;
-  const pending=RADIO.pendingRadioCue();
-  if(pending?.id===RADIO.RADIO_CUES.PRE_THIRD) return true;
-  if(!RADIO.shouldQueuePreThirdBreakdown({
-    completedTakes:completedRecordingTakes(),
-    isRecording:REC.isRecording(),
-    nearestRoom:room,
-    distanceMeters:0,
-  })) return false;
-  queueRadioStoryCue(RADIO.RADIO_CUES.PRE_THIRD, { roomId:room, reason:'record-at-third-room' });
-  return true;
+  return RADIO.pendingRadioCue()?.id===RADIO.RADIO_CUES.POST_SECOND;
 }
 
 function radioTransmit(i){
@@ -6902,6 +6898,11 @@ function chunkSurfAvailable(){
     });
 }
 
+function tickChunkSurfOffer(){
+  if(usingSourceSpace() || scenes.blocksInput() || REC.isRecording() || REC.isListening()) return false;
+  return chunkSurfAvailable() ? beginChunkSurf() : false;
+}
+
 function beginChunkSurf({ forced=false } = {}){
   if(!chunkSurfAvailable() && !forced) return false;
   if(usingSourceSpace()) return true;
@@ -7155,9 +7156,8 @@ function tickRecorder(dt){
     OBJ.clearWaypoint();
     saveCommit({ rec:REC.saveRecState() });
     stopTake();
-    // The radio survives one more room than it used to. After the second clean
-    // recording it gets unreliable, but it does not die until the third room is
-    // close enough to take the channel.
+    // The second clean room is the last time the radio works. Its final cue is
+    // queued after the take result lands, then the carrier dies on resolve.
     if(REC.recState().takes.length===2){
       once('radio-post-second', ()=>setTimeout(
         ()=>queueRadioStoryCue(RADIO.RADIO_CUES.POST_SECOND, { reason:'second-take-complete', roomId:room }),
@@ -7361,6 +7361,7 @@ function maybeJumpscare(){
   CR.fx.flash(90, 'rgba(200,200,205,0.5)');
   CR.fx.shake(2.2, 260);
   CR.fx.glitch(1, 320);
+  showSurferJumpscare();
   const d=window.__diffusion;
   if(d){
     applyLensPreset('rupture');
@@ -7930,16 +7931,15 @@ function currentMapContact(source){
   }
   const playerPhysical=FP.logicalToPhysical(px,py);
   const pst=PRES.presenceState();
-  const hushPhysical=FP.logicalToPhysical(pst.x,pst.y);
-  const floor=BUILDING_MAP.floors.find((candidate)=>hushPhysical.y>=candidate.minHeight&&hushPhysical.y<candidate.maxHeight);
+  const hush=currentMapHushMarker();
   const pressure=PRES.pressure(px,py);
   const sensoryField=hushAudioRuntime?.currentField?.();
   const sensoryAudition=hushAudioRuntime?.currentAudition?.();
   return HUSH_MAP_TELEMETRY.sample({
     hush:{
       active:true,
-      position:{x:hushPhysical.x,y:hushPhysical.z},
-      floorId:floor?.id||null,
+      position:hush.position,
+      floorId:hush.floorId,
       roomId:ZONE_RECORDING_ROOM[FP.zoneAt(pst.x,pst.y)]||null,
       emittedEnergy:Math.min(1,.44+pressure*.34+(pst.hasTarget ? .08 : 0)+(sensoryAudition?.interest||0)*.18),
       detectionRadius:92,
@@ -7952,6 +7952,18 @@ function currentMapContact(source){
   });
 }
 
+function currentMapHushMarker(){
+  if(!PRES.isActive()) return null;
+  const pst=PRES.presenceState();
+  const physical=FP.logicalToPhysical(pst.x,pst.y);
+  const floor=BUILDING_MAP.floors.find((candidate)=>physical.y>=candidate.minHeight&&physical.y<candidate.maxHeight);
+  return{
+    active:true,
+    position:{x:physical.x,y:physical.z},
+    floorId:floor?.id||null,
+  };
+}
+
 function currentFacilityMapModel(){
   if(usingSourceSpace()){
     const model=buildMapModel({source:null,job:bagJob(),navigation:activeDifficulty.navigation});
@@ -7961,6 +7973,7 @@ function currentFacilityMapModel(){
   if(!source)return buildMapModel({source:null,job:bagJob(),navigation:activeDifficulty.navigation});
   const physical=FP.logicalToPhysical(px,py);
   const contact=currentMapContact(source);
+  const hush=currentMapHushMarker();
   const doors=captureDoorMapState({
     doors:FP.doorState(),source,projectLogical:mapProjectLogical,
     hasKey:(keyId)=>playerKeys.has(keyId),
@@ -7969,9 +7982,10 @@ function currentFacilityMapModel(){
   const objective=OBJ.objState();
   const doorKey=doors.map((door)=>`${door.id}:${door.state}`).join('|');
   const contactKey=`${contact.state}:${contact.observation?.observedAt||0}:${contact.observation?.floorId||''}`;
+  const hushKey=hush?`${hush.floorId||''}:${Math.round(hush.position.x*2)}:${Math.round(hush.position.y*2)}`:'none';
   const tower=chapelTowerState(),towerKey=`${tower.phase}:${tower.ropeRoomVisited?1:0}:${tower.hatchInspected?1:0}`;
   const areaLabel=currentAreaLabel();
-  const key=[Math.round(physical.x/2),Math.round(physical.z/2),Math.round(physical.y*4),recordableRoomAt(px,py)||'',areaLabel,objective.target||'',job.rooms.map((room)=>room.recorded?'1':'0').join(''),doorKey,activeDifficulty.navigation.id||'',contactKey,towerKey].join('~');
+  const key=[Math.round(physical.x/2),Math.round(physical.z/2),Math.round(physical.y*4),recordableRoomAt(px,py)||'',areaLabel,objective.target||'',job.rooms.map((room)=>room.recorded?'1':'0').join(''),doorKey,activeDifficulty.navigation.id||'',contactKey,hushKey,towerKey].join('~');
   if(facilityMapCache.key===key&&facilityMapCache.model)return facilityMapCache.model;
   const model=buildMapModel({
     source,job,objectiveState:objective,doors,contacts:[contact],navigation:activeDifficulty.navigation,
@@ -7982,8 +7996,9 @@ function currentFacilityMapModel(){
     },
     player:{x:physical.x,y:physical.z,height:physical.y,roomId:recordableRoomAt(px,py),areaLabel,heading:RENDERER==='3d'?R3.r3dFacing()*Math.PI/2:0},
   });
-  facilityMapCache={key,model};
-  return model;
+  const liveModel={...model,hush};
+  facilityMapCache={key,model:liveModel};
+  return liveModel;
 }
 
 
@@ -8358,6 +8373,24 @@ function godClearSpecialWorlds(){
   R3.r3dSetSourceSurface([]);
 }
 
+function godRestoreBuildingWorld(){
+  const sourceState=chunkSurfRuntime?.state?.()||normalizeChunkSurfState(getSave().chunkSurf);
+  const wasInSource=usingSourceSpace();
+  const wasInSpecialWorld=wasInSource||!!sourceTowerTransition||!!bellTowerRuntime;
+  if(!wasInSpecialWorld)return false;
+  godClearSpecialWorlds();
+  if(wasInSource){
+    // A facility warp is an explicit exit from the Source diagnostic. Keep the
+    // reached-state data for inspection, but never resume Source coordinates
+    // over the building on the next frame or after a restart.
+    saveCommit({chunkSurf:{...sourceState,active:false},area:'conservatory'});
+  }
+  godLookDebug='final';
+  applyPixelMeshSettings({debugSource:'final'});
+  applyLookProfile('explore',{transitionMs:0,resetMemory:true});
+  return true;
+}
+
 function godSyncBuildingRender(){
   if(!FP.isLoaded()||usingSourceSpace())return false;
   const plan=FP.physicalRenderPlanFor(px,py);
@@ -8371,7 +8404,7 @@ function godSyncBuildingRender(){
 
 function godEnsureTestRun(){
   while(scenes.depth()) scenes.pop();
-  godClearSpecialWorlds();
+  godRestoreBuildingWorld();
   activeBattleId=null;
   godBattleOpen=false;
   STORY.stopTapeHiss({fade:0.2});
@@ -8413,6 +8446,7 @@ function godFindZonePoint(zone){
 }
 
 function godWarpToZone(zone){
+  godRestoreBuildingWorld();
   const point=godFindZonePoint(zone);
   if(!point){ pushEvent('// god: area is not loaded yet.'); return false; }
   px=point.x;py=point.y;trail=[];
@@ -9409,6 +9443,8 @@ function installProbe(){
       exitSnapshot:sourceExitSnapshot,
     }),
     chunkSurfStart:()=>beginChunkSurf({forced:true}),
+    godWarpDock:()=>godWarpToZone(ZONE.dock),
+    lookProfile:()=>activeLookProfile,
     chapelTower:()=>({
       ...chapelTowerState(),
       ...chapelTowerDiagnostics(),

@@ -36,6 +36,10 @@ assert.doesNotMatch(JSON.stringify(SOURCE_ATLAS), /\/Users\//);
 assert.doesNotMatch(JSON.stringify(SOURCE_ATLAS), /\b(process\.env|import\.meta\.env)\b/);
 assert.ok(CHUNK_SURF_ROOMS.every((room) => !('lines' in room) && !('tunedLines' in room)), 'visible pseudo-code was removed from authored narrative data');
 
+const mainSource=await readFile(resolve('src/main.js'),'utf8');
+assert.match(mainSource,/tickHushAudio\(dt\);\s*tickChunkSurfOffer\(\);\s*tickSourceSpace\(dt\);/,'chapel Source offer is evaluated in the live world loop');
+assert.match(mainSource,/return chunkSurfAvailable\(\) \? beginChunkSurf\(\) : false;/,'available Source transition begins without a hidden interact prompt');
+
 for (const entry of Object.values(SOURCE_ATLAS.entries)) {
   const file = await readFile(resolve(entry.file), 'utf8');
   const exact = file.split(/\r?\n/)[entry.line - 1];
@@ -76,7 +80,18 @@ for (const entry of Object.values(SOURCE_ATLAS.entries)) {
   const pages=runtime.propInstances(0,-224);
   assert.equal(pages.filter((page)=>page.interactiveId==='source-page').length,1,'exactly one page is interactive');
   assert.ok(pages.every((page)=>page.matrix?.length===16),'all pages use complete matrices');
+  assert.ok(pages.every((page)=>[...page.matrix].every(Number.isFinite)),'all page transforms contain only finite values');
+  const searchable=pages.find((page)=>page.interactiveId==='source-page');
+  const camera=runtime.geometry.logicalToPhysical(0,-224);
+  assert.ok(Math.hypot(searchable.matrix[12]-camera.x,searchable.matrix[14]-camera.z)<=24,'searchable page is rendered near the haystack player position');
   assert.ok(runtime.textInstances({px:0,py:-224}).every((text)=>SOURCE_ATLAS.entries[text.sourceId]),'page decals carry provenance-backed source');
+}
+
+{
+  const runtime=createSourceSpaceRuntime({initialState:hallState(96)});
+  const camera=runtime.geometry.logicalToPhysical(0,-96/CELL);
+  const pages=runtime.propInstances(0,-96/CELL);
+  assert.ok(pages.some((page)=>Math.hypot(page.matrix[12]-camera.x,page.matrix[14]-camera.z)<=48),'page storm populates the rendered hall around the player');
 }
 
 {

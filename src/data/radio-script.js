@@ -77,18 +77,21 @@ function postSecondTakeWarning() {
       { who: 'radio', text: 'Copy. Tw— two on—' },
       { who: 'direction', art: failingArt('OPEN'), text: 'The carrier stays open after the word should have ended.', hold: 2.2 },
       { who: 'radio', text: 'Do not tap the set. If it drifts, let it drift.' },
+      { who: 'direction', art: failingArt('DEAD'), text: 'The speaker gives one wet pop. The carrier light goes out and does not return.', cue: 'scream', shake: 1.0, shakeMs: 460, hold: 2.8 },
     ),
     interference: terminal(
       { who: 'me', text: 'I am getting another signal under you.' },
       { who: 'radio', text: 'No other channel assigned.' },
       { who: 'direction', art: failingArt('BEAT'), text: 'A dry click answers from inside the radio before the person does.', hold: 2.0 },
       { who: 'radio', text: 'Keep the next room short.' },
+      { who: 'direction', art: failingArt('DEAD'), text: 'The last word folds into a low squeal. Then the set is dead in your hand.', cue: 'scream', shake: 1.0, shakeMs: 460, hold: 2.8 },
     ),
     other: terminal(
       { who: 'me', text: 'Is anyone else on this channel?' },
       { who: 'radio', text: 'Negative.' },
       { who: 'direction', art: failingArt('OPEN'), text: 'Behind the negative, a breath arrives too close to the grille.', hold: 2.4 },
       { who: 'radio', text: 'If you hear yourself, stop answering.' },
+      { who: 'direction', art: failingArt('DEAD'), text: 'Your own breath answers once. The carrier snaps shut for good.', cue: 'scream', shake: 1.0, shakeMs: 460, hold: 2.8 },
     ),
   };
 }

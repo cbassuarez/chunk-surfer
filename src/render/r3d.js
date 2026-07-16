@@ -358,29 +358,43 @@ vec4 dreamSlotResponse(int slot){
 vec3 surfaceTile(int slot, vec2 worldUv, float metresPerTile){
   vec3 tc=vec3(worldUv/metresPerTile,float(slot));
   vec3 base=texture(uSurfAlbedo,tc).rgb;
+  vec2 hallucinationWarp=vec2(0.0);
   if(uLocalDiffusion>.001){
     // A local, material-space reaction-diffusion pass. It is sampled from
     // world UVs, not screen UVs, so the change sticks to brick, wood, concrete,
     // and tile instead of washing over the camera.
     vec2 rdUv=fract(worldUv/(metresPerTile*3.6) + vec2(float(slot)*0.071,float(slot)*0.113));
-    vec3 rd=texture(uRD,rdUv).rgb;
+    float drift=uTime*(.012+.018*uLocalDiffusion);
+    vec2 advect=vec2(
+      sin(uTime*.31+worldUv.y*.17+float(slot)),
+      cos(uTime*.27+worldUv.x*.19-float(slot))
+    )*(.018+.028*uLocalDiffusion);
+    vec3 rdA=texture(uRD,fract(rdUv+advect+vec2(drift,-drift*.71))).rgb;
+    vec3 rdB=texture(uRD,fract(rdUv*1.73-advect+vec2(-drift*.43,drift*.57))).rgb;
+    vec3 rd=mix(rdA,rdB,.38+.18*sin(uTime*.41+float(slot)));
     float vein=smoothstep(0.18,0.82,rd.g);
     float pit=smoothstep(0.62,0.96,rd.r-rd.g);
     vec3 oxidized=base*(0.78+0.30*vein) + vec3(0.045,0.040,0.030)*rd.g;
     vec3 etched=base*(0.92-0.18*pit);
     vec4 response=dreamSlotResponse(slot);
     base=mix(base,clamp(mix(oxidized,etched,pit),vec3(0.0),vec3(1.0)),clamp(uLocalDiffusion*response.x,0.0,1.0));
+    float boil=(vein-.5)*sin(uTime*.83+rd.r*8.0+float(slot)*.7);
+    base=clamp(base*(1.0+boil*.22*uLocalDiffusion*response.y),vec3(0.0),vec3(1.0));
+    // Only the generated layer swims. PBR albedo and all geometry remain fixed,
+    // so the wall appears to hallucinate instead of the whole camera sliding.
+    hallucinationWarp=(rd.rg-.5)*(.11*uLocalDiffusion*response.y);
   }
   if(uDreamReady<.5)return base;
-  vec3 dreamA=texture(uSurfDream,tc).rgb;
-  vec3 dreamB=texture(uSurfDreamNext,tc).rgb;
+  vec3 dreamTc=vec3(tc.xy+hallucinationWarp,float(slot));
+  vec3 dreamA=texture(uSurfDream,dreamTc).rgb;
+  vec3 dreamB=texture(uSurfDreamNext,dreamTc).rgb;
   vec3 dream=mix(dreamA,dreamB,uDreamNextReady>.5?uDreamBankBlend:0.0);
   // Transfer material detail, not the generated image's illumination or
   // palette. Dividing by a coarse mip extracts local grain/mortar/weathering;
   // multiplying that into the authored albedo keeps the room from becoming a
   // flat img2img wash while remaining fixed in world-space UVs.
-  vec3 dreamLowA=textureLod(uSurfDream,tc,4.0).rgb;
-  vec3 dreamLowB=textureLod(uSurfDreamNext,tc,4.0).rgb;
+  vec3 dreamLowA=textureLod(uSurfDream,dreamTc,4.0).rgb;
+  vec3 dreamLowB=textureLod(uSurfDreamNext,dreamTc,4.0).rgb;
   vec3 dreamLow=mix(dreamLowA,dreamLowB,uDreamNextReady>.5?uDreamBankBlend:0.0);
   vec3 detail=clamp(dream/max(dreamLow,vec3(.055)),vec3(.46),vec3(1.86));
   float baseLum=max(.035,dot(base,vec3(.2126,.7152,.0722)));
@@ -390,8 +404,15 @@ vec3 surfaceTile(int slot, vec2 worldUv, float metresPerTile){
   generatedTone=mix(neutralTone,generatedTone,clamp(uDreamChromaDrift,0.0,1.0));
   vec4 response=dreamSlotResponse(slot);
   vec3 detailed=clamp(base*mix(vec3(1.0),detail,clamp(uDreamDetailGain*response.x,0.0,1.7)),vec3(0.0),vec3(1.0));
-  detailed=mix(detailed,generatedTone,clamp(uDreamChromaDrift*response.y*.42,0.0,.42));
-  return mix(base,detailed,uDreamMix[slot]*response.x);
+  float generatedPresence=clamp((.24+uDreamChromaDrift*1.40)*uDreamMix[slot]*response.y,0.0,.58);
+  detailed=mix(detailed,generatedTone,generatedPresence);
+  // Generated texture may change colour and structure, never exposure. This is
+  // the guardrail that lets the diffusion layer become obvious without ever
+  // recreating the black-screen failure in the final compositor.
+  float detailedLum=max(.025,dot(detailed,vec3(.2126,.7152,.0722)));
+  detailed*=clamp(baseLum/detailedLum,.72,1.38);
+  detailed=clamp(detailed,vec3(0.0),vec3(1.0));
+  return mix(base,detailed,clamp(uDreamMix[slot]*response.x*1.12,0.0,1.0));
 }
 // One texture per surface, chosen by the room's material and whether we hit a
 // wall or a floor. No cross-slot mixing — that is what smeared every texture

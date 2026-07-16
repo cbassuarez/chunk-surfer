@@ -11,6 +11,7 @@
       "binaries/chunk-lens"
     ],
     "resources": {
+      "../LEGAL/EULA.md": "EULA.md",
       "lens-resources/lens/": "lens/"
     }
   }

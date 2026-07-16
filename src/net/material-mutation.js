@@ -1,12 +1,14 @@
 import { MATERIAL } from '../data/floorplan/legend.js';
 
-export const MUTATION_INTERVAL_MIN_MS = 5_000;
-export const MUTATION_INTERVAL_MAX_MS = 15_000;
-export const MUTATION_CROSSFADE_MIN_MS = 6_000;
-export const MUTATION_CROSSFADE_MAX_MS = 12_000;
-export const MUTATION_MIN_FPS = 58;
-export const MUTATION_MIN_SAMPLES = 60;
-export const MUTATION_FEEDBACK = 0.18;
+export const MUTATION_INTERVAL_MIN_MS = 2_800;
+export const MUTATION_INTERVAL_MAX_MS = 8_500;
+export const MUTATION_CROSSFADE_MIN_MS = 1_600;
+export const MUTATION_CROSSFADE_MAX_MS = 3_600;
+export const MUTATION_MIN_FPS = 48;
+export const MUTATION_MIN_SAMPLES = 30;
+export const MUTATION_FEEDBACK = 0.42;
+
+const MUTATION_PROMPT = 'creeping pareidolic structure, recursive material echoes, stains almost resolving into anatomy then slipping back into surface grain, unstable detail that visibly changes between samples';
 
 // Mirrors surfaceSlot() in render/r3d.js. Floors come first because they occupy
 // most of the image immediately around the player; walls follow for the room's
@@ -65,12 +67,12 @@ export function mutationCanStart({
 }
 
 export function mutationTiming({ fps = 60, lastRttMs = 0, random = Math.random } = {}) {
-  const framePressure = clamp((60 - Number(fps)) / 2, 0, 1);
-  const inferencePressure = clamp((Number(lastRttMs) - 250) / 1_250, 0, 1);
+  const framePressure = clamp((54 - Number(fps)) / 6, 0, 1);
+  const inferencePressure = clamp((Number(lastRttMs) - 350) / 2_000, 0, 1);
   const pressure = Math.max(framePressure, inferencePressure);
   const jitter = clamp(random(), 0, 1);
-  const interval = MUTATION_INTERVAL_MIN_MS + 7_000 * pressure + 3_000 * jitter;
-  const crossfade = MUTATION_CROSSFADE_MIN_MS + 3_000 * pressure + 3_000 * jitter;
+  const interval = MUTATION_INTERVAL_MIN_MS + 3_200 * pressure + 2_400 * jitter;
+  const crossfade = MUTATION_CROSSFADE_MIN_MS + 1_200 * pressure + 800 * jitter;
   return {
     intervalMs: Math.round(clamp(interval, MUTATION_INTERVAL_MIN_MS, MUTATION_INTERVAL_MAX_MS)),
     transitionMs: Math.round(clamp(crossfade, MUTATION_CROSSFADE_MIN_MS, MUTATION_CROSSFADE_MAX_MS)),
@@ -82,12 +84,12 @@ export function mutationGeneration(profile, slot, serial) {
   const safeSlot = Math.max(0, Math.floor(Number(slot) || 0));
   const safeSerial = Math.max(1, Math.floor(Number(serial) || 1));
   return {
-    prompt: generation.prompt || '',
+    prompt: `${generation.prompt || ''}, ${MUTATION_PROMPT}`,
     negative: generation.negative || '',
-    strength: clamp(Number(generation.strength) * 0.55, 0.14, 0.32),
-    guidance: clamp(generation.guidance, 0, 3),
-    passes: 1,
-    mix: clamp(generation.mix, 0, 0.92),
+    strength: clamp(Number(generation.strength) * 0.72 + 0.36, 0.48, 0.78),
+    guidance: clamp(Math.max(1.6, Number(generation.guidance) || 0), 0, 4.2),
+    passes: 3,
+    mix: clamp(Number(generation.mix) * 1.08, 0.55, 0.96),
     seed: ((Number(generation.seedBase) || 0) + safeSlot * 977 + safeSerial * 7_919) % 2_000_000_000,
     feedback: MUTATION_FEEDBACK,
     mutationSchema: 1,

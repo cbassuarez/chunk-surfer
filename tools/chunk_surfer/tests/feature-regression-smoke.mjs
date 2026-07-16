@@ -162,6 +162,24 @@ try {
   assert.equal(chunkSurf.parity.screen,'game','source-space remains in the normal gameplay renderer');
   assert.notEqual(chunkSurf.scene,'chunk-surf','source-space must not restore the obsolete blocking scene');
   await page.screenshot({path:path.join(output,'08-chunk-surf-long-hall.png')});
+
+  assert.equal(await page.evaluate(()=>window.__probe.godWarpDock()),true,'God warp returns from Source to the loading dock');
+  await page.waitForFunction(()=>{
+    const chunk=window.__probe.chunkSurf();
+    const map=window.__probe.map();
+    return chunk.active===false&&map?.player?.resolved===true&&window.__probe.lookProfile()==='explore';
+  },{timeout:interactionTimeout});
+  const dockReturn=await page.evaluate(()=>({
+    chunk:window.__probe.chunkSurf(),
+    map:window.__probe.map(),
+    source:window.__probe.mapSource(),
+    look:window.__probe.lookProfile(),
+  }));
+  assert.equal(dockReturn.chunk.active,false,'facility warp deactivates the Source diagnostic');
+  assert.equal(dockReturn.map.player.resolved,true,'loading-dock player position resolves after Source exit');
+  assert.ok(dockReturn.source?.definition?.floors?.length>=3,'loading-dock facility map is restored');
+  assert.match(String(dockReturn.map.player.areaLabel||''),/loading dock/i);
+  assert.equal(dockReturn.look,'explore','facility warp restores the authored facility look');
   console.log('visual smoke: gameplay path captured');
 
   assert.equal(await page.evaluate(()=>window.__probe.openCredits()),true);

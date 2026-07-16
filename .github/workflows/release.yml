@@ -106,7 +106,7 @@ jobs:
           path: |
             src-tauri/binaries/chunk-lens-${{ matrix.target }}*
             src-tauri/lens-resources/lens
-          key: lens-bundle-v1-${{ matrix.target }}-py312-${{ hashFiles('tools/chunk_surfer/diffusion_server/*.py', 'tools/chunk_surfer/diffusion_server/requirements-local.txt', 'THIRD_PARTY_LENS_NOTICES.md') }}
+          key: lens-bundle-v1-${{ matrix.target }}-py312-${{ hashFiles('tools/chunk_surfer/diffusion_server/*.py', 'tools/chunk_surfer/diffusion_server/requirements-local.txt', 'THIRD_PARTY_LENS_NOTICES.md', 'third_party/licenses/*') }}
 
       - name: Install pinned lens bundler dependencies
         if: steps.lens-bundle-cache.outputs.cache-hit != 'true'

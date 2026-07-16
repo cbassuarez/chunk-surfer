@@ -14,6 +14,11 @@ export function drawWaypointMarker(point, alpha = 1) {
   uiGlyph(Math.round(point.x), Math.round(point.y), '◆', 'ui-blue', alpha);
 }
 
+export function drawHushMarker(point, alpha = 1) {
+  if (!point) return;
+  uiGlyph(Math.round(point.x), Math.round(point.y), '●', 'ui-danger', alpha);
+}
+
 export function drawObjectiveMarker(command, alpha = 1) {
   const x = Math.round(command.point.x), y = Math.round(command.point.y);
   const cls = command.recorded ? 'ui-green' : command.waypoint ? 'ui-blue' : command.current ? 'ui-amber' : 'ui-primary';

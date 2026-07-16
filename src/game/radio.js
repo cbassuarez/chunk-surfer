@@ -6,8 +6,8 @@
 // never again.
 //
 //   INITIAL CHECK-IN               it works. Someone answers. Almost.
-//   AFTER THE SECOND CLEAN ROOM     it gets unreliable, but it is alive.
-//   APPROACHING THE THIRD ROOM      it opens one last time, and dies.
+//   AFTER THE SECOND CLEAN ROOM     it opens one last time, and dies.
+//   APPROACHING THE THIRD ROOM      dead air. Nothing else is promised.
 //   AFTER                          dead. And it squelches.
 //
 // The squelch is the design. A dead radio is a prop; a dead radio that emits
@@ -96,7 +96,7 @@ export function resolveRadioCue(id) {
   state.milestones[id] = true;
   if (state.activeCue?.id === id) state.activeCue = null;
   if (state.pendingCue?.id === id) state.pendingCue = null;
-  if (id === RADIO_CUES.PRE_THIRD) killRadio();
+  if (id === RADIO_CUES.POST_SECOND) killRadio();
   return true;
 }
 
@@ -189,11 +189,13 @@ export function tickRadio(dt, { expectation = 0, px = 0, py = 0 } = {}) {
 
 export function loadRadioState(saved = {}) {
   state.transmissions = saved.transmissions || 0;
-  state.dead = !!saved.dead;
   state.squelches = saved.squelches || 0;
   state.dropped = saved.dropped && Number.isFinite(saved.dropped.x) && Number.isFinite(saved.dropped.y)
     ? {x:Math.round(saved.dropped.x),y:Math.round(saved.dropped.y)} : null;
   state.milestones = { ...milestoneDefaults(), ...(saved.milestones || {}) };
+  // Saves from the previous timing contract may have completed the second-room
+  // breakdown without marking the radio dead. The resolved cue is authoritative.
+  state.dead = !!saved.dead || !!state.milestones[RADIO_CUES.POST_SECOND];
   state.pendingCue = saved.pendingCue && knownCue(saved.pendingCue.id) ? {
     id: saved.pendingCue.id,
     roomId: saved.pendingCue.roomId || null,

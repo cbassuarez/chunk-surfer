@@ -37,6 +37,14 @@ Publication remains a webmaster action. After updating itch.io, verify the page 
 - Prefer predictable depot/download size over first-launch model downloads. If
   model resources become optional later, ship them as a clearly named Steam
   depot/DLC, not as an implicit runtime fetch.
+- Upload [`LEGAL/EULA.md`](LEGAL/EULA.md) in Steamworks as the required
+  third-party EULA before submitting the build. The same file is also bundled as
+  `EULA.md` in packaged app resources.
+- Complete Steam's AI Generated Content disclosure for the local/offline
+  material-generation lens. Keep the disclosure narrow: bundled local model
+  resources, constrained environmental material generation, no cloud prompt
+  upload, no general-purpose player prompt surface, and no live Adult Only
+  sexual-content generation path.
 - Save/cloud files:
   - Include: `profile.json`, `saves/autosave.json`, `saves/slot-1.json`, `saves/slot-2.json`
   - Exclude: `settings.json`, input/window state, `migration/`, `logs/`, `cache/`, `*.tmp`, `saves/backup/` unless support recovery policy changes.

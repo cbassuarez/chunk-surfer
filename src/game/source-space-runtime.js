@@ -98,7 +98,7 @@ function mul(a, b) {
 }
 
 const identity = () => new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
-const translate = (x, y, z) => new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, x, y, z, 1]);
+const translate = (x, y, z) => new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1]);
 const scale = (x, y, z) => new Float32Array([x, 0, 0, 0, 0, y, 0, 0, 0, 0, z, 0, 0, 0, 0, 1]);
 const rotX = (a) => { const c = Math.cos(a), s = Math.sin(a); return new Float32Array([1, 0, 0, 0, 0, c, s, 0, 0, -s, c, 0, 0, 0, 0, 1]); };
 const rotY = (a) => { const c = Math.cos(a), s = Math.sin(a); return new Float32Array([c, 0, -s, 0, 0, 1, 0, 0, s, 0, c, 0, 0, 0, 0, 1]); };
@@ -493,7 +493,7 @@ export function createSourceSpaceRuntime({
       out.push({
         id: `source-sheet-${i}`,
         mesh: 'loose_note',
-        matrix: sourceMatrix({ x: rx * CELL, y: elevation, z: ry * CELL, scaleX: 1.05, scaleY: 1.05, scaleZ: 1.05, pitch, yaw, roll }),
+        matrix: sourceMatrix({ x: rx, y: elevation, z: ry, scaleX: 1.05, scaleY: 1.05, scaleZ: 1.05, pitch, yaw, roll }),
         zone: ZONE.sourceSpace,
         structural: false,
       });
@@ -503,7 +503,7 @@ export function createSourceSpaceRuntime({
       out.push({
         id: 'source-sheet-interactive',
         mesh: 'loose_note',
-        matrix: sourceMatrix({ x: correct.x * CELL, y: 0.021, z: correct.y * CELL, scaleX: 1.08, scaleY: 1.08, scaleZ: 1.08 }),
+        matrix: sourceMatrix({ x: correct.x, y: 0.021, z: correct.y, scaleX: 1.08, scaleY: 1.08, scaleZ: 1.08 }),
         zone: ZONE.sourceSpace,
         structural: false,
         interactiveId: 'source-page',
@@ -543,9 +543,9 @@ export function createSourceSpaceRuntime({
           sourceId: line?.id,
           text: line?.text || '',
           matrix: sourceMatrix({
-            x: (o.x + tree.x) * CELL,
+            x: o.x + tree.x,
             y: 0.35 + layer * 0.62,
-            z: (o.y + tree.y) * CELL,
+            z: o.y + tree.y,
             scaleX: width,
             scaleY: 0.36,
             scaleZ: 1,
@@ -564,7 +564,7 @@ export function createSourceSpaceRuntime({
           id: `source-landmark-${id}-${lineIndex}`,
           sourceId: line?.id,
           text: line?.text || '',
-          matrix: sourceMatrix({ x: p.x * CELL, y: 0.4 + lineIndex * 0.48, z: p.y * CELL, scaleX: 2.6, scaleY: 0.34, yaw: (lineIndex % 2 ? Math.PI / 2 : 0) }),
+          matrix: sourceMatrix({ x: p.x, y: 0.4 + lineIndex * 0.48, z: p.y, scaleX: 2.6, scaleY: 0.34, yaw: (lineIndex % 2 ? Math.PI / 2 : 0) }),
           color: id === 'final-page' || id === 'body-room' ? [1, 0.18, 0.12, 1] : id === 'fork-room' ? [0.82, 0.92, 1, 1] : [0.05, 0.74, 1, 1],
           semantic: `landmark:${id}`,
         });
@@ -578,7 +578,7 @@ export function createSourceSpaceRuntime({
           id: `source-redaction-${redaction.id}`,
           sourceId: line?.id,
           text: line?.text || '',
-          matrix: sourceMatrix({ x: (final.x + redaction.dx) * CELL, y: 1.5, z: (final.y - 4) * CELL, scaleX: 3.6, scaleY: 0.58 }),
+          matrix: sourceMatrix({ x: final.x + redaction.dx, y: 1.5, z: final.y - 4, scaleX: 3.6, scaleY: 0.58 }),
           color: state.redaction === redaction.id ? [0.015, 0.015, 0.015, 1]
             : state.armedRedaction === redaction.id ? [1, 0.08, 0.05, 1]
               : state.armedRedaction ? [0.24, 0.24, 0.23, 0.55] : [0.96, 0.93, 0.82, 1],
@@ -623,7 +623,7 @@ export function createSourceSpaceRuntime({
         id: `source-hush-${part.name}`,
         sourceId: line?.id,
         text: line?.tokens?.find((token) => token.kind === 'identifier')?.text || line?.text || '',
-        matrix: sourceMatrix({ x: hx * CELL + part.x, y: part.y, z: hy * CELL + part.z, scaleX: part.sx, scaleY: part.sy, yaw:bodyYaw, roll: part.roll || 0 }),
+        matrix: sourceMatrix({ x: hx + part.x, y: part.y, z: hy + part.z, scaleX: part.sx, scaleY: part.sy, yaw:bodyYaw, roll: part.roll || 0 }),
         color: index % 3 === 0 ? [0.96, 0.92, 0.80, 1] : [1, 0.08, 0.045, 1],
         semantic: 'source-hush',
       };
