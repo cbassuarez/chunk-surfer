@@ -35,6 +35,7 @@ const tests = [
   'test/launch-parity.spec.mjs',
   'test/dev-launch-contract.test.mjs',
   'test/release-workflow.spec.mjs',
+  'test/windows-portable.test.mjs',
   'test/itch-release.test.mjs',
   'test/conversation-choice-state.test.mjs',
   'test/menu-layout-contract.spec.mjs',

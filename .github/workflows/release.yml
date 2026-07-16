@@ -204,7 +204,12 @@ jobs:
         run: |
           node scripts/package-windows-portable.mjs
           $version = (Get-Content package.json | ConvertFrom-Json).version
-          Compress-Archive -Path "release/windows/Chunk Surfer" -DestinationPath "release/windows/chunk-surfer-v$version-windows-x64.zip" -Force
+          $zip = "release/windows/chunk-surfer-v$version-windows-x64.zip"
+          Compress-Archive -Path "release/windows/Chunk Surfer" -DestinationPath $zip -Force
+          $verifyRoot = "release/windows-verify"
+          Remove-Item $verifyRoot -Recurse -Force -ErrorAction SilentlyContinue
+          Expand-Archive -Path $zip -DestinationPath $verifyRoot -Force
+          node scripts/validate-windows-portable.mjs "$verifyRoot/Chunk Surfer"
 
       - name: Upload desktop bundles
         if: matrix.platform != 'ubuntu-22.04'

@@ -16,6 +16,8 @@ const cargo = readFileSync('src-tauri/Cargo.toml', 'utf8');
 const cargoVersion = cargo.match(/^version = "([^"]+)"/m)?.[1];
 const workflow = readFileSync('.github/workflows/release.yml', 'utf8');
 const releaseMatrix = readFileSync('scripts/release-matrix.mjs', 'utf8');
+const portablePackager = readFileSync('scripts/package-windows-portable.mjs', 'utf8');
+const portableValidator = readFileSync('scripts/validate-windows-portable.mjs', 'utf8');
 const vite = readFileSync('vite.config.js', 'utf8');
 
 const versions = { package: pkg.version, tauri: tauri.version, cargo: cargoVersion };
@@ -42,6 +44,15 @@ if (windowsJob.includes('nsis') || windowsJob.includes('msi')) {
 }
 if (!workflow.includes('scripts/package-windows-portable.mjs') || !workflow.includes('*windows-x64.zip')) {
   throw new Error('Windows release workflow must upload and verify the portable zip artifact');
+}
+if (!pkg.scripts?.['windows:validate']?.includes('validate-windows-portable.mjs')) {
+  throw new Error('Windows portable payload validator script is missing');
+}
+if (!portablePackager.includes('validateWindowsPortable(appDir)') || !portableValidator.includes('weightsSha256')) {
+  throw new Error('Windows portable packaging must validate the staged payload and model manifest');
+}
+if (!workflow.includes('Expand-Archive') || !workflow.includes('$verifyRoot/Chunk Surfer')) {
+  throw new Error('Windows release workflow must validate a clean extraction of the portable zip');
 }
 if (!workflow.includes('Prepare release upload assets') || !workflow.includes('split -b 1900M')) {
   throw new Error('release workflow must split assets that exceed GitHub release file limits');

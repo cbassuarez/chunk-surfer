@@ -89,6 +89,7 @@ test('protocol binds result bytes to request, bank, slot, model, and checksum id
 
 test('desktop shell owns random authenticated sidecar lifecycle and cleanup', () => {
   const rust = read('src-tauri/src/lens_service.rs');
+  const cargo = read('src-tauri/Cargo.toml');
   const main = read('src/main.js');
   assert.match(rust, /TcpListener::bind\(\("127\.0\.0\.1", 0\)\)/);
   assert.match(rust, /OsRng\.fill_bytes/);
@@ -97,6 +98,10 @@ test('desktop shell owns random authenticated sidecar lifecycle and cleanup', ()
   assert.match(main, /bootstrapNativeLens/);
   assert.match(clientSource(), /searchParams\.set\('token'/);
   assert.match(rust, /\.env\("LENS_DEPTH", "0"\)/);
+  assert.match(rust, /command\.creation_flags\(sidecar_creation_flags\(\)\)/);
+  assert.match(rust, /CREATE_NO_WINDOW/);
+  assert.match(cargo, /target\.'cfg\(windows\)'\.dependencies[\s\S]*windows-sys/);
+  assert.doesNotMatch(rust, /CREATE_NEW_CONSOLE|DETACHED_PROCESS|CREATE_NEW_PROCESS_GROUP/);
 });
 
 test('native development has an explicit loopback service path without weakening production ownership', () => {
@@ -123,6 +128,7 @@ test('bundled model path is offline, checksum-verified, and GPU-only', () => {
   assert.match(pipeline, /validate_bundled_resources/);
   assert.match(pipeline, /diffusers_logging\.disable_progress_bar\(\)/);
   assert.match(server, /device not in \{"cuda", "mps"\}/);
+  assert.match(server, /expected == "cuda"[\s\S]*NVIDIA CUDA hardware and a compatible driver are required/);
   assert.match(server, /UNSUPPORTED_GPU/);
   assert.match(bundle, /aarch64-apple-darwin/);
   assert.match(bundle, /x86_64-pc-windows-msvc/);
