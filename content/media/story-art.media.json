@@ -20,6 +20,30 @@
         "threshold",
         "opening"
       ]
+    },
+    {
+      "id": "surfer.still",
+      "kind": "image",
+      "path": "story-art/surfer.png",
+      "tags": ["person", "battle", "source"]
+    },
+    {
+      "id": "interface.still",
+      "kind": "image",
+      "path": "story-art/circuit-bent-interface.png",
+      "tags": ["device", "battle", "signal"]
+    },
+    {
+      "id": "tuning-fork.still",
+      "kind": "image",
+      "path": "story-art/tuningfork.png",
+      "tags": ["device", "battle", "signal"]
+    },
+    {
+      "id": "walkie.still",
+      "kind": "image",
+      "path": "story-art/walkie.png",
+      "tags": ["device", "battle", "radio"]
     }
   ],
   "storyArt": [
@@ -59,39 +83,43 @@
     },
     {
       "id": "surfer",
+      "assetId": "surfer.still",
       "label": "Recordist",
-      "caption": "[recordist] placeholder",
-      "status": "PLACEHOLDER",
+      "caption": "Borrowed body / unstable return",
+      "status": "HOSTILE RETURN",
       "tone": "subject",
       "mode": "hero",
-      "alt": "[recordist] placeholder"
+      "alt": "A divided portrait of the recordist under hostile signal interference."
     },
     {
       "id": "circuitBentInterface",
+      "assetId": "interface.still",
       "label": "Interface",
-      "caption": "[interface] placeholder",
-      "status": "PLACEHOLDER",
+      "caption": "Circuit-bent house return",
+      "status": "FEEDBACK LIVE",
       "tone": "device",
       "mode": "boss",
-      "alt": "[interface] placeholder"
+      "alt": "A circuit-bent audio interface lit in the dark."
     },
     {
       "id": "tuningFork",
+      "assetId": "tuning-fork.still",
       "label": "Tuning Fork",
-      "caption": "[tuning fork] placeholder",
-      "status": "PLACEHOLDER",
+      "caption": "Reference tone / unstable room",
+      "status": "A440",
       "tone": "signal",
       "mode": "boss",
-      "alt": "[tuning fork] placeholder"
+      "alt": "A steel tuning fork against a dark signal field."
     },
     {
       "id": "walkie",
+      "assetId": "walkie.still",
       "label": "Radio",
-      "caption": "[radio] placeholder",
-      "status": "PLACEHOLDER",
+      "caption": "Portable set / decoy frequency",
+      "status": "FIELD LIVE",
       "tone": "device",
       "mode": "hero",
-      "alt": "[radio] placeholder"
+      "alt": "A portable radio under field interference."
     }
   ]
 }

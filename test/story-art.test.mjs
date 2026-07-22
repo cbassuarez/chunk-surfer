@@ -17,16 +17,15 @@ test('story art manifest contains required ids', () => {
   assert.ok(STORY_ART.door.src.includes('story-art/'));
 });
 
-test('unverified story art slots render placeholders instead of unrelated pictures', () => {
-  for (const [id, caption] of [
-    ['surfer', '[recordist] placeholder'],
-    ['circuitBentInterface', '[interface] placeholder'],
-    ['tuningFork', '[tuning fork] placeholder'],
-    ['walkie', '[radio] placeholder'],
+test('battle story art slots resolve to their authored stills', () => {
+  for (const [id, path] of [
+    ['surfer', 'story-art/surfer.png'],
+    ['circuitBentInterface', 'story-art/circuit-bent-interface.png'],
+    ['tuningFork', 'story-art/tuningfork.png'],
+    ['walkie', 'story-art/walkie.png'],
   ]) {
-    assert.equal(STORY_ART[id].src, null, id);
-    assert.equal(STORY_ART[id].caption, caption, id);
-    assert.equal(STORY_ART[id].status, 'PLACEHOLDER', id);
+    assert.ok(STORY_ART[id].src.includes(path), id);
+    assert.notEqual(STORY_ART[id].status, 'PLACEHOLDER', id);
   }
 });
 

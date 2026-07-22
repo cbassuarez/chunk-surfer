@@ -194,7 +194,7 @@ assert.equal(validateAudioProject(badAudio).ok, false);
 const media = JSON.parse(await readFile('content/media/story-art.media.json', 'utf8'));
 assert.equal(validateMediaProject(media).ok, true);
 assert.equal(STORY_ART.guard.caption, 'Gate booth / Ellery Conservatory');
-assert.equal(STORY_ART.surfer.src, null);
+assert.ok(STORY_ART.surfer.src.includes('story-art/surfer.png'));
 assert.equal(authoringMedia[0].id, 'story-art');
 assert.equal(authoringNarrative.length, authoringProject.narrative.length);
 assert.equal(authoringRegistryPaths.media[0], 'media/story-art.media.json');

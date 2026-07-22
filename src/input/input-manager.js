@@ -20,6 +20,12 @@ export const ACTION_CODES = Object.freeze({
   quiet: ['ShiftLeft', 'ShiftRight'],
 });
 
+export const CONTROL_MODES = Object.freeze(['classic', 'independent-wasd', 'independent-arrows']);
+
+export function normalizeControlMode(value) {
+  return CONTROL_MODES.includes(value) ? value : 'classic';
+}
+
 const LETTER_CODE = /^[a-z]$/i;
 
 export class InputManager {
@@ -276,6 +282,46 @@ export function keyboardAxes(held = new Set()) {
   const turnX = (held.has('ArrowRight') || held.has('KeyD') ? 1 : 0)
     - (held.has('ArrowLeft') || held.has('KeyA') ? 1 : 0);
   return { moveX: clampAxis(strafe), moveY: clampAxis(moveY), turnX: clampAxis(turnX) };
+}
+
+function axesForCodes(held, { up, down, left, right }) {
+  return {
+    moveX: clampAxis((held.has(right) ? 1 : 0) - (held.has(left) ? 1 : 0)),
+    moveY: clampAxis((held.has(up) ? 1 : 0) - (held.has(down) ? 1 : 0)),
+  };
+}
+
+export function keyboardMotionAxes(held = new Set(), mode = 'classic') {
+  const normalized = normalizeControlMode(mode);
+  if (normalized === 'independent-arrows') {
+    return axesForCodes(held, { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' });
+  }
+  if (normalized === 'independent-wasd') {
+    return axesForCodes(held, { up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD' });
+  }
+  const axes = keyboardAxes(held);
+  return { moveX: 0, moveY: axes.moveY };
+}
+
+export function keyboardLookAxes(held = new Set(), mode = 'classic') {
+  const normalized = normalizeControlMode(mode);
+  if (normalized === 'independent-wasd') {
+    const axes = axesForCodes(held, { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' });
+    return { turnX: axes.moveX, lookY: axes.moveY };
+  }
+  if (normalized === 'independent-arrows') {
+    const axes = axesForCodes(held, { up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD' });
+    return { turnX: axes.moveX, lookY: axes.moveY };
+  }
+  return { turnX: keyboardAxes(held).turnX, lookY: 0 };
+}
+
+export function keyboardCodeRole(code, mode = 'classic') {
+  const normalized = normalizeControlMode(mode);
+  if (!isMovementCode(code)) return null;
+  if (normalized === 'classic') return (code === 'ArrowLeft' || code === 'ArrowRight' || code === 'KeyA' || code === 'KeyD') ? 'turn' : 'move';
+  const wasd = code.startsWith('Key');
+  return (normalized === 'independent-wasd') === wasd ? 'move' : 'look';
 }
 
 export function deadzone(v, dz = 0.12) {

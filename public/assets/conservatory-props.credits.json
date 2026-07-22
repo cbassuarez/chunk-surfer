@@ -4,10 +4,10 @@
     "author": "Chunk Surfer project",
     "source": "tools/chunk_surfer/build-props.mjs",
     "license": "project source (mixed: see meshes)",
-    "sha256": "d7b9d1e92293c6c2edaf7ef3fd2d909a134e5cd1c6ae9c7998ca192d99d71372",
+    "sha256": "ec986e0bcdb2b293fb0d3b74de49850b7f027f6e64471912d84aaaa6e1795fbc",
     "modifications": "Metres, Y-up, ground-centred. Procedural fallback geometry plus user-supplied source meshes (unverified provenance) baked, re-axised, height-scaled, and vertex-cluster decimated under budget.",
-    "triangles": 26538,
-    "bytes": 1790012
+    "triangles": 33386,
+    "bytes": 2238468
   },
   "meshes": [
     {
@@ -599,6 +599,27 @@
       }
     },
     {
+      "name": "pool_lane_markings",
+      "bounds": {
+        "min": [
+          -7.075,
+          0,
+          -9.9
+        ],
+        "max": [
+          7.075,
+          0.043,
+          9.4
+        ]
+      },
+      "triangles": 144,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
       "name": "plant_pipe_straight",
       "bounds": {
         "min": [
@@ -823,6 +844,258 @@
         ]
       },
       "triangles": 280,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "academic_atrium_structure",
+      "bounds": {
+        "min": [
+          -12,
+          -9.7,
+          -13.5
+        ],
+        "max": [
+          12,
+          1.24,
+          13.5
+        ]
+      },
+      "triangles": 1920,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "academic_skylight",
+      "bounds": {
+        "min": [
+          -11.55,
+          6.035,
+          -13.05
+        ],
+        "max": [
+          11.55,
+          6.85,
+          13.05
+        ]
+      },
+      "triangles": 288,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "academic_frieze",
+      "bounds": {
+        "min": [
+          -2.6,
+          0,
+          -0.199
+        ],
+        "max": [
+          2.6,
+          0.84,
+          0.06
+        ]
+      },
+      "triangles": 480,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "academic_bust_plinth",
+      "bounds": {
+        "min": [
+          -0.31,
+          0,
+          -0.31
+        ],
+        "max": [
+          0.31,
+          1.11,
+          0.31
+        ]
+      },
+      "triangles": 36,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "academic_bust_fragment",
+      "bounds": {
+        "min": [
+          -0.381,
+          0.025,
+          -0.224
+        ],
+        "max": [
+          0.369,
+          0.63,
+          0.238
+        ]
+      },
+      "triangles": 136,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "academic_planter",
+      "bounds": {
+        "min": [
+          -2,
+          0,
+          -1
+        ],
+        "max": [
+          2,
+          0.765,
+          1
+        ]
+      },
+      "triangles": 36,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "academic_dead_tree",
+      "bounds": {
+        "min": [
+          -1.45,
+          -0.002,
+          -0.343
+        ],
+        "max": [
+          1.56,
+          3.902,
+          0.325
+        ]
+      },
+      "triangles": 68,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "academic_dry_basin",
+      "bounds": {
+        "min": [
+          -1.35,
+          0,
+          -1.35
+        ],
+        "max": [
+          1.35,
+          1.12,
+          1.35
+        ]
+      },
+      "triangles": 260,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "academic_leaf_litter",
+      "bounds": {
+        "min": [
+          -1.49,
+          0,
+          -0.91
+        ],
+        "max": [
+          1.361,
+          0.024,
+          0.871
+        ]
+      },
+      "triangles": 216,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "academic_blackboard",
+      "bounds": {
+        "min": [
+          -1.3,
+          0,
+          -0.116
+        ],
+        "max": [
+          1.3,
+          1.44,
+          0.04
+        ]
+      },
+      "triangles": 96,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "academic_filing_bank",
+      "bounds": {
+        "min": [
+          -1.02,
+          0,
+          -0.283
+        ],
+        "max": [
+          1.02,
+          1.36,
+          0.24
+        ]
+      },
+      "triangles": 336,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "academic_breach",
+      "bounds": {
+        "min": [
+          -1.443,
+          0,
+          -0.498
+        ],
+        "max": [
+          1.372,
+          2.6,
+          0.462
+        ]
+      },
+      "triangles": 204,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -1999,6 +2272,195 @@
         ]
       },
       "triangles": 612,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "upper_stair_dressing",
+      "bounds": {
+        "min": [
+          -1.415,
+          0,
+          0.165
+        ],
+        "max": [
+          1.415,
+          5.75,
+          11.213
+        ]
+      },
+      "triangles": 408,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "basement_stair_dressing",
+      "bounds": {
+        "min": [
+          -1.415,
+          -4,
+          0.165
+        ],
+        "max": [
+          1.415,
+          0.96,
+          10.235
+        ]
+      },
+      "triangles": 408,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "academic_stair_dressing",
+      "bounds": {
+        "min": [
+          -1.415,
+          0,
+          0.165
+        ],
+        "max": [
+          1.415,
+          6.149,
+          10.215
+        ]
+      },
+      "triangles": 472,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "stair_smoke_door_open",
+      "bounds": {
+        "min": [
+          -1.54,
+          0,
+          -0.09
+        ],
+        "max": [
+          1.54,
+          2.52,
+          1.995
+        ]
+      },
+      "triangles": 144,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "stair_smoke_door_closed",
+      "bounds": {
+        "min": [
+          -1.54,
+          0,
+          -0.203
+        ],
+        "max": [
+          1.54,
+          2.52,
+          0.09
+        ]
+      },
+      "triangles": 208,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "stair_sconce_pair_opal",
+      "bounds": {
+        "min": [
+          -1.56,
+          -0.385,
+          -0.49
+        ],
+        "max": [
+          1.59,
+          0.39,
+          0.17
+        ]
+      },
+      "triangles": 320,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "stair_bulkhead_pair",
+      "bounds": {
+        "min": [
+          -1.59,
+          -0.395,
+          -0.22
+        ],
+        "max": [
+          1.59,
+          0.299,
+          0.14
+        ]
+      },
+      "triangles": 344,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "stair_pendant_opal",
+      "bounds": {
+        "min": [
+          -0.28,
+          0.005,
+          -0.276
+        ],
+        "max": [
+          0.28,
+          1.83,
+          0.276
+        ]
+      },
+      "triangles": 232,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "stair_shadow_figure",
+      "bounds": {
+        "min": [
+          -0.29,
+          -0.06,
+          -0.166
+        ],
+        "max": [
+          0.29,
+          1.72,
+          0.166
+        ]
+      },
+      "triangles": 92,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",

@@ -21,8 +21,8 @@ void main(){mat4 m=mat4(aM0,aM1,aM2,aM3);vec4 w=m*vec4(aPos,1.0);vWorld=w.xyz;vN
 const FRAG=`#version 300 es
 precision highp float;
 in vec3 vWorld,vNormal;in vec2 vUv;flat in int vZone;flat in int vPortrait;flat in int vStructural;
-uniform vec3 uEye,uForward,uBase,uZoneTint[13];uniform float uLight,uAlphaCut,uBaseAlpha;uniform sampler2D uTex,uNormalTex,uOrmTex,uFogTex;uniform float uUseTex,uUseNormal,uUseOrm,uMetallic,uRoughness,uNormalScale,uFogSize,uCellMeters;uniform vec2 uFogOrigin;
-uniform int uLocalLightCount;uniform vec4 uLocalLightPos[8],uLocalLightColor[8];
+uniform vec3 uEye,uForward,uBase,uZoneTint[14];uniform float uLight,uAlphaCut,uBaseAlpha;uniform sampler2D uTex,uNormalTex,uOrmTex,uFogTex;uniform float uUseTex,uUseNormal,uUseOrm,uMetallic,uRoughness,uNormalScale,uFogSize,uCellMeters;uniform vec2 uFogOrigin;
+uniform int uLocalLightCount,uLocalShadowIndex;uniform vec4 uLocalLightPos[8],uLocalLightColor[8];
 uniform sampler2D uPortraitAtlas;uniform float uUsePortrait;
 uniform sampler2D uShadowTex;uniform mat4 uShadowMatrix;uniform float uShadowReady;uniform vec2 uShadowTexel;
 out vec4 o;
@@ -51,8 +51,8 @@ void main(){
   float rough=clamp(orm.g*uRoughness,.08,1.0),metal=clamp(orm.b*uMetallic,0.0,1.0);
   float lambert=max(dot(n,ldir),0.12);vec3 fromEye=normalize(vWorld-uEye);float axis=dot(fromEye,uForward);
   float cone=smoothstep(.86,.94,axis)*uLight;float falloff=1.0/(1.0+.10*dist+.045*dist*dist);float shadow=flashlightShadow(vWorld,n,ldir);
-  float lamp=lambert*falloff*(.35+3.2*cone)*shadow;float ambient=mix(.012,.035,uLight);vec3 localLight=vec3(0.0);
-  for(int li=0;li<8;li++){if(li>=uLocalLightCount)break;vec3 delta=uLocalLightPos[li].xyz-vWorld;float d=length(delta),r=max(.01,uLocalLightPos[li].w);float att=pow(clamp(1.0-d/r,0.0,1.0),2.0);float ndl=max(dot(n,normalize(delta)),0.0);localLight+=uLocalLightColor[li].rgb*uLocalLightColor[li].w*att*(.18+.82*ndl);}
+  float lamp=lambert*falloff*(.35+3.2*cone)*(uLocalShadowIndex<0?shadow:1.0);float ambient=mix(.012,.035,uLight);vec3 localLight=vec3(0.0);
+  for(int li=0;li<8;li++){if(li>=uLocalLightCount)break;vec3 delta=uLocalLightPos[li].xyz-vWorld;float d=length(delta),r=max(.01,uLocalLightPos[li].w);float att=pow(clamp(1.0-d/r,0.0,1.0),2.0);float ndl=max(dot(n,normalize(delta)),0.0);float localShadow=li==uLocalShadowIndex?flashlightShadow(vWorld,n,normalize(delta)):1.0;localLight+=uLocalLightColor[li].rgb*uLocalLightColor[li].w*att*(.18+.82*ndl)*localShadow;}
   vec3 base=uBase*texel.rgb;vec3 halfDir=normalize(ldir+normalize(toEye));float spec=pow(max(dot(n,halfDir),0.0),mix(72.0,5.0,rough))*mix(.08,.72,metal)*cone*falloff*shadow;
   vec3 col=base*(ambient+lamp*(1.0-metal*.45)+localLight)+spec*mix(vec3(1.0),base,metal);
   col=col/(1.0+col*.30);o=vec4(col,1.0);
@@ -216,7 +216,12 @@ function modelMatrix(i,base=identity()){
 }
 function perspective(aspect){const f=1/.95,n=NEAR,fa=FAR;return new Float32Array([f/aspect,0,0,0,0,f,0,0,0,0,(fa+n)/(n-fa),-1,0,0,(2*fa*n)/(n-fa),0]);}
 function perspectiveFov(fov,aspect,near,far){const f=1/Math.tan(fov/2);return new Float32Array([f/aspect,0,0,0,0,f,0,0,0,0,(far+near)/(near-far),-1,0,0,(2*far*near)/(near-far),0]);}
-function view(eye,yaw){const f=[Math.sin(yaw),0,-Math.cos(yaw)],z=[-f[0],0,-f[2]],x=[z[2],0,-z[0]],y=[0,1,0];return new Float32Array([x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-x[0]*eye[0]-x[2]*eye[2],-eye[1],-z[0]*eye[0]-z[2]*eye[2],1]);}
+function view(eye,yaw,pitch=0){
+  const cp=Math.cos(pitch),f=[Math.sin(yaw)*cp,Math.sin(pitch),-Math.cos(yaw)*cp],z=[-f[0],-f[1],-f[2]];
+  const xl=Math.max(.0001,Math.hypot(z[0],z[2])),x=[z[2]/xl,0,-z[0]/xl];
+  const y=[z[1]*x[2]-z[2]*x[1],z[2]*x[0]-z[0]*x[2],z[0]*x[1]-z[1]*x[0]];
+  return new Float32Array([x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-x[0]*eye[0]-x[1]*eye[1]-x[2]*eye[2],-y[0]*eye[0]-y[1]*eye[1]-y[2]*eye[2],-z[0]*eye[0]-z[1]*eye[1]-z[2]*eye[2],1]);
+}
 
 export function propInstanceVisible(instance,eye,maxDistance=90){
   const ix=Number.isFinite(instance?.x)?instance.x:instance?.matrix?.[12];
@@ -224,21 +229,26 @@ export function propInstanceVisible(instance,eye,maxDistance=90){
   if(!Number.isFinite(ix)||!Number.isFinite(iz))return false;
   return Math.hypot(ix-eye[0],iz-eye[2])<=maxDistance;
 }
-function visibleGroups(eye,maxDistance){
+function visibleGroups(eye,maxDistance,{shadow=false}={}){
   const groups=new Map();
   for(const i of [...staticInstances,...dynamicInstances]){
+    if(!shadow&&i.shadowOnly)continue;
     if(!propInstanceVisible(i,eye,maxDistance))continue;
     if(!groups.has(i.mesh))groups.set(i.mesh,[]);groups.get(i.mesh).push(i);
   }
   return groups;
 }
 function uploadInstances(mesh,list){const data=new Float32Array(list.length*19);for(let k=0;k<list.length;k++){data.set(modelMatrix(list[k],mesh.nodeMatrix),k*19);data[k*19+16]=list[k].zone||0;data[k*19+17]=list[k].portraitIndex||0;data[k*19+18]=list[k].structural?1:0;}gl.bindBuffer(gl.ARRAY_BUFFER,mesh.instanceBuffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.DYNAMIC_DRAW);}
-function renderShadowPass(eye,yaw,light){
-  shadowActive=false;if(!shadowReady||!shadowFbo||light<=.001||!pack)return false;
+function renderShadowPass(eye,yaw,pitch,light,shadowLight=null){
+  const practical=shadowLight&&Number.isFinite(shadowLight.x)&&Number.isFinite(shadowLight.y)&&Number.isFinite(shadowLight.z)?shadowLight:null;
+  shadowActive=false;if(!shadowReady||!shadowFbo||(!practical&&light<=.001)||!pack)return false;
   const forward=[Math.sin(yaw),0,-Math.cos(yaw)],right=[Math.cos(yaw),0,Math.sin(yaw)];
-  const lightEye=[eye[0]+right[0]*.12,eye[1]-.08,eye[2]+right[2]*.12];
-  shadowMatrix=multiply(perspectiveFov(66*Math.PI/180,1,.05,35),view(lightEye,yaw));
-  const groups=visibleGroups(lightEye,35);
+  const lightYaw=practical&&Number.isFinite(practical.shadowYaw)?practical.shadowYaw:yaw;
+  const lightPitch=practical&&Number.isFinite(practical.shadowPitch)?practical.shadowPitch:pitch;
+  const lightEye=practical?[practical.x,practical.y,practical.z]:[eye[0]+right[0]*.12,eye[1]-.08,eye[2]+right[2]*.12];
+  const shadowFov=practical?92*Math.PI/180:66*Math.PI/180;
+  shadowMatrix=multiply(perspectiveFov(shadowFov,1,.05,35),view(lightEye,lightYaw,lightPitch));
+  const groups=visibleGroups(lightEye,35,{shadow:true});
   gl.bindFramebuffer(gl.FRAMEBUFFER,shadowFbo);gl.viewport(0,0,shadowSize,shadowSize);gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.enable(gl.POLYGON_OFFSET_FILL);gl.polygonOffset(1.2,2.0);gl.clearDepth(1);gl.clear(gl.DEPTH_BUFFER_BIT);gl.useProgram(shadowProgram);gl.uniformMatrix4fv(SU('uShadowMatrix'),false,shadowMatrix);
   for(const[name,list]of groups){const mesh=pack.catalog.get(name);if(!mesh||!list.length)continue;uploadInstances(mesh,list);for(const primitive of mesh.primitives){gl.bindVertexArray(primitive.vao);gl.uniform1f(SU('uBaseAlpha'),primitive.base[3]??1);gl.uniform1f(SU('uAlphaCut'),primitive.alphaCut);gl.uniform1f(SU('uUseTex'),primitive.texture?1:0);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,primitive.texture);gl.uniform1i(SU('uTex'),0);gl.drawElementsInstanced(gl.TRIANGLES,primitive.count,primitive.indexType,0,list.length);}}
   gl.disable(gl.POLYGON_OFFSET_FILL);gl.bindVertexArray(null);gl.bindFramebuffer(gl.FRAMEBUFFER,null);shadowActive=true;return true;
@@ -295,11 +305,11 @@ function renderSourceText(viewMatrix,projection,eye,forward,maxDistance){
   gl.useProgram(textProgram);gl.uniformMatrix4fv(TU('uView'),false,viewMatrix);gl.uniformMatrix4fv(TU('uProj'),false,projection);gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,textAtlas);gl.uniform1i(TU('uGlyphAtlas'),3);gl.bindVertexArray(textVao);gl.bindBuffer(gl.ARRAY_BUFFER,textInstanceBuffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.DYNAMIC_DRAW);gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);gl.drawArraysInstanced(gl.TRIANGLE_STRIP,0,4,visible.length);gl.disable(gl.BLEND);gl.bindVertexArray(null);
 }
 
-export function renderPropPass({camX,camY,camZ,yaw,light=1,maxDistance=90,fogTexture,fogOrigin=[0,0],fogSize=256,cellMeters=.5,zoneTints,localLightCount=0,localLightPositions,localLightColors}){
-  if(!gl||!fbo)return false;const eye=[camX,camY,camZ],forward=[Math.sin(yaw),0,-Math.cos(yaw)];
-  const viewMatrix=view(eye,yaw),projection=perspective(width/height);
-  renderShadowPass(eye,yaw,light);
-  gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);gl.viewport(0,0,width,height);gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.clearColor(0,0,0,0);gl.clearDepth(1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(program);gl.uniformMatrix4fv(U('uView'),false,viewMatrix);gl.uniformMatrix4fv(U('uProj'),false,projection);gl.uniform3fv(U('uEye'),eye);gl.uniform3fv(U('uForward'),forward);gl.uniform1f(U('uLight'),light);gl.uniform3fv(U('uZoneTint[0]'),zoneTints);gl.uniform2fv(U('uFogOrigin'),fogOrigin);gl.uniform1f(U('uFogSize'),fogSize);gl.uniform1f(U('uCellMeters'),cellMeters);gl.uniform1i(U('uLocalLightCount'),localLightCount);if(localLightPositions)gl.uniform4fv(U('uLocalLightPos[0]'),localLightPositions);if(localLightColors)gl.uniform4fv(U('uLocalLightColor[0]'),localLightColors);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,fogTexture);gl.uniform1i(U('uFogTex'),1);gl.uniform1f(U('uShadowReady'),shadowActive?1:0);gl.uniformMatrix4fv(U('uShadowMatrix'),false,shadowMatrix);gl.uniform2f(U('uShadowTexel'),1/Math.max(1,shadowSize),1/Math.max(1,shadowSize));gl.activeTexture(gl.TEXTURE6);gl.bindTexture(gl.TEXTURE_2D,shadowDepthTex);gl.uniform1i(U('uShadowTex'),6);
+export function renderPropPass({camX,camY,camZ,yaw,pitch=0,light=1,maxDistance=90,fogTexture,fogOrigin=[0,0],fogSize=256,cellMeters=.5,zoneTints,localLightCount=0,localLightPositions,localLightColors,localShadowIndex=-1,shadowLight=null}){
+  if(!gl||!fbo)return false;const cp=Math.cos(pitch),eye=[camX,camY,camZ],forward=[Math.sin(yaw)*cp,Math.sin(pitch),-Math.cos(yaw)*cp];
+  const viewMatrix=view(eye,yaw,pitch),projection=perspective(width/height);
+  renderShadowPass(eye,yaw,pitch,light,shadowLight);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);gl.viewport(0,0,width,height);gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.clearColor(0,0,0,0);gl.clearDepth(1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(program);gl.uniformMatrix4fv(U('uView'),false,viewMatrix);gl.uniformMatrix4fv(U('uProj'),false,projection);gl.uniform3fv(U('uEye'),eye);gl.uniform3fv(U('uForward'),forward);gl.uniform1f(U('uLight'),light);gl.uniform3fv(U('uZoneTint[0]'),zoneTints);gl.uniform2fv(U('uFogOrigin'),fogOrigin);gl.uniform1f(U('uFogSize'),fogSize);gl.uniform1f(U('uCellMeters'),cellMeters);gl.uniform1i(U('uLocalLightCount'),localLightCount);gl.uniform1i(U('uLocalShadowIndex'),localShadowIndex);if(localLightPositions)gl.uniform4fv(U('uLocalLightPos[0]'),localLightPositions);if(localLightColors)gl.uniform4fv(U('uLocalLightColor[0]'),localLightColors);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,fogTexture);gl.uniform1i(U('uFogTex'),1);gl.uniform1f(U('uShadowReady'),shadowActive?1:0);gl.uniformMatrix4fv(U('uShadowMatrix'),false,shadowMatrix);gl.uniform2f(U('uShadowTexel'),1/Math.max(1,shadowSize),1/Math.max(1,shadowSize));gl.activeTexture(gl.TEXTURE6);gl.bindTexture(gl.TEXTURE_2D,shadowDepthTex);gl.uniform1i(U('uShadowTex'),6);
   const groups=visibleGroups(eye,maxDistance);
   for(const [name,list] of groups){const m=pack?.catalog.get(name);if(!m||!list.length)continue;uploadInstances(m,list);
     for(const p of m.primitives){gl.bindVertexArray(p.vao);gl.uniform3fv(U('uBase'),p.base.slice(0,3));gl.uniform1f(U('uBaseAlpha'),p.base[3]??1);gl.uniform1f(U('uAlphaCut'),p.alphaCut);gl.uniform1f(U('uUseTex'),p.texture?1:0);gl.uniform1f(U('uUseNormal'),p.normalTexture?1:0);gl.uniform1f(U('uUseOrm'),p.ormTexture?1:0);gl.uniform1f(U('uNormalScale'),p.normalScale??1);gl.uniform1f(U('uMetallic'),p.metallic??0);gl.uniform1f(U('uRoughness'),p.roughness??1);gl.uniform1f(U('uUsePortrait'),p.portrait&&portraitAtlas?1:0);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,p.texture);gl.uniform1i(U('uTex'),0);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,portraitAtlas);gl.uniform1i(U('uPortraitAtlas'),2);gl.activeTexture(gl.TEXTURE4);gl.bindTexture(gl.TEXTURE_2D,p.normalTexture);gl.uniform1i(U('uNormalTex'),4);gl.activeTexture(gl.TEXTURE5);gl.bindTexture(gl.TEXTURE_2D,p.ormTexture);gl.uniform1i(U('uOrmTex'),5);gl.drawElementsInstanced(gl.TRIANGLES,p.count,p.indexType,0,list.length);}

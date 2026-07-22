@@ -4,7 +4,7 @@
 // this module. Given the same definition, state, and action, resolution is
 // byte-for-byte repeatable.
 
-export const COMBAT_SCHEMA = 1;
+export const COMBAT_SCHEMA = 2;
 
 export const COMBAT_ACTION = Object.freeze({
   EXPOSE: 'expose',
@@ -16,6 +16,39 @@ export const COMBAT_ACTION = Object.freeze({
   CHANNEL: 'channel',
   END_TEMPO: 'end-tempo',
   WHITEOUT: 'whiteout',
+  RADIO_DECOY: 'radio-decoy',
+  STEADY_HANDS: 'steady-hands',
+});
+
+export const COMBAT_TOOL = Object.freeze({
+  SELF: 'self',
+  TORCH: 'torch',
+  RECORDER: 'recorder',
+  RIG: 'rig',
+  FORK: 'fork',
+  RADIO: 'radio',
+  COFFEE: 'coffee',
+});
+
+export const SNR_STATE = Object.freeze({
+  SIGNAL: 'signal',
+  NOISE: 'noise',
+  SILENCE: 'silence',
+});
+
+export const SNR_PROFILE = Object.freeze({
+  [SNR_STATE.SIGNAL]: Object.freeze({
+    label: 'SIGNAL',
+    description: 'Clean captures and stronger monitoring. A missed read lands harder.',
+  }),
+  [SNR_STATE.NOISE]: Object.freeze({
+    label: 'NOISE',
+    description: 'Attacks bite harder. Monitoring and defense lose definition.',
+  }),
+  [SNR_STATE.SILENCE]: Object.freeze({
+    label: 'SILENCE',
+    description: 'Defense tightens. Outgoing damage loses one point.',
+  }),
 });
 
 export const INTENT_KIND = Object.freeze({
@@ -47,6 +80,32 @@ const ACTION_COUNTER = Object.freeze({
   [COMBAT_ACTION.MONITOR]: INTENT_KIND.BROADCAST,
   [COMBAT_ACTION.HOLD]: INTENT_KIND.OVERLOAD,
   [COMBAT_ACTION.INVERT]: INTENT_KIND.LOOP,
+  [COMBAT_ACTION.RADIO_DECOY]: INTENT_KIND.BROADCAST,
+});
+
+const ACTION_TOOL = Object.freeze({
+  [COMBAT_ACTION.HOLD]: COMBAT_TOOL.SELF,
+  [COMBAT_ACTION.END_TEMPO]: COMBAT_TOOL.SELF,
+  [COMBAT_ACTION.EXPOSE]: COMBAT_TOOL.TORCH,
+  [COMBAT_ACTION.WHITEOUT]: COMBAT_TOOL.TORCH,
+  [COMBAT_ACTION.MONITOR]: COMBAT_TOOL.RECORDER,
+  [COMBAT_ACTION.PLAYBACK]: COMBAT_TOOL.RECORDER,
+  [COMBAT_ACTION.INVERT]: COMBAT_TOOL.RIG,
+  [COMBAT_ACTION.TUNE]: COMBAT_TOOL.FORK,
+  [COMBAT_ACTION.RADIO_DECOY]: COMBAT_TOOL.RADIO,
+  [COMBAT_ACTION.STEADY_HANDS]: COMBAT_TOOL.COFFEE,
+});
+
+const ACTION_SNR = Object.freeze({
+  [COMBAT_ACTION.MONITOR]: SNR_STATE.SIGNAL,
+  [COMBAT_ACTION.TUNE]: SNR_STATE.SIGNAL,
+  [COMBAT_ACTION.STEADY_HANDS]: SNR_STATE.SIGNAL,
+  [COMBAT_ACTION.EXPOSE]: SNR_STATE.NOISE,
+  [COMBAT_ACTION.WHITEOUT]: SNR_STATE.NOISE,
+  [COMBAT_ACTION.PLAYBACK]: SNR_STATE.NOISE,
+  [COMBAT_ACTION.RADIO_DECOY]: SNR_STATE.NOISE,
+  [COMBAT_ACTION.HOLD]: SNR_STATE.SILENCE,
+  [COMBAT_ACTION.INVERT]: SNR_STATE.SILENCE,
 });
 
 const SOURCE_READING = Object.freeze({
@@ -103,6 +162,9 @@ export function validateCombatDefinition(definition) {
   if (!definition?.id) errors.push('combat has no id');
   if (!definition?.enemy) errors.push(`${definition?.id || 'combat'} has no enemy`);
   if (!Array.isArray(definition?.movements) || !definition.movements.length) errors.push(`${definition?.id || 'combat'} has no movements`);
+  if (definition?.signature && !['echo', 'feedback', 'ensemble', 'contract', 'routing'].includes(definition.signature.id)) {
+    errors.push(`${definition?.id || 'combat'} has invalid encounter signature`);
+  }
   const music = definition?.music;
   if (music) {
     const validLead = (id) => ['lead-1', 'lead-2', 'lead-3'].includes(id);
@@ -203,16 +265,25 @@ export function createCombatState(definition, {
       recorder: tools.recorder !== false,
       rig: !!tools.rig,
       fork: !!tools.fork,
+      radio: !!tools.radio,
+      coffee: !!tools.coffee,
+      order: unique(tools.order).filter((id) => Object.values(COMBAT_TOOL).includes(id) && id !== COMBAT_TOOL.SELF),
     },
+    injuries: Math.max(0, integer(injuries, 0)),
     techniques: normalizedTechniques,
     take: roomTone,
     exposedBonus: 0,
     ringing: false,
+    snr: SNR_STATE.SIGNAL,
     tempo: false,
     tuneUsedMovement: null,
     tuneBonus: 0,
     whiteoutUsed: false,
     feedbackLoopUsed: false,
+    feedbackMovements: [],
+    radioUsed: false,
+    coffeeUsed: false,
+    signaturePressure: 0,
     punchInMovements: [],
     overdubMovements: [],
     perfectCounters: 0,
@@ -300,6 +371,9 @@ function finishCombat(state, result) {
     perfectCounters: state.perfectCounters,
     missedCounters: state.missedCounters,
     damageTaken: state.damageTaken,
+    snr: state.snr,
+    injuries: state.injuries,
+    signature: state.definition.signature || null,
     torchSpent: state.torchSpent,
     techniques: [...state.techniques],
     toolsUsed: { ...state.toolsUsed },
@@ -345,6 +419,7 @@ function completeMovement(state) {
   state.tempo = false;
   state.exposedBonus = 0;
   state.ringing = false;
+  state.signaturePressure = 0;
   state.tuneBonus = 0;
   state.last.transition = { from: finishedIndex, to: state.movementIndex };
 }
@@ -355,8 +430,47 @@ function applyDamageToEnemy(state, amount) {
   return damage;
 }
 
+function shiftSnr(state, actionId) {
+  const next = ACTION_SNR[actionId] || state.snr;
+  const previous = state.snr;
+  state.snr = next;
+  return { from: previous, to: next, changed: previous !== next };
+}
+
+function outgoingDamage(state, amount) {
+  const base = Math.max(0, integer(amount, 0));
+  if (!base) return 0;
+  if (state.snr === SNR_STATE.NOISE) return base + 1;
+  if (state.snr === SNR_STATE.SILENCE) return Math.max(1, base - 1);
+  return base;
+}
+
+function defensivePrevention(state, amount) {
+  const base = Math.max(0, integer(amount, 0));
+  if (state.snr === SNR_STATE.SIGNAL) return base + 1;
+  if (state.snr === SNR_STATE.NOISE) return Math.max(0, base - 1);
+  if (state.snr === SNR_STATE.SILENCE) return base + 1;
+  return base;
+}
+
+function captureDamage(state, amount) {
+  const base = clamp(integer(amount, 1), 1, 4);
+  if (state.snr === SNR_STATE.NOISE) return Math.max(1, base - 1);
+  return base;
+}
+
 function applyEnemyIntent(state, intent, prevention) {
-  const damage = Math.max(0, integer(intent?.damage, 0) - Math.max(0, integer(prevention, 0)));
+  const signature = state.definition.signature?.id;
+  const echo = Math.max(0, integer(state.signaturePressure, 0));
+  state.signaturePressure = 0;
+  const ensemble = signature === 'ensemble'
+    && (state.turnsInMovement + 1) % 3 === 0
+    && state.tuneUsedMovement !== state.movementIndex ? 1 : 0;
+  const fragileSignal = state.snr === SNR_STATE.SIGNAL ? 1 : 0;
+  const damage = Math.max(0,
+    integer(intent?.damage, 0) + echo + ensemble + fragileSignal
+    - Math.max(0, integer(prevention, 0)),
+  );
   if (damage > 0) {
     if (state.difficulty.safetyRelay && !state.safetyRelayUsed && damage >= state.composure) {
       state.damageTaken += Math.max(0, state.composure - 1);
@@ -373,6 +487,7 @@ function applyEnemyIntent(state, intent, prevention) {
   if (intent?.effect === 'recover') {
     state.movementCoherence = Math.min(state.movementMaxCoherence, state.movementCoherence + Math.max(1, integer(intent.recover, 1)));
   }
+  if (signature === 'echo') state.signaturePressure = 1;
   return damage;
 }
 
@@ -403,6 +518,15 @@ function actionAvailability(state, actionId) {
     if (!state.take) return { enabled: false, reason: 'NO TAKE' };
     if (!intent?.invertible) return { enabled: false, reason: 'INTENT CANNOT INVERT' };
   }
+  if (actionId === COMBAT_ACTION.RADIO_DECOY) {
+    if (!state.tools.radio) return { enabled: false, reason: 'NO RADIO' };
+    if (state.radioUsed) return { enabled: false, reason: 'FREQUENCY BURNED' };
+  }
+  if (actionId === COMBAT_ACTION.STEADY_HANDS) {
+    if (!state.tools.coffee) return { enabled: false, reason: 'NO COFFEE' };
+    if (state.coffeeUsed) return { enabled: false, reason: 'CUP EMPTY' };
+    if (state.composure >= state.maxComposure) return { enabled: false, reason: 'COMPOSURE STEADY' };
+  }
   if (actionId === COMBAT_ACTION.END_TEMPO && !state.tempo) return { enabled: false, reason: 'NO TEMPO' };
   return { enabled: true };
 }
@@ -410,14 +534,16 @@ function actionAvailability(state, actionId) {
 export function availableCombatActions(state) {
   const intent = currentCombatIntent(state);
   const actions = [
-    { id: COMBAT_ACTION.EXPOSE, label: 'EXPOSE', detail: 'TORCH · 2 COHERENCE · APPLY EXPOSED' },
-    { id: COMBAT_ACTION.MONITOR, label: 'MONITOR', detail: 'RECORDER · PREVENT 1 · CAPTURE BROADCAST' },
-    { id: COMBAT_ACTION.PLAYBACK, label: 'PLAYBACK', detail: state.take ? `RECORDER · ${state.take.damage} COHERENCE · CONSUME ${state.take.label}` : 'RECORDER · NO TAKE LOADED' },
-    { id: COMBAT_ACTION.HOLD, label: 'HOLD', detail: `DEFEND · PREVENT ${state.difficulty.holdPrevention} · CLEAR RINGING` },
-    { id: COMBAT_ACTION.INVERT, label: 'INVERT', detail: 'BENT RIG · CONSUME TAKE · REFLECT LOOP' },
-    ...(hasTechnique(state, TECHNIQUE.WHITEOUT) ? [{ id: COMBAT_ACTION.WHITEOUT, label: 'WHITEOUT', detail: 'TORCH · 4 COHERENCE · ONCE / ENCOUNTER' }] : []),
-    ...(state.tools.fork ? [{ id: COMBAT_ACTION.TUNE, label: 'TUNE', detail: 'FORK · FREE · REVEAL NEXT TWO INTENTS' }] : []),
-    ...(state.tempo ? [{ id: COMBAT_ACTION.END_TEMPO, label: 'CLOSE CHANNEL', detail: 'END THE BONUS ACTION WITHOUT ACTING' }] : []),
+    { id: COMBAT_ACTION.HOLD, tool: COMBAT_TOOL.SELF, label: 'HOLD', detail: `PREVENT ${defensivePrevention({ ...state, snr: SNR_STATE.SILENCE }, state.difficulty.holdPrevention)} · ENTER SILENCE` },
+    { id: COMBAT_ACTION.EXPOSE, tool: COMBAT_TOOL.TORCH, label: 'EXPOSE', detail: `${outgoingDamage({ ...state, snr: SNR_STATE.NOISE }, 2)} COHERENCE · ENTER NOISE` },
+    { id: COMBAT_ACTION.MONITOR, tool: COMBAT_TOOL.RECORDER, label: 'MONITOR', detail: 'CAPTURE BROADCAST · ENTER SIGNAL' },
+    { id: COMBAT_ACTION.PLAYBACK, tool: COMBAT_TOOL.RECORDER, label: 'PLAYBACK', detail: state.take ? `${state.take.damage}+ COHERENCE · CONSUME ${state.take.label}` : 'NO TAKE LOADED' },
+    { id: COMBAT_ACTION.INVERT, tool: COMBAT_TOOL.RIG, label: 'INVERT', detail: 'CONSUME TAKE · RETURN LOOP · ENTER SILENCE' },
+    ...(hasTechnique(state, TECHNIQUE.WHITEOUT) ? [{ id: COMBAT_ACTION.WHITEOUT, tool: COMBAT_TOOL.TORCH, label: 'WHITEOUT', detail: '5 COHERENCE · ONCE / ENCOUNTER' }] : []),
+    ...(state.tools.fork ? [{ id: COMBAT_ACTION.TUNE, tool: COMBAT_TOOL.FORK, label: 'TUNE', detail: 'FREE · REVEAL TWO INTENTS · ENTER SIGNAL' }] : []),
+    ...(state.tools.radio ? [{ id: COMBAT_ACTION.RADIO_DECOY, tool: COMBAT_TOOL.RADIO, label: 'THROW VOICE', detail: 'PREVENT 2 · BURN FREQUENCY · ENTER NOISE' }] : []),
+    ...(state.tools.coffee ? [{ id: COMBAT_ACTION.STEADY_HANDS, tool: COMBAT_TOOL.COFFEE, label: 'STEADY HANDS', detail: 'RESTORE 3 COMPOSURE · CONSUME · ENTER SIGNAL' }] : []),
+    ...(state.tempo ? [{ id: COMBAT_ACTION.END_TEMPO, tool: COMBAT_TOOL.SELF, label: 'CLOSE CHANNEL', detail: 'END BONUS ACTION' }] : []),
   ];
   return actions.map((action) => {
     const availability = actionAvailability(state, action.id);
@@ -427,6 +553,36 @@ export function availableCombatActions(state) {
       perfect: ACTION_COUNTER[action.id] === intent?.kind || (action.id === COMBAT_ACTION.WHITEOUT && intent?.kind === INTENT_KIND.SILENCE),
     };
   });
+}
+
+const TOOL_LABEL = Object.freeze({
+  [COMBAT_TOOL.SELF]: 'HANDS',
+  [COMBAT_TOOL.TORCH]: 'FIELD TORCH',
+  [COMBAT_TOOL.RECORDER]: 'RECORDER',
+  [COMBAT_TOOL.RIG]: 'BENT RIG',
+  [COMBAT_TOOL.FORK]: 'TUNING FORK',
+  [COMBAT_TOOL.RADIO]: 'RADIO',
+  [COMBAT_TOOL.COFFEE]: 'COFFEE',
+});
+
+export function availableCombatTools(state) {
+  const available = [COMBAT_TOOL.TORCH, COMBAT_TOOL.RECORDER, COMBAT_TOOL.RIG, COMBAT_TOOL.FORK, COMBAT_TOOL.RADIO, COMBAT_TOOL.COFFEE]
+    .filter((id) => !!state.tools[id]);
+  const ordered = unique([...(state.tools.order || []), ...available]).filter((id) => available.includes(id));
+  const equipped = [COMBAT_TOOL.SELF, ...ordered];
+  return equipped.map((id) => {
+    const moves = combatMovesForTool(state, id);
+    return {
+      id,
+      label: TOOL_LABEL[id],
+      moves: moves.map((move) => move.id),
+      ready: moves.some((move) => move.enabled),
+    };
+  });
+}
+
+export function combatMovesForTool(state, toolId) {
+  return availableCombatActions(state).filter((action) => action.tool === toolId);
 }
 
 function maybeEarnProof(state, movement, actionId, perfect, takeBefore) {
@@ -457,10 +613,15 @@ export function reduceCombat(input, action = {}) {
   }
 
   if (actionId === COMBAT_ACTION.TUNE) {
+    const snrShift = shiftSnr(state, actionId);
     state.tuneUsedMovement = state.movementIndex;
     state.tuneBonus = 1;
     toolCount(state, 'fork');
-    state.last = { notice: 'FORK CALIBRATED · NEXT TWO INTENTS REVEALED', transition: null, action: actionId, perfect: false };
+    state.last = {
+      notice: 'FORK CALIBRATED · SIGNAL CLEAN · NEXT TWO INTENTS REVEALED',
+      transition: null, action: actionId, perfect: false,
+      snrFrom: snrShift.from, snrTo: snrShift.to, dealt: 0, received: 0,
+    };
     return state;
   }
 
@@ -478,13 +639,16 @@ export function reduceCombat(input, action = {}) {
     || (actionId === COMBAT_ACTION.WHITEOUT && intent?.kind === INTENT_KIND.SILENCE)
   );
   const takeBefore = state.take ? { ...state.take } : null;
+  const composureBefore = state.composure;
+  const coherenceBefore = state.movementCoherence;
+  const snrShift = shiftSnr(state, actionId);
   let prevention = 0;
   let enemyDamage = 0;
   let dealt = 0;
   let notice = '';
 
-  state.last = { notice: '', transition: null, action: actionId, perfect };
-  toolCount(state, actionId);
+  state.last = { notice: '', transition: null, action: actionId, perfect, snrFrom: snrShift.from, snrTo: snrShift.to };
+  toolCount(state, ACTION_TOOL[actionId] || actionId);
 
   if (actionId === COMBAT_ACTION.EXPOSE || actionId === COMBAT_ACTION.WHITEOUT) {
     const whiteout = actionId === COMBAT_ACTION.WHITEOUT;
@@ -492,11 +656,11 @@ export function reduceCombat(input, action = {}) {
     state.battery = Math.max(0, state.battery - cost);
     state.torchSpent += cost;
     state.whiteoutUsed ||= whiteout;
-    dealt = applyDamageToEnemy(state, whiteout ? 4 : 2);
+    dealt = applyDamageToEnemy(state, outgoingDamage(state, whiteout ? 4 : 2));
     state.exposedBonus = whiteout ? 0 : hasTechnique(state, TECHNIQUE.AFTERIMAGE) ? 2 : 1;
     notice = `${whiteout ? 'WHITEOUT' : 'EXPOSE'} · ${dealt} COHERENCE`;
   } else if (actionId === COMBAT_ACTION.MONITOR) {
-    prevention = 1;
+    prevention = defensivePrevention(state, 1);
     if (intent?.recordable) {
       if (state.take && !action.replaceTake) {
         state.last = { notice: 'TAKE SLOT OCCUPIED · CONFIRM REPLACEMENT', transition: null, action: actionId, perfect: false, needsTakeConfirmation: true };
@@ -505,13 +669,13 @@ export function reduceCombat(input, action = {}) {
       state.take = {
         id: intent.id,
         label: intent.takeLabel || intent.label,
-        damage: clamp(integer(intent.playbackDamage, intent.damage || 2), 1, 3),
+        damage: captureDamage(state, intent.playbackDamage ?? intent.damage ?? 2),
         tag: intent.takeTag || null,
       };
       notice = `CAPTURED · ${state.take.label}`;
     } else notice = 'MONITORING · NO STABLE TAKE';
   } else if (actionId === COMBAT_ACTION.PLAYBACK) {
-    dealt = applyDamageToEnemy(state, integer(state.take?.damage, 0) + state.exposedBonus);
+    dealt = applyDamageToEnemy(state, outgoingDamage(state, integer(state.take?.damage, 0) + state.exposedBonus));
     const retained = hasTechnique(state, TECHNIQUE.OVERDUB) && state.tools.rig && !state.overdubMovements.includes(state.movementIndex);
     if (retained) {
       state.take = { id: `${takeBefore.id}:overdub`, label: `${takeBefore.label} / OVERDUB`, damage: 1, tag: takeBefore.tag };
@@ -520,15 +684,27 @@ export function reduceCombat(input, action = {}) {
     state.exposedBonus = 0;
     notice = `PLAYBACK · ${dealt} COHERENCE${retained ? ' · RESIDUAL TAKE' : ''}`;
   } else if (actionId === COMBAT_ACTION.HOLD) {
-    prevention = state.difficulty.holdPrevention;
+    prevention = defensivePrevention(state, state.difficulty.holdPrevention);
     state.ringing = false;
     notice = `HOLD · PREVENT ${prevention}`;
   } else if (actionId === COMBAT_ACTION.INVERT) {
     const retain = hasTechnique(state, TECHNIQUE.FEEDBACK_LOOP) && !state.feedbackLoopUsed;
-    dealt = applyDamageToEnemy(state, integer(intent?.damage, 0) + (retain ? 1 : 0));
+    dealt = applyDamageToEnemy(state, outgoingDamage(state, integer(intent?.damage, 0) + (retain ? 1 : 0)));
     if (retain) state.feedbackLoopUsed = true;
     else state.take = null;
     notice = `INVERT · ${dealt} RETURNED${retain ? ' · TAKE RETAINED' : ''}`;
+  } else if (actionId === COMBAT_ACTION.RADIO_DECOY) {
+    state.radioUsed = true;
+    prevention = defensivePrevention(state, 2);
+    if (intent?.kind === INTENT_KIND.BROADCAST || intent?.kind === INTENT_KIND.LOOP) {
+      dealt = applyDamageToEnemy(state, outgoingDamage(state, 1));
+    }
+    notice = `THROW VOICE · PREVENT ${prevention} · FREQUENCY BURNED${dealt ? ` · ${dealt} COHERENCE` : ''}`;
+  } else if (actionId === COMBAT_ACTION.STEADY_HANDS) {
+    state.coffeeUsed = true;
+    const restored = Math.min(3, state.maxComposure - state.composure);
+    state.composure += restored;
+    notice = `STEADY HANDS · ${restored} COMPOSURE RESTORED · CUP EMPTY`;
   }
 
   if (perfect) {
@@ -551,7 +727,22 @@ export function reduceCombat(input, action = {}) {
 
   maybeEarnProof(state, movement, actionId, perfect, takeBefore);
 
-  if (state.movementCoherence <= 0) {
+  if (state.definition.signature?.id === 'feedback'
+      && actionId === COMBAT_ACTION.PLAYBACK
+      && state.snr === SNR_STATE.NOISE
+      && !state.feedbackMovements.includes(state.movementIndex)) {
+    state.feedbackMovements.push(state.movementIndex);
+    state.composure = Math.max(0, state.composure - 1);
+    state.damageTaken += 1;
+    enemyDamage += 1;
+    notice += ' · HOUSE RETURN -1 COMPOSURE';
+  }
+
+  if (state.composure <= 0) {
+    state.last.notice = `${notice} · COMPOSURE LOST`;
+    advanceIntent(state);
+    finishCombat(state, 'lose');
+  } else if (state.movementCoherence <= 0) {
     state.last.notice = notice;
     completeMovement(state);
   } else if (bonusAction) {
@@ -578,6 +769,19 @@ export function reduceCombat(input, action = {}) {
     bonus: bonusAction,
     dealt,
     received: enemyDamage,
+    snrFrom: snrShift.from,
+    snrTo: snrShift.to,
+  });
+  Object.assign(state.last, {
+    dealt,
+    received: enemyDamage,
+    composureFrom: composureBefore,
+    composureTo: state.composure,
+    coherenceFrom: coherenceBefore,
+    coherenceTo: state.movementCoherence,
+    snrFrom: snrShift.from,
+    snrTo: snrShift.to,
+    consumed: actionId === COMBAT_ACTION.STEADY_HANDS ? COMBAT_TOOL.COFFEE : null,
   });
   return state;
 }

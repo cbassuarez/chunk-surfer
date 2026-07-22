@@ -14,13 +14,12 @@ const provenance = (cohort, assetTag, state, extra = {}) => ({ cohort, assetTag,
 export const PROCUREMENT_COHORTS = Object.freeze({
   practice_room_contract:Object.freeze({kind:'contract',era:'later service life',markPrefix:'P/CH',summary:'Eight matching chairs bought for the double-loaded practice suite.'}),
   foyer_suite:Object.freeze({kind:'contract',era:'formal public-room refit',markPrefix:'FOH/F',summary:'A sofa, two armchairs and two console tables supplied as one waiting-room suite.'}),
-  curatorial_accessions:Object.freeze({kind:'accession',era:'accumulated collection',markPrefix:'ACC',summary:'Individually catalogued objects displayed on the foyer consoles.'}),
+  curatorial_accessions:Object.freeze({kind:'accession',era:'accumulated collection',markPrefix:'ACC',summary:'Individually catalogued objects displayed in the public rooms and corridors.'}),
   hall_lighting_refit:Object.freeze({kind:'contract',era:'major hall refit',markPrefix:'H/L',summary:'A matched pair of chandeliers above the stalls.'}),
   hall_lounge_replacement:Object.freeze({kind:'contract',era:'later public-room refit',markPrefix:'H/S',summary:'Two replacement Chesterfields at the rear cross aisle.'}),
   chapel_foundation_1908:Object.freeze({kind:'commission',era:'1908',markPrefix:'EC/C',summary:'Purpose-made chapel fixtures, score cabinets and the presider chair.'}),
   services_rewire:Object.freeze({kind:'contract',era:'late services refit',markPrefix:'S/P',summary:'Matching distribution panels installed across three service zones.'}),
   maintenance_purchase:Object.freeze({kind:'contract',era:'final maintenance period',markPrefix:'M/L',summary:'A paired purchase of portable inspection lamps.'}),
-  ground_spine_furnishing:Object.freeze({kind:'contract',era:'formal public-room refit',markPrefix:'G/F',summary:'Two waiting chairs and a dark pendant arranged as a focal ensemble at the end of the ground-floor spine.'}),
 });
 
 const MARIMBA = [
@@ -71,6 +70,7 @@ export const PROP_MESH = Object.freeze({
   box_office_desk:{w:1.15,d:.62,blocks:true}, program_stack:{w:.42,d:.32,blocks:false},
   cash_terminal:{w:.36,d:.28,blocks:false}, queue_stanchion:{w:.32,d:.32,blocks:false},
   notice_board:{w:1.2,d:.12,blocks:false}, pool_start_block:{w:.62,d:.72,blocks:true},
+  pool_lane_markings:{w:14.2,d:19.5,blocks:false},
   loose_note:{w:.32,d:.42,blocks:false},
   tuning_fork:{w:.22,d:.82,blocks:false},
   lifeguard_chair:{w:.78,d:.78,blocks:true}, lane_reel:{w:1.05,d:.62,blocks:true},
@@ -87,6 +87,18 @@ export const PROP_MESH = Object.freeze({
   tower_loft_rail:{w:10,d:.16,blocks:false}, tower_bulkhead:{w:.3,d:.18,blocks:false},
   tower_stair_rail_low_up:{w:9,d:4,blocks:false}, tower_stair_rail_high_up:{w:10,d:4,blocks:false},
   tower_stair_rail_high_down:{w:10,d:4,blocks:false}, tower_stair_rail_low_down:{w:9,d:4,blocks:false},
+  upper_stair_dressing:{w:3,d:11.5,blocks:false}, basement_stair_dressing:{w:3,d:10.5,blocks:false},
+  academic_stair_dressing:{w:3,d:10.5,blocks:false},
+  stair_smoke_door_open:{w:3.1,d:2.1,blocks:false},
+  stair_smoke_door_closed:{w:3.1,d:.2,blocks:false},
+  stair_sconce_pair_opal:{w:3,d:.55,blocks:false}, stair_bulkhead_pair:{w:3,d:.5,blocks:false},
+  stair_pendant_opal:{w:.6,d:.6,blocks:false}, stair_shadow_figure:{w:.65,d:.3,blocks:false},
+  academic_atrium_structure:{w:24,d:27,blocks:false}, academic_skylight:{w:23,d:26,blocks:false},
+  academic_frieze:{w:5.2,d:.12,blocks:false}, academic_bust_plinth:{w:.62,d:.62,blocks:false},
+  academic_bust_fragment:{w:.72,d:.58,blocks:false}, academic_planter:{w:4,d:2,blocks:true},
+  academic_dead_tree:{w:2.8,d:1.2,blocks:false}, academic_dry_basin:{w:2.7,d:2.7,blocks:true},
+  academic_leaf_litter:{w:3,d:1.8,blocks:false}, academic_blackboard:{w:2.6,d:.12,blocks:false},
+  academic_filing_bank:{w:2.1,d:.5,blocks:true}, academic_breach:{w:3,d:1.1,blocks:false},
   green_chair_01:{w:.673,d:.665,h:1.059,blocks:false,mount:'floor'},
   arm_chair_01:{w:.850,d:.765,h:1.065,blocks:false,mount:'floor'},
   sofa_01:{w:1.573,d:.659,h:.797,blocks:true,mount:'floor'},
@@ -133,7 +145,7 @@ export const CONSERVATORY_PROPS = [
     inspect:inspect('A portable inspection lamp from the paired maintenance purchase, M/L-02. The battery bay is open and empty; it cannot light the room.','M/L-02. Lamp, cable and no battery.'),
   }),
   P('foyer-pew-1','pew',82.0,7.0,Math.PI/2,{inspect:inspect('One chapel pew never made it upstairs. A paper removal tag is still tied to it.','The tag says RETURN TO CHAPEL.')}),
-  P('foyer-cart-1','equipment_cart',88.5,14.0,0,{inspect:inspect('A percussion cart with one wheel wired straight.','It will only travel in a circle.')}),
+  P('foyer-cart-1','equipment_cart',91.5,14.0,0,{inspect:inspect('A percussion cart with one wheel wired straight.','It will only travel in a circle.')}),
   P('foyer-portrait-titian','portrait_frame',80.5,4.0,0,{elevation:1.35,portraitIndex:0,inspect:inspect('Titian. Portrait of a Man. A Met Open Access reproduction in an inexpensive gilt frame.','The sitter keeps looking past the entrance.')}),
   P('foyer-portrait-greco','portrait_frame',84.0,4.0,0,{elevation:1.35,portraitIndex:1,inspect:inspect('El Greco. Portrait of an Old Man. Someone has polished the glass more often than the frame.','His eyes catch the corridor light first.')}),
   P('box-office-counter','ticket_counter',90.55,18.85,Math.PI/2,{scale:.75,inspect:inspect('The ticket counter was built to keep a queue outside and cash inside. The grille is still locked down.','Nothing has been sold here for years.')}),
@@ -188,6 +200,63 @@ export const CONSERVATORY_PROPS = [
     inspect:inspect('A marble bust, accession ACC-73. A clean steel pin through the old base says more about its history here than the blank sitter line.','ACC-73. The sitter is still blank; the repair is fully documented.'),
   }),
 
+  // The old front atrium is now a ruined interior garden. All pieces are
+  // deliberately mute: they block, shade and silhouette like ordinary fabric
+  // of the building, but expose no action, sample, inscription or collectible.
+  P('academic-atrium-structure','academic_atrium_structure',27,254,0,{
+    renderOffsetX:8,renderOffsetZ:1,renderGroups:['ground','academic'],interactive:false,structural:true,
+  }),
+  P('academic-skylight','academic_skylight',27,254,0,{
+    renderOffsetX:8,renderOffsetZ:1,renderGroups:['ground','academic'],interactive:false,structural:true,
+  }),
+  P('academic-garden-planter-west','academic_planter',80.5,11.0,.08,{renderGroups:['ground','academic'],interactive:false}),
+  P('academic-garden-planter-east','academic_planter',86.7,17.6,-.08,{renderGroups:['ground','academic'],interactive:false}),
+  P('academic-garden-basin','academic_dry_basin',83.6,14.6,0,{renderGroups:['ground','academic'],interactive:false}),
+  P('academic-garden-tree-west','academic_dead_tree',80.4,11.0,-.18,{renderGroups:['ground','academic'],interactive:false,elevation:.66}),
+  P('academic-garden-tree-east','academic_dead_tree',86.8,17.6,.28,{renderGroups:['ground','academic'],interactive:false,elevation:.66,scale:.82}),
+  P('academic-garden-leaves-north','academic_leaf_litter',83.0,9.0,.22,{renderGroups:['ground','academic'],interactive:false}),
+  P('academic-garden-leaves-south','academic_leaf_litter',84.8,19.1,-.18,{renderGroups:['ground','academic'],interactive:false}),
+
+  // Six anonymous bust stations establish the gallery cadence. Four retain a
+  // generic head; two have collapsed into unidentifiable fragments. There are
+  // no plaques, accession marks or interaction affordances on this floor.
+  ...[[27,250,0],[27,254,.18],[27,258,-.12],[41,250,Math.PI],[41,254,Math.PI+.15],[41,258,Math.PI-.12]].flatMap(([x,y,yaw],i)=>{
+    const common={renderGroups:['ground','academic'],interactive:false};
+    return i===2||i===5
+      ?[P(`academic-bust-plinth-${i+1}`,'academic_bust_plinth',x,y,yaw,common),P(`academic-bust-fragment-${i+1}`,'academic_bust_fragment',x+.18,y+.22,yaw+.45,{...common,elevation:1.08})]
+      :[P(`academic-bust-plinth-${i+1}`,'academic_bust_plinth',x,y,yaw,common),P(`academic-bust-${i+1}`,'marble_bust_01',x,y,yaw,{...common,elevation:1.10,scale:i===4?.88:1})];
+  }),
+  ...[248,253,258,263].flatMap((y,i)=>[
+    P(`academic-frieze-west-${i+1}`,'academic_frieze',24.2,y,Math.PI/2,{renderGroups:['ground','academic'],interactive:false,elevation:3.05}),
+    P(`academic-frieze-east-${i+1}`,'academic_frieze',45.8,y,-Math.PI/2,{renderGroups:['ground','academic'],interactive:false,elevation:3.05}),
+  ]),
+  ...[30,35,40].flatMap((x,i)=>[
+    P(`academic-frieze-north-${i+1}`,'academic_frieze',x,243.0,0,{renderGroups:['ground','academic'],interactive:false,elevation:3.05}),
+    P(`academic-frieze-south-${i+1}`,'academic_frieze',x,267.0,Math.PI,{renderGroups:['ground','academic'],interactive:false,elevation:3.05}),
+  ]),
+
+  // Eight classrooms are visually distinct only through mundane arrangements:
+  // desk orientation, an inactive piano or a cabinet. Nothing here can be
+  // auditioned, read, acquired or promoted into a work-order target.
+  ...[
+    [1,241,0],[14,241,Math.PI],[1,248,0],[14,248,Math.PI],
+    [1,255,0],[14,255,Math.PI],[1,262,0],[14,262,Math.PI],
+  ].flatMap(([x0,y0,yaw],room)=>{
+    const east=x0>10;
+    const desks=[0,1,2].flatMap((row)=>[0,1].map((col)=>P(`academic-class-${room+1}-desk-${row*2+col+1}`,'school_desk',x0+2.2+col*2.1,y0+1.7+row*1.35,yaw,{interactive:false})));
+    const fixtures=[
+      P(`academic-class-${room+1}-board`,'academic_blackboard',east?20.7:1.3,y0+2.7,east?-Math.PI/2:Math.PI/2,{interactive:false,elevation:1.0}),
+      P(`academic-class-${room+1}-teacher-table`,'school_desk',x0+(east?4.8:6.1),y0+4.0,yaw,{interactive:false,scale:1.15}),
+    ];
+    if(room%2===0)fixtures.push(P(`academic-class-${room+1}-piano`,'upright_piano',x0+(east?5.7:1.2),y0+4.0,yaw,{interactive:false}));
+    else fixtures.push(P(`academic-class-${room+1}-cabinet`,'academic_filing_bank',x0+(east?5.8:1.2),y0+4.0,yaw,{interactive:false}));
+    return[...desks,...fixtures];
+  }),
+  P('academic-reception-files','academic_filing_bank',12.0,273.0,Math.PI/2,{interactive:false}),
+  P('academic-stripped-office-desk','school_desk',16.0,273.0,Math.PI/2,{interactive:false,scale:1.2}),
+  P('academic-stripped-office-cabinet','academic_filing_bank',18.2,276.0,0,{interactive:false}),
+  P('academic-breach','academic_breach',17.5,267.7,0,{interactive:false,structural:true}),
+
   // Studio B3: equipment, teaching overflow, and stacked desks against walls.
   P('b3-desk-1','school_desk',8.0,8.0,Math.PI/2,{inspect:inspect('A desk pushed into the dead corner, its writing surface stippled with old tape marks.','Nothing is written on it now.')}),
   P('b3-desk-2','school_desk',8.0,9.0,Math.PI/2,{inspect:inspect('Another desk nested behind the first. Surplus becomes acoustic treatment if nobody moves it.','Two desks, making one bad absorber.')}),
@@ -231,86 +300,27 @@ export const CONSERVATORY_PROPS = [
     P(`hall-stand-${i}`,'music_stand',107.0+i*1.2,11.0,0,{inspect:inspect('A music stand at sitting height.','No part on it.')}),
   ]),
 
-  // The basement stair rises east onto the ground spine. Following that axis
-  // straight ahead ends at the west face of the atrium wall (x=74), before the
-  // box office. Compose that dead end: the portrait is an individual
-  // accession; the two chairs and pendant are one later furnishing order.
-  // Nothing is powered.
-  P('ground-spine-large-portrait','portrait_frame',73.75,23.0,-Math.PI/2,{
-    scale:2.1,elevation:1.05,portraitIndex:0,
-    provenance:provenance('curatorial_accessions','ACC-89','large corridor portrait; sitter and painter fields blank'),
-    inspectAt:{x:72.85,y:23.0},
-    inspect:inspect('A large painted portrait at the end of the first-floor spine. ACC-89 remains on the lower frame; the sitter and painter fields were left blank when the card was retyped.','ACC-89. Large enough to order the corridor, still without a useful name.'),
-  }),
-  P('acq-ground-spine-chair-north','arm_chair_01',72.85,21.8,Math.PI/2,{
-    scale:1.35,
-    provenance:provenance('ground_spine_furnishing','G/F-01','north chair; front edge re-tacked'),
-    inspect:inspect('The north chair of the stair-axis pair, G/F-01. Its front edge was re-tacked without replacing the original upholstery.','G/F-01. One of the two chairs beneath the large portrait.'),
-  }),
-  P('acq-ground-spine-chair-south','arm_chair_01',72.85,24.2,Math.PI/2,{
-    scale:1.35,
-    provenance:provenance('ground_spine_furnishing','G/F-02','south chair; rear foot packed level'),
-    inspect:inspect('The matching south chair, G/F-02. A thin packing block under the rear foot keeps the pair level against the wall.','G/F-02. Matched to the chair on the other side of the portrait.'),
-  }),
-  P('acq-ground-spine-chandelier','chandelier_03',69.0,23.0,0,{
-    scale:2.2,elevation:4.3,
-    provenance:provenance('ground_spine_furnishing','G/F-03','corridor pendant; supply isolated'),
-    inspectAt:{x:69.0,y:22.2},
-    inspect:inspect('A small chandelier centred on the portrait axis, G/F-03. It hangs low enough to catch the torch, but its supply is isolated with the rest of the floor.','G/F-03. Glass, brass and no current.'),
-  }),
-
-  // Corridor dressing uses the smaller lantern family as wall-hung fixtures.
-  // The formal chandelier at the stair-axis dead end remains a singular focal
-  // object; these repeat along circulation routes and stay tight to masonry.
-  ...[
-    ['basement-north-1',12.0,21.0,0],
-    ['basement-south-1',24.0,25.5,Math.PI],
-    ['basement-north-2',38.0,21.0,0],
-    ['basement-south-2',45.0,25.5,Math.PI],
-    ['ground-spine-west',64.0,17.5,Math.PI/2],
-    ['ground-spine-east',66.5,19.5,-Math.PI/2],
-    ['practice-west-1',65.0,59.0,Math.PI/2],
-    ['practice-east-1',67.5,66.0,-Math.PI/2],
-    ['practice-west-2',65.0,73.0,Math.PI/2],
-    ['upper-cross-corridor',86.0,51.0,0],
-  ].map(([id,x,y,yaw])=>P(`corridor-wall-light-${id}`,'lantern_chandelier_01',x,y,yaw,{
-    elevation:3.35,scale:1.15,mount:'wall',interactive:false,
-  })),
-  ...[
-    ['basement-north',18.0,21.0,0,2],
-    ['basement-south',42.0,25.5,Math.PI,3],
-    ['ground-spine',58.5,21.0,0,4],
-    ['practice-west',65.0,62.0,Math.PI/2,1],
-    ['practice-east',67.5,71.0,-Math.PI/2,5],
-  ].map(([id,x,y,yaw,portraitIndex])=>P(`corridor-portrait-${id}`,'portrait_frame',x,y,yaw,{
-    elevation:1.35,portraitIndex,
-    inspect:inspect('A corridor portrait hung flush to the wall, its catalogue plate dulled by cleaning.','Frame, plate, wall. Nothing has shifted.'),
-  })),
-  ...[
-    ['ground-cross-corridor',70.5,25.5,Math.PI],
-    ['upper-cross-corridor',80.0,51.0,0],
-    ['practice-corridor',65.0,61.0,Math.PI/2],
-  ].map(([id,x,y,yaw])=>P(`corridor-credenza-${id}`,'classic_console_01',x,y,yaw,{
-    inspect:inspect('A narrow corridor credenza, kept against the wall to leave the route clear.','Dust stops exactly at the rear edge.'),
-  })),
+  // Stair flights, landings, and their approach corridors intentionally stay
+  // bare. The architecture and torch define the route; rails, paintings,
+  // furniture, frames, and hanging fixtures made the safe throat ambiguous.
 
   // Practice suite. Mixed rooms, mixed equipment, and corridor surplus.
-  P('practice-ensemble-marimba','marimba',72.0,75.0,0,{...play(MARIMBA,'A rehearsal marimba with masking tape on four bars.','Four bars, four old pencil numbers.')}),
-  P('practice-ensemble-cello','cello',60.0,75.0,.18,{...play(STRINGS,'A cello left upright in a corner that is not safe for it.','No bow. No case open.')}),
-  P('practice-ensemble-violin','violin',61.0,76.0,-.3,{elevation:.48,inspectAt:{x:61.35,y:75.55},...play(STRINGS,'A violin left on a chair, chin rest to the door.','Someone put it down mid-phrase.')}),
-  ...[[60.0,54.0],[72.0,54.0],[60.0,61.0],[72.0,61.0],[60.0,68.0],[72.0,68.0]].map(([x,y],i)=>
+  P('practice-ensemble-marimba','marimba',72.0,78.0,0,{...play(MARIMBA,'A rehearsal marimba with masking tape on four bars.','Four bars, four old pencil numbers.')}),
+  P('practice-ensemble-cello','cello',60.0,78.0,.18,{...play(STRINGS,'A cello left upright in a corner that is not safe for it.','No bow. No case open.')}),
+  P('practice-ensemble-violin','violin',61.0,79.0,-.3,{elevation:.48,inspectAt:{x:61.35,y:78.55},...play(STRINGS,'A violin left on a chair, chin rest to the door.','Someone put it down mid-phrase.')}),
+  ...[[60.0,57.0],[72.0,57.0],[60.0,64.0],[72.0,64.0],[60.0,71.0],[72.0,71.0]].map(([x,y],i)=>
     P(`practice-piano-${i+1}`,'upright_piano',x,y,i%2?Math.PI:0,{...play(PIANO,'An upright piano, lid up, institutional number under the fallboard.','The number has been changed twice.')})),
-  ...[[61.0,56.0],[71.0,56.0],[61.0,63.0],[71.0,63.0],[71.0,77.0]].map(([x,y],i)=>
+  ...[[61.0,59.0],[71.0,59.0],[61.0,66.0],[71.0,66.0],[71.0,80.0]].map(([x,y],i)=>
     P(`practice-stand-${i+1}`,'music_stand',x,y,.1*i,{inspect:inspect('A stand left open at playing height.','Nothing on it.')})),
   ...[
-    {x:62.5,y:56.0,yaw:0,state:'pencil room number beneath the seat'},
-    {x:73.5,y:56.0,yaw:Math.PI,state:'new rubber foot on the corridor-side leg'},
-    {x:62.5,y:63.0,yaw:0,state:'back rail polished by a coat hook'},
-    {x:73.5,y:63.0,yaw:Math.PI,state:'two upholstery tacks replaced'},
-    {x:62.5,y:70.0,yaw:0,state:'old rosin ground into the front edge'},
-    {x:73.5,y:70.0,yaw:Math.PI,state:'seat foam compressed towards the piano'},
-    {x:61.0,y:76.0,yaw:0,state:'violin resting across the seat',inspectAt:{x:60.55,y:76.45}},
-    {x:73.5,y:77.0,yaw:Math.PI,state:'paper transfer label from the ensemble room'},
+    {x:62.5,y:59.0,yaw:0,state:'pencil room number beneath the seat'},
+    {x:73.5,y:59.0,yaw:Math.PI,state:'new rubber foot on the corridor-side leg'},
+    {x:62.5,y:66.0,yaw:0,state:'back rail polished by a coat hook'},
+    {x:73.5,y:66.0,yaw:Math.PI,state:'two upholstery tacks replaced'},
+    {x:62.5,y:73.0,yaw:0,state:'old rosin ground into the front edge'},
+    {x:73.5,y:73.0,yaw:Math.PI,state:'seat foam compressed towards the piano'},
+    {x:61.0,y:79.0,yaw:0,state:'violin resting across the seat',inspectAt:{x:60.55,y:79.45}},
+    {x:73.5,y:80.0,yaw:Math.PI,state:'paper transfer label from the ensemble room'},
   ].map((entry,i)=>{
     const assetTag=`P/CH-${String(i+1).padStart(2,'0')}`;
     return P(`acq-practice-chair-${i+1}`,'green_chair_01',entry.x,entry.y,entry.yaw,{
@@ -321,8 +331,8 @@ export const CONSERVATORY_PROPS = [
   }),
   P('practice-case-1','instrument_case',65.5,60.5,Math.PI/2,{inspect:inspect('A hard case with no instrument name, only a room number.','The room number no longer exists.')}),
   P('practice-case-2','instrument_case',66.5,67.5,Math.PI/2,{inspect:inspect('Another case in the corridor. Locked, light, probably empty.','Probably empty.')}),
-  P('practice-desk-stack-1','school_desk',57.5,77.0,Math.PI/2,{inspect:inspect('Two teaching desks shoved together at the wall.','Surplus stored in circulation, as usual.')}),
-  P('practice-desk-stack-2','school_desk',58.3,77.0,Math.PI/2,{inspect:inspect('The second desk makes the obstruction official.','Nobody filed a fire plan for this.')}),
+  P('practice-desk-stack-1','school_desk',57.5,80.0,Math.PI/2,{inspect:inspect('Two teaching desks shoved together at the wall.','Surplus stored in circulation, as usual.')}),
+  P('practice-desk-stack-2','school_desk',58.3,80.0,Math.PI/2,{inspect:inspect('The second desk makes the obstruction official.','Nobody filed a fire plan for this.')}),
 
   // Chapel: two banks leave a central aisle and side circulation clear.
   ...[62.0,65.0,68.0,71.0,74.0,77.0,80.0,83.0,86.0].flatMap((y,i)=>[
@@ -379,8 +389,6 @@ export const CONSERVATORY_PROPS = [
   P('tower-tenor-clock-hammer','tower_clock_hammer',31.0,153.0,0,{elevation:.4,...play(CHAPEL,'The clock hammer lifts and strikes the tenor while the bell is down. The stone keeps it for nine seconds.','One stationary hammer. One bell down.'),acousticKind:'bell_tenor_toll',hushPlayback:{mode:'interval',minMs:4200,maxMs:6800}}),
   P('tower-hammer-isolator','equipment_rack',18.0,153.0,0,{interaction:'action',action:'tower-hammer-isolator',inspect:inspect('CLOCK HAMMER ISOLATOR. A red lever, mechanically linked.','ISOLATE / SERVICE.')}),
   P('tower-sign-ringing','tower_plaque',32.0,159.0,Math.PI/2,{elevation:1.05,inspect:inspect('RINGING ROOM. The enamel letters are older than the electrical conduit.','RINGING ROOM.')}),
-  P('tower-access-lower-rail','tower_stair_rail_low_up',0.0,151.0,0,{interactive:false,structural:true}),
-  P('tower-access-upper-rail','tower_stair_rail_high_up',36.0,151.0,0,{interactive:false,structural:true}),
   P('tower-light-lower','tower_bulkhead',1.0,151.0,Math.PI/2,{elevation:1.85,interactive:false,structural:true}),
   P('tower-light-upper','tower_bulkhead',37.0,151.0,Math.PI/2,{elevation:1.85,interactive:false,structural:true}),
   P('tower-light-ringing','tower_bulkhead',25.0,152.0,0,{elevation:2.7,interactive:false,structural:true}),
@@ -410,29 +418,28 @@ export const CONSERVATORY_PROPS = [
   }),
   P('tower-loft-rail','tower_loft_rail',94.0,156.7,0,{interactive:false,structural:true}),
   P('tower-sign-organ-exit','tower_plaque',100.0,156.0,Math.PI/2,{elevation:1.0,inspect:inspect('ORGAN LOFT / NAVE. An arrow follows the service stair down.','ORGAN LOFT / NAVE.')}),
-  P('tower-service-upper-rail','tower_stair_rail_high_down',72.0,151.0,0,{interactive:false,structural:true}),
-  P('tower-service-lower-rail','tower_stair_rail_low_down',105.0,152.0,0,{interactive:false,structural:true}),
   P('tower-light-service','tower_bulkhead',73.0,151.0,Math.PI/2,{elevation:1.85,interactive:false,structural:true}),
   P('tower-light-organ-exit','tower_bulkhead',100.0,156.0,Math.PI/2,{elevation:1.85,interactive:false,structural:true}),
 
   // Utility spaces remain believable but are not playable instruments.
-  P('pool-bench-1','pew',73.4,31.2,0,{mesh:'pew',scale:.62,inspect:inspect('A timber changing bench, grey from chlorine.','The grain has lifted.')}),
-  P('pool-bench-2','pew',73.4,45.2,0,{mesh:'pew',scale:.62,inspect:inspect('A second changing bench set against the dry deck wall.','No towel ever dried here.')}),
-  P('pool-cart-1','equipment_cart',94.4,45.7,Math.PI/2,{inspect:inspect('A pool-maintenance cart parked by the service corner, not beside the basin.','The warning labels have run.')}),
-  P('acq-maintenance-searchlight-pool','portable_searchlight',94.4,45.25,-Math.PI/2,{
+  P('pool-lane-markings','pool_lane_markings',84,38.75,0,{interactive:false,structural:true,elevation:.05}),
+  P('pool-bench-1','pew',74.7,34.2,Math.PI/2,{mesh:'pew',scale:.62,inspect:inspect('A timber changing bench, grey from chlorine.','The grain has lifted.')}),
+  P('pool-bench-2','pew',74.7,42.2,Math.PI/2,{mesh:'pew',scale:.62,inspect:inspect('A second changing bench set against the dry deck wall.','No towel ever dried here.')}),
+  P('pool-cart-1','equipment_cart',94.2,46.7,Math.PI/2,{inspect:inspect('A pool-maintenance cart parked by the service corner, not beside the basin.','The warning labels have run.')}),
+  P('acq-maintenance-searchlight-pool','portable_searchlight',94.2,46.25,-Math.PI/2,{
     scale:1.5,elevation:.68,
     provenance:provenance('maintenance_purchase','M/L-01','natatorium unit; lens clamp replaced'),
-    inspectAt:{x:93.65,y:45.55},
+    inspectAt:{x:93.45,y:46.55},
     inspect:inspect('The pool cart carries M/L-01, one of two portable inspection lamps. Its replacement lens clamp is bright, but the disconnected lead ends at the cart.','M/L-01. A repaired lamp with nowhere to draw power.'),
   }),
-  P('pool-lifeguard-chair','lifeguard_chair',94.2,38.6,-Math.PI/2,{inspect:inspect('A lifeguard chair facing the length of a pool that has been dry for months.','The rescue tube is gone.')}),
-  P('pool-lane-reel','lane_reel',93.4,31.4,Math.PI/2,{inspect:inspect('A lane-line reel at the storage edge with one cracked float still wound onto it.','The handle turns half a revolution.')}),
-  ...[76.8,79.6,88.4,91.2].map((x,i)=>P(`pool-start-${i+1}`,'pool_start_block',x,34.0,Math.PI,{inspect:inspect('A starting block, its number plate removed.','Four bolt heads and a paler rectangle.')})),
-  ...[77,81,87,91].map((x,i)=>P(`pool-drain-${i+1}`,'drain_grille',x,42.6,0,{inspect:inspect('A basin drain furred white with old pool salts.','Dry all the way down.')})),
-  P('acq-services-panel-pool','power_box_01',91.5,45.0,-Math.PI/2,{
+  P('pool-lifeguard-chair','lifeguard_chair',94.2,38.8,-Math.PI/2,{inspect:inspect('A lifeguard chair facing the length of the pool.','The rescue tube is gone.')}),
+  P('pool-lane-reel','lane_reel',94.2,31.5,Math.PI/2,{inspect:inspect('A lane-line reel at the storage edge with one cracked float still wound onto it.','The handle turns half a revolution.')}),
+  ...[77.5,80.1,82.7,85.3,87.9,90.5].map((x,i)=>P(`pool-start-${i+1}`,'pool_start_block',x,49.0,0,{inspect:inspect('A starting block, its number plate removed.','Four bolt heads and a paler rectangle.')})),
+  ...[80.1,82.7,85.3,87.9].map((x,i)=>P(`pool-drain-${i+1}`,'drain_grille',x,44.8,0,{elevation:.06,inspect:inspect('A basin drain furred white with old pool salts.','The salts trace every slot.')})),
+  P('acq-services-panel-pool','power_box_01',95.45,44.8,-Math.PI/2,{
     scaleX:1.76,scaleY:1.63,elevation:1.45,
     provenance:provenance('services_rewire','S/P-02','natatorium panel; chlorine bloom under the lip'),
-    inspectAt:{x:90.8,y:45.0},
+    inspectAt:{x:94.7,y:44.8},
     inspect:inspect('The natatorium distribution panel, S/P-02, matches the plant-room and front-of-house boxes. Chlorine has lifted the paint beneath its lower lip; every breaker is open.','S/P-02. Same installation, different air, no live circuit.'),
   }),
   P('acq-services-panel-foh','power_box_01',96.0,16.0,-Math.PI/2,{

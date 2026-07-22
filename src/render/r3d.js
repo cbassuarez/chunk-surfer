@@ -30,6 +30,8 @@ let RENDER_SCALE = 1;
 let localLightCount=0;
 const localLightPositions=new Float32Array(MAX_LOCAL_LIGHTS*4);
 const localLightColors=new Float32Array(MAX_LOCAL_LIGHTS*4);
+let localShadowIndex=-1;
+let localShadowLight=null;
 
 export function r3dSetRenderScale(value = 1) {
   const next = Math.max(0.5, Math.min(1, Number(value) || 1));
@@ -51,7 +53,7 @@ const BIOME_RGB = {
 };
 // Zone → tint, indexed by the ZONE ids in data/floorplan/legend.js.
 // (none, dock, foyer, studio, natatorium, hall, practice, chapel, plant, stair,
-// source-space, outer chapel, bell tower)
+// source-space, outer chapel, bell tower, academic)
 const ZONE_TINTS = new Float32Array([
   0.60, 0.60, 0.58,   // none
   0.62, 0.60, 0.55,   // dock: sodium and rust
@@ -66,6 +68,7 @@ const ZONE_TINTS = new Float32Array([
   0.10, 0.92, 0.24,   // source-space: executable green against the void
   0.72, 0.75, 0.78,   // outer chapel: colder, lower stone
   0.73, 0.61, 0.42,   // bell tower: timber, bronze and dust
+  0.67, 0.70, 0.64,   // academic: cold plaster, oxidised metal, dead planting
 ]);
 
 const WORLD_RGB = {
@@ -162,6 +165,7 @@ uniform vec2  uFogOrigin;
 uniform float uAudio;        // 0..1 field energy
 uniform float uLight;        // 0 = flashlight off, 1 = on
 uniform int uLocalLightCount;
+uniform int uLocalShadowIndex;
 uniform vec4 uLocalLightPos[${MAX_LOCAL_LIGHTS}];
 uniform vec4 uLocalLightColor[${MAX_LOCAL_LIGHTS}];
 uniform int   uChunkCount;
@@ -199,7 +203,7 @@ uniform float uPropFar;
 uniform vec2  uPlanSize;
 uniform vec2  uPlanOrigin;
 uniform float uUsePlan;      // 0 = procedural lattice (JUST SURF), 1 = the conservatory
-uniform vec3  uZoneTint[13];
+uniform vec3  uZoneTint[14];
 uniform float uSourceReady;
 uniform vec4  uWaterBounds;  // min x, min z, max x, max z in runtime cells
 uniform vec4  uWaterParams;  // active, level metres, murk, reduce motion
@@ -228,6 +232,7 @@ const int MAT_SOURCE_FIELD = ${MATERIAL.sourceField};
 const int MAT_SOURCE_PATH = ${MATERIAL.sourcePath};
 const int MAT_SOURCE_PAGE = ${MATERIAL.sourcePage};
 const int MAT_SOURCE_FAULT = ${MATERIAL.sourceFault};
+const int MAT_ACADEMIC = ${MATERIAL.academicPlaster};
 
 bool waterActive(){ return uWaterParams.x > 0.5 && uUsePlan > 0.5; }
 bool inWaterBounds(vec2 p){
@@ -400,7 +405,7 @@ vec3 surfaceTile(int slot, vec2 worldUv, float metresPerTile){
   vec3 dreamLowA=textureLod(uSurfDream,dreamTc,4.0).rgb;
   vec3 dreamLowB=textureLod(uSurfDreamNext,dreamTc,4.0).rgb;
   vec3 dreamLow=mix(dreamLowA,dreamLowB,uDreamNextReady>.5?uDreamBankBlend:0.0);
-  vec3 detail=clamp(dream/max(dreamLow,vec3(.055)),vec3(.46),vec3(1.86));
+  vec3 detail=clamp(dream/max(dreamLow,vec3(.055)),vec3(.36),vec3(2.15));
   float baseLum=max(.035,dot(base,vec3(.2126,.7152,.0722)));
   float dreamLum=max(.035,dot(dreamLow,vec3(.2126,.7152,.0722)));
   vec3 neutralTone=vec3(baseLum);
@@ -408,13 +413,13 @@ vec3 surfaceTile(int slot, vec2 worldUv, float metresPerTile){
   generatedTone=mix(neutralTone,generatedTone,clamp(uDreamChromaDrift,0.0,1.0));
   vec4 response=dreamSlotResponse(slot);
   vec3 detailed=clamp(base*mix(vec3(1.0),detail,clamp(uDreamDetailGain*response.x,0.0,1.7)),vec3(0.0),vec3(1.0));
-  float generatedPresence=clamp((.24+uDreamChromaDrift*1.40)*uDreamMix[slot]*response.y,0.0,.58);
+  float generatedPresence=clamp((.32+uDreamChromaDrift*1.55)*uDreamMix[slot]*response.y,0.0,.76);
   detailed=mix(detailed,generatedTone,generatedPresence);
   // Generated texture may change colour and structure, never exposure. This is
   // the guardrail that lets the diffusion layer become obvious without ever
   // recreating the black-screen failure in the final compositor.
   float detailedLum=max(.025,dot(detailed,vec3(.2126,.7152,.0722)));
-  detailed*=clamp(baseLum/detailedLum,.72,1.38);
+  detailed*=clamp(baseLum/detailedLum,.62,1.48);
   detailed=clamp(detailed,vec3(0.0),vec3(1.0));
   return mix(base,detailed,clamp(uDreamMix[slot]*response.x*1.12,0.0,1.0));
 }
@@ -429,9 +434,10 @@ void surfaceSlot(int mat,int surf,vec2 uv,out int slot,out float tileM,out float
     else if(mat==MAT_POOL||mat==MAT_WET){slot=5;tileM=1.0;blend=.84;} // natatorium → white ceramic
     else if(mat==MAT_METAL){slot=9;tileM=1.6;blend=.82;}        // plant → concrete cladding
     else if(mat==MAT_CHAPEL){slot=1;tileM=1.4;blend=.82;}       // chapel → split-face stone
+    else if(mat==MAT_ACADEMIC){slot=7;tileM=2.2;blend=.80;}     // academic → pale worn stone/plaster
     else {slot=0;tileM=1.4;blend=.80;}                          // general → reclaimed brick
   } else {                                                      // floor (surf==2)
-    if(mat==MAT_ACOUSTIC||mat==MAT_PRACTICE){slot=6;tileM=1.8;blend=.88;} // basement/classroom → terrazzo
+    if(mat==MAT_ACOUSTIC||mat==MAT_PRACTICE||mat==MAT_ACADEMIC){slot=6;tileM=1.8;blend=.88;} // teaching floors → terrazzo
     else if(mat==MAT_WOOD||mat==MAT_CHAPEL){slot=3;tileM=2.0;blend=.90;}  // hall/chapel → quartzite
     else if(mat==MAT_WET){slot=4;tileM=0.9;blend=.92;}          // pool interior → blue mosaic
     else if(mat==MAT_POOL){slot=5;tileM=1.0;blend=.90;}         // pool deck → white ceramic
@@ -525,6 +531,16 @@ float propFlashShadow(vec3 world,vec3 normal,vec3 lightDir){
   float bias=max(.00018,.00115*(1.0-max(dot(normal,lightDir),0.0))),visible=0.0;
   for(int y=0;y<2;y++)for(int x=0;x<2;x++){vec2 tap=(vec2(float(x),float(y))-.5)*uPropShadowTexel;visible+=q.z-bias<=texture(uPropShadow,q.xy+tap).r?1.0:0.0;}
   return mix(.20,1.0,visible*.25);
+}
+float architecturalLightVisibility(vec3 fromM,vec3 toM){
+  float distanceM=length(toM-fromM);int checks=int(clamp(ceil(distanceM),1.0,8.0));
+  for(int i=1;i<8;i++){
+    if(i>=checks)break;
+    vec3 q=mix(fromM,toM,float(i)/float(checks));Cell blocker=cellAtI(ivec2(floor(q.xz/CELL_METERS)));
+    float qHeight=q.y/CELL_METERS;
+    if(blocker.solid||qHeight<blocker.f-.05||qHeight>blocker.c+.05)return .16;
+  }
+  return 1.0;
 }
 void main(){
   vec2 uv = (gl_FragCoord.xy / uRes) * 2.0 - 1.0;
@@ -775,6 +791,7 @@ void main(){
     float beam = (cone + beamRim + spill) * uLight;
     float propShadow=propFlashShadow(posM,n,ldir);
     float lamp = lambert * falloff * nearSoft * 3.0 * beam * propShadow;   // a torch, not a flare
+    if(uLocalShadowIndex>=0)lamp=lambert*falloff*nearSoft*3.0*beam;         // the map belongs to the hero practical
     vec3 localLight=vec3(0.0);
     for(int li=0;li<${MAX_LOCAL_LIGHTS};li++){
       if(li>=uLocalLightCount)break;
@@ -782,7 +799,9 @@ void main(){
       float localDistance=length(delta),radius=max(.01,uLocalLightPos[li].w);
       float attenuation=pow(clamp(1.0-localDistance/radius,0.0,1.0),2.0);
       float localLambert=max(dot(n,normalize(delta)),0.0);
-      localLight+=uLocalLightColor[li].rgb*uLocalLightColor[li].w*attenuation*(.18+.82*localLambert);
+      float localShadow=li==uLocalShadowIndex?propFlashShadow(posM,n,normalize(delta)):1.0;
+      float architecturalShadow=architecturalLightVisibility(posM,uLocalLightPos[li].xyz);
+      localLight+=uLocalLightColor[li].rgb*uLocalLightColor[li].w*attenuation*(.18+.82*localLambert)*localShadow*architecturalShadow;
     }
     // The unlit floor is deliberately lifted. With the torch off — or taken — a
     // dark-adapted eye still resolves a room: you are not blind, you simply
@@ -995,11 +1014,16 @@ export function r3dSetFear(v) { fearLevel = Math.max(0, Math.min(1, v || 0)); }
 
 export function r3dSetLocalLights(lights=[]){
   localLightPositions.fill(0);localLightColors.fill(0);
+  localShadowIndex=-1;localShadowLight=null;
   localLightCount=Math.min(MAX_LOCAL_LIGHTS,Array.isArray(lights)?lights.length:0);
   for(let i=0;i<localLightCount;i++){
     const light=lights[i]||{},p=i*4,color=light.color||[1,.78,.52];
     localLightPositions[p]=Number(light.x)||0;localLightPositions[p+1]=Number(light.y)||0;localLightPositions[p+2]=Number(light.z)||0;localLightPositions[p+3]=Math.max(.01,Number(light.radius)||4);
     localLightColors[p]=Number(color[0])||0;localLightColors[p+1]=Number(color[1])||0;localLightColors[p+2]=Number(color[2])||0;localLightColors[p+3]=Math.max(0,Number(light.intensity)||0);
+    if(localShadowIndex<0&&light.castsShadow){
+      localShadowIndex=i;
+      localShadowLight={x:localLightPositions[p],y:localLightPositions[p+1],z:localLightPositions[p+2],shadowYaw:Number.isFinite(light.shadowYaw)?light.shadowYaw:0};
+    }
   }
   return localLightCount;
 }
@@ -1200,14 +1224,14 @@ export function r3dSetSurfaceDream(slot,image,mix=.68){
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
   gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfDreamStageTex);
   gl.texSubImage3D(gl.TEXTURE_2D_ARRAY,0,0,0,slot,SURFACE_TILE,SURFACE_TILE,1,gl.RGBA,gl.UNSIGNED_BYTE,cv);
-  surfDreamMix[slot]=Math.max(0,Math.min(.92,Number(mix)||0));
+  surfDreamMix[slot]=Math.max(0,Math.min(.98,Number(mix)||0));
   return true;
 }
 export function r3dCommitSurfaceDream(mix=.68,options={}){
   if(!gl||!surfDreamStageTex)return false;
   gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfDreamStageTex);
   gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
-  surfDreamMix.fill(Math.max(0,Math.min(.92,Number(mix)||0)));
+  surfDreamMix.fill(Math.max(0,Math.min(.98,Number(mix)||0)));
   const bankId=options.bankId??surfDreamPendingBank;
   const transitionMs=Math.max(0,Number(options.transitionMs)||0);
   if(!surfDreamReady||transitionMs<=0){
@@ -1222,7 +1246,7 @@ export function r3dCommitSurfaceDream(mix=.68,options={}){
   return true;
 }
 export function r3dSetSurfaceDreamMix(mix=.68){
-  surfDreamMix.fill(Math.max(0,Math.min(.92,Number(mix)||0)));
+  surfDreamMix.fill(Math.max(0,Math.min(.98,Number(mix)||0)));
 }
 export function r3dClearSurfaceDream(){surfDreamMix.fill(0);surfDreamReady=false;surfDreamNextReady=false;surfDreamActiveBank=null;surfDreamPendingBank=null;}
 export function r3dSetLocalDiffusionLevel(v=1){localDiffusionAvailability=Math.max(0,Math.min(1,Number(v)||0));}
@@ -1242,7 +1266,7 @@ let planTexture = null, materialTexture = null, sourceLayerTexture = null, planW
 let planOriginX = 0, planOriginY = 0, sourceSurfaceTexture = null;
 let uniforms = {};
 let facing = 0; // 0=N(0,-1) 1=E 2=S 3=W
-let yaw = 0, yawTarget = 0;
+let yaw = 0, yawTarget = 0, pitch = 0, pitchTarget = 0;
 let camX = 0, camZ = 0, camY = EYE_METERS / CELL;
 let lastT = 0;
 let fogOrigin = [0, 0];
@@ -1616,10 +1640,19 @@ function resize() {
 
 // ── Facing / input hooks (main.js calls these in 3d mode) ────────────────────
 export function r3dTurn(dir) {
-  facing = (facing + dir + 4) % 4;
-  yawTarget += dir * Math.PI / 2;
+  const quarter=Math.PI/2,base=Math.round(yawTarget/quarter)+dir;
+  facing = ((base % 4) + 4) % 4;
+  yawTarget = base * quarter;
   r3dResetVfdMemory();
 }
+export function r3dLook(yawDelta=0,pitchDelta=0) {
+  yawTarget += Math.max(-.16,Math.min(.16,Number(yawDelta)||0));
+  pitchTarget = Math.max(-.62,Math.min(.62,pitchTarget+Math.max(-.12,Math.min(.12,Number(pitchDelta)||0))));
+  facing=((Math.round(yawTarget/(Math.PI/2))%4)+4)%4;
+  r3dResetVfdMemory();
+  return {yaw:yawTarget,pitch:pitchTarget,facing};
+}
+export function r3dLookAngles(){return{yaw:yawTarget,pitch:pitchTarget,facing};}
 export function r3dDelta(sign) {
   const v = [[0, -1], [1, 0], [0, 1], [-1, 0]][facing];
   return [v[0] * sign, v[1] * sign];
@@ -1630,6 +1663,7 @@ export function r3dFacing() { return facing; }
 export function r3dSetFacing(f) {
   facing = ((f % 4) + 4) % 4;
   yaw = yawTarget = facing * Math.PI / 2;
+  pitch = pitchTarget = 0;
   r3dResetVfdMemory();
 }
 
@@ -1857,6 +1891,7 @@ export function r3dFrame(state) {
   camX=nextCamX;
   camZ=nextCamZ;
   yaw += (yawTarget - yaw) * (1 - Math.exp(-dt * 12));
+  pitch += (pitchTarget - pitch) * (1 - Math.exp(-dt * 14));
   // Eye height above whatever floor you are standing on. Eased, so a stair is
   // a climb rather than a series of teleports.
   const floorGoal = ((state.floorH ?? 0) + EYE_METERS) / CELL;
@@ -1874,9 +1909,10 @@ export function r3dFrame(state) {
   if (textSpaceActive) {
     P3.renderPropPass({
       camX: camX * CELL, camY: camY * CELL, camZ: camZ * CELL,
-      yaw, light: 1, fogTexture, fogOrigin, fogSize: FOG_TEX,
+      yaw, pitch, light: 1, fogTexture, fogOrigin, fogSize: FOG_TEX,
       cellMeters: CELL, zoneTints: ZONE_TINTS,
       localLightCount: 0, localLightPositions, localLightColors,
+      localShadowIndex:-1,shadowLight:null,
     });
     drawTextSpace(P3.propTargets().color);
     return;
@@ -1910,9 +1946,10 @@ export function r3dFrame(state) {
 
   P3.renderPropPass({
     camX: camX * CELL, camY: camY * CELL, camZ: camZ * CELL,
-    yaw, light: lightEase, fogTexture, fogOrigin, fogSize:FOG_TEX,
+    yaw, pitch, light: lightEase, fogTexture, fogOrigin, fogSize:FOG_TEX,
     cellMeters:CELL, zoneTints:ZONE_TINTS,
     localLightCount,localLightPositions,localLightColors,
+    localShadowIndex,shadowLight:localShadowLight,
   });
 
   // march into low-res scene buffer
@@ -1924,7 +1961,7 @@ export function r3dFrame(state) {
   gl.uniform1f(U('uTime'), now);
   gl.uniform3f(U('uCam'), camX, camY, camZ);
   gl.uniform1f(U('uYaw'), yaw);
-  gl.uniform1f(U('uPitch'), 0.0); // level: corridors read as corridors
+  gl.uniform1f(U('uPitch'), pitch);
   gl.uniform2f(U('uTile'), state.tileW, state.tileH);
   gl.uniform1f(U('uWorldCount'), state.worldCount);
   gl.uniform3fv(U('uWorldTint[0]'), state.worldTints.flat());
@@ -1938,6 +1975,7 @@ export function r3dFrame(state) {
   gl.uniform1f(U('uAudio'), state.audio);
   gl.uniform1f(U('uLight'), lightEase);
   gl.uniform1i(U('uLocalLightCount'),localLightCount);
+  gl.uniform1i(U('uLocalShadowIndex'),localShadowIndex);
   gl.uniform4fv(U('uLocalLightPos[0]'),localLightPositions);
   gl.uniform4fv(U('uLocalLightColor[0]'),localLightColors);
   gl.uniform1f(U('uUsePlan'), state.plan ? 1 : 0);

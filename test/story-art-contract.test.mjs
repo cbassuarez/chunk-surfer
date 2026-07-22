@@ -56,12 +56,13 @@ test('story art scenes prefer side-by-side layout before vertical fallback', () 
   for (const file of [
     'src/game/coldopen.js',
     'src/game/thoughts.js',
-    'src/game/combat.js',
     'src/game/dialogue.js',
   ]) {
     const src = readFileSync(file, 'utf8');
     assert.match(src, /planStoryArtSideBySide/, file);
   }
+  const combat = readFileSync('src/render/combat-view.js', 'utf8');
+  assert.match(combat, /drawStoryArtCard/, 'combat reuses the shared story-art card primitive');
 });
 
 test('booth paperwork and threshold keep guard art until the yard walk begins', () => {

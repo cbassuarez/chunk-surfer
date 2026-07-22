@@ -3,9 +3,13 @@ import assert from 'node:assert/strict';
 
 import {
   COMBAT_ACTION,
+  COMBAT_TOOL,
+  SNR_STATE,
   SOURCE_CHANNEL,
   TECHNIQUE,
   availableCombatActions,
+  availableCombatTools,
+  combatMovesForTool,
   combatIntentLookahead,
   combatPrediction,
   combatResult,
@@ -53,7 +57,7 @@ test('Tune is a free once-per-movement calibration and strengthens the next perf
   assert.equal(combatIntentLookahead(state).length, 2);
   assert.equal(availableCombatActions(state).find((action) => action.id === COMBAT_ACTION.TUNE).enabled, false);
   state = reduceCombat(state, { type: COMBAT_ACTION.MONITOR });
-  assert.equal(state.movementCoherence, 2);
+  assert.equal(state.movementCoherence, 3);
   assert.equal(state.tuneBonus, 0);
 });
 
@@ -120,20 +124,101 @@ test('Afterimage, Whiteout, Overdub, Punch In, and Feedback Loop resolve exactly
 
   let punch = createCombatState(definition(), { techniques: [TECHNIQUE.PUNCH_IN] });
   punch = reduceCombat(punch, { type: COMBAT_ACTION.MONITOR });
-  assert.equal(punch.movementCoherence, 2);
+  assert.equal(punch.movementCoherence, 3);
   assert.deepEqual(punch.punchInMovements, [0]);
 
   let feedback = createCombatState(definition('hall'), {
     tools: { rig: true }, techniques: [TECHNIQUE.ROOM_TONE, TECHNIQUE.FEEDBACK_LOOP],
   });
   feedback.movementIndex = 1;
-  feedback.movementCoherence = 3;
-  feedback.movementMaxCoherence = 3;
+  feedback.movementCoherence = 2;
+  feedback.movementMaxCoherence = 4;
   feedback.intentIndex = 1;
   feedback = reduceCombat(feedback, { type: COMBAT_ACTION.INVERT });
   assert.equal(feedback.feedbackLoopUsed, true);
   assert.equal(feedback.take.id, 'room-tone');
   assert.equal(feedback.last.transition.to, 2);
+});
+
+test('the locked kit exposes tools first and only then the moves owned by that tool', () => {
+  const state = createCombatState(definition(), {
+    tools: { torch: true, recorder: true, radio: true, coffee: true, order: ['radio', 'torch', 'coffee', 'recorder'] },
+  });
+  assert.deepEqual(availableCombatTools(state).map((tool) => tool.id), [
+    COMBAT_TOOL.SELF, COMBAT_TOOL.RADIO, COMBAT_TOOL.TORCH, COMBAT_TOOL.COFFEE, COMBAT_TOOL.RECORDER,
+  ]);
+  assert.deepEqual(combatMovesForTool(state, COMBAT_TOOL.TORCH).map((move) => move.id), [COMBAT_ACTION.EXPOSE]);
+  assert.deepEqual(combatMovesForTool(state, COMBAT_TOOL.RECORDER).map((move) => move.id), [COMBAT_ACTION.MONITOR, COMBAT_ACTION.PLAYBACK]);
+});
+
+test('tool use drives player SNR and each state changes the visible combat math', () => {
+  let noisy = createCombatState(definition(), {});
+  noisy = reduceCombat(noisy, { type: COMBAT_ACTION.EXPOSE });
+  assert.equal(noisy.snr, SNR_STATE.NOISE);
+  assert.equal(noisy.last.dealt, 3);
+
+  let silent = createCombatState(definition(), {});
+  silent.intentIndex = 2;
+  silent = reduceCombat(silent, { type: COMBAT_ACTION.HOLD });
+  assert.equal(silent.snr, SNR_STATE.SILENCE);
+  assert.equal(silent.last.received, 0);
+
+  let signal = createCombatState(definition(), { tools: { coffee: true } });
+  signal.composure = 5;
+  signal.intentIndex = 2;
+  signal = reduceCombat(signal, { type: COMBAT_ACTION.STEADY_HANDS });
+  assert.equal(signal.snr, SNR_STATE.SIGNAL);
+  assert.equal(signal.last.consumed, COMBAT_TOOL.COFFEE);
+  assert.equal(signal.last.received, 3, 'Signal is strong but brittle on a missed read');
+});
+
+test('radio is a one-use battle move that burns its frequency and can counter a broadcast', () => {
+  let state = createCombatState(definition(), { tools: { radio: true } });
+  state = reduceCombat(state, { type: COMBAT_ACTION.RADIO_DECOY });
+  assert.equal(state.radioUsed, true);
+  assert.equal(state.snr, SNR_STATE.NOISE);
+  assert.equal(state.perfectCounters, 1);
+  assert.equal(state.last.dealt, 2);
+  assert.equal(combatMovesForTool(state, COMBAT_TOOL.RADIO)[0].enabled, false);
+});
+
+test('encounter signatures materially alter pressure while remaining authored data', () => {
+  let echo = createCombatState(definition('natatorium'), {});
+  echo.signaturePressure = 1;
+  echo = reduceCombat(echo, { type: COMBAT_ACTION.EXPOSE });
+  assert.equal(echo.last.received, 3);
+
+  let feedback = createCombatState(definition('hall'), { techniques: [TECHNIQUE.ROOM_TONE] });
+  feedback = reduceCombat(feedback, { type: COMBAT_ACTION.PLAYBACK });
+  assert.match(feedback.last.notice, /HOUSE RETURN/);
+
+  let fatalFeedback = createCombatState(definition('hall'), { techniques: [TECHNIQUE.ROOM_TONE] });
+  fatalFeedback.composure = 1;
+  fatalFeedback = reduceCombat(fatalFeedback, { type: COMBAT_ACTION.PLAYBACK });
+  assert.equal(combatResult(fatalFeedback)?.result, 'lose');
+
+  let ensemble = createCombatState(definition('practice'), {});
+  ensemble.turnsInMovement = 2;
+  ensemble = reduceCombat(ensemble, { type: COMBAT_ACTION.EXPOSE });
+  assert.equal(ensemble.last.received, 3);
+});
+
+test('a clean regular fight lands inside the authored 8–12 decision arc', () => {
+  let state = createCombatState(definition('practice'), { tools: { torch: true, recorder: true } });
+  let decisions = 0;
+  while (!state.result && decisions < 30) {
+    const intent = currentCombatIntent(state);
+    const action = state.tempo
+      ? state.take ? COMBAT_ACTION.PLAYBACK : COMBAT_ACTION.END_TEMPO
+      : intent.kind === 'broadcast' ? COMBAT_ACTION.MONITOR
+        : intent.kind === 'conceal' ? COMBAT_ACTION.EXPOSE
+          : intent.kind === 'overload' ? COMBAT_ACTION.HOLD
+            : COMBAT_ACTION.HOLD;
+    state = reduceCombat(state, { type: action, replaceTake: true });
+    decisions += 1;
+  }
+  assert.equal(combatResult(state)?.result, 'win');
+  assert.ok(decisions >= 8 && decisions <= 12, `clean fight used ${decisions} decisions`);
 });
 
 test('injuries and all four combat assistance modes set transparent authored difficulty without health inflation', () => {

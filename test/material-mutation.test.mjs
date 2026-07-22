@@ -18,6 +18,7 @@ test('visible material mapping follows the renderer surface slots and excludes s
   assert.deepEqual(visibleSurfaceSlots([MATERIAL.woodVelvet]), [3, 7]);
   assert.deepEqual(visibleSurfaceSlots([MATERIAL.wetTile, MATERIAL.poolTile]), [4, 5]);
   assert.deepEqual(visibleSurfaceSlots([MATERIAL.acousticFoam, MATERIAL.practiceFoam]), [6, 9, 8]);
+  assert.deepEqual(visibleSurfaceSlots([MATERIAL.academicPlaster]), [6, 7]);
   assert.deepEqual(visibleSurfaceSlots([MATERIAL.sourceField, MATERIAL.sourceFault]), []);
 });
 
@@ -46,15 +47,15 @@ test('runtime recipe is recursive, visibly strong, three-pass, and changes seed 
   const first = mutationGeneration(profile, 5, 1);
   const second = mutationGeneration(profile, 5, 2);
   assert.equal(first.passes, 3);
-  assert.equal(first.strength, 0.78);
+  assert.equal(first.strength, 0.82);
   assert.equal(first.feedback, 0.42);
-  assert.equal(first.mix, 0.96);
+  assert.equal(first.mix, 0.98);
   assert.match(first.prompt, /pareidolic structure/);
   assert.notEqual(first.seed, second.seed);
 
   const explore = mutationGeneration({ generation: { strength: 0.32, guidance: 1.05, mix: 0.68 } }, 2, 1);
-  assert.equal(explore.strength, 0.5904);
-  assert.equal(explore.guidance, 1.6);
+  assert.equal(explore.strength, 0.6232);
+  assert.equal(explore.guidance, 1.8);
   assert.equal(explore.passes, 3);
 });
 

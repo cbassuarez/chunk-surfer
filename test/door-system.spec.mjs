@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, statSync } from 'node:fs';
 import { conservatory } from '../src/data/floorplan/conservatory.js';
 import { CONSERVATORY_DOORS, DOOR_ARCHETYPES, DOOR_ARCHETYPE } from '../src/data/conservatory-doors.js';
+import { F } from '../src/data/floorplan/legend.js';
 import * as FP from '../src/world/floorplan.js';
 import {
   DOOR_STATE, advanceDoor, beginDoorClose, beginDoorOpen, doorBlocksPassage,
@@ -13,7 +14,7 @@ FP.compile(conservatory.levels,{
   connectors:conservatory.connectors,doors:conservatory.doors,
 });
 const doors=FP.doorState();
-assert.equal(doors.length,25,'the authored schedule includes chamber entry and both physical loft-route leaves');
+assert.equal(doors.length,CONSERVATORY_DOORS.length,'the compiled door set exactly matches the authored schedule');
 assert.equal(new Set(doors.map((door)=>door.id)).size,doors.length,'all door IDs are stable and unique');
 assert.ok(doors.every((door)=>door.archetype!=='legacy'),'every portal has exactly one explicit definition');
 assert.equal(doors.filter((door)=>door.leafCount===2).length,3,'only entrance, hall vestibule and chapel are pairs');
@@ -21,9 +22,16 @@ assert.deepEqual(doors.filter((door)=>door.leafCount===2).map((door)=>door.id).s
 assert.ok(doors.filter((door)=>door.leafCount===1).every((door)=>door.aperture.width>=.9&&door.aperture.width<=1.05),'single apertures do not infer leaves from portal cell count');
 assert.deepEqual(doors.find((door)=>door.id==='chapel-c17').activeLeaves,[1],'C-17 releases only the right leaf');
 for(const id of ['tower-hatch','bell-chamber-entry','organ-loft-service','organ-loft-nave'])assert.equal(doors.find((door)=>door.id===id).archetype,DOOR_ARCHETYPE.TOWER_SERVICE_SINGLE);
+for(const door of doors.filter((entry)=>entry.id.startsWith('academic-')))assert.equal(door.archetype,DOOR_ARCHETYPE.ACADEMIC_WIRED_GLASS);
 assert.equal(FP.sealedDoorways().length,1,'the x glyph is masonry with a surviving frame scar');
 assert.ok(CONSERVATORY_DOORS.every((door)=>DOOR_ARCHETYPES[door.archetype].head),'all leaf-height gaps have an authored transom, panel, tympanum or infill');
 assert.ok(CONSERVATORY_DOORS.every((door)=>DOOR_ARCHETYPES[door.archetype].aperture.height>=3.4));
+for(const door of doors){
+  const xs=door.cells.map((cell)=>cell.x),ys=door.cells.map((cell)=>cell.y);
+  assert.equal(door.cx,(Math.min(...xs)+Math.max(...xs))/2,`${door.id} frame is centred across the complete threshold width`);
+  assert.equal(door.cy,(Math.min(...ys)+Math.max(...ys))/2,`${door.id} frame is centred across the complete threshold depth`);
+  assert.ok(door.cells.every(({x,y})=>FP.cellAt(x,y)&&!FP.isSolid(x,y)&&!(FP.flagsAt(x,y)&F.BRICKED)),`${door.id} owns one fully clear masonry-free throat`);
+}
 
 // Legacy coordinate IDs migrate into stable names without losing endpoint.
 FP.resetDoors();

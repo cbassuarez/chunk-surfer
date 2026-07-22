@@ -2,13 +2,18 @@
 
 export const clamp = (value, lo, hi) => Math.max(lo, Math.min(hi, value));
 
-export function floorForHeight(definition, height) {
+export function floorForHeight(definition, height, { renderGroup = null } = {}) {
   const h = Number(height);
   if (!Number.isFinite(h)) return null;
-  return (definition?.floors || [])
+  const candidates = (definition?.floors || [])
     .slice()
     .sort((a, b) => a.order - b.order)
-    .find((floor) => h >= floor.minHeight && h < floor.maxHeight) || null;
+    .filter((floor) => h >= floor.minHeight && h < floor.maxHeight);
+  if (renderGroup) {
+    const specific = candidates.find((floor) => Array.isArray(floor.renderGroups) && floor.renderGroups.includes(renderGroup));
+    if (specific) return specific;
+  }
+  return candidates.find((floor) => !Array.isArray(floor.renderGroups) || floor.renderGroups.length === 0) || candidates[0] || null;
 }
 
 export function floorById(definition, floorId) {

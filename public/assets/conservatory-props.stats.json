@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-21T22:57:34.634Z",
-  "bytes": 1790012,
-  "totalTriangles": 26538,
+  "generatedAt": "2026-07-22T03:50:18.073Z",
+  "bytes": 2238468,
+  "totalTriangles": 33386,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -115,6 +115,10 @@
       "triangles": 120,
       "vertices": 240
     },
+    "pool_lane_markings": {
+      "triangles": 144,
+      "vertices": 288
+    },
     "plant_pipe_straight": {
       "triangles": 84,
       "vertices": 168
@@ -158,6 +162,54 @@
     "chapel_vault": {
       "triangles": 280,
       "vertices": 560
+    },
+    "academic_atrium_structure": {
+      "triangles": 1920,
+      "vertices": 2412
+    },
+    "academic_skylight": {
+      "triangles": 288,
+      "vertices": 576
+    },
+    "academic_frieze": {
+      "triangles": 480,
+      "vertices": 654
+    },
+    "academic_bust_plinth": {
+      "triangles": 36,
+      "vertices": 72
+    },
+    "academic_bust_fragment": {
+      "triangles": 136,
+      "vertices": 172
+    },
+    "academic_planter": {
+      "triangles": 36,
+      "vertices": 72
+    },
+    "academic_dead_tree": {
+      "triangles": 68,
+      "vertices": 136
+    },
+    "academic_dry_basin": {
+      "triangles": 260,
+      "vertices": 290
+    },
+    "academic_leaf_litter": {
+      "triangles": 216,
+      "vertices": 432
+    },
+    "academic_blackboard": {
+      "triangles": 96,
+      "vertices": 192
+    },
+    "academic_filing_bank": {
+      "triangles": 336,
+      "vertices": 672
+    },
+    "academic_breach": {
+      "triangles": 204,
+      "vertices": 408
     },
     "tower_bell_01": {
       "triangles": 492,
@@ -382,6 +434,42 @@
     "tower_stair_rail_low_down": {
       "triangles": 612,
       "vertices": 984
+    },
+    "upper_stair_dressing": {
+      "triangles": 408,
+      "vertices": 504
+    },
+    "basement_stair_dressing": {
+      "triangles": 408,
+      "vertices": 504
+    },
+    "academic_stair_dressing": {
+      "triangles": 472,
+      "vertices": 580
+    },
+    "stair_smoke_door_open": {
+      "triangles": 144,
+      "vertices": 288
+    },
+    "stair_smoke_door_closed": {
+      "triangles": 208,
+      "vertices": 382
+    },
+    "stair_sconce_pair_opal": {
+      "triangles": 320,
+      "vertices": 440
+    },
+    "stair_bulkhead_pair": {
+      "triangles": 344,
+      "vertices": 572
+    },
+    "stair_pendant_opal": {
+      "triangles": 232,
+      "vertices": 256
+    },
+    "stair_shadow_figure": {
+      "triangles": 92,
+      "vertices": 134
     },
     "chapel_inner_screen": {
       "triangles": 96,

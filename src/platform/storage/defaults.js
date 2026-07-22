@@ -1,5 +1,6 @@
 import { DEFAULT_SETTINGS, freshMeta, normalizeSettings, normalizeMeta } from '../../progression/schema.js';
 import { SAVE_VERSION } from '../../progression/schema.js';
+import { freshCombatLoadout } from '../../game/combat-loadout.js';
 
 export function defaultSettings() {
   return normalizeSettings(DEFAULT_SETTINGS);
@@ -20,6 +21,7 @@ export function defaultSave(settings = defaultSettings()) {
     items: [],
     props: { inspected: [], auditioned: [], cycles: {}, hushSeed: 0x43535552, hushCount: 0 },
     encounters: { cleared: [] },
+    bagLoadout: freshCombatLoadout(),
     doors: { schema: 2, states: {} },
     playSeconds: 0,
     steps: 0,

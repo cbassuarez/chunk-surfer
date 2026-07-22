@@ -81,6 +81,22 @@ function drawRadio(ctx, box) {
   path(ctx, [[.23,.82],[.77,.82]], box);
 }
 
+function drawInterface(ctx, box) {
+  rect(ctx, .10, .18, .80, .66, box);
+  rect(ctx, .20, .28, .34, .18, box);
+  for (const x of [.24,.40,.58,.74]) circle(ctx, x, .64, .035, box, true);
+  path(ctx, [[.24,.64],[.30,.52],[.58,.52],[.74,.64]], box);
+  path(ctx, [[.10,.74],[.00,.88],[.18,.98]], box);
+}
+
+function drawTuningFork(ctx, box) {
+  path(ctx, [[.30,.08],[.30,.46],[.38,.58],[.46,.62],[.46,.92]], box);
+  path(ctx, [[.70,.08],[.70,.46],[.62,.58],[.54,.62],[.54,.92]], box);
+  path(ctx, [[.42,.92],[.58,.92]], box);
+  path(ctx, [[.30,.18],[.18,.10]], box);
+  path(ctx, [[.70,.18],[.82,.10]], box);
+}
+
 function drawKeyring(ctx, box) {
   circle(ctx, .28, .38, .20, box);
   path(ctx, [[.44,.44],[.78,.78],[.88,.68]], box);
@@ -120,6 +136,8 @@ const DRAW = Object.freeze({
   light: drawLight,
   recorder: drawRecorder,
   radio: drawRadio,
+  interface: drawInterface,
+  'tuning-fork': drawTuningFork,
   keyring: drawKeyring,
   coffee: drawCoffee,
   room: drawRoom,

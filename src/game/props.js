@@ -22,7 +22,9 @@ export function propsInit(fp, placements=CONSERVATORY_PROPS){
     const interactionX=Number.isFinite(p.inspectAt?.x)?p.inspectAt.x:p.x;
     const interactionY=Number.isFinite(p.inspectAt?.y)?p.inspectAt.y:p.y;
     const physical=fp.logicalToPhysical?.(rx,ry);
-    return {...mesh,...p,rx,ry,interactionX,interactionY,interactionRx:rt(interactionX),interactionRy:rt(interactionY),floor:fp.floorAt(rx,ry),zone:fp.zoneAt(rx,ry),renderGroup:physical?.renderGroup||'',blocks:p.blocks??mesh.blocks??false};
+    const renderGroup=physical?.renderGroup||'';
+    const renderGroups=Array.isArray(p.renderGroups)&&p.renderGroups.length?[...new Set(p.renderGroups.map(String))]:[renderGroup];
+    return {...mesh,...p,rx,ry,interactionX,interactionY,interactionRx:rt(interactionX),interactionRy:rt(interactionY),floor:fp.floorAt(rx,ry),zone:fp.zoneAt(rx,ry),renderGroup,renderGroups,blocks:p.blocks??mesh.blocks??false};
   }).filter((p)=>!fp.isSolid(p.rx,p.ry));
   colliders=STRUCTURAL_COLLIDERS.map(c=>({...c,rx:rt(c.x),ry:rt(c.y)}));
   return instances;
@@ -36,10 +38,11 @@ export function setLooseProp(id, placement=null){
   const rx=Math.round(placement.rx),ry=Math.round(placement.ry),physical=floorplan.logicalToPhysical?.(rx,ry);
   if(floorplan.isSolid(rx,ry))return null;
   const x=meters(rx+.5),y=meters(ry+.5),interactionX=Number.isFinite(placement.inspectAt?.x)?placement.inspectAt.x:x,interactionY=Number.isFinite(placement.inspectAt?.y)?placement.inspectAt.y:y;
-  const prop={...mesh,...placement,id,rx,ry,x,y,interactionX,interactionY,interactionRx:rt(interactionX),interactionRy:rt(interactionY),floor:floorplan.floorAt(rx,ry),zone:floorplan.zoneAt(rx,ry),renderGroup:physical?.renderGroup||'',blocks:false};
+  const renderGroup=physical?.renderGroup||'',renderGroups=Array.isArray(placement.renderGroups)&&placement.renderGroups.length?[...new Set(placement.renderGroups.map(String))]:[renderGroup];
+  const prop={...mesh,...placement,id,rx,ry,x,y,interactionX,interactionY,interactionRx:rt(interactionX),interactionRy:rt(interactionY),floor:floorplan.floorAt(rx,ry),zone:floorplan.zoneAt(rx,ry),renderGroup,renderGroups,blocks:false};
   instances.push(prop);return prop;
 }
-export function renderInstances({group=null}={}){return instances.filter((p)=>!group||p.renderGroup===group).map((p)=>{const at=floorplan.logicalToPhysical?.(p.rx,p.ry);return{id:p.id,mesh:p.mesh,x:at?at.x*CELL:p.x,y:(p.floor||0)+(p.elevation||0),z:at?at.z*CELL:p.y,yaw:p.yaw||0,scale:p.scale||1,scaleX:p.scaleX,scaleY:p.scaleY,scaleZ:p.scaleZ,zone:p.zone||0,portraitIndex:p.portraitIndex||0,structural:!!p.structural};});}
+export function renderInstances({group=null}={}){return instances.filter((p)=>!group||(p.renderGroups||[p.renderGroup]).includes(group)).map((p)=>{const at=floorplan.logicalToPhysical?.(p.rx,p.ry);return{id:p.id,mesh:p.mesh,x:(at?at.x*CELL:p.x)+(p.renderOffsetX||0),y:(p.floor||0)+(p.elevation||0)+(p.renderOffsetY||0),z:(at?at.z*CELL:p.y)+(p.renderOffsetZ||0),yaw:p.yaw||0,scale:p.scale||1,scaleX:p.scaleX,scaleY:p.scaleY,scaleZ:p.scaleZ,zone:p.zone||0,portraitIndex:p.portraitIndex||0,structural:!!p.structural};});}
 
 function pointInProp(mx,mz,p,pad=.20){
   const dx=mx-p.x,dz=mz-p.y,c=Math.cos(-(p.yaw||0)),s=Math.sin(-(p.yaw||0));

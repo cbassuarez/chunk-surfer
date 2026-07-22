@@ -2,6 +2,7 @@
 // defaults and normalization, but never touches localStorage or game systems.
 
 import { DEFAULT_CONTROLLER_SETTINGS, normalizeControllerSettings } from '../game/bindings.js';
+import { normalizeControlMode } from '../input/input-manager.js';
 import { normalizeBackgroundAudioMode } from '../audio/background-audio.js';
 import {
   DEFAULT_NATATORIUM_WATER_ENVIRONMENT,
@@ -10,10 +11,17 @@ import {
   normalizeNatatoriumWaterEnvironment,
   normalizeNatatoriumWaterLedger,
 } from '../game/natatorium-water.js';
+import {
+  DEFAULT_STAIR_ANOMALY_ENVIRONMENT,
+  decideStairAnomalyEnvironment,
+  freshStairAnomalyLedger,
+  normalizeStairAnomalyEnvironment,
+  normalizeStairAnomalyLedger,
+} from '../game/stair-anomaly.js';
 
 export const SAVE_VERSION = 3;
 export const META_VERSION = 2;
-export const RUN_SCHEMA_VERSION = 1;
+export const RUN_SCHEMA_VERSION = 2;
 export const EVENT_SCHEMA_VERSION = 1;
 export const PROFILE_EXPORT_VERSION = 1;
 
@@ -47,6 +55,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   tutorialPrompts: true,
   objectiveHints: 'full',
   pauseOnBlur: true,
+  controlMode: 'classic',
   mic: 'ask',
   micInput: {
     deviceId: 'default',
@@ -132,6 +141,7 @@ export function freshLedger() {
     choices: { drankCoffee: false, namedSarah: false },
     equipment: { dropped: [], recovered: [] },
     natatoriumWater: { ...DEFAULT_NATATORIUM_WATER_LEDGER },
+    stairAnomaly: freshStairAnomalyLedger(),
   };
 }
 
@@ -147,7 +157,11 @@ export function freshRunRecord({
   const deadAir = preset === 'dead-air';
   const s = { ...DEFAULT_SETTINGS, ...objectOr(settings) };
   const runId = id || makeRunId(now);
-  const environment = decideNatatoriumWaterEnvironment({ meta, runId, now });
+  const waterEnvironment = decideNatatoriumWaterEnvironment({ meta, runId, now });
+  const environment = {
+    ...waterEnvironment,
+    stairAnomaly: Object.freeze(decideStairAnomalyEnvironment({ routeTrunk: waterEnvironment.routeTrunk, runId, now })),
+  };
 
   return {
     schema: RUN_SCHEMA_VERSION,
@@ -229,6 +243,7 @@ export function normalizeSettings(value) {
   return {
     ...DEFAULT_SETTINGS,
     ...source,
+    controlMode: normalizeControlMode(source.controlMode),
     backgroundAudio: normalizeBackgroundAudioMode(source.backgroundAudio),
     personalInterference: {
       enabled: !!personalSource.enabled,
@@ -280,6 +295,7 @@ export function normalizeLedger(value) {
       recovered: uniqueStrings(equipment.recovered),
     },
     natatoriumWater: normalizeNatatoriumWaterLedger(source.natatoriumWater),
+    stairAnomaly: normalizeStairAnomalyLedger(source.stairAnomaly),
   };
 }
 
@@ -299,6 +315,12 @@ export function normalizeRun(value, { meta = null, settings = null, activeFallba
   const startedPreset = typeof rules.startedPreset === 'string' ? rules.startedPreset : 'contract';
   const runId = typeof source.id === 'string' && source.id ? source.id : makeRunId(source.startedAt || Date.now());
   const fallbackEnvironment = DEFAULT_NATATORIUM_WATER_ENVIRONMENT;
+  const waterEnvironment = normalizeNatatoriumWaterEnvironment(source.environment, fallbackEnvironment);
+  const fallbackStairEnvironment = decideStairAnomalyEnvironment({
+    routeTrunk: waterEnvironment.routeTrunk,
+    runId,
+    now: source.startedAt || 0,
+  });
 
   return {
     schema: RUN_SCHEMA_VERSION,
@@ -328,7 +350,13 @@ export function normalizeRun(value, { meta = null, settings = null, activeFallba
       seenTextAssistUsed: !!replay.seenTextAssistUsed,
       condensedCheckInUsed: !!replay.condensedCheckInUsed,
     },
-    environment: normalizeNatatoriumWaterEnvironment(source.environment, fallbackEnvironment),
+    environment: {
+      ...waterEnvironment,
+      stairAnomaly: Object.freeze(normalizeStairAnomalyEnvironment(
+        objectOr(source.environment).stairAnomaly,
+        fallbackStairEnvironment || DEFAULT_STAIR_ANOMALY_ENVIRONMENT,
+      )),
+    },
     ledger: normalizeLedger(source.ledger),
     pendingReturn: source.pendingReturn && typeof source.pendingReturn === 'object' ? source.pendingReturn : null,
     finalizedReturn: source.finalizedReturn && typeof source.finalizedReturn === 'object' ? source.finalizedReturn : null,

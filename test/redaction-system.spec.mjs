@@ -58,18 +58,18 @@ test('Chapel action proof can unlock both return and inversion without route-nam
   let state = createCombatState(battle.combat, { tools: { rig: true, fork: true }, battery: 1 });
   // Proof behavior itself is authored by movement identity and the physical
   // tool action, not a separate dialogue answer.
-  state.movementIndex = 1; state.movementCoherence = 3; state.movementMaxCoherence = 3; state.intentIndex = 0;
+  state.movementIndex = 1; state.movementCoherence = 4; state.movementMaxCoherence = 4; state.intentIndex = 0;
   state = reduceCombat(state, { type: COMBAT_ACTION.MONITOR });
   assert.ok(state.proofs.includes('return.recordist'));
 
-  state.movementIndex = 3; state.movementCoherence = 3; state.movementMaxCoherence = 3; state.intentIndex = 0; state.tempo = false; state.take = null;
+  state.movementIndex = 3; state.movementCoherence = 4; state.movementMaxCoherence = 4; state.intentIndex = 0; state.tempo = false; state.take = null;
   state = reduceCombat(state, { type: COMBAT_ACTION.MONITOR });
   state = reduceCombat(state, { type: COMBAT_ACTION.END_TEMPO });
   assert.equal(currentCombatIntent(state).kind, 'loop');
   state = reduceCombat(state, { type: COMBAT_ACTION.INVERT });
   assert.ok(state.proofs.includes('invert.contract'));
 
-  state.movementIndex = 4; state.movementCoherence = 3; state.movementMaxCoherence = 3; state.intentIndex = 0; state.tempo = false; state.take = null;
+  state.movementIndex = 4; state.movementCoherence = 4; state.movementMaxCoherence = 4; state.intentIndex = 0; state.tempo = false; state.take = null;
   state = reduceCombat(state, { type: COMBAT_ACTION.MONITOR });
   state = reduceCombat(state, { type: COMBAT_ACTION.PLAYBACK });
   assert.ok(state.proofs.includes('return.source'));

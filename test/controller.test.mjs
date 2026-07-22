@@ -89,6 +89,21 @@ test('menu repeat emits stable repeated movement edges', () => {
   }
 });
 
+test('independent mode exposes left-stick and d-pad motion without synthetic turn presses', () => {
+  controller.controllerResetForTest();
+  controller.setControllerNavigatorForTest(nav([
+    pad('Pad', { axes: [0.7, -0.8, -0.6, 0.5], buttons: { 14: true } }),
+  ]));
+  const pressed = [];
+  controller.gamepadTick({ independentMotion: true, onPress: (action) => pressed.push(action) });
+  const axes = controller.controllerMotionAxes();
+  assert.equal(pressed.some((action) => action.startsWith('move_')), false);
+  assert.ok(axes.moveX < 0, 'd-pad left is blended with the left stick');
+  assert.ok(axes.moveY > 0);
+  assert.ok(axes.turnX < 0);
+  assert.ok(axes.lookY < 0);
+});
+
 test('blocking scenes can opt into modal controller actions', () => {
   controller.controllerResetForTest();
   controller.setControllerNavigatorForTest(nav([pad('Pad', { buttons: { 7: true } })]));

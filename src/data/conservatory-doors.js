@@ -10,6 +10,7 @@ export const DOOR_ARCHETYPE = Object.freeze({
   STAFF_HALF_GLAZED: 'staff-half-glazed',
   POOL_FIRE_SINGLE: 'pool-fire-single',
   TOWER_SERVICE_SINGLE: 'tower-service-single',
+  ACADEMIC_WIRED_GLASS: 'academic-wired-glass',
 });
 
 export const DOOR_ARCHETYPES = Object.freeze({
@@ -61,6 +62,12 @@ export const DOOR_ARCHETYPES = Object.freeze({
     construction: 'painted-plank-timber', openSeconds: .8, closeSeconds: .8,
     closer: 'none', acousticLossDb: 10, mesh: 'door_leaf_tower', frameMesh: 'door_frame_tower', headMesh: 'door_head_tower',
   }),
+  [DOOR_ARCHETYPE.ACADEMIC_WIRED_GLASS]: Object.freeze({
+    leafCount: 1, activeLeaves: [0], leaf: { width: .95, height: 2.20, depth: .055 },
+    aperture: { width: 1, height: 3.4 }, head: 'glazed-transom',
+    construction: 'old-oak-wired-glass-mortise', openSeconds: .72, closeSeconds: .86,
+    closer: 'standard', acousticLossDb: 12, mesh: 'door_leaf_staff', frameMesh: 'door_frame_single_oak', headMesh: 'door_head_transom',
+  }),
 });
 
 const D = (id, archetype, legacyId, options = {}) => {
@@ -86,20 +93,28 @@ export const CONSERVATORY_DOORS = Object.freeze([
   D('hall-rear-service', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '197,73', { open: true, hinge: 'left', swing: 'escape', widthAxis:'y' }),
   D('upper-bridge-west', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '154,111', { open: true, hinge: 'right', swing: 'escape', widthAxis:'y' }),
   D('upper-bridge-east', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '201,111', { open: true, hinge: 'left', swing: 'escape', widthAxis:'y' }),
-  D('practice-west-1', DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE, '129,113', { open: true, wedged: true, hinge: 'left', swing: 'room-in', widthAxis:'y' }),
-  D('practice-east-1', DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE, '137,113', { open: true, wedged: true, hinge: 'right', swing: 'room-in', widthAxis:'y' }),
+  D('practice-west-1', DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE, '129,119', { open: true, wedged: true, hinge: 'left', swing: 'room-in', widthAxis:'y' }),
+  D('practice-east-1', DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE, '137,119', { open: true, wedged: true, hinge: 'right', swing: 'room-in', widthAxis:'y' }),
   D('chapel-c17', DOOR_ARCHETYPE.CHAPEL_OAK_PAIR, '186,116', { key: 'chapel', hinge: 'right', swing: 'chapel-in', activeLeaves: [1] }),
-  D('practice-west-2', DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE, '129,127', { open: true, wedged: true, hinge: 'left', swing: 'room-in', widthAxis:'y' }),
-  D('practice-east-2', DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE, '137,127', { open: true, wedged: true, hinge: 'right', swing: 'room-in', widthAxis:'y' }),
+  D('practice-west-2', DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE, '129,133', { open: true, wedged: true, hinge: 'left', swing: 'room-in', widthAxis:'y' }),
+  D('practice-east-2', DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE, '137,133', { open: true, wedged: true, hinge: 'right', swing: 'room-in', widthAxis:'y' }),
   D('practice-side', DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE, '153,137', { open: true, wedged: true, hinge: 'right', swing: 'room-in', widthAxis:'y' }),
-  D('practice-west-3', DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE, '129,141', { open: true, wedged: true, hinge: 'left', swing: 'room-in', widthAxis:'y' }),
-  D('practice-east-3', DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE, '137,141', { open: true, wedged: true, hinge: 'right', swing: 'room-in', widthAxis:'y' }),
-  D('practice-west-4', DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE, '129,155', { open: true, wedged: true, hinge: 'left', swing: 'room-in', widthAxis:'y' }),
-  D('practice-east-4', DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE, '137,155', { open: true, wedged: true, hinge: 'right', swing: 'room-in', widthAxis:'y' }),
+  D('practice-west-3', DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE, '129,147', { open: true, wedged: true, hinge: 'left', swing: 'room-in', widthAxis:'y' }),
+  D('practice-east-3', DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE, '137,147', { open: true, wedged: true, hinge: 'right', swing: 'room-in', widthAxis:'y' }),
+  D('practice-west-4', DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE, '129,161', { open: true, wedged: true, hinge: 'left', swing: 'room-in', widthAxis:'y' }),
+  D('practice-east-4', DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE, '137,161', { open: true, wedged: true, hinge: 'right', swing: 'room-in', widthAxis:'y' }),
   D('tower-hatch', DOOR_ARCHETYPE.TOWER_SERVICE_SINGLE, '27,263', { at:{x:33,y:155},key: 'tower-live', hinge: 'right', swing: 'landing-out', widthAxis:'y' }),
   D('bell-chamber-entry', DOOR_ARCHETYPE.TOWER_SERVICE_SINGLE, null, { at:{x:69,y:158},key:'tower-live',hinge:'left',swing:'vestibule-in',widthAxis:'y' }),
   D('organ-loft-service', DOOR_ARCHETYPE.TOWER_SERVICE_SINGLE, null, { at:{x:69,y:163},key:'tower-cleared',hinge:'right',swing:'landing-out',widthAxis:'y' }),
   D('organ-loft-nave', DOOR_ARCHETYPE.TOWER_SERVICE_SINGLE, null, { at:{x:100,y:157},key:'tower-cleared',hinge:'left',swing:'landing-out',widthAxis:'x' }),
+  ...[
+    ['academic-classroom-west-1',9,244,'right'],['academic-classroom-east-1',13,244,'left'],
+    ['academic-classroom-west-2',9,251,'right'],['academic-classroom-east-2',13,251,'left'],
+    ['academic-classroom-west-3',9,258,'right'],['academic-classroom-east-3',13,258,'left'],
+    ['academic-classroom-west-4',9,264,'right'],['academic-classroom-east-4',13,264,'left'],
+  ].map(([id,x,y,hinge])=>D(id,DOOR_ARCHETYPE.ACADEMIC_WIRED_GLASS,null,{at:{x,y},key:'academic-core',hinge,swing:'classroom-in',widthAxis:'y'})),
+  D('academic-office-locked-1',DOOR_ARCHETYPE.ACADEMIC_WIRED_GLASS,null,{at:{x:3,y:269},key:'academic-core',hinge:'left',swing:'office-in',widthAxis:'x'}),
+  D('academic-office-locked-2',DOOR_ARCHETYPE.ACADEMIC_WIRED_GLASS,null,{at:{x:9,y:269},key:'academic-core',hinge:'right',swing:'office-in',widthAxis:'x'}),
 ]);
 
 export const DOOR_BY_ID = Object.freeze(Object.fromEntries(CONSERVATORY_DOORS.map((door) => [door.id, door])));
