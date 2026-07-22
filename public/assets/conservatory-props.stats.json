@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-15T06:17:35.652Z",
-  "bytes": 1782320,
-  "totalTriangles": 26486,
+  "generatedAt": "2026-07-21T22:57:34.634Z",
+  "bytes": 1790012,
+  "totalTriangles": 26538,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -120,16 +120,16 @@
       "vertices": 168
     },
     "plant_pipe_bank": {
-      "triangles": 156,
-      "vertices": 312
+      "triangles": 264,
+      "vertices": 528
     },
     "plant_pipe_elbow": {
-      "triangles": 92,
-      "vertices": 134
+      "triangles": 104,
+      "vertices": 158
     },
     "plant_pipe_valve": {
-      "triangles": 140,
-      "vertices": 188
+      "triangles": 72,
+      "vertices": 144
     },
     "altar_table": {
       "triangles": 36,

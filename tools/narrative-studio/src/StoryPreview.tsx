@@ -24,8 +24,12 @@ export function StoryPreview({ document, onCue }: { document: NarrativeDocument;
     for (const event of next) if (event.type === 'cue') onCue(event.cueId);
   }, [view, onCue]);
 
-  const advance = () => setView(executor.current?.advance());
-  const choose = (id: string) => setView(executor.current?.choose(id));
+  const run = (action: () => unknown) => {
+    try { setView(action()); setError(''); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : String(reason)); }
+  };
+  const advance = () => run(() => executor.current?.advance());
+  const choose = (id: string) => run(() => executor.current?.choose(id));
   const recent = useMemo(() => (view?.events || []).slice(-8).reverse(), [view]);
 
   return <section className="preview-panel">

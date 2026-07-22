@@ -52,6 +52,7 @@ import * as PROPS from './game/props.js';
 import * as CUES from './audio/cues.js';
 import { authoredCueUrls, dispatchAuthoredCue } from './audio/authored-cues.js';
 import * as STORY from './audio/story-audio.js';
+import { battleMusicInit, createBattleMusicSession, preloadBattleMusic } from './audio/battle-music.js';
 import * as FEAR from './audio/fear.js';
 import { createAudioContextRecovery } from './audio/context-recovery.js';
 import { createBackgroundAudioFocusPolicy } from './audio/background-audio.js';
@@ -61,7 +62,7 @@ import { assetUrl, IS_TAURI } from './platform/paths.js';
 import { installDesktopMenuBridge } from './platform/desktop-menu-bridge.js';
 import { isReservedDesktopShortcut } from './platform/desktop-menu-actions.js';
 import { applyGameModeDom, nextGameModeState } from './platform/game-mode.js';
-import { makePauseScene } from './game/pause.js';
+import { makePauseScene, shouldOpenPauseForEvent } from './game/pause.js';
 import { makeGodMenuScene } from './game/god-menu.js';
 import { drawFearOverlay } from './game/fear-overlay.js';
 import { applyDisplayCssVars, normalizeDisplaySettings, resolveRenderScale } from './platform/display-policy.js';
@@ -80,7 +81,10 @@ import * as OBJ from './game/objectives.js';
 import * as DOC from './game/document.js';
 import * as RADIO from './game/radio.js';
 import * as PB from './game/playback.js';
-import { makeBattleScene } from './game/battle.js';
+import { makeCombatScene } from './game/combat.js';
+import { sourceCombatBattle } from './data/combat-definitions.js';
+import { makeCalibrationScene } from './game/calibration.js';
+import { learnCombatTechnique, normalizeCombatBuild } from './game/combat-progression.js';
 import * as ENCOUNTERS from './game/encounters.js';
 import * as MIC from './game/mic.js';
 import { takeStamp, WORK_ORDER_STAMP } from './game/clock.js';
@@ -117,7 +121,7 @@ import { makeReturnReportScene } from './game/return-report.js';
 import { makeAchievementNoticeScene } from './game/achievement-notice.js';
 import { makeProgressionLabScene } from './game/progression-lab.js';
 import {
-  CHUNK_SURF_HUSH_STAGE,
+  CHUNK_SURF_PHASE,
   canOfferChunkSurf,
   freshChunkSurfState,
   normalizeChunkSurfState,
@@ -187,7 +191,8 @@ import {
 export { fx } from './render/canvas.js';
 
 // Canonical studio-authored trees. Only the final choice builder remains on a
-// compatibility adapter because it derives prose from live redaction readings.
+// compatibility adapter because it derives prose from live combat proof and
+// Source outcome state.
 const COLD_OPEN_DIALOGUE=runtimeTree('conservatory.cold_open_dialogue');
 const POST_DOOR=runtimeTree('conservatory.post_door');
 const LEVEL_CHECK=runtimeTree('conservatory.level_check');
@@ -488,7 +493,7 @@ function setSfxVolume(v){
   setGainNode(menuGain, v);
 }
 
-// MUSIC: title/intro music only.
+// MUSIC: title, intro, authored scene scores, and the battle-score director.
 function setMusicVolume(v){ setGainNode(musicGain, paused ? 0 : v); }
 function setMonitorVolume(v){
   const st=getSave().settings||{};
@@ -561,13 +566,15 @@ function ensureCtx({resume=true}={}){
           music: musicGain,
           menu: menuGain,
         });
+        battleMusicInit(actx, musicGain);
         CUES.cuesInit(actx, sfxDirectGain);
         FEAR.fearAudioInit(actx, sfxGain);
         // The final-output analyser remains in the audible graph. The physical
         // room mic joins its display as RMS only and is never routed to output.
         MONITOR.monitorSetAuxInput(()=>MIC.micActive()?MIC.micLevel():0);
 
-        CUES.preloadAll(authoredCueUrls());
+        CUES.preloadAll(authoredCueUrls({excludeCuePrefixes:['battle.']}));
+        preloadBattleMusic();
         STORY.preloadAll();
         audioRecovery?.bind(actx);
     }catch(err){
@@ -4835,7 +4842,10 @@ let planName='';
 let chunkSurfRuntime=null;
 let sourceExitSnapshot=null;
 let sourcePaperToneAt=0;
+let sourceAlignmentToneAt=0;
 let sourcePresenceWasActive=false;
+let sourceFinalCombatOpen=false;
+let sourceFinalCombatRetryAt=0;
 let bellTowerRuntime=null;
 let bellTowerAudio=null;
 let inertBellTowerInstances=null;
@@ -4955,6 +4965,10 @@ function worldRenderInstances(group=null){
 }
 
 function usingSourceSpace(){ return !!chunkSurfRuntime; }
+function sourceTextSpaceActive(){
+  if(!chunkSurfRuntime)return false;
+  return [CHUNK_SURF_PHASE.TRANSFORMING,CHUNK_SURF_PHASE.LANDSCAPE,CHUNK_SURF_PHASE.FINAL,CHUNK_SURF_PHASE.COMPLETED].includes(chunkSurfRuntime.state().phase);
+}
 function sourceGeometry(){ return usingSourceSpace() ? chunkSurfRuntime.geometry : null; }
 function activeGeometry(){ return sourceGeometry() || (usingPlan() ? FP : null); }
 
@@ -5096,9 +5110,10 @@ function syncSourceRender({ force=false }={}){
   const reducedMotion=(getSave().settings?.shake||'full')!=='full';
   R3.r3dSetProps(chunkSurfRuntime.propInstances(px,py,{time:performance.now()/1000,reducedMotion}));
   R3.r3dSetDynamicProps([]);
-  R3.r3dSetSourceTextInstances(chunkSurfRuntime.textInstances({
+  const scene=sourceTextSpaceActive()?chunkSurfRuntime.sourceScene({
     px,py,presence:PRES.publicSnapshot(),time:performance.now()/1000,reducedMotion,
-  }));
+  }):{key:'source:physical',corpus:[],staticInstances:[],dynamicInstances:[],look:{sunrise:0,chroma:1,paper:0}};
+  R3.r3dSetSourceScene(scene);
   return true;
 }
 
@@ -5118,13 +5133,14 @@ function beginSourceTowerTransition(){
     onExit:()=>{sourceTowerTransition=null;},
   });
   scenes.push(sourceTowerTransition);
-  chunkSurfRuntime=null;PRES.despawn();R3.r3dSetSourceTextInstances([]);
+  chunkSurfRuntime=null;PRES.despawn();R3.r3dSetSourceScene({key:'source:exit',corpus:[],staticInstances:[],dynamicInstances:[],look:{sunrise:0,chroma:1,paper:0}});
   px=CHAPEL_OUTER_CHECKPOINT.x;py=CHAPEL_OUTER_CHECKPOINT.y;R3.r3dSetFacing(CHAPEL_OUTER_CHECKPOINT.facing);renderMove=null;motionRig=null;trail=[];
   saveCommit({px,py,area:'conservatory'});
   return true;
 }
 
 function restoreFromSourceSpace(completion,exitSnapshot){
+  sourceFinalCombatOpen=false;
   const finalState=chunkSurfRuntime?.state?.()||normalizeChunkSurfState(getSave().chunkSurf);
   sourceExitSnapshot=exitSnapshot||chunkSurfRuntime?.exitSnapshot?.()||null;
   flagApply(completion.flags||[]);
@@ -5139,6 +5155,7 @@ function restoreFromSourceSpace(completion,exitSnapshot){
 function activateSourceSpace(state,{position=null}={}){
   const normalized=normalizeChunkSurfState(state);
   sourcePresenceWasActive=PRES.isActive();
+  sourceFinalCombatOpen=false;
   PRES.despawn();
   chunkSurfRuntime=createSourceSpaceRuntime({
     initialState:normalized,
@@ -5155,7 +5172,7 @@ function activateSourceSpace(state,{position=null}={}){
   R3.r3dSetFacing(Number.isFinite(at?.facing)?at.facing:SOURCE_ENTRY.facing);
   chunkSurfRuntime.setPlayerPosition({x:px,y:py,facing:R3.r3dFacing()});
   renderMove=null;motionRig=null;trail=[];
-  applyLensPreset('rupture');
+  applyLensPreset('explore');
   R3.r3dSetSourceSurface(chunkSurfRuntime.sourceSurfaceLines());
   syncSourceRender({force:true});
   return chunkSurfRuntime;
@@ -6362,6 +6379,12 @@ function bagEquipment(){
       statusTone:recorderMissing?'danger':'active',
       location:recorderMissing?'UNKNOWN':'CARRIED',
     },
+    ...(combatBuild().pinsEarned?[{
+      id:'calibration',label:'signal calibration',present:true,
+      value:combatBuild().unspent?`${combatBuild().unspent} PIN${combatBuild().unspent===1?'':'S'} READY`:`${combatBuild().techniques.length} LOCKED`,
+      statusTone:combatBuild().unspent?'metadata':'complete',location:'RECORDER',
+      action:openCombatCalibration,actionLabel:'OPEN',destructive:false,
+    }]:[]),
     {
       id:'map',label:'location indicator',present:!itemLost('map'),
       value:itemLost('map')?'MISSING':'LIVE',statusTone:itemLost('map')?'danger':'active',
@@ -6899,8 +6922,8 @@ function chunkSurfAvailable(){
 }
 
 function tickChunkSurfOffer(){
-  if(usingSourceSpace() || scenes.blocksInput() || REC.isRecording() || REC.isListening()) return false;
-  return chunkSurfAvailable() ? beginChunkSurf() : false;
+  // Availability is visible at the chapel screen; proximity never enters it.
+  return false;
 }
 
 function beginChunkSurf({ forced=false } = {}){
@@ -6917,7 +6940,8 @@ function beginChunkSurf({ forced=false } = {}){
     returnPoint,
   });
   state=reduceChunkSurf(state,{type:'SOURCE_ENTERED',returnPoint});
-  saveCommit({flags:getSave().flags,chunkSurf:state,px:SOURCE_ENTRY.x,py:SOURCE_ENTRY.y,area:'source-space'});
+  OBJ.clearWaypoint();
+  saveCommit({flags:getSave().flags,obj:OBJ.saveObjState(),chunkSurf:state,px:SOURCE_ENTRY.x,py:SOURCE_ENTRY.y,area:'source-space'});
   activateSourceSpace(state,{position:SOURCE_ENTRY});
   return true;
 }
@@ -7038,8 +7062,8 @@ function tickMutation(dt){
 
 function tickSourceSpace(dt){
   if(!usingSourceSpace())return;
+  if(SPEECH.isSpeaking()||scenes.blocksInput())chunkSurfRuntime.protectMoment(.35);
   chunkSurfRuntime.tick(dt,{px,py,facing:R3.r3dFacing()});
-  const state=chunkSurfRuntime.state();
   const paper=chunkSurfRuntime.paperTonePoint();
   const now=performance.now();
   if(paper&&now>=sourcePaperToneAt){
@@ -7052,16 +7076,54 @@ function tickSourceSpace(dt){
       sourcePaperToneAt=now+4200;
     }
   }
-  if([CHUNK_SURF_HUSH_STAGE.HUNT,CHUNK_SURF_HUSH_STAGE.FINAL].includes(state.hushStage)&&!PRES.isActive()){
-    const body=chunkSurfRuntime.checkpointPosition(state.hushStage===CHUNK_SURF_HUSH_STAGE.FINAL?'final-page':'body-room');
+  const objective=chunkSurfRuntime.sourceObjective();
+  if(objective.alignmentPulse&&objective.bearing&&now>=sourceAlignmentToneAt){
+    const pan=objective.bearing.includes('W')?-.55:objective.bearing.includes('E')?.55:0;
+    CUES.playCue(CUES.CUE.recorder,{gain:.055,rate:.5,pan});
+    sourceAlignmentToneAt=now+7000;
+  }
+  const hush=chunkSurfRuntime.hushMode();
+  if(hush.colliding&&!PRES.isActive()){
     PRES.spawnBehind(px,py,0,1);
-    const actor=PRES.presenceState();actor.x=body.x-18;actor.y=body.y+9;
+  }else if(!hush.colliding&&PRES.isActive())PRES.despawn();
+  if(!sourceFinalCombatOpen&&performance.now()>=sourceFinalCombatRetryAt&&!scenes.blocksInput()){
+    const request=chunkSurfRuntime.finalEncounterRequest();
+    if(request?.adapter==='combat-v1'){
+      sourceFinalCombatOpen=true;
+      PRES.despawn();
+      openBattle(sourceCombatBattle(),{
+        source:{rescueEligible:request.rescueEligible},
+        onWin:(metrics={})=>{
+          sourceFinalCombatOpen=false;
+          const resolved=chunkSurfRuntime?.resolveFinalEncounter({
+            outcome:metrics.source?.outcome,
+            channels:metrics.source?.channels||{},
+            turns:metrics.turns,
+            won:true,
+            compatibility:{adapter:'combat-v1',sourceReading:metrics.source?.sourceReading||null},
+          });
+          if(!resolved?.handled)SPEECH.say({who:'you',text:'The return channel did not resolve.'});
+        },
+        onLose:()=>{
+          sourceFinalCombatOpen=false;
+          sourceFinalCombatRetryAt=performance.now()+2500;
+          const failed=chunkSurfRuntime?.failFinalEncounter();
+          const checkpoint=failed?.checkpoint;
+          if(checkpoint){px=checkpoint.x;py=checkpoint.y;R3.r3dSetFacing(checkpoint.facing||0);chunkSurfRuntime.setPlayerPosition({x:px,y:py,facing:R3.r3dFacing()});}
+          renderMove=null;motionRig=null;trail=[];
+          saveCommit({px,py,chunkSurf:chunkSurfRuntime?.state?.(),rec:REC.saveRecState(),area:'source-space'});
+          SPEECH.say({who:'you',text:'Fresh monitor path. Same clause. It does not get to choose for me.'});
+        },
+        onAbort:()=>{sourceFinalCombatOpen=false;sourceFinalCombatRetryAt=performance.now()+1000;},
+      });
+    }
   }
   syncSourceRender();
 }
 
 function onSourcePresenceCatch(){
   if(!usingSourceSpace())return;
+  if(!chunkSurfRuntime.hushMode().colliding){PRES.despawn();return;}
   const checkpoint=chunkSurfRuntime.handleHushContact();
   px=checkpoint.x;py=checkpoint.y;R3.r3dSetFacing(checkpoint.facing||0);
   const actor=PRES.presenceState();actor.x=px-14;actor.y=py+10;actor.hasTarget=false;
@@ -7144,9 +7206,11 @@ function tickRecorder(dt){
   if(st==='complete'){
     const room=currentWorld();
     REC.addTake(room);
+    let sourceBecameReady=false;
     if(REC.recState().takes.filter((id)=>id&&id!=='lux_nova').length===4&&chapelTowerState().phase===CHAPEL_TOWER_PHASE.FORESHADOW){
       const chapelTower=reduceChapelTower(chapelTowerState(),{type:'FOURTH_TAKE_COMPLETED'});
       saveCommit({chapelTower});
+      sourceBecameReady=true;
     }
     if(!PRES.isActive()) once('presence-arrives',()=>{
       PRES.spawnBehind(px,py,-lastStepDx||0,-lastStepDy||1);
@@ -7154,7 +7218,11 @@ function tickRecorder(dt){
     });
     STAB.reportRelief(0.55);          // a clean take is the biggest exhale there is
     OBJ.clearWaypoint();
-    saveCommit({ rec:REC.saveRecState() });
+    if(sourceBecameReady){
+      const screen=FP.toRuntimePoint(CHAPEL_SCREEN_AUTHORED);
+      OBJ.setWaypoint(screen.x,screen.y,'inner chapel screen');
+    }
+    saveCommit({ rec:REC.saveRecState(), obj:OBJ.saveObjState() });
     stopTake();
     // The second clean room is the last time the radio works. Its final cue is
     // queued after the take result lands, then the carrier dies on resolve.
@@ -7394,27 +7462,61 @@ function playFarSound(round){
   STORY.startTapeHiss({ gain: 0.20, fade: 0.6 });                    // is it a recording?
 }
 
-function openBattle(battle, { onWin, onLose, onAbort }={}){
+function openBattle(battle, { onWin, onLose, onAbort, source=null }={}){
   ensureCtx();
-  return scenes.push(makeBattleScene({
+  return scenes.push(makeCombatScene({
     battle,
-    difficulty: currentDifficulty().redaction,
-    capabilities: {
-      fork: flagTest('has.fork') || flagTest(CHUNK_SURF_FLAGS.fork),
-      rig: flagTest('has.interface'),
+    difficulty: currentDifficulty().combat,
+    loadout: {
+      injuries: REC.recState().injuries,
+      battery: REC.batteryLevel(),
+      torchDrainScale: currentDifficulty().torch.drainScale,
+      techniques: normalizeCombatBuild(getSave().combatBuild, getSave().encounters?.cleared).techniques,
+      tools: {
+        torch: !itemLost('torch'),
+        recorder: !itemLost('recorder'),
+        fork: flagTest('has.fork') || flagTest(CHUNK_SURF_FLAGS.fork),
+        rig: flagTest('has.interface'),
+      },
     },
+    resources: {
+      battery: REC.batteryLevel(),
+      spendBattery: (amount)=>REC.addBattery(-Math.max(0,Number(amount)||0)),
+    },
+    source,
+    musicSession:createBattleMusicSession({
+      combatId:battle.combat?.id||battle.id,
+      runId:getSave().run?.id||'',
+      musicProfile:battle.combat?.music||{},
+    }),
     audio: STORY,
     getAudio: ()=>({ ctx:actx, destination:dialogGain || master }),
     fx: { cue:fireCue },
     playSound: playFarSound,
-    onWin: (metrics)=>{ STORY.stopTapeHiss({fade:0.8}); onWin?.(metrics); },
-    onLose:(metrics)=>{ STORY.stopTapeHiss({fade:0.8}); onLose?.(metrics); },
-    onAbort:()=>{ STORY.stopTapeHiss({fade:0.3}); onAbort?.(); },
+    onWin: (metrics)=>{ STORY.stopTapeHiss({fade:0.8}); saveCommit({rec:REC.saveRecState()}); onWin?.(metrics); },
+    onLose:(metrics)=>{ STORY.stopTapeHiss({fade:0.8}); saveCommit({rec:REC.saveRecState()}); onLose?.(metrics); },
+    onAbort:()=>{ STORY.stopTapeHiss({fade:0.3}); saveCommit({rec:REC.saveRecState()}); onAbort?.(); },
   }));
 }
 
 let activeBattleId=null;
 let godBattleOpen=false;
+function combatBuild(){return normalizeCombatBuild(getSave().combatBuild,getSave().encounters?.cleared);}
+function learnCalibration(id){
+  const learned=learnCombatTechnique(combatBuild(),id,{hasRig:flagTest('has.interface')});
+  if(!learned.changed)return false;
+  saveCommit({combatBuild:learned.build});
+  return true;
+}
+function openCombatCalibration(){
+  if(!combatBuild().pinsEarned)return false;
+  scenes.push(makeCalibrationScene({
+    getBuild:combatBuild,
+    hasRig:()=>flagTest('has.interface'),
+    onLearn:learnCalibration,
+  }));
+  return true;
+}
 function openEncounterBattle(id,battle,{onWin,onLose}={}){
   if(activeBattleId||ENCOUNTERS.encounterCleared(id))return false;
   activeBattleId=id;
@@ -7422,16 +7524,22 @@ function openEncounterBattle(id,battle,{onWin,onLose}={}){
   openBattle(battle,{
     onWin:(metrics={})=>{
       emitProgress(EVENT_TYPES.BATTLE_FINISHED, {
-        id, result:'win', attempts:Math.max(1,Number(metrics.attempts)||1), firstPass:Number(metrics.failedSubmissions||0)===0,
+        id, result:'win', attempts:Math.max(1,Number(metrics.attempts)||1), firstPass:Number(metrics.missedCounters??metrics.failedSubmissions??0)===0,
+        turns:Number(metrics.turns)||0,damageTaken:Number(metrics.damageTaken)||0,perfectCounters:Number(metrics.perfectCounters)||0,
+        torchSpent:Number(metrics.torchSpent)||0,toolsUsed:metrics.toolsUsed||{},source:metrics.source||null,
       }, 'main.openEncounterBattle');
+      const unspentBefore=combatBuild().unspent;
       ENCOUNTERS.clearEncounter(id);
-      saveCommit({encounters:ENCOUNTERS.saveEncounterState()});
+      const committed=saveCommit({encounters:ENCOUNTERS.saveEncounterState()});
       activeBattleId=null;
       onWin?.(metrics);
+      if((committed.combatBuild?.unspent||0)>unspentBefore)openCombatCalibration();
     },
     onLose:(metrics={})=>{
       emitProgress(EVENT_TYPES.BATTLE_FINISHED, {
         id, result:'lose', attempts:Math.max(1,Number(metrics.attempts)||1), firstPass:false,
+        turns:Number(metrics.turns)||0,damageTaken:Number(metrics.damageTaken)||0,perfectCounters:Number(metrics.perfectCounters)||0,
+        torchSpent:Number(metrics.torchSpent)||0,toolsUsed:metrics.toolsUsed||{},source:metrics.source||null,
       }, 'main.openEncounterBattle');
       activeBattleId=null;
       onLose?.(metrics);
@@ -7662,8 +7770,8 @@ function finishEnding(id){
 const RECORDING_BATTLES={the_tub:natatoriumBattle,amplifications:hallBattle,soundnoisemusic:practiceBattle};
 function battleForRoom(room,named){return RECORDING_BATTLES[room]?.(named)||null;}
 
-// Take two is a redaction sheet in whichever public room the player chose. It
-// is keyed to recording ordinal, not room or thought history.
+// Take two is a signal-combat encounter in whichever public room the player
+// chose. It is keyed to recording ordinal, not room or thought history.
 function maybeBattle(){
   if(planName!=='conservatory') return;
   if(!REC.isRecording() || scenes.blocksInput()) return;
@@ -8369,7 +8477,7 @@ function godClearSpecialWorlds(){
   stopBellTowerRuntime();
   bellTowerImpactActive=false;
   bellTowerCollisionEnabled=true;
-  R3.r3dSetSourceTextInstances([]);
+  R3.r3dSetSourceScene({key:'source:god-clear',corpus:[],staticInstances:[],dynamicInstances:[],look:{sunrise:0,chroma:1,paper:0}});
   R3.r3dSetSourceSurface([]);
 }
 
@@ -8397,7 +8505,7 @@ function godSyncBuildingRender(){
   R3.r3dSetPlan(plan.rgba,plan.w,plan.h,plan.material);
   r3dCache.physicalGroup=plan.group;r3dCache.physicalKey=plan.key;r3dCache.fogSize=-1;
   R3.r3dSetProps(worldRenderInstances(plan.group));
-  R3.r3dSetSourceTextInstances([]);
+  R3.r3dSetSourceScene({key:'source:building',corpus:[],staticInstances:[],dynamicInstances:[],look:{sunrise:0,chroma:1,paper:0}});
   revealAround(px,py);
   return true;
 }
@@ -8643,8 +8751,9 @@ function godTabs(){
       {id:'source-haystack',label:'HAYSTACK / SEARCH',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.HAYSTACK)},
       section('Open Text Landscape'),
       {id:'source-landscape',label:'LANDSCAPE / ENTRY',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.LANDSCAPE)},
-      {id:'source-hunt',label:'LANDSCAPE / HUSH HUNT',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.HUNT)},
-      {id:'source-final',label:'FINAL REDACTION',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.FINAL)},
+      {id:'source-hunt',label:'RECORDIST / BODY RUN',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.HUNT)},
+      {id:'source-final-run',label:'BODY / FINAL RUN',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.FINAL_RUN)},
+      {id:'source-final',label:'FINAL SIGNAL COMBAT',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.FINAL)},
     ]},
     {id:'bell-tower',name:'TOWER',rows:[
       section('Quiet access'),
@@ -9167,9 +9276,36 @@ async function handleReservedDesktopShortcut(e){
 // The glyph layer is the only surface the diffusion lens cannot repaint, so
 // everything the player must be able to trust lives here. M3 adds the compass
 // and the facility navigator alongside.
+function drawSourceHud(cols,rows){
+  const state=chunkSurfRuntime.state();
+  const objective=chunkSurfRuntime.sourceObjective();
+  const focus=chunkSurfRuntime.focusAt(px,py,R3.r3dFacing());
+  uiText(2,1,'SOURCE / PRIMARY TRACE','ui-label');
+  uiText(2,2,objective.label.slice(0,Math.max(1,cols-4)),objective.alignmentPulse?'ui-amber':'ui-blue');
+  if(state.hasFork)uiText(2,4,`OPTIONAL TRACES  ${objective.optionalProgress.resolved} / ${objective.optionalProgress.total}`,'ui-secondary');
+  if(objective.bearing){
+    const range=objective.distance>80?'DISTANT':objective.distance>30?'AHEAD':'NEAR';
+    uiText(Math.max(2,cols-24),1,`SIGNAL  ${objective.bearing} / ${range}`,objective.alignmentPulse?'ui-amber':'ui-secondary');
+  }
+  const hush=chunkSurfRuntime.hushMode();
+  if(hush.colliding)uiText(Math.max(2,cols-16),3,'HUSH / MOVE','ui-danger');
+  else if(hush.protected&&state.pursuitBeat)uiText(Math.max(2,cols-20),3,'HUSH / SUSPENDED','ui-secondary');
+  if(focus){
+    const label=focus.kind==='haystack-page'?'ENTER THE STILL PAGE'
+      :focus.kind==='redaction'?'RESOLVE SOURCE CLAUSE'
+        :focus.available===false?'SOURCE UNAVAILABLE':`INSPECT ${(chunkSurfRoom(focus.id)?.title||focus.id).toUpperCase()}`;
+    const prompt=focus.kind==='landmark'&&focus.available!==false
+      ?BINDINGS.promptLine([{action:'interact',label},{action:'light',label:'TUNE'},{action:'recorder',label:'RECORD'}])
+      :`${BINDINGS.inputPrompt('interact')} ${label}`;
+    uiText(Math.max(2,Math.floor((cols-prompt.length)/2)),rows-2,prompt.slice(0,Math.max(1,cols-4)),focus.available===false?'ui-secondary':'ui-amber');
+  }
+  SPEECH.drawSpeech();
+}
+
 function drawStoryHud(){
   if(!storyMode || scenes.blocksWorld()) return;
   const { cols, rows }=uiSize();
+  if(usingSourceSpace()){drawSourceHud(cols,rows);return;}
 
   // ROLLING. The take takes over the screen: the dark room you are locked in,
   // and one instruction. Nothing else, because there is nothing else you may
@@ -9240,7 +9376,10 @@ function drawStoryHud(){
 const teach=tutorialPromptsEnabled() ? TUT.tutorialPrompt() : null;
   // Paper at your feet outranks everything the corner has to say. It is the only
   // thing in the building anyone has left behind on purpose.
-  if(sourceFocus){
+  if(chunkSurfAvailable()){
+    const prompt=`${BINDINGS.inputPrompt('interact')} ENTER SOURCE`;
+    uiText(Math.max(2,Math.floor((cols-prompt.length)/2)),rows-2,prompt,'ui-amber');
+  } else if(sourceFocus){
     const label=sourceFocus.kind==='haystack-page'?'INSPECT STILL PAGE'
       :sourceFocus.kind==='redaction'?'REDACT SOURCE CLAUSE'
         :sourceFocus.available===false?'SOURCE UNAVAILABLE':`INSPECT ${(chunkSurfRoom(sourceFocus.id)?.title||sourceFocus.id).toUpperCase()}`;
@@ -9443,6 +9582,8 @@ function installProbe(){
       exitSnapshot:sourceExitSnapshot,
     }),
     chunkSurfStart:()=>beginChunkSurf({forced:true}),
+    sourcePreset:(preset=CHUNK_SURF_GOD_PRESET.HALL_ENTRY)=>{ godEnterSourcePreset(preset); return window.__probe.chunkSurf(); },
+    testRun:()=>{ godEnsureTestRun(); return true; },
     godWarpDock:()=>godWarpToZone(ZONE.dock),
     lookProfile:()=>activeLookProfile,
     chapelTower:()=>({
@@ -9472,6 +9613,8 @@ function installProbe(){
     materialAt:(x,y)=>usingSourceSpace()?chunkSurfRuntime.geometry.materialAt(x,y):FP.materialAt(x,y),
     canStep:(ax,ay,bx,by)=>usingSourceSpace()?chunkSurfRuntime.geometry.canStep(ax,ay,bx,by):FP.canStep(ax,ay,bx,by,{keys:playerKeys}),
     props:()=>({pack:R3.r3dPropStats(),instances:PROPS.allProps().map((p)=>({id:p.id,mesh:p.mesh,x:p.x,y:p.y,zone:p.zone,blocks:p.blocks})),learned:PROPS.learnedPlayable().map((p)=>p.id)}),
+    performance:()=>perfMeter.snapshot(),
+    performanceReset:()=>{perfMeter.reset();return true;},
     surfaceDream:()=>R3.r3dSurfaceDreamStats(),
     surfaces:()=>R3.r3dSurfaceStats(),
     pickProp:()=>PROPS.pickProp(px,py,R3.r3dFacing(),2),
@@ -9572,7 +9715,13 @@ function installProbe(){
     // Drive a battle without recording two takes to get to it.
     battle:(named)=>{ ensureCtx(); openBattle(natatoriumBattle(!!named),
       { onWin:()=>{}, onLose:()=>{} }); return true; },
-    battleId:(id, named)=>{ const F={natatorium:natatoriumBattle, practice:practiceBattle}[id||'natatorium'];
+    battleId:(id, named)=>{ const F={
+      natatorium:natatoriumBattle,
+      practice:practiceBattle,
+      hall:hallBattle,
+      source:()=>sourceCombatBattle(),
+      chapel:()=>chapelBoss({kind:'nothing'}),
+    }[id||'natatorium'];
       if(!F) return false; ensureCtx(); openBattle(F(!!named), { onWin:()=>{}, onLose:()=>{} }); return true; },
     battleAbort:()=>godAbortBattle(),
     playbackDialog:(room)=>{ maybePlaybackDialog(room); return scenes.top()?.id||null; },
@@ -9899,6 +10048,7 @@ function render3d(){
     audio:waterAudio,
     light: storyMode ? (REC.lightOn()?hushLightScale:0) : true,
     plan: usingPlan(),
+    textSpace: sourceTextSpaceActive(),
     floorH: worldView?.floorH??(usingSourceSpace()?chunkSurfRuntime.geometry.floorAt(viewX,viewY):usingPlan()?FP.floorAt(viewX,viewY):floorHere()),
     moveIntervalMs:currentMoveIntervalMs(),
     water:usingSourceSpace()?{active:false}:currentNatatoriumWaterRenderState({audio:waterAudio}),
@@ -10116,7 +10266,7 @@ function onKey(e){
   // cutscenes. It must be offered before a blocking scene swallows Escape.
   // Settings/God overlays own their own back behavior above an existing pause.
   const topSceneId=scenes.top()?.id;
-  if(storyMode && e.key==='Escape' && !['pause','settings','god-menu'].includes(topSceneId)){
+  if(shouldOpenPauseForEvent({storyMode,key:e.key,code:e.code,topSceneId})){
     e.preventDefault();
     openPauseMenu();
     return;
@@ -10159,6 +10309,8 @@ function onKey(e){
           syncSourceRender();
           return;
         }
+        SPEECH.say({who:'you',text:'The fork finds no stable source at this address.'});
+        return;
       }
       if(itemLost('torch')){ SPEECH.say({ who:'you', text:'No torch. It has the torch.' }); return; }
       if(!REC.lightOn() && REC.batteryLevel()<=0){ SPEECH.say({ who:'you', text:'Flat. It is flat, and I have nothing to put in it.' }); return; }

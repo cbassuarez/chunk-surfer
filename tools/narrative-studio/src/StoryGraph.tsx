@@ -1,14 +1,19 @@
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import {
   Background, Connection, Controls, Edge, Handle, MarkerType, MiniMap, Node, NodeProps,
-  Position, ReactFlow, ReactFlowProvider, useNodesState,
+  Position, ReactFlow, ReactFlowProvider, useNodesState, useUpdateNodeInternals,
 } from '@xyflow/react';
-import type { NarrativeDocument, StoryLayout, StoryNode } from './types';
+import type { NarrativeDocument, StoryLayout, StoryNode, StoryTransaction } from './types';
 
 type GraphNodeData = { story: StoryNode; label: string; entry: boolean; highlighted: boolean; searchHit: boolean };
 
 const StoryNodeCard = memo(({ data }: NodeProps<Node<GraphNodeData>>) => {
   const story = data.story;
+  const updateNodeInternals = useUpdateNodeInternals();
+  const handleSignature = `${story.goto || ''}|${(story.choices || []).map((choice) => choice.id).join('|')}`;
+  useLayoutEffect(() => {
+    updateNodeInternals(data.label);
+  }, [data.label, handleSignature, updateNodeInternals]);
   return <div className={`story-node story-node--${story.type} ${data.highlighted ? 'is-path' : ''} ${data.searchHit ? 'is-search' : ''}`}>
     <Handle type="target" position={Position.Left} />
     <div className="story-node__eyebrow">{data.entry ? 'ENTRY · ' : ''}{story.type}</div>
@@ -70,15 +75,15 @@ function regionNodes(document: NarrativeDocument, positions: StoryLayout['positi
     const maxY = Math.max(...points.map((p) => p.y), minY + 300) + 230;
     return {
       id: `region:${region.id}`, type: 'region', position: { x: minX, y: minY }, draggable: false, selectable: false,
-      data: { label: region.title, kind: region.kind, color: region.color || '#245c62' },
+      data: { label: region.title, kind: region.kind, color: region.color || '#F2A81E' },
       style: { width: Math.max(440, maxX - minX), height: Math.max(260, maxY - minY), zIndex: -2 },
     };
   });
 }
 
-function StoryGraphInner({ document, layout, selectedId, search, onSelect, onDocument, onLayout }: {
+function StoryGraphInner({ document, layout, selectedId, search, onSelect, onEdit, onTransaction }: {
   document: NarrativeDocument; layout: StoryLayout; selectedId: string | null; search: string;
-  onSelect: (id: string | null) => void; onDocument: (doc: NarrativeDocument) => void; onLayout: (layout: StoryLayout) => void;
+  onSelect: (id: string | null) => void; onEdit: (id: string) => void; onTransaction: (transaction: StoryTransaction) => void;
 }) {
   const [traceEnding, setTraceEnding] = useState<string | null>(null);
   const path = useMemo(() => pathTo(document, traceEnding), [document, traceEnding]);
@@ -103,20 +108,20 @@ function StoryGraphInner({ document, layout, selectedId, search, onSelect, onDoc
       const choice = source.choices?.find((item) => item.id === id);
       if (choice) { choice.goto = connection.target; delete choice.exit; }
     } else { source.goto = connection.target; delete source.exit; }
-    onDocument(next);
-  }, [document, onDocument]);
+    onTransaction({ document: next, layout, selectedId: connection.source });
+  }, [document, layout, onTransaction]);
 
   const persistPositions = useCallback((_event: unknown, node: Node) => {
     if (node.id.startsWith('region:')) return;
-    onLayout({ ...layout, positions: { ...layout.positions, [node.id]: node.position } });
-  }, [layout, onLayout]);
+    onTransaction({ document, layout: { ...layout, positions: { ...layout.positions, [node.id]: node.position } }, selectedId: node.id });
+  }, [document, layout, onTransaction]);
 
   const autoLayout = useCallback(async () => {
     const adjacency = new Map<string, string[]>();
     for (const edge of edges) adjacency.set(edge.source, [...(adjacency.get(edge.source) || []), edge.target]);
     const entries = [...new Set([document.entry, ...(document.entries || [])].filter(Boolean))];
     const levels = new Map<string, number>();
-    const pending = entries.map((id) => [id, 0] as const);
+    const pending: Array<[string, number]> = entries.map((id) => [id, 0]);
     while (pending.length) {
       const [id, level] = pending.shift()!;
       if (levels.has(id) && levels.get(id)! <= level) continue;
@@ -128,8 +133,8 @@ function StoryGraphInner({ document, layout, selectedId, search, onSelect, onDoc
     for (const [id, level] of levels) buckets.set(level, [...(buckets.get(level) || []), id]);
     const positions = { ...layout.positions };
     for (const [level, ids] of buckets) ids.sort().forEach((id, index) => { positions[id] = { x: 80 + level * 430, y: 90 + index * 250 }; });
-    onLayout({ ...layout, positions });
-  }, [document.nodes, edges, layout, onLayout]);
+    onTransaction({ document, layout: { ...layout, positions }, selectedId });
+  }, [document, edges, layout, onTransaction, selectedId]);
 
   const addNode = () => {
     const next = structuredClone(document);
@@ -137,8 +142,7 @@ function StoryGraphInner({ document, layout, selectedId, search, onSelect, onDoc
     let id = `node-${n}`; while (next.nodes[id]) id = `node-${++n}`;
     next.nodes[id] = { id, type: 'dialogue', speaker: '', lines: [{ id: `${id}.line.1`, who: 'direction', text: 'New line.' }] };
     next.regions[0]?.nodeIds.push(id);
-    onLayout({ ...layout, positions: { ...layout.positions, [id]: { x: 120, y: 120 } } });
-    onDocument(next); onSelect(id);
+    onTransaction({ document: next, layout: { ...layout, positions: { ...layout.positions, [id]: { x: 120, y: 120 } } }, selectedId: id });
   };
 
   const removeNode = () => {
@@ -149,7 +153,8 @@ function StoryGraphInner({ document, layout, selectedId, search, onSelect, onDoc
       for (const choice of node.choices || []) if (choice.goto === selectedId) delete choice.goto;
     }
     for (const region of next.regions) region.nodeIds = region.nodeIds.filter((id) => id !== selectedId);
-    onDocument(next); onSelect(null);
+    const positions = { ...layout.positions }; delete positions[selectedId];
+    onTransaction({ document: next, layout: { ...layout, positions }, selectedId: document.entry });
   };
 
   const endings = Object.values(document.nodes).filter((node) => node.type === 'ending');
@@ -162,10 +167,11 @@ function StoryGraphInner({ document, layout, selectedId, search, onSelect, onDoc
     <ReactFlow
       nodes={nodes} edges={edges} nodeTypes={nodeTypes} onNodesChange={onNodesChange} onNodeDragStop={persistPositions}
       onConnect={connect} onNodeClick={(_event: React.MouseEvent, node: Node) => !node.id.startsWith('region:') && onSelect(node.id)}
+      onNodeDoubleClick={(_event: React.MouseEvent, node: Node) => !node.id.startsWith('region:') && onEdit(node.id)}
       onPaneClick={() => onSelect(null)} fitView minZoom={.15} maxZoom={1.7} nodesDraggable snapToGrid snapGrid={[12, 12]}
       defaultEdgeOptions={{ type: 'smoothstep' }} colorMode="dark"
     >
-      <Background gap={24} size={1} /><Controls /><MiniMap pannable zoomable nodeColor={(node) => node.id.startsWith('region:') ? '#17383d' : (node.data as any)?.story?.type === 'ending' ? '#b96443' : '#43a7ac'} />
+      <Background color="var(--cs-vfd-silkscreen)" gap={24} size={1} /><Controls /><MiniMap pannable zoomable nodeColor={(node) => node.id.startsWith('region:') ? 'var(--cs-glass-soft)' : (node.data as any)?.story?.type === 'ending' ? 'var(--cs-vfd-marker)' : 'var(--cs-vfd-phosphor)'} />
     </ReactFlow>
   </div>;
 }

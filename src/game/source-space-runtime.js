@@ -4,6 +4,10 @@ import { encodeH } from '../world/floorplan.js';
 import {
   CHUNK_SURF_HUSH_STAGE,
   CHUNK_SURF_PHASE,
+  SOURCE_FINAL_OUTCOME,
+  SOURCE_FINAL_STATUS,
+  SOURCE_OPTIONAL_TRACES,
+  SOURCE_PURSUIT_BEAT,
   chunkSurfCompletion,
   chunkSurfProbe,
   normalizeChunkSurfState,
@@ -20,16 +24,16 @@ export const SOURCE_ENTRY = Object.freeze({ x: 0, y: 0, facing: 0 });
 const HALL_HALF_WIDTH = 6; // runtime cells = three metres from centre to wall
 const HALL_CEIL = 4.5;
 const HAYSTACK_METRES = 112;
-const LANDSCAPE_W = 144; // 72 metres
-const LANDSCAPE_H = 128; // 64 metres
+const LANDSCAPE_W = 360; // 180 metres
+const LANDSCAPE_H = 340; // 170 metres
 
 const LANDMARK_OFFSETS = Object.freeze({
-  'fork-room': { x: 0, y: -20, sector: 'fork' },
-  'surfer-origin': { x: -44, y: -48, sector: 'student' },
-  'work-order-loop': { x: 44, y: -48, sector: 'workOrder' },
-  'recordist-loop': { x: 0, y: -58, sector: 'recordist' },
-  'body-room': { x: 0, y: -92, sector: 'body' },
-  'final-page': { x: 40, y: -106, sector: 'final' },
+  'fork-room': { x: 0, y: -42, sector: 'fork' },
+  'surfer-origin': { x: -92, y: -104, sector: 'student' },
+  'work-order-loop': { x: 92, y: -104, sector: 'workOrder' },
+  'recordist-loop': { x: 0, y: -142, sector: 'recordist' },
+  'body-room': { x: 0, y: -232, sector: 'body' },
+  'final-page': { x: 80, y: -312, sector: 'final' },
 });
 
 const REDACTIONS = Object.freeze([
@@ -37,9 +41,17 @@ const REDACTIONS = Object.freeze([
   { id: 'body', sourceAnchor: 'borrowed-body-return', dx: 0 },
   { id: 'source', sourceAnchor: 'source-you', dx: 10 },
 ]);
+const ROUTE_SEGMENTS = Object.freeze([
+  { id: 'critical-spine', kind: 'critical', halfWidth: 6, points: [{ x: 0, y: 4 }, { x: 0, y: -42 }, { x: 0, y: -142 }, { x: 0, y: -232 }] },
+  { id: 'surfer-loop', kind: 'optional', halfWidth: 4.5, points: [{ x: 0, y: -42 }, { x: -44, y: -70 }, { x: -92, y: -104 }, { x: -54, y: -132 }, { x: 0, y: -142 }] },
+  { id: 'work-order-loop', kind: 'optional', halfWidth: 4.5, points: [{ x: 0, y: -42 }, { x: 44, y: -70 }, { x: 92, y: -104 }, { x: 54, y: -132 }, { x: 0, y: -142 }] },
+  { id: 'final-causeway', kind: 'critical', halfWidth: 6, points: [{ x: 0, y: -232 }, { x: 24, y: -260 }, { x: 48, y: -282 }, { x: 80, y: -312 }] },
+]);
+const LANDMARK_PAD_RADIUS = 10;
 const SOURCE_LAYER_BY_SECTOR=Object.freeze({hall:1,fork:2,recordist:3,student:4,workOrder:5,body:6,final:7,hush:8});
 
-const checkpointForLandmark = (id) => id === 'final-page' ? 'body-room' : id;
+const checkpointForLandmark = (id) => ['fork-room', 'recordist-loop', 'body-room'].includes(id)
+  ? id : id === 'final-page' ? 'body-room' : null;
 const clamp = (value, lo, hi) => Math.max(lo, Math.min(hi, Number(value) || 0));
 const clamp01 = (value) => clamp(value, 0, 1);
 const hash32 = (value) => {
@@ -52,10 +64,10 @@ const rand = (seed, index, salt = 0) => hash32((seed | 0) ^ Math.imul(index + 1,
 
 function pageCount(distance) {
   const d = Math.max(0, distance);
-  if (d < 28) return 1;
-  if (d < 56) return 1 + Math.floor((d - 28) / 28 * 15);
-  if (d < 84) return 16 + Math.floor((d - 56) / 28 * 80);
-  if (d < 112) return 96 + Math.floor((d - 84) / 28 * 264);
+  if (d < 28) return 180 + Math.floor(d / 28 * 60);
+  if (d < 56) return 240 + Math.floor((d - 28) / 28 * 80);
+  if (d < 84) return 320 + Math.floor((d - 56) / 28 * 110);
+  if (d < 112) return 430 + Math.floor((d - 84) / 28 * 170);
   return 600;
 }
 
@@ -63,9 +75,28 @@ function sourceLines(sectorId) {
   return SOURCE_ATLAS.sectors?.[sectorId]?.sourceLines || SOURCE_ATLAS.sectors?.hall?.sourceLines || [];
 }
 
+function readableSourceLines(sectorId) {
+  const readable = sourceLines(sectorId).filter((entry) => entry.text.trim().length >= 16 && /[A-Za-z_$]/.test(entry.text));
+  return readable.length ? readable : sourceLines(sectorId);
+}
+
 function exactLine(sectorId, index = 0) {
-  const lines = sourceLines(sectorId);
+  const lines = readableSourceLines(sectorId);
   return lines.length ? lines[((index % lines.length) + lines.length) % lines.length] : null;
+}
+
+function redactedSourceText(entry) {
+  if (!entry?.text) return '[SOURCE OMITTED]';
+  const candidates = (entry.tokens || []).filter((token) => token.kind === 'string' || token.kind === 'number' || (token.kind === 'identifier' && token.text.length >= 9));
+  const selected = candidates.length ? candidates.filter((_, index) => index % 2 === 0) : [];
+  if (!selected.length) return entry.text;
+  const chars = [...entry.text];
+  for (const token of selected) {
+    for (let index = token.start; index < token.end; index += 1) {
+      if (!/\s/.test(chars[index] || '')) chars[index] = '█';
+    }
+  }
+  return chars.join('');
 }
 
 function sourceLineByAnchor(anchor) {
@@ -77,7 +108,7 @@ function sourceLineByAnchor(anchor) {
 
 export function validateSourceAtlas(atlas = SOURCE_ATLAS) {
   const errors = [];
-  if (atlas?.schemaVersion !== 2) errors.push('schemaVersion must equal 2');
+  if (atlas?.schemaVersion !== 3) errors.push('schemaVersion must equal 3');
   if (!atlas?.exactSource) errors.push('exactSource must be true');
   for (const [sectorId, sector] of Object.entries(atlas?.sectors || {})) {
     if ((sector.sourceLines || []).length < 8) errors.push(`${sectorId} has too few source lines`);
@@ -85,6 +116,13 @@ export function validateSourceAtlas(atlas = SOURCE_ATLAS) {
       if (!line.file || !Number.isFinite(line.line) || !line.text || !Number.isFinite(line.hash)) errors.push(`${sectorId} contains invalid provenance`);
       if (/https?:\/\//i.test(line.text) || /\/Users\//.test(line.text)) errors.push(`${sectorId} contains unsafe source`);
     }
+  }
+  for (const reference of atlas?.references || []) {
+    const entry = atlas?.entries?.[reference.entryId];
+    if (!entry || entry.file !== reference.file || entry.line !== reference.line || entry.hash !== reference.hash) {
+      errors.push(`${reference.id || 'reference'} has invalid provenance`);
+    }
+    if (!atlas?.symbols?.[reference.from] || !atlas?.symbols?.[reference.to]) errors.push(`${reference.id || 'reference'} has unknown symbols`);
   }
   return { ok: errors.length === 0, errors };
 }
@@ -110,12 +148,12 @@ export function sourceMatrix({ x = 0, y = 0, z = 0, scaleX = 1, scaleY = 1, scal
 
 function treeOffsets(seed = 4417) {
   const out = [];
-  for (let i = 0; i < 34; i += 1) {
+  for (let i = 0; i < 132; i += 1) {
     const side = i % 2 ? 1 : -1;
-    const x = side * (20 + rand(seed, i, 11) * 44);
-    const y = -18 - rand(seed, i, 29) * 88;
-    if (Math.hypot(x, y + 58) < 15 || Math.hypot(x - 40, y + 106) < 15) continue;
-    out.push({ x, y, radius: 2 + rand(seed, i, 47) * 2.5 });
+    const x = side * (18 + rand(seed, i, 11) * 150);
+    const y = -18 - rand(seed, i, 29) * 306;
+    if (Math.hypot(x, y + 142) < 18 || Math.hypot(x - 80, y + 312) < 20) continue;
+    out.push({ x, y, radius: 2.2 + rand(seed, i, 47) * 4.8 });
   }
   return out;
 }
@@ -127,18 +165,52 @@ function distanceToSegment(point, a, b) {
   return Math.hypot(point.x - (a.x + vx * t), point.y - (a.y + vy * t));
 }
 
-const PATHS = Object.freeze([
-  [{ x: 0, y: 0 }, { x: 0, y: -58 }, { x: 0, y: -92 }],
-  [{ x: 0, y: -20 }, { x: -44, y: -48 }],
-  [{ x: 0, y: -20 }, { x: 44, y: -48 }],
-  [{ x: 0, y: -92 }, { x: 40, y: -106 }],
-]);
+function routeDistance(point, route) {
+  let distance = Infinity;
+  for (let index = 0; index < route.points.length - 1; index += 1) {
+    distance = Math.min(distance, distanceToSegment(point, route.points[index], route.points[index + 1]));
+  }
+  return distance;
+}
+
+function routeAt(point) {
+  return ROUTE_SEGMENTS.find((route) => routeDistance(point, route) <= route.halfWidth) || null;
+}
+
+function onLandmarkPad(point) {
+  return Object.values(LANDMARK_OFFSETS).some((landmark) => Math.hypot(point.x - landmark.x, point.y - landmark.y) <= LANDMARK_PAD_RADIUS);
+}
+
+const smoothstep = (lo, hi, value) => {
+  const t = clamp01((value - lo) / Math.max(0.0001, hi - lo));
+  return t * t * (3 - 2 * t);
+};
+
+export const SOURCE_OBJECTIVE_CONTRACT_VERSION = 1;
+
+function compassBearing(from, target) {
+  if (!from || !target) return null;
+  const angle = Math.atan2(target.x - from.x, -(target.y - from.y));
+  const index = Math.round(angle / (Math.PI / 4) + 8) % 8;
+  return ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][index];
+}
+
+// One continuous height field makes the open Source map traversable without a
+// jump verb. The broad climbs, descents and final switchback are authored as
+// ramps, and the text planes sample the same function as collision.
+export function sourceLandscapeFloorAt(localX, localY) {
+  const depth = Math.max(0, -Number(localY || 0));
+  const branch = smoothstep(18, 90, Math.abs(Number(localX) || 0)) * smoothstep(48, 105, depth) * (1 - smoothstep(145, 190, depth));
+  const approach = 3.2 * smoothstep(28, 86, depth);
+  const basin = -1.8 * smoothstep(118, 164, depth);
+  const bodyRamp = 4.8 * smoothstep(176, 232, depth);
+  const terminalRamp = 8.5 * smoothstep(246, 320, depth);
+  return approach + basin + bodyRamp + terminalRamp + branch * 1.4;
+}
 
 function materialAtLandscape(localX, localY) {
   const p = { x: localX, y: localY };
-  for (const path of PATHS) for (let i = 0; i < path.length - 1; i += 1) {
-    if (distanceToSegment(p, path[i], path[i + 1]) <= 3.2) return MATERIAL.sourcePath;
-  }
+  if (routeAt(p)) return MATERIAL.sourcePath;
   for (const point of Object.values(LANDMARK_OFFSETS)) {
     if (Math.hypot(localX - point.x, localY - point.y) <= 7) return MATERIAL.sourceFault;
   }
@@ -166,7 +238,7 @@ function lineOfSight(cellAt, a, b) {
   return true;
 }
 
-function aStar(cellAt, start, goal, maxVisited = 5000) {
+function aStar(cellAt, start, goal, maxVisited = 30000) {
   const sx = Math.floor(start.x), sy = Math.floor(start.y), gx = Math.floor(goal.x), gy = Math.floor(goal.y);
   const key = (x, y) => `${x},${y}`;
   const open = [{ x: sx, y: sy, g: 0, f: Math.hypot(gx - sx, gy - sy) }];
@@ -208,7 +280,14 @@ export function createSourceSpaceRuntime({
   let lastFocus = null;
   let completionSent = false;
   let pathCache = { key: '', path: [] };
+  let protectionRemaining = 0;
+  let restartGraceRemaining = 0;
+  let noProgressSeconds = 0;
+  let lastObjectiveDistance = Infinity;
+  let lastObjectiveId = '';
+  const sceneCache = new Map();
   const trees = treeOffsets(state.seed);
+  let sourceCorpusCache = null;
 
   function setState(next, { immediate = false } = {}) {
     state = normalizeChunkSurfState(next);
@@ -240,25 +319,37 @@ export function createSourceSpaceRuntime({
     return lx >= -LANDSCAPE_W / 2 && lx <= LANDSCAPE_W / 2 && ly <= 4 && ly >= -revealedDepth;
   }
 
+  function routeEnabled(route, point) {
+    if (!route) return false;
+    if (route.id === 'critical-spine') {
+      if (point.y >= -50) return true;
+      if (point.y >= -150) return state.hasFork;
+      return state.tuned.includes('recordist-loop');
+    }
+    if (route.kind === 'optional') return state.hasFork;
+    if (route.id === 'final-causeway') return state.tuned.includes('body-room');
+    return true;
+  }
+
+  function landmarkPadEnabled(point) {
+    for (const [id, landmark] of Object.entries(LANDMARK_OFFSETS)) {
+      if (Math.hypot(point.x - landmark.x, point.y - landmark.y) <= LANDMARK_PAD_RADIUS) return available(id);
+    }
+    return false;
+  }
+
   function landscapeCell(x, y) {
     const o = landscapeOrigin(), lx = x - o.x, ly = y - o.y;
     if (!inLandscape(x, y)) return null;
-    const edge = Math.min(LANDSCAPE_W / 2 - Math.abs(lx), ly + LANDSCAPE_H, 4 - ly);
-    if (edge < 1) return null;
-    for (const tree of trees) {
-      if (Math.hypot(lx - tree.x, ly - tree.y) < tree.radius * 0.45) return null;
-    }
-    for(const point of Object.values(LANDMARK_OFFSETS)){
-      if(Math.hypot(lx-point.x,ly-point.y)<1.35)return null;
-    }
-    // A few code ridges shape navigation without turning the field into the old graph.
-    if (Math.abs(lx) > 16 && Math.abs(ly + 72) < 2.2 && Math.abs(lx) < 58) {
-      if (Math.abs(lx - 32) > 7 && Math.abs(lx + 32) > 7) return null;
-    }
-    return { floor: 0, ceil: 12, flags: F.SKY, zone: ZONE.sourceSpace, material: materialAtLandscape(lx, ly) };
+    const local = { x: lx, y: ly };
+    const route = routeAt(local);
+    if (!routeEnabled(route, local) && !landmarkPadEnabled(local)) return null;
+    const floor = sourceLandscapeFloorAt(lx, ly);
+    return { floor, ceil: floor + 22, flags: F.SKY, zone: ZONE.sourceSpace, material: materialAtLandscape(lx, ly) };
   }
 
   function hallCell(x, y) {
+    if ([CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase)) return null;
     if (Math.abs(x) > HALL_HALF_WIDTH) return null;
     if (y > 3) return null;
     const barrierY = state.haystackOrigin ? state.haystackOrigin.y - 44 : -Infinity;
@@ -300,18 +391,19 @@ export function createSourceSpaceRuntime({
       if (from && Math.abs(to.floor - from.floor) > 0.45) return { ok: false, why: 'too high' };
       return { ok: true, floor: to.floor };
     },
-    floorAt: (x, y) => cellAt(x, y)?.floor || 0,
+    floorAt: (x, y) => cellAt(x, y)?.floor ?? 0,
     ceilAt: (x, y) => cellAt(x, y)?.ceil || HALL_CEIL,
     zoneAt: (x, y) => cellAt(x, y)?.zone || ZONE.none,
     materialAt: (x, y) => cellAt(x, y)?.material || MATERIAL.none,
     worldAt: () => 'source_space',
     areaLabelAt: () => 'source space',
-    logicalToPhysical: (x, y) => ({ x, z: y, y: cellAt(x, y)?.floor || 0, layer: 'source', spaceId: 'source-space', renderGroup: 'source-space' }),
+    logicalToPhysical: (x, y) => ({ x, z: y, y: cellAt(x, y)?.floor ?? 0, layer: 'source', spaceId: 'source-space', renderGroup: 'source-space' }),
     renderPlanFor(x, y) {
       const half = SOURCE_PLAN_WINDOW / 2;
       const originX = Math.floor((x - half) / SOURCE_PLAN_SNAP) * SOURCE_PLAN_SNAP;
       const originY = Math.floor((y - half) / SOURCE_PLAN_SNAP) * SOURCE_PLAN_SNAP;
-      const key = `${state.phase}:${state.pageStage}:${originX}:${originY}`;
+      const routeStateKey = `${state.hasFork ? 1 : 0}:${state.tuned.includes('recordist-loop') ? 1 : 0}:${state.tuned.includes('body-room') ? 1 : 0}`;
+      const key = `${state.phase}:${state.pageStage}:${routeStateKey}:${originX}:${originY}`;
       if (lastPlan?.key === key) return lastPlan;
       const size = SOURCE_PLAN_WINDOW;
       const rgba = new Uint8Array(size * size * 4);
@@ -332,7 +424,7 @@ export function createSourceSpaceRuntime({
     },
   };
 
-  function checkpointPosition(id = state.checkpointId) {
+  function checkpointPosition(id = state.checkpoint?.id || state.checkpointId) {
     if (id === 'hall-entry') return { x: SOURCE_ENTRY.x, y: SOURCE_ENTRY.y, facing: 0 };
     if (id === 'landscape-entry') { const o = landscapeOrigin(); return { x: o.x, y: o.y, facing: 0 }; }
     const point = landmarkPoint(id);
@@ -347,6 +439,111 @@ export function createSourceSpaceRuntime({
     return false;
   }
 
+  function protectMoment(seconds = 3) {
+    protectionRemaining = Math.max(protectionRemaining, Math.max(0, Number(seconds) || 0));
+  }
+
+  function sourceObjective() {
+    const optionalProgress = { resolved: state.optionalTraces.length, total: SOURCE_OPTIONAL_TRACES.length };
+    let objective;
+    if (state.phase === CHUNK_SURF_PHASE.HALL) {
+      objective = { id: 'long-hall', label: 'FOLLOW THE PAPER FIELD', target: { x: 0, y: -(HAYSTACK_METRES / CELL) }, bearingEligible: false };
+    } else if (state.phase === CHUNK_SURF_PHASE.HAYSTACK) {
+      objective = { id: 'still-page', label: 'FIND THE STILL PAGE', target: haystackPagePoint(), bearingEligible: false };
+    } else if (state.phase === CHUNK_SURF_PHASE.TRANSFORMING) {
+      objective = { id: 'source-opening', label: 'HOLD THE SOURCE', target: haystackPagePoint(), bearingEligible: false };
+    } else if (!state.hasFork) {
+      objective = { id: 'fork-gate', label: 'TUNE THE FORK GATE', target: landmarkPoint('fork-room'), bearingEligible: true };
+    } else if (!state.tuned.includes('recordist-loop')) {
+      objective = { id: 'recordist-loop', label: 'TRACE THE RECORDIST', target: landmarkPoint('recordist-loop'), bearingEligible: true };
+    } else if (!state.tuned.includes('body-room')) {
+      objective = { id: 'body-return', label: 'REACH BODY RETURN', target: landmarkPoint('body-room'), bearingEligible: true };
+    } else if (state.phase === CHUNK_SURF_PHASE.FINAL && state.finalEncounter.status !== SOURCE_FINAL_STATUS.RESOLVED) {
+      objective = { id: 'final-encounter', label: 'RESOLVE THE FINAL SOURCE', target: landmarkPoint('final-page'), bearingEligible: false };
+    } else if (state.phase === CHUNK_SURF_PHASE.COMPLETED) {
+      objective = { id: 'tower-crossing', label: 'MOVE FORWARD INTO THE TOWER', target: landmarkPoint('final-page'), bearingEligible: false };
+    } else {
+      objective = { id: 'final-horizon', label: 'REACH THE FINAL HORIZON', target: landmarkPoint('final-page'), bearingEligible: true };
+    }
+    const distance = objective.target ? Math.hypot(player.x - objective.target.x, player.y - objective.target.y) : null;
+    return {
+      schema: SOURCE_OBJECTIVE_CONTRACT_VERSION,
+      ...objective,
+      optionalProgress,
+      bearing: objective.bearingEligible ? compassBearing(player, objective.target) : null,
+      distance: Number.isFinite(distance) ? distance : null,
+      alignmentPulse: noProgressSeconds >= 6,
+    };
+  }
+
+  function nearProtectedMoment() {
+    if ([CHUNK_SURF_PHASE.HAYSTACK, CHUNK_SURF_PHASE.TRANSFORMING, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase)) return true;
+    if (state.phase !== CHUNK_SURF_PHASE.LANDSCAPE) return false;
+    return Object.keys(LANDMARK_OFFSETS).some((id) => {
+      const point = landmarkPoint(id);
+      return point && Math.hypot(player.x - point.x, player.y - point.y) <= LANDMARK_PAD_RADIUS;
+    });
+  }
+
+  function hushMode() {
+    const protectedMoment = protectionRemaining > 0 || restartGraceRemaining > 0 || nearProtectedMoment();
+    const colliding = !!state.pursuitBeat && !protectedMoment;
+    return {
+      mode: colliding ? 'pursuit' : state.hushStage === CHUNK_SURF_HUSH_STAGE.ABSENT ? 'absent' : 'atmospheric',
+      colliding,
+      protected: protectedMoment,
+      pursuitBeat: state.pursuitBeat,
+      restartGrace: restartGraceRemaining,
+    };
+  }
+
+  function sourceLook() {
+    const o = landscapeOrigin();
+    const depth = Math.max(0, o.y - player.y);
+    const approach = smoothstep(270, 318, depth);
+    const resolved = state.finalEncounter.status === SOURCE_FINAL_STATUS.RESOLVED || state.phase === CHUNK_SURF_PHASE.COMPLETED;
+    return {
+      sunrise: resolved ? 1 : approach,
+      chroma: 1 - approach * 0.72,
+      paper: resolved ? 1 : smoothstep(286, 318, depth),
+    };
+  }
+
+  function finalEncounterRequest() {
+    if (state.phase !== CHUNK_SURF_PHASE.FINAL || state.finalEncounter.status !== SOURCE_FINAL_STATUS.READY) return null;
+    const final = landmarkPoint('final-page');
+    if (!final || Math.hypot(player.x - final.x, player.y - final.y) > 12) return null;
+    return {
+      schema: 1,
+      id: 'source-final',
+      adapter: 'combat-v1',
+      outcomes: Object.values(SOURCE_FINAL_OUTCOME),
+      rescueEligible: !!state.profile?.bestEligible
+        && SOURCE_OPTIONAL_TRACES.every((id) => state.optionalTraces.includes(id))
+        && state.recorded.includes('body-room'),
+      compatibility: { redactions: REDACTIONS.map(({ id, sourceAnchor }) => ({ id, sourceAnchor })) },
+    };
+  }
+
+  function resolveFinalEncounter(result = {}) {
+    dispatch({ type: 'FINAL_ENCOUNTER_RESOLVED', result }, { immediate: true });
+    if (state.finalEncounter.status !== SOURCE_FINAL_STATUS.RESOLVED) return { handled: false, state };
+    dispatch({ type: 'SOURCE_COMPLETED' }, { immediate: true });
+    if (!completionSent) {
+      completionSent = true;
+      onComplete(chunkSurfCompletion(state), exitSnapshot());
+    }
+    protectMoment(30);
+    return { handled: true, state, completion: chunkSurfCompletion(state) };
+  }
+
+  function failFinalEncounter() {
+    dispatch({ type: 'FINAL_ENCOUNTER_LOST' }, { immediate: true });
+    protectionRemaining = Math.max(protectionRemaining, 4);
+    restartGraceRemaining = Math.max(restartGraceRemaining, 4);
+    return { handled: true, state, checkpoint: checkpointPosition(state.checkpointId) };
+  }
+
   function focusAt(px, py, facing) {
     const candidates = [];
     if (state.phase === CHUNK_SURF_PHASE.HAYSTACK) candidates.push({ kind: 'haystack-page', id: 'source-page', ...haystackPagePoint() });
@@ -354,12 +551,6 @@ export function createSourceSpaceRuntime({
       for (const id of Object.keys(LANDMARK_OFFSETS)) {
         const point = landmarkPoint(id);
         if (point) candidates.push({ kind: 'landmark', available: available(id), ...point });
-      }
-      if (state.phase === CHUNK_SURF_PHASE.FINAL) {
-        const final = landmarkPoint('final-page');
-        for (const redaction of REDACTIONS) {
-          candidates.push({ kind: 'redaction', id: redaction.id, sourceAnchor: redaction.sourceAnchor, x: final.x + redaction.dx, y: final.y - 4 });
-        }
       }
     }
     lastFocus = focusedCandidate(px, py, facing, candidates, state.phase === CHUNK_SURF_PHASE.HAYSTACK ? 5 : 8);
@@ -381,10 +572,36 @@ export function createSourceSpaceRuntime({
     if ([CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase)) {
       for (const id of Object.keys(LANDMARK_OFFSETS)) {
         const point = landmarkPoint(id);
-        if (point && Math.hypot(to.x - point.x, to.y - point.y) < 9) dispatch({ type: 'LANDMARK_VISITED', id });
+        if (point && Math.hypot(to.x - point.x, to.y - point.y) < 9 && !state.visited.includes(id)) {
+          dispatch({ type: 'LANDMARK_VISITED', id });
+          protectMoment(id === 'body-room' ? 4 : 2.5);
+        }
+      }
+      const recordist = landmarkPoint('recordist-loop');
+      const body = landmarkPoint('body-room');
+      if (state.tuned.includes('recordist-loop')
+        && !state.pursuitsCleared.includes(SOURCE_PURSUIT_BEAT.BODY_RUN)
+        && !state.pursuitBeat
+        && Math.hypot(to.x - recordist.x, to.y - recordist.y) > 12
+        && to.y < recordist.y - 7) {
+        dispatch({ type: 'PURSUIT_STARTED', id: SOURCE_PURSUIT_BEAT.BODY_RUN }, { immediate: true });
+      }
+      if (state.pursuitBeat === SOURCE_PURSUIT_BEAT.BODY_RUN && Math.hypot(to.x - body.x, to.y - body.y) < LANDMARK_PAD_RADIUS) {
+        dispatch({ type: 'PURSUIT_CLEARED', id: SOURCE_PURSUIT_BEAT.BODY_RUN }, { immediate: true });
+        protectMoment(6);
+      }
+      if (state.tuned.includes('body-room')
+        && !state.pursuitsCleared.includes(SOURCE_PURSUIT_BEAT.FINAL_RUN)
+        && !state.pursuitBeat
+        && Math.hypot(to.x - body.x, to.y - body.y) > 12
+        && to.y < body.y - 7) {
+        dispatch({ type: 'PURSUIT_STARTED', id: SOURCE_PURSUIT_BEAT.FINAL_RUN }, { immediate: true });
       }
       const final = landmarkPoint('final-page');
-      if (final && Math.hypot(to.x - final.x, to.y - final.y) < 10 && available('final-page')) dispatch({ type: 'FINAL_REACHED' });
+      if (final && Math.hypot(to.x - final.x, to.y - final.y) < 10 && available('final-page')) {
+        dispatch({ type: 'FINAL_REACHED' }, { immediate: true });
+        protectMoment(30);
+      }
     }
   }
 
@@ -400,32 +617,14 @@ export function createSourceSpaceRuntime({
       transformElapsed = 0;
       return { handled: true, text: 'One sheet does not move. The source printed on it lifts before the paper does.', event: 'page-found' };
     }
-    if (focus.kind === 'redaction') {
-      if (state.armedRedaction === focus.id) {
-        dispatch({ type: 'REDACTION_CONFIRMED', id: focus.id }, { immediate: true });
-        dispatch({ type: 'SOURCE_COMPLETED' }, { immediate: true });
-        if (!completionSent) {
-          completionSent = true;
-          onComplete(chunkSurfCompletion(state), exitSnapshot());
-        }
-        return { handled: true, text: chunkSurfRoom('final-page').redactions.find((entry) => entry.id === focus.id)?.result || 'The line goes black.', event: 'completed' };
-      }
-      dispatch({ type: 'REDACTION_ARMED', id: focus.id });
-      return { handled: true, text: 'The clause lifts out of the file. Touch it again to make the redaction permanent.', event: 'redaction-armed' };
-    }
     if (focus.kind === 'landmark') {
       if (!focus.available) return { handled: true, text: 'The source is present, but its call site has not been reached.' };
       dispatch({ type: 'LANDMARK_VISITED', id: focus.id });
+      protectMoment(5);
       const room = chunkSurfRoom(focus.id);
       return { handled: true, text: room.inspect, source: exactLine(focus.sector, 0) };
     }
     return { handled: false };
-  }
-
-  function maybeStartHunt() {
-    const branchResolved = ['recordist-loop', 'surfer-origin', 'work-order-loop']
-      .some((id) => state.tuned.includes(id) || state.recorded.includes(id));
-    if (branchResolved && state.hushStage === CHUNK_SURF_HUSH_STAGE.STALK) dispatch({ type: 'HUSH_HUNT_STARTED' }, { immediate: true });
   }
 
   function tuneFocused(px, py, facing) {
@@ -434,8 +633,9 @@ export function createSourceSpaceRuntime({
     if (!focus.available) return { handled: true, text: 'The false line does not answer yet.' };
     if (!state.hasFork && focus.id !== 'fork-room') return { handled: true, text: 'Nothing in your hand can make this source vibrate.' };
     dispatch({ type: 'LANDMARK_TUNED', id: focus.id }, { immediate: true });
-    dispatch({ type: 'CHECKPOINT_SET', id: checkpointForLandmark(focus.id) }, { immediate: true });
-    maybeStartHunt();
+    const checkpointId = checkpointForLandmark(focus.id);
+    if (checkpointId) dispatch({ type: 'CHECKPOINT_SET', id: checkpointId }, { immediate: true });
+    protectMoment(5);
     const room = chunkSurfRoom(focus.id);
     return { handled: true, text: room.tune, event: focus.id === 'fork-room' ? 'fork' : 'tuned' };
   }
@@ -446,18 +646,34 @@ export function createSourceSpaceRuntime({
     if (!focus.available) return { handled: true, text: 'The recorder finds no stable address here.' };
     if (!state.hasFork) return { handled: true, text: 'The transport clicks. The source behind it does not hold still.' };
     dispatch({ type: 'LANDMARK_RECORDED', id: focus.id }, { immediate: true });
-    dispatch({ type: 'CHECKPOINT_SET', id: checkpointForLandmark(focus.id) }, { immediate: true });
-    maybeStartHunt();
+    const checkpointId = checkpointForLandmark(focus.id);
+    if (checkpointId) dispatch({ type: 'CHECKPOINT_SET', id: checkpointId }, { immediate: true });
+    protectMoment(5);
     return { handled: true, text: chunkSurfRoom(focus.id).record, event: 'recorded' };
   }
 
   function tick(dt, { px = player.x, py = player.y, facing = player.facing } = {}) {
     player = { x: px, y: py, facing };
+    const elapsed = Math.max(0, Number(dt) || 0);
+    protectionRemaining = Math.max(0, protectionRemaining - elapsed);
+    restartGraceRemaining = Math.max(0, restartGraceRemaining - elapsed);
     if (state.phase === CHUNK_SURF_PHASE.TRANSFORMING) {
-      transformElapsed = Math.min(SOURCE_TRANSFORM_SECONDS, transformElapsed + Math.max(0, dt));
+      transformElapsed = Math.min(SOURCE_TRANSFORM_SECONDS, transformElapsed + elapsed);
       if (transformElapsed >= SOURCE_TRANSFORM_SECONDS) dispatch({ type: 'TRANSFORMATION_COMPLETED' }, { immediate: true });
     }
     focusAt(px, py, facing);
+    const objective = sourceObjective();
+    const distance = objective.distance;
+    if (objective.id !== lastObjectiveId) {
+      lastObjectiveId = objective.id;
+      lastObjectiveDistance = Number.isFinite(distance) ? distance : Infinity;
+      noProgressSeconds = 0;
+    } else if (Number.isFinite(distance) && distance < lastObjectiveDistance - 0.75) {
+      noProgressSeconds = 0;
+      lastObjectiveDistance = distance;
+    } else if (Number.isFinite(distance) && !nearProtectedMoment()) {
+      noProgressSeconds += elapsed;
+    }
   }
 
   function pageInstances(px, py, {time=0,reducedMotion=false}={}) {
@@ -468,21 +684,21 @@ export function createSourceSpaceRuntime({
       const r0 = rand(state.seed, i, 101), r1 = rand(state.seed, i, 211), r2 = rand(state.seed, i, 307);
       let rx, ry, elevation, pitch, yaw, roll;
       if (i === 0) {
-        rx = 0; ry = -24; elevation = 0.018; pitch = 0; yaw = 0.06; roll = 0;
+        rx = 0; ry = -24 * CELL; elevation = 0.018; pitch = 0; yaw = 0.06; roll = 0;
       } else {
         // Placement is world-authoritative and seed-derived. It never follows
         // the player or disappears on retreat; only the visible render window
         // moves around the persistent procedural addresses.
         const reach = Math.max(36, Math.min(280, state.hallMaxDistance / CELL + 42));
-        ry = -18 - r0 * reach;
+        ry = (-18 - r0 * reach) * CELL;
         const surface = i % 5;
         if (surface === 0 || surface === 1) {
-          rx = surface === 0 ? -HALL_HALF_WIDTH + 0.12 : HALL_HALF_WIDTH - 0.12;
+          rx = (surface === 0 ? -HALL_HALF_WIDTH + 0.12 : HALL_HALF_WIDTH - 0.12) * CELL;
           elevation = 0.35 + r1 * 3.6; pitch = Math.PI / 2; yaw = surface === 0 ? Math.PI / 2 : -Math.PI / 2; roll = (r2 - 0.5) * 0.45;
-        } else if (surface === 2 && state.pageStage >= 3) {
-          rx = (r1 - 0.5) * HALL_HALF_WIDTH * 1.7; elevation = HALL_CEIL - 0.08; pitch = Math.PI; yaw = r2 * Math.PI * 2; roll = 0;
+        } else if (surface === 2) {
+          rx = (r1 - 0.5) * HALL_HALF_WIDTH * CELL * 1.7; elevation = HALL_CEIL - 0.08; pitch = Math.PI; yaw = r2 * Math.PI * 2; roll = 0;
         } else {
-          rx = (r1 - 0.5) * HALL_HALF_WIDTH * 1.72; elevation = 0.018; pitch = 0; yaw = r2 * Math.PI * 2; roll = (r0 - 0.5) * 0.16;
+          rx = (r1 - 0.5) * HALL_HALF_WIDTH * CELL * 1.72; elevation = 0.018; pitch = 0; yaw = r2 * Math.PI * 2; roll = (r0 - 0.5) * 0.16;
         }
       }
       if(i>0&&!reducedMotion&&state.pageStage>0){
@@ -503,7 +719,7 @@ export function createSourceSpaceRuntime({
       out.push({
         id: 'source-sheet-interactive',
         mesh: 'loose_note',
-        matrix: sourceMatrix({ x: correct.x, y: 0.021, z: correct.y, scaleX: 1.08, scaleY: 1.08, scaleZ: 1.08 }),
+        matrix: sourceMatrix({ x: correct.x * CELL, y: 0.021, z: correct.y * CELL, scaleX: 1.08, scaleY: 1.08, scaleZ: 1.08 }),
         zone: ZONE.sourceSpace,
         structural: false,
         interactiveId: 'source-page',
@@ -630,9 +846,279 @@ export function createSourceSpaceRuntime({
     });
   }
 
-  function propInstances(px = player.x, py = player.y, options={}) { return pageInstances(px, py, options); }
+  const sourcePanel = ({ id, sector = 'hall', lineIndex = 0, redact = false, x, y, z, scaleX, scaleY, pitch = 0, yaw = 0, roll = 0, color = [0.72, 1, 0.82, 1], semantic = 'text-architecture', interactiveId = null, overlapLayer = 'base', platformHeight = null }) => {
+    const source = exactLine(sector, lineIndex);
+    const displayText = redact ? redactedSourceText(source) : source?.text || '[SOURCE OMITTED]';
+    const visiblyRedacted = !!(redact && source && displayText !== source.text);
+    return {
+      id,
+      sourceId: source?.id,
+      sourceFile: source?.file,
+      sourceLine: source?.line,
+      sourceHash: source?.hash,
+      text: displayText,
+      redacted: visiblyRedacted,
+      matrix: sourceMatrix({ x, y, z, scaleX, scaleY, pitch, yaw, roll }),
+      color,
+      semantic,
+      overlapLayer,
+      ...(Number.isFinite(platformHeight) ? { platformHeight } : {}),
+      ...(interactiveId ? { interactiveId } : {}),
+    };
+  };
+
+  const sourceSymbolPanel = ({ id, symbol, referenceId, x, y, z, scaleX = 2.5, scaleY = 0.4, pitch = 0, yaw = 0, roll = 0, color = [0.72, 1, 0.82, 1] }) => {
+    const occurrence = SOURCE_ATLAS.symbols?.[symbol]?.occurrence || SOURCE_ATLAS.symbols?.[symbol]?.occurrences?.[0];
+    return {
+      id,
+      sourceId: occurrence?.entryId,
+      sourceFile: occurrence?.file,
+      sourceLine: occurrence?.line,
+      sourceHash: occurrence?.hash,
+      referenceId,
+      text: symbol,
+      matrix: sourceMatrix({ x, y, z, scaleX, scaleY, pitch, yaw, roll }),
+      color,
+      semantic: 'text-architecture:reference',
+      overlapLayer: 'overlap',
+    };
+  };
+
+  const sectorAtHallDepth = (depth) => ['hall', 'recordist', 'student', 'workOrder', 'body', 'hush'][Math.abs(Math.floor(depth / 18)) % 6];
+  const routeVisual = (localX, localY) => {
+    const route = routeAt({ x: localX, y: localY });
+    if (route?.id === 'surfer-loop') return { sector: 'student', color: [0.10, 0.86, 1, 0.88] };
+    if (route?.id === 'work-order-loop') return { sector: 'workOrder', color: [1, 0.30, 0.14, 0.88] };
+    if (route?.id === 'final-causeway') return { sector: 'final', color: [0.86, 0.92, 0.82, 0.92] };
+    return { sector: sectorAtHallDepth(localY), color: [0.42, 1, 0.62, 0.88] };
+  };
+
+  function landscapeArchitectureTextInstances(px, py) {
+    if (![CHUNK_SURF_PHASE.TRANSFORMING,CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase)) return [];
+    const out = [];
+    const o = landscapeOrigin();
+    const rowCenter = Math.floor(py / 2) * 2;
+    for (let row = -34; row <= 22; row += 2) {
+      const worldZ = rowCenter + row;
+      for (let lane = -4; lane <= 4; lane += 1) {
+        const worldX=px+lane*5;
+        const cell=cellAt(worldX,worldZ);
+        if(!cell)continue;
+        const before=cellAt(worldX,worldZ+1)?.floor??cell.floor;
+        const after=cellAt(worldX,worldZ-1)?.floor??cell.floor;
+        const rampPitch=-Math.PI/2+Math.atan2(after-before,2*CELL);
+        const visual=routeVisual(worldX-o.x,worldZ-o.y);
+        out.push(sourcePanel({
+          id: `source-field-floor-${rowCenter}-${row}-${lane}`,
+          sector: visual.sector, lineIndex: Math.abs(row * 11 + lane * 17), redact: (row + lane) % 10 === 0,
+          x: worldX * CELL, y: cell.floor + 0.014 + Math.abs(lane) * 0.001, z: worldZ * CELL + lane * 0.045,
+          scaleX: 3.25, scaleY: 0.31,
+          pitch: rampPitch, yaw: lane * 0.032,
+          color: lane % 2 ? visual.color.map((value,index)=>index===3?value:value*.82) : visual.color,
+          semantic: 'text-architecture:ramp', overlapLayer: lane === 0 ? 'base' : 'overlap', platformHeight: cell.floor,
+        }));
+      }
+    }
+
+    // Text monoliths sit outside every walkable causeway and landmark pad, so
+    // their visual mass never implies a hidden collision volume on the route.
+    for(let index=0;index<trees.length;index+=1){
+      const tree=trees[index],worldX=o.x+tree.x,worldZ=o.y+tree.y;
+      if(routeAt(tree)||onLandmarkPad(tree))continue;
+      if(Math.hypot((worldX-px)*CELL,(worldZ-py)*CELL)>46)continue;
+      const base=sourceLandscapeFloorAt(tree.x,tree.y);
+      for(let row=0;row<8;row+=1)out.push(sourcePanel({
+        id:`source-field-monolith-${index}-${row}`,
+        sector:index%3===0?'hush':index%2?'student':'recordist',lineIndex:index*5+row*13,redact:row===5,
+        x:worldX*CELL,y:base+.28+row*.42,z:worldZ*CELL,
+        scaleX:2.1+row%3*.55,scaleY:.28,yaw:(index%4)*Math.PI/2,roll:row%2?.035:-.035,
+        color:row%3===0?[.16,.82,1,.9]:[.34,1,.48,.82],semantic:'text-architecture:monolith',overlapLayer:row%2?'overlap':'base',
+      }));
+    }
+
+    // Cross-braced frames make the long ramps legible at distance and give the
+    // massive field some authored architecture beyond its ground plane.
+    const localDepth=Math.max(0,Math.floor((o.y-py)/24)*24);
+    for(let frame=-4;frame<=4;frame+=1){
+      const depth=localDepth+frame*24;
+      if(depth<18||depth>LANDSCAPE_H-12)continue;
+      const worldZ=o.y-depth,base=sourceLandscapeFloorAt(0,-depth);
+      for(const side of [-1,1])for(let row=0;row<5;row+=1)out.push(sourcePanel({
+        id:`source-ramp-frame-${depth}-${side}-${row}`,sector:sectorAtHallDepth(depth),lineIndex:depth+row*19+(side>0?7:0),
+        x:(o.x+side*13)*CELL,y:base+.3+row*.52,z:worldZ*CELL,scaleX:3.1,scaleY:.26,yaw:Math.PI/2,
+        color:row===4?[1,.28,.16,.9]:[.18,.78,1,.72],semantic:'text-architecture:frame',overlapLayer:row%2?'overlap':'base',
+      }));
+      out.push(sourcePanel({
+        id:`source-ramp-span-${depth}`,sector:sectorAtHallDepth(depth),lineIndex:depth*3,redact:depth%48===0,
+        x:o.x*CELL,y:base+3.05,z:worldZ*CELL,scaleX:7.2,scaleY:.34,
+        color:[.62,1,.72,.84],semantic:'text-architecture:span',overlapLayer:'overlap',
+      }));
+    }
+
+    // Exact identifiers and same-line reference edges become a hovering call
+    // graph around the Fork Gate. No labels are authored outside the corpus.
+    const fork = landmarkPoint('fork-room');
+    if (Math.hypot((fork.x - px) * CELL, (fork.y - py) * CELL) < 72) {
+      const references = (SOURCE_ATLAS.references || []).slice(0, 28);
+      references.forEach((reference, index) => {
+        const angle = index * 0.73;
+        const radius = 9 + (index % 5) * 1.8;
+        const symbol = index % 2 ? reference.to : reference.from;
+        out.push(sourceSymbolPanel({
+          id: `source-reference-${reference.id}`,
+          symbol,
+          referenceId: reference.id,
+          x: (fork.x + Math.cos(angle) * radius) * CELL,
+          y: 1.2 + (index % 9) * 0.48,
+          z: (fork.y + Math.sin(angle) * radius) * CELL,
+          scaleX: 3.4 + (index % 4) * 0.9,
+          scaleY: 0.46,
+          yaw: -angle + Math.PI / 2,
+          roll: index % 2 ? 0.05 : -0.05,
+          color: index % 3 === 0 ? [1, 0.20, 0.12, 0.94] : [0.18, 0.84, 1, 0.86],
+        }));
+      });
+    }
+
+    for (const [id, offset] of Object.entries(LANDMARK_OFFSETS)) {
+      const x = (o.x + offset.x) * CELL, z = (o.y + offset.y) * CELL;
+      if (Math.hypot(x - px * CELL, z - py * CELL) > 54) continue;
+      const base=sourceLandscapeFloorAt(offset.x,offset.y);
+      for (let row = 0; row < 16; row += 1) {
+        out.push(sourcePanel({
+          id: `source-field-pillar-${id}-${row}`,
+          sector: offset.sector, lineIndex: row * 7 + id.length, redact: row % 6 === 3,
+          x, y: base+0.25 + row * 0.38, z,
+          scaleX: 4.8 + (row % 3) * 0.75, scaleY: 0.32,
+          yaw: row % 2 ? Math.PI / 2 : 0, roll: row % 2 ? 0.04 : -0.04,
+          color: id === 'final-page' ? [1, 0.32, 0.24, 1] : [0.72, 1, 0.82, 1],
+          semantic: 'text-architecture:pillar', overlapLayer: row % 2 ? 'overlap' : 'base',
+        }));
+      }
+    }
+
+    const final=landmarkPoint('final-page'),finalOffset=LANDMARK_OFFSETS['final-page'];
+    const finalBase=sourceLandscapeFloorAt(finalOffset.x,finalOffset.y);
+    if(Math.hypot((final.x-px)*CELL,(final.y-py)*CELL)<90){
+      for(const side of [-1,1])for(let row=0;row<14;row+=1)out.push(sourcePanel({
+        id:`source-endpoint-upright-${side}-${row}`,sector:'final',lineIndex:row*11+(side>0?5:0),redact:row%7===4,
+        x:(final.x+side*8)*CELL,y:finalBase+.3+row*.44,z:(final.y-4)*CELL,
+        scaleX:4.2,scaleY:.31,yaw:Math.PI/2,
+        color:row%4===0?[1,.14,.08,1]:[.82,.95,.86,.86],semantic:'text-architecture:endpoint',overlapLayer:row%2?'overlap':'base',
+      }));
+      for(let beam=0;beam<5;beam+=1)out.push(sourcePanel({
+        id:`source-endpoint-beam-${beam}`,sector:'final',lineIndex:80+beam*17,redact:beam===2,
+        x:final.x*CELL,y:finalBase+4.2+beam*.36,z:(final.y-4)*CELL,
+        scaleX:7.4-beam*.45,scaleY:.3,roll:beam%2?.025:-.025,
+        color:beam===0?[1,.16,.08,1]:[.16,.82,1,.82],semantic:'text-architecture:endpoint',overlapLayer:beam?'overlap':'base',
+      }));
+    }
+    return out;
+  }
+
+  function interactionTextInstances() {
+    const out = [];
+    if (state.phase === CHUNK_SURF_PHASE.TRANSFORMING) {
+      const point = haystackPagePoint();
+      out.push(sourcePanel({
+        id: 'source-text-exit-page', sector: 'final', lineIndex: 10,
+        x: point.x * CELL, y: 0.018, z: point.y * CELL,
+        scaleX: 2.8, scaleY: 0.34, pitch: -Math.PI / 2,
+        color: [1, 0.26, 0.18, 1], semantic: 'text-interaction:page', interactiveId: 'source-page',
+      }));
+    }
+    if (state.phase === CHUNK_SURF_PHASE.FINAL || state.phase === CHUNK_SURF_PHASE.COMPLETED) {
+      const final = landmarkPoint('final-page');
+      const base=sourceLandscapeFloorAt(LANDMARK_OFFSETS['final-page'].x,LANDMARK_OFFSETS['final-page'].y);
+      REDACTIONS.forEach((redaction, index) => out.push(sourcePanel({
+        id: `source-text-redaction-${redaction.id}`, sector: 'final', lineIndex: 9 + index, redact: true,
+        x: (final.x + redaction.dx) * CELL, y: base+1.15, z: (final.y - 4) * CELL,
+        scaleX: 3.4, scaleY: 0.36,
+        color: state.armedRedaction === redaction.id ? [1, 0.16, 0.10, 1] : [0.88, 0.94, 0.86, 1],
+        semantic: `text-endpoint:redaction:${redaction.id}`, interactiveId: redaction.id,
+      })));
+    }
+    return out;
+  }
+
+  function proofHushTextInstances(presence = null, time = 0) {
+    if (![CHUNK_SURF_HUSH_STAGE.STALK, CHUNK_SURF_HUSH_STAGE.HUNT, CHUNK_SURF_HUSH_STAGE.FINAL].includes(state.hushStage)) return [];
+    let hx = Number(presence?.x), hy = Number(presence?.y);
+    if (!Number.isFinite(hx) || !Number.isFinite(hy) || state.hushStage === CHUNK_SURF_HUSH_STAGE.STALK) {
+      const body = landmarkPoint('body-room'); hx = body.x - 18; hy = body.y + 9;
+    }
+    const sway = Math.sin(time * 1.6) * 0.08;
+    const o=landscapeOrigin(),base=sourceLandscapeFloorAt(hx-o.x,hy-o.y);
+    return Array.from({ length: 11 }, (_, row) => sourcePanel({
+      id: `source-text-hush-${row}`, sector: 'hush', lineIndex: row * 7 + 3, redact: row % 4 === 0,
+      x: hx * CELL + (row % 2 ? sway : -sway), y: base+0.25 + row * 0.3, z: hy * CELL,
+      scaleX: 2.25 - Math.abs(5 - row) * 0.09, scaleY: 0.24,
+      color: row % 2 ? [1, 0.12, 0.08, 1] : [0.92, 0.96, 0.86, 1],
+      semantic: 'text-actor:hush', overlapLayer: row % 2 ? 'overlap' : 'base',
+    }));
+  }
+
+  // The long hall is still the physical building: hundreds of authored sheet
+  // meshes occupy its floor, walls and ceiling. Meshes disappear only after
+  // the page opens into Source Space proper.
+  function propInstances(px = player.x, py = player.y, options = {}) {
+    return [CHUNK_SURF_PHASE.HALL,CHUNK_SURF_PHASE.HAYSTACK,CHUNK_SURF_PHASE.TRANSFORMING].includes(state.phase)
+      ? pageInstances(px,py,options) : [];
+  }
+  function sourceCorpus() {
+    if (sourceCorpusCache) return sourceCorpusCache;
+    const seen = new Set();
+    const corpus = [];
+    for (const entry of Object.values(SOURCE_ATLAS.entries || {})) {
+      if (!entry?.text || seen.has(entry.text)) continue;
+      seen.add(entry.text);
+      corpus.push(entry.text);
+    }
+    for (const reference of (SOURCE_ATLAS.references || []).slice(0, 28)) {
+      for (const symbol of [reference.from, reference.to]) {
+        if (!symbol || seen.has(symbol)) continue;
+        seen.add(symbol);
+        corpus.push(symbol);
+      }
+    }
+    sourceCorpusCache = Object.freeze(corpus);
+    return sourceCorpusCache;
+  }
+
+  function cachedArchitecture(px, py) {
+    const chunkSize = 64;
+    const chunkX = Math.floor(px / chunkSize);
+    const chunkY = Math.floor(py / chunkSize);
+    const progressKey = `${state.phase}:${state.hasFork ? 1 : 0}:${state.tuned.includes('recordist-loop') ? 1 : 0}:${state.tuned.includes('body-room') ? 1 : 0}`;
+    const key = `${progressKey}:${chunkX}:${chunkY}`;
+    if (!sceneCache.has(key)) {
+      sceneCache.set(key, landscapeArchitectureTextInstances(chunkX * chunkSize + chunkSize / 2, chunkY * chunkSize + chunkSize / 2));
+      if (sceneCache.size > 32) sceneCache.delete(sceneCache.keys().next().value);
+    }
+    return { key, instances: sceneCache.get(key) };
+  }
+
+  function sourceScene({ px = player.x, py = player.y, presence = null, time = 0, reducedMotion = false } = {}) {
+    const cached = cachedArchitecture(px, py);
+    const dynamicInstances = [
+      ...interactionTextInstances(),
+      ...proofHushTextInstances(hushMode().colliding ? presence : null, reducedMotion ? 0 : time),
+    ];
+    return {
+      schema: 1,
+      key: cached.key,
+      atlasKey: `${SOURCE_ATLAS.schemaVersion}:${SOURCE_ATLAS.corpusHash || Object.keys(SOURCE_ATLAS.entries || {}).length}`,
+      corpus: sourceCorpus(),
+      staticInstances: cached.instances,
+      dynamicInstances,
+      look: sourceLook(),
+      objective: sourceObjective(),
+    };
+  }
+
   function textInstances({ px = player.x, py = player.y, presence = null, time = 0, reducedMotion=false } = {}) {
-    return [...pageTextInstances(px, py,{time,reducedMotion}), ...landscapeTextInstances(), ...hushTextInstances(presence, reducedMotion?0:time)];
+    const scene = sourceScene({ px, py, presence, time, reducedMotion });
+    return [...scene.staticInstances, ...scene.dynamicInstances];
   }
 
   const navigation = {
@@ -658,7 +1144,10 @@ export function createSourceSpaceRuntime({
   };
 
   function handleHushContact() {
+    if (!hushMode().colliding) return checkpointPosition();
     dispatch({ type: 'HUSH_CONTACT' }, { immediate: true });
+    restartGraceRemaining = 4;
+    protectionRemaining = Math.max(protectionRemaining, 1.25);
     return checkpointPosition();
   }
 
@@ -681,9 +1170,11 @@ export function createSourceSpaceRuntime({
   function exitSnapshot() {
     const final = landmarkPoint('final-page') || { x: player.x, y: player.y };
     return {
-      schema: 1,
+      schema: 2,
       redaction: state.redaction,
       bestEligible: state.bestEligible,
+      finalEncounter: { ...state.finalEncounter },
+      optionalTraces: [...state.optionalTraces],
       camera: { x: final.x, y: final.y + 8, facing: 0 },
       hush: { x: final.x - 14, y: final.y - 10, pose: 'standing', source: 'hush' },
       sourceIds: REDACTIONS.map((entry) => sourceLineByAnchor(entry.sourceAnchor)?.id).filter(Boolean),
@@ -705,6 +1196,14 @@ export function createSourceSpaceRuntime({
     recordFocused,
     propInstances,
     textInstances,
+    sourceScene,
+    sourceObjective,
+    sourceLook,
+    hushMode,
+    protectMoment,
+    finalEncounterRequest,
+    resolveFinalEncounter,
+    failFinalEncounter,
     navigation,
     checkpointPosition,
     handleHushContact,
@@ -717,6 +1216,10 @@ export function createSourceSpaceRuntime({
       pageCount: pageCount(state.hallMaxDistance),
       planOrigin: lastPlan ? { x: lastPlan.originX, y: lastPlan.originY } : null,
       focus: lastFocus ? { kind: lastFocus.kind, id: lastFocus.id, source: lastFocus.sourceAnchor || null } : null,
+      objective: sourceObjective(),
+      hush: hushMode(),
+      sourceSceneCacheSize: sceneCache.size,
+      sourceSceneKey: sourceScene({ presence: null }).key,
       visibleGlyphs: textInstances({ presence: null }).reduce((sum, entry) => sum + String(entry.text || '').length, 0),
     }),
   };

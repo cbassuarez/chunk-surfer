@@ -515,6 +515,96 @@
       ]
     },
     {
+      "id": "asset.game.battle.bed",
+      "kind": "file",
+      "path": "audio/game/battle/bed.mp3",
+      "tags": [
+        "game",
+        "battle"
+      ]
+    },
+    {
+      "id": "asset.game.battle.entry-1-fill",
+      "kind": "file",
+      "path": "audio/game/battle/entry-1-fill.mp3",
+      "tags": [
+        "game",
+        "battle"
+      ]
+    },
+    {
+      "id": "asset.game.battle.entry-1-tail",
+      "kind": "file",
+      "path": "audio/game/battle/entry-1-tail.mp3",
+      "tags": [
+        "game",
+        "battle"
+      ]
+    },
+    {
+      "id": "asset.game.battle.entry-2-fill",
+      "kind": "file",
+      "path": "audio/game/battle/entry-2-fill.mp3",
+      "tags": [
+        "game",
+        "battle"
+      ]
+    },
+    {
+      "id": "asset.game.battle.entry-2-tail",
+      "kind": "file",
+      "path": "audio/game/battle/entry-2-tail.mp3",
+      "tags": [
+        "game",
+        "battle"
+      ]
+    },
+    {
+      "id": "asset.game.battle.entry-3-fill",
+      "kind": "file",
+      "path": "audio/game/battle/entry-3-fill.mp3",
+      "tags": [
+        "game",
+        "battle"
+      ]
+    },
+    {
+      "id": "asset.game.battle.entry-3-tail",
+      "kind": "file",
+      "path": "audio/game/battle/entry-3-tail.mp3",
+      "tags": [
+        "game",
+        "battle"
+      ]
+    },
+    {
+      "id": "asset.game.battle.lead-1",
+      "kind": "file",
+      "path": "audio/game/battle/lead-1.mp3",
+      "tags": [
+        "game",
+        "battle"
+      ]
+    },
+    {
+      "id": "asset.game.battle.lead-2",
+      "kind": "file",
+      "path": "audio/game/battle/lead-2.mp3",
+      "tags": [
+        "game",
+        "battle"
+      ]
+    },
+    {
+      "id": "asset.game.battle.lead-3",
+      "kind": "file",
+      "path": "audio/game/battle/lead-3.mp3",
+      "tags": [
+        "game",
+        "battle"
+      ]
+    },
+    {
       "id": "asset.game.bag_rummage",
       "kind": "file",
       "path": "audio/game/bag_rummage.mp3",
@@ -2725,9 +2815,11 @@
         {
           "id": "bag.layer",
           "assetId": "asset.game.bag_rummage",
-          "gain": 0.75,
+          "gain": 0.25,
           "playbackRate": 1,
-          "pan": 0
+          "pan": 0,
+          "trimStart": 0,
+          "trimEnd": 1.414490445451436
         }
       ]
     },
@@ -2740,7 +2832,7 @@
         {
           "id": "pens.layer",
           "assetId": "asset.game.pens",
-          "gain": 0.62,
+          "gain": 0.57,
           "playbackRate": 1,
           "pan": 0
         }
@@ -2755,7 +2847,7 @@
         {
           "id": "signature.layer",
           "assetId": "asset.game.signature",
-          "gain": 0.7,
+          "gain": 0.63,
           "playbackRate": 1,
           "pan": 0
         }
@@ -2770,7 +2862,7 @@
         {
           "id": "slides.layer",
           "assetId": "asset.game.slides_keys_and_radio",
-          "gain": 0.78,
+          "gain": 0.17,
           "playbackRate": 1,
           "pan": 0
         }
@@ -2785,7 +2877,7 @@
         {
           "id": "keyturn.layer",
           "assetId": "asset.game.the_key_turns",
-          "gain": 0.85,
+          "gain": 0.57,
           "playbackRate": 1,
           "pan": 0
         }
@@ -2803,7 +2895,7 @@
         {
           "id": "keys.layer",
           "assetId": "asset.game.keys",
-          "gain": 0.7,
+          "gain": 0.5,
           "playbackRate": 1,
           "pan": 0
         }
@@ -2818,7 +2910,7 @@
         {
           "id": "kit.layer",
           "assetId": "asset.game.torch-recorder-headphones-radio-keys-the-order",
-          "gain": 0.72,
+          "gain": 0.13,
           "playbackRate": 1,
           "pan": 0
         }
@@ -2833,7 +2925,7 @@
         {
           "id": "rewind.layer",
           "assetId": "asset.game.tape_rewind",
-          "gain": 0.8,
+          "gain": 0.7,
           "playbackRate": 1,
           "pan": 0
         }
@@ -2848,7 +2940,7 @@
         {
           "id": "scream.layer",
           "assetId": "asset.game.radio_breaks-scream",
-          "gain": 0.95,
+          "gain": 0.71,
           "playbackRate": 1,
           "pan": 0
         }
@@ -2957,7 +3049,7 @@
         {
           "id": "story.title.layer",
           "assetId": "asset.game.title_song",
-          "gain": 1,
+          "gain": 0.36,
           "playbackRate": 1,
           "pan": 0,
           "loop": true
@@ -2973,7 +3065,7 @@
         {
           "id": "story.typing.layer",
           "assetId": "asset.game.typing",
-          "gain": 1,
+          "gain": 1.11,
           "playbackRate": 1,
           "pan": 0,
           "loop": false
@@ -2992,7 +3084,11 @@
           "gain": 1,
           "playbackRate": 1,
           "pan": 0,
-          "loop": true
+          "loop": true,
+          "trimStart": 0.13494151846785218,
+          "trimEnd": 3.304031121751025,
+          "fadeIn": 1,
+          "fadeOut": 1
         }
       ]
     },
@@ -3008,7 +3104,9 @@
           "gain": 1,
           "playbackRate": 1,
           "pan": 0,
-          "loop": true
+          "loop": true,
+          "fadeIn": 1,
+          "fadeOut": 1
         }
       ]
     },
@@ -3025,6 +3123,136 @@
           "playbackRate": 1,
           "pan": 0,
           "loop": true
+        }
+      ]
+    },
+    {
+      "id": "battle.bed",
+      "title": "Battle bed",
+      "bus": "music",
+      "concurrency": "replace",
+      "layers": [
+        {
+          "id": "battle.bed.layer",
+          "assetId": "asset.game.battle.bed",
+          "gain": 0.72,
+          "playbackRate": 1,
+          "pan": 0,
+          "loop": true
+        }
+      ]
+    },
+    {
+      "id": "battle.lead.1",
+      "title": "Battle lead 1",
+      "bus": "music",
+      "concurrency": "replace",
+      "layers": [
+        {
+          "id": "battle.lead.1.layer",
+          "assetId": "asset.game.battle.lead-1",
+          "gain": 3,
+          "playbackRate": 1,
+          "pan": 0,
+          "loop": true
+        }
+      ]
+    },
+    {
+      "id": "battle.lead.2",
+      "title": "Battle lead 2",
+      "bus": "music",
+      "concurrency": "replace",
+      "layers": [
+        {
+          "id": "battle.lead.2.layer",
+          "assetId": "asset.game.battle.lead-2",
+          "gain": 2.35,
+          "playbackRate": 1,
+          "pan": 0,
+          "loop": true
+        }
+      ]
+    },
+    {
+      "id": "battle.lead.3",
+      "title": "Battle lead 3",
+      "bus": "music",
+      "concurrency": "replace",
+      "layers": [
+        {
+          "id": "battle.lead.3.layer",
+          "assetId": "asset.game.battle.lead-3",
+          "gain": 0.75,
+          "playbackRate": 1,
+          "pan": 0,
+          "loop": true
+        }
+      ]
+    },
+    {
+      "id": "battle.entry.1",
+      "title": "Battle entry 1",
+      "bus": "music",
+      "concurrency": "replace",
+      "layers": [
+        {
+          "id": "battle.entry.1.fill",
+          "assetId": "asset.game.battle.entry-1-fill",
+          "gain": 0.4,
+          "playbackRate": 1,
+          "pan": 0
+        },
+        {
+          "id": "battle.entry.1.tail",
+          "assetId": "asset.game.battle.entry-1-tail",
+          "gain": 1.25,
+          "playbackRate": 1,
+          "pan": 0
+        }
+      ]
+    },
+    {
+      "id": "battle.entry.2",
+      "title": "Battle entry 2",
+      "bus": "music",
+      "concurrency": "replace",
+      "layers": [
+        {
+          "id": "battle.entry.2.fill",
+          "assetId": "asset.game.battle.entry-2-fill",
+          "gain": 1.7,
+          "playbackRate": 1,
+          "pan": 0
+        },
+        {
+          "id": "battle.entry.2.tail",
+          "assetId": "asset.game.battle.entry-2-tail",
+          "gain": 1.35,
+          "playbackRate": 1,
+          "pan": 0
+        }
+      ]
+    },
+    {
+      "id": "battle.entry.3",
+      "title": "Battle entry 3",
+      "bus": "music",
+      "concurrency": "replace",
+      "layers": [
+        {
+          "id": "battle.entry.3.fill",
+          "assetId": "asset.game.battle.entry-3-fill",
+          "gain": 1.8,
+          "playbackRate": 1,
+          "pan": 0
+        },
+        {
+          "id": "battle.entry.3.tail",
+          "assetId": "asset.game.battle.entry-3-tail",
+          "gain": 1.4,
+          "playbackRate": 1,
+          "pan": 0
         }
       ]
     },
@@ -3050,8 +3278,11 @@
           "id": "squelch.layer",
           "assetId": "asset.game.recorder",
           "gain": 0.55,
-          "playbackRate": 0.4,
-          "pan": 0
+          "playbackRate": 0.04,
+          "pan": 0,
+          "trimStart": 0.01340817373461016,
+          "trimEnd": 0.04115522400820825,
+          "fadeOut": 0.4
         }
       ],
       "effects": [

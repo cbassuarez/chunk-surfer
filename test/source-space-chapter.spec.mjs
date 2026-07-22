@@ -1,0 +1,159 @@
+import assert from 'node:assert/strict';
+import {
+  SOURCE_FINAL_OUTCOME,
+  SOURCE_PURSUIT_BEAT,
+  freshChunkSurfState,
+  normalizeChunkSurfState,
+  reduceChunkSurf,
+} from '../src/game/chunk-surf-state.js';
+import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
+
+const ORIGIN={x:0,y:-252};
+const POINTS={
+  entry:{x:0,y:-252},fork:{x:0,y:-294},surfer:{x:-92,y:-356},work:{x:92,y:-356},recordist:{x:0,y:-394},body:{x:0,y:-484},final:{x:80,y:-564},
+};
+const apply=(state,type,details={})=>reduceChunkSurf(state,{type,...details});
+
+function landscapeState(){
+  let state=freshChunkSurfState({drankCoffee:true,hasRig:true,seed:4417,returnPoint:{x:10,y:20,facing:1}});
+  state=apply(state,'SOURCE_ENTERED',{returnPoint:state.returnPoint});
+  state=apply(state,'HALL_ADVANCED',{distance:112});
+  state=apply(state,'HAYSTACK_REACHED',{origin:{x:0,y:-224},slot:0});
+  state=apply(state,'HAYSTACK_PAGE_FOUND',{landscapeOrigin:ORIGIN});
+  return apply(state,'TRANSFORMATION_COMPLETED');
+}
+
+function withTuned(state,...ids){
+  return ids.reduce((next,id)=>apply(next,'LANDMARK_TUNED',{id}),state);
+}
+
+function reachable(runtime,start,goal,maxVisited=180000){
+  const key=(x,y)=>`${x},${y}`;
+  const queue=[[Math.round(start.x),Math.round(start.y)]];
+  const visited=new Set([key(queue[0][0],queue[0][1])]);
+  let index=0;
+  while(index<queue.length&&index<maxVisited){
+    const [x,y]=queue[index++];
+    if(Math.hypot(x-goal.x,y-goal.y)<=2)return true;
+    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const nx=x+dx,ny=y+dy,k=key(nx,ny);
+      if(visited.has(k)||!runtime.geometry.canStep(x,y,nx,ny).ok)continue;
+      visited.add(k);queue.push([nx,ny]);
+    }
+  }
+  return false;
+}
+
+{
+  let state=landscapeState();
+  let runtime=createSourceSpaceRuntime({initialState:state});
+  assert.equal(reachable(runtime,POINTS.entry,POINTS.fork),true,'the entry spine reaches the required Fork Gate without jumping');
+  assert.equal(runtime.geometry.cellAt(0,-330),null,'the unresolved Fork Gate does not expose downstream source');
+
+  state=withTuned(state,'fork-room');
+  runtime=createSourceSpaceRuntime({initialState:state});
+  assert.equal(reachable(runtime,POINTS.fork,POINTS.surfer),true,'the Surfer Origin loop is reachable');
+  assert.equal(reachable(runtime,POINTS.fork,POINTS.work),true,'the Work Order loop is reachable');
+  assert.equal(reachable(runtime,POINTS.fork,POINTS.recordist),true,'the required central spine remains readable');
+
+  state=withTuned(state,'recordist-loop');
+  runtime=createSourceSpaceRuntime({initialState:state});
+  assert.equal(reachable(runtime,POINTS.recordist,POINTS.body),true,'the first pursuit funnel reaches Body Return');
+
+  state=withTuned(state,'body-room');
+  runtime=createSourceSpaceRuntime({initialState:state});
+  assert.equal(reachable(runtime,POINTS.body,POINTS.final),true,'the final causeway reaches the protected horizon');
+  for(let y=POINTS.entry.y;y>=POINTS.body.y;y-=1){
+    const here=runtime.geometry.cellAt(0,y),next=runtime.geometry.cellAt(0,y-1);
+    if(here&&next)assert.ok(Math.abs(here.floor-next.floor)<=.45,`spine step ${y} stays within the movement limit`);
+  }
+}
+
+{
+  const state=withTuned(landscapeState(),'fork-room');
+  const runtime=createSourceSpaceRuntime({initialState:state});
+  const diagonal={x:-22,y:-56};
+  const tangent={x:-44,y:-28};
+  const length=Math.hypot(tangent.x,tangent.y);
+  const normal={x:-tangent.y/length,y:tangent.x/length};
+  const width=Array.from({length:17},(_,index)=>index-8)
+    .filter((offset)=>runtime.geometry.cellAt(ORIGIN.x+diagonal.x+normal.x*offset,ORIGIN.y+diagonal.y+normal.y*offset)).length;
+  assert.ok(width>=8,'optional causeways remain at least eight runtime cells wide');
+  const criticalWidth=Array.from({length:19},(_,index)=>index-9)
+    .filter((offset)=>runtime.geometry.cellAt(offset,ORIGIN.y-24)).length;
+  assert.ok(criticalWidth>=10,'the critical spine remains at least ten runtime cells wide');
+}
+
+{
+  let state=withTuned(landscapeState(),'fork-room','recordist-loop');
+  state=apply(state,'CHECKPOINT_SET',{id:'recordist-loop'});
+  const runtime=createSourceSpaceRuntime({initialState:state});
+  runtime.onStep({x:0,y:-402},{x:0,y:-407,facing:0});
+  assert.equal(runtime.state().pursuitBeat,SOURCE_PURSUIT_BEAT.BODY_RUN,'leaving Recordist starts the first authored pursuit');
+  assert.equal(runtime.hushMode().colliding,true);
+  const evidenceBefore=[...runtime.state().tuned];
+  const checkpoint=runtime.handleHushContact();
+  assert.equal(runtime.state().attempts,1);
+  assert.deepEqual(runtime.state().tuned,evidenceBefore,'a catch preserves all resolved evidence');
+  assert.equal(runtime.hushMode().colliding,false,'checkpoint reload grants restart grace');
+  assert.equal(checkpoint.y,POINTS.recordist.y+7,'the reload faces forward from the latest stable pad');
+  runtime.tick(5,{...checkpoint});
+  runtime.onStep({x:0,y:-470},{x:0,y:-478,facing:0});
+  assert.ok(runtime.state().pursuitsCleared.includes(SOURCE_PURSUIT_BEAT.BODY_RUN),'Body Return clears the first pursuit');
+}
+
+{
+  let state=withTuned(landscapeState(),'fork-room','recordist-loop','surfer-origin','work-order-loop','body-room');
+  state=apply(state,'LANDMARK_RECORDED',{id:'body-room'});
+  state=apply(state,'PURSUIT_STARTED',{id:SOURCE_PURSUIT_BEAT.FINAL_RUN});
+  const runtime=createSourceSpaceRuntime({initialState:state});
+  runtime.onStep({x:70,y:-552},{x:80,y:-564,facing:0});
+  assert.equal(runtime.state().phase,'final');
+  assert.equal(runtime.hushMode().colliding,false,'the final endpoint suspends HUSH collision');
+  const attempts=runtime.state().attempts;
+  runtime.handleHushContact();
+  assert.equal(runtime.state().attempts,attempts,'protected final interactions cannot reset the player');
+  assert.equal(runtime.finalEncounterRequest().adapter,'combat-v1','the final page opens the shared deterministic combat contract');
+  const result=runtime.resolveFinalEncounter({outcome:SOURCE_FINAL_OUTCOME.RESCUE,won:true,channels:{rescue:4,contain:1,submit:0},turns:9,compatibility:{fightVersion:'signal-combat'}});
+  assert.equal(result.handled,true);
+  assert.equal(runtime.state().completed,true);
+  assert.equal(runtime.state().finalEncounter.compatibility.fightVersion,'signal-combat');
+  assert.deepEqual(runtime.state().finalEncounter.channels,{rescue:4,contain:1,submit:0});
+  assert.equal(runtime.state().finalEncounter.rescuedRecordist,true,'profile, both optional loops, and Body Return evidence unlock rescue');
+  assert.equal(runtime.sourceLook().sunrise,1,'encounter resolution completes the white-paper sunrise');
+}
+
+{
+  const runtime=createSourceSpaceRuntime({initialState:landscapeState()});
+  runtime.tick(.1,{...POINTS.entry,facing:0});
+  const first=runtime.sourceScene({px:0,py:-252,time:0});
+  const second=runtime.sourceScene({px:4,py:-250,time:1});
+  assert.equal(first.key,second.key,'movement inside a spatial chunk reuses one static Source scene');
+  assert.equal(first.staticInstances,second.staticInstances,'static source architecture is cached by chunk and state key');
+  assert.notEqual(first.dynamicInstances,second.dynamicInstances,'interaction and HUSH layers remain independently dynamic');
+  runtime.tick(6.1,{...POINTS.entry,facing:0});
+  runtime.tick(6.1,{...POINTS.entry,facing:0});
+  assert.equal(runtime.sourceObjective().alignmentPulse,true,'stalled navigation exposes a restrained alignment pulse without dialogue spam');
+}
+
+{
+  let armed=withTuned(landscapeState(),'fork-room','recordist-loop');
+  armed=apply(armed,'CHECKPOINT_SET',{id:'recordist-loop'});
+  armed=apply(armed,'PURSUIT_STARTED',{id:SOURCE_PURSUIT_BEAT.BODY_RUN});
+  let final=withTuned(armed,'surfer-origin','work-order-loop','body-room');
+  final=apply(final,'LANDMARK_RECORDED',{id:'body-room'});
+  final=apply(final,'PURSUIT_CLEARED',{id:SOURCE_PURSUIT_BEAT.BODY_RUN});
+  final=apply(final,'PURSUIT_STARTED',{id:SOURCE_PURSUIT_BEAT.FINAL_RUN});
+  const ready=apply(final,'FINAL_REACHED');
+  const resolved=apply(ready,'FINAL_ENCOUNTER_RESOLVED',{result:{outcome:SOURCE_FINAL_OUTCOME.RESCUE,won:true,compatibility:{fightVersion:'future'}}});
+  for(const snapshot of [landscapeState(),armed,final,ready,resolved,apply(resolved,'SOURCE_COMPLETED')]){
+    const reloaded=normalizeChunkSurfState(JSON.parse(JSON.stringify(snapshot)));
+    assert.equal(reloaded.phase,snapshot.phase);
+    assert.equal(reloaded.checkpoint.id,snapshot.checkpoint.id);
+    assert.equal(reloaded.pursuitBeat,snapshot.pursuitBeat);
+    assert.deepEqual(reloaded.optionalTraces,snapshot.optionalTraces);
+    assert.equal(reloaded.finalEncounter.status,snapshot.finalEncounter.status);
+  }
+}
+
+console.log('source-space finished chapter specs passed');

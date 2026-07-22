@@ -54,6 +54,34 @@ export function storyArtSideBySidePanelRows({
     Math.max(0, Math.floor(Number(choicesRows) || 0));
 }
 
+// Choices are part of the fixed right-hand text lane, not another block below
+// the image. Reserve their rows from the bottom of that lane so both transcript
+// and selection remain inside the same sixteen-row story plate.
+export function storyArtSideBySideTextLayout({
+  rows = STORY_ART_SIDE_BY_SIDE.rows,
+  choicesRows = 0,
+  choiceGapRows = 1,
+} = {}) {
+  const bandRows = Math.max(1, Math.floor(Number(rows) || 1));
+  const requestedChoicesRows = Math.max(0, Math.floor(Number(choicesRows) || 0));
+  const gapRows = requestedChoicesRows
+    ? Math.max(0, Math.floor(Number(choiceGapRows) || 0))
+    : 0;
+  const fits = requestedChoicesRows + gapRows < bandRows;
+  const visibleChoicesRows = Math.min(requestedChoicesRows, Math.max(0, bandRows - 1));
+  const visibleGapRows = visibleChoicesRows
+    ? Math.min(gapRows, Math.max(0, bandRows - visibleChoicesRows - 1))
+    : 0;
+  return {
+    rows: bandRows,
+    transcriptRows: Math.max(1, bandRows - visibleChoicesRows - visibleGapRows),
+    choicesRows: visibleChoicesRows,
+    choicesOffset: bandRows - visibleChoicesRows,
+    gapRows: visibleGapRows,
+    fits,
+  };
+}
+
 export function storyArtRows(mode = 'compact', availableRows = 12) {
   const spec = STORY_ART_LAYOUT[mode] || STORY_ART_LAYOUT.compact;
   const available = Math.max(0, Math.floor(Number(availableRows) || 0));

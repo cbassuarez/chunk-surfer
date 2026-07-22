@@ -1,4 +1,4 @@
-// Physical redaction battle + encounter lifecycle.
+// Deterministic signal combat + encounter lifecycle.
 // npm run dev && node tools/chunk_surfer/tests/battle.mjs
 
 import puppeteer from 'puppeteer-core';
@@ -22,6 +22,16 @@ const gates=()=>ev(()=>window.__probe?.encounters?.()||null);
 const url='http://localhost:5173/index.html?mode=story&renderer=3d&skiptut=1&nothink=1&sam=0&at=85,30';
 
 async function dismissScenes(limit=30){
+  if(await ev(()=>typeof window.__probe?.testRun==='function')){
+    await ev(()=>window.__probe.testRun());
+    await wait(120);
+    return;
+  }
+  if(await ev(()=>typeof window.__probe?.clearDiagnosticScenes==='function')){
+    await ev(()=>window.__probe.clearDiagnosticScenes());
+    await wait(120);
+    return;
+  }
   for(let i=0;i<limit&&(await ev(()=>window.__scenes?.depth?.()||0))>0;i++)await key('Enter',110);
 }
 async function waitReady(limit=160){
@@ -31,29 +41,36 @@ async function waitReady(limit=160){
   }
   return false;
 }
-async function toPuzzle(limit=80){
+async function toCombatMenu(limit=120){
   for(let i=0;i<limit;i++){
     const s=await state();
-    if(s?.phase==='puzzle')return s;
+    if(s?.phase==='select')return s;
     if(!(await scene())?.startsWith('battle'))return null;
     await key('Space',100);
   }
   return null;
 }
-async function solveSheet(){
-  const s=await state();
-  const keep=new Set(s.readings[0].required);
-  for(let i=0;i<s.tokens.length;i++){
-    if(!keep.has(s.tokens[i].id))await key('Enter',12);
-    if(i<s.tokens.length-1)await key('ArrowRight',8);
-  }
-  await key('r',950);
+async function chooseAction(id){
+  const view=await state();
+  const at=view.actions.findIndex((action)=>action.id===id&&action.enabled);
+  if(at<0)throw new Error(`action ${id} unavailable: ${JSON.stringify(view.actions)}`);
+  const down=(at-view.selected+view.actions.length)%view.actions.length;
+  for(let i=0;i<down;i++)await key('ArrowDown',12);
+  await key('Enter',180);
 }
-async function finishWin(){
-  for(let guard=0;guard<8&&(await scene())?.startsWith('battle');guard++){
-    const s=await toPuzzle();
-    if(!s)break;
-    await solveSheet();
+async function finishWin(limit=80){
+  for(let guard=0;guard<limit&&(await scene())?.startsWith('battle');guard++){
+    const view=await toCombatMenu();
+    if(!view)break;
+    const intent=view.intent?.kind;
+    const preferred=view.state.tempo
+      ? (view.actions.some((action)=>action.id==='playback'&&action.enabled)?'playback':'end-tempo')
+      : intent==='broadcast'?'monitor'
+        : intent==='conceal'?'expose'
+          : intent==='overload'?'hold'
+            : intent==='loop'&&view.actions.some((action)=>action.id==='invert'&&action.enabled)?'invert'
+              :'hold';
+    await chooseAction(preferred);
   }
   for(let i=0;i<80&&(await scene())?.startsWith('battle');i++)await key('Space',80);
 }
@@ -63,30 +80,65 @@ await ev(()=>localStorage.clear());
 await p.reload({waitUntil:'domcontentloaded'});
 await waitReady();await dismissScenes();
 
-// Direct mechanic: the text itself is the battle.
-await ev(()=>window.__probe.battle(false));await wait(250);
-let s=await toPuzzle();
-check('battle opens on a physical sheet',s?.phase==='puzzle',JSON.stringify(s?.phase));
-check('sheet exposes tokens and multiple readings',s?.tokens?.length>10&&s?.readings?.length>=2,`${s?.tokens?.length}/${s?.readings?.length}`);
-check('no verb menu remains',!('verbs'in(s||{})));
-const original=s?.surviving;
-await key('Enter',80);
+// Direct mechanic: exact intent, action result, and deterministic Tempo.
+await ev(()=>window.__probe.battle(false));
+const heldForEntry=await state();
+check('combat waits while its musical entry is acquired',heldForEntry?.phase==='arrival',JSON.stringify(heldForEntry?.music));
+let arrival=heldForEntry;
+for(let i=0;i<50&&!arrival?.music?.entryVariant;i++){await wait(50);arrival=await state();}
+check('battle score exposes a deterministic entry pair',
+  arrival?.music?.entryVariant>=1&&arrival.music.entryVariant<=3&&Number.isFinite(arrival.music.downbeatAt),
+  JSON.stringify(arrival?.music));
+let s=await toCombatMenu();
+check('battle opens on an exact intent',s?.phase==='select'&&s?.intent?.kind==='broadcast',JSON.stringify(s?.intent));
+check('Natatorium keeps lead 1 on the shared 40-bar clock',
+  s?.music?.targetLead==='lead-1'&&s.music.status==='running'&&s.music.gridBar>=1,
+  JSON.stringify(s?.music));
+check('actions expose exact availability and results',s?.actions?.length>=5&&s.actions.every((action)=>typeof action.enabled==='boolean'),JSON.stringify(s?.actions));
+check('word-redaction sheet state is retired',!('tokens'in(s?.state||{}))&&!('readings'in(s?.state||{})));
+const printedTakeDamage=s?.intent?.playbackDamage??s?.intent?.damage;
+await chooseAction('monitor');
 s=await state();
-check('confirm physically blacks out the selected word',s?.playerRedacted?.length===1,String(s?.playerRedacted?.length));
-check('readback changes with the sheet',s?.surviving!==original,s?.surviving);
-await key('Backspace',80);
-check('undo restores the word',(await state())?.surviving===original);
+check('perfect Monitor captures the printed Take',s?.state?.take?.damage===printedTakeDamage,String(s?.state?.take?.damage));
+check('perfect response opens one Tempo action',s?.state?.tempo===true,JSON.stringify(s?.state?.last));
+check('perfect response requests the written lead on a future bar',
+  s?.music?.activeLead==='lead-1'&&s.music.windowStartAt>=s.music.downbeatAt,
+  JSON.stringify(s?.music));
+await chooseAction('playback');
+s=await state();
+check('Playback spends the Take without chaining Tempo',!s?.state?.take&&s?.state?.tempo===false,JSON.stringify({take:s?.state?.take,tempo:s?.state?.tempo,turns:s?.state?.turns}));
 await finishWin();
-check('two won challenges defeat a normal battle',!(await scene())?.startsWith('battle'));
+check('authored deterministic movements defeat a normal battle',!(await scene())?.startsWith('battle'));
+
+// The two boss routes use the same conductor but retain movement-authored voices.
+for(const [id,movementLeads] of [
+  ['source',['lead-1','lead-2','lead-3']],
+  ['chapel',['lead-1','lead-2','lead-3','lead-1','lead-3']],
+]){
+  await ev((battleId)=>window.__probe.battleId(battleId,false),id);
+  let bossArrival=await state();
+  for(let i=0;i<50&&!bossArrival?.music?.entryVariant;i++){await wait(50);bossArrival=await state();}
+  const bossMenu=await toCombatMenu();
+  check(`${id} opens on its deterministic battle-score session`,
+    bossMenu?.music?.targetLead===movementLeads[0]&&bossMenu.music.status==='running',
+    JSON.stringify(bossMenu?.music));
+  check(`${id} retains its authored movement voice sequence`,
+    await ev((battleId,expected)=>{
+      const music=window.__probe.battleState?.()?.state?.definition?.music;
+      return music?.mode==='movement'&&JSON.stringify(music.movementLeads)===JSON.stringify(expected);
+    },id,movementLeads));
+  await ev(()=>window.__probe.battleAbort());await wait(120);
+}
 
 // Fresh slot two: stale thought data must not suppress the natatorium.
 await ev(()=>localStorage.clear());
 await p.reload({waitUntil:'domcontentloaded'});await waitReady();await dismissScenes();
 await ev(()=>{
   const raw=JSON.parse(localStorage.getItem('chunk-surfer:save:v2')||'{"version":2}');
-  raw.thoughts={had:['battle-the_tub']};localStorage.setItem('chunk-surfer:save:v2',JSON.stringify(raw));
+  raw.thoughts={had:['battle-the_tub','level-check','first-take']};localStorage.setItem('chunk-surfer:save:v2',JSON.stringify(raw));
 });
 await p.reload({waitUntil:'domcontentloaded'});await waitReady();await dismissScenes();
+await ev(()=>window.__probe.warpCell(85,30));
 await ev(()=>window.__probe.seedTake('main_b3'));
 await ev(()=>window.__probe.tuneRoomTone({takeSeconds:8}));
 await key('r',180);await key('r',180);
@@ -97,6 +149,7 @@ check('recording slot two fires in the natatorium',fired==='battle:natatorium',J
 
 // Reloading an unfinished battle does not consume it.
 await p.reload({waitUntil:'domcontentloaded'});await waitReady();await dismissScenes();
+await ev(()=>window.__probe.warpCell(85,30));
 await ev(()=>window.__probe.seedTake('main_b3'));
 await ev(()=>window.__probe.tuneRoomTone({takeSeconds:8}));
 await key('r',180);await key('r',180);
@@ -105,8 +158,13 @@ for(let i=0;i<30&&!fired;i++){await wait(120);if((await scene())?.startsWith('ba
 check('reload re-arms an unfinished encounter',fired==='battle:natatorium',JSON.stringify(await gates()));
 
 // The event belongs to recording ordinal, not the natatorium. Choosing the
-// hall as recording two produces the hall sheet instead.
+// hall as recording two produces the hall combat script instead.
 await ev(()=>localStorage.clear());
+await p.reload({waitUntil:'domcontentloaded'});await waitReady();await dismissScenes();
+await ev(()=>{
+  const raw=JSON.parse(localStorage.getItem('chunk-surfer:save:v2')||'{"version":2}');
+  raw.thoughts={had:['level-check','first-take']};localStorage.setItem('chunk-surfer:save:v2',JSON.stringify(raw));
+});
 await p.reload({waitUntil:'domcontentloaded'});await waitReady();await dismissScenes();
 await ev(()=>window.__probe.seedTake('main_b3'));
 await ev(()=>window.__probe.warpCell(102,15));

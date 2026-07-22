@@ -2,9 +2,9 @@ import * as scenes from './scenes.js';
 import { uiSize, uiText, uiWrap } from '../render/ui.js';
 import { creditAtmosphereFrame, renderCreditAtmosphere } from './credit-visual.js';
 
-export const OPENING_CREDITS_DURATION = 22;
+export const OPENING_CREDITS_DURATION = 23.5;
 
-const AUTHORED_DURATION = 22;
+const AUTHORED_DURATION = 23.5;
 const QUOTE_LINES = Object.freeze([
   '...might not the glory of the machines consist',
   'in their being without this same boasted gift',
@@ -15,14 +15,9 @@ const QUOTE_LINES = Object.freeze([
   "to our fellow-creatures.'",
 ]);
 
-// A native window can be alive and rendering behind another application for
-// the whole authored opening. Do not spend that time until the player can
-// actually see it; otherwise a slow calibration followed by an unfocused
-// launch appears to jump directly to the title menu.
-export function openingCreditsArePresentable(doc = globalThis.document) {
-  if (!doc) return true;
-  if (doc.visibilityState === 'hidden' || doc.hidden === true) return false;
-  return typeof doc.hasFocus !== 'function' || doc.hasFocus();
+function wallClockSeconds() {
+  const monotonic = globalThis.performance?.now?.();
+  return Number.isFinite(monotonic) ? monotonic / 1000 : Date.now() / 1000;
 }
 
 function clamp01(value) {
@@ -49,8 +44,8 @@ export function openingCreditFrame(time, duration = OPENING_CREDITS_DURATION) {
   const t = Math.max(0, Number(time) || 0) / scale;
   const creator = fadeWindow(t, 0.85, 1.75, 5.65, 6.40);
   const sound = fadeWindow(t, 7.20, 8.10, 12.00, 12.80);
-  const quote = fadeWindow(t, 13.60, 14.55, 21.00, 21.80);
-  const attribution = fadeWindow(t, 15.05, 15.85, 21.00, 21.80);
+  const quote = fadeWindow(t, 13.60, 14.55, 22.50, 23.30);
+  const attribution = fadeWindow(t, 15.05, 15.85, 22.50, 23.30);
   const beats = { creator, sound, quote, attribution };
   const activeBeat = Object.entries(beats).reduce(
     (best, [key, alpha]) => (alpha > best.alpha ? { key, alpha } : best),
@@ -65,7 +60,7 @@ export function openingCreditFrame(time, duration = OPENING_CREDITS_DURATION) {
     quote,
     attribution,
     atmosphere: creditAtmosphereFrame(t, {
-      alpha: smooth((t - 0.20) / 1.7) * (1 - smooth((t - 21.35) / 0.65)),
+      alpha: smooth((t - 0.20) / 1.7) * (1 - smooth((t - 22.85) / 0.65)),
       intensity: 0.72,
     }),
   };
@@ -139,11 +134,12 @@ export function openingCreditLayout({ cols = 80, rows = 30, frame = openingCredi
 export function makeOpeningCreditsScene({
   onDone,
   duration = OPENING_CREDITS_DURATION,
-  isPresentable = openingCreditsArePresentable,
+  now = wallClockSeconds,
 } = {}) {
   let time = 0;
   let done = false;
   let scene = null;
+  let lastWallAt = Number(now()) || 0;
 
   function finish() {
     if (done) return;
@@ -158,11 +154,21 @@ export function makeOpeningCreditsScene({
     blocksWorld: true,
     lookProfile: 'calm',
 
-    enter() { document.body.classList.add('opening-credits-screen'); },
+    enter() {
+      lastWallAt = Number(now()) || lastWallAt;
+      document.body.classList.add('opening-credits-screen');
+    },
     exit() { document.body.classList.remove('opening-credits-screen'); },
     update(dt) {
-      if (!isPresentable()) return;
-      time += Math.max(0, Number(dt) || 0);
+      // Credits are part of boot, not an attention prompt. Use real elapsed
+      // time when an unfocused/background WebView throttles its frame clock,
+      // while retaining dt as the deterministic fixed-step fallback.
+      const wallAt = Number(now());
+      const wallDelta = Number.isFinite(wallAt)
+        ? Math.max(0, wallAt - lastWallAt)
+        : 0;
+      if (Number.isFinite(wallAt)) lastWallAt = wallAt;
+      time += Math.max(Math.max(0, Number(dt) || 0), wallDelta);
       if (time >= duration) finish();
     },
     key() { return true; },

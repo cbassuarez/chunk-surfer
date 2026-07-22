@@ -44,6 +44,18 @@ export type StoryRegion = {
   parentId?: string;
 };
 
+export type CombatMusicProfile =
+  | { mode: 'fixed'; lead: 'lead-1' | 'lead-2' | 'lead-3' }
+  | { mode: 'movement'; movementLeads: Array<'lead-1' | 'lead-2' | 'lead-3'> };
+
+export type CombatDefinition = {
+  id: string;
+  enemy: string;
+  movements: Array<{ id: string; coherence: number; [key: string]: unknown }>;
+  music: CombatMusicProfile;
+  [key: string]: unknown;
+};
+
 export type NarrativeDocument = {
   schemaVersion: number;
   id: string;
@@ -55,7 +67,7 @@ export type NarrativeDocument = {
   notes?: string;
   regions: StoryRegion[];
   nodes: Record<string, StoryNode>;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, unknown> & { combat?: CombatDefinition };
 };
 
 export type StoryLayout = {
@@ -63,6 +75,12 @@ export type StoryLayout = {
   documentId: string;
   positions: Record<string, { x: number; y: number }>;
   regions: Record<string, { x?: number; y?: number; width?: number; height?: number; collapsed?: boolean }>;
+};
+
+export type StoryTransaction = {
+  document: NarrativeDocument;
+  layout: StoryLayout;
+  selectedId?: string | null;
 };
 
 export type AudioAsset = {

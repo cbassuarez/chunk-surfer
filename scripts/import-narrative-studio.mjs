@@ -2,6 +2,7 @@ import { access, mkdir, readdir, rm, writeFile } from 'node:fs/promises';
 import { extname, relative, resolve } from 'node:path';
 import * as conservatory from '../src/data/conservatory-script.js';
 import * as battles from '../src/data/battles.js';
+import { authoredCombatProfile } from '../src/data/combat-definitions.js';
 import { dialogue as legacyPrologue } from '../src/data/prologue.js';
 import { radioDialogue } from '../src/data/radio-script.js';
 import { RADIO_CUES } from '../src/data/radio-cues.js';
@@ -107,7 +108,7 @@ function battleGraph(id, title, battle) {
   tree.win = { type: 'ending', lines: battle.win || [] };
   tree.lose = { type: 'ending', lines: battle.lose || [] };
   const doc = normalizeTree(id, title, tree, { regionKind: 'scene', tags: ['battle'] });
-  doc.metadata = { id: battle.id, enemy: battle.enemy, art: battle.art || null, composure: battle.composure, health: battle.health, tools: battle.tools || null, challenges: battle.challenges || [] };
+  doc.metadata = { id: battle.id, enemy: battle.enemy, art: battle.art || null, combat: authoredCombatProfile(battle.id) };
   doc.regions.push({ id: `${id}.endings`, title: 'Battle outcomes', kind: 'ending', color: '#8b3c48', nodeIds: ['win', 'lose'] });
   return doc;
 }
@@ -210,6 +211,16 @@ async function buildAudioProject() {
   for (const [name, path] of Object.entries(STORY_AUDIO)) {
     putCue({ id: `story.${name}`, title: `Story ${name}`, bus: name === 'title' ? 'music' : 'dialog', concurrency: 'replace', layers: [{ id: `story.${name}.layer`, assetId: byPath.get(path) || assetIdFor(path), gain: 1, playbackRate: 1, pan: 0, loop: ['title', 'booth', 'rain', 'tape'].includes(name) }] });
   }
+  const battleAsset = (name) => byPath.get(`audio/game/battle/${name}.mp3`) || assetIdFor(`audio/game/battle/${name}.mp3`);
+  putCue({ id: 'battle.bed', title: 'Battle bed', bus: 'music', concurrency: 'replace', layers: [{ id: 'battle.bed.layer', assetId: battleAsset('bed'), gain: .72, playbackRate: 1, pan: 0, loop: true }] });
+  [3, 2.35, .75].forEach((gain, index) => putCue({ id: `battle.lead.${index + 1}`, title: `Battle lead ${index + 1}`, bus: 'music', concurrency: 'replace', layers: [{ id: `battle.lead.${index + 1}.layer`, assetId: battleAsset(`lead-${index + 1}`), gain, playbackRate: 1, pan: 0, loop: true }] }));
+  [[.4, 1.25], [1.7, 1.35], [1.8, 1.4]].forEach(([fillGain, tailGain], index) => {
+    const variant = index + 1;
+    putCue({ id: `battle.entry.${variant}`, title: `Battle entry ${variant}`, bus: 'music', concurrency: 'replace', layers: [
+      { id: `battle.entry.${variant}.fill`, assetId: battleAsset(`entry-${variant}-fill`), gain: fillGain, playbackRate: 1, pan: 0 },
+      { id: `battle.entry.${variant}.tail`, assetId: battleAsset(`entry-${variant}-tail`), gain: tailGain, playbackRate: 1, pan: 0 },
+    ] });
+  });
   putCue({ id: 'freeze', title: 'Rupture freeze', bus: 'sfx', concurrency: 'replace', layers: [], effects: ['fx:flash:120', 'fx:shake:1.6:700', 'look:rupture'] });
   putCue({ id: 'squelch', title: 'Radio squelch', bus: 'sfx', concurrency: 'overlap', layers: [{ id: 'squelch.layer', assetId: byPath.get(CUE.recorder), gain: .55, playbackRate: .4, pan: 0 }], effects: ['threat:report', 'fear:bump:.22:.5'], acoustic: { kind: 'radio_squelch', sourceKind: 'equipment', sourceId: 'radio', reason: 'the radio', level: .34, emitsWorldNoise: true, maySpoilTake: true, markHeard: true } });
   for (const item of HUSH_MISCHIEF_CUES) {

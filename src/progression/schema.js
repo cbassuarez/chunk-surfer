@@ -75,7 +75,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
 export const DEFAULT_RULE_VALUES = Object.freeze({
   presencePressure: 'standard',
   recordingForgiveness: 'standard',
-  redactionAssistance: 'standard',
+  combatAssistance: 'standard',
   navigationSignal: 'directional',
   escapeTimer: 'standard',
   torchDrain: 'standard',
@@ -289,6 +289,10 @@ export function normalizeRun(value, { meta = null, settings = null, activeFallba
   }
   const source = value;
   const rules = objectOr(source.rules);
+  const rawRuleValues = objectOr(rules.values);
+  const migratedRuleValues = rawRuleValues.combatAssistance == null && typeof rawRuleValues.redactionAssistance === 'string'
+    ? { ...rawRuleValues, combatAssistance: rawRuleValues.redactionAssistance }
+    : rawRuleValues;
   const integrity = objectOr(source.integrity);
   const deadAir = objectOr(integrity.deadAir);
   const replay = objectOr(source.replay);
@@ -306,7 +310,7 @@ export function normalizeRun(value, { meta = null, settings = null, activeFallba
       startedPreset,
       currentPreset: typeof rules.currentPreset === 'string' ? rules.currentPreset : startedPreset,
       custom: !!rules.custom,
-      values: { ...DEFAULT_RULE_VALUES, ...objectOr(rules.values) },
+      values: { ...DEFAULT_RULE_VALUES, ...migratedRuleValues },
     },
     integrity: {
       deadAir: {

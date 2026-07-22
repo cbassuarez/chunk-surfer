@@ -22,7 +22,13 @@ import * as scenes from './scenes.js';
 import { uiSize, uiScrim } from '../render/ui.js';
 import { drawMachinePanel } from '../render/presentation.js';
 import { createConversation } from './conversation.js';
-import { drawStoryArtCard, planStoryArtInPanel, planStoryArtSideBySide, storyArtSideBySidePanelRows } from './story-art-card.js';
+import {
+  drawStoryArtCard,
+  planStoryArtInPanel,
+  planStoryArtSideBySide,
+  storyArtSideBySidePanelRows,
+  storyArtSideBySideTextLayout,
+} from './story-art-card.js';
 import { resolveStoryArt } from './story-art.js';
 import {
   drawTranscript,
@@ -82,7 +88,7 @@ export function makeThoughtScene({
         const art = resolveStoryArt(v.art || null);
         const fixedArtPanelH = art
           ? storyArtSideBySidePanelRows({
-              choicesRows: choices.height ? choices.height + 1 : 0,
+              choicesRows: 0,
               bottomPadRows: 2,
             })
           : 0;
@@ -133,17 +139,17 @@ export function makeThoughtScene({
         let transcriptY =
           header.y + (header.rows ? 1 : 0);
 
-        const beforeTextRows = Math.max(
+        const sidePanelRows = Math.max(
           1,
           panel.y +
             panel.h -
-            transcriptY -
-            reserve,
+            transcriptY,
         );
+        const beforeTextRows = Math.max(1, sidePanelRows - reserve);
         const sidePlan = planStoryArtSideBySide({
           art,
           mode: art?.mode || 'compact',
-          panelRows: beforeTextRows,
+          panelRows: sidePanelRows,
           panelCols: contentW,
           textRowsMin: 3,
           choicesRows: 0,
@@ -159,6 +165,10 @@ export function makeThoughtScene({
           const lanes = fixedTranscriptLanes(contentW, { split: sidePlan });
           choiceLayout = layoutTranscriptChoices(v, contentW, { lane: lanes.right });
           reserve = choiceLayout.height ? choiceLayout.height + 1 : 0;
+          const textLayout = storyArtSideBySideTextLayout({
+            rows: sidePlan.rows,
+            choicesRows: choiceLayout.height,
+          });
 
           drawStoryArtCard(art, {
             x: contentX,
@@ -170,7 +180,7 @@ export function makeThoughtScene({
           });
           transcriptX = contentX + sidePlan.artCols + sidePlan.gap;
           transcriptW = sidePlan.textCols;
-          availableRows = sidePlan.rows;
+          availableRows = textLayout.transcriptRows;
           const transcript = layoutTranscript(v, {
             width: contentW,
             maxRows: availableRows,
@@ -188,9 +198,9 @@ export function makeThoughtScene({
           if (choiceLayout.height) {
             drawTranscriptChoices(choiceLayout, {
               x: contentX,
-              y: panel.y + panel.h - choiceLayout.height,
+              y: transcriptY + textLayout.choicesOffset,
               width: contentW,
-              maxRows: choiceLayout.height,
+              maxRows: textLayout.choicesRows,
             });
           }
 

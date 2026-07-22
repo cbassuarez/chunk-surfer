@@ -7,7 +7,7 @@ import {
   PRESET_ORDER,
   PRESENCE_RULES,
   RECORDING_RULES,
-  REDACTION_RULES,
+  COMBAT_RULES,
   RULE_OPTIONS,
   TORCH_RULES,
 } from './difficulty-defs.js';
@@ -40,9 +40,12 @@ export function presetById(id, meta = null) {
 }
 
 export function normalizeRuleValues(values = {}) {
+  const source = values?.combatAssistance == null && typeof values?.redactionAssistance === 'string'
+    ? { ...values, combatAssistance: values.redactionAssistance }
+    : values;
   const out = { ...DEFAULT_RULE_VALUES };
   for (const [key, options] of Object.entries(RULE_OPTIONS)) {
-    const value = values?.[key];
+    const value = source?.[key];
     if (options.includes(value)) out[key] = value;
   }
   return out;
@@ -65,7 +68,8 @@ export function resolveDifficulty(runRules = null) {
     values: Object.freeze({ ...values }),
     presence: PRESENCE_RULES[values.presencePressure] || PRESENCE_RULES.standard,
     recording: RECORDING_RULES[values.recordingForgiveness] || RECORDING_RULES.standard,
-    redaction: REDACTION_RULES[values.redactionAssistance] || REDACTION_RULES.standard,
+    combat: COMBAT_RULES[values.combatAssistance] || COMBAT_RULES.standard,
+    redaction: COMBAT_RULES[values.combatAssistance] || COMBAT_RULES.standard,
     navigation: NAVIGATION_RULES[values.navigationSignal] || NAVIGATION_RULES.directional,
     escape: ESCAPE_RULES[values.escapeTimer] || ESCAPE_RULES.standard,
     torch: TORCH_RULES[values.torchDrain] || TORCH_RULES.standard,

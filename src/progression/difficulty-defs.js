@@ -11,7 +11,7 @@ export const DIFFICULTY_PRESETS = Object.freeze({
     values: Object.freeze({
       presencePressure: 'reduced',
       recordingForgiveness: 'pause',
-      redactionAssistance: 'guided',
+      combatAssistance: 'guided',
       navigationSignal: 'full',
       escapeTimer: 'extended',
       torchDrain: 'slow',
@@ -37,7 +37,7 @@ export const DIFFICULTY_PRESETS = Object.freeze({
     values: Object.freeze({
       presencePressure: 'severe',
       recordingForgiveness: 'strict',
-      redactionAssistance: 'severe',
+      combatAssistance: 'severe',
       navigationSignal: 'minimal',
       escapeTimer: 'strict',
       torchDrain: 'scarce',
@@ -54,7 +54,7 @@ export const DIFFICULTY_PRESETS = Object.freeze({
     values: Object.freeze({
       presencePressure: 'dead-air',
       recordingForgiveness: 'strict',
-      redactionAssistance: 'dead-air',
+      combatAssistance: 'dead-air',
       navigationSignal: 'minimal',
       escapeTimer: 'dead-air',
       torchDrain: 'dead-air',
@@ -68,7 +68,7 @@ export const PRESET_ORDER = Object.freeze(['story', 'contract', 'night', 'dead-a
 export const RULE_OPTIONS = Object.freeze({
   presencePressure: Object.freeze(['reduced', 'standard', 'severe', 'dead-air']),
   recordingForgiveness: Object.freeze(['pause', 'standard', 'strict']),
-  redactionAssistance: Object.freeze(['guided', 'standard', 'severe', 'dead-air']),
+  combatAssistance: Object.freeze(['guided', 'standard', 'severe', 'dead-air']),
   navigationSignal: Object.freeze(['full', 'directional', 'minimal']),
   escapeTimer: Object.freeze(['off', 'extended', 'standard', 'strict', 'dead-air']),
   torchDrain: Object.freeze(['slow', 'standard', 'scarce', 'dead-air']),
@@ -78,7 +78,7 @@ export const RULE_OPTIONS = Object.freeze({
 export const RULE_LABELS = Object.freeze({
   presencePressure: 'PRESENCE PRESSURE',
   recordingForgiveness: 'RECORDING FORGIVENESS',
-  redactionAssistance: 'REDACTION ASSISTANCE',
+  combatAssistance: 'COMBAT ASSISTANCE',
   navigationSignal: 'NAVIGATION SIGNAL',
   escapeTimer: 'ESCAPE TIMER',
   torchDrain: 'TORCH DRAIN',
@@ -105,7 +105,7 @@ export const VALUE_LABELS = Object.freeze({
 export const RULE_RANK = Object.freeze({
   presencePressure: Object.freeze({ reduced: 0, standard: 1, severe: 2, 'dead-air': 3 }),
   recordingForgiveness: Object.freeze({ pause: 0, standard: 1, strict: 2 }),
-  redactionAssistance: Object.freeze({ guided: 0, standard: 1, severe: 2, 'dead-air': 3 }),
+  combatAssistance: Object.freeze({ guided: 0, standard: 1, severe: 2, 'dead-air': 3 }),
   navigationSignal: Object.freeze({ full: 0, directional: 1, minimal: 2 }),
   escapeTimer: Object.freeze({ off: 0, extended: 1, standard: 2, strict: 3, 'dead-air': 4 }),
   torchDrain: Object.freeze({ slow: 0, standard: 1, scarce: 2, 'dead-air': 3 }),
@@ -125,12 +125,16 @@ export const RECORDING_RULES = Object.freeze({
   strict: Object.freeze({ minorNoise: 'spoil', spoilNoiseScale: 0.90 }),
 });
 
-export const REDACTION_RULES = Object.freeze({
-  guided: Object.freeze({ healthBonus: 2, maxAttempts: 3, hintAfterFailures: 2 }),
-  standard: Object.freeze({ healthBonus: 0, maxAttempts: 2, hintAfterFailures: null }),
-  severe: Object.freeze({ healthBonus: -1, maxAttempts: 2, hintAfterFailures: null }),
-  'dead-air': Object.freeze({ healthBonus: -1, maxAttempts: 1, hintAfterFailures: null }),
+export const COMBAT_RULES = Object.freeze({
+  guided: Object.freeze({ id: 'guided', composureBonus: 2, holdPrevention: 3, intentLookahead: 2, recommended: true, safetyRelay: true, variant: 'standard' }),
+  standard: Object.freeze({ id: 'standard', composureBonus: 0, holdPrevention: 2, intentLookahead: 1, recommended: true, safetyRelay: false, variant: 'standard' }),
+  severe: Object.freeze({ id: 'severe', composureBonus: -1, holdPrevention: 2, intentLookahead: 1, recommended: false, safetyRelay: false, variant: 'severe' }),
+  'dead-air': Object.freeze({ id: 'dead-air', composureBonus: -2, holdPrevention: 2, intentLookahead: 1, recommended: false, safetyRelay: false, variant: 'dead-air' }),
 });
+
+// Serialized saves migrate to combatAssistance, but this export keeps older
+// integrations from failing during the transition.
+export const REDACTION_RULES = COMBAT_RULES;
 
 export const NAVIGATION_RULES = Object.freeze({
   full: Object.freeze({

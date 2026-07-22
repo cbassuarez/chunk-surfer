@@ -97,7 +97,7 @@ export const ACHIEVEMENT_DEFS = Object.freeze([
   },
   {
     id: 'ACH_FIRST_PASS', name: 'Nothing There',
-    description: 'Clear every redaction encounter without losing one.', category: 'method', hidden: false,
+    description: 'Clear every signal-combat encounter without losing one.', category: 'method', hidden: false,
     events: [EVENT_TYPES.RUN_FINISHED],
     test: ({ summary }) => summary?.battles?.started >= 3
       && summary?.battles?.lost === 0

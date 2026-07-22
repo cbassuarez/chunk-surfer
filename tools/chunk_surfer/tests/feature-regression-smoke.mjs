@@ -51,6 +51,14 @@ async function settleViewport(){
   await new Promise((resolve)=>setTimeout(resolve,100));
 }
 
+async function samplePerformance(frames=75){
+  await page.evaluate(()=>window.__probe.performanceReset());
+  await new Promise((resolve)=>setTimeout(resolve,Math.max(500,frames*18)));
+  const snapshot=await page.evaluate(()=>window.__probe.performance());
+  assert.ok(snapshot.samples>=30,'performance probe must observe at least thirty rendered frames');
+  return snapshot;
+}
+
 async function capturePair(desktopName,compactName){
   await page.screenshot({path:path.join(output,desktopName)});
   await page.setViewport(compactViewport);
@@ -147,9 +155,15 @@ try {
   await page.waitForFunction(()=>/^battle:/.test(window.__scenes?.top?.()?.id||''),{timeout:interactionTimeout});
   await page.keyboard.press('Enter');
   await page.keyboard.press('Enter');
-  await page.screenshot({path:path.join(output,'07-redaction-battle.png')});
+  await page.screenshot({path:path.join(output,'07-signal-combat.png')});
   assert.equal(await page.evaluate(()=>window.__probe.battleAbort()),true);
   await page.waitForFunction(()=>!/^battle:/.test(window.__scenes?.top?.()?.id||''),{timeout:interactionTimeout});
+
+  await page.setViewport(compactViewport);
+  await settleViewport();
+  const buildingPerformance=await samplePerformance();
+  await page.setViewport(desktopViewport);
+  await settleViewport();
 
   assert.equal(await page.evaluate(()=>window.__probe.chunkSurfStart()),true);
   await page.waitForFunction(()=>window.__probe?.chunkSurf?.().active===true,{timeout:interactionTimeout});
@@ -162,6 +176,42 @@ try {
   assert.equal(chunkSurf.parity.screen,'game','source-space remains in the normal gameplay renderer');
   assert.notEqual(chunkSurf.scene,'chunk-surf','source-space must not restore the obsolete blocking scene');
   await page.screenshot({path:path.join(output,'08-chunk-surf-long-hall.png')});
+
+  const sourcePresets=[
+    ['hall-entry','hall'],
+    ['hall-storm','hall'],
+    ['haystack','haystack'],
+    ['landscape','landscape'],
+    ['hunt','landscape'],
+    ['final-run','landscape'],
+    ['final','final'],
+  ];
+  let sourcePerformance=null;
+  await page.setViewport(compactViewport);
+  await settleViewport();
+  for(const [preset,phase] of sourcePresets){
+    const snapshot=await page.evaluate((id)=>window.__probe.sourcePreset(id),preset);
+    assert.equal(snapshot.phase,phase,`${preset} must enter its authored Source phase`);
+    await page.waitForFunction((expected)=>window.__probe?.chunkSurf?.().phase===expected,{timeout:interactionTimeout},phase);
+    await new Promise((resolve)=>setTimeout(resolve,120));
+    const frame=await page.evaluate(()=>({source:window.__probe.chunkSurf(),props:window.__probe.props().pack,parity:window.__chunkParity()}));
+    assert.equal(frame.parity.renderer,'3d');
+    if(['landscape','final'].includes(phase)){
+      assert.ok(frame.source.visibleGlyphs>0,`${preset} must submit visible provenance-backed glyphs`);
+      assert.ok(frame.props.sourceText>0,`${preset} must reach the GPU source-text pass`);
+    }
+    if(preset==='landscape'){
+      const atlasBuilds=frame.props.textAtlasBuilds;
+      sourcePerformance=await samplePerformance();
+      const after=await page.evaluate(()=>window.__probe.props().pack);
+      assert.equal(after.textAtlasBuilds,atlasBuilds,'traversal frames must not rebuild the glyph atlas');
+      assert.ok(sourcePerformance.spikesAbove50<=1,'Source traversal must not produce recurring frame spikes above 50 ms');
+      assert.ok(sourcePerformance.frameMs<=buildingPerformance.frameMs*1.1,`Source frame time ${sourcePerformance.frameMs} ms must stay within 10% of building baseline ${buildingPerformance.frameMs} ms`);
+    }
+    await page.screenshot({path:path.join(output,`08-source-${preset}-960x600.png`)});
+  }
+  await page.setViewport(desktopViewport);
+  await settleViewport();
 
   assert.equal(await page.evaluate(()=>window.__probe.godWarpDock()),true,'God warp returns from Source to the loading dock');
   await page.waitForFunction(()=>{
@@ -212,6 +262,8 @@ try {
     authoredFloors:map.source.definition.floors.length,
     mapTargets:map.source.targets.length,
     chunkSurfPhase:chunkSurf.state.phase,
+    buildingPerformance,
+    sourcePerformance,
     output,
   }));
 } finally {

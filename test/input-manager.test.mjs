@@ -49,6 +49,20 @@ test('keyup clears held state and creates a release edge', () => {
   assert.equal(input.wasReleased('KeyW'), true);
 });
 
+test('consumed keyup still clears a movement key recorded before a scene opened', () => {
+  const input = new InputManager();
+  input.keyDown({ code: 'KeyW', target: {} });
+  input.endFrame();
+  input.keyUp({
+    code: 'KeyW',
+    defaultPrevented: true,
+    target: { tagName: 'INPUT' },
+  });
+
+  assert.equal(input.isHeld('KeyW'), false);
+  assert.equal(input.wasReleased('KeyW'), true);
+});
+
 test('blur clears held keys and pointer deltas', () => {
   const target = fakeTarget();
   const doc = fakeTarget();

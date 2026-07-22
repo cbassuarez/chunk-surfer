@@ -47,6 +47,29 @@ function validateArtRef(errors, path, art, mediaIds) {
   if (mediaIds && !mediaIds.has(id)) issue(errors, path, `unknown media slot ${id}`);
 }
 
+function validateCombatMusic(errors, combat) {
+  if (combat == null) return;
+  const path = 'metadata.combat.music';
+  const music = combat?.music;
+  const movements = Array.isArray(combat?.movements) ? combat.movements : [];
+  const validLead = (value) => ['lead-1', 'lead-2', 'lead-3'].includes(value);
+  if (!music || typeof music !== 'object' || Array.isArray(music)) {
+    issue(errors, path, 'is required for authored combat');
+    return;
+  }
+  if (!['fixed', 'movement'].includes(music.mode)) issue(errors, `${path}.mode`, 'must be fixed or movement');
+  if (music.mode === 'fixed' && !validLead(music.lead)) issue(errors, `${path}.lead`, 'must name lead-1, lead-2, or lead-3');
+  if (music.mode === 'movement') {
+    if (!Array.isArray(music.movementLeads) || music.movementLeads.length !== movements.length) {
+      issue(errors, `${path}.movementLeads`, 'must name one lead per movement');
+    } else {
+      music.movementLeads.forEach((lead, index) => {
+        if (!validLead(lead)) issue(errors, `${path}.movementLeads.${index}`, 'must name lead-1, lead-2, or lead-3');
+      });
+    }
+  }
+}
+
 export function validateNarrativeDocument(doc, options = {}) {
   const cueIds = options.cueIds || null;
   const mediaIds = options.mediaIds || null;
@@ -59,6 +82,7 @@ export function validateNarrativeDocument(doc, options = {}) {
   const nodes = doc.nodes || {};
   if (!nodes || typeof nodes !== 'object' || Array.isArray(nodes)) issue(errors, 'nodes', 'must be an object');
   if (!nodes[doc.entry]) issue(errors, 'entry', `target ${doc.entry || '(empty)'} does not exist`);
+  validateCombatMusic(errors, doc.metadata?.combat);
   for (const [index, entry] of (doc.entries || []).entries()) if (!nodes[entry]) issue(errors, `entries.${index}`, `target ${entry} does not exist`);
   const seenContentIds = new Set();
   for (const [nodeId, node] of Object.entries(nodes)) {
@@ -142,6 +166,12 @@ export function validateAudioProject(doc) {
     for (const [layerIndex, layer] of (cue.layers || []).entries()) {
       if (!ID.test(layer?.id || '')) issue(errors, `cues.${index}.layers.${layerIndex}.id`, 'must be a stable identifier');
       if (!assets.has(layer.assetId)) issue(errors, `cues.${index}.layers.${layerIndex}.assetId`, `unknown asset ${layer.assetId}`);
+      for (const parameter of ['gain', 'pan', 'playbackRate', 'delay', 'trimStart', 'trimEnd', 'fadeIn', 'fadeOut']) {
+        if (layer[parameter] != null && !Number.isFinite(Number(layer[parameter]))) issue(errors, `cues.${index}.layers.${layerIndex}.${parameter}`, 'must be numeric');
+      }
+      if (Number(layer.gain ?? 1) < 0) issue(errors, `cues.${index}.layers.${layerIndex}.gain`, 'cannot be negative');
+      if (Number(layer.pan ?? 0) < -1 || Number(layer.pan ?? 0) > 1) issue(errors, `cues.${index}.layers.${layerIndex}.pan`, 'must be between -1 and 1');
+      if (Number(layer.delay || 0) < 0) issue(errors, `cues.${index}.layers.${layerIndex}.delay`, 'cannot be negative');
       if (Number(layer.trimStart || 0) < 0) issue(errors, `cues.${index}.layers.${layerIndex}.trimStart`, 'cannot be negative');
       if (layer.trimEnd != null && Number(layer.trimEnd) < Number(layer.trimStart || 0)) issue(errors, `cues.${index}.layers.${layerIndex}.trimEnd`, 'cannot be before trimStart');
       if (Number(layer.playbackRate ?? 1) <= 0) issue(errors, `cues.${index}.layers.${layerIndex}.playbackRate`, 'must be positive');

@@ -377,1134 +377,564 @@
       "caption": "Damaged monitor path / chapel",
       "status": "SIGNAL"
     },
-    "composure": 1.25,
-    "health": 5,
-    "tools": {
-      "fork": true,
-      "rig": true
-    },
-    "challenges": [
-      {
-        "id": "chapel-room",
-        "title": "THE ROOM",
-        "claim": "THE CHAPEL CLAIMS A BODY IS AN INSTRUMENT.",
-        "tools": {
-          "reveal": true,
-          "graft": true
-        },
-        "terminal": false,
-        "tokens": [
-          {
-            "id": "chapel-room:printed:0",
-            "text": "THE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-room:printed:1",
-            "text": "ROOM",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-room:printed:2",
-            "text": "IS",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-room:printed:3",
-            "text": "EMPTY",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-room:printed:4",
-            "text": "THE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-room:printed:5",
-            "text": "SIGNAL",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-room:printed:6",
-            "text": "SAYS",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-room:printed:7",
-            "text": "BODY",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-room:printed:8",
-            "text": "THE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-room:printed:9",
-            "text": "ORGAN",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-room:printed:10",
-            "text": "SAYS",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-room:printed:11",
-            "text": "INSTRUMENT",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-room:not",
-            "text": "NOT",
-            "kind": "hidden",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-room:process",
-            "text": "PROCESS",
-            "kind": "graft",
-            "label": "",
-            "falseText": false
-          }
-        ],
-        "readings": [
-          {
-            "id": "room-empty",
-            "meaning": "The chapel is still a room.",
-            "routeBias": null,
-            "grants": [],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "chapel-room:printed:0",
-              "chapel-room:printed:1",
-              "chapel-room:printed:2",
-              "chapel-room:printed:3"
-            ],
-            "forbidden": [
-              "chapel-room:printed:7"
-            ],
-            "maxVisible": 4
-          },
-          {
-            "id": "signal-not-body",
-            "meaning": "The signal is not a body.",
-            "routeBias": null,
-            "grants": [
-              "route.inversion"
-            ],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "chapel-room:printed:5",
-              "chapel-room:not",
-              "chapel-room:printed:7"
-            ],
-            "forbidden": [
-              "chapel-room:printed:11"
-            ],
-            "maxVisible": 3
-          },
-          {
-            "id": "body-instrument",
-            "meaning": "You let the body become the instrument.",
-            "routeBias": "sacrifice",
-            "grants": [],
-            "locks": [
-              "route.surfaced"
-            ],
-            "pressureDelta": 1,
-            "required": [
-              "chapel-room:printed:7",
-              "chapel-room:printed:11"
-            ],
-            "forbidden": [
-              "chapel-room:printed:3"
-            ],
-            "maxVisible": 2
-          },
-          {
-            "id": "signal-process",
-            "meaning": "The source is a process in signal.",
-            "routeBias": null,
-            "grants": [
-              "route.inversion"
-            ],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "chapel-room:printed:5",
-              "chapel-room:process"
-            ],
-            "forbidden": [
-              "chapel-room:printed:7"
-            ],
-            "maxVisible": 2
-          }
-        ],
-        "opponentMoves": [
-          {
-            "blackout": [
-              "chapel-room:not"
-            ],
-            "scrape": [
-              "chapel-room:printed:7"
-            ],
-            "insert": [
-              "chapel-room:process"
-            ],
-            "notice": "THE OTHER HAND REMOVES NOT AND MAKES BODY SPEAK AGAIN."
-          },
-          {
-            "blackout": [
-              "chapel-room:printed:3"
-            ],
-            "scrape": [
-              "chapel-room:printed:11"
-            ],
-            "insert": [],
-            "notice": "THE OTHER HAND TAKES AWAY EMPTY."
-          }
+    "combat": {
+      "kind": "chapel",
+      "music": {
+        "mode": "movement",
+        "movementLeads": [
+          "lead-1",
+          "lead-2",
+          "lead-3",
+          "lead-1",
+          "lead-3"
         ]
       },
-      {
-        "id": "chapel-recordist",
-        "title": "THE PREVIOUS RECORDIST",
-        "claim": "THE OTHER HAND WANTS VANISHED TO BE CLEANER THAN BORROWED.",
-        "tools": {
-          "reveal": true,
-          "graft": true
+      "movements": [
+        {
+          "id": "room",
+          "title": "THE ROOM",
+          "coherence": 3,
+          "intents": [
+            {
+              "id": "chapel:room-tone",
+              "label": "ROOM TONE CLAIMS A BODY",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "ROOM CLAIM"
+            },
+            {
+              "id": "chapel:not-empty",
+              "label": "NOT WRITTEN INTO EMPTY",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "chapel:walls",
+              "label": "THE WALLS CLOSE THE CIRCUIT",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            }
+          ],
+          "severeIntents": [
+            {
+              "id": "chapel:not-empty",
+              "label": "NOT WRITTEN INTO EMPTY",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "chapel:walls",
+              "label": "THE WALLS CLOSE THE CIRCUIT",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "chapel:room-tone",
+              "label": "ROOM TONE CLAIMS A BODY",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "ROOM CLAIM"
+            }
+          ],
+          "deadAirIntents": [
+            {
+              "id": "chapel:walls",
+              "label": "THE WALLS CLOSE THE CIRCUIT",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "chapel:not-empty",
+              "label": "NOT WRITTEN INTO EMPTY",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "chapel:room-tone",
+              "label": "ROOM TONE CLAIMS A BODY",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "ROOM CLAIM"
+            }
+          ]
         },
-        "terminal": false,
-        "tokens": [
-          {
-            "id": "chapel-recordist:printed:0",
-            "text": "SARAH",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-recordist:printed:1",
-            "text": "VANISHED",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-recordist:printed:2",
-            "text": "BECAUSE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-recordist:printed:3",
-            "text": "HE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-recordist:printed:4",
-            "text": "AGREED",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-recordist:printed:5",
-            "text": "THE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-recordist:printed:6",
-            "text": "BODY",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-recordist:printed:7",
-            "text": "IS",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-recordist:printed:8",
-            "text": "BORROWED",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-recordist:printed:9",
-            "text": "AND",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-recordist:printed:10",
-            "text": "RETURN",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-recordist:printed:11",
-            "text": "IS",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-recordist:printed:12",
-            "text": "POSSIBLE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-recordist:not",
-            "text": "NOT",
-            "kind": "hidden",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-recordist:still",
-            "text": "STILL",
-            "kind": "graft",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-recordist:here",
-            "text": "HERE",
-            "kind": "graft",
-            "label": "",
-            "falseText": false
-          }
-        ],
-        "readings": [
-          {
-            "id": "recordist-vanished",
-            "meaning": "You accept the old absence.",
-            "routeBias": "sacrifice",
-            "grants": [],
-            "locks": [
-              "route.surfaced"
-            ],
-            "pressureDelta": 1,
-            "required": [
-              "chapel-recordist:printed:1"
-            ],
-            "forbidden": [
-              "chapel-recordist:printed:8",
-              "chapel-recordist:printed:10"
-            ],
-            "maxVisible": 1
-          },
-          {
-            "id": "he-agreed",
-            "meaning": "You accept the Surfer’s consent story.",
-            "routeBias": "sacrifice",
-            "grants": [],
-            "locks": [
-              "route.surfaced"
-            ],
-            "pressureDelta": 1,
-            "required": [
-              "chapel-recordist:printed:3",
-              "chapel-recordist:printed:4"
-            ],
-            "forbidden": [
-              "chapel-recordist:printed:8"
-            ],
-            "maxVisible": 2
-          },
-          {
-            "id": "body-borrowed-return",
-            "meaning": "The body is borrowed and can be returned.",
-            "routeBias": null,
-            "grants": [
-              "route.surfaced"
-            ],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "chapel-recordist:printed:6",
-              "chapel-recordist:printed:8",
-              "chapel-recordist:printed:10",
-              "chapel-recordist:printed:12"
-            ],
-            "forbidden": [
-              "chapel-recordist:printed:4"
-            ],
-            "maxVisible": 4
-          },
-          {
-            "id": "still-here",
-            "meaning": "The prior recordist is still recoverable.",
-            "routeBias": null,
-            "grants": [
-              "route.surfaced"
-            ],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "chapel-recordist:still",
-              "chapel-recordist:here"
-            ],
-            "forbidden": [
-              "chapel-recordist:printed:1"
-            ],
-            "maxVisible": 2
-          }
-        ],
-        "opponentMoves": [
-          {
-            "blackout": [
-              "chapel-recordist:printed:10"
-            ],
-            "scrape": [
-              "chapel-recordist:printed:4"
-            ],
-            "insert": [],
-            "notice": "THE OTHER HAND BLACKS OUT RETURN AND RESTORES AGREED."
-          },
-          {
-            "blackout": [
-              "chapel-recordist:printed:8"
-            ],
-            "scrape": [
-              "chapel-recordist:printed:1"
-            ],
-            "insert": [],
-            "notice": "THE OTHER HAND REMOVES BORROWED."
-          }
-        ]
-      },
-      {
-        "id": "chapel-surfer",
-        "title": "THE SURFER",
-        "claim": "IT ARGUES THAT A GHOST IS EASIER THAN A MACHINE.",
-        "tools": {
-          "reveal": true,
-          "graft": true
+        {
+          "id": "recordist",
+          "title": "THE PREVIOUS RECORDIST",
+          "coherence": 3,
+          "intents": [
+            {
+              "id": "chapel:body",
+              "label": "BORROWED BODY ON THE MONITOR",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "BORROWED BODY",
+              "takeTag": "body"
+            },
+            {
+              "id": "chapel:consent",
+              "label": "CONSENT BURIED UNDER NOISE",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "chapel:previous",
+              "label": "PREVIOUS RECORDIST BLACKED OUT",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            }
+          ],
+          "severeIntents": [
+            {
+              "id": "chapel:consent",
+              "label": "CONSENT BURIED UNDER NOISE",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "chapel:previous",
+              "label": "PREVIOUS RECORDIST BLACKED OUT",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "chapel:body",
+              "label": "BORROWED BODY ON THE MONITOR",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "BORROWED BODY",
+              "takeTag": "body"
+            }
+          ],
+          "deadAirIntents": [
+            {
+              "id": "chapel:previous",
+              "label": "PREVIOUS RECORDIST BLACKED OUT",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "chapel:consent",
+              "label": "CONSENT BURIED UNDER NOISE",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "chapel:body",
+              "label": "BORROWED BODY ON THE MONITOR",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "BORROWED BODY",
+              "takeTag": "body"
+            }
+          ]
         },
-        "terminal": false,
-        "tokens": [
-          {
-            "id": "chapel-surfer:printed:0",
-            "text": "THE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-surfer:printed:1",
-            "text": "SURFER",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-surfer:printed:2",
-            "text": "WAS",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-surfer:printed:3",
-            "text": "A",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-surfer:printed:4",
-            "text": "STUDENT",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-surfer:printed:5",
-            "text": "TRAINED",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-surfer:printed:6",
-            "text": "INTO",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-surfer:printed:7",
-            "text": "MUSIC",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-surfer:printed:8",
-            "text": "INSIDE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-surfer:printed:9",
-            "text": "THE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-surfer:printed:10",
-            "text": "FILES",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-surfer:printed:11",
-            "text": "MUSIC",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-surfer:printed:12",
-            "text": "WANTS",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-surfer:printed:13",
-            "text": "BODY",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-surfer:printed:14",
-            "text": "MACHINE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-surfer:printed:15",
-            "text": "WANTS",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-surfer:printed:16",
-            "text": "LANGUAGE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-surfer:not",
-            "text": "NOT",
-            "kind": "hidden",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-surfer:ghost",
-            "text": "GHOST",
-            "kind": "hidden",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-surfer:process",
-            "text": "PROCESS",
-            "kind": "graft",
-            "label": "",
-            "falseText": false
-          }
-        ],
-        "readings": [
-          {
-            "id": "student-trained",
-            "meaning": "The Surfer was trained, not born supernatural.",
-            "routeBias": null,
-            "grants": [],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "chapel-surfer:printed:1",
-              "chapel-surfer:printed:2",
-              "chapel-surfer:printed:3",
-              "chapel-surfer:printed:4"
-            ],
-            "forbidden": [
-              "chapel-surfer:ghost"
-            ],
-            "maxVisible": 4
-          },
-          {
-            "id": "music-inside-files",
-            "meaning": "The haunting lives inside files.",
-            "routeBias": null,
-            "grants": [],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "chapel-surfer:printed:7",
-              "chapel-surfer:printed:8",
-              "chapel-surfer:printed:9",
-              "chapel-surfer:printed:10"
-            ],
-            "forbidden": [
-              "chapel-surfer:ghost"
-            ],
-            "maxVisible": 4
-          },
-          {
-            "id": "not-ghost-process",
-            "meaning": "Not ghost: process.",
-            "routeBias": null,
-            "grants": [
-              "route.inversion"
-            ],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "chapel-surfer:not",
-              "chapel-surfer:ghost",
-              "chapel-surfer:process"
-            ],
-            "forbidden": [
-              "chapel-surfer:printed:13"
-            ],
-            "maxVisible": 3
-          },
-          {
-            "id": "music-wants-body",
-            "meaning": "You leave the appetite intact.",
-            "routeBias": "sacrifice",
-            "grants": [],
-            "locks": [],
-            "pressureDelta": 1,
-            "required": [
-              "chapel-surfer:printed:11",
-              "chapel-surfer:printed:12",
-              "chapel-surfer:printed:13"
-            ],
-            "forbidden": [
-              "chapel-surfer:process"
-            ],
-            "maxVisible": 3
-          }
-        ],
-        "opponentMoves": [
-          {
-            "blackout": [
-              "chapel-surfer:not"
-            ],
-            "scrape": [
-              "chapel-surfer:ghost"
-            ],
-            "insert": [],
-            "notice": "THE OTHER HAND RESTORES GHOST AND REMOVES NOT."
-          },
-          {
-            "blackout": [
-              "chapel-surfer:process"
-            ],
-            "scrape": [
-              "chapel-surfer:printed:13"
-            ],
-            "insert": [],
-            "notice": "THE OTHER HAND BLACKS OUT PROCESS."
-          }
-        ]
-      },
-      {
-        "id": "chapel-contract",
-        "title": "THE CONTRACT",
-        "claim": "THE CONTRACT CLAIMS IT WAS ONLY WORK.",
-        "tools": {
-          "reveal": true,
-          "graft": true
+        {
+          "id": "surfer",
+          "title": "THE SURFER",
+          "coherence": 3,
+          "intents": [
+            {
+              "id": "chapel:surfer",
+              "label": "SURFER PRINT ON THE TAPE",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "SURFER PRINT"
+            },
+            {
+              "id": "chapel:wearing",
+              "label": "THE THING WEARING THE WORD",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "chapel:process",
+              "label": "PROCESS WITHOUT AN OPERATOR",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            }
+          ],
+          "severeIntents": [
+            {
+              "id": "chapel:wearing",
+              "label": "THE THING WEARING THE WORD",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "chapel:process",
+              "label": "PROCESS WITHOUT AN OPERATOR",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "chapel:surfer",
+              "label": "SURFER PRINT ON THE TAPE",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "SURFER PRINT"
+            }
+          ],
+          "deadAirIntents": [
+            {
+              "id": "chapel:process",
+              "label": "PROCESS WITHOUT AN OPERATOR",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "chapel:wearing",
+              "label": "THE THING WEARING THE WORD",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "chapel:surfer",
+              "label": "SURFER PRINT ON THE TAPE",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "SURFER PRINT"
+            }
+          ]
         },
-        "terminal": false,
-        "tokens": [
-          {
-            "id": "chapel-contract:printed:0",
-            "text": "FIVE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-contract:printed:1",
-            "text": "ROOMS",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-contract:printed:2",
-            "text": "CLEAN",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-contract:printed:3",
-            "text": "MINUTE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-contract:printed:4",
-            "text": "SEAL",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-contract:printed:5",
-            "text": "CLIENT",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-contract:printed:6",
-            "text": "ACCOUNT",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-contract:printed:7",
-            "text": "FEEDS",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-contract:printed:8",
-            "text": "ANOTHER",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-contract:printed:9",
-            "text": "BODY",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-contract:not",
-            "text": "NOT",
-            "kind": "hidden",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-contract:work",
-            "text": "WORK",
-            "kind": "hidden",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-contract:order",
-            "text": "ORDER",
-            "kind": "hidden",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-contract:mouth",
-            "text": "MOUTH",
-            "kind": "graft",
-            "label": "",
-            "falseText": false
-          }
-        ],
-        "readings": [
-          {
-            "id": "five-rooms",
-            "meaning": "The job was five clean minutes.",
-            "routeBias": null,
-            "grants": [],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "chapel-contract:printed:0",
-              "chapel-contract:printed:1",
-              "chapel-contract:printed:2",
-              "chapel-contract:printed:3"
-            ],
-            "forbidden": [
-              "chapel-contract:printed:9"
-            ],
-            "maxVisible": 4
-          },
-          {
-            "id": "account-feeds-body",
-            "meaning": "The account feeds another body.",
-            "routeBias": "sacrifice",
-            "grants": [],
-            "locks": [],
-            "pressureDelta": 1,
-            "required": [
-              "chapel-contract:printed:6",
-              "chapel-contract:printed:7",
-              "chapel-contract:printed:8",
-              "chapel-contract:printed:9"
-            ],
-            "forbidden": [
-              "chapel-contract:not"
-            ],
-            "maxVisible": 4
-          },
-          {
-            "id": "not-work-order",
-            "meaning": "The work order is not the work.",
-            "routeBias": null,
-            "grants": [
-              "finale.knowsContract"
-            ],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "chapel-contract:not",
-              "chapel-contract:work",
-              "chapel-contract:order"
-            ],
-            "forbidden": [
-              "chapel-contract:printed:9"
-            ],
-            "maxVisible": 3
-          },
-          {
-            "id": "contract-mouth",
-            "meaning": "The account is a mouth.",
-            "routeBias": null,
-            "grants": [
-              "finale.knowsContract"
-            ],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "chapel-contract:printed:6",
-              "chapel-contract:mouth"
-            ],
-            "forbidden": [
-              "chapel-contract:printed:2"
-            ],
-            "maxVisible": 2
-          }
-        ],
-        "opponentMoves": [
-          {
-            "blackout": [
-              "chapel-contract:not"
-            ],
-            "scrape": [
-              "chapel-contract:printed:9"
-            ],
-            "insert": [],
-            "notice": "THE OTHER HAND MAKES BODY THE CLEANEST WORD."
-          },
-          {
-            "blackout": [
-              "chapel-contract:printed:2"
-            ],
-            "scrape": [
-              "chapel-contract:printed:6"
-            ],
-            "insert": [
-              "chapel-contract:mouth"
-            ],
-            "notice": "THE OTHER HAND WRITES MOUTH BUT BLACKS OUT CLEAN."
-          }
-        ]
-      },
-      {
-        "id": "chapel-source",
-        "title": "THE SOURCE",
-        "claim": "THE SOURCE PAGE IS TRYING TO DECIDE WHAT REALITY OBEYS.",
-        "tools": {
-          "reveal": true,
-          "graft": true
+        {
+          "id": "contract",
+          "title": "THE CONTRACT",
+          "coherence": 3,
+          "intents": [
+            {
+              "id": "chapel:terms",
+              "label": "TERMS READ INTO THE RECORDER",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "CONTRACT TERMS"
+            },
+            {
+              "id": "chapel:contract-loop",
+              "label": "AGREEMENT FED BACK AS CONSENT",
+              "kind": "loop",
+              "damage": 3,
+              "recordable": false,
+              "invertible": true,
+              "description": ""
+            },
+            {
+              "id": "chapel:signature",
+              "label": "SIGNATURE DRIVEN PAST ZERO",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            }
+          ],
+          "severeIntents": [
+            {
+              "id": "chapel:contract-loop",
+              "label": "AGREEMENT FED BACK AS CONSENT",
+              "kind": "loop",
+              "damage": 3,
+              "recordable": false,
+              "invertible": true,
+              "description": ""
+            },
+            {
+              "id": "chapel:signature",
+              "label": "SIGNATURE DRIVEN PAST ZERO",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "chapel:terms",
+              "label": "TERMS READ INTO THE RECORDER",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "CONTRACT TERMS"
+            }
+          ],
+          "deadAirIntents": [
+            {
+              "id": "chapel:signature",
+              "label": "SIGNATURE DRIVEN PAST ZERO",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "chapel:contract-loop",
+              "label": "AGREEMENT FED BACK AS CONSENT",
+              "kind": "loop",
+              "damage": 3,
+              "recordable": false,
+              "invertible": true,
+              "description": ""
+            },
+            {
+              "id": "chapel:terms",
+              "label": "TERMS READ INTO THE RECORDER",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "CONTRACT TERMS"
+            }
+          ]
         },
-        "terminal": true,
-        "tokens": [
-          {
-            "id": "chapel-source:printed:0",
-            "text": "SOURCE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-source:printed:1",
-            "text": "IS",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-source:printed:2",
-            "text": "ROOM",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-source:printed:3",
-            "text": "SOURCE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-source:printed:4",
-            "text": "IS",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-source:printed:5",
-            "text": "BODY",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-source:printed:6",
-            "text": "SOURCE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-source:printed:7",
-            "text": "IS",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-source:printed:8",
-            "text": "YOU",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-source:printed:9",
-            "text": "SILENCE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-source:printed:10",
-            "text": "AGREES",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-source:not",
-            "text": "NOT",
-            "kind": "hidden",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-source:borrowed",
-            "text": "BORROWED",
-            "kind": "hidden",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-source:return",
-            "text": "RETURN",
-            "kind": "hidden",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-source:signal",
-            "text": "SIGNAL",
-            "kind": "graft",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-source:process",
-            "text": "PROCESS",
-            "kind": "graft",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "chapel-source:release",
-            "text": "RELEASE",
-            "kind": "graft",
-            "label": "",
-            "falseText": false
-          }
-        ],
-        "readings": [
-          {
-            "id": "source-not-body",
-            "meaning": "The source is not the body.",
-            "routeBias": null,
-            "grants": [
-              "route.inversion"
-            ],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "chapel-source:printed:3",
-              "chapel-source:printed:4",
-              "chapel-source:not",
-              "chapel-source:printed:5"
-            ],
-            "forbidden": [
-              "chapel-source:printed:8"
-            ],
-            "maxVisible": 4
-          },
-          {
-            "id": "borrowed-body-return",
-            "meaning": "The borrowed body can be returned.",
-            "routeBias": null,
-            "grants": [
-              "route.surfaced"
-            ],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "chapel-source:printed:5",
-              "chapel-source:borrowed",
-              "chapel-source:return"
-            ],
-            "forbidden": [
-              "chapel-source:printed:10"
-            ],
-            "maxVisible": 3
-          },
-          {
-            "id": "source-you",
-            "meaning": "You leave yourself as the source.",
-            "routeBias": "sacrifice",
-            "grants": [],
-            "locks": [
-              "route.surfaced"
-            ],
-            "pressureDelta": 2,
-            "required": [
-              "chapel-source:printed:6",
-              "chapel-source:printed:7",
-              "chapel-source:printed:8"
-            ],
-            "forbidden": [
-              "chapel-source:not"
-            ],
-            "maxVisible": 3
-          },
-          {
-            "id": "signal-process-release",
-            "meaning": "Signal process release.",
-            "routeBias": null,
-            "grants": [
-              "route.inversion",
-              "route.surfaced"
-            ],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "chapel-source:signal",
-              "chapel-source:process",
-              "chapel-source:release"
-            ],
-            "forbidden": [
-              "chapel-source:printed:5"
-            ],
-            "maxVisible": 3
-          }
-        ],
-        "opponentMoves": [
-          {
-            "blackout": [
-              "chapel-source:not"
-            ],
-            "scrape": [
-              "chapel-source:printed:8"
-            ],
-            "insert": [],
-            "notice": "THE OTHER HAND TAKES AWAY NOT AND RESTORES YOU."
-          },
-          {
-            "blackout": [
-              "chapel-source:return"
-            ],
-            "scrape": [
-              "chapel-source:printed:5"
-            ],
-            "insert": [],
-            "notice": "THE OTHER HAND BLACKS OUT RETURN."
-          }
-        ]
-      }
-    ]
+        {
+          "id": "source",
+          "title": "THE SOURCE",
+          "coherence": 3,
+          "intents": [
+            {
+              "id": "chapel:body-return",
+              "label": "BODY BORROWED RETURN",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "BODY BORROWED RETURN",
+              "takeTag": "body"
+            },
+            {
+              "id": "chapel:source-pressure",
+              "label": "THE SOURCE PRESSES FOR AN ANSWER",
+              "kind": "overload",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "chapel:release-take",
+              "label": "RELEASE PRINT ON THE RETURN",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "SIGNAL RELEASE"
+            },
+            {
+              "id": "chapel:source-loop",
+              "label": "SIGNAL PROCESS RELEASE",
+              "kind": "loop",
+              "damage": 3,
+              "recordable": false,
+              "invertible": true,
+              "description": ""
+            }
+          ],
+          "severeIntents": [
+            {
+              "id": "chapel:source-pressure",
+              "label": "THE SOURCE PRESSES FOR AN ANSWER",
+              "kind": "overload",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "chapel:release-take",
+              "label": "RELEASE PRINT ON THE RETURN",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "SIGNAL RELEASE"
+            },
+            {
+              "id": "chapel:source-loop",
+              "label": "SIGNAL PROCESS RELEASE",
+              "kind": "loop",
+              "damage": 3,
+              "recordable": false,
+              "invertible": true,
+              "description": ""
+            },
+            {
+              "id": "chapel:body-return",
+              "label": "BODY BORROWED RETURN",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "BODY BORROWED RETURN",
+              "takeTag": "body"
+            }
+          ],
+          "deadAirIntents": [
+            {
+              "id": "chapel:source-loop",
+              "label": "SIGNAL PROCESS RELEASE",
+              "kind": "loop",
+              "damage": 3,
+              "recordable": false,
+              "invertible": true,
+              "description": ""
+            },
+            {
+              "id": "chapel:release-take",
+              "label": "RELEASE PRINT ON THE RETURN",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "SIGNAL RELEASE"
+            },
+            {
+              "id": "chapel:source-pressure",
+              "label": "THE SOURCE PRESSES FOR AN ANSWER",
+              "kind": "overload",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "chapel:body-return",
+              "label": "BODY BORROWED RETURN",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "BODY BORROWED RETURN",
+              "takeTag": "body"
+            }
+          ]
+        }
+      ]
+    }
   }
 }

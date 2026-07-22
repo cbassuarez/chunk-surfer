@@ -45,6 +45,7 @@ import {
   normalizeChapelTowerState,
 } from './chapel-tower-state.js';
 import { normalizeDoorSave } from './door-runtime.js';
+import { freshCombatBuild, normalizeCombatBuild } from './combat-progression.js';
 
 const SAVE_KEY = 'chunk-surfer:save:v3';
 const LEGACY_SAVE_KEYS = STORAGE_LEGACY_SAVE_KEYS.filter((key) => key !== SAVE_KEY);
@@ -61,6 +62,7 @@ export const freshSave = ({ settings = DEFAULT_SETTINGS, run = null } = {}) => (
   items: [],
   props: { inspected: [], auditioned: [], cycles: {}, hushSeed: 0x43535552, hushCount: 0 },
   encounters: { cleared: [] },
+  combatBuild: freshCombatBuild(),
   doors: { schema: 2, states: {} },
   playSeconds: 0,
   steps: 0,
@@ -219,6 +221,7 @@ function normalizeSaveV3(data, meta = null) {
     items: Array.isArray(source.items) ? source.items : [],
     props: { ...base.props, ...(source.props && typeof source.props === 'object' ? source.props : {}) },
     encounters: { ...base.encounters, ...(source.encounters && typeof source.encounters === 'object' ? source.encounters : {}) },
+    combatBuild: normalizeCombatBuild(source.combatBuild, source.encounters?.cleared),
     doors: normalizeDoorSave(source.doors),
     hushAudio: normalizeHushAudioSave(source.hushAudio),
     chunkSurf,

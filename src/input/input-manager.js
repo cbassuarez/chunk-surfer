@@ -100,9 +100,13 @@ export class InputManager {
   }
 
   keyUp(e = {}) {
-    if (this.shouldIgnoreKeyEvent(e)) return false;
     const code = normalizeCode(e);
     if (!code) return false;
+    // A release is removal-only. If gameplay recorded the press, always clear
+    // it even when a scene or focused control consumed/prevented the keyup
+    // before this manager saw it. Otherwise W/S can remain held until pause
+    // performs a full reset.
+    if (this.shouldIgnoreKeyEvent(e) && !this.held.has(code)) return false;
 
     this.eventsSeen += 1;
     this.lastKeyCode = code;

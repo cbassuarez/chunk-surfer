@@ -19,8 +19,10 @@ export function propsInit(fp, placements=CONSERVATORY_PROPS){
   instances=placements.map((p)=>{
     const mesh=PROP_MESH[p.mesh]||{};
     const rx=rt(p.x),ry=rt(p.y);
+    const interactionX=Number.isFinite(p.inspectAt?.x)?p.inspectAt.x:p.x;
+    const interactionY=Number.isFinite(p.inspectAt?.y)?p.inspectAt.y:p.y;
     const physical=fp.logicalToPhysical?.(rx,ry);
-    return {...mesh,...p,rx,ry,floor:fp.floorAt(rx,ry),zone:fp.zoneAt(rx,ry),renderGroup:physical?.renderGroup||'',blocks:p.blocks??mesh.blocks??false};
+    return {...mesh,...p,rx,ry,interactionX,interactionY,interactionRx:rt(interactionX),interactionRy:rt(interactionY),floor:fp.floorAt(rx,ry),zone:fp.zoneAt(rx,ry),renderGroup:physical?.renderGroup||'',blocks:p.blocks??mesh.blocks??false};
   }).filter((p)=>!fp.isSolid(p.rx,p.ry));
   colliders=STRUCTURAL_COLLIDERS.map(c=>({...c,rx:rt(c.x),ry:rt(c.y)}));
   return instances;
@@ -33,7 +35,8 @@ export function setLooseProp(id, placement=null){
   const mesh=PROP_MESH[placement.mesh]||{};
   const rx=Math.round(placement.rx),ry=Math.round(placement.ry),physical=floorplan.logicalToPhysical?.(rx,ry);
   if(floorplan.isSolid(rx,ry))return null;
-  const prop={...mesh,...placement,id,rx,ry,x:meters(rx+.5),y:meters(ry+.5),floor:floorplan.floorAt(rx,ry),zone:floorplan.zoneAt(rx,ry),renderGroup:physical?.renderGroup||'',blocks:false};
+  const x=meters(rx+.5),y=meters(ry+.5),interactionX=Number.isFinite(placement.inspectAt?.x)?placement.inspectAt.x:x,interactionY=Number.isFinite(placement.inspectAt?.y)?placement.inspectAt.y:y;
+  const prop={...mesh,...placement,id,rx,ry,x,y,interactionX,interactionY,interactionRx:rt(interactionX),interactionRy:rt(interactionY),floor:floorplan.floorAt(rx,ry),zone:floorplan.zoneAt(rx,ry),renderGroup:physical?.renderGroup||'',blocks:false};
   instances.push(prop);return prop;
 }
 export function renderInstances({group=null}={}){return instances.filter((p)=>!group||p.renderGroup===group).map((p)=>{const at=floorplan.logicalToPhysical?.(p.rx,p.ry);return{id:p.id,mesh:p.mesh,x:at?at.x*CELL:p.x,y:(p.floor||0)+(p.elevation||0),z:at?at.z*CELL:p.y,yaw:p.yaw||0,scale:p.scale||1,scaleX:p.scaleX,scaleY:p.scaleY,scaleZ:p.scaleZ,zone:p.zone||0,portraitIndex:p.portraitIndex||0,structural:!!p.structural};});}
@@ -70,9 +73,10 @@ export function pickProp(px,py,facing,maxMeters=2){
   let best=null,bestScore=Infinity;
   for(const p of instances){
     if(p.interactive===false)continue;
-    const dx=p.x-mx,dz=p.y-mz,d=Math.hypot(dx,dz);if(d>maxMeters+(Math.max(p.w,p.d)||0)/2)continue;
+    const interactionX=p.interactionX??p.x,interactionY=p.interactionY??p.y;
+    const dx=interactionX-mx,dz=interactionY-mz,d=Math.hypot(dx,dz);if(d>maxMeters+(Math.max(p.w,p.d)||0)/2)continue;
     const dot=(dx*f[0]+dz*f[1])/Math.max(.001,d);if(dot<.35)continue;
-    if(!clearLine(mx,mz,p.x,p.y))continue;
+    if(!clearLine(mx,mz,interactionX,interactionY))continue;
     const ang=Math.abs(wrapAngle(Math.atan2(dx,-dz)-facing*Math.PI/2));
     const score=d+ang*.7;if(score<bestScore){bestScore=score;best={...p,distance:d};}
   }
@@ -92,7 +96,7 @@ const key=(x,y)=>`${x},${y}`;
 function interactionGoals(p){
   const out=[];const reach=Math.max(2,Math.ceil(2/CELL));
   for(let dy=-reach;dy<=reach;dy++)for(let dx=-reach;dx<=reach;dx++){
-    const x=p.rx+dx,y=p.ry+dy;if(Math.hypot(dx,dy)>reach||floorplan.isSolid(x,y)||!propCanOccupy(x,y,{ignoreId:p.id}))continue;out.push(key(x,y));
+    const x=(p.interactionRx??p.rx)+dx,y=(p.interactionRy??p.ry)+dy;if(Math.hypot(dx,dy)>reach||floorplan.isSolid(x,y)||!propCanOccupy(x,y,{ignoreId:p.id}))continue;out.push(key(x,y));
   }
   return new Set(out);
 }

@@ -4,7 +4,6 @@ import { readFileSync } from 'node:fs';
 import {
   OPENING_CREDITS_DURATION,
   makeOpeningCreditsScene,
-  openingCreditsArePresentable,
   openingCreditFrame,
   openingCreditLayout,
 } from '../src/game/opening-credits.js';
@@ -16,7 +15,7 @@ test('opening credits use three fixed fade slates with deliberate black beats', 
   const blackTwo = openingCreditFrame(13.2);
   const quote = openingCreditFrame(17);
 
-  assert.equal(OPENING_CREDITS_DURATION, 22);
+  assert.equal(OPENING_CREDITS_DURATION, 23.5);
   assert.equal(creator.title, undefined);
   for (const frame of [blackOne, blackTwo]) {
     assert.ok(['creator', 'sound', 'quote', 'attribution'].every((key) => frame[key] <= 0.05));
@@ -24,6 +23,8 @@ test('opening credits use three fixed fade slates with deliberate black beats', 
   assert.ok(creator.creator > 0.9 && creator.sound === 0);
   assert.ok(sound.sound > 0.9 && sound.quote === 0);
   assert.ok(quote.quote > 0.9 && quote.attribution > 0.9);
+  const extendedQuote = openingCreditFrame(22.25);
+  assert.ok(extendedQuote.quote > 0.9 && extendedQuote.attribution > 0.9);
 });
 
 test('opening credit atmosphere is soft and text coordinates never drift', () => {
@@ -67,36 +68,32 @@ test('opening credits are authored, blocking, and not key-skippable', () => {
   assert.equal(completed, 1);
 });
 
-test('opening credits only spend their authored clock while visible and focused', () => {
-  let presentable = false;
+test('opening credits spend real elapsed time when background frames are throttled', () => {
+  let now = 100;
   let completed = 0;
   const scene = makeOpeningCreditsScene({
-    duration: 1,
-    isPresentable: () => presentable,
+    duration: 2,
+    now: () => now,
     onDone: () => { completed += 1; },
   });
 
-  scene.update(30);
-  assert.equal(scene.view().time, 0);
-  assert.equal(completed, 0);
-
-  presentable = true;
-  scene.update(0.75);
-  assert.equal(completed, 0);
-  presentable = false;
-  scene.update(30);
-  assert.equal(scene.view().time, 0.75);
-  assert.equal(completed, 0);
-
-  presentable = true;
   scene.update(0.25);
+  assert.equal(scene.view().time, 0.25);
+  assert.equal(completed, 0);
+
+  now += 1.5;
+  scene.update(0.05);
+  assert.equal(scene.view().time, 1.75);
+  assert.equal(completed, 0);
+
+  now += 0.25;
+  scene.update(0.01);
   assert.equal(completed, 1);
 });
 
-test('opening credit presentation rejects hidden and unfocused documents', () => {
-  assert.equal(openingCreditsArePresentable({ visibilityState: 'hidden', hasFocus: () => true }), false);
-  assert.equal(openingCreditsArePresentable({ visibilityState: 'visible', hasFocus: () => false }), false);
-  assert.equal(openingCreditsArePresentable({ visibilityState: 'visible', hasFocus: () => true }), true);
+test('opening credits have no document focus or visibility gate', () => {
+  const source = readFileSync('src/game/opening-credits.js', 'utf8');
+  assert.doesNotMatch(source, /hasFocus|visibilityState|isPresentable/);
 });
 
 test('normal app boot always places credits before the title menu', () => {

@@ -40,6 +40,12 @@ export function reduceRunLedger(ledger = freshLedger(), event) {
         ...(next.battles.results[p.id] || {}),
         result: p.result,
         attempts: Math.max(1, Number(p.attempts) || 1),
+        turns: Math.max(0, Math.floor(Number(p.turns) || 0)),
+        damageTaken: Math.max(0, Math.floor(Number(p.damageTaken) || 0)),
+        perfectCounters: Math.max(0, Math.floor(Number(p.perfectCounters) || 0)),
+        torchSpent: Math.max(0, Number(p.torchSpent) || 0),
+        toolsUsed: p.toolsUsed && typeof p.toolsUsed === 'object' && !Array.isArray(p.toolsUsed) ? { ...p.toolsUsed } : {},
+        source: p.source && typeof p.source === 'object' && !Array.isArray(p.source) ? { ...p.source } : null,
       };
       break;
     }

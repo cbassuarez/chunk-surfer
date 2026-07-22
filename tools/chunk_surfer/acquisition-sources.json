@@ -1,0 +1,170 @@
+{
+  "version": 1,
+  "sourceDirectoryEnv": "CHUNK_SURFER_ACQUISITION_SOURCE_DIR",
+  "defaultSourceDirectory": "/Users/seb/Downloads/models",
+  "output": "public/assets/conservatory-acquisitions.glb",
+  "limits": {
+    "bytes": 20971520,
+    "triangles": 85000,
+    "textureDimension": 1024
+  },
+  "sources": [
+    {
+      "mesh": "green_chair_01",
+      "archive": "GreenChair_01_4k.blend.zip",
+      "blend": "GreenChair_01_4k.blend",
+      "url": "https://polyhaven.com/a/GreenChair_01",
+      "license": "CC0-1.0",
+      "sha256": "c569077c1fdb19416a50a188769a7dcafcc59f619ea442f88c525670550936ae",
+      "anchor": "floor",
+      "targetHeight": 1.059,
+      "triangleBudget": 3000,
+      "textureSize": 512
+    },
+    {
+      "mesh": "arm_chair_01",
+      "archive": "ArmChair_01_4k.blend.zip",
+      "blend": "ArmChair_01_4k.blend",
+      "url": "https://polyhaven.com/a/ArmChair_01",
+      "license": "CC0-1.0",
+      "sha256": "86220cad56d897d8e3770238cab982a5ba1567066e73bf6181d570004b3cf906",
+      "anchor": "floor",
+      "targetHeight": 1.065,
+      "triangleBudget": 3500,
+      "textureSize": 512
+    },
+    {
+      "mesh": "sofa_01",
+      "archive": "Sofa_01_4k.blend.zip",
+      "blend": "Sofa_01_4k.blend",
+      "url": "https://polyhaven.com/a/Sofa_01",
+      "license": "CC0-1.0",
+      "sha256": "43a5f5bca1084cce84832bab8763661b46679c9009113b842995fb3c08323373",
+      "anchor": "floor",
+      "targetHeight": 0.797,
+      "triangleBudget": 3000,
+      "textureSize": 512
+    },
+    {
+      "mesh": "classic_console_01",
+      "archive": "ClassicConsole_01_4k.blend (1).zip",
+      "blend": "ClassicConsole_01_4k.blend",
+      "url": "https://polyhaven.com/a/ClassicConsole_01",
+      "license": "CC0-1.0",
+      "sha256": "fa8194850e3b8adf6001bc7a7d037be031927119005d0ebcfcb69620a9913465",
+      "anchor": "floor",
+      "targetHeight": 0.949,
+      "triangleBudget": 4500,
+      "textureSize": 512
+    },
+    {
+      "mesh": "marble_bust_01",
+      "archive": "marble_bust_01_4k.blend.zip",
+      "blend": "marble_bust_01_4k.blend",
+      "url": "https://polyhaven.com/a/marble_bust_01",
+      "license": "CC0-1.0",
+      "sha256": "93f445c2df038112c0229b09734b644642acbefff3b62e3072b9fcccd8eb9510",
+      "anchor": "surface",
+      "targetHeight": 0.515,
+      "triangleBudget": 10000,
+      "textureSize": 1024
+    },
+    {
+      "mesh": "horse_head",
+      "archive": "horse_head_4k.blend.zip",
+      "blend": "horse_head_4k.blend",
+      "url": "https://polyhaven.com/a/horse_head",
+      "license": "CC0-1.0",
+      "sha256": "2eb0105a7c81c72b0edc4237c0af8fffdd104ed9586b60cd28c9d5043fcf507f",
+      "anchor": "surface",
+      "targetHeight": 0.419,
+      "triangleBudget": 8500,
+      "textureSize": 1024
+    },
+    {
+      "mesh": "chandelier_03",
+      "archive": "Chandelier_03_4k.blend.zip",
+      "blend": "Chandelier_03_4k.blend",
+      "url": "https://polyhaven.com/a/Chandelier_03",
+      "license": "CC0-1.0",
+      "sha256": "455651002ca626d14825a1391b1c65bb6cd7023b893e4f71ce5158628df8389f",
+      "anchor": "ceiling",
+      "targetHeight": 1.041,
+      "triangleBudget": 10000,
+      "textureSize": 512
+    },
+    {
+      "mesh": "sofa_02",
+      "archive": "sofa_02_4k.blend.zip",
+      "blend": "sofa_02_4k.blend",
+      "url": "https://polyhaven.com/a/sofa_02",
+      "license": "CC0-1.0",
+      "sha256": "3af3d1b988c78455863e3f7219ae7f8c7dab9e4a0c87dd48d7e0554214fa305b",
+      "anchor": "floor",
+      "targetHeight": 0.709,
+      "triangleBudget": 2500,
+      "textureSize": 512
+    },
+    {
+      "mesh": "lantern_chandelier_01",
+      "archive": "lantern_chandelier_01_4k.blend.zip",
+      "blend": "lantern_chandelier_01_4k.blend",
+      "url": "https://polyhaven.com/a/lantern_chandelier_01",
+      "license": "CC0-1.0",
+      "sha256": "7445c89be49db65e21e0d643baf484fb6b4b851903fe227ade6a6aa6dc75b8bd",
+      "anchor": "ceiling",
+      "targetHeight": 0.878,
+      "triangleBudget": 4500,
+      "textureSize": 512
+    },
+    {
+      "mesh": "gothic_cabinet_01",
+      "archive": "GothicCabinet_01_4k.blend.zip",
+      "blend": "GothicCabinet_01_4k.blend",
+      "url": "https://polyhaven.com/a/GothicCabinet_01",
+      "license": "CC0-1.0",
+      "sha256": "04bb22cde5db7622120eadf5df6ab76fbc8a45c5deb027223225b99bece24dd2",
+      "anchor": "floor",
+      "targetHeight": 2.361,
+      "triangleBudget": 6500,
+      "textureSize": 1024
+    },
+    {
+      "mesh": "wooden_chair_01",
+      "archive": "WoodenChair_01_4k.blend.zip",
+      "blend": "WoodenChair_01_4k.blend",
+      "url": "https://polyhaven.com/a/WoodenChair_01",
+      "license": "CC0-1.0",
+      "sha256": "263be75ebf7a8589d2859b1bd82f7052fbea53f7dadf5f9e05c1f68b86562431",
+      "anchor": "floor",
+      "targetHeight": 2.274,
+      "triangleBudget": 9000,
+      "textureSize": 1024
+    },
+    {
+      "mesh": "power_box_01",
+      "archive": "power_box_01_4k.blend.zip",
+      "blend": "power_box_01_4k.blend",
+      "url": "https://polyhaven.com/a/power_box_01",
+      "license": "CC0-1.0",
+      "sha256": "73b1dad904425b78d08a861e01c6a68d384871fb1071df6e2dcfa7c920a89985",
+      "anchor": "wall",
+      "wallBackAxis": "positiveY",
+      "targetHeight": 0.822,
+      "triangleBudget": 8000,
+      "textureSize": 512
+    },
+    {
+      "mesh": "portable_searchlight",
+      "archive": "portable_searchlight_4k.blend (1).zip",
+      "blend": "portable_searchlight_4k.blend",
+      "url": "https://polyhaven.com/a/portable_searchlight",
+      "license": "CC0-1.0",
+      "sha256": "a35cd9a339e10268f67a0c6443cd6a0de2f491e9736446347c68698fbe7baf6a",
+      "anchor": "floor",
+      "targetHeight": 0.185,
+      "triangleBudget": 7000,
+      "textureSize": 512
+    }
+  ]
+}

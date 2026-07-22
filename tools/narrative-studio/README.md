@@ -47,6 +47,8 @@ node test/narrative-studio.spec.mjs
 - Double-click the waveform to play/pause it; drag the amber region to change
   non-destructive trim bounds.
 - **Audition cue** uses the shared data-driven Web Audio renderer.
+- Battle bed, lead, and paired entry gains live in the canonical cue registry;
+  runtime timing and eight-bar lead gates remain owned by the battle director.
 - The trigger index shows every story or gameplay event that fires the cue.
 - `acoustic` metadata is authoritative for what the HUSH hears and remains
   independent from player output volume.
@@ -75,5 +77,6 @@ The game consumes canonical studio documents for the cold open, core
 conservatory trees, radio, room-listen, playback, every battle including the
 chapel confrontation, authored ending sequences/epilogues, and the audio cue
 registry. Only the final ending-choice builder remains on a compatibility
-adapter because it assembles prose from live redaction readings; its four route
-captures remain visible and editable as reference variants.
+adapter because it assembles prose from live combat proof, pressure, and Source
+outcome state; its four route captures remain visible and editable as reference
+variants.

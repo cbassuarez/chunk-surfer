@@ -1,5 +1,6 @@
 import { assetUrl } from '../platform/paths.js';
 import { runtimeParams } from '../platform/launch.js';
+import { authoredCue } from './authored-cues.js';
 
 // Story-only beds.
 //
@@ -21,14 +22,12 @@ export const STORY_AUDIO = {
 //
 //   0.95   the radio, breaking             (the loudest thing that happens)
 //   0.95   the service door
-//   0.55   TYPE_GAIN — the typewriter      (a mind, at work)
+//   authored × bus baseline — title, typing and story beds
 //   0.26   a voice                         (sam-voice.js)
 //   0.62-0.85  the foley                   (audio/cues.js — pens, keys, signature)
-//   0.16   the title song                  (SOUNDTRACK_GAIN)
-//   0.085  the title song, while anyone speaks   (SOUNDTRACK_DUCK)
-//   0.075  the booth
-//   0.060  the rain on the roof of it
-//   0.010  room tone                       (the floor of an empty room)
+// The baseline is the bus calibration; the editable layer gain lives in the
+// audio project and is multiplied into it at runtime. Studio changes therefore
+// reach the game without freezing a particular authored value in JS or tests.
 //
 // TYPE_GAIN is a BUS gain, and each keystroke peaks around 0.4 into it, so the
 // loudest key lands near 0.22 — under a voice, over the song. It sat at 0.034
@@ -50,15 +49,28 @@ function queryGain(name, fallback) {
   } catch (_) { return fallback; }
 }
 
-export const TYPE_GAIN = queryGain('typegain', 0.55);
+function authoredGain(cueId, fallback = 1) {
+  const value = Number(authoredCue(cueId)?.layers?.[0]?.gain);
+  return Number.isFinite(value) && value >= 0 ? value : fallback;
+}
+
+export const STORY_GAIN_BASELINES = Object.freeze({
+  typing: 0.55,
+  title: 0.42,
+  booth: 0.075,
+  rain: 0.060,
+  tape: 0.46,
+});
+
+export const TYPE_GAIN = queryGain('typegain', STORY_GAIN_BASELINES.typing * authoredGain('story.typing'));
 export const TYPE_LEVEL = { thought: 1.0, direction: 1.15 };   // narration types harder
 // The song is the piece. It is not background: it carries the booth and it
 // carries the title, and it is the last thing the player hears before the door.
-export const SOUNDTRACK_GAIN = queryGain('songgain', 0.42);
+export const SOUNDTRACK_GAIN = queryGain('songgain', STORY_GAIN_BASELINES.title * authoredGain('story.title'));
 export const SOUNDTRACK_DUCK = SOUNDTRACK_GAIN * 0.55;         // audible, out of the way
-export const BOOTH_GAIN = 0.075;
-export const RAIN_GAIN = 0.060;
-export const TAPE_GAIN = queryGain('tapegain', 0.46);
+export const BOOTH_GAIN = STORY_GAIN_BASELINES.booth * authoredGain('story.booth');
+export const RAIN_GAIN = STORY_GAIN_BASELINES.rain * authoredGain('story.rain');
+export const TAPE_GAIN = queryGain('tapegain', STORY_GAIN_BASELINES.tape * authoredGain('story.tape'));
 
 let ctx = null;
 let bus = null;

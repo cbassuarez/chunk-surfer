@@ -27,6 +27,14 @@ export const assetUrl = (path: string) => `/project-assets/${path}?token=${encod
 export function subscribeToChanges(onChange: (event: { type: string; path: string; event: string }) => void) {
   const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
   const socket = new WebSocket(`${protocol}://${location.host}/studio-events?token=${encodeURIComponent(token)}`);
-  socket.onmessage = (event) => onChange(JSON.parse(event.data));
-  return () => socket.close();
+  let disposed = false;
+  socket.onmessage = (event) => {
+    if (!disposed) onChange(JSON.parse(event.data));
+  };
+  return () => {
+    disposed = true;
+    socket.onmessage = null;
+    if (socket.readyState === WebSocket.OPEN) socket.close();
+    else if (socket.readyState === WebSocket.CONNECTING) socket.addEventListener('open', () => socket.close(), { once: true });
+  };
 }

@@ -1,29 +1,22 @@
-import type { AudioProject, MediaProject, NarrativeDocument, StoryChoice, StoryLine, StoryNode } from './types';
+import type { AudioProject, MediaProject, NarrativeDocument, StoryChoice, StoryLayout, StoryLine, StoryNode, StoryTransaction } from './types';
+import { renameStoryNode } from './story-transforms.js';
 
 const field = (label: string, control: React.ReactNode, wide = false) => <label className={wide ? 'field field--wide' : 'field'}><span>{label}</span>{control}</label>;
 
-export function StoryInspector({ document, selectedId, audio, onDocument, onCue, onRename }: {
-  document: NarrativeDocument; selectedId: string | null; audio: AudioProject; media?: MediaProject;
-  onDocument: (doc: NarrativeDocument) => void; onCue: (cueId: string) => void; onRename?: (id: string) => void;
+export function StoryInspector({ document, layout, selectedId, audio, media, onTransaction, onCue }: {
+  document: NarrativeDocument; layout: StoryLayout; selectedId: string | null; audio: AudioProject; media?: MediaProject;
+  onTransaction: (transaction: StoryTransaction) => void; onCue: (cueId: string) => void;
 }) {
   const selected = selectedId ? document.nodes[selectedId] : null;
-  const updateDocument = (key: keyof NarrativeDocument, value: unknown) => onDocument({ ...document, [key]: value });
+  const transactDocument = (nextDocument: NarrativeDocument, nextSelectedId = selectedId) => onTransaction({ document: nextDocument, layout, selectedId: nextSelectedId });
+  const updateDocument = (key: keyof NarrativeDocument, value: unknown) => transactDocument({ ...document, [key]: value });
   const updateNode = (change: Partial<StoryNode>) => {
     if (!selectedId) return;
-    onDocument({ ...document, nodes: { ...document.nodes, [selectedId]: { ...document.nodes[selectedId], ...change } } });
+    transactDocument({ ...document, nodes: { ...document.nodes, [selectedId]: { ...document.nodes[selectedId], ...change } } });
   };
   const rename = (id: string) => {
-    if (!selectedId || !id || id === selectedId || document.nodes[id]) return;
-    const next = structuredClone(document);
-    next.nodes[id] = { ...next.nodes[selectedId], id }; delete next.nodes[selectedId];
-    if (next.entry === selectedId) next.entry = id;
-    next.entries = (next.entries || []).map((entry) => entry === selectedId ? id : entry);
-    for (const node of Object.values(next.nodes)) {
-      if (node.goto === selectedId) node.goto = id;
-      for (const choice of node.choices || []) if (choice.goto === selectedId) choice.goto = id;
-    }
-    for (const region of next.regions) region.nodeIds = region.nodeIds.map((nodeId) => nodeId === selectedId ? id : nodeId);
-    onDocument(next); onRename?.(id);
+    if (!selectedId) return;
+    onTransaction(renameStoryNode(document, layout, selectedId, id));
   };
   const storyArt = media?.storyArt || [];
   const cueList = audio.cues.map((cue) => cue.id);
@@ -59,9 +52,9 @@ export function StoryInspector({ document, selectedId, audio, onDocument, onCue,
     <div className="panel-section"><div className="section-title"><span>Regions</span><button onClick={() => {
       let index = document.regions.length + 1; let id = `${document.id}.region-${index}`;
       while (document.regions.some((region) => region.id === id)) id = `${document.id}.region-${++index}`;
-      updateDocument('regions', [...document.regions, { id, title: 'New region', kind: 'custom', color: '#315d6b', nodeIds: [] }]);
+      updateDocument('regions', [...document.regions, { id, title: 'New region', kind: 'custom', color: '#F2A81E', nodeIds: [] }]);
     }}>＋</button></div>{document.regions.map((region, index) => <div className="region-row" key={region.id}>
-      <input type="color" value={region.color || '#245c62'} onChange={(event) => { const regions = structuredClone(document.regions); regions[index].color = event.target.value; updateDocument('regions', regions); }} />
+      <input type="color" value={region.color || '#F2A81E'} onChange={(event) => { const regions = structuredClone(document.regions); regions[index].color = event.target.value; updateDocument('regions', regions); }} />
       <input value={region.title} onChange={(event) => { const regions = structuredClone(document.regions); regions[index].title = event.target.value; updateDocument('regions', regions); }} />
       <span>{region.nodeIds.length}</span>
     </div>)}</div>
@@ -79,7 +72,7 @@ export function StoryInspector({ document, selectedId, audio, onDocument, onCue,
         const regions = structuredClone(document.regions);
         for (const region of regions) region.nodeIds = region.nodeIds.filter((id) => id !== selectedId);
         regions.find((region) => region.id === event.target.value)?.nodeIds.push(selectedId!);
-        onDocument({ ...document, regions });
+        transactDocument({ ...document, regions });
       }}><option value="">Unassigned</option>{document.regions.map((region) => <option key={region.id} value={region.id}>{region.title}</option>)}</select>)}
     </div>
 

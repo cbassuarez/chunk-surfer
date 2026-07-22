@@ -12,17 +12,23 @@ function Waveform({ asset, layer, onLayer }: { asset: AudioAsset | null; layer: 
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!root.current || !asset?.path) return;
+    const styles = getComputedStyle(document.documentElement);
+    const color = (name: string) => styles.getPropertyValue(name).trim();
+    const phosphor = color('--cs-vfd-phosphor');
+    const accent = color('--cs-vfd-accent');
+    const marker = color('--cs-vfd-marker');
+    const silkscreen = color('--cs-vfd-silkscreen');
     const regions = Regions.create();
-    const envelope = Envelope.create({ volume: layer?.gain ?? 1, lineColor: '#e5a849', lineWidth: '2', dragPointSize: 7 });
+    const envelope = Envelope.create({ volume: layer?.gain ?? 1, lineColor: accent, lineWidth: '2', dragPointSize: 7 });
     const wave = WaveSurfer.create({
-      container: root.current, url: assetUrl(asset.path), height: 116, waveColor: '#285e66', progressColor: '#71d1cf', cursorColor: '#f3bb5a', normalize: false,
-      plugins: [regions, Timeline.create({ height: 20 }), Minimap.create({ height: 28, waveColor: '#1a4147', progressColor: '#397e83' }), envelope],
+      container: root.current, url: assetUrl(asset.path), height: 116, waveColor: silkscreen, progressColor: phosphor, cursorColor: marker, normalize: false,
+      plugins: [regions, Timeline.create({ height: 20 }), Minimap.create({ height: 28, waveColor: silkscreen, progressColor: phosphor }), envelope],
     });
     wave.on('ready', () => {
       const start = Math.max(0, layer?.trimStart || 0);
       const end = Math.min(wave.getDuration(), layer?.trimEnd ?? wave.getDuration());
       regions.clearRegions();
-      const region = regions.addRegion({ start, end, color: 'rgba(229,168,73,.14)', drag: true, resize: true });
+      const region = regions.addRegion({ start, end, color: `color-mix(in srgb, ${accent} 14%, transparent)`, drag: true, resize: true });
       region.on('update-end', () => layer && onLayer({ ...layer, trimStart: region.start, trimEnd: region.end }));
       envelope.setPoints([
         { time: start, volume: 0 }, { time: start + Math.max(.01, layer?.fadeIn || 0), volume: layer?.gain ?? 1 },
@@ -52,8 +58,9 @@ function AutomationLane({ layer, onLayer }: { layer: CueLayer; onLayer: (next: C
   </div>;
 }
 
-export function AudioWorkspace({ project, selectedCueId, documents, onSelectedCue, onProject }: {
+export function AudioWorkspace({ project, selectedCueId, documents, onSelectedCue, onProject, onStatus }: {
   project: AudioProject; selectedCueId: string | null; documents?: DocumentEnvelope[]; onSelectedCue: (id: string) => void; onProject: (project: AudioProject) => void;
+  onStatus?: (status: string) => void;
 }) {
   const [search, setSearch] = useState('');
   const cue = project.cues.find((item) => item.id === selectedCueId) || project.cues[0];
@@ -82,24 +89,36 @@ export function AudioWorkspace({ project, selectedCueId, documents, onSelectedCu
   const updateCue = (next: CueDefinition) => onProject({ ...project, cues: project.cues.map((item) => item.id === cue.id ? next : item) });
   const updateLayer = (next: CueLayer) => updateCue({ ...cue, layers: cue.layers.map((item) => item.id === next.id ? next : item) });
   const audition = async () => {
-    context.current ||= new AudioContext();
-    await context.current.resume();
-    const player = (createCuePlayer as any)({
-      context: context.current, destination: context.current.destination,
-      loadBuffer: async (source: AudioAsset) => {
-        if (!source.path) return null;
-        if (buffers.current.has(source.id)) return buffers.current.get(source.id)!;
-        const decoded = await context.current!.decodeAudioData(await (await fetch(assetUrl(source.path))).arrayBuffer());
-        buffers.current.set(source.id, decoded); return decoded;
-      },
-    });
-    await player.play(cue as any, new Map(project.assets.map((item) => [item.id, item])));
+    try {
+      context.current ||= new AudioContext();
+      await context.current.resume();
+      const player = (createCuePlayer as any)({
+        context: context.current, destination: context.current.destination,
+        loadBuffer: async (source: AudioAsset) => {
+          if (!source.path) return null;
+          if (buffers.current.has(source.id)) return buffers.current.get(source.id)!;
+          const response = await fetch(assetUrl(source.path));
+          if (!response.ok) throw new Error(`Audio asset failed to load (${response.status})`);
+          const decoded = await context.current!.decodeAudioData(await response.arrayBuffer());
+          buffers.current.set(source.id, decoded); return decoded;
+        },
+      });
+      await player.play(cue as any, new Map(project.assets.map((item) => [item.id, item])));
+      onStatus?.(`Auditioning ${cue.title}`);
+    } catch (error) {
+      onStatus?.(`Audition failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
   };
 
   const addCue = () => {
     let index = project.cues.length + 1; let id = `cue-${index}`;
     while (project.cues.some((item) => item.id === id)) id = `cue-${++index}`;
-    const next: CueDefinition = { id, title: 'New cue', bus: 'sfx', concurrency: 'overlap', layers: [] };
+    const firstAsset = project.assets[0];
+    const next: CueDefinition = {
+      id, title: 'New cue', bus: 'sfx', concurrency: 'overlap',
+      layers: firstAsset ? [{ id: `${id}.layer.1`, assetId: firstAsset.id, gain: 1, playbackRate: 1, pan: 0 }] : [],
+      effects: firstAsset ? undefined : ['fx:pending'],
+    };
     onProject({ ...project, cues: [...project.cues, next] }); onSelectedCue(id);
   };
 

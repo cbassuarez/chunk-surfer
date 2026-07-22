@@ -4,6 +4,7 @@
   "version": "0.1.1-beta.10",
   "type": "module",
   "scripts": {
+    "assets:acquisitions": "node tools/chunk_surfer/build-acquisitions.mjs",
     "assets:doors": "node scripts/build-door-pack.mjs",
     "dev": "vite",
     "assets:tuning-fork": "node scripts/generate-tuning-fork-glb.mjs",

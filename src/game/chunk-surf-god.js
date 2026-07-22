@@ -1,6 +1,7 @@
 import { CELL } from '../data/floorplan/legend.js';
 import {
   CHUNK_SURF_PHASE,
+  SOURCE_PURSUIT_BEAT,
   freshChunkSurfState,
   reduceChunkSurf,
 } from './chunk-surf-state.js';
@@ -11,6 +12,7 @@ export const CHUNK_SURF_GOD_PRESET = Object.freeze({
   HAYSTACK: 'haystack',
   LANDSCAPE: 'landscape',
   HUNT: 'hunt',
+  FINAL_RUN: 'final-run',
   FINAL: 'final',
 });
 
@@ -57,22 +59,30 @@ export function buildChunkSurfGodPreset(id, options = {}) {
     { type: 'CHECKPOINT_SET', id: 'fork-room' },
     { type: 'LANDMARK_TUNED', id: 'recordist-loop' },
     { type: 'CHECKPOINT_SET', id: 'recordist-loop' },
-    { type: 'HUSH_HUNT_STARTED' },
+    { type: 'PURSUIT_STARTED', id: SOURCE_PURSUIT_BEAT.BODY_RUN },
   );
   if (id === CHUNK_SURF_GOD_PRESET.HUNT) {
-    position = { x: LANDSCAPE_ORIGIN.x, y: LANDSCAPE_ORIGIN.y - 50, facing: 0 };
+    position = { x: LANDSCAPE_ORIGIN.x, y: LANDSCAPE_ORIGIN.y - 182, facing: 0 };
     return { state, position };
   }
 
   state = dispatch(state,
+    { type: 'PURSUIT_CLEARED', id: SOURCE_PURSUIT_BEAT.BODY_RUN },
+    { type: 'LANDMARK_TUNED', id: 'surfer-origin' },
+    { type: 'LANDMARK_TUNED', id: 'work-order-loop' },
     { type: 'LANDMARK_TUNED', id: 'body-room' },
     { type: 'LANDMARK_RECORDED', id: 'body-room' },
     { type: 'CHECKPOINT_SET', id: 'body-room' },
-    { type: 'FINAL_REACHED' },
+    { type: 'PURSUIT_STARTED', id: SOURCE_PURSUIT_BEAT.FINAL_RUN },
   );
+  if (id === CHUNK_SURF_GOD_PRESET.FINAL_RUN) {
+    position = { x: LANDSCAPE_ORIGIN.x + 44, y: LANDSCAPE_ORIGIN.y - 278, facing: 0 };
+    return { state, position };
+  }
+  state = dispatch(state,{ type: 'FINAL_REACHED' });
   if (id !== CHUNK_SURF_GOD_PRESET.FINAL || state.phase !== CHUNK_SURF_PHASE.FINAL) {
     throw new Error(`unknown source-space God preset ${id}`);
   }
-  position = { x: LANDSCAPE_ORIGIN.x + 40, y: LANDSCAPE_ORIGIN.y - 98, facing: 0 };
+  position = { x: LANDSCAPE_ORIGIN.x + 80, y: LANDSCAPE_ORIGIN.y - 314, facing: 0 };
   return { state, position };
 }

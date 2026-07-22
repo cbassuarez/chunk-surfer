@@ -1,0 +1,323 @@
+{
+  "file": "conservatory-acquisitions.glb",
+  "pack": {
+    "sha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+    "bytes": 13586820,
+    "triangles": 78395
+  },
+  "licence": "All source models are Poly Haven CC0 1.0 assets; conversion and placement metadata are project-authored.",
+  "sources": [
+    {
+      "mesh": "green_chair_01",
+      "source": "https://polyhaven.com/a/GreenChair_01",
+      "license": "CC0-1.0",
+      "archive": "GreenChair_01_4k.blend.zip",
+      "archiveSha256": "c569077c1fdb19416a50a188769a7dcafcc59f619ea442f88c525670550936ae",
+      "anchor": "floor",
+      "triangleBudget": 3000,
+      "sourceTriangles": 4213,
+      "triangles": 2940,
+      "bounds": {
+        "min": [
+          -0.336411,
+          0,
+          -0.33239
+        ],
+        "max": [
+          0.336411,
+          1.059,
+          0.33239
+        ]
+      },
+      "textureSize": 512
+    },
+    {
+      "mesh": "arm_chair_01",
+      "source": "https://polyhaven.com/a/ArmChair_01",
+      "license": "CC0-1.0",
+      "archive": "ArmChair_01_4k.blend.zip",
+      "archiveSha256": "86220cad56d897d8e3770238cab982a5ba1567066e73bf6181d570004b3cf906",
+      "anchor": "floor",
+      "triangleBudget": 3500,
+      "sourceTriangles": 5626,
+      "triangles": 3429,
+      "bounds": {
+        "min": [
+          -0.424788,
+          0,
+          -0.382698
+        ],
+        "max": [
+          0.424788,
+          1.065,
+          0.382698
+        ]
+      },
+      "textureSize": 512
+    },
+    {
+      "mesh": "sofa_01",
+      "source": "https://polyhaven.com/a/Sofa_01",
+      "license": "CC0-1.0",
+      "archive": "Sofa_01_4k.blend.zip",
+      "archiveSha256": "43a5f5bca1084cce84832bab8763661b46679c9009113b842995fb3c08323373",
+      "anchor": "floor",
+      "triangleBudget": 3000,
+      "sourceTriangles": 4101,
+      "triangles": 2940,
+      "bounds": {
+        "min": [
+          -0.786471,
+          0,
+          -0.329504
+        ],
+        "max": [
+          0.786471,
+          0.797,
+          0.329504
+        ]
+      },
+      "textureSize": 512
+    },
+    {
+      "mesh": "classic_console_01",
+      "source": "https://polyhaven.com/a/ClassicConsole_01",
+      "license": "CC0-1.0",
+      "archive": "ClassicConsole_01_4k.blend (1).zip",
+      "archiveSha256": "fa8194850e3b8adf6001bc7a7d037be031927119005d0ebcfcb69620a9913465",
+      "anchor": "floor",
+      "triangleBudget": 4500,
+      "sourceTriangles": 7566,
+      "triangles": 4410,
+      "bounds": {
+        "min": [
+          -0.769668,
+          0,
+          -0.29486
+        ],
+        "max": [
+          0.769668,
+          0.949,
+          0.29486
+        ]
+      },
+      "textureSize": 512
+    },
+    {
+      "mesh": "marble_bust_01",
+      "source": "https://polyhaven.com/a/marble_bust_01",
+      "license": "CC0-1.0",
+      "archive": "marble_bust_01_4k.blend.zip",
+      "archiveSha256": "93f445c2df038112c0229b09734b644642acbefff3b62e3072b9fcccd8eb9510",
+      "anchor": "surface",
+      "triangleBudget": 10000,
+      "sourceTriangles": 17456,
+      "triangles": 9800,
+      "bounds": {
+        "min": [
+          -0.135858,
+          0,
+          -0.149929
+        ],
+        "max": [
+          0.135858,
+          0.515,
+          0.149929
+        ]
+      },
+      "textureSize": 1024
+    },
+    {
+      "mesh": "horse_head",
+      "source": "https://polyhaven.com/a/horse_head",
+      "license": "CC0-1.0",
+      "archive": "horse_head_4k.blend.zip",
+      "archiveSha256": "2eb0105a7c81c72b0edc4237c0af8fffdd104ed9586b60cd28c9d5043fcf507f",
+      "anchor": "surface",
+      "triangleBudget": 8500,
+      "sourceTriangles": 12068,
+      "triangles": 8330,
+      "bounds": {
+        "min": [
+          -0.10755,
+          0,
+          -0.167192
+        ],
+        "max": [
+          0.10755,
+          0.419,
+          0.167192
+        ]
+      },
+      "textureSize": 1024
+    },
+    {
+      "mesh": "chandelier_03",
+      "source": "https://polyhaven.com/a/Chandelier_03",
+      "license": "CC0-1.0",
+      "archive": "Chandelier_03_4k.blend.zip",
+      "archiveSha256": "455651002ca626d14825a1391b1c65bb6cd7023b893e4f71ce5158628df8389f",
+      "anchor": "ceiling",
+      "triangleBudget": 10000,
+      "sourceTriangles": 29301,
+      "triangles": 9800,
+      "bounds": {
+        "min": [
+          -0.390495,
+          -1.041,
+          -0.3927
+        ],
+        "max": [
+          0.390495,
+          0,
+          0.3927
+        ]
+      },
+      "textureSize": 512
+    },
+    {
+      "mesh": "sofa_02",
+      "source": "https://polyhaven.com/a/sofa_02",
+      "license": "CC0-1.0",
+      "archive": "sofa_02_4k.blend.zip",
+      "archiveSha256": "3af3d1b988c78455863e3f7219ae7f8c7dab9e4a0c87dd48d7e0554214fa305b",
+      "anchor": "floor",
+      "triangleBudget": 2500,
+      "sourceTriangles": 2728,
+      "triangles": 2450,
+      "bounds": {
+        "min": [
+          -0.902961,
+          0,
+          -0.408594
+        ],
+        "max": [
+          0.902961,
+          0.709,
+          0.408594
+        ]
+      },
+      "textureSize": 512
+    },
+    {
+      "mesh": "lantern_chandelier_01",
+      "source": "https://polyhaven.com/a/lantern_chandelier_01",
+      "license": "CC0-1.0",
+      "archive": "lantern_chandelier_01_4k.blend.zip",
+      "archiveSha256": "7445c89be49db65e21e0d643baf484fb6b4b851903fe227ade6a6aa6dc75b8bd",
+      "anchor": "ceiling",
+      "triangleBudget": 4500,
+      "sourceTriangles": 5971,
+      "triangles": 4409,
+      "bounds": {
+        "min": [
+          -0.289707,
+          -0.878,
+          -0.287439
+        ],
+        "max": [
+          0.289707,
+          0,
+          0.287439
+        ]
+      },
+      "textureSize": 512
+    },
+    {
+      "mesh": "gothic_cabinet_01",
+      "source": "https://polyhaven.com/a/GothicCabinet_01",
+      "license": "CC0-1.0",
+      "archive": "GothicCabinet_01_4k.blend.zip",
+      "archiveSha256": "04bb22cde5db7622120eadf5df6ab76fbc8a45c5deb027223225b99bece24dd2",
+      "anchor": "floor",
+      "triangleBudget": 6500,
+      "sourceTriangles": 12170,
+      "triangles": 6369,
+      "bounds": {
+        "min": [
+          -0.859256,
+          0,
+          -0.558296
+        ],
+        "max": [
+          0.859256,
+          2.361,
+          0.558296
+        ]
+      },
+      "textureSize": 1024
+    },
+    {
+      "mesh": "wooden_chair_01",
+      "source": "https://polyhaven.com/a/WoodenChair_01",
+      "license": "CC0-1.0",
+      "archive": "WoodenChair_01_4k.blend.zip",
+      "archiveSha256": "263be75ebf7a8589d2859b1bd82f7052fbea53f7dadf5f9e05c1f68b86562431",
+      "anchor": "floor",
+      "triangleBudget": 9000,
+      "sourceTriangles": 19992,
+      "triangles": 8819,
+      "bounds": {
+        "min": [
+          -0.344095,
+          0,
+          -0.329206
+        ],
+        "max": [
+          0.344095,
+          2.274,
+          0.329206
+        ]
+      },
+      "textureSize": 1024
+    },
+    {
+      "mesh": "power_box_01",
+      "source": "https://polyhaven.com/a/power_box_01",
+      "license": "CC0-1.0",
+      "archive": "power_box_01_4k.blend.zip",
+      "archiveSha256": "73b1dad904425b78d08a861e01c6a68d384871fb1071df6e2dcfa7c920a89985",
+      "anchor": "wall",
+      "triangleBudget": 8000,
+      "sourceTriangles": 21272,
+      "triangles": 7840,
+      "bounds": {
+        "min": [
+          -0.202448,
+          -0.251526,
+          0
+        ],
+        "max": [
+          0.174881,
+          0.251526,
+          0.418382
+        ]
+      },
+      "textureSize": 512
+    },
+    {
+      "mesh": "portable_searchlight",
+      "source": "https://polyhaven.com/a/portable_searchlight",
+      "license": "CC0-1.0",
+      "archive": "portable_searchlight_4k.blend (1).zip",
+      "archiveSha256": "a35cd9a339e10268f67a0c6443cd6a0de2f491e9736446347c68698fbe7baf6a",
+      "anchor": "floor",
+      "triangleBudget": 7000,
+      "sourceTriangles": 18802,
+      "triangles": 6859,
+      "bounds": {
+        "min": [
+          -0.082482,
+          0,
+          -0.126449
+        ],
+        "max": [
+          0.082482,
+          0.185,
+          0.126449
+        ]
+      },
+      "textureSize": 512
+    }
+  ]
+}
