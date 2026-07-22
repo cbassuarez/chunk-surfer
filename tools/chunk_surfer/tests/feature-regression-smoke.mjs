@@ -8,6 +8,7 @@ if(!chrome)throw new Error('CHROME_PATH must point to the platform Chrome execut
 const base=process.env.CHUNK_SURFER_URL||'http://127.0.0.1:5173';
 const lens=process.env.MOCK_LENS_URL||'ws://127.0.0.1:8765';
 const output=path.resolve(process.env.FEATURE_SMOKE_OUTPUT||'artifacts/feature-regression-smoke');
+const frameSampleTimeout=Math.max(1000,Number(process.env.FEATURE_SMOKE_FRAME_TIMEOUT_MS)||10000);
 fs.rmSync(output,{recursive:true,force:true});
 fs.mkdirSync(output,{recursive:true});
 
@@ -51,11 +52,20 @@ async function settleViewport(){
   await new Promise((resolve)=>setTimeout(resolve,100));
 }
 
-async function samplePerformance(frames=75){
+async function samplePerformance(minimumSamples=30){
   await page.evaluate(()=>window.__probe.performanceReset());
-  await new Promise((resolve)=>setTimeout(resolve,Math.max(500,frames*18)));
-  const snapshot=await page.evaluate(()=>window.__probe.performance());
-  assert.ok(snapshot.samples>=30,'performance probe must observe at least thirty rendered frames');
+  const deadline=Date.now()+frameSampleTimeout;
+  let snapshot=await page.evaluate(()=>window.__probe.performance());
+  while(snapshot.samples<minimumSamples&&Date.now()<deadline){
+    // Poll from Node's wall clock. Hosted Windows runners can briefly throttle
+    // the headless tab, so a fixed 60 fps sleep is not a reliable frame count.
+    await new Promise((resolve)=>setTimeout(resolve,100));
+    snapshot=await page.evaluate(()=>window.__probe.performance());
+  }
+  assert.ok(
+    snapshot.samples>=minimumSamples,
+    `performance probe must observe at least ${minimumSamples} rendered frames; observed ${snapshot.samples} within ${frameSampleTimeout} ms`,
+  );
   return snapshot;
 }
 

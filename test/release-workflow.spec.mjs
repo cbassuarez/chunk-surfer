@@ -60,7 +60,8 @@ assert.match(yml, /gh release download[\s\S]*'\*\.dmg'[\s\S]*'\*\.zip'[\s\S]*'\*
 assert.match(yml, /build_bundle\.py --target \$\{\{ matrix\.target \}\}/, 'each target packages its own lens executable and model resources');
 assert.match(yml, /Run cross-platform visual smoke[\s\S]*npm run test:feature-smoke[\s\S]*Upload visual parity captures/, 'each native build job captures the same visual regression path');
 assert.match(yml, /Run cross-platform visual smoke[\s\S]*timeout-minutes: 10/, 'visual parity validation cannot hang a release runner indefinitely');
-assert.match(yml, /FEATURE_SMOKE_TIMEOUT_MS: \$\{\{ matrix\.os == 'ubuntu-latest' && '540000' \|\| '300000' \}\}/, 'Linux software rendering receives a bounded extended visual-smoke window');
+assert.match(yml, /FEATURE_SMOKE_TIMEOUT_MS: \$\{\{ matrix\.platform == 'ubuntu-22\.04' && '540000' \|\| '300000' \}\}/, 'Linux software rendering receives a bounded extended visual-smoke window');
+assert.match(yml, /FEATURE_SMOKE_FRAME_TIMEOUT_MS: \$\{\{ matrix\.platform == 'ubuntu-22\.04' && '60000' \|\| matrix\.platform == 'windows-latest' && '30000' \|\| '10000' \}\}/, 'slow hosted renderers receive a bounded window to collect real performance samples');
 assert.match(yml, /Run Windows sidecar process tests[\s\S]*if: matrix\.platform == 'windows-latest'[\s\S]*cargo test --manifest-path src-tauri\/Cargo\.toml --all-targets/, 'windows release runs the sidecar process integration tests');
 assert.match(featureSmoke, /enable-unsafe-swiftshader/, 'linux visual parity explicitly enables Chromium software WebGL');
 assert.match(featureSmoke, /fs\.rmSync\(output/, 'visual parity cannot upload stale captures after a failed boot');

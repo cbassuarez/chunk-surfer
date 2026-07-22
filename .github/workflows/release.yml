@@ -145,7 +145,8 @@ jobs:
       - name: Run cross-platform visual smoke
         timeout-minutes: 10
         env:
-          FEATURE_SMOKE_TIMEOUT_MS: ${{ matrix.os == 'ubuntu-latest' && '540000' || '300000' }}
+          FEATURE_SMOKE_TIMEOUT_MS: ${{ matrix.platform == 'ubuntu-22.04' && '540000' || '300000' }}
+          FEATURE_SMOKE_FRAME_TIMEOUT_MS: ${{ matrix.platform == 'ubuntu-22.04' && '60000' || matrix.platform == 'windows-latest' && '30000' || '10000' }}
         run: npm run test:feature-smoke
 
       - name: Upload visual parity captures
