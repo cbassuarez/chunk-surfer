@@ -59,6 +59,9 @@ export class InputManager {
     this.lastResetAt = 0;
     this.lastKeyCode = '';
     this.lastKeyAt = 0;
+    this.lastPointerDeltaReason = '';
+    this.lastPointerDeltaAt = 0;
+    this.lastPointerDeltaSource = { dx: 0, dy: 0 };
     this.controllerStateProvider = null;
     this._listeners = [];
 
@@ -130,25 +133,53 @@ export class InputManager {
     return true;
   }
 
-  mouseMove(e = {}) {
+  addPointerDelta(dx, dy, reason = 'pointer-delta') {
     if (!this.pointerLocked) return false;
-    const events = typeof e.getCoalescedEvents === 'function' ? e.getCoalescedEvents() : [e];
-    for (const ev of events) {
-      this.pointerDx += Number(ev.movementX || 0);
-      this.pointerDy += Number(ev.movementY || 0);
-    }
+    const x = Number(dx) || 0;
+    const y = Number(dy) || 0;
+    if (!x && !y) return false;
+    this.pointerDx += x;
+    this.pointerDy += y;
+    this.lastPointerDeltaReason = reason;
+    this.lastPointerDeltaAt = nowMs();
+    this.lastPointerDeltaSource = { dx: x, dy: y };
     return true;
   }
 
-  pointerLockChanged() {
-    this.pointerLocked = !!this.documentRef?.pointerLockElement;
-    if (!this.pointerLocked) {
-      this.pointerDx = 0;
-      this.pointerDy = 0;
+  mouseMove(e = {}) {
+    if (!this.pointerLocked) return false;
+    const events = typeof e.getCoalescedEvents === 'function' ? e.getCoalescedEvents() : [e];
+    let added = false;
+    for (const ev of events) {
+      added = this.addPointerDelta(ev.movementX, ev.movementY, 'dom-mousemove') || added;
+    }
+    return added;
+  }
+
+  setPointerLocked(next, reason = 'pointer-lock-set') {
+    const locked = !!next;
+    if (this.pointerLocked === locked) return;
+
+    this.pointerLocked = locked;
+
+    if (!locked) {
+      this.clearPointerDeltas();
       this.generation += 1;
-      this.lastResetReason = 'pointerlock-lost';
+      this.lastResetReason = reason;
       this.lastResetAt = nowMs();
     }
+  }
+
+  clearPointerDeltas() {
+    this.pointerDx = 0;
+    this.pointerDy = 0;
+  }
+
+  pointerLockChanged() {
+    // Pointer lock truth is owned by input/pointer-mode.js, because only the
+    // controller knows whether the lock belongs to the gameplay surface. Treat
+    // external changes conservatively.
+    this.setPointerLocked(false, 'pointerlock-external-change');
   }
 
   reset(reason = 'reset') {
@@ -166,8 +197,7 @@ export class InputManager {
   endFrame() {
     this.justPressed.clear();
     this.justReleased.clear();
-    this.pointerDx = 0;
-    this.pointerDy = 0;
+    this.clearPointerDeltas();
   }
 
   isHeld(code) { return this.held.has(code); }
@@ -240,6 +270,9 @@ export class InputManager {
       pointerDx: this.pointerDx,
       pointerDy: this.pointerDy,
       pointerLocked: this.pointerLocked,
+      lastPointerDeltaReason: this.lastPointerDeltaReason,
+      lastPointerDeltaAt: this.lastPointerDeltaAt,
+      lastPointerDeltaSource: this.lastPointerDeltaSource,
       focused: this.focused,
       generation: this.generation,
       eventsSeen: this.eventsSeen,

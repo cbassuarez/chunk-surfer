@@ -9,6 +9,8 @@ const tests = [
   'test/battle-narrative.spec.mjs',
   'test/prompt-token-budget.test.mjs',
   'test/eula-gate.test.mjs',
+  'test/vfd-select.test.mjs',
+  'test/studio-layout.test.mjs',
   'test/map-core.spec.mjs',
   'test/map-live-data.spec.mjs',
   'test/hush-telemetry.spec.mjs',

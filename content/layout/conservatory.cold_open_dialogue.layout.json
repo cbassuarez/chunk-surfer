@@ -2,61 +2,37 @@
   "schemaVersion": 1,
   "documentId": "conservatory.cold_open_dialogue",
   "positions": {
-    "start": {
+    "booth.hub": {
       "x": 80,
-      "y": 340
+      "y": -5100
     },
-    "replay-condensed": {
+    "booth.rooms": {
       "x": 80,
-      "y": 90
+      "y": -3500
     },
-    "torch": {
-      "x": 510,
-      "y": 1340
-    },
-    "torch.cells": {
-      "x": 940,
-      "y": 3340
-    },
-    "torch.dark": {
-      "x": 940,
-      "y": 3590
-    },
-    "torch.him": {
-      "x": 940,
-      "y": 3840
+    "booth.torch": {
+      "x": 80,
+      "y": -4400
     },
     "coffee": {
       "x": 510,
       "y": 90
     },
-    "order": {
+    "coffee.wife": {
+      "x": 940,
+      "y": -170
+    },
+    "greet.actually": {
       "x": 510,
-      "y": 590
+      "y": -2600
     },
-    "order.money": {
-      "x": 940,
-      "y": 2090
+    "greet.order": {
+      "x": 510,
+      "y": -2860
     },
-    "order.words": {
-      "x": 940,
-      "y": 2340
-    },
-    "order.client": {
-      "x": 940,
-      "y": 1340
-    },
-    "order.deadline": {
-      "x": 940,
-      "y": 1590
-    },
-    "order.last": {
-      "x": 940,
-      "y": 1840
-    },
-    "order.last.paid": {
-      "x": 1370,
-      "y": 340
+    "greet.somebody": {
+      "x": 510,
+      "y": -2340
     },
     "guard": {
       "x": 510,
@@ -70,9 +46,29 @@
       "x": 1370,
       "y": 90
     },
+    "guard.know": {
+      "x": 940,
+      "y": 340
+    },
+    "guard.know.radio": {
+      "x": 1370,
+      "y": 210
+    },
+    "guard.know.stair": {
+      "x": 1370,
+      "y": 470
+    },
     "guard.last": {
       "x": 940,
       "y": 590
+    },
+    "guard.last.home": {
+      "x": 1370,
+      "y": 460
+    },
+    "guard.last.left": {
+      "x": 1370,
+      "y": 720
     },
     "guard.name": {
       "x": 940,
@@ -82,21 +78,97 @@
       "x": 940,
       "y": 1090
     },
-    "guard.know": {
+    "order": {
+      "x": 510,
+      "y": 590
+    },
+    "order.client": {
       "x": 940,
+      "y": 1340
+    },
+    "order.client.box": {
+      "x": 1370,
+      "y": 1210
+    },
+    "order.client.ring": {
+      "x": 1370,
+      "y": 1470
+    },
+    "order.deadline": {
+      "x": 940,
+      "y": 1590
+    },
+    "order.last": {
+      "x": 940,
+      "y": 1840
+    },
+    "order.last.paid": {
+      "x": 1370,
       "y": 340
+    },
+    "order.money": {
+      "x": 940,
+      "y": 2090
+    },
+    "order.money.calendar": {
+      "x": 1370,
+      "y": 1960
+    },
+    "order.money.double": {
+      "x": 1370,
+      "y": 2220
+    },
+    "order.words": {
+      "x": 940,
+      "y": 2340
+    },
+    "order.words.asis": {
+      "x": 1370,
+      "y": 2210
+    },
+    "order.words.hear": {
+      "x": 1370,
+      "y": 2470
+    },
+    "replay-condensed": {
+      "x": 80,
+      "y": 90
+    },
+    "rooms.big": {
+      "x": 510,
+      "y": -3240
+    },
+    "rooms.minute": {
+      "x": 510,
+      "y": -3760
+    },
+    "rooms.waiting": {
+      "x": 510,
+      "y": -3500
+    },
+    "start": {
+      "x": 80,
+      "y": -2600
     },
     "tape": {
       "x": 510,
       "y": 840
     },
+    "tape.end": {
+      "x": 1370,
+      "y": 590
+    },
     "tape.levels": {
       "x": 940,
       "y": 2590
     },
-    "tape.slate": {
-      "x": 940,
-      "y": 3090
+    "tape.levels.better": {
+      "x": 1370,
+      "y": 2460
+    },
+    "tape.levels.diff": {
+      "x": 1370,
+      "y": 2720
     },
     "tape.run": {
       "x": 940,
@@ -106,13 +178,61 @@
       "x": 1370,
       "y": 840
     },
-    "tape.end": {
+    "tape.slate": {
+      "x": 940,
+      "y": 3090
+    },
+    "tape.slate.reasons": {
       "x": 1370,
-      "y": 590
+      "y": 3090
     },
     "threshold": {
       "x": 510,
       "y": 1090
+    },
+    "torch": {
+      "x": 510,
+      "y": 1340
+    },
+    "torch.cells": {
+      "x": 940,
+      "y": 3340
+    },
+    "torch.cells.dies": {
+      "x": 1370,
+      "y": 3210
+    },
+    "torch.cells.spares": {
+      "x": 1370,
+      "y": 3470
+    },
+    "torch.dark": {
+      "x": 940,
+      "y": 3590
+    },
+    "torch.him": {
+      "x": 940,
+      "y": 3840
+    },
+    "torch.him.red": {
+      "x": 1370,
+      "y": 3710
+    },
+    "torch.him.time": {
+      "x": 1370,
+      "y": 3970
+    },
+    "torchsay.first": {
+      "x": 510,
+      "y": -4660
+    },
+    "torchsay.power": {
+      "x": 510,
+      "y": -4140
+    },
+    "torchsay.usual": {
+      "x": 510,
+      "y": -4400
     }
   },
   "regions": {}

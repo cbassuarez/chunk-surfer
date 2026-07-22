@@ -52,9 +52,16 @@ export function uiSize() { return { cols, rows }; }
 export function uiClear() { if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height); }
 export function uiCanvasSize() { return { width: canvas?.width || 0, height: canvas?.height || 0 }; }
 export function uiPointFromClient(clientX, clientY) {
-  const rect = host?.getBoundingClientRect?.();
-  if (!rect) return { cellX:-1, cellY:-1 };
-  return { cellX:(clientX - rect.left) / scaledCellW, cellY:(clientY - rect.top) / scaledCellH };
+  // Pointer picking must use the actual rendered overlay rectangle, not the
+  // nominal cell size. In windowed desktop shells the CSS rect, DPR/backing
+  // pixels, and titlebar/window coordinates can diverge; ratio-mapping from
+  // the rendered canvas keeps hover/clicks aligned with what the player sees.
+  const rect = canvas?.getBoundingClientRect?.() || host?.getBoundingClientRect?.();
+  if (!rect || rect.width <= 0 || rect.height <= 0) return { cellX:-1, cellY:-1 };
+  return {
+    cellX: ((Number(clientX) - rect.left) / rect.width) * cols,
+    cellY: ((Number(clientY) - rect.top) / rect.height) * rows,
+  };
 }
 
 // Low-level drawing hook for code-native instruments. The callback receives

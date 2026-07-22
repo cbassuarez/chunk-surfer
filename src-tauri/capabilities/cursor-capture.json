@@ -1,0 +1,11 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "cursor-capture",
+  "description": "Allows Chunk Surfer desktop gameplay to hide, grab, and recenter the cursor for camera/look mode.",
+  "windows": ["*"],
+  "permissions": [
+    "core:window:allow-set-cursor-visible",
+    "core:window:allow-set-cursor-grab",
+    "core:window:allow-set-cursor-position"
+  ]
+}

@@ -697,7 +697,7 @@ export function layoutTranscriptChoices(view, width, { lane = null } = {}) {
 
   options.forEach((choice, idx) => {
     const selected = idx === view.pending.index;
-    const spent = !!view.spent?.(choice) || choice.replayState === 'seen-before-run';
+    const spent = !!view.spent?.(choice);
     const signal = choice.archiveSignal ? '◆' : ' ';
     const prefix = `${selected ? '▸' : ' '} ${idx + 1}${signal} `;
     const continuation = ' '.repeat(prefix.length);

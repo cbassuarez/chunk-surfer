@@ -41,8 +41,10 @@ ck('HUSH stays on the location indicator instead of disappearing outside a short
   main.includes('const pst=PRES.isActive()?PRES.presenceState():null'));
 ck('machine direction text is italic prose, not slash decoration',
   transcript.includes('uiItalicText')&&!transcript.includes("`${i === 0 ? '// ' : ''}`"));
-ck('being taken is a blocking flash, black, then focused transcript scene',
-  main.includes("id:'taken-flash',blocksInput:true,blocksWorld:true")&&main.includes("id:'taken-dialogue'")&&main.includes('makeColdOpenScene({'));
+ck('being taken is a surfer contact, then black, then focused transcript scene',
+  main.includes("id:'hush-contact',blocksInput:true,blocksWorld:true")&&main.includes("id:'taken-aftermath',blocksInput:true,blocksWorld:true")&&main.includes("id:'taken-dialogue'")&&main.includes('makeColdOpenScene({'));
+ck('the contact window never paints black over the surfer still',
+  /makeHushContactSequenceScene[\s\S]*?render\(\)\{\}/.test(main));
 ck('another taking is suppressed until the lost item is recovered',
   main.includes('!takenActive && !lostItem && performance.now()>=takenRecoveryUntil'));
 

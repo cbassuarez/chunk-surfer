@@ -119,6 +119,7 @@ import {
   movementCodeForEvent,
   normalizeControlMode,
 } from './input/input-manager.js';
+import { createPointerModeController } from './input/pointer-mode.js';
 import { makeControllerSettingsScene } from './game/controller-settings.js';
 import { makeThoughtScene, thoughtHad, markThought,
          loadThoughtState, saveThoughtState } from './game/thoughts.js';
@@ -399,6 +400,11 @@ let doorSwarmRadius=0;
 let doorSwarmCenter=null;
 let hushHitTimer=null;
 let hushJumpTimer=null;
+const HUSH_CONTACT_ASSET=Object.freeze({
+  id:'hush-surfer-contact',
+  url:assetUrl('story-art/surfer.png'),
+});
+let hushContactStyleInstalled=false;
 let hushPunishLockUntilMs=0;
 let doorRevealCutscene=false;
 let doorRevealStartedMs=0;
@@ -588,7 +594,11 @@ function ensureCtx({resume=true}={}){
         });
         battleMusicInit(actx, musicGain);
         CUES.cuesInit(actx, sfxDirectGain);
-        FEAR.fearAudioInit(actx, sfxGain);
+        // Heartbeat and hush stinger bypass the HUSH field entirely. Routed
+        // through sfxGain they went into hushAudioMix.worldInput, which the
+        // presence ducks to 10% behind a 620Hz lowpass at close range — so the
+        // contact stinger was being silenced by the very thing it announces.
+        FEAR.fearAudioInit(actx, dialogGain);
         // The final-output analyser remains in the audible graph. The physical
         // room mic joins its display as RMS only and is never routed to output.
         MONITOR.monitorSetAuxInput(()=>MIC.micActive()?MIC.micLevel():0);
@@ -1957,22 +1967,123 @@ function resetHorrorState(){
   }
   if(MAP_EL) MAP_EL.classList.remove('hush-hit');
   if(HUSH_JUMP_EL){
-    HUSH_JUMP_EL.classList.remove('active');
-    HUSH_JUMP_EL.classList.remove('blink');
+    HUSH_JUMP_EL.classList.remove('active','blink','contact-hit','taken-hit');
+    HUSH_JUMP_EL.removeAttribute('data-hush-contact-reason');
   }
 }
 
-function showSurferJumpscare(durationMs=460){
+function ensureHushContactStyle(){
+  if(hushContactStyleInstalled || typeof document==='undefined') return;
+  hushContactStyleInstalled=true;
+  const style=document.createElement('style');
+  style.id='chunk-surfer-hush-contact-style';
+  style.textContent=`
+#hushJump{
+  background-image:url("${HUSH_CONTACT_ASSET.url}");
+  background-size:cover;
+  background-position:50% 50%;
+  background-repeat:no-repeat;
+  pointer-events:none;
+}
+#hushJump.contact-hit{
+  /* It slams and it STAYS. The previous curve spent most of its runtime at
+     0.12-0.55 opacity while scaling and inverting, which is a compositing
+     exercise, not a scare: the face was never legibly on screen for a single
+     frame. It is now opaque for the whole window with two hard cuts in it. */
+  /* Hold the picture. No strobing to near-zero opacity, no darkening filters
+     that turn a face into a black rectangle — it is simply THERE, filling the
+     frame, and then it is gone. */
+  animation:hush-contact-hit 700ms linear both;
+  will-change:opacity,transform;
+  z-index:21;
+}
+#hushJump.taken-hit{
+  animation-duration:880ms;
+}
+@keyframes hush-contact-hit{
+  0%{opacity:0;transform:scale(1.14);}
+  4%{opacity:1;transform:scale(1.02);}
+  88%{opacity:1;transform:scale(1.0);}
+  100%{opacity:0;transform:scale(1.0);}
+}`;
+  document.head?.appendChild(style);
+}
+
+function ensureHushJumpSurferElement(){
+  if(!HUSH_JUMP_EL) return null;
+  ensureHushContactStyle();
+  HUSH_JUMP_EL.textContent='';
+  HUSH_JUMP_EL.style.backgroundImage=`url("${HUSH_CONTACT_ASSET.url}")`;
+  HUSH_JUMP_EL.style.backgroundSize='cover';
+  HUSH_JUMP_EL.style.backgroundPosition='50% 50%';
+  HUSH_JUMP_EL.style.backgroundRepeat='no-repeat';
+  HUSH_JUMP_EL.dataset.hushContactAsset=HUSH_CONTACT_ASSET.id;
+  return HUSH_JUMP_EL;
+}
+
+function assertHushJumpSurferAsset(el=HUSH_JUMP_EL){
+  if(!el) return false;
+  const bg=getComputedStyle(el).backgroundImage || '';
+  const inline=el.style?.backgroundImage || '';
+  const ok=el.dataset.hushContactAsset===HUSH_CONTACT_ASSET.id
+    && /surfer\.png(?:$|[?#"')])/.test(`${bg} ${inline}`);
+  if(!ok){
+    console.error('[hush-contact] illegal visual refused',{
+      expected:HUSH_CONTACT_ASSET.url,
+      assetId:el.dataset.hushContactAsset || null,
+      backgroundImage:bg,
+      inlineBackground:inline,
+      outerHTML:el.outerHTML,
+    });
+    el.classList.remove('active','blink','contact-hit','taken-hit');
+    return false;
+  }
+  return true;
+}
+
+function clearHushJumpClasses(){
   if(!HUSH_JUMP_EL) return;
-  HUSH_JUMP_EL.classList.remove('blink');
-  HUSH_JUMP_EL.classList.remove('active');
-  void HUSH_JUMP_EL.offsetWidth;
-  HUSH_JUMP_EL.classList.add('active');
+  HUSH_JUMP_EL.classList.remove('blink','active','contact-hit','taken-hit');
+}
+
+function armHushJump({durationMs=460, reason='surfer-signal', contact=false, taken=false}={}){
+  const el=ensureHushJumpSurferElement();
+  if(!assertHushJumpSurferAsset(el)) return false;
+  clearHushJumpClasses();
+  el.dataset.hushContactReason=reason;
+  void el.offsetWidth;
+  el.classList.add('active');
+  if(contact) el.classList.add('contact-hit');
+  if(taken) el.classList.add('taken-hit');
   if(hushJumpTimer!==null) clearTimeout(hushJumpTimer);
   hushJumpTimer=setTimeout(()=>{
-    if(HUSH_JUMP_EL) HUSH_JUMP_EL.classList.remove('active');
+    if(HUSH_JUMP_EL){
+      HUSH_JUMP_EL.classList.remove('active','contact-hit','taken-hit');
+      HUSH_JUMP_EL.removeAttribute('data-hush-contact-reason');
+    }
     hushJumpTimer=null;
   }, Math.max(100, Number(durationMs)||460));
+  return true;
+}
+
+function showSurferJumpscare(durationMs=460){
+  armHushJump({durationMs, reason:'surfer-signal'});
+}
+
+function showHushContactFlash({reason='contact',intensity=1,durationMs=700,blackout=false,stinger=true}={}){
+  const hit=armHushJump({durationMs, reason, contact:true, taken:!!blackout});
+  const amt=Math.max(0, Math.min(1.5, Number(intensity)||1));
+  if(stinger) FEAR.hushStinger?.(amt);
+  const flashAlpha=blackout ? 0.96 : 0.82;
+  const flashMs=blackout ? 160 : 120;
+  CR.fx.flash(flashMs, `rgba(225,244,238,${flashAlpha})`);
+  setTimeout(()=>CR.fx.flash(90, blackout ? 'rgba(0,0,0,0.92)' : 'rgba(10,10,12,0.78)'), 80);
+  CR.fx.shake(blackout ? 3.2 : 2.2, blackout ? 700 : 520);
+  CR.fx.glitch(blackout ? 1 : 0.82, blackout ? 560 : 420);
+  applyLensPreset('rupture');
+  possess('rupture', blackout ? 4 : 2);
+  if(navigator.vibrate) navigator.vibrate(blackout ? [18,24,180,30,220] : [12,20,120,24,160]);
+  return hit;
 }
 
 function playHushRupture(){
@@ -3633,9 +3744,13 @@ function tickHeldMovement(now){
 
 function setGameplayPaused(next, { announce=true }={}){
   next=!!next;
-  if(paused===next) return;
+  if(paused===next){
+    syncPointerMode(next ? 'pause-still-on' : 'pause-still-off');
+    return;
+  }
   paused=next;
   resetMotionInput(paused ? 'pause-enter' : 'pause-exit', {stopRenderMove:paused});
+  syncPointerMode(paused ? 'pause-enter' : 'pause-exit');
   if(paused){
     stopAllVoices(); stopWorldLayerVoice(); silenceAmbientDrone();
     setGainNode(dialogGain,0);setGainNode(sfxGain,0);setGainNode(sfxDirectGain,0);setGainNode(musicGain,0);
@@ -4823,11 +4938,29 @@ function r3dNearChunks(){
 // original lab exactly as it was: a walkable field of audio, no triggers.
 let storyMode=false;
 let lastLoopMs=0;
+let lastUnexpectedPointerUnlockAt=0;
 let activeDifficulty=currentDifficulty();
 let facilityMapSource=null;
 let facilityMapCache={key:'',model:null};
 const HUSH_MAP_TELEMETRY=createHushTelemetry({label:BUILDING_MAP.contact.label});
 let natatoriumBasinBounds=null;
+
+const pointerMode=createPointerModeController({
+  documentRef:document,
+  getTargetElement:()=>MAP_EL,
+  input:motionInput,
+  getState:()=>({
+    renderer:RENDERER,
+    storyMode,
+    inRogue,
+    paused,
+    blocksInput:scenes.blocksInput(),
+  }),
+  onUnexpectedUnlock:()=>{
+    lastUnexpectedPointerUnlockAt=performance.now();
+    if(storyMode&&inRogue&&!paused&&!scenes.blocksInput()) openPauseMenu({fromPointerUnlock:true});
+  },
+});
 
 function currentNatatoriumWaterRun(){
   return getSave()?.run || null;
@@ -4838,6 +4971,11 @@ function natatoriumWaterActive(){
 }
 
 function natatoriumWaterBlocksAt(x,y){
+  // The water keeps you OUT; it does not keep you in. Being taken drops you on
+  // a room's centre cell, and the natatorium's centre is the basin itself — so
+  // every direction was refused and the player stood in the pool unable to
+  // move. If you are already inside it, you can always walk.
+  if(WATER.pointInNatatoriumBasin(Math.floor(px),Math.floor(py),natatoriumBasinBounds)) return false;
   return WATER.natatoriumWaterBlocks(currentNatatoriumWaterRun(), x, y, natatoriumBasinBounds);
 }
 
@@ -5916,10 +6054,7 @@ function roll(){
   STORY.startTapeHiss({ gain: TAKE_HISS.min, fade: 1.2 });
   personalInterference.clear();
   SPEECH.say(framedLine('recStart', LINES.recStart));
-  if(!TUT.tutorialActive()) once('presence-arrives', ()=>{
-    PRES.spawnBehind(px, py, -lastStepDx||0, -lastStepDy||1);
-    emitProgress(EVENT_TYPES.HUSH_MET, {}, 'main.presenceArrives');
-  });
+  if(!TUT.tutorialActive()) summonPresence('first-take');
 }
 
 // Stop the take: a clean minute, a spoiled one, or one you called off.
@@ -5981,39 +6116,77 @@ let lostItem=null, lostAt=null;
 let takenRecoveryUntil=0;
 const itemLost=(id)=> lostItem===id;
 
-function makeTakenFlashScene(onBlack){
+function makeTakenAftermathScene(onBlack){
   let t=0,finished=false;
   return {
-    id:'taken-flash',blocksInput:true,blocksWorld:true,lensPreset:'rupture',
+    id:'taken-aftermath',blocksInput:true,blocksWorld:true,lensPreset:'rupture',
     update(dt){
       t+=dt;
-      if(t<1.75||finished)return;
+      if(t<1.25||finished)return;
       finished=true;scenes.pop();onBlack?.();
     },
     key(){return true;},
+    pointer(){return true;},
     render(){
       const {cols,rows}=uiSize();
       uiFill(0,0,cols,rows,'#000');
-      if(t>=.18)return;
-      // A single, unavoidable close contact. The field presence is deliberately
-      // illegible at range; here its two highlights and split mouth consume the
-      // camera for six frames before the signal collapses to black.
+      // The contact hit itself is the canonical surfer signal in #hushJump.
+      // The aftermath is only signal loss; it draws no figure.
+      if(t>.62)return;
       uiDraw(({ctx,dpr})=>{
-        const w=ctx.canvas.width,h=ctx.canvas.height,p=1-Math.min(1,t/.18);
-        ctx.save();ctx.globalCompositeOperation='screen';
-        ctx.fillStyle=`rgba(225,244,238,${.48+.48*p})`;
-        ctx.shadowColor='rgba(210,255,244,.95)';ctx.shadowBlur=42*dpr;
-        ctx.beginPath();ctx.ellipse(w*.5,h*.48,w*.24*(1+p*.18),h*.55,0,0,Math.PI*2);ctx.fill();
-        ctx.globalCompositeOperation='source-over';ctx.shadowBlur=10*dpr;ctx.fillStyle='rgba(0,0,0,.98)';
-        ctx.fillRect(w*.365,h*.31,w*.09,h*.075);ctx.fillRect(w*.545,h*.31,w*.09,h*.075);
-        ctx.fillRect(w*.485,h*.44,w*.03,h*.44);
-        for(let i=0;i<11;i++){
-          const x=w*(.29+i*.042),j=((i*37)%9-4)*dpr;
-          ctx.fillRect(x+j,h*.58,w*.012,h*(.22+(i%3)*.055));
+        const w=ctx.canvas.width,h=ctx.canvas.height,p=1-Math.min(1,t/.62);
+        ctx.save();
+        ctx.globalCompositeOperation='screen';
+        ctx.fillStyle=`rgba(225,244,238,${0.18*p})`;
+        for(let i=0;i<5;i++){
+          const y=h*(0.18+i*.15)+Math.sin((t*34)+i)*h*.012;
+          ctx.fillRect(0,y,w,Math.max(1,Math.floor((2+i%2)*dpr)));
         }
+        ctx.fillStyle=`rgba(0,0,0,${0.28*(1-p)})`;
+        ctx.fillRect(0,0,w,h);
         ctx.restore();
       });
     },
+  };
+}
+
+function beginHushContactFlash({taken=false,reason='contact',intensity=1}={}){
+  return showHushContactFlash({
+    reason:taken ? 'taken-contact' : reason,
+    intensity:taken ? 1 : intensity,
+    durationMs:taken ? 880 : 620,
+    blackout:!!taken,
+    stinger:true,
+  });
+}
+
+// The window in which the surfer hit owns the screen. Nothing may paint black
+// during it — that is the whole point of this scene existing.
+const HUSH_CONTACT_FLASH_MS=720;
+
+// The contact is a scene so that nothing can render over it. Pushing the black
+// aftermath in the same tick as the flash meant the aftermath's first render()
+// filled the frame before #hushJump was ever seen: the surfer was playing
+// underneath a black rectangle for its entire duration.
+function makeHushContactSequenceScene({taken=false,reason='contact',intensity=1,onAftermath=null}={}){
+  let t=0,handedOff=false;
+  return {
+    id:'hush-contact',blocksInput:true,blocksWorld:true,lensPreset:'rupture',
+    enter(){ beginHushContactFlash({taken,reason,intensity}); },
+    update(dt){
+      t+=dt;
+      if(handedOff || t<HUSH_CONTACT_FLASH_MS/1000) return;
+      handedOff=true;
+      // Replace rather than pop-then-push: a frame between the two would show
+      // the live world behind the flash it is meant to be interrupting.
+      if(taken) scenes.replace(makeTakenAftermathScene(onAftermath||wakeUp));
+      else scenes.pop();
+    },
+    key(){return true;},
+    pointer(){return true;},
+    // Deliberately draws nothing. #hushJump is a DOM layer above the canvas and
+    // must be left unobstructed for the whole window.
+    render(){},
   };
 }
 
@@ -6021,14 +6194,8 @@ function beginTaken(){
   takenActive=true;
   if(REC.isRecording()) REC.spoilTake('it took you');
   REC.injure();
-  fear=1; FEAR.setFear(1); FEAR.hushStinger(1);
-  const hue=Math.floor(Math.random()*360);
-  CR.fx.flash(110, `hsla(${hue},95%,74%,0.94)`);   // a colour that is not in the building
-  CR.fx.shake(3.2, 700); CR.fx.glitch(1, 520);
-  applyLensPreset('rupture');
-  // It has you. For as long as it does, the room is its to describe.
-  possess('rupture', 4);
-  scenes.push(makeTakenFlashScene(wakeUp));
+  fear=1; FEAR.setFear(1);
+  scenes.push(makeHushContactSequenceScene({taken:true,reason:'taken-contact',intensity:1,onAftermath:wakeUp}));
 }
 
 function wakeUp(){
@@ -6043,7 +6210,19 @@ function wakeUp(){
   });
   const room=pick(elsewhere.length?elsewhere:TARGETS.filter(r=>r!=='lux_nova'));
   const c=FP.toRuntimePoint(ROOM_CELLS[room]);
-  px=c.x; py=c.y; trail=[]; revealAround(px,py); faceOpenDirection();
+  px=c.x; py=c.y;
+  // Never wake standing in water. Walk the drop point out to the nearest dry
+  // cell rather than leaving the player in the basin to discover it.
+  if(WATER.pointInNatatoriumBasin(Math.floor(px),Math.floor(py),natatoriumBasinBounds)){
+    for(let r=1;r<=8 && WATER.pointInNatatoriumBasin(Math.floor(px),Math.floor(py),natatoriumBasinBounds);r++){
+      for(const [ox,oy] of [[r,0],[-r,0],[0,r],[0,-r],[r,r],[-r,r],[r,-r],[-r,-r]]){
+        if(!WATER.pointInNatatoriumBasin(Math.floor(c.x+ox),Math.floor(c.y+oy),natatoriumBasinBounds)){
+          px=c.x+ox; py=c.y+oy; break;
+        }
+      }
+    }
+  }
+  trail=[]; revealAround(px,py); faceOpenDirection();
   const minutes=6+Math.floor(Math.random()*9);      // the night is shorter than it was
   saveCommit({ playSeconds:(getSave().playSeconds||0)+minutes*60 });
   takeAnItem();
@@ -6092,12 +6271,13 @@ function tickLostItem(){
 
 function onPresenceCatch(count){
   STAB.reportThreat();
-  bumpFear(0.55, { stinger:1 });
+  bumpFear(0.55, { stinger:0 });
   // Half the time it hurts you. Half the time it TAKES you — and you do not get
   // to watch that happen. Never during the tutorial: nothing hunts a man who has
   // not started.
   if(!takenActive && !lostItem && performance.now()>=takenRecoveryUntil
      && !TUT.tutorialActive() && Math.random() < 0.5){ beginTaken(); return; }
+  beginHushContactFlash({taken:false,reason:'presence-contact',intensity:0.95});
   const injuries=REC.injure();
   emitProgress(EVENT_TYPES.PLAYER_INJURED, { count:injuries }, 'main.onPresenceCatch');
   if(REC.isRecording()) REC.spoilTake('it found you');
@@ -6977,6 +7157,28 @@ function tickRadio(dt){
     return;
   }
   RADIO.tickRadio(dt, { expectation: STAB.expectation(), px, py });
+  tickRadioDecoy(dt);
+}
+
+// A radio you put down is still a radio: it squelches in an empty corridor and
+// the HUSH walks to it. This is the only thing in the bag that can lie for you,
+// and it costs you the check-in to use it.
+let radioDecoyNextAt=0;
+function tickRadioDecoy(dt){
+  if(!storyMode || usingSpecialSpace() || !PRES.isActive()) return;
+  const at=RADIO.radioLocation();
+  if(!at) { radioDecoyNextAt=0; return; }
+  const now=performance.now();
+  if(!radioDecoyNextAt){ radioDecoyNextAt=now+2200+Math.random()*2600; return; }
+  if(now<radioDecoyNextAt) return;
+  radioDecoyNextAt=now+3200+Math.random()*4200;
+  // Emitted AT THE RADIO, not at the player — that displacement is the entire
+  // mechanic. A dead radio still clicks; it just has less to say.
+  const level=RADIO.isDead()?0.22:0.38;
+  REC.emitNoise(level, at.x, at.y, 'the radio squelches where you left it', {
+    kind:'radio_squelch', sourceKind:'equipment', sourceId:'dropped-radio',
+    playerGenerated:false, deliberate:false, spoils:false, audibleToHush:true,
+  });
 }
 
 // ── playback ────────────────────────────────────────────────────────────────
@@ -7439,12 +7641,33 @@ function onSourcePresenceCatch(){
   saveCommit({px,py,chunkSurf:chunkSurfRuntime.state(),presence:PRES.savePresenceState(),area:'source-space'});
 }
 
+// The HUSH arrives once the work starts and then it is simply part of the
+// night. It is never re-spawned on top of itself, and it is never gated on a
+// process-lifetime flag — the old `once('presence-arrives')` meant a New Game
+// in the same tab inherited a building that had already been visited.
+function summonPresence(reason='noise'){
+  if(!storyMode || usingSpecialSpace()) return false;
+  if(PRES.isActive()) return false;
+  PRES.spawnBehind(px, py, -lastStepDx||0, -lastStepDy||1);
+  emitProgress(EVENT_TYPES.HUSH_MET, {reason}, 'main.summonPresence');
+  return true;
+}
+
 function tickPresence(dt){
   if(usingStairAnomaly())return;
   if(!storyMode || !PRES.isActive()) return;
   if(chapelTowerState().phase===CHAPEL_TOWER_PHASE.TOWER_ACTIVE)return;
+  // Dread sets how close it circles when it has nothing to chase; occlusion is
+  // its sightline. acousticOcclusionDb already marches the floorplan between
+  // two points, so the torch is visible exactly when the room is open between
+  // you — no second raycaster, and walls mean the same thing to both senses.
+  const sightOcclusionDb=usingPlan()
+    ? acousticOcclusionDb(hushPresenceSnapshot(),acousticSpatialAt(px,py))
+    : 0;
   PRES.updatePresence(dt,px,py,usingSourceSpace()?onSourcePresenceCatch:onPresenceCatch,
-    usingSourceSpace()?{navigation:chunkSurfRuntime.navigation,catchMode:'source-checkpoint'}:{});
+    usingSourceSpace()
+      ? {navigation:chunkSurfRuntime.navigation,catchMode:'source-checkpoint'}
+      : {dreadLevel:presentedFearPressure(),sightOcclusionDb});
   // Its nearness bleeds into the room tone: the floor thickens as it closes.
   const fieldAudio=hushAudioRuntime?.currentField?.()?.absorption?.audio||0;
   RT.setBed(ROOM_TONE.bedGain * (1 + PRES.pressure(px,py)*0.65) * (1-fieldAudio*.72), 0.4);
@@ -7518,10 +7741,7 @@ function tickRecorder(dt){
       saveCommit({chapelTower});
       sourceBecameReady=true;
     }
-    if(!PRES.isActive()) once('presence-arrives',()=>{
-      PRES.spawnBehind(px,py,-lastStepDx||0,-lastStepDy||1);
-      emitProgress(EVENT_TYPES.HUSH_MET, {}, 'main.presenceArrives');
-    });
+    summonPresence('take-complete');
     STAB.reportRelief(0.55);          // a clean take is the biggest exhale there is
     OBJ.clearWaypoint();
     if(sourceBecameReady){
@@ -7707,7 +7927,7 @@ function onTakeBroken(reason){
   // last noise was made in, so make the last noise here.
   MUT.markHeard(px, py, 1);
   REC.emitNoise(0.6, px, py, reason,{audibleToHush:false});
-  if(!PRES.isActive()) once('presence-arrives', ()=>PRES.spawnBehind(px, py, -lastStepDx||0, -lastStepDy||1));
+  summonPresence('take-spoiled');
   // A quiet spoil only turns the presence toward the sound. A loud one is a
   // catch: an injury, a flash and a shake, and — if it is already in the room —
   // a touch. The jumpscare budget spends itself here, and only here.
@@ -9233,6 +9453,7 @@ function godTabs(){
       {id:'reset-fx',label:'RESET FEAR FX TO GAME',value:'[RESET]',activate:godResetFx},
       section('Threats'),
       {id:'presence',label:'HUSH / PRESENCE',value:()=>PRES.isActive()?'SPAWNED':'CLEAR',adjust:()=>{if(PRES.isActive())PRES.despawn();else PRES.spawnBehind(px,py,...R3.r3dDelta(-1));}},
+      {id:'hush-contact',label:'HUSH CONTACT FLASH',value:'[FIRE]',closeMenu:true,activate:()=>beginHushContactFlash({taken:false,reason:'god-contact',intensity:1})},
       {id:'taken',label:'TAKEN SEQUENCE',value:'[FIRE]',closeMenu:true,activate:beginTaken},
       {id:'injury',label:'ADD INJURY',value:()=>String(REC.recState().injuries),activate:()=>{REC.injure();saveCommit({rec:REC.saveRecState()});}},
       {id:'stinger',label:'HUSH STINGER',value:'[FIRE]',activate:()=>FEAR.hushStinger(1)},
@@ -9328,6 +9549,7 @@ async function requestQuitDesktop(){
 function closePauseMenu(){
   if(scenes.top()?.id==='pause') scenes.pop();
   setGameplayPaused(false,{announce:false});
+  syncPointerMode('pause-close');
 }
 
 function openPauseMenu(){
@@ -9356,6 +9578,7 @@ function openPauseMenu(){
       time:(()=>{const total=Math.max(0,Math.floor(getSave().playSeconds||0));const h=Math.floor(total/3600);const m=Math.floor(total%3600/60);const s=total%60;return [h,m,s].map((v)=>String(v).padStart(2,'0')).join(':');})(),
     }),
   }));
+  syncPointerMode('pause-open');
   return true;
 }
 
@@ -10068,6 +10291,7 @@ function installProbe(){
     setFear:(v)=>{ fear=Math.max(0,Math.min(1,Number(v)||0)); return fear; },
     bumpFear:(a)=>bumpFear(Number(a)||0),
     takeMe:()=>beginTaken(),
+    hushContact:()=>beginHushContactFlash({taken:false,reason:'probe-contact',intensity:1}),
     itemLost:(id)=>itemLost(id),
     warpToLost:()=>{ if(!lostAt) return false; px=lostAt.x; py=lostAt.y; trail=[]; revealAround(px,py); return true; },
     escapeWarp:()=>{ if(!escape) return false; const wp=escape.stage==='door'?escape.doorCell:escape.rescueCell; px=wp.x; py=wp.y; trail=[]; revealAround(px,py); return escape.stage; },
@@ -10717,22 +10941,31 @@ function tickIndependentLook(dt){
   const dx=Number(motionInput.pointerDx)||0, dy=Number(motionInput.pointerDy)||0;
   if(dx||dy){
     const sens=mouseLookSensitivity();
-    R3.r3dLook(dx*sens*0.0022, -dy*sens*0.0022*(mouseInvertY()?-1:1));
+    R3.r3dLook(dx*sens*0.0048, -dy*sens*0.0048*(mouseInvertY()?-1:1));
   }
-  motionInput.pointerDx=0; motionInput.pointerDy=0;
+  motionInput.clearPointerDeltas?.();
 }
 function mouseLookSensitivity(){
   const raw=Number(getSave()?.settings?.mouseSensitivity);
-  return Number.isFinite(raw)?Math.max(.2,Math.min(3,raw)):1;
+  return Number.isFinite(raw)?Math.max(.2,Math.min(10,raw)):2.4;
 }
 function mouseInvertY(){return !!getSave()?.settings?.mouseInvertY;}
-// Clicking the world takes the pointer; Escape gives it back (and the pause
-// menu still opens, because the browser releases the lock on the same key).
-function ensurePointerLock(){
-  if(RENDERER!=='3d'||!storyMode||!inRogue)return;
-  if(paused||scenes.blocksInput())return;
-  if(document.pointerLockElement)return;
-  try{ MAP_EL?.requestPointerLock?.(); }catch(_){}
+// Pointer lock is a gameplay-input lease. UI/menu state never captures it;
+// live unblocked first-person gameplay can request it only from a user gesture.
+function gameplayWantsPointerCapture(){
+  return RENDERER==='3d'&&storyMode&&inRogue&&!paused&&!scenes.blocksInput();
+}
+function syncPointerMode(reason='sync'){
+  return pointerMode.sync(reason);
+}
+function ensurePointerLock(reason='world-pointerdown'){
+  // Windowed play was the broken case: requestPointerLock is rejected outright
+  // when the document is not focused, and the click that focuses a windowed
+  // app is frequently consumed by the window manager rather than reaching us
+  // as a usable gesture. Take focus first, every time, then ask.
+  ensureInteractionFocus();
+  try{ if(typeof window!=='undefined' && !document.hasFocus?.()) window.focus?.(); }catch(_){}
+  return pointerMode.requestCaptureFromGesture(reason);
 }
 function performQuarterTurn(dir, now=performance.now()){
   if(!dir || RENDERER!=='3d') return false;
@@ -10780,6 +11013,10 @@ function onKey(e){
   // cutscenes. It must be offered before a blocking scene swallows Escape.
   // Settings/God overlays own their own back behavior above an existing pause.
   const topSceneId=scenes.top()?.id;
+  if(topSceneId==='pause'&&(e.key==='Escape'||e.code==='Escape')&&performance.now()-lastUnexpectedPointerUnlockAt<300){
+    e.preventDefault();
+    return;
+  }
   if(shouldOpenPauseForEvent({storyMode,key:e.key,code:e.code,topSceneId})){
     e.preventDefault();
     openPauseMenu();
@@ -10960,16 +11197,62 @@ function ensureInteractionFocus(){
   }catch(_){}
 }
 
-function onScenePointer(e){
-  if(!scenes.depth()) return;
+function pointerEventHitsGameplaySurface(e){
+  const target=e?.target || null;
+  if(target?.closest?.('button,input,textarea,select,a,[data-no-pointer-lock]')) return false;
+  if(!MAP_EL || !target) return true;
+  return target===MAP_EL
+    || !!MAP_EL.contains?.(target)
+    || target===document.body
+    || target===document.documentElement;
+}
+
+function scenePointerPayload(e){
   const point=uiPointFromClient(e.clientX,e.clientY);
-  if(!scenes.pointer({
-    type:e.type,clientX:e.clientX,clientY:e.clientY,
-    cellX:point.cellX,cellY:point.cellY,
-    pointerId:e.pointerId,buttons:e.buttons,pointerType:e.pointerType,
-  })) return;
-  e.preventDefault();
-  if(e.type==='pointerdown') ensureInteractionFocus();
+  return {
+    type:e.type,
+    clientX:e.clientX,
+    clientY:e.clientY,
+    cellX:point.cellX,
+    cellY:point.cellY,
+    pointerId:e.pointerId,
+    buttons:e.buttons,
+    pointerType:e.pointerType,
+    originalEvent:e,
+  };
+}
+
+function onPointerEvent(e){
+  if(e.type==='pointerdown'){
+    BINDINGS.setActiveInputDevice('keyboard');
+    void recoverInteractionAudio('pointerdown');
+    ensureInteractionFocus();
+  }
+
+  // Scenes get first refusal. Blocking scenes swallow pointer input even when
+  // they do not implement pointer(), so a menu click can never become gameplay
+  // pointer capture. Entering a scene also hard-releases any look backend via
+  // the scene subscription below.
+  if(scenes.pointer(scenePointerPayload(e))){
+    e.preventDefault?.();
+    e.stopPropagation?.();
+    return;
+  }
+
+  if(e.type==='pointermove' && pointerEventHitsGameplaySurface(e) && pointerMode.handlePointerMove?.(e)){
+    e.preventDefault?.();
+    e.stopPropagation?.();
+    return;
+  }
+
+  if(e.type==='pointerdown' && pointerEventHitsGameplaySurface(e)){
+    // Click is reserved for interaction/capture request. It must not start
+    // button-held camera look; mouse-look only begins after true pointer lock
+    // or confirmed native capture owns the pointer.
+    void ensurePointerLock('world-pointerdown');
+    e.preventDefault?.();
+    e.stopPropagation?.();
+  }
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
@@ -10999,28 +11282,45 @@ async function boot(){
   if(DEBUG_KEYS_BTN){
     DEBUG_KEYS_BTN.addEventListener('click', ()=>grantAllKeysForCurrentLevel());
   }
+  scenes.subscribe(({reason,scene})=>{
+    syncPointerMode(`scene-${reason}:${scene?.id||'unknown'}`);
+  });
+  syncPointerMode('boot');
   // Register input/focus handlers once; avoid missing controls during a partial
   // enterRogue path.
   window.addEventListener('keydown',onKey, {capture:true});
   window.addEventListener('keyup',onKeyUp, {capture:true});
-  window.addEventListener('pointerdown', ()=>{
-    BINDINGS.setActiveInputDevice('keyboard');
-    void recoverInteractionAudio('pointerdown');
-    ensureInteractionFocus();
-    ensurePointerLock();
-  }, {passive:true});
-  // The manager only accumulates mouse deltas while the pointer is locked, so
-  // this is the whole of mouse look: wire the events and let the frame drain it.
-  document.addEventListener('pointerlockchange', ()=>motionInput.pointerLockChanged());
-  window.addEventListener('mousemove', (e)=>motionInput.mouseMove(e), {passive:true});
-  window.addEventListener('pointerdown', onScenePointer, {capture:true,passive:false});
-  window.addEventListener('pointermove', onScenePointer, {capture:true,passive:false});
-  window.addEventListener('pointerup', onScenePointer, {capture:true,passive:false});
-  window.addEventListener('pointercancel', onScenePointer, {capture:true,passive:false});
+  // One pointer router owns both UI hit-testing and gameplay capture. Scenes
+  // get first refusal; unhandled world pointerdown requests camera ownership.
+  window.addEventListener('pointerdown', onPointerEvent, {capture:true,passive:false});
+  window.addEventListener('pointermove', onPointerEvent, {capture:true,passive:false});
+  window.addEventListener('pointerup', onPointerEvent, {capture:true,passive:false});
+  window.addEventListener('pointercancel', onPointerEvent, {capture:true,passive:false});
+  // The manager only accumulates mouse deltas while pointer mode says gameplay
+  // owns look input. That means true DOM pointer lock; native capture feeds
+  // deltas through pointermove after it has been confirmed/calibrated.
+  document.addEventListener('pointerlockchange', ()=>pointerMode.handlePointerLockChange());
+  document.addEventListener('pointerlockerror', (e)=>pointerMode.handlePointerLockError(e));
+  window.addEventListener('mousemove', (e)=>{
+    // True DOM pointer lock uses MouseEvent.movementX/Y. Soft-capture fallback
+    // feeds deltas from pointermove so it can recenter/ignore synthetic drift.
+    if(pointerMode.isTrueLocked?.()) motionInput.mouseMove(e);
+  }, {capture:true,passive:true});
   // Fullscreen and iframe transitions silently drop keyboard focus.
   document.addEventListener('fullscreenchange', ()=>{ refreshStageLayoutSoon(); ensureInteractionFocus(); });
   window.addEventListener('message', ensureInteractionFocus, {passive:true});
-  window.addEventListener('focus', ()=>{ recoverInteractionFocus('window-focus'); }, {passive:true});
+  window.addEventListener('focus', ()=>{
+    recoverInteractionFocus('window-focus');
+    // Regaining focus is not itself a gesture, so the lock cannot be taken
+    // here — but the click that follows must not be spent on focusing again.
+    ensureInteractionFocus();
+    syncPointerMode('window-focus');
+  }, {passive:true});
+  // A windowed build only ever gets focus from a click inside it. Treat that
+  // click as the capture gesture too, instead of swallowing it.
+  window.addEventListener('mousedown', ()=>{
+    if(gameplayWantsPointerCapture() && !pointerMode.isTrueLocked?.()) void ensurePointerLock('window-mousedown');
+  }, {capture:true,passive:true});
   document.addEventListener('visibilitychange', ()=>{
     if(document.hidden){
       resetMotionInput('visibility-hidden', {stopRenderMove:true});
@@ -11093,6 +11393,50 @@ async function boot(){
       openWebsite:()=>openExternalUrl(APP_LINKS.website),
       reportProblem:()=>openExternalUrl(APP_LINKS.reportProblem),
     };
+    window.__chunkSurferPointer={
+      status:()=>pointerMode.status(),
+      sync:(reason='manual')=>pointerMode.sync(reason),
+      capture:()=>pointerMode.requestCaptureFromGesture('debug-capture'),
+      release:(reason='debug-release')=>pointerMode.release(reason),
+      wantsCapture:()=>gameplayWantsPointerCapture(),
+      scene:()=>({
+        top:scenes.top()?.id||null,
+        depth:scenes.depth(),
+        blocksInput:scenes.blocksInput(),
+        blocksWorld:scenes.blocksWorld(),
+      }),
+    };
+    window.__chunkSurferHushScare={
+      forceContact:()=>beginHushContactFlash({taken:false,reason:'debug-contact',intensity:1}),
+      // The whole sequence, not just the flash: surfer hit, then the black
+      // aftermath only once the flash window has closed.
+      forceTaken:()=>{ beginTaken(); return true; },
+      contactFlashMs:()=>HUSH_CONTACT_FLASH_MS,
+      status:()=>{
+        const el=HUSH_JUMP_EL;
+        const bg=el?getComputedStyle(el).backgroundImage:null;
+        const inline=el?.style?.backgroundImage||'';
+        return {
+          expected:HUSH_CONTACT_ASSET.url,
+          assetId:el?.dataset?.hushContactAsset||null,
+          reason:el?.dataset?.hushContactReason||null,
+          backgroundImage:bg,
+          inlineBackground:inline,
+          active:!!el?.classList?.contains('active'),
+          contactHit:!!el?.classList?.contains('contact-hit'),
+          takenHit:!!el?.classList?.contains('taken-hit'),
+          blink:!!el?.classList?.contains('blink'),
+          topScene:scenes.top()?.id||null,
+          ok:/surfer\.png/.test(`${bg||''} ${inline}`),
+        };
+      },
+    };
+    window.__chunkSurferHitRegions=window.__chunkSurferHitRegions||{
+      show:false,
+      labels:true,
+      enable(){this.show=true;return this;},
+      disable(){this.show=false;return this;},
+    };
     window.__chunkSurferMotion={
       status:()=>({
         input:motionInput.debugState(),
@@ -11103,6 +11447,7 @@ async function boot(){
         scene:scenes.top()?.id||null,
         blocksInput:scenes.blocksInput(),
         blocksWorld:scenes.blocksWorld(),
+        pointer:pointerMode.status(),
         nextMoveInMs:nextMoveAtMs>0?Math.max(0,Math.round(nextMoveAtMs-performance.now())):0,
         nextTurnInMs:nextTurnAtMs>0?Math.max(0,Math.round(nextTurnAtMs-performance.now())):0,
         motionResetReason,

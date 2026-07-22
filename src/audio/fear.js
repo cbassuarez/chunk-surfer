@@ -90,7 +90,14 @@ export function stopHeartbeat({ fade = 0.6 } = {}) {
 export function hushStinger(intensity = 0.5) {
   if (!ctx || !bus) return;
   const fwd = buffers.get(FILES.hush);
-  if (!fwd) { load(FILES.hush); return; }
+  // The first scare of a run used to be silent: this returned while the file
+  // was still loading and never came back for it. Play it the moment it lands.
+  if (!fwd) {
+    load(FILES.hush)?.then?.(() => {
+      if (buffers.get(FILES.hush)) hushStinger(intensity);
+    }).catch?.(() => {});
+    return;
+  }
   const back = Math.random() < 0.35;           // sometimes it runs the wrong way
   const buf = (back && hushRev) ? hushRev : fwd;
   const i = Math.max(0, Math.min(1, intensity));

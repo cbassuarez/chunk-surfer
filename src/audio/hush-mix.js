@@ -44,6 +44,13 @@ export function hushMixTargets(field, settings = {}, { monitorGain = 1, monitorO
   const hissScale = clamp01(field?.presentation?.hiss ?? (settings.hushHiss === 'reduced' ? .48 : 1));
   const softened = field?.presentation?.softenCuts ?? settings.hushSuddenCuts === 'softened';
   const monitorPresence = clamp01(monitorGain) * (monitorOpen ? 1 : .52);
+  // The hiss is a MONITOR artifact — it belongs in the headphones, and only
+  // when the thing is genuinely close. Now that the presence never despawns,
+  // a low threshold and a half-open gate meant it sat under the whole run and
+  // never once stopped. Closed monitor is nearly silent; the floor is high
+  // enough that ambient proximity does not qualify.
+  const hissPresence = clamp01(monitorGain) * (monitorOpen ? 1 : .08);
+  const hissFloor = .38;
   return {
     worldGain: lerp(1, softened ? .32 : .10, Math.pow(audio, 1.30)),
     worldLowpassHz: lerp(19000, softened ? 1250 : 620, Math.pow(audio, 1.08)),
@@ -52,7 +59,7 @@ export function hushMixTargets(field, settings = {}, { monitorGain = 1, monitorO
     monitorGain: monitorPresence,
     monitorDryGain: monitorPresence * lerp(1, softened ? .20 : .035, Math.pow(monitor, 1.20)),
     monitorLowpassHz: lerp(16000, softened ? 1100 : 480, Math.pow(monitor, 1.02)),
-    hissGain: monitorPresence * hissScale * Math.max(0, (monitor - .16) / .84) * .27,
+    hissGain: hissPresence * hissScale * Math.max(0, (monitor - hissFloor) / (1 - hissFloor)) * .27,
     residueGain: monitorPresence * Math.max(0, (monitor - .64) / .36) * .14,
     fieldAmount: Math.max(audio, monitor),
   };

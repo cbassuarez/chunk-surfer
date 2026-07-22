@@ -24,8 +24,9 @@ body{min-width:0!important;min-height:0!important;}
 #map{width:100%!important;height:100%!important;overflow:hidden!important;box-sizing:border-box;}
 body.stage-scaled-down #wrap{image-rendering:auto;}
 body.stage-scaled-up #wrap{image-rendering:auto;}
-body.pause-open{cursor:default;}
-body.desktop-game-mode{cursor:none;background:#000;}
+body.desktop-game-mode{background:#000;}
+body.cursor-captured,body.cursor-captured #wrap,body.cursor-captured #map{cursor:none;}
+body.cursor-ui,body.cursor-ui #wrap,body.cursor-ui #map,body.pause-open,body.title-screen,body.god-menu-open{cursor:default;}
 body.desktop-game-mode #wrap{box-shadow:0 0 0 1px rgba(112,255,230,.08),0 0 48px rgba(112,255,230,.08);}
 body.viewport-too-small #wrap{filter:brightness(.74) saturate(.88);}
 .viewport-fault{z-index:99999;}

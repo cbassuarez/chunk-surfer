@@ -22,21 +22,41 @@ import * as REC from './recordist.js';
 
 const D = CELL_SCALE;
 
+// The player's sustained rate. Locomotion is one cell per MOVE_MS, so this is
+// the number the HUSH's speeds are quoted against — not its own former
+// absolutes, which made it six times slower than the man it was hunting.
+const PLAYER_CELLS_PER_SEC = 1000 / 45;
+
 export const PRESENCE = {
   spawnDistance: 22 * D,    // close enough to enter the next authored beat
-  baseSpeed: 0.90 * D,      // cells/sec while investigating
-  huntSpeed: 1.70 * D,      // cells/sec when it has a fresh sound
+  // It never sprints while it is only circling: this is the weather, and you
+  // can always walk out from under it.
+  stalkSpeedRatio: 0.20,
+  // With a fresh sound or a sighted light it commits, and then it is very
+  // nearly as fast as you are. You do not outrun this; you go quiet.
+  huntSpeedRatio: 0.62,
   catchRadius: 0.72 * D,
   hearingRadius: 30 * D,    // its initial placement is inside useful earshot
-  lightRadius: 16 * D,      // and can sense a lit player, vaguely, this far
+  lightRadius: 16 * D,      // and can see a lit player, if nothing is between you
   memorySec: 5.5,           // a sound remains useful long enough to close ground
-  loseInterestSec: 12,
+  // It does not leave. It loses interest and drifts back out to the far band,
+  // which is what `loseInterestSec` was always meant to mean.
+  disengageSec: 18,
+  // Dread decides how close it circles when it has nothing to chase.
+  bandNear: 6 * D,
+  bandFar: 34 * D,
+  // How much of the room may sit between you before a lit torch stops being a
+  // confession. Occlusion arrives in dB from the acoustic model.
+  sightOcclusionDb: 6,
   catchCooldownSec: 7.0,    // one touch is one injury, not one per frame
   recoilCells: 12 * D,      // and it withdraws, so the moment can land
   spawnGraceSec: 2.5,       // the arrival reads without postponing the encounter
   visibleRadius: 48 * D,    // dread needs a body, not only a punishment
   dreadRadius: 52 * D,
 };
+
+export function stalkSpeed() { return PRESENCE.stalkSpeedRatio * PLAYER_CELLS_PER_SEC; }
+export function huntSpeed() { return PRESENCE.huntSpeedRatio * PLAYER_CELLS_PER_SEC; }
 
 let difficultyRules = {
   baseSpeedScale: 1,
@@ -64,6 +84,12 @@ const state = {
   caughtCount: 0,
   externalTargetUntil: 0,
   externalTargetPriority: 0,
+  lastEngagedAt: 0,          // last noise heard or light seen — drives disengagement
+  lastSightedAt: 0,          // last time a lit torch was in its line
+  prowlX: 0, prowlY: 0,      // a destination in the world, not an offset from you
+  hasProwl: false,
+  prowlUntil: 0,
+  dwellUntil: 0,             // it arrives, and then it waits
   velocityX: 0,
   velocityY: 0,
   speed: 0,
@@ -116,6 +142,7 @@ export function spawnBehind(px, py, dirX = 0, dirY = 1) {
   state.lastHeardAt = performance.now();
   state.spawnedAt = state.lastHeardAt;
   state.velocityX = 0; state.velocityY = 0; state.speed = 0; state.motionMode = 'idle';
+  state.hasProwl = false; state.prowlUntil = 0; state.dwellUntil = 0;
 }
 
 export function despawn() { state.active = false; state.hasTarget = false; state.externalTargetUntil = 0; state.externalTargetPriority = 0; }
@@ -155,7 +182,9 @@ function hear(x, y, level, now) {
 }
 
 // `onCatch` is the game's, not ours: spoil the take, injure, degrade.
-export function updatePresence(dt, px, py, onCatch, { navigation = null, catchMode = 'normal' } = {}) {
+export function updatePresence(dt, px, py, onCatch, {
+  navigation = null, catchMode = 'normal', dreadLevel = 0, sightOcclusionDb = 0,
+} = {}) {
   if (!state.active) return;
   const now = performance.now();
   const rec = REC.recState();
@@ -166,14 +195,19 @@ export function updatePresence(dt, px, py, onCatch, { navigation = null, catchMo
   const externalFresh = now < state.externalTargetUntil;
   if (!externalFresh && REC.currentWorldNoise() > 0.02) {
     hear(rec.lastNoiseAt.x, rec.lastNoiseAt.y, REC.currentWorldNoise(), now);
+    state.lastEngagedAt = now;
   }
 
-  // 2. Light. A lit player is a smear on the dark, not an address: the target
-  //    is offset, so it comes *near* you rather than *to* you.
-  else if (REC.lightOn() && distanceTo(px, py) < PRESENCE.lightRadius) {
-    const jitter = 2.5 * D;
-    hear(px + (Math.random() * 2 - 1) * jitter,
-         py + (Math.random() * 2 - 1) * jitter, 0.08, now);
+  // 2. Light — but only if it can SEE it. A torch through a wall is nothing;
+  //    a torch across an open room is an address, and an exact one. This is the
+  //    inversion the design turns on: the light does not hold it off, it calls
+  //    it. Carrying the dark is the only way to be nobody.
+  else if (REC.lightOn()
+      && distanceTo(px, py) < PRESENCE.lightRadius
+      && sightOcclusionDb <= PRESENCE.sightOcclusionDb) {
+    hear(px, py, 0.24, now);
+    state.lastSightedAt = now;
+    state.lastEngagedAt = now;
   }
 
   // 3. Interest decays. A sound is only interesting for a few seconds.
@@ -183,20 +217,56 @@ export function updatePresence(dt, px, py, onCatch, { navigation = null, catchMo
     state.externalTargetPriority = 0;
   }
 
-  // 4. Move. Toward the last sound if it has one. In silence it stalks an orbit
-  //    around the player: silence denies a direct lock, not the encounter.
-  let tx = state.targetX, ty = state.targetY, speed = PRESENCE.baseSpeed * difficultyRules.baseSpeedScale;
+  // 4. Move. Toward what it last heard or saw; otherwise it circles at a
+  //    distance set by how frightened you already are. Dread is the leash: a
+  //    calm building keeps it out at the edge of earshot, a bad night walks it
+  //    in without it needing to hear anything at all.
+  const engaged = (now - (state.lastEngagedAt || 0)) / 1000
+    < PRESENCE.disengageSec * difficultyRules.memoryScale;
+  let tx = state.targetX, ty = state.targetY;
+  let speed = stalkSpeed() * difficultyRules.baseSpeedScale;
   if (state.hasTarget) {
     speed = sinceTarget < 1.5
-      ? PRESENCE.huntSpeed * difficultyRules.huntSpeedScale
-      : PRESENCE.baseSpeed * difficultyRules.baseSpeedScale;
+      ? huntSpeed() * difficultyRules.huntSpeedScale
+      : stalkSpeed() * difficultyRules.baseSpeedScale;
   } else {
-    const orbit = Math.max(PRESENCE.catchRadius * 3.2, 2.4 * D);
-    const angle = (now / 5200) + state.awareness * 2.7;
-    tx = px + Math.cos(angle) * orbit;
-    ty = py + Math.sin(angle) * orbit;
-    const far = distanceTo(px,py) > 10 * D;
-    speed = PRESENCE.baseSpeed * difficultyRules.baseSpeedScale * (far ? 0.78 : 0.52);
+    // PROWL. The old behaviour put the target at player + orbit, which meant
+    // its destination was recomputed from your position every frame: it held a
+    // fixed radius and moved only when you moved, because it was welded to you.
+    // It now walks to a point in the WORLD and stays committed to it — so it
+    // crosses rooms on its own schedule, sometimes away from you, and it stands
+    // still when it arrives. Dread only biases where it chooses to go next.
+    const pull = Math.max(0, Math.min(1, Number(dreadLevel) || 0));
+    const arrived = Math.hypot(state.prowlX - state.x, state.prowlY - state.y) < 1.6 * D;
+    const stale = now > (state.prowlUntil || 0);
+    if (!state.hasProwl || arrived || stale) {
+      if (arrived && !state.dwellUntil) {
+        // It stops. A thing that is always walking is a machine; a thing that
+        // arrives somewhere and waits is looking for something.
+        state.dwellUntil = now + 900 + Math.random() * 2600;
+      }
+      if (!state.dwellUntil || now >= state.dwellUntil) {
+        state.dwellUntil = 0;
+        const band = PRESENCE.bandFar + (PRESENCE.bandNear - PRESENCE.bandFar)
+          * (engaged ? Math.max(pull, 0.35) : pull);
+        // Anchored on you, but only loosely, and then left alone until reached.
+        // Each goal is drawn slightly inside the last, so a search that looks
+        // aimless is still converging: silence buys you time, never escape.
+        const angle = Math.random() * Math.PI * 2;
+        const here = distanceTo(px, py);
+        const inward = Math.min(band, here * 0.72);
+        const reach = Math.max(PRESENCE.bandNear * 0.5, inward * (0.55 + Math.random() * 0.75));
+        state.prowlX = px + Math.cos(angle) * reach;
+        state.prowlY = py + Math.sin(angle) * reach;
+        state.prowlUntil = now + 6000 + Math.random() * 9000;
+        state.hasProwl = true;
+      }
+    }
+    tx = state.prowlX; ty = state.prowlY;
+    // Dwelling means dwelling: it holds position rather than sliding onward.
+    speed = state.dwellUntil && now < state.dwellUntil
+      ? 0
+      : stalkSpeed() * difficultyRules.baseSpeedScale;
   }
   // Awareness makes it faster forever, but not fast. It learns you, and still
   // remains something you can get away from.
@@ -218,7 +288,12 @@ export function updatePresence(dt, px, py, onCatch, { navigation = null, catchMo
   const frameDt=Math.max(.0001,dt);
   state.velocityX=(state.x-beforeX)/frameDt;state.velocityY=(state.y-beforeY)/frameDt;
   state.speed=Math.hypot(state.velocityX,state.velocityY);
-  state.motionMode=state.speed<.02?'idle':state.hasTarget&&sinceTarget<1.5?'run':state.hasTarget?'walk':'stalk';
+  // Standing still with nothing to chase is still stalking — it has arrived
+  // somewhere and is waiting. 'idle' is reserved for having a target it is not
+  // moving toward, which is the genuinely inert case.
+  state.motionMode=!state.hasTarget?'stalk'
+    :state.speed<.02?'idle'
+    :sinceTarget<1.5?'run':'walk';
 
   // 5. Contact. Not death — a spoiled take, an injury, and it knows you better.
   //    Guarded and cooled: without this it touches you on every frame and one

@@ -29,12 +29,27 @@
 
 import { createSamDialogVoice, isVoiced } from '../audio/sam-voice.js';
 import { TYPE_GAIN, TYPE_LEVEL } from '../audio/story-audio.js';
+import { flagTest } from './flags.js';
 import { textCps } from './access.js';
 const CPS = 38;
 const MIN_DWELL = 0.25;         // before [space] is heard at all
 
 export const textOf = (l) => String(l?.text ?? l ?? '');
 export const whoOf = (l) => l?.who || 'direction';
+
+function visibleByFlag(item) {
+  const expr = item?.['if'];
+  if (expr == null || expr === '') return true;
+  try { return flagTest(expr); }
+  catch (err) {
+    console.warn?.('[conversation] bad condition', expr, err);
+    return false;
+  }
+}
+
+function visibleList(list = []) {
+  return (Array.isArray(list) ? list : []).filter(visibleByFlag);
+}
 
 // What a picker calls a line he is about to say. Long lines want a `prompt`.
 function sayLabel(l) {
@@ -69,9 +84,15 @@ export function createConversation({
     const history = [];
   const asked = new Set();
   const visited = new Set();
+  let nodeEntryMode = 'normal';
 
   const node = () => (nodes && nodes[nodeId]) || null;
-  const nodeLines = () => node()?.lines || [];
+  const nodeLines = () => {
+    const n = node();
+    if (!n) return [];
+    const list = nodeEntryMode === 'revisit' && n.revisitLines?.length ? n.revisitLines : n.lines || [];
+    return visibleList(list);
+  };
   const line = () => (mode === 'nodes' ? nodeLines()[lineIdx] : beats[beatIdx]);
 
   function artRefOf(obj) {
@@ -141,7 +162,15 @@ export function createConversation({
   // Before he speaks, you decide that he speaks.
     function beginLine() {
       const l = line();
-      if (!l) return;
+      if (!l) {
+        if (mode === 'nodes') {
+          if (branchOptions().length) { openBranch(); return; }
+          const n = node();
+          if (n?.goto) { gotoNode(n.goto); return; }
+        }
+        if (mode === 'beats') finish();
+        return;
+      }
 
       resetLine();
       lineSerial++;
@@ -184,7 +213,9 @@ export function createConversation({
     audio?.stopTyping?.();
     if (nodes[id].tape) audio?.startTapeHiss?.();
     else if (node()?.tape) audio?.stopTapeHiss?.();
+    const revisiting = visited.has(id);
     nodeId = id;
+    nodeEntryMode = revisiting ? 'revisit' : 'normal';
     lineIdx = 0;
     choiceIdx = 0;
     history.length = 0;
@@ -192,11 +223,15 @@ export function createConversation({
     resetLine();
 
     const n = nodes[id];
-    // He does not re-introduce himself. The questions are simply there again.
-    if (visited.has(id) && n.choices?.length) {
-      const last = n.lines?.[n.lines.length - 1];
+    // Hubs do not repeat their whole greeting. If a hub has authored return
+    // beats, play those; otherwise reopen the question board immediately.
+    if (revisiting && n.choices?.length) {
+      const returnLines = visibleList(n.revisitLines || []);
+      if (returnLines.length) { beginLine(); return; }
+      const ls = visibleList(n.lines || []);
+      const last = ls[ls.length - 1];
       typed = textOf(last).length;
-      lineIdx = Math.max(0, (n.lines?.length || 1) - 1);
+      lineIdx = Math.max(0, ls.length - 1);
       openBranch();
       return;
     }
@@ -307,6 +342,7 @@ export function createConversation({
 
       if (pending) {
         const cs = visibleOptions();
+        if (choiceIdx >= cs.length) choiceIdx = Math.max(0, cs.length - 1);
         if (!cs.length) {
           pending = null;
           const n = node();
@@ -396,6 +432,7 @@ export function createConversation({
     if (pending.kind === 'say') return pending.options;
     return pending.options
       .map((c, index) => ({ choice: c, index, id: choiceKey(c, index) }))
+      .filter(({ choice }) => visibleByFlag(choice))
       .filter(({ choice, id }) => !(choice.hideWhenAsked && asked.has(id)))
       .map(({ choice, id }) => {
         return {

@@ -11,6 +11,7 @@
 // once, on purpose, in M4).
 
 const stack = [];
+const listeners = new Set();
 let onLookProfile = () => {};
 let appliedLookProfile = null;
 
@@ -18,6 +19,23 @@ export function scenesInit({ applyLookProfile, applyLensPreset } = {}) {
   onLookProfile = applyLookProfile || applyLensPreset || onLookProfile;
   appliedLookProfile = null;
   syncLens();
+}
+
+
+function emitChange(reason, scene = null) {
+  for (const fn of listeners) {
+    try {
+      fn({ reason, scene, depth: stack.length, top: top({ includeOverlay: true }) });
+    } catch (err) {
+      console.warn('[scenes] change listener failed', err);
+    }
+  }
+}
+
+export function subscribe(fn) {
+  if (typeof fn !== 'function') return () => {};
+  listeners.add(fn);
+  return () => listeners.delete(fn);
 }
 
 function syncLens() {
@@ -32,6 +50,7 @@ export function push(scene, params) {
   stack.push(scene);
   scene.enter?.(params);
   syncLens();
+  emitChange('push', scene);
   return scene;
 }
 
@@ -40,6 +59,7 @@ export function pop() {
   s?.exit?.();
   stack[stack.length - 1]?.resume?.();
   syncLens();
+  emitChange('pop', s);
   return s;
 }
 
@@ -54,6 +74,7 @@ export function remove(sceneOrId) {
   s?.exit?.();
   if (wasTop) stack[stack.length - 1]?.resume?.();
   syncLens();
+  emitChange('remove', s);
   return s;
 }
 
@@ -65,6 +86,7 @@ export function replace(scene, params) {
   stack.push(scene);
   scene.enter?.(params);
   syncLens();
+  emitChange('replace', scene);
   return scene;
 }
 
@@ -123,12 +145,12 @@ export function keyup(e) {
   return false;
 }
 
-// Pointer input is opt-in. Modal scenes without a pointer contract continue to
-// use their existing keyboard/controller behavior and do not swallow clicks.
+// Pointer input is opt-in for behavior, but modal scenes still swallow pointer
+// events so a UI click can never become a gameplay pointer-lock request.
 export function pointer(e) {
   for (let i = stack.length - 1; i >= 0; i--) {
     if (stack[i].pointer?.(e)) return true;
-    if (stack[i].blocksInput) return false;
+    if (stack[i].blocksInput) return true;
   }
   return false;
 }

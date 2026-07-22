@@ -1,6 +1,9 @@
-import { uiSize, uiText, uiCenter, uiScrim } from '../render/ui.js';
+import { uiSize, uiText, uiCenter, uiScrim, uiFill } from '../render/ui.js';
+import { drawVfdRow, vfdRowStyle } from '../render/vfd-select.js';
 import { drawMachinePanel } from '../render/presentation.js';
+import { createHitRegions } from '../render/hit-regions.js';
 import { promptLine } from './bindings.js';
+import * as AUDIO from '../audio/story-audio.js';
 
 const LOCAL_ESCAPE_SCENES = new Set(['pause', 'settings', 'god-menu', 'bag', 'combat-calibration']);
 
@@ -25,6 +28,7 @@ export function makePauseScene({
   status = () => ({}),
 } = {}) {
   let selected = 0;
+  const hits = createHitRegions();
   const items = [
     { id: 'resume', label: 'RESUME', detail: 'Return to live monitoring.', action: onResume },
     { id: 'objectives', label: 'WORK ORDER / BAG', detail: 'Review the job, map, and carried equipment.', action: onObjectives },
@@ -35,12 +39,24 @@ export function makePauseScene({
     { id: 'quit', label: 'QUIT TO DESKTOP', detail: 'Close Chunk Surfer.', danger: true, action: onQuitDesktop },
   ];
 
+  function select(index, { sound = true } = {}) {
+    if (index < 0 || index >= items.length) return;
+    if (selected === index) return;
+    selected = index;
+    if (sound) AUDIO.menuMove?.();
+  }
+
   function move(delta) {
-    selected = (selected + delta + items.length) % items.length;
+    select((selected + delta + items.length) % items.length);
   }
 
   function activate() {
+    AUDIO.menuConfirm?.();
     items[selected]?.action?.();
+  }
+
+  function activateSelected() {
+    activate();
   }
 
   function key(e) {
@@ -72,6 +88,8 @@ export function makePauseScene({
   }
 
   function render() {
+    hits.reset();
+
     const { cols, rows } = uiSize();
     uiScrim(0.88);
 
@@ -109,11 +127,40 @@ export function makePauseScene({
     const visible = items.slice(start, start + maxItems);
     visible.forEach((item, j) => {
       const index = start + j;
+      const rowY = iy + 3 + j * 2;
       const on = index === selected;
+
+      hits.add({
+        id: item.id,
+        kind: 'pause-item',
+        x: ix,
+        y: rowY - 0.35,
+        w: Math.min(34, body.w),
+        h: 1.4,
+        selected: on,
+        danger: item.danger,
+        label: item.label,
+        data: { index, item },
+        onHover: () => select(index),
+        onClick: () => {
+          select(index, { sound: false });
+          activateSelected();
+        },
+      });
+
+      // Hover and the keyboard cursor drive the same single indicator, exactly
+      // as on a panel that only ever had one. Selection is inverse video; the
+      // pointer alone only steps the duty factor.
+      const style = vfdRowStyle({
+        hovered: hits.isHovered(item.id),
+        selected: on,
+        nowMs: (typeof performance !== 'undefined' ? performance.now() : Date.now()),
+      });
       const cls = item.danger ? (on ? 'ui-danger' : 'ui-amber') : (on ? 'ui-primary' : 'ui-secondary');
-      const prefix = on ? '▸' : ' ';
-      uiText(ix, iy + 3 + j * 2, `${prefix} ${clip(item.label, 26)}`, cls);
-      if (body.w < 70) uiText(ix + 2, iy + 4 + j * 2, clip(item.detail, Math.max(8, body.w - 4)), 'ui-secondary', on ? 0.9 : 0.56);
+      drawVfdRow({ uiFill, uiText, inverseColor: item.danger ? 'rgba(255,76,76,0.90)' : 'rgba(255,181,54,0.90)' }, {
+        x: ix, y: rowY, w: Math.min(34, body.w), label: clip(item.label, 26), style, role: cls,
+      });
+      if (body.w < 70) uiText(ix + 2, rowY + 1, clip(item.detail, Math.max(8, body.w - 4)), 'ui-secondary', on ? 0.9 : 0.56);
     });
 
     if (items.length > visible.length) {
@@ -124,16 +171,40 @@ export function makePauseScene({
     uiCenter(y + h - 3, 'PAUSE HOLDS THE RUN · SETTINGS CONFIGURE THE APPLICATION', 'ui-secondary');
   }
 
+
+  function pointer(e) {
+    if (e.type === 'pointermove') {
+      hits.handle(e, { click: false });
+      return true;
+    }
+    if (e.type === 'pointerdown') {
+      hits.handle(e);
+      return true;
+    }
+    return true;
+  }
+
   return {
     id: 'pause',
     kind: 'pause-menu',
     blocksInput: true,
     blocksWorld: true,
     lensPreset: 'calm',
-    enter() { globalThis.document?.body?.classList?.add('pause-open'); },
+    enter() {
+      globalThis.document?.body?.classList?.add('pause-open');
+      try { globalThis.document?.exitPointerLock?.(); } catch (_) {}
+    },
     exit() { globalThis.document?.body?.classList?.remove('pause-open'); },
     key,
+    pointer,
     render,
-    view() { return { selected: items[selected]?.id, items: items.map((item) => item.id), status: status() }; },
+    view() {
+      return {
+        selected: items[selected]?.id,
+        items: items.map((item) => item.id),
+        hitRegions: hits.view(),
+        status: status(),
+      };
+    },
   };
 }

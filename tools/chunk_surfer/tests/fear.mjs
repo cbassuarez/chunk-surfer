@@ -61,7 +61,12 @@ await wait(1600);
 const before = await ev(() => ({ pos: window.__probe.pos(), secs: JSON.parse(localStorage.getItem('chunk-surfer:save:v2') || '{}').playSeconds || 0 }));
 await ev(() => window.__probe.takeMe());
 await wait(80);
-check('TAKEN becomes a blocking jumpscare scene',await ev(()=>window.__scenes.top()?.id)==='taken-flash');
+// The contact owns the screen first: the surfer still, with nothing drawn over
+// it. Only once that window closes does the black aftermath begin.
+check('TAKEN opens on the surfer contact, not on black',await ev(()=>window.__scenes.top()?.id)==='hush-contact');
+check('the contact flash is the authored surfer still',await ev(()=>window.__chunkSurferHushScare.status().ok)===true);
+await wait(900);
+check('the black aftermath follows the contact window',await ev(()=>window.__scenes.top()?.id)==='taken-aftermath');
 await wait(1850);                                            // flash → black → wake
 check('wake-up account is a focused transcript, not radio HUD speech',await ev(()=>window.__scenes.top()?.id)==='taken-dialogue');
 for(let i=0;i<24&&await ev(()=>window.__scenes.top()?.id)==='taken-dialogue';i++)await key('Space',90);

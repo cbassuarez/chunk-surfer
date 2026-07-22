@@ -3,8 +3,10 @@
 // generic options screen: expected game settings, phrased as machine controls.
 
 import * as scenes from './scenes.js';
-import { uiSize, uiText, uiCenter, uiScrim } from '../render/ui.js';
+import { uiSize, uiText, uiCenter, uiScrim, uiFill } from '../render/ui.js';
 import { drawMachinePanel } from '../render/presentation.js';
+import { createHitRegions } from '../render/hit-regions.js';
+import { drawVfdRow, vfdRowStyle } from '../render/vfd-select.js';
 import { getSave, saveCommit, clearSave, clearAllData } from './save.js';
 import { controllerSettings, inputPrompt, promptLine } from './bindings.js';
 import { settingsFooterTips, clipTip } from './settings-tips.js';
@@ -73,6 +75,7 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
 
   let armed = null; // { key, until }
   let pendingChallenge = null; // { key, change, until }
+  const hits = createHitRegions();
   const now = () => (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
 
   function clearExpiredArm() {
@@ -397,8 +400,8 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           // The scheme is fixed: WASD/arrows walk and strafe, the mouse looks.
           // What is left to tune is the hand, not the contract.
           { id: 'mouseSensitivity', label: 'MOUSE LOOK',
-            value: () => `${Math.round(Number(setting('mouseSensitivity', 1)) * 100)}%`,
-            adjust: (d) => set('mouseSensitivity', clamp(Number(setting('mouseSensitivity', 1)) + d * 0.1, 0.2, 3)) },
+            value: () => `${Math.round(Number(setting('mouseSensitivity', 1.8)) * 100)}%`,
+            adjust: (d) => set('mouseSensitivity', clamp(Number(setting('mouseSensitivity', 1.8)) + d * 0.2, 0.2, 10)) },
           { id: 'mouseInvertY', label: 'INVERT LOOK',
             value: () => (setting('mouseInvertY', false) ? 'ON' : 'OFF'),
             adjust: () => set('mouseInvertY', !setting('mouseInvertY', false)) },
@@ -613,6 +616,51 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
     if (!isSelectable(rows[sel])) sel = firstSelectableIndex(rows);
   };
 
+  function changeTab(delta) {
+    tab = (tab + delta + tabs.length) % tabs.length;
+    sel = firstSelectableIndex();
+    armed = null;
+    pendingChallenge = null;
+    set('menuTab', tabs[tab].id);
+    AUDIO.menuMove();
+  }
+
+  function selectRow(index, { sound = true } = {}) {
+    const rows = rowsOf();
+    if (index < 0 || index >= rows.length) return false;
+    if (!isSelectable(rows[index])) return false;
+    if (sel === index) return true;
+    sel = index;
+    armed = null;
+    pendingChallenge = null;
+    if (sound) AUDIO.menuMove();
+    return true;
+  }
+
+  function activateRow(row = rowsOf()[sel]) {
+    AUDIO.menuConfirm();
+    if (!isSelectable(row)) return true;
+    if (row.challengeKey && confirmPendingChallenge(row.challengeKey)) return true;
+    if (row.activate) row.activate();
+    else if (row.adjust) {
+      row.adjust(1);
+      armed = null;
+    }
+    return true;
+  }
+
+  function pointer(e) {
+    if (e.type === 'pointermove') {
+      hits.handle(e, { click: false });
+      return true;
+    }
+    if (e.type === 'pointerdown') {
+      hits.handle(e);
+      return true;
+    }
+    return true;
+  }
+
   return {
     id: 'settings',
     blocksInput: true,
@@ -622,9 +670,10 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
     enter(){ if(inGame) hooks.pauseGame?.(); AUDIO.startMenuHiss(); },
     exit(){ hooks.cancelControllerRemap?.(); AUDIO.stopMenuHiss(); if(inGame) hooks.resumeGame?.(); },
 
+    pointer,
+
     key(e) {
       const raw=e.key||'', k=raw.toLowerCase(), code=e.code||'';
-      const changeTab = (d) => { tab = (tab + d + tabs.length) % tabs.length; sel = firstSelectableIndex(); armed = null; pendingChallenge = null; set('menuTab',tabs[tab].id); AUDIO.menuMove(); };
 
         if (raw === 'Tab') {
           changeTab(e.shiftKey ? -1 : 1);
@@ -643,12 +692,7 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
       if (raw === 'ArrowRight' || k === 'd' || code === 'KeyD') { if(isSelectable(row) && row.adjust){ row.adjust(1); armed = null; AUDIO.menuMove(); } return true; }
 
       if (raw === 'Enter' || code === 'Enter' || raw === ' ' || code === 'Space' || k === 'z' || code === 'KeyZ') {
-        AUDIO.menuConfirm();
-        if (!isSelectable(row)) return true;
-        if (row.challengeKey && confirmPendingChallenge(row.challengeKey)) return true;
-        if (row.activate) row.activate();
-        else if (row.adjust) { row.adjust(1); armed = null; }
-        return true;
+        return activateRow(row);
       }
 
       if (raw === 'Escape' || code === 'Escape') { scenes.pop(); return true; }
@@ -656,6 +700,7 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
     },
 
     render() {
+      hits.reset();
       clearExpiredArm();
 
       const { cols, rows: R } = uiSize();
@@ -685,7 +730,24 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
       tabs.forEach((t, i) => {
         const on = i === tab;
         const label = on ? `▸${t.name}` : ` ${t.name}`;
-        if (tx + label.length < x + w - 2) uiText(tx, iy, label, on ? 'ui-primary' : 'ui-secondary');
+        if (tx + label.length < x + w - 2) {
+          hits.add({
+            id: `tab:${t.id}`,
+            kind: 'settings-tab',
+            x: tx,
+            y: iy - 0.25,
+            w: label.length,
+            h: 1.35,
+            selected: on,
+            label: t.name,
+            data: { tab: i },
+            onClick: () => {
+              if (tab === i) return;
+              changeTab(i - tab);
+            },
+          });
+          uiText(tx, iy, label, on ? 'ui-primary' : 'ui-secondary');
+        }
         tx += label.length + 1;
       });
 
@@ -712,10 +774,61 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           return;
         }
 
-        uiText(ix, ry, `${on ? '▸' : ' '} ${row.label}`, on ? 'ui-primary' : 'ui-secondary');
+        hits.add({
+          id: `row:${row.id || i}`,
+          kind: 'settings-row',
+          x: ix,
+          y: ry - 0.25,
+          w: body.w,
+          h: Math.max(1, step),
+          disabled: !isSelectable(row),
+          selected: on,
+          label: row.label,
+          data: { index: i, row },
+          onHover: () => selectRow(i),
+          onClick: () => {
+            if (!selectRow(i, { sound: false })) return;
+            activateRow(row);
+          },
+        });
+
+        // The label carries the selection; the value column to its right stays
+        // legible, so the inverse block never swallows the setting itself.
+        drawVfdRow({ uiFill, uiText }, {
+          x: ix, y: ry, w: 24, label: row.label,
+          style: vfdRowStyle({
+            hovered: hits.isHovered(`row:${row.id || i}`),
+            selected: on,
+            disabled: !isSelectable(row),
+            nowMs: (typeof performance !== 'undefined' ? performance.now() : Date.now()),
+          }),
+          role: on ? 'ui-primary' : 'ui-secondary',
+        });
 
         const vx = ix + 25;
         const cls = on ? 'ui-amber' : 'ui-secondary';
+
+        if (row.adjust) {
+          hits.add({
+            id: `adjust:${row.id || i}`,
+            kind: 'settings-adjust',
+            x: vx,
+            y: ry - 0.25,
+            w: Math.max(8, x + w - vx - 3),
+            h: 1.35,
+            disabled: !isSelectable(row),
+            selected: on,
+            label: `${row.label}:adjust`,
+            data: { index: i, row },
+            onHover: () => selectRow(i),
+            onClick: () => {
+              if (!selectRow(i, { sound: false })) return;
+              row.adjust(1);
+              armed = null;
+              AUDIO.menuMove();
+            },
+          });
+        }
 
         if (row.bar) {
           uiText(vx, ry, `${bar(row.bar())} ${row.value()}`, cls);

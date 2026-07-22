@@ -9,6 +9,8 @@
 import * as scenes from './scenes.js';
 import { uiSize, uiCenter, uiFill, uiText } from '../render/ui.js';
 import { drawLocationIndicator, drawMachinePanel, drawVfdText } from '../render/presentation.js';
+import { createHitRegions } from '../render/hit-regions.js';
+import { drawVfdRow, vfdRowStyle } from '../render/vfd-select.js';
 import { UI_COLOR } from '../render/palette.js';
 import { getMeta, hasActiveRun } from './save.js';
 import * as AUDIO from '../audio/story-audio.js';
@@ -42,6 +44,7 @@ export function makeTitleScene({
   let confirmNewRun = false;
   let t = 0;
   let menuColumns = 1;
+  const hits = createHitRegions();
 
   const columns = () => menuColumns;
   const rowsPerColumn = () => Math.ceil(items.length / columns());
@@ -55,6 +58,57 @@ export function makeTitleScene({
 
   function disarm() {
     confirmNewRun = false;
+  }
+
+  function select(index, { sound = true } = {}) {
+    if (index < 0 || index >= items.length) return false;
+    if (items[index]?.disabled) return false;
+    if (sel === index) return true;
+    sel = index;
+    disarm();
+    if (sound) AUDIO.menuMove();
+    return true;
+  }
+
+  function activateCurrent() {
+    const item = items[sel];
+    if (!item) return true;
+
+    if (item.disabled) {
+      AUDIO.menuMove();
+      disarm();
+      return true;
+    }
+
+    if (item.confirms && !confirmNewRun) {
+      confirmNewRun = true;
+      AUDIO.menuConfirm();
+      return true;
+    }
+
+    AUDIO.menuConfirm();
+    if (item.stay) {
+      item.run?.();
+      disarm();
+      return true;
+    }
+
+    scenes.pop();
+    item.run?.();
+    return true;
+  }
+
+  function pointer(e) {
+    primeAudio();
+    if (e.type === 'pointermove') {
+      hits.handle(e, { click: false });
+      return true;
+    }
+    if (e.type === 'pointerdown') {
+      hits.handle(e);
+      return true;
+    }
+    return true;
   }
 
   return {
@@ -81,6 +135,8 @@ export function makeTitleScene({
       primeAudio();
       AUDIO.startMenuHiss();
     },
+
+    pointer,
 
     key(e) {
       primeAudio();
@@ -124,31 +180,7 @@ export function makeTitleScene({
         e.key === ' ' || code === 'Space' ||
         k === 'z' || code === 'KeyZ'
       ) {
-        const item = items[sel];
-        if (!item) return true;
-
-        if (item.disabled) {
-          AUDIO.menuMove();
-          disarm();
-          return true;
-        }
-
-        if (item.confirms && !confirmNewRun) {
-          confirmNewRun = true;
-          AUDIO.menuConfirm();
-          return true;
-        }
-
-        AUDIO.menuConfirm();
-        if (item.stay) {
-          item.run?.();
-          disarm();
-          return true;
-        }
-
-        scenes.pop();
-        item.run?.();
-        return true;
+        return activateCurrent();
       }
 
       return true;
@@ -157,6 +189,8 @@ export function makeTitleScene({
     update(dt) { t += dt; },
 
     render() {
+      hits.reset();
+
       const { cols, rows } = uiSize();
       uiFill(0, 0, cols, rows, UI_COLOR.glass);
 
@@ -232,13 +266,46 @@ export function makeTitleScene({
         const labelText = armed ? prompt : item.label.toUpperCase();
         const col = Math.floor(i / rowCount);
         const row = i % rowCount;
-        uiText(
-          menuX + col * colW,
-          menuY + row * 2,
-          `${on ? '▸ ' : '  '}${labelText}`,
-          item.disabled ? (on ? 'ui-label' : 'ui-secondary') : armed ? 'ui-danger' : on ? 'ui-amber' : 'ui-secondary',
-          item.disabled ? 0.48 : 1,
-        );
+        const itemX = menuX + col * colW;
+        const itemY = menuY + row * 2;
+        const drawnLabel = `${on ? '▸ ' : '  '}${labelText}`;
+
+        hits.add({
+          id: `title:${item.id}`,
+          kind: 'title-item',
+          x: itemX,
+          y: itemY - 0.35,
+          w: Math.min(colW, drawnLabel.length + 2),
+          h: 1.4,
+          disabled: item.disabled,
+          selected: on,
+          danger: armed,
+          label: item.label,
+          data: { index: i, item },
+          onHover: () => select(i),
+          onClick: () => {
+            if (!select(i, { sound: false }) && !item.disabled) return;
+            activateCurrent();
+          },
+        });
+
+        // One indicator, driven by pointer and keyboard alike: inverse video
+        // for the committed cursor, a duty-factor step for the pointer alone.
+        const style = vfdRowStyle({
+          hovered: hits.isHovered(`title:${item.id}`),
+          selected: on,
+          disabled: item.disabled,
+          editing: armed,
+          nowMs: (typeof performance !== 'undefined' ? performance.now() : Date.now()),
+        });
+        drawVfdRow({ uiFill, uiText, inverseColor: armed ? 'rgba(255,76,76,0.90)' : 'rgba(255,181,54,0.90)' }, {
+          x: itemX,
+          y: itemY,
+          w: Math.min(colW, drawnLabel.length + 2),
+          label: labelText,
+          style,
+          role: item.disabled ? 'ui-secondary' : armed ? 'ui-danger' : on ? 'ui-amber' : 'ui-secondary',
+        });
       });
     },
   };

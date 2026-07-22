@@ -160,7 +160,9 @@
       position:absolute;
       inset:0;
       pointer-events:none;
-      z-index:6;
+      /* Above the UI glyph canvas (z-index 8). The contact is the one thing in
+         this game that is allowed to cover the instrument. */
+      z-index:20;
       opacity:0;
       background-color:#010108;
       background-image:url('/story-art/surfer.png');
@@ -174,16 +176,16 @@
       opacity:1;
       animation:hush-jump-rupture 430ms steps(6,end);
     }
+    /* The blink must never set the `background` shorthand: doing so replaced the
+       authored surfer still with a procedural radial+scanline shape, which is
+       the one non-surfer visual that could still occupy this element. The blink
+       is expressed purely as opacity and filter over the same image. */
     #hushJump.blink{
       opacity:1;
       animation:hush-blink-rupture 220ms steps(4,end);
-      background:
-        radial-gradient(circle at 50% 50%, rgba(255,255,255,0.18) 0, rgba(0,0,0,0.98) 48%, rgba(0,0,0,1) 100%),
-        repeating-linear-gradient(90deg, rgba(255,255,255,0.08) 0, rgba(255,255,255,0.08) 2px, rgba(0,0,0,0.86) 2px, rgba(0,0,0,0.86) 5px);
       mix-blend-mode:normal;
     }
     #hushJump.active.blink{
-      background:#010108 url('/story-art/surfer.png') center/cover no-repeat;
       animation:hush-jump-rupture 430ms steps(6,end);
     }
     @keyframes hush-jump-rupture{

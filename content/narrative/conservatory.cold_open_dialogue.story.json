@@ -61,19 +61,25 @@
         "torch.cells.dies",
         "torch.cells.spares",
         "torch.him.red",
-        "torch.him.time"
+        "torch.him.time",
+        "greet.order",
+        "greet.actually",
+        "greet.somebody",
+        "booth.rooms",
+        "rooms.minute",
+        "rooms.waiting",
+        "rooms.big",
+        "booth.torch",
+        "torchsay.first",
+        "torchsay.usual",
+        "torchsay.power",
+        "booth.hub"
       ]
     }
   ],
   "nodes": {
     "start": {
       "speaker": "SERVICE BOOTH · 21:38",
-      "art": {
-        "id": "guard",
-        "mode": "hero",
-        "caption": "Gate booth / 21:38",
-        "status": "STILL"
-      },
       "lines": [
         {
           "who": "direction",
@@ -94,67 +100,414 @@
           "who": "guard",
           "text": "You here for the Ellery gig? Christ. They actually sent someone tonight.",
           "id": "start.line.4"
+        }
+      ],
+      "id": "start",
+      "type": "choice",
+      "art": {
+        "id": "guard",
+        "mode": "hero",
+        "caption": "Gate booth / 21:38",
+        "status": "STILL"
+      },
+      "choices": [
+        {
+          "text": "the job. requisition 4-4-1-7.",
+          "goto": "greet.order",
+          "id": "start.choice.1"
         },
+        {
+          "text": "\"actually\"?",
+          "goto": "greet.actually",
+          "id": "start.choice.2"
+        },
+        {
+          "text": "somebody has to.",
+          "goto": "greet.somebody",
+          "id": "start.choice.3"
+        }
+      ]
+    },
+    "greet.order": {
+      "speaker": "SERVICE BOOTH · 21:38",
+      "lines": [
         {
           "who": "me",
           "text": "Yeah, the sound job. Should be a work order there for me? Requisition number 4-4-1-7.",
-          "id": "start.line.5"
+          "id": "greet.order.line.1"
         },
         {
           "who": "guard",
           "text": "Came through around five today.",
-          "id": "start.line.6"
-        },
+          "id": "greet.order.line.2"
+        }
+      ],
+      "id": "greet.order",
+      "type": "dialogue",
+      "art": {
+        "id": "guard",
+        "mode": "hero",
+        "caption": "Gate booth / 21:38",
+        "status": "STILL"
+      },
+      "goto": "booth.rooms"
+    },
+    "greet.actually": {
+      "speaker": "SERVICE BOOTH · 21:38",
+      "lines": [
         {
-          "who": "direction",
-          "text": "He finds a pen... it doesn't work. He puts it back in the pot with the others.",
-          "id": "start.line.7",
-          "cues": [
-            "pens"
-          ]
+          "who": "me",
+          "text": "You said actually. Like you had money on it.",
+          "id": "greet.actually.line.1"
         },
         {
           "who": "guard",
-          "text": "My wife buys these. Twelve in a pack, and not a one of them works.",
-          "id": "start.line.8"
+          "text": "Third one they've booked. First one to stand where you're standing.",
+          "id": "greet.actually.line.2"
+        },
+        {
+          "who": "me",
+          "text": "And the other two?",
+          "id": "greet.actually.line.3"
+        },
+        {
+          "who": "guard",
+          "text": "Rang in sick, the first. The other supposedly never finished. Same week.",
+          "id": "greet.actually.line.4"
+        },
+        {
+          "who": "direction",
+          "text": "He says it to you but not at you. He keeps his eyes to the forms.",
+          "id": "greet.actually.line.5"
+        }
+      ],
+      "id": "greet.actually",
+      "type": "dialogue",
+      "art": {
+        "id": "guard",
+        "mode": "hero",
+        "caption": "Gate booth / 21:38",
+        "status": "STILL"
+      },
+      "goto": "booth.rooms"
+    },
+    "greet.somebody": {
+      "speaker": "SERVICE BOOTH · 21:38",
+      "lines": [
+        {
+          "who": "me",
+          "text": "Somebody has to.",
+          "id": "greet.somebody.line.1"
+        },
+        {
+          "who": "guard",
+          "text": "That's the spirit. That's what they all say and then they don't turn up.",
+          "id": "greet.somebody.line.2"
+        },
+        {
+          "who": "guard",
+          "text": "Order came through at five. It is here, whatever else.",
+          "id": "greet.somebody.line.3"
+        }
+      ],
+      "id": "greet.somebody",
+      "type": "dialogue",
+      "art": {
+        "id": "guard",
+        "mode": "hero",
+        "caption": "Gate booth / 21:38",
+        "status": "STILL"
+      },
+      "goto": "booth.rooms"
+    },
+    "booth.rooms": {
+      "speaker": "SERVICE BOOTH · 21:38",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "He finds a pen... it doesn't work. He puts it back in the pot with the others.",
+          "id": "booth.rooms.line.1",
+          "cue": "pens"
+        },
+        {
+          "who": "guard",
+          "text": "My wife buys these. Twelve in a pack, and not one of them works.",
+          "id": "booth.rooms.line.2"
         },
         {
           "who": "direction",
           "text": "Rain bounces off the roof of the booth, and on the skips out in the yard; you keep closer to the window.",
-          "id": "start.line.9"
+          "id": "booth.rooms.line.3"
         },
         {
           "who": "guard",
           "text": "Five rooms, it says. That's a lot of rooms.",
-          "id": "start.line.10"
+          "id": "booth.rooms.line.4"
+        }
+      ],
+      "id": "booth.rooms",
+      "type": "choice",
+      "art": {
+        "id": "guard",
+        "mode": "hero",
+        "caption": "Gate booth / 21:38",
+        "status": "STILL"
+      },
+      "choices": [
+        {
+          "text": "it's only a minute each.",
+          "goto": "rooms.minute",
+          "id": "booth.rooms.choice.1"
+        },
+        {
+          "text": "it's the waiting that takes the night.",
+          "goto": "rooms.waiting",
+          "id": "booth.rooms.choice.2"
+        },
+        {
+          "text": "how big is it in there?",
+          "goto": "rooms.big",
+          "id": "booth.rooms.choice.3"
+        }
+      ]
+    },
+    "rooms.minute": {
+      "speaker": "SERVICE BOOTH · 21:38",
+      "lines": [
+        {
+          "who": "me",
+          "text": "It's only a minute each. Sixty seconds of a room with nothing in it.",
+          "id": "rooms.minute.line.1"
+        },
+        {
+          "who": "guard",
+          "text": "A minute. And they pay four hundred for five minutes of nothing.",
+          "id": "rooms.minute.line.2"
         },
         {
           "who": "me",
-          "text": "It's only a minute each. Really it's the waiting about that takes the night.",
-          "id": "start.line.11"
+          "text": "They pay for the eight hours of not moving that fit around it.",
+          "id": "rooms.minute.line.3"
+        }
+      ],
+      "id": "rooms.minute",
+      "type": "dialogue",
+      "art": {
+        "id": "guard",
+        "mode": "hero",
+        "caption": "Gate booth / 21:38",
+        "status": "STILL"
+      },
+      "goto": "booth.torch"
+    },
+    "rooms.waiting": {
+      "speaker": "SERVICE BOOTH · 21:38",
+      "lines": [
+        {
+          "who": "me",
+          "text": "Really it's the waiting about that takes the night. The recording is the short part.",
+          "id": "rooms.waiting.line.1"
         },
+        {
+          "who": "guard",
+          "text": "Waiting for what?",
+          "id": "rooms.waiting.line.2"
+        },
+        {
+          "who": "me",
+          "text": "For the room to stop noticing me.",
+          "id": "rooms.waiting.line.3"
+        },
+        {
+          "who": "direction",
+          "text": "He looks up at that, and then decides not to have heard it.",
+          "id": "rooms.waiting.line.4"
+        }
+      ],
+      "id": "rooms.waiting",
+      "type": "dialogue",
+      "art": {
+        "id": "guard",
+        "mode": "hero",
+        "caption": "Gate booth / 21:38",
+        "status": "STILL"
+      },
+      "goto": "booth.torch"
+    },
+    "rooms.big": {
+      "speaker": "SERVICE BOOTH · 21:38",
+      "lines": [
+        {
+          "who": "me",
+          "text": "How big is it in there? Roughly.",
+          "id": "rooms.big.line.1"
+        },
+        {
+          "who": "guard",
+          "text": "Big. Pool, hall, practice block, the chapel at the end. All joined.",
+          "id": "rooms.big.line.2"
+        },
+        {
+          "who": "guard",
+          "text": "You walk it in twenty minutes if you know the way. Nobody knows the way.",
+          "id": "rooms.big.line.3"
+        }
+      ],
+      "id": "rooms.big",
+      "type": "dialogue",
+      "art": {
+        "id": "guard",
+        "mode": "hero",
+        "caption": "Gate booth / 21:38",
+        "status": "STILL"
+      },
+      "goto": "booth.torch"
+    },
+    "booth.torch": {
+      "speaker": "SERVICE BOOTH · 21:38",
+      "lines": [
         {
           "who": "guard",
           "text": "You brought a torch? Nobody brings a torch.",
-          "id": "start.line.12"
+          "id": "booth.torch.line.1"
+        }
+      ],
+      "id": "booth.torch",
+      "type": "choice",
+      "art": {
+        "id": "guard",
+        "mode": "hero",
+        "caption": "Gate booth / 21:38",
+        "status": "STILL"
+      },
+      "choices": [
+        {
+          "text": "not my first gig.",
+          "goto": "torchsay.first",
+          "id": "booth.torch.choice.1"
         },
+        {
+          "text": "what do they usually bring?",
+          "goto": "torchsay.usual",
+          "id": "booth.torch.choice.2"
+        },
+        {
+          "text": "there's no power in there, is there.",
+          "goto": "torchsay.power",
+          "id": "booth.torch.choice.3"
+        }
+      ]
+    },
+    "torchsay.first": {
+      "speaker": "SERVICE BOOTH · 21:38",
+      "lines": [
         {
           "who": "me",
           "text": "Not my first gig.",
-          "id": "start.line.13"
+          "id": "torchsay.first.line.1"
         },
         {
           "who": "guard",
-          "text": "There's coffee if you want it. I made too much. It's not good but it's hot, and it's a long night you have ahead.",
-          "id": "start.line.14"
+          "text": "No. You look like you've done a few.",
+          "id": "torchsay.first.line.2"
         }
       ],
+      "id": "torchsay.first",
+      "type": "dialogue",
+      "art": {
+        "id": "guard",
+        "mode": "hero",
+        "caption": "Gate booth / 21:38",
+        "status": "STILL"
+      },
+      "goto": "booth.hub"
+    },
+    "torchsay.usual": {
+      "speaker": "SERVICE BOOTH · 21:38",
+      "lines": [
+        {
+          "who": "me",
+          "text": "What do they usually bring?",
+          "id": "torchsay.usual.line.1"
+        },
+        {
+          "who": "guard",
+          "text": "A phone. A phone! In there.",
+          "id": "torchsay.usual.line.2"
+        },
+        {
+          "who": "guard",
+          "text": "Forty minutes of light and then they are standing in it with a dead brick in their hand.",
+          "id": "torchsay.usual.line.3"
+        }
+      ],
+      "id": "torchsay.usual",
+      "type": "dialogue",
+      "art": {
+        "id": "guard",
+        "mode": "hero",
+        "caption": "Gate booth / 21:38",
+        "status": "STILL"
+      },
+      "goto": "booth.hub"
+    },
+    "torchsay.power": {
+      "speaker": "SERVICE BOOTH · 21:38",
+      "lines": [
+        {
+          "who": "me",
+          "text": "There's no power in there, is there. Not since April.",
+          "id": "torchsay.power.line.1"
+        },
+        {
+          "who": "guard",
+          "text": "Not a watt. They pulled the main before the notice went up.",
+          "id": "torchsay.power.line.2"
+        },
+        {
+          "who": "me",
+          "text": "Good. Powered down is the whole job. A building with its power on has a hum, and a hum is a take spoiled.",
+          "id": "torchsay.power.line.3"
+        },
+        {
+          "who": "guard",
+          "text": "...you people hear different things than I do.",
+          "id": "torchsay.power.line.4"
+        }
+      ],
+      "id": "torchsay.power",
+      "type": "dialogue",
+      "art": {
+        "id": "guard",
+        "mode": "hero",
+        "caption": "Gate booth / 21:38",
+        "status": "STILL"
+      },
+      "goto": "booth.hub"
+    },
+    "booth.hub": {
+      "speaker": "SERVICE BOOTH · 21:38",
+      "lines": [
+        {
+          "who": "guard",
+          "text": "There's coffee if you want it. I made too much. It's not good but it's hot, and it's a long night you have ahead.",
+          "id": "booth.hub.line.1"
+        }
+      ],
+      "id": "booth.hub",
+      "type": "choice",
+      "art": {
+        "id": "guard",
+        "mode": "hero",
+        "caption": "Gate booth / 21:38",
+        "status": "STILL"
+      },
       "choices": [
         {
           "knowledgeId": "coldopen.route.order",
           "text": "look at the work order again",
           "goto": "order",
-          "id": "start.choice.1",
+          "id": "booth.hub.choice.1",
           "mutations": {
             "set": [
               "prologue.knowledge.self"
@@ -169,7 +522,7 @@
           "knowledgeId": "coldopen.route.guard",
           "text": "ask him about the building",
           "goto": "guard",
-          "id": "start.choice.2",
+          "id": "booth.hub.choice.2",
           "mutations": {
             "set": [
               "prologue.knowledge.guard"
@@ -184,7 +537,7 @@
           "knowledgeId": "coldopen.route.tape",
           "text": "put the headphones on — the client sent the last man's takes",
           "goto": "tape",
-          "id": "start.choice.3",
+          "id": "booth.hub.choice.3",
           "mutations": {
             "set": [
               "prologue.knowledge.tape"
@@ -199,7 +552,7 @@
           "knowledgeId": "coldopen.route.coffee",
           "text": "take the coffee he offered.",
           "goto": "coffee",
-          "id": "start.choice.4",
+          "id": "booth.hub.choice.4",
           "mutations": {
             "set": [
               "has.coffee"
@@ -210,11 +563,9 @@
           "knowledgeId": "coldopen.route.torch",
           "text": "the torch. check the torch.",
           "goto": "torch",
-          "id": "start.choice.5"
+          "id": "booth.hub.choice.5"
         }
-      ],
-      "id": "start",
-      "type": "choice"
+      ]
     },
     "replay-condensed": {
       "speaker": "SERVICE BOOTH · RETURN CHECK-IN",
@@ -351,7 +702,7 @@
         },
         {
           "text": "put the torch back in the bag",
-          "goto": "start",
+          "goto": "booth.hub",
           "id": "torch.choice.4"
         }
       ],
@@ -524,7 +875,7 @@
         },
         {
           "text": "just nod and take it",
-          "goto": "start",
+          "goto": "booth.hub",
           "id": "coffee.choice.2"
         }
       ]
@@ -1880,7 +2231,7 @@
       ],
       "id": "coffee.wife",
       "type": "dialogue",
-      "goto": "start"
+      "goto": "booth.hub"
     }
   }
 }
