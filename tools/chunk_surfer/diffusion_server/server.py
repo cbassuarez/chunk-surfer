@@ -36,8 +36,8 @@ import pipeline
 from cache_contract import material_cache_key
 
 JPEG_QUALITY = 72
-SERVER_REV = "r14-profile-banks"
-CACHE_SCHEMA = 2
+SERVER_REV = "r15-boil-frames"
+CACHE_SCHEMA = 3
 LENS_TOKEN = os.environ.get("LENS_TOKEN", "")
 CACHE_DIR = Path(os.environ.get("LENS_CACHE_DIR", Path.home() / ".cache" / "chunk-surfer" / "lens-v2"))
 
@@ -120,8 +120,14 @@ def read_manifest(bank_id: str) -> dict:
     return result
 
 
-def cached_result(bank_id: str, slot: int, cache_key: str, cache_path: Path) -> bytes | None:
-    entry = read_manifest(bank_id).get("entries", {}).get(str(slot), {})
+# Manifest entries key slot AND boil frame: a bank ships K temporal frames per
+# surface, and keying by slot alone would make each frame evict the last.
+def manifest_entry_key(slot: int, frame: int) -> str:
+    return f"{int(slot)}:{int(frame)}"
+
+
+def cached_result(bank_id: str, slot: int, frame: int, cache_key: str, cache_path: Path) -> bytes | None:
+    entry = read_manifest(bank_id).get("entries", {}).get(manifest_entry_key(slot, frame), {})
     if entry.get("cacheKey") != cache_key or entry.get("file") != cache_path.name:
         return None
     try:
@@ -131,12 +137,12 @@ def cached_result(bank_id: str, slot: int, cache_key: str, cache_path: Path) -> 
     return payload if hashlib.sha256(payload).hexdigest() == entry.get("sha256") else None
 
 
-def record_manifest(bank_id: str, slot: int, cache_key: str, cache_path: Path,
+def record_manifest(bank_id: str, slot: int, frame: int, cache_key: str, cache_path: Path,
                     payload_sha256: str, work: dict) -> None:
     with manifest_lock:
         manifest = read_manifest(bank_id)
         entries = manifest.get("entries", {})
-        entries[str(slot)] = {
+        entries[manifest_entry_key(slot, frame)] = {
             "file": cache_path.name,
             "cacheKey": cache_key,
             "sha256": payload_sha256,
@@ -274,6 +280,8 @@ async def session(ws: WebSocket):
                                 raise ValueError(f"invalid {field}")
                         if int(work.get("slot", -1)) not in range(10):
                             raise ValueError("slot must be between 0 and 9")
+                        if int(work.get("frame", 0)) not in range(8):
+                            raise ValueError("frame must be between 0 and 7")
                         if work.get("cacheSchema") != CACHE_SCHEMA:
                             raise ValueError(f"cacheSchema must be {CACHE_SCHEMA}")
                         # Authored boot banks are content-addressed and persistent.
@@ -289,8 +297,8 @@ async def session(ws: WebSocket):
                                 service_revision=SERVER_REV,
                                 cache_schema=CACHE_SCHEMA,
                             )
-                            cache_path = CACHE_DIR / bank_id / f"{work.get('slot', -1)}-{cache_key}.jpg"
-                    cached_payload = cached_result(bank_id, int(work["slot"]), cache_key, cache_path) if cache_path else None
+                            cache_path = CACHE_DIR / bank_id / f"{work.get('slot', -1)}-{int(work.get('frame', 0))}-{cache_key}.jpg"
+                    cached_payload = cached_result(bank_id, int(work["slot"]), int(work.get("frame", 0)), cache_key, cache_path) if cache_path else None
                     cached = cached_payload is not None
                     if cached_payload is not None:
                         styled = cached_payload
@@ -326,16 +334,26 @@ async def session(ws: WebSocket):
                             os.replace(temp_path, cache_path)
                     payload_sha256 = hashlib.sha256(styled).hexdigest()
                     if cache_path and not cached:
-                        record_manifest(bank_id, int(work["slot"]), cache_key, cache_path, payload_sha256, work)
+                        record_manifest(bank_id, int(work["slot"]), int(work.get("frame", 0)), cache_key, cache_path, payload_sha256, work)
                     d = f" +{len(dep)}B depth" if dep else " (blind)"
                     print(f"frame diffused in {time.time() - t0:.2f}s ({len(frame)}B{d} -> {len(styled)}B)")
                     if work.get("type") in {"generate", "mutate"}:
                         await ws.send_text(json.dumps({
                             "type": "result", "requestId": work.get("requestId"),
                             "bankId": work.get("bankId"), "slot": work.get("slot"),
+                            "frame": int(work.get("frame", 0)),
                             "modelId": pipeline.DEFAULT_MODEL,
                             "checksumId": f"sha256:{payload_sha256}",
                             "sha256": payload_sha256, "cached": cached,
+                        }))
+                    elif work.get("type") == "frame":
+                        # Possession bursts: live full-frame img2img, never cached,
+                        # newest-wins like everything else in this slot.
+                        await ws.send_text(json.dumps({
+                            "type": "result", "requestId": work.get("requestId"),
+                            "kind": "frame",
+                            "modelId": pipeline.DEFAULT_MODEL,
+                            "sha256": payload_sha256, "cached": False,
                         }))
                     await ws.send_bytes(styled)
             except asyncio.CancelledError:
@@ -363,7 +381,7 @@ async def session(ws: WebSocket):
                 latest = (frame, dep, dict(request))
             elif msg.get("text"):
                 data = json.loads(msg["text"])
-                if data.get("type") in {"prompt", "generate", "mutate"}:
+                if data.get("type") in {"prompt", "generate", "mutate", "frame"}:
                     request = dict(data)
                     # How hard the geometry is allowed to insist. A live knob,
                     # because the right answer is a matter of taste and the

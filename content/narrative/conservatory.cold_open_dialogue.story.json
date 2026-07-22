@@ -43,7 +43,25 @@
         "tape.run",
         "tape.run.again",
         "tape.end",
-        "threshold"
+        "threshold",
+        "coffee.wife",
+        "guard.know.radio",
+        "guard.know.stair",
+        "guard.last.home",
+        "guard.last.left",
+        "order.client.box",
+        "order.client.ring",
+        "order.money.calendar",
+        "order.money.double",
+        "order.words.asis",
+        "order.words.hear",
+        "tape.levels.better",
+        "tape.levels.diff",
+        "tape.slate.reasons",
+        "torch.cells.dies",
+        "torch.cells.spares",
+        "torch.him.red",
+        "torch.him.time"
       ]
     }
   ],
@@ -359,9 +377,25 @@
           "id": "torch.cells.line.3"
         }
       ],
-      "goto": "torch",
       "id": "torch.cells",
-      "type": "dialogue"
+      "type": "choice",
+      "choices": [
+        {
+          "text": "and if it dies in there",
+          "goto": "torch.cells.dies",
+          "id": "torch.cells.choice.1"
+        },
+        {
+          "text": "spares",
+          "goto": "torch.cells.spares",
+          "id": "torch.cells.choice.2"
+        },
+        {
+          "text": "that will do",
+          "goto": "torch",
+          "id": "torch.cells.choice.3"
+        }
+      ]
     },
     "torch.dark": {
       "speaker": "SERVICE BOOTH · 21:38",
@@ -435,9 +469,25 @@
           "id": "torch.him.line.6"
         }
       ],
-      "goto": "torch",
       "id": "torch.him",
-      "type": "dialogue"
+      "type": "choice",
+      "choices": [
+        {
+          "text": "he went in at what time, the third night",
+          "goto": "torch.him.time",
+          "id": "torch.him.choice.1"
+        },
+        {
+          "text": "a red head torch. why red",
+          "goto": "torch.him.red",
+          "id": "torch.him.choice.2"
+        },
+        {
+          "text": "put the torch back",
+          "goto": "torch",
+          "id": "torch.him.choice.3"
+        }
+      ]
     },
     "coffee": {
       "speaker": "SERVICE BOOTH · 21:38",
@@ -464,9 +514,20 @@
           "id": "coffee.line.3"
         }
       ],
-      "goto": "start",
       "id": "coffee",
-      "type": "dialogue"
+      "type": "choice",
+      "choices": [
+        {
+          "text": "ask what his wife makes of the coffee",
+          "goto": "coffee.wife",
+          "id": "coffee.choice.1"
+        },
+        {
+          "text": "just nod and take it",
+          "goto": "start",
+          "id": "coffee.choice.2"
+        }
+      ]
     },
     "order": {
       "speaker": "THE WORK ORDER",
@@ -542,9 +603,25 @@
           "id": "order.money.line.2"
         }
       ],
-      "goto": "order",
       "id": "order.money",
-      "type": "dialogue"
+      "type": "choice",
+      "choices": [
+        {
+          "text": "what does double usually mean",
+          "goto": "order.money.double",
+          "id": "order.money.choice.1"
+        },
+        {
+          "text": "the dispatch calendar",
+          "goto": "order.money.calendar",
+          "id": "order.money.choice.2"
+        },
+        {
+          "text": "fold that thought away",
+          "goto": "order",
+          "id": "order.money.choice.3"
+        }
+      ]
     },
     "order.words": {
       "speaker": "THE WORK ORDER",
@@ -560,9 +637,25 @@
           "id": "order.words.line.2"
         }
       ],
-      "goto": "order",
       "id": "order.words",
-      "type": "dialogue"
+      "type": "choice",
+      "choices": [
+        {
+          "text": "\"the room as it is\"",
+          "goto": "order.words.asis",
+          "id": "order.words.choice.1"
+        },
+        {
+          "text": "\"if you can hear yourself, start again\"",
+          "goto": "order.words.hear",
+          "id": "order.words.choice.2"
+        },
+        {
+          "text": "that is all it says",
+          "goto": "order",
+          "id": "order.words.choice.3"
+        }
+      ]
     },
     "order.client": {
       "speaker": "THE WORK ORDER",
@@ -583,9 +676,25 @@
           "id": "order.client.line.3"
         }
       ],
-      "goto": "order",
       "id": "order.client",
-      "type": "dialogue"
+      "type": "choice",
+      "choices": [
+        {
+          "text": "ring the landline",
+          "goto": "order.client.ring",
+          "id": "order.client.choice.1"
+        },
+        {
+          "text": "the post box in croydon",
+          "goto": "order.client.box",
+          "id": "order.client.choice.2"
+        },
+        {
+          "text": "leave it",
+          "goto": "order",
+          "id": "order.client.choice.3"
+        }
+      ]
     },
     "order.deadline": {
       "speaker": "THE WORK ORDER",
@@ -833,9 +942,25 @@
           "id": "guard.last.line.7"
         }
       ],
-      "goto": "guard",
       "id": "guard.last",
-      "type": "dialogue"
+      "type": "choice",
+      "choices": [
+        {
+          "text": "you were home. finish the sentence",
+          "goto": "guard.last.home",
+          "id": "guard.last.choice.1"
+        },
+        {
+          "text": "what did he leave in the booth",
+          "goto": "guard.last.left",
+          "id": "guard.last.choice.2"
+        },
+        {
+          "text": "leave it",
+          "goto": "guard",
+          "id": "guard.last.choice.3"
+        }
+      ]
     },
     "guard.name": {
       "speaker": "NIGHT GUARD",
@@ -937,9 +1062,25 @@
           "id": "guard.know.line.5"
         }
       ],
-      "goto": "guard",
       "id": "guard.know",
-      "type": "dialogue"
+      "type": "choice",
+      "choices": [
+        {
+          "text": "the basement stair light",
+          "goto": "guard.know.stair",
+          "id": "guard.know.choice.1"
+        },
+        {
+          "text": "do not shake it. say that again",
+          "goto": "guard.know.radio",
+          "id": "guard.know.choice.2"
+        },
+        {
+          "text": "anything else",
+          "goto": "guard",
+          "id": "guard.know.choice.3"
+        }
+      ]
     },
     "tape": {
       "speaker": "REFERENCE FILES · 04 (NO SLATE)",
@@ -1022,9 +1163,25 @@
           "id": "tape.levels.line.3"
         }
       ],
-      "goto": "tape",
       "id": "tape.levels",
-      "type": "dialogue"
+      "type": "choice",
+      "choices": [
+        {
+          "text": "he was better than you. sit with that",
+          "goto": "tape.levels.better",
+          "id": "tape.levels.choice.1"
+        },
+        {
+          "text": "what would you have done differently",
+          "goto": "tape.levels.diff",
+          "id": "tape.levels.choice.2"
+        },
+        {
+          "text": "back",
+          "goto": "tape",
+          "id": "tape.levels.choice.3"
+        }
+      ]
     },
     "tape.slate": {
       "speaker": "REFERENCE FILES · 04 (NO SLATE)",
@@ -1056,9 +1213,25 @@
           "id": "tape.slate.line.5"
         }
       ],
-      "goto": "tape",
       "id": "tape.slate",
-      "type": "dialogue"
+      "type": "choice",
+      "choices": [
+        {
+          "text": "reasons a man stops slating",
+          "goto": "tape.slate.reasons",
+          "id": "tape.slate.choice.1"
+        },
+        {
+          "text": "play take four",
+          "goto": "tape.run",
+          "id": "tape.slate.choice.2"
+        },
+        {
+          "text": "enough",
+          "goto": "tape",
+          "id": "tape.slate.choice.3"
+        }
+      ]
     },
     "tape.run": {
       "speaker": "REFERENCE FILES · 04 (NO SLATE)",
@@ -1299,6 +1472,415 @@
       ],
       "id": "threshold",
       "type": "dialogue"
+    },
+    "order.money.double": {
+      "speaker": "THE WORK ORDER",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Double means rush, risk, or silence. Rush I understand — the building is rubble on Thursday.",
+          "id": "order.money.double.line.1"
+        },
+        {
+          "who": "you",
+          "text": "Risk is a word for insurers. Silence is the one that pays double and asks you not to notice it paying.",
+          "id": "order.money.double.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "In the booth, the guard watches a television with no sound on it.",
+          "id": "order.money.double.line.3"
+        }
+      ],
+      "id": "order.money.double",
+      "type": "dialogue",
+      "goto": "order.money"
+    },
+    "order.money.calendar": {
+      "speaker": "THE WORK ORDER",
+      "lines": [
+        {
+          "who": "you",
+          "text": "The job sat on the board for nine minutes before I took it. For this money it should have gone in one.",
+          "id": "order.money.calendar.line.1"
+        },
+        {
+          "who": "you",
+          "text": "Three names were above mine, crossed out. Crossed out is not declined. Declined gets an email. Crossed out gets a pen.",
+          "id": "order.money.calendar.line.2"
+        }
+      ],
+      "id": "order.money.calendar",
+      "type": "dialogue",
+      "goto": "order.money"
+    },
+    "order.words.asis": {
+      "speaker": "THE WORK ORDER",
+      "lines": [
+        {
+          "who": "you",
+          "text": "\"As it is.\" Not \"as found\". Somebody wrote that carefully, or was corrected into it.",
+          "id": "order.words.asis.line.1"
+        },
+        {
+          "who": "you",
+          "text": "A room as found belongs to the finder. A room as it is belongs to the room. I am reading conveyancing law into a sound job now. Long night ahead.",
+          "id": "order.words.asis.line.2"
+        }
+      ],
+      "id": "order.words.asis",
+      "type": "dialogue",
+      "goto": "order.words"
+    },
+    "order.words.hear": {
+      "speaker": "THE WORK ORDER",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Standard note for amateurs. You can always hear yourself. The skill is getting the room to stop pointing it out.",
+          "id": "order.words.hear.line.1"
+        },
+        {
+          "who": "you",
+          "text": "Except they did not hire an amateur, and the rate says they know they did not. So the sentence is not advice. It is a specification.",
+          "id": "order.words.hear.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "Rain, on the roof, in the pause where a second thought should go.",
+          "id": "order.words.hear.line.3"
+        }
+      ],
+      "id": "order.words.hear",
+      "type": "dialogue",
+      "goto": "order.words"
+    },
+    "order.client.ring": {
+      "speaker": "THE WORK ORDER",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You dial it, because it is a landline and it is nine forty at night and you want to know.",
+          "id": "order.client.ring.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "It rings the way a phone rings in an empty office. You can hear the size of the room around the bell.",
+          "id": "order.client.ring.line.2"
+        },
+        {
+          "who": "you",
+          "text": "Eleven rings. No machine. No hold music. I put it away before somebody answers.",
+          "id": "order.client.ring.line.3"
+        },
+        {
+          "who": "guard",
+          "text": "That number only ever rings out, that one.",
+          "id": "order.client.ring.line.4"
+        }
+      ],
+      "id": "order.client.ring",
+      "type": "dialogue",
+      "goto": "order.client"
+    },
+    "order.client.box": {
+      "speaker": "THE WORK ORDER",
+      "lines": [
+        {
+          "who": "you",
+          "text": "A post box can cash a cheque and sign a work order. It cannot walk five rooms in the dark with a recorder.",
+          "id": "order.client.box.line.1"
+        },
+        {
+          "who": "you",
+          "text": "That, apparently, is what I am for.",
+          "id": "order.client.box.line.2"
+        }
+      ],
+      "id": "order.client.box",
+      "type": "dialogue",
+      "goto": "order.client"
+    },
+    "guard.know.stair": {
+      "speaker": "SERVICE BOOTH · 21:38",
+      "lines": [
+        {
+          "who": "guard",
+          "text": "Gone since spring. They stopped replacing bulbs when the demolition date came through.",
+          "id": "guard.know.stair.line.1"
+        },
+        {
+          "who": "me",
+          "text": "Bulbs don't know about demolition dates.",
+          "id": "guard.know.stair.line.2"
+        },
+        {
+          "who": "guard",
+          "text": "These ones did.",
+          "id": "guard.know.stair.line.3"
+        },
+        {
+          "who": "direction",
+          "text": "He does not smile when he says it, which is somehow worse than if he had.",
+          "id": "guard.know.stair.line.4"
+        }
+      ],
+      "id": "guard.know.stair",
+      "type": "dialogue",
+      "goto": "guard.know"
+    },
+    "guard.know.radio": {
+      "speaker": "SERVICE BOOTH · 21:38",
+      "lines": [
+        {
+          "who": "me",
+          "text": "You said do not shake the radio. In what way does it go funny.",
+          "id": "guard.know.radio.line.1"
+        },
+        {
+          "who": "guard",
+          "text": "Channel two stops being channel two.",
+          "id": "guard.know.radio.line.2"
+        },
+        {
+          "who": "me",
+          "text": "And becomes what.",
+          "id": "guard.know.radio.line.3"
+        },
+        {
+          "who": "guard",
+          "text": "Loud.",
+          "id": "guard.know.radio.line.4"
+        },
+        {
+          "who": "direction",
+          "text": "He says it like a man reporting the weather. Then he turns the television up, remembers the sound is off, and turns it back down.",
+          "id": "guard.know.radio.line.5"
+        }
+      ],
+      "id": "guard.know.radio",
+      "type": "dialogue",
+      "goto": "guard.know"
+    },
+    "guard.last.home": {
+      "speaker": "SERVICE BOOTH · 21:38",
+      "lines": [
+        {
+          "who": "guard",
+          "text": "I was home. And the gate log says the gate never opened after me. That is all I know and I know it twice, because I checked twice.",
+          "id": "guard.last.home.line.1"
+        },
+        {
+          "who": "me",
+          "text": "So he is still inside.",
+          "id": "guard.last.home.line.2"
+        },
+        {
+          "who": "guard",
+          "text": "Van was gone come Friday. So no. Initial there, and there.",
+          "id": "guard.last.home.line.3"
+        },
+        {
+          "who": "direction",
+          "text": "Two boxes. They want it twice now.",
+          "id": "guard.last.home.line.4"
+        }
+      ],
+      "id": "guard.last.home",
+      "type": "dialogue",
+      "goto": "guard.last"
+    },
+    "guard.last.left": {
+      "speaker": "SERVICE BOOTH · 21:38",
+      "lines": [
+        {
+          "who": "guard",
+          "text": "A pencil. Good one, soft, the kind you buy on purpose. And his cup, washed, upside down on the rack there.",
+          "id": "guard.last.left.line.1"
+        },
+        {
+          "who": "you",
+          "text": "A man who washes his cup means to come back for it.",
+          "id": "guard.last.left.line.2"
+        },
+        {
+          "who": "guard",
+          "text": "You want the pencil? He's not been back for the pencil.",
+          "id": "guard.last.left.line.3"
+        }
+      ],
+      "id": "guard.last.left",
+      "type": "dialogue",
+      "goto": "guard.last"
+    },
+    "torch.cells.dies": {
+      "speaker": "THE TORCH",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Then I stand still, and I listen, and the building tells me where its walls are. Every wall gives back a different nothing.",
+          "id": "torch.cells.dies.line.1"
+        },
+        {
+          "who": "guard",
+          "text": "You lot are not normal.",
+          "id": "torch.cells.dies.line.2"
+        },
+        {
+          "who": "me",
+          "text": "For four hundred a night you get not normal.",
+          "id": "torch.cells.dies.line.3"
+        }
+      ],
+      "id": "torch.cells.dies",
+      "type": "dialogue",
+      "goto": "torch.cells"
+    },
+    "torch.cells.spares": {
+      "speaker": "THE TORCH",
+      "lines": [
+        {
+          "who": "me",
+          "text": "Two spares in the side pocket. Ends taped.",
+          "id": "torch.cells.spares.line.1"
+        },
+        {
+          "who": "guard",
+          "text": "Taped?",
+          "id": "torch.cells.spares.line.2"
+        },
+        {
+          "who": "me",
+          "text": "Loose cells chatter. Nothing in my bag is allowed to have an opinion during a take.",
+          "id": "torch.cells.spares.line.3"
+        }
+      ],
+      "id": "torch.cells.spares",
+      "type": "dialogue",
+      "goto": "torch.cells"
+    },
+    "torch.him.time": {
+      "speaker": "THE TORCH",
+      "lines": [
+        {
+          "who": "guard",
+          "text": "Eight, maybe? Before me shift anyway. Paperwork says 20:10, received.",
+          "id": "torch.him.time.line.1"
+        },
+        {
+          "who": "you",
+          "text": "20:10 in. No returned. And the van gone by Friday.",
+          "id": "torch.him.time.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "The RETURNED column holds its blank the way a held breath holds.",
+          "id": "torch.him.time.line.3"
+        }
+      ],
+      "id": "torch.him.time",
+      "type": "dialogue",
+      "goto": "torch.him"
+    },
+    "torch.him.red": {
+      "speaker": "THE TORCH",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Red keeps your night eyes. That is serious kit, for a man planning to do serious waiting in the dark.",
+          "id": "torch.him.red.line.1"
+        },
+        {
+          "who": "you",
+          "text": "You do not buy a red head torch to leave a job at eighty percent.",
+          "id": "torch.him.red.line.2"
+        }
+      ],
+      "id": "torch.him.red",
+      "type": "dialogue",
+      "goto": "torch.him"
+    },
+    "tape.levels.better": {
+      "speaker": "THE LAST MAN'S TAPES",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Fifty-eight floor, hard room, first night, no spoils on the slated three. That is not luck. That is hands.",
+          "id": "tape.levels.better.line.1"
+        },
+        {
+          "who": "you",
+          "text": "And a man with hands like that stopped slating at take four. Whatever happened, it happened between three and four.",
+          "id": "tape.levels.better.line.2"
+        }
+      ],
+      "id": "tape.levels.better",
+      "type": "dialogue",
+      "goto": "tape.levels"
+    },
+    "tape.levels.diff": {
+      "speaker": "THE LAST MAN'S TAPES",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Nothing. That is the trouble with it.",
+          "id": "tape.levels.diff.line.1"
+        },
+        {
+          "who": "you",
+          "text": "I would have stood where he stood, held what he held, and made the same take with the same silence around it. So whatever found him was not a mistake he made.",
+          "id": "tape.levels.diff.line.2"
+        }
+      ],
+      "id": "tape.levels.diff",
+      "type": "dialogue",
+      "goto": "tape.levels"
+    },
+    "tape.slate.reasons": {
+      "speaker": "THE LAST MAN'S TAPES",
+      "lines": [
+        {
+          "who": "you",
+          "text": "One: he was tired. Not this man — the first three are textbook. Two: he never meant to keep the file.",
+          "id": "tape.slate.reasons.line.1"
+        },
+        {
+          "who": "you",
+          "text": "Three: he did not want his own voice on it. Not in that room. Not at that hour.",
+          "id": "tape.slate.reasons.line.2"
+        },
+        {
+          "who": "you",
+          "text": "Three is a strange reason. Three is the one I keep arriving at.",
+          "id": "tape.slate.reasons.line.3"
+        }
+      ],
+      "id": "tape.slate.reasons",
+      "type": "dialogue",
+      "goto": "tape.slate"
+    },
+    "coffee.wife": {
+      "speaker": "SERVICE BOOTH · 21:38",
+      "lines": [
+        {
+          "who": "guard",
+          "text": "She says I make it like I'm punishing it.",
+          "id": "coffee.wife.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "He looks pleased. It is clearly a fixed point in the marriage, like the pens.",
+          "id": "coffee.wife.line.2"
+        },
+        {
+          "who": "me",
+          "text": "It will do the job. Long night.",
+          "id": "coffee.wife.line.3"
+        }
+      ],
+      "id": "coffee.wife",
+      "type": "dialogue",
+      "goto": "start"
     }
   }
 }

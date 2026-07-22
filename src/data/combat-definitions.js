@@ -103,7 +103,7 @@ const PROFILES = Object.freeze({
       movement('recordist', 'THE PREVIOUS RECORDIST', 4, [
         B('chapel:body', 'BORROWED BODY ON THE MONITOR', 2, { takeLabel: 'BORROWED BODY', takeTag: 'body', playbackDamage: 2 }),
         O('chapel:consent', 'CONSENT BURIED UNDER NOISE', 3, { effect: 'ringing' }),
-        C('chapel:previous', 'PREVIOUS RECORDIST BLACKED OUT', 2),
+        C('chapel:previous', 'PREVIOUS RECORDIST HELD OFF-MIC', 2),
       ]),
       movement('surfer', 'THE SURFER', 4, [
         B('chapel:surfer', 'SURFER PRINT ON THE TAPE', 2, { takeLabel: 'SURFER PRINT', playbackDamage: 2 }),
@@ -120,6 +120,26 @@ const PROFILES = Object.freeze({
         O('chapel:source-pressure', 'THE SOURCE PRESSES FOR AN ANSWER', 2, { effect: 'ringing' }),
         B('chapel:release-take', 'RELEASE PRINT ON THE RETURN', 2, { takeLabel: 'SIGNAL RELEASE', playbackDamage: 2 }),
         L('chapel:source-loop', 'SIGNAL PROCESS RELEASE', 3),
+      ]),
+    ],
+  }),
+  // The pre-shift bench drill. No signature rule: the drill teaches the base
+  // verbs before any encounter twist is layered on. Intent order is load-bearing
+  // — the combat tutorial director scripts one lesson per beat against it.
+  training: Object.freeze({
+    kind: 'regular',
+    music: { mode: 'fixed', lead: 'lead-1' },
+    movements: [
+      movement('drill-a', 'CALIBRATION TONE', 8, [
+        B('training:tone', 'TEST TONE ON THE BENCH SEND', 1, { takeLabel: 'TEST TONE', playbackDamage: 2 }),
+        B('training:print', 'CLEAN PRINT, EASY CAPTURE', 1, { takeLabel: 'CLEAN PRINT', playbackDamage: 2 }),
+        C('training:mask', 'THE TONE HIDES IN THE FLOOR', 1),
+        O('training:swell', 'LEVEL SWELL PAST ZERO', 2, { effect: 'ringing' }),
+      ]),
+      movement('drill-b', 'PLAYBACK PROOF', 6, [
+        B('training:slate', 'SLATE READ ONTO THE TAPE', 2, { takeLabel: 'BENCH SLATE', playbackDamage: 2 }),
+        O('training:spike', 'A SPIKE YOU MUST SIT OUT', 2, { effect: 'ringing' }),
+        C('training:fade', 'IT PRETENDS TO LEAVE', 1),
       ]),
     ],
   }),
@@ -155,6 +175,7 @@ function profileId(id = '') {
   if (value.includes('hall')) return 'hall';
   if (value.includes('chapel')) return 'chapel';
   if (value.includes('source')) return 'source';
+  if (value.includes('training')) return 'training';
   return value;
 }
 
@@ -191,6 +212,36 @@ export function attachCombatDefinition(battle, combat = null) {
         threat: rounds[index]?.threat ?? .45 + index * .1,
       })),
     },
+  };
+}
+
+export function trainingCombatDefinition() {
+  const profile = authoredCombatProfile('training');
+  return {
+    id: 'training',
+    enemy: 'THE BENCH SIGNAL',
+    art: null,
+    baseComposure: 8,
+    kind: profile.kind,
+    signature: null,
+    music: profile.music,
+    movements: profile.movements,
+  };
+}
+
+export function trainingCombatBattle() {
+  const combat = trainingCombatDefinition();
+  return {
+    id: combat.id,
+    enemy: combat.enemy,
+    art: combat.art,
+    combat,
+    intro: [
+      { who: 'direction', text: 'The bench rig is patched to itself. A calibration signal waits on the send, the way every recordist runs the kit before a shift.' },
+      { who: 'you', text: 'Gear check. Nothing in this room can hurt me worse than being unprepared out there.' },
+    ],
+    win: [{ who: 'direction', text: 'The tone reads flat across the meter. The kit is calibrated. You are.' }],
+    lose: [{ who: 'direction', text: 'The bench signal clips your monitoring path. It is only the drill — reset and it will run again.' }],
   };
 }
 

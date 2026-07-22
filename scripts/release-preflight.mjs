@@ -90,6 +90,24 @@ if (lensResources['../LEGAL/EULA.md'] !== 'EULA.md') {
 if (!eula.includes('Mandatory model-use restrictions') || !eula.includes('Stable Diffusion 1.5') || !eula.includes('TAESD')) {
   throw new Error('EULA must carry bundled model stack restrictions and identify the local model resources');
 }
+if (!/^Version:\s*\S+/m.test(eula)) {
+  throw new Error('EULA must carry a Version: line; acceptance is recorded against it');
+}
+// Bundling the agreement is distribution. OpenRAIL-M also requires notice, so
+// the build must ship a gate that presents it before the model does any work.
+{
+  const mainSource = readFileSync('src/main.js', 'utf8');
+  const eulaText = readFileSync('src/game/eula-text.js', 'utf8');
+  if (!eulaText.includes('LEGAL/EULA.md?raw')) {
+    throw new Error('the licence screen must render the bundled LEGAL/EULA.md, not a copy');
+  }
+  if (!mainSource.includes('eulaAccepted(getMeta(),EULA_TEXT)') || !mainSource.includes('makeEulaScene')) {
+    throw new Error('boot must gate lens calibration behind EULA acceptance');
+  }
+  if (mainSource.indexOf('makeEulaScene') > mainSource.indexOf('pushCalibration()')) {
+    throw new Error('the EULA gate must be presented before lens calibration runs');
+  }
+}
 if (!buildBundle.includes('TAESD-MIT.txt') || !taesdMit.includes('Copyright (c) 2023 Ollin Boer Bohan')) {
   throw new Error('lens bundle must distribute the full TAESD MIT notice');
 }

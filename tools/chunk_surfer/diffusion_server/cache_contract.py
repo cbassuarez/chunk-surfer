@@ -6,8 +6,9 @@ import hashlib
 import json
 
 REQUEST_FIELDS = (
-    "bankId", "slot", "prompt", "negative", "strength", "passes", "guidance",
+    "bankId", "slot", "frame", "prompt", "negative", "strength", "passes", "guidance",
     "seed", "size", "cacheSchema", "sourceAtlasSha256", "recipeSha256", "modelId",
+    "depthScale", "depthSha256",
 )
 
 

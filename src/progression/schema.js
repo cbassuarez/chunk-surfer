@@ -55,7 +55,9 @@ export const DEFAULT_SETTINGS = Object.freeze({
   tutorialPrompts: true,
   objectiveHints: 'full',
   pauseOnBlur: true,
-  controlMode: 'classic',
+  controlMode: 'direct',
+  mouseSensitivity: 1,
+  mouseInvertY: false,
   mic: 'ask',
   micInput: {
     deviceId: 'default',
@@ -204,6 +206,12 @@ export function freshMeta() {
     endingsSeen: [],
     hushMet: false,
     leftMidRun: false,
+    // The EULA version this installation accepted. The bundled model licences
+    // are OpenRAIL-M: their use restrictions have to reach the person running
+    // the model, not just ship in a file beside it. Empty means never accepted,
+    // and a version bump means accept again.
+    eulaAccepted: '',
+    eulaAcceptedAt: 0,
     runs: 0,
     lastSeenAt: 0,
     achievements: {},
@@ -244,6 +252,8 @@ export function normalizeSettings(value) {
     ...DEFAULT_SETTINGS,
     ...source,
     controlMode: normalizeControlMode(source.controlMode),
+    mouseSensitivity: Math.max(0.2, Math.min(3, finiteOr(source.mouseSensitivity, 1))),
+    mouseInvertY: !!source.mouseInvertY,
     backgroundAudio: normalizeBackgroundAudioMode(source.backgroundAudio),
     personalInterference: {
       enabled: !!personalSource.enabled,
@@ -395,6 +405,8 @@ export function normalizeMeta(value) {
     endingsSeen,
     hushMet: !!source.hushMet,
     leftMidRun: !!source.leftMidRun,
+    eulaAccepted: typeof source.eulaAccepted === 'string' ? source.eulaAccepted.slice(0, 40) : '',
+    eulaAcceptedAt: Math.max(0, Math.floor(finiteOr(source.eulaAcceptedAt, 0))),
     runs: Math.max(0, Math.floor(finiteOr(source.runs, 0))),
     lastSeenAt: finiteOr(source.lastSeenAt, 0),
     achievements: { ...objectOr(source.achievements) },

@@ -654,10 +654,10 @@ fn spawn_child(spec: &LaunchSpec) -> Result<Child, String> {
         .env("LENS_EAGER", "0")
         .env("CHUNK_LENS_ATTEMPT", spec.attempt.to_string())
         .envs(spec.target.extra_env.iter().cloned())
-        // The production lens receives authored material tiles, never camera
-        // depth. Loading ControlNet here would consume GPU memory and inference
-        // time while its conditioning scale remains zero.
-        .env("LENS_DEPTH", "0")
+        // Material tiles are conditioned on the authored height atlas and
+        // possession bursts on the marched depth of the frame being repainted.
+        // Without ControlNet the lens paints over geometry instead of into it.
+        .env("LENS_DEPTH", "1")
         .stdin(Stdio::null())
         .stdout(Stdio::from(stdout))
         .stderr(Stdio::from(stderr));

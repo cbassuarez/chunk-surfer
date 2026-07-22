@@ -234,7 +234,7 @@
       "lines": [
         {
           "who": "you",
-          "text": "Nothing there. Hold the take. Forty-five seconds, and the last five are the ones that count.",
+          "text": "Nothing there. It fed me a piano and I fed it back its own empty room until the meter agreed.",
           "id": "win.line.1"
         },
         {
@@ -250,7 +250,7 @@
       "lines": [
         {
           "who": "direction",
-          "text": "You move. You do not decide to; you are moving before you know it, towards a piano that is not there.",
+          "text": "Your composure goes between beats. You are answering the piano before you know you have moved.",
           "id": "lose.line.1"
         },
         {

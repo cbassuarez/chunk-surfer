@@ -193,6 +193,15 @@ uniform float uDreamNextReady;
 uniform float uDreamBankBlend;
 uniform float uDreamDetailGain;
 uniform float uDreamChromaDrift;
+uniform float uDreamFramesA;      // temporal boil frames resident in the live bank
+uniform float uDreamFramesB;      // ...and in the staged one
+uniform float uBoilHz;            // crossfade rate between them, before agitation
+uniform float uDreamStructureMix; // how much generated RGB, not just its grain
+uniform float uDreamLumaLo;
+uniform float uDreamLumaHi;
+uniform float uDreamLumaHold;     // how hard authored exposure is enforced
+uniform float uAgitation;         // fear + onset: how hard the world is boiling
+float gBoilGlow=0.0;              // self-lit churn, written by surfaceTile
 uniform float uDreamRoughnessResponse;
 uniform float uDreamNormalResponse;
 uniform float uLocalDiffusion;
@@ -394,16 +403,37 @@ vec3 surfaceTile(int slot, vec2 worldUv, float metresPerTile){
     hallucinationWarp=(rd.rg-.5)*(.11*uLocalDiffusion*response.y);
   }
   if(uDreamReady<.5)return base;
-  vec3 dreamTc=vec3(tc.xy+hallucinationWarp,float(slot));
-  vec3 dreamA=texture(uSurfDream,dreamTc).rgb;
-  vec3 dreamB=texture(uSurfDreamNext,dreamTc).rgb;
+  // THE BOIL. Each surface holds K generated frames of itself — the same place,
+  // further along its own decay — and we crossfade between consecutive frames
+  // continuously. The phase is offset per texel by a hash of the world position,
+  // so a wall churns unevenly across its own face instead of pulsing as one
+  // flat card. That per-pixel desync is the whole difference between a texture
+  // fading and a surface boiling.
+  float boilPhase=0.0;
+  float framesA=max(1.0,uDreamFramesA);
+  if(uBoilHz>0.0001&&framesA>1.5){
+    float jitter=fract(sin(dot(floor(worldUv*11.0),vec2(12.9898,78.233)))*43758.5453);
+    boilPhase=uTime*uBoilHz*(1.0+uAgitation*1.4)+jitter*1.37;
+  }
+  float slotBase=float(slot)*framesA;
+  float fa=floor(boilPhase);
+  float ft=smoothstep(0.0,1.0,fract(boilPhase));
+  float layerA0=slotBase+mod(fa,framesA);
+  float layerA1=slotBase+mod(fa+1.0,framesA);
+  vec3 dreamTcA0=vec3(tc.xy+hallucinationWarp,layerA0);
+  vec3 dreamTcA1=vec3(tc.xy+hallucinationWarp,layerA1);
+  vec3 dreamA=mix(texture(uSurfDream,dreamTcA0).rgb,texture(uSurfDream,dreamTcA1).rgb,ft);
+  // The staged bank samples its own frame zero: a bank change is already a
+  // crossfade, and boiling both sides of it costs texture fetches nobody sees.
+  vec3 dreamTcB=vec3(tc.xy+hallucinationWarp,float(slot)*max(1.0,uDreamFramesB));
+  vec3 dreamB=texture(uSurfDreamNext,dreamTcB).rgb;
   vec3 dream=mix(dreamA,dreamB,uDreamNextReady>.5?uDreamBankBlend:0.0);
   // Transfer material detail, not the generated image's illumination or
   // palette. Dividing by a coarse mip extracts local grain/mortar/weathering;
   // multiplying that into the authored albedo keeps the room from becoming a
   // flat img2img wash while remaining fixed in world-space UVs.
-  vec3 dreamLowA=textureLod(uSurfDream,dreamTc,4.0).rgb;
-  vec3 dreamLowB=textureLod(uSurfDreamNext,dreamTc,4.0).rgb;
+  vec3 dreamLowA=mix(textureLod(uSurfDream,dreamTcA0,4.0).rgb,textureLod(uSurfDream,dreamTcA1,4.0).rgb,ft);
+  vec3 dreamLowB=textureLod(uSurfDreamNext,dreamTcB,4.0).rgb;
   vec3 dreamLow=mix(dreamLowA,dreamLowB,uDreamNextReady>.5?uDreamBankBlend:0.0);
   vec3 detail=clamp(dream/max(dreamLow,vec3(.055)),vec3(.36),vec3(2.15));
   float baseLum=max(.035,dot(base,vec3(.2126,.7152,.0722)));
@@ -415,12 +445,29 @@ vec3 surfaceTile(int slot, vec2 worldUv, float metresPerTile){
   vec3 detailed=clamp(base*mix(vec3(1.0),detail,clamp(uDreamDetailGain*response.x,0.0,1.7)),vec3(0.0),vec3(1.0));
   float generatedPresence=clamp((.32+uDreamChromaDrift*1.55)*uDreamMix[slot]*response.y,0.0,.76);
   detailed=mix(detailed,generatedTone,generatedPresence);
-  // Generated texture may change colour and structure, never exposure. This is
-  // the guardrail that lets the diffusion layer become obvious without ever
-  // recreating the black-screen failure in the final compositor.
+  // Past the grain: let the generated image itself onto the wall. In calm rooms
+  // this is zero and the lens stays a detail pass; under agitation the model's
+  // own structure arrives, which is what makes it a repaint and not a filter.
+  float structure=clamp(uDreamStructureMix*(0.6+0.4*uAgitation)*response.y,0.0,0.75);
+  detailed=mix(detailed,clamp(dream,vec3(0.0),vec3(1.0)),structure);
+  // Exposure leash. baseLum/detailedLum is a CORRECTION that drags generated
+  // luminance back onto the authored albedo — so the way to let the lens be
+  // seen is to apply less of it, not to widen its bounds. uDreamLumaHold is
+  // how much of that correction survives: 1.0 pins exposure exactly (quiet
+  // rooms stay legible), 0.2 lets the surface burn out or go black on its own.
+  // This matters more than anything else downstream: the VFD encoder buckets
+  // cells by luminance, so a boil that cannot move luminance cannot be seen.
   float detailedLum=max(.025,dot(detailed,vec3(.2126,.7152,.0722)));
-  detailed*=clamp(baseLum/detailedLum,.62,1.48);
+  float exposureFix=clamp(baseLum/detailedLum,uDreamLumaLo,uDreamLumaHi);
+  detailed*=mix(1.0,exposureFix,clamp(uDreamLumaHold,0.0,1.0));
   detailed=clamp(detailed,vec3(0.0),vec3(1.0));
+  // A boiling surface is doing something, and a condemned building is dark:
+  // let churn contribute its own faint light so the crawl is visible on walls
+  // the torch is not pointed at. Multiplied by albedo at the light sum, so it
+  // reads as the material glowing rather than a wash laid over the frame.
+  gBoilGlow=uAgitation*clamp(uDreamStructureMix*1.3,0.0,1.0)
+    *clamp(dot(dream,vec3(.2126,.7152,.0722)),0.0,1.0)
+    *uDreamMix[slot]*response.y*0.6;
   return mix(base,detailed,clamp(uDreamMix[slot]*response.x*1.12,0.0,1.0));
 }
 // One texture per surface, chosen by the room's material and whether we hit a
@@ -740,16 +787,40 @@ void main(){
       vec4 slotResponse=dreamSlotResponse(sslot);
       vec2 materialRdUv=fract(suv/(stile*3.6)+vec2(float(sslot)*.071,float(sslot)*.113));
       float materialRd=texture(uRD,materialRdUv).g-.5;
-      vec3 dc=vec3(sc.xy,float(sslot));
+      // RELIEF IS THE REAL CHANNEL. Albedo changes are luminance-pinned upstream
+      // and then point-sampled away by the VFD cell grid, but a change in the
+      // surface NORMAL changes how the torch strikes it — which moves shading,
+      // which moves edges, and edges are what this display is built to draw.
+      // So the generated tile is read as a height field and differentiated.
+      //
+      // The layer index must follow the boil layout (slot*K + frame); reading
+      // float(sslot) here sampled a different material's tile entirely.
+      float dFrames=max(1.0,uDreamFramesA);
+      float dPhase=0.0;
+      if(uBoilHz>0.0001&&dFrames>1.5){
+        float dJit=fract(sin(dot(floor(suv*11.0),vec2(12.9898,78.233)))*43758.5453);
+        dPhase=uTime*uBoilHz*(1.0+uAgitation*1.4)+dJit*1.37;
+      }
+      float dBase=float(sslot)*dFrames;
+      float dLayer=dBase+mod(floor(dPhase),dFrames);
+      vec3 dc=vec3(sc.xy,dLayer);
       vec2 dtex=vec2(1.0/512.0,0.0);
       float dl=dot(texture(uSurfDream,dc-vec3(dtex.x,0.0,0.0)).rgb,vec3(.2126,.7152,.0722));
       float dr=dot(texture(uSurfDream,dc+vec3(dtex.x,0.0,0.0)).rgb,vec3(.2126,.7152,.0722));
       float dd=dot(texture(uSurfDream,dc-vec3(0.0,dtex.x,0.0)).rgb,vec3(.2126,.7152,.0722));
       float du=dot(texture(uSurfDream,dc+vec3(0.0,dtex.x,0.0)).rgb,vec3(.2126,.7152,.0722));
       vec2 dreamSlope=vec2(dr-dl,du-dd);
-      nm.xy+=dreamSlope*uDreamNormalResponse*slotResponse.w*2.4;
+      // Agitation deepens the relief rather than merely tinting it: a boiling
+      // wall should catch the light differently, not just read a shade darker.
+      float reliefGain=uDreamNormalResponse*(1.0+uAgitation*2.2)*(1.0+uDreamStructureMix*1.6);
+      nm.xy+=dreamSlope*reliefGain*slotResponse.w*14.0;
       nm.xy+=materialRd*uLocalDiffusion*uDreamNormalResponse*slotResponse.w;
-      surfRough=clamp(surfRough+materialRd*uLocalDiffusion*uDreamRoughnessResponse*slotResponse.z,0.04,1.0);
+      // Generated detail also roughens and polishes the surface, so the torch's
+      // specular lobe crawls across it as the boil advances.
+      float dreamRough=(dr+dl+du+dd)*.25-.5;
+      surfRough=clamp(surfRough
+        +dreamRough*uDreamRoughnessResponse*(1.0+uAgitation*1.8)*slotResponse.z*2.2
+        +materialRd*uLocalDiffusion*uDreamRoughnessResponse*slotResponse.z,0.04,1.0);
       n = normalize(n + (T * nm.x + B * nm.y) * 0.58);
       surfaceOcclusion=mix(.68,1.0,smoothstep(.12,.88,h0));
       pbrReady=true;pbrSlot=sslot;pbrTile=stile;pbrBlend=sblend;pbrUv=sc.xy*stile;
@@ -830,6 +901,7 @@ void main(){
         vec3 ink=sourceSyntaxTint(hitMat);
         albedo=ink*(.06+1.18*smoothstep(.035,.46,sourceHeight));
       }else{
+        gBoilGlow=0.0;
         albedo=materialBase(hitMat, surf, tint, biome, rdv);
         albedo=pbrReady?mix(albedo,surfaceTile(pbrSlot,pbrUv,pbrTile),pbrBlend):architecturalSurface(hitMat,surf,posM,n,albedo);
       }
@@ -841,7 +913,7 @@ void main(){
       float spec = specStr * pow(clamp(lambert, 0.0, 1.0), mix(6.0, 48.0, gloss)) * lamp;
 
       float emis = (surf == 2) ? 0.55 : (surf == 1 ? 0.30 : 0.12);
-      col = albedo * (ambient*surfaceOcclusion + lamp + localLight)
+      col = albedo * (ambient*surfaceOcclusion + lamp + localLight + gBoilGlow)
           + vec3(0.55, 0.60, 0.62) * spec
           + rim * tint * (0.22 + uAudio * 0.45) * emis
           + glow * emis
@@ -1126,6 +1198,11 @@ let datamoshSourceTex=null,datamoshSourceFbo=null,datamoshTexA=null,datamoshTexB
 let datamoshActive=false,datamoshProgress=0,datamoshReducedMotion=false,lastPostSourceFbo=null;
 let surfAlbedoTex=null, surfNormalTex=null, surfRoughTex=null, surfHeightTex=null, surfDreamTex=null, surfDreamStageTex=null, anisoExt=null, anisoMax=1;
 const SURFACE_LAYERS=10,SURFACE_TILE=512;
+// Five temporal frames of ten 512² surfaces, live plus staged, is the ceiling
+// the texture budget allows. WebGL2 guarantees 256 array layers, so the limit
+// here is memory, not the API.
+const MAX_DREAM_FRAMES=5;
+let surfDreamFrames=1,surfDreamStageFrames=1,dreamAgitation=0;
 const surfDreamMix=new Float32Array(SURFACE_LAYERS);
 let localDiffusionAvailability = 1;
 let surfDreamReady=false,surfDreamNextReady=false,surfDreamTransitionStart=0,surfDreamTransitionMs=0;
@@ -1192,9 +1269,13 @@ function loadTextureArray(url, { srgb=false }={}){
     img.onerror=reject; img.src=url.href||String(url);
   });
 }
-function makeSurfaceDreamTexture(){
+// A dream bank is SURFACE_LAYERS surfaces × K temporal frames, laid out as
+// layer = slot*K + frame. K is authored per look profile; one frame is the old
+// still behaviour, five is a surface visibly cooking.
+function makeSurfaceDreamTexture(frames=1){
+  const k=Math.max(1,Math.min(MAX_DREAM_FRAMES,Math.floor(frames)||1));
   const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D_ARRAY,t);
-  gl.texImage3D(gl.TEXTURE_2D_ARRAY,0,gl.SRGB8_ALPHA8,SURFACE_TILE,SURFACE_TILE,SURFACE_LAYERS,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+  gl.texImage3D(gl.TEXTURE_2D_ARRAY,0,gl.SRGB8_ALPHA8,SURFACE_TILE,SURFACE_TILE,SURFACE_LAYERS*k,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
   gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
   gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_S,gl.REPEAT);
@@ -1204,26 +1285,32 @@ function makeSurfaceDreamTexture(){
   return t;
 }
 function initSurfaceDream(){
-  surfDreamTex=makeSurfaceDreamTexture();surfDreamStageTex=makeSurfaceDreamTexture();
+  surfDreamTex=makeSurfaceDreamTexture(1);surfDreamStageTex=makeSurfaceDreamTexture(1);
+  surfDreamFrames=1;surfDreamStageFrames=1;
 }
-export function r3dBeginSurfaceDreamBank(bankId=null){
+export function r3dBeginSurfaceDreamBank(bankId=null,frames=1){
   if(!gl)return false;
   if(surfDreamStageTex)gl.deleteTexture(surfDreamStageTex);
-  surfDreamStageTex=makeSurfaceDreamTexture();
+  const k=Math.max(1,Math.min(MAX_DREAM_FRAMES,Math.floor(Number(frames))||1));
+  surfDreamStageTex=makeSurfaceDreamTexture(k);
+  if(!surfDreamStageTex)return false;
+  surfDreamStageFrames=k;
   surfDreamPendingBank=bankId;
   surfDreamNextReady=false;
   surfDreamTransitionMs=0;
   return true;
 }
-export function r3dSetSurfaceDream(slot,image,mix=.68){
+export function r3dSetSurfaceDream(slot,frame,image,mix=.68){
   if(!gl||!surfDreamStageTex||slot<0||slot>=SURFACE_LAYERS||!image)return false;
+  const k=Math.max(1,surfDreamStageFrames);
+  const f=Math.max(0,Math.min(k-1,Math.floor(Number(frame))||0));
   const cv=document.createElement('canvas');cv.width=SURFACE_TILE;cv.height=SURFACE_TILE;
   cv.getContext('2d').drawImage(image,0,0,SURFACE_TILE,SURFACE_TILE);
   // Match loadTextureArray's orientation so generated mortar/grain lands on
   // the exact source texels it was conditioned from.
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
   gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfDreamStageTex);
-  gl.texSubImage3D(gl.TEXTURE_2D_ARRAY,0,0,0,slot,SURFACE_TILE,SURFACE_TILE,1,gl.RGBA,gl.UNSIGNED_BYTE,cv);
+  gl.texSubImage3D(gl.TEXTURE_2D_ARRAY,0,0,0,slot*k+f,SURFACE_TILE,SURFACE_TILE,1,gl.RGBA,gl.UNSIGNED_BYTE,cv);
   surfDreamMix[slot]=Math.max(0,Math.min(.98,Number(mix)||0));
   return true;
 }
@@ -1236,6 +1323,7 @@ export function r3dCommitSurfaceDream(mix=.68,options={}){
   const transitionMs=Math.max(0,Number(options.transitionMs)||0);
   if(!surfDreamReady||transitionMs<=0){
     [surfDreamTex,surfDreamStageTex]=[surfDreamStageTex,surfDreamTex];
+    [surfDreamFrames,surfDreamStageFrames]=[surfDreamStageFrames,surfDreamFrames];
     surfDreamReady=true;surfDreamNextReady=false;surfDreamActiveBank=bankId;surfDreamPendingBank=null;
     surfDreamTransitionMs=0;
   }else{
@@ -1250,17 +1338,23 @@ export function r3dSetSurfaceDreamMix(mix=.68){
 }
 export function r3dClearSurfaceDream(){surfDreamMix.fill(0);surfDreamReady=false;surfDreamNextReady=false;surfDreamActiveBank=null;surfDreamPendingBank=null;}
 export function r3dSetLocalDiffusionLevel(v=1){localDiffusionAvailability=Math.max(0,Math.min(1,Number(v)||0));}
+// How hard the world is boiling right now: dread, the coffee onset, and battle
+// impacts all push here. It scales the boil rate, how much generated structure
+// reaches the wall, and phosphor excitation in the VFD pass.
+export function r3dSetAgitation(v=0){dreamAgitation=Math.max(0,Math.min(1,Number(v)||0));}
+export function r3dAgitation(){return dreamAgitation;}
 function surfaceDreamBlend(nowMs=globalThis.performance?.now?.()||Date.now()){
   if(!surfDreamNextReady||!surfDreamTransitionMs)return 0;
   const t=Math.max(0,Math.min(1,(nowMs-surfDreamTransitionStart)/surfDreamTransitionMs));
   if(t>=1){
     [surfDreamTex,surfDreamStageTex]=[surfDreamStageTex,surfDreamTex];
+    [surfDreamFrames,surfDreamStageFrames]=[surfDreamStageFrames,surfDreamFrames];
     surfDreamReady=true;surfDreamNextReady=false;surfDreamActiveBank=surfDreamPendingBank;surfDreamPendingBank=null;surfDreamTransitionMs=0;
     return 0;
   }
   return t*t*(3-2*t);
 }
-export function r3dSurfaceDreamStats(){const look=currentLook();return{active:[...surfDreamMix].filter((v)=>v>0).length,mix:[...surfDreamMix],local:look.material.localDiffusion*localDiffusionAvailability,bank:surfDreamActiveBank,pendingBank:surfDreamPendingBank,transitioning:surfDreamNextReady};}
+export function r3dSurfaceDreamStats(){const look=currentLook();return{active:[...surfDreamMix].filter((v)=>v>0).length,mix:[...surfDreamMix],local:look.material.localDiffusion*localDiffusionAvailability,bank:surfDreamActiveBank,pendingBank:surfDreamPendingBank,transitioning:surfDreamNextReady,frames:surfDreamFrames,stagedFrames:surfDreamStageFrames,boilHz:look.material.boilHz??0,structureMix:look.material.structureMix??0,agitation:dreamAgitation,burst:burstMix};}
 export function r3dSurfaceStats(){return{albedo:!!surfAlbedoTex,normal:!!surfNormalTex,roughness:!!surfRoughTex,height:!!surfHeightTex,ready:!!(surfAlbedoTex&&surfNormalTex&&surfRoughTex&&surfHeightTex)};}
 let planTexture = null, materialTexture = null, sourceLayerTexture = null, planW = 0, planH = 0;
 let planOriginX = 0, planOriginY = 0, sourceSurfaceTexture = null;
@@ -1442,6 +1536,96 @@ function runDatamoshPass(towerTex,now){
   gl.drawArrays(gl.TRIANGLES,0,3);gl.bindFramebuffer(gl.FRAMEBUFFER,null);return dstTex;
 }
 
+// ── the possession burst ────────────────────────────────────────────────────
+// The rendered room, handed back to the model and returned a second later as
+// something that remembers being a room. It composites BEFORE the pixel mesh,
+// so the VFD pass encodes it like everything else and possession stays inside
+// the instrument instead of looking like a screenshot of another program.
+//
+// Latency is the honest problem: the reply describes the frame the player was
+// looking at, not the one in front of them. So the mix is damped by camera
+// motion — turn your head and the possession recedes; hold still and it takes
+// the room. Standing still in a horror game is not a limitation. It is the game.
+const BURST_FRAG=`#version 300 es
+precision highp float;
+uniform sampler2D uScene;
+uniform sampler2D uBurst;
+uniform vec2 uRes;
+uniform float uMix;
+uniform float uTime;
+out vec4 outColor;
+float bayer4(vec2 p){
+  int x=int(mod(p.x,4.0)),y=int(mod(p.y,4.0));
+  int i=y*4+x;
+  float m[16]=float[16](0.,8.,2.,10.,12.,4.,14.,6.,3.,11.,1.,9.,15.,7.,13.,5.);
+  return m[i]/16.0;
+}
+void main(){
+  vec2 uv=gl_FragCoord.xy/uRes;
+  vec3 scene=texture(uScene,uv).rgb;
+  vec3 burst=texture(uBurst,uv).rgb;
+  // Ordered dither on the blend: the repaint arrives as a spreading rash of
+  // cells rather than a clean dissolve, which reads as the display failing.
+  float threshold=bayer4(gl_FragCoord.xy);
+  float amount=clamp(uMix*1.35-threshold*0.35,0.0,1.0);
+  // Keep the room's own luminance structure underneath. The possession changes
+  // what the walls are made of, never where they are.
+  float sceneLum=dot(scene,vec3(.2126,.7152,.0722));
+  float burstLum=max(.03,dot(burst,vec3(.2126,.7152,.0722)));
+  vec3 relit=burst*mix(1.0,sceneLum/burstLum,0.45);
+  outColor=vec4(mix(scene,clamp(relit,0.0,1.0),amount),1.0);
+}`;
+let progBurst=null,burstTex=null,burstFbo=null,burstOutTex=null,burstOutFbo=null;
+let burstMix=0,burstTarget=0,burstLastAt=0,burstW=0,burstH=0;
+function burstU(name){return gl.getUniformLocation(progBurst,name);}
+export function r3dSetBurstFrame(image,{seconds=0}={}){
+  if(!gl||!image)return false;
+  if(!burstTex||burstW!==image.width||burstH!==image.height){
+    if(burstTex)gl.deleteTexture(burstTex);
+    burstW=image.width;burstH=image.height;
+    burstTex=makeTex(burstW,burstH);
+  }
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+  gl.bindTexture(gl.TEXTURE_2D,burstTex);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  burstTarget=1;
+  burstLastAt=globalThis.performance?.now?.()||Date.now();
+  return true;
+}
+export function r3dEndBurst(){burstTarget=0;}
+export function r3dBurstActive(){return burstMix>0.004;}
+function runBurstPass(sceneSource,now){
+  const nowMs=(globalThis.performance?.now?.()||Date.now());
+  // A reply that never came: fade out rather than hold a stale room forever.
+  if(burstTarget>0&&burstLastAt&&nowMs-burstLastAt>2200)burstTarget=0;
+  const dt=Math.max(0,Math.min(.25,now-(lastBurstTickAt||now)));
+  lastBurstTickAt=now;
+  const rate=burstTarget>burstMix?dt/0.30:dt/1.20;   // attack .3s, release 1.2s
+  burstMix+=Math.max(-1,Math.min(1,burstTarget-burstMix))*Math.min(1,rate);
+  if(burstMix<0.004){burstMix=0;return sceneSource;}
+  if(!progBurst||!burstTex||!burstOutFbo)return sceneSource;
+  // Camera motion damping: the repaint is always a moment stale, so it only
+  // asserts itself while the recordist is holding still.
+  const damped=burstMix*(1-Math.min(.8,vfdMovement*1.1));
+  if(damped<0.004)return sceneSource;
+  gl.useProgram(progBurst);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,burstOutFbo);
+  gl.viewport(0,0,uniforms.sceneW,uniforms.sceneH);
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,sceneSource);gl.uniform1i(burstU('uScene'),0);
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,burstTex);gl.uniform1i(burstU('uBurst'),1);
+  gl.uniform2f(burstU('uRes'),uniforms.sceneW,uniforms.sceneH);
+  gl.uniform1f(burstU('uMix'),damped);
+  gl.uniform1f(burstU('uTime'),now);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+  return burstOutTex;
+}
+let lastBurstTickAt=0;
+
 function runPixelMeshPass(state, now) {
   pixelMeshStatus.framesSeen += 1;
   pixelMeshStatus.shaderReady = !!progPixelMesh;
@@ -1464,6 +1648,9 @@ function runPixelMeshPass(state, now) {
   const prevTex = meshFlip ? meshTexB : meshTexA;
   meshFlip = !meshFlip;
 
+  // The possession composites first so the VFD encodes it as part of the world.
+  const worldTex = runBurstPass(sceneTex, now);
+
   // Other passes may leave a WebGL diagnostic behind. Clear before the pixel
   // pass so __chunkSurferPixelMesh.status() reports this layer, not stale GL.
   clearGlErrors();
@@ -1472,7 +1659,7 @@ function runPixelMeshPass(state, now) {
   gl.viewport(0, 0, uniforms.sceneW, uniforms.sceneH);
 
   gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, sceneTex);
+  gl.bindTexture(gl.TEXTURE_2D, worldTex);
   gl.uniform1i(pixelMeshU('uSrc'), 0);
 
   gl.activeTexture(gl.TEXTURE1);
@@ -1501,6 +1688,8 @@ function runPixelMeshPass(state, now) {
   gl.uniform1f(pixelMeshU('uDebugSource'), debugSourceToNumber(effectiveSettings.debugSource));
   gl.uniform1f(pixelMeshU('uForceSignal'), forceSignal);
   gl.uniform1f(pixelMeshU('uMovement'), vfdMovement);
+  gl.uniform1f(pixelMeshU('uPaletteChroma'), look.vfd.paletteChroma ?? 0);
+  gl.uniform1f(pixelMeshU('uAgitation'), dreamAgitation);
 
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   pixelMeshStatus.framesRendered += 1;
@@ -1534,6 +1723,7 @@ export function r3dInit(mapEl) {
   progPost = program(POST_FRAG);
   progDepth = program(DEPTH_FRAG);
   progDatamosh = program(DATAMOSH_FRAG);
+  try { progBurst = program(BURST_FRAG); } catch (_) { progBurst = null; }
   progTextSpace = program(TEXT_SPACE_FRAG);
   try {
     progPixelMesh = program(PIXEL_MESH_FRAG);
@@ -1620,6 +1810,8 @@ function resize() {
     gl.deleteFramebuffer(meshFboA); gl.deleteFramebuffer(meshFboB);
   }
   for(const item of [[datamoshSourceTex,datamoshSourceFbo],[datamoshTexA,datamoshFboA],[datamoshTexB,datamoshFboB]]){if(item[0])gl.deleteTexture(item[0]);if(item[1])gl.deleteFramebuffer(item[1]);}
+  if(burstOutTex){gl.deleteTexture(burstOutTex);gl.deleteFramebuffer(burstOutFbo);}
+  burstOutTex=makeMeshTex(sw,sh);burstOutFbo=makeFbo(burstOutTex);
   sceneTex = makeTex(sw, sh);
   sceneFbo = makeFbo(sceneTex);
   meshTexA = makeMeshTex(sw, sh);
@@ -2026,6 +2218,14 @@ export function r3dFrame(state) {
   gl.uniform1f(U('uDreamBankBlend'),bankBlend);
   gl.uniform1f(U('uDreamDetailGain'),look.material.detailGain);
   gl.uniform1f(U('uDreamChromaDrift'),look.material.chromaDrift);
+  gl.uniform1f(U('uDreamFramesA'),surfDreamFrames);
+  gl.uniform1f(U('uDreamFramesB'),surfDreamStageFrames);
+  gl.uniform1f(U('uBoilHz'),look.material.boilHz??0);
+  gl.uniform1f(U('uDreamStructureMix'),look.material.structureMix??0);
+  gl.uniform1f(U('uDreamLumaLo'),look.material.lumaClampLo??.62);
+  gl.uniform1f(U('uDreamLumaHi'),look.material.lumaClampHi??1.48);
+  gl.uniform1f(U('uDreamLumaHold'),look.material.lumaHold??1);
+  gl.uniform1f(U('uAgitation'),dreamAgitation);
   gl.uniform1f(U('uDreamRoughnessResponse'),look.material.roughnessResponse);
   gl.uniform1f(U('uDreamNormalResponse'),look.material.normalResponse);
   gl.uniform1f(U('uLocalDiffusion'),look.material.localDiffusion*localDiffusionAvailability);
@@ -2081,6 +2281,47 @@ export function r3dCanvas() { return canvas; }
 //
 // Exact, not estimated. Every other img2img pipeline in the world runs MiDaS to
 // GUESS the depth of a picture. We marched the room; we know.
+// The scene as the model will see it. Read back at burst resolution only while
+// a possession is running — never per frame — because readPixels is a stall.
+let burstCapCanvas=null,burstCapCtx=null,burstCapPix=null,burstCapImg=null,burstCapSize=0;
+export function r3dCaptureSceneCanvas(size=384){
+  if(!gl||!sceneTex||!sceneFbo)return null;
+  if(burstCapSize!==size){
+    burstCapCanvas=document.createElement('canvas');
+    burstCapCanvas.width=burstCapCanvas.height=size;
+    burstCapCtx=burstCapCanvas.getContext('2d');
+    burstCapPix=new Uint8Array(size*size*4);
+    burstCapImg=burstCapCtx.createImageData(size,size);
+    burstCapSize=size;
+  }
+  // Downsample through the post program into the burst target, then read that:
+  // the scene FBO is larger than the model wants and reading it whole costs
+  // more than the inference does.
+  gl.bindFramebuffer(gl.FRAMEBUFFER,burstOutFbo);
+  gl.viewport(0,0,uniforms.sceneW,uniforms.sceneH);
+  gl.useProgram(progPost);
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,sceneTex);gl.uniform1i(postU('uSrc'),0);
+  gl.uniform2f(postU('uRes'),uniforms.sceneW,uniforms.sceneH);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+  const sx=Math.max(0,Math.floor((uniforms.sceneW-Math.min(uniforms.sceneW,uniforms.sceneH))/2));
+  const sy=Math.max(0,Math.floor((uniforms.sceneH-Math.min(uniforms.sceneW,uniforms.sceneH))/2));
+  const side=Math.min(uniforms.sceneW,uniforms.sceneH);
+  const raw=new Uint8Array(side*side*4);
+  gl.readPixels(sx,sy,side,side,gl.RGBA,gl.UNSIGNED_BYTE,raw);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+  // GL is bottom-up; a canvas is top-down. Flip while scaling to the model size.
+  const tmp=document.createElement('canvas');tmp.width=tmp.height=side;
+  const tmpCtx=tmp.getContext('2d');
+  const tmpImg=tmpCtx.createImageData(side,side);
+  const row=side*4;
+  for(let y=0;y<side;y++){
+    const s=(side-1-y)*row,d=y*row;
+    tmpImg.data.set(raw.subarray(s,s+row),d);
+  }
+  tmpCtx.putImageData(tmpImg,0,0);
+  burstCapCtx.drawImage(tmp,0,0,side,side,0,0,size,size);
+  return burstCapCanvas;
+}
 let depthTex=null, depthFbo=null, depthSize=0, depthCanvas=null, depthCtx=null, depthPix=null, depthImg=null;
 export function r3dDepthCanvas(size = 512) {
   if (!gl || !sceneTex) return null;

@@ -2,7 +2,7 @@ import { uiSize, uiText, uiCenter, uiScrim } from '../render/ui.js';
 import { drawMachinePanel } from '../render/presentation.js';
 import { promptLine } from './bindings.js';
 
-const LOCAL_ESCAPE_SCENES = new Set(['pause', 'settings', 'god-menu', 'bag']);
+const LOCAL_ESCAPE_SCENES = new Set(['pause', 'settings', 'god-menu', 'bag', 'combat-calibration']);
 
 export function shouldOpenPauseForEvent({ storyMode = false, key = '', code = '', topSceneId = '' } = {}) {
   if (!storyMode || (key !== 'Escape' && code !== 'Escape')) return false;

@@ -31,7 +31,7 @@ const KNOWN_GEAR = Object.freeze({
     icon: 'light',
     status: ['READY', 'active'],
     description: 'Hand torch issued with the field kit.',
-    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'ILLUMINATION']],
+    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'ILLUMINATION'], ['BATTLE', 'EXPOSE · DMG · COUNTERS CONCEAL · USES BATTERY']],
   },
   recorder: {
     title: 'RECORDER + HEADPHONES',
@@ -39,7 +39,7 @@ const KNOWN_GEAR = Object.freeze({
     icon: 'recorder',
     status: ['READY', 'active'],
     description: 'Captures one uninterrupted minute of room tone.',
-    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'CAPTURE / MONITOR']],
+    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'CAPTURE / MONITOR'], ['BATTLE', 'MONITOR CAPTURES A TAKE · PLAYBACK SPENDS IT · COUNTERS BROADCAST']],
   },
   interface: {
     title: 'BENT RIG INTERFACE',
@@ -47,7 +47,7 @@ const KNOWN_GEAR = Object.freeze({
     icon: 'interface',
     status: ['READY', 'active'],
     description: 'A rewired return path capable of reversing a hostile signal.',
-    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'INVERT / FEEDBACK']],
+    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'INVERT / FEEDBACK'], ['BATTLE', 'INVERT RETURNS A LOOP · SPENDS THE TAKE · COUNTERS LOOP']],
   },
   'tuning-fork': {
     title: 'TUNING FORK',
@@ -55,7 +55,7 @@ const KNOWN_GEAR = Object.freeze({
     icon: 'tuning-fork',
     status: ['READY', 'active'],
     description: 'A stable reference tone carried into unstable rooms.',
-    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'TUNE / REVEAL']],
+    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'TUNE / REVEAL'], ['BATTLE', 'TUNE IS FREE · REVEALS THE NEXT TWO INTENTS']],
   },
   map: {
     title: 'LOCATION INDICATOR',
@@ -71,7 +71,7 @@ const KNOWN_GEAR = Object.freeze({
     icon: 'radio',
     status: ['LIVE', 'active'],
     description: 'Portable service radio assigned with the work order.',
-    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'CHECK-IN / FIELD CONTACT']],
+    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'CHECK-IN / FIELD CONTACT'], ['BATTLE', 'THROW VOICE · GUARD 2 · COUNTERS BROADCAST · ONCE PER FIGHT']],
   },
   coffee: {
     title: "THE GUARD'S COFFEE",
@@ -79,7 +79,7 @@ const KNOWN_GEAR = Object.freeze({
     icon: 'coffee',
     status: ['GETTING COLD', 'metadata'],
     description: 'Coffee from the service booth. Still technically warm.',
-    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'STIMULANT']],
+    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'STIMULANT'], ['BATTLE', 'STEADY HANDS · +3 COMPOSURE · ONE CUP']],
   },
   keyring: {
     title: 'STANDARD KEYRING',

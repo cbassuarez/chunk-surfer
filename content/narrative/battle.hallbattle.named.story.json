@@ -21,7 +21,10 @@
         "start",
         "outcome",
         "win",
-        "lose"
+        "lose",
+        "round-1",
+        "round-2",
+        "round-3"
       ]
     },
     {
@@ -62,7 +65,7 @@
           "id": "start.line.3"
         }
       ],
-      "goto": "outcome",
+      "goto": "round-1",
       "id": "start"
     },
     "outcome": {
@@ -115,6 +118,106 @@
         }
       ],
       "id": "lose"
+    },
+    "round-1": {
+      "type": "battle-round",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "The desk is dead and the send is live anyway. Whatever is on the house fader, it is being offered to you like a level to set.",
+          "channel": "before",
+          "id": "round-1.line.1"
+        },
+        {
+          "who": "you",
+          "text": "That is my own noise floor coming back off the stage. It is selling me my silence as a performance.",
+          "channel": "on-listen",
+          "id": "round-1.line.2"
+        },
+        {
+          "who": "you",
+          "text": "Take the send. If it wants to broadcast, it can go on my tape, at my level.",
+          "channel": "on-listen",
+          "id": "round-1.line.3"
+        },
+        {
+          "who": "direction",
+          "text": "The return thins. A hall this size should not know your kit by name.",
+          "channel": "after",
+          "id": "round-1.line.4"
+        }
+      ],
+      "goto": "round-2",
+      "battle": {
+        "nature": "on the tape",
+        "threat": 0.46
+      },
+      "id": "round-1"
+    },
+    "round-2": {
+      "type": "battle-round",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "The house return comes up patched to itself — output into input, a loop with no player in it.",
+          "channel": "before",
+          "id": "round-2.line.1"
+        },
+        {
+          "who": "sarah",
+          "text": "Row F. You had the recorder on your knee. You were setting a level while I said it.",
+          "channel": "before",
+          "id": "round-2.line.2",
+          "rate": 0.97
+        },
+        {
+          "who": "you",
+          "text": "Feedback is not a ghost. Feedback is a fault. Break the loop or bend it back.",
+          "channel": "on-listen",
+          "id": "round-2.line.3"
+        },
+        {
+          "who": "direction",
+          "text": "The loop closes on nothing and eats its own tail quietly.",
+          "channel": "after",
+          "id": "round-2.line.4"
+        }
+      ],
+      "goto": "round-3",
+      "battle": {
+        "nature": "not there",
+        "threat": 0.6
+      },
+      "id": "round-2"
+    },
+    "round-3": {
+      "type": "battle-round",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "Under the noise floor, applause. Rows of it. The hall is giving you the audience it thinks you came for.",
+          "channel": "before",
+          "id": "round-3.line.1"
+        },
+        {
+          "who": "you",
+          "text": "Nobody is sitting there. Nobody has sat there since April. I am not taking a bow for a room tone.",
+          "channel": "on-listen",
+          "id": "round-3.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "The applause runs out of hands. What is left is architecture, decaying at the speed architecture decays.",
+          "channel": "after",
+          "id": "round-3.line.3"
+        }
+      ],
+      "goto": "outcome",
+      "battle": {
+        "nature": "not there",
+        "threat": 0.74
+      },
+      "id": "round-3"
     }
   },
   "metadata": {

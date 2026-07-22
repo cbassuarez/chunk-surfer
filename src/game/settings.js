@@ -25,7 +25,6 @@ import {
   PERSONAL_INTERFERENCE_LABEL,
   normalizePersonalInterferenceSettings,
 } from './personalized-interference.js';
-import { CONTROL_MODES, normalizeControlMode } from '../input/input-manager.js';
 
 const MIC_LABEL = {
   idle: 'OFF',
@@ -49,11 +48,6 @@ const HUSH_AUDIO_LABEL = { reduced: 'REDUCED', full: 'FULL' };
 const HUSH_LIGHT_MODES = ['off', 'reduced', 'full'];
 const BACKGROUND_AUDIO_MODES = ['continue', 'pause'];
 const BACKGROUND_AUDIO_LABEL = { continue: 'CONTINUE', pause: 'PAUSE WHEN UNFOCUSED' };
-const CONTROL_MODE_LABEL = {
-  classic: 'CLASSIC TURN',
-  'independent-wasd': 'WASD MOVE / ARROWS LOOK',
-  'independent-arrows': 'ARROWS MOVE / WASD LOOK',
-};
 
 // A bar like ◀▮▮▮▯▯▶ for a 0..1 value.
 function bar(v, n = 10) {
@@ -400,9 +394,14 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
       {
         id: 'input', name: 'INPUT',
         rows: [
-          { id: 'controlMode', label: 'MOVEMENT MODE',
-            value: () => CONTROL_MODE_LABEL[normalizeControlMode(setting('controlMode', 'classic'))],
-            adjust: (d) => cycleSetting('controlMode', CONTROL_MODES, d, 'classic') },
+          // The scheme is fixed: WASD/arrows walk and strafe, the mouse looks.
+          // What is left to tune is the hand, not the contract.
+          { id: 'mouseSensitivity', label: 'MOUSE LOOK',
+            value: () => `${Math.round(Number(setting('mouseSensitivity', 1)) * 100)}%`,
+            adjust: (d) => set('mouseSensitivity', clamp(Number(setting('mouseSensitivity', 1)) + d * 0.1, 0.2, 3)) },
+          { id: 'mouseInvertY', label: 'INVERT LOOK',
+            value: () => (setting('mouseInvertY', false) ? 'ON' : 'OFF'),
+            adjust: () => set('mouseInvertY', !setting('mouseInvertY', false)) },
           { id: 'controlMap', label: 'CONTROLLER', value: () => controllerPrefs().enabled === false ? 'OFF' : (hooks.controllerName?.() || 'NO CONTROLLER'),
             adjust: () => controllerPatch({ enabled: controllerPrefs().enabled === false }) },
           { id: 'configureController', label: 'CONFIGURE CONTROLLER', value: () => inputPrompt('confirm'), activate: () => hooks.openControllerSettings?.() },
@@ -586,6 +585,7 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           { id: 'about:website', label: 'WEBSITE', value: () => 'cbassuarez.com', activate: () => hooks.openWebsite?.() },
           { id: 'about:report', label: 'REPORT A PROBLEM', value: () => inputPrompt('confirm'), activate: () => hooks.reportProblem?.() },
           { id: 'about:copyright', label: 'COPYRIGHT', value: () => hooks.copyright?.() || '© 2026 Sebastian Suarez-Solis' },
+          { id: 'about:licence', label: 'LICENCE / EULA', value: () => hooks.licenceVersion?.() || 'VIEW', activate: () => hooks.openLicence?.() },
 
           section('Performance'),
           { id: 'about:fps', label: 'FPS', value: () => formatFps(hooks.performanceSnapshot?.()?.fps) },

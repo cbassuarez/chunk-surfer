@@ -6,6 +6,7 @@
 // authored anchors are resident, one visible material at a time may be
 // re-hallucinated at a performance-gated cadence and crossfaded in world space.
 import { profileBankRecipes } from '../render/look-profiles.js';
+import { assembleSurfacePrompt, estimateClipTokens, PROMPT_TOKEN_BUDGET } from './prompt-budget.js';
 import {
   MUTATION_FEEDBACK,
   mutationCanStart,
@@ -17,11 +18,13 @@ import {
 
 const RETRIES = 20;
 const RETRY_MS = 6000;
-const CACHE_SCHEMA = 2;
+const CACHE_SCHEMA = 3;
 const MODEL_ID = 'sd15-hyper4';
 const MUTATION_OBSERVE_MS = 2_000;
+const BURST_SIZE = 384;
+const BURST_DEGRADED_SIZE = 320;
 
-export const NO_CHARACTERS = 'person, people, human, man, woman, child, figure, silhouette, face, portrait, eyes, creature, animal, monster, statue, mannequin, doll, crowd, neon, saturated, poster art, cartoon, bright, fog, mist, haze, smoke, steam, dust cloud, atmospheric veil, volumetric fog';
+export const NO_CHARACTERS = 'person, face, figure, hands, creature, animal, text, watermark, cartoon, bright, fog, smoke';
 
 export const SURFACE_NAMES = Object.freeze([
   'reclaimed brick wall', 'split-face stone wall', 'ash wood floor', 'quartzite floor',
@@ -29,18 +32,34 @@ export const SURFACE_NAMES = Object.freeze([
   'rammed-earth plaster wall', 'concrete wall cladding',
 ]);
 
+// Compressed to the two or three marks that identify each material. Every word
+// here is competing with the profile's mood for the front of CLIP's window.
 export const SURFACE_PROMPT_DETAILS = Object.freeze([
-  'uneven lime mortar, dark damp tide marks, isolated pale mineral blooms, displaced brick repairs',
-  'deep mineral fissures, rust bleed at joints, broad lichen-like discoloration without vegetation',
-  'raised grain, blackened board seams, worn varnish islands, long water stains across several planks',
-  'layered mica fractures, pale calcite veins, broad abrasion trails, chipped aggregate repairs',
-  'chlorine-bleached grout, cobalt crazing, missing tessera repairs, broad submerged mineral stains',
-  'cracked glaze, grey grout bloom, rust trails from old fittings, mismatched rectangular patch repairs',
-  'large aggregate ghosts, waxed wear lanes, branching hairline cracks, dark institutional repair plugs',
-  'open pores, ochre water tracks, chipped corners, pale salt blooms spanning multiple blocks',
-  'trowel arcs, damp blisters, hairline settlement cracks, broad rubbed and repainted patches',
-  'formwork grain, cold joints, iron oxide runs, spalled corners and conspicuous cement repairs',
+  'damp mortar, mineral bloom',
+  'mineral fissures, rust at joints',
+  'raised grain, black seams',
+  'mica fractures, calcite veins',
+  'bleached grout, cobalt crazing',
+  'cracked glaze, rust trails',
+  'aggregate ghosts, wear lanes',
+  'open pores, ochre tracks',
+  'trowel arcs, damp blisters',
+  'formwork grain, iron stains',
 ]);
+
+// A frame and the depth of THAT frame in one message, so newest-wins can never
+// pair a frame with another frame's depth. Mirrors unpack() in server.py.
+function packL2(frame, depth) {
+  if (!depth) return frame;
+  const frameBytes = new Uint8Array(frame);
+  const depthBytes = new Uint8Array(depth);
+  const out = new Uint8Array(6 + frameBytes.byteLength + depthBytes.byteLength);
+  out[0] = 0x4c; out[1] = 0x32; // 'L2'
+  new DataView(out.buffer).setUint32(2, frameBytes.byteLength, true);
+  out.set(frameBytes, 6);
+  out.set(depthBytes, 6 + frameBytes.byteLength);
+  return out.buffer;
+}
 
 function canvasJpeg(canvas) {
   return new Promise((resolve, reject) => {
@@ -93,7 +112,7 @@ async function anchoredMutationPayload(source, previous, feedback = MUTATION_FEE
   }
 }
 
-async function surfacePayloads(url) {
+async function sliceAtlas(url, { grey = false } = {}) {
   const response = await fetch(url);
   if (!response.ok) throw new Error(`source atlas unavailable (${response.status})`);
   const atlas = await response.arrayBuffer();
@@ -110,13 +129,52 @@ async function surfacePayloads(url) {
     const payloads = await Promise.all(Array.from({ length: layers }, (_, slot) => {
       const canvas = document.createElement('canvas');
       canvas.width = size; canvas.height = size;
-      canvas.getContext('2d').drawImage(image, 0, slot * size, size, size, 0, 0, size, size);
+      const context = canvas.getContext('2d');
+      context.drawImage(image, 0, slot * size, size, size, 0, 0, size, size);
+      if (grey) {
+        // A depth ControlNet trained on MiDaS wants the full range used. The
+        // height atlas is a relief map in one channel; normalise it so the
+        // CONTRAST is the signal, exactly as r3dDepthCanvas does for bursts.
+        const pixels = context.getImageData(0, 0, size, size);
+        const data = pixels.data;
+        let lo = 255; let hi = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i] < lo) lo = data[i];
+          if (data[i] > hi) hi = data[i];
+        }
+        const k = 255 / Math.max(1, hi - lo);
+        for (let i = 0; i < data.length; i += 4) {
+          const v = (data[i] - lo) * k;
+          data[i] = data[i + 1] = data[i + 2] = v;
+          data[i + 3] = 255;
+        }
+        context.putImageData(pixels, 0, 0);
+      }
       return canvasJpeg(canvas);
     }));
     return { atlasSha256, payloads };
   } finally {
     image.close?.();
   }
+}
+
+async function surfacePayloads(url, heightUrl) {
+  const albedo = await sliceAtlas(url);
+  // The authored relief of each material, handed to the depth ControlNet as its
+  // control image. Without it the model invents geometry that the PBR pass then
+  // contradicts; with it the hallucination is pinned to the surface it is on.
+  let depths = [];
+  let heightSha256 = null;
+  if (heightUrl) {
+    try {
+      const height = await sliceAtlas(heightUrl, { grey: true });
+      depths = height.payloads;
+      heightSha256 = height.atlasSha256;
+    } catch (_) {
+      depths = [];
+    }
+  }
+  return { atlasSha256: albedo.atlasSha256, payloads: albedo.payloads, depths, heightSha256 };
 }
 
 async function sha256(buffer) {
@@ -134,9 +192,12 @@ export function surfaceDiffusionStart({
   token = null,
   restartService = null,
   sourceUrl,
+  heightUrl = null,
   applySurface,
   beginBank = () => {},
   commitSurfaces = () => {},
+  captureBurstFrame = null,
+  applyBurst = null,
   profiles = profileBankRecipes(),
   onStatus = () => {},
 }) {
@@ -166,7 +227,13 @@ export function surfaceDiffusionStart({
   let pendingResult = null;
   let queue = [];
   let payloads = [];
+  let depthPayloads = [];
   let atlasSha256 = null;
+  let heightSha256 = null;
+  // Dropped to 3 when the GPU refuses the full temporal set. Five frames of ten
+  // surfaces is 133 MiB of texture array; a machine that cannot hold it should
+  // boil more slowly rather than not start.
+  let frameCeiling = 5;
   let readyResolve;
   let readyReject;
   let allReadyResolve;
@@ -182,10 +249,16 @@ export function surfaceDiffusionStart({
   let mutationObservationUntil = 0;
   let nextMutationAt = null;
   let streamTimer = null;
+  let burstUntil = 0;
+  let burstSerial = 0;
+  let burstPending = null;
+  let burstResolve = null;
 
-  const sourcePromise = surfacePayloads(sourceUrl).then((source) => {
+  const sourcePromise = surfacePayloads(sourceUrl, heightUrl).then((source) => {
     payloads = source.payloads;
+    depthPayloads = source.depths || [];
     atlasSha256 = source.atlasSha256;
+    heightSha256 = source.heightSha256;
     return source;
   });
 
@@ -222,22 +295,54 @@ export function surfaceDiffusionStart({
 
   async function buildQueue() {
     queue = [];
+    // Frame 0 of every bank first: that is the still image of the world, and
+    // boot only waits for the critical bank's ten. The boil frames that follow
+    // stream in behind the game and upgrade each surface in place.
+    const later = [];
     for (const profile of profiles) {
       const recipe = profile.generation;
       const recipeSha256 = await sha256(new TextEncoder().encode(JSON.stringify({
         bankId: profile.bankId, ...recipe,
       })));
+      const frames = bankFrames(profile);
       for (let slot = 0; slot < SURFACE_NAMES.length; slot += 1) {
-        queue.push({
-          requestId: `${profile.bankId}:${slot}:${recipeSha256.slice(0, 12)}`,
-          bankId: profile.bankId, slot, recipe, recipeSha256,
-        });
+        for (let frame = 0; frame < frames; frame += 1) {
+          const work = {
+            requestId: `${profile.bankId}:${slot}:${frame}:${recipeSha256.slice(0, 12)}`,
+            bankId: profile.bankId, slot, frame, recipe, recipeSha256,
+          };
+          if (frame === 0) queue.push(work);
+          else later.push(work);
+        }
       }
     }
+    queue = [...queue, ...later];
+  }
+
+  function bankFrames(profile) {
+    return Math.max(1, Math.min(frameCeiling, Math.floor(Number(profile?.generation?.frames) || 1)));
   }
 
   function surfacePrompt(recipe, slot) {
-    return `seamless tileable ${SURFACE_NAMES[slot]} material, ${SURFACE_PROMPT_DETAILS[slot]}, ${recipe.prompt}, conspicuous readable changes at arm's length, orthographic flat albedo texture, neutral exposure, diffuse even illumination, no cast shadows, no perspective`;
+    const prompt = assembleSurfacePrompt({
+      name: `seamless ${SURFACE_NAMES[slot]}`,
+      detail: SURFACE_PROMPT_DETAILS[slot],
+      style: recipe.prompt,
+    });
+    if (import.meta.env?.DEV) {
+      const tokens = estimateClipTokens(prompt);
+      if (tokens > PROMPT_TOKEN_BUDGET) {
+        console.warn(`lens prompt over budget (~${tokens} tokens, budget ${PROMPT_TOKEN_BUDGET}): ${prompt}`);
+      }
+    }
+    return prompt;
+  }
+
+  // Each successive boil frame is pushed a little further from the authored
+  // albedo, so the crossfade escalates instead of cycling through equals.
+  function frameStrength(recipe, frame) {
+    const ramp = Number(recipe.strengthRamp) || 0;
+    return Math.max(0.1, Math.min(0.95, Number(recipe.strength) + ramp * frame));
   }
 
   function continueBankStream() {
@@ -258,20 +363,28 @@ export function surfaceDiffusionStart({
     active = work; pendingResult = null;
     const recipe = work.recipe;
     const mutation = work.type === 'mutate';
+    const frame = Math.max(0, Math.floor(Number(work.frame) || 0));
+    const depth = depthPayloads[work.slot] || null;
     stats.slot = work.slot; stats.bank = work.bankId;
     if (mutation) setMutationState('generating', { mutationSlot: work.slot, mutationBank: work.bankId });
     else setState('generating');
     socket.send(JSON.stringify({
       type: mutation ? 'mutate' : 'generate', requestId: work.requestId, bankId: work.bankId, slot: work.slot,
+      frame,
       modelId: MODEL_ID, checksumId: `sha256:${work.recipeSha256}`,
       sourceAtlasSha256: atlasSha256, recipeSha256: work.recipeSha256,
       prompt: surfacePrompt(recipe, work.slot), negative: recipe.negative,
-      strength: recipe.strength, passes: recipe.passes, guidance: recipe.guidance,
-      seedMode: 'fixed', seed: mutation ? recipe.seed : recipe.seedBase + work.slot * 977,
+      strength: mutation ? recipe.strength : frameStrength(recipe, frame),
+      passes: recipe.passes, guidance: recipe.guidance,
+      // A surface keeps its identity across frames and walks only along the
+      // boil axis: same place, later in its decay.
+      seedMode: 'fixed', seed: mutation ? recipe.seed : recipe.seedBase + work.slot * 977 + frame * 131,
       size: 512, cacheSchema: CACHE_SCHEMA,
+      depthScale: depth ? 0.55 : undefined,
+      depthSha256: depth ? heightSha256 : undefined,
     }));
     sentAt = performance.now();
-    socket.send(payload); stats.framesOut += 1;
+    socket.send(packL2(payload, depth)); stats.framesOut += 1;
   }
 
   async function sendNext() {
@@ -318,17 +431,25 @@ export function surfaceDiffusionStart({
     const images = banks.get(bankId);
     const profile = profiles.find((entry) => entry.bankId === bankId);
     if (!images || images.filter(Boolean).length !== SURFACE_NAMES.length || !profile || !shouldCommit()) return false;
-    if (beginBank(bankId) === false) return false;
+    const frames = bankFrames(profile);
+    if (beginBank(bankId, frames) === false) return false;
     for (let slot = 0; slot < SURFACE_NAMES.length; slot += 1) {
-      const bitmap = await createImageBitmap(images[slot]);
-      try {
-        if (applySurface(slot, bitmap, profile.generation.mix) === false) return false;
-      } finally {
-        bitmap.close();
+      const stack = images[slot] || [];
+      for (let frame = 0; frame < frames; frame += 1) {
+        // A surface whose later boil frames have not landed yet holds still on
+        // frame zero rather than popping between a full and an empty layer.
+        const blob = stack[frame] || stack[0];
+        if (!blob) return false;
+        const bitmap = await createImageBitmap(blob);
+        try {
+          if (applySurface(slot, frame, bitmap, profile.generation.mix) === false) return false;
+        } finally {
+          bitmap.close();
+        }
       }
     }
     if (!shouldCommit()) return false;
-    return commitSurfaces(profile.generation.mix, { bankId, transitionMs }) !== false;
+    return commitSurfaces(profile.generation.mix, { bankId, transitionMs, frames }) !== false;
   }
 
   function queueBankUpload(bankId, transitionMs, shouldCommit) {
@@ -365,7 +486,9 @@ export function surfaceDiffusionStart({
   async function handleMutationBytes(work, bytes) {
     const candidate = new Blob([bytes], { type: 'image/jpeg' });
     const bank = banks.get(work.bankId) || [];
-    const previous = bank[work.slot];
+    const stack = bank[work.slot] || [];
+    const frame = Math.max(0, Math.floor(Number(work.frame) || 0));
+    const previous = stack[frame];
     // A shared GPU can block rendering so completely that tickMutation cannot
     // observe the bad frame until inference has returned. Watch the first
     // frames after every result as well as the frames during generation.
@@ -377,7 +500,8 @@ export function surfaceDiffusionStart({
       mutationSoftFailure('visual-outlier');
       return;
     }
-    bank[work.slot] = candidate;
+    stack[frame] = candidate;
+    bank[work.slot] = stack;
     banks.set(work.bankId, bank);
     stats.mutationsAccepted += 1;
     const stillCurrent = () => work.bankEpoch === bankEpoch
@@ -405,20 +529,24 @@ export function surfaceDiffusionStart({
 
   async function prepareMutation({ bankId, slot, epoch, timing }) {
     const profile = profiles.find((entry) => entry.bankId === bankId);
-    const previous = banks.get(bankId)?.[slot];
+    const stack = banks.get(bankId)?.[slot];
     const source = payloads[slot];
-    if (!profile || !previous || !source) throw new Error('visible material is not resident');
+    if (!profile || !stack?.length || !source) throw new Error('visible material is not resident');
     const serial = ++mutationSerial;
+    // Mutations walk the boil frames in turn, so a surface drifts one temporal
+    // step at a time instead of one frame lurching away from its neighbours.
+    const frame = serial % bankFrames(profile);
+    const previous = stack[frame] || stack[0];
     const recipe = mutationGeneration(profile, slot, serial);
     const recipeSha256 = await sha256(new TextEncoder().encode(JSON.stringify({
-      type: 'mutate', bankId, slot, serial, ...recipe,
+      type: 'mutate', bankId, slot, frame, serial, ...recipe,
     })));
     const payload = await anchoredMutationPayload(source, previous, recipe.feedback);
     if (stopped || fatal || epoch !== bankEpoch || stats.activeBank !== bankId || requestedBank != null) return false;
     if (active || queue.length || !socket || socket.readyState !== WebSocket.OPEN) return false;
     sendWork({
-      type: 'mutate', requestId: `mutate:${bankId}:${slot}:${serial}:${recipeSha256.slice(0, 12)}`,
-      bankId, slot, recipe, recipeSha256, transitionMs: timing.transitionMs,
+      type: 'mutate', requestId: `mutate:${bankId}:${slot}:${frame}:${serial}:${recipeSha256.slice(0, 12)}`,
+      bankId, slot, frame, recipe, recipeSha256, transitionMs: timing.transitionMs,
       bankEpoch: epoch, performanceFault: mutationPerformanceFault,
     }, payload);
     return true;
@@ -441,6 +569,8 @@ export function surfaceDiffusionStart({
     }
     if (mutationObservationUntil && now >= mutationObservationUntil) mutationObservationUntil = 0;
     if (stats.mutationDisabled) return false;
+    // A possession burst owns the GPU while it runs. Tiles wait their turn.
+    if (burstUntil > now) { nextMutationAt = null; return false; }
     if (!allowed) {
       nextMutationAt = null;
       if (stats.mutationState !== 'paused') setMutationState('paused');
@@ -488,6 +618,69 @@ export function surfaceDiffusionStart({
     return true;
   }
 
+  // ── possession bursts ──────────────────────────────────────────────────────
+  // The tiles are the world's material; this is the world itself, handed back
+  // to the model with the exact depth the engine marched, for a few seconds at
+  // a time. It runs at two or three frames a second and that is the point: the
+  // room stops being rendered and starts being remembered by something else.
+  async function runBurst(profileId, seconds) {
+    const profile = profiles.find((entry) => entry.bankId === profileId) || profiles.find((entry) => entry.bankId === stats.activeBank);
+    const recipe = profile?.generation?.burst;
+    if (!recipe || !captureBurstFrame || !applyBurst || stopped || fatal) return false;
+    if (burstUntil > performance.now()) { burstUntil = performance.now() + seconds * 1000; return true; }
+    burstUntil = performance.now() + Math.max(0.5, seconds) * 1000;
+    let size = BURST_SIZE;
+    try {
+      while (performance.now() < burstUntil && !stopped && !fatal) {
+        if (active || socket?.readyState !== WebSocket.OPEN) { await new Promise((r) => setTimeout(r, 40)); continue; }
+        const shot = await captureBurstFrame(size);
+        if (!shot?.frame) break;
+        const started = performance.now();
+        const requestId = `burst:${profileId}:${++burstSerial}`;
+        burstPending = { requestId };
+        active = { type: 'frame', requestId, slot: -1, bankId: null };
+        pendingResult = null;
+        socket.send(JSON.stringify({
+          type: 'frame', requestId, modelId: MODEL_ID,
+          prompt: recipe.prompt, negative: recipe.negative,
+          strength: recipe.strength, passes: 2, guidance: recipe.guidance,
+          seedMode: 'walk', seed: (burstSerial * 7919) % 2_000_000_000,
+          size, depthScale: recipe.depthScale ?? 0.6,
+        }));
+        sentAt = performance.now();
+        socket.send(packL2(shot.frame, shot.depth));
+        stats.framesOut += 1;
+        const bytes = await burstReply();
+        if (!bytes) break;
+        const rtt = performance.now() - started;
+        stats.lastRttMs = rtt;
+        // A round trip this slow means the repaint is a memory of a room the
+        // player has already left. Shrink once; leave if it is still slow.
+        if (rtt > 1500) {
+          if (size === BURST_DEGRADED_SIZE) break;
+          size = BURST_DEGRADED_SIZE;
+        }
+        const bitmap = await createImageBitmap(new Blob([bytes], { type: 'image/jpeg' }));
+        try { applyBurst(bitmap, { profileId, remainingMs: burstUntil - performance.now() }); }
+        finally { bitmap.close(); }
+      }
+    } finally {
+      burstUntil = 0; burstPending = null;
+      if (active?.type === 'frame') { active = null; pendingResult = null; }
+      applyBurst(null, { profileId, remainingMs: 0 });
+      setState(stats.state === 'error' ? 'error' : 'ready');
+      continueBankStream();
+    }
+    return true;
+  }
+
+  function burstReply() {
+    return new Promise((resolve) => {
+      burstResolve = resolve;
+      setTimeout(() => { if (burstResolve === resolve) { burstResolve = null; resolve(null); } }, 4000);
+    });
+  }
+
   function connect() {
     if (stopped || fatal) return;
     const mine = ++sequence;
@@ -518,6 +711,8 @@ export function surfaceDiffusionStart({
           if (message.type === 'status') {
             stats.server = message;
             if (message.device === 'cpu' || message.supported === false) { fail('accelerated GPU required'); return; }
+          } else if (message.type === 'result' && (message.kind === 'frame' || active?.type === 'frame')) {
+            if (burstPending && message.requestId === burstPending.requestId) pendingResult = message;
           } else if (message.type === 'result') {
             if (!active || message.requestId !== active.requestId || message.bankId !== active.bankId || message.slot !== active.slot || message.modelId !== MODEL_ID) {
               if (active?.type === 'mutate') mutationSoftFailure('identifier-mismatch', { disable: true });
@@ -531,6 +726,16 @@ export function surfaceDiffusionStart({
           }
           onStatus({ ...stats, server: message });
         } catch (error) { fail(error); }
+        return;
+      }
+      if (active?.type === 'frame') {
+        // Burst frames are ephemeral and unverified by design: there is nothing
+        // to cache and nothing to key them against but the request they answer.
+        const bytes = event.data instanceof ArrayBuffer ? event.data : await event.data.arrayBuffer();
+        stats.framesIn += 1;
+        active = null; pendingResult = null;
+        const resolve = burstResolve; burstResolve = null;
+        resolve?.(bytes);
         return;
       }
       if (!active || !pendingResult) { fail('material bytes arrived without result metadata'); return; }
@@ -548,7 +753,9 @@ export function surfaceDiffusionStart({
         return;
       }
       const bank = banks.get(work.bankId) || [];
-      bank[work.slot] = new Blob([bytes], { type: 'image/jpeg' }); banks.set(work.bankId, bank);
+      const stack = bank[work.slot] || [];
+      stack[Math.max(0, Math.floor(Number(work.frame) || 0))] = new Blob([bytes], { type: 'image/jpeg' });
+      bank[work.slot] = stack; banks.set(work.bankId, bank);
       stats.framesIn += 1; stats.completed += 1; stats.lastRttMs = performance.now() - sentAt;
       stats.banksReady = completeBankCount(banks);
       stats.criticalCompleted = (banks.get(criticalBank) || []).filter(Boolean).length;
@@ -559,6 +766,12 @@ export function surfaceDiffusionStart({
           setState('ready');
           readyResolve?.(api); readyResolve = null;
         }
+      }
+      // A boil frame that lands for the bank already on screen is uploaded in
+      // place: the surface starts moving without waiting for a bank change.
+      if (work.frame > 0 && stats.activeBank === work.bankId && requestedBank == null) {
+        const epoch = bankEpoch;
+        queueBankUpload(work.bankId, 0, () => epoch === bankEpoch && stats.activeBank === work.bankId);
       }
       active = null; pendingResult = null;
       continueBankStream();
@@ -617,6 +830,11 @@ export function surfaceDiffusionStart({
 
   const api = {
     stats, ready: readyPromises.ready, allReady: readyPromises.allReady, banks, activateBank, tickMutation, retry,
+    burst({ profileId = stats.activeBank, seconds = 3 } = {}) {
+      return runBurst(profileId, seconds).catch(() => false);
+    },
+    bursting() { return burstUntil > performance.now(); },
+    clampFrames(max) { frameCeiling = Math.max(1, Math.min(5, Math.floor(Number(max) || 5))); },
     setMoving() {}, nudge() {}, resetFeedback() {},
     stop() {
       stopped = true; sequence += 1;

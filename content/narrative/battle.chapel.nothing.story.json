@@ -25,7 +25,8 @@
         "round-4",
         "outcome",
         "win",
-        "lose"
+        "lose",
+        "round-5"
       ]
     },
     {
@@ -84,7 +85,7 @@
       "id": "start"
     },
     "round-1": {
-      "type": "checkpoint",
+      "type": "battle-round",
       "lines": [
         {
           "who": "recordist",
@@ -94,15 +95,9 @@
           "id": "round-1.line.1"
         },
         {
-          "who": "recordist",
-          "text": "You know this coat. You were always going to be wearing it.",
-          "channel": "checkpoint-prompt",
-          "id": "round-1.line.2"
-        },
-        {
           "who": "direction",
           "text": "It is waiting for you to agree with it. Agreeing is the only thing it cannot do for itself.",
-          "channel": "checkpoint-prompt",
+          "channel": "before",
           "id": "round-1.line.3"
         },
         {
@@ -124,31 +119,12 @@
           "id": "round-1.line.6"
         }
       ],
-      "choices": [
-        {
-          "text": "It is a recording of a room. Nothing is in here.",
-          "harder": 1,
-          "goto": "round-2",
-          "id": "round-1.choice.1"
-        },
-        {
-          "text": "Say it: that you are him, and that this is where you were always going to end.",
-          "harder": 1.5,
-          "goto": "round-2",
-          "id": "round-1.choice.2"
-        },
-        {
-          "text": "Who did you lose. — Nobody. I have not lost anybody.",
-          "harder": 1,
-          "goto": "round-2",
-          "id": "round-1.choice.3"
-        }
-      ],
       "battle": {
         "nature": "not there",
         "threat": 0.5
       },
-      "id": "round-1"
+      "id": "round-1",
+      "goto": "round-2"
     },
     "round-2": {
       "type": "battle-round",
@@ -192,7 +168,7 @@
       "id": "round-2"
     },
     "round-3": {
-      "type": "checkpoint",
+      "type": "battle-round",
       "lines": [
         {
           "who": "recordist",
@@ -204,13 +180,13 @@
         {
           "who": "surfer",
           "text": "It listened until language was an encumbrance. It became the music. Then it wanted a body back. You are a body.",
-          "channel": "checkpoint-prompt",
+          "channel": "before",
           "id": "round-3.line.2"
         },
         {
           "who": "direction",
           "text": "The organ blower is off and the organ is sounding anyway.",
-          "channel": "checkpoint-prompt",
+          "channel": "before",
           "id": "round-3.line.3"
         },
         {
@@ -232,31 +208,12 @@
           "id": "round-3.line.6"
         }
       ],
-      "choices": [
-        {
-          "text": "That is on the file. That is not a person in a room.",
-          "harder": 1,
-          "goto": "round-4",
-          "id": "round-3.choice.1"
-        },
-        {
-          "text": "Give it what it wants and it will stop.",
-          "harder": 1.6,
-          "goto": "round-4",
-          "id": "round-3.choice.2"
-        },
-        {
-          "text": "Hold the take. Say nothing. Let it be nothing.",
-          "harder": 1,
-          "goto": "round-4",
-          "id": "round-3.choice.3"
-        }
-      ],
       "battle": {
         "nature": "not there",
         "threat": 0.8
       },
-      "id": "round-3"
+      "id": "round-3",
+      "goto": "round-4"
     },
     "round-4": {
       "type": "battle-round",
@@ -304,7 +261,7 @@
           "id": "round-4.line.7"
         }
       ],
-      "goto": "outcome",
+      "goto": "round-5",
       "battle": {
         "nature": "not there",
         "threat": 0.92
@@ -366,6 +323,49 @@
         }
       ],
       "id": "lose"
+    },
+    "round-5": {
+      "type": "battle-round",
+      "lines": [
+        {
+          "who": "surfer",
+          "text": "Last page. The source is holding the pen out to you.",
+          "channel": "before",
+          "id": "round-5.line.1",
+          "rate": 0.94
+        },
+        {
+          "who": "recordist",
+          "text": "Sign it or read it. I signed.",
+          "channel": "before",
+          "id": "round-5.line.2",
+          "rate": 0.98
+        },
+        {
+          "who": "you",
+          "text": "It is not a contract. It is a room tone with terms in it. I record rooms. I do not agree with them.",
+          "channel": "on-listen",
+          "id": "round-5.line.3"
+        },
+        {
+          "who": "you",
+          "text": "Play it its own clause. Turn the loop around. Whatever proof I leave here is the proof I choose.",
+          "channel": "on-listen",
+          "id": "round-5.line.4"
+        },
+        {
+          "who": "direction",
+          "text": "The organ swallows the last word of its own sentence. The chapel is measurably smaller than its blueprint now.",
+          "channel": "after",
+          "id": "round-5.line.5"
+        }
+      ],
+      "goto": "outcome",
+      "battle": {
+        "nature": "not there",
+        "threat": 0.98
+      },
+      "id": "round-5"
     }
   },
   "metadata": {
@@ -520,7 +520,7 @@
             },
             {
               "id": "chapel:previous",
-              "label": "PREVIOUS RECORDIST BLACKED OUT",
+              "label": "PREVIOUS RECORDIST HELD OFF-MIC",
               "kind": "conceal",
               "damage": 2,
               "recordable": false,
@@ -541,7 +541,7 @@
             },
             {
               "id": "chapel:previous",
-              "label": "PREVIOUS RECORDIST BLACKED OUT",
+              "label": "PREVIOUS RECORDIST HELD OFF-MIC",
               "kind": "conceal",
               "damage": 2,
               "recordable": false,
@@ -564,7 +564,7 @@
           "deadAirIntents": [
             {
               "id": "chapel:previous",
-              "label": "PREVIOUS RECORDIST BLACKED OUT",
+              "label": "PREVIOUS RECORDIST HELD OFF-MIC",
               "kind": "conceal",
               "damage": 2,
               "recordable": false,

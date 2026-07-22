@@ -35,7 +35,7 @@ import { drawVfdCounter, drawVfdMeter, drawMachinePanel, drawLocationIndicator, 
 import { applyVfdSettings, vfdSettings } from './render/palette.js';
 import { saveLoadAsync, saveCommit, getSave, newGame, metaCommit, getMeta } from './game/save.js';
 import { currentStorage, exportAllData, exportDiagnosticsForSupport } from './platform/storage/storageService.js';
-import { flagApply, flagTest, flagGet } from './game/flags.js';
+import { flagApply, flagTest, flagGet, flagSet } from './game/flags.js';
 // The M2 dialogue runtime (game/dialogue.js, data/prologue.js, the Usher) is
 // gone. Conversations are game/conversation.js now, and there is nobody in this
 // building to talk to.
@@ -82,7 +82,8 @@ import * as DOC from './game/document.js';
 import * as RADIO from './game/radio.js';
 import * as PB from './game/playback.js';
 import { makeCombatScene } from './game/combat.js';
-import { sourceCombatBattle } from './data/combat-definitions.js';
+import { sourceCombatBattle, trainingCombatBattle } from './data/combat-definitions.js';
+import { createCombatTutorialDirector } from './game/combat-tutorial.js';
 import { makeCalibrationScene } from './game/calibration.js';
 import { learnCombatTechnique, normalizeCombatBuild } from './game/combat-progression.js';
 import { availableBattleTools, moveCombatGear } from './game/combat-loadout.js';
@@ -102,6 +103,9 @@ import { makeBagScene } from './game/bag.js';
 import { makeColdOpenScene, makeWorldTitleScene } from './game/coldopen.js';
 import { makeOpeningCreditsScene } from './game/opening-credits.js';
 import { makeLensCalibrationScene } from './game/lens-calibration.js';
+import { makeEulaScene } from './game/eula-scene.js';
+import { eulaAccepted, eulaVersion } from './game/eula.js';
+import { EULA_TEXT } from './game/eula-text.js';
 import { makeWarningScene } from './game/warning.js';
 import { createPersonalizedInterference } from './game/personalized-interference.js';
 import { computeFearPressure } from './game/fear-pressure.js';
@@ -3483,10 +3487,11 @@ function teleport(){
   pushEvent('// teleport.');
 }
 
-function currentControlMode(){return RENDERER==='3d'?normalizeControlMode(getSave()?.settings?.controlMode):'classic';}
-function independentControls(){return currentControlMode()!=='classic';}
+function currentControlMode(){return 'direct';}
+// One scheme now: the body always walks, the camera is always mouse/right-stick.
+function independentControls(){return RENDERER==='3d';}
 function combinedIndependentMotionAxes(){
-  const keyboard=keyboardMotionAxes(keysDown,currentControlMode()),controller=CONTROLLER.controllerMotionAxes();
+  const keyboard=keyboardMotionAxes(keysDown),controller=CONTROLLER.controllerMotionAxes();
   return{
     moveX:clamp(keyboard.moveX+controller.moveX,-1,1),
     moveY:clamp(keyboard.moveY+controller.moveY,-1,1),
@@ -6021,6 +6026,8 @@ function beginTaken(){
   CR.fx.flash(110, `hsla(${hue},95%,74%,0.94)`);   // a colour that is not in the building
   CR.fx.shake(3.2, 700); CR.fx.glitch(1, 520);
   applyLensPreset('rupture');
+  // It has you. For as long as it does, the room is its to describe.
+  possess('rupture', 4);
   scenes.push(makeTakenFlashScene(wakeUp));
 }
 
@@ -7732,6 +7739,7 @@ function maybeJumpscare(){
   const d=window.__diffusion;
   if(d){
     applyLensPreset('rupture');
+    possess('rupture', 2);
     setTimeout(()=>{ if(storyMode) applyLensPreset('explore'); }, 700);
   }
 }
@@ -7761,19 +7769,80 @@ function playFarSound(round){
   STORY.startTapeHiss({ gain: 0.20, fade: 0.6 });                    // is it a recording?
 }
 
-function openBattle(battle, { onWin, onLose, onAbort, source=null }={}){
+// The hit layer: synthesized impact sounds on top of the tool cues, so damage
+// is heard as damage — a zap that lands on the signal, a body thump when it
+// lands on you, a two-note confirmation for a perfect response, and a riser
+// when a movement breaks.
+function playCombatImpact({dealt=0,received=0,perfect=false,transition=false}={}){
+  if(!actx||!master)return;
+  const t=actx.currentTime;
+  const out=master;
+  const env=(g,peak,at,dec)=>{g.gain.setValueAtTime(0,t+at);g.gain.linearRampToValueAtTime(peak,t+at+0.006);g.gain.exponentialRampToValueAtTime(0.0004,t+at+dec);};
+  const noise=(seconds)=>{
+    const buf=actx.createBuffer(1,Math.max(1,Math.floor(actx.sampleRate*seconds)),actx.sampleRate);
+    const data=buf.getChannelData(0);
+    for(let i=0;i<data.length;i++)data[i]=Math.random()*2-1;
+    const src=actx.createBufferSource();src.buffer=buf;return src;
+  };
+  if(perfect){
+    [880,1318.5].forEach((freq,i)=>{
+      const o=actx.createOscillator();o.type='square';o.frequency.setValueAtTime(freq,t+i*0.07);
+      const g=actx.createGain();env(g,0.06,i*0.07,0.18);
+      o.connect(g);g.connect(out);o.start(t+i*0.07);o.stop(t+i*0.07+0.24);
+    });
+  }
+  if(dealt>0){
+    const n=noise(0.12);
+    const bp=actx.createBiquadFilter();bp.type='bandpass';bp.Q.value=1.4;
+    bp.frequency.setValueAtTime(2400,t);bp.frequency.exponentialRampToValueAtTime(500,t+0.12);
+    const g=actx.createGain();env(g,0.15+Math.min(0.12,dealt*0.03),0,0.12);
+    n.connect(bp);bp.connect(g);g.connect(out);n.start(t);n.stop(t+0.14);
+    const o=actx.createOscillator();o.type='square';
+    o.frequency.setValueAtTime(300,t);o.frequency.exponentialRampToValueAtTime(70,t+0.12);
+    const og=actx.createGain();env(og,0.09,0,0.11);
+    o.connect(og);og.connect(out);o.start(t);o.stop(t+0.15);
+  }
+  if(received>0){
+    const o=actx.createOscillator();o.type='sine';
+    o.frequency.setValueAtTime(96,t);o.frequency.exponentialRampToValueAtTime(34,t+0.2);
+    const g=actx.createGain();env(g,0.26+Math.min(0.18,received*0.05),0,0.22);
+    o.connect(g);g.connect(out);o.start(t);o.stop(t+0.28);
+    const n=noise(0.07);
+    const lp=actx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=380;
+    const ng=actx.createGain();env(ng,0.11,0,0.07);
+    n.connect(lp);lp.connect(ng);ng.connect(out);n.start(t);n.stop(t+0.09);
+  }
+  if(transition){
+    const o=actx.createOscillator();o.type='sawtooth';
+    o.frequency.setValueAtTime(140,t);o.frequency.exponentialRampToValueAtTime(560,t+0.4);
+    const g=actx.createGain();env(g,0.05,0,0.44);
+    o.connect(g);g.connect(out);o.start(t);o.stop(t+0.48);
+  }
+}
+
+function openBattle(battle, { onWin, onLose, onAbort, source=null, director=null, bench=false }={}){
   ensureCtx();
   const battleToolList=availableBattleTools(getSave().bagLoadout,bagEquipment());
   const battleTools=new Set(battleToolList);
+  const playTool=(tool)=>{
+    const cue=tool==='torch'?CUES.CUE.light:tool==='radio'?CUES.CUE.slides:CUES.CUE.recorder;
+    const rate=tool==='fork'?1.45:tool==='rig'?0.72:tool==='coffee'?0.58:1;
+    CUES.playCue(cue,{gain:tool==='radio'?0.45:0.34,rate});
+  };
   return scenes.push(makeCombatScene({
     battle,
     difficulty: currentDifficulty().combat,
     loadout: {
-      injuries: REC.recState().injuries,
-      battery: REC.batteryLevel(),
+      // The bench drill runs on house gear: torch and recorder patched in,
+      // full battery, no injuries — the real bag stays untouched.
+      injuries: bench?0:REC.recState().injuries,
+      battery: bench?1:REC.batteryLevel(),
       torchDrainScale: currentDifficulty().torch.drainScale,
-      techniques: normalizeCombatBuild(getSave().combatBuild, getSave().encounters?.cleared).techniques,
-      tools: {
+      techniques: bench?[]:normalizeCombatBuild(getSave().combatBuild, getSave().encounters?.cleared).techniques,
+      tools: bench?{
+        torch:true, recorder:true, fork:false, rig:false, radio:false, coffee:false,
+        order:['torch','recorder'],
+      }:{
         torch: battleTools.has('torch'),
         recorder: battleTools.has('recorder'),
         fork: battleTools.has('fork'),
@@ -7783,17 +7852,20 @@ function openBattle(battle, { onWin, onLose, onAbort, source=null }={}){
         order:battleToolList,
       },
     },
-    resources: {
+    resources: bench?{ battery:1, spendBattery:()=>{}, consumeItem:()=>{}, playTool, playImpact:(hit)=>{playCombatImpact(hit);pulseAgitation(hit?.received>0?900:600);} }:{
       battery: REC.batteryLevel(),
       spendBattery: (amount)=>REC.addBattery(-Math.max(0,Number(amount)||0)),
       consumeItem:(id)=>id==='coffee'&&consumeBattleCoffee(),
-      playTool:(tool)=>{
-        const cue=tool==='torch'?CUES.CUE.light:tool==='radio'?CUES.CUE.slides:CUES.CUE.recorder;
-        const rate=tool==='fork'?1.45:tool==='rig'?0.72:tool==='coffee'?0.58:1;
-        CUES.playCue(cue,{gain:tool==='radio'?0.45:0.34,rate});
+      playTool,
+      playImpact:(hit)=>{
+        playCombatImpact(hit);
+        // A landed hit shoves the walls. A phase break possesses them.
+        pulseAgitation(hit?.received>0?900:600);
+        if(hit?.transition)possess('battle',3);
       },
     },
     source,
+    director,
     musicSession:createBattleMusicSession({
       combatId:battle.combat?.id||battle.id,
       runId:getSave().run?.id||'',
@@ -7834,7 +7906,7 @@ function openEncounterBattle(id,battle,{onWin,onLose}={}){
   openBattle(battle,{
     onWin:(metrics={})=>{
       emitProgress(EVENT_TYPES.BATTLE_FINISHED, {
-        id, result:'win', attempts:Math.max(1,Number(metrics.attempts)||1), firstPass:Number(metrics.missedCounters??metrics.failedSubmissions??0)===0,
+        id, result:'win', attempts:Math.max(1,Number(metrics.attempts)||1), firstPass:Number(metrics.missedCounters??0)===0,
         turns:Number(metrics.turns)||0,damageTaken:Number(metrics.damageTaken)||0,perfectCounters:Number(metrics.perfectCounters)||0,
         torchSpent:Number(metrics.torchSpent)||0,toolsUsed:metrics.toolsUsed||{},source:metrics.source||null,
       }, 'main.openEncounterBattle');
@@ -7868,6 +7940,18 @@ function openGodBattle(battle){
     onWin:()=>{ godBattleOpen=false; },
     onLose:()=>{ godBattleOpen=false; },
     onAbort:()=>{ godBattleOpen=false; },
+  });
+}
+
+// The bench drill: a scripted training fight that runs once before the first
+// real encounter. Any exit — win, lose, or walking away — marks it done; one
+// pass through the drill is the requirement, not victory.
+function openTrainingBattle({withDirector=true}={}){
+  const done=()=>flagSet('combat.trained');
+  return openBattle(trainingCombatBattle(),{
+    bench:true,
+    director:withDirector?createCombatTutorialDirector():null,
+    onWin:done, onLose:done, onAbort:done,
   });
 }
 
@@ -8026,6 +8110,9 @@ function startEscape(){
     deadlineMs:seconds==null?null:performance.now()+seconds*1000 };
   OBJ.setWaypoint(door.x, door.y, 'grey door');
   applyLensPreset('rupture');
+  // The inversion: the building stops holding its own shape, and the lens is
+  // what says so.
+  possess('rupture', 5);
   SPEECH.say({ who:'direction', text:'The floor is going. Get to the door you came in through.' });
 }
 // Called each frame from the world tick. Advances the escape as you reach each
@@ -8089,6 +8176,9 @@ function maybeBattle(){
   if(!factory||REC.recState().takes.length!==1)return;
   if(ENCOUNTERS.encounterCleared('recording-2'))return;
   if(REC.takeProgress() < 0.18) return;
+  // First contact with signal combat runs the bench drill; this trigger fires
+  // again on a later frame and opens the real encounter.
+  if(!flagTest('combat.trained')){ openTrainingBattle(); return; }
   const named = flagGet('confession.kind')==='name' && flagGet('confession.value')==='Sarah';
   openEncounterBattle('recording-2',factory(named), {
     onWin: ()=>{ REC.recState().takeElapsed = ROOM_TONE.takeSeconds; },  // you held it
@@ -8629,6 +8719,10 @@ function openSettings({ inGame=false, initialTab=null }={}){
       performanceSnapshot: () => perfMeter.snapshot(),
       openWebsite: () => openExternalUrl(APP_LINKS.website),
       reportProblem: () => openExternalUrl(APP_LINKS.reportProblem),
+      // Accepted once at boot, readable forever after. A licence you cannot
+      // re-read is a licence you were shown, not one you were given.
+      openLicence: () => scenes.push(makeEulaScene({ reviewOnly: true })),
+      licenceVersion: () => eulaVersion(EULA_TEXT),
       copyDiagnosticReport,
       exportSaveBackup,
       restartAudioEngine: restartDesktopAudio,
@@ -9183,6 +9277,8 @@ function godTabs(){
       {id:'credits',label:'RELEASE CREDITS',value:'[OPEN]',closeMenu:true,activate:openCredits},
       section('Encounters'),
       {id:'battle-abort',label:'ABORT ACTIVE BATTLE',value:()=>activeBattleId||godBattleOpen?'[ABORT]':'NONE',danger:()=>!!(activeBattleId||godBattleOpen),closeMenu:true,activate:godAbortBattle},
+      {id:'possess-rupture',label:'POSSESSION BURST',value:'[FIRE]',closeMenu:true,activate:()=>possess('rupture',4)},
+      {id:'battle-training',label:'COMBAT TRAINING',value:'[OPEN]',closeMenu:true,activate:()=>openTrainingBattle()},
       battle('battle-natatorium','NATATORIUM BATTLE',natatoriumBattle),
       battle('battle-practice','PRACTICE BATTLE',practiceBattle),
       battle('battle-hall','CONCERT HALL BATTLE',hallBattle),
@@ -10064,6 +10160,10 @@ function installProbe(){
       chapel:()=>chapelBoss({kind:'nothing'}),
     }[id||'natatorium'];
       if(!F) return false; ensureCtx(); openBattle(F(!!named), { onWin:()=>{}, onLose:()=>{} }); return true; },
+    battleTraining:(bare)=>{ ensureCtx(); openTrainingBattle({withDirector:!bare}); return true; },
+    // Lens probes: drive a possession by hand and read what the boil is doing.
+    possess:(profileId,seconds)=>{ possess(profileId||'rupture',Number(seconds)||3); return true; },
+    boil:()=>({ ...(R3.r3dSurfaceDreamStats?.()||{}), lens:window.__diffusion?.stats||null }),
     battleAbort:()=>godAbortBattle(),
     playbackDialog:(room)=>{ maybePlaybackDialog(room); return scenes.top()?.id||null; },
     battleState:()=>{ const v=scenes.top()?.battleView?.(); return v||null; },
@@ -10236,7 +10336,7 @@ async function bootScenes(){
     if(!await lens.activateBank?.(bank,{transitionMs:0}))throw new Error('startup materials could not be activated');
     return lens;
   };
-  scenes.push(makeLensCalibrationScene({
+  const pushCalibration=()=>scenes.push(makeLensCalibrationScene({
     start:calibrate,
     retry:async()=>{
       const lens=window.__diffusion;
@@ -10246,6 +10346,20 @@ async function bootScenes(){
     onReady:afterCalibration,
     onQuit:requestQuitDesktop,
   }));
+  // The bundled model licence has to be accepted before the weights are asked
+  // to do anything. Calibration is that moment, so the gate stands in front of
+  // it — and only once per licence version per installation.
+  if(!eulaAccepted(getMeta(),EULA_TEXT)){
+    scenes.push(makeEulaScene({
+      onAccept:(version)=>{
+        metaCommit({eulaAccepted:version,eulaAcceptedAt:Date.now()});
+        pushCalibration();
+      },
+      onDecline:requestQuitDesktop,
+    }));
+    return;
+  }
+  pushCalibration();
 }
 
 
@@ -10317,10 +10431,25 @@ async function startLens(qp){
       return bootstrapNativeLens({restart:true});
     }:null,
     sourceUrl:assetUrl('assets/surfaces/surface-albedo.jpg'),
+    // The authored relief of every material, so the depth ControlNet conditions
+    // generated tiles on the geometry the PBR pass is already lighting.
+    heightUrl:assetUrl('assets/surfaces/surface-height.png'),
     profiles:profileBankRecipes(),
-    beginBank:(bankId)=>R3.r3dBeginSurfaceDreamBank?.(bankId),
-    applySurface:(slot,image,mix)=>R3.r3dSetSurfaceDream(slot,image,mix),
+    beginBank:(bankId,frames)=>R3.r3dBeginSurfaceDreamBank?.(bankId,frames),
+    applySurface:(slot,frame,image,mix)=>R3.r3dSetSurfaceDream(slot,frame,image,mix),
     commitSurfaces:(mix,options)=>R3.r3dCommitSurfaceDream(mix,options),
+    // Possession bursts: the rendered room and the exact depth the engine
+    // marched for it, welded into one message.
+    captureBurstFrame:async(size)=>{
+      const scene=R3.r3dCaptureSceneCanvas?.(size);
+      if(!scene)return null;
+      const depth=R3.r3dDepthCanvas?.(size);
+      const encode=(canvas)=>new Promise((resolve)=>canvas.toBlob(
+        (blob)=>resolve(blob?blob.arrayBuffer():null),'image/jpeg',0.86));
+      const [frame,depthBytes]=await Promise.all([encode(scene),depth?encode(depth):null]);
+      return frame?{frame,depth:depthBytes||null}:null;
+    },
+    applyBurst:(image)=>{ if(image)R3.r3dSetBurstFrame?.(image); else R3.r3dEndBurst?.(); },
     onStatus:(s)=>{
       if(s.server?.type==='status')console.info('diffusion server:',JSON.stringify(s.server));
       if(s.state==='error')console.error('diffusion calibration:',s.error);
@@ -10395,6 +10524,14 @@ function render3d(){
     moveIntervalMs:currentMoveIntervalMs(),
     water:usingSpecialSpace()?{active:false}:currentNatatoriumWaterRenderState({audio:waterAudio}),
   });
+  // How hard the world boils: the dread the player is under, the coffee onset,
+  // and whatever the last impact asked for. One number, three sources, and it
+  // drives boil rate, generated structure, and phosphor excitation together.
+  const agitationPulse=Math.max(0,(agitationPulseUntil-performance.now())/700);
+  R3.r3dSetAgitation?.(clamp(
+    presentedFearPressure()*0.8 + (window.__lensOnset||0)*0.4 + agitationPulse*0.5,
+    0,1,
+  ));
   window.__diffusion?.tickMutation?.({
     now:performance.now(),
     allowed:!paused && !scenes.blocksWorld() && document.visibilityState!=='hidden',
@@ -10402,6 +10539,18 @@ function render3d(){
     performance:perfMeter.snapshot(),
     transitioning:!!R3.r3dSurfaceDreamStats?.().transitioning,
   });
+}
+
+// A hit, a scare, a phase break: a short spike of boil on top of standing dread.
+let agitationPulseUntil=0;
+function pulseAgitation(ms=700){
+  agitationPulseUntil=Math.max(agitationPulseUntil,performance.now()+Math.max(0,ms));
+}
+// Short full-frame possession. Scenes and impacts ask for it by name; without a
+// live sidecar or a profile that authors one, this is a no-op.
+function possess(profileId,seconds=3){
+  pulseAgitation(seconds*1000);
+  window.__diffusion?.burst?.({profileId,seconds});
 }
 
 // ── Loading ───────────────────────────────────────────────────────────────────
@@ -10551,25 +10700,39 @@ function controllerEvent(action, repeat=false){
 function controllerPress(action,repeat=false){ if(CONTROLLER_KEY[action]) onKey(controllerEvent(action,repeat)); }
 function controllerRelease(action){ if(CONTROLLER_KEY[action]) onKeyUp(controllerEvent(action,false)); }
 function movementKey(e){ return movementCodeForEvent(e); }
-function movementRole(code){return keyboardCodeRole(code,currentControlMode());}
+function movementRole(code){return keyboardCodeRole(code);}
 function forwardHeld(){ return keysDown.has('ArrowUp') || keysDown.has('KeyW'); }
 function leftHeld(){ return keysDown.has('ArrowLeft') || keysDown.has('KeyA'); }
 function rightHeld(){ return keysDown.has('ArrowRight') || keysDown.has('KeyD'); }
 function backHeld(){ return keysDown.has('ArrowDown') || keysDown.has('KeyS'); }
-function turnHeldDir(){
-  if(independentControls())return 0;
-  const right=rightHeld();
-  const left=leftHeld();
-  if(right&&!left) return 1;
-  if(left&&!right) return -1;
-  return 0;
-}
+// A/D and ←/→ strafe now; nothing on the keyboard turns the body.
+function turnHeldDir(){return 0;}
 function tickIndependentLook(dt){
-  if(RENDERER!=='3d'||!independentControls()||paused||scenes.blocksInput())return;
-  const keyboard=keyboardLookAxes(keysDown,currentControlMode()),controller=CONTROLLER.controllerMotionAxes();
-  const turn=clamp(keyboard.turnX+controller.turnX,-1,1),look=clamp(keyboard.lookY+controller.lookY,-1,1);
-  if(Math.abs(turn)<.01&&Math.abs(look)<.01)return;
-  R3.r3dLook(turn*dt*2.2,look*dt*1.55);
+  if(RENDERER!=='3d'||paused||scenes.blocksInput()){motionInput.endFrame?.();return;}
+  const controller=CONTROLLER.controllerMotionAxes();
+  const turn=clamp(controller.turnX,-1,1),look=clamp(controller.lookY,-1,1);
+  if(Math.abs(turn)>=.01||Math.abs(look)>=.01) R3.r3dLook(turn*dt*2.2,look*dt*1.55);
+  // The mouse is a displacement, not a rate: it is already the distance the
+  // hand moved this frame, so it must not be scaled by dt as well.
+  const dx=Number(motionInput.pointerDx)||0, dy=Number(motionInput.pointerDy)||0;
+  if(dx||dy){
+    const sens=mouseLookSensitivity();
+    R3.r3dLook(dx*sens*0.0022, -dy*sens*0.0022*(mouseInvertY()?-1:1));
+  }
+  motionInput.pointerDx=0; motionInput.pointerDy=0;
+}
+function mouseLookSensitivity(){
+  const raw=Number(getSave()?.settings?.mouseSensitivity);
+  return Number.isFinite(raw)?Math.max(.2,Math.min(3,raw)):1;
+}
+function mouseInvertY(){return !!getSave()?.settings?.mouseInvertY;}
+// Clicking the world takes the pointer; Escape gives it back (and the pause
+// menu still opens, because the browser releases the lock on the same key).
+function ensurePointerLock(){
+  if(RENDERER!=='3d'||!storyMode||!inRogue)return;
+  if(paused||scenes.blocksInput())return;
+  if(document.pointerLockElement)return;
+  try{ MAP_EL?.requestPointerLock?.(); }catch(_){}
 }
 function performQuarterTurn(dir, now=performance.now()){
   if(!dir || RENDERER!=='3d') return false;
@@ -10844,7 +11007,12 @@ async function boot(){
     BINDINGS.setActiveInputDevice('keyboard');
     void recoverInteractionAudio('pointerdown');
     ensureInteractionFocus();
+    ensurePointerLock();
   }, {passive:true});
+  // The manager only accumulates mouse deltas while the pointer is locked, so
+  // this is the whole of mouse look: wire the events and let the frame drain it.
+  document.addEventListener('pointerlockchange', ()=>motionInput.pointerLockChanged());
+  window.addEventListener('mousemove', (e)=>motionInput.mouseMove(e), {passive:true});
   window.addEventListener('pointerdown', onScenePointer, {capture:true,passive:false});
   window.addEventListener('pointermove', onScenePointer, {capture:true,passive:false});
   window.addEventListener('pointerup', onScenePointer, {capture:true,passive:false});

@@ -108,6 +108,31 @@ const ACTION_SNR = Object.freeze({
   [COMBAT_ACTION.INVERT]: SNR_STATE.SILENCE,
 });
 
+// The stance triangle, restated as data for the UI. Every number here must
+// agree with outgoingDamage / defensivePrevention / captureDamage and the
+// fragile-signal penalty in applyEnemyIntent.
+export const SNR_TRIANGLE = Object.freeze({
+  [SNR_STATE.SIGNAL]: Object.freeze({
+    dmgMod: 0, guardMod: 1, captureMod: 0, fragile: true,
+    blurb: '+1 GUARD · CLEAN CAPTURE · +1 DMG WHEN HIT',
+  }),
+  [SNR_STATE.NOISE]: Object.freeze({
+    dmgMod: 1, guardMod: -1, captureMod: -1, fragile: false,
+    blurb: '+1 DMG DEALT · -1 GUARD · -1 CAPTURE',
+  }),
+  [SNR_STATE.SILENCE]: Object.freeze({
+    dmgMod: -1, guardMod: 1, captureMod: 0, fragile: false,
+    blurb: '+1 GUARD · -1 DMG DEALT',
+  }),
+});
+
+export function actionCounterKinds(actionId) {
+  const kinds = [];
+  if (ACTION_COUNTER[actionId]) kinds.push(ACTION_COUNTER[actionId]);
+  if (actionId === COMBAT_ACTION.WHITEOUT) kinds.push(INTENT_KIND.SILENCE);
+  return kinds;
+}
+
 const SOURCE_READING = Object.freeze({
   [SOURCE_CHANNEL.RESCUE]: 'BODY BORROWED RETURN',
   [SOURCE_CHANNEL.CONTAIN]: 'RETURN STILL INSIDE',
@@ -534,25 +559,115 @@ function actionAvailability(state, actionId) {
 export function availableCombatActions(state) {
   const intent = currentCombatIntent(state);
   const actions = [
-    { id: COMBAT_ACTION.HOLD, tool: COMBAT_TOOL.SELF, label: 'HOLD', detail: `PREVENT ${defensivePrevention({ ...state, snr: SNR_STATE.SILENCE }, state.difficulty.holdPrevention)} · ENTER SILENCE` },
-    { id: COMBAT_ACTION.EXPOSE, tool: COMBAT_TOOL.TORCH, label: 'EXPOSE', detail: `${outgoingDamage({ ...state, snr: SNR_STATE.NOISE }, 2)} COHERENCE · ENTER NOISE` },
-    { id: COMBAT_ACTION.MONITOR, tool: COMBAT_TOOL.RECORDER, label: 'MONITOR', detail: 'CAPTURE BROADCAST · ENTER SIGNAL' },
-    { id: COMBAT_ACTION.PLAYBACK, tool: COMBAT_TOOL.RECORDER, label: 'PLAYBACK', detail: state.take ? `${state.take.damage}+ COHERENCE · CONSUME ${state.take.label}` : 'NO TAKE LOADED' },
-    { id: COMBAT_ACTION.INVERT, tool: COMBAT_TOOL.RIG, label: 'INVERT', detail: 'CONSUME TAKE · RETURN LOOP · ENTER SILENCE' },
-    ...(hasTechnique(state, TECHNIQUE.WHITEOUT) ? [{ id: COMBAT_ACTION.WHITEOUT, tool: COMBAT_TOOL.TORCH, label: 'WHITEOUT', detail: '5 COHERENCE · ONCE / ENCOUNTER' }] : []),
-    ...(state.tools.fork ? [{ id: COMBAT_ACTION.TUNE, tool: COMBAT_TOOL.FORK, label: 'TUNE', detail: 'FREE · REVEAL TWO INTENTS · ENTER SIGNAL' }] : []),
-    ...(state.tools.radio ? [{ id: COMBAT_ACTION.RADIO_DECOY, tool: COMBAT_TOOL.RADIO, label: 'THROW VOICE', detail: 'PREVENT 2 · BURN FREQUENCY · ENTER NOISE' }] : []),
-    ...(state.tools.coffee ? [{ id: COMBAT_ACTION.STEADY_HANDS, tool: COMBAT_TOOL.COFFEE, label: 'STEADY HANDS', detail: 'RESTORE 3 COMPOSURE · CONSUME · ENTER SIGNAL' }] : []),
-    ...(state.tempo ? [{ id: COMBAT_ACTION.END_TEMPO, tool: COMBAT_TOOL.SELF, label: 'CLOSE CHANNEL', detail: 'END BONUS ACTION' }] : []),
+    {
+      id: COMBAT_ACTION.HOLD, tool: COMBAT_TOOL.SELF, label: 'HOLD',
+      detail: `PREVENT ${defensivePrevention({ ...state, snr: SNR_STATE.SILENCE }, state.difficulty.holdPrevention)} · ENTER SILENCE`,
+      prevents: defensivePrevention({ ...state, snr: SNR_STATE.SILENCE }, state.difficulty.holdPrevention),
+    },
+    {
+      id: COMBAT_ACTION.EXPOSE, tool: COMBAT_TOOL.TORCH, label: 'EXPOSE',
+      detail: `${outgoingDamage({ ...state, snr: SNR_STATE.NOISE }, 2)} COHERENCE · ENTER NOISE`,
+      damage: outgoingDamage({ ...state, snr: SNR_STATE.NOISE }, 2),
+    },
+    {
+      id: COMBAT_ACTION.MONITOR, tool: COMBAT_TOOL.RECORDER, label: 'MONITOR',
+      detail: 'CAPTURE BROADCAST · ENTER SIGNAL',
+      prevents: defensivePrevention({ ...state, snr: SNR_STATE.SIGNAL }, 1),
+      captures: true,
+    },
+    {
+      id: COMBAT_ACTION.PLAYBACK, tool: COMBAT_TOOL.RECORDER, label: 'PLAYBACK',
+      detail: state.take ? `${state.take.damage}+ COHERENCE · CONSUME ${state.take.label}` : 'NO TAKE LOADED',
+      damage: state.take ? outgoingDamage({ ...state, snr: SNR_STATE.NOISE }, integer(state.take.damage, 0) + state.exposedBonus) : 0,
+      consumesTake: true,
+    },
+    {
+      id: COMBAT_ACTION.INVERT, tool: COMBAT_TOOL.RIG, label: 'INVERT',
+      detail: 'CONSUME TAKE · RETURN LOOP · ENTER SILENCE',
+      damage: intent?.invertible ? outgoingDamage({ ...state, snr: SNR_STATE.SILENCE }, integer(intent?.damage, 0)) : 0,
+      consumesTake: true,
+    },
+    ...(hasTechnique(state, TECHNIQUE.WHITEOUT) ? [{
+      id: COMBAT_ACTION.WHITEOUT, tool: COMBAT_TOOL.TORCH, label: 'WHITEOUT',
+      detail: '5 COHERENCE · ONCE / ENCOUNTER',
+      damage: outgoingDamage({ ...state, snr: SNR_STATE.NOISE }, 4),
+      once: true,
+    }] : []),
+    ...(state.tools.fork ? [{
+      id: COMBAT_ACTION.TUNE, tool: COMBAT_TOOL.FORK, label: 'TUNE',
+      detail: 'FREE · REVEAL TWO INTENTS · ENTER SIGNAL',
+      reveals: 2, free: true,
+    }] : []),
+    ...(state.tools.radio ? [{
+      id: COMBAT_ACTION.RADIO_DECOY, tool: COMBAT_TOOL.RADIO, label: 'THROW VOICE',
+      detail: 'PREVENT 2 · BURN FREQUENCY · ENTER NOISE',
+      prevents: 2, once: true,
+    }] : []),
+    ...(state.tools.coffee ? [{
+      id: COMBAT_ACTION.STEADY_HANDS, tool: COMBAT_TOOL.COFFEE, label: 'STEADY HANDS',
+      detail: 'RESTORE 3 COMPOSURE · CONSUME · ENTER SIGNAL',
+      heals: 3, once: true,
+    }] : []),
+    ...(state.tempo ? [{
+      id: COMBAT_ACTION.END_TEMPO, tool: COMBAT_TOOL.SELF, label: 'CLOSE CHANNEL',
+      detail: 'END BONUS ACTION',
+      free: true,
+    }] : []),
   ];
   return actions.map((action) => {
     const availability = actionAvailability(state, action.id);
+    const countersKinds = actionCounterKinds(action.id);
     return {
+      damage: 0,
+      prevents: 0,
+      heals: 0,
       ...action,
       ...availability,
-      perfect: ACTION_COUNTER[action.id] === intent?.kind || (action.id === COMBAT_ACTION.WHITEOUT && intent?.kind === INTENT_KIND.SILENCE),
+      countersKinds,
+      stanceShift: ACTION_SNR[action.id] || null,
+      perfect: countersKinds.includes(intent?.kind),
     };
   });
+}
+
+// One-line mechanical readouts, assembled from the same structured fields the
+// reducer runs on so the UI copy can never drift from the rules.
+export function combatMoveSubtext(state, move) {
+  if (!move) return { short: '', long: '' };
+  const bits = [];
+  if (move.damage) bits.push(`${move.damage} DMG`);
+  if (move.prevents) bits.push(`GUARD ${move.prevents}`);
+  if (move.heals) bits.push(`+${move.heals} COMPOSURE`);
+  if (move.captures) bits.push('CAPTURE TAKE');
+  if (move.consumesTake) bits.push('SPEND TAKE');
+  if (move.reveals) bits.push(`SEE ${move.reveals} AHEAD`);
+  if (move.free) bits.push('FREE');
+  if (move.once) bits.push('ONCE');
+  if (move.stanceShift) bits.push(`→${String(move.stanceShift).toUpperCase()}`);
+  if (move.countersKinds?.length) bits.push(`CTR ${move.countersKinds.map((kind) => kind.toUpperCase()).join('/')}`);
+  const short = bits.join(' · ');
+  const sentences = [];
+  if (move.damage) sentences.push(`${move.damage} coherence damage`);
+  if (move.prevents) sentences.push(`guards ${move.prevents} incoming`);
+  if (move.heals) sentences.push(`restores ${move.heals} composure`);
+  if (move.captures) sentences.push('captures a recordable broadcast as a take');
+  if (move.consumesTake) sentences.push('spends the loaded take');
+  if (move.reveals) sentences.push(`reveals the next ${move.reveals} intents`);
+  if (move.free) sentences.push('does not spend the beat');
+  if (move.once) sentences.push('once per encounter');
+  if (move.stanceShift) sentences.push(`shifts stance to ${String(move.stanceShift).toUpperCase()}`);
+  if (move.countersKinds?.length) {
+    sentences.push(`counters ${move.countersKinds.map((kind) => kind.toUpperCase()).join('/')} — hit negated, TEMPO opens`);
+  }
+  const long = `${move.label} — ${sentences.join(' · ') || move.detail || ''}`;
+  return { short, long };
+}
+
+export function counterMovesForIntent(state, intent) {
+  if (!intent) return [];
+  return availableCombatActions(state).filter((move) => (
+    move.countersKinds.includes(intent.kind) && move.enabled
+  ));
 }
 
 const TOOL_LABEL = Object.freeze({

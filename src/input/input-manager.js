@@ -20,10 +20,17 @@ export const ACTION_CODES = Object.freeze({
   quiet: ['ShiftLeft', 'ShiftRight'],
 });
 
-export const CONTROL_MODES = Object.freeze(['classic', 'independent-wasd', 'independent-arrows']);
+// One scheme, not three. The hands move the body and the eyes move the camera:
+// WASD *and* the arrows both walk (and strafe), the mouse looks, the left stick
+// walks, the right stick looks. Nothing turns the body but looking.
+//
+// The three old modes (classic tank turning, WASD-move/arrows-look, and its
+// mirror) each taught a different contract for the same four keys, and a horror
+// game cannot afford the player thinking about which one they are in.
+export const CONTROL_MODES = Object.freeze(['direct']);
 
-export function normalizeControlMode(value) {
-  return CONTROL_MODES.includes(value) ? value : 'classic';
+export function normalizeControlMode() {
+  return 'direct';
 }
 
 const LETTER_CODE = /^[a-z]$/i;
@@ -291,37 +298,24 @@ function axesForCodes(held, { up, down, left, right }) {
   };
 }
 
-export function keyboardMotionAxes(held = new Set(), mode = 'classic') {
-  const normalized = normalizeControlMode(mode);
-  if (normalized === 'independent-arrows') {
-    return axesForCodes(held, { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' });
-  }
-  if (normalized === 'independent-wasd') {
-    return axesForCodes(held, { up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD' });
-  }
-  const axes = keyboardAxes(held);
-  return { moveX: 0, moveY: axes.moveY };
+// Both key sets walk. A/D and ←/→ strafe: the recordist sidesteps along a wall
+// without taking the microphone off it.
+export function keyboardMotionAxes(held = new Set()) {
+  const wasd = axesForCodes(held, { up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD' });
+  const arrows = axesForCodes(held, { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' });
+  return {
+    moveX: clampAxis(wasd.moveX + arrows.moveX),
+    moveY: clampAxis(wasd.moveY + arrows.moveY),
+  };
 }
 
-export function keyboardLookAxes(held = new Set(), mode = 'classic') {
-  const normalized = normalizeControlMode(mode);
-  if (normalized === 'independent-wasd') {
-    const axes = axesForCodes(held, { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' });
-    return { turnX: axes.moveX, lookY: axes.moveY };
-  }
-  if (normalized === 'independent-arrows') {
-    const axes = axesForCodes(held, { up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD' });
-    return { turnX: axes.moveX, lookY: axes.moveY };
-  }
-  return { turnX: keyboardAxes(held).turnX, lookY: 0 };
+// The keyboard no longer aims. Looking is the mouse and the right stick.
+export function keyboardLookAxes() {
+  return { turnX: 0, lookY: 0 };
 }
 
-export function keyboardCodeRole(code, mode = 'classic') {
-  const normalized = normalizeControlMode(mode);
-  if (!isMovementCode(code)) return null;
-  if (normalized === 'classic') return (code === 'ArrowLeft' || code === 'ArrowRight' || code === 'KeyA' || code === 'KeyD') ? 'turn' : 'move';
-  const wasd = code.startsWith('Key');
-  return (normalized === 'independent-wasd') === wasd ? 'move' : 'look';
+export function keyboardCodeRole(code) {
+  return isMovementCode(code) ? 'move' : null;
 }
 
 export function deadzone(v, dz = 0.12) {

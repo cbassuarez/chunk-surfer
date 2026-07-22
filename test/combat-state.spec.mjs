@@ -5,14 +5,18 @@ import {
   COMBAT_ACTION,
   COMBAT_TOOL,
   SNR_STATE,
+  SNR_TRIANGLE,
   SOURCE_CHANNEL,
   TECHNIQUE,
+  actionCounterKinds,
   availableCombatActions,
   availableCombatTools,
+  combatMoveSubtext,
   combatMovesForTool,
   combatIntentLookahead,
   combatPrediction,
   combatResult,
+  counterMovesForIntent,
   createCombatState,
   currentCombatIntent,
   reduceCombat,
@@ -305,4 +309,66 @@ test('a zero-battery no-rig player can clear every authored script variant throu
       assert.equal(combatResult(state)?.result, 'win', `${mode}:${id} remains winnable without torch or rig`);
     }
   }
+});
+
+test('move metadata and subtext derive from the live rules tables for every action', () => {
+  let state = createCombatState(definition(), {
+    battery: 1,
+    tools: { fork: true, radio: true, coffee: true },
+  });
+  state.composure -= 1; // so STEADY HANDS is offerable
+  const actions = availableCombatActions(state);
+  for (const action of actions) {
+    assert.deepEqual(action.countersKinds, actionCounterKinds(action.id), `${action.id} counter kinds`);
+    const { short, long } = combatMoveSubtext(state, action);
+    if (action.stanceShift) {
+      assert.ok(short.includes(`→${action.stanceShift.toUpperCase()}`), `${action.id} short subtext names its stance shift`);
+      assert.ok(long.toUpperCase().includes(action.stanceShift.toUpperCase()), `${action.id} long subtext names its stance shift`);
+    }
+    for (const kind of action.countersKinds) {
+      assert.ok(short.includes(kind.toUpperCase()), `${action.id} short subtext names ${kind}`);
+    }
+  }
+  // The intent hint is a pure reverse lookup over the same table.
+  const broadcast = currentCombatIntent(state);
+  assert.equal(broadcast.kind, 'broadcast');
+  const counters = counterMovesForIntent(state, broadcast).map((move) => move.id);
+  assert.ok(counters.includes(COMBAT_ACTION.MONITOR));
+  assert.ok(counters.includes(COMBAT_ACTION.RADIO_DECOY));
+  assert.ok(!counters.includes(COMBAT_ACTION.HOLD));
+  // The triangle widget data matches the resolution math.
+  assert.equal(SNR_TRIANGLE[SNR_STATE.NOISE].dmgMod, 1);
+  assert.equal(SNR_TRIANGLE[SNR_STATE.SILENCE].dmgMod, -1);
+  assert.equal(SNR_TRIANGLE[SNR_STATE.SIGNAL].fragile, true);
+  const inNoise = reduceCombat(state, { type: COMBAT_ACTION.EXPOSE });
+  assert.equal(inNoise.last.dealt, 2 + SNR_TRIANGLE[SNR_STATE.NOISE].dmgMod);
+});
+
+test('the training profile validates on every difficulty variant and its drill script holds', () => {
+  const training = definition('training');
+  assert.deepEqual(validateCombatDefinition(training), []);
+  for (const difficulty of Object.values(COMBAT_RULES)) {
+    assert.doesNotThrow(() => createCombatState(training, { difficulty }));
+  }
+  // The tutorial director's lesson order depends on this exact standard script.
+  const kinds = training.movements[0].intents.map((intent) => intent.kind);
+  assert.deepEqual(kinds, ['broadcast', 'broadcast', 'conceal', 'overload']);
+  // Walk the scripted drill: hold → monitor (perfect) → playback in tempo →
+  // expose (perfect) → hold in tempo.
+  let state = createCombatState(training, { tools: { torch: true, recorder: true } });
+  state = reduceCombat(state, { type: COMBAT_ACTION.HOLD });
+  assert.equal(state.composure, state.maxComposure, 'hold fully guards the 1-damage tone');
+  state = reduceCombat(state, { type: COMBAT_ACTION.MONITOR });
+  assert.equal(state.last.perfect, true);
+  assert.equal(state.tempo, true);
+  assert.ok(state.take);
+  state = reduceCombat(state, { type: COMBAT_ACTION.PLAYBACK });
+  assert.equal(state.take, null);
+  state = reduceCombat(state, { type: COMBAT_ACTION.EXPOSE });
+  assert.equal(state.last.perfect, true);
+  assert.equal(state.snr, SNR_STATE.NOISE);
+  assert.equal(state.tempo, true);
+  state = reduceCombat(state, { type: COMBAT_ACTION.HOLD });
+  assert.equal(state.snr, SNR_STATE.SILENCE);
+  assert.equal(state.result, null);
 });

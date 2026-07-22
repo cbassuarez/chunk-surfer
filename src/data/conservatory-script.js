@@ -225,7 +225,11 @@ export const COLD_OPEN_DIALOGUE = {
       { who: 'guard', text: "I'd have brought spares." },
       { who: 'me', text: "Everyone should bring spares... nobody really ever does though." },
     ],
-    goto: 'torch',
+    choices: [
+      { text: "and if it dies in there", goto: "torch.cells.dies" },
+      { text: "spares", goto: "torch.cells.spares" },
+      { text: "that will do", goto: "torch" },
+    ],
   },
   'torch.dark': {
     speaker: 'SERVICE BOOTH · 21:38',
@@ -249,7 +253,11 @@ export const COLD_OPEN_DIALOGUE = {
       { who: 'guard', text: 'Van was gone come Friday though. Who knows.' },
       { who: 'you', text: 'Who knows indeed... but why are you telling me this right before I head inside?' },
     ],
-    goto: 'torch',
+    choices: [
+      { text: "he went in at what time, the third night", goto: "torch.him.time" },
+      { text: "a red head torch. why red", goto: "torch.him.red" },
+      { text: "put the torch back", goto: "torch" },
+    ],
   },
 
   // Take it or leave it. A paper cup from a stranger in a hi-vis jacket, and the
@@ -262,7 +270,10 @@ export const COLD_OPEN_DIALOGUE = {
       { who: 'guard', text: 'There. You look like you need it more than I do.' },
       { who: 'you', text: 'Thanks?' },
     ],
-    goto: 'start',
+    choices: [
+      { text: "ask what his wife makes of the coffee", goto: "coffee.wife" },
+      { text: "just nod and take it", goto: "start" },
+    ],
   },
 
   // ── trunk one: the paperwork ──────────────────────────────────────────────
@@ -289,7 +300,11 @@ export const COLD_OPEN_DIALOGUE = {
       { who: 'you', text: "Four hundred for a night's work in a building with no power in it." },
       { who: 'you', text: "It's about double what I usually get. I saw the dispatch call come up on my job board at four and I said yes almost as soon as I saw it." },
     ],
-    goto: 'order',
+    choices: [
+      { text: "what does double usually mean", goto: "order.money.double" },
+      { text: "the dispatch calendar", goto: "order.money.calendar" },
+      { text: "fold that thought away", goto: "order" },
+    ],
   },
   'order.words': {
     speaker: 'THE WORK ORDER',
@@ -297,7 +312,11 @@ export const COLD_OPEN_DIALOGUE = {
       { who: 'you', text: '"The room as it is." "One clean minute." "If you can hear yourself on the take, you must start again."' },
       { who: 'you', text: "That's fair." },
     ],
-    goto: 'order',
+    choices: [
+      { text: "\"the room as it is\"", goto: "order.words.asis" },
+      { text: "\"if you can hear yourself, start again\"", goto: "order.words.hear" },
+      { text: "that is all it says", goto: "order" },
+    ],
   },
   'order.client': {
     speaker: 'THE WORK ORDER',
@@ -306,7 +325,11 @@ export const COLD_OPEN_DIALOGUE = {
       { who: 'you', text: 'No website. A landline and a post box in Croydon.' },
       { who: 'you', text: "I've worked for worse and been paid slower." },
     ],
-    goto: 'order',
+    choices: [
+      { text: "ring the landline", goto: "order.client.ring" },
+      { text: "the post box in croydon", goto: "order.client.box" },
+      { text: "leave it", goto: "order" },
+    ],
   },
   'order.deadline': {
     speaker: 'THE WORK ORDER',
@@ -391,7 +414,11 @@ export const COLD_OPEN_DIALOGUE = {
       { who: 'me', text: '...' },
       { who: 'guard', text: 'My shift ended at ten. I was home...' },
     ],
-    goto: 'guard',
+    choices: [
+      { text: "you were home. finish the sentence", goto: "guard.last.home" },
+      { text: "what did he leave in the booth", goto: "guard.last.left" },
+      { text: "leave it", goto: "guard" },
+    ],
   },
   'guard.name': {
     speaker: 'NIGHT GUARD',
@@ -425,7 +452,11 @@ export const COLD_OPEN_DIALOGUE = {
       { who: 'guard', text: 'Nothing. That is why I said do not.' },
       { who: 'direction', text: 'He laughs. He has been waiting all week to say that to somebody.' },
     ],
-    goto: 'guard',
+    choices: [
+      { text: "the basement stair light", goto: "guard.know.stair" },
+      { text: "do not shake it. say that again", goto: "guard.know.radio" },
+      { text: "anything else", goto: "guard" },
+    ],
   },
 
   // ── trunk three: the tape ─────────────────────────────────────────────────
@@ -455,7 +486,11 @@ export const COLD_OPEN_DIALOGUE = {
       { who: 'you', text: "It's a beautiful take. I would have sent it." },
       { who: 'you', text: 'He was better than me. I need to make these recordings count.' },
     ],
-    goto: 'tape',
+    choices: [
+      { text: "he was better than you. sit with that", goto: "tape.levels.better" },
+      { text: "what would you have done differently", goto: "tape.levels.diff" },
+      { text: "back", goto: "tape" },
+    ],
   },
   'tape.slate': {
     speaker: 'REFERENCE FILES · 04 (NO SLATE)',
@@ -467,7 +502,11 @@ export const COLD_OPEN_DIALOGUE = {
       { who: 'you', text: 'He slated the other three.' },
       { who: 'you', text: 'So either he stopped bothering, or he did not start this one.' },
     ],
-    goto: 'tape',
+    choices: [
+      { text: "reasons a man stops slating", goto: "tape.slate.reasons" },
+      { text: "play take four", goto: "tape.run" },
+      { text: "enough", goto: "tape" },
+    ],
   },
   'tape.run': {
     speaker: 'REFERENCE FILES · 04 (NO SLATE)',
@@ -537,6 +576,171 @@ export const COLD_OPEN_DIALOGUE = {
       { who: 'guard', text: "If the service leaf sticks, don't shoulder it. Main doors are through the front foyer, past the box office. Longer walk, same yard." },
       { who: 'direction', text: 'He is already looking at the television.' },
     ],
+  },
+
+  // Second and third passes under each trunk: every topic answers, and the
+  // answers take questions. Mirrored into the authored JSON via the studio
+  // import contract.
+  "order.money.double": {
+    speaker: "THE WORK ORDER",
+    lines: [
+      { who: "you", text: "Double means rush, risk, or silence. Rush I understand — the building is rubble on Thursday." },
+      { who: "you", text: "Risk is a word for insurers. Silence is the one that pays double and asks you not to notice it paying." },
+      { who: "direction", text: "In the booth, the guard watches a television with no sound on it." },
+    ],
+    goto: "order.money",
+  },
+  "order.money.calendar": {
+    speaker: "THE WORK ORDER",
+    lines: [
+      { who: "you", text: "The job sat on the board for nine minutes before I took it. For this money it should have gone in one." },
+      { who: "you", text: "Three names were above mine, crossed out. Crossed out is not declined. Declined gets an email. Crossed out gets a pen." },
+    ],
+    goto: "order.money",
+  },
+  "order.words.asis": {
+    speaker: "THE WORK ORDER",
+    lines: [
+      { who: "you", text: "\"As it is.\" Not \"as found\". Somebody wrote that carefully, or was corrected into it." },
+      { who: "you", text: "A room as found belongs to the finder. A room as it is belongs to the room. I am reading conveyancing law into a sound job now. Long night ahead." },
+    ],
+    goto: "order.words",
+  },
+  "order.words.hear": {
+    speaker: "THE WORK ORDER",
+    lines: [
+      { who: "you", text: "Standard note for amateurs. You can always hear yourself. The skill is getting the room to stop pointing it out." },
+      { who: "you", text: "Except they did not hire an amateur, and the rate says they know they did not. So the sentence is not advice. It is a specification." },
+      { who: "direction", text: "Rain, on the roof, in the pause where a second thought should go." },
+    ],
+    goto: "order.words",
+  },
+  "order.client.ring": {
+    speaker: "THE WORK ORDER",
+    lines: [
+      { who: "direction", text: "You dial it, because it is a landline and it is nine forty at night and you want to know." },
+      { who: "direction", text: "It rings the way a phone rings in an empty office. You can hear the size of the room around the bell." },
+      { who: "you", text: "Eleven rings. No machine. No hold music. I put it away before somebody answers." },
+      { who: "guard", text: "That number only ever rings out, that one." },
+    ],
+    goto: "order.client",
+  },
+  "order.client.box": {
+    speaker: "THE WORK ORDER",
+    lines: [
+      { who: "you", text: "A post box can cash a cheque and sign a work order. It cannot walk five rooms in the dark with a recorder." },
+      { who: "you", text: "That, apparently, is what I am for." },
+    ],
+    goto: "order.client",
+  },
+  "guard.know.stair": {
+    speaker: "SERVICE BOOTH · 21:38",
+    lines: [
+      { who: "guard", text: "Gone since spring. They stopped replacing bulbs when the demolition date came through." },
+      { who: "me", text: "Bulbs don't know about demolition dates." },
+      { who: "guard", text: "These ones did." },
+      { who: "direction", text: "He does not smile when he says it, which is somehow worse than if he had." },
+    ],
+    goto: "guard.know",
+  },
+  "guard.know.radio": {
+    speaker: "SERVICE BOOTH · 21:38",
+    lines: [
+      { who: "me", text: "You said do not shake the radio. In what way does it go funny." },
+      { who: "guard", text: "Channel two stops being channel two." },
+      { who: "me", text: "And becomes what." },
+      { who: "guard", text: "Loud." },
+      { who: "direction", text: "He says it like a man reporting the weather. Then he turns the television up, remembers the sound is off, and turns it back down." },
+    ],
+    goto: "guard.know",
+  },
+  "guard.last.home": {
+    speaker: "SERVICE BOOTH · 21:38",
+    lines: [
+      { who: "guard", text: "I was home. And the gate log says the gate never opened after me. That is all I know and I know it twice, because I checked twice." },
+      { who: "me", text: "So he is still inside." },
+      { who: "guard", text: "Van was gone come Friday. So no. Initial there, and there." },
+      { who: "direction", text: "Two boxes. They want it twice now." },
+    ],
+    goto: "guard.last",
+  },
+  "guard.last.left": {
+    speaker: "SERVICE BOOTH · 21:38",
+    lines: [
+      { who: "guard", text: "A pencil. Good one, soft, the kind you buy on purpose. And his cup, washed, upside down on the rack there." },
+      { who: "you", text: "A man who washes his cup means to come back for it." },
+      { who: "guard", text: "You want the pencil? He's not been back for the pencil." },
+    ],
+    goto: "guard.last",
+  },
+  "torch.cells.dies": {
+    speaker: "THE TORCH",
+    lines: [
+      { who: "you", text: "Then I stand still, and I listen, and the building tells me where its walls are. Every wall gives back a different nothing." },
+      { who: "guard", text: "You lot are not normal." },
+      { who: "me", text: "For four hundred a night you get not normal." },
+    ],
+    goto: "torch.cells",
+  },
+  "torch.cells.spares": {
+    speaker: "THE TORCH",
+    lines: [
+      { who: "me", text: "Two spares in the side pocket. Ends taped." },
+      { who: "guard", text: "Taped?" },
+      { who: "me", text: "Loose cells chatter. Nothing in my bag is allowed to have an opinion during a take." },
+    ],
+    goto: "torch.cells",
+  },
+  "torch.him.time": {
+    speaker: "THE TORCH",
+    lines: [
+      { who: "guard", text: "Eight, maybe? Before me shift anyway. Paperwork says 20:10, received." },
+      { who: "you", text: "20:10 in. No returned. And the van gone by Friday." },
+      { who: "direction", text: "The RETURNED column holds its blank the way a held breath holds." },
+    ],
+    goto: "torch.him",
+  },
+  "torch.him.red": {
+    speaker: "THE TORCH",
+    lines: [
+      { who: "you", text: "Red keeps your night eyes. That is serious kit, for a man planning to do serious waiting in the dark." },
+      { who: "you", text: "You do not buy a red head torch to leave a job at eighty percent." },
+    ],
+    goto: "torch.him",
+  },
+  "tape.levels.better": {
+    speaker: "THE LAST MAN'S TAPES",
+    lines: [
+      { who: "you", text: "Fifty-eight floor, hard room, first night, no spoils on the slated three. That is not luck. That is hands." },
+      { who: "you", text: "And a man with hands like that stopped slating at take four. Whatever happened, it happened between three and four." },
+    ],
+    goto: "tape.levels",
+  },
+  "tape.levels.diff": {
+    speaker: "THE LAST MAN'S TAPES",
+    lines: [
+      { who: "you", text: "Nothing. That is the trouble with it." },
+      { who: "you", text: "I would have stood where he stood, held what he held, and made the same take with the same silence around it. So whatever found him was not a mistake he made." },
+    ],
+    goto: "tape.levels",
+  },
+  "tape.slate.reasons": {
+    speaker: "THE LAST MAN'S TAPES",
+    lines: [
+      { who: "you", text: "One: he was tired. Not this man — the first three are textbook. Two: he never meant to keep the file." },
+      { who: "you", text: "Three: he did not want his own voice on it. Not in that room. Not at that hour." },
+      { who: "you", text: "Three is a strange reason. Three is the one I keep arriving at." },
+    ],
+    goto: "tape.slate",
+  },
+  "coffee.wife": {
+    speaker: "SERVICE BOOTH · 21:38",
+    lines: [
+      { who: "guard", text: "She says I make it like I'm punishing it." },
+      { who: "direction", text: "He looks pleased. It is clearly a fixed point in the marriage, like the pens." },
+      { who: "me", text: "It will do the job. Long night." },
+    ],
+    goto: "start",
   },
 };
 
@@ -1759,20 +1963,25 @@ export function endingChoice(options = {}, legacyCanSurface = false) {
     : { hasRig: !!options, canInvert: !!options, canSurface: !!legacyCanSurface };
   const readings = Array.isArray(opts.readings) ? opts.readings : [];
   const locks = new Set(Array.isArray(opts.locks) ? opts.locks : []);
-  const source = opts.sourceReading || readings.find((r) => /source/i.test(r.challengeId || '')) || null;
-  const byChallenge = (needle) => readings.find((r) => String(r.challengeId || '').includes(needle));
+  // Combat proofs arrive as { readingId, meaning, text }; the challengeId
+  // field only existed under the retired redact battles, kept as a fallback
+  // for old saves.
+  const readingKey = (r) => String(r.readingId || r.challengeId || '');
+  const source = opts.sourceReading || readings.find((r) => /source/i.test(readingKey(r))) || null;
+  const byProof = (needle) => readings.find((r) => readingKey(r).includes(needle));
   const sourceLine = source?.text
     ? `The last page still reads: ${source.text}.`
-    : 'The last page is legible only where the marker did not touch it.';
+    : 'The last page is still sounding. Nobody has read it onto tape.';
   const lines = [
     { who: 'direction', text: readings.length
       ? 'The five pages keep the shape you gave them. The recorder is still running on the floor between the three of you.'
       : 'It is not attacking any more. It is waiting, the recorder still running on the floor between the three of you.' },
     { who: 'direction', text: sourceLine },
   ];
-  const recordist = byChallenge('recordist');
-  if (recordist?.meaning) lines.push({ who: 'recordist', text: recordist.meaning === 'The prior recordist is still recoverable.'
-    ? 'I am still in here. That is what the page says now. Do not let it scrape that line clean.'
+  const recordist = byProof('recordist');
+  if (recordist) lines.push({ who: 'recordist', text: readingKey(recordist) === 'return.recordist'
+    || recordist.meaning === 'The prior recordist is still recoverable.'
+    ? 'I am still in here. That is what your take proves. Do not hand it the master.'
     : 'Careful. The sentence it likes best is the sentence where I agreed.' });
   if (opts.canSurface) lines.push({ who: 'direction', text: 'The fork and the rig answer the same line. The borrowed body is not sealed.' });
   else if (locks.has('route.surfaced')) lines.push({ who: 'direction', text: 'RETURN is missing from too many pages. Something could still be saved, but not cleanly.' });

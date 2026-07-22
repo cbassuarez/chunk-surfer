@@ -17,7 +17,8 @@ for name, value in [('source_sha256','e'*64),('model_id','other'),('resolution',
                     ('weights_sha256','f'*64),('service_revision','r15'),('cache_schema',3)]:
     changed = dict(base); changed[name] = value; keys.append(material_cache_key(**changed))
 for name, value in [('bankId','calm'),('slot',1),('recipeSha256','1'*64),
-                    ('sourceAtlasSha256','2'*64),('seed',8)]:
+                    ('sourceAtlasSha256','2'*64),('seed',8),
+                    ('frame',1),('depthScale',0.55),('depthSha256','3'*64)]:
     changed = dict(base); changed['work'] = dict(work); changed['work'][name] = value
     keys.append(material_cache_key(**changed))
 print(json.dumps(keys))

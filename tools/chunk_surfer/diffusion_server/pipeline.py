@@ -289,6 +289,7 @@ class Lens:
     style_lora: str | None = None     # our own, once we have trained it
     depth: bool = False               # a depth ControlNet is loaded and armed
     degraded: str = ""                # why we are not what we claim to be
+    compel: object = None             # long-prompt weighted embeddings, if available
 
     def status(self) -> dict:
         return {
@@ -421,6 +422,19 @@ def build(model_key: str | None = None, style_lora: str | None = None,
         except Exception:
             pass
 
+    # Compel lifts CLIP's 77-token cap (chunked embeddings) and adds (word:1.3)
+    # weighting. Its absence degrades to plain truncated strings, loudly.
+    try:
+        from compel import Compel
+        lens.compel = Compel(
+            tokenizer=pipe.tokenizer,
+            text_encoder=pipe.text_encoder,
+            truncate_long_prompts=False,
+        )
+    except Exception as e:
+        lens.compel = None
+        lens.degraded = (lens.degraded + " | " if lens.degraded else "") + f"compel unavailable ({str(e)[:80]}) — prompts truncate at 77 tokens"
+
     lens.pipe = pipe
     warm(lens)
     return lens
@@ -461,6 +475,13 @@ def warm(lens: Lens, n: int = 2) -> None:
 DEPTH_SCALE = float(os.environ.get("LENS_DEPTH_SCALE", "0.6"))
 
 
+def _clip_token_count(lens: Lens, text: str) -> int:
+    try:
+        return len(lens.pipe.tokenizer(text).input_ids)
+    except Exception:
+        return -1
+
+
 def diffuse(
     lens: Lens, jpeg_bytes: bytes, prompt: str, strength: float, passes: int,
     seed: int, guidance: float, negative: str, quality: int = 72,
@@ -470,8 +491,15 @@ def diffuse(
     src_size = img.size
     img = img.resize((SIZE, SIZE))
 
-    steps = lens.model.steps_for(strength, passes)
+    # Floor at two effective UNet evaluations for distilled models: one pass at
+    # low strength is a blur, not a hallucination.
+    effective_passes = max(2, passes) if lens.model.distilled_steps >= 2 else passes
+    steps = lens.model.steps_for(strength, effective_passes)
     gen = torch.Generator("cpu" if lens.device == "mps" else lens.device).manual_seed(seed)
+
+    tokens = _clip_token_count(lens, prompt)
+    if tokens > 77 and lens.compel is None:
+        print(f"PROMPT OVER BUDGET: {tokens} CLIP tokens, truncating at 77 (no compel): {prompt[:80]}…")
 
     # The exact depth of the room, marched by the engine that drew it. If the
     # client did not send one (old client, ?nodepth, a model with no ControlNet)
@@ -497,11 +525,25 @@ def diffuse(
     # aesthetic. Pass it through. A negative prompt only does anything once CFG
     # is off the floor, which is why it is gated on the same number.
     kwargs = {}
-    if guidance > lens.model.native_guidance + 0.05 and negative:
-        kwargs["negative_prompt"] = negative
+    use_negative = guidance > lens.model.native_guidance + 0.05 and bool(negative)
+    if lens.compel is not None:
+        # Weighted, chunk-embedded conditioning: no 77-token cliff, and burst
+        # prompts may carry (word:1.3) emphasis. Tensors must share a length or
+        # diffusers refuses the pair.
+        conditioning = lens.compel(prompt)
+        if use_negative:
+            negative_conditioning = lens.compel(negative)
+            [conditioning, negative_conditioning] = lens.compel.pad_conditioning_tensors_to_same_length(
+                [conditioning, negative_conditioning])
+            kwargs["negative_prompt_embeds"] = negative_conditioning
+        kwargs["prompt_embeds"] = conditioning
+    else:
+        kwargs["prompt"] = prompt
+        if use_negative:
+            kwargs["negative_prompt"] = negative
 
     out = lens.pipe(
-        prompt=prompt, image=img, strength=strength,
+        image=img, strength=strength,
         num_inference_steps=steps, guidance_scale=guidance,
         generator=gen, **ctrl, **kwargs,
     ).images[0]

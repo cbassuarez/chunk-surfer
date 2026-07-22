@@ -31,7 +31,7 @@ test('production material client stages one boot bank and streams all six comple
   assert.match(client, /prioritizeBank\(bankId\)/);
   assert.match(client, /await waitForBank\(bankId\)/);
   assert.match(client, /completeBankCount\(banks\)/);
-  assert.match(client, /beginBank\(bankId\)/);
+  assert.match(client, /beginBank\(bankId, frames\)/);
   assert.match(client, /for \(let slot = 0; slot < SURFACE_NAMES\.length; slot \+= 1\)/);
   assert.match(client, /commitSurfaces\([\s\S]*bankId, transitionMs/);
   assert.match(client, /if \(!shouldCommit\(\)\) return false/);
@@ -88,6 +88,64 @@ test('protocol binds result bytes to request, bank, slot, model, and checksum id
   assert.match(server, /if cache_path and not cached:/);
 });
 
+test('material tiles carry authored depth and a temporal boil set', () => {
+  const client = read('src/net/diffusion.js');
+  const server = read('tools/chunk_surfer/diffusion_server/server.py');
+  const r3d = read('src/render/r3d.js');
+  const main = read('src/main.js');
+  // Frame and depth are welded into one message so newest-wins can never pair
+  // a tile with another tile's relief.
+  assert.match(client, /function packL2/);
+  assert.match(client, /socket\.send\(packL2\(payload, depth\)\)/);
+  assert.match(client, /heightUrl/);
+  assert.match(main, /surface-height\.png/);
+  // K temporal frames per surface, cached and addressed independently.
+  assert.match(client, /frame \* 131/);
+  assert.match(server, /def manifest_entry_key/);
+  assert.match(server, /CACHE_SCHEMA = 3/);
+  assert.match(r3d, /slot\*k\+f/);
+  assert.match(r3d, /uBoilHz/);
+});
+
+test('the compositor lets generated structure and colour reach the screen', () => {
+  const r3d = read('src/render/r3d.js');
+  const shader = read('src/render/pixel-mesh/shader.js');
+  // baseLum/detailedLum drags generated luminance back onto the authored
+  // albedo. It must be APPLIED PARTIALLY, not merely widened — widening the
+  // bounds lets it correct harder and erases the lens.
+  assert.match(r3d, /detailed\*=mix\(1\.0,exposureFix,clamp\(uDreamLumaHold/);
+  assert.doesNotMatch(r3d, /detailed\*=clamp\(baseLum\/detailedLum/);
+  assert.match(r3d, /uDreamStructureMix/);
+  // Churn lights itself, or it cannot be seen in an unlit building.
+  assert.match(r3d, /gBoilGlow=uAgitation/);
+  assert.match(r3d, /localLight \+ gBoilGlow/);
+  // Relief is the channel that survives the display: the generated tile is read
+  // as a height field and must follow the slot*K+frame boil layout, not the old
+  // layer==slot one, or it differentiates a different material's texture.
+  assert.match(r3d, /float dBase=float\(sslot\)\*dFrames;/);
+  assert.doesNotMatch(r3d, /vec3 dc=vec3\(sc\.xy,float\(sslot\)\);/);
+  assert.match(r3d, /float dreamRough=/);
+  // Chroma survives the block palette instead of being quantised away.
+  assert.match(shader, /uPaletteChroma/);
+  assert.match(shader, /uAgitation \* materialSignal/);
+});
+
+test('possession bursts repaint the frame inside the instrument', () => {
+  const client = read('src/net/diffusion.js');
+  const server = read('tools/chunk_surfer/diffusion_server/server.py');
+  const r3d = read('src/render/r3d.js');
+  assert.match(client, /type: 'frame'/);
+  assert.match(client, /captureBurstFrame/);
+  assert.match(server, /\{"prompt", "generate", "mutate", "frame"\}/);
+  // Bursts are never cached: the cache branch stays generate-only.
+  assert.match(server, /if work\.get\("type"\) == "generate":\s+cache_key = material_cache_key/);
+  // The repaint composites before the VFD pass, and camera motion damps it.
+  assert.match(r3d, /const worldTex = runBurstPass\(sceneTex, now\)/);
+  assert.match(r3d, /vfdMovement/);
+  assert.match(r3d, /r3dCaptureSceneCanvas/);
+  assert.match(r3d, /r3dDepthCanvas/);
+});
+
 test('desktop shell owns random authenticated sidecar lifecycle and cleanup', () => {
   const rust = read('src-tauri/src/lens_service.rs');
   const cargo = read('src-tauri/Cargo.toml');
@@ -98,7 +156,7 @@ test('desktop shell owns random authenticated sidecar lifecycle and cleanup', ()
   assert.match(rust, /impl Drop for ManagedLens/);
   assert.match(main, /bootstrapNativeLens/);
   assert.match(clientSource(), /searchParams\.set\('token'/);
-  assert.match(rust, /\.env\("LENS_DEPTH", "0"\)/);
+  assert.match(rust, /\.env\("LENS_DEPTH", "1"\)/);
   assert.match(rust, /command\.creation_flags\(sidecar_creation_flags\(\)\)/);
   assert.match(rust, /CREATE_NO_WINDOW/);
   assert.match(cargo, /target\.'cfg\(windows\)'\.dependencies[\s\S]*windows-sys/);

@@ -11,6 +11,8 @@ uniform float uDt;
 uniform float uCellPx;
 uniform float uBaseRetention;
 uniform float uPaletteAmount;
+uniform float uPaletteChroma;
+uniform float uAgitation;
 uniform float uSignalAmount;
 uniform float uEdgeGain;
 uniform float uCoverage;
@@ -90,6 +92,9 @@ void main(){
   float materialSignal = smoothstep(0.18, 0.82, y) * 0.48;
   float excitation = clamp(max(edge, materialSignal) * (0.58 + eventSignal * 0.72)
     + eventSignal * 0.16, 0.0, 1.0);
+  // A boiling world excites the tube. Surfaces that are churning glow rather
+  // than merely changing colour, so the crawl reads on a display this coarse.
+  excitation = clamp(excitation + uAgitation * materialSignal * 0.5, 0.0, 1.0);
   excitation *= uSignalAmount;
 
   float prev = texture(uPrev, cellUv).a;
@@ -130,6 +135,12 @@ void main(){
   phosphor = mix(phosphor, palAmber(), fault);
 
   float replaceAmount = (1.0 - clamp(uBaseRetention, 0.0, 1.0)) * phosphorMask;
+  // The block palette is the instrument's voice and it stays. But a palette
+  // that quantises by luminance alone throws away everything the generated
+  // material said in colour. Let the scene's own chroma bend the block it
+  // lands in: the boil survives the encode without leaving the palette.
+  vec3 sceneChroma = c - vec3(dot(c, vec3(0.2126, 0.7152, 0.0722)));
+  paletted = clamp(paletted + sceneChroma * clamp(uPaletteChroma, 0.0, 0.6), 0.0, 1.0);
   vec3 encodedScene = mix(c, paletted, clamp(uPaletteAmount, 0.0, 1.0));
   vec3 finalColor = mix(encodedScene, phosphor, replaceAmount);
   float glow = (mem * 0.70 + edge * 0.30) * uGlowAmount * (1.0-uReduceFlash*0.68) * mix(1.0,0.78,uMovement);

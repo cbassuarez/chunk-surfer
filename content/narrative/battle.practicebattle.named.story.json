@@ -174,6 +174,12 @@
         },
         {
           "who": "you",
+          "text": "I will play this wing back its own phrase all night. Not yours.",
+          "channel": "before",
+          "id": "round-3.line.own-phrase"
+        },
+        {
+          "who": "you",
           "text": "Nothing there. Nothing in the room. The room is empty and I filled it, and I am the only thing on this take.",
           "channel": "on-listen",
           "id": "round-3.line.4"
@@ -216,7 +222,7 @@
       "lines": [
         {
           "who": "you",
-          "text": "Nothing there. Hold still. Sixty seconds, and the last five are the ones that count.",
+          "text": "Nothing there. Its own phrase, handed back to it enough times, and it stopped believing itself.",
           "id": "win.line.1"
         },
         {
@@ -232,7 +238,7 @@
       "lines": [
         {
           "who": "direction",
-          "text": "Your hand is already moving towards the recorder, towards playback, towards her. You stop it. Almost.",
+          "text": "Your hand is already on the transport, and it is not the wing’s take it reaches for. It is the box in the spare room. It is her.",
           "id": "lose.line.1"
         },
         {
