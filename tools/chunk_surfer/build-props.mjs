@@ -27,11 +27,15 @@ const materials = [
   ['paper label', [0.64, 0.60, 0.48, 1], 0.0, 0.9],
   ['portrait surface', [1, 1, 1, 1], 0.0, 0.76],
   ['chapel stone', [0.43, 0.44, 0.41, 1], 0.0, 0.86],
+  ['academic plaster', [0.63, 0.62, 0.55, 1], 0.0, 0.92],
+  ['oxidised bronze', [0.16, 0.29, 0.24, 1], 0.72, 0.58],
+  ['dry soil', [0.17, 0.12, 0.075, 1], 0.0, 1.0],
+  ['dead foliage', [0.28, 0.25, 0.14, 1], 0.0, 0.96],
 ].map(([name, baseColorFactor, metallicFactor, roughnessFactor]) => ({
   name, pbrMetallicRoughness: { baseColorFactor, metallicFactor, roughnessFactor },
 }));
 
-const MAT = { dark:0, wood:1, black:2, steel:3, ivory:4, brass:5, cloth:6, cone:7, paper:8, portrait:9, stone:10 };
+const MAT = { dark:0, wood:1, black:2, steel:3, ivory:4, brass:5, cloth:6, cone:7, paper:8, portrait:9, stone:10, plaster:11, bronze:12, soil:13, deadLeaf:14 };
 
 // Real source models, supplied by the user (FabConvert / SketchUp conversions).
 // Provenance is UNVERIFIED and recorded as such in credits.json; the runtime
@@ -240,6 +244,13 @@ function addQuad(m,a,b,c,d,mat){const g=group(m,mat),base=g.positions.length/3,u
 {const m=mesh('lane_reel');addCylinder(m,[0,.72,0],.36,.52,MAT.steel,18);addBox(m,[0,.25,0],[.92,.08,.50],MAT.steel);for(const x of[-.38,.38])addBox(m,[x,.45,0],[.06,.72,.06],MAT.steel);}
 {const m=mesh('drain_grille');addBox(m,[0,.025,0],[1.2,.05,.18],MAT.steel);for(let x=-.52;x<=.52;x+=.13)addBox(m,[x,.055,0],[.025,.03,.15],MAT.dark);}
 {
+  const m=mesh('pool_lane_markings');
+  for(const x of[-6.55,-3.95,-1.3,1.3,3.95,6.55]){
+    addBox(m,[x,.018,-.25],[.16,.036,19.3],MAT.ivory);
+    addBox(m,[x,.022,8.35],[1.05,.042,.15],MAT.dark);
+  }
+}
+{
   const m=mesh('plant_pipe_straight');
   addBeam(m,[-1.18,.18,0],[1.18,.18,0],.12,MAT.steel);
   for(const x of[-.82,0,.82]){addBox(m,[x,.18,0],[.08,.30,.22],MAT.dark);addBox(m,[x,.18,.13],[.18,.12,.04],MAT.brass);}
@@ -310,6 +321,107 @@ function addQuad(m,a,b,c,d,mat){const g=group(m,mat),base=g.positions.length/3,u
   addQuad(m,[0,13,z0],[6,9.5,z0],[6,9.5,z1],[0,13,z1],MAT.stone);
   for(let z=z0;z<=z1+.01;z+=bay){addBeam(m,[-6,9.48,z],[0,13.02,z],.14,MAT.brass);addBeam(m,[0,13.02,z],[6,9.48,z],.14,MAT.brass);}
   addBeam(m,[0,13.02,z0],[0,13.02,z1],.12,MAT.brass);
+}
+
+// Third-floor academic crown and its dead garden. These are deliberately
+// project-native architectural silhouettes: no named memorial, text, donor,
+// or found object can accidentally turn the red-herring floor into lore.
+{
+  const m=mesh('academic_atrium_structure');
+  // Four slab bands leave a genuine 10x13m void, offset west of centre to keep
+  // the old front-of-house office intact below.
+  addBox(m,[-9.25,-.16,0],[5.5,.32,27],MAT.plaster);
+  addBox(m,[8.0,-.16,0],[8,.32,27],MAT.plaster);
+  addBox(m,[-.75,-.16,-10],[11.5,.32,7],MAT.plaster);
+  addBox(m,[-.75,-.16,10],[11.5,.32,7],MAT.plaster);
+  // Oxidised gallery rail around the opening.
+  for(const x of[-6.5,5])for(let z=-6.5;z<=6.5;z+=1.25)addCylinder(m,[x,.62,z],.035,1.24,MAT.bronze,8);
+  for(const z of[-6.5,6.5])for(let x=-6.5;x<=5;x+=1.25)addCylinder(m,[x,.62,z],.035,1.24,MAT.bronze,8);
+  for(const y of[.16,.66,1.18]){
+    addBeam(m,[-6.5,y,-6.5],[-6.5,y,6.5],.045,MAT.bronze);
+    addBeam(m,[5,y,-6.5],[5,y,6.5],.045,MAT.bronze);
+    addBeam(m,[-6.5,y,-6.5],[5,y,-6.5],.045,MAT.bronze);
+    addBeam(m,[-6.5,y,6.5],[5,y,6.5],.045,MAT.bronze);
+  }
+  // The underside is columned enough to read from the entrance as an inserted
+  // institutional gallery rather than a floating plane.
+  for(const x of[-11.4,11.4])for(const z of[-12.4,-6.5,6.5,12.4])addCylinder(m,[x,-4.85,z],.16,9.7,MAT.plaster,12);
+}
+{
+  const m=mesh('academic_skylight');
+  for(let x=-11.5;x<=11.5;x+=2.3)addBeam(m,[x,6.8,-13],[x,6.8,13],.10,MAT.bronze);
+  for(let z=-13;z<=13;z+=2.6)addBeam(m,[-11.5,6.8,z],[11.5,6.8,z],.10,MAT.bronze);
+  // Two displaced bars make the damage legible without opening the roof.
+  addBeam(m,[-4.6,6.70,-2.6],[-1.8,6.08,.7],.09,MAT.steel);
+  addBeam(m,[3.2,6.76,3.1],[5.8,6.22,5.0],.08,MAT.steel);
+}
+{
+  const m=mesh('academic_frieze');
+  addBox(m,[0,.42,0],[5.2,.84,.12],MAT.plaster);
+  for(let i=-4;i<=4;i++){
+    const x=i*.54,y=.42+Math.sin(i*1.7)*.12;
+    addCylinder(m,[x,y,-.085],.12,.12,i%3===0?MAT.bronze:MAT.stone,10);
+    if(i<4)addBeam(m,[x+.10,y,-.09],[x+.44,.42+Math.sin((i+1)*1.7)*.12,-.09],.035,MAT.bronze);
+  }
+  addBox(m,[1.72,.18,-.10],[.58,.18,.05],MAT.dark,.08);
+}
+{
+  const m=mesh('academic_bust_plinth');
+  addBox(m,[0,.08,0],[.62,.16,.62],MAT.stone);
+  addBox(m,[0,.58,0],[.48,.92,.48],MAT.plaster);
+  addBox(m,[0,1.07,0],[.58,.08,.58],MAT.stone);
+}
+{
+  const m=mesh('academic_bust_fragment');
+  addCylinder(m,[0,.23,0],.23,.30,MAT.plaster,14);
+  addCylinder(m,[.08,.49,-.02],.17,.28,MAT.plaster,14);
+  addBox(m,[-.19,.17,.08],[.34,.18,.26],MAT.plaster,.18);
+  addBox(m,[.24,.08,-.06],[.22,.11,.18],MAT.stone,-.25);
+}
+{
+  const m=mesh('academic_planter');
+  addBox(m,[0,.33,0],[4.0,.66,2.0],MAT.plaster);
+  addBox(m,[0,.70,0],[3.54,.12,1.54],MAT.soil);
+  addBox(m,[0,.70,0],[3.0,.13,1.08],MAT.dark,.035);
+}
+{
+  const m=mesh('academic_dead_tree');
+  addBeam(m,[0,0,0],[.10,3.9,.02],.15,MAT.dark);
+  for(const [x,y,z] of[[-1.15,2.5,.15],[1.3,2.9,-.05],[-.8,3.45,-.3],[.72,3.65,.28]]){
+    addBeam(m,[.06,y-.75,0],[x,y,z],.075,MAT.dark);
+    addQuad(m,[x-.30,y-.03,z],[x,y+.12,z+.03],[x+.26,y-.02,z],[x,y-.10,z-.03],MAT.deadLeaf);
+  }
+}
+{
+  const m=mesh('academic_dry_basin');
+  addCylinder(m,[0,.20,0],1.35,.40,MAT.stone,24);
+  addCylinder(m,[0,.43,0],1.05,.08,MAT.soil,24);
+  addCylinder(m,[0,.77,0],.13,.70,MAT.bronze,14);
+  addBox(m,[.42,.47,-.10],[.62,.10,.28],MAT.dark,.22);
+}
+{
+  const m=mesh('academic_leaf_litter');
+  for(let i=0;i<18;i++){
+    const x=((i*37)%19)/19*2.8-1.4,z=((i*23)%17)/17*1.7-.85;
+    addBox(m,[x,.012,z],[.18+(i%3)*.04,.024,.08],i%4===0?MAT.soil:MAT.deadLeaf,(i*.73)%Math.PI);
+  }
+}
+{
+  const m=mesh('academic_blackboard');
+  addBox(m,[0,.72,0],[2.6,1.44,.08],MAT.dark);
+  addBox(m,[0,.70,-.055],[2.42,1.24,.025],MAT.black);
+  for(const y of[.46,.58,.70,.82,.94])addBox(m,[0,y,-.075],[2.18,.012,.012],MAT.ivory);
+  addBox(m,[.72,.62,-.085],[.62,.018,.012],MAT.plaster,-.08);
+}
+{
+  const m=mesh('academic_filing_bank');
+  for(let x=-.78;x<=.78;x+=.52){addBox(m,[x,.68,0],[.48,1.36,.48],MAT.steel);for(let y=.18;y<=1.18;y+=.34){addBox(m,[x,y,-.25],[.38,.25,.025],MAT.dark);addBox(m,[x,y,-.27],[.13,.04,.025],MAT.brass);}}
+}
+{
+  const m=mesh('academic_breach');
+  for(const x of[-1.35,-1.05,.92,1.28])addBox(m,[x,1.3,0],[.18,2.6,.22],MAT.plaster,(x%1)*.08);
+  addBeam(m,[-.92,2.54,0],[.74,2.28,.02],.10,MAT.dark);
+  for(let i=0;i<12;i++){const x=((i*29)%17)/17*2.3-1.15,z=((i*11)%13)/13*.8-.4;addBox(m,[x,.04,z],[.20+(i%4)*.06,.08,.15],i%3?MAT.plaster:MAT.dark,(i*.41)%Math.PI);}
 }
 
 // Ellery's fictional 1908 ring. Each moving assembly has its own pivoted mesh;
@@ -410,6 +522,86 @@ addDoglegRail('tower_stair_rail_low_up',3.8,10,false);
 addDoglegRail('tower_stair_rail_high_up',4.6,12,false);
 addDoglegRail('tower_stair_rail_high_down',4.6,12,true);
 addDoglegRail('tower_stair_rail_low_down',3.8,10,true);
+
+// Principal stair dressing. These meshes use the exact authored rise/run and
+// are placed at their lower/upper landing datums, so the runner never floats
+// above a tread and the handrail pitch agrees with collision.
+function addMainStairDressing(name,{rise,run,steps,down=false,basement=false,runner=true}={}){
+  const m=mesh(name),direction=down?-1:1;
+  if(runner){for(let i=0;i<=steps;i++){
+    const t=i/steps,z=.25+run*t,y=direction*rise*t;
+    addBox(m,[0,y+.022,z],[1.82,.044,Math.max(.22,run/steps*.88)],MAT.cloth);
+    if(i===11)addBox(m,[.38,y+.049,z],[.54,.018,.29],MAT.dark,.08);
+    if(i%2===0&&!basement)addBeam(m,[-.98,y+.075,z-.16],[.98,y+.075,z-.16],.028,MAT.brass);
+    if(basement&&i%5===2)addBox(m,[.34,y+.049,z],[.46,.018,.25],MAT.dark,(i%3-1)*.08);
+  }
+  }
+  for(const x of[-1.38,1.38]){
+    addBeam(m,[x,.92,.2],[x,direction*rise+.92,run+.2],.065,basement?MAT.steel:MAT.wood);
+    for(let i=0;i<=steps;i+=4){const t=i/steps,z=.2+run*t,y=direction*rise*t;addCylinder(m,[x,y+.48,z],.035,.96,basement?MAT.steel:MAT.brass,8);}
+  }
+}
+addMainStairDressing('upper_stair_dressing',{rise:4.8,run:11,steps:22,runner:false});
+addMainStairDressing('basement_stair_dressing',{rise:4,run:10,steps:20,down:true,basement:true,runner:false});
+addMainStairDressing('academic_stair_dressing',{rise:5.2,run:10,steps:26,runner:false});
+
+{
+  const m=mesh('stair_smoke_door_open');
+  for(const x of[-1.48,1.48])addBox(m,[x,1.25,0],[.12,2.5,.18],MAT.dark);
+  addBox(m,[0,2.46,0],[3.05,.12,.18],MAT.dark);
+  // The wired-glass leaf is pinned flat against the right return wall.
+  addBox(m,[1.42,1.23,1.02],[.10,2.30,1.95],MAT.steel);
+  addBox(m,[1.34,1.35,1.02],[.025,1.62,1.38],MAT.ivory);
+  for(const y of[.78,1.18,1.58,1.98])addBox(m,[1.31,y,1.02],[.018,.018,1.32],MAT.steel);
+  for(const z of[.60,1.02,1.44])addBox(m,[1.31,1.38,z],[.018,1.56,.018],MAT.steel);
+}
+{
+  const m=mesh('stair_smoke_door_closed');
+  for(const x of[-1.48,1.48])addBox(m,[x,1.25,0],[.12,2.5,.18],MAT.dark);
+  addBox(m,[0,2.46,0],[3.05,.12,.18],MAT.dark);
+  addBox(m,[0,1.23,-.02],[2.82,2.30,.10],MAT.steel);
+  addBox(m,[0,1.35,-.08],[2.42,1.62,.025],MAT.ivory);
+  for(const y of[.78,1.18,1.58,1.98])addBox(m,[0,y,-.10],[2.34,.018,.018],MAT.steel);
+  for(const x of[-.84,-.42,0,.42,.84])addBox(m,[x,1.38,-.10],[.018,1.56,.018],MAT.steel);
+  addCylinder(m,[1.05,1.16,-.16],.045,.15,MAT.brass,10);
+}
+{
+  const m=mesh('stair_sconce_pair_opal');
+  for(const x of[-1.42,1.42]){
+    addBox(m,[x,0,.08],[.08,.24,.18],MAT.brass);
+    addBeam(m,[x,0,0],[x,.10,-.28],.045,MAT.brass);
+    addCylinder(m,[x,.18,-.35],.14,.30,MAT.ivory,16);
+    addCylinder(m,[x,.36,-.35],.075,.06,MAT.brass,12);
+  }
+  addBox(m,[1.42,-.30,.01],[.34,.17,.035],MAT.dark);
+  for(const x of[1.34,1.42,1.50])addBox(m,[x,-.30,-.015],[.018,.10,.018],MAT.brass);
+}
+{
+  const m=mesh('stair_bulkhead_pair');
+  for(const x of[-1.42,1.42]){
+    addBox(m,[x,0,.06],[.34,.28,.16],MAT.steel);
+    addCylinder(m,[x,0,-.08],.14,.10,MAT.ivory,16);
+    for(let i=0;i<6;i++){const a=i*Math.PI/3;addBeam(m,[x+Math.cos(a)*.16,-.16+Math.sin(a)*.16,-.15],[x+Math.cos(a)*.16,.16+Math.sin(a)*.16,-.15],.018,MAT.steel);}
+  }
+  addBox(m,[1.42,-.31,.01],[.34,.17,.035],MAT.dark);
+  for(const x of[1.34,1.42,1.50])addBox(m,[x,-.31,-.015],[.018,.10,.018],MAT.ivory);
+}
+{
+  const m=mesh('stair_pendant_opal');
+  addCylinder(m,[0,.78,0],.025,1.55,MAT.brass,10);
+  addCylinder(m,[0,.08,0],.08,.10,MAT.brass,12);
+  addCylinder(m,[0,1.62,0],.22,.30,MAT.ivory,18);
+  addCylinder(m,[0,1.80,0],.28,.06,MAT.brass,18);
+}
+{
+  // This primitive is never drawn in the colour pass during the anomaly; it
+  // exists solely as a clean, body-shaped practical-light occluder.
+  const m=mesh('stair_shadow_figure');
+  addCylinder(m,[0,1.55,0],.17,.34,MAT.dark,14);
+  addBox(m,[0,.88,0],[.58,1.05,.24],MAT.dark);
+  addBox(m,[-.18,.30,0],[.16,.72,.18],MAT.dark,.05);
+  addBox(m,[.18,.30,0],[.16,.72,.18],MAT.dark,-.05);
+}
 {const m=mesh('chapel_inner_screen');for(const x of[-2.8,-1.4,0,1.4,2.8])addBox(m,[x,1.8,0],[.16,3.6,.18],MAT.wood);for(const y of[.15,1.8,3.45])addBox(m,[0,y,0],[6,.15,.18],MAT.wood);}
 {const m=mesh('tower_plaque');addBox(m,[0,.38,0],[1.35,.76,.05],MAT.brass);addBox(m,[0,.38,-.03],[1.18,.59,.025],MAT.dark);}
 

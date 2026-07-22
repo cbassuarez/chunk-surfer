@@ -1,12 +1,13 @@
 // THE CONSERVATORY. Condemned, powered down, days from demolition.
 //
-// Three logical drawings, compiled into one Euclidean physical volume. Logical
+// Four logical drawings, compiled into one Euclidean physical volume. Logical
 // cells remain unique for saves, sound paths and mutation; physicalOrigin puts
 // their air spans above/below one another for the renderer.
 //
 //   sub-basement  (left, -4m)    studio B3 · the plant room · the dead lift shaft
 //   ground        (top right)    loading dock · foyer · concert hall · the natatorium
 //   upper         (+4.8m)              the practice wing · the vaulted chapel
+//   academic      (+10m)       locked instruction rooms · offices · atrium crown
 //
 // You carry the standard keyring. It does not open everything. The building has
 // changed since it was working, and again since the last recordist walked it:
@@ -95,16 +96,22 @@ function organLoftRows(){
 }
 function bellChamberProfile(x,y,cell){return cell.solid?null:{ceil:22.0};}
 function natatoriumRows(){
-  const w=27,h=22,out=[];
+  const w=27,h=24,out=[];
   for(let y=0;y<h;y++){let row='';for(let x=0;x<w;x++){
+    // The replacement owns the entire inherited footprint. There is exactly
+    // one exterior wall around it—no inner box and no dead air behind one.
     let c=(x===0||x===w-1||y===0||y===h-1)?'#':'T';
     if(y===0&&x===14)c='+';                    // dry-to-wet lobby
-    if(x>=6&&x<=21&&y>=8&&y<=16)c='W';       // 16 × 9 m drained basin
-    // Enclosed pump room at the south-east; its service leaf is deliberately
-    // not part of the playable route.
-    if(x>=22&&y>=16)c=(x===22||y===16||x===26||y===21)?'#':'T';
+    if(x>=6&&x<=22&&y>=2&&y<=21)c='W';        // 17 × 20 m longitudinal basin
     row+=c;
   }out.push(row);}return out;
+}
+function natatoriumProfile(x,_y,cell){
+  if(cell.solid||(cell.flags&F.DOOR))return null;
+  // The authored ceiling is the roof itself: low eaves over the side decks and
+  // one continuous high ridge over the lanes, with no secondary shell below it.
+  const fromRidge=Math.min(9,Math.abs(x-14));
+  return{ceil:7.2+(9-fromRidge)*.42};
 }
 function frontAtriumRows(){
   const w=24,h=25,out=[];
@@ -124,19 +131,84 @@ function frontAtriumRows(){
     row+=c;
   }out.push(row);}return out;
 }
+function frontAtriumProfile(x,y,cell){
+  if(cell.solid||(cell.flags&(F.DOOR|F.BRICKED)))return null;
+  // The garden remains the full-height centre of the old atrium. Everywhere
+  // else receives the underside of the academic crown with a half-metre
+  // structural gap before the 10m floor above.
+  const gardenVoid=x>=5&&x<=14&&y>=5&&y<=17;
+  return{ceil:gardenVoid?17:9.5};
+}
+
+export const ACADEMIC_ORIGIN=Object.freeze({x:0,y:240});
+export const ACADEMIC_PHYSICAL_ORIGIN=Object.freeze({x:50,y:0});
+export const ACADEMIC_BASE=10;
+export const ACADEMIC_CLASSROOM_DOORS=Object.freeze([
+  {x:9,y:244},{x:13,y:244},{x:9,y:251},{x:13,y:251},
+  {x:9,y:258},{x:13,y:258},{x:9,y:264},{x:13,y:264},
+]);
+export const ACADEMIC_ENTRY=Object.freeze({x:8,y:275});
+export const ACADEMIC_BREACH=Object.freeze({x:17,y:267});
+
+function academicFloorRows(){
+  const w=48,h=40,inside=(x,y)=>
+    (x>=0&&x<=22&&y>=0&&y<=28)||
+    (x>=23&&x<=47&&y>=2&&y<=28)||
+    (x>=0&&x<=12&&y>=29&&y<=39)||
+    (x>=8&&x<=25&&y>=27&&y<=39);
+  const rows=[];
+  for(let y=0;y<h;y++){
+    let row='';
+    for(let x=0;x<w;x++){
+      if(!inside(x,y)){row+=' ';continue;}
+      const edge=[[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>!inside(x+dx,y+dy));
+      let c=edge?'#':'Q';
+
+      // Eight double-loaded classrooms. Their only corridor leaves use the
+      // obsolete academic core; the south-east room is also reachable through
+      // a damaged internal partition from the open office suite.
+      if(y>=1&&y<=27&&(x===9||x===13))c='#';
+      if([7,14,21,27].includes(y)&&((x>=1&&x<=8)||(x>=14&&x<=21)))c='#';
+      if([4,11,18,24].includes(y)&&(x===9||x===13))c='+';
+      if(x===22&&y>=1&&y<=26)c='#';
+      if(y===27&&x>=14&&x<=21)c=(x===17||x===18)?'Q':'#';
+
+      // Two locked faculty rooms sit beside an open reception and a stripped
+      // office. The open suite is the ordinary route to the breach.
+      if(y===29&&x>=0&&x<=12)c='#';
+      if(y===29&&(x===3||x===9))c='+';
+      if(x===6&&y>=30&&y<=38)c='#';
+      if(x===19&&y>=30&&y<=38)c=y===33?'Q':'#';
+      if(x===8&&y>=35&&y<=37)c='Q';
+      if(x>=5&&x<=7&&y>=35&&y<=38)c=' ';
+
+      // No authored cell occupies the centre. Collision sees an edge; the
+      // academic render slice sees the garden volume ten metres below.
+      if(x>=29&&x<=38&&y>=8&&y<=20)c=' ';
+      row+=c;
+    }
+    rows.push(row);
+  }
+  return rows;
+}
+function academicProfile(x,y,cell){
+  if(cell.solid||(cell.flags&(F.DOOR|F.BRICKED)))return null;
+  const crown=x>=23&&x<=47&&y>=2&&y<=28;
+  return{ceil:crown?17:14.5};
+}
 function practiceWingRows(){
-  const w=21,h=30,out=[];
+  const w=21,h=34,out=[];
   for(let y=0;y<h;y++){let row='';for(let x=0;x<w;x++){
     let c=(x===0||x===w-1||y===0||y===h-1)?'#':'P';
-    // Conventional double-loaded suite: a three-metre corridor, four enclosed
-    // rooms on each side, and one single acoustic leaf per room. Horizontal
-    // party walls remain solid all the way to the corridor; rooms never bleed
-    // into a showroom or into their neighbours.
-    if((x===8||x===12)&&y>0&&y<h-1){
-      const bay=y%7;c=bay===4?'+':'#';
+    // A four-metre arrival hall receives both stairs and continues east to the
+    // chapel bridge. The eight teaching rooms begin beyond its south wall, so
+    // neither stair nor chapel circulation ever borrows a classroom.
+    const roomBand=y>=4&&y<h-1;
+    if((x===8||x===12)&&roomBand){
+      c=[7,14,21,28].includes(y)?'+':'#';
     }
-    if((y===7||y===14||y===21||y===28)&&(x<9||x>11))c='#';
-    if(y===0&&x>=4&&x<=11)c='P';       // stair landing and short vestibule
+    if([4,11,18,25,32].includes(y)&&(x<9||x>11))c='#';
+    if(y===0&&x>=4&&x<=11)c='P';       // stair landing opens into the hall
     if(x===w-1&&y===3)c='+';           // thick-wall throat to upper bridge
     if(x===w-1&&y===16)c='+';          // string-room door to side passage
     row+=c;
@@ -161,14 +233,16 @@ function upperAtriumBridgeRows(){
 }
 function galleriaStairRows(x0){const out=[];for(let y=0;y<13;y++){let row='';for(let x=0;x<8;x++)row+=(y>0&&y<12&&x>=x0&&x<x0+2)?'/':' ';out.push(row);}return out;}
 const EUCLIDEAN_ADDITIONS=[
-  {id:'front_atrium',replace:true,layer:'ground',space:'front_atrium',renderGroup:'ground',origin:{x:74,y:3},physicalOrigin:{x:74,y:3},base:0,rows:frontAtriumRows()},
+  {id:'front_atrium',replace:true,layer:'ground',space:'front_atrium',renderGroup:'ground',origin:{x:74,y:3},physicalOrigin:{x:74,y:3},base:0,rows:frontAtriumRows(),profile:frontAtriumProfile},
   // The dock and the replacement atrium each own one metre of this old thick
   // wall. Author both cells as one single-leaf throat; leaf count remains
   // explicit in the door schedule.
   {id:'dock_foyer_threshold',replace:true,layer:'ground',space:'front_atrium',renderGroup:'ground',origin:{x:73,y:13},physicalOrigin:{x:73,y:13},base:0,rows:['++']},
-  {id:'pool_atrium_link',replace:true,layer:'ground',space:'front_atrium',renderGroup:'ground',origin:{x:83,y:25},physicalOrigin:{x:83,y:25},base:0,rows:['AAAAA','AAAAA']},
-  {id:'natatorium',replace:true,layer:'ground',space:'natatorium',renderGroup:'ground',origin:{x:70,y:27},physicalOrigin:{x:70,y:27},base:0,rows:natatoriumRows(),stairs:[
-    {from:{x:84,y:33},to:{x:84,y:37},fromH:0,toH:-1.6,width:3,ceil:9.5,zone:'natatorium',material:'poolTile'},
+  {id:'pool_atrium_link',replace:true,layer:'ground',space:'front_atrium',renderGroup:'ground',origin:{x:83,y:25},physicalOrigin:{x:83,y:25},base:0,rows:['AAAAA','AAAAA'],profile:(_x,_y,cell)=>cell.solid?null:{ceil:9.5}},
+  {id:'natatorium',replace:true,layer:'ground',space:'natatorium',renderGroup:'ground',origin:{x:70,y:27},physicalOrigin:{x:70,y:27},base:0,rows:natatoriumRows(),profile:natatoriumProfile,stairs:[
+    // wetTile is intentional on the whole run. The dry top tread naturally
+    // occludes a sub-floor water plane; each lower half-step can hold water.
+    {from:{x:84,y:29},to:{x:84,y:33},fromH:0,toH:-1.6,width:3,ceil:10.8,zone:'natatorium',material:'wetTile'},
   ]},
   {id:'hall_box_office_link',replace:true,layer:'ground',space:'front_atrium',renderGroup:'hall',origin:{x:94,y:24},physicalOrigin:{x:94,y:24},base:0,rows:['FFFFHH','FFFFHH','FFFFHH']},
   {id:'hall_orchestra',replace:true,layer:'ground',space:'hall',renderGroup:'hall',origin:{x:98,y:4},physicalOrigin:{x:98,y:4},base:0,rows:hallGroundRows(),profile:hallGroundProfile},
@@ -178,6 +252,22 @@ const EUCLIDEAN_ADDITIONS=[
   {id:'galleria_upper_stair',physicalReplace:true,layer:'hall_stair',space:'hall',renderGroup:'hall',origin:{x:40,y:40},physicalOrigin:{x:122,y:20},base:0,rows:galleriaStairRows(4),stairs:[{from:{x:44,y:51},to:{x:44,y:41},fromH:4,toH:7.5,width:2,head:2.6,zone:'hall',material:'woodVelvet'}]},
   {id:'practice_wing',replace:true,layer:'upper',space:'practice',renderGroup:'upper',origin:{x:56,y:52},physicalOrigin:{x:56,y:52},base:4.8,rows:practiceWingRows()},
   {id:'upper_atrium_bridge',replace:true,layer:'upper',space:'upper_atrium',renderGroup:'upper',origin:{x:77,y:53},physicalOrigin:{x:77,y:53},base:4.8,rows:upperAtriumBridgeRows()},
+  // The academic flight is visible immediately from the practice landing. It
+  // reverses beside the original upper stair, then meets the south end of the
+  // third-floor bridge without borrowing a classroom or hiding behind a seam.
+  {id:'academic_stair',layer:'academic_stair',space:'academic_stair',renderGroup:'academic',origin:{x:52,y:180},physicalOrigin:{x:63,y:39},base:4.8,rows:Array.from({length:18},()=> ' '.repeat(6)),stairs:[{
+    id:'main-academic-stair',zone:'stair',material:'serviceConcrete',head:3.4,
+    flights:[{
+      id:'return-flight',from:{x:52,y:194},to:{x:52,y:184},
+      physicalFrom:{x:63,z:49},physicalTo:{x:63,z:39},
+      fromH:4.8,toH:10,width:3,rises:26,groupFrom:'upper',groupTo:'academic',
+    }],
+    landings:[
+      {id:'practice-return',at:{x:52,y:194},size:{x:3,y:3},physicalAt:{x:63,z:49},height:4.8,renderGroup:'upper'},
+      {id:'academic-landing',at:{x:52,y:181},size:{x:3,y:3},physicalAt:{x:63,z:39},height:10,renderGroup:'academic'},
+    ],
+  }]},
+  {id:'academic_floor',layer:'academic',space:'academic',renderGroup:'academic',origin:ACADEMIC_ORIGIN,physicalOrigin:ACADEMIC_PHYSICAL_ORIGIN,base:ACADEMIC_BASE,rows:academicFloorRows(),profile:academicProfile},
   // First seal the entire legacy chapel footprint. The new chapel is the
   // only module allowed to reopen cells inside it.
   {id:'chapel_legacy_seal',replace:true,layer:'upper',space:'chapel_shell',renderGroup:'upper',origin:{x:81,y:58},physicalOrigin:{x:81,y:58},base:4.8,rows:Array.from({length:36},()=> '#'.repeat(30))},
@@ -240,7 +330,7 @@ const EUCLIDEAN_ADDITIONS=[
 
 export const conservatory = {
   width: 132,
-  height: 170,
+  height: 300,
   widenCorridors: true,
   connectors:[
     // Logical seams coincide at identical physical landings. Height changes
@@ -257,6 +347,10 @@ export const conservatory = {
     {from:{x:72,y:154},to:{x:101,y:151}},
     {from:{x:100,y:157},to:{x:104,y:151}},
     {from:{x:104,y:154},to:{x:98,y:82}},
+    // Existing save addresses remain untouched; these seams enter the appended
+    // academic stair and then the third-floor bridge at identical elevations.
+    {from:{x:63,y:52},to:{x:53,y:196}},
+    {from:{x:53,y:181},to:{x:13,y:278}},
   ],
   // Inside the loading dock, service door at your back. A bag, a work order,
   // and a radio that will fail.
@@ -394,10 +488,34 @@ export const conservatory = {
         ' ',
       ],
       stairs: [
-        // Stair A: the ground spine down to the basement. 0 → -4.0m, 11 cells.
-        { from: { x: 57, y: 22 }, to: { x: 47, y: 22 }, fromH: 0, toH: -4.0, width: 3 },
-        // Stair B: the shaft up to the practice wing. 0 → 4.0m, 11 cells.
-        { from: { x: 60, y: 41 }, to: { x: 60, y: 52 }, fromH: 0, toH: 4.8, width: 3 },
+        // Both principal stairs own their complete flights and three-metre
+        // landings. No endpoint inherits a neighbouring room's identity.
+        {
+          id:'main-basement-stair',zone:'stair',material:'serviceConcrete',
+          layer:'main_stair',space:'basement_stair',renderGroup:'ground',head:3.2,
+          flights:[{
+            id:'west-flight',from:{x:57,y:22},to:{x:47,y:22},
+            physicalFrom:{x:57,y:22},physicalTo:{x:47,y:22},physicalWidthSign:-1,
+            fromH:0,toH:-4,width:3,rises:20,groupFrom:'ground',groupTo:'basement',
+          }],
+          landings:[
+            {id:'ground-landing',at:{x:57,y:22},size:{x:3,y:3},physicalAt:{x:57,y:22},height:0,space:'basement_stair',renderGroup:'ground'},
+            {id:'b3-landing',at:{x:45,y:22},size:{x:3,y:3},physicalAt:{x:45,y:22},height:-4,space:'basement_stair',renderGroup:'basement'},
+          ],
+        },
+        {
+          id:'main-upper-stair',zone:'stair',material:'serviceConcrete',
+          layer:'main_stair',space:'upper_stair',renderGroup:'upper',head:3.4,
+          flights:[{
+            id:'shaft-flight',from:{x:60,y:41},to:{x:60,y:52},
+            physicalFrom:{x:60,y:41},physicalTo:{x:60,y:52},physicalWidthSign:-1,
+            fromH:0,toH:4.8,width:3,rises:22,groupFrom:'ground',groupTo:'upper',
+          }],
+          landings:[
+            {id:'ground-vestibule',at:{x:60,y:38},size:{x:3,y:3},physicalAt:{x:60,y:38},height:0,space:'upper_stair',renderGroup:'ground'},
+            {id:'practice-landing',at:{x:60,y:52},size:{x:3,y:3},physicalAt:{x:60,y:52},height:4.8,space:'upper_stair',renderGroup:'upper'},
+          ],
+        },
       ],
     },
     ...EUCLIDEAN_ADDITIONS,

@@ -51,10 +51,14 @@ const job = {
   unfiled: [],
 };
 
-const model = buildBagModel({ equipment, job });
+const model = buildBagModel({ equipment, job, loadout: { top: ['recorder', 'light'] } });
 assert.deepEqual(model.sections.map((section) => section.id), ['kit', 'map', 'files']);
 assert.equal(model.progress.done, 1);
-assert.equal(model.sections[0].entries[1].sourceId, 'recorder');
+assert.equal(model.sections[0].entries[0].sourceId, 'recorder');
+assert.deepEqual(model.sections[0].entries.slice(0, 2).map((entry) => entry.sourceId), ['recorder', 'light']);
+assert.equal(model.sections[0].entries[0].compartment, 'top');
+assert.equal(model.sections[0].entries[2].compartment, 'storage');
+assert.equal(model.sections[0].entries[2].actions.secondary.id, 'move-top');
 assert.equal(bagEntry(model, 'map', 'room:main_b3').state, 'recorded');
 assert.equal(bagEntry(model, 'files', 'file:work-order').roomId, 'main_b3');
 assert.equal(bagEntry(model, 'files', 'file:work-order').actions.secondary.id, 'unmark-room');

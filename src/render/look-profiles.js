@@ -9,8 +9,8 @@ const PROFILE_DATA = {
   calm: {
     bankId: 'calm', transitionMs: 600,
     generation: {
-      strength: 0.20, guidance: 0.8, passes: 1, mix: 0.42, seedBase: 11000,
-      prompt: 'quiet condemned conservatory surfaces, restrained age, fine dust in seams, underexposed neutral material study',
+      strength: 0.26, guidance: 1.1, passes: 1, mix: 0.54, seedBase: 11000,
+      prompt: 'quiet condemned conservatory materials, restrained age, isolated repairs and fine residue collected in seams, neutral flat material study',
       negative: NO_CHARACTERS,
     },
     material: { localDiffusion: 0.20, detailGain: 0.84, chromaDrift: 0.06, roughnessResponse: 0.06, normalResponse: 0.05 },
@@ -20,8 +20,8 @@ const PROFILE_DATA = {
   explore: {
     bankId: 'explore', transitionMs: 600,
     generation: {
-      strength: 0.32, guidance: 1.05, passes: 1, mix: 0.68, seedBase: 21000,
-      prompt: 'dark condemned conservatory materials, water damage, oxidized mineral bloom, repeating room-tone striations, underexposed physical texture',
+      strength: 0.42, guidance: 1.55, passes: 2, mix: 0.78, seedBase: 21000,
+      prompt: 'condemned conservatory materials, broad water damage, oxidized mineral blooms, repeating room-tone striations and conspicuous historic patch repairs, neutral flat physical texture',
       negative: NO_CHARACTERS,
     },
     material: { localDiffusion: 0.58, detailGain: 1.24, chromaDrift: 0.22, roughnessResponse: 0.16, normalResponse: 0.13 },
@@ -32,7 +32,7 @@ const PROFILE_DATA = {
     bankId: 'booth', transitionMs: 350,
     generation: {
       strength: 0.42, guidance: 1.5, passes: 1, mix: 0.78, seedBase: 31000,
-      prompt: 'institutional security booth material study, fluorescent glass reflections, stamped paper residue, tarnished key hooks, bureaucratic occult, underexposed procedural dread',
+      prompt: 'institutional security booth material study, stamped paper residue, tarnished metal ghosts, rectangular adhesive scars and bureaucratic occult patterning, neutral flat exposure',
       negative: `${NO_CHARACTERS}, gore, injury, friendly, clean bright office, neon poster`,
     },
     material: { localDiffusion: 0.70, detailGain: 1.38, chromaDrift: 0.28, roughnessResponse: 0.20, normalResponse: 0.17 },
@@ -54,7 +54,7 @@ const PROFILE_DATA = {
     bankId: 'hush', transitionMs: 900,
     generation: {
       strength: 0.46, guidance: 0.9, passes: 1, mix: 0.76, seedBase: 51000,
-      prompt: 'empty architectural material draining of detail, surfaces erased to cold grey, rubbed plaster, silence swallowing texture, underexposed void',
+      prompt: 'empty architectural material draining of detail, surfaces erased to cold grey, rubbed plaster islands, silence swallowing texture, neutral flat exposure',
       negative: NO_CHARACTERS,
     },
     material: { localDiffusion: 0.94, detailGain: 0.78, chromaDrift: 0.08, roughnessResponse: 0.22, normalResponse: 0.12 },

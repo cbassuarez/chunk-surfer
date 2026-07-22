@@ -26,19 +26,20 @@ function movement(id, title, coherence, intents, severeIntents = null, deadAirIn
 const PROFILES = Object.freeze({
   natatorium: Object.freeze({
     kind: 'regular',
+    signature: { id: 'echo', label: 'FOURTH RETURN', description: 'A missed response returns on the next hostile beat for +1 damage.' },
     music: { mode: 'fixed', lead: 'lead-1' },
     movements: [
-      movement('room', 'THE EMPTY ROOM', 3, [
+      movement('room', 'THE EMPTY ROOM', 4, [
         B('natatorium:meter', 'METER MOVES WITHOUT AIR', 2, { takeLabel: 'ROOM TONE', playbackDamage: 2 }),
         O('natatorium:pressure', 'PRESSURE BEHIND THE EARS', 2, { effect: 'ringing' }),
         C('natatorium:piano', 'PIANO WITH NO TRANSIENT', 2),
       ]),
-      movement('voice', 'THE VOICE ON TAPE', 3, [
+      movement('voice', 'THE VOICE ON TAPE', 4, [
         B('natatorium:voice', 'VOICE ON THE MONITOR PATH', 2, { takeLabel: 'VOICE PRINT', playbackDamage: 2 }),
         C('natatorium:memory', 'MEMORY PASSED AS SIGNAL', 2),
         O('natatorium:lean', 'THE ROOM LEANS CLOSER', 3, { effect: 'ringing' }),
       ]),
-      movement('hold', 'THE TAKE THAT HOLDS YOU', 3, [
+      movement('hold', 'THE TAKE THAT HOLDS YOU', 4, [
         B('natatorium:echo', 'FOURTH RETURN OF THE ECHO', 3, { takeLabel: 'EMPTY RETURN', playbackDamage: 2 }),
         O('natatorium:depth', 'BLACK WATER PRESSURE', 3, { effect: 'ringing' }),
         C('natatorium:absence', 'ABSENCE WEARING HER VOICE', 2),
@@ -47,19 +48,20 @@ const PROFILES = Object.freeze({
   }),
   hall: Object.freeze({
     kind: 'regular',
+    signature: { id: 'feedback', label: 'HOUSE RETURN', description: 'The first Playback in Noise each phase recoils for 1 Composure.' },
     music: { mode: 'fixed', lead: 'lead-3' },
     movements: [
-      movement('monitor', 'THE MONITOR RETURN', 3, [
+      movement('monitor', 'THE MONITOR RETURN', 4, [
         B('hall:send', 'HOUSE SEND ON AN OPEN FADER', 2, { takeLabel: 'HOUSE SEND', playbackDamage: 2 }),
         O('hall:bus', 'BUS VOLTAGE WITHOUT POWER', 2, { effect: 'ringing' }),
         C('hall:seat', 'A LISTENER IN THE EMPTY SEAT', 2),
       ]),
-      movement('return', 'THE HOUSE RETURN', 3, [
+      movement('return', 'THE HOUSE RETURN', 4, [
         B('hall:room', 'ROOM RETURN ON THE TAPE', 2, { takeLabel: 'HOUSE RETURN', playbackDamage: 2 }),
         L('hall:loop', 'OUTPUT PATCHED TO INPUT', 3),
         O('hall:clip', 'THE RETURN CLIPS RED', 3, { effect: 'ringing' }),
       ]),
-      movement('applause', 'APPLAUSE WITHOUT HANDS', 3, [
+      movement('applause', 'APPLAUSE WITHOUT HANDS', 4, [
         B('hall:applause', 'APPLAUSE IN THE NOISE FLOOR', 3, { takeLabel: 'EMPTY APPLAUSE', playbackDamage: 2 }),
         C('hall:audience', 'AUDIENCE REMOVED FROM VIEW', 2),
         O('hall:stack', 'THE STACK COMES UP AT ONCE', 3, { effect: 'ringing' }),
@@ -68,19 +70,20 @@ const PROFILES = Object.freeze({
   }),
   practice: Object.freeze({
     kind: 'regular',
+    signature: { id: 'ensemble', label: 'ENSEMBLE STACK', description: 'Every third hostile beat gains +1 damage unless this movement was Tuned.' },
     music: { mode: 'fixed', lead: 'lead-2' },
     movements: [
-      movement('instrument', 'THE WRONG INSTRUMENT', 3, [
+      movement('instrument', 'THE WRONG INSTRUMENT', 4, [
         B('practice:two-notes', 'TWO NOTES ON THE TAKE', 2, { takeLabel: 'TWO WRONG NOTES', playbackDamage: 2 }),
         C('practice:piano', 'PIANO HIDDEN IN A DEAD ROOM', 2),
         O('practice:ensemble', 'EVERY STAND ANSWERS', 2, { effect: 'ringing' }),
       ]),
-      movement('player', 'THE PLAYER NOT PRESENT', 3, [
+      movement('player', 'THE PLAYER NOT PRESENT', 4, [
         B('practice:breath', 'BREATH BEFORE THE PHRASE', 2, { takeLabel: 'PLAYER BREATH', playbackDamage: 2 }),
         O('practice:downbeat', 'DOWNBEAT THROUGH THE FLOOR', 3, { effect: 'ringing' }),
         C('practice:chair', 'THE EMPTY CHAIR MOVES', 2),
       ]),
-      movement('score', 'THE SCORE WRITES BACK', 3, [
+      movement('score', 'THE SCORE WRITES BACK', 4, [
         B('practice:phrase', 'THE PHRASE PLAYS ITSELF', 3, { takeLabel: 'SELF-PLAYING PHRASE', playbackDamage: 2 }),
         C('practice:rest', 'REST BLACKED OUT OF THE BAR', 2),
         O('practice:finale', 'ALL PARTS AT FULL LEVEL', 3, { effect: 'ringing' }),
@@ -89,29 +92,30 @@ const PROFILES = Object.freeze({
   }),
   chapel: Object.freeze({
     kind: 'chapel',
+    signature: { id: 'contract', label: 'CHAIN OF PROOF', description: 'Perfect tool responses preserve evidence used by the final contract.' },
     music: { mode: 'movement', movementLeads: ['lead-1', 'lead-2', 'lead-3', 'lead-1', 'lead-3'] },
     movements: [
-      movement('room', 'THE ROOM', 3, [
+      movement('room', 'THE ROOM', 4, [
         B('chapel:room-tone', 'ROOM TONE CLAIMS A BODY', 2, { takeLabel: 'ROOM CLAIM', playbackDamage: 2 }),
         C('chapel:not-empty', 'NOT WRITTEN INTO EMPTY', 2),
         O('chapel:walls', 'THE WALLS CLOSE THE CIRCUIT', 3, { effect: 'ringing' }),
       ]),
-      movement('recordist', 'THE PREVIOUS RECORDIST', 3, [
+      movement('recordist', 'THE PREVIOUS RECORDIST', 4, [
         B('chapel:body', 'BORROWED BODY ON THE MONITOR', 2, { takeLabel: 'BORROWED BODY', takeTag: 'body', playbackDamage: 2 }),
         O('chapel:consent', 'CONSENT BURIED UNDER NOISE', 3, { effect: 'ringing' }),
         C('chapel:previous', 'PREVIOUS RECORDIST BLACKED OUT', 2),
       ]),
-      movement('surfer', 'THE SURFER', 3, [
+      movement('surfer', 'THE SURFER', 4, [
         B('chapel:surfer', 'SURFER PRINT ON THE TAPE', 2, { takeLabel: 'SURFER PRINT', playbackDamage: 2 }),
         C('chapel:wearing', 'THE THING WEARING THE WORD', 2),
         O('chapel:process', 'PROCESS WITHOUT AN OPERATOR', 3, { effect: 'ringing' }),
       ]),
-      movement('contract', 'THE CONTRACT', 3, [
+      movement('contract', 'THE CONTRACT', 4, [
         B('chapel:terms', 'TERMS READ INTO THE RECORDER', 2, { takeLabel: 'CONTRACT TERMS', playbackDamage: 2 }),
         L('chapel:contract-loop', 'AGREEMENT FED BACK AS CONSENT', 3),
         O('chapel:signature', 'SIGNATURE DRIVEN PAST ZERO', 3, { effect: 'ringing' }),
       ]),
-      movement('source', 'THE SOURCE', 3, [
+      movement('source', 'THE SOURCE', 4, [
         B('chapel:body-return', 'BODY BORROWED RETURN', 2, { takeLabel: 'BODY BORROWED RETURN', takeTag: 'body', playbackDamage: 2 }),
         O('chapel:source-pressure', 'THE SOURCE PRESSES FOR AN ANSWER', 2, { effect: 'ringing' }),
         B('chapel:release-take', 'RELEASE PRINT ON THE RETURN', 2, { takeLabel: 'SIGNAL RELEASE', playbackDamage: 2 }),
@@ -121,19 +125,20 @@ const PROFILES = Object.freeze({
   }),
   source: Object.freeze({
     kind: 'source',
+    signature: { id: 'routing', label: 'THREE RETURNS', description: 'Every perfect response and phase break commits signal to the armed return channel.' },
     music: { mode: 'movement', movementLeads: ['lead-1', 'lead-2', 'lead-3'] },
     movements: [
-      movement('call-site', 'THE CALL SITE', 4, [
+      movement('call-site', 'THE CALL SITE', 5, [
         B('source:address', 'THE RECORDIST AT THIS ADDRESS', 2, { takeLabel: 'CALL SITE', playbackDamage: 2 }),
         C('source:alias', 'AN ALIAS WEARING YOUR NAME', 2),
         O('source:stack', 'THE STACK OPENS UNDERFOOT', 3, { effect: 'ringing' }),
       ]),
-      movement('borrowed-body', 'THE BORROWED BODY', 4, [
+      movement('borrowed-body', 'THE BORROWED BODY', 5, [
         B('source:body', 'BODY RETURN ON THE MONITOR', 2, { takeLabel: 'BORROWED BODY', takeTag: 'body', playbackDamage: 2 }),
         L('source:recursion', 'RECORDIST CALLS RECORDIST', 3),
         O('source:wear', 'THE BODY TAKES THE SIGNAL', 3, { effect: 'ringing' }),
       ]),
-      movement('final-clause', 'THE FINAL CLAUSE', 4, [
+      movement('final-clause', 'THE FINAL CLAUSE', 5, [
         B('source:return', 'RETURN VALUE STILL SPEAKING', 3, { takeLabel: 'RETURN VALUE', takeTag: 'body', playbackDamage: 3 }),
         L('source:final-loop', 'SOURCE FED BACK INTO SURFER', 3),
         C('source:redact', 'THE CLAUSE HIDES ITS SUBJECT', 2),
@@ -171,9 +176,14 @@ export function attachCombatDefinition(battle, combat = null) {
       art: battle.art || null,
       baseComposure: 8,
       kind: profile.kind,
+      signature: profile.signature || authored.signature,
       music: profile.music || authored.music,
       movements: profile.movements.map((movement, index) => ({
         ...movement,
+        // Narrative JSON owns prose and intent wording; the authored combat
+        // profile owns balance so old story variants cannot silently pin an
+        // obsolete health curve.
+        coherence: authored.movements[index]?.coherence ?? movement.coherence,
         before: rounds[index]?.before || [],
         onListen: rounds[index]?.onListen || [],
         after: rounds[index]?.after || [],
@@ -192,6 +202,7 @@ export function sourceCombatDefinition() {
     art: { id: 'surfer', mode: 'boss', caption: 'Source / borrowed body', status: 'RETURN' },
     baseComposure: 8,
     kind: profile.kind,
+    signature: profile.signature,
     music: profile.music,
     movements: profile.movements,
   };

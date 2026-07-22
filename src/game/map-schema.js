@@ -39,6 +39,8 @@ export function validateBuildingMap(definition, { requiredRooms = [] } = {}) {
     if (!(finite(floor.minHeight) || floor.minHeight === -Infinity)) errors.push(`${floor.id}: invalid minHeight`);
     if (!(finite(floor.maxHeight) || floor.maxHeight === Infinity)) errors.push(`${floor.id}: invalid maxHeight`);
     if (Number(floor.minHeight) >= Number(floor.maxHeight)) errors.push(`${floor.id}: floor band is empty`);
+    if (floor.visibility != null && !['always','discovered'].includes(floor.visibility)) errors.push(`${floor.id}: invalid visibility`);
+    if (floor.renderGroups != null && (!Array.isArray(floor.renderGroups) || floor.renderGroups.some((group) => typeof group !== 'string' || !group))) errors.push(`${floor.id}: invalid renderGroups`);
   }
 
   const rooms = new Set();

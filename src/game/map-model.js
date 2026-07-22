@@ -97,7 +97,7 @@ export function captureFloorplanMapSource({
   for (const [key, spans] of physical.cells) {
     const [physicalX, physicalY] = key.split(',').map(Number);
     for (const span of spans || []) {
-      const floor = floorForHeight(definition, span.floor);
+      const floor = floorForHeight(definition, span.floor, { renderGroup: span.renderGroup });
       if (!floor) continue;
       const runtimeFloor = floors.find((candidate) => candidate.id === floor.id);
       runtimeFloor.open.add(mapKey(Math.floor(physicalX / stride), Math.floor(physicalY / stride)));
@@ -111,7 +111,7 @@ export function captureFloorplanMapSource({
 
   const targets = definition.targets.map((target) => {
     const projected = projectLogical(target.logical);
-    const floor = floorForHeight(definition, projected.height ?? projected.y);
+    const floor = floorForHeight(definition, projected.height ?? projected.y, { renderGroup: projected.renderGroup });
     return {
       ...target,
       label: String(labelForRoom(target.roomId) || target.roomId).toUpperCase(),
@@ -124,15 +124,15 @@ export function captureFloorplanMapSource({
     };
   });
   const landmarks=(definition.landmarks||[]).map((landmark)=>{
-    const projected=projectLogical(landmark.logical),floor=floorForHeight(definition,projected.height??projected.y);
+    const projected=projectLogical(landmark.logical),floor=floorForHeight(definition,projected.height??projected.y,{renderGroup:projected.renderGroup});
     return{...landmark,floorId:floor?.id||null,position:{x:Number(projected.x)/stride,y:Number(projected.z??projected.mapY??projected.y)/stride},height:Number(projected.height??projected.y)||0};
   });
 
   const connectors = [];
   for (let index = 0; index < stairPortals.length; index++) {
     const portal = stairPortals[index];
-    const floorA = floorForHeight(definition, portal.floor0);
-    const floorB = floorForHeight(definition, portal.floor1);
+    const floorA = floorForHeight(definition, portal.floor0, { renderGroup: portal.group0 });
+    const floorB = floorForHeight(definition, portal.floor1, { renderGroup: portal.group1 });
     if (!floorA || !floorB || floorA.id === floorB.id) continue;
     connectors.push({
       id: `connector:${index}:${floorA.id}-${floorB.id}`,
@@ -169,7 +169,7 @@ export function captureDoorMapState({ doors = [], projectLogical, source, hasKey
   if (typeof projectLogical !== 'function') return [];
   return doors.map((door) => {
     const projected = projectLogical({ x: door.cx, y: door.cy }, { authored: false });
-    const floor = floorForHeight(source.definition, projected.height ?? projected.y);
+    const floor = floorForHeight(source.definition, projected.height ?? projected.y, { renderGroup: projected.renderGroup });
     const locked = !door.open && !!door.keyId && !hasKey(door.keyId);
     const closed = !door.open;
     return {
@@ -200,7 +200,7 @@ function normalizePlayer(source, player) {
       position: null, heading: Number(player?.heading) || 0,
     };
   }
-  const floor = floorForHeight(source.definition, player.height);
+  const floor = floorForHeight(source.definition, player.height, { renderGroup: player.renderGroup });
   return {
     resolved: !!floor,
     floorId: floor?.id || null,
@@ -227,6 +227,7 @@ export function buildMapModel({
   contacts = [],
   navigation = null,
   landmarkState = {},
+  discoveredFloorIds = new Set(),
 } = {}) {
   if (!source) {
     const rooms = Array.isArray(job?.rooms) ? job.rooms : [];
@@ -254,7 +255,12 @@ export function buildMapModel({
 
   const policy = resolveMapPolicy(navigation);
   const playerState = normalizePlayer(source, player);
-  const spaces = source.targets.map((target) => {
+  const discovered = discoveredFloorIds instanceof Set ? discoveredFloorIds : new Set(discoveredFloorIds || []);
+  const visibleFloors = source.floors.filter((floor) => floor.visibility !== 'discovered' || discovered.has(floor.id) || playerState.floorId === floor.id);
+  const visibleFloorIds = new Set(visibleFloors.map((floor) => floor.id));
+  const visibleConnectors = source.connectors.filter((connector) => visibleFloorIds.has(connector.a.floorId) && visibleFloorIds.has(connector.b.floorId));
+  const visibleDoors = doors.filter((door) => !door.floorId || visibleFloorIds.has(door.floorId));
+  const spaces = source.targets.filter((target)=>visibleFloorIds.has(target.floorId)).map((target) => {
     const room = roomEntry(job, target.roomId) || {};
     const notes = Array.isArray(room.notes) ? room.notes : [];
     const current = playerState.roomId === target.roomId;
@@ -301,9 +307,9 @@ export function buildMapModel({
   } : null;
 
   const route = resolveMapRoute({
-    floors: source.floors,
-    connectors: source.connectors,
-    doors,
+    floors: visibleFloors,
+    connectors: visibleConnectors,
+    doors: visibleDoors,
     player: playerState,
     waypoint,
   });
@@ -320,9 +326,9 @@ export function buildMapModel({
     version: 2,
     sourceVersion: source.version,
     topologyStride: source.topologyStride,
-    floors: source.floors,
-    connectors: source.connectors,
-    doors,
+    floors: visibleFloors,
+    connectors: visibleConnectors,
+    doors: visibleDoors,
     spaces,
     player: playerState,
     waypoint,

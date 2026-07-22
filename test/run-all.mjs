@@ -3,6 +3,8 @@ import process from 'node:process';
 
 const tests = [
   'test/bag.spec.mjs',
+  'test/combat-loadout.spec.mjs',
+  'test/combat-presentation.spec.mjs',
   'test/map-core.spec.mjs',
   'test/map-live-data.spec.mjs',
   'test/hush-telemetry.spec.mjs',
@@ -31,6 +33,8 @@ const tests = [
   'test/progression-profile.spec.mjs',
   'test/progression-runtime.spec.mjs',
   'test/progression-migration.spec.mjs',
+  'test/stair-anomaly.spec.mjs',
+  'test/academic-gallery.spec.mjs',
   'test/platform-sync.spec.mjs',
   'test/storage-platform.spec.mjs',
   'test/launch-parity.spec.mjs',

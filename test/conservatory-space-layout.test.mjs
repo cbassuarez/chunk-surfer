@@ -74,12 +74,24 @@ assert.ok(reachable(rt(97, 25), rt(100, 21)), 'hall door to lower galleria stair
 assert.ok(reachable(rt(102, 15), rt(1, 67)), 'orchestra to lower balcony route remains clear');
 assert.ok(reachable(rt(1, 67), rt(28, 114)), 'lower balcony to upper balcony route remains clear');
 
+const practiceEndIds = [
+  'practice-corridor-large-portrait',
+  'acq-practice-corridor-chair-west',
+  'acq-practice-corridor-chair-east',
+  'acq-practice-corridor-chandelier',
+];
+assert.ok(practiceEndIds.every((id) => !byId[id]), 'the practice stair corridor no longer terminates in a decorative ensemble');
+assert.ok(reachable(rt(66, 55), rt(66, 79)), 'the bare practice corridor remains reachable from its stair landing');
+
 const startBlockOnStairs = placed.filter((prop) => prop.id.startsWith('pool-start-'))
   .some((prop) => Math.abs(prop.x - 84) < 0.75);
 assert.equal(startBlockOnStairs, false, 'starting blocks must not occupy the basin stair run');
 assert.ok(reachable(rt(84, 27), rt(84, 37)), 'natatorium lobby to basin stair remains walkable');
-assert.ok(reachable(rt(84, 27), rt(72, 45)), 'natatorium west deck perimeter remains walkable');
-assert.ok(reachable(rt(84, 27), rt(94, 34)), 'natatorium east deck and lane storage remain walkable');
+assert.ok(reachable(rt(84, 27), rt(75, 45)), 'natatorium west deck perimeter remains walkable');
+assert.ok(reachable(rt(84, 27), rt(91, 34)), 'natatorium east deck and lane storage remain walkable');
+assert.ok(reachable(rt(84, 27), rt(84, 47)), 'the entrance, full basin length, and far axial wall read as one traversable hall');
+assert.equal(byId['natatorium-hall-shell'], undefined, 'the natatorium has no freestanding inner architectural shell');
+assert.equal(byId['pool-lane-markings']?.elevation, .05, 'longitudinal lane markings sit just above the basin floor');
 
 const pipeProps = placed.filter((prop) => prop.id.startsWith('plant-pipe-'));
 assert.ok(pipeProps.length >= 6, 'plant room receives a visible pipe system');

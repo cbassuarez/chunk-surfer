@@ -25,6 +25,7 @@ import {
   PERSONAL_INTERFERENCE_LABEL,
   normalizePersonalInterferenceSettings,
 } from './personalized-interference.js';
+import { CONTROL_MODES, normalizeControlMode } from '../input/input-manager.js';
 
 const MIC_LABEL = {
   idle: 'OFF',
@@ -48,6 +49,11 @@ const HUSH_AUDIO_LABEL = { reduced: 'REDUCED', full: 'FULL' };
 const HUSH_LIGHT_MODES = ['off', 'reduced', 'full'];
 const BACKGROUND_AUDIO_MODES = ['continue', 'pause'];
 const BACKGROUND_AUDIO_LABEL = { continue: 'CONTINUE', pause: 'PAUSE WHEN UNFOCUSED' };
+const CONTROL_MODE_LABEL = {
+  classic: 'CLASSIC TURN',
+  'independent-wasd': 'WASD MOVE / ARROWS LOOK',
+  'independent-arrows': 'ARROWS MOVE / WASD LOOK',
+};
 
 // A bar like ◀▮▮▮▯▯▶ for a 0..1 value.
 function bar(v, n = 10) {
@@ -394,6 +400,9 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
       {
         id: 'input', name: 'INPUT',
         rows: [
+          { id: 'controlMode', label: 'MOVEMENT MODE',
+            value: () => CONTROL_MODE_LABEL[normalizeControlMode(setting('controlMode', 'classic'))],
+            adjust: (d) => cycleSetting('controlMode', CONTROL_MODES, d, 'classic') },
           { id: 'controlMap', label: 'CONTROLLER', value: () => controllerPrefs().enabled === false ? 'OFF' : (hooks.controllerName?.() || 'NO CONTROLLER'),
             adjust: () => controllerPatch({ enabled: controllerPrefs().enabled === false }) },
           { id: 'configureController', label: 'CONFIGURE CONTROLLER', value: () => inputPrompt('confirm'), activate: () => hooks.openControllerSettings?.() },

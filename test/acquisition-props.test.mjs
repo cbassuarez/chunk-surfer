@@ -63,22 +63,21 @@ PROPS.propsInit(FP);
 
 const historicalProps = CONSERVATORY_PROPS.filter((prop) => prop.provenance);
 const acquisitions = historicalProps.filter((prop) => expectedMeshes.has(prop.mesh));
-assert.equal(historicalProps.length, 34);
-assert.equal(acquisitions.length, 33);
-assert.equal(new Set(historicalProps.map((prop) => prop.provenance.assetTag)).size, 34);
+assert.equal(historicalProps.length, 30);
+assert.equal(acquisitions.length, 30);
+assert.equal(new Set(historicalProps.map((prop) => prop.provenance.assetTag)).size, 30);
 assert.ok(historicalProps.every((prop) => PROCUREMENT_COHORTS[prop.provenance.cohort]));
 assert.ok(acquisitions.every((prop) => !prop.sampleFamily && prop.interaction !== 'play'));
 
 const expectedCohorts = {
   practice_room_contract: 8,
   foyer_suite: 5,
-  curatorial_accessions: 3,
+  curatorial_accessions: 2,
   hall_lighting_refit: 2,
   hall_lounge_replacement: 2,
   chapel_foundation_1908: 6,
   services_rewire: 3,
   maintenance_purchase: 2,
-  ground_spine_furnishing: 3,
 };
 for (const [cohort, count] of Object.entries(expectedCohorts)) {
   assert.equal(historicalProps.filter((prop) => prop.provenance.cohort === cohort).length, count, cohort);
@@ -87,7 +86,7 @@ for (const [cohort, count] of Object.entries(expectedCohorts)) {
 const practiceChairs = acquisitions.filter((prop) => prop.mesh === 'green_chair_01');
 assert.equal(practiceChairs.length, 8);
 assert.deepEqual(practiceChairs.map((prop) => prop.provenance.assetTag), ['P/CH-01', 'P/CH-02', 'P/CH-03', 'P/CH-04', 'P/CH-05', 'P/CH-06', 'P/CH-07', 'P/CH-08']);
-assert.ok(practiceChairs.some((prop) => prop.x === 61 && prop.y === 76), 'chair 07 remains beneath the violin');
+assert.ok(practiceChairs.some((prop) => prop.x === 61 && prop.y === 79), 'chair 07 remains beneath the violin');
 
 const ceilingProps = acquisitions.filter((prop) => PROP_MESH[prop.mesh].mount === 'ceiling');
 for (const prop of ceilingProps) {
@@ -142,19 +141,8 @@ for (let index = 1; index < northLowerRun.length; index += 1) {
   assert.ok(Math.abs(previousEnd - currentStart) <= 0.05, `${previous.id} joins ${current.id}`);
 }
 
-const spinePortrait = historicalProps.find((prop) => prop.id === 'ground-spine-large-portrait');
-const spineSet = historicalProps.filter((prop) => prop.provenance.cohort === 'ground_spine_furnishing');
-assert.equal(spinePortrait.mesh, 'portrait_frame');
-assert.ok(spinePortrait.scale >= 2);
-assert.equal(spinePortrait.x, 73.75, 'ground-spine painting is on the atrium west wall, not the box-office wall');
-assert.equal(spinePortrait.y, 23, 'ground-spine painting is centred on the basement-stair axis');
-assert.deepEqual(spineSet.map((prop) => prop.mesh).sort(), ['arm_chair_01', 'arm_chair_01', 'chandelier_03']);
-assert.deepEqual(spineSet.filter((prop) => prop.mesh === 'arm_chair_01').map((prop) => prop.y), [21.8, 24.2]);
-assert.deepEqual(spineSet.filter((prop) => prop.mesh === 'arm_chair_01').map((prop) => prop.x), [72.85, 72.85]);
-assert.ok(spineSet.filter((prop) => prop.mesh === 'arm_chair_01')
-  .every((prop) => prop.yaw === Math.PI / 2 && prop.scale === 1.35));
-assert.equal(spineSet.find((prop) => prop.mesh === 'chandelier_03').y, 23);
-assert.equal(spineSet.find((prop) => prop.mesh === 'chandelier_03').x, 69);
+const removedCirculationIds=['ground-spine-large-portrait','practice-corridor-large-portrait','acq-ground-spine-chair-north','acq-ground-spine-chair-south','acq-ground-spine-chandelier','acq-practice-corridor-chair-west','acq-practice-corridor-chair-east','acq-practice-corridor-chandelier'];
+assert.ok(removedCirculationIds.every((id)=>!historicalProps.some((prop)=>prop.id===id)),'stair approaches retain no acquisition furniture, paintings, or pendants');
 
 const keys = new Set((conservatory.doors || []).map((door) => door.key).filter(Boolean));
 const spawn = FP.toRuntimePoint(conservatory.spawn);

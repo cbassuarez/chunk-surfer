@@ -36,6 +36,9 @@ export function makeBagScene({
   job = EMPTY_JOB,
   map = null,
   getEquipment = null,
+  loadout = null,
+  getLoadout = null,
+  moveEquipment = null,
   getJob = null,
   getMap = null,
   hint = '',
@@ -52,16 +55,19 @@ export function makeBagScene({
   getMonitorSource = null,
 } = {}) {
   const equipmentSource = typeof getEquipment === 'function' ? getEquipment : () => equipment;
+  const loadoutSource = typeof getLoadout === 'function' ? getLoadout : () => loadout;
   const jobSource = typeof getJob === 'function' ? getJob : () => job;
   const mapSource = typeof getMap === 'function' ? getMap : () => map;
   const hintSource = typeof getHint === 'function' ? getHint : () => hint;
   const focusSource = typeof getFocus === 'function' ? getFocus : () => focus;
 
-  let model = buildBagModel({ equipment: equipmentSource(), job: jobSource(), map: mapSource() });
+  let model = buildBagModel({ equipment: equipmentSource(), job: jobSource(), map: mapSource(), loadout: loadoutSource() });
   let nav = (memory || rememberedNav) ? repairBagSelection(memory || rememberedNav, model) : initialBagState(model, focus || {});
   let mapNav = initialMapNav({ model: model.map, preferredRoomId: focus?.entryId?.replace(/^room:/, '') || null });
   if (nav.map) mapNav = reduceMapNav(nav.map, { type: 'MODEL_REFRESH' }, model.map);
   let t = 0;
+  let notice = '';
+  let noticeUntil = 0;
   let appliedFocusKey = '';
   const motion = { openedAt: 0, sectionChangedAt: 0, selectionChangedAt: 0, actionAt: 0 };
 
@@ -113,7 +119,7 @@ export function makeBagScene({
   }
 
   function refresh() {
-    model = buildBagModel({ equipment: equipmentSource(), job: jobSource(), map: mapSource() });
+    model = buildBagModel({ equipment: equipmentSource(), job: jobSource(), map: mapSource(), loadout: loadoutSource() });
     nav = reduceBagNav(nav, { type: 'MODEL_REFRESH' }, model);
     mapNav = reduceMapNav(mapNav, { type: 'MODEL_REFRESH' }, model.map);
     if (nav.sectionId === 'map') syncBagSelectionFromMap();
@@ -199,6 +205,18 @@ export function makeBagScene({
       ok = markRoom(entry.roomId);
     } else if (entry.kind === 'room' && actionId === 'read-attached') {
       if (entry.attached) { readDocument(entry.attached); ok = true; }
+    } else if (entry.kind === 'gear' && (actionId === 'move-top' || actionId === 'move-storage')) {
+      const result = typeof moveEquipment === 'function'
+        ? moveEquipment(entry.sourceId, actionId === 'move-top' ? 'top' : 'storage')
+        : { changed: false, reason: 'unavailable' };
+      ok = !!result?.changed;
+      if (!ok) {
+        notice = result?.reason === 'top-full'
+          ? `TOP COMPARTMENT FULL · ${model.loadout.capacity}/${model.loadout.capacity} · MOVE ONE ITEM TO STORAGE`
+          : 'LOADOUT UNCHANGED';
+        noticeUntil = t + 2.4;
+        AUDIO.menuMove?.();
+      }
     } else if (entry.kind === 'gear' && typeof entry.source?.action === 'function') {
       entry.source.action(); ok = true;
     }
@@ -252,7 +270,10 @@ export function makeBagScene({
       applyFocus(focusSource());
     },
 
-    update(dt) { t += dt; },
+    update(dt) {
+      t += dt;
+      if (notice && t >= noticeUntil) notice = '';
+    },
     refresh,
     selectSection: setSection,
     selectRoom(roomId) {
@@ -324,7 +345,10 @@ export function makeBagScene({
       if (nav.sectionId !== 'map') {
         nav = ensureBagSelectionVisible(nav, model, bagListCapacity(layout, nav.sectionId));
       }
-      drawBagView({ model, nav, mapNav, layout, hint: hintSource(), motion, now: t });
+      const liveHint = notice || (nav.sectionId === 'kit'
+        ? 'TOP COMPARTMENT IS THE LOCKED BATTLE KIT · [SPACE] MOVE ITEM'
+        : hintSource());
+      drawBagView({ model, nav, mapNav, layout, hint: liveHint, motion, now: t });
       debug?.({ model, nav, mapNav, layout, selected: currentBagEntry(nav, model), t });
     },
   };

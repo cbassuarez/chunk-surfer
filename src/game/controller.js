@@ -141,14 +141,22 @@ function movementFromAxes(axes, buttons) {
   return out;
 }
 
+function axesWithDpad(axes, buttons) {
+  return {
+    ...axes,
+    moveX: clampAxis(axes.moveX + (buttons.has('dpadRight') ? 1 : 0) - (buttons.has('dpadLeft') ? 1 : 0)),
+    moveY: clampAxis(axes.moveY + (buttons.has('dpadUp') ? 1 : 0) - (buttons.has('dpadDown') ? 1 : 0)),
+  };
+}
+
 function actionPressed(action, buttons) {
   const binding = controllerActionBinding(action);
   return binding?.kind === 'button' && buttons.has(binding.id);
 }
 
-function actionsFor(pad, menuContext, buttons = rawButtons(pad), extraActions = []) {
-  const axes = axesFor(pad);
-  const actions = movementFromAxes(axes, buttons);
+function actionsFor(pad, menuContext, buttons = rawButtons(pad), extraActions = [], independentMotion = false) {
+  const axes = axesWithDpad(axesFor(pad), buttons);
+  const actions = independentMotion && !menuContext ? new Set() : movementFromAxes(axes, buttons);
   const buttonActions = menuContext
     ? [...new Set([...MENU_ACTIONS, ...extraActions])]
     : WORLD_ACTIONS;
@@ -209,7 +217,7 @@ export function beginControllerRemap(action, done) {
 
 export function cancelControllerRemap() { capture = null; }
 
-export function gamepadTick({ menuContext = false, modalActions = [], onPress = () => {}, onRelease = () => {} } = {}) {
+export function gamepadTick({ menuContext = false, independentMotion = false, modalActions = [], onPress = () => {}, onRelease = () => {} } = {}) {
   settings = normalizeControllerSettings(controllerSettings());
   const list = pads();
   const pad = selectPad(list);
@@ -227,7 +235,7 @@ export function gamepadTick({ menuContext = false, modalActions = [], onPress = 
   }
   for (const token of [...suppressedButtons]) if (!raw.has(token)) suppressedButtons.delete(token);
   const buttons = new Set([...raw].filter((token) => !suppressedButtons.has(token)));
-  const { axes, actions } = actionsFor(pad, menuContext, buttons, modalActions);
+  const { axes, actions } = actionsFor(pad, menuContext, buttons, modalActions, independentMotion);
   updateLastState(pad, buttons, axes, actions);
 
   if (capture) {

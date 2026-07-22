@@ -29,6 +29,19 @@ export const SURFACE_NAMES = Object.freeze([
   'rammed-earth plaster wall', 'concrete wall cladding',
 ]);
 
+export const SURFACE_PROMPT_DETAILS = Object.freeze([
+  'uneven lime mortar, dark damp tide marks, isolated pale mineral blooms, displaced brick repairs',
+  'deep mineral fissures, rust bleed at joints, broad lichen-like discoloration without vegetation',
+  'raised grain, blackened board seams, worn varnish islands, long water stains across several planks',
+  'layered mica fractures, pale calcite veins, broad abrasion trails, chipped aggregate repairs',
+  'chlorine-bleached grout, cobalt crazing, missing tessera repairs, broad submerged mineral stains',
+  'cracked glaze, grey grout bloom, rust trails from old fittings, mismatched rectangular patch repairs',
+  'large aggregate ghosts, waxed wear lanes, branching hairline cracks, dark institutional repair plugs',
+  'open pores, ochre water tracks, chipped corners, pale salt blooms spanning multiple blocks',
+  'trowel arcs, damp blisters, hairline settlement cracks, broad rubbed and repainted patches',
+  'formwork grain, cold joints, iron oxide runs, spalled corners and conspicuous cement repairs',
+]);
+
 function canvasJpeg(canvas) {
   return new Promise((resolve, reject) => {
     canvas.toBlob(async (blob) => {
@@ -168,6 +181,7 @@ export function surfaceDiffusionStart({
   let mutationPerformanceFault = false;
   let mutationObservationUntil = 0;
   let nextMutationAt = null;
+  let streamTimer = null;
 
   const sourcePromise = surfacePayloads(sourceUrl).then((source) => {
     payloads = source.payloads;
@@ -223,7 +237,20 @@ export function surfaceDiffusionStart({
   }
 
   function surfacePrompt(recipe, slot) {
-    return `seamless tileable ${SURFACE_NAMES[slot]} material, ${recipe.prompt}, orthographic flat albedo texture, fine physical detail, even illumination, no perspective`;
+    return `seamless tileable ${SURFACE_NAMES[slot]} material, ${SURFACE_PROMPT_DETAILS[slot]}, ${recipe.prompt}, conspicuous readable changes at arm's length, orthographic flat albedo texture, neutral exposure, diffuse even illumination, no cast shadows, no perspective`;
+  }
+
+  function continueBankStream() {
+    if (streamTimer != null) clearTimeout(streamTimer);
+    // Once the currently displayed bank exists, leave a small render-frame
+    // window between background generations. The mutation scheduler can then
+    // interleave a visible tile instead of waiting for all sixty bank tiles.
+    const activeBankReady = (banks.get(stats.activeBank) || []).filter(Boolean).length === SURFACE_NAMES.length;
+    if (!activeBankReady) return sendNext().catch(fail);
+    streamTimer = setTimeout(() => {
+      streamTimer = null;
+      sendNext().catch(fail);
+    }, 120);
   }
 
   function sendWork(work, payload) {
@@ -373,6 +400,7 @@ export function surfaceDiffusionStart({
       mutationDisplayed: displayed,
       mutationPerformanceBackoff: !!work.performanceFault,
     });
+    continueBankStream();
   }
 
   async function prepareMutation({ bankId, slot, epoch, timing }) {
@@ -420,11 +448,12 @@ export function surfaceDiffusionStart({
     }
     const slots = [...new Set((Array.isArray(visibleSlots) ? visibleSlots : [])
       .map((slot) => Math.floor(Number(slot))).filter((slot) => slot >= 0 && slot < SURFACE_NAMES.length))];
+    const activeBankReady = (banks.get(stats.activeBank) || []).filter(Boolean).length === SURFACE_NAMES.length;
     const canStart = mutationCanStart({
       allowed,
-      resident: stats.resident,
+      resident: activeBankReady,
       activeBank: stats.activeBank,
-      activeWork: !!active || queue.length > 0 || mutationPreparing || requestedBank != null,
+      activeWork: !!active || mutationPreparing || requestedBank != null,
       transitioning,
       fps,
       samples: perf?.samples,
@@ -532,7 +561,7 @@ export function surfaceDiffusionStart({
         }
       }
       active = null; pendingResult = null;
-      sendNext().catch(fail);
+      continueBankStream();
     };
     let gone = false;
     const onGone = () => {
@@ -568,7 +597,9 @@ export function surfaceDiffusionStart({
   async function retry() {
     fatal = false; sequence += 1;
     if (reconnectTimer != null) clearTimeout(reconnectTimer);
+    if (streamTimer != null) clearTimeout(streamTimer);
     reconnectTimer = null;
+    streamTimer = null;
     try { socket?.close(1000, 'calibration retry'); } catch (_) {}
     socket = null; active = null; pendingResult = null; retries = RETRIES;
     mutationPreparing = false; mutationPerformanceFault = false; mutationObservationUntil = 0;
@@ -590,7 +621,9 @@ export function surfaceDiffusionStart({
     stop() {
       stopped = true; sequence += 1;
       if (reconnectTimer != null) clearTimeout(reconnectTimer);
+      if (streamTimer != null) clearTimeout(streamTimer);
       reconnectTimer = null;
+      streamTimer = null;
       try { socket?.close(1000, 'app shutdown'); } catch (_) {}
     },
   };

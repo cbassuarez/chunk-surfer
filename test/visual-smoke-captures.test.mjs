@@ -15,6 +15,10 @@ test('feature smoke captures the restored title, authored slates, cinematic roll
     '01d-opening-quotation-compact.png',
     '02-title-current-build.png',
     '02-title-compact.png',
+    '07-natatorium-long-hall.png',
+    '07a-upper-stair-normal-dark.png',
+    '07aa-practice-corridor-dead-end-dark.png',
+    '07b-basement-stair-normal-dark.png',
     '08-chunk-surf-long-hall.png',
     '09-credits-opening-card.png',
     '09-credits-opening-card-compact.png',
@@ -33,6 +37,9 @@ test('feature smoke captures the restored title, authored slates, cinematic roll
   assert.match(source, /__probe\.endingCredits\('sacrifice'\)/);
   assert.match(source, /chunkSurf\.state\.phase,'hall'/);
   assert.match(source, /__probe\.godWarpDock\(\)/);
+  assert.match(source, /\[\['reduced',true\],\['full',false\]\]/);
+  assert.match(source, /07c-stair-\$\{mode\}-phase-\$\{stage\+1\}\.png/);
+  assert.match(source, /stairPerformance=await samplePerformance\(\)/);
   assert.match(source, /map\.player\.resolved,true/);
   assert.doesNotMatch(source, /08-chunk-surf-source-fault\.png/);
 });
@@ -46,5 +53,7 @@ test('feature smoke runner is portable across release operating systems', () => 
   assert.match(source, /Visual smoke exceeded/);
   const capture = readFileSync('tools/chunk_surfer/tests/feature-regression-smoke.mjs', 'utf8');
   assert.doesNotMatch(capture, /page\.evaluate\([^\n]*requestAnimationFrame/);
-  assert.match(capture, /interactionTimeout=process\.platform==='linux'\?30000:5000/);
+  assert.match(capture, /interactionTimeout=process\.platform==='linux'\?30000:10000/);
+  assert.match(capture, /FEATURE_SMOKE_FRAME_TIMEOUT_MS/);
+  assert.match(capture, /snapshot\.samples<minimumSamples&&Date\.now\(\)<deadline/);
 });

@@ -11,6 +11,12 @@
 // for presentation and navigation. It deliberately knows nothing about scenes,
 // canvas, key events, saves, or the world clock.
 
+import {
+  combatCompartment,
+  isBattleGear,
+  normalizeCombatLoadout,
+} from './combat-loadout.js';
+
 export const EMPTY_JOB = Object.freeze({
   rooms: [],
   unfiled: [],
@@ -34,6 +40,22 @@ const KNOWN_GEAR = Object.freeze({
     status: ['READY', 'active'],
     description: 'Captures one uninterrupted minute of room tone.',
     facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'CAPTURE / MONITOR']],
+  },
+  interface: {
+    title: 'BENT RIG INTERFACE',
+    subtitle: 'CIRCUIT-BENT RETURN',
+    icon: 'interface',
+    status: ['READY', 'active'],
+    description: 'A rewired return path capable of reversing a hostile signal.',
+    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'INVERT / FEEDBACK']],
+  },
+  'tuning-fork': {
+    title: 'TUNING FORK',
+    subtitle: 'STEEL REFERENCE / A440',
+    icon: 'tuning-fork',
+    status: ['READY', 'active'],
+    description: 'A stable reference tone carried into unstable rooms.',
+    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'TUNE / REVEAL']],
   },
   map: {
     title: 'LOCATION INDICATOR',
@@ -362,7 +384,7 @@ export function normalizeBagSectionId(sectionId) {
   return BAG_SECTION_ALIASES[sectionId] || sectionId;
 }
 
-export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null } = {}) {
+export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, loadout = null } = {}) {
   const safeJob = {
     ...EMPTY_JOB,
     ...(job || {}),
@@ -370,7 +392,37 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null } = 
     unfiled: Array.isArray(job?.unfiled) ? job.unfiled : [],
   };
 
-  const kit = (Array.isArray(equipment) ? equipment : []).map(normalizeEquipment);
+  const normalizedLoadout = normalizeCombatLoadout(loadout);
+  const kit = (Array.isArray(equipment) ? equipment : []).map(normalizeEquipment).map((entry) => {
+    const battleCapable = entry.source?.battleCapable ?? isBattleGear(entry.sourceId);
+    const compartment = battleCapable ? combatCompartment(normalizedLoadout, entry.sourceId) : 'storage';
+    const topIndex = normalizedLoadout.top.indexOf(entry.sourceId);
+    const compartmentLabel = compartment === 'top'
+      ? `TOP ${topIndex + 1}/${normalizedLoadout.capacity}`
+      : battleCapable ? 'STORAGE / BATTLE LOCKED' : 'STORAGE';
+    return {
+      ...entry,
+      battleCapable,
+      compartment,
+      topIndex,
+      facts: [['COMPARTMENT', compartmentLabel], ...entry.facts],
+      badges: [compartment === 'top' ? `TOP ${topIndex + 1}` : 'STORAGE', ...entry.badges],
+      actions: {
+        ...entry.actions,
+        secondary: battleCapable && entry.present
+          ? {
+              id: compartment === 'top' ? 'move-storage' : 'move-top',
+              label: compartment === 'top' ? 'MOVE TO STORAGE' : 'PACK TOP',
+              destructive: false,
+            }
+          : null,
+      },
+    };
+  }).sort((a, b) => {
+    if (a.compartment !== b.compartment) return a.compartment === 'top' ? -1 : 1;
+    if (a.compartment === 'top') return a.topIndex - b.topIndex;
+    return 0;
+  });
   const total = Math.max(0, Number(safeJob.total) || safeJob.rooms.length || 0);
   const mapEntries = safeJob.rooms.map((room, index) => {
     const entry = normalizeRoom(room, index, total || safeJob.rooms.length || 5);
@@ -391,11 +443,12 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null } = 
 
   return {
     sections: [
-      { id: 'kit', label: 'KIT', countLabel: String(kit.filter((e) => e.present).length).padStart(2, '0'), entries: kit },
+      { id: 'kit', label: 'KIT', countLabel: `${kit.filter((e) => e.present && e.compartment === 'top').length}/${normalizedLoadout.capacity}`, entries: kit },
       { id: 'map', label: 'MAP', countLabel: `${done}/${total}`, entries: mapEntries, map },
       { id: 'files', label: 'FILES', countLabel: String(files.length).padStart(2, '0'), entries: files },
     ],
     progress: { done, total },
+    loadout: normalizedLoadout,
     job: safeJob,
     map,
   };

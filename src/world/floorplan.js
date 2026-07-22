@@ -219,10 +219,14 @@ function initDoorPortals(){
   doorPortals=[];doorCellToPortal.clear();
   for(const volume of plan.doorVolumes){
     if(volume.mask===F.BRICKED)continue;
-    const centerX=Math.floor(volume.cx),centerY=Math.floor(volume.cy);
-    const cells=volume.cells.filter((c)=>volume.widthAxis==='x'?c.y===centerY:c.x===centerX);
+    // The authored glyph expands to a two-cell-deep threshold at runtime. The
+    // old portal kept only one centreline through that volume, which moved the
+    // visible frame half a runtime cell toward one jamb and left masonry
+    // apparently intruding into otherwise valid doorways. Own and clear the
+    // complete throat, and keep the frame centred on the authored volume.
+    const cells=volume.cells.map((cell)=>({...cell}));
     if(!cells.length)continue;
-    const cx=cells.reduce((n,c)=>n+c.x,0)/cells.length,cy=cells.reduce((n,c)=>n+c.y,0)/cells.length;
+    const cx=volume.cx,cy=volume.cy;
     const portal={id:`${Math.round(cx)},${Math.round(cy)}`,legacyId:`${Math.round(cx)},${Math.round(cy)}`,cells,cx,cy,widthAxis:volume.widthAxis,volume,keyId:null,open:true,autoCloseSide:0,definition:null,runtime:{state:DOOR_STATE.OPEN,openFraction:1,wedge:false,closerArmed:false,closeRequested:false}};
     doorPortals.push(portal);for(const c of cells)doorCellToPortal.set(`${c.x},${c.y}`,portal);
   }
@@ -257,9 +261,8 @@ export function configureDoors(definitions=[]){
     if(definition.widthAxis&&definition.widthAxis!==portal.widthAxis){
       for(const c of portal.cells)doorCellToPortal.delete(`${c.x},${c.y}`);
       portal.widthAxis=definition.widthAxis;
-      const centerX=Math.floor(portal.volume.cx),centerY=Math.floor(portal.volume.cy);
-      portal.cells=portal.volume.cells.filter((c)=>portal.widthAxis==='x'?c.y===centerY:c.x===centerX);
-      portal.cx=portal.cells.reduce((n,c)=>n+c.x,0)/portal.cells.length;portal.cy=portal.cells.reduce((n,c)=>n+c.y,0)/portal.cells.length;
+      portal.cells=portal.volume.cells.map((cell)=>({...cell}));
+      portal.cx=portal.volume.cx;portal.cy=portal.volume.cy;
     }
     portal.runtime=freshDoorRuntime(definition);
     portal.aperture={...definition.aperture};portal.leaf={...definition.leaf};portal.activeLeaves=[...definition.activeLeaves];
@@ -424,12 +427,16 @@ function compoundStair({
     const logicalPx=Math.abs(dy),logicalPy=Math.abs(dx);
     const physicalDx=(p1.x-p0.x)/steps,physicalDy=(p1.y-p0.y)/steps;
     const physicalLength=Math.hypot(p1.x-p0.x,p1.y-p0.y)||1;
-    const physicalPx=-(p1.y-p0.y)/physicalLength;
-    const physicalPy=(p1.x-p0.x)/physicalLength;
+    const physicalWidthSign=flight.physicalWidthSign===-1?-1:1;
+    const physicalPx=-(p1.y-p0.y)/physicalLength*physicalWidthSign;
+    const physicalPy=(p1.x-p0.x)/physicalLength*physicalWidthSign;
     for(let s=0;s<=steps;s++){
       const rise=Math.min(rises,Math.floor(s*rises/steps));
       const t=rise/rises;
       const floor=flight.fromH+(flight.toH-flight.fromH)*t;
+      const stepGroup=flight.renderGroup||(s/steps<.5
+        ?(flight.groupFrom||renderGroup)
+        :(flight.groupTo||renderGroup));
       for(let k=0;k<runWidth;k++)writeStairCell(
         a.x+dx*s+logicalPx*k,
         a.y+dy*s+logicalPy*k,
@@ -440,13 +447,14 @@ function compoundStair({
           physicalX:p0.x+physicalDx*s+physicalPx*k,
           physicalY:p0.y+physicalDy*s+physicalPy*k,
           layer:flight.layer||layer,space:flight.space||space,
-          renderGroup:flight.renderGroup||renderGroup,owner:id,
+          renderGroup:stepGroup,owner:id,
         },
       );
     }
     const portal={
       id:`${id}:${flight.id||portals.length+1}`,flight:flight.id||null,
-      p0:[p0.x,p0.y],p1:[p1.x,p1.y],group0:renderGroup,group1:renderGroup,
+      p0:[p0.x,p0.y],p1:[p1.x,p1.y],
+      group0:flight.groupFrom||renderGroup,group1:flight.groupTo||renderGroup,
       floor0:flight.fromH,floor1:flight.toH,radius:Math.max(6,runWidth*2),
       rises,riseHeight:Math.abs(flight.toH-flight.fromH)/rises,
       physicalFrom:{...flight.physicalFrom},physicalTo:{...flight.physicalTo},
@@ -658,6 +666,13 @@ export function physicalRenderPlanFor(x,y){
     const [px,py]=key.split(',').map(Number);
     const hallSpans=all.filter((s)=>s.spaceId==='hall');
     const hallEnvelope=here.spaceId==='hall'&&here.layer!=='hall_stair'&&hallSpans.length;
+    // The academic crown is a real inserted floor around the old entrance
+    // atrium. Its centre has no academic collision cells at all; while walking
+    // the gallery, retain the ground-floor atrium span there so the player can
+    // see the garden ten metres below instead of a wall of unloaded rock.
+    const academicAtriumVoid=here.renderGroup==='academic'
+      &&all.some((s)=>s.spaceId==='front_atrium')
+      &&!all.some((s)=>s.renderGroup==='academic');
     // One coherent physical slice: nearby occupied floors plus every stair
     // run, regardless of its logical render group. Group-filtered slices cut
     // stairs in half and produced the horizontal slab / Platform 9¾ effect.
@@ -666,7 +681,7 @@ export function physicalRenderPlanFor(x,y){
       if(group===p.group1&&s.renderGroup===p.group0)return Math.hypot(px-p.p0[0],py-p.p0[1])<=p.radius;
       return false;
     });
-    let list=hallEnvelope?all.filter((s)=>s.spaceId==='hall'||s.spaceId==='front_atrium'):all.filter((s)=>(s.flags&F.STAIR)||Math.abs(s.floor-here.y)<=1.0||landingVisible(s)||(here.spaceId==='hall'&&s.spaceId==='front_atrium'));
+    let list=hallEnvelope?all.filter((s)=>s.spaceId==='hall'||s.spaceId==='front_atrium'):all.filter((s)=>(s.flags&F.STAIR)||Math.abs(s.floor-here.y)<=1.0||landingVisible(s)||(here.spaceId==='hall'&&s.spaceId==='front_atrium')||academicAtriumVoid);
     if(!list.length)continue;const i=py*w+px;solid[i]=0;
     // Hall decks are structural meshes. The sector envelope remains the full
     // air volume so orchestra and both balconies retain reciprocal sightlines.

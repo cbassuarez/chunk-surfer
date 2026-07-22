@@ -44,6 +44,7 @@ export const ZONE = {
   sourceSpace: 10,
   chapelOuter: 11,
   bellTower: 12,
+  academic: 13,
 };
 
 // Which world (audio + prompt) a zone belongs to. Corridors borrow the room
@@ -62,6 +63,9 @@ export const ZONE_WORLD = {
   [ZONE.sourceSpace]: 'source_space',
   [ZONE.chapelOuter]: 'chapel_outer',
   [ZONE.bellTower]: 'bell_tower',
+  // The academic floor is intentionally not a recording room. It borrows the
+  // public atrium's acoustic world without acquiring a take target of its own.
+  [ZONE.academic]: 'amplifications',
 };
 
 // Surface identity is deliberately not packed into F. Flags are collision and
@@ -81,6 +85,7 @@ export const MATERIAL = {
   sourcePath: 11,
   sourcePage: 12,
   sourceFault: 13,
+  academicPlaster: 14,
 };
 
 export function materialForZone(zone) {
@@ -92,6 +97,7 @@ export function materialForZone(zone) {
     case ZONE.chapel: return MATERIAL.chapelStone;
     case ZONE.chapelOuter: return MATERIAL.chapelStone;
     case ZONE.bellTower: return MATERIAL.chapelStone;
+    case ZONE.academic: return MATERIAL.academicPlaster;
     case ZONE.plant: return MATERIAL.metalPlant;
     case ZONE.sourceSpace: return MATERIAL.sourceField;
     default: return MATERIAL.serviceConcrete;
@@ -132,6 +138,7 @@ export const GLYPHS = {
   'N': { floor: 0.0, ceil: 3.4, zone: 'chapelOuter', material: 'chapelStone' },
   'G': { floor: 0.0, ceil: 4.2, zone: 'bellTower', material: 'chapelStone' },
   'M': { floor: 0.0, ceil: 3.8, zone: 'plant', material: 'metalPlant' },
+  'Q': { floor: 0.0, ceil: 4.5, zone: 'academic', material: 'academicPlaster' },
 };
 
 // Resolve a glyph to a cell descriptor. `base` lifts a whole physical level.

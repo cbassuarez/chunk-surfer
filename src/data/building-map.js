@@ -11,7 +11,7 @@ import { BELL_CHAMBER_ANCHOR, ORGAN_LOFT_ANCHOR, RINGING_ROOM_ANCHOR } from './b
 const freezePoint = (point) => Object.freeze({ x: Number(point.x), y: Number(point.y) });
 
 export const BUILDING_MAP = Object.freeze({
-  version: 2,
+  version: 3,
   id: 'ellery-conservatory',
   topologyStride: 2,
   north: Object.freeze({ x: 0, y: -1 }),
@@ -19,23 +19,28 @@ export const BUILDING_MAP = Object.freeze({
   floors: Object.freeze([
     Object.freeze({
       id: 'b1', order: -1, label: 'BASEMENT', shortLabel: 'B1',
-      minHeight: -Infinity, maxHeight: -2.75,
+      minHeight: -Infinity, maxHeight: -2.75, visibility: 'always',
     }),
     Object.freeze({
       id: 'g', order: 0, label: 'GROUND', shortLabel: 'G',
-      minHeight: -2.75, maxHeight: 3.25,
+      minHeight: -2.75, maxHeight: 3.25, visibility: 'always',
     }),
     Object.freeze({
       id: 'u1', order: 1, label: 'UPPER', shortLabel: 'U1',
-      minHeight: 3.25, maxHeight: 6.25,
+      minHeight: 3.25, maxHeight: 6.25, visibility: 'always',
     }),
     Object.freeze({
       id: 'u2', order: 2, label: 'RINGING ROOM / ORGAN LOFT', shortLabel: 'U2',
-      minHeight: 6.25, maxHeight: 11.5,
+      minHeight: 6.25, maxHeight: 11.5, visibility: 'always',
+    }),
+    Object.freeze({
+      id: 'academic', order: 2.5, label: 'THIRD FLOOR', shortLabel: '3F',
+      minHeight: 9.25, maxHeight: 11.5, visibility: 'discovered',
+      renderGroups: Object.freeze(['academic']),
     }),
     Object.freeze({
       id: 'u3', order: 3, label: 'BELL CHAMBER', shortLabel: 'U3',
-      minHeight: 11.5, maxHeight: Infinity,
+      minHeight: 11.5, maxHeight: Infinity, visibility: 'always',
     }),
   ]),
 

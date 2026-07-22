@@ -26,18 +26,21 @@ ck('accepted hall seating faces the proscenium',Math.abs((seat?.yaw||0)-Math.PI)
 ck('seat banks block but authored hall aisles remain open',seat&&!PROPS.propCanOccupy(seatCenter.x+4,seatCenter.y)&&PROPS.propCanOccupy(seatAisle.x,seatAisle.y));
 const hallRender=PROPS.renderInstances({group:'hall'});
 ck('hall slice receives seating and structure in physical metres',hallRender.some((p)=>p.mesh==='hall_seating')&&hallRender.some((p)=>p.mesh==='hall_structure'));
+const groundRender=PROPS.renderInstances({group:'ground'}),academicRender=PROPS.renderInstances({group:'academic'});
+const sharedAtriumIds=['academic-atrium-structure','academic-skylight','academic-garden-basin'];
+ck('atrium architecture is one gameplay instance shared across both render groups',sharedAtriumIds.every((id)=>groundRender.some((p)=>p.id===id)&&academicRender.some((p)=>p.id===id)));
+const poolLines=groundRender.find((p)=>p.id==='pool-lane-markings');
+ck('natatorium has no freestanding inner architectural shell',!placed.some((p)=>p.id==='natatorium-hall-shell'));
+ck('pool length markings sit on the basin floor instead of beneath it',poolLines&&Math.abs(poolLines.y-(-1.55))<.001,`y=${poolLines?.y}`);
 const portraits=placed.filter((p)=>p.mesh==='portrait_frame');
 const wallBacked=(p)=>{
   const behindX=p.rx-Math.round(Math.sin(p.yaw||0));
   const behindY=p.ry-Math.round(Math.cos(p.yaw||0));
   return FP.isSolid(behindX,behindY);
 };
-const corridorPortraits=portraits.filter((p)=>p.id.startsWith('corridor-portrait-'));
-const corridorLights=placed.filter((p)=>p.id.startsWith('corridor-wall-light-'));
-const corridorCredenzas=placed.filter((p)=>p.id.startsWith('corridor-credenza-'));
-ck('portrait frames are mounted against their authored wall plane',portraits.every(wallBacked)&&corridorPortraits.length>=5,`${portraits.length} total / ${corridorPortraits.length} corridor`);
-ck('corridors use the smaller lantern chandelier as a wall fixture',corridorLights.length>=10&&corridorLights.every((p)=>p.mesh==='lantern_chandelier_01'&&p.mount==='wall'&&wallBacked(p)),`${corridorLights.length} wall lights`);
-ck('corridor credenzas stay wall-backed and leave their centres in walkable space',corridorCredenzas.length>=3&&corridorCredenzas.every(wallBacked),`${corridorCredenzas.length} credenzas`);
+const circulationClutter=placed.filter((p)=>p.id.startsWith('corridor-')||p.id.includes('-stair-')||p.id.startsWith('ground-spine-')||p.id.startsWith('practice-corridor-'));
+ck('remaining room portraits are mounted against their authored wall plane',portraits.every(wallBacked),`${portraits.length} room portraits`);
+ck('stairs and their approach corridors contain no decorative props',circulationClutter.length===0,circulationClutter.map((p)=>p.id).join(','));
 
 // A small deterministic fixture isolates picking from the production dressing.
 const testProp={id:'test-upright',mesh:'upright_piano',x:65,y:9,yaw:0,blocks:true,interaction:'play',

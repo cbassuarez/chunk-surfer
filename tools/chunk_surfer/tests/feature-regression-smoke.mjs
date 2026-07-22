@@ -8,6 +8,7 @@ if(!chrome)throw new Error('CHROME_PATH must point to the platform Chrome execut
 const base=process.env.CHUNK_SURFER_URL||'http://127.0.0.1:5173';
 const lens=process.env.MOCK_LENS_URL||'ws://127.0.0.1:8765';
 const output=path.resolve(process.env.FEATURE_SMOKE_OUTPUT||'artifacts/feature-regression-smoke');
+const frameSampleTimeout=Math.max(1000,Number(process.env.FEATURE_SMOKE_FRAME_TIMEOUT_MS)||10000);
 fs.rmSync(output,{recursive:true,force:true});
 fs.mkdirSync(output,{recursive:true});
 
@@ -30,7 +31,7 @@ const desktopViewport={width:1280,height:800,deviceScaleFactor:1};
 const compactViewport={width:960,height:600,deviceScaleFactor:1};
 const transitionTimeout=process.platform==='linux'?60000:10000;
 const gameplayTimeout=process.platform==='linux'?90000:20000;
-const interactionTimeout=process.platform==='linux'?30000:5000;
+const interactionTimeout=process.platform==='linux'?30000:10000;
 await page.setViewport(desktopViewport);
 const errors=[];
 page.on('pageerror',(error)=>{
@@ -51,11 +52,20 @@ async function settleViewport(){
   await new Promise((resolve)=>setTimeout(resolve,100));
 }
 
-async function samplePerformance(frames=75){
+async function samplePerformance(minimumSamples=30){
   await page.evaluate(()=>window.__probe.performanceReset());
-  await new Promise((resolve)=>setTimeout(resolve,Math.max(500,frames*18)));
-  const snapshot=await page.evaluate(()=>window.__probe.performance());
-  assert.ok(snapshot.samples>=30,'performance probe must observe at least thirty rendered frames');
+  const deadline=Date.now()+frameSampleTimeout;
+  let snapshot=await page.evaluate(()=>window.__probe.performance());
+  while(snapshot.samples<minimumSamples&&Date.now()<deadline){
+    // Poll from Node's wall clock. Hosted Windows runners can briefly throttle
+    // the headless tab, so a fixed 60 fps sleep is not a reliable frame count.
+    await new Promise((resolve)=>setTimeout(resolve,100));
+    snapshot=await page.evaluate(()=>window.__probe.performance());
+  }
+  assert.ok(
+    snapshot.samples>=minimumSamples,
+    `performance probe must observe at least ${minimumSamples} rendered frames; observed ${snapshot.samples} within ${frameSampleTimeout} ms`,
+  );
   return snapshot;
 }
 
@@ -124,6 +134,28 @@ try {
   assert.notEqual(map.source?.kind,'procedural','legacy procedural navigation must not surface');
   await page.screenshot({path:path.join(output,'03-authored-facility-map.png')});
 
+  // Academic-gallery sightline proof. These are fixed authored positions, not
+  // a cinematic camera: the same player renderer used in the shipped build has
+  // to resolve the garden, crown, bridge, gallery void and locked threshold.
+  if(!(await page.evaluate(()=>window.__probe.torch().on)))await page.keyboard.press('f');
+  const academicViews=[
+    ['03a-academic-entrance-looking-up.png',83,7,2],
+    ['03b-academic-garden-plaza.png',77,14,1],
+    ['03c-academic-bridge-arrival.png',8,275,0],
+    ['03d-academic-gallery-across-void.png',41,254,3],
+    ['03e-academic-classroom-threshold.png',11,264,1],
+  ];
+  for(const [name,x,y,facing] of academicViews){
+    await page.evaluate((ax,ay,af)=>window.__probe.warpCell(ax,ay,af),x,y,facing);
+    await settleViewport();
+    await page.screenshot({path:path.join(output,name)});
+  }
+  await page.evaluate(()=>window.__probe.setFlags(['academic.entered']));
+  const discoveredAcademic=await page.evaluate(()=>window.__probe.map());
+  assert.equal(discoveredAcademic.floors.find((floor)=>floor.id==='academic')?.shortLabel,'3F');
+  assert.equal(discoveredAcademic.spaces.some((space)=>space.floorId==='academic'),false,'the discovered floor remains free of objectives and labels');
+  console.log('visual smoke: academic atrium and locked gallery captured');
+
   await page.keyboard.press('F10');
   await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='god-menu',{timeout:interactionTimeout});
   const godMenu=await page.evaluate(()=>window.__scenes.top().view());
@@ -164,6 +196,50 @@ try {
   const buildingPerformance=await samplePerformance();
   await page.setViewport(desktopViewport);
   await settleViewport();
+
+  await page.evaluate(()=>window.__probe.warpCell(84,28,2));
+  if(await page.evaluate(()=>window.__probe.torch().on))await page.keyboard.press('f');
+  await page.evaluate(()=>window.__probe.look(0,-.12));
+  await settleViewport();
+  await page.screenshot({path:path.join(output,'07-natatorium-long-hall.png')});
+
+  await page.evaluate(()=>window.__probe.warpCell(61,40,2));
+  if(!(await page.evaluate(()=>window.__probe.torch().on)))await page.keyboard.press('f');
+  await settleViewport();
+  await page.screenshot({path:path.join(output,'07a-upper-stair-normal-dark.png')});
+  await page.evaluate(()=>window.__probe.warpCell(61,54,1));
+  await settleViewport();
+  await page.screenshot({path:path.join(output,'07ab-practice-arrival-hall.png')});
+  await page.evaluate(()=>window.__probe.warpCell(64,53,0));
+  await settleViewport();
+  await page.screenshot({path:path.join(output,'07ac-academic-stair-visible.png')});
+  await page.evaluate(()=>window.__probe.warpCell(66,82,2));
+  await settleViewport();
+  await page.screenshot({path:path.join(output,'07aa-practice-corridor-dead-end-dark.png')});
+  await page.evaluate(()=>window.__probe.warpCell(49,23,1));
+  await settleViewport();
+  await page.screenshot({path:path.join(output,'07b-basement-stair-normal-dark.png')});
+  await page.keyboard.press('f');
+  await page.evaluate(()=>window.__probe.hush());
+
+  let stairPerformance=null;
+  for(const [mode,reduced] of [['reduced',true],['full',false]]){
+    for(let stage=0;stage<4;stage++){
+      const stair=await page.evaluate((phase,isReduced)=>window.__probe.stairAnomalyPreset(phase,isReduced),stage,reduced);
+      assert.equal(stair.active,true);
+      assert.equal(stair.ledger.stage,stage);
+      assert.ok(stair.lights.length<=8,'stair practicals stay inside the eight-light renderer limit');
+      assert.ok(stair.lights.filter((entry)=>entry.castsShadow).length<=1,'only one stair practical may cast a hero shadow');
+      if(stage===2)assert.equal(stair.shadowOnly,reduced?0:1,'reduced dread removes only the implied figure occluder');
+      await new Promise((resolve)=>setTimeout(resolve,140));
+      await page.screenshot({path:path.join(output,`07c-stair-${mode}-phase-${stage+1}.png`)});
+      if(!reduced&&stage===2)stairPerformance=await samplePerformance();
+    }
+  }
+  assert.ok(stairPerformance?.samples>=30,'active stair rendering must sustain the feature performance probe');
+  assert.equal(await page.evaluate(()=>window.__probe.godWarpDock()),true,'stair capture exits atomically back into the building');
+  await page.waitForFunction(()=>window.__probe?.stairAnomaly?.().active===false,{timeout:interactionTimeout});
+  console.log('visual smoke: permanent and impossible stairs captured');
 
   assert.equal(await page.evaluate(()=>window.__probe.chunkSurfStart()),true);
   await page.waitForFunction(()=>window.__probe?.chunkSurf?.().active===true,{timeout:interactionTimeout});
@@ -248,9 +324,12 @@ try {
   const endingSummary=await page.evaluate(()=>window.__probe.endingCredits('sacrifice'));
   assert.equal(endingSummary.endingId,'sacrifice');
   await page.waitForFunction(()=>window.__scenes?.top?.()?.view?.()?.context==='ending',{timeout:interactionTimeout});
-  await page.keyboard.press('End');
-  await page.keyboard.press('Space');
-  await page.evaluate(()=>window.__scenes.top().update?.(4.1));
+  await page.evaluate(()=>{
+    const credits=window.__scenes.top();
+    credits.key?.({key:'End',code:'End'});
+    credits.key?.({key:' ',code:'Space'});
+    credits.update?.(4.1);
+  });
   await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='return-report',{timeout:interactionTimeout});
   await capturePair('13-return-report-after-credits.png','13-return-report-after-credits-compact.png');
   console.log('visual smoke: credit and ending path captured');
@@ -263,6 +342,7 @@ try {
     mapTargets:map.source.targets.length,
     chunkSurfPhase:chunkSurf.state.phase,
     buildingPerformance,
+    stairPerformance,
     sourcePerformance,
     output,
   }));

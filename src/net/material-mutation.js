@@ -8,7 +8,7 @@ export const MUTATION_MIN_FPS = 48;
 export const MUTATION_MIN_SAMPLES = 30;
 export const MUTATION_FEEDBACK = 0.42;
 
-const MUTATION_PROMPT = 'creeping pareidolic structure, recursive material echoes, stains almost resolving into anatomy then slipping back into surface grain, unstable detail that visibly changes between samples';
+const MUTATION_PROMPT = 'bold mid-frequency material change, creeping pareidolic structure, recursive material echoes, branching stains and repairs that visibly relocate between samples, anatomy suggested only by surface grain, no subtle uniform noise';
 
 // Mirrors surfaceSlot() in render/r3d.js. Floors come first because they occupy
 // most of the image immediately around the player; walls follow for the room's
@@ -24,6 +24,7 @@ const MATERIAL_SLOTS = Object.freeze({
   [MATERIAL.chapelStone]: Object.freeze([3, 1]),
   [MATERIAL.metalPlant]: Object.freeze([2, 9]),
   [MATERIAL.doorGlassDuct]: Object.freeze([0, 2]),
+  [MATERIAL.academicPlaster]: Object.freeze([6, 7]),
 });
 
 const clamp = (value, lo, hi) => Math.max(lo, Math.min(hi, Number(value) || 0));
@@ -86,10 +87,10 @@ export function mutationGeneration(profile, slot, serial) {
   return {
     prompt: `${generation.prompt || ''}, ${MUTATION_PROMPT}`,
     negative: generation.negative || '',
-    strength: clamp(Number(generation.strength) * 0.72 + 0.36, 0.48, 0.78),
-    guidance: clamp(Math.max(1.6, Number(generation.guidance) || 0), 0, 4.2),
+    strength: clamp(Number(generation.strength) * 0.76 + 0.38, 0.52, 0.82),
+    guidance: clamp(Math.max(1.8, Number(generation.guidance) || 0), 0, 4.4),
     passes: 3,
-    mix: clamp(Number(generation.mix) * 1.08, 0.55, 0.96),
+    mix: clamp(Number(generation.mix) * 1.12, 0.62, 0.98),
     seed: ((Number(generation.seedBase) || 0) + safeSlot * 977 + safeSerial * 7_919) % 2_000_000_000,
     feedback: MUTATION_FEEDBACK,
     mutationSchema: 1,

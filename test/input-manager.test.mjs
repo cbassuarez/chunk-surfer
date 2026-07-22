@@ -1,6 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { InputManager, keyboardAxes, movementCodeForEvent, keyToCode, deadzone } from '../src/input/input-manager.js';
+import {
+  InputManager,
+  keyboardAxes,
+  keyboardCodeRole,
+  keyboardLookAxes,
+  keyboardMotionAxes,
+  movementCodeForEvent,
+  keyToCode,
+  deadzone,
+  normalizeControlMode,
+} from '../src/input/input-manager.js';
 
 function fakeTarget() {
   const listeners = new Map();
@@ -92,6 +102,17 @@ test('snapshot creates continuous axes from held state after edge frame clears',
 test('keyboard axes support first-person turn and forward contracts', () => {
   const held = new Set(['ArrowRight', 'KeyW']);
   assert.deepEqual(keyboardAxes(held), { moveX: 0, moveY: 1, turnX: 1 });
+});
+
+test('independent keyboard modes assign one key cluster to motion and the other to camera', () => {
+  const held = new Set(['KeyW', 'KeyD', 'ArrowUp', 'ArrowLeft']);
+  assert.deepEqual(keyboardMotionAxes(held, 'independent-wasd'), { moveX: 1, moveY: 1 });
+  assert.deepEqual(keyboardLookAxes(held, 'independent-wasd'), { turnX: -1, lookY: 1 });
+  assert.deepEqual(keyboardMotionAxes(held, 'independent-arrows'), { moveX: -1, moveY: 1 });
+  assert.deepEqual(keyboardLookAxes(held, 'independent-arrows'), { turnX: 1, lookY: 1 });
+  assert.equal(keyboardCodeRole('KeyA', 'independent-wasd'), 'move');
+  assert.equal(keyboardCodeRole('ArrowLeft', 'independent-wasd'), 'look');
+  assert.equal(normalizeControlMode('broken'), 'classic');
 });
 
 test('deadzone renormalizes analog input', () => {

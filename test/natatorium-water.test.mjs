@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { conservatory } from '../src/data/floorplan/conservatory.js';
+import { MATERIAL } from '../src/data/floorplan/legend.js';
 import * as FP from '../src/world/floorplan.js';
 import {
   applyNatatoriumWaterTextVariant,
@@ -24,10 +25,16 @@ FP.compile(conservatory.levels, {
 const bounds = computeNatatoriumBasinBounds(FP);
 assert.deepEqual(
   { minX: bounds.minX, minY: bounds.minY, maxX: bounds.maxX, maxY: bounds.maxY },
-  { minX: 152, minY: 70, maxX: 184, maxY: 88 },
+  { minX: 152, minY: 58, maxX: 186, maxY: 98 },
   'water basin bounds are derived from authored W cells',
 );
-assert.equal(bounds.count, 540);
+assert.equal(bounds.count, 1360);
+
+for (const y of [29, 30, 31, 32, 33]) {
+  const point = FP.toRuntimePoint({ x: 84, y });
+  assert.equal(FP.materialAt(point.x, point.y), MATERIAL.wetTile, `submerged stair cell ${y} remains water-bearing wet tile`);
+  assert.equal(point.x >= bounds.minX && point.x < bounds.maxX && point.y >= bounds.minY && point.y < bounds.maxY, true);
+}
 
 const firstRun = freshRunRecord({ id: 'run_first', meta: { endingsSeen: [] }, now: 1000 });
 assert.equal(firstRun.environment.natatoriumWater, 'drained');
@@ -129,10 +136,14 @@ assert.doesNotMatch(JSON.stringify(playback), /drained pool|basin remains empty/
 assert.match(JSON.stringify(playback), /filled pool|surface keeps moving/i);
 
 const rendererSource = readFileSync(new URL('../src/render/r3d.js', import.meta.url), 'utf8');
+const mainSource = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
 assert.match(rendererSource, /const WATER_FRAG/);
 assert.match(rendererSource, /uWaterHeight/);
 assert.match(rendererSource, /uWaterBounds/);
+assert.match(rendererSource, /cur\.mat == MAT_WET/);
 assert.match(rendererSource, /surf = 4/);
 assert.match(rendererSource, /DEPTH RIDES IN THE ALPHA CHANNEL/);
+assert.match(mainSource, /natatorium-roof-spill-north/);
+assert.match(mainSource, /natatorium-roof-spill-south/);
 
 console.log('natatorium water tests ok');
