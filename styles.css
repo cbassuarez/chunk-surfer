@@ -162,10 +162,13 @@
       pointer-events:none;
       z-index:6;
       opacity:0;
-      background:
-        radial-gradient(circle at 50% 50%, rgba(255,255,255,0.95) 0, rgba(255,255,255,0.58) 14%, rgba(0,0,0,0.98) 48%, rgba(0,0,0,1) 100%),
-        repeating-linear-gradient(0deg, rgba(255,255,255,0.14) 0, rgba(255,255,255,0.14) 2px, rgba(0,0,0,0.84) 2px, rgba(0,0,0,0.84) 4px);
-      mix-blend-mode:screen;
+      background-color:#010108;
+      background-image:url('/story-art/surfer.png');
+      background-position:center;
+      background-repeat:no-repeat;
+      background-size:cover;
+      image-rendering:pixelated;
+      mix-blend-mode:normal;
     }
     #hushJump.active{
       opacity:1;
@@ -179,13 +182,17 @@
         repeating-linear-gradient(90deg, rgba(255,255,255,0.08) 0, rgba(255,255,255,0.08) 2px, rgba(0,0,0,0.86) 2px, rgba(0,0,0,0.86) 5px);
       mix-blend-mode:normal;
     }
+    #hushJump.active.blink{
+      background:#010108 url('/story-art/surfer.png') center/cover no-repeat;
+      animation:hush-jump-rupture 430ms steps(6,end);
+    }
     @keyframes hush-jump-rupture{
-      0%   { opacity:0; transform:scale(1.15); filter:contrast(2.5) invert(0); }
-      12%  { opacity:1; transform:scale(1.0); filter:contrast(3.2) invert(0.8); }
-      34%  { opacity:0.25; transform:scale(1.03); filter:contrast(2.8) invert(0); }
-      54%  { opacity:1; transform:scale(0.99); filter:contrast(3.4) invert(1); }
-      78%  { opacity:0.48; transform:scale(1.01); filter:contrast(2.0) invert(0.2); }
-      100% { opacity:0; transform:scale(1); filter:contrast(1.0) invert(0); }
+      0%   { opacity:0; transform:scale(1.15) translate(2%,-1%); filter:contrast(1.5) saturate(1.4) brightness(.72); }
+      12%  { opacity:1; transform:scale(1.01) translate(-1%,1%); filter:contrast(2.0) saturate(1.8) brightness(1.18); }
+      34%  { opacity:0.28; transform:scale(1.06) translate(1%,0); filter:contrast(1.8) saturate(1.5) brightness(.84); }
+      54%  { opacity:1; transform:scale(1.0) translate(0,-1%); filter:contrast(2.2) saturate(2.0) brightness(1.1); }
+      78%  { opacity:0.52; transform:scale(1.03) translate(-1%,0); filter:contrast(1.7) saturate(1.6) brightness(.88); }
+      100% { opacity:0; transform:scale(1); filter:contrast(1.0) saturate(1.0) brightness(.72); }
     }
     @keyframes hush-blink-rupture{
       0%   { opacity:0.0; filter:contrast(1.1) blur(0px); }

@@ -9,6 +9,7 @@ import {
   authoringProject,
 } from './generated-content.js';
 import { interpolateStoryText } from './conditions.js';
+import { attachCombatDefinition } from '../data/combat-definitions.js';
 
 const documents = authoringDocumentsById;
 const audioProject = authoringAudioProject || { triggers: [] };
@@ -85,12 +86,13 @@ export function rehydrateBattle(document) {
       ...(checkpointOptions.length ? { checkpoint: { prompt: channel('checkpoint-prompt'), options: checkpointOptions } } : {}),
     };
   });
-  return {
+  const battle = {
     id: meta.id, enemy: meta.enemy, art: meta.art, composure: meta.composure, health: meta.health,
-    ...(meta.tools ? { tools: meta.tools } : {}), challenges: meta.challenges || [],
+    ...(meta.tools ? { tools: meta.tools } : {}),
     intro: (document.nodes.start?.lines || []).map(cleanLine), rounds,
     win: (document.nodes.win?.lines || []).map(cleanLine), lose: (document.nodes.lose?.lines || []).map(cleanLine),
   };
+  return attachCombatDefinition(battle, meta.combat || null);
 }
 
 export function runtimeBattle(id) {

@@ -3,6 +3,7 @@ import fs from 'node:fs';
 
 const yml = fs.readFileSync('.github/workflows/release.yml', 'utf8');
 const releaseMatrix = fs.readFileSync('scripts/release-matrix.mjs', 'utf8');
+const portablePackager = fs.readFileSync('scripts/package-windows-portable.mjs', 'utf8');
 const featureSmoke = fs.readFileSync('tools/chunk_surfer/tests/feature-regression-smoke.mjs', 'utf8');
 const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 const tauri = JSON.parse(fs.readFileSync('src-tauri/tauri.conf.json', 'utf8'));
@@ -21,6 +22,10 @@ assert.match(yml, /matrix: \$\{\{ fromJSON\(needs\.configure\.outputs\.matrix\) 
 assert.match(releaseMatrix, /Windows x64[\s\S]*args: '--no-bundle'/, 'windows release skips installer bundling for large offline lens builds');
 assert.match(releaseMatrix, /release\/windows\/\*\.zip/, 'windows portable zip artifact path is uploaded');
 assert.match(yml, /scripts\/package-windows-portable\.mjs/, 'windows release stages a portable app directory');
+assert.match(yml, /Expand-Archive[\s\S]*validate-windows-portable\.mjs "\$verifyRoot\/Chunk Surfer"/, 'windows release validates a clean extraction of the portable zip');
+assert.match(pkg.scripts['windows:validate'], /validate-windows-portable\.mjs/, 'windows portable validator has a local entrypoint');
+assert.match(portablePackager, /Do not run the game from Windows Explorer\\'s zip preview/, 'portable instructions require complete extraction');
+assert.match(portablePackager, /Microsoft Edge WebView2 Runtime/, 'portable instructions document the desktop runtime prerequisite');
 assert.doesNotMatch(yml, /Windows x64[\s\S]*args: --bundles (?:nsis|msi)/, 'windows release does not invoke NSIS or MSI installer linkers');
 assert.match(yml, /Prepare release upload assets[\s\S]*split -b 1900M/, 'release upload splits assets larger than GitHub release limits');
 assert.match(yml, /Public beta downloads are staged on itch\.io first/, 'GitHub release notes point players to itch first');
@@ -56,6 +61,7 @@ assert.match(yml, /build_bundle\.py --target \$\{\{ matrix\.target \}\}/, 'each 
 assert.match(yml, /Run cross-platform visual smoke[\s\S]*npm run test:feature-smoke[\s\S]*Upload visual parity captures/, 'each native build job captures the same visual regression path');
 assert.match(yml, /Run cross-platform visual smoke[\s\S]*timeout-minutes: 10/, 'visual parity validation cannot hang a release runner indefinitely');
 assert.match(yml, /FEATURE_SMOKE_TIMEOUT_MS: \$\{\{ matrix\.os == 'ubuntu-latest' && '540000' \|\| '300000' \}\}/, 'Linux software rendering receives a bounded extended visual-smoke window');
+assert.match(yml, /Run Windows sidecar process tests[\s\S]*if: matrix\.platform == 'windows-latest'[\s\S]*cargo test --manifest-path src-tauri\/Cargo\.toml --all-targets/, 'windows release runs the sidecar process integration tests');
 assert.match(featureSmoke, /enable-unsafe-swiftshader/, 'linux visual parity explicitly enables Chromium software WebGL');
 assert.match(featureSmoke, /fs\.rmSync\(output/, 'visual parity cannot upload stale captures after a failed boot');
 assert.match(featureSmoke, /FEATURE_SMOKE_OUTPUT/, 'local smoke validation can write outside the tracked visual evidence directory');

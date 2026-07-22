@@ -268,15 +268,15 @@ export function makeBagScene({
       const raw = e.key || '';
       const k = raw.toLowerCase();
       const code = e.code || '';
+      const closeKey = raw === 'Escape' || code === 'Escape' || k === 'b' || code === 'KeyB';
 
       if (nav.mode === 'confirm') {
         if (raw === 'Enter' || code === 'Enter' || raw === ' ' || code === 'Space') { confirmPending(); return true; }
-        if (raw === 'Escape') { nav = reduceBagNav(nav, { type: 'CANCEL' }, model); AUDIO.menuMove(); return true; }
-        if (k === 'b' || code === 'KeyB') { close(); return true; }
+        if (closeKey) { close(); return true; }
         return true;
       }
 
-      if (raw === 'Escape' || k === 'b' || code === 'KeyB') { close(); return true; }
+      if (closeKey) { close(); return true; }
       if (raw === 'Tab') { e.preventDefault?.(); selectSection(e.shiftKey ? -1 : 1); return true; }
 
       if (raw === '1' || code === 'Digit1') { setSection('kit'); return true; }

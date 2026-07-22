@@ -1,14 +1,14 @@
 // AUDIOCORP local navigation display.
 //
 // This is a projection of the same map model used by the field case. It never
-// reads AI state directly; the only presence information it may draw is an
-// evidence-derived acoustic contact supplied by hush-telemetry.js.
+// reads AI state directly. Main supplies a sanitized exact body position for
+// the literal HUSH dot; acoustic contact detail still comes from telemetry.
 
 import { uiDraw, uiGlyph, uiText, uiSize } from './ui.js';
 import { drawMachinePanel } from './presentation.js';
 import { themeRoleColor } from './palette.js';
 import { buildMinimapCommands } from './map-commands.js';
-import { drawAnomalyMarker, drawPlayerMarker, drawWaypointMarker } from './map-icons.js';
+import { drawAnomalyMarker, drawHushMarker, drawPlayerMarker, drawWaypointMarker } from './map-icons.js';
 import { mapCurrentAreaLabel, mapFloor, newestMapContact } from '../game/map-model.js';
 
 const clip = (value, width) => {
@@ -31,6 +31,11 @@ function currentLabel(model) {
 }
 
 export function hushStatus(model, now = 0) {
+  if(model?.hush?.active){
+    const here=model.hush.floorId===model?.player?.floorId;
+    const floor=mapFloor(model,model.hush.floorId);
+    return{label:'ACTIVE',cls:'ui-danger',detail:here?'ON MAP':floor?.label||'OTHER FLOOR',floorDelta:0};
+  }
   const contact = newestMapContact(model);
   if (!contact?.observation) return { label: 'NONE', cls: 'ui-secondary', detail: 'NO CONTACT', floorDelta: 0 };
   const state = String(contact.state || 'unresolved').toLowerCase();
@@ -97,6 +102,9 @@ function drawCommands(commands, now) {
     else if (command.kind === 'anomaly-contact' || command.kind === 'anomaly-edge') {
       drawAnomalyMarker(command, .80 + Math.sin(now * 12) * .14);
     }
+    else if (command.kind === 'hush' || command.kind === 'hush-edge') {
+      drawHushMarker(command.point, .88 + Math.sin(now * 10) * .12);
+    }
   }
 }
 
@@ -134,11 +142,13 @@ export function drawMinimap(model, opts = {}) {
   const floor = model.floors.find((candidate) => candidate.id === model.player.floorId);
   const floorTarget = commands.find((command) => command.kind === 'floor-target');
   const anomalyFloor = commands.find((command) => command.kind === 'anomaly-floor');
+  const hushFloor = commands.find((command) => command.kind === 'hush-floor');
   let footer = floor?.label || 'POSITION UNKNOWN';
-  if (anomalyFloor?.delta) footer = `HUSH ${anomalyFloor.delta > 0 ? '+' : ''}${anomalyFloor.delta} FLOOR`;
+  if (hushFloor?.delta) footer = `HUSH ${hushFloor.delta > 0 ? '+' : ''}${hushFloor.delta} FLOOR`;
+  else if (anomalyFloor?.delta) footer = `HUSH ${anomalyFloor.delta > 0 ? '+' : ''}${anomalyFloor.delta} FLOOR`;
   else if (floorTarget?.delta) footer = `TARGET ${floorTarget.delta > 0 ? '+' : ''}${floorTarget.delta} FLOOR`;
   uiText(panel.x, panel.y + panel.h - 1, clip(footer, panel.w), floorTarget?.delta || anomalyFloor?.delta ? 'ui-blue' : 'ui-label', .72);
-  if (opts.expanded) uiText(panel.x, panel.y + panel.h, '[GREEN] YOU · [BLUE] TARGET · [RED] HUSH', 'ui-secondary', .66);
+  if (opts.expanded) uiText(panel.x, panel.y + panel.h, '[GREEN] YOU · [BLUE] TARGET · [RED ●] HUSH', 'ui-secondary', .66);
 }
 
 // Small explicit marker used only for recorder playback origin. It is not part

@@ -176,6 +176,10 @@ uniform sampler2D uSourceLayer; // R=source corpus layer for this runtime cell
 uniform sampler2D uSourceSurface; // exact repository source rendered as a code-native surface
 uniform sampler2D uPropColor;
 uniform sampler2D uPropDepth;
+uniform sampler2D uPropShadow;
+uniform mat4 uPropShadowMatrix;
+uniform float uPropShadowReady;
+uniform vec2 uPropShadowTexel;
 uniform sampler2D uWaterHeight;
 uniform sampler2DArray uSurfAlbedo, uSurfNormal, uSurfRough, uSurfHeight; // PBR surface layers
 uniform sampler2DArray uSurfDream, uSurfDreamNext;             // current + staged generated albedo
@@ -358,29 +362,43 @@ vec4 dreamSlotResponse(int slot){
 vec3 surfaceTile(int slot, vec2 worldUv, float metresPerTile){
   vec3 tc=vec3(worldUv/metresPerTile,float(slot));
   vec3 base=texture(uSurfAlbedo,tc).rgb;
+  vec2 hallucinationWarp=vec2(0.0);
   if(uLocalDiffusion>.001){
     // A local, material-space reaction-diffusion pass. It is sampled from
     // world UVs, not screen UVs, so the change sticks to brick, wood, concrete,
     // and tile instead of washing over the camera.
     vec2 rdUv=fract(worldUv/(metresPerTile*3.6) + vec2(float(slot)*0.071,float(slot)*0.113));
-    vec3 rd=texture(uRD,rdUv).rgb;
+    float drift=uTime*(.012+.018*uLocalDiffusion);
+    vec2 advect=vec2(
+      sin(uTime*.31+worldUv.y*.17+float(slot)),
+      cos(uTime*.27+worldUv.x*.19-float(slot))
+    )*(.018+.028*uLocalDiffusion);
+    vec3 rdA=texture(uRD,fract(rdUv+advect+vec2(drift,-drift*.71))).rgb;
+    vec3 rdB=texture(uRD,fract(rdUv*1.73-advect+vec2(-drift*.43,drift*.57))).rgb;
+    vec3 rd=mix(rdA,rdB,.38+.18*sin(uTime*.41+float(slot)));
     float vein=smoothstep(0.18,0.82,rd.g);
     float pit=smoothstep(0.62,0.96,rd.r-rd.g);
     vec3 oxidized=base*(0.78+0.30*vein) + vec3(0.045,0.040,0.030)*rd.g;
     vec3 etched=base*(0.92-0.18*pit);
     vec4 response=dreamSlotResponse(slot);
     base=mix(base,clamp(mix(oxidized,etched,pit),vec3(0.0),vec3(1.0)),clamp(uLocalDiffusion*response.x,0.0,1.0));
+    float boil=(vein-.5)*sin(uTime*.83+rd.r*8.0+float(slot)*.7);
+    base=clamp(base*(1.0+boil*.22*uLocalDiffusion*response.y),vec3(0.0),vec3(1.0));
+    // Only the generated layer swims. PBR albedo and all geometry remain fixed,
+    // so the wall appears to hallucinate instead of the whole camera sliding.
+    hallucinationWarp=(rd.rg-.5)*(.11*uLocalDiffusion*response.y);
   }
   if(uDreamReady<.5)return base;
-  vec3 dreamA=texture(uSurfDream,tc).rgb;
-  vec3 dreamB=texture(uSurfDreamNext,tc).rgb;
+  vec3 dreamTc=vec3(tc.xy+hallucinationWarp,float(slot));
+  vec3 dreamA=texture(uSurfDream,dreamTc).rgb;
+  vec3 dreamB=texture(uSurfDreamNext,dreamTc).rgb;
   vec3 dream=mix(dreamA,dreamB,uDreamNextReady>.5?uDreamBankBlend:0.0);
   // Transfer material detail, not the generated image's illumination or
   // palette. Dividing by a coarse mip extracts local grain/mortar/weathering;
   // multiplying that into the authored albedo keeps the room from becoming a
   // flat img2img wash while remaining fixed in world-space UVs.
-  vec3 dreamLowA=textureLod(uSurfDream,tc,4.0).rgb;
-  vec3 dreamLowB=textureLod(uSurfDreamNext,tc,4.0).rgb;
+  vec3 dreamLowA=textureLod(uSurfDream,dreamTc,4.0).rgb;
+  vec3 dreamLowB=textureLod(uSurfDreamNext,dreamTc,4.0).rgb;
   vec3 dreamLow=mix(dreamLowA,dreamLowB,uDreamNextReady>.5?uDreamBankBlend:0.0);
   vec3 detail=clamp(dream/max(dreamLow,vec3(.055)),vec3(.46),vec3(1.86));
   float baseLum=max(.035,dot(base,vec3(.2126,.7152,.0722)));
@@ -390,8 +408,15 @@ vec3 surfaceTile(int slot, vec2 worldUv, float metresPerTile){
   generatedTone=mix(neutralTone,generatedTone,clamp(uDreamChromaDrift,0.0,1.0));
   vec4 response=dreamSlotResponse(slot);
   vec3 detailed=clamp(base*mix(vec3(1.0),detail,clamp(uDreamDetailGain*response.x,0.0,1.7)),vec3(0.0),vec3(1.0));
-  detailed=mix(detailed,generatedTone,clamp(uDreamChromaDrift*response.y*.42,0.0,.42));
-  return mix(base,detailed,uDreamMix[slot]*response.x);
+  float generatedPresence=clamp((.24+uDreamChromaDrift*1.40)*uDreamMix[slot]*response.y,0.0,.58);
+  detailed=mix(detailed,generatedTone,generatedPresence);
+  // Generated texture may change colour and structure, never exposure. This is
+  // the guardrail that lets the diffusion layer become obvious without ever
+  // recreating the black-screen failure in the final compositor.
+  float detailedLum=max(.025,dot(detailed,vec3(.2126,.7152,.0722)));
+  detailed*=clamp(baseLum/detailedLum,.72,1.38);
+  detailed=clamp(detailed,vec3(0.0),vec3(1.0));
+  return mix(base,detailed,clamp(uDreamMix[slot]*response.x*1.12,0.0,1.0));
 }
 // One texture per surface, chosen by the room's material and whether we hit a
 // wall or a floor. No cross-slot mixing — that is what smeared every texture
@@ -492,6 +517,14 @@ float materialSpec(int mat){
   if(mat == MAT_CHAPEL) return 0.18;
   if(mat == MAT_ACOUSTIC) return 0.035;
   return 0.08;
+}
+float propFlashShadow(vec3 world,vec3 normal,vec3 lightDir){
+  if(uPropShadowReady<.5)return 1.0;
+  vec4 clip=uPropShadowMatrix*vec4(world+normal*.008,1.0);if(clip.w<=0.0)return 1.0;
+  vec3 q=clip.xyz/clip.w*.5+.5;if(q.x<=0.0||q.x>=1.0||q.y<=0.0||q.y>=1.0||q.z<=0.0||q.z>=1.0)return 1.0;
+  float bias=max(.00018,.00115*(1.0-max(dot(normal,lightDir),0.0))),visible=0.0;
+  for(int y=0;y<2;y++)for(int x=0;x<2;x++){vec2 tap=(vec2(float(x),float(y))-.5)*uPropShadowTexel;visible+=q.z-bias<=texture(uPropShadow,q.xy+tap).r?1.0:0.0;}
+  return mix(.20,1.0,visible*.25);
 }
 void main(){
   vec2 uv = (gl_FragCoord.xy / uRes) * 2.0 - 1.0;
@@ -740,7 +773,8 @@ void main(){
     float beamRim  = smoothstep(0.840, 0.895, axis) * 0.30; // soft edge
     float spill    = smoothstep(0.30, 0.86, axis) * 0.05;   // lens leak
     float beam = (cone + beamRim + spill) * uLight;
-    float lamp = lambert * falloff * nearSoft * 3.0 * beam;   // a torch, not a flare
+    float propShadow=propFlashShadow(posM,n,ldir);
+    float lamp = lambert * falloff * nearSoft * 3.0 * beam * propShadow;   // a torch, not a flare
     vec3 localLight=vec3(0.0);
     for(int li=0;li<${MAX_LOCAL_LIGHTS};li++){
       if(li>=uLocalLightCount)break;
@@ -926,9 +960,35 @@ void main(){
   o = vec4(c, 1.0);
 }`;
 
+// Source Space is a deliberately separate proof: transparent glyph geometry
+// over a clear void. It must not inherit the VFD cell mesh, halftone, glass,
+// fear or material stack used by the physical building.
+const TEXT_SPACE_FRAG = COMMON_GLSL + `
+uniform sampler2D uText;
+uniform vec2 uRes;
+uniform float uSunrise;
+uniform float uSourceChroma;
+uniform float uPaper;
+out vec4 o;
+void main(){
+  vec2 uv=gl_FragCoord.xy/uRes;
+  float shift=(1.0+2.4*uSourceChroma)/uRes.x;
+  vec4 center=texture(uText,uv);
+  vec4 left=texture(uText,uv-vec2(shift,0.0));
+  vec4 right=texture(uText,uv+vec2(shift,0.0));
+  float glyphAlpha=max(center.a,max(left.a,right.a));
+  vec3 glyph=mix(center.rgb,vec3(right.r,center.g,left.b),uSourceChroma);
+  vec3 voidColor=vec3(.0015,.003,.004);
+  vec3 darkScene=glyph+voidColor*(1.0-glyphAlpha);
+  vec3 paper=vec3(.965,.925,.835);
+  vec3 paperScene=mix(paper,vec3(.012,.010,.009),smoothstep(.02,.72,glyphAlpha));
+  float lightMix=clamp(max(uSunrise,uPaper*.72),0.0,1.0);
+  o=vec4(mix(darkScene,paperScene,lightMix),1.0);
+}`;
+
 // ── GL plumbing ──────────────────────────────────────────────────────────────
 let gl = null, canvas = null;
-let progRD, progWater, progMarch, progPost, progDepth, progPixelMesh, progDatamosh;
+let progRD, progWater, progMarch, progPost, progDepth, progPixelMesh, progDatamosh, progTextSpace;
 // How frightened he is, 0..1. main.js owns the number; the post pass spends it.
 let fearLevel = 0;
 export function r3dSetFear(v) { fearLevel = Math.max(0, Math.min(1, v || 0)); }
@@ -1031,6 +1091,7 @@ export function r3dPixelMeshStatus() {
     ...pixelMeshStatus,
     settings: pixelMeshSettings,
     forced: pixelMeshStatus.forceSignalUntil > pixelMeshNow(),
+    bypassedByTextSpace: textSpaceActive,
   };
 }
 let rdTexA, rdTexB, rdFboA, rdFboB, rdFlip = false, rdWarm = 0;
@@ -1049,8 +1110,11 @@ let pixelMeshSettings = normalizePixelMeshSettings();
 let lastPixelMeshAt = 0;
 let vfdMovement = 0;
 let vfdPreviousX = null, vfdPreviousZ = null;
+let textSpaceActive = false;
+let sourceLook = { sunrise: 0, chroma: 1, paper: 0 };
 const pixelMeshUniformCache = new Map();
 const postUniformCache = new Map();
+const textSpaceUniformCache = new Map();
 const pixelMeshStatus = {
   supported: false,
   shaderReady: false,
@@ -1277,6 +1341,27 @@ function postU(name) {
   return postUniformCache.get(name);
 }
 
+function textSpaceU(name) {
+  if (!textSpaceUniformCache.has(name)) textSpaceUniformCache.set(name, gl.getUniformLocation(progTextSpace, name));
+  return textSpaceUniformCache.get(name);
+}
+
+function drawTextSpace(texture) {
+  gl.useProgram(progTextSpace);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0, 0, canvas.width, canvas.height);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.uniform1i(textSpaceU('uText'), 0);
+  gl.uniform2f(textSpaceU('uRes'), canvas.width, canvas.height);
+  gl.uniform1f(textSpaceU('uSunrise'), Math.max(0, Math.min(1, Number(sourceLook.sunrise) || 0)));
+  gl.uniform1f(textSpaceU('uSourceChroma'), Math.max(0, Math.min(1, Number(sourceLook.chroma) || 0)));
+  gl.uniform1f(textSpaceU('uPaper'), Math.max(0, Math.min(1, Number(sourceLook.paper) || 0)));
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  pixelMeshStatus.enabled = false;
+  lastPostSourceFbo = null;
+}
+
 const DATAMOSH_FRAG=`#version 300 es
 precision highp float;
 uniform sampler2D uSource;
@@ -1425,6 +1510,7 @@ export function r3dInit(mapEl) {
   progPost = program(POST_FRAG);
   progDepth = program(DEPTH_FRAG);
   progDatamosh = program(DATAMOSH_FRAG);
+  progTextSpace = program(TEXT_SPACE_FRAG);
   try {
     progPixelMesh = program(PIXEL_MESH_FRAG);
     pixelMeshStatus.shaderReady = true;
@@ -1481,6 +1567,7 @@ export function r3dInit(mapEl) {
   fogTexture = makeTex(FOG_TEX, FOG_TEX, new Uint8Array(FOG_TEX * FOG_TEX).fill(255), 'r8');
   resize();
   P3.loadPropPack(assetUrl('assets/conservatory-props.glb'))
+    .then(()=>P3.addPropPack(assetUrl('assets/conservatory-acquisitions.glb')))
     .then(()=>P3.addPropPack(assetUrl('assets/conservatory-doors.glb')))
     .then(()=>P3.addPropPack(assetUrl('assets/tuning-fork.glb')))
     .catch((err)=>console.warn('prop pack unavailable',err));
@@ -1522,7 +1609,7 @@ function resize() {
   pixelMeshStatus.sceneWidth = sw;
   pixelMeshStatus.sceneHeight = sh;
   pixelMeshStatus.supported = !!progPixelMesh;
-  P3.props3dResize(sw, sh);
+  P3.props3dResize(sw, sh, { shadowMapSize: RENDER_SCALE < .75 ? 512 : 1024 });
   uniforms.sceneW = sw; uniforms.sceneH = sh;
   r3dResetVfdMemory();
 }
@@ -1588,6 +1675,12 @@ export function r3dSetPlan(rgba, w, h, material = null, options = {}) {
 export function r3dSetProps(instances) { P3.setPropInstances(instances); }
 export function r3dSetDynamicProps(instances) { P3.setDynamicPropInstances(instances); }
 export function r3dSetSourceTextInstances(instances) { P3.setSourceTextInstances(instances); }
+export function r3dSetSourceScene(scene = {}) {
+  P3.setSourceScene(scene);
+  sourceLook = scene.look && typeof scene.look === 'object'
+    ? { sunrise: scene.look.sunrise, chroma: scene.look.chroma, paper: scene.look.paper }
+    : { sunrise: 0, chroma: 1, paper: 0 };
+}
 export function r3dSetHushProp(id) { P3.setHushProp(id); }
 export function r3dPropStats() { return P3.propPackStats(); }
 
@@ -1776,6 +1869,18 @@ export function r3dFrame(state) {
   if (Math.abs(lightGoal - lightEase) < 0.004) lightEase = lightGoal;
 
   gl.disable(gl.DEPTH_TEST);
+  textSpaceActive = !!state.textSpace;
+
+  if (textSpaceActive) {
+    P3.renderPropPass({
+      camX: camX * CELL, camY: camY * CELL, camZ: camZ * CELL,
+      yaw, light: 1, fogTexture, fogOrigin, fogSize: FOG_TEX,
+      cellMeters: CELL, zoneTints: ZONE_TINTS,
+      localLightCount: 0, localLightPositions, localLightColors,
+    });
+    drawTextSpace(P3.propTargets().color);
+    return;
+  }
 
   // reaction-diffusion: 2 steps/frame, audio drives feed/kill drift
   gl.useProgram(progRD);
@@ -1854,6 +1959,10 @@ export function r3dFrame(state) {
   gl.uniform1f(U('uPropsReady'),propTargets.ready?1:0);
   gl.uniform1f(U('uPropNear'),propTargets.near);
   gl.uniform1f(U('uPropFar'),propTargets.far);
+  gl.uniform1f(U('uPropShadowReady'),propTargets.shadowReady?1:0);
+  gl.uniformMatrix4fv(U('uPropShadowMatrix'),false,propTargets.shadowMatrix);
+  gl.uniform2fv(U('uPropShadowTexel'),propTargets.shadowTexel);
+  gl.activeTexture(gl.TEXTURE15);gl.bindTexture(gl.TEXTURE_2D,propTargets.shadow);gl.uniform1i(U('uPropShadow'),15);
   if(propTargets.ready){
     gl.activeTexture(gl.TEXTURE4);gl.bindTexture(gl.TEXTURE_2D,propTargets.color);gl.uniform1i(U('uPropColor'),4);
     gl.activeTexture(gl.TEXTURE5);gl.bindTexture(gl.TEXTURE_2D,propTargets.depth);gl.uniform1i(U('uPropDepth'),5);

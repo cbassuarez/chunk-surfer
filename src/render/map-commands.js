@@ -135,6 +135,24 @@ export function buildMinimapCommands({ model, viewport, radius = 18, now = 0 } =
     }
   }
 
+  // Playtesting requires an unambiguous body marker. Main supplies only this
+  // sanitized position/floor pair; pathfinding and detection internals remain
+  // outside the map model.
+  if (model.hush?.active && model.hush.position) {
+    if (model.hush.floorId === model.player.floorId) {
+      const raw = transform.point(model.hush.position);
+      const inside = insideRect(raw, viewport, 0.7);
+      commands.push({
+        kind: inside ? 'hush' : 'hush-edge',
+        point: inside ? raw : clampMarkerToEdge(model.player.position, model.hush.position, viewport, 0.8),
+      });
+    } else if (model.hush.floorId) {
+      const here = model.floors.find((candidate) => candidate.id === model.player.floorId);
+      const there = model.floors.find((candidate) => candidate.id === model.hush.floorId);
+      commands.push({ kind: 'hush-floor', delta: here && there ? there.order - here.order : 0 });
+    }
+  }
+
   return commands;
 }
 

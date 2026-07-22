@@ -4,9 +4,11 @@
 //
 // The rule that makes this a game rather than a chase: it does not know where
 // you are. It knows where you *were* — the cell you left a footfall in. Stand
-// still and you become a hole in its world. Run, and you draw a line straight
-// to yourself. Injury raises your noise floor, so the more it has hurt you,
-// the more easily it finds you again.
+// still and you deny it a precise sound target, but playtesting established
+// that silence cannot make the encounter disappear. Without a sound it stalks
+// the player's vicinity; run, and you draw a precise line straight to yourself.
+// Injury raises your noise floor, so the more it has hurt you, the more easily
+// it finds you again.
 //
 // A flashlight is a second, weaker channel. Light does not tell it where you
 // are, only that you are somewhere over there.
@@ -21,19 +23,19 @@ import * as REC from './recordist.js';
 const D = CELL_SCALE;
 
 export const PRESENCE = {
-  spawnDistance: 34 * D,    // cells behind you, out of sight
-  baseSpeed: 0.65 * D,      // cells/sec while investigating
-  huntSpeed: 1.25 * D,      // cells/sec when it has a fresh sound
+  spawnDistance: 22 * D,    // close enough to enter the next authored beat
+  baseSpeed: 0.90 * D,      // cells/sec while investigating
+  huntSpeed: 1.70 * D,      // cells/sec when it has a fresh sound
   catchRadius: 0.72 * D,
-  hearingRadius: 22 * D,    // it only registers noise within this
-  lightRadius: 11 * D,      // and can sense a lit player, vaguely, this far
-  memorySec: 3.4,          // how long a sound stays interesting
-  loseInterestSec: 18,     // with nothing to chase, it drifts and settles
-  catchCooldownSec: 8.0,   // one touch is one injury, not one per frame
-  recoilCells: 16 * D,      // and it withdraws, so the moment can land
-  spawnGraceSec: 4.0,      // enough time to understand it before it can touch
-  visibleRadius: 42 * D,    // dread needs a body, not only a punishment
-  dreadRadius: 46 * D,
+  hearingRadius: 30 * D,    // its initial placement is inside useful earshot
+  lightRadius: 16 * D,      // and can sense a lit player, vaguely, this far
+  memorySec: 5.5,           // a sound remains useful long enough to close ground
+  loseInterestSec: 12,
+  catchCooldownSec: 7.0,    // one touch is one injury, not one per frame
+  recoilCells: 12 * D,      // and it withdraws, so the moment can land
+  spawnGraceSec: 2.5,       // the arrival reads without postponing the encounter
+  visibleRadius: 48 * D,    // dread needs a body, not only a punishment
+  dreadRadius: 52 * D,
 };
 
 let difficultyRules = {
@@ -181,18 +183,20 @@ export function updatePresence(dt, px, py, onCatch, { navigation = null, catchMo
     state.externalTargetPriority = 0;
   }
 
-  // 4. Move. Toward the last sound if it has one; otherwise drift, slowly, in
-  //    a way that is not quite random and is never toward you.
+  // 4. Move. Toward the last sound if it has one. In silence it stalks an orbit
+  //    around the player: silence denies a direct lock, not the encounter.
   let tx = state.targetX, ty = state.targetY, speed = PRESENCE.baseSpeed * difficultyRules.baseSpeedScale;
   if (state.hasTarget) {
     speed = sinceTarget < 1.5
       ? PRESENCE.huntSpeed * difficultyRules.huntSpeedScale
       : PRESENCE.baseSpeed * difficultyRules.baseSpeedScale;
   } else {
-    const wander = (now / 2400) + state.awareness * 3;
-    tx = state.x + Math.cos(wander) * 6;
-    ty = state.y + Math.sin(wander * 1.31) * 6;
-    speed = PRESENCE.baseSpeed * difficultyRules.baseSpeedScale * 0.42;
+    const orbit = Math.max(PRESENCE.catchRadius * 3.2, 2.4 * D);
+    const angle = (now / 5200) + state.awareness * 2.7;
+    tx = px + Math.cos(angle) * orbit;
+    ty = py + Math.sin(angle) * orbit;
+    const far = distanceTo(px,py) > 10 * D;
+    speed = PRESENCE.baseSpeed * difficultyRules.baseSpeedScale * (far ? 0.78 : 0.52);
   }
   // Awareness makes it faster forever, but not fast. It learns you, and still
   // remains something you can get away from.

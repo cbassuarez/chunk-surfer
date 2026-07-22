@@ -581,12 +581,14 @@ version = "0.1.1-beta.10"
 dependencies = [
  "rand",
  "serde",
+ "serde_json",
  "tauri",
  "tauri-build",
  "tauri-plugin-fs",
  "tauri-plugin-global-shortcut",
  "tauri-plugin-log",
  "tauri-plugin-opener",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]

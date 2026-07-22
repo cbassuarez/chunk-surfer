@@ -5,6 +5,7 @@ import {
   layoutTranscript,
   layoutTranscriptChoices,
 } from '../src/render/transcript.js';
+import { storyArtSideBySideTextLayout } from '../src/game/story-art-card.js';
 
 const viewWithLongLocalChoice = {
   who: 'you',
@@ -41,6 +42,16 @@ test('choice layout clamps every local choice row to the right pane', () => {
   for (const row of layout.rows) {
     assert.ok(row.text.length <= layout.lane.w, row.text);
   }
+});
+
+test('story-art choices stay inside the same fixed-height band as the image', () => {
+  const lanes = fixedTranscriptLanes(82, { split: { artCols: 40, textCols: 40, gap: 2 } });
+  const choices = layoutTranscriptChoices(viewWithLongLocalChoice, 82, { lane: lanes.right });
+  const band = storyArtSideBySideTextLayout({ rows: 16, choicesRows: choices.height });
+
+  assert.equal(band.fits, true);
+  assert.equal(band.transcriptRows + band.gapRows + band.choicesRows, 16);
+  assert.equal(band.choicesOffset + band.choicesRows, 16);
 });
 
 test('story-art transcript layout clamps every role to the right text pane', () => {

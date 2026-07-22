@@ -27,12 +27,17 @@ ck('seat banks block but authored hall aisles remain open',seat&&!PROPS.propCanO
 const hallRender=PROPS.renderInstances({group:'hall'});
 ck('hall slice receives seating and structure in physical metres',hallRender.some((p)=>p.mesh==='hall_seating')&&hallRender.some((p)=>p.mesh==='hall_structure'));
 const portraits=placed.filter((p)=>p.mesh==='portrait_frame');
-const mounted=portraits.every((p)=>{
+const wallBacked=(p)=>{
   const behindX=p.rx-Math.round(Math.sin(p.yaw||0));
   const behindY=p.ry-Math.round(Math.cos(p.yaw||0));
   return FP.isSolid(behindX,behindY);
-});
-ck('portrait frames are mounted against their authored wall plane',portraits.length===6&&mounted,`${portraits.length}/6`);
+};
+const corridorPortraits=portraits.filter((p)=>p.id.startsWith('corridor-portrait-'));
+const corridorLights=placed.filter((p)=>p.id.startsWith('corridor-wall-light-'));
+const corridorCredenzas=placed.filter((p)=>p.id.startsWith('corridor-credenza-'));
+ck('portrait frames are mounted against their authored wall plane',portraits.every(wallBacked)&&corridorPortraits.length>=5,`${portraits.length} total / ${corridorPortraits.length} corridor`);
+ck('corridors use the smaller lantern chandelier as a wall fixture',corridorLights.length>=10&&corridorLights.every((p)=>p.mesh==='lantern_chandelier_01'&&p.mount==='wall'&&wallBacked(p)),`${corridorLights.length} wall lights`);
+ck('corridor credenzas stay wall-backed and leave their centres in walkable space',corridorCredenzas.length>=3&&corridorCredenzas.every(wallBacked),`${corridorCredenzas.length} credenzas`);
 
 // A small deterministic fixture isolates picking from the production dressing.
 const testProp={id:'test-upright',mesh:'upright_piano',x:65,y:9,yaw:0,blocks:true,interaction:'play',

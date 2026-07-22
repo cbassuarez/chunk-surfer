@@ -4,6 +4,7 @@
   "version": "0.1.1-beta.10",
   "type": "module",
   "scripts": {
+    "assets:acquisitions": "node tools/chunk_surfer/build-acquisitions.mjs",
     "assets:doors": "node scripts/build-door-pack.mjs",
     "dev": "vite",
     "assets:tuning-fork": "node scripts/generate-tuning-fork-glb.mjs",
@@ -26,6 +27,7 @@
     "tauri": "tauri",
     "tauri:dev": "node scripts/run-latest.mjs",
     "tauri:build": "tauri build --config src-tauri/tauri.lens.conf.json",
+    "windows:validate": "node scripts/validate-windows-portable.mjs",
     "lens:bundle": "python3 tools/chunk_surfer/diffusion_server/build_bundle.py",
     "lens:bundle:mac": "tools/chunk_surfer/diffusion_server/.venv-local/bin/python tools/chunk_surfer/diffusion_server/build_bundle.py --target aarch64-apple-darwin",
     "beta:build:mac": "npm run lens:bundle:mac && npm run tauri:build -- --target aarch64-apple-darwin --bundles dmg",

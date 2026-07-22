@@ -15,7 +15,7 @@ import { promptLine } from './bindings.js';
 const RULE_ORDER = Object.freeze([
   'presencePressure',
   'recordingForgiveness',
-  'redactionAssistance',
+  'combatAssistance',
   'navigationSignal',
   'escapeTimer',
   'torchDrain',

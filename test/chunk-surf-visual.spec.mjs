@@ -12,6 +12,7 @@ import {
   SOURCE_PLAN_SNAP,
   SOURCE_PLAN_WINDOW,
   createSourceSpaceRuntime,
+  sourceLandscapeFloorAt,
   validateSourceAtlas,
 } from '../src/game/source-space-runtime.js';
 
@@ -27,14 +28,46 @@ function hallState(distance = 0) {
   return reduceChunkSurf(state, { type: 'HALL_ADVANCED', distance });
 }
 
+function landscapeState(){
+  let state=hallState(112);
+  state=reduceChunkSurf(state,{type:'HAYSTACK_REACHED',origin:{x:0,y:-224},slot:0});
+  state=reduceChunkSurf(state,{type:'HAYSTACK_PAGE_FOUND',landscapeOrigin:{x:0,y:-252}});
+  return reduceChunkSurf(state,{type:'TRANSFORMATION_COMPLETED'});
+}
+
+function fullyOpenLandscapeState(){
+  let state=landscapeState();
+  for(const id of ['fork-room','recordist-loop','body-room'])state=reduceChunkSurf(state,{type:'LANDMARK_TUNED',id});
+  return state;
+}
+
 assert.equal(validateSourceAtlas(SOURCE_ATLAS).ok, true);
-assert.equal(SOURCE_ATLAS.schemaVersion, 2);
+assert.equal(SOURCE_ATLAS.schemaVersion, 3);
 assert.equal(SOURCE_ATLAS.exactSource, true);
 assert.equal(SOURCE_ATLAS.stats.sectors, 8);
 assert.doesNotMatch(JSON.stringify(SOURCE_ATLAS), /https?:\/\//i);
 assert.doesNotMatch(JSON.stringify(SOURCE_ATLAS), /\/Users\//);
 assert.doesNotMatch(JSON.stringify(SOURCE_ATLAS), /\b(process\.env|import\.meta\.env)\b/);
+assert.ok(Object.keys(SOURCE_ATLAS.symbols).length>0&&SOURCE_ATLAS.references.length>0,'the atlas includes provenance-safe symbol relationships');
+assert.ok(SOURCE_ATLAS.references.every((reference)=>SOURCE_ATLAS.entries[reference.entryId]?.hash===reference.hash),'every reference edge points back to an exact validated line');
 assert.ok(CHUNK_SURF_ROOMS.every((room) => !('lines' in room) && !('tunedLines' in room)), 'visible pseudo-code was removed from authored narrative data');
+
+const mainSource=await readFile(resolve('src/main.js'),'utf8');
+const rendererSource=await readFile(resolve('src/render/r3d.js'),'utf8');
+const crossingSource=await readFile(resolve('src/game/source-tower-transition-scene.js'),'utf8');
+assert.match(mainSource,/tickHushAudio\(dt\);\s*tickChunkSurfOffer\(\);\s*tickSourceSpace\(dt\);/,'chapel Source offer is evaluated in the live world loop');
+assert.match(mainSource,/function tickChunkSurfOffer\(\)\{[\s\S]*?return false;[\s\S]*?\}/,'proximity polling cannot auto-enter Source Space');
+assert.match(mainSource,/ENTER SOURCE/,'the chapel threshold exposes an explicit Source interaction');
+assert.match(mainSource,/if\(usingSourceSpace\(\)\)\{drawSourceHud\(cols,rows\);return;\}/,'Source uses its own HUD before any building map, battery, or takes UI');
+assert.match(mainSource,/if\(SPEECH\.isSpeaking\(\)\|\|scenes\.blocksInput\(\)\)chunkSurfRuntime\.protectMoment/,'dialogue and blocking handoffs suspend Source pursuit');
+assert.match(mainSource,/The fork finds no stable source at this address[\s\S]{0,80}return;/,'Tune cannot fall through to torch control inside Source Space');
+assert.match(mainSource,/textSpace:\s*sourceTextSpaceActive\(\)/,'only Source Space proper selects the clear text renderer');
+assert.match(mainSource,/CHUNK_SURF_PHASE\.TRANSFORMING,CHUNK_SURF_PHASE\.LANDSCAPE,CHUNK_SURF_PHASE\.FINAL,CHUNK_SURF_PHASE\.COMPLETED/,'the physical long hall is excluded from text rendering');
+assert.match(mainSource,/onDone:beginSourceTowerTransition/,'the completed Source endpoint feeds the tower crossing route');
+assert.match(crossingSource,/r3dBeginDatamosh\?\.\(\{ reducedMotion \}\)/,'the endpoint route starts the authored datamosh renderer');
+assert.match(rendererSource,/if \(textSpaceActive\) \{[\s\S]*drawTextSpace\(P3\.propTargets\(\)\.color\);[\s\S]*return;/,'Source Space exits before the normal material and pixel-mesh stack');
+assert.match(rendererSource,/uSunrise/,'the text-space shader owns the deterministic sunrise look');
+assert.match(mainSource,/r3dSetSourceScene\(scene\)/,'Source rendering is submitted as one keyed static and dynamic payload');
 
 for (const entry of Object.values(SOURCE_ATLAS.entries)) {
   const file = await readFile(resolve(entry.file), 'utf8');
@@ -60,29 +93,63 @@ for (const entry of Object.values(SOURCE_ATLAS.entries)) {
 }
 
 {
-  const counts=[];
-  for (const distance of [0, 28, 56, 84, 112]) {
-    const runtime=createSourceSpaceRuntime({initialState:hallState(distance)});
-    counts.push(runtime.propInstances(0,-distance/CELL).length);
+  const runtime=createSourceSpaceRuntime({initialState:hallState(0)});
+  const sheets=runtime.propInstances(0,0);
+  assert.deepEqual(runtime.textInstances({px:0,py:0}),[],'the long hall never uses Source Space text geometry');
+  assert.ok(sheets.length>=180,'the regular 3D hall begins full of real sheet meshes');
+  assert.ok(sheets.every((entry)=>entry.mesh==='loose_note'&&entry.matrix?.length===16),'every hall page is a rendered 3D sheet');
+  assert.ok(sheets.some((entry)=>Math.abs(entry.matrix[12])>2.8),'sheet meshes reach both physical walls');
+  assert.ok(sheets.some((entry)=>entry.matrix[13]>4),'sheet meshes occupy the ceiling as well as the floor');
+  assert.equal(runtime.probe().pageCount,180,'the dense sheet field exists before hall progression');
+}
+
+{
+  const runtime=createSourceSpaceRuntime({initialState:fullyOpenLandscapeState()});
+  const architecture=[
+    ...runtime.textInstances({px:0,py:-252}),
+    ...runtime.textInstances({px:0,py:-394}),
+    ...runtime.textInstances({px:80,py:-564}),
+  ];
+  assert.deepEqual(runtime.propInstances(),[],'mesh sheets end when the actual Source map begins');
+  assert.ok(architecture.length>=450,'the authored causeways are densely described by overlapping source geometry');
+  assert.ok(['ramp','frame','span','monolith','pillar','endpoint','reference'].every((surface)=>architecture.some((entry)=>entry.semantic===`text-architecture:${surface}`)), 'ramps, references, and large-scale structures are all built from source text');
+  assert.ok(architecture.filter((entry)=>entry.overlapLayer!=='base').length>=180,'offset source layers overlap across the map');
+  assert.ok(architecture.filter((entry)=>entry.redacted).length>=30,'selected source tokens are visibly redacted');
+  for(const entry of architecture){
+    const source=SOURCE_ATLAS.entries[entry.sourceId];
+    assert.ok(source,`${entry.id} retains atlas provenance`);
+    assert.equal(entry.sourceFile,source.file);
+    assert.equal(entry.sourceLine,source.line);
+    assert.equal(entry.sourceHash,source.hash);
+    if(entry.semantic==='text-architecture:reference')assert.ok(source.tokens.some((token)=>token.kind==='identifier'&&token.text===entry.text),'reference architecture displays an exact identifier token');
+    else if(entry.redacted) assert.notEqual(entry.text,source.text,'a redacted display line differs from its protected source');
+    else assert.equal(entry.text,source.text,'unredacted architecture displays exact repository source');
+    assert.doesNotMatch(entry.text,/https?:\/\//i);
+    assert.doesNotMatch(entry.text,/\/Users\//);
   }
-  assert.ok(counts.every((count,index)=>index===0||count>=counts[index-1]), 'page population is monotonic');
-  assert.ok(counts.at(-1) >= 600, 'haystack population reaches the authored cap');
+  assert.ok(architecture.every((entry)=>entry.matrix?.length===16&&[...entry.matrix].every(Number.isFinite)),'all text architecture uses complete finite matrices');
+  assert.ok(sourceLandscapeFloorAt(0,-320)>12,'the terminal occupies the top of a substantial final ramp');
+  for(let depth=0;depth<339;depth+=1)assert.ok(Math.abs(sourceLandscapeFloorAt(0,-depth-1)-sourceLandscapeFloorAt(0,-depth))<=.45,'every ramp step remains walkable without jumping');
+  assert.ok(runtime.geometry.cellAt(80,-564),'the final causeway reaches the authored horizon');
+  assert.equal(runtime.geometry.cellAt(40,-450),null,'off-route space is a visible authored boundary, not an oversized open field');
 }
 
 {
   let state=hallState(112);
   state=reduceChunkSurf(state,{type:'HAYSTACK_REACHED',origin:{x:0,y:-224},slot:3});
   const runtime=createSourceSpaceRuntime({initialState:state});
-  const pages=runtime.propInstances(0,-224);
-  assert.equal(pages.filter((page)=>page.interactiveId==='source-page').length,1,'exactly one page is interactive');
-  assert.ok(pages.every((page)=>page.matrix?.length===16),'all pages use complete matrices');
-  assert.ok(runtime.textInstances({px:0,py:-224}).every((text)=>SOURCE_ATLAS.entries[text.sourceId]),'page decals carry provenance-backed source');
+  const sheets=runtime.propInstances(0,-224);
+  assert.deepEqual(runtime.textInstances({px:0,py:-224}),[],'the haystack remains in the physical renderer');
+  assert.equal(sheets.filter((entry)=>entry.interactiveId==='source-page').length,1,'exactly one real sheet mesh is interactive');
+  const searchable=sheets.find((entry)=>entry.interactiveId==='source-page');
+  const camera=runtime.geometry.logicalToPhysical(0,-224);
+  assert.ok(Math.hypot(searchable.matrix[12]-camera.x*CELL,searchable.matrix[14]-camera.z*CELL)<=12,'interactive sheet is rendered near the haystack player in physical space');
 }
 
 {
   let state=hallState(112);
   state=reduceChunkSurf(state,{type:'HAYSTACK_REACHED',origin:{x:0,y:-224},slot:0});
-  state=reduceChunkSurf(state,{type:'HAYSTACK_PAGE_FOUND',landscapeOrigin:{x:0,y:-246}});
+  state=reduceChunkSurf(state,{type:'HAYSTACK_PAGE_FOUND',landscapeOrigin:{x:0,y:-252}});
   const runtime=createSourceSpaceRuntime({initialState:state});
   const before=runtime.geometry.logicalToPhysical(0,-238);
   runtime.tick(5.5,{px:0,py:-238,facing:0});
@@ -90,6 +157,25 @@ for (const entry of Object.values(SOURCE_ATLAS.entries)) {
   assert.deepEqual({x:after.x,z:after.z},{x:before.x,z:before.z},'transformation never teleports the player');
   assert.equal(runtime.state().phase,'landscape');
   assert.ok([MATERIAL.sourceField,MATERIAL.sourcePath,MATERIAL.sourceFault].includes(runtime.geometry.materialAt(0,-250)));
+}
+
+{
+  let state=landscapeState();
+  for(const event of [
+    {type:'LANDMARK_TUNED',id:'fork-room'},
+    {type:'LANDMARK_TUNED',id:'recordist-loop'},
+    {type:'LANDMARK_TUNED',id:'body-room'},
+    {type:'FINAL_REACHED'},
+  ])state=reduceChunkSurf(state,event);
+  let completed=null;
+  const runtime=createSourceSpaceRuntime({initialState:state,onComplete:(result,snapshot)=>{completed={result,snapshot};}});
+  const endpoint={x:80,y:-566,facing:0};
+  runtime.setPlayerPosition(endpoint);
+  assert.equal(runtime.finalEncounterRequest()?.adapter,'combat-v1','the terminal endpoint requests shared signal combat');
+  const resolved=runtime.resolveFinalEncounter({outcome:'rescue',won:true,channels:{rescue:4,contain:0,submit:0},turns:8,compatibility:{adapter:'combat-v1'}});
+  assert.equal(resolved.handled,true,'winning signal combat completes Source Space');
+  assert.equal(runtime.state().completed,true);
+  assert.ok(completed?.snapshot?.sourceIds?.length,'endpoint completion produces the snapshot consumed by the datamosh route');
 }
 
 console.log('chunk-surf 3d source-space specs passed');

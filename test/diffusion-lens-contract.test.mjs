@@ -49,23 +49,24 @@ test('material service reconnects are bounded and cancellable', () => {
   assert.match(client, /stop\(\) \{[\s\S]*clearTimeout\(reconnectTimer\)/);
 });
 
-test('runtime hallucination mutates one visible material ephemerally and fails closed on frame pressure', () => {
+test('runtime hallucination mutates one visible material ephemerally and backs off on frame pressure', () => {
   const client = read('src/net/diffusion.js');
   const policy = read('src/net/material-mutation.js');
   const server = read('tools/chunk_surfer/diffusion_server/server.py');
   const main = read('src/main.js');
-  assert.match(policy, /MUTATION_INTERVAL_MIN_MS = 5_000/);
-  assert.match(policy, /MUTATION_INTERVAL_MAX_MS = 15_000/);
-  assert.match(policy, /MUTATION_CROSSFADE_MIN_MS = 6_000/);
-  assert.match(policy, /MUTATION_CROSSFADE_MAX_MS = 12_000/);
-  assert.match(policy, /MUTATION_MIN_FPS = 58/);
+  assert.match(policy, /MUTATION_INTERVAL_MIN_MS = 2_800/);
+  assert.match(policy, /MUTATION_INTERVAL_MAX_MS = 8_500/);
+  assert.match(policy, /MUTATION_CROSSFADE_MIN_MS = 1_600/);
+  assert.match(policy, /MUTATION_CROSSFADE_MAX_MS = 3_600/);
+  assert.match(policy, /MUTATION_MIN_FPS = 48/);
   assert.match(client, /type: mutation \? 'mutate' : 'generate'/);
   assert.match(client, /anchoredMutationPayload/);
   assert.match(client, /mutationCandidateSafe/);
-  assert.match(client, /lastFrameMs > 33/);
+  assert.match(client, /lastFrameMs > 42/);
   assert.match(client, /MUTATION_OBSERVE_MS = 2_000/);
   assert.match(client, /observingResult && !active && !mutationPreparing/);
-  assert.match(client, /disableMutations\('frame-budget'|mutationSoftFailure\('frame-budget'/);
+  assert.match(client, /mutationCooldown\('frame-budget'/);
+  assert.doesNotMatch(client, /mutationSoftFailure\('frame-budget', \{ disable: true \}\)/);
   assert.match(main, /visibleSurfaceSlots/);
   assert.match(main, /tickMutation/);
   assert.match(server, /\{"generate", "mutate"\}/);
@@ -89,6 +90,7 @@ test('protocol binds result bytes to request, bank, slot, model, and checksum id
 
 test('desktop shell owns random authenticated sidecar lifecycle and cleanup', () => {
   const rust = read('src-tauri/src/lens_service.rs');
+  const cargo = read('src-tauri/Cargo.toml');
   const main = read('src/main.js');
   assert.match(rust, /TcpListener::bind\(\("127\.0\.0\.1", 0\)\)/);
   assert.match(rust, /OsRng\.fill_bytes/);
@@ -97,6 +99,10 @@ test('desktop shell owns random authenticated sidecar lifecycle and cleanup', ()
   assert.match(main, /bootstrapNativeLens/);
   assert.match(clientSource(), /searchParams\.set\('token'/);
   assert.match(rust, /\.env\("LENS_DEPTH", "0"\)/);
+  assert.match(rust, /command\.creation_flags\(sidecar_creation_flags\(\)\)/);
+  assert.match(rust, /CREATE_NO_WINDOW/);
+  assert.match(cargo, /target\.'cfg\(windows\)'\.dependencies[\s\S]*windows-sys/);
+  assert.doesNotMatch(rust, /CREATE_NEW_CONSOLE|DETACHED_PROCESS|CREATE_NEW_PROCESS_GROUP/);
 });
 
 test('native development has an explicit loopback service path without weakening production ownership', () => {
@@ -123,6 +129,7 @@ test('bundled model path is offline, checksum-verified, and GPU-only', () => {
   assert.match(pipeline, /validate_bundled_resources/);
   assert.match(pipeline, /diffusers_logging\.disable_progress_bar\(\)/);
   assert.match(server, /device not in \{"cuda", "mps"\}/);
+  assert.match(server, /expected == "cuda"[\s\S]*NVIDIA CUDA hardware and a compatible driver are required/);
   assert.match(server, /UNSUPPORTED_GPU/);
   assert.match(bundle, /aarch64-apple-darwin/);
   assert.match(bundle, /x86_64-pc-windows-msvc/);

@@ -3,6 +3,9 @@ import { CHUNK_SURF_FLAGS } from '../src/data/chunk-surf-script.js';
 import { buildChunkSurfGodPreset, CHUNK_SURF_GOD_PRESET } from '../src/game/chunk-surf-god.js';
 import {
   CHUNK_SURF_PHASE,
+  SOURCE_FINAL_OUTCOME,
+  SOURCE_FINAL_STATUS,
+  SOURCE_PURSUIT_BEAT,
   canOfferChunkSurf,
   chunkSurfCompletion,
   chunkSurfFlagsForState,
@@ -44,6 +47,17 @@ assert.equal(canOfferChunkSurf({ completedTakes: 4, roomId: 'chapel_approach', a
 
 assert.deepEqual([0, 27.9, 28, 56, 84, 112].map(pageStageForDistance), [0, 0, 1, 2, 3, 4]);
 assert.equal(inferLegacyChunkSurf({flags:{[CHUNK_SURF_FLAGS.entered]:true}}).active,true,'incomplete legacy source saves restart in the Hall');
+assert.equal(inferLegacyChunkSurf({flags:{[CHUNK_SURF_FLAGS.completed]:true}}).finalEncounter.status,SOURCE_FINAL_STATUS.RESOLVED,'completed legacy saves migrate to a resolved encounter');
+
+{
+  const migrated=normalizeChunkSurfState({
+    schema:2,active:true,phase:'landscape',profile:{bestEligible:true},tuned:['fork-room','surfer-origin'],recorded:['work-order-loop'],redaction:null,
+  });
+  assert.equal(migrated.schema,3);
+  assert.deepEqual(migrated.optionalTraces,['surfer-origin','work-order-loop'],'schema-2 Tune and Record evidence migrates without loss');
+  assert.equal(migrated.finalEncounter.status,SOURCE_FINAL_STATUS.LOCKED);
+  assert.deepEqual(migrated.checkpoint,{id:'hall-entry',facing:0});
+}
 
 {
   let state = freshChunkSurfState();
@@ -63,6 +77,13 @@ assert.equal(inferLegacyChunkSurf({flags:{[CHUNK_SURF_FLAGS.entered]:true}}).act
 }
 
 {
+  let state=landscapeState();
+  state=event(state,'LANDMARK_RECORDED',{id:'surfer-origin'});
+  state=event(state,'LANDMARK_TUNED',{id:'work-order-loop'});
+  assert.deepEqual(state.optionalTraces,['surfer-origin','work-order-loop'],'either Record or Tune resolves an optional trace');
+}
+
+{
   const wrong = chunkSurfCompletion(completeCandidate('source'));
   assert.equal(wrong.completed, true);
   assert.equal(wrong.bestEligible, false);
@@ -74,6 +95,27 @@ assert.equal(inferLegacyChunkSurf({flags:{[CHUNK_SURF_FLAGS.entered]:true}}).act
   assert.equal(complete.bestEligible, true);
   assert.ok(complete.flags.includes(CHUNK_SURF_FLAGS.bestEligible));
   assert.ok(complete.flags.includes(CHUNK_SURF_FLAGS.correctRedaction));
+}
+
+{
+  let state=landscapeState();
+  for(const id of ['fork-room','recordist-loop','body-room'])state=event(state,'LANDMARK_TUNED',{id});
+  state=event(state,'LANDMARK_RECORDED',{id:'body-room'});
+  state=event(state,'FINAL_REACHED');
+  state=event(state,'FINAL_ENCOUNTER_RESOLVED',{result:{outcome:SOURCE_FINAL_OUTCOME.RESCUE,won:true}});
+  state=event(state,'SOURCE_COMPLETED');
+  assert.equal(state.completed,true,'the generic fight seam can complete the chapter without the redaction adapter');
+  assert.equal(state.bestEligible,false,'both optional traces jointly gate rescue');
+}
+
+{
+  let state=landscapeState();
+  state=event(state,'PURSUIT_STARTED',{id:SOURCE_PURSUIT_BEAT.BODY_RUN});
+  assert.equal(state.pursuitBeat,SOURCE_PURSUIT_BEAT.BODY_RUN);
+  assert.equal(state.hushStage,'hunt');
+  state=event(state,'PURSUIT_CLEARED',{id:SOURCE_PURSUIT_BEAT.BODY_RUN});
+  assert.equal(state.pursuitBeat,null);
+  assert.ok(state.pursuitsCleared.includes(SOURCE_PURSUIT_BEAT.BODY_RUN));
 }
 
 {
@@ -96,12 +138,15 @@ assert.equal(inferLegacyChunkSurf({flags:{[CHUNK_SURF_FLAGS.entered]:true}}).act
   const haystack=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.HAYSTACK);
   const landscape=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.LANDSCAPE);
   const hunt=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.HUNT);
+  const finalRun=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FINAL_RUN);
   const final=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FINAL);
   assert.equal(entry.state.phase,CHUNK_SURF_PHASE.HALL);
   assert.equal(storm.state.pageStage,3);
   assert.equal(haystack.state.phase,CHUNK_SURF_PHASE.HAYSTACK);
   assert.equal(landscape.state.phase,CHUNK_SURF_PHASE.LANDSCAPE);
   assert.equal(hunt.state.hushStage,'hunt');
+  assert.equal(hunt.state.pursuitBeat,SOURCE_PURSUIT_BEAT.BODY_RUN);
+  assert.equal(finalRun.state.pursuitBeat,SOURCE_PURSUIT_BEAT.FINAL_RUN);
   assert.equal(final.state.phase,CHUNK_SURF_PHASE.FINAL);
   assert.equal(final.state.active,true);
 }

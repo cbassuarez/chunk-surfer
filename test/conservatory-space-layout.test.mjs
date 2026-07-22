@@ -83,7 +83,11 @@ assert.ok(reachable(rt(84, 27), rt(94, 34)), 'natatorium east deck and lane stor
 
 const pipeProps = placed.filter((prop) => prop.id.startsWith('plant-pipe-'));
 assert.ok(pipeProps.length >= 6, 'plant room receives a visible pipe system');
-assert.ok(pipeProps.every((prop) => !prop.blocks && prop.elevation >= 1.4), 'plant pipes are wall or overhead detail, not floor blockers');
+assert.ok(pipeProps.every((prop) => {
+  const behindX = prop.rx - Math.round(Math.sin(prop.yaw || 0));
+  const behindY = prop.ry - Math.round(Math.cos(prop.yaw || 0));
+  return !prop.blocks && prop.mount === 'wall' && prop.zone === 8 && FP.isSolid(behindX, behindY);
+}), 'plant pipes are nonblocking wall fixtures inside the plant zone');
 assert.ok(reachable(rt(25, 12), rt(35, 10)), 'studio to plant-room service path remains clear');
 assert.ok(reachable(rt(25, 12), rt(40, 14)), 'plant-room pipe dressing does not block circulation');
 

@@ -2,6 +2,7 @@
 
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { validateWindowsPortable } from './validate-windows-portable.mjs';
 
 const root = process.cwd();
 const version = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8')).version;
@@ -29,10 +30,13 @@ writeFileSync(
   [
     `${appName} ${version}`,
     '',
-    'Run chunk-surfer.exe from this folder.',
+    'Extract the complete Chunk Surfer folder before running. Do not run the game from Windows Explorer\'s zip preview.',
+    'Run chunk-surfer.exe from the extracted folder.',
     'Keep chunk-lens.exe and the lens folder next to the game executable; they are the bundled offline lens runtime.',
+    'Requires Windows x64, Microsoft Edge WebView2 Runtime, and an NVIDIA CUDA-capable GPU with a compatible driver.',
     '',
   ].join('\r\n'),
 );
 
-console.log(`Prepared Windows portable app at ${path.relative(root, appDir)}`);
+const validation = validateWindowsPortable(appDir);
+console.log(`Prepared Windows portable app at ${path.relative(root, appDir)} (${validation.manifestFiles} manifest files verified)`);

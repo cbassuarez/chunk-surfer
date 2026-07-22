@@ -67,7 +67,10 @@ async function anchoredMutationPayload(source, previous, feedback = MUTATION_FEE
     canvas.width = sourceBitmap.width; canvas.height = sourceBitmap.height;
     const context = canvas.getContext('2d');
     context.drawImage(sourceBitmap, 0, 0);
-    context.globalAlpha = Math.max(0, Math.min(0.25, Number(feedback) || 0));
+    // Keep enough of the preceding hallucination for motifs to breed across
+    // generations. The untouched source remains underneath as a structural
+    // anchor, so this is recursion rather than an accumulating full-frame wash.
+    context.globalAlpha = Math.max(0, Math.min(0.55, Number(feedback) || 0));
     context.drawImage(previousBitmap, 0, 0, canvas.width, canvas.height);
     context.globalAlpha = 1;
     return canvasJpeg(canvas);
@@ -320,9 +323,16 @@ export function surfaceDiffusionStart({
     stats.mutationsRejected += 1;
     if (disable) disableMutations(reason);
     else {
-      nextMutationAt = performance.now() + 15_000;
+      nextMutationAt = performance.now() + 12_000;
       setMutationState('rejected', { mutationLastReject: reason, nextMutationAt });
     }
+  }
+
+  function mutationCooldown(reason, delayMs = 12_000) {
+    mutationObservationUntil = 0;
+    mutationPerformanceFault = false;
+    nextMutationAt = performance.now() + delayMs;
+    setMutationState('cooldown', { mutationLastBackoff: reason, nextMutationAt });
   }
 
   async function handleMutationBytes(work, bytes) {
@@ -336,16 +346,8 @@ export function surfaceDiffusionStart({
     stats.framesIn += 1;
     stats.lastRttMs = performance.now() - sentAt;
     stats.mutationsGenerated += 1;
-    if (work.performanceFault) {
-      mutationSoftFailure('frame-budget', { disable: true });
-      return;
-    }
     if (!await mutationCandidateSafe(previous, candidate)) {
       mutationSoftFailure('visual-outlier');
-      return;
-    }
-    if (work.performanceFault) {
-      mutationSoftFailure('frame-budget', { disable: true });
       return;
     }
     bank[work.slot] = candidate;
@@ -357,12 +359,19 @@ export function surfaceDiffusionStart({
     let displayed = false;
     if (stillCurrent()) displayed = await queueBankUpload(work.bankId, work.transitionMs, stillCurrent);
     active = null; pendingResult = null;
+    if (work.performanceFault) {
+      // MPS inference and WebGL share the same GPU. A transient hitch while the
+      // model runs is expected; keep the valid visual result and simply wait
+      // longer before asking for another one.
+      nextMutationAt = Math.max(nextMutationAt || 0, performance.now() + 12_000);
+    }
     mutationPerformanceFault = false;
     setMutationState(displayed ? 'crossfading' : 'accepted', {
       mutationSlot: work.slot,
       mutationBank: work.bankId,
       mutationTransitionMs: work.transitionMs,
       mutationDisplayed: displayed,
+      mutationPerformanceBackoff: !!work.performanceFault,
     });
   }
 
@@ -393,12 +402,12 @@ export function surfaceDiffusionStart({
     const fps = Number(perf?.fps);
     const lastFrameMs = Number(perf?.lastFrameMs);
     const observingResult = now < mutationObservationUntil;
-    const frameBudgetExceeded = lastFrameMs > 33 || (Number.isFinite(fps) && fps < 54);
+    const frameBudgetExceeded = lastFrameMs > 42 || (Number.isFinite(fps) && fps < 46);
     if ((active?.type === 'mutate' || mutationPreparing || observingResult) && frameBudgetExceeded) {
       mutationPerformanceFault = true;
       if (active?.type === 'mutate') active.performanceFault = true;
       if (observingResult && !active && !mutationPreparing) {
-        disableMutations('frame-budget');
+        mutationCooldown('frame-budget');
         return false;
       }
     }

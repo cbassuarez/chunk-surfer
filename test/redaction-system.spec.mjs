@@ -1,168 +1,106 @@
+// Historical filename retained by the test runner. These assertions prove the
+// old word-redaction runtime has been replaced by deterministic signal combat.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readdir, readFile } from 'node:fs/promises';
 
 import {
-  authorRedactionChallenge,
-  applyOpponentMove,
-  createRedactionState,
-  graftSignal,
-  revealHidden,
-  toggleRedaction,
-  validateBattleDefinition,
-  validateReading,
-  visibleTokenIds,
-} from '../src/game/redaction.js';
-import {
-  chapelBoss,
-  hallBattle,
-  natatoriumBattle,
-  practiceBattle,
-} from '../src/data/battles.js';
+  COMBAT_ACTION,
+  combatResult,
+  createCombatState,
+  currentCombatIntent,
+  reduceCombat,
+  validateCombatDefinition,
+} from '../src/game/combat-state.js';
+import { runtimeBattle } from '../src/narrative/runtime-content.js';
+import { validateNarrativeDocument } from '../src/narrative/contracts.js';
 import { endingChoice, guardEpilogue } from '../src/data/conservatory-script.js';
 import { surfacedEnding } from '../src/data/chunk-surf-script.js';
 
-function tokenId(challenge, ref) {
-  const key = String(ref).toUpperCase();
-  const token = challenge.tokens.find((t) => t.id.endsWith(`:${ref}`) || String(t.text).toUpperCase() === key);
-  assert.ok(token, `missing token ${ref}`);
-  return token.id;
-}
-
-function redactAllExcept(state, refs) {
-  const keep = new Set(refs.map((ref) => tokenId(state.challenge, ref)));
-  for (const token of state.challenge.tokens) {
-    if (visibleTokenIds(state).includes(token.id) && !keep.has(token.id)) toggleRedaction(state, token.id);
-  }
-}
-
-test('hidden and grafted tokens participate in semantic readings', () => {
-  const challenge = authorRedactionChallenge('grammar', [
-    'ROOM', 'IS', 'EMPTY',
-    { id: 'not', text: 'NOT', kind: 'hidden' },
-    { id: 'return', text: 'RETURN', kind: 'graft' },
-  ], {
-    readings: [
-      {
-        id: 'grammar:return',
-        required: ['not', 'return'],
-        forbidden: ['empty'],
-        maxVisible: 2,
-        meaning: 'Absence becomes returnable.',
-        grants: ['route.surfaced'],
-        locks: ['route.sacrifice'],
-        routeBias: 'surfaced',
-        pressureDelta: -2,
-      },
-    ],
-  });
-  const state = createRedactionState(challenge);
-  assert.equal(validateReading(state).ok, false);
-  assert.equal(revealHidden(state), true);
-  assert.equal(graftSignal(state), true);
-  redactAllExcept(state, ['not', 'return']);
-  const verdict = validateReading(state);
-  assert.equal(verdict.ok, true);
-  assert.equal(verdict.readingId, 'grammar:return');
-  assert.deepEqual(verdict.grants, ['route.surfaced']);
-  assert.deepEqual(verdict.locks, ['route.sacrifice']);
-  assert.equal(verdict.meaning, 'Absence becomes returnable.');
-});
-
-test('opponent insertions are visible textual arguments', () => {
-  const challenge = authorRedactionChallenge('argument', [
-    'I', 'DID', 'NOT', 'AGREE',
-    { id: 'body', text: 'BODY', kind: 'insertion' },
-  ], {
-    readings: [
-      { id: 'argument:refusal', required: ['not'], forbidden: ['agree', 'body'], maxVisible: 3, meaning: 'Refusal survives.' },
-      { id: 'argument:body', required: ['body'], forbidden: ['not'], maxVisible: 3, meaning: 'The Surfer makes body the premise.' },
-    ],
-    opponentMoves: [
-      { insert: ['body'], scrape: ['agree'], notice: 'It writes BODY where the sentence was safest.' },
-    ],
-  });
-  const state = createRedactionState(challenge);
-  assert.equal(visibleTokenIds(state).includes(tokenId(challenge, 'body')), false);
-  toggleRedaction(state, tokenId(challenge, 'agree'));
-  const move = applyOpponentMove(state);
-  assert.equal(move.notice, 'It writes BODY where the sentence was safest.');
-  assert.equal(visibleTokenIds(state).includes(tokenId(challenge, 'body')), true);
-});
-
-test('all authored battles use the same redaction contract', () => {
-  const battles = [
-    natatoriumBattle(true),
-    practiceBattle(true),
-    hallBattle(true),
-    chapelBoss({ kind: 'name', value: 'Sarah', listened: 5 }),
-  ];
-  for (const battle of battles) {
-    const errors = validateBattleDefinition(battle);
-    assert.deepEqual(errors, [], battle.id);
-    for (const challenge of battle.challenges) {
-      assert.ok(challenge.readings.length >= 2, `${battle.id}:${challenge.id} needs multiple readings`);
-      for (const reading of challenge.readings) {
-        assert.ok(reading.meaning, `${battle.id}:${challenge.id}:${reading.id} lacks meaning`);
-      }
-    }
+test('all 13 authored battle documents use combat metadata and contain no redaction challenges', async () => {
+  const files = (await readdir('content/narrative')).filter((name) => /^battle\..*\.story\.json$/.test(name));
+  assert.equal(files.length, 13);
+  for (const name of files) {
+    const document = JSON.parse(await readFile(`content/narrative/${name}`, 'utf8'));
+    assert.ok(document.metadata.combat?.movements?.length, name);
+    assert.ok(document.metadata.combat?.music, `${name} declares its battle-score identity`);
+    assert.equal(validateNarrativeDocument(document).ok, true, `${name} passes authoring validation`);
+    assert.equal('challenges' in document.metadata, false, name);
+    assert.equal('health' in document.metadata, false, name);
   }
 });
 
-test('chapel finale has five pages and gates inversion/surfaced by authored meanings', () => {
-  const battle = chapelBoss({ kind: 'nothing', listened: 5 });
-  assert.equal(battle.challenges.length, 5);
-  assert.equal(battle.health, 5);
-  assert.deepEqual(battle.tools, { fork: true, rig: true });
-  assert.deepEqual(battle.challenges.map((c) => c.title), [
-    'THE ROOM',
-    'THE PREVIOUS RECORDIST',
-    'THE SURFER',
-    'THE CONTRACT',
-    'THE SOURCE',
-  ]);
-  const source = battle.challenges.at(-1);
-  const grants = new Set(source.readings.flatMap((r) => r.grants));
-  const locks = new Set(source.readings.flatMap((r) => r.locks));
-  assert.ok(grants.has('route.surfaced'));
-  assert.ok(grants.has('route.inversion'));
-  assert.ok(locks.has('route.surfaced'));
+test('authoring validation rejects incomplete battle-score identities', async () => {
+  const document = JSON.parse(await readFile('content/narrative/battle.natatoriumbattle.named.story.json', 'utf8'));
+  document.metadata.combat.music = { mode: 'movement', movementLeads: ['lead-1'] };
+  const result = validateNarrativeDocument(document);
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some((item) => item.path === 'metadata.combat.music.movementLeads'));
 });
 
+test('every runtime encounter validates under one deterministic combat contract', () => {
+  for (const id of [
+    'battle.natatoriumbattle.named', 'battle.natatoriumbattle.unnamed',
+    'battle.practicebattle.named', 'battle.practicebattle.unnamed',
+    'battle.hallbattle.named', 'battle.hallbattle.unnamed',
+    'battle.chapel.nothing', 'battle.chapel.name-sarah', 'battle.chapel.name-other',
+    'battle.chapel.reason-money', 'battle.chapel.reason-superstition', 'battle.chapel.reason-other', 'battle.chapel.feeling',
+  ]) {
+    const battle = runtimeBattle(id);
+    assert.deepEqual(validateCombatDefinition(battle.combat), [], id);
+    assert.ok(battle.combat.music, `${id} preserves music metadata at runtime`);
+  }
+});
 
-test('finale choice tree reflects authored route availability without exposing route names', () => {
-  const base = endingChoice({
-    hasRig: true,
-    canInvert: false,
-    canSurface: false,
-    readings: [{ challengeId: 'chapel-source', readingId: 'source-you', meaning: 'You leave yourself as the source.', text: 'SOURCE IS YOU' }],
-    locks: ['route.surfaced'],
-    sourceReading: { text: 'SOURCE IS YOU' },
-  });
-  assert.equal(base.start.choices.some((c) => c.set?.includes('ending.choice=inversion')), false);
-  assert.equal(base.start.choices.some((c) => c.set?.includes('ending.choice=surfaced')), false);
-  assert.ok(base.start.lines.some((l) => /SOURCE IS YOU/.test(l.text)));
+test('Chapel action proof can unlock both return and inversion without route-name choices', () => {
+  const battle = runtimeBattle('battle.chapel.nothing');
+  let state = createCombatState(battle.combat, { tools: { rig: true, fork: true }, battery: 1 });
+  // Proof behavior itself is authored by movement identity and the physical
+  // tool action, not a separate dialogue answer.
+  state.movementIndex = 1; state.movementCoherence = 3; state.movementMaxCoherence = 3; state.intentIndex = 0;
+  state = reduceCombat(state, { type: COMBAT_ACTION.MONITOR });
+  assert.ok(state.proofs.includes('return.recordist'));
 
+  state.movementIndex = 3; state.movementCoherence = 3; state.movementMaxCoherence = 3; state.intentIndex = 0; state.tempo = false; state.take = null;
+  state = reduceCombat(state, { type: COMBAT_ACTION.MONITOR });
+  state = reduceCombat(state, { type: COMBAT_ACTION.END_TEMPO });
+  assert.equal(currentCombatIntent(state).kind, 'loop');
+  state = reduceCombat(state, { type: COMBAT_ACTION.INVERT });
+  assert.ok(state.proofs.includes('invert.contract'));
+
+  state.movementIndex = 4; state.movementCoherence = 3; state.movementMaxCoherence = 3; state.intentIndex = 0; state.tempo = false; state.take = null;
+  state = reduceCombat(state, { type: COMBAT_ACTION.MONITOR });
+  state = reduceCombat(state, { type: COMBAT_ACTION.PLAYBACK });
+  assert.ok(state.proofs.includes('return.source'));
+  state = reduceCombat(state, { type: COMBAT_ACTION.HOLD });
+  state = reduceCombat(state, { type: COMBAT_ACTION.END_TEMPO });
+  state = reduceCombat(state, { type: COMBAT_ACTION.MONITOR });
+  state = reduceCombat(state, { type: COMBAT_ACTION.END_TEMPO });
+  state = reduceCombat(state, { type: COMBAT_ACTION.INVERT });
+  const result = combatResult(state);
+  assert.ok(result.proofs.includes('invert.source'));
+  assert.ok(result.finale.grants.includes('route.surfaced'));
+  assert.ok(result.finale.grants.includes('route.inversion'));
+});
+
+test('finale choice tree consumes combat-derived route availability without exposing route names', () => {
   const full = endingChoice({
     hasRig: true,
     canInvert: true,
     canSurface: true,
-    readings: [
-      { challengeId: 'chapel-recordist', readingId: 'still-here', meaning: 'The prior recordist is still recoverable.', text: 'STILL HERE' },
-      { challengeId: 'chapel-source', readingId: 'signal-process-release', meaning: 'Signal process release.', text: 'SIGNAL PROCESS RELEASE' },
-    ],
+    readings: [{ readingId: 'return.source', meaning: 'The body remains returnable.', text: 'BODY BORROWED RETURN' }],
     grants: ['route.inversion', 'route.surfaced'],
-    sourceReading: { text: 'SIGNAL PROCESS RELEASE' },
+    sourceReading: { text: 'BODY BORROWED RETURN' },
   });
-  const choiceText = full.start.choices.map((c) => c.text).join(' / ');
+  const choiceText = full.start.choices.map((choice) => choice.text).join(' / ');
   assert.match(choiceText, /broken rig/);
   assert.match(choiceText, /borrowed body/);
   assert.doesNotMatch(choiceText, /SURFACED|INVERSION|SACRIFICE/);
 });
 
-test('surfaced ending and epilogue acknowledge the recovered recordist', () => {
+test('surfaced ending and epilogue still acknowledge the recovered recordist', () => {
   const ending = surfacedEnding({ sourceReading: { text: 'BODY BORROWED RETURN' } });
   assert.ok(ending.some((line) => /BODY BORROWED RETURN/.test(line.text)));
-  const epilogue = guardEpilogue('surfaced');
-  assert.ok(epilogue.some((line) => /Two of you/.test(line.text)));
-  assert.ok(epilogue.some((line) => /RETURNED/.test(line.text)));
+  assert.ok(guardEpilogue('surfaced').some((line) => /Two of you/.test(line.text)));
 });

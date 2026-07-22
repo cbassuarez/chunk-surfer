@@ -333,8 +333,12 @@ def build(model_key: str | None = None, style_lora: str | None = None,
     kw = {"torch_dtype": dtype, "safety_checker": None, "requires_safety_checker": False}
     if BUNDLED:
         kw["local_files_only"] = True
-    if model.variant and device == "cuda":
-        kw["variant"] = model.variant
+    # The offline package intentionally contains only the pinned fp16 files.
+    # MPS and ROCm need the same variant selection as CUDA, and even a bundled
+    # CPU fallback must name the files that actually shipped.
+    weight_variant = model.variant if model.variant and (BUNDLED or dtype == torch.float16) else None
+    if weight_variant:
+        kw["variant"] = weight_variant
 
     def _open(**extra):
         k = {**kw, **extra}
@@ -343,6 +347,10 @@ def build(model_key: str | None = None, style_lora: str | None = None,
                 return StableDiffusionControlNetImg2ImgPipeline.from_pretrained(model.base, **k)
             return AutoPipelineForImage2Image.from_pretrained(model.base, **k)
         except Exception:                  # fp16 variant absent on some mirrors
+            # A pinned offline package cannot recover by asking for a variant
+            # it deliberately did not include. Preserve the real load error.
+            if BUNDLED or "variant" not in k:
+                raise
             k.pop("variant", None)
             if "controlnet" in k:
                 return StableDiffusionControlNetImg2ImgPipeline.from_pretrained(model.base, **k)
@@ -350,7 +358,10 @@ def build(model_key: str | None = None, style_lora: str | None = None,
 
     if want_depth:
         try:
-            cn = ControlNetModel.from_pretrained(CONTROLNET_DEPTH, torch_dtype=dtype, local_files_only=BUNDLED)
+            controlnet_kw = {"torch_dtype": dtype, "local_files_only": BUNDLED}
+            if weight_variant:
+                controlnet_kw["variant"] = weight_variant
+            cn = ControlNetModel.from_pretrained(CONTROLNET_DEPTH, **controlnet_kw)
             pipe = _open(controlnet=cn)
             lens.depth = True
         except Exception as e:

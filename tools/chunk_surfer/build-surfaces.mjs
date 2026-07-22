@@ -1,8 +1,8 @@
 // Build the architectural surface atlases the WebGL world renderer samples:
 // four texture arrays (albedo, normal, roughness, height), one slot per
-// real surface. Sources are standard PBR sets — Poliigon (BaseColor/Normal/
-// Roughness) and ambientCG-style (COL/NRM/GLOSS) — downscaled from 4K and packed.
-// Gloss maps are inverted to roughness. These are seam-tileable, so a single tile
+// real surface. Sources are standard PBR sets — currently Poly Haven CC0
+// downloads in `.blend.zip` packages — downscaled from 4K and packed.
+// Gloss maps are inverted to roughness when present. These are seam-tileable, so a single tile
 // repeats across a whole floor or wall without a visible join.
 //
 //   node tools/chunk_surfer/build-surfaces.mjs
@@ -11,31 +11,60 @@
 // neutral tile in its slot and is disclosed in surfaces.json, so the build never
 // hard-fails on an absent download. The material→slot mapping lives in the shader.
 
+import { execFileSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import sharp from 'sharp';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const OUT = path.join(ROOT, 'public/assets/surfaces');
 const DL = path.join(process.env.HOME, 'Downloads');
+const CACHE = path.join(os.tmpdir(), 'chunk-surfer-surface-sources');
+const POLY_HAVEN_LICENSE = 'https://polyhaven.com/license';
 // Each surface is one 512px tile; the three maps are stacked as vertical strips
 // (tile per slot) and uploaded as WebGL2 texture arrays — proper mipmaps, REPEAT
 // wrap, and anisotropy, none of which an atlas allows.
 const SIZE = 512;
 
-// slot → { dir under ~/Downloads, tile (world metres per repeat), kind }
+const poly = (slug) => ({
+  zip: `${slug}_4k.blend.zip`,
+  source: `Poly Haven: ${slug}`,
+  sourceUrl: `https://polyhaven.com/a/${slug}`,
+  license: 'CC0',
+  licenseUrl: POLY_HAVEN_LICENSE,
+});
+
+// slot → { zip under ~/Downloads, tile (world metres per repeat), kind }
 const SURFACES = {
-  wall_brick:       { slot: 0, dir: 'Poliigon_BrickWallReclaimed_8320',     tile: 3.0, kind: 'wall' },
-  wall_stonebrick:  { slot: 1, dir: 'StoneBricksSplitface001',              tile: 2.6, kind: 'wall' },
-  floor_wood:       { slot: 2, dir: 'Poliigon_WoodFloorAsh_4186',           tile: 2.4, kind: 'floor' },
-  floor_quartzite:  { slot: 3, dir: 'Poliigon_StoneQuartzite_8060',         tile: 2.8, kind: 'floor' },
-  floor_pooltile:   { slot: 4, dir: 'TilesSquarePoolMixed001',              tile: 1.2, kind: 'floor' },
-  floor_ceramic:    { slot: 5, dir: 'Poliigon_TilesCeramicWhite_6956',      tile: 1.2, kind: 'floor' },
-  floor_terrazzo:   { slot: 6, dir: 'Poliigon_TerrazzoTilePolished_4818',   tile: 2.2, kind: 'floor' },
-  wall_travertine:  { slot: 7, dir: 'TilesTravertine001',                   tile: 2.8, kind: 'wall' },
-  wall_rammedearth: { slot: 8, dir: 'RammedEarth018',                       tile: 3.2, kind: 'wall' },
-  wall_concrete:    { slot: 9, dir: 'Poliigon_ConcreteWallCladding_7856',   tile: 2.8, kind: 'wall' },
+  wall_brick:       { slot: 0, ...poly('medieval_red_brick'),   tile: 3.0, kind: 'wall' },
+  wall_stonebrick:  { slot: 1, ...poly('rock_wall_15'),         tile: 2.6, kind: 'wall' },
+  floor_wood:       { slot: 2, ...poly('old_wooden_floor_01'),  tile: 2.4, kind: 'floor' },
+  floor_quartzite:  { slot: 3, ...poly('floor_tiles_06'),       tile: 2.8, kind: 'floor' },
+  floor_pooltile:   { slot: 4, ...poly('floor_tiles_06'),       tile: 1.2, kind: 'floor' },
+  floor_ceramic:    { slot: 5, ...poly('grey_cartago_01'),      tile: 1.2, kind: 'floor' },
+  floor_terrazzo:   { slot: 6, ...poly('terrazzo_tiles'),       tile: 2.2, kind: 'floor' },
+  wall_travertine:  { slot: 7, ...poly('floor_tiles_06'),       tile: 2.8, kind: 'wall' },
+  wall_rammedearth: { slot: 8, ...poly('medieval_wall_01'),     tile: 3.2, kind: 'wall' },
+  wall_concrete:    { slot: 9, ...poly('coral_fort_wall_02'),   tile: 2.8, kind: 'wall' },
 };
+
+const extracted = new Map();
+function extractZip(zipName) {
+  if (extracted.has(zipName)) return extracted.get(zipName);
+  const zip = path.join(DL, zipName);
+  if (!fs.existsSync(zip)) {
+    extracted.set(zipName, null);
+    return null;
+  }
+  const dest = path.join(CACHE, zipName.replace(/[^a-z0-9._-]/gi, '_').replace(/\.zip$/i, ''));
+  fs.rmSync(dest, { recursive: true, force: true });
+  fs.mkdirSync(dest, { recursive: true });
+  execFileSync('unzip', ['-q', '-o', zip, '-d', dest], { stdio: 'pipe' });
+  extracted.set(zipName, dest);
+  return dest;
+}
 
 // Recursively list files once per set folder.
 function walkFiles(dir) {
@@ -47,11 +76,11 @@ function walkFiles(dir) {
 // Find the best map of a kind, honouring both naming schemes and skipping the
 // 16-bit TIFFs, previews, AO/DISP/REFL/metalness variants.
 function pickMap(files, kind) {
-  const img = files.filter((f) => /\.(jpe?g|png|tiff?)$/i.test(f) && !/preview/i.test(f));
+  const img = files.filter((f) => /\.(jpe?g|png|tiff?|exr)$/i.test(f) && !/preview/i.test(f));
   const has = (f, ...res) => res.some((r) => r.test(path.basename(f)));
   const pats = {
-    color: [/_basecolor/i, /_color/i, /_col[_.]/i, /_albedo/i, /_diffuse/i],
-    normal: [/_normalgl/i, /_normal[_.]/i, /_nrm[_.]/i],
+    color: [/_basecolor/i, /_color/i, /_col[_.]/i, /_albedo/i, /_diffuse/i, /_diff[_.]/i],
+    normal: [/_normalgl/i, /_normal[_.]/i, /_nrm[_.]/i, /_nor_gl[_.]/i],
     rough: [/_roughness/i, /_rough[_.]/i],
     gloss: [/_gloss/i],
     height: [/_displacement/i, /_disp[_.]/i, /_height/i, /_bump[_.]/i],
@@ -73,8 +102,20 @@ function pickMap(files, kind) {
   const m = match(pats[kind]); return m[0] ? { file: m[0] } : null;
 }
 
+function readableImage(file) {
+  if (!/\.exr$/i.test(file)) return file;
+  const hash = crypto.createHash('sha256').update(file).digest('hex').slice(0, 16);
+  const outDir = path.join(CACHE, 'converted');
+  fs.mkdirSync(outDir, { recursive: true });
+  const out = path.join(outDir, `${path.basename(file, path.extname(file))}-${hash}.png`);
+  if (!fs.existsSync(out)) {
+    execFileSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-i', file, out], { stdio: 'pipe' });
+  }
+  return out;
+}
+
 async function tile(file, { greyscale = false, invert = false } = {}) {
-  let s = sharp(file).resize(SIZE, SIZE, { fit: 'fill' });
+  let s = sharp(readableImage(file)).resize(SIZE, SIZE, { fit: 'fill' });
   if (greyscale) s = s.greyscale();
   if (invert) s = s.negate({ alpha: false });
   return s.removeAlpha().png().toBuffer();
@@ -92,7 +133,8 @@ const albedoT = [], normalT = [], roughT = [], heightT=[];
 const manifest = { version: 4, array: { tileSize: SIZE, layers: LAYERS, albedo: 'surfaces/surface-albedo.jpg', normal: 'surfaces/surface-normal.png', rough: 'surfaces/surface-rough.jpg', height:'surfaces/surface-height.png' }, surfaces: {} };
 
 for (const [name, cfg] of order) {
-  const files = walkFiles(path.join(DL, cfg.dir));
+  const sourceRoot = cfg.zip ? extractZip(cfg.zip) : path.join(DL, cfg.dir);
+  const files = sourceRoot ? walkFiles(sourceRoot) : [];
   const c = pickMap(files, 'color'), n = pickMap(files, 'normal'), r = pickMap(files, 'rough'), h=pickMap(files,'height');
   const top = cfg.slot * SIZE;                       // one tile per array layer, stacked
   const albedo = c ? await tile(c.file) : await solid(120, 118, 112);
@@ -101,7 +143,12 @@ for (const [name, cfg] of order) {
   const height=h?await tile(h.file,{greyscale:true}):await solid(128,128,128);
   albedoT.push({ input: albedo, left: 0, top }); normalT.push({ input: normal, left: 0, top }); roughT.push({ input: rough, left: 0, top });heightT.push({input:height,left:0,top});
   manifest.surfaces[name] = {
-    layer: cfg.slot, kind: cfg.kind, tileMeters: cfg.tile, source: cfg.dir,
+    layer: cfg.slot, kind: cfg.kind, tileMeters: cfg.tile,
+    source: cfg.source ?? cfg.dir ?? cfg.zip,
+    sourcePackage: cfg.zip ?? null,
+    sourceUrl: cfg.sourceUrl ?? null,
+    license: cfg.license ?? null,
+    licenseUrl: cfg.licenseUrl ?? null,
     maps: { color: c ? path.basename(c.file) : null, normal: n ? path.basename(n.file) : null, rough: r ? path.basename(r.file) + (r.invert ? ' (from gloss)' : '') : null, height:h?path.basename(h.file):null },
     present: !!c, variance: await variance(albedo),
   };

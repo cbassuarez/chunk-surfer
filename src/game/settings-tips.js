@@ -69,7 +69,7 @@ const SETTING_HELP = Object.freeze({
     shift: 'CURRENT SHIFT is the rules profile selected when this run began.',
     'challenge:presencePressure': 'PRESENCE PRESSURE changes how quickly and how well the HUSH tracks sound.',
     'challenge:recordingForgiveness': 'RECORDING FORGIVENESS changes how minor handling noise affects an active take.',
-    'challenge:redactionAssistance': 'REDACTION ASSISTANCE changes health and retry margins in redaction encounters.',
+    'challenge:combatAssistance': 'COMBAT ASSISTANCE changes intent guidance, Composure, guard strength, and enemy scripts.',
     'challenge:navigationSignal': 'NAVIGATION SIGNAL changes how much waypoint information the field case supplies.',
     'challenge:escapeTimer': 'ESCAPE TIMER changes the final timed window; OFF removes only that timer.',
     'challenge:torchDrain': 'TORCH DRAIN changes battery consumption, not light intensity.',

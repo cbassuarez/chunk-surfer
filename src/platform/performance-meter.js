@@ -10,7 +10,14 @@ export function createPerformanceMeter({
   let lastFrameMs = null;
 
   function snapshot() {
-    return { fps, frameMs, lastFrameMs, samples: frames.length };
+    return {
+      fps,
+      frameMs,
+      lastFrameMs,
+      maxFrameMs: frames.length ? Math.max(...frames) : null,
+      spikesAbove50: frames.filter((value) => value > 50).length,
+      samples: frames.length,
+    };
   }
 
   function frame(t = now()) {

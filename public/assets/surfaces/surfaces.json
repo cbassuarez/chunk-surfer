@@ -13,141 +13,181 @@
       "layer": 0,
       "kind": "wall",
       "tileMeters": 3,
-      "source": "Poliigon_BrickWallReclaimed_8320",
+      "source": "Poly Haven: medieval_red_brick",
+      "sourcePackage": "medieval_red_brick_4k.blend.zip",
+      "sourceUrl": "https://polyhaven.com/a/medieval_red_brick",
+      "license": "CC0",
+      "licenseUrl": "https://polyhaven.com/license",
       "maps": {
-        "color": "Poliigon_BrickWallReclaimed_8320_BaseColor.jpg",
-        "normal": "Poliigon_BrickWallReclaimed_8320_Normal.png",
-        "rough": "Poliigon_BrickWallReclaimed_8320_Roughness.jpg",
-        "height": "Poliigon_BrickWallReclaimed_8320_Displacement.tiff"
+        "color": "medieval_red_brick_diff_4k.jpg",
+        "normal": "medieval_red_brick_nor_gl_4k.exr",
+        "rough": "medieval_red_brick_rough_4k.exr",
+        "height": "medieval_red_brick_disp_4k.png"
       },
       "present": true,
-      "variance": 238.6
+      "variance": 395
     },
     "wall_stonebrick": {
       "layer": 1,
       "kind": "wall",
       "tileMeters": 2.6,
-      "source": "StoneBricksSplitface001",
+      "source": "Poly Haven: rock_wall_15",
+      "sourcePackage": "rock_wall_15_4k.blend.zip",
+      "sourceUrl": "https://polyhaven.com/a/rock_wall_15",
+      "license": "CC0",
+      "licenseUrl": "https://polyhaven.com/license",
       "maps": {
-        "color": "StoneBricksSplitface001_COL_4K.jpg",
-        "normal": "StoneBricksSplitface001_NRM_4K.jpg",
-        "rough": "StoneBricksSplitface001_GLOSS_4K.jpg (from gloss)",
-        "height": "StoneBricksSplitface001_BUMP_4K.jpg"
+        "color": "rock_wall_15_diff_4k.jpg",
+        "normal": "rock_wall_15_nor_gl_4k.exr",
+        "rough": "rock_wall_15_rough_4k.exr",
+        "height": "rock_wall_15_disp_4k.png"
       },
       "present": true,
-      "variance": 371.5
+      "variance": 1153.2
     },
     "floor_wood": {
       "layer": 2,
       "kind": "floor",
       "tileMeters": 2.4,
-      "source": "Poliigon_WoodFloorAsh_4186",
+      "source": "Poly Haven: old_wooden_floor_01",
+      "sourcePackage": "old_wooden_floor_01_4k.blend.zip",
+      "sourceUrl": "https://polyhaven.com/a/old_wooden_floor_01",
+      "license": "CC0",
+      "licenseUrl": "https://polyhaven.com/license",
       "maps": {
-        "color": "Poliigon_WoodFloorAsh_4186_BaseColor.jpg",
-        "normal": "Poliigon_WoodFloorAsh_4186_Normal.png",
-        "rough": "Poliigon_WoodFloorAsh_4186_Roughness.jpg",
-        "height": "Poliigon_WoodFloorAsh_4186_Displacement.tiff"
+        "color": "old_wooden_floor_01_diff_4k.jpg",
+        "normal": "old_wooden_floor_01_nor_gl_4k.exr",
+        "rough": "old_wooden_floor_01_rough_4k.exr",
+        "height": "old_wooden_floor_01_disp_4k.png"
       },
       "present": true,
-      "variance": 39
+      "variance": 105.5
     },
     "floor_quartzite": {
       "layer": 3,
       "kind": "floor",
       "tileMeters": 2.8,
-      "source": "Poliigon_StoneQuartzite_8060",
+      "source": "Poly Haven: floor_tiles_06",
+      "sourcePackage": "floor_tiles_06_4k.blend.zip",
+      "sourceUrl": "https://polyhaven.com/a/floor_tiles_06",
+      "license": "CC0",
+      "licenseUrl": "https://polyhaven.com/license",
       "maps": {
-        "color": "Poliigon_StoneQuartzite_8060_BaseColor.jpg",
-        "normal": "Poliigon_StoneQuartzite_8060_Normal.png",
-        "rough": "Poliigon_StoneQuartzite_8060_Roughness.jpg",
-        "height": "Poliigon_StoneQuartzite_8060_Displacement.tiff"
+        "color": "floor_tiles_06_diff_4k.jpg",
+        "normal": "floor_tiles_06_nor_gl_4k.exr",
+        "rough": "floor_tiles_06_rough_4k.jpg",
+        "height": "floor_tiles_06_disp_4k.png"
       },
       "present": true,
-      "variance": 36.1
+      "variance": 561.7
     },
     "floor_pooltile": {
       "layer": 4,
       "kind": "floor",
       "tileMeters": 1.2,
-      "source": "TilesSquarePoolMixed001",
+      "source": "Poly Haven: floor_tiles_06",
+      "sourcePackage": "floor_tiles_06_4k.blend.zip",
+      "sourceUrl": "https://polyhaven.com/a/floor_tiles_06",
+      "license": "CC0",
+      "licenseUrl": "https://polyhaven.com/license",
       "maps": {
-        "color": "TilesSquarePoolMixed001_COL_4K.jpg",
-        "normal": "TilesSquarePoolMixed001_NRM_4K.jpg",
-        "rough": "TilesSquarePoolMixed001_GLOSS_4K.jpg (from gloss)",
-        "height": "TilesSquarePoolMixed001_DISP_4K.jpg"
+        "color": "floor_tiles_06_diff_4k.jpg",
+        "normal": "floor_tiles_06_nor_gl_4k.exr",
+        "rough": "floor_tiles_06_rough_4k.jpg",
+        "height": "floor_tiles_06_disp_4k.png"
       },
       "present": true,
-      "variance": 952.5
+      "variance": 561.7
     },
     "floor_ceramic": {
       "layer": 5,
       "kind": "floor",
       "tileMeters": 1.2,
-      "source": "Poliigon_TilesCeramicWhite_6956",
+      "source": "Poly Haven: grey_cartago_01",
+      "sourcePackage": "grey_cartago_01_4k.blend.zip",
+      "sourceUrl": "https://polyhaven.com/a/grey_cartago_01",
+      "license": "CC0",
+      "licenseUrl": "https://polyhaven.com/license",
       "maps": {
-        "color": "Poliigon_TilesCeramicWhite_6956_BaseColor.jpg",
-        "normal": "Poliigon_TilesCeramicWhite_6956_Normal.png",
-        "rough": "Poliigon_TilesCeramicWhite_6956_Roughness.jpg",
-        "height": "Poliigon_TilesCeramicWhite_6956_Displacement.tiff"
+        "color": "grey_cartago_01_diff_4k.jpg",
+        "normal": "grey_cartago_01_nor_gl_4k.exr",
+        "rough": "grey_cartago_01_rough_4k.exr",
+        "height": "grey_cartago_01_disp_4k.png"
       },
       "present": true,
-      "variance": 8.1
+      "variance": 345.8
     },
     "floor_terrazzo": {
       "layer": 6,
       "kind": "floor",
       "tileMeters": 2.2,
-      "source": "Poliigon_TerrazzoTilePolished_4818",
+      "source": "Poly Haven: terrazzo_tiles",
+      "sourcePackage": "terrazzo_tiles_4k.blend.zip",
+      "sourceUrl": "https://polyhaven.com/a/terrazzo_tiles",
+      "license": "CC0",
+      "licenseUrl": "https://polyhaven.com/license",
       "maps": {
-        "color": "Poliigon_TerrazzoTilePolished_4818_BaseColor.jpg",
-        "normal": "Poliigon_TerrazzoTilePolished_4818_Normal.png",
-        "rough": "Poliigon_TerrazzoTilePolished_4818_Roughness.jpg",
-        "height": "Poliigon_TerrazzoTilePolished_4818_Displacement.tiff"
+        "color": "terrazzo_tiles_diff_4k.jpg",
+        "normal": "terrazzo_tiles_nor_gl_4k.exr",
+        "rough": "terrazzo_tiles_rough_4k.exr",
+        "height": "terrazzo_tiles_disp_4k.png"
       },
       "present": true,
-      "variance": 156.6
+      "variance": 219
     },
     "wall_travertine": {
       "layer": 7,
       "kind": "wall",
       "tileMeters": 2.8,
-      "source": "TilesTravertine001",
+      "source": "Poly Haven: floor_tiles_06",
+      "sourcePackage": "floor_tiles_06_4k.blend.zip",
+      "sourceUrl": "https://polyhaven.com/a/floor_tiles_06",
+      "license": "CC0",
+      "licenseUrl": "https://polyhaven.com/license",
       "maps": {
-        "color": "TilesTravertine001_COL_4K.jpg",
-        "normal": "TilesTravertine001_NRM_4K.jpg",
-        "rough": "TilesTravertine001_GLOSS_4K.jpg (from gloss)",
-        "height": "TilesTravertine001_DISP_4K.jpg"
+        "color": "floor_tiles_06_diff_4k.jpg",
+        "normal": "floor_tiles_06_nor_gl_4k.exr",
+        "rough": "floor_tiles_06_rough_4k.jpg",
+        "height": "floor_tiles_06_disp_4k.png"
       },
       "present": true,
-      "variance": 53.8
+      "variance": 561.7
     },
     "wall_rammedearth": {
       "layer": 8,
       "kind": "wall",
       "tileMeters": 3.2,
-      "source": "RammedEarth018",
+      "source": "Poly Haven: medieval_wall_01",
+      "sourcePackage": "medieval_wall_01_4k.blend.zip",
+      "sourceUrl": "https://polyhaven.com/a/medieval_wall_01",
+      "license": "CC0",
+      "licenseUrl": "https://polyhaven.com/license",
       "maps": {
-        "color": "RammedEarth018_COL_4K_METALNESS.png",
-        "normal": "RammedEarth018_NRM_4K_METALNESS.png",
-        "rough": "RammedEarth018_ROUGHNESS_4K_METALNESS.png",
-        "height": "RammedEarth018_DISP_4K_METALNESS.png"
+        "color": "medieval_wall_01_diff_4k.jpg",
+        "normal": "medieval_wall_01_nor_gl_4k.exr",
+        "rough": "medieval_wall_01_rough_4k.jpg",
+        "height": "medieval_wall_01_disp_4k.png"
       },
       "present": true,
-      "variance": 35.1
+      "variance": 257
     },
     "wall_concrete": {
       "layer": 9,
       "kind": "wall",
       "tileMeters": 2.8,
-      "source": "Poliigon_ConcreteWallCladding_7856",
+      "source": "Poly Haven: coral_fort_wall_02",
+      "sourcePackage": "coral_fort_wall_02_4k.blend.zip",
+      "sourceUrl": "https://polyhaven.com/a/coral_fort_wall_02",
+      "license": "CC0",
+      "licenseUrl": "https://polyhaven.com/license",
       "maps": {
-        "color": "Poliigon_ConcreteWallCladding_7856_BaseColor.jpg",
-        "normal": "Poliigon_ConcreteWallCladding_7856_Normal.png",
-        "rough": "Poliigon_ConcreteWallCladding_7856_Roughness.jpg",
-        "height": "Poliigon_ConcreteWallCladding_7856_Displacement.tiff"
+        "color": "coral_fort_wall_02_diff_4k.jpg",
+        "normal": "coral_fort_wall_02_nor_gl_4k.exr",
+        "rough": "coral_fort_wall_02_rough_4k.exr",
+        "height": "coral_fort_wall_02_disp_4k.png"
       },
       "present": true,
-      "variance": 7
+      "variance": 1078
     }
   }
 }

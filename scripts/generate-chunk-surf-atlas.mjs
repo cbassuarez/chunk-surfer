@@ -190,22 +190,67 @@ for (const sector of Object.values(sectors)) {
   for (const entry of sector.sourceLines) all.set(entry.id, entry);
 }
 
+// Reference architecture is derived only from identifiers that coexist on an
+// exact, provenance-checked source line. It supplies safe graph edges without
+// inventing user-visible labels or claiming a semantic call that the parser
+// has not proven.
+const symbolOccurrences = new Map();
+const references = [];
+for (const entry of all.values()) {
+  const identifiers = [...new Set((entry.tokens || [])
+    .filter((token) => token.kind === 'identifier' && /^[A-Za-z_$][\w$]*$/.test(token.text))
+    .map((token) => token.text))];
+  for (const symbol of identifiers) {
+    if (symbolOccurrences.has(symbol)) continue;
+    const token = entry.tokens.find((candidate) => candidate.kind === 'identifier' && candidate.text === symbol);
+    symbolOccurrences.set(symbol, { entryId: entry.id, file: entry.file, line: entry.line, start: token.start, end: token.end, hash: entry.hash });
+  }
+  if (identifiers.length > 1) {
+    for (const target of identifiers.slice(1, 9)) {
+      if (target === identifiers[0]) continue;
+      references.push({
+        id: `${entry.id}:${identifiers[0]}:${target}`,
+        from: identifiers[0],
+        to: target,
+        kind: 'same-line-reference',
+        entryId: entry.id,
+        file: entry.file,
+        line: entry.line,
+        hash: entry.hash,
+      });
+    }
+  }
+}
+
+const referencedSymbols = new Set(references.flatMap((reference) => [reference.from, reference.to]));
+const symbols = Object.fromEntries([...symbolOccurrences]
+  .filter(([id]) => referencedSymbols.has(id))
+  .sort(([a], [b]) => a.localeCompare(b))
+  .map(([id, occurrence]) => [id, { id, occurrence }]));
+const sortedEntries = [...all].sort(([a], [b]) => a.localeCompare(b));
+const corpusHash = hash(sortedEntries.map(([id, entry]) => `${id}:${entry.hash}`).join('|'));
+
 const atlas = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   id: 'chunk-surf.source-atlas',
+  corpusHash,
   generatedFrom: SOURCE_FILES,
   exactSource: true,
   leakGuard: {
     policy: ['reject-network-addresses', 'reject-local-machine-paths', 'reject-credential-literals', 'reject-environment-reads'],
   },
   sectors,
-  entries: Object.fromEntries([...all].sort(([a], [b]) => a.localeCompare(b))),
+  entries: Object.fromEntries(sortedEntries),
+  symbols,
+  references,
   stats: {
     files: SOURCE_FILES.length,
     sectors: Object.keys(sectors).length,
     sourceLines: all.size,
     javascriptLines: [...all.values()].filter((entry) => entry.language === 'javascript').length,
     jsonLines: [...all.values()].filter((entry) => entry.language === 'json').length,
+    symbols: Object.keys(symbols).length,
+    references: references.length,
   },
 };
 

@@ -1,8 +1,10 @@
-import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
+import { Component, Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
+import type { ErrorInfo, ReactNode } from 'react';
 import { loadProject, saveDocument, subscribeToChanges } from './api';
+import { StoryComposer } from './StoryComposer';
 import { StoryInspector } from './StoryInspector';
 import { StoryPreview } from './StoryPreview';
-import type { AudioProject, DocumentEnvelope, MediaProject, NarrativeDocument, ProjectSnapshot, StoryLayout } from './types';
+import type { AudioProject, DocumentEnvelope, MediaProject, NarrativeDocument, ProjectSnapshot, StoryLayout, StoryTransaction } from './types';
 import { reachableNodeIds, validateAudioProject, validateMediaProject, validateNarrativeDocument, validateProjectManifest } from '../../../src/narrative/contracts.js';
 
 const RECOVERY_KEY = 'chunk-surfer.narrative-studio.recovery.v1';
@@ -10,10 +12,26 @@ const StoryGraph = lazy(() => import('./StoryGraph').then((module) => ({ default
 const AudioWorkspace = lazy(() => import('./AudioWorkspace').then((module) => ({ default: module.AudioWorkspace })));
 const TimelineWorkspace = lazy(() => import('./TimelineWorkspace').then((module) => ({ default: module.TimelineWorkspace })));
 const MediaWorkspace = lazy(() => import('./MediaWorkspace').then((module) => ({ default: module.MediaWorkspace })));
-type HistoryFrame = { document: NarrativeDocument; layout: StoryLayout };
+type HistoryFrame = { document: NarrativeDocument; layout: StoryLayout; selectedId: string | null };
 type HistoryState = Record<string, { past: HistoryFrame[]; future: HistoryFrame[] }>;
 type AudioHistoryState = { past: AudioProject[]; future: AudioProject[] };
 type Tab = 'timeline' | 'story' | 'media' | 'audio';
+type StoryView = 'compose' | 'map';
+
+class WorkspaceErrorBoundary extends Component<{ children: ReactNode; onReset: () => void }, { error: Error | null }> {
+  state = { error: null as Error | null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  componentDidCatch(error: Error, info: ErrorInfo) { console.error('Narrative Studio workspace failed', error, info); }
+  render() {
+    if (!this.state.error) return this.props.children;
+    return <section className="workspace-error">
+      <span>WORKSPACE INTERRUPTED</span>
+      <h1>This panel hit an error.</h1>
+      <p>{this.state.error.message}</p>
+      <button className="primary" onClick={this.props.onReset}>Return to timeline</button>
+    </section>;
+  }
+}
 
 export function App() {
   const [snapshot, setSnapshot] = useState<ProjectSnapshot | null>(null);
@@ -29,6 +47,7 @@ export function App() {
   const [externalChanges, setExternalChanges] = useState(new Set<string>());
   const [status, setStatus] = useState('Loading project…');
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [storyView, setStoryView] = useState<StoryView>('compose');
   const [history, setHistory] = useState<HistoryState>({});
   const [audioHistory, setAudioHistory] = useState<AudioHistoryState>({ past: [], future: [] });
   const [selectedMediaId, setSelectedMediaId] = useState<string | null>(null);
@@ -62,18 +81,18 @@ export function App() {
   const mediaValidation = useMemo(() => media ? validateMediaProject(media) : { ok: true, errors: [] }, [media]);
   const projectValidation = useMemo(() => snapshot ? validateProjectManifest(snapshot.project, { documents: snapshot.documents.map((item) => item.document), documentIds: snapshot.documents.map((item) => item.document.id) }) : { ok: true, errors: [] }, [snapshot]);
   const unreachable = useMemo(() => document ? Object.keys(document.nodes).filter((id) => !reachableNodeIds(document).has(id)) : [], [document]);
+  const activeSelectedNodeId = document && selectedNodeId && document.nodes[selectedNodeId] ? selectedNodeId : document?.entry || null;
 
-  const updateEnvelope = (change: Partial<DocumentEnvelope>, dirty = true) => {
+  const updateStory = (transaction: StoryTransaction, dirty = true) => {
     if (!snapshot || !envelope) return;
     if (dirty) setHistory((current) => {
       const item = current[envelope.document.id] || { past: [], future: [] };
-      return { ...current, [envelope.document.id]: { past: [...item.past.slice(-99), { document: envelope.document, layout: envelope.layout }], future: [] } };
+      return { ...current, [envelope.document.id]: { past: [...item.past.slice(-99), { document: envelope.document, layout: envelope.layout, selectedId: activeSelectedNodeId }], future: [] } };
     });
-    setSnapshot({ ...snapshot, documents: snapshot.documents.map((item) => item.document.id === envelope.document.id ? { ...item, ...change } : item) });
+    setSnapshot({ ...snapshot, documents: snapshot.documents.map((item) => item.document.id === envelope.document.id ? { ...item, document: transaction.document, layout: transaction.layout } : item) });
+    if ('selectedId' in transaction) setSelectedNodeId(transaction.selectedId ?? null);
     if (dirty) setDirtyStories((current) => new Set(current).add(envelope.document.id));
   };
-  const updateDocument = (next: NarrativeDocument) => updateEnvelope({ document: next });
-  const updateLayout = (next: StoryLayout) => updateEnvelope({ layout: next });
   const updateAudio = (next: AudioProject) => {
     if (!snapshot) return;
     setAudioHistory((current) => ({ past: [...current.past.slice(-99), snapshot.audio.document], future: [] }));
@@ -87,8 +106,9 @@ export function App() {
     const source = direction === 'undo' ? item.past : item.future;
     if (!source.length) return;
     const frame = source[source.length - 1];
-    const current = { document: envelope.document, layout: envelope.layout };
-    setSnapshot({ ...snapshot, documents: snapshot.documents.map((entry) => entry.document.id === envelope.document.id ? { ...entry, ...frame } : entry) });
+    const current = { document: envelope.document, layout: envelope.layout, selectedId: activeSelectedNodeId };
+    setSnapshot({ ...snapshot, documents: snapshot.documents.map((entry) => entry.document.id === envelope.document.id ? { ...entry, document: frame.document, layout: frame.layout } : entry) });
+    setSelectedNodeId(frame.selectedId);
     setHistory({ ...history, [envelope.document.id]: direction === 'undo'
       ? { past: item.past.slice(0, -1), future: [...item.future, current] }
       : { past: [...item.past, current], future: item.future.slice(0, -1) } });
@@ -175,7 +195,14 @@ export function App() {
     if (!snapshot) return;
     const raw = localStorage.getItem(RECOVERY_KEY);
     if (!raw) return;
-    const recovery = JSON.parse(raw);
+    let recovery;
+    try { recovery = JSON.parse(raw); }
+    catch {
+      localStorage.removeItem(RECOVERY_KEY);
+      setRecoveryAvailable(false);
+      setStatus('Discarded an unreadable local recovery record');
+      return;
+    }
     const recoveredStories = new Map((recovery.stories || []).map((item: DocumentEnvelope) => [item.document.id, item]));
     setSnapshot({
       ...snapshot,
@@ -199,10 +226,10 @@ export function App() {
     : tab === 'media' ? !dirtyMedia || !mediaValidation.ok
     : !dirtyProject || !projectValidation.ok;
   const saveActive = tab === 'story' ? saveStory : tab === 'audio' ? saveAudio : tab === 'media' ? saveMedia : saveProject;
-  return <div className="studio">
-    <header className="topbar">
-      <div className="brand"><div className="studio-mark">CS</div><div><strong>NARRATIVE STUDIO</strong><span>Chunk Surfer authoring system</span></div></div>
-      <nav><button className={tab === 'timeline' ? 'is-active' : ''} onClick={() => setTab('timeline')}>Timeline</button><button className={tab === 'story' ? 'is-active' : ''} onClick={() => setTab('story')}>Story Graph</button><button className={tab === 'media' ? 'is-active' : ''} onClick={() => setTab('media')}>Media</button><button className={tab === 'audio' ? 'is-active' : ''} onClick={() => setTab('audio')}>Audio Timeline</button></nav>
+  return <div className="studio cs-machine-panel">
+    <header className="topbar cs-machine-header">
+      <div className="brand cs-machine-header__identity"><div className="studio-mark cs-machine-phosphor">CS</div><div><strong className="cs-machine-wordmark">NARRATIVE STUDIO</strong><span>Chunk Surfer authoring system</span></div></div>
+      <nav><button className={tab === 'timeline' ? 'is-active' : ''} onClick={() => setTab('timeline')}>Timeline</button><button className={tab === 'story' ? 'is-active' : ''} onClick={() => setTab('story')}>Story</button><button className={tab === 'media' ? 'is-active' : ''} onClick={() => setTab('media')}>Media</button><button className={tab === 'audio' ? 'is-active' : ''} onClick={() => setTab('audio')}>Audio Timeline</button></nav>
       <div className="top-actions">
         {externalChanges.size > 0 && <button className="warning" onClick={reload}>↻ {externalChanges.size} external change{externalChanges.size === 1 ? '' : 's'}</button>}
         {recoveryAvailable && <button className="warning" onClick={restoreRecovery}>Recover local edits</button>}
@@ -213,26 +240,31 @@ export function App() {
       </div>
     </header>
 
+    <WorkspaceErrorBoundary key={tab} onReset={() => { setSelectedNodeId(null); setPreviewOpen(false); setTab('timeline'); }}>
     <Suspense fallback={<div className="loading"><div className="studio-mark">CS</div><p>Loading workspace…</p></div>}>
-    {tab === 'timeline' ? <TimelineWorkspace project={snapshot.project} documents={snapshot.documents} selectedDocumentId={document.id} onSelect={(id) => { setSelectedDocumentId(id); setSelectedNodeId(null); setTab('story'); }} />
-    : tab === 'story' ? <div className={`story-workspace ${previewOpen ? 'has-preview' : ''}`}>
+    {tab === 'timeline' ? <TimelineWorkspace project={snapshot.project} documents={snapshot.documents} selectedDocumentId={document.id} onSelect={(id) => { const next = snapshot.documents.find((item) => item.document.id === id)?.document; setSelectedDocumentId(id); setSelectedNodeId(next?.entry || null); setStoryView('compose'); setTab('story'); }} />
+    : tab === 'story' ? <div className={`story-workspace story-workspace--${storyView} ${previewOpen ? 'has-preview' : ''}`}>
       <aside className="story-browser">
         <div className="panel-heading"><span>STORY INDEX</span><strong>{snapshot.documents.length} documents</strong></div>
+        <div className="story-view-switch"><button className={storyView === 'compose' ? 'is-active' : ''} onClick={() => setStoryView('compose')}>Compose</button><button className={storyView === 'map' ? 'is-active' : ''} onClick={() => setStoryView('map')}>Map</button></div>
         <input className="search" placeholder="Search scenes, tags, endings" value={search} onChange={(event) => setSearch(event.target.value)} />
-        <div className="story-list">{visibleDocuments.map((item) => <button key={item.document.id} className={item.document.id === document.id ? 'is-active' : ''} onClick={() => { setSelectedDocumentId(item.document.id); setSelectedNodeId(null); }}>
+        <div className="story-list">{visibleDocuments.map((item) => <button key={item.document.id} className={item.document.id === document.id ? 'is-active' : ''} onClick={() => { setSelectedDocumentId(item.document.id); setSelectedNodeId(item.document.entry); setStoryView('compose'); }}>
           <i style={{ background: item.document.regions.find((region) => region.kind === 'ending')?.color || item.document.regions[0]?.color }} />
           <span><b>{item.document.title}</b><small>{item.document.id} · {Object.keys(item.document.nodes).length} nodes</small></span>
           {dirtyStories.has(item.document.id) && <em>●</em>}
         </button>)}</div>
         <div className="validation-summary"><span className={storyValidation.ok && !unreachable.length ? 'valid' : 'invalid'}>{storyValidation.ok ? 'Schema valid' : `${storyValidation.errors.length} errors`}</span><span>{unreachable.length ? `${unreachable.length} unreachable` : 'All nodes reachable'}</span></div>
       </aside>
-      <StoryGraph document={document} layout={envelope.layout} selectedId={selectedNodeId} search={search} onSelect={setSelectedNodeId} onDocument={updateDocument} onLayout={updateLayout} />
-      <StoryInspector document={document} selectedId={selectedNodeId} audio={audio} media={media} onDocument={updateDocument} onCue={(id) => openCue(id, true)} onRename={setSelectedNodeId} />
+      <main className="story-main">{storyView === 'compose' && activeSelectedNodeId
+        ? <StoryComposer document={document} layout={envelope.layout} selectedId={activeSelectedNodeId} audio={audio} media={media} onTransaction={updateStory} onSelect={setSelectedNodeId} onCue={(id) => openCue(id, true)} />
+        : <StoryGraph document={document} layout={envelope.layout} selectedId={activeSelectedNodeId} search={search} onSelect={setSelectedNodeId} onEdit={(id) => { setSelectedNodeId(id); setStoryView('compose'); }} onTransaction={updateStory} />}</main>
+      {storyView === 'map' && <StoryInspector document={document} layout={envelope.layout} selectedId={activeSelectedNodeId} audio={audio} media={media} onTransaction={updateStory} onCue={(id) => openCue(id, true)} />}
       {previewOpen && <StoryPreview document={document} onCue={(id) => openCue(id)} />}
     </div> : tab === 'media' ? <MediaWorkspace project={media} selectedId={selectedMediaId} onSelected={setSelectedMediaId} onProject={updateMedia} />
-    : <AudioWorkspace project={audio} selectedCueId={selectedCueId} documents={snapshot.documents} onSelectedCue={setSelectedCueId} onProject={updateAudio} />}
+    : <AudioWorkspace project={audio} selectedCueId={selectedCueId} documents={snapshot.documents} onSelectedCue={setSelectedCueId} onProject={updateAudio} onStatus={setStatus} />}
     </Suspense>
+    </WorkspaceErrorBoundary>
 
-    <footer className="statusbar"><span>{status}</span><span>{tab === 'timeline' ? `${snapshot.project.timeline?.length || 0} groups · ${projectValidation.errors.length} errors` : tab === 'story' ? `${Object.keys(document.nodes).length} nodes · ${document.regions.length} regions · ${storyValidation.errors.length} errors` : tab === 'media' ? `${media.storyArt.length} story slots · ${mediaValidation.errors.length} errors` : `${audio.cues.length} cues · ${audio.triggers.length} triggers · ${audioValidation.errors.length} errors`}</span></footer>
+    <footer className="statusbar cs-machine-footer"><span>{status}</span><span>{tab === 'timeline' ? `${snapshot.project.timeline?.length || 0} groups · ${projectValidation.errors.length} errors` : tab === 'story' ? `${Object.keys(document.nodes).length} nodes · ${document.regions.length} regions · ${storyValidation.errors.length} errors` : tab === 'media' ? `${media.storyArt.length} story slots · ${mediaValidation.errors.length} errors` : `${audio.cues.length} cues · ${audio.triggers.length} triggers · ${audioValidation.errors.length} errors`}</span></footer>
   </div>;
 }

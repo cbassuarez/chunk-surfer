@@ -32,6 +32,8 @@ test('feature smoke captures the restored title, authored slates, cinematic roll
   assert.match(source, /__probe\.openCredits\(\)/);
   assert.match(source, /__probe\.endingCredits\('sacrifice'\)/);
   assert.match(source, /chunkSurf\.state\.phase,'hall'/);
+  assert.match(source, /__probe\.godWarpDock\(\)/);
+  assert.match(source, /map\.player\.resolved,true/);
   assert.doesNotMatch(source, /08-chunk-surf-source-fault\.png/);
 });
 

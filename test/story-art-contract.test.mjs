@@ -36,8 +36,8 @@ test('cold open data uses story art refs', () => {
 });
 
 test('battle data has boss art scaffold', () => {
-  const data = readFileSync('src/data/battles.js', 'utf8');
-  assert.match(data, /art:\s*\{[^}]*circuitBentInterface/s);
+  const data = readFileSync('content/narrative/battle.chapel.nothing.story.json', 'utf8');
+  assert.match(data, /"id": "circuitBentInterface"/);
 });
 
 test('story art renderer uses uiDraw rather than DOM layout', () => {
@@ -56,7 +56,7 @@ test('story art scenes prefer side-by-side layout before vertical fallback', () 
   for (const file of [
     'src/game/coldopen.js',
     'src/game/thoughts.js',
-    'src/game/battle.js',
+    'src/game/combat.js',
     'src/game/dialogue.js',
   ]) {
     const src = readFileSync(file, 'utf8');

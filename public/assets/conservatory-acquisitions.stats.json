@@ -1,0 +1,656 @@
+{
+  "file": "conservatory-acquisitions.glb",
+  "bytes": 13586820,
+  "sha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+  "totalTriangles": 78395,
+  "textureCount": 45,
+  "maxTextureDimension": 1024,
+  "limits": {
+    "bytes": 20971520,
+    "triangles": 85000,
+    "textureDimension": 1024
+  },
+  "meshes": {
+    "green_chair_01": {
+      "index": 0,
+      "name": "green_chair_01",
+      "triangles": 2940,
+      "primitives": 1,
+      "bounds": {
+        "min": [
+          -0.336411,
+          0,
+          -0.33239
+        ],
+        "max": [
+          0.336411,
+          1.059,
+          0.33239
+        ]
+      }
+    },
+    "arm_chair_01": {
+      "index": 1,
+      "name": "arm_chair_01",
+      "triangles": 3429,
+      "primitives": 1,
+      "bounds": {
+        "min": [
+          -0.424788,
+          0,
+          -0.382698
+        ],
+        "max": [
+          0.424788,
+          1.065,
+          0.382698
+        ]
+      }
+    },
+    "sofa_01": {
+      "index": 2,
+      "name": "sofa_01",
+      "triangles": 2940,
+      "primitives": 1,
+      "bounds": {
+        "min": [
+          -0.786471,
+          0,
+          -0.329504
+        ],
+        "max": [
+          0.786471,
+          0.797,
+          0.329504
+        ]
+      }
+    },
+    "classic_console_01": {
+      "index": 3,
+      "name": "classic_console_01",
+      "triangles": 4410,
+      "primitives": 1,
+      "bounds": {
+        "min": [
+          -0.769668,
+          0,
+          -0.29486
+        ],
+        "max": [
+          0.769668,
+          0.949,
+          0.29486
+        ]
+      }
+    },
+    "marble_bust_01": {
+      "index": 4,
+      "name": "marble_bust_01",
+      "triangles": 9800,
+      "primitives": 1,
+      "bounds": {
+        "min": [
+          -0.135858,
+          0,
+          -0.149929
+        ],
+        "max": [
+          0.135858,
+          0.515,
+          0.149929
+        ]
+      }
+    },
+    "horse_head": {
+      "index": 5,
+      "name": "horse_head",
+      "triangles": 8330,
+      "primitives": 1,
+      "bounds": {
+        "min": [
+          -0.10755,
+          0,
+          -0.167192
+        ],
+        "max": [
+          0.10755,
+          0.419,
+          0.167192
+        ]
+      }
+    },
+    "chandelier_03": {
+      "index": 6,
+      "name": "chandelier_03",
+      "triangles": 9800,
+      "primitives": 2,
+      "bounds": {
+        "min": [
+          -0.390495,
+          -1.041,
+          -0.3927
+        ],
+        "max": [
+          0.390495,
+          0,
+          0.3927
+        ]
+      }
+    },
+    "sofa_02": {
+      "index": 7,
+      "name": "sofa_02",
+      "triangles": 2450,
+      "primitives": 1,
+      "bounds": {
+        "min": [
+          -0.902961,
+          0,
+          -0.408594
+        ],
+        "max": [
+          0.902961,
+          0.709,
+          0.408594
+        ]
+      }
+    },
+    "lantern_chandelier_01": {
+      "index": 8,
+      "name": "lantern_chandelier_01",
+      "triangles": 4409,
+      "primitives": 3,
+      "bounds": {
+        "min": [
+          -0.289707,
+          -0.878,
+          -0.287439
+        ],
+        "max": [
+          0.289707,
+          0,
+          0.287439
+        ]
+      }
+    },
+    "gothic_cabinet_01": {
+      "index": 9,
+      "name": "gothic_cabinet_01",
+      "triangles": 6369,
+      "primitives": 1,
+      "bounds": {
+        "min": [
+          -0.859256,
+          0,
+          -0.558296
+        ],
+        "max": [
+          0.859256,
+          2.361,
+          0.558296
+        ]
+      }
+    },
+    "wooden_chair_01": {
+      "index": 10,
+      "name": "wooden_chair_01",
+      "triangles": 8819,
+      "primitives": 1,
+      "bounds": {
+        "min": [
+          -0.344095,
+          0,
+          -0.329206
+        ],
+        "max": [
+          0.344095,
+          2.274,
+          0.329206
+        ]
+      }
+    },
+    "power_box_01": {
+      "index": 11,
+      "name": "power_box_01",
+      "triangles": 7840,
+      "primitives": 1,
+      "bounds": {
+        "min": [
+          -0.202448,
+          -0.251526,
+          0
+        ],
+        "max": [
+          0.174881,
+          0.251526,
+          0.418382
+        ]
+      }
+    },
+    "portable_searchlight": {
+      "index": 12,
+      "name": "portable_searchlight",
+      "triangles": 6859,
+      "primitives": 2,
+      "bounds": {
+        "min": [
+          -0.082482,
+          0,
+          -0.126449
+        ],
+        "max": [
+          0.082482,
+          0.185,
+          0.126449
+        ]
+      }
+    }
+  },
+  "images": [
+    {
+      "index": 0,
+      "name": "GreenChair_01_nor_gl_4k",
+      "mimeType": "image/jpeg",
+      "bytes": 79547,
+      "width": 512,
+      "height": 512,
+      "format": "jpeg"
+    },
+    {
+      "index": 1,
+      "name": "GreenChair_01_diff_4k",
+      "mimeType": "image/jpeg",
+      "bytes": 48479,
+      "width": 512,
+      "height": 512,
+      "format": "jpeg"
+    },
+    {
+      "index": 2,
+      "name": "GreenChair_01_metallic-GreenChair_01_roughness",
+      "mimeType": "image/png",
+      "bytes": 199082,
+      "width": 512,
+      "height": 512,
+      "format": "png"
+    },
+    {
+      "index": 3,
+      "name": "Armchair_01_nor_gl_4k",
+      "mimeType": "image/jpeg",
+      "bytes": 80413,
+      "width": 512,
+      "height": 512,
+      "format": "jpeg"
+    },
+    {
+      "index": 4,
+      "name": "Armchair_01_diff_4k",
+      "mimeType": "image/jpeg",
+      "bytes": 56873,
+      "width": 512,
+      "height": 512,
+      "format": "jpeg"
+    },
+    {
+      "index": 5,
+      "name": "Armchair_01_metallic-Armchair_01_roughness",
+      "mimeType": "image/png",
+      "bytes": 191663,
+      "width": 512,
+      "height": 512,
+      "format": "png"
+    },
+    {
+      "index": 6,
+      "name": "Sofa_01_nor_gl_4k",
+      "mimeType": "image/jpeg",
+      "bytes": 57521,
+      "width": 512,
+      "height": 512,
+      "format": "jpeg"
+    },
+    {
+      "index": 7,
+      "name": "Sofa_01_diff_4k",
+      "mimeType": "image/jpeg",
+      "bytes": 44080,
+      "width": 512,
+      "height": 512,
+      "format": "jpeg"
+    },
+    {
+      "index": 8,
+      "name": "Sofa_01_metallic-Sofa_01_roughness",
+      "mimeType": "image/png",
+      "bytes": 167356,
+      "width": 512,
+      "height": 512,
+      "format": "png"
+    },
+    {
+      "index": 9,
+      "name": "ClassicConsole_01_nor_gl_4k",
+      "mimeType": "image/jpeg",
+      "bytes": 82862,
+      "width": 512,
+      "height": 512,
+      "format": "jpeg"
+    },
+    {
+      "index": 10,
+      "name": "ClassicConsole_01_diff_4k",
+      "mimeType": "image/jpeg",
+      "bytes": 51437,
+      "width": 512,
+      "height": 512,
+      "format": "jpeg"
+    },
+    {
+      "index": 11,
+      "name": "ClassicConsole_01_metallic-ClassicConsole_01_roughness",
+      "mimeType": "image/png",
+      "bytes": 206066,
+      "width": 512,
+      "height": 512,
+      "format": "png"
+    },
+    {
+      "index": 12,
+      "name": "marble_bust_01_nor_gl_4k",
+      "mimeType": "image/jpeg",
+      "bytes": 161977,
+      "width": 1024,
+      "height": 1024,
+      "format": "jpeg"
+    },
+    {
+      "index": 13,
+      "name": "marble_bust_01_mask_4k",
+      "mimeType": "image/png",
+      "bytes": 1667605,
+      "width": 1024,
+      "height": 1024,
+      "format": "png"
+    },
+    {
+      "index": 14,
+      "name": "marble_bust_01_rough_4k",
+      "mimeType": "image/png",
+      "bytes": 966244,
+      "width": 1024,
+      "height": 1024,
+      "format": "png"
+    },
+    {
+      "index": 15,
+      "name": "horse_head_nor_gl_4k",
+      "mimeType": "image/jpeg",
+      "bytes": 150390,
+      "width": 1024,
+      "height": 1024,
+      "format": "jpeg"
+    },
+    {
+      "index": 16,
+      "name": "horse_head_diff_4k",
+      "mimeType": "image/jpeg",
+      "bytes": 173794,
+      "width": 1024,
+      "height": 1024,
+      "format": "jpeg"
+    },
+    {
+      "index": 17,
+      "name": "horse_head_metal-horse_head_rough",
+      "mimeType": "image/png",
+      "bytes": 1194187,
+      "width": 1024,
+      "height": 1024,
+      "format": "png"
+    },
+    {
+      "index": 18,
+      "name": "Chandelier_03_nor_gl_4k",
+      "mimeType": "image/jpeg",
+      "bytes": 74161,
+      "width": 512,
+      "height": 512,
+      "format": "jpeg"
+    },
+    {
+      "index": 19,
+      "name": "Chandelier_03_diff_4k",
+      "mimeType": "image/jpeg",
+      "bytes": 50290,
+      "width": 512,
+      "height": 512,
+      "format": "jpeg"
+    },
+    {
+      "index": 20,
+      "name": "Chandelier_03_metallic-Chandelier_03_roughness",
+      "mimeType": "image/png",
+      "bytes": 350788,
+      "width": 512,
+      "height": 512,
+      "format": "png"
+    },
+    {
+      "index": 21,
+      "name": "Chandelier_03_opacity_4k",
+      "mimeType": "image/png",
+      "bytes": 18768,
+      "width": 512,
+      "height": 512,
+      "format": "png"
+    },
+    {
+      "index": 22,
+      "name": "sofa_02_nor_gl_4k",
+      "mimeType": "image/jpeg",
+      "bytes": 58996,
+      "width": 512,
+      "height": 512,
+      "format": "jpeg"
+    },
+    {
+      "index": 23,
+      "name": "sofa_02_diff_4k",
+      "mimeType": "image/jpeg",
+      "bytes": 33586,
+      "width": 512,
+      "height": 512,
+      "format": "jpeg"
+    },
+    {
+      "index": 24,
+      "name": "sofa_02_metallic-sofa_02_roughness",
+      "mimeType": "image/png",
+      "bytes": 192602,
+      "width": 512,
+      "height": 512,
+      "format": "png"
+    },
+    {
+      "index": 25,
+      "name": "lantern_chandelier_01_nor_gl_4k",
+      "mimeType": "image/jpeg",
+      "bytes": 70907,
+      "width": 512,
+      "height": 512,
+      "format": "jpeg"
+    },
+    {
+      "index": 26,
+      "name": "lantern_chandelier_01_diff_4k",
+      "mimeType": "image/jpeg",
+      "bytes": 68736,
+      "width": 512,
+      "height": 512,
+      "format": "jpeg"
+    },
+    {
+      "index": 27,
+      "name": "lantern_chandelier_01_metal-lantern_chandelier_01_rough",
+      "mimeType": "image/png",
+      "bytes": 441320,
+      "width": 512,
+      "height": 512,
+      "format": "png"
+    },
+    {
+      "index": 28,
+      "name": "lantern_chandelier_01_glass_alpha_4k",
+      "mimeType": "image/png",
+      "bytes": 18141,
+      "width": 512,
+      "height": 512,
+      "format": "png"
+    },
+    {
+      "index": 29,
+      "name": "lantern_chandelier_01_glass_nor_gl_4k",
+      "mimeType": "image/png",
+      "bytes": 537394,
+      "width": 512,
+      "height": 512,
+      "format": "png"
+    },
+    {
+      "index": 30,
+      "name": "lantern_chandelier_01_glass_diff_4k",
+      "mimeType": "image/png",
+      "bytes": 67696,
+      "width": 512,
+      "height": 512,
+      "format": "png"
+    },
+    {
+      "index": 31,
+      "name": "lantern_chandelier_01_glass_metal-lantern_chandelier_01_glass_r",
+      "mimeType": "image/png",
+      "bytes": 26996,
+      "width": 512,
+      "height": 512,
+      "format": "png"
+    },
+    {
+      "index": 32,
+      "name": "GothicCabinet_01_nor_gl_4k",
+      "mimeType": "image/jpeg",
+      "bytes": 208800,
+      "width": 1024,
+      "height": 1024,
+      "format": "jpeg"
+    },
+    {
+      "index": 33,
+      "name": "GothicCabinet_01_diff_4k",
+      "mimeType": "image/jpeg",
+      "bytes": 172677,
+      "width": 1024,
+      "height": 1024,
+      "format": "jpeg"
+    },
+    {
+      "index": 34,
+      "name": "GothicCabinet_01_metallic-GothicCabinet_01_roughness",
+      "mimeType": "image/png",
+      "bytes": 866806,
+      "width": 1024,
+      "height": 1024,
+      "format": "png"
+    },
+    {
+      "index": 35,
+      "name": "WoodenChair_01_nor_gl_4k",
+      "mimeType": "image/jpeg",
+      "bytes": 264015,
+      "width": 1024,
+      "height": 1024,
+      "format": "jpeg"
+    },
+    {
+      "index": 36,
+      "name": "WoodenChair_01_diff_4k",
+      "mimeType": "image/jpeg",
+      "bytes": 190628,
+      "width": 1024,
+      "height": 1024,
+      "format": "jpeg"
+    },
+    {
+      "index": 37,
+      "name": "WoodenChair_01_metallic-WoodenChair_01_roughness",
+      "mimeType": "image/png",
+      "bytes": 698534,
+      "width": 1024,
+      "height": 1024,
+      "format": "png"
+    },
+    {
+      "index": 38,
+      "name": "power_box_01_nor_gl_4k",
+      "mimeType": "image/jpeg",
+      "bytes": 51815,
+      "width": 512,
+      "height": 512,
+      "format": "jpeg"
+    },
+    {
+      "index": 39,
+      "name": "power_box_01_diff_4k",
+      "mimeType": "image/jpeg",
+      "bytes": 46892,
+      "width": 512,
+      "height": 512,
+      "format": "jpeg"
+    },
+    {
+      "index": 40,
+      "name": "power_box_01_metal-power_box_01_rough",
+      "mimeType": "image/png",
+      "bytes": 361846,
+      "width": 512,
+      "height": 512,
+      "format": "png"
+    },
+    {
+      "index": 41,
+      "name": "portable_searchlight_nor_gl_4k",
+      "mimeType": "image/jpeg",
+      "bytes": 46229,
+      "width": 512,
+      "height": 512,
+      "format": "jpeg"
+    },
+    {
+      "index": 42,
+      "name": "portable_searchlight_diff_4k",
+      "mimeType": "image/jpeg",
+      "bytes": 41114,
+      "width": 512,
+      "height": 512,
+      "format": "jpeg"
+    },
+    {
+      "index": 43,
+      "name": "portable_searchlight_metal-portable_searchlight_rough",
+      "mimeType": "image/png",
+      "bytes": 215680,
+      "width": 512,
+      "height": 512,
+      "format": "png"
+    },
+    {
+      "index": 44,
+      "name": "portable_searchlight_diff-portable_searchlight_alpha",
+      "mimeType": "image/png",
+      "bytes": 246503,
+      "width": 512,
+      "height": 512,
+      "format": "png"
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import { BUILDING_MAP, REQUIRED_MAP_TARGETS } from '../src/data/building-map.js';
 import { validateBuildingMap, validateMapSource } from '../src/game/map-schema.js';
@@ -55,6 +56,14 @@ const minimalModel = mapLabModel(MAP_LAB_CASES.find((entry) => entry.id === 'dea
 const minimalCommands = buildMinimapCommands({ minimalModel, model: minimalModel, viewport: { x: 0, y: 0, w: 18, h: 8 }, now: 1000 });
 assert.equal(minimalCommands.some((command) => command.kind === 'local-topology'), false);
 assert.ok(minimalCommands.some((command) => command.kind === 'anomaly-contact' || command.kind === 'anomaly-edge'));
+
+const hushModel={
+  ...minimalModel,
+  hush:{active:true,floorId:minimalModel.player.floorId,position:{x:minimalModel.player.position.x+2,y:minimalModel.player.position.y+1}},
+};
+const hushCommands=buildMinimapCommands({model:hushModel,viewport:{x:0,y:0,w:18,h:8},now:1000});
+assert.ok(hushCommands.some((command)=>command.kind==='hush'),'active HUSH is a literal on-map point');
+assert.match(readFileSync('src/render/map-icons.js','utf8'),/drawHushMarker[\s\S]*?'●', 'ui-danger'/,'HUSH marker is the literal red dot required by playtesting');
 
 const edge = clampMarkerToEdge({ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 0, y: 0, w: 20, h: 10 }, 1);
 assert.equal(Math.round(edge.x), 19);

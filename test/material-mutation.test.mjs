@@ -21,7 +21,7 @@ test('visible material mapping follows the renderer surface slots and excludes s
   assert.deepEqual(visibleSurfaceSlots([MATERIAL.sourceField, MATERIAL.sourceFault]), []);
 });
 
-test('mutation timing stays inside the authored five-to-fifteen and six-to-twelve second windows', () => {
+test('mutation timing stays inside the authored visible-turnover windows', () => {
   for (const [fps, rtt, random] of [[60, 100, 0], [60, 100, 1], [58, 1500, 0.5], [30, 5000, 1]]) {
     const timing = mutationTiming({ fps, lastRttMs: rtt, random: () => random });
     assert.ok(timing.intervalMs >= MUTATION_INTERVAL_MIN_MS && timing.intervalMs <= MUTATION_INTERVAL_MAX_MS);
@@ -31,25 +31,31 @@ test('mutation timing stays inside the authored five-to-fifteen and six-to-twelv
     > mutationTiming({ fps: 60, lastRttMs: 100, random: () => 0 }).intervalMs);
 });
 
-test('mutation requires a resident bank, visible material, stable renderer, and measured 58fps headroom', () => {
-  const ready = { allowed: true, resident: true, activeBank: 'explore', fps: 60, samples: 60, visibleSlots: [2] };
+test('mutation requires a resident bank, visible material, stable renderer, and measured 48fps headroom', () => {
+  const ready = { allowed: true, resident: true, activeBank: 'explore', fps: 60, samples: 30, visibleSlots: [2] };
   assert.equal(mutationCanStart(ready), true);
-  assert.equal(mutationCanStart({ ...ready, fps: 57.9 }), false);
-  assert.equal(mutationCanStart({ ...ready, samples: 59 }), false);
+  assert.equal(mutationCanStart({ ...ready, fps: 47.9 }), false);
+  assert.equal(mutationCanStart({ ...ready, samples: 29 }), false);
   assert.equal(mutationCanStart({ ...ready, activeWork: true }), false);
   assert.equal(mutationCanStart({ ...ready, transitioning: true }), false);
   assert.equal(mutationCanStart({ ...ready, visibleSlots: [] }), false);
 });
 
-test('runtime recipe is one-pass, low-strength, anchored, and changes seed each generation', () => {
+test('runtime recipe is recursive, visibly strong, three-pass, and changes seed each generation', () => {
   const profile = { generation: { strength: 0.64, guidance: 2.8, mix: 0.90, seedBase: 61_000, prompt: 'rupture', negative: 'clean' } };
   const first = mutationGeneration(profile, 5, 1);
   const second = mutationGeneration(profile, 5, 2);
-  assert.equal(first.passes, 1);
-  assert.equal(first.strength, 0.32);
-  assert.equal(first.feedback, 0.18);
-  assert.equal(first.mix, 0.90);
+  assert.equal(first.passes, 3);
+  assert.equal(first.strength, 0.78);
+  assert.equal(first.feedback, 0.42);
+  assert.equal(first.mix, 0.96);
+  assert.match(first.prompt, /pareidolic structure/);
   assert.notEqual(first.seed, second.seed);
+
+  const explore = mutationGeneration({ generation: { strength: 0.32, guidance: 1.05, mix: 0.68 } }, 2, 1);
+  assert.equal(explore.strength, 0.5904);
+  assert.equal(explore.guidance, 1.6);
+  assert.equal(explore.passes, 3);
 });
 
 function pixels(width, height, value) {

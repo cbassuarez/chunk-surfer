@@ -69,8 +69,10 @@ Core systems:
 
 - First-person exploration through a hostile, audio-reactive conservatory.
 - Room-tone recording where silence is a resource and a rule.
-- Physical redaction battles built around blacking out words and defending a
-  reading of the transcript.
+- Authored, deterministic signal combat built around exact enemy intents,
+  recorder Takes, torch exposure, defensive Holds, and Tempo bonus actions.
+- A deterministic 168 BPM battle score: paired live entries, one exact looping
+  bed, and authored lead performances gated by perfect responses and movements.
 - A field bag with map, documents, equipment, records, and return reports.
 - Full keyboard/mouse and controller-oriented input paths for normal play.
 - Optional local microphone loudness checks for the room-silence mechanic.
@@ -92,15 +94,7 @@ Core systems:
       <br><a href="docs/media/chunk-surf-source-space.webm">Watch the Chunk Surf clip</a>
     </td>
     <td width="50%">
-      <strong>Chunk Surf.</strong><br>Some routes rupture into fullscreen source-code space: literal game files become floors, walls, portals, and redaction surfaces.
-    </td>
-  </tr>
-  <tr>
-    <td width="50%">
-      <img src="docs/media/redaction-battle.png" alt="A redaction battle transcript with a line selected for blackout">
-    </td>
-    <td width="50%">
-      <strong>Transcript fights.</strong><br>Redaction battles make the argument physical: choose what to black out, defend the reading, and live with what the tape says back.
+      <strong>Chunk Surf.</strong><br>Some routes rupture into fullscreen source-code space: literal game files become floors, walls, portals, and the final signal-combat arena.
     </td>
   </tr>
 </table>

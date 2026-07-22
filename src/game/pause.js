@@ -2,6 +2,13 @@ import { uiSize, uiText, uiCenter, uiScrim } from '../render/ui.js';
 import { drawMachinePanel } from '../render/presentation.js';
 import { promptLine } from './bindings.js';
 
+const LOCAL_ESCAPE_SCENES = new Set(['pause', 'settings', 'god-menu', 'bag']);
+
+export function shouldOpenPauseForEvent({ storyMode = false, key = '', code = '', topSceneId = '' } = {}) {
+  if (!storyMode || (key !== 'Escape' && code !== 'Escape')) return false;
+  return !LOCAL_ESCAPE_SCENES.has(topSceneId);
+}
+
 function clip(text, width) {
   const s = String(text || '');
   return s.length > width ? `${s.slice(0, Math.max(0, width - 1))}…` : s;

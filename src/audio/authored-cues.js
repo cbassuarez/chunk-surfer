@@ -7,8 +7,11 @@ const cues = new Map(AUDIO_PROJECT.cues.map((cue) => [cue.id, cue]));
 
 export function authoredCue(id) { return cues.get(id) || null; }
 export function authoredAudioProject() { return AUDIO_PROJECT; }
-export function authoredCueUrls() {
-  return [...new Set(AUDIO_PROJECT.cues.flatMap((cue) => (cue.layers || []).map((layer) => assets.get(layer.assetId)).filter((asset) => asset?.path).map((asset) => assetUrl(asset.path))))];
+export function authoredCueUrls({ excludeCuePrefixes = [] } = {}) {
+  const prefixes = (excludeCuePrefixes || []).map(String).filter(Boolean);
+  return [...new Set(AUDIO_PROJECT.cues
+    .filter((cue) => !prefixes.some((prefix) => cue.id.startsWith(prefix)))
+    .flatMap((cue) => (cue.layers || []).map((layer) => assets.get(layer.assetId)).filter((asset) => asset?.path).map((asset) => assetUrl(asset.path))))];
 }
 
 export function dispatchAuthoredCue(id, { play, effect, acoustic } = {}) {

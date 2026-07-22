@@ -242,14 +242,14 @@ function addQuad(m,a,b,c,d,mat){const g=group(m,mat),base=g.positions.length/3,u
 {
   const m=mesh('plant_pipe_straight');
   addBeam(m,[-1.18,.18,0],[1.18,.18,0],.12,MAT.steel);
-  for(const x of[-.82,0,.82]){addBox(m,[x,.18,0],[.08,.30,.22],MAT.dark);addBox(m,[x,.18,-.13],[.18,.12,.04],MAT.brass);}
+  for(const x of[-.82,0,.82]){addBox(m,[x,.18,0],[.08,.30,.22],MAT.dark);addBox(m,[x,.18,.13],[.18,.12,.04],MAT.brass);}
 }
 {
   const m=mesh('plant_pipe_bank');
   for(let i=0;i<3;i++){
     const y=.18+i*.18;
     addBeam(m,[-1.35,y,0],[1.35,y,0],.095,i===1?MAT.brass:MAT.steel);
-    for(const x of[-.92,.02,.94])addBox(m,[x,y,0],[.055,.26,.20],MAT.dark);
+    for(const x of[-.92,.02,.94]){addBox(m,[x,y,0],[.055,.26,.20],MAT.dark);addBox(m,[x,y,.12],[.13,.10,.04],MAT.brass);}
   }
   addBox(m,[0,.72,.04],[2.65,.10,.08],MAT.steel);
 }
@@ -259,14 +259,18 @@ function addQuad(m,a,b,c,d,mat){const g=group(m,mat),base=g.positions.length/3,u
   addBeam(m,[.20,.28,0],[.20,.88,0],.12,MAT.steel);
   addCylinder(m,[.20,.28,0],.18,.08,MAT.brass,14);
   addBox(m,[.20,.88,0],[.28,.08,.28],MAT.dark);
+  addBox(m,[.20,.88,.17],[.16,.13,.05],MAT.brass);
 }
 {
   const m=mesh('plant_pipe_valve');
   addBeam(m,[-.30,.22,0],[.30,.22,0],.11,MAT.steel);
-  addCylinder(m,[0,.23,0],.15,.14,MAT.brass,16);
-  addCylinder(m,[0,.50,0],.035,.38,MAT.steel,10);
-  addBox(m,[0,.73,0],[.48,.045,.07],MAT.brass);
-  addBox(m,[0,.73,0],[.07,.045,.48],MAT.brass);
+  addBox(m,[0,.22,.07],[.20,.20,.16],MAT.brass);
+  addBox(m,[0,.49,.10],[.055,.42,.055],MAT.steel);
+  // The wheel lies in the wall plane and its hub projects along +Z, the
+  // shared authored front for wall-mounted props.
+  addBox(m,[0,.70,.15],[.48,.055,.07],MAT.brass);
+  addBox(m,[0,.70,.15],[.07,.48,.055],MAT.brass);
+  addBox(m,[0,.70,.11],[.13,.13,.18],MAT.dark);
 }
 {const m=mesh('altar_table');addBox(m,[0,.84,0],[1.8,.12,.78],MAT.ivory);for(const x of[-.68,.68])addBox(m,[x,.42,0],[.14,.84,.58],MAT.wood);}
 {const m=mesh('lectern');addBox(m,[0,.08,0],[.58,.16,.55],MAT.wood);addBox(m,[0,.68,.08],[.12,1.2,.12],MAT.wood);addBox(m,[0,1.28,-.08],[.62,.08,.46],MAT.wood,-.22);}

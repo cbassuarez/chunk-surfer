@@ -253,697 +253,317 @@
       "caption": "Reference tone / wrong music",
       "status": "REFERENCE"
     },
-    "composure": 1,
-    "health": 2,
-    "tools": null,
-    "challenges": [
-      {
-        "id": "practice-file",
-        "title": "THE FILE",
-        "claim": "THE FORK CAN MAKE THE FALSE WORD VISIBLE.",
-        "tools": {
-          "reveal": true,
-          "graft": false
-        },
-        "terminal": false,
-        "tokens": [
-          {
-            "id": "practice-file:printed:0",
-            "text": "THE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-file:printed:1",
-            "text": "MUSIC",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-file:printed:2",
-            "text": "COMES",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-file:printed:3",
-            "text": "FROM",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-file:printed:4",
-            "text": "A",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-file:printed:5",
-            "text": "FILE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-file:not1",
-            "text": "NOT",
-            "kind": "hidden",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-file:printed:7",
-            "text": "A",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-file:printed:8",
-            "text": "ROOM",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-file:printed:9",
-            "text": "YOU",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-file:printed:10",
-            "text": "KEPT",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-file:printed:11",
-            "text": "EVERY",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-file:printed:12",
-            "text": "BREATH",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-file:printed:13",
-            "text": "AND",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-file:printed:14",
-            "text": "CALLED",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-file:printed:15",
-            "text": "THE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-file:printed:16",
-            "text": "KEEPING",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-file:printed:17",
-            "text": "SILENCE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          }
-        ],
-        "readings": [
-          {
-            "id": "music-from-file",
-            "meaning": "The music is a file.",
-            "routeBias": null,
-            "grants": [],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "practice-file:printed:0",
-              "practice-file:printed:1",
-              "practice-file:printed:2",
-              "practice-file:printed:3",
-              "practice-file:printed:4",
-              "practice-file:printed:5"
-            ],
-            "forbidden": [
-              "practice-file:printed:9"
-            ],
-            "maxVisible": 6
-          },
-          {
-            "id": "not-a-room",
-            "meaning": "The fork reveals: this is not a room.",
-            "routeBias": null,
-            "grants": [],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "practice-file:not1",
-              "practice-file:printed:7",
-              "practice-file:printed:8"
-            ],
-            "forbidden": [
-              "practice-file:printed:1"
-            ],
-            "maxVisible": 3
-          },
-          {
-            "id": "you-kept-silence",
-            "meaning": "You kept silence and called that care.",
-            "routeBias": "sacrifice",
-            "grants": [],
-            "locks": [],
-            "pressureDelta": 1,
-            "required": [
-              "practice-file:printed:9",
-              "practice-file:printed:10",
-              "practice-file:printed:17"
-            ],
-            "forbidden": [
-              "practice-file:printed:1"
-            ],
-            "maxVisible": 3
-          }
-        ],
-        "opponentMoves": [
-          {
-            "blackout": [
-              "practice-file:not1"
-            ],
-            "scrape": [
-              "practice-file:printed:9"
-            ],
-            "insert": [],
-            "notice": "THE OTHER HAND BLACKS OUT NOT AND RESTORES YOU."
-          },
-          {
-            "blackout": [
-              "practice-file:printed:14"
-            ],
-            "scrape": [
-              "practice-file:printed:10"
-            ],
-            "insert": [],
-            "notice": "THE OTHER HAND LEAVES KEPT IN PLACE."
-          }
-        ]
+    "combat": {
+      "kind": "regular",
+      "music": {
+        "mode": "fixed",
+        "lead": "lead-2"
       },
-      {
-        "id": "practice-heard",
-        "title": "THE KEPT VOICE",
-        "claim": "",
-        "tools": {
-          "reveal": true,
-          "graft": false
+      "movements": [
+        {
+          "id": "instrument",
+          "title": "THE WRONG INSTRUMENT",
+          "coherence": 3,
+          "intents": [
+            {
+              "id": "practice:two-notes",
+              "label": "TWO NOTES ON THE TAKE",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "TWO WRONG NOTES"
+            },
+            {
+              "id": "practice:piano",
+              "label": "PIANO HIDDEN IN A DEAD ROOM",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "practice:ensemble",
+              "label": "EVERY STAND ANSWERS",
+              "kind": "overload",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            }
+          ],
+          "severeIntents": [
+            {
+              "id": "practice:piano",
+              "label": "PIANO HIDDEN IN A DEAD ROOM",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "practice:ensemble",
+              "label": "EVERY STAND ANSWERS",
+              "kind": "overload",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "practice:two-notes",
+              "label": "TWO NOTES ON THE TAKE",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "TWO WRONG NOTES"
+            }
+          ],
+          "deadAirIntents": [
+            {
+              "id": "practice:ensemble",
+              "label": "EVERY STAND ANSWERS",
+              "kind": "overload",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "practice:piano",
+              "label": "PIANO HIDDEN IN A DEAD ROOM",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "practice:two-notes",
+              "label": "TWO NOTES ON THE TAKE",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "TWO WRONG NOTES"
+            }
+          ]
         },
-        "terminal": false,
-        "tokens": [
-          {
-            "id": "practice-heard:printed:0",
-            "text": "YOU",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-heard:printed:1",
-            "text": "ACCEPTED",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-heard:printed:2",
-            "text": "HER",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-heard:printed:3",
-            "text": "NAME",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-heard:printed:4",
-            "text": "BUT",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-heard:printed:5",
-            "text": "YOU",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-heard:printed:6",
-            "text": "DID",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-heard:printed:7",
-            "text": "NOT",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-heard:printed:8",
-            "text": "HEAR",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-heard:printed:9",
-            "text": "HER",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-heard:printed:10",
-            "text": "YOU",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-heard:printed:11",
-            "text": "KEPT",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-heard:printed:12",
-            "text": "THE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-heard:printed:13",
-            "text": "SOUND",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-heard:printed:14",
-            "text": "AND",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-heard:printed:15",
-            "text": "LOST",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-heard:printed:16",
-            "text": "WHAT",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-heard:printed:17",
-            "text": "SHE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-heard:printed:18",
-            "text": "SAID",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-heard:consent",
-            "text": "CONSENT",
-            "kind": "hidden",
-            "label": "",
-            "falseText": false
-          }
-        ],
-        "readings": [
-          {
-            "id": "did-not-hear",
-            "meaning": "Acceptance was not listening.",
-            "routeBias": null,
-            "grants": [],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "practice-heard:printed:5",
-              "practice-heard:printed:6",
-              "practice-heard:printed:7",
-              "practice-heard:printed:8",
-              "practice-heard:printed:9"
-            ],
-            "forbidden": [
-              "practice-heard:printed:1"
-            ],
-            "maxVisible": 5
-          },
-          {
-            "id": "kept-sound",
-            "meaning": "You kept the sound.",
-            "routeBias": null,
-            "grants": [],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "practice-heard:printed:10",
-              "practice-heard:printed:11",
-              "practice-heard:printed:12",
-              "practice-heard:printed:13"
-            ],
-            "forbidden": [
-              "practice-heard:consent"
-            ],
-            "maxVisible": 4
-          },
-          {
-            "id": "lost-what-she-said",
-            "meaning": "The content was lost.",
-            "routeBias": null,
-            "grants": [],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "practice-heard:printed:15",
-              "practice-heard:printed:16",
-              "practice-heard:printed:17",
-              "practice-heard:printed:18"
-            ],
-            "forbidden": [
-              "practice-heard:printed:3"
-            ],
-            "maxVisible": 4
-          },
-          {
-            "id": "consent-missing",
-            "meaning": "The missing word is consent.",
-            "routeBias": null,
-            "grants": [
-              "finale.knowsConsent"
-            ],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "practice-heard:consent"
-            ],
-            "forbidden": [
-              "practice-heard:printed:11"
-            ],
-            "maxVisible": 1
-          }
-        ],
-        "opponentMoves": [
-          {
-            "blackout": [
-              "practice-heard:consent"
-            ],
-            "scrape": [
-              "practice-heard:printed:11"
-            ],
-            "insert": [],
-            "notice": "THE OTHER HAND REMOVES CONSENT AND RESTORES KEPT."
-          },
-          {
-            "blackout": [
-              "practice-heard:printed:7"
-            ],
-            "scrape": [
-              "practice-heard:printed:8"
-            ],
-            "insert": [],
-            "notice": "THE OTHER HAND TAKES AWAY NOT."
-          }
-        ]
-      },
-      {
-        "id": "practice-pianos",
-        "title": "THE INSTRUMENTS",
-        "claim": "",
-        "tools": {
-          "reveal": false,
-          "graft": false
+        {
+          "id": "player",
+          "title": "THE PLAYER NOT PRESENT",
+          "coherence": 3,
+          "intents": [
+            {
+              "id": "practice:breath",
+              "label": "BREATH BEFORE THE PHRASE",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "PLAYER BREATH"
+            },
+            {
+              "id": "practice:downbeat",
+              "label": "DOWNBEAT THROUGH THE FLOOR",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "practice:chair",
+              "label": "THE EMPTY CHAIR MOVES",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            }
+          ],
+          "severeIntents": [
+            {
+              "id": "practice:downbeat",
+              "label": "DOWNBEAT THROUGH THE FLOOR",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "practice:chair",
+              "label": "THE EMPTY CHAIR MOVES",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "practice:breath",
+              "label": "BREATH BEFORE THE PHRASE",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "PLAYER BREATH"
+            }
+          ],
+          "deadAirIntents": [
+            {
+              "id": "practice:chair",
+              "label": "THE EMPTY CHAIR MOVES",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "practice:downbeat",
+              "label": "DOWNBEAT THROUGH THE FLOOR",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "practice:breath",
+              "label": "BREATH BEFORE THE PHRASE",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "PLAYER BREATH"
+            }
+          ]
         },
-        "terminal": false,
-        "tokens": [
-          {
-            "id": "practice-pianos:printed:0",
-            "text": "SEVEN",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-pianos:printed:1",
-            "text": "PIANOS",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-pianos:printed:2",
-            "text": "WAIT",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-pianos:printed:3",
-            "text": "WITH",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-pianos:printed:4",
-            "text": "BROKEN",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-pianos:printed:5",
-            "text": "STRINGS",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-pianos:printed:6",
-            "text": "SOME",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-pianos:printed:7",
-            "text": "STILL",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-pianos:printed:8",
-            "text": "SOUND",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-pianos:printed:9",
-            "text": "LIKE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-pianos:printed:10",
-            "text": "PIANOS",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-pianos:printed:11",
-            "text": "NONE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-pianos:printed:12",
-            "text": "OF",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-pianos:printed:13",
-            "text": "THEM",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-pianos:printed:14",
-            "text": "KNOW",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-pianos:printed:15",
-            "text": "THE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-pianos:printed:16",
-            "text": "MUSIC",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-pianos:printed:17",
-            "text": "YOU",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "practice-pianos:printed:18",
-            "text": "HEAR",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          }
-        ],
-        "readings": [
-          {
-            "id": "pianos-wait",
-            "meaning": "The pianos wait; they are not playing.",
-            "routeBias": null,
-            "grants": [],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "practice-pianos:printed:0",
-              "practice-pianos:printed:1",
-              "practice-pianos:printed:2"
-            ],
-            "forbidden": [
-              "practice-pianos:printed:17"
-            ],
-            "maxVisible": 3
-          },
-          {
-            "id": "some-still-sound",
-            "meaning": "Some things still sound like themselves.",
-            "routeBias": null,
-            "grants": [],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "practice-pianos:printed:6",
-              "practice-pianos:printed:7",
-              "practice-pianos:printed:8",
-              "practice-pianos:printed:9",
-              "practice-pianos:printed:10"
-            ],
-            "forbidden": [
-              "practice-pianos:printed:16"
-            ],
-            "maxVisible": 5
-          },
-          {
-            "id": "none-know",
-            "meaning": "The instruments do not know the music.",
-            "routeBias": null,
-            "grants": [],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "practice-pianos:printed:11",
-              "practice-pianos:printed:12",
-              "practice-pianos:printed:13",
-              "practice-pianos:printed:14"
-            ],
-            "forbidden": [
-              "practice-pianos:printed:17"
-            ],
-            "maxVisible": 4
-          }
-        ],
-        "opponentMoves": [
-          {
-            "blackout": [
-              "practice-pianos:printed:11"
-            ],
-            "scrape": [
-              "practice-pianos:printed:16"
-            ],
-            "insert": [],
-            "notice": "THE OTHER HAND GIVES THE MUSIC BACK TO THE PIANOS."
-          },
-          {
-            "blackout": [
-              "practice-pianos:printed:4"
-            ],
-            "scrape": [
-              "practice-pianos:printed:17"
-            ],
-            "insert": [],
-            "notice": "THE OTHER HAND RESTORES YOU TO THE MUSIC."
-          }
-        ]
-      }
-    ]
+        {
+          "id": "score",
+          "title": "THE SCORE WRITES BACK",
+          "coherence": 3,
+          "intents": [
+            {
+              "id": "practice:phrase",
+              "label": "THE PHRASE PLAYS ITSELF",
+              "kind": "broadcast",
+              "damage": 3,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "SELF-PLAYING PHRASE"
+            },
+            {
+              "id": "practice:rest",
+              "label": "REST BLACKED OUT OF THE BAR",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "practice:finale",
+              "label": "ALL PARTS AT FULL LEVEL",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            }
+          ],
+          "severeIntents": [
+            {
+              "id": "practice:rest",
+              "label": "REST BLACKED OUT OF THE BAR",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "practice:finale",
+              "label": "ALL PARTS AT FULL LEVEL",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "practice:phrase",
+              "label": "THE PHRASE PLAYS ITSELF",
+              "kind": "broadcast",
+              "damage": 3,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "SELF-PLAYING PHRASE"
+            }
+          ],
+          "deadAirIntents": [
+            {
+              "id": "practice:finale",
+              "label": "ALL PARTS AT FULL LEVEL",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "practice:rest",
+              "label": "REST BLACKED OUT OF THE BAR",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "practice:phrase",
+              "label": "THE PHRASE PLAYS ITSELF",
+              "kind": "broadcast",
+              "damage": 3,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "SELF-PLAYING PHRASE"
+            }
+          ]
+        }
+      ]
+    }
   }
 }

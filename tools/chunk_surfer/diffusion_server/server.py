@@ -52,6 +52,10 @@ def compatibility_error() -> str | None:
     device, _dtype = pipeline.pick_device()
     expected = os.environ.get("LENS_EXPECT_BACKEND")
     if device not in {"cuda", "mps"}:
+        if expected == "cuda":
+            return "unsupported GPU: NVIDIA CUDA hardware and a compatible driver are required"
+        if expected == "mps":
+            return "unsupported GPU: Apple Silicon MPS is required"
         return "unsupported GPU: Apple Silicon MPS or NVIDIA CUDA is required"
     if expected and device != expected:
         return f"incompatible GPU backend: package requires {expected}, detected {device}"

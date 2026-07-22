@@ -271,598 +271,317 @@
       "caption": "Signal subject / empty room",
       "status": "STILL"
     },
-    "composure": 1,
-    "health": 2,
-    "tools": null,
-    "challenges": [
-      {
-        "id": "natatorium-room",
-        "title": "THE ROOM",
-        "claim": "",
-        "tools": {
-          "reveal": false,
-          "graft": false
-        },
-        "terminal": false,
-        "tokens": [
-          {
-            "id": "natatorium-room:printed:0",
-            "text": "THE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-room:printed:1",
-            "text": "ROOM",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-room:printed:2",
-            "text": "IS",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-room:printed:3",
-            "text": "EMPTY",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-room:printed:4",
-            "text": "BUT",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-room:printed:5",
-            "text": "THE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-room:printed:6",
-            "text": "TAPE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-room:printed:7",
-            "text": "INSISTS",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-room:printed:8",
-            "text": "SOMEONE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-room:printed:9",
-            "text": "IS",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-room:printed:10",
-            "text": "WAITING",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-room:printed:11",
-            "text": "IN",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-room:printed:12",
-            "text": "WATER",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          }
-        ],
-        "readings": [
-          {
-            "id": "empty-room",
-            "meaning": "The room is empty; the tape is lying.",
-            "routeBias": null,
-            "grants": [],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "natatorium-room:printed:0",
-              "natatorium-room:printed:1",
-              "natatorium-room:printed:2",
-              "natatorium-room:printed:3"
-            ],
-            "forbidden": [
-              "natatorium-room:printed:8",
-              "natatorium-room:printed:10",
-              "natatorium-room:printed:12"
-            ],
-            "maxVisible": 4
-          },
-          {
-            "id": "tape-insists",
-            "meaning": "The tape is making the claim, not the room.",
-            "routeBias": null,
-            "grants": [],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "natatorium-room:printed:5",
-              "natatorium-room:printed:6",
-              "natatorium-room:printed:7"
-            ],
-            "forbidden": [
-              "natatorium-room:printed:1"
-            ],
-            "maxVisible": 3
-          },
-          {
-            "id": "someone-waiting",
-            "meaning": "You let the room contain somebody.",
-            "routeBias": "sacrifice",
-            "grants": [],
-            "locks": [
-              "route.surfaced"
-            ],
-            "pressureDelta": 1,
-            "required": [
-              "natatorium-room:printed:8",
-              "natatorium-room:printed:9",
-              "natatorium-room:printed:10"
-            ],
-            "forbidden": [
-              "natatorium-room:printed:3"
-            ],
-            "maxVisible": 3
-          }
-        ],
-        "opponentMoves": [
-          {
-            "blackout": [
-              "natatorium-room:printed:4"
-            ],
-            "scrape": [
-              "natatorium-room:printed:8"
-            ],
-            "insert": [],
-            "notice": "THE OTHER HAND RESTORES SOMEBODY TO THE EMPTY ROOM."
-          },
-          {
-            "blackout": [
-              "natatorium-room:printed:3"
-            ],
-            "scrape": [
-              "natatorium-room:printed:10"
-            ],
-            "insert": [],
-            "notice": "THE OTHER HAND REMOVES EMPTY AND LEAVES WAITING."
-          }
-        ]
+    "combat": {
+      "kind": "regular",
+      "music": {
+        "mode": "fixed",
+        "lead": "lead-1"
       },
-      {
-        "id": "natatorium-voice",
-        "title": "THE VOICE",
-        "claim": "",
-        "tools": {
-          "reveal": false,
-          "graft": false
+      "movements": [
+        {
+          "id": "room",
+          "title": "THE EMPTY ROOM",
+          "coherence": 3,
+          "intents": [
+            {
+              "id": "natatorium:meter",
+              "label": "METER MOVES WITHOUT AIR",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "ROOM TONE"
+            },
+            {
+              "id": "natatorium:pressure",
+              "label": "PRESSURE BEHIND THE EARS",
+              "kind": "overload",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "natatorium:piano",
+              "label": "PIANO WITH NO TRANSIENT",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            }
+          ],
+          "severeIntents": [
+            {
+              "id": "natatorium:pressure",
+              "label": "PRESSURE BEHIND THE EARS",
+              "kind": "overload",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "natatorium:piano",
+              "label": "PIANO WITH NO TRANSIENT",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "natatorium:meter",
+              "label": "METER MOVES WITHOUT AIR",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "ROOM TONE"
+            }
+          ],
+          "deadAirIntents": [
+            {
+              "id": "natatorium:piano",
+              "label": "PIANO WITH NO TRANSIENT",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "natatorium:pressure",
+              "label": "PRESSURE BEHIND THE EARS",
+              "kind": "overload",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "natatorium:meter",
+              "label": "METER MOVES WITHOUT AIR",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "ROOM TONE"
+            }
+          ]
         },
-        "terminal": false,
-        "tokens": [
-          {
-            "id": "natatorium-voice:printed:0",
-            "text": "HER",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-voice:printed:1",
-            "text": "VOICE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-voice:printed:2",
-            "text": "IS",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-voice:printed:3",
-            "text": "ON",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-voice:printed:4",
-            "text": "THE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-voice:printed:5",
-            "text": "TAPE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-voice:printed:6",
-            "text": "AND",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-voice:printed:7",
-            "text": "THE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-voice:printed:8",
-            "text": "TAPE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-voice:printed:9",
-            "text": "IS",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-voice:printed:10",
-            "text": "NOT",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-voice:printed:11",
-            "text": "HER",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-voice:printed:12",
-            "text": "VOICE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-voice:printed:13",
-            "text": "IS",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-voice:printed:14",
-            "text": "ONLY",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-voice:printed:15",
-            "text": "PRESSURE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          }
-        ],
-        "readings": [
-          {
-            "id": "voice-on-tape",
-            "meaning": "The voice is on the tape; it is not her.",
-            "routeBias": null,
-            "grants": [],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "natatorium-voice:printed:0",
-              "natatorium-voice:printed:1",
-              "natatorium-voice:printed:2",
-              "natatorium-voice:printed:3",
-              "natatorium-voice:printed:4",
-              "natatorium-voice:printed:5"
-            ],
-            "forbidden": [
-              "natatorium-voice:printed:11"
-            ],
-            "maxVisible": 6
-          },
-          {
-            "id": "only-pressure",
-            "meaning": "The room is producing pressure, not a person.",
-            "routeBias": null,
-            "grants": [],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "natatorium-voice:printed:12",
-              "natatorium-voice:printed:13",
-              "natatorium-voice:printed:14",
-              "natatorium-voice:printed:15"
-            ],
-            "forbidden": [
-              "natatorium-voice:printed:11"
-            ],
-            "maxVisible": 4
-          },
-          {
-            "id": "not-her",
-            "meaning": "The tape is not her.",
-            "routeBias": null,
-            "grants": [],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "natatorium-voice:printed:7",
-              "natatorium-voice:printed:8",
-              "natatorium-voice:printed:9",
-              "natatorium-voice:printed:10",
-              "natatorium-voice:printed:11"
-            ],
-            "forbidden": [
-              "natatorium-voice:printed:1"
-            ],
-            "maxVisible": 5
-          }
-        ],
-        "opponentMoves": [
-          {
-            "blackout": [
-              "natatorium-voice:printed:10"
-            ],
-            "scrape": [
-              "natatorium-voice:printed:11"
-            ],
-            "insert": [],
-            "notice": "THE OTHER HAND SCRAPES HER CLEAN."
-          },
-          {
-            "blackout": [
-              "natatorium-voice:printed:6"
-            ],
-            "scrape": [
-              "natatorium-voice:printed:12"
-            ],
-            "insert": [],
-            "notice": "THE OTHER HAND SCRAPES VOICE CLEAN AND LEAVES THE CLAIM OPEN."
-          }
-        ]
-      },
-      {
-        "id": "natatorium-hold",
-        "title": "THE TAKE",
-        "claim": "",
-        "tools": {
-          "reveal": false,
-          "graft": false
+        {
+          "id": "voice",
+          "title": "THE VOICE ON TAPE",
+          "coherence": 3,
+          "intents": [
+            {
+              "id": "natatorium:voice",
+              "label": "VOICE ON THE MONITOR PATH",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "VOICE PRINT"
+            },
+            {
+              "id": "natatorium:memory",
+              "label": "MEMORY PASSED AS SIGNAL",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "natatorium:lean",
+              "label": "THE ROOM LEANS CLOSER",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            }
+          ],
+          "severeIntents": [
+            {
+              "id": "natatorium:memory",
+              "label": "MEMORY PASSED AS SIGNAL",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "natatorium:lean",
+              "label": "THE ROOM LEANS CLOSER",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "natatorium:voice",
+              "label": "VOICE ON THE MONITOR PATH",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "VOICE PRINT"
+            }
+          ],
+          "deadAirIntents": [
+            {
+              "id": "natatorium:lean",
+              "label": "THE ROOM LEANS CLOSER",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "natatorium:memory",
+              "label": "MEMORY PASSED AS SIGNAL",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "natatorium:voice",
+              "label": "VOICE ON THE MONITOR PATH",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "VOICE PRINT"
+            }
+          ]
         },
-        "terminal": false,
-        "tokens": [
-          {
-            "id": "natatorium-hold:printed:0",
-            "text": "NOTHING",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-hold:printed:1",
-            "text": "MOVED",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-hold:printed:2",
-            "text": "EXCEPT",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-hold:printed:3",
-            "text": "YOU",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-hold:printed:4",
-            "text": "TOWARDS",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-hold:printed:5",
-            "text": "A",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-hold:printed:6",
-            "text": "PIANO",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-hold:printed:7",
-            "text": "THAT",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-hold:printed:8",
-            "text": "WAS",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-hold:printed:9",
-            "text": "NEVER",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-hold:printed:10",
-            "text": "THERE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-hold:printed:11",
-            "text": "HOLD",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-hold:printed:12",
-            "text": "THE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-hold:printed:13",
-            "text": "TAKE",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-hold:printed:14",
-            "text": "HOLD",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          },
-          {
-            "id": "natatorium-hold:printed:15",
-            "text": "YOURSELF",
-            "kind": "printed",
-            "label": "",
-            "falseText": false
-          }
-        ],
-        "readings": [
-          {
-            "id": "nothing-moved",
-            "meaning": "Nothing moved.",
-            "routeBias": null,
-            "grants": [],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "natatorium-hold:printed:0",
-              "natatorium-hold:printed:1"
-            ],
-            "forbidden": [
-              "natatorium-hold:printed:3",
-              "natatorium-hold:printed:6"
-            ],
-            "maxVisible": 2
-          },
-          {
-            "id": "piano-never-there",
-            "meaning": "The piano was never there.",
-            "routeBias": null,
-            "grants": [],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "natatorium-hold:printed:6",
-              "natatorium-hold:printed:8",
-              "natatorium-hold:printed:9",
-              "natatorium-hold:printed:10"
-            ],
-            "forbidden": [
-              "natatorium-hold:printed:3"
-            ],
-            "maxVisible": 4
-          },
-          {
-            "id": "hold-take",
-            "meaning": "Hold the take.",
-            "routeBias": null,
-            "grants": [],
-            "locks": [],
-            "pressureDelta": 0,
-            "required": [
-              "natatorium-hold:printed:11",
-              "natatorium-hold:printed:12",
-              "natatorium-hold:printed:13"
-            ],
-            "forbidden": [
-              "natatorium-hold:printed:3"
-            ],
-            "maxVisible": 3
-          }
-        ],
-        "opponentMoves": [
-          {
-            "blackout": [
-              "natatorium-hold:printed:9"
-            ],
-            "scrape": [
-              "natatorium-hold:printed:6"
-            ],
-            "insert": [],
-            "notice": "THE OTHER HAND MAKES THE PIANO POSSIBLE."
-          },
-          {
-            "blackout": [
-              "natatorium-hold:printed:2"
-            ],
-            "scrape": [
-              "natatorium-hold:printed:3"
-            ],
-            "insert": [],
-            "notice": "THE OTHER HAND MAKES YOU THE MOVING THING."
-          }
-        ]
-      }
-    ]
+        {
+          "id": "hold",
+          "title": "THE TAKE THAT HOLDS YOU",
+          "coherence": 3,
+          "intents": [
+            {
+              "id": "natatorium:echo",
+              "label": "FOURTH RETURN OF THE ECHO",
+              "kind": "broadcast",
+              "damage": 3,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "EMPTY RETURN"
+            },
+            {
+              "id": "natatorium:depth",
+              "label": "BLACK WATER PRESSURE",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "natatorium:absence",
+              "label": "ABSENCE WEARING HER VOICE",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            }
+          ],
+          "severeIntents": [
+            {
+              "id": "natatorium:depth",
+              "label": "BLACK WATER PRESSURE",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "natatorium:absence",
+              "label": "ABSENCE WEARING HER VOICE",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "natatorium:echo",
+              "label": "FOURTH RETURN OF THE ECHO",
+              "kind": "broadcast",
+              "damage": 3,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "EMPTY RETURN"
+            }
+          ],
+          "deadAirIntents": [
+            {
+              "id": "natatorium:absence",
+              "label": "ABSENCE WEARING HER VOICE",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "natatorium:depth",
+              "label": "BLACK WATER PRESSURE",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "natatorium:echo",
+              "label": "FOURTH RETURN OF THE ECHO",
+              "kind": "broadcast",
+              "damage": 3,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "EMPTY RETURN"
+            }
+          ]
+        }
+      ]
+    }
   }
 }

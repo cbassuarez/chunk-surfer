@@ -6,7 +6,7 @@ mod identity;
 mod lens_service;
 
 pub fn run() {
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .manage(lens_service::LensServiceState::default())
         .plugin(tauri_plugin_opener::init())
         .plugin(
@@ -43,6 +43,15 @@ pub fn run() {
             display_policy::enforce_window_floor(app.handle());
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running Chunk Surfer");
+        .build(tauri::generate_context!())
+        .expect("error while building Chunk Surfer");
+    app.run(|app, event| {
+        if matches!(
+            event,
+            tauri::RunEvent::Exit | tauri::RunEvent::ExitRequested { .. }
+        ) {
+            use tauri::Manager;
+            app.state::<lens_service::LensServiceState>().stop();
+        }
+    });
 }

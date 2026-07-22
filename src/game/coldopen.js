@@ -22,7 +22,13 @@ import {
 } from '../render/transcript.js';
 import { UI_COLOR } from '../render/palette.js';
 import { createConversation } from './conversation.js';
-import { drawStoryArtCard, planStoryArtInPanel, planStoryArtSideBySide, storyArtSideBySidePanelRows } from './story-art-card.js';
+import {
+  drawStoryArtCard,
+  planStoryArtInPanel,
+  planStoryArtSideBySide,
+  storyArtSideBySidePanelRows,
+  storyArtSideBySideTextLayout,
+} from './story-art-card.js';
 import { resolveStoryArt } from './story-art.js';
 import { promptLine } from './bindings.js';
 
@@ -88,10 +94,9 @@ export function makeColdOpenScene({
 
         if (v.art) lastBeatArt = v.art;
         const art = resolveStoryArt(v.art || (v.mode === 'beats' ? lastBeatArt : null));
-        const preliminaryChoices = layoutTranscriptChoices(v, Math.max(12, w - 8));
         const fixedArtPanelH = art
           ? storyArtSideBySidePanelRows({
-              choicesRows: preliminaryChoices.height ? preliminaryChoices.height + 1 : 0,
+              choicesRows: 0,
               bottomPadRows: 2,
             })
           : 0;
@@ -146,17 +151,17 @@ export function makeColdOpenScene({
         let transcriptY =
           header.y + (header.rows ? 1 : 0);
 
-        const beforeTextRows = Math.max(
+        const sidePanelRows = Math.max(
           1,
           body.y +
             body.h -
-            transcriptY -
-            choiceReserve,
+            transcriptY,
         );
+        const beforeTextRows = Math.max(1, sidePanelRows - choiceReserve);
         const sidePlan = planStoryArtSideBySide({
           art,
           mode: art?.mode || 'compact',
-          panelRows: beforeTextRows,
+          panelRows: sidePanelRows,
           panelCols: contentW,
           textRowsMin: choices.height ? 4 : 5,
           choicesRows: 0,
@@ -172,6 +177,10 @@ export function makeColdOpenScene({
           const lanes = fixedTranscriptLanes(contentW, { split: sidePlan });
           choices = layoutTranscriptChoices(v, contentW, { lane: lanes.right });
           choiceReserve = choices.height ? choices.height + 1 : 0;
+          const textLayout = storyArtSideBySideTextLayout({
+            rows: sidePlan.rows,
+            choicesRows: choices.height,
+          });
 
           drawStoryArtCard(art, {
             x: contentX,
@@ -183,7 +192,7 @@ export function makeColdOpenScene({
           });
           transcriptX = contentX + sidePlan.artCols + sidePlan.gap;
           transcriptW = sidePlan.textCols;
-          transcriptMaxRows = sidePlan.rows;
+          transcriptMaxRows = textLayout.transcriptRows;
           const transcript = layoutTranscript(v, {
             width: contentW,
             maxRows: transcriptMaxRows,
@@ -201,9 +210,9 @@ export function makeColdOpenScene({
           if (choices.height) {
             drawTranscriptChoices(choices, {
               x: contentX,
-              y: body.y + body.h - choices.height,
+              y: transcriptY + textLayout.choicesOffset,
               width: contentW,
-              maxRows: choices.height,
+              maxRows: textLayout.choicesRows,
             });
           }
 

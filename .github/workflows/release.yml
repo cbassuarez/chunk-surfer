@@ -106,7 +106,7 @@ jobs:
           path: |
             src-tauri/binaries/chunk-lens-${{ matrix.target }}*
             src-tauri/lens-resources/lens
-          key: lens-bundle-v1-${{ matrix.target }}-py312-${{ hashFiles('tools/chunk_surfer/diffusion_server/*.py', 'tools/chunk_surfer/diffusion_server/requirements-local.txt', 'THIRD_PARTY_LENS_NOTICES.md') }}
+          key: lens-bundle-v1-${{ matrix.target }}-py312-${{ hashFiles('tools/chunk_surfer/diffusion_server/*.py', 'tools/chunk_surfer/diffusion_server/requirements-local.txt', 'THIRD_PARTY_LENS_NOTICES.md', 'third_party/licenses/*') }}
 
       - name: Install pinned lens bundler dependencies
         if: steps.lens-bundle-cache.outputs.cache-hit != 'true'
@@ -159,6 +159,10 @@ jobs:
       - name: Check Tauri Rust
         run: npm run tauri:check
 
+      - name: Run Windows sidecar process tests
+        if: matrix.platform == 'windows-latest'
+        run: cargo test --manifest-path src-tauri/Cargo.toml --all-targets
+
       - name: Build Tauri bundles
         if: matrix.platform != 'ubuntu-22.04'
         run: npm run tauri:build -- ${{ matrix.args }}
@@ -204,7 +208,12 @@ jobs:
         run: |
           node scripts/package-windows-portable.mjs
           $version = (Get-Content package.json | ConvertFrom-Json).version
-          Compress-Archive -Path "release/windows/Chunk Surfer" -DestinationPath "release/windows/chunk-surfer-v$version-windows-x64.zip" -Force
+          $zip = "release/windows/chunk-surfer-v$version-windows-x64.zip"
+          Compress-Archive -Path "release/windows/Chunk Surfer" -DestinationPath $zip -Force
+          $verifyRoot = "release/windows-verify"
+          Remove-Item $verifyRoot -Recurse -Force -ErrorAction SilentlyContinue
+          Expand-Archive -Path $zip -DestinationPath $verifyRoot -Force
+          node scripts/validate-windows-portable.mjs "$verifyRoot/Chunk Surfer"
 
       - name: Upload desktop bundles
         if: matrix.platform != 'ubuntu-22.04'
