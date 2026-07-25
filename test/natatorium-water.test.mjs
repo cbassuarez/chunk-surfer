@@ -143,7 +143,17 @@ assert.match(rendererSource, /uWaterBounds/);
 assert.match(rendererSource, /cur\.mat == MAT_WET/);
 assert.match(rendererSource, /surf = 4/);
 assert.match(rendererSource, /DEPTH RIDES IN THE ALPHA CHANNEL/);
-assert.match(mainSource, /natatorium-roof-spill-north/);
-assert.match(mainSource, /natatorium-roof-spill-south/);
+// The roof spill moved out of main.js into the authored rig
+// (src/data/conservatory-lights.js). Assert the lights themselves rather than a
+// string in the hub: the natatorium is one of only two places in the building with
+// real sky, and that is what makes the drained tile read.
+const { allAuthoredLights, LIGHT_KIND } = await import('../src/data/conservatory-lights.js');
+const spill = allAuthoredLights().filter((light) => light.id.startsWith('natatorium-'));
+assert.equal(spill.length, 5, 'four roof spills and the end window');
+assert.ok(spill.every((light) => light.kind === LIGHT_KIND.SKY),
+  'it is daylight through a failed roof, not powered fittings — every practical here stays dead');
+assert.ok(spill.every((light) => light.circuit === null), 'and it needs no mains');
+assert.ok(spill.some((light) => light.id === 'natatorium-roof-spill-north'));
+assert.ok(spill.some((light) => light.id === 'natatorium-roof-spill-south'));
 
 console.log('natatorium water tests ok');

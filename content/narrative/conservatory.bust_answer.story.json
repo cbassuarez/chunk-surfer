@@ -1,0 +1,128 @@
+{
+ "schemaVersion": 1,
+ "id": "conservatory.bust_answer",
+ "title": "The One That Answers",
+ "status": "active",
+ "entry": "start",
+ "entries": [
+  "start"
+ ],
+ "tags": [],
+ "notes": "",
+ "regions": [
+  {
+   "id": "conservatory.bust_answer.region",
+   "title": "The One That Answers",
+   "kind": "scene",
+   "color": "#5c2440",
+   "nodeIds": [
+    "start",
+    "again",
+    "leave"
+   ]
+  }
+ ],
+ "nodes": {
+  "start": {
+   "speaker": "THE GALLERY",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "The fifth head. Same blank sitter line, same nothing cut into the plinth.",
+     "id": "start.line.1"
+    },
+    {
+     "who": "you",
+     "text": "And you? Anything to say?",
+     "id": "start.line.2"
+    },
+    {
+     "who": "direction",
+     "text": "The room does what the room has done all night.",
+     "hold": 2.6,
+     "id": "start.line.3"
+    },
+    {
+     "who": "unknown",
+     "text": "Ask it again.",
+     "hold": 3,
+     "id": "start.line.4"
+    },
+    {
+     "who": "direction",
+     "text": "He does not move. The torch does not move.",
+     "id": "start.line.5"
+    }
+   ],
+   "choices": [
+    {
+     "text": "ask it again",
+     "goto": "again",
+     "id": "start.choice.1"
+    },
+    {
+     "text": "do not ask it again",
+     "goto": "leave",
+     "id": "start.choice.2"
+    }
+   ],
+   "id": "start",
+   "type": "choice"
+  },
+  "again": {
+   "speaker": "THE GALLERY",
+   "lines": [
+    {
+     "who": "you",
+     "text": "Anything to say.",
+     "id": "again.line.1"
+    },
+    {
+     "who": "unknown",
+     "text": "No. Nothing. Same as you.",
+     "hold": 3,
+     "id": "again.line.2"
+    },
+    {
+     "who": "direction",
+     "text": "Marble, at the height of a person standing slightly too close, with the light on it.",
+     "id": "again.line.3"
+    },
+    {
+     "who": "you",
+     "text": "Right.",
+     "id": "again.line.4"
+    },
+    {
+     "who": "you",
+     "text": "Right, that was me. That was me doing a voice. That is what a man on his own does at three in the morning.",
+     "id": "again.line.5"
+    },
+    {
+     "who": "direction",
+     "text": "He believes that for about four seconds.",
+     "id": "again.line.6"
+    }
+   ],
+   "id": "again",
+   "type": "dialogue"
+  },
+  "leave": {
+   "speaker": "THE GALLERY",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "He puts the beam on the floor and keeps it there while he walks away.",
+     "id": "leave.line.1"
+    },
+    {
+     "who": "you",
+     "text": "No. I am not doing that again.",
+     "id": "leave.line.2"
+    }
+   ],
+   "id": "leave",
+   "type": "dialogue"
+  }
+ }
+}

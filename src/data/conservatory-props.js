@@ -237,8 +237,11 @@ export const CONSERVATORY_PROPS = [
   // you have said out loud, which is the point of them.
   ...[[27,250,0],[27,254,.18],[27,258,-.12],[41,250,Math.PI],[41,254,Math.PI+.15],[41,258,Math.PI-.12]].flatMap(([x,y,yaw],i)=>{
     const common={renderGroups:['ground','academic'],interactive:false};
+    // All six stations are addressable, the two broken ones included — talking to
+    // a head that is not there any more is worse than talking to one that is.
     return i===2||i===5
-      ?[P(`academic-bust-plinth-${i+1}`,'academic_bust_plinth',x,y,yaw,common),P(`academic-bust-fragment-${i+1}`,'academic_bust_fragment',x+.18,y+.22,yaw+.45,{...common,elevation:1.08})]
+      ?[P(`academic-bust-plinth-${i+1}`,'academic_bust_plinth',x,y,yaw,common),
+        P(`academic-bust-fragment-${i+1}`,'academic_bust_fragment',x+.18,y+.22,yaw+.45,{renderGroups:['ground','academic'],talkable:true,elevation:1.08})]
       :[P(`academic-bust-plinth-${i+1}`,'academic_bust_plinth',x,y,yaw,common),
         P(`academic-bust-${i+1}`,'marble_bust_01',x,y,yaw,{renderGroups:['ground','academic'],talkable:true,elevation:1.10,scale:i===4?.88:1})];
   }),
@@ -321,9 +324,9 @@ export const CONSERVATORY_PROPS = [
   // furniture, frames, and hanging fixtures made the safe throat ambiguous.
 
   // Practice suite. Mixed rooms, mixed equipment, and corridor surplus.
-  P('practice-ensemble-marimba','marimba',72.0,78.0,0,{...play(MARIMBA,'A rehearsal marimba with masking tape on four bars.','Four bars, four old pencil numbers.')}),
-  P('practice-ensemble-cello','cello',60.0,78.0,.18,{...play(STRINGS,'A cello left upright in a corner that is not safe for it.','No bow. No case open.')}),
-  P('practice-ensemble-violin','violin',61.0,79.0,-.3,{elevation:.48,inspectAt:{x:61.35,y:78.55},...play(STRINGS,'A violin left on a chair, chin rest to the door.','Someone put it down mid-phrase.')}),
+  P('practice-ensemble-marimba','marimba',67,78,0,{...play(MARIMBA,'A rehearsal marimba with masking tape on four bars.','Four bars, four old pencil numbers.')}),
+  P('practice-ensemble-cello','cello',55,78,.18,{...play(STRINGS,'A cello left upright in a corner that is not safe for it.','No bow. No case open.')}),
+  P('practice-ensemble-violin','violin',56,79,-.3,{elevation:.48,inspectAt:{x:61.35,y:78.55},...play(STRINGS,'A violin left on a chair, chin rest to the door.','Someone put it down mid-phrase.')}),
   ...[[60.0,57.0],[72.0,57.0],[60.0,64.0],[72.0,64.0],[60.0,71.0],[72.0,71.0]].map(([x,y],i)=>
     P(`practice-piano-${i+1}`,'upright_piano',x,y,i%2?Math.PI:0,{...play(PIANO,'An upright piano, lid up, institutional number under the fallboard.','The number has been changed twice.')})),
   ...[[61.0,59.0],[71.0,59.0],[61.0,66.0],[71.0,66.0],[71.0,80.0]].map(([x,y],i)=>
@@ -345,10 +348,10 @@ export const CONSERVATORY_PROPS = [
       inspect:inspect(`A green practice-room chair from the eight-chair order. ${assetTag} is stamped underneath; ${entry.state}.`,`${assetTag}. One of eight, altered by this room.`),
     });
   }),
-  P('practice-case-1','instrument_case',65.5,60.5,Math.PI/2,{inspect:inspect('A hard case with no instrument name, only a room number.','The room number no longer exists.')}),
-  P('practice-case-2','instrument_case',66.5,67.5,Math.PI/2,{inspect:inspect('Another case in the corridor. Locked, light, probably empty.','Probably empty.')}),
-  P('practice-desk-stack-1','school_desk',57.5,80.0,Math.PI/2,{inspect:inspect('Two teaching desks shoved together at the wall.','Surplus stored in circulation, as usual.')}),
-  P('practice-desk-stack-2','school_desk',58.3,80.0,Math.PI/2,{inspect:inspect('The second desk makes the obstruction official.','Nobody filed a fire plan for this.')}),
+  P('practice-case-1','instrument_case',60.5,60.5,Math.PI/2,{inspect:inspect('A hard case with no instrument name, only a room number.','The room number no longer exists.')}),
+  P('practice-case-2','instrument_case',61.5,67.5,Math.PI/2,{inspect:inspect('Another case in the corridor. Locked, light, probably empty.','Probably empty.')}),
+  P('practice-desk-stack-1','school_desk',52.5,80,Math.PI/2,{inspect:inspect('Two teaching desks shoved together at the wall.','Surplus stored in circulation, as usual.')}),
+  P('practice-desk-stack-2','school_desk',53.3,80,Math.PI/2,{inspect:inspect('The second desk makes the obstruction official.','Nobody filed a fire plan for this.')}),
 
   // Chapel: two banks leave a central aisle and side circulation clear.
   ...[62.0,65.0,68.0,71.0,74.0,77.0,80.0,83.0,86.0].flatMap((y,i)=>[

@@ -14,11 +14,17 @@ export const PIN_SOURCES = Object.freeze({
   // Real encounter clear-ids (see openEncounterBattle): the two calibration
   // fights plus the chapel boss now each grant a pin.
   encounters: Object.freeze([...CALIBRATION_ENCOUNTERS, 'chapel']),
-  // Collectible calibration pins, found in optional corners of the building —
-  // the upper academic gallery, the front atrium, and the bell tower. Picking
-  // one up sets its flag, which grants a pin here. All three sit off the
-  // recording route, so exploration is its own reward.
-  flags: Object.freeze(['pin.academic', 'pin.foyer', 'pin.tower']),
+  // Collectible calibration pins, found in optional corners of the building — the
+  // planter in the ruined atrium garden, the bell tower, and the gallery head that
+  // sits off-square on its plinth. Picking one up sets its flag, which grants a pin
+  // here; all three sit off the recording route, so exploration is its own reward.
+  //
+  // `pin.foyer` was retired when the gallery head got one: the foyer bust and the
+  // gallery bust were the same discovery twice — a marble head with a loose pin in
+  // the felt under its base. The foyer bust keeps its documented repair pin THROUGH
+  // the base, which was never collectible and still reads correctly. One pin per
+  // act now: atrium, gallery, tower.
+  flags: Object.freeze(['pin.academic', 'pin.tower', 'pin.gallery']),
 });
 
 export const TECHNIQUE_DEFS = Object.freeze([

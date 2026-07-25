@@ -152,6 +152,7 @@ import {
   stairAnomalyTriggerMatches,
 } from './game/stair-anomaly.js';
 import { createStairAnomalyRuntime, STAIR_ANOMALY_ENTRY, STAIR_ANOMALY_MODULE_CELLS } from './game/stair-anomaly-runtime.js';
+import { resolveLocalLights } from './data/conservatory-lights.js';
 import { buildChunkSurfGodPreset, CHUNK_SURF_GOD_PRESET } from './game/chunk-surf-god.js';
 import {
   CHAPEL_TOWER_PHASE,
@@ -225,6 +226,9 @@ const HUSH=runtimeTree('conservatory.hush');
 const RADIO_DEAD=runtimeTree('conservatory.radio_dead');
 const BENT_RIG=runtimeTree('conservatory.bent_rig');
 const BUST_TALK=runtimeTree('conservatory.bust_talk');
+const BUST_FRAGMENT=runtimeTree('conservatory.bust_fragment');
+const BUST_ANSWER=runtimeTree('conservatory.bust_answer');
+const BUST_PIN=runtimeTree('conservatory.bust_pin');
 const BUST_TURN=runtimeTree('conservatory.bust_turn');
 const TALISMAN=runtimeTree('conservatory.talisman');
 const CHAPEL_KEY_CHECK=runtimeTree('conservatory.chapel_key_check');
@@ -5220,43 +5224,28 @@ function syncDoorDynamicProps(){
   R3.r3dSetDynamicProps(doorDynamicCombined);
 }
 
+// The building's practicals are AUTHORED now — see src/data/conservatory-lights.js.
+// This used to be two hardcoded blocks keyed on render group, which is why seven
+// of the nine spaces had no light at all: there was nowhere to put any. All this
+// does is resolve the authored rig for where you are standing.
 function syncArchitecturalLocalLights(group){
-  if(group==='ground'||group==='academic'){
-    const reducedFlash=(getSave().settings?.flash||'full')!=='full';
-    const t=performance.now()/1000;
-    const flutter=.5+.5*Math.sin(t*7.1)*Math.sin(t*2.37);
-    const failingIntensity=reducedFlash?.42:.22+flutter*.34;
-    R3.r3dSetLocalLights?.([
-      {id:'academic-skylight-spill',x:85,z:15,y:16.25,color:[.52,.67,.80],intensity:1.12,radius:22},
-      {id:'academic-emergency-west',x:77,z:7,y:11.8,color:[1,.62,.32],intensity:.54,radius:7.2},
-      {id:'academic-emergency-east-failing',x:93,z:23,y:11.8,color:[1,.57,.28],intensity:failingIntensity,radius:6.4},
-      // Cold roof spill, not powered fittings: the reference hall's long
-      // clerestory remains legible while every practical stays dead.
-      {id:'natatorium-roof-spill-north',x:84,z:31,y:9.4,color:[.66,.82,.90],intensity:10.0,radius:18},
-      {id:'natatorium-roof-spill-mid',x:84,z:36,y:9.7,color:[.62,.79,.88],intensity:9.2,radius:18},
-      {id:'natatorium-roof-spill-south',x:84,z:41,y:9.7,color:[.59,.76,.86],intensity:8.5,radius:18},
-      {id:'natatorium-roof-spill-far',x:84,z:46,y:9.4,color:[.56,.73,.83],intensity:8.0,radius:18},
-      {id:'natatorium-end-window-spill',x:84,z:49,y:5.4,color:[.64,.80,.88],intensity:7.0,radius:15},
-    ]);
-    return;
-  }
-  if(group!=='tower'){R3.r3dSetLocalLights?.([]);return;}
-  const cleared=[CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(chapelTowerState().phase);
-  const lights=[
-    {id:'access-low',x:100,z:62,y:6.65,color:[1,.68,.38],intensity:1.35,radius:5.2},
-    {id:'access-high',x:106,z:63,y:11.45,color:[1,.70,.42],intensity:1.20,radius:5.0},
-    {id:'ringing-pendant',x:90,z:64,y:11.55,color:[1,.72,.46],intensity:1.05,radius:7.5},
-    {id:'chamber-entry',x:97,z:64,y:15.65,color:[.92,.80,.61],intensity:1.00,radius:5.0},
-    {id:'louvre-spill',x:97,z:61,y:17.4,color:[.50,.66,.82],intensity:1.22,radius:8.2},
-    {id:'winch-lamp',x:97,z:69,y:15.25,color:[1,.74,.43],intensity:1.35,radius:5.4},
-    {id:'service-landing',x:106,z:70,y:11.45,color:[1,.69,.40],intensity:1.10,radius:5.0},
-  ];
-  if(cleared)lights.push(
-    {id:'organ-exit',x:98,z:79,y:10.25,color:[.78,.88,1],intensity:1.25,radius:7},
-    {id:'nave-exit',x:100.5,z:82,y:6.45,color:[1,.73,.42],intensity:1.18,radius:5.8},
-  );
-  R3.r3dSetLocalLights?.(lights);
+  const settings=getSave().settings||{};
+  R3.r3dSetLocalLights?.(resolveLocalLights(group,{
+    timeSec:performance.now()/1000,
+    reducedFlash:(settings.flash||'full')!=='full',
+    towerCleared:[CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(chapelTowerState().phase),
+    liveCircuits:liveLightCircuits(),
+    origin:physicalPointFor(px,py),
+  }));
 }
+
+// Which breaker panels are thrown. Nothing energises a circuit yet — the three
+// `power_box_01` panels are still inspect-only — so this is empty today and is the
+// single place §3 will feed once they become real.
+function liveLightCircuits(){
+  return EMPTY_CIRCUITS;
+}
+const EMPTY_CIRCUITS=Object.freeze(new Set());
 
 function worldRenderInstances(group=null){
   if(usingSourceSpace()){R3.r3dSetLocalLights?.([]);return chunkSurfRuntime.propInstances(px,py,{time:performance.now()/1000,reducedMotion:(getSave().settings?.shake||'full')!=='full'});}
@@ -7760,13 +7749,14 @@ function syncStoryObjectProps(){
 // whose base was re-pinned, soil somebody knelt in to service a head, a ringing
 // bench with a gap between its boards.
 const PIN_HOSTS = Object.freeze({
-  'acq-foyer-marble-bust': {
-    flag:'pin.foyer',
-    found:'And a second pin, loose in the felt of the base — brass, tape-era, the sort you align a head with. Not the one holding the marble together. Pocket it.',
-  },
   'academic-garden-planter-west': {
     flag:'pin.academic',
     found:'A calibration pin, half down in the soil. Somebody knelt out here with a head off and lost it in the dirt. Still true.',
+  },
+  // The gallery head that sits off-square on its plinth (see BUST_TREES).
+  'academic-bust-5': {
+    flag:'pin.gallery',
+    found:'A calibration pin, on its side in the felt under the base. Somebody had this head off, serviced something out here, and never found it again. Still true.',
   },
   'tower-ringing-bench-west': {
     flag:'pin.tower',
@@ -8536,14 +8526,38 @@ function tickHushMischief(){
 // drift the garden uses, so the thing he is frightened of has not actually moved
 // anywhere he could bump into.
 const BUST_TURN_YAW = 0.72;
+// SIX STATIONS, SIX DIFFERENT THINGS. They used to share one tree, so every head
+// in the gallery said the same words and the whole set read as one prop repeated.
+// Now each plinth is somebody else's problem:
+//
+//   1  the long conversation — who he was, how long, the job, that could be me
+//   2  the one that TURNS, on the second visit (see below)
+//   3  a fragment: the bottom third of a face
+//   4  the one that ANSWERS, in a voice that is not his
+//   5  brass in the felt under its base — a calibration pin
+//   6  a fragment
+const BUST_TREES = Object.freeze({
+  'academic-bust-1': 'talk',
+  'academic-bust-2': 'talk',
+  'academic-bust-fragment-3': 'fragment',
+  'academic-bust-4': 'answer',
+  'academic-bust-5': 'pin',
+  'academic-bust-fragment-6': 'fragment',
+});
+// The head that does not hold still, and the one holding a pin. Named, so the set
+// is authored rather than whichever one you happened to touch twice.
+const BUST_THAT_TURNS = 'academic-bust-2';
+const BUST_WITH_PIN = 'academic-bust-5';
 const spokenBusts = new Set();
 let bustTurned = false;
 
 function talkToBust(propId){
   if(!storyMode || planName!=='conservatory') return false;
   if(scenes.blocksInput()) return false;
-  // Coming back to one he has already spoken to is the moment it can happen.
-  if(!bustTurned && spokenBusts.has(propId) && spokenBusts.size >= 2){
+  const kind = BUST_TREES[propId] || 'talk';
+  // The scare, on its own head, the second time he comes back to it. The turn has
+  // already happened by the time the beam gets there.
+  if(kind === 'talk' && propId === BUST_THAT_TURNS && !bustTurned && spokenBusts.has(propId)){
     bustTurned = true;
     PROPS.setPropDrift(propId, { dyaw: BUST_TURN_YAW });
     if(RENDERER==='3d') syncStoryObjectProps();
@@ -8553,9 +8567,17 @@ function talkToBust(propId){
     return true;
   }
   spokenBusts.add(propId);
+  // The pin is announced first and the head still says its own piece underneath,
+  // the same order ordinary furniture uses (see PIN_HOSTS / takeHostedPin).
+  if(propId === BUST_WITH_PIN) takeHostedPin(propId);
+  const tree = kind === 'fragment' ? BUST_FRAGMENT
+    : kind === 'answer' ? BUST_ANSWER
+      : kind === 'pin' ? BUST_PIN
+        : BUST_TALK;
+  if(kind === 'answer') bumpFear(.16, { stinger:.3 });
   // `force` because this is a thought you may have more than once: it is a
   // conversation, and a man alone in a building has it again.
-  think(`bust-talk:${propId}`, BUST_TALK, { force:true });
+  think(`bust-talk:${propId}`, tree, { force:true });
   return true;
 }
 
@@ -11572,6 +11594,12 @@ function installProbe(){
     mischiefFire:()=>{ mischiefNextAtMs=1; mischiefQuietUntilMs=0; return true; },
     busts:()=>({spoken:[...spokenBusts],turned:bustTurned}),
     talkToBust:(id)=>talkToBust(id),
+    // Light state, for the lighting harness: the torch and the resolved rig for
+    // where you are standing.
+    light:()=>({on:REC.lightOn(),battery:+REC.batteryLevel().toFixed(3),
+      rig:resolveLocalLights(FP.logicalToPhysical(px,py)?.renderGroup||null,{
+        timeSec:performance.now()/1000,towerCleared:false,origin:physicalPointFor(px,py),
+      }).map((l)=>({id:l.id,intensity:+l.intensity.toFixed(3)}))}),
     garden:()=>({epoch:gardenEpoch,inside:inTheGarden(),
       poses:GARDEN_DRIFT_PROPS.map((id)=>{const q=PROPS.propById(id);return q?{id,ox:+(q.renderOffsetX||0).toFixed(4),oz:+(q.renderOffsetZ||0).toFixed(4),yaw:+(q.yaw||0).toFixed(4),rx:q.rx,ry:q.ry}:null;})}),
     shiftGarden:(reason='probe')=>shiftGarden(reason),

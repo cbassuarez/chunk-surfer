@@ -661,6 +661,71 @@ export const BUST_TALK = {
   },
 };
 
+// A head that is not there any more. Two of the six plinths hold only the bottom
+// of a face, and he talks to those too, which is worse.
+export const BUST_FRAGMENT = {
+  start: {
+    speaker: 'THE GALLERY',
+    lines: [
+      { who: 'direction', text: 'A plinth with the bottom third of a face on it. Jaw, part of a mouth, no eyes.' },
+      { who: 'you', text: 'Sorry. I would ask, but.' },
+      { who: 'direction', text: 'The break is old and clean, and somebody swept up after it.' },
+      { who: 'you', text: 'Somebody tidied you and left you here. That is the most this building has done for anybody.' },
+    ],
+  },
+};
+
+// THE ONE THAT ANSWERS. It comes back in a voice that is not his — `unknown`, the
+// same voice the surfer has, and the only line in the gallery he does not say
+// himself. Nothing about this is explained and nothing is granted by it.
+export const BUST_ANSWER = {
+  start: {
+    speaker: 'THE GALLERY',
+    lines: [
+      { who: 'direction', text: 'The fifth head. Same blank sitter line, same nothing cut into the plinth.' },
+      { who: 'you', text: 'And you? Anything to say?' },
+      { who: 'direction', text: 'The room does what the room has done all night.', hold: 2.6 },
+      { who: 'unknown', text: 'Ask it again.', hold: 3.0 },
+      { who: 'direction', text: 'He does not move. The torch does not move.' },
+    ],
+    choices: [
+      { text: 'ask it again', goto: 'again' },
+      { text: 'do not ask it again', goto: 'leave' },
+    ],
+  },
+  again: {
+    speaker: 'THE GALLERY',
+    lines: [
+      { who: 'you', text: 'Anything to say.' },
+      { who: 'unknown', text: 'No. Nothing. Same as you.', hold: 3.0 },
+      { who: 'direction', text: 'Marble, at the height of a person standing slightly too close, with the light on it.' },
+      { who: 'you', text: 'Right.' },
+      { who: 'you', text: 'Right, that was me. That was me doing a voice. That is what a man on his own does at three in the morning.' },
+      { who: 'direction', text: 'He believes that for about four seconds.' },
+    ],
+  },
+  leave: {
+    speaker: 'THE GALLERY',
+    lines: [
+      { who: 'direction', text: 'He puts the beam on the floor and keeps it there while he walks away.' },
+      { who: 'you', text: 'No. I am not doing that again.' },
+    ],
+  },
+};
+
+// The one with something in it. A head sitting off-square on its plinth, felt
+// under the base, and a calibration pin lost in the felt.
+export const BUST_PIN = {
+  start: {
+    speaker: 'THE GALLERY',
+    lines: [
+      { who: 'direction', text: 'This one sits off-square on its plinth. There is old felt under the base, packed down.' },
+      { who: 'you', text: 'Somebody had you off and put you back in a hurry.' },
+      { who: 'direction', text: 'Brass in the felt, on its side, where it rolled when a hand let go of it.' },
+    ],
+  },
+};
+
 // The one that does not hold still. Fires once per run, on a bust he has already
 // spoken to, and the movement has ALREADY happened by the time he looks: the map
 // of a face he was talking to a second ago is now aimed at him.
@@ -1202,7 +1267,7 @@ export const ROOM_CELLS = {
   main_b3: { x: 15, y: 12 },
   the_tub: { x: 85, y: 30 },
   amplifications: { x: 102, y: 15 },
-  soundnoisemusic: { x: 65, y: 65 },
+  soundnoisemusic: { x: 60, y: 65 },
   lux_nova: { x: 92, y: 74 },
 };
 export const MAIN_EXIT_CELL = { x:79, y:4 };

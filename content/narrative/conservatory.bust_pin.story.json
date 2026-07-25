@@ -1,0 +1,47 @@
+{
+ "schemaVersion": 1,
+ "id": "conservatory.bust_pin",
+ "title": "Brass In The Felt",
+ "status": "active",
+ "entry": "start",
+ "entries": [
+  "start"
+ ],
+ "tags": [],
+ "notes": "",
+ "regions": [
+  {
+   "id": "conservatory.bust_pin.region",
+   "title": "Brass In The Felt",
+   "kind": "scene",
+   "color": "#4a4a2a",
+   "nodeIds": [
+    "start"
+   ]
+  }
+ ],
+ "nodes": {
+  "start": {
+   "speaker": "THE GALLERY",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "This one sits off-square on its plinth. There is old felt under the base, packed down.",
+     "id": "start.line.1"
+    },
+    {
+     "who": "you",
+     "text": "Somebody had you off and put you back in a hurry.",
+     "id": "start.line.2"
+    },
+    {
+     "who": "direction",
+     "text": "Brass in the felt, on its side, where it rolled when a hand let go of it.",
+     "id": "start.line.3"
+    }
+   ],
+   "id": "start",
+   "type": "dialogue"
+  }
+ }
+}

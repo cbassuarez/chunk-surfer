@@ -224,16 +224,20 @@ ck('main stair collision and rendering share one physical footprint',embeddedWit
 const mainStairPortal=cp.stairPortals.find(p=>p.group0==='ground'&&p.group1==='upper'),basementStairPortal=cp.stairPortals.find(p=>p.group0==='ground'&&p.group1==='basement');
 ck('stairs terminate on their physical destination floors',!!mainStairPortal&&!!basementStairPortal,JSON.stringify(cp.stairPortals.slice(0,3)));
 
+// The wing now sits on the main stair's axis: corridor at authored x60-62, west
+// rooms x52-58, east rooms x64-75. Coming up the stair you face straight down it.
 const partyWalls=[56,63,70,77,84];
-ck('practice rooms have continuous party walls',partyWalls.every((y)=>FP.isSolid(...Object.values(rc(60,y)))&&FP.isSolid(...Object.values(rc(72,y)))&&!FP.isSolid(...Object.values(rc(66,y)))));
+ck('practice rooms have continuous party walls',partyWalls.every((y)=>FP.isSolid(...Object.values(rc(55,y)))&&FP.isSolid(...Object.values(rc(70,y)))&&!FP.isSolid(...Object.values(rc(61,y)))));
 ck('practice wing is a double-loaded corridor, not an open floor',
-  [59,66,73,80].every((y)=>!FP.isSolid(...Object.values(rc(64,y)))&&!FP.isSolid(...Object.values(rc(68,y))))
-  && [57,61,64,68,71,75,78,82].every((y)=>FP.isSolid(...Object.values(rc(64,y)))&&FP.isSolid(...Object.values(rc(68,y)))));
+  [59,66,73,80].every((y)=>!FP.isSolid(...Object.values(rc(59,y)))&&!FP.isSolid(...Object.values(rc(63,y))))
+  && [57,61,64,68,71,75,78,82].every((y)=>FP.isSolid(...Object.values(rc(59,y)))&&FP.isSolid(...Object.values(rc(63,y)))));
+ck('the corridor is on the stair axis, so the arrival looks straight down it',
+  [56,60,70,80].every((y)=>[60,61,62].every((x)=>!FP.isSolid(...Object.values(rc(x,y))))));
 ck('the upper stair opens into the shared practice-floor arrival hall',
-  [53,54,55].every((y)=>[61,64,67,72,75].every((x)=>!FP.isSolid(...Object.values(rc(x,y))))));
+  [53,54,55].every((y)=>[56,61,64,67,72].every((x)=>!FP.isSolid(...Object.values(rc(x,y))))));
 const practiceRoomCell=(x,y)=>{
   const ax=FP.toAuthoredCoord(x),ay=FP.toAuthoredCoord(y);
-  return ay>=56&&ay<=84&&((ax>=57&&ax<64)||(ax>=69&&ax<76));
+  return ay>=56&&ay<=84&&((ax>=52&&ax<59)||(ax>=64&&ax<76));
 };
 const reachesBridgeWithoutClassroom=(()=>{
   const from=restoredArrival,to=rc(78,55),seen=new Set([key(from)]),q=[from];

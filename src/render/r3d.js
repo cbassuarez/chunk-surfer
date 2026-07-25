@@ -1689,6 +1689,7 @@ function runPixelMeshPass(state, now) {
   gl.uniform1f(pixelMeshU('uForceSignal'), forceSignal);
   gl.uniform1f(pixelMeshU('uMovement'), vfdMovement);
   gl.uniform1f(pixelMeshU('uPaletteChroma'), look.vfd.paletteChroma ?? 0);
+  gl.uniform1f(pixelMeshU('uShadowLift'), look.vfd.shadowLift ?? 0);
   gl.uniform1f(pixelMeshU('uAgitation'), dreamAgitation);
 
   gl.drawArrays(gl.TRIANGLES, 0, 3);

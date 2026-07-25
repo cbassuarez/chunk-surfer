@@ -28,6 +28,11 @@ const NO_TIDY = 'clean, tidy, bright, cartoon, poster, text, watermark';
 //   whether the boil is visible at all, because the VFD encoder downstream
 //   buckets cells by luminance.
 // vfd.paletteChroma — how much generated colour survives the block palette.
+// vfd.shadowLift    — how far the darkest block opens up. The bottom bucket is
+//                     where every authored practical in a building with no mains
+//                     lands; at 0 it crushes them to nothing. True black is
+//                     unaffected at any value, so this reveals light that is
+//                     there rather than lifting the whole image off the floor.
 const PROFILE_DATA = {
   calm: {
     bankId: 'calm', transitionMs: 600,
@@ -38,7 +43,7 @@ const PROFILE_DATA = {
       negative: NO_CHARACTERS,
     },
     material: { localDiffusion: 0.20, detailGain: 0.84, chromaDrift: 0.06, roughnessResponse: 0.1, normalResponse: 0.1, boilHz: 0, structureMix: 0.0, lumaClampLo: 0.62, lumaClampHi: 1.48, lumaHold: 1.0 },
-    vfd: { baseRetention: 0.90, paletteAmount: 0.28, paletteChroma: 0.08, persistenceMs: 90, cellPx: 8, signalGain: 0.42, edgeGain: 0.72, coverage: 0.20, glow: 0.12, aperture: 0.76, amber: 0.02 },
+    vfd: { baseRetention: 0.90, shadowLift: 0.3, paletteAmount: 0.28, paletteChroma: 0.08, persistenceMs: 90, cellPx: 8, signalGain: 0.42, edgeGain: 0.72, coverage: 0.20, glow: 0.12, aperture: 0.76, amber: 0.02 },
     glass: { strength: 0.18, fringe: 0.16, bloom: 0.10, grain: 0.18 },
   },
   explore: {
@@ -50,7 +55,7 @@ const PROFILE_DATA = {
       negative: NO_CHARACTERS,
     },
     material: { localDiffusion: 0.58, detailGain: 1.24, chromaDrift: 0.22, roughnessResponse: 0.32, normalResponse: 0.3, boilHz: 0.25, structureMix: 0.26, lumaClampLo: 0.55, lumaClampHi: 1.65, lumaHold: 0.72 },
-    vfd: { baseRetention: 0.78, paletteAmount: 0.78, paletteChroma: 0.28, persistenceMs: 220, cellPx: 8, signalGain: 0.76, edgeGain: 1.12, coverage: 0.40, glow: 0.28, aperture: 0.82, amber: 0.06 },
+    vfd: { baseRetention: 0.78, shadowLift: 0.42, paletteAmount: 0.78, paletteChroma: 0.28, persistenceMs: 220, cellPx: 8, signalGain: 0.76, edgeGain: 1.12, coverage: 0.40, glow: 0.28, aperture: 0.82, amber: 0.06 },
     glass: { strength: 0.36, fringe: 0.32, bloom: 0.28, grain: 0.30 },
   },
   booth: {
@@ -62,7 +67,7 @@ const PROFILE_DATA = {
       negative: `${NO_CHARACTERS}, clean office`,
     },
     material: { localDiffusion: 0.70, detailGain: 1.38, chromaDrift: 0.28, roughnessResponse: 0.38, normalResponse: 0.36, boilHz: 0.35, structureMix: 0.32, lumaClampLo: 0.52, lumaClampHi: 1.70, lumaHold: 0.66 },
-    vfd: { baseRetention: 0.72, paletteAmount: 0.86, paletteChroma: 0.34, persistenceMs: 320, cellPx: 8, signalGain: 0.92, edgeGain: 1.28, coverage: 0.52, glow: 0.40, aperture: 0.86, amber: 0.12 },
+    vfd: { baseRetention: 0.72, shadowLift: 0.26, paletteAmount: 0.86, paletteChroma: 0.34, persistenceMs: 320, cellPx: 8, signalGain: 0.92, edgeGain: 1.28, coverage: 0.52, glow: 0.40, aperture: 0.86, amber: 0.12 },
     glass: { strength: 0.48, fringe: 0.42, bloom: 0.42, grain: 0.36 },
   },
   battle: {
@@ -79,7 +84,7 @@ const PROFILE_DATA = {
       },
     },
     material: { localDiffusion: 0.90, detailGain: 1.56, chromaDrift: 0.40, roughnessResponse: 0.55, normalResponse: 0.52, boilHz: 0.80, structureMix: 0.46, lumaClampLo: 0.40, lumaClampHi: 1.95, lumaHold: 0.4 },
-    vfd: { baseRetention: 0.60, paletteAmount: 0.96, paletteChroma: 0.46, persistenceMs: 480, cellPx: 9, signalGain: 1.12, edgeGain: 1.42, coverage: 0.72, glow: 0.56, aperture: 0.90, amber: 0.34 },
+    vfd: { baseRetention: 0.60, shadowLift: 0.18, paletteAmount: 0.96, paletteChroma: 0.46, persistenceMs: 480, cellPx: 9, signalGain: 1.12, edgeGain: 1.42, coverage: 0.72, glow: 0.56, aperture: 0.90, amber: 0.34 },
     glass: { strength: 0.66, fringe: 0.62, bloom: 0.62, grain: 0.52 },
   },
   hush: {
@@ -91,7 +96,7 @@ const PROFILE_DATA = {
       negative: NO_CHARACTERS,
     },
     material: { localDiffusion: 0.94, detailGain: 0.78, chromaDrift: 0.08, roughnessResponse: 0.4, normalResponse: 0.26, boilHz: 0.15, structureMix: 0.24, lumaClampLo: 0.55, lumaClampHi: 1.60, lumaHold: 0.7 },
-    vfd: { baseRetention: 0.68, paletteAmount: 0.66, paletteChroma: 0.18, persistenceMs: 700, cellPx: 10, signalGain: 0.66, edgeGain: 0.92, coverage: 0.48, glow: 0.38, aperture: 0.78, amber: 0.01 },
+    vfd: { baseRetention: 0.68, shadowLift: 0.5, paletteAmount: 0.66, paletteChroma: 0.18, persistenceMs: 700, cellPx: 10, signalGain: 0.66, edgeGain: 0.92, coverage: 0.48, glow: 0.38, aperture: 0.78, amber: 0.01 },
     glass: { strength: 0.56, fringe: 0.24, bloom: 0.34, grain: 0.46 },
   },
   rupture: {
@@ -108,7 +113,7 @@ const PROFILE_DATA = {
       },
     },
     material: { localDiffusion: 1.0, detailGain: 1.68, chromaDrift: 0.50, roughnessResponse: 0.66, normalResponse: 0.62, boilHz: 1.20, structureMix: 0.6, lumaClampLo: 0.30, lumaClampHi: 2.20, lumaHold: 0.2 },
-    vfd: { baseRetention: 0.55, paletteAmount: 1.0, paletteChroma: 0.58, persistenceMs: 900, cellPx: 10, signalGain: 1.24, edgeGain: 1.58, coverage: 0.75, glow: 0.70, aperture: 0.92, amber: 0.42 },
+    vfd: { baseRetention: 0.55, shadowLift: 0.12, paletteAmount: 1.0, paletteChroma: 0.58, persistenceMs: 900, cellPx: 10, signalGain: 1.24, edgeGain: 1.58, coverage: 0.75, glow: 0.70, aperture: 0.92, amber: 0.42 },
     glass: { strength: 0.78, fringe: 0.78, bloom: 0.76, grain: 0.62 },
   },
 };
@@ -155,7 +160,8 @@ export function validateLookProfile(profile) {
     profile.material.boilHz, profile.material.structureMix,
     profile.material.lumaClampLo, profile.material.lumaClampHi, profile.material.lumaHold,
     profile.vfd.baseRetention, profile.vfd.paletteAmount, profile.vfd.paletteChroma,
-    profile.vfd.persistenceMs, profile.vfd.coverage,
+    profile.vfd.persistenceMs,
+    profile.vfd.shadowLift, profile.vfd.coverage,
     profile.glass.strength, profile.glass.bloom,
   ];
   const burst = profile.generation.burst;
@@ -165,6 +171,10 @@ export function validateLookProfile(profile) {
     && profile.vfd.baseRetention >= 0.55 && profile.vfd.baseRetention <= 1
     && profile.vfd.paletteAmount >= 0 && profile.vfd.paletteAmount <= 1
     && profile.vfd.paletteChroma >= 0 && profile.vfd.paletteChroma <= 0.6
+    // Past ~0.6 the darkest block stops being dark and the building stops being
+    // frightening; the lift is for revealing authored light, not for turning the
+    // lights on.
+    && profile.vfd.shadowLift >= 0 && profile.vfd.shadowLift <= 0.6
     && profile.vfd.coverage >= 0 && profile.vfd.coverage <= 0.75
     && profile.vfd.persistenceMs >= 16
     // The boil: K temporal frames per surface, crossfaded. More than five is

@@ -103,8 +103,18 @@ assert.ok(academicProps.length>=100);
 const MUTE_EXCEPTIONS=new Set(['academic-garden-planter-west']);
 const TALKABLE=new Set(academicProps.filter((prop)=>prop.talkable).map((prop)=>prop.id));
 assert.deepEqual([...TALKABLE].sort(),
-  ['academic-bust-1','academic-bust-2','academic-bust-4','academic-bust-5'],
-  'exactly the four intact heads may be addressed — not the plinths, not the fragments');
+  ['academic-bust-1','academic-bust-2','academic-bust-4','academic-bust-5',
+   'academic-bust-fragment-3','academic-bust-fragment-6'],
+  'all six stations may be addressed — the two broken heads included, never the plinths');
+// Six stations, six different things to find. They used to share one tree, so
+// every head said the same words and the set read as one prop repeated.
+const BUST_KINDS=mainSource.match(/const BUST_TREES\s*=\s*Object\.freeze\(\{[\s\S]*?\}\)/)?.[0]||'';
+for(const id of TALKABLE) assert.ok(BUST_KINDS.includes(`'${id}'`),`${id} is assigned its own beat`);
+assert.match(BUST_KINDS,/'fragment'/);
+assert.match(BUST_KINDS,/'answer'/,'one of them answers back');
+assert.match(BUST_KINDS,/'pin'/,'and one of them is holding a pin');
+assert.match(mainSource,/BUST_THAT_TURNS\s*=\s*'academic-bust-2'/,'the scare is on an authored head, not whichever you touched twice');
+assert.match(mainSource,/'academic-bust-5':\s*\{[\s\S]{0,120}pin\.gallery/,'the pin host is wired');
 assert.ok(academicProps.every((prop)=>prop.interactive===false||MUTE_EXCEPTIONS.has(prop.id)||TALKABLE.has(prop.id)),
   'the gallery stays mute apart from the pin host and the four heads');
 assert.equal(academicProps.filter((prop)=>prop.interactive!==false).length,MUTE_EXCEPTIONS.size+TALKABLE.size,

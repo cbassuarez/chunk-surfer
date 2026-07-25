@@ -216,7 +216,16 @@ function academicProfile(x,y,cell){
   return{ceil:crown?17:14.5};
 }
 function practiceWingRows(){
-  const w=21,h=34,out=[];
+  // THE SPINE IS ON THE STAIR'S AXIS. The wing sits five metres further west than
+  // it used to (origin x51, not x56) and reaches five metres further east, so its
+  // corridor — local x9-11 — lands on authored x60-62: exactly the shaft the main
+  // stair climbs. Come up from the ground floor and the corridor is dead ahead
+  // down the middle of the wing, rather than five metres off your left shoulder.
+  //
+  // Nothing inside here moved in LOCAL terms. The whole change is the origin, plus
+  // the east rooms now running to the new east wall (twelve metres instead of
+  // seven) which is what the ensemble room in the room tone always implied.
+  const w=26,h=34,out=[];
   for(let y=0;y<h;y++){let row='';for(let x=0;x<w;x++){
     let c=(x===0||x===w-1||y===0||y===h-1)?'#':'P';
     // A four-metre arrival hall receives both stairs and continues east to the
@@ -227,7 +236,10 @@ function practiceWingRows(){
       c=[7,14,21,28].includes(y)?'+':'#';
     }
     if([4,11,18,25,32].includes(y)&&(x<9||x>11))c='#';
-    if(y===0&&x>=4&&x<=11)c='P';       // stair landing opens into the hall
+    // The mouth in the north wall carries BOTH stairs: the main shaft at authored
+    // x60-62 and the academic flight's foot beside it at x63-65. Cut it any
+    // narrower and the third floor stops being reachable.
+    if(y===0&&x>=9&&x<=14)c='P';
     if(x===w-1&&y===3)c='+';           // thick-wall throat to upper bridge
     if(x===w-1&&y===16)c='+';          // string-room door to side passage
     row+=c;
@@ -269,21 +281,35 @@ const EUCLIDEAN_ADDITIONS=[
   {id:'hall_upper_balcony',layer:'hall_upper',space:'hall',renderGroup:'hall',origin:{x:0,y:82},physicalOrigin:{x:98,y:4},base:0,rows:balconyRows('U')},
   {id:'galleria_lower_stair',physicalReplace:true,layer:'hall_stair',space:'hall',renderGroup:'hall',origin:{x:32,y:40},physicalOrigin:{x:99,y:20},base:0,rows:galleriaStairRows(1),stairs:[{from:{x:33,y:41},to:{x:33,y:51},fromH:-.74,toH:4,width:2,head:2.6,zone:'hall',material:'woodVelvet'}]},
   {id:'galleria_upper_stair',physicalReplace:true,layer:'hall_stair',space:'hall',renderGroup:'hall',origin:{x:40,y:40},physicalOrigin:{x:122,y:20},base:0,rows:galleriaStairRows(4),stairs:[{from:{x:44,y:51},to:{x:44,y:41},fromH:4,toH:7.5,width:2,head:2.6,zone:'hall',material:'woodVelvet'}]},
-  {id:'practice_wing',replace:true,layer:'upper',space:'practice',renderGroup:'upper',origin:{x:56,y:52},physicalOrigin:{x:56,y:52},base:4.8,rows:practiceWingRows()},
+  {id:'practice_wing',replace:true,layer:'upper',space:'practice',renderGroup:'upper',origin:{x:51,y:52},physicalOrigin:{x:51,y:52},base:4.8,rows:practiceWingRows()},
   {id:'upper_atrium_bridge',replace:true,layer:'upper',space:'upper_atrium',renderGroup:'upper',origin:{x:77,y:53},physicalOrigin:{x:77,y:53},base:4.8,rows:upperAtriumBridgeRows()},
   // The academic flight is visible immediately from the practice landing. It
   // reverses beside the original upper stair, then meets the south end of the
   // third-floor bridge without borrowing a classroom or hiding behind a seam.
-  {id:'academic_stair',layer:'academic_stair',space:'academic_stair',renderGroup:'academic',origin:{x:52,y:180},physicalOrigin:{x:63,y:39},base:4.8,rows:Array.from({length:18},()=> ' '.repeat(6)),stairs:[{
+  // The academic flight is visible immediately from the practice landing. It
+  // reverses beside the original upper stair, then meets the south end of the
+  // third-floor bridge without borrowing a classroom or hiding behind a seam.
+  //
+  // The foot now stands IN the arrival hall's north edge rather than three metres
+  // out behind its back wall, so coming up the main stair the third-floor flight is
+  // beside you and in view instead of through the mouth at your shoulder.
+  //
+  // The trick is that logical and physical are decoupled here. Its LOGICAL cells
+  // stay outside the wing — they must, because a connector's redirect only fires
+  // where an ordinary step is blocked, and inside the hall you would simply walk
+  // across the seam and never take it. Only the PHYSICAL placement moved south,
+  // two metres, and `physicalReplace` lets those treads own the hall's air where
+  // they now overlap it (see writeStairCell).
+  {id:'academic_stair',physicalReplace:true,layer:'academic_stair',space:'academic_stair',renderGroup:'academic',origin:{x:52,y:180},physicalOrigin:{x:63,y:38},base:4.8,rows:Array.from({length:18},()=> ' '.repeat(6)),stairs:[{
     id:'main-academic-stair',zone:'stair',material:'serviceConcrete',head:3.4,
     flights:[{
       id:'return-flight',from:{x:52,y:194},to:{x:52,y:184},
-      physicalFrom:{x:63,z:49},physicalTo:{x:63,z:39},
+      physicalFrom:{x:63,z:51},physicalTo:{x:63,z:41},
       fromH:4.8,toH:10,width:3,rises:26,groupFrom:'upper',groupTo:'academic',
     }],
     landings:[
-      {id:'practice-return',at:{x:52,y:194},size:{x:3,y:3},physicalAt:{x:63,z:49},height:4.8,renderGroup:'upper'},
-      {id:'academic-landing',at:{x:52,y:181},size:{x:3,y:3},physicalAt:{x:63,z:39},height:10,renderGroup:'academic'},
+      {id:'practice-return',at:{x:52,y:194},size:{x:3,y:3},physicalAt:{x:63,z:51},height:4.8,renderGroup:'upper'},
+      {id:'academic-landing',at:{x:52,y:181},size:{x:3,y:3},physicalAt:{x:63,z:38},height:10,renderGroup:'academic'},
     ],
   }]},
   {id:'academic_floor',layer:'academic',space:'academic',renderGroup:'academic',origin:ACADEMIC_ORIGIN,physicalOrigin:ACADEMIC_PHYSICAL_ORIGIN,base:ACADEMIC_BASE,rows:academicFloorRows(),profile:academicProfile},
@@ -366,6 +392,8 @@ export const conservatory = {
     {from:{x:72,y:154},to:{x:101,y:151}},
     {from:{x:100,y:157},to:{x:104,y:151}},
     {from:{x:104,y:154},to:{x:98,y:82}},
+    // Existing save addresses remain untouched; these seams enter the appended
+    // academic stair and then the third-floor bridge at identical elevations.
     // Existing save addresses remain untouched; these seams enter the appended
     // academic stair and then the third-floor bridge at identical elevations.
     {from:{x:63,y:52},to:{x:53,y:196}},

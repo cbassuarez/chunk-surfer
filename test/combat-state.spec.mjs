@@ -128,7 +128,9 @@ test('the tree is deeper and pins come from more than two fixed fights', () => {
   const relearned = normalizeCombatBuild(withFlags);
   assert.equal(relearned.pinsEarned, 3, 'flag-earned pins persist via rewardedFlags');
   // The cap holds even with every source firing.
-  const capped = normalizeCombatBuild(null, PIN_SOURCES.encounters, { 'pin.academic': true, 'pin.foyer': true, 'pin.tower': true });
+  // Three collectible pins now: the atrium planter, the gallery head, the tower.
+  // `pin.foyer` was retired — it was the gallery head's discovery twice over.
+  const capped = normalizeCombatBuild(null, PIN_SOURCES.encounters, { 'pin.academic': true, 'pin.gallery': true, 'pin.tower': true });
   assert.equal(capped.pinsEarned, MAX_PINS);
 });
 

@@ -1,0 +1,52 @@
+{
+ "schemaVersion": 1,
+ "id": "conservatory.bust_fragment",
+ "title": "A Head That Is Not There",
+ "status": "active",
+ "entry": "start",
+ "entries": [
+  "start"
+ ],
+ "tags": [],
+ "notes": "",
+ "regions": [
+  {
+   "id": "conservatory.bust_fragment.region",
+   "title": "A Head That Is Not There",
+   "kind": "scene",
+   "color": "#3d3d4a",
+   "nodeIds": [
+    "start"
+   ]
+  }
+ ],
+ "nodes": {
+  "start": {
+   "speaker": "THE GALLERY",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "A plinth with the bottom third of a face on it. Jaw, part of a mouth, no eyes.",
+     "id": "start.line.1"
+    },
+    {
+     "who": "you",
+     "text": "Sorry. I would ask, but.",
+     "id": "start.line.2"
+    },
+    {
+     "who": "direction",
+     "text": "The break is old and clean, and somebody swept up after it.",
+     "id": "start.line.3"
+    },
+    {
+     "who": "you",
+     "text": "Somebody tidied you and left you here. That is the most this building has done for anybody.",
+     "id": "start.line.4"
+    }
+   ],
+   "id": "start",
+   "type": "dialogue"
+  }
+ }
+}

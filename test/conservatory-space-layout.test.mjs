@@ -143,3 +143,33 @@ console.log('conservatory space layout tests ok');
   }
 }
 console.log('main stair shaft ok');
+
+// ── the corridor is on the stair's axis ──────────────────────────────────────
+// The practice wing moved five metres west (origin x51) so its spine sits at
+// authored x60-62: the same shaft the main stair climbs. Coming up from the ground
+// floor you now walk STRAIGHT off the landing and down the middle of the wing.
+// It used to land at x60-62 with the corridor at x65-67, so arriving meant
+// stepping out and turning left to find the building.
+{
+  const keys = new Set(['master', 'chapel']);
+  for (const door of FP.doorState()) if (!door.keyId || keys.has(door.keyId)) FP.setDoorOpen(door.id, true);
+  let y = 52; let steps = 0;
+  while (y < 84) {
+    const a = rt(61, y); const b = rt(61, y + 1);
+    if (!FP.canStep(a.x, a.y, b.x, b.y, { keys }).ok) break;
+    steps += 1; y += 1;
+  }
+  assert.equal(steps, 32, 'the whole wing is walkable due south from the stair landing');
+  // The corridor is where the stair is, and the old corridor line is room floor.
+  for (const cy of [58, 66, 74, 82]) {
+    const spine = rt(61, cy);
+    assert.ok(!FP.isSolid(spine.x, spine.y), `x61,${cy} is corridor`);
+  }
+  // Both stairs still share the north mouth: the academic flight's foot needs
+  // x63-65 open at y52 or the third floor becomes unreachable.
+  for (const mx of [60, 61, 62, 63, 64, 65]) {
+    const mouth = rt(mx, 52);
+    assert.ok(!FP.isSolid(mouth.x, mouth.y), `the mouth is open at x${mx}`);
+  }
+}
+console.log('stair axis ok');

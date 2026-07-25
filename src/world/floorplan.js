@@ -154,6 +154,7 @@ export function compile(levels, { width, height, widenCorridors = false, connect
       layer:level.layer||level.id||'stair',
       space:level.space||level.id||'stair',
       renderGroup:level.renderGroup||level.layer||'ground',
+      physicalReplace:!!level.physicalReplace,
       ...s,
     });
   }
@@ -380,6 +381,11 @@ function inheritCorridorMaterials() {
 // pool steps descend inside a six-metre hall and must not grow a lid.
 function writeStairCell(x,y,{
   floor,ceil,zone,material,physicalX,physicalY,layer,space,renderGroup,owner,
+  // A stair standing INSIDE a room owns the air it occupies — the same claim an
+  // authored level makes with `physicalReplace`. Without this a flight in a hall
+  // is a second physical span at the hall's own coordinates, which the compiler
+  // reports as an intersection (and is right to: two structures, one place).
+  physicalReplace=false,
 }){
   if(!inside(x,y))return;
   const i=idx(x,y);
@@ -391,6 +397,7 @@ function writeStairCell(x,y,{
   plan.material[i]=material?MATERIAL[material]:MATERIAL.serviceConcrete;
   plan.physicalX[i]=Math.round(physicalX);
   plan.physicalY[i]=Math.round(physicalY);
+  plan.physicalReplace[i]=physicalReplace?1:0;
   plan.layer[i]=layer||'stair';
   plan.space[i]=space||'stair';
   plan.renderGroup[i]=renderGroup||'ground';
@@ -410,7 +417,7 @@ function authoredPhysicalPoint(point){
 // risers, map connectors and movement manager all consume the same geometry.
 function compoundStair({
   id='stair',flights=[],landings=[],zone=null,material=null,
-  layer='stair',space='stair',renderGroup='ground',head=2.6,
+  layer='stair',space='stair',renderGroup='ground',head=2.6,physicalReplace=false,
 }){
   const portals=[];
   for(const flight of flights){
@@ -447,7 +454,7 @@ function compoundStair({
           physicalX:p0.x+physicalDx*s+physicalPx*k,
           physicalY:p0.y+physicalDy*s+physicalPy*k,
           layer:flight.layer||layer,space:flight.space||space,
-          renderGroup:stepGroup,owner:id,
+          renderGroup:stepGroup,owner:id,physicalReplace,
         },
       );
     }
@@ -472,7 +479,7 @@ function compoundStair({
       zone:landing.zone||zone,material:landing.material||material,
       physicalX:p.x+ox,physicalY:p.y+oy,
       layer:landing.layer||layer,space:landing.space||space,
-      renderGroup:landing.renderGroup||renderGroup,owner:id,
+      renderGroup:landing.renderGroup||renderGroup,owner:id,physicalReplace,
     });
   }
   return portals;

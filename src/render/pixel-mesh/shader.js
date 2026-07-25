@@ -12,6 +12,7 @@ uniform float uCellPx;
 uniform float uBaseRetention;
 uniform float uPaletteAmount;
 uniform float uPaletteChroma;
+uniform float uShadowLift;
 uniform float uAgitation;
 uniform float uSignalAmount;
 uniform float uEdgeGain;
@@ -126,7 +127,20 @@ void main(){
   } else if(y > 0.20) {
     paletted = mix(palWorldDark(), palWorldMid(), clamp(y * 1.5, 0.0, 1.0));
   } else {
-    paletted = mix(palGlass(), palWorldDark(), clamp(y * 2.0 + edge * 0.25, 0.0, 1.0));
+    // THE BOTTOM BUCKET IS WHERE AUTHORED LIGHT LIVES, and it used to crush it.
+    // Everything under y=0.20 was compressed into palGlass..palWorldDark, an
+    // output span of roughly 0.015..0.07 luma — so a dim practical, which is the
+    // whole vocabulary of a building with no mains, could be computed correctly by
+    // the raymarcher and still be invisible here.
+    //
+    // uShadowLift opens that span up. It is shaped by y itself, so an unlit
+    // sealed room stays black (nothing to lift) and only light that is actually
+    // there comes up — and the bucket's ceiling rises toward palWorldMid, because
+    // a ceiling of palWorldDark is still nearly nothing.
+    float t = clamp(y * 2.0 + edge * 0.25, 0.0, 1.0);
+    float lift = clamp(uShadowLift, 0.0, 1.0) * smoothstep(0.010, 0.160, y);
+    t = clamp(t + lift * 0.85, 0.0, 1.0);
+    paletted = mix(palGlass(), mix(palWorldDark(), palWorldMid(), lift * 0.65), t);
   }
 
   vec3 phosphor = mix(palCyanDim(), palCyan(), smoothstep(0.28, 0.82, signalLevel));

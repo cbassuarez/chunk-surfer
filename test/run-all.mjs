@@ -17,6 +17,7 @@ const tests = [
   'test/vfd-select.test.mjs',
   'test/pad-glyphs.test.mjs',
   'test/studio-layout.test.mjs',
+  'test/lighting-rig.spec.mjs',
   'test/map-core.spec.mjs',
   'test/map-live-data.spec.mjs',
   'test/hush-telemetry.spec.mjs',
