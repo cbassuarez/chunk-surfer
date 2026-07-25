@@ -17,6 +17,11 @@ import * as AUDIO from '../audio/story-audio.js';
 import { promptLine } from './bindings.js';
 
 const TITLE_CONFIRM_PROMPT = 'START NEW RUN? PRESS ENTER AGAIN';
+const TITLE_MENU_TWO_COLUMN_MIN_W = 64;
+
+function titleMenuColumnCount(bodyW, itemCount) {
+  return bodyW >= TITLE_MENU_TWO_COLUMN_MIN_W && itemCount > 4 ? 2 : 1;
+}
 
 function nowMs() {
   return typeof performance !== 'undefined' ? performance.now() : Date.now();
@@ -29,7 +34,8 @@ function drawRightText(xRight, y, text, role = 'ui-label', alpha = 1) {
 }
 
 function titleMenuLayout(body, itemCount) {
-  const twoColumns = body.w >= 64 && itemCount > 4;
+  const colCount = titleMenuColumnCount(body.w, itemCount);
+  const twoColumns = colCount > 1;
 
   if (!twoColumns) {
     const x = body.x + 7;
@@ -56,8 +62,8 @@ function titleMenuLayout(body, itemCount) {
   const rightW = Math.max(18, body.x + body.w - rightX - 3);
 
   return {
-    colCount: 2,
-    rowCount: Math.ceil(itemCount / 2),
+    colCount,
+    rowCount: Math.ceil(itemCount / colCount),
     colX: [leftX, rightX],
     colW: [leftW, rightW],
     confirmW: leftW,
@@ -246,7 +252,7 @@ export function makeTitleScene({
 
       const w = Math.min(78, cols - 4);
       const estimatedBodyW = Math.max(1, w - 6);
-      const estimatedColumns = estimatedBodyW >= 58 && items.length > 4 ? 2 : 1;
+      const estimatedColumns = titleMenuColumnCount(estimatedBodyW, items.length);
       const estimatedRows = Math.ceil(items.length / estimatedColumns);
       const bodyRowsNeeded = 15 + Math.max(0, estimatedRows - 1) * 2;
       const h = Math.min(Math.max(28, bodyRowsNeeded + 7), rows - 4);

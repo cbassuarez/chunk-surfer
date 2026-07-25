@@ -15,7 +15,15 @@ test('title screen restores the AUDIOCORP case-select machine panel', () => {
 });
 
 test('title screen keeps canonical menu items and keyboard activation paths', () => {
-  for (const id of ['continue', 'new-run', 'archive', 'return-index', 'just-surf', 'settings']) {
+  for (const id of [
+    'continue',
+    'new-run',
+    'archive',
+    'return-index',
+    'just-surf',
+    'beta-notice',
+    'settings',
+  ]) {
     assert.match(source, new RegExp(`id: '${id}'`));
   }
   for (const key of ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Space']) {
@@ -27,7 +35,15 @@ test('title screen keeps the default selection and two-step new-run confirmation
   assert.match(source, /let sel = activeRun \? 0 : 1/);
   assert.match(source, /item\.confirms && !confirmNewRun/);
   assert.match(source, /START NEW RUN\? PRESS ENTER AGAIN/);
-  assert.match(source, /menuColumns = body\.w >= 58/);
+  assert.match(source, /TITLE_MENU_TWO_COLUMN_MIN_W = 64/);
+  assert.match(source, /function titleMenuColumnCount/);
+  assert.match(source, /bodyW >= TITLE_MENU_TWO_COLUMN_MIN_W && itemCount > 4 \? 2 : 1/);
+  assert.match(source, /const estimatedColumns = titleMenuColumnCount\(estimatedBodyW, items\.length\)/);
+  assert.match(source, /const colCount = titleMenuColumnCount\(body\.w, itemCount\)/);
+  assert.match(source, /TITLE_CONFIRM_PROMPT\.length \+ 2/);
+  assert.match(source, /rowW = armed\s*\?\s*layout\.confirmW/);
+  assert.match(source, /menuColumns = layout\.colCount/);
+  assert.doesNotMatch(source, /body\.w >= 58/);
   assert.match(source, /BUILD.*CURRENT SOURCE|buildLabel/);
-  assert.match(source, /body\.y \+ body\.h - 2/, 'build label keeps a blank row above the footer');
+  assert.match(source, /y \+ h - 5/, 'build label stays above the footer prompt strip');
 });
