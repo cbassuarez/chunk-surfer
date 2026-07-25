@@ -577,7 +577,7 @@ dependencies = [
 
 [[package]]
 name = "chunk-surfer"
-version = "0.1.1-beta.10"
+version = "0.1.2-beta.2"
 dependencies = [
  "rand",
  "serde",

@@ -49,7 +49,7 @@ const devConfig=JSON.stringify({
 });
 
 console.log('Starting the current game with the local critical lens.');
-console.log(`Build: 0.1.1-beta.10 · frontend: http://127.0.0.1:${frontendPort}`);
+console.log(`Build: 0.1.2-beta.2 · frontend: http://127.0.0.1:${frontendPort}`);
 console.log('The first 10 material textures load before the 22-second opening; the remaining banks continue in the background.');
 
 const lensChild = spawn(lens, [], {
