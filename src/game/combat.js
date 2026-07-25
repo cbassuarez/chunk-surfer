@@ -4,7 +4,7 @@
 // and the command band underneath spells out what every move actually does.
 
 import * as scenes from './scenes.js';
-import { uiSize, uiFill, uiText, uiWrap, uiStrokeRect, uiLine } from '../render/ui.js';
+import { uiSize, uiFill, uiText, uiStrokeRect, uiLine } from '../render/ui.js';
 import { drawMachinePanel, drawVfdCounter, drawVfdText } from '../render/presentation.js';
 import { UI_COLOR } from '../render/palette.js';
 import { createSamDialogVoice, isVoiced } from '../audio/sam-voice.js';
@@ -43,6 +43,12 @@ import {
 } from './combat-state.js';
 
 import { TECHNIQUE_DEFS } from './combat-progression.js';
+import {
+  COMBAT_DIALOGUE_MIN_MANUAL_DWELL,
+  battleDialoguePageView,
+  battleLineAutoHoldSeconds,
+  shouldAutoAdvanceBattleLine,
+} from './combat-dialogue-model.js';
 import { enemyAttackCue, enemyAttackShape, enemyAttackVoice } from '../audio/piano-weapon.js';
 
 // Which techniques are fired as moves in the fight (vs passives that change the
@@ -72,6 +78,23 @@ function opponentArt(ref, combatId = '') {
   // Encounters without authored raster art get the procedural signal-being
   // instead of borrowing another opponent's portrait.
   return ['surfer', 'guard'].includes(id) ? ref : { procedural: true, id: String(combatId || 'signal') };
+}
+
+function combatStageHeight({ panel, stageY, compact, sourceActive, phase }) {
+  const sourceReserve = sourceActive ? 5 : 0;
+  const talk = phase === 'talk';
+  const reserveBelowStage = talk
+    ? (compact ? 10 : 13)
+    : (compact ? 8 + sourceReserve : 12 + sourceReserve);
+  const available = panel.h - (stageY - panel.y) - reserveBelowStage;
+
+  if (talk) {
+    return Math.max(compact ? 5 : 7, Math.min(compact ? 8 : 10, available));
+  }
+
+  return compact
+    ? Math.max(6, available)
+    : Math.max(9, Math.min(15, available));
 }
 
 // How it went, in the words a recordist would use. This is the "IT WAS SUPER
@@ -127,6 +150,9 @@ export function makeCombatScene({
   let acc = 0;
   let held = 0;
   let lineDoneAt = null;
+  let talkPage = 0;
+  let confirmAdvanceLocked = false;
+  let confirmLockedAt = -Infinity;
   let now = 0;
   let arrivalElapsed = 0;
   let handle = null;
@@ -170,6 +196,30 @@ export function makeCombatScene({
 
   const movement = (index = state.movementIndex) => battle.combat.movements[index] || null;
   const stopVoice = () => { handle?.stop?.(); handle = null; };
+  const isConfirmInput = (e = {}) => e.key === ' ' || e.key === 'Enter' || e.key === 'z' || e.controllerAction === 'confirm';
+
+  function estimateDialogueViewport() {
+    const { cols, rows } = uiSize();
+    // This mirrors the centred battle panel loosely enough for auto-advanced
+    // authored barks; render() computes the exact viewport for player-visible
+    // pagination.
+    const panelW = Math.min(118, cols - 4);
+    return {
+      width: Math.max(20, panelW - 4),
+      rows: Math.max(2, Math.min(6, rows - 20)),
+    };
+  }
+
+  function currentBattleDialogueView({ width, rows } = {}) {
+    const viewport = width && rows ? { width, rows } : estimateDialogueViewport();
+    return battleDialoguePageView({
+      text: textOf(cur),
+      typed,
+      width: viewport.width,
+      maxRows: viewport.rows,
+      page: talkPage,
+    });
+  }
 
   function tools() { return availableCombatTools(state); }
   function activeTool() { return tools()[selectedTool] || tools()[0] || { id: COMBAT_TOOL.SELF, label: 'HANDS' }; }
@@ -205,6 +255,7 @@ export function makeCombatScene({
     typed = 0;
     acc = 0;
     held = 0;
+    talkPage = 0;
     lineDoneAt = null;
     if (!cur) {
       musicSession?.setDialogueActive?.(false);
@@ -611,17 +662,26 @@ export function makeCombatScene({
         typed = Math.min(text.length, Math.floor(acc * textCps(CPS) * (cur.rate || 1)));
         if (typed >= text.length) audio?.stopTyping?.();
       }
-      // The fight paces its own dialogue: once a line has landed it holds for a
-      // reading beat and moves on, so battle never turns into a continue-mash.
-      // Confirm still fast-forwards or skips ahead.
+      // Battle dialogue is player-paced by default. Individual authored lines can
+      // opt into cinematic auto-advance with auto:true / battleAuto:true /
+      // advance:'auto', but the engine never advances ordinary story text on its
+      // own and never silently discards wrapped overflow.
       if (typed >= text.length && (!handle || handle.done())) {
         if (lineDoneAt == null) lineDoneAt = now;
-        else if (now - lineDoneAt >= 1.15) nextLine();
+        else if (shouldAutoAdvanceBattleLine(cur) && now - lineDoneAt >= battleLineAutoHoldSeconds(cur)) {
+          const view = currentBattleDialogueView();
+          if (view.hasMore) {
+            talkPage = view.page + 1;
+            lineDoneAt = now;
+          } else {
+            nextLine();
+          }
+        }
       }
     },
 
     key(e) {
-      const confirm = e.key === ' ' || e.key === 'Enter' || e.key === 'z' || e.controllerAction === 'confirm';
+      const confirm = isConfirmInput(e);
       // Escape is the run-level pause everywhere, including mid-battle, so the
       // in-fight "step back" is Tab (with X as the legacy alternate).
       const back = e.key === 'Tab' || e.key === 'x' || e.controllerAction === 'back';
@@ -629,12 +689,44 @@ export function makeCombatScene({
         if (confirm) {
           if (!cur) return true;
           const text = textOf(cur);
+
+          // A single physical press may reveal OR advance. Repeated keydown events
+          // from a held confirm are ignored until keyup; controller-like confirm
+          // pulses get a short time fallback so they cannot become permanently
+          // locked if the platform never emits a keyup for synthetic actions.
+          if (confirmAdvanceLocked) {
+            if (e.repeat || now - confirmLockedAt < Math.max(0.24, COMBAT_DIALOGUE_MIN_MANUAL_DWELL)) return true;
+            confirmAdvanceLocked = false;
+          }
+
           if (typed < text.length) {
             typed = text.length;
+            acc = 1e6;
             handle?.finish?.();
             handle = null;
             audio?.stopTyping?.();
-          } else if (held >= .2) nextLine();
+            lineDoneAt = now;
+            confirmAdvanceLocked = true;
+            confirmLockedAt = now;
+            return true;
+          }
+
+          if (lineDoneAt == null) lineDoneAt = now;
+          if (now - lineDoneAt < COMBAT_DIALOGUE_MIN_MANUAL_DWELL) return true;
+
+          const view = currentBattleDialogueView();
+          if (view.hasMore) {
+            talkPage = view.page + 1;
+            lineDoneAt = now;
+            confirmAdvanceLocked = true;
+            confirmLockedAt = now;
+            audio?.menuMove?.();
+            return true;
+          }
+
+          nextLine();
+          confirmAdvanceLocked = true;
+          confirmLockedAt = now;
         }
         return true;
       }
@@ -683,6 +775,14 @@ export function makeCombatScene({
         if (moves().length) { phase = 'move'; selectedMove = 0; audio?.menuConfirm?.(); }
       } else if (confirm && phase === 'move') execute(moves()[selectedMove]?.id);
       return true;
+    },
+
+    keyup(e) {
+      if (isConfirmInput(e)) {
+        confirmAdvanceLocked = false;
+        return phase === 'talk';
+      }
+      return false;
     },
 
     pointer(e) {
@@ -792,10 +892,13 @@ export function makeCombatScene({
       // ── the void stage: one continuous backdrop, opponent right-of-centre in
       // an oblique fight stance, hands rising from the near-left ──────────────
       const stageY = enemyBarY + 2;
-      const reserve = state.source ? 5 : 0;
-      const stageH = compact
-        ? Math.max(6, panel.h - (stageY - panel.y) - 8 - reserve)
-        : Math.max(9, Math.min(15, panel.h - (stageY - panel.y) - 12 - reserve));
+      const stageH = combatStageHeight({
+        panel,
+        stageY,
+        compact,
+        sourceActive: !!state.source,
+        phase,
+      });
       const reducedMotion = shakeMode() !== 'full';
       const introP = Math.min(1, introElapsed / 1.05);
       const introIn = reducedMotion ? 1 : ease(introP);
@@ -1018,17 +1121,39 @@ export function makeCombatScene({
       }
 
       if (phase === 'talk' && cur) {
-        // Pokemon-style: dialogue takes over the command band, the fight stage
-        // stays visible above it.
-        uiText(panel.x, cmdY + 2, whoOf(cur).toUpperCase(), 'ui-label');
+        // Dialogue gets a real command-card region during battles. Long lines are
+        // paged with a visible MORE state instead of being silently dropped, and
+        // the combat stage is slightly shorter while this card is active.
+        const speakerY = cmdY + 2;
+        const textY = speakerY + 1;
+        const hintY = bottom;
+        const maxTextRows = Math.max(2, hintY - textY);
         const dlgW = Math.max(20, panel.w - 2);
-        const lines = uiWrap(textOf(cur).slice(0, typed), dlgW);
-        lines.slice(0, Math.max(2, bottom - (cmdY + 3) + 1)).forEach((line, index) => uiText(
+        const who = whoOf(cur);
+        const text = textOf(cur);
+        const view = currentBattleDialogueView({ width: dlgW, rows: maxTextRows });
+
+        uiText(panel.x, speakerY, who.toUpperCase().slice(0, panel.w), 'ui-label');
+        view.rows.forEach((line, index) => uiText(
           panel.x,
-          cmdY + 3 + index,
-          line,
-          whoOf(cur) === 'direction' ? 'ui-secondary' : 'ui-primary',
+          textY + index,
+          line.slice(0, dlgW),
+          who === 'direction' ? 'ui-secondary' : 'ui-primary',
         ));
+
+        const done = typed >= text.length && (!handle || handle.done());
+        const hint = view.hasMore
+          ? `MORE ${view.page + 1}/${view.pageCount} · PRESS CONTINUE`
+          : done ? 'PRESS CONTINUE' : '';
+        if (hint) {
+          uiText(
+            panel.x + Math.max(0, panel.w - hint.length),
+            hintY,
+            hint.slice(0, panel.w),
+            view.hasMore ? 'ui-amber' : 'ui-secondary',
+            .72,
+          );
+        }
         return;
       }
 

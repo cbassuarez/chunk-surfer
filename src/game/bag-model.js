@@ -465,21 +465,21 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, loa
     const compartment = battleCapable ? combatCompartment(normalizedLoadout, entry.sourceId) : 'storage';
     const topIndex = normalizedLoadout.top.indexOf(entry.sourceId);
     const compartmentLabel = compartment === 'top'
-      ? `TOP ${topIndex + 1}/${normalizedLoadout.capacity}`
-      : battleCapable ? 'STORAGE / BATTLE LOCKED' : 'STORAGE';
+      ? `READY NOW ${topIndex + 1}/${normalizedLoadout.capacity}`
+      : battleCapable ? 'BAG STORAGE / NOT READY' : 'BAG STORAGE';
     return {
       ...entry,
       battleCapable,
       compartment,
       topIndex,
       facts: [['COMPARTMENT', compartmentLabel], ...entry.facts],
-      badges: [compartment === 'top' ? `TOP ${topIndex + 1}` : 'STORAGE', ...entry.badges],
+      badges: [compartment === 'top' ? `READY ${topIndex + 1}` : 'STORAGE', ...entry.badges],
       actions: {
         ...entry.actions,
         secondary: battleCapable && entry.present
           ? {
               id: compartment === 'top' ? 'move-storage' : 'move-top',
-              label: compartment === 'top' ? 'MOVE TO STORAGE' : 'PACK TOP',
+              label: compartment === 'top' ? 'CLEAR READY SLOT' : 'PUT IN READY NOW',
               destructive: false,
             }
           : null,

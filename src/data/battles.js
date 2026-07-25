@@ -548,7 +548,7 @@ export function chapelBoss({ kind = 'nothing', value = null, listened = 5 } = {}
       { who: 'direction', text: 'The chapel. Two banks of pews, an organ with the wind isolated, and the fifth room tone you were sent for.', cue: 'freeze' },
       { who: 'recordist', text: 'Take five.' },
       { who: 'surfer', text: 'Take five.', rate: 0.94 },
-      { who: 'you', text: 'There are two of them in here and one of them is me in eleven years.' },
+      { who: 'you', text: "There is not a person in the chapel... or there shouldn't be, but I'm getting the feeling I'm in heart of the building. Is that...? " },
       { who: 'direction', text: `It has put on a face while you were not looking. It is wearing ${face.label.toLowerCase()}.` },
     ],
     rounds: [
@@ -558,21 +558,23 @@ export function chapelBoss({ kind = 'nothing', value = null, listened = 5 } = {}
         before: [{ who: face.who, text: offer, rate: 0.98 }],
         onListen: [
           { who: 'you', text: 'No transient. No breath. No felt, no reed, no room.' },
-          { who: 'you', text: 'There is nothing there, and it is speaking to me in a voice I have missed.' },
+          { who: 'you', text: 'There is nothing there, and it is speaking to me in a voice I have missed so dearly.' },
         ],
-        after: [{ who: 'direction', text: 'The pews return it four times, and each return is more certain than you are.' }],
+        after: [{ who: 'direction', text: 'Back in the booth, the guard turns the television down.' }],
       },
       {
         nature: 'on the tape', threat: 0.66,
         before: [
-          { who: 'recordist', text: 'I did the first four. You did the chapel. They said it did not matter who, so long as it was somebody.' },
-          { who: 'you', text: '...four and one. Yours and mine. It overlapped.' },
+          { who: 'recordist?', text: 'You never looked for me.' },
+          { who: 'you', text: 'Sarah?' },
         ],
         onListen: [
-          { who: 'you', text: 'That is a take. That is a level and a room and a date, and the date is wrong by eleven years.' },
-          { who: 'you', text: 'He is not haunting me. He is the reference file, and I am the room he is playing in.' },
+          { who: 'you', text: 'I... what am I doing?' },
+          { who: '???', text: "You know what? No. You don't get to be the victim here. I – I had hopes, I dreamed of loving you. You want points for your martyrdom?" },
+          { who: 'you', text: "Don't you throw that in my face I fuck– I ca" },
+          { who: 'you', text: "You what? You cared about me, just because you allowed me to transition? Oh wow! What an ally! You left! You're the one who gave up!" },
         ],
-        after: [{ who: 'recordist', text: 'One more and I am out of here. That is what I said too.' }],
+        after: [{ who: '???', text: "I thought it would be easy. I thought 'one more and we're out of here.'" }],
       },
       {
         nature: 'not there', threat: 0.8,

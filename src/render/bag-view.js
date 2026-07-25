@@ -154,6 +154,245 @@ function drawFilesList(entries, selectedId, rect, scroll, capacity, pulse) {
   }
 }
 
+
+function kitRegion(layout) {
+  if (layout.mode === 'wide') {
+    return {
+      x: layout.list.x,
+      y: layout.list.y,
+      w: (layout.detail.x + layout.detail.w) - layout.list.x,
+      h: layout.list.h,
+    };
+  }
+  return {
+    x: layout.detail.x,
+    y: layout.detail.y,
+    w: layout.detail.w,
+    h: (layout.list.y + layout.list.h) - layout.detail.y,
+  };
+}
+
+function kitReadySlots(model, entries) {
+  const capacity = Math.max(1, Math.floor(model?.loadout?.capacity || 4));
+  const slots = Array.from({ length: capacity }, () => null);
+  for (const entry of entries || []) {
+    if (entry?.compartment !== 'top') continue;
+    const at = Number.isFinite(entry.topIndex) ? entry.topIndex : -1;
+    if (at >= 0 && at < slots.length) slots[at] = entry;
+  }
+  return slots;
+}
+
+function kitStorageEntries(entries) {
+  // Storage is the inventory ledger, not a second source of truth. READY NOW
+  // items remain visible here as ASSIGNED ABOVE so players never wonder where
+  // something went when they prepare it.
+  return (entries || []).filter(Boolean);
+}
+
+function drawMicroBox(rect, { selected = false, dim = false, danger = false, active = false } = {}) {
+  const fill = selected
+    ? 'rgba(216,138,59,0.15)'
+    : active ? 'rgba(216,138,59,0.09)'
+      : danger ? 'rgba(80,28,18,0.18)'
+        : dim ? 'rgba(255,255,255,0.018)'
+          : 'rgba(255,255,255,0.032)';
+  uiFill(rect.x, rect.y, rect.w, rect.h, fill);
+  uiStrokeRect(rect.x, rect.y, rect.w, rect.h, selected ? UI_COLOR.amber : danger ? UI_COLOR.danger : UI_COLOR.frame, selected ? .78 : .34, selected ? 1.4 : 1);
+}
+
+function drawKitRuleStrip(region, model) {
+  if (region.h < 17 || region.w < 54) return 0;
+  const leftW = Math.max(20, Math.floor((region.w - 4) / 2));
+  const rightW = Math.max(20, region.w - leftW - 4);
+  const y = region.y;
+
+  drawMicroBox({ x: region.x, y, w: leftW, h: 2.4 }, { active: true });
+  uiText(region.x + 1, y, 'READY NOW', 'ui-amber', .90);
+  uiText(region.x + 1, y + 1, clip('WORKS DURING CONTACT', leftW - 2), 'ui-blue', .72);
+
+  uiText(region.x + leftW + 1, y + 1, '↑', 'ui-blue', .72);
+
+  drawMicroBox({ x: region.x + leftW + 4, y, w: rightW, h: 2.4 }, {});
+  uiText(region.x + leftW + 5, y, 'BAG STORAGE', 'ui-label', .72);
+  uiText(region.x + leftW + 5, y + 1, clip('CARRYING IS NOT READINESS', rightW - 2), 'ui-secondary', .58);
+  return 3;
+}
+
+function drawReadySlot(slot, rect, index, selected) {
+  const entry = slot || null;
+  drawMicroBox(rect, { selected, dim: !entry, active: !!entry });
+  uiText(rect.x + 1, rect.y, `[${index + 1}]`, entry ? 'ui-blue' : 'ui-secondary', entry ? .84 : .44);
+  if (!entry) {
+    uiText(rect.x + 1, rect.y + 2, clip('EMPTY', rect.w - 2), 'ui-secondary', .42);
+    uiText(rect.x + 1, rect.y + 3, clip('PRESS T TO FILL', rect.w - 2), 'ui-label', .40);
+    return;
+  }
+  const titleY = rect.h >= 6 ? rect.y + 2 : rect.y + 1;
+  uiText(rect.x + 1, titleY, clip(entry.title, rect.w - 2), selected ? 'ui-amber' : 'ui-primary', selected ? 1 : .82);
+  uiText(rect.x + 1, titleY + 1, clip('USABLE IN CONTACT', rect.w - 2), 'ui-amber', selected ? .90 : .66);
+}
+
+function drawReadyNow(model, entries, selectedId, rect) {
+  const slots = kitReadySlots(model, entries);
+  const cap = slots.length;
+  const gap = 1;
+  const slotW = Math.max(8, Math.floor((rect.w - gap * Math.max(0, cap - 1)) / cap));
+  uiText(rect.x, rect.y, 'READY NOW', 'ui-amber', .90);
+  rightText(rect.x, rect.y, rect.w, `SLOTS 1-${cap}`, 'ui-blue', .56);
+  uiText(rect.x, rect.y + 1, clip('Only this row is prepared for contact.', rect.w), 'ui-secondary', .58);
+
+  for (let i = 0; i < cap; i++) {
+    const slotX = rect.x + i * (slotW + gap);
+    const w = i === cap - 1 ? Math.max(8, rect.x + rect.w - slotX) : slotW;
+    const entry = slots[i];
+    drawReadySlot(entry, { x: slotX, y: rect.y + 3, w, h: Math.max(4, rect.h - 3) }, i, !!entry && entry.id === selectedId);
+  }
+}
+
+function storageBadge(entry) {
+  if (!entry) return { text: 'EMPTY', cls: 'ui-secondary' };
+  if (entry.present === false) return { text: 'MISSING', cls: 'ui-danger' };
+  if (entry.compartment === 'top') return { text: 'ASSIGNED ABOVE', cls: 'ui-amber' };
+  if (entry.battleCapable) return { text: 'PRESS T', cls: 'ui-blue' };
+  return { text: 'CARRY ONLY', cls: 'ui-secondary' };
+}
+
+function drawStorageSlot(entry, rect, selected) {
+  const badge = storageBadge(entry);
+  drawMicroBox(rect, { selected, dim: entry?.present === false, active: entry?.battleCapable && entry.compartment !== 'top' });
+  uiText(rect.x + 1, rect.y, clip(entry?.title || 'EMPTY', rect.w - 2), selected ? 'ui-amber' : entry?.present === false ? 'ui-secondary' : 'ui-primary', selected ? 1 : .72);
+  if (rect.h > 3) uiText(rect.x + 1, rect.y + 1, clip(entry?.subtitle || '', rect.w - 2), 'ui-label', selected ? .62 : .46);
+  uiText(rect.x + 1, rect.y + rect.h - 1, clip(badge.text, rect.w - 2), badge.cls, selected ? .92 : .64);
+}
+
+function kitStorageColumns(width) {
+  if (width >= 46) return 3;
+  if (width >= 28) return 2;
+  return 1;
+}
+
+function drawBagStorage(entries, selectedId, rect) {
+  const storage = kitStorageEntries(entries);
+  const cols = kitStorageColumns(rect.w);
+  const gap = 1;
+  const headerH = 3;
+  const cellW = Math.max(8, Math.floor((rect.w - gap * Math.max(0, cols - 1)) / cols));
+  const cellH = rect.h >= 15 ? 4 : 3;
+  const rows = Math.max(1, Math.floor((rect.h - headerH) / cellH));
+  const max = Math.max(1, rows * cols);
+
+  uiText(rect.x, rect.y, 'BAG STORAGE', 'ui-label', .76);
+  rightText(rect.x, rect.y, rect.w, `${Math.min(storage.length, max)}/${storage.length}`, 'ui-blue', .52);
+  uiText(rect.x, rect.y + 1, clip('Carry items here. Press T to ready contact gear.', rect.w), 'ui-secondary', .52);
+
+  if (!storage.length) {
+    uiText(rect.x + Math.max(0, Math.floor((rect.w - 10) / 2)), rect.y + 4, 'BAG EMPTY', 'ui-secondary', .46);
+    return;
+  }
+
+  const selectedAt = Math.max(0, storage.findIndex((entry) => entry.id === selectedId));
+  const start = selectedAt >= max ? Math.max(0, selectedAt - max + 1) : 0;
+  const visible = storage.slice(start, start + max);
+  visible.forEach((entry, i) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const x = rect.x + col * (cellW + gap);
+    const y = rect.y + headerH + row * cellH;
+    const w = col === cols - 1 ? Math.max(8, rect.x + rect.w - x) : cellW;
+    const selected = entry.id === selectedId && entry.compartment !== 'top';
+    drawStorageSlot(entry, { x, y, w, h: Math.max(3, cellH - .35) }, selected);
+  });
+
+  if (start > 0) uiText(rect.x, rect.y + 2, '▲ MORE', 'ui-secondary', .38);
+  if (start + max < storage.length) rightText(rect.x, rect.y + rect.h - 1, rect.w, '▼ MORE ITEMS', 'ui-secondary', .44);
+}
+
+function kitVerdict(entry) {
+  if (!entry) {
+    return { tone: 'empty', cls: 'ui-secondary', title: 'NOTHING HERE', copy: 'Pick a storage item and press T to put it in READY NOW.' };
+  }
+  if (entry.compartment === 'top') {
+    return { tone: 'ready', cls: 'ui-amber', title: 'USABLE DURING CONTACT', copy: 'This item is in READY NOW. It can be reached when the room goes bad.' };
+  }
+  if (entry.battleCapable) {
+    return { tone: 'assignable', cls: 'ui-blue', title: 'CAN BE MADE READY', copy: 'Press T to assign this item to the numbered READY NOW row.' };
+  }
+  return { tone: 'carry', cls: 'ui-secondary', title: 'CARRY ONLY', copy: 'Useful in the building, but not a quick-use contact item.' };
+}
+
+function drawKitDetail(entry, rect, nav, motion, now) {
+  const p = acquire(now, motion.selectionChangedAt);
+  drawMicroBox(rect, { selected: false, active: true });
+
+  if (nav.mode === 'confirm') {
+    drawConfirm(nav, { x: rect.x + 1, y: rect.y + 1, w: rect.w - 2, h: rect.h - 2 }, entry, p);
+    return;
+  }
+
+  const verdict = kitVerdict(entry);
+  const iconW = Math.min(12, Math.max(7, Math.floor(rect.w * .28)));
+  const iconH = Math.min(7, Math.max(4, Math.floor(rect.h * .32)));
+  drawBagIcon(entry?.icon || 'unknown', rect.x + 1, rect.y + 2, {
+    w: iconW,
+    h: iconH,
+    active: true,
+    state: entry?.status?.tone || verdict.tone,
+    alpha: entry ? .35 + p * .55 : .20,
+    empty: entry?.present === false,
+  });
+
+  const tx = rect.x + iconW + 3;
+  const tw = Math.max(10, rect.x + rect.w - tx - 1);
+  uiText(tx, rect.y + 1, 'SELECTED ITEM', 'ui-label', .58);
+  uiText(tx, rect.y + 2, clip(entry?.title || 'EMPTY READY SLOT', tw), 'ui-amber', .62 + p * .38);
+  uiText(tx, rect.y + 3, clip(entry?.subtitle || 'NO ITEM ASSIGNED', tw), 'ui-secondary', .58);
+
+  const verdictY = rect.y + Math.max(5, iconH + 3);
+  uiStrokeRect(rect.x + 1, verdictY, rect.w - 2, 3, verdict.cls === 'ui-amber' ? UI_COLOR.amber : verdict.cls === 'ui-blue' ? UI_COLOR.blue : UI_COLOR.frame, .30, 1);
+  uiText(rect.x + 2, verdictY + 1, clip(verdict.title, rect.w - 4), verdict.cls, .86);
+  uiText(rect.x + 2, verdictY + 2, clip(verdict.copy, rect.w - 4), 'ui-secondary', .62);
+
+  let cy = verdictY + 4;
+  const description = entry?.description || '';
+  if (description && cy < rect.y + rect.h - 4) {
+    cy += drawDescription(description, rect.x + 1, cy, rect.w - 2, Math.max(1, rect.y + rect.h - cy - 4), 'ui-secondary');
+  }
+
+  const actionY = rect.y + rect.h - 2;
+  let action = '[ENTER] USE / INSPECT';
+  if (entry?.compartment === 'top') action = '[R] CLEAR READY SLOT   [ENTER] USE';
+  else if (entry?.battleCapable) action = '[T] PUT IN READY NOW   [ENTER] INSPECT';
+  else if (entry?.present === false) action = 'NOT CARRIED';
+  uiText(rect.x + 1, actionY, clip(action, rect.w - 2), entry?.battleCapable ? 'ui-amber' : 'ui-label', .72);
+}
+
+function drawKitLoadoutView(model, nav, layout, motion, now) {
+  const section = bagSection(model, 'kit') || { entries: [] };
+  const selected = bagEntry(model, 'kit', nav.selected?.kit);
+  const region = kitRegion(layout);
+  const ruleH = drawKitRuleStrip(region, model);
+  const readyH = region.h >= 18 ? 8 : 6;
+  const readyRect = { x: region.x, y: region.y + ruleH, w: region.w, h: readyH };
+  drawReadyNow(model, section.entries, selected?.id || null, readyRect);
+
+  const belowY = readyRect.y + readyRect.h + 1;
+  const belowH = Math.max(5, region.y + region.h - belowY);
+  const wide = region.w >= 66 && belowH >= 9;
+
+  if (wide) {
+    const storageW = clamp(Math.floor(region.w * .56), 30, Math.max(30, region.w - 24));
+    const storageRect = { x: region.x, y: belowY, w: storageW, h: belowH };
+    const detailRect = { x: storageRect.x + storageRect.w + 2, y: belowY, w: Math.max(18, region.x + region.w - storageRect.x - storageRect.w - 2), h: belowH };
+    drawBagStorage(section.entries, selected?.id || null, storageRect);
+    drawKitDetail(selected, detailRect, nav, motion, now);
+  } else {
+    const storageH = Math.max(5, Math.floor(belowH * .52));
+    drawBagStorage(section.entries, selected?.id || null, { x: region.x, y: belowY, w: region.w, h: storageH });
+    drawKitDetail(selected, { x: region.x, y: belowY + storageH + 1, w: region.w, h: Math.max(5, belowH - storageH - 1) }, nav, motion, now);
+  }
+}
+
 function drawList(model, nav, layout, motion, now) {
   const section = bagSection(model, nav.sectionId) || { entries: [] };
   const selectedId = nav.selected?.[section.id];
@@ -310,7 +549,15 @@ export function bagActionRail(entry, mode) {
 
   const out = [];
   if (entry?.actions?.primary) out.push([inputPromptLabel('confirm'), entry.actions.primary.label]);
-  if (entry?.actions?.secondary) out.push([inputPromptLabel('mark'), entry.actions.secondary.label]);
+
+  if (entry?.kind === 'gear' && entry?.actions?.secondary) {
+    if (entry.actions.secondary.id === 'move-top') out.push(['T', 'PUT IN READY NOW']);
+    else if (entry.actions.secondary.id === 'move-storage') out.push(['R', 'CLEAR READY SLOT']);
+    else out.push([inputPromptLabel('mark'), entry.actions.secondary.label]);
+  } else if (entry?.actions?.secondary) {
+    out.push([inputPromptLabel('mark'), entry.actions.secondary.label]);
+  }
+
   out.push([inputPromptLabel('bag'), 'CLOSE']);
   return out;
 }
@@ -379,6 +626,8 @@ export function drawBagView({ model, nav, mapNav = null, layout, hint = '', guid
   } else if (nav.sectionId === 'map' && model.map && mapNav) {
     const rendered = drawMapView({ model: model.map, nav: mapNav, bagLayout: layout, now });
     actions = rendered.actions;
+  } else if (nav.sectionId === 'kit') {
+    drawKitLoadoutView(model, nav, layout, motion, now);
   } else {
     if (layout.mode === 'wide') {
       uiLine(layout.dividerX, layout.list.y - 1, layout.dividerX, layout.list.y + layout.list.h, undefined, .36);

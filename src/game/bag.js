@@ -7,7 +7,7 @@ import * as scenes from './scenes.js';
 import * as AUDIO from '../audio/story-audio.js';
 import { uiScrim, uiSize } from '../render/ui.js';
 import { drawMachinePanel } from '../render/presentation.js';
-import { buildBagModel, bagEntry, EMPTY_JOB, normalizeBagSectionId } from './bag-model.js';
+import { buildBagModel, bagEntry, bagSection, EMPTY_JOB, normalizeBagSectionId } from './bag-model.js';
 import {
   currentBagEntry,
   ensureBagSelectionVisible,
@@ -233,6 +233,69 @@ export function makeBagScene({
     }
   }
 
+
+  function kitEntries() {
+    return bagSection(model, 'kit')?.entries || [];
+  }
+
+  function selectKitEntry(entry) {
+    if (!entry) return;
+    const before = currentBagEntry(nav, model)?.id;
+    nav = reduceBagNav(nav, { type: 'SELECT_ENTRY', sectionId: 'kit', entryId: entry.id }, model);
+    if (currentBagEntry(nav, model)?.id !== before) {
+      motion.selectionChangedAt = t;
+      AUDIO.menuMove();
+      remember();
+    }
+  }
+
+  function moveKitSpatial(dx, dy) {
+    const entries = kitEntries();
+    const current = currentBagEntry(nav, model);
+    if (!entries.length || !current) return;
+
+    const ready = entries
+      .filter((entry) => entry.compartment === 'top')
+      .sort((a, b) => a.topIndex - b.topIndex);
+    const storage = entries.filter((entry) => entry.compartment !== 'top');
+
+    if (current.compartment === 'top') {
+      const readyAt = Math.max(0, ready.findIndex((entry) => entry.id === current.id));
+      if (dy > 0 && storage.length) {
+        selectKitEntry(storage[Math.min(storage.length - 1, readyAt)]);
+        return;
+      }
+      if (dx && ready.length > 1) {
+        selectKitEntry(ready[(readyAt + dx + ready.length) % ready.length]);
+      }
+      return;
+    }
+
+    const storageAt = Math.max(0, storage.findIndex((entry) => entry.id === current.id));
+    const cols = 3;
+    if (dy < 0 && ready.length) {
+      selectKitEntry(ready[Math.min(ready.length - 1, storageAt % cols)]);
+      return;
+    }
+    if (dy > 0) {
+      selectKitEntry(storage[Math.min(storage.length - 1, storageAt + cols)]);
+      return;
+    }
+    if (dx && storage.length > 1) {
+      selectKitEntry(storage[(storageAt + dx + storage.length) % storage.length]);
+    }
+  }
+
+  function readyOrClearKitEntry(direction) {
+    const entry = currentBagEntry(nav, model);
+    if (nav.sectionId !== 'kit' || entry?.kind !== 'gear') return false;
+    const action = entry.actions?.secondary;
+    if (!action) return false;
+    if (direction === 'ready' && action.id !== 'move-top') return false;
+    if (direction === 'clear' && action.id !== 'move-storage') return false;
+    return execute(entry, action.id);
+  }
+
   // The tree is two-dimensional, so it does not use the list reducer: left/right
   // walks branches, up/down walks tiers, and a shorter branch clamps to its
   // deepest tile rather than swallowing the press.
@@ -444,6 +507,13 @@ export function makeBagScene({
         if (raw === 'ArrowDown' || k === 's' || code === 'KeyS') { moveSkill(0, 1); return true; }
         if (raw === 'ArrowLeft' || k === 'a' || code === 'KeyA') { moveSkill(-1, 0); return true; }
         if (raw === 'ArrowRight' || k === 'd' || code === 'KeyD') { moveSkill(1, 0); return true; }
+      } else if (nav.sectionId === 'kit') {
+        if (k === 't' || code === 'KeyT') { readyOrClearKitEntry('ready'); return true; }
+        if (k === 'r' || code === 'KeyR') { readyOrClearKitEntry('clear'); return true; }
+        if (raw === 'ArrowUp' || k === 'w' || code === 'KeyW') { moveKitSpatial(0, -1); return true; }
+        if (raw === 'ArrowDown' || k === 's' || code === 'KeyS') { moveKitSpatial(0, 1); return true; }
+        if (raw === 'ArrowLeft' || k === 'a' || code === 'KeyA') { moveKitSpatial(-1, 0); return true; }
+        if (raw === 'ArrowRight' || k === 'd' || code === 'KeyD') { moveKitSpatial(1, 0); return true; }
       } else if (nav.sectionId === 'map') {
         if (raw === '[' || code === 'BracketLeft') { changeFloor(-1); return true; }
         if (raw === ']' || code === 'BracketRight') { changeFloor(1); return true; }
@@ -491,10 +561,9 @@ export function makeBagScene({
       if (nav.sectionId !== 'map') {
         nav = ensureBagSelectionVisible(nav, model, bagListCapacity(layout, nav.sectionId));
       }
-      const canReorder = nav.sectionId === 'kit' && !!currentBagEntry(nav, model)?.actions?.tertiary;
       const skills = nav.sectionId === 'skills';
       const liveHint = guided ? '' : (notice || (nav.sectionId === 'kit'
-        ? `TOP COMPARTMENT IS THE BATTLE TRAY · [SPACE] MOVE ITEM${canReorder ? ' · [R] MOVE UP' : ''} · ORDER = TOOL RAIL`
+        ? 'READY NOW WORKS DURING CONTACT · BAG STORAGE DOES NOT · [T] READY · [R] CLEAR'
         : skills
           ? 'PINS BUY MODIFICATIONS TO THE RECORDER · ONE PIN EACH · NOTHING CAN BE UNFITTED THIS RUN'
           : hintSource()));

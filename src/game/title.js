@@ -16,6 +16,54 @@ import { getMeta, hasActiveRun } from './save.js';
 import * as AUDIO from '../audio/story-audio.js';
 import { promptLine } from './bindings.js';
 
+const TITLE_CONFIRM_PROMPT = 'START NEW RUN? PRESS ENTER AGAIN';
+
+function nowMs() {
+  return typeof performance !== 'undefined' ? performance.now() : Date.now();
+}
+
+function drawRightText(xRight, y, text, role = 'ui-label', alpha = 1) {
+  const s = String(text || '').toUpperCase();
+  if (!s) return;
+  uiText(Math.round(xRight - s.length + 1), y, s, role, alpha);
+}
+
+function titleMenuLayout(body, itemCount) {
+  const twoColumns = body.w >= 64 && itemCount > 4;
+
+  if (!twoColumns) {
+    const x = body.x + 7;
+    const w = Math.max(1, body.w - 14);
+    return {
+      colCount: 1,
+      rowCount: itemCount,
+      colX: [x],
+      colW: [w],
+      confirmW: w,
+    };
+  }
+
+  const leftX = body.x + 4;
+  const rightX = Math.min(
+    body.x + body.w - 22,
+    Math.max(body.x + 40, Math.floor(body.x + body.w * 0.58)),
+  );
+  const gap = 4;
+  const leftW = Math.max(
+    TITLE_CONFIRM_PROMPT.length + 2,
+    rightX - leftX - gap,
+  );
+  const rightW = Math.max(18, body.x + body.w - rightX - 3);
+
+  return {
+    colCount: 2,
+    rowCount: Math.ceil(itemCount / 2),
+    colX: [leftX, rightX],
+    colW: [leftW, rightW],
+    confirmW: leftW,
+  };
+}
+
 export function makeTitleScene({
   buildLabel = '',
   onNewGame,
@@ -24,6 +72,7 @@ export function makeTitleScene({
   onSettings,
   onArchive = () => {},
   onReturnIndex = () => {},
+  onBetaNotice = () => {},
   onAudioGate = () => {},
 } = {}) {
   const meta = getMeta();
@@ -36,6 +85,7 @@ export function makeTitleScene({
     { id: 'archive', label: 'achievements', stay: true, run: onArchive },
     { id: 'return-index', label: 'endings', stay: true, run: onReturnIndex },
     { id: 'just-surf', label: 'just surf', run: onJustSurf },
+    { id: 'beta-notice', label: 'beta notice', stay: true, run: onBetaNotice },
     { id: 'settings', label: 'settings', stay: true, run: onSettings },
   ];
 
@@ -198,8 +248,8 @@ export function makeTitleScene({
       const estimatedBodyW = Math.max(1, w - 6);
       const estimatedColumns = estimatedBodyW >= 58 && items.length > 4 ? 2 : 1;
       const estimatedRows = Math.ceil(items.length / estimatedColumns);
-      const bodyRowsNeeded = 13 + Math.max(0, estimatedRows - 1) * 2;
-      const h = Math.min(Math.max(26, bodyRowsNeeded + 7), rows - 4);
+      const bodyRowsNeeded = 15 + Math.max(0, estimatedRows - 1) * 2;
+      const h = Math.min(Math.max(28, bodyRowsNeeded + 7), rows - 4);
       const x = Math.floor((cols - w) / 2);
       const y = Math.floor((rows - h) / 2);
       const body = drawMachinePanel(x, y, w, h, {
@@ -249,33 +299,32 @@ export function makeTitleScene({
       else if (replay) uiCenter(body.y + 9, 'ENDINGS AND ACHIEVEMENTS ARE AVAILABLE.', 'ui-amber');
       else uiCenter(body.y + 9, 'THE CASE FILE IS EMPTY.', 'ui-secondary');
 
-      if (buildLabel) {
-        uiText(body.x + 1, body.y + body.h - 2, String(buildLabel).toUpperCase().slice(0, body.w - 2), 'ui-label', 0.62);
-      }
-
       const menuY = body.y + 12;
-      menuColumns = body.w >= 58 && items.length > 4 ? 2 : 1;
-      const colCount = columns();
+      const layout = titleMenuLayout(body, items.length);
+      menuColumns = layout.colCount;
       const rowCount = rowsPerColumn();
-      const colW = Math.floor((body.w - 12) / colCount);
-      const menuX = body.x + 7;
+
       items.forEach((item, i) => {
         const on = i === sel;
         const armed = item.confirms && confirmNewRun;
-        const prompt = 'START NEW RUN? PRESS ENTER AGAIN';
-        const labelText = armed ? prompt : item.label.toUpperCase();
+        const labelText = armed ? TITLE_CONFIRM_PROMPT : item.label.toUpperCase();
         const col = Math.floor(i / rowCount);
         const row = i % rowCount;
-        const itemX = menuX + col * colW;
+        const itemX = layout.colX[col] ?? layout.colX[0];
         const itemY = menuY + row * 2;
-        const drawnLabel = `${on ? '▸ ' : '  '}${labelText}`;
+        const rowW = armed
+          ? layout.confirmW
+          : (layout.colW[col] ?? layout.colW[0]);
+        const safeLabel = labelText.slice(0, Math.max(1, rowW - 2));
+        const drawnLabel = `${on ? '▸ ' : '  '}${safeLabel}`;
+        const hitW = Math.min(rowW, drawnLabel.length + 2);
 
         hits.add({
           id: `title:${item.id}`,
           kind: 'title-item',
           x: itemX,
           y: itemY - 0.35,
-          w: Math.min(colW, drawnLabel.length + 2),
+          w: hitW,
           h: 1.4,
           disabled: item.disabled,
           selected: on,
@@ -296,17 +345,25 @@ export function makeTitleScene({
           selected: on,
           disabled: item.disabled,
           editing: armed,
-          nowMs: (typeof performance !== 'undefined' ? performance.now() : Date.now()),
+          nowMs: nowMs(),
         });
         drawVfdRow({ uiFill, uiText, theme: activeTheme, inverseColor: armed ? activeTheme().danger : null }, {
           x: itemX,
           y: itemY,
-          w: Math.min(colW, drawnLabel.length + 2),
-          label: labelText,
+          w: hitW,
+          label: safeLabel,
           style,
           role: item.disabled ? 'ui-secondary' : armed ? 'ui-danger' : on ? 'ui-amber' : 'ui-secondary',
         });
       });
+
+      if (buildLabel) {
+        const maxBuildW = Math.max(1, body.w - 2);
+        const buildText = String(buildLabel).toUpperCase().slice(0, maxBuildW);
+        const buildXRight = body.x + body.w - 1;
+        const buildY = Math.max(body.y + 1, y + h - 5);
+        drawRightText(buildXRight, buildY, buildText, 'ui-label', 0.62);
+      }
     },
   };
 }

@@ -52,6 +52,38 @@ async function settleViewport(){
   await new Promise((resolve)=>setTimeout(resolve,100));
 }
 
+async function waitForTopScene(timeout=120000){
+  await page.waitForFunction(
+    ()=>!!window.__scenes?.top?.()?.id,
+    {timeout},
+  );
+  return page.evaluate(()=>window.__scenes?.top?.()?.id||null);
+}
+
+async function acceptEulaIfPresent(){
+  const scene=await waitForTopScene();
+  if(scene!=='eula')return false;
+
+  await page.screenshot({path:path.join(output,'00-eula-gate.png')}).catch(()=>{});
+  const eulaView=await page.evaluate(()=>window.__scenes?.top?.()?.view?.()||null);
+  assert.equal(eulaView?.reviewOnly,false,'first-run EULA must be an acceptance gate');
+  assert.ok(eulaView?.sections>=3,'EULA gate must show required model-use sections');
+
+  const lensAlreadyStarted=await page.evaluate(()=>!!window.__diffusion);
+  assert.equal(
+    lensAlreadyStarted,
+    false,
+    'diffusion lens must not start before EULA acceptance',
+  );
+
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(
+    ()=>window.__scenes?.top?.()?.id!=='eula',
+    {timeout:30000},
+  );
+  return true;
+}
+
 async function samplePerformance(minimumSamples=30){
   await page.evaluate(()=>window.__probe.performanceReset());
   const deadline=Date.now()+frameSampleTimeout;
@@ -86,6 +118,7 @@ try {
   await page.goto(`${base}/index.html?skiptut=1&nomic=1&sam=0&diffusion=${encodeURIComponent(lens)}`,{
     waitUntil:'domcontentloaded',timeout:60000,
   });
+  await acceptEulaIfPresent();
   try{
     await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='opening-credits',{timeout:120000});
   }catch(error){

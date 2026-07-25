@@ -9,15 +9,30 @@
 // Shipping EULA.md inside the app bundle satisfies distribution. It does not
 // satisfy notice.
 
+function normalizeEulaText(text) {
+  return String(text || '').replace(/\r\n?/g, '\n');
+}
+
+function eulaLines(text) {
+  return normalizeEulaText(text).split('\n');
+}
+
+const EULA_GATE_SECTION_TITLES = Object.freeze([
+  /bundled local ai model resources/i,
+  /mandatory model-use restrictions/i,
+  /generated outputs/i,
+]);
+
 export function eulaVersion(text) {
-  return String(text || '').match(/^Version:\s*(.+)$/m)?.[1]?.trim() || 'unversioned';
+  return normalizeEulaText(text).match(/^Version:\s*(.+)$/m)?.[1]?.trim() || 'unversioned';
 }
 
 export function eulaSections(text) {
   const sections = [];
   let current = null;
-  for (const line of String(text || '').split('\n')) {
-    const heading = line.match(/^##\s+(.+)$/);
+  for (const raw of eulaLines(text)) {
+    const line = raw.trimEnd();
+    const heading = line.match(/^##\s+(.+?)\s*$/);
     if (heading) {
       current = { title: heading[1].trim(), lines: [] };
       sections.push(current);
@@ -34,8 +49,10 @@ export function eulaSections(text) {
 // bundled, and what they may not do with it. The rest of the agreement stays
 // one keystroke away in the settings.
 export function eulaGateSections(text) {
-  const wanted = /model resources|model-use restrictions|Generated outputs/i;
-  return eulaSections(text).filter((section) => wanted.test(section.title));
+  const sections = eulaSections(text);
+  return EULA_GATE_SECTION_TITLES
+    .map((pattern) => sections.find((section) => pattern.test(section.title)))
+    .filter(Boolean);
 }
 
 export function eulaAccepted(meta, text) {

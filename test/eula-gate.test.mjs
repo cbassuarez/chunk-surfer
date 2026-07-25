@@ -5,7 +5,8 @@ import { readFileSync } from 'node:fs';
 import { eulaAccepted, eulaGateSections, eulaSections, eulaVersion } from '../src/game/eula.js';
 import { freshMeta, normalizeMeta } from '../src/progression/schema.js';
 
-const read = (path) => readFileSync(path, 'utf8');
+const normalizeText = (text) => String(text || '').replace(/\r\n?/g, '\n');
+const read = (path) => normalizeText(readFileSync(path, 'utf8'));
 const EULA = read('LEGAL/EULA.md');
 
 test('the displayed agreement is the bundled agreement', () => {
@@ -40,6 +41,19 @@ test('the gate shows the model-use restrictions the OpenRAIL licence requires', 
   assert.ok(eulaSections(EULA).length > gate.length, 'full text stays available beyond the gate');
 });
 
+test('the EULA parser is line-ending safe', () => {
+  const crlf = EULA.replace(/\n/g, '\r\n');
+  assert.equal(eulaVersion(crlf), eulaVersion(EULA));
+  assert.deepEqual(
+    eulaGateSections(crlf).map((section) => section.title),
+    eulaGateSections(EULA).map((section) => section.title),
+  );
+  assert.deepEqual(
+    eulaGateSections(crlf).map((section) => section.lines),
+    eulaGateSections(EULA).map((section) => section.lines),
+  );
+});
+
 test('acceptance is persisted in the profile and survives normalization', () => {
   assert.equal(freshMeta().eulaAccepted, '');
   const stored = normalizeMeta({ ...freshMeta(), eulaAccepted: '2026-07-16', eulaAcceptedAt: 1234 });
@@ -48,11 +62,19 @@ test('acceptance is persisted in the profile and survives normalization', () => 
   assert.equal(normalizeMeta({ eulaAccepted: 42 }).eulaAccepted, '');
 });
 
-test('the gate stands ahead of calibration and declining quits', () => {
+test('the gate stands ahead of calibration, lens startup, and declining quits', () => {
   const main = read('src/main.js');
+  const gateIndex = main.indexOf('if(!eulaAccepted(getMeta(),EULA_TEXT))');
+  const calibrationIndex = main.indexOf('pushCalibration();', gateIndex);
   // The model may not be asked to do work before the licence is accepted.
-  assert.ok(main.indexOf('if(!eulaAccepted(getMeta(),EULA_TEXT))') < main.indexOf('  pushCalibration();\n}'),
-    'the EULA gate must precede lens calibration');
+  assert.ok(gateIndex >= 0, 'the EULA gate must exist');
+  assert.ok(calibrationIndex > gateIndex, 'the EULA gate must precede lens calibration');
+  assert.match(main, /function lensEulaAccepted\(\)\s*\{[^}]*eulaAccepted\(getMeta\(\),EULA_TEXT\)/s);
+  assert.match(main, /function lensStartBlockedByEula\(\)\s*\{[^}]*!lensEulaAccepted\(\)/s);
+  assert.match(main, /function ensureLensStarted[\s\S]*?lensStartBlockedByEula\(\)/);
+  assert.match(main, /async function requireLensStarted[\s\S]*?model licence must be accepted before lens startup/);
+  assert.match(main, /ensureLensStarted\(qp,\{quietBlocked:true\}\)/);
+  assert.match(main, /ensureLensStarted\(params\(\),\{quietBlocked:true\}\)/);
   assert.match(main, /onDecline:requestQuitDesktop/);
   assert.match(main, /metaCommit\(\{eulaAccepted:version/);
   // And it stays readable afterwards.

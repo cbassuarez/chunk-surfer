@@ -41,6 +41,7 @@ import { flagApply, flagTest, flagGet, flagSet } from './game/flags.js';
 // building to talk to.
 import { makeTitleScene } from './game/title.js';
 import { makeSettingsScene } from './game/settings.js';
+import { makeBetaNoticeScene } from './game/beta-notice.js';
 import { makeCreditsScene } from './game/credits.js';
 import { makeStoryArtPreviewScene } from './game/story-art-preview.js';
 import { preloadStoryArt, resolveStoryArt, storyArtCacheSnapshot } from './game/story-art.js';
@@ -5900,7 +5901,7 @@ function enterStory(){
   const flagParam=qp.get('flags');
   if(flagParam) flagApply(flagParam.split(',').filter(Boolean));
   ensureCtx();
-  if(inRogue&&RENDERER==='3d') ensureLensStarted(qp);
+  if(inRogue&&RENDERER==='3d') ensureLensStarted(qp,{quietBlocked:true});
   // The cold open, then a man doing his setup in the dark. `?skiptut=1` for
   // anyone who has to walk this building forty times today.
   if(!flagTest('prologueDone') && !qp.has('skiptut')){
@@ -9986,6 +9987,54 @@ async function copyDiagnosticReport(){
   return ok;
 }
 
+function betaReportTemplate(){
+  const about=collectAboutSnapshot();
+  const runtime=about.runtime || {};
+  const display=about.display || {};
+  const audio=about.audio || {};
+
+  return [
+    'Chunk Surfer beta report',
+    '',
+    `Version: ${about.version}`,
+    `Build: ${about.build}`,
+    `Runtime: ${runtime.mode} / ${runtime.platform}`,
+    `Renderer: ${runtime.renderer}`,
+    `Lens: ${runtime.lens === true ? 'on' : runtime.lens === false ? 'off' : 'unknown'}`,
+    `Display: ${display.width}x${display.height} @ DPR ${display.dpr}`,
+    `Audio: ${audio.state}${audio.sampleRate ? ` / ${audio.sampleRate} Hz` : ''}`,
+    '',
+    'What happened:',
+    '',
+    'Where it happened:',
+    '',
+    'What I expected:',
+    '',
+    'Can I reproduce it?',
+    '',
+    'Did restarting help?',
+    '',
+    'Screenshot / clip / save notes:',
+    '',
+  ].join('\n');
+}
+
+async function copyBetaReportTemplate(){
+  const ok=await copyText(betaReportTemplate()).catch(()=>false);
+  pushEvent(ok ? '// beta report template copied.' : '// beta report template could not access clipboard.');
+  return ok;
+}
+
+function openBetaNotice(){
+  ensureCtx();
+  scenes.push(makeBetaNoticeScene({
+    buildInfo:collectAboutSnapshot,
+    onCopyReportTemplate:copyBetaReportTemplate,
+    onCopyDiagnostics:copyDiagnosticReport,
+    onOpenReport:()=>openExternalUrl(APP_LINKS.reportProblem),
+  }));
+}
+
 async function exportSaveBackup(){
   let data=null;
   try{ data=await exportAllData(); }
@@ -10795,6 +10844,7 @@ function makeTitle({wantFullscreen=false}={}){
     onSettings:()=>openSettings({inGame:false}),
     onArchive:openArchive,
     onReturnIndex:openReturnIndex,
+    onBetaNotice:openBetaNotice,
   });
 }
 
@@ -11789,7 +11839,7 @@ async function bootScenes(){
     syncPlatform().catch(()=>{});
   };
   const calibrate=async()=>{
-    const lens=await ensureLensStarted(qp);
+    const lens=await requireLensStarted(qp);
     if(!lens)throw new Error('critical diffusion service unavailable');
     await lens.ready;
     const bank=lens.stats?.criticalBank||'calm';
@@ -11827,6 +11877,13 @@ async function bootScenes(){
 const LOCAL_LENS_DEFAULT='ws://127.0.0.1:8000';
 let lensStarting=null;
 let lensDisabled=false;
+let lensBlockedEulaLogged=false;
+function lensEulaAccepted(){
+  return eulaAccepted(getMeta(),EULA_TEXT);
+}
+function lensStartBlockedByEula(){
+  return !lensEulaAccepted();
+}
 function localLensEndpoint(raw){
   try{
     const u=new URL(raw||LOCAL_LENS_DEFAULT, location.href);
@@ -11918,7 +11975,14 @@ async function startLens(qp){
   setLocalDiffusionActive(true);
   return window.__diffusion;
 }
-function ensureLensStarted(qp=params()){
+function ensureLensStarted(qp=params(), {quietBlocked=false}={}){
+  if(lensStartBlockedByEula()){
+    if(!quietBlocked && !lensBlockedEulaLogged){
+      console.info('diffusion lens blocked until EULA acceptance');
+      lensBlockedEulaLogged=true;
+    }
+    return null;
+  }
   if(window.__diffusion) return window.__diffusion;
   if(lensStarting) return lensStarting;
   lensStarting=startLens(qp)
@@ -11929,6 +11993,11 @@ function ensureLensStarted(qp=params()){
     })
     .finally(()=>{ lensStarting=null; });
   return lensStarting;
+}
+async function requireLensStarted(qp=params()){
+  const lens=await ensureLensStarted(qp);
+  if(!lens)throw new Error('model licence must be accepted before lens startup');
+  return lens;
 }
 
 function visibleMaterialSlotsAt(x,y){
@@ -11942,7 +12011,7 @@ function visibleMaterialSlotsAt(x,y){
 }
 
 function render3d(){
-  ensureLensStarted();
+  ensureLensStarted(params(),{quietBlocked:true});
   const worldView=scenes.worldView(),viewX=worldView?.x??px,viewY=worldView?.y??py;
   const physical=usingSpecialSpace()?activeGeometry().logicalToPhysical(viewX,viewY):usingPlan()?FP.logicalToPhysical(viewX,viewY):{x:viewX,z:viewY,y:worldView?.floorH??floorHere(),renderGroup:''};
   const rendered=worldView?{x:physical.x,z:physical.z}:renderedPlayerPoint();
@@ -12125,7 +12194,7 @@ function enterRogue(){
     // `?diffusion=ws://127.0.0.1:...` is useful when testing another local port.
     // Remote endpoints are rejected. Any failure leaves the base render up.
     const qp=params();
-    ensureLensStarted(qp);
+    ensureLensStarted(qp,{quietBlocked:true});
   }
   try{
     MAP_EL.setAttribute('tabindex','0');
