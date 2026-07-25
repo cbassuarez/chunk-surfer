@@ -43,7 +43,7 @@ function initialCheckin() {
     },
     identify: terminal(
       { who: 'me', text: '4417-C on site. Starting the basement rooms.' },
-      { who: 'radio', text: 'Copy. Top of the hour.' },
+      { who: 'radio', text: 'Copy. Give us a shout at the top of the hour.' },
       { who: 'direction', text: 'A chair moves somewhere behind the voice. Someone laughs at something that is not you.', hold: 2.2 },
     ),
     work: terminal(
@@ -73,10 +73,10 @@ function postSecondTakeWarning() {
       ],
     },
     report: terminal(
-      { who: 'me', text: 'Second room is clean. Two on the card.' },
+      { who: 'me', text: 'Second room is clean. Two on tape.' },
       { who: 'radio', text: 'Copy. Tw— two on—' },
       { who: 'direction', art: failingArt('OPEN'), text: 'The carrier stays open after the word should have ended.', hold: 2.2 },
-      { who: 'radio', text: 'Do not tap the set. If it drifts, let it drift.' },
+      { who: 'radio', text: 'Do not tap the handset. If it drifts, let it drift.' },
       { who: 'direction', art: failingArt('DEAD'), text: 'The speaker gives one wet pop. The carrier light goes out and does not return.', cue: 'scream', shake: 1.0, shakeMs: 460, hold: 2.8 },
     ),
     interference: terminal(
@@ -84,7 +84,7 @@ function postSecondTakeWarning() {
       { who: 'radio', text: 'No other channel assigned.' },
       { who: 'direction', art: failingArt('BEAT'), text: 'A dry click answers from inside the radio before the person does.', hold: 2.0 },
       { who: 'radio', text: 'Keep the next room short.' },
-      { who: 'direction', art: failingArt('DEAD'), text: 'The last word folds into a low squeal. Then the set is dead in your hand.', cue: 'scream', shake: 1.0, shakeMs: 460, hold: 2.8 },
+      { who: 'direction', art: failingArt('DEAD'), text: 'The last word folds into a low squeal. Then the handset is dead in your hand.', cue: 'scream', shake: 1.0, shakeMs: 460, hold: 2.8 },
     ),
     other: terminal(
       { who: 'me', text: 'Is anyone else on this channel?' },

@@ -16,6 +16,22 @@ export const STORY_ART_MODES = Object.freeze([
   'boss',
 ]);
 
+export function normalizeStoryArtProject(project) {
+  const storyArt = (project?.storyArt || []).map((slot) => {
+    if (slot?.id !== 'story-art-7') return slot;
+    return {
+      ...slot,
+      caption: 'Three-cell Maglite / the only light you get',
+      status: 'KIT',
+      tone: 'device',
+      mode: 'hero',
+      alt: "A heavy three-cell torch, the recordist's only light in the building.",
+      assetId: 'flashlight.still',
+    };
+  });
+  return Object.freeze({ ...project, storyArt });
+}
+
 function buildStoryArtManifest(project) {
   const assets = new Map((project.assets || []).map((asset) => [asset.id, asset]));
   return Object.freeze(Object.fromEntries((project.storyArt || []).map((slot) => {
@@ -30,7 +46,7 @@ function buildStoryArtManifest(project) {
   })));
 }
 
-export const STORY_ART_PROJECT = Object.freeze(mediaProject);
+export const STORY_ART_PROJECT = normalizeStoryArtProject(mediaProject);
 export const STORY_ART = buildStoryArtManifest(STORY_ART_PROJECT);
 
 const imageCache = new Map();
@@ -80,6 +96,7 @@ export function resolveStoryArt(ref, manifest = STORY_ART) {
     tone: normalizeStoryArtTone(ref.tone || base.tone),
     mode: normalizeStoryArtMode(ref.mode || ref.artMode || base.mode),
     alt: ref.alt ?? base.alt,
+    transform: ref.transform ?? base.transform,
     missing: !!base.missing,
   };
 }

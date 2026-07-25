@@ -24,6 +24,7 @@ import { portrait, degrade } from '../render/portraits.js';
 import { textCps } from './access.js';
 import { drawStoryArtCard, planStoryArtInPanel, planStoryArtSideBySide, storyArtRows, storyArtSideBySidePanelRows } from './story-art-card.js';
 import { resolveStoryArt } from './story-art.js';
+import { freshStoryArtShotState, resolveStoryArtShot } from './story-art-shot.js';
 import { interpolate } from './terror.js';
 import { promptLine } from './bindings.js';
 
@@ -82,8 +83,36 @@ function makeDialogueScene(nodeId) {
   let done = false;       // all lines shown; choices (if any) active
   let choiceIdx = 0;
   let acc = 0;
+  let storyArtState = freshStoryArtShotState();
+  let currentStoryArt = null;
+  let currentStoryArtKey = '';
 
   const choices = () => (node.choices || []).filter((c) => flagTest(c.if));
+
+  function activeStoryArtRef() {
+    const line = done ? null : (lines[li] || null);
+    const sourceId = String(line?.sourceId || line?.id || '');
+    const lineId = done
+      ? `${nodeId}:choices`
+      : (sourceId || `${nodeId}:line:${li}`);
+    const key = `${done ? 'done' : 'line'}:${lineId}`;
+    if (key !== currentStoryArtKey) {
+      const resolved = resolveStoryArtShot({
+        mode: 'nodes',
+        sceneId: `dialogue:${nodeId}`,
+        nodeId,
+        lineId,
+        sourceId,
+        line,
+        node,
+        previous: storyArtState,
+      });
+      storyArtState = resolved.state;
+      currentStoryArt = resolved.art;
+      currentStoryArtKey = key;
+    }
+    return currentStoryArt;
+  }
 
   function advance() {
     const line = lines[li];
@@ -143,7 +172,7 @@ function makeDialogueScene(nodeId) {
       uiScrim(0.5);
 
       const currentLine = lines[li] || null;
-      const art = resolveStoryArt(currentLine?.art || node.art || null);
+      const art = resolveStoryArt(activeStoryArtRef() || null);
       const choiceList = choices();
       const choicesReserve = done && choiceList.length ? Math.min(choiceList.length * 2, 8) + 1 : 1;
       const wantedArtRows = art ? storyArtRows(art.mode, Math.floor(rows * 0.28)) + 1 : 0;

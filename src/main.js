@@ -6408,7 +6408,7 @@ function finishSetupRehearsal(){
   // He does NOT mark it for the player. Marking is the verb being taught.
   converse('waypoint-brief', { start:{ lines:[
     { who:'you', text:"Right. Levels are honest, and I am not telling anybody about the rest of that." },
-    { who:'direction', text:'Six seconds on the card. The kit is straight. Nothing else in this building is going to be this easy.' },
+    { who:'direction', text:'Six seconds on tape. The kit is straight. Nothing else in this building is going to be this easy.' },
     { who:'you', text:"Last thing before I go down: write down where I'm going." },
     { who:'you', text:"Bag. There's a floor plan in it. Studio B3 is the one the order wants first — mark it, and the bearing at the top of my eye points at it until I've done it." },
     { who:'direction', text:'The case is in his left hand. The plan is behind the work order.' },
@@ -6518,7 +6518,7 @@ function firstTakeIntercept(){
     beginTakeNow();
     return true;
   }
-  // Levels on the card, but the hold never actually happened — an old save, or the
+  // Levels on tape, but the hold never actually happened — an old save, or the
   // loop's six-second catch firing without the beat. [r] on the dock has to be the
   // way back in. It used to fall through to "that is not a room", which left the
   // player refused by the door AND refused by the recorder, with nothing to press.
@@ -6571,12 +6571,12 @@ function recordAction(){
   // is handled upstream by firstTakeIntercept, so this only ever refuses a REAL
   // take attempted before setup is done.
   if(!setupComplete()){
-    // Self-healing: levels on the card but the six seconds never actually held
+    // Self-healing: levels on tape but the six seconds never actually held
     // (an old save, or the loop's catch). [r] is the way in — it starts the hold
     // and the count, same as the first time, so the gate can never dead-end and
     // nothing else in the world has to start a fight on the player's behalf.
     if(flagTest('setup.levels') && !flagTest('combat.trained')){
-      SPEECH.say({ who:'you', text:"Levels are on the card but I never properly held it. Once more, feet still, and then nothing on this tape is my fault." });
+      SPEECH.say({ who:'you', text:"Levels are on tape but I never properly held it. Once more, feet still, and then nothing on this tape is my fault." });
       beginDaydream();
       return;
     }
@@ -6585,7 +6585,7 @@ function recordAction(){
   // And B3 comes first: no other room takes until Studio B3 has a clean minute.
   if(room!=='main_b3' && room!=='lux_nova' && !REC.hasTake('main_b3')){ SPEECH.say(LINES.basementFirst); return; }
   // The chapel is the fifth room, and it is not a take. It is locked until the
-  // other four are on the card, and rolling it opens the confrontation.
+  // other four are on tape, and rolling it opens the confrontation.
   if(room==='lux_nova'){
     if(finaleActive) return;
     if(REC.recState().takes.length < 4){ SPEECH.say(LINES.chapelLocked); return; }
@@ -7345,7 +7345,7 @@ function interact(){
       if(doorHit.keyId==='tower-live'){
         const next=reduceChapelTower(chapelTowerState(),{type:'BELL_HATCH_INSPECTED'});saveCommit({chapelTower:next});
         SPEECH.say({who:'you',text:'Bell chamber. ACCESS RESTRICTED. The maintenance hasp is linked to the inner screen.'});
-      }else SPEECH.say({who:'you',text:doorHit.keyId==='chapel'?'Replacement core. Not on the standard ring.':doorHit.keyId==='academic-core'?'Different core. Nothing on the ring is even close.':'Locked. None of these.'});
+      }else SPEECH.say({who:'you',text:doorHit.keyId==='chapel'?'Replacement lock core. Not on the standard keyring.':doorHit.keyId==='academic-core'?'Different lock core. Nothing on the keyring is even close.':'Locked. None of these.'});
       return;
     }
     if(doorHit.opened||doorHit.closed||doorHit.removedWedge){
@@ -7404,7 +7404,7 @@ function interact(){
       return;
     }
     if(hit.action==='chapel-key-cabinet'){
-      if(playerKeys.has('chapel')){SPEECH.say({who:'you',text:'C-17. Already on the ring.'});return;}
+      if(playerKeys.has('chapel')){SPEECH.say({who:'you',text:'C-17. Already on the keyring.'});return;}
       if(!flagTest('chapel.clue.log')||!flagTest('chapel.clue.ledger')){
         SPEECH.say({who:'you',text:'Three tags, two generations of lock. I need the rekey sheet and the office ledger before I guess.'});return;
       }
@@ -8105,7 +8105,7 @@ function tickTorch(dt){
     REC.killTorch();
     CR.fx.flash(90, 'rgba(0,0,0,0.9)'); bumpFear(0.5, { stinger:0.9 });
     SPEECH.sayAll([
-      { who: 'direction', text: 'At the chapel door, with four rooms on the card and one to go, the torch goes out.' },
+      { who: 'direction', text: 'At the chapel door, with four rooms on tape and one to go, the torch goes out.' },
       { who: 'you', text: 'The cells. The good cells. Of course.' },
       { who: 'direction', text: 'You traded a way out for a few hours of light, and the light has just handed the hours back, at the door, in front of the thing you are about to meet.' },
     ]);

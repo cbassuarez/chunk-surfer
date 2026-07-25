@@ -59,7 +59,6 @@ export function makeColdOpenScene({
     nodes: opening, beats, startAt, sceneId: id, replay, onChoice, cue, fx, audio, getAudio,
     onDone: () => { scenes.pop(); if (ambient) audio?.stopBoothTone?.({ fade: 0.8 }); onDone?.(); },
   });
-  let lastBeatArt = null;
 
   return {
     id,
@@ -92,8 +91,7 @@ export function makeColdOpenScene({
         const w = Math.min(COL_W, cols - 4);
         const x = Math.floor((cols - w) / 2);
 
-        if (v.art) lastBeatArt = v.art;
-        const art = resolveStoryArt(v.art || (v.mode === 'beats' ? lastBeatArt : null));
+        const art = resolveStoryArt(v.art || null);
         const fixedArtPanelH = art
           ? storyArtSideBySidePanelRows({
               choicesRows: 0,

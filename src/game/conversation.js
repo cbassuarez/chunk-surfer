@@ -31,6 +31,7 @@ import { createSamDialogVoice, isVoiced } from '../audio/sam-voice.js';
 import { TYPE_GAIN, TYPE_LEVEL } from '../audio/story-audio.js';
 import { flagTest } from './flags.js';
 import { textCps } from './access.js';
+import { freshStoryArtShotState, resolveStoryArtShot } from './story-art-shot.js';
 const CPS = 38;
 const MIN_DWELL = 0.25;         // before [space] is heard at all
 
@@ -77,6 +78,9 @@ export function createConversation({
   let choiceIdx = 0;
   let activeLineId = '';
   let activeLineSeenBefore = false;
+  let storyArtState = freshStoryArtShotState();
+  let currentStoryArt = null;
+  let currentStoryArtReason = 'none';
   let accelerateHeld = false;
   let accelerateStartedAt = 0;
     let finished = false;
@@ -95,16 +99,21 @@ export function createConversation({
   };
   const line = () => (mode === 'nodes' ? nodeLines()[lineIdx] : beats[beatIdx]);
 
-  function artRefOf(obj) {
-    if (!obj) return null;
-    if (obj.art) return obj.art;
-    if (obj.artId) return { id: obj.artId, mode: obj.artMode };
-    return null;
-  }
-
-  function currentArtRef() {
-    const l = line();
-    return artRefOf(l) || (mode === 'nodes' ? artRefOf(node()) : null);
+  function updateStoryArtShot(l = line()) {
+    const sourceId = String(l?.sourceId || l?.id || '');
+    const resolved = resolveStoryArtShot({
+      mode,
+      sceneId,
+      nodeId: mode === 'nodes' ? nodeId : 'beats',
+      lineId: l ? activeLineId : `${sceneId}:${mode === 'nodes' ? nodeId : 'beats'}:choice`,
+      sourceId,
+      line: l || null,
+      node: mode === 'nodes' ? node() : null,
+      previous: storyArtState,
+    });
+    storyArtState = resolved.state;
+    currentStoryArt = resolved.art;
+    currentStoryArtReason = resolved.reason;
   }
 
   const lineContentId = (l = line()) => replay?.lineId?.({
@@ -176,6 +185,7 @@ export function createConversation({
       lineSerial++;
       activeLineId = lineContentId(l);
       activeLineSeenBefore = replay?.lineStatus?.(activeLineId) === 'seen-before-run';
+      updateStoryArtShot(l);
     if (mode === 'nodes' && whoOf(l) === 'me' && l.say !== false) {
       pending = { kind: 'say', line: l, options: [{ text: sayLabel(l), say: true }] };
       choiceIdx = 0;
@@ -245,6 +255,7 @@ export function createConversation({
     audio?.unduckSoundtrack?.();
     pending = { kind: 'branch', options: branchOptions() };
     choiceIdx = 0;
+    updateStoryArtShot(null);
   }
 
   function commitLine() {
@@ -421,7 +432,9 @@ export function createConversation({
           accelerating: accelerateHeld,
           voice: handle && !handle.done() ? handle.progress() : null,
         pending: pending ? { kind: pending.kind, options: visibleOptions(), index: choiceIdx } : null,
-        art: currentArtRef(),
+        art: currentStoryArt,
+        artReason: currentStoryArtReason,
+        lineSourceId: l?.sourceId || l?.id || '',
         spent: (c) => asked.has(choiceKey(c)),
       };
     },

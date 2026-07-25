@@ -948,7 +948,7 @@ export function reduceCombat(input, action = {}) {
   } else if (actionId === COMBAT_ACTION.MASTER_TAKE) {
     state.masterTakeUsed = true;
     dealt = applyDamageToEnemy(state, outgoingDamage(state, 6));
-    notice = `MASTER TAKE · ${dealt} COHERENCE · THE ROOM IS ON THE CARD`;
+    notice = `MASTER TAKE · ${dealt} COHERENCE · THE ROOM IS ON TAPE`;
   } else if (actionId === COMBAT_ACTION.RUNAWAY_FEEDBACK) {
     state.runawayUsed = true;
     state.take = null;

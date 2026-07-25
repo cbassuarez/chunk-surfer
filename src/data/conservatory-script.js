@@ -123,7 +123,7 @@ export const WORK_ORDER = {
 //
 //   read the order   →  WHY he does not leave. He thinks in money and nouns.
 //   talked to the man →  WHO would notice. He watched a finger run up a column
-//                        to an empty box marked returned.
+//                        to an empty checkbox marked RETURNED.
 //   heard the tape    →  WHAT he is feeling. He has already been asked who he
 //                        lost, and he said no, so that is the one question he
 //                        will not put to himself. He deflects.
@@ -1007,9 +1007,9 @@ export const RADIO_DEAD = {
 // It ends on the key, because the title card goes here — and the door does not
 // shut until the title has faded and the song has gone with it.
 export const COLD_OPEN = [
-  { who: 'direction', art: { id: 'thresholdYard', mode: 'hero', caption: 'A hundred metres of nothing.', status: 'THRESHOLD' }, text: 'The yard. Rain on the skips, and a hundred metres of nothing between the booth and the grey door.', hold: 2.6 },
+  { who: 'direction', art: { id: 'thresholdYard', mode: 'hero', caption: 'A hundred metres of nothing.', status: 'THRESHOLD' }, artHold: true, artScope: 'scene', text: 'The yard. Rain on the skips, and a hundred metres of nothing between the booth and the grey door.', hold: 2.6 },
   { who: 'you', text: 'Basement first. It will be the hardest and I want it behind me.', hold: 2.4 },
-  { who: 'direction', text: 'The key turns. The door is heavier than it looks, the way fire doors are.', cue: 'keyturn', hold: 2.6 },
+  { who: 'direction', art: { id: 'door', mode: 'hero', caption: 'The grey door / key in hand', status: 'THRESHOLD' }, text: 'The key turns. The door is heavier than it looks, the way fire doors are.', cue: 'keyturn', hold: 2.6 },
 ];
 
 // ...and then the title. And THEN the door, into a silence the song has just
@@ -1017,10 +1017,10 @@ export const COLD_OPEN = [
 export const AFTER_TITLE = [
   { who: 'direction', art: { id: 'door', mode: 'hero', caption: 'The door closes behind you.', status: 'THRESHOLD' }, text: 'The service door closes behind you.',
     cue: 'door', shake: 2.2, shakeMs: 620, flash: true, flashMs: 220, hold: 3.4 },
-  { who: 'you', text: 'Darker than the yard. Which is not great, because the yard was dark.', hold: 2.6 },
+  { who: 'you', artClear: true, text: 'Darker than the yard. Which is not great, because the yard was dark.', hold: 2.6 },
   { who: 'you', text: 'And quieter. No rain in here. No rain, no traffic, no plant, no lift.', hold: 2.8 },
   { who: 'you', text: 'Minus sixty decibels, near enough, before I have taken the recorder out of the bag.', hold: 2.8 },
-  { who: 'direction', text: 'You put the bag down and go through it by feel.', cue: 'bag', hold: 2.6 },
+  { who: 'direction', art: { id: 'flashlight', mode: 'hero', caption: 'Kit check / by feel', status: 'KIT' }, text: 'You put the bag down and go through it by feel.', cue: 'bag', hold: 2.6 },
   { who: 'you', text: 'Torch. Recorder. Headphones. Radio. Keys. The order, folded twice.', cue: 'kit', hold: 2.8 },
   { who: 'you', text: 'Five rooms, a minute each, and then I drive home.', hold: 3.2 },
 ];
@@ -1150,11 +1150,11 @@ export const PAGES = [
     id: 'page-6', at: { x: 61, y: 30 }, room: 'lux_nova', decay: 0.28,
     title: 'log — 02:10', byline: 'sheet 6',
     body: [
-      'Rang the client. Told them the chapel is locked and the key on the ring is for the original ward, not the replacement core.',
+      'Rang the client. Told them the chapel is locked and the key on the keyring is for the original chapel lock, not the replacement lock core.',
       '',
       'Front of house kept the new spare under key control. Box office cabinet, according to the rekey invoice. The tag is in their ledger, not on this sheet.',
       '',
-      'The box office staff door should still answer to the building master. That is the useful key on the ring, if the lock has not swollen.',
+      'The box office staff door should still answer to the building master key, if the lock has not swollen.',
       '',
       { raw: 'I have started leaving these where I turn around. The plan I was given does not match the floor.' },
     ],
@@ -1232,19 +1232,19 @@ export const CHAPEL_KEY_CHECK = {
   start: {
     speaker:'FRONT OF HOUSE · KEY CONTROL',
     lines:[
-      {who:'direction',text:'Three hooks still carry keys. The ledger gives the replacement core one tag.'},
-      {who:'you',text:'Replacement core. Chapel. C-seventeen.'},
+      {who:'direction',text:'Three hooks still carry keys. The ledger gives the replacement lock core one tag.'},
+      {who:'you',text:'Replacement lock core. Chapel. C-seventeen.'},
     ],
     choices:[
-      {text:'CH-04 / ORIGINAL WARD',keyTag:'CH-04',goto:'wrong'},
-      {text:'C-17 / REPLACEMENT CORE',keyTag:'C-17',goto:'right'},
-      {text:'FOH-M / MASTER',keyTag:'FOH-M',goto:'wrong'},
+      {text:'CH-04 / ORIGINAL LOCK',keyTag:'CH-04',goto:'wrong'},
+      {text:'C-17 / REPLACEMENT LOCK',keyTag:'C-17',goto:'right'},
+      {text:'FOH-M / MASTER KEY',keyTag:'FOH-M',goto:'wrong'},
     ],
   },
   wrong:{
     speaker:'FRONT OF HOUSE · KEY CONTROL',
     lines:[
-      {who:'direction',text:'The wrong ring drops against the steel cabinet. The sound leaves the office before you do.'},
+      {who:'direction',text:'The wrong keyring drops against the steel cabinet. The sound leaves the office before you do.'},
       {who:'you',text:'No. Read it properly.'},
     ],
     goto:'start',
@@ -1252,8 +1252,8 @@ export const CHAPEL_KEY_CHECK = {
   right:{
     speaker:'FRONT OF HOUSE · KEY CONTROL',
     lines:[
-      {who:'direction',text:'C-17 comes off its hook. Brass, two cuts newer than everything else on the ring.'},
-      {who:'you',text:'Chapel key. Replacement core.'},
+      {who:'direction',text:'C-17 comes off its hook. Brass, two cuts newer than everything else on the keyring.'},
+      {who:'you',text:'Chapel key. Replacement lock core.'},
     ],
   },
 };
@@ -1333,7 +1333,7 @@ export const HIM_LINES = [
   { who: 'you', text: 'Here is the arithmetic. He was better than me and it got him. So being better is not the axis. Something else is the axis, and I have been walking around inside it for two hours looking for a fault in his mic technique.' },
   { who: 'you', text: "It wanted something off him. It got it. I have listened to enough of him tonight to know he had it to give — whatever it was, he had lost somebody, or he could be talked into believing he had, and in this place that is the same thing." },
   { who: 'surfer', text: 'he gave it to me. he gave it and gave it and gave it.', rate: 0.9 },
-  { who: 'you', text: "Then he was generous and I am not. I have nothing in me it wants. No sister, no wife, no boy on a bike. I have a job, a torch, and a card with four minutes of nothing on it, and it can starve." },
+  { who: 'you', text: "Then he was generous and I am not. I have nothing in me it wants. No sister, no wife, no boy on a bike. I have a job, a torch, and a tape with four minutes of nothing on it, and it can starve." },
 ];
 
 export const LINES = {
@@ -1344,7 +1344,7 @@ export const LINES = {
   listenOff: { who: 'you', text: 'Not yet. Off it comes.' },
   mustRoll: { who: 'you', text: "No. Levels are set. You don't set a level and walk away — you roll. [r]." },
   already: { who: 'you', text: "Done that one. Clean minute, in the bag. I'm not doing it twice." },
-  chapelLocked: { who: 'you', text: 'Not the chapel. Not yet. You do the chapel last, when the other four are on the card.' },
+  chapelLocked: { who: 'you', text: 'Not the chapel. Not yet. You do the chapel last, when the other four are on tape.' },
   // ROLL: the room drops out and the hiss comes up, and you must not move.
   recStart: { who: 'direction', text: 'The room drops out of the cans. Tape hiss, and under it nothing, and you have forty-five seconds to hold still inside it.' },
   recDone: { who: 'you', text: 'Clean. One minute of nothing, and the nothing is theirs.' },
@@ -1609,7 +1609,7 @@ export const INVERT_START = [
 export const FALSE_DOOR = [
   { who: 'direction', text: 'The grey service door. The one you came in through, where the plan says it is.' },
   { who: 'you', text: 'There you are. Fine. I was tired. I was anxious and I walked past it.' },
-  { who: 'direction', text: 'Relief arrives all at once: the guard, the returned box, the wet yard eleven seconds away. Your exit is incoming.' },
+  { who: 'direction', text: 'Relief arrives all at once: the guard, the RETURNED checkbox, the wet yard eleven seconds away. Your exit is incoming.' },
   { who: 'direction', text: 'It is right there and it does not open. And then it is not right there — a foot to the left, and then a wall.' },
   { who: 'surfer', text: 'You did not vanquish me. There is no version of this where you vanquish me. I am the room.' },
   { who: 'direction', text: 'The door goes on not being where the door is. Your waypoint blinks out, and re-draws, pointing somewhere you never marked.' },

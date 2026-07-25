@@ -1,6 +1,7 @@
 import { uiDraw, uiFill, uiLine, uiText, uiWrap } from '../render/ui.js';
 import { UI_COLOR } from '../render/palette.js';
 import { loadStoryArtImage, resolveStoryArt } from './story-art.js';
+import { storyArtImageRect, storyArtLoadLabel, storyArtLoadState } from './story-art-layout-model.js';
 
 export const STORY_ART_LAYOUT = Object.freeze({
   compact: { minRows: 8, maxRows: 11, preferredRows: 10 },
@@ -199,29 +200,8 @@ export function planStoryArtSideBySide({
   };
 }
 
-function coverRect(srcW, srcH, dstW, dstH) {
-  if (!srcW || !srcH || !dstW || !dstH) {
-    return { sx: 0, sy: 0, sw: srcW || 1, sh: srcH || 1 };
-  }
-
-  const srcRatio = srcW / srcH;
-  const dstRatio = dstW / dstH;
-
-  if (srcRatio > dstRatio) {
-    const sw = srcH * dstRatio;
-    return { sx: (srcW - sw) / 2, sy: 0, sw, sh: srcH };
-  }
-
-  const sh = srcW / dstRatio;
-  return { sx: 0, sy: (srcH - sh) / 2, sw: srcW, sh };
-}
-
 function toneIsWarning(art) {
   return art?.tone === 'device' || art?.tone === 'signal';
-}
-
-function imageLoaded(imgRec) {
-  return !!(imgRec?.loaded && !imgRec.error && imgRec.image?.naturalWidth && imgRec.image?.naturalHeight);
 }
 
 export function drawStoryArtCard(ref, {
@@ -243,6 +223,7 @@ export function drawStoryArtCard(ref, {
     : storyArtRows(cardMode, rows);
   const imgRec = art.src ? loadStoryArtImage(art.src) : null;
   const warning = toneIsWarning(art);
+  const loadState = storyArtLoadState(art, imgRec);
 
   uiDraw(({ ctx, dpr, cellW, cellH }) => {
     const px = x * cellW * dpr;
@@ -276,9 +257,15 @@ export function drawStoryArtCard(ref, {
     ctx.fillStyle = 'rgba(1,4,8,0.98)';
     ctx.fillRect(imageBoxX, imageBoxY, imageBoxW, imageBoxH);
 
-    if (imageLoaded(imgRec)) {
+    if (loadState === 'ready') {
       const img = imgRec.image;
-      const r = coverRect(img.naturalWidth, img.naturalHeight, imageBoxW, imageBoxH);
+      const r = storyArtImageRect({
+        srcW: img.naturalWidth,
+        srcH: img.naturalHeight,
+        dstW: imageBoxW,
+        dstH: imageBoxH,
+        transform: art.transform,
+      });
       ctx.save();
       ctx.beginPath();
       ctx.rect(imageBoxX, imageBoxY, imageBoxW, imageBoxH);
@@ -288,7 +275,17 @@ export function drawStoryArtCard(ref, {
         ? 'saturate(0.92) contrast(1.14) brightness(0.91)'
         : 'saturate(0.94) contrast(1.08) brightness(0.95)';
       ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(img, r.sx, r.sy, r.sw, r.sh, imageBoxX, imageBoxY, imageBoxW, imageBoxH);
+      ctx.drawImage(
+        img,
+        r.sx,
+        r.sy,
+        r.sw,
+        r.sh,
+        imageBoxX + r.dx,
+        imageBoxY + r.dy,
+        r.dw,
+        r.dh,
+      );
       ctx.filter = 'none';
 
       // Phosphor plate wash: screen-space, quiet, stable.
@@ -298,9 +295,10 @@ export function drawStoryArtCard(ref, {
       ctx.fillRect(imageBoxX, imageBoxY, imageBoxW, imageBoxH);
       ctx.restore();
     } else {
-      ctx.fillStyle = art.missing ? 'rgba(255,178,74,0.07)' : 'rgba(112,255,230,0.05)';
+      const problem = loadState === 'missing' || loadState === 'error';
+      ctx.fillStyle = problem ? 'rgba(255,178,74,0.07)' : 'rgba(112,255,230,0.05)';
       ctx.fillRect(imageBoxX, imageBoxY, imageBoxW, imageBoxH);
-      ctx.strokeStyle = art.missing ? 'rgba(255,178,74,0.28)' : 'rgba(112,255,230,0.18)';
+      ctx.strokeStyle = problem ? 'rgba(255,178,74,0.28)' : 'rgba(112,255,230,0.18)';
       ctx.lineWidth = Math.max(1, dpr);
       ctx.strokeRect(imageBoxX + dpr, imageBoxY + dpr, imageBoxW - 2 * dpr, imageBoxH - 2 * dpr);
     }
@@ -355,8 +353,12 @@ export function drawStoryArtCard(ref, {
   });
 
   const label = String(art.label || '').toUpperCase();
-  const status = String(art.status || '').toUpperCase();
-  const caption = art.missing ? fallbackCaption : art.caption;
+  const loadLabel = storyArtLoadLabel(loadState);
+  const status = String(loadLabel || art.status || '').toUpperCase();
+  const caption = loadState === 'missing' ? fallbackCaption
+    : loadState === 'error' ? 'Decode failed'
+      : loadState === 'loading' ? 'Loading still'
+        : art.caption;
   const labelY = y + h - 2;
   const captionY = y + h - 1;
 
@@ -374,10 +376,13 @@ export function drawStoryArtCard(ref, {
     if (lines[0]) uiText(x + 2, captionY, lines[0], 'ui-secondary', 0.66);
   }
 
-  // A one-cell dormant baseline keeps missing stills from looking broken.
-  if (art.missing) {
-    uiFill(x + 2, y + Math.max(2, Math.floor(h / 2)), Math.max(4, w - 4), 0.16, 'rgba(255,178,74,0.20)');
-    uiLine(x + 2, y + Math.max(3, Math.floor(h / 2) + 1), x + Math.max(4, w - 2), y + Math.max(3, Math.floor(h / 2) + 1), UI_COLOR.amber, 0.34, 1);
+  // A one-cell dormant baseline keeps unavailable stills from looking broken.
+  if (loadState !== 'ready') {
+    const midY = y + Math.max(2, Math.floor(h / 2));
+    const marker = loadLabel || 'STILL PENDING';
+    uiText(x + Math.max(2, Math.floor((w - marker.length) / 2)), midY, marker, loadState === 'loading' ? 'ui-secondary' : 'ui-amber', loadState === 'loading' ? 0.58 : 0.78);
+    uiFill(x + 2, midY + 1, Math.max(4, w - 4), 0.16, loadState === 'loading' ? 'rgba(112,255,230,0.16)' : 'rgba(255,178,74,0.20)');
+    uiLine(x + 2, midY + 2, x + Math.max(4, w - 2), midY + 2, loadState === 'loading' ? UI_COLOR.primary : UI_COLOR.amber, loadState === 'loading' ? 0.24 : 0.34, 1);
   }
 
   return { rendered: true, rows: h, art };
