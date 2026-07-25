@@ -60,7 +60,7 @@ assert.match(mainSource,/function tickChunkSurfOffer\(\)\{[\s\S]*?return false;[
 assert.match(mainSource,/ENTER SOURCE/,'the chapel threshold exposes an explicit Source interaction');
 assert.match(mainSource,/if\(usingSourceSpace\(\)\)\{drawSourceHud\(cols,rows\);return;\}/,'Source uses its own HUD before any building map, battery, or takes UI');
 assert.match(mainSource,/if\(SPEECH\.isSpeaking\(\)\|\|scenes\.blocksInput\(\)\)chunkSurfRuntime\.protectMoment/,'dialogue and blocking handoffs suspend Source pursuit');
-assert.match(mainSource,/The fork finds no stable source at this address[\s\S]{0,80}return;/,'Tune cannot fall through to torch control inside Source Space');
+assert.match(mainSource,/usingSourceSpace\(\)\)\{\s*const result=chunkSurfRuntime\.tuneFocused\([\s\S]*?if\(result\.handled\)\{[\s\S]*?return;\s*\}[\s\S]*?\}\s*if\(itemLost\('torch'\)\)/,'In Source, F tunes a focused landmark and otherwise falls through to the torch (the flashlight stays available)');
 assert.match(mainSource,/textSpace:\s*sourceTextSpaceActive\(\)/,'only Source Space proper selects the clear text renderer');
 assert.match(mainSource,/CHUNK_SURF_PHASE\.TRANSFORMING,CHUNK_SURF_PHASE\.LANDSCAPE,CHUNK_SURF_PHASE\.FINAL,CHUNK_SURF_PHASE\.COMPLETED/,'the physical long hall is excluded from text rendering');
 assert.match(mainSource,/onDone:beginSourceTowerTransition/,'the completed Source endpoint feeds the tower crossing route');
@@ -110,7 +110,14 @@ for (const entry of Object.values(SOURCE_ATLAS.entries)) {
     ...runtime.textInstances({px:0,py:-394}),
     ...runtime.textInstances({px:80,py:-564}),
   ];
-  assert.deepEqual(runtime.propInstances(),[],'mesh sheets end when the actual Source map begins');
+  // The long-hall page sheets end, but the open field surfaces the cathédrale
+  // engloutie: real building meshes (vaults, bells, pews, the organ) leaking up
+  // through the code, denser toward the end. They render via renderPropPass and
+  // are composited by the text-space shader (solid stone half made of source).
+  const leaked=[[0,-320],[0,-440],[0,-540],[40,-470],[-40,-390]].flatMap(([x,y])=>runtime.propInstances(x,y,{time:2}));
+  assert.ok(leaked.length>0,'the open field surfaces drowned architecture as real meshes');
+  assert.ok(leaked.some((entry)=>['chapel_vault','pew','altar_table','lectern','tower_bell_01','tower_bell_04','tower_frame','organ_console','organ_pipes','grand_piano','hall_structure','chapel_inner_screen'].includes(entry.mesh)),'real building geometry surfaces through the field (cathédrale engloutie)');
+  assert.ok(leaked.every((entry)=>typeof entry.mesh==='string'&&entry.matrix?.length===16),'every surfaced/drift piece is a placed mesh');
   assert.ok(architecture.length>=450,'the authored causeways are densely described by overlapping source geometry');
   assert.ok(['ramp','frame','span','monolith','pillar','endpoint','reference'].every((surface)=>architecture.some((entry)=>entry.semantic===`text-architecture:${surface}`)), 'ramps, references, and large-scale structures are all built from source text');
   assert.ok(architecture.filter((entry)=>entry.overlapLayer!=='base').length>=180,'offset source layers overlap across the map');
@@ -130,8 +137,13 @@ for (const entry of Object.values(SOURCE_ATLAS.entries)) {
   assert.ok(architecture.every((entry)=>entry.matrix?.length===16&&[...entry.matrix].every(Number.isFinite)),'all text architecture uses complete finite matrices');
   assert.ok(sourceLandscapeFloorAt(0,-320)>12,'the terminal occupies the top of a substantial final ramp');
   for(let depth=0;depth<339;depth+=1)assert.ok(Math.abs(sourceLandscapeFloorAt(0,-depth-1)-sourceLandscapeFloorAt(0,-depth))<=.45,'every ramp step remains walkable without jumping');
-  assert.ok(runtime.geometry.cellAt(80,-564),'the final causeway reaches the authored horizon');
-  assert.equal(runtime.geometry.cellAt(40,-450),null,'off-route space is a visible authored boundary, not an oversized open field');
+  assert.ok(runtime.geometry.cellAt(80,-564),'the final horizon is reachable');
+  // The field is now one open, freely-roamable ground (Oblivion-style) — off the
+  // routes is walkable, not an invisible causeway wall. The routes survive only
+  // as brighter path material for wayfinding; the only hard edge is the field's
+  // own perimeter, rendered as a visible wall of code.
+  assert.ok(runtime.geometry.cellAt(40,-450),'off-route space is open, walkable ground — no invisible causeway walls');
+  assert.equal(runtime.geometry.cellAt(0,-900),null,'beyond the field perimeter there is no ground (sky, not corridor)');
 }
 
 {

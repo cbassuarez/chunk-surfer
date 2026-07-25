@@ -1,5 +1,6 @@
 import { uiSize, uiText, uiCenter, uiScrim, uiFill } from '../render/ui.js';
 import { drawVfdRow, vfdRowStyle } from '../render/vfd-select.js';
+import { activeTheme } from '../render/palette.js';
 import { drawMachinePanel } from '../render/presentation.js';
 import { createHitRegions } from '../render/hit-regions.js';
 import { promptLine } from './bindings.js';
@@ -102,7 +103,7 @@ export function makePauseScene({
       wordmark: 'CHUNK SURFER',
       label: 'FIELD HOLD',
       source: 'RUN PAUSED',
-      footer: promptLine([{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: 'CONFIRM' }, { action: 'back', label: 'RESUME' }]),
+      footerParts: [{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: 'CONFIRM' }, { action: 'back', label: 'RESUME' }],
       meter: false,
     });
 
@@ -157,7 +158,7 @@ export function makePauseScene({
         nowMs: (typeof performance !== 'undefined' ? performance.now() : Date.now()),
       });
       const cls = item.danger ? (on ? 'ui-danger' : 'ui-amber') : (on ? 'ui-primary' : 'ui-secondary');
-      drawVfdRow({ uiFill, uiText, inverseColor: item.danger ? 'rgba(255,76,76,0.90)' : 'rgba(255,181,54,0.90)' }, {
+      drawVfdRow({ uiFill, uiText, theme: activeTheme, inverseColor: item.danger ? activeTheme().danger : null }, {
         x: ix, y: rowY, w: Math.min(34, body.w), label: clip(item.label, 26), style, role: cls,
       });
       if (body.w < 70) uiText(ix + 2, rowY + 1, clip(item.detail, Math.max(8, body.w - 4)), 'ui-secondary', on ? 0.9 : 0.56);

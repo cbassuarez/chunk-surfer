@@ -13,6 +13,7 @@ import { settingsFooterTips, clipTip } from './settings-tips.js';
 import {
   applyVfdSettings, vfdSettings, PHOSPHOR_THEMES, PHOSPHOR_LABEL,
   FLICKER_LEVELS, FLICKER_LABEL, vfdFlickerLevel,
+  activeTheme,
 } from '../render/palette.js';
 import * as AUDIO from '../audio/story-audio.js';
 import { RULE_LABELS, RULE_OPTIONS, VALUE_LABELS } from '../progression/difficulty-defs.js';
@@ -225,6 +226,7 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           phosphor: vfdSettings.phosphor,
           brightness: vfdSettings.brightness,
           flicker: vfdFlickerLevel(),
+          menuContrast: vfdSettings.menuContrast,
         },
       },
     });
@@ -360,6 +362,9 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           { id: 'flicker', label: 'VFD FLICKER',
             value: () => FLICKER_LABEL[vfdFlickerLevel()],
             adjust: (d) => cycleVfd('flicker', FLICKER_LEVELS, d) },
+          { id: 'menuContrast', label: 'HIGH CONTRAST MENUS',
+            value: () => vfdSettings.menuContrast ? 'ON' : 'OFF',
+            adjust: () => setVfd({ menuContrast: !vfdSettings.menuContrast }) },
           { id: 'visualFx', label: 'VISUAL FX',
             value: () => setting('fx', true) ? 'ON' : 'OFF',
             adjust: () => set('fx', !setting('fx', true)) },
@@ -714,13 +719,13 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
         wordmark: 'AUDIOCORP',
         label: inGame ? 'SERVICE MENU' : 'MAIN MENU',
         source: 'SETUP',
-        footer: promptLine([
+        footerParts: [
           { action: 'tabNext', label: 'SECTION' },
           { action: 'select', label: 'ROW' },
           { action: 'set', label: 'SET' },
           { action: 'confirm', label: 'RUN' },
           ...(inGame ? [] : [{ action: 'back', label: 'DONE' }]),
-        ]),
+        ],
         meter: false,
       });
 
@@ -794,7 +799,7 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
 
         // The label carries the selection; the value column to its right stays
         // legible, so the inverse block never swallows the setting itself.
-        drawVfdRow({ uiFill, uiText }, {
+        drawVfdRow({ uiFill, uiText, theme: activeTheme }, {
           x: ix, y: ry, w: 24, label: row.label,
           style: vfdRowStyle({
             hovered: hits.isHovered(`row:${row.id || i}`),

@@ -23,13 +23,18 @@ export function bagPanelBounds({ cols, rows }) {
   };
 }
 
-export function bagLayout({ body, forceMode = null } = {}) {
+// `guideRows` reserves a band above the rails for a guided-step callout. It is
+// real geometry, not an overlay: a guided moment pushes the case's own content
+// up rather than printing on top of it.
+export function bagLayout({ body, forceMode = null, guideRows = 0 } = {}) {
   const b = body || { x: 0, y: 0, w: 60, h: 22 };
   const compact = forceMode === 'compact' || (forceMode !== 'wide' && (b.w < 68 || b.h < 20));
 
   const tabs = { x: b.x, y: b.y, w: b.w, h: 2 };
   const actionRail = { x: b.x, y: b.y + b.h - 1, w: b.w, h: 1 };
-  const taskRail = { x: b.x, y: actionRail.y - 1, w: b.w, h: 1 };
+  const guideH = Math.max(0, Math.min(Math.floor(b.h / 3), Math.floor(guideRows)));
+  const guide = guideH ? { x: b.x, y: actionRail.y - 1 - guideH, w: b.w, h: guideH } : null;
+  const taskRail = { x: b.x, y: actionRail.y - 1 - guideH - (guideH ? 1 : 0), w: b.w, h: 1 };
 
   if (compact) {
     const detailH = clamp(Math.floor(b.h * 0.34), 5, 8);
@@ -43,6 +48,7 @@ export function bagLayout({ body, forceMode = null } = {}) {
       detail: { x: b.x, y: contentY, w: b.w, h: detailH },
       list: { x: b.x, y: listY, w: b.w, h: Math.max(3, taskRail.y - listY - 1) },
       dividerX: null,
+      guide,
       taskRail,
       actionRail,
     };
@@ -65,6 +71,7 @@ export function bagLayout({ body, forceMode = null } = {}) {
       w: Math.max(20, b.x + b.w - dividerX - 2),
       h: contentH,
     },
+    guide,
     taskRail,
     actionRail,
   };

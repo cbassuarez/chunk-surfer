@@ -45,6 +45,10 @@ export const ZONE = {
   chapelOuter: 11,
   bellTower: 12,
   academic: 13,
+  danceStudio: 14,  // the sub-basement dance wing. Shares B3's room tone and is
+                    // deliberately NOT in ZONE_RECORDING_ROOM: these are rooms
+                    // you walk, not takes you roll.
+  store: 15,        // the costume and prop store at the corridor's dead end
 };
 
 // Which world (audio + prompt) a zone belongs to. Corridors borrow the room
@@ -59,6 +63,8 @@ export const ZONE_WORLD = {
   [ZONE.practice]: 'soundnoisemusic',
   [ZONE.chapel]: 'lux_nova',
   [ZONE.plant]: 'main_b3',
+  [ZONE.danceStudio]: 'main_b3',
+  [ZONE.store]: 'main_b3',
   [ZONE.stair]: 'main_b3',
   [ZONE.sourceSpace]: 'source_space',
   [ZONE.chapelOuter]: 'chapel_outer',
@@ -99,6 +105,8 @@ export function materialForZone(zone) {
     case ZONE.bellTower: return MATERIAL.chapelStone;
     case ZONE.academic: return MATERIAL.academicPlaster;
     case ZONE.plant: return MATERIAL.metalPlant;
+    // Sprung maple and a mirrored wall: bright where B3 is dead.
+    case ZONE.danceStudio: return MATERIAL.woodVelvet;
     case ZONE.sourceSpace: return MATERIAL.sourceField;
     default: return MATERIAL.serviceConcrete;
   }
@@ -139,6 +147,17 @@ export const GLYPHS = {
   'G': { floor: 0.0, ceil: 4.2, zone: 'bellTower', material: 'chapelStone' },
   'M': { floor: 0.0, ceil: 3.8, zone: 'plant', material: 'metalPlant' },
   'Q': { floor: 0.0, ceil: 4.5, zone: 'academic', material: 'academicPlaster' },
+  // ── the sub-basement dance wing ────────────────────────────────────────────
+  // Taller than B3 and hard where B3 is soft: sprung maple, a mirrored wall, and
+  // nothing on the work order. A room you cross, not a room you record.
+  'K': { floor: 0.0, ceil: 3.6, zone: 'danceStudio', material: 'woodVelvet' },
+  // The prop store: a step down, and a ceiling you can touch.
+  'V': { floor: -0.35, ceil: 2.25, zone: 'store', material: 'serviceConcrete' },
+  // Service corridor, fixed and LOW. The basement's two corridors are the worst
+  // air in the building on purpose; nobody should want to linger in either.
+  ';': { floor: 0.0, ceil: 2.45, material: 'serviceConcrete' },
+  // The tank room, sunk half a step below the passage that serves it.
+  'J': { floor: -0.40, ceil: 3.0, zone: 'plant', material: 'metalPlant' },
 };
 
 // Resolve a glyph to a cell descriptor. `base` lifts a whole physical level.

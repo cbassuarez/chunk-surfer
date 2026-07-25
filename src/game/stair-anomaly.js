@@ -63,8 +63,13 @@ export const LEGACY_STAIR_ANOMALY_LEDGER = Object.freeze({
 
 export function decideStairAnomalyEnvironment({ routeTrunk = 'baseline', runId = '', now = 0 } = {}) {
   const seed = stairAnomalyHash(`${runId}:${now}:stair-anomaly`) || 4417;
+  // NEVER on the way DOWN to the basement. That descent is the route to studio B3
+  // — the first room on the order, walked before the player has done anything —
+  // and an impossible stair there reads as the game being broken rather than the
+  // building being wrong. The seal variant keeps its inverted slope but happens on
+  // the climb OUT: you are trying to leave and it keeps taking you down.
   if (routeTrunk === 'flooded-seal') {
-    return { stairId: 'basement', travel: 'down', visualSlope: 'down', variant: STAIR_ANOMALY_VARIANT.SEAL, seed };
+    return { stairId: 'basement', travel: 'up', visualSlope: 'down', variant: STAIR_ANOMALY_VARIANT.SEAL, seed };
   }
   if (routeTrunk === 'flooded-surface') {
     return { stairId: 'basement', travel: 'up', visualSlope: 'up', variant: STAIR_ANOMALY_VARIANT.SURFACE, seed };
@@ -76,7 +81,8 @@ export function decideStairAnomalyEnvironment({ routeTrunk = 'baseline', runId =
     const basement = (seed & 1) === 1;
     return {
       stairId: basement ? 'basement' : 'upper',
-      travel: basement ? 'down' : 'up',
+      // Always an ascent. See the seal note above: the descent to B3 is sacred.
+      travel: 'up',
       visualSlope: basement ? 'down' : 'up',
       variant: STAIR_ANOMALY_VARIANT.UNCERTAIN,
       seed,

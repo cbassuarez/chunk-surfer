@@ -64,6 +64,14 @@ export function uiPointFromClient(clientX, clientY) {
   };
 }
 
+// Cell metrics in cell space, for instruments that must place drawn art and
+// uiText glyphs on the same geometry. Cells are taller than they are wide, so
+// anything that wants to stay square has to know the ratio before it can pick
+// its scale — and that decision happens outside the draw callback.
+export function uiCellMetrics() {
+  return { cellW: scaledCellW, cellH: scaledCellH, aspect: scaledCellW / (scaledCellH || 1) };
+}
+
 // Low-level drawing hook for code-native instruments. The callback receives
 // device-pixel metrics; authored modules still express all geometry in cells.
 export function uiDraw(draw) {
@@ -153,7 +161,16 @@ export function uiFill(cx, cy, w, h, color = 'rgba(6,7,9,0.92)') {
   if (!ctx) return;
   const dpr = atlasDpr();
   ctx.fillStyle = color;
-  ctx.fillRect(cx * scaledCellW * dpr, cy * scaledCellH * dpr, w * scaledCellW * dpr, h * scaledCellH * dpr);
+  const x0 = cx * scaledCellW * dpr;
+  const y0 = cy * scaledCellH * dpr;
+  // The cell grid is floor(width / cellW) cells wide, so a full-screen fill would
+  // leave a sub-cell remainder strip on the right (and bottom) uncovered — and
+  // the opaque layer beneath, the diffusion canvas, would show through it as a
+  // band. When a fill runs to the grid extent, snap its far edge to the canvas
+  // so the background covers that strip.
+  const x1 = (cx + w >= cols) ? canvas.width : x0 + w * scaledCellW * dpr;
+  const y1 = (cy + h >= rows) ? canvas.height : y0 + h * scaledCellH * dpr;
+  ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
 }
 
 export function uiStrokeRect(cx, cy, w, h, color = UI_COLOR.frame, alpha = 1, lineWidth = 1) {

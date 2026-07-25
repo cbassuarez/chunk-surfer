@@ -828,6 +828,49 @@ export function doorAcousticLossBetween(source,listener){
 
 export function sealedDoorways(){return plan.doorVolumes.filter((volume)=>volume.mask===F.BRICKED).map((volume)=>({id:`sealed:${Math.round(volume.cx)},${Math.round(volume.cy)}`,cx:volume.cx,cy:volume.cy,widthAxis:volume.widthAxis}));}
 
+// A door stops being a door.
+//
+// The building already knows how to draw a doorway that is no longer one: an
+// `'x'` glyph compiles to a BRICKED volume (see authorDoorThresholds), which
+// `sealedDoorways()` hands out as a `door_sealed_scar` — jamb scars, a lintel,
+// and masonry infill. Retiring a live door is therefore not a new kind of thing,
+// it is the same thing arrived at later: become that volume, and stop being a
+// portal.
+//
+// Dropping the portal is what makes it honest everywhere else at once. The leaf,
+// frame and head are emitted from `doorState()`/`forEachDoor`, `doorNear` stops
+// offering to open a wall, `saveDoorState` stops writing it, the acoustic march
+// stops counting a leaf that is now nine inches of brick, and the 2D map stops
+// drawing a door on it. None of those call sites need to know this happened.
+//
+// Callers own persistence: there is no room in the door save schema for this
+// (normalizeDoorSave whitelists state/wedge/closerArmed), so whoever retires a
+// door records it as story state and replays it on load.
+export function retireDoor(id){
+  const at=doorPortals.findIndex((portal)=>portal.id===id||portal.legacyId===id);
+  if(at<0) return false;
+  const portal=doorPortals[at];
+
+  // The volume becomes masonry, exactly as the compiler would have built it from
+  // an 'x'. `rgba` matters as much as `flags` here: it is the texture the
+  // raymarcher reads, and the compile-time path never has to write it because
+  // encoding happens afterwards.
+  if(portal.volume) portal.volume.mask=F.BRICKED;
+  for(const cell of portal.cells){
+    if(!inside(cell.x,cell.y)) continue;
+    const i=idx(cell.x,cell.y);
+    plan.solid[i]=1;
+    plan.flags[i]=F.SOLID|F.BRICKED;
+    plan.material[i]=MATERIAL.serviceConcrete;
+    plan.rgba[i*4+2]=F.SOLID;
+  }
+
+  doorPortals.splice(at,1);
+  for(const [key,value] of [...doorCellToPortal.entries()]) if(value===portal) doorCellToPortal.delete(key);
+  buildPhysicalSpans();
+  return true;
+}
+
 // ── mutation support (M4.1 writes through these) ────────────────────────────
 export function setSolid(x, y, solid) {
   if (!inside(x, y)) return false;

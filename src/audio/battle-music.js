@@ -147,9 +147,13 @@ export function nextBattleBarAt(time, downbeatAt) {
   return origin + bars * BATTLE_BAR_SECONDS;
 }
 
-function cueLayerGain(cueId, layerId, fallback) {
-  const layer = authoredCue(cueId)?.layers?.find((entry) => entry.id === layerId)
-    || authoredCue(cueId)?.layers?.[0];
+function cueLayerGain(cueId, layerId, fallback, { strict = false } = {}) {
+  const layers = authoredCue(cueId)?.layers;
+  // `strict` exists for the entry pairs. The loose fallback takes layers[0],
+  // which for an entry cue is the FILL — so a tail whose layer id ever drifted
+  // would silently be mixed at its fill's level. A missing tail gain falls back
+  // to the tail's own default instead.
+  const layer = layers?.find((entry) => entry.id === layerId) || (strict ? null : layers?.[0]);
   const gain = Number(layer?.gain);
   return Number.isFinite(gain) && gain >= 0 ? gain : fallback;
 }
@@ -158,7 +162,7 @@ function gainFor(id) {
   if (id === 'bed') return cueLayerGain('battle.bed', 'battle.bed.layer', FALLBACK_GAIN[id]);
   if (id.startsWith('lead-')) return cueLayerGain(`battle.${id.replace('-', '.')}`, `battle.${id.replace('-', '.')}.layer`, FALLBACK_GAIN[id]);
   const match = /^entry-(\d)-(fill|tail)$/.exec(id);
-  if (match) return cueLayerGain(`battle.entry.${match[1]}`, `battle.entry.${match[1]}.${match[2]}`, FALLBACK_GAIN[id]);
+  if (match) return cueLayerGain(`battle.entry.${match[1]}`, `battle.entry.${match[1]}.${match[2]}`, FALLBACK_GAIN[id], { strict: true });
   return FALLBACK_GAIN[id] ?? 1;
 }
 
@@ -383,10 +387,22 @@ export function createBattleMusicSession({
       paramValueAt(master.gain, masterTarget(), now());
       master.connect(destination);
       entryVariant = chooseEntryPair();
-      const fillAt = now() + START_LOOKAHEAD_SECONDS;
+      // A fill and its tail are ONE hit, split either side of beat one, and they
+      // are always the same variant — never a fill from one take with the ring-out
+      // of another.
       const fill = entryVariant ? bankBuffer(bank, `entry-${entryVariant}-fill`) : null;
       const tail = entryVariant ? bankBuffer(bank, `entry-${entryVariant}-tail`) : null;
-      downbeatAt = fillAt + (fill?.duration || 0);
+      // The fill is a PICKUP: it leads INTO the downbeat, so it has to end there.
+      // It used to define the downbeat instead — `fillAt + fill.duration` — and the
+      // three fills are .44, .66 and .44 of a bar long, so the bed's first beat
+      // landed at a different off-grid moment for every variant and the tail then
+      // rang out from that same wrong place. The grid comes first now; the fill is
+      // scheduled backwards from it.
+      const readyAt = now() + START_LOOKAHEAD_SECONDS;
+      const fillSeconds = fill?.duration || 0;
+      const countInBars = fillSeconds ? Math.max(1, Math.ceil(fillSeconds / BATTLE_BAR_SECONDS)) : 0;
+      downbeatAt = readyAt + countInBars * BATTLE_BAR_SECONDS;
+      const fillAt = downbeatAt - fillSeconds;
       if (fill) connectSource(`entry-${entryVariant}-fill`, fill, fillAt);
       connectSource('bed', bankBuffer(bank, 'bed'), downbeatAt, { loop: true });
       if (tail) connectSource(`entry-${entryVariant}-tail`, tail, downbeatAt);

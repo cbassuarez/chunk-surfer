@@ -97,6 +97,15 @@ function drawTuningFork(ctx, box) {
   path(ctx, [[.70,.18],[.82,.10]], box);
 }
 
+// NERVE. Not a heart — a hand held steady: a wrist, and the trace of a pulse
+// under it that has flattened out. The composure branch, drawn as the thing the
+// composure branch is about.
+function drawNerve(ctx, box) {
+  path(ctx, [[.10,.62],[.26,.62],[.34,.34],[.44,.82],[.54,.52],[.62,.62],[.90,.62]], box);
+  path(ctx, [[.16,.24],[.24,.16],[.40,.14],[.52,.18]], box);
+  circle(ctx, .70, .28, .10, box);
+}
+
 function drawKeyring(ctx, box) {
   circle(ctx, .28, .38, .20, box);
   path(ctx, [[.44,.44],[.78,.78],[.88,.68]], box);
@@ -138,6 +147,7 @@ const DRAW = Object.freeze({
   radio: drawRadio,
   interface: drawInterface,
   'tuning-fork': drawTuningFork,
+  nerve: drawNerve,
   keyring: drawKeyring,
   coffee: drawCoffee,
   room: drawRoom,

@@ -47,7 +47,7 @@ assert.match(yml, /Upload desktop bundles[\s\S]*if: matrix\.platform != 'ubuntu-
 assert.match(yml, /libwebkit2gtk-4\.1-dev libayatana-appindicator3-dev/, 'linux runner installs current Tauri WebKit dependencies');
 assert.match(yml, /Free Linux runner disk[\s\S]*\/usr\/share\/dotnet[\s\S]*\/usr\/local\/lib\/android[\s\S]*docker system prune -af/, 'linux release frees hosted-runner disk before large lens packaging');
 assert.match(yml, /pip install --no-cache-dir/, 'release install avoids retaining pip wheel cache during lens packaging');
-assert.match(yml, /actions\/cache\/restore@v4[\s\S]*lens-bundle-v1-\$\{\{ matrix\.target \}\}/, 'release restores the immutable per-target lens bundle cache');
+assert.match(yml, /actions\/cache\/restore@v4[\s\S]*lens-bundle-v2-cu128-\$\{\{ matrix\.target \}\}/, 'release restores the immutable per-target lens bundle cache');
 assert.match(yml, /Build offline lens sidecar and pinned resources[\s\S]*if: steps\.lens-bundle-cache\.outputs\.cache-hit != 'true'/, 'release rebuilds the lens payload only on a cache miss');
 assert.match(yml, /actions\/cache\/save@v4[\s\S]*cache-primary-key/, 'release saves a completed lens bundle immediately for retries and tagged builds');
 assert.match(yml, /Trim Linux lens build scratch space[\s\S]*rm -rf \.lens-build ~\/\.cache\/huggingface ~\/\.cache\/pip/, 'linux release removes sidecar build scratch space before Tauri bundling');
@@ -70,6 +70,27 @@ assert.match(yml, /npm ci/, 'release installs the exact locked frontend dependen
 assert.match(yml, /release-preflight\.mjs/, 'release validates source versions against its tag');
 assert.doesNotMatch(yml, /args: --config src-tauri\/tauri\.lens\.conf\.json/, 'release matrix does not duplicate the mandatory lens config flag');
 assert.doesNotMatch(yml, /macOS Intel|x86_64-apple-darwin/, 'unsupported macOS Intel package is not built');
+// The GPU sidecar packaging: `pip install torch` from the default index is a
+// CPU-only wheel on Windows, which shipped a sidecar that reported no GPU on
+// every Windows machine, and even the CUDA index needs cu128 for RTX 50-series
+// (Blackwell). These assertions guard the whole chain that fixes it.
+const torchInstaller = fs.readFileSync('tools/chunk_surfer/diffusion_server/install_torch.py', 'utf8');
+const lensRequirements = fs.readFileSync('tools/chunk_surfer/diffusion_server/requirements-local.txt', 'utf8');
+const buildBundle = fs.readFileSync('tools/chunk_surfer/diffusion_server/build_bundle.py', 'utf8');
+const gpuSmoke = fs.readFileSync('.github/workflows/lens-gpu-smoke.yml', 'utf8');
+
+assert.match(torchInstaller, /whl\/cu128/, 'torch installer targets the Blackwell-capable cu128 wheel index');
+assert.match(torchInstaller, /torch>=2\.7/, 'torch floor is new enough for RTX 50-series kernels');
+assert.match(torchInstaller, /Darwin[\s\S]*install\(\[TORCH_SPEC/, 'macOS gets the default-index MPS wheel, not a CUDA index');
+// A bare `torch` line in requirements would let the default-index CPU wheel
+// reinstall over the CUDA one. It must be the installer's job alone.
+assert.doesNotMatch(lensRequirements, /^torch(vision)?(\s|>|=|<|$)/m, 'requirements must not list torch; install_torch.py owns it');
+assert.match(buildBundle, /cuda_build is None[\s\S]*CPU-only torch wheel/, 'the bundler refuses to freeze a CPU-only wheel for a CUDA target');
+assert.match(yml, /Install GPU-correct PyTorch[\s\S]*install_torch\.py/, 'release installs GPU-correct torch before the requirements');
+assert.match(yml, /lens-bundle-v2-cu128/, 'the lens bundle cache key is bumped so the CPU-only build is not reused');
+assert.match(gpuSmoke, /install_torch\.py[\s\S]*requirements-local\.txt/, 'the GPU smoke also installs torch from the correct index first');
+assert.match(pkg.scripts['lens:setup'], /install_torch\.py/, 'local lens setup installs GPU-correct torch too');
+
 const readme = fs.readFileSync('README.md', 'utf8');
 assert.match(readme, /Chunk Surfer itch\.io page/, 'README presents itch as the public beta download path');
 assert.match(readme, /GitHub Releases remain available as a developer mirror/, 'README demotes GitHub split assets to mirror status');

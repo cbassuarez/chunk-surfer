@@ -84,7 +84,36 @@ const D = (id, archetype, legacyId, options = {}) => {
 export const CONSERVATORY_DOORS = Object.freeze([
   D('front-main', DOOR_ARCHETYPE.PUBLIC_GLAZED_PAIR, '159,7', { open: true, swing: 'outward', activeLeaves: [0, 1] }),
   D('hall-stage-service', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '197,23', { open: true, hinge: 'right', swing: 'stage-out', widthAxis:'y' }),
-  D('b3-plant-service', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '51,25', { hinge: 'left', swing: 'plant-out', widthAxis:'y' }),
+  // ── the sub-basement dance wing ───────────────────────────────────────────
+  // Studio to studio through the old service wall: this used to be the way to
+  // the plant room, before the plant room ended up on the other side.
+  D('b3-b2-service', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '51,25', { hinge: 'left', swing: 'b2-in', widthAxis:'y' }),
+  // Off the corridor, north side. Acoustic leaves, all three wedged open the way
+  // a working building leaves studio doors when nobody is recording.
+  D('b2-corridor', DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE, '57,43', { open: true, wedged: true, hinge: 'left', swing: 'room-in', widthAxis:'x' }),
+  D('b1-corridor', DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE, '87,43', { open: true, wedged: true, hinge: 'right', swing: 'room-in', widthAxis:'x' }),
+  D('store-corridor', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '5,43', { hinge: 'right', swing: 'store-in', widthAxis:'x' }),
+  // South side: room 5, and the plant room at the end of its own stub.
+  D('room5-corridor', DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE, '25,51', { open: true, hinge: 'left', swing: 'room-in', widthAxis:'x' }),
+  // The plant room is only reachable down the spur now. Its north and east walls
+  // are solid pipe run, so this is the one wall a door can go in — and it means
+  // the bent rig is behind the worst two metres of air in the building.
+  D('plant-spur', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '59,61', { hinge: 'left', swing: 'plant-out', widthAxis:'y' }),
+  // The two rooms off the spur. `services-core` is not on the standard keyring
+  // and is not issued anywhere in the building: these do not open, and the point
+  // of them is that you can hear what is behind them.
+  D('spur-substation', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '51,73', { key: 'services-core', hinge: 'left', swing: 'room-in', widthAxis:'y' }),
+  D('spur-tank', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '59,75', { key: 'services-core', hinge: 'right', swing: 'room-in', widthAxis:'y' }),
+  // The old lift landing, in B1's north wall. The master key still turns it, and
+  // behind it is the shaft: a pit, no car, and eight metres of nothing overhead.
+  D('b1-lift-hatch', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '87,23', { key: 'master', hinge: 'left', swing: 'shaft-in', widthAxis:'x' }),
+  // THE GREY DOOR. The one he came in through, in the yard-facing wall of the
+  // dock, dead centre and directly ahead of where he starts. Closed and keyed to
+  // his own master key, because he locked it behind himself eleven seconds ago.
+  // Nothing is authored on the far side of it: it is a threshold you can stand
+  // in and not pass, which is the point. It does not survive being looked at —
+  // see retireDoor / the post-door beat.
+  D('dock-grey-exterior', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '131,7', { open: false, key: 'master', hinge: 'left', swing: 'escape', widthAxis:'x' }),
   D('dock-foyer-service', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '149,27', { open: true, key: 'master', hinge: 'right', swing: 'escape', widthAxis:'y' }),
   D('dock-inner-service', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '131,33', { open: true, key: 'master', hinge: 'left', swing: 'escape' }),
   D('foh-office', DOOR_ARCHETYPE.STAFF_HALF_GLAZED, '179,41', { key: 'master', hinge: 'left', swing: 'office-in', widthAxis:'y' }),
@@ -108,11 +137,20 @@ export const CONSERVATORY_DOORS = Object.freeze([
   D('organ-loft-service', DOOR_ARCHETYPE.TOWER_SERVICE_SINGLE, null, { at:{x:69,y:163},key:'tower-cleared',hinge:'right',swing:'landing-out',widthAxis:'y' }),
   D('organ-loft-nave', DOOR_ARCHETYPE.TOWER_SERVICE_SINGLE, null, { at:{x:100,y:157},key:'tower-cleared',hinge:'left',swing:'landing-out',widthAxis:'x' }),
   ...[
-    ['academic-classroom-west-1',9,244,'right'],['academic-classroom-east-1',13,244,'left'],
+    ['academic-classroom-west-1',9,244,'right'],
     ['academic-classroom-west-2',9,251,'right'],['academic-classroom-east-2',13,251,'left'],
     ['academic-classroom-west-3',9,258,'right'],['academic-classroom-east-3',13,258,'left'],
     ['academic-classroom-west-4',9,264,'right'],['academic-classroom-east-4',13,264,'left'],
   ].map(([id,x,y,hinge])=>D(id,DOOR_ARCHETYPE.ACADEMIC_WIRED_GLASS,null,{at:{x,y},key:'academic-core',hinge,swing:'classroom-in',widthAxis:'y'})),
+  // The lobby's corridor door: same leaf as the classrooms, no lock. It is the
+  // other half of the way through.
+  D('academic-lobby-core',DOOR_ARCHETYPE.ACADEMIC_WIRED_GLASS,null,{at:{x:13,y:244},open:true,hinge:'left',swing:'room-in',widthAxis:'y'}),
+  // ── the third floor, made walkable ────────────────────────────────────────
+  // The north-east room is the LOBBY: one room given over to circulation so the
+  // core corridor becomes a circuit instead of a spine with a dead end at both
+  // ends. Its two doors are the only unlocked openings on this floor — the pair
+  // that lets you through, and nothing that lets you into a classroom.
+  D('academic-gallery-lobby',DOOR_ARCHETYPE.ACADEMIC_WIRED_GLASS,'45,489',{open:true,hinge:'left',swing:'gallery-in',widthAxis:'y'}),
   D('academic-office-locked-1',DOOR_ARCHETYPE.ACADEMIC_WIRED_GLASS,null,{at:{x:3,y:269},key:'academic-core',hinge:'left',swing:'office-in',widthAxis:'x'}),
   D('academic-office-locked-2',DOOR_ARCHETYPE.ACADEMIC_WIRED_GLASS,null,{at:{x:9,y:269},key:'academic-core',hinge:'right',swing:'office-in',widthAxis:'x'}),
 ]);

@@ -45,24 +45,18 @@ function reachable(runtime,start,goal,maxVisited=180000){
 }
 
 {
-  let state=landscapeState();
-  let runtime=createSourceSpaceRuntime({initialState:state});
-  assert.equal(reachable(runtime,POINTS.entry,POINTS.fork),true,'the entry spine reaches the required Fork Gate without jumping');
-  assert.equal(runtime.geometry.cellAt(0,-330),null,'the unresolved Fork Gate does not expose downstream source');
-
-  state=withTuned(state,'fork-room');
-  runtime=createSourceSpaceRuntime({initialState:state});
-  assert.equal(reachable(runtime,POINTS.fork,POINTS.surfer),true,'the Surfer Origin loop is reachable');
-  assert.equal(reachable(runtime,POINTS.fork,POINTS.work),true,'the Work Order loop is reachable');
-  assert.equal(reachable(runtime,POINTS.fork,POINTS.recordist),true,'the required central spine remains readable');
-
-  state=withTuned(state,'recordist-loop');
-  runtime=createSourceSpaceRuntime({initialState:state});
-  assert.equal(reachable(runtime,POINTS.recordist,POINTS.body),true,'the first pursuit funnel reaches Body Return');
-
-  state=withTuned(state,'body-room');
-  runtime=createSourceSpaceRuntime({initialState:state});
-  assert.equal(reachable(runtime,POINTS.body,POINTS.final),true,'the final causeway reaches the protected horizon');
+  // Exploration-first: the whole field is walkable the moment it opens — no fork
+  // gate, no tune-to-unlock. Every landmark and the horizon are reachable from a
+  // fresh, untuned state, so nothing action-gates the walk.
+  const state=landscapeState();
+  const runtime=createSourceSpaceRuntime({initialState:state});
+  assert.equal(reachable(runtime,POINTS.entry,POINTS.fork),true,'the entry spine reaches the Fork Gate');
+  assert.notEqual(runtime.geometry.cellAt(0,-330),null,'the field is open for exploration from the start — no action walls the downstream source');
+  assert.equal(reachable(runtime,POINTS.fork,POINTS.surfer),true,'the Surfer Origin loop is reachable without tuning');
+  assert.equal(reachable(runtime,POINTS.fork,POINTS.work),true,'the Work Order loop is reachable without tuning');
+  assert.equal(reachable(runtime,POINTS.fork,POINTS.recordist),true,'the central spine is reachable without tuning');
+  assert.equal(reachable(runtime,POINTS.recordist,POINTS.body),true,'Body Return is reachable without tuning');
+  assert.equal(reachable(runtime,POINTS.body,POINTS.final),true,'the final causeway reaches the horizon without tuning');
   for(let y=POINTS.entry.y;y>=POINTS.body.y;y-=1){
     const here=runtime.geometry.cellAt(0,y),next=runtime.geometry.cellAt(0,y-1);
     if(here&&next)assert.ok(Math.abs(here.floor-next.floor)<=.45,`spine step ${y} stays within the movement limit`);
@@ -85,21 +79,18 @@ function reachable(runtime,start,goal,maxVisited=180000){
 }
 
 {
-  let state=withTuned(landscapeState(),'fork-room','recordist-loop');
-  state=apply(state,'CHECKPOINT_SET',{id:'recordist-loop'});
+  // Exploration-first: leaving a landmark no longer arms a pursuit or checkpoints
+  // the player. The hush stalks the field as atmosphere — visible and in motion —
+  // but it never stops the walk or resets progress.
+  const state=withTuned(landscapeState(),'fork-room','recordist-loop');
   const runtime=createSourceSpaceRuntime({initialState:state});
+  const before=[...runtime.state().tuned];
   runtime.onStep({x:0,y:-402},{x:0,y:-407,facing:0});
-  assert.equal(runtime.state().pursuitBeat,SOURCE_PURSUIT_BEAT.BODY_RUN,'leaving Recordist starts the first authored pursuit');
-  assert.equal(runtime.hushMode().colliding,true);
-  const evidenceBefore=[...runtime.state().tuned];
-  const checkpoint=runtime.handleHushContact();
-  assert.equal(runtime.state().attempts,1);
-  assert.deepEqual(runtime.state().tuned,evidenceBefore,'a catch preserves all resolved evidence');
-  assert.equal(runtime.hushMode().colliding,false,'checkpoint reload grants restart grace');
-  assert.equal(checkpoint.y,POINTS.recordist.y+7,'the reload faces forward from the latest stable pad');
-  runtime.tick(5,{...checkpoint});
+  assert.equal(runtime.state().pursuitBeat,null,'movement never arms a pursuit');
+  assert.equal(runtime.hushMode().colliding,false,'the hush never hard-stops exploration');
   runtime.onStep({x:0,y:-470},{x:0,y:-478,facing:0});
-  assert.ok(runtime.state().pursuitsCleared.includes(SOURCE_PURSUIT_BEAT.BODY_RUN),'Body Return clears the first pursuit');
+  assert.equal(runtime.state().pursuitBeat,null,'and it stays that way as you keep wandering');
+  assert.deepEqual(runtime.state().tuned,before,'wandering preserves resolved evidence');
 }
 
 {

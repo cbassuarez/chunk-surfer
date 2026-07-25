@@ -11,7 +11,7 @@ import { uiSize, uiCenter, uiFill, uiText } from '../render/ui.js';
 import { drawLocationIndicator, drawMachinePanel, drawVfdText } from '../render/presentation.js';
 import { createHitRegions } from '../render/hit-regions.js';
 import { drawVfdRow, vfdRowStyle } from '../render/vfd-select.js';
-import { UI_COLOR } from '../render/palette.js';
+import { UI_COLOR, activeTheme } from '../render/palette.js';
 import { getMeta, hasActiveRun } from './save.js';
 import * as AUDIO from '../audio/story-audio.js';
 import { promptLine } from './bindings.js';
@@ -205,7 +205,7 @@ export function makeTitleScene({
       const body = drawMachinePanel(x, y, w, h, {
         label: 'CASE SELECT',
         source: '4417-C',
-        footer: promptLine([{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: 'CONFIRM' }]),
+        footerParts: [{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: 'CONFIRM' }],
         meter: true,
       });
 
@@ -298,7 +298,7 @@ export function makeTitleScene({
           editing: armed,
           nowMs: (typeof performance !== 'undefined' ? performance.now() : Date.now()),
         });
-        drawVfdRow({ uiFill, uiText, inverseColor: armed ? 'rgba(255,76,76,0.90)' : 'rgba(255,181,54,0.90)' }, {
+        drawVfdRow({ uiFill, uiText, theme: activeTheme, inverseColor: armed ? activeTheme().danger : null }, {
           x: itemX,
           y: itemY,
           w: Math.min(colW, drawnLabel.length + 2),

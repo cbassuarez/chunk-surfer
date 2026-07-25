@@ -4,10 +4,10 @@
     "author": "Chunk Surfer project",
     "source": "tools/chunk_surfer/build-props.mjs",
     "license": "project source (mixed: see meshes)",
-    "sha256": "ec986e0bcdb2b293fb0d3b74de49850b7f027f6e64471912d84aaaa6e1795fbc",
+    "sha256": "5112729bbcbb09340bfadce0949dcc5180d051d6a515f1c2d5ff027ac9777b9b",
     "modifications": "Metres, Y-up, ground-centred. Procedural fallback geometry plus user-supplied source meshes (unverified provenance) baked, re-axised, height-scaled, and vertex-cluster decimated under budget.",
-    "triangles": 33386,
-    "bytes": 2238468
+    "triangles": 33642,
+    "bytes": 2253916
   },
   "meshes": [
     {
@@ -508,6 +508,27 @@
         ]
       },
       "triangles": 24,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "calibration_pin",
+      "bounds": {
+        "min": [
+          -0.052,
+          0,
+          -0.052
+        ],
+        "max": [
+          0.052,
+          0.175,
+          0.052
+        ]
+      },
+      "triangles": 256,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",

@@ -33,6 +33,7 @@ const BUTTON_BY_INDEX = Object.freeze({
   13: 'dpadDown',
   14: 'dpadLeft',
   15: 'dpadRight',
+  16: 'guide',
   17: 'touchpad',
 });
 
@@ -41,6 +42,7 @@ let previousButtons = new Set();
 let repeatedAt = new Map();
 let suppressedButtons = new Set();
 let padName = '';
+let rawPadId = '';
 let activePadId = '';
 let activePadIndex = -1;
 let capture = null;
@@ -79,7 +81,15 @@ function pads() {
   catch (_) { return []; }
 }
 
-function buttonPressed(button, threshold) {
+const ANALOG_BUTTONS = new Set(['leftTrigger', 'rightTrigger']);
+
+function buttonPressed(button, threshold, id = null) {
+  // Digital buttons report `pressed` and nothing useful in `value`. Analog
+  // triggers report both — and short-circuiting on `pressed` meant the user's
+  // triggerThreshold only ever applied to pads that left `pressed` false.
+  // `recorder` is bound to a trigger by default, so this is the setting that
+  // matters most.
+  if (id && ANALOG_BUTTONS.has(id)) return Number(button?.value || 0) >= threshold;
   return !!button?.pressed || Number(button?.value || 0) >= threshold;
 }
 
@@ -91,7 +101,7 @@ function rawButtons(pad, threshold = settings.triggerThreshold) {
   const out = new Set();
   pad?.buttons?.forEach((button, index) => {
     const id = BUTTON_BY_INDEX[index];
-    if (id && buttonPressed(button, threshold)) out.add(id);
+    if (id && buttonPressed(button, threshold, id)) out.add(id);
   });
   return out;
 }
@@ -193,7 +203,7 @@ function releaseAll(onRelease) {
   activePadId = '';
   activePadIndex = -1;
   capture = null;
-  setActiveInputDevice('keyboard', { viable: false });
+  setActiveInputDevice('keyboard', { viable: false, controllerFamily: 'generic' });
   lastState = emptyState();
 }
 
@@ -226,11 +236,12 @@ export function gamepadTick({ menuContext = false, independentMotion = false, mo
     return;
   }
   padName = normalizePadName(pad);
+  rawPadId = String(pad?.id || '');
   const raw = rawButtons(pad);
   if (raw.size || rawActivity(pad)) {
     setActiveInputDevice('controller', {
       viable: true,
-      controllerFamily: settings.family === 'auto' ? controllerFamilyFromName(padName) : settings.family,
+      controllerFamily: settings.family === 'auto' ? controllerFamilyFromName(rawPadId || padName) : settings.family,
     });
   }
   for (const token of [...suppressedButtons]) if (!raw.has(token)) suppressedButtons.delete(token);

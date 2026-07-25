@@ -242,7 +242,14 @@ export function buildMapModel({
         objective:{ required:true, sequence:index+1, state:objectiveState({...room,marked}), recorded:!!room.recorded, marked, stamp:room.stamp||'--:--', notes, fileCount:notes.length, source:room },
       };
     });
-    const waypointSpace = spaces.find((space) => space.roomId === objective?.target) || null;
+    // A target must be a REAL room id. Matching on a falsy target made every space
+  // with `roomId: null` — landmarks, and now the unnamed `???` rooms — answer to
+  // "no target at all", so the monitor read TARGET ??? the moment you started a
+  // run with no waypoint set.
+  const targetRoomId = objective?.target || null;
+  const waypointSpace = targetRoomId
+    ? (spaces.find((space) => space.roomId === targetRoomId) || null)
+    : null;
     return {
       version:1, floors:[fallbackFloor], connectors:[], doors:[], spaces,
       player:{resolved:false,floorId:'unknown',roomId:player?.roomId||null,areaLabel:player?.areaLabel||null,position:null,heading:Number(player?.heading)||0},
@@ -294,11 +301,27 @@ export function buildMapModel({
   });
   for(const landmark of source.landmarks||[]){
     const live=landmarkState?.[landmark.id]||{};
-    if(!live.visible)continue;
+    if(!visibleFloorIds.has(landmark.floorId))continue;
+    if(!live.visible){
+      // A room you have not read about yet is still a room that is THERE. Drawing
+      // nothing said "this floor is empty", which is a lie the map should not tell:
+      // the player could not know there was anything to unlock. It is marked and
+      // unnamed — `???` — and it cannot be selected or targeted until a log names
+      // it, so knowing it exists costs nothing and gives nothing away.
+      spaces.push({id:`${landmark.id}:unknown`,kind:'unknown',roomId:null,floorId:landmark.floorId,
+        label:'???',shortLabel:'???',position:landmark.position,selectable:false,waypointable:false,
+        visibility:'unknown',unknown:true,current:false,waypoint:false,objective:null});
+      continue;
+    }
     spaces.push({id:landmark.id,kind:'landmark',roomId:null,floorId:landmark.floorId,label:String(live.label||landmark.label).toUpperCase(),shortLabel:landmark.shortLabel||'LAND',position:landmark.position,selectable:landmark.selectable!==false,waypointable:false,visibility:'discovered',current:false,waypoint:false,objective:null});
   }
 
-  const waypointSpace = spaces.find((space) => space.roomId === objective?.target) || null;
+  // Same rule as the unresolved-player path above: a target must be a real room
+  // id, or every `roomId: null` space answers to "nothing is set".
+  const liveTargetRoomId = objective?.target || null;
+  const waypointSpace = liveTargetRoomId
+    ? (spaces.find((space) => space.roomId === liveTargetRoomId) || null)
+    : null;
   const waypoint = waypointSpace ? {
     roomId: waypointSpace.roomId,
     spaceId: waypointSpace.id,

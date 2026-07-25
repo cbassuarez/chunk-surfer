@@ -46,7 +46,7 @@ export function makeArchiveScene({ meta, onClose = () => {} } = {}) {
       const body = drawMachinePanel(x, y, w, h, {
         label: 'ACHIEVEMENTS',
         source: 'PROGRESS',
-        footer: promptLine([{ action: 'tabNext', label: 'CATEGORY' }, { action: 'select', label: 'ENTRY' }, { action: 'back', label: 'CLOSE' }]),
+        footerParts: [{ action: 'tabNext', label: 'CATEGORY' }, { action: 'select', label: 'ENTRY' }, { action: 'back', label: 'CLOSE' }],
         meter: false,
       });
       drawVfdText(body.x, body.y, 'ACHIEVEMENTS', { color: UI_COLOR.amber, max: body.w });

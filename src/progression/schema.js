@@ -354,8 +354,13 @@ export function normalizeRun(value, { meta = null, settings = null, activeFallba
     replay: {
       isReplay: !!replay.isReplay,
       endingsAtStart: Math.max(0, Math.floor(finiteOr(replay.endingsAtStart, 0))),
-      seenTextMode: ['normal', 'fast', 'instant'].includes(replay.seenTextMode) ? replay.seenTextMode : 'fast',
-      archiveSignals: replay.archiveSignals !== false,
+      // Cross-run assists default OFF: a fresh run should read the same whether
+      // or not you have played before. Previously-seen text played at normal
+      // speed, and the ◆ "never chosen" hint stays hidden until the player opts
+      // in from Settings. Only an explicit stored value turns them on.
+      seenTextMode: ['normal', 'fast', 'instant'].includes(replay.seenTextMode) ? replay.seenTextMode : 'normal',
+      // Off unless explicitly enabled; the settings toggle stores 'subtle' for on.
+      archiveSignals: replay.archiveSignals === true || replay.archiveSignals === 'subtle',
       condensedCheckIn: !!replay.condensedCheckIn,
       seenTextAssistUsed: !!replay.seenTextAssistUsed,
       condensedCheckInUsed: !!replay.condensedCheckInUsed,

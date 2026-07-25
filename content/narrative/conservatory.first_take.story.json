@@ -350,11 +350,71 @@
           "who": "you",
           "text": "The last man slated three of his four.",
           "id": "slate.line.5"
+        },
+        {
+          "who": "you",
+          "text": "And while my voice is in the room. There is a thing I did not say by the door, when I could not find the door.",
+          "id": "slate.line.confess",
+          "if": "!confession.kind"
         }
       ],
-      "goto": "hub",
       "id": "slate",
-      "type": "dialogue"
+      "type": "choice",
+      "choices": [
+        {
+          "text": "\"I want to hear that natatorium. Six metres of tile and no water.\"",
+          "goto": "hub",
+          "id": "slate.choice.craft",
+          "if": "!confession.kind",
+          "mutations": {
+            "set": [
+              "confession.kind=reason",
+              "confession.value=craft"
+            ]
+          }
+        },
+        {
+          "text": "\"Four hundred quid. I am not walking out on a paid job.\"",
+          "goto": "hub",
+          "id": "slate.choice.money",
+          "if": "!confession.kind",
+          "mutations": {
+            "set": [
+              "confession.kind=reason",
+              "confession.value=money"
+            ]
+          }
+        },
+        {
+          "text": "\"Sarah'll have gone up. She won't check the drive till morning.\"",
+          "goto": "hub",
+          "id": "slate.choice.sarah",
+          "if": "!confession.kind",
+          "mutations": {
+            "set": [
+              "confession.kind=name",
+              "confession.value=Sarah"
+            ]
+          }
+        },
+        {
+          "text": "(slate it and nothing else. that is what a slate is for.)",
+          "goto": "hub",
+          "id": "slate.choice.nothing",
+          "if": "!confession.kind",
+          "mutations": {
+            "set": [
+              "confession.kind=nothing"
+            ]
+          }
+        },
+        {
+          "text": "back",
+          "goto": "hub",
+          "id": "slate.choice.back",
+          "if": "confession.kind"
+        }
+      ]
     },
     "dark": {
       "speaker": "STUDIO B3",

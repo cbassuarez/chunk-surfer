@@ -40,7 +40,9 @@ let migrated=Object.fromEntries(FP.doorState().map((door)=>[door.id,door]));
 assert.equal(migrated['chapel-c17'].state,DOOR_STATE.OPEN);
 assert.equal(migrated['practice-west-1'].state,DOOR_STATE.OPEN);
 assert.equal(migrated['practice-west-1'].wedge,true);
-assert.equal(migrated['b3-plant-service'].state,DOOR_STATE.OPEN);
+// '51,25' is the studio-to-studio door in the dance wing; it was called
+// b3-plant-service back when the plant room was on the other side of it.
+assert.equal(migrated['b3-b2-service'].state,DOOR_STATE.OPEN);
 const stable=FP.saveDoorState();assert.equal(stable.schema,2);assert.equal(stable.states['chapel-c17'].state,'open');
 assert.deepEqual(normalizeDoorSave(stable).states['practice-west-1'],stable.states['practice-west-1']);
 
@@ -65,6 +67,50 @@ FP.resetDoors();const practice=FP.doorState().find((door)=>door.id==='practice-w
 const across=practice.widthAxis==='x'?{a:{x:practice.cx,y:practice.cy-2},b:{x:practice.cx,y:practice.cy+2}}:{a:{x:practice.cx-2,y:practice.cy},b:{x:practice.cx+2,y:practice.cy}};
 FP.setDoorOpen(practice.id,false);assert.equal(FP.doorAcousticLossBetween(across.a,across.b),16);
 FP.setDoorOpen(practice.id,true);assert.equal(FP.doorAcousticLossBetween(across.a,across.b),0);
+
+// ── the grey door, and a door that stops being one ──────────────────────────
+// The door he came in through stands in the dock's north wall, dead ahead of
+// where he starts, locked to his own key. It is the only door in the building
+// authored to open onto nothing, and the only one that does not survive the
+// night: reaching for it retires it into masonry (see retireDoor / the post-door
+// beat in main.js), which has to leave the building honest everywhere at once.
+FP.resetDoors();
+const grey=FP.doorState().find((door)=>door.id==='dock-grey-exterior');
+assert.ok(grey,'the grey door he came in through exists');
+assert.equal(grey.keyId,'master','it is locked, and he is the man with the key');
+assert.equal(grey.widthAxis,'x','it sits in an east-west wall');
+FP.setSpawn(conservatory.spawn.x,conservatory.spawn.y);
+const spawnCell=FP.spawn();
+assert.ok(grey.cells.some((cell)=>cell.x===spawnCell.x),'it is dead ahead of where he starts');
+assert.ok(grey.cy<spawnCell.y,'...and due north of him, in the wall he is already facing');
+assert.ok(FP.isSolid(Math.round(grey.cx),Math.round(grey.cy)-2),'nothing is authored past it: a threshold you stand in, not through');
+assert.ok(FP.doorNear(spawnCell.x,spawnCell.y-11,[0,-1])?.portal?.id==='dock-grey-exterior','he can reach for it once he walks up to it');
+
+const portalsBefore=FP.doorState().length;
+const scarsBefore=FP.sealedDoorways().length;
+assert.equal(FP.retireDoor('dock-grey-exterior'),true,'the wall closes over it');
+assert.equal(FP.doorState().length,portalsBefore-1,'it stops being a portal');
+assert.equal(FP.sealedDoorways().length,scarsBefore+1,'and starts being a scar, which is a mesh the pack already has');
+const scar=FP.sealedDoorways().find((entry)=>entry.cx===grey.cx&&entry.cy===grey.cy);
+assert.ok(scar,'the scar stands exactly where the door stood');
+// Indistinguishable from a doorway that was bricked up before he was born: the
+// authored 'x' glyph on the concert hall's staff door is the reference.
+const authoredScar=FP.sealedDoorways().find((entry)=>entry.id==='sealed:195,27');
+const authoredCell={x:Math.round(authoredScar.cx),y:Math.round(authoredScar.cy)};
+for(const {x,y} of grey.cells){
+  assert.ok(FP.isSolid(x,y),'the throat is masonry now');
+  assert.equal(FP.flagsAt(x,y),FP.flagsAt(authoredCell.x,authoredCell.y),'...and reads exactly as an authored bricked doorway does');
+  assert.equal(FP.cellAt(x,y),null,'nothing stands in it');
+}
+assert.equal(FP.doorNear(spawnCell.x,spawnCell.y-11,[0,-1]),null,'nothing offers to open a wall');
+assert.equal(FP.canStep(spawnCell.x,spawnCell.y-13,spawnCell.x,spawnCell.y-14,{keys:new Set(['master'])}).ok,false,'and the key does not help');
+assert.ok(!('dock-grey-exterior' in (FP.saveDoorState().states||{})),'a retired door is not written to the door save');
+assert.equal(FP.retireDoor('dock-grey-exterior'),false,'retiring it twice is a no-op');
+FP.compile(conservatory.levels,{
+  width:conservatory.width,height:conservatory.height,widenCorridors:conservatory.widenCorridors,
+  connectors:conservatory.connectors,doors:conservatory.doors,
+});
+assert.equal(FP.doorState().length,CONSERVATORY_DOORS.length,'a fresh compile brings it back (the save flag is what keeps it gone)');
 
 // Asset contract: modular, textured, small and fully static at import.
 const bytes=readFileSync('public/assets/conservatory-doors.glb');assert.equal(bytes.slice(0,4).toString(),'glTF');assert.ok(statSync('public/assets/conservatory-doors.glb').size<2.5*1024*1024);

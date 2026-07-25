@@ -1845,8 +1845,31 @@ export function r3dLook(yawDelta=0,pitchDelta=0) {
   return {yaw:yawTarget,pitch:pitchTarget,facing};
 }
 export function r3dLookAngles(){return{yaw:yawTarget,pitch:pitchTarget,facing};}
+// Put the head back level. Windowed play could leave pitch parked near its
+// upper clamp — you spend the whole session looking at the ceiling — because
+// nothing ever recentred it after focus was lost and regained.
+export function r3dRecenterLook({ pitch = true, yaw = false } = {}) {
+  if (pitch) pitchTarget = 0;
+  if (yaw) { const q = Math.PI / 2; const k = Math.round(yawTarget / q); facing = ((k % 4) + 4) % 4; yawTarget = k * q; }
+  r3dResetVfdMemory();
+  return { yaw: yawTarget, pitch: pitchTarget, facing };
+}
 export function r3dDelta(sign) {
   const v = [[0, -1], [1, 0], [0, 1], [-1, 0]][facing];
+  return [v[0] * sign, v[1] * sign];
+}
+// The direction the FEET go, from where the HEAD is actually pointed.
+//
+// `facing` is a quarter-turn index, so anything built on r3dDelta walked due
+// north while you were looking north-east: the body refusing to follow the eyes.
+// This reads the continuous yaw and snaps it to eight directions instead of
+// four, which is as free as movement can be while collision is still resolved
+// one grid cell at a time (see the diagonal guard in main.js step()).
+const STEP_RING = [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]];
+export function r3dStepDelta(sign = 1) {
+  const eighth = Math.PI / 4;
+  const k = ((Math.round(yawTarget / eighth) % 8) + 8) % 8;
+  const v = STEP_RING[k];
   return [v[0] * sign, v[1] * sign];
 }
 export function r3dFacing() { return facing; }

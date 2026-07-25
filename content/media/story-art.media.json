@@ -25,25 +25,112 @@
       "id": "surfer.still",
       "kind": "image",
       "path": "story-art/surfer.png",
-      "tags": ["person", "battle", "source"]
+      "tags": [
+        "person",
+        "battle",
+        "source"
+      ]
     },
     {
       "id": "interface.still",
       "kind": "image",
-      "path": "story-art/circuit-bent-interface.png",
-      "tags": ["device", "battle", "signal"]
+      "path": "story-art/circuit-bent-interface.jpg",
+      "tags": [
+        "device",
+        "battle",
+        "signal"
+      ]
     },
     {
       "id": "tuning-fork.still",
       "kind": "image",
       "path": "story-art/tuningfork.png",
-      "tags": ["device", "battle", "signal"]
+      "tags": [
+        "device",
+        "battle",
+        "signal"
+      ]
     },
     {
       "id": "walkie.still",
       "kind": "image",
       "path": "story-art/walkie.png",
-      "tags": ["device", "battle", "radio"]
+      "tags": [
+        "device",
+        "battle",
+        "radio"
+      ]
+    },
+    {
+      "id": "recordist.still",
+      "kind": "image",
+      "path": "story-art/recordist.jpg",
+      "tags": [
+        "person",
+        "subject",
+        "tape"
+      ]
+    },
+    {
+      "id": "recordist-swirled.still",
+      "kind": "image",
+      "path": "story-art/recordist-swirled.jpg",
+      "tags": [
+        "person",
+        "subject",
+        "tape",
+        "hostile"
+      ]
+    },
+    {
+      "id": "flashlight.still",
+      "kind": "image",
+      "path": "story-art/flashlight.png",
+      "tags": [
+        "device",
+        "opening",
+        "light"
+      ]
+    },
+    {
+      "id": "booth-rain.still",
+      "kind": "image",
+      "path": "story-art/booth.establishing.rain.jpg",
+      "tags": [
+        "place",
+        "opening",
+        "threshold"
+      ]
+    },
+    {
+      "id": "booth-pen.still",
+      "kind": "image",
+      "path": "story-art/booth.pen.failure.jpg",
+      "tags": [
+        "object",
+        "opening",
+        "paper"
+      ]
+    },
+    {
+      "id": "booth-coffee.still",
+      "kind": "image",
+      "path": "story-art/booth.coffee.form.jpg",
+      "tags": [
+        "object",
+        "opening",
+        "paper"
+      ]
+    },
+    {
+      "id": "threshold-yard.still",
+      "kind": "image",
+      "path": "story-art/threshold.yard-wide.jpg",
+      "tags": [
+        "place",
+        "threshold",
+        "opening"
+      ]
     }
   ],
   "storyArt": [
@@ -120,6 +207,135 @@
       "tone": "device",
       "mode": "hero",
       "alt": "A portable radio under field interference."
+    },
+    {
+      "id": "story-art-7",
+      "label": "TORCH",
+      "caption": "[item] placeholder",
+      "status": "STILL",
+      "tone": "missing",
+      "mode": "compact",
+      "alt": "[item] placeholder",
+      "assetId": "guard.still"
+    },
+    {
+      "id": "recordist",
+      "assetId": "recordist.still",
+      "label": "The previous recordist",
+      "caption": "The man who did this job before you",
+      "status": "ON THE TAPE",
+      "tone": "subject",
+      "mode": "hero",
+      "alt": "A portrait of the recordist who worked this building before you.",
+      "transform": {
+        "focalPoint": {
+          "x": 0.5,
+          "y": 0.45
+        },
+        "fit": "cover"
+      }
+    },
+    {
+      "id": "recordist-swirled",
+      "assetId": "recordist-swirled.still",
+      "label": "The previous recordist",
+      "caption": "The same face, no longer holding its shape",
+      "status": "WRONG",
+      "tone": "subject",
+      "mode": "hero",
+      "alt": "The previous recordist's face, smeared and turning, as it comes back off the tape.",
+      "transform": {
+        "focalPoint": {
+          "x": 0.5,
+          "y": 0.45
+        },
+        "fit": "cover"
+      }
+    },
+    {
+      "id": "flashlight",
+      "assetId": "flashlight.still",
+      "label": "Field torch",
+      "caption": "Three-cell Maglite / the only light you get",
+      "status": "KIT",
+      "tone": "device",
+      "mode": "hero",
+      "alt": "A heavy three-cell torch, the recordist's only light in the building.",
+      "transform": {
+        "focalPoint": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "fit": "cover"
+      }
+    },
+    {
+      "id": "boothRain",
+      "assetId": "booth-rain.still",
+      "label": "Service Booth",
+      "caption": "Vehicle gate / 21:38, raining",
+      "status": "STILL",
+      "tone": "threshold",
+      "mode": "hero",
+      "alt": "A lit gate booth seen from outside in the rain, the only warm thing in the frame.",
+      "transform": {
+        "focalPoint": {
+          "x": 0.5,
+          "y": 0.55
+        },
+        "fit": "cover"
+      }
+    },
+    {
+      "id": "boothPen",
+      "assetId": "booth-pen.still",
+      "label": "The Form",
+      "caption": "Requisition 4-4-1-7",
+      "status": "UNSIGNED",
+      "tone": "object",
+      "mode": "hero",
+      "alt": "A work order on the booth counter beside a pot of pens.",
+      "transform": {
+        "focalPoint": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "fit": "cover"
+      }
+    },
+    {
+      "id": "boothCoffee",
+      "assetId": "booth-coffee.still",
+      "label": "The Coffee",
+      "caption": "Second cup, across the glass",
+      "status": "OFFERED",
+      "tone": "object",
+      "mode": "hero",
+      "alt": "A paper cup of coffee on the booth counter, the surface black in the light.",
+      "transform": {
+        "focalPoint": {
+          "x": 0.5,
+          "y": 0.45
+        },
+        "fit": "cover"
+      }
+    },
+    {
+      "id": "thresholdYard",
+      "assetId": "threshold-yard.still",
+      "label": "The Yard",
+      "caption": "A hundred metres of nothing",
+      "status": "THRESHOLD",
+      "tone": "threshold",
+      "mode": "hero",
+      "alt": "A wide dark yard between the gate booth and the conservatory, skips and rain.",
+      "transform": {
+        "focalPoint": {
+          "x": 0.5,
+          "y": 0.6
+        },
+        "fit": "cover"
+      }
     }
   ]
 }

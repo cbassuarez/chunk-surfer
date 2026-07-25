@@ -9,7 +9,7 @@ import { reachableNodeIds, validateAudioProject, validateMediaProject, validateN
 import { createCuePlayer } from '../src/audio/cue-player.js';
 import { authoredCue, dispatchAuthoredCue } from '../src/audio/authored-cues.js';
 import { SOUNDTRACK_GAIN, STORY_GAIN_BASELINES } from '../src/audio/story-audio.js';
-import { COLD_OPEN_DIALOGUE, sacrificeEnding, rescueEnding, helpedEnding, druggedReveal, guardEpilogue } from '../src/data/conservatory-script.js';
+import { sacrificeEnding, rescueEnding, helpedEnding, druggedReveal, guardEpilogue } from '../src/data/conservatory-script.js';
 import { authoredCombatProfile } from '../src/data/combat-definitions.js';
 import { validateCombatDefinition } from '../src/game/combat-state.js';
 import { rehydrateBattle, rehydrateTree, runtimeBattle, runtimeCuesForLine, runtimeTree } from '../src/narrative/runtime-content.js';
@@ -142,9 +142,30 @@ assert.ok(invalidResult.errors.some((item) => item.path.endsWith('.id')));
 assert.ok(invalidResult.errors.some((item) => item.message.includes('unknown cue')));
 assert.ok(invalidResult.errors.some((item) => item.message.includes('unknown media')));
 
+// The cold open is authored directly in its studio story.json (single source),
+// not imported from JS — so validate the document itself rather than mirroring a
+// JS export: it must have a `start` node, every goto must resolve, and every
+// node must be reachable from an entry (start or an alternate entry).
 const authored = JSON.parse(await readFile('content/narrative/conservatory.cold_open_dialogue.story.json', 'utf8'));
-assert.equal(Object.keys(authored.nodes).length, Object.keys(COLD_OPEN_DIALOGUE).length, 'cold-open import preserves every runtime node');
-for (const id of Object.keys(COLD_OPEN_DIALOGUE)) assert.ok(authored.nodes[id], `missing imported cold-open node ${id}`);
+assert.ok(authored.nodes.start, 'cold open has a start node');
+const coldOpenIds = new Set(Object.keys(authored.nodes));
+for (const [nodeId, node] of Object.entries(authored.nodes)) {
+  if (node.goto) assert.ok(coldOpenIds.has(node.goto), `cold-open node ${nodeId} goto resolves (${node.goto})`);
+  for (const choice of node.choices || []) {
+    if (choice.goto) assert.ok(coldOpenIds.has(choice.goto), `cold-open choice in ${nodeId} goto resolves (${choice.goto})`);
+  }
+}
+const coldOpenReachable = new Set();
+const coldOpenPending = [...new Set([authored.entry, ...(authored.entries || [])].filter(Boolean))];
+while (coldOpenPending.length) {
+  const id = coldOpenPending.shift();
+  if (coldOpenReachable.has(id) || !authored.nodes[id]) continue;
+  coldOpenReachable.add(id);
+  const node = authored.nodes[id];
+  if (node.goto) coldOpenPending.push(node.goto);
+  for (const choice of node.choices || []) if (choice.goto) coldOpenPending.push(choice.goto);
+}
+for (const id of coldOpenIds) assert.ok(coldOpenReachable.has(id), `cold-open node ${id} is reachable from an entry`);
 
 for (const [name, profile] of [['natatoriumbattle', 'natatorium'], ['practicebattle', 'practice'], ['hallbattle', 'hall']]) {
   for (const named of [false, true]) {

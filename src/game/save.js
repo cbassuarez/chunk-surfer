@@ -223,7 +223,7 @@ function normalizeSaveV3(data, meta = null) {
     items: Array.isArray(source.items) ? source.items : [],
     props: { ...base.props, ...(source.props && typeof source.props === 'object' ? source.props : {}) },
     encounters: { ...base.encounters, ...(source.encounters && typeof source.encounters === 'object' ? source.encounters : {}) },
-    combatBuild: normalizeCombatBuild(source.combatBuild, source.encounters?.cleared),
+    combatBuild: normalizeCombatBuild(source.combatBuild, source.encounters?.cleared, source.flags),
     bagLoadout: normalizeCombatLoadout(source.bagLoadout),
     doors: normalizeDoorSave(source.doors),
     hushAudio: normalizeHushAudioSave(source.hushAudio),

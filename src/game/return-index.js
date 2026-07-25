@@ -28,7 +28,7 @@ export function makeReturnIndexScene({ meta } = {}) {
       const body = drawMachinePanel(x, y, w, h, {
         label: 'ENDINGS',
         source: `${meta?.endingsSeen?.length || 0} / ${entries.length}`,
-        footer: promptLine([{ action: 'select', label: 'ENDING' }, { action: 'back', label: 'CLOSE' }]),
+        footerParts: [{ action: 'select', label: 'ENDING' }, { action: 'back', label: 'CLOSE' }],
         meter: false,
       });
       drawVfdText(body.x, body.y, 'ENDINGS', { color: UI_COLOR.amber, max: body.w });

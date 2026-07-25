@@ -16,6 +16,11 @@ import {
   isBattleGear,
   normalizeCombatLoadout,
 } from './combat-loadout.js';
+import {
+  TECHNIQUE_DEFS,
+  normalizeCombatBuild,
+  techniqueAvailability,
+} from './combat-progression.js';
 
 export const EMPTY_JOB = Object.freeze({
   rooms: [],
@@ -384,7 +389,69 @@ export function normalizeBagSectionId(sectionId) {
   return BAG_SECTION_ALIASES[sectionId] || sectionId;
 }
 
-export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, loadout = null } = {}) {
+// ── the SKILLS section ──────────────────────────────────────────────────────
+// One column per branch, its techniques in tier order. Every entry carries the
+// three things the screen has to be able to say without the player deducing
+// anything: which of the three states it is in, what it does, and — when it is
+// locked — what unlocks it BY NAME. "TIER I REQUIRED" told nobody anything.
+function buildSkillsSection({ build, hasRig }) {
+  const current = normalizeCombatBuild(build);
+  const nameOf = (id) => TECHNIQUE_DEFS.find((entry) => entry.id === id)?.label || '';
+  const branchOrder = [...new Set(TECHNIQUE_DEFS.map((entry) => entry.branch))];
+  const branches = branchOrder.map((branch) => ({
+    id: branch,
+    entries: TECHNIQUE_DEFS
+      .filter((entry) => entry.branch === branch)
+      .sort((a, b) => a.tier - b.tier)
+      .map((entry) => {
+        const availability = techniqueAvailability(current, entry.id, { hasRig });
+        const owned = current.techniques.includes(entry.id);
+        return {
+          id: `skill:${entry.id}`,
+          techniqueId: entry.id,
+          kind: 'skill',
+          branch,
+          tier: entry.tier,
+          label: entry.label,
+          detail: entry.detail,
+          active: !!entry.active,
+          special: !!entry.special,
+          owned,
+          enabled: availability.enabled,
+          state: owned ? 'owned' : availability.enabled ? 'affordable' : 'locked',
+          // Named, not numbered.
+          blockedBy: owned ? ''
+            : availability.enabled ? ''
+              : entry.requires && !current.techniques.includes(entry.requires)
+                ? `LOCKED · FIT ${nameOf(entry.requires)} FIRST`
+                : entry.requiresRig && !hasRig
+                  ? 'LOCKED · NEEDS THE BENT RIG FROM THE PLANT ROOM'
+                  : current.unspent <= 0 ? 'NEEDS A PIN · NONE SPARE'
+                    : String(availability.reason || 'LOCKED'),
+          buyPrompt: 'IT CANNOT BE UNFITTED THIS RUN',
+          actions: {
+            primary: (!owned && availability.enabled)
+              ? { id: 'fit-skill', label: 'FIT', destructive: false }
+              : null,
+          },
+        };
+      }),
+  }));
+  const maxTier = branches.reduce((max, branch) => Math.max(max, ...branch.entries.map((e) => e.tier)), 1);
+  return {
+    id: 'skills',
+    label: 'SKILLS',
+    countLabel: current.unspent ? `${current.unspent} PIN${current.unspent === 1 ? '' : 'S'}` : `${current.techniques.length} FITTED`,
+    entries: branches.flatMap((branch) => branch.entries),
+    tree: {
+      branches,
+      maxTier,
+      pins: { earned: current.pinsEarned, spent: current.pinsSpent, unspent: current.unspent },
+    },
+  };
+}
+
+export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, loadout = null, build = null, hasRig = false } = {}) {
   const safeJob = {
     ...EMPTY_JOB,
     ...(job || {}),
@@ -416,6 +483,12 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, loa
               destructive: false,
             }
           : null,
+        // Tray order is the in-fight tool rail order. One "move up" is a
+        // complete reorder primitive — walk a tool down by lifting the one below
+        // it — and it only exists for gear that has somewhere above to go.
+        tertiary: compartment === 'top' && entry.present && topIndex > 0
+          ? { id: 'reorder-up', label: 'MOVE UP', destructive: false }
+          : null,
       },
     };
   }).sort((a, b) => {
@@ -446,6 +519,7 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, loa
       { id: 'kit', label: 'KIT', countLabel: `${kit.filter((e) => e.present && e.compartment === 'top').length}/${normalizedLoadout.capacity}`, entries: kit },
       { id: 'map', label: 'MAP', countLabel: `${done}/${total}`, entries: mapEntries, map },
       { id: 'files', label: 'FILES', countLabel: String(files.length).padStart(2, '0'), entries: files },
+      buildSkillsSection({ build, hasRig }),
     ],
     progress: { done, total },
     loadout: normalizedLoadout,

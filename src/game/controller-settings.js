@@ -1,4 +1,10 @@
 import * as scenes from './scenes.js';
+import { uiFill, uiScrim, uiSize, uiText } from '../render/ui.js';
+import { drawMachinePanel } from '../render/presentation.js';
+import { drawPadDiagram } from '../render/pad-diagram.js';
+import { drawVfdRow, vfdBlinkOn, vfdRowStyle } from '../render/vfd-select.js';
+import { activeTheme } from '../render/palette.js';
+import { createHitRegions } from '../render/hit-regions.js';
 import {
   BUTTON_POSITIONS,
   controllerDiagramModel,
@@ -7,81 +13,15 @@ import {
   controllerActionLabel,
   controllerButtonLabel,
   controllerSettings,
+  cycleControllerFamily,
   activeInputPromptDevice,
   promptLine,
   resetControllerSettings,
   setControllerBinding,
 } from './bindings.js';
-import { applyVfdDomTheme } from '../render/vfd-dom.js';
-
-function esc(text) {
-  return String(text ?? '').replace(/[&<>"']/g, (ch) => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;',
-  }[ch]));
-}
-
-function svgButton(button) {
-  const p = button.pos;
-  const cls = `cs-pad-button${button.active ? ' is-active' : ''}${button.captureTarget ? ' is-capture' : ''}`;
-  const label = esc(button.label);
-  if ('r' in p) {
-    return `<g class="${cls}" data-button="${esc(button.id)}"><circle cx="${p.x}" cy="${p.y}" r="${p.r}"/><text x="${p.x}" y="${p.y + 1.4}">${label}</text></g>`;
-  }
-  return `<g class="${cls}" data-button="${esc(button.id)}"><rect x="${p.x - p.w / 2}" y="${p.y - p.h / 2}" width="${p.w}" height="${p.h}" rx="2"/><text x="${p.x}" y="${p.y + 1.4}">${label}</text></g>`;
-}
-
-export function renderControllerOverlayHtml(model, { padName = 'NO CONTROLLER' } = {}) {
-  const actions = model.actions.map((action) => `
-    <button class="cs-controller-action${action.selected ? ' is-selected' : ''}${action.capturing ? ' is-capturing' : ''}" data-action="${esc(action.id)}" type="button">
-      <span class="cs-controller-action-group">${esc(action.group)}</span>
-      <span class="cs-controller-action-label">${esc(action.label)}</span>
-      <span class="cs-controller-action-binding">${esc(action.capturing ? 'PRESS ANY BUTTON' : action.bindingLabel)}</span>
-    </button>
-  `).join('');
-  const buttons = model.buttons.map(svgButton).join('');
-  const capture = model.captureAction ? `CAPTURING ${controllerActionLabel(model.captureAction)}` : 'SELECT ACTION TO REMAP';
-  const footer = activeInputPromptDevice() === 'controller'
-    ? promptLine([{ action: 'select', label: 'ACTION' }, { action: 'confirm', label: 'REMAP' }, { action: 'back', label: 'BACK' }])
-    : '[UP / DOWN] ACTION · [ENTER / SPACE] REMAP · [R] RESET · [ESC] BACK';
-  return `
-    <div class="cs-controller-panel cs-machine-panel ${model.mode === 'stacked' ? 'is-stacked' : 'is-split'}">
-      <header class="cs-controller-header cs-machine-header">
-        <div>
-          <div class="cs-controller-eyebrow"><span class="cs-machine-wordmark">AUDIOCORP</span> INPUT SERVICE</div>
-          <h1 class="cs-machine-phosphor">Controller Setup</h1>
-        </div>
-        <div class="cs-controller-status cs-machine-header__source">
-          <span>SOURCE</span>
-          <span>${esc(padName || 'NO CONTROLLER')}</span>
-          <strong>${esc(model.family.toUpperCase())}</strong>
-        </div>
-      </header>
-      <main class="cs-controller-main cs-machine-glass">
-        <section class="cs-controller-diagram" aria-label="Controller diagram">
-          <svg viewBox="0 0 100 86" role="img" aria-label="Controller map">
-            <path class="cs-pad-shell" d="M18 33 C23 21 36 27 43 30 L57 30 C64 27 77 21 82 33 C88 47 91 67 82 72 C76 76 68 65 61 62 L39 62 C32 65 24 76 18 72 C9 67 12 47 18 33 Z"/>
-            <rect class="cs-pad-touch" x="42" y="34" width="16" height="7" rx="3"/>
-            <path class="cs-pad-dpad" d="M24 43 h5 v6 h6 v5 h-6 v6 h-5 v-6 h-6 v-5 h6 z"/>
-            ${buttons}
-          </svg>
-          <div class="cs-controller-capture">${esc(capture)}</div>
-        </section>
-        <section class="cs-controller-actions" aria-label="Controller actions">
-          ${actions}
-        </section>
-      </main>
-      <footer class="cs-controller-footer cs-machine-footer">
-        ${footer.split(' · ').map((part) => `<span>${esc(part)}</span>`).join('')}
-      </footer>
-    </div>
-  `;
-}
 
 export function makeControllerSettingsScene({
+  getControllerSnapshot = null,
   onSave,
   onClose,
   beginControllerRemap,
@@ -92,10 +32,34 @@ export function makeControllerSettingsScene({
 } = {}) {
   let selected = 0;
   let captureAction = null;
-  let host = null;
+  const hits = createHitRegions();
+
+  // The cursor runs over the pad options and the bindings as one list, so the
+  // option rows are reachable with the same up/down the rest of the screen uses.
+  // The row SET does not depend on which row is selected, so this must not go
+  // through model() — that reads currentAction(), which reads this, and the
+  // screen would recurse until the stack gave out. It does need the pad name:
+  // without it every binding label falls back to the generic family while the
+  // header shows the real pad.
+  function rowsModel() {
+    return controllerDiagramModel({
+      settings: controllerSettings(),
+      padName: getPadName(),
+    });
+  }
+
+  function list(base = rowsModel()) {
+    return [...base.options, ...base.actions];
+  }
+
+  function currentRow() {
+    const all = list();
+    return all[Math.min(selected, all.length - 1)] || all[0];
+  }
 
   function currentAction() {
-    return controllerDiagramModel({ settings: controllerSettings() }).actions[selected]?.id || 'interact';
+    const row = currentRow();
+    return row?.kind === 'option' ? row.id : (row?.id || 'interact');
   }
 
   function save() {
@@ -108,16 +72,24 @@ export function makeControllerSettingsScene({
   }
 
   function beginCapture() {
+    // Option rows have nothing to capture — activating one adjusts it instead.
+    if (currentRow()?.kind === 'option') { adjust(1); return; }
     captureAction = currentAction();
     beginControllerRemap?.(captureAction, (token) => bindToken(token));
   }
 
+  function adjust(delta) {
+    if (currentRow()?.kind !== 'option') return false;
+    cycleControllerFamily(delta);
+    save();
+    return true;
+  }
+
   function move(delta) {
-    const model = controllerDiagramModel({ settings: controllerSettings() });
-    selected = (selected + delta + model.actions.length) % model.actions.length;
+    const total = list().length;
+    selected = (selected + delta + total) % total;
     captureAction = null;
     cancelControllerRemap?.();
-    renderHtml();
   }
 
   function bindToken(token) {
@@ -125,7 +97,6 @@ export function makeControllerSettingsScene({
     const ok = setControllerBinding(captureAction, token);
     captureAction = null;
     if (ok) save();
-    renderHtml();
     return ok;
   }
 
@@ -138,13 +109,18 @@ export function makeControllerSettingsScene({
       selectedAction: currentAction(),
       captureAction,
       padName: getPadName(),
+      // Live hardware, read fresh every render: pressed buttons light and the
+      // sticks deflect, so this screen is also the pad diagnostic.
+      heldButtons: getControllerSnapshot?.().buttons || null,
+      axes: getControllerSnapshot?.().axes || null,
     });
   }
 
-  function renderHtml() {
-    if (!host) return;
-    applyVfdDomTheme(host, 'amber');
-    host.innerHTML = renderControllerOverlayHtml(model(), { padName: getPadName() });
+  function padRect(body) {
+    // The pad takes the left column and the rows the right. Leader labels run
+    // out into the pad column's margins, which is why it gets the larger share.
+    const w = Math.max(30, Math.round(body.w * 0.60));
+    return { x: body.x, y: body.y, w, h: body.h - 2 };
   }
 
   const scene = {
@@ -153,20 +129,9 @@ export function makeControllerSettingsScene({
     blocksWorld: true,
     lensPreset: 'calm',
 
-    enter() {
-      const doc = globalThis.document;
-      if (!doc?.body) return;
-      host = doc.createElement('div');
-      host.className = 'cs-controller-overlay cs-machine-overlay';
-      host.setAttribute('role', 'dialog');
-      host.setAttribute('aria-modal', 'true');
-      doc.body.appendChild(host);
-      renderHtml();
-    },
+    enter() { selected = 0; captureAction = null; },
 
     exit() {
-      host?.remove?.();
-      host = null;
       captureAction = null;
       cancelControllerRemap?.();
     },
@@ -179,14 +144,15 @@ export function makeControllerSettingsScene({
         if (raw === 'Escape' || code === 'Escape' || raw === 'Backspace' || code === 'Backspace') {
           captureAction = null;
           cancelControllerRemap?.();
-          renderHtml();
         }
         return true;
       }
       if (raw === 'ArrowUp' || k === 'w' || code === 'KeyW') { move(-1); return true; }
       if (raw === 'ArrowDown' || k === 's' || code === 'KeyS') { move(1); return true; }
-      if (raw === 'Enter' || code === 'Enter' || raw === ' ' || code === 'Space' || k === 'z' || code === 'KeyZ') { beginCapture(); renderHtml(); return true; }
-      if (raw === 'r' || raw === 'R' || code === 'KeyR') { resetControllerSettings(); save(); captureAction = null; cancelControllerRemap?.(); renderHtml(); return true; }
+      if (raw === 'ArrowLeft' || k === 'a' || code === 'KeyA') { adjust(-1); return true; }
+      if (raw === 'ArrowRight' || k === 'd' || code === 'KeyD') { adjust(1); return true; }
+      if (raw === 'Enter' || code === 'Enter' || raw === ' ' || code === 'Space' || k === 'z' || code === 'KeyZ') { beginCapture(); return true; }
+      if (raw === 'r' || raw === 'R' || code === 'KeyR') { resetControllerSettings(); save(); captureAction = null; cancelControllerRemap?.(); return true; }
       if (raw === 'Escape' || code === 'Escape' || raw === 'Backspace' || code === 'Backspace') { close(); return true; }
       return true;
     },
@@ -196,23 +162,99 @@ export function makeControllerSettingsScene({
     },
 
     pointer(e = {}) {
-      if (e.type !== 'pointerdown') return true;
-      const target = globalThis.document?.elementFromPoint?.(e.clientX, e.clientY);
-      const action = target?.closest?.('[data-action]')?.dataset?.action;
-      if (!action) return true;
-      const modelActions = model().actions;
-      const at = modelActions.findIndex((entry) => entry.id === action);
-      if (at >= 0) selected = at;
-      beginCapture();
-      renderHtml();
+      hits.handle(e);
       return true;
     },
 
     update() {
       if (captureAction && typeof controllerRemapAction === 'function' && controllerRemapAction() !== captureAction) captureAction = null;
-      renderHtml();
     },
-    render() {},
+
+    render() {
+      hits.reset();
+      const { cols, rows: R } = uiSize();
+      uiScrim(1);
+
+      const w = Math.min(104, cols - 4);
+      const h = Math.min(Math.max(26, R - 6), R - 2);
+      const x = Math.floor((cols - w) / 2);
+      const y = Math.floor((R - h) / 2);
+      const m = model();
+
+      const body = drawMachinePanel(x, y, w, h, {
+        theme: 'amber',
+        wordmark: 'AUDIOCORP',
+        label: 'CONTROLLER SETUP',
+        source: getPadName() || 'NO CONTROLLER',
+        meter: false,
+        footerParts: [
+          { action: 'select', label: 'ROW / SET' },
+          { action: 'confirm', label: 'REMAP' },
+          { action: 'back', label: 'DONE' },
+        ],
+      });
+
+      const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+      const blink = vfdBlinkOn(now);
+      const pad = padRect(body);
+      drawPadDiagram(pad, m, { cols, blinkOn: blink });
+
+      const listX = body.x + pad.w + 2;
+      const listW = Math.max(18, body.x + body.w - listX);
+      const valueW = 20;
+      const labelW = Math.max(8, listW - valueW - 2);
+
+      list(m).forEach((row, i) => {
+        const on = i === selected;
+        const ry = body.y + i * 2;
+        if (ry > body.y + body.h - 3) return;
+        const id = `row:${row.id}`;
+        hits.add({
+          id,
+          kind: 'controller-row',
+          x: listX - 1,
+          y: ry - 0.25,
+          w: listW + 1,
+          h: 1.5,
+          selected: on,
+          label: row.label,
+          data: { index: i },
+          onHover: () => { selected = i; },
+          onClick: () => { selected = i; beginCapture(); },
+        });
+
+        drawVfdRow({ uiFill, uiText, theme: activeTheme }, {
+          x: listX, y: ry, w: labelW, label: row.label,
+          style: vfdRowStyle({
+            hovered: hits.isHovered(id),
+            selected: on,
+            editing: row.id === captureAction,
+            nowMs: now,
+          }),
+          role: on ? 'ui-primary' : 'ui-secondary',
+        });
+
+        const value = row.kind === 'option'
+          ? `\u25c0 ${row.value} \u25b6`
+          : (row.id === captureAction ? 'PRESS ANY BUTTON' : row.bindingLabel);
+        const vx = listX + labelW + 2;
+        const clipped = value.length > listW - labelW - 2 ? value.slice(0, Math.max(1, listW - labelW - 2)) : value;
+        // Marker is the panel's alert annunciator and is reserved for capture;
+        // counter marks the live binding; everything else stays silkscreen.
+        const role = row.id === captureAction
+          ? (blink ? 'ui-marker' : 'ui-secondary')
+          : on ? 'ui-counter' : 'ui-secondary';
+        uiText(vx, ry, clipped, role, on || row.id === captureAction ? 1 : 0.8);
+
+        // A printed rule under the pad options: they change how the hardware is
+        // read, the rows below them only change what a button does.
+        if (row.kind === 'option') {
+          uiText(listX, ry + 1, '─'.repeat(Math.max(1, listW)), 'ui-secondary', 0.35);
+        }
+      });
+
+    },
+
     view() {
       const m = model();
       return {
@@ -224,6 +266,8 @@ export function makeControllerSettingsScene({
         family: m.family,
         selectedBindingLabel: controllerButtonLabel(m.activeButton, m.family),
         buttonCount: Object.keys(BUTTON_POSITIONS).length,
+        callouts: (m.callouts || []).length,
+        hitRegions: hits.view(),
       };
     },
   };

@@ -197,13 +197,16 @@ export function natatoriumBattle(named = false) {
   return {
     id: 'natatorium',
     enemy: 'THE SOUND OF SILENCE',
-    art: { id: 'surfer', mode: 'boss', caption: 'Signal subject / empty room', status: 'STILL' },
+    // Not the surfer: the hush wearing the drowned pool as a shell (procedural
+    // signal-being; the surfer raster is reserved for the finals). A non-surfer/
+    // guard id keeps opponentArt on the procedural path.
+    art: { id: 'drownedShell', mode: 'boss', caption: 'Borrowed shell / the drowned room', status: 'STILL' },
     composure: 1,
     health: 2,
     challenges: natatoriumChallenges(),
     intro: [
       { who: 'direction', text: 'Forty seconds into the take. Six metres of tile, no water, and the meter dead flat at the bottom of the scale.' },
-      { who: 'direction', text: 'And then, far off, a piano. Two notes. The wrong two notes.' },
+      { who: 'direction', text: 'And then, far off, a piano. Two notes. The wrong two notes.', cue: 'piano.diegetic.01' },
       { who: 'you', text: 'There is no piano in a natatorium.' },
       { who: 'you', text: 'There is no piano in a building that has had its power off since April.' },
     ],
@@ -212,14 +215,14 @@ export function natatoriumBattle(named = false) {
         nature: 'not there',
         threat: 0.42,
         before: [
-          { who: 'direction', text: 'It comes again. Closer, or louder, or you are leaning towards it — you cannot tell which, and not being able to tell which is the whole of the problem.' },
+          { who: 'direction', text: 'It comes again. Closer, or louder, or you are leaning towards it — you cannot tell which, and not being able to tell which is the whole of the problem.', cue: 'piano.diegetic.02' },
         ],
         onListen: [
           { who: 'you', text: 'No transient. No air moving. No felt on a string.' },
           { who: 'you', text: 'There is nothing there. There is nothing there and I can hear it.' },
         ],
         after: [
-          { who: 'direction', text: 'The tile gives it back to you four times and each return is thinner than the last.' },
+          { who: 'direction', text: 'The tile gives it back to you four times and each return is thinner than the last.', cue: 'piano.diegetic.03' },
         ],
       },
       {
@@ -261,7 +264,7 @@ export function natatoriumBattle(named = false) {
       { who: 'direction', text: 'The tile stops answering. The meter holds. You have a clean minute of a room with only you in it, which is the job, which was always the job.' },
     ],
     lose: [
-      { who: 'direction', text: 'You move. You do not decide to; you are moving before you know it, towards a piano that is not there.' },
+      { who: 'direction', text: 'You move. You do not decide to; you are moving before you know it, towards a piano that is not there.', cue: 'piano.diegetic.05' },
       { who: 'direction', text: 'The take dies. Somewhere far off, satisfied, the room stops playing.' },
     ],
   };
@@ -313,7 +316,7 @@ export function practiceBattle(named = false) {
           { who: 'you', text: "She is not here. She is on a drive, in a box... you're hallucinating again. You can stop it." },
         ],
         after: [
-          { who: 'direction', text: 'The pianos do not move. Seven uprights, lids up, many strings popped. Some of them still sound like pianos.' },
+          { who: 'direction', text: 'The pianos do not move. Seven uprights, lids up, many strings popped. Some of them still sound like pianos.', cue: 'piano.diegetic.04' },
         ],
       },
       {
@@ -375,7 +378,7 @@ export function hallPlayback(named = false) {
   return {
     start: {
       speaker: 'PLAYBACK · THE CONCERT HALL',
-      art: { id: 'surfer', mode: 'hero', caption: 'Playback / a room behind glass', status: 'PLAYBACK' },
+      art: { id: 'recordist', mode: 'hero', caption: 'Playback / a room behind glass', status: 'PLAYBACK' },
       lines: [
         { who: 'direction', text: 'The take rolls. A hall holding its breath, minus fifty-four, and then, under the noise floor, coming up, her.' },
         { who: 'sarah', text: 'You’re not even here. You’re behind the glass. You’re always behind the glass.', rate: 0.96 },
@@ -534,7 +537,9 @@ export function chapelBoss({ kind = 'nothing', value = null, listened = 5 } = {}
   return {
     id: 'chapel',
     enemy: face.label,
-    art: { id: 'circuitBentInterface', mode: 'boss', caption: 'Damaged monitor path / chapel', status: 'SIGNAL' },
+    // The chapel is the surfer's domain — the later-gen body that grew its own
+    // form. It shows the surfer raster, not a shell (the finals earn the image).
+    art: { id: 'surfer', mode: 'boss', caption: 'Borrowed body / the surfer', status: 'RETURN' },
     composure: 1.25,                 // longer than the others: this is the last one
     health: 5,
     tools: { fork:true, rig:true },

@@ -3,7 +3,13 @@
 #
 # The local runtime is the production inference path. peft is not optional:
 # load_lora_weights(adapter_name=...) and set_adapters() are peft.
-torch>=2.4
+#
+# torch and torchvision are DELIBERATELY not listed here. `pip install torch`
+# from the default index is a CPU-only wheel on Windows, which is what shipped a
+# GPU-less sidecar to every Windows player. Install them first with
+# `python install_torch.py`, which picks the cu128 index (Windows/Linux) or the
+# MPS build (macOS). diffusers/transformers/etc. then install against whatever
+# torch is already present.
 diffusers==0.31.0
 transformers==4.46.3
 huggingface_hub==0.26.5
@@ -14,7 +20,6 @@ peft==0.13.2
 compel==2.0.3
 safetensors
 pillow
-torchvision
 fastapi
 uvicorn[standard]
 websockets

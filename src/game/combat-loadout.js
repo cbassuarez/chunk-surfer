@@ -73,6 +73,23 @@ export function moveCombatGear(loadout, id, destination) {
   };
 }
 
+// Reorder a piece of gear within the tray. The tray order is the in-fight tool
+// rail order (availableBattleTools returns tools in `top` order, and combat
+// honours that), so this is how the player shapes which tool sits first.
+export function reorderCombatGear(loadout, id, direction) {
+  const normalized = normalizeCombatLoadout(loadout);
+  const key = sourceId(id);
+  const at = normalized.top.indexOf(key);
+  if (at < 0) return { loadout: normalized, changed: false, reason: 'not-in-top' };
+  const step = direction === 'up' ? -1 : direction === 'down' ? 1 : 0;
+  if (!step) return { loadout: normalized, changed: false, reason: 'invalid-direction' };
+  const to = at + step;
+  if (to < 0 || to >= normalized.top.length) return { loadout: normalized, changed: false, reason: 'at-edge' };
+  const top = [...normalized.top];
+  [top[at], top[to]] = [top[to], top[at]];
+  return { loadout: { ...normalized, top }, changed: true, reason: null };
+}
+
 export function availableBattleTools(loadout, equipment = []) {
   const normalized = normalizeCombatLoadout(loadout);
   const present = new Set(

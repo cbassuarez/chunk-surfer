@@ -195,17 +195,35 @@ function compassBearing(from, target) {
   return ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][index];
 }
 
-// One continuous height field makes the open Source map traversable without a
-// jump verb. The broad climbs, descents and final switchback are authored as
-// ramps, and the text planes sample the same function as collision.
+// Deterministic value noise — the ground is an actual, uneven landscape of mounds
+// and dips generated here, not a smooth ramp dressed with decals. The code text
+// planes sample this same function as collision, so the source IS the terrain's
+// surface, tiled over its real topology. Amplitude/frequency are bounded so the
+// per-cell slope stays under the walk limit.
+function landHash(ix, iy) {
+  let n = (Math.imul(ix, 374761393) + Math.imul(iy, 668265263)) | 0;
+  n = Math.imul(n ^ (n >>> 13), 1274126177) | 0;
+  return ((n ^ (n >>> 16)) >>> 0) / 4294967295;
+}
+function landNoise(x, y) {
+  const fx = Math.floor(x), fy = Math.floor(y), sx = x - fx, sy = y - fy;
+  const u = sx * sx * (3 - 2 * sx), v = sy * sy * (3 - 2 * sy);
+  const a = landHash(fx, fy), b = landHash(fx + 1, fy), c = landHash(fx, fy + 1), d = landHash(fx + 1, fy + 1);
+  return (a * (1 - u) + b * u) * (1 - v) + (c * (1 - u) + d * u) * v; // 0..1
+}
 export function sourceLandscapeFloorAt(localX, localY) {
-  const depth = Math.max(0, -Number(localY || 0));
-  const branch = smoothstep(18, 90, Math.abs(Number(localX) || 0)) * smoothstep(48, 105, depth) * (1 - smoothstep(145, 190, depth));
+  const lx = Number(localX) || 0, ly = Number(localY) || 0;
+  const depth = Math.max(0, -ly);
+  const branch = smoothstep(18, 90, Math.abs(lx)) * smoothstep(48, 105, depth) * (1 - smoothstep(145, 190, depth));
   const approach = 3.2 * smoothstep(28, 86, depth);
   const basin = -1.8 * smoothstep(118, 164, depth);
   const bodyRamp = 4.8 * smoothstep(176, 232, depth);
   const terminalRamp = 8.5 * smoothstep(246, 320, depth);
-  return approach + basin + bodyRamp + terminalRamp + branch * 1.4;
+  // Rolling mounds (broad) + finer unevenness, both slope-bounded so the whole
+  // field stays walkable while reading as real terrain rather than a flat plane.
+  const mounds = (landNoise(lx * 0.05 + 11, ly * 0.05) - 0.5) * 1.7
+    + (landNoise(lx * 0.12 + 37, ly * 0.12) - 0.5) * 0.55;
+  return approach + basin + bodyRamp + terminalRamp + branch * 1.4 + mounds;
 }
 
 function materialAtLandscape(localX, localY) {
@@ -319,16 +337,13 @@ export function createSourceSpaceRuntime({
     return lx >= -LANDSCAPE_W / 2 && lx <= LANDSCAPE_W / 2 && ly <= 4 && ly >= -revealedDepth;
   }
 
-  function routeEnabled(route, point) {
-    if (!route) return false;
-    if (route.id === 'critical-spine') {
-      if (point.y >= -50) return true;
-      if (point.y >= -150) return state.hasFork;
-      return state.tuned.includes('recordist-loop');
-    }
-    if (route.kind === 'optional') return state.hasFork;
-    if (route.id === 'final-causeway') return state.tuned.includes('body-room');
-    return true;
+  function routeEnabled(route) {
+    // Exploration-first: no action gates movement. Every causeway — spine, both
+    // optional loops, the final causeway — is walkable from the moment the field
+    // opens. You wander and read the source as you go; tuning a landmark is
+    // optional lore and evidence toward the rare fifth ending, never a key that
+    // unlocks the ground under your feet.
+    return !!route;
   }
 
   function landmarkPadEnabled(point) {
@@ -340,10 +355,12 @@ export function createSourceSpaceRuntime({
 
   function landscapeCell(x, y) {
     const o = landscapeOrigin(), lx = x - o.x, ly = y - o.y;
+    // The whole opened field is one walkable ground — free roam, Oblivion-style,
+    // no invisible causeway walls carving the space into corridors. The routes
+    // survive only as brighter path material for wayfinding, not as the edges of
+    // the floor. The only wall is the field's own perimeter (rendered as visible
+    // code, see perimeterWallInstances); beyond it is sky.
     if (!inLandscape(x, y)) return null;
-    const local = { x: lx, y: ly };
-    const route = routeAt(local);
-    if (!routeEnabled(route, local) && !landmarkPadEnabled(local)) return null;
     const floor = sourceLandscapeFloorAt(lx, ly);
     return { floor, ceil: floor + 22, flags: F.SKY, zone: ZONE.sourceSpace, material: materialAtLandscape(lx, ly) };
   }
@@ -431,12 +448,12 @@ export function createSourceSpaceRuntime({
     return point ? { x: point.x, y: point.y + 7, facing: 0 } : { x: SOURCE_ENTRY.x, y: SOURCE_ENTRY.y, facing: 0 };
   }
 
-  function available(id) {
-    if (id === 'fork-room') return true;
-    if (['surfer-origin', 'work-order-loop', 'recordist-loop'].includes(id)) return state.hasFork;
-    if (id === 'body-room') return state.hasFork && state.tuned.includes('recordist-loop');
-    if (id === 'final-page') return state.tuned.includes('body-room');
-    return false;
+  function available() {
+    // Every landmark is reachable and readable from the moment the field opens —
+    // there is no unlock. The final ENCOUNTER is still paced (see onStep's
+    // FINAL_REACHED, which only asks that you have wandered past Body Return), but
+    // nothing stops you exploring the whole horizon before then.
+    return true;
   }
 
   function protectMoment(seconds = 3) {
@@ -570,6 +587,9 @@ export function createSourceSpaceRuntime({
       return;
     }
     if ([CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase)) {
+      // Walking near a landmark simply notes you were there (lore, and the record
+      // of what you have seen). No pursuit is armed and nothing checkpoints you —
+      // the hush stalks the field as atmosphere, seen but never stopping the walk.
       for (const id of Object.keys(LANDMARK_OFFSETS)) {
         const point = landmarkPoint(id);
         if (point && Math.hypot(to.x - point.x, to.y - point.y) < 9 && !state.visited.includes(id)) {
@@ -577,28 +597,12 @@ export function createSourceSpaceRuntime({
           protectMoment(id === 'body-room' ? 4 : 2.5);
         }
       }
-      const recordist = landmarkPoint('recordist-loop');
-      const body = landmarkPoint('body-room');
-      if (state.tuned.includes('recordist-loop')
-        && !state.pursuitsCleared.includes(SOURCE_PURSUIT_BEAT.BODY_RUN)
-        && !state.pursuitBeat
-        && Math.hypot(to.x - recordist.x, to.y - recordist.y) > 12
-        && to.y < recordist.y - 7) {
-        dispatch({ type: 'PURSUIT_STARTED', id: SOURCE_PURSUIT_BEAT.BODY_RUN }, { immediate: true });
-      }
-      if (state.pursuitBeat === SOURCE_PURSUIT_BEAT.BODY_RUN && Math.hypot(to.x - body.x, to.y - body.y) < LANDMARK_PAD_RADIUS) {
-        dispatch({ type: 'PURSUIT_CLEARED', id: SOURCE_PURSUIT_BEAT.BODY_RUN }, { immediate: true });
-        protectMoment(6);
-      }
-      if (state.tuned.includes('body-room')
-        && !state.pursuitsCleared.includes(SOURCE_PURSUIT_BEAT.FINAL_RUN)
-        && !state.pursuitBeat
-        && Math.hypot(to.x - body.x, to.y - body.y) > 12
-        && to.y < body.y - 7) {
-        dispatch({ type: 'PURSUIT_STARTED', id: SOURCE_PURSUIT_BEAT.FINAL_RUN }, { immediate: true });
-      }
       const final = landmarkPoint('final-page');
-      if (final && Math.hypot(to.x - final.x, to.y - final.y) < 10 && available('final-page')) {
+      // Movement to the horizon is free, but the final encounter only commits
+      // once Body Return is behind you — so exploring ahead early is allowed, it
+      // just doesn't skip the beat that earns the ending.
+      const bodyReached = state.visited.includes('body-room') || state.tuned.includes('body-room') || state.recorded.includes('body-room');
+      if (final && Math.hypot(to.x - final.x, to.y - final.y) < 10 && bodyReached) {
         dispatch({ type: 'FINAL_REACHED' }, { immediate: true });
         protectMoment(30);
       }
@@ -629,9 +633,12 @@ export function createSourceSpaceRuntime({
 
   function tuneFocused(px, py, facing) {
     const focus = focusAt(px, py, facing);
+    // Unhandled (not a nagging thought) whenever there is nothing to tune, so the
+    // caller is free to fall through to the ordinary torch. The fork only speaks
+    // when a reachable landmark is actually in focus.
     if (!focus || focus.kind !== 'landmark') return { handled: false };
-    if (!focus.available) return { handled: true, text: 'The false line does not answer yet.' };
-    if (!state.hasFork && focus.id !== 'fork-room') return { handled: true, text: 'Nothing in your hand can make this source vibrate.' };
+    if (!focus.available) return { handled: false };
+    if (!state.hasFork && focus.id !== 'fork-room') return { handled: false };
     dispatch({ type: 'LANDMARK_TUNED', id: focus.id }, { immediate: true });
     const checkpointId = checkpointForLandmark(focus.id);
     if (checkpointId) dispatch({ type: 'CHECKPOINT_SET', id: checkpointId }, { immediate: true });
@@ -642,9 +649,11 @@ export function createSourceSpaceRuntime({
 
   function recordFocused(px, py, facing) {
     const focus = focusAt(px, py, facing);
+    // Silent (unhandled) unless there is an available landmark to record — no
+    // "nothing answers here" nag while you are just moving through the field.
     if (!focus || focus.kind !== 'landmark') return { handled: false };
-    if (!focus.available) return { handled: true, text: 'The recorder finds no stable address here.' };
-    if (!state.hasFork) return { handled: true, text: 'The transport clicks. The source behind it does not hold still.' };
+    if (!focus.available) return { handled: false };
+    if (!state.hasFork) return { handled: false };
     dispatch({ type: 'LANDMARK_RECORDED', id: focus.id }, { immediate: true });
     const checkpointId = checkpointForLandmark(focus.id);
     if (checkpointId) dispatch({ type: 'CHECKPOINT_SET', id: checkpointId }, { immediate: true });
@@ -812,7 +821,9 @@ export function createSourceSpaceRuntime({
     const velocity=presence?.velocity||{x:0,y:0};
     const bodyYaw=Math.hypot(Number(velocity.x)||0,Number(velocity.y)||0)>.02
       ?Math.atan2(Number(velocity.x)||0,-(Number(velocity.y)||0)):0;
-    if (!Number.isFinite(hx) || !Number.isFinite(hy) || state.hushStage === CHUNK_SURF_HUSH_STAGE.STALK) {
+    if (!Number.isFinite(hx) || !Number.isFinite(hy)) {
+      // No live presence yet (just spawned): stand it a little way off toward
+      // Body Return so it reads as already out there, about to move.
       const body = landmarkPoint('body-room');
       hx = body.x - 18; hy = body.y + 9; speed = 0;
     }
@@ -833,12 +844,18 @@ export function createSourceSpaceRuntime({
       { name: 'foot-l', x: -0.34, y: 0.15, z: gait * 0.28, sx: 0.72, sy: 0.20 },
       { name: 'foot-r', x: 0.34, y: 0.15, z: -gait * 0.28, sx: 0.72, sy: 0.20 },
     ];
+    // A body assembled from full source lines (the hush is made of the same code
+    // as the field it wears). Each part carries exact atlas provenance so it
+    // honours the same contract as the architecture around it.
     return parts.map((part, index) => {
       const line = lines[(index * 7) % Math.max(1, lines.length)];
       return {
         id: `source-hush-${part.name}`,
         sourceId: line?.id,
-        text: line?.tokens?.find((token) => token.kind === 'identifier')?.text || line?.text || '',
+        sourceFile: line?.file,
+        sourceLine: line?.line,
+        sourceHash: line?.hash,
+        text: line?.text || '',
         matrix: sourceMatrix({ x: hx + part.x, y: part.y, z: hy + part.z, scaleX: part.sx, scaleY: part.sy, yaw:bodyYaw, roll: part.roll || 0 }),
         color: index % 3 === 0 ? [0.96, 0.92, 0.80, 1] : [1, 0.08, 0.045, 1],
         semantic: 'source-hush',
@@ -898,22 +915,28 @@ export function createSourceSpaceRuntime({
     const out = [];
     const o = landscapeOrigin();
     const rowCenter = Math.floor(py / 2) * 2;
+    // The floor SURFACE, tiled densely in source and hugging the terrain in both
+    // axes — the code IS the ground, following every mound and dip, not a rug laid
+    // on a flat plane.
     for (let row = -34; row <= 22; row += 2) {
       const worldZ = rowCenter + row;
-      for (let lane = -4; lane <= 4; lane += 1) {
-        const worldX=px+lane*5;
+      for (let lane = -7; lane <= 7; lane += 1) {
+        const worldX=px+lane*4.5;
         const cell=cellAt(worldX,worldZ);
         if(!cell)continue;
         const before=cellAt(worldX,worldZ+1)?.floor??cell.floor;
         const after=cellAt(worldX,worldZ-1)?.floor??cell.floor;
         const rampPitch=-Math.PI/2+Math.atan2(after-before,2*CELL);
+        const west=cellAt(worldX-1,worldZ)?.floor??cell.floor;
+        const east=cellAt(worldX+1,worldZ)?.floor??cell.floor;
+        const rollTilt=Math.atan2(east-west,2*CELL);
         const visual=routeVisual(worldX-o.x,worldZ-o.y);
         out.push(sourcePanel({
           id: `source-field-floor-${rowCenter}-${row}-${lane}`,
           sector: visual.sector, lineIndex: Math.abs(row * 11 + lane * 17), redact: (row + lane) % 10 === 0,
           x: worldX * CELL, y: cell.floor + 0.014 + Math.abs(lane) * 0.001, z: worldZ * CELL + lane * 0.045,
-          scaleX: 3.25, scaleY: 0.31,
-          pitch: rampPitch, yaw: lane * 0.032,
+          scaleX: 4.7, scaleY: 0.34,
+          pitch: rampPitch, yaw: lane * 0.028, roll: rollTilt,
           color: lane % 2 ? visual.color.map((value,index)=>index===3?value:value*.82) : visual.color,
           semantic: 'text-architecture:ramp', overlapLayer: lane === 0 ? 'base' : 'overlap', platformHeight: cell.floor,
         }));
@@ -1013,6 +1036,34 @@ export function createSourceSpaceRuntime({
         color:beam===0?[1,.16,.08,1]:[.16,.82,1,.82],semantic:'text-architecture:endpoint',overlapLayer:beam?'overlap':'base',
       }));
     }
+
+    // The field's edge is a WALL OF CODE, not an invisible boundary. Where the
+    // ground runs out at the left/right perimeter, tall columns of source strings
+    // stand up out of the floor so you can SEE the wall — the "made of code" of
+    // the space, made literal. Only rendered near the player's edge; the interior
+    // is open sky, no walls (Oblivion).
+    const halfW = LANDSCAPE_W / 2;
+    for (const side of [-1, 1]) {
+      const edgeWorldX = o.x + side * halfW;
+      if (Math.abs((edgeWorldX - px) * CELL) > 64) continue;
+      const zCenter = Math.floor(py / 4) * 4;
+      for (let dz = -24; dz <= 24; dz += 4) {
+        const worldZ = zCenter + dz;
+        const localY = worldZ - o.y;
+        if (localY > 4 || localY < -LANDSCAPE_H) continue;
+        const base = sourceLandscapeFloorAt(side * halfW, localY);
+        for (let row = 0; row < 12; row += 1) {
+          out.push(sourcePanel({
+            id: `source-wall-${side}-${worldZ}-${row}`,
+            sector: sectorAtHallDepth(-localY), lineIndex: Math.abs(worldZ * 7 + row * 13 + (side > 0 ? 5 : 0)), redact: row % 5 === 0,
+            x: edgeWorldX * CELL, y: base + 0.3 + row * 0.95, z: worldZ * CELL,
+            scaleX: 3.6, scaleY: 0.86, yaw: Math.PI / 2, roll: side * 0.03,
+            color: row % 4 === 0 ? [0.05, 0.74, 1, 0.92] : [0.12, 0.86, 0.42, 0.86],
+            semantic: 'text-architecture:wall', overlapLayer: row % 2 ? 'overlap' : 'base',
+          }));
+        }
+      }
+    }
     return out;
   }
 
@@ -1043,8 +1094,12 @@ export function createSourceSpaceRuntime({
 
   function proofHushTextInstances(presence = null, time = 0) {
     if (![CHUNK_SURF_HUSH_STAGE.STALK, CHUNK_SURF_HUSH_STAGE.HUNT, CHUNK_SURF_HUSH_STAGE.FINAL].includes(state.hushStage)) return [];
+    // Follow the live presence whenever it is on the board — during the quiet
+    // stalk as well as the scripted pursuits — so the body is visibly in motion,
+    // not pinned beside Body Return. Only fall back to the static pose when no
+    // presence is driving it (e.g. before it has spawned).
     let hx = Number(presence?.x), hy = Number(presence?.y);
-    if (!Number.isFinite(hx) || !Number.isFinite(hy) || state.hushStage === CHUNK_SURF_HUSH_STAGE.STALK) {
+    if (!Number.isFinite(hx) || !Number.isFinite(hy)) {
       const body = landmarkPoint('body-room'); hx = body.x - 18; hy = body.y + 9;
     }
     const sway = Math.sin(time * 1.6) * 0.08;
@@ -1061,9 +1116,112 @@ export function createSourceSpaceRuntime({
   // The long hall is still the physical building: hundreds of authored sheet
   // meshes occupy its floor, walls and ceiling. Meshes disappear only after
   // the page opens into Source Space proper.
+  // Cathédrale engloutie: real building meshes — chapel vaults, bells, pews, an
+  // organ, the drowned furniture of the rooms — leak up through the open field.
+  // They render through renderPropPass and are composited by the text-space
+  // shader, so they arrive already half made of code: solid stone one glance,
+  // dissolving into source the next. More of it surfaces the deeper you go — code
+  // near the entrance, built architecture near the end (progressive resolution).
+  const SOURCE_LEAK_MESHES = Object.freeze([
+    'chapel_vault', 'altar_table', 'lectern', 'hymn_board', 'pew', 'pew', 'chapel_inner_screen',
+    'organ_console', 'organ_pipes', 'tower_organ_case', 'portrait_frame', 'hall_structure',
+    'hall_seating', 'tower_bell_01', 'tower_bell_04', 'tower_frame', 'tower_wheel_01',
+    'upright_piano', 'grand_piano', 'marimba', 'timpani',
+  ]);
+  const SOURCE_LEAK_COUNT = 120;
+
+  function surfaceArchitectureInstances(px, py) {
+    if (![CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase)) return [];
+    const o = landscapeOrigin();
+    const out = [];
+    for (let i = 0; i < SOURCE_LEAK_COUNT; i += 1) {
+      const localX = (rand(state.seed, i, 71) - 0.5) * LANDSCAPE_W * 0.94;
+      const depth = 8 + rand(state.seed, i, 131) * (LANDSCAPE_H - 16);
+      const localY = -depth;
+      // The drowned architecture surfaces more the deeper (nearer the end) you go.
+      const resolution = 0.16 + 0.84 * smoothstep(40, LANDSCAPE_H - 30, depth);
+      if (rand(state.seed, i, 199) > resolution) continue;
+      const worldX = o.x + localX, worldZ = o.y + localY;
+      if (Math.hypot((worldX - px) * CELL, (worldZ - py) * CELL) > 108) continue;
+      const floor = sourceLandscapeFloorAt(localX, localY);
+      const piece = SOURCE_LEAK_MESHES[Math.floor(rand(state.seed, i, 233) * SOURCE_LEAK_MESHES.length)];
+      const scale = 0.8 + rand(state.seed, i, 251) * 1.2;
+      // Half-sunk: many pieces rise only partway out of the field, still drowned.
+      const sink = rand(state.seed, i, 281) * 1.7;
+      out.push({
+        id: `source-leak-${i}`,
+        mesh: piece,
+        matrix: sourceMatrix({
+          x: worldX * CELL, y: floor - sink + 0.05, z: worldZ * CELL,
+          scaleX: scale, scaleY: scale, scaleZ: scale,
+          yaw: rand(state.seed, i, 353) * Math.PI * 2,
+          roll: (rand(state.seed, i, 401) - 0.5) * 0.2,
+          pitch: (rand(state.seed, i, 431) - 0.5) * 0.14,
+        }),
+        zone: ZONE.sourceSpace,
+        structural: true,
+      });
+    }
+    // The drowned cathedral itself, standing at the horizon: a dense cluster of
+    // vault, bells, organ and pews around the final page, mostly risen where the
+    // rest of the field is still code. It reads from a distance as the place the
+    // whole space is sinking toward — the engloutie you walk into.
+    const final = landmarkPoint('final-page');
+    if (Math.hypot((final.x - px) * CELL, (final.y - py) * CELL) < 150) {
+      const CATHEDRAL = ['chapel_vault', 'tower_bell_01', 'tower_bell_04', 'tower_frame', 'organ_console', 'organ_pipes', 'altar_table', 'lectern', 'pew', 'pew', 'chapel_inner_screen'];
+      for (let i = 0; i < 34; i += 1) {
+        const ang = i * 0.79, rad = 3 + (i % 7) * 3.4;
+        const worldX = final.x + Math.cos(ang) * rad, worldZ = final.y - 4 + Math.sin(ang) * rad * 0.8;
+        const floor = sourceLandscapeFloorAt(worldX - o.x, worldZ - o.y);
+        const piece = CATHEDRAL[i % CATHEDRAL.length];
+        const scale = 1.1 + rand(state.seed, i, 617) * 1.4;
+        out.push({
+          id: `source-cathedral-${i}`,
+          mesh: piece,
+          matrix: sourceMatrix({ x: worldX * CELL, y: floor - rand(state.seed, i, 641) * 0.7, z: worldZ * CELL, scaleX: scale, scaleY: scale * (piece.startsWith('tower') ? 1.5 : 1), scaleZ: scale, yaw: ang + Math.PI, roll: (rand(state.seed, i, 673) - 0.5) * 0.12 }),
+          zone: ZONE.sourceSpace,
+          structural: true,
+        });
+      }
+    }
+    return out;
+  }
+
+  // The current: motes of source drift down the spine toward the end — a moving,
+  // non-dialogue wayfinding cue (this way finishes it). They ride the terrain and
+  // loop over the field length so the stream never runs dry.
+  function driftInstances(px, py, time) {
+    if (![CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase)) return [];
+    const o = landscapeOrigin();
+    const out = [];
+    const span = LANDSCAPE_H;
+    for (let i = 0; i < 52; i += 1) {
+      const lane = (rand(state.seed, i, 61) - 0.5) * 26;
+      const speed = 5 + rand(state.seed, i, 83) * 5;
+      const phase = (rand(state.seed, i, 97) + time * speed / span) % 1;
+      const depth = 6 + phase * (span - 12);
+      const worldX = o.x + lane, worldZ = o.y - depth;
+      if (Math.hypot((worldX - px) * CELL, (worldZ - py) * CELL) > 72) continue;
+      const floor = sourceLandscapeFloorAt(lane, -depth);
+      out.push({
+        id: `source-drift-${i}`,
+        mesh: 'loose_note',
+        matrix: sourceMatrix({ x: worldX * CELL, y: floor + 0.5 + Math.sin(time * 1.4 + i) * 0.25, z: worldZ * CELL, scaleX: 0.5, scaleY: 0.5, scaleZ: 0.5, pitch: time * 0.8 + i, yaw: time * 0.5 + i, roll: i }),
+        zone: ZONE.sourceSpace,
+        structural: false,
+      });
+    }
+    return out;
+  }
+
   function propInstances(px = player.x, py = player.y, options = {}) {
-    return [CHUNK_SURF_PHASE.HALL,CHUNK_SURF_PHASE.HAYSTACK,CHUNK_SURF_PHASE.TRANSFORMING].includes(state.phase)
-      ? pageInstances(px,py,options) : [];
+    if ([CHUNK_SURF_PHASE.HALL, CHUNK_SURF_PHASE.HAYSTACK, CHUNK_SURF_PHASE.TRANSFORMING].includes(state.phase)) return pageInstances(px, py, options);
+    if ([CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase)) {
+      const arch = surfaceArchitectureInstances(px, py);
+      if (options.reducedMotion || state.phase === CHUNK_SURF_PHASE.COMPLETED) return arch;
+      return [...arch, ...driftInstances(px, py, options.time || 0)];
+    }
+    return [];
   }
   function sourceCorpus() {
     if (sourceCorpusCache) return sourceCorpusCache;
@@ -1102,7 +1260,7 @@ export function createSourceSpaceRuntime({
     const cached = cachedArchitecture(px, py);
     const dynamicInstances = [
       ...interactionTextInstances(),
-      ...proofHushTextInstances(hushMode().colliding ? presence : null, reducedMotion ? 0 : time),
+      ...hushTextInstances(presence?.active ? presence : null, reducedMotion ? 0 : time),
     ];
     return {
       schema: 1,

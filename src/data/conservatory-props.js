@@ -22,23 +22,28 @@ export const PROCUREMENT_COHORTS = Object.freeze({
   maintenance_purchase:Object.freeze({kind:'contract',era:'final maintenance period',markPrefix:'M/L',summary:'A paired purchase of portable inspection lamps.'}),
 });
 
+// Authored player stems (public/audio/marimba/player, public/audio/violin/player),
+// resolved from the '<instr>_player' worldId to preloaded buffers (see PROP_STEMS
+// / propChunk in main.js). They replace the old website-playground chunks so the
+// marimba and strings you hold-to-play — and the HUSH plays back — are the
+// authored takes, same path the piano took.
 const MARIMBA = [
-  {worldId:'amplifications',fileLabel:'amp-001'},
-  {worldId:'amplifications',fileLabel:'amp-014'},
-  {worldId:'amplifications',fileLabel:'amp-028'},
-  {worldId:'amplifications',fileLabel:'amp-043'},
+  {worldId:'marimba_player',fileLabel:'01'},
 ];
+// Authored player-piano stems (public/audio/piano/player). These replace the old
+// main_b3 website-playground chunks; the runtime resolves the 'piano_player'
+// worldId to preloaded buffers (see propChunk in main.js), so both the player's
+// audition and the HUSH playing the piano back at you sound the authored takes.
 const PIANO = [
-  {worldId:'main_b3',fileLabel:'03'},
-  {worldId:'main_b3',fileLabel:'17'},
-  {worldId:'main_b3',fileLabel:'31'},
-  {worldId:'main_b3',fileLabel:'46'},
+  {worldId:'piano_player',fileLabel:'01'},
+  {worldId:'piano_player',fileLabel:'02'},
+  {worldId:'piano_player',fileLabel:'03'},
+  {worldId:'piano_player',fileLabel:'04'},
+  {worldId:'piano_player',fileLabel:'05'},
 ];
 const STRINGS = [
-  {worldId:'soundnoisemusic',fileLabel:'snm-001'},
-  {worldId:'soundnoisemusic',fileLabel:'snm-019'},
-  {worldId:'soundnoisemusic',fileLabel:'snm-037'},
-  {worldId:'soundnoisemusic',fileLabel:'snm-053'},
+  {worldId:'violin_player',fileLabel:'01'},
+  {worldId:'violin_player',fileLabel:'02'},
 ];
 const PERCUSSION = [
   {worldId:'amplifications',fileLabel:'amp-008'},
@@ -73,6 +78,7 @@ export const PROP_MESH = Object.freeze({
   pool_lane_markings:{w:14.2,d:19.5,blocks:false},
   loose_note:{w:.32,d:.42,blocks:false},
   tuning_fork:{w:.22,d:.82,blocks:false},
+  calibration_pin:{w:.12,d:.12,blocks:false},
   lifeguard_chair:{w:.78,d:.78,blocks:true}, lane_reel:{w:1.05,d:.62,blocks:true},
   drain_grille:{w:1.2,d:.18,blocks:false}, altar_table:{w:1.8,d:.78,blocks:true},
   lectern:{w:.62,d:.62,blocks:true}, hymn_board:{w:.8,d:.12,blocks:false},
@@ -209,7 +215,11 @@ export const CONSERVATORY_PROPS = [
   P('academic-skylight','academic_skylight',27,254,0,{
     renderOffsetX:8,renderOffsetZ:1,renderGroups:['ground','academic'],interactive:false,structural:true,
   }),
-  P('academic-garden-planter-west','academic_planter',80.5,11.0,.08,{renderGroups:['ground','academic'],interactive:false}),
+  // The one piece of the ruined garden you may put a hand in. Everything else
+  // here is deliberately mute; this planter is where a calibration pin has been
+  // sitting in the soil since somebody serviced a head out here (see PIN_HOSTS).
+  P('academic-garden-planter-west','academic_planter',80.5,11.0,.08,{renderGroups:['ground','academic'],
+    inspect:inspect('Dry soil in a stone planter, packed hard and full of old leaf. Something brass is half down in it.','The soil keeps the shape your hand left in it.')}),
   P('academic-garden-planter-east','academic_planter',86.7,17.6,-.08,{renderGroups:['ground','academic'],interactive:false}),
   P('academic-garden-basin','academic_dry_basin',83.6,14.6,0,{renderGroups:['ground','academic'],interactive:false}),
   P('academic-garden-tree-west','academic_dead_tree',80.4,11.0,-.18,{renderGroups:['ground','academic'],interactive:false,elevation:.66}),
@@ -218,13 +228,19 @@ export const CONSERVATORY_PROPS = [
   P('academic-garden-leaves-south','academic_leaf_litter',84.8,19.1,-.18,{renderGroups:['ground','academic'],interactive:false}),
 
   // Six anonymous bust stations establish the gallery cadence. Four retain a
-  // generic head; two have collapsed into unidentifiable fragments. There are
-  // no plaques, accession marks or interaction affordances on this floor.
+  // generic head; two have collapsed into unidentifiable fragments. Still no
+  // plaques and no accession marks — nobody wrote down who these were.
+  //
+  // The four intact heads are the ONE thing on this floor you may address, and
+  // what you get is your own voice (see BUST_TALK). They expose no sample, no
+  // collectible and no inscription: talking to them changes nothing except what
+  // you have said out loud, which is the point of them.
   ...[[27,250,0],[27,254,.18],[27,258,-.12],[41,250,Math.PI],[41,254,Math.PI+.15],[41,258,Math.PI-.12]].flatMap(([x,y,yaw],i)=>{
     const common={renderGroups:['ground','academic'],interactive:false};
     return i===2||i===5
       ?[P(`academic-bust-plinth-${i+1}`,'academic_bust_plinth',x,y,yaw,common),P(`academic-bust-fragment-${i+1}`,'academic_bust_fragment',x+.18,y+.22,yaw+.45,{...common,elevation:1.08})]
-      :[P(`academic-bust-plinth-${i+1}`,'academic_bust_plinth',x,y,yaw,common),P(`academic-bust-${i+1}`,'marble_bust_01',x,y,yaw,{...common,elevation:1.10,scale:i===4?.88:1})];
+      :[P(`academic-bust-plinth-${i+1}`,'academic_bust_plinth',x,y,yaw,common),
+        P(`academic-bust-${i+1}`,'marble_bust_01',x,y,yaw,{renderGroups:['ground','academic'],talkable:true,elevation:1.10,scale:i===4?.88:1})];
   }),
   ...[248,253,258,263].flatMap((y,i)=>[
     P(`academic-frieze-west-${i+1}`,'academic_frieze',24.2,y,Math.PI/2,{renderGroups:['ground','academic'],interactive:false,elevation:3.05}),
@@ -448,8 +464,8 @@ export const CONSERVATORY_PROPS = [
     inspectAt:{x:95.25,y:16.0},
     inspect:inspect('The front-of-house panel, S/P-03. Its typed circuit card lists foyer, box office and hall lounge; the main isolator is down.','S/P-03. A neat card for three dead circuits.'),
   }),
-  P('plant-rack-1','equipment_rack',38.5,8.0,Math.PI/2,{inspect:inspect('A controls rack beside equipment too old to report to it.','The indicators are mechanical.')}),
-  P('acq-services-panel-plant','power_box_01',38.0,10.0,-Math.PI/2,{
+  P('plant-rack-1','equipment_rack',38.5,28,Math.PI/2,{inspect:inspect('A controls rack beside equipment too old to report to it.','The indicators are mechanical.')}),
+  P('acq-services-panel-plant','power_box_01',38.0,30,-Math.PI/2,{
     scaleX:1.76,scaleY:1.63,elevation:1.45,
     provenance:provenance('services_rewire','S/P-01','plant-room panel; hand-corrected labels'),
     inspectAt:{x:37.25,y:10.0},
@@ -458,14 +474,14 @@ export const CONSERVATORY_PROPS = [
   // Two authored wall systems replace the loose pipe cloud. All origins are
   // in plant-room air, one half-cell from solid masonry, and yaw points the
   // service faces into the room. The lower north run joins edge-to-edge.
-  P('plant-pipe-north-lower-1','plant_pipe_straight',31.9,6.15,0,{elevation:1.18,mount:'wall',inspect:inspect('The west length of the lower wall run. Its clips share a chalk line with the valve.','The run stays level into the valve body.')}),
-  P('plant-pipe-north-lower-valve','plant_pipe_valve',33.39,6.15,0,{elevation:1.14,mount:'wall',inspect:inspect('A red handwheel valve fitted inline on the lower north run. It has been wired open.','The tag says DO NOT ISOLATE.')}),
-  P('plant-pipe-north-lower-2','plant_pipe_straight',34.89,6.15,0,{elevation:1.18,mount:'wall',inspect:inspect('The lower run continues east without changing level.','Old flux marks the joint beside the valve.')}),
-  P('plant-pipe-north-lower-elbow','plant_pipe_elbow',36.51,6.15,0,{elevation:1.08,mount:'wall',inspect:inspect('The lower run finishes in a wall-plane riser elbow.','The bend was fitted in a hurry.')}),
-  P('plant-pipe-north-bank-west','plant_pipe_bank',34.0,6.15,0,{elevation:1.62,mount:'wall',inspect:inspect('Three insulated runs clipped to the north wall on a common datum.','The paint has bubbled under old heat.')}),
-  P('plant-pipe-north-bank-east','plant_pipe_bank',36.7,6.15,0,{elevation:1.62,mount:'wall',inspect:inspect('The three-line bank continues through matching sleeves.','One clamp is newer than the others.')}),
-  P('plant-pipe-north-bank-elbow','plant_pipe_elbow',38.47,6.15,0,{elevation:1.62,mount:'wall',inspect:inspect('The upper bank terminates at a short riser beside the east wall.','Cold to the touch from below.')}),
-  P('plant-pipe-east-bank-north','plant_pipe_bank',39.5,9.0,-Math.PI/2,{elevation:1.55,mount:'wall',inspect:inspect('A three-line service bank fixed to the east wall.','All three lines share the same bracket centres.')}),
-  P('plant-pipe-east-bank-south','plant_pipe_bank',39.5,11.7,-Math.PI/2,{elevation:1.55,mount:'wall',inspect:inspect('The east-wall bank continues south through matching couplings.','The insulation changes colour at one coupling.')}),
-  P('plant-pipe-east-valve','plant_pipe_valve',39.5,11.7,-Math.PI/2,{elevation:1.51,mount:'wall',inspect:inspect('A drain valve projects into the room from the east-wall bank.','Green crust at the threads.')}),
+  P('plant-pipe-north-lower-1','plant_pipe_straight',31.9,26.15,0,{elevation:1.18,mount:'wall',inspect:inspect('The west length of the lower wall run. Its clips share a chalk line with the valve.','The run stays level into the valve body.')}),
+  P('plant-pipe-north-lower-valve','plant_pipe_valve',33.39,26.15,0,{elevation:1.14,mount:'wall',inspect:inspect('A red handwheel valve fitted inline on the lower north run. It has been wired open.','The tag says DO NOT ISOLATE.')}),
+  P('plant-pipe-north-lower-2','plant_pipe_straight',34.89,26.15,0,{elevation:1.18,mount:'wall',inspect:inspect('The lower run continues east without changing level.','Old flux marks the joint beside the valve.')}),
+  P('plant-pipe-north-lower-elbow','plant_pipe_elbow',36.51,26.15,0,{elevation:1.08,mount:'wall',inspect:inspect('The lower run finishes in a wall-plane riser elbow.','The bend was fitted in a hurry.')}),
+  P('plant-pipe-north-bank-west','plant_pipe_bank',34.0,26.15,0,{elevation:1.62,mount:'wall',inspect:inspect('Three insulated runs clipped to the north wall on a common datum.','The paint has bubbled under old heat.')}),
+  P('plant-pipe-north-bank-east','plant_pipe_bank',36.7,26.15,0,{elevation:1.62,mount:'wall',inspect:inspect('The three-line bank continues through matching sleeves.','One clamp is newer than the others.')}),
+  P('plant-pipe-north-bank-elbow','plant_pipe_elbow',38.47,26.15,0,{elevation:1.62,mount:'wall',inspect:inspect('The upper bank terminates at a short riser beside the east wall.','Cold to the touch from below.')}),
+  P('plant-pipe-east-bank-north','plant_pipe_bank',39.5,29,-Math.PI/2,{elevation:1.55,mount:'wall',inspect:inspect('A three-line service bank fixed to the east wall.','All three lines share the same bracket centres.')}),
+  P('plant-pipe-east-bank-south','plant_pipe_bank',39.5,31.7,-Math.PI/2,{elevation:1.55,mount:'wall',inspect:inspect('The east-wall bank continues south through matching couplings.','The insulation changes colour at one coupling.')}),
+  P('plant-pipe-east-valve','plant_pipe_valve',39.5,31.7,-Math.PI/2,{elevation:1.51,mount:'wall',inspect:inspect('A drain valve projects into the room from the east-wall bank.','Green crust at the threads.')}),
 ];

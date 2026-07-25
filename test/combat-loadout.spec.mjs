@@ -7,6 +7,7 @@ import {
   freshCombatLoadout,
   moveCombatGear,
   normalizeCombatLoadout,
+  reorderCombatGear,
 } from '../src/game/combat-loadout.js';
 
 test('older saves receive a conservative starter tray with one open slot', () => {
@@ -29,6 +30,29 @@ test('the top compartment is unique, battle-gear-only, and capacity limited', ()
   assert.deepEqual(storage.loadout.top, ['light', 'recorder', 'coffee']);
   const packed = moveCombatGear(storage.loadout, 'interface', 'top');
   assert.deepEqual(packed.loadout.top, ['light', 'recorder', 'coffee', 'interface']);
+});
+
+test('reordering the tray moves gear and holds at the edges', () => {
+  const start = normalizeCombatLoadout({ top: ['light', 'recorder', 'radio'] });
+  const up = reorderCombatGear(start, 'recorder', 'up');
+  assert.equal(up.changed, true);
+  assert.deepEqual(up.loadout.top, ['recorder', 'light', 'radio']);
+  const down = reorderCombatGear(start, 'recorder', 'down');
+  assert.deepEqual(down.loadout.top, ['light', 'radio', 'recorder']);
+  // Edges and non-tray gear are no-ops with a reason.
+  assert.deepEqual(reorderCombatGear(start, 'light', 'up'), { loadout: start, changed: false, reason: 'at-edge' });
+  assert.equal(reorderCombatGear(start, 'coffee', 'up').reason, 'not-in-top');
+  assert.equal(reorderCombatGear(start, 'light', 'sideways').reason, 'invalid-direction');
+});
+
+test('the tray order is the in-fight tool rail order', () => {
+  // Reordering the tray must reorder the tools combat receives — the whole
+  // point of a player-controlled loadout order.
+  const start = normalizeCombatLoadout({ top: ['light', 'recorder', 'radio'] });
+  const present = [{ id: 'light' }, { id: 'recorder' }, { id: 'radio' }];
+  assert.deepEqual(availableBattleTools(start, present), ['torch', 'recorder', 'radio']);
+  const moved = reorderCombatGear(start, 'radio', 'up').loadout;
+  assert.deepEqual(availableBattleTools(moved, present), ['torch', 'radio', 'recorder']);
 });
 
 test('combat receives only present gear from the saved top compartment', () => {

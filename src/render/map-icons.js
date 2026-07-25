@@ -3,10 +3,13 @@
 import { uiDraw, uiGlyph, uiLine } from './ui.js';
 import { themeRoleColor } from './palette.js';
 
-export function drawPlayerMarker(point, heading = 0, alpha = 1) {
+// `tick` draws the old 0.75-cell facing stub. It is only used where there is no
+// sight cone to say the same thing better (the compass fallback, the full map).
+export function drawPlayerMarker(point, heading = 0, alpha = 1, { tick = true } = {}) {
+  uiGlyph(Math.round(point.x), Math.round(point.y), '●', 'ui-green', alpha);
+  if (!tick) return;
   const dx = Math.sin(heading) * 0.75;
   const dy = -Math.cos(heading) * 0.75;
-  uiGlyph(Math.round(point.x), Math.round(point.y), '●', 'ui-green', alpha);
   uiLine(point.x, point.y, point.x + dx, point.y + dy, themeRoleColor('counter'), alpha, 1.25);
 }
 
@@ -21,6 +24,9 @@ export function drawHushMarker(point, alpha = 1) {
 
 export function drawObjectiveMarker(command, alpha = 1) {
   const x = Math.round(command.point.x), y = Math.round(command.point.y);
+  // A room that exists but has not been named yet: present, unmistakably not a
+  // target. It is the only marker drawn hollow in the silkscreen colour.
+  if (command.unknown) { uiGlyph(x, y, '?', 'ui-secondary', alpha * .55); return; }
   const cls = command.recorded ? 'ui-green' : command.waypoint ? 'ui-blue' : command.current ? 'ui-amber' : 'ui-primary';
   const glyph = command.recorded ? '■' : command.waypoint ? '◆' : command.current ? '●' : '◇';
   uiGlyph(x, y, glyph, cls, alpha);

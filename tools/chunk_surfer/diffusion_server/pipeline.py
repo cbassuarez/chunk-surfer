@@ -267,6 +267,44 @@ MODELS: dict[str, Model] = {
 DEFAULT_MODEL = os.environ.get("LENS_MODEL", "sd15-hyper4")
 
 
+def torch_build_report() -> dict:
+    """Everything about the installed torch that decides whether a GPU works.
+
+    This is the report that was missing when a Windows tester with an RTX 5070
+    hit "unsupported GPU": the message could not tell a CPU-only wheel (shipped
+    by accident from PyPI's default Windows index) apart from a real driver
+    problem apart from a GPU too new for the bundled CUDA. All three read as
+    `cuda.is_available() == False`, and only this distinguishes them.
+    """
+    cuda_build = getattr(torch.version, "cuda", None)  # None on a CPU-only wheel
+    report = {
+        "torch": torch.__version__,
+        "cudaBuild": cuda_build,          # the CUDA the wheel was compiled for
+        "cudaAvailable": bool(torch.cuda.is_available()),
+        "cpuOnlyWheel": cuda_build is None,
+        "deviceCount": 0,
+        "devices": [],
+        "driverError": None,
+    }
+    try:
+        report["deviceCount"] = torch.cuda.device_count()
+        for i in range(report["deviceCount"]):
+            props = torch.cuda.get_device_properties(i)
+            report["devices"].append({
+                "name": props.name,
+                # Blackwell is sm_120; a wheel whose max supported arch is below
+                # this cannot run the card even though the driver enumerates it.
+                "capability": f"sm_{props.major}{props.minor}",
+            })
+    except Exception as exc:  # torch raises here when the runtime can't init
+        report["driverError"] = str(exc)
+    try:
+        report["archList"] = torch.cuda.get_arch_list()
+    except Exception:
+        report["archList"] = []
+    return report
+
+
 def pick_device() -> tuple[str, torch.dtype]:
     """CUDA, then Apple, then the couch. fp16 everywhere it is real."""
     if torch.cuda.is_available():

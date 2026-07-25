@@ -116,9 +116,25 @@ const tail = firstBank.get(`entry-${variant}-tail`);
 const fillStart = firstAudio.starts.find((entry) => entry.buffer === fill);
 const tailStart = firstAudio.starts.find((entry) => entry.buffer === tail);
 const bedStart = firstAudio.starts.find((entry) => entry.source.loop && entry.buffer === firstBank.get('bed'));
-assert.equal(fillStart.when, 10.06);
-assert.equal(startSnapshot.downbeatAt, fillStart.when + fill.duration);
+// The fill is a pickup INTO beat one, so the grid is decided first and the fill
+// is scheduled backwards from it. It used to be the other way round — the fill
+// started at the lookahead and its own file length chose the downbeat — which put
+// the bed's first beat at a different fraction of a bar for every variant.
+const countInBars = Math.max(1, Math.ceil(fill.duration / BATTLE_BAR_SECONDS));
+assert.equal(startSnapshot.downbeatAt, 10.06 + countInBars * BATTLE_BAR_SECONDS,
+  'the downbeat lands on the bar grid, not wherever the fill file happens to end');
+assert.equal(fillStart.when, startSnapshot.downbeatAt - fill.duration,
+  'and the fill ends exactly on the downbeat');
+assert.ok(fillStart.when >= 10.06, 'a pickup is never scheduled in the past');
 assert.equal(tailStart.when, startSnapshot.downbeatAt, 'matching tail starts exactly on beat one');
+// One fill, one tail, same take: the pair is 1:1 and never crossed.
+assert.equal(firstAudio.starts.filter((entry) => /entry-\d-fill/.test(entry.id || '')).length,
+  firstAudio.starts.filter((entry) => /entry-\d-tail/.test(entry.id || '')).length);
+for (const other of [1, 2, 3].filter((n) => n !== variant)) {
+  assert.ok(!firstAudio.starts.some((entry) => entry.buffer === firstBank.get(`entry-${other}-fill`)
+    || entry.buffer === firstBank.get(`entry-${other}-tail`)),
+    `variant ${other} contributes neither half of the entrance`);
+}
 assert.equal(bedStart.when, tailStart.when, 'bed and tail share one AudioContext timestamp');
 assert.equal(bedStart.buffer.length, 9600);
 assert.equal(bedStart.source.loopEnd, BATTLE_LOOP_SECONDS);

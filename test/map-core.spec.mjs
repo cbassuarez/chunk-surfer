@@ -79,3 +79,48 @@ assert.equal(unresolved.status, 'unresolved');
 assert.equal(mapLabJob(testCase).rooms.length, 5);
 
 console.log('map core tests ok');
+
+// ── the minimap sightline ───────────────────────────────────────────────────
+// The old facing hint was a 0.75-cell tick on the player dot: it said which way
+// you were pointing and nothing about whether you could SEE that way, and it
+// pointed straight through corners. The cone is masked by the same open cells the
+// topology layer draws, so a wall stops it.
+{
+  const { SIGHT, openCellLookup, sightPolygon } = await import('../src/render/minimap.js');
+
+  // A one-cell-wide corridor running north from the player, with a room to the
+  // east that is NOT connected: nothing in it may be visible.
+  const open = new Set();
+  for (let y = 0; y <= 10; y += 1) open.add(`5,${y}`);       // the corridor
+  for (let y = 2; y <= 4; y += 1) for (let x = 8; x <= 10; x += 1) open.add(`${x},${y}`);
+  const isOpen = openCellLookup({ open });
+  assert.equal(isOpen(5, 5), true);
+  assert.equal(isOpen(9, 3), true);
+  assert.equal(isOpen(7, 3), false, 'the corridor and the room do not touch');
+
+  const origin = { x: 5.5, y: 8.5 };
+  const north = sightPolygon({ origin, heading: 0, isOpen, radius: 12 });
+  assert.equal(north.length, SIGHT.rays);
+  // Looking north up the corridor, the centre ray runs a long way...
+  const centre = north[Math.floor(SIGHT.rays / 2)];
+  assert.ok(origin.y - centre.y > 5, `the corridor is visible along its length (${(origin.y - centre.y).toFixed(2)})`);
+  // ...and every point of the cone stays on open floor, so nothing is seen
+  // through a wall.
+  for (const point of north) {
+    assert.ok(isOpen(Math.floor(point.x), Math.floor(point.y)),
+      `no ray ends inside geometry (${point.x.toFixed(2)},${point.y.toFixed(2)})`);
+  }
+  // Nothing in the sealed room is ever inside the cone, from any heading.
+  for (let i = 0; i < 16; i += 1) {
+    const heading = (i / 16) * Math.PI * 2;
+    for (const point of sightPolygon({ origin, heading, isOpen, radius: 14 })) {
+      assert.ok(point.x < 7, `the sealed room stays unseen at heading ${heading.toFixed(2)}`);
+    }
+  }
+  // Facing a wall collapses the cone to the player's own cell rather than
+  // punching through it.
+  const south = sightPolygon({ origin: { x: 5.5, y: 10.5 }, heading: Math.PI, isOpen, radius: 12 });
+  for (const point of south) {
+    assert.ok(point.y <= 11.5, 'a wall one cell away stops the cone dead');
+  }
+}

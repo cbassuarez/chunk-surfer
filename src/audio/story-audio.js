@@ -10,6 +10,9 @@ import { authoredCue } from './authored-cues.js';
 
 export const STORY_AUDIO = {
   title: assetUrl('audio/game/title_song.mp3'),
+  // The credits roll gets its own piece. It plays through the same soundtrack
+  // slot as the title bed, which is what guarantees the two can never overlap.
+  credits: assetUrl('audio/game/credits_song.mp3'),
   typing: assetUrl('audio/game/typing.mp3'),
   booth: assetUrl('audio/game/outside_room_tone.mp3'),
   rain: assetUrl('audio/game/rain.mp3'),
@@ -57,6 +60,10 @@ function authoredGain(cueId, fallback = 1) {
 export const STORY_GAIN_BASELINES = Object.freeze({
   typing: 0.55,
   title: 0.42,
+  // Louder than the title bed: nothing competes with it. The credits roll has
+  // no dialogue, no foley and no room tone over the top, so the bed IS the
+  // scene rather than a floor under one.
+  credits: 0.66,
   booth: 0.075,
   rain: 0.060,
   tape: 0.46,
@@ -67,6 +74,7 @@ export const TYPE_LEVEL = { thought: 1.0, direction: 1.15 };   // narration type
 // The song is the piece. It is not background: it carries the booth and it
 // carries the title, and it is the last thing the player hears before the door.
 export const SOUNDTRACK_GAIN = queryGain('songgain', STORY_GAIN_BASELINES.title * authoredGain('story.title'));
+export const CREDITS_GAIN = queryGain('creditsgain', STORY_GAIN_BASELINES.credits * authoredGain('story.credits'));
 export const SOUNDTRACK_DUCK = SOUNDTRACK_GAIN * 0.55;         // audible, out of the way
 export const BOOTH_GAIN = STORY_GAIN_BASELINES.booth * authoredGain('story.booth');
 export const RAIN_GAIN = STORY_GAIN_BASELINES.rain * authoredGain('story.rain');
@@ -111,7 +119,12 @@ export async function preload(url) {
 }
 
 export function preloadAll() {
-  return Promise.all(Object.values(STORY_AUDIO).map(preload));
+  // The credits piece is six megabytes and is not needed until the roll, which
+  // fetches it lazily on enter. Preloading it at boot would buy nothing and
+  // cost the whole download before the first frame.
+  return Promise.all(
+    Object.entries(STORY_AUDIO).filter(([key]) => key !== 'credits').map(([, url]) => preload(url)),
+  );
 }
 
 function setGain(gainNode, value, rampSec = 0.5) {
@@ -125,19 +138,30 @@ function setGain(gainNode, value, rampSec = 0.5) {
 // The player's music level, a scalar over SOUNDTRACK_GAIN. 1 is the mix as
 // authored; 0 is silence. Rides the live soundtrack when changed.
 let musicScale = 1;
+function trackGain(track) {
+  return track === 'credits' ? CREDITS_GAIN : SOUNDTRACK_GAIN;
+}
 export function setMusicVolume(v) {
   musicScale = Math.max(0, Math.min(1, Number(v)));
-  if (soundtrack && !soundtrack.stopping) setGain(soundtrack.gain, SOUNDTRACK_GAIN * musicScale, 0.15);
+  if (soundtrack && !soundtrack.stopping) setGain(soundtrack.gain, trackGain(soundtrack.track) * musicScale, 0.15);
 }
 export function musicVolume() { return musicScale; }
 
-export function startSoundtrack({ gain = SOUNDTRACK_GAIN * musicScale, fade = 2.8 } = {}) {
+// One soundtrack at a time, whichever track it is. Asking for a different
+// track than the one playing swaps it; asking for the same one just re-ramps,
+// which is what makes this safe to call from a scene's enter() every time.
+export function startSoundtrack({ track = 'title', gain = null, fade = 2.8 } = {}) {
   if (!ctx || !bus) return null;
-  const buf = buffers.get(STORY_AUDIO.title);
-  if (!buf) { preload(STORY_AUDIO.title).then(() => startSoundtrack({ gain, fade })); return null; }
+  const url = STORY_AUDIO[track] || STORY_AUDIO.title;
+  const level = gain == null ? trackGain(track) * musicScale : gain;
+  const buf = buffers.get(url);
+  if (!buf) { preload(url).then(() => startSoundtrack({ track, gain, fade })); return null; }
   if (soundtrack && !soundtrack.stopping) {
-    setGain(soundtrack.gain, gain, fade);
-    return soundtrack;
+    if (soundtrack.track === track) {
+      setGain(soundtrack.gain, level, fade);
+      return soundtrack;
+    }
+    fadeSoundtrack({ fade: Math.min(fade, 1.6) });
   }
 
   const now = ctx.currentTime;
@@ -149,8 +173,8 @@ export function startSoundtrack({ gain = SOUNDTRACK_GAIN * musicScale, fade = 2.
   src.connect(g);
     g.connect(outBus('music'));
   try { src.start(now); } catch (_) { return null; }
-  soundtrack = { src, gain: g, startedAt: now, stopping: false };
-  setGain(g, gain, fade);
+  soundtrack = { src, gain: g, startedAt: now, stopping: false, track };
+  setGain(g, level, fade);
   src.onended = () => {
     try { src.disconnect(); g.disconnect(); } catch (_) {}
     if (soundtrack?.src === src) soundtrack = null;
@@ -258,7 +282,9 @@ export function audioState() {
     time: ctx ? +ctx.currentTime.toFixed(2) : 0,
     busIsCtxDest: !!ctx && bus === ctx.destination,
     song: soundtrack ? +soundtrack.gain.gain.value.toFixed(4) : null,
+    songTrack: soundtrack?.track || null,
     songLoaded: buffers.has(STORY_AUDIO.title),
+    creditsLoaded: buffers.has(STORY_AUDIO.credits),
     booth: booth ? +booth.gain.gain.value.toFixed(4) : null,
     tape: +tapeHissGain().toFixed(4),
     tapeLoaded: buffers.has(STORY_AUDIO.tape),

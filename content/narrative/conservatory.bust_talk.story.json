@@ -1,0 +1,262 @@
+{
+ "schemaVersion": 1,
+ "id": "conservatory.bust_talk",
+ "title": "Talking to the Busts",
+ "status": "active",
+ "entry": "start",
+ "entries": [
+  "start"
+ ],
+ "tags": [],
+ "notes": "",
+ "regions": [
+  {
+   "id": "conservatory.bust_talk.region",
+   "title": "Talking to the Busts",
+   "kind": "scene",
+   "color": "#4a3d62",
+   "nodeIds": [
+    "start",
+    "who",
+    "long",
+    "job",
+    "me",
+    "stop"
+   ]
+  }
+ ],
+ "nodes": {
+  "start": {
+   "speaker": "THE GALLERY",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "A head on a plinth, at the height of a person who is standing slightly too close.",
+     "id": "start.line.1"
+    },
+    {
+     "who": "you",
+     "text": "Evening.",
+     "id": "start.line.2"
+    },
+    {
+     "who": "direction",
+     "text": "The room does what the room has done all night, which is nothing.",
+     "id": "start.line.3"
+    },
+    {
+     "who": "you",
+     "text": "Right. Sorry. I know.",
+     "id": "start.line.4"
+    }
+   ],
+   "choices": [
+    {
+     "text": "ask who he was",
+     "goto": "who",
+     "id": "start.choice.1"
+    },
+    {
+     "text": "ask how long he has been up here",
+     "goto": "long",
+     "id": "start.choice.2"
+    },
+    {
+     "text": "tell him about the job",
+     "goto": "job",
+     "id": "start.choice.3"
+    },
+    {
+     "text": "stop talking to a rock",
+     "goto": "stop",
+     "id": "start.choice.4"
+    }
+   ],
+   "id": "start",
+   "type": "choice"
+  },
+  "who": {
+   "speaker": "THE GALLERY",
+   "lines": [
+    {
+     "who": "you",
+     "text": "So who were you, then. Founder? Benefactor? Somebody who gave them a organ and got a face out of it?",
+     "id": "who.line.1"
+    },
+    {
+     "who": "direction",
+     "text": "No plaque. No accession number. Nothing cut into the plinth and nothing screwed to it either — not removed, never fitted.",
+     "id": "who.line.2"
+    },
+    {
+     "who": "you",
+     "text": "Nobody wrote you down.",
+     "id": "who.line.3"
+    },
+    {
+     "who": "you",
+     "text": "That is the thing about this place. It kept the marble and lost the paperwork. Four rooms delivered and no name on the fifth.",
+     "id": "who.line.4"
+    }
+   ],
+   "choices": [
+    {
+     "text": "that could be me",
+     "goto": "me",
+     "id": "who.choice.1"
+    },
+    {
+     "text": "ask something else",
+     "goto": "start",
+     "id": "who.choice.2"
+    },
+    {
+     "text": "leave him to it",
+     "goto": "stop",
+     "id": "who.choice.3"
+    }
+   ],
+   "id": "who",
+   "type": "choice"
+  },
+  "long": {
+   "speaker": "THE GALLERY",
+   "lines": [
+    {
+     "who": "you",
+     "text": "How long have you been up here in the dark?",
+     "id": "long.line.1"
+    },
+    {
+     "who": "direction",
+     "text": "Dust on the crown of the head, and none on the front of the face. Somebody wiped it, once, at about eye level.",
+     "id": "long.line.2"
+    },
+    {
+     "who": "you",
+     "text": "Longer than the lights, anyway.",
+     "id": "long.line.3"
+    },
+    {
+     "who": "you",
+     "text": "You get used to it, I expect. You stop noticing that nothing is answering.",
+     "id": "long.line.4"
+    },
+    {
+     "who": "direction",
+     "text": "He hears himself say it.",
+     "id": "long.line.5"
+    }
+   ],
+   "choices": [
+    {
+     "text": "ask something else",
+     "goto": "start",
+     "id": "long.choice.1"
+    },
+    {
+     "text": "that could be me",
+     "goto": "me",
+     "id": "long.choice.2"
+    },
+    {
+     "text": "leave him to it",
+     "goto": "stop",
+     "id": "long.choice.3"
+    }
+   ],
+   "id": "long",
+   "type": "choice"
+  },
+  "job": {
+   "speaker": "THE GALLERY",
+   "lines": [
+    {
+     "who": "you",
+     "text": "Five rooms of nothing. That is the job. I record what a room sounds like when nobody is in it.",
+     "id": "job.line.1"
+    },
+    {
+     "who": "you",
+     "text": "People think that is empty. It is not. It is the loudest thing in the building if you hold still for it.",
+     "id": "job.line.2"
+    },
+    {
+     "who": "direction",
+     "text": "He waits, out of habit, for the part where the other person says something back.",
+     "id": "job.line.3"
+    },
+    {
+     "who": "you",
+     "text": "And you would know about holding still.",
+     "id": "job.line.4"
+    }
+   ],
+   "choices": [
+    {
+     "text": "ask something else",
+     "goto": "start",
+     "id": "job.choice.1"
+    },
+    {
+     "text": "leave him to it",
+     "goto": "stop",
+     "id": "job.choice.2"
+    }
+   ],
+   "id": "job",
+   "type": "choice"
+  },
+  "me": {
+   "speaker": "THE GALLERY",
+   "lines": [
+    {
+     "who": "you",
+     "text": "A man in a room with no name on him. Building coming down on Friday.",
+     "id": "me.line.1"
+    },
+    {
+     "who": "you",
+     "text": "Somebody did the first four and did not come out, and nobody has said his name to me once. Not the client. Not the guard.",
+     "id": "me.line.2"
+    },
+    {
+     "who": "direction",
+     "text": "The beam goes across the other plinths. Blank. Blank. A fragment. Blank.",
+     "id": "me.line.3"
+    },
+    {
+     "who": "you",
+     "text": "Right. Enough of that.",
+     "id": "me.line.4"
+    }
+   ],
+   "choices": [
+    {
+     "text": "get back to work",
+     "goto": "stop",
+     "id": "me.choice.1"
+    }
+   ],
+   "id": "me",
+   "type": "choice"
+  },
+  "stop": {
+   "speaker": "THE GALLERY",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "He puts the beam back on the floor and the head goes out like a switch.",
+     "id": "stop.line.1"
+    },
+    {
+     "who": "you",
+     "text": "Goodnight.",
+     "id": "stop.line.2"
+    }
+   ],
+   "id": "stop",
+   "type": "dialogue"
+  }
+ }
+}

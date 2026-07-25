@@ -12,6 +12,7 @@
 import { uiDraw, uiFill, uiText } from './ui.js';
 import { activeTheme, setActiveSurface, uiBrightness, themeRoleColor, themeRoleDim, uiFlickerAlpha } from './palette.js';
 import { drawVfdGlyph } from './vfd-font.js';
+import { drawPromptParts } from './prompt-glyphs.js';
 import { MONITOR_THRESHOLDS, monitorSnapshot } from '../audio/monitor.js';
 
 export const PANEL = Object.freeze({ padX: 2, headerRows: 2, footerRows: 2 });
@@ -43,6 +44,10 @@ function hairline(ctx, x, y, w, h, color, alpha = 1, lw = 1, dpr = 1) {
 export function drawMachinePanel(x, y, w, h, {
   label = 'MONITOR', source = '', footer = '', meter = true, scrim = false,
   theme = 'amber', wordmark = 'AUDIOCORP', model = '', buttons = null,
+  // Prompt parts, drawn as button glyphs on a pad and as bracketed text on a
+  // keyboard. Takes precedence over `footer` when both are given, so a caller
+  // can migrate one surface at a time.
+  footerParts = null,
 } = {}) {
   setActiveSurface(theme);
   const t = activeTheme();
@@ -81,7 +86,8 @@ export function drawMachinePanel(x, y, w, h, {
   if (meter) drawVfdMeter(meterX, y + 1, 14, monitorSnapshot(), { theme });
 
   // Footer.
-  if (footer) uiText(x + 2, y + h - 2, String(footer).slice(0, Math.max(0, w - 4)), 'ui-label');
+  if (footerParts?.length) drawPromptParts(x + 2, y + h - 2, footerParts, { role: 'ui-label', cols: w });
+  else if (footer) uiText(x + 2, y + h - 2, String(footer).slice(0, Math.max(0, w - 4)), 'ui-label');
   if (buttons) drawButtonCluster(x + w - buttons.w - 2, y + PANEL.headerRows + 1, buttons);
 
   return {

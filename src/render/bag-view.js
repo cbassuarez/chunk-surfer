@@ -5,9 +5,11 @@
 //  Created by Sebastian Suarez-Solis on 7/12/26.
 //
 
-// Field-case presentation. One scrolling list, one persistent detail pane.
+// Field-case presentation. One scrolling list, one persistent detail pane — and
+// sections that own their whole content area instead (SKILLS, see `drawContent`).
 
-import { uiLine, uiText, uiWrap } from './ui.js';
+import { uiFill, uiLine, uiStrokeRect, uiText, uiWrap } from './ui.js';
+import { UI_COLOR } from './palette.js';
 import { drawBagIcon } from './bag-icons.js';
 import { bagEntry, bagSection } from '../game/bag-model.js';
 import { drawMapView } from './map-view.js';
@@ -58,7 +60,7 @@ function drawTabs(model, nav, layout, pulse) {
   const gap = compact ? 1 : 2;
 
   const labels = tabs.map((tab) => {
-    const short = tab.id === 'kit' ? 'K' : tab.id === 'map' ? 'M' : 'F';
+    const short = tab.id === 'kit' ? 'K' : tab.id === 'map' ? 'M' : tab.id === 'skills' ? 'S' : 'F';
     const core = compact ? `${short} ${tab.countLabel}` : `${tab.label} ${tab.countLabel}`;
     return tab.id === active ? `[${compact ? '' : ' '}${core}${compact ? '' : ' '}]` : core;
   });
@@ -82,6 +84,7 @@ function drawTabs(model, nav, layout, pulse) {
 function sectionHeader(sectionId) {
   if (sectionId === 'kit') return 'CASE INDEX';
   if (sectionId === 'map') return 'FACILITY MAP';
+  if (sectionId === 'skills') return 'RECORDER MODIFICATIONS';
   return 'FILE INDEX';
 }
 
@@ -327,13 +330,53 @@ export function bagTaskText({ hint, model, entry }) {
   return `TASK: RECORD FIVE CLEAN MINUTES · ${model.progress.done}/${model.progress.total} COMPLETE`;
 }
 
-export function drawBagView({ model, nav, mapNav = null, layout, hint = '', motion, now }) {
+// How tall a callout needs to be for this guide at this width. The caller asks
+// the layout for the band before drawing, so the case's own content is laid out
+// around a callout that is always fully readable — never clipped, never scrolled.
+export function bagGuideRows(guide, width) {
+  if (!guide) return 0;
+  const w = Math.max(12, Math.floor(width) - 4);
+  return 2 + uiWrap(String(guide.why || ''), w).length;
+}
+
+// The guided callout. A locked surface has to say three things at once, loudly:
+// that it IS locked, which control opens it, and — the part a footer hint could
+// never carry — why the man wants it done. `nudge` is how long ago the player
+// pressed something the lock refused, so the band can flash rather than queue up
+// a line of monitor text nobody asked for.
+export function drawBagGuide({ guide, region, nudge = 1 }) {
+  if (!guide || !region || region.h <= 0) return;
+  const refused = nudge < 0.5;
+  const pulse = refused ? 0.5 + 0.5 * Math.cos(nudge * Math.PI * 6) : 0;
+  uiFill(region.x - 1, region.y - .3, region.w + 2, region.h + .6, refused ? 'rgba(60,34,4,0.55)' : 'rgba(28,20,6,0.42)');
+  uiStrokeRect(region.x - 1, region.y - .3, region.w + 2, region.h + .6, UI_COLOR.amber, .35 + pulse * .5, 1);
+
+  const key = inputPromptLabel(guide.action || 'confirm');
+  const head = `▶ GUIDED · [${key}] ${String(guide.title || '').toUpperCase()}`;
+  uiText(region.x, region.y, clip(head, region.w), 'ui-amber', 1);
+  uiWrap(String(guide.why || ''), Math.max(12, region.w - 2))
+    .slice(0, Math.max(0, region.h - 2))
+    .forEach((line, i) => uiText(region.x + 2, region.y + 1 + i, clip(line, region.w - 2), 'ui-primary', .88));
+  const foot = refused
+    ? 'THE CASE IS HELD ON THIS ONE THING. THE REST OF THE NIGHT IS YOURS.'
+    : `EVERYTHING ELSE IS HELD UNTIL THIS IS DONE · [${inputPromptLabel('bag')}] CLOSE THE CASE`;
+  uiText(region.x + 2, region.y + region.h - 1, clip(foot, region.w - 2), refused ? 'ui-amber' : 'ui-secondary', refused ? .95 : .6);
+}
+
+export function drawBagView({ model, nav, mapNav = null, layout, hint = '', guide = null, guideNudge = 1, motion, now, drawContent = null }) {
   const selected = bagEntry(model, nav.sectionId, nav.selected?.[nav.sectionId]);
   const sectionPulse = acquire(now, motion.sectionChangedAt);
   drawTabs(model, nav, layout, sectionPulse);
 
   let actions = null;
-  if (nav.sectionId === 'map' && model.map && mapNav) {
+  // A section may own its whole content area (the SKILLS tree does). It gets the
+  // list+detail region and the surrounding chrome is untouched.
+  if (drawContent) {
+    const region = layout.mode === 'wide'
+      ? { x: layout.list.x, y: layout.list.y, w: (layout.detail.x + layout.detail.w) - layout.list.x, h: layout.list.h }
+      : { x: layout.list.x, y: layout.detail.y, w: layout.list.w, h: (layout.list.y + layout.list.h) - layout.detail.y };
+    drawContent(region);
+  } else if (nav.sectionId === 'map' && model.map && mapNav) {
     const rendered = drawMapView({ model: model.map, nav: mapNav, bagLayout: layout, now });
     actions = rendered.actions;
   } else {
@@ -349,7 +392,12 @@ export function drawBagView({ model, nav, mapNav = null, layout, hint = '', moti
   uiLine(layout.taskRail.x, layout.taskRail.y - .35, layout.taskRail.x + layout.taskRail.w, layout.taskRail.y - .35, undefined, .24);
   uiText(layout.taskRail.x, layout.taskRail.y, clip(bagTaskText({ hint, model, entry: selected }), layout.taskRail.w), hint ? 'ui-amber' : 'ui-secondary', hint ? .92 : .62);
 
-  actions = nav.mode === 'confirm' ? bagActionRail(selected, nav.mode) : (actions || bagActionRail(selected, nav.mode));
+  if (guide && layout.guide) drawBagGuide({ guide, region: layout.guide, nudge: guideNudge });
+
+  // A locked case does not advertise the keys it is refusing.
+  actions = guide
+    ? [[inputPromptLabel(guide.action || 'confirm'), String(guide.title || '').toUpperCase()], [inputPromptLabel('bag'), 'CLOSE']]
+    : nav.mode === 'confirm' ? bagActionRail(selected, nav.mode) : (actions || bagActionRail(selected, nav.mode));
   const actionText = clip(actionRailText(actions, layout.actionRail.w), layout.actionRail.w);
   uiText(layout.actionRail.x, layout.actionRail.y, actionText, nav.mode === 'confirm' ? 'ui-danger' : 'ui-label', nav.mode === 'confirm' ? .92 : .72);
 }

@@ -30,17 +30,19 @@ export const BUILDING_MAP = Object.freeze({
       minHeight: 3.25, maxHeight: 6.25, visibility: 'always',
     }),
     Object.freeze({
-      id: 'u2', order: 2, label: 'RINGING ROOM / ORGAN LOFT', shortLabel: 'U2',
-      minHeight: 6.25, maxHeight: 11.5, visibility: 'always',
-    }),
-    Object.freeze({
       id: 'academic', order: 2.5, label: 'THIRD FLOOR', shortLabel: '3F',
       minHeight: 9.25, maxHeight: 11.5, visibility: 'discovered',
       renderGroups: Object.freeze(['academic']),
     }),
+    // ONE tower page, not three. The turret used to be split into U2 (ringing
+    // room / organ loft) and U3 (bell chamber), which paged as two nearly-empty
+    // floors either side of the third floor — the map read as though the building
+    // had interstitial levels in it. Nobody describes this building that way: it
+    // is a basement, a ground floor, an upper floor, a third floor, and a tower
+    // you climb. Every landmark inside it keeps its own callout.
     Object.freeze({
-      id: 'u3', order: 3, label: 'BELL CHAMBER', shortLabel: 'U3',
-      minHeight: 11.5, maxHeight: Infinity, visibility: 'always',
+      id: 'tower', order: 3, label: 'TOWER', shortLabel: 'TWR',
+      minHeight: 6.25, maxHeight: Infinity, visibility: 'always',
     }),
   ]),
 

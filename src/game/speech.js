@@ -48,7 +48,22 @@ function normalize(line) {
   return src;
 }
 
-export function say(line) { q.push(normalize(line)); }
+// A thought is a moment, not a mailbox. Never let low-priority chatter (fiddling
+// in the bag, repeated marks) pile into minutes of unstoppable monitor text.
+//
+// Two rules keep the flood from forming. A man does not say the same sentence
+// twice in a row, so a line already queued or being spoken is not queued again —
+// leaning on a key can no longer buy sixty seconds of backlog. And whatever
+// survives that is capped: only the most recent handful is kept, because the
+// oldest queued thought is the one least worth hearing by the time it comes up.
+const MAX_QUEUED = 6;
+export function say(line) {
+  const next = normalize(line);
+  const last = q.length ? q[q.length - 1] : cur;
+  if (last && last.who === next.who && last.text === next.text) return;
+  q.push(next);
+  if (q.length > MAX_QUEUED) q.splice(0, q.length - MAX_QUEUED);
+}
 export function sayAll(lines = []) { for (const l of lines) say(l); }
 export function clearSpeech() {
   q.length = 0;
@@ -139,9 +154,24 @@ const WHO = {
   guard: { tag: 'GUARD', cls: 'ui-amber', alpha: 1 },
   recordist: { tag: 'TAKE', cls: 'ui-primary', alpha: 1 },
   surfer: { tag: 'SURFER', cls: 'ui-danger', alpha: 1 },
+  // Heard, and not named. It is the surfer, hours before the game admits it.
+  unknown: { tag: 'UNKNOWN', cls: 'ui-counter', alpha: 1 },
   sarah: { tag: 'SARAH', cls: 'ui-danger', alpha: 1 },
   direction: { tag: 'DIRECTION', cls: 'ui-secondary', alpha: 1 },
 };
+
+// Where the band's top edge is right now, or null when nothing is being said.
+// The HUD needs this because anything it wants the player to LOOK at — the
+// flashing bag prompt at the end of the setup, say — is drawn near the foot of
+// the screen and would otherwise end up behind the band.
+export function bandTop() {
+  if (!cur) return null;
+  const { cols, rows } = uiSize();
+  const w = Math.min(BAND_W, cols - 8);
+  const shown = cur.text.slice(0, typed);
+  const panelH = Math.max(1, uiWrap(shown, Math.max(12, w - 8)).length) + 7;
+  return rows - panelH - 2;
+}
 
 export function drawSpeech() {
   if (!cur) return;

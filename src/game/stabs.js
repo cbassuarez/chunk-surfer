@@ -23,13 +23,24 @@
 import * as REC from './recordist.js';
 import { dreadAllowed } from './terror.js';
 
+// The budget. These numbers are the entire difference between a haunting and a
+// haunted house, and they are deliberately mean: a stab the player can predict
+// the RATE of is a metronome, and a metronome is not frightening. Roughly one
+// every few minutes at the very most, never two in a room, and never before the
+// building has been quiet long enough for the silence to be worth breaking.
 export const STABS = {
-  quietMinutes: 2.0,       // no stab at all before this. trust must exist first
-  cooldownSec: 42,         // hard floor between stabs
+  quietMinutes: 4.0,       // no stab at all before this. trust must exist first
+  cooldownSec: 150,        // hard floor between stabs
   trueBeforeFalse: 2,      // TRUE stabs required before a FALSE one may fire
   falseChance: 0.45,       // once unlocked
-  fireThreshold: 0.82,     // expectation must peak this high
-  maxPerRoom: 3,
+  fireThreshold: 0.90,     // expectation must peak this high
+  maxPerRoom: 2,
+  // Safety accrues while nothing happens, but it must accrue at the speed of
+  // PLAYING, not the speed of the wall clock. Without a ceiling on the "nothing
+  // has happened for a while" term, a game left running (or a tab left in the
+  // background) came back with expectation pinned at 1 and fired the moment the
+  // player touched it — which reads as the game waiting for you to look away.
+  sinceThreatCapSec: 90,
 };
 
 const state = {
@@ -90,6 +101,20 @@ export function reportRelief(amount = 0.25) {
   state.expectation = Math.min(1, state.expectation + amount);
 }
 
+// The player came back to the game after being away — alt-tabbed, paused,
+// asleep, or a frame that took a wall-clock age. None of that time was spent
+// deciding they were safe, so none of it counts toward being startled. Without
+// this, coming back to the window WAS the trigger, which taught the player that
+// the building only moves when they are not looking at it.
+export function settleAfterAway(awayMs = 0) {
+  const now = performance.now();
+  state.expectation = 0;
+  state.lastThreatAt = now;
+  // Nor was the cooldown being served while nobody was here.
+  state.lastStabAt += Math.max(0, awayMs);
+  state.startedAt += Math.max(0, awayMs);
+}
+
 export function expectation() { return state.expectation; }
 export function enteredRoom() { state.roomCount = 0; }
 
@@ -110,8 +135,9 @@ export function updateStabs(dt, threatNear = 0) {
   if (threatNear > 0.25) { reportThreat(); return null; }
 
   // Safety accumulates. This is the whole model: the longer nothing happens,
-  // the more certain the player becomes that nothing will.
-  const sinceThreat = (now - state.lastThreatAt) / 1000;
+  // the more certain the player becomes that nothing will. Capped, because a
+  // player who was not at the keyboard was not becoming certain of anything.
+  const sinceThreat = Math.min(STABS.sinceThreatCapSec, (now - state.lastThreatAt) / 1000);
   state.expectation = Math.min(1, state.expectation + dt * (0.035 + sinceThreat * 0.0025));
 
   if (state.expectation < STABS.fireThreshold) return null;

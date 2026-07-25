@@ -7,6 +7,8 @@
     "narrative/conservatory.level_check.story.json",
     "narrative/conservatory.first_take.story.json",
     "narrative/conservatory.bent_rig.story.json",
+    "narrative/conservatory.bust_turn.story.json",
+    "narrative/conservatory.bust_talk.story.json",
     "narrative/conservatory.talisman.story.json",
     "narrative/conservatory.hush.story.json",
     "narrative/conservatory.radio_dead.story.json",
@@ -84,6 +86,8 @@
     "conservatory.hush",
     "conservatory.radio_dead",
     "conservatory.bent_rig",
+    "conservatory.bust_turn",
+    "conservatory.bust_talk",
     "conservatory.talisman",
     "conservatory.chapel_key_check",
     "room-listen.main_b3",
@@ -111,7 +115,9 @@
         "conservatory.talisman",
         "conservatory.hush",
         "conservatory.radio_dead",
-        "conservatory.chapel_key_check"
+        "conservatory.chapel_key_check",
+        "conservatory.bust_talk",
+        "conservatory.bust_turn"
       ]
     },
     {

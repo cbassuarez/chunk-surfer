@@ -57,7 +57,10 @@
         {
           "who": "direction",
           "text": "And then, far off, a piano. Two notes. The wrong two notes.",
-          "id": "start.line.2"
+          "id": "start.line.2",
+          "cues": [
+            "piano.diegetic.01"
+          ]
         },
         {
           "who": "you",
@@ -80,7 +83,10 @@
           "who": "direction",
           "text": "It comes again. Closer, or louder, or you are leaning towards it — you cannot tell which, and not being able to tell which is the whole of the problem.",
           "channel": "before",
-          "id": "round-1.line.1"
+          "id": "round-1.line.1",
+          "cues": [
+            "piano.diegetic.02"
+          ]
         },
         {
           "who": "you",
@@ -98,7 +104,10 @@
           "who": "direction",
           "text": "The tile gives it back to you four times and each return is thinner than the last.",
           "channel": "after",
-          "id": "round-1.line.4"
+          "id": "round-1.line.4",
+          "cues": [
+            "piano.diegetic.03"
+          ]
         }
       ],
       "goto": "round-2",

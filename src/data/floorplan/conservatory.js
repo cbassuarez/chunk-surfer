@@ -4,7 +4,9 @@
 // cells remain unique for saves, sound paths and mutation; physicalOrigin puts
 // their air spans above/below one another for the renderer.
 //
-//   sub-basement  (left, -4m)    studio B3 · the plant room · the dead lift shaft
+//   sub-basement  (left, -4m)    the dance wing: B3 · B2 · B1 · room 5 · the
+//                                prop store · the plant room · two locked
+//                                service rooms · the bricked lift shaft
 //   ground        (top right)    loading dock · foyer · concert hall · the natatorium
 //   upper         (+4.8m)              the practice wing · the vaulted chapel
 //   academic      (+10m)       locked instruction rooms · offices · atrium crown
@@ -143,8 +145,10 @@ function frontAtriumProfile(x,y,cell){
 export const ACADEMIC_ORIGIN=Object.freeze({x:0,y:240});
 export const ACADEMIC_PHYSICAL_ORIGIN=Object.freeze({x:50,y:0});
 export const ACADEMIC_BASE=10;
+// The LOCKED ones. (13,244) is not here any more: that leaf is the lobby's
+// corridor door, and the lobby is how you get round this floor.
 export const ACADEMIC_CLASSROOM_DOORS=Object.freeze([
-  {x:9,y:244},{x:13,y:244},{x:9,y:251},{x:13,y:251},
+  {x:9,y:244},{x:9,y:251},{x:13,y:251},
   {x:9,y:258},{x:13,y:258},{x:9,y:264},{x:13,y:264},
 ]);
 export const ACADEMIC_ENTRY=Object.freeze({x:8,y:275});
@@ -164,14 +168,29 @@ function academicFloorRows(){
       const edge=[[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>!inside(x+dx,y+dy));
       let c=edge?'#':'Q';
 
-      // Eight double-loaded classrooms. Their only corridor leaves use the
-      // obsolete academic core; the south-east room is also reachable through
-      // a damaged internal partition from the open office suite.
+      // Seven locked classrooms and a lobby, either side of the academic core.
+      //
+      // The floor used to be a corridor that dead-ended at the north wall with
+      // eight locked doors off it and no way round — you walked up, you walked
+      // back. Now it is a circuit:
+      //
+      //   gallery → lobby → core → south corridor → gallery
+      //
+      // The gallery itself is untouched. The only cut into it is one door in its
+      // outer west wall, five metres from the nearest plinth.
       if(y>=1&&y<=27&&(x===9||x===13))c='#';
       if([7,14,21,27].includes(y)&&((x>=1&&x<=8)||(x>=14&&x<=21)))c='#';
       if([4,11,18,24].includes(y)&&(x===9||x===13))c='+';
       if(x===22&&y>=1&&y<=26)c='#';
       if(y===27&&x>=14&&x<=21)c=(x===17||x===18)?'Q':'#';
+      // ...and the north-east room is not a classroom any more. It is the LOBBY:
+      // one room given over to circulation, with a door straight through into the
+      // gallery's west aisle. That single opening is what turns the core corridor
+      // from a spine with a dead end at each end into a circuit. Everything else
+      // up here stays locked, because locked instruction rooms are the point of
+      // this floor — the complaint was that you could not get ANYWHERE, not that
+      // you could not get in.
+      if(x===22&&y===4)c='+';
 
       // Two locked faculty rooms sit beside an open reception and a stripped
       // office. The open suite is the ordinary route to the breach.
@@ -361,48 +380,65 @@ export const conservatory = {
       // ── sub-basement, four metres down ─────────────────────────────────────
       id:'basement',layer:'basement',space:'basement',renderGroup:'basement',origin: { x: 0, y: 0 }, physicalOrigin:{x:0,y:0},base: -4.0,
       rows: [
-        ' ',
-        ' ',
-        ' ',
-        ' ',
-        ' ',
-        '     #####################   #############',
-        '     #BBBBBBBBBBBBBBBBBBB#   #MMMMMMMMMMM#',
-        '     #BBBBBBBBBBBBBBBBBBB#   #MMMMMMMMMM#####',
-        '     #BBBBBBBBBBBBBBBBBBB#   #MMMMMMMMMM#ooo#',
-        '     #BBBBBBBBBBBBBBBBBBB#   #MMMMMMMMMM#ooo#',
-        '     #BBBBBBBBBBBBBBBBBBB#   #MMMMMMMMMM#ooo#',
-        '     #BBBBBBBBBBBBBBBBBBB#####MMMMMMMMMM##.##',
-        '     #BBBBBBBBBBBBBBBBBBB+....MMMMMMMMMMM#.#',
-        '     #BBBBBBBBBBBBBBBBBBB#####MMMMMMMMMMM#.#',
-        '     #BBBBBBBBBBBBBBBBBBB#   #MMMMMMMMMMM#.#',
-        '     #BBBBBBBBBBBBBBBBBBB#   ######.######.#',
-        '     #BBBBBBBBBBBBBBBBBBB#        #.#    #.#',
-        '     #BBBBBBBBBBBBBBBBBBB#        #.#    #.#',
-        '     #BBBBBBBBBBBBBBBBBBB#        #.#    #.#',
-        '     ##########.##########        #.#    #.#',
-        '              #.#                 #.#    #.#',
-        '     ##########.###################.######.#####',
-        '     #,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,#',
-        '     #,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,#',
-        '     #,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,#',
-        '     ###########################################',
-        ' ',
-        ' ',
-        ' ',
-        ' ',
-        ' ',
-        ' ',
+        // ── the dance wing ────────────────────────────────────────────────
+        // Studio B3 (the take) at the dead-end end, then B2 and B1 east of it
+        // along the north side of the service corridor. The prop store is the
+        // room at the far west, opposite the stair. South of the corridor:
+        // Room 5, then the spur, then the plant room. The spur is a two-metre
+        // passage with two locked doors and a bricked lift shaft at the end.
+        //
+        // Generated from a rectangle declaration; if you move a room, move its
+        // props (conservatory-props.js) and PLANT_RIG_CELL with it.
+        '',
+        '',
+        '',
+        '',
+        '',
+        '     ###################################',
+        '     #BBBBBBBBBBBBBBBBBBB#KKKKKKKKKKKKK#',
+        '######BBBBBBBBBBBBBBBBBBB#KKKKKKKKKKKKK# #####',
+        '#VVVV#BBBBBBBBBBBBBBBBBBB#KKKKKKKKKKKKK# #ooo#',
+        '#VVVV#BBBBBBBBBBBBBBBBBBB#KKKKKKKKKKKKK# #ooo#',
+        '#VVVV#BBBBBBBBBBBBBBBBBBB#KKKKKKKKKKKKK# #ooo#',
+        '#VVVV#BBBBBBBBBBBBBBBBBBB#KKKKKKKKKKKKK####+######',
+        '#VVVV#BBBBBBBBBBBBBBBBBBB+KKKKKKKKKKKKK#KKKKKKKKK#',
+        '#VVVV#BBBBBBBBBBBBBBBBBBB#KKKKKKKKKKKKK#KKKKKKKKK#',
+        '#VVVV#BBBBBBBBBBBBBBBBBBB#KKKKKKKKKKKKK#KKKKKKKKK#',
+        '#VVVV#BBBBBBBBBBBBBBBBBBB#KKKKKKKKKKKKK#KKKKKKKKK#',
+        '#VVVV#BBBBBBBBBBBBBBBBBBB#KKKKKKKKKKKKK#KKKKKKKKK#',
+        '#VVVV#BBBBBBBBBBBBBBBBBBB#KKKKKK########KKKKKKKKK#',
+        '#VVVV#BBBBBBBBBBBBBBBBBBB#KKKKKK#      #KKKKKKKKK#',
+        '#VVVV##########.##########KKKKKK#      #KKKKKKKKK#',
+        '#VVVV#         .         #KKKKKK#      #KKKKKKKKK#',
+        '##+############.############+##############+######',
+        '#;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;#',
+        '#;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;#',
+        '#;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;#',
+        '############+#############;;;####################',
+        '       #KKKKKKKKKKKKKKKK##;;;#MMMMMMMMMMM#',
+        '       #KKKKKKKKKKKKKKKK##;;;#MMMMMMMMMM##',
+        '       #KKKKKKKKKKKKKKKK##;;;#MMMMMMMMMM##',
+        '       #KKKKKKKKKKKKKKKK##;;;#MMMMMMMMMM##',
+        '       #KKKKKKKKKKKKKKKK##;;;+MMMMMMMMMM##',
+        '       #KKKKKKKKKKKKKKKK##;;;#MMMMMMMMMM##',
+        '       #KKKKKKKKKKKKKKKK##;;;#MMMMMMMMMMM#',
+        '       ###################;;;#MMMMMMMMMMM#',
+        '                  #MMMMMM#;;;#MMMMMMMMMMM#',
+        '                  #MMMMMM#;;;#############',
+        '                  #MMMMMM+;;;#JJJJJJ#',
+        '                  #MMMMMM#;;;+JJJJJJ#',
+        '                  ############JJJJJJ#',
+        '                             ########',
       ],
     },
     {
       // ── ground ─────────────────────────────────────────────────────────────
       id:'ground',layer:'ground',space:'ground',renderGroup:'ground',origin: { x: 50, y: 0 }, physicalOrigin:{x:50,y:0},base: 0,
       rows: [
-        ' ',
-        ' ',
-        ' ',
-        '       ################# ################# ###################',
+        '',
+        '',
+        '',
+        '       ########+######## ################# ###################',
         '       #DDDDDDDDDDDDDDD# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
         '       #DDDDDDDDDDDDDDD# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
         '       #DDDDDDDDDDDDDDD# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
@@ -432,17 +468,17 @@ export const conservatory = {
         '          #,#            #TTTTTTTTTTTTTTTTTTT#',
         '          #,#            #TTTTTTTTTTTTTTTTTTT#',
         '          #,#            #TTTTWWWWWWWWWWWTTTT#',
-        '          #,#            #TTTTWWWWWWWWWWWTTTT#',
-        '          #,#            #TTTTWWWWWWWWWWWTTTT#',
-        '          #,#            #TTTTWWWWWWWWWWWTTTT#',
-        '          #,#            #TTTTWWWWWWWWWWWTTTT#',
-        '          #,#            #TTTTWWWWWWWWWWWTTTT#',
-        '          #,#            #TTTTWWWWWWWWWWWTTTT#',
-        '          #,#            #TTTTWWWWWWWWWWWTTTT#',
-        '          #,#            #TTTTWWWWWWWWWWWTTTT#',
-        '          #,#            #TTTTTTTTTTTTTTTTTTT#',
-        '          #,#            #TTTTTTTTTTTTTTTTTTT#',
-        '          #,#            #####################',
+        '         ##,##           #TTTTWWWWWWWWWWWTTTT#',
+        '         #,,,#           #TTTTWWWWWWWWWWWTTTT#',
+        '         #,,,#           #TTTTWWWWWWWWWWWTTTT#',
+        '         #,,,#           #TTTTWWWWWWWWWWWTTTT#',
+        '         #,,,#           #TTTTWWWWWWWWWWWTTTT#',
+        '         #,,,#           #TTTTWWWWWWWWWWWTTTT#',
+        '         #,,,#           #TTTTWWWWWWWWWWWTTTT#',
+        '         #,,,#           #TTTTWWWWWWWWWWWTTTT#',
+        '         #,,,#           #TTTTTTTTTTTTTTTTTTT#',
+        '         #,,,#           #TTTTTTTTTTTTTTTTTTT#',
+        '         #,,,#           #####################',
       ],
       stairs: [],
     },
@@ -450,13 +486,13 @@ export const conservatory = {
       // ── upper, four metres up ──────────────────────────────────────────────
       id:'upper',layer:'upper',space:'upper',renderGroup:'upper',origin: { x: 50, y: 44 }, physicalOrigin:{x:50,y:44},base: 4.8,
       rows: [
-        '          #,#',
-        '          #,#',
-        '          #,#',
-        '          #,#',
-        '          #,#',
-        '          #,#',
-        '          #,#',
+        '         #,,,#',
+        '         #,,,#',
+        '         #,,,#',
+        '         #,,,#',
+        '         #,,,#',
+        '         #,,,#',
+        '         #,,,#',
         '     ######,####################################',
         '     #,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,#',
         '     #,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,#',
@@ -484,8 +520,8 @@ export const conservatory = {
         '                           #CCCCCCCCCCCCCCCCCCCCCCCCCCC#',
         '                           #CCCCCCCCCCCCCCCCCCCCCCCCCCC#',
         '                           #############################',
-        ' ',
-        ' ',
+        '',
+        '',
       ],
       stairs: [
         // Both principal stairs own their complete flights and three-metre

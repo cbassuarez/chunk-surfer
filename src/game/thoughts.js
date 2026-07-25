@@ -41,13 +41,22 @@ import {
 } from '../render/transcript.js';
 import { promptLine } from './bindings.js';
 
-const BAND_W = 74;
+// Match the cold-open dialogue shell width (COL_W) so the in-world thought
+// monitor reads as the same machine, not a narrower one-off.
+const BAND_W = 86;
 
 // A thought tree is a scene like any other. `onDone` fires once, when he stops
 // thinking and the building is his problem again.
+// `anchor: 'bottom'` drops the shell to the foot of the screen and leaves the
+// middle of the frame alone. It exists for beats that are ABOUT something the
+// player has to keep watching — the level-check daydream is the case: the whole
+// point of him counting to six is that you are looking at the recorder's meter
+// while he does it, and a centred panel over a 0.62 scrim buries the machine the
+// beat is narrating. Combined with `scrim: 0` it reads as the monitor band
+// talking under a take that is still visibly rolling.
 export function makeThoughtScene({
   id = 'thought', nodes, startAt = 'start', onDone, onChoice, cue, fx, audio, getAudio, replay = null,
-  scrim = 0.62, lensPreset = 'calm',
+  scrim = 0.62, lensPreset = 'calm', anchor = 'center',
 } = {}) {
   const convo = createConversation({
     nodes, startAt, sceneId: `thought:${id}`, replay, onChoice, cue, fx, audio, getAudio,
@@ -75,7 +84,7 @@ export function makeThoughtScene({
         const v = convo.view();
         const { cols, rows } = uiSize();
 
-        uiScrim(scrim);
+        if (scrim > 0) uiScrim(scrim);
 
         const w = Math.min(BAND_W, cols - 8);
         const x = Math.floor((cols - w) / 2);
@@ -92,16 +101,20 @@ export function makeThoughtScene({
               bottomPadRows: 2,
             })
           : 0;
-        const panelH = Math.min(
-          rows - 4,
-          Math.max(
-            12,
-            Math.min(21, 12 + choices.height),
-            fixedArtPanelH,
-          ),
-        );
+        // Match the cold-open dialogue shell: with a story plate the panel is
+        // exactly header + art/text band + pad (no dead space under the group),
+        // and it sits centered like the usual monitor rather than dropped to the
+        // bottom of the screen.
+        const panelH = art
+          ? Math.min(rows - 4, fixedArtPanelH)
+          : Math.min(
+              rows - 4,
+              Math.max(12, Math.min(21, 12 + choices.height)),
+            );
 
-        const y0 = rows - panelH - 2;
+        const y0 = anchor === 'bottom'
+          ? Math.max(2, rows - panelH - 1)
+          : Math.max(2, Math.floor((rows - panelH) / 2));
 
         const sourceWho =
           v.pending?.kind === 'say'
@@ -109,9 +122,9 @@ export function makeThoughtScene({
             : v.who;
 
         const panel = drawMachinePanel(
-          x - 2,
+          x,
           y0,
-          w + 4,
+          w,
           panelH,
           {
             label: 'MONITOR',

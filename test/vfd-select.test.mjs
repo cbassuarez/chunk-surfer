@@ -21,10 +21,11 @@ test('hover and selection use different physical mechanisms and never collide', 
   const selected = vfdRowStyle({ selected: true });
   // Hover borrows brightness — the one channel that was semantically empty on
   // real hardware — and must NOT claim the inverse block.
-  assert.equal(hover.inverse, false, 'hover must not use the selection primitive');
+  assert.equal(hover.inverse, false, 'hover must not use the inverse block');
   assert.ok(hover.tier > vfdRowStyle({}).tier, 'hover steps the duty factor up');
-  // Selection is inverse video, the one state real VFDs actually had.
-  assert.equal(selected.inverse, true);
+  // Selection is the classic bright-text + caret cursor, NOT an inverse block —
+  // the block is reserved for the reduced-motion edit substitute only.
+  assert.equal(selected.inverse, false, 'selection never paints an inverse block over the label');
   assert.equal(selected.tier, VFD_TIER.full);
   assert.equal(selected.gutter, '▶');
 });

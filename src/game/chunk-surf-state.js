@@ -242,9 +242,15 @@ export function reduceChunkSurf(value, event = {}) {
         checkpointId: 'landscape-entry',
       };
 
-    case 'TRANSFORMATION_COMPLETED':
+    case 'TRANSFORMATION_COMPLETED': {
       if (state.phase !== CHUNK_SURF_PHASE.TRANSFORMING) return state;
-      return { ...state, phase: CHUNK_SURF_PHASE.LANDSCAPE, visited: add(state.visited, 'approach') };
+      // The moment the field opens, the hush is already out there — stalking at a
+      // distance, a body in motion you can see long before it hunts. It was never
+      // meant to wait, invisible, for the fork gate.
+      const hushStage = state.hushStage === CHUNK_SURF_HUSH_STAGE.ABSENT
+        ? CHUNK_SURF_HUSH_STAGE.STALK : state.hushStage;
+      return { ...state, phase: CHUNK_SURF_PHASE.LANDSCAPE, hushStage, visited: add(state.visited, 'approach') };
+    }
 
     case 'LANDMARK_VISITED':
       if (!event.id) return state;

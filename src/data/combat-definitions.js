@@ -15,9 +15,12 @@ const O = (id, label, damage = 2, options = {}) => intent(id, label, INTENT_KIND
 const L = (id, label, damage = 3, options = {}) => intent(id, label, INTENT_KIND.LOOP, damage, options);
 const S = (id, label, options = {}) => intent(id, label, INTENT_KIND.SILENCE, 0, options);
 
-function movement(id, title, coherence, intents, severeIntents = null, deadAirIntents = null) {
+function movement(id, title, coherence, intents, { reactions = null, severeIntents = null, deadAirIntents = null } = {}) {
   return {
     id, title, coherence, intents,
+    // Board-state reactions swap the cycle intent when a condition holds — the
+    // opponent responding to how the fight is actually going, not a fixed loop.
+    ...(reactions ? { reactions } : {}),
     severeIntents: severeIntents || [...intents.slice(1), intents[0]],
     deadAirIntents: deadAirIntents || [...intents].reverse(),
   };
@@ -38,10 +41,16 @@ const PROFILES = Object.freeze({
         B('natatorium:voice', 'VOICE ON THE MONITOR PATH', 2, { takeLabel: 'VOICE PRINT', playbackDamage: 2 }),
         C('natatorium:memory', 'MEMORY PASSED AS SIGNAL', 2),
         O('natatorium:lean', 'THE ROOM LEANS CLOSER', 3, { effect: 'ringing' }),
-      ]),
+      ], {
+        // Hoard a take and the room leans on you for it — the opponent reacts to
+        // your board rather than reading from a fixed script.
+        reactions: [{ when: 'take-loaded', use: 'natatorium:lean' }],
+      }),
       movement('hold', 'THE TAKE THAT HOLDS YOU', 4, [
         B('natatorium:echo', 'FOURTH RETURN OF THE ECHO', 3, { takeLabel: 'EMPTY RETURN', playbackDamage: 2 }),
-        O('natatorium:depth', 'BLACK WATER PRESSURE', 3, { effect: 'ringing' }),
+        // The pressure returns once as a second, lighter blow — a chained enemy
+        // turn you brace for as one.
+        O('natatorium:depth', 'BLACK WATER PRESSURE', 3, { effect: 'ringing', followups: [{ id: 'natatorium:depth-echo', kind: 'overload', damage: 1 }] }),
         C('natatorium:absence', 'ABSENCE WEARING HER VOICE', 2),
       ]),
     ],
@@ -219,7 +228,7 @@ export function trainingCombatDefinition() {
   const profile = authoredCombatProfile('training');
   return {
     id: 'training',
-    enemy: 'THE BENCH SIGNAL',
+    enemy: 'THE THING NOT THERE YET',
     art: null,
     baseComposure: 8,
     kind: profile.kind,
@@ -236,12 +245,20 @@ export function trainingCombatBattle() {
     enemy: combat.enemy,
     art: combat.art,
     combat,
+    // He is asleep on his feet on the loading dock with the levels good, and the
+    // stupid joke he just made to pass the time is happening to him. He did not
+    // prepare for this and he is not being brave: he bored himself into a
+    // nightmare and it is going to be embarrassing when he wakes up.
+    //
+    // The count and the drift that get him here are the daydream beat, which runs
+    // during the take itself (see beginDaydream in main.js). By the time this
+    // opens he has already said the demon part out loud.
     intro: [
-      { who: 'direction', text: 'The bench rig is patched to itself. A calibration signal waits on the send, the way every recordist runs the kit before a shift.' },
-      { who: 'you', text: 'Gear check. Nothing in this room can hurt me worse than being unprepared out there.' },
+      { who: 'direction', text: 'And there it is. Nine feet of it, in the deep end, exactly as daft as he described.' },
+      { who: 'you', text: "Oh, that's not fair. I was joking. I was making a joke." },
     ],
-    win: [{ who: 'direction', text: 'The tone reads flat across the meter. The kit is calibrated. You are.' }],
-    lose: [{ who: 'direction', text: 'The bench signal clips your monitoring path. It is only the drill — reset and it will run again.' }],
+    win: [{ who: 'direction', text: 'You blink. The dock, the dark, the meter still under sixty, your feet exactly where you left them. Six seconds. You have been standing here six seconds.' }],
+    lose: [{ who: 'direction', text: 'You blink, and lose the thread of it, and it is only the dock again. Six seconds, a good level, and a slightly stupid feeling. Nothing touched you. Nothing has started yet.' }],
   };
 }
 

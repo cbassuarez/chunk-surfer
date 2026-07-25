@@ -171,3 +171,41 @@ assert.equal(propInstanceVisible(sideThresholdProp, [-3.01, 0, 0], 35), true);
 assert.equal(propInstanceVisible(sideThresholdProp, [-35.01, 0, 0], 35), false);
 
 console.log('acquisition prop contracts passed');
+
+// ── the garden shifts, and only in the way a garden may ──────────────────────
+// The atrium garden is never quite as you left it. What it may NOT do is become
+// a different obstacle course: the drift writes render offsets only, so colliders,
+// interaction points and the pin in the west planter's soil stay authored.
+{
+  const gardenIds = [
+    'academic-garden-planter-west', 'academic-garden-planter-east',
+    'academic-garden-tree-west', 'academic-garden-tree-east',
+    'academic-garden-leaves-north', 'academic-garden-leaves-south',
+  ];
+  for (const id of gardenIds) {
+    const prop = PROPS.propById(id);
+    assert.ok(prop, `${id} is placed`);
+    const before = { rx: prop.rx, ry: prop.ry, ix: prop.interactionRx, iy: prop.interactionRy };
+    const applied = PROPS.setPropDrift(id, { dx: .21, dz: -.17, dyaw: .06 });
+    assert.equal(applied.dx, .21);
+    assert.equal(prop.rx, before.rx, 'a drift never moves the collider');
+    assert.equal(prop.ry, before.ry);
+    assert.equal(prop.interactionRx, before.ix, 'nor where you have to stand to use it');
+    assert.equal(prop.interactionRy, before.iy);
+    assert.ok(Math.abs(prop.renderOffsetX) <= 1 && Math.abs(prop.renderOffsetZ) <= 1,
+      'and it stays subtle');
+    // Absolute, not cumulative: applying it twice is the same as applying it once.
+    const yawOnce = prop.yaw;
+    PROPS.setPropDrift(id, { dx: .21, dz: -.17, dyaw: .06 });
+    assert.equal(prop.yaw, yawOnce, 'a repeated drift does not compound');
+    // And it can be put back exactly.
+    PROPS.setPropDrift(id, null);
+    assert.equal(prop.renderOffsetX, prop.driftBase.x);
+    assert.equal(prop.yaw, prop.driftBase.yaw);
+  }
+  // The stone the room is built from does not join in.
+  for (const fixed of ['academic-garden-basin', 'academic-atrium-structure', 'academic-skylight']) {
+    assert.ok(PROPS.propById(fixed), `${fixed} exists and is deliberately not in the drift set`);
+    assert.ok(!gardenIds.includes(fixed));
+  }
+}

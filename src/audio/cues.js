@@ -14,6 +14,76 @@ let ctx = null, bus = null;
 const buffers = new Map();      // url -> AudioBuffer
 const pending = new Map();      // url -> Promise
 
+// Some cues belong to a moment rather than to themselves. A battle stem is the
+// adversary striking on THIS beat: when the beat is over, so is the sound, and
+// when the fight is over the room must be silent — a stem that outlives its
+// turn is the surfer still playing at a fight nobody is having. Naming a group
+// on the way in is how a caller earns the right to cut it off.
+const groups = new Map();       // name -> Set of { src, gain }
+// Every live one-shot, grouped or not. A run that ends has to be able to leave
+// the room silent: a thirty-second stem, a scream, a page turn still decaying —
+// none of them belong to the next run, and several of them are long enough to
+// still be going when it starts.
+const live = new Set();
+
+function joinGroup(name, voice) {
+  live.add(voice);
+  if (!name) return;
+  if (!groups.has(name)) groups.set(name, new Set());
+  groups.get(name).add(voice);
+}
+
+function leaveGroup(name, voice) {
+  live.delete(voice);
+  const set = name && groups.get(name);
+  if (!set) return;
+  set.delete(voice);
+  if (!set.size) groups.delete(name);
+}
+
+function silence(voice, fade, now) {
+  try {
+    if (fade > 0 && voice.gain) {
+      voice.gain.gain.cancelScheduledValues(now);
+      voice.gain.gain.setValueAtTime(Math.max(0.0001, voice.gain.gain.value), now);
+      voice.gain.gain.exponentialRampToValueAtTime(0.0001, now + fade);
+      voice.src.stop(now + fade + 0.02);
+    } else {
+      voice.src.stop();
+    }
+  } catch (_) { /* already ended */ }
+}
+
+// Everything, gone. Called when a run ends or restarts.
+export function stopAllCues(fade = 0.08) {
+  const now = ctx ? ctx.currentTime : 0;
+  const count = live.size;
+  for (const voice of [...live]) silence(voice, fade, now);
+  live.clear();
+  groups.clear();
+  return count;
+}
+
+export function liveCueCount() { return live.size; }
+
+// Fade the group out and drop it. Silent no-op for a group nobody joined.
+export function stopCueGroup(name, fade = 0.12) {
+  const set = groups.get(name);
+  if (!set) return 0;
+  const now = ctx ? ctx.currentTime : 0;
+  let stopped = 0;
+  for (const voice of [...set]) {
+    stopped += 1;
+    silence(voice, fade, now);
+    set.delete(voice);
+    live.delete(voice);
+  }
+  groups.delete(name);
+  return stopped;
+}
+
+export function cueGroupSize(name) { return groups.get(name)?.size || 0; }
+
 export function cuesInit(audioCtx, destination) {
   ctx = audioCtx; bus = destination;
 }
@@ -37,7 +107,8 @@ export function preloadAll(urls) {
 // gain: linear. rate: playbackRate (a tired switch is a slower switch).
 // pan: -1..1. Returns the source, so a caller can stop a long cue early.
 export function playCue(url, { gain = 1, rate = 1, pan = 0, delay = 0,
-  trimStart = 0, trimEnd = null, fadeIn = 0, fadeOut = 0, loop = false } = {}) {
+  trimStart = 0, trimEnd = null, fadeIn = 0, fadeOut = 0, loop = false, group = null,
+  lowpassHz = null, sliceSeconds = null, wrapStart = false } = {}) {
   if (!ctx || !bus) return null;
   const buf = buffers.get(url);
   if (!buf) { preload(url); return null; }   // first press may be silent; warm it
@@ -50,15 +121,33 @@ export function playCue(url, { gain = 1, rate = 1, pan = 0, delay = 0,
   g.gain.setValueAtTime(fadeIn > 0 ? 0 : targetGain, now);
   if (fadeIn > 0) g.gain.linearRampToValueAtTime(targetGain, now + fadeIn);
   let node = g;
+  const chain = [src, g];
+  // Distance and wall, in one knob: a thing heard from another room has no top
+  // end. Placed after the gain so a fade still fades the filtered signal.
+  if (lowpassHz && ctx.createBiquadFilter) {
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(Math.max(120, lowpassHz), now);
+    node.connect(lp); node = lp; chain.push(lp);
+  }
   if (pan !== 0 && ctx.createStereoPanner) {
     const p = ctx.createStereoPanner();
     p.pan.setValueAtTime(Math.max(-1, Math.min(1, pan)), now);
-    g.connect(p); node = p;
+    node.connect(p); node = p; chain.push(p);
   }
   src.connect(g);
   node.connect(bus);
-  const start = Math.max(0, Math.min(buf.duration, Number(trimStart) || 0));
-  const duration = Math.max(0, Math.min(buf.duration - start, trimEnd == null ? buf.duration - start : Number(trimEnd) - start));
+  // A chop: `wrapStart` walks an offset around a long take instead of running
+  // off the end of it, and `sliceSeconds` says how much of it to bite out. This
+  // is how a minute-long performance becomes a one-shot the length of a beat.
+  const rawStart = Number(trimStart) || 0;
+  const start = wrapStart && buf.duration > 0
+    ? ((rawStart % buf.duration) + buf.duration) % buf.duration
+    : Math.max(0, Math.min(buf.duration, rawStart));
+  const remaining = buf.duration - start;
+  const duration = sliceSeconds != null
+    ? Math.max(0, Math.min(remaining, Number(sliceSeconds) || 0))
+    : Math.max(0, Math.min(remaining, trimEnd == null ? remaining : Number(trimEnd) - start));
   src.loop = !!loop;
   if (loop) {
     src.loopStart = start;
@@ -71,11 +160,58 @@ export function playCue(url, { gain = 1, rate = 1, pan = 0, delay = 0,
     }
     src.start(now, start, duration);
   }
-  src.onended = () => { try { src.disconnect(); g.disconnect(); node.disconnect(); } catch (_) {} };
+  const voice = { src, gain: g };
+  joinGroup(group, voice);
+  src.onended = () => {
+    leaveGroup(group, voice);
+    for (const n of chain) { try { n.disconnect(); } catch (_) {} }
+  };
   return src;
 }
 
 export function isLoaded(url) { return buffers.has(url); }
+export function bufferSeconds(url) { return buffers.get(url)?.duration ?? null; }
+
+// A managed looping voice: it owns its own gain node so the caller can drop it on
+// a scheduled downbeat (`when`) and fade it out on stop. Returns a handle, or null
+// if the buffer is not warm yet. Used for the surfer's grid-locked backing (the
+// breakbeat needle dropped under a whole movement — see startCombatBacking).
+export function playCueLoop(url, { gain = 1, rate = 1, pan = 0, when = null, fadeIn = 0.05 } = {}) {
+  if (!ctx || !bus) return null;
+  const buf = buffers.get(url);
+  if (!buf) { preload(url); return null; }
+  const startAt = Math.max(ctx.currentTime, Number(when) || ctx.currentTime);
+  const src = ctx.createBufferSource();
+  src.buffer = buf; src.loop = true; src.loopStart = 0; src.loopEnd = buf.duration;
+  src.playbackRate.setValueAtTime(rate, startAt);
+  const g = ctx.createGain();
+  const target = Math.max(0, gain);
+  g.gain.setValueAtTime(fadeIn > 0 ? 0 : target, startAt);
+  if (fadeIn > 0) g.gain.linearRampToValueAtTime(target, startAt + fadeIn);
+  let node = g;
+  if (pan !== 0 && ctx.createStereoPanner) {
+    const p = ctx.createStereoPanner();
+    p.pan.setValueAtTime(Math.max(-1, Math.min(1, pan)), startAt);
+    g.connect(p); node = p;
+  }
+  src.connect(g); node.connect(bus);
+  src.start(startAt);
+  src.onended = () => { try { src.disconnect(); g.disconnect(); node.disconnect(); } catch (_) {} };
+  let stopped = false;
+  return {
+    stop(fade = 0.3) {
+      if (stopped) return;
+      stopped = true;
+      const t = ctx.currentTime, f = Math.max(0.01, Number(fade) || 0.01);
+      try {
+        g.gain.cancelScheduledValues(t);
+        g.gain.setValueAtTime(g.gain.value, t);
+        g.gain.linearRampToValueAtTime(0.0001, t + f);
+        src.stop(t + f + 0.02);
+      } catch (_) { try { src.stop(); } catch (_) {} }
+    },
+  };
+}
 
 // A cue is a sound that a LINE makes. Most of these are named after the line
 // they belong to, and the name is the contract: `data/conservatory-script.js`

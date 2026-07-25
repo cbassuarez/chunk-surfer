@@ -17,9 +17,11 @@ import {
   drawCombatPips,
   drawEnemyVoidStage,
   drawFirstPersonHands,
+  drawAttackNotes,
   drawOpponentCombatArt,
   drawSignalBeing,
   drawStanceTriangle,
+  drawTurnGlyph,
 } from '../render/combat-view.js';
 import {
   COMBAT_ACTION,
@@ -36,9 +38,21 @@ import {
   createCombatState,
   currentCombatIntent,
   reduceCombat,
+  advanceEnemy,
+  selectEnemyIntents,
 } from './combat-state.js';
 
+import { TECHNIQUE_DEFS } from './combat-progression.js';
+import { enemyAttackCue, enemyAttackShape, enemyAttackVoice } from '../audio/piano-weapon.js';
+
+// Which techniques are fired as moves in the fight (vs passives that change the
+// rules). Derived from the authored descriptor so new actives need no code here.
+const ACTIVE_TECHNIQUE_IDS = new Set(TECHNIQUE_DEFS.filter((t) => t.active).map((t) => t.id));
+
 export const ORDINARY_TURN_SECONDS = 1.2;
+// The reactive-parry window, as a fraction of the enemy beat: you may guard from
+// here up to the impact (0.28). Bracing before it is guarding at air.
+export const PARRY_WINDOW_LO = 0.06;
 const UTILITY_TURN_SECONDS = .82;
 const CPS = 40;
 const BATTLE_GRID_LABEL = '168 BPM / 4:4 / 40 BARS';
@@ -58,6 +72,18 @@ function opponentArt(ref, combatId = '') {
   // Encounters without authored raster art get the procedural signal-being
   // instead of borrowing another opponent's portrait.
   return ['surfer', 'guard'].includes(id) ? ref : { procedural: true, id: String(combatId || 'signal') };
+}
+
+// How it went, in the words a recordist would use. This is the "IT WAS SUPER
+// EFFECTIVE" slot: the player has to be able to tell, without reading a number,
+// whether what they did worked — and if it did not, what the blow did instead.
+export function strikeVerdict(last = {}, { parried = false } = {}) {
+  if (last.perfect) return { text: 'COUNTERED · NOTHING GETS THROUGH', role: 'ui-counter' };
+  if (parried || last.parried) return { text: 'TURNED BACK ON IT', role: 'ui-counter' };
+  if (last.snrTo === 'noise' && last.received) return { text: 'IT LANDS HARD · YOU ARE IN NOISE', role: 'ui-danger' };
+  if (last.received > 1) return { text: 'IT LANDS HARD', role: 'ui-danger' };
+  if (last.received) return { text: 'IT CONNECTS', role: 'ui-primary' };
+  return { text: 'IT GLANCES OFF', role: 'ui-secondary' };
 }
 
 function turnDuration(actionId) {
@@ -108,8 +134,23 @@ export function makeCombatScene({
   let selectedTool = 0;
   let selectedMove = 0;
   let notice = '';
+  // The state the moment the player committed — one whole turn may resolve over
+  // two beats (player, then enemy), and the director/music must see the turn as
+  // one span from here to the settled end.
+  let turnStart = null;
   let takeConfirmation = false;
   let resolution = null;
+  // Rotates the adversary's piano voice within a movement's stem set, so
+  // successive enemy beats don't repeat the same note.
+  let enemyBeatSeq = 0;
+  // What the surfer is hitting you with THIS beat, said out loud on the stage:
+  // who, the blow, the instrument, and then whether it worked. Every enemy attack
+  // is announced — the fight used to show numbers after the fact and expect the
+  // player to work backwards from them to a move they never saw named.
+  let strike = null;
+  // The exchange the fight is on, shown by the turn glyph. One per player+enemy
+  // beat pair; incremented as each turn settles into the next.
+  let turnCount = 1;
   let resultDelivered = false;
   let sceneEntered = false;
   let openingStarted = false;
@@ -205,6 +246,7 @@ export function makeCombatScene({
   function deliverResult() {
     if (resultDelivered) return;
     resultDelivered = true;
+    fx?.stopCues?.();   // the last blow does not outlive the fight
     const metrics = combatResult(state) || {};
     const legacyMetrics = {
       ...metrics,
@@ -228,7 +270,7 @@ export function makeCombatScene({
 
   function spawnPopup(popup) {
     popupSeq += 1;
-    popups.push({ ...popup, born: now, jx: ((popupSeq % 3) - 1) * 2 });
+    popups.push({ ...popup, born: now + (popup.delay || 0), jx: ((popupSeq % 3) - 1) * 2 });
   }
 
   function fireImpact() {
@@ -237,31 +279,61 @@ export function makeCombatScene({
     const before = resolution.before;
     const after = resolution.after;
     const last = after.last || {};
-    resources.playTool?.(resolution.action.tool, resolution.action.id);
+    const enemyBeatImpact = resolution.side === 'enemy';
+    // The player's tool sound belongs to the player beat; the enemy beat is the
+    // opponent's, so it plays no tool. dealt is zeroed for the enemy beat's
+    // audio/fx because it carries over from the player step (see below).
+    if (!enemyBeatImpact) resources.playTool?.(resolution.action.tool, resolution.action.id);
+    const impactDealt = enemyBeatImpact ? 0 : (last.dealt || 0);
     resources.playImpact?.({
-      dealt: last.dealt || 0,
+      dealt: impactDealt,
       received: last.received || 0,
       perfect: !!last.perfect,
     });
-    impactFx = { at: now, dealt: last.dealt || 0, received: last.received || 0 };
+    impactFx = { at: now, dealt: impactDealt, received: last.received || 0 };
     // Hit-stop: the whole beat freezes for a few frames so the hit has weight.
-    if (shakeMode() === 'full' && (last.dealt > 0 || last.received > 0)) {
-      hitstop = Math.min(.15, .05 + (last.dealt || 0) * .012 + (last.received || 0) * .03);
+    if (shakeMode() === 'full' && (impactDealt > 0 || last.received > 0)) {
+      hitstop = Math.min(.15, .05 + impactDealt * .012 + (last.received || 0) * .03);
     }
     if (last.perfect && flashMode() === 'full') fx?.flash?.(60, 'rgba(255,214,120,0.30)');
-    if (last.dealt > 0) {
+    const enemyBeat = resolution.side === 'enemy';
+    // The player beat shows what the player did to the enemy (coherence, heal);
+    // the enemy beat shows what it did back (composure). `last.dealt` carries
+    // over from the player step into the enemy-after state, so the side guard is
+    // what stops the dealt popup firing twice.
+    if (!enemyBeat && last.enemyDodge) {
+      // The surfer turned your swing. No coherence lost; a parry nicks composure.
+      spawnPopup({ text: last.enemyDodge.mode === 'parry' ? 'PARRIED' : 'DODGED', role: 'ui-danger', anchor: 'enemy' });
+      if (last.enemyDodge.nick > 0) spawnPopup({ value: last.enemyDodge.nick, kind: 'received', anchor: 'hands', delay: .12 });
+      fx?.flash?.(66, 'rgba(120,220,255,0.24)');
+      fx?.shake?.(.2, 180);
+    } else if (!enemyBeat && last.dealt > 0) {
       barGhost.coherence = { from: before.movementCoherence, at: now };
       spawnPopup({ value: last.dealt, kind: 'dealt', anchor: 'enemy' });
       fx?.flash?.(72, 'rgba(255,180,55,0.38)');
       fx?.glitch?.(.24 + Math.min(.32, last.dealt * .07), 150);
     }
-    if (last.received > 0) {
+    if (enemyBeat && last.parried) {
+      // Turned. No composure lost this beat — the blow's force went back as
+      // coherence, and the guard reads cold-blue, not red.
+      spawnPopup({ text: 'PARRIED', role: 'ui-blue', anchor: 'hands' });
+      if (last.dealt > 0) {
+        barGhost.coherence = { from: before.movementCoherence, at: now };
+        spawnPopup({ value: last.dealt, kind: 'dealt', anchor: 'enemy', delay: .1 });
+      }
+      fx?.flash?.(80, 'rgba(120,220,255,0.42)');
+    } else if (enemyBeat && last.received > 0) {
       barGhost.composure = { from: before.composure, at: now };
-      spawnPopup({ value: last.received, kind: 'received', anchor: 'hands' });
+      // Chained hits each get their own popup, fanned out in time so a two-hit
+      // enemy turn reads as two blows rather than one big number.
+      const hits = last.enemyHits?.length ? last.enemyHits : [{ received: last.received }];
+      hits.forEach((hit, i) => {
+        if (hit.received > 0) spawnPopup({ value: hit.received, kind: 'received', anchor: 'hands', delay: i * .16 });
+      });
       fx?.flash?.(90, 'rgba(154,20,30,0.48)');
       fx?.shake?.(.26 + Math.min(.50, last.received * .11), 220);
     }
-    if ((last.composureTo ?? 0) > (last.composureFrom ?? 0)) {
+    if (!enemyBeat && (last.composureTo ?? 0) > (last.composureFrom ?? 0)) {
       barGhost.composure = { from: last.composureFrom, at: now };
       spawnPopup({ value: last.composureTo - last.composureFrom, kind: 'heal', anchor: 'hands' });
     }
@@ -273,9 +345,29 @@ export function makeCombatScene({
 
   function finishResolution() {
     if (!resolution) return;
+    // A player beat that deferred the enemy turn hands off to the enemy beat;
+    // everything else (perfect, tempo, movement break, KO, or the finished
+    // enemy beat) settles the whole turn.
+    if (resolution.side === 'player' && state.phase === 'enemy' && !state.result) {
+      resolution = null;
+      beginEnemyBeat();
+      return;
+    }
+    settleTurn();
+  }
+
+  function settleTurn() {
+    if (!resolution) return;
     const resolved = resolution;
     resolution = null;
-    director?.advance?.(resolved.before, resolved.after);
+    // The exchange is over, and so is the sound of it.
+    fx?.stopCues?.();
+    // The director and music read the turn as one span: from where the player
+    // committed (turnStart) to the settled end-state.
+    director?.advance?.(turnStart || resolved.before, state);
+    turnStart = null;
+    // This exchange has settled; the next one is a new turn on the glyph.
+    if (!state.result) turnCount += 1;
     if (!state.result) musicSession?.onCombatEvent?.({
       perfect: state.last?.perfect === true,
       transition: state.last?.transition || null,
@@ -325,6 +417,7 @@ export function makeCombatScene({
     }
     takeConfirmation = false;
     syncResourceSpend(before, next);
+    turnStart = before;
     state = next;
     notice = state.last?.notice || '';
     audio?.menuConfirm?.();
@@ -332,12 +425,57 @@ export function makeCombatScene({
       before,
       after: state,
       action,
+      side: 'player',
       elapsed: 0,
       duration: turnDuration(actionId),
       impactFired: false,
     };
     phase = 'resolve';
     repairSelection();
+  }
+
+  // The opponent's own beat. It only runs when the player step deferred the
+  // enemy turn (phase 'enemy'); a perfect counter, a tempo action, a completed
+  // movement, or a KO settle straight from the player beat with no enemy turn.
+  function beginEnemyBeat() {
+    const before = state;
+    const intents = selectEnemyIntents(state);
+    const primary = intents[0] || null;
+    const next = advanceEnemy(state);
+    state = next;
+    notice = state.last?.notice || '';
+    // The adversary's attack is an instrument: each movement has its own piano
+    // voice, and a low-composure recordist hears the SCREAM instead. Fired here,
+    // on the enemy beat, so the sound arrives with the blow.
+    if (primary) {
+      // The surfer sounds like what it is doing this beat — its intent's voice —
+      // not a slot on a clock.
+      const beat = enemyBeatSeq++;
+      const cueId = enemyAttackCue({
+        intentKind: primary.kind,
+        beat,
+        composure: next.composure,
+        maxComposure: next.maxComposure,
+      });
+      // The blow is a chop off the surfer's take, and it is this beat's sound
+      // and no longer: it is cut to half a bar on the way in (enemyAttackShape)
+      // and it goes out on the battle voice group, which is cut when the turn
+      // settles. A stem still ringing in the next exchange — or out past the end
+      // of the fight — is the surfer playing at a fight that is over.
+      if (cueId) fx?.cue?.(cueId, { group: 'battle', ...enemyAttackShape(cueId, beat) });
+      strike = { ...enemyAttackVoice(primary.kind, cueId), label: primary.label, kind: primary.kind };
+    } else strike = null;
+    resolution = {
+      before,
+      after: next,
+      action: { id: 'enemy', tool: COMBAT_TOOL.SELF, label: primary?.label || 'INTENT', kind: primary?.kind || null },
+      side: 'enemy',
+      elapsed: 0,
+      // A chained turn takes proportionally longer so each hit reads.
+      duration: ORDINARY_TURN_SECONDS * Math.max(1, next.last?.enemyHits?.length || 1),
+      impactFired: false,
+    };
+    phase = 'resolve';
   }
 
   function cycleChannel(delta) {
@@ -414,6 +552,7 @@ export function makeCombatScene({
       sceneEntered = false;
       stopVoice();
       audio?.stopTyping?.();
+      fx?.stopCues?.();   // never let a stem the surfer was mid-swing with outlive the scene
       if (!musicFinished) {
         if (state.result) finishMusic();
         else musicSession?.abort?.();
@@ -435,7 +574,8 @@ export function makeCombatScene({
         selectedTool,
         selectedMove,
         notice,
-        resolution: resolution ? { elapsed: resolution.elapsed, duration: resolution.duration, action: resolution.action.id } : null,
+        resolution: resolution ? { elapsed: resolution.elapsed, duration: resolution.duration, action: resolution.action.id, side: resolution.side } : null,
+        statePhase: state.phase,
         tutorial: director?.snapshot?.() || null,
       };
     },
@@ -499,6 +639,22 @@ export function makeCombatScene({
         return true;
       }
       if (phase === 'resolve') {
+        // Reactive parry: during the adversary's blow, before it lands, a timed
+        // guard turns it back. The window is the pre-impact beat — brace too early
+        // and you guard at air. This is the ONLY way to parry; never a chosen move.
+        if (confirm && resolution && resolution.side === 'enemy'
+            && !resolution.impactFired && !resolution.parryTried) {
+          resolution.parryTried = true;
+          if (resolution.elapsed / resolution.duration >= PARRY_WINDOW_LO) {
+            state = reduceCombat(state, { type: COMBAT_ACTION.PARRY });
+            resolution.after = state;
+            resolution.parried = !!state.last?.parried;
+            if (resolution.parried) { fx?.flash?.(70, 'rgba(120,220,255,0.34)'); audio?.menuMove?.(); }
+          } else {
+            resolution.parryWhiffed = true;
+          }
+          return true;
+        }
         if (confirm && resolution && resolution.elapsed >= .22) {
           if (!resolution.impactFired) fireImpact();
           finishResolution();
@@ -571,7 +727,11 @@ export function makeCombatScene({
           : phase === 'move'
             ? '[↑↓] CHOOSE MOVE · [ENTER] ACT · [TAB] TOOLS'
             : phase === 'resolve'
-              ? 'RESOLVING · [ENTER] FAST-FORWARD'
+              ? (resolution && resolution.side === 'enemy' && !resolution.impactFired && !resolution.parryTried
+                  ? 'THE BLOW LANDS · [SPACE] PARRY'
+                  : resolution && resolution.parried
+                    ? 'PARRIED · [ENTER] CONTINUE'
+                    : 'RESOLVING · [ENTER] FAST-FORWARD')
               : promptLine([{ action: 'continue', label: 'CONTINUE' }]);
       const panel = drawMachinePanel(x - 2, 1, w + 4, rows - 2, {
         label: 'AUDIOCORP / SIGNAL COMBAT', source: state.source ? 'SOURCE' : 'FIELD', meter: true, footer,
@@ -617,6 +777,18 @@ export function makeCombatScene({
         ...ghostFor(barGhost.coherence),
       });
 
+      // Whose beat it is + the exchange count, as a persistent glyph readout in
+      // the header. The enemy beat is the opponent's turn; anything else is yours.
+      const glyphW = 11;
+      if (!compact && panel.w > barW + glyphW + 2) {
+        drawTurnGlyph(panel.x + panel.w - glyphW, enemyBarY, {
+          active: resolution?.side === 'enemy' ? 'enemy' : 'player',
+          turn: turnCount,
+          reducedMotion: shakeMode() !== 'full',
+          now,
+        });
+      }
+
       // ── the void stage: one continuous backdrop, opponent right-of-centre in
       // an oblique fight stance, hands rising from the near-left ──────────────
       const stageY = enemyBarY + 2;
@@ -638,8 +810,34 @@ export function makeCombatScene({
         resolveProgress: visual.progress,
         reduceFlash: flashMode() !== 'full',
       });
+      // Whose turn it is, stated over the opponent it belongs to. The enemy beat
+      // is the opponent's own turn now, so it gets a lit banner centred on the
+      // being the moment control leaves the player.
+      if (resolution?.side === 'enemy') {
+        const hits = resolution.after?.last?.enemyHits?.length || 1;
+        const chained = hits > 1;
+        const banner = chained ? 'ENEMY TURN · CHAIN' : 'ENEMY TURN';
+        uiText(ex + Math.floor((ew - banner.length) / 2), stageY, banner, 'ui-danger', .95);
+        // What they are playing, made visible: notes come off the figure and keep
+        // dancing for as long as the attack lasts. A chain throws more of them.
+        // Seeded off the turn and the action so the swarm is stable frame to
+        // frame instead of reshuffling every render.
+        drawAttackNotes({
+          x: ex, y: stageY + 1, w: ew, h: Math.max(3, eh - 1),
+          count: Math.min(9, 3 + hits * 2),
+          now,
+          seed: (state.turn || 0) * 31 + (resolution.action?.kind || '').length * 7 + hits,
+          reducedMotion,
+          alpha: .55 + (1 - visual.progress) * .45,
+        });
+      }
       const intentState = resolution?.before || state;
-      const intent = currentCombatIntent(intentState);
+      // On the enemy beat, show the intent actually landing (a board-state
+      // reaction may have overridden the cycle intent); otherwise show what the
+      // player is bracing against.
+      const intent = resolution?.side === 'enemy'
+        ? { kind: resolution.action?.kind || currentCombatIntent(intentState)?.kind || null }
+        : currentCombatIntent(intentState);
       if (art?.procedural) {
         drawSignalBeing(battle.combat.id, {
           x: ex, y: stageY, w: ew, h: eh,
@@ -707,7 +905,19 @@ export function makeCombatScene({
             last.received ? `-${last.received} COMPOSURE` : '',
             last.snrFrom !== last.snrTo ? `${String(last.snrFrom).toUpperCase()} → ${String(last.snrTo).toUpperCase()}` : '',
           ].filter(Boolean).join(' · ') || 'POSITION HELD';
-          if (last.perfect) {
+          // ── the strike banner ──────────────────────────────────────────────
+          // Every enemy blow says itself: WHO does WHAT, with WHICH instrument,
+          // and then whether it worked. The fight used to print only the numbers
+          // and leave the player to infer, from -1 COMPOSURE, which move they had
+          // just been hit by — a move they had never seen named.
+          if (resolution.side === 'enemy' && strike) {
+            const who = String(battle.enemy || 'THE SIGNAL').toUpperCase();
+            drawVfdText(intentX, stageY + 1, `${who} ${strike.verb}`.slice(0, intentW), { scale: 1, role: 'ui-danger' });
+            uiText(intentX, stageY + 2, `${strike.label} · ${strike.instrument}`.slice(0, intentW), 'ui-amber', .9);
+            const verdict = strikeVerdict(last, { parried: resolution.parried });
+            uiText(intentX, stageY + 3, verdict.text.slice(0, intentW + 6), verdict.role, .95);
+            uiText(intentX, stageY + 4, impactLine.slice(0, intentW), 'ui-secondary', .75);
+          } else if (last.perfect) {
             drawVfdText(intentX, stageY + 1, 'PERFECT RESPONSE', { scale: 2, role: 'ui-counter' });
             const why = `${resolution.action.label} COUNTERS ${String(intent?.kind || '').toUpperCase()} — HIT NEGATED · TEMPO OPENS`;
             uiText(intentX, stageY + 3, why.slice(0, intentW + 6), 'ui-amber', .8);
@@ -734,6 +944,12 @@ export function makeCombatScene({
             uiText(intentX, stageY + intentRow, `NEXT · ${lookahead[1].label}`.slice(0, intentW), 'ui-secondary', .5);
             intentRow += 1;
           }
+          // The surfer's guard is telegraphed here: swing into it and it slips or
+          // turns the hit, so the read is to set up instead.
+          if (state.enemyGuard) {
+            uiText(intentX, stageY + intentRow, `⚠ SET TO ${state.enemyGuard.mode === 'parry' ? 'TURN' : 'SLIP'} YOUR SWING`.slice(0, intentW), 'ui-danger', .85);
+            intentRow += 1;
+          }
           regionRects.intent = { x: intentX, y: stageY + 1, w: intentW, h: intentRow + .2 };
         }
 
@@ -747,6 +963,7 @@ export function makeCombatScene({
       // ── floating damage numbers ─────────────────────────────────────────────
       popups = popups.filter((popup) => now - popup.born < .95);
       for (const popup of popups) {
+        if (now < popup.born) continue; // staggered chain popup, not born yet
         const t = (now - popup.born) / .95;
         const rise = ease(Math.min(1, t * 1.3)) * 2.6;
         const alpha = t < .12 ? 1 : Math.max(0, 1 - (t - .12) / .88);
@@ -783,10 +1000,15 @@ export function makeCombatScene({
       uiText(takeX, cmdY, takeText.slice(0, Math.max(8, panel.w - barW - 20)), 'ui-counter', .76);
       regionRects.take = { x: takeX, y: cmdY, w: Math.min(takeText.length + 1, panel.w - barW - 20), h: 1.1 };
       uiText(panel.x + Math.max(0, panel.w - 15), cmdY, `BATTERY · ${Math.round(state.battery * 100)}%`, 'ui-counter', .76);
-      const skillText = state.techniques.length
-        ? state.techniques.map((id) => id.split('.').pop().replaceAll('-', ' ').toUpperCase()).join(' / ')
-        : 'NONE';
-      uiText(takeX, cmdY + 1, `SKILLS · ${skillText}`.slice(0, Math.max(8, panel.w - barW - 20)), 'ui-blue', .55);
+      // Active techniques appear in the tool rail as moves you fire; the SKILLS
+      // line lists the passives that just change the rules, so the two aren't
+      // conflated into one opaque label.
+      const shortName = (id) => id.split('.').pop().replaceAll('-', ' ').toUpperCase();
+      const passives = state.techniques.filter((id) => !ACTIVE_TECHNIQUE_IDS.has(id));
+      const actives = state.techniques.filter((id) => ACTIVE_TECHNIQUE_IDS.has(id));
+      const skillText = passives.length ? passives.map(shortName).join(' / ') : 'NONE';
+      const activeText = actives.length ? ` · ACTIVE ${actives.map(shortName).join('/')}` : '';
+      uiText(takeX, cmdY + 1, `SKILLS · ${skillText}${activeText}`.slice(0, Math.max(8, panel.w - barW - 20)), 'ui-blue', .55);
 
       if (phase === 'arrival') {
         // No title card: the stage is already on screen behind the entry wipe.
@@ -863,11 +1085,16 @@ export function makeCombatScene({
       moveWindow.items.forEach((move, row) => {
         const index = moveWindow.start + row;
         const active = index === selectedMove;
-        const recommended = state.difficulty.recommended && move.perfect;
+        // Teach the read: the move that COUNTERS the telegraphed intent is marked
+        // ◆ and lit on EVERY difficulty (you learn which move beats which intent by
+        // seeing it at the decision point). Recommended difficulty adds the explicit
+        // '/ PERFECT' spell-out on top.
+        const counters = move.perfect && phase !== 'resolve';
+        const recommended = state.difficulty.recommended && counters;
         const subtext = phase === 'resolve' ? move.detail : combatMoveSubtext(state, move).short;
-        const suffix = !move.enabled ? move.reason : `${subtext}${recommended ? ' / PERFECT' : ''}`;
+        const suffix = !move.enabled ? move.reason : `${counters ? '◆ ' : ''}${subtext}${recommended ? ' / PERFECT' : ''}`;
         const line = `${active ? '▶' : ' '} ${move.label.padEnd(13)} ${suffix}`;
-        uiText(moveX, listY + 1 + row, line.slice(0, moveW), !move.enabled ? 'ui-secondary' : recommended ? 'ui-counter' : active ? 'ui-primary' : 'ui-secondary', active ? 1 : .72);
+        uiText(moveX, listY + 1 + row, line.slice(0, moveW), !move.enabled ? 'ui-secondary' : counters ? 'ui-counter' : active ? 'ui-primary' : 'ui-secondary', active ? 1 : .72);
         if (active && phase === 'move') uiStrokeRect(moveX - .3, listY + .9 + row, moveW, 1, UI_COLOR.primary, .60, 1);
         moveRows.push({ id: move.id, index, x: moveX, y: listY + 1 + row, w: moveW });
       });

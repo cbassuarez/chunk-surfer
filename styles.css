@@ -92,51 +92,14 @@
       filter:brightness(var(--cs-vfd-brightness));
       text-shadow:0 0 3px color-mix(in srgb,var(--cs-vfd-danger) 62%,transparent),0 0 10px color-mix(in srgb,var(--cs-vfd-danger) 24%,transparent);
     }
-    .cs-machine-overlay[data-vfd-flicker="low"] :is(.cs-machine-phosphor,.cs-machine-danger,.cs-machine-header__source strong,.cs-controller-action-binding,.cs-controller-action.is-selected .cs-controller-action-label,.cs-controller-capture,.cs-pad-button.is-active){animation:cs-vfd-dom-flicker-low 2.8s steps(2,end) infinite;}
-    .cs-machine-overlay[data-vfd-flicker="full"] :is(.cs-machine-phosphor,.cs-machine-danger,.cs-machine-header__source strong,.cs-controller-action-binding,.cs-controller-action.is-selected .cs-controller-action-label,.cs-controller-capture,.cs-pad-button.is-active){animation:cs-vfd-dom-flicker-full 1.45s steps(2,end) infinite;}
+    .cs-machine-overlay[data-vfd-flicker="low"] :is(.cs-machine-phosphor,.cs-machine-danger,.cs-machine-header__source strong){animation:cs-vfd-dom-flicker-low 2.8s steps(2,end) infinite;}
+    .cs-machine-overlay[data-vfd-flicker="full"] :is(.cs-machine-phosphor,.cs-machine-danger,.cs-machine-header__source strong){animation:cs-vfd-dom-flicker-full 1.45s steps(2,end) infinite;}
     @keyframes cs-vfd-dom-flicker-low{0%,91%,100%{opacity:1}92%{opacity:.93}94%{opacity:.98}}
     @keyframes cs-vfd-dom-flicker-full{0%,74%,100%{opacity:1}76%{opacity:.82}79%{opacity:.96}82%{opacity:.88}}
 
-    .cs-controller-overlay{z-index:40;}
-    .cs-controller-panel{
-      width:min(1120px,100%);
-      height:min(720px,100%);
-      min-height:420px;
-    }
-    .cs-controller-eyebrow,.cs-controller-status,.cs-controller-footer{color:var(--cs-vfd-silkscreen);}
-    .cs-controller-header h1{font-size:clamp(18px,2.2vw,27px);line-height:1;margin-top:5px;font-weight:700;letter-spacing:0;}
-    .cs-controller-status{text-align:right;display:grid;gap:4px;}
-    .cs-controller-status strong{color:var(--cs-vfd-phosphor);font-weight:700;filter:brightness(var(--cs-vfd-brightness));}
-    .cs-controller-main{display:grid;grid-template-columns:minmax(360px,1fr) minmax(320px,.72fr);gap:0;}
-    .cs-controller-panel.is-stacked .cs-controller-main{grid-template-columns:1fr;grid-template-rows:minmax(220px,.85fr) minmax(0,1fr);}
-    .cs-controller-diagram,.cs-controller-actions{min-width:0;min-height:0;border:0;background:transparent;}
-    .cs-controller-diagram{display:grid;grid-template-rows:1fr auto;place-items:center;padding:14px;}
-    .cs-controller-panel.is-split .cs-controller-diagram{border-right:1px solid color-mix(in srgb,var(--cs-vfd-silkscreen) 24%,transparent);}
-    .cs-controller-panel.is-stacked .cs-controller-diagram{border-bottom:1px solid color-mix(in srgb,var(--cs-vfd-silkscreen) 24%,transparent);}
-    .cs-controller-diagram svg{width:100%;height:100%;min-height:210px;max-height:420px;}
-    .cs-pad-shell{fill:#101010;stroke:var(--cs-vfd-silkscreen);stroke-width:1.2;}
-    .cs-pad-touch,.cs-pad-dpad{fill:var(--cs-vfd-dim);stroke:var(--cs-vfd-silkscreen);stroke-width:.8;}
-    .cs-pad-button circle,.cs-pad-button rect{fill:var(--cs-vfd-dim);stroke:var(--cs-vfd-silkscreen);stroke-width:.8;}
-    .cs-pad-button text{fill:var(--cs-vfd-silkscreen);font-size:3px;text-anchor:middle;font-family:var(--cs-mono);}
-    .cs-pad-button.is-active circle,.cs-pad-button.is-active rect{fill:var(--cs-vfd-dim);stroke:var(--cs-vfd-phosphor);stroke-width:1.3;filter:brightness(var(--cs-vfd-brightness));}
-    .cs-pad-button.is-active text{fill:var(--cs-vfd-phosphor);filter:brightness(var(--cs-vfd-brightness));}
-    .cs-pad-button.is-capture circle,.cs-pad-button.is-capture rect{animation:cs-controller-pulse 760ms ease-in-out infinite;}
-    @keyframes cs-controller-pulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.85)}}
-    .cs-controller-capture{width:100%;padding-top:10px;border-top:1px solid color-mix(in srgb,var(--cs-vfd-silkscreen) 22%,transparent);color:var(--cs-vfd-phosphor);text-align:center;text-transform:uppercase;font-size:13px;filter:brightness(var(--cs-vfd-brightness));}
-    .cs-controller-actions{display:grid;align-content:start;gap:6px;overflow:auto;padding:10px;}
-    .cs-controller-action{display:grid;grid-template-columns:72px minmax(0,1fr) minmax(104px,.7fr);gap:10px;align-items:center;width:100%;border:1px solid transparent;background:transparent;color:var(--cs-vfd-silkscreen);font:inherit;text-align:left;text-transform:uppercase;padding:9px 10px;}
-    .cs-controller-action.is-selected{border-color:var(--cs-vfd-phosphor);background:var(--cs-vfd-dim);color:var(--cs-vfd-phosphor);filter:brightness(var(--cs-vfd-brightness));}
-    .cs-controller-action.is-capturing{border-color:var(--cs-vfd-accent);}
-    .cs-controller-action-group{font-size:11px;color:var(--cs-vfd-silkscreen);opacity:.62;}
-    .cs-controller-action-label,.cs-controller-action-binding{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-    .cs-controller-action-binding{color:var(--cs-vfd-accent);text-align:right;filter:brightness(var(--cs-vfd-brightness));}
-    .cs-controller-footer{justify-content:center;flex-wrap:wrap;}
+        /* "PRESS ANY BUTTON" is longer than any binding name, so the capturing row
+       lends the value column the space the action label was using. */
     @media (max-width: 760px), (max-height: 460px){
-      .cs-controller-panel{min-height:0;height:100%;}
-      .cs-controller-header{align-items:flex-start;}
-      .cs-controller-main{grid-template-columns:1fr;grid-template-rows:minmax(190px,.82fr) minmax(0,1fr);}
-      .cs-controller-action{grid-template-columns:62px minmax(0,1fr);font-size:12px;}
-      .cs-controller-action-binding{grid-column:2;text-align:left;}
       .cs-machine-header{min-height:42px;padding-top:6px;padding-bottom:5px;}
       .cs-machine-footer{min-height:32px;padding-top:5px;padding-bottom:5px;}
     }

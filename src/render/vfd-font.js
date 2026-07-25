@@ -71,6 +71,17 @@ const G = {
   '%': [0b11000, 0b11001, 0b00010, 0b00100, 0b01000, 0b10011, 0b00011],
   '*': [0, 0b00100, 0b10101, 0b01110, 0b10101, 0b00100, 0],
   '·': [0, 0, 0, 0b01100, 0b01100, 0, 0],
+  // Typographic punctuation the authored copy actually uses (em dashes, curly
+  // quotes, ellipses). Without these the character module leaves a blank hole
+  // where the glyph should be, so prose loses its dashes and apostrophes.
+  '—': [0, 0, 0, 0b11111, 0, 0, 0],
+  '–': [0, 0, 0, 0b11111, 0, 0, 0],
+  '‘': [0b00100, 0b00100, 0b01000, 0, 0, 0, 0],
+  '’': [0b00100, 0b00100, 0b01000, 0, 0, 0, 0],
+  '“': [0b01010, 0b01010, 0b10100, 0, 0, 0, 0],
+  '”': [0b01010, 0b01010, 0b10100, 0, 0, 0, 0],
+  '…': [0, 0, 0, 0, 0, 0b10101, 0b10101],
+  '•': [0, 0, 0b01110, 0b01110, 0b01110, 0, 0],
   '↑': [0b00100, 0b01110, 0b10101, 0b00100, 0b00100, 0b00100, 0b00100],
   '↓': [0b00100, 0b00100, 0b00100, 0b10101, 0b01110, 0b00100, 0],
   '→': [0, 0b00100, 0b00010, 0b11111, 0b00010, 0b00100, 0],
@@ -93,10 +104,19 @@ const G = {
 export const VFD_COLS = 5;
 export const VFD_ROWS = 7;
 
-// A glyph exists in the ROM? (Anything unknown falls back to the block box, the
-// way a real character module shows an unmapped code.)
+// Typographic characters that have no distinct 5×7 form fold onto the nearest
+// ASCII glyph that does, so an unmapped code never leaves a blank hole in prose.
+const FALLBACK = {
+  '\u00A0': ' ', '\u2007': ' ', '\u202F': ' ', '\u200B': ' ',   // spaces
+  '\u00AD': '-', '\u2010': '-', '\u2011': '-', '\u2012': '-',   // hyphens
+  '\u2032': "'", '\u2033': '"', '\u2035': "'", '\u2036': '"',   // primes
+  '\u00B4': "'", '\u0060': "'",                                     // accents as apostrophes
+};
+
+// A glyph exists in the ROM? Typographic variants fold to their nearest mapped
+// form; only a genuinely unknown code returns null.
 export function vfdGlyph(ch) {
-  return G[ch] || G[ch?.toUpperCase?.()] || null;
+  return G[ch] || G[FALLBACK[ch]] || G[ch?.toUpperCase?.()] || null;
 }
 
 // Draw one 5×7 glyph into `ctx`, in device pixels, at (px, py), filling a cell

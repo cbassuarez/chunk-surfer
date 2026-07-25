@@ -104,3 +104,42 @@ assert.ok(reachable(rt(25, 12), rt(35, 10)), 'studio to plant-room service path 
 assert.ok(reachable(rt(25, 12), rt(40, 14)), 'plant-room pipe dressing does not block circulation');
 
 console.log('conservatory space layout tests ok');
+
+// ── the main stair's shaft is as wide as the stair in it ─────────────────────
+// `main-upper-stair` is a 3-metre flight with 3x3-metre landings. It used to run
+// down a ONE-cell service spur (`#,#` at x60/61/62), so both landings straddled
+// the two wall columns and the collision around them had nothing to agree with.
+// Both floors now author the full three metres, walled either side.
+{
+  const cell = (x, y) => rt(x, y);
+  for (const y of [35, 39, 43]) {           // the ground vestibule hall
+    for (const x of [60, 61, 62]) {
+      const p = cell(x, y);
+      assert.ok(!FP.isSolid(p.x, p.y), `ground shaft is open at ${x},${y}`);
+    }
+  }
+  // Walled either side, below the flare where the one-cell service spur widens
+  // into the hall (the compiler's corridor widening opens x59-63 at the head).
+  for (const y of [40, 41, 42, 43]) {
+    for (const x of [59, 63]) {
+      const p = cell(x, y);
+      assert.ok(FP.isSolid(p.x, p.y), `and walled at ${x},${y}`);
+    }
+  }
+  for (const y of [45, 47, 50]) {           // the upper floor's own well
+    for (const x of [60, 61, 62]) {
+      const p = cell(x, y);
+      assert.ok(!FP.isSolid(p.x, p.y), `upper well is open at ${x},${y}`);
+    }
+  }
+  // The landings sit wholly inside it, which is the point.
+  for (const [lx, ly] of [[60, 38], [60, 52]]) {
+    for (let ox = 0; ox < 3; ox += 1) {
+      for (let oy = 0; oy < 3; oy += 1) {
+        const p = cell(lx + ox, ly + oy);
+        assert.ok(!FP.isSolid(p.x, p.y), `landing cell ${lx + ox},${ly + oy} is standable`);
+      }
+    }
+  }
+}
+console.log('main stair shaft ok');

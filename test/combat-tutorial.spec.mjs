@@ -6,6 +6,7 @@ import {
   availableCombatActions,
   createCombatState,
   reduceCombat,
+  runCombatTurn,
 } from '../src/game/combat-state.js';
 import { authoredCombatProfile, trainingCombatBattle } from '../src/data/combat-definitions.js';
 import { COMBAT_TUTORIAL_STEPS, createCombatTutorialDirector } from '../src/game/combat-tutorial.js';
@@ -39,7 +40,7 @@ test('the drill advances one lesson per scripted turn against the training profi
   let state = trainingState();
   const play = (actionId) => {
     const before = state;
-    state = reduceCombat(state, { type: actionId });
+    state = runCombatTurn(state, { type: actionId });
     return director.advance(before, state);
   };
   assert.equal(director.step().id, 'hold');
@@ -75,7 +76,7 @@ test('every scripted lesson only allows moves the training state can actually ta
     assert.ok(allowed.length >= 1, `${director.step().id} offers an enabled move`);
     assert.ok(allowed.some((move) => move.id === actionId), `${director.step().id} allows ${actionId}`);
     const before = state;
-    state = reduceCombat(state, { type: actionId });
+    state = runCombatTurn(state, { type: actionId });
     director.advance(before, state);
     assert.equal(state.result, null, 'the drill never ends mid-lesson');
   }

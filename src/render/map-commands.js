@@ -49,9 +49,13 @@ export function buildMapCommands({ model, nav, layout, now = 0 } = {}) {
     commands.push({
       kind: 'objective', id: space.id, roomId: space.roomId, point: transform.point(space.position),
       selected: selectedHere, current: !!space.current, waypoint: !!space.waypoint,
-      recorded: !!space.objective?.recorded, tone: objectiveTone(space),
+      recorded: !!space.objective?.recorded, tone: objectiveTone(space), unknown: !!space.unknown,
       sequence: space.objective?.sequence, label: space.label,
-      showLabel: selectedHere || model.policy?.showAllTargetLabels,
+      // ALWAYS labelled. A marker whose name only appears once you have already
+      // selected it cannot tell you that you could go there — which is the one
+      // thing this screen is for. Unselected callouts are dimmed, not withheld.
+      showLabel: true,
+      dimLabel: !!space.unknown || !(selectedHere || space.current || space.waypoint || model.policy?.showAllTargetLabels),
     });
   }
 
@@ -86,16 +90,35 @@ function localTopology(floor, transform, viewport, center, radius) {
   return { kind: 'local-topology', floorId: floor.id, open: floor.open, runs: floor.runs || null, transform, viewport, center, radius };
 }
 
-export function buildMinimapCommands({ model, viewport, radius = 18, now = 0 } = {}) {
+export function buildMinimapCommands({ model, viewport, radius = 18, now = 0, aspect = 1 } = {}) {
   if (!model?.player?.resolved || !model.player.position) return [{ kind: 'compass-fallback' }];
   const floor = mapFloor(model, model.player.floorId);
   if (!floor) return [{ kind: 'compass-fallback' }];
   const policy = model.policy || {};
-  const transform = minimapTransform({ center: model.player.position, radius, viewport });
+  const heading = Number(model.player.heading) || 0;
+  const transform = minimapTransform({ center: model.player.position, radius, viewport, heading, aspect });
   const commands = [];
 
   if (policy.minimapMode !== 'compass' && policy.showMapTopology !== false) {
     commands.push(localTopology(floor, transform, viewport, model.player.position, radius));
+  }
+  // What he can actually SEE, as a wedge the geometry cuts into. The old facing
+  // hint was a 0.75-cell tick on the player dot, which told you which way you
+  // were pointing and nothing about whether you could see anything that way —
+  // and it happily pointed straight through a corner. This carries the same open
+  // cells the topology layer draws, so the cone is masked by the real walls.
+  if (policy.minimapMode !== 'compass' && policy.showMapTopology !== false) {
+    commands.push({
+      kind: 'sight',
+      floorId: floor.id,
+      origin: { ...model.player.position },
+      heading: model.player.heading || 0,
+      open: floor.open,
+      runs: floor.runs || null,
+      transform,
+      viewport,
+      radius,
+    });
   }
   commands.push({ kind: 'player', point: transform.point(model.player.position), heading: model.player.heading || 0 });
 
@@ -103,13 +126,13 @@ export function buildMinimapCommands({ model, viewport, radius = 18, now = 0 } =
     if (model.waypoint.floorId === model.player.floorId && model.waypoint.position) {
       const raw = transform.point(model.waypoint.position);
       const inside = insideRect(raw, viewport, 0.7);
-      commands.push({ kind: inside ? 'waypoint' : 'waypoint-edge', point: inside ? raw : clampMarkerToEdge(model.player.position, model.waypoint.position, viewport, 0.8), floorDelta: 0 });
+      commands.push({ kind: inside ? 'waypoint' : 'waypoint-edge', point: inside ? raw : clampMarkerToEdge(model.player.position, model.waypoint.position, viewport, 0.8, heading), floorDelta: 0 });
     } else {
       const target = model.route?.targetPosition;
       if (target && policy.showCrossFloorConnector) {
         const raw = transform.point(target);
         const inside = insideRect(raw, viewport, 0.7);
-        commands.push({ kind: inside ? 'connector-target' : 'connector-edge', point: inside ? raw : clampMarkerToEdge(model.player.position, target, viewport, 0.8), floorDelta: model.route?.floorDelta || 0 });
+        commands.push({ kind: inside ? 'connector-target' : 'connector-edge', point: inside ? raw : clampMarkerToEdge(model.player.position, target, viewport, 0.8, heading), floorDelta: model.route?.floorDelta || 0 });
       } else {
         commands.push({ kind: 'floor-target', delta: model.route?.floorDelta || 0, status: model.route?.status || 'unresolved' });
       }

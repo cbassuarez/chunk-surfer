@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import { combatBarCells, combatInjuryStage } from '../src/render/combat-view.js';
+import * as combatView from '../src/render/combat-view.js';
 import { ORDINARY_TURN_SECONDS } from '../src/game/combat.js';
 
 const combatViewSource = readFileSync(new URL('../src/render/combat-view.js', import.meta.url), 'utf8');
@@ -58,6 +59,21 @@ test('hits carry weight: hit-stop, ghost pips, damage popups, entry wipe, impact
   assert.match(combatViewSource, /export function drawBattleWipe/);
 });
 
+test('the enemy takes its own beat: player and enemy resolutions are sequenced', () => {
+  // The player action resolves, then a distinct enemy beat runs when the turn
+  // was deferred to the enemy phase — not folded into one atomic flash.
+  assert.match(combatSceneSource, /function beginEnemyBeat\(\)/);
+  assert.match(combatSceneSource, /advanceEnemy\(state\)/);
+  assert.match(combatSceneSource, /side: 'enemy'/);
+  assert.match(combatSceneSource, /side: 'player'/);
+  // The player beat hands off to the enemy beat only when a turn is pending.
+  assert.match(combatSceneSource, /resolution\.side === 'player' && state\.phase === 'enemy'/);
+  // The enemy turn is visibly announced.
+  assert.match(combatSceneSource, /ENEMY TURN/);
+  // The turn is read as one span for the director/music, from the commit point.
+  assert.match(combatSceneSource, /director\?\.advance\?\.\(turnStart/);
+});
+
 test('Tab steps back inside the fight; Escape stays reserved for run-level pause', () => {
   assert.match(combatSceneSource, /e\.key === 'Tab'/);
   assert.doesNotMatch(combatSceneSource, /back = e\.key === 'Escape'/);
@@ -80,4 +96,53 @@ test('the legibility layer is wired: stance triangle, counter hints, derived sub
   assert.match(combatSceneSource, /combatMoveSubtext\(/);
   // The old hand-written hint table is gone; hints derive from the rules tables.
   assert.doesNotMatch(combatSceneSource, /idealResponse/);
+});
+
+test('the opponent throws note sprites while its attack plays', () => {
+  // Sprites, not '♪': the atlas renders glyphs through a monospace stack with no
+  // dependable music note in it — the same trap that made the minimap's mischief
+  // ring draw nothing at all — so these are stepped blocks like everything else
+  // in the void.
+  const { NOTE_SPRITES } = combatView;
+  assert.ok(Object.keys(NOTE_SPRITES).length >= 3, 'more than one kind of note');
+  for (const [kind, rows] of Object.entries(NOTE_SPRITES)) {
+    assert.ok(rows.length >= 5, `${kind} is a pixel pattern with real height`);
+    assert.ok(rows.every((row) => /^[.#]+$/.test(row)), `${kind} is drawn from blocks, not a glyph`);
+    assert.equal(new Set(rows.map((row) => row.length)).size, 1, `${kind} is rectangular`);
+    assert.ok(rows.some((row) => row.includes('#')), `${kind} has ink in it`);
+  }
+  assert.match(combatSceneSource, /drawAttackNotes\(/);
+  // Only on the enemy beat, and inside the guard that proves there IS an enemy
+  // beat — reading resolution.after with no resolution throws, and an exception
+  // in this render path blanks the whole stage instead of erroring loudly.
+  const guard = combatSceneSource.indexOf("resolution?.side === 'enemy'");
+  const call = combatSceneSource.indexOf('drawAttackNotes(');
+  assert.ok(guard >= 0 && call > guard, 'notes are drawn inside the enemy-beat guard');
+
+  const { attackNoteLayout } = combatView;
+  // Deterministic: the same turn renders the same swarm every frame of it.
+  const a = attackNoteLayout({ count: 6, now: 3.25, seed: 42 });
+  const b = attackNoteLayout({ count: 6, now: 3.25, seed: 42 });
+  assert.deepEqual(a, b);
+  assert.notDeepEqual(a, attackNoteLayout({ count: 6, now: 3.25, seed: 43 }));
+  assert.equal(a.length, 6);
+  // Every note stays on the figure and climbs it.
+  for (const note of a) {
+    assert.ok(note.u >= 0 && note.u <= 1, 'across the figure');
+    assert.ok(note.v >= 0 && note.v <= 1, 'and inside its height');
+    assert.ok(note.alpha >= 0 && note.alpha <= 1);
+    assert.ok(note.scale > 0);
+    assert.ok(NOTE_SPRITES[note.kind], `${note.kind} is a sprite this file can draw`);
+  }
+  // They dance out of step with each other rather than rising as a rank.
+  const later = attackNoteLayout({ count: 6, now: 3.55, seed: 42 });
+  assert.ok(later.some((note, index) => note.v !== a[index].v), 'and they move');
+  assert.ok(new Set(a.map((note) => note.v.toFixed(3))).size > 1, 'never in one line');
+  // A chain throws more of them than a single hit.
+  assert.ok(attackNoteLayout({ count: 9, now: 1, seed: 1 }).length
+    > attackNoteLayout({ count: 5, now: 1, seed: 1 }).length);
+  // Reduced motion holds them still instead of animating.
+  const still = attackNoteLayout({ count: 4, now: 9.1, seed: 7, reducedMotion: true });
+  assert.ok(still.every((note) => note.sway === 0));
+  assert.deepEqual(still, attackNoteLayout({ count: 4, now: 21.7, seed: 7, reducedMotion: true }));
 });

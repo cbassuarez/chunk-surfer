@@ -100,6 +100,10 @@ function drawRoute(command) {
 }
 
 function drawMapCommands(commands, viewport, now) {
+  // The tower is one page now, and its rooms are stacked — the ringing room and
+  // the bell chamber share a footprint — so two callouts can want the same row.
+  // Nudge the later one down rather than printing them on top of each other.
+  const labelRows = new Set();
   for (const command of commands) {
     if (command.kind === 'topology') drawTopology(command, viewport);
     else if (command.kind === 'route') drawRoute(command);
@@ -110,7 +114,15 @@ function drawMapCommands(commands, viewport, now) {
       if (command.showLabel || command.current || command.waypoint) {
         const label = clip(command.current ? 'YOU' : command.waypoint ? 'TARGET' : command.label, Math.max(4, Math.min(18, viewport.w - 4)));
         const lx = Math.max(viewport.x, Math.min(viewport.x + viewport.w - label.length, Math.round(command.point.x) + 2));
-        uiText(lx, Math.round(command.point.y), label, command.current ? 'ui-green' : command.waypoint ? 'ui-blue' : command.selected ? 'ui-amber' : 'ui-secondary', command.selected || command.current || command.waypoint ? .92 : .58);
+        // Dimmed rather than hidden: you can read every place you could walk to,
+        // and the bright one is still unmistakably the place you have chosen.
+        const bright = command.selected || command.current || command.waypoint;
+        let ly = Math.round(command.point.y);
+        for (let nudge = 0; nudge < 3 && labelRows.has(`${ly},${lx}`); nudge += 1) ly += 1;
+        labelRows.add(`${ly},${lx}`);
+        uiText(lx, ly, label,
+          command.current ? 'ui-green' : command.waypoint ? 'ui-blue' : command.selected ? 'ui-amber' : 'ui-secondary',
+          bright ? .92 : command.dimLabel ? .42 : .58);
       }
     }
     else if (command.kind === 'player') drawPlayerMarker(command.point, command.heading, 1);

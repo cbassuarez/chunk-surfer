@@ -53,6 +53,21 @@ def compatibility_error() -> str | None:
     expected = os.environ.get("LENS_EXPECT_BACKEND")
     if device not in {"cuda", "mps"}:
         if expected == "cuda":
+            # Name the actual cause. All three of these surface as
+            # cuda.is_available() == False, and the old message blamed the GPU
+            # for what was usually a mis-packaged wheel.
+            report = pipeline.torch_build_report()
+            if report["cpuOnlyWheel"]:
+                return ("lens packaging error: the bundled PyTorch is a CPU-only build "
+                        "(no CUDA). This is a build defect, not your hardware — please report it")
+            if report["driverError"]:
+                return (f"NVIDIA driver could not initialize CUDA: {report['driverError']}. "
+                        "Update your NVIDIA driver and retry")
+            if report["deviceCount"] and report["devices"]:
+                cap = report["devices"][0]["capability"]
+                archs = ", ".join(report.get("archList") or []) or "none"
+                return (f"GPU {report['devices'][0]['name']} ({cap}) is newer than the bundled "
+                        f"CUDA runtime supports (built for: {archs}). A newer lens build is required")
             return "unsupported GPU: NVIDIA CUDA hardware and a compatible driver are required"
         if expected == "mps":
             return "unsupported GPU: Apple Silicon MPS is required"
@@ -418,6 +433,12 @@ if __name__ == "__main__":
     host = os.environ.get("LENS_HOST", "127.0.0.1")
     if host not in {"127.0.0.1", "localhost", "::1"}:
         raise SystemExit("LENS_HOST must be loopback; the diffusion service is local-only")
+    # The first thing in the log, always: what torch we are and what it can see.
+    # A support request that includes chunk-lens.log now answers "why no GPU?"
+    # without a second round trip.
+    print(f"torch build: {json.dumps(pipeline.torch_build_report())}")
+    device, _dtype = pipeline.pick_device()
+    print(f"device: {device}; expected: {os.environ.get('LENS_EXPECT_BACKEND') or 'any'}")
     if os.environ.get("LENS_EAGER", "1") != "0":
         load_lens()
     uvicorn.run(app, host=host, port=int(os.environ.get("LENS_PORT", "8000")))

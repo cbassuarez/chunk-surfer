@@ -52,13 +52,18 @@ const job = {
 };
 
 const model = buildBagModel({ equipment, job, loadout: { top: ['recorder', 'light'] } });
-assert.deepEqual(model.sections.map((section) => section.id), ['kit', 'map', 'files']);
+// SKILLS joined KIT/MAP/FILES as a real fourth section (see bag-skills.spec).
+assert.deepEqual(model.sections.map((section) => section.id), ['kit', 'map', 'files', 'skills']);
 assert.equal(model.progress.done, 1);
 assert.equal(model.sections[0].entries[0].sourceId, 'recorder');
 assert.deepEqual(model.sections[0].entries.slice(0, 2).map((entry) => entry.sourceId), ['recorder', 'light']);
 assert.equal(model.sections[0].entries[0].compartment, 'top');
 assert.equal(model.sections[0].entries[2].compartment, 'storage');
 assert.equal(model.sections[0].entries[2].actions.secondary.id, 'move-top');
+// Tray reorder: the first top item has nowhere up (no tertiary); the second does.
+assert.equal(model.sections[0].entries[0].actions.tertiary, null);
+assert.equal(model.sections[0].entries[1].actions.tertiary.id, 'reorder-up');
+assert.equal(model.sections[0].entries[2].actions.tertiary, null);
 assert.equal(bagEntry(model, 'map', 'room:main_b3').state, 'recorded');
 assert.equal(bagEntry(model, 'files', 'file:work-order').roomId, 'main_b3');
 assert.equal(bagEntry(model, 'files', 'file:work-order').actions.secondary.id, 'unmark-room');

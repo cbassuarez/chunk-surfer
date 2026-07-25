@@ -100,14 +100,16 @@ export function makeColdOpenScene({
               bottomPadRows: 2,
             })
           : 0;
-        const panelH = Math.min(
-          rows - 4,
-          Math.max(
-            18,
-            Math.min(30, Math.floor(rows * 0.64)),
-            fixedArtPanelH,
-          ),
-        );
+        // With a story plate present the panel is exactly the height of the
+        // header + fixed art/text band + bottom pad. Sizing to that removes the
+        // dead space that used to sit under the image/text group when the panel
+        // was stretched to a share of the screen instead.
+        const panelH = art
+          ? Math.min(rows - 4, fixedArtPanelH)
+          : Math.min(
+              rows - 4,
+              Math.max(18, Math.min(30, Math.floor(rows * 0.64))),
+            );
 
         const top = Math.max(
           2,

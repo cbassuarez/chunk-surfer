@@ -1,4 +1,4 @@
-import { access, mkdir, readdir, rm, writeFile } from 'node:fs/promises';
+import { access, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { extname, relative, resolve } from 'node:path';
 import * as conservatory from '../src/data/conservatory-script.js';
 import * as battles from '../src/data/battles.js';
@@ -117,9 +117,12 @@ const documents = [];
 const add = (doc) => documents.push(doc);
 
 for (const [key, title] of [
-  ['COLD_OPEN_DIALOGUE', 'Cold Open'], ['POST_DOOR', 'After the Door'], ['LEVEL_CHECK', 'Level Check'],
+  // The cold open is authored directly in its studio story.json (single source);
+  // it is intentionally NOT imported from JS, so an import can never clobber it.
+  ['POST_DOOR', 'After the Door'], ['LEVEL_CHECK', 'Level Check'],
   ['FIRST_TAKE', 'First Take'], ['BENT_RIG', 'Bent Rig'], ['TALISMAN', 'Talisman'],
   ['HUSH', 'The HUSH'], ['RADIO_DEAD', 'Dead Radio'], ['CHAPEL_KEY_CHECK', 'Chapel Key Check'],
+  ['BUST_TALK', 'Talking to the Busts'], ['BUST_TURN', 'The One That Turned'],
 ]) {
   if (conservatory[key]) add(normalizeTree(`conservatory.${slug(key)}`, title, conservatory[key]));
 }
@@ -226,9 +229,42 @@ async function buildAudioProject() {
   for (const item of HUSH_MISCHIEF_CUES) {
     putCue({ id: item.id, title: item.caption?.text || item.id, bus: item.delivery === 'monitor' ? 'monitor' : 'world', concurrency: 'overlap', layers: [{ id: `${item.id}.layer`, assetId: `procedural.${item.audio.sound}`, gain: item.audio.gain, playbackRateRange: item.audio.pitchRange }], acoustic: { ...item.gameplay, sourcePolicy: item.sourcePolicy } });
   }
+  // Piano sonic weapons — the adversary's attacks as instruments (the first
+  // authored instrument layer). Stems live in public/audio/piano/*; the file
+  // scan above already indexed them as assets. Weapon cues are fired in combat
+  // via fx.cue() (see src/audio/piano-weapon.js); diegetic cues fire from
+  // story-line `cues` when the HUSH plays the piano in dialogue. Player-piano
+  // stems are played spatially through the prop system, not as cues.
+  const pianoAsset = (rel) => byPath.get(`audio/piano/${rel}`) || assetIdFor(`audio/piano/${rel}`);
+  for (let i = 1; i <= 11; i += 1) {
+    const nn = String(i).padStart(2, '0');
+    putCue({ id: `piano.weapon.${nn}`, title: `Piano weapon ${nn}`, bus: 'world', concurrency: 'overlap', layers: [{ id: `piano.weapon.${nn}.layer`, assetId: pianoAsset(`weapon/hush-plays-piano-battle-${nn}.mp3`), gain: .9, playbackRate: 1, pan: 0 }] });
+  }
+  for (let i = 1; i <= 18; i += 1) {
+    const nn = String(i).padStart(2, '0');
+    putCue({ id: `piano.diegetic.${nn}`, title: `Piano diegetic ${nn}`, bus: 'world', concurrency: 'replace', layers: [{ id: `piano.diegetic.${nn}.layer`, assetId: pianoAsset(`diegetic/hush-plays-piano-diegetic-${nn}.mp3`), gain: .85, playbackRate: 1, pan: 0 }] });
+  }
+  // The SCREAM special — the adversary's low-composure desperation move: the
+  // scream, chopped and screwed (slowed), landing with a shake.
+  putCue({ id: 'piano.scream', title: 'Piano scream', bus: 'world', concurrency: 'replace', layers: [{ id: 'piano.scream.layer', assetId: byPath.get('audio/game/radio_breaks-scream.mp3') || assetIdFor('audio/game/radio_breaks-scream.mp3'), gain: .95, playbackRate: .55, pan: 0 }], effects: ['fx:shake:2.2:820', 'threat:report'] });
   const triggers = [];
   for (const doc of documents) {
     for (const [nodeId, node] of Object.entries(doc.nodes)) {
+      (node.cues || []).forEach((cueId) => triggers.push({ id: `trigger.${doc.id}.${nodeId}.${cueId}`, event: `story.node-enter:${doc.id}:${nodeId}`, cueId }));
+      (node.lines || []).forEach((line) => (line.cues || []).forEach((cueId) => triggers.push({ id: `trigger.${doc.id}.${line.id}.${cueId}`, event: `story.line:${doc.id}:${line.id}`, cueId })));
+      (node.choices || []).forEach((choice) => (choice.cues || []).forEach((cueId) => triggers.push({ id: `trigger.${doc.id}.${choice.id}.${cueId}`, event: `story.choice:${doc.id}:${choice.id}`, cueId })));
+    }
+  }
+  // Studio-native documents (authored directly in content/, not rebuilt from JS —
+  // e.g. the cold open) are absent from `documents`, so their cue triggers would
+  // vanish on a --force rebuild. Fold them back in by reading the committed
+  // story.json for every published narrative doc not covered above.
+  const importedIds = new Set(documents.map((doc) => doc.id));
+  const manifest = JSON.parse(await readFile(resolve(ROOT, 'content/project.json'), 'utf8'));
+  for (const rel of manifest.narrative || []) {
+    const doc = JSON.parse(await readFile(resolve(ROOT, `content/${rel}`), 'utf8'));
+    if (importedIds.has(doc.id)) continue;
+    for (const [nodeId, node] of Object.entries(doc.nodes || {})) {
       (node.cues || []).forEach((cueId) => triggers.push({ id: `trigger.${doc.id}.${nodeId}.${cueId}`, event: `story.node-enter:${doc.id}:${nodeId}`, cueId }));
       (node.lines || []).forEach((line) => (line.cues || []).forEach((cueId) => triggers.push({ id: `trigger.${doc.id}.${line.id}.${cueId}`, event: `story.line:${doc.id}:${line.id}`, cueId })));
       (node.choices || []).forEach((choice) => (choice.cues || []).forEach((cueId) => triggers.push({ id: `trigger.${doc.id}.${choice.id}.${cueId}`, event: `story.choice:${doc.id}:${choice.id}`, cueId })));
@@ -245,16 +281,27 @@ if (!FORCE) {
     if (error?.code !== 'ENOENT') throw error;
   }
 }
-if (FORCE) await Promise.all([
-  rm(STORY_DIR, { recursive: true, force: true }),
-  rm(AUDIO_DIR, { recursive: true, force: true }),
-  rm(LAYOUT_DIR, { recursive: true, force: true }),
-]);
+// The audio project is fully regenerated, so a --force rebuild clears it.
+// Story and layout are written per-document and are NOT wiped wholesale:
+// some documents (e.g. the cold open) are authored directly in the studio and
+// are intentionally not present in `documents`; a blanket rm would delete them.
+if (FORCE) await rm(AUDIO_DIR, { recursive: true, force: true });
 await Promise.all([mkdir(STORY_DIR, { recursive: true }), mkdir(AUDIO_DIR, { recursive: true }), mkdir(LAYOUT_DIR, { recursive: true })]);
 for (const doc of documents) {
   await writeFile(resolve(STORY_DIR, `${doc.id}.story.json`), stableJson(doc));
+  // Layout-preserving: keep any hand-placed positions, assign a default grid
+  // slot only to node ids that don't already have one.
+  let existing = {};
+  try {
+    const prev = JSON.parse(await readFile(resolve(LAYOUT_DIR, `${doc.id}.layout.json`), 'utf8'));
+    existing = prev?.positions || {};
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error;
+  }
   const positions = {};
-  Object.keys(doc.nodes).forEach((nodeId, index) => { positions[nodeId] = { x: 80 + (index % 4) * 360, y: 100 + Math.floor(index / 4) * 260 }; });
+  Object.keys(doc.nodes).forEach((nodeId, index) => {
+    positions[nodeId] = existing[nodeId] || { x: 80 + (index % 4) * 360, y: 100 + Math.floor(index / 4) * 260 };
+  });
   await writeFile(resolve(LAYOUT_DIR, `${doc.id}.layout.json`), stableJson({ schemaVersion: 1, documentId: doc.id, positions, regions: {} }));
 }
 await writeFile(resolve(AUDIO_DIR, 'audio-project.audio.json'), stableJson(await buildAudioProject()));

@@ -10,16 +10,29 @@ import {
 } from './stair-anomaly.js';
 
 export const STAIR_ANOMALY_ENTRY = Object.freeze({ x: 0, y: 0, facing: 0 });
-export const STAIR_ANOMALY_MODULE_CELLS = 32;
-export const STAIR_ANOMALY_TOTAL_CELLS = STAIR_ANOMALY_MODULE_CELLS * 4;
-export const STAIR_ANOMALY_STEP_INTERVAL_MS = 320;
+export const STAIR_ANOMALY_MODULE_CELLS = 160;
+// One continuous, impossible flight — ~a minute of climbing at the ORDINARY walk
+// cadence (you travel exactly as you do on a real stair, no throttle), far taller
+// than any real floor-to-floor stair. No modules, no landings, no loop.
+export const STAIR_ANOMALY_TOTAL_CELLS = 640;
+// Nominal per-tread time, matching the ordinary move interval (config MOVE_MS) —
+// used only to reason about pacing in tests; the live climb uses the normal
+// movement clock, so the stair feels no different to walk than any other.
+export const STAIR_ANOMALY_STEP_INTERVAL_MS = 90;
 
 const PLAN_SIZE = 192;
 const PLAN_SNAP = 16;
-const FLIGHT_CELLS = 22;
+// Steady tread rise per cell — a real stair's pitch, kept continuous over the
+// whole flight, so the staircase just climbs, and climbs, without ever resetting
+// to a landing. Over 640 treads that is ~140m of rise: heights are rendered
+// RELATIVE to the observer's plan window (see heightRef) so the ordinary height
+// encoding never clamps and the climb stays true the whole impossible way up.
+const RISE_PER_CELL = 4.8 / 22;
 const WIDTH_MIN = -3;
 const WIDTH_MAX = 2;
-const STAGE_DEPTHS = [0, 32, 64, 96, 128];
+// Atmosphere/checkpoint thresholds only — the FLOOR is one continuous ramp; these
+// just pace the light stages and the resume checkpoints across the long climb.
+const STAGE_DEPTHS = [0, 160, 320, 480, 640];
 
 const clamp = (value, lo, hi) => Math.max(lo, Math.min(hi, Number(value) || 0));
 
@@ -34,9 +47,9 @@ function stageForDepth(depth) {
 export function stairAnomalyFloorAt(y, environment) {
   const selected = normalizeStairAnomalyEnvironment(environment);
   const depth = clamp(-y, 0, STAIR_ANOMALY_TOTAL_CELLS);
-  const module = Math.min(3, Math.floor(depth / STAIR_ANOMALY_MODULE_CELLS));
-  const local = Math.min(FLIGHT_CELLS, depth - module * STAIR_ANOMALY_MODULE_CELLS);
-  const elevation = module * 4.8 + local / FLIGHT_CELLS * 4.8;
+  // One continuous, monotonic rise for the entire flight — no module reset, no
+  // landing. The stair simply keeps climbing, impossibly far.
+  const elevation = depth * RISE_PER_CELL;
   return selected.visualSlope === 'down' ? -elevation : elevation;
 }
 
@@ -49,12 +62,27 @@ export function createStairAnomalyRuntime({
   onComplete = () => {},
 } = {}) {
   const selected = normalizeStairAnomalyEnvironment(environment);
+  // Heights are rendered RELATIVE to the local plan origin so the ordinary
+  // [-8, 24]m height encoding never clamps on this impossibly tall flight. The
+  // same reference shifts the camera, the treads, the props, and the lights
+  // together — an invisible uniform vertical translation — so the climb reads
+  // true the whole way up instead of flattening once it passes a real floor.
+  const planOriginY = (y) => Math.floor((y - PLAN_SIZE / 2) / PLAN_SNAP) * PLAN_SNAP;
+  // ONE reference for the whole world, taken from where the PLAYER is.
+  //
+  // This used to be `heightRefFor(y)` — a reference derived from the queried
+  // cell's own plan window — which meant two cells either side of a snap boundary
+  // were measured against frames 16 cells of rise apart (~3.5 m). Every time the
+  // player crossed one, `canStep` handed back a floor height 3.5 m from the last
+  // one and the camera jumped a storey in a single step: the stair "smacking you
+  // in the face" every few paces. The reference must be a property of the OBSERVER,
+  // not of the cell being asked about, or the geometry is not one space.
+  const heightRef = () => stairAnomalyFloorAt(planOriginY(player.y) + PLAN_SIZE / 2, selected);
   let ledger = normalizeStairAnomalyLedger(initialLedger, { missing: 'armed' });
   if (ledger.status === STAIR_ANOMALY_STATUS.ARMED) ledger = reduceStairAnomaly(ledger, { type: 'ENTER' });
   else if (ledger.status === STAIR_ANOMALY_STATUS.ACTIVE) ledger = reduceStairAnomaly(ledger, { type: 'RESUME' });
   let player = checkpointPosition();
   let furthestDepth = Math.max(player.y * -1, ledger.progress * STAIR_ANOMALY_TOTAL_CELLS);
-  let lastAcceptedStepAt = -Infinity;
   let completionSent = false;
   let planCache = null;
   let previousLightStage = ledger.stage;
@@ -99,21 +127,20 @@ export function createStairAnomalyRuntime({
     canStep(fromX, fromY, toX, toY) {
       const target = cellAt(toX, toY);
       if (!target) return { ok: false, why: 'wall' };
-      const fromDepth = -fromY, toDepth = -toY;
-      if (toDepth > fromDepth && now() - lastAcceptedStepAt < STAIR_ANOMALY_STEP_INTERVAL_MS) {
-        return { ok: false, why: 'stair-cadence' };
-      }
-      const rearDepth = STAGE_DEPTHS[Math.min(3, ledger.checkpoint)];
-      if (toDepth < rearDepth) {
-        const wrappedDepth = Math.min(STAIR_ANOMALY_TOTAL_CELLS - 1, rearDepth + STAIR_ANOMALY_MODULE_CELLS - 2);
-        lastAcceptedStepAt = now();
-        return { ok: true, floor: stairAnomalyFloorAt(-wrappedDepth, selected), redirect: { x: toX, y: -wrappedDepth }, wrapped: true };
-      }
-      lastAcceptedStepAt = now();
-      return { ok: true, floor: target.floor };
+      const toDepth = -toY;
+      // You travel exactly as you do on any real stair — no throttle, no paced
+      // one-tread-at-a-time cadence. It just happens to never end.
+      // The only way is up. Behind you is a wall, not a wrap — it is one
+      // continuous flight, so you never re-tread the same steps or loop back.
+      const rearDepth = STAGE_DEPTHS[Math.min(4, ledger.checkpoint)];
+      if (toDepth < rearDepth) return { ok: false, why: 'no-return' };
+      return { ok: true, floor: target.floor - heightRef() };
     },
-    floorAt: (x, y) => cellAt(x, y)?.floor ?? stairAnomalyFloorAt(y, selected),
-    ceilAt: (x, y) => cellAt(x, y)?.ceil ?? stairAnomalyFloorAt(y, selected) + 3.4,
+    // Camera/logic heights are rendered relative to the OBSERVER's plan window
+    // (see heightRef) — the same shift renderPlanFor applies, so the eye sits at
+    // the correct height above the treads the whole climb and never jumps.
+    floorAt: (x, y) => (cellAt(x, y)?.floor ?? stairAnomalyFloorAt(y, selected)) - heightRef(),
+    ceilAt: (x, y) => (cellAt(x, y)?.ceil ?? stairAnomalyFloorAt(y, selected) + 3.4) - heightRef(),
     zoneAt: () => ZONE.stair,
     materialAt: () => MATERIAL.serviceConcrete,
     worldAt: () => 'main_b3',
@@ -126,11 +153,15 @@ export function createStairAnomalyRuntime({
       if (planCache?.key === key) return planCache;
       const rgba = new Uint8Array(PLAN_SIZE * PLAN_SIZE * 4);
       const material = new Uint8Array(PLAN_SIZE * PLAN_SIZE);
+      // Encode heights relative to this window's centre so the impossibly tall
+      // rise never runs past the ordinary [-8, 24]m encoding — the camera is
+      // shifted by the same reference, so it is an invisible translation.
+      const ref = stairAnomalyFloorAt(originY + PLAN_SIZE / 2, selected);
       for (let py = 0; py < PLAN_SIZE; py += 1) for (let px = 0; px < PLAN_SIZE; px += 1) {
         const cell = cellAt(originX + px + 0.5, originY + py + 0.5), index = py * PLAN_SIZE + px;
         if (!cell) { rgba[index * 4 + 2] = F.SOLID; continue; }
-        rgba[index * 4] = encodeH(cell.floor);
-        rgba[index * 4 + 1] = encodeH(cell.ceil);
+        rgba[index * 4] = encodeH(cell.floor - ref);
+        rgba[index * 4 + 1] = encodeH(cell.ceil - ref);
         rgba[index * 4 + 2] = cell.flags;
         rgba[index * 4 + 3] = cell.zone;
         material[index] = cell.material;
@@ -174,10 +205,10 @@ export function createStairAnomalyRuntime({
     // geometry; decorative rails, doors, pendants, and fixtures would create
     // false collision cues in a space where the traversal itself is uncanny.
     if (!reducedDread && ledger.stage === STAIR_ANOMALY_STAGE.SHADOW) {
-      const depth = clamp(-player.y + 14, 68, 92);
+      const depth = clamp(-player.y + 14, STAGE_DEPTHS[2], STAIR_ANOMALY_TOTAL_CELLS - 4);
       out.push({
         id: 'stair-anomaly-shadow-only', mesh: 'stair_shadow_figure', x: 0,
-        y: stairAnomalyFloorAt(-depth, selected), z: -depth * CELL,
+        y: stairAnomalyFloorAt(-depth, selected) - heightRef(), z: -depth * CELL,
         yaw: Math.PI, structural: true, shadowOnly: true, zone: ZONE.stair,
       });
     }
@@ -205,7 +236,7 @@ export function createStairAnomalyRuntime({
       }
       const cold = selected.variant === STAIR_ANOMALY_VARIANT.UNCERTAIN && ((depth / 10) & 1);
       candidates.push({
-        id: `stair-practical-${depth}`, x: ((Math.floor(depth / 10) & 1) ? -1.18 : 1.18), y: stairAnomalyFloorAt(-depth, selected) + 2.22, z: -depth * CELL,
+        id: `stair-practical-${depth}`, x: ((Math.floor(depth / 10) & 1) ? -1.18 : 1.18), y: stairAnomalyFloorAt(-depth, selected) - heightRef() + 2.22, z: -depth * CELL,
         color: cold ? [.58, .70, 1] : [1, .68, .38], intensity: Math.max(0, intensity), radius: 6.4,
         distance,
       });

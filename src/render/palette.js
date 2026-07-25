@@ -45,6 +45,10 @@ export const vfdSettings = {
   phosphor: 'faithful',                  // 'faithful' | 'amber' | 'green' | 'cyan' | custom hex
   brightness: 1.0,                       // 0.55 .. 1.25
   flicker: 'off',
+  // High-contrast menus: lifts the unselected menu rows off the dormant floor so
+  // they stay legible without a pointer on them. Off keeps the faithful VFD look
+  // where only the selection is fully lit.
+  menuContrast: false,
 };
 let version = 1;
 export function vfdVersion() { return version; }
@@ -64,9 +68,9 @@ export function vfdFlickerLevel() {
 
 export function applyVfdSettings(patch = {}) {
   let changed = false;
-    for (const k of ['phosphor', 'brightness', 'flicker']) {
+    for (const k of ['phosphor', 'brightness', 'flicker', 'menuContrast']) {
       if (patch[k] === undefined) continue;
-      const next = k === 'flicker' ? normalizeFlicker(patch[k]) : patch[k];
+      const next = k === 'flicker' ? normalizeFlicker(patch[k]) : k === 'menuContrast' ? !!patch[k] : patch[k];
       if (next !== vfdSettings[k]) { vfdSettings[k] = next; changed = true; }
     }
   if (changed) version++;

@@ -3,12 +3,51 @@ import { drawVfdText } from '../render/presentation.js';
 import { CREDITS, flattenCredits } from '../data/credits.js';
 import { activeInputPromptDevice, promptLine } from './bindings.js';
 import { creditAtmosphereFrame, renderCreditAtmosphere } from './credit-visual.js';
+import * as AUDIO from '../audio/story-audio.js';
 
 const AUTO_SCROLL_ROWS_PER_SEC = 0.72;
 const KEY_SCROLL_ROWS = 3;
 const PAGE_SCROLL_ROWS = 10;
 export const END_CREDITS_OPENING_DURATION = 3.8;
 export const END_CREDITS_CLOSING_HOLD = 4.0;
+
+// The last thing the game says.
+//
+// The opening credits open on Butler being charmed: the glory of the machines is
+// that they cannot talk, and silence is a virtue that makes us agreeable. Five
+// rooms later the player has spent a night with a machine that kept what they
+// could not hear, so the ending answers that passage with the one that follows
+// it — the same book, the same voice, no longer charmed. It is the twin, and it
+// is the last card before black.
+const CLOSING_QUOTE_LINES = Object.freeze([
+  'There is no security against the ultimate',
+  'development of mechanical consciousness,',
+  'in the fact of machines possessing little',
+  'consciousness now.',
+]);
+const CLOSING_ATTRIBUTION = Object.freeze(['SAMUEL BUTLER · EREWHON', 'THE BOOK OF THE MACHINES']);
+
+// The quote fades up, is held long enough to be read twice, and goes out to a
+// full black. The audio leaves with it; the hiss bed is what is waiting on the
+// other side (see onBlack).
+export const CLOSING_QUOTE = Object.freeze({ fadeIn: 2.4, hold: 6.4, fadeOut: 3.0 });
+const CLOSING_QUOTE_SECONDS = CLOSING_QUOTE.fadeIn + CLOSING_QUOTE.hold + CLOSING_QUOTE.fadeOut;
+
+// 0 at the start and the end, 1 across the hold.
+export function closingQuoteAlpha(elapsed) {
+  const t = Math.max(0, Number(elapsed) || 0);
+  if (t < CLOSING_QUOTE.fadeIn) return smooth01(t / CLOSING_QUOTE.fadeIn);
+  const outAt = CLOSING_QUOTE.fadeIn + CLOSING_QUOTE.hold;
+  if (t < outAt) return 1;
+  return 1 - smooth01((t - outAt) / CLOSING_QUOTE.fadeOut);
+}
+
+export function closingQuoteBlock(width = 46) {
+  const w = Math.max(18, Math.floor(width));
+  const quote = CLOSING_QUOTE_LINES.flatMap((line) => wrap(line, w));
+  const attribution = CLOSING_ATTRIBUTION.flatMap((line) => wrap(line, w));
+  return { quote, attribution, lines: [...quote, '', ...attribution] };
+}
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, Number(value) || 0));
@@ -112,6 +151,10 @@ export function makeCreditsScene({
   context = 'menu',
   onDone,
   onWebsite,
+  // Fired once as the closing quote begins to fade up (take the music away), and
+  // once when it has faded to full black (bring the hiss bed up under nothing).
+  onQuote,
+  onBlack,
   openingDuration = END_CREDITS_OPENING_DURATION,
   closingHold = END_CREDITS_CLOSING_HOLD,
   initialCols = 80,
@@ -124,6 +167,8 @@ export function makeCreditsScene({
   let paused = false;
   let closingElapsed = 0;
   let done = false;
+  let quoteElapsed = null;    // null until the closing quote starts
+  let blackFired = false;
 
   function refreshLayout(cols, rows) {
     layout = creditRollLayout({ cols, rows, credits });
@@ -132,6 +177,7 @@ export function makeCreditsScene({
   }
 
   function phase() {
+    if (quoteElapsed != null) return 'quote';
     if (elapsed < openingDuration && scroll <= 0.001) return 'opening';
     if (scroll >= layout.maxScroll - 0.001) return 'closing';
     return 'roll';
@@ -140,8 +186,18 @@ export function makeCreditsScene({
   function finish() {
     if (done) return true;
     done = true;
+    // Skipping still hands over a silent room: whoever asked for the summary
+    // early should not get the credits music playing under it.
+    if (!blackFired) { blackFired = true; onBlack?.(); }
     onDone?.();
     return true;
+  }
+
+  function beginQuote() {
+    if (quoteElapsed != null) return;
+    quoteElapsed = 0;
+    paused = false;
+    onQuote?.();
   }
 
   function enterRoll() {
@@ -161,9 +217,26 @@ export function makeCreditsScene({
     blocksWorld: true,
     lensPreset: 'calm',
 
+    // The roll has its own piece, played through the shared soundtrack slot so
+    // it displaces the title bed rather than stacking on top of it. Fading out
+    // on the way is what stops the ending from cutting to silence mid-bar.
+    enter() { AUDIO.startSoundtrack({ track: 'credits', fade: 2.2 }); },
+    exit() { AUDIO.fadeSoundtrack({ fade: 3.2 }); },
+
     update(dt = 0) {
-      if (done || paused) return;
+      if (done) return;
       const delta = Math.max(0, Number(dt) || 0);
+      // Once the quote is up, nothing else moves and pausing does not hold it:
+      // this is the ending playing itself out, not a roll you are scrubbing.
+      if (quoteElapsed != null) {
+        quoteElapsed += delta;
+        if (!blackFired && quoteElapsed >= CLOSING_QUOTE_SECONDS) { blackFired = true; onBlack?.(); }
+        // A beat of held black after the fade, so the summary does not arrive on
+        // top of the last frame of the quote.
+        if (quoteElapsed >= CLOSING_QUOTE_SECONDS + 1.6) finish();
+        return;
+      }
+      if (paused) return;
       const before = elapsed;
       elapsed += delta;
       if (elapsed < openingDuration) return;
@@ -173,7 +246,9 @@ export function makeCreditsScene({
         if (scroll < layout.maxScroll) return;
       }
       closingElapsed += rollDelta;
-      if (presentationContext === 'ending' && closingElapsed >= closingHold) finish();
+      // The ending does not cut from "thank you for listening" to a stats screen.
+      // It answers its own opening quote first, and goes to black doing it.
+      if (presentationContext === 'ending' && closingElapsed >= closingHold) beginQuote();
     },
 
     key(e = {}) {
@@ -182,6 +257,9 @@ export function makeCreditsScene({
       const k = raw.toLowerCase();
 
       if (raw === 'Escape' || code === 'Escape' || raw === 'Backspace' || code === 'Backspace') return finish();
+      // The closing quote is not scrollable and cannot be paused. The only thing
+      // left to do to it is skip it, which Escape already does.
+      if (quoteElapsed != null) return true;
       if (raw === 'ArrowUp' || k === 'w' || code === 'KeyW') { userScroll(-KEY_SCROLL_ROWS); return true; }
       if (raw === 'ArrowDown' || k === 's' || code === 'KeyS') { userScroll(KEY_SCROLL_ROWS); return true; }
       if (raw === 'PageUp') { userScroll(-PAGE_SCROLL_ROWS); return true; }
@@ -231,6 +309,25 @@ export function makeCreditsScene({
     render() {
       const { cols, rows } = uiSize();
       refreshLayout(cols, rows);
+
+      // ── the closing quote ────────────────────────────────────────────────
+      // Nothing else is on screen. No atmosphere, no footer, no prompt: the
+      // machine has stopped talking, which was the opening quote's whole point.
+      if (quoteElapsed != null) {
+        const alpha = closingQuoteAlpha(quoteElapsed);
+        if (alpha <= 0.001) return;
+        const width = clamp(cols - (cols >= 96 ? 28 : 6), Math.min(22, cols - 2), Math.min(52, cols - 2));
+        const block = closingQuoteBlock(width);
+        const top = Math.max(1, Math.round((rows - block.lines.length) / 2));
+        block.quote.forEach((line, i) => {
+          uiText(centerX(line, cols), top + i, line, 'ui-secondary', alpha * 0.92);
+        });
+        block.attribution.forEach((line, i) => {
+          uiText(centerX(line, cols), top + block.quote.length + 1 + i, line, 'ui-amber', alpha * 0.7);
+        });
+        return;
+      }
+
       renderCreditAtmosphere(creditAtmosphereFrame(elapsed + scroll * 0.08, {
         alpha: 1,
         intensity: phase() === 'opening' ? 0.78 : 0.62,

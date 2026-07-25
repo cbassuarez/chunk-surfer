@@ -22,7 +22,7 @@
     "test": "node test/run-all.mjs",
     "test:acoustic": "node scripts/check-acoustic-catalogue.mjs",
     "lens:local": "tools/chunk_surfer/diffusion_server/run-local.sh",
-    "lens:setup": "python3.12 -m venv tools/chunk_surfer/diffusion_server/.venv-local && tools/chunk_surfer/diffusion_server/.venv-local/bin/pip install -r tools/chunk_surfer/diffusion_server/requirements-local.txt pyinstaller==6.16.0",
+    "lens:setup": "python3.12 -m venv tools/chunk_surfer/diffusion_server/.venv-local && tools/chunk_surfer/diffusion_server/.venv-local/bin/python tools/chunk_surfer/diffusion_server/install_torch.py && tools/chunk_surfer/diffusion_server/.venv-local/bin/pip install -r tools/chunk_surfer/diffusion_server/requirements-local.txt pyinstaller==6.16.0",
     "play:latest": "node scripts/run-latest.mjs",
     "tauri": "tauri",
     "tauri:dev": "node scripts/run-latest.mjs",

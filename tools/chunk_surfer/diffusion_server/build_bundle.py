@@ -110,6 +110,24 @@ def main() -> None:
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", "utf-8"
     )
 
+    # The wheel about to be frozen must match the backend the sidecar will
+    # demand at runtime. A CUDA target with a CPU-only torch is exactly the
+    # defect that shipped a GPU-less Windows sidecar — and it needs no GPU to
+    # detect, only `torch.version.cuda`. Fail the build here rather than after
+    # a player downloads it.
+    import torch  # installed by install_torch.py before this runs
+    is_macos = "apple-darwin" in args.target
+    cuda_build = getattr(torch.version, "cuda", None)
+    if is_macos:
+        if cuda_build is not None:
+            raise SystemExit(f"macOS sidecar must use the MPS wheel, got a CUDA build ({cuda_build})")
+    elif cuda_build is None:
+        raise SystemExit(
+            "CUDA target has a CPU-only torch wheel — run install_torch.py first. "
+            "This is the packaging defect that shipped a GPU-less sidecar."
+        )
+    print(f"freezing torch {torch.__version__} (cuda build: {cuda_build}) for {args.target}")
+
     work = root / ".lens-build" / args.target
     work.mkdir(parents=True, exist_ok=True)
     subprocess.run(

@@ -239,6 +239,18 @@ function addQuad(m,a,b,c,d,mat){const g=group(m,mat),base=g.positions.length/3,u
   addBox(m,[0,.008,0],[.32,.016,.42],MAT.paper);
   addBox(m,[.115,.019,-.155],[.07,.006,.07],MAT.ivory,.16);
 }
+{
+  // A calibration pin: the small brass alignment tool a recordist keeps for
+  // aligning a tape head. It reads as a precision object glinting on the floor
+  // — a machined base, a slim brass shaft, a knurled head, a bright tip. Found
+  // in the building's optional corners; each grants a calibration pin.
+  const m=mesh('calibration_pin');
+  addCylinder(m,[0,.012,0],.052,.024,MAT.dark,16);   // machined base
+  addCylinder(m,[0,.030,0],.030,.012,MAT.steel,16);  // collar
+  addCylinder(m,[0,.088,0],.011,.10,MAT.brass,12);   // slim shaft
+  addCylinder(m,[0,.150,0],.020,.026,MAT.brass,12);  // knurled head
+  addCylinder(m,[0,.168,0],.008,.014,MAT.ivory,8);   // bright reference tip
+}
 {const m=mesh('pool_start_block');addBox(m,[0,.34,0],[.50,.68,.48],MAT.steel);addBox(m,[0,.72,-.08],[.62,.09,.62],MAT.ivory,.12);}
 {const m=mesh('lifeguard_chair');addBox(m,[0,1.35,.1],[.62,.08,.55],MAT.wood);addBox(m,[0,1.68,.34],[.62,.62,.08],MAT.wood);for(const x of[-.27,.27])for(const z of[-.2,.35])addBox(m,[x,.68,z],[.055,1.35,.055],MAT.steel,.08);}
 {const m=mesh('lane_reel');addCylinder(m,[0,.72,0],.36,.52,MAT.steel,18);addBox(m,[0,.25,0],[.92,.08,.50],MAT.steel);for(const x of[-.38,.38])addBox(m,[x,.45,0],[.06,.72,.06],MAT.steel);}

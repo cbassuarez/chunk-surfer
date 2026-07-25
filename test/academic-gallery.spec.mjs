@@ -7,7 +7,7 @@ import { CONSERVATORY_DOORS, DOOR_ARCHETYPE } from '../src/data/conservatory-doo
 import { CONSERVATORY_PROPS } from '../src/data/conservatory-props.js';
 import { BUILDING_MAP } from '../src/data/building-map.js';
 import { TARGETS } from '../src/data/conservatory-script.js';
-import { MATERIAL, ZONE, ZONE_WORLD } from '../src/data/floorplan/legend.js';
+import { F, MATERIAL, ZONE, ZONE_WORLD } from '../src/data/floorplan/legend.js';
 import * as FP from '../src/world/floorplan.js';
 import * as PROPS from '../src/game/props.js';
 import { buildMapModel, captureFloorplanMapSource } from '../src/game/map-model.js';
@@ -21,14 +21,28 @@ PROPS.propsInit(FP);
 
 const academicDoors=FP.doorState().filter((door)=>door.id.startsWith('academic-'));
 const classroomDoors=academicDoors.filter((door)=>door.id.startsWith('academic-classroom-'));
-assert.equal(classroomDoors.length,8);
-assert.equal(ACADEMIC_CLASSROOM_DOORS.length,8);
-assert.equal(academicDoors.length,10);
-assert.ok(academicDoors.every((door)=>door.keyId==='academic-core'&&door.archetype===DOOR_ARCHETYPE.ACADEMIC_WIRED_GLASS));
+// SEVEN locked classrooms now. The north-east room became the lobby — one room
+// given over to circulation so the core corridor is a circuit rather than a spine
+// with a dead end at each end. Its two doors are the only unlocked openings up
+// here, and neither of them opens a classroom.
+assert.equal(classroomDoors.length,7);
+assert.equal(ACADEMIC_CLASSROOM_DOORS.length,7);
+assert.equal(academicDoors.length,11,'seven locked classrooms, two locked offices, and the lobby pair');
+const lobbyDoors=academicDoors.filter((door)=>door.id==='academic-lobby-core'||door.id==='academic-gallery-lobby');
+assert.equal(lobbyDoors.length,2,'the lobby has a way in and a way through');
+assert.ok(lobbyDoors.every((door)=>!door.keyId),'and neither of them is locked');
+assert.ok(academicDoors.filter((door)=>!lobbyDoors.includes(door))
+  .every((door)=>door.keyId==='academic-core'),'everything else up here stays locked');
+assert.ok(academicDoors.every((door)=>door.archetype===DOOR_ARCHETYPE.ACADEMIC_WIRED_GLASS));
 assert.ok(CONSERVATORY_DOORS.filter((door)=>door.key==='academic-core').every((door)=>door.id.startsWith('academic-')));
 
 const ordinaryKeys=new Set(['master','chapel']);
-for(const door of academicDoors){
+// The lobby pair is deliberately outside this rule: those two leaves are the way
+// round the floor, so they answer to no key at all. Everything else up here holds
+// against the standard and chapel rings.
+const lockedAcademicDoors=academicDoors.filter((door)=>door.keyId==='academic-core');
+assert.equal(lockedAcademicDoors.length,9);
+for(const door of lockedAcademicDoors){
   FP.setDoorOpen(door.id,false);
   const from=door.widthAxis==='x'?{x:door.cx,y:door.cy-3}:{x:door.cx-3,y:door.cy};
   const facing=door.widthAxis==='x'?[0,1]:[1,0];
@@ -74,8 +88,38 @@ assert.equal(CONSERVATORY_PROPS.some((prop)=>stairClutterMeshes.has(prop.mesh)),
 
 const academicProps=CONSERVATORY_PROPS.filter((prop)=>prop.id.startsWith('academic-'));
 assert.ok(academicProps.length>=100);
-assert.ok(academicProps.every((prop)=>prop.interactive===false));
+// The gallery is mute, with TWO sanctioned kinds of exception and no others.
+//
+//   1. the west garden planter, which holds a calibration pin (see PIN_HOSTS in
+//      main.js). The pins used to lie loose on the floor of this zone at 2cm
+//      elevation and were, in practice, unfindable — so one piece of the garden
+//      became something you may put a hand in;
+//   2. the four intact busts, which you may TALK to (see BUST_TALK). Every answer
+//      is the recordist's own; addressing them grants nothing, takes nothing and
+//      changes no state except which things he has said out loud.
+//
+// Both remain inert in every other way: no sample, no action, no provenance, no
+// collectible anywhere on this floor.
+const MUTE_EXCEPTIONS=new Set(['academic-garden-planter-west']);
+const TALKABLE=new Set(academicProps.filter((prop)=>prop.talkable).map((prop)=>prop.id));
+assert.deepEqual([...TALKABLE].sort(),
+  ['academic-bust-1','academic-bust-2','academic-bust-4','academic-bust-5'],
+  'exactly the four intact heads may be addressed — not the plinths, not the fragments');
+assert.ok(academicProps.every((prop)=>prop.interactive===false||MUTE_EXCEPTIONS.has(prop.id)||TALKABLE.has(prop.id)),
+  'the gallery stays mute apart from the pin host and the four heads');
+assert.equal(academicProps.filter((prop)=>prop.interactive!==false).length,MUTE_EXCEPTIONS.size+TALKABLE.size,
+  'and gains no further interactive pieces by accident');
 assert.ok(academicProps.every((prop)=>!prop.sampleFamily&&!prop.action&&!prop.provenance));
+// A bust is a conversation and nothing else: no inspect text, no pin, no sample.
+for(const id of TALKABLE){
+  const prop=academicProps.find((entry)=>entry.id===id);
+  assert.ok(!prop.inspect,`${id} is addressed, not inspected`);
+  assert.ok(!prop.sampleFamily&&!prop.action,`${id} grants nothing`);
+}
+for(const id of MUTE_EXCEPTIONS){
+  const prop=academicProps.find((entry)=>entry.id===id);
+  assert.ok(prop?.inspect?.first,`${id} is inspectable, which is the whole point of the exception`);
+}
 for(const id of ['academic-atrium-structure','academic-skylight','academic-garden-basin']){
   const prop=academicProps.find((entry)=>entry.id===id);
   assert.deepEqual(prop?.renderGroups,['ground','academic']);
@@ -105,3 +149,67 @@ const academicPortal=FP.floorplan().stairPortals.find((portal)=>portal.group1===
 assert.ok(academicPortal&&academicPortal.rises>0&&academicPortal.riseHeight<=FP.STEP_UP);
 
 console.log('academic gallery contracts passed');
+
+// ── the third floor is a circuit, not eight dead ends ────────────────────────
+// It used to be eight classrooms with ONE door each, all onto a single core
+// corridor that itself dead-ended at the north wall. Now each bank is chained
+// room-to-room and the north-east room is a lobby through to the gallery, so you
+// can walk the floor without ever reversing:
+//
+//   gallery → lobby → core → south corridor → gallery
+//
+// The gallery is untouched; the only cut into it is one door in its outer west
+// wall, five metres from the nearest plinth.
+{
+  const keys = new Set(['master', 'chapel']);
+  for (const door of FP.doorState()) if (!door.keyId || keys.has(door.keyId)) FP.setDoorOpen(door.id, true);
+  const at = (x, y) => FP.toRuntimePoint({ x, y: 240 + y });
+  const rooms = { lobby: [14, 21, 1, 6] };
+  for (const [name, [x0, x1, y0, y1]] of Object.entries(rooms)) {
+    let exits = 0;
+    for (let y = y0; y <= y1; y += 1) {
+      for (let x = x0; x <= x1; x += 1) {
+        const a = at(x, y);
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const nx = x + dx; const ny = y + dy;
+          if (nx >= x0 && nx <= x1 && ny >= y0 && ny <= y1) continue;
+          if (FP.canStep(a.x, a.y, at(nx, ny).x, at(nx, ny).y, { keys }).ok) { exits += 1; break; }
+        }
+      }
+    }
+    assert.ok(exits >= 2, `${name} has more than one way out (${exits})`);
+  }
+  // And the circuit closes: you can get from the gallery back to the gallery the
+  // long way round, through the lobby and the core, without retracing.
+  const reach = (from, to) => {
+    const start = at(...from); const goal = at(...to);
+    const seen = new Set([`${start.x},${start.y}`]); const queue = [start];
+    while (queue.length) {
+      const cell = queue.pop();
+      if (cell.x === goal.x && cell.y === goal.y) return true;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const next = { x: cell.x + dx, y: cell.y + dy };
+        const key = `${next.x},${next.y}`;
+        if (seen.has(key)) continue;
+        if (!FP.canStep(cell.x, cell.y, next.x, next.y, { keys }).ok) continue;
+        seen.add(key); queue.push(next);
+      }
+    }
+    return false;
+  };
+  // The circuit: from the gallery, through the lobby, down the core, along the
+  // south corridor and back into the gallery — without a key and without
+  // reversing through a dead end.
+  assert.ok(reach([25, 5], [18, 3]), 'the gallery reaches the lobby');
+  assert.ok(reach([18, 3], [11, 14]), 'the lobby reaches the core');
+  assert.ok(reach([11, 14], [12, 28]), 'the core reaches the south corridor');
+  assert.ok(reach([12, 28], [40, 15]), 'and the south corridor comes back into the gallery');
+  // The locked rooms stay locked: the point of this floor is intact.
+  assert.ok(!reach([25, 5], [4, 10]), 'a classroom is still not somewhere you can walk into');
+  // The busts' own aisles stay exactly as authored: no door, no threshold.
+  for (const y of [10, 14, 18]) {
+    const cell = at(27, y);
+    assert.ok(!FP.hasFlag(cell.x, cell.y, F.DOOR), 'no door is cut beside a plinth');
+  }
+}
+console.log('third floor circuit ok');

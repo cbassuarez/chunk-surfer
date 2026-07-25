@@ -38,7 +38,7 @@ export const CONTROLLER_BUTTON_IDS = Object.freeze([
   'leftShoulder', 'rightShoulder', 'leftTrigger', 'rightTrigger',
   'view', 'menu', 'leftStick', 'rightStick',
   'dpadUp', 'dpadDown', 'dpadLeft', 'dpadRight',
-  'touchpad',
+  'touchpad', 'guide',
 ]);
 
 export const LEGACY_BUTTON_TO_ID = Object.freeze({
@@ -58,6 +58,7 @@ export const LEGACY_BUTTON_TO_ID = Object.freeze({
   button13: 'dpadDown',
   button14: 'dpadLeft',
   button15: 'dpadRight',
+  button16: 'guide',
   button17: 'touchpad',
 });
 
@@ -68,11 +69,11 @@ const ID_TO_LEGACY_BUTTON = Object.freeze(
 export const CONTROLLER_FAMILIES = Object.freeze(['auto', 'xbox', 'playstation', 'nintendo', 'generic']);
 
 export const CONTROLLER_BINDING_ACTIONS = Object.freeze([
-  'quiet', 'light', 'bag', 'recorder', 'interact', 'playback', 'menu',
+  'quiet', 'light', 'bag', 'recorder', 'interact', 'playback', 'mark', 'menu',
   'confirm', 'back', 'tabPrev', 'tabNext',
 ]);
 
-const WORLD_GROUP = Object.freeze(['quiet', 'light', 'bag', 'recorder', 'interact', 'playback', 'menu']);
+const WORLD_GROUP = Object.freeze(['quiet', 'light', 'bag', 'recorder', 'interact', 'playback', 'mark', 'menu']);
 const UI_GROUP = Object.freeze(['confirm', 'back', 'menu', 'tabPrev', 'tabNext']);
 const PAD_GROUPS = Object.freeze([WORLD_GROUP, UI_GROUP]);
 
@@ -83,6 +84,9 @@ export const DEFAULT_CONTROLLER_BINDINGS = Object.freeze({
   recorder: { kind: 'button', id: 'rightTrigger' },
   interact: { kind: 'button', id: 'south' },
   playback: { kind: 'button', id: 'east' },
+  // The waypoint verb had no pad binding at all, so every prompt that mentions
+  // it rendered "[UNBOUND]" the moment a controller was picked up.
+  mark: { kind: 'button', id: 'dpadUp' },
   menu: { kind: 'button', id: 'menu' },
   confirm: { kind: 'button', id: 'south' },
   back: { kind: 'button', id: 'east' },
@@ -122,28 +126,28 @@ const FAMILY_BUTTON_LABELS = Object.freeze({
     leftShoulder: 'LB', rightShoulder: 'RB', leftTrigger: 'LT', rightTrigger: 'RT',
     view: 'VIEW', menu: 'MENU', leftStick: 'L3', rightStick: 'R3',
     dpadUp: 'D-PAD UP', dpadDown: 'D-PAD DOWN', dpadLeft: 'D-PAD LEFT', dpadRight: 'D-PAD RIGHT',
-    touchpad: 'TOUCHPAD',
+    touchpad: 'SHARE', guide: 'GUIDE',
   },
   playstation: {
     south: 'CROSS', east: 'CIRCLE', west: 'SQUARE', north: 'TRIANGLE',
     leftShoulder: 'L1', rightShoulder: 'R1', leftTrigger: 'L2', rightTrigger: 'R2',
     view: 'SHARE', menu: 'OPTIONS', leftStick: 'L3', rightStick: 'R3',
     dpadUp: 'D-PAD UP', dpadDown: 'D-PAD DOWN', dpadLeft: 'D-PAD LEFT', dpadRight: 'D-PAD RIGHT',
-    touchpad: 'TOUCHPAD',
+    touchpad: 'TOUCHPAD', guide: 'PS',
   },
   nintendo: {
     south: 'B', east: 'A', west: 'Y', north: 'X',
     leftShoulder: 'L', rightShoulder: 'R', leftTrigger: 'ZL', rightTrigger: 'ZR',
     view: 'MINUS', menu: 'PLUS', leftStick: 'L3', rightStick: 'R3',
     dpadUp: 'D-PAD UP', dpadDown: 'D-PAD DOWN', dpadLeft: 'D-PAD LEFT', dpadRight: 'D-PAD RIGHT',
-    touchpad: 'CAPTURE',
+    touchpad: 'CAPTURE', guide: 'HOME',
   },
   generic: {
     south: 'SOUTH', east: 'EAST', west: 'WEST', north: 'NORTH',
     leftShoulder: 'L1', rightShoulder: 'R1', leftTrigger: 'L2', rightTrigger: 'R2',
     view: 'VIEW', menu: 'MENU', leftStick: 'L3', rightStick: 'R3',
     dpadUp: 'D-PAD UP', dpadDown: 'D-PAD DOWN', dpadLeft: 'D-PAD LEFT', dpadRight: 'D-PAD RIGHT',
-    touchpad: 'TOUCHPAD',
+    touchpad: 'EXTRA', guide: 'GUIDE',
   },
 });
 
@@ -162,11 +166,32 @@ function normalizeButtonId(value) {
   return CONTROLLER_BUTTON_IDS.includes(id) ? id : null;
 }
 
+// USB vendor ids are unambiguous where names are not. They live in the
+// parenthesised "(STANDARD GAMEPAD Vendor: 054c Product: 0ce6)" payload that
+// the display-name normalizer strips, so this must be given the RAW pad id.
+const VENDOR_FAMILY = Object.freeze({
+  '057e': 'nintendo',
+  '054c': 'playstation',
+  '045e': 'xbox',
+  '28de': 'generic',     // Valve — reports as a virtual pad, no printed letters
+});
+
 export function controllerFamilyFromName(name = '') {
-  const id = String(name || '').toLowerCase();
+  const raw = String(name || '');
+  const vendor = raw.match(/vendor:\s*([0-9a-f]{4})/i)?.[1]?.toLowerCase();
+  if (vendor && VENDOR_FAMILY[vendor]) return VENDOR_FAMILY[vendor];
+  const id = raw.toLowerCase();
   if (/xbox|xinput|microsoft/.test(id)) return 'xbox';
-  if (/playstation|dualshock|dualsense|wireless controller|sony/.test(id)) return 'playstation';
+  // Nintendo is tested before the generic "wireless controller" phrase: that
+  // phrase is Sony's own product name but also appears in third-party ids, and
+  // testing it first labelled "8BitDo Pro 2 Wireless Controller" a PlayStation.
   if (/switch|joy-con|joycon|nintendo|pro controller/.test(id)) return 'nintendo';
+  // "Wireless Controller" is Sony's own bare product name, but it is also a
+  // substring of many third-party ids ("8BitDo Pro 2 Wireless Controller"), so
+  // it only counts as an exact whole name.
+  if (/playstation|dualshock|dualsense|sony/.test(id)) return 'playstation';
+  if (/^wireless controller$/.test(id.trim())) return 'playstation';
+  if (/8bitdo|logitech|steelseries|razer/.test(id)) return 'xbox';   // XInput-layout pads
   return 'generic';
 }
 
@@ -219,18 +244,8 @@ export function normalizeControllerSettings(value = {}, legacyBindings = null) {
 let controller = normalizeControllerSettings(DEFAULT_CONTROLLER_SETTINGS);
 let activeInputDevice = 'keyboard';
 let controllerViable = false;
-let activeControllerFamily = 'generic';
+let activeControllerFamilyId = 'generic';
 
-const UI_CONTROLLER_LABELS = Object.freeze({
-  move: 'LEFT STICK / D-PAD',
-  look: 'RIGHT STICK',
-  select: 'LEFT STICK / D-PAD',
-  set: 'LEFT STICK / D-PAD',
-  continue: 'SOUTH',
-  allow: 'SOUTH',
-  deny: 'EAST',
-  start: 'SOUTH',
-});
 
 export function setControllerSettings(next = {}, legacy = null) {
   controller = normalizeControllerSettings(next, legacy);
@@ -253,6 +268,25 @@ export function resetControllerBindings() {
 export function resetControllerSettings() {
   controller = normalizeControllerSettings(DEFAULT_CONTROLLER_SETTINGS);
   return controllerSettings();
+}
+
+// Detection is a guess made from a USB string, and it is occasionally wrong —
+// clone pads report whatever their firmware author felt like. `family` was
+// normalized and persisted from the first version of this module, but nothing
+// ever wrote it, so `auto` was the only value a player could ever have.
+export function setControllerFamily(family) {
+  if (!CONTROLLER_FAMILIES.includes(family)) return false;
+  controller = normalizeControllerSettings({ ...controller, family });
+  return true;
+}
+
+export function cycleControllerFamily(delta = 1) {
+  const at = CONTROLLER_FAMILIES.indexOf(controller.family);
+  const next = CONTROLLER_FAMILIES[
+    ((at < 0 ? 0 : at) + Math.sign(delta) + CONTROLLER_FAMILIES.length) % CONTROLLER_FAMILIES.length
+  ];
+  setControllerFamily(next);
+  return next;
 }
 
 export function setControllerBindings(next = {}) {
@@ -319,19 +353,43 @@ export function bindingLabel(action) {
   return DEFAULT_BINDINGS[action] || String(action || '').toUpperCase();
 }
 
-function controllerPromptLabel(action, family = activeControllerFamily) {
-  if (action === 'move') return 'LEFT STICK / D-PAD';
-  if (action === 'look') return 'RIGHT STICK';
-  if (action === 'select') return 'LEFT STICK / D-PAD';
-  if (action === 'set') return 'LEFT STICK / D-PAD';
-  if (action === 'continue' || action === 'allow' || action === 'start') return controllerButtonLabel(controllerToken('confirm') || 'south', family);
-  if (action === 'deny') return controllerButtonLabel(controllerToken('back') || 'east', family);
-  return controllerBindingLabel(action, family);
+// Prompt aliases: names scenes ask for that are not themselves bindable. Kept
+// as one table so the label and the glyph can never disagree about which
+// button a prompt means.
+const PROMPT_ALIAS = Object.freeze({
+  continue: 'confirm', allow: 'confirm', start: 'confirm', read: 'confirm', deny: 'back',
+});
+const PROMPT_COMPOSITE = Object.freeze({
+  move: 'LEFT STICK / D-PAD',
+  select: 'LEFT STICK / D-PAD',
+  set: 'LEFT STICK / D-PAD',
+  look: 'RIGHT STICK',
+});
+
+// The single button a prompt resolves to, or null when it is a stick, a
+// composite, or simply unbound. Callers that draw a glyph need this; callers
+// that print text go through controllerPromptLabel instead.
+export function controllerPromptToken(action) {
+  if (PROMPT_COMPOSITE[action]) return null;
+  const resolved = PROMPT_ALIAS[action] || action;
+  if (resolved === 'confirm') return controllerToken('confirm') || 'south';
+  if (resolved === 'back') return controllerToken('back') || 'east';
+  return controllerToken(resolved);
+}
+
+function controllerPromptLabel(action, family = activeControllerFamilyId) {
+  if (PROMPT_COMPOSITE[action]) return PROMPT_COMPOSITE[action];
+  const token = controllerPromptToken(action);
+  return token ? controllerButtonLabel(token, family) : controllerBindingLabel(action, family);
+}
+
+export function activeControllerFamily() {
+  return activeControllerFamilyId;
 }
 
 export function setActiveInputDevice(device, { controllerFamily = null, viable = null } = {}) {
   if (viable != null) controllerViable = !!viable;
-  if (controllerFamily) activeControllerFamily = controllerFamily;
+  if (controllerFamily) activeControllerFamilyId = controllerFamily;
   if (device === 'controller') {
     if (controllerViable) activeInputDevice = 'controller';
   } else if (device === 'keyboard') {
@@ -344,7 +402,7 @@ export function activeInputPromptDevice() {
   return activeInputDevice === 'controller' && controllerViable ? 'controller' : 'keyboard';
 }
 
-export function inputPromptLabel(action, { device = activeInputPromptDevice(), family = activeControllerFamily } = {}) {
+export function inputPromptLabel(action, { device = activeInputPromptDevice(), family = activeControllerFamilyId } = {}) {
   return device === 'controller' ? controllerPromptLabel(action, family) : bindingLabel(action);
 }
 

@@ -43,7 +43,8 @@
         {
           "who": "direction",
           "text": "Painted breeze block, cold, and a seam of mortar where your thumb expects a steel push bar.",
-          "id": "self.line.2"
+          "id": "self.line.2",
+          "cue": "door.grey.seal"
         },
         {
           "who": "you",
@@ -161,7 +162,8 @@
         {
           "who": "direction",
           "text": "Painted breeze block, cold, and a seam of mortar where your thumb expects a steel push bar.",
-          "id": "guard.line.2"
+          "id": "guard.line.2",
+          "cue": "door.grey.seal"
         },
         {
           "who": "you",
@@ -259,10 +261,10 @@
     "tape": {
       "speaker": "",
       "art": {
-        "id": "surfer",
+        "id": "recordist-swirled",
         "mode": "hero",
         "caption": "The previous take keeps playing back.",
-        "status": "PLAYBACK"
+        "status": "ON THE TAPE"
       },
       "lines": [
         {
@@ -273,7 +275,8 @@
         {
           "who": "direction",
           "text": "Painted breeze block, cold, and a seam of mortar where your thumb expects a steel push bar.",
-          "id": "tape.line.2"
+          "id": "tape.line.2",
+          "cue": "door.grey.seal"
         },
         {
           "who": "you",
@@ -321,7 +324,7 @@
           "id": "tape.line.11"
         },
         {
-          "who": "you",
+          "who": "unknown",
           "text": "Who did you lose.",
           "id": "tape.line.12"
         },

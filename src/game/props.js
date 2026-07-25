@@ -31,6 +31,22 @@ export function propsInit(fp, placements=CONSERVATORY_PROPS){
 }
 export function allProps(){return instances;}
 export function propById(id){return instances.find((p)=>p.id===id)||null;}
+// A purely VISUAL nudge. It writes renderOffset/yaw only, never rx/ry, so the
+// collider and the interaction point stay exactly where they were authored: a
+// thing can look like it moved without becoming a thing you can walk through or
+// have to re-aim at. Offsets are absolute, measured from the authored pose, so
+// applying a drift twice does not compound it.
+export function setPropDrift(id, drift = null){
+  const p = propById(id);
+  if(!p) return null;
+  if(p.driftBase === undefined) p.driftBase = { x:p.renderOffsetX||0, z:p.renderOffsetZ||0, yaw:p.yaw||0, y:p.renderOffsetY||0 };
+  const base = p.driftBase;
+  p.renderOffsetX = base.x + (Number(drift?.dx) || 0);
+  p.renderOffsetZ = base.z + (Number(drift?.dz) || 0);
+  p.renderOffsetY = base.y + (Number(drift?.dy) || 0);
+  p.yaw = base.yaw + (Number(drift?.dyaw) || 0);
+  return { id, dx:Number(drift?.dx)||0, dz:Number(drift?.dz)||0, dy:Number(drift?.dy)||0, dyaw:Number(drift?.dyaw)||0 };
+}
 export function setLooseProp(id, placement=null){
   instances=instances.filter((p)=>p.id!==id);
   if(!placement||!floorplan)return null;

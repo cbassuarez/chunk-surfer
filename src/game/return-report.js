@@ -59,6 +59,12 @@ export function makeReturnReportScene({
   let action = 0;
   const actions = ['NEW RUN', 'ACHIEVEMENTS', 'TITLE'];
   let consumed = false;
+  // The summary arrives out of the black the closing quote left behind, with the
+  // hiss bed already up under it (see presentCredits onBlack). It fades in rather
+  // than cutting, because cutting to a stats panel is the one thing that would
+  // undo the ending.
+  let entered = 0;
+  const FADE_IN = 2.2;
 
   function finish(kind) {
     if (!consumed) { consumeReturnReport(summary.id); consumed = true; }
@@ -72,7 +78,10 @@ export function makeReturnReportScene({
     id: 'return-report', blocksInput: true, blocksWorld: true, lensPreset: 'calm',
     enter() { AUDIO.startMenuHiss(); },
     exit() { AUDIO.stopMenuHiss(); },
+    update(dt = 0) { entered += Math.max(0, Number(dt) || 0); },
     key(e) {
+      // A key during the fade takes you to the end of it, never past it.
+      if (entered < FADE_IN) { entered = FADE_IN; return true; }
       const k = String(e.key || '').toLowerCase();
       const current = stages[stage].id;
       if (current === 'actions') {
@@ -88,6 +97,16 @@ export function makeReturnReportScene({
       return true;
     },
     render() {
+      this.drawReport();
+      // Up out of the black the closing quote went out on.
+      if (entered < FADE_IN) {
+        const { cols, rows } = uiSize();
+        const remaining = 1 - (entered / FADE_IN);
+        uiFill(0, 0, cols, rows, `rgba(2,2,3,${(remaining * remaining).toFixed(3)})`);
+      }
+    },
+
+    drawReport() {
       const { cols, rows } = uiSize();
       uiFill(0, 0, cols, rows, UI_COLOR.glass);
       const w = Math.min(88, cols - 4), h = Math.min(Math.max(30, rows - 8), rows - 4);

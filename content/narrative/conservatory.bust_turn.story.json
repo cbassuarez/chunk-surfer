@@ -1,0 +1,58 @@
+{
+ "schemaVersion": 1,
+ "id": "conservatory.bust_turn",
+ "title": "The One That Turned",
+ "status": "active",
+ "entry": "start",
+ "entries": [
+  "start"
+ ],
+ "tags": [],
+ "notes": "",
+ "regions": [
+  {
+   "id": "conservatory.bust_turn.region",
+   "title": "The One That Turned",
+   "kind": "scene",
+   "color": "#62243a",
+   "nodeIds": [
+    "start"
+   ]
+  }
+ ],
+ "nodes": {
+  "start": {
+   "speaker": "THE GALLERY",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "The beam comes back to the plinth on the way past.",
+     "id": "start.line.1"
+    },
+    {
+     "who": "direction",
+     "text": "It is facing him. It was facing the window.",
+     "hold": 2.4,
+     "id": "start.line.2"
+    },
+    {
+     "who": "you",
+     "text": "No.",
+     "id": "start.line.3"
+    },
+    {
+     "who": "you",
+     "text": "No, you were — you were pointed at the glass. You were pointed at the glass when I was standing here.",
+     "id": "start.line.4"
+    },
+    {
+     "who": "direction",
+     "text": "It does not do it again while he is watching, and he watches for a long time.",
+     "id": "start.line.5"
+    }
+   ],
+   "id": "start",
+   "type": "dialogue"
+  }
+ }
+}

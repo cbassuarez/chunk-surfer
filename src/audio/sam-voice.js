@@ -258,6 +258,11 @@ export const VOICE_PROFILES = {
   recordist: { rate: 0.98, gain: 0.95, hp: 120, lp: 5200, hiss: 0.010, wobble: 0.006 },
   surfer: { rate: 0.80, gain: 1.05, hp: 60, lp: 1500, smear: { time: 0.19, feedback: 0.42, mix: 0.5 } },
   client: { rate: 0.96, gain: 1.0, hp: 300, lp: 3000, drive: 0.3 },
+  // The voice that asks him a question in an empty building, eleven seconds in.
+  // It is the surfer, and it must not be named yet — so it sounds like the surfer
+  // heard through a wall: same transposition and smear, quieter, and with the top
+  // taken off, because you are not meant to be sure you heard a person.
+  unknown: { rate: 0.82, gain: 0.88, hp: 90, lp: 1150, smear: { time: 0.17, feedback: 0.38, mix: 0.44 } },
   default: { rate: 1.0, gain: 1.0 },
 };
 
@@ -495,5 +500,10 @@ export function createSamDialogVoice({ volume = 0.22, getAudio = null } = {}) {
 // can hear it. Stage directions are typed for the same reason: nobody is
 // saying them. A stage direction read aloud by a robot is the game explaining
 // itself, which is the one thing this game does not do.
-export const VOICED = new Set(['me', 'guard', 'radio', 'recordist', 'surfer', 'client', 'sarah']);
+//
+// `unknown` is voiced for the opposite reason: it is a mouth he cannot account
+// for. The whole horror of it is that he HEARS it, so it must never be typed —
+// a typed "Who did you lose." is his own thought, which is a completely
+// different and much smaller scene.
+export const VOICED = new Set(['me', 'guard', 'radio', 'recordist', 'surfer', 'client', 'sarah', 'unknown']);
 export const isVoiced = (who) => VOICED.has(who);

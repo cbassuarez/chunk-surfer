@@ -22,6 +22,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Install GPU-correct PyTorch for this platform
+        run: python tools/chunk_surfer/diffusion_server/install_torch.py
       - name: Install pinned inference runtime
         run: python -m pip install -r tools/chunk_surfer/diffusion_server/requirements-local.txt
       - name: Verify backend and generate 512px material

@@ -50,9 +50,9 @@ import * as RT from './audio/roomtone.js';
 import * as PRES from './game/presence.js';
 import * as PROPS from './game/props.js';
 import * as CUES from './audio/cues.js';
-import { authoredCueUrls, dispatchAuthoredCue } from './audio/authored-cues.js';
+import { authoredCue, authoredAudioProject, authoredCueUrls, dispatchAuthoredCue } from './audio/authored-cues.js';
 import * as STORY from './audio/story-audio.js';
-import { battleMusicInit, createBattleMusicSession, preloadBattleMusic } from './audio/battle-music.js';
+import { battleMusicInit, createBattleMusicSession, nextBattleBarAt, preloadBattleMusic } from './audio/battle-music.js';
 import * as FEAR from './audio/fear.js';
 import { createAudioContextRecovery } from './audio/context-recovery.js';
 import { createBackgroundAudioFocusPolicy } from './audio/background-audio.js';
@@ -82,11 +82,12 @@ import * as DOC from './game/document.js';
 import * as RADIO from './game/radio.js';
 import * as PB from './game/playback.js';
 import { makeCombatScene } from './game/combat.js';
+import { makeLoadoutBriefingScene } from './game/loadout-briefing.js';
 import { sourceCombatBattle, trainingCombatBattle } from './data/combat-definitions.js';
+import { BREAKBEAT_CUE, SCREAM_CUE, enemyAttackShape } from './audio/piano-weapon.js';
 import { createCombatTutorialDirector } from './game/combat-tutorial.js';
-import { makeCalibrationScene } from './game/calibration.js';
 import { learnCombatTechnique, normalizeCombatBuild } from './game/combat-progression.js';
-import { availableBattleTools, moveCombatGear } from './game/combat-loadout.js';
+import { availableBattleTools, moveCombatGear, reorderCombatGear } from './game/combat-loadout.js';
 import * as ENCOUNTERS from './game/encounters.js';
 import * as MIC from './game/mic.js';
 import { takeStamp, WORK_ORDER_STAMP } from './game/clock.js';
@@ -111,6 +112,7 @@ import { createPersonalizedInterference } from './game/personalized-interference
 import { computeFearPressure } from './game/fear-pressure.js';
 import * as CONTROLLER from './game/controller.js';
 import * as BINDINGS from './game/bindings.js';
+import { drawPromptParts, promptPartsWidth } from './render/prompt-glyphs.js';
 import {
   InputManager,
   keyboardCodeRole,
@@ -143,12 +145,13 @@ import {
 import { createSourceSpaceRuntime, SOURCE_ENTRY } from './game/source-space-runtime.js';
 import {
   STAIR_ANOMALY_STATUS,
+  freshStairAnomalyLedger,
   normalizeStairAnomalyEnvironment,
   normalizeStairAnomalyLedger,
   reduceStairAnomaly,
   stairAnomalyTriggerMatches,
 } from './game/stair-anomaly.js';
-import { createStairAnomalyRuntime, STAIR_ANOMALY_ENTRY, STAIR_ANOMALY_MODULE_CELLS, STAIR_ANOMALY_STEP_INTERVAL_MS } from './game/stair-anomaly-runtime.js';
+import { createStairAnomalyRuntime, STAIR_ANOMALY_ENTRY, STAIR_ANOMALY_MODULE_CELLS } from './game/stair-anomaly-runtime.js';
 import { buildChunkSurfGodPreset, CHUNK_SURF_GOD_PRESET } from './game/chunk-surf-god.js';
 import {
   CHAPEL_TOWER_PHASE,
@@ -221,6 +224,8 @@ const FIRST_TAKE=runtimeTree('conservatory.first_take');
 const HUSH=runtimeTree('conservatory.hush');
 const RADIO_DEAD=runtimeTree('conservatory.radio_dead');
 const BENT_RIG=runtimeTree('conservatory.bent_rig');
+const BUST_TALK=runtimeTree('conservatory.bust_talk');
+const BUST_TURN=runtimeTree('conservatory.bust_turn');
 const TALISMAN=runtimeTree('conservatory.talisman');
 const CHAPEL_KEY_CHECK=runtimeTree('conservatory.chapel_key_check');
 const roomListen=(room,label)=>WATER.applyNatatoriumWaterTextVariant(runtimeTree(`room-listen.${room}`,{label}), room === 'the_tub' ? getSave()?.run : null);
@@ -605,6 +610,7 @@ function ensureCtx({resume=true}={}){
 
         CUES.preloadAll(authoredCueUrls({excludeCuePrefixes:['battle.']}));
         preloadBattleMusic();
+        preloadPropStems();
         STORY.preloadAll();
         audioRecovery?.bind(actx);
     }catch(err){
@@ -2047,6 +2053,10 @@ function clearHushJumpClasses(){
 }
 
 function armHushJump({durationMs=460, reason='surfer-signal', contact=false, taken=false}={}){
+  // The daydream is not real — nothing has started, so nothing hunts.
+  // The tutorial owns the recordist's imagination here; the building only learns
+  // someone is in it at the first REAL take, after setup is done.
+  if(TUT.tutorialActive()) return false;
   const el=ensureHushJumpSurferElement();
   if(!assertHushJumpSurferAsset(el)) return false;
   clearHushJumpClasses();
@@ -3029,7 +3039,9 @@ function storyMoveScale(){
   return REC.recState().slow ? 1.9 : 1;   // quiet means careful means slow
 }
 function currentMoveIntervalMs(){
-  if(usingStairAnomaly())return REC.recState().slow?410:STAIR_ANOMALY_STEP_INTERVAL_MS;
+  // The impossible stair is walked exactly like any real stair — the ordinary
+  // move interval, no throttle. It is long, not slow.
+  if(usingStairAnomaly())return MOVE_MS * storyMoveScale();
   if(isIntroActive()){
     const p=introProgress();
     return Math.round(INTRO_SCENE.speedStartMs + (INTRO_SCENE.speedEndMs-INTRO_SCENE.speedStartMs)*p);
@@ -3387,9 +3399,21 @@ function step(dx,dy){
   if(scenes.blocksInput()) return;
   // You can always run. You simply cannot run and still have the take. The
   // earlier version locked movement outright, which reads as broken input.
-  if(storyMode && REC.isRecording() && !REC.isStalled()) REC.spoilTake('you moved');
+  // Exception: the tutorial level check never fails — it teaches the posture, it
+  // does not punish you for it, so the guided sequence can always complete.
+  if(storyMode && REC.isRecording() && !REC.isStalled() && !TUT.tutorialActive()) REC.spoilTake('you moved');
   const nowMs=performance.now();
   if(stairTriggerCrossed(dx,dy)){beginStairAnomaly();return;}
+  // The first threshold. Until the levels are set and the six seconds held — both
+  // of which happen right here, on the dock, in the dark — the recordist does not
+  // walk out. This is not a locked door; it is the man's own discipline, and he
+  // says which half of the job is still open when you try it. The bag's guided
+  // callout and the level-check prompt are what make it satisfiable without
+  // leaving (see tutorialGuide / firstTakeIntercept).
+  if(storyMode && !setupComplete() && usingPlan() && !usingSpecialSpace()
+     && FP.zoneAt(px,py)===ZONE.dock && FP.zoneAt(px+dx,py+dy)!==ZONE.dock){
+    refuseDockExit(); return;
+  }
   // Geometry blocks the step. In the conservatory this is a body test — a wall,
   // a lintel you would brain yourself on, a riser too tall to take — and it
   // reads from the same array the shader draws from.
@@ -3405,6 +3429,20 @@ function step(dx,dy){
     }
     if(activeGeometry()){
       const geometry=activeGeometry();
+      // A diagonal step is only legal if BOTH of its orthogonal halves are, or
+      // you would slip through the corner where two walls meet — a gap that is
+      // solid to the eye and to the shader. If only one half is walkable, the
+      // step degrades to that half rather than refusing: you slide along the
+      // wall instead of sticking to it, which is what a shoulder does.
+      if(dx&&dy){
+        const alongX=geometry.canStep(px, py, px+dx, py, { keys: playerKeys }).ok;
+        const alongY=geometry.canStep(px, py, px, py+dy, { keys: playerKeys }).ok;
+        if(!(alongX&&alongY)){
+          if(alongX) dy=0;
+          else if(alongY) dx=0;
+          else return;
+        }
+      }
       const move=geometry.canStep(px, py, px+dx, py+dy, { keys: playerKeys });
       if(!move.ok){
         if(move.why==='locked') pushEvent('// locked. none of your keys.');
@@ -3417,6 +3455,10 @@ function step(dx,dy){
       if(!usingSpecialSpace()&&natatoriumWaterBlocksAt(tx,ty)) return;
       if(!usingSpecialSpace()&&!PROPS.propCanOccupy(tx,ty)) return;
     } else if(R3.r3dSolid(px+dx, py+dy)) return;
+    else if(dx&&dy&&(R3.r3dSolid(px+dx,py)||R3.r3dSolid(px,py+dy))){
+      // Same corner rule for the plain solid-grid path.
+      if(!R3.r3dSolid(px+dx,py)) dy=0; else if(!R3.r3dSolid(px,py+dy)) dx=0; else return;
+    }
   }
   // Your feet are the loudest thing in this building. The noise is left at the
   // cell you are leaving: the presence hunts where you WERE.
@@ -3618,7 +3660,7 @@ function arrowDelta(){
     if(independentControls()){
       const axes=combinedIndependentMotionAxes();
       if(Math.max(Math.abs(axes.moveX),Math.abs(axes.moveY))<.32)return[0,0];
-      const forward=R3.r3dDelta(1),right=[-forward[1],forward[0]];
+      const forward=R3.r3dStepDelta(1),right=[-forward[1],forward[0]];
       // Collision remains cardinal and deterministic: the dominant input axis
       // wins instead of allowing analog diagonals to cut through wall corners.
       if(Math.abs(axes.moveY)>=Math.abs(axes.moveX)){
@@ -3626,9 +3668,10 @@ function arrowDelta(){
       }
       const sign=axes.moveX>=0?1:-1;return[right[0]*sign,right[1]*sign];
     }
-    // Facing-relative grid steps: forward/back along the current quarter-turn.
-    if(forwardHeld()) return R3.r3dDelta(1);
-    if(backHeld()) return R3.r3dDelta(-1);
+    // Head-relative grid steps. Eight directions, from the live yaw rather than
+    // the quarter-turn index: if you turn your head and walk, you turn your feet.
+    if(forwardHeld()) return R3.r3dStepDelta(1);
+    if(backHeld()) return R3.r3dStepDelta(-1);
     return [0,0];
   }
   if(isPrelude()){
@@ -3761,6 +3804,9 @@ function setGameplayPaused(next, { announce=true }={}){
     startAmbientDroneAt(currentAmbientTarget());
     if(announce) pushEvent('// resumed.');
     updateAudio();
+    // Coming back from the pause menu is the single most common way to end up
+    // focused-but-not-captured, so take everything back explicitly.
+    resumeGameplayInput('pause-exit');
   }
 }
 function togglePause(){ setGameplayPaused(!paused); }
@@ -4793,14 +4839,31 @@ function updateDevelopmentWindowMarker(){
     .finally(()=>{developmentWindowMarkerPending=false;});
 }
 
+// A frame gap longer than this means the player was not at the game.
+const AWAY_GAP_MS=900;
+function settleAfterAway(gapMs){
+  STAB.settleAfterAway(gapMs);
+  // The hush's schedules are wall-clock too: push them out by exactly as long
+  // as nobody was watching, so returning to the window is never the cue.
+  if(mischiefNextAtMs) mischiefNextAtMs+=gapMs;
+  if(mischiefQuietUntilMs) mischiefQuietUntilMs+=gapMs;
+}
+
 function loop(){
   try{
     tick++;
     if(IS_TAURI && (tick % 120)===0) audioRecovery?.watchdog('tauri-frame-watchdog');
     const nowLoopMs=performance.now();
     perfMeter.frame(nowLoopMs);
-    const dt=Math.min(0.05, lastLoopMs ? (nowLoopMs-lastLoopMs)/1000 : 0.016);
+    const rawGapMs=lastLoopMs ? nowLoopMs-lastLoopMs : 16;
+    const dt=Math.min(0.05, lastLoopMs ? rawGapMs/1000 : 0.016);
     lastLoopMs=nowLoopMs;
+    // A frame that took most of a second did not happen: the tab was hidden, the
+    // window was behind something, the machine slept. Wall-clock timers kept
+    // running through it and the dread director did not — so on the way back it
+    // believed the player had spent all that time getting comfortable, and fired
+    // the moment they returned. Nothing accrues while nobody is here.
+    if(rawGapMs>AWAY_GAP_MS) settleAfterAway(rawGapMs);
     const modal = scenes.top?.();
     const modalControllerActions = (() => {
       const id = modal?.id || '';
@@ -4833,8 +4896,11 @@ function loop(){
         tickSourceSpace(dt);
         tickStairAnomaly(dt);
         tickDoorRuntime(dt);
+        speakAtExitDoor();
         tickBellTower(dt);
         tickPresence(dt);
+        tickHushMischief();
+        tickGarden();
         tickStabs(dt);
         tickPages();
         tickRadio(dt);
@@ -4854,7 +4920,16 @@ function loop(){
         // The cold open and the beats after the title own the voice themselves.
         if(storyMode && !scenes.has('cold-open') && !scenes.has('after-title')){
           SPEECH.updateSpeech(dt);
+          tickMicTest(dt);
           TUT.tickTutorial(dt, tutorialCtx());
+          // Fallback for a skipped/absent intro tutorial: a clean six-second take
+          // at B3 sets levels and drifts into the daydream regardless, so the
+          // hard gate can always be cleared.
+          if(!flagTest('setup.levels') && currentWorld()==='main_b3'
+             && REC.isRecording() && !REC.isStalled()
+             && (REC.recState().takeElapsed||0) >= TUT.LEVEL_CHECK_SECONDS){
+            onLevelsSet();
+          }
         }
       }
       // Calibration, opening/title presentation, and credits fully cover the
@@ -5051,6 +5126,7 @@ let stairEchoSerial=0;
 let sourceExitSnapshot=null;
 let sourcePaperToneAt=0;
 let sourceAlignmentToneAt=0;
+let sourceHallDreadAt=0;
 let sourcePresenceWasActive=false;
 let sourceFinalCombatOpen=false;
 let sourceFinalCombatRetryAt=0;
@@ -5230,9 +5306,9 @@ function stairTriggerCrossed(dx,dy){
   if(stairAnomalyTriggerMatches(environment,{stairId:'upper',travel:'up'})){
     return dy>0&&py===81&&ny===82&&px>=120&&px<=125;
   }
-  if(stairAnomalyTriggerMatches(environment,{stairId:'basement',travel:'down'})){
-    return dx<0&&px===114&&nx===113&&py>=44&&py<=49;
-  }
+  // No descent trigger. The way down to B3 is never the impossible stair — see
+  // decideStairAnomalyEnvironment. Kept out of the match list entirely so a
+  // legacy save that stored a 'down' environment simply never fires.
   if(stairAnomalyTriggerMatches(environment,{stairId:'basement',travel:'up'})){
     return dx>0&&px===95&&nx===96&&py>=44&&py<=49;
   }
@@ -5261,22 +5337,12 @@ function scheduleStairStepEcho(level){
   scheduleStairEnvironmentalFootstep(level*.26,360+((seed+stairEchoSerial*73)%240));
 }
 
-function beginStairAttention(stage){
-  if(stairAttentionScene)scenes.remove(stairAttentionScene);
-  const reducedMotion=(getSave().settings?.shake||'full')!=='full';
-  const durations=[.9,.65,.75,.8],duration=reducedMotion?Math.min(.35,durations[stage]||.6):(durations[stage]||.6);
-  const restoreFacing=R3.r3dFacing();
-  if(!reducedMotion&&stage===0)R3.r3dSetFacing((restoreFacing+2)%4);
-  else if(!reducedMotion&&stage===2)R3.r3dSetFacing((restoreFacing+1)%4);
-  let elapsed=0;
-  const scene={
-    id:`stair-attention-${stage}`,blocksInput:true,blocksWorld:false,tracksMotion:true,
-    update(dt){
-      elapsed+=dt;if(elapsed<duration)return;
-      R3.r3dSetFacing(restoreFacing);scenes.remove(scene);if(stairAttentionScene===scene)stairAttentionScene=null;
-    },
-  };
-  stairAttentionScene=scene;scenes.push(scene);
+// The impossible stair used to seize the camera and lock input for a beat at
+// each stage — which read as "my movement is stuck." The uncanniness now lives
+// entirely in the endless continuous climb and its shifting lights, so the
+// climb is never interrupted. Left as a no-op so its call sites stay harmless.
+function beginStairAttention(_stage){
+  if(stairAttentionScene){scenes.remove(stairAttentionScene);stairAttentionScene=null;}
 }
 
 function onStairAnomalyStage({stage}){
@@ -5317,6 +5383,9 @@ function finishStairAnomaly(){
   saveCommit({run,px,py,area:'conservatory',presence:PRES.savePresenceState()});
   const plan=FP.physicalRenderPlanFor(px,py);R3.r3dSetPlan(plan.rgba,plan.w,plan.h,plan.material);r3dCache.physicalKey=plan.key;r3dCache.physicalGroup=plan.group;r3dCache.fogSize=-1;
   R3.r3dSetProps(worldRenderInstances(plan.group));syncDoorDynamicProps();revealAround(px,py);updateAudio();
+  // Symmetric fade back out onto the ordinary stair — the return teleport lands
+  // under the black, so stepping off the impossible flight never flashes either.
+  CR.fx.flash(460,'rgba(0,0,0,0.98)');
   return true;
 }
 
@@ -5343,18 +5412,56 @@ function activateStairAnomaly(ledger,{position=null,fresh=false}={}){
   return stairAnomalyRuntime;
 }
 
+// ── the way out of the impossible stair ─────────────────────────────────────
+// Climbing 640 treads is the long way and nobody should have to find that out by
+// doing it. There is a second exit, and it is the thing a person actually does
+// when a stairwell stops making sense: they stop, and they check their torch.
+//
+// Kill the light, stand in the dark long enough to be sure, and put it back on —
+// and the stair is just a stair again, with the door where the door should be. It
+// is deliberately not signposted; the recordist works it out out loud once he has
+// been climbing long enough to be frightened.
+const STAIR_ESCAPE = Object.freeze({ dark: 30000, hintAfter: 42000 });
+let stairDarkSince=0;
+let stairEscapeHinted=false;
+
+function noteStairTorchFlick(on){
+  if(!usingStairAnomaly()) return;
+  if(!on){ stairDarkSince=performance.now(); return; }
+  // Light back on. Was it dark long enough?
+  const held=stairDarkSince ? performance.now()-stairDarkSince : 0;
+  stairDarkSince=0;
+  if(held < STAIR_ESCAPE.dark){
+    SPEECH.say({ who:'you', text:'No. Not long enough in the dark to be sure of anything.' });
+    return;
+  }
+  SPEECH.sayAll([
+    { who:'direction', text:'The filament comes up on a landing, a smoke door, and a handrail that ends where handrails end.' },
+    { who:'you', text:'There. That is a stair. That is an ordinary stair.' },
+  ]);
+  fireCue('door');
+  CR.fx.flash(520,'rgba(0,0,0,0.96)');
+  setTimeout(()=>{ if(usingStairAnomaly()) finishStairAnomaly(); }, 420);
+}
+
 function beginStairAnomaly(){
   if(usingSpecialSpace())return false;
+  stairDarkSince=0; stairEscapeHinted=false; stairAnomalyEnteredAt=performance.now();
   const entered=reduceStairAnomaly(currentStairAnomalyLedger(),{type:'ENTER'});
   const run=runWithStairAnomalyLedger(entered);
   saveCommit({run,px:STAIR_ANOMALY_ENTRY.x,py:STAIR_ANOMALY_ENTRY.y,area:'stair-anomaly'});
   CUES.playCue(CUES.CUE.door,{gain:.34,rate:.78});CUES.playCue(CUES.CUE.light,{gain:.24,rate:.62,delay:.18});
   stairCueCaption('a smoke door closes; one lamp wakes');
   activateStairAnomaly(entered,{position:STAIR_ANOMALY_ENTRY,fresh:true});beginStairAttention(0);
+  // Fade in to the impossible stair from black rather than hard-cutting — the
+  // switch of scene and position happens under the black, so there is no flash
+  // of the ordinary stair before the trick one takes over.
+  CR.fx.flash(460,'rgba(0,0,0,0.98)');
   return true;
 }
 
 function resumeStairAnomalyFromSave(){
+  stairDarkSince=0; stairEscapeHinted=false; stairAnomalyEnteredAt=performance.now();
   const ledger=currentStairAnomalyLedger();
   if(ledger.status!==STAIR_ANOMALY_STATUS.ACTIVE||getSave().area!=='stair-anomaly')return false;
   const sx=Number(getSave().px),sy=Number(getSave().py);
@@ -5378,6 +5485,25 @@ function stairAnomalyProbePreset(stage=0,reduced=false){
     ledger:stairAnomalyRuntime.state(),lights:stairAnomalyRuntime.lightRig(performance.now()/1000,{reducedFlash:!!reduced}),
     shadowOnly:stairAnomalyRuntime.propInstances({reducedDread:!!reduced}).filter((entry)=>entry.shadowOnly).length,
   };
+}
+
+// Debug: re-arm the impossible stair WITHIN the current run — sets the run's
+// stair ledger back to ARMED so the anomaly fires again the next time you cross
+// the trigger, regardless of any run-completion data.
+function godRearmStairRun(){
+  saveCommit({run:runWithStairAnomalyLedger(freshStairAnomalyLedger())});
+  pushEvent('// [god] stair anomaly re-armed for this run');
+}
+// Debug: reset the stair globally, as if it is the first run of the game ever —
+// zeroes the cross-game run counter (meta.runs), re-arms this run's ledger, and
+// restores the first-run environment (upper / up, F1→F2). Previous completions
+// no longer count.
+function godResetStairGlobal(){
+  metaCommit({runs:0});
+  const base=runWithStairAnomalyLedger(freshStairAnomalyLedger());
+  const run={...base,environment:{...(base.environment||{}),stairAnomaly:normalizeStairAnomalyEnvironment(undefined)}};
+  saveCommit({run});
+  pushEvent('// [god] stair anomaly reset (global): runs→0, re-armed, env→upper/up');
 }
 
 function chapelTowerState(){return normalizeChapelTowerState(getSave().chapelTower);}
@@ -5454,7 +5580,7 @@ function completeBellTower(){
   playerKeys.add('tower-cleared');
   for(const id of ['tower-hatch','bell-chamber-entry','organ-loft-service','organ-loft-nave'])FP.setDoorOpen(id,true);
   saveCommit({chapelTower:next,doors:FP.saveDoorState(),px,py,area:'bell-tower'});syncDoorDynamicProps();
-  SPEECH.say({who:'direction',text:'The last bell reaches the balance and comes down. The silence is larger than the ringing. A service leaf releases towards the organ loft.'});
+  SPEECH.say({who:'direction',text:'The last bell reaches the balance and comes down. The silence is larger than the ringing. A service door releases towards the organ loft.'});
 }
 
 function startBellTowerRuntime({retry=false,collisions=true,offsetMs=0}={}){
@@ -5633,6 +5759,11 @@ async function loadBuilding(){
       px=start.x;py=start.y;
     }
     FP.loadDoorState(getSave().doors);
+    // The grey door does not come back. There is no room for this in the door
+    // save schema (normalizeDoorSave keeps only state/wedge/closerArmed), so it
+    // is story state, replayed here before the plan texture is uploaded below —
+    // the wall has to already be solid when the renderer first reads it.
+    if(which==='conservatory'&&flagTest('door.grey.retired')) FP.retireDoor(GREY_DOOR_ID);
     if(which==='conservatory'&&!normalizeChunkSurfState(getSave().chunkSurf).active){
       const tower=repairLegacyTowerLayout(chapelTowerState());
       if(tower.phase===CHAPEL_TOWER_PHASE.TRANSITION_READY){px=CHAPEL_OUTER_CHECKPOINT.x;py=CHAPEL_OUTER_CHECKPOINT.y;}
@@ -5678,9 +5809,41 @@ async function loadBuilding(){
   }
 }
 
+// A run has to start in a silent room.
+//
+// Almost nothing in this game's audio is short: instrument stems run minutes, the
+// scream thirty seconds, the tape hiss and room bed are held open until something
+// closes them, and the hush's own runtime holds a mix. Ending a run never asked
+// any of them to stop, so restarting one inherited whatever was still ringing
+// wherever the last one ended — a held instrument from the natatorium, a stem
+// mid-chop, the finale's bed under a loading dock.
+//
+// This is the one place that reaches for everything, so there is one answer to
+// "why can I hear the last run".
+function resetRunAudio(reason='run-reset'){
+  SPEECH.clearSpeech();
+  CUES.stopAllCues(0.06);
+  clearInstrument();
+  stopHushAudioRuntime();
+  stopAllVoices();
+  stopWorldLayerVoice();
+  silenceAmbientDrone();
+  silenceSampleField();
+  STORY.stopAll();
+  RT.setBed(0, 0.1);
+  personalInterference.clear();
+  // The dread director and the hush's mischief keep wall-clock schedules; a new
+  // run is not owed the last one's timers.
+  mischiefNextAtMs=0;
+  mischiefQuietUntilMs=0;
+  STAB.reportThreat();
+  pushEvent(`// audio reset (${reason}).`);
+}
+
 function enterStory(){
   sampleFieldEnabled=false;
   storyMode=true;
+  resetRunAudio('enter-story');
   silenceSampleField();
   applyCurrentRunDifficulty();
   ensureCtx();
@@ -5722,8 +5885,9 @@ function enterStory(){
     cue:fireCue,
   });
   TUT.tutorialInit({ say:SPEECH.say,
-    // Six seconds is a level check. The recorder is handed straight back.
-    onLevelsGood:()=>setTimeout(()=>{ if(REC.isRecording()) stopTake(); }, 700) });
+    // Six seconds is a level check. It sets the gate flag, hands the recorder
+    // back, and drifts into the daydream (see onLevelsSet).
+    onLevelsGood:()=>setTimeout(onLevelsSet, 700) });
   PB.playbackInit({ chunkById:chunkAt, pickGuest,
     // It heard what he said in the dark, eleven seconds after the door went.
     // This is where it gives it back.
@@ -5785,7 +5949,11 @@ function enterStory(){
             cue: fireCue,
             fx: CR.fx,
             replay: createReplayService('after-title'),
-            onDone:()=>postDoorThought(()=>TUT.startTutorial()),
+            // Straight into the dark and the setup. The door he came in through
+            // is behind him and still there; losing it is something he has to go
+            // and find out (see tryTheGreyDoor), not something the game does to
+            // him on a timer before he has even found the torch.
+            onDone:()=>TUT.startTutorial(),
           })),
         }));
       },
@@ -5798,11 +5966,44 @@ function enterStory(){
   }
 }
 
-function fireCue(name){
+function authoredAssetUrl(assetId){
+  const asset=authoredAudioProject?.()?.assets?.find?.((a)=>a.id===assetId);
+  return asset?.path ? assetUrl(asset.path) : null;
+}
+function cueAssetUrl(cueId){
+  const layer=authoredCue?.(cueId)?.layers?.[0];
+  return layer?authoredAssetUrl(layer.assetId):null;
+}
+// The breakbeat is now a LOOP beat's voice rather than a backing, and a weapon
+// stem has to be decoded before its first chop or the first hit is silent.
+function warmBattleVoices(){
   ensureCtx();
+  for(const id of [BREAKBEAT_CUE,'marimba.weapon.01','piano.weapon.01','violin.weapon.01']){
+    const url=cueAssetUrl(id);
+    if(url) CUES.preload(url);
+  }
+}
+
+// `shape` overrides the authored layer options for this firing: a voice group
+// so the cue can be cut, a slice (trimStart/trimEnd/rate) for a chop, and
+// `gainScale` to duck it against whatever the author set. Everything omitted
+// stays exactly as authored.
+// The one "cue" that is not a sound: the line in the post-door beat where his
+// hand finds mortar is the line the door stops existing on. Authored onto the
+// line (content/narrative/conservatory.post_door.story.json) rather than run off
+// a timer, so it lands exactly when he reads it, however fast he reads.
+const CUE_SEAL_GREY_DOOR='door.grey.seal';
+
+function fireCue(name, shape=null){
+  if(name===CUE_SEAL_GREY_DOOR){ sealTheGreyDoor(); return true; }
+  ensureCtx();
+  const { gainScale=1, skipEffects=false, ...override } = shape || {};
   return dispatchAuthoredCue(name, {
-    play:(url, options)=>CUES.playCue(url, options),
+    play:(url, options)=>CUES.playCue(url, { ...options, ...override, gain:(options.gain ?? 1) * gainScale }),
     effect:(event)=>{
+      // A chop is a quarter-second of a tape, not the authored moment: it does
+      // not get that moment's screen shake every time the surfer swings it.
+      if(skipEffects) return;
       const [scope, action, a, b]=String(event).split(':');
       if(scope==='fx' && action==='flash') CR.fx.flash(Number(a)||120, 'rgba(6,6,8,0.85)');
       else if(scope==='fx' && action==='shake') CR.fx.shake(Number(a)||1, Number(b)||420);
@@ -5872,7 +6073,7 @@ function think(id, nodes, { startAt='start', onChoice, onDone, force=false }={})
 
 // A repeatable dialog beat — not a once-in-a-run thought. The LISTEN before a
 // take uses this: every take is guided by it. `?nothink=1` still bypasses.
-function converse(id, nodes, { startAt='start', onChoice, onDone }={}){
+function converse(id, nodes, { startAt='start', onChoice, onDone, scrim=0.5, anchor='center' }={}){
   // No dialog here (a mechanism suite, or not story): the caller is left in
   // whatever state it set up, to be driven by the bare verbs. It does NOT
   // auto-advance, because the whole point of the two phases is that the second
@@ -5883,7 +6084,7 @@ function converse(id, nodes, { startAt='start', onChoice, onDone }={}){
     id, nodes, startAt,
     audio: STORY, getAudio: ()=>({ ctx:actx, destination:dialogGain || master }), fx: CR.fx, cue: fireCue,
     replay: createReplayService(`conversation:${id}`),
-    scrim: 0.5,
+    scrim, anchor,
     onChoice: (c)=>{ applyStoryChoice(c); onChoice?.(c); },
     onDone,
   }));
@@ -5891,12 +6092,109 @@ function converse(id, nodes, { startAt='start', onChoice, onDone }={}){
 
 // The push bar is not where the push bar is. Which question he asks himself
 // depends entirely on what he did at the booth.
+// ── the grey door ───────────────────────────────────────────────────────────
+// The door he came in through, and the one beat in the game that used to happen
+// TO the player instead of because of them: he panicked about losing his exit on
+// a timer, eleven seconds after the title, standing in the middle of a dark room
+// with his hands full and nothing behind him to reach for.
+//
+// Now the door is really there — grey steel, dead centre of the dock's north
+// wall, directly ahead of where he starts, locked with his own key. Walking up to
+// it and reaching for it is what starts the beat, and the beat is what takes it
+// away: the leaf, frame and head are retired mid-sentence and the wall closes
+// over them while he has his hand on it (see FP.retireDoor). He is never allowed
+// to open it. That is the whole point of putting it there.
+//
+// It is optional, and being optional is what makes it mean something — see
+// greyDoorSearched() for what the ending does with a man who never went looking.
+const GREY_DOOR_ID='dock-grey-exterior';
+function greyDoorRetired(){ return flagTest('door.grey.retired'); }
+function greyDoorNear(){
+  if(!storyMode || !usingPlan() || usingSpecialSpace() || greyDoorRetired()) return null;
+  const hit=FP.doorNear(px,py,R3.r3dDelta(1));
+  return hit?.portal?.id===GREY_DOOR_ID ? hit.portal : null;
+}
+
+// The wall closes. Called between the reach and the mortar, so the player is
+// looking at the door when it stops being one.
+function sealTheGreyDoor(){
+  if(greyDoorRetired()) return false;
+  if(!FP.retireDoor(GREY_DOOR_ID)) return false;
+  flagApply(['door.grey.retired']);
+  saveCommit({ flags:getSave().flags, doors:FP.saveDoorState() });
+  refreshRetiredDoorWorld();
+  // Not a door sound. A low, wrong, settling one — the building taking it back.
+  CUES.playCue(CUES.CUE.door, {gain:.5, rate:.42, lowpassHz:520});
+  CR.fx.shake(1.1, 520);
+  return true;
+}
+
+// The masonry is new geometry AND new material, so the raymarcher's plan texture
+// and the static instance list both have to be rebuilt — the same refresh a
+// mutation does.
+function refreshRetiredDoorWorld(){
+  if(RENDERER!=='3d' || !usingPlan()) return;
+  const p=FP.physicalRenderPlanFor(px,py);
+  R3.r3dSetPlan(p.rgba,p.w,p.h,p.material);
+  r3dCache.physicalGroup=p.group;
+  r3dCache.physicalKey=p.key;
+  r3dCache.fogSize=-1;
+  doorLeafVisualCache.group=null;doorLeafVisualCache.entries.length=0;
+  facilityMapCache={key:null,model:null};
+  syncStoryObjectProps();
+  syncDoorDynamicProps();
+}
+
+// [e] on the grey door. Runs the post-door tree, which is where the panic and the
+// confession both live.
+//
+// It must NEVER be a press that does nothing. The door was offering
+// "[E] THE DOOR YOU CAME IN THROUGH" and then swallowing the key, because
+// `think()` declines a tree whose id has already been marked had — and `post-door`
+// is marked by any earlier run of the beat, including every save made while it
+// still fired automatically after the title. So the prompt was live, the verb was
+// eaten, and nothing happened.
+//
+// The DOOR is the once-only gate here: it retires itself, so the beat cannot
+// repeat anyway. That makes the thought-bookkeeping gate redundant — hence
+// `force` — and if the scene still declines for any reason, the press seals the
+// wall itself rather than doing nothing at all.
+function tryTheGreyDoor(){
+  if(!greyDoorNear()) return false;
+  if(!postDoorThought()) {
+    sealTheGreyDoor();
+    SPEECH.sayAll([
+      { who:'direction', text:'Painted breeze block, cold, and a seam of mortar where your thumb expects a steel push bar.' },
+      { who:'you', text:'It was here. I came through it. It was here.' },
+    ]);
+  }
+  return true;
+}
+
 function postDoorThought(onDone){
   const frame=prologueKnowledgeFrame() || 'self';
-  think('post-door', POST_DOOR, {
+  const before=flagGet('confession.kind');
+  const opened=think('post-door', POST_DOOR, {
     startAt: frame,
-    onDone: ()=>{ saveCommit({ flags:getSave().flags }); onDone?.(); },
+    force: true,
+    onDone: ()=>{
+      // Going looking for your own exit on night one is the qualification for
+      // the ending that sends you back for it (see openEndingChoice), and how
+      // you left it decides how that run behaves (see startEscape).
+      const said=flagGet('confession.kind');
+      flagApply([
+        'finale.grant.route.inversion',
+        `door.grey.searched=${said && said!=='nothing' ? 'tried' : 'settled'}`,
+      ]);
+      void before;
+      // Whatever else happened, the wall is closed by the end of the beat. This
+      // is the backstop for a player who skipped the line that closes it.
+      sealTheGreyDoor();
+      saveCommit({ flags:getSave().flags });
+      onDone?.();
+    },
   });
+  return !!opened;
 }
 
 function prologueKnowledgeFrame(){
@@ -5920,16 +6218,322 @@ function framedLine(kind, fallback, ...args){
 // Three things it must never intercept: a take already running, a non-B3
 // tutorial room, and the testbed, whose studio also answers to `main_b3` and
 // whose whole job is to let the mechanism suites press [r] and get a recorder.
+// Setup is the one hard gate: a real take counts only after the recordist has
+// set his levels and held the six seconds. Both happen on the dock, in the dark,
+// before the night's work — going to B3 first is not signposted, it is required.
+function setupComplete(){ return flagTest('setup.levels') && flagTest('combat.trained'); }
+
+// A level check is not a take, and the dock is not one of the five rooms. It has
+// its own id so nothing it does can be filed against studio B3, whose world id
+// the dock happens to share (ZONE_WORLD).
+const LEVEL_CHECK_ROOM='loading_dock';
+
+// The dock is the ONE room he will not leave with the job half-set, and this is
+// the one line in the game that has to be blunt. Everything else in the dock is
+// free: look around it, pick things up, try the door he came in through. This is
+// the only wall, and it says plainly what is outstanding and which key does it.
+//
+// Register matters here and the poetry was the bug: "I don't move until I've run
+// the worst room in my head" was a nice sentence, useless to a player standing
+// at a door that will not open. Concrete, practical, and it names the key.
+//
+// It also does not merely refuse. When the hold is the only thing left,
+// walking at the door is what STARTS it — so the wall is never a thing you have
+// to go away and solve somewhere else.
+let dockRefuseLockUntilMs=0;
+function refuseDockExit(){
+  const now=performance.now();
+  if(now<dockRefuseLockUntilMs) return;
+  dockRefuseLockUntilMs=now+2600;
+  fireCue('bag');
+  if(!flagTest('setup.levels')){
+    SPEECH.say({ who:'you', text:`Not yet. The keys stay in my pocket until the levels are set — ${BINDINGS.inputPrompt('recorder')}, I want to get a good six seconds of test audio. Can't count how many recordings I've ruined because I never set the meter.` });
+    return;
+  }
+  if(!flagTest('combat.trained')){
+    SPEECH.say({ who:'you', text:`Hold on — I never actually held the six seconds. ${BINDINGS.inputPrompt('recorder')}, feet still, and then we go down.` });
+  }
+}
+
+// The doors out, before the job is set. He has the key to every one of them and
+// says so — the discipline is his, not the lock's. Throttled the same way the
+// threshold refusal is, and it never stops him: it is a man talking himself out
+// of leaving, and after setup these doors open like any other.
+const EXIT_DOOR_IDS=new Set([GREY_DOOR_ID,'front-main']);
+let exitDoorLockUntilMs=0;
+function speakAtExitDoor(){
+  if(!storyMode || setupComplete()) return;
+  const hit=FP.doorNear(px,py,R3.r3dDelta(1));
+  const id=hit?.portal?.id;
+  if(!id || !EXIT_DOOR_IDS.has(id)) return;
+  if(id===GREY_DOOR_ID && !greyDoorRetired()) return;   // that one has its own beat
+  const now=performance.now();
+  if(now<exitDoorLockUntilMs) return;
+  exitDoorLockUntilMs=now+9000;
+  SPEECH.say({ who:'you', text: flagTest('setup.levels')
+    ? "I'll unlock this once I get my levels set. Don't want to forget and ruin the takes."
+    : "I'll head through in a second. I want to get my levels set first." });
+}
+// The room the running take belongs to — decided when it starts, not re-asked
+// from the floor he happens to be standing on when it stops.
+let takeRoom=null;
+// Levels get set where the kit gets set up: the dock. B3 also answers, so a
+// player who skipped the intro is never left without a way to set them.
+function levelCheckHere(){
+  if(!usingPlan() || usingSpecialSpace()) return false;
+  return FP.zoneAt(px,py)===ZONE.dock || recordableRoomAt(px,py)==='main_b3';
+}
+
+
+// ── the daydream ────────────────────────────────────────────────────────────
+// He is not rehearsing. He does not want a fight and he is not preparing for one.
+// He wants six seconds of test audio, and to get them he has to stand perfectly
+// still in a dark room with nothing to do, which is the most boring thing a
+// person can be asked to do — so he counts, and his mind goes where a bored mind
+// goes. He talks himself into a stupid ghost story and then he is IN it.
+//
+// The fight is an accident of being bored. Nothing in here is allowed to sound
+// like a man steeling himself: no rehearsing, no "the worst room", no getting the
+// shape of it. Just a tired professional holding a take and amusing himself.
+const DAYDREAM_DRIFT = Object.freeze([
+  "God, it's dead in here. Minus sixty at least. You could hear a moth.",
+  "Five rooms. One of them's got water in it, they said. Who fills a room with water and calls it a job.",
+  "A natatorium. Fancy word for a drowned gym.",
+  "I could be asleep. I could be anywhere that isn't forty feet under a dead building.",
+  "Nothing down there but damp and a raccoon. It's always a raccoon.",
+  "Wonder what's actually in that basement, though.",
+  "They say the west stair goes down further than the plans admit to. Everyone jokes about that.",
+]);
+const DAYDREAM_SILLY = Object.freeze([
+  "Ooh, spooky. Big horrible demon down there, probably. Me and a torch and a Nagra against it.",
+  "Something enormous in the dark going ROOOAR, and me going hold on, let me just get a level on that.",
+  "Giant devil in the deep end. I fight it off with a boom pole. They put it in the trade magazines.",
+  "And it turns out to be nine feet tall and I beat it to death with a windshield. Front page of Resolution.",
+]);
+
+function shufflePick(arr, n){
+  const pool=[...arr];
+  for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+  return pool.slice(0, Math.max(0, Math.min(pool.length, n)));
+}
+
+// He counts the hold out loud, drifts between numbers, and by the last one he has
+// talked himself into something daft. Drawn fresh each run so the drift is a
+// little different, while the shape — count, drift, joke, and then he is in it —
+// stays put. A beat, not a battle intro: it plays on its own and hands over.
+function daydreamBeat(){
+  const drift=shufflePick(DAYDREAM_DRIFT, 3);
+  const silly=shufflePick(DAYDREAM_SILLY, 1)[0];
+  const pause={ who:'you', text:'...' };
+  return [
+    { who:'direction', text:'Rolling. Feet still, hands off the light, and nothing to do for six seconds but count them.' },
+    { who:'you', text:'One.' },
+    pause,
+    { who:'you', text:'Two.' },
+    pause,
+    { who:'you', text:'Three.' },
+    { who:'you', text:drift[0] },
+    pause,
+    { who:'you', text:'Four.' },
+    { who:'you', text:drift[1] },
+    pause,
+    { who:'you', text:'Five.' },
+    { who:'you', text:drift[2] },
+    { who:'you', text:silly },
+    { who:'you', text:'Heh.' },
+    pause,
+    { who:'you', text:'Six. There. That is a level.' },
+    { who:'direction', text:'The needle settles. So do your eyes.' },
+  ];
+}
+
+// Six clean seconds. The flag goes on and the recorder comes back — and the
+// daydream he has been talking himself into for the whole hold takes over. He did
+// not decide to do this; he was bored, and now his eyes are shut.
+function onLevelsSet(){
+  if(flagTest('setup.levels')) return;
+  flagApply(['setup.levels']);
+  // The recorder KEEPS ROLLING through the daydream. He set out to hold six
+  // seconds, got bored, drifted, and is still standing there with the tape
+  // running — which is both the truth of the scene and the only way the player
+  // can watch the DA-1000 while he counts it out. The take is stopped at the
+  // ripple instead (dreamRippleIntoDrill).
+  if(REC.isRecording() && !daydreamRunning && !flagTest('combat.trained')) stopTake();
+  else if(REC.isRecording() && flagTest('combat.trained')) stopTake();
+  saveCommit({ flags:getSave().flags });
+  if(flagTest('combat.trained')) return;   // already been through it (legacy save)
+  // The beat is normally already running (see roll → beginDaydream). This is the
+  // fallback for levels set some other way — a skipped intro, the loop's
+  // six-second catch — so the daydream never simply fails to happen.
+  if(!daydreamRunning) beginDaydream();
+}
+
+// The dream ripple, and then he is in it. The lens goes soft and wrong for a beat
+// so the cut into the fight reads as falling asleep rather than as a scene change.
+function dreamRippleIntoDrill(){
+  // He has been holding the take all the way through the drift. The recorder
+  // clicks off as he goes under — this is where the six seconds actually end.
+  if(REC.isRecording()) stopTake();
+  if(flagTest('combat.trained')) return;
+  applyLensPreset('rupture');
+  CR.fx.glitch(0.55, 900);
+  CR.fx.flash(420, 'rgba(10,14,20,0.55)');
+  CUES.playCue(CUES.CUE.recorder, {gain:.28, rate:.34, lowpassHz:700});
+  setTimeout(()=>{ if(storyMode && !flagTest('combat.trained')) openTrainingBattle(); }, 1100);
+}
+
+// The count, the drift, the daft joke, and then the ripple. Runs on the world
+// surface while the take rolls, so the six seconds he is counting are the six
+// seconds the recorder is actually holding.
+let daydreamRunning=false;
+function beginDaydream(){
+  if(daydreamRunning || flagTest('combat.trained')) return false;
+  daydreamRunning=true;
+  // No scrim, and down at the foot of the screen: the DA-1000 take overlay is
+  // drawn before scenes (drawStoryHud → scenes.render), so a centred panel over a
+  // scrim used to bury the machine this beat is narrating. He counts the seconds
+  // and you watch the meter hold them — that is the whole lesson.
+  const opened=converse('daydream', { start:{ lines:daydreamBeat() } }, {
+    scrim:0, anchor:'bottom',
+    onDone:()=>{ daydreamRunning=false; dreamRippleIntoDrill(); },
+  });
+  // `?nothink=1` and the mechanism suites get no dialog surface at all. The drill
+  // still has to happen, or the dock gate can never be cleared.
+  if(!opened){ daydreamRunning=false; dreamRippleIntoDrill(); }
+  return true;
+}
+
+// Out the other side — win or lose, he has had the daft dream and the setup is
+// done with it. He opens his eyes on the dock with the levels good, slightly
+// embarrassed, and the night's work begins: the bearing down to Studio B3.
+function finishSetupRehearsal(){
+  fireCue('bag');
+  // The kit is honest and the six seconds are held. The last thing he owes
+  // himself is a bearing — and the waypoint is the one verb the player has not
+  // been walked through yet, so it gets the monitor shell rather than a line in
+  // the band: the same small machine that talks to them everywhere else, holding
+  // still until they have actually done it. The bag prompt flashes underneath
+  // (drawStoryHud) and the case itself locks to the map (tutorialGuide).
+  //
+  // He does NOT mark it for the player. Marking is the verb being taught.
+  converse('waypoint-brief', { start:{ lines:[
+    { who:'you', text:"Right. Levels are honest, and I am not telling anybody about the rest of that." },
+    { who:'direction', text:'Six seconds on the card. The kit is straight. Nothing else in this building is going to be this easy.' },
+    { who:'you', text:"Last thing before I go down: write down where I'm going." },
+    { who:'you', text:"Bag. There's a floor plan in it. Studio B3 is the one the order wants first — mark it, and the bearing at the top of my eye points at it until I've done it." },
+    { who:'direction', text:'The case is in his left hand. The plan is behind the work order.' },
+  ] } }, {
+    scrim:0.35,
+    onDone:()=>{ waypointBriefShownAt=performance.now(); },
+  });
+}
+// When the bag prompt started flashing, so it can settle to a steady glow rather
+// than blinking at the player forever.
+let waypointBriefShownAt=0;
+
+// ── the mic test ────────────────────────────────────────────────────────────
+// He checks a microphone the way anyone checks a microphone: he says something
+// into it and watches the needle. It is YOUR mic and YOUR voice — the same input
+// that will spoil takes for the rest of the night — and here it costs exactly
+// nothing. Nothing is rolling, nothing is kept, nothing in the building can hear
+// it, and there is no way to fail it: talk and he acknowledges it, stay quiet
+// and he takes the quiet as the answer.
+//
+// It is skipped without comment when there is no mic to test (?nomic, mic set to
+// off, or a permission the player declined). Setup never waits on hardware.
+const MIC_TEST=Object.freeze({ speak:0.045, hold:0.45, settle:1.6, wait:3.0, limit:15 });
+let micCheck=null;   // {elapsed, spoke, peak, ack, ackAt, onDone}
+
+function micCheckActive(){ return !!micCheck; }
+
+function beginMicTest(onDone){
+  const wanted = storyMode && !params().has('nomic') && getSave().settings?.mic!=='off';
+  if(!wanted){ onDone?.(); return false; }
+  startRoomMic();
+  micCheck={ elapsed:0, spoke:0, peak:0, ack:false, ackAt:0, onDone };
+  SPEECH.say({ who:'you', text:"Mic first. Say something into it — check, one two — and watch the meter move. Nothing's rolling. The tape isn't running and this room keeps none of it." });
+  return true;
+}
+
+function finishMicTest(line){
+  if(!micCheck) return;
+  const done=micCheck.onDone;
+  micCheck=null;
+  if(line) SPEECH.say({ who:'you', text:line });
+  setTimeout(()=>{ if(storyMode) done?.(); }, line?1200:600);
+}
+
+function tickMicTest(dt){
+  if(!micCheck) return;
+  micCheck.elapsed+=dt;
+  const level=MIC.micLevel();
+  micCheck.peak=Math.max(micCheck.peak, level);
+  if(level>=MIC_TEST.speak) micCheck.spoke+=dt;
+  else micCheck.spoke=Math.max(0, micCheck.spoke-dt*0.5);
+
+  // No mic, or one the player declined. Say nothing about it and get on with it.
+  if(!MIC.micActive() && MIC.micState()!=='asking' && micCheck.elapsed>=MIC_TEST.wait){ finishMicTest(null); return; }
+
+  if(!micCheck.ack && micCheck.spoke>=MIC_TEST.hold){
+    micCheck.ack=true;
+    micCheck.ackAt=micCheck.elapsed;
+    SPEECH.say({ who:'you', text:"There it is. That's me on the meter — and that is exactly what a take hears if I so much as move wrong. Right. Levels." });
+  }
+  if(micCheck.ack && micCheck.elapsed>=micCheck.ackAt+MIC_TEST.settle){ finishMicTest(null); return; }
+  if(micCheck.elapsed>=MIC_TEST.limit) finishMicTest("Quiet in here. Good — that's the number I want on the meter all night.");
+}
+
+// The meter, while he tests it. Deliberately the same green VFD as the take
+// meter, with the one thing that matters printed under it: nothing is recording.
+function drawMicTestOverlay(cols, rows){
+  if(!micCheck) return;
+  const w=Math.min(64, cols-8);
+  const x=Math.floor((cols-w)/2);
+  const y=Math.max(2, Math.floor(rows*0.14));
+  const asking=MIC.micState()==='asking';
+  // No header meter: the only meter on this panel is the one the player is
+  // being asked to move, and it is the room mic, not the monitor bus.
+  const panel=drawMachinePanel(x, y, w, 9, {
+    theme:'green', label:'MIC TEST', source:'ROOM MIC', meter:false,
+    footer:'NOTHING IS RECORDING. NOTHING IS KEPT.',
+  });
+  uiText(panel.x, panel.y, asking ? 'WAITING ON THE MICROPHONE…' : 'SAY: "CHECK, ONE TWO"', 'ui-amber');
+  drawVfdMeter(panel.x, panel.y+1, Math.max(12, Math.min(28, panel.w-4)), MONITOR.monitorSnapshotForRms(MIC.micLevel()), { theme:'green', thresholdDb:-12 });
+  uiText(panel.x, panel.y+2,
+    micCheck.ack ? 'HEARD. THAT IS WHAT A TAKE WILL HEAR.'
+      : MIC.micActive() ? 'THAT NEEDLE IS YOUR REAL ROOM. IT CANNOT SPOIL ANYTHING YET.'
+        : 'NO MICROPHONE. THE NIGHT RUNS FINE WITHOUT ONE.',
+    micCheck.ack ? 'ui-counter' : 'ui-secondary', .85);
+}
+
 function firstTakeIntercept(){
   if(!storyMode || REC.isMonitoring()) return false;
   if(planName!=='conservatory') return false;
 
-  // The level check belongs to Studio B3. Elsewhere [r] is just the recorder.
-  if(TUT.tutorialStep()==='level' && currentWorld()==='main_b3'){
-    // The tutorial owns this specific check: the first press opens the tree,
-    // and every retry after a spoil rolls straight, so the lesson can pass.
-    if(!thoughtHad('level-check')) return !!think('level-check', LEVEL_CHECK, { onDone:()=>beginTakeNow() });
+  // The level check belongs to Studio B3 and is the one hard gate: until levels
+  // are set, no take counts, and levels can only be set here. It fires whenever
+  // you record at B3 with levels unset — decoupled from the soft tutorial step,
+  // so it holds even if the intro was skipped. First press opens the tree; every
+  // retry after a spoil rolls straight, so the lesson can always pass.
+  //
+  // WHERE: the dock, where he sets up before he goes anywhere — and studio B3
+  // too, so a player who skipped the intro can still set levels in the room the
+  // order names first. Asked explicitly rather than leaning on `currentWorld()`,
+  // which the dock answers as `main_b3` because it shares the basement's room
+  // tone; that accident is what made the dock's level check roll a B3 take.
+  if(levelCheckHere() && !flagTest('setup.levels')){
+    // The tree talks him through the meter, then he tests the real one, then he
+    // rolls. A retry after a spoil skips both and rolls straight.
+    if(!thoughtHad('level-check')) return !!think('level-check', LEVEL_CHECK, { onDone:()=>beginMicTest(()=>beginTakeNow()) });
     beginTakeNow();
+    return true;
+  }
+  // Levels on the card, but the hold never actually happened — an old save, or the
+  // loop's six-second catch firing without the beat. [r] on the dock has to be the
+  // way back in. It used to fall through to "that is not a room", which left the
+  // player refused by the door AND refused by the recorder, with nothing to press.
+  if(levelCheckHere() && !flagTest('combat.trained')){
+    beginDaydream();
     return true;
   }
   if(TUT.tutorialActive()) return false;
@@ -5945,6 +6549,9 @@ function firstTakeIntercept(){
 // rolling into a take. You can only record inside one of the five rooms, and
 // only one you have not already done.
 function recordAction(){
+  // Mid mic test, [r] is "yes, I've heard enough" — it ends the test and rolls.
+  // The verb is never swallowed and the test is never a wall.
+  if(micCheckActive()){ finishMicTest(null); return; }
   if(REC.isRecording()){
     if(REC.isStalled()){ resumeInstrumentTake(); return; }
     stopTake(); return;
@@ -5956,9 +6563,9 @@ function recordAction(){
       emitRecorderTransport('source capture');
       if(result.text)SPEECH.say({who:'you',text:result.text});
       syncSourceRender();
-      return;
     }
-    SPEECH.say({who:'you',text:'The recorder runs. No work-order room answers here.'});
+    // No landmark in focus: nothing to capture, and no nagging thought — the
+    // recorder is only for the source addresses you deliberately face.
     return;
   }
   if(usingStairAnomaly()){CUES.playCue(CUES.CUE.recorder,{gain:.08,rate:.42});return;}
@@ -5969,6 +6576,24 @@ function recordAction(){
   if(REC.isListening()){ if(!scenes.blocksInput()) roll(); return; }
   const room=recordableRoomAt(px,py);
   if(!room){ SPEECH.say(LINES.notARoom); return; }
+  // The one hard gate: nothing counts until the kit is honest — levels set and
+  // the six seconds held, both of which only happen on the dock. The level check
+  // is handled upstream by firstTakeIntercept, so this only ever refuses a REAL
+  // take attempted before setup is done.
+  if(!setupComplete()){
+    // Self-healing: levels on the card but the six seconds never actually held
+    // (an old save, or the loop's catch). [r] is the way in — it starts the hold
+    // and the count, same as the first time, so the gate can never dead-end and
+    // nothing else in the world has to start a fight on the player's behalf.
+    if(flagTest('setup.levels') && !flagTest('combat.trained')){
+      SPEECH.say({ who:'you', text:"Levels are on the card but I never properly held it. Once more, feet still, and then nothing on this tape is my fault." });
+      beginDaydream();
+      return;
+    }
+    SPEECH.say(LINES.needLevels); return;
+  }
+  // And B3 comes first: no other room takes until Studio B3 has a clean minute.
+  if(room!=='main_b3' && room!=='lux_nova' && !REC.hasTake('main_b3')){ SPEECH.say(LINES.basementFirst); return; }
   // The chapel is the fifth room, and it is not a take. It is locked until the
   // other four are on the card, and rolling it opens the confrontation.
   if(room==='lux_nova'){
@@ -5999,6 +6624,7 @@ function emitRecorderTransport(action='transport'){
 function openListen(room){
   if(!REC.startListening()) return;
   ensureCtx();
+  takeRoom=room;
   PB.beginTake(room, {x:px, y:py});
   CUES.playCue(CUES.CUE.recorder, {gain:0.7, rate:1.02});
   emitRecorderTransport('monitor-on');
@@ -6017,7 +6643,8 @@ let committedListen=false;
 function cancelListen(){
   if(!REC.isListening()) return false;
   if(committedListen){ SPEECH.say(LINES.mustRoll); return true; }
-  const room=currentWorld();
+  const room=takeRoom || currentWorld();
+  takeRoom=null;
   REC.stopListening();
   PB.abortTake(room);
   CUES.playCue(CUES.CUE.recorder, {gain:0.5, rate:0.9});
@@ -6054,14 +6681,26 @@ function roll(){
   STORY.startTapeHiss({ gain: TAKE_HISS.min, fade: 1.2 });
   personalInterference.clear();
   SPEECH.say(framedLine('recStart', LINES.recStart));
+  // The mic was tested before this roll (see beginMicTest), so the take says
+  // nothing more about it. Nothing hunts a man who has not started work.
   if(!TUT.tutorialActive()) summonPresence('first-take');
+  // The level check is six seconds of standing still in the dark with nothing to
+  // do, so the counting starts with the roll: the numbers he says out loud ARE
+  // the seconds the recorder is holding, and by the last one he has talked
+  // himself into something stupid (see beginDaydream).
+  else if(!flagTest('setup.levels') && !flagTest('combat.trained')) beginDaydream();
 }
 
 // Stop the take: a clean minute, a spoiled one, or one you called off.
+//
+// The room is the one the take BEGAN in, not wherever the recordist is standing
+// when it stops. Asking the world again at the end is how a level check set on
+// the dock came to be filed against studio B3.
 function stopTake(){
   if(!REC.isRecording()) return;
-  const room=currentWorld();
+  const room=takeRoom || recordableRoomAt(px,py) || currentWorld();
   const r=REC.stopRecording();
+  takeRoom=null;
   clearInstrument();
   instrArmedThisTake=false;
   CUES.playCue(CUES.CUE.recorder, {gain:0.7, rate:0.88});
@@ -6076,12 +6715,15 @@ function stopTake(){
     himBeat();                      // he held a clean minute here too, and then he did not
   } else {
     PB.abortTake(room);
+    // The tutorial level check is stopped deliberately at six seconds by the setup
+    // sequence, not aborted by the player — the daydream owns the narration from
+    // here, so the recorder just clicks off without a "wasted take" line.
     if(r.spoiled){
       emitProgress(EVENT_TYPES.TAKE_SPOILED, { roomId:room, reason:r.reason || 'noise' }, 'main.stopTake');
-      SPEECH.say(LINES.recSpoiled(r.reason));
+      if(!TUT.tutorialActive()) SPEECH.say(LINES.recSpoiled(r.reason));
     } else {
       emitProgress(EVENT_TYPES.TAKE_ABORTED, { roomId:room }, 'main.stopTake');
-      SPEECH.say(LINES.recAbort);
+      if(!TUT.tutorialActive()) SPEECH.say(LINES.recAbort);
     }
   }
 }
@@ -6092,8 +6734,14 @@ function stopTake(){
 // monitor opened when the tree started); this just rolls it.
 function beginTakeNow(){
   if(REC.isMonitoring()){ roll(); return; }
-  const room=recordableRoomAt(px,py) || currentWorld();
+  // The level check is set on the dock floor, and the dock is not one of the
+  // five rooms. It used to fall through to `currentWorld()`, which the dock
+  // answers as `main_b3` (it shares the basement's room tone — ZONE_WORLD), so
+  // setting levels in the dock opened, rolled and aborted a take of STUDIO B3
+  // while standing two floors above it. A level check is its own thing now.
+  const room=recordableRoomAt(px,py) || LEVEL_CHECK_ROOM;
   if(!REC.startListening()) return;
+  takeRoom=room;
   PB.beginTake(room, {x:px, y:py});
   roll();
 }
@@ -6414,8 +7062,42 @@ function himBeat(){
 // One verb, and it reads whatever is at your feet. There is nothing else in
 // this building to do with your hands.
 function propLabel(prop){ return String(prop?.label || prop?.mesh || 'object').replaceAll('_',' ').toUpperCase(); }
+
+// One centred prompt row on the HUD. Measured before it is drawn because a
+// drawn button glyph is a fixed three cells wide regardless of what the
+// keyboard fallback text would have been.
+function hudPromptRow(y, parts, cols, role='ui-amber'){
+  const w = promptPartsWidth(parts);
+  drawPromptParts(Math.max(2, Math.floor((cols - w) / 2)), y, parts, { role, cols });
+}
+// Authored instrument stems the props play. Unlike the surfable worlds, these
+// are short discrete takes preloaded as whole buffers (see preloadPropStems), so
+// they never enter the chunk-surf world manifest.
+const PROP_STEMS={
+  piano_player:['01','02','03','04','05'].map((label)=>({label,url:assetUrl(`audio/piano/player/you-play-piano-${label}.mp3`)})),
+  marimba_player:['01'].map((label)=>({label,url:assetUrl(`audio/marimba/player/you-play-marimba-168bpm-${label}.mp3`)})),
+  violin_player:['01','02'].map((label)=>({label,url:assetUrl(`audio/violin/player/you-play-violin-${label}.mp3`)})),
+};
+const propStemBuffers=new Map(); // `${worldId}:${label}` -> AudioBuffer
+async function preloadPropStems(){
+  if(!actx)return;
+  for(const [worldId,stems] of Object.entries(PROP_STEMS)){
+    for(const {label,url} of stems){
+      const key=`${worldId}:${label}`;
+      if(propStemBuffers.has(key))continue;
+      try{
+        const res=await fetch(url);const ab=await res.arrayBuffer();
+        propStemBuffers.set(key,await actx.decodeAudioData(ab));
+      }catch(err){console.warn('prop stem load failed',url,err);}
+    }
+  }
+}
 function propChunk(ref){
   if(!ref)return null;
+  if(PROP_STEMS[ref.worldId]){
+    const buffer=propStemBuffers.get(`${ref.worldId}:${ref.fileLabel}`);
+    return buffer?{buffer}:null;
+  }
   const file=files.find((f)=>f.worldId===ref.worldId&&f.label===ref.fileLabel);
   return file ? chunkAt(file.idx) : null;
 }
@@ -6430,6 +7112,46 @@ function playPropSample(prop,ref){
   gain.gain.setValueAtTime(Math.max(.05,.28/(1+d*.18)),now);
   src.connect(gain);gain.connect(pan);pan.connect(master);src.start(now);
   return true;
+}
+// Hold-to-play. The universal rule for playing an instrument in the world: hold
+// [e] and a random stem from that instrument's set plays from the top; let go and
+// it stops. One voice at a time; a key-repeat on the same prop keeps it going
+// rather than restarting it.
+let heldPropPlay=null;
+function startHeldPropPlay(prop){
+  ensureCtx();
+  const fam=prop?.sampleFamily||[];
+  if(!fam.length) return false;
+  if(heldPropPlay){ if(heldPropPlay.propId===prop.id) return true; stopHeldPropPlay(.04); }
+  const ref=fam[Math.floor(Math.random()*fam.length)];   // random, per set
+  const chunk=propChunk(ref);
+  if(!actx||!master||!chunk?.buffer) return false;
+  const now=actx.currentTime,src=actx.createBufferSource(),gain=actx.createGain(),pan=actx.createStereoPanner();
+  src.buffer=chunk.buffer;
+  const mx=(px+.5)*CELL,mz=(py+.5)*CELL,dx=prop.x-mx,dz=prop.y-mz,d=Math.hypot(dx,dz);
+  const right=[[1,0],[0,1],[-1,0],[0,-1]][((R3.r3dFacing()%4)+4)%4];
+  pan.pan.setValueAtTime(Math.max(-1,Math.min(1,(dx*right[0]+dz*right[1])/4)),now);
+  gain.gain.setValueAtTime(Math.max(.05,.30/(1+d*.18)),now);
+  src.connect(gain);gain.connect(pan);pan.connect(master);
+  src.start(now);   // from the beginning, always
+  const entry={src,gain,propId:prop.id};
+  heldPropPlay=entry;
+  src.onended=()=>{ if(heldPropPlay===entry) heldPropPlay=null; };
+  return true;
+}
+function stopHeldPropPlay(fade=.08){
+  const entry=heldPropPlay;
+  if(!entry) return;
+  heldPropPlay=null;
+  try{
+    if(actx&&entry.gain){
+      const t=actx.currentTime,f=Math.max(.01,fade);
+      entry.gain.gain.cancelScheduledValues(t);
+      entry.gain.gain.setValueAtTime(entry.gain.gain.value,t);
+      entry.gain.gain.linearRampToValueAtTime(.0001,t+f);
+      entry.src.stop(t+f+.02);
+    } else entry.src.stop();
+  }catch{/* already stopped */}
 }
 function progressionDocumentId(doc){
   return String(doc?.id || doc?.title || 'document').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
@@ -6488,7 +7210,7 @@ function makeObjectDetailScene({ id, title, source = 'OBJECT', body = '', onCont
       const panel = drawMachinePanel(x, y, w, h, {
         label: 'INSPECT',
         source,
-        footer: BINDINGS.promptLine([{ action: 'confirm', label: 'INSPECT' }, { action: 'back', label: 'CLOSE' }]),
+        footerParts: [{ action: 'confirm', label: 'INSPECT' }, { action: 'back', label: 'CLOSE' }],
         meter: true,
       });
       drawVfdText(panel.x + 1, panel.y - 1, String(title || source).toUpperCase(), {
@@ -6605,9 +7327,9 @@ function interact(){
       REC.emitNoise(.05,px,py,'source handled',{spoils:false,kind:'handling_noise',sourceKind:'player',sourceId:'source',playerGenerated:true,deliberate:true});
       if(result.text)SPEECH.say({who:result.event==='completed'?'direction':'you',text:result.text});
       syncSourceRender({force:result.event==='page-found'||result.event==='completed'});
-      return;
     }
-    SPEECH.say({who:'you',text:'The source has no interaction at this address.'});
+    // Nothing in focus: no interaction, and no "nothing here" thought to break
+    // the flow of just walking and reading the field.
     return;
   }
   if(usingStairAnomaly()){CUES.playCue(CUES.CUE.door,{gain:.05,rate:.36});return;}
@@ -6624,6 +7346,9 @@ function interact(){
     });
     if(pickUpPage()) return;
   }
+  // Reaching for the door he came in through outranks operating it. He never
+  // gets to open this one.
+  if(tryTheGreyDoor()) return;
   const doorHit=usingPlan()?FP.interactDoor(px,py,R3.r3dDelta(1),playerKeys):null;
   if(doorHit){
     if(!doorHit.ok){
@@ -6723,13 +7448,25 @@ function interact(){
       SPEECH.say({who:'direction',text:'The shutters begin to open. The ring finishes what it is saying, finds rounds, and starts to stand.'});
       return;
     }
+    // The gallery busts are the one thing on that floor you address rather than
+    // inspect. See talkToBust: every answer is his own.
+    if(hit.talkable && talkToBust(hit.id)) return;
     const line=inspectPropTracked(hit.id);
+    // Some ordinary furniture has a calibration pin in it (see PIN_HOSTS). The
+    // pin is announced first and the prop still says its own line underneath.
+    const tookPin=takeHostedPin(hit.id);
+    if(tookPin){ saveCommit({props:PROPS.savePropState()}); if(line)SPEECH.say({who:'you',text:line}); return; }
     if(hit.sampleFamily?.length){
-      const ref=auditionPropTracked(hit.id);
-      playPropSample(hit,ref);
-      REC.emitNoise(.16,hit.rx,hit.ry,`the ${propLabel(hit).toLowerCase()} sounded`,{
-        kind:hit.acousticKind||'instrument_note',sourceKind:'environment',sourceId:hit.id,playerGenerated:true,deliberate:true,
-      });
+      // Hold [e] to play a random stem from the top; release stops it (see
+      // onKeyUp → stopHeldPropPlay). The first press is the deliberate note the
+      // room hears.
+      auditionPropTracked(hit.id);
+      const started=startHeldPropPlay(hit);
+      if(started){
+        REC.emitNoise(.16,hit.rx,hit.ry,`the ${propLabel(hit).toLowerCase()} sounded`,{
+          kind:hit.acousticKind||'instrument_note',sourceKind:'environment',sourceId:hit.id,playerGenerated:true,deliberate:true,
+        });
+      }
     }
     saveCommit({props:PROPS.savePropState()});
     if(line)SPEECH.say({who:'you',text:line});
@@ -6841,12 +7578,6 @@ function bagEquipment(){
       id:'tuning-fork',label:'tuning fork',present:true,battleCapable:true,
       value:'A440',statusTone:'active',location:'CARRIED',
     }]:[]),
-    ...(combatBuild().pinsEarned?[{
-      id:'calibration',label:'signal calibration',present:true,
-      value:combatBuild().unspent?`${combatBuild().unspent} PIN${combatBuild().unspent===1?'':'S'} READY`:`${combatBuild().techniques.length} LOCKED`,
-      statusTone:combatBuild().unspent?'metadata':'complete',location:'RECORDER',
-      action:openCombatCalibration,actionLabel:'OPEN',destructive:false,
-    }]:[]),
     {
       id:'map',label:'location indicator',present:!itemLost('map'),
       value:itemLost('map')?'MISSING':'LIVE',statusTone:itemLost('map')?'danger':'active',
@@ -6883,13 +7614,17 @@ function moveBagCombatEquipment(id,destination){
   return result;
 }
 
-function bagHint(){
-  return TUT.tutorialStep()==='read'
-    ? `${BINDINGS.inputPrompt('confirm')} READ THE WORK ORDER - FIND WHAT THEY WANT`
-    : TUT.tutorialStep()==='mark'
-      ? `${BINDINGS.inputPrompt('mark')} MARK STUDIO B3 - SET THE WAYPOINT`
-      : '';
+function reorderBagCombatEquipment(id,direction){
+  const result=reorderCombatGear(getSave().bagLoadout,id,direction);
+  if(result.changed)saveCommit({bagLoadout:result.loadout});
+  return result;
 }
+
+// The footer hint is for the un-guided case. A tutorial step is not a hint: it
+// takes the case's own callout band (see tutorialGuide / drawBagGuide), which
+// locks the surface and says WHY, so a required step can never be mistaken for
+// an optional keypress printed next to a button.
+function bagHint(){ return ''; }
 
 function bagFocus(){
   if(TUT.tutorialStep()==='read') return {sectionId:'files',entryId:'file:work-order'};
@@ -6897,7 +7632,7 @@ function bagFocus(){
   return null;
 }
 
-function openBag(){
+function openBag({ focus:focusOverride=null }={}){
   if(!storyMode) return;
   if(REC.isRecording()){ SPEECH.say({ who:'you', text:'Not while rolling.' }); return; }
   ensureCtx();
@@ -6909,11 +7644,16 @@ function openBag(){
     getEquipment:bagEquipment,
     getLoadout:()=>getSave().bagLoadout,
     moveEquipment:moveBagCombatEquipment,
+    reorderEquipment:reorderBagCombatEquipment,
     getJob:bagJob,
     getMap:currentFacilityMapModel,
     getHint:bagHint,
-    focus:bagFocus(),
+    focus:focusOverride || bagFocus(),
     getFocus:bagFocus,
+    getGuide:()=>TUT.tutorialGuide('bag'),
+    getBuild:combatBuild,
+    hasRig:()=>flagTest('has.interface'),
+    onFitSkill:learnCalibration,
     memory:getSave().bagNav,
     onRemember:(bagNav)=>saveCommit({bagNav}),
     getMonitorSource:()=>MIC.micActive()?'ROOM MIC LIVE':'FIELD LIVE',
@@ -7001,6 +7741,58 @@ function syncStoryObjectProps(){
       again:'A=440. And nothing else.',
     },
   });
+}
+
+// Collectible calibration pins — diegetic brass pickups in the building's
+// optional corners. Each grants a calibration pin (see combat-progression's
+// PIN_SOURCES.flags). Placed off the recording route so finding one is a reason
+// to explore the academic gallery, the atrium, and the tower.
+// ── the calibration pins ────────────────────────────────────────────────────
+// They used to be three loose brass pins lying on the floor of three enormous
+// zones, at `elevation: .02`, in the dark, at a position picked by
+// `godFindZonePoint` — i.e. an arbitrary walkable cell. Nobody found them, ever,
+// including people looking on purpose. A 20mm object flat on the floor of a
+// pitch-black gallery is not a collectible, it is a rumour.
+//
+// So they live INSIDE things you already want to touch. Each host is an ordinary
+// inspectable prop; inspecting it the first time turns up the pin as well as its
+// own line. The hosts are chosen so the pin makes sense of the object: a bust
+// whose base was re-pinned, soil somebody knelt in to service a head, a ringing
+// bench with a gap between its boards.
+const PIN_HOSTS = Object.freeze({
+  'acq-foyer-marble-bust': {
+    flag:'pin.foyer',
+    found:'And a second pin, loose in the felt of the base — brass, tape-era, the sort you align a head with. Not the one holding the marble together. Pocket it.',
+  },
+  'academic-garden-planter-west': {
+    flag:'pin.academic',
+    found:'A calibration pin, half down in the soil. Somebody knelt out here with a head off and lost it in the dirt. Still true.',
+  },
+  'tower-ringing-bench-west': {
+    flag:'pin.tower',
+    found:'Something in the gap between the boards. A calibration pin, brass, gone dull. It rings very faintly when the bell settles.',
+  },
+});
+
+// Inspecting a host prop yields its pin, once. Returns true when a pin was taken,
+// so the caller still prints the prop's ordinary inspect line underneath.
+function takeHostedPin(propId){
+  const host=PIN_HOSTS[propId];
+  if(!host || flagTest(host.flag)) return false;
+  flagApply([host.flag]);
+  saveCommit({flags:getSave().flags});
+  fireCue('bag');
+  REC.emitNoise(.03,px,py,'calibration pin pocketed',{
+    spoils:false,kind:'handling_noise',sourceKind:'equipment',sourceId:'pin',playerGenerated:true,deliberate:true,
+  });
+  const free=combatBuild().unspent;
+  SPEECH.sayAll([
+    { who:'you', text:host.found },
+    { who:'you', text:free>0
+      ? `That is ${free===1?'a modification':`${free} modifications`} the recorder can take. ${BINDINGS.inputPrompt('bag')} — calibration.`
+      : 'The recorder can spend that on itself.' },
+  ]);
+  return true;
 }
 
 function dropRadioFromBag(){
@@ -7541,7 +8333,14 @@ function tutorialCtx(){
   const r=REC.recState();
   return { px, py, light:r.light, recording:REC.isRecording(), takeElapsed:r.takeElapsed,
            spoiled:r.spoiled, spoilReason:r.spoilReason, slow:r.slow, workOrderRead,
-           marked: OBJ.targetRoom(), leftDock: py > FP.toRuntimeCoord(15) };
+           marked: OBJ.targetRoom(),
+           // The level step is not done when the meter reads good — it is done
+           // when the rehearsal that follows it is. Otherwise the next step's
+           // line lands in the middle of the daydream, over the top of the drill.
+           rehearsed: flagTest('combat.trained'),
+           // Left the dock = stepped out of its zone in any direction, which is
+           // what ends the setup and starts the night.
+           leftDock: usingPlan() && !usingSpecialSpace() ? FP.zoneAt(px,py)!==ZONE.dock : true };
 }
 
 function tickMutation(dt){
@@ -7568,6 +8367,15 @@ function tickSourceSpace(dt){
   chunkSurfRuntime.tick(dt,{px,py,facing:R3.r3dFacing()});
   const paper=chunkSurfRuntime.paperTonePoint();
   const now=performance.now();
+  // The long hall should tighten toward the still page, not slacken. Feed a
+  // gentle depth-scaled dread while advancing so the pressure rises INTO the
+  // find instead of decaying to nothing before you reach it — the fear system
+  // still eases it back down, so this sustains a curve rather than a spike, and
+  // it does not cliff the moment the page is in view. Small and throttled.
+  if(chunkSurfRuntime.state().phase===CHUNK_SURF_PHASE.HALL && now>=sourceHallDreadAt){
+    const stage=chunkSurfRuntime.state().pageStage; // 0..4, rises with hall depth
+    if(stage>0){ bumpFear(.05+stage*.045); sourceHallDreadAt=now+1100; }
+  }
   if(paper&&now>=sourcePaperToneAt){
     const dx=paper.x-px,dy=paper.y-py,distance=Math.hypot(dx,dy);
     if(distance<32){
@@ -7585,9 +8393,14 @@ function tickSourceSpace(dt){
     sourceAlignmentToneAt=now+7000;
   }
   const hush=chunkSurfRuntime.hushMode();
-  if(hush.colliding&&!PRES.isActive()){
+  // The presence is on the board for the whole back half of Source, not only the
+  // two scripted pursuits: once the fork wakes it (mode leaves 'absent') it stays
+  // spawned and PROWLS at a dread-set distance — a body you can see moving out
+  // there — and only escalates to a hunt when the runtime says it is colliding.
+  const hushPresent=hush.mode!=='absent';
+  if(hushPresent&&!PRES.isActive()){
     PRES.spawnBehind(px,py,0,1);
-  }else if(!hush.colliding&&PRES.isActive())PRES.despawn();
+  }else if(!hushPresent&&PRES.isActive())PRES.despawn();
   if(!sourceFinalCombatOpen&&performance.now()>=sourceFinalCombatRetryAt&&!scenes.blocksInput()){
     const request=chunkSurfRuntime.finalEncounterRequest();
     if(request?.adapter==='combat-v1'){
@@ -7623,14 +8436,35 @@ function tickSourceSpace(dt){
   syncSourceRender();
 }
 
+let stairAnomalyEnteredAt=0;
 function tickStairAnomaly(_dt){
   if(!usingStairAnomaly())return;
   syncStairAnomalyRender();
+  // He works out the trick himself, once he has been climbing long enough to be
+  // properly frightened. Said once, in his own voice, and never repeated — it is a
+  // man reasoning, not a hint system.
+  if(!stairEscapeHinted && stairAnomalyEnteredAt && performance.now()-stairAnomalyEnteredAt>STAIR_ESCAPE.hintAfter){
+    stairEscapeHinted=true;
+    SPEECH.sayAll([
+      { who:'you', text:'This is not a stair. I have been on this for a minute and a half and it is not a stair.' },
+      { who:'you', text:"Right. Nothing in here is real while I can see it. So stop seeing it." },
+      { who:'you', text:`${BINDINGS.inputPrompt('light')}. Torch off, stand still, count to thirty, and put it back on.` },
+    ]);
+  }
 }
 
 function onSourcePresenceCatch(){
   if(!usingSourceSpace())return;
-  if(!chunkSurfRuntime.hushMode().colliding){PRES.despawn();return;}
+  if(!chunkSurfRuntime.hushMode().colliding){
+    // It brushed you during the quiet stalk — not a pursuit, so it does not reset
+    // you. It withdraws to arm's length and keeps circling instead of despawning,
+    // so the watched feeling persists between the scripted runs.
+    const actor=PRES.presenceState();
+    const ang=Math.atan2(actor.y-py,actor.x-px)||(Math.random()*Math.PI*2);
+    actor.x=px+Math.cos(ang)*12;actor.y=py+Math.sin(ang)*12;
+    actor.hasTarget=false;actor.velocityX=0;actor.velocityY=0;actor.speed=0;
+    return;
+  }
   const checkpoint=chunkSurfRuntime.handleHushContact();
   px=checkpoint.x;py=checkpoint.y;R3.r3dSetFacing(checkpoint.facing||0);
   const actor=PRES.presenceState();actor.x=px-14;actor.y=py+10;actor.hasTarget=false;
@@ -7651,6 +8485,207 @@ function summonPresence(reason='noise'){
   PRES.spawnBehind(px, py, -lastStepDx||0, -lastStepDy||1);
   emitProgress(EVENT_TYPES.HUSH_MET, {reason}, 'main.summonPresence');
   return true;
+}
+
+// The hush's off-hours mischief. Some instruments keep a folder of non-battle
+// stems; outside the fight the hush will, RARELY, one-shot a single one of them
+// — a violin phrase out of the dark, out of time, from somewhere else in the
+// building. Never during a fight (the battle scene blocks the world tick), and
+// only once the night's real work has begun.
+//
+// Three things make it a sound in a building rather than a sound in your ears:
+// it comes from a bearing (pan), it is far (quiet, and no top end), and the
+// walls between you and it take the rest (occlusion). A mischief cue you can
+// hear clearly is a mischief cue standing next to you, which is not the joke.
+let mischiefNextAtMs=0;
+let mischiefQuietUntilMs=0;
+const MISCHIEF_INTERVAL_MS=[150000, 330000];
+// After a fight the room has had quite enough. Losing especially: the last
+// thing a beaten recordist needs is the thing that beat him noodling at him.
+const MISCHIEF_AFTER_BATTLE_MS={ win:120000, lose:240000, abort:120000 };
+
+function hushMischiefQuiet(reason='win'){
+  mischiefQuietUntilMs=performance.now()+(MISCHIEF_AFTER_BATTLE_MS[reason]??120000);
+  mischiefNextAtMs=Math.max(mischiefNextAtMs, mischiefQuietUntilMs);
+}
+
+function tickHushMischief(){
+  if(!storyMode || !usingPlan() || usingSpecialSpace() || !setupComplete()) return;
+  if(scenes.blocksInput()) return;
+  const now=performance.now();
+  const reschedule=()=>{ mischiefNextAtMs=now+MISCHIEF_INTERVAL_MS[0]+Math.random()*(MISCHIEF_INTERVAL_MS[1]-MISCHIEF_INTERVAL_MS[0]); };
+  if(mischiefNextAtMs===0){ reschedule(); return; }
+  if(now<mischiefNextAtMs || now<mischiefQuietUntilMs) return;
+  reschedule();
+  // A single one-shot, drawn at random from the violin non-battle set, played
+  // from somewhere that is not here.
+  const n=1+Math.floor(Math.random()*6);
+  const shape=farRoomShape();
+  fireCue(`violin.mischief.${String(n).padStart(2,'0')}`, shape);
+  noteMischiefHeard(shape.pan);
+}
+
+// ── the busts ────────────────────────────────────────────────────────────────
+// Four anonymous heads in the gallery, and a man who talks to them. Nothing
+// answers: the conversation is his, both halves of it, and the tree says so (see
+// BUST_TALK). It is worldbuilding, it grants nothing, and it costs nothing.
+//
+// Except once. The FIRST bust he comes back to after having spoken to it has
+// turned to face him — a yaw change applied while he was elsewhere, never while
+// he is watching, never explained, never repeated. It is the same visual-only
+// drift the garden uses, so the thing he is frightened of has not actually moved
+// anywhere he could bump into.
+const BUST_TURN_YAW = 0.72;
+const spokenBusts = new Set();
+let bustTurned = false;
+
+function talkToBust(propId){
+  if(!storyMode || planName!=='conservatory') return false;
+  if(scenes.blocksInput()) return false;
+  // Coming back to one he has already spoken to is the moment it can happen.
+  if(!bustTurned && spokenBusts.has(propId) && spokenBusts.size >= 2){
+    bustTurned = true;
+    PROPS.setPropDrift(propId, { dyaw: BUST_TURN_YAW });
+    if(RENDERER==='3d') syncStoryObjectProps();
+    fireCue('violin.mischief.01', { gain:.5, lowpassHz:900 });
+    bumpFear(.28, { stinger:.5 });
+    think('bust-turn', BUST_TURN, { force:true });
+    return true;
+  }
+  spokenBusts.add(propId);
+  // `force` because this is a thought you may have more than once: it is a
+  // conversation, and a man alone in a building has it again.
+  think(`bust-talk:${propId}`, BUST_TALK, { force:true });
+  return true;
+}
+
+// ── the garden ───────────────────────────────────────────────────────────────
+// The ruined atrium garden is never quite as you left it. Nothing is ever seen
+// to move: the drift is applied while the garden is OUT OF SIGHT — you left the
+// zone, or your torch was off in it — and it is small enough (a quarter of a
+// metre, a few degrees) that you cannot be sure. The trees lean differently. The
+// leaf litter has crept. The planters have turned a little on their bases.
+//
+// Visual only, via PROPS.setPropDrift: the colliders and the pin in the west
+// planter's soil stay exactly where they were authored. Whatever the garden looks
+// like it is doing, it is still a place you can walk through the same way.
+const GARDEN_DRIFT_PROPS = Object.freeze([
+  'academic-garden-planter-west', 'academic-garden-planter-east',
+  'academic-garden-tree-west', 'academic-garden-tree-east',
+  'academic-garden-leaves-north', 'academic-garden-leaves-south',
+]);
+// The basin and the structure never move. Something in the frame has to be
+// trustworthy or the whole room reads as a special effect instead of a place.
+const GARDEN_DRIFT_LIMIT = Object.freeze({ pos: .26, yaw: .085 });
+let gardenEpoch = 0;
+let gardenWasVisible = false;
+
+function gardenDriftAt(epoch, index, salt){
+  // Deterministic per epoch, so a frame drawn twice draws the same garden.
+  let h = (Math.imul(epoch + 1, 0x9e3779b1) ^ Math.imul(index + 1, 0x85ebca6b) ^ Math.imul(salt, 0xc2b2ae35)) >>> 0;
+  h ^= h >>> 15; h = Math.imul(h, 0x2545f491) >>> 0; h ^= h >>> 13;
+  return ((h >>> 0) / 4294967296) * 2 - 1;
+}
+
+function inTheGarden(){
+  if(!usingPlan() || usingSpecialSpace()) return false;
+  const zone = FP.zoneAt(px, py);
+  return zone === ZONE.foyer || zone === ZONE.academic;
+}
+
+// Called when the garden has been unobserved and is about to be seen again.
+function shiftGarden(reason='unseen'){
+  gardenEpoch += 1;
+  GARDEN_DRIFT_PROPS.forEach((id, index)=>{
+    // Litter moves most, then the trees, then the stone.
+    const heavy = id.includes('planter');
+    const light = id.includes('leaves');
+    const reach = GARDEN_DRIFT_LIMIT.pos * (light ? 1 : heavy ? .45 : .75);
+    PROPS.setPropDrift(id, {
+      dx: gardenDriftAt(gardenEpoch, index, 1) * reach,
+      dz: gardenDriftAt(gardenEpoch, index, 2) * reach,
+      dyaw: gardenDriftAt(gardenEpoch, index, 3) * GARDEN_DRIFT_LIMIT.yaw * (heavy ? .6 : 1),
+    });
+  });
+  if(RENDERER==='3d') syncStoryObjectProps();
+  return { epoch: gardenEpoch, reason };
+}
+
+// The garden is observed when you are standing in it with the light on. The
+// moment that stops being true it is free to rearrange, and it does so on the way
+// back in rather than while you watch.
+function tickGarden(){
+  // ONE owner for the transition. Switching the torch off in the garden and
+  // walking out of it are the same event as far as the garden is concerned, and
+  // firing a shift from the key handler as well just made the jump twice as big.
+  const visible = inTheGarden() && REC.lightOn();
+  if(!visible && gardenWasVisible) shiftGarden('out-of-sight');
+  gardenWasVisible = visible;
+}
+
+// Where that came from, for the map. The mischief is the hush's doing, so if the
+// hush is on the floor it IS the hush's position; otherwise the sound came from
+// the bearing it was panned to, which is the only honest answer the recorder has.
+// It blinks for a few seconds and then it is gone, because a monitor that keeps
+// showing a noise you heard once is a monitor that is lying about the present.
+const MISCHIEF_BLINK_MS=4200;
+let mischiefHeard=null;
+function noteMischiefHeard(pan){
+  if(!usingPlan()||usingSpecialSpace()) return;
+  let at=null;
+  if(PRES.isActive()){
+    const actor=PRES.presenceState();
+    if(Number.isFinite(actor?.x)&&Number.isFinite(actor?.y)) at={x:actor.x,y:actor.y};
+  }
+  if(!at){
+    // Pan is -1..1 across the front; place it out at a plausible room's distance.
+    const ang=mapHeading()+(Number(pan)||0)*(Math.PI*0.75);
+    // Far enough to be another room, near enough to land inside the local map's
+    // radius — a blink drawn off the edge of the panel is a blink nobody sees.
+    const reach=9+Math.random()*7;
+    at={x:px+Math.sin(ang)*reach, y:py-Math.cos(ang)*reach};
+  }
+  mischiefHeard={...at, at:performance.now()};
+}
+function recentMischief(){
+  if(!mischiefHeard) return null;
+  const age=performance.now()-mischiefHeard.at;
+  if(age>MISCHIEF_BLINK_MS){ mischiefHeard=null; return null; }
+  // AUTHORED cells, because that is the space the map model draws in — the sight
+  // command's origin is the authored position, not the runtime one. Handing the
+  // map a runtime position put the blink at twice its true offset, which on this
+  // floor is off the right-hand edge of the panel every single time.
+  return {
+    x:FP.toAuthoredCoord(mischiefHeard.x),
+    y:FP.toAuthoredCoord(mischiefHeard.y),
+    age, life:MISCHIEF_BLINK_MS,
+  };
+}
+
+// A cue as heard through a building: off to one side, quiet, and dulled by
+// however much wall is between you and the hush. When the hush is not on the
+// floor at all we still place it somewhere — the joke is that it is elsewhere.
+function farRoomShape(){
+  const bearing=(Math.random()*2-1);
+  let occlusionDb=14;
+  if(PRES.isActive() && usingPlan()){
+    try{ occlusionDb=Math.max(6, acousticOcclusionDb(hushPresenceSnapshot(), acousticSpatialAt(px,py))); }
+    catch(_){ /* no field yet: keep the default distance */ }
+  }
+  // -6 dB is half the level; walls take the rest on top of plain distance.
+  const muffle=Math.min(34, occlusionDb+8);
+  const attenuation=Math.pow(10, -muffle/20);
+  return {
+    group:'mischief',
+    pan:bearing*0.92,
+    gainScale:Math.max(0.05, attenuation),
+    // Far things have no top end, run a hair slow, and arrive a touch late.
+    lowpassHz:Math.max(380, 2600-muffle*62),
+    rate:0.92+Math.random()*0.06,
+    delay:0.05+Math.random()*0.25,
+    fadeIn:0.12,
+    skipEffects:true,
+  };
 }
 
 function tickPresence(dt){
@@ -7773,6 +8808,9 @@ let screamedThisTake=false;
 let roomMicAcousticAt=0;
 function tickRoomMicAcoustics(dt){
   if(!storyMode||REC.isRecording()||!MIC.micActive()||!MIC.micMaySpoil()) return;
+  // The setup is not a trap, and the mic test least of all: the meter moves,
+  // and nothing in the building is told a word about it.
+  if(TUT.tutorialActive()||micCheckActive()) return;
   const level=MIC.micLevel();
   if(level<0.035) return;
   const now=performance.now();
@@ -7793,6 +8831,10 @@ function tickRoomMicAcoustics(dt){
 }
 function tickMic(){
   if(!MIC.micActive()) return;
+  // The tutorial level check is a lesson, not a trap: your real mic drives the
+  // monitor meter (the mic test) but never spoils the take or finds you. Nothing
+  // punishes you until setup is done and the night's work has actually begun.
+  if(TUT.tutorialActive()) return;
   const m=MIC.micLevel();
   if(!MIC.micMaySpoil()) return;
   if(m < MIC_LEVEL.spoil) return;
@@ -8040,8 +9082,31 @@ function playCombatImpact({dealt=0,received=0,perfect=false,transition=false}={}
   }
 }
 
-function openBattle(battle, { onWin, onLose, onAbort, source=null, director=null, bench=false }={}){
+function openBattle(battle, opts={}){
+  const { bench=false }=opts;
+  // The first real fight opens the tray editor once, so the player learns the
+  // loadout is theirs to shape. The bench drill runs on fixed house gear and is
+  // exempt; after this the flag keeps it from ever nagging again.
+  if(!bench && !flagTest('loadout.introShown')){
+    ensureCtx();
+    return scenes.push(makeLoadoutBriefingScene({
+      getLoadout:()=>getSave().bagLoadout,
+      getEquipment:bagEquipment,
+      moveEquipment:moveBagCombatEquipment,
+      reorderEquipment:reorderBagCombatEquipment,
+      onConfirm:()=>{ flagSet('loadout.introShown'); saveCommit({flags:getSave().flags}); pushCombat(battle,opts); },
+      onClose:()=>{ flagSet('loadout.introShown'); saveCommit({flags:getSave().flags}); pushCombat(battle,opts); },
+    }));
+  }
+  return pushCombat(battle,opts);
+}
+
+function pushCombat(battle, { onWin, onLose, onAbort, source=null, director=null, bench=false }={}){
   ensureCtx();
+  // Warm the surfer's breakbeat before the fight can ask for it. The cue player
+  // returns silence for a file it has not decoded yet, so a backing that is only
+  // ever requested mid-fight was never once actually heard.
+  warmBattleVoices();
   const battleToolList=availableBattleTools(getSave().bagLoadout,bagEquipment());
   const battleTools=new Set(battleToolList);
   const playTool=(tool)=>{
@@ -8058,7 +9123,7 @@ function openBattle(battle, { onWin, onLose, onAbort, source=null, director=null
       injuries: bench?0:REC.recState().injuries,
       battery: bench?1:REC.batteryLevel(),
       torchDrainScale: currentDifficulty().torch.drainScale,
-      techniques: bench?[]:normalizeCombatBuild(getSave().combatBuild, getSave().encounters?.cleared).techniques,
+      techniques: bench?[]:normalizeCombatBuild(getSave().combatBuild, getSave().encounters?.cleared, getSave().flags).techniques,
       tools: bench?{
         torch:true, recorder:true, fork:false, rig:false, radio:false, coffee:false,
         order:['torch','recorder'],
@@ -8093,30 +9158,36 @@ function openBattle(battle, { onWin, onLose, onAbort, source=null, director=null
     }),
     audio: STORY,
     getAudio: ()=>({ ctx:actx, destination:dialogGain || master }),
-    fx: { cue:fireCue, flash:CR.fx.flash, shake:CR.fx.shake, glitch:CR.fx.glitch },
+    fx: { cue:fireCue, flash:CR.fx.flash, shake:CR.fx.shake, glitch:CR.fx.glitch,
+      // No sustained backing. Everything the surfer does is a blow on a beat, and
+      // the beat is what ends it (see piano-weapon.js).
+      // Every battle voice belongs to the beat that swung it (see cues.js
+      // groups). This is how a turn — and a fight — actually ends in the room.
+      stopCues:()=>CUES.stopCueGroup('battle', .12) },
     playSound: playFarSound,
-    onWin: (metrics)=>{ STORY.stopTapeHiss({fade:0.8}); saveCommit({rec:REC.saveRecState()}); onWin?.(metrics); },
-    onLose:(metrics)=>{ STORY.stopTapeHiss({fade:0.8}); saveCommit({rec:REC.saveRecState()}); onLose?.(metrics); },
-    onAbort:()=>{ STORY.stopTapeHiss({fade:0.3}); saveCommit({rec:REC.saveRecState()}); onAbort?.(); },
+    // Whatever the result, the building shuts up for a while afterwards. The
+    // worst version of this game is the thing that just beat you noodling at you
+    // from the next room thirty seconds later.
+    onWin: (metrics)=>{ STORY.stopTapeHiss({fade:0.8}); CUES.stopCueGroup('battle',.2); hushMischiefQuiet('win'); STAB.reportThreat(); saveCommit({rec:REC.saveRecState()}); onWin?.(metrics); },
+    onLose:(metrics)=>{ STORY.stopTapeHiss({fade:0.8}); CUES.stopCueGroup('battle',.2); hushMischiefQuiet('lose'); STAB.reportThreat(); saveCommit({rec:REC.saveRecState()}); onLose?.(metrics); },
+    onAbort:()=>{ STORY.stopTapeHiss({fade:0.3}); CUES.stopCueGroup('battle',.2); hushMischiefQuiet('abort'); STAB.reportThreat(); saveCommit({rec:REC.saveRecState()}); onAbort?.(); },
   }));
 }
 
 let activeBattleId=null;
 let godBattleOpen=false;
-function combatBuild(){return normalizeCombatBuild(getSave().combatBuild,getSave().encounters?.cleared);}
+function combatBuild(){return normalizeCombatBuild(getSave().combatBuild,getSave().encounters?.cleared,getSave().flags);}
 function learnCalibration(id){
   const learned=learnCombatTechnique(combatBuild(),id,{hasRig:flagTest('has.interface')});
   if(!learned.changed)return false;
   saveCommit({combatBuild:learned.build});
   return true;
 }
+// A won pin opens the bag on its SKILLS tab. There is no separate calibration
+// screen any more: the tree is a section of the case like KIT and MAP, so this is
+// the ordinary bag with its cursor put somewhere useful.
 function openCombatCalibration(){
-  if(!combatBuild().pinsEarned)return false;
-  scenes.push(makeCalibrationScene({
-    getBuild:combatBuild,
-    hasRig:()=>flagTest('has.interface'),
-    onLearn:learnCalibration,
-  }));
+  openBag({ focus:{ sectionId:'skills' } });
   return true;
 }
 function openEncounterBattle(id,battle,{onWin,onLose}={}){
@@ -8167,8 +9238,15 @@ function openGodBattle(battle){
 // real encounter. Any exit — win, lose, or walking away — marks it done; one
 // pass through the drill is the requirement, not victory.
 function openTrainingBattle({withDirector=true}={}){
-  const done=()=>flagSet('combat.trained');
-  return openBattle(trainingCombatBattle(),{
+  // Win or lose, the daydream completes setup and lands the waypoint. Losing is
+  // no catastrophe — he blinks and it is the dock again, six seconds later, with a
+  // good level and a slightly stupid feeling (see the battle's lose dialog).
+  const done=()=>{ const first=!flagTest('combat.trained'); flagSet('combat.trained'); if(first) finishSetupRehearsal(); };
+  // The count and the drift already happened on the dock, out loud, during the
+  // take (beginDaydream). The battle's own authored intro picks it up from there,
+  // so nothing is injected here any more.
+  const battle=trainingCombatBattle();
+  return openBattle(battle,{
     bench:true,
     director:withDirector?createCombatTutorialDirector():null,
     onWin:done, onLose:done, onAbort:done,
@@ -8264,9 +9342,29 @@ function beginConfrontation(){
   });
 }
 
+// Which endings the chapel is willing to offer.
+//
+// Every route needs the physical thing it is performed with — the bent rig for
+// both, the fork as well for the surfaced return — and then a QUALIFICATION,
+// which is where this used to quietly collapse.
+//
+// The chapel fight grants `route.*` for whichever proof you landed and LOCKS the
+// one you did not (see finishCombat: `locks` is the complement of `grants`). So a
+// grant from anywhere else in the game was dead on arrival: the lock always
+// followed it. The grey door earns its qualification honestly — a man who went
+// looking for his exit on night one, and watched the building take it, has the
+// same knowledge the inversion is built on — so it is a second way to qualify
+// rather than a flag the chapel immediately overrules.
+function canInvertEnding(){
+  if(!flagTest('has.interface')) return false;
+  const proven = finaleGrant('route.inversion') && !finaleLock('route.inversion');
+  const learned = flagTest('door.grey.searched');
+  return proven || learned;
+}
+
 function openEndingChoice(){
   const hasRig = flagTest('has.interface');
-  const canInvert = hasRig && finaleGrant('route.inversion') && !finaleLock('route.inversion');
+  const canInvert = canInvertEnding();
   const canSurface = flagTest(CHUNK_SURF_FLAGS.bestEligible)
     && hasRig
     && finaleHasFork()
@@ -8328,7 +9426,16 @@ function startEscape(){
   const seconds=currentDifficulty().escape.seconds;
   escape={ stage:'door', doorCell:door, rescueCell:resc,
     deadlineMs:seconds==null?null:performance.now()+seconds*1000 };
-  OBJ.setWaypoint(door.x, door.y, 'grey door');
+  // A man who went and put his hand on his exit on night one knows where it is,
+  // and gets a true bearing. A man who never looked has only the plan to go on,
+  // and the plan is what has been lying to him all night — so his bearing is a
+  // little to the left of the truth. The arrival radius still resolves it (see
+  // tickFinale), so this is dread, not a dead end.
+  const searched=flagGet('door.grey.searched');
+  const drift=searched?0:2;
+  OBJ.setWaypoint(door.x+drift, door.y, 'grey door');
+  // And a man who said something out loud at that wall is quicker back to it.
+  if(searched==='tried' && escape.deadlineMs!=null) escape.deadlineMs+=6000;
   applyLensPreset('rupture');
   // The inversion: the building stops holding its own shape, and the lens is
   // what says so.
@@ -8396,8 +9503,10 @@ function maybeBattle(){
   if(!factory||REC.recState().takes.length!==1)return;
   if(ENCOUNTERS.encounterCleared('recording-2'))return;
   if(REC.takeProgress() < 0.18) return;
-  // First contact with signal combat runs the bench drill; this trigger fires
-  // again on a later frame and opens the real encounter.
+  // The daydream happens on the dock during the level check, so combat is already
+  // taught by the time real encounters begin. This guard only survives as a safety
+  // net for a legacy save that reached the field untaught — it must never leave the
+  // player facing signal combat cold.
   if(!flagTest('combat.trained')){ openTrainingBattle(); return; }
   const named = flagGet('confession.kind')==='name' && flagGet('confession.value')==='Sarah';
   openEncounterBattle('recording-2',factory(named), {
@@ -8496,7 +9605,10 @@ const ZONE_RECORDING_ROOM={ [ZONE.studio]:'main_b3', [ZONE.natatorium]:'the_tub'
 const ZONE_ACOUSTIC_ROOM={...ZONE_RECORDING_ROOM,[ZONE.chapelOuter]:'chapel_outer',[ZONE.bellTower]:'bell_tower'};
 const ZONE_AREA={ [ZONE.dock]:'loading dock', [ZONE.foyer]:'front atrium', [ZONE.studio]:'studio B3',
   [ZONE.natatorium]:'the natatorium', [ZONE.hall]:'the concert hall', [ZONE.practice]:'the practice wing',
-  [ZONE.chapel]:'chapel nave', [ZONE.chapelOuter]:'outer chapel', [ZONE.bellTower]:'bell tower', [ZONE.academic]:'academic gallery', [ZONE.plant]:'plant room', [ZONE.stair]:'building stair' };
+  [ZONE.chapel]:'chapel nave', [ZONE.chapelOuter]:'outer chapel', [ZONE.bellTower]:'bell tower', [ZONE.academic]:'academic gallery', [ZONE.plant]:'plant room', [ZONE.stair]:'building stair',
+  // The dance wing reads as one area on purpose: the recordist has no work order
+  // for these rooms and no name for them beyond what is stencilled on the door.
+  [ZONE.danceStudio]:'the dance wing', [ZONE.store]:'the prop store' };
 function recordableRoomAt(x,y){ return usingSpecialSpace()?null:usingPlan() ? (ZONE_RECORDING_ROOM[FP.zoneAt(x,y)] || null) : currentWorld(); }
 function acousticRoomAt(x,y){return usingSourceSpace()?'source_space':usingStairAnomaly()?'stair_anomaly':usingPlan()?(ZONE_ACOUSTIC_ROOM[FP.zoneAt(x,y)]||FP.worldAt(x,y)):currentWorld();}
 function currentAreaLabel(){
@@ -8698,6 +9810,15 @@ function currentMapHushMarker(){
   };
 }
 
+// Where he is looking, continuously. `r3dFacing()` is a quarter-turn index, so a
+// cone built from it could only ever point at four compass points; the look yaw is
+// the actual direction of the eye.
+function mapHeading(){
+  if(RENDERER!=='3d') return 0;
+  const angles=R3.r3dLookAngles?.();
+  return Number.isFinite(angles?.yaw) ? angles.yaw : R3.r3dFacing()*Math.PI/2;
+}
+
 function currentFacilityMapModel(){
   if(usingSourceSpace()){
     const model=buildMapModel({source:null,job:bagJob(),navigation:activeDifficulty.navigation});
@@ -8725,7 +9846,12 @@ function currentFacilityMapModel(){
   const discoveredFloorIds=flagGet('academic.entered')?new Set(['academic']):new Set();
   const discoveryKey=discoveredFloorIds.has('academic')?'academic':'base';
   const areaLabel=currentAreaLabel();
-  const key=[Math.round(physical.x/2),Math.round(physical.z/2),Math.round(physical.y*4),recordableRoomAt(px,py)||'',areaLabel,objective.target||'',job.rooms.map((room)=>room.recorded?'1':'0').join(''),doorKey,activeDifficulty.navigation.id||'',contactKey,hushKey,towerKey,discoveryKey].join('~');
+  // The heading is PART OF THE KEY. It was not, so turning on the spot never
+  // invalidated the cache and the map kept drawing last frame's facing — which is
+  // why the old facing tick appeared frozen and why the sight cone would not turn.
+  // Quantised to ~6° so an idle mouse does not rebuild the model every frame.
+  const headingKey=Math.round(mapHeading()/(Math.PI/30));
+  const key=[Math.round(physical.x/2),Math.round(physical.z/2),Math.round(physical.y*4),headingKey,recordableRoomAt(px,py)||'',areaLabel,objective.target||'',job.rooms.map((room)=>room.recorded?'1':'0').join(''),doorKey,activeDifficulty.navigation.id||'',contactKey,hushKey,towerKey,discoveryKey].join('~');
   if(facilityMapCache.key===key&&facilityMapCache.model)return facilityMapCache.model;
   const model=buildMapModel({
     source,job,objectiveState:objective,doors,contacts:[contact],navigation:activeDifficulty.navigation,discoveredFloorIds,
@@ -8734,7 +9860,7 @@ function currentFacilityMapModel(){
       'landmark:bell-chamber':{visible:tower.hatchInspected||[CHAPEL_TOWER_PHASE.TOWER_ACTIVE,CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(tower.phase),label:tower.phase===CHAPEL_TOWER_PHASE.FORESHADOW||tower.phase===CHAPEL_TOWER_PHASE.SOURCE_READY?'ACCESS RESTRICTED':'BELL CHAMBER'},
       'landmark:organ-loft':{visible:[CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(tower.phase)},
     },
-    player:{x:physical.x,y:physical.z,height:physical.y,renderGroup:physical.renderGroup,roomId:recordableRoomAt(px,py),areaLabel,heading:RENDERER==='3d'?R3.r3dFacing()*Math.PI/2:0},
+    player:{x:physical.x,y:physical.z,height:physical.y,renderGroup:physical.renderGroup,roomId:recordableRoomAt(px,py),areaLabel,heading:mapHeading()},
   });
   const liveModel={...model,hush};
   facilityMapCache={key,model:liveModel};
@@ -8872,6 +9998,7 @@ function openControllerSettings(){
   scenes.push(makeControllerSettingsScene({
     onSave:saveControllerSettings,
     getPadName:CONTROLLER.controllerName,
+    getControllerSnapshot:CONTROLLER.controllerSnapshot,
     beginControllerRemap:CONTROLLER.beginControllerRemap,
     cancelControllerRemap:CONTROLLER.cancelControllerRemap,
     controllerRemapAction:CONTROLLER.controllerRemapAction,
@@ -9381,6 +10508,9 @@ function godTabs(){
       {id:'bell-tower-live',label:'BELL TOWER LIVE',value:'[OPEN]',closeMenu:true,activate:godBellTowerLive},
       {id:'test-run',label:'ENTER / RESET TEST RUN',value:()=>ready()?'READY':'[START]',danger:!ready(),closeMenu:true,activate:godEnsureTestRun},
       {id:'resume',label:'CLOSE GOD MENU',value:'[RESUME]',activate:closeGodMenu},
+      section('Stair anomaly'),
+      {id:'stair-rearm-run',label:'RE-ARM STAIR · THIS RUN',value:()=>currentStairAnomalyLedger().status===STAIR_ANOMALY_STATUS.ARMED?'ARMED':'[ARM]',activate:godRearmStairRun},
+      {id:'stair-reset-global',label:'RESET STAIR · GLOBAL / FIRST-EVER',value:()=>`RUNS ${getMeta()?.runs||0} · [RESET]`,danger:true,activate:godResetStairGlobal},
       section('Locations'),
       warp('warp-dock','LOADING DOCK',ZONE.dock),
       warp('warp-foyer','FRONT ATRIUM',ZONE.foyer),
@@ -9501,7 +10631,9 @@ function godTabs(){
       {id:'possess-rupture',label:'POSSESSION BURST',value:'[FIRE]',closeMenu:true,activate:()=>possess('rupture',4)},
       {id:'battle-training',label:'COMBAT TRAINING',value:'[OPEN]',closeMenu:true,activate:()=>openTrainingBattle()},
       battle('battle-natatorium','NATATORIUM BATTLE',natatoriumBattle),
-      battle('battle-practice','PRACTICE BATTLE',practiceBattle),
+      // "PRACTICE BATTLE" read as the training drill. It is the practice WING's
+      // encounter — one of the five rooms, not the dock rehearsal.
+      battle('battle-practice','PRACTICE ROOM BATTLE',practiceBattle),
       battle('battle-hall','CONCERT HALL BATTLE',hallBattle),
       {id:'battle-chapel',label:'CHAPEL CONFRONTATION',value:'[OPEN]',closeMenu:true,activate:beginConfrontation},
       {id:'ending-choice',label:'ENDING CHOICE',value:'[OPEN]',closeMenu:true,activate:openEndingChoice},
@@ -9599,6 +10731,19 @@ function presentCredits({context='menu',onDone=()=>{}}={}){
     context,
     onDone:finish,
     onWebsite:()=>openExternalUrl(APP_LINKS.website),
+    // The ending's last thirty seconds, as sound: the credits piece leaves under
+    // the closing Butler quote, everything else is cut with it, and what is
+    // waiting on the other side of the black is tape hiss — the sound the whole
+    // game has been made of. The run summary then fades up into that.
+    onQuote:()=>{
+      STORY.fadeSoundtrack({ fade:4.2 });
+      CUES.stopAllCues(1.2);
+    },
+    onBlack:()=>{
+      STORY.stopAll();
+      CUES.stopAllCues(0.4);
+      if(context==='ending') STORY.startTapeHiss({ gain:TAKE_HISS.min*0.9, fade:3.4 });
+    },
   }));
 }
 
@@ -9643,8 +10788,13 @@ function returnToTitle(){
   storyMode=false;
   setGameplayPaused(false,{announce:false});
   setGameChrome(false);
+  // Explicit here as well as inside resetRunAudio: revoking legacy sample
+  // playback and silencing the story bus on the way back to the title are
+  // contracts of their own (test/sample-field-boot-contract) and are checked
+  // against this function's body. Both calls are idempotent.
   silenceSampleField();
   STORY.stopAll();
+  resetRunAudio('return-to-title');
   FEAR.setFear(0);
   godFxOverride.heartbeat=null;
   godFxOverride.monitorHiss=null;
@@ -9982,7 +11132,7 @@ function drawStoryHud(){
   if(itemLost('map')){
     uiText(2, 5, 'PLAN  MISSING', 'ui-danger');
   } else if(nav.showMap){
-    drawMinimap(currentFacilityMapModel(),{now:performance.now()});
+    drawMinimap(currentFacilityMapModel(),{now:performance.now(),mischief:recentMischief()});
   } else if(wp){
     uiText(2, 5, 'PLAN  SIGNAL MINIMAL', 'ui-secondary');
   }
@@ -10036,26 +11186,42 @@ const teach=tutorialPromptsEnabled() ? TUT.tutorialPrompt() : null;
     const label=sourceFocus.kind==='haystack-page'?'INSPECT STILL PAGE'
       :sourceFocus.kind==='redaction'?'REDACT SOURCE CLAUSE'
         :sourceFocus.available===false?'SOURCE UNAVAILABLE':`INSPECT ${(chunkSurfRoom(sourceFocus.id)?.title||sourceFocus.id).toUpperCase()}`;
-    const prompt=sourceFocus.kind==='landmark'&&sourceFocus.available!==false
-      ?BINDINGS.promptLine([{action:'interact',label},{action:'light',label:'TUNE'},{action:'recorder',label:'RECORD'}])
-      :`${BINDINGS.inputPrompt('interact')} ${label}`;
-    uiText(Math.max(2,Math.floor((cols-prompt.length)/2)),rows-2,prompt.slice(0,Math.max(1,cols-4)),sourceFocus.available===false?'ui-secondary':'ui-amber');
+    const parts=sourceFocus.kind==='landmark'&&sourceFocus.available!==false
+      ?[{action:'interact',label},{action:'light',label:'TUNE'},{action:'recorder',label:'RECORD'}]
+      :[{action:'interact',label}];
+    hudPromptRow(rows-2,parts,cols,sourceFocus.available===false?'ui-secondary':'ui-amber');
   } else if(pageHere && !REC.isRecording()){
-    const prompt=`${BINDINGS.inputPrompt('interact')} PICK UP THE SHEET`;
-    uiText(Math.max(2, Math.floor((cols-prompt.length)/2)), rows-2, prompt, 'ui-amber');
+    hudPromptRow(rows-2,[{action:'interact',label:'PICK UP THE SHEET'}],cols,'ui-amber');
   } else if(doorHud){
     const hasKey=!doorHud.portal.keyId||playerKeys.has(doorHud.portal.keyId);
     const runtime=doorHud.portal.runtime;
-    const action=runtime.wedge?'REMOVE WEDGE':runtime.state==='open'||runtime.state==='opening'?'CLOSE DOOR':hasKey?'OPEN DOOR':'TRY LOCKED DOOR';
-    const prompt=`${BINDINGS.inputPrompt('interact')} ${action}`;
-    uiText(Math.max(2,Math.floor((cols-prompt.length)/2)),rows-2,prompt,hasKey?'ui-amber':'ui-secondary');
+    // He does not operate the door he came in through. He reaches for it.
+    const action=doorHud.portal.id===GREY_DOOR_ID&&!greyDoorRetired()
+      ? 'THE DOOR YOU CAME IN THROUGH'
+      : runtime.wedge?'REMOVE WEDGE':runtime.state==='open'||runtime.state==='opening'?'CLOSE DOOR':hasKey?'OPEN DOOR':'TRY LOCKED DOOR';
+    hudPromptRow(rows-2,[{action:'interact',label:action}],cols,hasKey?'ui-amber':'ui-secondary');
   } else if(propHit){
     const verb=propHit.sampleFamily?.length?'PLAY':'INSPECT';
-    const prompt=(`${BINDINGS.inputPrompt('interact')} ${verb} ${propLabel(propHit)}`).slice(0,Math.max(1,cols-4));
-    uiText(Math.max(2,Math.floor((cols-prompt.length)/2)),rows-2,prompt,'ui-amber');
+    hudPromptRow(rows-2,[{action:'interact',label:`${verb} ${propLabel(propHit)}`}],cols,'ui-amber');
   } else if(teach){
     const prompt=teach.toUpperCase().slice(0,Math.max(1,cols-4));
-    uiText(Math.max(2, Math.floor((cols-prompt.length)/2)), rows-2, prompt, 'ui-amber');
+    const px0=Math.max(2, Math.floor((cols-prompt.length)/2));
+    // The waypoint is the last verb the setup teaches and the only one the player
+    // has never been shown, so its prompt does not sit there politely: it comes up
+    // as VFD text and pulses for the first few seconds after the briefing, then
+    // settles. Flashing forever is nagging; flashing once is pointing.
+    const flashFor=(TUT.tutorialStep()==='mark' && waypointBriefShownAt)
+      ? (performance.now()-waypointBriefShownAt)/1000 : null;
+    if(flashFor!=null && flashFor<9){
+      const pulse=.55+.45*Math.abs(Math.cos(flashFor*Math.PI*1.25));
+      // Above the monitor band if he is mid-sentence — a prompt the player is
+      // meant to look at cannot be behind the thing that told them to look.
+      const band=SPEECH.bandTop();
+      const y=band==null ? rows-2.15 : Math.max(3, band-1.4);
+      drawVfdText(px0, y, prompt, { scale:1, theme:'amber', alpha:pulse });
+    } else {
+      uiText(px0, rows-2, prompt, 'ui-amber');
+    }
   } else if(hintMode !== 'off') {
     const done = REC.hasTake(currentWorld());
     const parts = [
@@ -10065,15 +11231,12 @@ const teach=tutorialPromptsEnabled() ? TUT.tutorialPrompt() : null;
       ...(hintMode === 'full' && PB.hasTake(currentWorld()) ? [{ action: 'playback', label: 'PLAYBACK' }] : []),
       ...(hintMode === 'full' ? [{ action: 'menu', label: 'PAUSE' }] : []),
     ];
-    const hint = BINDINGS.promptLine(parts);
-
     if(cols<72){
-      const first=BINDINGS.promptLine(parts.slice(0, 2)).slice(0,cols-4);
-      const second=BINDINGS.promptLine(parts.slice(2)).slice(0,cols-4);
-      uiText(2,rows-3,first,'ui-secondary');
-      uiText(2,rows-2,second,'ui-secondary');
+      drawPromptParts(2,rows-3,parts.slice(0,2),{role:'ui-secondary',cols});
+      drawPromptParts(2,rows-2,parts.slice(2),{role:'ui-secondary',cols});
     } else {
-      uiText(Math.max(2, cols - hint.length - 2), rows-2, hint, 'ui-secondary');
+      const w=promptPartsWidth(parts);
+      drawPromptParts(Math.max(2, cols - w - 2), rows-2, parts, {role:'ui-secondary',cols});
     }
   }
 
@@ -10095,6 +11258,7 @@ const teach=tutorialPromptsEnabled() ? TUT.tutorialPrompt() : null;
   }
   uiText(2, monitorY, 'MONITOR', 'ui-label');
   drawVfdMeter(11, monitorY, 12, MONITOR.monitorSnapshot());
+  drawMicTestOverlay(cols, rows);
   SPEECH.drawSpeech();
 }
 
@@ -10302,6 +11466,8 @@ function installProbe(){
     // that wants to stand in the chapel should say so in the language of the map.
     warpCell:(x,y,f=null)=>{ godRestoreBuildingWorld();const r=FP.toRuntimePoint({x,y});px=r.x;py=r.y;if(f!=null)R3.r3dSetFacing(f);renderMove=null;motionRig=null;trail=[];revealAround(px,py);godSyncBuildingRender();return{x:px,y:py,facing:R3.r3dFacing()}; },
     look:(yawDelta=0,pitchDelta=0)=>R3.r3dLook?.(yawDelta,pitchDelta),
+    lookAngles:()=>R3.r3dLookAngles?.()||null,
+    stepDelta:(sign=1)=>R3.r3dStepDelta?.(sign)||null,
     hushInstrument:()=>instr?{propId:instr.propId,silenced:instr.silenced,origin:takeOrigin,pathLength:instr.path?.length||0}:null,
     wakeHush:()=>wakeInstrument(),
     silenceHush:()=>silenceInstrument(instr?.propId),
@@ -10373,6 +11539,48 @@ function installProbe(){
     hush:()=>SPEECH.clearSpeech(),
     tut:()=>({active:TUT.tutorialActive(), step:TUT.tutorialStep(), prompt:TUT.tutorialPrompt()}),
     tutSkip:()=>TUT.skipTutorial(),
+    // Start the setup on demand, so a suite can test the dock flow without
+    // walking the whole cold open first.
+    tutStart:()=>{ TUT.startTutorial(); return TUT.tutorialStep(); },
+    tutGuide:(surface)=>TUT.tutorialGuide(surface||null),
+    build:()=>combatBuild(),
+    flagValue:(name)=>flagGet(name)??null,
+    // The grey door, as numbers: is it still a door, is there a scar where it
+    // was, is the wall solid, and is he close enough to reach for it.
+    greyDoor:()=>{
+      let portal=null; FP.forEachDoor((p)=>{ if(p.id===GREY_DOOR_ID) portal=p; });
+      const scar=FP.sealedDoorways().some((s)=>Math.abs(s.cx-130.5)<.6&&Math.abs(s.cy-6.5)<.6);
+      return { id:GREY_DOOR_ID, present:!!portal, retired:greyDoorRetired(), scar,
+               solid:FP.isSolid(130,6)&&FP.isSolid(131,7), near:!!greyDoorNear() };
+    },
+    // Battle voices, as counts: a fight that has ended must leave none behind.
+    cueGroup:(name)=>CUES.cueGroupSize(name||'battle'),
+    liveCues:()=>CUES.liveCueCount(),
+    resetAudio:(reason)=>{ resetRunAudio(reason||'probe'); return CUES.liveCueCount(); },
+    // Which rooms the recorder and the tape actually believe they hold. The dock
+    // level check must appear in neither as `main_b3`.
+    hasTake:(room)=>REC.hasTake(room),
+    takeFor:(room)=>{ const t=PB.takeFor(room); return t && { roomId:t.roomId, sealed:t.sealed }; },
+    fire:(id,shape)=>fireCue(id, shape||null),
+    stopBattleCues:()=>CUES.stopCueGroup('battle', .05),
+    screamShape:()=>enemyAttackShape(SCREAM_CUE, 0, ()=>0.5),
+    weaponShape:(beat)=>enemyAttackShape('marimba.weapon.01', Number(beat)||0),
+    cueLoaded:(id)=>{ const u=cueAssetUrl(id); return u ? CUES.isLoaded(u) : null; },
+    cueDurations:(ids)=>Object.fromEntries((ids||[]).map((id)=>{
+      const u=cueAssetUrl(id); return [id, u ? (CUES.bufferSeconds(u) ?? null) : null];
+    })),
+    mischiefFire:()=>{ mischiefNextAtMs=1; mischiefQuietUntilMs=0; return true; },
+    busts:()=>({spoken:[...spokenBusts],turned:bustTurned}),
+    talkToBust:(id)=>talkToBust(id),
+    garden:()=>({epoch:gardenEpoch,inside:inTheGarden(),
+      poses:GARDEN_DRIFT_PROPS.map((id)=>{const q=PROPS.propById(id);return q?{id,ox:+(q.renderOffsetX||0).toFixed(4),oz:+(q.renderOffsetZ||0).toFixed(4),yaw:+(q.yaw||0).toFixed(4),rx:q.rx,ry:q.ry}:null;})}),
+    shiftGarden:(reason='probe')=>shiftGarden(reason),
+    mischiefAt:(dx,dy)=>{ mischiefHeard={x:px+(Number(dx)||0),y:py+(Number(dy)||0),at:performance.now()}; return recentMischief(); },
+    // Headless Chrome keeps rAF running with the tab hidden, so a suite cannot
+    // produce a real away-gap. This is the same call the long-frame path makes.
+    awayGap:(ms)=>{ settleAfterAway(Math.max(0, Number(ms)||0)); return true; },
+    micCheck:()=>micCheck && { elapsed:+micCheck.elapsed.toFixed(2), peak:+micCheck.peak.toFixed(4),
+                               spoke:+micCheck.spoke.toFixed(2), ack:micCheck.ack },
     // Drive a battle without recording two takes to get to it.
     battle:(named)=>{ ensureCtx(); openBattle(natatoriumBattle(!!named),
       { onWin:()=>{}, onLose:()=>{} }); return true; },
@@ -10913,8 +12121,16 @@ const CONTROLLER_KEY=Object.freeze({
   move_up:['ArrowUp','ArrowUp'], move_down:['ArrowDown','ArrowDown'],
   move_left:['ArrowLeft','ArrowLeft'], move_right:['ArrowRight','ArrowRight'],
   quiet:['Shift','ShiftLeft'], light:['f','KeyF'], bag:['b','KeyB'], recorder:['r','KeyR'],
-  interact:['e','KeyE'], playback:['p','KeyP'], menu:['Escape','Escape'],
-  confirm:['Enter','Enter'], back:['Escape','Escape'], tabPrev:['q','KeyQ'], tabNext:['e','KeyE'],
+  interact:['e','KeyE'], playback:['p','KeyP'], mark:[' ','Space'], menu:['Escape','Escape'],
+  // `tabNext` used to emit KeyE exactly like `interact`, which made "next
+  // section" and "interact" indistinguishable — and `modalActions` injects
+  // interact into menu context, so both meanings were live at once. Tab is
+  // already the in-fiction step-back key and collides with nothing.
+  //
+  // `back` deliberately still emits Escape: every scene's close handler keys on
+  // it, and scenes that need to tell back from menu read e.controllerAction,
+  // which is present on every synthetic event.
+  confirm:['Enter','Enter'], back:['Escape','Escape'], tabPrev:['q','KeyQ'], tabNext:['Tab','Tab'],
 });
 function controllerEvent(action, repeat=false){
   const [key,code]=CONTROLLER_KEY[action]||['',''];
@@ -10998,6 +12214,12 @@ function onKey(e){
   }
   if(e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
   if(!e.controller) BINDINGS.setActiveInputDevice('keyboard');
+  // A keypress IS a user gesture, so it is allowed to take the pointer lock. If
+  // you are playing the game from the keyboard, the pointer belongs to the game:
+  // recovering it here removes a whole class of "I have to click somewhere first"
+  // states, without stealing the cursor from anyone typing (guarded above) or
+  // from a scene that wants the mouse.
+  if(!e.controller && !e.metaKey && !e.ctrlKey && !e.altKey) resumeGameplayInput('keydown',{recenter:false});
   if(!e.metaKey && !e.ctrlKey && !e.altKey && (e.key==='F10' || e.code==='F10')){
     e.preventDefault();
     openGodMenu();
@@ -11061,8 +12283,9 @@ function onKey(e){
           syncSourceRender();
           return;
         }
-        SPEECH.say({who:'you',text:'The fork finds no stable source at this address.'});
-        return;
+        // Nothing tunable in focus — F is the torch here as anywhere. The fork
+        // only answers when you are actually facing a reachable landmark, so
+        // moving through the field never steals the flashlight.
       }
       if(itemLost('torch')){ SPEECH.say({ who:'you', text:'No torch. It has the torch.' }); return; }
       if(!REC.lightOn() && REC.batteryLevel()<=0){ SPEECH.say({ who:'you', text:'Flat. It is flat, and I have nothing to put in it.' }); return; }
@@ -11071,6 +12294,8 @@ function onKey(e){
       REC.emitNoise(.02,px,py,'torch switch',{
         spoils:false,kind:'handling_noise',sourceKind:'equipment',sourceId:'torch',playerGenerated:true,deliberate:true,
       });
+      // On the impossible stair, the torch is the way out (see tickStairAnomaly).
+      if(usingStairAnomaly()) noteStairTorchFlick(on);
       // He says it the first time. After that a man who flicks his own torch
       // on does not narrate it, and neither do we.
       once(on ? 'said-light-on' : 'said-light-off', ()=>SPEECH.say(on ? framedLine('lightOn', LINES.lightOn) : LINES.lightOff));
@@ -11173,6 +12398,8 @@ function onKey(e){
 function onKeyUp(e){
   if(scenes.depth() && scenes.keyup(e)) e.preventDefault?.();
   if(e.key==='Shift' || e.code==='ShiftLeft' || e.code==='ShiftRight'){ motionInput.keyUp(e); REC.setSlow(false); }
+  // Release [e] to stop a held instrument. Play lasts exactly as long as you hold.
+  if((e.key==='e' || e.code==='KeyE') && heldPropPlay) stopHeldPropPlay();
   const moveKey=movementKey(e);
   if(moveKey){
     motionInput.keyUp(e);
@@ -11185,6 +12412,16 @@ function onBlur(){
   // Releasing focus mid-press would otherwise leave keys "stuck".
   resetMotionInput('window-blur', {stopRenderMove:true});
   void recoverInteractionAudio('window-blur');
+}
+// Focus, capture and a level head, together. Every path back INTO gameplay wants
+// all three: a windowed build that has just been clicked, a pause menu that has
+// just been dismissed, a keypress arriving while the pointer is loose. Doing only
+// one of them is what left the game focused but uncaptured, or captured but
+// staring at the ceiling.
+function resumeGameplayInput(reason='resume-input',{recenter=true}={}){
+  ensureInteractionFocus();
+  if(recenter && RENDERER==='3d') R3.r3dRecenterLook?.({pitch:true});
+  if(gameplayWantsPointerCapture() && !pointerMode.isTrueLocked?.()) void ensurePointerLock(reason);
 }
 function ensureInteractionFocus(){
   // Must work before inRogue too: the title screen is keyboard-driven, and an

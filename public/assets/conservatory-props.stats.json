@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-22T03:50:18.073Z",
-  "bytes": 2238468,
-  "totalTriangles": 33386,
+  "generatedAt": "2026-07-23T07:07:50.972Z",
+  "bytes": 2253916,
+  "totalTriangles": 33642,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -98,6 +98,10 @@
     "loose_note": {
       "triangles": 24,
       "vertices": 48
+    },
+    "calibration_pin": {
+      "triangles": 256,
+      "vertices": 286
     },
     "pool_start_block": {
       "triangles": 24,

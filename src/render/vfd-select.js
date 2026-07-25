@@ -33,6 +33,8 @@
 // are split across DIFFERENT physical mechanisms that could genuinely co-occur:
 // brightness for the pointer, inverse video for the committed cursor.
 
+import { vfdSettings } from './palette.js';
+
 // Duty-factor tiers, as the character modules expose them.
 export const VFD_TIER = Object.freeze({
   off: 0,
@@ -68,8 +70,9 @@ export function vfdBlinkOn(nowMs, { hz = VFD_BLINK_HZ, duty = VFD_BLINK_DUTY } =
 //   hover    — brightness tier only. Brightness was the one VFD channel that
 //              was global and semantically empty, so borrowing it for the
 //              pointer steals nothing that meant something.
-//   selected — inverse video block. The one state real hardware had; it should
-//              look the most installed.
+//   selected — bright text (full tier) + a gutter caret, in the caller's
+//              highlight colour. The classic dot-matrix menu cursor: it reads as
+//              the live row without painting an inverse block over the label.
 //   editing  — blink, on the value field only.
 //   pressed  — a transient duty sag. Real panels sag when current draw spikes,
 //              and duty modulation is exactly that mechanism.
@@ -80,12 +83,18 @@ export function vfdBlinkOn(nowMs, { hz = VFD_BLINK_HZ, duty = VFD_BLINK_DUTY } =
 // rounded corner or a soft edge is where the illusion dies, because a real
 // panel inverts whole dot cells and nothing else.
 export function drawVfdRow(ui, {
-  x, y, w, label, gutterWidth = 2, style, role = 'ui-primary', invertRole = 'ui-glass',
+  x, y, w, label, gutterWidth = 2, style, role = 'ui-primary', invertRole = 'ui-strip',
 }) {
   const { uiFill, uiText } = ui;
   const s = style || vfdRowStyle({});
   if (s.inverse) {
-    uiFill(x - 1, y - 0.1, w + 2, 1.15, ui.inverseColor || 'rgba(255,181,54,0.92)');
+    // Inverse video is now used only as the reduced-motion substitute for a
+    // blinking edit field (selection is bright text + a caret, not a block). The
+    // block is the panel's own phosphor, and the glyphs must be the unlit GLASS
+    // showing through — role `ui-strip` maps to the theme's glass, so the text
+    // stays dark and legible on the lit block. (`ui-glass` is not a role; it
+    // falls back to phosphor and paints amber-on-amber — invisible.)
+    uiFill(x - 1, y - 0.1, w + 2, 1.15, ui.inverseColor || ui.theme?.().phosphor || '#F2A81E');
   }
   if (s.gutter && s.gutter !== ' ') uiText(x, y, s.gutter, s.inverse ? invertRole : role, s.tier);
   // The knock-out is the disabled state: a binary panel cannot render grey, so
@@ -101,18 +110,23 @@ export function vfdRowStyle({
   pressedFor = 0, nowMs = 0, reduceMotion = false,
 } = {}) {
   if (disabled) return { tier: VFD_TIER.dim, inverse: false, knockout: 0.5, gutter: ' ' };
-  let tier = hovered ? VFD_TIER.mid : VFD_TIER.low;
-  if (selected) tier = VFD_TIER.full;
+  // The classic VFD menu: SELECTION is bright text + a gutter caret, and the
+  // caller's role colour (e.g. ui-amber selected vs ui-secondary resting) plus
+  // the brightness tier separate the states — never an inverse block over the
+  // label. Resting (unselected, un-hovered) rows sit one authored step below the
+  // live row so an idle menu stays fully readable; high-contrast menus lift them
+  // the rest of the way to full.
+  const restTier = vfdSettings.menuContrast ? VFD_TIER.full : VFD_TIER.mid;
+  let tier = (selected || hovered) ? VFD_TIER.full : restTier;
   // A press drops one tier for well under 100 ms and snaps back. Momentary
   // only — never repeating, so it cannot read as a flash.
   if (pressedFor > 0 && pressedFor < 80) tier = Math.max(VFD_TIER.dim, tier - 0.25);
+  // A blinking edit field, and its reduced-motion steady substitute, are the
+  // ONLY things that still use the inverse block — selection never does.
   const blinking = editing && !reduceMotion && !vfdBlinkOn(nowMs);
   return {
     tier,
-    // Reduced motion substitutes a steady inverse block for every blinking
-    // state. Blink and inverse are separate hardware primitives, so this
-    // degrades with no design compromise at all.
-    inverse: selected ? !blinking : (editing && reduceMotion),
+    inverse: editing && (reduceMotion || blinking),
     knockout: 0,
     // The gutter is a fixed-anode annunciator: it can only be off, on, or
     // blinking. It can never move, scale, or change tier on its own.

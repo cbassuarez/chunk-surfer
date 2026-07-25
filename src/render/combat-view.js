@@ -411,10 +411,15 @@ export function drawOpponentCombatArt(ref, {
 // coherence drains. Time is quantized so it strobes like an addressed grid
 // rather than animating smoothly.
 
+// The field encounters are the hush wearing the room as an ill-fitting shell —
+// a signal-form with a dark formless core showing through the middle. The finals
+// (chapel, source) use the surfer raster instead (the later-gen body that grew
+// its own form), so their figures here are only fallbacks. `training` stays a
+// plain standing wave: the bench signal is not the hush and has no core.
 const BEING_FIGURE = Object.freeze({
-  natatorium: 'ripples',
-  hall: 'column',
-  practice: 'braid',
+  natatorium: 'drowned',
+  hall: 'return',
+  practice: 'wire',
   chapel: 'seal',
   training: 'column',
   'source-final': 'lattice',
@@ -427,10 +432,60 @@ function beingSeed(profileKey = '') {
   return hash;
 }
 
+// The formless hush at the centre of a borrowed shell. Small, dense, slightly
+// off-centre and adrift — the shell never sits quite right over it. Marked
+// `core` so drawSignalBeing renders it as a dark mass ringed by faint signal
+// instead of the shell's tint, and so it never dissolves with coherence.
+function pushCore(points, tick, seed) {
+  const cx = Math.sin(tick * .7 + seed) * .045;
+  const cy = Math.cos(tick * .5 + seed) * .035;
+  for (let i = 0; i < 12; i++) {
+    const angle = (i / 12) * Math.PI * 2 + tick * .8;
+    const radius = .028 + (Math.sin(i * 2.7 + tick * 1.3) * .5 + .5) * .055;
+    points.push({ u: cx + Math.cos(angle) * radius, v: cy + Math.sin(angle) * radius * .92, a: .96, core: true });
+  }
+}
+
 function beingPoints(figure, { tick, layers, seed }) {
   const points = [];
   const push = (u, v, a = 1) => points.push({ u, v, a });
-  if (figure === 'ripples') {
+  if (figure === 'drowned') {
+    // Natatorium — the empty pool's ripples worn as a hollow carapace, the core
+    // sitting in water that is not there. Rings start out from a hollow centre so
+    // the dark core reads through the gap.
+    for (let ring = 1; ring < 3 + layers; ring++) {
+      const radius = .12 + ring * .12;
+      const count = 14 + ring * 8;
+      for (let i = 0; i < count; i++) {
+        const angle = (i / count) * Math.PI * 2 + tick * .5 * (ring % 2 ? -1 : 1);
+        push(Math.cos(angle) * radius, Math.sin(angle) * radius * .62, 1 - ring * .13);
+      }
+    }
+    pushCore(points, tick, seed);
+  } else if (figure === 'wire') {
+    // Practice — the braided helix as a cage of piano-wire the hush strings
+    // itself through, the core threaded down the centre and plucking it.
+    for (let voice = 0; voice < 3; voice++) {
+      for (let i = 0; i <= 26; i++) {
+        const v = -.42 + (i / 26) * .84;
+        const u = Math.sin(v * Math.PI * (3 + layers) + voice * (Math.PI * 2 / 3) + tick) * .17;
+        push(u, v, .9 - voice * .18);
+      }
+    }
+    pushCore(points, tick, seed);
+  } else if (figure === 'return') {
+    // Hall — the house's own monitor return worn as a shell: a standing wave that
+    // rises then folds back on itself, the core knotted at the fold.
+    for (let i = 0; i <= 30; i++) {
+      const t = i / 30;
+      const v = -.44 + t * .88;
+      const fold = Math.sin(t * Math.PI);
+      const u = Math.sin(v * Math.PI * (2 + layers) + tick) * (.05 + .16 * fold);
+      push(u, v, .95);
+      push(-u * .6, v, .38 + .3 * fold);
+    }
+    pushCore(points, tick, seed);
+  } else if (figure === 'ripples') {
     for (let ring = 0; ring < 2 + layers; ring++) {
       const radius = .10 + ring * .13;
       const count = 16 + ring * 8;
@@ -474,6 +529,84 @@ function beingPoints(figure, { tick, layers, seed }) {
     }
   }
   return points;
+}
+
+// ── the opponent's notes ─────────────────────────────────────────────────────
+// While the other side is playing, the sound they are making is visible: note
+// sprites come off the figure and dance until the attack is over.
+//
+// Two rules this obeys. They are SPRITES, not '♪' — the atlas renders glyphs
+// through a monospace stack with no dependable music note in it, the same trap
+// that made the minimap's mischief ring invisible. And they are stepped blocks,
+// not vector curves, because everything else in this void is (see the hands: no
+// ctx.ellipse anywhere in this file, and combat-presentation.spec pins it).
+export const NOTE_SPRITES = Object.freeze({
+  quaver: Object.freeze(['..###', '..#.#', '..#..', '..#..', '..#..', '###..', '###..']),
+  beamed: Object.freeze(['#######', '#.....#', '#.....#', '#.....#', '#.....#', '###.###', '###.###']),
+  crotchet: Object.freeze(['...#.', '...#.', '...#.', '...#.', '...#.', '###..', '###..']),
+});
+const NOTE_KINDS = Object.freeze(['quaver', 'beamed', 'crotchet', 'quaver']);
+
+function noteHash(seed, index) {
+  let h = (Math.imul(seed | 0, 0x9e3779b1) ^ Math.imul(index + 1, 0x85ebca6b)) >>> 0;
+  h ^= h >>> 15; h = Math.imul(h, 0x2545f491) >>> 0; h ^= h >>> 13;
+  return (h >>> 0) / 4294967296;
+}
+
+export function attackNoteLayout({ count = 3, now = 0, seed = 0, reducedMotion = false } = {}) {
+  const notes = [];
+  const total = Math.max(0, Math.min(12, Math.floor(count)));
+  for (let index = 0; index < total; index += 1) {
+    const r1 = noteHash(seed, index);
+    const r2 = noteHash(seed + 7919, index);
+    const r3 = noteHash(seed + 104729, index);
+    // Each note keeps its own phase, so they never rise as a rank.
+    const speed = .34 + r2 * .3;
+    const life = reducedMotion ? .5 : ((now * speed + r1) % 1);
+    notes.push({
+      // Across the figure, climbing and drifting outward as it goes.
+      u: Math.min(.94, Math.max(.02, .1 + r1 * .78 + (r3 - .5) * life * .5)),
+      v: 1 - life,
+      // The dance: a sway that is not in step with the climb.
+      sway: reducedMotion ? 0 : Math.sin(now * 2.6 + r3 * Math.PI * 2) * .45,
+      life,
+      // In and out — never full strength at either end of the climb.
+      alpha: Math.sin(Math.min(1, Math.max(0, life)) * Math.PI),
+      scale: .8 + r2 * .5,
+      kind: NOTE_KINDS[Math.floor(r2 * NOTE_KINDS.length) % NOTE_KINDS.length],
+    });
+  }
+  return notes;
+}
+
+export function drawAttackNotes({
+  x, y, w, h, count = 3, now = 0, seed = 0, reducedMotion = false, alpha = 1, tone = 'enemy',
+} = {}) {
+  if (!(w > 0) || !(h > 0) || !(count > 0)) return;
+  const notes = attackNoteLayout({ count, now, seed, reducedMotion });
+  if (!notes.length) return;
+  uiDraw(({ ctx, dpr, cellW, cellH }) => {
+    ctx.save();
+    ctx.fillStyle = tone === 'enemy' ? UI_COLOR.danger : UI_COLOR.amber;
+    for (const note of notes) {
+      const a = alpha * note.alpha * .92;
+      if (a <= .02) continue;
+      const sprite = NOTE_SPRITES[note.kind] || NOTE_SPRITES.crotchet;
+      // A note stands about one character tall, so it belongs to this screen.
+      const px = Math.max(1, Math.round((cellH * dpr * note.scale) / sprite.length));
+      const originX = Math.round((x + note.u * w + note.sway * .4) * cellW * dpr);
+      const originY = Math.round((y + note.v * Math.max(1, h - 1)) * cellH * dpr);
+      ctx.globalAlpha = a;
+      for (let row = 0; row < sprite.length; row += 1) {
+        const line = sprite[row];
+        for (let col = 0; col < line.length; col += 1) {
+          if (line[col] !== '#') continue;
+          ctx.fillRect(originX + col * px, originY + row * px, px, px);
+        }
+      }
+    }
+    ctx.restore();
+  });
 }
 
 export function drawSignalBeing(profileKey, {
@@ -533,21 +666,67 @@ export function drawSignalBeing(profileKey, {
     ctx.rect(px - cellW * dpr, py, pw + cellW * dpr * 2, ph);
     ctx.clip();
     points.forEach((point, index) => {
-      if (rnd(index) > keep) return;
-      const alpha = clamp(point.a * alphaScale, 0, 1) * (.55 + .45 * rnd(index * 13));
-      const color = flash > 0 ? '255,244,230' : tint;
+      // The core is the hush itself: it never thins out with coherence, and it
+      // reads as a dark mass haloed by the shell's tint rather than taking the
+      // tint. The shell (everything else) dissolves as the fight wears it down.
+      if (!point.core && rnd(index) > keep) return;
+      const alpha = point.core
+        ? clamp(point.a, 0, 1) * (.8 + .2 * rnd(index * 13))
+        : clamp(point.a * alphaScale, 0, 1) * (.55 + .45 * rnd(index * 13));
+      const color = flash > 0 ? '255,244,230' : point.core ? '9,7,12' : tint;
+      const size = point.core ? dot * 1.7 : dot;
       ctx.fillStyle = `rgba(${color},${Math.min(1, alpha + flash * .5).toFixed(3)})`;
-      ctx.shadowColor = `rgba(${color},.9)`;
-      ctx.shadowBlur = (4 + flash * 5) * dpr;
+      ctx.shadowColor = point.core ? `rgba(${tint},.85)` : `rgba(${color},.9)`;
+      ctx.shadowBlur = ((point.core ? 6 : 4) + flash * 5) * dpr;
       ctx.fillRect(
-        Math.round(cx + point.u * pw - dot / 2),
-        Math.round(cy + point.v * ph - dot / 2),
-        Math.round(dot),
-        Math.round(dot),
+        Math.round(cx + point.u * pw - size / 2),
+        Math.round(cy + point.v * ph - size / 2),
+        Math.round(size),
+        Math.round(size),
       );
     });
     ctx.restore();
   });
+}
+
+// ── the turn glyph ────────────────────────────────────────────────────────────
+// Whose beat it is, as a drawn symbol pair rather than text: a signal-ring for
+// the recordist and the hush's dark core-diamond for the opponent (the same core
+// that shows through its shell). The active side is lit, filled and gently
+// pulsing; the idle side recedes to a dim outline. A small exchange tally sits
+// alongside. Filled-vs-outline plus the ring/diamond shapes carry it without
+// relying on colour, and the pulse holds still under reduced motion.
+export function drawTurnGlyph(x, y, { active = 'player', turn = 1, reducedMotion = false, now = 0 } = {}) {
+  const enemyTurn = active === 'enemy';
+  const pulse = reducedMotion ? 1 : .78 + .22 * Math.abs(Math.sin(now * Math.PI * 1.4));
+  uiDraw(({ ctx, dpr, cellW, cellH }) => {
+    const cw = cellW * dpr, ch = cellH * dpr;
+    const cy = (y + 0.5) * ch;
+    const r = Math.min(cw, ch) * 0.42;
+    // Recordist — a signal ring, filled and haloed on your beat, else a faint hoop.
+    const youAlpha = enemyTurn ? 0.3 : pulse;
+    ctx.save();
+    ctx.lineWidth = Math.max(1, dpr);
+    ctx.strokeStyle = `rgba(120,190,255,${youAlpha.toFixed(3)})`;
+    ctx.beginPath(); ctx.arc((x + 0.7) * cw, cy, r, 0, Math.PI * 2);
+    if (!enemyTurn) {
+      ctx.shadowColor = 'rgba(120,190,255,0.8)'; ctx.shadowBlur = 6 * dpr;
+      ctx.fillStyle = `rgba(120,190,255,${youAlpha.toFixed(3)})`; ctx.fill();
+    }
+    ctx.stroke();
+    ctx.restore();
+    // Hush — the dark core-diamond, lit and haloed red on its beat, else a dim rim.
+    const enAlpha = enemyTurn ? pulse : 0.3;
+    ctx.save();
+    ctx.translate((x + 2.15) * cw, cy); ctx.rotate(Math.PI / 4);
+    ctx.lineWidth = Math.max(1, dpr * 1.3);
+    ctx.strokeStyle = `rgba(255,70,55,${enAlpha.toFixed(3)})`;
+    if (enemyTurn) { ctx.shadowColor = `rgba(255,60,50,${enAlpha.toFixed(3)})`; ctx.shadowBlur = 8 * dpr; }
+    ctx.fillStyle = enemyTurn ? 'rgba(12,6,10,1)' : `rgba(120,40,40,${enAlpha.toFixed(3)})`;
+    ctx.beginPath(); ctx.rect(-r * 0.82, -r * 0.82, r * 1.64, r * 1.64); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  });
+  uiText(x + 3, y, `TURN ${Math.max(1, Math.floor(turn))}`, 'ui-amber', .82);
 }
 
 // ── the stance triangle ───────────────────────────────────────────────────────

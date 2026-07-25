@@ -49,15 +49,43 @@ export function fitBounds(bounds, viewport, { padding = 1, preserveAspect = true
   };
 }
 
-export function minimapTransform({ center, radius, viewport }) {
+// HEADING-UP. The local map turns under the player instead of the player turning
+// on a fixed north-up map: a monitor strapped to your chest reads the way you are
+// facing, and a north-up minimap in a building with no windows is a puzzle rather
+// than an instrument.
+//
+// Two things this has to get right:
+//   · `aspect` (cellW/cellH) makes the projection ISOTROPIC. Terminal cells are
+//     about twice as tall as they are wide, so scaling x by w and y by h — which
+//     is what this did — meant one world metre was two different lengths on
+//     screen. Rotate that and squares turn into parallelograms.
+//   · axis-aligned fills (the topology runs) cannot be drawn from two rotated
+//     corners, so they rotate the canvas and use `pointFlat` instead.
+export function minimapTransform({ center, radius, viewport, heading = 0, aspect = 1 }) {
   const safeRadius = Math.max(1, Number(radius) || 1);
+  const safeAspect = Math.max(0.05, Number(aspect) || 1);
+  // Equal pixels per world unit on both axes, and still inside the viewport.
+  const scaleX = Math.min(viewport.w / (safeRadius * 2), viewport.h / (safeRadius * 2 * safeAspect));
+  const scaleY = scaleX * safeAspect;
+  const cx = viewport.x + viewport.w / 2;
+  const cy = viewport.y + viewport.h / 2;
+  const yaw = Number(heading) || 0;
+  const cos = Math.cos(yaw);
+  const sin = Math.sin(yaw);
   return {
+    heading: yaw,
+    screenCenter: { x: cx, y: cy },
+    scaleX,
+    scaleY,
     point(value) {
-      return {
-        x: viewport.x + viewport.w / 2 + (value.x - center.x) * viewport.w / (safeRadius * 2),
-        y: viewport.y + viewport.h / 2 + (value.y - center.y) * viewport.h / (safeRadius * 2),
-      };
+      const dx = Number(value?.x || 0) - center.x;
+      const dy = Number(value?.y || 0) - center.y;
+      return { x: cx + (dx * cos + dy * sin) * scaleX, y: cy + (-dx * sin + dy * cos) * scaleY };
     },
+    pointFlat(value) {
+      return { x: cx + (Number(value?.x || 0) - center.x) * scaleX, y: cy + (Number(value?.y || 0) - center.y) * scaleY };
+    },
+    length(value) { return Number(value || 0) * scaleX; },
   };
 }
 
@@ -66,9 +94,14 @@ export function insideRect(value, rect, margin = 0) {
     && value.y >= rect.y + margin && value.y <= rect.y + rect.h - margin;
 }
 
-export function clampMarkerToEdge(center, target, viewport, margin = 0.8) {
-  const dx = target.x - center.x;
-  const dy = target.y - center.y;
+export function clampMarkerToEdge(center, target, viewport, margin = 0.8, heading = 0) {
+  const yaw = Number(heading) || 0;
+  const wx = target.x - center.x;
+  const wy = target.y - center.y;
+  // Same rotation the transform applies, so an edge marker sits on the bearing
+  // you would actually walk rather than on true north.
+  const dx = wx * Math.cos(yaw) + wy * Math.sin(yaw);
+  const dy = -wx * Math.sin(yaw) + wy * Math.cos(yaw);
   const magnitude = Math.hypot(dx, dy) || 1;
   const ux = dx / magnitude;
   const uy = dy / magnitude;

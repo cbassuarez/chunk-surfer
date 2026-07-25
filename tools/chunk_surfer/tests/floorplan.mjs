@@ -110,7 +110,7 @@ FP.setSpawn(conservatory.spawn.x, conservatory.spawn.y);
 const STANDARD_KEYS = new Set(['master']);
 const KEYRING = new Set(['master','chapel']); // after the front-of-house key check
 const PROBES = {
-  studio:     [15, 12], plant:  [35, 10], lift:  [42, 9],
+  studio:     [15, 12], plant:  [35, 30], lift:  [43, 9],
   dock:       [65, 9],  foyer:  [83, 10], hall:  [102, 15],
   natatorium: [75, 30], pool:   [85, 38],
   practice:   [65, 65], chapel: [90, 66],
@@ -165,7 +165,7 @@ ck('every visible frame is centred on its complete authored threshold',offCenter
 const obstructedThroats=scheduled.filter((door)=>door.cells.some(({x,y})=>FP.isSolid(x,y)||(FP.flagsAt(x,y)&F.BRICKED)));
 ck('every live door owns a completely clear masonry-free throat',obstructedThroats.length===0,obstructedThroats.map((door)=>door.id).join(','));
 let doorCells=0;for(let y=0;y<cp.h;y++)for(let x=0;x<cp.w;x++)if(FP.hasFlag(x,y,F.DOOR))doorCells++;
-ck('door authoring cannot cascade through the building',doorCells<200,`${doorCells} door cells in ${thresholdVolumes.length} volumes`);
+ck('door authoring cannot cascade through the building',doorCells<240,`${doorCells} door cells in ${thresholdVolumes.length} volumes`);
 const chapelSeed=rc(92,58,{center:false}),chapelVolume=cp.doorVolumes.find(v=>chapelSeed.x+1>=v.minX&&chapelSeed.x+1<=v.maxX&&chapelSeed.y+1>=v.minY&&chapelSeed.y+1<=v.maxY&&v.mask!==F.BRICKED);
 const chapelDoor=FP.doorState().find((door)=>door.id==='chapel-c17');
 const chapelUnkeyed=(chapelDoor?.cells||[]).filter(({x,y})=>FP.doorKeyAt(x,y)!=='chapel').map(({x,y})=>`${x},${y}`);
