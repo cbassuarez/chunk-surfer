@@ -1428,7 +1428,7 @@
         },
         {
           "who": "recordist",
-          "text": "The — say again?",
+          "text": "the fuck? ...say again?",
           "id": "tape.run.line.4"
         },
         {
@@ -1447,14 +1447,59 @@
           "id": "tape.run.line.7"
         },
         {
-          "who": "direction",
-          "text": "Thirty seconds of the room, at the same level as before. Then the voice, closer.",
+          "who": "recordist",
+          "text": "Not m-.",
           "id": "tape.run.line.8"
         },
         {
           "who": "surfer",
-          "text": "Come closer.",
+          "text": "You did everything you could to keep from losing her. It drove her away, didn't it?.",
           "id": "tape.run.line.9"
+        },
+        {
+          "who": "recordist",
+          "text": "No! Why do you know this?! Who are you?",
+          "id": "tape.run.line.10"
+        },
+        {
+          "who": "direction",
+          "text": "Thirty seconds of the room, at the same level as before.",
+          "id": "tape.run.line.11"
+        },
+        {
+          "who": "surfer",
+          "text": "Come closer.",
+          "id": "tape.run.line.12"
+        },
+        {
+          "who": "direction",
+          "text": "Vague nothings you cannot make out.",
+          "id": "tape.run.line.13"
+        },
+        {
+          "who": "surfer",
+          "text": "Closer. Bring forth to me your body.",
+          "id": "tape.run.line.14"
+        },
+        {
+          "who": "direction",
+          "text": ".",
+          "id": "tape.run.line.15"
+        },
+        {
+          "who": "direction",
+          "text": "..",
+          "id": "tape.run.line.16"
+        },
+        {
+          "who": "direction",
+          "text": "...",
+          "id": "tape.run.line.17"
+        },
+        {
+          "who": "surfer",
+          "text": "You will bring me another, and will lose them together.",
+          "id": "tape.run.line.18"
         }
       ],
       "revisitLines": [
@@ -1466,12 +1511,12 @@
       ],
       "choices": [
         {
-          "text": "back it up and check the level",
+          "text": "wind it back",
           "goto": "tape.run.again",
           "id": "tape.run.choice.1"
         },
         {
-          "text": "let the rest of the file play",
+          "text": "listen to the end",
           "goto": "tape.end",
           "id": "tape.run.choice.2"
         },
@@ -1486,21 +1531,27 @@
       "id": "tape.run.again",
       "type": "dialogue",
       "speaker": "THE HEADPHONES",
+      "tape": true,
       "lines": [
         {
           "who": "direction",
-          "text": "Back forty seconds. The room, the chair, the man standing up. The voice again.",
+          "text": "Back forty seconds. The room, the chair, the man standing up.",
           "id": "tape.run.again.line.1"
         },
         {
-          "who": "you",
-          "text": "Same words. Same level. Minus forty-one, both times. A voice does not repeat at a matched level. A voice is not a loop.",
+          "who": "surfer",
+          "text": "Who did you lose.",
           "id": "tape.run.again.line.2"
         },
         {
           "who": "you",
-          "text": "I am going to be checking my recordings very carefully tonight.",
+          "text": "Same words. Same level. Minus forty-one decibels, both times.",
           "id": "tape.run.again.line.3"
+        },
+        {
+          "who": "direction",
+          "text": "You have a feeling you're going to need to check your recordings extra carefully tonight.",
+          "id": "tape.run.again.line.4"
         }
       ],
       "goto": "tape.run"
@@ -1513,13 +1564,18 @@
       "lines": [
         {
           "who": "direction",
-          "text": "The rest of the file is clean ambient room. Nine minutes of it. He does not speak again, and neither does anything else.",
+          "text": "The rest of the file is pure, clean ambient room sounds. Nine minutes of it. He does not speak again, and neither does anything else.",
           "id": "tape.end.line.1"
         },
         {
           "who": "you",
-          "text": "That is the best room tone I have ever heard. And it ends on nothing, which is worse than ending on something.",
+          "text": "That is the best goddamned room tone I have ever heard.",
           "id": "tape.end.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "The file ends. It does not end on anything.",
+          "id": "tape.end.line.3"
         }
       ],
       "goto": "descent"

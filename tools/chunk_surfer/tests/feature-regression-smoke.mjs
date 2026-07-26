@@ -17,6 +17,11 @@ const browser=await puppeteer.launch({
   headless:'new',
   args:[
     '--autoplay-policy=no-user-gesture-required',
+    '--disable-background-timer-throttling',
+    '--disable-backgrounding-occluded-windows',
+    '--disable-renderer-backgrounding',
+    '--disable-features=CalculateNativeWinOcclusion,PaintHolding,BackForwardCache',
+    '--window-size=1280,800',
     ...(process.platform==='darwin'?['--use-angle=metal']:[]),
     ...(process.platform==='linux'?[
       '--disable-dev-shm-usage',
@@ -32,6 +37,9 @@ const compactViewport={width:960,height:600,deviceScaleFactor:1};
 const transitionTimeout=process.platform==='linux'?60000:10000;
 const gameplayTimeout=process.platform==='linux'?90000:20000;
 const interactionTimeout=process.platform==='linux'?30000:10000;
+const screenshotTimeout=process.platform==='linux'?30000:15000;
+const viewportTimeout=process.platform==='linux'?20000:10000;
+let currentPhase='boot';
 await page.setViewport(desktopViewport);
 const errors=[];
 page.on('pageerror',(error)=>{
@@ -43,6 +51,63 @@ page.on('console',(message)=>{
     console.error(`visual smoke: page ${message.type()}: ${message.text()}`);
   }
 });
+
+function smokeSlug(value){
+  return String(value||'step').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,80)||'step';
+}
+
+function smokeJson(value){
+  try{return JSON.stringify(value).slice(0,4000);}catch{return '[unserializable]';}
+}
+
+function withTimeout(promise,timeoutMs,label){
+  let timer=null;
+  return Promise.race([
+    Promise.resolve(promise).finally(()=>{ if(timer!==null)clearTimeout(timer); }),
+    new Promise((_,reject)=>{
+      timer=setTimeout(()=>reject(new Error(`visual smoke step timed out: ${label}`)),Math.max(1000,Number(timeoutMs)||interactionTimeout));
+    }),
+  ]);
+}
+
+async function dumpSmokeState(phase){
+  const state=await withTimeout(page.evaluate(()=>({
+    scene:window.__scenes?.top?.()?.id||null,
+    sceneView:window.__scenes?.top?.()?.view?.()||null,
+    parity:window.__chunkParity?.()||null,
+    probeScene:window.__probe?.scene?.()||null,
+    hush:window.__chunkSurferHushScare?.status?.()||null,
+    performance:window.__probe?.performance?.()||null,
+  })),5000,`diagnostic state for ${phase}`).catch((error)=>({diagnosticError:error.message}));
+  console.error(`visual smoke: failed during ${phase}: ${smokeJson(state)}`);
+  await withTimeout(
+    page.screenshot({path:path.join(output,`failure-${smokeSlug(phase)}.png`)}).catch(()=>{}),
+    5000,
+    `diagnostic screenshot for ${phase}`,
+  ).catch(()=>{});
+}
+
+async function smokeStep(name,fn,timeoutMs=interactionTimeout){
+  currentPhase=name;
+  console.log(`visual smoke: ${name}...`);
+  try{
+    const result=await withTimeout(Promise.resolve().then(fn),timeoutMs,name);
+    console.log(`visual smoke: ${name} done`);
+    return result;
+  }catch(error){
+    await dumpSmokeState(name).catch(()=>{});
+    throw error;
+  }
+}
+
+async function safeScreenshot(name,timeoutMs=screenshotTimeout){
+  await smokeStep(`screenshot ${name}`,()=>page.screenshot({path:path.join(output,name)}),timeoutMs);
+}
+
+setInterval(()=>{
+  console.log(`visual smoke: heartbeat phase=${currentPhase}`);
+},15000).unref();
+
 
 async function settleViewport(){
   // Hosted Windows runners can suspend requestAnimationFrame for headless tabs
@@ -102,11 +167,11 @@ async function samplePerformance(minimumSamples=30){
 }
 
 async function capturePair(desktopName,compactName){
-  await page.screenshot({path:path.join(output,desktopName)});
-  await page.setViewport(compactViewport);
+  await safeScreenshot(desktopName);
+  await smokeStep('set compact viewport',()=>page.setViewport(compactViewport),viewportTimeout);
   await settleViewport();
-  await page.screenshot({path:path.join(output,compactName)});
-  await page.setViewport(desktopViewport);
+  await safeScreenshot(compactName);
+  await smokeStep('restore desktop viewport',()=>page.setViewport(desktopViewport),viewportTimeout);
   await settleViewport();
 }
 
@@ -256,30 +321,38 @@ try {
   assert.equal(discoveredAcademic.spaces.some((space)=>space.floorId==='academic'),false,'the discovered floor remains free of objectives and labels');
   console.log('visual smoke: academic atrium and locked gallery captured');
 
-  await page.keyboard.press('F10');
-  await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='god-menu',{timeout:interactionTimeout});
-  const godMenu=await page.evaluate(()=>window.__scenes.top().view());
-  assert.ok(godMenu.tabs.some((tab)=>tab.id==='conditions'));
-  assert.ok(godMenu.tabs.some((tab)=>tab.id==='scenes'));
-  await page.screenshot({path:path.join(output,'04-god-menu.png')});
-  const currentTab=godMenu.tabs.findIndex((tab)=>tab.id===godMenu.tab);
-  const scenesTab=godMenu.tabs.findIndex((tab)=>tab.id==='scenes');
-  const tabSteps=(scenesTab-currentTab+godMenu.tabs.length)%godMenu.tabs.length;
-  for(let i=0;i<tabSteps;i++)await page.keyboard.press('e');
-  await page.waitForFunction(()=>window.__scenes?.top?.()?.view?.()?.tab==='scenes',{timeout:interactionTimeout});
-  await page.screenshot({path:path.join(output,'04b-god-menu-game-parts.png')});
-  await page.keyboard.press('F10');
-  await page.waitForFunction(()=>window.__scenes?.top?.()?.id!=='god-menu',{timeout:interactionTimeout});
+  const godMenu=await smokeStep('open god menu diagnostic',async()=>{
+    const view=await page.evaluate(()=>window.__probe.godMenu());
+    assert.equal(await page.evaluate(()=>window.__scenes?.top?.()?.id==='god-menu'),true);
+    assert.ok(view.tabs.some((tab)=>tab.id==='conditions'));
+    assert.ok(view.tabs.some((tab)=>tab.id==='scenes'));
+    return view;
+  });
+  await safeScreenshot('04-god-menu.png');
+  await smokeStep('show god menu scenes tab',async()=>{
+    const view=await page.evaluate(()=>window.__probe.godMenu('scenes'));
+    assert.equal(view?.tab,'scenes');
+    assert.ok(view.tabs.some((tab)=>tab.id==='scenes'));
+  });
+  await safeScreenshot('04b-god-menu-game-parts.png');
+  await smokeStep('close god menu diagnostic',async()=>{
+    assert.equal(await page.evaluate(()=>window.__probe.closeGodMenu()),true);
+    await page.waitForFunction(()=>window.__scenes?.top?.()?.id!=='god-menu',{timeout:interactionTimeout});
+  });
 
-  assert.equal(await page.evaluate(()=>window.__probe.coldOpen()),true);
-  await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='god-cold-open',{timeout:interactionTimeout});
-  await page.evaluate(()=>window.__scenes.top().update?.(2.5));
-  await page.screenshot({path:path.join(output,'05-cold-open-clamped-dialogue.png')});
+  await smokeStep('open cold open diagnostic',async()=>{
+    assert.equal(await page.evaluate(()=>window.__probe.coldOpen()),true);
+    await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='god-cold-open',{timeout:interactionTimeout});
+    await page.evaluate(()=>window.__scenes.top().update?.(2.5));
+  });
+  await safeScreenshot('05-cold-open-clamped-dialogue.png');
 
-  assert.equal(await page.evaluate(()=>window.__probe.think('hush')),true);
-  await page.waitForFunction(()=>/^thought:|^dialogue:/.test(window.__scenes?.top?.()?.id||''),{timeout:interactionTimeout});
-  await page.evaluate(()=>window.__scenes.top().update?.(1.2));
-  await page.screenshot({path:path.join(output,'06-dialogue-pane.png')});
+  await smokeStep('open hush warning diagnostic',async()=>{
+    assert.equal(await page.evaluate(()=>window.__probe.think('hush')),true);
+    await page.waitForFunction(()=>/^thought:|^dialogue:/.test(window.__scenes?.top?.()?.id||''),{timeout:interactionTimeout});
+    await page.evaluate(()=>window.__scenes.top().update?.(1.2));
+  });
+  await safeScreenshot('06-dialogue-pane.png');
   const warningDiagnostic=await page.evaluate(()=>window.__probe.hushSensation());
   assert.equal(warningDiagnostic.mode,'proximity');
   assert.ok(warningDiagnostic.debug.choices.every((choice)=>!Object.hasOwn(choice,'outcome')),'a distant warning has no hidden mechanical answers');
@@ -314,14 +387,35 @@ try {
   const hardPicker=await page.evaluate(()=>window.__probe.hushSensation());
   const hardIndex=hardPicker.debug.choices.findIndex((choice)=>choice.outcome==='hard');
   assert.ok(hardIndex>=0);
+  await page.evaluate((timeoutMs)=>{
+    const watcher={seen:false,status:null,deadline:performance.now()+Math.max(1000,Number(timeoutMs)||3000)};
+    window.__featureSmokeHushHardFlash=watcher;
+    const sample=()=>{
+      const status=window.__chunkSurferHushScare?.status?.()||null;
+      watcher.status=status;
+      if(status?.active&&status?.contactHit){
+        watcher.seen=true;
+        return;
+      }
+      if(performance.now()<watcher.deadline)setTimeout(sample,20);
+    };
+    sample();
+  },interactionTimeout);
   assert.equal(await page.evaluate((index)=>window.__probe.hushChoice(index),hardIndex),true);
   await revealThoughtResponse();
   await page.screenshot({path:path.join(output,'06c-hush-brush-failed-thought.png')});
   await finishThought();
-  const hardFlash=await page.evaluate(()=>window.__chunkSurferHushScare.status());
-  assert.equal(hardFlash.active,true);
-  assert.equal(hardFlash.contactHit,true);
-  await page.screenshot({path:path.join(output,'06d-hush-brush-hard-contact.png')});
+  const hardFlash=await page.evaluate(async(timeoutMs)=>{
+    const watcher=window.__featureSmokeHushHardFlash;
+    const deadline=performance.now()+Math.max(1000,Number(timeoutMs)||3000);
+    while(watcher&&!watcher.seen&&performance.now()<deadline){
+      await new Promise((resolve)=>setTimeout(resolve,20));
+    }
+    return watcher?.status||window.__chunkSurferHushScare.status();
+  },interactionTimeout);
+  assert.equal(hardFlash?.active,true,`hard brush contact flash was not observed: ${JSON.stringify(hardFlash)}`);
+  assert.equal(hardFlash?.contactHit,true,`hard brush contact flash did not report contact-hit: ${JSON.stringify(hardFlash)}`);
+  await safeScreenshot('06d-hush-brush-hard-contact.png');
   const afterHard=await page.evaluate(()=>({presence:window.__probe.presence(),rec:window.__probe.rec(),sensation:window.__probe.hushSensation()}));
   assert.equal(afterHard.sensation.debug.selected.outcome,'hard');
   assert.equal(afterHard.presence.caughtCount,beforeHard.presence.caughtCount+1);

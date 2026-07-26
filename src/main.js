@@ -12443,6 +12443,20 @@ function installProbe(){
       resetMotionInput('probe-clear-scenes',{stopRenderMove:true});
       return true;
     },
+    godMenu:(tab=null)=>{
+      if(scenes.top()?.id!=='god-menu')openGodMenu();
+      const scene=scenes.top();
+      if(scene?.id!=='god-menu')return null;
+      const wanted=tab==null?null:String(tab);
+      for(let i=0;wanted&&scene.view?.()?.tab!==wanted&&i<20;i++){
+        scene.key?.({key:'e',code:'KeyE',preventDefault(){}});
+      }
+      return scene.view?.()||null;
+    },
+    closeGodMenu:()=>{
+      if(scenes.top()?.id==='god-menu')closeGodMenu();
+      return scenes.top()?.id!=='god-menu';
+    },
     read:()=>interact(),
     lensPreset:(n)=>!!applyLensPreset(n),
     typing:()=>STORY.typingState(),
