@@ -97,6 +97,7 @@ const tests = [
   'test/source-space-chapter.spec.mjs',
   'test/chapel-tower-state.spec.mjs',
   'test/bell-tower.spec.mjs',
+  'test/tower-on-foot-route.spec.mjs',
   'test/bell-stem-assets.test.mjs',
   'test/source-tower-transition.spec.mjs',
   'test/narrative-studio.spec.mjs',

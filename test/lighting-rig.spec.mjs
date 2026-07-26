@@ -37,6 +37,11 @@ assert.equal(byId['natatorium-roof-spill-north'].intensity,1.52);
 assert.equal(byId['access-low'].kind,LIGHT_KIND.EMERGENCY);
 assert.equal(byId['access-low'].anchorPropId,'tower-light-lower');
 assert.equal(byId['academic-skylight-spill'].anchorPropId,'academic-skylight');
+assert.equal(byId['atrium-main-exit'].anchorPropId,'atrium-light-main-exit');
+assert.equal(byId['natatorium-emergency-entry'].anchorPropId,'natatorium-light-emergency-entry');
+assert.equal(byId['natatorium-emergency-far'].anchorPropId,'natatorium-light-emergency-far');
+assert.equal(byId['organ-loft-exit'].anchorPropId,'tower-light-organ-exit');
+assert.equal(byId['nave-exit'].anchorPropId,'tower-light-nave-exit');
 assert.equal(byId['dock-grey-door-seam'].circuit,null,'dock seam is not the disconnected chandelier');
 
 const room=(group,zone)=>({group,zone});
@@ -68,7 +73,7 @@ const anchored=resolveLocalLights(room('tower',ZONE.bellTower),{
   towerCleared:false,
   anchorPosition:(id)=>id==='tower-light-lower'?{x:7,y:8,z:9}:null,
 }).find((light)=>light.id==='access-low');
-assert.deepEqual([anchored.x,anchored.y,anchored.z],[7,8.12,9],'moving a fitting moves its light');
+assert.deepEqual([anchored.x,anchored.y,anchored.z],[7,8.18,9],'moving a fitting moves its light');
 
 const towerDark=resolveLocalLights(room('tower',ZONE.bellTower),{towerCleared:false,origin:{x:100,z:62}});
 assert.equal(towerDark.length,7);

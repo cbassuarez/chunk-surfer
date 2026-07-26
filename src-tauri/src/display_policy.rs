@@ -218,6 +218,14 @@ pub fn chunk_minimize(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn chunk_restore(app: AppHandle) -> Result<(), String> {
+    let window = main_window(&app)?;
+    window.show().map_err(|err| err.to_string())?;
+    window.unminimize().map_err(|err| err.to_string())?;
+    window.set_focus().map_err(|err| err.to_string())
+}
+
+#[tauri::command]
 pub fn chunk_window_is_focused(app: AppHandle) -> Result<bool, String> {
     let window = main_window(&app)?;
     Ok(window.is_focused().unwrap_or(false))

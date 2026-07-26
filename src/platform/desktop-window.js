@@ -31,6 +31,10 @@ export async function minimizeNativeWindow() {
   return invokeDesktop('chunk_minimize');
 }
 
+export async function restoreNativeWindow() {
+  return invokeDesktop('chunk_restore');
+}
+
 export async function isNativeWindowFocused() {
   if (!IS_TAURI) return false;
   const { invoke } = await import('@tauri-apps/api/core');

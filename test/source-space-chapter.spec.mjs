@@ -66,6 +66,7 @@ function reachable(runtime,start,goal,maxVisited=180000){
 {
   const state=withTuned(landscapeState(),'fork-room');
   const runtime=createSourceSpaceRuntime({initialState:state});
+  assert.match(runtime.sourceObjective().label,/RECORDIST TRACE — TUNE \[F\]/,'the objective names the actual input and action');
   const diagonal={x:-22,y:-56};
   const tangent={x:-44,y:-28};
   const length=Math.hypot(tangent.x,tangent.y);
@@ -91,6 +92,15 @@ function reachable(runtime,start,goal,maxVisited=180000){
   runtime.onStep({x:0,y:-470},{x:0,y:-478,facing:0});
   assert.equal(runtime.state().pursuitBeat,null,'and it stays that way as you keep wandering');
   assert.deepEqual(runtime.state().tuned,before,'wandering preserves resolved evidence');
+}
+
+{
+  let state=withTuned(landscapeState(),'fork-room','recordist-loop');
+  state=apply(state,'LANDMARK_VISITED',{id:'body-room'});
+  const runtime=createSourceSpaceRuntime({initialState:state});
+  assert.match(runtime.sourceObjective().label,/BODY RETURN — TUNE \[F\]/);
+  runtime.onStep({x:70,y:-552},{x:80,y:-564,facing:0});
+  assert.equal(runtime.state().phase,'landscape','merely visiting Body Return cannot satisfy an objective that asks the player to tune it');
 }
 
 {

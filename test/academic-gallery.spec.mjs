@@ -84,7 +84,10 @@ assert.ok(!BUILDING_MAP.targets.some((target)=>target.logical.y>=240));
 const academicStairMid=runtime({x:53,y:189});
 assert.equal(FP.materialAt(academicStairMid.x,academicStairMid.y),MATERIAL.serviceConcrete,'the 3F stair keeps the service-stair concrete treatment');
 const stairClutterMeshes=new Set(['upper_stair_dressing','basement_stair_dressing','academic_stair_dressing','stair_smoke_door_open','stair_smoke_door_closed','stair_sconce_pair_opal','stair_bulkhead_pair','stair_pendant_opal','tower_stair_rail_low_up','tower_stair_rail_high_up','tower_stair_rail_high_down','tower_stair_rail_low_down']);
-assert.equal(CONSERVATORY_PROPS.some((prop)=>stairClutterMeshes.has(prop.mesh)),false,'every ordinary stair stays free of rails, frames, and decorative fixtures');
+assert.equal(CONSERVATORY_PROPS.some((prop)=>prop.id!=='tower-light-ringing'&&stairClutterMeshes.has(prop.mesh)),false,
+  'every ordinary stair stays free of rails, frames, and decorative fixtures');
+assert.equal(CONSERVATORY_PROPS.find((prop)=>prop.id==='tower-light-ringing')?.mesh,'stair_pendant_opal',
+  'the ringing-room ceiling pendant is the sole deliberate exception');
 
 const academicProps=CONSERVATORY_PROPS.filter((prop)=>prop.id.startsWith('academic-'));
 assert.ok(academicProps.length>=100);
@@ -130,8 +133,8 @@ for(const id of MUTE_EXCEPTIONS){
   const prop=academicProps.find((entry)=>entry.id===id);
   assert.ok(prop?.inspect?.first,`${id} is inspectable, which is the whole point of the exception`);
 }
-for(const id of ['academic-atrium-structure','academic-skylight','academic-garden-basin']){
-  const prop=academicProps.find((entry)=>entry.id===id);
+for(const id of ['academic-atrium-structure','academic-skylight','academic-garden-basin','atrium-perimeter-relief']){
+  const prop=CONSERVATORY_PROPS.find((entry)=>entry.id===id);
   assert.deepEqual(prop?.renderGroups,['ground','academic']);
 }
 

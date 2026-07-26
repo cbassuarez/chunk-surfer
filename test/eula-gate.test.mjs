@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { eulaAccepted, eulaGateSections, eulaSections, eulaVersion } from '../src/game/eula.js';
+import { eulaAccepted, eulaGateSections, eulaPreamble, eulaSections, eulaVersion } from '../src/game/eula.js';
 import { freshMeta, normalizeMeta } from '../src/progression/schema.js';
 
 const normalizeText = (text) => String(text || '').replace(/\r\n?/g, '\n');
@@ -41,6 +41,24 @@ test('the gate shows the model-use restrictions the OpenRAIL licence requires', 
   assert.ok(eulaSections(EULA).length > gate.length, 'full text stays available beyond the gate');
 });
 
+test('the acceptance screen displays the complete agreement and wraps its heading copy', () => {
+  const scene = read('src/game/eula-scene.js');
+  assert.match(scene, /const sections = eulaSections\(text\)/);
+  assert.match(scene, /const preamble = eulaPreamble\(text\)/);
+  assert.doesNotMatch(scene, /reviewOnly\s*\?\s*eulaSections\(text\)\s*:\s*eulaGateSections\(text\)/);
+  assert.match(scene, /uiWrap\(FIRST_RUN_NOTICE,\s*panel\.w\)/);
+  assert.match(scene, /splitHeading/);
+  assert.match(scene, /label:\s*'LICENCE'/);
+  assert.doesNotMatch(scene, /label:\s*'AUDIOCORP\s*\/\s*LICENCE'/);
+});
+
+test('the complete agreement includes its introductory terms before Section 1', () => {
+  const preamble = eulaPreamble(EULA);
+  assert.equal(preamble.length, 2);
+  assert.match(preamble[0], /governs your use of Chunk Surfer/i);
+  assert.match(preamble[1], /do not agree/i);
+});
+
 test('the EULA parser is line-ending safe', () => {
   const crlf = EULA.replace(/\n/g, '\r\n');
   assert.equal(eulaVersion(crlf), eulaVersion(EULA));
@@ -60,6 +78,17 @@ test('acceptance is persisted in the profile and survives normalization', () => 
   assert.equal(stored.eulaAccepted, '2026-07-16');
   assert.equal(stored.eulaAcceptedAt, 1234);
   assert.equal(normalizeMeta({ eulaAccepted: 42 }).eulaAccepted, '');
+});
+
+test('offline runtime preparation marker survives profile normalization', () => {
+  assert.equal(freshMeta().lensRuntimeReady, '');
+  const stored = normalizeMeta({
+    ...freshMeta(),
+    lensRuntimeReady: 'offline-lens-v3-cu128-compel-2',
+    lensRuntimeReadyAt: 4321,
+  });
+  assert.equal(stored.lensRuntimeReady, 'offline-lens-v3-cu128-compel-2');
+  assert.equal(stored.lensRuntimeReadyAt, 4321);
 });
 
 test('the gate stands ahead of calibration, lens startup, and declining quits', () => {

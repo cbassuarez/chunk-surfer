@@ -1,3 +1,5 @@
+import { uiSize, uiText } from '../render/ui.js';
+
 export const SOURCE_TOWER_CROSSING_SECONDS = 8.5;
 
 const clamp01 = (value) => Math.max(0, Math.min(1, Number(value) || 0));
@@ -42,6 +44,17 @@ export function createSourceTowerTransitionScene({
         committed = true;
         onCommit?.();
       }
+    },
+    render() {
+      const { cols, rows } = uiSize();
+      const label = 'FOLLOW THE SIGNAL INTO THE TOWER';
+      const instruction = 'HOLD FORWARD — THE BELL ROPES CARRY IT UP';
+      const width = Math.max(12, Math.min(34, cols - 8));
+      const filled = Math.round(width * progress);
+      const meter = `${'█'.repeat(filled)}${'·'.repeat(Math.max(0, width - filled))}`;
+      uiText(Math.max(2, Math.floor((cols - label.length) / 2)), 2, label, 'ui-amber');
+      uiText(Math.max(2, Math.floor((cols - instruction.length) / 2)), rows - 4, instruction.slice(0, cols - 4), 'ui-secondary');
+      uiText(Math.max(2, Math.floor((cols - meter.length) / 2)), rows - 2, meter, progress >= 1 ? 'ui-green' : 'ui-blue');
     },
     exit() {
       renderer?.r3dEndDatamosh?.();

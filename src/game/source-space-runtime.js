@@ -470,11 +470,11 @@ export function createSourceSpaceRuntime({
     } else if (state.phase === CHUNK_SURF_PHASE.TRANSFORMING) {
       objective = { id: 'source-opening', label: 'HOLD THE SOURCE', target: haystackPagePoint(), bearingEligible: false };
     } else if (!state.hasFork) {
-      objective = { id: 'fork-gate', label: 'TUNE THE FORK GATE', target: landmarkPoint('fork-room'), bearingEligible: true };
+      objective = { id: 'fork-gate', label: 'FACE THE FORK GATE — TUNE [F]', target: landmarkPoint('fork-room'), bearingEligible: true };
     } else if (!state.tuned.includes('recordist-loop')) {
-      objective = { id: 'recordist-loop', label: 'TRACE THE RECORDIST', target: landmarkPoint('recordist-loop'), bearingEligible: true };
+      objective = { id: 'recordist-loop', label: 'FACE THE RECORDIST TRACE — TUNE [F]', target: landmarkPoint('recordist-loop'), bearingEligible: true };
     } else if (!state.tuned.includes('body-room')) {
-      objective = { id: 'body-return', label: 'REACH BODY RETURN', target: landmarkPoint('body-room'), bearingEligible: true };
+      objective = { id: 'body-return', label: 'FACE BODY RETURN — TUNE [F]', target: landmarkPoint('body-room'), bearingEligible: true };
     } else if (state.phase === CHUNK_SURF_PHASE.FINAL && state.finalEncounter.status !== SOURCE_FINAL_STATUS.RESOLVED) {
       objective = { id: 'final-encounter', label: 'RESOLVE THE FINAL SOURCE', target: landmarkPoint('final-page'), bearingEligible: false };
     } else if (state.phase === CHUNK_SURF_PHASE.COMPLETED) {
@@ -601,7 +601,7 @@ export function createSourceSpaceRuntime({
       // Movement to the horizon is free, but the final encounter only commits
       // once Body Return is behind you — so exploring ahead early is allowed, it
       // just doesn't skip the beat that earns the ending.
-      const bodyReached = state.visited.includes('body-room') || state.tuned.includes('body-room') || state.recorded.includes('body-room');
+      const bodyReached = state.tuned.includes('body-room') || state.recorded.includes('body-room');
       if (final && Math.hypot(to.x - final.x, to.y - final.y) < 10 && bodyReached) {
         dispatch({ type: 'FINAL_REACHED' }, { immediate: true });
         protectMoment(30);

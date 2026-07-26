@@ -14,8 +14,40 @@ export const BELL_TOWER_RUNTIME_STATE = Object.freeze({
 const BELL_STAND_SETTLE_MS = 900;
 const RESUME_SKIP_MS = 1500;
 const LATE_AUDIO_GRACE_MS = 80;
+export const RELAY_INTERRUPT_REQUIRED = 3;
+export const RELAY_INTERRUPT_CYCLE_MS = 5600;
+export const RELAY_INTERRUPT_LEAD_IN_MS = 2600;
+const RELAY_INTERRUPT_WINDOW_START = .46;
+const RELAY_INTERRUPT_WINDOW_END = .86;
+const RELAY_INTERRUPT_GUARD_MS = 900;
 const clamp01 = (value) => Math.max(0, Math.min(1, Number(value) || 0));
 const ease = (t) => { const x = clamp01(t); return x * x * (3 - 2 * x); };
+
+export function relayInterventionWindowAt(elapsedMs) {
+  const elapsed = Math.max(0, Number(elapsedMs) || 0);
+  if (elapsed < RELAY_INTERRUPT_LEAD_IN_MS) {
+    return {
+      open: false,
+      phase: 0,
+      opensInMs: RELAY_INTERRUPT_LEAD_IN_MS - elapsed,
+      closesInMs: 0,
+    };
+  }
+  const cycleElapsed = (elapsed - RELAY_INTERRUPT_LEAD_IN_MS) % RELAY_INTERRUPT_CYCLE_MS;
+  const phase = cycleElapsed / RELAY_INTERRUPT_CYCLE_MS;
+  const open = phase >= RELAY_INTERRUPT_WINDOW_START && phase <= RELAY_INTERRUPT_WINDOW_END;
+  const opensInMs = open
+    ? 0
+    : phase < RELAY_INTERRUPT_WINDOW_START
+      ? (RELAY_INTERRUPT_WINDOW_START - phase) * RELAY_INTERRUPT_CYCLE_MS
+      : (1 - phase + RELAY_INTERRUPT_WINDOW_START) * RELAY_INTERRUPT_CYCLE_MS;
+  return {
+    open,
+    phase,
+    opensInMs,
+    closesInMs: open ? (RELAY_INTERRUPT_WINDOW_END - phase) * RELAY_INTERRUPT_CYCLE_MS : 0,
+  };
+}
 function writePivotMatrix(out,pivot,yaw,angle,s=1,offsetX=0,offsetY=0,offsetZ=0){
   const cy=Math.cos(yaw||0),sy=Math.sin(yaw||0),c=Math.cos(angle),sn=Math.sin(angle);
   out[0]=cy*c*s;out[1]=sn*s;out[2]=-sy*c*s;out[3]=0;
@@ -174,11 +206,18 @@ export function createBellTowerRuntime({
   let state = BELL_TOWER_RUNTIME_STATE.IDLE, startedAt = 0, startOffsetMs = 0, previousElapsed = 0;
   let audioCursor = 0, acousticCursor = 0, closing = null, stopRequestedAt = null, clearedSent = false;
   let shutters = 0, retry = false, currentSection = 'idle', currentRow = -1;
+  let relayInterruptions = 0, lastRelayInterruptionAt = -Infinity;
   const renderCache=[];
   const hazardCache=[];
   const pointScratch=new Float32Array(3);
   const poseCache=bells.map(()=>({angle:0,clapperAngle:0,stroke:null,phase:0,motion:{},curve:{phase:0,direction:1,balanceHold:.08,strikePhase:.54}}));
-  const snapshotCache={state:BELL_TOWER_RUNTIME_STATE.IDLE,retry:false,elapsedMs:0,scoreSection:'idle',scoreRow:-1,shutters:0,stopAvailable:false,stopAvailableAtMs:finite.endMs,activeBellAngles:new Array(bells.length).fill(0),scheduledStrikeCount:0};
+  const snapshotCache={
+    state:BELL_TOWER_RUNTIME_STATE.IDLE,retry:false,elapsedMs:0,scoreSection:'idle',scoreRow:-1,
+    shutters:0,stopAvailable:false,stopAvailableAtMs:null,
+    relayInterruptions:0,relayInterruptionsRequired:RELAY_INTERRUPT_REQUIRED,
+    relayWindowOpen:false,relayWindowPhase:0,relayWindowOpensInMs:0,relayWindowClosesInMs:0,
+    activeBellAngles:new Array(bells.length).fill(0),scheduledStrikeCount:0,
+  };
   let poseCacheAt=Number.NaN;
   for(const bell of bells){
     for(const [part,mesh] of [
@@ -239,6 +278,21 @@ export function createBellTowerRuntime({
     rebuildPerBell();
     audioCursor = Math.min(audioCursor, timeline.length);
     acousticCursor = Math.min(acousticCursor, timeline.length);
+  }
+
+  function createRelayClosing(elapsed) {
+    if (closing) return;
+    const nextIndex = upperBound(rowTimeline, elapsed + 900);
+    const next = rowTimeline[nextIndex];
+    const boundary = Math.max(elapsed + 900, Number(next?.atMs) || 0);
+    const rowIndex = Number.isFinite(next?.rowIndex) ? next.rowIndex : Math.max(0, currentRow + 1);
+    const stroke = next?.stroke || (rowIndex % 2 ? 'back' : 'hand');
+    closing = buildClosing(boundary, rowIndex, stroke);
+    timeline = timeline.filter((strike) => strike.atMs < boundary).concat(closing.strikes);
+    rowTimeline = rowTimeline.filter((row) => row.atMs < boundary).concat(closing.rows);
+    rebuildPerBell();
+    audioCursor = lowerBound(timeline, elapsed - LATE_AUDIO_GRACE_MS);
+    acousticCursor = lowerBound(timeline, elapsed - LATE_AUDIO_GRACE_MS);
   }
 
   function emitStrike(record) {
@@ -310,7 +364,7 @@ export function createBellTowerRuntime({
     if ([BELL_TOWER_RUNTIME_STATE.IDLE, BELL_TOWER_RUNTIME_STATE.CLEARED].includes(state)) return snapshot();
     const elapsed = currentElapsed();
     ensureHoldingThrough(elapsed + SCHEDULE_AHEAD_SEC * 1000 + 1200);
-    if (stopRequestedAt != null) createClosing(elapsed);
+    if (stopRequestedAt != null) createRelayClosing(elapsed);
     if (!closing) state = elapsed < finite.tenorEndMs ? BELL_TOWER_RUNTIME_STATE.TENOR : BELL_TOWER_RUNTIME_STATE.RINGING;
     else state = BELL_TOWER_RUNTIME_STATE.STOP_REQUESTED;
     scheduleStrikes(elapsed);
@@ -352,11 +406,13 @@ export function createBellTowerRuntime({
     return renderCache;
   }
 
-  function start({ retry: nextRetry = false, offsetMs = 0 } = {}) {
+  function start({ retry: nextRetry = false, offsetMs = 0, interventions = 0 } = {}) {
     retry = !!nextRetry; startOffsetMs = Math.max(0, Number(offsetMs) || 0);
     resetTimeline();
     state = startOffsetMs < finite.tenorEndMs ? BELL_TOWER_RUNTIME_STATE.TENOR : BELL_TOWER_RUNTIME_STATE.RINGING;
     startedAt = now(); previousElapsed = startOffsetMs; stopRequestedAt = null; shutters = 0; clearedSent = false;poseCacheAt=Number.NaN;
+    relayInterruptions = Math.max(0, Math.min(RELAY_INTERRUPT_REQUIRED, Math.floor(Number(interventions) || 0)));
+    lastRelayInterruptionAt = -Infinity;
     currentSection = startOffsetMs < finite.tenorEndMs ? 'tenor-awakens' : 'rounds'; currentRow = -1;
     ensureHoldingThrough(startOffsetMs + SCHEDULE_AHEAD_SEC * 1000 + 1200);
     audioCursor = lowerBound(timeline, startOffsetMs - LATE_AUDIO_GRACE_MS);
@@ -365,10 +421,41 @@ export function createBellTowerRuntime({
     return snapshot();
   }
 
+  function interruptRelay() {
+    if ([BELL_TOWER_RUNTIME_STATE.IDLE, BELL_TOWER_RUNTIME_STATE.CLEARED].includes(state)) {
+      return { ok: false, reason: 'inactive' };
+    }
+    if (relayInterruptions >= RELAY_INTERRUPT_REQUIRED) {
+      return { ok: true, complete: true, count: relayInterruptions };
+    }
+    const elapsed = currentElapsed();
+    const window = relayInterventionWindowAt(elapsed);
+    if (!window.open) return { ok: false, reason: 'unsafe', ...window };
+    if (elapsed - lastRelayInterruptionAt < RELAY_INTERRUPT_GUARD_MS) {
+      return { ok: false, reason: 'already-cut', ...window };
+    }
+    relayInterruptions += 1;
+    lastRelayInterruptionAt = elapsed;
+    return {
+      ok: true,
+      complete: relayInterruptions >= RELAY_INTERRUPT_REQUIRED,
+      count: relayInterruptions,
+      required: RELAY_INTERRUPT_REQUIRED,
+      ...window,
+    };
+  }
+
   function requestStop() {
     const elapsed = currentElapsed();
-    if (elapsed < finite.endMs) return { ok: false, reason: 'under-load', availableAtMs: finite.endMs };
-    if (stopRequestedAt == null) { stopRequestedAt = elapsed; createClosing(elapsed); audio?.releaseShutters?.(); }
+    if (relayInterruptions < RELAY_INTERRUPT_REQUIRED) {
+      return {
+        ok: false,
+        reason: 'relay-live',
+        count: relayInterruptions,
+        required: RELAY_INTERRUPT_REQUIRED,
+      };
+    }
+    if (stopRequestedAt == null) { stopRequestedAt = elapsed; createRelayClosing(elapsed); audio?.releaseShutters?.(); }
     return { ok: true };
   }
 
@@ -378,14 +465,26 @@ export function createBellTowerRuntime({
   function snapshot() {
     const elapsed = currentElapsed();
     updatePoseCache(elapsed);
+    const relayWindow=relayInterventionWindowAt(elapsed);
     snapshotCache.state=state;snapshotCache.retry=retry;snapshotCache.elapsedMs=elapsed;snapshotCache.scoreSection=currentSection;snapshotCache.scoreRow=currentRow;snapshotCache.shutters=shutters;
-    snapshotCache.stopAvailable=elapsed>=finite.endMs;snapshotCache.stopAvailableAtMs=finite.endMs;snapshotCache.scheduledStrikeCount=timeline.length;
+    snapshotCache.stopAvailable=relayInterruptions>=RELAY_INTERRUPT_REQUIRED;snapshotCache.stopAvailableAtMs=null;snapshotCache.scheduledStrikeCount=timeline.length;
+    snapshotCache.relayInterruptions=relayInterruptions;snapshotCache.relayInterruptionsRequired=RELAY_INTERRUPT_REQUIRED;
+    snapshotCache.relayWindowOpen=relayWindow.open;snapshotCache.relayWindowPhase=relayWindow.phase;
+    snapshotCache.relayWindowOpensInMs=relayWindow.opensInMs;snapshotCache.relayWindowClosesInMs=relayWindow.closesInMs;
     for(let i=0;i<poseCache.length;i++)snapshotCache.activeBellAngles[i]=poseCache[i].angle;
     return snapshotCache;
   }
-  const timing = () => ({ finiteEndMs: finite.endMs, tenorEndMs: finite.tenorEndMs, holdingCourseMs, rowsPerCourse });
+  const timing = () => ({
+    finiteEndMs: finite.endMs,
+    tenorEndMs: finite.tenorEndMs,
+    holdingCourseMs,
+    rowsPerCourse,
+    relayCycleMs: RELAY_INTERRUPT_CYCLE_MS,
+    relayLeadInMs: RELAY_INTERRUPT_LEAD_IN_MS,
+    relayInterruptionsRequired: RELAY_INTERRUPT_REQUIRED,
+  });
   return {
-    start, tick, requestStop, stopImmediately, reset, destroy, renderInstances, hazardVolumes, timing,
+    start, tick, interruptRelay, requestStop, stopImmediately, reset, destroy, renderInstances, hazardVolumes, timing,
     maskingDb: () => audio?.maskingDb?.() || (state === BELL_TOWER_RUNTIME_STATE.RINGING ? 18 : 0),
     isRinging: () => [BELL_TOWER_RUNTIME_STATE.TENOR, BELL_TOWER_RUNTIME_STATE.RINGING, BELL_TOWER_RUNTIME_STATE.STOP_REQUESTED].includes(state),
     state: () => state,

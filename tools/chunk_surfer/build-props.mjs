@@ -170,6 +170,55 @@ function addRingBeamYZ(m, centre, radius, section, mat, segments=16, start=0, en
   for(let i=0;i<points.length-1;i++)addBeam(m,points[i],points[i+1],section,mat);
 }
 
+// A small "second perimeter" kit. Floorplan walls remain the collision and
+// occlusion envelope; these shallow, non-blocking pieces sit against their
+// inside faces and give a room base courses, dado rails, pilasters, cornices
+// and arched bays without creating another walkable shell.
+function addWallRun(m,{axis,plane,inside,from,to,y,height,depth,mat}){
+  const along=(from+to)/2,length=to-from,normal=plane+inside*depth/2;
+  if(axis==='x')addBox(m,[along,y+height/2,normal],[length,height,depth],mat);
+  else addBox(m,[normal,y+height/2,along],[depth,height,length],mat);
+}
+
+function addWallPilaster(m,{axis,plane,inside,along,y=0,height,width=.38,depth=.28,mat}){
+  const normal=plane+inside*depth/2;
+  if(axis==='x')addBox(m,[along,y+height/2,normal],[width,height,depth],mat);
+  else addBox(m,[normal,y+height/2,along],[depth,height,width],mat);
+}
+
+function addWallArch(m,{axis,plane,inside,along,spring,radius,depth=.31,section=.10,mat,segments=10}){
+  const normal=plane+inside*depth;
+  let previous=null;
+  for(let i=0;i<=segments;i++){
+    const a=Math.PI*i/segments;
+    const across=along+Math.cos(a)*radius,y=spring+Math.sin(a)*radius;
+    const next=axis==='x'?[across,y,normal]:[normal,y,across];
+    if(previous)addBeam(m,previous,next,section,mat);
+    previous=next;
+  }
+}
+
+function addSecondPerimeterWall(m,{
+  axis,plane,inside,spans,pilasters=[],stiles=pilasters,
+  dadoHeight=1.18,pictureY=4.28,corniceY=4.72,
+  baseMat=MAT.stone,fillMat=null,trimMat=MAT.plaster,reliefScale=1,
+}){
+  for(const [from,to] of spans){
+    if(fillMat!==null)addWallRun(m,{axis,plane,inside,from,to,y:.18,height:dadoHeight-.18,depth:.10*reliefScale,mat:fillMat});
+    addWallRun(m,{axis,plane,inside,from,to,y:0,height:.20,depth:.20*reliefScale,mat:baseMat});
+    addWallRun(m,{axis,plane,inside,from,to,y:dadoHeight-.07,height:.14,depth:.24*reliefScale,mat:trimMat});
+    addWallRun(m,{axis,plane,inside,from,to,y:pictureY-.055,height:.11,depth:.16*reliefScale,mat:trimMat});
+    addWallRun(m,{axis,plane,inside,from,to,y:corniceY-.10,height:.20,depth:.27*reliefScale,mat:trimMat});
+    addWallRun(m,{axis,plane,inside,from,to,y:corniceY+.10,height:.10,depth:.36*reliefScale,mat:baseMat});
+  }
+  for(const along of stiles)addWallPilaster(m,{
+    axis,plane,inside,along,y:.20,height:dadoHeight-.27,width:.12,depth:.17*reliefScale,mat:trimMat,
+  });
+  for(const along of pilasters)addWallPilaster(m,{
+    axis,plane,inside,along,y:dadoHeight,height:corniceY-dadoHeight,width:.38,depth:.30*reliefScale,mat:trimMat,
+  });
+}
+
 function addTriangle(m,a,b,c,mat){
   const g=group(m,mat),u=b.map((q,i)=>q-a[i]),v=c.map((q,i)=>q-a[i]);
   const raw=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]],l=Math.hypot(...raw)||1,n=raw.map(q=>q/l);
@@ -334,6 +383,37 @@ function addTriangle(m,a,b,c,mat){
     addQuad(m,[-5.05,roofY(-5.05)-.05,a],[-.82,roofY(-.82)-.05,a],[-.82,roofY(-.82)-.05,b],[-5.05,roofY(-5.05)-.05,b],MAT.roofGlass);
     addQuad(m,[.82,roofY(.82)-.05,a],[5.05,roofY(5.05)-.05,a],[5.05,roofY(5.05)-.05,b],[.82,roofY(.82)-.05,b],MAT.roofGlass);
   }
+}
+{
+  // The municipal-baths room finish is independent of the later steel roof:
+  // a continuous glazed dado, a darker skirting course, and wall piers aligned
+  // to every roof rib. Their shallow relief makes the wall read as the work of
+  // several building campaigns while the authored DDA wall remains the one
+  // collision envelope.
+  const m=mesh('natatorium_perimeter_relief');
+  const sidePiers=[];for(let z=-9.75;z<=9.75+.01;z+=3.25)sidePiers.push(z);
+  for(const [plane,inside] of[[-12.5,1],[12.5,-1]])addSecondPerimeterWall(m,{
+    axis:'z',plane,inside,spans:[[-10.5,10.5]],pilasters:sidePiers,stiles:sidePiers,
+    dadoHeight:1.34,pictureY:4.64,corniceY:5.04,
+    baseMat:MAT.poolBlue,fillMat:MAT.poolMint,trimMat:MAT.agedWhite,reliefScale:.60,
+  });
+  // The north entrance interrupts every horizontal course, not just the tile.
+  addSecondPerimeterWall(m,{
+    axis:'x',plane:-11,inside:1,spans:[[-12,-.35],[2.35,12]],pilasters:[-10,-6,-2.1,4,8,11.7],
+    stiles:[-10,-8,-6,-4,-2.1,2.35,4,6,8,10],dadoHeight:1.34,pictureY:4.64,corniceY:5.04,
+    baseMat:MAT.poolBlue,fillMat:MAT.poolMint,trimMat:MAT.agedWhite,reliefScale:.60,
+  });
+  // At the far end the low ceramic finish survives beneath the large arched
+  // window. Short returns either side keep the end wall from reading as one
+  // undifferentiated rectangle.
+  addSecondPerimeterWall(m,{
+    axis:'x',plane:11,inside:-1,spans:[[-12,-4.6],[6.6,12]],pilasters:[-11.7,-8,8,11.7],
+    stiles:[-10,-8,-6,8,10],dadoHeight:1.34,pictureY:4.64,corniceY:5.04,
+    baseMat:MAT.poolBlue,fillMat:MAT.poolMint,trimMat:MAT.agedWhite,reliefScale:.60,
+  });
+  addWallRun(m,{axis:'x',plane:11,inside:-1,from:-4.6,to:6.6,y:0,height:1.34,depth:.06,mat:MAT.poolMint});
+  addWallRun(m,{axis:'x',plane:11,inside:-1,from:-4.6,to:6.6,y:0,height:.20,depth:.12,mat:MAT.poolBlue});
+  addWallRun(m,{axis:'x',plane:11,inside:-1,from:-4.6,to:6.6,y:1.27,height:.14,depth:.14,mat:MAT.agedWhite});
 }
 {
   // Continuous changing cubicles line the outside walls, as at Warrender and
@@ -557,6 +637,50 @@ function addTriangle(m,a,b,c,mat){
   for(const x of[-11.4,11.4])for(const z of[-12.4,-6.5,6.5,12.4])addCylinder(m,[x,-4.85,z],.16,9.7,MAT.plaster,12);
 }
 {
+  // The old public atrium gets a civic interior order rather than a texture
+  // pasted over a rectangular shell. The original wall remains visible in
+  // recessed panels between the shallow stone/plaster rails. Real apertures
+  // break every run, and the upper blind arches deliberately vary in width.
+  const m=mesh('front_atrium_perimeter_relief');
+  addSecondPerimeterWall(m,{
+    axis:'x',plane:-11.5,inside:1,spans:[[-10.5,-8.95],[-6.05,10.5]],
+    pilasters:[-10.35,-8.95,-6.05,-3.0,.15,3.3,6.45,9.9],
+    stiles:[-10.35,-8.95,-6.05,-4.5,-3,-1.45,.15,1.7,3.3,4.85,6.45,8.1,9.9],
+    reliefScale:.36,
+  });
+  addSecondPerimeterWall(m,{
+    axis:'z',plane:-11,inside:1,spans:[[-10.9,-2.65],[-.35,10.9]],
+    pilasters:[-10.65,-7.9,-5.25,-2.65,-.35,2.35,5.05,7.75,10.65],
+    stiles:[-10.65,-9.25,-7.9,-6.55,-5.25,-3.9,-2.65,-.35,1,2.35,3.7,5.05,6.4,7.75,9.1,10.65],
+    reliefScale:.36,
+  });
+  // The east side becomes a staff office and the narrow concert-hall
+  // vestibule south of the bricked service leaf. Stop the public-room order
+  // there completely: even shallow trim would steal too much of that passage.
+  addSecondPerimeterWall(m,{
+    axis:'z',plane:11,inside:-1,spans:[[-10.9,-2.65]],
+    pilasters:[-10.65,-7.9,-5.25,-2.65],
+    stiles:[-10.65,-9.25,-7.9,-6.55,-5.25,-3.9,-2.65],
+    reliefScale:.36,
+  });
+  addSecondPerimeterWall(m,{
+    axis:'x',plane:11.5,inside:-1,spans:[[-10.5,-1.75],[.75,10.5]],
+    pilasters:[-10.25,-7.35,-4.45,-1.75,.75,3.7,6.65,9.9],
+    stiles:[-10.25,-8.8,-7.35,-5.9,-4.45,-3.05,-1.75,.75,2.25,3.7,5.2,6.65,8.15,9.9],
+    reliefScale:.36,
+  });
+  for(const along of[-7.5,-4.5,-1.45,1.65,4.8,7.95])addWallArch(m,{
+    axis:'x',plane:-11.5,inside:1,along,spring:3.05,radius:1.20,depth:.10,section:.065,mat:MAT.stone,
+  });
+  for(const along of[-8.9,-6.15,1,3.7,6.4,9.1])addWallArch(m,{
+    axis:'z',plane:-11,inside:1,along,spring:3.08,radius:1.03,depth:.10,section:.065,mat:MAT.plaster,
+  });
+  // Only the public north part of the east wall receives blind arches.
+  for(const along of[-8.9,-6.15])addWallArch(m,{
+    axis:'z',plane:11,inside:-1,along,spring:3.08,radius:1.03,depth:.10,section:.065,mat:MAT.stone,
+  });
+}
+{
   const m=mesh('academic_skylight');
   for(let x=-11.5;x<=11.5;x+=2.3)addBeam(m,[x,6.8,-13],[x,6.8,13],.10,MAT.bronze);
   for(let z=-13;z<=13;z+=2.6)addBeam(m,[-11.5,6.8,z],[11.5,6.8,z],.10,MAT.bronze);
@@ -711,7 +835,13 @@ for(let id=1;id<=8;id++){
   addBox(m,[0,.32,-.16],[5.45,.42,.20],MAT.wood);
 }
 {const m=mesh('tower_loft_rail');for(let x=-5;x<=5;x+=1.25)addCylinder(m,[x,.58,0],.035,1.16,MAT.steel,8);for(const y of[.12,.62,1.12])addBeam(m,[-5,y,0],[5,y,0],.05,MAT.steel);}
-{const m=mesh('tower_bulkhead');addBox(m,[0,.18,.08],[.30,.20,.18],MAT.steel);addCylinder(m,[0,.18,-.07],.12,.08,MAT.ivory,14);}
+{
+  // Wall origin is the back plane and +Z is the visible/front direction, the
+  // same convention used by imported wall assets such as power_box_01.
+  const m=mesh('tower_bulkhead');
+  addBox(m,[0,.18,.09],[.30,.20,.18],MAT.steel);
+  addCylinder(m,[0,.18,.14],.12,.08,MAT.ivory,14);
+}
 
 function addDoglegRail(name,rise,rises,down=false){
   const m=mesh(name),sign=down?-1:1,half=rise/2,run=rises===12?6:5,end=2+run;
@@ -797,10 +927,12 @@ addMainStairDressing('academic_stair_dressing',{rise:5.2,run:10,steps:26,runner:
 }
 {
   const m=mesh('stair_pendant_opal');
-  addCylinder(m,[0,.78,0],.025,1.55,MAT.brass,10);
-  addCylinder(m,[0,.08,0],.08,.10,MAT.brass,12);
-  addCylinder(m,[0,1.62,0],.22,.30,MAT.ivory,18);
-  addCylinder(m,[0,1.80,0],.28,.06,MAT.brass,18);
+  // Ceiling origin at y=0; every part hangs below it. The lens centre is
+  // exactly y=-1.25, matching the authored ringing-room light origin.
+  addCylinder(m,[0,-.04,0],.08,.08,MAT.brass,12);
+  addCylinder(m,[0,-.55,0],.025,1.0,MAT.brass,10);
+  addCylinder(m,[0,-1.25,0],.22,.30,MAT.ivory,18);
+  addCylinder(m,[0,-1.10,0],.28,.06,MAT.brass,18);
 }
 {
   // This primitive is never drawn in the colour pass during the anomaly; it
@@ -812,7 +944,13 @@ addMainStairDressing('academic_stair_dressing',{rise:5.2,run:10,steps:26,runner:
   addBox(m,[.18,.30,0],[.16,.72,.18],MAT.dark,-.05);
 }
 {const m=mesh('chapel_inner_screen');for(const x of[-2.8,-1.4,0,1.4,2.8])addBox(m,[x,1.8,0],[.16,3.6,.18],MAT.wood);for(const y of[.15,1.8,3.45])addBox(m,[0,y,0],[6,.15,.18],MAT.wood);}
-{const m=mesh('tower_plaque');addBox(m,[0,.38,0],[1.35,.76,.05],MAT.brass);addBox(m,[0,.38,-.03],[1.18,.59,.025],MAT.dark);}
+{
+  // Like every wall fixture, the origin is the wall plane and +Z faces the
+  // reader. This keeps plaques and exit markers from being embedded backwards.
+  const m=mesh('tower_plaque');
+  addBox(m,[0,.38,.03],[1.35,.76,.06],MAT.brass);
+  addBox(m,[0,.38,.067],[1.18,.59,.025],MAT.dark);
+}
 
 // Real source models replace (or add) named meshes. Each overwrites the
 // procedural mesh of the same name; new names (violin, plant_pipes) are added.

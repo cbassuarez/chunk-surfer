@@ -461,7 +461,9 @@ def build(model_key: str | None = None, style_lora: str | None = None,
             pass
 
     # Compel lifts CLIP's 77-token cap (chunked embeddings) and adds (word:1.3)
-    # weighting. Its absence degrades to plain truncated strings, loudly.
+    # weighting. Local development may still report a degraded environment,
+    # but a packaged build is invalid without it: silently truncating prompts
+    # after a player downloaded the full offline runtime is not a recovery path.
     try:
         from compel import Compel
         lens.compel = Compel(
@@ -470,6 +472,8 @@ def build(model_key: str | None = None, style_lora: str | None = None,
             truncate_long_prompts=False,
         )
     except Exception as e:
+        if BUNDLED:
+            raise RuntimeError(f"bundled Compel failed validation: {e}") from e
         lens.compel = None
         lens.degraded = (lens.degraded + " | " if lens.degraded else "") + f"compel unavailable ({str(e)[:80]}) — prompts truncate at 77 tokens"
 

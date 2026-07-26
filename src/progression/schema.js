@@ -213,6 +213,11 @@ export function freshMeta() {
     // and a version bump means accept again.
     eulaAccepted: '',
     eulaAcceptedAt: 0,
+    // A semantic payload marker, bumped only when the offline PyTorch/model
+    // bundle changes. This drives the one-time preparation explanation without
+    // repeating it for ordinary saves or every application launch.
+    lensRuntimeReady: '',
+    lensRuntimeReadyAt: 0,
     runs: 0,
     lastSeenAt: 0,
     achievements: {},
@@ -419,6 +424,8 @@ export function normalizeMeta(value) {
     leftMidRun: !!source.leftMidRun,
     eulaAccepted: typeof source.eulaAccepted === 'string' ? source.eulaAccepted.slice(0, 40) : '',
     eulaAcceptedAt: Math.max(0, Math.floor(finiteOr(source.eulaAcceptedAt, 0))),
+    lensRuntimeReady: typeof source.lensRuntimeReady === 'string' ? source.lensRuntimeReady.slice(0, 80) : '',
+    lensRuntimeReadyAt: Math.max(0, Math.floor(finiteOr(source.lensRuntimeReadyAt, 0))),
     runs: Math.max(0, Math.floor(finiteOr(source.runs, 0))),
     lastSeenAt: finiteOr(source.lastSeenAt, 0),
     achievements: { ...objectOr(source.achievements) },

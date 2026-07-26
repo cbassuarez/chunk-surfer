@@ -160,7 +160,7 @@ export function chunkSurfCompletionLines({ bestEligible = false, savedRecordist 
 export function surfacedEnding({ drankCoffee = false, sourceReading = null } = {}) {
   const sourceText = sourceReading?.text ? String(sourceReading.text) : 'BODY BORROWED RETURN';
   return [
-    { who: 'direction', text: 'The chapel door opens on the service road instead of the nave.' },
+    { who: 'direction', text: 'You carry him through the silent building. The public doors open on the service road exactly where a door ought to.' },
     { who: 'direction', text: `The source page follows you as an afterimage: ${sourceText}. It does not get to revise itself again.` },
     { who: 'recordist', text: 'I gave it my body because it told me that was the professional thing to do.' },
     { who: 'you', text: 'You can walk?' },

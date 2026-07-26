@@ -24,11 +24,13 @@ export function combatInjuryStage({ composure = 0, maxComposure = 1, injuries = 
   return 'steady';
 }
 
-export function drawCombatBar({ x, y, w, value, max, label, tone = 'player', alpha = 1 } = {}) {
+export function drawCombatBar({
+  x, y, w, value, max, label, tone = 'player', alpha = 1, lowDanger = true,
+} = {}) {
   const labelText = String(label || '').toUpperCase();
   const amount = `${Math.max(0, Math.round(value))}/${Math.max(1, Math.round(max))}`;
   const fillColor = tone === 'enemy' ? 'rgba(255,76,76,0.84)' : 'rgba(255,181,54,0.88)';
-  const low = value / Math.max(1, max) <= .25;
+  const low = lowDanger && value / Math.max(1, max) <= .25;
   uiText(x, y, labelText, tone === 'enemy' ? 'ui-danger' : low ? 'ui-danger' : 'ui-label', alpha);
   uiText(x + Math.max(0, w - amount.length), y, amount, tone === 'enemy' ? 'ui-danger' : low ? 'ui-danger' : 'ui-primary', alpha);
   uiFill(x, y + 1.15, w, .58, 'rgba(255,255,255,0.07)');
@@ -43,11 +45,11 @@ export function drawCombatBar({ x, y, w, value, max, label, tone = 'player', alp
 // a point just gained flashes in green before settling to the tone color.
 export function drawCombatPips({
   x, y, w, value, max, label, tone = 'player',
-  ghostFrom = null, ghostAge = 0, now = 0, alpha = 1,
+  ghostFrom = null, ghostAge = 0, now = 0, alpha = 1, lowDanger = true,
 } = {}) {
   const maxPips = Math.max(1, Math.round(max));
   const current = Math.max(0, Math.min(maxPips, Math.round(value)));
-  const low = tone !== 'enemy' && current / maxPips <= .25;
+  const low = lowDanger && tone !== 'enemy' && current / maxPips <= .25;
   const pulse = low ? .70 + .30 * Math.sin(now * 6) : 1;
   const labelRole = tone === 'enemy' || low ? 'ui-danger' : 'ui-label';
   uiText(x, y, String(label || '').toUpperCase(), labelRole, alpha * pulse);

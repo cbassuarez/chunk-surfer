@@ -31,6 +31,7 @@ pub fn run() {
             display_policy::chunk_reset_window,
             display_policy::chunk_set_game_mode,
             display_policy::chunk_minimize,
+            display_policy::chunk_restore,
             display_policy::chunk_window_is_focused,
             display_policy::chunk_quit,
             identity::chunk_ephemeral_display_names,

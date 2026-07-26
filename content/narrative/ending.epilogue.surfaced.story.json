@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "id": "ending.epilogue.surfaced",
+  "title": "Guard Epilogue · surfaced",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "ending",
+    "epilogue",
+    "surfaced"
+  ],
+  "notes": "",
+  "regions": [
+    {
+      "id": "ending.epilogue.surfaced.region",
+      "title": "Guard Epilogue · surfaced",
+      "kind": "ending",
+      "color": "#ad6a3b",
+      "nodeIds": [
+        "start"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "type": "ending",
+      "lines": [
+        {
+          "who": "direction",
+          "art": {
+            "id": "guard",
+            "mode": "hero",
+            "caption": "Gate booth / returned",
+            "status": "RETURNED"
+          },
+          "text": "The gate booth. The same bored man, the same book, and a second man standing behind you with no shoes on.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "guard",
+          "text": "Two of you.",
+          "id": "start.line.2"
+        },
+        {
+          "who": "recordist",
+          "text": "I am going to sit down now.",
+          "id": "start.line.3"
+        },
+        {
+          "who": "direction",
+          "text": "The guard opens the right column. RETURNED. He writes your name first, because you can still hold the pen. Then he writes the other name from memory.",
+          "id": "start.line.4"
+        },
+        {
+          "who": "guard",
+          "text": "I kept a place for it. I thought that was superstition. It was filing.",
+          "id": "start.line.5"
+        }
+      ],
+      "id": "start"
+    }
+  }
+}

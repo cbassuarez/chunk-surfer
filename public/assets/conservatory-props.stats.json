@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-26T09:30:24.995Z",
-  "bytes": 2800856,
-  "totalTriangles": 40530,
+  "generatedAt": "2026-07-26T11:11:56.132Z",
+  "bytes": 3120280,
+  "totalTriangles": 44682,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -107,6 +107,10 @@
       "triangles": 3268,
       "vertices": 6536
     },
+    "natatorium_perimeter_relief": {
+      "triangles": 1104,
+      "vertices": 2208
+    },
     "natatorium_cubicle_bank": {
       "triangles": 604,
       "vertices": 1000
@@ -206,6 +210,10 @@
     "academic_atrium_structure": {
       "triangles": 1920,
       "vertices": 2412
+    },
+    "front_atrium_perimeter_relief": {
+      "triangles": 3048,
+      "vertices": 6096
     },
     "academic_skylight": {
       "triangles": 288,

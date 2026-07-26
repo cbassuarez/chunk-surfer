@@ -73,6 +73,7 @@
     "narrative/ending.epilogue.nobody.story.json",
     "narrative/ending.epilogue.helped.story.json",
     "narrative/ending.epilogue.drugged.story.json",
+    "narrative/ending.epilogue.surfaced.story.json",
     "narrative/legacy.prologue.story.json"
   ],
   "audio": [
@@ -218,7 +219,8 @@
         "ending.epilogue.client",
         "ending.epilogue.nobody",
         "ending.epilogue.helped",
-        "ending.epilogue.drugged"
+        "ending.epilogue.drugged",
+        "ending.epilogue.surfaced"
       ]
     },
     {

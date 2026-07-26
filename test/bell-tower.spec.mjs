@@ -4,9 +4,19 @@ import { applyPlaceNotation, ELLERY_BELLS, plainHuntMajor, RINGING_SCORE, STEDMA
 import { createBellTowerAudio } from '../src/audio/bell-tower-audio.js';
 import { bellStemTemplate, chooseBellStem, loadBellStemBankFromUrl, validateBellStemManifest } from '../src/audio/bell-stem-manifest.js';
 import { BELL_CHAMBER_ANCHOR, ORGAN_LOFT_ANCHOR, RINGING_ROOM_ANCHOR, SHUTTER_WINCH_AUTHORED, createBellFrameLayout } from '../src/data/bell-tower-layout.js';
-import { bellMotionPhaseAt, createBellTowerRuntime, createInertBellAssemblyInstances, fullCircleBellCurve, sweptCapsuleIntersectsHazard } from '../src/game/bell-tower-runtime.js';
+import {
+  RELAY_INTERRUPT_LEAD_IN_MS,
+  RELAY_INTERRUPT_CYCLE_MS,
+  bellMotionPhaseAt,
+  createBellTowerRuntime,
+  createInertBellAssemblyInstances,
+  fullCircleBellCurve,
+  relayInterventionWindowAt,
+  sweptCapsuleIntersectsHazard,
+} from '../src/game/bell-tower-runtime.js';
 import { conservatory } from '../src/data/floorplan/conservatory.js';
 import { CONSERVATORY_PROPS, STRUCTURAL_COLLIDERS } from '../src/data/conservatory-props.js';
+import * as PROPS from '../src/game/props.js';
 import * as FP from '../src/world/floorplan.js';
 
 assert.equal(ELLERY_BELLS.length,8);assert.equal(ELLERY_BELLS[7].massKg,2200);
@@ -101,16 +111,25 @@ try{
 let now=0,cleared=0,strikes=0;
 const runtime=createBellTowerRuntime({now:()=>now,emitAcousticEvent:()=>{strikes++;},onCleared:()=>{cleared++;}});
 runtime.start();
-for(now=0;now<=220_000;now+=500)runtime.tick(.5);
-assert.equal(runtime.snapshot().stopAvailable,true);assert.ok(strikes>100);
-assert.equal(runtime.snapshot().scoreSection,'holding-course');
+assert.equal(runtime.requestStop().reason,'relay-live','the winch cannot bypass the relay intervention');
+const safeStrokeTimes=[0,1,2].map((index)=>RELAY_INTERRUPT_LEAD_IN_MS+RELAY_INTERRUPT_CYCLE_MS*(index+.6));
+for(const safeAt of safeStrokeTimes){
+  now=safeAt;runtime.tick(.5);
+  assert.equal(runtime.snapshot().relayWindowOpen,true,'each authored relay cut lands in a readable safe window');
+  assert.equal(runtime.interruptRelay().ok,true);
+}
+assert.equal(runtime.snapshot().stopAvailable,true);assert.ok(strikes>0);
 const cachedSnapshot=runtime.snapshot(),cachedInstances=runtime.renderInstances(),cachedHazards=runtime.hazardVolumes();
 assert.equal(cachedHazards.length,96,'eight bells expose casting, segmented wheel, clapper, stay and slider hazards');
 assert.deepEqual(new Set(runtime.hazardVolumes().map((hazard)=>hazard.component)),new Set(['casting','wheel','clapper','stay','slider']));
 assert.equal(runtime.snapshot(),cachedSnapshot,'the per-frame diagnostic snapshot is reused');
 assert.equal(runtime.renderInstances(),cachedInstances,'bell render instances are allocation-free after construction');
 assert.equal(runtime.hazardVolumes(),cachedHazards,'compound hazard instances are allocation-free after construction');
-assert.equal(runtime.requestStop().ok,true);now=800_000;runtime.tick(.016);assert.equal(runtime.state(),'cleared');assert.equal(cleared,1);assert.equal(runtime.renderInstances().length,40);
+assert.equal(runtime.requestStop().ok,true);
+for(;now<60_000&&runtime.state()!=='cleared';now+=250)runtime.tick(.25);
+assert.equal(runtime.state(),'cleared');assert.equal(cleared,1);assert.equal(runtime.renderInstances().length,40);
+assert.equal(relayInterventionWindowAt(0).open,false);
+assert.equal(relayInterventionWindowAt(safeStrokeTimes[0]).open,true);
 
 let transformNow=0;
 const transformRuntime=createBellTowerRuntime({now:()=>transformNow,bells:layout});
@@ -135,6 +154,7 @@ scheduler.start();scheduleNow=600;scheduler.tick(.016);
 assert.ok(scheduled.some((delay)=>delay>0),'audio receives look-ahead scheduling before contact');
 
 FP.compile(conservatory.levels,{width:conservatory.width,height:conservatory.height,widenCorridors:conservatory.widenCorridors,connectors:conservatory.connectors,doors:conservatory.doors});
+PROPS.propsInit(FP);
 const towerStairs=FP.floorplan().stairPortals.filter((entry)=>entry.id?.startsWith('tower-'));
 assert.equal(towerStairs.length,8,'four dog-leg stairs have two authored flights each');
 assert.deepEqual(towerStairs.map((entry)=>entry.rises),[10,10,12,12,12,12,10,10]);
@@ -148,18 +168,44 @@ const pathExists=(from,to,keys=new Set())=>{
     const p=queue[at];if(Math.hypot(p.x-goal.x,p.y-goal.y)<=2)return true;
     for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
       const move=FP.canStep(p.x,p.y,p.x+dx,p.y+dy,{keys});if(!move.ok)continue;
-      const q=move.redirect||{x:p.x+dx,y:p.y+dy},key=`${q.x},${q.y}`;if(seen.has(key))continue;seen.add(key);queue.push(q);
+      const q=move.redirect||{x:p.x+dx,y:p.y+dy},key=`${q.x},${q.y}`;
+      if(seen.has(key)||!PROPS.propCanOccupy(q.x,q.y))continue;
+      seen.add(key);queue.push(q);
     }
   }
   return false;
+};
+const openDoorOnFoot=(id,keys)=>{
+  const portal=FP.doorState().find((door)=>door.id===id);
+  assert.ok(portal,`${id} exists`);
+  const candidates=[];
+  for(let y=Math.floor(portal.cy)-4;y<=Math.ceil(portal.cy)+4;y+=1){
+    for(let x=Math.floor(portal.cx)-4;x<=Math.ceil(portal.cx)+4;x+=1){
+      const cell=FP.cellAt(x,y),distance=Math.hypot(x-portal.cx,y-portal.cy);
+      if(!cell||distance<1||distance>4||!PROPS.propCanOccupy(x,y))continue;
+      candidates.push({x,y,distance});
+    }
+  }
+  candidates.sort((a,b)=>a.distance-b.distance);
+  for(const at of candidates){
+    const distance=Math.max(.001,Math.hypot(portal.cx-at.x,portal.cy-at.y));
+    const facing=[(portal.cx-at.x)/distance,(portal.cy-at.y)/distance];
+    const result=FP.interactDoor(at.x,at.y,facing,keys);
+    if(result?.id!==id)continue;
+    assert.equal(result.ok,true,`${id} opens with the issued keyring`);
+    FP.tickDoors(3,{playerX:at.x,playerY:at.y});
+    assert.equal(FP.doorState().find((door)=>door.id===id).open,true,`${id} becomes passable through normal interaction`);
+    return at;
+  }
+  assert.fail(`${id} has no prop-clear on-foot interaction approach`);
 };
 FP.resetDoors();
 assert.equal(pathExists({x:98,y:62},RINGING_ROOM_ANCHOR,new Set(['chapel'])),true,'narthex reaches ringing chamber before the chapter');
 const hatch=FP.doorState().find((door)=>door.id==='tower-hatch');
 assert.equal(FP.canStep(hatch.cx+2,hatch.cy,hatch.cx,hatch.cy,{keys:new Set()}).ok,false,'belfry stair remains locked before tower-live');
-for(const id of ['tower-hatch','bell-chamber-entry'])FP.setDoorOpen(id,true);
+for(const id of ['tower-hatch','bell-chamber-entry'])openDoorOnFoot(id,new Set(['tower-live']));
 assert.equal(pathExists(RINGING_ROOM_ANCHOR,SHUTTER_WINCH_AUTHORED,new Set(['tower-live'])),true,'ordinary held movement traverses the complete live route');
-for(const id of ['organ-loft-service','organ-loft-nave'])FP.setDoorOpen(id,true);
+for(const id of ['organ-loft-service','organ-loft-nave'])openDoorOnFoot(id,new Set(['tower-live','tower-cleared']));
 assert.equal(pathExists(BELL_CHAMBER_ANCHOR,{x:98,y:82},new Set(['tower-live','tower-cleared'])),true,'post-clear route physically reaches the nave');
 assert.equal(pathExists({x:98,y:82},BELL_CHAMBER_ANCHOR,new Set(['tower-live','tower-cleared'])),true,'post-clear route is bidirectional');
 assert.equal(pathExists(ORGAN_LOFT_ANCHOR,{x:98,y:82},new Set(['tower-cleared'])),true);

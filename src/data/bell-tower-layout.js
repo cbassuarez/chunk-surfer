@@ -11,6 +11,7 @@ export const CHAPEL_SCREEN_AUTHORED = Object.freeze({ x:92, y:67 });
 export const RINGING_ROOM_ANCHOR = Object.freeze({ x:25, y:158 });
 export const BELL_CHAMBER_ANCHOR = Object.freeze({ x:61, y:158 });
 export const BELL_FRAME_AUTHORED = Object.freeze({ x:61, y:158 });
+export const BELL_RELAY_CLAMP_AUTHORED = Object.freeze({ x:65.2, y:158 });
 export const ORGAN_LOFT_ANCHOR = Object.freeze({ x:94, y:154 });
 export const TOWER_ENTRY_AUTHORED = Object.freeze({ x:25, y:158, facing:0 });
 export const SHUTTER_WINCH_AUTHORED = Object.freeze({ x:68, y:163 });

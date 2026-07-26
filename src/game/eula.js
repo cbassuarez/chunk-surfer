@@ -27,6 +27,18 @@ export function eulaVersion(text) {
   return normalizeEulaText(text).match(/^Version:\s*(.+)$/m)?.[1]?.trim() || 'unversioned';
 }
 
+export function eulaPreamble(text) {
+  const lines = eulaLines(text);
+  const firstSection = lines.findIndex((line) => /^##\s+/.test(line));
+  const versionLine = lines.findIndex((line) => /^Version:\s*/i.test(line));
+  if (firstSection < 0 || versionLine < 0 || firstSection <= versionLine) return [];
+  return lines
+    .slice(versionLine + 1, firstSection)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => line.replace(/\*\*/g, ''));
+}
+
 export function eulaSections(text) {
   const sections = [];
   let current = null;

@@ -85,6 +85,7 @@ export const PROP_MESH = Object.freeze({
   notice_board:{w:1.2,d:.12,blocks:false}, pool_start_block:{w:.62,d:.72,blocks:true},
   pool_lane_markings:{w:10.2,d:15.5,blocks:false},
   natatorium_roof_structure:{w:23.2,d:20.5,blocks:false},
+  natatorium_perimeter_relief:{w:25.2,d:22.2,blocks:false},
   natatorium_cubicle_bank:{w:14.7,d:.35,blocks:false},
   natatorium_end_window:{w:10.5,d:.24,blocks:false}, natatorium_clock:{w:1.1,d:.12,blocks:false},
   changing_bench:{w:2.2,d:.48,blocks:true}, pool_lane_ropes:{w:8.0,d:15.2,blocks:false},
@@ -101,10 +102,10 @@ export const PROP_MESH = Object.freeze({
   tower_frame:{w:9,d:4.6,blocks:false}, tower_rope:{w:.18,d:.18,blocks:false},
   tower_clock_hammer:{w:.9,d:.5,blocks:false}, tower_winch:{w:1.2,d:.8,blocks:false},
   tower_shutters:{w:3.4,d:.2,blocks:false}, chapel_inner_screen:{w:6,d:.2,blocks:false},
-  tower_plaque:{w:1.35,d:.12,blocks:false}, tower_rope_mat:{w:1.05,d:1.05,blocks:false},
+  tower_plaque:{w:1.35,d:.12,h:.76,blocks:false,mount:'wall'}, tower_rope_mat:{w:1.05,d:1.05,blocks:false},
   tower_catwalk:{w:11.8,d:8.2,blocks:false}, tower_louvres:{w:6,d:.25,blocks:false},
   tower_peal_board:{w:1.8,d:.12,blocks:false}, tower_organ_case:{w:5.8,d:1.2,blocks:true},
-  tower_loft_rail:{w:10,d:.16,blocks:false}, tower_bulkhead:{w:.3,d:.18,blocks:false},
+  tower_loft_rail:{w:10,d:.16,blocks:false}, tower_bulkhead:{w:.3,d:.26,h:.30,blocks:false,mount:'wall'},
   tower_stair_rail_low_up:{w:9,d:4,blocks:false}, tower_stair_rail_high_up:{w:10,d:4,blocks:false},
   tower_stair_rail_high_down:{w:10,d:4,blocks:false}, tower_stair_rail_low_down:{w:9,d:4,blocks:false},
   upper_stair_dressing:{w:3,d:11.5,blocks:false}, basement_stair_dressing:{w:3,d:10.5,blocks:false},
@@ -112,8 +113,9 @@ export const PROP_MESH = Object.freeze({
   stair_smoke_door_open:{w:3.1,d:2.1,blocks:false},
   stair_smoke_door_closed:{w:3.1,d:.2,blocks:false},
   stair_sconce_pair_opal:{w:3,d:.55,blocks:false}, stair_bulkhead_pair:{w:3,d:.5,blocks:false},
-  stair_pendant_opal:{w:.6,d:.6,blocks:false}, stair_shadow_figure:{w:.65,d:.3,blocks:false},
-  academic_atrium_structure:{w:24,d:27,blocks:false}, academic_skylight:{w:23,d:26,blocks:false},
+  stair_pendant_opal:{w:.6,d:.6,h:1.4,blocks:false,mount:'ceiling'}, stair_shadow_figure:{w:.65,d:.3,blocks:false},
+  academic_atrium_structure:{w:24,d:27,blocks:false}, front_atrium_perimeter_relief:{w:22.2,d:23.2,blocks:false},
+  academic_skylight:{w:23,d:26,blocks:false},
   academic_frieze:{w:5.2,d:.12,blocks:false}, academic_bust_plinth:{w:.62,d:.62,blocks:false},
   academic_bust_fragment:{w:.72,d:.58,blocks:false}, academic_planter:{w:4,d:2,blocks:true},
   academic_dead_tree:{w:2.8,d:1.2,blocks:false}, academic_dry_basin:{w:2.7,d:2.7,blocks:true},
@@ -236,6 +238,14 @@ export const CONSERVATORY_PROPS = [
   P('foyer-cart-1','equipment_cart',91.5,14.0,0,{inspect:inspect('A percussion cart with one wheel wired straight.','It will only travel in a circle.')}),
   P('foyer-portrait-titian','portrait_frame',80.5,4.0,0,{elevation:1.35,portraitIndex:0,inspect:inspect('Titian. Portrait of a Man. A Met Open Access reproduction in an inexpensive gilt frame.','The sitter keeps looking past the entrance.')}),
   P('foyer-portrait-greco','portrait_frame',84.0,4.0,0,{elevation:1.35,portraitIndex:1,inspect:inspect('El Greco. Portrait of an Old Man. Someone has polished the glass more often than the frame.','His eyes catch the corridor light first.')}),
+  P('atrium-sign-main-exit','tower_plaque',77.5,4.0,0,{
+    elevation:.7,renderOffsetZ:-.25,
+    inspect:inspect('PUBLIC EXIT. The glazed entrance pair opens outward to the loading court.','PUBLIC EXIT.'),
+  }),
+  P('atrium-light-main-exit','tower_bulkhead',77.5,4.0,0,{
+    elevation:1.62,renderOffsetZ:-.25,interactive:false,structural:true,
+    lightMaintained:true,lightColor:[1,.64,.34],
+  }),
   P('box-office-counter','ticket_counter',90.55,18.85,Math.PI/2,{scale:.75,inspect:inspect('The ticket counter was built to keep a queue outside and cash inside. The grille is still locked down.','Nothing has been sold here for years.')}),
   P('box-office-desk','box_office_desk',94.05,19.1,0,{inspect:inspect('The staff desk is squared to the ticket window. A blotter has been pressed flat by damp.','Front of house, stopped mid-week.')}),
   P('box-office-chair','chair',93.25,19.15,Math.PI/2,{inspect:inspect('A staff chair tucked under the ticket desk, not abandoned in the queue path.','Its casters have made a small grey ring.')}),
@@ -297,6 +307,9 @@ export const CONSERVATORY_PROPS = [
   P('academic-skylight','academic_skylight',27,254,0,{
     renderOffsetX:8,renderOffsetZ:1,renderGroups:['ground','academic'],interactive:false,structural:true,
   }),
+  P('atrium-perimeter-relief','front_atrium_perimeter_relief',85.5,15,0,{
+    renderGroups:['ground','academic'],interactive:false,structural:true,
+  }),
   // The one piece of the ruined garden you may put a hand in. Everything else
   // here is deliberately mute; this planter is where a calibration pin has been
   // sitting in the soil since somebody serviced a head out here (see PIN_HOSTS).
@@ -308,6 +321,14 @@ export const CONSERVATORY_PROPS = [
   P('academic-garden-tree-east','academic_dead_tree',86.8,17.6,.28,{renderGroups:['ground','academic'],interactive:false,elevation:.66,scale:.82}),
   P('academic-garden-leaves-north','academic_leaf_litter',83.0,9.0,.22,{renderGroups:['ground','academic'],interactive:false}),
   P('academic-garden-leaves-south','academic_leaf_litter',84.8,19.1,-.18,{renderGroups:['ground','academic'],interactive:false}),
+  P('academic-light-emergency-west','tower_bulkhead',28.5,248.0,Math.PI/2,{
+    elevation:1.62,renderOffsetX:.25,renderGroups:['ground','academic'],interactive:false,structural:true,
+    lightMaintained:true,lightColor:[1,.62,.32],
+  }),
+  P('academic-light-emergency-east-failing','tower_bulkhead',46.5,263.0,Math.PI/2,{
+    elevation:1.62,renderOffsetX:.25,renderGroups:['ground','academic'],interactive:false,structural:true,
+    lightMaintained:true,lightColor:[1,.57,.28],
+  }),
 
   // Six anonymous bust stations establish the gallery cadence. Four retain a
   // generic head; two have collapsed into unidentifiable fragments. Still no
@@ -476,7 +497,10 @@ export const CONSERVATORY_PROPS = [
   }),
   P('chapel-vault','chapel_vault',92.5,75.5,0,{interactive:false,structural:true}),
   P('chapel-inner-screen','chapel_inner_screen',92.5,67.5,0,{interactive:false,structural:true}),
-  P('tower-history-plaque','tower_plaque',88.0,62.0,Math.PI/2,{elevation:1.0,inspect:inspect('J. VALE & SONS — CAST FOR ELLERY COLLEGIATE CHAPEL — 1908. Eight bells. Tenor: 2,200 kg.','Ellery Collegiate Chapel. 1908. No county is given.')}),
+  P('tower-history-plaque','tower_plaque',87.0,62.0,-Math.PI/2,{
+    elevation:1.0,renderOffsetX:-.25,
+    inspect:inspect('J. VALE & SONS — CAST FOR ELLERY COLLEGIATE CHAPEL — 1908. Eight bells. Tenor: 2,200 kg.','Ellery Collegiate Chapel. 1908. No county is given.'),
+  }),
 
   // The ringing chamber contains people and ropes, never bell machinery. Pitch
   // order proceeds clockwise from the treble at the north of the circle.
@@ -492,21 +516,44 @@ export const CONSERVATORY_PROPS = [
   P('tower-peal-board','tower_peal_board',18.0,151.1,0,{elevation:1.25,inspect:inspect('ELLERY COLLEGIATE CHAPEL — STEDMAN TRIPLES — 1908. A touch, not a peal.','The gilt names have gone brown.')}),
   P('tower-tenor-clock-hammer','tower_clock_hammer',31.0,153.0,0,{elevation:.4,...play(CHAPEL,'The clock hammer lifts and strikes the tenor while the bell is down. The stone keeps it for nine seconds.','One stationary hammer. One bell down.'),acousticKind:'bell_tenor_toll',hushPlayback:{mode:'interval',minMs:4200,maxMs:6800}}),
   P('tower-hammer-isolator','equipment_rack',18.0,153.0,0,{interaction:'action',action:'tower-hammer-isolator',inspect:inspect('CLOCK HAMMER ISOLATOR. A red lever, mechanically linked.','ISOLATE / SERVICE.')}),
-  P('tower-sign-ringing','tower_plaque',32.0,159.0,Math.PI/2,{elevation:1.05,inspect:inspect('RINGING ROOM. The enamel letters are older than the electrical conduit.','RINGING ROOM.')}),
-  P('tower-light-lower','tower_bulkhead',1.0,151.0,Math.PI/2,{elevation:1.85,interactive:false,structural:true}),
-  P('tower-light-upper','tower_bulkhead',37.0,151.0,Math.PI/2,{elevation:1.85,interactive:false,structural:true}),
-  P('tower-light-ringing','tower_bulkhead',25.0,152.0,0,{elevation:2.7,interactive:false,structural:true}),
+  P('tower-sign-ringing','tower_plaque',32.5,158.5,Math.PI/2,{
+    elevation:1.05,renderOffsetX:.25,
+    inspect:inspect('RINGING ROOM. The enamel letters are older than the electrical conduit.','RINGING ROOM.'),
+  }),
+  P('tower-light-lower','tower_bulkhead',1.0,151.0,0,{
+    elevation:1.67,renderOffsetZ:-.25,interactive:false,structural:true,
+    lightMaintained:true,lightColor:[1,.68,.38],
+  }),
+  P('tower-light-upper','tower_bulkhead',43.0,155.0,Math.PI,{
+    elevation:1.67,renderOffsetZ:.25,interactive:false,structural:true,
+    lightMaintained:true,lightColor:[1,.70,.42],
+  }),
+  // This is the only pendant in the tower rig. Its origin is the ceiling rose;
+  // the generated mesh extends downward to the light at y - 1.25.
+  P('tower-light-ringing','stair_pendant_opal',25.0,158.0,0,{
+    elevation:4.2,interactive:false,structural:true,
+    lightMaintained:true,lightColor:[1,.72,.46],
+  }),
 
   // Above: a low two-row H frame and perimeter catwalk in a monumental English
   // belfry. The temporary French recording affects audio only, never form.
   P('tower-bell-frame','tower_frame',61.0,158.0,0,{interactive:false,structural:true}),
   P('tower-catwalk','tower_catwalk',61.0,158.0,0,{interactive:false,structural:true}),
   P('tower-louvres-east','tower_louvres',68.3,158.0,Math.PI/2,{interactive:false,structural:true,elevation:2.5}),
-  P('tower-sign-belfry','tower_plaque',67.8,158.0,Math.PI/2,{elevation:1.1,inspect:inspect('BELLS — AUTHORISED ACCESS. The final word has been underlined by hand.','BELLS — AUTHORISED ACCESS.')}),
-  P('tower-light-entry','tower_bulkhead',67.0,158.0,Math.PI/2,{elevation:1.9,interactive:false,structural:true}),
+  P('tower-sign-belfry','tower_plaque',68.5,157.5,Math.PI/2,{
+    elevation:1.1,renderOffsetX:.25,
+    inspect:inspect('BELLS — AUTHORISED ACCESS. The final word has been underlined by hand.','BELLS — AUTHORISED ACCESS.'),
+  }),
+  P('tower-light-entry','tower_bulkhead',68.5,157.5,Math.PI/2,{
+    elevation:2.27,renderOffsetX:.25,interactive:false,structural:true,
+    lightMaintained:true,lightColor:[.92,.80,.61],
+  }),
   P('tower-shutters','tower_shutters',68.0,158.0,Math.PI/2,{interactive:false,structural:true,elevation:.1}),
   P('tower-shutter-winch','tower_winch',68.0,163.0,0,{interaction:'action',action:'tower-shutter-winch',inspect:inspect('The shutter winch is taking the whole frame through its pawl.','Under load.')}),
-  P('tower-light-winch','tower_bulkhead',67.5,163.0,Math.PI/2,{elevation:1.8,interactive:false,structural:true}),
+  P('tower-light-winch','tower_bulkhead',68.5,162.5,Math.PI/2,{
+    elevation:1.87,renderOffsetX:.25,interactive:false,structural:true,
+    lightMaintained:true,lightColor:[1,.74,.43],
+  }),
 
   P('tower-organ-case','tower_organ_case',94.0,152.0,0,{interactive:false,structural:true}),
   P('tower-organ-console','organ_console',94.0,154.5,Math.PI,{...play(CHAPEL,'The loft console faces east over the nave. The blower remains isolated.','No wind. The descent door is beside it.')}),
@@ -521,9 +568,26 @@ export const CONSERVATORY_PROPS = [
     inspect:inspect('The matching east score cabinet, EC/C-05. Its original lock has seized open, exposing pencilled shelf letters and no scores.','EC/C-05. The older lock failed in the safer direction.'),
   }),
   P('tower-loft-rail','tower_loft_rail',94.0,156.7,0,{interactive:false,structural:true}),
-  P('tower-sign-organ-exit','tower_plaque',100.0,156.0,Math.PI/2,{elevation:1.0,inspect:inspect('ORGAN LOFT / NAVE. An arrow follows the service stair down.','ORGAN LOFT / NAVE.')}),
-  P('tower-light-service','tower_bulkhead',73.0,151.0,Math.PI/2,{elevation:1.85,interactive:false,structural:true}),
-  P('tower-light-organ-exit','tower_bulkhead',100.0,156.0,Math.PI/2,{elevation:1.85,interactive:false,structural:true}),
+  P('tower-sign-organ-exit','tower_plaque',104.5,151.0,0,{
+    elevation:.7,renderOffsetZ:-.25,
+    inspect:inspect('ORGAN LOFT / NAVE. An arrow follows the service stair down.','ORGAN LOFT / NAVE.'),
+  }),
+  P('tower-light-service','tower_bulkhead',79.0,152.0,Math.PI,{
+    elevation:1.67,renderOffsetZ:.25,interactive:false,structural:true,
+    lightMaintained:true,lightColor:[1,.69,.40],
+  }),
+  P('tower-light-organ-exit','tower_bulkhead',104.5,151.0,0,{
+    elevation:1.47,renderOffsetZ:-.25,interactive:false,structural:true,
+    lightMaintained:true,lightColor:[1,.72,.42],
+  }),
+  P('tower-sign-nave-exit','tower_plaque',105.5,154.0,0,{
+    elevation:.7,renderOffsetZ:-.25,
+    inspect:inspect('NAVE / CHAPEL EXIT. The route continues through the narthex to the public doors.','NAVE / CHAPEL EXIT.'),
+  }),
+  P('tower-light-nave-exit','tower_bulkhead',105.5,154.0,0,{
+    elevation:1.47,renderOffsetZ:-.25,interactive:false,structural:true,
+    lightMaintained:true,lightColor:[1,.73,.42],
+  }),
 
   // ── Natatorium: an Edwardian municipal bath under a later steel refit ───
   // The roof, cubicles and end-window dressing all sit on the ONE authored
@@ -531,6 +595,7 @@ export const CONSERVATORY_PROPS = [
   // banks are shallow wall furniture, so this cannot regress into the former
   // room-inside-a-room failure.
   P('natatorium-roof-structure','natatorium_roof_structure',83.0,38.5,0,{interactive:false,structural:true}),
+  P('natatorium-perimeter-relief','natatorium_perimeter_relief',83.0,38.5,0,{interactive:false,structural:true}),
   P('natatorium-cubicles-west','natatorium_cubicle_bank',71.4,40.5,-Math.PI/2,{interactive:false,structural:true}),
   P('natatorium-cubicles-east','natatorium_cubicle_bank',94.6,40.5,Math.PI/2,{interactive:false,structural:true}),
   P('natatorium-end-window','natatorium_end_window',84.0,49.25,0,{interactive:false,structural:true,elevation:.55}),
@@ -565,25 +630,45 @@ export const CONSERVATORY_PROPS = [
   P('pool-lane-reel','lane_reel',92.7,34.2,0,{inspect:inspect('A lane-line reel staged beside the starting end, one cracked float still wound onto it.','The handle turns half a revolution.')}),
   ...[79.2,81.6,84.0,86.4,88.8].map((x,i)=>P(`pool-start-${i+1}`,'pool_start_block',x,32.4,Math.PI,{inspect:inspect('A starting block, its number plate removed.','Four bolt heads and a paler rectangle.')})),
   ...[80.4,82.8,85.2,87.6].map((x,i)=>P(`pool-drain-${i+1}`,'drain_grille',x,46.0,0,{elevation:.06,inspect:inspect('A basin drain furred white with old pool salts.','The salts trace every slot.')})),
-  P('acq-services-panel-pool','power_box_01',95.45,44.8,-Math.PI/2,{
-    scaleX:1.76,scaleY:1.63,elevation:1.45,
+  P('acq-services-panel-pool','power_box_01',95.5,44.8,Math.PI/2,{
+    scaleX:1.76,scaleY:1.63,elevation:1.45,renderOffsetX:.25,
     provenance:provenance('services_rewire','S/P-02','natatorium panel; chlorine bloom under the lip'),
     inspectAt:{x:94.7,y:44.8},
     interaction:'action',action:'power-panel-sp02',interactionPriority:2,
     inspect:inspect('The natatorium distribution panel, S/P-02, matches the plant-room and front-of-house boxes. Chlorine has lifted the paint beneath its lower lip; every breaker is open.','S/P-02. Same installation, different air, no live circuit.'),
   }),
-  P('acq-services-panel-foh','power_box_01',96.0,16.0,-Math.PI/2,{
-    scaleX:1.76,scaleY:1.63,elevation:1.45,
+  P('natatorium-sign-exit','tower_plaque',84.5,27.5,Math.PI/2,{
+    elevation:.7,renderOffsetX:.25,
+    inspect:inspect('EXIT / FOYER. The dry lobby returns to the public entrance route.','EXIT / FOYER.'),
+  }),
+  P('natatorium-light-emergency-entry','tower_bulkhead',84.5,27.5,Math.PI/2,{
+    elevation:1.62,renderOffsetX:.25,interactive:false,structural:true,
+    lightMaintained:true,lightColor:[1,.65,.36],
+  }),
+  P('natatorium-light-emergency-west','tower_bulkhead',71.0,38.5,-Math.PI/2,{
+    elevation:1.62,renderOffsetX:-.25,interactive:false,structural:true,
+    lightMaintained:true,lightColor:[1,.62,.32],
+  }),
+  P('natatorium-light-emergency-east','tower_bulkhead',95.5,38.5,Math.PI/2,{
+    elevation:1.62,renderOffsetX:.25,interactive:false,structural:true,
+    lightMaintained:true,lightColor:[1,.62,.32],
+  }),
+  P('natatorium-light-emergency-far','tower_bulkhead',84.0,49.5,Math.PI,{
+    elevation:1.62,renderOffsetZ:.25,interactive:false,structural:true,
+    lightMaintained:true,lightColor:[1,.60,.30],
+  }),
+  P('acq-services-panel-foh','power_box_01',96.5,16.0,Math.PI/2,{
+    scaleX:1.76,scaleY:1.63,elevation:1.45,renderOffsetX:.25,
     provenance:provenance('services_rewire','S/P-03','front-of-house panel; typed circuit card'),
     inspectAt:{x:95.25,y:16.0},
     interaction:'action',action:'power-panel-sp03',interactionPriority:2,
     inspect:inspect('The front-of-house panel, S/P-03. Its typed circuit card lists foyer, box office and hall lounge; the main isolator is down.','S/P-03. A neat card for three dead circuits.'),
   }),
   P('plant-rack-1','equipment_rack',38.5,28,Math.PI/2,{inspect:inspect('A controls rack beside equipment too old to report to it.','The indicators are mechanical.')}),
-  P('acq-services-panel-plant','power_box_01',38.0,30,-Math.PI/2,{
-    scaleX:1.76,scaleY:1.63,elevation:1.45,
+  P('acq-services-panel-plant','power_box_01',39.5,30,Math.PI/2,{
+    scaleX:1.76,scaleY:1.63,elevation:1.45,renderOffsetX:.25,
     provenance:provenance('services_rewire','S/P-01','plant-room panel; hand-corrected labels'),
-    inspectAt:{x:37.25,y:30.0},
+    inspectAt:{x:38.75,y:30.0},
     interaction:'action',action:'power-panel-sp01',interactionPriority:2,
     inspect:inspect('The plant-room distribution panel, S/P-01. It begins the same numbered installation as the later boxes upstairs; two typed labels have been corrected in pencil.','S/P-01. The oldest corrections are still the clearest instructions.'),
   }),
@@ -591,17 +676,17 @@ export const CONSERVATORY_PROPS = [
   // anchors to these casings, so a fitting cannot drift away from the thing
   // that appears to emit it. `lightCircuit` is presentation metadata only;
   // the breaker state itself remains in the power runtime.
-  P('light-dance-stair-casing','tower_bulkhead',45,19.75,0,{elevation:2.5,interactive:false,structural:true,lightMaintained:true,lightColor:[1,.48,.22]}),
-  P('light-plant-service-casing','tower_bulkhead',35,29,0,{elevation:2.45,interactive:false,structural:true,lightCircuit:'sp01',lightColor:[.69,.83,.70]}),
-  P('light-dance-work-casing','tower_bulkhead',18,10,0,{elevation:2.45,interactive:false,structural:true,lightCircuit:'sp01',lightColor:[.78,.78,.65]}),
-  P('light-foh-west-casing','tower_bulkhead',81,13,0,{elevation:3.25,interactive:false,structural:true,lightCircuit:'sp03',lightColor:[.74,.82,.78]}),
-  P('light-foh-east-casing','tower_bulkhead',92,16.5,0,{elevation:3.25,interactive:false,structural:true,lightCircuit:'sp03',lightColor:[.74,.82,.78]}),
-  P('light-pool-service-a-casing','tower_bulkhead',91,43,0,{elevation:3.3,interactive:false,structural:true,lightCircuit:'sp02',lightColor:[.69,.83,.78]}),
-  P('light-pool-service-b-casing','tower_bulkhead',77,43,0,{elevation:3.3,interactive:false,structural:true,lightCircuit:'sp02',lightColor:[.67,.81,.76]}),
-  P('light-hall-stage-door-casing','tower_bulkhead',100,8,0,{elevation:5.15,interactive:false,structural:true,lightMaintained:true,lightColor:[1,.40,.22]}),
-  P('light-hall-lounge-casing','tower_bulkhead',101,27,0,{elevation:3.1,interactive:false,structural:true,lightCircuit:'sp03',lightColor:[.78,.74,.62]}),
-  P('light-practice-north-casing','tower_bulkhead',60.5,55,0,{elevation:2.5,interactive:false,structural:true,lightMaintained:true,lightColor:[1,.52,.25]}),
-  P('light-practice-south-casing','tower_bulkhead',61,81,0,{elevation:2.5,interactive:false,structural:true,lightMaintained:true,lightColor:[1,.50,.24]}),
+  P('light-dance-stair-casing','tower_bulkhead',45,20.5,Math.PI,{elevation:2.5,renderOffsetZ:.25,interactive:false,structural:true,lightMaintained:true,lightColor:[1,.48,.22]}),
+  P('light-plant-service-casing','tower_bulkhead',35,26,0,{elevation:2.45,renderOffsetZ:-.25,interactive:false,structural:true,lightCircuit:'sp01',lightColor:[.69,.83,.70]}),
+  P('light-dance-work-casing','tower_bulkhead',18,6,0,{elevation:2.45,renderOffsetZ:-.25,interactive:false,structural:true,lightCircuit:'sp01',lightColor:[.78,.78,.65]}),
+  P('light-foh-west-casing','tower_bulkhead',75,12.5,-Math.PI/2,{elevation:3.25,renderOffsetX:-.25,interactive:false,structural:true,lightCircuit:'sp03',lightColor:[.74,.82,.78]}),
+  P('light-foh-east-casing','tower_bulkhead',92,16.5,Math.PI,{elevation:3.25,renderOffsetZ:.25,interactive:false,structural:true,lightCircuit:'sp03',lightColor:[.74,.82,.78]}),
+  P('light-pool-service-a-casing','tower_bulkhead',95.5,43,Math.PI/2,{elevation:3.3,renderOffsetX:.25,interactive:false,structural:true,lightCircuit:'sp02',lightColor:[.69,.83,.78]}),
+  P('light-pool-service-b-casing','tower_bulkhead',71,43,-Math.PI/2,{elevation:3.3,renderOffsetX:-.25,interactive:false,structural:true,lightCircuit:'sp02',lightColor:[.67,.81,.76]}),
+  P('light-hall-stage-door-casing','tower_bulkhead',99,8,-Math.PI/2,{elevation:5.15,renderOffsetX:-.25,interactive:false,structural:true,lightMaintained:true,lightColor:[1,.40,.22]}),
+  P('light-hall-lounge-casing','tower_bulkhead',99,27,-Math.PI/2,{elevation:3.1,renderOffsetX:-.25,interactive:false,structural:true,lightCircuit:'sp03',lightColor:[.78,.74,.62]}),
+  P('light-practice-north-casing','tower_bulkhead',59.5,55.5,Math.PI,{elevation:2.5,renderOffsetZ:.25,interactive:false,structural:true,lightMaintained:true,lightColor:[1,.52,.25]}),
+  P('light-practice-south-casing','tower_bulkhead',60,81,-Math.PI/2,{elevation:2.5,renderOffsetX:-.25,interactive:false,structural:true,lightMaintained:true,lightColor:[1,.50,.24]}),
   // Two authored wall systems replace the loose pipe cloud. All origins are
   // in plant-room air, one half-cell from solid masonry, and yaw points the
   // service faces into the room. The lower north run joins edge-to-edge.

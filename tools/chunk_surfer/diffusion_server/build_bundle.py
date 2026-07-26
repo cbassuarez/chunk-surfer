@@ -116,6 +116,13 @@ def main() -> None:
     # detect, only `torch.version.cuda`. Fail the build here rather than after
     # a player downloads it.
     import torch  # installed by install_torch.py before this runs
+    try:
+        import compel
+    except Exception as error:
+        raise SystemExit(
+            "Compel is required in the shipped lens runtime — install "
+            "requirements-local.txt before building."
+        ) from error
     is_macos = "apple-darwin" in args.target
     cuda_build = getattr(torch.version, "cuda", None)
     if is_macos:
@@ -127,6 +134,7 @@ def main() -> None:
             "This is the packaging defect that shipped a GPU-less sidecar."
         )
     print(f"freezing torch {torch.__version__} (cuda build: {cuda_build}) for {args.target}")
+    print(f"freezing compel {getattr(compel, '__version__', 'unknown')} for {args.target}")
 
     work = root / ".lens-build" / args.target
     work.mkdir(parents=True, exist_ok=True)
@@ -152,6 +160,8 @@ def main() -> None:
             "diffusers",
             "--collect-all",
             "transformers",
+            "--collect-all",
+            "compel",
             str(server_dir / "server.py"),
         ],
         check=True,

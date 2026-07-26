@@ -21,6 +21,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const story = (id) => JSON.parse(readFileSync(`content/narrative/${id}.story.json`, 'utf8'));
+const mainSource = readFileSync('src/main.js','utf8');
 const mutationsOf = (doc) => {
   const out = [];
   for (const [nodeId, node] of Object.entries(doc.nodes)) {
@@ -118,7 +119,7 @@ for (const id of [
   'ending.helped.named', 'ending.helped.unnamed',
   'ending.drugged.complete', 'ending.drugged.partial',
   'ending.epilogue.out', 'ending.epilogue.client', 'ending.epilogue.nobody',
-  'ending.epilogue.helped', 'ending.epilogue.drugged',
+  'ending.epilogue.helped', 'ending.epilogue.drugged', 'ending.epilogue.surfaced',
 ]) {
   const doc = story(id);
   assert.ok(Object.keys(doc.nodes).length > 0, `${id} has content`);
@@ -131,5 +132,14 @@ for (const named of ['named', 'unnamed']) {
     assert.ok(Object.keys(doc.nodes).length > 0, `sacrifice ${named}/${injuries} exists`);
   }
 }
+
+// Every terminal choice hands back to an embodied world action before its final
+// text: walk the surfaced route, touch the chapel screen to stay, or run the
+// inversion from the chapel where the choice was actually made.
+assert.match(mainSource,/escape=\{kind:'surfaced',stage:'exit'/,'surfaced walks to the public exit');
+assert.match(mainSource,/escape=\{kind:'stay',stage:'commit'/,'sacrifice and helped require the chapel-screen commitment');
+assert.match(mainSource,/escape=\{ kind:'inversion',stage:'door'/,'inversion retains the playable two-door escape');
+assert.match(mainSource,/id===CHUNK_SURF_ENDING_ID \? 'surfaced'/,'surfaced reaches its two-person gate epilogue');
+assert.doesNotMatch(mainSource,/THE PLANT ROOM · REVERSED/,'the inversion no longer claims to teleport to the plant room');
 
 console.log('endings audit passed');

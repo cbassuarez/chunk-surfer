@@ -4,10 +4,10 @@
     "author": "Chunk Surfer project",
     "source": "tools/chunk_surfer/build-props.mjs",
     "license": "project source (mixed: see meshes)",
-    "sha256": "6ac7322ca391aed9673af48ace85f5d2e7c1003af7aa42af62a9c1f38d548718",
+    "sha256": "2037ea671bb2a7cc6dcbab9c4d61f3d5df6b3edd8a237d81080374f2901eb92f",
     "modifications": "Metres, Y-up, ground-centred. Procedural fallback geometry plus user-supplied source meshes (unverified provenance) baked, re-axised, height-scaled, and vertex-cluster decimated under budget.",
-    "triangles": 40530,
-    "bytes": 2800856
+    "triangles": 44682,
+    "bytes": 3120280
   },
   "meshes": [
     {
@@ -557,6 +557,27 @@
       }
     },
     {
+      "name": "natatorium_perimeter_relief",
+      "bounds": {
+        "min": [
+          -12.5,
+          0,
+          -11
+        ],
+        "max": [
+          12.5,
+          5.24,
+          11
+        ]
+      },
+      "triangles": 1104,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
       "name": "natatorium_cubicle_bank",
       "bounds": {
         "min": [
@@ -1075,6 +1096,27 @@
         ]
       },
       "triangles": 1920,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "front_atrium_perimeter_relief",
+      "bounds": {
+        "min": [
+          -11,
+          0,
+          -11.5
+        ],
+        "max": [
+          11,
+          4.92,
+          11.5
+        ]
+      },
+      "triangles": 3048,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -2389,12 +2431,12 @@
         "min": [
           -0.15,
           0.08,
-          -0.187
+          0
         ],
         "max": [
           0.15,
           0.28,
-          0.17
+          0.257
         ]
       },
       "triangles": 68,
@@ -2640,12 +2682,12 @@
       "bounds": {
         "min": [
           -0.28,
-          0.005,
+          -1.4,
           -0.276
         ],
         "max": [
           0.28,
-          1.83,
+          0,
           0.276
         ]
       },
@@ -2704,12 +2746,12 @@
         "min": [
           -0.675,
           0,
-          -0.042
+          0
         ],
         "max": [
           0.675,
           0.76,
-          0.025
+          0.08
         ]
       },
       "triangles": 24,

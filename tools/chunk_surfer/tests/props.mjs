@@ -27,10 +27,16 @@ ck('seat banks block but authored hall aisles remain open',seat&&!PROPS.propCanO
 const hallRender=PROPS.renderInstances({group:'hall'});
 ck('hall slice receives seating and structure in physical metres',hallRender.some((p)=>p.mesh==='hall_seating')&&hallRender.some((p)=>p.mesh==='hall_structure'));
 const groundRender=PROPS.renderInstances({group:'ground'}),academicRender=PROPS.renderInstances({group:'academic'});
-const sharedAtriumIds=['academic-atrium-structure','academic-skylight','academic-garden-basin'];
+const sharedAtriumIds=['academic-atrium-structure','academic-skylight','academic-garden-basin','atrium-perimeter-relief'];
 ck('atrium architecture is one gameplay instance shared across both render groups',sharedAtriumIds.every((id)=>groundRender.some((p)=>p.id===id)&&academicRender.some((p)=>p.id===id)));
 const poolLines=groundRender.find((p)=>p.id==='pool-lane-markings');
 ck('natatorium has no freestanding inner architectural shell',!placed.some((p)=>p.id==='natatorium-hall-shell'));
+const perimeterRelief=placed.filter((p)=>p.id==='atrium-perimeter-relief'||p.id==='natatorium-perimeter-relief');
+ck('second-perimeter architecture is visible structure, never duplicate collision',
+  perimeterRelief.length===2&&perimeterRelief.every((p)=>p.structural&&!p.blocks),
+  perimeterRelief.map((p)=>`${p.id}:${p.blocks?'blocking':'visual'}`).join(','));
+ck('atrium and natatorium use distinct authored perimeter assemblies',
+  PROP_MESH.front_atrium_perimeter_relief?.blocks===false&&PROP_MESH.natatorium_perimeter_relief?.blocks===false);
 ck('pool length markings sit on the walkable pool surface',poolLines&&Math.abs(poolLines.y-.05)<.001,`y=${poolLines?.y}`);
 const portraits=placed.filter((p)=>p.mesh==='portrait_frame');
 const wallBacked=(p)=>{
@@ -38,8 +44,21 @@ const wallBacked=(p)=>{
   const behindY=p.ry-Math.round(Math.cos(p.yaw||0));
   return FP.isSolid(behindX,behindY);
 };
+// Power panels, emergency bulkheads and safety plaques share the generated
+// wall-fixture convention: +Z faces the room, while the wall sits behind the
+// origin. Their quarter-metre render nudge puts that origin on the cell edge.
+const safetyFixtures=placed.filter((p)=>['power_box_01','tower_bulkhead','tower_plaque'].includes(p.mesh));
+const fixtureWallBacked=(p)=>{
+  const wallX=Math.round(Math.sin(p.yaw||0));
+  const wallY=-Math.round(Math.cos(p.yaw||0));
+  return FP.isSolid(p.rx+wallX,p.ry+wallY)
+    && Math.abs((p.renderOffsetX||0)-wallX*.25)<.001
+    && Math.abs((p.renderOffsetZ||0)-wallY*.25)<.001;
+};
 const circulationClutter=placed.filter((p)=>!p.id.startsWith('light-')&&(p.id.startsWith('corridor-')||p.id.includes('-stair-')||p.id.startsWith('ground-spine-')||p.id.startsWith('practice-corridor-')));
 ck('remaining room portraits are mounted against their authored wall plane',portraits.every(wallBacked),`${portraits.length} room portraits`);
+ck('power, emergency and egress fixtures touch and face away from a real wall',safetyFixtures.every(fixtureWallBacked),
+  safetyFixtures.filter((p)=>!fixtureWallBacked(p)).map((p)=>p.id).join(','));
 ck('stairs and their approach corridors contain no decorative props',circulationClutter.length===0,circulationClutter.map((p)=>p.id).join(','));
 
 // A small deterministic fixture isolates picking from the production dressing.

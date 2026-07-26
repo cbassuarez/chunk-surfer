@@ -6,8 +6,11 @@ import * as scenes from './scenes.js';
 import { uiCenter, uiFill, uiSize, uiText, uiWrap, uiStrokeRect } from '../render/ui.js';
 import { UI_COLOR } from '../render/palette.js';
 import { drawMachinePanel } from '../render/presentation.js';
-import { eulaGateSections, eulaSections, eulaVersion } from './eula.js';
+import { eulaPreamble, eulaSections, eulaVersion } from './eula.js';
 import { EULA_TEXT } from './eula-text.js';
+
+const AGREEMENT_TITLE = 'END USER LICENCE AGREEMENT';
+const FIRST_RUN_NOTICE = 'This game generates its materials locally with bundled AI models. Their licence requires you to read and accept these terms first.';
 
 export function makeEulaScene({
   onAccept = () => {},
@@ -16,7 +19,11 @@ export function makeEulaScene({
   text = EULA_TEXT,
 } = {}) {
   const version = eulaVersion(text);
-  const sections = reviewOnly ? eulaSections(text) : eulaGateSections(text);
+  // Acceptance applies to the whole agreement. The old first-run view only
+  // selected the three model clauses (Sections 5–7), which made the EULA look
+  // truncated even though the remaining sections shipped in the file.
+  const sections = eulaSections(text);
+  const preamble = eulaPreamble(text);
   let scroll = 0;
   let selected = 0;
   let maxScroll = 0;
@@ -26,6 +33,10 @@ export function makeEulaScene({
 
   function lines(width) {
     const out = [];
+    for (const paragraph of preamble) {
+      for (const line of uiWrap(paragraph, width)) out.push({ text: line, role: 'ui-primary' });
+      out.push({ text: '', role: 'ui-secondary' });
+    }
     for (const section of sections) {
       out.push({ text: section.title.toUpperCase(), role: 'ui-amber' });
       out.push({ text: '', role: 'ui-secondary' });
@@ -83,19 +94,31 @@ export function makeEulaScene({
         ? '[↑↓] SCROLL · [ESC] CLOSE'
         : '[↑↓] SCROLL · [←→] CHOOSE · [ENTER] CONFIRM';
       const panel = drawMachinePanel(x, 1, width, rows - 2, {
-        label: 'AUDIOCORP / LICENCE', source: 'EULA', meter: false, footer,
+        label: 'LICENCE', source: 'EULA', meter: false, footer,
       });
 
-      uiText(panel.x, panel.y, reviewOnly ? 'END USER LICENCE AGREEMENT' : 'BEFORE THE LENS RUNS', 'ui-amber');
       const stamp = `VERSION ${version}`;
-      uiText(panel.x + Math.max(0, panel.w - stamp.length), panel.y, stamp, 'ui-secondary', .7);
-      if (!reviewOnly) {
-        uiText(panel.x, panel.y + 1,
-          'This game generates its materials locally with bundled AI models. Their licence requires you to read and accept these terms first.'.slice(0, panel.w),
-          'ui-secondary', .78);
+      const splitHeading = AGREEMENT_TITLE.length + stamp.length + 2 > panel.w;
+      uiText(panel.x, panel.y, AGREEMENT_TITLE.slice(0, panel.w), 'ui-amber');
+      uiText(
+        splitHeading ? panel.x : panel.x + panel.w - stamp.length,
+        panel.y + (splitHeading ? 1 : 0),
+        stamp.slice(0, panel.w),
+        'ui-secondary',
+        .7,
+      );
+
+      const headingRows = splitHeading ? 2 : 1;
+      const noticeLines = reviewOnly ? [] : uiWrap(FIRST_RUN_NOTICE, panel.w);
+      noticeLines.forEach((line, index) => {
+        uiText(panel.x, panel.y + headingRows + index, line, 'ui-secondary', .78);
+      });
+      if (!reviewOnly && noticeLines.length) {
+        const markerY = panel.y + headingRows + noticeLines.length;
+        uiText(panel.x, markerY, `FULL AGREEMENT · ${sections.length} SECTIONS`, 'ui-label', .65);
       }
 
-      const bodyTop = panel.y + (reviewOnly ? 2 : 3);
+      const bodyTop = panel.y + headingRows + noticeLines.length + (reviewOnly ? 1 : 2);
       const bodyBottom = panel.y + panel.h - (reviewOnly ? 2 : 4);
       const bodyHeight = Math.max(3, bodyBottom - bodyTop);
       const all = lines(panel.w - 2);

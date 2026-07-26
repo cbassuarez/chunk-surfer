@@ -81,7 +81,7 @@ import { makePauseScene, shouldOpenPauseForEvent } from './game/pause.js';
 import { makeGodMenuScene } from './game/god-menu.js';
 import { drawFearOverlay } from './game/fear-overlay.js';
 import { applyDisplayCssVars, normalizeDisplaySettings, resolveRenderScale } from './platform/display-policy.js';
-import { minimizeNativeWindow, quitNativeApp, resetNativeWindow, setNativeGameMode, setNativeWindowPreset } from './platform/desktop-window.js';
+import { minimizeNativeWindow, quitNativeApp, resetNativeWindow, restoreNativeWindow, setNativeGameMode, setNativeWindowPreset } from './platform/desktop-window.js';
 import { applyCurrentStageLayout, installViewportGuard } from './platform/viewport-guard.js';
 import { resolveDesktopPaths } from './platform/paths/desktopPaths.js';
 import { revealPath } from './platform/diagnostics/desktopDiagnostics.js';
@@ -115,9 +115,17 @@ import { roomLabel, roomToneCharacter } from './audio/manifest-map.js';
 import * as SPEECH from './game/speech.js';
 import * as TUT from './game/tutorial.js';
 import { objectiveHintsMode, tutorialPromptsEnabled } from './game/access.js';
+import { doorWinsWorldInteraction } from './game/interaction-focus.js';
 import { makeBagScene } from './game/bag.js';
 import { makeColdOpenScene, makeWorldTitleScene } from './game/coldopen.js';
 import { makeOpeningCreditsScene } from './game/opening-credits.js';
+import {
+  createGardenWatchState,
+  gardenLayoutForEpoch,
+  gardenRecallForLayout,
+  shouldNoticeGardenShift,
+  tickGardenWatch,
+} from './game/garden-drift.js';
 import { makeLensCalibrationScene } from './game/lens-calibration.js';
 import { makeEulaScene } from './game/eula-scene.js';
 import { eulaAccepted, eulaVersion } from './game/eula.js';
@@ -180,11 +188,17 @@ import { resolveTorchLook } from './render/lighting-model.js';
 import { buildChunkSurfGodPreset, CHUNK_SURF_GOD_PRESET } from './game/chunk-surf-god.js';
 import {
   CHAPEL_TOWER_PHASE,
+  TOWER_RELAY_REQUIRED_INTERRUPTS,
+  TOWER_RELAY_STAGE,
+  chapelTowerKeyring,
   freshChapelTowerState,
   normalizeChapelTowerState,
   reduceChapelTower,
+  towerObjective,
+  towerRelayStage,
 } from './game/chapel-tower-state.js';
 import { createSourceTowerTransitionScene } from './game/source-tower-transition-scene.js';
+import { applyTowerRelayAdvantage } from './game/tower-chapel-bridge.js';
 import {
   DOCK_ACOUSTIC_PROP_IDS,
   DOCK_HAUNTING_GRACE_MS,
@@ -203,6 +217,7 @@ import { ELLERY_BELLS } from './data/bell-tower.js';
 import { DOOR_ARCHETYPE } from './data/conservatory-doors.js';
 import {
   BELL_FRAME_AUTHORED,
+  BELL_RELAY_CLAMP_AUTHORED,
   BELL_CHAMBER_ANCHOR,
   CHAPEL_OUTER_CHECKPOINT,
   CHAPEL_SCREEN_AUTHORED,
@@ -236,6 +251,9 @@ import { exportProfile, mergeImportedProfile } from './progression/profile.js';
 import { currentPlatform } from './platform/index.js';
 
 const APP_VERSION=__APP_VERSION__;
+// Bump only when the offline inference payload changes. Unlike APP_VERSION,
+// this marker does not make an ordinary game update look like another install.
+const LENS_RUNTIME_MARKER='offline-lens-v3-cu128-compel-2';
 import { WORK_ORDER, SQUELCH_LINES,
          PAGES, ROOM_CELLS, MAIN_EXIT_CELL, TARGETS, COLD_OPEN, AFTER_TITLE,
          PLANT_RIG_CELL, TALISMAN_CELL,
@@ -284,7 +302,7 @@ const chapelBoss=({kind='nothing',value=null}={})=>{
   if(kind==='name') variant=value==='Sarah'?'name-sarah':'name-other';
   else if(kind==='reason') variant=value==='money'?'reason-money':value==='superstition'?'reason-superstition':'reason-other';
   else if(kind==='feeling') variant='feeling';
-  return runtimeChapelBattle(`battle.chapel.${variant}`);
+  return applyTowerRelayAdvantage(runtimeChapelBattle(`battle.chapel.${variant}`),chapelTowerState());
 };
 const sacrificeEnding=({injuries=0,named=false}={})=>endingLines(`ending.sacrifice.${authoredVariant(named)}.injuries-${Math.max(0,Math.min(5,Math.floor(Number(injuries)||0)))}`);
 const INVERT_START=endingLines('ending.inversion-start');
@@ -293,7 +311,7 @@ const rescueEnding=(named=false)=>endingLines(`ending.rescue.${authoredVariant(n
 const INVERSION_FINAL=endingLines('ending.inversion-final');
 const helpedEnding=({named=false}={})=>endingLines(`ending.helped.${authoredVariant(named)}`);
 const druggedReveal=({takes=5}={})=>endingLines(`ending.drugged.${Number(takes)>=5?'complete':'partial'}`);
-const guardEpilogue=(variant='out')=>endingLines(`ending.epilogue.${['out','client','nobody','helped','drugged'].includes(variant)?variant:'out'}`);
+const guardEpilogue=(variant='out')=>endingLines(`ending.epilogue.${['out','client','nobody','helped','drugged','surfaced'].includes(variant)?variant:'out'}`);
 
 // The authored game is always first-person 3D. Canvas/DOM survive only as
 // explicit development diagnostics and cannot be selected in a release.
@@ -5587,9 +5605,47 @@ function godResetStairGlobal(){
 }
 
 function chapelTowerState(){return normalizeChapelTowerState(getSave().chapelTower);}
+function syncChapelTowerKeyring(tower=chapelTowerState()){
+  playerKeys.delete('tower-live');
+  playerKeys.delete('tower-cleared');
+  for(const key of chapelTowerKeyring(tower))playerKeys.add(key);
+}
+function towerWaypointFor(tower=chapelTowerState()){
+  const objective=towerObjective(tower);
+  const authored={
+    'enter-source':CHAPEL_SCREEN_AUTHORED,
+    'follow-signal':CHAPEL_SCREEN_AUTHORED,
+    'ringing-room':{x:25,y:158},
+    'clock-hammer':{x:18,y:153},
+    'belfry-hatch':TOWER_ROUTE_ANCHORS.belfryDoor,
+    'break-relay':BELL_RELAY_CLAMP_AUTHORED,
+    'release-winch':TOWER_ROUTE_ANCHORS.winch,
+    'bells-settling':TOWER_ROUTE_ANCHORS.winch,
+    'descend-nave':TOWER_ROUTE_ANCHORS.naveExit,
+    'roll-fifth-take':CHAPEL_SCREEN_AUTHORED,
+  }[objective.id];
+  return authored?{objective,point:FP.toRuntimePoint(authored)}:{objective,point:null};
+}
+function towerCheckpointFor(tower=chapelTowerState()){
+  const stage=towerRelayStage(tower);
+  const authored=stage===TOWER_RELAY_STAGE.INTERRUPT
+    ? TOWER_ROUTE_ANCHORS.chamberEntry
+    : [TOWER_RELAY_STAGE.RELEASE,TOWER_RELAY_STAGE.SETTLING].includes(stage)
+      ? TOWER_ROUTE_ANCHORS.winch
+      : {x:25,y:158,facing:0};
+  return{...FP.toRuntimePoint(authored),facing:authored.facing||0};
+}
+function syncTowerWaypoint(tower=chapelTowerState()){
+  const {objective,point}=towerWaypointFor(tower);
+  if(point)OBJ.setWaypoint(point.x,point.y,objective.id);
+  else if(tower.phase===CHAPEL_TOWER_PHASE.CHAPEL_FINAL)OBJ.clearWaypoint();
+  return OBJ.saveObjState();
+}
 function commitChapelTower(event,patch={}){
   const next=reduceChapelTower(chapelTowerState(),event);
-  saveCommit({chapelTower:next,...patch});
+  syncChapelTowerKeyring(next);
+  const obj=syncTowerWaypoint(next);
+  saveCommit({chapelTower:next,obj,...patch});
   return next;
 }
 
@@ -5644,23 +5700,29 @@ function tickDoorRuntime(dt){
 
 function failBellTower({hazardId='machinery'}={}){
   if(!bellTowerCollisionEnabled||bellTowerImpactActive||chapelTowerState().phase!==CHAPEL_TOWER_PHASE.TOWER_ACTIVE)return;
-  bellTowerImpactActive=true;bellTowerRuntime?.stopImmediately?.();
+  bellTowerImpactActive=true;
   const next=commitChapelTower({type:'TOWER_COLLISION',hazardId});
   CR.fx.shake(.8,420);
+  const checkpoint=towerCheckpointFor(next);
   let elapsed=0;
   scenes.push({
     id:'tower-impact',blocksInput:true,blocksWorld:true,lookProfile:'rupture',
-    update(dt){elapsed+=dt;if(elapsed<.6)return;scenes.pop();px=TOWER_ENTRY.x;py=TOWER_ENTRY.y;R3.r3dSetFacing(TOWER_ENTRY.facing);renderMove=null;motionRig=null;trail=[];resetTowerPlayerSweep();saveCommit({chapelTower:next,px,py,area:'bell-tower'});bellTowerImpactActive=false;bellTowerRuntime?.start?.({retry:true});},
+    update(dt){
+      elapsed+=dt;if(elapsed<.6)return;
+      scenes.pop();px=checkpoint.x;py=checkpoint.y;R3.r3dSetFacing(checkpoint.facing||0);
+      renderMove=null;motionRig=null;trail=[];resetTowerPlayerSweep();
+      saveCommit({chapelTower:next,px,py,area:'bell-tower'});
+      bellTowerImpactActive=false;
+      SPEECH.say({who:'you',text:'Back to the last safe landing. The relay count held.'});
+    },
   });
 }
 
 function completeBellTower(){
   if(chapelTowerState().phase!==CHAPEL_TOWER_PHASE.TOWER_ACTIVE)return;
   const next=commitChapelTower({type:'BELLS_STOOD'});
-  playerKeys.add('tower-cleared');
-  for(const id of ['tower-hatch','bell-chamber-entry','organ-loft-service','organ-loft-nave'])FP.setDoorOpen(id,true);
   saveCommit({chapelTower:next,doors:FP.saveDoorState(),px,py,area:'bell-tower'});syncDoorDynamicProps();
-  SPEECH.say({who:'direction',text:'The last bell reaches the balance and comes down. The silence is larger than the ringing. A service door releases towards the organ loft.'});
+  SPEECH.say({who:'direction',text:'The last bell reaches the balance and comes down. The silence is larger than the ringing. The service lock releases; open it and descend to the nave.'});
 }
 
 function startBellTowerRuntime({retry=false,collisions=true,offsetMs=0}={}){
@@ -5671,17 +5733,26 @@ function startBellTowerRuntime({retry=false,collisions=true,offsetMs=0}={}){
     bells:towerBellLayout(),audio:bellTowerAudio,emitAcousticEvent,
     onCollision:failBellTower,onCleared:completeBellTower,
   });
-  playerKeys.add('tower-live');
+  syncChapelTowerKeyring();
   resetTowerPlayerSweep();
   const resolvedOffset=offsetMs==='stop-ready'?bellTowerRuntime.timing().finiteEndMs+25:Math.max(0,Number(offsetMs)||0);
-  bellTowerRuntime.start({retry,offsetMs:resolvedOffset});
+  bellTowerRuntime.start({
+    retry,
+    offsetMs:resolvedOffset,
+    interventions:chapelTowerState().relayInterruptions,
+  });
   syncDoorDynamicProps();
   return bellTowerRuntime;
 }
 
 function tickBellTower(dt){
   if(usingPlan()&&!usingSpecialSpace()&&FP.zoneAt(px,py)===ZONE.bellTower&&!chapelTowerState().ropeRoomVisited&&FP.floorAt(px,py)<12){
-    const next=reduceChapelTower(chapelTowerState(),{type:'ROPE_ROOM_VISITED'});saveCommit({chapelTower:next});
+    commitChapelTower({type:'ROPE_ROOM_VISITED'});
+    SPEECH.say({who:'you',text:'Rope room. Eight lines into one frame. Find what is driving them before I touch the bells.'});
+  }
+  if(usingPlan()&&!usingSpecialSpace()&&chapelTowerState().phase===CHAPEL_TOWER_PHASE.TOWER_CLEARED&&!chapelTowerState().chapelReached&&FP.zoneAt(px,py)===ZONE.chapel){
+    commitChapelTower({type:'CHAPEL_REACHED'});
+    SPEECH.say({who:'direction',text:'The tower is silent above the nave. The recorder meter is moving anyway. Put the fifth take on tape.'});
   }
   if(chapelTowerState().phase!==CHAPEL_TOWER_PHASE.TOWER_ACTIVE||!bellTowerRuntime)return;
   const current=towerPlayerCapsule();
@@ -5742,7 +5813,7 @@ function beginSourceTowerTransition(){
       saveCommit({chapelTower:next,px,py,area:'bell-tower'});
       scenes.remove(sourceTowerTransition);sourceTowerTransition=null;
       startBellTowerRuntime({retry:false});
-      SPEECH.say({who:'direction',text:'Eight ropes. Above them, the tenor begins alone. Then the frame takes the building.'});
+      SPEECH.say({who:'direction',text:'The Source climbs into eight ropes. Above them, the tenor begins alone. Diagnose the relay before the whole frame takes the building.'});
     },
     onExit:()=>{sourceTowerTransition=null;},
   });
@@ -5847,8 +5918,8 @@ async function loadBuilding(){
     if(which==='conservatory'&&!normalizeChunkSurfState(getSave().chunkSurf).active){
       const tower=repairLegacyTowerLayout(chapelTowerState());
       if(tower.phase===CHAPEL_TOWER_PHASE.TRANSITION_READY){px=CHAPEL_OUTER_CHECKPOINT.x;py=CHAPEL_OUTER_CHECKPOINT.y;}
-      else if(tower.phase===CHAPEL_TOWER_PHASE.TOWER_ACTIVE){px=TOWER_ENTRY.x;py=TOWER_ENTRY.y;playerKeys.add('tower-live');}
-      else if([CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(tower.phase)){playerKeys.add('tower-live');playerKeys.add('tower-cleared');for(const id of ['tower-hatch','bell-chamber-entry','organ-loft-service','organ-loft-nave'])FP.setDoorOpen(id,true);}
+      else if(tower.phase===CHAPEL_TOWER_PHASE.TOWER_ACTIVE){const checkpoint=towerCheckpointFor(tower);px=checkpoint.x;py=checkpoint.y;R3.r3dSetFacing(checkpoint.facing);}
+      else if([CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(tower.phase)){syncChapelTowerKeyring(tower);}
       else if(FP.zoneAt(px,py)===ZONE.chapel){px=CHAPEL_OUTER_CHECKPOINT.x;py=CHAPEL_OUTER_CHECKPOINT.y;}
     }
     if(which==='conservatory'){
@@ -5941,12 +6012,12 @@ function enterStory(){
   setGameChrome(true);
   playerKeys.clear();playerKeys.add('master');
   if((getSave().items||[]).includes('chapel_key'))playerKeys.add('chapel');
-  if([CHAPEL_TOWER_PHASE.TOWER_ACTIVE,CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(chapelTowerState().phase))playerKeys.add('tower-live');
-  if([CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(chapelTowerState().phase))playerKeys.add('tower-cleared');
+  syncChapelTowerKeyring();
   REC.loadRecState(getSave().rec);
   PRES.loadPresenceState(getSave().presence);
   resetHushContactSession();
   OBJ.loadObjState(getSave().obj);
+  if(chapelTowerState().phase!==CHAPEL_TOWER_PHASE.FORESHADOW)syncTowerWaypoint();
   STAB.loadStabState(getSave().stabs);
   RADIO.loadRadioState(getSave().radio);
   PROPS.loadPropState(getSave().props);
@@ -7548,6 +7619,28 @@ function focusedWorldProp(maxMeters=2){
   const look=R3.r3dLookAngles?.()||{};
   return PROPS.pickProp(px,py,R3.r3dFacing(),maxMeters,{yaw:mapHeading(),pitch:look.pitch});
 }
+function focusedTowerRelay(maxMeters=4.2){
+  if(towerRelayStage(chapelTowerState())!==TOWER_RELAY_STAGE.INTERRUPT)return null;
+  const frame=PROPS.propById('tower-bell-frame');if(!frame)return null;
+  const mx=(px+.5)*CELL,mz=(py+.5)*CELL;
+  const dx=BELL_RELAY_CLAMP_AUTHORED.x-mx,dz=BELL_RELAY_CLAMP_AUTHORED.y-mz,d=Math.hypot(dx,dz);
+  if(d>maxMeters)return null;
+  const heading=mapHeading(),dot=(dx*Math.sin(heading)+dz*-Math.cos(heading))/Math.max(.001,d);
+  if(dot<.72)return null;
+  const aimAngle=Math.abs(Math.atan2(Math.sin(Math.atan2(dx,-dz)-heading),Math.cos(Math.atan2(dx,-dz)-heading)));
+  const halfAngle=Math.max(.10,Math.min(.48,Math.atan2(.65,Math.max(.05,d))));
+  if(aimAngle>halfAngle*1.2)return null;
+  return{
+    ...frame,
+    id:'tower-bell-relay-clamp',
+    label:'bell relay clamp',
+    action:'tower-relay-interrupt',
+    interactive:true,
+    distance:d,
+    aimAngle,
+    aimScore:aimAngle/halfAngle+d*.025,
+  };
+}
 function focusedWorldDoor(maxCells=5){
   if(!usingPlan()||usingSpecialSpace())return null;
   const yaw=mapHeading(),facing=[Math.sin(yaw),-Math.cos(yaw)];
@@ -7560,11 +7653,22 @@ function focusedWorldDoor(maxCells=5){
   return{...hit,aimAngle:ang,aimScore:ang/halfAngle+d*.012};
 }
 function worldInteractionFocus(){
-  const prop=focusedWorldProp(2),door=focusedWorldDoor();
-  // A prop wins a near tie. Door apertures are physically broad, while an
-  // inspection target is the more exact statement of where the player aimed.
-  const doorWins=!!door&&(!prop||door.aimScore+.08<prop.aimScore);
+  const prop=focusedTowerRelay()||focusedWorldProp(2),door=focusedWorldDoor();
+  // Story-route doors win an interaction tie. Several authored plaques and
+  // mechanisms sit beside these thresholds; they must never make the only
+  // playable route depend on a pixel-perfect reticle.
+  const doorWins=doorWinsWorldInteraction(prop,door);
   return{prop,door,doorWins};
+}
+function lockedDoorThought(keyId){
+  if(keyId==='chapel'){
+    if(!flagTest('chapel.clue.log'))return'Replacement lock core. Page 6 names the front-of-house office; read it in the bag.';
+    if(!flagTest('chapel.clue.ledger'))return'Page 6 points to front of house. I still need the rekey ledger inside the office.';
+    return'C-17. The rekey ledger says the tagged key is in the front-of-house cabinet.';
+  }
+  if(keyId==='services-core')return'PLANT SERVICES — NO CONTRACTOR ACCESS. Nothing behind this door is on tonight’s route.';
+  if(keyId==='academic-core')return'ACADEMIC CORE — NO CONTRACTOR ACCESS. These rooms are outside the work order.';
+  return'Locked. None of these.';
 }
 
 // One centred prompt row on the HUD. Measured before it is drawn because a
@@ -7860,6 +7964,10 @@ function interactNatatoriumWater(){
 
 function interactChapelScreen(){
   if(!nearAuthoredRuntime(px,py,CHAPEL_SCREEN_AUTHORED,7))return false;
+  if(escape?.kind==='stay'){
+    completeSacrificeEnding();
+    return true;
+  }
   const tower=chapelTowerState(),ordinary=REC.recState().takes.filter((id)=>id&&id!=='lux_nova').length;
   if(ordinary<4){SPEECH.say({who:'you',text:'The collegiate chapel screen is locked from within. Four rooms remain the only honest work.'});return true;}
   if(tower.phase===CHAPEL_TOWER_PHASE.SOURCE_READY){beginChunkSurf({forced:true});return true;}
@@ -7903,11 +8011,15 @@ function interact(){
   const lookYaw=mapHeading(),lookForward=[Math.sin(lookYaw),-Math.cos(lookYaw)];
   const doorHit=focus.doorWins?FP.interactDoor(px,py,lookForward,playerKeys):null;
   if(doorHit){
+    if(doorHit.id==='tower-hatch'&&!chapelTowerState().hatchInspected){
+      commitChapelTower({type:'BELL_HATCH_INSPECTED'});
+      SPEECH.say({who:'you',text:'Bell chamber hatch. The hasp follows the inner screen; the relay runs through the frame above it.'});
+    }
     if(!doorHit.ok){
       if(doorHit.keyId==='tower-live'){
-        const next=reduceChapelTower(chapelTowerState(),{type:'BELL_HATCH_INSPECTED'});saveCommit({chapelTower:next});
+        if(!chapelTowerState().hatchInspected)commitChapelTower({type:'BELL_HATCH_INSPECTED'});
         SPEECH.say({who:'you',text:'Bell chamber. ACCESS RESTRICTED. The maintenance hasp is linked to the inner screen.'});
-      }else SPEECH.say({who:'you',text:doorHit.keyId==='chapel'?'Replacement lock core. Not on the standard keyring.':doorHit.keyId==='academic-core'?'Different lock core. Nothing on the keyring is even close.':'Locked. None of these.'});
+      }else SPEECH.say({who:'you',text:lockedDoorThought(doorHit.keyId)});
       return;
     }
     if(doorHit.opened||doorHit.closed||doorHit.removedWedge){
@@ -7922,6 +8034,29 @@ function interact(){
   if(interactNatatoriumWater()) return;
   const hit=focus.prop;
   if(hit){
+    if(hit.action==='tower-relay-interrupt'){
+      if(towerRelayStage(chapelTowerState())!==TOWER_RELAY_STAGE.INTERRUPT){
+        SPEECH.say({who:'you',text:'The frame is not the first fault. Rope, hammer, hatch. Diagnose it in order.'});
+        return;
+      }
+      const result=bellTowerRuntime?.interruptRelay?.()||{ok:false,reason:'inactive'};
+      if(!result.ok){
+        if(result.reason==='unsafe')SPEECH.say({who:'you',text:'Not against the moving wheel. Wait for the casting to pass balance, then cut the relay.'});
+        else if(result.reason==='already-cut')SPEECH.say({who:'you',text:'That clamp is already out. Let the next stroke expose the following one.'});
+        else SPEECH.say({who:'you',text:'The relay is not moving yet.'});
+        return;
+      }
+      const next=commitChapelTower({type:'RELAY_INTERRUPTED'});
+      CUES.playCue(CUES.CUE.keys,{gain:.36,rate:.52+next.relayInterruptions*.08});
+      CR.fx.shake(.24,180);
+      SPEECH.say({
+        who:result.complete?'direction':'you',
+        text:result.complete
+          ? 'The third clamp drops. The peal loses its carrier. The shutter winch is free to take the remaining load.'
+          : `Relay clamp ${next.relayInterruptions} of ${TOWER_RELAY_REQUIRED_INTERRUPTS}. The next safe stroke is coming.`,
+      });
+      return;
+    }
     if(hit.id==='dropped-radio'){
       if(RADIO.pickUpRadio(px,py)){
         syncDroppedRadioProp();saveCommit({radio:RADIO.saveRadioState()});fireCue('bag');
@@ -8015,17 +8150,23 @@ function interact(){
       return;
     }
     if(hit.action==='tower-hammer-isolator'){
-      const next=reduceChapelTower(chapelTowerState(),{type:'CLOCK_HAMMER_ISOLATED'});saveCommit({chapelTower:next});
+      if(chapelTowerState().hammerIsolated){SPEECH.say({who:'you',text:'Clock hammer isolated. The remaining drive is in the bell frame.'});return;}
+      commitChapelTower({type:'CLOCK_HAMMER_ISOLATED'});
       if(instr?.propId==='tower-tenor-clock-hammer')silenceInstrument(instr.propId);
       SPEECH.say({who:'you',text:'CLOCK HAMMER — ISOLATED. The linkage falls out of tension.'});
       return;
     }
     if(hit.action==='tower-shutter-winch'){
       if([CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(chapelTowerState().phase)){SPEECH.say({who:'you',text:'The pawl is released. The service stairs are open in both directions.'});return;}
+      if(towerRelayStage(chapelTowerState())!==TOWER_RELAY_STAGE.RELEASE){
+        const objective=towerObjective(chapelTowerState());
+        SPEECH.say({who:'you',text:`Not yet. ${objective.label.replaceAll('  ',' ')}.`});
+        return;
+      }
       const result=bellTowerRuntime?.requestStop?.()||{ok:false};
-      if(!result.ok){SPEECH.say({who:'you',text:'Under load. The pawl will not lift until the touch reaches a boundary.'});return;}
-      if(!chapelTowerState().shuttersReleased){const next=reduceChapelTower(chapelTowerState(),{type:'SHUTTERS_RELEASED'});saveCommit({chapelTower:next});}
-      SPEECH.say({who:'direction',text:'The shutters begin to open. The ring finishes what it is saying, finds rounds, and starts to stand.'});
+      if(!result.ok){SPEECH.say({who:'you',text:'The relay is still carrying the frame. Three clamps, then the pawl.'});return;}
+      if(!chapelTowerState().shuttersReleased)commitChapelTower({type:'SHUTTERS_RELEASED'});
+      SPEECH.say({who:'direction',text:'The shutters open. The damaged peal takes one short course to rounds and begins to stand.'});
       return;
     }
     // The gallery busts are the one thing on that floor you address rather than
@@ -9174,66 +9315,63 @@ function talkToBust(propId){
 
 // ── the garden ───────────────────────────────────────────────────────────────
 // The ruined atrium garden is never quite as you left it. Nothing is ever seen
-// to move: the drift is applied while the garden is OUT OF SIGHT — you left the
-// zone, or your torch was off in it — and it is small enough (a quarter of a
-// metre, a few degrees) that you cannot be sure. The trees lean differently. The
-// leaf litter has crept. The planters have turned a little on their bases.
+// to move: a new authored arrangement is applied only after the player has left
+// the room for a while. The change is large enough to recognize and restrained
+// enough to make memory—not animation—the unsettling part.
 //
 // Visual only, via PROPS.setPropDrift: the colliders and the pin in the west
-// planter's soil stay exactly where they were authored. Whatever the garden looks
-// like it is doing, it is still a place you can walk through the same way.
+// planter's soil stay exactly where they were authored. The layout offsets stay
+// within those broad navigation footprints.
 const GARDEN_DRIFT_PROPS = Object.freeze([
   'academic-garden-planter-west', 'academic-garden-planter-east',
   'academic-garden-tree-west', 'academic-garden-tree-east',
   'academic-garden-leaves-north', 'academic-garden-leaves-south',
 ]);
-// The basin and the structure never move. Something in the frame has to be
-// trustworthy or the whole room reads as a special effect instead of a place.
-const GARDEN_DRIFT_LIMIT = Object.freeze({ pos: .26, yaw: .085 });
 let gardenEpoch = 0;
-let gardenWasVisible = false;
-
-function gardenDriftAt(epoch, index, salt){
-  // Deterministic per epoch, so a frame drawn twice draws the same garden.
-  let h = (Math.imul(epoch + 1, 0x9e3779b1) ^ Math.imul(index + 1, 0x85ebca6b) ^ Math.imul(salt, 0xc2b2ae35)) >>> 0;
-  h ^= h >>> 15; h = Math.imul(h, 0x2545f491) >>> 0; h ^= h >>> 13;
-  return ((h >>> 0) / 4294967296) * 2 - 1;
-}
+let gardenLayoutId = gardenLayoutForEpoch(0).id;
+let gardenWatch = createGardenWatchState();
+let gardenRecallPending = '';
 
 function inTheGarden(){
   if(!usingPlan() || usingSpecialSpace()) return false;
-  const zone = FP.zoneAt(px, py);
-  return zone === ZONE.foyer || zone === ZONE.academic;
+  const physical=FP.logicalToPhysical(px,py);
+  // The academic gallery looks directly into the garden, and the concert hall
+  // retains a sightline through its small vestibule. Neither counts as "away"
+  // merely because its zone id differs from the ground-floor atrium.
+  return physical.spaceId==='front_atrium'
+    || physical.spaceId==='hall'
+    || physical.renderGroup==='academic';
 }
 
-// Called when the garden has been unobserved and is about to be seen again.
+// Called only after a real empty-room interval (or by the explicit debug
+// probe). The basin and the structure never move; they are the trustworthy
+// frame against which the authored arrangements become obvious.
 function shiftGarden(reason='unseen'){
+  const previousLayoutId = gardenLayoutId;
   gardenEpoch += 1;
-  GARDEN_DRIFT_PROPS.forEach((id, index)=>{
-    // Litter moves most, then the trees, then the stone.
-    const heavy = id.includes('planter');
-    const light = id.includes('leaves');
-    const reach = GARDEN_DRIFT_LIMIT.pos * (light ? 1 : heavy ? .45 : .75);
-    PROPS.setPropDrift(id, {
-      dx: gardenDriftAt(gardenEpoch, index, 1) * reach,
-      dz: gardenDriftAt(gardenEpoch, index, 2) * reach,
-      dyaw: gardenDriftAt(gardenEpoch, index, 3) * GARDEN_DRIFT_LIMIT.yaw * (heavy ? .6 : 1),
-    });
+  const layout = gardenLayoutForEpoch(gardenEpoch);
+  GARDEN_DRIFT_PROPS.forEach((id)=>{
+    PROPS.setPropDrift(id, layout.poses[id]);
   });
-  if(RENDERER==='3d') syncStoryObjectProps();
-  return { epoch: gardenEpoch, reason };
+  gardenLayoutId = layout.id;
+  gardenRecallPending = gardenRecallForLayout(previousLayoutId);
+  // setPropDrift mutates the prop records; the renderer owns a copied instance
+  // list, so it must be refreshed here or the change never reaches the frame.
+  if(RENDERER==='3d') refreshWorldProps();
+  return { epoch:gardenEpoch, layout:gardenLayoutId, previousLayout:previousLayoutId, reason };
 }
 
-// The garden is observed when you are standing in it with the light on. The
-// moment that stops being true it is free to rearrange, and it does so on the way
-// back in rather than while you watch.
+// Torch state is irrelevant: darkness while the player is still in the atrium
+// is not permission to move. The room must be unoccupied for the full interval.
 function tickGarden(){
-  // ONE owner for the transition. Switching the torch off in the garden and
-  // walking out of it are the same event as far as the garden is concerned, and
-  // firing a shift from the key handler as well just made the jump twice as big.
-  const visible = inTheGarden() && REC.lightOn();
-  if(!visible && gardenWasVisible) shiftGarden('out-of-sight');
-  gardenWasVisible = visible;
+  const event=tickGardenWatch(gardenWatch,{inside:inTheGarden(),now:performance.now()});
+  gardenWatch=event.state;
+  if(event.shouldShift) shiftGarden('room-empty');
+  if(event.shouldRecall && gardenRecallPending){
+    const recall=gardenRecallPending;
+    gardenRecallPending='';
+    if(shouldNoticeGardenShift(gardenEpoch))SPEECH.say({who:'you',text:recall});
+  }
 }
 
 // Where that came from, for the map. The mischief is the hush's doing, so if the
@@ -9896,9 +10034,9 @@ function godAbortBattle(){
   return removed;
 }
 
-// ── M5: the confrontation and the two endings ───────────────────────────────
+// ── M5: the confrontation and its embodied ending routes ────────────────────
 let finaleActive=false;
-let escape=null;   // the playable escape state: { stage, doorCell, rescueCell, deadlineMs }
+let escape=null;   // playable finale route: inversion, surfaced exit, or chapel commitment
 const isNamed=()=> flagGet('confession.kind')==='name' && flagGet('confession.value')==='Sarah';
 
 // Put a finale beat sequence (array) or node tree (object) on the cold-open
@@ -10017,7 +10155,16 @@ function openEndingChoice(){
 }
 
 function endSurfaced(){
-  escape=null; OBJ.clearWaypoint();
+  const exitCell=FP.toRuntimePoint(MAIN_EXIT_CELL);
+  escape={kind:'surfaced',stage:'exit',exitCell,deadlineMs:null};
+  OBJ.setWaypoint(exitCell.x,exitCell.y,'main entrance');
+  saveCommit({obj:OBJ.saveObjState()});
+  applyLensPreset('explore');
+  SPEECH.say({who:'recordist',text:'The tower is quiet. Do not let the chapel choose another cut. Walk me to the public door.'});
+}
+
+function completeSurfacedExit(){
+  escape=null;OBJ.clearWaypoint();
   const drank=flagTest('drank.coffee');
   const beats=[...surfacedEnding({
     drankCoffee:drank,
@@ -10035,7 +10182,19 @@ function endSurfaced(){
 // it was all real. If you drank, it was a real guard who tried to help and could
 // not: the same staying, reframed by a paper cup.
 function endSacrifice(){
-  escape=null; OBJ.clearWaypoint();
+  const screenCell=FP.toRuntimePoint(CHAPEL_SCREEN_AUTHORED);
+  escape={kind:'stay',stage:'commit',screenCell,deadlineMs:null};
+  OBJ.setWaypoint(screenCell.x,screenCell.y,'chapel screen');
+  saveCommit({obj:OBJ.saveObjState()});
+  applyLensPreset('battle');
+  SPEECH.say({
+    who:'direction',
+    text:'The chapel waits for a final physical answer. Return to the inner screen and put your hand on it.',
+  });
+}
+
+function completeSacrificeEnding(){
+  escape=null;OBJ.clearWaypoint();
   const drank=flagTest('drank.coffee');
   const base = drank ? helpedEnding({ named:isNamed() })
                      : sacrificeEnding({ injuries:REC.recState().injuries, named:isNamed() });
@@ -10046,13 +10205,13 @@ function endSacrifice(){
 // Ending B — the inversion. The invert, then the playable run for a door that
 // will not be where the door is, then a way out you did not open.
 function beginInversion(){
-  presentFinale(INVERT_START, { slate:'THE PLANT ROOM · REVERSED', onDone: startEscape });
+  presentFinale(INVERT_START, { slate:'THE CHAPEL · REVERSED', onDone: startEscape });
 }
 function startEscape(){
   const door=FP.spawn();                                   // the grey door you came in through
   const resc=FP.toRuntimePoint(MAIN_EXIT_CELL);            // the public door the guard named
   const seconds=currentDifficulty().escape.seconds;
-  escape={ stage:'door', doorCell:door, rescueCell:resc,
+  escape={ kind:'inversion',stage:'door', doorCell:door, rescueCell:resc,
     deadlineMs:seconds==null?null:performance.now()+seconds*1000 };
   // A man who went and put his hand on his exit on night one knows where it is,
   // and gets a true bearing. A man who never looked has only the plan to go on,
@@ -10074,6 +10233,11 @@ function startEscape(){
 // waypoint; running out of time takes Ending A by default.
 function tickFinale(){
   if(!escape || scenes.blocksWorld()) return;
+  if(escape.kind==='surfaced'){
+    if(Math.hypot(px-escape.exitCell.x,py-escape.exitCell.y)<=2.4)completeSurfacedExit();
+    return;
+  }
+  if(escape.kind==='stay')return;
   if(escape.deadlineMs!=null && performance.now() > escape.deadlineMs){ escape=null; OBJ.clearWaypoint(); endSacrifice(); return; }
   const wp = escape.stage==='door' ? escape.doorCell : escape.rescueCell;
   if(Math.hypot(px-wp.x, py-wp.y) > 2.4) return;
@@ -10110,7 +10274,7 @@ function finishEnding(id){
   const variant =
     id==='drugged' ? 'drugged' :
     id==='helped' ? 'helped' :
-    id===CHUNK_SURF_ENDING_ID ? 'out' :
+    id===CHUNK_SURF_ENDING_ID ? 'surfaced' :
     id==='inversion' ? 'out' :
     (flagGet('confession.kind')==='nothing' ? 'nobody' : 'client');
   presentFinale(guardEpilogue(variant), {
@@ -10203,7 +10367,8 @@ function saveTick(dt){
     return;
   }
   const towerActive=chapelTowerState().phase===CHAPEL_TOWER_PHASE.TOWER_ACTIVE;
-  saveCommit({ px:towerActive?TOWER_ENTRY.x:px, py:towerActive?TOWER_ENTRY.y:py, steps:stepCount, area:usingSourceSpace()?'source-space':usingStairAnomaly()?'stair-anomaly':towerActive?'bell-tower':storyMode?'conservatory':getSave().area,
+  const towerCheckpoint=towerActive?towerCheckpointFor():null;
+  saveCommit({ px:towerCheckpoint?towerCheckpoint.x:px, py:towerCheckpoint?towerCheckpoint.y:py, steps:stepCount, area:usingSourceSpace()?'source-space':usingStairAnomaly()?'stair-anomaly':towerActive?'bell-tower':storyMode?'conservatory':getSave().area,
     ...(usingSourceSpace()?{chunkSurf:chunkSurfRuntime.state()}:{}),
     playSeconds:(getSave().playSeconds||0)+4, hushAudio:hushAudioRuntime?.save?.()||getSave().hushAudio||null });
 }
@@ -11134,7 +11299,11 @@ function godEnterTowerPreset(preset){
     ...freshChapelTowerState(),
     phase,
     ropeRoomVisited:preset!=='outer-chapel',
+    hatchInspected:['bell-frame','crossing','stop-ready','winch','service-stair','organ-loft','nave-door','nave-exit','chapel-final'].includes(preset),
+    hammerIsolated:['bell-frame','crossing','stop-ready','winch','service-stair','organ-loft','nave-door','nave-exit','chapel-final'].includes(preset),
+    relayInterruptions:['stop-ready','winch','service-stair','organ-loft','nave-door','nave-exit','chapel-final'].includes(preset)?TOWER_RELAY_REQUIRED_INTERRUPTS:0,
     shuttersReleased:[CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(phase),
+    chapelReached:preset==='chapel-final',
   };
   px=point.x;py=point.y;trail=[];renderMove=null;motionRig=null;
   playerKeys.add('chapel');
@@ -11852,6 +12021,18 @@ function drawStoryHud(){
   drawVfdCounter(9, 1, String(takes));
   uiText(11, 1, '/ 5', 'ui-blue');
   if(rec.injuries) uiText(16, 1, `HURT ×${rec.injuries}`, 'ui-danger');
+  {
+    const tower=chapelTowerState();
+    if([CHAPEL_TOWER_PHASE.TOWER_ACTIVE,CHAPEL_TOWER_PHASE.TOWER_CLEARED].includes(tower.phase)){
+      const objective=towerObjective(tower);
+      uiText(2,2,objective.label.slice(0,Math.max(1,cols-4)),objective.id==='bells-settling'?'ui-secondary':'ui-amber');
+      if(objective.id==='break-relay'){
+        const snapshot=bellTowerRuntime?.snapshot?.();
+        const signal=snapshot?.relayWindowOpen?'RELAY WINDOW / CUT NOW':'RELAY WINDOW / HOLD';
+        uiText(Math.max(2,cols-signal.length-2),3,signal,snapshot?.relayWindowOpen?'ui-green':'ui-secondary');
+      }
+    }
+  }
   if(KEY_DEBUG){
     if(lastKeyDebug) uiText(2, 4, lastKeyDebug.slice(0,130), 't-key', 0.9);
     try{
@@ -11878,7 +12059,9 @@ function drawStoryHud(){
 const teach=tutorialPromptsEnabled() ? TUT.tutorialPrompt() : null;
   // Paper at your feet outranks everything the corner has to say. It is the only
   // thing in the building anyone has left behind on purpose.
-  if(chunkSurfAvailable()){
+  if(escape?.kind==='stay'&&nearAuthoredRuntime(px,py,CHAPEL_SCREEN_AUTHORED,7)){
+    hudPromptRow(rows-2,[{action:'interact',label:'PUT YOUR HAND ON THE SCREEN'}],cols,'ui-amber');
+  } else if(chunkSurfAvailable()){
     const prompt=`${BINDINGS.inputPrompt('interact')} ENTER SOURCE`;
     uiText(Math.max(2,Math.floor((cols-prompt.length)/2)),rows-2,prompt,'ui-amber');
   } else if(sourceFocus){
@@ -11900,7 +12083,10 @@ const teach=tutorialPromptsEnabled() ? TUT.tutorialPrompt() : null;
       : runtime.wedge?'REMOVE WEDGE':runtime.state==='open'||runtime.state==='opening'?'CLOSE DOOR':hasKey?'OPEN DOOR':'TRY LOCKED DOOR';
     hudPromptRow(rows-2,[{action:'interact',label:action}],cols,hasKey?'ui-amber':'ui-secondary');
   } else if(propHit){
-    const verb=propHit.dockInvestigation?'INVESTIGATE':propHit.sampleFamily?.length?'PLAY':'INSPECT';
+    const verb=propHit.action==='tower-relay-interrupt'?'BREAK'
+      :propHit.action==='tower-shutter-winch'?'RELEASE'
+        :propHit.action==='tower-hammer-isolator'?'ISOLATE'
+          :propHit.dockInvestigation?'INVESTIGATE':propHit.sampleFamily?.length?'PLAY':'INSPECT';
     hudPromptRow(rows-2,[{action:'interact',label:`${verb} ${propLabel(propHit)}`}],cols,'ui-amber');
   } else if(teach){
     const prompt=teach.toUpperCase().slice(0,Math.max(1,cols-4));
@@ -12348,7 +12534,7 @@ function installProbe(){
       return normalizePowerState(getSave().power);
     },
     electricalHum:()=>({...electricalHumFrame}),
-    garden:()=>({epoch:gardenEpoch,inside:inTheGarden(),
+    garden:()=>({epoch:gardenEpoch,layout:gardenLayoutId,inside:inTheGarden(),watch:{...gardenWatch},
       poses:GARDEN_DRIFT_PROPS.map((id)=>{const q=PROPS.propById(id);return q?{id,ox:+(q.renderOffsetX||0).toFixed(4),oz:+(q.renderOffsetZ||0).toFixed(4),yaw:+(q.yaw||0).toFixed(4),rx:q.rx,ry:q.ry}:null;})}),
     shiftGarden:(reason='probe')=>shiftGarden(reason),
     mischiefAt:(dx,dy)=>{ mischiefHeard={x:px+(Number(dx)||0),y:py+(Number(dy)||0),at:performance.now()}; return recentMischief(); },
@@ -12530,29 +12716,40 @@ async function bootScenes(){
     scenes.push(makeTitle({wantFullscreen}));
     if(pending)showReturnReport(pending);
   };
+  // `?firstinstall=1` is a Vite-only visual lab for the release screen; the
+  // production browser path cannot impersonate a native payload installation.
+  const firstInstall=(IS_TAURI && getMeta().lensRuntimeReady!==LENS_RUNTIME_MARKER)
+    || (import.meta.env?.DEV && qp.has('firstinstall'));
   const afterCalibration=()=>{
+    if(firstInstall){
+      metaCommit({lensRuntimeReady:LENS_RUNTIME_MARKER,lensRuntimeReadyAt:Date.now()});
+    }
     // Every launch gets the authored opening. Debug/lab destinations may change
     // what follows it, never the calibration -> credits ordering.
     scenes.push(makeOpeningCreditsScene({onDone:afterCredits}));
     syncPlatform().catch(()=>{});
   };
-  const calibrate=async()=>{
-    const lens=await requireLensStarted(qp);
+  const activateStartupBank=async(lens)=>{
     if(!lens)throw new Error('critical diffusion service unavailable');
     await lens.ready;
     const bank=lens.stats?.criticalBank||'calm';
     if(!await lens.activateBank?.(bank,{transitionMs:0}))throw new Error('startup materials could not be activated');
     return lens;
   };
+  const calibrate=async()=>activateStartupBank(await requireLensStarted(qp));
   const pushCalibration=()=>scenes.push(makeLensCalibrationScene({
     start:calibrate,
     retry:async()=>{
       const lens=window.__diffusion;
-      if(lens?.retry)await lens.retry();
-      else await calibrate();
+      if(!lens?.retry)return calibrate();
+      await lens.retry();
+      return activateStartupBank(lens);
     },
     onReady:afterCalibration,
     onQuit:requestQuitDesktop,
+    firstInstall,
+    minimize:minimizeNativeWindow,
+    restore:restoreNativeWindow,
   }));
   // The bundled model licence has to be accepted before the weights are asked
   // to do anything. Calibration is that moment, so the gate stands in front of

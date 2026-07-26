@@ -85,7 +85,9 @@ assert.match(torchInstaller, /Darwin[\s\S]*install\(\[TORCH_SPEC/, 'macOS gets t
 // A bare `torch` line in requirements would let the default-index CPU wheel
 // reinstall over the CUDA one. It must be the installer's job alone.
 assert.doesNotMatch(lensRequirements, /^torch(vision)?(\s|>|=|<|$)/m, 'requirements must not list torch; install_torch.py owns it');
+assert.match(lensRequirements, /^compel==2\.0\.3$/m, 'Compel is pinned as a mandatory long-prompt runtime dependency');
 assert.match(buildBundle, /cuda_build is None[\s\S]*CPU-only torch wheel/, 'the bundler refuses to freeze a CPU-only wheel for a CUDA target');
+assert.match(buildBundle, /import compel[\s\S]*"--collect-all",\s+"compel"/, 'the bundler validates and freezes Compel into the one-file sidecar');
 assert.match(yml, /Install GPU-correct PyTorch[\s\S]*install_torch\.py/, 'release installs GPU-correct torch before the requirements');
 assert.match(yml, /lens-bundle-v2-cu128/, 'the lens bundle cache key is bumped so the CPU-only build is not reused');
 assert.match(gpuSmoke, /install_torch\.py[\s\S]*requirements-local\.txt/, 'the GPU smoke also installs torch from the correct index first');

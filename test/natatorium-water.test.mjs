@@ -149,12 +149,17 @@ assert.match(rendererSource, /DEPTH RIDES IN THE ALPHA CHANNEL/);
 // string in the hub: the natatorium is one of only two places in the building with
 // real sky, and that is what makes the drained tile read.
 const { allAuthoredLights, LIGHT_KIND } = await import('../src/data/conservatory-lights.js');
-const spill = allAuthoredLights().filter((light) => light.id.startsWith('natatorium-'));
+const natatoriumLights = allAuthoredLights().filter((light) => light.id.startsWith('natatorium-'));
+const spill = natatoriumLights.filter((light) => light.kind === LIGHT_KIND.SKY);
 assert.equal(spill.length, 5, 'four roof spills and the end window');
 assert.ok(spill.every((light) => light.kind === LIGHT_KIND.SKY),
-  'it is daylight through a failed roof, not powered fittings — every practical here stays dead');
+  'the broad pool exposure is daylight through a failed roof, not a powered fitting');
 assert.ok(spill.every((light) => light.circuit === null), 'and it needs no mains');
 assert.ok(spill.some((light) => light.id === 'natatorium-roof-spill-north'));
 assert.ok(spill.some((light) => light.id === 'natatorium-roof-spill-south'));
+const emergency = natatoriumLights.filter((light) => light.kind === LIGHT_KIND.EMERGENCY);
+assert.equal(emergency.length, 4, 'the maintained egress route has four wall-mounted emergency fittings');
+assert.ok(emergency.every((light) => light.maintained && light.circuit === null && light.anchorPropId),
+  'egress lights stay maintained and resolve from their visible wall casings');
 
 console.log('natatorium water tests ok');

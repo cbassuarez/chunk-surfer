@@ -67,7 +67,7 @@ async function acceptEulaIfPresent(){
   await page.screenshot({path:path.join(output,'00-eula-gate.png')}).catch(()=>{});
   const eulaView=await page.evaluate(()=>window.__scenes?.top?.()?.view?.()||null);
   assert.equal(eulaView?.reviewOnly,false,'first-run EULA must be an acceptance gate');
-  assert.ok(eulaView?.sections>=3,'EULA gate must show required model-use sections');
+  assert.ok(eulaView?.sections>=12,'EULA gate must show the complete agreement, not only the model-use sections');
 
   const lensAlreadyStarted=await page.evaluate(()=>!!window.__diffusion);
   assert.equal(
@@ -205,7 +205,12 @@ try {
   // Academic-gallery sightline proof. These are fixed authored positions, not
   // a cinematic camera: the same player renderer used in the shipped build has
   // to resolve the garden, crown, bridge, gallery void and locked threshold.
-  if(!(await page.evaluate(()=>window.__probe.torch().on)))await page.keyboard.press('f');
+  await page.evaluate(()=>{
+    window.__probe.setTorchBattery(1);
+    window.__probe.setTorch(true);
+  });
+  assert.equal(await page.evaluate(()=>window.__probe.clearDiagnosticScenes()),true);
+  await page.waitForFunction(()=>window.__chunkParity?.().screen==='game',{timeout:interactionTimeout});
   const academicViews=[
     ['03a-academic-entrance-looking-up.png',83,7,2],
     ['03b-academic-garden-plaza.png',77,14,1],
@@ -215,6 +220,33 @@ try {
   ];
   for(const [name,x,y,facing] of academicViews){
     await page.evaluate((ax,ay,af)=>window.__probe.warpCell(ax,ay,af),x,y,facing);
+    await settleViewport();
+    await page.screenshot({path:path.join(output,name)});
+  }
+  // The debug probe applies the same authored layout change used after a real
+  // away interval. Capture both frames from one fixed player camera so a
+  // visually inert "drift" cannot pass on state changes alone.
+  await page.evaluate(()=>window.__probe.warpCell(83,9,2));
+  const gardenBefore=await page.evaluate(()=>window.__probe.garden());
+  await page.screenshot({path:path.join(output,'03aa-academic-garden-before-drift.png')});
+  await page.evaluate(()=>window.__probe.shiftGarden('visual-smoke'));
+  await settleViewport();
+  const gardenAfter=await page.evaluate(()=>window.__probe.garden());
+  assert.notEqual(gardenAfter.layout,gardenBefore.layout);
+  assert.ok(gardenAfter.poses.some((pose,index)=>{
+    const before=gardenBefore.poses[index];
+    return pose&&before&&Math.hypot(pose.ox-before.ox,pose.oz-before.oz)>=1.5;
+  }),'at least one garden piece must visibly leave its previous footprint');
+  await page.screenshot({path:path.join(output,'03ab-academic-garden-after-drift.png')});
+
+  // Two player-height checks through the narrow front-atrium/concert-hall
+  // vestibule. Decorative perimeter relief must stop before these doors, not
+  // bridge the portal or flash different slabs as the near plane crosses it.
+  for(const [name,x] of[
+    ['03f-atrium-hall-vestibule-approach.png',95],
+    ['03g-atrium-hall-vestibule-threshold.png',96],
+  ]){
+    await page.evaluate((ax)=>window.__probe.warpCell(ax,24,1),x);
     await settleViewport();
     await page.screenshot({path:path.join(output,name)});
   }
@@ -452,6 +484,8 @@ try {
   assert.ok(stairPerformance?.samples>=30,'active stair rendering must sustain the feature performance probe');
   assert.equal(await page.evaluate(()=>window.__probe.godWarpDock()),true,'stair capture exits atomically back into the building');
   await page.waitForFunction(()=>window.__probe?.stairAnomaly?.().active===false,{timeout:interactionTimeout});
+  assert.equal(await page.evaluate(()=>window.__probe.clearDiagnosticScenes()),true);
+  await page.waitForFunction(()=>window.__chunkParity?.().screen==='game',{timeout:interactionTimeout});
   console.log('visual smoke: permanent and impossible stairs captured');
 
   assert.equal(await page.evaluate(()=>window.__probe.chunkSurfStart()),true);
