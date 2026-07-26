@@ -1,0 +1,42 @@
+diff --git a/src/main.js b/src/main.js
+index baefe7d..9fea8bc 100644
+--- a/src/main.js
++++ b/src/main.js
+@@ -12367,6 +12367,13 @@ function installProbe(){
+     hushContact:()=>beginHushContactFlash({taken:false,reason:'probe-contact',intensity:1}),
+     hushWarning:(seed=4417)=>openHushSensation(HUSH_SENSATION_MODE.PROXIMITY,{seed:Number(seed)||4417}),
+     hushBrush:(seed=4417)=>openDebugHushBrush(seed),
++    // Visual-only brush opener for smoke coverage. The release/hard paths above
++    // use openDebugHushBrush so they still exercise a real deferred contact
++    // attempt; reduced-dread only needs the authored brush scene and lens profile.
++    hushBrushVisual:(seed=4417)=>{
++      if(usingSpecialSpace()||hushSensationMode)return false;
++      return openHushSensation(HUSH_SENSATION_MODE.BRUSH,{seed:Number(seed)||4417,attempt:null});
++    },
+     hushDecision:(roll=.1,seed=.5,takeBreak=false)=>chooseHushContactExperience(
+       hushContactContext({takeBreak:!!takeBreak}),
+       {rng:(()=>{const values=[Number(roll)||0,Number(seed)||0];return()=>values.shift()??0;})()},
+diff --git a/tools/chunk_surfer/tests/feature-regression-smoke.mjs b/tools/chunk_surfer/tests/feature-regression-smoke.mjs
+index 665d5f8..0f9ba4d 100644
+--- a/tools/chunk_surfer/tests/feature-regression-smoke.mjs
++++ b/tools/chunk_surfer/tests/feature-regression-smoke.mjs
+@@ -443,11 +443,15 @@ try {
+   assert.equal(afterHard.rec.injuries,beforeHard.rec.injuries+1);
+   await new Promise((resolve)=>setTimeout(resolve,750));
+ 
+-  await page.evaluate(()=>window.__probe.setReduceDread(true));
+-  assert.equal(await page.evaluate(()=>window.__probe.hushBrush(9001)),true);
+-  await advanceThoughtToBranch();
++  await smokeStep('open reduced-dread hush brush visual', async()=>{
++    assert.equal(await page.evaluate(()=>window.__probe.clearDiagnosticScenes()),true);
++    await page.waitForFunction(()=>window.__chunkParity?.().screen==='game',{timeout:interactionTimeout});
++    await page.evaluate(()=>window.__probe.setReduceDread(true));
++    assert.equal(await page.evaluate(()=>window.__probe.hushBrushVisual()),true);
++    await advanceThoughtToBranch();
++  });
+   assert.equal(await page.evaluate(()=>window.__probe.lookProfile()),'calm','reduced effects remove the moving HUSH look');
+-  await page.screenshot({path:path.join(output,'06e-hush-brush-reduced.png')});
++  await safeScreenshot('06e-hush-brush-reduced.png');
+   assert.equal(await page.evaluate(()=>window.__probe.clearDiagnosticScenes()),true);
+   await page.evaluate(()=>window.__probe.setReduceDread(false));
+ 

@@ -12367,6 +12367,13 @@ function installProbe(){
     hushContact:()=>beginHushContactFlash({taken:false,reason:'probe-contact',intensity:1}),
     hushWarning:(seed=4417)=>openHushSensation(HUSH_SENSATION_MODE.PROXIMITY,{seed:Number(seed)||4417}),
     hushBrush:(seed=4417)=>openDebugHushBrush(seed),
+    // Visual-only brush opener for smoke coverage. The release/hard paths above
+    // use openDebugHushBrush so they still exercise a real deferred contact
+    // attempt; reduced-dread only needs the authored brush scene and lens profile.
+    hushBrushVisual:(seed=4417)=>{
+      if(usingSpecialSpace()||hushSensationMode)return false;
+      return openHushSensation(HUSH_SENSATION_MODE.BRUSH,{seed:Number(seed)||4417,attempt:null});
+    },
     hushDecision:(roll=.1,seed=.5,takeBreak=false)=>chooseHushContactExperience(
       hushContactContext({takeBreak:!!takeBreak}),
       {rng:(()=>{const values=[Number(roll)||0,Number(seed)||0];return()=>values.shift()??0;})()},
