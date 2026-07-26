@@ -183,17 +183,23 @@ const roomRuntime = runtimeTree('room-listen.main_b3', { label: 'The Concert Hal
 assert.match(JSON.stringify(roomRuntime), /The Concert Hall/);
 
 const readStory = async (id) => JSON.parse(await readFile(`content/narrative/${id}.story.json`, 'utf8'));
+const withoutLineSourceIds = (lines) => lines.map((line) => {
+  if (!line || typeof line !== 'object' || Array.isArray(line)) return line;
+  const { sourceId, ...visibleLine } = line;
+  return visibleLine;
+});
+const runtimeStartLines = async (id) => withoutLineSourceIds(rehydrateTree(await readStory(id)).start.lines);
 for (const named of [false, true]) for (const injuries of [0, 2, 5]) {
   const id = `ending.sacrifice.${named ? 'named' : 'unnamed'}.injuries-${injuries}`;
-  assert.deepEqual(rehydrateTree(await readStory(id)).start.lines, sacrificeEnding({ named, injuries }), id);
+  assert.deepEqual(await runtimeStartLines(id), sacrificeEnding({ named, injuries }), id);
 }
 for (const named of [false, true]) {
-  assert.deepEqual(rehydrateTree(await readStory(`ending.rescue.${named ? 'named' : 'unnamed'}`)).start.lines, rescueEnding(named));
-  assert.deepEqual(rehydrateTree(await readStory(`ending.helped.${named ? 'named' : 'unnamed'}`)).start.lines, helpedEnding({ named }));
+  assert.deepEqual(await runtimeStartLines(`ending.rescue.${named ? 'named' : 'unnamed'}`), rescueEnding(named));
+  assert.deepEqual(await runtimeStartLines(`ending.helped.${named ? 'named' : 'unnamed'}`), helpedEnding({ named }));
 }
-assert.deepEqual(rehydrateTree(await readStory('ending.drugged.complete')).start.lines, druggedReveal({ takes: 5 }));
-assert.deepEqual(rehydrateTree(await readStory('ending.drugged.partial')).start.lines, druggedReveal({ takes: 4 }));
-for (const variant of ['out', 'client', 'nobody', 'helped', 'drugged']) assert.deepEqual(rehydrateTree(await readStory(`ending.epilogue.${variant}`)).start.lines, guardEpilogue(variant));
+assert.deepEqual(await runtimeStartLines('ending.drugged.complete'), druggedReveal({ takes: 5 }));
+assert.deepEqual(await runtimeStartLines('ending.drugged.partial'), druggedReveal({ takes: 4 }));
+for (const variant of ['out', 'client', 'nobody', 'helped', 'drugged']) assert.deepEqual(await runtimeStartLines(`ending.epilogue.${variant}`), guardEpilogue(variant));
 for (const fixture of [
   ['nothing', { kind: 'nothing' }], ['name-sarah', { kind: 'name', value: 'Sarah' }],
   ['reason-money', { kind: 'reason', value: 'money' }], ['feeling', { kind: 'feeling', value: 'dread' }],
