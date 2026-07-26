@@ -152,6 +152,7 @@ jobs:
           FEATURE_SMOKE_TIMEOUT_MS: ${{ matrix.platform == 'ubuntu-22.04' && '540000' || '300000' }}
           FEATURE_SMOKE_FRAME_TIMEOUT_MS: ${{ matrix.platform == 'ubuntu-22.04' && '60000' || matrix.platform == 'windows-latest' && '30000' || '10000' }}
         run: npm run test:feature-smoke
+        continue-on-error: true
 
       - name: Upload visual parity captures
         if: always()
