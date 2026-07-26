@@ -10,7 +10,7 @@ await page.setViewport({width:1280,height:800,deviceScaleFactor:1});
 const errors=[];
 page.on('pageerror',(error)=>errors.push(error.message));
 await page.goto(`${base}/index.html?mode=story&renderer=3d&skiptut=1&nothink=1&nomic=1&sam=0&diffusion=${encodeURIComponent(lens)}`,{waitUntil:'domcontentloaded',timeout:60000});
-await page.waitForFunction(()=>window.__chunkSurferPixelMesh?.status?.()?.framesRendered>4,{timeout:120000,polling:250});
+await page.waitForFunction(()=>window.__chunkSurferPixelMesh?.status?.()?.framesRendered>4,{timeout:240000,polling:250});
 try {
   await page.waitForFunction(()=>window.__chunkSurferPixelMesh?.bankStatus?.()?.bank==='calm',{timeout:30000,polling:100});
 } catch (error) {

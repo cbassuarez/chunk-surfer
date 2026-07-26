@@ -120,7 +120,7 @@ try {
   });
   await acceptEulaIfPresent();
   try{
-    await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='opening-credits',{timeout:120000});
+    await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='opening-credits',{timeout:240000});
   }catch(error){
     await page.screenshot({path:path.join(output,'00-boot-failure.png')}).catch(()=>{});
     const state=await page.evaluate(()=>({

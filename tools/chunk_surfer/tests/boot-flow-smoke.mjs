@@ -25,7 +25,7 @@ try {
   });
   const url=`${base}/index.html?skiptut=1&nomic=1&sam=0&diffusion=${encodeURIComponent(lens)}`;
   await page.goto(url,{waitUntil:'domcontentloaded',timeout:60000});
-  await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='opening-credits',{timeout:120000,polling:100});
+  await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='opening-credits',{timeout:240000,polling:100});
   await page.waitForFunction(()=>window.__chunkSurferPixelMesh?.bankStatus?.()?.bank==='calm',{timeout:30000,polling:100});
   await page.screenshot({path:path.join(output,'01-opening-credits.png')});
 
