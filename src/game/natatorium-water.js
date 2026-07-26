@@ -155,7 +155,9 @@ export function waterUvForPoint(x, y, bounds) {
 }
 
 export function natatoriumWaterBlocks(run, x, y, bounds) {
-  return natatoriumWaterActive(run) && pointInNatatoriumBasin(Math.floor(x), Math.floor(y), bounds);
+  // Water is presentation and narrative state, never a collision volume.
+  void run; void x; void y; void bounds;
+  return false;
 }
 
 export function makeNatatoriumRippleSources({

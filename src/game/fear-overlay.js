@@ -1,6 +1,64 @@
 import { uiDraw } from '../render/ui.js';
+import { visualEffectsEnabled } from './access.js';
 
 const clamp01 = (value) => Math.max(0, Math.min(1, Number(value) || 0));
+const REDUCED_MOTION = typeof matchMedia === 'function'
+  && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function edgePoint(seed, index, width, height, inset) {
+  const side = (seed + index * 7) % 4;
+  const along = (((seed * 47 + index * 131) % 997) / 997);
+  if (side === 0) return { x: along * width, y: inset };
+  if (side === 1) return { x: width - inset, y: along * height };
+  if (side === 2) return { x: along * width, y: height - inset };
+  return { x: inset, y: along * height };
+}
+
+function drawPeripheralPrickle(ctx, frame, nowMs, width, height, dpr) {
+  const amount = clamp01(frame.dread * 0.7 + frame.hiss * 0.4);
+  if (amount <= 0.08) return;
+  const seed = REDUCED_MOTION ? 4417 : Math.floor(nowMs / 260);
+  const count = Math.floor(7 + amount * 19);
+  ctx.save();
+  ctx.strokeStyle = `rgba(196,221,213,${0.025 + amount * 0.075})`;
+  ctx.lineWidth = Math.max(0.6, dpr * 0.52);
+  for (let index = 0; index < count; index += 1) {
+    const point = edgePoint(seed, index, width, height, 2.5 * dpr);
+    const horizontal = point.y < height * 0.1 || point.y > height * 0.9;
+    const length = (2 + ((seed + index * 11) % 7)) * dpr;
+    ctx.beginPath();
+    ctx.moveTo(point.x, point.y);
+    ctx.lineTo(point.x + (horizontal ? length : 0), point.y + (horizontal ? 0 : length));
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawColdFlecks(ctx, frame, nowMs, width, height, dpr) {
+  if (frame.hiss <= 0.08) return;
+  const seed = REDUCED_MOTION ? 194 : Math.floor(nowMs / 310);
+  const count = Math.floor(3 + frame.hiss * 13);
+  ctx.save();
+  ctx.fillStyle = `rgba(155,228,217,${0.025 + frame.hiss * 0.08})`;
+  for (let index = 0; index < count; index += 1) {
+    const point = edgePoint(seed * 3, index, width, height, (5 + (index % 3) * 3) * dpr);
+    const length = (1 + ((seed + index * 17) % 4)) * dpr;
+    ctx.fillRect(point.x, point.y, length, Math.max(0.7, dpr * 0.48));
+  }
+  ctx.restore();
+}
+
+function drawPulseCorners(ctx, frame, width, height, dpr) {
+  if (frame.pulse <= 0.02) return;
+  const reach = Math.max(18 * dpr, Math.min(width, height) * 0.08);
+  ctx.save();
+  ctx.fillStyle = `rgba(24,1,2,${frame.pulse * 0.065})`;
+  for (const [x, y] of [[0, 0], [width - reach, 0], [0, height - reach], [width - reach, height - reach]]) {
+    ctx.fillRect(x, y, reach, reach * 0.28);
+    ctx.fillRect(x, y, reach * 0.28, reach);
+  }
+  ctx.restore();
+}
 
 export function fearOverlayFrame(pressure = {}, nowMs = 0) {
   const heartbeat = clamp01(pressure.heartbeat);
@@ -23,6 +81,7 @@ export function fearOverlayFrame(pressure = {}, nowMs = 0) {
 
 export function drawFearOverlay(pressure, nowMs = performance.now()) {
   const frame = fearOverlayFrame(pressure, nowMs);
+  if (!visualEffectsEnabled()) return frame;
   if (frame.edgeAlpha < 0.002 && frame.staticAlpha < 0.002) return frame;
 
   uiDraw(({ ctx, dpr, cellW, cellH, cols, rows }) => {
@@ -42,19 +101,18 @@ export function drawFearOverlay(pressure, nowMs = performance.now()) {
       ctx.fillRect(0, 0, width, height);
     }
 
+    drawPeripheralPrickle(ctx, frame, nowMs, width, height, dpr);
+    drawColdFlecks(ctx, frame, nowMs, width, height, dpr);
+    drawPulseCorners(ctx, frame, width, height, dpr);
+
     if (frame.staticAlpha > 0.002) {
-      const seed = Math.floor(nowMs / 47);
-      ctx.fillStyle = `rgba(170,225,208,${frame.staticAlpha})`;
-      const count = Math.floor(18 + frame.hiss * 76);
-      for (let index = 0; index < count; index++) {
-        const x = ((seed * 73 + index * 199) % 997) / 997 * width;
-        const y = ((seed * 151 + index * 83) % 991) / 991 * height;
-        const length = (2 + ((seed + index * 17) % 29)) * dpr;
-        ctx.fillRect(x, y, length, Math.max(1, dpr * 0.55));
-      }
       ctx.fillStyle = `rgba(112,255,230,${frame.scanAlpha})`;
-      const scanY = ((nowMs * (0.04 + frame.hiss * 0.08)) % (height + 24 * dpr)) - 12 * dpr;
-      ctx.fillRect(0, scanY, width, Math.max(1, dpr));
+      const scanY = REDUCED_MOTION
+        ? height * 0.16
+        : ((nowMs * (0.04 + frame.hiss * 0.08)) % (height + 24 * dpr)) - 12 * dpr;
+      const span = width * 0.16;
+      ctx.fillRect(0, scanY, span, Math.max(1, dpr));
+      ctx.fillRect(width - span, scanY, span, Math.max(1, dpr));
     }
     ctx.restore();
   });

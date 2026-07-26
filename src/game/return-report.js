@@ -7,6 +7,7 @@ import { consumeReturnReport } from '../progression/runtime.js';
 import { formatDuration, returnDefinition } from '../progression/report.js';
 import * as AUDIO from '../audio/story-audio.js';
 import { promptLine } from './bindings.js';
+import { roomLabel } from '../audio/manifest-map.js';
 
 const chunk = (values, size) => {
   const out = [];
@@ -29,11 +30,14 @@ const FEATURE_LABELS = Object.freeze({
 
 function reportRows(summary) {
   const ret = returnDefinition(summary.endingId);
+  const contaminated = summary.takes?.contaminated || [];
   return [
     ['ENDING', ret?.title || summary.endingId.toUpperCase()],
     ['DIFFICULTY', String(summary.rules?.startedPreset || 'contract').replaceAll('-', ' ').toUpperCase()],
     ['TAKES', `${summary.takes.completed} / 5`],
     ['SPOILED', String(summary.takes.spoiled)],
+    ['NOISE FLOOR', contaminated.length ? `${contaminated.length} TAKE${contaminated.length===1?'':'S'} / BALLAST` : 'CLEAN'],
+    ...(contaminated.length?[['MARKED',contaminated.map((id)=>roomLabel(id).toUpperCase()).join(' · ')]]:[]),
     ['INJURIES', String(summary.injuries)],
     ['DISCLOSURES', `${summary.disclosures.found} / ??`],
     ['EQUIPMENT', `${summary.equipment.returned} / ${summary.equipment.issued} RETURNED`],

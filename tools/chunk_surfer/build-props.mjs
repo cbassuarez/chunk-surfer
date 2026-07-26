@@ -31,11 +31,20 @@ const materials = [
   ['oxidised bronze', [0.16, 0.29, 0.24, 1], 0.72, 0.58],
   ['dry soil', [0.17, 0.12, 0.075, 1], 0.0, 1.0],
   ['dead foliage', [0.28, 0.25, 0.14, 1], 0.0, 0.96],
+  ['pool enamel blue', [0.055, 0.22, 0.31, 1], 0.04, 0.38],
+  ['pool mint glaze', [0.38, 0.59, 0.53, 1], 0.0, 0.34],
+  ['aged white paint', [0.69, 0.72, 0.66, 1], 0.03, 0.68],
+  ['safety red', [0.56, 0.045, 0.025, 1], 0.0, 0.56],
+  ['wired roof glass', [0.29, 0.49, 0.54, 1], 0.0, 0.24],
 ].map(([name, baseColorFactor, metallicFactor, roughnessFactor]) => ({
   name, pbrMetallicRoughness: { baseColorFactor, metallicFactor, roughnessFactor },
 }));
 
-const MAT = { dark:0, wood:1, black:2, steel:3, ivory:4, brass:5, cloth:6, cone:7, paper:8, portrait:9, stone:10, plaster:11, bronze:12, soil:13, deadLeaf:14 };
+const MAT = {
+  dark:0, wood:1, black:2, steel:3, ivory:4, brass:5, cloth:6, cone:7,
+  paper:8, portrait:9, stone:10, plaster:11, bronze:12, soil:13, deadLeaf:14,
+  poolBlue:15, poolMint:16, agedWhite:17, safetyRed:18, roofGlass:19,
+};
 
 // Real source models, supplied by the user (FabConvert / SketchUp conversions).
 // Provenance is UNVERIFIED and recorded as such in credits.json; the runtime
@@ -130,6 +139,47 @@ function addBeam(m,a,b,w,mat){
 }
 
 function addQuad(m,a,b,c,d,mat){const g=group(m,mat),base=g.positions.length/3,u=b.map((q,i)=>q-a[i]),v=c.map((q,i)=>q-a[i]),n=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]],l=Math.hypot(...n)||1;for(const p of[a,b,c,d]){g.positions.push(...p);g.normals.push(...n.map(q=>q/l));}g.indices.push(base,base+1,base+2,base,base+2,base+3);}
+
+function addPlateBeamXY(m,a,b,w,mat){
+  // A flat, double-sided steel member in the XY plane. Pool-roof ribs and
+  // perforated ties are cut plate, so giving every short arc segment six box
+  // faces wastes triangles and makes the apertures read like bent scaffold.
+  const dx=b[0]-a[0],dy=b[1]-a[1],length=Math.hypot(dx,dy)||1;
+  const ox=-dy/length*w/2,oy=dx/length*w/2,z=(a[2]+b[2])/2;
+  const p0=[a[0]+ox,a[1]+oy,z],p1=[b[0]+ox,b[1]+oy,z];
+  const p2=[b[0]-ox,b[1]-oy,z],p3=[a[0]-ox,a[1]-oy,z];
+  addQuad(m,p0,p1,p2,p3,mat);
+  addQuad(m,p3,p2,p1,p0,mat);
+}
+
+function addRingBeam(m, centre, radius, section, mat, segments=16, start=0, end=Math.PI*2){
+  const points=[];
+  for(let i=0;i<=segments;i++){
+    const a=start+(end-start)*(i/segments);
+    points.push([centre[0]+Math.cos(a)*radius,centre[1]+Math.sin(a)*radius,centre[2]]);
+  }
+  for(let i=0;i<points.length-1;i++)addPlateBeamXY(m,points[i],points[i+1],section,mat);
+}
+
+function addRingBeamYZ(m, centre, radius, section, mat, segments=16, start=0, end=Math.PI*2){
+  const points=[];
+  for(let i=0;i<=segments;i++){
+    const a=start+(end-start)*(i/segments);
+    points.push([centre[0],centre[1]+Math.cos(a)*radius,centre[2]+Math.sin(a)*radius]);
+  }
+  for(let i=0;i<points.length-1;i++)addBeam(m,points[i],points[i+1],section,mat);
+}
+
+function addTriangle(m,a,b,c,mat){
+  const g=group(m,mat),u=b.map((q,i)=>q-a[i]),v=c.map((q,i)=>q-a[i]);
+  const raw=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]],l=Math.hypot(...raw)||1,n=raw.map(q=>q/l);
+  let base=g.positions.length/3;
+  for(const p of[a,b,c]){g.positions.push(...p);g.normals.push(...n);}
+  g.indices.push(base,base+1,base+2);
+  base=g.positions.length/3;
+  for(const p of[c,b,a]){g.positions.push(...p);g.normals.push(...n.map(q=>-q));}
+  g.indices.push(base,base+1,base+2);
+}
 
 // Repeating furniture.
 {
@@ -251,15 +301,162 @@ function addQuad(m,a,b,c,d,mat){const g=group(m,mat),base=g.positions.length/3,u
   addCylinder(m,[0,.150,0],.020,.026,MAT.brass,12);  // knurled head
   addCylinder(m,[0,.168,0],.008,.014,MAT.ivory,8);   // bright reference tip
 }
-{const m=mesh('pool_start_block');addBox(m,[0,.34,0],[.50,.68,.48],MAT.steel);addBox(m,[0,.72,-.08],[.62,.09,.62],MAT.ivory,.12);}
-{const m=mesh('lifeguard_chair');addBox(m,[0,1.35,.1],[.62,.08,.55],MAT.wood);addBox(m,[0,1.68,.34],[.62,.62,.08],MAT.wood);for(const x of[-.27,.27])for(const z of[-.2,.35])addBox(m,[x,.68,z],[.055,1.35,.055],MAT.steel,.08);}
-{const m=mesh('lane_reel');addCylinder(m,[0,.72,0],.36,.52,MAT.steel,18);addBox(m,[0,.25,0],[.92,.08,.50],MAT.steel);for(const x of[-.38,.38])addBox(m,[x,.45,0],[.06,.72,.06],MAT.steel);}
+{
+  // A municipal-baths roof rather than a second room shell. Repeated curved
+  // ribs spring from the real perimeter walls; the deep ties are made from
+  // alternating large and small circular apertures, the characteristic
+  // perforated-steel language of later British pool refits. There are no
+  // triangular trusses and no wall planes below the eaves.
+  const m=mesh('natatorium_roof_structure'),z0=-9.75,z1=9.75,bay=3.25;
+  const roofY=(x)=>5.18+3.86*Math.pow(Math.max(0,Math.cos((x/11.35)*Math.PI*.5)),.72);
+  for(let z=z0;z<=z1+.01;z+=bay){
+    let previous=[-11.35,roofY(-11.35),z];
+    for(let i=1;i<=16;i++){
+      const x=-11.35+(22.7*i/16),next=[x,roofY(x),z];
+      addPlateBeamXY(m,previous,next,.17,MAT.agedWhite);previous=next;
+    }
+    addPlateBeamXY(m,[-10.65,6.24,z],[10.65,6.24,z],.13,MAT.agedWhite);
+    addPlateBeamXY(m,[-10.65,7.72,z],[10.65,7.72,z],.13,MAT.agedWhite);
+    addPlateBeamXY(m,[-10.65,6.24,z],[-10.65,7.72,z],.13,MAT.agedWhite);
+    addPlateBeamXY(m,[10.65,6.24,z],[10.65,7.72,z],.13,MAT.agedWhite);
+    for(const x of[-9,-6,-3,0,3,6,9]){
+      addRingBeam(m,[x,6.98,z],.72,.105,MAT.agedWhite,8);
+    }
+    for(const x of[-7.5,-4.5,-1.5,1.5,4.5,7.5]){
+      addRingBeam(m,[x,6.98,z],.30,.08,MAT.agedWhite,6);
+    }
+  }
+  for(const x of[-10.6,-8,-5.2,-2.5,0,2.5,5.2,8,10.6]){
+    addBeam(m,[x,roofY(x),z0],[x,roofY(x),z1],.105,x===0?MAT.steel:MAT.agedWhite);
+  }
+  for(let z=z0;z<z1-.01;z+=bay){
+    const a=z+.12,b=Math.min(z+bay-.12,z1);
+    addQuad(m,[-5.05,roofY(-5.05)-.05,a],[-.82,roofY(-.82)-.05,a],[-.82,roofY(-.82)-.05,b],[-5.05,roofY(-5.05)-.05,b],MAT.roofGlass);
+    addQuad(m,[.82,roofY(.82)-.05,a],[5.05,roofY(5.05)-.05,a],[5.05,roofY(5.05)-.05,b],[.82,roofY(.82)-.05,b],MAT.roofGlass);
+  }
+}
+{
+  // Continuous changing cubicles line the outside walls, as at Warrender and
+  // the older municipal baths. Their shallow backs sit against the actual
+  // envelope; they never create a walkable air gap or an inner wall.
+  const m=mesh('natatorium_cubicle_bank'),count=8,bay=1.82,start=-count*bay/2;
+  addBox(m,[0,.55,.12],[count*bay,1.10,.16],MAT.poolMint);
+  addBox(m,[0,2.25,.12],[count*bay,.42,.16],MAT.agedWhite);
+  addBox(m,[0,.10,-.015],[count*bay,.20,.24],MAT.dark);
+  addBox(m,[0,2.03,-.02],[count*bay,.12,.28],MAT.poolBlue);
+  for(let i=0;i<=count;i++)addBox(m,[start+i*bay,1.18,-.02],[.10,2.22,.30],MAT.agedWhite);
+  for(let i=0;i<count;i++){
+    const x=start+(i+.5)*bay;
+    if(i===3){
+      addBox(m,[x-.34,1.08,-.35],[1.36,1.72,.09],MAT.poolBlue,-.62);
+    }else{
+      addBox(m,[x,1.08,-.11],[1.54,1.72,.08],i%3===0?MAT.poolMint:MAT.poolBlue);
+    }
+    addBox(m,[x,2.25,-.02],[1.48,.26,.05],MAT.roofGlass);
+    addCylinder(m,[x+.58,1.10,-.18],.025,.045,MAT.brass,8);
+  }
+}
+{
+  const m=mesh('changing_bench');
+  for(const z of[-.16,-.05,.06,.17])addBox(m,[0,.49,z],[2.15,.055,.085],MAT.wood);
+  for(const x of[-.82,.82]){
+    addBox(m,[x,.25,0],[.07,.48,.40],MAT.steel);
+    addBox(m,[x,.04,0],[.38,.07,.48],MAT.steel);
+  }
+}
+{
+  const m=mesh('natatorium_end_window');
+  addBox(m,[0,.18,0],[10.4,.36,.24],MAT.stone);
+  for(const x of[-3.45,0,3.45]){
+    addBox(m,[x,1.95,.04],[2.25,3.18,.08],MAT.roofGlass);
+    addBox(m,[x-1.18,2.25,0],[.16,4.15,.22],MAT.stone);
+    addBox(m,[x+1.18,2.25,0],[.16,4.15,.22],MAT.stone);
+    addRingBeam(m,[x,3.53,0],1.18,.15,MAT.stone,12,0,Math.PI);
+    addBeam(m,[x,3.53,-.02],[x,4.65,-.02],.065,MAT.agedWhite);
+    addBeam(m,[x-1.05,3.52,-.02],[x+1.05,3.52,-.02],.065,MAT.agedWhite);
+    for(const mullion of[-.55,.55])addBox(m,[x+mullion,1.95,-.02],[.065,3.05,.09],MAT.agedWhite);
+  }
+}
+{
+  const m=mesh('natatorium_clock');
+  addBox(m,[0,0,0],[1.08,1.08,.09],MAT.dark);
+  addRingBeam(m,[0,0,-.08],.45,.055,MAT.agedWhite,20);
+  for(let i=0;i<12;i++){
+    const a=i*Math.PI/6,inside=[Math.cos(a)*.34,Math.sin(a)*.34,-.10],outside=[Math.cos(a)*.41,Math.sin(a)*.41,-.10];
+    addBeam(m,inside,outside,.025,MAT.agedWhite);
+  }
+  addBeam(m,[0,0,-.13],[.04,.28,-.13],.045,MAT.agedWhite);
+  addBeam(m,[0,0,-.14],[-.23,-.12,-.14],.035,MAT.safetyRed);
+}
+{
+  const m=mesh('pool_lane_ropes');
+  for(const x of[-3.6,-1.2,1.2,3.6]){
+    addBeam(m,[x,.065,-7.45],[x,.065,7.45],.035,MAT.steel);
+    let n=0;
+    for(let z=-7.25;z<=7.25;z+=.52,n++)addBox(m,[x,.075,z],[.12,.10,.28],n%5===0?MAT.safetyRed:n%2?MAT.agedWhite:MAT.poolBlue);
+  }
+}
+{
+  const m=mesh('pool_backstroke_flags');
+  addBeam(m,[-6.05,2.78,0],[6.05,2.78,0],.025,MAT.steel);
+  let index=0;
+  for(let x=-5.7;x<=5.7;x+=.76,index++){
+    const mat=index%3===0?MAT.safetyRed:index%3===1?MAT.agedWhite:MAT.poolBlue;
+    addTriangle(m,[x-.27,2.73,0],[x+.27,2.73,0],[x,2.20,.015],mat);
+  }
+}
+{
+  const m=mesh('pool_ladder');
+  for(const x of[-.29,.29]){
+    addBeam(m,[x,.02,.52],[x,.92,.28],.055,MAT.steel);
+    addBeam(m,[x,.92,.28],[x,1.22,-.18],.055,MAT.steel);
+  }
+  for(let i=0;i<4;i++)addBeam(m,[-.29,.18+i*.20,.46-i*.055],[.29,.18+i*.20,.46-i*.055],.045,MAT.steel);
+  addBox(m,[0,.025,-.02],[.82,.05,.18],MAT.ivory);
+}
+{
+  const m=mesh('pool_lifebuoy');
+  addRingBeam(m,[0,0,0],.46,.12,MAT.safetyRed,20);
+  addBeam(m,[-.31,-.31,-.02],[.31,.31,-.02],.055,MAT.agedWhite);
+  addBeam(m,[-.31,.31,-.02],[.31,-.31,-.02],.055,MAT.agedWhite);
+}
+{
+  const m=mesh('pool_start_block');
+  addBox(m,[0,.33,.04],[.48,.66,.46],MAT.steel);
+  addBox(m,[0,.72,-.08],[.64,.09,.66],MAT.agedWhite,.12);
+  addBox(m,[0,.43,-.225],[.32,.32,.035],MAT.poolBlue);
+  for(const x of[-.18,.18])addBeam(m,[x,.05,.25],[x,.56,.29],.035,MAT.steel);
+}
+{
+  const m=mesh('lifeguard_chair');
+  addBox(m,[0,1.46,.08],[.68,.09,.58],MAT.wood);
+  addBox(m,[0,1.78,.34],[.68,.56,.08],MAT.wood);
+  for(const x of[-.30,.30]){
+    addBeam(m,[x,.04,-.34],[x,1.46,-.16],.055,MAT.steel);
+    addBeam(m,[x,.04,.46],[x,1.48,.34],.055,MAT.steel);
+    addBeam(m,[x,1.48,-.16],[x,1.84,-.26],.045,MAT.steel);
+  }
+  for(let i=0;i<5;i++)addBeam(m,[-.30,.30+i*.22,-.30+i*.03],[.30,.30+i*.22,-.30+i*.03],.045,MAT.steel);
+  addBeam(m,[-.44,1.58,-.02],[.44,1.58,-.02],.045,MAT.steel);
+}
+{
+  const m=mesh('lane_reel');
+  addBox(m,[0,.14,0],[1.0,.09,.62],MAT.steel);
+  for(const x of[-.39,.39]){
+    addBeam(m,[x,.16,-.23],[x,.74,0],.055,MAT.steel);
+    addRingBeamYZ(m,[x,.76,0],.38,.055,MAT.steel,16);
+  }
+  addBeam(m,[-.46,.76,0],[.46,.76,0],.075,MAT.steel);
+  for(let a=0;a<Math.PI*2;a+=Math.PI/5)addBeam(m,[-.37,.76,0],[.37,.76+Math.cos(a)*.30,Math.sin(a)*.30],.025,a>Math.PI?MAT.safetyRed:MAT.poolBlue);
+  addBeam(m,[.40,.76,0],[.60,.96,.12],.045,MAT.brass);
+  addCylinder(m,[.60,.98,.12],.055,.12,MAT.wood,10);
+}
 {const m=mesh('drain_grille');addBox(m,[0,.025,0],[1.2,.05,.18],MAT.steel);for(let x=-.52;x<=.52;x+=.13)addBox(m,[x,.055,0],[.025,.03,.15],MAT.dark);}
 {
   const m=mesh('pool_lane_markings');
-  for(const x of[-6.55,-3.95,-1.3,1.3,3.95,6.55]){
-    addBox(m,[x,.018,-.25],[.16,.036,19.3],MAT.ivory);
-    addBox(m,[x,.022,8.35],[1.05,.042,.15],MAT.dark);
+  for(const x of[-4.8,-2.4,0,2.4,4.8]){
+    addBox(m,[x,.018,0],[.16,.036,15.35],MAT.ivory);
+    addBox(m,[x,.022,-6.75],[1.05,.042,.15],MAT.dark);
   }
 }
 {

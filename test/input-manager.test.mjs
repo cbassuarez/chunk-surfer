@@ -104,15 +104,13 @@ test('keyboard axes support first-person turn and forward contracts', () => {
   assert.deepEqual(keyboardAxes(held), { moveX: 0, moveY: 1, turnX: 1 });
 });
 
-test('independent keyboard modes assign one key cluster to motion and the other to camera', () => {
+test('direct keyboard control combines both movement clusters and reserves looking for pointer or stick', () => {
   const held = new Set(['KeyW', 'KeyD', 'ArrowUp', 'ArrowLeft']);
-  assert.deepEqual(keyboardMotionAxes(held, 'independent-wasd'), { moveX: 1, moveY: 1 });
-  assert.deepEqual(keyboardLookAxes(held, 'independent-wasd'), { turnX: -1, lookY: 1 });
-  assert.deepEqual(keyboardMotionAxes(held, 'independent-arrows'), { moveX: -1, moveY: 1 });
-  assert.deepEqual(keyboardLookAxes(held, 'independent-arrows'), { turnX: 1, lookY: 1 });
-  assert.equal(keyboardCodeRole('KeyA', 'independent-wasd'), 'move');
-  assert.equal(keyboardCodeRole('ArrowLeft', 'independent-wasd'), 'look');
-  assert.equal(normalizeControlMode('broken'), 'classic');
+  assert.deepEqual(keyboardMotionAxes(held), { moveX: 0, moveY: 1 });
+  assert.deepEqual(keyboardLookAxes(held), { turnX: 0, lookY: 0 });
+  assert.equal(keyboardCodeRole('KeyA'), 'move');
+  assert.equal(keyboardCodeRole('ArrowLeft'), 'move');
+  assert.equal(normalizeControlMode('broken'), 'direct');
 });
 
 test('deadzone renormalizes analog input', () => {

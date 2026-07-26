@@ -47,6 +47,7 @@ import {
 import { normalizeDoorSave } from './door-runtime.js';
 import { freshCombatBuild, normalizeCombatBuild } from './combat-progression.js';
 import { freshCombatLoadout, normalizeCombatLoadout } from './combat-loadout.js';
+import { freshPowerState, normalizePowerState } from './conservatory-power.js';
 
 const SAVE_KEY = 'chunk-surfer:save:v3';
 const LEGACY_SAVE_KEYS = STORAGE_LEGACY_SAVE_KEYS.filter((key) => key !== SAVE_KEY);
@@ -72,6 +73,7 @@ export const freshSave = ({ settings = DEFAULT_SETTINGS, run = null } = {}) => (
   hushAudio: null,
   chunkSurf: freshChunkSurfState(),
   chapelTower: freshChapelTowerState(),
+  power: freshPowerState(),
   settings: normalizeSettings(settings),
   run,
 });
@@ -229,6 +231,7 @@ function normalizeSaveV3(data, meta = null) {
     hushAudio: normalizeHushAudioSave(source.hushAudio),
     chunkSurf,
     chapelTower,
+    power: normalizePowerState(source.power),
     settings,
     run: sanitizeRun(normalizeRun(source.run, {
       meta,

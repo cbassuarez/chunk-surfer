@@ -15,6 +15,8 @@ export function reduceRunLedger(ledger = freshLedger(), event) {
     case EVENT_TYPES.TAKE_COMPLETED:
       next.takes.completed += 1;
       addUnique(next.takes.rooms, p.roomId);
+      if (p.contaminated === true) addUnique(next.takes.contaminated, p.roomId);
+      else next.takes.contaminated = next.takes.contaminated.filter((id) => id !== p.roomId);
       break;
     case EVENT_TYPES.TAKE_SPOILED:
       next.takes.spoiled += 1;
@@ -72,6 +74,12 @@ export function reduceRunLedger(ledger = freshLedger(), event) {
       break;
     case EVENT_TYPES.COFFEE_DRUNK:
       next.choices.drankCoffee = true;
+      break;
+    case EVENT_TYPES.POWER_CIRCUIT_CHANGED:
+      if (p.live) {
+        addUnique(next.power.live, p.circuit);
+        addUnique(next.power.everRestored, p.circuit);
+      } else next.power.live = next.power.live.filter((id) => id !== p.circuit);
       break;
     case EVENT_TYPES.CONFESSION_COMMITTED:
       next.choices.namedSarah = p.kind === 'name' && p.value === 'Sarah';

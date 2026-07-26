@@ -20,7 +20,7 @@ test('story art manifest contains required ids', () => {
 test('battle story art slots resolve to their authored stills', () => {
   for (const [id, path] of [
     ['surfer', 'story-art/surfer.png'],
-    ['circuitBentInterface', 'story-art/circuit-bent-interface.png'],
+    ['circuitBentInterface', 'story-art/circuit-bent-interface.jpg'],
     ['tuningFork', 'story-art/tuningfork.png'],
     ['walkie', 'story-art/walkie.png'],
   ]) {

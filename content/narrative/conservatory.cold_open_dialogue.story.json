@@ -1884,7 +1884,7 @@
           "hideWhenAsked": true
         },
         {
-          "text": "sign the ring — I'll start at the bottom",
+          "text": "sign the form — let's get on with it.",
           "goto": "threshold",
           "id": "descent.choice.4"
         }

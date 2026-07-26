@@ -17,6 +17,15 @@ import { MONITOR_THRESHOLDS, monitorSnapshot } from '../audio/monitor.js';
 
 export const PANEL = Object.freeze({ padX: 2, headerRows: 2, footerRows: 2 });
 
+export function machinePanelBody(x, y, w, h, { footer = '' } = {}) {
+  return {
+    x: x + PANEL.padX + 1,
+    y: y + PANEL.headerRows + 2,
+    w: Math.max(1, w - PANEL.padX * 2 - 2),
+    h: Math.max(1, h - PANEL.headerRows - (footer ? PANEL.footerRows : 1) - 2),
+  };
+}
+
 const clamp01 = (v) => Math.max(0, Math.min(1, Number.isFinite(Number(v)) ? Number(v) : 0));
 const nowSec = () => ((typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now()) * 0.001;
 const pwm16 = (a) => Math.round(clamp01(a) * 16) / 16;
@@ -38,6 +47,57 @@ function rect(ctx, x, y, w, h, color, alpha = 1) {
 function hairline(ctx, x, y, w, h, color, alpha = 1, lw = 1, dpr = 1) {
   ctx.save(); ctx.globalAlpha = alpha; ctx.strokeStyle = color; ctx.lineWidth = lw * dpr;
   ctx.strokeRect(x + 0.5 * dpr, y + 0.5 * dpr, w - dpr, h - dpr); ctx.restore();
+}
+
+function drawPanelHardware(ctx, { px, py, pw, ph, gx, gy, gw, gh, dpr }) {
+  const screw = Math.max(1.5 * dpr, 2);
+  const inset = Math.max(0.72 * dpr, 1);
+  ctx.save();
+
+  // Four punched square heads in the bezel. Their slots all face the same way,
+  // as if one technician closed every panel on the line.
+  for (const [sx, sy] of [
+    [px + inset, py + inset],
+    [px + pw - inset - screw, py + inset],
+    [px + inset, py + ph - inset - screw],
+    [px + pw - inset - screw, py + ph - inset - screw],
+  ]) {
+    ctx.globalAlpha = 0.16;
+    ctx.fillStyle = '#8a887f';
+    ctx.fillRect(sx, sy, screw, screw);
+    ctx.globalAlpha = 0.24;
+    ctx.fillStyle = '#050505';
+    ctx.fillRect(sx + screw * 0.18, sy + screw * 0.46, screw * 0.64, Math.max(0.5, dpr * 0.36));
+  }
+
+  // Registration crosses live on the silkscreen, outside the data area.
+  ctx.strokeStyle = '#74776e';
+  ctx.lineWidth = Math.max(0.5, dpr * 0.42);
+  ctx.globalAlpha = 0.32;
+  const arm = Math.max(2 * dpr, 1.5);
+  for (const [cx, cy] of [[gx + arm * 1.4, gy - arm], [gx + gw - arm * 1.4, gy + gh + arm]]) {
+    ctx.beginPath();
+    ctx.moveTo(cx - arm, cy); ctx.lineTo(cx + arm, cy);
+    ctx.moveTo(cx, cy - arm); ctx.lineTo(cx, cy + arm);
+    ctx.stroke();
+  }
+
+  // Dormant service lamps are manufacturing detail, not state. They never
+  // animate or brighten and remain below the footer's information hierarchy.
+  ctx.globalAlpha = 0.12;
+  const led = Math.max(1, dpr * 0.8);
+  for (let index = 0; index < 3; index += 1) {
+    ctx.fillStyle = index === 1 ? '#7b5431' : '#35584f';
+    ctx.fillRect(px + pw - (7 - index * 1.7) * dpr, py + ph - 2.3 * dpr, led, led);
+  }
+
+  // A second imperfect stamping line gives the matte plate thickness without
+  // introducing a glossy bevel or gradient.
+  ctx.globalAlpha = 0.12;
+  ctx.strokeStyle = '#6a675f';
+  ctx.lineWidth = Math.max(0.5, dpr * 0.45);
+  ctx.strokeRect(px + 1.6 * dpr, py + 1.35 * dpr, pw - 3.2 * dpr, ph - 2.7 * dpr);
+  ctx.restore();
 }
 
 // ── the faceplate ─────────────────────────────────────────────────────────────
@@ -64,6 +124,7 @@ export function drawMachinePanel(x, y, w, h, {
     rect(ctx, gx, gy, gw, gh, t.glass);
     hairline(ctx, gx, gy, gw, gh, '#000', 0.9, 1, dpr);
     hairline(ctx, px, py, pw, ph, '#242424', 1, 1, dpr);
+    drawPanelHardware(ctx, { px, py, pw, ph, gx, gy, gw, gh, dpr });
   });
 
   // Header silkscreen legends. The brand/model/label live on one padded row;
@@ -90,12 +151,7 @@ export function drawMachinePanel(x, y, w, h, {
   else if (footer) uiText(x + 2, y + h - 2, String(footer).slice(0, Math.max(0, w - 4)), 'ui-label');
   if (buttons) drawButtonCluster(x + w - buttons.w - 2, y + PANEL.headerRows + 1, buttons);
 
-  return {
-    x: x + PANEL.padX + 1,
-    y: y + PANEL.headerRows + 2,
-    w: Math.max(1, w - PANEL.padX * 2 - 2),
-    h: Math.max(1, h - PANEL.headerRows - (footer ? PANEL.footerRows : 1) - 2),
-  };
+  return machinePanelBody(x, y, w, h, { footer });
 }
 
 // ── the bargraph meter (DA-1000 / Akai VOLUME scale) ─────────────────────────

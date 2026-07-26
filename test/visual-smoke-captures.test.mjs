@@ -15,11 +15,37 @@ test('feature smoke captures the restored title, authored slates, cinematic roll
     '01d-opening-quotation-compact.png',
     '02-title-current-build.png',
     '02-title-compact.png',
+    '06a-hush-brush-picker.png',
+    '06b-hush-brush-release.png',
+    '06c-hush-brush-failed-thought.png',
+    '06d-hush-brush-hard-contact.png',
+    '06e-hush-brush-reduced.png',
+    '06f-hush-active-recording-exclusion.png',
+    '06g-hush-taken-contact.png',
     '07-natatorium-long-hall.png',
+    '07-signal-combat-chapel.png',
+    '07l-dock-sodium-seam.png',
+    '07l-dance-stair-failure.png',
+    '07l-plant-indicator.png',
+    '07l-natatorium-roof-bounce.png',
+    '07l-hall-stage-door.png',
+    '07o-natatorium-single-vault.png',
+    '07o-hall-seating-rises-to-rear.png',
+    '07l-practice-emergency-end.png',
+    '07l-academic-skylight.png',
+    '07l-chapel-cold-shaft.png',
+    '07l-tower-light-bands.png',
+    '07m-sp01-off.png',
+    '07m-sp01-on.png',
+    '07n-torch-clean.png',
+    '07n-torch-warm.png',
+    '07n-torch-failing.png',
+    '07n-torch-flat.png',
     '07a-upper-stair-normal-dark.png',
     '07aa-practice-corridor-dead-end-dark.png',
     '07b-basement-stair-normal-dark.png',
     '08-chunk-surf-long-hall.png',
+    '08-source-hunt-contact-960x600.png',
     '09-credits-opening-card.png',
     '09-credits-opening-card-compact.png',
     '10-credits-roll-early.png',
@@ -56,4 +82,13 @@ test('feature smoke runner is portable across release operating systems', () => 
   assert.match(capture, /interactionTimeout=process\.platform==='linux'\?30000:10000/);
   assert.match(capture, /FEATURE_SMOKE_FRAME_TIMEOUT_MS/);
   assert.match(capture, /snapshot\.samples<minimumSamples&&Date\.now\(\)<deadline/);
+});
+
+test('mock lens unwraps depth packets before echoing a decodable material image', () => {
+  const source = readFileSync('tools/chunk_surfer/tests/mock-lens-service.mjs', 'utf8');
+  assert.match(source, /bytes\[0\]!==0x4c\|\|bytes\[1\]!==0x32/);
+  assert.match(source, /readUInt32LE\(2\)/);
+  assert.match(source, /bytes\.subarray\(6,6\+frameLength\)/);
+  assert.match(source, /createHash\('sha256'\)\.update\(bytes\)/);
+  assert.match(source, /socket\.send\(bytes\)/);
 });

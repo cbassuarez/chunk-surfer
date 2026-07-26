@@ -2,22 +2,19 @@
   "schemaVersion": 1,
   "documentId": "conservatory.hush",
   "positions": {
-    "start": {
-      "x": 80,
-      "y": 100
-    },
-    "settle": {
-      "x": 440,
-      "y": 100
-    },
-    "steps": {
-      "x": 800,
-      "y": 100
-    },
-    "still": {
-      "x": 1160,
-      "y": 100
-    }
+    "start": { "x": 80, "y": 100 },
+    "response-cold": { "x": 440, "y": 40 },
+    "response-shape": { "x": 800, "y": 40 },
+    "response-turn": { "x": 1160, "y": 40 },
+    "response-count": { "x": 440, "y": 300 },
+    "response-cans": { "x": 800, "y": 300 },
+    "response-steps": { "x": 1160, "y": 300 },
+    "response-walk": { "x": 440, "y": 560 },
+    "response-name": { "x": 800, "y": 560 },
+    "response-wall": { "x": 1160, "y": 560 },
+    "response-breath": { "x": 440, "y": 820 },
+    "response-bruise": { "x": 800, "y": 820 },
+    "response-repeat": { "x": 1160, "y": 820 }
   },
   "regions": {}
 }

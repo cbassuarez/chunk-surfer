@@ -25,16 +25,17 @@ FP.compile(conservatory.levels, {
 const bounds = computeNatatoriumBasinBounds(FP);
 assert.deepEqual(
   { minX: bounds.minX, minY: bounds.minY, maxX: bounds.maxX, maxY: bounds.maxY },
-  { minX: 152, minY: 58, maxX: 186, maxY: 98 },
+  { minX: 156, minY: 66, maxX: 180, maxY: 98 },
   'water basin bounds are derived from authored W cells',
 );
-assert.equal(bounds.count, 1360);
+assert.equal(bounds.count, 768);
 
-for (const y of [29, 30, 31, 32, 33]) {
+for (const y of [29, 30, 31, 32]) {
   const point = FP.toRuntimePoint({ x: 84, y });
-  assert.equal(FP.materialAt(point.x, point.y), MATERIAL.wetTile, `submerged stair cell ${y} remains water-bearing wet tile`);
-  assert.equal(point.x >= bounds.minX && point.x < bounds.maxX && point.y >= bounds.minY && point.y < bounds.maxY, true);
+  assert.equal(FP.materialAt(point.x, point.y), MATERIAL.poolTile, `lead deck cell ${y} stays dry before the pool`);
+  assert.equal(point.y < bounds.minY, true);
 }
+assert.equal(FP.materialAt(...Object.values(FP.toRuntimePoint({x:84,y:33}))),MATERIAL.wetTile,'pool begins only after the lead deck');
 
 const firstRun = freshRunRecord({ id: 'run_first', meta: { endingsSeen: [] }, now: 1000 });
 assert.equal(firstRun.environment.natatoriumWater, 'drained');
@@ -91,7 +92,7 @@ const murkyRun = freshRunRecord({
   meta: { endingsSeen: ['surfaced'], returns: { history: [{ endingId: 'surfaced' }] } },
   now: 3000,
 });
-assert.equal(natatoriumWaterBlocks(murkyRun, bounds.minX, bounds.minY, bounds), true);
+assert.equal(natatoriumWaterBlocks(murkyRun, bounds.minX, bounds.minY, bounds), false);
 assert.equal(natatoriumWaterBlocks(murkyRun, bounds.minX - 1, bounds.minY, bounds), false);
 assert.equal(natatoriumWaterBlocks(firstRun, bounds.minX, bounds.minY, bounds), false);
 

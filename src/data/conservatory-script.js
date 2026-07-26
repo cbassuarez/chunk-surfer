@@ -1077,7 +1077,7 @@ export const PAGES = [
       { raw: 'RIG   MKH-8020 pair, ORTF. Sound Devices. No mains.' },
       { raw: 'REF   -60 dBFS floor in the stairwell. Very good.' },
       '',
-      'Powered down means powered down. No hum, no fridge, no lift. I have not worked a building this quiet and I have worked at four in the morning.',
+      'It was powered down when we arrived. No fridge, no lift, no accidental hum. If anything is singing now, I put it back into the walls myself — and I know which board will shut it up.',
       '',
       'Down the west stair to B3 first, because it is the deadest room in the plan and if I can hold a clean minute there I can hold one anywhere. The stair is behind the dock, past the inner door. Standard key.',
       '',

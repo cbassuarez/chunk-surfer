@@ -1,0 +1,267 @@
+{
+  "version": 1,
+  "status": "approval-required",
+  "reviewedAt": "2026-07-25",
+  "downloadedAt": null,
+  "licensePolicy": ["CC0-1.0", "CC-BY-4.0"],
+  "pack": {
+    "output": "public/assets/conservatory-dock.glb",
+    "maxBytes": 8388608,
+    "maxTriangles": 45000,
+    "heroTextureMax": 2048,
+    "repeatTextureMax": 1024,
+    "axis": "Y-up",
+    "unit": "metre",
+    "allowedAlphaModes": ["OPAQUE", "MASK"],
+    "forbiddenFeatures": ["animations", "skins", "sparseAccessors", "extensionsRequired"]
+  },
+  "selectionCriteria": {
+    "contour": "The object must remain unmistakable as a black silhouette at eight metres in the dock's ordinary ground light.",
+    "interaction": "Handles, latches, flanges, wheels, toe plates and frame locks must be modeled geometry, not texture-only detail.",
+    "processing": "Selection authorizes download for evaluation only; hash, topology, texture and redistribution checks still precede ingestion."
+  },
+  "categories": [
+    {
+      "id": "hand-truck",
+      "required": 1,
+      "candidates": [
+        {
+          "id": "hand-truck-poly-haven",
+          "title": "Hand Truck",
+          "source": "https://polyhaven.com/a/hand_truck",
+          "preview": "https://cdn.polyhaven.com/asset_img/thumbs/hand_truck.png?format=png&width=512",
+          "author": "Mutanzom3D",
+          "license": "CC0-1.0",
+          "rawSizeMiB": 66.35,
+          "sourceTriangles": 13000,
+          "sourceTextureMax": 8192,
+          "targetTriangles": 6500,
+          "targetTextureMax": 1024,
+          "intendedUse": "Primary upright hand truck; retain the curved handles, toe plate and wheel profile.",
+          "contourGrade": "A",
+          "attributionRequired": false,
+          "downloadedAt": null
+        },
+        {
+          "id": "hand-truck-hippostance",
+          "title": "Hand Truck",
+          "source": "https://sketchfab.com/3d-models/hand-truck-f539455450ca40df8843a602aafbda91",
+          "preview": "https://sketchfab.com/models/f539455450ca40df8843a602aafbda91/embed",
+          "author": "HippoStance",
+          "license": "CC-BY-4.0",
+          "rawSizeMiB": null,
+          "sourceTriangles": 24100,
+          "sourceTextureMax": null,
+          "targetTriangles": 6500,
+          "targetTextureMax": 1024,
+          "intendedUse": "Alternate older cart with a heavier warehouse silhouette and visible chassis detail.",
+          "contourGrade": "A",
+          "attributionRequired": true,
+          "downloadedAt": null
+        }
+      ]
+    },
+    {
+      "id": "crates",
+      "required": 1,
+      "candidates": [
+        {
+          "id": "plastic-crate-poly-haven",
+          "title": "Plastic Crate 02",
+          "source": "https://polyhaven.com/a/plastic_crate_02",
+          "preview": "https://cdn.polyhaven.com/asset_img/thumbs/plastic_crate_02.png?format=png&width=512",
+          "author": "Fabi_G",
+          "license": "CC0-1.0",
+          "rawSizeMiB": 16.11,
+          "sourceTriangles": 6000,
+          "sourceTextureMax": 4096,
+          "targetTriangles": 3200,
+          "targetTextureMax": 1024,
+          "intendedUse": "Repeated salvage crates; preserve vented walls, stacking ribs and cutout handles.",
+          "contourGrade": "A",
+          "attributionRequired": false,
+          "downloadedAt": null
+        },
+        {
+          "id": "plastic-crate-rodriguez",
+          "title": "Plastic Crate",
+          "source": "https://sketchfab.com/3d-models/plastic-crate-5f7103bfb5974eab85bb1a4ab8a8595e",
+          "preview": "https://sketchfab.com/models/5f7103bfb5974eab85bb1a4ab8a8595e/embed",
+          "author": "Denisse Rodriguez",
+          "license": "CC-BY-4.0",
+          "rawSizeMiB": null,
+          "sourceTriangles": 19100,
+          "sourceTextureMax": null,
+          "targetTriangles": 4800,
+          "targetTextureMax": 1024,
+          "intendedUse": "Higher-contour alternate for the nearest hero crate; repeat copies share one material set.",
+          "contourGrade": "A",
+          "attributionRequired": true,
+          "downloadedAt": null
+        }
+      ]
+    },
+    {
+      "id": "cable-reel",
+      "required": 1,
+      "candidates": [
+        {
+          "id": "cable-drum-yodha",
+          "title": "Cable Drum",
+          "source": "https://sketchfab.com/3d-models/cable-drum-366b9959f9d54cfb9ceb8a9d06a53b28",
+          "preview": "https://sketchfab.com/models/366b9959f9d54cfb9ceb8a9d06a53b28/embed",
+          "author": "YodhaGameStudio",
+          "license": "CC-BY-4.0",
+          "rawSizeMiB": null,
+          "sourceTriangles": 10600,
+          "sourceTextureMax": null,
+          "targetTriangles": 4800,
+          "targetTextureMax": 1024,
+          "intendedUse": "Portable feeder-reel body; add an authored handle and ratchet while retaining the flange profile.",
+          "contourGrade": "B",
+          "attributionRequired": true,
+          "downloadedAt": null
+        },
+        {
+          "id": "wooden-cable-drum-silva",
+          "title": "Wooden Cable Drum",
+          "source": "https://sketchfab.com/3d-models/wooden-cable-drum-90120b2f0348407b8071577e85766827",
+          "preview": "https://sketchfab.com/models/90120b2f0348407b8071577e85766827/embed",
+          "author": "Aparicio Silva 3D",
+          "license": "CC-BY-4.0",
+          "rawSizeMiB": null,
+          "sourceTriangles": 11600,
+          "sourceTextureMax": null,
+          "targetTriangles": 4800,
+          "targetTextureMax": 1024,
+          "intendedUse": "Alternate wider drum if playtest reads the metal reel as too domestic; requires an authored portable stand.",
+          "contourGrade": "A",
+          "attributionRequired": true,
+          "downloadedAt": null
+        }
+      ]
+    },
+    {
+      "id": "road-case",
+      "required": 1,
+      "candidates": [
+        {
+          "id": "transport-case-sousinho",
+          "title": "Transport Case",
+          "source": "https://sketchfab.com/3d-models/transport-case-812e6f81a90e4e1a9d28ae3831f2b44b",
+          "preview": "https://sketchfab.com/models/812e6f81a90e4e1a9d28ae3831f2b44b/embed",
+          "author": "Sousinho",
+          "license": "CC-BY-4.0",
+          "rawSizeMiB": null,
+          "sourceTriangles": 13300,
+          "sourceTextureMax": 4096,
+          "targetTriangles": 4800,
+          "targetTextureMax": 2048,
+          "intendedUse": "Preferred previous-recordist case; preserve the scuffed corners, butterfly hardware and lid contour.",
+          "contourGrade": "A",
+          "attributionRequired": true,
+          "downloadedAt": null
+        },
+        {
+          "id": "flight-case-iradmir",
+          "title": "Case OBJ",
+          "source": "https://sketchfab.com/3d-models/case-obj-a0241d73816242d0b0de4469dfa2ad07",
+          "preview": "https://sketchfab.com/models/a0241d73816242d0b0de4469dfa2ad07/embed",
+          "author": "iradmir777",
+          "license": "CC-BY-4.0",
+          "rawSizeMiB": null,
+          "sourceTriangles": 390300,
+          "sourceTextureMax": null,
+          "targetTriangles": 5200,
+          "targetTextureMax": 2048,
+          "intendedUse": "High-detail silhouette reference only unless a clean decimation preserves the latch and caster assemblies.",
+          "contourGrade": "A",
+          "attributionRequired": true,
+          "downloadedAt": null
+        }
+      ]
+    },
+    {
+      "id": "industrial-worklight",
+      "required": 1,
+      "candidates": [
+        {
+          "id": "portable-searchlight-poly-haven",
+          "title": "Portable Searchlight",
+          "source": "https://polyhaven.com/a/portable_searchlight",
+          "preview": "https://cdn.polyhaven.com/asset_img/thumbs/portable_searchlight.png?format=png&width=512",
+          "author": "Poly Haven contributor",
+          "license": "CC0-1.0",
+          "rawSizeMiB": null,
+          "sourceTriangles": 18802,
+          "sourceTextureMax": 4096,
+          "targetTriangles": 6859,
+          "targetTextureMax": 1024,
+          "intendedUse": "Retained dead searchlight; already processed in the existing acquisition pack and eligible for rescale/material revision only.",
+          "contourGrade": "B",
+          "attributionRequired": false,
+          "downloadedAt": "existing-approved-pack"
+        },
+        {
+          "id": "work-light-hippostance",
+          "title": "Work Light",
+          "source": "https://sketchfab.com/3d-models/work-light-278dd26f90d544a8941d347bef0ebf40",
+          "preview": "https://sketchfab.com/models/278dd26f90d544a8941d347bef0ebf40/embed",
+          "author": "HippoStance",
+          "license": "CC-BY-4.0",
+          "rawSizeMiB": null,
+          "sourceTriangles": 8700,
+          "sourceTextureMax": 2048,
+          "targetTriangles": 6200,
+          "targetTextureMax": 1024,
+          "intendedUse": "Higher-contour replacement if the current searchlight remains visually slight; feet and carrying handle must survive processing.",
+          "contourGrade": "A",
+          "attributionRequired": true,
+          "downloadedAt": null
+        }
+      ]
+    },
+    {
+      "id": "chandelier-and-freight-frame",
+      "required": 1,
+      "candidates": [
+        {
+          "id": "chandelier-03-industrial-pipe-frame",
+          "title": "Chandelier 03 plus modular industrial pipe frame",
+          "source": "https://polyhaven.com/a/Chandelier_03",
+          "secondarySource": "https://polyhaven.com/a/modular_industrial_pipes_01",
+          "preview": "https://cdn.polyhaven.com/asset_img/thumbs/Chandelier_03.png?format=png&width=512",
+          "author": "Kirill Sannikov; Jorge Camacho",
+          "license": "CC0-1.0",
+          "rawSizeMiB": 129.98,
+          "sourceTriangles": 41300,
+          "sourceTextureMax": 8192,
+          "targetTriangles": 13500,
+          "targetTextureMax": 2048,
+          "intendedUse": "Preferred intact/spent chandelier kit; pipe sections become a purpose-built wheeled transport cage with modeled locks and a disconnected tail.",
+          "contourGrade": "A",
+          "attributionRequired": false,
+          "downloadedAt": null
+        },
+        {
+          "id": "chandelier-01-gutter-frame",
+          "title": "Chandelier 01 plus modular metal frame components",
+          "source": "https://polyhaven.com/a/Chandelier_01",
+          "secondarySource": "https://polyhaven.com/a/modular_metal_gutter",
+          "preview": "https://cdn.polyhaven.com/asset_img/thumbs/Chandelier_01.png?format=png&width=512",
+          "author": "Kirill Sannikov; Maxim Domnin",
+          "license": "CC0-1.0",
+          "rawSizeMiB": 56.27,
+          "sourceTriangles": 43000,
+          "sourceTextureMax": 4096,
+          "targetTriangles": 13500,
+          "targetTextureMax": 2048,
+          "intendedUse": "Broader six-shade alternate with an authored square freight cage; reject if shades obscure the bulb-by-bulb rupture.",
+          "contourGrade": "A",
+          "attributionRequired": false,
+          "downloadedAt": null
+        }
+      ]
+    }
+  ]
+}

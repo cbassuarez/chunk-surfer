@@ -96,6 +96,8 @@ export function makeTitleScene({
   ];
 
   let sel = activeRun ? 0 : 1;
+  let previousSel = sel;
+  let previousSelUntil = 0;
   let audioPrimed = false;
   let confirmNewRun = false;
   let t = 0;
@@ -120,10 +122,23 @@ export function makeTitleScene({
     if (index < 0 || index >= items.length) return false;
     if (items[index]?.disabled) return false;
     if (sel === index) return true;
+    previousSel = sel;
+    previousSelUntil = nowMs() + 90;
     sel = index;
     disarm();
     if (sound) AUDIO.menuMove();
     return true;
+  }
+
+  function moveSelection(index) {
+    const next = (index + items.length) % items.length;
+    if (next !== sel) {
+      previousSel = sel;
+      previousSelUntil = nowMs() + 90;
+      sel = next;
+    }
+    disarm();
+    AUDIO.menuMove();
   }
 
   function activateCurrent() {
@@ -200,33 +215,25 @@ export function makeTitleScene({
       const code = e.code || '';
 
       if (e.key === 'ArrowUp' || k === 'w' || code === 'KeyW') {
-        sel = (sel - 1 + items.length) % items.length;
-        disarm();
-        AUDIO.menuMove();
+        moveSelection(sel - 1);
         return true;
       }
 
       if (e.key === 'ArrowDown' || k === 's' || code === 'KeyS') {
-        sel = (sel + 1) % items.length;
-        disarm();
-        AUDIO.menuMove();
+        moveSelection(sel + 1);
         return true;
       }
 
       if (e.key === 'ArrowLeft' || k === 'a' || code === 'KeyA') {
         if (columns() > 1) {
-          sel = (sel - rowsPerColumn() + items.length) % items.length;
-          disarm();
-          AUDIO.menuMove();
+          moveSelection(sel - rowsPerColumn());
         }
         return true;
       }
 
       if (e.key === 'ArrowRight' || k === 'd' || code === 'KeyD') {
         if (columns() > 1) {
-          sel = (sel + rowsPerColumn()) % items.length;
-          disarm();
-          AUDIO.menuMove();
+          moveSelection(sel + rowsPerColumn());
         }
         return true;
       }
@@ -273,9 +280,9 @@ export function makeTitleScene({
       const scanPhase = (Math.floor(t * 120) % 9) === 0 ? 0.92 : 1;
       const blank = (t % 4.25) < 0.035 ? 0.68 : 1;
       if (t < 1.0) {
-        drawVfdText(titleX, body.y + 1, display, {
+        drawVfdText(titleX + 0.32, body.y + 1, display, {
           scale: titleScale,
-          alpha: Math.max(0.10, pwm * 0.24),
+          alpha: Math.max(0.08, pwm * 0.18),
         });
       }
       drawVfdText(titleX, body.y + 1, display, {
@@ -300,6 +307,11 @@ export function makeTitleScene({
       );
       uiCenter(body.y + 7, 'FIVE ROOM TONES. ONE BUILDING LISTENING.', 'ui-primary');
 
+      if (t < 0.85) {
+        uiCenter(body.y + 8, 'STANDBY / CASE FILE / SOURCE 4417-C', 'ui-label', 0.34);
+        uiCenter(body.y + 10, 'AUDIOCORP LOCAL MONITOR READY', 'ui-secondary', 0.28);
+      }
+
       if (meta.hushMet) uiCenter(body.y + 9, 'THE HUSH HAS YOUR SIGNAL.', 'ui-danger');
       else if (meta.leftMidRun) uiCenter(body.y + 9, 'UNFINISHED RUN SAVED.', 'ui-danger');
       else if (replay) uiCenter(body.y + 9, 'ENDINGS AND ACHIEVEMENTS ARE AVAILABLE.', 'ui-amber');
@@ -309,6 +321,7 @@ export function makeTitleScene({
       const layout = titleMenuLayout(body, items.length);
       menuColumns = layout.colCount;
       const rowCount = rowsPerColumn();
+      const renderNow = nowMs();
 
       items.forEach((item, i) => {
         const on = i === sel;
@@ -344,6 +357,10 @@ export function makeTitleScene({
           },
         });
 
+        if (i === previousSel && i !== sel && renderNow < previousSelUntil) {
+          uiText(itemX - 1, itemY, `▸ ${safeLabel}`.slice(0, rowW), 'ui-amber', 0.12);
+        }
+
         // One indicator, driven by pointer and keyboard alike: inverse video
         // for the committed cursor, a duty-factor step for the pointer alone.
         const style = vfdRowStyle({
@@ -351,7 +368,7 @@ export function makeTitleScene({
           selected: on,
           disabled: item.disabled,
           editing: armed,
-          nowMs: nowMs(),
+          nowMs: renderNow,
         });
         drawVfdRow({ uiFill, uiText, theme: activeTheme, inverseColor: armed ? activeTheme().danger : null }, {
           x: itemX,

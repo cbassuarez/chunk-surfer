@@ -4,10 +4,10 @@
     "author": "Chunk Surfer project",
     "source": "tools/chunk_surfer/build-props.mjs",
     "license": "project source (mixed: see meshes)",
-    "sha256": "5112729bbcbb09340bfadce0949dcc5180d051d6a515f1c2d5ff027ac9777b9b",
+    "sha256": "6ac7322ca391aed9673af48ace85f5d2e7c1003af7aa42af62a9c1f38d548718",
     "modifications": "Metres, Y-up, ground-centred. Procedural fallback geometry plus user-supplied source meshes (unverified provenance) baked, re-axised, height-scaled, and vertex-cluster decimated under budget.",
-    "triangles": 33642,
-    "bytes": 2253916
+    "triangles": 40530,
+    "bytes": 2800856
   },
   "meshes": [
     {
@@ -536,20 +536,209 @@
       }
     },
     {
+      "name": "natatorium_roof_structure",
+      "bounds": {
+        "min": [
+          -11.405,
+          5.115,
+          -9.75
+        ],
+        "max": [
+          11.405,
+          9.125,
+          9.75
+        ]
+      },
+      "triangles": 3268,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "natatorium_cubicle_bank",
+      "bounds": {
+        "min": [
+          -7.33,
+          0,
+          -0.782
+        ],
+        "max": [
+          7.33,
+          2.46,
+          0.2
+        ]
+      },
+      "triangles": 604,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "changing_bench",
+      "bounds": {
+        "min": [
+          -1.075,
+          0.005,
+          -0.24
+        ],
+        "max": [
+          1.075,
+          0.517,
+          0.24
+        ]
+      },
+      "triangles": 96,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "natatorium_end_window",
+      "bounds": {
+        "min": [
+          -5.2,
+          0,
+          -0.12
+        ],
+        "max": [
+          5.2,
+          4.784,
+          0.12
+        ]
+      },
+      "triangles": 408,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "natatorium_clock",
+      "bounds": {
+        "min": [
+          -0.54,
+          -0.54,
+          -0.158
+        ],
+        "max": [
+          0.54,
+          0.54,
+          0.045
+        ]
+      },
+      "triangles": 260,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "pool_lane_ropes",
+      "bounds": {
+        "min": [
+          -3.66,
+          0.025,
+          -7.45
+        ],
+        "max": [
+          3.66,
+          0.125,
+          7.45
+        ]
+      },
+      "triangles": 1392,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "pool_backstroke_flags",
+      "bounds": {
+        "min": [
+          -6.05,
+          2.2,
+          -0.013
+        ],
+        "max": [
+          6.05,
+          2.792,
+          0.015
+        ]
+      },
+      "triangles": 44,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "pool_ladder",
+      "bounds": {
+        "min": [
+          -0.41,
+          0,
+          -0.195
+        ],
+        "max": [
+          0.41,
+          1.243,
+          0.547
+        ]
+      },
+      "triangles": 108,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "pool_lifebuoy",
+      "bounds": {
+        "min": [
+          -0.519,
+          -0.519,
+          -0.048
+        ],
+        "max": [
+          0.519,
+          0.519,
+          0.007
+        ]
+      },
+      "triangles": 104,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
       "name": "pool_start_block",
       "bounds": {
         "min": [
-          -0.345,
+          -0.357,
           0,
-          -0.425
+          -0.446
         ],
         "max": [
-          0.345,
+          0.357,
           0.765,
-          0.265
+          0.307
         ]
       },
-      "triangles": 24,
+      "triangles": 60,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -560,17 +749,17 @@
       "name": "lifeguard_chair",
       "bounds": {
         "min": [
-          -0.31,
-          0.005,
-          -0.23
+          -0.44,
+          0.037,
+          -0.367
         ],
         "max": [
-          0.31,
-          1.99,
-          0.38
+          0.44,
+          2.06,
+          0.487
         ]
       },
-      "triangles": 72,
+      "triangles": 168,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -581,17 +770,17 @@
       "name": "lane_reel",
       "bounds": {
         "min": [
-          -0.46,
-          0.09,
-          -0.355
+          -0.5,
+          0.095,
+          -0.407
         ],
         "max": [
-          0.46,
-          0.98,
-          0.355
+          0.655,
+          1.167,
+          0.407
         ]
       },
-      "triangles": 108,
+      "triangles": 604,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -623,17 +812,17 @@
       "name": "pool_lane_markings",
       "bounds": {
         "min": [
-          -7.075,
+          -5.325,
           0,
-          -9.9
+          -7.675
         ],
         "max": [
-          7.075,
+          5.325,
           0.043,
-          9.4
+          7.675
         ]
       },
-      "triangles": 144,
+      "triangles": 120,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",

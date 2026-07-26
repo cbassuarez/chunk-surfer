@@ -4,12 +4,16 @@
 // reads AI state directly. Main supplies a sanitized exact body position for
 // the literal HUSH dot; acoustic contact detail still comes from telemetry.
 
-import { uiCellMetrics, uiDraw, uiGlyph, uiText, uiSize } from './ui.js';
+import { uiCellMetrics, uiDraw, uiFill, uiGlyph, uiText, uiSize } from './ui.js';
 import { drawMachinePanel } from './presentation.js';
 import { themeRoleColor, UI_COLOR } from './palette.js';
 import { buildMinimapCommands } from './map-commands.js';
 import { drawAnomalyMarker, drawHushMarker, drawPlayerMarker, drawWaypointMarker } from './map-icons.js';
 import { mapCurrentAreaLabel, mapFloor, newestMapContact } from '../game/map-model.js';
+import { shakeMode, visualEffectsEnabled } from '../game/access.js';
+
+let lastHushStatusKey = '';
+let hushStatusPulseUntil = 0;
 
 const clip = (value, width) => {
   const text = String(value ?? '');
@@ -48,6 +52,101 @@ export function hushStatus(model, now = 0) {
   if (state === 'saturated') return { label: 'VERY NEAR', cls: 'ui-danger', detail: here ? `${confidence}%` : floor?.label || 'OTHER FLOOR', floorDelta: 0 };
   if (state === 'locked') return { label: 'NEARBY', cls: 'ui-danger', detail: here ? `${confidence}%` : floor?.label || 'OTHER FLOOR', floorDelta: 0 };
   return { label: 'UNCLEAR', cls: 'ui-blue', detail: floor?.label || `${confidence}%`, floorDelta: 0 };
+}
+
+export function minimapTelemetryCrumbs(model, commands, now = 0) {
+  const transformCommand = (commands || []).find((command) => command.kind === 'sight')
+    || (commands || []).find((command) => command.kind === 'local-topology');
+  if (!transformCommand?.transform || !Array.isArray(model?.contacts)) return [];
+  const newest = newestMapContact(model);
+  return model.contacts
+    .filter((contact) => contact !== newest && contact?.observation?.position)
+    .filter((contact) => contact.observation.floorId === model?.player?.floorId)
+    .sort((a, b) => Number(a.observation.observedAt || 0) - Number(b.observation.observedAt || 0))
+    .slice(-7)
+    .map((contact) => {
+      const observedAt = Number(contact.observation.observedAt);
+      const age = Math.max(0, (Number(now) - (Number.isFinite(observedAt) ? observedAt : Number(now))) / 1000);
+      return {
+        point: transformCommand.transform.point(contact.observation.position),
+        alpha: Math.max(0, 0.18 * (1 - age / 12)),
+        age,
+      };
+    })
+    .filter((crumb) => crumb.alpha > 0.004);
+}
+
+function drawTelemetryCrumbs(model, commands, viewport, now) {
+  const crumbs = minimapTelemetryCrumbs(model, commands, now);
+  if (!crumbs.length) return;
+  uiDraw(({ ctx, dpr, cellW, cellH }) => {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(viewport.x * cellW * dpr, viewport.y * cellH * dpr, viewport.w * cellW * dpr, viewport.h * cellH * dpr);
+    ctx.clip();
+    ctx.strokeStyle = themeRoleColor('silkscreen');
+    ctx.lineWidth = Math.max(0.7, dpr * 0.6);
+    for (const crumb of crumbs) {
+      const cx = (crumb.point.x + 0.5) * cellW * dpr;
+      const cy = (crumb.point.y + 0.5) * cellH * dpr;
+      const rx = Math.max(1.5 * dpr, cellW * dpr * 0.26);
+      const ry = Math.max(1.5 * dpr, cellH * dpr * 0.18);
+      ctx.globalAlpha = crumb.alpha;
+      ctx.strokeRect(cx - rx, cy - ry, rx * 2, ry * 2);
+    }
+    ctx.restore();
+  });
+}
+
+function hushStatusPulse(hush, now) {
+  const key = `${hush.label}:${hush.cls}`;
+  if (!lastHushStatusKey) lastHushStatusKey = key;
+  else if (key !== lastHushStatusKey) {
+    lastHushStatusKey = key;
+    if (visualEffectsEnabled()) hushStatusPulseUntil = Number(now) + 180;
+  }
+  if (!visualEffectsEnabled() || Number(now) >= hushStatusPulseUntil) return 0;
+  const life = Math.max(0, (hushStatusPulseUntil - Number(now)) / 180);
+  return life * (shakeMode() === 'full' ? 0.06 : 0.028);
+}
+
+function drawConfidenceTicks(panel, model) {
+  const contact = newestMapContact(model);
+  const state = String(contact?.state || '').toLowerCase();
+  if (!['acquiring', 'decaying'].includes(state)) return;
+  const confidence = Math.max(0, Math.min(1, Number(contact?.observation?.confidence) || 0));
+  uiDraw(({ ctx, dpr, cellW, cellH }) => {
+    const baseX = (panel.x + panel.w - 4.2) * cellW * dpr;
+    const baseY = (panel.y + 2.45) * cellH * dpr;
+    ctx.save();
+    ctx.strokeStyle = themeRoleColor(state === 'acquiring' ? 'counter' : 'silkscreen');
+    ctx.lineWidth = Math.max(0.6, dpr * 0.5);
+    for (let index = 0; index < 4; index += 1) {
+      ctx.globalAlpha = index / 4 < confidence ? 0.32 : 0.11;
+      const xx = baseX + index * cellW * dpr * 0.62;
+      ctx.beginPath();
+      ctx.moveTo(xx, baseY - 2 * dpr);
+      ctx.lineTo(xx + 2 * dpr, baseY + 2 * dpr);
+      ctx.stroke();
+    }
+    ctx.restore();
+  });
+}
+
+function drawFloorDeltaLed(panel, delta) {
+  if (!delta) return;
+  uiDraw(({ ctx, dpr, cellW, cellH }) => {
+    const size = Math.max(1.2 * dpr, 1.5);
+    const px = (panel.x + panel.w - 1) * cellW * dpr;
+    const py = (panel.y + panel.h - 0.55) * cellH * dpr;
+    ctx.save();
+    ctx.globalAlpha = 0.38;
+    ctx.fillStyle = themeRoleColor('counter');
+    ctx.fillRect(px, py, size, size);
+    ctx.globalAlpha = 0.16;
+    ctx.fillRect(px + size * 1.7, py + (delta > 0 ? -size : size), size, size);
+    ctx.restore();
+  });
 }
 
 function drawLocalTopology(command) {
@@ -264,6 +363,8 @@ export function drawMinimap(model, opts = {}) {
     meter: false,
     theme: hush.cls === 'ui-danger' ? 'green' : 'amber',
   });
+  const panelPulse = hushStatusPulse(hush, now);
+  if (panelPulse > 0) uiFill(panel.x, panel.y, panel.w, panel.h, `rgba(255,118,65,${panelPulse})`);
   const viewport = {
     x: panel.x + 1,
     y: panel.y + 3,
@@ -274,8 +375,10 @@ export function drawMinimap(model, opts = {}) {
   uiText(panel.x, panel.y, `YOU ${clip(here, Math.max(4, panel.w - 4))}`, 'ui-green', .78);
   uiText(panel.x, panel.y + 1, `TARGET ${clip(target, Math.max(4, panel.w - 7))}`, model.waypoint ? 'ui-blue' : 'ui-secondary', .74);
   uiText(panel.x, panel.y + 2, `HUSH ${clip(hush.label, 8)} ${clip(hush.detail, Math.max(3, panel.w - 16))}`, hush.cls, .76);
+  drawConfidenceTicks(panel, model);
 
   const commands = buildMinimapCommands({ model, viewport, radius: opts.radius || 18, now, aspect: uiCellMetrics().aspect });
+  drawTelemetryCrumbs(model, commands, viewport, now);
   drawCommands(commands, now);
   drawMischiefBlink(commands, opts.mischief, viewport);
 
@@ -288,6 +391,7 @@ export function drawMinimap(model, opts = {}) {
   else if (anomalyFloor?.delta) footer = `HUSH ${anomalyFloor.delta > 0 ? '+' : ''}${anomalyFloor.delta} FLOOR`;
   else if (floorTarget?.delta) footer = `TARGET ${floorTarget.delta > 0 ? '+' : ''}${floorTarget.delta} FLOOR`;
   uiText(panel.x, panel.y + panel.h - 1, clip(footer, panel.w), floorTarget?.delta || anomalyFloor?.delta ? 'ui-blue' : 'ui-label', .72);
+  drawFloorDeltaLed(panel, hushFloor?.delta || anomalyFloor?.delta || floorTarget?.delta || 0);
   if (opts.expanded) uiText(panel.x, panel.y + panel.h, '[GREEN] YOU · [BLUE] TARGET · [RED ●] HUSH', 'ui-secondary', .66);
 }
 

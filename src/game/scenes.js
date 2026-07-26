@@ -3,6 +3,7 @@
 // A scene is { id, enter?, exit?, update?(dt), render?(), key?(e)->bool,
 //              pointer?(e)->bool,
 //              blocksInput?:bool, blocksWorld?:bool, tracksMotion?:bool,
+//              allowsLook?:bool,
 //              lookProfile?:string, lensPreset?:string (legacy alias) }
 //
 // `blocksInput` stops the player walking (dialogue, menus). `blocksWorld`
@@ -103,6 +104,10 @@ export function has(id) { return stack.some((s) => s.id === id); }
 export function blocksInput() { return stack.some((s) => s.blocksInput); }
 export function blocksWorld() { return stack.some((s) => s.blocksWorld); }
 export function tracksMotion() { return !!top()?.tracksMotion; }
+// A tableau may hold the body while leaving the head alone. This is narrower
+// than tracksMotion: it never records locomotion, it only keeps first-person
+// pointer/right-stick look alive. A pause overlay on top revokes the lease.
+export function allowsLook() { return !!top({ includeOverlay:true })?.allowsLook; }
 export function worldView() { return top()?.worldView?.() || null; }
 
 export function update(dt) {

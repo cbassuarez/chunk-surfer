@@ -48,6 +48,15 @@ test('the fight is an abstract void: centred opponent, procedural fallback, no o
   assert.match(combatSceneSource, /oblique: -\.05/);
 });
 
+test('fight voids retain low-alpha room memory without new combat semantics', () => {
+  assert.match(combatViewSource, /export function drawVoidRoomMemory/);
+  for (const profile of ['natatorium', 'hall', 'practice', 'chapel', 'source-final', 'training']) {
+    assert.match(combatViewSource, new RegExp(`key === '${profile}'`));
+  }
+  assert.match(combatViewSource, /drawVoidRoomMemory\(ctx, profileKey/);
+  assert.doesNotMatch(combatViewSource, /roomMemory.*attack|roomMemory.*damage/i);
+});
+
 test('hits carry weight: hit-stop, ghost pips, damage popups, entry wipe, impact audio', () => {
   assert.match(combatSceneSource, /hitstop = Math\.min/);
   assert.match(combatSceneSource, /drawCombatPips\(/);

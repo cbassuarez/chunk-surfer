@@ -37,6 +37,9 @@ export function buildRunSummary({ endingId, save, meta, authoritative = {}, now 
   const dropped = [...new Set(ledger.equipment?.dropped || [])];
   const missing = [...new Set(authoritative.missingEquipment || dropped)];
   const returned = issued.filter((id) => !missing.includes(id));
+  const contaminatedRooms = Array.isArray(rec.contaminated)
+    ? [...new Set(rec.contaminated)].filter((id) => completedRooms.includes(id))
+    : [...new Set(ledger.takes?.contaminated || [])].filter((id) => completedRooms.includes(id));
 
   return {
     schema: 1,
@@ -53,6 +56,7 @@ export function buildRunSummary({ endingId, save, meta, authoritative = {}, now 
       spoiled: Number(ledger.takes?.spoiled) || 0,
       aborted: Number(ledger.takes?.aborted) || 0,
       rooms: completedRooms,
+      contaminated: contaminatedRooms,
     },
     injuries,
     battles: clone(ledger.battles || { started: 0, won: 0, lost: 0, firstPassWon: 0, results: {} }),
@@ -67,6 +71,7 @@ export function buildRunSummary({ endingId, save, meta, authoritative = {}, now 
     },
     choices: clone(ledger.choices || {}),
     replay: clone(run.replay || {}),
+    power: clone(ledger.power || { live: [], everRestored: [] }),
     unlockedAchievements: [],
     newlyUnlockedFeatures: [],
     endingsAtCompletion: new Set([...(meta?.endingsSeen || []), endingId]).size,

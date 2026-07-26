@@ -110,6 +110,41 @@ async function capturePair(desktopName,compactName){
   await settleViewport();
 }
 
+async function advanceThoughtToBranch(){
+  for(let i=0;i<12;i++){
+    const view=await page.evaluate(()=>window.__scenes?.top?.()?.view?.()||null);
+    if(view?.pending?.kind==='branch')return view;
+    await page.evaluate(()=>{
+      const scene=window.__scenes?.top?.();
+      scene?.update?.(8);
+      scene?.key?.({key:'Enter',code:'Enter'});
+    });
+  }
+  throw new Error('thought did not reach a response branch');
+}
+
+async function revealThoughtResponse(){
+  await page.evaluate(()=>{
+    const scene=window.__scenes?.top?.();
+    if(scene?.view?.()?.pending?.kind==='say')scene.key?.({key:'Enter',code:'Enter'});
+    scene?.update?.(8);
+    if(scene?.view?.()?.typing)scene.key?.({key:'Enter',code:'Enter'});
+  });
+}
+
+async function finishThought(){
+  for(let i=0;i<12;i++){
+    const id=await page.evaluate(()=>window.__scenes?.top?.()?.id||null);
+    if(!String(id||'').startsWith('thought:'))return true;
+    await page.evaluate(()=>{
+      const scene=window.__scenes?.top?.();
+      scene?.update?.(8);
+      scene?.key?.({key:'Enter',code:'Enter'});
+    });
+  }
+  throw new Error('thought did not resolve');
+}
+
 try {
   console.log(`visual smoke: launching ${process.platform} capture with ${chrome}`);
   await page.evaluateOnNewDocument(()=>{
@@ -213,16 +248,161 @@ try {
   await page.waitForFunction(()=>/^thought:|^dialogue:/.test(window.__scenes?.top?.()?.id||''),{timeout:interactionTimeout});
   await page.evaluate(()=>window.__scenes.top().update?.(1.2));
   await page.screenshot({path:path.join(output,'06-dialogue-pane.png')});
+  const warningDiagnostic=await page.evaluate(()=>window.__probe.hushSensation());
+  assert.equal(warningDiagnostic.mode,'proximity');
+  assert.ok(warningDiagnostic.debug.choices.every((choice)=>!Object.hasOwn(choice,'outcome')),'a distant warning has no hidden mechanical answers');
   assert.equal(await page.evaluate(()=>window.__probe.clearDiagnosticScenes()),true);
   await page.waitForFunction(()=>window.__chunkParity?.().screen==='game',{timeout:interactionTimeout});
 
+  const beforeRelease=await page.evaluate(()=>({presence:window.__probe.presence(),rec:window.__probe.rec()}));
+  assert.equal(await page.evaluate(()=>window.__probe.hushBrush(4417)),true);
+  await advanceThoughtToBranch();
+  const releasePicker=await page.evaluate(()=>window.__probe.hushSensation());
+  const releaseIndex=releasePicker.debug.choices.findIndex((choice)=>choice.outcome==='release');
+  assert.ok(releaseIndex>=0&&releasePicker.pending?.id,'brush diagnostics expose a real deferred attempt');
+  await page.screenshot({path:path.join(output,'06a-hush-brush-picker.png')});
+  assert.equal(await page.evaluate((index)=>window.__probe.hushChoice(index),releaseIndex),true);
+  await revealThoughtResponse();
+  await page.screenshot({path:path.join(output,'06b-hush-brush-release.png')});
+  await finishThought();
+  const afterRelease=await page.evaluate(()=>({
+    sensation:window.__probe.hushSensation(),presence:window.__probe.presence(),rec:window.__probe.rec(),
+  }));
+  assert.equal(afterRelease.sensation.debug.selected.outcome,'release');
+  assert.equal(afterRelease.sensation.pending,null);
+  assert.equal(afterRelease.presence.active,true);
+  assert.equal(afterRelease.presence.hasTarget,true,'the saving answer redirects HUSH instead of despawning it');
+  assert.equal(afterRelease.presence.caughtCount,beforeRelease.presence.caughtCount);
+  assert.equal(afterRelease.presence.awareness,beforeRelease.presence.awareness);
+  assert.equal(afterRelease.rec.injuries,beforeRelease.rec.injuries);
+
+  const beforeHard=await page.evaluate(()=>({presence:window.__probe.presence(),rec:window.__probe.rec()}));
+  assert.equal(await page.evaluate(()=>window.__probe.hushBrush(7127)),true);
+  await advanceThoughtToBranch();
+  const hardPicker=await page.evaluate(()=>window.__probe.hushSensation());
+  const hardIndex=hardPicker.debug.choices.findIndex((choice)=>choice.outcome==='hard');
+  assert.ok(hardIndex>=0);
+  assert.equal(await page.evaluate((index)=>window.__probe.hushChoice(index),hardIndex),true);
+  await revealThoughtResponse();
+  await page.screenshot({path:path.join(output,'06c-hush-brush-failed-thought.png')});
+  await finishThought();
+  const hardFlash=await page.evaluate(()=>window.__chunkSurferHushScare.status());
+  assert.equal(hardFlash.active,true);
+  assert.equal(hardFlash.contactHit,true);
+  await page.screenshot({path:path.join(output,'06d-hush-brush-hard-contact.png')});
+  const afterHard=await page.evaluate(()=>({presence:window.__probe.presence(),rec:window.__probe.rec(),sensation:window.__probe.hushSensation()}));
+  assert.equal(afterHard.sensation.debug.selected.outcome,'hard');
+  assert.equal(afterHard.presence.caughtCount,beforeHard.presence.caughtCount+1);
+  assert.ok(afterHard.presence.awareness>beforeHard.presence.awareness);
+  assert.equal(afterHard.rec.injuries,beforeHard.rec.injuries+1);
+  await new Promise((resolve)=>setTimeout(resolve,750));
+
+  await page.evaluate(()=>window.__probe.setReduceDread(true));
+  assert.equal(await page.evaluate(()=>window.__probe.hushBrush(9001)),true);
+  await advanceThoughtToBranch();
+  assert.equal(await page.evaluate(()=>window.__probe.lookProfile()),'calm','reduced effects remove the moving HUSH look');
+  await page.screenshot({path:path.join(output,'06e-hush-brush-reduced.png')});
+  assert.equal(await page.evaluate(()=>window.__probe.clearDiagnosticScenes()),true);
+  await page.evaluate(()=>window.__probe.setReduceDread(false));
+
+  await page.evaluate(()=>window.__probe.setRecording(true));
+  const recordingDecision=await page.evaluate(()=>window.__probe.hushDecision(.01,.25,false));
+  assert.notEqual(recordingDecision.kind,'brush','an active take cannot become a brush dialogue');
+  assert.equal(await page.evaluate(()=>window.__probe.scene()),null);
+  await page.screenshot({path:path.join(output,'06f-hush-active-recording-exclusion.png')});
+  await page.evaluate(()=>window.__probe.setRecording(false));
+
+  assert.equal(await page.evaluate(()=>window.__probe.takeMe()),undefined);
+  const takenFlash=await page.evaluate(()=>window.__chunkSurferHushScare.status());
+  assert.equal(takenFlash.active,true);
+  assert.equal(takenFlash.takenHit,true);
+  await page.screenshot({path:path.join(output,'06g-hush-taken-contact.png')});
+  assert.equal(await page.evaluate(()=>window.__probe.clearDiagnosticScenes()),true);
+
+  await page.evaluate(()=>window.__probe.warpCell(80,31,2));
   assert.equal(await page.evaluate(()=>window.__probe.battleId('natatorium',false)),true);
+  if(await page.evaluate(()=>window.__scenes?.top?.()?.id==='loadout-briefing')){
+    await page.keyboard.press('Enter');
+  }
   await page.waitForFunction(()=>/^battle:/.test(window.__scenes?.top?.()?.id||''),{timeout:interactionTimeout});
   await page.keyboard.press('Enter');
   await page.keyboard.press('Enter');
   await page.screenshot({path:path.join(output,'07-signal-combat.png')});
   assert.equal(await page.evaluate(()=>window.__probe.battleAbort()),true);
   await page.waitForFunction(()=>!/^battle:/.test(window.__scenes?.top?.()?.id||''),{timeout:interactionTimeout});
+
+  await page.evaluate(()=>window.__probe.warpCell(93,73,0));
+  assert.equal(await page.evaluate(()=>window.__probe.battleId('chapel',false)),true);
+  await page.waitForFunction(()=>/^battle:/.test(window.__scenes?.top?.()?.id||''),{timeout:interactionTimeout});
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter');
+  await page.screenshot({path:path.join(output,'07-signal-combat-chapel.png')});
+  assert.equal(await page.evaluate(()=>window.__probe.battleAbort()),true);
+  await page.waitForFunction(()=>!/^battle:/.test(window.__scenes?.top?.()?.id||''),{timeout:interactionTimeout});
+
+  // Lighting signatures are judged through the shipped renderer. Power and
+  // torch are held off here so each room has to identify itself by its own
+  // maintained practical, sky and ambient response rather than by the HUD.
+  for(const circuit of ['sp01','sp02','sp03'])await page.evaluate((id)=>window.__probe.setPower(id,false),circuit);
+  await page.evaluate(()=>window.__probe.hush());
+  await page.evaluate(()=>window.__probe.setTorch(false));
+  const lightingViews=[
+    ['07l-dock-sodium-seam.png',65,10,0],
+    ['07l-dance-stair-failure.png',45,19.5,2],
+    ['07l-plant-indicator.png',35,29,1],
+    ['07l-natatorium-roof-bounce.png',80,31,2],
+    ['07l-hall-stage-door.png',100,12,0],
+    ['07l-practice-emergency-end.png',60.5,55,0],
+    ['07l-academic-skylight.png',39,254,3],
+    ['07l-chapel-cold-shaft.png',93,73,0],
+    ['07l-tower-light-bands.png',1,151,2],
+  ];
+  for(const [name,x,y,facing] of lightingViews){
+    await page.evaluate((ax,ay,af)=>window.__probe.warpCell(ax,ay,af),x,y,facing);
+    await settleViewport();
+    await page.screenshot({path:path.join(output,name)});
+  }
+
+  // Geometry proofs use the player's actual torch and local service circuit.
+  // The pool view must show one uninterrupted room with no inserted shell; the
+  // wing view must show the seating bowl climbing away from the stage.
+  await page.evaluate(()=>{window.__probe.setTorchBattery(1);window.__probe.setTorch(true);window.__probe.setPower('sp02',true);});
+  await page.evaluate(()=>window.__probe.warpCell(83,47,0));
+  await settleViewport();
+  await page.screenshot({path:path.join(output,'07o-natatorium-single-vault.png')});
+  await page.evaluate(()=>{window.__probe.setPower('sp02',false);window.__probe.setPower('sp03',true);});
+  await page.evaluate(()=>window.__probe.warpCell(100,23,1));
+  await settleViewport();
+  await page.screenshot({path:path.join(output,'07o-hall-seating-rises-to-rear.png')});
+  await page.evaluate(()=>{window.__probe.setPower('sp03',false);window.__probe.setTorch(false);});
+
+  await page.evaluate(()=>window.__probe.warpCell(35,29,1));
+  await page.screenshot({path:path.join(output,'07m-sp01-off.png')});
+  const livePlant=await page.evaluate(()=>{window.__probe.setPower('sp01',true);return{power:window.__probe.power(),light:window.__probe.light(),hum:window.__probe.electricalHum()};});
+  assert.ok(livePlant.power.live.includes('sp01'));
+  assert.ok(livePlant.light.rig.some((entry)=>entry.id==='plant-service-live'));
+  assert.equal(livePlant.hum.audible,true);
+  await settleViewport();
+  await page.screenshot({path:path.join(output,'07m-sp01-on.png')});
+  await page.evaluate(()=>window.__probe.setPower('sp01',false));
+
+  await page.evaluate(()=>window.__probe.warpCell(49,23,1));
+  await page.evaluate(()=>window.__probe.hush());
+  for(const [name,battery] of [
+    ['07n-torch-clean.png',1],
+    ['07n-torch-warm.png',.30],
+    ['07n-torch-failing.png',.10],
+    ['07n-torch-flat.png',0],
+  ]){
+    await page.evaluate((value)=>window.__probe.setTorchBattery(value),battery);
+    const shouldBurn=battery>0;
+    await page.evaluate((on)=>window.__probe.setTorch(on),shouldBurn);
+    await settleViewport();
+    await page.screenshot({path:path.join(output,name)});
+  }
+  await page.evaluate(()=>window.__probe.setTorchBattery(1));
+  await page.evaluate(()=>window.__probe.setTorch(true));
+  console.log('visual smoke: room signatures, circuit state and torch degradation captured');
 
   await page.setViewport(compactViewport);
   await settleViewport();
@@ -318,6 +498,14 @@ try {
       assert.ok(sourcePerformance.frameMs<=buildingPerformance.frameMs*1.1,`Source frame time ${sourcePerformance.frameMs} ms must stay within 10% of building baseline ${buildingPerformance.frameMs} ms`);
     }
     await page.screenshot({path:path.join(output,`08-source-${preset}-960x600.png`)});
+    if(preset==='hunt'){
+      const beforeContact=await page.evaluate(()=>window.__probe.chunkSurf());
+      const contact=await page.evaluate(()=>window.__probe.sourceContact());
+      assert.ok(contact&&contact.source,'Source checkpoint contact remains on its separate immediate path');
+      assert.deepEqual(contact.source.optionalTraces,beforeContact.optionalTraces,'Source contact preserves resolved evidence');
+      await new Promise((resolve)=>setTimeout(resolve,250));
+      await page.screenshot({path:path.join(output,'08-source-hunt-contact-960x600.png')});
+    }
   }
   await page.setViewport(desktopViewport);
   await settleViewport();
@@ -362,6 +550,7 @@ try {
     credits.key?.({key:'End',code:'End'});
     credits.key?.({key:' ',code:'Space'});
     credits.update?.(4.1);
+    credits.update?.(13.5);
   });
   await page.waitForFunction(()=>window.__scenes?.top?.()?.id==='return-report',{timeout:interactionTimeout});
   await capturePair('13-return-report-after-credits.png','13-return-report-after-credits-compact.png');

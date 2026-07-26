@@ -86,23 +86,56 @@ function clearLine(ax,ay,bx,by){
   for(let i=1;i<steps;i++){const t=i/steps;if(floorplan.isSolid(rt(ax+(bx-ax)*t),rt(ay+(by-ay)*t)))return false;}
   return true;
 }
-export function pickProp(px,py,facing,maxMeters=2){
+export function pickProp(px,py,facing,maxMeters=2,{yaw=null,pitch=null,eyeHeight=1.58}={}){
   const mx=meters(px+.5),mz=meters(py+.5);
-  const f=[[0,-1],[1,0],[0,1],[-1,0]][((facing%4)+4)%4];
+  // `facing` is deliberately still accepted for the deterministic suites and
+  // the 2D fallback. In first person the caller supplies the continuous look
+  // yaw: using the old quarter-turn body direction made the interaction cone
+  // cover several neighboring props even when the reticle was plainly on one.
+  const heading=Number.isFinite(yaw)?yaw:Number(facing||0)*Math.PI/2;
+  const f=[Math.sin(heading),-Math.cos(heading)];
+  const eyeY=(floorplan?.floorAt?.(px,py)||0)+(Number(eyeHeight)||1.58);
   let best=null,bestScore=Infinity;
   for(const p of instances){
     if(p.interactive===false)continue;
     const interactionX=p.interactionX??p.x,interactionY=p.interactionY??p.y;
     const dx=interactionX-mx,dz=interactionY-mz,d=Math.hypot(dx,dz);if(d>maxMeters+(Math.max(p.w,p.d)||0)/2)continue;
-    const dot=(dx*f[0]+dz*f[1])/Math.max(.001,d);if(dot<.35)continue;
+    const dot=(dx*f[0]+dz*f[1])/Math.max(.001,d);if(dot<.72)continue;
     if(!clearLine(mx,mz,interactionX,interactionY))continue;
-    const ang=Math.abs(wrapAngle(Math.atan2(dx,-dz)-facing*Math.PI/2));
-    const score=d+ang*.7;if(score<bestScore){bestScore=score;best={...p,distance:d};}
+    const ang=Math.abs(wrapAngle(Math.atan2(dx,-dz)-heading));
+    // Rank by reticle alignment before proximity. The angular footprint keeps
+    // a broad road case forgiving while preventing its edge from stealing a
+    // clipboard, latch, or reel handle the player is actually aiming at.
+    const radius=Math.max(.12,Math.min(.7,((Math.max(p.w,p.d)||.32)*(p.scale||1))/2+.12));
+    const halfAngle=Math.max(.08,Math.min(.58,Math.atan2(radius,Math.max(.05,d))));
+    if(ang>halfAngle*1.2)continue;
+    let verticalPenalty=0;
+    if(Number.isFinite(pitch)){
+      const h=Math.max(.12,(p.h||.55)*(p.scale||1));
+      const targetY=(p.floor||0)+(p.elevation||0)+h*.5;
+      const targetPitch=Math.atan2(targetY-eyeY,Math.max(.05,d));
+      verticalPenalty=Math.abs(targetPitch-pitch)/Math.max(.12,Math.atan2(h*.5+.08,Math.max(.05,d)))*.24;
+    }
+    const aimScore=ang/halfAngle+verticalPenalty+d*.025-(Number(p.interactionPriority)||0)*.08;
+    if(aimScore<bestScore){bestScore=aimScore;best={...p,distance:d,aimAngle:ang,aimScore};}
   }
   return best;
 }
 
-export function inspectProp(id){const p=propById(id);if(!p)return null;const seen=state.inspected.has(id);state.inspected.add(id);return seen?(p.inspect?.again||p.inspect?.first):(p.inspect?.first||'Nothing useful.');}
+export function inspectProp(id,{aftermath=false}={}){
+  const p=propById(id);if(!p)return null;
+  const aftermathCopy=aftermath&&p.aftermathInspect
+    ? (p.aftermathInspect.heard||p.aftermathInspect.unheard
+      ? (state.auditioned.has(id)?p.aftermathInspect.heard:p.aftermathInspect.unheard)
+      : p.aftermathInspect)
+    : null;
+  const copy=aftermathCopy||p.inspect;
+  // The aftermath is a second authored inspection pass. A prop seen before the
+  // rupture must still get its first post-event line once.
+  const stateId=aftermathCopy?`${id}@aftermath`:id;
+  const seen=state.inspected.has(stateId);state.inspected.add(stateId);
+  return seen?(copy?.again||copy?.first):(copy?.first||'Nothing useful.');
+}
 export function auditionProp(id){
   const p=propById(id);if(!p?.sampleFamily?.length)return null;
   state.auditioned.add(id);const i=state.cycles[id]||0;state.cycles[id]=(i+1)%p.sampleFamily.length;

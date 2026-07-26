@@ -30,5 +30,14 @@ REC.emitNoise(.20, 3, 4, 'bookkeeping reinforcement', {
 });
 assert.equal(events.at(-1).audibleToHush, false);
 
+REC.addTake('the_tub',{contaminated:true});
+assert.equal(REC.hasTake('the_tub'),true);
+assert.equal(REC.takeIsContaminated('the_tub'),true);
+const dirtySave=REC.saveRecState();
+REC.loadRecState(dirtySave);
+assert.deepEqual(REC.contaminatedTakes(),['the_tub'],'contamination survives recorder save/load');
+REC.addTake('the_tub',{contaminated:false});
+assert.equal(REC.takeIsContaminated('the_tub'),false,'a clean retake replaces the contaminated take');
+
 REC.setAcousticEmitter(null);
 console.log('recordist acoustic tests ok');

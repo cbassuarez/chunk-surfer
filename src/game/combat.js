@@ -127,6 +127,7 @@ export function makeCombatScene({
   source = null,
   musicSession = null,
   director = null,
+  environmentLighting = null,
   onWin = () => {},
   onLose = () => {},
   onAbort = () => {},
@@ -912,6 +913,7 @@ export function makeCombatScene({
         enemyBox: { x: ex, w: ew },
         resolveProgress: visual.progress,
         reduceFlash: flashMode() !== 'full',
+        environmentLighting,
       });
       // Whose turn it is, stated over the opponent it belongs to. The enemy beat
       // is the opponent's own turn now, so it gets a lit banner centred on the

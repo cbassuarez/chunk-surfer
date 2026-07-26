@@ -19,6 +19,7 @@ import * as P3 from './props3d.js';
 import { normalizePixelMeshSettings } from './pixel-mesh/settings.js';
 import { PIXEL_MESH_FRAG } from './pixel-mesh/shader.js';
 import { getLookProfile } from './look-profiles.js';
+import { visualEffectsEnabled } from '../game/access.js';
 
 const MAX_CHUNKS = 48;
 const RD_SIZE = 256;
@@ -32,6 +33,8 @@ const localLightPositions=new Float32Array(MAX_LOCAL_LIGHTS*4);
 const localLightColors=new Float32Array(MAX_LOCAL_LIGHTS*4);
 let localShadowIndex=-1;
 let localShadowLight=null;
+let lightingAmbientColor=new Float32Array([.64,.65,.62]);
+let lightingAmbientIntensity=.022;
 
 export function r3dSetRenderScale(value = 1) {
   const next = Math.max(0.5, Math.min(1, Number(value) || 1));
@@ -164,6 +167,14 @@ uniform sampler2D uFogTex;
 uniform vec2  uFogOrigin;
 uniform float uAudio;        // 0..1 field energy
 uniform float uLight;        // 0 = flashlight off, 1 = on
+uniform vec3 uTorchColor;
+uniform float uTorchReach;
+uniform vec2 uTorchCone;
+uniform float uTorchSpill;
+uniform vec3 uAmbientColor;
+uniform float uAmbientIntensity;
+uniform float uOpticalEffects;
+uniform float uReduceMotionOptical;
 uniform int uLocalLightCount;
 uniform int uLocalShadowIndex;
 uniform vec4 uLocalLightPos[${MAX_LOCAL_LIGHTS}];
@@ -477,7 +488,7 @@ void surfaceSlot(int mat,int surf,vec2 uv,out int slot,out float tileM,out float
   if(surf==1){                                                  // walls — one texture per wall
     if(mat==MAT_ACOUSTIC){slot=9;tileM=1.6;blend=.84;}          // basement (studio) → concrete cladding
     else if(mat==MAT_PRACTICE){slot=8;tileM=1.8;blend=.84;}     // classroom → rammed earth
-    else if(mat==MAT_WOOD){slot=7;tileM=1.6;blend=.86;}         // concert hall → travertine
+    else if(mat==MAT_WOOD){slot=2;tileM=2.2;blend=.90;}         // concert hall → dark timber panelling
     else if(mat==MAT_POOL||mat==MAT_WET){slot=5;tileM=1.0;blend=.84;} // natatorium → white ceramic
     else if(mat==MAT_METAL){slot=9;tileM=1.6;blend=.82;}        // plant → concrete cladding
     else if(mat==MAT_CHAPEL){slot=1;tileM=1.4;blend=.82;}       // chapel → split-face stone
@@ -485,7 +496,8 @@ void surfaceSlot(int mat,int surf,vec2 uv,out int slot,out float tileM,out float
     else {slot=0;tileM=1.4;blend=.80;}                          // general → reclaimed brick
   } else {                                                      // floor (surf==2)
     if(mat==MAT_ACOUSTIC||mat==MAT_PRACTICE||mat==MAT_ACADEMIC){slot=6;tileM=1.8;blend=.88;} // teaching floors → terrazzo
-    else if(mat==MAT_WOOD||mat==MAT_CHAPEL){slot=3;tileM=2.0;blend=.90;}  // hall/chapel → quartzite
+    else if(mat==MAT_WOOD){slot=2;tileM=1.8;blend=.92;}         // concert hall → worn timber boards
+    else if(mat==MAT_CHAPEL){slot=3;tileM=2.0;blend=.90;}       // chapel → quartzite
     else if(mat==MAT_WET){slot=4;tileM=0.9;blend=.92;}          // pool interior → blue mosaic
     else if(mat==MAT_POOL){slot=5;tileM=1.0;blend=.90;}         // pool deck → white ceramic
     else {slot=2;tileM=1.8;blend=.84;}                          // general → ash wood
@@ -842,7 +854,8 @@ void main(){
     float dist = length(toEyeM);
     vec3 ldir = normalize(toEye);
     float lambert = clamp(dot(n, ldir), 0.0, 1.0);
-    float falloff = 1.0 / (1.0 + 0.10 * dist + 0.045 * dist * dist);
+    float torchReach=max(.35,uTorchReach);
+    float falloff = 1.0 / (1.0 + (0.10/torchReach) * dist + (0.045/(torchReach*torchReach)) * dist * dist);
     // grazing floor right at the feet would otherwise blow out: soften the
     // near field so the lamp reads as a pool of light, not a flashbulb
     float nearSoft = smoothstep(0.0, 1.4, dist) * 0.55 + 0.45;
@@ -856,10 +869,15 @@ void main(){
     // A torch throws a defined disc, not a gradient across the room: a hard
     // edge with just enough diffusion at the rim to read as glass, plus a faint
     // spill because no lens is perfect.
-    float cone     = smoothstep(0.880, 0.940, axis);        // the disc
-    float beamRim  = smoothstep(0.840, 0.895, axis) * 0.30; // soft edge
-    float spill    = smoothstep(0.30, 0.86, axis) * 0.05;   // lens leak
+    float cone     = smoothstep(uTorchCone.x, uTorchCone.y, axis);        // the disc
+    float beamRim  = smoothstep(uTorchCone.x-.04, uTorchCone.x+.015, axis) * 0.30;
+    float spill    = smoothstep(0.30, uTorchCone.x-.02, axis) * uTorchSpill;
     float beam = (cone + beamRim + spill) * uLight;
+    // Unevenness belongs to the lens edge, never the whole room. The static RD
+    // sample breaks the perfect circle without becoming moving fog or noise.
+    float lensDirt=texture(uRD,fract(gl_FragCoord.xy/uRes*1.7+vec2(.13,.07))).g;
+    float rimMask=clamp(beamRim*3.33*(1.0-cone*.78),0.0,1.0);
+    beam*=mix(1.0,mix(.965,1.018,lensDirt),rimMask*uOpticalEffects);
     float propShadow=propFlashShadow(posM,n,ldir);
     float lamp = lambert * falloff * nearSoft * 3.0 * beam * propShadow;   // a torch, not a flare
     if(uLocalShadowIndex>=0)lamp=lambert*falloff*nearSoft*3.0*beam;         // the map belongs to the hero practical
@@ -872,12 +890,12 @@ void main(){
       float localLambert=max(dot(n,normalize(delta)),0.0);
       float localShadow=li==uLocalShadowIndex?propFlashShadow(posM,n,normalize(delta)):1.0;
       float architecturalShadow=architecturalLightVisibility(posM,uLocalLightPos[li].xyz);
-      localLight+=uLocalLightColor[li].rgb*uLocalLightColor[li].w*attenuation*(.18+.82*localLambert)*localShadow*architecturalShadow;
+      localLight+=uLocalLightColor[li].rgb*uLocalLightColor[li].w*attenuation*localLambert*localShadow*architecturalShadow;
     }
     // The unlit floor is deliberately lifted. With the torch off — or taken — a
     // dark-adapted eye still resolves a room: you are not blind, you simply
     // cannot see WELL. A black screen is not horror, it is a bug you cannot play.
-    float ambient = mix(0.034, 0.048, uLight);
+    float ambient = uAmbientIntensity * mix(1.0,1.12,uLight);
 
     if(surf == 4){
       vec2 wuv=waterUv(pos.xz);
@@ -890,9 +908,9 @@ void main(){
       float fres=pow(1.0-clamp(dot(normalize(toEye),n),0.0,1.0),3.0);
       float glitter=pow(clamp(dot(reflect(normalize(-toEye),n),normalize(fwd+vec3(0.0,.15,0.0))),0.0,1.0),34.0);
       float murk=clamp(uWaterParams.z,0.0,1.0);
-      col=skin*(ambient*.82+lamp*.34)
-        + vec3(.36,.48,.42)*glitter*beam*(1.0-uWaterParams.w*.65)
-        + vec3(.09,.16,.13)*fres*(.22+lamp*.22)
+      col=skin*(uAmbientColor*ambient*.82+uTorchColor*lamp*.34)
+        + uTorchColor*vec3(.36,.48,.42)*glitter*beam*(1.0-uWaterParams.w*.65)
+        + uTorchColor*vec3(.09,.16,.13)*fres*(.22+lamp*.22)
         + vec3(.035,.070,.045)*scum*(.45+.35*film);
       col=mix(col,deep,murk*.34);
     } else {
@@ -913,17 +931,25 @@ void main(){
       float spec = specStr * pow(clamp(lambert, 0.0, 1.0), mix(6.0, 48.0, gloss)) * lamp;
 
       float emis = (surf == 2) ? 0.55 : (surf == 1 ? 0.30 : 0.12);
-      col = albedo * (ambient*surfaceOcclusion + lamp + localLight + gBoilGlow)
-          + vec3(0.55, 0.60, 0.62) * spec
+      col = albedo * (uAmbientColor*ambient*surfaceOcclusion + uTorchColor*lamp + localLight + gBoilGlow)
+          + uTorchColor * vec3(0.55, 0.60, 0.62) * spec
           + rim * tint * (0.22 + uAudio * 0.45) * emis
           + glow * emis
-          - seam * 0.30 * (ambient + lamp);
+          - seam * 0.30 * (uAmbientColor*ambient + uTorchColor*lamp);
       if(waterActive() && surf == 1 && hitMat == MAT_WET){
         float caustic=(sin(posM.x*9.0+uTime*.9)+sin(posM.z*7.0-uTime*.7))*.5+.5;
         col+=vec3(.05,.08,.07)*caustic*lamp*.18*(1.0-uWaterParams.w*.75);
       }
     }
     col = col / (1.0 + col * 0.30);  // filmic-ish rolloff, tames the near field
+
+    // A handful of dust catches only the lit cone. Quantized movement keeps it
+    // from reading as snowfall; reduced motion holds the same sparse field.
+    float moteTime=mix(floor(uTime*.35),0.0,uReduceMotionOptical);
+    vec2 moteCell=floor(gl_FragCoord.xy*.08);
+    float moteHash=hash01(moteCell.x+moteTime*13.0,moteCell.y-moteTime*7.0);
+    float mote=step(.9991,moteHash)*smoothstep(.22,.82,beam)*uOpticalEffects;
+    col+=uTorchColor*mote*uLight*.045;
 
     // No exploration fog and no distance haze. Darkness now comes only from
     // actual lighting, occlusion and material response, so doorways and the far
@@ -949,7 +975,12 @@ void main(){
     float s = clamp(dot(uHush.xy - ro2, rd2), 0.0, span);
     float d = length(ro2 + rd2*s - uHush.xy) * CELL_METERS;
     float reach = exp(-d*d*0.02) * uHush.z;
-    float churn = texture(uRD, fract((ro2 + rd2*s) * 0.05 + uTime*0.01)).g;
+    vec2 hushDelta=uHush.xy-(ro2+rd2*s);
+    vec2 pullDir=normalize(hushDelta+vec2(.0001));
+    vec2 churnUv=fract((ro2+rd2*s)*.05+uTime*.01);
+    float baseChurn=texture(uRD,churnUv).g;
+    float pulledChurn=texture(uRD,fract(churnUv+pullDir*reach*.024)).g;
+    float churn=mix(baseChurn,pulledChurn,.38*uOpticalEffects);
     col = mix(col, vec3(0.0), clamp(reach * (0.75 + churn*0.5), 0.0, 0.97));
   }
 
@@ -975,8 +1006,8 @@ void main(){
   }
 
   col += (grain - 0.5) * 0.035;             // film grain
-  float vig = 1.0 - 0.42 * pow(length(uv * vec2(0.72, 0.9)), 2.2);
-  col *= clamp(vig, 0.0, 1.0);
+  // The expressive post pass owns the fear vignette. A second fixed vignette
+  // here used to halve the corners before fear was even applied.
 
   // DEPTH RIDES IN THE ALPHA CHANNEL. The post pass reads .rgb and writes 1.0,
   // so nothing on screen can see this; the diffusion lens resolves it back out
@@ -1098,6 +1129,14 @@ export function r3dSetLocalLights(lights=[]){
     }
   }
   return localLightCount;
+}
+export function r3dSetLightingContext(context={}){
+  const color=Array.isArray(context.ambientColor)?context.ambientColor:[.64,.65,.62];
+  lightingAmbientColor=new Float32Array([
+    Math.max(0,Number(color[0])||0),Math.max(0,Number(color[1])||0),Math.max(0,Number(color[2])||0),
+  ]);
+  lightingAmbientIntensity=Math.max(.006,Math.min(.12,Number(context.ambientIntensity)||.022));
+  return{ambientColor:[...lightingAmbientColor],ambientIntensity:lightingAmbientIntensity};
 }
 let lookFrom = getLookProfile('explore');
 let lookTarget = lookFrom;
@@ -2118,6 +2157,14 @@ export function r3dFrame(state) {
     : state.light === false ? 0 : 1;
   lightEase += (lightGoal - lightEase) * (1 - Math.exp(-dt * (lightGoal ? 90 : 45)));
   if (Math.abs(lightGoal - lightEase) < 0.004) lightEase = lightGoal;
+  const torch=state.torchLook||{};
+  const torchPower=lightEase*Math.max(0,Math.min(1,Number(torch.power??1)||0));
+  const torchColor=Array.isArray(torch.color)?torch.color:[1,.94,.82];
+  const torchReach=Math.max(.35,Math.min(1.1,Number(torch.reach)||1));
+  const torchConeInner=Math.max(.72,Math.min(.94,Number(torch.coneInner)||.88));
+  const torchConeOuter=Math.max(torchConeInner+.015,Math.min(.98,Number(torch.coneOuter)||.94));
+  const torchSpill=Math.max(0,Math.min(.12,Number(torch.spill??.05)||0));
+  const opticalEffects=visualEffectsEnabled()?1:0;
 
   gl.disable(gl.DEPTH_TEST);
   textSpaceActive = !!state.textSpace;
@@ -2129,6 +2176,9 @@ export function r3dFrame(state) {
       cellMeters: CELL, zoneTints: ZONE_TINTS,
       localLightCount: 0, localLightPositions, localLightColors,
       localShadowIndex:-1,shadowLight:null,
+      torch:{power:1,color:[1,1,1],reach:1,coneInner:.88,coneOuter:.94,spill:.05},
+      ambientColor:lightingAmbientColor,ambientIntensity:lightingAmbientIntensity,
+      planTexture,planSize:[planW,planH],planOrigin:[planOriginX,planOriginY],
     });
     drawTextSpace(P3.propTargets().color);
     return;
@@ -2162,10 +2212,13 @@ export function r3dFrame(state) {
 
   P3.renderPropPass({
     camX: camX * CELL, camY: camY * CELL, camZ: camZ * CELL,
-    yaw, pitch, light: lightEase, fogTexture, fogOrigin, fogSize:FOG_TEX,
+    yaw, pitch, light: torchPower, fogTexture, fogOrigin, fogSize:FOG_TEX,
     cellMeters:CELL, zoneTints:ZONE_TINTS,
     localLightCount,localLightPositions,localLightColors,
     localShadowIndex,shadowLight:localShadowLight,
+    torch:{power:torchPower,color:torchColor,reach:torchReach,coneInner:torchConeInner,coneOuter:torchConeOuter,spill:torchSpill},
+    ambientColor:lightingAmbientColor,ambientIntensity:lightingAmbientIntensity,
+    planTexture,planSize:[planW,planH],planOrigin:[planOriginX,planOriginY],
   });
 
   // march into low-res scene buffer
@@ -2189,7 +2242,15 @@ export function r3dFrame(state) {
   gl.uniform1i(U('uFogTex'), 1);
   gl.uniform2f(U('uFogOrigin'), fogOrigin[0], fogOrigin[1]);
   gl.uniform1f(U('uAudio'), state.audio);
-  gl.uniform1f(U('uLight'), lightEase);
+  gl.uniform1f(U('uLight'), torchPower);
+  gl.uniform3fv(U('uTorchColor'),torchColor);
+  gl.uniform1f(U('uTorchReach'),torchReach);
+  gl.uniform2f(U('uTorchCone'),torchConeInner,torchConeOuter);
+  gl.uniform1f(U('uTorchSpill'),torchSpill);
+  gl.uniform3fv(U('uAmbientColor'),lightingAmbientColor);
+  gl.uniform1f(U('uAmbientIntensity'),lightingAmbientIntensity);
+  gl.uniform1f(U('uOpticalEffects'),opticalEffects);
+  gl.uniform1f(U('uReduceMotionOptical'),pixelMeshSettings.reduceMotion?1:0);
   gl.uniform1i(U('uLocalLightCount'),localLightCount);
   gl.uniform1i(U('uLocalShadowIndex'),localShadowIndex);
   gl.uniform4fv(U('uLocalLightPos[0]'),localLightPositions);

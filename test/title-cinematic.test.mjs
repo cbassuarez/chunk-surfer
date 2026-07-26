@@ -12,6 +12,9 @@ test('title screen restores the AUDIOCORP case-select machine panel', () => {
   assert.match(source, /source: '4417-C'/);
   assert.doesNotMatch(source, /renderCinematicConservatory/);
   assert.doesNotMatch(source, /Georgia|Times New Roman/);
+  assert.match(source, /STANDBY \/ CASE FILE \/ SOURCE 4417-C/);
+  assert.match(source, /AUDIOCORP LOCAL MONITOR READY/);
+  assert.match(source, /previousSelUntil = nowMs\(\) \+ 90/);
 });
 
 test('title screen keeps canonical menu items and keyboard activation paths', () => {

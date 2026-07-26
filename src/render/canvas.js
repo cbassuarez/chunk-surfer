@@ -7,6 +7,7 @@
 import { CELL_W, CELL_H, FONT_PX, MONO_STACK, atlasConfigure, atlasDpr, getTile } from './atlas.js';
 import { flashMode, shakeMode, visualEffectsEnabled } from '../game/access.js';
 import { runtimeParams } from '../platform/launch.js';
+import { createGlassPass, drawGlassPass } from './glass-pass.js';
 
 const REDUCED_MOTION = typeof matchMedia === 'function'
   && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -17,13 +18,14 @@ const CRT_ON = params.get('crt') !== '0';
 
 let mapEl = null, canvas = null, ctx = null;      // visible
 let frame = null, fctx = null;                    // offscreen frame
+let persistence = null, persistenceCtx = null;    // previous glyph frame only
 let cols = 0, rows = 0, cw = 0, chh = 0;          // device-px cell metrics
 let cellGlyph = [], cellCls = [], cellAlpha = []; // current frame stream
 let cursor = 0;
 let frameMsEma = 0;
 
 // pre-baked overlays
-let scanlinePattern = null, vignette = null, noiseTiles = [];
+let scanlinePattern = null, vignette = null, noiseTiles = [], glassPass = null;
 
 const fxState = {
   flashUntil: 0, flashColor: 'rgba(230,236,245,0.85)', flashDur: 1,
@@ -115,6 +117,8 @@ export function canvasSetup(el) {
   ctx = canvas.getContext('2d');
   frame = document.createElement('canvas');
   fctx = frame.getContext('2d');
+  persistence = document.createElement('canvas');
+  persistenceCtx = persistence.getContext('2d');
   resize();
   window.addEventListener('resize', resize);
   return { viewDims };
@@ -126,8 +130,10 @@ function resize() {
   const w = Math.max(1, mapEl.clientWidth), h = Math.max(1, mapEl.clientHeight);
   canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
   frame.width = canvas.width; frame.height = canvas.height;
+  persistence.width = canvas.width; persistence.height = canvas.height;
   cw = CELL_W * dpr; chh = CELL_H * dpr;
   bakeOverlays();
+  glassPass = createGlassPass({ width: canvas.width, height: canvas.height, dpr, seed: 4417 });
 }
 
 // Same viewport math as the DOM path's computeViewDims — identical FOV.
@@ -185,6 +191,13 @@ export function end() {
 
 function composite(now) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const effectsOn = visualEffectsEnabled();
+  if (CRT_ON && effectsOn && !REDUCED_MOTION && persistence) {
+    ctx.save();
+    ctx.globalAlpha = 0.034;
+    ctx.drawImage(persistence, 0, 0);
+    ctx.restore();
+  }
   ctx.save();
   if (now < fxState.shakeUntil) {
     const k = fxState.shakeAmp * atlasDpr();
@@ -228,6 +241,15 @@ function composite(now) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.restore();
     ctx.drawImage(vignette, 0, 0);
+    drawGlassPass(ctx, glassPass, {
+      now,
+      reducedMotion: REDUCED_MOTION,
+      visualEffects: effectsOn,
+    });
+  }
+  if (persistenceCtx) {
+    persistenceCtx.clearRect(0, 0, persistence.width, persistence.height);
+    if (CRT_ON && effectsOn && !REDUCED_MOTION) persistenceCtx.drawImage(frame, 0, 0);
   }
   if (now < fxState.flashUntil) {
     ctx.save();

@@ -204,6 +204,85 @@ function toneIsWarning(art) {
   return art?.tone === 'device' || art?.tone === 'signal';
 }
 
+export function hashString(text = '') {
+  let hash = 2166136261;
+  for (const char of String(text)) {
+    hash ^= char.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+export function storyArtArtifactLayout(art = {}, { width = 1, height = 1 } = {}) {
+  const key = art?.id || art?.src || art?.label || art?.caption || 'story-art';
+  const seed = hashString(key);
+  const deadPixelCount = 1 + (seed % 3);
+  const deadPixels = [];
+  for (let index = 0; index < deadPixelCount; index += 1) {
+    const h = Math.imul(seed ^ (index + 1) * 0x45d9f3b, 0x27d4eb2d) >>> 0;
+    const side = h % 4;
+    const along = ((h >>> 8) & 0xffff) / 0xffff;
+    const inset = 0.055 + (((h >>> 24) & 7) / 7) * 0.055;
+    const xNorm = side === 1 ? 1 - inset : side === 3 ? inset : 0.08 + along * 0.84;
+    const yNorm = side === 0 ? inset : side === 2 ? 1 - inset : 0.08 + along * 0.84;
+    deadPixels.push({
+      x: Math.round(xNorm * Math.max(1, width)),
+      y: Math.round(yNorm * Math.max(1, height)),
+      bright: !!(h & 0x80),
+    });
+  }
+  return Object.freeze({ key: String(key), seed, deadPixels: Object.freeze(deadPixels) });
+}
+
+function drawRegistrationMarks(ctx, box, dpr, warning) {
+  const color = warning ? 'rgba(255,178,74,0.34)' : 'rgba(112,255,230,0.28)';
+  const arm = Math.max(2.5 * dpr, 2);
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(0.6, dpr * 0.55);
+  for (const [cx, cy] of [
+    [box.x + arm * 1.8, box.y + arm * 1.8],
+    [box.x + box.w - arm * 1.8, box.y + arm * 1.8],
+    [box.x + arm * 1.8, box.y + box.h - arm * 1.8],
+    [box.x + box.w - arm * 1.8, box.y + box.h - arm * 1.8],
+  ]) {
+    ctx.beginPath();
+    ctx.moveTo(cx - arm, cy); ctx.lineTo(cx + arm, cy);
+    ctx.moveTo(cx, cy - arm); ctx.lineTo(cx, cy + arm);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawGlassReflection(ctx, box, dpr, warning) {
+  const stripX = box.x + box.w * 0.72;
+  const stripW = Math.max(4 * dpr, box.w * 0.055);
+  const reflection = ctx.createLinearGradient(stripX, 0, stripX + stripW, 0);
+  reflection.addColorStop(0, 'rgba(255,255,255,0)');
+  reflection.addColorStop(0.5, warning ? 'rgba(255,222,174,0.050)' : 'rgba(195,234,226,0.045)');
+  reflection.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.save();
+  ctx.fillStyle = reflection;
+  ctx.fillRect(stripX, box.y + 2 * dpr, stripW, box.h - 4 * dpr);
+  ctx.restore();
+}
+
+function drawStableArtArtifacts(ctx, art, box, dpr, warning, ready) {
+  const layout = storyArtArtifactLayout(art, { width: box.w, height: box.h });
+  drawGlassReflection(ctx, box, dpr, warning);
+  drawRegistrationMarks(ctx, box, dpr, warning);
+  if (!ready) return layout;
+  ctx.save();
+  for (const pixel of layout.deadPixels) {
+    ctx.fillStyle = pixel.bright
+      ? (warning ? 'rgba(255,211,137,0.48)' : 'rgba(184,239,226,0.42)')
+      : 'rgba(0,2,3,0.68)';
+    ctx.fillRect(box.x + pixel.x, box.y + pixel.y, Math.max(1, dpr), Math.max(1, dpr));
+  }
+  ctx.restore();
+  return layout;
+}
+
 export function drawStoryArtCard(ref, {
   x = 0,
   y = 0,
@@ -303,6 +382,13 @@ export function drawStoryArtCard(ref, {
       ctx.strokeRect(imageBoxX + dpr, imageBoxY + dpr, imageBoxW - 2 * dpr, imageBoxH - 2 * dpr);
     }
 
+    drawStableArtArtifacts(ctx, art, {
+      x: imageBoxX,
+      y: imageBoxY,
+      w: imageBoxW,
+      h: imageBoxH,
+    }, dpr, warning, loadState === 'ready');
+
     // Static VFD faceplate. It covers the whole still so the card reads as an
     // instrument surface, but never becomes a flashing effect.
     ctx.save();
@@ -361,6 +447,13 @@ export function drawStoryArtCard(ref, {
         : art.caption;
   const labelY = y + h - 2;
   const captionY = y + h - 1;
+  const artifact = storyArtArtifactLayout(art);
+  const sourceIndex = artifact.seed.toString(16).toUpperCase().padStart(8, '0').slice(0, 4);
+  const frameIndex = String(art.frame ?? art.index ?? (artifact.seed % 100)).padStart(2, '0').slice(-2);
+  const timeIndex = String(art.timecode || art.time || '--:--').toUpperCase();
+  const indexLine = `SOURCE ${sourceIndex}  FRAME ${frameIndex}  TIME ${timeIndex}`.slice(0, Math.max(0, w - 4));
+
+  if (indexLine && h >= 8) uiText(x + 2, y + 1, indexLine, warning ? 'ui-amber' : 'ui-secondary', 0.34);
 
   if (label) uiText(x + 2, labelY, label.slice(0, Math.max(0, w - 4)), warning ? 'ui-amber' : 'ui-label');
   if (status) uiText(

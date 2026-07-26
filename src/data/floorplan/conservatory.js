@@ -16,7 +16,7 @@
 // the old staff door onto the concert hall is bricked up, and the chapel is
 // locked with a replacement key retained by front of house.
 //
-import { F } from './legend.js';
+import { F, ZONE } from './legend.js';
 import { CONSERVATORY_DOORS } from '../conservatory-doors.js';
 
 // The engine holds no geometry — edit these maps freely. To find a building
@@ -100,20 +100,31 @@ function bellChamberProfile(x,y,cell){return cell.solid?null:{ceil:22.0};}
 function natatoriumRows(){
   const w=27,h=24,out=[];
   for(let y=0;y<h;y++){let row='';for(let x=0;x<w;x++){
-    // The replacement owns the entire inherited footprint. There is exactly
-    // one exterior wall around it—no inner box and no dead air behind one.
+    // One outer room envelope. The W rectangle is a surface/material change,
+    // not a second lowered collision room; natatoriumProfile flattens it to
+    // the deck so the renderer cannot build inner walls around it.
     let c=(x===0||x===w-1||y===0||y===h-1)?'#':'T';
-    if(y===0&&x===14)c='+';                    // dry-to-wet lobby
-    if(x>=6&&x<=22&&y>=2&&y<=21)c='W';        // 17 × 20 m longitudinal basin
+    if(y===0&&x===14)c='+';
+    // Five metres of dry lead-in lets the room reveal itself before the pool.
+    // A narrower 12 x 16m basin reads longitudinally instead of swallowing the
+    // hall as soon as the lobby leaf opens.
+    if(x>=8&&x<=19&&y>=6&&y<=21)c='W';        // world x78..89, y33..48
     row+=c;
   }out.push(row);}return out;
 }
-function natatoriumProfile(x,_y,cell){
+function natatoriumProfile(_x,_y,cell){
   if(cell.solid||(cell.flags&F.DOOR))return null;
-  // The authored ceiling is the roof itself: low eaves over the side decks and
-  // one continuous high ridge over the lanes, with no secondary shell below it.
-  const fromRidge=Math.min(9,Math.abs(x-14));
-  return{ceil:7.2+(9-fromRidge)*.42};
+  // Collision and sector traversal own one continuous room volume. Encoding a
+  // pitched roof as stepped per-cell ceiling heights makes every height change
+  // a visible header in the DDA renderer, so keep this envelope continuous.
+  // `W` historically sat 1.6m lower than the deck. In the height-field
+  // renderer that becomes a complete rectangular wall shell, trapping a
+  // smaller "natatorium" inside the room. Keep its wet-tile identity but make
+  // the playable surface continuous; water/lanes provide the pool image.
+  // The academic crown begins at 10m over this physical footprint. Stop the
+  // pool hall below that slab; the old 11.2m envelope literally intersected
+  // its walls and models, producing the nested room visible from the deck.
+  return{floor:cell.zone===ZONE.natatorium&&cell.floor<0?0:cell.floor,ceil:9.5,flags:cell.flags&~F.STAIR};
 }
 function frontAtriumRows(){
   const w=24,h=25,out=[];
@@ -245,14 +256,6 @@ function practiceWingRows(){
     row+=c;
   }out.push(row);}return out;
 }
-function poolAtriumLinkRows(){
-  return [
-    'AAAAA',
-    'AAAAA',
-    'TTTTT',
-    'TTTTT',
-  ];
-}
 function upperAtriumBridgeRows(){
   const w=24,h=5,out=[];
   for(let y=0;y<h;y++){let row='';for(let x=0;x<w;x++){
@@ -269,12 +272,7 @@ const EUCLIDEAN_ADDITIONS=[
   // wall. Author both cells as one single-leaf throat; leaf count remains
   // explicit in the door schedule.
   {id:'dock_foyer_threshold',replace:true,layer:'ground',space:'front_atrium',renderGroup:'ground',origin:{x:73,y:13},physicalOrigin:{x:73,y:13},base:0,rows:['++']},
-  {id:'pool_atrium_link',replace:true,layer:'ground',space:'front_atrium',renderGroup:'ground',origin:{x:83,y:25},physicalOrigin:{x:83,y:25},base:0,rows:['AAAAA','AAAAA'],profile:(_x,_y,cell)=>cell.solid?null:{ceil:9.5}},
-  {id:'natatorium',replace:true,layer:'ground',space:'natatorium',renderGroup:'ground',origin:{x:70,y:27},physicalOrigin:{x:70,y:27},base:0,rows:natatoriumRows(),profile:natatoriumProfile,stairs:[
-    // wetTile is intentional on the whole run. The dry top tread naturally
-    // occludes a sub-floor water plane; each lower half-step can hold water.
-    {from:{x:84,y:29},to:{x:84,y:33},fromH:0,toH:-1.6,width:3,ceil:10.8,zone:'natatorium',material:'wetTile'},
-  ]},
+  {id:'natatorium',replace:true,layer:'ground',space:'natatorium',renderGroup:'ground',origin:{x:70,y:27},physicalOrigin:{x:70,y:27},base:0,rows:natatoriumRows(),profile:natatoriumProfile},
   {id:'hall_box_office_link',replace:true,layer:'ground',space:'front_atrium',renderGroup:'hall',origin:{x:94,y:24},physicalOrigin:{x:94,y:24},base:0,rows:['FFFFHH','FFFFHH','FFFFHH']},
   {id:'hall_orchestra',replace:true,layer:'ground',space:'hall',renderGroup:'hall',origin:{x:98,y:4},physicalOrigin:{x:98,y:4},base:0,rows:hallGroundRows(),profile:hallGroundProfile},
   {id:'hall_lower_balcony',layer:'hall_lower',space:'hall',renderGroup:'hall',origin:{x:0,y:40},physicalOrigin:{x:98,y:4},base:0,rows:balconyRows('L')},

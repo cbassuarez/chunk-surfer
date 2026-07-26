@@ -19,6 +19,10 @@
 
 import { CELL_SCALE, NOISE } from '../config.js';
 import * as REC from './recordist.js';
+import {
+  freshHushContactDirectorState,
+  normalizeHushContactDirectorState,
+} from './hush-contact.js';
 
 const D = CELL_SCALE;
 
@@ -94,10 +98,18 @@ const state = {
   velocityY: 0,
   speed: 0,
   motionMode: 'idle',
+  contactSerial: 0,
+  pendingContact: null,
+  contactDirector: freshHushContactDirectorState(),
 };
 
 export function presenceState() { return state; }
 export function isActive() { return state.active; }
+export function contactDirectorState() { return normalizeHushContactDirectorState(state.contactDirector); }
+export function setContactDirectorState(value = {}) {
+  state.contactDirector = normalizeHushContactDirectorState(value);
+  return contactDirectorState();
+}
 
 // Sanitized bridge for sensory systems. It intentionally exposes no search
 // mode, attack cooldown, or pathfinding internals.
@@ -143,9 +155,53 @@ export function spawnBehind(px, py, dirX = 0, dirY = 1) {
   state.spawnedAt = state.lastHeardAt;
   state.velocityX = 0; state.velocityY = 0; state.speed = 0; state.motionMode = 'idle';
   state.hasProwl = false; state.prowlUntil = 0; state.dwellUntil = 0;
+  state.pendingContact = null;
 }
 
-export function despawn() { state.active = false; state.hasTarget = false; state.externalTargetUntil = 0; state.externalTargetPriority = 0; }
+export function despawn() {
+  state.active = false;
+  state.hasTarget = false;
+  state.externalTargetUntil = 0;
+  state.externalTargetPriority = 0;
+  state.pendingContact = null;
+}
+
+export function pendingContactAttempt() {
+  return state.pendingContact ? { ...state.pendingContact } : null;
+}
+
+export function confirmContactAttempt(id) {
+  const pending = state.pendingContact;
+  if (!pending || pending.id !== id) return null;
+  state.pendingContact = null;
+  state.caughtCount++;
+  state.awareness = Math.min(1, state.awareness + 0.18);
+  return { count: state.caughtCount, awareness: state.awareness };
+}
+
+export function releaseContactAttempt(id, {
+  target = null,
+  expiresAt = 0,
+  priority = 1,
+} = {}) {
+  const pending = state.pendingContact;
+  if (!state.active || !pending || pending.id !== id) return false;
+  state.pendingContact = null;
+  state.hasTarget = false;
+  state.externalTargetUntil = 0;
+  state.externalTargetPriority = 0;
+  state.lastEngagedAt = performance.now();
+  if (target && Number.isFinite(Number(target.x)) && Number.isFinite(Number(target.y))) {
+    offerSoundTarget({
+      position: { x: Number(target.x), y: Number(target.y) },
+      level: 0.2,
+      confidence: 1,
+      expiresAt,
+      priority,
+    });
+  }
+  return true;
+}
 
 export function distanceTo(px, py) {
   return state.active ? Math.hypot(state.x - px, state.y - py) : Infinity;
@@ -181,9 +237,12 @@ function hear(x, y, level, now) {
   return true;
 }
 
-// `onCatch` is the game's, not ours: spoil the take, injure, degrade.
-export function updatePresence(dt, px, py, onCatch, {
+// `onContactAttempt` is the game's, not ours. In ordinary building play it
+// receives a deferred transaction; Source checkpoint mode deliberately keeps
+// the legacy immediate count callback.
+export function updatePresence(dt, px, py, onContactAttempt, {
   navigation = null, catchMode = 'normal', dreadLevel = 0, sightOcclusionDb = 0,
+  deferContact = false, suppressContact = false,
 } = {}) {
   if (!state.active) return;
   const now = performance.now();
@@ -301,10 +360,8 @@ export function updatePresence(dt, px, py, onCatch, {
   //    moment has an after.
   const cooling = (now - state.lastCatchAt) / 1000 < PRESENCE.catchCooldownSec;
   const spawning = (now - state.spawnedAt) / 1000 < PRESENCE.spawnGraceSec;
-  if (!cooling && !spawning && distanceTo(px, py) <= PRESENCE.catchRadius) {
+  if (!suppressContact && !state.pendingContact && !cooling && !spawning && distanceTo(px, py) <= PRESENCE.catchRadius) {
     state.lastCatchAt = now;
-    state.caughtCount++;
-    state.awareness = Math.min(1, state.awareness + 0.18);
     state.hasTarget = false;
     state.externalTargetUntil = 0;
     state.externalTargetPriority = 0;
@@ -318,7 +375,20 @@ export function updatePresence(dt, px, py, onCatch, {
       state.y += (ry / rm) * PRESENCE.recoilCells;
     }
     state.escapeDir = [rx / rm, ry / rm];   // the game shoves the player the other way
-    onCatch?.(state.caughtCount);
+    if (deferContact && catchMode !== 'source-checkpoint') {
+      const id = ++state.contactSerial;
+      state.pendingContact = {
+        id,
+        proposedCount: state.caughtCount + 1,
+        position: { x: state.x, y: state.y },
+        escapeDirection: [...state.escapeDir],
+      };
+      onContactAttempt?.({ ...state.pendingContact });
+    } else {
+      state.caughtCount++;
+      state.awareness = Math.min(1, state.awareness + 0.18);
+      onContactAttempt?.(state.caughtCount);
+    }
   }
 }
 
@@ -326,9 +396,16 @@ export function loadPresenceState(saved = {}) {
   state.awareness = saved.awareness || 0;
   state.caughtCount = saved.caughtCount || 0;
   state.spawnedAt = -1e9;
+  state.lastCatchAt = performance.now() - Math.max(0, PRESENCE.catchCooldownSec - 3) * 1000;
   state.externalTargetUntil = 0;
   state.externalTargetPriority = 0;
+  state.pendingContact = null;
+  state.contactDirector = normalizeHushContactDirectorState(saved.contactDirector);
 }
 export function savePresenceState() {
-  return { awareness: state.awareness, caughtCount: state.caughtCount };
+  return {
+    awareness: state.awareness,
+    caughtCount: state.caughtCount,
+    contactDirector: contactDirectorState(),
+  };
 }

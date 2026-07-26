@@ -110,6 +110,18 @@ export const ACHIEVEMENT_DEFS = Object.freeze([
     test: ({ summary }) => summary?.rules?.startedPreset === 'dead-air'
       && summary?.integrity?.deadAir?.eligible === true,
   },
+  {
+    id: 'ACH_ONE_TORCH', name: 'The Whole Night on One Torch',
+    description: 'Finish without restoring a building circuit.', category: 'method', hidden: false,
+    events: [EVENT_TYPES.RUN_FINISHED],
+    test: ({ run }) => (run?.ledger?.power?.everRestored?.length || 0) === 0,
+  },
+  {
+    id: 'ACH_BUILDING_ALIVE', name: 'The Building, Briefly Alive',
+    description: 'Restore all three distribution circuits in one run.', category: 'method', hidden: false,
+    events: [EVENT_TYPES.RUN_FINISHED],
+    test: ({ run }) => ['sp01','sp02','sp03'].every((id) => run?.ledger?.power?.everRestored?.includes(id)),
+  },
 ]);
 
 export const ACHIEVEMENT_BY_ID = Object.freeze(

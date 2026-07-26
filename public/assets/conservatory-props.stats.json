@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-23T07:07:50.972Z",
-  "bytes": 2253916,
-  "totalTriangles": 33642,
+  "generatedAt": "2026-07-26T09:30:24.995Z",
+  "bytes": 2800856,
+  "totalTriangles": 40530,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -103,25 +103,61 @@
       "triangles": 256,
       "vertices": 286
     },
+    "natatorium_roof_structure": {
+      "triangles": 3268,
+      "vertices": 6536
+    },
+    "natatorium_cubicle_bank": {
+      "triangles": 604,
+      "vertices": 1000
+    },
+    "changing_bench": {
+      "triangles": 96,
+      "vertices": 192
+    },
+    "natatorium_end_window": {
+      "triangles": 408,
+      "vertices": 816
+    },
+    "natatorium_clock": {
+      "triangles": 260,
+      "vertices": 520
+    },
+    "pool_lane_ropes": {
+      "triangles": 1392,
+      "vertices": 2784
+    },
+    "pool_backstroke_flags": {
+      "triangles": 44,
+      "vertices": 120
+    },
+    "pool_ladder": {
+      "triangles": 108,
+      "vertices": 216
+    },
+    "pool_lifebuoy": {
+      "triangles": 104,
+      "vertices": 208
+    },
     "pool_start_block": {
-      "triangles": 24,
-      "vertices": 48
+      "triangles": 60,
+      "vertices": 120
     },
     "lifeguard_chair": {
-      "triangles": 72,
-      "vertices": 144
+      "triangles": 168,
+      "vertices": 336
     },
     "lane_reel": {
-      "triangles": 108,
-      "vertices": 150
+      "triangles": 604,
+      "vertices": 1174
     },
     "drain_grille": {
       "triangles": 120,
       "vertices": 240
     },
     "pool_lane_markings": {
-      "triangles": 144,
-      "vertices": 288
+      "triangles": 120,
+      "vertices": 240
     },
     "plant_pipe_straight": {
       "triangles": 84,

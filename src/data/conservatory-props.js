@@ -57,6 +57,14 @@ const CHAPEL = [
   {worldId:'lux_nova',fileLabel:'lux-049'},
 ];
 
+// Short mechanical sounds already shipped with the game, assigned to dock
+// objects as fixed source families. They are intentionally mundane: a case
+// latch, a reel ratchet, and a shutter bar. Once the player has made one, the
+// existing prop memory lets the HUSH reproduce that exact family later.
+const DOCK_CASE = [{worldId:'dock_case',fileLabel:'01'}];
+const DOCK_REEL = [{worldId:'dock_reel',fileLabel:'01'}];
+const DOCK_SHUTTER = [{worldId:'dock_shutter',fileLabel:'01'}];
+
 export const PROP_MESH = Object.freeze({
   school_desk:{w:.72,d:.78,blocks:true}, pew:{w:2.8,d:.72,blocks:true},
   chair:{w:.52,d:.56,blocks:false}, music_stand:{w:.45,d:.45,blocks:false},
@@ -75,7 +83,13 @@ export const PROP_MESH = Object.freeze({
   box_office_desk:{w:1.15,d:.62,blocks:true}, program_stack:{w:.42,d:.32,blocks:false},
   cash_terminal:{w:.36,d:.28,blocks:false}, queue_stanchion:{w:.32,d:.32,blocks:false},
   notice_board:{w:1.2,d:.12,blocks:false}, pool_start_block:{w:.62,d:.72,blocks:true},
-  pool_lane_markings:{w:14.2,d:19.5,blocks:false},
+  pool_lane_markings:{w:10.2,d:15.5,blocks:false},
+  natatorium_roof_structure:{w:23.2,d:20.5,blocks:false},
+  natatorium_cubicle_bank:{w:14.7,d:.35,blocks:false},
+  natatorium_end_window:{w:10.5,d:.24,blocks:false}, natatorium_clock:{w:1.1,d:.12,blocks:false},
+  changing_bench:{w:2.2,d:.48,blocks:true}, pool_lane_ropes:{w:8.0,d:15.2,blocks:false},
+  pool_backstroke_flags:{w:12.2,d:.08,blocks:false}, pool_ladder:{w:.85,d:.95,blocks:false},
+  pool_lifebuoy:{w:1.0,d:.14,blocks:false},
   loose_note:{w:.32,d:.42,blocks:false},
   tuning_fork:{w:.22,d:.82,blocks:false},
   calibration_pin:{w:.12,d:.12,blocks:false},
@@ -143,13 +157,81 @@ export const STRUCTURAL_COLLIDERS = Object.freeze([
 ]);
 
 export const CONSERVATORY_PROPS = [
-  // Loading dock / foyer: work furniture, not a showroom.
-  P('dock-desk-1','school_desk',60.0,6.0,.15,{inspect:inspect('A school desk used as a signing table. The basket underneath is full of cable ties.','The cable ties are older than the desk.')}),
-  P('acq-maintenance-searchlight-dock','portable_searchlight',61.0,6.0,.35,{
-    scale:1.8,
-    provenance:provenance('maintenance_purchase','M/L-02','loading-dock unit; battery removed'),
-    inspect:inspect('A portable inspection lamp from the paired maintenance purchase, M/L-02. The battery bay is open and empty; it cannot light the room.','M/L-02. Lamp, cable and no battery.'),
+  // ── Loading dock: LAST LOAD-OUT ──────────────────────────────────────────
+  // The room has a three-metre freight spine at x64–66. Everything lives at
+  // the perimeter so the setup is dense without becoming a prop maze.
+  P('dock-level-check-box','tower_rope_mat',65.0,10.0,0,{interactive:false,blocks:false,scale:1.45,elevation:.018}),
+  P('dock-desk-1','school_desk',60.0,6.0,.15,{
+    label:'signing desk',inspectAt:{x:59.6,y:7.0},dockInvestigation:true,
+    inspect:inspect('A school desk doing the job of a dispatch station. Somebody meant to come back to it.','The little desk is still waiting for the rest of its shift.'),
   }),
+  P('dock-work-order-clipboard','loose_note',60.2,6.05,.12,{
+    label:'unfinished clipboard',elevation:.83,blocks:false,inspectAt:{x:60.55,y:7.0},dockInvestigation:true,
+    inspect:inspect('Your job is clipped over somebody else’s unfinished leaving.','The last line is still waiting to be crossed out.'),
+  }),
+  P('dock-crew-board','notice_board',58.15,8.0,Math.PI/2,{
+    label:'erased route board',elevation:1.15,blocks:false,inspectAt:{x:59.1,y:8.0},dockInvestigation:true,
+    inspect:inspect('The route remains. The names beside it have been rubbed away.','Three places and nobody assigned to walk between them.'),
+  }),
+  P('acq-maintenance-searchlight-dock','portable_searchlight',61.0,6.0,.35,{
+    label:'dead portable searchlight',
+    scale:1.8,dockInvestigation:true,
+    provenance:provenance('maintenance_purchase','M/L-02','loading-dock unit; battery removed'),
+    inspect:inspect('A work lamp with its back open and its battery gone. An honestly dead thing.','Click. Nothing. Good.'),
+    aftermathInspect:{
+      first:'The work lamp is still dead. It is the only light in the room that behaved.',
+      again:'Click. Nothing. Somehow that is comforting now.',
+    },
+  }),
+  P('dock-hand-truck','equipment_cart',72.6,5.35,Math.PI/2,{
+    label:'strapped hand truck',scale:.72,inspectAt:{x:71.7,y:5.5},dockInvestigation:true,
+    inspect:inspect('A hand truck tied up neatly before it ever carried the load.','FRAME FIRST, still chalked across its foot.'),
+  }),
+  P('dock-freight-crates','equipment_rack',72.1,7.45,0,{
+    label:'empty freight crates',scale:1.15,inspectAt:{x:71.0,y:7.5},dockInvestigation:true,
+    inspect:inspect('Three empty crates. Everything in the room had somewhere to go except the chandelier.','The empty boxes still smell of rain and hot dust.'),
+  }),
+  P('dock-freight-crate-low','instrument_case',71.5,8.55,Math.PI/2,{interactive:false,blocks:false,scale:1.15}),
+  P('dock-road-case','instrument_case',60.1,12.45,Math.PI/2,{
+    label:'previous recordist’s case',dockInvestigation:true,
+    ...play(DOCK_CASE,'An open road case with a recorder-shaped absence inside it.','Four tally marks under the handle. Space for one more.'),
+    acousticKind:'handling_noise',hushPlayback:{mode:'interval',minMs:5200,maxMs:7600},
+    aftermathInspect:{
+      unheard:{first:'The case is not quite where you remember it. You never touched it, so memory gets the last word.',again:'A small distance. A large uncertainty.'},
+      heard:{first:'The case stayed here. Its little metal cough came from across the room.',again:'One sound. Two places. Keep them separate.'},
+    },
+  }),
+  P('dock-cable-reel','lane_reel',71.8,10.7,0,{
+    label:'empty cable reel',scale:.82,blocks:true,dockInvestigation:true,
+    ...play(DOCK_REEL,'An empty reel, wound clean and left with nothing to carry.','The handle rests one tooth past certainty.'),
+    acousticKind:'mechanical_click',hushPlayback:{mode:'interval',minMs:5600,maxMs:8200},
+    aftermathInspect:{
+      unheard:{first:'The handle seems to have moved. You never marked it, so “seems” is all you own.',again:'One tooth past certainty.'},
+      heard:{first:'The handle did not turn. The click still came from behind the desk.',again:'You know what you heard. You do not know what heard you.'},
+    },
+  }),
+  P('dock-shutter-bar','plant_pipe_straight',72.4,12.45,0,{
+    label:'singing shutter bar',scale:.88,blocks:false,inspectAt:{x:71.4,y:12.45},dockInvestigation:true,
+    ...play(DOCK_SHUTTER,'A steel bar carrying the whole shutter’s held breath.','Put a hand on it and the room goes quiet.'),
+    acousticKind:'structure_impact',hushPlayback:{mode:'interval',minMs:6100,maxMs:9000},
+    aftermathInspect:{
+      unheard:{first:'The bar hums under your hand. You never knocked it before.',again:'The shutter is still. Something in it is not.'},
+      heard:{first:'Your knock returned from above the chandelier, where there is no steel to carry it.',again:'The room knew the sound well enough to put it somewhere else.'},
+    },
+  }),
+  P('dock-chandelier-frame','tower_frame',69.0,6.25,0,{
+    label:'caged chandelier',scale:.34,blocks:false,inspectAt:{x:67.45,y:7.1},dockInvestigation:true,
+    inspect:inspect('A chandelier locked inside a wheeled cage. Its wire ends in open air.','Too carefully held for rubbish. Too dead to be a lamp.'),
+    aftermathInspect:{
+      first:'Black bulbs. Bright glass. Every wheel still locked.',
+      again:'The cage never moved. The thing inside it changed anyway.',
+    },
+  }),
+  P('dock-chandelier-intact','chandelier_03',69.0,6.25,0,{label:'chandelier lamps',interactive:false,blocks:false,scale:1.48,elevation:1.05}),
+  P('dock-chandelier-spent','chandelier_03',69.05,6.3,.48,{label:'ruptured chandelier lamps',interactive:false,blocks:false,scale:1.18,scaleY:.48,elevation:.48}),
+  P('dock-chandelier-tag','loose_note',67.85,6.55,-.2,{interactive:false,blocks:false,scale:.8,elevation:1.0}),
+
+  // Loading dock / foyer: work furniture, not a showroom.
   P('foyer-pew-1','pew',82.0,7.0,Math.PI/2,{inspect:inspect('One chapel pew never made it upstairs. A paper removal tag is still tied to it.','The tag says RETURN TO CHAPEL.')}),
   P('foyer-cart-1','equipment_cart',91.5,14.0,0,{inspect:inspect('A percussion cart with one wheel wired straight.','It will only travel in a circle.')}),
   P('foyer-portrait-titian','portrait_frame',80.5,4.0,0,{elevation:1.35,portraitIndex:0,inspect:inspect('Titian. Portrait of a Man. A Met Open Access reproduction in an inexpensive gilt frame.','The sitter keeps looking past the entrance.')}),
@@ -284,7 +366,10 @@ export const CONSERVATORY_PROPS = [
 
   // Concert hall and its overflow. The grand is not an upright substitute.
   P('hall-structure','hall_structure',113.0,23.0,0,{interactive:false,structural:true}),
-  P('hall-seating','hall_seating',113.0,23.0,Math.PI,{interactive:false,structural:true,elevation:-2.5,collisionMask:'hall-seating'}),
+  // The mesh is authored front-low at -Z and back-high at +Z. The stage is
+  // north (-Z), so yaw zero is the only transform that puts the low stalls at
+  // the apron and lets the bowl rise toward the rear cross aisle.
+  P('hall-seating','hall_seating',113.0,23.0,0,{interactive:false,structural:true,elevation:-2.5,collisionMask:'hall-seating'}),
   P('hall-grand-1','grand_piano',113.0,8.0,Math.PI,{...play(PIANO,'A grand piano under a black cover, except the keyboard is exposed.','The keys are colder than the room.')}),
   P('hall-marimba-1','marimba',103.0,9.0,Math.PI/2,{...play(MARIMBA,'The concert marimba, brakes on, one resonator tube dented flat.','The dent has a pitch of its own.')}),
   P('hall-marimba-overflow','marimba',125.0,12.0,0,{...play(MARIMBA,'A second marimba parked where the hall narrows. It did not fit wherever it was meant to go.','It is still in everybody’s way.')}),
@@ -440,40 +525,83 @@ export const CONSERVATORY_PROPS = [
   P('tower-light-service','tower_bulkhead',73.0,151.0,Math.PI/2,{elevation:1.85,interactive:false,structural:true}),
   P('tower-light-organ-exit','tower_bulkhead',100.0,156.0,Math.PI/2,{elevation:1.85,interactive:false,structural:true}),
 
-  // Utility spaces remain believable but are not playable instruments.
-  P('pool-lane-markings','pool_lane_markings',84,38.75,0,{interactive:false,structural:true,elevation:.05}),
-  P('pool-bench-1','pew',74.7,34.2,Math.PI/2,{mesh:'pew',scale:.62,inspect:inspect('A timber changing bench, grey from chlorine.','The grain has lifted.')}),
-  P('pool-bench-2','pew',74.7,42.2,Math.PI/2,{mesh:'pew',scale:.62,inspect:inspect('A second changing bench set against the dry deck wall.','No towel ever dried here.')}),
-  P('pool-cart-1','equipment_cart',94.2,46.7,Math.PI/2,{inspect:inspect('A pool-maintenance cart parked by the service corner, not beside the basin.','The warning labels have run.')}),
-  P('acq-maintenance-searchlight-pool','portable_searchlight',94.2,46.25,-Math.PI/2,{
+  // ── Natatorium: an Edwardian municipal bath under a later steel refit ───
+  // The roof, cubicles and end-window dressing all sit on the ONE authored
+  // room envelope. Nothing below the roof spans the hall, and both cubicle
+  // banks are shallow wall furniture, so this cannot regress into the former
+  // room-inside-a-room failure.
+  P('natatorium-roof-structure','natatorium_roof_structure',83.0,38.5,0,{interactive:false,structural:true}),
+  P('natatorium-cubicles-west','natatorium_cubicle_bank',71.4,40.5,-Math.PI/2,{interactive:false,structural:true}),
+  P('natatorium-cubicles-east','natatorium_cubicle_bank',94.6,40.5,Math.PI/2,{interactive:false,structural:true}),
+  P('natatorium-end-window','natatorium_end_window',84.0,49.25,0,{interactive:false,structural:true,elevation:.55}),
+  P('natatorium-clock','natatorium_clock',92.0,49.25,0,{
+    elevation:5.25,inspectAt:{x:92,y:48.2},
+    inspect:inspect('The pool clock stopped at twenty-seven past. Chlorine has greened the screws but not moved the hands.','Still twenty-seven past.'),
+  }),
+
+  P('pool-lane-markings','pool_lane_markings',84,40.5,0,{interactive:false,structural:true,elevation:.05}),
+  P('pool-lane-ropes','pool_lane_ropes',84,40.5,0,{interactive:false,structural:true,elevation:.015}),
+  P('pool-flags-near','pool_backstroke_flags',84,36.0,0,{interactive:false,structural:true}),
+  P('pool-flags-far','pool_backstroke_flags',84,45.5,0,{interactive:false,structural:true}),
+  P('pool-ladder-west','pool_ladder',77.7,40.0,-Math.PI/2,{interactive:false,structural:true}),
+  P('pool-ladder-east','pool_ladder',90.3,44.0,Math.PI/2,{interactive:false,structural:true}),
+  P('pool-lifebuoy-west','pool_lifebuoy',71.4,42.0,-Math.PI/2,{
+    elevation:1.55,inspectAt:{x:72.3,y:42.0},
+    inspect:inspect('A cork lifebuoy repainted until its name has disappeared. The rope is stiff with old pool water.','Layers of municipal red. No readable name.'),
+  }),
+  P('pool-bench-1','changing_bench',73.3,36.0,Math.PI/2,{inspect:inspect('A slatted changing bench, grey from chlorine.','The grain has lifted around every brass screw.')}),
+  P('pool-bench-2','changing_bench',73.3,44.0,Math.PI/2,{inspect:inspect('A second bench set below the cubicles, close enough for bare feet and folded towels.','No towel ever dried here.')}),
+  P('pool-cart-1','equipment_cart',94.0,47.0,Math.PI/2,{
+    action:'take-pool-cells',interaction:'action',interactionPriority:1,
+    inspect:inspect('A pool-maintenance cart parked by the service corner, not beside the basin. A sealed battery sleeve is clipped under the handle.','The warning labels have run; the empty sleeve remains under the handle.'),
+  }),
+  P('acq-maintenance-searchlight-pool','portable_searchlight',94.0,46.55,-Math.PI/2,{
     scale:1.5,elevation:.68,
     provenance:provenance('maintenance_purchase','M/L-01','natatorium unit; lens clamp replaced'),
-    inspectAt:{x:93.45,y:46.55},
+    inspectAt:{x:93.25,y:46.85},
     inspect:inspect('The pool cart carries M/L-01, one of two portable inspection lamps. Its replacement lens clamp is bright, but the disconnected lead ends at the cart.','M/L-01. A repaired lamp with nowhere to draw power.'),
   }),
-  P('pool-lifeguard-chair','lifeguard_chair',94.2,38.8,-Math.PI/2,{inspect:inspect('A lifeguard chair facing the length of the pool.','The rescue tube is gone.')}),
-  P('pool-lane-reel','lane_reel',94.2,31.5,Math.PI/2,{inspect:inspect('A lane-line reel at the storage edge with one cracked float still wound onto it.','The handle turns half a revolution.')}),
-  ...[77.5,80.1,82.7,85.3,87.9,90.5].map((x,i)=>P(`pool-start-${i+1}`,'pool_start_block',x,49.0,0,{inspect:inspect('A starting block, its number plate removed.','Four bolt heads and a paler rectangle.')})),
-  ...[80.1,82.7,85.3,87.9].map((x,i)=>P(`pool-drain-${i+1}`,'drain_grille',x,44.8,0,{elevation:.06,inspect:inspect('A basin drain furred white with old pool salts.','The salts trace every slot.')})),
+  P('pool-lifeguard-chair','lifeguard_chair',92.5,40.5,-Math.PI/2,{inspect:inspect('A lifeguard chair on the east deck, facing across the pool.','The rescue tube is gone.')}),
+  P('pool-lane-reel','lane_reel',92.7,34.2,0,{inspect:inspect('A lane-line reel staged beside the starting end, one cracked float still wound onto it.','The handle turns half a revolution.')}),
+  ...[79.2,81.6,84.0,86.4,88.8].map((x,i)=>P(`pool-start-${i+1}`,'pool_start_block',x,32.4,Math.PI,{inspect:inspect('A starting block, its number plate removed.','Four bolt heads and a paler rectangle.')})),
+  ...[80.4,82.8,85.2,87.6].map((x,i)=>P(`pool-drain-${i+1}`,'drain_grille',x,46.0,0,{elevation:.06,inspect:inspect('A basin drain furred white with old pool salts.','The salts trace every slot.')})),
   P('acq-services-panel-pool','power_box_01',95.45,44.8,-Math.PI/2,{
     scaleX:1.76,scaleY:1.63,elevation:1.45,
     provenance:provenance('services_rewire','S/P-02','natatorium panel; chlorine bloom under the lip'),
     inspectAt:{x:94.7,y:44.8},
+    interaction:'action',action:'power-panel-sp02',interactionPriority:2,
     inspect:inspect('The natatorium distribution panel, S/P-02, matches the plant-room and front-of-house boxes. Chlorine has lifted the paint beneath its lower lip; every breaker is open.','S/P-02. Same installation, different air, no live circuit.'),
   }),
   P('acq-services-panel-foh','power_box_01',96.0,16.0,-Math.PI/2,{
     scaleX:1.76,scaleY:1.63,elevation:1.45,
     provenance:provenance('services_rewire','S/P-03','front-of-house panel; typed circuit card'),
     inspectAt:{x:95.25,y:16.0},
+    interaction:'action',action:'power-panel-sp03',interactionPriority:2,
     inspect:inspect('The front-of-house panel, S/P-03. Its typed circuit card lists foyer, box office and hall lounge; the main isolator is down.','S/P-03. A neat card for three dead circuits.'),
   }),
   P('plant-rack-1','equipment_rack',38.5,28,Math.PI/2,{inspect:inspect('A controls rack beside equipment too old to report to it.','The indicators are mechanical.')}),
   P('acq-services-panel-plant','power_box_01',38.0,30,-Math.PI/2,{
     scaleX:1.76,scaleY:1.63,elevation:1.45,
     provenance:provenance('services_rewire','S/P-01','plant-room panel; hand-corrected labels'),
-    inspectAt:{x:37.25,y:10.0},
+    inspectAt:{x:37.25,y:30.0},
+    interaction:'action',action:'power-panel-sp01',interactionPriority:2,
     inspect:inspect('The plant-room distribution panel, S/P-01. It begins the same numbered installation as the later boxes upstairs; two typed labels have been corrected in pencil.','S/P-01. The oldest corrections are still the clearest instructions.'),
   }),
+  // Every authored electric practical has a visible body. The light table
+  // anchors to these casings, so a fitting cannot drift away from the thing
+  // that appears to emit it. `lightCircuit` is presentation metadata only;
+  // the breaker state itself remains in the power runtime.
+  P('light-dance-stair-casing','tower_bulkhead',45,19.75,0,{elevation:2.5,interactive:false,structural:true,lightMaintained:true,lightColor:[1,.48,.22]}),
+  P('light-plant-service-casing','tower_bulkhead',35,29,0,{elevation:2.45,interactive:false,structural:true,lightCircuit:'sp01',lightColor:[.69,.83,.70]}),
+  P('light-dance-work-casing','tower_bulkhead',18,10,0,{elevation:2.45,interactive:false,structural:true,lightCircuit:'sp01',lightColor:[.78,.78,.65]}),
+  P('light-foh-west-casing','tower_bulkhead',81,13,0,{elevation:3.25,interactive:false,structural:true,lightCircuit:'sp03',lightColor:[.74,.82,.78]}),
+  P('light-foh-east-casing','tower_bulkhead',92,16.5,0,{elevation:3.25,interactive:false,structural:true,lightCircuit:'sp03',lightColor:[.74,.82,.78]}),
+  P('light-pool-service-a-casing','tower_bulkhead',91,43,0,{elevation:3.3,interactive:false,structural:true,lightCircuit:'sp02',lightColor:[.69,.83,.78]}),
+  P('light-pool-service-b-casing','tower_bulkhead',77,43,0,{elevation:3.3,interactive:false,structural:true,lightCircuit:'sp02',lightColor:[.67,.81,.76]}),
+  P('light-hall-stage-door-casing','tower_bulkhead',100,8,0,{elevation:5.15,interactive:false,structural:true,lightMaintained:true,lightColor:[1,.40,.22]}),
+  P('light-hall-lounge-casing','tower_bulkhead',101,27,0,{elevation:3.1,interactive:false,structural:true,lightCircuit:'sp03',lightColor:[.78,.74,.62]}),
+  P('light-practice-north-casing','tower_bulkhead',60.5,55,0,{elevation:2.5,interactive:false,structural:true,lightMaintained:true,lightColor:[1,.52,.25]}),
+  P('light-practice-south-casing','tower_bulkhead',61,81,0,{elevation:2.5,interactive:false,structural:true,lightMaintained:true,lightColor:[1,.50,.24]}),
   // Two authored wall systems replace the loose pipe cloud. All origins are
   // in plant-room air, one half-cell from solid masonry, and yaw points the
   // service faces into the room. The lower north run joins edge-to-edge.

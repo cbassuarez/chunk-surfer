@@ -49,6 +49,20 @@ import { terrorInit, once, interpolate } from './game/terror.js';
 import * as REC from './game/recordist.js';
 import * as RT from './audio/roomtone.js';
 import * as PRES from './game/presence.js';
+import {
+  HUSH_BRUSH_OUTCOME,
+  HUSH_CONTACT_KIND,
+  HUSH_CONTACT_LIMITS,
+  HUSH_SENSATION_MODE,
+  buildHushReleaseNote,
+  buildHushSensationTree,
+  chooseHushReleaseDestination,
+  chooseHushContactExperience,
+  noteHushWarningShown,
+  rememberHushContent,
+  resolveHushSensationChoice,
+  updateHushWarningSchedule,
+} from './game/hush-contact.js';
 import * as PROPS from './game/props.js';
 import * as CUES from './audio/cues.js';
 import { authoredCue, authoredAudioProject, authoredCueUrls, dispatchAuthoredCue } from './audio/authored-cues.js';
@@ -153,7 +167,16 @@ import {
   stairAnomalyTriggerMatches,
 } from './game/stair-anomaly.js';
 import { createStairAnomalyRuntime, STAIR_ANOMALY_ENTRY, STAIR_ANOMALY_MODULE_CELLS } from './game/stair-anomaly-runtime.js';
-import { resolveLocalLights } from './data/conservatory-lights.js';
+import { resolveLightingContext, resolveLocalLights } from './data/conservatory-lights.js';
+import {
+  livePowerCircuits,
+  normalizePowerState,
+  powerCircuitDefinition,
+  powerCircuitForPanel,
+  togglePowerCircuit,
+} from './game/conservatory-power.js';
+import { createElectricalHumRuntime, electricalHumAt } from './audio/electrical-hum.js';
+import { resolveTorchLook } from './render/lighting-model.js';
 import { buildChunkSurfGodPreset, CHUNK_SURF_GOD_PRESET } from './game/chunk-surf-god.js';
 import {
   CHAPEL_TOWER_PHASE,
@@ -162,6 +185,18 @@ import {
   reduceChapelTower,
 } from './game/chapel-tower-state.js';
 import { createSourceTowerTransitionScene } from './game/source-tower-transition-scene.js';
+import {
+  DOCK_ACOUSTIC_PROP_IDS,
+  DOCK_HAUNTING_GRACE_MS,
+  deriveDockHauntingEligibility,
+  dockExitAttemptShouldSpeak,
+  dockEndingBeat,
+  dockHauntingDynamicInstances,
+  dockHauntingLights,
+  freshDockTransitState,
+  makeLoadingDockHauntingScene,
+  reduceDockTransit,
+} from './game/loading-dock.js';
 import { createBellTowerRuntime, createInertBellAssemblyInstances } from './game/bell-tower-runtime.js';
 import { createBellTowerAudio } from './audio/bell-tower-audio.js';
 import { ELLERY_BELLS } from './data/bell-tower.js';
@@ -207,6 +242,7 @@ import { WORK_ORDER, SQUELCH_LINES,
          PROLOGUE_THOUGHTS, LINES, HIM_LINES, guestLines,
          endingChoice,
          takenLines, foundLine } from './data/conservatory-script.js';
+import { loadingDockInvestigation } from './data/loading-dock-investigation.js';
 import {
   CHUNK_SURF_ENDING_ID,
   CHUNK_SURF_FLAGS,
@@ -501,6 +537,8 @@ let menuGain=null;
 let outputMonitor=null;
 let hushAudioMix=null;
 let hushAudioRuntime=null;
+let electricalHumRuntime=null;
+let electricalHumFrame={audible:false,gain:0,pan:0,circuits:[],primary:null,sources:[]};
 let hushLightScale=1;
 let audioInitFailed=false;
 
@@ -617,6 +655,7 @@ function ensureCtx({resume=true}={}){
         preloadBattleMusic();
         preloadPropStems();
         STORY.preloadAll();
+        electricalHumRuntime=createElectricalHumRuntime({context:actx,destination:sfxGain});
         audioRecovery?.bind(actx);
     }catch(err){
       audioInitFailed=true;
@@ -3313,6 +3352,7 @@ function audibleCandidates(){
 
 function updateAudio(){
   hushAudioMix?.setProgramMode?.(storyMode&&REC.isListening()?'monitor':'world');
+  updateElectricalHum();
   if(sampleFieldSuppressed()){
     silenceSampleField();
     return;
@@ -3417,7 +3457,13 @@ function step(dx,dy){
   // leaving (see tutorialGuide / firstTakeIntercept).
   if(storyMode && !setupComplete() && usingPlan() && !usingSpecialSpace()
      && FP.zoneAt(px,py)===ZONE.dock && FP.zoneAt(px+dx,py+dy)!==ZONE.dock){
-    refuseDockExit(); return;
+    const yaw=mapHeading(),forward=[Math.sin(yaw),-Math.cos(yaw)],stepLength=Math.max(.001,Math.hypot(dx,dy));
+    const forwardIntent=(dx*forward[0]+dy*forward[1])/stepLength;
+    const crossed=FP.doorAt(px,py)||FP.doorAt(px+dx,py+dy)||FP.doorNear(px,py,[dx/stepLength,dy/stepLength],3.5)?.portal;
+    // Always hold the setup boundary. Speak only when the player deliberately
+    // walks forward through an actual exit; brushing the zone seam or strafing
+    // beside a leaf should not summon the tutorial line.
+    refuseDockExit({speak:dockExitAttemptShouldSpeak({forwardIntent,hasDoor:!!crossed})}); return;
   }
   // Geometry blocks the step. In the conservatory this is a body test — a wall,
   // a lintel you would brain yourself on, a riser too tall to take — and it
@@ -3504,6 +3550,7 @@ function step(dx,dy){
   beginRenderStep(nx,ny,nowMs);
   lastMoveAtMs=nowMs;
   px=nx; py=ny; stepCount++;
+  if(storyMode&&usingPlan()&&!usingSpecialSpace())noteDockTransitStep(stepFrom,{x:px,y:py});
   if(usingPlan()&&!usingSpecialSpace()&&FP.logicalToPhysical(px,py).renderGroup==='academic'&&!flagGet('academic.entered')){
     flagApply(['academic.entered']);
     facilityMapCache={key:null,model:null};
@@ -5051,11 +5098,7 @@ function natatoriumWaterActive(){
 }
 
 function natatoriumWaterBlocksAt(x,y){
-  // The water keeps you OUT; it does not keep you in. Being taken drops you on
-  // a room's centre cell, and the natatorium's centre is the basin itself — so
-  // every direction was refused and the player stood in the pool unable to
-  // move. If you are already inside it, you can always walk.
-  if(WATER.pointInNatatoriumBasin(Math.floor(px),Math.floor(py),natatoriumBasinBounds)) return false;
+  // Compatibility seam: pool water no longer blocks entry in any run state.
   return WATER.natatoriumWaterBlocks(currentNatatoriumWaterRun(), x, y, natatoriumBasinBounds);
 }
 
@@ -5064,7 +5107,7 @@ function currentNatatoriumWaterRenderState({ audio = 0 } = {}){
   return {
     active:true,
     basinBounds:natatoriumBasinBounds,
-    levelM:-0.06,
+    levelM:0.015,
     murk:0.86,
     rippleSources:WATER.makeNatatoriumRippleSources({
       run:currentNatatoriumWaterRun(),
@@ -5222,6 +5265,8 @@ function syncDoorDynamicProps(){
   if(group==='tower'&&!inertBellTowerInstances)inertBellTowerInstances=createInertBellAssemblyInstances(towerBellLayout());
   const bells=group!=='tower'?[]:chapelTowerState().phase===CHAPEL_TOWER_PHASE.TOWER_ACTIVE&&bellTowerRuntime?bellTowerRuntime.renderInstances():(inertBellTowerInstances||[]);
   for(const bell of bells)doorDynamicCombined[count++]=bell;doorDynamicCombined.length=count;
+  if(group==='ground')for(const instance of dockHauntingDynamicInstances(dockHauntingFrame))doorDynamicCombined[count++]=instance;
+  doorDynamicCombined.length=count;
   R3.r3dSetDynamicProps(doorDynamicCombined);
 }
 
@@ -5230,35 +5275,80 @@ function syncDoorDynamicProps(){
 // of the nine spaces had no light at all: there was nowhere to put any. All this
 // does is resolve the authored rig for where you are standing.
 function syncArchitecturalLocalLights(group){
+  if(group==='ground'&&dockHauntingFrame){
+    R3.r3dSetLocalLights?.(dockHauntingLights(dockHauntingFrame));
+    return;
+  }
   const settings=getSave().settings||{};
-  R3.r3dSetLocalLights?.(resolveLocalLights(group,{
+  const physical=FP.logicalToPhysical(px,py);
+  const context=resolveLightingContext({group,zone:FP.zoneAt(px,py),spaceId:physical.spaceId});
+  R3.r3dSetLightingContext?.(context);
+  R3.r3dSetLocalLights?.(resolveLocalLights(context,{
     timeSec:performance.now()/1000,
     reducedFlash:(settings.flash||'full')!=='full',
     towerCleared:[CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(chapelTowerState().phase),
     liveCircuits:liveLightCircuits(),
-    origin:physicalPointFor(px,py),
+    // physicalPointFor is in runtime cells; authored light data is in metres.
+    origin:{x:physical.x*CELL,z:physical.z*CELL},
+    anchorPosition:lightAnchorPosition,
   }));
 }
 
-// Which breaker panels are thrown. Nothing energises a circuit yet — the three
-// `power_box_01` panels are still inspect-only — so this is empty today and is the
-// single place §3 will feed once they become real.
 function liveLightCircuits(){
-  return EMPTY_CIRCUITS;
+  return livePowerCircuits(getSave().power);
 }
-const EMPTY_CIRCUITS=Object.freeze(new Set());
+
+function lightAnchorPosition(propId){
+  const prop=PROPS.propById(propId);if(!prop)return null;
+  const at=FP.logicalToPhysical(prop.rx,prop.ry);
+  return{
+    x:at.x*CELL+(Number(prop.renderOffsetX)||0),
+    y:(Number(prop.floor)||0)+(Number(prop.elevation)||0)+(Number(prop.renderOffsetY)||0),
+    z:at.z*CELL+(Number(prop.renderOffsetZ)||0),
+  };
+}
+
+function propEmissive(instance){
+  const prop=PROPS.propById(instance.id);
+  if(prop?.lightColor){
+    const live=!prop.lightCircuit||liveLightCircuits().has(prop.lightCircuit);
+    const color=prop.lightColor;
+    return live
+      ? [Number(color[0])||0,Number(color[1])||0,Number(color[2])||0,prop.lightMaintained?.22:.28]
+      : [Number(color[0])||0,Number(color[1])||0,Number(color[2])||0,.015];
+  }
+  if(instance.mesh==='power_box_01'){
+    const circuit=powerCircuitForPanel(instance.id);
+    return circuit&&liveLightCircuits().has(circuit.id)?[.10,1,.24,.28]:[.06,.42,.12,.07];
+  }
+  if(instance.mesh==='tower_bulkhead')return[1,.58,.27,.34];
+  return null;
+}
 
 function worldRenderInstances(group=null){
-  if(usingSourceSpace()){R3.r3dSetLocalLights?.([]);return chunkSurfRuntime.propInstances(px,py,{time:performance.now()/1000,reducedMotion:(getSave().settings?.shake||'full')!=='full'});}
+  if(usingSourceSpace()){
+    // Source owns a void-to-paper sunrise. Do not let the room the player left
+    // bleed its fluorescent ambient signature into that authored transition.
+    R3.r3dSetLightingContext?.({ambientColor:[.12,.13,.12],ambientIntensity:.006});
+    R3.r3dSetLocalLights?.([]);
+    return chunkSurfRuntime.propInstances(px,py,{time:performance.now()/1000,reducedMotion:(getSave().settings?.shake||'full')!=='full'});
+  }
   if(usingStairAnomaly()){
     const settings=getSave().settings||{};
+    R3.r3dSetLightingContext?.(resolveLightingContext({group:'stair',zone:ZONE.stair,spaceId:'impossible-stair'}));
     R3.r3dSetLocalLights?.(stairAnomalyRuntime.lightRig(performance.now()/1000,{reducedFlash:(settings.flash||'full')!=='full'}));
     return stairAnomalyRuntime.propInstances({reducedDread:!!settings.reduceDread});
   }
   syncArchitecturalLocalLights(group);
   const tower=chapelTowerState();
   const screenOpen=[CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(tower.phase);
-  const props=PROPS.renderInstances({group}).filter((instance)=>!(screenOpen&&instance.id==='chapel-inner-screen'));
+  const dockSpent=dockHauntingFrame?!!dockHauntingFrame.rupture:flagTest('dock.haunting.spent');
+  const props=PROPS.renderInstances({group}).filter((instance)=>{
+    if(screenOpen&&instance.id==='chapel-inner-screen')return false;
+    if(instance.id==='dock-chandelier-intact')return !dockSpent;
+    if(instance.id==='dock-chandelier-spent')return dockSpent;
+    return true;
+  }).map((instance)=>({...instance,emissive:propEmissive(instance)}));
   return[...props,...doorRenderInstances(group)];
 }
 
@@ -5761,6 +5851,15 @@ async function loadBuilding(){
       else if([CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(tower.phase)){playerKeys.add('tower-live');playerKeys.add('tower-cleared');for(const id of ['tower-hatch','bell-chamber-entry','organ-loft-service','organ-loft-nave'])FP.setDoorOpen(id,true);}
       else if(FP.zoneAt(px,py)===ZONE.chapel){px=CHAPEL_OUTER_CHECKPOINT.x;py=CHAPEL_OUTER_CHECKPOINT.y;}
     }
+    if(which==='conservatory'){
+      dockHauntingFrame=null;dockHauntingScene=null;dockRuptureRendered=false;dockHauntingGraceUntil=0;
+      dockTransit=freshDockTransitState({inside:FP.zoneAt(px,py)===ZONE.dock});
+      // A pre-feature save already out in the building has plainly departed.
+      // Record that fact without staging the event; only a later walked return
+      // can trigger it. Explicit debug spawns remain ineligible.
+      if(!flagTest('dock.departed')&&setupComplete()&&Number(getSave().steps)>0
+         &&FP.zoneAt(px,py)!==ZONE.dock&&!params().has('at'))flagSet('dock.departed');
+    }
     const p=FP.floorplan(),physicalPlan=FP.physicalRenderPlanFor(px,py);
     R3.r3dSetPlan(physicalPlan.rgba,physicalPlan.w,physicalPlan.h,physicalPlan.material);
     r3dCache.physicalGroup=physicalPlan.group;
@@ -5821,6 +5920,7 @@ function resetRunAudio(reason='run-reset'){
   silenceSampleField();
   STORY.stopAll();
   RT.setBed(0, 0.1);
+  electricalHumRuntime?.update?.({gain:0,pan:0});
   personalInterference.clear();
   // The dread director and the hush's mischief keep wall-clock schedules; a new
   // run is not owed the last one's timers.
@@ -5845,6 +5945,7 @@ function enterStory(){
   if([CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(chapelTowerState().phase))playerKeys.add('tower-cleared');
   REC.loadRecState(getSave().rec);
   PRES.loadPresenceState(getSave().presence);
+  resetHushContactSession();
   OBJ.loadObjState(getSave().obj);
   STAB.loadStabState(getSave().stabs);
   RADIO.loadRadioState(getSave().radio);
@@ -6097,11 +6198,149 @@ function converse(id, nodes, { startAt='start', onChoice, onDone, scrim=0.5, anc
 //
 // It is optional, and being optional is what makes it mean something — see
 // greyDoorSearched() for what the ending does with a man who never went looking.
+// ── loading dock: LAST LOAD-OUT / impossible return ─────────────────────────
+// The event is not a puzzle. The player crosses an ordinary door and the HUSH
+// performs it. Transit memory is session-only; the result is persisted before
+// the first lamp wakes so a reload can never farm or replay the scene.
+let dockTransit=freshDockTransitState({inside:true});
+let dockHauntingFrame=null;
+let dockHauntingScene=null;
+let dockHauntingGraceUntil=0;
+let dockRuptureRendered=false;
+
+function dockHauntingEffectsMode(){
+  const flash=String(getSave().settings?.flash||'full');
+  return ['full','reduced','off'].includes(flash)?flash:'full';
+}
+
+function dockWrongSoundPoint(propId){
+  if(propId==='dock-road-case')return{x:72.0,y:8.0,label:'the east salvage wall'};
+  if(propId==='dock-cable-reel')return{x:59.0,y:9.0,label:'behind the dispatch desk'};
+  return{x:69.0,y:5.2,label:'above the chandelier frame'};
+}
+
+function playDockHauntingAnswer(propId,index=0,snapshot=dockHauntingFrame){
+  const prop=PROPS.propById(propId),ref=prop?.sampleFamily?.[0],chunk=propChunk(ref),wrong=dockWrongSoundPoint(propId);
+  ensureCtx();
+  if(actx&&master&&chunk?.buffer){
+    const now=actx.currentTime,src=actx.createBufferSource(),gain=actx.createGain(),pan=actx.createStereoPanner();
+    const listener=physicalPointFor(px,py),dx=wrong.x-listener.x,dz=wrong.y-listener.z,right=[[1,0],[0,1],[-1,0],[0,-1]][((R3.r3dFacing()%4)+4)%4];
+    src.buffer=chunk.buffer;src.playbackRate.setValueAtTime(snapshot?.coffee ? .92+(index%2)*.07 : 1,now);
+    gain.gain.setValueAtTime(.22,now);pan.pan.setValueAtTime(Math.max(-1,Math.min(1,(dx*right[0]+dz*right[1])/4)),now);
+    src.connect(gain);gain.connect(pan);pan.connect(master);src.start(now);src.stop(now+Math.min(2.6,chunk.buffer.duration));
+  }
+  const at=FP.toRuntimePoint({x:wrong.x,y:wrong.y});
+  REC.emitNoise(.18,at.x,at.y,`the ${propLabel(prop).toLowerCase()} answered`,{
+    spoils:false,kind:prop?.acousticKind||'handling_noise',sourceKind:'hush',sourceId:propId,
+    playerGenerated:false,audibleToHush:false,canSpoilTake:false,deliberate:true,
+  });
+  pushEvent(`// ${propLabel(prop).toLowerCase()} — ${wrong.label}.`);
+}
+
+function syncDockHauntingPresentation({refreshStatic=false}={}){
+  if(RENDERER!=='3d'||!usingPlan()||usingSpecialSpace())return;
+  const group=FP.logicalToPhysical(px,py).renderGroup;
+  if(refreshStatic)R3.r3dSetProps(worldRenderInstances(group));
+  else if(group==='ground')R3.r3dSetLocalLights?.(dockHauntingFrame?dockHauntingLights(dockHauntingFrame):resolveLocalLights(group,{
+    timeSec:performance.now()/1000,
+    reducedFlash:(getSave().settings?.flash||'full')!=='full',
+    towerCleared:false,liveCircuits:liveLightCircuits(),origin:physicalPointFor(px,py),
+  }));
+  syncDoorDynamicProps();
+}
+
+function onDockHauntingEvent(event,snapshot){
+  if(event.type==='answer'){playDockHauntingAnswer(event.propId,event.index,snapshot);return;}
+  if(event.type==='frame-creak'){
+    CUES.playCue(CUES.CUE.door,{gain:.32,rate:.38,lowpassHz:700});
+    pushEvent('// the cage gives one small settling sound.');
+    return;
+  }
+  if(event.type==='glow'){
+    CUES.playCue(CUES.CUE.light,{gain:.36,rate:.58});
+    SPEECH.say({who:'direction',text:'One bulb goes orange. It should go out. Instead the next one catches, and the next.'});
+    if(snapshot.coffee&&snapshot.effects!=='off')CR.fx.glitch(.36,420);
+    return;
+  }
+  if(event.type==='reflection'){
+    pushEvent('// the curved glass has made room for someone behind you.');
+    return;
+  }
+  if(event.type==='literal'){
+    const text=snapshot.variant==='cross-dock'
+      ? 'The shape remains in the glass while someone crosses the real room, slow enough to be seen.'
+      :snapshot.variant==='exit-block'
+        ? 'The shape remains in the glass. In the doorway behind you, someone has taken your place.'
+        :'The shape remains in the glass. Behind the cage, someone is standing where the wall should be.';
+    SPEECH.say({who:'direction',text});
+    if(snapshot.coffee&&snapshot.effects!=='off')CR.fx.glitch(.58,620);
+    return;
+  }
+  if(event.type==='rupture'){
+    CUES.playCue(CUES.CUE.keys,{gain:(event.group===1||event.group==='all') ? .48 : .3,rate:1.42+(Number(event.group)||0)*.08,pan:event.group===2 ? .45 : event.group===3 ? -.38 : 0});
+    if(snapshot.effects==='full'){
+      CR.fx.flash(75,'rgba(255,178,96,0.34)');
+      if((getSave().settings?.shake||'full')==='full')CR.fx.shake(.34,130);
+    }
+    if(!dockRuptureRendered){dockRuptureRendered=true;dockHauntingFrame={...snapshot,rupture:true};syncDockHauntingPresentation({refreshStatic:true});}
+    return;
+  }
+  if(event.type==='blackout'){
+    CUES.playCue(CUES.CUE.door,{gain:.3,rate:.31,lowpassHz:520});
+    SPEECH.say({who:'direction',text:'The last bulb breaks where the face should be. In the dark, glass keeps falling long after it ought to stop.'});
+  }
+}
+
+function finishDockHaunting(){
+  dockHauntingGraceUntil=performance.now()+DOCK_HAUNTING_GRACE_MS;
+  dockHauntingScene=null;dockHauntingFrame=null;dockRuptureRendered=false;
+  syncDockHauntingPresentation({refreshStatic:true});
+}
+
+function beginDockHaunting(entryPortal){
+  if(dockHauntingScene||usingSpecialSpace()||!storyMode)return false;
+  const decision=deriveDockHauntingEligibility({
+    departed:flagTest('dock.departed'),spent:flagTest('dock.haunting.spent'),
+    drankCoffee:flagTest('drank.coffee'),completedTakes:REC.recState().takes.length,
+    transitionKind:'step',entryPortal,
+  });
+  if(!decision.eligible)return false;
+  const flags=getSave().flags;
+  flags['dock.haunting.spent']=true;
+  flags['dock.haunting.variant']=decision.variant;
+  saveCommit({flags,props:PROPS.savePropState()});
+  dockRuptureRendered=false;
+  const scene=makeLoadingDockHauntingScene({
+    variant:decision.variant,entryPortal,coffee:flagTest('drank.coffee'),effects:dockHauntingEffectsMode(),
+    auditioned:DOCK_ACOUSTIC_PROP_IDS.filter((id)=>PROPS.isAuditioned(id)),
+    onEvent:onDockHauntingEvent,
+    onUpdate:(frame)=>{dockHauntingFrame=frame;syncDockHauntingPresentation();},
+    onRender:()=>SPEECH.drawSpeech(),
+    onComplete:(active)=>scenes.remove(active),
+    onExit:finishDockHaunting,
+  });
+  dockHauntingScene=scene;dockHauntingFrame=scene.view();
+  syncDockHauntingPresentation({refreshStatic:true});
+  scenes.push(scene);
+  return true;
+}
+
+function noteDockTransitStep(from,to){
+  if(planName!=='conservatory'||usingSpecialSpace())return;
+  dockTransit=reduceDockTransit(dockTransit,{
+    kind:'step',
+    fromDock:FP.zoneAt(from.x,from.y)===ZONE.dock,toDock:FP.zoneAt(to.x,to.y)===ZONE.dock,
+    fromPortal:FP.doorAt(from.x,from.y)?.id||null,toPortal:FP.doorAt(to.x,to.y)?.id||null,
+  });
+  if(dockTransit.departedNow&&setupComplete()&&!flagTest('dock.departed'))flagSet('dock.departed');
+  if(dockTransit.enteredNow)beginDockHaunting(dockTransit.entryPortal);
+}
+
 const GREY_DOOR_ID='dock-grey-exterior';
 function greyDoorRetired(){ return flagTest('door.grey.retired'); }
 function greyDoorNear(){
   if(!storyMode || !usingPlan() || usingSpecialSpace() || greyDoorRetired()) return null;
-  const hit=FP.doorNear(px,py,R3.r3dDelta(1));
+  const hit=focusedWorldDoor(4.5);
   return hit?.portal?.id===GREY_DOOR_ID ? hit.portal : null;
 }
 
@@ -6231,18 +6470,21 @@ const LEVEL_CHECK_ROOM='loading_dock';
 // walking at the door is what STARTS it — so the wall is never a thing you have
 // to go away and solve somewhere else.
 let dockRefuseLockUntilMs=0;
-function refuseDockExit(){
+function refuseDockExit({speak=true}={}){
+  if(!speak)return false;
   const now=performance.now();
-  if(now<dockRefuseLockUntilMs) return;
+  if(now<dockRefuseLockUntilMs) return false;
   dockRefuseLockUntilMs=now+2600;
   fireCue('bag');
   if(!flagTest('setup.levels')){
-    SPEECH.say({ who:'you', text:`Not yet. The keys stay in my pocket until the levels are set — ${BINDINGS.inputPrompt('recorder')}, I want to get a good six seconds of test audio. Can't count how many recordings I've ruined because I never set the meter.` });
-    return;
+    SPEECH.say({ who:'you', text:`No. I know this trick: leave the first check till later and later never comes. ${BINDINGS.inputPrompt('recorder')}. Light out. Six quiet seconds. Then the door.` });
+    return true;
   }
   if(!flagTest('combat.trained')){
-    SPEECH.say({ who:'you', text:`Hold on — I never actually held the six seconds. ${BINDINGS.inputPrompt('recorder')}, feet still, and then we go down.` });
+    SPEECH.say({ who:'you', text:`No, I counted it but I did not hold it. Back on the mark. ${BINDINGS.inputPrompt('recorder')}, feet still. Do it properly and then we go.` });
+    return true;
   }
+  return false;
 }
 
 // The doors out, before the job is set. He has the key to every one of them and
@@ -6251,22 +6493,29 @@ function refuseDockExit(){
 // of leaving, and after setup these doors open like any other.
 const EXIT_DOOR_IDS=new Set([GREY_DOOR_ID,'front-main']);
 let exitDoorLockUntilMs=0;
+let exitDoorFocusId=null,exitDoorFocusSinceMs=0;
 function speakAtExitDoor(){
-  if(!storyMode || setupComplete()) return;
-  const hit=FP.doorNear(px,py,R3.r3dDelta(1));
+  if(!storyMode || setupComplete()) {exitDoorFocusId=null;exitDoorFocusSinceMs=0;return;}
+  const hit=focusedWorldDoor(3.5);
   const id=hit?.portal?.id;
-  if(!id || !EXIT_DOOR_IDS.has(id)) return;
-  if(id===GREY_DOOR_ID && !greyDoorRetired()) return;   // that one has its own beat
+  if(!id || !EXIT_DOOR_IDS.has(id)){exitDoorFocusId=null;exitDoorFocusSinceMs=0;return;}
+  if(id===GREY_DOOR_ID && !greyDoorRetired()){exitDoorFocusId=null;exitDoorFocusSinceMs=0;return;}   // that one has its own beat
   const now=performance.now();
+  if(exitDoorFocusId!==id){exitDoorFocusId=id;exitDoorFocusSinceMs=now;return;}
+  if(now-exitDoorFocusSinceMs<1100)return;
   if(now<exitDoorLockUntilMs) return;
   exitDoorLockUntilMs=now+9000;
+  exitDoorFocusSinceMs=now;
   SPEECH.say({ who:'you', text: flagTest('setup.levels')
-    ? "I'll unlock this once I get my levels set. Don't want to forget and ruin the takes."
-    : "I'll head through in a second. I want to get my levels set first." });
+    ? "That door can wait. If I leave the check half-done, I will hear it in every room after this one."
+    : "In a second. First I listen to the room I am actually standing in." });
 }
 // The room the running take belongs to — decided when it starts, not re-asked
 // from the floor he happens to be standing on when it stops.
 let takeRoom=null;
+let humRecordConsent=null;       // first [r] refuses; a deliberate second press overrides
+let armedTakeContamination=null; // snapshot carried through LISTEN into the take
+let activeTakeContamination=null;
 // Levels get set where the kit gets set up: the dock. B3 also answers, so a
 // player who skipped the intro is never left without a way to set them.
 function levelCheckHere(){
@@ -6592,7 +6841,22 @@ function recordAction(){
     if(chapelTowerState().phase!==CHAPEL_TOWER_PHASE.TOWER_CLEARED&&chapelTowerState().phase!==CHAPEL_TOWER_PHASE.CHAPEL_FINAL){SPEECH.say({who:'you',text:'The nave is not the way in yet. The tower route is still live.'});return;}
     beginConfrontation(); return;
   }
-  if(REC.hasTake(room)){ SPEECH.say(LINES.already); return; }
+  if(REC.hasTake(room)&&!REC.takeIsContaminated(room)){ SPEECH.say(LINES.already); return; }
+  const hum=currentElectricalHumFrame();
+  if(hum.audible){
+    const key=`${room}:${hum.circuits.join(',')}`,now=performance.now();
+    if(!humRecordConsent||humRecordConsent.key!==key||now>humRecordConsent.until){
+      humRecordConsent={key,until:now+12000};
+      const circuit=hum.primary?.label||hum.circuits[0]?.toUpperCase()||'A PANEL';
+      SPEECH.say({who:'you',text:`No. ${circuit} is still in the cans. That low note is the building, not the room. Kill it at the panel—or ask me again and I will put the mistake on tape.`});
+      return;
+    }
+    armedTakeContamination={room,circuits:[...hum.circuits]};humRecordConsent=null;
+    SPEECH.say({who:'you',text:'All right. Their tape, their ballast. I will mark exactly what I heard.'});
+  }else{
+    armedTakeContamination=null;humRecordConsent=null;
+    if(REC.takeIsContaminated(room))SPEECH.say({who:'you',text:'Again. Same room, this time without the building singing through it.'});
+  }
   if(maybeForceRadioBreakdownForRoom(room)) return;
   openListen(room);
 }
@@ -6635,6 +6899,8 @@ function cancelListen(){
   if(committedListen){ SPEECH.say(LINES.mustRoll); return true; }
   const room=takeRoom || currentWorld();
   takeRoom=null;
+  armedTakeContamination=null;
+  humRecordConsent=null;
   REC.stopListening();
   PB.abortTake(room);
   CUES.playCue(CUES.CUE.recorder, {gain:0.5, rate:0.9});
@@ -6649,6 +6915,10 @@ function cancelListen(){
 // someone is in it.
 function roll(){
   if(!REC.startRecording()) return;
+  activeTakeContamination=armedTakeContamination&&armedTakeContamination.room===(takeRoom||currentWorld())
+    ? {...armedTakeContamination,circuits:[...armedTakeContamination.circuits]}
+    : null;
+  armedTakeContamination=null;
   emitProgress(EVENT_TYPES.TAKE_STARTED, { roomId:currentWorld() }, 'main.roll');
   committedListen=false;
   screamedThisTake=false;
@@ -6690,6 +6960,7 @@ function stopTake(){
   if(!REC.isRecording()) return;
   const room=takeRoom || recordableRoomAt(px,py) || currentWorld();
   const r=REC.stopRecording();
+  const contamination=activeTakeContamination;activeTakeContamination=null;
   takeRoom=null;
   clearInstrument();
   instrArmedThisTake=false;
@@ -6699,9 +6970,15 @@ function stopTake(){
   personalInterference.clear();
   updateAudio();
   if(r.completed){
-    emitProgress(EVENT_TYPES.TAKE_COMPLETED, { roomId:room, elapsed:r.elapsed }, 'main.stopTake');
+    emitProgress(EVENT_TYPES.TAKE_COMPLETED, {
+      roomId:room, elapsed:r.elapsed,
+      contaminated:!!contamination,
+      circuits:contamination?.circuits||[],
+    }, 'main.stopTake');
     PB.sealTake(room);              // choose the guest once. a tape does not re-roll.
-    SPEECH.say(framedLine('recDone', LINES.recDone));
+    SPEECH.say(contamination
+      ? {who:'you',text:`Held. It counts—but ${contamination.circuits.map((id)=>powerCircuitDefinition(id)?.label||id.toUpperCase()).join(' and ')} sits under every second of it. I am writing that down.`}
+      : framedLine('recDone', LINES.recDone));
     himBeat();                      // he held a clean minute here too, and then he did not
   } else {
     PB.abortTake(room);
@@ -6752,7 +7029,24 @@ const LOSABLE=['recorder','torch','map','radio'];
 let takenActive=false;
 let lostItem=null, lostAt=null;
 let takenRecoveryUntil=0;
+let hushSensationMode=null;
+let hushSensationSerial=0;
+let hushBrushCooldownUntil=0;
+let hushWarningSchedule={armed:true,readyAt:0};
+let pendingHushBrush=null;
+let hushSensationDebug=null;
+let hushSensationScene=null;
 const itemLost=(id)=> lostItem===id;
+
+function resetHushContactSession(){
+  const graceUntil=performance.now()+7000;
+  hushSensationMode=null;
+  pendingHushBrush=null;
+  hushSensationDebug=null;
+  hushSensationScene=null;
+  hushBrushCooldownUntil=graceUntil;
+  hushWarningSchedule={armed:true,readyAt:graceUntil};
+}
 
 function makeTakenAftermathScene(onBlack){
   let t=0,finished=false;
@@ -6907,21 +7201,7 @@ function tickLostItem(){
   emitProgress(EVENT_TYPES.EQUIPMENT_RECOVERED, { id }, 'main.tickLostItem');
 }
 
-function onPresenceCatch(count){
-  STAB.reportThreat();
-  bumpFear(0.55, { stinger:0 });
-  // Half the time it hurts you. Half the time it TAKES you — and you do not get
-  // to watch that happen. Never during the tutorial: nothing hunts a man who has
-  // not started.
-  if(!takenActive && !lostItem && performance.now()>=takenRecoveryUntil
-     && !TUT.tutorialActive() && Math.random() < 0.5){ beginTaken(); return; }
-  beginHushContactFlash({taken:false,reason:'presence-contact',intensity:0.95});
-  const injuries=REC.injure();
-  emitProgress(EVENT_TYPES.PLAYER_INJURED, { count:injuries }, 'main.onPresenceCatch');
-  if(REC.isRecording()) REC.spoilTake('it found you');
-  CR.fx.flash(140, 'rgba(10,10,12,0.9)');
-  CR.fx.shake(1.4, 420);
-  SPEECH.say(LINES.caught(injuries));
+function shovePlayerAwayFromPresence(){
   // Shove the player away from it — not to safety, just away. Try the direction
   // that points away first, then the other cardinals: in a corridor the "away"
   // direction is often a wall, and standing still after being caught reads as
@@ -6942,9 +7222,217 @@ function onPresenceCatch(count){
   }
   trail=[]; revealAround(px,py);
   faceOpenDirection();
+}
+
+function resolveHardHushContact({attempt=null,reason='presence-contact'}={}){
+  if(attempt?.id && !PRES.confirmContactAttempt(attempt.id))return false;
+  STAB.reportThreat();
+  bumpFear(0.55, { stinger:0 });
+  beginHushContactFlash({taken:false,reason,intensity:0.95});
+  const injuries=REC.injure();
+  emitProgress(EVENT_TYPES.PLAYER_INJURED, { count:injuries }, 'main.onPresenceCatch');
+  if(REC.isRecording()) REC.spoilTake('it found you');
+  CR.fx.flash(140, 'rgba(10,10,12,0.9)');
+  CR.fx.shake(1.4, 420);
+  SPEECH.say(LINES.caught(injuries));
+  shovePlayerAwayFromPresence();
   applyLensPreset('hush');
   setTimeout(()=>{ if(storyMode) applyLensPreset('explore'); }, 4200);
   saveCommit({ rec:REC.saveRecState(), presence:PRES.savePresenceState() });
+  return true;
+}
+
+function beginTakenFromContact(attempt=null){
+  if(attempt?.id && !PRES.confirmContactAttempt(attempt.id))return false;
+  STAB.reportThreat();
+  bumpFear(0.55,{stinger:0});
+  beginTaken();
+  saveCommit({presence:PRES.savePresenceState()});
+  return true;
+}
+
+function hushContactSeed(salt=0){
+  const runSeed=Number(getSave().run?.startedAt)||Date.now();
+  const serial=++hushSensationSerial;
+  const tag=typeof salt==='number'?salt:String(salt).split('').reduce((sum,ch)=>sum+ch.charCodeAt(0),0);
+  return (runSeed+(serial*0x9e3779b1)+(Number(tag)||0))>>>0;
+}
+
+function hushContactContext({takeBreak=false}={}){
+  return {
+    tutorial:TUT.tutorialActive(),
+    sourceSpace:usingSourceSpace(),
+    recording:REC.isRecording(),
+    thoughtOpen:!!hushSensationMode,
+    brushOpen:hushSensationMode===HUSH_SENSATION_MODE.BRUSH,
+    takeBreak,
+    takenEligible:!takenActive&&!lostItem&&performance.now()>=takenRecoveryUntil&&!TUT.tutorialActive(),
+    cooldownReady:performance.now()>=hushBrushCooldownUntil,
+    state:PRES.contactDirectorState(),
+  };
+}
+
+function chooseHushReleaseTarget(seed=1){
+  if(!usingPlan()||usingSpecialSpace())return null;
+  const current=recordableRoomAt(px,py);
+  const minimum=18*CELL_SCALE;
+  const listener=acousticSpatialAt(px,py);
+  const target=chooseHushReleaseDestination({
+    player:{x:px,y:py},currentRoom:current,minimumDistance:minimum,seed,
+    candidates:TARGETS
+    .filter((id)=>ROOM_CELLS[id])
+    .map((id)=>{
+      const point=FP.toRuntimePoint(ROOM_CELLS[id]);
+      return{id,point,valid:!FP.isSolid(point.x,point.y),occlusion:acousticOcclusionDb(acousticSpatialAt(point.x,point.y),listener)};
+    }),
+  });
+  if(target)return target;
+  // A recordable anchor should normally win. The ring search is the promised
+  // distant-prowl fallback for a migrated/custom floorplan whose room centres
+  // are unavailable or blocked.
+  for(let ring=0;ring<4;ring++)for(let i=0;i<16;i++){
+    const radius=minimum+ring*4*CELL_SCALE;
+    const angle=((seed%360)+i*137.5+ring*31)*Math.PI/180;
+    const point={x:px+Math.cos(angle)*radius,y:py+Math.sin(angle)*radius};
+    if(!FP.isSolid(point.x,point.y))return{id:null,point,distance:radius,occlusion:8};
+  }
+  return null;
+}
+
+function playHushReleaseNote(target,seed=1){
+  if(!target?.point)return false;
+  const facing=R3.r3dFacing(),right=[[1,0],[0,1],[-1,0],[0,-1]][facing]||[1,0];
+  const note=buildHushReleaseNote({target,player:{x:px,y:py},right:{x:right[0],y:right[1]},seed});
+  if(!note)return false;
+  fireCue(note.cueId,note.audio);
+  emitAcousticEvent({
+    ...note.event,
+    spatial:acousticSpatialAt(target.point.x,target.point.y),
+  });
+  pushEvent(`// ${note.caption}`);
+  return true;
+}
+
+function resolveHushBrushRelease(pending){
+  const target=chooseHushReleaseTarget(pending.seed);
+  const now=performance.now();
+  const expiresAt=now+10000+(pending.seed%4001);
+  const redirected=pending.attempt?.id
+    ? PRES.releaseContactAttempt(pending.attempt.id,{target:target?.point||null,expiresAt,priority:1})
+    : !!(PRES.isActive()&&target&&PRES.offerSoundTarget({position:target.point,level:.2,confidence:1,expiresAt,priority:1}));
+  if(target)playHushReleaseNote(target,pending.seed);
+  bumpFear(.12,{stinger:0});
+  saveCommit({presence:PRES.savePresenceState()});
+  return redirected;
+}
+
+function finishHushBrushContact(pending){
+  if(!pending)return;
+  const outcome=pending.choice||{outcome:HUSH_BRUSH_OUTCOME.HARD,choiceId:'unanswered'};
+  pendingHushBrush=null;
+  if(outcome.outcome===HUSH_BRUSH_OUTCOME.RELEASE){resolveHushBrushRelease(pending);return;}
+  resolveHardHushContact({attempt:pending.attempt,reason:'goosebumps-contact'});
+}
+
+function openHushSensation(mode,{seed=hushContactSeed(mode),attempt=null}={}){
+  if(hushSensationMode)return false;
+  const state=PRES.contactDirectorState();
+  const built=buildHushSensationTree({
+    mode,authoredTree:HUSH,seed,recentContentIds:state.recentContentIds,
+  });
+  const nextState=mode===HUSH_SENSATION_MODE.PROXIMITY
+    ? noteHushWarningShown(state,built.usedContentIds)
+    : rememberHushContent(state,built.usedContentIds);
+  PRES.setContactDirectorState(nextState);
+  hushSensationMode=mode;
+  hushSensationDebug={
+    mode,seed,choiceCount:built.choiceCount,savingCount:built.savingCount,
+    choices:built.tree.start.choices.map((choice)=>({
+      id:choice.hushChoiceId,text:choice.text,
+      ...(mode===HUSH_SENSATION_MODE.BRUSH?{outcome:choice.hushOutcome}:{}),
+    })),
+  };
+  const fullEffects=(getSave().settings?.shake||'full')==='full'
+    && (getSave().settings?.flash||'full')==='full'
+    && !getSave().settings?.reduceDread;
+  if(mode===HUSH_SENSATION_MODE.BRUSH){
+    hushBrushCooldownUntil=performance.now()+HUSH_CONTACT_LIMITS.brushCooldownMs;
+    pendingHushBrush={attempt,seed,choice:null};
+    bumpFear(.16,{stinger:fullEffects ? .08 : 0});
+    if(fullEffects)CR.fx.shake(.16,110);
+  }
+  saveCommit({presence:PRES.savePresenceState()});
+  ensureCtx();
+  hushSensationScene=scenes.push(makeThoughtScene({
+    id:mode===HUSH_SENSATION_MODE.PROXIMITY?'hush':`hush-brush-${++hushSensationSerial}`,
+    nodes:built.tree,
+    audio:STORY,
+    getAudio:()=>({ctx:actx,destination:dialogGain||master}),
+    fx:CR.fx,
+    cue:fireCue,
+    scrim:.50,
+    lensPreset:mode===HUSH_SENSATION_MODE.BRUSH&&fullEffects?'hush':'calm',
+    onChoice:(choice)=>{
+      applyStoryChoice(choice);
+      if(hushSensationDebug)hushSensationDebug.selected=resolveHushSensationChoice(choice);
+      if(mode===HUSH_SENSATION_MODE.BRUSH&&pendingHushBrush)pendingHushBrush.choice=resolveHushSensationChoice(choice);
+    },
+    onDone:()=>{
+      const pending=mode===HUSH_SENSATION_MODE.BRUSH?pendingHushBrush:null;
+      hushSensationMode=null;
+      hushSensationScene=null;
+      if(pending)finishHushBrushContact(pending);
+    },
+  }));
+  return true;
+}
+
+function dismissHushProximityForContact(){
+  if(hushSensationMode!==HUSH_SENSATION_MODE.PROXIMITY)return false;
+  const scene=hushSensationScene;
+  hushSensationMode=null;
+  hushSensationScene=null;
+  if(scene)scenes.remove(scene);
+  return true;
+}
+
+function chooseHushSensationDebug(index=0){
+  if(!hushSensationMode)return false;
+  const scene=scenes.top();
+  const view=scene?.view?.();
+  if(view?.pending?.kind!=='branch')return false;
+  const choices=view.pending.options||[];
+  if(!choices.length)return false;
+  const target=Math.max(0,Math.min(choices.length-1,Math.floor(Number(index)||0)));
+  return !!scene.key?.({key:String(target+1)});
+}
+
+function openDebugHushBrush(seed=4417){
+  if(usingSpecialSpace()||hushSensationMode)return false;
+  if(!PRES.isActive())PRES.spawnBehind(px,py,...R3.r3dDelta(-1));
+  const actor=PRES.presenceState();
+  actor.x=px;actor.y=py;actor.spawnedAt=-1e9;actor.lastCatchAt=-1e9;
+  let opened=false;
+  PRES.updatePresence(0,px,py,(attempt)=>{
+    opened=openHushSensation(HUSH_SENSATION_MODE.BRUSH,{seed:Number(seed)||4417,attempt});
+  },{deferContact:true,suppressContact:false,dreadLevel:presentedFearPressure(),sightOcclusionDb:0});
+  return opened;
+}
+
+function onPresenceCatch(attemptOrCount,{takeBreak=false}={}){
+  const attempt=attemptOrCount&&typeof attemptOrCount==='object'?attemptOrCount:null;
+  const decision=chooseHushContactExperience(hushContactContext({takeBreak}),{rng:Math.random});
+  PRES.setContactDirectorState(decision.state);
+  if(decision.kind===HUSH_CONTACT_KIND.BRUSH&&attempt){
+    openHushSensation(HUSH_SENSATION_MODE.BRUSH,{seed:decision.seed,attempt});
+    return;
+  }
+  // A distant warning is superseded, not stacked, when distance becomes touch.
+  // Its selection had already made Brush ineligible, so physical arrival can
+  // only continue into the existing Hard or Taken paths.
+  dismissHushProximityForContact();
+  if(decision.kind===HUSH_CONTACT_KIND.TAKEN){beginTakenFromContact(attempt);return;}
+  resolveHardHushContact({attempt,reason:takeBreak?'take-break-contact':'presence-contact'});
 }
 
 // A stab is a catalogue transient played once, loud, and never explained.
@@ -7053,6 +7541,32 @@ function himBeat(){
 // this building to do with your hands.
 function propLabel(prop){ return String(prop?.label || prop?.mesh || 'object').replaceAll('_',' ').toUpperCase(); }
 
+// World interaction follows the eye, not the body's nearest quarter turn. This
+// keeps two neighboring labels independently selectable and stops a door at the
+// edge of the view from taking [E] away from the prop under the reticle.
+function focusedWorldProp(maxMeters=2){
+  const look=R3.r3dLookAngles?.()||{};
+  return PROPS.pickProp(px,py,R3.r3dFacing(),maxMeters,{yaw:mapHeading(),pitch:look.pitch});
+}
+function focusedWorldDoor(maxCells=5){
+  if(!usingPlan()||usingSpecialSpace())return null;
+  const yaw=mapHeading(),facing=[Math.sin(yaw),-Math.cos(yaw)];
+  const hit=FP.doorNear(px,py,facing,maxCells);if(!hit)return null;
+  const dx=hit.portal.cx-px,dz=hit.portal.cy-py,d=Math.max(.001,Math.hypot(dx,dz));
+  const ang=Math.abs(Math.atan2(Math.sin(Math.atan2(dx,-dz)-yaw),Math.cos(Math.atan2(dx,-dz)-yaw)));
+  const halfCells=Math.max(.7,(Number(hit.portal.aperture?.width)||1.06)/(CELL*2));
+  const halfAngle=Math.max(.10,Math.min(.52,Math.atan2(halfCells,d)));
+  if(ang>halfAngle*1.05)return null;
+  return{...hit,aimAngle:ang,aimScore:ang/halfAngle+d*.012};
+}
+function worldInteractionFocus(){
+  const prop=focusedWorldProp(2),door=focusedWorldDoor();
+  // A prop wins a near tie. Door apertures are physically broad, while an
+  // inspection target is the more exact statement of where the player aimed.
+  const doorWins=!!door&&(!prop||door.aimScore+.08<prop.aimScore);
+  return{prop,door,doorWins};
+}
+
 // One centred prompt row on the HUD. Measured before it is drawn because a
 // drawn button glyph is a fixed three cells wide regardless of what the
 // keyboard fallback text would have been.
@@ -7067,6 +7581,12 @@ const PROP_STEMS={
   piano_player:['01','02','03','04','05'].map((label)=>({label,url:assetUrl(`audio/piano/player/you-play-piano-${label}.mp3`)})),
   marimba_player:['01'].map((label)=>({label,url:assetUrl(`audio/marimba/player/you-play-marimba-168bpm-${label}.mp3`)})),
   violin_player:['01','02'].map((label)=>({label,url:assetUrl(`audio/violin/player/you-play-violin-${label}.mp3`)})),
+  // Existing mechanical production recordings, reassigned to the three dock
+  // probes. Their source family remains fixed so the HUSH can learn the exact
+  // object the player sounded instead of a generic one-shot.
+  dock_case:[{label:'01',url:CUES.CUE.keys}],
+  dock_reel:[{label:'01',url:CUES.CUE.rewind}],
+  dock_shutter:[{label:'01',url:CUES.CUE.door}],
 };
 const propStemBuffers=new Map(); // `${worldId}:${label}` -> AudioBuffer
 async function preloadPropStems(){
@@ -7153,7 +7673,7 @@ function readDocumentTracked(doc){
   return true;
 }
 function inspectPropTracked(id){
-  const line=PROPS.inspectProp(id);
+  const line=PROPS.inspectProp(id,{aftermath:flagTest('dock.haunting.spent')});
   emitProgress(EVENT_TYPES.PROP_INSPECTED, { id }, 'main.inspectPropTracked');
   return line;
 }
@@ -7161,6 +7681,46 @@ function auditionPropTracked(id){
   const ref=PROPS.auditionProp(id);
   emitProgress(EVENT_TYPES.PROP_AUDITIONED, { id }, 'main.auditionPropTracked');
   return ref;
+}
+
+function auditionDockInvestigationProp(prop){
+  const ref=auditionPropTracked(prop.id);
+  if(!ref)return false;
+  const started=playPropSample(prop,ref);
+  if(started){
+    REC.emitNoise(.16,prop.rx,prop.ry,`the ${propLabel(prop).toLowerCase()} sounded`,{
+      kind:prop.acousticKind||'handling_noise',sourceKind:'environment',sourceId:prop.id,
+      playerGenerated:true,deliberate:true,
+    });
+  }
+  saveCommit({props:PROPS.savePropState()});
+  return started;
+}
+
+// The dock's objects are not labels. Looking at one opens a small investigation
+// in which the player chooses what the recordist touches, tests, or refuses to
+// conclude. Only an explicit sound-making choice teaches that sound to HUSH.
+function openLoadingDockInvestigation(prop){
+  if(!prop?.dockInvestigation)return false;
+  const aftermath=flagTest('dock.haunting.spent');
+  const stateId=aftermath?`${prop.id}@aftermath`:prop.id;
+  const revisited=PROPS.propState().inspected.has(stateId);
+  const nodes=loadingDockInvestigation(prop.id,{
+    aftermath,revisited,auditioned:PROPS.isAuditioned(prop.id),
+  });
+  if(!nodes)return false;
+  const opened=converse(`dock-investigation:${prop.id}:${aftermath?'after':'before'}`,nodes,{
+    scrim:.38,
+    onChoice:(choice)=>{
+      if(choice?.dockAction==='audition')auditionDockInvestigationProp(prop);
+    },
+  });
+  // `?nothink=1` is a mechanism-test surface. Preserve its old immediate prop
+  // behavior instead of swallowing the interaction behind an invisible tree.
+  if(!opened)return false;
+  inspectPropTracked(prop.id);
+  saveCommit({props:PROPS.savePropState()});
+  return true;
 }
 
 function makeObjectDetailScene({ id, title, source = 'OBJECT', body = '', onContinue } = {}) {
@@ -7339,7 +7899,9 @@ function interact(){
   // Reaching for the door he came in through outranks operating it. He never
   // gets to open this one.
   if(tryTheGreyDoor()) return;
-  const doorHit=usingPlan()?FP.interactDoor(px,py,R3.r3dDelta(1),playerKeys):null;
+  const focus=usingPlan()?worldInteractionFocus():{prop:null,door:null,doorWins:false};
+  const lookYaw=mapHeading(),lookForward=[Math.sin(lookYaw),-Math.cos(lookYaw)];
+  const doorHit=focus.doorWins?FP.interactDoor(px,py,lookForward,playerKeys):null;
   if(doorHit){
     if(!doorHit.ok){
       if(doorHit.keyId==='tower-live'){
@@ -7358,7 +7920,7 @@ function interact(){
     return;
   }
   if(interactNatatoriumWater()) return;
-  const hit=usingPlan() ? PROPS.pickProp(px,py,R3.r3dFacing(),2) : null;
+  const hit=focus.prop;
   if(hit){
     if(hit.id==='dropped-radio'){
       if(RADIO.pickUpRadio(px,py)){
@@ -7376,6 +7938,26 @@ function interact(){
       SPEECH.say({who:'you',text:'Not while the take is held. Find the source.'});
       return;
     }
+    if(openLoadingDockInvestigation(hit))return;
+    if(hit.action?.startsWith('power-panel-')){
+      const circuit=powerCircuitForPanel(hit.id);
+      if(!circuit)return;
+      inspectPropTracked(hit.id);
+      const result=togglePowerCircuit(getSave().power,circuit.id);
+      saveCommit({power:result.state});
+      emitProgress(EVENT_TYPES.POWER_CIRCUIT_CHANGED,{circuit:circuit.id,live:result.live},'main.powerPanel');
+      updateElectricalHum();
+      const group=FP.logicalToPhysical(px,py).renderGroup;
+      R3.r3dSetProps(worldRenderInstances(group));
+      if(result.live){
+        CUES.playCue(CUES.CUE.light,{gain:.42,rate:.62});
+        SPEECH.say({who:'you',text:`${circuit.label}. Up. For a second, nothing—then ${circuit.serves} remembers electricity. Dim tubes, old ballast. Useful light with a note underneath it.`});
+      }else{
+        CUES.playCue(CUES.CUE.light,{gain:.28,rate:.48});
+        SPEECH.say({who:'you',text:`${circuit.label}. Down. The light goes first. The hum takes another breath to understand.`});
+      }
+      return;
+    }
     if(hit.action==='story-bent-rig'){
       openObjectDetail({
         id:'bent-rig',
@@ -7384,6 +7966,14 @@ function interact(){
         body:'The case is open. The converter output is patched back into its own input, a feedback circuit built to make a machine stop singing.',
         onContinue:()=>interactRig(true),
       });
+      return;
+    }
+    if(hit.action==='take-pool-cells'){
+      if(flagTest('pool.cells')){SPEECH.say({who:'you',text:'The empty sleeve is still in the cart. I did not imagine taking them.'});return;}
+      flagApply(['pool.cells']);REC.addBattery(.5);
+      saveCommit({flags:getSave().flags,rec:REC.saveRecState()});
+      CUES.playCue(CUES.CUE.keys,{gain:.28,rate:.74});
+      SPEECH.say({who:'you',text:'Two alkaline cells in a sealed maintenance sleeve. Wrong department, right torch. Half a night, if I stop spending it on rooms I already know.'});
       return;
     }
     if(hit.action==='story-tuning-fork'){
@@ -7550,7 +8140,7 @@ function bagEquipment(){
   return [
     {
       id:'light',label:'light',present:!torchMissing,battleCapable:true,
-      value:torchMissing?'MISSING':'READY',
+      value:torchMissing?'MISSING':`${Math.round(Math.min(1,REC.batteryLevel())*100)}%${REC.batteryLevel()>1?'+ RESERVE':''}`,
       statusTone:torchMissing?'danger':'active',
       location:torchMissing?'UNKNOWN':'CARRIED',
     },
@@ -8022,7 +8612,7 @@ function interactRig(force=false){
 function reconcileRig(){
   if(flagTest('rig.gutted') && !flagTest('rig.cells')){
     flagApply(['rig.cells']);
-    REC.addBattery(0.75);          // the only spare cells in the building
+    REC.addBattery(0.75);          // the larger of the building's two cell caches
   }
   saveCommit({ flags:getSave().flags, rec:REC.saveRecState() });
   syncStoryObjectProps();
@@ -8079,21 +8669,21 @@ function tickTorch(dt){
   // It browns out before it dies. Two warnings, once each per run, so that a flat
   // torch is always something you watched happen and chose not to prevent.
   const bat=REC.batteryLevel();
-  if(REC.lightOn() && bat<=0.22 && !flagTest('torch.low')){
+  if(REC.lightOn() && bat<=0.40 && !flagTest('torch.low')){
     flagApply(['torch.low']);
-    SPEECH.say({who:'you',text:'The beam has gone yellow. That is the cells going, and there are no more cells.'});
+    SPEECH.say({who:'you',text:'The light is shrinking and the white has gone out of it. Forty percent, perhaps. Enough to work with, for now.'});
     saveCommit({flags:getSave().flags});
   }
-  if(REC.lightOn() && bat<=0.07 && !flagTest('torch.dying')){
+  if(REC.lightOn() && bat<=0.15 && !flagTest('torch.dying')){
     flagApply(['torch.dying']);
     bumpFear(0.2);
-    SPEECH.say({who:'you',text:'Minutes. I have got minutes of light left and I am going to want them later. Off it goes.'});
+    SPEECH.say({who:'you',text:"Brown at the edge. I don't know that it will last much longer."});
     saveCommit({flags:getSave().flags});
   }
   if(REC.drainLight(dt)){
     CUES.playCue(CUES.CUE.light, {gain:0.5, rate:0.72});
     bumpFear(0.35, { stinger:0.7 });
-    SPEECH.say({ who:'you', text:'...no. No, no — come on. Come ON.' });
+    SPEECH.say({ who:'you', text:'...no. No, no — come on. Come ON!' });
     SPEECH.say({ who:'direction', text:'The torch dies in your hand, and the room does not go dark so much as stop pretending it was ever anything else.' });
     himBeat();     // he worked in the dark too. that is the thought you did not want.
   }
@@ -8106,7 +8696,7 @@ function tickTorch(dt){
     CR.fx.flash(90, 'rgba(0,0,0,0.9)'); bumpFear(0.5, { stinger:0.9 });
     SPEECH.sayAll([
       { who: 'direction', text: 'At the chapel door, with four rooms on tape and one to go, the torch goes out.' },
-      { who: 'you', text: 'The cells. The good cells. Of course.' },
+      { who: 'you', text: 'The torch cells. The good cells. Of course.' },
       { who: 'direction', text: 'You traded a way out for a few hours of light, and the light has just handed the hours back, at the door, in front of the thing you are about to meet.' },
     ]);
     saveCommit({ flags:getSave().flags, rec:REC.saveRecState() });
@@ -8714,6 +9304,7 @@ function farRoomShape(){
 function tickPresence(dt){
   if(usingStairAnomaly())return;
   if(!storyMode || !PRES.isActive()) return;
+  if(performance.now()<dockHauntingGraceUntil)return;
   if(chapelTowerState().phase===CHAPEL_TOWER_PHASE.TOWER_ACTIVE)return;
   // Dread sets how close it circles when it has nothing to chase; occlusion is
   // its sightline. acousticOcclusionDb already marches the floorplan between
@@ -8725,22 +9316,27 @@ function tickPresence(dt){
   PRES.updatePresence(dt,px,py,usingSourceSpace()?onSourcePresenceCatch:onPresenceCatch,
     usingSourceSpace()
       ? {navigation:chunkSurfRuntime.navigation,catchMode:'source-checkpoint'}
-      : {dreadLevel:presentedFearPressure(),sightOcclusionDb});
+      : {
+          dreadLevel:presentedFearPressure(),sightOcclusionDb,deferContact:true,
+          suppressContact:hushSensationMode===HUSH_SENSATION_MODE.BRUSH,
+        });
   // Its nearness bleeds into the room tone: the floor thickens as it closes.
   const fieldAudio=hushAudioRuntime?.currentField?.()?.absorption?.audio||0;
   RT.setBed(ROOM_TONE.bedGain * (1 + PRES.pressure(px,py)*0.65) * (1-fieldAudio*.72), 0.4);
 
   if(usingSourceSpace())return;
 
-  // The first time it gets close, he has a think about it. The world does not
-  // stop for that — it is still coming, and the three things he can tell
-  // himself take exactly as long as it takes to arrive. But we will not open
-  // the tree with it already on top of him: that is an ambush, not a thought.
-  if(!thoughtHad('hush') && !scenes.blocksInput()
-     && PRES.pressure(px,py) > 0.45
-     && PRES.distanceTo(px,py) > PRES.PRESENCE.recoilCells){
-    think('hush', HUSH);
-  }
+  // A body warning is repeatable, but only after the pressure has genuinely
+  // gone away and returned. It shares language with brush contact without
+  // sharing its hidden outcome: this is still only a thought, and HUSH keeps
+  // walking underneath it.
+  hushWarningSchedule=updateHushWarningSchedule(hushWarningSchedule,{
+    now:performance.now(),pressure:PRES.pressure(px,py),distance:PRES.distanceTo(px,py),
+    recoilDistance:PRES.PRESENCE.recoilCells,recording:REC.isRecording(),
+    dialogueOpen:scenes.blocksInput(),sourceSpace:false,tutorial:TUT.tutorialActive(),
+    state:PRES.contactDirectorState(),
+  });
+  if(hushWarningSchedule.shouldOpen)openHushSensation(HUSH_SENSATION_MODE.PROXIMITY,{seed:hushContactSeed('warning')});
 }
 
 // A take of nothing that gets louder. The hiss rises with the seconds, because
@@ -8791,8 +9387,8 @@ function tickRecorder(dt){
   }
   const st=REC.tickRecording(dt);
   if(st==='complete'){
-    const room=currentWorld();
-    REC.addTake(room);
+    const room=takeRoom||recordableRoomAt(px,py)||currentWorld();
+    REC.addTake(room,{contaminated:!!activeTakeContamination});
     let sourceBecameReady=false;
     if(REC.recState().takes.filter((id)=>id&&id!=='lux_nova').length===4&&chapelTowerState().phase===CHAPEL_TOWER_PHASE.FORESHADOW){
       const chapelTower=reduceChapelTower(chapelTowerState(),{type:'FOURTH_TAKE_COMPLETED'});
@@ -9000,7 +9596,7 @@ function onTakeBroken(reason){
   CR.fx.flash(90, 'rgba(120,0,0,0.35)');
   CR.fx.shake(1.8, 360);
   if(PRES.isActive() && PRES.distanceTo(px,py) < PRES.PRESENCE.recoilCells*1.5){
-    onPresenceCatch(REC.recState().injuries+1);
+    onPresenceCatch(REC.recState().injuries+1,{takeBreak:true});
   } else {
     REC.injure();
     saveCommit({ rec:REC.saveRecState() });
@@ -9132,6 +9728,11 @@ function pushCombat(battle, { onWin, onLose, onAbort, source=null, director=null
   warmBattleVoices();
   const battleToolList=availableBattleTools(getSave().bagLoadout,bagEquipment());
   const battleTools=new Set(battleToolList);
+  const physical=usingPlan()&&!usingSpecialSpace()?FP.logicalToPhysical(px,py):null;
+  const battleLighting=!bench&&physical?resolveLightingContext({
+    group:physical.renderGroup,zone:FP.zoneAt(px,py),spaceId:physical.spaceId,
+  }):null;
+  if(battleLighting)battleLighting.poolScale=Math.max(.62,Math.min(1.18,.55+battleLighting.ambientIntensity*12));
   const playTool=(tool)=>{
     const cue=tool==='torch'?CUES.CUE.light:tool==='radio'?CUES.CUE.slides:CUES.CUE.recorder;
     const rate=tool==='fork'?1.45:tool==='rig'?0.72:tool==='coffee'?0.58:1;
@@ -9174,6 +9775,7 @@ function pushCombat(battle, { onWin, onLose, onAbort, source=null, director=null
     },
     source,
     director,
+    environmentLighting:battleLighting,
     musicSession:createBattleMusicSession({
       combatId:battle.combat?.id||battle.id,
       runId:getSave().run?.id||'',
@@ -9416,11 +10018,13 @@ function openEndingChoice(){
 
 function endSurfaced(){
   escape=null; OBJ.clearWaypoint();
-  presentFinale(surfacedEnding({
-    drankCoffee:flagTest('drank.coffee'),
+  const drank=flagTest('drank.coffee');
+  const beats=[...surfacedEnding({
+    drankCoffee:drank,
     sourceReading: flagGet('finale.sourceReading') || null,
     readings: flagGet('finale.readings') || [],
-  }), {
+  }),...dockEndingBeat({spent:flagTest('dock.haunting.spent'),variant:flagGet('dock.haunting.variant'),supernatural:true,drankCoffee:drank})];
+  presentFinale(beats, {
     slate:'THE SERVICE ROAD',
     replayId:'surfaced-ending',
     onDone:()=> finishEnding(CHUNK_SURF_ENDING_ID),
@@ -9433,8 +10037,9 @@ function endSurfaced(){
 function endSacrifice(){
   escape=null; OBJ.clearWaypoint();
   const drank=flagTest('drank.coffee');
-  const beats = drank ? helpedEnding({ named:isNamed() })
-                      : sacrificeEnding({ injuries:REC.recState().injuries, named:isNamed() });
+  const base = drank ? helpedEnding({ named:isNamed() })
+                     : sacrificeEnding({ injuries:REC.recState().injuries, named:isNamed() });
+  const beats=[...base,...dockEndingBeat({spent:flagTest('dock.haunting.spent'),variant:flagGet('dock.haunting.variant'),supernatural:!drank,drankCoffee:drank})];
   presentFinale(beats, { slate:'THE CHAPEL', onDone:()=> finishEnding(drank?'helped':'sacrifice') });
 }
 
@@ -9483,8 +10088,9 @@ function tickFinale(){
     // You got out. Sober, the yard is not there and the clock restarts. Drunk,
     // the yard is exactly there, the building stands, and the takes are ruined.
     const drank=flagTest('drank.coffee');
-    const beats = drank ? druggedReveal({ takes:REC.recState().takes.length })
-                        : [ ...rescueEnding(isNamed()), ...INVERSION_FINAL ];
+    const base = drank ? druggedReveal({ takes:REC.recState().takes.length })
+                       : [ ...rescueEnding(isNamed()), ...INVERSION_FINAL ];
+    const beats=[...base,...dockEndingBeat({spent:flagTest('dock.haunting.spent'),variant:flagGet('dock.haunting.variant'),supernatural:!drank,drankCoffee:drank})];
     presentFinale(beats, { onDone:()=> finishEnding(drank?'drugged':'inversion') });
   }
 }
@@ -9680,6 +10286,24 @@ function acousticOcclusionDb(source,listener){
   const roomPenalty=source.roomId&&listener.roomId&&source.roomId!==listener.roomId?4:0;
   const doorLoss=FP.doorAcousticLossBetween(a,b);
   return Math.min(36,roomPenalty+blocked*2.8+doorLoss);
+}
+
+function currentElectricalHumFrame(){
+  if(!storyMode||!usingPlan()||usingSpecialSpace())return{audible:false,gain:0,pan:0,circuits:[],primary:null,sources:[]};
+  const physical=FP.logicalToPhysical(px,py);
+  const listener={x:physical.x*CELL,z:physical.z*CELL};
+  return electricalHumAt(getSave().power,listener,{
+    occlusionDb:(_listener,source)=>{
+      const point=FP.toRuntimePoint({x:source.x,y:source.z});
+      return acousticOcclusionDb(acousticSpatialAt(point.x,point.y),acousticSpatialAt(px,py));
+    },
+  });
+}
+
+function updateElectricalHum(){
+  electricalHumFrame=currentElectricalHumFrame();
+  electricalHumRuntime?.update?.(electricalHumFrame);
+  return electricalHumFrame;
 }
 
 function emitRecordistAcoustic(raw={}){
@@ -10655,6 +11279,8 @@ function godTabs(){
       section('Threats'),
       {id:'presence',label:'HUSH / PRESENCE',value:()=>PRES.isActive()?'SPAWNED':'CLEAR',adjust:()=>{if(PRES.isActive())PRES.despawn();else PRES.spawnBehind(px,py,...R3.r3dDelta(-1));}},
       {id:'hush-contact',label:'HUSH CONTACT FLASH',value:'[FIRE]',closeMenu:true,activate:()=>beginHushContactFlash({taken:false,reason:'god-contact',intensity:1})},
+      {id:'hush-warning',label:'HUSH BODY WARNING',value:'[FIRE]',closeMenu:true,activate:()=>openHushSensation(HUSH_SENSATION_MODE.PROXIMITY,{seed:hushContactSeed('god-warning')})},
+      {id:'hush-brush',label:'HUSH BRUSH CONTACT',value:'[FIRE]',closeMenu:true,activate:()=>openDebugHushBrush(hushContactSeed('god-brush'))},
       {id:'taken',label:'TAKEN SEQUENCE',value:'[FIRE]',closeMenu:true,activate:beginTaken},
       {id:'injury',label:'ADD INJURY',value:()=>String(REC.recState().injuries),activate:()=>{REC.injure();saveCommit({rec:REC.saveRecState()});}},
       {id:'stinger',label:'HUSH STINGER',value:'[FIRE]',activate:()=>FEAR.hushStinger(1)},
@@ -11240,8 +11866,9 @@ function drawStoryHud(){
   if(REC.isListening()) return;
 
   const sourceFocus=usingSourceSpace()?chunkSurfRuntime.focusAt(px,py,R3.r3dFacing()):null;
-  const doorHud=usingPlan()&&!usingSpecialSpace()?FP.doorNear(px,py,R3.r3dDelta(1)):null;
-  const propHit=usingPlan()&&!usingSpecialSpace()?PROPS.pickProp(px,py,R3.r3dFacing(),2):null;
+  const interactionFocus=usingPlan()&&!usingSpecialSpace()?worldInteractionFocus():{prop:null,door:null,doorWins:false};
+  const doorHud=interactionFocus.doorWins?interactionFocus.door:null;
+  const propHit=interactionFocus.prop;
 
   // The verbs must be discoverable. A player should never have to guess that
   // the recorder exists in a game about recording.
@@ -11273,7 +11900,7 @@ const teach=tutorialPromptsEnabled() ? TUT.tutorialPrompt() : null;
       : runtime.wedge?'REMOVE WEDGE':runtime.state==='open'||runtime.state==='opening'?'CLOSE DOOR':hasKey?'OPEN DOOR':'TRY LOCKED DOOR';
     hudPromptRow(rows-2,[{action:'interact',label:action}],cols,hasKey?'ui-amber':'ui-secondary');
   } else if(propHit){
-    const verb=propHit.sampleFamily?.length?'PLAY':'INSPECT';
+    const verb=propHit.dockInvestigation?'INVESTIGATE':propHit.sampleFamily?.length?'PLAY':'INSPECT';
     hudPromptRow(rows-2,[{action:'interact',label:`${verb} ${propLabel(propHit)}`}],cols,'ui-amber');
   } else if(teach){
     const prompt=teach.toUpperCase().slice(0,Math.max(1,cols-4));
@@ -11480,6 +12107,19 @@ function installProbe(){
     stairAnomalyPreset:(stage=0,reduced=false)=>stairAnomalyProbePreset(stage,reduced),
     testRun:()=>{ godEnsureTestRun(); return true; },
     godWarpDock:()=>godWarpToZone(ZONE.dock),
+    dockHaunting:()=>({
+      active:!!dockHauntingScene,
+      frame:dockHauntingFrame?{...dockHauntingFrame}:null,
+      departed:flagTest('dock.departed'),
+      spent:flagTest('dock.haunting.spent'),
+      variant:getSave().flags?.['dock.haunting.variant']||null,
+      graceMs:Math.max(0,dockHauntingGraceUntil-performance.now()),
+      transit:{...dockTransit},
+    }),
+    interactionFocus:()=>{
+      const focus=usingPlan()&&!usingSpecialSpace()?worldInteractionFocus():{prop:null,door:null,doorWins:false};
+      return{propId:focus.prop?.id||null,doorId:focus.door?.portal?.id||null,doorWins:!!focus.doorWins};
+    },
     lookProfile:()=>activeLookProfile,
     chapelTower:()=>({
       ...chapelTowerState(),
@@ -11512,7 +12152,7 @@ function installProbe(){
     performanceReset:()=>{perfMeter.reset();return true;},
     surfaceDream:()=>R3.r3dSurfaceDreamStats(),
     surfaces:()=>R3.r3dSurfaceStats(),
-    pickProp:()=>PROPS.pickProp(px,py,R3.r3dFacing(),2),
+    pickProp:()=>focusedWorldProp(2),
     warp:(x,y,f)=>{ px=x; py=y; if(f!=null) R3.r3dSetFacing(f); trail=[]; revealAround(px,py); },
     // ── M5 finale test surface ──
     beginConfrontation:()=>beginConfrontation(),
@@ -11524,10 +12164,44 @@ function installProbe(){
     torch:()=>({ on:REC.lightOn(), battery:+REC.batteryLevel().toFixed(3),
                  soldered:flagTest('has.interface'), gutted:flagTest('rig.gutted'), betrayed:flagTest('torch.betrayed') }),
     drainTorch:(s)=>{ REC.drainLight(Number(s)||0); return REC.batteryLevel(); },
+    setTorch:(value)=>{
+      const wanted=!!value;
+      if(REC.lightOn()!==wanted&&(!wanted||REC.batteryLevel()>0))REC.toggleLight();
+      return{on:REC.lightOn(),battery:+REC.batteryLevel().toFixed(3)};
+    },
+    setTorchBattery:(value)=>{
+      const target=Math.max(0,Math.min(2,Number(value)||0));
+      if(target<=0)REC.killTorch();
+      else REC.addBattery(target-REC.batteryLevel());
+      return{on:REC.lightOn(),battery:+REC.batteryLevel().toFixed(3)};
+    },
     setFear:(v)=>{ fear=Math.max(0,Math.min(1,Number(v)||0)); return fear; },
     bumpFear:(a)=>bumpFear(Number(a)||0),
     takeMe:()=>beginTaken(),
     hushContact:()=>beginHushContactFlash({taken:false,reason:'probe-contact',intensity:1}),
+    hushWarning:(seed=4417)=>openHushSensation(HUSH_SENSATION_MODE.PROXIMITY,{seed:Number(seed)||4417}),
+    hushBrush:(seed=4417)=>openDebugHushBrush(seed),
+    hushDecision:(roll=.1,seed=.5,takeBreak=false)=>chooseHushContactExperience(
+      hushContactContext({takeBreak:!!takeBreak}),
+      {rng:(()=>{const values=[Number(roll)||0,Number(seed)||0];return()=>values.shift()??0;})()},
+    ),
+    hushSensation:()=>({mode:hushSensationMode,debug:hushSensationDebug,pending:PRES.pendingContactAttempt(),director:PRES.contactDirectorState()}),
+    hushChoice:(index=0)=>chooseHushSensationDebug(index),
+    setRecording:(wanted=true)=>{
+      if(wanted&&!REC.isRecording()){
+        if(!REC.isListening())REC.startListening();
+        REC.startRecording();
+      }else if(!wanted){
+        if(REC.isRecording())REC.stopRecording();
+        if(REC.isListening())REC.stopListening();
+      }
+      return{recording:REC.isRecording(),listening:REC.isListening()};
+    },
+    sourceContact:()=>{
+      if(!usingSourceSpace())return false;
+      onSourcePresenceCatch();
+      return{source:chunkSurfRuntime.state(),presence:PRES.savePresenceState(),position:{x:px,y:py}};
+    },
     itemLost:(id)=>itemLost(id),
     warpToLost:()=>{ if(!lostAt) return false; px=lostAt.x; py=lostAt.y; trail=[]; revealAround(px,py); return true; },
     escapeWarp:()=>{ if(!escape) return false; const wp=escape.stage==='door'?escape.doorCell:escape.rescueCell; px=wp.x; py=wp.y; trail=[]; revealAround(px,py); return escape.stage; },
@@ -11573,6 +12247,12 @@ function installProbe(){
     scene:()=>scenes.top()?.id||null,
     clearDiagnosticScenes:()=>{
       while(scenes.depth()) scenes.pop();
+      // Diagnostic scene removal bypasses a conversation's normal onDone. Do
+      // not leave the repeat-contact guard or a deferred attempt stranded just
+      // because a smoke harness cleared the overlay out of band.
+      if(pendingHushBrush?.attempt?.id)PRES.releaseContactAttempt(pendingHushBrush.attempt.id);
+      hushSensationMode=null;hushSensationScene=null;pendingHushBrush=null;
+      takenActive=false;
       setGameplayPaused(false,{announce:false});
       resetMotionInput('probe-clear-scenes',{stopRenderMove:true});
       return true;
@@ -11603,8 +12283,9 @@ function installProbe(){
                     interface:!!flagTest('has.interface'),
                     listened:Number(flagGet('listened.count'))||0 }),
     job:()=>bagJob(),
-    think:(id)=>{ const T={'post-door':POST_DOOR,'level-check':LEVEL_CHECK,'first-take':FIRST_TAKE,
-                           hush:HUSH,'radio-dead':RADIO_DEAD,'bent-rig':BENT_RIG,
+    think:(id)=>{ if(id==='hush')return openHushSensation(HUSH_SENSATION_MODE.PROXIMITY,{seed:4417});
+      const T={'post-door':POST_DOOR,'level-check':LEVEL_CHECK,'first-take':FIRST_TAKE,
+                           'radio-dead':RADIO_DEAD,'bent-rig':BENT_RIG,
                            talisman:TALISMAN}[id];
       return !!(T && think(id, T, {force:true, startAt: id==='post-door' ? (prologueKnowledgeFrame()||'self') : 'start'})); },
     speech:()=>{ const s=SPEECH.speaking(); return s && {who:s.who, text:s.text}; },
@@ -11646,10 +12327,27 @@ function installProbe(){
     talkToBust:(id)=>talkToBust(id),
     // Light state, for the lighting harness: the torch and the resolved rig for
     // where you are standing.
-    light:()=>({on:REC.lightOn(),battery:+REC.batteryLevel().toFixed(3),
-      rig:resolveLocalLights(FP.logicalToPhysical(px,py)?.renderGroup||null,{
-        timeSec:performance.now()/1000,towerCleared:false,origin:physicalPointFor(px,py),
-      }).map((l)=>({id:l.id,intensity:+l.intensity.toFixed(3)}))}),
+    light:()=>{
+      const physical=FP.logicalToPhysical(px,py);
+      const context=resolveLightingContext({group:physical?.renderGroup,zone:FP.zoneAt(px,py),spaceId:physical?.spaceId});
+      return{on:REC.lightOn(),battery:+REC.batteryLevel().toFixed(3),context,
+        rig:resolveLocalLights(context,{
+          timeSec:performance.now()/1000,towerCleared:false,liveCircuits:liveLightCircuits(),
+          origin:{x:physical.x*CELL,z:physical.z*CELL},anchorPosition:lightAnchorPosition,
+        }).map((l)=>({id:l.id,intensity:+l.intensity.toFixed(3),circuit:l.circuit||null}))};
+    },
+    power:()=>normalizePowerState(getSave().power),
+    setPower:(circuit,live=true)=>{
+      const before=normalizePowerState(getSave().power);
+      const wanted=!!live;
+      const isLive=before.live.includes(circuit);
+      const next=isLive===wanted?before:togglePowerCircuit(before,circuit,{at:Date.now()}).state;
+      saveCommit({power:next});
+      godSyncBuildingRender();
+      updateElectricalHum();
+      return normalizePowerState(getSave().power);
+    },
+    electricalHum:()=>({...electricalHumFrame}),
     garden:()=>({epoch:gardenEpoch,inside:inTheGarden(),
       poses:GARDEN_DRIFT_PROPS.map((id)=>{const q=PROPS.propById(id);return q?{id,ox:+(q.renderOffsetX||0).toFixed(4),oz:+(q.renderOffsetZ||0).toFixed(4),yaw:+(q.yaw||0).toFixed(4),rx:q.rx,ry:q.ry}:null;})}),
     shiftGarden:(reason='probe')=>shiftGarden(reason),
@@ -12047,6 +12745,12 @@ function render3d(){
       : (hush.active?{...mapPoint({x:hush.x,y:hush.y}),strength:1}:null),
     audio:waterAudio,
     light: storyMode ? (REC.lightOn()?hushLightScale:0) : true,
+    torchLook:resolveTorchLook({
+      on:storyMode?REC.lightOn():true,
+      battery:storyMode?REC.batteryLevel():1,
+      timeSec:performance.now()/1000,
+      reducedEffects:(getSave().settings?.flash||'full')!=='full',
+    }),
     plan: usingPlan(),
     textSpace: sourceTextSpaceActive(),
     floorH: worldView?.floorH??(usingSpecialSpace()?activeGeometry().floorAt(viewX,viewY):usingPlan()?FP.floorAt(viewX,viewY):floorHere()),
@@ -12245,7 +12949,7 @@ function backHeld(){ return keysDown.has('ArrowDown') || keysDown.has('KeyS'); }
 // A/D and ←/→ strafe now; nothing on the keyboard turns the body.
 function turnHeldDir(){return 0;}
 function tickIndependentLook(dt){
-  if(RENDERER!=='3d'||paused||scenes.blocksInput()){motionInput.endFrame?.();return;}
+  if(RENDERER!=='3d'||paused||(scenes.blocksInput()&&!scenes.allowsLook())){motionInput.endFrame?.();return;}
   const controller=CONTROLLER.controllerMotionAxes();
   const turn=clamp(controller.turnX,-1,1),look=clamp(controller.lookY,-1,1);
   if(Math.abs(turn)>=.01||Math.abs(look)>=.01) R3.r3dLook(turn*dt*2.2,look*dt*1.55);
@@ -12266,7 +12970,7 @@ function mouseInvertY(){return !!getSave()?.settings?.mouseInvertY;}
 // Pointer lock is a gameplay-input lease. UI/menu state never captures it;
 // live unblocked first-person gameplay can request it only from a user gesture.
 function gameplayWantsPointerCapture(){
-  return RENDERER==='3d'&&storyMode&&inRogue&&!paused&&!scenes.blocksInput();
+  return RENDERER==='3d'&&storyMode&&inRogue&&!paused&&(!scenes.blocksInput()||scenes.allowsLook());
 }
 function syncPointerMode(reason='sync'){
   return pointerMode.sync(reason);
@@ -12385,7 +13089,12 @@ function onKey(e){
         // moving through the field never steals the flashlight.
       }
       if(itemLost('torch')){ SPEECH.say({ who:'you', text:'No torch. It has the torch.' }); return; }
-      if(!REC.lightOn() && REC.batteryLevel()<=0){ SPEECH.say({ who:'you', text:'Flat. It is flat, and I have nothing to put in it.' }); return; }
+      if(!REC.lightOn() && REC.batteryLevel()<=0){
+        SPEECH.say(usingStairAnomaly()
+          ? {who:'you',text:'Flat. And this stair only answered the second click. No second click now—so I leave it by the long way, in the dark.'}
+          : { who:'you', text:'Flat. It is flat, and I have nothing to put in it.' });
+        return;
+      }
       const on=REC.toggleLight();
       CUES.playCue(CUES.CUE.light, {gain:0.7, rate: on ? 1 : 0.92});
       REC.emitNoise(.02,px,py,'torch switch',{
@@ -12742,10 +13451,14 @@ async function boot(){
     };
     window.__chunkSurferHushScare={
       forceContact:()=>beginHushContactFlash({taken:false,reason:'debug-contact',intensity:1}),
+      forceWarning:(seed=4417)=>openHushSensation(HUSH_SENSATION_MODE.PROXIMITY,{seed:Number(seed)||4417}),
+      forceBrush:(seed=4417)=>openDebugHushBrush(seed),
+      choose:(index=0)=>chooseHushSensationDebug(index),
       // The whole sequence, not just the flash: surfer hit, then the black
       // aftermath only once the flash window has closed.
       forceTaken:()=>{ beginTaken(); return true; },
       contactFlashMs:()=>HUSH_CONTACT_FLASH_MS,
+      sensation:()=>({mode:hushSensationMode,debug:hushSensationDebug,pending:PRES.pendingContactAttempt(),director:PRES.contactDirectorState()}),
       status:()=>{
         const el=HUSH_JUMP_EL;
         const bg=el?getComputedStyle(el).backgroundImage:null;

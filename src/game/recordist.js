@@ -95,6 +95,7 @@ const state = {
   lastNoiseAt: { x: 0, y: 0, t: 0 },   // where the presence goes looking
   slow: false,          // Shift held
   takes: [],            // completed room ids
+  contaminated: [],     // accepted rooms whose most recent take carried mains hum
   assistPause: 0,       // Story mode can hold the clock for small handling noise
 };
 
@@ -141,8 +142,8 @@ export function batteryLevel() { return state.battery; }
 // Measured in torch-fulls, and you can carry more than one. This matters: the
 // torch leaves the flat FULL, so if the ceiling were 1 then the two good cells in
 // the dead man's tray would be worth precisely nothing, and the whole trade would
-// be a lie. There are no other cells in the building. These are the only spares
-// that exist, and they cost you the way out.
+// be a lie. A second, smaller reserve can be found on the pool-maintenance cart;
+// both caches are physical, finite, and require going somewhere to earn them.
 const BATTERY_MAX = 2;
 export function addBattery(v) { state.battery = Math.max(0, Math.min(BATTERY_MAX, state.battery + v)); }
 export function killTorch() { state.light = false; state.battery = 0; }
@@ -308,12 +309,22 @@ export function injure() {
 }
 
 export function setSlow(on) { state.slow = !!on; }
-export function addTake(roomId) { if (!state.takes.includes(roomId)) state.takes.push(roomId); }
+export function addTake(roomId, { contaminated = false } = {}) {
+  if (!state.takes.includes(roomId)) state.takes.push(roomId);
+  const dirty = new Set(state.contaminated);
+  if (contaminated) dirty.add(roomId); else dirty.delete(roomId);
+  state.contaminated = [...dirty];
+}
 export function hasTake(roomId) { return state.takes.includes(roomId); }
+export function takeIsContaminated(roomId) { return state.contaminated.includes(roomId); }
+export function contaminatedTakes() { return [...state.contaminated]; }
 export function setTake(roomId, present = true) {
   if (!roomId) return false;
   if (present) addTake(roomId);
-  else state.takes = state.takes.filter((id) => id !== roomId);
+  else {
+    state.takes = state.takes.filter((id) => id !== roomId);
+    state.contaminated = state.contaminated.filter((id) => id !== roomId);
+  }
   return hasTake(roomId) === !!present;
 }
 
@@ -321,11 +332,12 @@ export function loadRecState(saved = {}) {
   Object.assign(state, {
     injuries: saved.injuries || 0,
     takes: saved.takes || [],
+    contaminated: [...new Set((saved.contaminated || []).filter((id) => (saved.takes || []).includes(id)))],
     assistPause: 0,
     battery: saved.battery == null ? 1 : saved.battery,
     worldNoise: 0,
   });
 }
 export function saveRecState() {
-  return { injuries: state.injuries, takes: state.takes, battery: state.battery };
+  return { injuries: state.injuries, takes: state.takes, contaminated: state.contaminated, battery: state.battery };
 }

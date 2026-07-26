@@ -7,7 +7,7 @@ test('story art assets are present in public directory', () => {
     'public/story-art/guard.png',
     'public/story-art/door.png',
     'public/story-art/surfer.png',
-    'public/story-art/circuit-bent-interface.png',
+    'public/story-art/circuit-bent-interface.jpg',
     'public/story-art/tuningfork.png',
     'public/story-art/walkie.png',
   ]) {
@@ -20,7 +20,7 @@ test('story art assets are optimized for fast decode', () => {
     'public/story-art/guard.png',
     'public/story-art/door.png',
     'public/story-art/surfer.png',
-    'public/story-art/circuit-bent-interface.png',
+    'public/story-art/circuit-bent-interface.jpg',
     'public/story-art/tuningfork.png',
     'public/story-art/walkie.png',
   ]) {
@@ -46,10 +46,12 @@ test('story art renderer uses uiDraw rather than DOM layout', () => {
   assert.doesNotMatch(src, /document\.createElement\(['"]div/);
 });
 
-test('conversation view exposes an art ref for presenters', () => {
+test('conversation view exposes the resolved story-art shot for presenters', () => {
   const src = readFileSync('src/game/conversation.js', 'utf8');
-  assert.match(src, /currentArtRef/);
-  assert.match(src, /art:\s*currentArtRef\(\)/);
+  assert.match(src, /let currentStoryArt = null/);
+  assert.match(src, /currentStoryArt = resolved\.art/);
+  assert.match(src, /art:\s*currentStoryArt/);
+  assert.match(src, /artReason:\s*currentStoryArtReason/);
 });
 
 test('story art scenes prefer side-by-side layout before vertical fallback', () => {
@@ -62,12 +64,14 @@ test('story art scenes prefer side-by-side layout before vertical fallback', () 
     assert.match(src, /planStoryArtSideBySide/, file);
   }
   const combat = readFileSync('src/render/combat-view.js', 'utf8');
-  assert.match(combat, /drawStoryArtCard/, 'combat reuses the shared story-art card primitive');
+  assert.match(combat, /drawOpponentCombatArt/, 'combat owns its keyed opponent-art primitive');
+  assert.doesNotMatch(combat, /drawStoryArtCard/, 'combat does not put an evidence card inside the abstract fight void');
 });
 
-test('booth paperwork and threshold keep guard art until the yard walk begins', () => {
+test('booth and post-door sources retain their authored establishing stills', () => {
+  const coldOpen = readFileSync('content/narrative/conservatory.cold_open_dialogue.story.json', 'utf8');
   const data = readFileSync('src/data/conservatory-script.js', 'utf8');
-  assert.match(data, /order:\s*{[\s\S]*?art:\s*{\s*id:\s*'guard'/);
-  assert.match(data, /threshold:\s*{[\s\S]*?art:\s*{\s*id:\s*'guard'/);
-  assert.match(data, /export const COLD_OPEN = \[[\s\S]*?art:\s*{\s*id:\s*'door'/);
+  assert.match(coldOpen, /"id": "boothRain"/);
+  assert.match(coldOpen, /"id": "guard"/);
+  assert.match(data, /export const POST_DOOR = \{[\s\S]*?art:\s*{\s*id:\s*'door'/);
 });

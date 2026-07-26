@@ -132,7 +132,7 @@ export function makeRunId(now = Date.now(), random = Math.random) {
 export function freshLedger() {
   return {
     seq: 0,
-    takes: { completed: 0, spoiled: 0, aborted: 0, rooms: [] },
+    takes: { completed: 0, spoiled: 0, aborted: 0, rooms: [], contaminated: [] },
     injuries: 0,
     battles: { started: 0, won: 0, lost: 0, firstPassWon: 0, results: {} },
     disclosures: [],
@@ -144,6 +144,7 @@ export function freshLedger() {
     equipment: { dropped: [], recovered: [] },
     natatoriumWater: { ...DEFAULT_NATATORIUM_WATER_LEDGER },
     stairAnomaly: freshStairAnomalyLedger(),
+    power: { live: [], everRestored: [] },
   };
 }
 
@@ -274,6 +275,7 @@ export function normalizeLedger(value) {
   const battles = objectOr(source.battles);
   const choices = objectOr(source.choices);
   const equipment = objectOr(source.equipment);
+  const power = objectOr(source.power);
 
   return {
     seq: Math.max(0, Math.floor(finiteOr(source.seq, 0))),
@@ -282,6 +284,7 @@ export function normalizeLedger(value) {
       spoiled: Math.max(0, Math.floor(finiteOr(takes.spoiled, 0))),
       aborted: Math.max(0, Math.floor(finiteOr(takes.aborted, 0))),
       rooms: uniqueStrings(takes.rooms),
+      contaminated: uniqueStrings(takes.contaminated).filter((id) => uniqueStrings(takes.rooms).includes(id)),
     },
     injuries: Math.max(0, Math.floor(finiteOr(source.injuries, 0))),
     battles: {
@@ -306,6 +309,10 @@ export function normalizeLedger(value) {
     },
     natatoriumWater: normalizeNatatoriumWaterLedger(source.natatoriumWater),
     stairAnomaly: normalizeStairAnomalyLedger(source.stairAnomaly),
+    power: {
+      live: uniqueStrings(power.live).filter((id) => ['sp01','sp02','sp03'].includes(id)),
+      everRestored: uniqueStrings(power.everRestored).filter((id) => ['sp01','sp02','sp03'].includes(id)),
+    },
   };
 }
 

@@ -257,7 +257,7 @@ const lv = (n, pnt, want) => {
 lv('the sub-basement', probePoint('studio'), -4.0);
 lv('the ground', probePoint('foyer'), 0);
 lv('the upper', probePoint('chapel'), 4.8);
-lv('the drained pool', probePoint('pool'), -1.6);
+lv('the walkable pool surface', probePoint('pool'), 0);
 
 let tallAtrium=0;const heights=new Set();
 for(let y=0;y<cp.h;y++)for(let x=0;x<cp.w;x++){
@@ -300,12 +300,12 @@ for (const k of walked) {
 ck('no riser anywhere in the building is a ladder', worstRiser <= FP.STEP_UP + 1e-6,
    `worst = ${worstRiser.toFixed(3)}m (max ${FP.STEP_UP})  at ${worstPair}`);
 
-// The recordist cannot jump and cannot fall. The pool steps are deliberate.
-const overTheEdge = FP.canStep(...Object.values(rc(75, 36)), ...Object.values(rc(76, 36)), { keys: KEYRING });
-ck('you cannot walk off the edge of the drained pool', !overTheEdge.ok && overTheEdge.why === 'too high', JSON.stringify(overTheEdge));
-ck('the pool steps are the way down', FP.canStep(...Object.values(rc(84, 28)), ...Object.values(rc(84, 29)), { keys: KEYRING }).ok);
-ck('...and the only way down', [76, 77, 78, 79, 80, 81, 82, 83, 87, 88, 89, 90, 91, 92]
-  .every((x) => !FP.canStep(...Object.values(rc(x, 28)), ...Object.values(rc(x, 29)), { keys: KEYRING }).ok));
+// The pool is a visual/material plane in the room, never a recessed inner
+// collision room. All four sides are ordinary walkable transitions.
+ck('you can walk into the pool from the west deck',FP.canStep(...Object.values(rc(77,40)),...Object.values(rc(78,40)),{keys:KEYRING}).ok);
+ck('you can walk into the pool from the east deck',FP.canStep(...Object.values(rc(90,40)),...Object.values(rc(89,40)),{keys:KEYRING}).ok);
+ck('you can walk into the pool from the lead deck',FP.canStep(...Object.values(rc(84,32)),...Object.values(rc(84,33)),{keys:KEYRING}).ok);
+ck('you can walk out at the far end',FP.canStep(...Object.values(rc(84,48)),...Object.values(rc(84,49)),{keys:KEYRING}).ok);
 
 let lowRoom = 0;
 for (const k of walked) {

@@ -1,25 +1,37 @@
 {
   "schemaVersion": 1,
   "id": "conservatory.hush",
-  "title": "The HUSH",
+  "title": "The HUSH / Body Warnings",
   "status": "active",
   "entry": "start",
   "entries": [
     "start"
   ],
-  "tags": [],
-  "notes": "",
+  "tags": [
+    "dynamic-catalogue",
+    "hush"
+  ],
+  "notes": "Runtime samples two start lines and three or four choices. Choice safety is assigned only after sampling and is never authored onto a response family.",
   "regions": [
     {
       "id": "conservatory.hush.region",
-      "title": "The HUSH",
+      "title": "Body-warning catalogue",
       "kind": "scene",
       "color": "#245c62",
       "nodeIds": [
         "start",
-        "settle",
-        "steps",
-        "still"
+        "response-cold",
+        "response-shape",
+        "response-turn",
+        "response-count",
+        "response-cans",
+        "response-steps",
+        "response-walk",
+        "response-name",
+        "response-wall",
+        "response-breath",
+        "response-bruise",
+        "response-repeat"
       ]
     }
   ],
@@ -27,91 +39,192 @@
     "start": {
       "speaker": "",
       "lines": [
-        {
-          "who": "direction",
-          "text": "Something in the corridor behind you. Not a sound, exactly. A change in what the silence is shaped like.",
-          "id": "start.line.1"
-        },
-        {
-          "who": "you",
-          "text": "Right.",
-          "id": "start.line.2"
-        }
+        { "who": "direction", "text": "The skin across your shoulders lifts under the jacket.", "hushRole": "opener", "id": "start.opener.skin" },
+        { "who": "direction", "text": "Your scalp prickles beneath the headphone band.", "hushRole": "opener", "id": "start.opener.scalp" },
+        { "who": "direction", "text": "Your jaw locks before there is anything to be afraid of.", "hushRole": "opener", "id": "start.opener.jaw" },
+        { "who": "direction", "text": "The room changes pressure behind your teeth.", "hushRole": "opener", "id": "start.opener.pressure" },
+        { "who": "direction", "text": "The collar touches the back of your neck like a hand withdrawing.", "hushRole": "opener", "id": "start.opener.clothing" },
+        { "who": "direction", "text": "The left cup goes cold against your ear. The right does not.", "hushRole": "opener", "id": "start.opener.headphones" },
+        { "who": "direction", "text": "Cold travels from one wrist to the other without crossing the space between.", "hushRole": "opener", "id": "start.opener.temperature" },
+        { "who": "direction", "text": "You take a breath your body had already decided to take.", "hushRole": "opener", "id": "start.opener.breath" },
+        { "who": "direction", "text": "It could be sweat cooling where the recorder strap crosses your back.", "hushRole": "frame", "id": "start.frame.sweat" },
+        { "who": "you", "text": "A draught. There are enough holes in this place to make one.", "hushRole": "frame", "id": "start.frame.draught" },
+        { "who": "direction", "text": "Plastic settles. Metal contracts. Equipment has small night-time lives.", "hushRole": "frame", "id": "start.frame.equipment" },
+        { "who": "you", "text": "Tired. Over-caffeinated. Listening too hard. Pick one.", "hushRole": "frame", "id": "start.frame.fatigue" },
+        { "who": "direction", "text": "Your body remembers being watched more quickly than you remember who watched.", "hushRole": "frame", "id": "start.frame.memory" },
+        { "who": "direction", "text": "Nothing sounds. Nothing moves. Your body files its objection anyway.", "hushRole": "frame", "id": "start.frame.nothing" }
       ],
       "choices": [
-        {
-          "text": "\"That is a building settling. They do that.\"",
-          "goto": "settle",
-          "id": "start.choice.1"
-        },
-        {
-          "text": "\"That is footsteps.\"",
-          "goto": "steps",
-          "id": "start.choice.2"
-        },
-        {
-          "text": "(do not turn around.)",
-          "goto": "still",
-          "id": "start.choice.3"
-        }
+        { "text": "let the jacket be cold", "goto": "response-cold", "id": "start.choice.cold" },
+        { "text": "do not give that feeling a name", "goto": "response-shape", "id": "start.choice.shape" },
+        { "text": "turn around properly", "goto": "response-turn", "id": "start.choice.turn" },
+        { "text": "count four ordinary breaths", "goto": "response-count", "id": "start.choice.count" },
+        { "text": "lift one headphone cup", "goto": "response-cans", "id": "start.choice.cans" },
+        { "text": "call it footsteps and be done", "goto": "response-steps", "id": "start.choice.steps" },
+        { "text": "keep walking at the same pace", "goto": "response-walk", "id": "start.choice.walk" },
+        { "text": "say your own name under your breath", "goto": "response-name", "id": "start.choice.name" },
+        { "text": "put your palm against the wall", "goto": "response-wall", "id": "start.choice.wall" },
+        { "text": "hold your breath and let the room go first", "goto": "response-breath", "id": "start.choice.breath" },
+        { "text": "blame the oldest bruise", "goto": "response-bruise", "id": "start.choice.bruise" },
+        { "text": "wait for it to happen twice", "goto": "response-repeat", "id": "start.choice.repeat" }
       ],
       "id": "start",
       "type": "choice"
     },
-    "settle": {
+    "response-cold": {
       "speaker": "",
       "lines": [
-        {
-          "who": "you",
-          "text": "Brick lets go of heat all night. Timber moves. Everything in here is on its way down anyway.",
-          "id": "settle.line.1"
-        },
-        {
-          "who": "direction",
-          "text": "All of that is true, and none of it is what you heard.",
-          "id": "settle.line.2"
-        }
+        { "who": "you", "text": "Cold cloth. Damp shirt. Long night. That is enough of an explanation.", "hushRole": "release", "id": "response.cold.release.1" },
+        { "who": "direction", "text": "You let the cold belong to the jacket. It does not ask to be anything else.", "hushRole": "release", "id": "response.cold.release.2" },
+        { "who": "direction", "text": "The jacket warms. The cold stays exactly where it was.", "hushRole": "hard", "id": "response.cold.hard.1" },
+        { "who": "you", "text": "No. Cloth moves when I move. That moved first.", "hushRole": "hard", "id": "response.cold.hard.2" },
+        { "who": "you", "text": "Cold jacket. Bad air. Keep it boring.", "hushRole": "proximity", "id": "response.cold.proximity.1" },
+        { "who": "direction", "text": "The cloth settles. Your shoulders take longer.", "hushRole": "proximity", "id": "response.cold.proximity.2" }
       ],
-      "id": "settle",
+      "id": "response-cold",
       "type": "dialogue"
     },
-    "steps": {
+    "response-shape": {
       "speaker": "",
       "lines": [
-        {
-          "who": "you",
-          "text": "Twenty metres. Slow. Not looking for anything, because it already knows.",
-          "id": "steps.line.1"
-        },
-        {
-          "who": "you",
-          "text": "Say it properly: it went to where I made a noise. It did not come to me.",
-          "id": "steps.line.2"
-        },
-        {
-          "who": "direction",
-          "text": "That is worse, and it is also the only useful thing anybody has said tonight.",
-          "id": "steps.line.3"
-        }
+        { "who": "you", "text": "No face. No feet. No story. Just skin doing what skin does.", "hushRole": "release", "id": "response.shape.release.1" },
+        { "who": "direction", "text": "The feeling passes without becoming a picture.", "hushRole": "release", "id": "response.shape.release.2" },
+        { "who": "direction", "text": "You refuse the picture. Something supplies one from behind.", "hushRole": "hard", "id": "response.shape.hard.1" },
+        { "who": "you", "text": "Do not imagine a hand. Do not—", "hushRole": "hard", "id": "response.shape.hard.2" },
+        { "who": "you", "text": "Nothing with a face. Nothing worth turning for.", "hushRole": "proximity", "id": "response.shape.proximity.1" },
+        { "who": "direction", "text": "The dark remains unhelpfully without a shape.", "hushRole": "proximity", "id": "response.shape.proximity.2" }
       ],
-      "id": "steps",
+      "id": "response-shape",
       "type": "dialogue"
     },
-    "still": {
+    "response-turn": {
       "speaker": "",
       "lines": [
-        {
-          "who": "direction",
-          "text": "You do not turn around. You stand in a dead building with your back to a corridor and you are perfectly, professionally still.",
-          "id": "still.line.1"
-        },
-        {
-          "who": "you",
-          "text": "This is the job. This is literally the job.",
-          "id": "still.line.2"
-        }
+        { "who": "direction", "text": "You turn. Corridor, wall, your own light. The body is embarrassed before you are.", "hushRole": "release", "id": "response.turn.release.1" },
+        { "who": "you", "text": "There. Nothing. Good. Carry on.", "hushRole": "release", "id": "response.turn.release.2" },
+        { "who": "direction", "text": "You turn and give the feeling a front.", "hushRole": "hard", "id": "response.turn.hard.1" },
+        { "who": "you", "text": "There you—", "hushRole": "hard", "id": "response.turn.hard.2" },
+        { "who": "direction", "text": "You look. The corridor has the decency to be empty.", "hushRole": "proximity", "id": "response.turn.proximity.1" },
+        { "who": "you", "text": "Empty is a thing I know how to record.", "hushRole": "proximity", "id": "response.turn.proximity.2" }
       ],
-      "id": "still",
+      "id": "response-turn",
+      "type": "dialogue"
+    },
+    "response-count": {
+      "speaker": "",
+      "lines": [
+        { "who": "you", "text": "One. Two. Three. Four. Still my lungs. Still only mine.", "hushRole": "release", "id": "response.count.release.1" },
+        { "who": "direction", "text": "By four, your skin has forgotten what it objected to.", "hushRole": "release", "id": "response.count.release.2" },
+        { "who": "direction", "text": "One breath. Then another breathing in the space before two.", "hushRole": "hard", "id": "response.count.hard.1" },
+        { "who": "you", "text": "One. Two. There should not be room for that between them.", "hushRole": "hard", "id": "response.count.hard.2" },
+        { "who": "you", "text": "One. Two. Three. Four. Nothing clever in it.", "hushRole": "proximity", "id": "response.count.proximity.1" },
+        { "who": "direction", "text": "The count ends. The listening does not.", "hushRole": "proximity", "id": "response.count.proximity.2" }
+      ],
+      "id": "response-count",
+      "type": "dialogue"
+    },
+    "response-cans": {
+      "speaker": "",
+      "lines": [
+        { "who": "direction", "text": "The cup lifts. Air reaches the ear. The pressure was foam and sweat after all.", "hushRole": "release", "id": "response.cans.release.1" },
+        { "who": "you", "text": "Bad fit. Too many hours. Mystery concluded.", "hushRole": "release", "id": "response.cans.release.2" },
+        { "who": "direction", "text": "You lift the cup. The bare ear hears less and knows more.", "hushRole": "hard", "id": "response.cans.hard.1" },
+        { "who": "you", "text": "That was not in the headphones.", "hushRole": "hard", "id": "response.cans.hard.2" },
+        { "who": "direction", "text": "One ear hears the room. One hears the machine. Neither agrees.", "hushRole": "proximity", "id": "response.cans.proximity.1" },
+        { "who": "you", "text": "That is why we wear both.", "hushRole": "proximity", "id": "response.cans.proximity.2" }
+      ],
+      "id": "response-cans",
+      "type": "dialogue"
+    },
+    "response-steps": {
+      "speaker": "",
+      "lines": [
+        { "who": "you", "text": "Footsteps. Fine. Buildings are full of footsteps after people leave them.", "hushRole": "release", "id": "response.steps.release.1" },
+        { "who": "direction", "text": "The word is ordinary enough to carry the fear out of the room.", "hushRole": "release", "id": "response.steps.release.2" },
+        { "who": "direction", "text": "You name footsteps. The next one lands close enough to correct you.", "hushRole": "hard", "id": "response.steps.hard.1" },
+        { "who": "you", "text": "Footsteps. Behind me. Coming—", "hushRole": "hard", "id": "response.steps.hard.2" },
+        { "who": "you", "text": "Footsteps is a word. I still have not heard one.", "hushRole": "proximity", "id": "response.steps.proximity.1" },
+        { "who": "direction", "text": "The word waits behind you even when the sound does not.", "hushRole": "proximity", "id": "response.steps.proximity.2" }
+      ],
+      "id": "response-steps",
+      "type": "dialogue"
+    },
+    "response-walk": {
+      "speaker": "",
+      "lines": [
+        { "who": "direction", "text": "Same pace. Same breath. The body falls back into the rhythm you give it.", "hushRole": "release", "id": "response.walk.release.1" },
+        { "who": "you", "text": "Do not hurry for something that has not happened.", "hushRole": "release", "id": "response.walk.release.2" },
+        { "who": "direction", "text": "You keep the same pace. Something else matches it.", "hushRole": "hard", "id": "response.walk.hard.1" },
+        { "who": "you", "text": "Mine. Mine. That third one is not mine.", "hushRole": "hard", "id": "response.walk.hard.2" },
+        { "who": "you", "text": "Same pace. If I run, I invent the reason afterwards.", "hushRole": "proximity", "id": "response.walk.proximity.1" },
+        { "who": "direction", "text": "You keep walking. The corridor keeps its opinion.", "hushRole": "proximity", "id": "response.walk.proximity.2" }
+      ],
+      "id": "response-walk",
+      "type": "dialogue"
+    },
+    "response-name": {
+      "speaker": "",
+      "lines": [
+        { "who": "me", "text": "Still me.", "hushRole": "release", "id": "response.name.release.1" },
+        { "who": "direction", "text": "Your own name sounds small and correctly yours.", "hushRole": "release", "id": "response.name.release.2" },
+        { "who": "me", "text": "Still—", "hushRole": "hard", "id": "response.name.hard.1" },
+        { "who": "direction", "text": "The room receives the name as an introduction.", "hushRole": "hard", "id": "response.name.hard.2" },
+        { "who": "me", "text": "Still me.", "hushRole": "proximity", "id": "response.name.proximity.1" },
+        { "who": "you", "text": "Still here. Embarrassing, but useful.", "hushRole": "proximity", "id": "response.name.proximity.2" }
+      ],
+      "id": "response-name",
+      "type": "dialogue"
+    },
+    "response-wall": {
+      "speaker": "",
+      "lines": [
+        { "who": "direction", "text": "Paint grit. Cold plaster. A wall being exactly a wall beneath your hand.", "hushRole": "release", "id": "response.wall.release.1" },
+        { "who": "you", "text": "There. Something that stops where it says it stops.", "hushRole": "release", "id": "response.wall.release.2" },
+        { "who": "direction", "text": "The wall is cold. The warmth at your back is not.", "hushRole": "hard", "id": "response.wall.hard.1" },
+        { "who": "you", "text": "Wall in front. Then what is—", "hushRole": "hard", "id": "response.wall.hard.2" },
+        { "who": "direction", "text": "The wall answers with paint dust and no pulse.", "hushRole": "proximity", "id": "response.wall.proximity.1" },
+        { "who": "you", "text": "Good. We agree on something.", "hushRole": "proximity", "id": "response.wall.proximity.2" }
+      ],
+      "id": "response-wall",
+      "type": "dialogue"
+    },
+    "response-breath": {
+      "speaker": "",
+      "lines": [
+        { "who": "direction", "text": "The room exhales radiators, timber, old fabric. Nothing waits for you to join in.", "hushRole": "release", "id": "response.breath.release.1" },
+        { "who": "you", "text": "Just a room cooling. My lungs can stop making it personal.", "hushRole": "release", "id": "response.breath.release.2" },
+        { "who": "direction", "text": "You stop breathing. Something behind you does not.", "hushRole": "hard", "id": "response.breath.hard.1" },
+        { "who": "you", "text": "That is not the pipes.", "hushRole": "hard", "id": "response.breath.hard.2" },
+        { "who": "direction", "text": "You hold still long enough to hear every cheap little part of the building.", "hushRole": "proximity", "id": "response.breath.proximity.1" },
+        { "who": "you", "text": "All of it ordinary. None of it comforting.", "hushRole": "proximity", "id": "response.breath.proximity.2" }
+      ],
+      "id": "response-breath",
+      "type": "dialogue"
+    },
+    "response-bruise": {
+      "speaker": "",
+      "lines": [
+        { "who": "you", "text": "Old bruise. Strap pulling across it. Body complaining late as usual.", "hushRole": "release", "id": "response.bruise.release.1" },
+        { "who": "direction", "text": "The ache accepts the explanation and stays inside your skin.", "hushRole": "release", "id": "response.bruise.release.2" },
+        { "who": "direction", "text": "The bruise aches. A new pressure settles neatly over it.", "hushRole": "hard", "id": "response.bruise.hard.1" },
+        { "who": "you", "text": "That one is old. This is—", "hushRole": "hard", "id": "response.bruise.hard.2" },
+        { "who": "you", "text": "Strap on a bruise. There is the grand mystery.", "hushRole": "proximity", "id": "response.bruise.proximity.1" },
+        { "who": "direction", "text": "The answer is plausible. Your body remains unconvinced.", "hushRole": "proximity", "id": "response.bruise.proximity.2" }
+      ],
+      "id": "response-bruise",
+      "type": "dialogue"
+    },
+    "response-repeat": {
+      "speaker": "",
+      "lines": [
+        { "who": "direction", "text": "You wait. The feeling does not repeat. That makes it smaller.", "hushRole": "release", "id": "response.repeat.release.1" },
+        { "who": "you", "text": "One bad signal from the nerves. Not evidence.", "hushRole": "release", "id": "response.repeat.release.2" },
+        { "who": "direction", "text": "You wait for twice. The second arrives with weight.", "hushRole": "hard", "id": "response.repeat.hard.1" },
+        { "who": "you", "text": "There. Again. Closer.", "hushRole": "hard", "id": "response.repeat.hard.2" },
+        { "who": "direction", "text": "Nothing repeats. You listen long enough to make that suspicious.", "hushRole": "proximity", "id": "response.repeat.proximity.1" },
+        { "who": "you", "text": "Once is nerves. Twice is a problem. Keep moving before twice.", "hushRole": "proximity", "id": "response.repeat.proximity.2" }
+      ],
+      "id": "response-repeat",
       "type": "dialogue"
     }
   }

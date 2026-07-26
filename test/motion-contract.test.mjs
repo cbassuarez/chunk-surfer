@@ -44,6 +44,15 @@ test('3d camera has a spring motion rig for visual inertia', () => {
   assert.match(src, /motionRig:\s*motionRig\?/);
 });
 
+test('a blocking tableau may retain look without retaining locomotion', () => {
+  const main = readFileSync('src/main.js', 'utf8');
+  const scenes = readFileSync('src/game/scenes.js', 'utf8');
+  assert.match(scenes, /export function allowsLook\(\)/);
+  assert.match(main, /scenes\.blocksInput\(\)&&!scenes\.allowsLook\(\)/);
+  assert.match(main, /!scenes\.blocksInput\(\)\|\|scenes\.allowsLook\(\)/);
+  assert.match(main, /!scenes\.blocksInput\(\)\|\|scenes\.tracksMotion\(\)/, 'movement remains on the separate tracksMotion contract');
+});
+
 test('focus recovery clears stale movement and resumes interaction systems', () => {
   const src = readFileSync('src/main.js', 'utf8');
   assert.match(src, /function recoverMotionFocus/);

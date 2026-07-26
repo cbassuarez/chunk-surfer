@@ -255,17 +255,100 @@ const VOID_TINT = Object.freeze({
   'source-final': '196,206,224',
 });
 
-export function combatVoidTint(profileKey = '') {
+export function combatVoidTint(profileKey = '', environmentLighting = null) {
+  if(!['training','source-final'].includes(String(profileKey))&&Array.isArray(environmentLighting?.ambientColor)){
+    return environmentLighting.ambientColor.slice(0,3)
+      .map((value)=>Math.max(0,Math.min(255,Math.round((Number(value)||0)*255))))
+      .join(',');
+  }
   return VOID_TINT[String(profileKey)] || '124,134,150';
+}
+
+// Non-semantic residue from the room that produced the fight. These marks are
+// deliberately static, low-alpha, and pushed toward the void's perimeter so
+// they cannot be mistaken for an attack telegraph or opponent state.
+export function drawVoidRoomMemory(ctx, profileKey, box, tint, {
+  resolveProgress = 0,
+  reduceFlash = false,
+  dpr = 1,
+} = {}) {
+  if (!ctx || !box) return false;
+  const key = String(profileKey || 'training');
+  const { x, y, w, h } = box;
+  const alpha = (reduceFlash ? 0.45 : 1) * (0.045 + Math.min(1, Math.max(0, resolveProgress)) * 0.018);
+  const line = Math.max(0.6, dpr * 0.6);
+  ctx.save();
+  ctx.strokeStyle = `rgba(${tint},${alpha})`;
+  ctx.fillStyle = `rgba(${tint},${alpha * 0.72})`;
+  ctx.lineWidth = line;
+
+  if (key === 'natatorium') {
+    // Lane bars below the horizon and a few tile-edge registration marks.
+    for (let lane = 0; lane < 4; lane += 1) {
+      const yy = y + h * (0.78 + lane * 0.047);
+      ctx.fillRect(x + w * 0.08, yy, w * 0.84, Math.max(line, h * 0.003));
+    }
+    for (let tile = 0; tile < 6; tile += 1) {
+      const xx = x + w * (0.09 + tile * 0.032);
+      ctx.fillRect(xx, y + h * 0.67, line, h * 0.05);
+    }
+  } else if (key === 'hall') {
+    // Return-monitor traces which stop before the opponent's central bay.
+    for (let trace = 0; trace < 5; trace += 1) {
+      const yy = y + h * (0.15 + trace * 0.07);
+      ctx.fillRect(x + w * 0.04, yy, w * (0.16 + trace * 0.018), line);
+      ctx.fillRect(x + w * (0.79 - trace * 0.012), yy, w * 0.17, line);
+    }
+  } else if (key === 'practice') {
+    // Piano-wire tension kept to the outer thirds of the field.
+    for (const u of [0.08, 0.13, 0.18, 0.82, 0.87, 0.92]) {
+      const xx = x + w * u;
+      ctx.beginPath();
+      ctx.moveTo(xx, y + h * 0.13);
+      ctx.lineTo(xx + (u < 0.5 ? line * 4 : -line * 4), y + h * 0.66);
+      ctx.stroke();
+    }
+  } else if (key === 'chapel') {
+    // Angular lancets: window memory without arches or a readable symbol.
+    for (const u of [0.10, 0.20, 0.80, 0.90]) {
+      const xx = x + w * u;
+      const half = w * 0.022;
+      ctx.beginPath();
+      ctx.moveTo(xx - half, y + h * 0.46);
+      ctx.lineTo(xx, y + h * 0.18);
+      ctx.lineTo(xx + half, y + h * 0.46);
+      ctx.stroke();
+    }
+  } else if (key === 'source-final') {
+    // Broken lattice at the limits of the frame, never behind the being.
+    for (let index = 0; index < 5; index += 1) {
+      const yy = y + h * (0.12 + index * 0.105);
+      ctx.fillRect(x + w * 0.025, yy, w * 0.18, line);
+      ctx.fillRect(x + w * 0.795, yy + line * 2, w * 0.18, line);
+      const xx = x + w * (0.05 + index * 0.028);
+      ctx.fillRect(xx, y + h * 0.10, line, h * 0.48);
+      ctx.fillRect(x + w - (xx - x), y + h * 0.12, line, h * 0.45);
+    }
+  } else if (key === 'training') {
+    // One neutral stepped standing-wave reference.
+    const baseY = y + h * 0.32;
+    for (let step = 0; step < 6; step += 1) {
+      const xx = x + w * (0.07 + step * 0.035);
+      ctx.fillRect(xx, baseY + (step % 2) * h * 0.018, w * 0.03, line);
+    }
+  }
+  ctx.restore();
+  return true;
 }
 
 // The abstract fight void: flat near-black, one tint wash, a floor hairline,
 // and a stepped light pool under the opponent. Flat blocks only — no gradient
 // rails, no ellipses; the display is a grid.
 export function drawEnemyVoidStage(profileKey, {
-  x, y, w, h, enemyBox = null, resolveProgress = 0, reduceFlash = false,
+  x, y, w, h, enemyBox = null, resolveProgress = 0, reduceFlash = false, environmentLighting = null,
 } = {}) {
-  const tint = combatVoidTint(profileKey);
+  const tint = combatVoidTint(profileKey,environmentLighting);
+  const poolScale=Math.max(.62,Math.min(1.18,Number(environmentLighting?.poolScale)||1));
   uiDraw(({ ctx, dpr, cellW, cellH }) => {
     const px = x * cellW * dpr;
     const py = y * cellH * dpr;
@@ -286,12 +369,17 @@ export function drawEnemyVoidStage(profileKey, {
     ctx.moveTo(px + pw * .04, floorY);
     ctx.lineTo(px + pw * .96, floorY);
     ctx.stroke();
+    drawVoidRoomMemory(ctx, profileKey, { x: px, y: py, w: pw, h: ph }, tint, {
+      resolveProgress,
+      reduceFlash,
+      dpr,
+    });
     if (enemyBox) {
       const cx = (enemyBox.x + enemyBox.w / 2) * cellW * dpr;
       const sw = enemyBox.w * cellW * dpr;
       for (const [scale, alpha] of [[.66, .06], [.46, .07], [.26, .09]]) {
         ctx.fillStyle = `rgba(${tint},${alpha})`;
-        ctx.fillRect(cx - (sw * scale) / 2, floorY - Math.max(dpr, ph * .006), sw * scale, Math.max(dpr * 2, ph * .018));
+        ctx.fillRect(cx - (sw * scale*poolScale) / 2, floorY - Math.max(dpr, ph * .006), sw * scale*poolScale, Math.max(dpr * 2, ph * .018));
       }
     }
     if (resolveProgress > .20 && resolveProgress < .62) {

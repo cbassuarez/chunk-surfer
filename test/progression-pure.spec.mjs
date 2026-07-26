@@ -121,6 +121,8 @@ assert.equal(cannotRequalify.integrity.deadAir.invalidations.length, 1);
 // Event validation and bus isolation.
 assert.equal(validateEvent(event(EVENT_TYPES.TAKE_COMPLETED, { roomId: 'main_b3', elapsed: 45 })), true);
 assert.equal(validateEvent(event(EVENT_TYPES.TAKE_COMPLETED, { roomId: 'main_b3' })), false);
+assert.equal(validateEvent(event(EVENT_TYPES.POWER_CIRCUIT_CHANGED, { circuit: 'sp01', live: true })), true);
+assert.equal(validateEvent(event(EVENT_TYPES.POWER_CIRCUIT_CHANGED, { circuit: 'sp04', live: true })), false);
 assert.equal(validateEvent(event(EVENT_TYPES.CREDITS_VIEWED)), true);
 assert.equal(validateEvent(event('made.up', {})), false);
 const seen = [];
@@ -146,6 +148,8 @@ ledger = reduceRunLedger(ledger, event(EVENT_TYPES.BATTLE_STARTED, { id: 'hall' 
 ledger = reduceRunLedger(ledger, event(EVENT_TYPES.BATTLE_FINISHED, { id: 'hall', result: 'win', attempts: 1, firstPass: true }, 6));
 ledger = reduceRunLedger(ledger, event(EVENT_TYPES.DOCUMENT_READ, { id: 'work-order' }, 7));
 ledger = reduceRunLedger(ledger, event(EVENT_TYPES.DOCUMENT_READ, { id: 'work-order' }, 8));
+ledger = reduceRunLedger(ledger, event(EVENT_TYPES.POWER_CIRCUIT_CHANGED, { circuit: 'sp01', live: true }, 9));
+ledger = reduceRunLedger(ledger, event(EVENT_TYPES.POWER_CIRCUIT_CHANGED, { circuit: 'sp01', live: false }, 10));
 assert.equal(ledger.takes.completed, 2);
 assert.deepEqual(ledger.takes.rooms, ['main_b3']);
 assert.equal(ledger.takes.spoiled, 1);
@@ -154,7 +158,9 @@ assert.equal(ledger.battles.started, 1);
 assert.equal(ledger.battles.won, 1);
 assert.equal(ledger.battles.firstPassWon, 1);
 assert.deepEqual(ledger.documentsRead, ['work-order']);
-assert.equal(ledger.seq, 8);
+assert.deepEqual(ledger.power.live, []);
+assert.deepEqual(ledger.power.everRestored, ['sp01']);
+assert.equal(ledger.seq, 10);
 assert.deepEqual(normalizeLedger({ takes: { rooms: ['a', 'a'] } }).takes.rooms, ['a']);
 
 // Achievement definitions are canonical and inaccessible settings are absent.
@@ -193,6 +199,23 @@ assert.deepEqual(
   }),
   ['ACH_RELEASE_RECORD'],
 );
+const allPowerRun = freshRunRecord({ now: 1, id: 'run_power' });
+for (const [index, circuit] of ['sp01', 'sp02', 'sp03'].entries()) {
+  allPowerRun.ledger = reduceRunLedger(allPowerRun.ledger,
+    event(EVENT_TYPES.POWER_CIRCUIT_CHANGED, { circuit, live: true }, index + 1));
+}
+assert.ok(evaluateAchievements({
+  event: event(EVENT_TYPES.RUN_FINISHED, { summary: {} }),
+  profile,
+  run: allPowerRun,
+  summary: {},
+}).includes('ACH_BUILDING_ALIVE'));
+assert.ok(evaluateAchievements({
+  event: event(EVENT_TYPES.RUN_FINISHED, { summary: {} }),
+  profile,
+  run: freshRunRecord({ now: 1, id: 'run_dark' }),
+  summary: {},
+}).includes('ACH_ONE_TORCH'));
 const deadAirSummary = {
   rules: { startedPreset: 'dead-air' },
   integrity: { deadAir: { eligible: true } },

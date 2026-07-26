@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   planStoryArtInPanel,
   planStoryArtSideBySide,
+  storyArtArtifactLayout,
   storyArtCols,
   storyArtSideBySideCols,
   storyArtSideBySideSplit,
@@ -11,6 +12,16 @@ import {
   storyArtFits,
   storyArtRows,
 } from '../src/game/story-art-card.js';
+
+test('story art forensic artifacts are stable per authored still', () => {
+  const a = storyArtArtifactLayout({ id: 'dock-frame' }, { width: 640, height: 360 });
+  const b = storyArtArtifactLayout({ id: 'dock-frame' }, { width: 640, height: 360 });
+  const other = storyArtArtifactLayout({ id: 'chapel-frame' }, { width: 640, height: 360 });
+  assert.deepEqual(a, b);
+  assert.notDeepEqual(a, other);
+  assert.ok(a.deadPixels.length >= 1 && a.deadPixels.length <= 3);
+  assert.ok(a.deadPixels.every((pixel) => pixel.x >= 0 && pixel.x <= 640 && pixel.y >= 0 && pixel.y <= 360));
+});
 
 test('story art row planning keeps minimum readable heights', () => {
   assert.ok(storyArtRows('compact', 20) >= 8);
