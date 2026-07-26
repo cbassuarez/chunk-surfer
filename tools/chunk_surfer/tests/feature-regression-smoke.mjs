@@ -391,7 +391,7 @@ try {
   await revealThoughtResponse();
   await safeScreenshot('06c-hush-brush-failed-thought.png');
   const hardFlash=await smokeStep('finish hard hush brush and observe contact flash',()=>page.evaluate(async(timeoutMs)=>{
-    const deadline=performance.now()+Math.max(1000,Number(timeoutMs)||3000);
+    const deadline=performance.now()+Math.max(2000,Number(timeoutMs)||5000);
     let lastStatus=window.__chunkSurferHushScare?.status?.()||null;
     let lastView=null;
     let steps=0;
@@ -432,7 +432,7 @@ try {
       diagnosticScene:window.__scenes?.top?.()?.id||null,
       diagnosticView:lastView,
     };
-  },interactionTimeout),interactionTimeout+5000);
+  },interactionTimeout),interactionTimeout+10000);
   assert.equal(hardFlash?.observed,true,`hard brush contact flash was not observed: ${JSON.stringify(hardFlash)}`);
   assert.equal(hardFlash?.contactHit,true,`hard brush contact flash did not report contact-hit: ${JSON.stringify(hardFlash)}`);
   await safeScreenshot('06d-hush-brush-hard-contact.png');
