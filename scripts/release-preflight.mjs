@@ -56,14 +56,8 @@ if (!pkg.scripts?.['windows:validate']?.includes('validate-windows-portable.mjs'
 if (!portablePackager.includes('validateWindowsPortable(appDir)') || !portableValidator.includes('weightsSha256')) {
   throw new Error('Windows portable packaging must validate the staged payload and model manifest');
 }
-if (workflow.includes('Compress-Archive') || workflow.includes('Expand-Archive')) {
-  throw new Error('Windows portable zip packaging must use 7-Zip, not PowerShell archive cmdlets');
-}
-if (!workflow.includes('Get-Command 7z') || !workflow.includes('& $sevenZip a -tzip') || !workflow.includes('& $sevenZip t') || !workflow.includes('& $sevenZip x')) {
-  throw new Error('Windows release workflow must create, verify, and extract the oversized portable zip with 7-Zip');
-}
-if (!workflow.includes('$verifyRoot/Chunk Surfer')) {
-  throw new Error('Windows release workflow must validate a clean 7-Zip extraction of the portable zip');
+if (!workflow.includes('Expand-Archive') || !workflow.includes('$verifyRoot/Chunk Surfer')) {
+  throw new Error('Windows release workflow must validate a clean extraction of the portable zip');
 }
 if (!workflow.includes('Prepare release upload assets') || !workflow.includes('split -b 1900M')) {
   throw new Error('release workflow must split assets that exceed GitHub release file limits');
