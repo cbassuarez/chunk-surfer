@@ -56,6 +56,12 @@ if (!pkg.scripts?.['windows:validate']?.includes('validate-windows-portable.mjs'
 if (!portablePackager.includes('validateWindowsPortable(appDir)') || !portableValidator.includes('weightsSha256')) {
   throw new Error('Windows portable packaging must validate the staged payload and model manifest');
 }
+if (workflow.includes('Compress-Archive')) {
+  throw new Error('Windows portable zip creation must use 7-Zip, not PowerShell Compress-Archive, for the oversized offline lens payload');
+}
+if (!workflow.includes('Get-Command 7z') || !workflow.includes('& $sevenZip a -tzip') || !workflow.includes('& $sevenZip t')) {
+  throw new Error('Windows release workflow must create and verify the oversized portable zip with 7-Zip');
+}
 if (!workflow.includes('Expand-Archive') || !workflow.includes('$verifyRoot/Chunk Surfer')) {
   throw new Error('Windows release workflow must validate a clean extraction of the portable zip');
 }
