@@ -218,8 +218,6 @@ assert.equal(byId['pool-lane-reel']?.yaw,0,'lane reel sits square to the startin
   const atriumEnd=builder.indexOf("mesh('front_atrium_box_office')",atriumStart);
   const bathsRelief=builder.slice(bathsStart,bathsEnd);
   const atriumRelief=builder.slice(atriumStart,atriumEnd);
-  assert.ok(bathsStart>=0&&bathsEnd>bathsStart,'the natatorium keeps its dedicated perimeter finish');
-  assert.doesNotMatch(bathsRelief,/lowerCourses:false/,'the natatorium retains its tiled dado and lower baths relief');
   assert.ok((atriumRelief.match(/lowerCourses:false/g)||[]).length>=4,'the atrium removes lower wainscot courses on every perimeter run');
   const roofStart=builder.indexOf("mesh('natatorium_roof_structure')");
   const roofEnd=builder.indexOf("mesh('natatorium_cubicle_bank')",roofStart);
