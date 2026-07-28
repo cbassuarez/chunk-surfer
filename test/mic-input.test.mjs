@@ -6,6 +6,8 @@ import {
   micDevices,
   micInit,
   micLevel,
+  micMeasurement,
+  micPeak,
   micRefreshDevices,
   micRms,
   micSnapshot,
@@ -173,4 +175,8 @@ test('headless mic test override remains authoritative', async () => {
   assert.equal(micActive(), true);
   assert.equal(micLevel(), 0.2);
   assert.equal(micRms(new Float32Array([0.5, -0.5])), 0.5);
+  assert.ok(Math.abs(micPeak(new Float32Array([0.5, -0.9, 0.2])) - 0.9) < 1e-6);
+  micTest({ rms: 0.4, peak: 1, clipped: true });
+  assert.deepEqual(micMeasurement(), { rms: 0.4, peak: 1, clipped: true });
+  assert.equal(micLevel(), 0.4);
 });

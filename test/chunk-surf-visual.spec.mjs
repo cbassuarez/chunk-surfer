@@ -9,10 +9,17 @@ import {
 } from '../src/game/chunk-surf-state.js';
 import {
   SOURCE_ATLAS,
+  SOURCE_ARCH_MAX_INSTANCES,
+  SOURCE_ARCH_TILE_CELLS,
   SOURCE_PLAN_SNAP,
   SOURCE_PLAN_WINDOW,
+  SOURCE_SEEDED_STRUCTURE_COUNT,
   createSourceSpaceRuntime,
+  sourceLandscapePlanOrigin,
   sourceLandscapeFloorAt,
+  sourceStructureCollisionAt,
+  sourceStructurePlacements,
+  sourceStructureRouteClearance,
   validateSourceAtlas,
 } from '../src/game/source-space-runtime.js';
 
@@ -142,8 +149,53 @@ for (const entry of Object.values(SOURCE_ATLAS.entries)) {
   // routes is walkable, not an invisible causeway wall. The routes survive only
   // as brighter path material for wayfinding; the only hard edge is the field's
   // own perimeter, rendered as a visible wall of code.
-  assert.ok(runtime.geometry.cellAt(40,-450),'off-route space is open, walkable ground — no invisible causeway walls');
+  assert.ok(runtime.geometry.cellAt(20,-450),'off-route space remains open except where authored solid architecture occupies it');
+  assert.equal(runtime.geometry.cellAt(40,-450),null,'the colossal percussion shelf is physically present in off-route space');
   assert.equal(runtime.geometry.cellAt(0,-900),null,'beyond the field perimeter there is no ground (sky, not corridor)');
+}
+
+{
+  const first=sourceStructurePlacements(4417),again=sourceStructurePlacements(4417),other=sourceStructurePlacements(4418);
+  assert.deepEqual(first,again,'giant placement is exactly deterministic for a run seed');
+  assert.notDeepEqual(first.filter((entry)=>entry.seeded),other.filter((entry)=>entry.seeded),'another run seed changes only the field scatter');
+  assert.equal(first.filter((entry)=>entry.hero).length,5,'five authored hero compositions anchor the landscape');
+  assert.equal(first.filter((entry)=>entry.seeded).length,SOURCE_SEEDED_STRUCTURE_COUNT,'exactly fourteen seeded giants are accepted');
+  assert.ok(first.filter((entry)=>entry.kind==='fractured-bust').length<=2,'fractured scatter stays rare');
+  assert.ok(first.every((entry)=>sourceStructureRouteClearance(entry)>0),'every giant collider clears the authored walking routes');
+  assert.ok(sourceStructureCollisionAt(first,-24,-30),'the west stand gate has a real footprint');
+  assert.equal(sourceStructureCollisionAt(first,0,-30),null,'the stand gate leaves its central approach open');
+}
+
+{
+  const runtime=createSourceSpaceRuntime({initialState:fullyOpenLandscapeState()});
+  const expected=sourceLandscapePlanOrigin({x:0,y:-252});
+  const near=runtime.geometry.renderPlanFor(0,-252);
+  const far=runtime.geometry.renderPlanFor(120,-540);
+  assert.equal(near,far,'ordinary landscape movement never rebuilds or recentres the raster plan');
+  assert.deepEqual({x:near.originX,y:near.originY},expected);
+  assert.ok(near.originX<=-180&&near.originX+near.w>=180,'the anchored plan covers the complete landscape width');
+  assert.ok(near.originY<=-592&&near.originY+near.h>=-248,'the anchored plan covers the complete landscape depth');
+
+  const before=runtime.sourceScene({px:127,py:-380,time:0});
+  const after=runtime.sourceScene({px:129,py:-380,time:0});
+  assert.equal(SOURCE_ARCH_TILE_CELLS,128);
+  assert.ok(before.staticBatches.length>1&&after.staticBatches.length>1,'text architecture is delivered in bounded world batches');
+  assert.ok(before.staticInstances.length<=SOURCE_ARCH_MAX_INSTANCES&&after.staticInstances.length<=SOURCE_ARCH_MAX_INSTANCES);
+  assert.equal(new Set(before.staticInstances.map((entry)=>entry.id)).size,before.staticInstances.length,'resident tiles never duplicate an authored source panel');
+  const beforeById=new Map(before.staticInstances.map((entry)=>[entry.id,entry]));
+  for(const entry of after.staticInstances){
+    const prior=beforeById.get(entry.id);
+    if(prior)assert.deepEqual([...entry.matrix],[...prior.matrix],`${entry.id} never moves when residency changes`);
+  }
+  const beforeKeys=new Set(before.staticBatches.map((batch)=>batch.key));
+  const afterKeys=new Set(after.staticBatches.map((batch)=>batch.key));
+  const changed=[...before.staticBatches.filter((batch)=>!afterKeys.has(batch.key)),...after.staticBatches.filter((batch)=>!beforeKeys.has(batch.key))];
+  const playerMetres={x:129*CELL,z:-380*CELL};
+  for(const batch of changed){
+    const bx=Math.max(batch.bounds.minX,Math.min(playerMetres.x,batch.bounds.maxX));
+    const bz=Math.max(batch.bounds.minZ,Math.min(playerMetres.z,batch.bounds.maxZ));
+    assert.ok(Math.hypot(bx-playerMetres.x,bz-playerMetres.z)>90,'tiles enter or leave only beyond the prop render radius');
+  }
 }
 
 {

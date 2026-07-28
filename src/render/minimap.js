@@ -1,8 +1,9 @@
 // AUDIOCORP local navigation display.
 //
 // This is a projection of the same map model used by the field case. It never
-// reads AI state directly. Main supplies a sanitized exact body position for
-// the literal HUSH dot; acoustic contact detail still comes from telemetry.
+// reads AI state directly. Main supplies sanitized perception language plus a
+// momentary visual-confirmation flag; exact HUSH position exists here only
+// while the player can already see the manifestation in the world.
 
 import { uiCellMetrics, uiDraw, uiFill, uiGlyph, uiText, uiSize } from './ui.js';
 import { drawMachinePanel } from './presentation.js';
@@ -308,16 +309,16 @@ function drawCommands(commands, now) {
     else if (command.kind === 'anomaly-contact' || command.kind === 'anomaly-edge') {
       drawAnomalyMarker(command, .80 + Math.sin(now * 12) * .14);
     }
-    else if (command.kind === 'hush' || command.kind === 'hush-edge') {
-      drawHushMarker(command.point, .88 + Math.sin(now * 10) * .12);
+    else if (command.kind === 'hush-visible' || command.kind === 'hush-visible-edge') {
+      drawHushMarker(command.point, .82 + Math.sin(now * 9) * .12);
     }
   }
 }
 
 // A noise you just heard, blinking where it came from, and then gone. It is not a
-// contact and it must never read as one: the hush's own dot is solid red, this is
-// a hollow ring that fades out. The map is allowed to tell you what you heard a
-// second ago; it is not allowed to imply the thing is still standing there.
+// contact and it must never read as one: this is a hollow ring that fades out.
+// The map may tell you what you heard a second ago; it never reveals HUSH's body
+// or implies the thing is still standing at the sound source.
 function drawMischiefBlink(commands, mischief, viewport) {
   if (!mischief) return;
   const sight = commands.find((command) => command.kind === 'sight')
@@ -394,14 +395,12 @@ export function drawMinimap(model, opts = {}) {
   const floor = model.floors.find((candidate) => candidate.id === model.player.floorId);
   const floorTarget = commands.find((command) => command.kind === 'floor-target');
   const anomalyFloor = commands.find((command) => command.kind === 'anomaly-floor');
-  const hushFloor = commands.find((command) => command.kind === 'hush-floor');
   let footer = floor?.label || 'POSITION UNKNOWN';
-  if (hushFloor?.delta) footer = `HUSH ${hushFloor.delta > 0 ? '+' : ''}${hushFloor.delta} FLOOR`;
-  else if (anomalyFloor?.delta) footer = `HUSH ${anomalyFloor.delta > 0 ? '+' : ''}${anomalyFloor.delta} FLOOR`;
+  if (anomalyFloor?.delta) footer = `HUSH ${anomalyFloor.delta > 0 ? '+' : ''}${anomalyFloor.delta} FLOOR`;
   else if (floorTarget?.delta) footer = `TARGET ${floorTarget.delta > 0 ? '+' : ''}${floorTarget.delta} FLOOR`;
   uiText(panel.x, panel.y + panel.h - 1, clip(footer, panel.w), floorTarget?.delta || anomalyFloor?.delta ? 'ui-blue' : 'ui-label', .72);
-  drawFloorDeltaLed(panel, hushFloor?.delta || anomalyFloor?.delta || floorTarget?.delta || 0);
-  if (opts.expanded) uiText(panel.x, panel.y + panel.h, '[GREEN] YOU · [BLUE] TARGET · [RED ●] HUSH', 'ui-secondary', .66);
+  drawFloorDeltaLed(panel, anomalyFloor?.delta || floorTarget?.delta || 0);
+  if (opts.expanded) uiText(panel.x, panel.y + panel.h, '[GREEN] YOU · [BLUE] TARGET · [RED ?] HUSH (SEEN)', 'ui-secondary', .66);
 }
 
 // Small explicit marker used only for recorder playback origin. It is not part

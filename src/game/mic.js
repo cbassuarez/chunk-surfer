@@ -75,6 +75,7 @@ export function micDevices() {
 }
 
 export function micSnapshot() {
+  const measurement = micMeasurement();
   return {
     state: micState(),
     reason: stateReason,
@@ -86,7 +87,9 @@ export function micSnapshot() {
     channelMode: activeInput.channelMode,
     channelCount: activeChannelCount,
     canSelectDevice: !!mediaDevices()?.enumerateDevices,
-    level: micLevel(),
+    level: measurement.rms,
+    peak: measurement.peak,
+    clipped: measurement.clipped,
   };
 }
 
@@ -235,19 +238,39 @@ export function micInit(audioCtx, options = {}) {
   return request;
 }
 
+const clampLevel = (value) => Math.max(0, Math.min(1, Number(value) || 0));
+
+export function micMeasurement() {
+  if (testLevel != null) {
+    if (testLevel && typeof testLevel === 'object') {
+      const rms = clampLevel(testLevel.rms);
+      const peak = Math.max(rms, clampLevel(testLevel.peak));
+      return { rms, peak, clipped: !!testLevel.clipped || peak >= .985 };
+    }
+    const rms = clampLevel(testLevel);
+    return { rms, peak: rms, clipped: rms >= .985 };
+  }
+  if (state !== 'on' || !analyser || !data) return { rms: 0, peak: 0, clipped: false };
+  analyser.getFloatTimeDomainData(data);
+  const rms = micRms(data);
+  const peak = micPeak(data);
+  return { rms, peak, clipped: peak >= .985 };
+}
+
 // Current loudness of the real room, RMS 0..1. A quiet room is ~0.005; talking
 // is ~0.05–0.15; a shout is past 0.3.
-export function micLevel() {
-  if (testLevel != null) return testLevel;
-  if (state !== 'on' || !analyser || !data) return 0;
-  analyser.getFloatTimeDomainData(data);
-  return micRms(data);
-}
+export function micLevel() { return micMeasurement().rms; }
 
 export function micRms(samples) {
   let sum = 0;
   for (let i = 0; i < samples.length; i++) sum += samples[i] * samples[i];
   return Math.sqrt(sum / Math.max(1, samples.length));
+}
+
+export function micPeak(samples) {
+  let peak = 0;
+  for (let i = 0; i < samples.length; i++) peak = Math.max(peak, Math.abs(samples[i]));
+  return peak;
 }
 
 // Known transport sounds remain visible on both meters, but cannot invalidate

@@ -1,7 +1,6 @@
 // The loading dock has two lives: an ordinary load-out room and one impossible
-// return. This module keeps the eligibility, threshold bookkeeping, timeline,
-// and presentation data pure so a debug warp or save restore can never be
-// mistaken for a player crossing a door.
+// return.  The scare is deliberately driven by space, not time: a load, warp,
+// or debug placement can never accidentally become an authored threshold.
 
 export const DOCK_PORTAL = Object.freeze({
   FOYER: 'dock-foyer-service',
@@ -9,19 +8,14 @@ export const DOCK_PORTAL = Object.freeze({
 });
 
 export const DOCK_HAUNTING_VARIANT = Object.freeze({
-  BEHIND_FRAME: 'behind-frame',
-  CROSS_DOCK: 'cross-dock',
-  EXIT_BLOCK: 'exit-block',
+  WEST_DESK: 'west-desk',
+  NORTH_CAGE: 'north-cage',
 });
 
-export const DOCK_HAUNTING_PHASE = Object.freeze({
-  QUIET: 'quiet',
-  ANSWERS: 'answers',
-  REVEAL: 'reveal',
-  FIGURE: 'figure',
-  RUPTURE: 'rupture',
-  BLACKOUT: 'blackout',
-  COMPLETE: 'complete',
+export const DOCK_HAUNTING_STATUS = Object.freeze({
+  IDLE: 'idle',
+  ACTIVE: 'active',
+  RESOLVED: 'resolved',
 });
 
 export const DOCK_ACOUSTIC_PROP_IDS = Object.freeze([
@@ -43,11 +37,19 @@ export const DOCK_HERO_PROP_IDS = Object.freeze([
   'dock-chandelier-frame',
 ]);
 
-export const DOCK_HAUNTING_SECONDS = 6.5;
-export const DOCK_HAUNTING_GRACE_MS = 3000;
+export const DOCK_HAUNTING_PRESSURE = Object.freeze({
+  outerMeters: 9,
+  contactMeters: .55,
+});
+
+// These are crossed once, persisted, and never replayed after a reload.  The
+// first two are isolated; the close milestones overlap into a small swarm.
+export const DOCK_HAUNTING_MILESTONES = Object.freeze([.08, .25, .43, .59, .73, .84, .92, .975]);
 
 const RETURN_PORTALS = new Set(Object.values(DOCK_PORTAL));
 const EFFECTS = new Set(['full', 'reduced', 'off']);
+const clamp01 = (value) => Math.max(0, Math.min(1, Number(value) || 0));
+const finite = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
 
 export function isDockReturnPortal(id) {
   return RETURN_PORTALS.has(String(id || ''));
@@ -58,27 +60,30 @@ export function normalizeDockEffects(value) {
   return EFFECTS.has(id) ? id : 'full';
 }
 
-export function dockVariantFor({ drankCoffee = false, entryPortal = null } = {}) {
-  if (drankCoffee) return DOCK_HAUNTING_VARIANT.EXIT_BLOCK;
-  if (entryPortal === DOCK_PORTAL.FOYER) return DOCK_HAUNTING_VARIANT.CROSS_DOCK;
-  return DOCK_HAUNTING_VARIANT.BEHIND_FRAME;
+export function dockVariantFor({ entryPortal = null } = {}) {
+  return entryPortal === DOCK_PORTAL.FOYER
+    ? DOCK_HAUNTING_VARIANT.WEST_DESK
+    : DOCK_HAUNTING_VARIANT.NORTH_CAGE;
+}
+
+export function dockHauntingStaging({ entryPortal = null, variant = null } = {}) {
+  const selected = Object.values(DOCK_HAUNTING_VARIANT).includes(variant)
+    ? variant
+    : dockVariantFor({ entryPortal });
+  return selected === DOCK_HAUNTING_VARIANT.WEST_DESK
+    ? { variant: selected, x: 59, y: 5.6, yaw: Math.PI / 2, concealment: 'west signing desk and searchlight' }
+    : { variant: selected, x: 69, y: 5.55, yaw: Math.PI, concealment: 'north side of the chandelier cage' };
 }
 
 // The setup gate always blocks an early exit, but its explanatory line belongs
-// only to a deliberate forward press through a real leaf. A sideways brush
-// against the zone boundary is silent.
+// only to a deliberate forward press through a real leaf.
 export function dockExitAttemptShouldSpeak({ forwardIntent = 0, hasDoor = false } = {}) {
   return !!hasDoor && Number(forwardIntent) > .72;
 }
 
-// Only a normal player step may become an entry. Loading, restoring, warping,
-// and scripted repositioning are deliberately ineligible even if they land on
-// the same cells.
 export function deriveDockHauntingEligibility({
   departed = false,
   spent = false,
-  drankCoffee = false,
-  completedTakes = 0,
   transitionKind = 'step',
   entryPortal = null,
 } = {}) {
@@ -86,22 +91,13 @@ export function deriveDockHauntingEligibility({
   if (!departed) return { eligible: false, reason: 'not-departed', variant: null };
   if (transitionKind !== 'step') return { eligible: false, reason: 'not-a-step', variant: null };
   if (!isDockReturnPortal(entryPortal)) return { eligible: false, reason: 'unknown-portal', variant: null };
-  if (drankCoffee && Number(completedTakes) < 1) return { eligible: false, reason: 'coffee-awaits-take', variant: null };
-  return {
-    eligible: true,
-    reason: 'eligible',
-    variant: dockVariantFor({ drankCoffee, entryPortal }),
-  };
+  return { eligible: true, reason: 'eligible', variant: dockVariantFor({ entryPortal }) };
 }
 
 export function freshDockTransitState({ inside = true } = {}) {
   return { inside: !!inside, crossingPortal: null };
 }
 
-// Door portals occupy several runtime cells and the gap immediately outside
-// the dock is ZONE.none. Remember the leaf crossed, then resolve the transition
-// only after the body clears it. Turning around before reaching the leaf is not
-// leaving the loading dock.
 export function reduceDockTransit(value, event = {}) {
   const state = {
     inside: value?.inside !== false,
@@ -125,183 +121,215 @@ export function reduceDockTransit(value, event = {}) {
     entryPortal = crossingPortal;
   }
 
+  return { inside, crossingPortal: inside ? null : crossingPortal, departedNow, enteredNow, entryPortal };
+}
+
+export function dockHauntingPressure(distanceMeters) {
+  const distance = finite(distanceMeters, Infinity);
+  const span = DOCK_HAUNTING_PRESSURE.outerMeters - DOCK_HAUNTING_PRESSURE.contactMeters;
+  const linear = clamp01((DOCK_HAUNTING_PRESSURE.outerMeters - distance) / span);
+  // Smoothstep has no visible kink when the player crosses the outer boundary.
+  return linear * linear * (3 - 2 * linear);
+}
+
+export function dockHauntingMoveScale(pressure) {
+  const p = clamp01(pressure);
+  return 1 + 3 * p * p;
+}
+
+export function dockHauntingMilestonesCrossed(pressure, fired = []) {
+  const seen = new Set((Array.isArray(fired) ? fired : []).map(Number));
+  return DOCK_HAUNTING_MILESTONES.filter((milestone) => pressure >= milestone && !seen.has(milestone));
+}
+
+const validStatus = (value) => Object.values(DOCK_HAUNTING_STATUS).includes(value)
+  ? value
+  : DOCK_HAUNTING_STATUS.IDLE;
+const normalizeDoorEndpoint = (value) => ({
+  state: value?.state === 'open' ? 'open' : 'closed',
+  wedge: !!value?.wedge,
+  closerArmed: !!value?.closerArmed,
+});
+
+// Only behavior needed to resume a held HUSH is accepted.  Absolute clock
+// values are intentionally absent; the snapshot stores bounded remaining time.
+export function normalizeDockPresenceSnapshot(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const point = (x, y) => Number.isFinite(Number(x)) && Number.isFinite(Number(y));
+  if (!point(value.x, value.y)) return null;
+  const remaining = value.remaining && typeof value.remaining === 'object' ? value.remaining : {};
+  const boundedTimer = (timer) => Math.max(0, Math.min(120000, finite(timer, 0)));
   return {
-    inside,
-    crossingPortal: inside ? null : crossingPortal,
-    departedNow,
-    enteredNow,
-    entryPortal,
+    schema: 1,
+    active: !!value.active,
+    x: finite(value.x), y: finite(value.y),
+    targetX: finite(value.targetX), targetY: finite(value.targetY),
+    hasTarget: !!value.hasTarget,
+    targetLevel: clamp01(value.targetLevel), targetConfidence: clamp01(value.targetConfidence),
+    targetReason: typeof value.targetReason === 'string' ? value.targetReason.slice(0, 96) : null,
+    targetPriority: clamp01(value.targetPriority),
+    targetAgeMs: boundedTimer(value.targetAgeMs), lastHeardAgeMs: boundedTimer(value.lastHeardAgeMs),
+    lastEngagedAgeMs: boundedTimer(value.lastEngagedAgeMs), lastCatchAgeMs: boundedTimer(value.lastCatchAgeMs),
+    spawnedAgeMs: boundedTimer(value.spawnedAgeMs),
+    externalTargetPriority: clamp01(value.externalTargetPriority),
+    lastSoundX: finite(value.lastSoundX), lastSoundY: finite(value.lastSoundY), hasSearchOrigin: !!value.hasSearchOrigin,
+    prowlX: finite(value.prowlX), prowlY: finite(value.prowlY), hasProwl: !!value.hasProwl,
+    velocityX: finite(value.velocityX), velocityY: finite(value.velocityY), speed: Math.max(0, finite(value.speed)),
+    escapeDir: Array.isArray(value.escapeDir)&&value.escapeDir.length===2
+      ? [finite(value.escapeDir[0]),finite(value.escapeDir[1])]
+      : null,
+    motionMode: typeof value.motionMode === 'string' ? value.motionMode.slice(0, 32) : 'idle',
+    behaviorMode: typeof value.behaviorMode === 'string' ? value.behaviorMode.slice(0, 32) : 'stand',
+    directorIntent: typeof value.directorIntent === 'string' ? value.directorIntent.slice(0, 32) : 'IGNORE',
+    tauntRequested: !!value.tauntRequested,
+    spawnSector: typeof value.spawnSector === 'string' ? value.spawnSector.slice(0, 64) : null,
+    contactDirector: value.contactDirector && typeof value.contactDirector === 'object'
+      ? {
+          schema: 1,
+          lastKind: typeof value.contactDirector.lastKind === 'string' ? value.contactDirector.lastKind.slice(0, 24) : null,
+          eligibleSinceBrush: Math.max(0, Math.min(99, Math.floor(finite(value.contactDirector.eligibleSinceBrush)))),
+          brushesShown: Math.max(0, Math.min(4, Math.floor(finite(value.contactDirector.brushesShown)))),
+          warningsShown: Math.max(0, Math.min(3, Math.floor(finite(value.contactDirector.warningsShown)))),
+          recentContentIds: (Array.isArray(value.contactDirector.recentContentIds) ? value.contactDirector.recentContentIds : [])
+            .filter((id) => typeof id === 'string').slice(-18).map((id) => id.slice(0, 128)),
+        }
+      : null,
+    remaining: {
+      externalTarget: boundedTimer(remaining.externalTarget),
+      prowl: boundedTimer(remaining.prowl), dwell: boundedTimer(remaining.dwell),
+      phase: boundedTimer(remaining.phase), chase: boundedTimer(remaining.chase),
+      nextLightListen: boundedTimer(remaining.nextLightListen),
+    },
   };
 }
 
-export function dockHauntingPhaseAt(seconds) {
-  const t = Math.max(0, Number(seconds) || 0);
-  if (t >= DOCK_HAUNTING_SECONDS) return DOCK_HAUNTING_PHASE.COMPLETE;
-  if (t >= 5.5) return DOCK_HAUNTING_PHASE.BLACKOUT;
-  if (t >= 4.2) return DOCK_HAUNTING_PHASE.RUPTURE;
-  if (t >= 2.6) return DOCK_HAUNTING_PHASE.FIGURE;
-  if (t >= 1.35) return DOCK_HAUNTING_PHASE.REVEAL;
-  if (t >= .35) return DOCK_HAUNTING_PHASE.ANSWERS;
-  return DOCK_HAUNTING_PHASE.QUIET;
-}
-
-export function dockHauntingEvents({ auditioned = [], effects = 'full' } = {}) {
-  const heard = DOCK_ACOUSTIC_PROP_IDS.filter((id) => new Set(auditioned || []).has(id));
-  const events = [];
-  if (heard.length) {
-    const span = heard.length === 1 ? 0 : 1.4 / (heard.length - 1);
-    heard.forEach((propId, index) => events.push({ at: .35 + span * index, type: 'answer', propId, index }));
-  } else events.push({ at: .7, type: 'frame-creak' });
-  events.push(
-    { at: 1.35, type: 'glow' },
-    { at: 1.55, type: 'reflection' },
-    { at: 2.6, type: 'literal' },
-  );
-  if (normalizeDockEffects(effects) === 'full') {
-    events.push(
-      { at: 4.2, type: 'rupture', group: 1 },
-      { at: 4.7, type: 'rupture', group: 2 },
-      { at: 5.15, type: 'rupture', group: 3 },
-    );
-  } else events.push({ at: 4.55, type: 'rupture', group: 'all' });
-  events.push({ at: 5.5, type: 'blackout' }, { at: DOCK_HAUNTING_SECONDS, type: 'complete' });
-  return events.sort((a, b) => a.at - b.at);
-}
-
-export function dockHauntingSnapshot({ seconds = 0, variant = DOCK_HAUNTING_VARIANT.BEHIND_FRAME, entryPortal = null, coffee = false, effects = 'full' } = {}) {
-  const t = Math.max(0, Math.min(DOCK_HAUNTING_SECONDS, Number(seconds) || 0));
-  const phase = dockHauntingPhaseAt(t);
-  const reveal = t >= 1.35 && t < 5.5;
-  const rupture = t >= 4.2;
+export function freshDockHauntingState() {
   return {
-    seconds: t,
-    progress: t / DOCK_HAUNTING_SECONDS,
-    phase,
-    variant,
+    schema: 1,
+    status: DOCK_HAUNTING_STATUS.IDLE,
+    entryPortal: null,
+    variant: null,
+    firedMilestones: [],
+    doorEndpoints: {},
+    presenceSnapshot: null,
+    doorAttempted: false,
+    coffee: false,
+  };
+}
+
+export function normalizeDockHauntingState(value) {
+  const base = freshDockHauntingState();
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return base;
+  const entryPortal = isDockReturnPortal(value.entryPortal) ? value.entryPortal : null;
+  let variant = Object.values(DOCK_HAUNTING_VARIANT).includes(value.variant) ? value.variant : null;
+  // Normalize the pre-tableau timed variants by their authored entry door.
+  if (!variant && entryPortal) variant = dockVariantFor({ entryPortal });
+  const fired = new Set((Array.isArray(value.firedMilestones) ? value.firedMilestones : [])
+    .map(Number).filter((n) => DOCK_HAUNTING_MILESTONES.includes(n)));
+  const endpoints = value.doorEndpoints && typeof value.doorEndpoints === 'object'
+    ? Object.fromEntries(Object.values(DOCK_PORTAL).filter((id) => value.doorEndpoints[id])
+      .map((id) => [id, normalizeDoorEndpoint(value.doorEndpoints[id])]))
+    : {};
+  const status = validStatus(value.status);
+  if (status === DOCK_HAUNTING_STATUS.ACTIVE && (!entryPortal || !variant)) return base;
+  return {
+    schema: 1,
+    status,
     entryPortal,
-    coffee: !!coffee,
-    effects: normalizeDockEffects(effects),
-    glow: reveal,
-    glowMix: reveal ? Math.max(0, Math.min(1, (t - 1.35) / .7)) : 0,
-    reflection: t >= 1.55 && t < 2.75,
-    literal: t >= 2.6 && t < 5.5,
-    rupture,
-    blackout: t >= 5.5,
-    complete: t >= DOCK_HAUNTING_SECONDS,
+    variant,
+    firedMilestones: [...fired].sort((a, b) => a - b),
+    doorEndpoints: endpoints,
+    presenceSnapshot: normalizeDockPresenceSnapshot(value.presenceSnapshot),
+    doorAttempted: !!value.doorAttempted,
+    coffee: !!value.coffee,
   };
 }
 
 export function makeLoadingDockHauntingScene({
-  variant = DOCK_HAUNTING_VARIANT.BEHIND_FRAME,
+  variant = DOCK_HAUNTING_VARIANT.NORTH_CAGE,
   entryPortal = null,
-  coffee = false,
   effects = 'full',
-  auditioned = [],
-  onEvent = null,
+  coffee = false,
+  firedMilestones = [],
+  distanceMeters = () => Infinity,
+  onMilestone = null,
   onUpdate = null,
+  onContact = null,
   onRender = null,
-  onComplete = null,
   onExit = null,
 } = {}) {
-  let seconds = 0;
-  let eventIndex = 0;
-  let completed = false;
+  const fired = new Set((Array.isArray(firedMilestones) ? firedMilestones : []).map(Number));
+  let resolved = false;
   let exited = false;
-  const events = dockHauntingEvents({ auditioned, effects });
-  const snapshot = () => dockHauntingSnapshot({ seconds, variant, entryPortal, coffee, effects });
+  const frame = () => {
+    const distance = Math.max(0, finite(distanceMeters?.(), Infinity));
+    const pressure = dockHauntingPressure(distance);
+    return {
+      variant, entryPortal, effects: normalizeDockEffects(effects), coffee: !!coffee,
+      distanceMeters: distance, pressure,
+      // Coffee alters perception, not geometry or compliance.  The distance
+      // contract and movement resistance remain honest while the audiovisual
+      // pressure arrives earlier and runs hotter.
+      effectPressure: clamp01(pressure * (coffee ? 1.16 : 1)),
+      moveScale: dockHauntingMoveScale(pressure),
+      contact: distance <= DOCK_HAUNTING_PRESSURE.contactMeters,
+      firedMilestones: [...fired].sort((a, b) => a - b), resolved,
+    };
+  };
+  const resolve = () => {
+    if (resolved) return false;
+    resolved = true;
+    onContact?.(frame());
+    return true;
+  };
   const scene = {
     id: 'loading-dock-haunting',
-    blocksInput: true,
-    blocksWorld: true,
+    blocksInput: false,
+    blocksWorld: false,
     allowsLook: true,
-    lookProfile: coffee ? 'hush' : 'rupture',
-    update(dt) {
-      if (completed) return;
-      seconds = Math.min(DOCK_HAUNTING_SECONDS, seconds + Math.max(0, Number(dt) || 0));
-      while (eventIndex < events.length && events[eventIndex].at <= seconds) {
-        onEvent?.(events[eventIndex], snapshot());
-        eventIndex += 1;
+    lookProfile: 'hush',
+    update() {
+      if (resolved) return;
+      const current = frame();
+      for (const milestone of dockHauntingMilestonesCrossed(current.pressure, [...fired])) {
+        fired.add(milestone);
+        onMilestone?.(milestone, frame());
       }
-      const frame = snapshot();
-      onUpdate?.(frame);
-      if (frame.complete) {
-        completed = true;
-        onComplete?.(scene, frame);
-      }
+      const next = frame();
+      onUpdate?.(next);
+      if (next.contact) resolve();
     },
-    render() { onRender?.(snapshot()); },
-    key() { return true; },
-    pointer() { return true; },
+    render() { onRender?.(frame()); },
+    key() { return false; },
+    pointer() { return false; },
+    contact: resolve,
     exit() {
       if (exited) return;
       exited = true;
-      onExit?.(snapshot());
+      onExit?.(frame());
     },
-    view() { return { ...snapshot(), pendingEvents: events.slice(eventIndex) }; },
+    view: frame,
   };
   return scene;
 }
 
-export function dockHauntingLights(snapshot = null) {
-  if (!snapshot?.glow || snapshot.blackout) return [];
-  const mix = Math.max(.05, Number(snapshot.glowMix) || 0);
-  const steady = snapshot.effects === 'off' ? .78 : 1;
-  const intensity = mix * steady;
-  const color = [1, .46, .17];
-  return [
-    { id: 'dock-chandelier-west', x: 68.45, z: 6.0, y: 2.15, color, intensity: 1.05 * intensity, radius: 5.2 },
-    { id: 'dock-chandelier-centre', x: 69.0, z: 6.0, y: 2.25, color, intensity: 1.32 * intensity, radius: 5.8 },
-    { id: 'dock-chandelier-east', x: 69.55, z: 6.0, y: 2.15, color, intensity: 1.05 * intensity, radius: 5.2 },
-    { id: 'dock-chandelier-fill', x: 67.8, z: 8.2, y: 1.7, color: [1, .31, .12], intensity: .38 * intensity, radius: 7.2 },
-    { id: 'dock-surfer-rim', x: 70.2, z: 6.8, y: 1.35, color: [.68, .12, .08], intensity: .24 * intensity, radius: 3.4 },
-  ];
+// A cool rim refuses total silhouette loss at peak pressure.  Architectural
+// lighting and torch reach are absorbed by the ordinary HUSH field.
+export function dockHauntingLights(snapshot = null, staging = null, baseLights = []) {
+  if (!snapshot || !staging) return [];
+  const p = clamp01(snapshot.effectPressure ?? snapshot.pressure);
+  const absorbed = (Array.isArray(baseLights) ? baseLights : []).map((light) => ({
+    ...light,
+    intensity: Math.max(0, Number(light.intensity) || 0) * (1 - p * .94),
+    radius: Math.max(.4, Number(light.radius) || 1) * (1 - p * .68),
+  }));
+  return [...absorbed, {
+    id: 'dock-hush-readable-rim', x: staging.x, z: staging.y, y: 1.15,
+    color: [.18, .25, .3], intensity: .16 + p * .08, radius: 2.2 - p * .45,
+  }];
 }
 
-function literalPose(snapshot) {
-  const p = Math.max(0, Math.min(1, (snapshot.seconds - 2.6) / 1.6));
-  if (snapshot.variant === DOCK_HAUNTING_VARIANT.CROSS_DOCK) {
-    return { x: 59.2 + p * 13.1, z: 9.15, yaw: Math.PI / 2 };
-  }
-  if (snapshot.variant === DOCK_HAUNTING_VARIANT.EXIT_BLOCK) {
-    return snapshot.entryPortal === DOCK_PORTAL.FOYER
-      ? { x: 72.45, z: 13.15, yaw: -Math.PI / 2 }
-      : { x: 65.5, z: 14.1, yaw: 0 };
-  }
-  return { x: 69.85, z: 6.65, yaw: Math.PI };
-}
-
-export function dockHauntingDynamicInstances(snapshot = null) {
-  if (!snapshot || snapshot.blackout) return [];
-  const out = [];
-  if (snapshot.reflection) {
-    out.push({
-      id: 'dock-surfer-reflection', mesh: 'stair_shadow_figure',
-      x: 68.72, y: .72, z: 5.82, yaw: Math.PI,
-      scale: .72, scaleX: -.48, scaleY: .86, scaleZ: .42, zone: 1,
-    });
-  }
-  if (snapshot.literal) {
-    const pose = literalPose(snapshot);
-    out.push({
-      id: 'dock-surfer-literal', mesh: 'stair_shadow_figure',
-      ...pose, y: 0, scale: 1.08,
-      scaleX: snapshot.coffee ? .72 : .9,
-      scaleY: snapshot.coffee ? 1.22 : 1.05,
-      scaleZ: .72, zone: 1,
-    });
-  }
-  return out;
-}
-
-export function dockEndingBeat({ spent = false, variant = null, supernatural = false, drankCoffee = false } = {}) {
+export function dockEndingBeat({ spent = false } = {}) {
   if (!spent) return [];
-  const figure = variant === DOCK_HAUNTING_VARIANT.CROSS_DOCK
-    ? 'the figure that crossed the loading dock'
-    : variant === DOCK_HAUNTING_VARIANT.EXIT_BLOCK
-      ? 'the figure that waited in the loading-dock doorway'
-      : 'the figure that stood behind the chandelier frame';
-  if (supernatural && !drankCoffee) {
-    return [{ who: 'you', text: `The dock. ${figure}. It was not trying to catch me. It was showing me it already knew where I would come back.` }];
-  }
-  return [{ who: 'you', text: `The dock. ${figure}. Then the broken bulbs. Or the bulbs first. I can hold every part of it except the order.` }];
+  return [{ who: 'you', text: 'The dock. It told me to come closer. I crossed every warning, touched it, and it let me go.' }];
 }

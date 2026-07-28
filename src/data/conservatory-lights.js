@@ -172,9 +172,78 @@ export function resolveLightingContext(context = {}) {
   };
 }
 
+// Maintained means the circuit and its ballast stay alive; it does not mean
+// the lamp presents a constant image. Each fixture owns a stable offset and
+// period so adjacent emergency lights breathe out of step instead of turning
+// the building into a synchronized alarm. The electrical hum is deliberately
+// resolved elsewhere and therefore remains continuous through the dark beat.
+function stableLightHash(id) {
+  let hash = 2166136261;
+  const text = String(id || 'emergency');
+  for (let index = 0; index < text.length; index++) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+const smooth01 = (value) => {
+  const t = Math.max(0, Math.min(1, Number(value) || 0));
+  return t * t * (3 - 2 * t);
+};
+
+export function emergencyBlinkState(id, timeSec = 0, { effectsMode = 'full' } = {}) {
+  const hash = stableLightHash(id);
+  const period = 3.9 + ((hash >>> 8) % 13) / 10;
+  const offset = ((hash & 0xffff) / 0xffff) * period;
+  const cycleTime = Math.max(0, Number(timeSec) || 0) + offset;
+  const pulseIndex = Math.floor(cycleTime / period);
+  const phase = (cycleTime - pulseIndex * period) / period;
+  const mode = ['full', 'reduced', 'off'].includes(effectsMode) ? effectsMode : 'full';
+  let scale = .018;
+
+  if (mode === 'full') {
+    // Two short catches precede the readable burn. They are authored and
+    // deterministic, so the fixture never produces temporal-noise shimmer.
+    if (phase >= .035 && phase < .065) scale = .42;
+    else if (phase >= .085 && phase < .115) scale = .72;
+    else if (phase >= .145 && phase < .54) {
+      const rise = smooth01((phase - .145) / .055);
+      const fall = 1 - smooth01((phase - .49) / .05);
+      scale = .88 + .12 * Math.min(rise, fall);
+    }
+  } else {
+    // Reduced and off modes preserve the on/off story while removing the two
+    // hard pre-flashes. Long fades make the same shadow composition readable.
+    const fade = mode === 'off' ? .085 : .055;
+    if (phase >= .09 && phase < .60) {
+      const rise = smooth01((phase - .09) / fade);
+      const fall = 1 - smooth01((phase - (.60 - fade)) / fade);
+      scale = .035 + .965 * Math.min(rise, fall);
+    }
+  }
+
+  const family = (hash >>> 20) % 3;
+  const carriesShadow = pulseIndex % 3 === family;
+  const revealStart = mode === 'full' ? .25 : .24;
+  const revealEnd = mode === 'full' ? .49 : .55;
+  const shadowReveal = carriesShadow && phase >= revealStart && phase < revealEnd
+    ? smooth01(Math.min((phase - revealStart) / .055, (revealEnd - phase) / .07))
+    : 0;
+
+  return Object.freeze({
+    scale: Math.max(.012, Math.min(1, scale)),
+    shadowReveal,
+    pulseIndex,
+    phase,
+    period,
+  });
+}
+
 export function resolveLocalLights(context, {
   timeSec = 0,
   reducedFlash = false,
+  effectsMode = null,
   towerCleared = false,
   liveCircuits = null,
   origin = null,
@@ -187,15 +256,20 @@ export function resolveLocalLights(context, {
   if (!rig) return [];
   const live = liveCircuits instanceof Set ? liveCircuits : new Set(liveCircuits || []);
   const flutter = .5 + .5 * Math.sin(timeSec * 7.1) * Math.sin(timeSec * 2.37);
+  const resolvedEffectsMode = effectsMode || (reducedFlash ? 'reduced' : 'full');
   const out = [];
   for (const light of rig) {
     if (Number.isFinite(zone) && light.zones.length && !light.zones.includes(zone)) continue;
     if (light.phase === 'cleared' && !towerCleared) continue;
     if (light.circuit && !live.has(light.circuit)) continue;
     let intensity = light.intensity;
-    if (light.flutter) intensity = reducedFlash
+    const blink = light.kind === LIGHT_KIND.EMERGENCY
+      ? emergencyBlinkState(light.id, timeSec, { effectsMode: resolvedEffectsMode })
+      : null;
+    if (light.flutter) intensity = resolvedEffectsMode !== 'full'
       ? light.flutter.steady
       : Math.min(LIGHT_BANDS[light.kind][1], light.intensity + flutter * light.flutter.amount);
+    if (blink) intensity *= blink.scale;
     const anchored = light.anchorPropId && typeof anchorPosition === 'function'
       ? anchorPosition(light.anchorPropId)
       : null;
@@ -212,6 +286,13 @@ export function resolveLocalLights(context, {
       circuit: light.circuit,
       maintained: light.maintained,
       anchorPropId: light.anchorPropId || null,
+      floorY: Number.isFinite(anchored?.floorY) ? anchored.floorY : (light.y - 1.8),
+      anchorYaw: Number.isFinite(anchored?.yaw) ? anchored.yaw : null,
+      nominalIntensity: light.intensity,
+      emissiveScale: blink?.scale ?? 1,
+      emergencyPulse: blink?.scale ?? null,
+      shadowReveal: blink?.shadowReveal ?? 0,
+      pulseIndex: blink?.pulseIndex ?? null,
       castsShadow: !!light.castsShadow,
     });
   }

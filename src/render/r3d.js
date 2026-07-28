@@ -185,6 +185,9 @@ uniform vec3  uChunkC[${MAX_CHUNKS}]; // biome rgb
 uniform vec4  uKey;          // x, z, active, -
 uniform vec4  uDoor;
 uniform vec4  uHush;         // x, z, absorption strength, radius in metres
+uniform vec4  uHushBody;     // x, z, manifestation, texture ready
+uniform vec4  uHushBodyLook; // height metres, width metres, glow, composite mode
+uniform sampler2D uHushBodyTex;
 uniform sampler2D uPlan;     // the authored building: R=floor G=ceil B=flags A=zone
 uniform sampler2D uMat;      // R=material id
 uniform sampler2D uSourceLayer; // R=source corpus layer for this runtime cell
@@ -611,6 +614,12 @@ float architecturalLightVisibility(vec3 fromM,vec3 toM){
   }
   return 1.0;
 }
+vec3 hushScreen(vec3 base,vec3 layer){
+  return 1.0-(1.0-base)*(1.0-clamp(layer,0.0,0.92));
+}
+vec3 hushColorDodge(vec3 base,vec3 layer){
+  return min(vec3(1.0),base/max(vec3(0.075),vec3(1.0)-clamp(layer,0.0,0.90)));
+}
 void main(){
   vec2 uv = (gl_FragCoord.xy / uRes) * 2.0 - 1.0;
   uv.x *= uRes.x / uRes.y;
@@ -1029,6 +1038,114 @@ void main(){
     col*=1.0-absorption;
   }
 
+  // The cover-art figure is a real presence in the room, not a screen decal.
+  // Intersect a vertical cylindrical billboard at the HUSH position and test
+  // that depth against the already-composed architecture + prop surface. The
+  // body therefore vanishes behind doors, walls and road cases while retaining
+  // its authored front silhouette from every approach direction.
+  if(uHushBody.w > 0.5 && uHushBody.z > 0.001 && uHushBodyLook.w < 2.5){
+    vec2 bodyCenter=uHushBody.xy+vec2(.5);
+    vec2 planeNormal=normalize(ro.xz-bodyCenter+vec2(.0001));
+    vec2 planeRight=vec2(-planeNormal.y,planeNormal.x);
+    float planeDenom=dot(rd.xz,planeNormal);
+    float safePlaneDenom=abs(planeDenom)<.0001?-.0001:planeDenom;
+    float bodyT=dot(bodyCenter-ro.xz,planeNormal)/safePlaneDenom;
+    float bodyView=bodyT*CELL_METERS*max(.001,dot(rd,fwd));
+    float bodyRange=length(bodyCenter-ro.xz)*CELL_METERS;
+    Cell bodyCell=cellAtI(ivec2(floor(bodyCenter)));
+    float bodyBase=bodyCell.f+.025/CELL_METERS;
+    vec3 bodyHit=ro+rd*bodyT;
+    vec2 bodyUv=vec2(
+      dot(bodyHit.xz-bodyCenter,planeRight)*CELL_METERS/max(.1,uHushBodyLook.y)+.5,
+      (bodyHit.y-bodyBase)*CELL_METERS/max(.2,uHushBodyLook.x)
+    );
+    bool insideCard=bodyT>0.0&&bodyUv.x>0.0&&bodyUv.x<1.0&&bodyUv.y>0.0&&bodyUv.y<1.0;
+    bool bodyVisible=insideCard&&bodyView<zView+.012&&bodyRange>.22;
+    if(bodyVisible){
+      vec4 bodySample=texture(uHushBodyTex,bodyUv);
+      float sdf=(bodySample.r-.5)*56.0;
+      // Never let minification turn the SDF derivative into card coverage.
+      // At distance fwidth can span many source texels; unbounded, that makes
+      // the zero-crossing wide enough to resolve the transparent billboard as
+      // a rectangle.  The authored body only needs a couple of SDF texels of
+      // antialiasing at any range.
+      float aa=clamp(fwidth(sdf)*1.35,.7,2.6);
+      float cardDistance=min(
+        min(bodyUv.x,1.0-bodyUv.x),
+        min(bodyUv.y,1.0-bodyUv.y)
+      );
+      // The feet intentionally sit near the bottom of the texture, so the
+      // outer glow can reach the card boundary even though the body cannot.
+      // Fade the last few transparent texels for every manifestation channel
+      // (including depth) so a clipped halo can never draw a straight edge.
+      float cardFade=smoothstep(.008,.055,cardDistance);
+      // The source-alpha channel carries a faint matte over the original
+      // smart-object bounds. Treating it as literal coverage exposed the
+      // entire rectangular card. Only the authored opaque figure and the SDF
+      // interior are allowed to become body coverage.
+      float sourceCoverage=smoothstep(.28,.72,bodySample.g)*cardFade;
+      float silhouette=max(sourceCoverage,smoothstep(-aa,aa,sdf))*cardFade;
+      float edge=exp(-abs(sdf)/max(1.15,aa*1.4))*cardFade;
+      float outsideDistance=max(0.0,-sdf);
+      // A Photoshop-style outer glow has finite support. The old exponential
+      // had a non-zero tail at every pixel of the billboard, which the
+      // recording acquisition pass correctly revealed as a box.
+      float haloSupport=1.0-smoothstep(9.0,14.0,outsideDistance);
+      float outer=exp(-outsideDistance/5.2)*haloSupport*(1.0-silhouette)*cardFade;
+      float rangeFade=smoothstep(.22,.68,bodyRange);
+      float manifestation=clamp(uHushBody.z*rangeFade,0.0,1.0);
+      // In/out is a material apparition, not character animation: the figure
+      // remains perfectly still while its lower and upper contours resolve at
+      // slightly different rates. Reduced motion still sees the same static
+      // final silhouette because this contains no time-driven motion.
+      float resolveBand=1.0-smoothstep(-.18,1.12,bodyUv.y-(manifestation-.5)*1.55);
+      float resolved=manifestation*mix(manifestation,resolveBand,.28);
+      float mode=uHushBodyLook.w;
+      float coreEnabled=mode<1.5?1.0:0.0;
+      float glowEnabled=(mode<.5||(mode>1.5&&mode<2.5))?1.0:0.0;
+      float bodyAlpha=clamp(silhouette*resolved*coreEnabled,0.0,1.0);
+      float outlineAlpha=clamp(edge*resolved*coreEnabled,0.0,1.0);
+      float fieldAlpha=clamp(
+        (outer*.48+edge*.08)*uHushBodyLook.z*resolved*glowEnabled,
+        0.0,
+        .72
+      );
+      // The cover figure is negative first: its surrounding field eats the
+      // available light, and the human mass consumes almost everything that
+      // remains.  The card itself never participates because every term is
+      // derived from the guarded SDF coverage above.
+      col*=1.0-clamp(fieldAlpha*.44+bodyAlpha*.88,0.0,.965);
+      // Photoshop ordering from the cover, kept deliberately low-energy:
+      // a cold Screen haze gives the absence an edge, then Color Dodge raises
+      // only the local boundary.  Neither operation fills the person.
+      vec3 negativeTint=vec3(.045,.105,.115);
+      vec3 glowLayer=negativeTint*(outer*.24+edge*.055)*uHushBodyLook.z*resolved*glowEnabled;
+      col=hushScreen(col,glowLayer);
+      vec3 bodySeed=negativeTint*(.020+edge*.026)*bodyAlpha;
+      col=hushScreen(col,bodySeed);
+      vec3 dodgeLayer=vec3(.025,.065,.072)*outlineAlpha;
+      vec3 dodged=hushColorDodge(col,dodgeLayer);
+      col=mix(col,dodged,outlineAlpha*.24);
+      // The recording-acquisition pass intentionally reduces ordinary light
+      // to one-bit ink. Reserve two chroma keys for this authored compositor
+      // so that pass can reconstruct the PSD ordering *after* acquisition
+      // instead of collapsing the figure and its glow into a white contour.
+      // These are not visible cards: both keys are bounded by the actual SDF.
+      float acquisitionGlow=clamp((outer*.82+edge*.11)*resolved*glowEnabled,0.0,1.0);
+      float acquisitionBody=bodyAlpha;
+      col=mix(col,vec3(.018,.355,.145),acquisitionGlow*.72);
+      // The reserved body key is diagnostic transport, not display colour.
+      // The acquisition pass consumes it and restores a light-eating mass;
+      // carrying the full silhouette avoids reducing the cover to line art.
+      col=mix(col,vec3(.016,.245,.735),acquisitionBody*.94);
+      // The billboard is only an intersection aid.  It must never become a
+      // rectangular depth surface: doing so makes the fog/post stack reveal
+      // the transparent card as a black slab.  Only authored body coverage
+      // writes depth; the outer glow remains light with no geometry of its own.
+      if(silhouette*resolved>.018) zView=min(zView,bodyView);
+    }
+  }
+
   col += (grain - 0.5) * 0.035;             // film grain
   // The expressive post pass owns the fear vignette. A second fixed vignette
   // here used to halve the corners before fear was even applied.
@@ -1189,6 +1306,7 @@ let fearLevel = 0;
 export function r3dSetFear(v) { fearLevel = Math.max(0, Math.min(1, v || 0)); }
 
 export function r3dSetLocalLights(lights=[]){
+  P3.setPracticalLightFrame(lights);
   localLightPositions.fill(0);localLightColors.fill(0);
   localShadowIndex=-1;localShadowLight=null;
   localLightCount=Math.min(MAX_LOCAL_LIGHTS,Array.isArray(lights)?lights.length:0);
@@ -1198,7 +1316,7 @@ export function r3dSetLocalLights(lights=[]){
     localLightColors[p]=Number(color[0])||0;localLightColors[p+1]=Number(color[1])||0;localLightColors[p+2]=Number(color[2])||0;localLightColors[p+3]=Math.max(0,Number(light.intensity)||0);
     if(localShadowIndex<0&&light.castsShadow){
       localShadowIndex=i;
-      localShadowLight={x:localLightPositions[p],y:localLightPositions[p+1],z:localLightPositions[p+2],shadowYaw:Number.isFinite(light.shadowYaw)?light.shadowYaw:0};
+      localShadowLight={x:localLightPositions[p],y:localLightPositions[p+1],z:localLightPositions[p+2],shadowYaw:Number.isFinite(light.shadowYaw)?light.shadowYaw:0,shadowPitch:Number.isFinite(light.shadowPitch)?light.shadowPitch:0};
     }
   }
   return localLightCount;
@@ -1310,6 +1428,29 @@ let meshTexA=null, meshTexB=null, meshFboA=null, meshFboB=null, meshFlip=false;
 let datamoshSourceTex=null,datamoshSourceFbo=null,datamoshTexA=null,datamoshTexB=null,datamoshFboA=null,datamoshFboB=null,datamoshFlip=false;
 let datamoshActive=false,datamoshProgress=0,datamoshReducedMotion=false,lastPostSourceFbo=null;
 let surfAlbedoTex=null, surfNormalTex=null, surfRoughTex=null, surfHeightTex=null, surfDreamTex=null, surfDreamStageTex=null, anisoExt=null, anisoMax=1;
+let hushBodyTex=null,hushBodyReady=false,hushBodyLoadError=null;
+let hushBodyMode='live';
+let hushBodyManifestation=0;
+let hushBodyLast={x:0,y:0,strength:.9};
+const HUSH_BODY_ASSET='assets/hush/hush-body-sdf.png';
+const HUSH_BODY_ASSET_REV='8f52397c';
+export const HUSH_BODY_MODES=Object.freeze(['live','core','glow','off']);
+
+export function r3dSetHushBodyMode(mode='live'){
+  hushBodyMode=HUSH_BODY_MODES.includes(mode)?mode:'live';
+  return hushBodyMode;
+}
+
+export function r3dHushBodyStatus(){
+  return{
+    ready:hushBodyReady,
+    mode:hushBodyMode,
+    manifestation:hushBodyManifestation,
+    asset:HUSH_BODY_ASSET,
+    revision:HUSH_BODY_ASSET_REV,
+    error:hushBodyLoadError,
+  };
+}
 const SURFACE_LAYERS=10,SURFACE_TILE=512;
 // Five temporal frames of ten 512² surfaces, live plus staged, is the ceiling
 // the texture budget allows. WebGL2 guarantees 256 array layers, so the limit
@@ -1826,6 +1967,15 @@ function runPixelMeshPass(state, now) {
   gl.uniform1f(pixelMeshU('uPaletteChroma'), look.vfd.paletteChroma ?? 0);
   gl.uniform1f(pixelMeshU('uShadowLift'), look.vfd.shadowLift ?? 0);
   gl.uniform1f(pixelMeshU('uAgitation'), dreamAgitation);
+  const hushBodyModeIndex=Math.max(0,HUSH_BODY_MODES.indexOf(hushBodyMode));
+  const hushBodyPostActive=state?.hushBodyAllowed!==false&&hushBodyReady&&hushBodyManifestation>.001&&hushBodyModeIndex<3;
+  gl.uniform4f(
+    pixelMeshU('uHushBodyPost'),
+    hushBodyManifestation,
+    hushBodyPostActive?1:0,
+    hushBodyModeIndex<2?1:0,
+    hushBodyModeIndex===0||hushBodyModeIndex===2?1:0,
+  );
 
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   pixelMeshStatus.framesRendered += 1;
@@ -1838,6 +1988,29 @@ function runPixelMeshPass(state, now) {
 function loadImageTexture(url){
   return new Promise((resolve,reject)=>{
     const img=new Image();img.onload=()=>{const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);gl.texImage2D(gl.TEXTURE_2D,0,gl.SRGB8_ALPHA8,gl.RGBA,gl.UNSIGNED_BYTE,img);gl.generateMipmap(gl.TEXTURE_2D);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);resolve(t);};img.onerror=reject;img.src=url.href||String(url);
+  });
+}
+
+// Linear data texture: the HUSH asset stores signed distance and coverage,
+// not display colour. sRGB decoding would bend the distance field and thicken
+// the body differently at each mip/range.
+function loadDataTexture(url){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>{
+      const t=gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D,t);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,gl.RGBA,gl.UNSIGNED_BYTE,img);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+      resolve(t);
+    };
+    img.onerror=()=>reject(new Error(`failed to load data texture ${url}`));
+    img.src=url.href||String(url);
   });
 }
 
@@ -1918,6 +2091,7 @@ export function r3dInit(mapEl) {
   resize();
   P3.loadPropPack(assetUrl('assets/conservatory-props.glb'))
     .then(()=>P3.addPropPack(assetUrl('assets/conservatory-acquisitions.glb')))
+    .then(()=>P3.addPropPack(assetUrl('assets/source-structures.glb')))
     .then(()=>P3.addPropPack(assetUrl('assets/conservatory-doors.glb')))
     .then(()=>P3.addPropPack(assetUrl('assets/tuning-fork.glb')))
     .catch((err)=>console.warn('prop pack unavailable',err));
@@ -1930,6 +2104,13 @@ export function r3dInit(mapEl) {
     loadTextureArray(assetUrl('assets/surfaces/surface-height.png')),
   ]).then(([a,n,r,h])=>{surfAlbedoTex=a;surfNormalTex=n;surfRoughTex=r;surfHeightTex=h;surfaceTexture=a;})
     .catch((err)=>console.warn('surface arrays unavailable; using native material fallback',err));
+  // The body is generated data, not an ordinary colour texture. Fingerprint
+  // its URL so a running desktop/webview cannot retain an older matte/card
+  // from the same filename after an asset-only rebuild.
+  const hushBodyAssetUrl=assetUrl(HUSH_BODY_ASSET);
+  loadDataTexture(`${hushBodyAssetUrl}${hushBodyAssetUrl.includes('?')?'&':'?'}v=${HUSH_BODY_ASSET_REV}`)
+    .then((texture)=>{hushBodyTex=texture;hushBodyReady=true;hushBodyLoadError=null;})
+    .catch((err)=>{hushBodyReady=false;hushBodyLoadError=err?.message||String(err);console.warn('HUSH body unavailable; retaining absence field',err);});
   window.addEventListener('resize', resize);
 }
 
@@ -2063,6 +2244,7 @@ export function r3dSetPlan(rgba, w, h, material = null, options = {}) {
 
 export function r3dSetProps(instances) { P3.setPropInstances(instances); }
 export function r3dSetDynamicProps(instances) { P3.setDynamicPropInstances(instances); }
+export function r3dSetEmergencyShadows(instances) { P3.setEmergencyShadowInstances(instances); }
 export function r3dSetSourceTextInstances(instances) { P3.setSourceTextInstances(instances); }
 export function r3dSetSourceScene(scene = {}) {
   P3.setSourceScene(scene);
@@ -2266,6 +2448,25 @@ export function r3dFrame(state) {
   const torchSpill=Math.max(0,Math.min(.12,Number(torch.spill??.05)||0));
   const opticalEffects=visualEffectsEnabled()?1:0;
 
+  // Keep the gameplay presence authoritative while giving only its drawing a
+  // short material resolve. Despawn keeps the last world position long enough
+  // to dissolve there; it does not retain collision, pursuit or awareness.
+  const hushBodyRenderAllowed=state.hushBodyAllowed!==false;
+  const incomingHush=hushBodyRenderAllowed&&state.hush&&Number.isFinite(state.hush.x)&&Number.isFinite(state.hush.y)
+    ? state.hush
+    : null;
+  if(incomingHush){
+    hushBodyLast={
+      x:Number(incomingHush.x),
+      y:Number(incomingHush.y),
+      strength:Math.max(0,Math.min(1,Number(incomingHush.strength)||0)),
+    };
+  }
+  const hushBodyTarget=incomingHush?1:0;
+  const hushBodyRate=hushBodyTarget?7.2:4.0;
+  hushBodyManifestation+=(hushBodyTarget-hushBodyManifestation)*(1-Math.exp(-dt*hushBodyRate));
+  if(Math.abs(hushBodyTarget-hushBodyManifestation)<.002)hushBodyManifestation=hushBodyTarget;
+
   gl.disable(gl.DEPTH_TEST);
   textSpaceActive = !!state.textSpace;
 
@@ -2367,8 +2568,13 @@ export function r3dFrame(state) {
     gl.uniform2f(U('uPlanOrigin'), planOriginX, planOriginY);
     gl.uniform3fv(U('uZoneTint[0]'), ZONE_TINTS);
   }
-  gl.uniform1f(U('uSourceReady'), sourceSurfaceTexture ? 1 : 0);
-  gl.activeTexture(gl.TEXTURE13);gl.bindTexture(gl.TEXTURE_2D,sourceSurfaceTexture);gl.uniform1i(U('uSourceSurface'),13);
+  // WebGL2 only guarantees sixteen fragment samplers and this pass already
+  // uses them all. Source Space suppresses building actors, so its corpus atlas
+  // and the HUSH SDF safely share unit 13 without ever being sampled together.
+  const hushBodyTextureActive=hushBodyRenderAllowed&&hushBodyReady&&hushBodyManifestation>.001&&hushBodyMode!=='off';
+  const unit13Texture=hushBodyTextureActive?hushBodyTex:sourceSurfaceTexture;
+  gl.uniform1f(U('uSourceReady'),sourceSurfaceTexture&&!hushBodyTextureActive?1:0);
+  gl.activeTexture(gl.TEXTURE13);gl.bindTexture(gl.TEXTURE_2D,unit13Texture);gl.uniform1i(U('uSourceSurface'),13);gl.uniform1i(U('uHushBodyTex'),13);
   gl.activeTexture(gl.TEXTURE14);gl.bindTexture(gl.TEXTURE_2D,sourceLayerTexture);gl.uniform1i(U('uSourceLayer'),14);
   const propTargets=P3.propTargets();
   gl.uniform1f(U('uPropsReady'),propTargets.ready?1:0);
@@ -2430,6 +2636,9 @@ export function r3dFrame(state) {
   gl.uniform4f(U('uKey'), state.key?.x ?? 0, state.key?.y ?? 0, state.key ? 1 : 0, 0);
   gl.uniform4f(U('uDoor'), state.door?.x ?? 0, state.door?.y ?? 0, state.door ? 1 : 0, 0);
   gl.uniform4f(U('uHush'), state.hush?.x ?? 0, state.hush?.y ?? 0, state.hush?.strength ?? 0, state.hush?.radiusM ?? 0);
+  const hushBodyModeIndex=Math.max(0,HUSH_BODY_MODES.indexOf(hushBodyMode));
+  gl.uniform4f(U('uHushBody'),hushBodyLast.x,hushBodyLast.y,hushBodyRenderAllowed?hushBodyManifestation:0,hushBodyTextureActive?1:0);
+  gl.uniform4f(U('uHushBodyLook'),1.83,.58,.88+hushBodyLast.strength*.22,hushBodyModeIndex);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 
   const pixelSourceTex = runPixelMeshPass(state, now);

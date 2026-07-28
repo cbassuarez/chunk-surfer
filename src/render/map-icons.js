@@ -17,9 +17,13 @@ export function drawWaypointMarker(point, alpha = 1) {
   uiGlyph(Math.round(point.x), Math.round(point.y), '◆', 'ui-blue', alpha);
 }
 
+// This is not a permanent enemy tracker. It is emitted only while main has
+// confirmed that the player can presently see the manifestation in the world.
+// The red question mark confirms the sighting without pretending the monitor
+// understands what the manifestation is.
 export function drawHushMarker(point, alpha = 1) {
   if (!point) return;
-  uiGlyph(Math.round(point.x), Math.round(point.y), '●', 'ui-danger', alpha);
+  uiGlyph(Math.round(point.x), Math.round(point.y), '?', 'ui-danger', alpha);
 }
 
 export function drawObjectiveMarker(command, alpha = 1) {

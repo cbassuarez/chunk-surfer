@@ -71,6 +71,12 @@
           "id": "start.line.3"
         },
         {
+          "who": "surfer",
+          "text": "COME CLOSER",
+          "rate": 0.94,
+          "id": "start.line.callback"
+        },
+        {
           "who": "you",
           "text": "There are two of them in here and one of them is me in eleven years.",
           "id": "start.line.4"

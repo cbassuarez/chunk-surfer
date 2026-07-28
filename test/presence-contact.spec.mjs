@@ -17,6 +17,8 @@ function stageContact(){
 let state=stageContact(),attempt=null;
 PRES.updatePresence(0,0,0,(value)=>{attempt=value;},{deferContact:true});
 assert.equal(typeof attempt?.id,'number');
+assert.equal(attempt.behaviorMode,'stand','the deferred transaction preserves the approach mode');
+assert.equal(typeof attempt.targetPriority,'number');
 assert.equal(state.caughtCount,0,'a deferred touch is not yet a confirmed catch');
 assert.equal(state.awareness,0,'a deferred touch teaches HUSH nothing yet');
 assert.equal(PRES.pendingContactAttempt().id,attempt.id);

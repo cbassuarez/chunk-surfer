@@ -69,6 +69,11 @@ export const PROP_MESH = Object.freeze({
   school_desk:{w:.72,d:.78,blocks:true}, pew:{w:2.8,d:.72,blocks:true},
   chair:{w:.52,d:.56,blocks:false}, music_stand:{w:.45,d:.45,blocks:false},
   instrument_case:{w:1.25,d:.5,blocks:false}, equipment_cart:{w:1.2,d:.72,blocks:true},
+  piano_bench:{w:.78,d:.36,blocks:false}, open_score:{w:.62,d:.36,blocks:false},
+  loose_pages:{w:.78,d:.62,blocks:false}, metronome:{w:.22,d:.18,blocks:false},
+  wastebasket:{w:.34,d:.34,blocks:false}, soft_bag:{w:.68,d:.32,blocks:false},
+  draped_coat:{w:.62,d:.5,blocks:false}, mallet_pair:{w:.58,d:.12,blocks:false},
+  cable_coil:{w:.58,d:.58,blocks:false}, open_instrument_case:{w:1.35,d:.72,blocks:false},
   upright_piano:{w:1.55,d:.72,blocks:true}, grand_piano:{w:1.75,d:2.45,blocks:true},
   marimba:{w:2.8,d:1.05,blocks:true}, timpani:{w:.92,d:.92,blocks:true},
   cello:{w:.62,d:.42,blocks:false}, speaker_cabinet:{w:.64,d:.58,blocks:true},
@@ -429,56 +434,110 @@ export const CONSERVATORY_PROPS = [
   // bare. The architecture and torch define the route; rails, paintings,
   // furniture, frames, and hanging fixtures made the safe throat ambiguous.
 
-  // Practice suite. The wing was moved around a new x60–62 central spine; the
-  // old dressing was not, leaving instruments in the corridor and interaction
-  // points behind the new partitions. Seven teaching rooms now each read as a
-  // real, usable piano room. The south-east room is the ensemble store/rehearsal
-  // room, with one coherent instrument setup instead of props split through a
-  // wall. The central spine and every door landing stay completely bare.
+  // Practice suite. Every threshold remains visibly wedged open, but each room
+  // now records a different interruption. The wall-backed uprights are the
+  // repeated institutional datum; everything in front of them has drifted with
+  // use. Small paper and clothing props are visual evidence, never collision.
   ...[
-    {x:52.25,y:59.5,yaw:Math.PI/2},
-    {x:74.75,y:59.5,yaw:-Math.PI/2},
-    {x:52.25,y:66.5,yaw:Math.PI/2},
-    {x:74.75,y:66.5,yaw:-Math.PI/2},
-    {x:52.25,y:73.5,yaw:Math.PI/2},
-    {x:74.75,y:73.5,yaw:-Math.PI/2},
-    {x:52.25,y:80.5,yaw:Math.PI/2},
+    {x:52.30,y:58.25,yaw:1.51,history:'exam-preparation',first:'Open scales and a marked examination piece cover the upright. The metronome stopped one click before the bar line.',again:'The examination piece is still open at the bad bar.'},
+    {x:74.65,y:60.35,yaw:-1.47,history:'cello-lesson',first:'An upright turned slightly towards two offset chairs. The lesson stopped before anybody put the cello away.',again:'The piano is still angled towards the absent student.'},
+    {x:52.35,y:67.20,yaw:1.62,history:'piano-maintenance',first:'The fallboard is off and the action has been interrupted halfway out. A service lead trails under the bench.',again:'The action remains halfway out.'},
+    {x:74.55,y:65.45,yaw:-1.55,history:'coat-and-bag-drop',first:'A plain teaching piano with somebody’s coat and bag occupying the useful half of the room.',again:'The coat and bag make the room feel briefly claimed.'},
+    {x:52.28,y:72.35,yaw:1.45,history:'chamber-spillover',first:'The upright has been pulled into a small rehearsal arc. Three parts disagree about where the first repeat begins.',again:'The rehearsal arc still points at the piano.'},
+    {x:74.62,y:74.00,yaw:-1.64,history:'copied-parts',first:'Copied parts have spread from the upright to the stand, chair, floor, and wastebasket.',again:'Every copy has a different pencil correction.'},
+    {x:52.22,y:81.45,yaw:1.69,history:'hurried-departure',first:'The upright is square to the wall. Everything else is skewed towards the door, as if the room left in a hurry.',again:'Only the piano kept its place.'},
   ].map((entry,i)=>P(`practice-piano-${i+1}`,'upright_piano',entry.x,entry.y,entry.yaw,{
-    ...play(PIANO,'An upright piano, lid up, institutional number under the fallboard.','The number has been changed twice.'),
+    roomHistory:entry.history,...play(PIANO,entry.first,entry.again),
   })),
   ...[
-    {x:55.0,y:59.5,yaw:-Math.PI/2}, {x:71.8,y:59.5,yaw:Math.PI/2},
-    {x:55.0,y:66.5,yaw:-Math.PI/2}, {x:71.8,y:66.5,yaw:Math.PI/2},
-    {x:55.0,y:73.5,yaw:-Math.PI/2}, {x:71.8,y:73.5,yaw:Math.PI/2},
-    {x:55.0,y:80.5,yaw:-Math.PI/2}, {x:69.1,y:80.5,yaw:Math.PI/2},
+    {x:55.05,y:60.45,yaw:-1.36,history:'exam-preparation'},
+    {x:71.75,y:58.10,yaw:1.42,history:'cello-lesson'},
+    {x:55.25,y:64.65,yaw:-1.92,history:'piano-maintenance'},
+    {x:71.40,y:67.45,yaw:1.28,history:'coat-and-bag-drop'},
+    {x:55.15,y:74.55,yaw:-1.24,history:'chamber-spillover'},
+    {x:71.85,y:72.15,yaw:1.77,history:'copied-parts'},
+    {x:55.35,y:79.00,yaw:-1.08,history:'hurried-departure'},
+    {x:69.25,y:80.85,yaw:.84,history:'ensemble-rehearsal'},
   ].map((entry,i)=>P(`practice-stand-${i+1}`,'music_stand',entry.x,entry.y,entry.yaw,{
-    inspect:inspect('A stand left open at playing height.','Nothing on it.'),
+    roomHistory:entry.history,interactive:false,blocks:false,
   })),
   ...[
-    {x:56.0,y:59.5,yaw:-Math.PI/2,state:'pencil room number beneath the seat'},
-    {x:70.7,y:59.5,yaw:Math.PI/2,state:'new rubber foot on the piano-side leg'},
-    {x:56.0,y:66.5,yaw:-Math.PI/2,state:'back rail polished by a coat hook'},
-    {x:70.7,y:66.5,yaw:Math.PI/2,state:'two upholstery tacks replaced'},
-    {x:56.0,y:73.5,yaw:-Math.PI/2,state:'old rosin ground into the front edge'},
-    {x:70.7,y:73.5,yaw:Math.PI/2,state:'seat foam compressed towards the piano'},
-    {x:56.0,y:80.5,yaw:-Math.PI/2,state:'varnish worn where a cellist steadied the case'},
-    {x:70.2,y:81.8,yaw:Math.PI/2,state:'violin resting across the seat',inspectAt:{x:69.2,y:81.8}},
+    {x:56.05,y:61.00,yaw:-1.34,state:'pencil room number beneath the seat',history:'exam-preparation'},
+    {x:70.45,y:60.65,yaw:1.84,state:'new rubber foot on the piano-side leg',history:'cello-lesson'},
+    {x:56.05,y:68.15,yaw:-1.72,state:'back rail polished by a coat hook',history:'piano-maintenance'},
+    {x:70.85,y:66.20,yaw:1.24,state:'two upholstery tacks replaced',history:'coat-and-bag-drop'},
+    {x:56.10,y:72.85,yaw:-1.11,state:'old rosin ground into the front edge',history:'chamber-spillover'},
+    {x:70.55,y:74.65,yaw:1.88,state:'seat foam compressed towards the piano',history:'copied-parts'},
+    {x:55.85,y:81.15,yaw:-.88,state:'varnish worn where a case struck it',history:'hurried-departure'},
+    {x:69.25,y:82.05,yaw:1.16,state:'violin resting across the seat',history:'ensemble-rehearsal',inspectAt:{x:68.25,y:82.05}},
   ].map((entry,i)=>{
     const assetTag=`P/CH-${String(i+1).padStart(2,'0')}`;
     return P(`acq-practice-chair-${i+1}`,'green_chair_01',entry.x,entry.y,entry.yaw,{
+      roomHistory:entry.history,
       provenance:provenance('practice_room_contract',assetTag,entry.state),
       ...(entry.inspectAt?{inspectAt:entry.inspectAt}:{}),
       inspect:inspect(`A green practice-room chair from the eight-chair order. ${assetTag} is stamped underneath; ${entry.state}.`,`${assetTag}. One of eight, altered by this room.`),
     });
   }),
-  P('practice-ensemble-marimba','marimba',72.6,80.0,Math.PI/2,{...play(MARIMBA,'A rehearsal marimba with masking tape on four bars.','Four bars, four old pencil numbers.')}),
-  P('practice-ensemble-cello','cello',74.2,82.2,-Math.PI/2,{...play(STRINGS,'A cello left upright in a corner that is not safe for it.','No bow. No case open.')}),
-  P('practice-ensemble-violin','violin',70.2,81.8,Math.PI/2,{
-    elevation:.48,inspectAt:{x:69.2,y:81.8},
+  // Exam preparation.
+  P('practice-bench-exam','piano_bench',53.55,58.35,1.43,{interactive:false,blocks:false,roomHistory:'exam-preparation'}),
+  P('practice-score-exam','open_score',52.80,58.15,1.51,{interactive:false,blocks:false,elevation:.94,roomHistory:'exam-preparation'}),
+  P('practice-metronome-exam','metronome',52.30,59.85,1.51,{interactive:false,blocks:false,elevation:.94,roomHistory:'exam-preparation'}),
+  P('practice-pages-exam','loose_pages',54.45,61.15,-.16,{interactive:false,blocks:false,elevation:.012,roomHistory:'exam-preparation'}),
+
+  // Cello lesson, stopped mid-correction.
+  P('practice-bench-cello','piano_bench',73.45,60.30,-1.55,{interactive:false,blocks:false,roomHistory:'cello-lesson'}),
+  P('practice-lesson-cello','cello',72.55,61.55,-.32,{roomHistory:'cello-lesson',...play(STRINGS,'The student cello is still extended on its endpin between two chairs.','The endpin has marked the floor twice.')}),
+  P('practice-case-cello','open_instrument_case',69.25,57.65,.12,{interactive:false,blocks:false,roomHistory:'cello-lesson'}),
+  P('practice-score-cello','open_score',71.78,58.08,1.42,{interactive:false,blocks:false,elevation:1.20,roomHistory:'cello-lesson'}),
+
+  // Piano maintenance interrupted with the action exposed.
+  P('practice-bench-maintenance','piano_bench',54.10,67.55,1.08,{interactive:false,blocks:false,roomHistory:'piano-maintenance'}),
+  P('practice-cable-maintenance','cable_coil',54.65,65.85,.36,{interactive:false,blocks:false,roomHistory:'piano-maintenance'}),
+  P('practice-pages-maintenance','loose_pages',55.15,67.25,.28,{interactive:false,blocks:false,elevation:.015,roomHistory:'piano-maintenance'}),
+  P('practice-waste-maintenance','wastebasket',53.25,68.55,.12,{interactive:false,blocks:false,roomHistory:'piano-maintenance'}),
+
+  // Coat and bag drop.
+  P('practice-bench-coat','piano_bench',73.35,65.55,-1.47,{interactive:false,blocks:false,roomHistory:'coat-and-bag-drop'}),
+  P('practice-coat-drop','draped_coat',70.83,66.20,1.24,{interactive:false,blocks:false,elevation:.43,roomHistory:'coat-and-bag-drop'}),
+  P('practice-bag-drop','soft_bag',69.55,68.20,-.22,{interactive:false,blocks:false,roomHistory:'coat-and-bag-drop'}),
+
+  // Chamber rehearsal spillover.
+  P('practice-bench-chamber','piano_bench',53.62,72.55,1.32,{interactive:false,blocks:false,roomHistory:'chamber-spillover'}),
+  P('practice-chair-chamber-a','chair',54.62,75.20,-.72,{interactive:false,blocks:false,roomHistory:'chamber-spillover'}),
+  P('practice-chair-chamber-b','chair',56.35,74.10,-1.94,{interactive:false,blocks:false,roomHistory:'chamber-spillover'}),
+  P('practice-score-chamber','open_score',55.15,74.55,-1.24,{interactive:false,blocks:false,elevation:1.20,roomHistory:'chamber-spillover'}),
+  P('practice-pages-chamber','loose_pages',53.85,75.45,.19,{interactive:false,blocks:false,elevation:.014,roomHistory:'chamber-spillover'}),
+
+  // Copied parts and paper-heavy teaching.
+  P('practice-bench-parts','piano_bench',73.38,73.85,-1.72,{interactive:false,blocks:false,roomHistory:'copied-parts'}),
+  P('practice-score-parts','open_score',71.85,72.15,1.77,{interactive:false,blocks:false,elevation:1.20,roomHistory:'copied-parts'}),
+  P('practice-pages-parts-a','loose_pages',69.40,75.45,-.35,{interactive:false,blocks:false,elevation:.012,roomHistory:'copied-parts'}),
+  P('practice-pages-parts-b','loose_pages',72.65,75.55,.28,{interactive:false,blocks:false,elevation:.014,roomHistory:'copied-parts'}),
+  P('practice-waste-parts','wastebasket',73.75,75.70,.18,{interactive:false,blocks:false,roomHistory:'copied-parts'}),
+
+  // Hurried departure.
+  P('practice-bench-departure','piano_bench',53.78,81.22,1.12,{interactive:false,blocks:false,roomHistory:'hurried-departure'}),
+  P('practice-open-case-departure','open_instrument_case',54.35,82.15,-.34,{interactive:false,blocks:false,roomHistory:'hurried-departure'}),
+  P('practice-bag-departure','soft_bag',56.55,82.55,.74,{interactive:false,blocks:false,roomHistory:'hurried-departure'}),
+  P('practice-pages-departure','loose_pages',54.30,79.20,.61,{interactive:false,blocks:false,elevation:.012,roomHistory:'hurried-departure'}),
+
+  // Ensemble room: a rehearsal abandoned mid-use. Blocking mass stays on the
+  // far side so the door-to-instrument route and a full loop around the group
+  // remain readable.
+  P('practice-ensemble-marimba','marimba',71.65,79.15,.04,{roomHistory:'ensemble-rehearsal',...play(MARIMBA,'A rehearsal marimba with four bars pencilled and both mallets abandoned across the naturals.','Four bars, two mallets, no player.')}),
+  P('practice-ensemble-mallets','mallet_pair',71.65,79.12,.18,{interactive:false,blocks:false,elevation:1.15,roomHistory:'ensemble-rehearsal'}),
+  P('practice-ensemble-cello','cello',74.15,81.70,-1.18,{roomHistory:'ensemble-rehearsal',...play(STRINGS,'A cello left extended beside its open case.','The bow is still on the chair.')}),
+  P('practice-ensemble-violin','violin',69.25,82.05,1.16,{
+    elevation:.48,inspectAt:{x:68.25,y:82.05},roomHistory:'ensemble-rehearsal',
     ...play(STRINGS,'A violin left on a chair, chin rest to the door.','Someone put it down mid-phrase.'),
   }),
-  P('practice-case-1','instrument_case',68.3,82.6,0,{inspect:inspect('A hard case with no instrument name, only a room number.','The room number no longer exists.')}),
-  P('practice-case-2','instrument_case',72.0,82.6,0,{inspect:inspect('Another case against the ensemble-room wall. Locked, light, probably empty.','Probably empty.')}),
+  P('practice-case-1','open_instrument_case',68.05,82.25,-.10,{interactive:false,blocks:false,roomHistory:'ensemble-rehearsal'}),
+  P('practice-case-2','instrument_case',72.25,82.65,.07,{interactive:false,blocks:false,roomHistory:'ensemble-rehearsal'}),
+  P('practice-ensemble-chair-a','chair',68.55,79.10,.62,{interactive:false,blocks:false,roomHistory:'ensemble-rehearsal'}),
+  P('practice-ensemble-chair-b','chair',73.65,78.25,-.42,{interactive:false,blocks:false,roomHistory:'ensemble-rehearsal'}),
+  P('practice-ensemble-score-a','open_score',69.25,80.85,.84,{interactive:false,blocks:false,elevation:1.20,roomHistory:'ensemble-rehearsal'}),
+  P('practice-ensemble-pages','loose_pages',74.00,79.65,-.12,{interactive:false,blocks:false,elevation:.012,roomHistory:'ensemble-rehearsal'}),
   P('practice-desk-stack-1','school_desk',53.0,54.2,0,{inspect:inspect('A teaching desk waiting at the stair landing for somebody to claim it.','Still waiting, safely out of the route.')}),
   P('practice-desk-stack-2','school_desk',54.0,54.2,0,{inspect:inspect('The matching desk has been pushed alongside it, drawers to the wall.','Two desks parked for collection.')}),
 

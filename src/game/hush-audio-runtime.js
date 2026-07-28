@@ -103,12 +103,20 @@ export function createHushAudioRuntime({
       : null;
     if (playerBand === MONITOR_BAND.NORMAL) return;
     audition = ingestHeardNoise(audition, { event: enriched, propagation, now: clock(), policy });
+    // The field monitor is the single player-noise perception authority. It
+    // applies the visible normal/clue/pinpoint thresholds and optional mic RMS
+    // once per frame. Keep this propagated event in the sensory audition, but
+    // do not offer a second, differently attenuated player target here.
+    if (enriched.semantics.playerGenerated) {
+      onHeard?.({ event: enriched, propagation, audition: structuredClone(audition) });
+      return;
+    }
     presence?.offerSoundTarget?.({
       position: enriched.spatial.position,
       level: Math.max(0, Math.min(1, (propagation.effectiveLevelDb - policy.hearingThresholdDb) / 24)),
       confidence: Math.max(0, 1 - propagation.uncertainty),
       expiresAt: clock() + Math.max(1800, policy.certaintyHalfLife * 320),
-      priority: playerBand === MONITOR_BAND.HOT ? .96 : .65,
+      priority: .65,
       reason: 'ACOUSTIC_EVENT',
     });
     onHeard?.({ event: enriched, propagation, audition: structuredClone(audition) });
@@ -140,19 +148,13 @@ export function createHushAudioRuntime({
       narrative: { enabled: enabled && hush.active, allowMischief: ctx.allowMischief !== false },
       random,
     });
+    presence?.setDirectorIntent?.(lastIntent);
 
-    if (lastIntent.kind === 'INVESTIGATE' || lastIntent.kind === 'STALK') {
-      const target = lastIntent.target;
-      if (target?.position) {
-        presence?.offerSoundTarget?.({
-          position: target.position,
-          confidence: target.confidence,
-          expiresAt: clock() + (lastIntent.kind === 'STALK' ? 4800 : 2800),
-          priority: lastIntent.kind === 'STALK' ? .72 : .55,
-          reason: lastIntent.kind,
-        });
-      }
-    } else if (lastIntent.kind === 'PLAY') {
+    // Heard acoustic events already offered their one fallible location to the
+    // presence. Re-offering the best hypothesis here every frame used to
+    // refresh that coordinate forever, turning memory into omniscience. Intent
+    // now shapes gait/hesitation only; a new sound is required to update place.
+    if (lastIntent.kind === 'PLAY') {
       const cue = selectMischiefCue({
         context: {
           interest: audition.interest,

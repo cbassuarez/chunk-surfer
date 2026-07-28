@@ -6,14 +6,18 @@ export const HUSH_NOISE_PERCEPTION = Object.freeze({
   clueMemoryMs: 4_800,
   pinpointMemoryMs: 9_000,
   sustainedHotMs: 1_750,
+  hotReleaseGraceMs: 260,
+  bandHysteresisDb: 2,
   directContactMemoryMs: 12_000,
 });
 
 export function freshHushNoisePerception() {
   return {
-    schema: 1,
+    schema: 2,
     band: MONITOR_BAND.NORMAL,
     hotHeldMs: 0,
+    hotGapMs: 0,
+    contactEscalated: false,
     nextSignalAt: 0,
     perceptionMode: 'none',
     perceptionUntil: 0,
@@ -28,6 +32,8 @@ export function normalizeHushNoisePerception(value = {}) {
     ...base,
     band: Object.values(MONITOR_BAND).includes(value.band) ? value.band : base.band,
     hotHeldMs: Math.max(0, Number(value.hotHeldMs) || 0),
+    hotGapMs: Math.max(0, Number(value.hotGapMs) || 0),
+    contactEscalated: !!value.contactEscalated,
     nextSignalAt: Math.max(0, Number(value.nextSignalAt) || 0),
     perceptionMode: ['none', 'clue', 'pinpoint', 'locked'].includes(value.perceptionMode) ? value.perceptionMode : 'none',
     perceptionUntil: Math.max(0, Number(value.perceptionUntil) || 0),
@@ -50,9 +56,8 @@ export function hushNoiseMapConfirmation(state, now = 0) {
   return { mode: 'none', label: 'ACTIVE', detail: 'NO FIX', cls: 'ui-secondary' };
 }
 
-// Pure reducer for the player-noise/HUSH loop. It never spawns, despawns, moves,
-// or catches the HUSH itself; main applies the returned clue/pinpoint offer to
-// the already-active presence authority.
+// Pure reducer for the player-noise/HUSH loop. It never spawns or despawns HUSH.
+// Main applies clue/pinpoint targeting and commits the one-shot contact action.
 export function updateHushNoisePerception(value, {
   now = 0,
   dt = 0,
@@ -63,14 +68,26 @@ export function updateHushNoisePerception(value, {
   const state = normalizeHushNoisePerception(value);
   const at = Math.max(0, Number(now) || 0);
   const elapsedMs = Math.max(0, Math.min(250, (Number(dt) || 0) * 1000));
-  const band = monitorBandForDb(db);
+  const band = monitorBandForDb(db, {
+    previousBand: state.band,
+    hysteresisDb: HUSH_NOISE_PERCEPTION.bandHysteresisDb,
+  });
 
   if (!active || !enabled) {
     return { state: freshHushNoisePerception(), action: null, confirmation: hushNoiseMapConfirmation(null, at) };
   }
 
   state.band = band;
-  state.hotHeldMs = band === MONITOR_BAND.HOT ? state.hotHeldMs + elapsedMs : 0;
+  if (band === MONITOR_BAND.HOT) {
+    state.hotHeldMs += elapsedMs;
+    state.hotGapMs = 0;
+  } else {
+    state.hotGapMs += elapsedMs;
+    if (state.hotGapMs > HUSH_NOISE_PERCEPTION.hotReleaseGraceMs) {
+      state.hotHeldMs = 0;
+      state.contactEscalated = false;
+    }
+  }
   let action = null;
 
   if (band === MONITOR_BAND.MID_HOT && at >= state.nextSignalAt) {
@@ -85,11 +102,19 @@ export function updateHushNoisePerception(value, {
     state.perceptionUntil = action.expiresAt;
   }
 
-  if (band === MONITOR_BAND.HOT && state.hotHeldMs >= HUSH_NOISE_PERCEPTION.sustainedHotMs) {
+  if (band === MONITOR_BAND.HOT
+      && state.hotHeldMs >= HUSH_NOISE_PERCEPTION.sustainedHotMs
+      && !state.contactEscalated) {
     state.directContactUntil = at + HUSH_NOISE_PERCEPTION.directContactMemoryMs;
     state.perceptionMode = 'locked';
     state.perceptionUntil = state.directContactUntil;
-    if (action) action.forceDirectContact = true;
+    state.contactEscalated = true;
+    action = {
+      kind: 'contact',
+      priority: 1,
+      expiresAt: state.directContactUntil,
+      forceDirectContact: true,
+    };
   }
 
   if (state.perceptionUntil && at >= state.perceptionUntil) {

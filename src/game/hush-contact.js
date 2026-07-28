@@ -34,10 +34,65 @@ export const HUSH_CONTACT_LIMITS = Object.freeze({
   warningTriggerPressure: 0.45,
 });
 
+// Contact dialogue belongs to the instant in which the player has to decide
+// whether the body sensation was real. It is incoherent when HUSH has been
+// plainly charging through the centre of the frame. The broad rear hemisphere
+// always qualifies; the slim side-surprise allowance is only a little tighter,
+// but additionally requires a quiet approach with no prior warning.
+export const HUSH_DIALOGUE_APPROACH = Object.freeze({
+  behindDotMax: -0.08,
+  surpriseDotMax: 0.30,
+  surprisePriorityMax: 0.88,
+});
+
 const KINDS = new Set(Object.values(HUSH_CONTACT_KIND));
 const OUTCOMES = new Set(Object.values(HUSH_BRUSH_OUTCOME));
 const unit = (value) => Math.max(0, Math.min(1, Number(value) || 0));
 const whole = (value, max = 1_000_000) => Math.max(0, Math.min(max, Math.floor(Number(value) || 0)));
+
+export function classifyHushContactApproach({
+  player = null,
+  contact = null,
+  forward = null,
+  behaviorMode = 'stand',
+  targetPriority = 0,
+  warned = false,
+  forced = false,
+} = {}) {
+  const px = Number(player?.x);
+  const py = Number(player?.y);
+  const hx = Number(contact?.x);
+  const hy = Number(contact?.y);
+  const fx = Number(forward?.x);
+  const fy = Number(forward?.y);
+  const distance = Math.hypot(hx - px, hy - py);
+  const forwardLength = Math.hypot(fx, fy);
+  if (![px, py, hx, hy, fx, fy].every(Number.isFinite) || distance < 1e-5 || forwardLength < 1e-5) {
+    return Object.freeze({
+      fromBehind: false,
+      bySurprise: false,
+      dialogueEligible: false,
+      facingDot: 1,
+    });
+  }
+
+  const facingDot = ((hx - px) / distance) * (fx / forwardLength)
+    + ((hy - py) / distance) * (fy / forwardLength);
+  const fromBehind = facingDot <= HUSH_DIALOGUE_APPROACH.behindDotMax;
+  const mode = String(behaviorMode || 'stand');
+  const bySurprise = !forced
+    && !warned
+    && Number(targetPriority || 0) < HUSH_DIALOGUE_APPROACH.surprisePriorityMax
+    && mode !== 'chase'
+    && mode !== 'listen'
+    && facingDot <= HUSH_DIALOGUE_APPROACH.surpriseDotMax;
+  return Object.freeze({
+    fromBehind,
+    bySurprise,
+    dialogueEligible: !forced && (fromBehind || bySurprise),
+    facingDot,
+  });
+}
 
 export function freshHushContactDirectorState() {
   return {
@@ -73,6 +128,7 @@ export function normalizeHushContactContext(context = {}) {
     brushOpen: !!context.brushOpen,
     takeBreak: !!context.takeBreak,
     forceDirect: !!context.forceDirect,
+    dialogueEligible: context.dialogueEligible !== false,
     takenEligible: context.takenEligible !== false,
     cooldownReady: context.cooldownReady !== false,
     state: normalizeHushContactDirectorState(context.state),
@@ -89,6 +145,7 @@ function brushChanceFor(context = {}) {
     && !ctx.brushOpen
     && !ctx.takeBreak
     && !ctx.forceDirect
+    && ctx.dialogueEligible
     && ctx.cooldownReady
     && state.lastKind !== HUSH_CONTACT_KIND.BRUSH
     && state.brushesShown < HUSH_CONTACT_LIMITS.brushMaxPerRun;
@@ -104,10 +161,11 @@ export function hushContactWeights(context = {}) {
   const ctx = normalizeHushContactContext(context);
   const brush = brushChanceFor(ctx);
   const remainder = 1 - brush.chance;
+  const dialogueKindEligible = ctx.dialogueEligible && !ctx.forceDirect;
   return Object.freeze({
     brush: brush.chance,
-    taken: ctx.takenEligible ? remainder * 0.5 : 0,
-    hard: ctx.takenEligible ? remainder * 0.5 : remainder,
+    taken: dialogueKindEligible && ctx.takenEligible ? remainder * 0.5 : 0,
+    hard: dialogueKindEligible && ctx.takenEligible ? remainder * 0.5 : remainder,
   });
 }
 

@@ -16,6 +16,13 @@ import {
   hushNoiseMapConfirmation,
   updateHushNoisePerception,
 } from '../src/game/hush-noise-perception.js';
+import {
+  applyVfdSettings,
+  setActiveSurface,
+  themeRoleColor,
+  uiRoleColor,
+  vfdSettings,
+} from '../src/render/palette.js';
 
 const event = ({ player = true, monitor = true, hush = true, db = -25, durationMs = 500 } = {}) => ({
   id: `event:${db}:${player}`,
@@ -31,6 +38,8 @@ test('monitor bands describe exposure rather than clipping', () => {
   assert.equal(monitorBandForDb(-18), MONITOR_BAND.HOT);
   assert.equal(monitorSnapshotForRms(.05).band, MONITOR_BAND.MID_HOT, 'ordinary speech is a location clue');
   assert.equal(monitorSnapshotForRms(.15).band, MONITOR_BAND.HOT, 'loud speech is a pinpoint, not a clip indicator');
+  assert.equal(monitorBandForDb(-19, { previousBand: MONITOR_BAND.HOT, hysteresisDb: 2 }), MONITOR_BAND.HOT);
+  assert.equal(monitorBandForDb(-21, { previousBand: MONITOR_BAND.HOT, hysteresisDb: 2 }), MONITOR_BAND.MID_HOT);
 });
 
 test('monitor ignores system audio and accepts only player sound plus an active mic feed', () => {
@@ -39,6 +48,7 @@ test('monitor ignores system audio and accepts only player sound plus an active 
   assert.equal(monitorSnapshot(1010).band, MONITOR_BAND.NORMAL);
   assert.equal(monitorObserveAcousticEvent(event({ player: true, db: -25 }), 1020), true);
   const player = monitorSnapshot(1100);
+  assert.equal(player.band, player.hushBand, 'the visible band is the HUSH evidence band');
   assert.equal(player.hushBand, MONITOR_BAND.MID_HOT);
   assert.deepEqual(player.inputPosition, { x: 8, y: 9 });
 
@@ -48,10 +58,21 @@ test('monitor ignores system audio and accepts only player sound plus an active 
   assert.equal(mic.hushBand, MONITOR_BAND.HOT);
   assert.equal(mic.inputKind, 'room-mic');
   assert.equal(mic.inputPosition, null);
+
+  monitorSetAuxInput(() => ({ rms: .15, peak: 1, clipped: true }));
+  const clipped = monitorSnapshot(2010);
+  assert.equal(clipped.band, MONITOR_BAND.HOT, 'clip state does not redefine the HUSH RMS band');
+  assert.equal(clipped.clipped, true);
+  assert.equal(clipped.segments, 12, 'a clipped input cannot display false headroom');
+  assert.equal(clipped.peakDb, 0);
+
+  monitorReset();
+  monitorObserveAcousticEvent(event({ player: true, hush: false, db: -6 }), 3000);
+  assert.equal(monitorSnapshot(3010).band, MONITOR_BAND.NORMAL, 'safe authored player sounds cannot produce a false HUSH warning');
   monitorReset();
 });
 
-test('mid-hot clues, hot pinpoints, and sustained hot forbids a brush contact', () => {
+test('mid-hot clues, hot pinpoints, and sustained hot emits one guaranteed direct contact', () => {
   let state = freshHushNoisePerception();
   let result = updateHushNoisePerception(state, { now: 1000, dt: .1, db: -34, active: true });
   assert.equal(result.action, null);
@@ -63,11 +84,35 @@ test('mid-hot clues, hot pinpoints, and sustained hot forbids a brush contact', 
 
   state = result.state;
   let now = 2000;
+  const actions = [];
   for (let elapsed = 0; elapsed < HUSH_NOISE_PERCEPTION.sustainedHotMs + 100; elapsed += 100) {
     result = updateHushNoisePerception(state, { now, dt: .1, db: -10, active: true });
+    if (result.action) actions.push(result.action.kind);
     state = result.state;
     now += 100;
   }
+  assert.equal(actions.filter((kind) => kind === 'contact').length, 1);
   assert.equal(hushNoiseForcesDirectContact(state, now), true);
   assert.equal(hushNoiseMapConfirmation(state, now).mode, 'locked');
+
+  result = updateHushNoisePerception(state, { now, dt: .1, db: -19, active: true });
+  assert.equal(result.state.band, MONITOR_BAND.HOT, 'hot hysteresis absorbs a one-frame mic dip');
+  assert.equal(result.state.contactEscalated, true);
+});
+
+test('warning colors remain semantic under green, amber, and forced phosphor themes', () => {
+  const previous = { ...vfdSettings };
+  try {
+    applyVfdSettings({ phosphor: 'faithful' });
+    setActiveSurface('green');
+    assert.equal(themeRoleColor('warning'), '#F2A81E');
+    assert.equal(uiRoleColor('ui-warning'), themeRoleColor('warning'));
+    setActiveSurface('amber');
+    assert.notEqual(themeRoleColor('warning'), themeRoleColor('phosphor'));
+    applyVfdSettings({ phosphor: 'cyan' });
+    assert.notEqual(themeRoleColor('warning'), themeRoleColor('phosphor'));
+  } finally {
+    applyVfdSettings(previous);
+    setActiveSurface('amber');
+  }
 });

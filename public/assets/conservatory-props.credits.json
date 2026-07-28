@@ -4,10 +4,10 @@
     "author": "Chunk Surfer project",
     "source": "tools/chunk_surfer/build-props.mjs",
     "license": "project source (mixed: see meshes)",
-    "sha256": "2037ea671bb2a7cc6dcbab9c4d61f3d5df6b3edd8a237d81080374f2901eb92f",
+    "sha256": "412ccc5ab144601089a35f6afd923c3b4552d84d78760873785a9f4f7fda5dd8",
     "modifications": "Metres, Y-up, ground-centred. Procedural fallback geometry plus user-supplied source meshes (unverified provenance) baked, re-axised, height-scaled, and vertex-cluster decimated under budget.",
-    "triangles": 44682,
-    "bytes": 3120280
+    "triangles": 45190,
+    "bytes": 3169528
   },
   "meshes": [
     {
@@ -130,6 +130,216 @@
         ]
       },
       "triangles": 312,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "piano_bench",
+      "bounds": {
+        "min": [
+          -0.38,
+          0.025,
+          -0.17
+        ],
+        "max": [
+          0.38,
+          0.54,
+          0.17
+        ]
+      },
+      "triangles": 140,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "open_score",
+      "bounds": {
+        "min": [
+          -0.319,
+          0.003,
+          -0.191
+        ],
+        "max": [
+          0.319,
+          0.024,
+          0.191
+        ]
+      },
+      "triangles": 36,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "loose_pages",
+      "bounds": {
+        "min": [
+          -0.352,
+          0.002,
+          -0.373
+        ],
+        "max": [
+          0.378,
+          0.026,
+          0.457
+        ]
+      },
+      "triangles": 84,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "metronome",
+      "bounds": {
+        "min": [
+          -0.095,
+          0,
+          -0.092
+        ],
+        "max": [
+          0.095,
+          0.421,
+          0.07
+        ]
+      },
+      "triangles": 48,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "wastebasket",
+      "bounds": {
+        "min": [
+          -0.17,
+          0,
+          -0.17
+        ],
+        "max": [
+          0.17,
+          0.427,
+          0.17
+        ]
+      },
+      "triangles": 96,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "soft_bag",
+      "bounds": {
+        "min": [
+          -0.32,
+          0.01,
+          -0.15
+        ],
+        "max": [
+          0.32,
+          0.492,
+          0.15
+        ]
+      },
+      "triangles": 48,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "draped_coat",
+      "bounds": {
+        "min": [
+          -0.415,
+          0.06,
+          -0.061
+        ],
+        "max": [
+          0.415,
+          0.87,
+          0.078
+        ]
+      },
+      "triangles": 48,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "mallet_pair",
+      "bounds": {
+        "min": [
+          -0.272,
+          -0.002,
+          -0.096
+        ],
+        "max": [
+          0.328,
+          0.073,
+          0.076
+        ]
+      },
+      "triangles": 104,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "cable_coil",
+      "bounds": {
+        "min": [
+          -0.269,
+          0.026,
+          -0.269
+        ],
+        "max": [
+          0.319,
+          0.08,
+          0.269
+        ]
+      },
+      "triangles": 588,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "open_instrument_case",
+      "bounds": {
+        "min": [
+          -0.64,
+          0.01,
+          -0.28
+        ],
+        "max": [
+          0.64,
+          0.77,
+          0.416
+        ]
+      },
+      "triangles": 84,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -1107,7 +1317,7 @@
       "bounds": {
         "min": [
           -11,
-          0,
+          1.18,
           -11.5
         ],
         "max": [
@@ -1116,7 +1326,7 @@
           11.5
         ]
       },
-      "triangles": 3048,
+      "triangles": 2280,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",

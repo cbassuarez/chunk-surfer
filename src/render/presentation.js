@@ -187,7 +187,7 @@ export function drawVfdMeter(x, y, width = 14, snapshot = monitorSnapshot(), {
         const hot = bandThresholds && db >= Number(bandThresholds.hotDb);
         const midHot = bandThresholds && !hot && db >= Number(bandThresholds.midHotDb);
         const danger = hot || (!bandThresholds && db >= thresholdDb);
-        ctx.fillStyle = danger ? t.danger : midHot ? '#F2A81E' : phosphor;
+        ctx.fillStyle = danger ? t.danger : midHot ? themeRoleColor('warning', x + i, cols) : phosphor;
         ctx.globalAlpha = litDuty(x + i, y, danger ? 'danger' : midHot ? 'counter' : 'phosphor', 1);
         ctx.shadowColor = ctx.fillStyle;
         ctx.shadowBlur = 4.5 * dpr;
@@ -217,7 +217,7 @@ export function drawVfdWarningTriangle(x, y, snapshot = monitorSnapshot(), { now
   const hot = band === 'hot';
   const seconds = Number.isFinite(Number(now)) ? Number(now) / 1000 : nowSec();
   const blink = .34 + .66 * (Math.sin(seconds * Math.PI * (hot ? 5.2 : 3.4)) > 0 ? 1 : .18);
-  const color = hot ? activeTheme().danger : '#F2A81E';
+  const color = hot ? activeTheme().danger : themeRoleColor('warning');
   uiDraw(({ ctx, dpr, cellW, cellH }) => {
     const left = x * cellW * dpr;
     const top = (y + .08) * cellH * dpr;
@@ -237,7 +237,7 @@ export function drawVfdWarningTriangle(x, y, snapshot = monitorSnapshot(), { now
     ctx.stroke();
     ctx.restore();
   });
-  uiText(x + .64, y, '!', hot ? 'ui-danger' : 'ui-amber', blink);
+  uiText(x + .64, y, '!', hot ? 'ui-danger' : 'ui-warning', blink);
   return true;
 }
 

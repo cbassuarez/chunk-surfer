@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { hushStatus, minimapTelemetryCrumbs } from '../src/render/minimap.js';
+import { buildMinimapCommands } from '../src/render/map-commands.js';
 
 test('minimap confirms what HUSH knows about the player without drawing a noise layer', () => {
   const active = hushStatus({
@@ -55,4 +56,42 @@ test('stale minimap telemetry is capped, transformed, and age-faded', () => {
   assert.ok(crumbs.every((crumb) => crumb.alpha > 0 && crumb.alpha < 0.18));
   assert.ok(crumbs.every((crumb) => crumb.point.x >= 10 && crumb.point.y >= 21));
   assert.ok(!crumbs.some((crumb) => crumb.point.x === 18), 'newest contact stays the live observation, not a crumb');
+});
+
+test('minimap reveals the HUSH body only during direct visual confirmation', () => {
+  const commands = buildMinimapCommands({
+    model: {
+      player: { resolved: true, floorId: 'g', position: { x: 0, y: 0 }, heading: 0 },
+      floors: [{ id: 'g', open: [] }],
+      policy: { minimapMode: 'compass' },
+      contacts: [],
+      hush: { active: true, floorId: 'g', position: { x: 2, y: 3 } },
+    },
+    viewport: { x: 0, y: 0, w: 20, h: 10 },
+  });
+  assert.ok(!commands.some((command) => String(command.kind).startsWith('hush')));
+
+  const visible = buildMinimapCommands({
+    model: {
+      player: { resolved: true, floorId: 'g', position: { x: 0, y: 0 }, heading: 0 },
+      floors: [{ id: 'g', open: [] }],
+      policy: { minimapMode: 'compass' },
+      contacts: [],
+      hush: { active: true, visible: true, floorId: 'g', position: { x: 2, y: 3 } },
+    },
+    viewport: { x: 0, y: 0, w: 20, h: 10 },
+  });
+  assert.ok(visible.some((command) => command.kind === 'hush-visible'));
+
+  const edge = buildMinimapCommands({
+    model: {
+      player: { resolved: true, floorId: 'g', position: { x: 0, y: 0 }, heading: 0 },
+      floors: [{ id: 'g', open: [] }],
+      policy: { minimapMode: 'compass' },
+      contacts: [],
+      hush: { active: true, visible: true, floorId: 'g', position: { x: 200, y: 3 } },
+    },
+    viewport: { x: 0, y: 0, w: 20, h: 10 },
+  });
+  assert.ok(edge.some((command) => command.kind === 'hush-visible-edge'), 'the same confirmed marker clamps to the edge');
 });

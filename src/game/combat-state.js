@@ -576,7 +576,7 @@ function applyEnemyIntent(state, intent, prevention) {
       state.damageTaken += Math.max(0, state.composure - 1);
       state.composure = 1;
       state.safetyRelayUsed = true;
-      state.last.notice += ' · SAFETY RELAY HELD AT 1';
+      state.last.notice += ' · SAFETY RELAY REMAINS AT 1';
     } else {
       state.composure = Math.max(0, state.composure - damage);
       state.damageTaken += damage;

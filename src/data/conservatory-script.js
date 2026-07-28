@@ -891,10 +891,10 @@ export const TALISMAN = {
   damp: {
     speaker: 'THE PRACTICE WING',
     lines: [
-      { who: 'direction', text: 'You close your hand around it. The steel is cold and perfectly still, and it has been perfectly still the whole time.' },
-      { who: 'you', text: '...it was not the fork.' },
-      { who: 'direction', text: 'The A goes on, in the room, without it. Then it stops, all at once, the way a held breath stops.' },
-      { who: 'you', text: 'That was not the fork. That was in here with me and it was being polite.' },
+      { who: 'direction', text: 'You close your hand around it. The steel is cold and perfectly still, in a way that makes your fingers secondguess holding on any longer.' },
+      { who: 'you', text: "That's an A alright. Real strong, or maybe I'm just hearing things, adjusting to the silence." },
+      { who: 'direction', text: 'The tone goes on, in the room, without it. Then it stops, all at once, the way a held breath stops.' },
+      { who: 'you', text: 'Hm.' },
     ],
     choices: [
       { text: 'pocket it and get on', goto: 'pocket', set: ['has.fork'] },
@@ -903,15 +903,15 @@ export const TALISMAN = {
   pocket: {
     speaker: 'THE PRACTICE WING',
     lines: [
-      { who: 'direction', text: 'It goes in the top pocket, where a professional keeps the one tool he trusts.' },
-      { who: 'you', text: 'A=440. And nothing else. Right.' },
+      { who: 'you', text: "Let's just hope it wasn't cursed." },
+      { who: '???', text: "Let's." },
     ],
   },
   leave: {
     speaker: 'THE PRACTICE WING',
     lines: [
-      { who: 'you', text: 'It is a fork on a sill. I have four rooms.' },
-      { who: 'direction', text: 'You leave the one object in this building that would have told you the truth.' },
+      { who: 'you', text: 'It is a fork on a sill. I have more rooms to do.' },
+      { who: 'the fork', text: "Well that's a shame." },
     ],
   },
 };
@@ -924,35 +924,34 @@ export const HUSH = {
   start: {
     speaker: '',
     lines: [
-      { who: 'direction', text: 'Something in the corridor behind you. Not a sound, exactly. A change in what the silence is shaped like.' },
+      { who: 'direction', text: 'Something in the corridor behind you. Not a sound, exactly... maybe a change in pressure? Regardless, your hair stands on end; your neck begs to snap around.' },
       { who: 'you', text: 'Right.' },
     ],
     choices: [
       { text: '"That is a building settling. They do that."', goto: 'settle' },
-      { text: '"That is footsteps."', goto: 'steps' },
-      { text: '(do not turn around.)', goto: 'still' },
+      { text: "Don't. Turn. Your. Head.", goto: 'steps' },
+      { text: '(say nothing.)', goto: 'still' },
     ],
   },
   settle: {
     speaker: '',
     lines: [
       { who: 'you', text: 'Brick lets go of heat all night. Timber moves. Everything in here is on its way down anyway.' },
-      { who: 'direction', text: 'All of that is true, and none of it is what you heard.' },
+      { who: 'direction', text: 'All of that is true; none of it is what you heard, though.' },
     ],
   },
   steps: {
     speaker: '',
     lines: [
-      { who: 'you', text: 'Twenty metres. Slow. Not looking for anything, because it already knows.' },
-      { who: 'you', text: 'Say it properly: it went to where I made a noise. It did not come to me.' },
-      { who: 'direction', text: 'That is worse, and it is also the only useful thing anybody has said tonight.' },
+      { who: 'you', text: "Whatever that is, at least it's slow..." },
+      { who: 'you', text: "...and it looks like it follows noise, not me necessarily." },
     ],
   },
   still: {
     speaker: '',
     lines: [
       { who: 'direction', text: 'You do not turn around. You stand in a dead building with your back to a corridor and you are perfectly, professionally still.' },
-      { who: 'you', text: 'This is the job. This is literally the job.' },
+      { who: 'you', text: '10 years of training.' },
     ],
   },
 };
@@ -964,8 +963,8 @@ export const RADIO_DEAD = {
   start: {
     speaker: '',
     lines: [
-      { who: 'direction', text: 'The carrier is gone. No hiss, no channel, not even the sound of a channel with nobody on it.' },
-      { who: 'you', text: 'Dead. And it stays clipped to my belt, because it is their radio.' },
+      { who: 'direction', text: 'The frequency is gone. No hiss, no channel, not even the sound of a channel with nobody on it.' },
+      { who: 'you', text: "This damned thing's already mullered. Dead weight now. Or maybe it's just jammed?" },
     ],
     choices: [
       { text: 'try channel two again', goto: 'again' },
@@ -977,7 +976,7 @@ export const RADIO_DEAD = {
     speaker: '',
     lines: [
       { who: 'me', text: 'Four four one seven, radio check.' },
-      { who: 'direction', text: 'Nothing. Not silence — nothing. A silence would have a floor to it.' },
+      { who: 'direction', text: 'Nothing. Not silence; nothing.' },
       { who: 'me', text: 'Four four one seven.' },
     ],
     choices: [
@@ -989,7 +988,7 @@ export const RADIO_DEAD = {
     speaker: '',
     lines: [
       { who: 'direction', text: 'You shake it. Everybody shakes it.', cue: 'squelch', shake: 1.1, shakeMs: 260 },
-      { who: 'direction', text: 'A squelch, one syllable long, at about ninety decibels, in a building where the loudest thing all night has been your own knee.' },
+      { who: 'direction', text: 'A squelch, one syllable long, at about ninety decibels; this cannot be good to carry.' },
       { who: 'you', text: 'He told me not to do that.' },
       { who: 'you', text: 'He told me twice, and he thought it was funny, and it was.' },
     ],
@@ -998,7 +997,7 @@ export const RADIO_DEAD = {
   clip: {
     speaker: '',
     lines: [
-      { who: 'direction', text: 'It goes back on your belt, where it will stay, because it is not yours to leave anywhere.' },
+      { who: 'direction', text: 'You keep it on your belt, but you suspect it could be better suited elsewhere.' },
     ],
   },
 };
@@ -1044,22 +1043,22 @@ export const TRANSMISSIONS = [
     { who: 'radio', text: '4417-C, go ahead.' },
     { who: 'me', text: 'One down. Studio B3. Clean.' },
     { who: 'radio', text: 'Copy. Th—' },
-    { who: 'direction', text: 'The carrier opens. It stays open.', hold: 2.6 },
+    { who: 'direction', text: 'The carrier frequency opens; it stays open.', hold: 2.6 },
     { who: 'direction', text: 'Something is close to the microphone on the other end.', hold: 2.8 },
-    { who: 'direction', text: 'Closer than a person sitting at a desk can be.', hold: 3.0 },
+    { who: 'direction', text: 'Closer than a person sitting at a desk could possibly be.', hold: 3.0 },
     // Eight seconds of a man working out what is on the other end, and then it
     // is not a jump scare, because he already knew.
-    { who: 'direction', text: 'It is listening to you listen to it.', cue: 'scream', shake: 2.6, shakeMs: 900, hold: 4.2 },
-    { who: 'direction', text: 'The carrier drops.', hold: 2.2 },
+    { who: 'direction', text: 'It is listening to you listen to it. It likes you, you know? Only reason you still have ears to hear, and a mouth to scream.', cue: 'scream', shake: 2.6, shakeMs: 900, hold: 4.2 },
+    { who: 'direction', text: 'The radio drops out.', hold: 2.2 },
   ],
 ];
 
 // After this, `radio.js` owns it, and it is a hazard.
-export const RADIO_DEAD_LINE = { who: 'you', text: 'Dead. And it stays clipped to my belt, because it is their radio.' };
+export const RADIO_DEAD_LINE = { who: 'you', text: 'Of course it dies. Truth be told, I hate checking in anyway. Keeps me away from the job.' };
 export const SQUELCH_LINES = [
-  { who: 'direction', text: 'The radio squelches. Everything in the building that can hear, heard that.' },
-  { who: 'direction', text: 'Static. One syllable of it.' },
-  { who: 'direction', text: 'The radio opens, says nothing, and closes.' },
+  { who: 'direction', text: 'The radio squelches. Everything in the building with ears can hear that.' },
+  { who: 'direction', text: 'Static.' },
+  { who: 'direction', text: 'The radio clicks and hisses.' },
 ];
 
 // ── the previous recordist ──────────────────────────────────────────────────
@@ -1077,9 +1076,9 @@ export const PAGES = [
       { raw: 'RIG   MKH-8020 pair, ORTF. Sound Devices. No mains.' },
       { raw: 'REF   -60 dBFS floor in the stairwell. Very good.' },
       '',
-      'It was powered down when we arrived. No fridge, no lift, no accidental hum. If anything is singing now, I put it back into the walls myself — and I know which board will shut it up.',
+      'It was powered down when we arrived. No fridge, no lift, no accidental hum. If anything is singing now, I put it back into the walls myself; I know which board will shut it up.',
       '',
-      'Down the west stair to B3 first, because it is the deadest room in the plan and if I can hold a clean minute there I can hold one anywhere. The stair is behind the dock, past the inner door. Standard key.',
+      "Down the west stair to B3 first, because it is the deadest room in the plan and if I can hold a clean minute there I can hold one anywhere. Oh who am I kidding?! I just really hate basements.",
       '',
       'The trick is the same trick it always is: stop moving before you press record, and stay stopped for ten seconds after you think you are done. The room does not settle when you do.',
     ],
@@ -1281,13 +1280,13 @@ export const MAIN_EXIT_CELL = { x:79, y:4 };
 export const PROLOGUE_THOUGHTS = {
   // He read the paperwork. He is working a job, and he keeps doing sums.
   self: {
-    lightOn: { who: 'you', text: 'On. Four hundred quid and I am afraid of a corridor.' },
+    lightOn: { who: 'you', text: "On. Four hundred quid. Maybe if I keep saying it I won't be so scared." },
     recStart: { who: 'you', text: "One clean minute. That's all they asked for." },
     recDone: { who: 'you', text: "That's one. Eighty quid a room, near enough." },
     playback: { who: 'you', text: 'Check it before I count it.' },
     playbackNone: { who: 'you', text: 'Nothing recorded in here yet.' },
     pageRoom: (room) => ({ who: 'you', text: `His log. He hadn't done ${room} either.` }),
-    pageAny: { who: 'you', text: "His log. Same list, same order. He was working it the way I am." },
+    pageAny: { who: 'you', text: "His log. Same list, same order. He was working it the way I am. Am I– am I headed towards a trap? I could always leave..." },
   },
   // He talked to the guard. He keeps thinking about a man who went home at ten.
   guard: {

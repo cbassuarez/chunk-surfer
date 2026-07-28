@@ -49,6 +49,7 @@ import { terrorInit, once, interpolate } from './game/terror.js';
 import * as REC from './game/recordist.js';
 import * as RT from './audio/roomtone.js';
 import * as PRES from './game/presence.js';
+import { createPresenceNavigation } from './game/presence-navigation.js';
 import {
   HUSH_BRUSH_OUTCOME,
   HUSH_CONTACT_KIND,
@@ -56,12 +57,12 @@ import {
   HUSH_SENSATION_MODE,
   buildHushReleaseNote,
   buildHushSensationTree,
+  classifyHushContactApproach,
   chooseHushReleaseDestination,
   chooseHushContactExperience,
   noteHushWarningShown,
   rememberHushContent,
   resolveHushSensationChoice,
-  updateHushWarningSchedule,
 } from './game/hush-contact.js';
 import {
   freshHushNoisePerception,
@@ -75,6 +76,7 @@ import { authoredCue, authoredAudioProject, authoredCueUrls, dispatchAuthoredCue
 import * as STORY from './audio/story-audio.js';
 import { battleMusicInit, createBattleMusicSession, nextBattleBarAt, preloadBattleMusic } from './audio/battle-music.js';
 import * as FEAR from './audio/fear.js';
+import { createSamDialogVoice } from './audio/sam-voice.js';
 import { createAudioContextRecovery } from './audio/context-recovery.js';
 import { createBackgroundAudioFocusPolicy } from './audio/background-audio.js';
 import { runtimeBattle, runtimeTree } from './narrative/runtime-content.js';
@@ -184,6 +186,7 @@ import {
 } from './game/stair-anomaly.js';
 import { createStairAnomalyRuntime, STAIR_ANOMALY_ENTRY, STAIR_ANOMALY_MODULE_CELLS } from './game/stair-anomaly-runtime.js';
 import { resolveLightingContext, resolveLocalLights } from './data/conservatory-lights.js';
+import { buildEmergencyShadowFrame } from './game/emergency-light-runtime.js';
 import {
   livePowerCircuits,
   normalizePowerState,
@@ -208,15 +211,18 @@ import {
 import { createSourceTowerTransitionScene } from './game/source-tower-transition-scene.js';
 import { applyTowerRelayAdvantage } from './game/tower-chapel-bridge.js';
 import {
-  DOCK_ACOUSTIC_PROP_IDS,
-  DOCK_HAUNTING_GRACE_MS,
+  DOCK_HAUNTING_STATUS,
+  DOCK_PORTAL,
   deriveDockHauntingEligibility,
   dockExitAttemptShouldSpeak,
   dockEndingBeat,
-  dockHauntingDynamicInstances,
   dockHauntingLights,
+  dockHauntingMoveScale,
+  dockHauntingPressure,
+  dockHauntingStaging,
   freshDockTransitState,
   makeLoadingDockHauntingScene,
+  normalizeDockHauntingState,
   reduceDockTransit,
 } from './game/loading-dock.js';
 import { createBellTowerRuntime, createInertBellAssemblyInstances } from './game/bell-tower-runtime.js';
@@ -396,6 +402,7 @@ let renderMove=null;            // frame interpolation between collision cells
 let motionRig=null;              // spring-smoothed first-person camera rig
 let lastStepDx=0;
 let lastStepDy=0;
+let buildingPresenceNavigation=null;
 let allFilesLoaded=false;
 let lastVoidSinkMsgStep=-9999;
 let gateFlashTimer=null;
@@ -680,7 +687,7 @@ function ensureCtx({resume=true}={}){
         // The transparent monitor node remains in the audible graph, but its
         // display is fed only by semantic player noise and optional room-mic
         // RMS. Program audio is never treated as HUSH exposure.
-        MONITOR.monitorSetAuxInput(()=>MIC.micActive()?MIC.micLevel():0);
+        MONITOR.monitorSetAuxInput(()=>MIC.micActive()?MIC.micMeasurement():0);
 
         CUES.preloadAll(authoredCueUrls({excludeCuePrefixes:['battle.']}));
         preloadBattleMusic();
@@ -3157,6 +3164,10 @@ function currentMoveIntervalMs(){
       return Math.round(clamp(ms, SCALED_MOVE_MIN(84), SCALED_MOVE_MIN(220)));
     }
   }
+  if(dockHauntingFrame&&!dockHauntingFrame.resolved){
+    ms*=dockHauntingMoveScale(dockHauntingFrame.pressure);
+    return Math.round(clamp(ms,SCALED_MOVE_MIN(44),SCALED_MOVE_MIN(480)));
+  }
   // Keep motion responsive; difficulty is mostly handled by sink/lateral drag.
   return Math.round(clamp(ms, SCALED_MOVE_MIN(44), SCALED_MOVE_MIN(120)));
 }
@@ -3582,6 +3593,9 @@ function step(dx,dy){
   lastMoveAtMs=nowMs;
   px=nx; py=ny; stepCount++;
   if(storyMode&&usingPlan()&&!usingSpecialSpace())noteDockTransitStep(stepFrom,{x:px,y:py});
+  // Contact is a spatial threshold, so resolve it on the movement frame that
+  // actually crossed the body rather than waiting for the next render tick.
+  if(dockHauntingScene) dockHauntingScene.update(0);
   if(usingPlan()&&!usingSpecialSpace()&&FP.logicalToPhysical(px,py).renderGroup==='academic'&&!flagGet('academic.entered')){
     flagApply(['academic.entered']);
     facilityMapCache={key:null,model:null};
@@ -5297,7 +5311,6 @@ function syncDoorDynamicProps(){
   if(group==='tower'&&!inertBellTowerInstances)inertBellTowerInstances=createInertBellAssemblyInstances(towerBellLayout());
   const bells=group!=='tower'?[]:chapelTowerState().phase===CHAPEL_TOWER_PHASE.TOWER_ACTIVE&&bellTowerRuntime?bellTowerRuntime.renderInstances():(inertBellTowerInstances||[]);
   for(const bell of bells)doorDynamicCombined[count++]=bell;doorDynamicCombined.length=count;
-  if(group==='ground')for(const instance of dockHauntingDynamicInstances(dockHauntingFrame))doorDynamicCombined[count++]=instance;
   doorDynamicCombined.length=count;
   R3.r3dSetDynamicProps(doorDynamicCombined);
 }
@@ -5306,24 +5319,32 @@ function syncDoorDynamicProps(){
 // This used to be two hardcoded blocks keyed on render group, which is why seven
 // of the nine spaces had no light at all: there was nowhere to put any. All this
 // does is resolve the authored rig for where you are standing.
-function syncArchitecturalLocalLights(group){
-  if(group==='ground'&&dockHauntingFrame){
-    R3.r3dSetLocalLights?.(dockHauntingLights(dockHauntingFrame));
-    return;
-  }
+function syncArchitecturalLocalLights(group,{logicalX=px,logicalY=py}={}){
   const settings=getSave().settings||{};
-  const physical=FP.logicalToPhysical(px,py);
-  const context=resolveLightingContext({group,zone:FP.zoneAt(px,py),spaceId:physical.spaceId});
+  const physical=FP.logicalToPhysical(logicalX,logicalY);
+  const context=resolveLightingContext({group,zone:FP.zoneAt(logicalX,logicalY),spaceId:physical.spaceId});
   R3.r3dSetLightingContext?.(context);
-  R3.r3dSetLocalLights?.(resolveLocalLights(context,{
+  const ordinaryLights=resolveLocalLights(context,{
     timeSec:performance.now()/1000,
     reducedFlash:(settings.flash||'full')!=='full',
+    effectsMode:settings.flash||'full',
     towerCleared:[CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(chapelTowerState().phase),
     liveCircuits:liveLightCircuits(),
     // physicalPointFor is in runtime cells; authored light data is in metres.
     origin:{x:physical.x*CELL,z:physical.z*CELL},
     anchorPosition:lightAnchorPosition,
-  }));
+  });
+  const presentedLights=group==='ground'&&dockHauntingFrame&&dockHauntingStagingPoint
+    ?dockHauntingLights(dockHauntingFrame,dockHauntingStagingPoint,ordinaryLights)
+    :ordinaryLights;
+  const shadow=buildEmergencyShadowFrame(presentedLights,{
+    listener:{x:physical.x*CELL,z:physical.z*CELL},
+    enabled:!dockHauntingFrame&&!settings.reduceDread,
+  });
+  R3.r3dSetEmergencyShadows?.(shadow?[shadow.instance]:[]);
+  R3.r3dSetLocalLights?.(shadow
+    ?presentedLights.map((light)=>light.id===shadow.lightId?{...light,...shadow.lightOverride}:light)
+    :presentedLights);
 }
 
 function liveLightCircuits(){
@@ -5337,6 +5358,8 @@ function lightAnchorPosition(propId){
     x:at.x*CELL+(Number(prop.renderOffsetX)||0),
     y:(Number(prop.floor)||0)+(Number(prop.elevation)||0)+(Number(prop.renderOffsetY)||0),
     z:at.z*CELL+(Number(prop.renderOffsetZ)||0),
+    floorY:Number(prop.floor)||0,
+    yaw:Number(prop.yaw)||0,
   };
 }
 
@@ -5363,22 +5386,22 @@ function worldRenderInstances(group=null){
     // bleed its fluorescent ambient signature into that authored transition.
     R3.r3dSetLightingContext?.({ambientColor:[.12,.13,.12],ambientIntensity:.006});
     R3.r3dSetLocalLights?.([]);
+    R3.r3dSetEmergencyShadows?.([]);
     return chunkSurfRuntime.propInstances(px,py,{time:performance.now()/1000,reducedMotion:(getSave().settings?.shake||'full')!=='full'});
   }
   if(usingStairAnomaly()){
     const settings=getSave().settings||{};
     R3.r3dSetLightingContext?.(resolveLightingContext({group:'stair',zone:ZONE.stair,spaceId:'impossible-stair'}));
     R3.r3dSetLocalLights?.(stairAnomalyRuntime.lightRig(performance.now()/1000,{reducedFlash:(settings.flash||'full')!=='full'}));
+    R3.r3dSetEmergencyShadows?.([]);
     return stairAnomalyRuntime.propInstances({reducedDread:!!settings.reduceDread});
   }
   syncArchitecturalLocalLights(group);
   const tower=chapelTowerState();
   const screenOpen=[CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(tower.phase);
-  const dockSpent=dockHauntingFrame?!!dockHauntingFrame.rupture:flagTest('dock.haunting.spent');
   const props=PROPS.renderInstances({group}).filter((instance)=>{
     if(screenOpen&&instance.id==='chapel-inner-screen')return false;
-    if(instance.id==='dock-chandelier-intact')return !dockSpent;
-    if(instance.id==='dock-chandelier-spent')return dockSpent;
+    if(instance.id==='dock-chandelier-spent')return false;
     return true;
   }).map((instance)=>({...instance,emissive:propEmissive(instance)}));
   return[...props,...doorRenderInstances(group)];
@@ -5937,7 +5960,7 @@ async function loadBuilding(){
       else if(FP.zoneAt(px,py)===ZONE.chapel){px=CHAPEL_OUTER_CHECKPOINT.x;py=CHAPEL_OUTER_CHECKPOINT.y;}
     }
     if(which==='conservatory'){
-      dockHauntingFrame=null;dockHauntingScene=null;dockRuptureRendered=false;dockHauntingGraceUntil=0;
+      stopDockHauntingAudio();dockHauntingFrame=null;dockHauntingScene=null;dockHauntingStagingPoint=null;dockCommandUntil=0;
       dockTransit=freshDockTransitState({inside:FP.zoneAt(px,py)===ZONE.dock});
       // A pre-feature save already out in the building has plainly departed.
       // Record that fact without staging the event; only a later walked return
@@ -5954,6 +5977,14 @@ async function loadBuilding(){
     // across a reload — the building may move, the paper does not come back.
     if(which==='conservatory'){
       PROPS.propsInit(FP);
+      buildingPresenceNavigation=createPresenceNavigation({
+        isSolid:(x,y)=>FP.isSolid(x,y)||natatoriumWaterBlocksAt(x,y),
+        canStep:(ax,ay,bx,by)=>FP.canStep(ax,ay,bx,by,{keys:playerKeys}),
+        canOccupy:(x,y)=>PROPS.propCanOccupy(x,y),
+        connectorDestination:FP.connectorDestination,
+        planSize:FP.planSize,
+        keys:playerKeys,
+      });
       syncDroppedRadioProp();
       R3.r3dSetProps(worldRenderInstances(physicalPlan.group));
       syncDoorDynamicProps();
@@ -5966,8 +5997,8 @@ async function loadBuilding(){
       syncVisiblePages();
       syncStoryObjectProps();
       R3.r3dSetProps(worldRenderInstances(physicalPlan.group));
-    } else R3.r3dSetProps([]);
-    if(!resumeStairAnomalyFromSave()&&!resumeSourceSpaceFromSave()){
+    } else { buildingPresenceNavigation=null; R3.r3dSetProps([]); }
+    if(!resumeStairAnomalyFromSave()&&!resumeSourceSpaceFromSave()&&!resumeDockHauntingFromSave()){
       revealAround(px,py);
       faceOpenDirection();
         if(
@@ -6290,123 +6321,209 @@ function converse(id, nodes, { startAt='start', onChoice, onDone, scrim=0.5, anc
 let dockTransit=freshDockTransitState({inside:true});
 let dockHauntingFrame=null;
 let dockHauntingScene=null;
-let dockHauntingGraceUntil=0;
-let dockRuptureRendered=false;
+let dockHauntingStagingPoint=null;
+let dockCommandUntil=0;
+const dockHauntingSources=new Set();
+const dockHauntingTimers=new Set();
+const dockHauntingVoices=new Set();
+let dockCommandVoices=null;
 
 function dockHauntingEffectsMode(){
   const flash=String(getSave().settings?.flash||'full');
   return ['full','reduced','off'].includes(flash)?flash:'full';
 }
 
-function dockWrongSoundPoint(propId){
-  if(propId==='dock-road-case')return{x:72.0,y:8.0,label:'the east salvage wall'};
-  if(propId==='dock-cable-reel')return{x:59.0,y:9.0,label:'behind the dispatch desk'};
-  return{x:69.0,y:5.2,label:'above the chandelier frame'};
-}
-
-function playDockHauntingAnswer(propId,index=0,snapshot=dockHauntingFrame){
-  const prop=PROPS.propById(propId),ref=prop?.sampleFamily?.[0],chunk=propChunk(ref),wrong=dockWrongSoundPoint(propId);
-  ensureCtx();
-  if(actx&&master&&chunk?.buffer){
-    const now=actx.currentTime,src=actx.createBufferSource(),gain=actx.createGain(),pan=actx.createStereoPanner();
-    const listener=physicalPointFor(px,py),dx=wrong.x-listener.x,dz=wrong.y-listener.z,right=[[1,0],[0,1],[-1,0],[0,-1]][((R3.r3dFacing()%4)+4)%4];
-    src.buffer=chunk.buffer;src.playbackRate.setValueAtTime(snapshot?.coffee ? .92+(index%2)*.07 : 1,now);
-    gain.gain.setValueAtTime(.22,now);pan.pan.setValueAtTime(Math.max(-1,Math.min(1,(dx*right[0]+dz*right[1])/4)),now);
-    src.connect(gain);gain.connect(pan);pan.connect(master);src.start(now);src.stop(now+Math.min(2.6,chunk.buffer.duration));
-  }
-  const at=FP.toRuntimePoint({x:wrong.x,y:wrong.y});
-  REC.emitNoise(.18,at.x,at.y,`the ${propLabel(prop).toLowerCase()} answered`,{
-    spoils:false,kind:prop?.acousticKind||'handling_noise',sourceKind:'hush',sourceId:propId,
-    playerGenerated:false,audibleToHush:false,canSpoilTake:false,deliberate:true,
-  });
-  pushEvent(`// ${propLabel(prop).toLowerCase()} — ${wrong.label}.`);
-}
-
 function syncDockHauntingPresentation({refreshStatic=false}={}){
   if(RENDERER!=='3d'||!usingPlan()||usingSpecialSpace())return;
   const group=FP.logicalToPhysical(px,py).renderGroup;
   if(refreshStatic)R3.r3dSetProps(worldRenderInstances(group));
-  else if(group==='ground')R3.r3dSetLocalLights?.(dockHauntingFrame?dockHauntingLights(dockHauntingFrame):resolveLocalLights(group,{
-    timeSec:performance.now()/1000,
-    reducedFlash:(getSave().settings?.flash||'full')!=='full',
-    towerCleared:false,liveCircuits:liveLightCircuits(),origin:physicalPointFor(px,py),
-  }));
+  else syncArchitecturalLocalLights(group);
   syncDoorDynamicProps();
 }
 
-function onDockHauntingEvent(event,snapshot){
-  if(event.type==='answer'){playDockHauntingAnswer(event.propId,event.index,snapshot);return;}
-  if(event.type==='frame-creak'){
-    CUES.playCue(CUES.CUE.door,{gain:.32,rate:.38,lowpassHz:700});
-    pushEvent('// the cage gives one small settling sound.');
-    return;
-  }
-  if(event.type==='glow'){
-    CUES.playCue(CUES.CUE.light,{gain:.36,rate:.58});
-    SPEECH.say({who:'direction',text:'One bulb goes orange. It should go out. Instead the next one catches, and the next.'});
-    if(snapshot.coffee&&snapshot.effects!=='off')CR.fx.glitch(.36,420);
-    return;
-  }
-  if(event.type==='reflection'){
-    pushEvent('// the curved glass has made room for someone behind you.');
-    return;
-  }
-  if(event.type==='literal'){
-    const text=snapshot.variant==='cross-dock'
-      ? 'The shape remains in the glass while someone crosses the real room, slow enough to be seen.'
-      :snapshot.variant==='exit-block'
-        ? 'The shape remains in the glass. In the doorway behind you, someone has taken your place.'
-        :'The shape remains in the glass. Behind the cage, someone is standing where the wall should be.';
-    SPEECH.say({who:'direction',text});
-    if(snapshot.coffee&&snapshot.effects!=='off')CR.fx.glitch(.58,620);
-    return;
-  }
-  if(event.type==='rupture'){
-    CUES.playCue(CUES.CUE.keys,{gain:(event.group===1||event.group==='all') ? .48 : .3,rate:1.42+(Number(event.group)||0)*.08,pan:event.group===2 ? .45 : event.group===3 ? -.38 : 0});
-    if(snapshot.effects==='full'){
-      CR.fx.flash(75,'rgba(255,178,96,0.34)');
-      if((getSave().settings?.shake||'full')==='full')CR.fx.shake(.34,130);
-    }
-    if(!dockRuptureRendered){dockRuptureRendered=true;dockHauntingFrame={...snapshot,rupture:true};syncDockHauntingPresentation({refreshStatic:true});}
-    return;
-  }
-  if(event.type==='blackout'){
-    CUES.playCue(CUES.CUE.door,{gain:.3,rate:.31,lowpassHz:520});
-    SPEECH.say({who:'direction',text:'The last bulb breaks where the face should be. In the dark, glass keeps falling long after it ought to stop.'});
-  }
+function dockDoorEndpoints(){
+  const states=FP.saveDoorState()?.states||{};
+  return Object.fromEntries(Object.values(DOCK_PORTAL).filter((id)=>states[id]).map((id)=>[id,{...states[id]}]));
 }
 
-function finishDockHaunting(){
-  dockHauntingGraceUntil=performance.now()+DOCK_HAUNTING_GRACE_MS;
-  dockHauntingScene=null;dockHauntingFrame=null;dockRuptureRendered=false;
+function stopDockHauntingAudio(){
+  for(const timer of dockHauntingTimers)clearTimeout(timer);
+  dockHauntingTimers.clear();
+  for(const source of dockHauntingSources){try{source.stop();}catch(_){ }try{source.disconnect();}catch(_){ }}
+  dockHauntingSources.clear();
+  for(const voice of dockHauntingVoices)voice?.stop?.();
+  dockHauntingVoices.clear();
+  CUES.stopCueGroup('dock-haunting',.001);
+}
+
+function ensureDockCommandVoices(){
+  if(dockCommandVoices)return dockCommandVoices;
+  const audioFor=(destination)=>()=>{ensureCtx();return actx?{ctx:actx,destination:destination()||actx.destination}:null;};
+  dockCommandVoices=[
+    createSamDialogVoice({volume:.23,getAudio:audioFor(()=>dialogGain||master)}),
+    createSamDialogVoice({volume:.13,getAudio:audioFor(()=>sfxGain||master)}),
+    createSamDialogVoice({volume:.08,getAudio:audioFor(()=>outputMonitor||master)}),
+  ];
+  return dockCommandVoices;
+}
+
+function issueDockCommand({coffee=false}={}){
+  dockCommandUntil=performance.now()+4200;
+  pushEvent('COME CLOSER');
+  for(const [index,voice] of ensureDockCommandVoices().entries()){
+    const handle=voice.start('COME CLOSER',{speaker:'surfer',rate:(coffee ? .94 : 1)+(index-1)*.018});
+    dockHauntingVoices.add(handle);
+  }
+  const at=dockHauntingStagingPoint?FP.toRuntimePoint(dockHauntingStagingPoint):{x:px,y:py};
+  REC.emitNoise(.28,at.x,at.y,'a voice in every return',{
+    spoils:false,kind:'voice',sourceKind:'hush',sourceId:'dock-compliance-command',
+    playerGenerated:false,audibleToHush:false,audibleToMonitor:false,canSpoilTake:false,deliberate:true,
+  });
+}
+
+function playDockHauntingStab(milestone,{delayMs=0,opening=false}={}){
+  const start=()=>{
+    const chunk=STAB.drawFromPool(opening?8:Math.max(10,Math.round(24-milestone*12)));
+    ensureCtx();
+    if(!actx||!chunk?.buffer||!sfxGain)return;
+    const now=actx.currentTime,src=actx.createBufferSource(),filter=actx.createBiquadFilter();
+    const room=actx.createGain(),direct=actx.createGain(),pan=actx.createStereoPanner();
+    src.buffer=chunk.buffer;
+    src.playbackRate.setValueAtTime((dockHauntingFrame?.coffee?.70:.82)+milestone*.33+Math.random()*.08,now);
+    filter.type='bandpass';filter.frequency.setValueAtTime(520+milestone*1900,now);filter.Q.setValueAtTime(.5+milestone*1.6,now);
+    const peak=(opening?.46:.17+milestone*.36)/(1+Math.max(0,delayMs)/900);
+    room.gain.setValueAtTime(0,now);room.gain.linearRampToValueAtTime(peak,now+.004);room.gain.exponentialRampToValueAtTime(.0004,now+.75);
+    direct.gain.setValueAtTime(0,now);direct.gain.linearRampToValueAtTime(peak*.22,now+.004);direct.gain.exponentialRampToValueAtTime(.0004,now+.58);
+    pan.pan.setValueAtTime((Math.random()*2-1)*.92,now);
+    src.connect(filter);filter.connect(room);room.connect(pan);pan.connect(sfxGain);
+    filter.connect(direct);direct.connect(sfxDirectGain||master);
+    dockHauntingSources.add(src);
+    src.onended=()=>{dockHauntingSources.delete(src);try{src.disconnect();filter.disconnect();room.disconnect();direct.disconnect();pan.disconnect();}catch(_){ }};
+    src.start(now);src.stop(now+Math.min(1.15,chunk.buffer.duration));
+  };
+  if(delayMs<=0){start();return;}
+  const timer=setTimeout(()=>{dockHauntingTimers.delete(timer);start();},delayMs);
+  dockHauntingTimers.add(timer);
+}
+
+function onDockHauntingMilestone(milestone,frame){
+  const swarm=milestone>=.92?4:milestone>=.73?3:milestone>=.43?2:1;
+  for(let index=0;index<swarm;index++)playDockHauntingStab(milestone,{delayMs:index*(frame.coffee?58:92)});
+  const active=normalizeDockHauntingState(getSave().dockHaunting);
+  saveCommit({dockHaunting:{...active,firedMilestones:frame.firedMilestones}});
+}
+
+function onDockHauntingUpdate(frame){
+  dockHauntingFrame=frame;
+  syncDockHauntingPresentation();
+}
+
+function fallbackPresenceSpawn(){
+  const [forwardX,forwardY]=R3.r3dDelta(1);
+  return PRES.spawnInHabitableSpace(px,py,{navigation:buildingPresenceNavigation,forwardX,forwardY})
+    || PRES.spawnBehind(px,py,-forwardX,-forwardY);
+}
+
+function resolveDockHaunting(){
+  const active=normalizeDockHauntingState(getSave().dockHaunting);
+  if(active.status!==DOCK_HAUNTING_STATUS.ACTIVE)return false;
+  const scene=dockHauntingScene;
+  stopDockHauntingAudio();
+  dockCommandUntil=0;
+  FP.setDoorOpen(active.entryPortal,true);
+  const other=active.entryPortal===DOCK_PORTAL.FOYER?DOCK_PORTAL.SERVICE:DOCK_PORTAL.FOYER;
+  FP.setDoorOpen(other,false);
+  const hasFirstRecording=REC.recState().takes.length>0;
+  if(!hasFirstRecording)PRES.endPresenceTableau({despawn:true});
+  else if(!PRES.endPresenceTableau({restore:active.presenceSnapshot}))fallbackPresenceSpawn();
+  dockHauntingScene=null;dockHauntingFrame=null;dockHauntingStagingPoint=null;
+  const flags=getSave().flags;flags['dock.haunting.spent']=true;flags['dock.haunting.variant']=active.variant;
+  saveCommit({
+    flags,
+    doors:FP.saveDoorState(),
+    presence:PRES.savePresenceState(),
+    dockHaunting:{...active,status:DOCK_HAUNTING_STATUS.RESOLVED},
+  });
+  if(scene)scenes.remove(scene);
   syncDockHauntingPresentation({refreshStatic:true});
+  return true;
+}
+
+function createDockHauntingRuntime(active,{announce=false}={}){
+  dockHauntingStagingPoint=dockHauntingStaging({entryPortal:active.entryPortal,variant:active.variant});
+  const staged=FP.toRuntimePoint(dockHauntingStagingPoint,{center:false});
+  PRES.beginPresenceTableau({x:staged.x,y:staged.y,snapshot:active.presenceSnapshot});
+  for(const id of Object.values(DOCK_PORTAL))FP.setDoorOpen(id,false);
+  const scene=makeLoadingDockHauntingScene({
+    variant:active.variant,entryPortal:active.entryPortal,effects:dockHauntingEffectsMode(),coffee:active.coffee,
+    firedMilestones:active.firedMilestones,
+    distanceMeters:()=>PRES.distanceTo(px,py)*CELL,
+    onMilestone:onDockHauntingMilestone,onUpdate:onDockHauntingUpdate,
+    onContact:resolveDockHaunting,
+    onRender:()=>{},
+    // Stack teardown is not contact. Keep the persisted tableau active so a
+    // reload can reconstruct it; only the physical distance threshold may
+    // mark the compliance test resolved.
+    onExit:()=>{
+      if(dockHauntingScene!==scene)return;
+      const held=normalizeDockHauntingState(getSave().dockHaunting);
+      stopDockHauntingAudio();dockCommandUntil=0;
+      dockHauntingScene=null;dockHauntingFrame=null;dockHauntingStagingPoint=null;
+      PRES.endPresenceTableau({restore:held.presenceSnapshot});
+      syncDockHauntingPresentation({refreshStatic:true});
+    },
+  });
+  dockHauntingScene=scene;dockHauntingFrame=scene.view();
+  syncDockHauntingPresentation({refreshStatic:true});
+  scenes.push(scene);
+  if(announce){
+    CUES.playCue(CUES.CUE.door,{gain:.62,rate:.48,lowpassHz:900,group:'dock-haunting'});
+    if((getSave().settings?.shake||'full')==='full')CR.fx.shake(.72,260);
+    playDockHauntingStab(.04,{opening:true});
+    issueDockCommand({coffee:active.coffee});
+  }
+  scene.update(0);
+  return true;
 }
 
 function beginDockHaunting(entryPortal){
   if(dockHauntingScene||usingSpecialSpace()||!storyMode)return false;
   const decision=deriveDockHauntingEligibility({
     departed:flagTest('dock.departed'),spent:flagTest('dock.haunting.spent'),
-    drankCoffee:flagTest('drank.coffee'),completedTakes:REC.recState().takes.length,
     transitionKind:'step',entryPortal,
   });
   if(!decision.eligible)return false;
+  const presenceSnapshot=PRES.capturePresenceTableauState();
+  const active=normalizeDockHauntingState({
+    status:DOCK_HAUNTING_STATUS.ACTIVE,entryPortal,variant:decision.variant,
+    firedMilestones:[],doorEndpoints:dockDoorEndpoints(),presenceSnapshot,
+    doorAttempted:false,coffee:flagTest('drank.coffee'),
+  });
   const flags=getSave().flags;
   flags['dock.haunting.spent']=true;
   flags['dock.haunting.variant']=decision.variant;
-  saveCommit({flags,props:PROPS.savePropState()});
-  dockRuptureRendered=false;
-  const scene=makeLoadingDockHauntingScene({
-    variant:decision.variant,entryPortal,coffee:flagTest('drank.coffee'),effects:dockHauntingEffectsMode(),
-    auditioned:DOCK_ACOUSTIC_PROP_IDS.filter((id)=>PROPS.isAuditioned(id)),
-    onEvent:onDockHauntingEvent,
-    onUpdate:(frame)=>{dockHauntingFrame=frame;syncDockHauntingPresentation();},
-    onRender:()=>SPEECH.drawSpeech(),
-    onComplete:(active)=>scenes.remove(active),
-    onExit:finishDockHaunting,
-  });
-  dockHauntingScene=scene;dockHauntingFrame=scene.view();
-  syncDockHauntingPresentation({refreshStatic:true});
-  scenes.push(scene);
+  for(const id of Object.values(DOCK_PORTAL))FP.setDoorOpen(id,false);
+  saveCommit({flags,props:PROPS.savePropState(),dockHaunting:active,doors:FP.saveDoorState()});
+  return createDockHauntingRuntime(active,{announce:true});
+}
+
+function resumeDockHauntingFromSave(){
+  if(planName!=='conservatory'||usingSpecialSpace()||params().has('at'))return false;
+  const active=normalizeDockHauntingState(getSave().dockHaunting);
+  if(active.status!==DOCK_HAUNTING_STATUS.ACTIVE)return false;
+  return createDockHauntingRuntime(active,{announce:false});
+}
+
+function tryDockHauntingDoor(focus){
+  const active=normalizeDockHauntingState(getSave().dockHaunting);
+  const id=focus?.door?.portal?.id;
+  if(active.status!==DOCK_HAUNTING_STATUS.ACTIVE||!focus?.doorWins||!Object.values(DOCK_PORTAL).includes(id))return false;
+  CUES.playCue(CUES.CUE.keys,{gain:.46,rate:.46,lowpassHz:1100,group:'dock-haunting'});
+  CUES.playCue(CUES.CUE.door,{gain:.23,rate:.28,lowpassHz:480,group:'dock-haunting'});
+  if(!active.doorAttempted){
+    saveCommit({dockHaunting:{...active,doorAttempted:true}});
+    SPEECH.say({who:'you',text:'No. Something is holding the key.'});
+  }
   return true;
 }
 
@@ -7117,11 +7234,11 @@ let takenRecoveryUntil=0;
 let hushSensationMode=null;
 let hushSensationSerial=0;
 let hushBrushCooldownUntil=0;
-let hushWarningSchedule={armed:true,readyAt:0};
 let pendingHushBrush=null;
 let hushSensationDebug=null;
 let hushSensationScene=null;
 let hushNoisePerception=freshHushNoisePerception();
+let monitorExposureSnapshot=MONITOR.monitorSnapshotForRms(0);
 const itemLost=(id)=> lostItem===id;
 
 function resetHushContactSession(){
@@ -7131,8 +7248,8 @@ function resetHushContactSession(){
   hushSensationDebug=null;
   hushSensationScene=null;
   hushNoisePerception=freshHushNoisePerception();
+  monitorExposureSnapshot=MONITOR.monitorSnapshotForRms(0);
   hushBrushCooldownUntil=graceUntil;
-  hushWarningSchedule={armed:true,readyAt:graceUntil};
 }
 
 function makeTakenAftermathScene(onBlack){
@@ -7311,7 +7428,7 @@ function shovePlayerAwayFromPresence(){
   faceOpenDirection();
 }
 
-function resolveHardHushContact({attempt=null,reason='presence-contact'}={}){
+function resolveHardHushContact({attempt=null,reason='presence-contact',speak=true}={}){
   if(attempt?.id && !PRES.confirmContactAttempt(attempt.id))return false;
   STAB.reportThreat();
   bumpFear(0.55, { stinger:0 });
@@ -7321,7 +7438,7 @@ function resolveHardHushContact({attempt=null,reason='presence-contact'}={}){
   if(REC.isRecording()) REC.spoilTake('it found you');
   CR.fx.flash(140, 'rgba(10,10,12,0.9)');
   CR.fx.shake(1.4, 420);
-  SPEECH.say(LINES.caught(injuries));
+  if(speak)SPEECH.say(LINES.caught(injuries));
   shovePlayerAwayFromPresence();
   applyLensPreset('hush');
   setTimeout(()=>{ if(storyMode) applyLensPreset('explore'); }, 4200);
@@ -7345,7 +7462,7 @@ function hushContactSeed(salt=0){
   return (runSeed+(serial*0x9e3779b1)+(Number(tag)||0))>>>0;
 }
 
-function hushContactContext({takeBreak=false}={}){
+function hushContactContext({takeBreak=false,dialogueEligible=false}={}){
   return {
     tutorial:TUT.tutorialActive(),
     sourceSpace:usingSourceSpace(),
@@ -7354,10 +7471,24 @@ function hushContactContext({takeBreak=false}={}){
     brushOpen:hushSensationMode===HUSH_SENSATION_MODE.BRUSH,
     takeBreak,
     forceDirect:hushNoiseForcesDirectContact(hushNoisePerception,performance.now()),
-    takenEligible:!takenActive&&!lostItem&&performance.now()>=takenRecoveryUntil&&!TUT.tutorialActive(),
+    dialogueEligible,
+    takenEligible:dialogueEligible&&!takenActive&&!lostItem&&performance.now()>=takenRecoveryUntil&&!TUT.tutorialActive(),
     cooldownReady:performance.now()>=hushBrushCooldownUntil,
     state:PRES.contactDirectorState(),
   };
+}
+
+function hushContactApproach(attempt,{forced=false}={}){
+  const yaw=mapHeading();
+  return classifyHushContactApproach({
+    player:{x:px,y:py},
+    contact:attempt?.position||null,
+    forward:{x:Math.sin(yaw),y:-Math.cos(yaw)},
+    behaviorMode:attempt?.behaviorMode||'stand',
+    targetPriority:attempt?.targetPriority||0,
+    warned:hushSensationMode===HUSH_SENSATION_MODE.PROXIMITY,
+    forced,
+  });
 }
 
 function chooseHushReleaseTarget(seed=1){
@@ -7484,6 +7615,17 @@ function dismissHushProximityForContact(){
   return true;
 }
 
+function dismissHushSensationForForcedContact(){
+  if(!hushSensationMode)return false;
+  const scene=hushSensationScene;
+  hushSensationMode=null;
+  hushSensationScene=null;
+  pendingHushBrush=null;
+  hushSensationDebug=null;
+  if(scene)scenes.remove(scene);
+  return true;
+}
+
 function chooseHushSensationDebug(index=0){
   if(!hushSensationMode)return false;
   const scene=scenes.top();
@@ -7507,9 +7649,13 @@ function openDebugHushBrush(seed=4417){
   return opened;
 }
 
-function onPresenceCatch(attemptOrCount,{takeBreak=false}={}){
+function onPresenceCatch(attemptOrCount,{takeBreak=false,forced=false,silent=false,reason=null}={}){
+  if(PRES.presenceTableauActive())return false;
   const attempt=attemptOrCount&&typeof attemptOrCount==='object'?attemptOrCount:null;
-  const decision=chooseHushContactExperience(hushContactContext({takeBreak}),{rng:Math.random});
+  const approach=hushContactApproach(attempt,{forced});
+  const decision=chooseHushContactExperience(hushContactContext({
+    takeBreak,dialogueEligible:approach.dialogueEligible,
+  }),{rng:Math.random});
   PRES.setContactDirectorState(decision.state);
   if(decision.kind===HUSH_CONTACT_KIND.BRUSH&&attempt){
     openHushSensation(HUSH_SENSATION_MODE.BRUSH,{seed:decision.seed,attempt});
@@ -7518,9 +7664,15 @@ function onPresenceCatch(attemptOrCount,{takeBreak=false}={}){
   // A distant warning is superseded, not stacked, when distance becomes touch.
   // Its selection had already made Brush ineligible, so physical arrival can
   // only continue into the existing Hard or Taken paths.
-  dismissHushProximityForContact();
+  if(forced)dismissHushSensationForForcedContact();
+  else dismissHushProximityForContact();
+  if(forced)PRES.commitForcedContact();
   if(decision.kind===HUSH_CONTACT_KIND.TAKEN){beginTakenFromContact(attempt);return;}
-  resolveHardHushContact({attempt,reason:takeBreak?'take-break-contact':'presence-contact'});
+  resolveHardHushContact({
+    attempt,
+    reason:reason||(takeBreak?'take-break-contact':'presence-contact'),
+    speak:!silent,
+  });
 }
 
 // A stab is a catalogue transient played once, loud, and never explained.
@@ -8025,6 +8177,7 @@ function interact(){
   // gets to open this one.
   if(tryTheGreyDoor()) return;
   const focus=usingPlan()?worldInteractionFocus():{prop:null,door:null,doorWins:false};
+  if(tryDockHauntingDoor(focus))return;
   const lookYaw=mapHeading(),lookForward=[Math.sin(lookYaw),-Math.cos(lookYaw)];
   const doorHit=focus.doorWins?FP.interactDoor(px,py,lookForward,playerKeys):null;
   if(doorHit){
@@ -9219,10 +9372,18 @@ function onSourcePresenceCatch(){
 // night. It is never re-spawned on top of itself, and it is never gated on a
 // process-lifetime flag — the old `once('presence-arrives')` meant a New Game
 // in the same tab inherited a building that had already been visited.
+function spawnBuildingPresence(){
+  if(!buildingPresenceNavigation)return false;
+  const [forwardX,forwardY]=RENDERER==='3d'?R3.r3dDelta(1):[0,-1];
+  return PRES.spawnInHabitableSpace(px,py,{
+    navigation:buildingPresenceNavigation,forwardX,forwardY,
+  });
+}
+
 function summonPresence(reason='noise'){
   if(!storyMode || usingSpecialSpace()) return false;
   if(PRES.isActive()) return false;
-  PRES.spawnBehind(px, py, -lastStepDx||0, -lastStepDy||1);
+  if(!spawnBuildingPresence())return false;
   emitProgress(EVENT_TYPES.HUSH_MET, {reason}, 'main.summonPresence');
   return true;
 }
@@ -9460,6 +9621,7 @@ function farRoomShape(){
 function tickHushNoisePerception(dt){
   const now=performance.now();
   const snapshot=MONITOR.monitorSnapshot(now);
+  monitorExposureSnapshot=snapshot;
   const enabled=storyMode&&!usingSpecialSpace()&&!TUT.tutorialActive();
   const next=updateHushNoisePerception(hushNoisePerception,{
     now,dt,db:snapshot.hushDb,active:PRES.isActive(),enabled,
@@ -9470,33 +9632,63 @@ function tickHushNoisePerception(dt){
   const target=input&&Number.isFinite(input.x)&&Number.isFinite(input.y)
     ? input
     : {x:px,y:py};
+  const direct=next.action.kind==='pinpoint'||next.action.kind==='contact';
   PRES.offerSoundTarget({
     position:target,
-    level:next.action.kind==='pinpoint'?1:.55,
-    confidence:next.action.kind==='pinpoint'?1:.58,
+    level:direct?1:.55,
+    confidence:direct?1:.58,
     expiresAt:next.action.expiresAt,
     priority:next.action.priority,
-    reason:next.action.kind==='pinpoint'?'PLAYER_NOISE_PINPOINT':'PLAYER_NOISE_CLUE',
+    reason:direct?'PLAYER_NOISE_PINPOINT':'PLAYER_NOISE_CLUE',
   });
+  if(next.action.kind==='contact'){
+    if(PRES.presenceTableauActive())return;
+    onPresenceCatch(null,{forced:true,silent:true,reason:'sustained-player-noise'});
+  }
+}
+
+function monitorDisplaySnapshot(){
+  const snapshot=monitorExposureSnapshot||MONITOR.monitorSnapshot();
+  const perceptionEnabled=storyMode&&!usingSpecialSpace()&&!TUT.tutorialActive()&&PRES.isActive();
+  if(!perceptionEnabled)return snapshot;
+  const band=hushNoisePerception.band;
+  const floorDb=band==='hot'
+    ? MONITOR.MONITOR_DANGER_THRESHOLDS.hotDb
+    : band==='mid-hot'
+      ? MONITOR.MONITOR_DANGER_THRESHOLDS.midHotDb
+      : -96;
+  const bandSegments=MONITOR.MONITOR_THRESHOLDS.reduce((count,threshold)=>count+(threshold<=floorDb?1:0),0);
+  return{
+    ...snapshot,
+    band,
+    hushBand:band,
+    segments:Math.max(snapshot.segments||0,bandSegments),
+  };
 }
 
 function tickPresence(dt){
   if(usingStairAnomaly())return;
   if(!storyMode || !PRES.isActive()) return;
-  if(performance.now()<dockHauntingGraceUntil)return;
   if(chapelTowerState().phase===CHAPEL_TOWER_PHASE.TOWER_ACTIVE)return;
-  // Dread sets how close it circles when it has nothing to chase; occlusion is
-  // its sightline. acousticOcclusionDb already marches the floorplan between
-  // two points, so the torch is visible exactly when the room is open between
-  // you — no second raycaster, and walls mean the same thing to both senses.
-  const sightOcclusionDb=usingPlan()
+  // The torch attracts it acoustically: filament, driver and battery noise. It
+  // is sampled intermittently and attenuated by the same walls as every other
+  // sound. No sightline and no exact per-frame player tracking are involved.
+  const flashlightOcclusionDb=usingPlan()
     ? acousticOcclusionDb(hushPresenceSnapshot(),acousticSpatialAt(px,py))
     : 0;
   PRES.updatePresence(dt,px,py,usingSourceSpace()?onSourcePresenceCatch:onPresenceCatch,
     usingSourceSpace()
       ? {navigation:chunkSurfRuntime.navigation,catchMode:'source-checkpoint'}
       : {
-          dreadLevel:presentedFearPressure(),sightOcclusionDb,deferContact:true,
+          navigation:buildingPresenceNavigation,
+          dreadLevel:presentedFearPressure(),deferContact:true,
+          lightSound:{
+            active:REC.lightOn(),position:{x:px,y:py},
+            // A tired driver complains a little more loudly; either way this
+            // remains a weak clue compared with feet or an open microphone.
+            level:.24+(1-REC.batteryLevel())*.10,
+            confidence:.38,occlusionDb:flashlightOcclusionDb,
+          },
           suppressContact:hushSensationMode===HUSH_SENSATION_MODE.BRUSH,
         });
   // Its nearness bleeds into the room tone: the floor thickens as it closes.
@@ -9505,17 +9697,9 @@ function tickPresence(dt){
 
   if(usingSourceSpace())return;
 
-  // A body warning is repeatable, but only after the pressure has genuinely
-  // gone away and returned. It shares language with brush contact without
-  // sharing its hidden outcome: this is still only a thought, and HUSH keeps
-  // walking underneath it.
-  hushWarningSchedule=updateHushWarningSchedule(hushWarningSchedule,{
-    now:performance.now(),pressure:PRES.pressure(px,py),distance:PRES.distanceTo(px,py),
-    recoilDistance:PRES.PRESENCE.recoilCells,recording:REC.isRecording(),
-    dialogueOpen:scenes.blocksInput(),sourceSpace:false,tutorial:TUT.tutorialActive(),
-    state:PRES.contactDirectorState(),
-  });
-  if(hushWarningSchedule.shouldOpen)openHushSensation(HUSH_SENSATION_MODE.PROXIMITY,{seed:hushContactSeed('warning')});
+  // HUSH dialogue never opens merely because pressure is high. A body-warning
+  // picker is now reserved for a physical catch whose approach was unseen.
+  // The proximity variant remains reachable only through explicit debug probes.
 }
 
 // A take of nothing that gets louder. The hiss rises with the seconds, because
@@ -10548,6 +10732,7 @@ function initHushAudioRuntime(){
     presence:{
       publicSnapshot:hushPresenceSnapshot,
       offerSoundTarget:(offer)=>PRES.offerSoundTarget(offer),
+      setDirectorIntent:(intent)=>PRES.setDirectorIntent(intent),
     },
     playerSpatial:()=>({...acousticSpatialAt(px,py)}),
     occlusionDb:acousticOcclusionDb,
@@ -10660,8 +10845,25 @@ function currentMapHushMarker(){
     active:true,
     position:{x:physical.x,y:physical.z},
     floorId:floor?.id||null,
+    visible:hushManifestationVisibleToPlayer(pst),
     perception:hushNoiseMapConfirmation(hushNoisePerception,performance.now()),
   };
+}
+
+function hushManifestationVisibleToPlayer(pst=PRES.presenceState()){
+  if(!PRES.isActive()||!pst||usingSpecialSpace()||scenes.worldView()?.suppressActors)return false;
+  const dx=pst.x-px,dy=pst.y-py;
+  const distance=Math.hypot(dx,dy);
+  if(distance<0.001||distance>D(26))return false;
+  const heading=mapHeading();
+  const facingX=Math.sin(heading),facingY=-Math.cos(heading);
+  if((dx*facingX+dy*facingY)/distance<Math.cos(Math.PI*.34))return false;
+  const samples=Math.max(2,Math.ceil(distance/D(.35)));
+  for(let index=2;index<samples-1;index++){
+    const t=index/samples;
+    if(solidAt(px+dx*t,py+dy*t))return false;
+  }
+  return true;
 }
 
 // Where he is looking, continuously. `r3dFacing()` is a quarter-turn index, so a
@@ -10686,7 +10888,7 @@ function currentFacilityMapModel(){
   if(!source)return buildMapModel({source:null,job:bagJob(),navigation:activeDifficulty.navigation});
   const physical=FP.logicalToPhysical(px,py);
   const contact=currentMapContact(source);
-  const hush=currentMapHushMarker();
+  const rawHush=currentMapHushMarker();
   const doors=captureDoorMapState({
     doors:FP.doorState(),source,projectLogical:mapProjectLogical,
     hasKey:(keyId)=>playerKeys.has(keyId),
@@ -10695,7 +10897,7 @@ function currentFacilityMapModel(){
   const objective=OBJ.objState();
   const doorKey=doors.map((door)=>`${door.id}:${door.state}`).join('|');
   const contactKey=`${contact.state}:${contact.observation?.observedAt||0}:${contact.observation?.floorId||''}`;
-  const hushKey=hush?`${hush.floorId||''}:${Math.round(hush.position.x*2)}:${Math.round(hush.position.y*2)}:${hush.perception?.mode||'none'}`:'none';
+  const hushKey=rawHush?`${rawHush.floorId||''}:${Math.round(rawHush.position.x*2)}:${Math.round(rawHush.position.y*2)}:${rawHush.perception?.mode||'none'}:${rawHush.visible?1:0}`:'none';
   const tower=chapelTowerState(),towerKey=`${tower.phase}:${tower.ropeRoomVisited?1:0}:${tower.hatchInspected?1:0}`;
   const discoveredFloorIds=flagGet('academic.entered')?new Set(['academic']):new Set();
   const discoveryKey=discoveredFloorIds.has('academic')?'academic':'base';
@@ -10716,6 +10918,11 @@ function currentFacilityMapModel(){
     },
     player:{x:physical.x,y:physical.z,height:physical.y,renderGroup:physical.renderGroup,roomId:recordableRoomAt(px,py),areaLabel,heading:mapHeading()},
   });
+  const stride=source.topologyStride||1;
+  const hush=rawHush?{
+    ...rawHush,
+    position:{x:rawHush.position.x/stride,y:rawHush.position.y/stride},
+  }:null;
   const liveModel={...model,hush};
   facilityMapCache={key,model:liveModel};
   return liveModel;
@@ -11124,6 +11331,13 @@ function godCycleLevel(key,delta){
   return next;
 }
 
+function godCycleHushBody(delta=1){
+  const modes=R3.HUSH_BODY_MODES||['live','core','glow','off'];
+  const current=R3.r3dHushBodyStatus?.().mode||'live';
+  const at=Math.max(0,modes.indexOf(current));
+  return R3.r3dSetHushBodyMode?.(modes[(at+delta+modes.length)%modes.length])||current;
+}
+
 function godResetFx(){
   godFxOverride.heartbeat=null;
   godFxOverride.monitorHiss=null;
@@ -11131,6 +11345,7 @@ function godResetFx(){
   if(!REC.isRecording()) STORY.stopTapeHiss({fade:0.12});
   FEAR.setFear(storyMode ? currentFearPressure().heartbeat : 0);
   R3.r3dSetFear(storyMode ? currentFearPressure().visualDread : 0);
+  R3.r3dSetHushBodyMode?.('live');
 }
 
 function godClearSpecialWorlds(){
@@ -11488,7 +11703,8 @@ function godTabs(){
       {id:'visual-dread',label:'DREAD VIGNETTE',value:()=>godLevelLabel(godFxOverride.visualDread),adjust:(d)=>godCycleLevel('visualDread',d)},
       {id:'reset-fx',label:'RESET FEAR FX TO GAME',value:'[RESET]',activate:godResetFx},
       section('Threats'),
-      {id:'presence',label:'HUSH / PRESENCE',value:()=>PRES.isActive()?'SPAWNED':'CLEAR',adjust:()=>{if(PRES.isActive())PRES.despawn();else PRES.spawnBehind(px,py,...R3.r3dDelta(-1));}},
+      {id:'presence',label:'HUSH / PRESENCE',value:()=>PRES.isActive()?'SPAWNED':'CLEAR',adjust:()=>{if(PRES.isActive())PRES.despawn();else spawnBuildingPresence();}},
+      {id:'hush-body',label:'HUSH BODY COMPOSITE',value:()=>R3.r3dHushBodyStatus?.().mode?.toUpperCase()||'UNAVAILABLE',adjust:godCycleHushBody},
       {id:'hush-contact',label:'HUSH CONTACT FLASH',value:'[FIRE]',closeMenu:true,activate:()=>beginHushContactFlash({taken:false,reason:'god-contact',intensity:1})},
       {id:'hush-warning',label:'HUSH BODY WARNING',value:'[FIRE]',closeMenu:true,activate:()=>openHushSensation(HUSH_SENSATION_MODE.PROXIMITY,{seed:hushContactSeed('god-warning')})},
       {id:'hush-brush',label:'HUSH BRUSH CONTACT',value:'[FIRE]',closeMenu:true,activate:()=>openDebugHushBrush(hushContactSeed('god-brush'))},
@@ -12175,10 +12391,14 @@ const teach=tutorialPromptsEnabled() ? TUT.tutorialPrompt() : null;
   });
 
   const monitorY=cols<72?rows-5:rows-4;
-  const monitor=MONITOR.monitorSnapshot();
-  uiText(2, monitorY, 'MONITOR', 'ui-label');
+  const monitor=monitorDisplaySnapshot();
   drawVfdMeter(11, monitorY, 12, monitor,{theme:'green',bandThresholds:MONITOR.MONITOR_DANGER_THRESHOLDS});
+  uiText(2, monitorY, 'MONITOR', 'ui-label');
   drawVfdWarningTriangle(25,monitorY,monitor);
+  if(performance.now()<dockCommandUntil){
+    const pulse=.58+.42*Math.abs(Math.sin(performance.now()/92));
+    drawVfdText(28,monitorY,'COME CLOSER',{scale:.72,theme:'danger',alpha:pulse});
+  }
   drawMicTestOverlay(cols, rows);
   SPEECH.drawSpeech();
 }
@@ -12275,6 +12495,7 @@ function installProbe(){
     world:()=>currentWorld(),
     presence:()=>({...PRES.presenceState(), dist:PRES.distanceTo(px,py), pressure:PRES.pressure(px,py)}),
     spawnPresence:(d=6)=>PRES.spawnBehind(px,py,0,d/Math.abs(d||1)),
+    spawnPresenceHabitable:()=>spawnBuildingPresence(),
     placePresence:(x,y)=>{ const st=PRES.presenceState(); st.active=true; st.x=x; st.y=y; },
     solid:(x,y)=>solidAt(x,y),
     plan:()=>({loaded:FP.isLoaded(), ...FP.planSize()}),
@@ -12335,7 +12556,8 @@ function installProbe(){
       departed:flagTest('dock.departed'),
       spent:flagTest('dock.haunting.spent'),
       variant:getSave().flags?.['dock.haunting.variant']||null,
-      graceMs:Math.max(0,dockHauntingGraceUntil-performance.now()),
+      staging:dockHauntingStagingPoint?{...dockHauntingStagingPoint}:null,
+      persisted:normalizeDockHauntingState(getSave().dockHaunting),
       transit:{...dockTransit},
     }),
     interactionFocus:()=>{
@@ -12411,10 +12633,11 @@ function installProbe(){
       return openHushSensation(HUSH_SENSATION_MODE.BRUSH,{seed:Number(seed)||4417,attempt:null});
     },
     hushDecision:(roll=.1,seed=.5,takeBreak=false)=>chooseHushContactExperience(
-      hushContactContext({takeBreak:!!takeBreak}),
+      hushContactContext({takeBreak:!!takeBreak,dialogueEligible:true}),
       {rng:(()=>{const values=[Number(roll)||0,Number(seed)||0];return()=>values.shift()??0;})()},
     ),
     hushSensation:()=>({mode:hushSensationMode,debug:hushSensationDebug,pending:PRES.pendingContactAttempt(),director:PRES.contactDirectorState()}),
+    hushBody:()=>R3.r3dHushBodyStatus?.()||null,
     hushChoice:(index=0)=>chooseHushSensationDebug(index),
     setRecording:(wanted=true)=>{
       if(wanted&&!REC.isRecording()){
@@ -12974,6 +13197,10 @@ function render3d(){
     else if(usingStairAnomaly())syncStairAnomalyRender({force:true});
     else{R3.r3dSetPlan(slice.rgba,slice.w,slice.h,slice.material);r3dCache.physicalGroup=slice.group;r3dCache.physicalKey=slice.key;r3dCache.fogSize=-1;R3.r3dSetProps(worldRenderInstances(slice.group));}
   }
+  // Emergency lamps are a small dynamic layer. Their cadence, emissive glass,
+  // and occasional architecture-projected figure update every render frame;
+  // static room geometry and the prop pack remain cached.
+  if(usingPlan()&&!usingSpecialSpace())syncArchitecturalLocalLights(physical.renderGroup,{logicalX:viewX,logicalY:viewY});
   if(fog.size!==r3dCache.fogSize){
     if(usingSpecialSpace())R3.r3dUpdateFog(()=>2,physical.x,physical.z);
     else if(usingPlan())R3.r3dUpdateFog((fx,fy)=>{const l=FP.logicalAtPhysical(fx,fy,{group:physical.renderGroup,floor:physical.y});return l?fogGet(l.x,l.y):0;},physical.x,physical.z);
@@ -13013,6 +13240,7 @@ function render3d(){
     key:worldView?.suppressActors||usingSpecialSpace()?null:mapPoint(firstKey),
     door:worldView?.suppressActors||usingSpecialSpace()?null:mapPoint(door),
     hush:renderedHush,
+    hushBodyAllowed:!worldView?.suppressActors&&!usingSpecialSpace(),
     audio:waterAudio,
     light:storyMode?REC.lightOn():true,
     torchLook,
@@ -13026,8 +13254,11 @@ function render3d(){
   // and whatever the last impact asked for. One number, three sources, and it
   // drives boil rate, generated structure, and phosphor excitation together.
   const agitationPulse=Math.max(0,(agitationPulseUntil-performance.now())/700);
+  const dockEffectScale=(getSave().settings?.flash||'full')==='full'
+    ?1:(getSave().settings?.flash||'full')==='reduced' ? .58 : .34;
+  const dockAgitation=(dockHauntingFrame?.effectPressure||0)*dockEffectScale;
   R3.r3dSetAgitation?.(clamp(
-    presentedFearPressure()*0.8 + (window.__lensOnset||0)*0.4 + agitationPulse*0.5,
+    Math.max(dockAgitation,presentedFearPressure()*0.8 + (window.__lensOnset||0)*0.4 + agitationPulse*0.5),
     0,1,
   ));
   window.__diffusion?.tickMutation?.({

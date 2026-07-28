@@ -1,23 +1,3 @@
-// What silence buys you.
-//
-// The claim this file exists to defend is that staying quiet cannot make the
-// encounter go away. It is NOT that the HUSH walks straight at you: prowling
-// picks a loosely player-anchored point in the WORLD, commits to it, and then
-// DWELLS for up to three and a half seconds on arrival (see updatePresence) —
-// so the distance it closes in any particular ten seconds is noise.
-//
-// The old assertion was `after < before - 8` over a single unseeded ten-second
-// window, which was false about eight times in a hundred and made `npm test`
-// intermittently red. Measured over 3200 runs at four horizons, the distance
-// does not converge to zero at all — it plateaus and hovers. What IS invariant,
-// every single run, is the pair of claims the design actually makes:
-//
-//   · it never gains ground on you. Not once, at any horizon.
-//   · it always closes some. Silence buys time, never escape.
-//
-// Both are asserted here across a seeded sweep, so this is a statement about the
-// behaviour rather than about one lucky roll.
-
 import assert from 'node:assert/strict';
 
 globalThis.document ||= { title: 'Chunk Surfer', baseURI: 'http://localhost/' };
@@ -25,8 +5,6 @@ globalThis.window ||= globalThis;
 
 const PRES = await import('../src/game/presence.js');
 
-// A fixed stream, so a red run is a real regression and can be re-run to the
-// same numbers. mulberry32.
 function seedRandom(seed) {
   const original = Math.random;
   let a = seed >>> 0;
@@ -42,58 +20,80 @@ function seedRandom(seed) {
 
 const restore = seedRandom(0x5EB1);
 
-// One quiet pursuit: spawn behind, never make a sound, and watch.
-function pursue(seconds, step = 0.25) {
-  PRES.spawnBehind(0, 0, 0, 1);
-  const before = PRES.distanceTo(0, 0);
-  let worst = before;
-  for (let i = 0; i < Math.round(seconds / step); i += 1) {
-    PRES.updatePresence(step, 0, 0, null);
-    worst = Math.max(worst, PRES.distanceTo(0, 0));
-  }
-  const after = PRES.distanceTo(0, 0);
-  const mode = PRES.presenceState().motionMode;
-  PRES.despawn();
-  return { before, after, worst, closed: before - after, mode };
-}
+// Silence is no longer a covert player target. The initial manifestation can
+// simply stand there; moving the player does not rewrite its search origin.
+PRES.spawnBehind(0, 0, 0, 1);
+let actor = PRES.presenceState();
+const spawn = { x: actor.x, y: actor.y };
+PRES.updatePresence(1, 40, -30, null);
+assert.deepEqual({ x: actor.x, y: actor.y }, spawn, 'a silent manifestation may stand still');
+assert.equal(actor.motionMode, 'stand');
+assert.deepEqual({ x: actor.lastSoundX, y: actor.lastSoundY }, spawn, 'silence never replaces belief with player position');
 
-// ── it arrives inside the encounter band ────────────────────────────────────
-const first = pursue(0);
-assert.ok(first.before <= 23 * 2, 'HUSH spawns within the revised encounter distance');
+// Once its hold expires it searches around its last sound anchor, not around a
+// newly moved player. This search may advance, limp, feint, or stop again.
+actor.phaseUntil = -1;
+PRES.updatePresence(.25, -80, 70, null);
+assert.ok(['investigate', 'limp', 'feint', 'stand'].includes(actor.behaviorMode));
+assert.ok(Math.hypot(actor.prowlX - spawn.x, actor.prowlY - spawn.y) < 24, 'search remains local to remembered sound');
+assert.ok(Math.hypot(actor.prowlX + 80, actor.prowlY - 70) > 60, 'search does not orbit the player');
 
-// ── silence buys time, never escape ─────────────────────────────────────────
-const horizons = [8, 12, 30, 60];
-const runsPer = 60;
-let closedTotal = 0;
-let worstClosed = Infinity;
-for (const seconds of horizons) {
-  for (let run = 0; run < runsPer; run += 1) {
-    const r = pursue(seconds);
-    assert.ok(
-      r.worst <= r.before + 1e-9,
-      `HUSH must never gain ground on a silent player (${seconds}s: spawned ${r.before.toFixed(2)}, drifted to ${r.worst.toFixed(2)})`,
-    );
-    assert.ok(
-      r.closed > 0.5,
-      `HUSH must always close some ground (${seconds}s: closed only ${r.closed.toFixed(3)})`,
-    );
-    assert.equal(r.mode, 'stalk', 'a HUSH with nothing to chase is stalking, not idle');
-    closedTotal += r.closed;
-    worstClosed = Math.min(worstClosed, r.closed);
-  }
-}
-const meanClosed = closedTotal / (horizons.length * runsPer);
-// It is hunting, not merely failing to leave. Measured mean is ~18 cells; the
-// floor here is deliberately loose so a feel retune does not fail the build,
-// while a HUSH that stopped hunting still would.
-assert.ok(meanClosed > 8, `a silent player is still being hunted (mean closed ${meanClosed.toFixed(2)})`);
+// A clue is fallible and produces a searching gait.
+PRES.offerSoundTarget({ position: { x: 8, y: 2 }, level: .36, confidence: .38, priority: .52, expiresAt: performance.now() + 5000 });
+assert.ok(['limp', 'investigate'].includes(actor.behaviorMode));
+assert.notDeepEqual({ x: actor.targetX, y: actor.targetY }, { x: 8, y: 2 }, 'uncertain sound names an area, not an exact transform');
 
-// ── and it does not lose interest over a long quiet ─────────────────────────
-// The plateau is the design: it settles into the near band and waits there. What
-// must not happen is that a long silence walks it back out of the encounter.
-const long = pursue(180);
-assert.ok(long.worst <= long.before + 1e-9, 'three minutes of silence does not let it drift away');
-assert.ok(long.after < long.before, 'nor leaves it exactly where it started');
+// A hot, certain sound creates a real chase burst, followed by a listening
+// hesitation unless renewed by more hot noise.
+PRES.offerSoundTarget({ position: { x: 2, y: 1 }, level: 1, confidence: 1, priority: .96, expiresAt: performance.now() + 5000 });
+const before = PRES.distanceTo(2, 1);
+PRES.updatePresence(.2, 2, 1, null);
+assert.equal(actor.behaviorMode, 'chase');
+assert.ok(PRES.distanceTo(2, 1) < before, 'pinpoint noise starts a chase');
+actor.chaseUntil = -1;
+PRES.updatePresence(.1, 2, 1, null);
+assert.equal(actor.behaviorMode, 'listen', 'a chase burst stops to listen');
+assert.equal(actor.motionMode, 'listen');
 
+// PLAY has a physical consequence: it interrupts a non-hot approach and turns
+// the next search into a stand/feint rather than only playing an audio cue.
+actor.hasTarget = false;
+actor.externalTargetUntil = -1;
+actor.externalTargetPriority = 0;
+actor.targetPriority = 0;
+PRES.offerSoundTarget({ position: { x: 20, y: 4 }, level: .4, confidence: .55, priority: .6, expiresAt: performance.now() + 5000 });
+PRES.setDirectorIntent({ kind: 'PLAY' });
+PRES.updatePresence(.1, 100, 100, null);
+assert.equal(actor.behaviorMode, 'stand');
+actor.phaseUntil = -1;
+PRES.updatePresence(.1, 100, 100, null);
+assert.equal(actor.behaviorMode, 'feint');
+
+// A flashlight is an intermittent, uncertain electrical sound. It can update
+// belief when the listening cadence opens, but cannot track a moving player on
+// each frame.
+PRES.spawnBehind(0, 0, 0, 0);
+actor = PRES.presenceState();
+actor.nextLightListenAt = -1;
+PRES.updatePresence(.016, 5, 0, null, {
+  lightSound: { active: true, position: { x: 5, y: 0 }, level: .3, confidence: .38, occlusionDb: 0 },
+});
+assert.equal(actor.targetReason, 'FLASHLIGHT_ELECTRICAL_HUM');
+const firstHumBelief = { x: actor.targetX, y: actor.targetY };
+PRES.updatePresence(.016, -30, 25, null, {
+  lightSound: { active: true, position: { x: -30, y: 25 }, level: .3, confidence: .38, occlusionDb: 0 },
+});
+assert.deepEqual({ x: actor.targetX, y: actor.targetY }, firstHumBelief, 'torch sound is sampled, not an exact per-frame tether');
+
+// A sustained-hot forced contact shares awareness/cooldown bookkeeping and
+// clears the target so a nearby body cannot immediately punish a second time.
+PRES.offerSoundTarget({ position: { x: 1, y: 1 }, level: 1, confidence: 1, priority: 1, expiresAt: performance.now() + 5000 });
+const caughtBefore = actor.caughtCount;
+const forcedContact = PRES.commitForcedContact();
+assert.equal(forcedContact.count, caughtBefore + 1);
+assert.equal(actor.hasTarget, false);
+assert.equal(actor.behaviorMode, 'stand');
+
+PRES.despawn();
 restore();
-console.log(`presence pursuit specs passed (${horizons.length * runsPer} pursuits, min closed ${worstClosed.toFixed(2)}, mean ${meanClosed.toFixed(2)})`);
+console.log('presence sound-belief pursuit specs passed');

@@ -54,8 +54,9 @@ emitAcousticEvent({
   spatial:{roomId:'a',floorId:'g',position:{x:9,y:0}},
   semantics:{audibleToHush:true,playerGenerated:true},
 });
-assert.ok(offered.length>offeredBeforeRegular,'mid-hot player noise offers a location clue');
+assert.equal(offered.length,offeredBeforeRegular,'player noise is targeted once by the field-monitor authority');
 const playerInterest=runtime.currentAudition().interest;
+assert.ok(playerInterest>heardInterest,'propagated player noise still informs the sensory audition');
 
 emitAcousticEvent({
   kind: 'instrument_note',

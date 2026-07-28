@@ -145,7 +145,7 @@ const doorStep=(id)=>{const door=FP.doorState().find((entry)=>entry.id===id),to=
 const chapelStep=doorStep('chapel-c17');FP.setDoorOpen('chapel-c17',false);
 const lockedChapel = FP.canStep(chapelStep.from.x,chapelStep.from.y,chapelStep.to.x,chapelStep.to.y,{ keys: STANDARD_KEYS });
 FP.setDoorOpen('chapel-c17',true);const openedChapel = FP.canStep(chapelStep.from.x,chapelStep.from.y,chapelStep.to.x,chapelStep.to.y,{ keys: KEYRING });
-ck('the chapel is locked until C-17 is added to the ring', !lockedChapel.ok && lockedChapel.why === 'locked' && openedChapel.ok, JSON.stringify(lockedChapel));
+ck('the chapel is locked until C-17 is added to the keyring', !lockedChapel.ok && lockedChapel.why === 'locked' && openedChapel.ok, JSON.stringify(lockedChapel));
 const officeStep=doorStep('foh-office');FP.setDoorOpen('foh-office',false);
 const boxOfficeLocked=FP.canStep(officeStep.from.x,officeStep.from.y,officeStep.to.x,officeStep.to.y,{keys:new Set()});
 FP.setDoorOpen('foh-office',true);const boxOfficeMaster=FP.canStep(officeStep.from.x,officeStep.from.y,officeStep.to.x,officeStep.to.y,{keys:STANDARD_KEYS});

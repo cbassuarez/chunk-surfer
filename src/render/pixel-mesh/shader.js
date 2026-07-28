@@ -44,6 +44,10 @@ uniform float uRecordingAudioGain;
 uniform float uDebugSource;
 uniform float uForceSignal;
 uniform float uMovement;
+// x manifestation, y active, z core enabled, w glow enabled. The HUSH body
+// is composed before this pass, but its Photoshop-style emissive result must
+// be restored after the one-bit recorder has encoded the rest of the world.
+uniform vec4 uHushBodyPost;
 out vec4 o;
 
 float hash21(vec2 p){
@@ -149,6 +153,26 @@ vec3 palWorldDark(){ return vec3(0.020, 0.080, 0.105); }
 vec3 palWorldMid(){ return vec3(0.250, 0.305, 0.365); }
 vec3 palWorldMauve(){ return vec3(0.520, 0.390, 0.455); }
 vec3 palCream(){ return vec3(1.000, 0.820, 0.560); }
+
+float hushCoreKey(vec3 value){
+  float blueLead=value.b-max(value.r,value.g);
+  float greenLead=value.g-value.r;
+  return smoothstep(0.10,0.34,blueLead)*smoothstep(0.055,0.18,greenLead);
+}
+
+float hushGlowKey(vec3 value){
+  float greenLead=value.g-max(value.r,value.b);
+  float blueLift=value.b-value.r;
+  return smoothstep(0.055,0.20,greenLead)*smoothstep(0.025,0.10,blueLift);
+}
+
+vec3 hushScreen(vec3 base,vec3 layer){
+  return 1.0-(1.0-base)*(1.0-clamp(layer,0.0,0.94));
+}
+
+vec3 hushColorDodge(vec3 base,vec3 layer){
+  return min(vec3(1.0),base/max(vec3(0.07),vec3(1.0)-clamp(layer,0.0,0.91)));
+}
 
 void main(){
   vec2 frag = gl_FragCoord.xy;
@@ -347,6 +371,47 @@ void main(){
   captureLight = clamp(captureLight, 0.0, 1.0);
   vec3 oneBitScene = mix(captureDark, captureLight, captureBit);
   finalColor = mix(finalColor, oneBitScene, clamp(uRecordingCaptureMix, 0.0, 1.0));
+
+  // Reconstruct the cover compositor after acquisition. The transport keys
+  // carry a full negative body and its finite SDF aura across the one-bit
+  // recorder. They are never display colours.
+  if(uHushBodyPost.y>.5&&uHushBodyPost.x>.001){
+    float body=hushCoreKey(srcFull.rgb)*uHushBodyPost.z*uHushBodyPost.x;
+    float authoredAura=hushGlowKey(srcFull.rgb)*uHushBodyPost.w*uHushBodyPost.x;
+    // Two restrained radii spread the absence into the surrounding exposure.
+    // They never sample the billboard bounds or create a luminous outline.
+    vec2 nearPx=vec2(2.25)/uRes;
+    vec2 farPx=vec2(5.25)/uRes;
+    float nearby=max(
+      max(hushCoreKey(texture(uSrc,clamp(fullUv+vec2(nearPx.x,0.0),vec2(.001),vec2(.999))).rgb),
+          hushCoreKey(texture(uSrc,clamp(fullUv-vec2(nearPx.x,0.0),vec2(.001),vec2(.999))).rgb)),
+      max(hushCoreKey(texture(uSrc,clamp(fullUv+vec2(0.0,nearPx.y),vec2(.001),vec2(.999))).rgb),
+          hushCoreKey(texture(uSrc,clamp(fullUv-vec2(0.0,nearPx.y),vec2(.001),vec2(.999))).rgb))
+    );
+    float distant=max(
+      max(hushCoreKey(texture(uSrc,clamp(fullUv+vec2(farPx.x,farPx.y),vec2(.001),vec2(.999))).rgb),
+          hushCoreKey(texture(uSrc,clamp(fullUv-vec2(farPx.x,farPx.y),vec2(.001),vec2(.999))).rgb)),
+      max(hushCoreKey(texture(uSrc,clamp(fullUv+vec2(farPx.x,-farPx.y),vec2(.001),vec2(.999))).rgb),
+          hushCoreKey(texture(uSrc,clamp(fullUv+vec2(-farPx.x,farPx.y),vec2(.001),vec2(.999))).rgb))
+    );
+    nearby*=uHushBodyPost.w*uHushBodyPost.x;
+    distant*=uHushBodyPost.w*uHushBodyPost.x;
+    body=smoothstep(.018,.26,body);
+    float fieldAbsorb=clamp(authoredAura*.48+nearby*.18+distant*.085,0.0,.72);
+    // It is a mass of shadow: first swallow the exposure around it, then make
+    // the authored human interior almost entirely absent. A small amount of
+    // the underlying image survives so the form feels volumetric, not cut out.
+    finalColor*=1.0-fieldAbsorb;
+    vec3 swallowed=min(finalColor*.045,vec3(.006,.014,.016));
+    finalColor=mix(finalColor,swallowed,body*.96);
+    // The cover's glow is the contrast fringe of that absence. Screen and
+    // Color Dodge are retained in their PSD order, but at low energy: a dim
+    // blue-grey haze around a negative person, never a white emissive sprite.
+    float negativeRim=clamp(authoredAura*.34+nearby*(1.0-body)*.12,0.0,.46);
+    finalColor=hushScreen(finalColor,vec3(.060,.125,.135)*negativeRim);
+    vec3 dodged=hushColorDodge(finalColor,vec3(.028,.070,.078)*negativeRim);
+    finalColor=mix(finalColor,dodged,negativeRim*.22);
+  }
 
   if(uDebugSource == 1.0) finalColor = c;
   if(uDebugSource == 2.0) finalColor = vec3(signalLevel);

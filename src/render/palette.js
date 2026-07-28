@@ -21,6 +21,7 @@ export const THEMES = Object.freeze({
     silkscreen: '#8C7C54',               // printed legend, unlit
     wordmark: '#C7B27E',
     strip: '#B9A06A',
+    warning: '#FFE38A',
     danger: '#FF6A5A',
   },
   green: {
@@ -34,6 +35,7 @@ export const THEMES = Object.freeze({
     silkscreen: '#4E6E5F',
     wordmark: '#9FD4FF',
     strip: '#8A8F94',
+    warning: '#F2A81E',
     danger: '#FF6A5A',
   },
 });
@@ -226,7 +228,7 @@ export function activeTheme() { return themeForSurface(active); }
 const ROLE = {
   'ui-primary': 'phosphor', 'ui-secondary': 'silkscreen', 'ui-label': 'silkscreen',
   'ui-amber': 'accent', 'ui-blue': 'accent', 'ui-green': 'phosphor',
-  'ui-counter': 'counter', 'ui-danger': 'danger', 'ui-marker': 'marker',
+  'ui-counter': 'counter', 'ui-warning': 'warning', 'ui-danger': 'danger', 'ui-marker': 'marker',
   'ui-strip': 'glass', 'ui-wordmark': 'wordmark',
 };
 const BANDED_ROLES = new Set(['phosphor', 'counter', 'accent']);
@@ -252,7 +254,7 @@ function bandColorFor(t, x, cols, fallback) {
 
 export function themeRoleColor(role = 'phosphor', x = null, cols = null) {
   const t = activeTheme();
-  const base = t[role] || t.phosphor;
+  const base = role === 'warning' ? (t.warning || '#F2A81E') : (t[role] || t.phosphor);
 
   return t.bands && BANDED_ROLES.has(role)
     ? bandColorFor(t, x, cols, base)

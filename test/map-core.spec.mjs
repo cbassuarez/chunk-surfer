@@ -62,8 +62,12 @@ const hushModel={
   hush:{active:true,floorId:minimalModel.player.floorId,position:{x:minimalModel.player.position.x+2,y:minimalModel.player.position.y+1}},
 };
 const hushCommands=buildMinimapCommands({model:hushModel,viewport:{x:0,y:0,w:18,h:8},now:1000});
-assert.ok(hushCommands.some((command)=>command.kind==='hush'),'active HUSH is a literal on-map point');
-assert.match(readFileSync('src/render/map-icons.js','utf8'),/drawHushMarker[\s\S]*?'●', 'ui-danger'/,'HUSH marker is the literal red dot required by playtesting');
+assert.equal(hushCommands.some((command)=>String(command.kind).startsWith('hush')),false,'an unseen HUSH never becomes reciprocal radar');
+const seenHushCommands=buildMinimapCommands({model:{...hushModel,hush:{...hushModel.hush,visible:true}},viewport:{x:0,y:0,w:18,h:8},now:1000});
+assert.ok(seenHushCommands.some((command)=>command.kind==='hush-visible'),'a directly seen manifestation is confirmed on the minimap');
+const mapIconSource=readFileSync('src/render/map-icons.js','utf8');
+assert.match(mapIconSource,/uiGlyph\(Math\.round\(point\.x\), Math\.round\(point\.y\), '\?', 'ui-danger'/,'the visible manifestation is a themed red question mark');
+assert.doesNotMatch(mapIconSource,/ctx\.arc\(cx, cy - unit/,'the retired humanoid marker is gone');
 
 const edge = clampMarkerToEdge({ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 0, y: 0, w: 20, h: 10 }, 1);
 assert.equal(Math.round(edge.x), 19);

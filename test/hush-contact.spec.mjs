@@ -6,6 +6,7 @@ import {
   HUSH_SENSATION_MODE,
   buildHushReleaseNote,
   buildHushSensationTree,
+  classifyHushContactApproach,
   chooseHushReleaseDestination,
   chooseHushContactExperience,
   freshHushContactDirectorState,
@@ -31,8 +32,31 @@ for(const excluded of [
   assert.equal(hushContactWeights({...excluded,takenEligible:true}).brush,0,`brush excluded by ${JSON.stringify(excluded)}`);
 }
 assert.deepEqual(hushContactWeights({takenEligible:false,state:{}}),{brush:.25,taken:0,hard:.75});
-assert.deepEqual(hushContactWeights({forceDirect:true,takenEligible:true,state:{}}),{brush:0,taken:.5,hard:.5},
-  'sustained hot noise removes goosebumps without forcing Hard over Taken');
+assert.deepEqual(hushContactWeights({dialogueEligible:false,takenEligible:true,state:{}}),{brush:0,taken:0,hard:1},
+  'an anticipated contact cannot enter either dialogue path');
+assert.deepEqual(hushContactWeights({forceDirect:true,takenEligible:true,state:{}}),{brush:0,taken:0,hard:1},
+  'sustained hot noise contact is immediate and dialogue-free');
+
+// Contact dialogue is spatially authored: the broad rear hemisphere qualifies,
+// while a side catch needs the slightly tighter quiet-surprise conditions.
+const approach=(contact,extra={})=>classifyHushContactApproach({
+  player:{x:0,y:0},forward:{x:0,y:-1},contact,...extra,
+});
+assert.equal(approach({x:0,y:1},{behaviorMode:'chase',targetPriority:1}).dialogueEligible,true,
+  'a literal rear catch qualifies even at the end of a chase');
+assert.deepEqual(
+  {...approach({x:1,y:-.15},{behaviorMode:'limp',targetPriority:.4}),facingDot:undefined},
+  {fromBehind:false,bySurprise:true,dialogueEligible:true,facingDot:undefined},
+  'a quiet flank catch can be a surprise without being literally behind',
+);
+assert.equal(approach({x:1,y:-.15},{behaviorMode:'chase',targetPriority:.95}).dialogueEligible,false,
+  'the same flank is anticipated during a pinpoint chase');
+assert.equal(approach({x:1,y:-.15},{behaviorMode:'limp',targetPriority:.4,warned:true}).dialogueEligible,false,
+  'a warned flank catch is no longer a surprise');
+assert.equal(approach({x:0,y:-1},{behaviorMode:'stand'}).dialogueEligible,false,
+  'a body plainly in front never opens contact dialogue');
+assert.equal(approach({x:0,y:1},{forced:true}).dialogueEligible,false,
+  'forced hot-noise punishment remains immediate and dialogue-free');
 
 // The first roll selects the kind, the second only seeds its dialogue.
 assert.equal(chooseHushContactExperience({state:{}},{rng:fixed(.1,.2)}).kind,HUSH_CONTACT_KIND.BRUSH);

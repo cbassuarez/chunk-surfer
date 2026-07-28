@@ -7,6 +7,7 @@ import {
   LIGHT_RIGS,
   LOCAL_LIGHT_SLOTS,
   allAuthoredLights,
+  emergencyBlinkState,
   lightRigFor,
   resolveLightingContext,
   resolveLocalLights,
@@ -63,17 +64,29 @@ const contexts=[ZONE.dock,ZONE.studio,ZONE.natatorium,ZONE.hall,ZONE.practice,ZO
 assert.equal(new Set(contexts.map((context)=>`${context.ambientColor.join(',')}:${context.ambientIntensity}`)).size,contexts.length,
   'each major room has a distinct still-frame ambient signature');
 
-const failing=(timeSec,reducedFlash=false)=>resolveLocalLights(room('academic',ZONE.academic),{timeSec,reducedFlash})
+const failing=(timeSec,effectsMode='full')=>resolveLocalLights(room('academic',ZONE.academic),{timeSec,effectsMode})
   .find((light)=>light.id==='academic-emergency-east-failing').intensity;
-assert.equal(failing(0,true),.22);
-assert.equal(failing(9,true),.22);
-assert.notEqual(failing(.4),failing(1.9));
+const fullBlinkSamples=Array.from({length:400},(_,index)=>emergencyBlinkState('academic-emergency-east-failing',index*.05));
+assert.ok(fullBlinkSamples.some((sample)=>sample.scale>.9),'an emergency practical reaches a readable lit beat');
+assert.ok(fullBlinkSamples.some((sample)=>sample.scale<.025),'an emergency practical has a real dark beat');
+assert.ok(fullBlinkSamples.some((sample)=>sample.shadowReveal>.6),'selected lit beats reveal the shadow pass');
+assert.ok(failing(0)<failing(3),'failing maintained practical blinks instead of remaining at a fixed exposure');
+const reducedSamples=Array.from({length:400},(_,index)=>emergencyBlinkState('academic-emergency-east-failing',index*.025,{effectsMode:'reduced'}));
+const reducedJumps=reducedSamples.slice(1).map((sample,index)=>Math.abs(sample.scale-reducedSamples[index].scale));
+assert.ok(Math.max(...reducedJumps)<.38,'reduced effects removes hard emergency-light stutters');
+assert.deepEqual(emergencyBlinkState('dock-grey-door-seam',12.25),emergencyBlinkState('dock-grey-door-seam',12.25),'cadence is deterministic');
+assert.ok(Array.from({length:120},(_,index)=>index*.05).some((time)=>
+  Math.abs(emergencyBlinkState('academic-emergency-west',time).scale-emergencyBlinkState('academic-emergency-east-failing',time).scale)>.6
+),'adjacent emergency lights are staggered');
+const steadySky=resolveLocalLights(room('ground',ZONE.natatorium),{timeSec:1}).find((light)=>light.id==='natatorium-roof-spill-north');
+assert.equal(steadySky.intensity,1.52,'blinking does not modulate daylight or ordinary fittings');
 
 const anchored=resolveLocalLights(room('tower',ZONE.bellTower),{
   towerCleared:false,
-  anchorPosition:(id)=>id==='tower-light-lower'?{x:7,y:8,z:9}:null,
+  anchorPosition:(id)=>id==='tower-light-lower'?{x:7,y:8,z:9,floorY:6.2,yaw:.4}:null,
 }).find((light)=>light.id==='access-low');
 assert.deepEqual([anchored.x,anchored.y,anchored.z],[7,8.18,9],'moving a fitting moves its light');
+assert.equal(anchored.floorY,6.2,'anchored practical carries its floor into the shadow composition');
 
 const towerDark=resolveLocalLights(room('tower',ZONE.bellTower),{towerCleared:false,origin:{x:100,z:62}});
 assert.equal(towerDark.length,7);

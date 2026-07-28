@@ -548,6 +548,7 @@ export function chapelBoss({ kind = 'nothing', value = null, listened = 5 } = {}
       { who: 'direction', text: 'The chapel. Two banks of pews, an organ with the wind isolated, and the fifth room tone you were sent for.', cue: 'freeze' },
       { who: 'recordist', text: 'Take five.' },
       { who: 'surfer', text: 'Take five.', rate: 0.94 },
+      { who: 'surfer', text: 'COME CLOSER', rate: 0.94 },
       { who: 'you', text: "There is not a person in the chapel... or there shouldn't be, but I'm getting the feeling I'm in heart of the building. Is that...? " },
       { who: 'direction', text: `It has put on a face while you were not looking. It is wearing ${face.label.toLowerCase()}.` },
     ],

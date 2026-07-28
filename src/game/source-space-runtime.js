@@ -18,6 +18,10 @@ import { chunkSurfRoom } from '../data/chunk-surf-script.js';
 
 export const SOURCE_PLAN_WINDOW = 384;
 export const SOURCE_PLAN_SNAP = 16;
+export const SOURCE_ARCH_TILE_CELLS = 128;
+export const SOURCE_ARCH_TILE_RADIUS = 2;
+export const SOURCE_ARCH_MAX_INSTANCES = 20000;
+export const SOURCE_SEEDED_STRUCTURE_COUNT = 14;
 export const SOURCE_TRANSFORM_SECONDS = 5.5;
 export const SOURCE_ENTRY = Object.freeze({ x: 0, y: 0, facing: 0 });
 
@@ -186,6 +190,230 @@ const smoothstep = (lo, hi, value) => {
   return t * t * (3 - 2 * t);
 };
 
+const SOURCE_STRUCTURE_ROUTE_BUFFER = 12;
+const SOURCE_STRUCTURE_EDGE_MARGIN = 12;
+const SEEDED_STRUCTURE_KINDS = Object.freeze([
+  'music-stand', 'music-stand', 'upright-piano', 'grand-piano',
+  'marimba', 'timpani', 'cello', 'violin', 'bust', 'fractured-bust',
+]);
+
+const heroStructurePlacements = () => [
+  {
+    id: 'source-hero-stand-gate', kind: 'music-stand-gate', hero: true, x: 0, y: -30, yaw: 0,
+    components: [
+      { mesh: 'music_stand', dx: -24, dz: 0, scale: 9, yaw: 0.12, roll: -0.045, sink: 0.18 },
+      { mesh: 'music_stand', dx: 24, dz: 0, scale: 9.4, yaw: -0.12, roll: 0.045, sink: 0.22 },
+    ],
+    colliders: [
+      { dx: -24, dz: 0, halfX: 5, halfY: 5, yaw: 0.12 },
+      { dx: 24, dz: 0, halfX: 5.2, halfY: 5.2, yaw: -0.12 },
+    ],
+  },
+  {
+    id: 'source-hero-string-fall', kind: 'string-fall', hero: true, x: -128, y: -104, yaw: -0.18,
+    components: [
+      { mesh: 'cello', dx: -3, dz: 0, scale: 7.2, yaw: -0.28, roll: -0.16, sink: 0.55 },
+      { mesh: 'violin', dx: 6, dz: 2, scale: 15, yaw: 0.55, pitch: -Math.PI / 2, roll: 0.22, sink: 0.32 },
+      { mesh: 'music_stand', dx: 2, dz: -7, scale: 7.4, yaw: 1.15, roll: 0.34, sink: 0.8 },
+    ],
+    colliders: [{ dx: 0, dz: -1, halfX: 10, halfY: 10, yaw: -0.18 }],
+  },
+  {
+    id: 'source-hero-piano-rise', kind: 'piano-rise', hero: true, x: 128, y: -112, yaw: 0.14,
+    components: [
+      { mesh: 'grand_piano', dx: -5, dz: 1, scale: 6.8, yaw: 0.38, roll: -0.055, sink: 1.15 },
+      { mesh: 'upright_piano', dx: 12, dz: -6, scale: 7.6, yaw: -0.48, roll: 0.035, sink: 0.58 },
+    ],
+    colliders: [
+      { dx: -5, dz: 1, halfX: 13, halfY: 20, yaw: 0.38 },
+      { dx: 12, dz: -6, halfX: 12, halfY: 10, yaw: -0.48 },
+    ],
+  },
+  {
+    id: 'source-hero-percussion-shelf', kind: 'percussion-shelf', hero: true, x: 44, y: -184, yaw: -0.08,
+    components: [
+      { mesh: 'marimba', dx: 0, dz: 0, scale: 8, yaw: Math.PI / 2 - 0.08, roll: -0.025, sink: 0.7 },
+      { mesh: 'timpani', dx: 4, dz: -13, scale: 10, yaw: 0.24, sink: 0.9 },
+      { mesh: 'timpani', dx: -6, dz: -14, scale: 8.5, yaw: -0.16, sink: 0.65 },
+      { mesh: 'mallet_pair', dx: -2, dz: 3, scale: 20, yaw: 0.72, pitch: -0.18, elevation: 2.4 },
+      { mesh: 'music_stand', dx: 9, dz: 8, scale: 6.8, yaw: -0.55, roll: 0.16, sink: 0.48 },
+    ],
+    colliders: [
+      { dx: 0, dz: 0, halfX: 11, halfY: 22, yaw: Math.PI / 2 - 0.08 },
+      { dx: 0, dz: -14, halfX: 12, halfY: 8, yaw: 0 },
+      { dx: 9, dz: 8, halfX: 4, halfY: 4, yaw: -0.55 },
+    ],
+  },
+  {
+    id: 'source-hero-bust-tribunal', kind: 'bust-tribunal', hero: true, x: -52, y: -250, yaw: 0.12,
+    components: [
+      { mesh: 'academic_bust_plinth', dx: -8, dz: 0, scale: 12, yaw: 0.06, sink: 0.25 },
+      { mesh: 'marble_bust_01', dx: -8, dz: 0, scale: 24, yaw: Math.PI + 0.06, elevation: 13.25 },
+      { mesh: 'source_bust_broken_torso', dx: 8, dz: -2, scale: 24, yaw: Math.PI - 0.2, roll: -0.08, sink: 0.3 },
+      { mesh: 'source_bust_broken_head', dx: 15, dz: 5, scale: 24, yaw: 0.72, roll: 1.08, sink: 0.16 },
+      { mesh: 'source_bust_face_shard', dx: 4, dz: 9, scale: 24, yaw: -0.6, roll: 0.44, sink: 0.08 },
+      { mesh: 'source_bust_marble_chips', dx: 10, dz: 3, scale: 24, yaw: 0.2, sink: 0.02 },
+    ],
+    colliders: [
+      { dx: -8, dz: 0, halfX: 8, halfY: 8, yaw: 0.06 },
+      { dx: 9, dz: 2, halfX: 12, halfY: 11, yaw: -0.12 },
+    ],
+  },
+];
+
+function rotateOffset(dx = 0, dz = 0, yaw = 0) {
+  const c = Math.cos(yaw), s = Math.sin(yaw);
+  return { x: dx * c + dz * s, y: -dx * s + dz * c };
+}
+
+function colliderWorld(placement, collider) {
+  const offset = rotateOffset(collider.dx, collider.dz, placement.yaw || 0);
+  return {
+    x: placement.x + offset.x,
+    y: placement.y + offset.y,
+    halfX: collider.halfX,
+    halfY: collider.halfY,
+    yaw: (placement.yaw || 0) + (collider.yaw || 0),
+  };
+}
+
+function pointInStructureCollider(x, y, placement, collider) {
+  const world = colliderWorld(placement, collider);
+  const c = Math.cos(world.yaw), s = Math.sin(world.yaw);
+  const dx = x - world.x, dy = y - world.y;
+  const localX = dx * c - dy * s;
+  const localY = dx * s + dy * c;
+  return Math.abs(localX) <= world.halfX && Math.abs(localY) <= world.halfY;
+}
+
+function placementRadius(placement) {
+  return Math.max(1, ...(placement.colliders || []).map((collider) => {
+    const offset = Math.hypot(collider.dx || 0, collider.dz || 0);
+    return offset + Math.hypot(collider.halfX || 0, collider.halfY || 0);
+  }));
+}
+
+function placementClearsAuthoredSpace(placement, accepted = []) {
+  const radius = placementRadius(placement);
+  if (Math.abs(placement.x) + radius > LANDSCAPE_W / 2 - SOURCE_STRUCTURE_EDGE_MARGIN) return false;
+  if (placement.y + radius > -12 || placement.y - radius < -LANDSCAPE_H + SOURCE_STRUCTURE_EDGE_MARGIN) return false;
+  for (const route of ROUTE_SEGMENTS) {
+    if (routeDistance(placement, route) <= route.halfWidth + SOURCE_STRUCTURE_ROUTE_BUFFER + radius) return false;
+  }
+  for (const point of Object.values(LANDMARK_OFFSETS)) {
+    if (Math.hypot(placement.x - point.x, placement.y - point.y) <= LANDMARK_PAD_RADIUS + SOURCE_STRUCTURE_ROUTE_BUFFER + radius) return false;
+  }
+  return !accepted.some((other) => Math.hypot(placement.x - other.x, placement.y - other.y)
+    <= radius + placementRadius(other) + 8);
+}
+
+function seededStructure(kind, seed, index, x, y) {
+  const unit = rand(seed, index, 811);
+  const yaw = rand(seed, index, 823) * Math.PI * 2;
+  const depth = -y;
+  const emergence = smoothstep(28, LANDSCAPE_H - 36, depth);
+  const sink = (1.65 - emergence * 1.25) * (0.5 + rand(seed, index, 827) * 0.7);
+  const make = (components, colliders) => ({
+    id: `source-seeded-giant-${index}`, kind, hero: false, seeded: true, x, y, yaw, components, colliders,
+  });
+  if (kind === 'music-stand') {
+    const scale = 5.2 + unit * 2.8;
+    return make([{ mesh: 'music_stand', scale, yaw: 0, roll: (rand(seed, index, 829) - 0.5) * 0.2, sink }],
+      [{ halfX: scale * 0.58, halfY: scale * 0.58, yaw: 0 }]);
+  }
+  if (kind === 'upright-piano') {
+    const scale = 4.5 + unit * 3;
+    return make([{ mesh: 'upright_piano', scale, yaw: 0, roll: (rand(seed, index, 839) - 0.5) * 0.12, sink }],
+      [{ halfX: scale * 1.55, halfY: scale * 1.36, yaw: 0 }]);
+  }
+  if (kind === 'grand-piano') {
+    const scale = 5.5 + unit * 3;
+    return make([{ mesh: 'grand_piano', scale, yaw: 0, roll: (rand(seed, index, 853) - 0.5) * 0.1, sink }],
+      [{ halfX: scale * 2.05, halfY: scale * 3.12, yaw: 0 }]);
+  }
+  if (kind === 'marimba') {
+    const scale = 5.5 + unit * 3.5;
+    return make([{ mesh: 'marimba', scale, yaw: 0, roll: (rand(seed, index, 857) - 0.5) * 0.08, sink }],
+      [{ halfX: scale * 2.7, halfY: scale * 1.36, yaw: 0 }]);
+  }
+  if (kind === 'timpani') {
+    const scale = 6 + unit * 5;
+    return make([{ mesh: 'timpani', scale, yaw: 0, sink }],
+      [{ halfX: scale * 0.92, halfY: scale * 0.92, yaw: 0 }]);
+  }
+  if (kind === 'cello') {
+    const scale = 4 + unit * 3.5;
+    return make([{ mesh: 'cello', scale, yaw: 0, roll: (rand(seed, index, 859) - 0.5) * 0.22, sink }],
+      [{ halfX: scale * 0.62, halfY: scale * 0.62, yaw: 0 }]);
+  }
+  if (kind === 'violin') {
+    const scale = 8 + unit * 8;
+    return make([{ mesh: 'violin', scale, yaw: 0, pitch: -Math.PI / 2, roll: (rand(seed, index, 863) - 0.5) * 0.26, sink }],
+      [{ halfX: scale * 0.68, halfY: scale * 1.1, yaw: 0 }]);
+  }
+  if (kind === 'fractured-bust') {
+    const scale = 14 + unit * 8;
+    return make([
+      { mesh: 'source_bust_broken_torso', dx: -2, dz: 0, scale, yaw: 0, roll: -0.08, sink },
+      { mesh: 'source_bust_broken_head', dx: 3.5, dz: 2, scale, yaw: 0.7, roll: 1.1, sink: sink * 0.4 },
+      { mesh: 'source_bust_face_shard', dx: 0, dz: 4, scale, yaw: -0.55, roll: 0.4, sink: 0 },
+      { mesh: 'source_bust_marble_chips', dx: 1, dz: 2, scale, yaw: 0, sink: 0 },
+    ], [{ dx: 0.5, dz: 1.5, halfX: scale * 0.9, halfY: scale * 0.8, yaw: 0 }]);
+  }
+  const plinthScale = 6 + unit * 2;
+  const bustScale = plinthScale * 2;
+  return make([
+    { mesh: 'academic_bust_plinth', scale: plinthScale, yaw: 0, sink },
+    { mesh: 'marble_bust_01', scale: bustScale, yaw: Math.PI, elevation: plinthScale * 1.11 - sink },
+  ], [{ halfX: plinthScale * 0.66, halfY: plinthScale * 0.66, yaw: 0 }]);
+}
+
+export function sourceStructurePlacements(seed = 4417) {
+  const heroes = heroStructurePlacements();
+  const accepted = [];
+  let fractured = 0;
+  for (let candidate = 0; candidate < 800 && accepted.length < SOURCE_SEEDED_STRUCTURE_COUNT; candidate += 1) {
+    const x = (rand(seed, candidate, 733) - 0.5) * (LANDSCAPE_W - SOURCE_STRUCTURE_EDGE_MARGIN * 2);
+    const y = -(24 + rand(seed, candidate, 751) * (LANDSCAPE_H - 48));
+    let kind = SEEDED_STRUCTURE_KINDS[Math.floor(rand(seed, candidate, 769) * SEEDED_STRUCTURE_KINDS.length)];
+    if (kind === 'fractured-bust' && fractured >= 2) kind = 'bust';
+    const placement = seededStructure(kind, seed, candidate, x, y);
+    if (!placementClearsAuthoredSpace(placement, [...heroes, ...accepted])) continue;
+    if (kind === 'fractured-bust') fractured += 1;
+    placement.id = `source-seeded-giant-${accepted.length}`;
+    accepted.push(placement);
+  }
+  if (accepted.length !== SOURCE_SEEDED_STRUCTURE_COUNT) {
+    throw new Error(`Source structure placement exhausted at ${accepted.length}/${SOURCE_SEEDED_STRUCTURE_COUNT}`);
+  }
+  return [...heroes, ...accepted];
+}
+
+export function sourceStructureCollisionAt(placements, localX, localY) {
+  return (placements || []).find((placement) => (placement.colliders || [])
+    .some((collider) => pointInStructureCollider(localX, localY, placement, collider))) || null;
+}
+
+export function sourceStructureRouteClearance(placement) {
+  let clearance = Infinity;
+  for (const collider of placement?.colliders || []) {
+    const world = colliderWorld(placement, collider);
+    for (const route of ROUTE_SEGMENTS) {
+      clearance = Math.min(clearance, routeDistance(world, route) - route.halfWidth - Math.max(world.halfX, world.halfY));
+    }
+  }
+  return clearance;
+}
+
+export function sourceLandscapePlanOrigin(origin = { x: 0, y: -252 }) {
+  const marginX = (SOURCE_PLAN_WINDOW - LANDSCAPE_W) / 2;
+  const marginY = (SOURCE_PLAN_WINDOW - LANDSCAPE_H) / 2;
+  return {
+    x: Math.floor((Number(origin.x || 0) - LANDSCAPE_W / 2 - marginX) / SOURCE_PLAN_SNAP) * SOURCE_PLAN_SNAP,
+    y: Math.floor((Number(origin.y || 0) - LANDSCAPE_H - marginY) / SOURCE_PLAN_SNAP) * SOURCE_PLAN_SNAP,
+  };
+}
+
 export const SOURCE_OBJECTIVE_CONTRACT_VERSION = 1;
 
 function compassBearing(from, target) {
@@ -304,7 +532,9 @@ export function createSourceSpaceRuntime({
   let lastObjectiveDistance = Infinity;
   let lastObjectiveId = '';
   const sceneCache = new Map();
+  const sceneAssemblyCache = new Map();
   const trees = treeOffsets(state.seed);
+  const structures = sourceStructurePlacements(state.seed);
   let sourceCorpusCache = null;
 
   function setState(next, { immediate = false } = {}) {
@@ -361,6 +591,8 @@ export function createSourceSpaceRuntime({
     // the floor. The only wall is the field's own perimeter (rendered as visible
     // code, see perimeterWallInstances); beyond it is sky.
     if (!inLandscape(x, y)) return null;
+    if ([CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase)
+        && sourceStructureCollisionAt(structures, lx, ly)) return null;
     const floor = sourceLandscapeFloorAt(lx, ly);
     return { floor, ceil: floor + 22, flags: F.SKY, zone: ZONE.sourceSpace, material: materialAtLandscape(lx, ly) };
   }
@@ -417,10 +649,13 @@ export function createSourceSpaceRuntime({
     logicalToPhysical: (x, y) => ({ x, z: y, y: cellAt(x, y)?.floor ?? 0, layer: 'source', spaceId: 'source-space', renderGroup: 'source-space' }),
     renderPlanFor(x, y) {
       const half = SOURCE_PLAN_WINDOW / 2;
-      const originX = Math.floor((x - half) / SOURCE_PLAN_SNAP) * SOURCE_PLAN_SNAP;
-      const originY = Math.floor((y - half) / SOURCE_PLAN_SNAP) * SOURCE_PLAN_SNAP;
+      const anchored = [CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase);
+      const landscapePlan = anchored ? sourceLandscapePlanOrigin(landscapeOrigin()) : null;
+      const originX = landscapePlan?.x ?? Math.floor((x - half) / SOURCE_PLAN_SNAP) * SOURCE_PLAN_SNAP;
+      const originY = landscapePlan?.y ?? Math.floor((y - half) / SOURCE_PLAN_SNAP) * SOURCE_PLAN_SNAP;
       const routeStateKey = `${state.hasFork ? 1 : 0}:${state.tuned.includes('recordist-loop') ? 1 : 0}:${state.tuned.includes('body-room') ? 1 : 0}`;
-      const key = `${state.phase}:${state.pageStage}:${routeStateKey}:${originX}:${originY}`;
+      const o = landscapeOrigin();
+      const key = `${state.phase}:${state.pageStage}:${routeStateKey}:${o.x}:${o.y}:${originX}:${originY}`;
       if (lastPlan?.key === key) return lastPlan;
       const size = SOURCE_PLAN_WINDOW;
       const rgba = new Uint8Array(size * size * 4);
@@ -910,18 +1145,21 @@ export function createSourceSpaceRuntime({
     return { sector: sectorAtHallDepth(localY), color: [0.42, 1, 0.62, 0.88] };
   };
 
-  function landscapeArchitectureTextInstances(px, py) {
+  function landscapeArchitectureTextInstances(px, py, { tileX = Math.floor(px / SOURCE_ARCH_TILE_CELLS), tileY = Math.floor(py / SOURCE_ARCH_TILE_CELLS) } = {}) {
     if (![CHUNK_SURF_PHASE.TRANSFORMING,CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase)) return [];
     const out = [];
     const o = landscapeOrigin();
-    const rowCenter = Math.floor(py / 2) * 2;
+    const tileMinX = tileX * SOURCE_ARCH_TILE_CELLS;
+    const tileMinY = tileY * SOURCE_ARCH_TILE_CELLS;
+    const tileMaxX = tileMinX + SOURCE_ARCH_TILE_CELLS;
+    const tileMaxY = tileMinY + SOURCE_ARCH_TILE_CELLS;
+    const ownsWorld = (x, y) => x >= tileMinX && x < tileMaxX && y >= tileMinY && y < tileMaxY;
     // The floor SURFACE, tiled densely in source and hugging the terrain in both
     // axes — the code IS the ground, following every mound and dip, not a rug laid
-    // on a flat plane.
-    for (let row = -34; row <= 22; row += 2) {
-      const worldZ = rowCenter + row;
-      for (let lane = -7; lane <= 7; lane += 1) {
-        const worldX=px+lane*4.5;
+    // on a flat plane. Positions derive only from the world tile, never the
+    // player, so a residency change cannot slide the floor underneath them.
+    for (let worldZ = tileMinY + 2; worldZ < tileMaxY; worldZ += 4) {
+      for (let worldX = tileMinX + 4; worldX < tileMaxX; worldX += 8) {
         const cell=cellAt(worldX,worldZ);
         if(!cell)continue;
         const before=cellAt(worldX,worldZ+1)?.floor??cell.floor;
@@ -932,13 +1170,13 @@ export function createSourceSpaceRuntime({
         const rollTilt=Math.atan2(east-west,2*CELL);
         const visual=routeVisual(worldX-o.x,worldZ-o.y);
         out.push(sourcePanel({
-          id: `source-field-floor-${rowCenter}-${row}-${lane}`,
-          sector: visual.sector, lineIndex: Math.abs(row * 11 + lane * 17), redact: (row + lane) % 10 === 0,
-          x: worldX * CELL, y: cell.floor + 0.014 + Math.abs(lane) * 0.001, z: worldZ * CELL + lane * 0.045,
-          scaleX: 4.7, scaleY: 0.34,
-          pitch: rampPitch, yaw: lane * 0.028, roll: rollTilt,
-          color: lane % 2 ? visual.color.map((value,index)=>index===3?value:value*.82) : visual.color,
-          semantic: 'text-architecture:ramp', overlapLayer: lane === 0 ? 'base' : 'overlap', platformHeight: cell.floor,
+          id: `source-field-floor-${worldX}-${worldZ}`,
+          sector: visual.sector, lineIndex: Math.abs(worldZ * 11 + worldX * 17), redact: (worldZ + worldX) % 20 === 0,
+          x: worldX * CELL, y: cell.floor + 0.014 + Math.abs(worldX % 3) * 0.001, z: worldZ * CELL + (worldX % 2) * 0.035,
+          scaleX: 8.2, scaleY: 0.52,
+          pitch: rampPitch, yaw: (worldX % 5) * 0.009, roll: rollTilt,
+          color: worldX % 16 ? visual.color.map((value,index)=>index===3?value:value*.82) : visual.color,
+          semantic: 'text-architecture:ramp', overlapLayer: worldX % 16 ? 'overlap' : 'base', platformHeight: cell.floor,
         }));
       }
     }
@@ -948,7 +1186,7 @@ export function createSourceSpaceRuntime({
     for(let index=0;index<trees.length;index+=1){
       const tree=trees[index],worldX=o.x+tree.x,worldZ=o.y+tree.y;
       if(routeAt(tree)||onLandmarkPad(tree))continue;
-      if(Math.hypot((worldX-px)*CELL,(worldZ-py)*CELL)>46)continue;
+      if(!ownsWorld(worldX,worldZ))continue;
       const base=sourceLandscapeFloorAt(tree.x,tree.y);
       for(let row=0;row<8;row+=1)out.push(sourcePanel({
         id:`source-field-monolith-${index}-${row}`,
@@ -961,11 +1199,9 @@ export function createSourceSpaceRuntime({
 
     // Cross-braced frames make the long ramps legible at distance and give the
     // massive field some authored architecture beyond its ground plane.
-    const localDepth=Math.max(0,Math.floor((o.y-py)/24)*24);
-    for(let frame=-4;frame<=4;frame+=1){
-      const depth=localDepth+frame*24;
-      if(depth<18||depth>LANDSCAPE_H-12)continue;
+    for(let depth=24;depth<=LANDSCAPE_H-12;depth+=24){
       const worldZ=o.y-depth,base=sourceLandscapeFloorAt(0,-depth);
+      if(!ownsWorld(o.x,worldZ))continue;
       for(const side of [-1,1])for(let row=0;row<5;row+=1)out.push(sourcePanel({
         id:`source-ramp-frame-${depth}-${side}-${row}`,sector:sectorAtHallDepth(depth),lineIndex:depth+row*19+(side>0?7:0),
         x:(o.x+side*13)*CELL,y:base+.3+row*.52,z:worldZ*CELL,scaleX:3.1,scaleY:.26,yaw:Math.PI/2,
@@ -981,7 +1217,7 @@ export function createSourceSpaceRuntime({
     // Exact identifiers and same-line reference edges become a hovering call
     // graph around the Fork Gate. No labels are authored outside the corpus.
     const fork = landmarkPoint('fork-room');
-    if (Math.hypot((fork.x - px) * CELL, (fork.y - py) * CELL) < 72) {
+    if (ownsWorld(fork.x, fork.y)) {
       const references = (SOURCE_ATLAS.references || []).slice(0, 28);
       references.forEach((reference, index) => {
         const angle = index * 0.73;
@@ -1005,7 +1241,7 @@ export function createSourceSpaceRuntime({
 
     for (const [id, offset] of Object.entries(LANDMARK_OFFSETS)) {
       const x = (o.x + offset.x) * CELL, z = (o.y + offset.y) * CELL;
-      if (Math.hypot(x - px * CELL, z - py * CELL) > 54) continue;
+      if (!ownsWorld(o.x + offset.x, o.y + offset.y)) continue;
       const base=sourceLandscapeFloorAt(offset.x,offset.y);
       for (let row = 0; row < 16; row += 1) {
         out.push(sourcePanel({
@@ -1022,7 +1258,7 @@ export function createSourceSpaceRuntime({
 
     const final=landmarkPoint('final-page'),finalOffset=LANDMARK_OFFSETS['final-page'];
     const finalBase=sourceLandscapeFloorAt(finalOffset.x,finalOffset.y);
-    if(Math.hypot((final.x-px)*CELL,(final.y-py)*CELL)<90){
+    if(ownsWorld(final.x,final.y)){
       for(const side of [-1,1])for(let row=0;row<14;row+=1)out.push(sourcePanel({
         id:`source-endpoint-upright-${side}-${row}`,sector:'final',lineIndex:row*11+(side>0?5:0),redact:row%7===4,
         x:(final.x+side*8)*CELL,y:finalBase+.3+row*.44,z:(final.y-4)*CELL,
@@ -1040,17 +1276,15 @@ export function createSourceSpaceRuntime({
     // The field's edge is a WALL OF CODE, not an invisible boundary. Where the
     // ground runs out at the left/right perimeter, tall columns of source strings
     // stand up out of the floor so you can SEE the wall — the "made of code" of
-    // the space, made literal. Only rendered near the player's edge; the interior
-    // is open sky, no walls (Oblivion).
+    // the space, made literal. Each course belongs to exactly one world tile;
+    // the interior is open sky, no walls (Oblivion).
     const halfW = LANDSCAPE_W / 2;
     for (const side of [-1, 1]) {
       const edgeWorldX = o.x + side * halfW;
-      if (Math.abs((edgeWorldX - px) * CELL) > 64) continue;
-      const zCenter = Math.floor(py / 4) * 4;
-      for (let dz = -24; dz <= 24; dz += 4) {
-        const worldZ = zCenter + dz;
+      for (let worldZ = Math.floor((o.y - LANDSCAPE_H) / 4) * 4; worldZ <= o.y + 4; worldZ += 4) {
         const localY = worldZ - o.y;
         if (localY > 4 || localY < -LANDSCAPE_H) continue;
+        if (!ownsWorld(edgeWorldX, worldZ)) continue;
         const base = sourceLandscapeFloorAt(side * halfW, localY);
         for (let row = 0; row < 12; row += 1) {
           out.push(sourcePanel({
@@ -1130,10 +1364,45 @@ export function createSourceSpaceRuntime({
   ]);
   const SOURCE_LEAK_COUNT = 120;
 
+  function structurePropInstances(px, py) {
+    const o = landscapeOrigin();
+    const out = [];
+    for (const placement of structures) {
+      const placementX = o.x + placement.x, placementY = o.y + placement.y;
+      if (Math.hypot((placementX - px) * CELL, (placementY - py) * CELL) > 120) continue;
+      (placement.components || []).forEach((component, componentIndex) => {
+        const offset = rotateOffset(component.dx, component.dz, placement.yaw || 0);
+        const localX = placement.x + offset.x, localY = placement.y + offset.y;
+        const worldX = o.x + localX, worldZ = o.y + localY;
+        const floor = sourceLandscapeFloorAt(localX, localY);
+        const scaleValue = Number(component.scale) || 1;
+        out.push({
+          id: `${placement.id}-${componentIndex}`,
+          mesh: component.mesh,
+          matrix: sourceMatrix({
+            x: worldX * CELL,
+            y: floor + (Number(component.elevation) || 0) - (Number(component.sink) || 0),
+            z: worldZ * CELL,
+            scaleX: scaleValue,
+            scaleY: scaleValue,
+            scaleZ: scaleValue,
+            yaw: (placement.yaw || 0) + (component.yaw || 0),
+            pitch: component.pitch || 0,
+            roll: component.roll || 0,
+          }),
+          zone: ZONE.sourceSpace,
+          structural: true,
+          sourceStructure: placement.id,
+        });
+      });
+    }
+    return out;
+  }
+
   function surfaceArchitectureInstances(px, py) {
     if (![CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase)) return [];
     const o = landscapeOrigin();
-    const out = [];
+    const out = structurePropInstances(px, py);
     for (let i = 0; i < SOURCE_LEAK_COUNT; i += 1) {
       const localX = (rand(state.seed, i, 71) - 0.5) * LANDSCAPE_W * 0.94;
       const depth = 8 + rand(state.seed, i, 131) * (LANDSCAPE_H - 16);
@@ -1244,16 +1513,53 @@ export function createSourceSpaceRuntime({
   }
 
   function cachedArchitecture(px, py) {
-    const chunkSize = 64;
-    const chunkX = Math.floor(px / chunkSize);
-    const chunkY = Math.floor(py / chunkSize);
-    const progressKey = `${state.phase}:${state.hasFork ? 1 : 0}:${state.tuned.includes('recordist-loop') ? 1 : 0}:${state.tuned.includes('body-room') ? 1 : 0}`;
-    const key = `${progressKey}:${chunkX}:${chunkY}`;
-    if (!sceneCache.has(key)) {
-      sceneCache.set(key, landscapeArchitectureTextInstances(chunkX * chunkSize + chunkSize / 2, chunkY * chunkSize + chunkSize / 2));
-      if (sceneCache.size > 32) sceneCache.delete(sceneCache.keys().next().value);
+    const o = landscapeOrigin();
+    const centerTileX = Math.floor(px / SOURCE_ARCH_TILE_CELLS);
+    const centerTileY = Math.floor(py / SOURCE_ARCH_TILE_CELLS);
+    const minTileX = Math.floor((o.x - LANDSCAPE_W / 2) / SOURCE_ARCH_TILE_CELLS);
+    const maxTileX = Math.floor((o.x + LANDSCAPE_W / 2) / SOURCE_ARCH_TILE_CELLS);
+    const minTileY = Math.floor((o.y - LANDSCAPE_H) / SOURCE_ARCH_TILE_CELLS);
+    const maxTileY = Math.floor((o.y + 4) / SOURCE_ARCH_TILE_CELLS);
+    const transformBand = state.phase === CHUNK_SURF_PHASE.TRANSFORMING
+      ? Math.floor(clamp01(transformElapsed / SOURCE_TRANSFORM_SECONDS) * 8) : 8;
+    const progressKey = `${state.phase}:${state.pageStage}:${transformBand}:${state.hasFork ? 1 : 0}:${state.tuned.includes('recordist-loop') ? 1 : 0}:${state.tuned.includes('body-room') ? 1 : 0}:${o.x}:${o.y}`;
+    const tileCoords = [];
+    for (let tileY = Math.max(minTileY, centerTileY - SOURCE_ARCH_TILE_RADIUS); tileY <= Math.min(maxTileY, centerTileY + SOURCE_ARCH_TILE_RADIUS); tileY += 1) {
+      for (let tileX = Math.max(minTileX, centerTileX - SOURCE_ARCH_TILE_RADIUS); tileX <= Math.min(maxTileX, centerTileX + SOURCE_ARCH_TILE_RADIUS); tileX += 1) {
+        tileCoords.push({ tileX, tileY });
+      }
     }
-    return { key, instances: sceneCache.get(key) };
+    const key = `${progressKey}:${tileCoords.map(({ tileX, tileY }) => `${tileX},${tileY}`).join(';')}`;
+    if (sceneAssemblyCache.has(key)) return sceneAssemblyCache.get(key);
+    const batches = tileCoords.map(({ tileX, tileY }) => {
+      const tileKey = `${progressKey}:tile:${tileX}:${tileY}`;
+      if (!sceneCache.has(tileKey)) {
+        sceneCache.set(tileKey, landscapeArchitectureTextInstances(
+          tileX * SOURCE_ARCH_TILE_CELLS + SOURCE_ARCH_TILE_CELLS / 2,
+          tileY * SOURCE_ARCH_TILE_CELLS + SOURCE_ARCH_TILE_CELLS / 2,
+          { tileX, tileY },
+        ));
+        if (sceneCache.size > 64) sceneCache.delete(sceneCache.keys().next().value);
+      }
+      return {
+        key: tileKey,
+        bounds: {
+          minX: tileX * SOURCE_ARCH_TILE_CELLS * CELL,
+          maxX: (tileX + 1) * SOURCE_ARCH_TILE_CELLS * CELL,
+          minZ: tileY * SOURCE_ARCH_TILE_CELLS * CELL,
+          maxZ: (tileY + 1) * SOURCE_ARCH_TILE_CELLS * CELL,
+        },
+        instances: sceneCache.get(tileKey),
+      };
+    });
+    const instances = batches.flatMap((batch) => batch.instances);
+    if (instances.length > SOURCE_ARCH_MAX_INSTANCES) {
+      throw new Error(`Source architecture exceeds resident budget: ${instances.length}/${SOURCE_ARCH_MAX_INSTANCES}`);
+    }
+    const assembled = { key, instances, batches };
+    sceneAssemblyCache.set(key, assembled);
+    if (sceneAssemblyCache.size > 8) sceneAssemblyCache.delete(sceneAssemblyCache.keys().next().value);
+    return assembled;
   }
 
   function sourceScene({ px = player.x, py = player.y, presence = null, time = 0, reducedMotion = false } = {}) {
@@ -1268,6 +1574,7 @@ export function createSourceSpaceRuntime({
       atlasKey: `${SOURCE_ATLAS.schemaVersion}:${SOURCE_ATLAS.corpusHash || Object.keys(SOURCE_ATLAS.entries || {}).length}`,
       corpus: sourceCorpus(),
       staticInstances: cached.instances,
+      staticBatches: cached.batches,
       dynamicInstances,
       look: sourceLook(),
       objective: sourceObjective(),
@@ -1353,6 +1660,7 @@ export function createSourceSpaceRuntime({
     tuneFocused,
     recordFocused,
     propInstances,
+    structurePlacements: () => structures,
     textInstances,
     sourceScene,
     sourceObjective,
@@ -1377,6 +1685,8 @@ export function createSourceSpaceRuntime({
       objective: sourceObjective(),
       hush: hushMode(),
       sourceSceneCacheSize: sceneCache.size,
+      sourceStructureCount: structures.length,
+      sourceSeededStructureCount: structures.filter((entry) => entry.seeded).length,
       sourceSceneKey: sourceScene({ presence: null }).key,
       visibleGlyphs: textInstances({ presence: null }).reduce((sum, entry) => sum + String(entry.text || '').length, 0),
     }),

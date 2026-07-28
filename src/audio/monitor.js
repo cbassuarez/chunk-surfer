@@ -11,6 +11,7 @@ export const MONITOR_THRESHOLDS = Object.freeze([
 export const MONITOR_DANGER_THRESHOLDS = Object.freeze({
   midHotDb: -30,
   hotDb: -18,
+  hysteresisDb: 2,
 });
 
 export const MONITOR_BAND = Object.freeze({
@@ -19,17 +20,15 @@ export const MONITOR_BAND = Object.freeze({
   HOT: 'hot',
 });
 
-const ATTACK_SEC = 0.035;
-const RELEASE_SEC = 0.300;
 const PEAK_HOLD_SEC = 0.650;
+const CLIP_HOLD_SEC = 0.650;
+const CLIP_PEAK = 0.985;
 
 let ctx = null;
 let analyser = null;
-let data = null;
-let envelope = 0;
 let peak = 0;
 let peakUntil = 0;
-let lastAt = 0;
+let clipUntil = 0;
 let injected = null;
 let auxiliaryInput = null;
 let acousticInputs = [];
@@ -43,9 +42,8 @@ export function monitorInit(audioCtx, destination) {
   analyser.fftSize = 1024;
   analyser.smoothingTimeConstant = 0;
   analyser.channelCountMode = 'max';
-  data = null;
-  envelope = peak = 0;
-  peakUntil = lastAt = 0;
+  peak = 0;
+  peakUntil = clipUntil = 0;
   if (destination) analyser.connect(destination);
   return analyser;
 }
@@ -54,24 +52,33 @@ const dbFor = (rms) => rms > 0 ? Math.max(-96, 20 * Math.log10(rms)) : -96;
 const segmentsFor = (db) => MONITOR_THRESHOLDS.reduce((n, t) => n + (db >= t ? 1 : 0), 0);
 const rmsForDb = (db) => Math.max(0, Math.min(1, Math.pow(10, (Number(db) || -96) / 20)));
 
-export function monitorBandForDb(db) {
+export function monitorBandForDb(db, { previousBand = null, hysteresisDb = 0 } = {}) {
   const level = Number.isFinite(Number(db)) ? Number(db) : -96;
+  const hysteresis = Math.max(0, Number(hysteresisDb) || 0);
+  if (previousBand === MONITOR_BAND.HOT && level >= MONITOR_DANGER_THRESHOLDS.hotDb - hysteresis) return MONITOR_BAND.HOT;
   if (level >= MONITOR_DANGER_THRESHOLDS.hotDb) return MONITOR_BAND.HOT;
+  if (previousBand === MONITOR_BAND.MID_HOT && level >= MONITOR_DANGER_THRESHOLDS.midHotDb - hysteresis) return MONITOR_BAND.MID_HOT;
   if (level >= MONITOR_DANGER_THRESHOLDS.midHotDb) return MONITOR_BAND.MID_HOT;
   return MONITOR_BAND.NORMAL;
 }
 
-export function monitorSnapshotForRms(rms) {
+export function monitorSnapshotForRms(rms, { peak = rms, clipped = false } = {}) {
   const level = Math.max(0, Math.min(1, Number(rms) || 0));
+  const peakLevel = Math.max(level, Math.min(1, Number(peak) || 0));
   const db = dbFor(level);
   const band = monitorBandForDb(db);
-  return { rms: level, db, segments: segmentsFor(db), peakDb: db, band, hushRms: level, hushDb: db, hushBand: band };
+  const clip = !!clipped || peakLevel >= CLIP_PEAK;
+  return {
+    rms: level, db, segments: clip ? MONITOR_THRESHOLDS.length : segmentsFor(db),
+    peak: peakLevel, peakDb: clip ? 0 : dbFor(peakLevel), clipped: clip,
+    band, hushRms: level, hushDb: db, hushBand: band,
+  };
 }
 
 // Feed one semantic world sound into the operator meter. Player-generated
 // equipment sounds count (a door, keys, the field case); system-authored sounds
-// do not. `audibleToHush` is retained separately so safe authored moments may
-// still move the visible meter without becoming AI evidence.
+// do not. Sounds explicitly hidden from HUSH are also hidden from the exposure
+// display: the bar and warning are a promise about what the AI can use.
 export function monitorObserveAcousticEvent(event, nowMs = null) {
   if (!event?.semantics?.playerGenerated || event.semantics.audibleToMonitor === false) return false;
   const now = Number.isFinite(Number(nowMs)) ? Number(nowMs)
@@ -103,58 +110,63 @@ function semanticRmsAt(nowMs, { hushOnly = false } = {}) {
   return Math.min(1, Math.sqrt(sum));
 }
 
+function normalizeMeasurement(value) {
+  if (value && typeof value === 'object') {
+    const rms = Math.max(0, Math.min(1, Number(value.rms) || 0));
+    const peakValue = Math.max(rms, Math.min(1, Number(value.peak) || 0));
+    return { rms, peak: peakValue, clipped: !!value.clipped || peakValue >= CLIP_PEAK };
+  }
+  const rms = Math.max(0, Math.min(1, Number(value) || 0));
+  return { rms, peak: rms, clipped: rms >= CLIP_PEAK };
+}
+
 export function monitorSnapshot(nowMs = performance.now()) {
-  let programRms = injected != null
-    ? Math.max(0, Math.min(1, injected))
-    : semanticRmsAt(nowMs);
-  let hushProgramRms = injected != null
-    ? Math.max(0, Math.min(1, injected))
-    : semanticRmsAt(nowMs, { hushOnly: true });
-  let auxiliaryRms = 0;
-  try { auxiliaryRms = Math.max(0, Math.min(1, Number(auxiliaryInput?.()) || 0)); } catch (_) {}
+  const injectedMeasurement = injected != null ? normalizeMeasurement(injected) : null;
+  const programRms = injectedMeasurement?.rms ?? semanticRmsAt(nowMs, { hushOnly: true });
+  let auxiliary = { rms: 0, peak: 0, clipped: false };
+  try { auxiliary = normalizeMeasurement(auxiliaryInput?.()); } catch (_) {}
   // The room microphone never connects to this AudioNode or to the speakers.
   // It is nevertheless HUSH evidence whenever permission has made it active.
-  const rms = Math.min(1, Math.hypot(programRms, auxiliaryRms));
-  const hushRms = Math.min(1, Math.hypot(hushProgramRms, auxiliaryRms));
+  const rms = Math.min(1, Math.hypot(programRms, auxiliary.rms));
+  const instantPeak = Math.max(injectedMeasurement?.peak || programRms, auxiliary.peak);
+  const clipping = !!injectedMeasurement?.clipped || auxiliary.clipped || instantPeak >= CLIP_PEAK;
 
-  const dt = lastAt ? Math.min(0.25, Math.max(0, (nowMs - lastAt) / 1000)) : 1 / 60;
-  lastAt = nowMs;
-  const tau = rms > envelope ? ATTACK_SEC : RELEASE_SEC;
-  const k = 1 - Math.exp(-dt / tau);
-  envelope += (rms - envelope) * k;
-
-  if (envelope >= peak || nowMs >= peakUntil) {
-    peak = envelope;
+  if (instantPeak >= peak || nowMs >= peakUntil) {
+    peak = instantPeak;
     peakUntil = nowMs + PEAK_HOLD_SEC * 1000;
   }
+  if (clipping) clipUntil = nowMs + CLIP_HOLD_SEC * 1000;
 
-  const db = dbFor(envelope);
-  const peakDb = dbFor(peak);
-  const hushDb = dbFor(hushRms);
+  const db = dbFor(rms);
+  const clipHeld = nowMs < clipUntil;
+  const peakDb = clipHeld ? 0 : dbFor(peak);
+  const band = monitorBandForDb(db);
   return {
-    rms: envelope,
+    rms,
     db,
-    segments: segmentsFor(db),
+    segments: clipHeld ? MONITOR_THRESHOLDS.length : segmentsFor(db),
+    peak,
     peakDb,
-    band: monitorBandForDb(db),
-    hushRms,
-    hushDb,
-    hushBand: monitorBandForDb(hushDb),
-    inputKind: auxiliaryRms > 0 ? 'room-mic' : lastPlayerInput?.until > nowMs ? lastPlayerInput.kind : null,
-    inputPosition: auxiliaryRms <= 0 && lastPlayerInput?.audibleToHush && lastPlayerInput?.until > nowMs && lastPlayerInput.position
+    clipped: clipHeld,
+    band,
+    hushRms: rms,
+    hushDb: db,
+    hushBand: band,
+    inputKind: auxiliary.rms > 0 ? 'room-mic' : lastPlayerInput?.until > nowMs ? lastPlayerInput.kind : null,
+    inputPosition: auxiliary.rms <= 0 && lastPlayerInput?.audibleToHush && lastPlayerInput?.until > nowMs && lastPlayerInput.position
       ? { ...lastPlayerInput.position }
       : null,
   };
 }
 
-// Test-only injection. `null` reconnects the readout to the real analyser.
-export function monitorInject(level = null) { injected = level == null ? null : Number(level); }
+// Test-only injection. `null` reconnects the readout to semantic events + mic.
+export function monitorInject(level = null) { injected = level == null ? null : level; }
 export function monitorSetAuxInput(provider = null) { auxiliaryInput = typeof provider === 'function' ? provider : null; }
 
 export function monitorReset() {
-  ctx = analyser = data = null;
-  envelope = peak = 0;
-  peakUntil = lastAt = 0;
+  ctx = analyser = null;
+  peak = 0;
+  peakUntil = clipUntil = 0;
   injected = null;
   auxiliaryInput = null;
   acousticInputs = [];

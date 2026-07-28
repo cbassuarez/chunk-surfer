@@ -122,6 +122,18 @@ export function buildMinimapCommands({ model, viewport, radius = 18, now = 0, as
   }
   commands.push({ kind: 'player', point: transform.point(model.player.position), heading: model.player.heading || 0 });
 
+  // Exact position is permitted only for a manifestation the player can see
+  // right now. Losing sight removes the marker on the next model update.
+  if (model.hush?.active && model.hush.visible === true
+      && model.hush.floorId === model.player.floorId && model.hush.position) {
+    const raw = transform.point(model.hush.position);
+    const inside = insideRect(raw, viewport, 0.7);
+    commands.push({
+      kind: inside ? 'hush-visible' : 'hush-visible-edge',
+      point: inside ? raw : clampMarkerToEdge(model.player.position, model.hush.position, viewport, 0.8, heading),
+    });
+  }
+
   if (policy.showWaypoint !== false && model.waypoint) {
     if (model.waypoint.floorId === model.player.floorId && model.waypoint.position) {
       const raw = transform.point(model.waypoint.position);
@@ -158,23 +170,9 @@ export function buildMinimapCommands({ model, viewport, radius = 18, now = 0, as
     }
   }
 
-  // Playtesting requires an unambiguous body marker. Main supplies only this
-  // sanitized position/floor pair; pathfinding and detection internals remain
-  // outside the map model.
-  if (model.hush?.active && model.hush.position) {
-    if (model.hush.floorId === model.player.floorId) {
-      const raw = transform.point(model.hush.position);
-      const inside = insideRect(raw, viewport, 0.7);
-      commands.push({
-        kind: inside ? 'hush' : 'hush-edge',
-        point: inside ? raw : clampMarkerToEdge(model.player.position, model.hush.position, viewport, 0.8),
-      });
-    } else if (model.hush.floorId) {
-      const here = model.floors.find((candidate) => candidate.id === model.player.floorId);
-      const there = model.floors.find((candidate) => candidate.id === model.hush.floorId);
-      commands.push({ kind: 'hush-floor', delta: here && there ? there.order - here.order : 0 });
-    }
-  }
+  // Unseen HUSH knowledge is still confirmed by the status line rather than a
+  // body, bearing, radius, or floor marker. Only direct visual confirmation may
+  // produce the short-lived body command above.
 
   return commands;
 }

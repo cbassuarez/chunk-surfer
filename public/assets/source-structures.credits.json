@@ -1,0 +1,106 @@
+{
+  "file": "source-structures.glb",
+  "pack": {
+    "sha256": "486edd9d7e026ee2a613685b3d7a02805619f500a567a90f2cad18c298d3c1a6",
+    "bytes": 4176440,
+    "triangles": 12724
+  },
+  "source": {
+    "mesh": "marble_bust_01",
+    "source": "https://polyhaven.com/a/marble_bust_01",
+    "license": "CC0-1.0",
+    "archive": "marble_bust_01_4k.blend.zip",
+    "archiveSha256": "93f445c2df038112c0229b09734b644642acbefff3b62e3072b9fcccd8eb9510",
+    "acquisitionPack": "conservatory-acquisitions.glb",
+    "acquisitionPackSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336"
+  },
+  "derivation": {
+    "builder": "tools/chunk_surfer/build-source-structures.mjs",
+    "deterministic": true,
+    "operations": [
+      "complementary triangle-plane clipping",
+      "deterministic irregular edge displacement",
+      "rough inset fracture caps",
+      "derived marble chips"
+    ],
+    "externalDownloadsRequired": false
+  },
+  "meshes": [
+    {
+      "name": "source_bust_broken_torso",
+      "triangles": 4488,
+      "vertices": 13464,
+      "bounds": {
+        "min": [
+          -0.135858,
+          0,
+          -0.140867
+        ],
+        "max": [
+          0.135858,
+          0.322,
+          0.140867
+        ]
+      },
+      "watertight": true,
+      "openEdges": 0
+    },
+    {
+      "name": "source_bust_broken_head",
+      "triangles": 6048,
+      "vertices": 18144,
+      "bounds": {
+        "min": [
+          -0.096419,
+          0,
+          -0.129516
+        ],
+        "max": [
+          0.096419,
+          0.225332,
+          0.129516
+        ]
+      },
+      "watertight": true,
+      "openEdges": 0
+    },
+    {
+      "name": "source_bust_face_shard",
+      "triangles": 2160,
+      "vertices": 6480,
+      "bounds": {
+        "min": [
+          -0.054083,
+          0,
+          -0.069298
+        ],
+        "max": [
+          0.054083,
+          0.192883,
+          0.069298
+        ]
+      },
+      "watertight": true,
+      "openEdges": 0
+    },
+    {
+      "name": "source_bust_marble_chips",
+      "triangles": 28,
+      "vertices": 84,
+      "bounds": {
+        "min": [
+          -0.097123,
+          0,
+          -0.123839
+        ],
+        "max": [
+          0.097123,
+          0.02361,
+          0.123839
+        ]
+      },
+      "watertight": true,
+      "openEdges": 0
+    }
+  ]
+}

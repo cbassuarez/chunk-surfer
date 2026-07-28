@@ -7,6 +7,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { importPropMesh } from './lib/glb-import.mjs';
+import {
+  MARIMBA_ACCIDENTAL_AFTER,
+  MARIMBA_LOWER_BAR_COUNT,
+  marimbaAccidentalX,
+  marimbaNaturalX,
+} from '../../src/data/marimba-layout.js';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const OUT_DIR = path.join(ROOT, 'public/assets');
@@ -259,6 +265,36 @@ function addTriangle(m,a,b,c,mat){
 {
   const m=mesh('equipment_cart'); addBox(m,[0,.62,0],[1.15,.08,.65],MAT.steel);addBox(m,[0,.18,0],[1.15,.08,.65],MAT.steel);for(const x of [-.5,.5])for(const z of [-.25,.25]){addCylinder(m,[x,.40,z],.018,.42,MAT.steel,8);addCylinder(m,[x,.05,z],.07,.05,MAT.black,10);}
 }
+{
+  const m=mesh('piano_bench');addBox(m,[0,.49,0],[.76,.10,.34],MAT.black);addLegs(m,0,0,.60,.20,.025,.47,MAT.dark,.025);
+}
+{
+  const m=mesh('open_score');addBox(m,[-.155,.012,0],[.30,.018,.36],MAT.paper,-.08);addBox(m,[.155,.012,0],[.30,.018,.36],MAT.ivory,.08);addBeam(m,[0,.020,-.17],[0,.020,.17],.008,MAT.dark);
+}
+{
+  const m=mesh('loose_pages');for(let i=0;i<7;i++)addBox(m,[(i%3-.8)*.12,.005+i*.003,(Math.floor(i/3)-.7)*.14],[.34,.006,.44],i%2?MAT.paper:MAT.ivory,(i-3)*.17);
+}
+{
+  const m=mesh('metronome');addBox(m,[0,.16,0],[.19,.32,.14],MAT.wood);addBox(m,[0,.33,.01],[.12,.08,.10],MAT.dark);addBeam(m,[0,.08,-.08],[.05,.42,-.08],.012,MAT.brass);addBox(m,[.035,.27,-.08],[.06,.025,.025],MAT.brass);
+}
+{
+  const m=mesh('wastebasket');addCylinder(m,[0,.20,0],.16,.40,MAT.steel,12);addCylinder(m,[0,.415,0],.17,.025,MAT.dark,12);
+}
+{
+  const m=mesh('soft_bag');addBox(m,[0,.15,0],[.64,.28,.30],MAT.cloth);addBeam(m,[-.20,.27,0],[-.12,.48,0],.025,MAT.dark);addBeam(m,[.20,.27,0],[.12,.48,0],.025,MAT.dark);addBeam(m,[-.12,.48,0],[.12,.48,0],.025,MAT.dark);
+}
+{
+  const m=mesh('draped_coat');addBox(m,[0,.43,0],[.52,.74,.08],MAT.cloth,.08);addBox(m,[-.30,.43,.02],[.22,.62,.07],MAT.cloth,-.22);addBox(m,[.30,.43,.02],[.22,.62,.07],MAT.cloth,.22);addBox(m,[0,.77,-.01],[.24,.20,.09],MAT.dark);
+}
+{
+  const m=mesh('mallet_pair');addBeam(m,[-.27,.035,-.035],[.27,.035,.035],.018,MAT.wood);addBeam(m,[-.27,.035,.055],[.27,.035,-.055],.018,MAT.wood);addCylinder(m,[.29,.035,.04],.038,.075,MAT.cloth,10);addCylinder(m,[.29,.035,-.06],.038,.075,MAT.cloth,10);
+}
+{
+  const m=mesh('cable_coil');for(let ring=0;ring<3;ring++){const r=.19+ring*.035;for(let i=0;i<16;i++){const a=i*Math.PI*2/16,b=(i+1)*Math.PI*2/16;addBeam(m,[Math.cos(a)*r,.035+ring*.018,Math.sin(a)*r],[Math.cos(b)*r,.035+ring*.018,Math.sin(b)*r],.018,MAT.black);}}addBeam(m,[.20,.05,0],[.31,.05,.12],.025,MAT.brass);
+}
+{
+  const m=mesh('open_instrument_case');addBox(m,[0,.10,0],[1.28,.18,.48],MAT.black);addBox(m,[0,.205,0],[1.15,.035,.36],MAT.cloth);addBox(m,[0,.48,.30],[1.28,.58,.08],MAT.black,-.12);addBox(m,[0,.48,.25],[1.14,.46,.035],MAT.cloth,-.12);for(const x of[-.38,0,.38])addBox(m,[x,.11,-.255],[.10,.05,.05],MAT.brass);
+}
 
 // Instruments and electro-acoustic fixtures.
 {
@@ -272,8 +308,8 @@ function addTriangle(m,a,b,c,mat){
 }
 {
   const m=mesh('marimba'); addBox(m,[0,.72,0],[2.65,.07,.46],MAT.steel);addBox(m,[0,.72,.46],[2.25,.07,.40],MAT.steel);addLegs(m,0,.20,2.35,.56,.08,.68,MAT.steel,.025);
-  for(let i=0;i<17;i++){const x=-1.18+i*.147,w=.13,d=.52-i*.009;addBox(m,[x,1.08,0],[w,.045,d],MAT.wood);if(i<14)addCylinder(m,[x,.72,.02],.035,.58-i*.018,MAT.brass,10);}
-  for(let i=0;i<12;i++){const x=-.95+i*.17;addBox(m,[x,1.15,.42],[.145,.045,.39],MAT.wood);addCylinder(m,[x,.77,.43],.034,.54-i*.014,MAT.brass,10);}
+  for(let i=0;i<MARIMBA_LOWER_BAR_COUNT;i++){const x=marimbaNaturalX(i),w=.13,d=.52-i*.009;addBox(m,[x,1.08,0],[w,.045,d],MAT.wood);if(i<14)addCylinder(m,[x,.72,.02],.035,.58-i*.018,MAT.brass,10);}
+  for(let i=0;i<MARIMBA_ACCIDENTAL_AFTER.length;i++){const after=MARIMBA_ACCIDENTAL_AFTER[i],x=marimbaAccidentalX(after);addBox(m,[x,1.15,.42],[.13,.045,.39],MAT.wood);addCylinder(m,[x,.77,.43],.034,.54-i*.014,MAT.brass,10);}
 }
 {
   const m=mesh('timpani'); addCylinder(m,[0,.54,0],.39,.72,MAT.brass,18);addCylinder(m,[0,.93,0],.44,.08,MAT.steel,20);addCylinder(m,[0,.99,0],.40,.045,MAT.ivory,20);for(let i=0;i<4;i++){const a=i*Math.PI/2;addCylinder(m,[Math.cos(a)*.33,.28,Math.sin(a)*.33],.018,.50,MAT.steel,8);}

@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "asset": "hush-body-sdf.png",
+  "runtimeCopy": "public/assets/hush/hush-body-sdf.png",
+  "purpose": "Static HUSH manifestation derived from the cover-art silhouette",
+  "source": {
+    "name": "Color Fill 2.png",
+    "sha256": "b2b6d9050bae346d1b90fac329ece047a6108d17d7d47c1499f13882c3e950d5",
+    "sourceSize": [
+      177,
+      343
+    ],
+    "opaqueBounds": [
+      1,
+      219,
+      41,
+      342
+    ],
+    "ownership": "user-provided project artwork"
+  },
+  "coverReference": {
+    "psdSha256": "8755c5780e01dd193e98116e36da6e0499948d31c7a29347d626bf9035d07333",
+    "pngSha256": "f2f72c84c042dbf5682212e226540646a17628a8611c963dc627d4000696035d",
+    "composite": "Screen outer glow followed by Color Dodge silhouette layer"
+  },
+  "processed": {
+    "sha256": "8f52397c0c2b050c4b3f78b14f6a7fb3040f8fa0253498c928151ffeb280d655",
+    "size": [
+      128,
+      256
+    ],
+    "fitSize": [
+      74,
+      228
+    ],
+    "channels": {
+      "r": "signed distance, 0.5 at the silhouette edge, 28 pixel range",
+      "g": "resampled source alpha",
+      "b": "bottom-to-top body coordinate",
+      "a": "opaque"
+    },
+    "alphaFloor": 32,
+    "maskThreshold": 112,
+    "generator": "scripts/generate-hush-body-sdf.py",
+    "distanceSource": "thresholded figure alpha; smart-object canvas wash excluded"
+  }
+}

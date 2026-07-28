@@ -4,7 +4,11 @@ import { readFileSync } from 'node:fs';
 
 import { combatActionReadout, combatBarCells, combatInjuryStage } from '../src/render/combat-view.js';
 import * as combatView from '../src/render/combat-view.js';
-import { ORDINARY_TURN_SECONDS } from '../src/game/combat.js';
+import {
+  ORDINARY_TURN_SECONDS,
+  combatDeckDirection,
+  combatDeckNavigation,
+} from '../src/game/combat.js';
 
 const combatViewSource = readFileSync(new URL('../src/render/combat-view.js', import.meta.url), 'utf8');
 const combatSceneSource = readFileSync(new URL('../src/game/combat.js', import.meta.url), 'utf8');
@@ -83,10 +87,12 @@ test('the enemy takes its own beat: player and enemy resolutions are sequenced',
   assert.match(combatSceneSource, /director\?\.advance\?\.\(turnStart/);
 });
 
-test('Tab steps back inside the fight; Escape stays reserved for run-level pause', () => {
-  assert.match(combatSceneSource, /e\.key === 'Tab'/);
+test('directional rows replace Tab while Escape stays reserved for run-level pause', () => {
+  assert.doesNotMatch(combatSceneSource, /e\.key === 'Tab'/);
   assert.doesNotMatch(combatSceneSource, /back = e\.key === 'Escape'/);
-  assert.match(combatSceneSource, /\[TAB\] KIT/);
+  assert.doesNotMatch(combatSceneSource, /\[TAB/);
+  assert.match(combatSceneSource, /BACK AGAIN TO SKIP THE DRILL/);
+  assert.match(combatSceneSource, /CLICK SKIP DRILL/);
 });
 
 test('the command surface is an icon deck, not a text-list browser', () => {
@@ -103,11 +109,30 @@ test('the command surface is an icon deck, not a text-list browser', () => {
   assert.doesNotMatch(combatSceneSource, /move\.label\.padEnd\(13\)/);
 });
 
-test('the horizontal command deck supports keys and full-card pointer targets', () => {
-  assert.match(combatSceneSource, /e\.key === 'ArrowLeft'/);
-  assert.match(combatSceneSource, /e\.key === 'ArrowRight'/);
+test('the command deck uses horizontal selection, vertical rows, and full-card pointer targets', () => {
+  assert.equal(combatDeckDirection({ key: 'ArrowLeft' }), 'left');
+  assert.equal(combatDeckDirection({ key: 'd' }), 'right');
+  assert.equal(combatDeckDirection({ key: 'ArrowUp' }), 'up');
+  assert.equal(combatDeckDirection({ key: 's' }), 'down');
+  assert.equal(combatDeckDirection({ controllerAction: 'move_left' }), 'left');
+  assert.equal(combatDeckDirection({ controllerAction: 'move_down' }), 'down');
+
+  const tool = { phase: 'tool', selectedTool: 0, selectedMove: 2, toolCount: 3, moveCount: 4 };
+  assert.deepEqual(combatDeckNavigation(tool, 'left'), { phase: 'tool', selectedTool: 2, selectedMove: 0 });
+  assert.deepEqual(combatDeckNavigation(tool, 'down'), { phase: 'move', selectedTool: 0, selectedMove: 2 });
+  assert.deepEqual(combatDeckNavigation(tool, 'up'), { phase: 'tool', selectedTool: 0, selectedMove: 2 });
+
+  const move = { ...tool, phase: 'move' };
+  assert.deepEqual(combatDeckNavigation(move, 'right'), { phase: 'move', selectedTool: 0, selectedMove: 3 });
+  assert.deepEqual(combatDeckNavigation(move, 'up'), { phase: 'tool', selectedTool: 0, selectedMove: 2 });
+  assert.deepEqual(combatDeckNavigation(move, 'down'), { phase: 'move', selectedTool: 0, selectedMove: 2 });
+
   assert.match(combatSceneSource, /y >= row\.y && y < row\.y \+ \(row\.h \|\| 1\)/);
-  assert.match(combatSceneSource, /\[←→\] CHOOSE ACTION/);
+  assert.match(combatSceneSource, /phase = 'tool';\s+takeConfirmation = false/);
+  assert.match(combatSceneSource, /confirm && phase === 'move'/);
+  assert.doesNotMatch(combatSceneSource, /confirm && phase === 'tool'/);
+  assert.match(combatSceneSource, /\[←→ \/ A D\] ATTACK/);
+  assert.match(combatSceneSource, /action: 'back', label: '×2'/);
 });
 
 test('hands render in two near-square boxes clipped to the stage, not one full-width band', () => {

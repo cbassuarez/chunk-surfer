@@ -48,6 +48,7 @@ import { normalizeDoorSave } from './door-runtime.js';
 import { freshCombatBuild, normalizeCombatBuild } from './combat-progression.js';
 import { freshCombatLoadout, normalizeCombatLoadout } from './combat-loadout.js';
 import { freshPowerState, normalizePowerState } from './conservatory-power.js';
+import { freshDockHauntingState, normalizeDockHauntingState } from './loading-dock.js';
 
 const SAVE_KEY = 'chunk-surfer:save:v3';
 const LEGACY_SAVE_KEYS = STORAGE_LEGACY_SAVE_KEYS.filter((key) => key !== SAVE_KEY);
@@ -74,6 +75,7 @@ export const freshSave = ({ settings = DEFAULT_SETTINGS, run = null } = {}) => (
   chunkSurf: freshChunkSurfState(),
   chapelTower: freshChapelTowerState(),
   power: freshPowerState(),
+  dockHaunting: freshDockHauntingState(),
   settings: normalizeSettings(settings),
   run,
 });
@@ -232,6 +234,7 @@ function normalizeSaveV3(data, meta = null) {
     chunkSurf,
     chapelTower,
     power: normalizePowerState(source.power),
+    dockHaunting: normalizeDockHauntingState(source.dockHaunting),
     settings,
     run: sanitizeRun(normalizeRun(source.run, {
       meta,

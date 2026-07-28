@@ -86,7 +86,10 @@ for (const [cohort, count] of Object.entries(expectedCohorts)) {
 const practiceChairs = acquisitions.filter((prop) => prop.mesh === 'green_chair_01');
 assert.equal(practiceChairs.length, 8);
 assert.deepEqual(practiceChairs.map((prop) => prop.provenance.assetTag), ['P/CH-01', 'P/CH-02', 'P/CH-03', 'P/CH-04', 'P/CH-05', 'P/CH-06', 'P/CH-07', 'P/CH-08']);
-assert.ok(practiceChairs.some((prop) => prop.x === 70.2 && prop.y === 81.8), 'chair 08 remains beneath the violin in the ensemble room');
+const chair08=practiceChairs.find((prop)=>prop.provenance.assetTag==='P/CH-08');
+const ensembleViolin=CONSERVATORY_PROPS.find((prop)=>prop.id==='practice-ensemble-violin');
+assert.deepEqual({x:chair08?.x,y:chair08?.y},{x:ensembleViolin?.x,y:ensembleViolin?.y},
+  'chair 08 remains beneath the violin in the redressed ensemble room');
 
 const ceilingProps = acquisitions.filter((prop) => PROP_MESH[prop.mesh].mount === 'ceiling');
 for (const prop of ceilingProps) {

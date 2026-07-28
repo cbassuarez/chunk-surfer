@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-26T11:11:56.132Z",
-  "bytes": 3120280,
-  "totalTriangles": 44682,
+  "generatedAt": "2026-07-28T06:58:46.473Z",
+  "bytes": 3169528,
+  "totalTriangles": 45190,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -26,6 +26,46 @@
     "equipment_cart": {
       "triangles": 312,
       "vertices": 384
+    },
+    "piano_bench": {
+      "triangles": 140,
+      "vertices": 176
+    },
+    "open_score": {
+      "triangles": 36,
+      "vertices": 72
+    },
+    "loose_pages": {
+      "triangles": 84,
+      "vertices": 168
+    },
+    "metronome": {
+      "triangles": 48,
+      "vertices": 96
+    },
+    "wastebasket": {
+      "triangles": 96,
+      "vertices": 108
+    },
+    "soft_bag": {
+      "triangles": 48,
+      "vertices": 96
+    },
+    "draped_coat": {
+      "triangles": 48,
+      "vertices": 96
+    },
+    "mallet_pair": {
+      "triangles": 104,
+      "vertices": 140
+    },
+    "cable_coil": {
+      "triangles": 588,
+      "vertices": 1176
+    },
+    "open_instrument_case": {
+      "triangles": 84,
+      "vertices": 168
     },
     "upright_piano": {
       "triangles": 360,
@@ -212,8 +252,8 @@
       "vertices": 2412
     },
     "front_atrium_perimeter_relief": {
-      "triangles": 3048,
-      "vertices": 6096
+      "triangles": 2280,
+      "vertices": 4560
     },
     "academic_skylight": {
       "triangles": 288,

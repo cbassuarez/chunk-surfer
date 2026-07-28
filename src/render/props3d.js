@@ -109,7 +109,8 @@ precision highp float;
 in vec2 vUv;uniform sampler2D uTex;uniform float uUseTex,uBaseAlpha,uAlphaCut;
 void main(){float alpha=uUseTex>.5?texture(uTex,vUv).a:1.0;if(alpha*uBaseAlpha<uAlphaCut)discard;}`;
 
-let gl=null,program=null,textProgram=null,shadowProgram=null,pack=null,staticInstances=[],dynamicInstances=[],sourceStaticTextInstances=[],sourceDynamicTextInstances=[],sourceTextCorpus=[],sourceSceneKey='',sourceCorpusKey='',portraitAtlas=null;
+let gl=null,program=null,textProgram=null,shadowProgram=null,pack=null,staticInstances=[],dynamicInstances=[],emergencyShadowInstances=[],sourceStaticTextInstances=[],sourceStaticTextBatches=[],sourceVisibleBatchCount=0,sourceDynamicTextInstances=[],sourceTextCorpus=[],sourceSceneKey='',sourceCorpusKey='',portraitAtlas=null;
+let practicalLightScaleByPropId=new Map();
 let colorTex=null,depthTex=null,fbo=null,width=0,height=0;
 let shadowDepthTex=null,shadowFbo=null,shadowSize=0,shadowReady=false,shadowActive=false,shadowMatrix=new Float32Array(16);
 const NEAR=.05,FAR=90;
@@ -249,14 +250,14 @@ export function propInstanceVisible(instance,eye,maxDistance=90){
 }
 function visibleGroups(eye,maxDistance,{shadow=false}={}){
   const groups=new Map();
-  for(const i of [...staticInstances,...dynamicInstances]){
+  for(const i of [...staticInstances,...dynamicInstances,...emergencyShadowInstances]){
     if(!shadow&&i.shadowOnly)continue;
     if(!propInstanceVisible(i,eye,maxDistance))continue;
     if(!groups.has(i.mesh))groups.set(i.mesh,[]);groups.get(i.mesh).push(i);
   }
   return groups;
 }
-function uploadInstances(mesh,list){const data=new Float32Array(list.length*23);for(let k=0;k<list.length;k++){const at=k*23,emissive=Array.isArray(list[k].emissive)?list[k].emissive:[0,0,0,0];data.set(modelMatrix(list[k],mesh.nodeMatrix),at);data[at+16]=list[k].zone||0;data[at+17]=list[k].portraitIndex||0;data[at+18]=list[k].structural?1:0;data[at+19]=Number(emissive[0])||0;data[at+20]=Number(emissive[1])||0;data[at+21]=Number(emissive[2])||0;data[at+22]=Math.max(0,Number(emissive[3])||0);}gl.bindBuffer(gl.ARRAY_BUFFER,mesh.instanceBuffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.DYNAMIC_DRAW);}
+function uploadInstances(mesh,list){const data=new Float32Array(list.length*23);for(let k=0;k<list.length;k++){const at=k*23,emissive=Array.isArray(list[k].emissive)?list[k].emissive:[0,0,0,0],lightScale=practicalLightScaleByPropId.get(list[k].id)??1;data.set(modelMatrix(list[k],mesh.nodeMatrix),at);data[at+16]=list[k].zone||0;data[at+17]=list[k].portraitIndex||0;data[at+18]=list[k].structural?1:0;data[at+19]=Number(emissive[0])||0;data[at+20]=Number(emissive[1])||0;data[at+21]=Number(emissive[2])||0;data[at+22]=Math.max(0,(Number(emissive[3])||0)*lightScale);}gl.bindBuffer(gl.ARRAY_BUFFER,mesh.instanceBuffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.DYNAMIC_DRAW);}
 function renderShadowPass(eye,yaw,pitch,light,shadowLight=null){
   const practical=shadowLight&&Number.isFinite(shadowLight.x)&&Number.isFinite(shadowLight.y)&&Number.isFinite(shadowLight.z)?shadowLight:null;
   shadowActive=false;if(!shadowReady||!shadowFbo||(!practical&&light<=.001)||!pack)return false;
@@ -274,10 +275,16 @@ function renderShadowPass(eye,yaw,pitch,light,shadowLight=null){
 
 export function setPropInstances(next){staticInstances=Array.isArray(next)?next:[];}
 export function setDynamicPropInstances(next){dynamicInstances=Array.isArray(next)?next:[];}
-export function setSourceTextInstances(next){sourceStaticTextInstances=Array.isArray(next)?next:[];sourceDynamicTextInstances=[];sourceTextCorpus=[];sourceCorpusKey='';sourceSceneKey='legacy';}
+export function setEmergencyShadowInstances(next){emergencyShadowInstances=Array.isArray(next)?next:[];}
+export function setPracticalLightFrame(lights){
+  practicalLightScaleByPropId=new Map((Array.isArray(lights)?lights:[])
+    .filter((light)=>light?.anchorPropId&&Number.isFinite(light.emissiveScale))
+    .map((light)=>[light.anchorPropId,Math.max(.012,Math.min(1,Number(light.emissiveScale)||0))]));
+}
+export function setSourceTextInstances(next){sourceStaticTextInstances=Array.isArray(next)?next:[];sourceStaticTextBatches=[];sourceVisibleBatchCount=0;sourceDynamicTextInstances=[];sourceTextCorpus=[];sourceCorpusKey='';sourceSceneKey='legacy';}
 export function setSourceScene(scene={}){
   const key=String(scene.key||'');
-  if(key!==sourceSceneKey){sourceSceneKey=key;sourceStaticTextInstances=Array.isArray(scene.staticInstances)?scene.staticInstances:[];}
+  if(key!==sourceSceneKey){sourceSceneKey=key;sourceStaticTextInstances=Array.isArray(scene.staticInstances)?scene.staticInstances:[];sourceStaticTextBatches=Array.isArray(scene.staticBatches)?scene.staticBatches.filter((batch)=>Array.isArray(batch?.instances)):[];}
   sourceDynamicTextInstances=Array.isArray(scene.dynamicInstances)?scene.dynamicInstances:[];
   const atlasKey=String(scene.atlasKey||'');
   if(atlasKey&&atlasKey!==sourceCorpusKey&&Array.isArray(scene.corpus)){sourceCorpusKey=atlasKey;sourceTextCorpus=scene.corpus;}
@@ -314,7 +321,18 @@ function ensureTextAtlas(){
   if(textAtlas)gl.deleteTexture(textAtlas);textAtlas=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,textAtlas);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,gl.RGBA,gl.UNSIGNED_BYTE,canvas);gl.generateMipmap(gl.TEXTURE_2D);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
 }
 function renderSourceText(viewMatrix,projection,eye,forward,maxDistance){
-  const sourceTextInstances=[...sourceStaticTextInstances,...sourceDynamicTextInstances];
+  let staticTextInstances=sourceStaticTextInstances;
+  if(sourceStaticTextBatches.length){
+    const visibleBatches=sourceStaticTextBatches.filter((batch)=>{
+      const b=batch.bounds;if(!b)return true;
+      const x=Math.max(Number(b.minX)||0,Math.min(eye[0],Number(b.maxX)||0));
+      const z=Math.max(Number(b.minZ)||0,Math.min(eye[2],Number(b.maxZ)||0));
+      return Math.hypot(x-eye[0],z-eye[2])<=maxDistance;
+    });
+    sourceVisibleBatchCount=visibleBatches.length;
+    staticTextInstances=visibleBatches.flatMap((batch)=>batch.instances);
+  }else sourceVisibleBatchCount=sourceStaticTextInstances.length?1:0;
+  const sourceTextInstances=[...staticTextInstances,...sourceDynamicTextInstances];
   if(!sourceTextInstances.length||!textProgram)return;
   ensureTextAtlas();const visible=[];
   for(const entry of sourceTextInstances){const m=entry.matrix;if(!m||m.length!==16)continue;const dx=m[12]-eye[0],dz=m[14]-eye[2],d=Math.hypot(dx,dz);if(d>maxDistance)continue;if(d>4&&(dx*forward[0]+dz*forward[2])/Math.max(.001,d)<-.15)continue;const text=String(entry.text||entry.source?.text||''),uv=textAtlasEntries.get(text);if(!uv)continue;visible.push({entry,m,uv});}
@@ -336,4 +354,4 @@ export function renderPropPass({camX,camY,camZ,yaw,pitch=0,light=1,maxDistance=9
   gl.bindVertexArray(null);gl.disable(gl.CULL_FACE);gl.disable(gl.DEPTH_TEST);gl.bindFramebuffer(gl.FRAMEBUFFER,null);return true;
 }
 
-export function propPackStats(){return pack?{meshes:pack.catalog.size,instances:staticInstances.length,dynamicInstances:dynamicInstances.length,sourceText:sourceStaticTextInstances.length+sourceDynamicTextInstances.length,sourceStaticText:sourceStaticTextInstances.length,sourceDynamicText:sourceDynamicTextInstances.length,sourceSceneKey,sourceCorpusKey,textAtlasBuilds,shadow:{ready:shadowReady,active:shadowActive,size:shadowSize}}:null;}
+export function propPackStats(){return pack?{meshes:pack.catalog.size,instances:staticInstances.length,dynamicInstances:dynamicInstances.length,emergencyShadowInstances:emergencyShadowInstances.length,sourceText:sourceStaticTextInstances.length+sourceDynamicTextInstances.length,sourceStaticText:sourceStaticTextInstances.length,sourceDynamicText:sourceDynamicTextInstances.length,sourceStaticBatches:sourceStaticTextBatches.length,sourceVisibleBatches:sourceVisibleBatchCount,sourceSceneKey,sourceCorpusKey,textAtlasBuilds,shadow:{ready:shadowReady,active:shadowActive,size:shadowSize}}:null;}

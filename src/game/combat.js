@@ -75,6 +75,40 @@ const clamp = (value, min, max) => Math.max(min, Math.min(max, Number(value) || 
 const lerp = (a, b, t) => Number(a || 0) + (Number(b || 0) - Number(a || 0)) * t;
 const ease = (t) => 1 - Math.pow(1 - clamp(t, 0, 1), 3);
 
+export function combatDeckDirection(event = {}) {
+  const action = String(event.controllerAction || '');
+  if (action === 'move_left') return 'left';
+  if (action === 'move_right') return 'right';
+  if (action === 'move_up') return 'up';
+  if (action === 'move_down') return 'down';
+  const key = String(event.key || '').toLowerCase();
+  if (key === 'arrowleft' || key === 'a') return 'left';
+  if (key === 'arrowright' || key === 'd') return 'right';
+  if (key === 'arrowup' || key === 'w') return 'up';
+  if (key === 'arrowdown' || key === 's') return 'down';
+  return null;
+}
+
+export function combatDeckNavigation({
+  phase = 'tool', selectedTool = 0, selectedMove = 0, toolCount = 0, moveCount = 0,
+} = {}, direction = null) {
+  const next = { phase, selectedTool, selectedMove };
+  if (direction === 'left' || direction === 'right') {
+    const delta = direction === 'left' ? -1 : 1;
+    const count = phase === 'move' ? moveCount : toolCount;
+    if (count <= 0) return next;
+    if (phase === 'move') next.selectedMove = (selectedMove + delta + count) % count;
+    else {
+      next.selectedTool = (selectedTool + delta + count) % count;
+      next.selectedMove = 0;
+    }
+    return next;
+  }
+  if (direction === 'down' && phase === 'tool' && moveCount > 0) next.phase = 'move';
+  else if (direction === 'up' && phase === 'move') next.phase = 'tool';
+  return next;
+}
+
 function opponentArt(ref, combatId = '') {
   const id = typeof ref === 'string' ? ref : String(ref?.id || '');
   // Encounters without authored raster art get the procedural signal-being
@@ -191,6 +225,7 @@ export function makeCombatScene({
   let toolRows = [];
   let moveRows = [];
   let channelRows = [];
+  let skipRect = null;
   let skipArmed = false;
   let regionRects = {};
   let introElapsed = 0;
@@ -544,19 +579,28 @@ export function makeCombatScene({
     audio?.menuMove?.();
   }
 
-  function moveSelection(delta) {
-    if (phase === 'tool') {
-      const list = tools();
-      if (!list.length) return;
-      selectedTool = (selectedTool + delta + list.length) % list.length;
-      selectedMove = 0;
-    } else if (phase === 'move') {
-      const list = moves();
-      if (!list.length) return;
-      selectedMove = (selectedMove + delta + list.length) % list.length;
-    }
+  function navigateDeck(direction) {
+    const before = { phase, selectedTool, selectedMove };
+    const next = combatDeckNavigation({
+      ...before,
+      toolCount: tools().length,
+      moveCount: moves().length,
+    }, direction);
+    phase = next.phase;
+    selectedTool = next.selectedTool;
+    selectedMove = next.selectedMove;
+    if (phase === before.phase && selectedTool === before.selectedTool && selectedMove === before.selectedMove) return;
     takeConfirmation = false;
     audio?.menuMove?.();
+  }
+
+  function skipDrill() {
+    if (!director?.active?.()) return false;
+    director.skip();
+    skipArmed = false;
+    notice = 'DRILL SKIPPED · ALL MOVES OPEN';
+    audio?.menuMove?.();
+    return true;
   }
 
   function visualState() {
@@ -688,9 +732,9 @@ export function makeCombatScene({
 
     key(e) {
       const confirm = isConfirmInput(e);
-      // Escape is the run-level pause everywhere, including mid-battle, so the
-      // in-fight "step back" is Tab (with X as the legacy alternate).
-      const back = e.key === 'Tab' || e.key === 'x' || e.controllerAction === 'back';
+      // Escape remains the run-level pause. The fight's semantic Back is the
+      // controller binding (or X on keyboard), never Tab.
+      const back = String(e.key || '').toLowerCase() === 'x' || e.controllerAction === 'back';
       if (phase === 'talk') {
         if (confirm) {
           if (!cur) return true;
@@ -761,24 +805,20 @@ export function makeCombatScene({
       }
       if (!['tool', 'move'].includes(phase)) return true;
       if (!back) skipArmed = false;
-      if (e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'w' || e.key === 'a') moveSelection(-1);
-      else if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === 's' || e.key === 'd') moveSelection(1);
-      else if (e.key === 'q') cycleChannel(-1);
-      else if (e.key === 'e') cycleChannel(1);
-      else if (back && phase === 'move') { phase = 'tool'; takeConfirmation = false; audio?.menuMove?.(); }
+      const direction = combatDeckDirection(e);
+      if (direction) navigateDeck(direction);
+      else if (String(e.key || '').toLowerCase() === 'q' || e.controllerAction === 'tabPrev') cycleChannel(-1);
+      else if (String(e.key || '').toLowerCase() === 'e' || e.controllerAction === 'tabNext') cycleChannel(1);
+      else if (back && phase === 'move') navigateDeck('up');
       else if (back && phase === 'tool' && director?.active?.()) {
-        // The drill can always be walked away from: one Tab warns, two skip it.
+        // The drill can always be walked away from: one Back warns, two skip it.
         if (skipArmed) {
-          director.skip();
-          skipArmed = false;
-          notice = 'DRILL SKIPPED · ALL MOVES OPEN';
+          skipDrill();
         } else {
           skipArmed = true;
-          notice = 'TAB AGAIN TO SKIP THE DRILL';
+          notice = 'BACK AGAIN TO SKIP THE DRILL';
+          audio?.menuMove?.();
         }
-        audio?.menuMove?.();
-      } else if (confirm && phase === 'tool') {
-        if (moves().length) { phase = 'move'; selectedMove = 0; audio?.menuConfirm?.(); }
       } else if (confirm && phase === 'move') execute(moves()[selectedMove]?.id);
       return true;
     },
@@ -795,6 +835,10 @@ export function makeCombatScene({
       if (!['tool', 'move'].includes(phase) || e.type !== 'pointerdown') return true;
       const x = Math.floor(Number(e.cellX));
       const y = Math.floor(Number(e.cellY));
+      if (skipRect && x >= skipRect.x && x < skipRect.x + skipRect.w && y >= skipRect.y && y < skipRect.y + skipRect.h) {
+        skipDrill();
+        return true;
+      }
       const channel = channelRows.find((row) => y >= row.y && y < row.y + (row.h || 1) && x >= row.x && x < row.x + row.w);
       if (channel) {
         state = reduceCombat(state, { type: COMBAT_ACTION.CHANNEL, channel: channel.id });
@@ -806,8 +850,9 @@ export function makeCombatScene({
       if (tool) {
         selectedTool = tool.index;
         selectedMove = 0;
-        phase = 'move';
-        audio?.menuConfirm?.();
+        phase = 'tool';
+        takeConfirmation = false;
+        audio?.menuMove?.();
         return true;
       }
       const move = moveRows.find((row) => y >= row.y && y < row.y + (row.h || 1) && x >= row.x && x < row.x + row.w);
@@ -828,10 +873,12 @@ export function makeCombatScene({
         ? '168 BPM · LOCKING DOWNBEAT'
         : phase === 'tool'
           ? activeInputPromptDevice() === 'controller'
-            ? promptLine([{ action: 'select', label: 'CHOOSE KIT' }, { action: 'confirm', label: 'OPEN ACTIONS' }])
-            : `[←→] CHOOSE KIT · [ENTER] ACTIONS${director?.active?.() ? ' · [TAB×2] SKIP DRILL' : ''}`
+            ? '[STICK / D-PAD ←→] TOOL · [↓] ACTIONS'
+            : '[←→ / A D] TOOL · [↓ / S] ACTIONS'
           : phase === 'move'
-            ? '[←→] CHOOSE ACTION · [ENTER] ACT · [TAB] KIT'
+            ? activeInputPromptDevice() === 'controller'
+              ? `${promptLine([{ action: 'select', label: '←→ ATTACK' }, { action: 'confirm', label: 'ACT' }])} · [↑] TOOL`
+              : '[←→ / A D] ATTACK · [ENTER] ACT · [↑ / W] TOOL'
             : phase === 'resolve'
               ? (resolution && resolution.side === 'enemy' && !resolution.impactFired && !resolution.parryTried
                   ? 'THE BLOW LANDS · [SPACE] PARRY'
@@ -842,6 +889,18 @@ export function makeCombatScene({
       const panel = drawMachinePanel(x - 2, 1, w + 4, rows - 2, {
         label: 'AUDIOCORP / SIGNAL COMBAT', source: state.source ? 'SOURCE' : 'FIELD', meter: true, footer,
       });
+      skipRect = null;
+      if (director?.active?.() && choosing) {
+        const skipLabel = activeInputPromptDevice() === 'controller'
+          ? skipArmed
+            ? `${promptLine([{ action: 'back', label: 'AGAIN' }])} / CLICK TO SKIP`
+            : `${promptLine([{ action: 'back', label: '×2' }])} / CLICK SKIP DRILL`
+          : skipArmed ? 'BACK AGAIN / CLICK TO SKIP' : 'BACK×2 / CLICK SKIP DRILL';
+        const skipX = x + w - skipLabel.length;
+        const skipY = rows - 3;
+        uiText(skipX, skipY, skipLabel, skipArmed ? 'ui-danger' : 'ui-amber', skipArmed ? .95 : .72);
+        skipRect = { x: skipX, y: skipY, w: skipLabel.length, h: 1 };
+      }
       const compact = panel.h < 20;
       const visual = visualState();
       const movementData = movement(visual.movementIndex) || movement();

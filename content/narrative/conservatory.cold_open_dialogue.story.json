@@ -209,7 +209,7 @@
           "hideWhenAsked": true
         },
         {
-          "text": "sign for the ring and go in",
+          "text": "sign for the keyring and go in",
           "goto": "descent",
           "id": "start.choice.6",
           "mutations": {
@@ -867,7 +867,7 @@
       "revisitLines": [
         {
           "who": "guard",
-          "text": "Still the door, the ring, and the book. Ask away.",
+          "text": "Still the door, the keyring, and the book. Ask away.",
           "id": "guard.revisit.line.1",
           "when": "!cold.guard.wary"
         },
@@ -1841,7 +1841,7 @@
         },
         {
           "who": "direction",
-          "text": "In one gesture (the toughest labour of his evening) he slides the ring and a handset under the glass and takes the form back.",
+          "text": "In one gesture (the toughest labour of his evening) he slides the keys and a handset under the glass and takes the form back.",
           "id": "threshold.line.5",
           "cues": [
             "slides"
@@ -1870,7 +1870,7 @@
         },
         {
           "who": "guard",
-          "text": "Whatever the last man heard, he still signed received. Bring me the ring, and sign the other box.",
+          "text": "Whatever the last man heard, he still signed received. Bring me back the keyring, and sign the other box.",
           "id": "threshold.line.10",
           "when": "cold.knows.returned_blank"
         },
@@ -1889,7 +1889,7 @@
       "lines": [
         {
           "who": "guard",
-          "text": "One thing, before you take the ring. The stair down to the basement — the light's dead. Since—",
+          "text": "One thing, before you take the keys. The stair down to the basement — the light's dead. Since—",
           "id": "descent.line.1"
         },
         {
