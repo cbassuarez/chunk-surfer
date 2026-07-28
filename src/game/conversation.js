@@ -176,6 +176,11 @@ export function createConversation({
           if (branchOptions().length) { openBranch(); return; }
           const n = node();
           if (n?.goto) { gotoNode(n.goto); return; }
+          // An explicitly empty terminal node is a real ending. Previously it
+          // left the thought shell alive with no line, choices, or dismissible
+          // input — the loading-dock investigations all terminate this way.
+          startBeats();
+          return;
         }
         if (mode === 'beats') finish();
         return;

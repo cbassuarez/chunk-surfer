@@ -429,23 +429,40 @@ export const CONSERVATORY_PROPS = [
   // bare. The architecture and torch define the route; rails, paintings,
   // furniture, frames, and hanging fixtures made the safe throat ambiguous.
 
-  // Practice suite. Mixed rooms, mixed equipment, and corridor surplus.
-  P('practice-ensemble-marimba','marimba',67,78,0,{...play(MARIMBA,'A rehearsal marimba with masking tape on four bars.','Four bars, four old pencil numbers.')}),
-  P('practice-ensemble-cello','cello',55,78,.18,{...play(STRINGS,'A cello left upright in a corner that is not safe for it.','No bow. No case open.')}),
-  P('practice-ensemble-violin','violin',56,79,-.3,{elevation:.48,inspectAt:{x:61.35,y:78.55},...play(STRINGS,'A violin left on a chair, chin rest to the door.','Someone put it down mid-phrase.')}),
-  ...[[60.0,57.0],[72.0,57.0],[60.0,64.0],[72.0,64.0],[60.0,71.0],[72.0,71.0]].map(([x,y],i)=>
-    P(`practice-piano-${i+1}`,'upright_piano',x,y,i%2?Math.PI:0,{...play(PIANO,'An upright piano, lid up, institutional number under the fallboard.','The number has been changed twice.')})),
-  ...[[61.0,59.0],[71.0,59.0],[61.0,66.0],[71.0,66.0],[71.0,80.0]].map(([x,y],i)=>
-    P(`practice-stand-${i+1}`,'music_stand',x,y,.1*i,{inspect:inspect('A stand left open at playing height.','Nothing on it.')})),
+  // Practice suite. The wing was moved around a new x60–62 central spine; the
+  // old dressing was not, leaving instruments in the corridor and interaction
+  // points behind the new partitions. Seven teaching rooms now each read as a
+  // real, usable piano room. The south-east room is the ensemble store/rehearsal
+  // room, with one coherent instrument setup instead of props split through a
+  // wall. The central spine and every door landing stay completely bare.
   ...[
-    {x:62.5,y:59.0,yaw:0,state:'pencil room number beneath the seat'},
-    {x:73.5,y:59.0,yaw:Math.PI,state:'new rubber foot on the corridor-side leg'},
-    {x:62.5,y:66.0,yaw:0,state:'back rail polished by a coat hook'},
-    {x:73.5,y:66.0,yaw:Math.PI,state:'two upholstery tacks replaced'},
-    {x:62.5,y:73.0,yaw:0,state:'old rosin ground into the front edge'},
-    {x:73.5,y:73.0,yaw:Math.PI,state:'seat foam compressed towards the piano'},
-    {x:61.0,y:79.0,yaw:0,state:'violin resting across the seat',inspectAt:{x:60.55,y:79.45}},
-    {x:73.5,y:80.0,yaw:Math.PI,state:'paper transfer label from the ensemble room'},
+    {x:52.25,y:59.5,yaw:Math.PI/2},
+    {x:74.75,y:59.5,yaw:-Math.PI/2},
+    {x:52.25,y:66.5,yaw:Math.PI/2},
+    {x:74.75,y:66.5,yaw:-Math.PI/2},
+    {x:52.25,y:73.5,yaw:Math.PI/2},
+    {x:74.75,y:73.5,yaw:-Math.PI/2},
+    {x:52.25,y:80.5,yaw:Math.PI/2},
+  ].map((entry,i)=>P(`practice-piano-${i+1}`,'upright_piano',entry.x,entry.y,entry.yaw,{
+    ...play(PIANO,'An upright piano, lid up, institutional number under the fallboard.','The number has been changed twice.'),
+  })),
+  ...[
+    {x:55.0,y:59.5,yaw:-Math.PI/2}, {x:71.8,y:59.5,yaw:Math.PI/2},
+    {x:55.0,y:66.5,yaw:-Math.PI/2}, {x:71.8,y:66.5,yaw:Math.PI/2},
+    {x:55.0,y:73.5,yaw:-Math.PI/2}, {x:71.8,y:73.5,yaw:Math.PI/2},
+    {x:55.0,y:80.5,yaw:-Math.PI/2}, {x:69.1,y:80.5,yaw:Math.PI/2},
+  ].map((entry,i)=>P(`practice-stand-${i+1}`,'music_stand',entry.x,entry.y,entry.yaw,{
+    inspect:inspect('A stand left open at playing height.','Nothing on it.'),
+  })),
+  ...[
+    {x:56.0,y:59.5,yaw:-Math.PI/2,state:'pencil room number beneath the seat'},
+    {x:70.7,y:59.5,yaw:Math.PI/2,state:'new rubber foot on the piano-side leg'},
+    {x:56.0,y:66.5,yaw:-Math.PI/2,state:'back rail polished by a coat hook'},
+    {x:70.7,y:66.5,yaw:Math.PI/2,state:'two upholstery tacks replaced'},
+    {x:56.0,y:73.5,yaw:-Math.PI/2,state:'old rosin ground into the front edge'},
+    {x:70.7,y:73.5,yaw:Math.PI/2,state:'seat foam compressed towards the piano'},
+    {x:56.0,y:80.5,yaw:-Math.PI/2,state:'varnish worn where a cellist steadied the case'},
+    {x:70.2,y:81.8,yaw:Math.PI/2,state:'violin resting across the seat',inspectAt:{x:69.2,y:81.8}},
   ].map((entry,i)=>{
     const assetTag=`P/CH-${String(i+1).padStart(2,'0')}`;
     return P(`acq-practice-chair-${i+1}`,'green_chair_01',entry.x,entry.y,entry.yaw,{
@@ -454,10 +471,16 @@ export const CONSERVATORY_PROPS = [
       inspect:inspect(`A green practice-room chair from the eight-chair order. ${assetTag} is stamped underneath; ${entry.state}.`,`${assetTag}. One of eight, altered by this room.`),
     });
   }),
-  P('practice-case-1','instrument_case',60.5,60.5,Math.PI/2,{inspect:inspect('A hard case with no instrument name, only a room number.','The room number no longer exists.')}),
-  P('practice-case-2','instrument_case',61.5,67.5,Math.PI/2,{inspect:inspect('Another case in the corridor. Locked, light, probably empty.','Probably empty.')}),
-  P('practice-desk-stack-1','school_desk',52.5,80,Math.PI/2,{inspect:inspect('Two teaching desks shoved together at the wall.','Surplus stored in circulation, as usual.')}),
-  P('practice-desk-stack-2','school_desk',53.3,80,Math.PI/2,{inspect:inspect('The second desk makes the obstruction official.','Nobody filed a fire plan for this.')}),
+  P('practice-ensemble-marimba','marimba',72.6,80.0,Math.PI/2,{...play(MARIMBA,'A rehearsal marimba with masking tape on four bars.','Four bars, four old pencil numbers.')}),
+  P('practice-ensemble-cello','cello',74.2,82.2,-Math.PI/2,{...play(STRINGS,'A cello left upright in a corner that is not safe for it.','No bow. No case open.')}),
+  P('practice-ensemble-violin','violin',70.2,81.8,Math.PI/2,{
+    elevation:.48,inspectAt:{x:69.2,y:81.8},
+    ...play(STRINGS,'A violin left on a chair, chin rest to the door.','Someone put it down mid-phrase.'),
+  }),
+  P('practice-case-1','instrument_case',68.3,82.6,0,{inspect:inspect('A hard case with no instrument name, only a room number.','The room number no longer exists.')}),
+  P('practice-case-2','instrument_case',72.0,82.6,0,{inspect:inspect('Another case against the ensemble-room wall. Locked, light, probably empty.','Probably empty.')}),
+  P('practice-desk-stack-1','school_desk',53.0,54.2,0,{inspect:inspect('A teaching desk waiting at the stair landing for somebody to claim it.','Still waiting, safely out of the route.')}),
+  P('practice-desk-stack-2','school_desk',54.0,54.2,0,{inspect:inspect('The matching desk has been pushed alongside it, drawers to the wall.','Two desks parked for collection.')}),
 
   // Chapel: two banks leave a central aisle and side circulation clear.
   ...[62.0,65.0,68.0,71.0,74.0,77.0,80.0,83.0,86.0].flatMap((y,i)=>[
@@ -637,10 +660,9 @@ export const CONSERVATORY_PROPS = [
     interaction:'action',action:'power-panel-sp02',interactionPriority:2,
     inspect:inspect('The natatorium distribution panel, S/P-02, matches the plant-room and front-of-house boxes. Chlorine has lifted the paint beneath its lower lip; every breaker is open.','S/P-02. Same installation, different air, no live circuit.'),
   }),
-  P('natatorium-sign-exit','tower_plaque',84.5,27.5,Math.PI/2,{
-    elevation:.7,renderOffsetX:.25,
-    inspect:inspect('EXIT / FOYER. The dry lobby returns to the public entrance route.','EXIT / FOYER.'),
-  }),
+  // The foyer threshold is self-evident and intentionally unplaque'd. A tower
+  // plaque used to be mounted on the door plane here, which made the tower
+  // object visibly clip through the natatorium leaf.
   P('natatorium-light-emergency-entry','tower_bulkhead',84.5,27.5,Math.PI/2,{
     elevation:1.62,renderOffsetX:.25,interactive:false,structural:true,
     lightMaintained:true,lightColor:[1,.65,.36],

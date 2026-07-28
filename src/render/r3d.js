@@ -184,7 +184,7 @@ uniform vec4  uChunkA[${MAX_CHUNKS}]; // x, z, radius, activity
 uniform vec3  uChunkC[${MAX_CHUNKS}]; // biome rgb
 uniform vec4  uKey;          // x, z, active, -
 uniform vec4  uDoor;
-uniform vec4  uHush;         // x, z, strength, -
+uniform vec4  uHush;         // x, z, absorption strength, radius in metres
 uniform sampler2D uPlan;     // the authored building: R=floor G=ceil B=flags A=zone
 uniform sampler2D uMat;      // R=material id
 uniform sampler2D uSourceLayer; // R=source corpus layer for this runtime cell
@@ -386,7 +386,13 @@ vec4 dreamSlotResponse(int slot){
 }
 vec3 surfaceTile(int slot, vec2 worldUv, float metresPerTile){
   vec3 tc=vec3(worldUv/metresPerTile,float(slot));
-  vec3 base=texture(uSurfAlbedo,tc).rgb;
+  // Supply the world-space footprint explicitly. Raymarch hits arrive through
+  // divergent DDA branches, where implicit texture derivatives can collapse at
+  // grazing angles and make the same wall acquire a direction as the camera
+  // turns. All banks share this footprint, so albedo and generated detail stay
+  // registered while the texture unit performs anisotropic filtering.
+  vec2 tcDx=dFdx(tc.xy),tcDy=dFdy(tc.xy);
+  vec3 base=textureGrad(uSurfAlbedo,tc,tcDx,tcDy).rgb;
   vec2 hallucinationWarp=vec2(0.0);
   if(uLocalDiffusion>.001){
     // A local, material-space reaction-diffusion pass. It is sampled from
@@ -433,11 +439,15 @@ vec3 surfaceTile(int slot, vec2 worldUv, float metresPerTile){
   float layerA1=slotBase+mod(fa+1.0,framesA);
   vec3 dreamTcA0=vec3(tc.xy+hallucinationWarp,layerA0);
   vec3 dreamTcA1=vec3(tc.xy+hallucinationWarp,layerA1);
-  vec3 dreamA=mix(texture(uSurfDream,dreamTcA0).rgb,texture(uSurfDream,dreamTcA1).rgb,ft);
+  vec3 dreamA=mix(
+    textureGrad(uSurfDream,dreamTcA0,tcDx,tcDy).rgb,
+    textureGrad(uSurfDream,dreamTcA1,tcDx,tcDy).rgb,
+    ft
+  );
   // The staged bank samples its own frame zero: a bank change is already a
   // crossfade, and boiling both sides of it costs texture fetches nobody sees.
   vec3 dreamTcB=vec3(tc.xy+hallucinationWarp,float(slot)*max(1.0,uDreamFramesB));
-  vec3 dreamB=texture(uSurfDreamNext,dreamTcB).rgb;
+  vec3 dreamB=textureGrad(uSurfDreamNext,dreamTcB,tcDx,tcDy).rgb;
   vec3 dream=mix(dreamA,dreamB,uDreamNextReady>.5?uDreamBankBlend:0.0);
   // Transfer material detail, not the generated image's illumination or
   // palette. Dividing by a coarse mip extracts local grain/mortar/weathering;
@@ -701,7 +711,9 @@ void main(){
   }
 
   vec3 col;
-  float grain = hash01(gl_FragCoord.x + fract(uTime)*61.0, gl_FragCoord.y + fract(uTime*1.7)*47.0);
+  // Stable sensor grain. The previous time-offset hash made stationary walls
+  // sparkle even when no authored effect was changing.
+  float grain = hash01(gl_FragCoord.x, gl_FragCoord.y);
   if(tHit < 0.0){
     // open sky above an expanse: near-black, nothing to see up there
     float g = clamp(rd.y * 0.5 + 0.5, 0.0, 1.0);
@@ -780,19 +792,17 @@ void main(){
       vec2 suv = surfaceUv(surf,posM,n);
       surfaceSlot(hitMat, surf, suv, sslot, stile, sblend);
       vec3 sc = vec3(suv / stile, float(sslot));
-      // Height drives actual view-dependent parallax and reinforces the source
-      // normal map. This is still a flat collision plane, but no longer a flat
-      // picture pasted onto it: mortar, board joints and tile bevels shift and
-      // self-shade as the eye crosses them.
+      // Texture coordinates remain fixed to the authoritative world plane.
+      // Height still supplies occlusion and reinforces the normal response,
+      // but it must not slide the material under the camera: that made a wall
+      // change direction and texture density merely because the player turned.
       vec3 T = (surf == 1) ? normalize(vec3(-n.z, 0.0, n.x)) : vec3(1.0, 0.0, 0.0);
       if(dot(T, T) < 0.01) T = vec3(1.0, 0.0, 0.0);
       vec3 B = (surf == 1) ? vec3(0.0, 1.0, 0.0) : vec3(0.0, 0.0, 1.0);
-      vec3 viewDir=normalize(toEyeM);
-      float h0=texture(uSurfHeight,sc).r;
-      vec2 viewTs=vec2(dot(viewDir,T),dot(viewDir,B))/max(.30,abs(dot(viewDir,n)));
-      sc.xy+=viewTs*(h0-.5)*(surf==1 ? .030 : .018);
-      vec3 nm = texture(uSurfNormal, sc).rgb * 2.0 - 1.0;
-      surfRough = texture(uSurfRough, sc).r;
+      vec2 scDx=dFdx(sc.xy),scDy=dFdy(sc.xy);
+      float h0=textureGrad(uSurfHeight,sc,scDx,scDy).r;
+      vec3 nm = textureGrad(uSurfNormal,sc,scDx,scDy).rgb * 2.0 - 1.0;
+      surfRough = textureGrad(uSurfRough,sc,scDx,scDy).r;
       // The native reaction field and generated detail participate in the
       // physical response, not only in albedo. Geometry remains a flat,
       // authoritative collision plane; only micro-normal and roughness move.
@@ -817,10 +827,10 @@ void main(){
       float dLayer=dBase+mod(floor(dPhase),dFrames);
       vec3 dc=vec3(sc.xy,dLayer);
       vec2 dtex=vec2(1.0/512.0,0.0);
-      float dl=dot(texture(uSurfDream,dc-vec3(dtex.x,0.0,0.0)).rgb,vec3(.2126,.7152,.0722));
-      float dr=dot(texture(uSurfDream,dc+vec3(dtex.x,0.0,0.0)).rgb,vec3(.2126,.7152,.0722));
-      float dd=dot(texture(uSurfDream,dc-vec3(0.0,dtex.x,0.0)).rgb,vec3(.2126,.7152,.0722));
-      float du=dot(texture(uSurfDream,dc+vec3(0.0,dtex.x,0.0)).rgb,vec3(.2126,.7152,.0722));
+      float dl=dot(textureGrad(uSurfDream,dc-vec3(dtex.x,0.0,0.0),scDx,scDy).rgb,vec3(.2126,.7152,.0722));
+      float dr=dot(textureGrad(uSurfDream,dc+vec3(dtex.x,0.0,0.0),scDx,scDy).rgb,vec3(.2126,.7152,.0722));
+      float dd=dot(textureGrad(uSurfDream,dc-vec3(0.0,dtex.x,0.0),scDx,scDy).rgb,vec3(.2126,.7152,.0722));
+      float du=dot(textureGrad(uSurfDream,dc+vec3(0.0,dtex.x,0.0),scDx,scDy).rgb,vec3(.2126,.7152,.0722));
       vec2 dreamSlope=vec2(dr-dl,du-dd);
       // Agitation deepens the relief rather than merely tinting it: a boiling
       // wall should catch the light differently, not just read a shade darker.
@@ -970,20 +980,6 @@ void main(){
     float d = length(ro2 + rd2*s - uDoor.xy) * CELL_METERS;
     col += vec3(0.75, 0.85, 1.0) * (exp(-d*d*4.0)*0.8 + exp(-d*d*0.25)*0.2);
   }
-  // the hush: an absence — darkens and destabilises everything near its line
-  if(uHush.z > 0.001){
-    float s = clamp(dot(uHush.xy - ro2, rd2), 0.0, span);
-    float d = length(ro2 + rd2*s - uHush.xy) * CELL_METERS;
-    float reach = exp(-d*d*0.02) * uHush.z;
-    vec2 hushDelta=uHush.xy-(ro2+rd2*s);
-    vec2 pullDir=normalize(hushDelta+vec2(.0001));
-    vec2 churnUv=fract((ro2+rd2*s)*.05+uTime*.01);
-    float baseChurn=texture(uRD,churnUv).g;
-    float pulledChurn=texture(uRD,fract(churnUv+pullDir*reach*.024)).g;
-    float churn=mix(baseChurn,pulledChurn,.38*uOpticalEffects);
-    col = mix(col, vec3(0.0), clamp(reach * (0.75 + churn*0.5), 0.0, 0.97));
-  }
-
   // Mesh props were rasterised with the exact same camera before this pass.
   // Reconstruct their view-space depth and compare it to the sector hit: a
   // piano behind a wall stays behind the wall, while a desk in front of it is
@@ -1005,6 +1001,34 @@ void main(){
     }
   }
 
+  // The HUSH is not a dark decal on the walls; it is a volume in which light
+  // stops arriving. Apply the absence after the prop composite so furniture,
+  // practical highlights, beacons and architecture all disappear into the
+  // same shadow. Reduced/off effects hold the edge still but never relight it.
+  if(uHush.z > 0.001){
+    // Clip the volume to the closest composed surface. A HUSH behind a road
+    // case may eat the case's rim light; one twenty metres behind it may not
+    // paint a silhouette through the case just because the wall is farther.
+    float surfaceSpan=min(span,(zView/max(.001,dot(rd,fwd)))*length(rd.xz)/CELL_METERS);
+    float s = clamp(dot(uHush.xy - ro2, rd2), 0.0, surfaceSpan);
+    vec2 nearest=ro2+rd2*s;
+    float d = length(nearest-uHush.xy) * CELL_METERS;
+    float radius=max(3.0,uHush.w);
+    vec2 hushDelta=uHush.xy-nearest;
+    vec2 pullDir=normalize(hushDelta+vec2(.0001));
+    vec2 stillUv=fract(nearest*.05);
+    vec2 movingUv=fract(nearest*.05+uTime*.01);
+    float stillChurn=texture(uRD,stillUv).g;
+    float movingChurn=texture(uRD,movingUv).g;
+    float pulledChurn=texture(uRD,fract(movingUv+pullDir*.035)).g;
+    float churn=mix(stillChurn,mix(movingChurn,pulledChurn,.42),uOpticalEffects);
+    float edgeWarp=(churn-.5)*radius*.22;
+    float body=1.0-smoothstep(radius*.40+edgeWarp,radius+edgeWarp,d);
+    float core=1.0-smoothstep(radius*.05,radius*.34,d);
+    float absorption=clamp((body*.78+core*.38)*uHush.z,0.0,.995);
+    col*=1.0-absorption;
+  }
+
   col += (grain - 0.5) * 0.035;             // film grain
   // The expressive post pass owns the fear vignette. A second fixed vignette
   // here used to halve the corners before fear was even applied.
@@ -1014,7 +1038,7 @@ void main(){
   // (see r3dDepthInto). Stored as INVERSE depth — near is bright — because that
   // is the convention every SD depth ControlNet was trained on (MiDaS), and
   // handing a depth ControlNet a linear far-is-bright map inverts the room.
-  o = vec4(col, 1.0 / (1.0 + zView * 0.14));
+  o = vec4(clamp(col,0.0,1.0), 1.0 / (1.0 + zView * 0.14));
 }`;
 
 // ── Depth resolve ───────────────────────────────────────────────────────────
@@ -1033,8 +1057,9 @@ void main(){
 // ── Post: upscale with slight chromatic drift ────────────────────────────────
 // Fear is not a number on a bar; it is what the room starts doing to you. It
 // tightens a vignette (tunnel vision), pulls the colour out (a frightened man
-// stops seeing in colour), adds a grain that is the eye's own noise, and pushes
-// the chromatic split — the picture stops holding itself together.
+// stops seeing in colour), and pushes the chromatic split — the picture stops
+// holding itself together. Recording grain is a separate acquisition layer:
+// fine, luma-shaped, black-protected, and phase-held rather than animated snow.
 const POST_FRAG = COMMON_GLSL + `
 uniform sampler2D uSrc;
 uniform vec2 uRes;
@@ -1044,10 +1069,35 @@ uniform float uGlassStrength;
 uniform float uGlassFringe;
 uniform float uGlassBloom;
 uniform float uGlassGrain;
+uniform float uRecordingPostGrain;
+uniform float uRecordingLumaGrain;
+uniform float uRecordingTemporalHz;
+uniform float uRecordingTemporalSmear;
 uniform float uReduceFlash;
 uniform float uReduceMotion;
 out vec4 o;
 float h21(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float grainClock(float time, float hz, float reduceMotion){
+  return time * max(0.0, hz) * (1.0 - clamp(reduceMotion, 0.0, 1.0));
+}
+float phaseGrain(vec2 p, float phase){
+  // Neighbouring pixels share taps, introducing the slight spatial correlation
+  // of a recorded medium without softening the architectural image itself.
+  vec2 q=p+vec2(phase*37.0,phase*73.0);
+  float fine=h21(q);
+  float correlated=(
+    h21(q)+
+    h21(q+vec2(1.0,0.0))+
+    h21(q+vec2(0.0,1.0))+
+    h21(q+vec2(1.0,1.0))
+  )*.25;
+  return mix(fine,correlated,.58);
+}
+float correlatedGrain(vec2 p, float clock, float temporalSmear){
+  float phase=floor(clock);
+  float phaseMix=smoothstep(0.0,1.0,fract(clock))*clamp(temporalSmear,0.0,1.0);
+  return mix(phaseGrain(p,phase),phaseGrain(p,phase+1.0),phaseMix);
+}
 void main(){
   vec2 uv = gl_FragCoord.xy / uRes;
   float f = clamp(uFear, 0.0, 1.0);
@@ -1075,11 +1125,34 @@ void main(){
   // a frightened man stops seeing in colour
   float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
   c = mix(c, vec3(lum), f * 0.55);
-  // the eye's own noise, which is always there and which you notice when afraid
-  float noiseTime=mix(fract(uTimeP),0.0,uReduceMotion);
-  float g = h21(gl_FragCoord.xy + noiseTime * 91.7) - 0.5;
-  c += g * (0.008*uGlassGrain + f * 0.055);
-  o = vec4(c, 1.0);
+  // Fine acquisition grain belongs to the signal, not a translucent overlay.
+  // True black stays black; midtones carry most of the texture; highlights
+  // retain their silhouettes instead of dissolving into white snow.
+  float lumForGrain=dot(c,vec3(0.2126,0.7152,0.0722));
+  float blackProtect=smoothstep(0.003,0.045,lumForGrain);
+  float midtone=
+    smoothstep(0.04,0.36,lumForGrain)*
+    (1.0-smoothstep(0.76,1.0,lumForGrain));
+  float flashSafe=mix(1.0,0.45,clamp(uReduceFlash,0.0,1.0));
+  float grainMask=blackProtect*mix(1.0,midtone,clamp(uRecordingLumaGrain,0.0,1.0));
+  // Hold the correlated field on one phase so it reads as recorded texture,
+  // not a full-frame layer flashing independently of the room.
+  float heldClock=7.35;
+  float g=correlatedGrain(
+    gl_FragCoord.xy,
+    heldClock,
+    uRecordingTemporalSmear
+  )-0.5;
+  float recordingAmp=
+    clamp(uRecordingPostGrain,0.0,0.08)*
+    flashSafe*
+    grainMask*
+    (1.0+f*0.55);
+  // Glass grain remains a quiet instrument/eye texture. It can no longer
+  // overwhelm the recorded medium or lift an unlit room.
+  float eyeAmp=(0.003*uGlassGrain+f*0.012)*flashSafe*blackProtect;
+  c+=g*(recordingAmp+eyeAmp);
+  o=vec4(c,1.0);
 }`;
 
 // Source Space is a deliberately separate proof: transparent glyph geometry
@@ -1165,6 +1238,7 @@ function currentLook(nowMs = lookNowMs()) {
     ...lookTarget,
     material: blendLayer(lookFrom.material, lookTarget.material, t),
     vfd: blendLayer(lookFrom.vfd, lookTarget.vfd, t),
+    recording: blendLayer(lookFrom.recording, lookTarget.recording, t),
     glass: blendLayer(lookFrom.glass, lookTarget.glass, t),
   };
 }
@@ -1302,7 +1376,7 @@ function loadTextureArray(url, { srgb=false }={}){
       gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_S,gl.REPEAT);
       gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_T,gl.REPEAT);
-      if(anisoExt) gl.texParameterf(gl.TEXTURE_2D_ARRAY,anisoExt.TEXTURE_MAX_ANISOTROPY_EXT,Math.min(8,anisoMax));
+      if(anisoExt) gl.texParameterf(gl.TEXTURE_2D_ARRAY,anisoExt.TEXTURE_MAX_ANISOTROPY_EXT,anisoMax);
       resolve(t);
     };
     img.onerror=reject; img.src=url.href||String(url);
@@ -1319,7 +1393,7 @@ function makeSurfaceDreamTexture(frames=1){
   gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_S,gl.REPEAT);
   gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_T,gl.REPEAT);
-  if(anisoExt)gl.texParameterf(gl.TEXTURE_2D_ARRAY,anisoExt.TEXTURE_MAX_ANISOTROPY_EXT,Math.min(8,anisoMax));
+  if(anisoExt)gl.texParameterf(gl.TEXTURE_2D_ARRAY,anisoExt.TEXTURE_MAX_ANISOTROPY_EXT,anisoMax);
   gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
   return t;
 }
@@ -1478,13 +1552,16 @@ function debugSourceToNumber(source) {
   if (source === 'memory') return 3;
   if (source === 'edge') return 4;
   if (source === 'mask') return 5;
+  if (source === 'threshold') return 6;
+  if (source === 'recorded') return 7;
+  if (source === 'instability') return 8;
   return 0;
 }
 
 function resolvePixelMeshCellScenePx() {
   const raw = pixelMeshSettings.cellSize;
-  const authored = currentLook().vfd.cellPx || 8;
-  const cssCell = raw === 'auto' ? authored : Math.max(4, Math.min(24, Number(raw) || authored));
+  const authored = currentLook().vfd.cellPx || 2;
+  const cssCell = raw === 'auto' ? authored : Math.max(2, Math.min(24, Number(raw) || authored));
   return Math.max(1, cssCell * (globalThis.devicePixelRatio || 1) * RENDER_SCALE);
 }
 
@@ -1705,7 +1782,15 @@ function runPixelMeshPass(state, now) {
   gl.bindTexture(gl.TEXTURE_2D, prevTex);
   gl.uniform1i(pixelMeshU('uPrev'), 1);
 
+  gl.activeTexture(gl.TEXTURE2);
+  gl.bindTexture(gl.TEXTURE_2D, sceneTex);
+  gl.uniform1i(pixelMeshU('uDepth'), 2);
+
   gl.uniform2f(pixelMeshU('uRes'), uniforms.sceneW, uniforms.sceneH);
+  gl.uniform3f(pixelMeshU('uCam'), camX, camY, camZ);
+  gl.uniform1f(pixelMeshU('uYaw'), yaw);
+  gl.uniform1f(pixelMeshU('uPitch'), pitch);
+  gl.uniform1f(pixelMeshU('uCellMeters'), CELL);
   gl.uniform1f(pixelMeshU('uTime'), now);
   const dt = lastPixelMeshAt > 0 ? Math.max(0, Math.min(0.25, now - lastPixelMeshAt)) : 1 / 60;
   lastPixelMeshAt = now;
@@ -1724,6 +1809,17 @@ function runPixelMeshPass(state, now) {
   gl.uniform1f(pixelMeshU('uFear'), fearLevel);
   gl.uniform1f(pixelMeshU('uReduceFlash'), effectiveSettings.reduceFlash ? 1 : 0);
   gl.uniform1f(pixelMeshU('uReduceMotion'), effectiveSettings.reduceMotion ? 1 : 0);
+  gl.uniform1f(pixelMeshU('uRecordingCaptureMix'), look.recording.captureMix);
+  gl.uniform1f(pixelMeshU('uRecordingPatternScale'), look.recording.patternScale);
+  gl.uniform1f(pixelMeshU('uRecordingBlackFloor'), look.recording.blackFloor);
+  gl.uniform1f(pixelMeshU('uRecordingDensityGamma'), look.recording.densityGamma);
+  gl.uniform1f(pixelMeshU('uRecordingThresholdNoise'), look.recording.thresholdNoise);
+  gl.uniform1f(pixelMeshU('uRecordingIrregularity'), look.recording.thresholdIrregularity);
+  gl.uniform1f(pixelMeshU('uRecordingTemporalHz'), look.recording.temporalHz);
+  gl.uniform1f(pixelMeshU('uRecordingTemporalSmear'), look.recording.temporalSmear);
+  gl.uniform1f(pixelMeshU('uRecordingScenePinning'), look.recording.scenePinning);
+  gl.uniform1f(pixelMeshU('uRecordingFearGain'), look.recording.fearGain);
+  gl.uniform1f(pixelMeshU('uRecordingAudioGain'), look.recording.audioGain);
   gl.uniform1f(pixelMeshU('uDebugSource'), debugSourceToNumber(effectiveSettings.debugSource));
   gl.uniform1f(pixelMeshU('uForceSignal'), forceSignal);
   gl.uniform1f(pixelMeshU('uMovement'), vfdMovement);
@@ -1852,7 +1948,11 @@ function resize() {
   for(const item of [[datamoshSourceTex,datamoshSourceFbo],[datamoshTexA,datamoshFboA],[datamoshTexB,datamoshFboB]]){if(item[0])gl.deleteTexture(item[0]);if(item[1])gl.deleteFramebuffer(item[1]);}
   if(burstOutTex){gl.deleteTexture(burstOutTex);gl.deleteFramebuffer(burstOutFbo);}
   burstOutTex=makeMeshTex(sw,sh);burstOutFbo=makeFbo(burstOutTex);
-  sceneTex = makeTex(sw, sh);
+  // Preserve ray distance beyond eight alpha bits. The acquisition pass pins
+  // its marks to reconstructed world space; quantised depth made that position
+  // crawl sideways as the camera changed angle. RGB is explicitly clamped in
+  // the raymarch shader, so this precision upgrade does not alter exposure.
+  sceneTex = makeTex(sw, sh, null, 'rgba16f');
   sceneFbo = makeFbo(sceneTex);
   meshTexA = makeMeshTex(sw, sh);
   meshTexB = makeMeshTex(sw, sh);
@@ -2329,7 +2429,7 @@ export function r3dFrame(state) {
   }
   gl.uniform4f(U('uKey'), state.key?.x ?? 0, state.key?.y ?? 0, state.key ? 1 : 0, 0);
   gl.uniform4f(U('uDoor'), state.door?.x ?? 0, state.door?.y ?? 0, state.door ? 1 : 0, 0);
-  gl.uniform4f(U('uHush'), state.hush?.x ?? 0, state.hush?.y ?? 0, state.hush?.strength ?? 0, 0);
+  gl.uniform4f(U('uHush'), state.hush?.x ?? 0, state.hush?.y ?? 0, state.hush?.strength ?? 0, state.hush?.radiusM ?? 0);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 
   const pixelSourceTex = runPixelMeshPass(state, now);
@@ -2350,6 +2450,10 @@ export function r3dFrame(state) {
   gl.uniform1f(postU('uGlassFringe'), postLook.glass.fringe);
   gl.uniform1f(postU('uGlassBloom'), postLook.glass.bloom);
   gl.uniform1f(postU('uGlassGrain'), postLook.glass.grain);
+  gl.uniform1f(postU('uRecordingPostGrain'), postLook.recording.postGrain);
+  gl.uniform1f(postU('uRecordingLumaGrain'), postLook.recording.lumaGrain);
+  gl.uniform1f(postU('uRecordingTemporalHz'), postLook.recording.temporalHz);
+  gl.uniform1f(postU('uRecordingTemporalSmear'), postLook.recording.temporalSmear);
   gl.uniform1f(postU('uReduceFlash'), pixelMeshSettings.reduceFlash?1:0);
   gl.uniform1f(postU('uReduceMotion'), pixelMeshSettings.reduceMotion?1:0);
   gl.drawArrays(gl.TRIANGLES, 0, 3);

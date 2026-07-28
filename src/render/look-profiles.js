@@ -1,7 +1,7 @@
 // One authored contract for every layer that makes up the instrument image.
 // Geometry and PBR remain renderer truth. Generated material, reaction-
-// diffusion, VFD excitation and glass are coordinated here so no layer can
-// silently become a second full-frame renderer.
+// diffusion, VFD excitation, recording acquisition and glass are coordinated
+// here so no layer can silently become a second full-frame renderer.
 
 // Negatives are a token budget too, and every word here competes with the
 // prompt for CLIP's attention. Keep it to the failures that actually happen:
@@ -27,7 +27,9 @@ const NO_TIDY = 'clean, tidy, bright, cartoon, poster, text, watermark';
 //   the surface set its own brightness. This is the single knob that decides
 //   whether the boil is visible at all, because the VFD encoder downstream
 //   buckets cells by luminance.
-// vfd.paletteChroma — how much generated colour survives the block palette.
+// vfd.paletteChroma — how much generated colour survives the restrained tonal
+//                     plate. The recording layer, rather than coarse blocks,
+//                     now owns the visible medium texture.
 // vfd.shadowLift    — how far the darkest block opens up. The bottom bucket is
 //                     where every authored practical in a building with no mains
 //                     lands; at 0 it crushes them to nothing. True black is
@@ -43,7 +45,8 @@ const PROFILE_DATA = {
       negative: NO_CHARACTERS,
     },
     material: { localDiffusion: 0.20, detailGain: 0.84, chromaDrift: 0.06, roughnessResponse: 0.1, normalResponse: 0.1, boilHz: 0, structureMix: 0.0, lumaClampLo: 0.62, lumaClampHi: 1.48, lumaHold: 1.0 },
-    vfd: { baseRetention: 0.90, shadowLift: 0.3, paletteAmount: 0.28, paletteChroma: 0.08, persistenceMs: 90, cellPx: 8, signalGain: 0.42, edgeGain: 0.72, coverage: 0.20, glow: 0.12, aperture: 0.76, amber: 0.02 },
+    vfd: { baseRetention: 0.90, shadowLift: 0.3, paletteAmount: 0.06, paletteChroma: 0.08, persistenceMs: 90, cellPx: 2, signalGain: 0.42, edgeGain: 0.72, coverage: 0.20, glow: 0.12, aperture: 0.76, amber: 0.02 },
+    recording: { captureMix: 1.0, patternScale: 42, blackFloor: 0.005, densityGamma: 0.78, thresholdNoise: 0.025, thresholdIrregularity: 0.52, postGrain: 0.018, lumaGrain: 0.50, temporalHz: 6, temporalSmear: 0.70, scenePinning: 0.72, fearGain: 0.20, audioGain: 0.10 },
     glass: { strength: 0.18, fringe: 0.16, bloom: 0.10, grain: 0.18 },
   },
   explore: {
@@ -55,7 +58,8 @@ const PROFILE_DATA = {
       negative: NO_CHARACTERS,
     },
     material: { localDiffusion: 0.58, detailGain: 1.24, chromaDrift: 0.22, roughnessResponse: 0.32, normalResponse: 0.3, boilHz: 0.25, structureMix: 0.26, lumaClampLo: 0.55, lumaClampHi: 1.65, lumaHold: 0.72 },
-    vfd: { baseRetention: 0.78, shadowLift: 0.42, paletteAmount: 0.78, paletteChroma: 0.28, persistenceMs: 220, cellPx: 8, signalGain: 0.76, edgeGain: 1.12, coverage: 0.40, glow: 0.28, aperture: 0.82, amber: 0.06 },
+    vfd: { baseRetention: 0.78, shadowLift: 0.42, paletteAmount: 0.12, paletteChroma: 0.28, persistenceMs: 220, cellPx: 2, signalGain: 0.76, edgeGain: 1.12, coverage: 0.40, glow: 0.28, aperture: 0.82, amber: 0.06 },
+    recording: { captureMix: 1.0, patternScale: 46, blackFloor: 0.004, densityGamma: 0.72, thresholdNoise: 0.060, thresholdIrregularity: 0.68, postGrain: 0.045, lumaGrain: 0.68, temporalHz: 10, temporalSmear: 0.62, scenePinning: 0.60, fearGain: 0.45, audioGain: 0.18 },
     glass: { strength: 0.36, fringe: 0.32, bloom: 0.28, grain: 0.30 },
   },
   booth: {
@@ -67,7 +71,8 @@ const PROFILE_DATA = {
       negative: `${NO_CHARACTERS}, clean office`,
     },
     material: { localDiffusion: 0.70, detailGain: 1.38, chromaDrift: 0.28, roughnessResponse: 0.38, normalResponse: 0.36, boilHz: 0.35, structureMix: 0.32, lumaClampLo: 0.52, lumaClampHi: 1.70, lumaHold: 0.66 },
-    vfd: { baseRetention: 0.72, shadowLift: 0.26, paletteAmount: 0.86, paletteChroma: 0.34, persistenceMs: 320, cellPx: 8, signalGain: 0.92, edgeGain: 1.28, coverage: 0.52, glow: 0.40, aperture: 0.86, amber: 0.12 },
+    vfd: { baseRetention: 0.72, shadowLift: 0.26, paletteAmount: 0.16, paletteChroma: 0.34, persistenceMs: 320, cellPx: 2, signalGain: 0.92, edgeGain: 1.28, coverage: 0.52, glow: 0.40, aperture: 0.86, amber: 0.12 },
+    recording: { captureMix: 1.0, patternScale: 44, blackFloor: 0.004, densityGamma: 0.70, thresholdNoise: 0.072, thresholdIrregularity: 0.72, postGrain: 0.055, lumaGrain: 0.72, temporalHz: 9, temporalSmear: 0.70, scenePinning: 0.52, fearGain: 0.38, audioGain: 0.18 },
     glass: { strength: 0.48, fringe: 0.42, bloom: 0.42, grain: 0.36 },
   },
   battle: {
@@ -84,7 +89,8 @@ const PROFILE_DATA = {
       },
     },
     material: { localDiffusion: 0.90, detailGain: 1.56, chromaDrift: 0.40, roughnessResponse: 0.55, normalResponse: 0.52, boilHz: 0.80, structureMix: 0.46, lumaClampLo: 0.40, lumaClampHi: 1.95, lumaHold: 0.4 },
-    vfd: { baseRetention: 0.60, shadowLift: 0.18, paletteAmount: 0.96, paletteChroma: 0.46, persistenceMs: 480, cellPx: 9, signalGain: 1.12, edgeGain: 1.42, coverage: 0.72, glow: 0.56, aperture: 0.90, amber: 0.34 },
+    vfd: { baseRetention: 0.60, shadowLift: 0.18, paletteAmount: 0.18, paletteChroma: 0.46, persistenceMs: 480, cellPx: 3, signalGain: 1.12, edgeGain: 1.42, coverage: 0.72, glow: 0.56, aperture: 0.90, amber: 0.34 },
+    recording: { captureMix: 1.0, patternScale: 40, blackFloor: 0.003, densityGamma: 0.66, thresholdNoise: 0.120, thresholdIrregularity: 0.82, postGrain: 0.070, lumaGrain: 0.78, temporalHz: 14, temporalSmear: 0.45, scenePinning: 0.42, fearGain: 0.70, audioGain: 0.35 },
     glass: { strength: 0.66, fringe: 0.62, bloom: 0.62, grain: 0.52 },
   },
   hush: {
@@ -96,7 +102,8 @@ const PROFILE_DATA = {
       negative: NO_CHARACTERS,
     },
     material: { localDiffusion: 0.94, detailGain: 0.78, chromaDrift: 0.08, roughnessResponse: 0.4, normalResponse: 0.26, boilHz: 0.15, structureMix: 0.24, lumaClampLo: 0.55, lumaClampHi: 1.60, lumaHold: 0.7 },
-    vfd: { baseRetention: 0.68, shadowLift: 0.5, paletteAmount: 0.66, paletteChroma: 0.18, persistenceMs: 700, cellPx: 10, signalGain: 0.66, edgeGain: 0.92, coverage: 0.48, glow: 0.38, aperture: 0.78, amber: 0.01 },
+    vfd: { baseRetention: 0.68, shadowLift: 0.5, paletteAmount: 0.08, paletteChroma: 0.18, persistenceMs: 700, cellPx: 3, signalGain: 0.66, edgeGain: 0.92, coverage: 0.48, glow: 0.38, aperture: 0.78, amber: 0.01 },
+    recording: { captureMix: 1.0, patternScale: 38, blackFloor: 0.008, densityGamma: 0.82, thresholdNoise: 0.080, thresholdIrregularity: 0.78, postGrain: 0.050, lumaGrain: 0.76, temporalHz: 5, temporalSmear: 0.82, scenePinning: 0.70, fearGain: 0.30, audioGain: 0.10 },
     glass: { strength: 0.56, fringe: 0.24, bloom: 0.34, grain: 0.46 },
   },
   rupture: {
@@ -113,7 +120,8 @@ const PROFILE_DATA = {
       },
     },
     material: { localDiffusion: 1.0, detailGain: 1.68, chromaDrift: 0.50, roughnessResponse: 0.66, normalResponse: 0.62, boilHz: 1.20, structureMix: 0.6, lumaClampLo: 0.30, lumaClampHi: 2.20, lumaHold: 0.2 },
-    vfd: { baseRetention: 0.55, shadowLift: 0.12, paletteAmount: 1.0, paletteChroma: 0.58, persistenceMs: 900, cellPx: 10, signalGain: 1.24, edgeGain: 1.58, coverage: 0.75, glow: 0.70, aperture: 0.92, amber: 0.42 },
+    vfd: { baseRetention: 0.55, shadowLift: 0.12, paletteAmount: 0.22, paletteChroma: 0.58, persistenceMs: 900, cellPx: 3, signalGain: 1.24, edgeGain: 1.58, coverage: 0.75, glow: 0.70, aperture: 0.92, amber: 0.42 },
+    recording: { captureMix: 1.0, patternScale: 36, blackFloor: 0.002, densityGamma: 0.60, thresholdNoise: 0.160, thresholdIrregularity: 0.90, postGrain: 0.080, lumaGrain: 0.82, temporalHz: 16, temporalSmear: 0.35, scenePinning: 0.32, fearGain: 0.85, audioGain: 0.45 },
     glass: { strength: 0.78, fringe: 0.78, bloom: 0.76, grain: 0.62 },
   },
 };
@@ -128,6 +136,7 @@ function freezeProfile(id, value) {
     }),
     material: Object.freeze({ ...value.material }),
     vfd: Object.freeze({ ...value.vfd }),
+    recording: Object.freeze({ ...value.recording }),
     glass: Object.freeze({ ...value.glass }),
   });
 }
@@ -149,7 +158,7 @@ export function isLookProfile(id) {
 export function validateLookProfile(profile) {
   if (!profile || !isLookProfile(profile.id) || profile.bankId !== profile.id) return false;
   if (!Number.isFinite(profile.transitionMs) || profile.transitionMs < 0) return false;
-  for (const layer of ['generation', 'material', 'vfd', 'glass']) {
+  for (const layer of ['generation', 'material', 'vfd', 'recording', 'glass']) {
     if (!profile[layer] || typeof profile[layer] !== 'object') return false;
   }
   const required = [
@@ -162,6 +171,15 @@ export function validateLookProfile(profile) {
     profile.vfd.baseRetention, profile.vfd.paletteAmount, profile.vfd.paletteChroma,
     profile.vfd.persistenceMs,
     profile.vfd.shadowLift, profile.vfd.coverage,
+    profile.recording.captureMix,
+    profile.recording.patternScale,
+    profile.recording.blackFloor,
+    profile.recording.densityGamma,
+    profile.recording.thresholdNoise, profile.recording.thresholdIrregularity,
+    profile.recording.postGrain, profile.recording.lumaGrain,
+    profile.recording.temporalHz, profile.recording.temporalSmear,
+    profile.recording.scenePinning, profile.recording.fearGain,
+    profile.recording.audioGain,
     profile.glass.strength, profile.glass.bloom,
   ];
   const burst = profile.generation.burst;
@@ -176,7 +194,22 @@ export function validateLookProfile(profile) {
     // lights on.
     && profile.vfd.shadowLift >= 0 && profile.vfd.shadowLift <= 0.6
     && profile.vfd.coverage >= 0 && profile.vfd.coverage <= 0.75
+    && Number.isInteger(profile.vfd.cellPx)
+    && profile.vfd.cellPx >= 1 && profile.vfd.cellPx <= 12
     && profile.vfd.persistenceMs >= 16
+    && profile.recording.captureMix >= 0 && profile.recording.captureMix <= 1
+    && profile.recording.patternScale >= 12 && profile.recording.patternScale <= 96
+    && profile.recording.blackFloor >= 0 && profile.recording.blackFloor <= 0.08
+    && profile.recording.densityGamma >= 0.45 && profile.recording.densityGamma <= 1.5
+    && profile.recording.thresholdNoise >= 0 && profile.recording.thresholdNoise <= 0.20
+    && profile.recording.thresholdIrregularity >= 0 && profile.recording.thresholdIrregularity <= 1
+    && profile.recording.postGrain >= 0 && profile.recording.postGrain <= 0.08
+    && profile.recording.lumaGrain >= 0 && profile.recording.lumaGrain <= 1
+    && profile.recording.temporalHz >= 0 && profile.recording.temporalHz <= 24
+    && profile.recording.temporalSmear >= 0 && profile.recording.temporalSmear <= 1
+    && profile.recording.scenePinning >= 0 && profile.recording.scenePinning <= 1
+    && profile.recording.fearGain >= 0 && profile.recording.fearGain <= 1.5
+    && profile.recording.audioGain >= 0 && profile.recording.audioGain <= 1.5
     // The boil: K temporal frames per surface, crossfaded. More than five is
     // texture memory nobody can see moving.
     && Number.isInteger(profile.generation.frames)

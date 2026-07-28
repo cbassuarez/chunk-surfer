@@ -6,7 +6,7 @@
 //
 // What a legible upgrade screen has to do, and therefore what this pins:
 //
-//   · THREE unmistakable states per node — owned, affordable, locked;
+//   · FOUR unmistakable states per node — installed, chosen, available, locked;
 //   · a locked node names its blocker, by name, not "TIER I REQUIRED";
 //   · the prerequisite chain is real structure (branch column, tier row), so a
 //     path's depth is visible before anything is read;
@@ -33,7 +33,7 @@ import {
 } from '../src/render/bag-skills.js';
 
 const skillsOf = (model) => model.sections.find((section) => section.id === 'skills');
-const treeFor = (build, hasRig = true) => skillsOf(buildBagModel({ build, hasRig })).tree;
+const treeFor = (build, hasRig = true, settledBuild = null) => skillsOf(buildBagModel({ build, settledBuild, hasRig })).tree;
 const flat = (tree) => tree.branches.flatMap((branch) => branch.entries);
 const find = (tree, id) => flat(tree).find((entry) => entry.techniqueId === id);
 
@@ -61,6 +61,7 @@ assert.equal(empty.maxTier, 4);
 
 // ── three states, and a locked node says why by NAME ────────────────────────
 assert.equal(skillState({ owned: true, enabled: false }), SKILL_STATE.OWNED);
+assert.equal(skillState({ owned: true, pending: true, enabled: false }), SKILL_STATE.PENDING);
 assert.equal(skillState({ owned: false, enabled: true }), SKILL_STATE.AFFORDABLE);
 assert.equal(skillState({ owned: false, enabled: false }), SKILL_STATE.LOCKED);
 
@@ -83,34 +84,35 @@ assert.match(find(noRig, TECHNIQUE.OVERDUB).blockedBy, /BENT RIG/);
 assert.match(find(noRig, TECHNIQUE.OVERDUB).blockedBy, /PLANT ROOM/, '...and where to get it');
 
 // ── moves and passives are stated, not coded in guillemets ──────────────────
-assert.equal(skillKindLabel({ active: true }), 'A MOVE YOU FIRE');
-assert.equal(skillKindLabel({ special: true }), 'ONCE PER FIGHT');
-assert.equal(skillKindLabel({}), 'ALWAYS ON');
-assert.equal(skillKindLabel(find(funded, TECHNIQUE.AFTERIMAGE)), 'ALWAYS ON');
-assert.equal(skillKindLabel(find(funded, TECHNIQUE.WHITEOUT)), 'A MOVE YOU FIRE');
-assert.equal(skillKindLabel(find(funded, TECHNIQUE.MASTER_TAKE)), 'ONCE PER FIGHT');
+assert.equal(skillKindLabel({ active: true }), 'MANUAL TECHNIQUE');
+assert.equal(skillKindLabel({ special: true }), 'SIGNATURE MOVE');
+assert.equal(skillKindLabel({}), 'PASSIVE EFFECT');
+assert.equal(skillKindLabel(find(funded, TECHNIQUE.AFTERIMAGE)), 'PASSIVE EFFECT');
+assert.equal(skillKindLabel(find(funded, TECHNIQUE.WHITEOUT)), 'MANUAL TECHNIQUE');
+assert.equal(skillKindLabel(find(funded, TECHNIQUE.MASTER_TAKE)), 'SIGNATURE MOVE');
 
 // ── only affordable nodes offer the buy ─────────────────────────────────────
 for (const entry of flat(funded)) {
   const offers = !!entry.actions.primary;
   assert.equal(offers, entry.state === SKILL_STATE.AFFORDABLE,
-    `${entry.label} offers FIT exactly when it is affordable`);
+    `${entry.label} offers CHOOSE exactly when it is available`);
 }
 
 // ── buying one moves the tree with it ───────────────────────────────────────
 let build = normalizeCombatBuild(null, PIN_SOURCES.encounters);
 const before = treeFor(build).pins.unspent;
 build = learnCombatTechnique(build, TECHNIQUE.AFTERIMAGE, { hasRig: true }).build;
-const after = treeFor(build);
-assert.equal(find(after, TECHNIQUE.AFTERIMAGE).state, SKILL_STATE.OWNED);
+const after = treeFor(build, true, normalizeCombatBuild(null, PIN_SOURCES.encounters));
+assert.equal(find(after, TECHNIQUE.AFTERIMAGE).state, SKILL_STATE.PENDING);
 assert.equal(find(after, TECHNIQUE.WHITEOUT).state, SKILL_STATE.AFFORDABLE, 'the chain opens up');
 assert.equal(after.pins.unspent, before - 1, 'and it cost a pin');
-assert.equal(find(after, TECHNIQUE.AFTERIMAGE).actions.primary, null, 'an owned node is not re-buyable');
+assert.equal(find(after, TECHNIQUE.AFTERIMAGE).actions.primary, null, 'a chosen node is not re-buyable');
+assert.equal(after.pins.pending, 1, 'the case distinguishes this session from installed modifications');
 
 // ── the count on the tab is about the urgent thing ──────────────────────────
 assert.match(skillsOf(buildBagModel({ build: normalizeCombatBuild(null, PIN_SOURCES.encounters) })).countLabel, /PIN/,
   'unspent pins are what the tab advertises');
-assert.match(skillsOf(buildBagModel({ build })).countLabel, /PIN|FITTED/);
+assert.match(skillsOf(buildBagModel({ build, settledBuild: normalizeCombatBuild(null, PIN_SOURCES.encounters) })).countLabel, /PIN|CHOSEN|INSTALLED/);
 
 // ── the geometry fits the panel it is given, and shrinks ────────────────────
 for (const region of [

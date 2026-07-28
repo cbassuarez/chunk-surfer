@@ -31,12 +31,15 @@ for(const excluded of [
   assert.equal(hushContactWeights({...excluded,takenEligible:true}).brush,0,`brush excluded by ${JSON.stringify(excluded)}`);
 }
 assert.deepEqual(hushContactWeights({takenEligible:false,state:{}}),{brush:.25,taken:0,hard:.75});
+assert.deepEqual(hushContactWeights({forceDirect:true,takenEligible:true,state:{}}),{brush:0,taken:.5,hard:.5},
+  'sustained hot noise removes goosebumps without forcing Hard over Taken');
 
 // The first roll selects the kind, the second only seeds its dialogue.
 assert.equal(chooseHushContactExperience({state:{}},{rng:fixed(.1,.2)}).kind,HUSH_CONTACT_KIND.BRUSH);
 assert.equal(chooseHushContactExperience({state:{}},{rng:fixed(.3,.2)}).kind,HUSH_CONTACT_KIND.TAKEN);
 assert.equal(chooseHushContactExperience({state:{}},{rng:fixed(.9,.2)}).kind,HUSH_CONTACT_KIND.HARD);
 assert.equal(chooseHushContactExperience({takenEligible:false,state:{}},{rng:fixed(.8,.2)}).kind,HUSH_CONTACT_KIND.HARD);
+assert.notEqual(chooseHushContactExperience({forceDirect:true,state:{}},{rng:fixed(0,.2)}).kind,HUSH_CONTACT_KIND.BRUSH);
 
 const drought={...freshHushContactDirectorState(),eligibleSinceBrush:HUSH_CONTACT_LIMITS.brushDroughtRaiseAt};
 assert.equal(hushContactWeights({state:drought}).brush,.5,'third missed opportunity raises brush chance');

@@ -202,16 +202,17 @@ function addSecondPerimeterWall(m,{
   axis,plane,inside,spans,pilasters=[],stiles=pilasters,
   dadoHeight=1.18,pictureY=4.28,corniceY=4.72,
   baseMat=MAT.stone,fillMat=null,trimMat=MAT.plaster,reliefScale=1,
+  lowerCourses=true,
 }){
   for(const [from,to] of spans){
-    if(fillMat!==null)addWallRun(m,{axis,plane,inside,from,to,y:.18,height:dadoHeight-.18,depth:.10*reliefScale,mat:fillMat});
-    addWallRun(m,{axis,plane,inside,from,to,y:0,height:.20,depth:.20*reliefScale,mat:baseMat});
-    addWallRun(m,{axis,plane,inside,from,to,y:dadoHeight-.07,height:.14,depth:.24*reliefScale,mat:trimMat});
+    if(lowerCourses&&fillMat!==null)addWallRun(m,{axis,plane,inside,from,to,y:.18,height:dadoHeight-.18,depth:.10*reliefScale,mat:fillMat});
+    if(lowerCourses)addWallRun(m,{axis,plane,inside,from,to,y:0,height:.20,depth:.20*reliefScale,mat:baseMat});
+    if(lowerCourses)addWallRun(m,{axis,plane,inside,from,to,y:dadoHeight-.07,height:.14,depth:.24*reliefScale,mat:trimMat});
     addWallRun(m,{axis,plane,inside,from,to,y:pictureY-.055,height:.11,depth:.16*reliefScale,mat:trimMat});
     addWallRun(m,{axis,plane,inside,from,to,y:corniceY-.10,height:.20,depth:.27*reliefScale,mat:trimMat});
     addWallRun(m,{axis,plane,inside,from,to,y:corniceY+.10,height:.10,depth:.36*reliefScale,mat:baseMat});
   }
-  for(const along of stiles)addWallPilaster(m,{
+  if(lowerCourses)for(const along of stiles)addWallPilaster(m,{
     axis,plane,inside,along,y:.20,height:dadoHeight-.27,width:.12,depth:.17*reliefScale,mat:trimMat,
   });
   for(const along of pilasters)addWallPilaster(m,{
@@ -637,22 +638,23 @@ function addTriangle(m,a,b,c,mat){
   for(const x of[-11.4,11.4])for(const z of[-12.4,-6.5,6.5,12.4])addCylinder(m,[x,-4.85,z],.16,9.7,MAT.plaster,12);
 }
 {
-  // The old public atrium gets a civic interior order rather than a texture
-  // pasted over a rectangular shell. The original wall remains visible in
-  // recessed panels between the shallow stone/plaster rails. Real apertures
-  // break every run, and the upper blind arches deliberately vary in width.
+  // The old public atrium keeps only its high civic order: pilasters, picture
+  // rail, cornice and blind arches. Lower base courses, dado rails and stiles
+  // were visually reading as wainscoting throughout the atrium, so the actual
+  // authored wall now runs cleanly from floor to the high relief. The municipal
+  // baths relief is separate and deliberately retains its tiled dado.
   const m=mesh('front_atrium_perimeter_relief');
   addSecondPerimeterWall(m,{
     axis:'x',plane:-11.5,inside:1,spans:[[-10.5,-8.95],[-6.05,10.5]],
     pilasters:[-10.35,-8.95,-6.05,-3.0,.15,3.3,6.45,9.9],
     stiles:[-10.35,-8.95,-6.05,-4.5,-3,-1.45,.15,1.7,3.3,4.85,6.45,8.1,9.9],
-    reliefScale:.36,
+    reliefScale:.36,lowerCourses:false,
   });
   addSecondPerimeterWall(m,{
     axis:'z',plane:-11,inside:1,spans:[[-10.9,-2.65],[-.35,10.9]],
     pilasters:[-10.65,-7.9,-5.25,-2.65,-.35,2.35,5.05,7.75,10.65],
     stiles:[-10.65,-9.25,-7.9,-6.55,-5.25,-3.9,-2.65,-.35,1,2.35,3.7,5.05,6.4,7.75,9.1,10.65],
-    reliefScale:.36,
+    reliefScale:.36,lowerCourses:false,
   });
   // The east side becomes a staff office and the narrow concert-hall
   // vestibule south of the bricked service leaf. Stop the public-room order
@@ -661,13 +663,13 @@ function addTriangle(m,a,b,c,mat){
     axis:'z',plane:11,inside:-1,spans:[[-10.9,-2.65]],
     pilasters:[-10.65,-7.9,-5.25,-2.65],
     stiles:[-10.65,-9.25,-7.9,-6.55,-5.25,-3.9,-2.65],
-    reliefScale:.36,
+    reliefScale:.36,lowerCourses:false,
   });
   addSecondPerimeterWall(m,{
     axis:'x',plane:11.5,inside:-1,spans:[[-10.5,-1.75],[.75,10.5]],
     pilasters:[-10.25,-7.35,-4.45,-1.75,.75,3.7,6.65,9.9],
     stiles:[-10.25,-8.8,-7.35,-5.9,-4.45,-3.05,-1.75,.75,2.25,3.7,5.2,6.65,8.15,9.9],
-    reliefScale:.36,
+    reliefScale:.36,lowerCourses:false,
   });
   for(const along of[-7.5,-4.5,-1.45,1.65,4.8,7.95])addWallArch(m,{
     axis:'x',plane:-11.5,inside:1,along,spring:3.05,radius:1.20,depth:.10,section:.065,mat:MAT.stone,

@@ -439,6 +439,9 @@ if __name__ == "__main__":
     print(f"torch build: {json.dumps(pipeline.torch_build_report())}")
     device, _dtype = pipeline.pick_device()
     print(f"device: {device}; expected: {os.environ.get('LENS_EXPECT_BACKEND') or 'any'}")
-    if os.environ.get("LENS_EAGER", "1") != "0":
+    # Uvicorn and /healthz must come up before any model initialization. The
+    # WebSocket handshake owns loading; direct execution should remain a cheap
+    # diagnostic rather than an accidental multi-gigabyte download.
+    if os.environ.get("LENS_EAGER", "0") == "1":
         load_lens()
     uvicorn.run(app, host=host, port=int(os.environ.get("LENS_PORT", "8000")))

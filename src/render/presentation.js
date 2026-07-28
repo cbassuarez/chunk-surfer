@@ -13,7 +13,7 @@ import { uiDraw, uiFill, uiText } from './ui.js';
 import { activeTheme, setActiveSurface, uiBrightness, themeRoleColor, themeRoleDim, uiFlickerAlpha } from './palette.js';
 import { drawVfdGlyph } from './vfd-font.js';
 import { drawPromptParts } from './prompt-glyphs.js';
-import { MONITOR_THRESHOLDS, monitorSnapshot } from '../audio/monitor.js';
+import { MONITOR_DANGER_THRESHOLDS, MONITOR_THRESHOLDS, monitorSnapshot } from '../audio/monitor.js';
 
 export const PANEL = Object.freeze({ padX: 2, headerRows: 2, footerRows: 2 });
 
@@ -144,7 +144,11 @@ export function drawMachinePanel(x, y, w, h, {
     const maxLeft = Math.max(1, (source ? sourceLabelX : x + w - 2) - (x + 2) - 1);
     uiText(x + 2, y + 1, leftHeader.slice(0, maxLeft), 'ui-label');
   }
-  if (meter) drawVfdMeter(meterX, y + 1, 14, monitorSnapshot(), { theme });
+  if (meter) {
+    const snapshot = monitorSnapshot();
+    drawVfdMeter(meterX, y + 1, 12, snapshot, { theme, bandThresholds: MONITOR_DANGER_THRESHOLDS });
+    drawVfdWarningTriangle(x + w - 3, y + 1, snapshot);
+  }
 
   // Footer.
   if (footerParts?.length) drawPromptParts(x + 2, y + h - 2, footerParts, { role: 'ui-label', cols: w });
@@ -156,7 +160,7 @@ export function drawMachinePanel(x, y, w, h, {
 
 // ── the bargraph meter (DA-1000 / Akai VOLUME scale) ─────────────────────────
 export function drawVfdMeter(x, y, width = 14, snapshot = monitorSnapshot(), {
-  thresholdDb = -3, label = '', theme = null,
+  thresholdDb = -3, label = '', theme = null, bandThresholds = null,
 } = {}) {
   const t = theme ? (setActiveSurface(theme), activeTheme()) : activeTheme();
   const n = Math.max(1, Math.min(MONITOR_THRESHOLDS.length, width));
@@ -180,8 +184,11 @@ export function drawVfdMeter(x, y, width = 14, snapshot = monitorSnapshot(), {
 
       ctx.save();
       if (on) {
-        ctx.fillStyle = db >= thresholdDb ? t.danger : phosphor;
-        ctx.globalAlpha = litDuty(x + i, y, db >= thresholdDb ? 'danger' : 'phosphor', 1);
+        const hot = bandThresholds && db >= Number(bandThresholds.hotDb);
+        const midHot = bandThresholds && !hot && db >= Number(bandThresholds.midHotDb);
+        const danger = hot || (!bandThresholds && db >= thresholdDb);
+        ctx.fillStyle = danger ? t.danger : midHot ? '#F2A81E' : phosphor;
+        ctx.globalAlpha = litDuty(x + i, y, danger ? 'danger' : midHot ? 'counter' : 'phosphor', 1);
         ctx.shadowColor = ctx.fillStyle;
         ctx.shadowBlur = 4.5 * dpr;
       } else {
@@ -202,6 +209,36 @@ export function drawVfdMeter(x, y, width = 14, snapshot = monitorSnapshot(), {
   });
 
   if (label) uiText(x - label.length - 1, y, label.toUpperCase(), 'ui-label');
+}
+
+export function drawVfdWarningTriangle(x, y, snapshot = monitorSnapshot(), { now = null } = {}) {
+  const band = snapshot?.band || 'normal';
+  if (band === 'normal') return false;
+  const hot = band === 'hot';
+  const seconds = Number.isFinite(Number(now)) ? Number(now) / 1000 : nowSec();
+  const blink = .34 + .66 * (Math.sin(seconds * Math.PI * (hot ? 5.2 : 3.4)) > 0 ? 1 : .18);
+  const color = hot ? activeTheme().danger : '#F2A81E';
+  uiDraw(({ ctx, dpr, cellW, cellH }) => {
+    const left = x * cellW * dpr;
+    const top = (y + .08) * cellH * dpr;
+    const width = Math.max(4, 1.75 * cellW * dpr);
+    const height = Math.max(4, .78 * cellH * dpr);
+    ctx.save();
+    ctx.globalAlpha = blink;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(1, dpr);
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 4 * dpr;
+    ctx.beginPath();
+    ctx.moveTo(left + width * .5, top);
+    ctx.lineTo(left + width, top + height);
+    ctx.lineTo(left, top + height);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.restore();
+  });
+  uiText(x + .64, y, '!', hot ? 'ui-danger' : 'ui-amber', blink);
+  return true;
 }
 
 // The DA-1000 LOCATION INDICATOR: a row of vertical bars with a red position

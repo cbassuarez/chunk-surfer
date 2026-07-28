@@ -857,7 +857,7 @@ export function drawStanceTriangle(x, y, w, { snr = 'signal', pendingShift = nul
   return { x, y, w, h: 5 };
 }
 
-const TOOL_ICON = Object.freeze({
+export const COMBAT_TOOL_ICON = Object.freeze({
   self: null,
   torch: 'light',
   recorder: 'recorder',
@@ -866,6 +866,161 @@ const TOOL_ICON = Object.freeze({
   radio: 'radio',
   coffee: 'coffee',
 });
+
+export function combatToolIcon(toolId) {
+  return COMBAT_TOOL_ICON[toolId] || (toolId === 'self' ? 'nerve' : 'unknown');
+}
+
+// The command deck is operated by silhouettes first and read as text second.
+// These are small service-manual symbols, not font glyphs: they remain legible
+// at the VFD's native low resolution and do not depend on platform emoji fonts.
+export function drawCombatActionIcon(actionId, x, y, {
+  w = 5,
+  h = 2.2,
+  active = false,
+  enabled = true,
+  counter = false,
+  alpha = 1,
+} = {}) {
+  uiDraw(({ ctx, dpr, cellW, cellH }) => {
+    const box = {
+      x: x * cellW * dpr,
+      y: y * cellH * dpr,
+      w: w * cellW * dpr,
+      h: h * cellH * dpr,
+    };
+    const X = (u) => box.x + box.w * u;
+    const Y = (v) => box.y + box.h * v;
+    const path = (points, close = false) => {
+      ctx.beginPath();
+      points.forEach(([u, v], index) => (index ? ctx.lineTo(X(u), Y(v)) : ctx.moveTo(X(u), Y(v))));
+      if (close) ctx.closePath();
+      ctx.stroke();
+    };
+    const circle = (u, v, r, fill = false) => {
+      ctx.beginPath();
+      ctx.arc(X(u), Y(v), Math.min(box.w, box.h) * r, 0, Math.PI * 2);
+      fill ? ctx.fill() : ctx.stroke();
+    };
+    const rect = (u, v, ww, hh, fill = false) => {
+      const args = [X(u), Y(v), box.w * ww, box.h * hh];
+      fill ? ctx.fillRect(...args) : ctx.strokeRect(...args);
+    };
+    const id = String(actionId || '');
+    const color = !enabled ? UI_COLOR.secondary : counter ? '#84e6a1' : active ? UI_COLOR.counter : UI_COLOR.primary;
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.globalAlpha = alpha * (enabled ? 1 : .34);
+    ctx.lineWidth = Math.max(1, 1.15 * dpr);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    if (active && enabled) { ctx.shadowColor = color; ctx.shadowBlur = 4 * dpr; }
+
+    if (id === 'hold') {
+      path([[.5,.06],[.82,.20],[.76,.62],[.5,.92],[.24,.62],[.18,.20]], true);
+      path([[.5,.18],[.5,.76]]);
+    } else if (id === 'wait') {
+      rect(.29,.16,.13,.68,true); rect(.58,.16,.13,.68,true);
+    } else if (id === 'compose') {
+      path([[.08,.54],[.27,.54],[.34,.28],[.46,.76],[.57,.42],[.66,.54],[.92,.54]]);
+      circle(.5,.53,.39);
+    } else if (id === 'expose') {
+      rect(.12,.32,.23,.38); path([[.35,.35],[.88,.10],[.88,.90],[.35,.67]], true);
+      path([[.67,.28],[.93,.18]]); path([[.67,.72],[.93,.82]]);
+    } else if (id === 'whiteout') {
+      circle(.5,.5,.16,true);
+      for (const [a,b] of [[[.5,.02],[.5,.25]],[[.5,.75],[.5,.98]],[[.02,.5],[.25,.5]],[[.75,.5],[.98,.5]],[[.16,.16],[.31,.31]],[[.69,.69],[.84,.84]],[[.84,.16],[.69,.31]],[[.31,.69],[.16,.84]]]) path([a,b]);
+    } else if (id === 'monitor') {
+      circle(.32,.45,.18); circle(.68,.45,.18); path([[.32,.45],[.68,.45]]);
+      rect(.22,.73,.56,.10);
+    } else if (id === 'playback') {
+      path([[.31,.16],[.78,.50],[.31,.84]], true); path([[.08,.18],[.08,.82]]);
+    } else if (id === 'master-take') {
+      circle(.30,.45,.16); circle(.70,.45,.16); path([[.30,.45],[.70,.45]]);
+      path([[.20,.78],[.36,.63],[.50,.78],[.64,.63],[.80,.78]]);
+    } else if (id === 'invert') {
+      path([[.22,.39],[.34,.20],[.66,.20],[.80,.39]]); path([[.80,.39],[.68,.36],[.76,.25]]);
+      path([[.78,.61],[.66,.80],[.34,.80],[.20,.61]]); path([[.20,.61],[.32,.64],[.24,.75]]);
+    } else if (id === 'runaway-feedback') {
+      path([[.08,.52],[.26,.24],[.48,.48],[.70,.76],[.92,.50],[.72,.24],[.50,.50],[.28,.76],[.08,.52]]);
+      circle(.50,.50,.05,true);
+    } else if (id === 'tune') {
+      path([[.30,.08],[.30,.48],[.42,.63],[.46,.63],[.46,.94]]);
+      path([[.70,.08],[.70,.48],[.58,.63],[.54,.63],[.54,.94]]);
+      path([[.18,.18],[.06,.10]]); path([[.82,.18],[.94,.10]]);
+    } else if (id === 'radio-decoy') {
+      path([[.42,.20],[.58,.20],[.58,.84],[.42,.84]], true); path([[.50,.20],[.50,.04]]);
+      path([[.30,.30],[.18,.20],[.12,.08]]); path([[.70,.30],[.82,.20],[.88,.08]]);
+      circle(.50,.63,.06,true);
+    } else if (id === 'steady-hands') {
+      path([[.26,.24],[.74,.24],[.66,.84],[.34,.84]], true); path([[.22,.18],[.78,.18]]);
+      path([[.40,.12],[.43,.02]]); path([[.57,.12],[.61,.02]]);
+    } else if (id === 'end-tempo') {
+      rect(.23,.18,.54,.64); rect(.38,.36,.24,.28,true);
+    } else {
+      circle(.50,.50,.28); path([[.50,.08],[.50,.92]]); path([[.18,.50],[.82,.50]]);
+    }
+    ctx.restore();
+  });
+}
+
+export function combatActionReadout(move = {}) {
+  if (move.enabled === false) return 'UNAVAILABLE';
+  const bits = [];
+  if (move.damage) bits.push(`DMG ${move.damage}`);
+  if (move.prevents) bits.push(`GUARD ${move.prevents}`);
+  if (move.heals) bits.push(`HEAL ${move.heals}`);
+  if (move.captures) bits.push('CAPTURE');
+  if (move.consumesTake) bits.push('PLAY TAKE');
+  if (move.reveals) bits.push(`READ ${move.reveals}`);
+  if (move.free) bits.push('FREE');
+  if (move.once) bits.push('ONCE');
+  return bits.slice(0, 2).join(' · ') || 'POSITION';
+}
+
+export function drawCombatToolTile(tool, { x, y, w, h = 3, selected = false, focused = false } = {}) {
+  const ready = tool?.ready !== false;
+  uiFill(x, y, w, h, selected ? 'rgba(242,168,30,.075)' : 'rgba(255,255,255,.018)');
+  uiStrokeRect(x, y, w, h, selected ? UI_COLOR.amber : UI_COLOR.frame, focused ? .86 : selected ? .46 : .18, focused ? 1.4 : 1);
+  const iconW = Math.min(4.3, Math.max(2.8, w * .34));
+  drawBagIcon(combatToolIcon(tool?.id), x + .35, y + .28, {
+    w: iconW,
+    h: h - .55,
+    active: selected,
+    state: ready ? (selected ? 'active' : 'dim') : 'dim',
+    alpha: ready ? 1 : .28,
+    empty: !ready,
+  });
+  const labelX = x + iconW + .8;
+  const labelW = Math.max(1, Math.floor(w - iconW - 1.1));
+  uiText(labelX, y + .48, String(tool?.label || '').slice(0, labelW), selected ? 'ui-primary' : 'ui-secondary', selected ? 1 : .68);
+  uiText(labelX, y + 1.50, ready ? 'READY' : 'LOCKED', ready ? 'ui-label' : 'ui-danger', ready ? .48 : .55);
+  return { x, y, w, h };
+}
+
+export function drawCombatActionTile(move, { x, y, w, h = 3.2, selected = false, focused = false } = {}) {
+  const enabled = move?.enabled !== false;
+  const counters = !!move?.perfect;
+  const color = counters ? '#84e6a1' : selected ? UI_COLOR.primary : UI_COLOR.frame;
+  uiFill(x, y, w, h, selected ? 'rgba(91,240,138,.065)' : 'rgba(255,255,255,.018)');
+  uiStrokeRect(x, y, w, h, color, focused ? .90 : selected ? .50 : .18, focused ? 1.4 : 1);
+  const iconW = Math.min(5.5, Math.max(3.6, w * .28));
+  drawCombatActionIcon(move?.id, x + .35, y + .34, {
+    w: iconW,
+    h: h - .68,
+    active: selected,
+    enabled,
+    counter: counters,
+    alpha: selected ? 1 : .72,
+  });
+  const labelX = x + iconW + .85;
+  const labelW = Math.max(1, Math.floor(w - iconW - 1.15));
+  uiText(labelX, y + .48, String(move?.label || '').slice(0, labelW), !enabled ? 'ui-secondary' : counters ? 'ui-counter' : selected ? 'ui-primary' : 'ui-secondary', selected ? 1 : .72);
+  uiText(labelX, y + 1.52, combatActionReadout(move).slice(0, labelW), !enabled ? 'ui-danger' : 'ui-label', !enabled ? .52 : .58);
+  if (counters) uiText(x + w - 2, y + .35, '◆', 'ui-counter', .92);
+  return { x, y, w, h };
+}
 
 const HAND_PALETTE = Object.freeze({
   signal: Object.freeze({
@@ -1135,7 +1290,7 @@ export function drawFirstPersonHands(toolId, {
     ctx.restore();
   });
 
-  const icon = rightCells ? TOOL_ICON[toolId] : null;
+  const icon = rightCells ? COMBAT_TOOL_ICON[toolId] : null;
   if (icon) drawBagIcon(icon, rightCells.x + rightCells.w * .30, rightCells.y + rightCells.h * .12, {
     w: rightCells.w * .34,
     h: rightCells.h * .55,

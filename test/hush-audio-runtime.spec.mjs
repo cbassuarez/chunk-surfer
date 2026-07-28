@@ -39,13 +39,31 @@ assert.ok(offered.length >= 1);
 assert.ok(runtime.snapshot().audition.interest > 0);
 const heardInterest = runtime.currentAudition().interest;
 
+const offeredBeforeRegular=offered.length;
+emitAcousticEvent({
+  kind:'footstep_walk',
+  source:{kind:'player',id:'player'},
+  spatial:{roomId:'a',floorId:'g',position:{x:9,y:0}},
+  semantics:{audibleToHush:true,playerGenerated:true},
+});
+assert.equal(offered.length,offeredBeforeRegular,'normal-band player noise does not offer a location');
+
+emitAcousticEvent({
+  kind:'bag_rummage',
+  source:{kind:'player',id:'player'},
+  spatial:{roomId:'a',floorId:'g',position:{x:9,y:0}},
+  semantics:{audibleToHush:true,playerGenerated:true},
+});
+assert.ok(offered.length>offeredBeforeRegular,'mid-hot player noise offers a location clue');
+const playerInterest=runtime.currentAudition().interest;
+
 emitAcousticEvent({
   kind: 'instrument_note',
   source: { kind: 'hush', id: 'hush' },
   spatial: { roomId: 'a', floorId: 'g', position: { x: 1, y: 0 } },
   semantics: { audibleToHush: false, playerGenerated: false },
 });
-assert.equal(runtime.currentAudition().interest, heardInterest, 'HUSH-created cues must not recursively alert it');
+assert.equal(runtime.currentAudition().interest, playerInterest, 'HUSH-created cues must not recursively alert it');
 
 runtime.tick(.016);
 assert.ok(applied.length >= 1);

@@ -204,9 +204,68 @@ export function stopPlayback() {
 }
 
 export function progress() {
-  if (!state.playing || !state.ctx) return 0;
-  const p = state.playing;
-  return Math.max(0, Math.min(1, (state.ctx.currentTime - p.startedAt) / PLAYBACK.seconds));
+  return playbackSnapshot()?.progress || 0;
+}
+
+const clamp01 = (value) => Math.max(0, Math.min(1, Number(value) || 0));
+
+function textSeed(value) {
+  let seed = 2166136261;
+  for (const ch of String(value || 'take')) {
+    seed ^= ch.charCodeAt(0);
+    seed = Math.imul(seed, 16777619);
+  }
+  return (seed >>> 0) / 4294967295;
+}
+
+// Pure transport telemetry. It describes the sealed recording and the machine,
+// never the extra voice: nothing visible on the recorder is allowed to name or
+// classify what the headphones reveal. A late, unlabelled trace drift is the
+// only concession to the sound changing under the player.
+export function buildPlaybackSnapshot({ take, playing, now = 0, duration = PLAYBACK.seconds } = {}) {
+  if (!take || !playing) return null;
+  const seconds = Math.max(.01, Number(duration) || PLAYBACK.seconds);
+  const elapsedSec = Math.max(0, Math.min(seconds, Number(now) - Number(playing.startedAt || 0)));
+  const progress = clamp01(elapsedSec / seconds);
+  const audible = Array.isArray(take.audible) ? take.audible : [];
+  const discrete = Array.isArray(take.discrete) ? take.discrete : [];
+  const average = audible.length
+    ? audible.reduce((sum, entry) => sum + Math.max(0, Number(entry?.[1]) || 0), 0) / audible.length
+    : 0;
+  const seed = textSeed(take.roomId);
+  const phase = elapsedSec * (2.1 + seed * .7) + seed * Math.PI * 2;
+  const signalBase = clamp01(.14 + Math.min(.55, average * 2.6) + audible.length * .022);
+  const lateChange = take.guest
+    ? clamp01((elapsedSec - PLAYBACK.guestDelaySec) / Math.max(.01, PLAYBACK.guestRiseSec))
+    : 0;
+  const signalLeft = clamp01(signalBase * (.68 + .23 * Math.sin(phase)) + lateChange * .19);
+  const signalRight = clamp01(signalBase * (.70 + .21 * Math.sin(phase * .83 + 1.17)) + lateChange * .22);
+  return {
+    roomId: String(take.roomId || ''),
+    recordedAt: Math.max(0, Number(take.at) || 0),
+    durationSec: seconds,
+    elapsedSec,
+    remainingSec: Math.max(0, seconds - elapsedSec),
+    progress,
+    sourceCount: audible.length,
+    eventCount: discrete.length,
+    signalLeft,
+    signalRight,
+    tapeDrift: lateChange,
+    markers: discrete.map((event, index) => ({
+      id: `${event?.cueId || 'event'}:${index}`,
+      position: clamp01((Math.max(0, Number(event?.atSec) || 0) / 60) * ((seconds - 1) / seconds)),
+    })),
+  };
+}
+
+export function playbackSnapshot() {
+  if (!state.playing || !state.ctx) return null;
+  return buildPlaybackSnapshot({
+    take: state.takes.get(state.playing.roomId),
+    playing: state.playing,
+    now: state.ctx.currentTime,
+  });
 }
 
 function noiseBuffer(ctx, seconds) {

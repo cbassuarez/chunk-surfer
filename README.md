@@ -153,8 +153,8 @@ large and can take a long time on its first run.
 does not contain `src-tauri/lens-resources/lens/` and a `chunk-lens` sidecar, it
 is not a release candidate.
 
-The Beta 2 source version is `0.1.1-beta.2`; the release tag is
-`v0.1.1-beta.2`. Before creating that tag, run:
+The Beta 2 source version is `0.1.1-beta.3`; the release tag is
+`v0.1.1-beta.3`. Before creating that tag, run:
 
 ```sh
 npm test

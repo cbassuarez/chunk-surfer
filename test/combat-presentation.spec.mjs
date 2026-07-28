@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { combatBarCells, combatInjuryStage } from '../src/render/combat-view.js';
+import { combatActionReadout, combatBarCells, combatInjuryStage } from '../src/render/combat-view.js';
 import * as combatView from '../src/render/combat-view.js';
 import { ORDINARY_TURN_SECONDS } from '../src/game/combat.js';
 
@@ -86,7 +86,28 @@ test('the enemy takes its own beat: player and enemy resolutions are sequenced',
 test('Tab steps back inside the fight; Escape stays reserved for run-level pause', () => {
   assert.match(combatSceneSource, /e\.key === 'Tab'/);
   assert.doesNotMatch(combatSceneSource, /back = e\.key === 'Escape'/);
-  assert.match(combatSceneSource, /\[TAB\] TOOLS/);
+  assert.match(combatSceneSource, /\[TAB\] KIT/);
+});
+
+test('the command surface is an icon deck, not a text-list browser', () => {
+  assert.equal(combatActionReadout({ enabled: true, damage: 3, prevents: 2 }), 'DMG 3 · GUARD 2');
+  assert.equal(combatActionReadout({ enabled: false, reason: 'NO TAKE' }), 'UNAVAILABLE');
+  assert.equal(combatActionReadout({ enabled: true, captures: true }), 'CAPTURE');
+  assert.match(combatViewSource, /export function drawCombatActionIcon/);
+  assert.match(combatViewSource, /export function drawCombatToolTile/);
+  assert.match(combatViewSource, /export function drawCombatActionTile/);
+  assert.match(combatSceneSource, /drawCombatToolTile\(tool/);
+  assert.match(combatSceneSource, /drawCombatActionTile\(move/);
+  assert.doesNotMatch(combatSceneSource, /uiText\(toolX, listY, 'TOOL'/);
+  assert.doesNotMatch(combatSceneSource, /`MOVES \/ \$\{activeTool\(\)\.label\}`/);
+  assert.doesNotMatch(combatSceneSource, /move\.label\.padEnd\(13\)/);
+});
+
+test('the horizontal command deck supports keys and full-card pointer targets', () => {
+  assert.match(combatSceneSource, /e\.key === 'ArrowLeft'/);
+  assert.match(combatSceneSource, /e\.key === 'ArrowRight'/);
+  assert.match(combatSceneSource, /y >= row\.y && y < row\.y \+ \(row\.h \|\| 1\)/);
+  assert.match(combatSceneSource, /\[←→\] CHOOSE ACTION/);
 });
 
 test('hands render in two near-square boxes clipped to the stage, not one full-width band', () => {

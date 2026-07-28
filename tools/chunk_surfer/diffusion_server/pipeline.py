@@ -45,6 +45,7 @@ import hashlib
 import json
 import math
 import os
+import sys
 from dataclasses import dataclass, field
 
 import torch
@@ -66,7 +67,11 @@ from PIL import Image
 # progress machinery (and its semaphore) from being created at all.
 diffusers_logging.disable_progress_bar()
 
-BUNDLED = os.environ.get("LENS_BUNDLED") == "1"
+_bundled_env = os.environ.get("LENS_BUNDLED")
+# The game always passes LENS_BUNDLED=1. A frozen sidecar launched directly or
+# by an older shell must still fail closed against its packaged resources rather
+# than silently downloading several gigabytes from Hugging Face.
+BUNDLED = _bundled_env == "1" or (_bundled_env is None and bool(getattr(sys, "frozen", False)))
 MODEL_ROOT = os.environ.get("LENS_MODEL_ROOT")
 RESOURCE_ROOT = os.environ.get("LENS_RESOURCE_DIR")
 _validated_weights_sha256: str | None = None

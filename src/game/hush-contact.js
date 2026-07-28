@@ -72,6 +72,7 @@ export function normalizeHushContactContext(context = {}) {
     thoughtOpen: !!context.thoughtOpen,
     brushOpen: !!context.brushOpen,
     takeBreak: !!context.takeBreak,
+    forceDirect: !!context.forceDirect,
     takenEligible: context.takenEligible !== false,
     cooldownReady: context.cooldownReady !== false,
     state: normalizeHushContactDirectorState(context.state),
@@ -87,6 +88,7 @@ function brushChanceFor(context = {}) {
     && !ctx.thoughtOpen
     && !ctx.brushOpen
     && !ctx.takeBreak
+    && !ctx.forceDirect
     && ctx.cooldownReady
     && state.lastKind !== HUSH_CONTACT_KIND.BRUSH
     && state.brushesShown < HUSH_CONTACT_LIMITS.brushMaxPerRun;

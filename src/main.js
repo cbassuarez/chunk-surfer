@@ -24,14 +24,14 @@ import { fft, analyze, biomeFrom } from './audio/analysis.js';
 import * as CR from './render/canvas.js';
 import * as R3 from './render/r3d.js';
 import * as MONITOR from './audio/monitor.js';
-import { emitAcousticEvent } from './audio/acoustic-events.js';
+import { emitAcousticEvent, onAcousticEvent } from './audio/acoustic-events.js';
 import { createHushMix } from './audio/hush-mix.js';
 import * as FP from './world/floorplan.js';
 import { F as CELL_FLAGS, ZONE, CELL, MATERIAL } from './data/floorplan/legend.js';
 import * as MUT from './world/mutate.js';
 import * as scenes from './game/scenes.js';
 import { uiInit, uiSetScale, uiClear, uiText, uiSize, uiFill, uiCenter, uiDraw, uiPointFromClient, uiWrap } from './render/ui.js';
-import { drawVfdCounter, drawVfdMeter, drawMachinePanel, drawLocationIndicator, drawVfdText } from './render/presentation.js';
+import { drawVfdCounter, drawVfdMeter, drawVfdWarningTriangle, drawMachinePanel, drawLocationIndicator, drawVfdText } from './render/presentation.js';
 import { applyVfdSettings, vfdSettings } from './render/palette.js';
 import { saveLoadAsync, saveCommit, getSave, newGame, metaCommit, getMeta } from './game/save.js';
 import { currentStorage, exportAllData, exportDiagnosticsForSupport } from './platform/storage/storageService.js';
@@ -63,6 +63,12 @@ import {
   resolveHushSensationChoice,
   updateHushWarningSchedule,
 } from './game/hush-contact.js';
+import {
+  freshHushNoisePerception,
+  hushNoiseForcesDirectContact,
+  hushNoiseMapConfirmation,
+  updateHushNoisePerception,
+} from './game/hush-noise-perception.js';
 import * as PROPS from './game/props.js';
 import * as CUES from './audio/cues.js';
 import { authoredCue, authoredAudioProject, authoredCueUrls, dispatchAuthoredCue } from './audio/authored-cues.js';
@@ -96,12 +102,13 @@ import * as OBJ from './game/objectives.js';
 import * as DOC from './game/document.js';
 import * as RADIO from './game/radio.js';
 import * as PB from './game/playback.js';
+import { drawPlaybackOverlay } from './render/playback-view.js';
 import { makeCombatScene } from './game/combat.js';
 import { makeLoadoutBriefingScene } from './game/loadout-briefing.js';
 import { sourceCombatBattle, trainingCombatBattle } from './data/combat-definitions.js';
 import { BREAKBEAT_CUE, SCREAM_CUE, enemyAttackShape } from './audio/piano-weapon.js';
 import { createCombatTutorialDirector } from './game/combat-tutorial.js';
-import { learnCombatTechnique, normalizeCombatBuild } from './game/combat-progression.js';
+import { normalizeCombatBuild } from './game/combat-progression.js';
 import { availableBattleTools, moveCombatGear, reorderCombatGear } from './game/combat-loadout.js';
 import * as ENCOUNTERS from './game/encounters.js';
 import * as MIC from './game/mic.js';
@@ -111,6 +118,7 @@ import { BUILDING_MAP } from './data/building-map.js';
 import { captureDoorMapState, captureFloorplanMapSource, buildMapModel } from './game/map-model.js';
 import { createHushTelemetry } from './game/hush-telemetry.js';
 import { createHushAudioRuntime } from './game/hush-audio-runtime.js';
+import { applyHushTorchInterference, hushAbsenceLook, inactiveHushField } from './game/hush-field.js';
 import { roomLabel, roomToneCharacter } from './audio/manifest-map.js';
 import * as SPEECH from './game/speech.js';
 import * as TUT from './game/tutorial.js';
@@ -249,6 +257,10 @@ import { consumeNotice, noticePolicy, peekNotice } from './progression/notificat
 import { syncPlatform } from './progression/platform-sync.js';
 import { exportProfile, mergeImportedProfile } from './progression/profile.js';
 import { currentPlatform } from './platform/index.js';
+
+// One semantic feed owns the physical meter. It accepts only player-generated
+// events; audible program audio never leaks into the HUSH exposure display.
+onAcousticEvent((event)=>MONITOR.monitorObserveAcousticEvent(event));
 
 const APP_VERSION=__APP_VERSION__;
 // Bump only when the offline inference payload changes. Unlike APP_VERSION,
@@ -557,7 +569,7 @@ let hushAudioMix=null;
 let hushAudioRuntime=null;
 let electricalHumRuntime=null;
 let electricalHumFrame={audible:false,gain:0,pan:0,circuits:[],primary:null,sources:[]};
-let hushLightScale=1;
+let hushFieldFrame=inactiveHushField();
 let audioInitFailed=false;
 
 const clamp01 = (v, fallback = 1) => {
@@ -665,8 +677,9 @@ function ensureCtx({resume=true}={}){
         // presence ducks to 10% behind a 620Hz lowpass at close range — so the
         // contact stinger was being silenced by the very thing it announces.
         FEAR.fearAudioInit(actx, dialogGain);
-        // The final-output analyser remains in the audible graph. The physical
-        // room mic joins its display as RMS only and is never routed to output.
+        // The transparent monitor node remains in the audible graph, but its
+        // display is fed only by semantic player noise and optional room-mic
+        // RMS. Program audio is never treated as HUSH exposure.
         MONITOR.monitorSetAuxInput(()=>MIC.micActive()?MIC.micLevel():0);
 
         CUES.preloadAll(authoredCueUrls({excludeCuePrefixes:['battle.']}));
@@ -4961,6 +4974,7 @@ function loop(){
         updateHorrorTick();
         tickRecorder(dt);
         tickRoomMicAcoustics(dt);
+        tickHushNoisePerception(dt);
         tickHushAudio(dt);
         tickChunkSurfOffer();
         tickSourceSpace(dt);
@@ -7107,6 +7121,7 @@ let hushWarningSchedule={armed:true,readyAt:0};
 let pendingHushBrush=null;
 let hushSensationDebug=null;
 let hushSensationScene=null;
+let hushNoisePerception=freshHushNoisePerception();
 const itemLost=(id)=> lostItem===id;
 
 function resetHushContactSession(){
@@ -7115,6 +7130,7 @@ function resetHushContactSession(){
   pendingHushBrush=null;
   hushSensationDebug=null;
   hushSensationScene=null;
+  hushNoisePerception=freshHushNoisePerception();
   hushBrushCooldownUntil=graceUntil;
   hushWarningSchedule={armed:true,readyAt:graceUntil};
 }
@@ -7337,6 +7353,7 @@ function hushContactContext({takeBreak=false}={}){
     thoughtOpen:!!hushSensationMode,
     brushOpen:hushSensationMode===HUSH_SENSATION_MODE.BRUSH,
     takeBreak,
+    forceDirect:hushNoiseForcesDirectContact(hushNoisePerception,performance.now()),
     takenEligible:!takenActive&&!lostItem&&performance.now()>=takenRecoveryUntil&&!TUT.tutorialActive(),
     cooldownReady:performance.now()>=hushBrushCooldownUntil,
     state:PRES.contactDirectorState(),
@@ -7978,7 +7995,7 @@ function interactChapelScreen(){
 
 function interact(){
   if(!storyMode) return;
-  if(PB.isPlaying()){ PB.stopPlayback(); return; }
+  if(PB.isPlaying()){ PB.stopPlayback(); playbackRoom=null; return; }
   if(usingSourceSpace()){
     const result=chunkSurfRuntime.inspectFocused(px,py,R3.r3dFacing());
     if(result.handled){
@@ -8374,7 +8391,7 @@ function openBag({ focus:focusOverride=null }={}){
     getGuide:()=>TUT.tutorialGuide('bag'),
     getBuild:combatBuild,
     hasRig:()=>flagTest('has.interface'),
-    onFitSkill:learnCalibration,
+    onApplySkills:applyCalibrationBuild,
     memory:getSave().bagNav,
     onRemember:(bagNav)=>saveCommit({bagNav}),
     getMonitorSource:()=>MIC.micActive()?'ROOM MIC LIVE':'FIELD LIVE',
@@ -8714,10 +8731,11 @@ let playbackRoom=null;
 function playCurrentTake(){
   const room=currentWorld();
   if(!PB.hasTake(room)){ SPEECH.say(framedLine('playbackNone', LINES.playbackNone)); return; }
-  if(PB.isPlaying()){ PB.stopPlayback(); return; }
+  if(PB.isPlaying()){ PB.stopPlayback(); playbackRoom=null; return; }
   ensureCtx();
-    PB.playbackInit({ ctx:actx, bus:sfxGain || master });
-  PB.playTake(room, { character: roomToneCharacter(room) });
+  PB.playbackInit({ ctx:actx, bus:sfxGain || master });
+  const playing=PB.playTake(room, { character: roomToneCharacter(room) });
+  if(!playing)return;
   playbackRoom=room;
   SPEECH.say(framedLine('playback', LINES.playback));
 }
@@ -9439,6 +9457,29 @@ function farRoomShape(){
   };
 }
 
+function tickHushNoisePerception(dt){
+  const now=performance.now();
+  const snapshot=MONITOR.monitorSnapshot(now);
+  const enabled=storyMode&&!usingSpecialSpace()&&!TUT.tutorialActive();
+  const next=updateHushNoisePerception(hushNoisePerception,{
+    now,dt,db:snapshot.hushDb,active:PRES.isActive(),enabled,
+  });
+  hushNoisePerception=next.state;
+  if(!next.action||!PRES.isActive())return;
+  const input=snapshot.inputPosition;
+  const target=input&&Number.isFinite(input.x)&&Number.isFinite(input.y)
+    ? input
+    : {x:px,y:py};
+  PRES.offerSoundTarget({
+    position:target,
+    level:next.action.kind==='pinpoint'?1:.55,
+    confidence:next.action.kind==='pinpoint'?1:.58,
+    expiresAt:next.action.expiresAt,
+    priority:next.action.priority,
+    reason:next.action.kind==='pinpoint'?'PLAYER_NOISE_PINPOINT':'PLAYER_NOISE_CLUE',
+  });
+}
+
 function tickPresence(dt){
   if(usingStairAnomaly())return;
   if(!storyMode || !PRES.isActive()) return;
@@ -9940,10 +9981,10 @@ function pushCombat(battle, { onWin, onLose, onAbort, source=null, director=null
 let activeBattleId=null;
 let godBattleOpen=false;
 function combatBuild(){return normalizeCombatBuild(getSave().combatBuild,getSave().encounters?.cleared,getSave().flags);}
-function learnCalibration(id){
-  const learned=learnCombatTechnique(combatBuild(),id,{hasRig:flagTest('has.interface')});
-  if(!learned.changed)return false;
-  saveCommit({combatBuild:learned.build});
+function applyCalibrationBuild(build,{techniqueIds=[]}={}){
+  if(!techniqueIds.length)return false;
+  const next=normalizeCombatBuild(build,getSave().encounters?.cleared,getSave().flags);
+  saveCommit({combatBuild:next});
   return true;
 }
 // A won pin opens the bag on its SKILLS tab. There is no separate calibration
@@ -10492,7 +10533,7 @@ function emitRecordistAcoustic(raw={}){
 
 function hushPresenceSnapshot(){
   const base=PRES.publicSnapshot();
-  const room=usingPlan()?(ZONE_RECORDING_ROOM[FP.zoneAt(base.x,base.y)]||null):currentWorld();
+  const room=usingPlan()?acousticRoomAt(base.x,base.y):currentWorld();
   return {...base,roomId:room,floorId:acousticFloorIdAt(base.x,base.y)};
 }
 
@@ -10501,7 +10542,7 @@ function initHushAudioRuntime(){
   hushAudioRuntime?.destroy?.();
   REC.setAcousticEmitter(emitRecordistAcoustic);
   roomMicAcousticAt=0;
-  hushLightScale=1;
+  hushFieldFrame=inactiveHushField();
   lastHushFieldStage='none';
   hushAudioRuntime=createHushAudioRuntime({
     presence:{
@@ -10524,8 +10565,8 @@ function initHushAudioRuntime(){
       monitorOpen:!itemLost('recorder'),
     }),
     effects:hushAudioMix,
-    onField:({field,torchScale})=>{
-      hushLightScale=REC.lightOn()?torchScale:0;
+    onField:({field})=>{
+      hushFieldFrame=field||inactiveHushField();
       const stage=field.stage||'none';
       if(stage!==lastHushFieldStage){
         const captions=!!getSave().settings?.hushCueCaptions;
@@ -10549,13 +10590,13 @@ function stopHushAudioRuntime(){
   hushAudioRuntime?.destroy?.();
   hushAudioRuntime=null;
   REC.setAcousticEmitter(null);
-  hushLightScale=1;
+  hushFieldFrame=inactiveHushField();
   lastHushFieldStage='none';
   hushAudioMix?.reset?.();
 }
 
 function tickHushAudio(dt){
-  if(!storyMode||!hushAudioRuntime){hushLightScale=REC.lightOn()?1:0;return;}
+  if(!storyMode||!hushAudioRuntime){hushFieldFrame=inactiveHushField();return;}
   hushAudioRuntime.tick(dt);
 }
 
@@ -10619,6 +10660,7 @@ function currentMapHushMarker(){
     active:true,
     position:{x:physical.x,y:physical.z},
     floorId:floor?.id||null,
+    perception:hushNoiseMapConfirmation(hushNoisePerception,performance.now()),
   };
 }
 
@@ -10653,7 +10695,7 @@ function currentFacilityMapModel(){
   const objective=OBJ.objState();
   const doorKey=doors.map((door)=>`${door.id}:${door.state}`).join('|');
   const contactKey=`${contact.state}:${contact.observation?.observedAt||0}:${contact.observation?.floorId||''}`;
-  const hushKey=hush?`${hush.floorId||''}:${Math.round(hush.position.x*2)}:${Math.round(hush.position.y*2)}`:'none';
+  const hushKey=hush?`${hush.floorId||''}:${Math.round(hush.position.x*2)}:${Math.round(hush.position.y*2)}:${hush.perception?.mode||'none'}`:'none';
   const tower=chapelTowerState(),towerKey=`${tower.phase}:${tower.ropeRoomVisited?1:0}:${tower.hatchInspected?1:0}`;
   const discoveredFloorIds=flagGet('academic.entered')?new Set(['academic']):new Set();
   const discoveryKey=discoveredFloorIds.has('academic')?'academic':'base';
@@ -11053,7 +11095,7 @@ function openSettingsFromPause(initialTab='display'){
 
 const GOD_LEVELS=[null,0,0.25,0.5,0.75,1];
 const GOD_LEVEL_LABEL=new Map([[null,'AUTO'],[0,'OFF'],[0.25,'LOW'],[0.5,'MED'],[0.75,'HIGH'],[1,'MAX']]);
-const GOD_LOOK_DEBUG=['final','world','signal','memory','edge','mask'];
+const GOD_LOOK_DEBUG=['final','world','signal','memory','edge','mask','threshold','recorded','instability'];
 let godLookDebug='final';
 
 function godLevelLabel(value){
@@ -12113,7 +12155,8 @@ const teach=tutorialPromptsEnabled() ? TUT.tutorialPrompt() : null;
       { action: 'light', label: rec.light ? 'LIGHT OFF' : 'LIGHT' },
       ...(done ? [] : [{ action: 'recorder', label: 'LISTEN' }]),
       { action: 'bag', label: 'BAG' },
-      ...(hintMode === 'full' && PB.hasTake(currentWorld()) ? [{ action: 'playback', label: 'PLAYBACK' }] : []),
+      ...(hintMode === 'full' && PB.hasTake(currentWorld())
+        ? [{ action: 'playback', label: PB.isPlaying() ? 'STOP PLAYBACK' : 'PLAYBACK' }] : []),
       ...(hintMode === 'full' ? [{ action: 'menu', label: 'PAUSE' }] : []),
     ];
     if(cols<72){
@@ -12125,24 +12168,17 @@ const teach=tutorialPromptsEnabled() ? TUT.tutorialPrompt() : null;
     }
   }
 
-  // Playback has its own meter, and it is deliberately identical to the take
-  // meter. The one difference is that this one is safe, and the player has to
-  // remember which one they are looking at.
-  if(PB.isPlaying()){
-    const w=Math.min(46, cols-8);
-    const x=Math.floor((cols-w)/2), y=rows-5;
-    const filled=Math.round(PB.progress()*(w-2));
-    uiText(x, y-1, '▶ PLAYBACK', 'ui-blue');
-    for(let i=0;i<w-2;i++) uiText(x+1+i, y, i<filled ? '▓' : '░', i<filled?'ui-blue':'ui-frame', i<filled ? 1 : 0.45);
-  }
+  const playback=PB.playbackSnapshot();
+  if(playback)drawPlaybackOverlay({
+    snapshot:playback,cols,rows,roomTitle:roomLabel(playback.roomId),
+    takeNumber:Math.max(0,TARGETS.indexOf(playback.roomId)+1),
+  });
 
   const monitorY=cols<72?rows-5:rows-4;
-  if(MIC.micActive()){
-    uiText(2,monitorY-1,'ROOM MIC','ui-label');
-    drawVfdMeter(11,monitorY-1,12,MONITOR.monitorSnapshotForRms(MIC.micLevel()),{theme:'green',thresholdDb:-12});
-  }
+  const monitor=MONITOR.monitorSnapshot();
   uiText(2, monitorY, 'MONITOR', 'ui-label');
-  drawVfdMeter(11, monitorY, 12, MONITOR.monitorSnapshot());
+  drawVfdMeter(11, monitorY, 12, monitor,{theme:'green',bandThresholds:MONITOR.MONITOR_DANGER_THRESHOLDS});
+  drawVfdWarningTriangle(25,monitorY,monitor);
   drawMicTestOverlay(cols, rows);
   SPEECH.drawSpeech();
 }
@@ -12949,6 +12985,25 @@ function render3d(){
   const firstKey=keyMap.size>0 ? keyMap.values().next().value : null;
   const mapPoint=(p)=>{if(!p||!usingPlan()||usingSpecialSpace())return p;const q=FP.logicalToPhysical(p.x,p.y);return{...p,x:q.x,y:q.z};};
   const waterAudio=clamp(voiceSum/3, 0, 1);
+  const presenceVisible=!worldView?.suppressActors&&!usingSpecialSpace()&&storyMode&&PRES.isActive()
+    &&chapelTowerState().phase!==CHAPEL_TOWER_PHASE.TOWER_ACTIVE;
+  const absence=presenceVisible
+    ? hushAbsenceLook({active:true,field:hushFieldFrame,dread:PRES.dread(px,py)})
+    : null;
+  const renderedHush=presenceVisible
+    ? {...mapPoint({x:PRES.presenceState().x,y:PRES.presenceState().y}),strength:absence.strength,radiusM:absence.radiusM}
+    : (!worldView?.suppressActors&&!usingSpecialSpace()&&hush.active
+      ? {...mapPoint({x:hush.x,y:hush.y}),strength:1,radiusM:6.4}
+      : null);
+  const baseTorchLook=resolveTorchLook({
+    on:storyMode?REC.lightOn():true,
+    battery:storyMode?REC.batteryLevel():1,
+    timeSec:performance.now()/1000,
+    reducedEffects:(getSave().settings?.flash||'full')!=='full',
+  });
+  const torchLook=storyMode
+    ? applyHushTorchInterference(baseTorchLook,hushFieldFrame)
+    : baseTorchLook;
   R3.r3dFrame({
     px:rendered.x, py:rendered.z,
     tileW:WORLD_TILE_W, tileH:WORLD_TILE_H,
@@ -12957,18 +13012,10 @@ function render3d(){
     chunks:worldView?.suppressActors||usingSpecialSpace()?[]:r3dNearChunks().map(mapPoint),
     key:worldView?.suppressActors||usingSpecialSpace()?null:mapPoint(firstKey),
     door:worldView?.suppressActors||usingSpecialSpace()?null:mapPoint(door),
-    hush: (!worldView?.suppressActors && !usingSpecialSpace() && storyMode && PRES.isActive() && chapelTowerState().phase!==CHAPEL_TOWER_PHASE.TOWER_ACTIVE)
-      ? {...mapPoint({x:PRES.presenceState().x,y:PRES.presenceState().y}),
-         strength: 0.65 + PRES.dread(px,py)*0.55}
-      : (hush.active?{...mapPoint({x:hush.x,y:hush.y}),strength:1}:null),
+    hush:renderedHush,
     audio:waterAudio,
-    light: storyMode ? (REC.lightOn()?hushLightScale:0) : true,
-    torchLook:resolveTorchLook({
-      on:storyMode?REC.lightOn():true,
-      battery:storyMode?REC.batteryLevel():1,
-      timeSec:performance.now()/1000,
-      reducedEffects:(getSave().settings?.flash||'full')!=='full',
-    }),
+    light:storyMode?REC.lightOn():true,
+    torchLook,
     plan: usingPlan(),
     textSpace: sourceTextSpaceActive(),
     floorH: worldView?.floorH??(usingSpecialSpace()?activeGeometry().floorAt(viewX,viewY):usingPlan()?FP.floorAt(viewX,viewY):floorHere()),

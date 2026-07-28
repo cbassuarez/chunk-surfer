@@ -8,6 +8,7 @@ import { chooseHushIntent } from './hush-director.js';
 import { applyFieldPresentationPolicy, computeHushField, effectiveTorchScale, inactiveHushField } from './hush-field.js';
 import { commitMischiefCue, freshMischiefState, normalizeMischiefState, selectMischiefCue } from './hush-mischief.js';
 import { hushAudioPolicyForDifficulty } from './hush-sensory-policy.js';
+import { MONITOR_BAND, monitorBandForDb } from '../audio/monitor.js';
 
 const nowDefault = () => (typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now());
 
@@ -94,13 +95,20 @@ export function createHushAudioRuntime({
     lastEvent = enriched;
     policy = hushAudioPolicyForDifficulty(difficulty());
     if (!isAudibleToHush(propagation, policy)) return;
+    // Regular-band player noise is beneath the authored visibility threshold.
+    // Environmental sounds retain their existing behaviour; the player-facing
+    // exposure rule applies only to what the operator caused.
+    const playerBand = enriched.semantics.playerGenerated
+      ? monitorBandForDb(enriched.acoustic.levelDb)
+      : null;
+    if (playerBand === MONITOR_BAND.NORMAL) return;
     audition = ingestHeardNoise(audition, { event: enriched, propagation, now: clock(), policy });
     presence?.offerSoundTarget?.({
       position: enriched.spatial.position,
       level: Math.max(0, Math.min(1, (propagation.effectiveLevelDb - policy.hearingThresholdDb) / 24)),
       confidence: Math.max(0, 1 - propagation.uncertainty),
       expiresAt: clock() + Math.max(1800, policy.certaintyHalfLife * 320),
-      priority: .65,
+      priority: playerBand === MONITOR_BAND.HOT ? .96 : .65,
       reason: 'ACOUSTIC_EVENT',
     });
     onHeard?.({ event: enriched, propagation, audition: structuredClone(audition) });

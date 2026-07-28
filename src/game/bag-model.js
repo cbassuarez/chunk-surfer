@@ -394,8 +394,9 @@ export function normalizeBagSectionId(sectionId) {
 // three things the screen has to be able to say without the player deducing
 // anything: which of the three states it is in, what it does, and — when it is
 // locked — what unlocks it BY NAME. "TIER I REQUIRED" told nobody anything.
-function buildSkillsSection({ build, hasRig }) {
+function buildSkillsSection({ build, settledBuild = null, hasRig }) {
   const current = normalizeCombatBuild(build);
+  const settled = normalizeCombatBuild(settledBuild ?? build);
   const nameOf = (id) => TECHNIQUE_DEFS.find((entry) => entry.id === id)?.label || '';
   const branchOrder = [...new Set(TECHNIQUE_DEFS.map((entry) => entry.branch))];
   const branches = branchOrder.map((branch) => ({
@@ -406,6 +407,7 @@ function buildSkillsSection({ build, hasRig }) {
       .map((entry) => {
         const availability = techniqueAvailability(current, entry.id, { hasRig });
         const owned = current.techniques.includes(entry.id);
+        const pending = owned && !settled.techniques.includes(entry.id);
         return {
           id: `skill:${entry.id}`,
           techniqueId: entry.id,
@@ -417,8 +419,9 @@ function buildSkillsSection({ build, hasRig }) {
           active: !!entry.active,
           special: !!entry.special,
           owned,
+          pending,
           enabled: availability.enabled,
-          state: owned ? 'owned' : availability.enabled ? 'affordable' : 'locked',
+          state: pending ? 'pending' : owned ? 'owned' : availability.enabled ? 'affordable' : 'locked',
           // Named, not numbered.
           blockedBy: owned ? ''
             : availability.enabled ? ''
@@ -428,10 +431,10 @@ function buildSkillsSection({ build, hasRig }) {
                   ? 'LOCKED · NEEDS THE BENT RIG FROM THE PLANT ROOM'
                   : current.unspent <= 0 ? 'NEEDS A PIN · NONE SPARE'
                     : String(availability.reason || 'LOCKED'),
-          buyPrompt: 'IT CANNOT BE UNFITTED THIS RUN',
+          buyPrompt: 'TAKES EFFECT WHEN THE CASE CLOSES',
           actions: {
             primary: (!owned && availability.enabled)
-              ? { id: 'fit-skill', label: 'FIT', destructive: false }
+              ? { id: 'fit-skill', label: 'CHOOSE', destructive: false }
               : null,
           },
         };
@@ -441,17 +444,26 @@ function buildSkillsSection({ build, hasRig }) {
   return {
     id: 'skills',
     label: 'SKILLS',
-    countLabel: current.unspent ? `${current.unspent} PIN${current.unspent === 1 ? '' : 'S'}` : `${current.techniques.length} FITTED`,
+    countLabel: current.unspent
+      ? `${current.unspent} PIN${current.unspent === 1 ? '' : 'S'}${current.techniques.length - settled.techniques.length ? ` · ${current.techniques.length - settled.techniques.length} CHOSEN` : ''}`
+      : current.techniques.length - settled.techniques.length
+        ? `${current.techniques.length - settled.techniques.length} CHOSEN`
+        : `${current.techniques.length} INSTALLED`,
     entries: branches.flatMap((branch) => branch.entries),
     tree: {
       branches,
       maxTier,
-      pins: { earned: current.pinsEarned, spent: current.pinsSpent, unspent: current.unspent },
+      pins: {
+        earned: current.pinsEarned,
+        spent: current.pinsSpent,
+        unspent: current.unspent,
+        pending: Math.max(0, current.techniques.length - settled.techniques.length),
+      },
     },
   };
 }
 
-export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, loadout = null, build = null, hasRig = false } = {}) {
+export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, loadout = null, build = null, settledBuild = null, hasRig = false } = {}) {
   const safeJob = {
     ...EMPTY_JOB,
     ...(job || {}),
@@ -519,7 +531,7 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, loa
       { id: 'kit', label: 'KIT', countLabel: `${kit.filter((e) => e.present && e.compartment === 'top').length}/${normalizedLoadout.capacity}`, entries: kit },
       { id: 'map', label: 'MAP', countLabel: `${done}/${total}`, entries: mapEntries, map },
       { id: 'files', label: 'FILES', countLabel: String(files.length).padStart(2, '0'), entries: files },
-      buildSkillsSection({ build, hasRig }),
+      buildSkillsSection({ build, settledBuild, hasRig }),
     ],
     progress: { done, total },
     loadout: normalizedLoadout,

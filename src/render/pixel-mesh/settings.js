@@ -2,8 +2,11 @@
 // existing accessibility ceilings and internal diagnostics; legacy intensity
 // modes are deliberately ignored.
 
-export const PIXEL_MESH_CELL_OPTIONS = Object.freeze(['auto', '6', '8', '10', '12']);
-export const PIXEL_MESH_DEBUG_SOURCES = Object.freeze(['final', 'world', 'signal', 'memory', 'edge', 'mask']);
+export const PIXEL_MESH_CELL_OPTIONS = Object.freeze(['auto', '2', '3', '4', '6', '8', '10', '12']);
+export const PIXEL_MESH_DEBUG_SOURCES = Object.freeze([
+  'final', 'world', 'signal', 'memory', 'edge', 'mask',
+  'threshold', 'recorded', 'instability',
+]);
 
 export const DEFAULT_PIXEL_MESH_SETTINGS = Object.freeze({
   cellSize: 'auto',

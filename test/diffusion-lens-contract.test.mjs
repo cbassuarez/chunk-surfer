@@ -170,6 +170,12 @@ test('desktop shell owns random authenticated sidecar lifecycle and cleanup', ()
   assert.match(main, /bootstrapNativeLens/);
   assert.match(clientSource(), /searchParams\.set\('token'/);
   assert.match(rust, /\.env\("LENS_DEPTH", "1"\)/);
+  assert.match(rust, /\.env\("LENS_EAGER", "0"\)/);
+  assert.match(rust, /\.env\("HF_HUB_OFFLINE", "1"\)/);
+  assert.match(rust, /\.env\("TRANSFORMERS_OFFLINE", "1"\)/);
+  assert.match(rust, /health_silent_timeout/);
+  assert.match(rust, /health_stall_timeout/);
+  assert.match(rust, /health_hard_timeout/);
   assert.match(rust, /command\.creation_flags\(sidecar_creation_flags\(\)\)/);
   assert.match(rust, /CREATE_NO_WINDOW/);
   assert.match(cargo, /target\.'cfg\(windows\)'\.dependencies[\s\S]*windows-sys/);
@@ -198,7 +204,9 @@ test('bundled model path is offline, checksum-verified, and GPU-only', () => {
   const bundle = read('tools/chunk_surfer/diffusion_server/build_bundle.py');
   assert.match(pipeline, /local_files_only/);
   assert.match(pipeline, /validate_bundled_resources/);
+  assert.match(pipeline, /getattr\(sys, "frozen", False\)/);
   assert.match(pipeline, /diffusers_logging\.disable_progress_bar\(\)/);
+  assert.match(server, /os\.environ\.get\("LENS_EAGER", "0"\) == "1"/);
   assert.match(server, /device not in \{"cuda", "mps"\}/);
   assert.match(server, /expected == "cuda"[\s\S]*NVIDIA CUDA hardware and a compatible driver are required/);
   assert.match(server, /UNSUPPORTED_GPU/);

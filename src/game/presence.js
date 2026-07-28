@@ -57,6 +57,10 @@ export const PRESENCE = {
   spawnGraceSec: 2.5,       // the arrival reads without postponing the encounter
   visibleRadius: 48 * D,    // dread needs a body, not only a punishment
   dreadRadius: 52 * D,
+  // Semantic monitor bands own ordinary player-noise acquisition. This is the
+  // legacy-envelope fail-safe for partially initialized builds: regular
+  // footsteps stay below it and therefore do nothing.
+  noiseClueThreshold: 0.34,
 };
 
 export function stalkSpeed() { return PRESENCE.stalkSpeedRatio * PLAYER_CELLS_PER_SEC; }
@@ -252,7 +256,7 @@ export function updatePresence(dt, px, py, onContactAttempt, {
   // remembered source. The legacy envelope remains as a fail-safe so old and
   // partially initialized builds preserve their authored behaviour.
   const externalFresh = now < state.externalTargetUntil;
-  if (!externalFresh && REC.currentWorldNoise() > 0.02) {
+  if (!externalFresh && REC.currentWorldNoise() >= PRESENCE.noiseClueThreshold) {
     hear(rec.lastNoiseAt.x, rec.lastNoiseAt.y, REC.currentWorldNoise(), now);
     state.lastEngagedAt = now;
   }

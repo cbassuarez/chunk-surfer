@@ -14,7 +14,9 @@ import { activeInputPromptDevice, promptLine } from './bindings.js';
 import {
   combatInjuryStage,
   drawBattleWipe,
+  drawCombatActionTile,
   drawCombatPips,
+  drawCombatToolTile,
   drawEnemyVoidStage,
   drawFirstPersonHands,
   drawAttackNotes,
@@ -83,9 +85,12 @@ function opponentArt(ref, combatId = '') {
 function combatStageHeight({ panel, stageY, compact, sourceActive, phase }) {
   const sourceReserve = sourceActive ? 5 : 0;
   const talk = phase === 'talk';
+  const choosing = phase === 'tool' || phase === 'move';
   const reserveBelowStage = talk
     ? (compact ? 10 : 13)
-    : (compact ? 8 + sourceReserve : 12 + sourceReserve);
+    : choosing
+      ? (compact ? 10 + sourceReserve : 14 + sourceReserve)
+      : (compact ? 8 + sourceReserve : 12 + sourceReserve);
   const available = panel.h - (stageY - panel.y) - reserveBelowStage;
 
   if (talk) {
@@ -756,8 +761,8 @@ export function makeCombatScene({
       }
       if (!['tool', 'move'].includes(phase)) return true;
       if (!back) skipArmed = false;
-      if (e.key === 'ArrowUp' || e.key === 'w') moveSelection(-1);
-      else if (e.key === 'ArrowDown' || e.key === 's') moveSelection(1);
+      if (e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'w' || e.key === 'a') moveSelection(-1);
+      else if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === 's' || e.key === 'd') moveSelection(1);
       else if (e.key === 'q') cycleChannel(-1);
       else if (e.key === 'e') cycleChannel(1);
       else if (back && phase === 'move') { phase = 'tool'; takeConfirmation = false; audio?.menuMove?.(); }
@@ -790,14 +795,14 @@ export function makeCombatScene({
       if (!['tool', 'move'].includes(phase) || e.type !== 'pointerdown') return true;
       const x = Math.floor(Number(e.cellX));
       const y = Math.floor(Number(e.cellY));
-      const channel = channelRows.find((row) => y === row.y && x >= row.x && x < row.x + row.w);
+      const channel = channelRows.find((row) => y >= row.y && y < row.y + (row.h || 1) && x >= row.x && x < row.x + row.w);
       if (channel) {
         state = reduceCombat(state, { type: COMBAT_ACTION.CHANNEL, channel: channel.id });
         notice = state.last.notice;
         audio?.menuMove?.();
         return true;
       }
-      const tool = toolRows.find((row) => y === row.y && x >= row.x && x < row.x + row.w);
+      const tool = toolRows.find((row) => y >= row.y && y < row.y + (row.h || 1) && x >= row.x && x < row.x + row.w);
       if (tool) {
         selectedTool = tool.index;
         selectedMove = 0;
@@ -805,7 +810,7 @@ export function makeCombatScene({
         audio?.menuConfirm?.();
         return true;
       }
-      const move = moveRows.find((row) => y === row.y && x >= row.x && x < row.x + row.w);
+      const move = moveRows.find((row) => y >= row.y && y < row.y + (row.h || 1) && x >= row.x && x < row.x + row.w);
       if (move) {
         selectedMove = move.index;
         execute(move.id);
@@ -823,10 +828,10 @@ export function makeCombatScene({
         ? '168 BPM · LOCKING DOWNBEAT'
         : phase === 'tool'
           ? activeInputPromptDevice() === 'controller'
-            ? promptLine([{ action: 'select', label: 'CHOOSE TOOL' }, { action: 'confirm', label: 'OPEN MOVES' }])
-            : `[↑↓] CHOOSE TOOL · [ENTER] OPEN MOVES${director?.active?.() ? ' · [TAB×2] SKIP DRILL' : ''}`
+            ? promptLine([{ action: 'select', label: 'CHOOSE KIT' }, { action: 'confirm', label: 'OPEN ACTIONS' }])
+            : `[←→] CHOOSE KIT · [ENTER] ACTIONS${director?.active?.() ? ' · [TAB×2] SKIP DRILL' : ''}`
           : phase === 'move'
-            ? '[↑↓] CHOOSE MOVE · [ENTER] ACT · [TAB] TOOLS'
+            ? '[←→] CHOOSE ACTION · [ENTER] ACT · [TAB] KIT'
             : phase === 'resolve'
               ? (resolution && resolution.side === 'enemy' && !resolution.impactFired && !resolution.parryTried
                   ? 'THE BLOW LANDS · [SPACE] PARRY'
@@ -1159,75 +1164,79 @@ export function makeCombatScene({
         return;
       }
 
-      // ── tool and move lists ────────────────────────────────────────────────
+      // ── icon-forward command deck ─────────────────────────────────────────
       let listY = cmdY + 2;
       channelRows = [];
       if (state.source) {
         const prediction = combatPrediction(state);
+        const channelGap = .8;
+        const channelH = 2.35;
+        const channelW = (panel.w - channelGap * (CHANNELS.length - 1)) / CHANNELS.length;
         CHANNELS.forEach((channel, index) => {
           const armed = channel.id === state.source.armed;
-          const line = `${armed ? '▶' : ' '} ${channel.glyph} ${channel.label} ${state.source.channels[channel.id]}`;
-          uiText(panel.x, listY + index, line, armed ? 'ui-amber' : 'ui-secondary', .72);
-          channelRows.push({ id: channel.id, x: panel.x, y: listY + index, w: Math.min(31, line.length) });
+          const x = panel.x + index * (channelW + channelGap);
+          uiFill(x, listY, channelW, channelH, armed ? 'rgba(242,168,30,.07)' : 'rgba(255,255,255,.018)');
+          uiStrokeRect(x, listY, channelW, channelH, armed ? UI_COLOR.amber : UI_COLOR.frame, armed ? .72 : .2, armed ? 1.35 : 1);
+          uiText(x + .7, listY + .38, `${channel.glyph} ${channel.label}`.slice(0, Math.max(1, Math.floor(channelW - 5))), armed ? 'ui-amber' : 'ui-secondary', armed ? .9 : .58);
+          uiText(x + Math.max(1, channelW - 3), listY + .38, String(state.source.channels[channel.id]), armed ? 'ui-counter' : 'ui-label', armed ? 1 : .58);
+          channelRows.push({ id: channel.id, x, y: listY, w: channelW, h: channelH });
         });
-        uiText(panel.x, listY + 3, `ENDS AS · ${prediction.outcome.toUpperCase()}`, 'ui-blue', .64);
-        listY += 5;
+        uiText(panel.x, listY + channelH + .2, `SIGNAL ROUTE · ${prediction.outcome.toUpperCase()}`.slice(0, panel.w), 'ui-blue', .6);
+        listY += channelH + 1.25;
       }
 
-      const toolX = panel.x;
-      const toolW = Math.min(26, Math.max(18, Math.floor(panel.w * .24)));
-      const moveX = toolX + toolW + 2;
-      const moveW = panel.w - toolW - 2;
       const detailY = compact ? null : panel.y + panel.h - 3;
       const listBottom = (detailY ?? bottom) - 1;
-      const maxRows = Math.max(1, listBottom - (listY + 1) + 1);
-      uiText(toolX, listY, 'TOOL', 'ui-label', .68);
-      uiText(moveX, listY, `MOVES / ${activeTool().label}`, 'ui-label', .68);
-
-      const windowSlice = (list, selected) => {
-        if (list.length <= maxRows) return { start: 0, items: list };
-        const start = Math.min(Math.max(0, selected - Math.floor(maxRows / 2)), list.length - maxRows);
-        return { start, items: list.slice(start, start + maxRows) };
+      const centredWindow = (list, selected, visible) => {
+        if (list.length <= visible) return { start: 0, items: list };
+        const start = Math.min(Math.max(0, selected - Math.floor(visible / 2)), list.length - visible);
+        return { start, items: list.slice(start, start + visible) };
       };
 
       toolRows = [];
       const toolList = tools();
-      const toolWindow = windowSlice(toolList, selectedTool);
-      toolWindow.items.forEach((tool, row) => {
-        const index = toolWindow.start + row;
-        const active = index === selectedTool;
-        const line = `${active ? '▶' : ' '} ${index === 0 ? '—' : String(index).padStart(2, '0')} ${tool.label}`;
-        uiText(toolX, listY + 1 + row, line.slice(0, toolW), active ? 'ui-amber' : tool.ready ? 'ui-primary' : 'ui-secondary', active ? 1 : .72);
-        if (active && phase === 'tool') uiStrokeRect(toolX - .3, listY + .9 + row, toolW, 1, UI_COLOR.amber, .55, 1);
-        toolRows.push({ index, x: toolX, y: listY + 1 + row, w: toolW });
+      const toolGap = .65;
+      const visibleToolCount = Math.max(1, Math.min(toolList.length, Math.floor((panel.w + toolGap) / 14)));
+      const toolWindow = centredWindow(toolList, selectedTool, visibleToolCount);
+      const toolW = (panel.w - toolGap * Math.max(0, toolWindow.items.length - 1)) / Math.max(1, toolWindow.items.length);
+      const toolH = Math.max(2.35, Math.min(2.9, listBottom - listY - 3.9));
+      toolWindow.items.forEach((tool, slot) => {
+        const index = toolWindow.start + slot;
+        const x = panel.x + slot * (toolW + toolGap);
+        drawCombatToolTile(tool, {
+          x, y: listY, w: toolW, h: toolH,
+          selected: index === selectedTool,
+          focused: phase === 'tool' && index === selectedTool,
+        });
+        toolRows.push({ index, x, y: listY, w: toolW, h: toolH });
       });
-      if (toolWindow.start > 0) uiText(toolX + toolW - 2, listY, '▲', 'ui-secondary', .6);
-      if (toolWindow.start + maxRows < toolList.length) uiText(toolX + toolW - 1, listY, '▼', 'ui-secondary', .6);
+      if (toolWindow.start > 0) uiText(panel.x + .2, listY + toolH - .8, '◀', 'ui-secondary', .75);
+      if (toolWindow.start + toolWindow.items.length < toolList.length) uiText(panel.x + panel.w - 1.2, listY + toolH - .8, '▶', 'ui-secondary', .75);
+      regionRects.tools = { x: panel.x, y: listY, w: panel.w, h: toolH };
 
       moveRows = [];
       const renderedMoves = phase === 'resolve' && resolution
         ? [{ ...resolution.action, enabled: true, detail: resolution.after.last?.notice || resolution.action.detail }]
         : moves();
-      const moveWindow = windowSlice(renderedMoves, selectedMove);
-      moveWindow.items.forEach((move, row) => {
-        const index = moveWindow.start + row;
-        const active = index === selectedMove;
-        // Teach the read: the move that COUNTERS the telegraphed intent is marked
-        // ◆ and lit on EVERY difficulty (you learn which move beats which intent by
-        // seeing it at the decision point). Recommended difficulty adds the explicit
-        // '/ PERFECT' spell-out on top.
-        const counters = move.perfect && phase !== 'resolve';
-        const recommended = state.difficulty.recommended && counters;
-        const subtext = phase === 'resolve' ? move.detail : combatMoveSubtext(state, move).short;
-        const suffix = !move.enabled ? move.reason : `${counters ? '◆ ' : ''}${subtext}${recommended ? ' / PERFECT' : ''}`;
-        const line = `${active ? '▶' : ' '} ${move.label.padEnd(13)} ${suffix}`;
-        uiText(moveX, listY + 1 + row, line.slice(0, moveW), !move.enabled ? 'ui-secondary' : counters ? 'ui-counter' : active ? 'ui-primary' : 'ui-secondary', active ? 1 : .72);
-        if (active && phase === 'move') uiStrokeRect(moveX - .3, listY + .9 + row, moveW, 1, UI_COLOR.primary, .60, 1);
-        moveRows.push({ id: move.id, index, x: moveX, y: listY + 1 + row, w: moveW });
+      const moveGap = .75;
+      const visibleMoveCount = Math.max(1, Math.min(renderedMoves.length, Math.floor((panel.w + moveGap) / 17)));
+      const moveWindow = centredWindow(renderedMoves, selectedMove, visibleMoveCount);
+      const moveY = listY + toolH + .65;
+      const moveW = (panel.w - moveGap * Math.max(0, moveWindow.items.length - 1)) / Math.max(1, moveWindow.items.length);
+      const moveH = Math.max(2.35, Math.min(3.25, listBottom - moveY));
+      moveWindow.items.forEach((move, slot) => {
+        const index = moveWindow.start + slot;
+        const x = panel.x + slot * (moveW + moveGap);
+        drawCombatActionTile(move, {
+          x, y: moveY, w: moveW, h: moveH,
+          selected: index === selectedMove,
+          focused: phase === 'move' && index === selectedMove,
+        });
+        moveRows.push({ id: move.id, index, x, y: moveY, w: moveW, h: moveH });
       });
-      if (moveWindow.start > 0) uiText(moveX + moveW - 4, listY, '▲', 'ui-secondary', .6);
-      if (moveWindow.start + maxRows < renderedMoves.length) uiText(moveX + moveW - 3, listY, '▼', 'ui-secondary', .6);
-      regionRects.moves = { x: moveX - .3, y: listY + .9, w: moveW, h: Math.min(maxRows, moveWindow.items.length) + .2 };
+      if (moveWindow.start > 0) uiText(panel.x + .2, moveY + moveH - .8, '◀', 'ui-secondary', .75);
+      if (moveWindow.start + moveWindow.items.length < renderedMoves.length) uiText(panel.x + panel.w - 1.2, moveY + moveH - .8, '▶', 'ui-secondary', .75);
+      regionRects.moves = { x: panel.x, y: moveY, w: panel.w, h: moveH };
 
       // ── detail, notice, drill callout ──────────────────────────────────────
       if (detailY != null) {
@@ -1235,7 +1244,9 @@ export function makeCombatScene({
           ? renderedMoves[selectedMove]
           : phase === 'resolve' && resolution ? resolution.action : null;
         if (highlighted) {
-          const long = combatMoveSubtext(state, highlighted).long.toUpperCase();
+          const long = highlighted.enabled === false
+            ? `${highlighted.label} — ${highlighted.reason || 'UNAVAILABLE'}`
+            : combatMoveSubtext(state, highlighted).long;
           uiText(panel.x, detailY, long.slice(0, panel.w), 'ui-secondary', .6);
         }
       }

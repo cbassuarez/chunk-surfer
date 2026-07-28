@@ -20,6 +20,7 @@ import { resolveMapAction } from './map-actions.js';
 import { bagLayout, bagPanelBounds } from '../render/bag-layout.js';
 import { bagGuideRows, bagListCapacity, drawBagView } from '../render/bag-view.js';
 import { drawSkillsSection } from '../render/bag-skills.js';
+import { learnCombatTechnique, normalizeCombatBuild } from './combat-progression.js';
 
 let rememberedNav = null;
 
@@ -49,11 +50,12 @@ export function makeBagScene({
   getFocus = null,
   guide = null,
   getGuide = null,
-  // The SKILLS tab needs the combat build (what is fitted, what a pin can buy)
-  // and the authority to spend one. Gameplay truth stays outside this scene.
+  // The SKILLS tab works on a case-local copy. Gameplay truth changes only as
+  // the case closes, so browsing and choosing never rewrites the live build out
+  // from under the player.
   getBuild = null,
   hasRig = null,
-  onFitSkill = null,
+  onApplySkills = null,
   readDocument = () => {},
   markRoom = () => false,
   onClose = () => {},
@@ -73,7 +75,14 @@ export function makeBagScene({
   const buildSource = typeof getBuild === 'function' ? getBuild : () => null;
   const rigSource = typeof hasRig === 'function' ? hasRig : () => false;
 
-  let model = buildBagModel({ equipment: equipmentSource(), job: jobSource(), map: mapSource(), loadout: loadoutSource(), build: buildSource(), hasRig: rigSource() });
+  const settledBuild = normalizeCombatBuild(buildSource());
+  let workingBuild = settledBuild;
+  let chosenTechniqueIds = [];
+  let skillsApplied = false;
+  let model = buildBagModel({
+    equipment: equipmentSource(), job: jobSource(), map: mapSource(), loadout: loadoutSource(),
+    build: workingBuild, settledBuild, hasRig: rigSource(),
+  });
   let nav = (memory || rememberedNav) ? repairBagSelection(memory || rememberedNav, model) : initialBagState(model, focus || {});
   let mapNav = initialMapNav({ model: model.map, preferredRoomId: focus?.entryId?.replace(/^room:/, '') || null });
   if (nav.map) mapNav = reduceMapNav(nav.map, { type: 'MODEL_REFRESH' }, model.map);
@@ -185,7 +194,10 @@ export function makeBagScene({
   }
 
   function refresh() {
-    model = buildBagModel({ equipment: equipmentSource(), job: jobSource(), map: mapSource(), loadout: loadoutSource(), build: buildSource(), hasRig: rigSource() });
+    model = buildBagModel({
+      equipment: equipmentSource(), job: jobSource(), map: mapSource(), loadout: loadoutSource(),
+      build: workingBuild, settledBuild, hasRig: rigSource(),
+    });
     nav = reduceBagNav(nav, { type: 'MODEL_REFRESH' }, model);
     mapNav = reduceMapNav(mapNav, { type: 'MODEL_REFRESH' }, model.map);
     if (nav.sectionId === 'map') syncBagSelectionFromMap();
@@ -196,6 +208,13 @@ export function makeBagScene({
     remember();
     scenes.pop();
     onClose();
+  }
+
+  function applyChosenSkills() {
+    if (skillsApplied) return;
+    skillsApplied = true;
+    if (!chosenTechniqueIds.length || typeof onApplySkills !== 'function') return;
+    onApplySkills(workingBuild, { techniqueIds: [...chosenTechniqueIds] });
   }
 
   function setSection(sectionId) {
@@ -381,10 +400,18 @@ export function makeBagScene({
         AUDIO.menuMove?.();
       }
     } else if (entry.kind === 'skill' && actionId === 'fit-skill') {
-      const result = typeof onFitSkill === 'function' ? onFitSkill(entry.techniqueId) : false;
-      ok = !!result;
-      if (ok) { notice = `${entry.label} FITTED · LOCKED IN FOR THIS RUN`; noticeUntil = t + 3.2; }
-      else { notice = entry.blockedBy || 'NOT FITTED'; noticeUntil = t + 2.6; AUDIO.menuMove?.(); }
+      const result = learnCombatTechnique(workingBuild, entry.techniqueId, { hasRig: rigSource() });
+      ok = !!result.changed;
+      if (ok) {
+        workingBuild = result.build;
+        chosenTechniqueIds = [...chosenTechniqueIds, entry.techniqueId];
+        notice = `${entry.label} CHOSEN · TAKES EFFECT WHEN THE CASE CLOSES`;
+        noticeUntil = t + 3.2;
+      } else {
+        notice = entry.blockedBy || 'NOT AVAILABLE';
+        noticeUntil = t + 2.6;
+        AUDIO.menuMove?.();
+      }
     } else if (entry.kind === 'gear' && actionId === 'reorder-up') {
       const result = typeof reorderEquipment === 'function'
         ? reorderEquipment(entry.sourceId, 'up')
@@ -465,7 +492,14 @@ export function makeBagScene({
       remember();
     },
 
-    debugState() { return { model, nav, mapNav, selected: currentBagEntry(nav, model), mapSelected: selectedMapSpace(mapNav, model.map) }; },
+    debugState() {
+      return {
+        model, nav, mapNav, selected: currentBagEntry(nav, model), mapSelected: selectedMapSpace(mapNav, model.map),
+        chosenTechniqueIds: [...chosenTechniqueIds], workingBuild: structuredClone(workingBuild),
+      };
+    },
+
+    exit() { applyChosenSkills(); },
 
     key(e) {
       const raw = e.key || '';
@@ -565,7 +599,7 @@ export function makeBagScene({
       const liveHint = guided ? '' : (notice || (nav.sectionId === 'kit'
         ? 'READY NOW WORKS DURING CONTACT · BAG STORAGE DOES NOT · [T] READY · [R] CLEAR'
         : skills
-          ? 'PINS BUY MODIFICATIONS TO THE RECORDER · ONE PIN EACH · NOTHING CAN BE UNFITTED THIS RUN'
+          ? 'CHOOSE RECORDER MODIFICATIONS · THEY TAKE EFFECT WHEN THE CASE CLOSES'
           : hintSource()));
       drawBagView({ model, nav, mapNav, layout, hint: liveHint, guide: guided, guideNudge, motion, now: t,
         // The tree owns the content area for its own section; the tabs, task line

@@ -20,6 +20,7 @@ test('profile validation rejects incomplete and out-of-range contracts', () => {
   assert.equal(validateLookProfile(LOOK_PROFILES.explore), true);
   assert.equal(validateLookProfile({ ...LOOK_PROFILES.explore, bankId: 'wrong' }), false);
   assert.equal(validateLookProfile({ ...LOOK_PROFILES.explore, vfd: { ...LOOK_PROFILES.explore.vfd, coverage: 1 } }), false);
+  assert.equal(validateLookProfile({ ...LOOK_PROFILES.explore, recording: null }), false);
   assert.equal(validateLookProfile(null), false);
 });
 
@@ -40,20 +41,47 @@ test('coverage ceilings preserve legibility in exploration and permit dramatic s
   assert.ok(LOOK_PROFILES.rupture.vfd.coverage <= 0.75);
 });
 
-test('the authored 8-bit palette is strong in ordinary exploration and escalates in dramatic states', () => {
-  assert.ok(LOOK_PROFILES.calm.vfd.paletteAmount < 0.4);
-  assert.ok(LOOK_PROFILES.explore.vfd.paletteAmount >= 0.75);
-  assert.ok(LOOK_PROFILES.battle.vfd.paletteAmount >= LOOK_PROFILES.explore.vfd.paletteAmount);
-  assert.equal(LOOK_PROFILES.rupture.vfd.paletteAmount, 1);
+test('fine recording acquisition replaces the dominant 8-bit block treatment', () => {
+  assert.ok(LOOK_PROFILES.calm.vfd.cellPx <= 2);
+  assert.ok(LOOK_PROFILES.explore.vfd.cellPx <= 2);
+  assert.ok(LOOK_PROFILES.rupture.vfd.cellPx <= 3);
+  assert.ok(LOOK_PROFILES.explore.vfd.paletteAmount <= 0.16);
+  assert.ok(LOOK_PROFILES.rupture.vfd.paletteAmount <= 0.25);
+  assert.ok(LOOK_PROFILES.explore.recording.postGrain > LOOK_PROFILES.calm.recording.postGrain);
+  assert.ok(LOOK_PROFILES.rupture.recording.thresholdNoise > LOOK_PROFILES.battle.recording.thresholdNoise);
 });
 
-test('each profile owns generation, material, VFD, glass, and bank identity', () => {
+test('each profile owns generation, material, VFD, recording, glass, and bank identity', () => {
   for (const id of LOOK_PROFILE_IDS) {
     const profile = LOOK_PROFILES[id];
     assert.equal(profile.bankId, id);
     assert.equal(profile.generation.seedBase % 1000, 0);
     assert.ok(profile.material.detailGain > 0);
     assert.ok(profile.vfd.baseRetention >= 0.55);
+    assert.equal(profile.recording.captureMix, 1);
+    assert.ok(profile.recording.postGrain >= 0);
     assert.ok(profile.glass.strength >= 0);
+    assert.ok(Object.isFrozen(profile.recording));
+  }
+});
+
+test('recording profile validation rejects every unsafe boundary', () => {
+  const mutate = (patch) => ({
+    ...LOOK_PROFILES.explore,
+    recording: { ...LOOK_PROFILES.explore.recording, ...patch },
+  });
+  for (const patch of [
+    { captureMix: -0.001 }, { captureMix: 1.001 },
+    { thresholdNoise: -0.001 }, { thresholdNoise: 0.201 },
+    { thresholdIrregularity: -0.001 }, { thresholdIrregularity: 1.001 },
+    { postGrain: -0.001 }, { postGrain: 0.081 },
+    { lumaGrain: -0.001 }, { lumaGrain: 1.001 },
+    { temporalHz: -0.001 }, { temporalHz: 24.001 },
+    { temporalSmear: -0.001 }, { temporalSmear: 1.001 },
+    { scenePinning: -0.001 }, { scenePinning: 1.001 },
+    { fearGain: -0.001 }, { fearGain: 1.501 },
+    { audioGain: -0.001 }, { audioGain: 1.501 },
+  ]) {
+    assert.equal(validateLookProfile(mutate(patch)), false, JSON.stringify(patch));
   }
 });

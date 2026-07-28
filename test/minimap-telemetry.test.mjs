@@ -2,14 +2,30 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { hushStatus, minimapTelemetryCrumbs } from '../src/render/minimap.js';
 
-test('minimap HUSH status meanings remain unchanged', () => {
+test('minimap confirms what HUSH knows about the player without drawing a noise layer', () => {
   const active = hushStatus({
     player: { floorId: 'g' },
     floors: [{ id: 'g', label: 'GROUND' }],
     hush: { active: true, floorId: 'g' },
     contacts: [],
   }, 4000);
-  assert.deepEqual(active, { label: 'ACTIVE', cls: 'ui-danger', detail: 'ON MAP', floorDelta: 0 });
+  assert.deepEqual(active, { label: 'ACTIVE', cls: 'ui-secondary', detail: 'NO FIX', floorDelta: 0 });
+
+  const heard = hushStatus({
+    player: { floorId: 'g' },
+    floors: [{ id: 'g', label: 'GROUND' }],
+    hush: { active: true, floorId: 'g', perception: { mode: 'clue', label: 'HEARD', detail: 'LAST POSITION', cls: 'ui-amber' } },
+    contacts: [],
+  }, 4000);
+  assert.deepEqual(heard, { label: 'HEARD', cls: 'ui-amber', detail: 'LAST POSITION', floorDelta: 0 });
+
+  const locked = hushStatus({
+    player: { floorId: 'g' },
+    floors: [{ id: 'g', label: 'GROUND' }],
+    hush: { active: true, floorId: 'g', perception: { mode: 'locked', label: 'LOCKED', detail: 'YOU', cls: 'ui-danger' } },
+    contacts: [],
+  }, 4000);
+  assert.equal(locked.detail, 'YOU');
 
   const tracing = hushStatus({
     player: { floorId: 'g' },

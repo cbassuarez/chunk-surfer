@@ -6,7 +6,8 @@
 //  This replaced a text list that nobody could read. The rules it follows come
 //  from how legible skill screens actually work:
 //
-//    · a node has THREE unmistakable states — owned, affordable, locked — and
+//    · a node has FOUR unmistakable states — installed, chosen, available,
+//      locked — and
 //      never leaves the player guessing which;
 //    · a locked node says what unlocks it BY NAME, not "TIER I REQUIRED";
 //    · the prerequisite chain is drawn, so a branch's depth is visible without
@@ -44,12 +45,11 @@ export const BRANCH_LABEL = Object.freeze({
   radio: 'RADIO',
 });
 
-// A move you fire in a fight, something that is simply true, or a once-a-fight
-// finisher. '‹ACTIVE›' and '‹SPECIAL›' were jargon; these are sentences.
+// Capability belongs in the detail card, not the node's ownership badge.
 export function skillKindLabel(entry) {
-  if (entry?.special) return 'ONCE PER FIGHT';
-  if (entry?.active) return 'A MOVE YOU FIRE';
-  return 'ALWAYS ON';
+  if (entry?.special) return 'SIGNATURE MOVE';
+  if (entry?.active) return 'MANUAL TECHNIQUE';
+  return 'PASSIVE EFFECT';
 }
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, Number(v) || 0));
@@ -97,27 +97,37 @@ export function skillsTreeLayout({ region, branches, maxTier }) {
   };
 }
 
-// The three states, named once so the view and the tests agree.
+// The four states, named once so the view and the tests agree.
 export const SKILL_STATE = Object.freeze({
   OWNED: 'owned',
+  PENDING: 'pending',
   AFFORDABLE: 'affordable',
   LOCKED: 'locked',
 });
 
-export function skillState({ owned, enabled }) {
+export function skillState({ owned, pending, enabled }) {
+  if (pending) return SKILL_STATE.PENDING;
   if (owned) return SKILL_STATE.OWNED;
   return enabled ? SKILL_STATE.AFFORDABLE : SKILL_STATE.LOCKED;
 }
 
 const STATE_ROLE = Object.freeze({
-  [SKILL_STATE.OWNED]: 'ui-counter',
+  [SKILL_STATE.OWNED]: 'ui-green',
+  [SKILL_STATE.PENDING]: 'ui-amber',
   [SKILL_STATE.AFFORDABLE]: 'ui-amber',
   [SKILL_STATE.LOCKED]: 'ui-secondary',
 });
 const STATE_MARK = Object.freeze({
-  [SKILL_STATE.OWNED]: '●',
-  [SKILL_STATE.AFFORDABLE]: '+',
+  [SKILL_STATE.OWNED]: '◆',
+  [SKILL_STATE.PENDING]: '◈',
+  [SKILL_STATE.AFFORDABLE]: '◇',
   [SKILL_STATE.LOCKED]: '·',
+});
+const STATE_LABEL = Object.freeze({
+  [SKILL_STATE.OWNED]: 'INSTALLED',
+  [SKILL_STATE.PENDING]: 'CHOSEN',
+  [SKILL_STATE.AFFORDABLE]: 'AVAILABLE',
+  [SKILL_STATE.LOCKED]: 'LOCKED',
 });
 
 function fit(text, width) {
@@ -131,24 +141,36 @@ function fit(text, width) {
 function drawTile(entry, box, { selected }) {
   const role = STATE_ROLE[entry.state] || 'ui-secondary';
   const owned = entry.state === SKILL_STATE.OWNED;
+  const pending = entry.state === SKILL_STATE.PENDING;
   const affordable = entry.state === SKILL_STATE.AFFORDABLE;
   uiFill(box.x, box.y, box.w, box.h,
-    owned ? 'rgba(255,181,54,0.20)' : affordable ? 'rgba(255,181,54,0.07)' : 'rgba(255,255,255,0.025)');
-  uiStrokeRect(box.x, box.y, box.w, box.h, owned || affordable ? UI_COLOR.amber : UI_COLOR.frame,
-    owned ? .85 : affordable ? .55 : .22, 1);
-  if (selected) uiStrokeRect(box.x - .3, box.y - .18, box.w + .6, box.h + .36, UI_COLOR.primary, .9, 1);
+    owned ? 'rgba(65,173,135,0.14)'
+      : pending ? 'rgba(255,181,54,0.24)'
+        : affordable ? 'rgba(255,181,54,0.07)'
+          : 'rgba(255,255,255,0.025)');
+  uiStrokeRect(box.x, box.y, box.w, box.h,
+    owned ? UI_COLOR.green : pending || affordable ? UI_COLOR.amber : UI_COLOR.frame,
+    owned ? .58 : pending ? .95 : affordable ? .48 : .20, pending ? 1.5 : 1);
+  if (selected) {
+    uiStrokeRect(box.x - .35, box.y - .22, box.w + .7, box.h + .44, UI_COLOR.primary, .95, 1.4);
+    uiLine(box.x - .35, box.y - .22, box.x + Math.min(4, box.w * .45), box.y - .22, UI_COLOR.amber, 1, 2);
+  }
 
   const mark = STATE_MARK[entry.state] || '·';
-  // Too narrow for a name: the mark alone, centred. Still three readable states.
+  // Too narrow for a name: the mark alone, centred. Still four readable states.
   if (box.w < 8) {
-    uiText(box.x + Math.max(0, (box.w - 1) / 2), box.y + .2, mark, role, owned ? 1 : affordable ? .95 : .55);
+    uiText(box.x + Math.max(0, (box.w - 1) / 2), box.y + .2, mark, role, owned || pending ? 1 : affordable ? .95 : .55);
     return;
   }
-  uiText(box.x + .5, box.y + .2, mark, role, owned ? 1 : affordable ? .95 : .5);
-  uiText(box.x + 2, box.y + .2, fit(entry.label, box.w - 2.5), role, selected ? 1 : owned ? .92 : affordable ? .85 : .45);
-  // A second line only when the tile is tall enough to hold one without crowding.
+  uiText(box.x + .5, box.y + .2, mark, role, owned || pending ? 1 : affordable ? .95 : .5);
+  uiText(box.x + 2, box.y + .2, fit(entry.label, box.w - 2.5), role,
+    selected ? 1 : owned || pending ? .92 : affordable ? .85 : .45);
+  if (box.w >= 12) uiText(box.x + box.w - 2.3, box.y + .2, `T${entry.tier}`, 'ui-label', selected ? .68 : .36);
+  // Ownership gets the second line. Capability is kept in the detail card so
+  // PASSIVE EFFECT can never read like proof that something was purchased.
   if (box.h >= 3) {
-    uiText(box.x + 2, box.y + 1.2, fit(skillKindLabel(entry), box.w - 2.5), 'ui-secondary', selected ? .8 : .45);
+    uiText(box.x + 2, box.y + 1.2, fit(STATE_LABEL[entry.state], box.w - 2.5), role,
+      selected ? .85 : owned || pending ? .68 : .42);
   }
 }
 
@@ -162,25 +184,31 @@ export function drawSkillsSection({ model, layout, selectedId, now = 0 }) {
   // An unspent pin is the only urgent thing on this screen, so it is the only
   // thing drawn as VFD text.
   const headline = pins.unspent
-    ? `${pins.unspent} PIN${pins.unspent === 1 ? '' : 'S'} TO SPEND`
-    : pins.earned ? 'ALL PINS SPENT' : 'NO PINS YET';
-  drawVfdText(tree.headline.x, tree.headline.y, headline, { scale: 1, theme: 'amber', alpha: pins.unspent ? 1 : .55 });
+    ? `${pins.unspent} PIN${pins.unspent === 1 ? '' : 'S'} OPEN${pins.pending ? ` · ${pins.pending} CHOSEN` : ''}`
+    : pins.pending ? `${pins.pending} CHOSEN · TAKES EFFECT WHEN THE CASE CLOSES`
+      : pins.earned ? 'ALL PINS INSTALLED' : 'NO PINS YET';
+  const headlinePrint = fit(headline, tree.w);
+  drawVfdText(tree.headline.x, tree.headline.y, headlinePrint, { scale: 1, theme: 'amber', alpha: pins.unspent || pins.pending ? 1 : .55 });
   if (!pins.earned) {
-    uiText(tree.headline.x + headline.length + 2, tree.headline.y + .1,
-      fit('WIN A FIGHT, OR SEARCH THE ATRIUM, THE GALLERY AND THE TOWER', tree.w - headline.length - 3),
+    uiText(tree.headline.x + headlinePrint.length + 2, tree.headline.y + .1,
+      fit('WIN A FIGHT, OR SEARCH THE ATRIUM, THE GALLERY AND THE TOWER', tree.w - headlinePrint.length - 3),
       'ui-secondary', .6);
   }
 
   branches.forEach((branch, index) => {
     const cx = tree.columnX(index);
+    if (tree.headerH >= 2) {
+      uiFill(cx + .15, tree.treeTop - .2, tree.tileW + .7, Math.max(1.8, tree.headerH - .15), 'rgba(255,255,255,0.018)');
+      uiStrokeRect(cx + .15, tree.treeTop - .2, tree.tileW + .7, Math.max(1.8, tree.headerH - .15), UI_COLOR.frame, .18, 1);
+    }
     // The branch's own icon, so a column is identifiable without reading it.
     drawBagIcon(BRANCH_ICON[branch.id] || 'unknown', cx + .5, tree.treeTop - .1, {
       w: Math.min(6, Math.max(3, tree.tileW - 1)), h: 2,
-      state: branch.entries.some((e) => e.state === SKILL_STATE.OWNED) ? 'active' : 'dim',
+      state: branch.entries.some((e) => e.state === SKILL_STATE.OWNED || e.state === SKILL_STATE.PENDING) ? 'active' : 'dim',
       alpha: .95,
     });
     uiText(cx + .5, tree.treeTop + 2, fit(BRANCH_LABEL[branch.id] || branch.id.toUpperCase(), tree.tileW),
-      branch.entries.some((e) => e.state === SKILL_STATE.OWNED) ? 'ui-amber' : 'ui-label', .8);
+      branch.entries.some((e) => e.state === SKILL_STATE.OWNED || e.state === SKILL_STATE.PENDING) ? 'ui-amber' : 'ui-label', .8);
 
     branch.entries.forEach((entry) => {
       const y = tree.tileY(entry.tier);
@@ -190,7 +218,8 @@ export function drawSkillsSection({ model, layout, selectedId, now = 0 }) {
       if (entry.tier > 1) {
         const prevBottom = tree.tileY(entry.tier - 1) + Math.max(1, tree.tileH - .35);
         uiLine(box.x + 1.2, prevBottom, box.x + 1.2, y, UI_COLOR.frame,
-          entry.state === SKILL_STATE.LOCKED ? .25 : .6);
+          entry.state === SKILL_STATE.LOCKED ? .20 : entry.state === SKILL_STATE.PENDING ? .9 : .55,
+          entry.state === SKILL_STATE.PENDING ? 1.4 : 1);
       }
       drawTile(entry, box, { selected: entry.id === selectedId });
     });
@@ -204,10 +233,12 @@ export function drawSkillsSection({ model, layout, selectedId, now = 0 }) {
   uiText(d.x, d.y, fit(`${BRANCH_LABEL[selected.branch] || selected.branch} · ${selected.label} · ${skillKindLabel(selected)}`, d.w), 'ui-blue', .85);
   uiText(d.x, d.y + 1, fit(selected.detail, d.w), 'ui-primary', .9);
   // What to do about it, in the imperative, including WHY not.
-  const call = selected.state === SKILL_STATE.OWNED ? 'FITTED · LOCKED IN FOR THIS RUN'
-    : selected.state === SKILL_STATE.AFFORDABLE ? `SPEND A PIN ON THIS · ${selected.buyPrompt}`
-      : selected.blockedBy;
+  const call = selected.state === SKILL_STATE.OWNED ? 'INSTALLED'
+    : selected.state === SKILL_STATE.PENDING ? `CHOSEN · ${selected.buyPrompt}`
+      : selected.state === SKILL_STATE.AFFORDABLE ? `[ENTER] CHOOSE · ${selected.buyPrompt}`
+        : selected.blockedBy;
   uiText(d.x, d.y + 2, fit(call, d.w),
-    selected.state === SKILL_STATE.OWNED ? 'ui-counter' : selected.state === SKILL_STATE.AFFORDABLE ? 'ui-amber' : 'ui-danger', .9);
+    selected.state === SKILL_STATE.OWNED ? 'ui-green'
+      : selected.state === SKILL_STATE.PENDING || selected.state === SKILL_STATE.AFFORDABLE ? 'ui-amber' : 'ui-danger', .9);
   void now;
 }

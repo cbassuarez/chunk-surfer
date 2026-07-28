@@ -36,9 +36,18 @@ function currentLabel(model) {
 
 export function hushStatus(model, now = 0) {
   if(model?.hush?.active){
+    const perception=model.hush.perception;
+    if(perception?.mode&&perception.mode!=='none'){
+      return{
+        label:String(perception.label||'ACTIVE'),
+        cls:String(perception.cls||'ui-danger'),
+        detail:String(perception.detail||'YOU'),
+        floorDelta:0,
+      };
+    }
     const here=model.hush.floorId===model?.player?.floorId;
     const floor=mapFloor(model,model.hush.floorId);
-    return{label:'ACTIVE',cls:'ui-danger',detail:here?'ON MAP':floor?.label||'OTHER FLOOR',floorDelta:0};
+    return{label:'ACTIVE',cls:'ui-secondary',detail:here?'NO FIX':floor?.label||'OTHER FLOOR',floorDelta:0};
   }
   const contact = newestMapContact(model);
   if (!contact?.observation) return { label: 'NONE', cls: 'ui-secondary', detail: 'NO CONTACT', floorDelta: 0 };

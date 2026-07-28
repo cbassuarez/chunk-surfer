@@ -15,7 +15,12 @@ use std::{
 use tauri::{AppHandle, Manager, State};
 
 const MAX_STARTS: usize = 3;
-const HEALTH_TIMEOUT: Duration = Duration::from_secs(45);
+// PyInstaller's one-file bootloader is silent while Windows Defender scans and
+// extracts the bundled PyTorch runtime. That legitimate first-launch phase can
+// exceed the ordinary post-log stall window on slower machines.
+const HEALTH_SILENT_TIMEOUT: Duration = Duration::from_secs(5 * 60);
+const HEALTH_STALL_TIMEOUT: Duration = Duration::from_secs(45);
+const HEALTH_HARD_TIMEOUT: Duration = Duration::from_secs(15 * 60);
 const HEALTH_POLL_INTERVAL: Duration = Duration::from_millis(150);
 const HEALTH_CONNECT_TIMEOUT: Duration = Duration::from_millis(300);
 const HEALTH_READ_TIMEOUT: Duration = Duration::from_millis(600);
@@ -76,7 +81,9 @@ struct LaunchSpec {
 
 #[derive(Clone, Copy)]
 struct StartupTiming {
-    health_timeout: Duration,
+    health_silent_timeout: Duration,
+    health_stall_timeout: Duration,
+    health_hard_timeout: Duration,
     poll_interval: Duration,
     connect_timeout: Duration,
     read_timeout: Duration,
@@ -85,7 +92,9 @@ struct StartupTiming {
 impl Default for StartupTiming {
     fn default() -> Self {
         Self {
-            health_timeout: HEALTH_TIMEOUT,
+            health_silent_timeout: HEALTH_SILENT_TIMEOUT,
+            health_stall_timeout: HEALTH_STALL_TIMEOUT,
+            health_hard_timeout: HEALTH_HARD_TIMEOUT,
             poll_interval: HEALTH_POLL_INTERVAL,
             connect_timeout: HEALTH_CONNECT_TIMEOUT,
             read_timeout: HEALTH_READ_TIMEOUT,
@@ -610,6 +619,12 @@ fn append_spec_diagnostic(spec: &LaunchSpec, message: &str) {
     append_diagnostic(&spec.log_path, &spec.token, message);
 }
 
+fn log_size(path: &Path) -> u64 {
+    fs::metadata(path)
+        .map(|metadata| metadata.len())
+        .unwrap_or(0)
+}
+
 fn sidecar_creation_flags() -> u32 {
     #[cfg(windows)]
     {
@@ -652,6 +667,12 @@ fn spawn_child(spec: &LaunchSpec) -> Result<Child, String> {
         .env("LENS_BUNDLED", "1")
         .env("LENS_EXPECT_BACKEND", spec.backend)
         .env("LENS_EAGER", "0")
+        // The portable runtime contains every required weight. Network fallback
+        // can turn a packaging defect into a multi-gigabyte, multi-minute first
+        // launch that looks alive but can never satisfy the portable contract.
+        .env("HF_HUB_OFFLINE", "1")
+        .env("TRANSFORMERS_OFFLINE", "1")
+        .env("PYTHONUNBUFFERED", "1")
         .env("CHUNK_LENS_ATTEMPT", spec.attempt.to_string())
         .envs(spec.target.extra_env.iter().cloned())
         // Material tiles are conditioned on the authored height atlas and
@@ -855,12 +876,14 @@ fn launch_attempts(
         append_spec_diagnostic(
             &spec,
             &format!(
-                "startup_session={} attempt={attempt}/{MAX_STARTS} spawn_policy_flags=0x{:08X} backend={} app_version={} health_timeout_ms={} retry=pending",
+                "startup_session={} attempt={attempt}/{MAX_STARTS} spawn_policy_flags=0x{:08X} backend={} app_version={} health_silent_timeout_ms={} health_stall_timeout_ms={} health_hard_timeout_ms={} retry=pending",
                 spec.session,
                 sidecar_creation_flags(),
                 spec.backend,
                 spec.app_version,
-                timing.health_timeout.as_millis(),
+                timing.health_silent_timeout.as_millis(),
+                timing.health_stall_timeout.as_millis(),
+                timing.health_hard_timeout.as_millis(),
             ),
         );
 
@@ -878,6 +901,9 @@ fn launch_attempts(
         );
 
         let started = Instant::now();
+        let mut last_progress_at = started;
+        let mut last_log_size = log_size(&spec.log_path);
+        let mut progress_observed = false;
         let mut last_health = None;
         let retry = loop {
             match poll_starting_child(state, session)? {
@@ -910,6 +936,15 @@ fn launch_attempts(
                 }
             }
 
+            // Sample before writing any launcher diagnostics below. Only bytes
+            // emitted by the child between polls extend the stall window.
+            let current_log_size = log_size(&spec.log_path);
+            if current_log_size > last_log_size {
+                last_log_size = current_log_size;
+                last_progress_at = Instant::now();
+                progress_observed = true;
+            }
+
             let health = health_probe(port, timing);
             let label = health_label(&health);
             if last_health != Some(label) {
@@ -922,6 +957,9 @@ fn launch_attempts(
                     ),
                 );
                 last_health = Some(label);
+                // Do not mistake our own diagnostic line for child activity on
+                // the next poll.
+                last_log_size = log_size(&spec.log_path);
             }
             match health {
                 HealthState::Ready | HealthState::Starting => {
@@ -981,19 +1019,44 @@ fn launch_attempts(
                 HealthState::Unreachable => {}
             }
 
-            if started.elapsed() >= timing.health_timeout {
+            let hard_timeout = started.elapsed() >= timing.health_hard_timeout;
+            let current_stall_limit = if progress_observed {
+                timing.health_stall_timeout
+            } else {
+                timing.health_silent_timeout
+            };
+            let stalled = last_progress_at.elapsed() >= current_stall_limit;
+            if hard_timeout || stalled {
                 terminate_attempt(state, session);
-                last_error = format!(
-                    "diffusion service did not open its health endpoint within {} seconds",
-                    timing.health_timeout.as_secs_f32()
-                );
-                let should_retry = attempt < MAX_STARTS;
+                last_error = if hard_timeout {
+                    format!(
+                        "diffusion service did not open its health endpoint within {} seconds despite startup activity",
+                        timing.health_hard_timeout.as_secs_f32()
+                    )
+                } else if progress_observed {
+                    format!(
+                        "diffusion service stopped making startup progress for {} seconds before opening its health endpoint",
+                        timing.health_stall_timeout.as_secs_f32()
+                    )
+                } else {
+                    format!(
+                        "diffusion service did not open its health endpoint or report startup progress within {} seconds",
+                        timing.health_silent_timeout.as_secs_f32()
+                    )
+                };
+                // A genuinely stalled extraction may recover on a fresh attempt.
+                // Continuous activity extends the stall window; the hard cap is
+                // terminal so a pathological child cannot multiply a long wait.
+                let should_retry = attempt < MAX_STARTS && !hard_timeout;
                 append_spec_diagnostic(
                     &spec,
                     &format!(
-                        "startup_session={} attempt={attempt}/{MAX_STARTS} startup_state=health-timeout elapsed_ms={} retry={should_retry}",
+                        "startup_session={} attempt={attempt}/{MAX_STARTS} startup_state=health-timeout reason={} elapsed_ms={} last_progress_elapsed_ms={} log_bytes={} retry={should_retry}",
                         spec.session,
+                        if hard_timeout { "hard-cap" } else { "stalled" },
                         started.elapsed().as_millis(),
+                        last_progress_at.elapsed().as_millis(),
+                        last_log_size,
                     ),
                 );
                 break should_retry;
@@ -1144,7 +1207,9 @@ mod tests {
 
     fn fast_timing() -> StartupTiming {
         StartupTiming {
-            health_timeout: Duration::from_millis(450),
+            health_silent_timeout: Duration::from_millis(450),
+            health_stall_timeout: Duration::from_millis(450),
+            health_hard_timeout: Duration::from_secs(2),
             poll_interval: Duration::from_millis(10),
             connect_timeout: Duration::from_millis(20),
             read_timeout: Duration::from_millis(100),
@@ -1173,6 +1238,18 @@ mod tests {
         if mode == "timeout" {
             thread::sleep(Duration::from_secs(60));
             return;
+        }
+        if mode == "progressing" || mode == "progress-forever" {
+            let steps = if mode == "progress-forever" { 60 } else { 8 };
+            for step in 0..steps {
+                println!("fixture startup progress {step}/{steps}");
+                std::io::stdout().flush().unwrap();
+                thread::sleep(Duration::from_millis(100));
+            }
+            if mode == "progress-forever" {
+                thread::sleep(Duration::from_secs(60));
+                return;
+            }
         }
         if mode == "delayed" {
             thread::sleep(Duration::from_millis(80));
@@ -1231,8 +1308,8 @@ mod tests {
     }
 
     #[test]
-    fn immediate_ready_lazy_and_delayed_fake_sidecars_start() {
-        for mode in ["ready", "healthy", "delayed"] {
+    fn immediate_ready_lazy_delayed_and_progressing_fake_sidecars_start() {
+        for mode in ["ready", "healthy", "delayed", "progressing"] {
             let (root, state, result) = run_fixture(mode);
             let config = result.unwrap_or_else(|error| panic!("{mode}: {error}"));
             assert_eq!(config.backend, "cuda");
@@ -1286,6 +1363,32 @@ mod tests {
     }
 
     #[test]
+    fn continuous_progress_extends_the_stall_window_but_not_the_hard_cap() {
+        let (root, paths) = fixture_paths("progress-forever");
+        let state = LensServiceState::default();
+        let result = launch_with_paths(
+            &state,
+            paths,
+            "cuda",
+            "test",
+            false,
+            StartupTiming {
+                health_stall_timeout: Duration::from_millis(250),
+                health_hard_timeout: Duration::from_millis(800),
+                ..fast_timing()
+            },
+        );
+        let error = result.unwrap_err();
+        assert!(error.contains("despite startup activity"), "{error}");
+        let log = fs::read_to_string(root.join("logs/chunk-lens.log")).unwrap();
+        assert!(log.contains("reason=hard-cap"));
+        assert!(log.contains("attempt=1/3"));
+        assert!(!log.contains("attempt=2/3"));
+        assert!(state.0.lock().unwrap().managed.is_none());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
     fn cleanup_during_startup_kills_the_registered_child() {
         let (root, paths) = fixture_paths("timeout");
         let state = LensServiceState::default();
@@ -1298,7 +1401,7 @@ mod tests {
                 "test",
                 false,
                 StartupTiming {
-                    health_timeout: Duration::from_secs(10),
+                    health_stall_timeout: Duration::from_secs(10),
                     ..fast_timing()
                 },
             )

@@ -36,3 +36,20 @@ test('revisited id-less branch choices only mark the exact selected option spent
   assert.equal(view.spent(view.pending.options[2]), false);
   assert.notEqual(view.pending.options[0].contentId, view.pending.options[1].contentId);
 });
+
+test('an empty terminal node closes the conversation instead of leaving an empty shell', () => {
+  let done = 0;
+  const convo = createConversation({
+    sceneId: 'empty-terminal-regression',
+    nodes: {
+      start: { lines: [], choices: [{ text: 'leave it alone', goto: 'done' }] },
+      done: { lines: [] },
+    },
+    onDone: () => { done += 1; },
+  });
+  convo.start();
+  assert.equal(convo.view().pending.kind, 'branch');
+  convo.key({ key: 'Enter' });
+  assert.equal(done, 1);
+  assert.equal(convo.view().finished, true);
+});

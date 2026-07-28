@@ -10,14 +10,31 @@ test('pixel mesh ignores legacy player mode values', () => {
   });
 });
 
-test('VFD compositor combines the strong block palette with selective phosphor', () => {
+test('VFD compositor combines fine acquisition thresholds with selective phosphor', () => {
   const shader = readFileSync('src/render/pixel-mesh/shader.js', 'utf8');
   assert.match(shader, /texture\(uSrc,\s*fullUv\)/);
   assert.match(shader, /texture\(uSrc,\s*cellUv\)/);
-  assert.match(shader, /vec3\s+paletted/);
+  assert.match(shader, /recordingNoise/);
+  assert.match(shader, /recordedSignal/);
+  assert.match(shader, /mix\(\s*ordered,\s*organic/);
   assert.match(shader, /mix\(c,\s*paletted,\s*clamp\(uPaletteAmount/);
+  assert.match(shader, /recordingHash3/);
+  assert.match(shader, /formStipple/);
+  assert.match(shader, /formStipple\(worldMetres/);
+  assert.match(shader, /float footprint\s*=\s*max\(length\(dx\),\s*length\(dy\)\)/);
+  assert.doesNotMatch(shader, /surfaceScreenCoordinates/);
+  assert.match(shader, /broadForm/);
+  assert.match(shader, /brightContour/);
+  assert.match(shader, /darkCrease/);
+  assert.match(shader, /broadColor/);
+  assert.match(shader, /sourceChroma/);
+  assert.match(shader, /luma\(neutralLightInk\)\s*\/\s*max\(0\.001,\s*luma\(captureLight\)\)/);
+  assert.match(shader, /oneBitScene/);
+  assert.doesNotMatch(shader, /acquiredScene/);
+  assert.doesNotMatch(shader, /clusteredDotScreen|diagonalLineScreen|materialScreen/);
   assert.match(shader, /mix\(encodedScene,\s*phosphor,\s*replaceAmount\)/);
   assert.match(shader, /uBaseRetention/);
+  assert.match(shader, /sceneSignal/);
   assert.doesNotMatch(shader, /uLocalDiffusion|localDiffusion/);
   assert.doesNotMatch(shader, /drawUI|uiText|settings|dialogue/i);
 });
@@ -29,6 +46,7 @@ test('VFD persistence is time-based and accessibility retains the authored look'
   assert.match(shader, /uPersistenceMs/);
   assert.match(shader, /uReduceFlash/);
   assert.match(shader, /uReduceMotion/);
+  assert.match(shader, /uRecordingTemporalSmear/);
   assert.doesNotMatch(shader, /uReduceFlash[^;]*\?\s*0\.0/);
 });
 
@@ -57,6 +75,8 @@ test('reaffirming a look profile does not restart its transition', () => {
   assert.equal(halfway.transitioning, true);
   assert.ok(halfway.profile.vfd.baseRetention > 0.78);
   assert.ok(halfway.profile.vfd.baseRetention < 0.90);
+  assert.ok(halfway.profile.recording.thresholdNoise > 0.025);
+  assert.ok(halfway.profile.recording.thresholdNoise < 0.060);
 
   r3dSetLookProfile('calm', { transitionMs: 600, nowMs: 400 });
   const complete = r3dLookStatus(700);

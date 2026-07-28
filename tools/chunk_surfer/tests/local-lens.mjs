@@ -31,6 +31,10 @@ ck('gameplay mutation is visible-material, performance-gated, and not camera-dri
 ck('runtime mutation is ephemeral and never expands the authored cache',server.includes('new seed every few seconds would create unbounded disk use'));
 ck('request/result identifiers and checksum are enforced',client.includes('pendingResult.checksumId')&&server.includes('"checksumId"')&&server.includes('record_manifest'));
 ck('bundled models are offline and byte-verified',pipeline.includes('local_files_only')&&pipeline.includes('validate_bundled_resources'));
+ck('frozen sidecar defaults to bundled resources',pipeline.includes('getattr(sys, "frozen", False)'));
+ck('packaged launch cannot fall back to network weights',rust.includes('.env("HF_HUB_OFFLINE", "1")')&&rust.includes('.env("TRANSFORMERS_OFFLINE", "1")'));
+ck('health endpoint starts before model initialization',rust.includes('.env("LENS_EAGER", "0")')&&server.includes('os.environ.get("LENS_EAGER", "0") == "1"'));
+ck('native watchdog allows silent extraction, follows startup progress, and retains a hard cap',rust.includes('health_silent_timeout')&&rust.includes('health_stall_timeout')&&rust.includes('health_hard_timeout')&&rust.includes('last_progress_at'));
 ck('bundled fp16 weights are selected on Apple, NVIDIA, AMD, and CPU fallback',pipeline.includes('BUNDLED or dtype == torch.float16')&&pipeline.includes('controlnet_kw["variant"] = weight_variant'));
 ck('bundled loading cannot fall back to weight files that were not shipped',pipeline.includes('if BUNDLED or "variant" not in k:')&&pipeline.includes('Preserve the real load error'));
 ck('sidecar package supports only the three approved target triples',bundle.includes('aarch64-apple-darwin')&&bundle.includes('x86_64-pc-windows-msvc')&&bundle.includes('x86_64-unknown-linux-gnu')&&!bundle.includes('x86_64-apple-darwin'));

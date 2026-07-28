@@ -5,6 +5,7 @@ import {
   DOCK_INVESTIGATION_PROP_IDS,
   loadingDockInvestigation,
 } from '../src/data/loading-dock-investigation.js';
+import { createConversation } from '../src/game/conversation.js';
 
 const acoustic = new Set(['dock-road-case', 'dock-cable-reel', 'dock-shutter-bar']);
 const aftermath = new Set([
@@ -51,6 +52,19 @@ for (const id of DOCK_INVESTIGATION_PROP_IDS) {
 
   const revisited = loadingDockInvestigation(id, { aftermath:false, revisited:true, auditioned:acoustic.has(id) });
   assert.notEqual(revisited.start.lines[0].text, tree.start.lines[0].text, `${id} acknowledges a return inspection`);
+
+  let closed=0;
+  const convo=createConversation({nodes:tree,onDone:()=>{closed++;}});
+  convo.start();
+  for(let guard=0;guard<80&&!convo.view().finished;guard++){
+    const view=convo.view();
+    convo.update(10);
+    if(view.pending?.kind==='branch'){
+      const leaveIndex=view.pending.options.findIndex((choice)=>choice.text==='leave it alone');
+      convo.key({key:leaveIndex>=0?String(leaveIndex+1):'Enter'});
+    }else convo.key({key:' '});
+  }
+  assert.equal(closed,1,`${id} leave choice dismisses the investigation shell`);
 }
 
 for (const id of aftermath) {

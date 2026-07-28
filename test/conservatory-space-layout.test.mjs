@@ -146,6 +146,42 @@ const practiceEndIds = [
 assert.ok(practiceEndIds.every((id) => !byId[id]), 'the practice stair corridor no longer terminates in a decorative ensemble');
 assert.ok(reachable(rt(66, 55), rt(66, 79)), 'the bare practice corridor remains reachable from its stair landing');
 
+const practiceRoomProps = placed.filter((prop) =>
+  prop.id.startsWith('practice-') || prop.id.startsWith('acq-practice-chair-'));
+const practiceStart = rt(61, 54);
+assert.equal(placed.filter((prop) => prop.id.startsWith('practice-piano-')).length, 7,
+  'seven teaching rooms contain one wall-backed upright each');
+for (const prop of practiceRoomProps.filter((entry) => entry.interactive !== false)) {
+  assert.ok(PROPS.pathToProp(practiceStart.x, practiceStart.y, prop.id, KEYRING),
+    `${prop.id} remains inspectable from the practice stair landing`);
+}
+for (const prop of practiceRoomProps.filter((entry) => !entry.structural)) {
+  const halfW = (prop.w * (prop.scale || 1)) * .46;
+  const halfD = (prop.d * (prop.scale || 1)) * .46;
+  const c = Math.cos(prop.yaw || 0);
+  const s = Math.sin(prop.yaw || 0);
+  for (const [lx, lz] of [[0, 0], [-halfW, -halfD], [halfW, -halfD], [-halfW, halfD], [halfW, halfD]]) {
+    const x = prop.x + lx * c - lz * s;
+    const y = prop.y + lx * s + lz * c;
+    assert.equal(FP.isSolid(rt(x, y).x, rt(x, y).y), false,
+      `${prop.id} footprint stays out of the practice partitions at ${x.toFixed(2)},${y.toFixed(2)}`);
+  }
+}
+for (let authoredY = 57; authoredY <= 83; authoredY += .5) {
+  for (let authoredX = 60; authoredX <= 62; authoredX += .5) {
+    const p = rt(authoredX, authoredY);
+    assert.ok(PROPS.propCanOccupy(p.x, p.y),
+      `practice central spine stays clear at ${authoredX},${authoredY}`);
+  }
+}
+for (const doorY of [59, 66, 73, 80]) {
+  for (const doorX of [58.5, 59.5, 62.5, 63.5]) {
+    const p = rt(doorX, doorY);
+    assert.ok(PROPS.propCanOccupy(p.x, p.y),
+      `practice room door landing stays clear at ${doorX},${doorY}`);
+  }
+}
+
 const poolStarts=placed.filter((prop)=>prop.id.startsWith('pool-start-'));
 assert.equal(poolStarts.length,5,'five starting blocks align to the five-lane pool');
 assert.ok(poolStarts.every((prop)=>prop.y===32.4&&prop.yaw===Math.PI),'starting blocks face into the pool from the end of the lead deck');
@@ -168,6 +204,7 @@ assert.ok(reachable(rt(84, 27), rt(91, 34)), 'natatorium east deck and lane stor
 assert.ok(reachable(rt(84, 27), rt(84, 47)), 'the entrance, full basin length, and far axial wall read as one traversable hall');
 assert.equal(byId['natatorium-hall-shell'], undefined, 'the natatorium has no freestanding inner architectural shell');
 assert.equal(byId['natatorium-vault'], undefined, 'the natatorium has no freestanding inner roof shell');
+assert.equal(byId['natatorium-sign-exit'], undefined, 'the natatorium threshold has no tower plaque intersecting its door leaf');
 assert.equal(byId['pool-lane-markings']?.elevation, .05, 'longitudinal lane markings sit just above the basin floor');
 assert.deepEqual({x:byId['pool-lane-markings']?.x,y:byId['pool-lane-markings']?.y},{x:84,y:40.5},'lane markings are centred in the shifted pool');
 assert.equal(byId['pool-lifeguard-chair']?.yaw,-Math.PI/2,'lifeguard chair faces west across the pool');
@@ -175,6 +212,15 @@ assert.equal(byId['pool-lane-reel']?.yaw,0,'lane reel sits square to the startin
 
 {
   const builder=readFileSync(new URL('../tools/chunk_surfer/build-props.mjs',import.meta.url),'utf8');
+  const bathsStart=builder.indexOf("mesh('natatorium_perimeter_relief')");
+  const bathsEnd=builder.indexOf("mesh('natatorium_roof_structure')",bathsStart);
+  const atriumStart=builder.indexOf("mesh('front_atrium_perimeter_relief')");
+  const atriumEnd=builder.indexOf("mesh('front_atrium_box_office')",atriumStart);
+  const bathsRelief=builder.slice(bathsStart,bathsEnd);
+  const atriumRelief=builder.slice(atriumStart,atriumEnd);
+  assert.ok(bathsStart>=0&&bathsEnd>bathsStart,'the natatorium keeps its dedicated perimeter finish');
+  assert.doesNotMatch(bathsRelief,/lowerCourses:false/,'the natatorium retains its tiled dado and lower baths relief');
+  assert.ok((atriumRelief.match(/lowerCourses:false/g)||[]).length>=4,'the atrium removes lower wainscot courses on every perimeter run');
   const roofStart=builder.indexOf("mesh('natatorium_roof_structure')");
   const roofEnd=builder.indexOf("mesh('natatorium_cubicle_bank')",roofStart);
   const roofSource=builder.slice(roofStart,roofEnd);
