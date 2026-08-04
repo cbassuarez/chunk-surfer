@@ -313,40 +313,52 @@ assert.ok(reachable(rt(25, 12), rt(40, 14)), 'plant-room pipe dressing does not 
 
 console.log('conservatory space layout tests ok');
 
-// ── the main stair's shaft is as wide as the stair in it ─────────────────────
-// `main-upper-stair` is a 3-metre flight with 3x3-metre landings. It used to run
-// down a ONE-cell service spur (`#,#` at x60/61/62), so both landings straddled
-// the two wall columns and the collision around them had nothing to agree with.
-// Both floors now author the full three metres, walled either side.
+// ── the main stair's well, and the winders that fill it ─────────────────────
+// The main stair is a spiral now: two half revolutions of winders wound around a
+// solid newel, filling a square well. It replaced two straight flights that
+// shared this well with no wall between them, one of which had its foot landing
+// standing invisibly inside the second-floor hall.
+//
+// A ring cannot keep the old three-cell slot walled at x59/x63 — the winders ARE
+// the width of the well. And these are PHYSICAL facts: the treads' logical run is
+// a straight four-column corridor, and only its embedding fills the square. So
+// this reads the compiled physical spans, not FP.isSolid, which is logical.
 {
-  const cell = (x, y) => rt(x, y);
-  for (const y of [35, 39, 43]) {           // the ground vestibule hall
-    for (const x of [60, 61, 62]) {
-      const p = cell(x, y);
-      assert.ok(!FP.isSolid(p.x, p.y), `ground shaft is open at ${x},${y}`);
-    }
-  }
-  // Walled either side, below the flare where the one-cell service spur widens
-  // into the hall (the compiler's corridor widening opens x59-63 at the head).
-  for (const y of [40, 41, 42, 43]) {
-    for (const x of [59, 63]) {
-      const p = cell(x, y);
-      assert.ok(FP.isSolid(p.x, p.y), `and walled at ${x},${y}`);
-    }
-  }
-  for (const y of [45, 47, 50]) {           // the upper floor's own well
-    for (const x of [60, 61, 62]) {
-      const p = cell(x, y);
-      assert.ok(!FP.isSolid(p.x, p.y), `upper well is open at ${x},${y}`);
-    }
-  }
-  // The landings sit wholly inside it, which is the point.
-  for (const [lx, ly] of [[60, 38], [60, 52]]) {
-    for (let ox = 0; ox < 3; ox += 1) {
-      for (let oy = 0; oy < 3; oy += 1) {
-        const p = cell(lx + ox, ly + oy);
-        assert.ok(!FP.isSolid(p.x, p.y), `landing cell ${lx + ox},${ly + oy} is standable`);
+  const WELL = { x0: 120, x1: 131, z0: 78, z1: 91 };
+  const NEWEL = { x0: 124, x1: 127, z0: 82, z1: 85 };
+  const spans = FP.physicalSpanData();
+  const at = (x, z) => spans.cells.get(`${x},${z}`) || [];
+  const inNewel = (x, z) => x >= NEWEL.x0 && x <= NEWEL.x1 && z >= NEWEL.z0 && z <= NEWEL.z1;
+
+  let treads = 0;
+  for (let z = WELL.z0; z <= WELL.z1; z += 1) {
+    for (let x = WELL.x0; x <= WELL.x1; x += 1) {
+      if (inNewel(x, z)) {
+        assert.equal(at(x, z).length, 0, `the newel post is solid at ${x},${z}`);
+        continue;
       }
+      if (at(x, z).length) treads += 1;
+    }
+  }
+  // 12x14 well less a 4x4 newel is 152 cells. The winders should fill nearly all
+  // of it: a well with holes in it is a stair you fall through.
+  assert.ok(treads > 130, `the winders fill the well (${treads} of 152)`);
+
+  // Walled either side, the whole depth. These are the shaft's own straight
+  // walls, and they are why the spiral reads at all — every boundary in it is
+  // straight except the tread nosings, which is where a stair has edges anyway.
+  for (let z = WELL.z0; z <= WELL.z1; z += 1) {
+    for (const x of [WELL.x0 - 1, WELL.x1 + 1]) {
+      assert.equal(at(x, z).length, 0, `the well is walled at ${x},${z}`);
+    }
+  }
+
+  // The half-landing is standable across its whole width and depth — the thing
+  // the old stair got wrong, where a 3x3 slab hid inside the hall behind a
+  // single open tile.
+  for (let z = 92; z <= 95; z += 1) {
+    for (let x = 120; x <= 131; x += 1) {
+      assert.ok(at(x, z).length > 0, `half-landing cell ${x},${z} is standable`);
     }
   }
 }

@@ -178,14 +178,17 @@ const hallView=FP.physicalRenderPlanFor(...Object.values(rc(102,15)));
 const atriumPhysical=FP.logicalToPhysical(...Object.values(rc(96,24)));
 ck('the atrium opening is visible from the hall render slice',!hallView.solid[Math.floor(atriumPhysical.z)*hallView.w+Math.floor(atriumPhysical.x)]);
 
-const stairView=FP.physicalRenderPlanFor(...Object.values(rc(61,40)));
+// The main stair is a spiral of winders: two half revolutions whose logical runs
+// are (120-122, 78-91) and (124-126, 78-91). Their treads wind away physically,
+// so the run is walked cell by cell rather than down an authored column.
+const stairView=FP.physicalRenderPlanFor(120,80);
 let hiddenStair=[];
-for(let ay=41;ay<=52;ay++){
-  const lp=rc(61,ay),pp=FP.logicalToPhysical(lp.x,lp.y),pi=Math.floor(pp.z)*stairView.w+Math.floor(pp.x);
-  if(stairView.solid[pi])hiddenStair.push(ay);
+for(let z=78;z<=91;z++)for(const x of [120,124]){
+  const pp=FP.logicalToPhysical(x,z),pi=Math.floor(pp.z)*stairView.w+Math.floor(pp.x);
+  if(stairView.solid[pi])hiddenStair.push(`${x},${z}`);
 }
-ck('a stair renders as one continuous run with no transition slabs',hiddenStair.length===0,hiddenStair.join(','));
-const upperLanding=FP.logicalToPhysical(...Object.values(rc(61,54))),upperLandingIndex=Math.floor(upperLanding.z)*stairView.w+Math.floor(upperLanding.x);
+ck('a stair renders as one continuous run with no transition slabs',hiddenStair.length===0,hiddenStair.join(' '));
+const upperLanding=FP.logicalToPhysical(124,93),upperLandingIndex=Math.floor(upperLanding.z)*stairView.w+Math.floor(upperLanding.x);
 ck('the upper landing is already open from the foot of its stair',!stairView.solid[upperLandingIndex],`${upperLanding.x},${upperLanding.z}`);
 const basementView=FP.physicalRenderPlanFor(...Object.values(rc(57,22))),basementLanding=FP.logicalToPhysical(...Object.values(rc(46,22))),basementLandingIndex=Math.floor(basementLanding.z)*basementView.w+Math.floor(basementLanding.x);
 ck('the basement landing is already open from the foot of its stair',!basementView.solid[basementLandingIndex],`${basementLanding.x},${basementLanding.z}`);
@@ -197,30 +200,67 @@ const ownedLanding=(spaceId,x0,y0)=>{
   }
   return misses;
 };
-const upperGroundLanding=ownedLanding('upper_stair',60,38),upperPracticeLanding=ownedLanding('upper_stair',60,52);
+// The spiral's landings are two three-cell bands at the well's north mouth (one
+// per coil, at 0m and 10m) and one full-width half-landing at 4.8m, in runtime
+// cells rather than 3x3 authored squares.
+const spiralOwned=(x0,x1,z0,z1)=>{
+  const misses=[];
+  for(let z=z0;z<=z1;z++)for(let x=x0;x<=x1;x++){
+    const cell=FP.cellAt(x,z),physical=FP.logicalToPhysical(x,z);
+    if(cell?.zone!==ZONE.stair||physical.spaceId!=='main_stair')misses.push(`${x},${z}`);
+  }
+  return misses;
+};
 const basementGroundLanding=ownedLanding('basement_stair',57,22),basementB3Landing=ownedLanding('basement_stair',45,22);
-ck('the upper stair owns explicit 3x3-metre landings at both ends',upperGroundLanding.length===0&&upperPracticeLanding.length===0,[...upperGroundLanding,...upperPracticeLanding].join(' '));
+const groundBand=spiralOwned(120,122,76,77),academicBand=spiralOwned(124,126,76,77),halfLanding=spiralOwned(120,131,92,95);
+ck('the spiral owns its two north bands and its half-landing',
+  groundBand.length===0&&academicBand.length===0&&halfLanding.length===0,
+  [...groundBand,...academicBand,...halfLanding].join(' '));
 ck('the basement stair owns explicit 3x3-metre landings at both ends',basementGroundLanding.length===0&&basementB3Landing.length===0,[...basementGroundLanding,...basementB3Landing].join(' '));
 ck('both main stair shells retain the reclaimed-brick service material',
-  FP.materialAt(...Object.values(rc(61,45)))===MATERIAL.serviceConcrete
+  FP.materialAt(121,84)===MATERIAL.serviceConcrete
   && FP.materialAt(...Object.values(rc(52,22)))===MATERIAL.serviceConcrete,
-  `upper=${FP.materialAt(...Object.values(rc(61,45)))} basement=${FP.materialAt(...Object.values(rc(52,22)))}`);
-const upperArrival=rc(66,55),restoredArrival=rc(61,52);
-ck('the original x60-62 upper-stair axis is restored',FP.zoneAt(restoredArrival.x,restoredArrival.y)===ZONE.stair&&FP.logicalToPhysical(restoredArrival.x,restoredArrival.y).spaceId==='upper_stair');
+  `upper=${FP.materialAt(121,84)} basement=${FP.materialAt(...Object.values(rc(52,22)))}`);
+// A ring has no axis to restore. What the old check really protected is that the
+// stair delivers you into the gallery and on down the practice spine.
+const upperArrival=rc(66,55),restoredArrival={x:124,y:93};
+ck('the spiral half-landing opens onto the practice gallery',
+  FP.zoneAt(restoredArrival.x,restoredArrival.y)===ZONE.stair
+  &&FP.logicalToPhysical(restoredArrival.x,restoredArrival.y).spaceId==='main_stair'
+  &&!FP.isSolid(124,98));
 ck('the restored landing remains open to the existing practice corridor',FP.zoneAt(upperArrival.x,upperArrival.y)===ZONE.practice&&!FP.isSolid(upperArrival.x,upperArrival.y)&&reachable(restoredArrival,upperArrival,KEYRING));
 const climbable=(points)=>points.every(([ax,ay,bx,by])=>FP.canStep(ax,ay,bx,by,{keys:KEYRING}).ok&&FP.canStep(bx,by,ax,ay,{keys:KEYRING}).ok);
 ck('both main flights have continuous bidirectional climbable risers',climbable([
-  ...Array.from({length:22},(_,i)=>[123,82+i,123,83+i]),
+  // Lower winders, north to south, then the step onto the half-landing.
+  ...Array.from({length:13},(_,i)=>[120,78+i,120,79+i]),
+  [120,91,120,92],
+  // Upper winders, south to north, then the step onto the academic band.
+  ...Array.from({length:13},(_,i)=>[124,91-i,124,90-i]),
+  [124,78,124,77],
+  // The basement flight is unchanged.
   ...Array.from({length:20},(_,i)=>[114-i,47,113-i,47]),
 ]));
 const embeddedWithoutDrift=(points)=>points.every(([x,y])=>{
   const p=FP.logicalToPhysical(x+.25,y+.25);
   return Math.abs(p.x-(x+.25))<1e-6&&Math.abs(p.z-(y+.25))<1e-6;
 });
-ck('main stair collision and rendering share one physical footprint',embeddedWithoutDrift([
-  ...Array.from({length:23},(_,i)=>[123,82+i]),
-  ...Array.from({length:21},(_,i)=>[114-i,47]),
-]));
+// The basement flight is still a pure translation and must stay one.
+ck('the basement stair collision and rendering share one physical footprint',
+  embeddedWithoutDrift(Array.from({length:21},(_,i)=>[114-i,47])));
+// The spiral cannot satisfy that — asserting it would be asserting the stair is
+// straight. The correct generalisation is stronger: every tread lands inside the
+// well, the mapping is injective, and the well is filled. A duplicate is a tread
+// the camera does not move across; a hole is rock in the middle of a flight.
+const wellCells=[],claimed=new Set();
+for(let z=78;z<=91;z++)for(const x0 of [120,124])for(let x=x0;x<x0+2;x++){
+  const p=FP.logicalToPhysical(x,z);
+  wellCells.push([x,z,p.x,p.z]); claimed.add(`${p.x},${p.z}`);
+}
+const outside=wellCells.filter(([,,px,pz])=>px<120||px>131||pz<78||pz>91);
+ck('every winder lands inside the stair well',outside.length===0,
+  outside.slice(0,4).map(([x,z,px,pz])=>`${x},${z}->${px},${pz}`).join(' '));
+ck('the spiral maps one logical tread to one physical cell',claimed.size===wellCells.length,
+  `${wellCells.length} logical -> ${claimed.size} physical`);
 const mainStairPortal=cp.stairPortals.find(p=>p.group0==='ground'&&p.group1==='upper'),basementStairPortal=cp.stairPortals.find(p=>p.group0==='ground'&&p.group1==='basement');
 ck('stairs terminate on their physical destination floors',!!mainStairPortal&&!!basementStairPortal,JSON.stringify(cp.stairPortals.slice(0,3)));
 

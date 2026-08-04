@@ -153,6 +153,11 @@ function frontAtriumProfile(x,y,cell){
   return{ceil:gardenVoid?17:9.5};
 }
 
+// The main stair's well and its newel post, in physical runtime cells. The well
+// is the existing 6x6m shaft; the newel is a 2x2m column at its centre.
+const SPIRAL_WELL=Object.freeze({x0:120,x1:131,z0:78,z1:91});
+const SPIRAL_NEWEL=Object.freeze({x0:124,x1:127,z0:82,z1:85});
+
 export const ACADEMIC_ORIGIN=Object.freeze({x:0,y:240});
 export const ACADEMIC_PHYSICAL_ORIGIN=Object.freeze({x:50,y:0});
 export const ACADEMIC_BASE=10;
@@ -298,18 +303,78 @@ const EUCLIDEAN_ADDITIONS=[
   // across the seam and never take it. Only the PHYSICAL placement moved south,
   // two metres, and `physicalReplace` lets those treads own the hall's air where
   // they now overlap it (see writeStairCell).
-  {id:'academic_stair',physicalReplace:true,layer:'academic_stair',space:'academic_stair',renderGroup:'academic',origin:{x:52,y:180},physicalOrigin:{x:63,y:38},base:4.8,rows:Array.from({length:18},()=> ' '.repeat(6)),stairs:[{
-    id:'main-academic-stair',zone:'stair',material:'serviceConcrete',head:3.4,
-    flights:[{
-      id:'return-flight',from:{x:52,y:194},to:{x:52,y:184},
-      physicalFrom:{x:63,z:51},physicalTo:{x:63,z:41},
-      fromH:4.8,toH:10,width:3,rises:26,groupFrom:'upper',groupTo:'academic',
-    }],
+  // THE MAIN STAIR IS ONE SPIRAL, GROUND TO THIRD FLOOR — winders in a square
+  // well, wound around a solid newel post.
+  //
+  // It replaces two straight flights that shared this well with no wall between
+  // them, running opposite ways at different heights, where the third floor's
+  // foot landing stood INSIDE the second-floor hall — same height, same
+  // material, made invisible by physicalReplace, and reachable through exactly
+  // one half-metre tile. You could see the stair, walk its whole length, and
+  // never find the way on.
+  //
+  // WHY WINDERS IN A SQUARE, and not a ring. The scene shader is a sector DDA:
+  // one floor/ceiling pair per column. A rasterised CIRCLE therefore becomes a
+  // sawtooth of tiny wall faces where a smooth surface should be — and a ring
+  // floating in a square well has two of them, its outer edge and its open
+  // newel. Built that way first, it rendered as visual noise. Filling the well
+  // to its own straight walls and cutting a rectangular newel leaves every
+  // boundary straight except the radial tread edges, and those are nosings:
+  // exactly where a stair is supposed to have a vertical face.
+  //
+  // WHY HALF A REVOLUTION EACH. The building decides it. The ground corridor
+  // meets the well at the NORTH, the academic floor leaves at the NORTH, and the
+  // practice wing is SOUTH. A full turn returns you to the side you came in on,
+  // so it cannot serve a landing on the far side. Two half turns put the
+  // second-floor landing exactly where the practice wing already is.
+  //
+  // EVERY JUNCTION IS LOGICALLY ADJACENT. A connector is one cell, and a
+  // one-cell junction is the bug above. Only the physical embedding winds; the
+  // logical run is a straight corridor whose ends touch their landings, so
+  // ordinary steps carry the player the whole way:
+  //
+  //   ground corridor -> ground band -> lower coil -> landing -> gallery -> wing
+  //                                     landing -> upper coil -> academic band
+  //
+  // One seam survives, at the academic band, because the academic floor's
+  // logical space is nowhere near the shaft's — and it is the TOP of the stair,
+  // a dead end walked straight into, which is the arrangement that works
+  // everywhere else in this building.
+  {id:'main_spiral',layer:'main_stair',space:'main_stair',renderGroup:'upper',
+   origin:{x:60,y:38},physicalOrigin:{x:60,y:38},base:0,
+   rows:Array.from({length:9},()=> ' '.repeat(4)),stairs:[{
+    // The stair stands in other people's air — the academic floor at its top
+    // band, the upper layer where the winders pass. physicalReplace resolves
+    // those into one volume instead of two structures in one place.
+    id:'main-spiral',zone:'stair',material:'serviceConcrete',head:3.4,physicalReplace:true,
+    flights:[
+      {id:'lower-coil',from:{x:60,y:39},to:{x:60,y:45.5},
+       fromH:0,toH:4.8,width:2,rises:14,ceil:13.4,
+       groupFrom:'ground',groupTo:'upper',
+       arc:{center:{x:63,z:42},rOuter:4.4,theta0:0,sweep:Math.PI,
+            bounds:SPIRAL_WELL,newelBox:SPIRAL_NEWEL}},
+      {id:'upper-coil',from:{x:62,y:45.5},to:{x:62,y:39},
+       fromH:4.8,toH:10,width:2,rises:14,ceil:13.4,
+       groupFrom:'upper',groupTo:'academic',
+       arc:{center:{x:63,z:42},rOuter:4.4,theta0:Math.PI,sweep:Math.PI,
+            bounds:SPIRAL_WELL,newelBox:SPIRAL_NEWEL}},
+    ],
     landings:[
-      {id:'practice-return',at:{x:52,y:194},size:{x:3,y:3},physicalAt:{x:63,z:51},height:4.8,renderGroup:'upper'},
-      {id:'academic-landing',at:{x:52,y:181},size:{x:3,y:3},physicalAt:{x:63,z:38},height:10,renderGroup:'academic'},
+      {id:'ground-band',at:{x:60,y:38},size:{x:1.5,y:1},physicalAt:{x:60,z:38},height:0,ceil:4.5,renderGroup:'ground'},
+      {id:'academic-band',at:{x:62,y:38},size:{x:1.5,y:1},physicalAt:{x:62,z:38},height:10,ceil:13.4,renderGroup:'academic'},
+      // Two metres deep and the full width of the well, sitting directly
+      // against the last winder. A one-metre lip left the whole stair in your
+      // face at arm's length, and the step off the top tread crossed a 1.5m
+      // gap because the ring stopped short of it.
+      {id:'practice-landing',at:{x:60,y:46},size:{x:6,y:2},physicalAt:{x:60,z:46},height:4.8,ceil:8.2,renderGroup:'upper'},
     ],
   }]},
+  // The short run from the half-landing to the practice wing's north mouth.
+  // Identity-embedded and logically continuous with both, so no seam. `,` not
+  // `.`: widenCorridors would chew a mutable corridor's edges here.
+  {id:'spiral_gallery',replace:true,layer:'main_stair',space:'main_stair',renderGroup:'upper',
+   origin:{x:60,y:48},physicalOrigin:{x:60,y:48},base:4.8,
+   rows:Array.from({length:4},()=> ','.repeat(6))},
   {id:'academic_floor',layer:'academic',space:'academic',renderGroup:'academic',origin:ACADEMIC_ORIGIN,physicalOrigin:ACADEMIC_PHYSICAL_ORIGIN,base:ACADEMIC_BASE,rows:academicFloorRows(),profile:academicProfile},
   // First seal the entire legacy chapel footprint. The new chapel is the
   // only module allowed to reopen cells inside it.
@@ -406,8 +471,8 @@ export const conservatory = {
     // the next step is a wall. One cell works precisely because it is the only
     // one. The real fix is to stop needing a hidden landing at all — see the
     // spiral rebuild, which replaces this stair with one continuous run.
-    {from:{x:63,y:52},to:{x:53,y:196}},
-    {from:{x:53,y:181},to:{x:13,y:278}},
+    // Only ONE seam survives in the main stair, and it is the top of it.
+    {from:{x:62,y:38},to:{x:13,y:278}},
   ],
   // Inside the loading dock, service door at your back. A bag, a work order,
   // and a radio that will fail.
@@ -575,19 +640,6 @@ export const conservatory = {
           landings:[
             {id:'ground-landing',at:{x:57,y:22},size:{x:3,y:3},physicalAt:{x:57,y:22},height:0,space:'basement_stair',renderGroup:'ground'},
             {id:'b3-landing',at:{x:45,y:22},size:{x:3,y:3},physicalAt:{x:45,y:22},height:-4,space:'basement_stair',renderGroup:'basement'},
-          ],
-        },
-        {
-          id:'main-upper-stair',zone:'stair',material:'serviceConcrete',
-          layer:'main_stair',space:'upper_stair',renderGroup:'upper',head:3.4,
-          flights:[{
-            id:'shaft-flight',from:{x:60,y:41},to:{x:60,y:52},
-            physicalFrom:{x:60,y:41},physicalTo:{x:60,y:52},physicalWidthSign:-1,
-            fromH:0,toH:4.8,width:3,rises:22,groupFrom:'ground',groupTo:'upper',
-          }],
-          landings:[
-            {id:'ground-vestibule',at:{x:60,y:38},size:{x:3,y:3},physicalAt:{x:60,y:38},height:0,space:'upper_stair',renderGroup:'ground'},
-            {id:'practice-landing',at:{x:60,y:52},size:{x:3,y:3},physicalAt:{x:60,y:52},height:4.8,space:'upper_stair',renderGroup:'upper'},
           ],
         },
       ],

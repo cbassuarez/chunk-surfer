@@ -445,17 +445,34 @@ const TAU=Math.PI*2;
 // Angles run CLOCKWISE FROM NORTH, matching the shader's fwd = (sin y, ·, -cos y),
 // so a stair with theta0 = 0 enters at the north bearing and turns east — the
 // conventional newel.
-function rasteriseAnnulus({cx,cz,ri,ro,theta0,sweep},count){
+function rasteriseAnnulus({cx,cz,ri,ro,theta0,sweep,bounds,newelBox},count){
   const wedges=Array.from({length:count},()=>[]);
   const inner=[];
   const step=sweep/count;
-  const x0=Math.floor(cx-ro)-1,x1=Math.ceil(cx+ro)+1;
-  const z0=Math.floor(cz-ro)-1,z1=Math.ceil(cz+ro)+1;
+  // WINDERS FILLING A SQUARE WELL, NOT A RING FLOATING IN ONE.
+  //
+  // The first version of this rasterised a circular annulus inside the square
+  // shaft, and it was unreadable: a sector DDA draws one floor/ceiling pair per
+  // column, so a rasterised CIRCLE becomes a sawtooth of hundreds of tiny wall
+  // faces where a smooth surface should be. Two of them — the outer edge and the
+  // open newel — turned the whole flight into visual noise.
+  //
+  // Clipping to the well's own rectangle and cutting a rectangular newel post
+  // means every boundary in the stair is STRAIGHT except the radial tread edges,
+  // and those are supposed to be edges. The rasterisation artefacts now land on
+  // the nosings, which is exactly where a stair has vertical faces anyway.
+  const x0=bounds?bounds.x0:Math.floor(cx-ro)-1,x1=bounds?bounds.x1:Math.ceil(cx+ro)+1;
+  const z0=bounds?bounds.z0:Math.floor(cz-ro)-1,z1=bounds?bounds.z1:Math.ceil(cz+ro)+1;
+  const inNewel=(px,pz)=>newelBox&&px>=newelBox.x0&&px<=newelBox.x1&&pz>=newelBox.z0&&pz<=newelBox.z1;
   for(let pz=z0;pz<=z1;pz++)for(let px=x0;px<=x1;px++){
     // Cell centres, because a cell is a square and its angle is its middle's.
     const dx=px+.5-cx,dz=pz+.5-cz;
     const r=Math.hypot(dx,dz);
     if(r>ro)continue;
+    // The newel is left as rock: a solid post you wind around, which a sector
+    // renderer draws as four clean faces. An open well would be a second
+    // rasterised circle, and that is half of what made the first attempt noise.
+    if(inNewel(px,pz)){inner.push({px,pz,r});continue;}
     if(r<ri){inner.push({px,pz,r});continue;}
     let th=Math.atan2(dx,-dz)-theta0;
     th=((th%TAU)+TAU)%TAU;
@@ -495,8 +512,9 @@ function arcFlight(id,flight,a,b,ctx){
   const cz=toRuntimeCoord(arc.center.z??arc.center.y,{center:false});
   const geom={
     cx,cz,
-    ri:arc.rInner*PLAN_SCALE,ro:arc.rOuter*PLAN_SCALE,
+    ri:(arc.rInner||0)*PLAN_SCALE,ro:arc.rOuter*PLAN_SCALE,
     theta0:arc.theta0||0,sweep:arc.sweep??TAU,
+    bounds:arc.bounds||null,newelBox:arc.newelBox||null,
   };
   const {wedges,inner}=rasteriseAnnulus(geom,treads);
   const thin=wedges.findIndex((w)=>w.length<runWidth);
