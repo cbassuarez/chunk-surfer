@@ -479,9 +479,8 @@ function rasteriseAnnulus({cx,cz,ri,ro,theta0,sweep,bounds,newelBox},count){
     if(th>=sweep)continue;                       // outside a partial sweep
     wedges[Math.min(count-1,Math.floor(th/step))].push({px,pz,r});
   }
-  // Outermost first: the logical run's k=0 is the outside of the tread, which is
-  // where the walking line is and where the balustrade would be.
-  for(const w of wedges)w.sort((a,b)=>b.r-a.r);
+  // Sorted by radius so a lane can be picked by distance from the newel.
+  for(const w of wedges)w.sort((a,b)=>a.r-b.r);
   return {wedges,inner};
 }
 
@@ -517,6 +516,10 @@ function arcFlight(id,flight,a,b,ctx){
     bounds:arc.bounds||null,newelBox:arc.newelBox||null,
   };
   const {wedges,inner}=rasteriseAnnulus(geom,treads);
+  // The walking band runs from the newel out to the largest circle that fits the
+  // well, so a lane never has to reach into a corner to find its cell.
+  const innerR=geom.ri;
+  const walkOuter=(arc.rWalk!=null?arc.rWalk:arc.rOuter)*PLAN_SCALE;
   const thin=wedges.findIndex((w)=>w.length<runWidth);
   if(thin>=0)throw new Error(
     `${id}/${flight.id||'flight'} wedge ${thin} rasterises to ${wedges[thin].length} cells `
@@ -548,21 +551,48 @@ function arcFlight(id,flight,a,b,ctx){
       layer:flight.layer||ctx.layer,space:flight.space||ctx.space,
       renderGroup:stepGroup,owner:id,physicalReplace:ctx.physicalReplace,arcId,
     };
+    // LANES ARE RADIUS BANDS, NOT RANKS WITHIN A WEDGE.
+    //
+    // Binding lane k to "the k-th cell out" looks equivalent and teleports the
+    // player. In a square well the outermost cell of a wedge swings between the
+    // inscribed radius at an edge and the half-diagonal at a corner, so walking
+    // one lane threw the camera 3.0 cells for a 1.0-cell step — three times the
+    // distance a pace should cover, felt as a jerk on most treads. Measured
+    // before this: steps of 1.0 to 3.0 cells. Picking the cell nearest a fixed
+    // target radius instead keeps a lane at one distance from the newel the
+    // whole way round, so the physical step matches the logical one.
     const wedge=wedges[s];
-    for(let k=0;k<runWidth;k++)writeStairCell(
-      a.x+dx*s+logicalPx*k,
-      a.y+dy*s+logicalPy*k,
-      {...cellOf,physicalX:wedge[k].px,physicalY:wedge[k].pz},
-    );
-    // Wedges are not all the same size — the raster is a partition of a ring, not
-    // a grid. The surplus is real tread with no logical address, so it is carried
-    // as fill: geometry you can see and stand on, reached through the cell beside it.
-    for(let k=runWidth;k<wedge.length;k++)plan.stairFill.push({
+    const taken=new Set();
+    const band=(walkOuter-innerR)/runWidth;
+    for(let k=0;k<runWidth;k++){
+      const target=innerR+(k+0.5)*band;
+      let best=-1,bestD=Infinity;
+      for(let i=0;i<wedge.length;i++){
+        if(taken.has(i))continue;
+        const d=Math.abs(wedge[i].r-target);
+        if(d<bestD){bestD=d;best=i;}
+      }
+      if(best<0)break;
+      taken.add(best);
+      writeStairCell(
+        a.x+dx*s+logicalPx*k,
+        a.y+dy*s+logicalPy*k,
+        {...cellOf,physicalX:wedge[best].px,physicalY:wedge[best].pz},
+      );
+    }
+    // Everything else in the wedge — the corners a square well has and a ring
+    // does not — is real tread with no logical address, carried as fill. It is
+    // drawn and at the same height as the lane beside it; you simply do not
+    // stand with your centre out there, which on a two-metre tread is no loss.
+    for(let k=0;k<wedge.length;k++){
+      if(taken.has(k))continue;
+      plan.stairFill.push({
       px:wedge[k].px,pz:wedge[k].pz,floor,ceil,flags:F.STAIR,arcId,
       zone:cellOf.zone?ZONE[cellOf.zone]:ZONE.stair,
       material:cellOf.material?MATERIAL[cellOf.material]:MATERIAL.serviceConcrete,
       layer:cellOf.layer,spaceId:cellOf.space,renderGroup:stepGroup,owner:id,
-    });
+      });
+    }
   }
 
   // The well. One span, floor to lid, so every height resolves it identically and
