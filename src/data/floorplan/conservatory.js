@@ -392,8 +392,20 @@ export const conservatory = {
     {from:{x:104,y:154},to:{x:98,y:82}},
     // Existing save addresses remain untouched; these seams enter the appended
     // academic stair and then the third-floor bridge at identical elevations.
-    // Existing save addresses remain untouched; these seams enter the appended
-    // academic stair and then the third-floor bridge at identical elevations.
+    //
+    // DO NOT PUT `span` ON THESE. It was tried, to fix the reported "you get
+    // locked into paths" bug — the third floor's foot landing stands inside the
+    // second-floor hall, invisible, and a single-cell seam leaves its whole
+    // perimeter wall except one half-metre tile. Widening the seam does raise
+    // the ways in from 1 to 50. It also makes the return journey IMPOSSIBLE:
+    // measured, 3F->ground went from reachable in 2146 cells to unreachable.
+    //
+    // The reason is structural. A redirect fires on any successful step ONTO a
+    // seam cell, so once a seam covers an area rather than a junction, ordinary
+    // movement inside that area throws you onto the other logical island, where
+    // the next step is a wall. One cell works precisely because it is the only
+    // one. The real fix is to stop needing a hidden landing at all — see the
+    // spiral rebuild, which replaces this stair with one continuous run.
     {from:{x:63,y:52},to:{x:53,y:196}},
     {from:{x:53,y:181},to:{x:13,y:278}},
   ],

@@ -15,6 +15,11 @@ export const AUTHOR_CELL = 1.0;   // metres per authored floorplan glyph
 export const CELL = 0.5;          // metres per runtime cell
 export const PLAN_SCALE = AUTHOR_CELL / CELL;
 export const EYE = 1.62;
+// The baked per-cell ambient (world/floorplan.js bakeAmbientField) is a
+// multiplier on the zone ambient, carried in one byte of the material texture's
+// G channel. This is the encode both ends share: byte 255 means this multiplier,
+// so 255/scale is neutral 1.0 and an unbaked plan slice renders unchanged.
+export const AMBIENT_PLACE_SCALE = 4.0;
 export const STEP_UP = 0.45;      // the tallest riser a person takes without thinking
 export const HEADROOM = 1.80;     // below this you do not fit
 

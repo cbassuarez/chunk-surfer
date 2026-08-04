@@ -21,7 +21,7 @@
 
 import {
   F, ZONE, ZONE_WORLD, MATERIAL, cellFor, materialForZone,
-  EYE, STEP_UP, HEADROOM, PLAN_SCALE
+  EYE, STEP_UP, HEADROOM, PLAN_SCALE, AMBIENT_PLACE_SCALE
 } from '../data/floorplan/legend.js';
 import {
   DOOR_STATE,
@@ -121,6 +121,15 @@ export function compile(levels, { width, height, widenCorridors = false, connect
   plan.ownershipConflicts = [];
   plan.stairPortals = [];
   plan.doorVolumes = [];
+  // A helical flight's cells: which arc they belong to, and the arcs themselves.
+  // Empty for every straight stair, which is all of them until a spiral exists.
+  plan.arcId = new Uint16Array(w * h);
+  plan.arcs = [];
+  // Physical cells a stair claims that no LOGICAL cell maps to. An arc rasterises
+  // to an annulus whose wedges are not all the same size, so the surplus cells —
+  // and the newel void — have real geometry but no address you can stand on.
+  // buildPhysicalSpans folds these in; nothing else needs to know.
+  plan.stairFill = [];
 
   for (const level of levels) {
     const { rows, origin, base = 0 } = level;
@@ -386,9 +395,16 @@ function writeStairCell(x,y,{
   // is a second physical span at the hall's own coordinates, which the compiler
   // reports as an intersection (and is right to: two structures, one place).
   physicalReplace=false,
+  // Which arc this cell belongs to, 1-based into plan.arcs; 0 for the straight
+  // stairs, which is every stair in the building until a spiral is authored.
+  // A selector, not a value — the rotation itself is derived analytically from
+  // the arc record, because a stored per-cell angle would step a whole wedge
+  // every tread with nothing to interpolate against.
+  arcId=0,
 }){
   if(!inside(x,y))return;
   const i=idx(x,y);
+  plan.arcId[i]=arcId;
   plan.solid[i]=0;
   plan.floor[i]=floor;
   plan.ceil[i]=ceil;
@@ -412,6 +428,152 @@ function authoredPhysicalPoint(point){
   };
 }
 
+const TAU=Math.PI*2;
+
+// RASTERISE AN ANNULUS INTO ANGULAR WEDGES.
+//
+// A helical flight is a straight logical corridor wrapped onto a ring, so the
+// question this answers is "which physical cells are tread `s`". Every cell in
+// the annulus is assigned to exactly one wedge — a PARTITION, which is the whole
+// point. The obvious alternative, sampling ring radii at each angle, was tried
+// and measured: it produced 76 distinct physical cells from 96 logical ones, so
+// 20 treads shared a cell with their neighbour (the player steps and the camera
+// does not move) and 24 annulus cells belonged to no tread at all (rock pits in
+// the ring). Neither is a rounding artefact you can tune away; they are what
+// sampling a continuous curve onto a raster does.
+//
+// Angles run CLOCKWISE FROM NORTH, matching the shader's fwd = (sin y, ·, -cos y),
+// so a stair with theta0 = 0 enters at the north bearing and turns east — the
+// conventional newel.
+function rasteriseAnnulus({cx,cz,ri,ro,theta0,sweep},count){
+  const wedges=Array.from({length:count},()=>[]);
+  const inner=[];
+  const step=sweep/count;
+  const x0=Math.floor(cx-ro)-1,x1=Math.ceil(cx+ro)+1;
+  const z0=Math.floor(cz-ro)-1,z1=Math.ceil(cz+ro)+1;
+  for(let pz=z0;pz<=z1;pz++)for(let px=x0;px<=x1;px++){
+    // Cell centres, because a cell is a square and its angle is its middle's.
+    const dx=px+.5-cx,dz=pz+.5-cz;
+    const r=Math.hypot(dx,dz);
+    if(r>ro)continue;
+    if(r<ri){inner.push({px,pz,r});continue;}
+    let th=Math.atan2(dx,-dz)-theta0;
+    th=((th%TAU)+TAU)%TAU;
+    if(th>=sweep)continue;                       // outside a partial sweep
+    wedges[Math.min(count-1,Math.floor(th/step))].push({px,pz,r});
+  }
+  // Outermost first: the logical run's k=0 is the outside of the tread, which is
+  // where the walking line is and where the balustrade would be.
+  for(const w of wedges)w.sort((a,b)=>b.r-a.r);
+  return {wedges,inner};
+}
+
+// A HELICAL FLIGHT.
+//
+// The logical run is an ordinary straight corridor, so collision, pathfinding
+// and the movement manager need to know nothing about any of this — the player
+// walks in a line and the building is what curves. Only the PHYSICAL embedding
+// is a ring, and only the camera has to be told (see arcYawOffset).
+//
+// The one thing that cannot be represented is the coil above: the scene shader
+// is a sector DDA with one floor/ceiling pair per column, so standing on a tread
+// you can never SEE the tread five metres over your head. `ceilFrom`/`ceilTo`
+// are what make the stair read anyway — authoring each tread's ceiling as the
+// floor of the coil above minus a slab draws the correct soffit at every bearing
+// without the renderer ever fetching the other span. The open well is delivered
+// separately, by `arc.newel`: a single-span column through the middle, which is
+// unambiguous from any height and is the view that actually says "spiral".
+function arcFlight(id,flight,a,b,ctx){
+  const arc=flight.arc;
+  const steps=Math.max(Math.abs(b.x-a.x),Math.abs(b.y-a.y));
+  if(!steps)throw new Error(`${id}/${flight.id||'flight'} has no run`);
+  const treads=steps+1;
+  const dx=Math.sign(b.x-a.x),dy=Math.sign(b.y-a.y);
+  const runWidth=Math.max(1,Math.round((flight.width??1.5)*PLAN_SCALE));
+  const logicalPx=Math.abs(dy),logicalPy=Math.abs(dx);
+  const cx=toRuntimeCoord(arc.center.x,{center:false});
+  const cz=toRuntimeCoord(arc.center.z??arc.center.y,{center:false});
+  const geom={
+    cx,cz,
+    ri:arc.rInner*PLAN_SCALE,ro:arc.rOuter*PLAN_SCALE,
+    theta0:arc.theta0||0,sweep:arc.sweep??TAU,
+  };
+  const {wedges,inner}=rasteriseAnnulus(geom,treads);
+  const thin=wedges.findIndex((w)=>w.length<runWidth);
+  if(thin>=0)throw new Error(
+    `${id}/${flight.id||'flight'} wedge ${thin} rasterises to ${wedges[thin].length} cells `
+    +`but the run is ${runWidth} wide — widen the annulus or use fewer treads`);
+
+  // The arc record the camera rotates against. Stored in runtime cells because
+  // that is the frame logicalToPhysical answers in.
+  plan.arcs.push({id:`${id}:${flight.id||plan.arcs.length+1}`,...geom,
+    sign:arc.sign===-1?-1:1});
+  const arcId=plan.arcs.length;
+
+  // `rises` counts every riser INCLUDING the one onto the landing at the top, so
+  // the last tread sits one riser short of it. That is what makes the arrival a
+  // step rather than a seam you are already standing level with.
+  const rises=Math.max(1,Math.round(flight.rises??treads));
+  const span=flight.toH-flight.fromH;
+  for(let s=0;s<treads;s++){
+    const t=Math.min(1,s/rises);
+    const floor=flight.fromH+span*t;
+    const ceil=flight.ceil!=null?flight.ceil
+      :flight.ceilFrom!=null?flight.ceilFrom+((flight.ceilTo??flight.ceilFrom)-flight.ceilFrom)*t
+      :floor+(flight.head??ctx.head);
+    const stepGroup=flight.renderGroup||(s/steps<.5
+      ?(flight.groupFrom||ctx.renderGroup)
+      :(flight.groupTo||ctx.renderGroup));
+    const cellOf={
+      floor,ceil,
+      zone:flight.zone||ctx.zone,material:flight.material||ctx.material,
+      layer:flight.layer||ctx.layer,space:flight.space||ctx.space,
+      renderGroup:stepGroup,owner:id,physicalReplace:ctx.physicalReplace,arcId,
+    };
+    const wedge=wedges[s];
+    for(let k=0;k<runWidth;k++)writeStairCell(
+      a.x+dx*s+logicalPx*k,
+      a.y+dy*s+logicalPy*k,
+      {...cellOf,physicalX:wedge[k].px,physicalY:wedge[k].pz},
+    );
+    // Wedges are not all the same size — the raster is a partition of a ring, not
+    // a grid. The surplus is real tread with no logical address, so it is carried
+    // as fill: geometry you can see and stand on, reached through the cell beside it.
+    for(let k=runWidth;k<wedge.length;k++)plan.stairFill.push({
+      px:wedge[k].px,pz:wedge[k].pz,floor,ceil,flags:F.STAIR,arcId,
+      zone:cellOf.zone?ZONE[cellOf.zone]:ZONE.stair,
+      material:cellOf.material?MATERIAL[cellOf.material]:MATERIAL.serviceConcrete,
+      layer:cellOf.layer,spaceId:cellOf.space,renderGroup:stepGroup,owner:id,
+    });
+  }
+
+  // The well. One span, floor to lid, so every height resolves it identically and
+  // you can see down it from the top and up it from the bottom. canStep refuses
+  // it on the riser (the drop in is far past STEP_UP), so it is a view, not a fall.
+  if(arc.newel)for(const c of inner)plan.stairFill.push({
+    px:c.px,pz:c.pz,floor:arc.newel.floor,ceil:arc.newel.ceil,flags:F.STAIR,arcId,
+    zone:ZONE.stair,material:MATERIAL.serviceConcrete,
+    layer:flight.layer||ctx.layer,spaceId:flight.space||ctx.space,
+    renderGroup:flight.groupFrom||ctx.renderGroup,owner:id,
+  });
+
+  const portal={
+    id:`${id}:${flight.id||plan.stairPortals.length+1}`,flight:flight.id||null,
+    // A ring does not travel, so both ends of the portal are its entry bearing.
+    // landingVisible() reads these as a radius test, which is the right question
+    // for a spiral and the reason the landings stay in the slice.
+    p0:[cx,cz],p1:[cx,cz],
+    group0:flight.groupFrom||ctx.renderGroup,group1:flight.groupTo||ctx.renderGroup,
+    floor0:flight.fromH,floor1:flight.toH,radius:Math.max(6,Math.ceil(geom.ro*2)),
+    rises,riseHeight:Math.abs(span)/rises,
+    arc:{...geom,treads,arcId},
+    physicalFrom:{x:arc.center.x,z:arc.center.z??arc.center.y},
+    physicalTo:{x:arc.center.x,z:arc.center.z??arc.center.y},
+  };
+  plan.stairPortals.push(portal);
+  return portal;
+}
+
 // Tower stairs use an explicit compound contract. Flights and landing slabs
 // author both the collision cells and their Euclidean embedding, so the visual
 // risers, map connectors and movement manager all consume the same geometry.
@@ -423,6 +585,7 @@ function compoundStair({
   for(const flight of flights){
     const a=toRuntimePoint(flight.from,{center:false});
     const b=toRuntimePoint(flight.to,{center:false});
+    if(flight.arc){portals.push(arcFlight(id,flight,a,b,{zone,material,layer,space,renderGroup,head,physicalReplace}));continue;}
     const p0=authoredPhysicalPoint(flight.physicalFrom);
     const p1=authoredPhysicalPoint(flight.physicalTo);
     if(!p0||!p1)throw new Error(`${id}/${flight.id||'flight'} requires physicalFrom and physicalTo`);
@@ -595,26 +758,68 @@ export function canStep(fromX, fromY, toX, toY, { keys } = {}) {
 // stack several levels over the same X/Z footprint.
 const connectorMap=new Map();
 export function connectorDestination(x,y){const p=connectorMap.get(`${Math.floor(x)},${Math.floor(y)}`);return p?{...p}:null;}
-function registerConnector({from,to,bidirectional=true}){
+// A SEAM IS AN EDGE, NOT A KEYHOLE.
+//
+// This used to scan up to sixteen candidate cells at each end, score every pair,
+// and keep exactly ONE — discarding every other coincidence it had just proved
+// legal. That single half-metre tile is the bug behind "you get locked into
+// paths": the third-floor stair's foot landing stands inside the second-floor
+// hall at the hall's own height and material, invisible, and its entire
+// perimeter was wall except for that one cell. You could see the stair, walk the
+// length of it, and never find the way on. Coming down, you landed on a slab
+// where every direction but one was a wall you could not see. Measured before
+// this change: one redirect in forty possible steps along the hall's edge.
+//
+// Widening is OPT-IN, via `span`, and that restriction was measured rather than
+// assumed. Registering every valid pair by default looks safe — a valid pair is
+// within half a metre and one riser, i.e. the same place — but a seam covers an
+// AREA, not just the junction, and the galleria's seams lie on the open
+// orchestra floor. Blanket widening put redirects on 78 hall cells, so crossing
+// the orchestra rewrote your address mid-stride and dropped you on the balcony's
+// logical island where the next step was a wall: the hall's three levels stopped
+// being mutually reachable. A seam that fires where nobody meant to cross one is
+// worse than a narrow seam.
+//
+// So `span` (authored metres) both widens the candidate window AND opts into
+// registering the whole edge. Without it the behaviour is exactly as before —
+// one pair, the closest.
+function registerConnector({from,to,bidirectional=true,span=null}){
+  const reach={
+    x:Math.max(0,Math.round((span?.x||0)*PLAN_SCALE)),
+    y:Math.max(0,Math.round((span?.y||0)*PLAN_SCALE)),
+  };
   const candidates=(p)=>{
     const x0=toRuntimeCoord(p.x,{center:false}),y0=toRuntimeCoord(p.y,{center:false}),out=[];
-    for(let oy=-1;oy<=PLAN_SCALE;oy++)for(let ox=-1;ox<=PLAN_SCALE;ox++){
+    for(let oy=-1;oy<=PLAN_SCALE+reach.y;oy++)for(let ox=-1;ox<=PLAN_SCALE+reach.x;ox++){
       const x=x0+ox,y=y0+oy,c=cellAt(x,y);if(!c)continue;
       const q=logicalToPhysical(x,y);out.push({x,y,px:q.x,pz:q.z,h:c.floor});
     }
     return out;
   };
-  let best=null;
+  const pairs=[];
   for(const a of candidates(from))for(const b of candidates(to)){
-    const planar=Math.hypot(a.px-b.px,a.pz-b.pz),vertical=Math.abs(a.h-b.h),score=planar*4+vertical;
-    if(!best||score<best.score)best={a,b,planar,vertical,score};
+    if(a.x===b.x&&a.y===b.y)continue;                 // a cell is not its own seam
+    const planar=Math.hypot(a.px-b.px,a.pz-b.pz),vertical=Math.abs(a.h-b.h);
+    pairs.push({a,b,planar,vertical,score:planar*4+vertical});
   }
-  if(!best||best.planar>1.01||best.vertical>STEP_UP+1e-6){
-    throw new Error(`floorplan: discontinuous level seam ${JSON.stringify(from)} -> ${JSON.stringify(to)}`);
+  pairs.sort((p,q)=>p.score-q.score);
+  const valid=pairs.filter((p)=>p.planar<=1.01&&p.vertical<=STEP_UP+1e-6);
+  if(!valid.length){
+    // Name the cell that came closest and by how much. The old message quoted
+    // only the authored metres, which is the one thing the author already knows.
+    const near=pairs[0];
+    throw new Error(`floorplan: discontinuous level seam ${JSON.stringify(from)} -> ${JSON.stringify(to)}`
+      +(near
+        ?`; closest pair (${near.a.x},${near.a.y})->(${near.b.x},${near.b.y}) is `
+         +`${near.planar.toFixed(2)} cells apart and ${near.vertical.toFixed(2)}m in height `
+         +`(limits 1.01 and ${STEP_UP})`
+        :'; neither end has any open cell'));
   }
-  const {a,b}=best;
-  connectorMap.set(`${a.x},${a.y}`,{x:b.x,y:b.y});
-  if(bidirectional)connectorMap.set(`${b.x},${b.y}`,{x:a.x,y:a.y});
+  // Best score first, so where a cell could pair with several the closest wins.
+  for(const {a,b} of (span?valid:[valid[0]])){
+    if(!connectorMap.has(`${a.x},${a.y}`))connectorMap.set(`${a.x},${a.y}`,{x:b.x,y:b.y});
+    if(bidirectional&&!connectorMap.has(`${b.x},${b.y}`))connectorMap.set(`${b.x},${b.y}`,{x:a.x,y:a.y});
+  }
 }
 
 function buildPhysicalSpans(){
@@ -623,7 +828,16 @@ function buildPhysicalSpans(){
     const i=idx(x,y);if(plan.solid[i]||plan.physicalX[i]<0)continue;
     const px=plan.physicalX[i],py=plan.physicalY[i],key=`${px},${py}`;maxX=Math.max(maxX,px);maxY=Math.max(maxY,py);
     if(!cells.has(key))cells.set(key,[]);
-    cells.get(key).push({floor:plan.floor[i],ceil:plan.ceil[i],flags:plan.flags[i],zone:plan.zone[i],material:plan.material[i],logicalX:x,logicalY:y,layer:plan.layer[i],spaceId:plan.space[i],renderGroup:plan.renderGroup[i],owner:plan.owner[i],physicalReplace:!!plan.physicalReplace[i]});
+    cells.get(key).push({floor:plan.floor[i],ceil:plan.ceil[i],flags:plan.flags[i],zone:plan.zone[i],material:plan.material[i],logicalX:x,logicalY:y,layer:plan.layer[i],spaceId:plan.space[i],renderGroup:plan.renderGroup[i],owner:plan.owner[i],arcId:plan.arcId[i],physicalReplace:!!plan.physicalReplace[i]});
+  }
+  // Physical geometry a stair claims that no logical cell addresses: an arc's
+  // surplus wedge cells and its newel void. They are real volume — drawn, and
+  // stood on by way of the tread beside them — so they belong in the spans, but
+  // they have no logical address and so cannot come from the scan above.
+  for(const f of plan.stairFill){
+    const key=`${f.px},${f.pz}`;maxX=Math.max(maxX,f.px);maxY=Math.max(maxY,f.pz);
+    if(!cells.has(key))cells.set(key,[]);
+    cells.get(key).push({floor:f.floor,ceil:f.ceil,flags:f.flags,zone:f.zone,material:f.material,logicalX:-1,logicalY:-1,layer:f.layer,spaceId:f.spaceId,renderGroup:f.renderGroup,owner:f.owner,arcId:f.arcId||0,physicalReplace:false});
   }
   let maxSpans=0,overlaps=[];
   const intersects=(a,b)=>a.floor<b.ceil-.01&&b.floor<a.ceil-.01;
@@ -651,10 +865,44 @@ function buildPhysicalSpans(){
   plan.physical={width:maxX+1,height:maxY+1,maxSpans,cells,overlaps,renderCache:new Map()};
 }
 
+// HOW FAR THE WORLD IS TURNED UNDER YOU AT THIS POSITION.
+//
+// Zero everywhere except on a helical flight, which is to say zero everywhere in
+// the building today. It is analytic rather than a stored per-cell angle for a
+// reason that is easy to miss: px,py are always integers, so the sub-cell
+// fraction is always zero and a stored array would have nothing to interpolate
+// between — the view would snap a whole wedge on every tread. Derived from the
+// RENDERED physical position instead, it is continuous for free, because it is
+// a function of the same smoothed point the camera is already at.
+//
+// theta0 is by construction the bearing at which the arc meets its unrotated
+// neighbours, so the offset is 0 at both thresholds and every seam is blend-free.
+// Only ever consumed through cos/sin, so it never needs unwrapping.
+export function arcYawOffset(logicalX,logicalY,physX,physZ){
+  const cx=Math.floor(logicalX),cy=Math.floor(logicalY);
+  if(!inside(cx,cy))return 0;
+  const id=plan.arcId?.[idx(cx,cy)];
+  if(!id)return 0;
+  const a=plan.arcs[id-1];
+  return a.sign*(Math.atan2(physX-a.cx,-(physZ-a.cz))-a.theta0);
+}
+
 export function logicalToPhysical(x,y){
   const cx=Math.floor(x),cy=Math.floor(y);if(!inside(cx,cy))return{x,y,z:y,layer:'',spaceId:'',renderGroup:''};
   const i=idx(cx,cy),ox=x-cx,oy=y-cy;
-  return{x:plan.physicalX[i]>=0?plan.physicalX[i]+ox:x,z:plan.physicalY[i]>=0?plan.physicalY[i]+oy:y,y:plan.floor[i],layer:plan.layer[i],spaceId:plan.space[i],renderGroup:plan.renderGroup[i]};
+  const px=plan.physicalX[i],pz=plan.physicalY[i];
+  const id=plan.arcId[i];
+  // On an arc, intra-cell motion must run along the tangent, not along the
+  // logical axis, or every tread carries a half-metre sideways wobble. Rotating
+  // about the cell ORIGIN rather than its centre keeps logicalToPhysical(int,int)
+  // byte-identical, which matters: ~25 call sites pass integers meaning "that
+  // cell" and registerConnector compares the results for exact coincidence.
+  let rx=ox,rz=oy;
+  if(id&&(ox||oy)){
+    const t=arcYawOffset(cx,cy,px+.5,pz+.5),c=Math.cos(t),s=Math.sin(t);
+    rx=ox*c-oy*s;rz=ox*s+oy*c;
+  }
+  return{x:px>=0?px+rx:x,z:pz>=0?pz+rz:y,y:plan.floor[i],arcId:id,owner:plan.owner[i],layer:plan.layer[i],spaceId:plan.space[i],renderGroup:plan.renderGroup[i]};
 }
 
 export function physicalSpanData(){return plan.physical;}
@@ -665,8 +913,143 @@ export function logicalAtPhysical(x,z,{group=null,floor=null}={}){
   choices.sort((a,b)=>floor==null?0:Math.abs(a.floor-floor)-Math.abs(b.floor-floor));return{x:choices[0].logicalX+(x-Math.floor(x)),y:choices[0].logicalY+(z-Math.floor(z)),...choices[0]};
 }
 
+// AMBIENT IS A PROPERTY OF PLACE, NOT A NUMBER PER ZONE.
+//
+// It used to be one scalar per zone (0.014-0.043) applied to every cell in that
+// zone equally, which is why an unlit room read as wireframe: a wall one metre
+// from the eye and the far end of a thirty-metre corridor received identical
+// light, so nothing receded, and the whole building was equally visible.
+//
+// The obvious model — ambient is daylight spill, so bake distance to the nearest
+// F.SKY opening — was measured and thrown away. This building has THIRTY-SIX sky
+// cells in total and none at all in the ground slice the player spends the game
+// in. It is a windowless basement conservatory. Distance-to-daylight is inert
+// here, and driving ambient from it dimmed every zone to the same floor, which
+// is the original bug with a longer derivation behind it.
+//
+// So the driver is the building's own statement about which of its spaces are
+// grand: CEILING HEIGHT. The store is 2.25m and the concert hall is 15.5m, and
+// that is not decoration — a tall volume has more surface above you catching the
+// practicals and bouncing them back down, and it is where this building puts its
+// light. Enclosure modifies it, because a tight corridor collects less of it than
+// an open floor at the same height. The sky term survives as a bonus for the few
+// cells that genuinely have a shaft over them.
+//
+// Baked once per plan slice and carried in the material texture's G channel (see
+// r3dSetPlan) because MAX_TEXTURE_IMAGE_UNITS is 16 on the target machine and all
+// 16 are already bound — a sampler of its own was never available.
+//
+// Encoded as a MULTIPLIER on the zone ambient, scaled by AMBIENT_PLACE_SCALE so
+// a byte can carry it. 255/AMBIENT_PLACE_SCALE is exactly 1.0, which is what an
+// unbaked plan gets by default — so a slice that never runs this is unchanged.
+const AMBIENT_SKY_CAP = 40;               // stop the BFS; past here it is all dark
+const AMBIENT_SKY_SOFT = 7;               // cells at which spill has halved
+const AMBIENT_SKY_WEIGHT = 0.60;          // what a shaft directly overhead adds
+const AMBIENT_VOLUME_LOW = 2.2;           // the store: a ceiling you can touch
+const AMBIENT_VOLUME_HIGH = 15.5;         // the hall: the tallest authored volume
+const AMBIENT_DEEP = 0.65;                // multiplier in the meanest space
+const AMBIENT_OPEN = 2.60;                // multiplier in the grandest
+const AMBIENT_ENCLOSED = 0.50;            // what a fully enclosed cell keeps
+
+export function bakeAmbientField({w,h,solid,flags,floor=null,ceil=null}){
+  const cells=w*h;
+  const dist=new Int32Array(cells).fill(-1);
+  const queue=new Int32Array(cells);
+  let head=0,tail=0;
+  for(let i=0;i<cells;i++) if(!solid[i]&&(flags[i]&F.SKY)){dist[i]=0;queue[tail++]=i;}
+  // Breadth-first through open cells only. 4-neighbour: spill turns corners but
+  // does not cut them, which is the behaviour a diagonal step would fake.
+  while(head<tail){
+    const i=queue[head++],d=dist[i];
+    if(d>=AMBIENT_SKY_CAP)continue;
+    const x=i%w,y=(i-x)/w;
+    for(let k=0;k<4;k++){
+      const nx=x+(k===0?1:k===1?-1:0),ny=y+(k===2?1:k===3?-1:0);
+      if(nx<0||ny<0||nx>=w||ny>=h)continue;
+      const j=ny*w+nx;
+      if(solid[j]||dist[j]>=0)continue;
+      dist[j]=d+1;queue[tail++]=j;
+    }
+  }
+  const out=new Uint8Array(cells);
+  const span=AMBIENT_VOLUME_HIGH-AMBIENT_VOLUME_LOW;
+  const encode=(m)=>Math.max(1,Math.min(255,Math.round(m/AMBIENT_PLACE_SCALE*255)));
+  for(let i=0;i<cells;i++){
+    if(solid[i])continue;                 // filled from its neighbours below
+    const x=i%w,y=(i-x)/w;
+    let open=0;
+    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+      if(!dx&&!dy)continue;
+      const nx=x+dx,ny=y+dy;
+      // Outside the plan is void, which is rock. Counting it as open would make
+      // every cell on the building's edge read as though it stood in a plaza.
+      if(nx<0||ny<0||nx>=w||ny>=h)continue;
+      if(!solid[ny*w+nx])open++;
+    }
+    const height=ceil&&floor?Math.max(0,ceil[i]-floor[i]):AMBIENT_VOLUME_LOW;
+    const volume=Math.max(0,Math.min(1,(height-AMBIENT_VOLUME_LOW)/span));
+    const d=dist[i];
+    const sky=d<0?0:1/(1+d/AMBIENT_SKY_SOFT);
+    const enclosure=AMBIENT_ENCLOSED+(1-AMBIENT_ENCLOSED)*(open/8);
+    const a=Math.min(1,volume*enclosure+AMBIENT_SKY_WEIGHT*sky);
+    out[i]=encode(AMBIENT_DEEP+(AMBIENT_OPEN-AMBIENT_DEEP)*a);
+  }
+  // A wall is lit by the room it faces, not by the rock behind it. Without this
+  // every solid cell reads as the deepest possible interior and the walls of the
+  // hall come back black — which is the very failure being fixed.
+  const deep=encode(AMBIENT_DEEP);
+  for(let i=0;i<cells;i++){
+    if(!solid[i])continue;
+    const x=i%w,y=(i-x)/w;
+    let best=0;
+    for(let k=0;k<4;k++){
+      const nx=x+(k===0?1:k===1?-1:0),ny=y+(k===2?1:k===3?-1:0);
+      if(nx<0||ny<0||nx>=w||ny>=h)continue;
+      const j=ny*w+nx;
+      if(!solid[j]&&out[j]>best)best=out[j];
+    }
+    out[i]=best||deep;
+  }
+  return out;
+}
+
+// QUANTISE THE OBSERVER'S HEIGHT ONCE, AND BUILD THE SLICE FOR THAT HEIGHT.
+//
+// The cache key used to round to 0.25 m while the span filter and the
+// nearest-span choice below used the raw continuous height. Two positions in one
+// bucket could therefore want different slices, and whichever asked second
+// silently got the first one's — a latent aliasing bug that is invisible on a
+// flat floor and sharp on a stair, where the floor moves every step.
+//
+// THE BAND STAYS AT A QUARTER METRE, AND THAT IS A DELIBERATE REFUSAL.
+//
+// Coarsening it is the obvious way to cut rebuilds — one metre takes a climb of
+// the main stair from twenty-two slices to eight, 152 ms to 67 ms — but it is not
+// free, and the cost is invisible from here. A coarser band moves the height the
+// slice is BUILT for away from where the player actually stands, so a different
+// span wins in any column holding two, and the baked ambient reads ceiling
+// height. Measured: at one metre the hall/studio ambient differential collapsed
+// from +2.1% to +0.1%, i.e. the room quietly relit itself. Widening the window
+// to match the bucket is worse again — `if(!list.length)continue` means the
+// window decides which columns get geometry AT ALL, not merely which span wins,
+// and at 1.5 the hall acquired balcony spans it had never had (+2.1% to -0.8%).
+//
+// So the churn is paid for elsewhere: the expensive part of a slice change was
+// never the slice, it was the prop-pack rebuild that rode along with it, and
+// that is now gated on the render group actually changing (see main.js).
+const HEIGHT_BAND=0.25;
+const SPAN_WINDOW=1.0;
+
 export function physicalRenderPlanFor(x,y){
-  const here=logicalToPhysical(x,y),group=here.renderGroup||here.layer||'ground',heightBand=Math.round(here.y*4)/4,cacheKey=`${group}:${here.layer}:${heightBand}`;
+  const here=logicalToPhysical(x,y),group=here.renderGroup||here.layer||'ground';
+  const band=Math.round(here.y/HEIGHT_BAND);
+  // The single height this slice is built for. Everything below uses it — key,
+  // filter and choice — so the cached slice always matches what it was keyed on.
+  // That was the bug: the key rounded while the filter and the nearest-span
+  // choice used the raw height, so two positions inside one band could want
+  // different slices and whichever asked second silently got the first's.
+  const hy=band*HEIGHT_BAND;
+  const cacheKey=`${group}:${here.layer}:${band}`;
   if(plan.physical.renderCache.has(cacheKey))return plan.physical.renderCache.get(cacheKey);
   const w=plan.physical.width,h=plan.physical.height,solid=new Uint8Array(w*h).fill(1),floor=new Float32Array(w*h),ceil=new Float32Array(w*h),flags=new Uint8Array(w*h),zone=new Uint8Array(w*h),material=new Uint8Array(w*h),rgba=new Uint8Array(w*h*4);
   for(const [key,all] of plan.physical.cells){
@@ -688,15 +1071,41 @@ export function physicalRenderPlanFor(x,y){
       if(group===p.group1&&s.renderGroup===p.group0)return Math.hypot(px-p.p0[0],py-p.p0[1])<=p.radius;
       return false;
     });
-    let list=hallEnvelope?all.filter((s)=>s.spaceId==='hall'||s.spaceId==='front_atrium'):all.filter((s)=>(s.flags&F.STAIR)||Math.abs(s.floor-here.y)<=1.0||landingVisible(s)||(here.spaceId==='hall'&&s.spaceId==='front_atrium')||academicAtriumVoid);
+    let list=hallEnvelope?all.filter((s)=>s.spaceId==='hall'||s.spaceId==='front_atrium'):all.filter((s)=>(s.flags&F.STAIR)||Math.abs(s.floor-hy)<=SPAN_WINDOW||landingVisible(s)||(here.spaceId==='hall'&&s.spaceId==='front_atrium')||academicAtriumVoid);
     if(!list.length)continue;const i=py*w+px;solid[i]=0;
     // Hall decks are structural meshes. The sector envelope remains the full
     // air volume so orchestra and both balconies retain reciprocal sightlines.
     if(hallEnvelope){floor[i]=Math.min(...list.map((s)=>s.floor));ceil[i]=Math.max(...list.map((s)=>s.ceil));const hall=list.find((s)=>s.zone===ZONE.hall)||list[0];flags[i]=hall.flags;zone[i]=hall.zone;material[i]=hall.material;}
-    else {const s=list.reduce((best,v)=>Math.abs(v.floor-here.y)<Math.abs(best.floor-here.y)?v:best,list[0]);floor[i]=s.floor;ceil[i]=s.ceil;flags[i]=s.flags;zone[i]=s.zone;material[i]=s.material;}
+    else {
+      // ON A SPIRAL, PREFER THE COIL YOU ARE STANDING ON.
+      //
+      // Two helices stacked in one well put two spans in most columns, and
+      // nearest-by-height picks the wrong one over a large part of the climb:
+      // at the top of the lower coil the upper coil's floor is nearer to the eye
+      // than the lower coil's own treads behind you, so the stair you just walked
+      // redraws itself five metres up. It reads as a hole, and it reads as a
+      // renderer bug rather than as this one line.
+      //
+      // Deliberately gated on the observer being ON an arc. A blanket owner
+      // preference would let the hall's own span hide a stair crossing it, which
+      // is the horizontal-slab regression the retention rule above exists to
+      // prevent. Nothing in the building is an arc today, so this is inert until
+      // a spiral is authored.
+      let pool=list;
+      if(here.arcId){
+        // Matched on the ARC, not the owner: two coils authored as two flights of
+        // one compoundStair share an owner id, and the whole point is to tell
+        // them apart. The arc is the coil.
+        const mine=list.filter((v)=>v.arcId===here.arcId);
+        if(mine.length)pool=mine;
+      }
+      const s=pool.reduce((best,v)=>Math.abs(v.floor-hy)<Math.abs(best.floor-hy)?v:best,pool[0]);
+      floor[i]=s.floor;ceil[i]=s.ceil;flags[i]=s.flags;zone[i]=s.zone;material[i]=s.material;
+    }
   }
   for(let i=0;i<w*h;i++){rgba[i*4]=solid[i]?0:encodeH(floor[i]);rgba[i*4+1]=solid[i]?0:encodeH(ceil[i]);rgba[i*4+2]=solid[i]?F.SOLID:flags[i];rgba[i*4+3]=solid[i]?0:zone[i];}
-  const out={rgba,material,solid,floor,ceil,flags,zone,w,h,group,key:cacheKey};plan.physical.renderCache.set(cacheKey,out);return out;
+  const ambient=bakeAmbientField({w,h,solid,flags,floor,ceil});
+  const out={rgba,material,ambient,solid,floor,ceil,flags,zone,w,h,group,key:cacheKey};plan.physical.renderCache.set(cacheKey,out);return out;
 }
 
 // Door → key. Kept out of the grid (a byte has no room) in a sparse map that
