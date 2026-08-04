@@ -114,6 +114,13 @@ export const CONSERVATORY_LIGHTS = Object.freeze([
   // Concert hall and the upper floor.
   L('hall-stage-door-maintained', LIGHT_KIND.EMERGENCY, 98.75, 8.0, 2.83, [1, .40, .22], .48, 7.0,
     { groups:['hall'], zones:[ZONE.hall], anchorPropId:'light-hall-stage-door-casing', anchorOffset:[0,.18,0] }),
+  // The dead end's chandelier. ZONE.none ambient is 0.022 — without a practical
+  // this room is a black corridor with furniture you cannot see. Anchored to the
+  // fitting so moving it moves its light.
+  L('deadend-ground-chandelier', LIGHT_KIND.FITTING, 73.0, 23.5, 3.35, [.80, .76, .64], .74, 7.5,
+    { groups:['ground'], zones:[ZONE.none], circuit:'sp03',
+      anchorPropId:'deadend-ground-chandelier', anchorOffset:[0,-.28,0],
+      flutter:{ amount:.05, steady:.88 } }),
   L('hall-lounge-live', LIGHT_KIND.FITTING, 98.75, 27.0, 3.28, [.78, .74, .62], .82, 10,
     { groups:['hall'], zones:[ZONE.hall], circuit:'sp03', anchorPropId:'light-hall-lounge-casing', anchorOffset:[0,.18,0], flutter:{ amount:.06, steady:.78 } }),
   L('practice-emergency-north', LIGHT_KIND.EMERGENCY, 59.5, 55.75, 7.48, [1, .52, .25], .42, 7.5,

@@ -48,6 +48,14 @@ export function pageNear(px, py) {
 // You do not hoover up a dead man's paperwork by walking across it. You stop,
 // you crouch, and you pick it up with your hand — which in this game is [e].
 // Returns the page if one was taken.
+// A page that was never on the floor: it was inside something you opened. Same
+// bookkeeping, no cell to clear.
+export function markPageRead(id) {
+  if (!id || state.read.includes(id)) return false;
+  state.read.push(id);
+  return true;
+}
+
 export function tryPickup(px, py) {
   const p = pageNear(px, py);
   if (!p) return null;

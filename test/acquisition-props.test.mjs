@@ -63,15 +63,18 @@ PROPS.propsInit(FP);
 
 const historicalProps = CONSERVATORY_PROPS.filter((prop) => prop.provenance);
 const acquisitions = historicalProps.filter((prop) => expectedMeshes.has(prop.mesh));
-assert.equal(historicalProps.length, 30);
-assert.equal(acquisitions.length, 30);
-assert.equal(new Set(historicalProps.map((prop) => prop.provenance.assetTag)).size, 30);
+// 33 since the ground-floor dead end was furnished: FOH/F-06 through F-08, the
+// three pieces of the front-of-house suite that were carried round the back and
+// left there. Same cohort and the same stamping as the pieces still out front.
+assert.equal(historicalProps.length, 33);
+assert.equal(acquisitions.length, 33);
+assert.equal(new Set(historicalProps.map((prop) => prop.provenance.assetTag)).size, 33);
 assert.ok(historicalProps.every((prop) => PROCUREMENT_COHORTS[prop.provenance.cohort]));
 assert.ok(acquisitions.every((prop) => !prop.sampleFamily && prop.interaction !== 'play'));
 
 const expectedCohorts = {
   practice_room_contract: 8,
-  foyer_suite: 5,
+  foyer_suite: 8,   // 5 out front, 3 carried round to the east dead end
   curatorial_accessions: 2,
   hall_lighting_refit: 2,
   hall_lounge_replacement: 2,

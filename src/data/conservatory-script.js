@@ -826,15 +826,26 @@ export const BENT_RIG = {
 //
 // This is where the lore lives. It is the only place the Chunk Surfer is said out
 // loud, and it is said by a man reading an engraving, not by a ghost.
-// On the sill of the practice wing, one cell off the mark you have been sent to
-// stand on. You cannot set up for that take without coming within arm's reach.
-export const TALISMAN_CELL = { x: 66, y: 65 };
+// WHERE IT LIVES, and why that took two goes to get right.
+//
+// It used to sit at authored (66,65): flat on the floor of the east coat-and-bag
+// room, four metres past a door, six metres from the mark, in the dark. The
+// comment here claimed it was one cell off the mark and unmissable. It was not,
+// and nobody ever found it — the same failure the calibration pins had before
+// they were moved inside furniture (see PIN_HOSTS in main.js).
+//
+// It now rests on the desk of the music stand in the service room, at chest
+// height, through the one open door you are looking straight at while you set up
+// the practice-wing take. TALISMAN_STAND is the authority; TALISMAN_CELL is only
+// the proximity fallback for a save whose loose props failed to place.
+export const TALISMAN_STAND = 'practice-stand-3';
+export const TALISMAN_CELL = { x: 55, y: 64 };
 export const TALISMAN = {
   start: {
     speaker: 'THE PRACTICE WING',
     lines: [
-      { who: 'direction', text: 'On the sill, in the dust, a tuning fork. Steel, stamped, older than the last refit.' },
-      { who: 'you', text: 'Somebody left a fork on a windowsill. That is the least mysterious object I have ever found.' },
+      { who: 'direction', text: 'On the desk of the music stand, in the dust, a tuning fork. Steel, stamped, older than the last refit.' },
+      { who: 'you', text: 'Somebody left a fork where the music goes. That is the least mysterious object I have ever found.' },
     ],
     choices: [
       { text: 'pick it up', goto: 'read' },
@@ -910,7 +921,7 @@ export const TALISMAN = {
   leave: {
     speaker: 'THE PRACTICE WING',
     lines: [
-      { who: 'you', text: 'It is a fork on a sill. I have more rooms to do.' },
+      { who: 'you', text: 'It is a fork on a stand. I have more rooms to do.' },
       { who: 'the fork', text: "Well that's a shame." },
     ],
   },
@@ -1069,6 +1080,69 @@ export const SQUELCH_LINES = [
 // `room` is the waypoint a page grants. `at` is where it lies on the floor.
 
 export const PAGES = [
+  {
+    // In the credenza drawer in the ground-floor dead end. Its `at` is the
+    // credenza's own cell: hostedPageFor grants it on inspecting the furniture
+    // rather than by treading on it, so the sheet is found where a sheet would
+    // actually be. Never placed as a loose prop — see syncVisiblePages.
+    id:'foh-overflow-note',at:{x:73.6,y:23.5},room:'amplifications',decay:.09,hosted:'deadend-ground-credenza',
+    title:'FURNITURE OFF THE FLOOR',byline:'FRONT OF HOUSE · UNSIGNED',
+    body:[
+      {raw:'FOH/F-06   armchair        east corridor'},
+      {raw:'FOH/F-07   green chair     east corridor'},
+      {raw:'FOH/F-08   console         east corridor'},
+      '',
+      'Taken out of the front room before the photographs and not put back. The corridor is dry and nobody walks it, and there is a rail on that wall already, so the big canvas went round too rather than into the store where it would have been stacked face-in.',
+      '',
+      'It is a better room than the one it came out of. That is not a complaint about the corridor.',
+      '',
+      {raw:'RETURN BY: —'},
+    ],
+  },
+  {
+    id:'pre-roll-analysis',at:{x:68,y:14},room:'main_b3',decay:.05,
+    title:'PRE-ROLL ANALYSIS',byline:'TRANSFER BENCH · B3',
+    body:[
+      {raw:'DECK       TASCAM 122 Mk III · transport verified'},
+      {raw:'OFFSET     -01.8 s before recorded slate'},
+      '',
+      'The fragment precedes the source slate on the source reel and both safety copies. Azimuth, head timing, and timecode agree. Do not describe this as print-through unless a later pass produces a leading analogue of the complete phrase.',
+      '',
+      {raw:'RECORDER FAULT: NOT INDICATED'},
+    ],
+  },
+  {
+    id:'faculty-reference-requirement',at:{x:100,y:16},room:'soundnoisemusic',decay:.12,
+    title:'REFERENCE REQUIREMENT',byline:'FACULTY PERFORMANCE OFFICE',
+    body:[
+      {raw:'MINIMUM   6 monitored corrections / student / week'},
+      {raw:'RETAKES   exact reference retained until match'},
+      '',
+      'A correction session is complete only when the student can reproduce the retained reference without deviation. Practice-room decks are not to be stopped between attempts. Missed sessions are referred to Performance Standards.',
+    ],
+  },
+  {
+    id:'student-monitoring-notes',at:{x:104,y:16},room:'soundnoisemusic',decay:.26,
+    title:'THE SECOND PERFORMANCE',byline:'STUDENT MONITORING BOOK · TRANSFER LABEL ATTACHED',
+    body:[
+      {raw:'TRANSFER   CHUNK SURFER'},
+      {raw:'SOURCE     corrections 17–46 / reference deck B'},
+      '',
+      'Again from the first bar. The playback is in the room before I am. By the fourth pass the ensemble and the reference are one mishmash and I cannot tell which one I am correcting.',
+      '',
+      'Everyone else stopped at 23:10. I continued monitoring.',
+    ],
+  },
+  {
+    id:'work-order-carbon',at:{x:66,y:14},room:'main_b3',decay:.18,
+    title:'WORK ORDER 4417-C · CARBON',byline:'SITE COPY / AUTHORITY UNCONFIRMED',
+    body:[
+      {raw:'AUTHORISED   20:14 · day before issue'},
+      {raw:'RETURNED     impressed before RECEIVED'},
+      '',
+      'Five rooms. Names and consent at the gate. Demolition after delivery. The owner field contains W. Ellery Holdings; the living authorising officer field is blank beneath every carbon layer.',
+    ],
+  },
   {
     id: 'page-1', at: { x: 65, y: 13 }, room: 'main_b3', decay: 0.00,
     title: 'log — 21:40', byline: 'sheet 1',
@@ -1398,17 +1472,14 @@ export const LINES = {
 // same four words, three times, at an identical level. `tape.run.again` already
 // taught the player that a voice in a room is never the same twice. So this is
 // not a voice in a room.
-// LISTENING IS THE WOUND, and the game has never said so.
-//
-// Recording a room does nothing to you. Playing it back does. The previous
-// recordist listened to four of these rooms and then went up to the chapel and
-// listened to the fifth, and that is the entire mechanism of what happened to
-// him — not the takes, not the building, not a deed in his past. He heard all
-// five. The thing in the signal only needs an ear that has heard all of it.
-//
-// So `n` is how many rooms the player has now played back, and it is the only
-// number in this game that goes one way. The player is never told. They are
-// simply allowed to press [p] as often as they like.
+// Exact reference is the pressure, and the game lets the player infer that
+// before it names it. Recording remains technically safe; every complete
+// playback gives the same diffuse density another identical route through a
+// room. Breadth and repetition let that density cohere, while variation breaks
+// the match. The previous contractor heard the sequence before this operator;
+// the conservatory student endured it as compulsory practice until the
+// performance no longer stopped with the session. Neither person created HUSH.
+// `n` remains a compatibility input; ReferenceExposureV1 is now authoritative.
 export function guestLines(kind, value, n = 1) {
   const under = n >= 4
     ? { who: 'direction', text: 'It is not under the noise floor. It is at the level of the room, and it always was.' }
@@ -1586,12 +1657,12 @@ export function sacrificeEnding({ injuries = 0, named = false } = {}) {
     named
       ? { who: 'me', text: 'I lost Sarah. There. Is that what you wanted. I lost Sarah.' }
       : { who: 'me', text: 'I lost somebody. Everybody has lost somebody. There. Take it.' },
-    { who: 'surfer', text: 'Thank you. That is all it ever wanted — somebody to say it out loud in a room.' },
+    { who: 'surfer', text: 'Take five. Accepted. Thank you.' },
     { who: 'direction', text: 'The recorder clicks off. The seal was never the five takes. The seal was always a building coming down on a recordist, and now the building has one.' },
     injuries > 0
       ? { who: 'direction', text: `You are the ${ordinal} thing it caught tonight, and the last.` }
       : { who: 'direction', text: 'It never caught you, not once, all night. It did not need to. It only needed you to stay for the end.' },
-    { who: 'direction', text: 'Demolition is booked for 06:00. The clock reads 05:5?, and the clock was always the seal, and it is nearly closed.' },
+    { who: 'direction', text: 'Demolition is booked for 06:00. The first strike covers the downbeat. Under it, another work order begins at bar one.' },
   ];
 }
 
@@ -1604,13 +1675,14 @@ export const INVERT_START = [
   { who: 'surfer', text: 'That is cheating.' },
   { who: 'you', text: 'It is engineering. You would not know the difference. Nobody in here ever did.' },
   { who: 'direction', text: 'The organ chokes off. Somewhere below, the first wall lets go. The only clock in this building that was ever real starts to run.' },
+  { who: 'direction', text: 'On the reversed pre-roll, two service exits open before the transport reaches the sound of either door.' },
 ];
 export const FALSE_DOOR = [
   { who: 'direction', text: 'The grey service door. The one you came in through, where the plan says it is.' },
   { who: 'you', text: 'There you are. Fine. I was tired. I was anxious and I walked past it.' },
   { who: 'direction', text: 'Relief arrives all at once: the guard, the RETURNED checkbox, the wet yard eleven seconds away. Your exit is incoming.' },
   { who: 'direction', text: 'It is right there and it does not open. And then it is not right there — a foot to the left, and then a wall.' },
-  { who: 'surfer', text: 'You did not vanquish me. There is no version of this where you vanquish me. I am the room.' },
+  { who: 'surfer', text: 'Where it does not open a door, try another route.' },
   { who: 'direction', text: 'The door goes on not being where the door is. Your waypoint blinks out, and re-draws, pointing somewhere you never marked.' },
 ];
 export function rescueEnding(named) {
@@ -1624,7 +1696,7 @@ export const INVERSION_FINAL = [
   { who: 'direction', text: 'You come out into the yard. The yard is not there.' },
   { who: 'direction', text: 'A clock restarts in front of you: --:--. Further off there is another grey door, exactly like the one you just came out of.' },
   { who: 'recordist', text: 'Ha.' },
-  { who: 'direction', text: 'The recordist begins to laugh, low, and it does not stop when he stops, because the Chunk Surfer is sounding out of him now. You did not save him. Somebody saved you. You will spend a while working out who — and whether they got out either.' },
+  { who: 'direction', text: 'The recordist begins to laugh, low, and it does not stop when he stops. The signal has kept a usable reference of him. You did not save him. Somebody saved you. You will spend a while working out who — and whether they got out either.' },
 ];
 
 // If you drank the guard's coffee, the ending is reframed — and the mechanic
@@ -1645,14 +1717,14 @@ export function helpedEnding({ named = false } = {}) {
 // faux pas. Do not take the coffee from the man in the hi-vis jacket.
 export function druggedReveal({ takes = 5 } = {}) {
   return [
-    { who: 'direction', text: 'You are in the car park. It is the car park. The skips are where the skips are, and the building stands, unlit, four storeys of nothing, and there was never anything in it but you.' },
+    { who: 'direction', text: 'You are in the car park. The skips are where the skips are and the building stands unlit. The incident report will say there was never anything in it but you.' },
     { who: 'you', text: '...what was in that coffee.' },
     { who: 'direction', text: 'You put the headphones on, out of thirty years of habit, and you play the night back.' },
     { who: 'recordist', text: 'Take one.' },
     { who: 'you', text: 'That is me. Breathing. Talking to a room. Take two is footsteps. Take three is a man saying a name into a space with nobody in it.' },
     { who: 'direction', text: `${takes >= 5 ? 'Five files' : 'Every file'}, and not one clean minute among them. You did not record five rooms. You wandered a condemned building for eight hours, off your face on a stranger's coffee, narrating.` },
     { who: 'you', text: 'No money. No takes. A note in a file somewhere: this contractor could not be relied upon.' },
-    { who: 'direction', text: 'Do not take the coffee from the man in the hi-vis jacket. That is the whole of it. That is the only thing the night had to teach.' },
+    { who: 'direction', text: 'The file closes on that explanation. Under the last sentence, the recorder still reads PRE -01.8.' },
   ];
 }
 

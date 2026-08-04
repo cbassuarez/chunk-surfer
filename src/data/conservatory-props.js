@@ -76,10 +76,12 @@ export const PROP_MESH = Object.freeze({
   cable_coil:{w:.58,d:.58,blocks:false}, open_instrument_case:{w:1.35,d:.72,blocks:false},
   upright_piano:{w:1.55,d:.72,blocks:true}, grand_piano:{w:1.75,d:2.45,blocks:true},
   marimba:{w:2.8,d:1.05,blocks:true}, timpani:{w:.92,d:.92,blocks:true},
-  cello:{w:.62,d:.42,blocks:false}, speaker_cabinet:{w:.64,d:.58,blocks:true},
+  cello:{w:.46,d:.32,blocks:false}, speaker_cabinet:{w:.64,d:.58,blocks:true},
   organ_console:{w:1.65,d:.88,blocks:true}, organ_pipes:{w:2.2,d:.36,blocks:true},
   equipment_rack:{w:.72,d:.7,blocks:true},
-  violin:{w:.4,d:.3,blocks:false},
+  // The violin lies on its back with the scroll along +z, so its footprint is
+  // narrow and long rather than the old placeholder square.
+  violin:{w:.24,d:.64,blocks:false},
   portrait_frame:{w:.76,d:.12,blocks:false},
   hall_seating:{w:25.6,d:18.6,blocks:false},
   hall_structure:{w:29,d:37,blocks:false},
@@ -119,6 +121,10 @@ export const PROP_MESH = Object.freeze({
   stair_smoke_door_closed:{w:3.1,d:.2,blocks:false},
   stair_sconce_pair_opal:{w:3,d:.55,blocks:false}, stair_bulkhead_pair:{w:3,d:.5,blocks:false},
   stair_pendant_opal:{w:.6,d:.6,h:1.4,blocks:false,mount:'ceiling'}, stair_shadow_figure:{w:.65,d:.3,blocks:false},
+  player_shadow_figure:{w:.62,d:.28,h:1.78,blocks:false,mount:'floor'},
+  legacy_tape_rack:{w:1.08,d:.42,h:2.08,blocks:true,mount:'floor'},
+  legacy_patchbay:{w:1.28,d:.36,h:1.74,blocks:true,mount:'floor'},
+  legacy_transfer_deck:{w:1.48,d:.78,h:1.24,blocks:true,mount:'floor'},
   academic_atrium_structure:{w:24,d:27,blocks:false}, front_atrium_perimeter_relief:{w:22.2,d:23.2,blocks:false},
   academic_skylight:{w:23,d:26,blocks:false},
   academic_frieze:{w:5.2,d:.12,blocks:false}, academic_bust_plinth:{w:.62,d:.62,blocks:false},
@@ -279,6 +285,48 @@ export const CONSERVATORY_PROPS = [
   P('acq-foyer-armchair-02','arm_chair_01',75.5,20.3,-Math.PI/2,{
     provenance:provenance('foyer_suite','FOH/F-03','replacement castor blocks'),
     inspect:inspect('The matching armchair, FOH/F-03. Two dark blocks under the front feet are later than the chair and exactly the right height.','FOH/F-03. A matched chair on unmatched blocks.'),
+  }),
+  // ── the ground-floor dead end ───────────────────────────────────────────────
+  // The service spine runs east past the natatorium and dock spurs and simply
+  // stops, sharing a half-metre wall with the atrium. That wall is why the room
+  // is identifiable: the atrium's own perimeter relief bleeds through it, so the
+  // dead end has pilasters and a picture rail it was never given.
+  //
+  // So it is furnished as what it plainly became — the overflow of the public
+  // waiting room on the other side of that wall. Same cohort, same stamps: the
+  // suite that would not fit out front, pushed round the back and left. The
+  // painting hangs on the rail that is already there, which is the one thing
+  // this room has that no other dead end does.
+  //
+  // Ids are `deadend-` and not `corridor-`/`ground-spine-`: tools/.../props.mjs
+  // fails any decorative prop whose id marks it as circulation, and it is right
+  // to — a stair approach with furniture in it is a hazard, not a room.
+  P('deadend-ground-armchair','arm_chair_01',72.4,22.4,Math.PI/2,{
+    provenance:provenance('foyer_suite','FOH/F-06','withdrawn from the front room'),
+    inspect:inspect('An armchair from the front-of-house suite, FOH/F-06, faced into the corner. The stamp matches the two still out in the atrium through this wall.','FOH/F-06. It has been sat in since it was put here.'),
+  }),
+  P('deadend-ground-chair','wooden_chair_01',72.4,24.6,Math.PI/2,{
+    provenance:provenance('foyer_suite','FOH/F-07','odd chair, never matched'),
+    inspect:inspect('A tall-backed chair that belongs to no set. It is older than the suite and half a head higher, and somebody put it here facing the same way as the armchair, as though the two of them were waiting together.','FOH/F-07. Two chairs, one conversation, nobody in either.'),
+  }),
+  P('deadend-ground-credenza','classic_console_01',73.6,23.5,-Math.PI/2,{
+    provenance:provenance('foyer_suite','FOH/F-08','east table, drawer swollen'),
+    inspectAt:{x:72.8,y:23.5},
+    inspect:inspect('The last console of the suite, FOH/F-08, pushed against the atrium wall. The drawer is swollen shut and has been forced before — the lip is bright where somebody worked at it.','FOH/F-08. The drawer is open now.'),
+  }),
+  // Hung on the picture rail the atrium relief puts through this wall, which is
+  // the only reason a painting can touch a wall in a service corridor and look
+  // like it was always meant to. props.mjs checks a solid cell sits behind every
+  // portrait_frame: at authored x74.0 the wall is runtime x149.
+  P('deadend-ground-painting','portrait_frame',74.0,23.5,-Math.PI/2,{
+    elevation:1.55,scale:2.2,portraitIndex:1,renderOffsetX:.25,
+    inspect:inspect('A large canvas, hung high on a picture rail that has no business being in a service corridor. It is the atrium\'s rail — the panelling comes through the wall here, half a metre of plaster between this room and the public one. The painting has been given the better half.','Too big for the room and hung too high, on somebody else\'s rail.'),
+  }),
+  P('deadend-ground-chandelier','chandelier_03',73.0,23.5,0,{
+    scale:1.6,elevation:3.35,
+    lightColor:[.78,.74,.62],lightCircuit:'sp03',
+    inspectAt:{x:73.0,y:24.6},
+    inspect:inspect('A chandelier, in a corridor, over two chairs and a table. Nothing about this room was planned; all of it was moved here. Somebody went to the trouble of wiring it.','It is still on the front-of-house circuit.'),
   }),
   P('acq-foyer-console-01','classic_console_01',88.5,4.25,Math.PI,{
     provenance:provenance('foyer_suite','FOH/F-04','west table, water-marked'),
@@ -768,6 +816,13 @@ export const CONSERVATORY_PROPS = [
   P('light-hall-lounge-casing','tower_bulkhead',99,27,-Math.PI/2,{elevation:3.1,renderOffsetX:-.25,interactive:false,structural:true,lightCircuit:'sp03',lightColor:[.78,.74,.62]}),
   P('light-practice-north-casing','tower_bulkhead',59.5,55.5,Math.PI,{elevation:2.5,renderOffsetZ:.25,interactive:false,structural:true,lightMaintained:true,lightColor:[1,.52,.25]}),
   P('light-practice-south-casing','tower_bulkhead',60,81,-Math.PI/2,{elevation:2.5,renderOffsetX:-.25,interactive:false,structural:true,lightMaintained:true,lightColor:[1,.50,.24]}),
+  // The sealed spur-substation is audible from the story route but has no
+  // ordinary door. These objects are permanent building history; only the
+  // separate HUSH navigation policy can cross the service seam to see them.
+  P('legacy-tape-rack-west-a','legacy_tape_rack',22.15,34.65,Math.PI/2,{interactive:false}),
+  P('legacy-tape-rack-west-b','legacy_tape_rack',22.15,36.15,Math.PI/2,{interactive:false}),
+  P('legacy-patchbay-north','legacy_patchbay',24.15,34.45,0,{interactive:false}),
+  P('legacy-transfer-console','legacy_transfer_deck',22.95,37.15,Math.PI,{interactive:false}),
   // Two authored wall systems replace the loose pipe cloud. All origins are
   // in plant-room air, one half-cell from solid masonry, and yaw points the
   // service faces into the room. The lower north run joins edge-to-edge.
