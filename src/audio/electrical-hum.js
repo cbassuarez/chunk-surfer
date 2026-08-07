@@ -4,7 +4,10 @@ import { POWER_CIRCUIT, livePowerCircuits, powerCircuitDefinition } from '../gam
 // events and never enter the HUSH noise envelope: they are continuous room tone.
 export const ELECTRICAL_HUM_SOURCES = Object.freeze([
   Object.freeze({ id: 'sp01-plant', circuit: POWER_CIRCUIT.SP01, x: 37.2, z: 30.0, radius: 20, gain: .28 }),
-  Object.freeze({ id: 'sp01-dance', circuit: POWER_CIRCUIT.SP01, x: 18.0, z: 41.0, radius: 13, gain: .20 }),
+  // In B2, where the wing's lit fitting is. It used to sit at z:41, which is off
+  // the south edge of the authored sub-basement entirely — the wing's own hum
+  // was emitting from solid rock and only ever clipped the far side of room 5.
+  Object.freeze({ id: 'sp01-dance', circuit: POWER_CIRCUIT.SP01, x: 32.0, z: 16.0, radius: 13, gain: .20 }),
   Object.freeze({ id: 'sp02-pool', circuit: POWER_CIRCUIT.SP02, x: 91.5, z: 42.0, radius: 24, gain: .25 }),
   Object.freeze({ id: 'sp03-foh', circuit: POWER_CIRCUIT.SP03, x: 92.0, z: 15.5, radius: 21, gain: .23 }),
   Object.freeze({ id: 'sp03-hall', circuit: POWER_CIRCUIT.SP03, x: 102.0, z: 17.5, radius: 18, gain: .19 }),

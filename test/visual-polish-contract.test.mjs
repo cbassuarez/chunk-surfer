@@ -12,6 +12,12 @@ test('machine panel hardware leaves the authored body rectangle unchanged', () =
   assert.deepEqual(machinePanelBody(10, 4, 40, 18, { footer: 'SELECT' }), { x: 13, y: 8, w: 34, h: 12 });
 });
 
+test('VFD bloom is spatial halation and never described as temporal persistence', () => {
+  const font = readFileSync(new URL('../src/render/vfd-font.js', import.meta.url), 'utf8');
+  assert.match(font, /halation/);
+  assert.doesNotMatch(font, /ghost\s*:|Phosphor afterglow/);
+});
+
 test('screen-body polish is resize-baked and ordered below contact flash', () => {
   assert.match(canvasSource, /createGlassPass\(\{ width: canvas\.width, height: canvas\.height/);
   assert.ok(canvasSource.indexOf('drawGlassPass(ctx') < canvasSource.indexOf("if (now < fxState.flashUntil)"));

@@ -8,11 +8,28 @@ import { authoredCue } from './authored-cues.js';
 // under the existing sound world, and the typing sound is a granular texture
 // that is active only while text is actually being revealed.
 
+// ⚠ THE FIVE ENDING BEDS ARE THE TITLE THEME. ⚠
+//
+// Placeholder, deliberately and visibly. Every ending currently plays the opening
+// title song under it, which is the right stand-in — it is the only piece of
+// music the player already associates with this building — and the wrong final
+// answer, because five endings that sound identical are four endings that do not
+// land. See ENDING_AUDIO_TODO in data/endings.js for the full outstanding list.
+//
+// Replacing one is a one-line change: point its key at its own file.
+const ENDING_BED_PLACEHOLDER = assetUrl('audio/game/title_song.mp3');
+
 export const STORY_AUDIO = {
   title: assetUrl('audio/game/title_song.mp3'),
   // The credits roll gets its own piece. It plays through the same soundtrack
   // slot as the title bed, which is what guarantees the two can never overlap.
   credits: assetUrl('audio/game/credits_song.mp3'),
+  // The endings. TEMPORARY — all five are the title theme (see above).
+  'ending.sacrifice': ENDING_BED_PLACEHOLDER,
+  'ending.helped': ENDING_BED_PLACEHOLDER,
+  'ending.inversion': ENDING_BED_PLACEHOLDER,
+  'ending.drugged': ENDING_BED_PLACEHOLDER,
+  'ending.surfaced': ENDING_BED_PLACEHOLDER,
   typing: assetUrl('audio/game/typing.mp3'),
   booth: assetUrl('audio/game/outside_room_tone.mp3'),
   rain: assetUrl('audio/game/rain.mp3'),
@@ -320,6 +337,7 @@ export function stopTyping({ fade = 0.12 } = {}) {
 // that has no room in it.
 
 let booth = null;   // { nodes:[], gain }
+let rainBed = null; // { nodes:[], gain } — its own bed, see startRain
 let tape = null;
 
 // One looping file, one gain, faded in. Returns null (and retries) if the
@@ -338,32 +356,61 @@ function loopFile(url, gain, fade, out) {
   return { src, g };
 }
 
+// THE RAIN IS NOT THE GUARD'S BOOTH, AND IT USED TO BE.
+//
+// Both loops hung off one bed here, so the rain could only start when the lodge
+// conversation started it and stopped when stopBoothTone tore that bed down —
+// which is the moment the conversation ENDS. The player then walked a hundred
+// metres of open yard, in visible rain, in silence, and went in through the grey
+// door having heard weather only while standing still at a window.
+//
+// It has its own bed now. It starts when he is outdoors and it stops at the
+// door, which is what the comment under stopRain always claimed.
+export function startRain({ gain = RAIN_GAIN, fade = 2.4 } = {}) {
+  if (!ctx || !bus || rainBed) return;
+  if (!buffers.has(STORY_AUDIO.rain)) {
+    preload(STORY_AUDIO.rain).then(() => { if (!rainBed) startRain({ gain, fade }); });
+    return;
+  }
+  const out = ctx.createGain();
+  out.gain.setValueAtTime(1, ctx.currentTime);
+  out.connect(outBus('sfx'));
+  const nodes = [out];
+  const rain = loopFile(STORY_AUDIO.rain, gain, fade, out);
+  if (rain) nodes.push(rain.src, rain.g);
+  rainBed = { nodes, gain: out };
+}
+
 export function startBoothTone({ gain = BOOTH_GAIN, fade = 1.6 } = {}) {
+  // The weather does not belong to the booth, but a man at the window is
+  // certainly standing in it.
+  startRain({ fade });
   if (!ctx || !bus || booth) return;
-  if (!buffers.has(STORY_AUDIO.booth) || !buffers.has(STORY_AUDIO.rain)) {
+  if (!buffers.has(STORY_AUDIO.booth)) {
     // The scene starts before the mp3s land. Come back when they have.
-    Promise.all([preload(STORY_AUDIO.booth), preload(STORY_AUDIO.rain)])
-      .then(() => { if (!booth) startBoothTone({ gain, fade }); });
+    preload(STORY_AUDIO.booth).then(() => { if (!booth) startBoothTone({ gain, fade }); });
     return;
   }
   const now = ctx.currentTime;
   const out = ctx.createGain();
   out.gain.setValueAtTime(1, now);
     out.connect(outBus('sfx'));
-    
+
   const nodes = [out];
   const room = loopFile(STORY_AUDIO.booth, gain, fade, out);
-  const rain = loopFile(STORY_AUDIO.rain, RAIN_GAIN, fade, out);
   if (room) nodes.push(room.src, room.g);
-  if (rain) nodes.push(rain.src, rain.g);
 
-  booth = { nodes, gain: out, rain: rain?.g || null };
+  booth = { nodes, gain: out };
 }
 
-// The rain stops at the door, and it stops before the booth does, because he
-// is the one who went inside.
+// The rain stops at the door, because he is the one who went inside.
 export function stopRain({ fade = 0.5 } = {}) {
-  if (booth?.rain) setGain(booth.rain, 0, fade);
+  if (!rainBed) return;
+  const b = rainBed; rainBed = null;
+  setGain(b.gain, 0, fade);
+  window.setTimeout(() => {
+    for (const n of b.nodes) { try { n.stop?.(); } catch (_) {} try { n.disconnect(); } catch (_) {} }
+  }, Math.ceil(fade * 1000) + 120);
 }
 
 export function stopBoothTone({ fade = 1.2 } = {}) {
@@ -521,6 +568,7 @@ export function stopAll() {
   stopTyping({ fade: 0.04 });
   stopTapeHiss({ fade: 0.2 });
   stopBoothTone({ fade: 0.4 });
+  stopRain({ fade: 0.4 });
   fadeSoundtrack({ fade: 0.5 });
   stopMenuHiss();
 }

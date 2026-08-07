@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "ending.epilogue.drugged",
-  "title": "Guard Epilogue · drugged",
+  "title": "Coda · you signing out, or not",
   "status": "active",
   "entry": "start",
   "entries": [
@@ -11,13 +11,13 @@
     "ending",
     "epilogue"
   ],
-  "notes": "",
+  "notes": "Cold, Bitter, Gone's coda. It used to reopen the supernatural reading after the main scene had closed it, which is the argument the audit objected to; the ending is competing evidence now, so this is one more piece of it rather than a retraction. The escalation this scene was missing: he DID come back, so he signs the RETURNED column — the one that has never been used — and the guard is completely casual about a man being the first entry in it.",
   "regions": [
     {
       "id": "ending.epilogue.drugged.region",
-      "title": "Guard Epilogue · drugged",
+      "title": "You signing out, or not",
       "kind": "ending",
-      "color": "#ad6a3b",
+      "color": "#6a5a3b",
       "nodeIds": [
         "start"
       ]
@@ -26,16 +26,16 @@
   "nodes": {
     "start": {
       "type": "ending",
+      "art": {
+        "id": "guard",
+        "mode": "hero",
+        "caption": "Gate booth / dawn",
+        "status": "STILL"
+      },
       "lines": [
         {
           "who": "direction",
-          "art": {
-            "id": "guard",
-            "mode": "hero",
-            "caption": "Gate booth / dawn",
-            "status": "STILL"
-          },
-          "text": "The gate booth, lit, at dawn. The same bored man. He does not ask how it went; he watches the little television with the sound off.",
+          "text": "The gate booth, lit, at dawn. The same bored man. He does not ask how it went; he watches the little television with the sound off, the way he was watching it eight hours ago.",
           "id": "start.line.1"
         },
         {
@@ -50,13 +50,65 @@
         },
         {
           "who": "direction",
-          "text": "There is one paper cup in the bin by his foot, and it is not yours — yours is still in your hand, empty, and you do not remember finishing it.",
+          "text": "He is not being clever. There is no flicker in it. You have put a microphone in front of enough people to know the half-second where a man decides what to say, and there is no half-second in him. He is already back at the television.",
           "id": "start.line.4"
+        },
+        {
+          "who": "direction",
+          "text": "There is one paper cup in the bin by his foot and it is not yours — yours is still in your hand, empty, and you do not remember finishing it.",
+          "id": "start.line.5"
+        },
+        {
+          "who": "you",
+          "text": "You made me a coffee.",
+          "id": "start.line.6"
+        },
+        {
+          "who": "guard",
+          "text": "I make everybody a coffee.",
+          "id": "start.line.7"
+        },
+        {
+          "who": "direction",
+          "text": "Which settles nothing, and he has no idea it settles nothing, and he goes back to the television.",
+          "id": "start.line.8"
+        },
+        {
+          "who": "direction",
+          "text": "Then he turns the book round. Two columns. The left one is full of names all the way up the page in his handwriting, and the right one — RETURNED — has been empty the whole time.",
+          "id": "start.line.9"
         },
         {
           "who": "guard",
           "text": "Long night. You signing out, or not.",
-          "id": "start.line.5"
+          "id": "start.line.10"
+        },
+        {
+          "who": "direction",
+          "text": "You are the first name in that column. He does not remark on it. He does not appear to have noticed, and he ruled the thing himself, and he holds the pen out sideways the way people do when they are watching something else.",
+          "id": "start.line.11"
+        },
+        {
+          "who": "you",
+          "text": "Has anybody signed this side before.",
+          "id": "start.line.12"
+        },
+        {
+          "who": "guard",
+          "text": "Not on my shift.",
+          "id": "start.line.13"
+        },
+        {
+          "who": "direction",
+          "text": "He has been on this gate for years. You put that with the marks on your arm, and the recorder that is still in there, and the cup, and you carry all four of them out to the van, and you drive home in the light.",
+          "id": "start.line.14",
+          "when": "ending.injuries>=1 && !ending.equipment.complete"
+        },
+        {
+          "who": "direction",
+          "text": "He has been on this gate for years. You put that with the rest of it, and you carry the lot out to the van, and you drive home in the light.",
+          "id": "start.line.15",
+          "when": "!ending.injuries>=1 || ending.equipment.complete"
         }
       ],
       "id": "start"

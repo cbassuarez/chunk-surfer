@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "ending.epilogue.nobody",
-  "title": "Guard Epilogue · nobody",
+  "title": "Coda · nobody comes",
   "status": "active",
   "entry": "start",
   "entries": [
@@ -11,13 +11,13 @@
     "ending",
     "epilogue"
   ],
-  "notes": "",
+  "notes": "The Seal's coda when the player disclosed nothing all night. It was three lines and it is the bleakest scene in the game: the client does not come, because there is no account to close and nothing to settle, and the player is not here either. It stays quiet on purpose — the guard alone, past the end of his shift, with a pen — and it is the only coda with nobody in it to talk to.",
   "regions": [
     {
       "id": "ending.epilogue.nobody.region",
-      "title": "Guard Epilogue · nobody",
+      "title": "Nobody comes",
       "kind": "ending",
-      "color": "#ad6a3b",
+      "color": "#4a4a4a",
       "nodeIds": [
         "start"
       ]
@@ -26,27 +26,63 @@
   "nodes": {
     "start": {
       "type": "ending",
+      "art": {
+        "id": "guard",
+        "mode": "hero",
+        "caption": "Gate booth / morning",
+        "status": "STILL"
+      },
       "lines": [
         {
           "who": "direction",
-          "art": {
-            "id": "guard",
-            "mode": "hero",
-            "caption": "Gate booth / morning",
-            "status": "STILL"
-          },
-          "text": "The gate booth. The bored man, the book, and nobody else. Not the client, who did not need to come. Not you, who did not come out.",
+          "text": "The gate booth. The bored man, the book, and nobody else. Not the client, who did not need to come, because there was nothing to close. Not you.",
           "id": "start.line.1"
         },
         {
           "who": "direction",
-          "text": "He writes the date and the time in the left column, beside a name, and he leaves the right column empty, the way it has been empty all the way up the page. The building took a man and gave back a file with nothing on it.",
+          "text": "His shift ended at six. He is still here at twenty past, which he has not done for a long time and used to do rather a lot.",
           "id": "start.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "He has the book open at the page with your name on it. There is a time in the left column beside it, written when you signed received, in his handwriting, at twenty-one thirty-eight.",
+          "id": "start.line.3"
+        },
+        {
+          "who": "guard",
+          "text": "Come on.",
+          "id": "start.line.4"
+        },
+        {
+          "who": "direction",
+          "text": "He says it to a door, quietly, the way a man says it to a kettle. Then he waits some more, because that is the only part of this he has ever been able to do.",
+          "id": "start.line.5"
+        },
+        {
+          "who": "direction",
+          "text": "At half past he writes the date and the time in the left column, and he leaves the right column empty, the way it has been empty all the way up the page.",
+          "id": "start.line.6"
+        },
+        {
+          "who": "direction",
+          "text": "The building took a man and gave back a file with nothing on it. Not a name, not a reason, not one sentence anybody could use — you were in there eight hours and you did not give it a single thing, and it kept you anyway, and it will make do.",
+          "id": "start.line.7",
+          "when": "ending.confession.nothing"
+        },
+        {
+          "who": "direction",
+          "text": "Somewhere behind him the machines start at six, on schedule, and the sound of them arrives at the booth about a second after the ground does.",
+          "id": "start.line.8"
+        },
+        {
+          "who": "direction",
+          "text": "He does not go and look. He turns the page, and rules a fresh line down the middle of it, and writes RETURNED at the top of the right-hand side.",
+          "id": "start.line.9"
         },
         {
           "who": "guard",
           "text": "Next.",
-          "id": "start.line.3"
+          "id": "start.line.10"
         }
       ],
       "id": "start"

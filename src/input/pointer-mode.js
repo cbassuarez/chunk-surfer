@@ -39,6 +39,18 @@ function pointFromEvent(e = {}) {
   return { x: Number(e.clientX) || 0, y: Number(e.clientY) || 0 };
 }
 
+// A gesture-driven capture request can be refused for reasons that have nothing
+// to do with the gesture: browsers reject requestPointerLock for roughly a
+// second after the user pressed Escape to leave a previous lock, which is
+// exactly how long it takes to dismiss a pause menu and ask again. Retrying on
+// a timer costs nothing and turns "the camera is dead until I click" into a
+// pause that nobody notices.
+const CAPTURE_RETRY_DELAYS_MS = Object.freeze([420, 1400]);
+// A request already in flight owns the attempt. Key repeat fires keydown many
+// times per second, and a fresh request per repeat used to invalidate the
+// previous one forever: holding W meant never regaining the camera.
+const CAPTURE_REQUEST_TTL_MS = 500;
+
 export function createPointerModeController({
   documentRef = globalThis.document || null,
   getTargetElement = () => null,
@@ -46,7 +58,12 @@ export function createPointerModeController({
   input = null,
   onUnexpectedUnlock = () => {},
   allowSoftCaptureFallback = true,
+  loadNativeWindowApi = () => import('@tauri-apps/api/window'),
+  setTimeoutFn = (fn, ms) => globalThis.setTimeout?.(fn, ms),
+  clearTimeoutFn = (id) => globalThis.clearTimeout?.(id),
+  nowFn = nowMs,
 } = {}) {
+  const timeNow = () => Number(nowFn?.()) || 0;
   let desiredMode = 'ui';
   let lastMode = 'ui';
   let lastReason = 'init';
@@ -58,6 +75,7 @@ export function createPointerModeController({
     kind: 'pointer-lock',
     lastRequestAt: 0,
     lastRequestReason: '',
+    lastRequestGesture: false,
     lastError: null,
     lastErrorAt: 0,
     lastResult: 'idle',
@@ -85,21 +103,46 @@ export function createPointerModeController({
     permissionHint: '',
     center: { x: 0, y: 0 },
     lastCenterAt: 0,
+    // Where a native recenter actually landed, retained for diagnostics only.
+    // Camera input never derives from this absolute offset.
+    bias: { x: 0, y: 0 },
     recenterPending: false,
     recenterGeneration: 0,
     recenterAt: 0,
     recenterCount: 0,
     ignoredRecenters: 0,
+    calibrationRecenters: 0,
+    calibrationSample: null,
+    lastAppliedOffset: null,
+    echoesAtLastApply: -1,
     moves: 0,
     addedDeltas: 0,
     lastMoveAt: 0,
     lastClient: { x: 0, y: 0 },
+    hasLastClient: false,
     lastOffset: { dx: 0, dy: 0 },
     lastAppliedDelta: { dx: 0, dy: 0 },
     lastDeltaReason: '',
-    gain: 4.8,
+    // Native PointerEvents expose the same CSS-pixel movementX/Y units as DOM
+    // pointer lock. Keeping the gain at one makes the two backends feel alike.
+    gain: 1,
     deadzone: 0.10,
-    calibrationAbortPx: 36,
+    suppressMovementUntil: 0,
+    relativeEvents: 0,
+    absoluteFallbackEvents: 0,
+    // A synthetic recenter event may take an IPC round trip to come back.
+    echoWindowMs: 350,
+    // The jump a pending recenter is about to make, so its echo can be
+    // recognised by shape instead of by arrival time. Null when none is owed.
+    expectedEcho: null,
+    // Retained in the debug snapshot for compatibility with older diagnostics.
+    echoRadiusPx: 6,
+    // Legacy absolute-calibration counters retained for support snapshots.
+    driftStrikes: 0,
+    maxDriftStrikes: 6,
+    mismatchFloorPx: 64,
+    mismatchFraction: 0.25,
+    maxCalibrationRecenters: 8,
   };
 
   const drag = {
@@ -113,6 +156,14 @@ export function createPointerModeController({
     lastAppliedDelta: { dx: 0, dy: 0 },
     lastDeltaReason: '',
     gain: 3.2,
+  };
+
+  const retry = {
+    timer: null,
+    attempts: 0,
+    reason: '',
+    scheduledAt: 0,
+    fired: 0,
   };
 
   function state() { return getState?.() || {}; }
@@ -156,13 +207,13 @@ export function createPointerModeController({
   function markError(err, reason = 'pointerlock-error') {
     backend.errors += 1;
     backend.lastError = errorName(err) || reason;
-    backend.lastErrorAt = nowMs();
+    backend.lastErrorAt = timeNow();
     backend.lastResult = 'error';
   }
 
   function markNativeError(err, reason = 'native-capture') {
     native.error = errorName(err) || reason;
-    native.errorAt = nowMs();
+    native.errorAt = timeNow();
     native.fatalReason = reason;
     native.permissionHint = /not allowed|Permissions associated/i.test(native.error)
       ? `Grant ${REQUIRED_TAURI_CURSOR_PERMISSIONS.join(', ')} in src-tauri/capabilities for the gameplay window.`
@@ -170,7 +221,7 @@ export function createPointerModeController({
   }
 
   function updateCenter(force = false) {
-    const now = nowMs();
+    const now = timeNow();
     if (!force && now - native.lastCenterAt < 250) return native.center;
 
     const el = target();
@@ -188,6 +239,33 @@ export function createPointerModeController({
     return native.center;
   }
 
+  // The origin look is measured from: the requested centre plus the translation
+  // between the cursor API's coordinate space and the web view's client space.
+  function nativeAnchor() {
+    return {
+      x: native.center.x + native.bias.x,
+      y: native.center.y + native.bias.y,
+    };
+  }
+
+  function resetNativeCalibration() {
+    native.calibrated = false;
+    native.calibrationPending = false;
+    // calibrationFailed is diagnostic and deliberately survives: a backend that
+    // was refused for a coordinate mismatch should still say so afterwards.
+    native.calibrationRecenters = 0;
+    native.calibrationSample = null;
+    native.driftStrikes = 0;
+    native.lastAppliedOffset = null;
+    native.echoesAtLastApply = -1;
+    native.bias = { x: 0, y: 0 };
+    native.hasLastClient = false;
+    native.suppressMovementUntil = 0;
+    // A recenter owed to a capture that has ended must not swallow the first
+    // real movement of the next one.
+    native.expectedEcho = null;
+  }
+
   async function loadTauriWindow() {
     if (!tauriRuntime()) {
       native.available = false;
@@ -198,7 +276,7 @@ export function createPointerModeController({
 
     native.attempted = true;
     try {
-      const mod = await import('@tauri-apps/api/window');
+      const mod = await loadNativeWindowApi();
       const getWin = mod.getCurrentWindow || mod.appWindow || null;
       native.windowApi = mod;
       native.win = typeof getWin === 'function' ? getWin() : getWin;
@@ -233,9 +311,11 @@ export function createPointerModeController({
     const win = native.win;
     native.active = false;
     native.pending = false;
-    native.calibrationPending = false;
     native.recenterPending = false;
     native.generation = gen;
+    // The next capture may happen in a different window geometry (fullscreen
+    // toggled, window moved). Re-learn the anchor rather than inherit one.
+    resetNativeCalibration();
     try { await win?.setCursorGrab?.(false); } catch (err) { markNativeError(err, `${reason}:set-cursor-grab:false`); }
     try { await win?.setCursorVisible?.(true); } catch (err) { markNativeError(err, `${reason}:set-cursor-visible:true`); }
   }
@@ -261,7 +341,7 @@ export function createPointerModeController({
     try {
       native.recenterPending = true;
       native.recenterGeneration = generation;
-      native.recenterAt = nowMs();
+      native.recenterAt = timeNow();
       native.recenterCount += 1;
       if (expectCalibration) {
         native.calibrationPending = true;
@@ -300,16 +380,30 @@ export function createPointerModeController({
       // we have capture; fall back to drag-look instead.
       if (!native.win?.setCursorVisible) throw new Error('setCursorVisible unavailable');
       if (!native.win?.setCursorGrab) throw new Error('setCursorGrab unavailable');
+      // TAKE THE OS WINDOW FIRST. main.js already calls window.focus() before
+      // asking for capture, but in the Tauri shell that only touches the
+      // webview — it cannot raise or focus the native window, so a click on an
+      // unfocused window grabbed a cursor for a window that was not receiving
+      // input. Not fatal if the running Tauri version lacks it.
+      if (typeof native.win.setFocus === 'function') {
+        try { await native.win.setFocus(); } catch (_) {}
+      }
       await native.win.setCursorVisible(false);
       await native.win.setCursorGrab(true);
 
       native.active = true;
       native.pending = false;
-      native.calibrated = false;
-      native.calibrationPending = false;
-      native.coordinateSpace = 'pending-calibration';
+      resetNativeCalibration();
+      // Camera input is relative. Absolute client coordinates are only an
+      // emergency fallback for old WebViews; they are never integrated from a
+      // fixed window centre, because title bars and DPI transforms turn that
+      // fixed offset into permanent look drift.
+      native.calibrated = true;
+      native.calibrationFailed = false;
+      native.coordinateSpace = 'relative-motion';
       native.generation = generation;
-      const ok = await recenterNativeCursor({ force: true, generation, expectCalibration: true });
+      native.suppressMovementUntil = timeNow() + 80;
+      const ok = await recenterNativeCursor({ force: true, generation, expectCalibration: false });
       if (!ok || generation !== captureGeneration || !wantsCapture()) return failNativeCapture(`${reason}:stale-after-recenter`);
 
       lastMode = 'native-captured';
@@ -342,8 +436,47 @@ export function createPointerModeController({
     return false;
   }
 
+  function clearCaptureRetry() {
+    if (retry.timer !== null) {
+      try { clearTimeoutFn(retry.timer); } catch (_) { /* timer host went away */ }
+    }
+    retry.timer = null;
+    retry.attempts = 0;
+  }
+
+  // Schedule one more unattended attempt. Not a poll: a short, bounded ladder
+  // that expires as soon as a backend is live or gameplay stops wanting one.
+  function scheduleCaptureRetry(reason = 'capture-retry') {
+    if (retry.timer !== null) return false;
+    if (retry.attempts >= CAPTURE_RETRY_DELAYS_MS.length) return false;
+    if (!wantsCapture() || lookBackendActive()) return false;
+    const delay = CAPTURE_RETRY_DELAYS_MS[retry.attempts];
+    retry.attempts += 1;
+    retry.reason = reason;
+    retry.scheduledAt = timeNow();
+    const attempt = retry.attempts;
+    retry.timer = setTimeoutFn(() => {
+      retry.timer = null;
+      retry.fired += 1;
+      if (!wantsCapture() || lookBackendActive()) { clearCaptureRetry(); return; }
+      void attemptCapture(`${reason}:retry${attempt}`, { gesture: false });
+    }, delay);
+    return true;
+  }
+
+  function fallbackToNativeOrRetry(reason, generation) {
+    const started = startNativeCapture(reason, generation);
+    void Promise.resolve(started).then((ok) => {
+      if (ok) { clearCaptureRetry(); return; }
+      if (generation !== captureGeneration) return;
+      if (!wantsCapture() || lookBackendActive()) return;
+      scheduleCaptureRetry(reason);
+    });
+  }
+
   function release(reason = 'release') {
     expectedUnlockReason = reason;
+    clearCaptureRetry();
     stopDragLook(`${reason}:drag`);
     void stopNativeCapture(`${reason}:native`);
     if (anyPointerLocked()) {
@@ -395,32 +528,47 @@ export function createPointerModeController({
     if (generation !== captureGeneration) return;
     if (lockedToTarget()) {
       backend.lastResult = 'locked';
+      clearCaptureRetry();
       sync(`${reason}:verified`);
       return;
     }
     if (!wantsCapture()) return;
     backend.lastResult = 'not-locked';
     backend.fallbackReason = backend.lastError || 'request did not lock target';
-    void startNativeCapture(`${reason}:native-fallback`, generation);
+    fallbackToNativeOrRetry(`${reason}:native-fallback`, generation);
   }
 
-  async function requestCaptureFromGesture(reason = 'gesture') {
+  function captureRequestInFlight() {
+    if (native.pending) return true;
+    return backend.lastResult === 'requesting' && timeNow() - backend.lastRequestAt < CAPTURE_REQUEST_TTL_MS;
+  }
+
+  async function attemptCapture(reason = 'gesture', { gesture = true } = {}) {
     const current = sync(reason);
-    if (!current.wantsCapture) return false;
-    if (current.locked || current.nativeCaptured) return true;
+    if (!current.wantsCapture) { clearCaptureRetry(); return false; }
+    if (current.locked || current.nativeCaptured) { clearCaptureRetry(); return true; }
+    // Key repeat, a click landing on top of a keypress, and the pause-exit path
+    // all fire within milliseconds of each other. Let the attempt already in
+    // flight finish instead of bumping the generation out from under it.
+    if (captureRequestInFlight() && (!gesture || backend.lastRequestGesture)) {
+      if (gesture) retry.attempts = 0;
+      return false;
+    }
+    if (gesture) retry.attempts = 0;
 
     const generation = ++captureGeneration;
     const el = target();
     const request = el?.requestPointerLock;
-    backend.lastRequestAt = nowMs();
+    backend.lastRequestAt = timeNow();
     backend.lastRequestReason = reason;
+    backend.lastRequestGesture = !!gesture;
     backend.requests += 1;
     backend.lastError = null;
     backend.lastResult = 'requesting';
 
     if (!request) {
       markError('requestPointerLock unavailable', reason);
-      void startNativeCapture(`${reason}:native-fallback`, generation);
+      fallbackToNativeOrRetry(`${reason}:native-fallback`, generation);
       return false;
     }
 
@@ -450,15 +598,15 @@ export function createPointerModeController({
                     () => setTimeout(() => verifyLockOrNativeFallback(`${reason}:retry`, generation), 0),
                     (retryErr) => {
                       markError(retryErr, `${reason}:retry`);
-                      if (generation === captureGeneration) void startNativeCapture(`${reason}:native-fallback`, generation);
+                      if (generation === captureGeneration) fallbackToNativeOrRetry(`${reason}:native-fallback`, generation);
                     },
                   );
                 } else setTimeout(() => verifyLockOrNativeFallback(`${reason}:retry`, generation), 25);
               } catch (retryErr) {
                 markError(retryErr, `${reason}:retry`);
-                void startNativeCapture(`${reason}:native-fallback`, generation);
+                fallbackToNativeOrRetry(`${reason}:native-fallback`, generation);
               }
-            } else void startNativeCapture(`${reason}:native-fallback`, generation);
+            } else fallbackToNativeOrRetry(`${reason}:native-fallback`, generation);
           },
         );
       } else {
@@ -467,7 +615,7 @@ export function createPointerModeController({
       return true;
     } catch (err) {
       markError(err, reason);
-      void startNativeCapture(`${reason}:native-fallback`, generation);
+      fallbackToNativeOrRetry(`${reason}:native-fallback`, generation);
       return false;
     }
   }
@@ -476,6 +624,7 @@ export function createPointerModeController({
     const locked = lockedToTarget();
     if (locked) {
       captureGeneration += 1;
+      clearCaptureRetry();
       if (native.active || native.pending) void stopNativeCapture('pointerlock-acquired:native');
     }
     setInputLocked(locked || nativeCaptured(), locked ? 'pointerlock-acquired' : 'pointerlock-lost');
@@ -501,72 +650,126 @@ export function createPointerModeController({
   function handlePointerLockError(err = null) {
     markError(err || 'pointerlockerror', backend.lastRequestReason || 'pointerlockerror');
     const generation = captureGeneration;
-    if (wantsCapture()) void startNativeCapture(`${backend.lastRequestReason || 'pointerlockerror'}:native-fallback`, generation);
+    // The most common error here is not a broken request but a refused one:
+    // the browser blocks re-locking for about a second after the user pressed
+    // Escape. Leaving that as a dead camera until the next click is the bug.
+    if (wantsCapture()) fallbackToNativeOrRetry(`${backend.lastRequestReason || 'pointerlockerror'}:native-fallback`, generation);
   }
 
   function handleNativePointerMove(e = {}) {
     if (!nativeCaptured() || !wantsCapture()) return false;
     native.moves += 1;
-    native.lastMoveAt = nowMs();
-    native.lastClient = pointFromEvent(e);
+    const now = timeNow();
+    native.lastMoveAt = now;
+    const previous = native.lastClient;
+    const hadPrevious = native.hasLastClient;
+    const point = pointFromEvent(e);
+    native.lastClient = point;
+    native.hasLastClient = true;
 
     const c = updateCenter(false);
-    const ox = native.lastClient.x - c.x;
-    const oy = native.lastClient.y - c.y;
-    native.lastOffset = { dx: ox, dy: oy };
+    const landedX = point.x - c.x;
+    const landedY = point.y - c.y;
+    native.lastOffset = { dx: landedX, dy: landedY };
 
-    const now = nowMs();
+    // setCursorPosition dispatches a synthetic move in some WebViews. It is a
+    // transport echo, never camera intent. Ignore the first event in the short
+    // IPC window and remember where the cursor actually landed so diagnostics
+    // remain useful across title bars and DPI scaling.
     const recentRecenter = native.recenterPending
       && native.recenterGeneration === native.generation
-      && now - native.recenterAt < 220;
-    const nearCenter = Math.abs(ox) <= 2.5 && Math.abs(oy) <= 2.5;
-
-    if (native.calibrationPending) {
-      if (nearCenter) {
-        native.calibrationPending = false;
-        native.calibrated = true;
-        native.coordinateSpace = 'client-calibrated';
-        native.recenterPending = false;
-        native.ignoredRecenters += 1;
-        native.lastAppliedDelta = { dx: 0, dy: 0 };
-        native.lastDeltaReason = 'native-calibration-recenter-ignored';
-        return true;
-      }
-      if (recentRecenter && (Math.abs(ox) > native.calibrationAbortPx || Math.abs(oy) > native.calibrationAbortPx)) {
-        native.calibrationFailed = true;
-        native.coordinateSpace = 'mismatch-rejected';
-        native.lastAppliedDelta = { dx: 0, dy: 0 };
-        native.lastDeltaReason = 'native-coordinate-mismatch';
-        void failNativeCapture('native-coordinate-calibration-failed');
-        return false;
-      }
-      // Small immediate offset is probably real hand movement before the first
-      // synthetic recenter event arrived. Accept it and continue.
-      native.calibrationPending = false;
-      native.calibrated = true;
-      native.coordinateSpace = 'client-calibrated-with-initial-motion';
-    }
-
-    if (recentRecenter && nearCenter) {
+      && now - native.recenterAt < native.echoWindowMs;
+    if (recentRecenter && now <= native.suppressMovementUntil) {
+      native.bias = { x: landedX, y: landedY };
       native.recenterPending = false;
       native.ignoredRecenters += 1;
       native.lastAppliedDelta = { dx: 0, dy: 0 };
       native.lastDeltaReason = 'native-recenter-ignored';
       return true;
     }
+    if (now < native.suppressMovementUntil) {
+      native.lastAppliedDelta = { dx: 0, dy: 0 };
+      native.lastDeltaReason = 'native-recenter-settling';
+      return true;
+    }
     native.recenterPending = false;
 
-    let dx = Math.abs(ox) >= native.deadzone ? ox * native.gain : 0;
-    let dy = Math.abs(oy) >= native.deadzone ? oy * native.gain : 0;
+    const movementX = Number(e.movementX);
+    const movementY = Number(e.movementY);
+    const hasRelative = Number.isFinite(movementX) && Number.isFinite(movementY);
+    let dx = 0;
+    let dy = 0;
+    if (hasRelative) {
+      dx = movementX * native.gain;
+      dy = movementY * native.gain;
+      native.relativeEvents += 1;
+      native.lastDeltaReason = 'tauri-native-relative';
+    } else if (hadPrevious) {
+      // Old WebViews omit movementX/Y. Event-to-event displacement is safe:
+      // unlike centre-relative displacement, a fixed title-bar offset cancels.
+      dx = (point.x - previous.x) * native.gain;
+      dy = (point.y - previous.y) * native.gain;
+      native.absoluteFallbackEvents += 1;
+      native.lastDeltaReason = 'tauri-native-event-delta';
+    }
+    // THE RECENTER ECHO, CAUGHT BY SHAPE RATHER THAN BY CLOCK.
+    //
+    // The timing test above needs `now <= suppressMovementUntil`, which is set
+    // to now+80ms, so the 350ms echoWindowMs was never actually reachable. When
+    // the synthetic event took longer than 80ms to return through IPC it was
+    // applied as camera intent — and because recentring always jumps the cursor
+    // toward the middle, that error had a direction. Push the mouse down to
+    // look down, hit the bottom edge, and the echo kicked the view UP. A
+    // handful of those pinned the camera on the ceiling and fought every
+    // attempt to look away from it.
+    //
+    // An echo is recognisable regardless of when it lands: its delta is the
+    // jump the recenter just made. Matching that is time-independent, so a slow
+    // IPC round trip can no longer be mistaken for a hand movement.
+    const echo = native.expectedEcho;
+    if (echo && (dx || dy)) {
+      const near = Math.abs(dx - echo.dx) <= Math.max(24, Math.abs(echo.dx) * 0.3)
+        && Math.abs(dy - echo.dy) <= Math.max(24, Math.abs(echo.dy) * 0.3);
+      // A stale expectation must not swallow real movement, so it only lives
+      // for as long as an IPC round trip could plausibly take.
+      const fresh = now - echo.at < native.echoWindowMs;
+      if (fresh && near) {
+        native.expectedEcho = null;
+        native.ignoredRecenters += 1;
+        native.lastAppliedDelta = { dx: 0, dy: 0 };
+        native.lastDeltaReason = 'native-recenter-echo-shape';
+        return true;
+      }
+      if (!fresh) native.expectedEcho = null;
+    }
+    dx = Math.abs(dx) >= native.deadzone ? dx : 0;
+    dy = Math.abs(dy) >= native.deadzone ? dy : 0;
     dx = clampDelta(dx);
     dy = clampDelta(dy);
     native.lastAppliedDelta = { dx, dy };
-    native.lastDeltaReason = 'tauri-native-capture';
 
     if (dx || dy) {
-      if (input?.addPointerDelta?.(dx, dy, 'tauri-native-capture')) native.addedDeltas += 1;
+      if (input?.addPointerDelta?.(dx, dy, native.lastDeltaReason)) native.addedDeltas += 1;
     }
-    void recenterNativeCursor({ generation: native.generation });
+
+    // Cursor grab confines on WebViews that cannot provide a true relative
+    // lock. Recenter only at an edge, not after every motion event; this avoids
+    // manufacturing a second stream of camera deltas during ordinary look.
+    const rect = target()?.getBoundingClientRect?.();
+    const right = rect ? (Number.isFinite(rect.right) ? rect.right : rect.left + rect.width) : 0;
+    const bottom = rect ? (Number.isFinite(rect.bottom) ? rect.bottom : rect.top + rect.height) : 0;
+    const edge = rect && (point.x <= rect.left + 12 || point.x >= right - 12
+      || point.y <= rect.top + 12 || point.y >= bottom - 12);
+    if (edge) {
+      native.suppressMovementUntil = now + 80;
+      // Remember the jump this recenter is about to make. The echo it provokes
+      // will carry almost exactly this delta, which identifies it far more
+      // reliably than the arrival time does — see expectedEcho in the move
+      // handler for why the timing test alone was not enough.
+      const centre = updateCenter(false);
+      native.expectedEcho = { dx: centre.x - point.x, dy: centre.y - point.y, at: now };
+      void recenterNativeCursor({ generation: native.generation });
+    }
     return true;
   }
 
@@ -611,12 +814,17 @@ export function createPointerModeController({
         requestPointerLockType: typeof requestPointerLockFn(),
         lastRequestAt: backend.lastRequestAt,
         lastRequestReason: backend.lastRequestReason,
+        lastRequestGesture: backend.lastRequestGesture,
         lastError: backend.lastError,
         lastErrorAt: backend.lastErrorAt,
         lastResult: backend.lastResult,
         fallbackReason: backend.fallbackReason,
         requests: backend.requests,
         errors: backend.errors,
+        retryPending: retry.timer !== null,
+        retryAttempts: retry.attempts,
+        retriesFired: retry.fired,
+        retryReason: retry.reason,
       },
       nativeBackend: {
         kind: native.kind,
@@ -628,6 +836,8 @@ export function createPointerModeController({
         calibrationPending: native.calibrationPending,
         calibrationFailed: native.calibrationFailed,
         coordinateSpace: native.coordinateSpace,
+        bias: native.bias,
+        anchor: nativeAnchor(),
         generation: native.generation,
         error: native.error,
         errorAt: native.errorAt,
@@ -647,6 +857,8 @@ export function createPointerModeController({
         lastDeltaReason: native.lastDeltaReason,
         gain: native.gain,
         deadzone: native.deadzone,
+        relativeEvents: native.relativeEvents,
+        absoluteFallbackEvents: native.absoluteFallbackEvents,
       },
       softBackend: {
         // Compatibility name for the v3 debug UI. This is now native-only data;
@@ -657,6 +869,8 @@ export function createPointerModeController({
         nativeErrorAt: native.errorAt,
         permissionHint: native.permissionHint,
         center: native.center,
+        bias: native.bias,
+        anchor: nativeAnchor(),
         recenterPending: native.recenterPending,
         recenterCount: native.recenterCount,
         ignoredRecenters: native.ignoredRecenters,
@@ -705,10 +919,15 @@ export function createPointerModeController({
     };
   }
 
+  function requestCaptureFromGesture(reason = 'gesture') {
+    return attemptCapture(reason, { gesture: true });
+  }
+
   return {
     sync,
     release,
     requestCaptureFromGesture,
+    attemptCapture,
     beginDragLook,
     endDragLook,
     handlePointerLockChange,

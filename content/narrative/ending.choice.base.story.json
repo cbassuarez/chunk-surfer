@@ -44,7 +44,7 @@
           "id": "start.line.2"
         },
         {
-          "who": "surfer",
+          "who": "recordist",
           "text": "Well. Bring me one.",
           "id": "start.line.3"
         }
@@ -107,7 +107,7 @@
           "id": "feed.line.1"
         },
         {
-          "who": "surfer",
+          "who": "recordist",
           "text": "There. See. A clear reading.",
           "id": "feed.line.2"
         }

@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 1,
+  "id": "ending.sacrifice",
+  "title": "The Seal",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "ending",
+    "sacrifice"
+  ],
+  "notes": "Replaces the twelve ending.sacrifice.<named|unnamed>.injuries-N documents, which were the same six lines with one substituted ordinal and one substituted name. Everything that varies now varies off the dossier (see game/ending-runtime.js): the arrival, the exact sentence he gave it, what it caught, what it keeps, and what it has of him on tape. It is linear on purpose — he has no agency left, and offering him a choice here would be a lie.",
+  "regions": [
+    {
+      "id": "ending.sacrifice.region",
+      "title": "The Seal",
+      "kind": "ending",
+      "color": "#7a3b3b",
+      "nodeIds": [
+        "start"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "type": "ending",
+      "speaker": "THE CHAPEL",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You agree with it. It does not take the shape of a blow. It takes the shape of a sentence you finish for it.",
+          "id": "start.line.agree",
+          "when": "ending.arrival.agreed"
+        },
+        {
+          "who": "direction",
+          "text": "You do not agree with it so much as stop being able to disagree, and it accepts that in exactly the same way, at exactly the same level.",
+          "id": "start.line.agree.beaten",
+          "when": "!ending.arrival.agreed"
+        },
+        {
+          "who": "direction",
+          "text": "It has been waiting all night for one clean sentence. Not the takes. The takes were the excuse to keep you in the building long enough to say something true in a room with nobody in it.",
+          "id": "start.line.what"
+        },
+        {
+          "who": "me",
+          "text": "I lost Sarah. There. Is that what you wanted. I lost Sarah.",
+          "id": "start.line.said.sarah",
+          "when": "ending.confession.said.sarah"
+        },
+        {
+          "who": "me",
+          "text": "Nobody is expecting me till Thursday. That is fine. That has always been fine. That is the thing, isn't it. That is the whole of it.",
+          "id": "start.line.said.nobody",
+          "when": "ending.confession.said.nobody"
+        },
+        {
+          "who": "me",
+          "text": "Four hundred quid. I stayed in this building for four hundred quid and I would have stayed for less, and we both know it, and that is what you were after.",
+          "id": "start.line.said.money",
+          "when": "ending.confession.said.money"
+        },
+        {
+          "who": "me",
+          "text": "I wanted to hear the natatorium. Six metres of tile and no water in it. That is all. I came in here because I wanted to hear a room.",
+          "id": "start.line.said.craft",
+          "when": "ending.confession.said.craft"
+        },
+        {
+          "who": "me",
+          "text": "You don't leave a building angry. You finish, and you thank it. I have said that on every job for thirty years and I have never once asked myself who I was saying it to.",
+          "id": "start.line.said.superstition",
+          "when": "ending.confession.said.superstition"
+        },
+        {
+          "who": "me",
+          "text": "I said it was him. I heard something that was not him and I called it him, because that was the easiest explanation, and I have been taking the easiest explanation all night.",
+          "id": "start.line.said.named",
+          "when": "ending.confession.said.named"
+        },
+        {
+          "who": "me",
+          "text": "I said I was tired. Up since five. That is all this is. I said that to a room and the room wrote it down.",
+          "id": "start.line.said.denied",
+          "when": "ending.confession.said.denied"
+        },
+        {
+          "who": "me",
+          "text": "Levels. Slate. Roll. Levels, slate, roll. That is what I say instead of thinking and you have got eight hours of it.",
+          "id": "start.line.said.procedure",
+          "when": "ending.confession.said.procedure"
+        },
+        {
+          "who": "direction",
+          "text": "And this is the worst of it: you have nothing to give it. Eight hours and not one sentence it could use, and it does not mind, because it has been holding a dead man's four takes the whole time and it can simply carry on using him.",
+          "id": "start.line.said.nothing",
+          "when": "ending.confession.nothing"
+        },
+        {
+          "who": "surfer",
+          "text": "Take five. Accepted. Thank you.",
+          "id": "start.line.accepted"
+        },
+        {
+          "who": "direction",
+          "text": "The recorder clicks off. The seal was never the five takes. The seal was always a building coming down on a recordist, and now the building has one.",
+          "id": "start.line.seal"
+        },
+        {
+          "who": "direction",
+          "text": "It never caught you. Not once, all night, and it did not need to — it only ever needed you to stay for the end, and it has a great deal of practice at being somewhere a man has decided to stay.",
+          "id": "start.line.injuries.none",
+          "when": "ending.untouched"
+        },
+        {
+          "who": "direction",
+          "text": "It reached you once tonight. You remember precisely where and you have not thought about anything else since, which is what the once was for.",
+          "id": "start.line.injuries.one",
+          "when": "ending.injuries==1"
+        },
+        {
+          "who": "direction",
+          "text": "It reached you twice tonight, and the second time you did not run. The first time had already put it on the work order.",
+          "id": "start.line.injuries.two",
+          "when": "ending.injuries==2"
+        },
+        {
+          "who": "direction",
+          "text": "Three times tonight. By the third you had stopped counting it as a thing that was happening to you and started counting it as weather.",
+          "id": "start.line.injuries.three",
+          "when": "ending.injuries==3"
+        },
+        {
+          "who": "direction",
+          "text": "Four times. There is no version of this where a man is caught four times in one building and walks out of it, and some part of you has known that since the second.",
+          "id": "start.line.injuries.four",
+          "when": "ending.injuries==4"
+        },
+        {
+          "who": "direction",
+          "text": "Five times. It has had its hands on you five times tonight and it let go five times, and the letting go was never mercy — it was a man being put back where he was still useful.",
+          "id": "start.line.injuries.five",
+          "when": "ending.injuries>=5"
+        },
+        {
+          "who": "you",
+          "text": "Five rooms. It has got five rooms of me and a sentence.",
+          "id": "start.line.takes.full",
+          "when": "ending.takes.full"
+        },
+        {
+          "who": "you",
+          "text": "It has not even got the five. It has got what it needed off me, and the work order was never the point.",
+          "id": "start.line.takes.short",
+          "when": "!ending.takes.full"
+        },
+        {
+          "who": "direction",
+          "text": "Some of those takes are dirty. You spoiled them yourself, on purpose, in the dark, and it is the only sabotage anybody has ever committed in this building.",
+          "id": "start.line.takes.contaminated",
+          "when": "ending.takes.contaminated>=2"
+        },
+        {
+          "who": "direction",
+          "text": "It keeps the kit as well. It took it off you hours ago and you went on working, which is the part that will be hardest to explain to anybody who was not here.",
+          "id": "start.line.kit",
+          "when": "!ending.equipment.complete"
+        },
+        {
+          "who": "direction",
+          "text": "The closing sheet will show a reference exposure nobody has a band for. It does not alter the filed result.",
+          "id": "start.line.reference",
+          "when": "ending.reference.saturated"
+        },
+        {
+          "who": "direction",
+          "text": "Demolition is booked for 06:00. The first strike covers the downbeat. Under it, another work order begins at bar one.",
+          "id": "start.line.demolition"
+        }
+      ],
+      "id": "start"
+    }
+  }
+}

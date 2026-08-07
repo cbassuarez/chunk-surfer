@@ -62,3 +62,31 @@ test('focus recovery clears stale movement and resumes interaction systems', () 
   assert.match(src, /recoverInteractionFocus\('visibility-visible'\)/);
   assert.match(src, /focusRecovery:'reset-and-reacquire'/);
 });
+
+test('the original world click owns capture before scene routing', () => {
+  const src = readFileSync('src/main.js', 'utf8');
+  const start = src.indexOf('function onPointerEvent(e)');
+  const end = src.indexOf('// ── Boot', start);
+  const body = src.slice(start, end);
+  assert.ok(start >= 0 && end > start);
+  assert.ok(
+    body.indexOf("ensurePointerLock('world-pointerdown')") < body.indexOf('scenes.pointer('),
+    'scene handling must not consume the capture gesture first',
+  );
+});
+
+test('window focus does not start a gesture-less pointer lock request', () => {
+  const src = readFileSync('src/main.js', 'utf8');
+  const start = src.indexOf("window.addEventListener('focus'");
+  const end = src.indexOf("document.addEventListener('visibilitychange'", start);
+  const focusHandler = src.slice(start, end);
+  assert.ok(start >= 0 && end > start);
+  assert.doesNotMatch(focusHandler, /ensurePointerLock\(/);
+});
+
+test('capture and fullscreen recovery level both current and target pitch', () => {
+  const main = readFileSync('src/main.js', 'utf8');
+  const render = readFileSync('src/render/r3d.js', 'utf8');
+  assert.match(main, /r3dRecenterLook\?\.\(\{pitch:true,immediate:true\}\)/);
+  assert.match(render, /if \(resetPitch\) pitch = pitchTarget/);
+});

@@ -1,6 +1,8 @@
 // Fair, non-recursive HUSH mischief. These definitions never impersonate save,
 // objective, achievement, or menu feedback.
 
+import { ZONE } from './floorplan/legend.js';
+
 export const HUSH_MISCHIEF_CUES = Object.freeze([
   Object.freeze({
     id: 'mischief.monitor-return', family: 'monitor-injection', delivery: 'monitor', sourcePolicy: 'monitor-nonspatial',
@@ -32,6 +34,33 @@ export const HUSH_MISCHIEF_CUES = Object.freeze([
     selection: { baseWeight: .62, repeatPenalty: .50, familyCooldownMs: 30000, cueCooldownMs: 70000, maxPerRun: 2 },
     audio: { sound: 'negative', gain: .16, pitchRange: [1, 1] },
     caption: { text: 'THE ROOM LOSES ITS RETURN', spatial: false },
+    gameplay: { emittedAsWorldNoise: false, maySpoilTake: false, mayCreateMapContact: true },
+  }),
+  // ── the dance wing ────────────────────────────────────────────────────────
+  //
+  // Two cues that can only happen down here, because they are made of the two
+  // things this wing has and nowhere else does: a floor that gives, and four
+  // walls of glass. Both stay inside the doctrine — neither speaks, neither
+  // imitates the interface, and neither spoils a take you are actually rolling.
+  //
+  // The floor cue is the nastier one. A sprung floor answers a footfall, so a
+  // footfall you did not make is the room telling you the weight is not yours.
+  Object.freeze({
+    id: 'mischief.sprung-answer', family: 'floor', delivery: 'world', sourcePolicy: 'behind-player',
+    requirements: { zones: [ZONE.danceStudio, ZONE.studio], minInterest: .32, maxAgitation: .78, minCertainty: .14 },
+    selection: { baseWeight: 1.05, repeatPenalty: .58, familyCooldownMs: 24000, cueCooldownMs: 56000, maxPerRun: 3 },
+    audio: { sound: 'equipment', gain: .19, pitchRange: [.62, .80] },
+    caption: { text: 'THE FLOOR GIVES UNDER A WEIGHT THAT IS NOT YOURS', spatial: true },
+    gameplay: { emittedAsWorldNoise: false, maySpoilTake: false, mayCreateMapContact: true },
+  }),
+  // And the mirror. The renderer has no reflections, which is the point: the
+  // room is telling you about a reflection you cannot go and check.
+  Object.freeze({
+    id: 'mischief.mirror-return', family: 'negative', delivery: 'world', sourcePolicy: 'adjacent-bearing',
+    requirements: { zones: [ZONE.danceStudio, ZONE.studio], minInterest: .38, maxAgitation: .82, minCertainty: .22 },
+    selection: { baseWeight: .84, repeatPenalty: .54, familyCooldownMs: 28000, cueCooldownMs: 64000, maxPerRun: 2 },
+    audio: { sound: 'negative', gain: .17, pitchRange: [.94, 1.06] },
+    caption: { text: 'SOMETHING SETTLES AGAINST THE GLASS', spatial: true },
     gameplay: { emittedAsWorldNoise: false, maySpoilTake: false, mayCreateMapContact: true },
   }),
 ]);

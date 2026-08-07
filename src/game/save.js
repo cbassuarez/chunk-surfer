@@ -1,6 +1,6 @@
 // Persistence, in two files with different lifetimes.
 //
-// SAVE v3 — the current night. NEW GAME replaces this record.
+// SAVE v4 — the current night. NEW GAME replaces this record.
 // META v2 — knowledge, returns, achievements, and platform sync state. NEW
 // GAME never clears it.
 //
@@ -48,9 +48,10 @@ import { normalizeDoorSave } from './door-runtime.js';
 import { freshCombatBuild, normalizeCombatBuild } from './combat-progression.js';
 import { freshCombatLoadout, normalizeCombatLoadout } from './combat-loadout.js';
 import { freshPowerState, normalizePowerState } from './conservatory-power.js';
-import { freshDockHauntingState, normalizeDockHauntingState } from './loading-dock.js';
+import { freshDockHauntingState, normalizeDockHauntingState } from './get-in.js';
+import { freshPracticeHauntState, normalizePracticeHauntState } from './practice-rooms.js';
 
-const SAVE_KEY = 'chunk-surfer:save:v3';
+const SAVE_KEY = 'chunk-surfer:save:v4';
 const LEGACY_SAVE_KEYS = STORAGE_LEGACY_SAVE_KEYS.filter((key) => key !== SAVE_KEY);
 const META_KEY = 'chunk-surfer:meta:v2';
 const LEGACY_META_KEYS = LEGACY_PROFILE_KEYS.filter((key) => key !== META_KEY);
@@ -76,6 +77,11 @@ export const freshSave = ({ settings = DEFAULT_SETTINGS, run = null } = {}) => (
   chapelTower: freshChapelTowerState(),
   power: freshPowerState(),
   dockHaunting: freshDockHauntingState(),
+  practiceHaunts: freshPracticeHauntState(),
+  // The chair in the yard, and whether it has been looked at. Normalised on
+  // read by game/yard-vigil.js rather than here, because the whole rule lives
+  // in that module and this file has no business knowing what a vigil is.
+  yardVigil: null,
   settings: normalizeSettings(settings),
   run,
 });
@@ -183,13 +189,14 @@ function migrateSaveV1ToV2(data) {
   return next;
 }
 
-function migrateSaveToV3(data, meta) {
+function migrateSaveToV4(data, meta) {
   let old = data;
   if (old?.version === 1) old = migrateSaveV1ToV2(old);
+  if (old?.version === 3) return normalizeSaveV4({ ...old, version: SAVE_VERSION }, meta);
   if (old?.version !== 2) return null;
 
   const settings = normalizeSettings(old.settings);
-  return normalizeSaveV3({
+  return normalizeSaveV4({
     ...old,
     version: SAVE_VERSION,
     settings,
@@ -202,7 +209,7 @@ function migrateSaveToV3(data, meta) {
   }, meta);
 }
 
-function normalizeSaveV3(data, meta = null) {
+function normalizeSaveV4(data, meta = null) {
   const base = freshSave();
   const source = data && typeof data === 'object' ? data : {};
   const settings = normalizeSettings(source.settings);
@@ -235,11 +242,13 @@ function normalizeSaveV3(data, meta = null) {
     chapelTower,
     power: normalizePowerState(source.power),
     dockHaunting: normalizeDockHauntingState(source.dockHaunting),
+    practiceHaunts: normalizePracticeHauntState(source.practiceHaunts),
     settings,
     run: sanitizeRun(normalizeRun(source.run, {
       meta,
       settings,
       activeFallback: hasOldRunState,
+      legacyFlags: source.flags,
     })),
   };
 }
@@ -320,8 +329,8 @@ export function saveLoad() {
     save = freshSave();
   } else {
     const raw = safeParse(saveStored.raw);
-    if (raw?.version === SAVE_VERSION) save = normalizeSaveV3(raw, meta);
-    else save = migrateSaveToV3(raw, meta) || freshSave();
+    if (raw?.version === SAVE_VERSION) save = normalizeSaveV4(raw, meta);
+    else save = migrateSaveToV4(raw, meta) || freshSave();
     if (saveStored.key !== SAVE_KEY) write(SAVE_KEY, save);
   }
 
@@ -337,8 +346,8 @@ export async function saveLoadAsync({ gameVersion = 'LOCAL', kind = null, adapte
     if (loaded.save) {
       const withSettings = { ...loaded.save, settings: loaded.settings || loaded.save.settings };
       save = withSettings.version === SAVE_VERSION
-        ? normalizeSaveV3(withSettings, meta)
-        : (migrateSaveToV3(withSettings, meta) || normalizeSaveV3(withSettings, meta));
+        ? normalizeSaveV4(withSettings, meta)
+        : (migrateSaveToV4(withSettings, meta) || normalizeSaveV4(withSettings, meta));
     } else {
       save = freshSave({ settings: loaded.settings || DEFAULT_SETTINGS });
     }
@@ -366,7 +375,7 @@ export function hasActiveRun() {
 
 export function saveCommit(patch = {}) {
   Object.assign(save, patch);
-  save = normalizeSaveV3(save, meta);
+  save = normalizeSaveV4(save, meta);
   write(SAVE_KEY, save);
   saveSettingsQueued(save.settings);
   saveGameQueued(save);

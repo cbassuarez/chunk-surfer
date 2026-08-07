@@ -64,6 +64,7 @@ const plan = {
   doorVolumes: [],
   physical: null,
   spawn: { x: 0, y: 0 },
+  homeAnchor: null,
   loaded: false,
 };
 let doorPortals=[];
@@ -1357,5 +1358,14 @@ export function setSpawn(x, y, { authored = true } = {}) {
   plan.spawn = authored ? toRuntimePoint({ x, y }) : { x: Math.round(x), y: Math.round(y) };
 }
 export function spawn() { return plan.spawn; }
+
+// The building's own front door, from the inside — the cell a plan considers its
+// hearth. It is `spawn` in every plan that starts you indoors, and it stops
+// being spawn the moment a plan starts you outside of itself. Mutation anchors
+// and the escape run want this one, not wherever the camera first opened.
+export function setHomeAnchor(x, y, { authored = true } = {}) {
+  plan.homeAnchor = authored ? toRuntimePoint({ x, y }) : { x: Math.round(x), y: Math.round(y) };
+}
+export function homeAnchor() { return plan.homeAnchor || plan.spawn; }
 
 export { F, ZONE, MATERIAL, EYE, STEP_UP, HEADROOM, PLAN_SCALE };

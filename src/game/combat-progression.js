@@ -24,7 +24,14 @@ export const PIN_SOURCES = Object.freeze({
   // the felt under its base. The foyer bust keeps its documented repair pin THROUGH
   // the base, which was never collectible and still reads correctly. One pin per
   // act now: atrium, gallery, tower.
-  flags: Object.freeze(['pin.academic', 'pin.tower', 'pin.gallery']),
+  //
+  // `pin.yard` is the fourth and the odd one out: it is not inside a piece of
+  // furniture and it is not picked up. It is granted for standing still in the
+  // yard long enough to watch the weather, and then noticing what was put behind
+  // you while you did (see game/yard-vigil.js). Nothing announces it. It is the
+  // only pin in the game a player can be handed without being told they have
+  // been handed anything.
+  flags: Object.freeze(['pin.academic', 'pin.tower', 'pin.gallery', 'pin.yard']),
 });
 
 export const TECHNIQUE_DEFS = Object.freeze([

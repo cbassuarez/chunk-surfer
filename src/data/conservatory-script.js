@@ -794,7 +794,7 @@ export const BENT_RIG = {
     lines: [
       { who: 'direction', text: 'You kneel on a plant-room floor at two in the morning and reflow a joint a dead man left grey, because that is the job, and it was always the job.' },
       { who: 'you', text: 'There. That is a circuit. That is a horrible, beautiful, working circuit.' },
-      { who: 'direction', text: 'It goes in the bag, against the work order, where it is the heaviest thing you are carrying. The cells stay in it, because a rig with no cells is a paperweight.' },
+      { who: 'direction', text: 'It goes in the bag, against the work order, where it is the heaviest thing you are carrying. The cells stay in it, and the cells are most of the weight, and you put them in anyway.' },
       { who: 'you', text: 'I do not know what I would do with it.' },
       { who: 'direction', text: 'That is true when he says it. It will not be true later.' },
     ],
@@ -1016,17 +1016,48 @@ export const RADIO_DEAD = {
 // After the booth: the yard, in the rain, and a key going into a grey door.
 // It ends on the key, because the title card goes here — and the door does not
 // shut until the title has faded and the song has gone with it.
-export const COLD_OPEN = [
-  { who: 'direction', art: { id: 'thresholdYard', mode: 'hero', caption: 'A hundred metres of nothing.', status: 'THRESHOLD' }, artHold: true, artScope: 'scene', text: 'The yard. Rain on the skips, and a hundred metres of nothing between the booth and the grey door.', hold: 2.6 },
-  { who: 'you', text: 'Basement first. It will be the hardest and I want it behind me.', hold: 2.4 },
-  { who: 'direction', art: { id: 'door', mode: 'hero', caption: 'The grey door / key in hand', status: 'THRESHOLD' }, text: 'The key turns. The door is heavier than it looks, the way fire doors are.', cue: 'keyturn', hold: 2.6 },
-];
+// THESE THREE BEATS ARE THINGS HE DOES NOW, NOT THINGS HE IS TOLD.
+//
+// They used to close the cold open: the yard, the plan, and the key turning —
+// narrated over black, between the booth conversation and the title, describing
+// a hundred-metre walk the player never took and a door they never opened. Then
+// control, outside, in front of that same unopened door.
+//
+// The walk is the game's now (see the spine in floorplan/conservatory.js), so
+// each line has gone to the place it describes:
+//
+//   the yard        -> ARRIVAL_THOUGHTS.gate, on first leaving the lodge
+//   basement first  -> ARRIVAL_THOUGHTS.crossing, out on the tarmac
+//   the key turns   -> ARRIVAL_THOUGHTS.door, on the [e] that opens the grey door
+//
+// The array stays, and stays empty, because makeColdOpenScene still takes beats
+// and the god menu still opens the booth conversation with it.
+export const COLD_OPEN = [];
+
+// The three redistributed lines. Fired from main.js as ordinary in-world
+// thoughts, each once, at the point on the walk it belongs to.
+export const ARRIVAL_THOUGHTS = Object.freeze({
+  gate: [
+    { who: 'direction', text: 'Out of the gate, and the yard opens up. Rain on the skips, and a hundred metres of nothing between here and the building.' },
+  ],
+  crossing: [
+    { who: 'you', text: 'Basement first. It will be the hardest and I want it behind me.' },
+  ],
+  door: [
+    { who: 'direction', text: 'The key turns. The door is heavier than it looks, the way fire doors are.' },
+  ],
+});
 
 // ...and then the title. And THEN the door, into a silence the song has just
 // vacated. The loudest thing that happens all night lands on an empty mix.
+// It no longer REPORTS the arrival. The player has just walked the yard, turned
+// the key and stepped through, and the closer has shut the door behind them on
+// screen — so the beat that used to open with "the service door closes behind
+// you" now begins where the man actually is, which is standing in the dark on
+// the other side of it, listening. "Darker than the yard" finally means
+// something, because there was a yard and it was dark and he was in it.
 export const AFTER_TITLE = [
-  { who: 'direction', art: { id: 'door', mode: 'hero', caption: 'The door closes behind you.', status: 'THRESHOLD' }, text: 'The service door closes behind you.',
-    cue: 'door', shake: 2.2, shakeMs: 620, flash: true, flashMs: 220, hold: 3.4 },
+  { who: 'you', art: { id: 'door', mode: 'hero', caption: 'Inside / the door shut', status: 'THRESHOLD' }, text: 'Right. That is the weather dealt with.', hold: 2.4 },
   { who: 'you', artClear: true, text: 'Darker than the yard. Which is not great, because the yard was dark.', hold: 2.6 },
   { who: 'you', text: 'And quieter. No rain in here. No rain, no traffic, no plant, no lift.', hold: 2.8 },
   { who: 'you', text: 'Minus sixty decibels, near enough, before I have taken the recorder out of the bag.', hold: 2.8 },
@@ -1210,7 +1241,7 @@ export const PAGES = [
     body: [
       { raw: 'PRAC  take 1. Clean. 60s.' },
       '',
-      'Eight practice rooms and an ensemble room, all with the door open. Seven uprights with their lids up, none of them in tune with any of the others. Stands and cases in the rooms without them. In an empty room the pianos are still the loudest thing, because a piano with the lid up is a hundred and eighty strings waiting for something to happen.',
+      'Eight practice rooms and an ensemble room, all with the door open. Seven uprights with their lids up, none of them in tune with any of the others. Stands and cases in the rooms without them. In an empty room the pianos are still the loudest thing. A hundred and eighty strings apiece, nothing touching any of them, and still the loudest thing in the building.',
       '',
       'Something happened in the corridor while I was recording, and it is not on the take, and I was wearing the headphones, and the headphones are the only reason I would have heard it.',
       '',
@@ -1648,128 +1679,27 @@ export function endingChoice(options = {}, legacyCanSurface = false) {
   };
 }
 
-// Ending A — the sacrifice. You stay; the seal (the demolition) closes. Graded
-// by whether you named it and how badly the night used you.
-export function sacrificeEnding({ injuries = 0, named = false } = {}) {
-  const ordinal = ['', 'first', 'second', 'third', 'fourth', 'fifth'][Math.min(5, injuries)] || 'newest';
-  return [
-    { who: 'direction', text: 'You agree with it. It does not take the shape of a blow. It takes the shape of a sentence you finish for it.' },
-    named
-      ? { who: 'me', text: 'I lost Sarah. There. Is that what you wanted. I lost Sarah.' }
-      : { who: 'me', text: 'I lost somebody. Everybody has lost somebody. There. Take it.' },
-    { who: 'surfer', text: 'Take five. Accepted. Thank you.' },
-    { who: 'direction', text: 'The recorder clicks off. The seal was never the five takes. The seal was always a building coming down on a recordist, and now the building has one.' },
-    injuries > 0
-      ? { who: 'direction', text: `You are the ${ordinal} thing it caught tonight, and the last.` }
-      : { who: 'direction', text: 'It never caught you, not once, all night. It did not need to. It only needed you to stay for the end.' },
-    { who: 'direction', text: 'Demolition is booked for 06:00. The first strike covers the downbeat. Under it, another work order begins at bar one.' },
-  ];
-}
+// ENDING A AND THE COFFEE VERSION OF IT ARE AUTHORED CONTENT NOW.
+//
+// sacrificeEnding() and helpedEnding() lived here and were migrated to
+// content/narrative/ending.sacrifice.*.story.json as twelve and two files — the
+// same six lines with one substituted ordinal and one substituted name. Both are
+// single conditional documents now (ending.sacrifice, ending.helped) that read
+// the run's dossier, so there is nothing left here to keep in sync. See
+// data/endings.js for the contract and game/ending-runtime.js for the dossier.
 
-// Ending B — the inversion. Needs the rig. The invert, then the collapse (the one
-// real clock), then a run for a door that will not be where the door is, then a
-// way out you did not open — and a yard that is not there.
-export const INVERT_START = [
-  { who: 'direction', text: 'You feed the output back into its own input before it has finished being an output. The oldest trick there is: run the circuit that makes a machine sing, backwards, to make one stop.' },
-  { who: 'you', text: 'He built this to get something OUT of the signal.' },
-  { who: 'surfer', text: 'That is cheating.' },
-  { who: 'you', text: 'It is engineering. You would not know the difference. Nobody in here ever did.' },
-  { who: 'direction', text: 'The organ chokes off. Somewhere below, the first wall lets go. The only clock in this building that was ever real starts to run.' },
-  { who: 'direction', text: 'On the reversed pre-roll, two service exits open before the transport reaches the sound of either door.' },
-];
-export const FALSE_DOOR = [
-  { who: 'direction', text: 'The grey service door. The one you came in through, where the plan says it is.' },
-  { who: 'you', text: 'There you are. Fine. I was tired. I was anxious and I walked past it.' },
-  { who: 'direction', text: 'Relief arrives all at once: the guard, the RETURNED checkbox, the wet yard eleven seconds away. Your exit is incoming.' },
-  { who: 'direction', text: 'It is right there and it does not open. And then it is not right there — a foot to the left, and then a wall.' },
-  { who: 'surfer', text: 'Where it does not open a door, try another route.' },
-  { who: 'direction', text: 'The door goes on not being where the door is. Your waypoint blinks out, and re-draws, pointing somewhere you never marked.' },
-];
-export function rescueEnding(named) {
-  return [
-    { who: 'direction', text: 'The new mark is a door you never wrote down. It is open. A shape holds it open, backlit, and you do not get to see the face.' },
-    named ? { who: 'me', text: '...Sarah?' } : { who: 'you', text: 'Who is that. Who is holding the door.' },
-    { who: 'direction', text: 'It could be her. It could be the man who did the first four rooms and did not come out. It could be nobody, and the door simply failed open. You go through it, because it is open and the building is coming down.' },
-  ];
-}
-export const INVERSION_FINAL = [
-  { who: 'direction', text: 'You come out into the yard. The yard is not there.' },
-  { who: 'direction', text: 'A clock restarts in front of you: --:--. Further off there is another grey door, exactly like the one you just came out of.' },
-  { who: 'recordist', text: 'Ha.' },
-  { who: 'direction', text: 'The recordist begins to laugh, low, and it does not stop when he stops. The signal has kept a usable reference of him. You did not save him. Somebody saved you. You will spend a while working out who — and whether they got out either.' },
-];
+// ENDING B AND THE DRUGGED READING OF IT ARE AUTHORED CONTENT NOW.
+//
+// INVERT_START and FALSE_DOOR survive as authored documents because they are not
+// endings — they are the invert and the door that is not where the door is, both
+// of which happen mid-escape. rescueEnding(), INVERSION_FINAL and druggedReveal()
+// were migrated and then rewritten: ending.inversion and ending.drugged are
+// single conditional documents that read the run's dossier. See data/endings.js.
 
-// If you drank the guard's coffee, the ending is reframed — and the mechanic
-// never says which reading is true. You stayed: he was a real guard who put a
-// stimulant in a hot drink to hold the thing off, and it was kind, and it was
-// real, and it was not enough.
-export function helpedEnding({ named = false } = {}) {
-  return [
-    { who: 'direction', text: 'You agree with it, and the coffee is still somewhere behind your teeth, and it did not save you, because it was only ever coffee with something kind in it.' },
-    { who: 'you', text: 'He put something in it. A stimulant. To hold the thing off, to buy me the night.' },
-    { who: 'direction', text: 'A guard on a gate read a work order for a building that eats recordists, and he did the one thing a man in a booth can do — he made you a hot drink and he hoped.' },
-    { who: named ? 'me' : 'direction', text: named ? 'It was real. He tried. And I still said her name.' : 'It was real, and it was kind, and it was not enough. The seal closes at 06:00 with you inside it.' },
-  ];
-}
-
-// You got out — but you drank it, so there was never anything to get out of. A
-// psychedelic night in an empty building; the takes are ruined and the job is a
-// faux pas. Do not take the coffee from the man in the hi-vis jacket.
-export function druggedReveal({ takes = 5 } = {}) {
-  return [
-    { who: 'direction', text: 'You are in the car park. The skips are where the skips are and the building stands unlit. The incident report will say there was never anything in it but you.' },
-    { who: 'you', text: '...what was in that coffee.' },
-    { who: 'direction', text: 'You put the headphones on, out of thirty years of habit, and you play the night back.' },
-    { who: 'recordist', text: 'Take one.' },
-    { who: 'you', text: 'That is me. Breathing. Talking to a room. Take two is footsteps. Take three is a man saying a name into a space with nobody in it.' },
-    { who: 'direction', text: `${takes >= 5 ? 'Five files' : 'Every file'}, and not one clean minute among them. You did not record five rooms. You wandered a condemned building for eight hours, off your face on a stranger's coffee, narrating.` },
-    { who: 'you', text: 'No money. No takes. A note in a file somewhere: this contractor could not be relied upon.' },
-    { who: 'direction', text: 'The file closes on that explanation. Under the last sentence, the recorder still reads PRE -01.8.' },
-  ];
-}
-
-// The frame closes on the guard's ledger. Variant:
-//   'out' | 'client' | 'nobody' (the supernatural readings), or
-//   'helped' | 'drugged' (if you drank the coffee).
-export function guardEpilogue(variant) {
-  if (variant === 'drugged') return [
-    { who: 'direction', art: { id: 'guard', mode: 'hero', caption: 'Gate booth / dawn', status: 'STILL' }, text: 'The gate booth, lit, at dawn. The same bored man. He does not ask how it went; he watches the little television with the sound off.' },
-    { who: 'you', text: 'What did you put in it.' },
-    { who: 'guard', text: 'In what?' },
-    { who: 'direction', text: 'There is one paper cup in the bin by his foot, and it is not yours — yours is still in your hand, empty, and you do not remember finishing it.' },
-    { who: 'guard', text: 'Long night. You signing out, or not.' },
-  ];
-  if (variant === 'helped') return [
-    { who: 'direction', art: { id: 'guard', mode: 'hero', caption: 'Gate booth / dawn', status: 'STILL' }, text: 'The gate booth. The bored man is not bored now. He has been up all night, and he keeps looking at the door you went in by.' },
-    { who: 'guard', text: '...that is longer than the last one lasted.' },
-    { who: 'direction', text: 'He made you a coffee with something in it to hold the thing off, because it was the only help a man in a booth had to give, and he knew when he did it that it might not be enough.' },
-    { who: 'guard', text: 'I did what I could think of. I am sorry. I am.' },
-  ];
-  if (variant === 'surfaced') return [
-    { who: 'direction', art: { id: 'guard', mode: 'hero', caption: 'Gate booth / returned', status: 'RETURNED' }, text: 'The gate booth. The same bored man, the same book, and a second man standing behind you with no shoes on.' },
-    { who: 'guard', text: 'Two of you.' },
-    { who: 'recordist', text: 'I am going to sit down now.' },
-    { who: 'direction', text: 'The guard opens the right column. RETURNED. He writes your name first, because you can still hold the pen. Then he writes the other name from memory.' },
-    { who: 'guard', text: 'I kept a place for it. I thought that was superstition. It was filing.' },
-  ];
-  if (variant === 'out') return [
-    { who: 'direction', art: { id: 'guard', mode: 'hero', caption: 'Gate booth / dawn', status: 'STILL' }, text: 'The gate booth. The same bored man, the same book, the two columns he never explained.' },
-    { who: 'guard', text: 'You came back.' },
-    { who: 'you', text: 'I came back.' },
-    { who: 'guard', text: 'Huh.' },
-    { who: 'direction', text: 'He turns the book around. The left column is full of names, all the way up the page. The right column — RETURNED — has been empty the whole time. He writes in it. Yours is the first.' },
-    { who: 'guard', text: 'Sign here. And here. The second one is new. I have never once had to use it.' },
-  ];
-  if (variant === 'client') return [
-    { who: 'direction', art: { id: 'guard', mode: 'hero', caption: 'Gate booth / account closed', status: 'STILL' }, text: 'The gate booth. The bored man is not alone. Someone in a good coat is at the desk who was not here when you went in.' },
-    { who: 'client', text: 'Is it done?' },
-    { who: 'guard', text: 'It is done.' },
-    { who: 'direction', text: 'The client signs the account closed. Nobody at W. Ellery has ever seen a ghost. They have seen a schedule of consent and an open account, and now a closed one. The left column got one more name. The right stays empty.' },
-    { who: 'client', text: 'Good. Book the machines for 06:00.' },
-  ];
-  return [
-    { who: 'direction', art: { id: 'guard', mode: 'hero', caption: 'Gate booth / morning', status: 'STILL' }, text: 'The gate booth. The bored man, the book, and nobody else. Not the client, who did not need to come. Not you, who did not come out.' },
-    { who: 'direction', text: 'He writes the date and the time in the left column, beside a name, and he leaves the right column empty, the way it has been empty all the way up the page. The building took a man and gave back a file with nothing on it.' },
-    { who: 'guard', text: 'Next.' },
-  ];
-}
+// THE SIX GATE EPILOGUES ARE AUTHORED CONTENT NOW.
+//
+// guardEpilogue() lived here and was migrated to content/narrative/
+// ending.epilogue.*.story.json, and then rewritten: they are the last page of the
+// game and they were five lines each, and three of the six never touched the
+// RETURNED column, which is the best object in this story. See data/endings.js —
+// each ending declares which coda closes it, and every coda reads the dossier.

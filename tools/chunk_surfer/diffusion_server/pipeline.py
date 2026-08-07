@@ -41,6 +41,8 @@ the disagreement is exactly what a naive swap gets wrong. So a Model states it:
 from __future__ import annotations
 
 import io
+
+import numpy as np
 import hashlib
 import json
 import math
@@ -529,10 +531,88 @@ def _clip_token_count(lens: Lens, text: str) -> int:
         return -1
 
 
+# ── seamless generation ──────────────────────────────────────────────────────
+#
+# THE BANKS ARE TILED, SO THEY HAVE TO WRAP. surfaceSlot() in render/r3d.js
+# repeats every generated material every 1.0-2.2 metres, and nothing in this
+# pipeline ever asked the model for something that could survive that. Measured
+# on the shipped cache, the two edges of a bank differ by up to fourteen times
+# the texture's own internal detail — so every repeat drew a hard seam and the
+# walls read as a grid of panels. That grid is the "plaid".
+#
+# Convolutions are where the edge is decided: with zero padding the model has no
+# information past the border and invents a different one on each side. Circular
+# padding makes the border wrap, so the left edge is generated knowing the right.
+# It costs nothing and it is the standard way to get a tileable image out of SD.
+#
+# It has to be set on EVERYTHING that touches pixels — the UNet, the ControlNet
+# and the decoder. TAESD is a real convolutional decoder, so a seamless latent
+# decoded through zero padding gets its seam back on the way out.
+_SEAMLESS_MODULES = ("unet", "controlnet", "vae")
+
+
+def _mirror_seam(a, axis: int, feather: int):
+    """Blend a band across the middle of `axis` with its own mirror.
+
+    At the centre both sides average to the same value, so the join is exactly
+    continuous; away from it the blend falls off to nothing. Because the band is
+    mixed with a FLIPPED COPY OF ITSELF rather than a gradient, real texture
+    survives the repair — a linear ramp would leave a soft smear across the tile.
+    """
+    a = np.swapaxes(a, 0, axis)
+    n = a.shape[0]
+    lo, hi = n // 2 - feather, n // 2 + feather
+    if lo < 0 or hi > n or hi - lo < 2:
+        return np.swapaxes(a, 0, axis)
+    band = a[lo:hi]
+    # 0.5 at the seam, 0 at the band edges: the two centre rows both become the
+    # average of the pair, which is what makes them equal.
+    ramp = 1.0 - np.abs(np.linspace(-1.0, 1.0, band.shape[0]))
+    w = (0.5 * ramp * ramp).reshape(-1, *([1] * (band.ndim - 1)))
+    a[lo:hi] = band * (1.0 - w) + band[::-1] * w
+    return np.swapaxes(a, 0, axis)
+
+
+def make_tileable(img: Image.Image, feather: int = 40) -> Image.Image:
+    """Guarantee the wrap, on both axes.
+
+    Circular convolution padding fixes the seam the MODEL creates, and measured
+    it takes the horizontal wrap from 3.5x the texture's internal detail down to
+    1.0x — seamless. It cannot fix a seam the SOURCE brought with it: img2img at
+    moderate strength preserves large-scale content, so a frame whose top simply
+    looks different from its bottom stays that way, and the vertical wrap does
+    not improve at all.
+
+    Rolling by half is the deterministic half of the fix. It makes the wrap
+    continuous by construction — the new left and right borders were ADJACENT
+    columns in the original — and moves the real discontinuity to a cross in the
+    middle, where _mirror_seam can repair it without touching the edges the
+    tiling depends on.
+    """
+    a = np.asarray(img.convert("RGB"), dtype=np.float32)
+    h, w = a.shape[:2]
+    a = np.roll(a, (h // 2, w // 2), axis=(0, 1))
+    a = _mirror_seam(a, 1, min(feather, w // 4))
+    a = _mirror_seam(a, 0, min(feather, h // 4))
+    return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8), mode="RGB")
+
+
+def _set_seamless(pipe, enable: bool) -> None:
+    mode = "circular" if enable else "zeros"
+    for name in _SEAMLESS_MODULES:
+        module = getattr(pipe, name, None)
+        if module is None:
+            continue
+        for layer in module.modules():
+            if isinstance(layer, torch.nn.Conv2d):
+                layer.padding_mode = mode
+
+
 def diffuse(
     lens: Lens, jpeg_bytes: bytes, prompt: str, strength: float, passes: int,
     seed: int, guidance: float, negative: str, quality: int = 72,
     depth_bytes: bytes | None = None, depth_scale: float | None = None,
+    dream_opts: dict | None = None, seamless: bool = False,
 ) -> bytes:
     img = Image.open(io.BytesIO(jpeg_bytes)).convert("RGB")
     src_size = img.size
@@ -589,11 +669,42 @@ def diffuse(
         if use_negative:
             kwargs["negative_prompt"] = negative
 
-    out = lens.pipe(
-        image=img, strength=strength,
-        num_inference_steps=steps, guidance_scale=guidance,
-        generator=gen, **ctrl, **kwargs,
-    ).images[0]
+    # Restored in a finally: the pipe is a long-lived singleton shared with the
+    # burst path, which repaints the whole screen and must NOT wrap.
+    _set_seamless(lens.pipe, seamless)
+    try:
+        out = lens.pipe(
+            image=img, strength=strength,
+            num_inference_steps=steps, guidance_scale=guidance,
+            generator=gen, **ctrl, **kwargs,
+        ).images[0]
+    finally:
+        if seamless:
+            _set_seamless(lens.pipe, False)
+
+    # THE SECOND LAYER. Gradient ascent on a CNN's own activations, run on what
+    # the diffuser just produced — see dream.py for why a prompt cannot do this.
+    # Applied at SIZE, before the resize back, so the octaves work at the
+    # resolution the model actually generated rather than the client's.
+    #
+    # Absent or gain<=0 it costs nothing and this is the pipeline it always was.
+    if dream_opts and float(dream_opts.get("gain", 0) or 0) > 0:
+        from dream import dream_image
+        out = dream_image(
+            out,
+            gain=float(dream_opts.get("gain", 1.0)),
+            layer=str(dream_opts.get("layer", "objects")),
+            octaves=int(dream_opts.get("octaves", 3)),
+            iterations=int(dream_opts.get("iterations", 10)),
+            step=float(dream_opts.get("step", 0.02)),
+            device=lens.device,
+        )
+
+    # LAST, AND IT HAS TO BE LAST. The dream pass above is gradient ascent with
+    # zero-padded convolutions over resampled octaves; whatever the wrap looked
+    # like going in, it does not survive. Tiling is the final word on a bank.
+    if seamless:
+        out = make_tileable(out)
 
     out = out.resize(src_size)
     buf = io.BytesIO()

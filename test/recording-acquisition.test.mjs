@@ -36,7 +36,14 @@ test('VFD selection is destabilised before phosphor encoding', () => {
   assert.match(pixelShader, /float ordered\s*=\s*bayer4/);
   assert.match(pixelShader, /float organic\s*=\s*recordingNoise/);
   assert.match(pixelShader, /float recordedSignal\s*=\s*clamp\(signalLevel\s*\+\s*instability/);
-  assert.match(pixelShader, /smoothstep\(coverageThreshold[^;]+recordedSignal/s);
+  // The selection is a HALFTONE of the leveled tone now, lifted by the tube's
+  // excitation, rather than a smoothstep on the raw signal against a sliding cut
+  // point. The contract is unchanged in intent -- recordedSignal must still
+  // destabilise selection before phosphor encoding -- so this pins the lift.
+  assert.match(pixelShader, /float lift = clamp\(recordedSignal[^;]+;/s);
+  assert.match(pixelShader, /selected = step\(threshold, clamp\(exposure \+ lift/s);
+  // And the picture must come from levels, not from raw luma.
+  assert.match(pixelShader, /float tone = levels\(y\);/);
   assert.match(pixelShader, /mix\(c,\s*paletted/);
   assert.match(pixelShader, /recordingHash3/);
   assert.match(pixelShader, /formStipple/);
@@ -57,9 +64,15 @@ test('VFD selection is destabilised before phosphor encoding', () => {
 test('raymarched material sampling remains direction-invariant', () => {
   assert.doesNotMatch(renderer, /sc\.xy\s*\+=\s*viewTs/);
   assert.doesNotMatch(renderer, /float\s+viewTs\s*=/);
-  assert.match(renderer, /textureGrad\(uSurfHeight,sc,scDx,scDy\)/);
+  // Roughness and relief now share one array — R and G of a single sample —
+  // because the pass had no spare texture unit and the engraving needed one.
+  // The guarantee this test exists for is unchanged: explicit derivatives, so a
+  // wall cannot change texture density merely because the player turned.
+  assert.match(renderer, /textureGrad\(uSurfMaterial,sc,scDx,scDy\)\.rg/);
   assert.match(renderer, /textureGrad\(uSurfNormal,sc,scDx,scDy\)/);
-  assert.match(renderer, /textureGrad\(uSurfRough,sc,scDx,scDy\)/);
+  assert.match(renderer, /float h0=material\.g/);
+  assert.match(renderer, /surfRough = material\.r/);
+  assert.doesNotMatch(renderer, /uSurfRough|uSurfHeight/);
   assert.match(renderer, /TEXTURE_MAX_ANISOTROPY_EXT,anisoMax/);
   assert.match(renderer, /sceneTex\s*=\s*makeTex\(sw,\s*sh,\s*null,\s*'rgba16f'\)/);
 });

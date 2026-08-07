@@ -231,7 +231,7 @@ export function drawPadDiagram(rect, model, { cols = 120, blinkOn = true } = {})
             blur: button.held ? 0 : 2.6,
             dpr,
             alpha: 1,
-            ghost: 0,
+            halation: 0,
           });
         });
       }

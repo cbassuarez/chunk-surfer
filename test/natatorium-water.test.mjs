@@ -37,13 +37,34 @@ for (const y of [29, 30, 31, 32]) {
 }
 assert.equal(FP.materialAt(...Object.values(FP.toRuntimePoint({x:84,y:33}))),MATERIAL.wetTile,'pool begins only after the lead deck');
 
+
+// THE FIXTURES DID NOT MATCH WHAT THE GAME ACTUALLY STORES.
+//
+// `returns.history` is an array of summary ID STRINGS and `returns.records` maps
+// those ids to summaries — see runtime.js. These fixtures passed history as
+// objects (`[{ endingId }]`), which normalizeReturnHistory discards entirely, so
+// every assertion below was really being satisfied by the `endingsSeen` fallback
+// and the real lookup path was never exercised once. `endingsSeen` is unique
+// DISCOVERY order, not the latest return, so a fixture that never leaves it
+// cannot catch the thing this file exists to catch.
+//
+// metaAfter() builds the shape the runtime writes. It also proves the ordering
+// rule: the LAST return decides the water, not the first time you saw an ending.
+const metaAfter = (...endingIds) => ({
+  endingsSeen: [...new Set(endingIds)],
+  returns: {
+    history: endingIds.map((_, i) => `return:run_${i}`),
+    records: Object.fromEntries(endingIds.map((endingId, i) => [`return:run_${i}`, { id: `return:run_${i}`, endingId }])),
+  },
+});
+
 const firstRun = freshRunRecord({ id: 'run_first', meta: { endingsSeen: [] }, now: 1000 });
 assert.equal(firstRun.environment.natatoriumWater, 'drained');
 assert.equal(firstRun.environment.routeTrunk, 'baseline');
 
 for (const endingId of ['sacrifice', 'helped']) {
   const env = decideNatatoriumWaterEnvironment({
-    meta: { endingsSeen: [endingId], returns: { history: [{ endingId }] } },
+    meta: metaAfter(endingId),
     runId: `run_${endingId}`,
     now: 2000,
   });
@@ -51,9 +72,23 @@ for (const endingId of ['sacrifice', 'helped']) {
   assert.equal(env.routeTrunk, 'flooded-seal');
 }
 
+// AND IT IS THE LATEST RETURN THAT DECIDES, NOT THE FIRST ONE SEEN. This is the
+// assertion the object-shaped fixtures could never have made: endingsSeen is in
+// discovery order, so a player who saw the inversion first and then sealed the
+// building would have got a dry natatorium for the rest of time.
+assert.equal(
+  decideNatatoriumWaterEnvironment({ meta: metaAfter('inversion', 'sacrifice'), runId: 'run_latest', now: 2000 }).routeTrunk,
+  'flooded-seal',
+  'the most recent return decides the water, not the first ending discovered',
+);
+assert.equal(
+  decideNatatoriumWaterEnvironment({ meta: metaAfter('sacrifice', 'inversion'), runId: 'run_latest2', now: 2000 }).routeTrunk,
+  'dry-inversion',
+);
+
 assert.deepEqual(
   decideNatatoriumWaterEnvironment({
-    meta: { endingsSeen: ['surfaced'], returns: { history: [{ endingId: 'surfaced' }] } },
+    meta: metaAfter('surfaced'),
     runId: 'run_surface',
     now: 2000,
   }),
@@ -61,7 +96,7 @@ assert.deepEqual(
 );
 assert.deepEqual(
   decideNatatoriumWaterEnvironment({
-    meta: { endingsSeen: ['inversion'], returns: { history: [{ endingId: 'inversion' }] } },
+    meta: metaAfter('inversion'),
     runId: 'run_inversion',
     now: 2000,
   }),
@@ -69,12 +104,12 @@ assert.deepEqual(
 );
 
 const druggedA = decideNatatoriumWaterEnvironment({
-  meta: { endingsSeen: ['drugged'], returns: { history: [{ endingId: 'drugged' }] } },
+  meta: metaAfter('drugged'),
   runId: 'drugged-a',
   now: 2000,
 });
 const druggedB = decideNatatoriumWaterEnvironment({
-  meta: { endingsSeen: ['drugged'], returns: { history: [{ endingId: 'drugged' }] } },
+  meta: metaAfter('drugged'),
   runId: 'drugged-b',
   now: 2000,
 });
@@ -89,7 +124,7 @@ assert.equal(oldRun.ledger.natatoriumWater.seen, false);
 
 const murkyRun = freshRunRecord({
   id: 'murky',
-  meta: { endingsSeen: ['surfaced'], returns: { history: [{ endingId: 'surfaced' }] } },
+  meta: metaAfter('surfaced'),
   now: 3000,
 });
 assert.equal(natatoriumWaterBlocks(murkyRun, bounds.minX, bounds.minY, bounds), false);

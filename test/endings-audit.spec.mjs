@@ -20,6 +20,10 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
+import { ENDING_IDS } from '../src/progression/schema.js';
+import { endingCodaVariant } from '../src/data/endings.js';
+import { confessionValues } from '../src/game/ending-runtime.js';
+
 const story = (id) => JSON.parse(readFileSync(`content/narrative/${id}.story.json`, 'utf8'));
 const mainSource = readFileSync('src/main.js','utf8');
 const mutationsOf = (doc) => {
@@ -114,23 +118,37 @@ for (const [id, routes] of Object.entries(expected)) {
 // Every terminal finishEnding() id needs the tree it presents. A missing document
 // throws at runtime, deep in the finale, where nobody would find it.
 for (const id of [
-  'ending.false-door', 'ending.inversion-start', 'ending.inversion-final',
-  'ending.rescue.named', 'ending.rescue.unnamed',
-  'ending.helped.named', 'ending.helped.unnamed',
-  'ending.drugged.complete', 'ending.drugged.partial',
+  'ending.false-door', 'ending.inversion-start',
+  'ending.sacrifice', 'ending.helped', 'ending.surfaced',
+  'ending.inversion', 'ending.drugged',
+  'ending.arrival.defeated', 'ending.arrival.timed-out',
   'ending.epilogue.out', 'ending.epilogue.client', 'ending.epilogue.nobody',
   'ending.epilogue.helped', 'ending.epilogue.drugged', 'ending.epilogue.surfaced',
 ]) {
   const doc = story(id);
   assert.ok(Object.keys(doc.nodes).length > 0, `${id} has content`);
 }
-// The sacrifice ending is per-injury and per-name, and the whole matrix has to be
-// there or a five-injury run crashes at the last line of the game.
-for (const named of ['named', 'unnamed']) {
+// THE SACRIFICE USED TO BE TWELVE DOCUMENTS — named × injuries 0–5 — and this
+// asserted the whole matrix was on disk, because a five-injury run would
+// otherwise crash on the last line of the game. It is one document that reads the
+// dossier now, so the guarantee moves: every injury count must still reach a line,
+// or the same run ends on a shorter ending than it earned.
+{
+  const doc = story('ending.sacrifice');
+  const conditions = (doc.nodes.start.lines || []).map((l) => l.when).filter(Boolean);
   for (let injuries = 0; injuries <= 5; injuries += 1) {
-    const doc = story(`ending.sacrifice.${named}.injuries-${injuries}`);
-    assert.ok(Object.keys(doc.nodes).length > 0, `sacrifice ${named}/${injuries} exists`);
+    const reached = conditions.some((c) => c === `ending.injuries==${injuries}`)
+      || (injuries === 0 && conditions.includes('ending.untouched'))
+      || (injuries >= 5 && conditions.some((c) => /ending\.injuries>=\d/.test(c)));
+    assert.ok(reached, `a run with ${injuries} injuries still gets its own line`);
   }
+  // And every disclosure the game can actually reach has a reply, which is the
+  // thing that was broken: only "Sarah" ever changed a word of any ending.
+  for (const value of confessionValues()) {
+    assert.ok(conditions.includes(`ending.confession.said.${value}`),
+      `the sacrifice answers "${value}" — every disclosure is a sentence he said out loud`);
+  }
+  assert.ok(conditions.includes('ending.confession.nothing'), 'and answers having said nothing');
 }
 
 // Every terminal choice hands back to an embodied world action before its final
@@ -139,7 +157,22 @@ for (const named of ['named', 'unnamed']) {
 assert.match(mainSource,/escape=\{kind:'surfaced',stage:'exit'/,'surfaced walks to the public exit');
 assert.match(mainSource,/escape=\{kind:'stay',stage:'commit'/,'sacrifice and helped require the chapel-screen commitment');
 assert.match(mainSource,/escape=\{ kind:'inversion',stage:'door'/,'inversion retains the playable two-door escape');
-assert.match(mainSource,/id===CHUNK_SURF_ENDING_ID \? 'surfaced'/,'surfaced reaches its two-person gate epilogue');
+// WHICH GATE SCENE CLOSES AN ENDING MOVED INTO THE CONTRACT.
+//
+// It was a five-branch ternary in finishEnding that no ending could see. The
+// guarantee is the same one and it is asserted at its new home: every terminal id
+// resolves to a distinct authored coda, and staying with nothing disclosed still
+// gets the one gate scene the player is not in.
+assert.equal(endingCodaVariant('surfaced'),'surfaced','surfaced reaches its two-person gate epilogue');
+assert.equal(endingCodaVariant('inversion'),'out');
+assert.equal(endingCodaVariant('helped'),'helped');
+assert.equal(endingCodaVariant('drugged'),'drugged');
+assert.equal(endingCodaVariant('sacrifice',{confession:{kind:'nothing'}}),'nobody');
+assert.equal(endingCodaVariant('sacrifice',{confession:{kind:'reason'}}),'client');
+{
+  const codas=new Set(ENDING_IDS.map((id)=>endingCodaVariant(id,{confession:{kind:'name'}})));
+  assert.equal(codas.size,ENDING_IDS.length,'no two endings share a gate scene');
+}
 assert.doesNotMatch(mainSource,/THE PLANT ROOM · REVERSED/,'the inversion no longer claims to teleport to the plant room');
 
 console.log('endings audit passed');

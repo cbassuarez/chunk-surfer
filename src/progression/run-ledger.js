@@ -1,5 +1,6 @@
 import { freshLedger, normalizeLedger } from './schema.js';
 import { EVENT_TYPES } from './events.js';
+import { applyPerformancePropagation, applyPlaybackExposure } from '../game/reference-exposure.js';
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 const addUnique = (array, value) => {
@@ -53,6 +54,12 @@ export function reduceRunLedger(ledger = freshLedger(), event) {
     }
     case EVENT_TYPES.PLAYBACK_DISCOVERED:
       addUnique(next.disclosures, p.id);
+      break;
+    case EVENT_TYPES.PLAYBACK_HEARD:
+      next.reference = applyPlaybackExposure(next.reference, p.roomId);
+      break;
+    case EVENT_TYPES.BATTLE_PERFORMANCE_PROPAGATED:
+      next.reference = applyPerformancePropagation(next.reference, p.id);
       break;
     case EVENT_TYPES.DOCUMENT_READ:
       addUnique(next.documentsRead, p.id);

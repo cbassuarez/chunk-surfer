@@ -25,7 +25,16 @@ export const LOCAL_LIGHT_SLOTS = 8;
 
 const AMBIENT = Object.freeze({
   [ZONE.none]: { color: [.64, .65, .62], intensity: .022 },
-  [ZONE.dock]: { color: [.84, .57, .31], intensity: .028 },
+  // The loading bay is the only place in this game with weather over it: cold,
+  // wet and bluer than any interior, and far brighter, because a sodium-lit
+  // overcast is still hugely more light than a building with no power in it.
+  //
+  // This number looks wrong beside the others and is not. Ambient does not fall
+  // off with distance, and the yard is fifty metres of ground that no fitting
+  // reaches — a local light with a nineteen-metre radius lights the near third
+  // and leaves the rest black. Out here the sky IS the light source, so it has
+  // to arrive as ambient or it does not arrive at all.
+  [ZONE.dock]: { color: [.40, .50, .70], intensity: .17 },
   [ZONE.foyer]: { color: [.66, .71, .70], intensity: .034 },
   [ZONE.studio]: { color: [.48, .57, .45], intensity: .024 },
   [ZONE.natatorium]: { color: [.43, .63, .57], intensity: .040 },
@@ -39,7 +48,39 @@ const AMBIENT = Object.freeze({
   [ZONE.academic]: { color: [.62, .69, .70], intensity: .036 },
   [ZONE.danceStudio]: { color: [.38, .34, .27], intensity: .014 },
   [ZONE.store]: { color: [.42, .43, .40], intensity: .016 },
+  // The get-in keeps the sodium and rust the old dock room had.
+  [ZONE.getIn]: { color: [.84, .57, .31], intensity: .028 },
 });
+
+// WHAT COUNTS AS WHITE IN THIS ROOM.
+//
+// The halftone's white point is authored per look profile — explore puts it at
+// .46 — and a look profile has no idea which room it is standing in. A wall at
+// ambient .028 then lands five per cent up that curve and dithers at three per
+// cent ink, which IS the pointillism: the curve is calibrated for a lit exterior
+// and this building has no mains. Measured in the get-in before this existed:
+// ~90% pure black, ~10% pure white, every intermediate bucket empty.
+//
+// So a zone declares its own ceiling, as a multiple of its own ambient. K is how
+// far above the ambient floor a surface has to be before it reads as white —
+// LOWER K gives a lighter, busier, more heavily inked room. It is expressed as a
+// scale against explore's white point so the profiles keep their relationship to
+// one another: battle is still harder than calm inside the same room.
+export const REFERENCE_WHITE_POINT = 0.46;
+export const ZONE_WHITE_POINT_K = 4.5;
+
+// Derived rather than hand-authored, so re-lighting a room cannot silently leave
+// a stale ceiling behind. The dock opts out: out there the sky is the light
+// source, its ambient is already the .17 of an overcast rather than a floor to
+// climb off, and scaling it would only darken the one place with weather over it.
+const WHITE_POINT_SCALE_OVERRIDE = Object.freeze({ [ZONE.dock]: 1 });
+
+export function zoneWhitePointScale(zone) {
+  const override = WHITE_POINT_SCALE_OVERRIDE[zone];
+  if (Number.isFinite(override)) return override;
+  const ambient = AMBIENT[zone] || AMBIENT[ZONE.none];
+  return (ambient.intensity * ZONE_WHITE_POINT_K) / REFERENCE_WHITE_POINT;
+}
 
 const freezeLight = (id, kind, x, z, y, color, intensity, radius, extra = {}) => Object.freeze({
   id, kind, x, z, y,
@@ -58,10 +99,36 @@ const L = freezeLight;
 // emitted light. The fallback coordinates keep deterministic tests and early
 // asset-load frames stable.
 export const CONSERVATORY_LIGHTS = Object.freeze([
-  // Loading dock: only the sodium seam. The freight-frame chandelier is
-  // disconnected and is exclusively controlled by the haunting override.
-  L('dock-grey-door-seam', LIGHT_KIND.EMERGENCY, 65.5, 4.2, 2.1, [1, .43, .16], .34, 6.2,
+  // The get-in: only the sodium seam under the grey door. The freight-frame
+  // chandelier is disconnected and is exclusively controlled by the haunting
+  // override.
+  L('getin-grey-door-seam', LIGHT_KIND.EMERGENCY, 65.5, 4.2, 2.1, [1, .43, .16], .34, 6.2,
+    { groups:['ground'], zones:[ZONE.getIn] }),
+
+  // THE LOADING BAY. The only lit place in this building that nobody is paying
+  // for: the sky over the yard, and a lamp on a pole beyond the fence that
+  // belongs to the road, not to the conservatory.
+  //
+  // The wash is a SKY light and takes its reach from radius, not intensity —
+  // twenty metres of open weather over an apron, arriving through the mouth. It
+  // is the only fitting in the game whose source is not in the building.
+  L('bay-sky-wash', LIGHT_KIND.SKY, 50.0, 7.5, 5.2, [.54, .62, .80], 1.28, 20.0,
     { groups:['ground'], zones:[ZONE.dock] }),
+  // A second wash, high and out in front of the elevation. The building's west
+  // face is the tallest thing in the bay and the apron's own fittings all point
+  // down; without this it is a fifteen-metre unlit plane at the top of the shot.
+  L('bay-facade-wash', LIGHT_KIND.SKY, 46.0, 9.0, 11.0, [.50, .58, .74], 1.42, 26.0,
+    { groups:['ground'], zones:[ZONE.dock] }),
+  // A bulkhead over the dock door, on the same dead circuit as everything else,
+  // still running because it is wired to the yard supply and not the building's.
+  L('bay-canopy-bulkhead', LIGHT_KIND.FITTING, 55.2, 7.5, 4.1, [1, .74, .42], .86, 7.5,
+    { groups:['ground'], zones:[ZONE.dock], flutter:{ amount:.09, steady:.55 } }),
+  // Sodium on the road's own column, too far to hear and too far to help.
+  L('bay-yard-sodium', LIGHT_KIND.FITTING, 22.0, 4.0, 6.6, [1, .52, .18], 1.05, 22.0,
+    { groups:['ground'], zones:[ZONE.dock] }),
+  // The booth window. The only lit one on the site, and the last shift in it.
+  L('bay-booth-window', LIGHT_KIND.FITTING, 24.0, 14.0, 1.9, [1, .80, .52], .74, 9.0,
+    { groups:['ground'], zones:[ZONE.dock], flutter:{ amount:.04, steady:.90 } }),
 
   // Basement and dance wing. The corridors deliberately remain absent.
   L('dance-stair-failing', LIGHT_KIND.EMERGENCY, 45.0, 20.75, -1.32, [1, .48, .22], .20, 6.0,
@@ -70,7 +137,13 @@ export const CONSERVATORY_LIGHTS = Object.freeze([
     { groups:['basement'], zones:[ZONE.plant] }),
   L('plant-service-live', LIGHT_KIND.FITTING, 35.0, 25.75, -1.37, [.69, .83, .70], .88, 9.0,
     { groups:['basement'], zones:[ZONE.plant], circuit:'sp01', anchorPropId:'light-plant-service-casing', anchorOffset:[0,.18,0], flutter:{ amount:.06, steady:.84 } }),
-  L('dance-work-live', LIGHT_KIND.FITTING, 18.0, 5.75, -1.37, [.78, .78, .65], .82, 9.0,
+  // B3's work light stands in B3 and is zoned to it. It used to carry
+  // ZONE.danceStudio while sitting at (18,6) — inside the take room — so it was
+  // filtered out for the player standing under it and resolved only for one
+  // stood in B2, eight metres away through a wall. B3 has no other practical.
+  L('b3-work-live', LIGHT_KIND.FITTING, 18.0, 5.75, -1.37, [.78, .78, .65], .82, 9.0,
+    { groups:['basement'], zones:[ZONE.studio], circuit:'sp01', anchorPropId:'light-b3-work-casing', anchorOffset:[0,.18,0], flutter:{ amount:.07, steady:.78 } }),
+  L('dance-work-live', LIGHT_KIND.FITTING, 32.0, 5.75, -1.37, [.78, .78, .65], .82, 9.0,
     { groups:['basement'], zones:[ZONE.danceStudio], circuit:'sp01', anchorPropId:'light-dance-work-casing', anchorOffset:[0,.18,0], flutter:{ amount:.07, steady:.78 } }),
 
   // Ground/atrium and natatorium.
@@ -176,6 +249,7 @@ export function resolveLightingContext(context = {}) {
     spaceId: typeof context?.spaceId === 'string' ? context.spaceId : '',
     ambientColor: [...ambient.color],
     ambientIntensity: ambient.intensity,
+    whitePointScale: zoneWhitePointScale(zone),
   };
 }
 

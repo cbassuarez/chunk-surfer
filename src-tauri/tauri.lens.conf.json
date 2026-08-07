@@ -12,7 +12,8 @@
     ],
     "resources": {
       "../LEGAL/EULA.md": "EULA.md",
-      "lens-resources/lens/": "lens/"
+      "lens-resources/lens/": "lens/",
+      "steamworks-runtime/": "steamworks/"
     }
   }
 }

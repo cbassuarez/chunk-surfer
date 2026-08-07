@@ -731,13 +731,45 @@ export function updatePresence(dt, px, py, onContactAttempt, {
 
 export function loadPresenceState(saved = {}) {
   tableau = null;
+  // Saves retain what the player learned from prior contacts, never a live
+  // body. Module state survives New Game in the same process, so loading a
+  // fresh record must explicitly revoke the previous run's manifestation.
+  Object.assign(state, {
+    active: false,
+    x: 0, y: 0,
+    targetX: 0, targetY: 0,
+    hasTarget: false,
+    targetLevel: 0,
+    targetConfidence: 0,
+    targetReason: null,
+    targetPriority: 0,
+    targetSetAt: 0,
+    lastHeardAt: 0,
+    externalTargetUntil: 0,
+    externalTargetPriority: 0,
+    lastEngagedAt: 0,
+    lastSoundX: 0, lastSoundY: 0,
+    hasSearchOrigin: false,
+    prowlX: 0, prowlY: 0,
+    hasProwl: false,
+    prowlUntil: 0,
+    dwellUntil: 0,
+    velocityX: 0, velocityY: 0,
+    speed: 0,
+    motionMode: 'idle',
+    behaviorMode: 'stand',
+    phaseUntil: 0,
+    chaseUntil: 0,
+    directorIntent: 'IGNORE',
+    tauntRequested: false,
+    nextLightListenAt: 0,
+    spawnSector: null,
+    pendingContact: null,
+  });
   state.awareness = saved.awareness || 0;
   state.caughtCount = saved.caughtCount || 0;
   state.spawnedAt = -1e9;
   state.lastCatchAt = performance.now() - Math.max(0, PRESENCE.catchCooldownSec - 3) * 1000;
-  state.externalTargetUntil = 0;
-  state.externalTargetPriority = 0;
-  state.pendingContact = null;
   state.contactDirector = normalizeHushContactDirectorState(saved.contactDirector);
 }
 export function savePresenceState() {

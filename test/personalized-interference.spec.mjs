@@ -1,10 +1,30 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
-  createPersonalizedInterference,
+  createEphemeralIdentityCache,
+  normalizeNativeIdentity,
   normalizePersonalInterferenceSettings,
   safeInterferenceSettingsForStorage,
+  sanitizeInterferenceDevice,
   sanitizeInterferenceName,
+  requestIdentitySnapshot,
 } from '../src/game/personalized-interference.js';
+import { obscuredNameShape } from '../src/narrative/obscured-name.js';
+import {
+  appendInterferenceRevision,
+  createInterferenceRecord,
+  finalizeInterferenceRecord,
+  interferenceHtml,
+  interferenceManifest,
+  maskIdentitySnapshot,
+  normalizeInterferenceRecord,
+} from '../src/game/interference-case.js';
+import { createBattleInterferenceDirector, interferenceStageForBattle } from '../src/game/interference-director.js';
+import { buildInterferenceWav } from '../src/platform/interference-artifacts.js';
+import {
+  createPersonalizedWindowEffects,
+  substantiallyOnscreenPosition,
+} from '../src/platform/personalized-window-effects.js';
 import { normalizeSettings } from '../src/progression/schema.js';
 
 assert.equal(sanitizeInterferenceName('Sebastian'), 'Sebastian');
@@ -13,12 +33,47 @@ assert.equal(sanitizeInterferenceName('seb@example.com'), null);
 assert.equal(sanitizeInterferenceName('/Users/seb'), null);
 assert.equal(sanitizeInterferenceName('a'), null);
 assert.equal(sanitizeInterferenceName('________________________________'), null);
+assert.equal(sanitizeInterferenceName('safe\u202Etxt.exe'), 'safe txt.exe', 'bidi overrides are stripped');
+assert.equal([...sanitizeInterferenceName('😀'.repeat(40))].length, 32, 'long emoji is cut at whole graphemes');
+assert.equal(sanitizeInterferenceDevice('Scarlett 2i2 USB / 1'), null, 'path-like device labels are rejected');
+
+const nativeCandidates = {
+  names: [
+    { source: 'steam', display: 'Steam Persona' },
+    { source: 'os', display: 'deck' },
+  ],
+  hostname: 'Deck Host',
+};
+assert.deepEqual(normalizeNativeIdentity(nativeCandidates, normalizePersonalInterferenceSettings({
+  enabled: true, sourceSteam: true, sourceOs: true, sourceHost: true, sourceMic: true,
+}), { micLabel: 'Scarlett USB', micPermission: true }), {
+  schema: 1,
+  persona: { source: 'steam', value: 'Steam Persona' },
+  hostname: { source: 'host', value: 'Deck Host' },
+  mic: { source: 'mic', value: 'Scarlett USB' },
+}, 'Steam persona wins when both persona sources are available');
+assert.deepEqual(normalizeNativeIdentity({
+  ...nativeCandidates,
+  names: [{ source: 'steam', display: '' }, { source: 'os', display: 'deck' }],
+}, normalizePersonalInterferenceSettings({
+  enabled: true, sourceSteam: true, sourceOs: true, sourceHost: false, sourceMic: true,
+}), { micLabel: 'Scarlett USB', micPermission: false }), {
+  schema: 1,
+  persona: { source: 'os', value: 'deck' },
+  hostname: null,
+  mic: null,
+}, 'blank Steam persona uses the separately enabled OS fallback and never obtains a mic label without prior permission');
+assert.equal(normalizeNativeIdentity({ names: [{ source: 'os', display: 'deck' }] }, normalizePersonalInterferenceSettings({
+  enabled: true, sourceSteam: true, sourceOs: false,
+})).persona, null, 'direct-launch failure stays unresolved when OS fallback is off');
 
 const normalized = normalizeSettings({
   personalInterference: {
     enabled: true,
     sourceSteam: false,
     sourceOs: true,
+    sourceHost: false,
+    sourceMic: true,
     vfdText: true,
     localSpeech: true,
     intensity: 'hostile',
@@ -30,8 +85,10 @@ assert.deepEqual(normalized.personalInterference, {
   enabled: true,
   sourceSteam: false,
   sourceOs: true,
+  sourceHost: false,
+  sourceMic: true,
   vfdText: true,
-  localSpeech: true,
+  localSpeech: false,
   intensity: 'hostile',
 });
 assert.equal(JSON.stringify(normalized).includes('SHOULD_NOT_SURVIVE'), false);
@@ -43,67 +100,212 @@ assert.deepEqual(safeStored, {
   enabled: true,
   sourceSteam: true,
   sourceOs: false,
+  sourceHost: true,
+  sourceMic: true,
   vfdText: true,
   localSpeech: false,
   intensity: 'standard',
 });
 
-let nowMs = 0;
-let calls = 0;
-const spoken = [];
-const runtime = createPersonalizedInterference({
-  now: () => nowMs,
-  identityProvider: async () => {
-    calls++;
-    return { source: 'os', display: 'Sebastian' };
+const rawSnapshot = {
+  schema: 1,
+  persona: { source: 'steam', value: 'Sebastian Secret' },
+  hostname: { source: 'host', value: 'Secret-Machine' },
+  mic: { source: 'mic', value: 'Secret Microphone' },
+};
+const masked = await maskIdentitySnapshot(rawSnapshot, new Uint8Array(32).fill(7));
+assert.match(masked.caseId, /^FIELD-[0-9A-F]{8}$/);
+assert.match(masked.tokens.persona.token, /^OPERATOR [0-9A-F]{4}$/);
+assert.match(masked.tokens.hostname.token, /^HOST [0-9A-F]{4}$/);
+assert.match(masked.tokens.mic.token, /^INPUT [0-9A-F]{4}$/);
+assert.equal(JSON.stringify(masked).includes('Secret'), false);
+
+let record = createInterferenceRecord(masked);
+record = appendInterferenceRevision(record, {
+  battleId: 'recording-2', stage: 'recognition', result: 'win', roomId: 'the_tub',
+  choiceIds: ['conservatory:guard.radio.choice.1'], actionIds: ['monitor'], windowEvents: ['title:operator-resolved'],
+  annotation: 'AUDIOCORP: OPERATOR PATH RESOLVED.',
+});
+record = finalizeInterferenceRecord(record, 'inversion');
+assert.equal(record.classification, 'INVERSION');
+assert.equal(record.status, 'filed');
+assert.equal(normalizeInterferenceRecord({ ...record, caseId: '../Secret' }).caseId, null);
+for (const output of [JSON.stringify(record), interferenceManifest(record), interferenceHtml(record)]) {
+  assert.equal(output.includes('Sebastian Secret'), false);
+  assert.equal(output.includes('Secret-Machine'), false);
+  assert.equal(output.includes('Secret Microphone'), false);
+}
+// THE OBSCURED NAME AT THE GATE TAKES ITS SHAPE FROM THE TOKEN, NEVER THE NAME.
+//
+// The shape is dimensioned by who you are only when you have said it may be.
+// The same fixture that must not survive into a filed case must not survive into
+// the thing drawn on screen either — and with consent withheld there is no token
+// to derive from at all, so the run seed is the whole input.
+const consented = obscuredNameShape({ runSeed: 3, token: masked.tokens.persona.token });
+const withheld = obscuredNameShape({ runSeed: 3 });
+assert.match(consented.cells, /^[░▏▯▓▮█ ]+$/u, 'the shape is blocks, whatever it was derived from');
+assert.notEqual(consented.cells, withheld.cells, 'consent has to change the shape or it is theatre');
+for (const secret of ['Sebastian Secret', 'Secret-Machine', 'Secret Microphone', 'Secret', masked.tokens.persona.token]) {
+  assert.equal(consented.cells.includes(secret), false, `${secret} reached the screen`);
+}
+// requestIdentitySnapshot refuses before consent, which is what makes the above
+// unreachable rather than merely unused.
+const denied = await requestIdentitySnapshot(normalizePersonalInterferenceSettings({ enabled: false }));
+assert.equal(denied.persona, null);
+assert.equal(denied.hostname, null);
+assert.equal(denied.mic, null);
+
+// The consent card itself: an explicit yes or no, never a menu confirm, and it
+// carries the sentence that says what it is for.
+const warningSource = readFileSync(new URL('../src/game/warning.js', import.meta.url), 'utf8');
+assert.match(warningSource, /askInterference/, 'the identity card is gated, not always shown');
+assert.match(warningSource, /onEnableInterference/);
+assert.match(warningSource, /Do you want to allow personalized interference\?/);
+assert.match(warningSource, /name you give the guard at the gate/, 'the card must disclose this use');
+const mainSourceForConsent = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+assert.match(mainSourceForConsent, /askInterference:IS_TAURI/, 'never asked where there is nothing to read');
+
+const wav = buildInterferenceWav(record, { sampleRate: 8000, seconds: 1 });
+assert.equal(new TextDecoder().decode(wav.slice(0, 4)), 'RIFF');
+assert.equal(wav.byteLength, 44 + 8000 * 2);
+
+const endings = {
+  sacrifice: 'CONTAINMENT',
+  helped: 'INTERVENTION',
+  inversion: 'INVERSION',
+  drugged: 'CONTAMINATION',
+  surfaced: 'EXTRACTION',
+};
+for (const [endingId, classification] of Object.entries(endings)) {
+  const finalized = finalizeInterferenceRecord(createInterferenceRecord(masked), endingId);
+  assert.equal(finalized.classification, classification);
+  assert.match(interferenceManifest(finalized), new RegExp(`CLASSIFICATION ${classification}`));
+}
+const inversionArtifact = finalizeInterferenceRecord(record, 'inversion');
+const helpedArtifact = finalizeInterferenceRecord(record, 'helped');
+assert.ok(
+  interferenceManifest(inversionArtifact).indexOf('ending:inversion')
+    < interferenceManifest(inversionArtifact).indexOf('recording-2'),
+  'inversion files its revision trace in reverse order',
+);
+const inverseWav = buildInterferenceWav(inversionArtifact, { sampleRate: 8000, seconds: 1 });
+const forwardWav = buildInterferenceWav(helpedArtifact, { sampleRate: 8000, seconds: 1 });
+assert.equal(
+  new DataView(inverseWav.buffer, inverseWav.byteOffset).getInt16(44, true),
+  new DataView(forwardWav.buffer, forwardWav.byteOffset).getInt16(forwardWav.byteLength - 2, true),
+  'inversion reverses the evidence signal chronology',
+);
+
+assert.equal(interferenceStageForBattle('training'), null);
+assert.equal(interferenceStageForBattle('practice-room-hush'), 'foreshadow');
+assert.equal(interferenceStageForBattle('recording-2'), 'recognition');
+assert.equal(interferenceStageForBattle('pre-recording-4'), 'control');
+assert.equal(interferenceStageForBattle('chapel'), 'handoff');
+assert.equal(interferenceStageForBattle('other', 'source-final'), 'handoff');
+
+const identityCache = createEphemeralIdentityCache({ provider: async () => rawSnapshot });
+const effectsLog = [];
+const artifacts = [];
+let persisted = null;
+const director = createBattleInterferenceDirector({
+  identityCache,
+  loadKey: async () => new Uint8Array(32).fill(9),
+  effects: {
+    begin: async (value) => effectsLog.push(['begin', value.intensity]),
+    apply: async (kind, value) => effectsLog.push(['apply', kind, value.title]),
+    reject: async () => effectsLog.push(['reject']),
+    end: async () => effectsLog.push(['end']),
+    statusLine: () => 'HOLD ESC',
   },
-  speech: { speak: (event) => { spoken.push(event.voiceText); return true; }, cancel() {} },
+  writeArtifact: async (value) => { artifacts.push(JSON.stringify(value)); return { ok: true }; },
+  getSettings: () => normalizePersonalInterferenceSettings({ enabled: true, intensity: 'hostile' }),
+  getContext: () => ({ roomId: 'the_tub', choiceIds: ['choice:guard'], micPermission: true, micLabel: 'Secret Microphone' }),
+  onRecord: (value) => { persisted = value; },
 });
+const hook = director.forBattle('recording-2', 'natatorium');
+await hook.enter();
+await hook.phaseBreak();
+assert.match(hook.line().text, /Sebastian Secret/);
+hook.action('monitor');
+await hook.finish('win', { toolsUsed: { recorder: 1 }, perfectCounters: 1 });
+assert.ok(persisted?.caseId);
+assert.equal(JSON.stringify(persisted).includes('Secret'), false);
+assert.equal(artifacts.some((value) => value.includes('Secret')), false);
+assert.ok(effectsLog.some((entry) => entry[0] === 'apply' && entry[1] === 'broadcast'));
+assert.deepEqual(director.debug().identity.sources, { persona: 'steam', hostname: true, mic: true });
 
-let event = runtime.tick({
-  settings: { enabled: false },
-  recording: true,
-  takeSlot: 3,
-  takeProgress: 1,
-  runSeconds: 999,
-});
-assert.equal(event, null);
-assert.equal(calls, 0);
+const control = director.forBattle('pre-recording-4', 'hall');
+await control.enter();
+await control.impact({ kind: 'overload', received: 2 });
+await control.impact({ kind: 'loop', perfect: true });
+await control.finish('lose', { missedCounters: 1 });
+assert.ok(effectsLog.some((entry) => entry[0] === 'apply' && entry[1] === 'overload'));
+assert.ok(effectsLog.some((entry) => entry[0] === 'reject'));
 
-event = runtime.tick({
-  settings: { enabled: true, sourceOs: true, sourceSteam: true, vfdText: true, localSpeech: true, intensity: 'hostile' },
-  recording: true,
-  takeSlot: 3,
-  takeProgress: 0.95,
-  runSeconds: 999,
-  roomId: 'main_b3',
-});
-assert.equal(event, null, 'first tick starts async identity load only');
-await Promise.resolve();
-event = runtime.tick({
-  settings: { enabled: true, sourceOs: true, sourceSteam: true, vfdText: true, localSpeech: true, intensity: 'hostile' },
-  recording: true,
-  takeSlot: 3,
-  takeProgress: 0.95,
-  runSeconds: 999,
-  roomId: 'main_b3',
-});
-assert.ok(event);
-assert.match(event.text, /SEBASTIAN/i);
-assert.equal(spoken.length, 1);
-assert.equal(JSON.stringify(runtime.debug()).includes('Sebastian'), false);
+await director.finalizeEnding('surfaced');
+assert.equal(director.currentRecord().classification, 'EXTRACTION');
+assert.equal(JSON.stringify(director.currentRecord()).includes('Secret'), false);
 
-nowMs += 31000;
-event = runtime.tick({
-  settings: { enabled: true, sourceOs: true, sourceSteam: true, vfdText: true, localSpeech: false, intensity: 'hostile' },
-  recording: true,
-  takeSlot: 4,
-  takeProgress: 0.95,
-  runSeconds: 999,
-  roomId: 'the_tub',
+assert.deepEqual(substantiallyOnscreenPosition({
+  position: { x: -1800, y: 40 },
+  size: { width: 1000, height: 700 },
+  monitor: { position: { x: -1920, y: 0 }, size: { width: 1920, height: 1080 } },
+  dx: -500,
+  dy: -500,
+}), { x: -2120, y: -140 }, 'negative-origin secondary monitors retain at least eighty percent of the game window');
+
+const windowState = {
+  title: 'Chunk Surfer', position: { x: 120, y: 80 }, size: { width: 1280, height: 800 },
+  fullscreen: true, minimized: true, alwaysOnTop: false, focused: false, visible: true,
+};
+const windowHistory = [];
+const fakeMain = {
+  async title() { return windowState.title; },
+  async outerPosition() { return { ...windowState.position }; },
+  async outerSize() { return { ...windowState.size }; },
+  async isFullscreen() { return windowState.fullscreen; },
+  async isMinimized() { return windowState.minimized; },
+  async isAlwaysOnTop() { return windowState.alwaysOnTop; },
+  async isFocused() { return windowState.focused; },
+  async currentMonitor() { return { position: { x: 0, y: 0 }, size: { width: 1920, height: 1080 } }; },
+  async show() { windowState.visible = true; },
+  async hide() { windowState.visible = false; },
+  async minimize() { windowState.minimized = true; },
+  async unminimize() { windowState.minimized = false; },
+  async setFullscreen(value) { windowState.fullscreen = value; },
+  async setAlwaysOnTop(value) { windowState.alwaysOnTop = value; },
+  async setSize(value) { windowState.size = { width: value.width, height: value.height }; windowHistory.push(['size', { ...windowState.size }]); },
+  async setPosition(value) { windowState.position = { x: value.x, y: value.y }; windowHistory.push(['position', { ...windowState.position }]); },
+  async setTitle(value) { windowState.title = value; },
+  async requestUserAttention() { windowHistory.push(['attention']); },
+};
+class PhysicalSize { constructor(width, height) { this.width = width; this.height = height; } }
+class PhysicalPosition { constructor(x, y) { this.x = x; this.y = y; } }
+let emergencyCount = 0;
+const windowEffects = createPersonalizedWindowEffects({
+  runtimeApi: { PhysicalSize, PhysicalPosition },
+  mainWindow: fakeMain,
+  sleep: async () => {},
+  onEmergency: () => { emergencyCount += 1; },
 });
-assert.equal(event, null, 'expired identity is refreshed asynchronously');
-await Promise.resolve();
-assert.equal(calls, 2);
+await windowEffects.begin({ intensity: 'hostile', reducedMotion: false });
+await windowEffects.apply('overload', { title: 'AUDIOCORP / OVERLOAD' });
+assert.deepEqual(windowState, {
+  title: 'Chunk Surfer', position: { x: 120, y: 80 }, size: { width: 1280, height: 800 },
+  fullscreen: true, minimized: true, alwaysOnTop: false, focused: false, visible: true,
+}, 'every beat restores title, bounds, fullscreen, minimized, and topmost state transactionally');
+assert.ok(windowHistory.some(([kind]) => kind === 'attention'), 'an unfocused game requests attention without focusing itself');
+await windowEffects.emergencyRestore();
+assert.equal(emergencyCount, 1);
+
+const identityRust = readFileSync(new URL('../src-tauri/src/identity.rs', import.meta.url), 'utf8');
+assert.match(identityRust, /SteamAPI_ISteamFriends_GetPersonaName/);
+assert.doesNotMatch(identityRust, /GetSteamID|GetFriend|Enumerate|PersonaState/);
+const tauriBundle = readFileSync(new URL('../src-tauri/tauri.lens.conf.json', import.meta.url), 'utf8');
+assert.match(tauriBundle, /steamworks-runtime\/.*steamworks\//s);
+const gitignore = readFileSync(new URL('../.gitignore', import.meta.url), 'utf8');
+assert.match(gitignore, /^steam_appid\.txt$/m);
+const directorSource = readFileSync(new URL('../src/game/interference-director.js', import.meta.url), 'utf8');
+assert.doesNotMatch(directorSource, /SPEECH|speech|console\.|analytics|telemetry/);
 
 console.log('personalized interference contracts passed');

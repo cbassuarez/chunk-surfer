@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "ending.epilogue.out",
-  "title": "Guard Epilogue · out",
+  "title": "Coda · you came back",
   "status": "active",
   "entry": "start",
   "entries": [
@@ -11,13 +11,13 @@
     "ending",
     "epilogue"
   ],
-  "notes": "",
+  "notes": "The Other Door's coda. The ending before it says the join is missing — he does not walk to this gate, he is at it — so this leans on the guard being entirely, unbearably normal. The RETURNED column is the best object in the game and this is the scene it belongs to: empty all the way up the page, and the man above his name in the left column is the one who never came out.",
   "regions": [
     {
       "id": "ending.epilogue.out.region",
-      "title": "Guard Epilogue · out",
+      "title": "You came back",
       "kind": "ending",
-      "color": "#ad6a3b",
+      "color": "#3b6a8a",
       "nodeIds": [
         "start"
       ]
@@ -26,16 +26,16 @@
   "nodes": {
     "start": {
       "type": "ending",
+      "art": {
+        "id": "guard",
+        "mode": "hero",
+        "caption": "Gate booth / dawn",
+        "status": "RETURNED"
+      },
       "lines": [
         {
           "who": "direction",
-          "art": {
-            "id": "guard",
-            "mode": "hero",
-            "caption": "Gate booth / dawn",
-            "status": "STILL"
-          },
-          "text": "The gate booth. The same bored man, the same book, the two columns he never explained.",
+          "text": "The gate booth. The same bored man, the same book, the two columns he never explained. The little television is on with the sound off and he does not look up straight away, because from where he is sitting nothing has happened.",
           "id": "start.line.1"
         },
         {
@@ -55,13 +55,51 @@
         },
         {
           "who": "direction",
-          "text": "He turns the book around. The left column is full of names, all the way up the page. The right column — RETURNED — has been empty the whole time. He writes in it. Yours is the first.",
+          "text": "That is the whole of his reaction. You have just come out of a yard that was not there, past a clock with no numbers on it, and a man in a hi-vis jacket has said huh, and you cannot think of a single thing to put after it.",
           "id": "start.line.5"
+        },
+        {
+          "who": "direction",
+          "text": "He turns the book around. The left column is full of names, all the way up the page, in his handwriting, going back years. The right column — RETURNED — has been empty the whole time.",
+          "id": "start.line.6"
+        },
+        {
+          "who": "direction",
+          "text": "The name directly above yours in the left column is the man who did the first four rooms. There is nothing beside it and there never will be.",
+          "id": "start.line.7"
         },
         {
           "who": "guard",
           "text": "Sign here. And here. The second one is new. I have never once had to use it.",
-          "id": "start.line.6"
+          "id": "start.line.8"
+        },
+        {
+          "who": "direction",
+          "text": "You are the first entry in a column somebody ruled onto a page a very long time ago, in the expectation that one day it would be needed, by a man who has never explained to anybody why he keeps it.",
+          "id": "start.line.9"
+        },
+        {
+          "who": "you",
+          "text": "My recorder is still in there.",
+          "id": "start.line.10",
+          "when": "!ending.equipment.complete"
+        },
+        {
+          "who": "guard",
+          "text": "Machines are booked for six. I would leave it.",
+          "id": "start.line.11",
+          "when": "!ending.equipment.complete"
+        },
+        {
+          "who": "you",
+          "text": "I got the five. Whatever they are of, I got the five.",
+          "id": "start.line.12",
+          "when": "ending.takes.full"
+        },
+        {
+          "who": "direction",
+          "text": "He caps the pen and puts it back in the pot with the ones that do not work, and turns the book back round, and the last thing you see of Ellery Conservatory of Music is a ruled column with one name in it.",
+          "id": "start.line.13"
         }
       ],
       "id": "start"

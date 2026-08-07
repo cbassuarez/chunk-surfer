@@ -34,7 +34,7 @@ pub fn run() {
             display_policy::chunk_restore,
             display_policy::chunk_window_is_focused,
             display_policy::chunk_quit,
-            identity::chunk_ephemeral_display_names,
+            identity::chunk_ephemeral_identity,
             lens_service::chunk_lens_bootstrap,
             lens_service::chunk_lens_retry,
             lens_service::chunk_lens_stop,

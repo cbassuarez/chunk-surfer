@@ -90,6 +90,11 @@ export const ACHIEVEMENT_DEFS = Object.freeze([
     events: [EVENT_TYPES.RUN_FINISHED], test: ({ summary }) => summary?.injuries === 0,
   },
   {
+    id: 'ACH_SECOND_TRACK', name: 'Second Track',
+    description: 'File a usable causal tape from a return with no more than one injury.', category: 'method', hidden: false,
+    events: [EVENT_TYPES.CAUSAL_TAPE_PROMOTED], test: ({ event }) => !!event.payload?.contentHash,
+  },
+  {
     id: 'ACH_UNBROKEN', name: 'Unbroken',
     description: 'Complete every accepted take without spoiling one.', category: 'method', hidden: false,
     events: [EVENT_TYPES.RUN_FINISHED],

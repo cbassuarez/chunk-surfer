@@ -9,6 +9,8 @@ src-tauri/target/
 src-tauri/gen/
 src-tauri/binaries/
 src-tauri/lens-resources/
+steam_appid.txt
+src-tauri/steam_appid.txt
 .lens-build/
 *.log
 __pycache__/

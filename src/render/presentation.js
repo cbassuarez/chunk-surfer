@@ -155,7 +155,7 @@ export function drawMachinePanel(x, y, w, h, {
   else if (footer) uiText(x + 2, y + h - 2, String(footer).slice(0, Math.max(0, w - 4)), 'ui-label');
   if (buttons) drawButtonCluster(x + w - buttons.w - 2, y + PANEL.headerRows + 1, buttons);
 
-  return machinePanelBody(x, y, w, h, { footer });
+  return machinePanelBody(x, y, w, h, { footer: footer || footerParts?.length ? 'CONTROLS' : '' });
 }
 
 // ── the bargraph meter (DA-1000 / Akai VOLUME scale) ─────────────────────────
@@ -379,7 +379,7 @@ export function drawVfdText(x, y, text, { scale = 2, theme = null, role = 'ui-pr
         dpr,
         alpha: duty,
         scan: scanDuty(cellX, y),
-        ghost: 0.18,
+        halation: 0.18,
       });
     }
   });

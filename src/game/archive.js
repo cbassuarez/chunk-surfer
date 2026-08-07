@@ -5,17 +5,24 @@ import { UI_COLOR } from '../render/palette.js';
 import { achievementEntries } from '../progression/achievements.js';
 import * as AUDIO from '../audio/story-audio.js';
 import { promptLine } from './bindings.js';
+import { returnFileEntries } from './second-shift.js';
 
 const CATEGORY_ORDER = ['work', 'disclosures', 'returns', 'method'];
 const CATEGORY_LABEL = { work: 'STORY', disclosures: 'SECRETS', returns: 'ENDINGS', method: 'CHALLENGES' };
 
 export function makeArchiveScene({ meta, onClose = () => {} } = {}) {
   const entries = achievementEntries(meta);
+  const files = returnFileEntries(meta);
+  let tab = 0;
   let category = 0;
   let sel = 0;
   let scroll = 0;
+  // A filed document runs to five paragraphs and the panel holds two or three, so
+  // it pages. Up/Down already move between returns; left/right are free on this
+  // tab and were doing nothing.
+  let docPage = 0;
 
-  const visibleEntries = () => entries.filter((entry) => entry.category === CATEGORY_ORDER[category]);
+  const visibleEntries = () => tab === 0 ? entries.filter((entry) => entry.category === CATEGORY_ORDER[category]) : files;
   const clamp = () => {
     const list = visibleEntries();
     sel = Math.max(0, Math.min(sel, Math.max(0, list.length - 1)));
@@ -27,13 +34,19 @@ export function makeArchiveScene({ meta, onClose = () => {} } = {}) {
     exit() { AUDIO.stopMenuHiss(); onClose(); },
     key(e) {
       const k = String(e.key || '').toLowerCase();
-      if (e.key === 'Tab' || e.key === 'ArrowRight') {
+      if (e.key === 'Tab') {
+        tab = (tab + (e.shiftKey ? -1 : 1) + 2) % 2;
+        sel = 0; scroll = 0; AUDIO.menuMove(); return true;
+      }
+      if (tab === 0 && e.key === 'ArrowRight') {
         category = (category + (e.shiftKey ? -1 : 1) + CATEGORY_ORDER.length) % CATEGORY_ORDER.length;
         sel = 0; scroll = 0; AUDIO.menuMove(); return true;
       }
-      if (e.key === 'ArrowLeft') { category = (category - 1 + CATEGORY_ORDER.length) % CATEGORY_ORDER.length; sel = 0; scroll = 0; AUDIO.menuMove(); return true; }
-      if (e.key === 'ArrowUp' || k === 'w') { sel--; clamp(); AUDIO.menuMove(); return true; }
-      if (e.key === 'ArrowDown' || k === 's') { sel++; clamp(); AUDIO.menuMove(); return true; }
+      if (tab === 0 && e.key === 'ArrowLeft') { category = (category - 1 + CATEGORY_ORDER.length) % CATEGORY_ORDER.length; sel = 0; scroll = 0; AUDIO.menuMove(); return true; }
+      if (tab === 1 && e.key === 'ArrowRight') { docPage++; AUDIO.menuMove(); return true; }
+      if (tab === 1 && e.key === 'ArrowLeft') { docPage = Math.max(0, docPage - 1); AUDIO.menuMove(); return true; }
+      if (e.key === 'ArrowUp' || k === 'w') { sel--; docPage = 0; clamp(); AUDIO.menuMove(); return true; }
+      if (e.key === 'ArrowDown' || k === 's') { sel++; docPage = 0; clamp(); AUDIO.menuMove(); return true; }
       if (e.key === 'Escape' || k === 'b' || e.key === 'Enter') { scenes.pop(); return true; }
       return true;
     },
@@ -44,14 +57,15 @@ export function makeArchiveScene({ meta, onClose = () => {} } = {}) {
       const w = Math.min(94, cols - 4), h = Math.min(Math.max(32, rows - 8), rows - 4);
       const x = Math.floor((cols - w) / 2), y = Math.floor((rows - h) / 2);
       const body = drawMachinePanel(x, y, w, h, {
-        label: 'ACHIEVEMENTS',
+        label: 'ARCHIVE',
         source: 'PROGRESS',
-        footerParts: [{ action: 'tabNext', label: 'CATEGORY' }, { action: 'select', label: 'ENTRY' }, { action: 'back', label: 'CLOSE' }],
+        footerParts: [{ action: 'tabNext', label: 'TAB' }, { action: 'select', label: 'ENTRY' }, { action: 'back', label: 'CLOSE' }],
         meter: false,
       });
-      drawVfdText(body.x, body.y, 'ACHIEVEMENTS', { color: UI_COLOR.amber, max: body.w });
+      drawVfdText(body.x, body.y, tab === 0 ? 'ACHIEVEMENTS' : 'RETURN FILES', { color: UI_COLOR.amber, max: body.w });
+      uiText(body.x + Math.max(20, body.w - 36), body.y, tab === 0 ? '[ACHIEVEMENTS]  RETURN FILES' : ' ACHIEVEMENTS  [RETURN FILES]', 'ui-label');
       let tx = body.x;
-      CATEGORY_ORDER.forEach((id, i) => {
+      if (tab === 0) CATEGORY_ORDER.forEach((id, i) => {
         const on = i === category;
         const label = on ? `[${CATEGORY_LABEL[id]}]` : ` ${CATEGORY_LABEL[id]} `;
         uiText(tx, body.y + 2, label, on ? 'ui-amber' : 'ui-secondary');
@@ -67,6 +81,12 @@ export function makeArchiveScene({ meta, onClose = () => {} } = {}) {
       if (sel >= scroll + cap) scroll = sel - cap + 1;
       list.slice(scroll, scroll + cap).forEach((entry, j) => {
         const i = scroll + j, on = i === sel;
+        if (tab === 1) {
+          const title = String(entry.summary?.endingId || 'return').replaceAll('-', ' ').toUpperCase();
+          uiText(body.x, body.y + 5 + j, `${on ? '▸' : ' '} ${title}`.slice(0, listW - 9), on ? 'ui-amber' : 'ui-primary');
+          uiText(body.x + listW - 5, body.y + 5 + j, 'FILED', 'ui-green');
+          return;
+        }
         const hidden = entry.hidden && !entry.unlocked;
         const title = hidden ? '████████████' : entry.name.toUpperCase();
         const status = entry.unlocked ? 'DONE' : hidden ? 'LOCKED' : 'OPEN';
@@ -81,6 +101,52 @@ export function makeArchiveScene({ meta, onClose = () => {} } = {}) {
         return;
       }
       const dx = divider + 3, dw = body.x + body.w - dx;
+      if (tab === 1) {
+        if (!entry) {
+          uiText(dx, body.y + 5, 'NO RETURNS FILED', 'ui-secondary');
+          uiWrap('Complete a story return to add its physical residue and second-shift lead here.', dw).forEach((line, i) => uiText(dx, body.y + 8 + i, line, 'ui-secondary'));
+          return;
+        }
+        uiText(dx, body.y + 5, String(entry.summary?.endingId || 'return').replaceAll('-', ' ').toUpperCase(), 'ui-amber');
+        uiText(dx, body.y + 7, `EVIDENCE  ${String(entry.evidenceLabel || 'unfiled').toUpperCase()}`.slice(0, dw), 'ui-label');
+        uiText(dx, body.y + 9, `RESIDUE   ${String(entry.residueLabel || 'unfiled').toUpperCase()}`.slice(0, dw), 'ui-blue');
+        uiText(dx, body.y + 11, 'SECOND-SHIFT LEAD', 'ui-label');
+        let ry = body.y + 12;
+        uiWrap(entry.lead || 'No adjacent lead has been filed.', dw).slice(0, 3)
+          .forEach((line, i) => uiText(dx, ry + i, line, 'ui-primary'));
+        ry += 4;
+        // THE DOCUMENT THE ENDING LEFT BEHIND. This is what W. Ellery wrote about
+        // a night nobody at W. Ellery attended — the only voice in this game that
+        // was not in the building, and the reason the return files are worth
+        // opening twice. See data/ending-archive.js.
+        const doc = entry.document;
+        if (doc) {
+          // PAGE IT RATHER THAN TRUNCATE IT. The first version stopped when it ran
+          // out of panel, which on a short terminal meant paragraphs two to five of
+          // every filed document were unreachable and nothing said so.
+          const room = Math.max(3, body.y + body.h - 1 - (ry + 3));
+          const pages = [];
+          let page = [];
+          let used = 0;
+          for (const paragraph of doc.body) {
+            const wrapped = uiWrap(paragraph, dw);
+            if (page.length && used + wrapped.length + 1 > room) { pages.push(page); page = []; used = 0; }
+            page.push(...wrapped, '');
+            used += wrapped.length + 1;
+          }
+          if (page.length) pages.push(page);
+          docPage = pages.length ? Math.min(docPage, pages.length - 1) : 0;
+          uiText(dx, ry, doc.title.slice(0, dw), 'ui-amber');
+          const filing = `${doc.classification} · ${doc.filedBy}`;
+          uiText(dx, ry + 1, filing.slice(0, dw), 'ui-label', 0.8);
+          if (pages.length > 1) {
+            const marker = `${docPage + 1}/${pages.length}  ◂ ▸`;
+            uiText(dx + Math.max(0, dw - marker.length), ry + 1, marker, 'ui-blue', 0.9);
+          }
+          (pages[docPage] || []).slice(0, room).forEach((line, i) => uiText(dx, ry + 3 + i, line, 'ui-primary', 0.86));
+        }
+        return;
+      }
       const hidden = entry.hidden && !entry.unlocked;
       uiText(dx, body.y + 5, hidden ? 'LOCKED ACHIEVEMENT' : entry.name.toUpperCase(), entry.unlocked ? 'ui-amber' : 'ui-secondary');
       uiText(dx, body.y + 7, `CATEGORY  ${CATEGORY_LABEL[entry.category]}`, 'ui-label');

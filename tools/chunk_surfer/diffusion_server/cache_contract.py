@@ -9,6 +9,10 @@ REQUEST_FIELDS = (
     "bankId", "slot", "frame", "prompt", "negative", "strength", "passes", "guidance",
     "seed", "size", "cacheSchema", "sourceAtlasSha256", "recipeSha256", "modelId",
     "depthScale", "depthSha256",
+    # The second lens layer changes the picture, so it has to change the key.
+    # Without this a dreamed bank would be written under the plain bank's name
+    # and served back to a client that never asked for one.
+    "dream",
 )
 
 

@@ -56,7 +56,7 @@ export const CHUNK_SURF_ROOMS = Object.freeze([
     optionalFlag: CHUNK_SURF_FLAGS.optionalSurfer,
     inspect: 'A rehearsal room made of staff lines. Every measure is a rule about endurance.',
     tune: 'The room does not become clearer. It becomes more willing to accuse itself.',
-    record: 'The take is scales, then knuckles, then a sermon on useful silence.',
+    record: 'The take is scales, the correction tone, a faculty voice saying retain the reference, then the same bar again after the room has emptied.',
   },
   {
     id: 'work-order-loop',
@@ -105,7 +105,7 @@ export const CHUNK_SURF_ROOMS = Object.freeze([
         id: 'source',
         label: 'REDACT: SOURCE SURFER',
         correct: false,
-        result: 'The word SURFER goes black. The thing wearing it remains.',
+        result: 'The transfer label goes black. The student keeps repeating the correction.',
       },
     ],
   },
@@ -153,21 +153,12 @@ export function chunkSurfCompletionLines({ bestEligible = false, savedRecordist 
   ];
   return [
     { who: 'direction', text: 'The source folds back into the corridor. The chapel is ahead, actual and waiting.' },
-    { who: 'you', text: 'He got four. Then he gave it the rest.' },
+    { who: 'you', text: 'He stopped after four. The reference did not.' },
   ];
 }
 
-export function surfacedEnding({ drankCoffee = false, sourceReading = null } = {}) {
-  const sourceText = sourceReading?.text ? String(sourceReading.text) : 'BODY BORROWED RETURN';
-  return [
-    { who: 'direction', text: 'You carry him through the silent building. The public doors open on the service road exactly where a door ought to.' },
-    { who: 'direction', text: `The source page follows you as an afterimage: ${sourceText}. It does not get to revise itself again.` },
-    { who: 'recordist', text: 'I gave it my body because it told me that was the professional thing to do.' },
-    { who: 'you', text: 'You can walk?' },
-    { who: 'recordist', text: 'I can be carried by anything that does not need me to be music.' },
-    { who: 'direction', text: drankCoffee
-      ? 'The coffee comes up bitter at the back of your throat, but the road remains where roads remain.'
-      : 'Behind you, the building fails to find the file it has been using as a mouth.' },
-    { who: 'direction', text: 'Morning does not arrive. You arrive in it.' },
-  ];
-}
+// surfacedEnding() WAS HERE, AND IT WAS THE LAST PRINCIPAL ENDING OUTSIDE THE
+// NARRATIVE PIPELINE. It is content/narrative/ending.surfaced.story.json now — a
+// conversation rather than seven lines, because the man being carried is the only
+// person alive who knows what the player has just done and there was never a way
+// to ask him anything. See data/endings.js.

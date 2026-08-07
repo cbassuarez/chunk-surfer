@@ -477,11 +477,11 @@ export function natatoriumPlayback(named = false) {
 }
 
 // ── take 5 · the chapel · the confrontation ──────────────────────────────────
-// Both of them: the recordist who did not come out, and the Chunk Surfer that is
-// sounding out of him — one voice each (recordist / surfer). It wears whatever
-// you said in the dark eleven seconds after the door: named Sarah, it is Sarah;
-// gave a reason, it gives the reason back; gave nothing, it arrives as the last
-// recordist. The fight is turn-based and its checkpoints do not reward. The
+// Two recorded sources overlap here: the previous contractor as a borrowed
+// reference, and the student's surviving correction phrases as Chunk Surfer
+// traces. The former can return what the operator said in the dark; the latter
+// is limited to take numbers and institutional language. HUSH itself never
+// speaks or acquires a visible face. The fight is turn-based and its checkpoints do not reward. The
 // RIGHT read is always the professional refusal — "it is a recording, there is
 // nothing there" — and the WRONG read is to accept the wound it is offering,
 // which is the whole thesis: the genre wants you to have lost someone, and the
@@ -497,8 +497,8 @@ export function chapelBoss({ kind = 'nothing', value = null, listened = 5 } = {}
   // What it puts on. `who` picks the voice/label the confrontation speaks in.
   const face = named ? { label: 'SARAH', who: 'sarah' }
     : wearsName ? { label: 'A WOMAN YOU KNOW', who: 'sarah' }
-      : wearsReason ? { label: 'THE REASON YOU CAME', who: 'surfer' }
-        : wearsFeeling ? { label: 'WHAT YOU WOULD NOT NAME', who: 'surfer' }
+      : wearsReason ? { label: 'THE REASON YOU CAME', who: 'recordist' }
+        : wearsFeeling ? { label: 'WHAT YOU WOULD NOT NAME', who: 'recordist' }
           : { label: 'THE PREVIOUS RECORDIST', who: 'recordist' };
   // The thing it offers you to accept — the wound the genre demands.
   const wound = named ? 'that you lost Sarah'
@@ -525,7 +525,7 @@ export function chapelBoss({ kind = 'nothing', value = null, listened = 5 } = {}
     ],
   );
   const secondCheckpoint = CP(
-    [{ who: 'surfer', text: 'It listened until language was an encumbrance. It became the music. Then it wanted a body back. You are a body.' },
+    [{ who: 'surfer', text: 'Again from the first bar. Retain the reference. Correct the deviation. Again.' },
      { who: 'direction', text: 'The organ blower is off and the organ is sounding anyway.' }],
     [
       { text: 'That is on the file. That is not a person in a room.', harder: 1.0 },
@@ -537,9 +537,9 @@ export function chapelBoss({ kind = 'nothing', value = null, listened = 5 } = {}
   return {
     id: 'chapel',
     enemy: face.label,
-    // The chapel is the surfer's domain — the later-gen body that grew its own
-    // form. It shows the surfer raster, not a shell (the finals earn the image).
-    art: { id: 'surfer', mode: 'boss', caption: 'Borrowed body / the surfer', status: 'RETURN' },
+    // The image is the borrowed contractor under layered reference material,
+    // never a body or portrait for HUSH.
+    art: { id: 'surfer', mode: 'boss', caption: 'Borrowed contractor / retained reference', status: 'RETURN' },
     composure: 1.25,                 // longer than the others: this is the last one
     health: 5,
     tools: { fork:true, rig:true },
@@ -583,14 +583,14 @@ export function chapelBoss({ kind = 'nothing', value = null, listened = 5 } = {}
         before: [{ who: face.who, text: `Then bring me one. Bring me the one you lost and I will let the rest of it be nothing.`, rate: 0.97 }],
         onListen: [
           { who: 'you', text: `It wants me to agree ${wound}.` },
-          { who: 'you', text: 'I record rooms with nobody in them. It never once occurred to me that this suited me. That is not a wound. That is a man who is bad at something.' },
+          { who: 'you', text: 'I record rooms with nobody in them. It never once occurred to me that this suited me. That is not a wound. That is thirty years of being bad at the other thing.' },
         ],
         after: [{ who: 'direction', text: 'The meter, which has never lied to you, sits flat at the bottom of the scale.' }],
       },
       {
         nature: 'not there', threat: 0.92,
         before: [
-          { who: 'surfer', text: 'Everybody has lost somebody.' },
+          { who: 'recordist', text: 'Everybody has lost somebody.' },
           { who: 'me', text: 'No.' },
           { who: 'surfer', text: '...no?' },
           { who: 'me', text: 'No. I came here to record five rooms. I have recorded five rooms.' },

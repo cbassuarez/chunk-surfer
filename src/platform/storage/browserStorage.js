@@ -17,8 +17,79 @@ import {
 } from './types.js';
 import { defaultSettings, defaultProfile } from './defaults.js';
 import { logInfo, logWarn } from '../diagnostics/diagnostics.js';
+import { validateCausalTape } from '../../causal/tape.js';
 
 const memoryErrors = [];
+const CAUSAL_DB = 'chunk-surfer-causal-v1';
+const CAUSAL_STORE = 'records';
+const CAUSAL_FALLBACK_PREFIX = 'chunk-surfer:causal:v1:';
+
+function openCausalDb() {
+  if (!globalThis.indexedDB) return Promise.resolve(null);
+  return new Promise((resolve, reject) => {
+    const request = globalThis.indexedDB.open(CAUSAL_DB, 1);
+    request.onupgradeneeded = () => {
+      if (!request.result.objectStoreNames.contains(CAUSAL_STORE)) request.result.createObjectStore(CAUSAL_STORE);
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error || new Error('causal database unavailable'));
+  });
+}
+
+async function causalGet(key) {
+  const db = await openCausalDb();
+  if (!db) return parseStoredJson(readLocalStorage(`${CAUSAL_FALLBACK_PREFIX}${key}`));
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(CAUSAL_STORE, 'readonly');
+    const request = tx.objectStore(CAUSAL_STORE).get(key);
+    request.onsuccess = () => resolve(request.result ?? null);
+    request.onerror = () => reject(request.error);
+    tx.oncomplete = () => db.close();
+  });
+}
+
+async function causalPut(key, value) {
+  const db = await openCausalDb();
+  if (!db) {
+    if (!writeJson(`${CAUSAL_FALLBACK_PREFIX}${key}`, value)) throw new Error('causal fallback write failed');
+    return;
+  }
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(CAUSAL_STORE, 'readwrite');
+    tx.objectStore(CAUSAL_STORE).put(value, key);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error || new Error('causal transaction aborted'));
+  });
+  db.close();
+}
+
+async function causalDelete(key) {
+  const db = await openCausalDb();
+  if (!db) { removeLocalStorage(`${CAUSAL_FALLBACK_PREFIX}${key}`); return; }
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(CAUSAL_STORE, 'readwrite');
+    tx.objectStore(CAUSAL_STORE).delete(key);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}
+
+async function causalClear() {
+  const db = await openCausalDb();
+  if (!db) {
+    removeKeys(['latest', 'draft', 'sealed', 'session'].map((key) => `${CAUSAL_FALLBACK_PREFIX}${key}`));
+    return;
+  }
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(CAUSAL_STORE, 'readwrite');
+    tx.objectStore(CAUSAL_STORE).clear();
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}
 
 function storage() {
   try { return globalThis.localStorage || null; } catch (_) { return null; }
@@ -194,15 +265,62 @@ export class BrowserStorage {
     return out;
   }
 
+  async loadLatestCausalTape() { return causalGet('latest'); }
+
+  async loadCausalDraft() { return causalGet('draft'); }
+
+  async appendCausalDraftSegment(runId, segment, header = {}) {
+    const draft = await causalGet('draft');
+    const next = draft?.runId === runId
+      ? { ...draft, segments: [...(draft.segments || []), segment] }
+      : { runId, ...header, segments: [segment], sealed: null };
+    await causalPut('draft', next);
+    return next;
+  }
+
+  async sealCausalDraft(runId, tape) {
+    const draft = await causalGet('draft');
+    if (draft?.runId && draft.runId !== runId) throw new Error('causal draft run mismatch');
+    const sealed = { runId, tape, sealedAt: Date.now() };
+    await causalPut('sealed', sealed);
+    await causalPut('draft', { ...(draft || {}), runId, sealedAt: sealed.sealedAt });
+    return sealed;
+  }
+
+  async loadSealedCausalDraft() { return causalGet('sealed'); }
+
+  async promoteCausalDraft(runId) {
+    const sealed = await causalGet('sealed');
+    if (!sealed || sealed.runId !== runId) throw new Error('sealed causal draft unavailable');
+    const validation = validateCausalTape(sealed.tape);
+    if (!validation.ok) throw new Error(validation.reason);
+    await causalPut('latest', sealed.tape);
+    await Promise.all([causalDelete('sealed'), causalDelete('draft'), causalDelete('session')]);
+    return sealed.tape;
+  }
+
+  async discardCausalDraft(runId = null) {
+    const draft = await causalGet('draft');
+    const sealed = await causalGet('sealed');
+    if (!runId || draft?.runId === runId) await causalDelete('draft');
+    if (!runId || sealed?.runId === runId) await causalDelete('sealed');
+  }
+
+  async loadHushRunSession() { return causalGet('session'); }
+  async saveHushRunSession(session) { await causalPut('session', session); return session; }
+  async deleteHushRunSession() { await causalDelete('session'); }
+  async deleteLatestCausalTape() { await causalDelete('latest'); await causalDelete('session'); }
+
   async exportAllData() {
-    return { format: 'chunk-surfer-export', version: 1, exportedAt: new Date().toISOString(), settings: await this.loadSettings(), profile: await this.loadProfile(), saves: await Promise.all(SAVE_SLOTS.map(async (slot) => [slot, await this.loadSave(slot)])) };
+    return { format: 'chunk-surfer-export', version: 2, exportedAt: new Date().toISOString(), settings: await this.loadSettings(), profile: await this.loadProfile(), saves: await Promise.all(SAVE_SLOTS.map(async (slot) => [slot, await this.loadSave(slot)])), causal: { latest: await this.loadLatestCausalTape(), session: await this.loadHushRunSession() } };
   }
 
   async deleteAllUserData() {
     removeKeys([SETTINGS_KEY, PROFILE_KEY, AUTOSAVE_KEY, MIGRATION_KEY, ...SAVE_SLOTS.map((slot) => this.saveKey(slot))]);
+    await causalClear();
   }
 
   async getStorageInfo() {
-    return { kind: this.kind, keys: { settings: SETTINGS_KEY, profile: PROFILE_KEY, autosave: AUTOSAVE_KEY, migration: MIGRATION_KEY }, recentErrors: storageErrors(), migration: this.migration || null };
+    return { kind: this.kind, keys: { settings: SETTINGS_KEY, profile: PROFILE_KEY, autosave: AUTOSAVE_KEY, migration: MIGRATION_KEY, causal: `${CAUSAL_DB}/${CAUSAL_STORE}` }, recentErrors: storageErrors(), migration: this.migration || null };
   }
 }

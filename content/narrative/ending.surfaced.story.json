@@ -1,0 +1,392 @@
+{
+  "schemaVersion": 1,
+  "id": "ending.surfaced",
+  "title": "The Other Recordist",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "ending",
+    "surfaced"
+  ],
+  "notes": "Migrated out of src/data/chunk-surf-script.js, which was the last principal ending hard-coded outside this pipeline. It is the hardest route in the game — fork, three tunings, both traces, the rescue outcome, the surfaced proof — and it resolved in seven lines. It is a conversation now, because the man you are carrying is the only person in this building who knows what you have just done, and the player has never once been able to ask him anything. He has a name. The building could not hold yours and it kept his, which is the asymmetry the whole route is about.",
+  "regions": [
+    {
+      "id": "ending.surfaced.region",
+      "title": "The Other Recordist",
+      "kind": "ending",
+      "color": "#3b7f6a",
+      "nodeIds": [
+        "start",
+        "ask",
+        "ask.source",
+        "ask.takes",
+        "ask.surrender",
+        "ask.long",
+        "ask.her",
+        "out"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "type": "dialogue",
+      "speaker": "THE SERVICE ROAD",
+      "art": {
+        "id": "recordist",
+        "mode": "hero",
+        "caption": "Carried out / 05:52",
+        "status": "RETURNED"
+      },
+      "lines": [
+        {
+          "who": "direction",
+          "text": "He weighs almost nothing and he is the heaviest thing you have ever carried, and both of those are true at once, and you stop trying to work out which.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "The public doors open on the service road exactly where a door ought to. Nothing about that is remarkable and it takes you three steps to understand why you are crying.",
+          "id": "start.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "The source page follows you out as an afterimage and will not resolve: {source}. It does not get to revise itself again.",
+          "id": "start.line.3"
+        },
+        {
+          "who": "recordist",
+          "text": "Alan. It is Alan. Nobody has had to say it out loud in a while and I want to hear whether it still fits.",
+          "id": "start.line.4"
+        },
+        {
+          "who": "you",
+          "text": "It fits.",
+          "id": "start.line.5"
+        },
+        {
+          "who": "direction",
+          "text": "He has no shoes. His feet are clean. You decide not to think about that until you are somewhere with a chair in it.",
+          "id": "start.line.6"
+        },
+        {
+          "who": "recordist",
+          "text": "Do not put me down yet. If you put me down I will explain that I can walk, and then I will try, and neither of us needs that.",
+          "id": "start.line.7"
+        },
+        {
+          "who": "direction",
+          "text": "The road runs a hundred metres to the gate and you are walking it at the pace of a man carrying another man. There is time for exactly as many questions as you are willing to ask.",
+          "id": "start.line.8"
+        }
+      ],
+      "goto": "ask",
+      "id": "start"
+    },
+    "ask": {
+      "type": "choice",
+      "kind": "hub",
+      "speaker": "THE SERVICE ROAD",
+      "lines": [],
+      "choices": [
+        {
+          "text": "\"What was it, in there?\"",
+          "goto": "ask.source",
+          "id": "ask.choice.source"
+        },
+        {
+          "text": "\"You did four rooms.\"",
+          "goto": "ask.takes",
+          "id": "ask.choice.takes"
+        },
+        {
+          "text": "\"Why did you agree to it?\"",
+          "goto": "ask.surrender",
+          "id": "ask.choice.surrender"
+        },
+        {
+          "text": "\"How long have you been in there?\"",
+          "goto": "ask.long",
+          "id": "ask.choice.long"
+        },
+        {
+          "text": "\"Did you ever hear it say Sarah?\"",
+          "goto": "ask.her",
+          "when": "ending.confession.sarah",
+          "id": "ask.choice.her"
+        },
+        {
+          "text": "Say nothing, and keep walking.",
+          "goto": "out",
+          "id": "ask.choice.out"
+        }
+      ],
+      "id": "ask"
+    },
+    "ask.source": {
+      "type": "dialogue",
+      "speaker": "THE SERVICE ROAD",
+      "lines": [
+        {
+          "who": "recordist",
+          "text": "A reference. That is all. The most complete reference anybody has ever taken of a room, and it kept taking it after the room stopped being a room.",
+          "id": "ask.source.line.1"
+        },
+        {
+          "who": "recordist",
+          "text": "It is not evil. I want to be careful about that, because everybody who comes out of a place like this says it was evil and then nobody checks the equipment.",
+          "id": "ask.source.line.2"
+        },
+        {
+          "who": "you",
+          "text": "It wore your face.",
+          "id": "ask.source.line.3"
+        },
+        {
+          "who": "recordist",
+          "text": "It had a very good take of my face. That is a different sentence and it is the one that is true.",
+          "id": "ask.source.line.4"
+        },
+        {
+          "who": "recordist",
+          "text": "You found where it came from, then. Both ends of it. I looked for eleven weeks and got one.",
+          "id": "ask.source.line.5",
+          "when": "ending.source.traces>=2"
+        },
+        {
+          "who": "recordist",
+          "text": "You did not go looking for where it came from. Good. I did, and that is most of how it got me.",
+          "id": "ask.source.line.6",
+          "when": "ending.source.traces<1"
+        }
+      ],
+      "goto": "ask",
+      "id": "ask.source"
+    },
+    "ask.takes": {
+      "type": "dialogue",
+      "speaker": "THE SERVICE ROAD",
+      "lines": [
+        {
+          "who": "recordist",
+          "text": "Four. And the fifth was the chapel, and I have had a long time to think about the fact that I was going to do it anyway.",
+          "id": "ask.takes.line.1"
+        },
+        {
+          "who": "recordist",
+          "text": "Take four, clean. I said that out loud in an empty room and I was pleased with myself. It has been saying it back ever since and it has never once got the level wrong.",
+          "id": "ask.takes.line.2"
+        },
+        {
+          "who": "you",
+          "text": "I have five.",
+          "id": "ask.takes.line.3",
+          "when": "ending.takes.full"
+        },
+        {
+          "who": "recordist",
+          "text": "Then it has five of you. I am not saying do not file them. I am saying know what you are filing.",
+          "id": "ask.takes.line.4",
+          "when": "ending.takes.full"
+        },
+        {
+          "who": "you",
+          "text": "I did not get all five.",
+          "id": "ask.takes.line.5",
+          "when": "!ending.takes.full"
+        },
+        {
+          "who": "recordist",
+          "text": "No. Neither did I, in the end. There is a version of this job where that is the only correct outcome and nobody has ever written it down.",
+          "id": "ask.takes.line.6",
+          "when": "!ending.takes.full"
+        },
+        {
+          "who": "recordist",
+          "text": "And some of yours are dirty. Good. A contaminated take is a take it cannot use cleanly.",
+          "id": "ask.takes.line.7",
+          "when": "ending.takes.contaminated>=1"
+        }
+      ],
+      "goto": "ask",
+      "id": "ask.takes"
+    },
+    "ask.surrender": {
+      "type": "dialogue",
+      "speaker": "THE SERVICE ROAD",
+      "lines": [
+        {
+          "who": "recordist",
+          "text": "Because it asked me professionally.",
+          "id": "ask.surrender.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "He says it the way you would say a fact about a microphone.",
+          "id": "ask.surrender.line.2"
+        },
+        {
+          "who": "recordist",
+          "text": "It did not threaten me. It did not chase me. It told me the take would be better if I stopped being in the way of it, and it was right, and I have never in thirty years argued with somebody who was right about a take.",
+          "id": "ask.surrender.line.3"
+        },
+        {
+          "who": "recordist",
+          "text": "That is the trick. It is not fear. It is the thing you already believe about your own work, said back to you at exactly the right level.",
+          "id": "ask.surrender.line.4"
+        },
+        {
+          "who": "you",
+          "text": "It tried that on me.",
+          "id": "ask.surrender.line.5"
+        },
+        {
+          "who": "recordist",
+          "text": "And you gave it something instead. I heard. Everybody in there heard.",
+          "id": "ask.surrender.line.6",
+          "when": "ending.confession.spoken"
+        },
+        {
+          "who": "recordist",
+          "text": "And you gave it nothing at all. Eight hours and not one sentence it could use. I did not know that was allowed.",
+          "id": "ask.surrender.line.7",
+          "when": "ending.confession.nothing"
+        }
+      ],
+      "goto": "ask",
+      "id": "ask.surrender"
+    },
+    "ask.long": {
+      "type": "dialogue",
+      "speaker": "THE SERVICE ROAD",
+      "lines": [
+        {
+          "who": "recordist",
+          "text": "What is the date.",
+          "id": "ask.long.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "You tell him. He does the arithmetic twice, out loud, the second time slower, and gets the same answer.",
+          "id": "ask.long.line.2"
+        },
+        {
+          "who": "recordist",
+          "text": "Eleven weeks.",
+          "id": "ask.long.line.3"
+        },
+        {
+          "who": "recordist",
+          "text": "It felt like one shift. It felt like one long shift where I could not find the fifth room and kept being nearly finished.",
+          "id": "ask.long.line.4"
+        },
+        {
+          "who": "direction",
+          "text": "Eleven weeks of a building doing four takes over and over at a level that never moved, and a man inside it who thought he was nearly finished.",
+          "id": "ask.long.line.5"
+        },
+        {
+          "who": "recordist",
+          "text": "Do not look at me like that. You were in there eight hours and you were nearly finished the whole time as well.",
+          "id": "ask.long.line.6"
+        }
+      ],
+      "goto": "ask",
+      "id": "ask.long"
+    },
+    "ask.her": {
+      "type": "dialogue",
+      "speaker": "THE SERVICE ROAD",
+      "lines": [
+        {
+          "who": "recordist",
+          "text": "Tonight. Once, about two hours in, in a corridor with nobody in it.",
+          "id": "ask.her.line.1"
+        },
+        {
+          "who": "you",
+          "text": "That was me. That was me saying it.",
+          "id": "ask.her.line.2"
+        },
+        {
+          "who": "recordist",
+          "text": "I know. I have got very good at telling the difference between a man saying a name and a building saying it back. It is about four seconds and it is the longest four seconds there is.",
+          "id": "ask.her.line.3"
+        },
+        {
+          "who": "recordist",
+          "text": "It has her now, in the sense that it has a very clean recording of you losing her. That is all it ever has. It is not a small thing and it is not the thing you are afraid of.",
+          "id": "ask.her.line.4"
+        },
+        {
+          "who": "you",
+          "text": "It held a door open. Somebody held a door open.",
+          "id": "ask.her.line.5",
+          "when": "ending.door.searched"
+        },
+        {
+          "who": "recordist",
+          "text": "Somebody did. I have stopped needing to know who. You will not, for a while.",
+          "id": "ask.her.line.6",
+          "when": "ending.door.searched"
+        }
+      ],
+      "goto": "ask",
+      "id": "ask.her"
+    },
+    "out": {
+      "type": "ending",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "The gate is ahead and the sky over the city has gone the colour it goes about an hour before anybody admits it is morning.",
+          "id": "out.line.1"
+        },
+        {
+          "who": "recordist",
+          "text": "It cannot find the file it was using as a mouth. Listen. Nothing. It is looking for the take and the take walked off.",
+          "id": "out.line.2",
+          "when": "!ending.coffee"
+        },
+        {
+          "who": "direction",
+          "text": "Behind you one borrowed reference goes quiet, and the recorder on your belt still shows a return before its source.",
+          "id": "out.line.3",
+          "when": "!ending.coffee"
+        },
+        {
+          "who": "direction",
+          "text": "The coffee comes up bitter at the back of your throat one more time, and the road stays exactly where roads stay, and the man in your arms weighs exactly what a man weighs.",
+          "id": "out.line.4",
+          "when": "ending.coffee"
+        },
+        {
+          "who": "recordist",
+          "text": "Whatever you think was in that cup — I was not drugged, and I was in there for eleven weeks, and here we both are.",
+          "id": "out.line.5",
+          "when": "ending.coffee"
+        },
+        {
+          "who": "recordist",
+          "text": "You are going to want to go back in for the kit.",
+          "id": "out.line.6",
+          "when": "!ending.equipment.complete"
+        },
+        {
+          "who": "you",
+          "text": "It can keep it.",
+          "id": "out.line.7",
+          "when": "!ending.equipment.complete"
+        },
+        {
+          "who": "direction",
+          "text": "Morning does not arrive. You arrive in it, and you are carrying somebody, and that is the first thing that has happened in this building tonight that was not about you.",
+          "id": "out.line.8"
+        }
+      ],
+      "id": "out"
+    }
+  }
+}

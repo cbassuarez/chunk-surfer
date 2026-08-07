@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "ending.epilogue.helped",
-  "title": "Guard Epilogue · helped",
+  "title": "Coda · he did what he could think of",
   "status": "active",
   "entry": "start",
   "entries": [
@@ -11,13 +11,13 @@
     "ending",
     "epilogue"
   ],
-  "notes": "",
+  "notes": "He Tried to Help's coda, and the guard's only scene. The ending before it ends with the player INSIDE and says so, which fixes the point-of-view break the audit found: this is not something the player watches. It is what happens at the gate afterwards, and he never gets to know whether the thing he did worked, which is the whole of him.",
   "regions": [
     {
       "id": "ending.epilogue.helped.region",
-      "title": "Guard Epilogue · helped",
+      "title": "He did what he could think of",
       "kind": "ending",
-      "color": "#ad6a3b",
+      "color": "#8a6a3b",
       "nodeIds": [
         "start"
       ]
@@ -26,16 +26,16 @@
   "nodes": {
     "start": {
       "type": "ending",
+      "art": {
+        "id": "guard",
+        "mode": "hero",
+        "caption": "Gate booth / dawn",
+        "status": "STILL"
+      },
       "lines": [
         {
           "who": "direction",
-          "art": {
-            "id": "guard",
-            "mode": "hero",
-            "caption": "Gate booth / dawn",
-            "status": "STILL"
-          },
-          "text": "The gate booth. The bored man is not bored now. He has been up all night, and he keeps looking at the door you went in by.",
+          "text": "The gate booth. The bored man is not bored now. He has been up all night, which he was going to be anyway, and he has spent it looking at the door you went in by, which he was not.",
           "id": "start.line.1"
         },
         {
@@ -45,13 +45,56 @@
         },
         {
           "who": "direction",
-          "text": "He made you a coffee with something in it to hold the thing off, because it was the only help a man in a booth had to give, and he knew when he did it that it might not be enough.",
+          "text": "He says it to nobody, at about four in the morning, and then he sits with the fact that he has a figure for how long the last one lasted.",
           "id": "start.line.3"
+        },
+        {
+          "who": "direction",
+          "text": "He put something in a hot drink. He is not a chemist and he is not a priest and he is a man on a gate with a hotplate and a kettle, and he did the only thing a man in a booth has to give, and he knew when he did it that it might not be anything at all.",
+          "id": "start.line.4"
         },
         {
           "who": "guard",
           "text": "I did what I could think of. I am sorry. I am.",
-          "id": "start.line.4"
+          "id": "start.line.5"
+        },
+        {
+          "who": "direction",
+          "text": "He will not find out whether it worked. That is the shape of this job: the men who could tell him are all in the left column, and he wrote every one of them in himself.",
+          "id": "start.line.6"
+        },
+        {
+          "who": "direction",
+          "text": "Eight hours. It is not nothing. He has watched a man do four rooms and stop, and he has watched a man do none, and eight hours is the longest anybody has been in there and gone on making sense on the radio.",
+          "id": "start.line.7",
+          "when": "ending.takes.completed>=4"
+        },
+        {
+          "who": "direction",
+          "text": "He does not know that you spent the last of it fighting, or that it took the decision off you. He knows the radio went and did not come back.",
+          "id": "start.line.8",
+          "when": "ending.arrival.defeated"
+        },
+        {
+          "who": "direction",
+          "text": "He does not know you ran for it. He does not know how close. Nobody is ever going to tell him, and he would take it badly.",
+          "id": "start.line.9",
+          "when": "ending.arrival.timedOut"
+        },
+        {
+          "who": "direction",
+          "text": "At ten to six he opens the book and looks at the right column, which is empty all the way up the page, and which he ruled himself years ago on the assumption that somebody would eventually need it.",
+          "id": "start.line.10"
+        },
+        {
+          "who": "direction",
+          "text": "He does not write anything in it. He puts the pen down beside the book rather than back in the pot, which is the closest thing to hope anybody displays in this story.",
+          "id": "start.line.11"
+        },
+        {
+          "who": "direction",
+          "text": "The machines start at six.",
+          "id": "start.line.12"
         }
       ],
       "id": "start"

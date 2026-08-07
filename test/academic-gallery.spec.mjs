@@ -81,8 +81,9 @@ assert.equal(TARGETS.length,5);
 assert.equal(BUILDING_MAP.targets.length,5);
 assert.ok(!BUILDING_MAP.targets.some((target)=>target.logical.y>=240));
 
-const academicStairMid=runtime({x:53,y:189});
-assert.equal(FP.materialAt(academicStairMid.x,academicStairMid.y),MATERIAL.serviceConcrete,'the 3F stair keeps the service-stair concrete treatment');
+// The flight to the third floor is the upper half of the main spiral now; its
+// logical run is at runtime (124-126, 78-91) and its old island is gone.
+assert.equal(FP.materialAt(124,84),MATERIAL.serviceConcrete,'the 3F stair keeps the service-stair concrete treatment');
 const stairClutterMeshes=new Set(['upper_stair_dressing','basement_stair_dressing','academic_stair_dressing','stair_smoke_door_open','stair_smoke_door_closed','stair_sconce_pair_opal','stair_bulkhead_pair','stair_pendant_opal','tower_stair_rail_low_up','tower_stair_rail_high_up','tower_stair_rail_high_down','tower_stair_rail_low_down']);
 assert.equal(CONSERVATORY_PROPS.some((prop)=>prop.id!=='tower-light-ringing'&&stairClutterMeshes.has(prop.mesh)),false,
   'every ordinary stair stays free of rails, frames, and decorative fixtures');

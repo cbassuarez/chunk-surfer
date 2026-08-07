@@ -27,7 +27,9 @@
     "play:latest": "node scripts/run-latest.mjs",
     "tauri": "tauri",
     "tauri:dev": "node scripts/run-latest.mjs",
-    "tauri:build": "tauri build --config src-tauri/tauri.lens.conf.json",
+    "tauri:build": "npm run steamworks:verify && tauri build --config src-tauri/tauri.lens.conf.json",
+    "steamworks:stage": "node scripts/stage-steamworks.mjs",
+    "steamworks:verify": "node scripts/validate-steamworks-package.mjs",
     "windows:validate": "node scripts/validate-windows-portable.mjs",
     "lens:bundle": "python3 tools/chunk_surfer/diffusion_server/build_bundle.py",
     "lens:bundle:mac": "tools/chunk_surfer/diffusion_server/.venv-local/bin/python tools/chunk_surfer/diffusion_server/build_bundle.py --target aarch64-apple-darwin",
@@ -44,7 +46,7 @@
     "test:desktop": "npm run test:desktop-menu && npm run test:display",
     "test:pixel-mesh": "node --test test/look-profiles.test.mjs test/pixel-mesh-dither.test.mjs test/pixel-mesh-quantize.test.mjs test/pixel-mesh-memory.test.mjs test/pixel-mesh-contract.test.mjs test/recording-acquisition.test.mjs",
     "test:story-art": "node --test test/story-art.test.mjs test/story-art-card.test.mjs test/story-art-contract.test.mjs",
-    "test:motion": "node --test test/input-manager.test.mjs test/fixed-step-loop.test.mjs test/movement-controller.test.mjs test/camera-controller.test.mjs test/motion-focus-regression.test.mjs test/motion-contract.test.mjs"
+    "test:motion": "node --test test/input-manager.test.mjs test/fixed-step-loop.test.mjs test/movement-controller.test.mjs test/camera-controller.test.mjs test/motion-focus-regression.test.mjs test/motion-contract.test.mjs test/pointer-capture.test.mjs"
   },
   "devDependencies": {
     "@gltf-transform/core": "^4.4.1",

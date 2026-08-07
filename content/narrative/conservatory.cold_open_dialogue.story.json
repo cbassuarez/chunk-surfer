@@ -1422,7 +1422,7 @@
           "id": "tape.run.line.2"
         },
         {
-          "who": "surfer",
+          "who": "recordist",
           "text": "Who did you lose?",
           "id": "tape.run.line.3"
         },
@@ -1432,7 +1432,7 @@
           "id": "tape.run.line.4"
         },
         {
-          "who": "surfer",
+          "who": "recordist",
           "text": "It is how this goes. You lost her. You lost me. Now come in and look for her.",
           "id": "tape.run.line.5"
         },
@@ -1442,7 +1442,7 @@
           "id": "tape.run.line.6"
         },
         {
-          "who": "surfer",
+          "who": "recordist",
           "text": "Everybody has lost somebody.",
           "id": "tape.run.line.7"
         },
@@ -1452,7 +1452,7 @@
           "id": "tape.run.line.8"
         },
         {
-          "who": "surfer",
+          "who": "recordist",
           "text": "You did everything you could to keep from losing her. It drove her away, didn't it?.",
           "id": "tape.run.line.9"
         },
@@ -1467,7 +1467,7 @@
           "id": "tape.run.line.11"
         },
         {
-          "who": "surfer",
+          "who": "recordist",
           "text": "Come closer.",
           "id": "tape.run.line.12"
         },
@@ -1477,7 +1477,7 @@
           "id": "tape.run.line.13"
         },
         {
-          "who": "surfer",
+          "who": "recordist",
           "text": "Closer. Bring forth to me your body.",
           "id": "tape.run.line.14"
         },
@@ -1497,7 +1497,7 @@
           "id": "tape.run.line.17"
         },
         {
-          "who": "surfer",
+          "who": "recordist",
           "text": "You will bring me another, and will lose them together.",
           "id": "tape.run.line.18"
         }
@@ -1539,7 +1539,7 @@
           "id": "tape.run.again.line.1"
         },
         {
-          "who": "surfer",
+          "who": "recordist",
           "text": "Who did you lose.",
           "id": "tape.run.again.line.2"
         },
@@ -1827,12 +1827,76 @@
           "id": "threshold.line.2"
         },
         {
+          "who": "guard",
+          "signalRole": "human",
+          "text": "Your name for the register?",
+          "id": "threshold.line.name-request"
+        },
+        {
+          "who": "me",
+          "signalRole": "human",
+          "prompt": "(tell him)",
+          "text": "[NAME OBSCURED]",
+          "mask": "operator-name",
+          "voice": false,
+          "id": "threshold.line.name-obscured",
+          "cues": [
+            "booth.name-mask"
+          ]
+        },
+        {
+          "who": "guard",
+          "signalRole": "human",
+          "text": "Right. Got you.",
+          "id": "threshold.line.name-accepted"
+        },
+        {
+          "who": "me",
+          "signalRole": "human",
+          "prompt": "(say it again, louder)",
+          "text": "[NAME OBSCURED]",
+          "mask": "operator-name",
+          "voice": false,
+          "id": "threshold.line.name-repeat",
+          "cues": [
+            "booth.name-mask"
+          ]
+        },
+        {
+          "who": "guard",
+          "signalRole": "human",
+          "text": "You're alright. It's down.",
+          "id": "threshold.line.name-enough"
+        },
+        {
           "who": "direction",
-          "text": "You sign the first box. The second says returned. It is the width of a fingernail and empty all the way up the page.",
+          "text": "He has written something. He is not going to check it with you and you are not going to ask.",
+          "id": "threshold.line.name-written"
+        },
+        {
+          "who": "direction",
+          "text": "You sign the first box. The second says returned. Under its blank box, old carbon has left 20:14 and yesterday's date, too faint to count as ink.",
           "id": "threshold.line.3",
           "cues": [
             "signature"
           ]
+        },
+        {
+          "who": "direction",
+          "text": "Above the carbon, in the name column, someone has already been written in.",
+          "id": "threshold.line.returned-name"
+        },
+        {
+          "who": "direction",
+          "text": "[NAME OBSCURED]",
+          "mask": "operator-name",
+          "id": "threshold.line.returned-shape"
+        },
+        {
+          "who": "guard",
+          "signalRole": "human",
+          "text": "That'll be the last lad. Never came out and signed it. Still owes me a keyring.",
+          "id": "threshold.line.returned-grumble"
         },
         {
           "who": "guard",

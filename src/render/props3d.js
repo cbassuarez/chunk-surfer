@@ -2,6 +2,10 @@
 // raymarcher; meshes render into colour + depth first, and r3d.js composites
 // whichever surface is actually nearer to the camera.
 
+// The one zone that is outdoors. Baked into the fragment shader so a prop
+// standing in the yard is lit by the sky rather than by a lamp that is not there.
+import { ZONE } from '../data/floorplan/legend.js';
+
 const VERT=`#version 300 es
 precision highp float;
 layout(location=0) in vec3 aPos;
@@ -22,7 +26,7 @@ void main(){mat4 m=mat4(aM0,aM1,aM2,aM3);vec4 w=m*vec4(aPos,1.0);vWorld=w.xyz;vN
 const FRAG=`#version 300 es
 precision highp float;
 in vec3 vWorld,vNormal;in vec2 vUv;flat in int vZone;flat in int vPortrait;flat in int vStructural;flat in vec4 vEmissive;
-uniform vec3 uEye,uForward,uBase,uZoneTint[14];uniform float uLight,uAlphaCut,uBaseAlpha;uniform sampler2D uTex,uNormalTex,uOrmTex,uFogTex;uniform float uUseTex,uUseNormal,uUseOrm,uMetallic,uRoughness,uNormalScale,uFogSize,uCellMeters;uniform vec2 uFogOrigin;
+uniform vec3 uEye,uForward,uBase,uZoneTint[17];uniform float uLight,uAlphaCut,uBaseAlpha;uniform sampler2D uTex,uNormalTex,uOrmTex,uFogTex;uniform float uUseTex,uUseNormal,uUseOrm,uMetallic,uRoughness,uNormalScale,uFogSize,uCellMeters;uniform vec2 uFogOrigin;
 uniform vec3 uTorchColor,uAmbientColor;uniform float uTorchReach,uTorchSpill,uAmbientIntensity;uniform vec2 uTorchCone;
 uniform int uLocalLightCount,uLocalShadowIndex;uniform vec4 uLocalLightPos[8],uLocalLightColor[8];
 uniform sampler2D uPlanTex;uniform vec2 uPlanSize,uPlanOrigin;uniform float uPlanReady;
@@ -73,6 +77,44 @@ void main(){
   for(int li=0;li<8;li++){if(li>=uLocalLightCount)break;vec3 delta=uLocalLightPos[li].xyz-vWorld;float d=length(delta),r=max(.01,uLocalLightPos[li].w);float att=pow(clamp(1.0-d/r,0.0,1.0),2.0);float ndl=max(dot(n,normalize(delta)),0.0);float localShadow=li==uLocalShadowIndex?flashlightShadow(vWorld,n,normalize(delta)):1.0;float arch=architecturalLightVisibility(vWorld,uLocalLightPos[li].xyz);localLight+=uLocalLightColor[li].rgb*uLocalLightColor[li].w*att*ndl*localShadow*arch;}
   vec3 base=uBase*texel.rgb;vec3 halfDir=normalize(ldir+normalize(toEye));float spec=pow(max(dot(n,halfDir),0.0),mix(72.0,5.0,rough))*mix(.08,.72,metal)*cone*falloff*shadow*uLight;
   vec3 col=base*(uAmbientColor*ambient+uTorchColor*lamp*(1.0-metal*.45)+localLight)+uTorchColor*spec*mix(vec3(1.0),base,metal)+vEmissive.rgb*vEmissive.a;
+  // OUTDOORS.
+  //
+  // Everything above is a lamp model: a source in the room, an occlusion term, a
+  // falloff. None of it describes standing in a yard, where the source is the
+  // whole hemisphere and the object is lit for the same reason the cloud is. The
+  // raymarcher grew a hemispherical term for this (see hitSky in r3d.js) and the
+  // mesh pass did not, so the loading bay's canopy, the gate, the lodge and the
+  // entire west elevation of the conservatory rendered as black cut-outs against
+  // a sky that was working perfectly.
+  //
+  // ZONE.dock is the yard and the apron, and it is the only outdoor zone in the
+  // building — so the test is the zone, carried per instance from the cell the
+  // prop stands in. Weighted by how much sky the face can see: full for anything
+  // looking up, a third for a wall.
+  if(vZone==${ZONE.dock}){
+    float facingSky=.30+.70*clamp(n.y*.5+.5,0.0,1.0);
+    col+=base*vec3(.30,.36,.47)*facingSky;
+    // And the sheen. It has been raining on all of this all night, and a wet
+    // face at a grazing angle returns the lit deck rather than its own colour —
+    // which is the only thing that reads on brick at forty metres in the dark.
+    // Not multiplied by albedo, because a film of water has none.
+    float graze=pow(1.0-abs(dot(n,normalize(uEye-vWorld))),3.0);
+    col+=vec3(.052,.062,.086)*graze*facingSky;
+    // AERIAL PERSPECTIVE, WHICH IS THE ONLY DEPTH CUE OUT HERE.
+    //
+    // The hemispherical term above has no falloff, and that is right — the sky
+    // is not further away over the far end of the yard. But it means a wall
+    // forty-five metres off reads at exactly the value of one at eight, and with
+    // no torch reaching either of them the whole exterior flattened into one
+    // plane: the far side of the road came forward and sat on the gate.
+    //
+    // There is a night's worth of rain in between. Wash toward the horizon's own
+    // value, which is what the shader's own distance haze does to the skyline
+    // (see the shoulder in nightSky) — the two have to agree or the meshes and
+    // the painted city recede at different rates.
+    float haze=smoothstep(20.0,76.0,dist);
+    col=mix(col,vec3(.100,.122,.168),haze*.82);
+  }
   col=col/(1.0+col*.30);o=vec4(col,1.0);
 }`;
 

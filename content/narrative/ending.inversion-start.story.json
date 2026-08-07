@@ -37,7 +37,7 @@
           "id": "start.line.2"
         },
         {
-          "who": "surfer",
+          "who": "recordist",
           "text": "That is cheating.",
           "id": "start.line.3"
         },
@@ -50,6 +50,11 @@
           "who": "direction",
           "text": "The organ chokes off. Somewhere below, the first wall lets go. The only clock in this building that was ever real starts to run.",
           "id": "start.line.5"
+        },
+        {
+          "who": "direction",
+          "text": "On the reversed pre-roll, two service exits open before the transport reaches the sound of either door.",
+          "id": "start.line.pre-roll-exits"
         }
       ],
       "id": "start"

@@ -32,12 +32,12 @@
       "lines": [
         {
           "who": "direction",
-          "text": "On the sill, in the dust, a tuning fork. Steel, stamped, older than the last refit.",
+          "text": "On the desk of the music stand, in the dust, a tuning fork. Steel, stamped, older than the last refit.",
           "id": "start.line.1"
         },
         {
           "who": "you",
-          "text": "Somebody left a fork on a windowsill. That is the least mysterious object I have ever found.",
+          "text": "Somebody left a fork where the music goes. That is the least mysterious object I have ever found.",
           "id": "start.line.2"
         }
       ],
@@ -174,7 +174,7 @@
         },
         {
           "who": "surfer",
-          "text": "...unless the system likes it.",
+          "text": "Again. Hold the reference.",
           "rate": 0.94,
           "id": "strike.line.7"
         },
@@ -195,7 +195,7 @@
         },
         {
           "who": "direction",
-          "text": "And a thing that will not let a sound stop is a thing that has stopped being a listener and started being the sound. That is not a ghost. That is worse. A ghost was a person.",
+          "text": "The room does not tell you whether it kept the note, or whether the exact note merely gave something in the room a straight line to follow.",
           "id": "strike.line.11"
         }
       ],
@@ -280,7 +280,7 @@
       "lines": [
         {
           "who": "you",
-          "text": "It is a fork on a sill. I have four rooms.",
+          "text": "It is a fork on a stand. I have four rooms.",
           "id": "leave.line.1"
         },
         {

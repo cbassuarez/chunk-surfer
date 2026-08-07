@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-28T06:58:46.473Z",
-  "bytes": 3169528,
-  "totalTriangles": 45190,
+  "generatedAt": "2026-08-07T04:04:11.740Z",
+  "bytes": 4445464,
+  "totalTriangles": 62134,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -16,8 +16,8 @@
       "vertices": 200
     },
     "music_stand": {
-      "triangles": 68,
-      "vertices": 110
+      "triangles": 80,
+      "vertices": 134
     },
     "instrument_case": {
       "triangles": 36,
@@ -68,8 +68,8 @@
       "vertices": 168
     },
     "upright_piano": {
-      "triangles": 360,
-      "vertices": 564
+      "triangles": 868,
+      "vertices": 1528
     },
     "grand_piano": {
       "triangles": 308,
@@ -84,12 +84,12 @@
       "vertices": 402
     },
     "cello": {
-      "triangles": 200,
-      "vertices": 242
+      "triangles": 696,
+      "vertices": 758
     },
     "violin": {
-      "triangles": 164,
-      "vertices": 212
+      "triangles": 636,
+      "vertices": 698
     },
     "speaker_cabinet": {
       "triangles": 152,
@@ -134,6 +134,26 @@
     "notice_board": {
       "triangles": 24,
       "vertices": 48
+    },
+    "dance_barre": {
+      "triangles": 152,
+      "vertices": 236
+    },
+    "dance_mirror": {
+      "triangles": 60,
+      "vertices": 120
+    },
+    "door_stencil": {
+      "triangles": 12,
+      "vertices": 24
+    },
+    "costume_rail": {
+      "triangles": 180,
+      "vertices": 282
+    },
+    "rolled_lino": {
+      "triangles": 156,
+      "vertices": 210
     },
     "loose_note": {
       "triangles": 24,
@@ -559,6 +579,22 @@
       "triangles": 92,
       "vertices": 134
     },
+    "player_shadow_figure": {
+      "triangles": 108,
+      "vertices": 174
+    },
+    "legacy_tape_rack": {
+      "triangles": 960,
+      "vertices": 1920
+    },
+    "legacy_patchbay": {
+      "triangles": 1200,
+      "vertices": 2400
+    },
+    "legacy_transfer_deck": {
+      "triangles": 428,
+      "vertices": 608
+    },
     "chapel_inner_screen": {
       "triangles": 96,
       "vertices": 192
@@ -566,6 +602,78 @@
     "tower_plaque": {
       "triangles": 24,
       "vertices": 48
+    },
+    "bay_canopy": {
+      "triangles": 508,
+      "vertices": 964
+    },
+    "conservatory_west_elevation": {
+      "triangles": 3660,
+      "vertices": 7014
+    },
+    "conservatory_stair_window": {
+      "triangles": 60,
+      "vertices": 120
+    },
+    "yard_booth": {
+      "triangles": 440,
+      "vertices": 854
+    },
+    "yard_fence_run": {
+      "triangles": 396,
+      "vertices": 792
+    },
+    "yard_lamp_column": {
+      "triangles": 136,
+      "vertices": 196
+    },
+    "yard_skip": {
+      "triangles": 224,
+      "vertices": 426
+    },
+    "yard_clutter": {
+      "triangles": 348,
+      "vertices": 564
+    },
+    "yard_markings": {
+      "triangles": 372,
+      "vertices": 744
+    },
+    "yard_sign": {
+      "triangles": 144,
+      "vertices": 288
+    },
+    "yard_road": {
+      "triangles": 340,
+      "vertices": 628
+    },
+    "yard_gate_piers": {
+      "triangles": 624,
+      "vertices": 1248
+    },
+    "yard_hedge_run": {
+      "triangles": 756,
+      "vertices": 1278
+    },
+    "city_frontage": {
+      "triangles": 3272,
+      "vertices": 6050
+    },
+    "yard_van": {
+      "triangles": 472,
+      "vertices": 808
+    },
+    "yard_van_lamp": {
+      "triangles": 24,
+      "vertices": 48
+    },
+    "city_bus_shelter": {
+      "triangles": 144,
+      "vertices": 288
+    },
+    "city_parked_car": {
+      "triangles": 280,
+      "vertices": 424
     }
   }
 }

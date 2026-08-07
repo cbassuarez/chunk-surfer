@@ -1,0 +1,33 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "personalized-interference",
+  "description": "Restricts opted-in interference to Chunk Surfer's main window and its game-owned monitor-return sidecar.",
+  "windows": ["main", "interference-monitor"],
+  "permissions": [
+    "core:event:allow-emit-to",
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "core:webview:allow-create-webview-window",
+    "core:webview:allow-get-all-webviews",
+    "core:window:allow-get-all-windows",
+    "core:window:allow-title",
+    "core:window:allow-outer-position",
+    "core:window:allow-outer-size",
+    "core:window:allow-current-monitor",
+    "core:window:allow-is-focused",
+    "core:window:allow-is-fullscreen",
+    "core:window:allow-is-minimized",
+    "core:window:allow-is-always-on-top",
+    "core:window:allow-show",
+    "core:window:allow-hide",
+    "core:window:allow-minimize",
+    "core:window:allow-unminimize",
+    "core:window:allow-close",
+    "core:window:allow-set-title",
+    "core:window:allow-set-position",
+    "core:window:allow-set-size",
+    "core:window:allow-set-fullscreen",
+    "core:window:allow-set-always-on-top",
+    "core:window:allow-request-user-attention"
+  ]
+}

@@ -8,6 +8,10 @@ export function freshMischiefState() {
 
 function eligible(def, context, state, now) {
   const r = def.requirements || {};
+  // A cue may belong to a room. Unzoned cues play anywhere, as they always have;
+  // a zoned one is silent everywhere else, so a set-piece written for one room
+  // cannot leak into a corridor and stop meaning anything.
+  if (Array.isArray(r.zones) && r.zones.length && !r.zones.includes(context.zone)) return false;
   if (context.interest < finite(r.minInterest, 0)) return false;
   if (context.agitation > finite(r.maxAgitation, 1)) return false;
   if (context.certainty < finite(r.minCertainty, 0)) return false;

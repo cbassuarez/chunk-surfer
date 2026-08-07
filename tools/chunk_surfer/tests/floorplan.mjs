@@ -30,8 +30,10 @@ ck('compiles at 2x runtime scale',
 ck('material plane matches the runtime grid', p.material.length === p.w * p.h, `${p.material.length} materials`);
 
 const b = FP.cellAt(...Object.values(rc(5, 5)));
-ck('studio B3 is low and dead (but not a cupboard)', b && Math.abs(b.ceil - 3.2) < 0.01 && b.zone === ZONE.studio);
-ck('studio B3 has acoustic material', FP.materialAt(...Object.values(rc(5, 5))) === MATERIAL.acousticFoam);
+ck('studio B3 is low (but not a cupboard)', b && Math.abs(b.ceil - 3.2) < 0.01 && b.zone === ZONE.studio);
+// B3 is one of the dance studios — the one with a take on it — so it carries the
+// wing's sprung maple rather than a treatment nothing else in the building has.
+ck('studio B3 has the dance wing\'s maple', FP.materialAt(...Object.values(rc(5, 5))) === MATERIAL.woodVelvet);
 
 const c = FP.cellAt(...Object.values(rc(48, 5)));
 ck('chapel floor is four metres up', c && Math.abs(c.floor - 4.0) < 0.01, `floor=${c && c.floor}`);
@@ -310,7 +312,7 @@ ck('the building uses a legible hierarchy of ceiling heights',heights.size>=8,`$
 // Materials are a second map, not flag bits. The big zones need distinct
 // signatures or the renderer cannot make the building legible.
 const materialChecks = [
-  ['studio acoustic foam', probePoint('studio'), MATERIAL.acousticFoam],
+  ['studio B3 sprung maple', probePoint('studio'), MATERIAL.woodVelvet],
   ['pool tile', probePoint('natatorium'), MATERIAL.poolTile],
   ['wet drained pool tile', probePoint('pool'), MATERIAL.wetTile],
   ['concert hall wood/velvet', probePoint('hall'), MATERIAL.woodVelvet],

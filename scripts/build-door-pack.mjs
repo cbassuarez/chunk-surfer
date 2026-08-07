@@ -65,6 +65,10 @@ mesh('door_head_infill',[box(0,2.78,0,1.16,1.16,.16,MAT.stone)]);
 mesh('door_head_overpanel',[box(0,2.90,0,2.25,.90,.14,MAT.dark)]);
 mesh('door_head_tympanum',[box(0,2.92,0,2.20,.96,.18,MAT.dark),box(0,3.22,-.10,1.1,.10,.10,MAT.iron)]);
 mesh('door_head_tower',[box(0,2.68,0,1.12,1.45,.28,MAT.stone)]);
+// The goods opening is three metres wide, so it needs a head and a frame of its
+// own: door_head_infill is 1.16 across and would have sat over the middle of it
+// like a lintel over nothing.
+mesh('door_head_goods',[box(0,3.02,0,3.30,.74,.20,MAT.stone),box(0,2.70,-.10,3.20,.14,.24,MAT.iron)]);
 mesh('door_head_transom',[box(0,2.90,0,2.18,.88,.09,MAT.glass),box(0,2.90,-.055,.06,.88,.08,MAT.dark),box(0,2.48,-.055,2.18,.07,.08,MAT.dark),box(0,3.32,-.055,2.18,.07,.08,MAT.dark)]);
 mesh('door_sealed_scar',[box(-.54,1.7,0,.08,3.4,.06,MAT.dark),box(.54,1.7,0,.08,3.4,.06,MAT.dark),box(0,3.36,0,1.16,.08,.06,MAT.dark),box(0,1.7,.04,1.08,3.32,.12,MAT.stone)]);
 mesh('door_debug_aperture',[box(0,1.7,.14,1.06,.025,.025,MAT.debug),box(0,.02,.14,1.06,.025,.025,MAT.debug),box(-.52,.86,.14,.025,1.68,.025,MAT.debug),box(.52,.86,.14,.025,1.68,.025,MAT.debug)]);
@@ -80,6 +84,19 @@ leaf('door_leaf_public',.88,2.35,.055,MAT.dark,[box(.44,1.49,-.047,.68,1.30,.025
 leaf('door_leaf_hall',1.02,2.35,.08,MAT.dark,[box(.51,.20,-.058,.94,.28,.028,MAT.kick),box(.90,1.08,-.07,.14,.04,.05,MAT.brass),box(.025,1.175,0,.035,2.25,.10,MAT.rubber)]);
 leaf('door_leaf_chapel',.98,2.40,.075,MAT.dark,[box(.49,.56,-.057,.76,.76,.025,MAT.dark),box(.49,1.55,-.057,.76,.80,.025,MAT.dark),box(.86,1.12,-.07,.16,.045,.045,MAT.iron)]);
 leaf('door_leaf_tower',.90,1.95,.055,MAT.oak,[box(.45,.48,-.05,.82,.045,.035,MAT.iron),box(.45,1.00,-.05,.82,.045,.035,MAT.iron),box(.45,1.52,-.05,.82,.045,.035,MAT.iron),box(.78,.96,-.06,.14,.06,.045,MAT.iron)]);
+// THE GOODS DOORS. A metre and a half of steel per leaf, ribbed, with a kick
+// plate the height of a pallet truck and a drop bolt at the foot of each. They
+// are barred from the inside and stay that way: there is no lorry, and the man
+// on foot uses the personnel door beside them.
+leaf('door_leaf_bay_goods',1.48,3.05,.07,MAT.green,[
+  box(.74,.30,-.055,1.40,.42,.030,MAT.kick),
+  box(.74,1.02,-.052,1.36,.055,.028,MAT.iron),
+  box(.74,1.72,-.052,1.36,.055,.028,MAT.iron),
+  box(.74,2.42,-.052,1.36,.055,.028,MAT.iron),
+  box(1.34,1.44,-.075,.16,.30,.055,MAT.iron),          // the handle
+  box(.10,.16,-.06,.09,.32,.09,MAT.iron),              // drop bolt, shot
+]);
+frame('door_frame_goods',3.00,3.05,MAT.iron,.13,.22);
 
 const sceneNodes=nodes.map((_,index)=>index),json={asset:{version:'2.0',generator:'Chunk Surfer modular door builder'},scene:0,scenes:[{nodes:sceneNodes}],nodes,meshes,materials,textures,images,samplers:[{magFilter:9729,minFilter:9987,wrapS:10497,wrapT:10497}],accessors,bufferViews,buffers:[{byteLength}]};
 const jsonBytes=Buffer.from(JSON.stringify(json)),jsonPad=(4-jsonBytes.length%4)%4,jsonChunk=Buffer.concat([jsonBytes,Buffer.alloc(jsonPad,0x20)]),bin=Buffer.concat(chunks),binPad=(4-bin.length%4)%4,binChunk=Buffer.concat([bin,Buffer.alloc(binPad)]);

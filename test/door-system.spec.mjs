@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, statSync } from 'node:fs';
 import { conservatory } from '../src/data/floorplan/conservatory.js';
 import { CONSERVATORY_DOORS, DOOR_ARCHETYPES, DOOR_ARCHETYPE } from '../src/data/conservatory-doors.js';
-import { F } from '../src/data/floorplan/legend.js';
+import { F, ZONE } from '../src/data/floorplan/legend.js';
 import * as FP from '../src/world/floorplan.js';
 import {
   DOOR_STATE, advanceDoor, beginDoorClose, beginDoorOpen, doorBlocksPassage,
@@ -17,8 +17,19 @@ const doors=FP.doorState();
 assert.equal(doors.length,CONSERVATORY_DOORS.length,'the compiled door set exactly matches the authored schedule');
 assert.equal(new Set(doors.map((door)=>door.id)).size,doors.length,'all door IDs are stable and unique');
 assert.ok(doors.every((door)=>door.archetype!=='legacy'),'every portal has exactly one explicit definition');
-assert.equal(doors.filter((door)=>door.leafCount===2).length,3,'only entrance, hall vestibule and chapel are pairs');
-assert.deepEqual(doors.filter((door)=>door.leafCount===2).map((door)=>door.id).sort(),['chapel-c17','front-main','hall-vestibule']);
+assert.equal(doors.filter((door)=>door.leafCount===2).length,4,'only the entrance, hall vestibule, chapel and the bay goods doors are pairs');
+assert.deepEqual(doors.filter((door)=>door.leafCount===2).map((door)=>door.id).sort(),['bay-goods-pair','chapel-c17','front-main','hall-vestibule']);
+// The goods doors are the widest opening in the building and the only one whose
+// key is never issued: barred from the inside, in a bay with no lorry.
+{
+  const goods=doors.find((door)=>door.id==='bay-goods-pair');
+  assert.equal(goods.aperture.width,3,'three metres of opening');
+  assert.equal(goods.cells.length,12,'three authored metres of portal, not one widened cell');
+  assert.equal(goods.keyId,'services-core','the keyring nobody is issued');
+  assert.ok(!doors.find((door)=>door.id==='dock-grey-exterior').cells
+    .some((cell)=>goods.cells.some((other)=>other.x===cell.x&&other.y===cell.y)),
+  'and they are a separate portal from the personnel door beside them');
+}
 assert.ok(doors.filter((door)=>door.leafCount===1).every((door)=>door.aperture.width>=.9&&door.aperture.width<=1.05),'single apertures do not infer leaves from portal cell count');
 assert.deepEqual(doors.find((door)=>door.id==='chapel-c17').activeLeaves,[1],'C-17 releases only the right leaf');
 for(const id of ['tower-hatch','bell-chamber-entry','organ-loft-service','organ-loft-nave'])assert.equal(doors.find((door)=>door.id===id).archetype,DOOR_ARCHETYPE.TOWER_SERVICE_SINGLE);
@@ -69,22 +80,38 @@ FP.setDoorOpen(practice.id,false);assert.equal(FP.doorAcousticLossBetween(across
 FP.setDoorOpen(practice.id,true);assert.equal(FP.doorAcousticLossBetween(across.a,across.b),0);
 
 // ── the grey door, and a door that stops being one ──────────────────────────
-// The door he came in through stands in the dock's north wall, dead ahead of
-// where he starts, locked to his own key. It is the only door in the building
-// authored to open onto nothing, and the only one that does not survive the
-// night: reaching for it retires it into masonry (see retireDoor / the post-door
-// beat in main.js), which has to leave the building honest everywhere at once.
+// The door he comes in through stands in the get-in's west wall, dead ahead of
+// where he starts out on the loading bay apron, locked to his own key. He walks
+// through it once. It is the only door in the building that does not survive the
+// night: reaching for it from the inside retires it into masonry (see retireDoor
+// / the post-door beat in main.js), which has to leave the building honest
+// everywhere at once — and takes the bay, the yard and the weather with it.
 FP.resetDoors();
 const grey=FP.doorState().find((door)=>door.id==='dock-grey-exterior');
 assert.ok(grey,'the grey door he came in through exists');
 assert.equal(grey.keyId,'master','it is locked, and he is the man with the key');
-assert.equal(grey.widthAxis,'x','it sits in an east-west wall');
+assert.equal(grey.widthAxis,'y','it sits in a north-south wall');
 FP.setSpawn(conservatory.spawn.x,conservatory.spawn.y);
 const spawnCell=FP.spawn();
-assert.ok(grey.cells.some((cell)=>cell.x===spawnCell.x),'it is dead ahead of where he starts');
-assert.ok(grey.cy<spawnCell.y,'...and due north of him, in the wall he is already facing');
-assert.ok(FP.isSolid(Math.round(grey.cx),Math.round(grey.cy)-2),'nothing is authored past it: a threshold you stand in, not through');
-assert.ok(FP.doorNear(spawnCell.x,spawnCell.y-11,[0,-1])?.portal?.id==='dock-grey-exterior','he can reach for it once he walks up to it');
+const approach=FP.toRuntimePoint(conservatory.greyDoorApproach);
+// HE DOES NOT START IN FRONT OF IT ANY MORE. The spawn used to be the apron,
+// dead ahead of this door, because the cold open had already narrated the walk
+// across the yard. The walk is played now, so he starts out on the road and the
+// door is the END of it — see the spine in conservatory.js. What has to stay
+// true is that the door is dead ahead of the APRON, which is where he arrives.
+const apronMark=FP.toRuntimePoint({x:53,y:7});
+assert.equal(FP.zoneAt(apronMark.x,apronMark.y),ZONE.dock,'the apron mark is on the loading bay');
+assert.ok(grey.cells.some((cell)=>cell.y===apronMark.y),'it is dead ahead of the apron');
+assert.ok(grey.cx>apronMark.x,'...and due east of it, in the wall he walks up to');
+// Unlike every earlier version of this door, there IS something on both sides:
+// the bay he crosses, and the get-in he is walking into.
+assert.equal(FP.zoneAt(spawnCell.x,spawnCell.y),ZONE.dock,'he starts outside, and the yard is the bay too');
+assert.ok(spawnCell.y>apronMark.y,'he starts out in the yard, not on the apron');
+assert.equal(FP.zoneAt(approach.x,approach.y),ZONE.getIn,'and the far side of it is the get-in');
+assert.equal(FP.canStep(Math.round(grey.cx)+1,Math.round(grey.cy),Math.round(grey.cx),Math.round(grey.cy),
+  {keys:new Set(['master'])}).why,'closed','it is shut, and his own key is what opens it');
+assert.ok(FP.doorNear(Math.round(grey.cx)+4,Math.round(grey.cy),[-1,0])?.portal?.id==='dock-grey-exterior',
+  'he can reach for it from inside, which is the only side the beat happens on');
 
 const portalsBefore=FP.doorState().length;
 const scarsBefore=FP.sealedDoorways().length;
@@ -102,8 +129,12 @@ for(const {x,y} of grey.cells){
   assert.equal(FP.flagsAt(x,y),FP.flagsAt(authoredCell.x,authoredCell.y),'...and reads exactly as an authored bricked doorway does');
   assert.equal(FP.cellAt(x,y),null,'nothing stands in it');
 }
-assert.equal(FP.doorNear(spawnCell.x,spawnCell.y-11,[0,-1]),null,'nothing offers to open a wall');
-assert.equal(FP.canStep(spawnCell.x,spawnCell.y-13,spawnCell.x,spawnCell.y-14,{keys:new Set(['master'])}).ok,false,'and the key does not help');
+// Probed AT THE DOOR rather than at an offset from the spawn: these used to
+// count cells north of the apron, which stopped meaning anything the moment he
+// started the night out on the road instead.
+const westOfScar={x:Math.round(grey.cx)-2,y:Math.round(grey.cy)};
+assert.equal(FP.doorNear(westOfScar.x,westOfScar.y,[1,0]),null,'nothing offers to open a wall');
+assert.equal(FP.canStep(westOfScar.x,westOfScar.y,westOfScar.x+1,westOfScar.y,{keys:new Set(['master'])}).ok,false,'and the key does not help');
 assert.ok(!('dock-grey-exterior' in (FP.saveDoorState().states||{})),'a retired door is not written to the door save');
 assert.equal(FP.retireDoor('dock-grey-exterior'),false,'retiring it twice is a no-op');
 FP.compile(conservatory.levels,{

@@ -32,11 +32,25 @@ export const F = {
   STAIR:    1 << 4,   // never mutates, never bricked
   BRICKED:  1 << 5,   // a door that has been filled in since he came through
   CLOSED:   1 << 6,   // a real leaf is present; [E] must open the whole portal
+  // Open to the sky, but STANDING IN A BUILDING that has a real height.
+  //
+  // r3d draws the wall beside a sky cell up to that cell's ceiling, and then
+  // clobbers the ceiling of every sky cell to 90m so the ray can leave. For the
+  // yard and the lift shaft that is right — nothing solid stands close enough to
+  // either for the height to read. For a bay with walls on three sides it is a
+  // canyon: three black slabs ninety metres tall against a lit sky, which is
+  // exactly why the apron was roofed instead of opened.
+  //
+  // WALLED says: let the ray out, but draw the walls to the ceiling I authored.
+  // Sky above, building around you. See cellAt in render/r3d.js.
+  WALLED:   1 << 7,
 };
 
 // Zones map to rooms (audio/manifest-map.js) → lens prompt, seed, room tone.
 export const ZONE = {
   none: 0,
+  // The real loading bay: apron and yard, open to the west and to the weather.
+  // Everything the lorry ever touched. See getIn for the room behind it.
   dock: 1,
   foyer: 2,
   studio: 3,        // main_b3
@@ -50,10 +64,16 @@ export const ZONE = {
   chapelOuter: 11,
   bellTower: 12,
   academic: 13,
-  danceStudio: 14,  // the sub-basement dance wing. Shares B3's room tone and is
-                    // deliberately NOT in ZONE_RECORDING_ROOM: these are rooms
-                    // you walk, not takes you roll.
+  danceStudio: 14,  // the sub-basement dance wing. B3 is one of these rooms — it
+                    // is simply the one with a take on it, which is why it alone
+                    // keeps ZONE.studio and its place in ZONE_RECORDING_ROOM.
+                    // The rest are rooms you walk, not takes you roll.
   store: 15,        // the costume and prop store at the corridor's dead end
+  // THE GET-IN. What used to be called the loading dock, which it never was: a
+  // sealed room with no way for a lorry into it. It is the room a loading bay
+  // leads to — where a show is checked in, staged, and taken apart again. The
+  // last load-out is still standing in it.
+  getIn: 16,
 };
 
 // Which world (audio + prompt) a zone belongs to. Corridors borrow the room
@@ -77,6 +97,10 @@ export const ZONE_WORLD = {
   // The academic floor is intentionally not a recording room. It borrows the
   // public atrium's acoustic world without acquiring a take target of its own.
   [ZONE.academic]: 'amplifications',
+  // The get-in borrows B3's dead box, as the old dock room always did. That
+  // shared world id is why LEVEL_CHECK_ROOM exists: a level check taken here
+  // must not be filed as a B3 take.
+  [ZONE.getIn]: 'main_b3',
 };
 
 // Surface identity is deliberately not packed into F. Flags are collision and
@@ -84,6 +108,10 @@ export const ZONE_WORLD = {
 export const MATERIAL = {
   none: 0,
   serviceConcrete: 1,
+  // NOT AUTHORED ANYWHERE. Studio B3 was its only user until B3 was resolved as
+  // one of the dance studios and took their sprung maple. The id stays reserved
+  // and r3d.js keeps its branches — a treated room may want them again — but no
+  // glyph and no zone currently reaches them.
   acousticFoam: 2,
   poolTile: 3,
   wetTile: 4,
@@ -97,11 +125,21 @@ export const MATERIAL = {
   sourcePage: 12,
   sourceFault: 13,
   academicPlaster: 14,
+  // Wet tarmac. The only ground in this game that is outdoors, and the reason
+  // it needed its own id: the general floor slot in r3d's surfaceSlot() is ash
+  // wood, so every serviceConcrete floor was being drawn as floorboards. Nobody
+  // noticed indoors. Fifty metres of it under an open sky is a parquet yard.
+  wetTarmac: 15,
 };
 
 export function materialForZone(zone) {
   switch (zone) {
-    case ZONE.studio: return MATERIAL.acousticFoam;
+    case ZONE.dock: return MATERIAL.wetTarmac;
+    // B3 is a dance studio that happens to carry the take, so it is the same
+    // sprung maple as the rest of the wing. It used to be acousticFoam, which
+    // drew dark concrete cladding over a terrazzo floor and contradicted both
+    // the room tone and the wing it stands in.
+    case ZONE.studio: return MATERIAL.woodVelvet;
     case ZONE.natatorium: return MATERIAL.poolTile;
     case ZONE.hall: return MATERIAL.woodVelvet;
     case ZONE.practice: return MATERIAL.practiceFoam;
@@ -110,7 +148,8 @@ export function materialForZone(zone) {
     case ZONE.bellTower: return MATERIAL.chapelStone;
     case ZONE.academic: return MATERIAL.academicPlaster;
     case ZONE.plant: return MATERIAL.metalPlant;
-    // Sprung maple and a mirrored wall: bright where B3 is dead.
+    // Sprung maple and a mirrored wall — the same surface B3 has, because B3 is
+    // one of these rooms.
     case ZONE.danceStudio: return MATERIAL.woodVelvet;
     case ZONE.sourceSpace: return MATERIAL.sourceField;
     default: return MATERIAL.serviceConcrete;
@@ -133,10 +172,51 @@ export const GLYPHS = {
   'o': { floor: 0.0, ceil: 8.0, sky: true, material: 'metalPlant' },           // shaft, open above
 
   // Rooms. The letter is the zone; the height is the room.
-  'D': { floor: 0.0, ceil: 5.5, zone: 'dock', material: 'serviceConcrete' },
+  // THE LOADING BAY APRON, WHICH IS OUTSIDE.
+  //
+  // This was roofed at 5.5m and not sky, for two stated reasons. One was that
+  // opening it would draw the bay's three walls as ninety-metre slabs — true,
+  // and F.WALLED is what fixes it. The other was that the academic crown stands
+  // over the apron, which is also true and is NOT fixed here: the academic floor
+  // is a real physical span at 10.0m covering 168 of these 224 cells.
+  //
+  // So the ceiling sits flush under it at 10.0 rather than being removed. The
+  // walls of the bay stand to the underside of the crown, the ray leaves above
+  // them, and the sky the player gets is the sky over the yard and over the open
+  // half of the apron. From the ground slice the crown is not drawn at all, so
+  // nothing on screen contradicts this; in the building model it means a bay
+  // that is open to the weather with a third floor above part of it. Cutting the
+  // crown back over the bay is the honest fix and is a bigger change than this
+  // one — it moves a floor of the academic wing. Flagged, not smuggled.
+  'D': { floor: 0.0, ceil: 10.0, sky: true, walled: true, zone: 'dock', material: 'wetTarmac' },
+  'I': { floor: 0.0, ceil: 5.5, zone: 'getIn', material: 'serviceConcrete' },
+  // The yard beyond the bay mouth. Open to the weather, and walked: the gate,
+  // the lodge and the dock steps are all out here. It also exists so the ray has
+  // somewhere to go before it leaves the plan and becomes sky.
+  //
+  // WALLED, for the same reason the apron is. Without it every wall of the
+  // conservatory facing this yard is drawn to the 90m ceiling r3d gives a sky
+  // cell — a building with no top edge, standing in front of the moon. The
+  // ceiling authored here is therefore not headroom; it is the height of the
+  // building next to it, and `yardProfile` in floorplan/conservatory.js bands it
+  // along the yard's depth so the west elevation has a roofline that varies.
+  // 24.0 is the fallback for any cell the profile does not reach.
+  'Y': { floor: 0.0, ceil: 24.0, sky: true, walled: true, zone: 'dock', material: 'wetTarmac' },
+  // The dock edge: a kerb at the lip of the apron. Authored as a raised FLOOR
+  // rather than as rock, because rock is drawn full height and this has to be a
+  // thing you see over. canStep refuses the rise (0.80m against a 0.45m limit),
+  // so it bounds the bay without being an invisible wall.
+  //
+  // 0.80 IS A CEILING, NOT A TASTE. physicalRenderPlanFor keeps only spans
+  // within SPAN_WINDOW (1.0m) of the height the slice is built for, so a floor
+  // more than a metre above the apron is dropped from the slice entirely and the
+  // cell comes back solid — which draws the full-height black cliff this glyph
+  // exists to avoid. Anything you want to see OVER has to stay inside that
+  // window.
+  'w': { floor: 0.8, ceil: 24.0, sky: true, walled: true, zone: 'dock', material: 'wetTarmac' },
   'F': { floor: 0.0, ceil: 6.5, zone: 'foyer', material: 'serviceConcrete' },
   'A': { floor: 0.0, ceil: 11.5, zone: 'foyer', material: 'serviceConcrete' },
-  'B': { floor: 0.0, ceil: 3.2, zone: 'studio', material: 'acousticFoam' },
+  'B': { floor: 0.0, ceil: 3.2, zone: 'studio', material: 'woodVelvet' },
   'T': { floor: 0.0, ceil: 9.5, zone: 'natatorium', material: 'poolTile' },
   'W': { floor: -1.6, ceil: 9.5, zone: 'natatorium', material: 'wetTile' },
   'H': { floor: 0.0, ceil: 15.5, zone: 'hall', material: 'woodVelvet' },
@@ -176,6 +256,7 @@ export function cellFor(ch, base = 0) {
   if (g.door) flags |= F.DOOR;
   if (g.bricked) flags |= F.BRICKED;
   if (g.sky) flags |= F.SKY;
+  if (g.walled) flags |= F.WALLED;
   if (g.mutable) flags |= F.MUTABLE;
   if (g.stair) flags |= F.STAIR;
 

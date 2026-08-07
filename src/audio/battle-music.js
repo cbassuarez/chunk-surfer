@@ -208,6 +208,7 @@ export function createBattleMusicSession({
   const leadHandles = new Map();
   let startPromise = null;
   let master = null;
+  let roomLeak = null;
   let bank = bufferBank;
   let status = contextRef && destination ? 'idle' : 'unavailable';
   let entryVariant = null;
@@ -223,6 +224,7 @@ export function createBattleMusicSession({
   let dialogueActive = false;
   let finishing = false;
   let stopped = false;
+  let intrusion = 0;
 
   function now() { return Number(contextRef?.currentTime) || 0; }
   function registerNode(node) { if (node) graphNodes.add(node); return node; }
@@ -276,6 +278,20 @@ export function createBattleMusicSession({
     return null;
   }
   function masterTarget() { return dialogueActive ? DIALOGUE_GAIN : SESSION_GAIN; }
+  function roomLeakTarget(value=intrusion){
+    const normalized=Math.max(0,Math.min(1,(Number(value)||0)));
+    if(normalized<.33)return 0;
+    return Math.pow((normalized-.32)/.68,1.35)*.34;
+  }
+  function setIntrusion(value){
+    intrusion=Math.max(0,Math.min(1,Number(value)||0));
+    if(!roomLeak||finishing)return intrusion;
+    const at=now();
+    cancelParam(roomLeak.gain,at);
+    paramValueAt(roomLeak.gain,roomLeak.gain.value,at);
+    rampParam(roomLeak.gain,roomLeakTarget(),at+.24);
+    return intrusion;
+  }
   function setDialogueActive(value) {
     dialogueActive = !!value;
     if (!master || finishing) return;
@@ -386,6 +402,19 @@ export function createBattleMusicSession({
       master = registerNode(contextRef.createGain());
       paramValueAt(master.gain, masterTarget(), now());
       master.connect(destination);
+      // The composition begins only in the monitor return. Intrusion opens a
+      // second, filtered physical path: first one resonator, then the room. It
+      // remains program audio, never player noise, even when the architecture
+      // visibly joins it.
+      if(contextRef.createBiquadFilter){
+        const roomFilter=registerNode(contextRef.createBiquadFilter());
+        roomFilter.type='bandpass';
+        paramValueAt(roomFilter.frequency,680,now());
+        paramValueAt(roomFilter.Q,1.8,now());
+        roomLeak=registerNode(contextRef.createGain());
+        paramValueAt(roomLeak.gain,roomLeakTarget(),now());
+        master.connect(roomFilter);roomFilter.connect(roomLeak);roomLeak.connect(destination);
+      }
       entryVariant = chooseEntryPair();
       // A fill and its tail are ONE hit, split either side of beat one, and they
       // are always the same variant — never a fill from one take with the ring-out
@@ -451,8 +480,10 @@ export function createBattleMusicSession({
       restUntil,
       fallbackAt,
       dialogueActive,
+      intrusion,
+      roomLeakGain:roomLeakTarget(),
       sourceCount: activeSources.size,
     };
   }
-  return { start, update, onCombatEvent, setDialogueActive, finish, abort, snapshot };
+  return { start, update, onCombatEvent, setDialogueActive, setIntrusion, finish, abort, snapshot };
 }

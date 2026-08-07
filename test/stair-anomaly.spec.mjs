@@ -42,8 +42,8 @@ assert.deepEqual({ ...route('dry-inversion'), seed: 0 }, { stairId: 'upper', tra
 assert.deepEqual(route('uncertain'), route('uncertain'));
 assert.notEqual(route('uncertain').variant, 'baseline');
 
-assert.equal(SAVE_VERSION, 3, 'the outer save version stays stable');
-assert.equal(RUN_SCHEMA_VERSION, 2, 'only the nested run schema increments');
+assert.equal(SAVE_VERSION, 4, 'reference exposure migration bumps the outer save contract');
+assert.equal(RUN_SCHEMA_VERSION, 3, 'the causal/reference run contract is versioned');
 const fresh = freshRunRecord({ id: 'run-stair', now: 100 });
 assert.equal(fresh.ledger.stairAnomaly.status, STAIR_ANOMALY_STATUS.ARMED);
 assert.equal(Object.isFrozen(fresh.environment.stairAnomaly), true, 'the run-scoped selection is immutable');

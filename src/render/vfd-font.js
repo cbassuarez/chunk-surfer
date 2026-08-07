@@ -125,7 +125,7 @@ export function vfdGlyph(ch) {
 // text. `dim` is the dormant colour (may be null to omit the grid).
 export function drawVfdGlyph(ctx, ch, px, py, cellW, cellH, {
   color = '#F2A81E', dim = null, blur = 3, dpr = 1, alpha = 1,
-  scan = 1, ghost = 0.14, dimAlpha = 0.78,
+  scan = 1, halation = 0.14, dimAlpha = 0.78,
 } = {}) {
   const rows = vfdGlyph(ch);
   if (!rows) return;
@@ -162,11 +162,12 @@ export function drawVfdGlyph(ctx, ch, px, py, cellW, cellH, {
       ctx.beginPath();
       ctx.arc(dx, dy, r, 0, Math.PI * 2);
       if (on) {
-        if (ghost > 0) {
-          // Phosphor afterglow: a wider, dimmer dot under the addressed one.
+        if (halation > 0) {
+          // Optical halation in the front glass: spatial bloom only, never a
+          // temporal trail. A VFD dot stops emitting when it is not addressed.
           ctx.save();
           ctx.fillStyle = color;
-          ctx.globalAlpha = Math.max(0, Math.min(0.28, alpha * ghost * scan));
+          ctx.globalAlpha = Math.max(0, Math.min(0.28, alpha * halation * scan));
           ctx.shadowColor = color;
           ctx.shadowBlur = blur * 2.7 * dpr;
           ctx.beginPath();

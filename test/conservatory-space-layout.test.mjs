@@ -5,7 +5,7 @@ import { CONSERVATORY_PROPS, PROP_MESH } from '../src/data/conservatory-props.js
 import { MATERIAL, PLAN_SCALE, ZONE } from '../src/data/floorplan/legend.js';
 import * as FP from '../src/world/floorplan.js';
 import * as PROPS from '../src/game/props.js';
-import { DOCK_ACOUSTIC_PROP_IDS, DOCK_HERO_PROP_IDS, DOCK_PORTAL, dockHauntingStaging } from '../src/game/loading-dock.js';
+import { DOCK_ACOUSTIC_PROP_IDS, DOCK_HERO_PROP_IDS, DOCK_PORTAL, dockHauntingStaging } from '../src/game/get-in.js';
 
 const rt = (x, y) => FP.toRuntimePoint({ x, y });
 const key = ({ x, y }) => `${x},${y}`;
@@ -20,6 +20,10 @@ FP.compile(conservatory.levels, {
 });
 for(const door of FP.doorState())FP.setDoorOpen(door.id,true);
 FP.setSpawn(conservatory.spawn.x, conservatory.spawn.y);
+// Spawn is out on the loading bay now. Everything below is about the get-in, so
+// it measures from the get-in side of the grey door — where he stands once he is
+// in, and where the level check happens.
+const inside = FP.toRuntimePoint(conservatory.greyDoorApproach);
 
 PROPS.loadPropState({});
 const placed = PROPS.propsInit(FP);
@@ -87,10 +91,10 @@ for (const name of [
 
 assert.equal(placed.length, CONSERVATORY_PROPS.length, 'every dressed prop center remains in open floorplan space');
 
-assert.equal(DOCK_HERO_PROP_IDS.length, 10, 'the dock has ten authored hero inspections');
+assert.equal(DOCK_HERO_PROP_IDS.length, 10, 'the get-in has ten authored hero inspections');
 for (const id of DOCK_HERO_PROP_IDS) {
-  assert.ok(byId[id], `${id} is placed in the dock`);
-  assert.ok(PROPS.pathToProp(FP.spawn().x, FP.spawn().y, id, KEYRING), `${id} remains reachable from the level-check box`);
+  assert.ok(byId[id], `${id} is placed in the get-in`);
+  assert.ok(PROPS.pathToProp(inside.x, inside.y, id, KEYRING), `${id} remains reachable from the level-check box`);
 }
 for (const id of DOCK_ACOUSTIC_PROP_IDS) {
   assert.ok(byId[id]?.sampleFamily?.length, `${id} has a fixed acoustic family`);
@@ -101,12 +105,12 @@ for (let authoredY = 7; authoredY <= 14; authoredY += .5) {
     assert.ok(PROPS.propCanOccupy(p.x, p.y), `three-metre freight spine stays clear at ${authoredX},${authoredY}`);
   }
 }
-assert.ok(reachable(FP.spawn(), rt(65, 15)), 'level-check box to south service leaf remains clear');
-assert.ok(reachable(FP.spawn(), rt(73, 13)), 'level-check box to foyer service leaf remains clear');
+assert.ok(reachable(inside, rt(65, 15)), 'level-check box to south service leaf remains clear');
+assert.ok(reachable(inside, rt(73, 13)), 'level-check box to foyer service leaf remains clear');
 for(const entryPortal of Object.values(DOCK_PORTAL)){
   const contact=FP.toRuntimePoint(dockHauntingStaging({entryPortal}),{center:false});
   assert.ok(PROPS.propCanOccupy(contact.x,contact.y),`${entryPortal} tableau contact point is not inside a blocking prop`);
-  assert.ok(reachable(FP.spawn(),contact),`${entryPortal} tableau body can be physically reached and touched`);
+  assert.ok(reachable(inside,contact),`${entryPortal} tableau body can be physically reached and touched`);
 }
 
 for (const id of [
@@ -115,7 +119,7 @@ for (const id of [
   'acq-services-panel-foh',
 ]) {
   assert.equal(byId[id]?.interaction, 'action', `${id} remains an explicit breaker interaction`);
-  assert.ok(PROPS.pathToProp(FP.spawn().x, FP.spawn().y, id, KEYRING), `${id} remains reachable from the loading dock`);
+  assert.ok(PROPS.pathToProp(inside.x, inside.y, id, KEYRING), `${id} remains reachable from the get-in`);
 }
 
 PROPS.loadPropState({});
@@ -393,3 +397,41 @@ console.log('main stair shaft ok');
   }
 }
 console.log('stair axis ok');
+
+// ── the sub-basement dance wing ──────────────────────────────────────────────
+//
+// Four studios and a store that used to contain nothing at all. The census is
+// here because an unplaced prop is SILENT: propsInit filters out anything whose
+// centre lands in rock, so a mis-authored room is not an error, it is an empty
+// room that looks deliberate.
+{
+  const wing = placed.filter((prop) => /^(b1|b2|b3|b5|store)-/.test(prop.id));
+  for (const [room, pattern] of [
+    ['B1', /^b1-/], ['B2', /^b2-/], ['B3', /^b3-/], ['B5', /^b5-/], ['the prop store', /^store-/],
+  ]) {
+    assert.ok(wing.some((prop) => pattern.test(prop.id)), `${room} is furnished`);
+  }
+  // There is no B4 — the plant room is standing in it.
+  assert.equal(placed.filter((prop) => /^b4-/.test(prop.id)).length, 0, 'there is no studio B4');
+
+  // THE CONVERTER TRAP. Props resolve with round(metres * PLAN_SCALE), not the
+  // metres*2+1 of FP.toRuntimePoint, so wall furniture authored half a metre out
+  // sits INSIDE the wall and vanishes. Every barre, mirror and stencil in the
+  // wing must have masonry directly behind it, in the direction it faces away
+  // from: yaw 0 backs onto -y, PI onto +y, PI/2 onto -x, -PI/2 onto +x.
+  const wallMounted = wing.filter((prop) => PROP_MESH[prop.mesh]?.mount === 'wall');
+  assert.ok(wallMounted.length >= 12, `the wing hangs real wall furniture (${wallMounted.length})`);
+  for (const prop of wallMounted) {
+    const bx = prop.rx - Math.round(Math.sin(prop.yaw || 0));
+    const by = prop.ry - Math.round(Math.cos(prop.yaw || 0));
+    assert.equal(FP.isSolid(bx, by), true, `${prop.id} hangs on masonry rather than on air`);
+  }
+
+  // B3 is one of these rooms, so it carries the wing's surface and its furniture
+  // rather than a treatment nothing else in the building has.
+  const b3 = rt(15, 12);
+  assert.equal(FP.materialAt(b3.x, b3.y), MATERIAL.woodVelvet, 'B3 is sprung maple like the rest of the wing');
+  assert.equal(FP.zoneAt(b3.x, b3.y), ZONE.studio, 'and still the only one of them with a take on it');
+  assert.ok(byId['b3-barre-east'] && byId['b3-mirror-north-a'], 'B3 keeps a barre and a mirror');
+}
+console.log('dance wing furnishing ok');

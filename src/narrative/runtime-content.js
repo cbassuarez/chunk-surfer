@@ -10,6 +10,7 @@ import {
 } from './generated-content.js';
 import { interpolateStoryText } from './conditions.js';
 import { attachCombatDefinition } from '../data/combat-definitions.js';
+import { attachSignalRole } from './signal-role.js';
 
 const documents = authoringDocumentsById;
 const audioProject = authoringAudioProject || { triggers: [] };
@@ -58,7 +59,7 @@ export function runtimeCuesForLine(documentId, line = {}) {
 }
 
 function runtimeLine(line, context = {}, documentId = '') {
-  const next = { ...line };
+  const next = attachSignalRole(line);
   if (line.id && !next.sourceId) next.sourceId = line.id;
   delete next.id; delete next.role; delete next.when;
   if (line.when) next.if = line.when;

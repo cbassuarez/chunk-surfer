@@ -53,10 +53,10 @@ export const STYLE = {
 export function makeColdOpenScene({
   id = 'cold-open',
   beats = [], opening = null, startAt = 'start', slate = '', ambient = true, lensPreset = 'booth',
-  onDone, onChoice, cue, fx, audio, getAudio, replay = null,
+  onDone, onChoice, onLine, cue, fx, audio, getAudio, replay = null,
 } = {}) {
   const convo = createConversation({
-    nodes: opening, beats, startAt, sceneId: id, replay, onChoice, cue, fx, audio, getAudio,
+    nodes: opening, beats, startAt, sceneId: id, replay, onChoice, onLine, cue, fx, audio, getAudio,
     onDone: () => { scenes.pop(); if (ambient) audio?.stopBoothTone?.({ fade: 0.8 }); onDone?.(); },
   });
 
@@ -270,11 +270,74 @@ export function makeColdOpenScene({
       },
   };
 }
-// Long enough that the song gets a verse and the reader gets to sit in it. The
-// fade takes the whole back half, so the door lands in a mix that has emptied.
-export function makeWorldTitleScene({ onDone, audio, duration = 12.0 } = {}) {
+// THE ARRIVAL. He is standing at the back of his own van on a wet road and the
+// game has not started yet.
+//
+// Control used to arrive on a hard cut: one frame of menu, the next frame of a
+// man outdoors in the rain, already able to walk. Nothing said "this is a place"
+// before it said "you may now move". Two and a half seconds of black coming off
+// the world is all it takes, and it is also the only chance the rain and the
+// bed get to arrive before the player's hands do.
+//
+// `blocksWorld` stays false: the world is rendering underneath the whole time,
+// which is the point — it is a fade FROM black onto a shot, not a loading card.
+export function makeArrivalScene({ onDone, audio, duration = 2.6 } = {}) {
   let t = 0;
   let done = false;
+
+  function finish() {
+    if (done) return;
+    done = true;
+    scenes.pop();
+    onDone?.();
+  }
+
+  return {
+    id: 'arrival',
+    blocksInput: true,
+    blocksWorld: false,
+    lensPreset: 'calm',
+
+    enter() { audio?.startRain?.(); },
+    update(dt) { t += dt; if (t >= duration) finish(); },
+    // No skipping. It is two and a half seconds and it is the first thing the
+    // game says.
+    key() { return true; },
+
+    render() {
+      const { cols, rows } = uiSize();
+      // Full black for the first fifth, then off. Cubed, so the last of it
+      // lingers and the yard resolves rather than snapping in.
+      const k = Math.min(1, Math.max(0, (t - duration * 0.18) / (duration * 0.82)));
+      const alpha = (1 - k) * (1 - k) * (1 - k);
+      if (alpha > 0.002) uiFill(0, 0, cols, rows, `rgba(4,5,7,${alpha.toFixed(3)})`);
+    },
+  };
+}
+
+// Long enough that the song gets a verse and the reader gets to sit in it. The
+// fade takes the whole back half, so the door lands in a mix that has emptied.
+//
+// THE LEAD-IN IS THE CROSSING ITSELF.
+//
+// This used to open on a frame of solid glass, which meant the last thing the
+// player saw of the outdoors was whatever happened to be under the cursor on the
+// step that fired it — a hard cut off a wall. The door he has just come through
+// is the most important object in the game (see the post-door beat, and the
+// masonry), and it went past unwatched.
+//
+// So the scene now begins in the world: the view swings back to the door, the
+// closer takes it, and the last rectangle of yard light narrows to nothing
+// before the type comes up. `duration` still means the length of the TYPE, so
+// every existing caller and the god menu are unchanged.
+export function makeWorldTitleScene({
+  onDone, audio, cue, camera = null,
+  duration = 12.0, turn = 1.3, iris = 1.6,
+} = {}) {
+  let t = 0;
+  let done = false;
+  let slammed = false;
+  const lead = camera ? turn + iris : 0;
 
   function finish() {
     if (done) return;
@@ -290,10 +353,21 @@ export function makeWorldTitleScene({ onDone, audio, duration = 12.0 } = {}) {
     lensPreset: 'calm',
 
     // The song leaves before the title does, so the door slams into an empty mix.
-    enter() { audio?.fadeSoundtrack?.({ fade: Math.max(2, duration - 2.4) }); },
-    update(dt) { t += dt; if (t >= duration) finish(); },
-    // This is an authored twelve-second scene, not a text line. Input is
-    // swallowed until the song and title complete; no key can collapse it.
+    enter() { audio?.fadeSoundtrack?.({ fade: Math.max(2, lead + duration - 2.4) }); },
+    update(dt) {
+      t += dt;
+      // The turn is driven a frame at a time rather than set, because r3dLook
+      // clamps how far the head moves per call — a man looking over his
+      // shoulder, not a camera being teleported.
+      if (camera && t < turn) camera.turn?.(Math.min(dt, turn - (t - dt)) / turn);
+      if (!slammed && t >= turn + iris * 0.82) {
+        slammed = true;
+        cue?.('door');
+      }
+      if (t >= lead + duration) finish();
+    },
+    // This is an authored scene, not a text line. Input is swallowed until the
+    // song and title complete; no key can collapse it.
     key() { return true; },
     exit() { audio?.stopTyping?.(); },
 
@@ -302,10 +376,31 @@ export function makeWorldTitleScene({ onDone, audio, duration = 12.0 } = {}) {
     // Each line fades up on its own beat and they all leave together.
     render() {
       const { cols, rows } = uiSize();
+
+      // ── the iris ────────────────────────────────────────────────────────────
+      // On a character grid an iris is not a circle; it is four filled bands
+      // closing on an aperture, and that is the right instrument for it — the
+      // shape that ends up on screen is a door-height slot, because the width
+      // collapses on a steeper curve than the height.
+      if (t < lead) {
+        if (t <= turn) return;                       // world only: he is turning
+        const k = Math.min(1, (t - turn) / iris);
+        const e = k * k * (3 - 2 * k);
+        const aw = Math.max(0, Math.round(cols * Math.pow(1 - e, 1.9)));
+        const ah = Math.max(0, Math.round(rows * (1 - e)));
+        const ax = Math.floor((cols - aw) / 2), ay = Math.floor((rows - ah) / 2);
+        uiFill(0, 0, cols, ay, UI_COLOR.glass);
+        uiFill(0, ay + ah, cols, rows - ay - ah, UI_COLOR.glass);
+        uiFill(0, ay, ax, ah, UI_COLOR.glass);
+        uiFill(ax + aw, ay, cols - ax - aw, ah, UI_COLOR.glass);
+        return;
+      }
+
       uiFill(0, 0, cols, rows, UI_COLOR.glass);
 
-      const out = Math.min(1, Math.max(0, (duration - t) / 2.4));
-      const up = (at, over = 1.8) => Math.min(1, Math.max(0, (t - at) / over)) * out;
+      const tt = t - lead;
+      const out = Math.min(1, Math.max(0, (duration - tt) / 2.4));
+      const up = (at, over = 1.8) => Math.min(1, Math.max(0, (tt - at) / over)) * out;
 
       const w = Math.min(72, cols - 4), h = Math.min(17, rows - 4);
       const x = Math.floor((cols - w) / 2), y = Math.floor((rows - h) / 2);

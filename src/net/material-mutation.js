@@ -25,6 +25,7 @@ const MATERIAL_SLOTS = Object.freeze({
   [MATERIAL.metalPlant]: Object.freeze([2, 9]),
   [MATERIAL.doorGlassDuct]: Object.freeze([0, 2]),
   [MATERIAL.academicPlaster]: Object.freeze([6, 7]),
+  [MATERIAL.wetTarmac]: Object.freeze([9, 1]),
 });
 
 const clamp = (value, lo, hi) => Math.max(lo, Math.min(hi, Number(value) || 0));

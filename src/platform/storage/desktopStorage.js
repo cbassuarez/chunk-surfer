@@ -18,6 +18,14 @@ import { isTauriRuntime } from '../detect.js';
 import { resolveDesktopPaths } from '../paths/desktopPaths.js';
 import { revealPath } from '../diagnostics/desktopDiagnostics.js';
 import { logInfo, logWarn, logError } from '../diagnostics/diagnostics.js';
+import { validateCausalTape } from '../../causal/tape.js';
+
+const CAUSAL_PATHS = Object.freeze({
+  latest: 'causal/latest.json',
+  draft: 'causal/draft.json',
+  sealed: 'causal/sealed.json',
+  session: 'causal/session.json',
+});
 
 function dirname(path) {
   const i = String(path).lastIndexOf('/');
@@ -82,6 +90,7 @@ export class DesktopStorage {
     await this.adapter.mkdir('saves', this.adapter.baseData);
     await this.adapter.mkdir('saves/backup', this.adapter.baseData);
     await this.adapter.mkdir('migration', this.adapter.baseData);
+    await this.adapter.mkdir('causal', this.adapter.baseData);
   }
 
   async readFile(path, baseDir) {
@@ -297,8 +306,93 @@ export class DesktopStorage {
     return out;
   }
 
+  async readCausalFile(path, { validateTape = false } = {}) {
+    const read = async (target) => {
+      const file = await this.readFile(target, this.adapter.baseData);
+      if (!file.ok) return null;
+      try {
+        const parsed = JSON.parse(file.raw);
+        const value = parsed && Object.prototype.hasOwnProperty.call(parsed, 'data') ? parsed.data : parsed;
+        if (validateTape) {
+          const validation = validateCausalTape(value);
+          if (!validation.ok) throw new Error(validation.reason);
+        }
+        return value;
+      } catch (error) {
+        this.recordError('causal-schema', target, error);
+        return null;
+      }
+    };
+    const primary = await read(path);
+    if (primary) return primary;
+    const backup = path.replace(/\.json$/, '.previous.json');
+    const recovered = await read(backup);
+    if (recovered) await this.writeEnvelopeSafe(path, recovered, { schemaVersion: 1, baseDir: this.adapter.baseData });
+    return recovered;
+  }
+
+  async loadLatestCausalTape() { return this.readCausalFile(CAUSAL_PATHS.latest, { validateTape: true }); }
+  async loadCausalDraft() { return this.readCausalFile(CAUSAL_PATHS.draft); }
+
+  async appendCausalDraftSegment(runId, segment, header = {}) {
+    const draft = await this.loadCausalDraft();
+    const next = draft?.runId === runId
+      ? { ...draft, segments: [...(draft.segments || []), segment] }
+      : { runId, ...header, segments: [segment], sealed: null };
+    await this.writeEnvelopeSafe(CAUSAL_PATHS.draft, next, { schemaVersion: 1, baseDir: this.adapter.baseData });
+    return next;
+  }
+
+  async sealCausalDraft(runId, tape) {
+    const draft = await this.loadCausalDraft();
+    if (draft?.runId && draft.runId !== runId) throw new Error('causal draft run mismatch');
+    const sealed = { runId, tape, sealedAt: Date.now() };
+    await this.writeEnvelopeSafe(CAUSAL_PATHS.sealed, sealed, { schemaVersion: 1, baseDir: this.adapter.baseData });
+    await this.writeEnvelopeSafe(CAUSAL_PATHS.draft, { ...(draft || {}), runId, sealedAt: sealed.sealedAt }, { schemaVersion: 1, baseDir: this.adapter.baseData });
+    return sealed;
+  }
+
+  async loadSealedCausalDraft() { return this.readCausalFile(CAUSAL_PATHS.sealed); }
+
+  async promoteCausalDraft(runId) {
+    const sealed = await this.loadSealedCausalDraft();
+    if (!sealed || sealed.runId !== runId) throw new Error('sealed causal draft unavailable');
+    const validation = validateCausalTape(sealed.tape);
+    if (!validation.ok) throw new Error(validation.reason);
+    await this.writeEnvelopeSafe(CAUSAL_PATHS.latest, sealed.tape, { schemaVersion: 1, baseDir: this.adapter.baseData });
+    await Promise.all([
+      this.deleteCausalPath(CAUSAL_PATHS.draft),
+      this.deleteCausalPath(CAUSAL_PATHS.sealed),
+      this.deleteHushRunSession(),
+    ]);
+    return sealed.tape;
+  }
+
+  async deleteCausalPath(path) {
+    await Promise.all([
+      this.adapter.remove(path, this.adapter.baseData).catch(() => {}),
+      this.adapter.remove(path.replace(/\.json$/, '.previous.json'), this.adapter.baseData).catch(() => {}),
+      this.adapter.remove(`${path}.tmp`, this.adapter.baseData).catch(() => {}),
+    ]);
+  }
+
+  async discardCausalDraft(runId = null) {
+    const draft = await this.loadCausalDraft();
+    const sealed = await this.loadSealedCausalDraft();
+    if (!runId || draft?.runId === runId) await this.deleteCausalPath(CAUSAL_PATHS.draft);
+    if (!runId || sealed?.runId === runId) await this.deleteCausalPath(CAUSAL_PATHS.sealed);
+  }
+
+  async loadHushRunSession() { return this.readCausalFile(CAUSAL_PATHS.session); }
+  async saveHushRunSession(session) {
+    await this.writeEnvelopeSafe(CAUSAL_PATHS.session, session, { schemaVersion: 1, baseDir: this.adapter.baseData });
+    return session;
+  }
+  async deleteHushRunSession() { await this.deleteCausalPath(CAUSAL_PATHS.session); }
+  async deleteLatestCausalTape() { await this.deleteCausalPath(CAUSAL_PATHS.latest); await this.deleteHushRunSession(); }
+
   async exportAllData() {
-    return { format: 'chunk-surfer-export', version: 1, exportedAt: new Date().toISOString(), settings: await this.loadSettings(), profile: await this.loadProfile(), saves: await Promise.all(SAVE_SLOTS.map(async (slot) => [slot, await this.loadSave(slot)])), storage: await this.getStorageInfo() };
+    return { format: 'chunk-surfer-export', version: 2, exportedAt: new Date().toISOString(), settings: await this.loadSettings(), profile: await this.loadProfile(), saves: await Promise.all(SAVE_SLOTS.map(async (slot) => [slot, await this.loadSave(slot)])), causal: { latest: await this.loadLatestCausalTape(), session: await this.loadHushRunSession() }, storage: await this.getStorageInfo() };
   }
 
   async deleteAllUserData() {
@@ -307,10 +401,11 @@ export class DesktopStorage {
     await this.adapter.remove('profile.json', this.adapter.baseData).catch(() => {});
     await this.adapter.remove('profile.previous.json', this.adapter.baseData).catch(() => {});
     for (const slot of SAVE_SLOTS) await this.deleteSave(slot);
+    for (const path of Object.values(CAUSAL_PATHS)) await this.deleteCausalPath(path);
   }
 
   async getStorageInfo() {
-    return { kind: this.kind, paths: this.paths, layout: { appData: ['profile.json', 'saves/*.json'], appConfig: ['settings.json'], appLog: ['chunksurfer.log'] }, migration: this.migration, recentErrors: [...this.errors] };
+    return { kind: this.kind, paths: this.paths, layout: { appData: ['profile.json', 'saves/*.json', 'causal/latest.json', 'causal/draft.json', 'causal/session.json'], appConfig: ['settings.json'], appLog: ['chunksurfer.log'] }, migration: this.migration, recentErrors: [...this.errors] };
   }
 
   async revealSaveFolder() { return this.paths?.appData ? revealPath(this.paths.appData) : { ok: false, unsupported: true }; }

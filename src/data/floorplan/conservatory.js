@@ -7,7 +7,8 @@
 //   sub-basement  (left, -4m)    the dance wing: B3 · B2 · B1 · room 5 · the
 //                                prop store · the plant room · two locked
 //                                service rooms · the bricked lift shaft
-//   ground        (top right)    loading dock · foyer · concert hall · the natatorium
+//   ground        (top right)    the loading bay · the get-in · foyer · concert
+//                                hall · the natatorium
 //   upper         (+4.8m)              the practice wing · the vaulted chapel
 //   academic      (+10m)       locked instruction rooms · offices · atrium crown
 //
@@ -271,12 +272,168 @@ function upperAtriumBridgeRows(){
   }out.push(row);}return out;
 }
 function galleriaStairRows(x0){const out=[];for(let y=0;y<13;y++){let row='';for(let x=0;x<8;x++)row+=(y>0&&y<12&&x>=x0&&x<x0+2)?'/':' ';out.push(row);}return out;}
+
+// THE YARD, WHICH IS SCENERY AND NOT A ROOM.
+//
+// The loading bay's apron is drawn into the ground level itself (its first seven
+// columns, which were empty). This is everything WEST of the bay mouth: the wet
+// yard the lorry reversed across, and it exists for one reason — a ray leaving
+// the bay has to have somewhere to go. Undrawn cells are rock, and rock beside a
+// sky cell is drawn to the 90m ceiling r3d gives sky, so a bay with nothing
+// outside it is a bay facing a black cliff. Drawn ground lets the ray run to the
+// plan edge and become sky, and the distant valley is meshes past that edge.
+//
+// It is never walked. Its east edge is the retaining wall (`w`), a 1.20m rise
+// canStep refuses, so the bay's open face is a view and not a way out. Its
+// LOGICAL address is parked in the empty band at y200 because the sub-basement
+// owns every logical cell west of x50; only the physical embedding is out here.
+// Nothing walks between the two, so this needs no connector.
+// Big, because a ray that leaves the yard's edge does not find sky — it finds
+// the undrawn cells inside the plan's bounding box, which are rock, and rock
+// beside a sky cell is drawn to the 90m ceiling r3d gives sky. At sixteen rows
+// the first look south-west out of the bay hit a black slab eight metres away.
+// The sub-basement tops out at -0.40m and the yard sits at grade, so this can
+// run the full depth of the building's footprint without meeting anything.
+//
+// SEVENTY-FOUR WAS NOT THE FULL DEPTH. The ground slice is 256x186 runtime cells
+// from physical (0,0) — 128m by 93m — and every cell north of the yard's old
+// last row was undrawn, which is to say rock, which is to say a ninety-metre
+// black cliff standing across the whole northern horizon sixty-six metres out,
+// with no building behind it. It was the second of the two slabs that ate this
+// sky; F.WALLED on the yard glyphs (legend.js) is the first. 93 runs the drawn
+// ground to the edge of the slice, where the ray leaves the plan and becomes
+// weather. Measure the slice before changing this — if the building grows north,
+// this grows with it or the cliff comes back.
+const YARD_W=50,YARD_H=93;
+// THE ROOFLINE.
+//
+// A WALLED sky cell's ceiling is the height every solid neighbour is drawn UP TO
+// (see the wall test in r3d.js: when the next cell is solid the wall spans the
+// CURRENT cell's floor to its ceiling). So these numbers are not headroom over a
+// yard nobody's head goes near — they are the top edge of the conservatory, read
+// off whichever yard cell the ray is standing in when it meets the building.
+//
+// Banded along the yard's depth, so the elevation has a silhouette instead of an
+// extrusion. The mouth band matches `parapet` in the west elevation mesh
+// (tools/chunk_surfer/build-props.mjs) exactly; move one and move the other.
+const YARD_ROOFLINE=[
+  {to:12, ceil:14.35},   // the bay and its parapet
+  {to:30, ceil:18.00},   // the academic crown, a floor higher
+  {to:52, ceil:21.00},   // the hall's fly tower, the tallest thing on the site
+  {to:Infinity, ceil:11.00}, // the back range: roof plant, and nothing above it
+];
+function yardCeilAt(ry){
+  for(const band of YARD_ROOFLINE) if(ry<=band.to) return band.ceil;
+  return 24.0;
+}
+// The head of the basement stair breaks grade at +0.50m and stands in the middle
+// of all this. Lay the kerb glyph over it rather than leaving a hole: at 0.80m
+// it clears the stair's span, it is under the 1.0m slice window so it still
+// draws, and a low block in a yard reads as exactly what it is.
+const YARD_STAIR_HEAD={x0:13,x1:17,y0:18,y1:21};
+// The opening itself, in yard-local rows: the bay's three walls stand at y3 and
+// y12, so this is the clear width a lorry backs through.
+const YARD_MOUTH={y0:3,y1:12};
+// THE DOCK FACE.
+//
+// A loading dock stands a few feet over its yard — that drop is most of what
+// makes one read as a dock rather than as a door onto a car park. It cannot run
+// the whole yard: the sub-basement's dance wing tops out at -0.40m and sits
+// directly under everything past about twelve metres out, so a uniformly sunken
+// yard intersects it.
+//
+// It does not have to. The only place the drop is ever seen is the first few
+// metres, where there is nothing beneath at all (the free strip at x46..49) and
+// the lift shaft beside it is already capped at -1.0. So the yard is cut down
+// hard at the dock face and ramped back up to grade before it reaches the wing —
+// which is what a real yard does anyway, since a lorry has to get out of it.
+// It is also bounded across the yard, not only along it. Past the bay's own
+// walls the dance wing comes back up under everything, so the cut is kept inside
+// the band the mouth can actually see — and the walls, which are solid to 5.5m,
+// hide both ends of it.
+const YARD_DROP=-0.85, YARD_DROP_FROM=45, YARD_RAMP_TO=38;
+const YARD_DROP_BAND={y0:2,y1:11};
+// THE DOCK STEPS. A lorry uses the face; a man uses these.
+//
+// The 0.85m drop at the dock face is the whole reason the bay reads as a dock
+// rather than as a door onto a car park, so it stays — but 0.85m is nearly twice
+// STEP_UP (0.45), which means until now the apron and the yard were two places
+// with no way between them. That was fine while the yard was scenery. It is not
+// fine now that the gate, the hedge and the man in the booth are things you walk
+// to.
+//
+// So four risers are cut into the north end of the mouth, in the last row of the
+// drop band, where the bay's own wall hides them from most of the yard. Each
+// riser is 0.21m and the top one lands 0.21m under the apron lip, so every step
+// of the walk down is inside STEP_UP with room to spare.
+const YARD_STEPS={y:11,x0:46,x1:49};
+function yardFloorAt(x,y){
+  if(y<YARD_DROP_BAND.y0||y>YARD_DROP_BAND.y1) return 0;
+  if(y===YARD_STEPS.y&&x>=YARD_STEPS.x0&&x<=YARD_STEPS.x1){
+    const rise=(x-YARD_STEPS.x0+1)/(YARD_STEPS.x1-YARD_STEPS.x0+2);
+    return YARD_DROP*(1-rise);
+  }
+  if(x>=YARD_DROP_FROM) return YARD_DROP;
+  if(x<=YARD_RAMP_TO) return 0;
+  return YARD_DROP*((x-YARD_RAMP_TO)/(YARD_DROP_FROM-YARD_RAMP_TO));
+}
+function yardProfile(rx,ry,cell){
+  if(cell.solid) return null;
+  // EVERY yard cell now carries a ceiling, because every yard cell is the height
+  // of whatever building stands beside it (see YARD_ROOFLINE). This used to
+  // return null for all but the sunken band, which was fine while the ceiling
+  // was decorative and is not fine now that it is the roofline.
+  // ABSOLUTE, not headroom. The old line was `ceil: cell.ceil + floor`, which is
+  // right for a room whose ceiling follows its floor down; a parapet does not get
+  // lower because the tarmac in front of it was cut away for a lorry.
+  const ceil=yardCeilAt(ry);
+  // Kerbs (the outer bound and the stair head) keep their authored floor; they
+  // are clearing real spans and must not be dragged down with the yard.
+  if(cell.floor!==0) return {ceil};
+  return {floor:yardFloorAt(rx,ry),ceil};
+}
+function yardRows(){
+  const out=[];
+  for(let y=0;y<YARD_H;y++){
+    let row='';
+    for(let x=0;x<YARD_W;x++){
+      // NO LIP ACROSS THE BAY MOUTH. The kerb ran the whole east edge, put there
+      // to stop the player walking off the apron — and it was doing nothing,
+      // because the yard is a separate logical island with no connector to the
+      // apron, so an ordinary step west is already refused. All it did was draw
+      // a step across the one view in the game.
+      //
+      // It stays everywhere else along that edge, where it is never seen and is
+      // doing real work: the main basement stair breaks grade at +0.20m behind
+      // it, and at 0.80m the kerb clears that span.
+      const mouth=y>=YARD_MOUTH.y0&&y<=YARD_MOUTH.y1;
+      const kerb=(x===YARD_W-1&&!mouth)||y===YARD_H-1
+        ||(x>=YARD_STAIR_HEAD.x0&&x<=YARD_STAIR_HEAD.x1&&y>=YARD_STAIR_HEAD.y0&&y<=YARD_STAIR_HEAD.y1);
+      row+=kerb?'w':'Y';
+    }
+    out.push(row);
+  }
+  return out;
+}
+// The bricked lift shaft is authored `o`, whose generic 8m ceiling puts its head
+// four metres ABOVE the ground floor — in open air, in a building that has no
+// ground floor over the sub-basement. Nobody could ever see that: r3d draws a
+// sky cell to 90m regardless of the authored ceiling, so this number only ever
+// reached the physical-span compiler. It reaches the yard now, as a 4m lump of
+// solid air standing in the middle of the one view in this game. Stop the shaft
+// below grade, where a lift overrun stops.
+function basementProfile(_x,_y,cell){
+  return (!cell.solid&&(cell.flags&F.SKY))?{ceil:-1.0}:null;
+}
+
 const EUCLIDEAN_ADDITIONS=[
+  {id:'loading_bay_yard',layer:'ground',space:'loading_bay',renderGroup:'ground',
+   origin:{x:50,y:200},physicalOrigin:{x:0,y:0},base:0,rows:yardRows(),profile:yardProfile},
   {id:'front_atrium',replace:true,layer:'ground',space:'front_atrium',renderGroup:'ground',origin:{x:74,y:3},physicalOrigin:{x:74,y:3},base:0,rows:frontAtriumRows(),profile:frontAtriumProfile},
-  // The dock and the replacement atrium each own one metre of this old thick
+  // The get-in and the replacement atrium each own one metre of this old thick
   // wall. Author both cells as one single-leaf throat; leaf count remains
   // explicit in the door schedule.
-  {id:'dock_foyer_threshold',replace:true,layer:'ground',space:'front_atrium',renderGroup:'ground',origin:{x:73,y:13},physicalOrigin:{x:73,y:13},base:0,rows:['++']},
+  {id:'getin_foyer_threshold',replace:true,layer:'ground',space:'front_atrium',renderGroup:'ground',origin:{x:73,y:13},physicalOrigin:{x:73,y:13},base:0,rows:['++']},
   {id:'natatorium',replace:true,layer:'ground',space:'natatorium',renderGroup:'ground',origin:{x:70,y:27},physicalOrigin:{x:70,y:27},base:0,rows:natatoriumRows(),profile:natatoriumProfile},
   {id:'hall_box_office_link',replace:true,layer:'ground',space:'front_atrium',renderGroup:'hall',origin:{x:94,y:24},physicalOrigin:{x:94,y:24},base:0,rows:['FFFFHH','FFFFHH','FFFFHH']},
   {id:'hall_orchestra',replace:true,layer:'ground',space:'hall',renderGroup:'hall',origin:{x:98,y:4},physicalOrigin:{x:98,y:4},base:0,rows:hallGroundRows(),profile:hallGroundProfile},
@@ -473,15 +630,55 @@ export const conservatory = {
     // spiral rebuild, which replaces this stair with one continuous run.
     // Only ONE seam survives in the main stair, and it is the top of it.
     {from:{x:62,y:38},to:{x:13,y:278}},
+    // THE APRON TO THE YARD, at the top of the dock steps.
+    //
+    // The yard was built as scenery — a view with no connector, bounded by a
+    // kerb canStep refuses — because nothing out there was ever meant to be
+    // reached. The gate, the hedge and the man in the booth change that.
+    //
+    // No `span`, for exactly the reason set out above: a wide seam here would
+    // cover open tarmac at the mouth, and every ordinary step across it would
+    // rewrite the player's address mid-stride. One cell, at the head of the
+    // steps (see YARD_STEPS), which is the only place the two floors meet
+    // within a riser of each other.
+    {from:{x:50,y:11},to:{x:99,y:211}},
   ],
-  // Inside the loading dock, service door at your back. A bag, a work order,
-  // and a radio that will fail.
-  spawn: { x: 65, y: 10 },
+  // ON THE ROAD, OUTSIDE THE GATE. He has parked and he is walking in.
+  //
+  // This was the apron, in front of the grey door, which is where the old cold
+  // open dropped him after narrating the walk he never took. The walk is the
+  // game's now: road, lodge, gate, yard, dock steps, apron, door. Authored yard
+  // coordinates — the yard's logical address is origin (50,200) plus its local
+  // cell, so this is physical (12,7), out on the carriageway.
+  // Five metres further back than it was, so his own van is a VAN in the opening
+  // frame and not a wall of chevrons two metres off his shoulder. The usable
+  // stretch of carriageway is bounded east by yard-fence-west at physical x20,
+  // so there is nowhere to put the van except in front of him — which means the
+  // room has to come from moving him, not it.
+  spawn: { x: 57, y: 207 },
+  // FACING THE WAY HE WALKS.
+  //
+  // faceOpenDirection picks whichever neighbour is open, which out on fifty
+  // metres of tarmac is a coin toss — the fade came up on his back half the time,
+  // looking west at a road going nowhere. He is standing at the open doors of his
+  // own van (yard-van, parked just west of here) with the gate, the lodge's lit
+  // window and the building all in front of him. Facing 1 is east, measured.
+  spawnFacing: 1,
+  // WHERE THE GREY DOOR IS REACHED FROM, WHICH IS NO LONGER WHERE HE SPAWNS.
+  //
+  // FP.spawn() used to mean three things at once: the start, the mutation home
+  // anchor, and the inversion ending's "grey door" waypoint. Moving the start
+  // outdoors quietly broke the third — it would have pointed the escape run at a
+  // spot on the apron, through a door that is masonry by then, with the drift
+  // calibration measured against a room the player is no longer in. The two
+  // meanings are separate now: this is the get-in side of the grey door.
+  greyDoorApproach: { x: 65, y: 10 },
   doors: CONSERVATORY_DOORS,
   levels: [
     {
       // ── sub-basement, four metres down ─────────────────────────────────────
       id:'basement',layer:'basement',space:'basement',renderGroup:'basement',origin: { x: 0, y: 0 }, physicalOrigin:{x:0,y:0},base: -4.0,
+      profile: basementProfile,
       rows: [
         // ── the dance wing ────────────────────────────────────────────────
         // Studio B3 (the take) at the dead-end end, then B2 and B1 east of it
@@ -541,18 +738,18 @@ export const conservatory = {
         '',
         '',
         '',
-        '       ########+######## ################# ###################',
-        '       #DDDDDDDDDDDDDDD# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
-        '       #DDDDDDDDDDDDDDD# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
-        '       #DDDDDDDDDDDDDDD# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
-        '       #DDDDDDDDDDDDDDD# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
-        '       #DDDDDDDDDDDDDDD# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
-        '       #DDDDDDDDDDDDDDD# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
-        '       #DDDDDDDDDDDDDDD###FFFFFFFFFFFFFFF###HHHHHHHHHHHHHHHHH#',
-        '       #DDDDDDDDDDDDDDD.+.FFFFFFFFFFFFFFF.x.HHHHHHHHHHHHHHHHH#',
-        '       #DDDDDDDDDDDDDDD###FFFFFFFFFFFFFFF###HHHHHHHHHHHHHHHHH#',
-        '       #DDDDDDDDDDDDDDD# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
-        '       #DDDDDDDDDDDDDDD# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
+        '######################## ################# ###################',
+        'DDDDDDD#IIIIIIIIIIIIIII# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
+        'DDDDDDD#IIIIIIIIIIIIIII# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
+        'DDDDDDD#IIIIIIIIIIIIIII# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
+        'DDDDDDD+IIIIIIIIIIIIIII# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
+        'DDDDDDD#IIIIIIIIIIIIIII# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
+        'DDDDDDD+IIIIIIIIIIIIIII# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
+        'DDDDDDD+IIIIIIIIIIIIIII###FFFFFFFFFFFFFFF###HHHHHHHHHHHHHHHHH#',
+        'DDDDDDD+IIIIIIIIIIIIIII.+.FFFFFFFFFFFFFFF.x.HHHHHHHHHHHHHHHHH#',
+        '########IIIIIIIIIIIIIII###FFFFFFFFFFFFFFF###HHHHHHHHHHHHHHHHH#',
+        '       #IIIIIIIIIIIIIII# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
+        '       #IIIIIIIIIIIIIII# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
         '       ########.######## #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
         '              #+#        #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
         '              #.#        ########.######## #HHHHHHHHHHHHHHHHH#',

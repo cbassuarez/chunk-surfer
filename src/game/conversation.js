@@ -97,7 +97,16 @@ export function createConversation({
     const list = nodeEntryMode === 'revisit' && n.revisitLines?.length ? n.revisitLines : n.lines || [];
     return visibleList(list);
   };
-  const line = () => (mode === 'nodes' ? nodeLines()[lineIdx] : beats[beatIdx]);
+  // A BEAT LIST IS FILTERED THE SAME WAY A NODE IS.
+  //
+  // It was not, and nothing noticed for as long as no beat list carried a
+  // condition — the endings kept their variants in separate DOCUMENTS, so no
+  // authored beat had ever had an `if` on it. The moment one did (the sacrifice
+  // collapsing twelve files into one that reads the run) every conditional line
+  // played at once, and the ending told the player both that it never touched
+  // them and that it reached them three times, in consecutive sentences.
+  const visibleBeats = () => visibleList(beats);
+  const line = () => (mode === 'nodes' ? nodeLines()[lineIdx] : visibleBeats()[beatIdx]);
 
   function updateStoryArtShot(l = line()) {
     const sourceId = String(l?.sourceId || l?.id || '');
@@ -134,12 +143,16 @@ export function createConversation({
     stopVoice();
   }
 
-    function pushHistory(text, who) {
+    function pushHistory(text, who, mask = null) {
       if (!text) return;
 
       history.push({
         text,
         who,
+        // Carried so a line the rain took still looks taken once it has scrolled
+        // up into the record. Only the mask's NAME travels; the shape itself is
+        // resolved at draw time and never enters the transcript.
+        mask,
         serial: lineSerial,
       });
 
@@ -153,6 +166,8 @@ export function createConversation({
     if (l.flash) fx?.flash?.(l.flashMs || 160, 'rgba(4,4,6,1)');
   }
 
+  let maskChoke = null;
+
   // A line either gets a mouth or a typewriter. Never both.
   function utter(l) {
     fire(l);
@@ -164,7 +179,22 @@ export function createConversation({
       handle = voice.start(text, { speaker: who, rate: l.rate || 1 });
       audio?.stopTyping?.();
     } else if (text) {
-      audio?.startTyping?.({ gain: TYPE_GAIN * (TYPE_LEVEL[who === 'direction' ? 'direction' : 'thought'] || 1) });
+      const bed = TYPE_GAIN * (TYPE_LEVEL[who === 'direction' ? 'direction' : 'thought'] || 1);
+      audio?.startTyping?.({ gain: l?.mask ? bed * 1.15 : bed });
+      // THE MACHINE LOSES IT.
+      //
+      // A masked line is one the rain took, and the typewriter has to fail with
+      // it — it starts hard, as if this were an ordinary thing to write down,
+      // and then gives out under the rain cue rather than running the length of
+      // the line. What is left is the weather, which is the whole point.
+      //
+      // A timer rather than a reveal hook because the reveal is player-paced:
+      // somebody who sits on the line for ten seconds should still hear the
+      // machine give up early, not type patiently the entire time.
+      if (l?.mask) {
+        clearTimeout(maskChoke);
+        maskChoke = setTimeout(() => audio?.stopTyping?.({ fade: 0.34 }), 380);
+      }
     }
   }
 
@@ -178,7 +208,7 @@ export function createConversation({
           if (n?.goto) { gotoNode(n.goto); return; }
           // An explicitly empty terminal node is a real ending. Previously it
           // left the thought shell alive with no line, choices, or dismissible
-          // input — the loading-dock investigations all terminate this way.
+          // input — the get-in investigations all terminate this way.
           startBeats();
           return;
         }
@@ -205,6 +235,7 @@ export function createConversation({
     if (finished) return;
     finished = true;
     stopVoice();
+    clearTimeout(maskChoke);
     audio?.stopTyping?.();
     audio?.stopTapeHiss?.({ fade: 0.3 });
     onDone?.();
@@ -218,7 +249,7 @@ export function createConversation({
     mode = 'beats';
     beatIdx = 0;
     pending = null;
-    if (!beats.length) { finish(); return; }
+    if (!visibleBeats().length) { finish(); return; }
     beginLine();
   }
 
@@ -266,7 +297,7 @@ export function createConversation({
   function commitLine() {
     const l = line();
     if (!l) return;
-    pushHistory(textOf(l), whoOf(l));
+    pushHistory(textOf(l), whoOf(l), l?.mask || null);
     if (activeLineId) replay?.markLine?.(activeLineId);
   }
 
@@ -274,7 +305,7 @@ export function createConversation({
     if (mode === 'beats') {
       commitLine();
       beatIdx++;
-      if (beatIdx >= beats.length) { finish(); return; }
+      if (beatIdx >= visibleBeats().length) { finish(); return; }
       beginLine();
       return;
     }
@@ -313,7 +344,7 @@ export function createConversation({
 
   return {
     start() {
-      if (mode === 'beats') { if (!beats.length) { finish(); return; } }
+      if (mode === 'beats') { if (!visibleBeats().length) { finish(); return; } }
       else visited.add(nodeId);
       beginLine();
     },

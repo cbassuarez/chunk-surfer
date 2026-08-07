@@ -12,9 +12,46 @@
 // right, and machine/direction text occupies a centered rail. It owns no scene
 // state and changes no input; presenters pass it a conversation view.
 
-import { uiText, uiItalicText, uiWrap } from './ui.js';
+import { uiText, uiItalicText, uiWrap, uiGlyph } from './ui.js';
+import { obscuredGlyphAt, obscuredShape } from '../narrative/obscured-name.js';
+import { visualEffectsEnabled } from '../game/access.js';
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+// A LINE THE RAIN TOOK.
+//
+// uiText is only a loop over uiGlyph, so drawing a row character by character
+// costs nothing and buys the whole effect: the ink goes down left to right, and
+// the rain comes up behind it and thickens each mark until there is nothing to
+// read. No letter is ever involved — obscuredGlyphAt is the only source of
+// glyphs here, and its alphabet is six blocks and a space.
+//
+// Two things have to be true when the animation is not running. With effects
+// off we draw the authored caption instead, which is exactly the behaviour this
+// replaced, so that path is the accessible one and it is the one that was
+// already shipping. With instant text the reveal arrives at 1 on the first
+// frame, and the settled shape is the correct picture with no motion at all.
+function drawMaskedRow(row, drawX, cy, laneW, cls, alpha) {
+  const shape = obscuredShape(row.mask);
+  if (!shape || !visualEffectsEnabled()) {
+    const drawText = row.italic ? uiItalicText : uiText;
+    drawText(drawX, cy, row.text.slice(0, Math.max(0, laneW - row.x)), cls, alpha);
+    return;
+  }
+
+  const reveal = Math.max(0, Math.min(1, Number(row.reveal ?? 1)));
+  // The nib runs slightly ahead of the weather, so there is always a little wet
+  // ink at the end of it that has not been taken yet.
+  const written = Math.ceil(reveal * (shape.length + 2));
+  const room = Math.max(0, laneW - row.x);
+
+  for (let i = 0; i < Math.min(shape.length, room); i++) {
+    if (i >= written) break;
+    const glyph = obscuredGlyphAt(shape, i, reveal);
+    if (!glyph || glyph === ' ') continue;
+    uiGlyph(drawX + i, cy, glyph, cls, alpha);
+  }
+}
 
 const SPEAKER_LABEL = Object.freeze({
   me: 'YOU',
@@ -228,6 +265,15 @@ function normalizeEntry(entry, index, active = false, view = null) {
     who,
     role: transcriptRole(who),
     text: String(entry?.text ?? ''),
+    // The mask's NAME only. The shape is resolved at draw time from the run's
+    // registry, so nothing in the transcript, the history or a saved view ever
+    // holds it.
+    mask: entry?.mask || null,
+    // How far the line has been written. A masked line uses this for both the
+    // ink going down and the rain taking it; a finished one is simply 1.
+    reveal: active && view?.line
+      ? Math.min(1, Number(view.typed || 0) / Math.max(1, String(view.line?.text ?? '').length))
+      : 1,
     active,
     typing: active && !!view?.typing,
   };
@@ -263,6 +309,7 @@ export function transcriptBlocks(view, { keep = 12 } = {}) {
       text: String(view.line?.text ?? view.line ?? '')
         .slice(0, Math.max(0, view.typed)),
       who: view.who,
+      mask: view.line?.mask || null,
       serial: view.lineSerial,
     }, entries.length, true, view));
   }
@@ -341,6 +388,8 @@ function preparedRows(block, lane) {
           text: centered.text,
           x: centered.offset,
           italic: true,
+          mask: segment.mask || null,
+          reveal: segment.reveal,
           active: segment.active,
           typing: false,
           segmentLast: i === wrapped.length - 1,
@@ -356,6 +405,8 @@ function preparedRows(block, lane) {
       rows.push({
         text: line,
         x: bodyInset,
+        mask: segment.mask || null,
+        reveal: segment.reveal,
         active: segment.active,
         typing: segment.typing && i === wrapped.length - 1,
         segmentLast: i === wrapped.length - 1,
@@ -598,17 +649,21 @@ export function drawTranscript(layout, {
 
       const drawX = bx + row.x;
 
-      const drawText = row.italic ? uiItalicText : uiText;
-      drawText(
-        drawX,
-        cy,
-        row.text.slice(
-          0,
-          Math.max(0, block.lane.w - row.x),
-        ),
-        cls,
-        alpha,
-      );
+      if (row.mask) {
+        drawMaskedRow(row, drawX, cy, block.lane.w, cls, alpha);
+      } else {
+        const drawText = row.italic ? uiItalicText : uiText;
+        drawText(
+          drawX,
+          cy,
+          row.text.slice(
+            0,
+            Math.max(0, block.lane.w - row.x),
+          ),
+          cls,
+          alpha,
+        );
+      }
 
       if (row.typing) {
         const cursor =

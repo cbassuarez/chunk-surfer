@@ -6,6 +6,8 @@
 // Negatives are a token budget too, and every word here competes with the
 // prompt for CLIP's attention. Keep it to the failures that actually happen:
 // people appearing in an empty building, and the model drifting to clip art.
+import { isScreen } from './pixel-mesh/screens.js';
+
 const NO_CHARACTERS = 'person, face, figure, hands, creature, animal, text, watermark, cartoon, bright, fog, smoke';
 const NO_TIDY = 'clean, tidy, bright, cartoon, poster, text, watermark';
 
@@ -45,7 +47,7 @@ const PROFILE_DATA = {
       negative: NO_CHARACTERS,
     },
     material: { localDiffusion: 0.20, detailGain: 0.84, chromaDrift: 0.06, roughnessResponse: 0.1, normalResponse: 0.1, boilHz: 0, structureMix: 0.0, lumaClampLo: 0.62, lumaClampHi: 1.48, lumaHold: 1.0 },
-    vfd: { baseRetention: 0.90, shadowLift: 0.3, paletteAmount: 0.06, paletteChroma: 0.08, persistenceMs: 90, cellPx: 2, signalGain: 0.42, edgeGain: 0.72, coverage: 0.20, glow: 0.12, aperture: 0.76, amber: 0.02 },
+    vfd: { baseRetention: 0.90, shadowLift: 0.3, paletteAmount: 0.06, paletteChroma: 0.08, persistenceMs: 90, cellPx: 2, signalGain: 0.42, edgeGain: 0.72, coverage: 0.20, blackPoint: 0.006, whitePoint: 0.34, toneGamma: 0.95, lineAmount: 0.44, toneAmount: 0.9, glow: 0.12, aperture: 0.76, amber: 0.02 , screen: 'hatch' },
     recording: { captureMix: 1.0, patternScale: 42, blackFloor: 0.005, densityGamma: 0.78, thresholdNoise: 0.025, thresholdIrregularity: 0.52, postGrain: 0.018, lumaGrain: 0.50, temporalHz: 6, temporalSmear: 0.70, scenePinning: 0.72, fearGain: 0.20, audioGain: 0.10 },
     glass: { strength: 0.18, fringe: 0.16, bloom: 0.10, grain: 0.18 },
   },
@@ -58,7 +60,7 @@ const PROFILE_DATA = {
       negative: NO_CHARACTERS,
     },
     material: { localDiffusion: 0.58, detailGain: 1.24, chromaDrift: 0.22, roughnessResponse: 0.32, normalResponse: 0.3, boilHz: 0.25, structureMix: 0.26, lumaClampLo: 0.55, lumaClampHi: 1.65, lumaHold: 0.72 },
-    vfd: { baseRetention: 0.78, shadowLift: 0.42, paletteAmount: 0.12, paletteChroma: 0.28, persistenceMs: 220, cellPx: 2, signalGain: 0.76, edgeGain: 1.12, coverage: 0.40, glow: 0.28, aperture: 0.82, amber: 0.06 },
+    vfd: { baseRetention: 0.78, shadowLift: 0.42, paletteAmount: 0.12, paletteChroma: 0.28, persistenceMs: 220, cellPx: 2, signalGain: 0.76, edgeGain: 1.12, coverage: 0.40, blackPoint: 0.005, whitePoint: 0.46, toneGamma: 0.92, lineAmount: 0.53, toneAmount: 0.9, glow: 0.28, aperture: 0.82, amber: 0.06 , screen: 'hatch' },
     recording: { captureMix: 1.0, patternScale: 46, blackFloor: 0.004, densityGamma: 0.72, thresholdNoise: 0.060, thresholdIrregularity: 0.68, postGrain: 0.045, lumaGrain: 0.68, temporalHz: 10, temporalSmear: 0.62, scenePinning: 0.60, fearGain: 0.45, audioGain: 0.18 },
     glass: { strength: 0.36, fringe: 0.32, bloom: 0.28, grain: 0.30 },
   },
@@ -71,7 +73,7 @@ const PROFILE_DATA = {
       negative: `${NO_CHARACTERS}, clean office`,
     },
     material: { localDiffusion: 0.70, detailGain: 1.38, chromaDrift: 0.28, roughnessResponse: 0.38, normalResponse: 0.36, boilHz: 0.35, structureMix: 0.32, lumaClampLo: 0.52, lumaClampHi: 1.70, lumaHold: 0.66 },
-    vfd: { baseRetention: 0.72, shadowLift: 0.26, paletteAmount: 0.16, paletteChroma: 0.34, persistenceMs: 320, cellPx: 2, signalGain: 0.92, edgeGain: 1.28, coverage: 0.52, glow: 0.40, aperture: 0.86, amber: 0.12 },
+    vfd: { baseRetention: 0.72, shadowLift: 0.26, paletteAmount: 0.16, paletteChroma: 0.34, persistenceMs: 320, cellPx: 2, signalGain: 0.92, edgeGain: 1.28, coverage: 0.52, blackPoint: 0.004, whitePoint: 0.56, toneGamma: 0.88, lineAmount: 0.584, toneAmount: 0.9, glow: 0.40, aperture: 0.86, amber: 0.12 , screen: 'stochastic' },
     recording: { captureMix: 1.0, patternScale: 44, blackFloor: 0.004, densityGamma: 0.70, thresholdNoise: 0.072, thresholdIrregularity: 0.72, postGrain: 0.055, lumaGrain: 0.72, temporalHz: 9, temporalSmear: 0.70, scenePinning: 0.52, fearGain: 0.38, audioGain: 0.18 },
     glass: { strength: 0.48, fringe: 0.42, bloom: 0.42, grain: 0.36 },
   },
@@ -89,7 +91,7 @@ const PROFILE_DATA = {
       },
     },
     material: { localDiffusion: 0.90, detailGain: 1.56, chromaDrift: 0.40, roughnessResponse: 0.55, normalResponse: 0.52, boilHz: 0.80, structureMix: 0.46, lumaClampLo: 0.40, lumaClampHi: 1.95, lumaHold: 0.4 },
-    vfd: { baseRetention: 0.60, shadowLift: 0.18, paletteAmount: 0.18, paletteChroma: 0.46, persistenceMs: 480, cellPx: 3, signalGain: 1.12, edgeGain: 1.42, coverage: 0.72, glow: 0.56, aperture: 0.90, amber: 0.34 },
+    vfd: { baseRetention: 0.60, shadowLift: 0.18, paletteAmount: 0.18, paletteChroma: 0.46, persistenceMs: 480, cellPx: 3, signalGain: 1.12, edgeGain: 1.42, coverage: 0.72, blackPoint: 0.003, whitePoint: 0.72, toneGamma: 0.85, lineAmount: 0.674, toneAmount: 0.9, glow: 0.56, aperture: 0.90, amber: 0.34 , screen: 'crosshatchTight' },
     recording: { captureMix: 1.0, patternScale: 40, blackFloor: 0.003, densityGamma: 0.66, thresholdNoise: 0.120, thresholdIrregularity: 0.82, postGrain: 0.070, lumaGrain: 0.78, temporalHz: 14, temporalSmear: 0.45, scenePinning: 0.42, fearGain: 0.70, audioGain: 0.35 },
     glass: { strength: 0.66, fringe: 0.62, bloom: 0.62, grain: 0.52 },
   },
@@ -102,7 +104,7 @@ const PROFILE_DATA = {
       negative: NO_CHARACTERS,
     },
     material: { localDiffusion: 0.94, detailGain: 0.78, chromaDrift: 0.08, roughnessResponse: 0.4, normalResponse: 0.26, boilHz: 0.15, structureMix: 0.24, lumaClampLo: 0.55, lumaClampHi: 1.60, lumaHold: 0.7 },
-    vfd: { baseRetention: 0.68, shadowLift: 0.5, paletteAmount: 0.08, paletteChroma: 0.18, persistenceMs: 700, cellPx: 3, signalGain: 0.66, edgeGain: 0.92, coverage: 0.48, glow: 0.38, aperture: 0.78, amber: 0.01 },
+    vfd: { baseRetention: 0.68, shadowLift: 0.5, paletteAmount: 0.08, paletteChroma: 0.18, persistenceMs: 700, cellPx: 3, signalGain: 0.66, edgeGain: 0.92, coverage: 0.48, blackPoint: 0.005, whitePoint: 0.52, toneGamma: 0.9, lineAmount: 0.566, toneAmount: 0.9, glow: 0.38, aperture: 0.78, amber: 0.01 , screen: 'crosshatch' },
     recording: { captureMix: 1.0, patternScale: 38, blackFloor: 0.008, densityGamma: 0.82, thresholdNoise: 0.080, thresholdIrregularity: 0.78, postGrain: 0.050, lumaGrain: 0.76, temporalHz: 5, temporalSmear: 0.82, scenePinning: 0.70, fearGain: 0.30, audioGain: 0.10 },
     glass: { strength: 0.56, fringe: 0.24, bloom: 0.34, grain: 0.46 },
   },
@@ -120,7 +122,7 @@ const PROFILE_DATA = {
       },
     },
     material: { localDiffusion: 1.0, detailGain: 1.68, chromaDrift: 0.50, roughnessResponse: 0.66, normalResponse: 0.62, boilHz: 1.20, structureMix: 0.6, lumaClampLo: 0.30, lumaClampHi: 2.20, lumaHold: 0.2 },
-    vfd: { baseRetention: 0.55, shadowLift: 0.12, paletteAmount: 0.22, paletteChroma: 0.58, persistenceMs: 900, cellPx: 3, signalGain: 1.24, edgeGain: 1.58, coverage: 0.75, glow: 0.70, aperture: 0.92, amber: 0.42 },
+    vfd: { baseRetention: 0.55, shadowLift: 0.12, paletteAmount: 0.22, paletteChroma: 0.58, persistenceMs: 900, cellPx: 3, signalGain: 1.24, edgeGain: 1.58, coverage: 0.75, blackPoint: 0.003, whitePoint: 0.78, toneGamma: 0.84, lineAmount: 0.688, toneAmount: 0.9, glow: 0.70, aperture: 0.92, amber: 0.42 , screen: 'crosshatchTight' },
     recording: { captureMix: 1.0, patternScale: 36, blackFloor: 0.002, densityGamma: 0.60, thresholdNoise: 0.160, thresholdIrregularity: 0.90, postGrain: 0.080, lumaGrain: 0.82, temporalHz: 16, temporalSmear: 0.35, scenePinning: 0.32, fearGain: 0.85, audioGain: 0.45 },
     glass: { strength: 0.78, fringe: 0.78, bloom: 0.76, grain: 0.62 },
   },
@@ -157,6 +159,9 @@ export function isLookProfile(id) {
 
 export function validateLookProfile(profile) {
   if (!profile || !isLookProfile(profile.id) || profile.bankId !== profile.id) return false;
+  // The screen is a string id, so it cannot ride in the numeric `required` list
+  // below — same reason bankId and burst.prompt are checked separately.
+  if (!isScreen(profile.vfd?.screen)) return false;
   if (!Number.isFinite(profile.transitionMs) || profile.transitionMs < 0) return false;
   for (const layer of ['generation', 'material', 'vfd', 'recording', 'glass']) {
     if (!profile[layer] || typeof profile[layer] !== 'object') return false;

@@ -55,10 +55,10 @@ export function seedFor(worldId, inExpanse) {
 //
 // Every entry names materials and decay. None names an inhabitant.
 const WORLD_PROMPTS = {
-  // studio B3 — sub-basement. where it starts almost normal.
+  // studio B3 — sub-basement dance wing. where it starts almost normal.
   main_b3: {
-    corridor: 'sub-basement service concrete, loading dock threshold, security booth glass reflected in the dark, peeling acoustic foam, coiled cable trench, damp concrete, plant room lift shaft',
-    expanse: 'a dead live-room with black acoustic absorption, isolation booth glass, cable troughs in the floor, service concrete walls swallowed by darkness',
+    corridor: 'sub-basement dance wing passage, service concrete, stencilled studio doors, wired glass, sprung maple visible through a wedged-open leaf, coiled cable trench, plant room lift shaft',
+    expanse: 'an empty dance studio, sprung maple floorboards, a full-height mirrored wall returning the dark, a ballet barre along bare plaster, service concrete ceiling swallowed by darkness',
   },
   // the natatorium — drained, wet, bounded
   the_tub: {

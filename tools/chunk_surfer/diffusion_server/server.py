@@ -36,7 +36,9 @@ import pipeline
 from cache_contract import material_cache_key
 
 JPEG_QUALITY = 72
-SERVER_REV = "r15-boil-frames"
+# r16: banks are generated with circular convolution padding so they tile. Every
+# cached bank from r15 has a hard seam at its wrap and must be regenerated.
+SERVER_REV = "r16-seamless-banks"
 CACHE_SCHEMA = 3
 LENS_TOKEN = os.environ.get("LENS_TOKEN", "")
 CACHE_DIR = Path(os.environ.get("LENS_CACHE_DIR", Path.home() / ".cache" / "chunk-surfer" / "lens-v2"))
@@ -202,7 +204,8 @@ def unpack(data: bytes) -> tuple[bytes, bytes | None]:
 
 def diffuse(jpeg_bytes: bytes, prompt: str, strength: float, passes: int,
             seed: int, guidance: float, negative: str,
-            depth_bytes: bytes | None = None, depth_scale: float | None = None) -> bytes:
+            depth_bytes: bytes | None = None, depth_scale: float | None = None,
+            dream_opts: dict | None = None, seamless: bool = False) -> bytes:
     # Seed policy is the client's call (seed_mode). Pinned per zone: the place
     # keeps its identity frame to frame, and the crawl comes from the client's
     # feedback loop instead. Walking: the surfaces boil and the place forgets
@@ -211,6 +214,7 @@ def diffuse(jpeg_bytes: bytes, prompt: str, strength: float, passes: int,
         load_lens(), jpeg_bytes, prompt, strength, passes, seed, guidance,
         negative, quality=JPEG_QUALITY,
         depth_bytes=depth_bytes, depth_scale=depth_scale,
+        dream_opts=dream_opts, seamless=seamless,
     )
 
 
@@ -224,6 +228,7 @@ async def session(ws: WebSocket):
     negative = "person, people, human, figure, face, creature, clean, bright"
     strength = 0.5
     passes = 2
+    dream_opts = None
     guidance = 1.2
     seed_mode = "fixed"  # fixed = a place stays itself | walk = it comes apart
     seed = 7
@@ -340,7 +345,11 @@ async def session(ws: WebSocket):
                             }))
                             styled = await loop.run_in_executor(
                                 None, diffuse, frame, prompt, strength, passes,
-                                seed, guidance, negative, dep, depth_scale
+                                seed, guidance, negative, dep, depth_scale,
+                                dream_opts,
+                                # Banks are tiled across a wall and must wrap.
+                                # A burst is one full-screen repaint and must not.
+                                work.get("type") in {"generate", "mutate"},
                             )
                         if cache_path:
                             cache_path.parent.mkdir(parents=True, exist_ok=True)
@@ -409,6 +418,20 @@ async def session(ws: WebSocket):
                     requested_passes = min(6, max(1, int(data.get("passes", passes))))
                     passes = requested_passes
                     guidance = min(8.0, max(0.0, float(data.get("guidance", guidance))))
+                    # THE SECOND LENS LAYER, off unless asked for. Clamped hard:
+                    # every one of these is a cost multiplier and the mutation
+                    # cadence (2.8s floor, client side) is the budget it has to
+                    # fit inside. An old client sends nothing and gets the
+                    # pipeline it has always had.
+                    if data.get("dream") is not None:
+                        d = data.get("dream") or {}
+                        dream_opts = {
+                            "gain": min(1.0, max(0.0, float(d.get("gain", 0) or 0))),
+                            "layer": str(d.get("layer", "objects"))[:16],
+                            "octaves": min(5, max(1, int(d.get("octaves", 3)))),
+                            "iterations": min(24, max(1, int(d.get("iterations", 10)))),
+                            "step": min(0.12, max(0.001, float(d.get("step", 0.02)))),
+                        } if d else None
                     seed_mode = "walk" if data.get("seedMode") == "walk" else "fixed"
                     # A seed pinned per zone keeps a *place* recognisably itself
                     # across frames; the texture still crawls via client-side

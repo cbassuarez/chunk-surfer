@@ -262,6 +262,53 @@ export function trainingCombatBattle() {
   };
 }
 
+// One practice room, on one night, was still being used. Which room it is gets
+// dealt per run (see game/practice-rooms.js); it is never the same one twice and
+// it is never announced. You touch something in there and the room finishes its
+// phrase at you.
+//
+// Deliberately two movements, not the recording battle's three. This is a fight
+// you walked into by opening a door, not the set piece the work order sent you
+// for, and it must not read as a second copy of THE SOUND OF SILENCE. The
+// authored practice profile already carries the beat this is built on:
+// `practice:chair` — THE EMPTY CHAIR MOVES.
+export function practiceRoomHushDefinition() {
+  const profile = authoredCombatProfile('practice');
+  return {
+    id: 'practice-room-hush',
+    enemy: 'THE ROOM THAT WAS PRACTISING',
+    art: null,
+    baseComposure: 8,
+    kind: profile.kind,
+    signature: profile.signature,
+    music: profile.music,
+    movements: profile.movements.slice(0, 2),
+  };
+}
+
+export function practiceRoomHushBattle() {
+  const combat = practiceRoomHushDefinition();
+  return {
+    id: combat.id,
+    enemy: combat.enemy,
+    art: combat.art,
+    combat,
+    intro: [
+      { who: 'direction', text: 'The door was wedged open, like all of them, because whoever was in here was coming back after a coffee.' },
+      { who: 'direction', text: 'They came back. The room takes up the phrase where it was interrupted, at full level, six feet away, with nobody at the instrument.' },
+      { who: 'you', text: 'No. No, that is a room. That is a room with nothing in it.' },
+    ],
+    win: [
+      { who: 'direction', text: 'The phrase gives up halfway through a bar, the way a phrase does when the player stops believing in it.' },
+      { who: 'you', text: 'Wedge the door. Leave the door. Whatever. I am not shutting anything in here.' },
+    ],
+    lose: [
+      { who: 'direction', text: 'You are out in the corridor with your hand on the frame and no memory of the two steps that put you there.' },
+      { who: 'direction', text: 'Behind you the room finishes the phrase properly, and stops, and waits to be interrupted again.' },
+    ],
+  };
+}
+
 export function sourceCombatDefinition() {
   const profile = authoredCombatProfile('source');
   return {

@@ -138,6 +138,23 @@ npm run preview
 
 The Vite build uses `base: './'` so generated assets are safe for static preview and Tauri packaging.
 
+### Stage Steamworks Redistributables
+
+Personalized interference initializes Steamworks in the Tauri shell and reads
+only the current user's persona name. Before a desktop release, stage the
+official Valve redistributables from a Steamworks SDK checkout:
+
+```sh
+npm run steamworks:stage -- /path/to/steamworks_sdk --platform=all
+npm run steamworks:verify
+```
+
+The staged `steam_api64.dll`, `libsteam_api.dylib`, and `libsteam_api.so` files
+belong in `src-tauri/steamworks-runtime/` and are bundled under `steamworks/`.
+`npm run tauri:build` refuses to package the current platform without its
+library. A local `steam_appid.txt` may be used for direct-launch SDK testing,
+but it is gitignored, is not a configured bundle resource, and must never ship.
+
 ### Package the macOS Beta 6 Candidate
 
 ```sh

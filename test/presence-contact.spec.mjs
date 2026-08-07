@@ -50,6 +50,8 @@ assert.equal(state.caughtCount,1);
 
 PRES.loadPresenceState({awareness:.4,caughtCount:3,contactDirector:{brushesShown:2,warningsShown:1,recentContentIds:['a']}});
 assert.equal(PRES.pendingContactAttempt(),null,'pending attempts never survive load');
+assert.equal(PRES.isActive(),false,'a loaded or fresh run never inherits the previous live manifestation');
+assert.deepEqual({x:PRES.presenceState().x,y:PRES.presenceState().y},{x:0,y:0});
 assert.deepEqual(PRES.savePresenceState().contactDirector,{
   schema:1,lastKind:null,eligibleSinceBrush:0,brushesShown:2,warningsShown:1,recentContentIds:['a'],
 });

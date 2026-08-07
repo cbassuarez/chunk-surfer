@@ -718,6 +718,12 @@ export function createSourceSpaceRuntime({
       objective = { id: 'final-horizon', label: 'REACH THE FINAL HORIZON', target: landmarkPoint('final-page'), bearingEligible: true };
     }
     const distance = objective.target ? Math.hypot(player.x - objective.target.x, player.y - objective.target.y) : null;
+    const evidenceTags=new Set(state.profile?.evidenceTags||[]);
+    const knownLandmarks=[
+      ...(evidenceTags.has('student-performance')?['surfer-origin']:[]),
+      ...(evidenceTags.has('contract-inheritance')?['work-order-loop']:[]),
+      ...(evidenceTags.has('borrowed-body')?['body-room']:[]),
+    ];
     return {
       schema: SOURCE_OBJECTIVE_CONTRACT_VERSION,
       ...objective,
@@ -725,6 +731,10 @@ export function createSourceSpaceRuntime({
       bearing: objective.bearingEligible ? compassBearing(player, objective.target) : null,
       distance: Number.isFinite(distance) ? distance : null,
       alignmentPulse: noProgressSeconds >= 6,
+      knownLandmarks,
+      coherentRoute:state.profile?.sourceGuidance
+        ? ['surfer-origin','work-order-loop','recordist-loop','body-room']
+        : [],
     };
   }
 
@@ -765,13 +775,17 @@ export function createSourceSpaceRuntime({
     if (state.phase !== CHUNK_SURF_PHASE.FINAL || state.finalEncounter.status !== SOURCE_FINAL_STATUS.READY) return null;
     const final = landmarkPoint('final-page');
     if (!final || Math.hypot(player.x - final.x, player.y - final.y) > 12) return null;
+    const evidenceTags=new Set(state.profile?.evidenceTags||[]);
+    const evidenceRoute=['reference-pressure','student-performance','pre-roll-causality','contract-inheritance','borrowed-body']
+      .every((tag)=>evidenceTags.has(tag));
     return {
       schema: 1,
       id: 'source-final',
       adapter: 'combat-v1',
       outcomes: Object.values(SOURCE_FINAL_OUTCOME),
       rescueEligible: !!state.profile?.bestEligible
-        && SOURCE_OPTIONAL_TRACES.every((id) => state.optionalTraces.includes(id))
+        && state.hasFork
+        && (SOURCE_OPTIONAL_TRACES.every((id) => state.optionalTraces.includes(id))||evidenceRoute)
         && state.recorded.includes('body-room'),
       compatibility: { redactions: REDACTIONS.map(({ id, sourceAnchor }) => ({ id, sourceAnchor })) },
     };
@@ -1050,50 +1064,36 @@ export function createSourceSpaceRuntime({
     return out;
   }
 
-  function hushTextInstances(presence = null, time = 0) {
+  function densityWakeTextInstances(presence = null, time = 0) {
     if (![CHUNK_SURF_HUSH_STAGE.STALK, CHUNK_SURF_HUSH_STAGE.HUNT, CHUNK_SURF_HUSH_STAGE.FINAL].includes(state.hushStage)) return [];
-    let hx = presence?.x, hy = presence?.y, speed = Number(presence?.speed) || 0;
+    const hx=Number(presence?.x),hy=Number(presence?.y);
+    if(!presence?.active||!Number.isFinite(hx)||!Number.isFinite(hy))return[];
     const velocity=presence?.velocity||{x:0,y:0};
-    const bodyYaw=Math.hypot(Number(velocity.x)||0,Number(velocity.y)||0)>.02
-      ?Math.atan2(Number(velocity.x)||0,-(Number(velocity.y)||0)):0;
-    if (!Number.isFinite(hx) || !Number.isFinite(hy)) {
-      // No live presence yet (just spawned): stand it a little way off toward
-      // Body Return so it reads as already out there, about to move.
-      const body = landmarkPoint('body-room');
-      hx = body.x - 18; hy = body.y + 9; speed = 0;
-    }
-    if (state.phase === CHUNK_SURF_PHASE.COMPLETED) {
-      const final = landmarkPoint('final-page'); hx = final.x - 14; hy = final.y - 10; speed = 0;
-    }
-    const phase = time * (speed > 1 ? 7 : speed > 0.1 ? 3.5 : 0.8);
-    const gait = Math.sin(phase) * clamp01(speed / 2);
+    const direction=Math.hypot(Number(velocity.x)||0,Number(velocity.y)||0)>.02
+      ?Math.atan2(Number(velocity.y)||0,Number(velocity.x)||0):time*.08;
     const lines = sourceLines('hush');
-    const parts = [
-      { name: 'head', x: 0, y: 2.12, z: 0, sx: 1.05, sy: 0.28 },
-      { name: 'torso-a', x: 0, y: 1.65, z: 0, sx: 1.75, sy: 0.32 },
-      { name: 'torso-b', x: 0, y: 1.28, z: 0, sx: 1.55, sy: 0.30 },
-      { name: 'arm-l', x: -0.75, y: 1.48 + gait * 0.12, z: 0, sx: 1.0, sy: 0.22, roll: -0.55 - gait * 0.45 },
-      { name: 'arm-r', x: 0.75, y: 1.48 - gait * 0.12, z: 0, sx: 1.0, sy: 0.22, roll: 0.55 - gait * 0.45 },
-      { name: 'leg-l', x: -0.30, y: 0.72, z: gait * 0.16, sx: 0.95, sy: 0.24, roll: -0.15 + gait * 0.55 },
-      { name: 'leg-r', x: 0.30, y: 0.72, z: -gait * 0.16, sx: 0.95, sy: 0.24, roll: 0.15 - gait * 0.55 },
-      { name: 'foot-l', x: -0.34, y: 0.15, z: gait * 0.28, sx: 0.72, sy: 0.20 },
-      { name: 'foot-r', x: 0.34, y: 0.15, z: -gait * 0.28, sx: 0.72, sy: 0.20 },
-    ];
-    // A body assembled from full source lines (the hush is made of the same code
-    // as the field it wears). Each part carries exact atlas provenance so it
-    // honours the same contract as the architecture around it.
-    return parts.map((part, index) => {
+    // HUSH never resolves into a body. Source can only show the architecture
+    // failing to hold its lines around a moving, deliberately empty centre: a
+    // wide wake of displaced fragments, never a head, torso, face, or outline.
+    return Array.from({length:9},(_,index)=>{
+      const side=index%2?1:-1;
+      const behind=5+Math.floor(index/2)*2.4;
+      const across=side*(6+(index%3)*2.2);
+      const dx=Math.cos(direction)*-behind-Math.sin(direction)*across;
+      const dz=Math.sin(direction)*-behind+Math.cos(direction)*across;
+      const worldX=hx+dx,worldY=hy+dz;
+      const o=landscapeOrigin(),floor=sourceLandscapeFloorAt(worldX-o.x,worldY-o.y);
       const line = lines[(index * 7) % Math.max(1, lines.length)];
       return {
-        id: `source-hush-${part.name}`,
+        id: `source-density-wake-${index}`,
         sourceId: line?.id,
         sourceFile: line?.file,
         sourceLine: line?.line,
         sourceHash: line?.hash,
-        text: line?.text || '',
-        matrix: sourceMatrix({ x: hx + part.x, y: part.y, z: hy + part.z, scaleX: part.sx, scaleY: part.sy, yaw:bodyYaw, roll: part.roll || 0 }),
-        color: index % 3 === 0 ? [0.96, 0.92, 0.80, 1] : [1, 0.08, 0.045, 1],
-        semantic: 'source-hush',
+        text:index%3===0?'[PRE-ROLL OMITTED]':line?.text||'',
+        matrix:sourceMatrix({x:worldX*CELL,y:floor+.08,z:worldY*CELL,scaleX:1.25,scaleY:.18,yaw:direction+(side>0?.08:-.08),pitch:-Math.PI/2}),
+        color:index%3===0?[.04,.04,.035,.92]:[.88,.22,.14,.46],
+        semantic:'source-density-wake',
       };
     });
   }
@@ -1326,27 +1326,6 @@ export function createSourceSpaceRuntime({
     return out;
   }
 
-  function proofHushTextInstances(presence = null, time = 0) {
-    if (![CHUNK_SURF_HUSH_STAGE.STALK, CHUNK_SURF_HUSH_STAGE.HUNT, CHUNK_SURF_HUSH_STAGE.FINAL].includes(state.hushStage)) return [];
-    // Follow the live presence whenever it is on the board — during the quiet
-    // stalk as well as the scripted pursuits — so the body is visibly in motion,
-    // not pinned beside Body Return. Only fall back to the static pose when no
-    // presence is driving it (e.g. before it has spawned).
-    let hx = Number(presence?.x), hy = Number(presence?.y);
-    if (!Number.isFinite(hx) || !Number.isFinite(hy)) {
-      const body = landmarkPoint('body-room'); hx = body.x - 18; hy = body.y + 9;
-    }
-    const sway = Math.sin(time * 1.6) * 0.08;
-    const o=landscapeOrigin(),base=sourceLandscapeFloorAt(hx-o.x,hy-o.y);
-    return Array.from({ length: 11 }, (_, row) => sourcePanel({
-      id: `source-text-hush-${row}`, sector: 'hush', lineIndex: row * 7 + 3, redact: row % 4 === 0,
-      x: hx * CELL + (row % 2 ? sway : -sway), y: base+0.25 + row * 0.3, z: hy * CELL,
-      scaleX: 2.25 - Math.abs(5 - row) * 0.09, scaleY: 0.24,
-      color: row % 2 ? [1, 0.12, 0.08, 1] : [0.92, 0.96, 0.86, 1],
-      semantic: 'text-actor:hush', overlapLayer: row % 2 ? 'overlap' : 'base',
-    }));
-  }
-
   // The long hall is still the physical building: hundreds of authored sheet
   // meshes occupy its floor, walls and ceiling. Meshes disappear only after
   // the page opens into Source Space proper.
@@ -1566,7 +1545,7 @@ export function createSourceSpaceRuntime({
     const cached = cachedArchitecture(px, py);
     const dynamicInstances = [
       ...interactionTextInstances(),
-      ...hushTextInstances(presence?.active ? presence : null, reducedMotion ? 0 : time),
+      ...densityWakeTextInstances(presence?.active ? presence : null, reducedMotion ? 0 : time),
     ];
     return {
       schema: 1,
@@ -1641,7 +1620,7 @@ export function createSourceSpaceRuntime({
       finalEncounter: { ...state.finalEncounter },
       optionalTraces: [...state.optionalTraces],
       camera: { x: final.x, y: final.y + 8, facing: 0 },
-      hush: { x: final.x - 14, y: final.y - 10, pose: 'standing', source: 'hush' },
+      unresolvedDensity:{status:'present',form:'unseen',near:{x:final.x-14,y:final.y-10}},
       sourceIds: REDACTIONS.map((entry) => sourceLineByAnchor(entry.sourceAnchor)?.id).filter(Boolean),
     };
   }

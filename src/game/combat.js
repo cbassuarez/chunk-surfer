@@ -5,7 +5,7 @@
 
 import * as scenes from './scenes.js';
 import { uiSize, uiFill, uiText, uiStrokeRect, uiLine } from '../render/ui.js';
-import { drawMachinePanel, drawVfdCounter, drawVfdText } from '../render/presentation.js';
+import { drawLocationIndicator, drawMachinePanel, drawVfdCounter, drawVfdText } from '../render/presentation.js';
 import { UI_COLOR } from '../render/palette.js';
 import { createSamDialogVoice, isVoiced } from '../audio/sam-voice.js';
 import { TYPE_GAIN, TYPE_LEVEL } from '../audio/story-audio.js';
@@ -52,6 +52,7 @@ import {
   shouldAutoAdvanceBattleLine,
 } from './combat-dialogue-model.js';
 import { enemyAttackCue, enemyAttackShape, enemyAttackVoice } from '../audio/piano-weapon.js';
+import { performanceIntrusionStage, reducePerformanceIntrusion } from './performance-intrusion.js';
 
 // Which techniques are fired as moves in the fight (vs passives that change the
 // rules). Derived from the authored descriptor so new actives need no code here.
@@ -166,7 +167,10 @@ export function makeCombatScene({
   source = null,
   musicSession = null,
   director = null,
+  interference = null,
   environmentLighting = null,
+  initialPerformanceIntrusion = 0,
+  onPerformanceStage = () => {},
   onWin = () => {},
   onLose = () => {},
   onAbort = () => {},
@@ -234,6 +238,9 @@ export function makeCombatScene({
   let popupSeq = 0;
   let impactFx = null;
   let barGhost = { composure: null, coherence: null };
+  let interferencePause = false;
+  let performanceIntrusion = Math.max(0,Math.min(.32,Number(initialPerformanceIntrusion)||0));
+  let performanceStage = performanceIntrusionStage(performanceIntrusion);
 
   const movement = (index = state.movementIndex) => battle.combat.movements[index] || null;
   const stopVoice = () => { handle?.stop?.(); handle = null; };
@@ -345,12 +352,16 @@ export function makeCombatScene({
       attempts: Math.max(1, Number(metrics.turns) || 1),
       playerHealth: metrics.composure,
       enemyHealth: 0,
+      performanceIntrusion,
+      performanceStage,
     };
     speak(metrics.result === 'win' ? battle.win : battle.lose, () => {
       stopVoice();
       audio?.stopTyping?.();
-      scenes.pop();
-      (metrics.result === 'win' ? onWin : onLose)(legacyMetrics);
+      Promise.resolve(interference?.finish?.(metrics.result, legacyMetrics)).catch(() => null).finally(() => {
+        scenes.pop();
+        (metrics.result === 'win' ? onWin : onLose)(legacyMetrics);
+      });
     });
   }
 
@@ -433,10 +444,34 @@ export function makeCombatScene({
     if (after.take && !before.take && last.action === COMBAT_ACTION.MONITOR) {
       spawnPopup({ text: 'CAPTURED', role: 'ui-blue', anchor: 'enemy' });
     }
+    if (enemyBeatImpact) {
+      resolution.interferencePending = Promise.resolve(interference?.impact?.({
+        kind: resolution.action?.kind || null,
+        perfect: !!last.perfect,
+        parried: !!last.parried,
+        received: Math.max(0, Number(last.received) || 0),
+        transition: last.transition || null,
+      })).catch(() => null);
+    }
   }
 
   function finishResolution() {
     if (!resolution) return;
+    if (resolution.interferencePending && !resolution.interferenceDone) {
+      if (!resolution.interferenceWaiting) {
+        const pendingResolution = resolution;
+        pendingResolution.interferenceWaiting = true;
+        interferencePause = true;
+        pendingResolution.interferencePending.finally(() => {
+          if (resolution !== pendingResolution) return;
+          pendingResolution.interferenceDone = true;
+          pendingResolution.interferenceWaiting = false;
+          interferencePause = false;
+          finishResolution();
+        });
+      }
+      return;
+    }
     // A player beat that deferred the enemy turn hands off to the enemy beat;
     // everything else (perfect, tempo, movement break, KO, or the finished
     // enemy beat) settles the whole turn.
@@ -458,6 +493,20 @@ export function makeCombatScene({
     // committed (turnStart) to the settled end-state.
     director?.advance?.(turnStart || resolved.before, state);
     turnStart = null;
+    const last=state.last||{};
+    const correct=last.perfect===true||last.parried===true||((Number(last.dealt)||0)>0&&(Number(last.received)||0)===0);
+    const changed=reducePerformanceIntrusion(performanceIntrusion,{
+      missed:(Number(last.received)||0)>0||!correct,
+      correct,
+      movementTransition:last.transition?.to!=null,
+    });
+    const previousStage=performanceStage;
+    performanceIntrusion=changed.value;
+    performanceStage=changed.stage;
+    musicSession?.setIntrusion?.(performanceIntrusion);
+    if(previousStage!==performanceStage)onPerformanceStage({
+      battleId:battle.combat.id,value:performanceIntrusion,stage:performanceStage,previousStage,
+    });
     // This exchange has settled; the next one is a new turn on the glyph.
     if (!state.result) turnCount += 1;
     if (!state.result) musicSession?.onCombatEvent?.({
@@ -480,9 +529,20 @@ export function makeCombatScene({
       const lines = [...(old?.after || []), ...(nextMovement?.before || []), ...(nextMovement?.onListen || [])];
       playSound?.({ threat: nextMovement?.threat ?? .55 });
       resources.playImpact?.({ transition: true });
-      barGhost.coherence = null;
-      if (lines.length) speak(lines, beginToolSelection);
-      else beginToolSelection();
+      interferencePause = true;
+      Promise.resolve(interference?.phaseBreak?.({
+        from: state.last.transition.from,
+        to: state.last.transition.to,
+      })).then((beat) => new Promise((resolve) => {
+        const dwell = Math.max(0, Math.min(2600, Number(beat?.dwellMs) || 0));
+        if (dwell) setTimeout(resolve, dwell);
+        else resolve();
+      })).catch(() => null).finally(() => {
+        interferencePause = false;
+        barGhost.coherence = null;
+        if (lines.length) speak(lines, beginToolSelection);
+        else beginToolSelection();
+      });
       return;
     }
     beginToolSelection();
@@ -511,6 +571,7 @@ export function makeCombatScene({
     syncResourceSpend(before, next);
     turnStart = before;
     state = next;
+    interference?.action?.(actionId);
     notice = state.last?.notice || '';
     audio?.menuConfirm?.();
     resolution = {
@@ -636,11 +697,13 @@ export function makeCombatScene({
 
     enter() {
       sceneEntered = true;
+      void Promise.resolve(interference?.enter?.()).catch(() => null);
       phase = musicSession ? 'arrival' : 'talk';
       if (!musicSession) { beginOpening(); return; }
       Promise.resolve(musicSession.start?.()).then((music) => {
         if (!sceneEntered) return;
         musicBootResolved = true;
+        musicSession?.setIntrusion?.(performanceIntrusion);
         if (music?.phase !== 'arrival') beginOpening();
       }).catch((error) => {
         console.warn('battle music start failed', error);
@@ -659,6 +722,7 @@ export function makeCombatScene({
         else musicSession?.abort?.();
       }
       if (!resultDelivered && !state.result) onAbort();
+      if (!resultDelivered && !state.result) void Promise.resolve(interference?.finish?.('abort', {})).catch(() => null);
     },
 
     battleView() {
@@ -672,6 +736,8 @@ export function makeCombatScene({
         actions: availableCombatActions(state),
         prediction: combatPrediction(state),
         music: musicSession?.snapshot?.() || null,
+        performanceIntrusion,
+        performanceStage,
         selectedTool,
         selectedMove,
         notice,
@@ -886,8 +952,10 @@ export function makeCombatScene({
                     ? 'PARRIED · [ENTER] CONTINUE'
                     : 'RESOLVING · [ENTER] FAST-FORWARD')
               : promptLine([{ action: 'continue', label: 'CONTINUE' }]);
+      const interferenceStatus = interference?.active?.() ? interference?.statusLine?.() : '';
       const panel = drawMachinePanel(x - 2, 1, w + 4, rows - 2, {
-        label: 'AUDIOCORP / SIGNAL COMBAT', source: state.source ? 'SOURCE' : 'FIELD', meter: true, footer,
+        label: 'AUDIOCORP / SIGNAL COMBAT', source: state.source ? 'SOURCE' : 'FIELD', meter: true,
+        footer: interferenceStatus ? `${footer} · ${interferenceStatus}` : footer,
       });
       skipRect = null;
       if (director?.active?.() && choosing) {
@@ -941,6 +1009,12 @@ export function makeCombatScene({
         now,
         ...ghostFor(barGhost.coherence),
       });
+      const intrusionW=Math.min(20,Math.max(10,Math.floor(panel.w*.18)));
+      const intrusionX=panel.x+barW+2;
+      if(intrusionX+intrusionW<panel.x+panel.w-12){
+        drawVfdText(intrusionX,enemyBarY,`RETURN ${performanceStage}`.slice(0,intrusionW),{scale:1,role:performanceStage==='CORRECTION'?'ui-danger':'ui-amber'});
+        drawLocationIndicator(intrusionX,enemyBarY+1,intrusionW,performanceIntrusion,{theme:performanceStage==='CORRECTION'?'red':'amber'});
+      }
 
       // Whose beat it is + the exchange count, as a persistent glyph readout in
       // the header. The enemy beat is the opponent's turn; anything else is yours.
@@ -1178,6 +1252,12 @@ export function makeCombatScene({
       const skillText = passives.length ? passives.map(shortName).join(' / ') : 'NONE';
       const activeText = actives.length ? ` · ACTIVE ${actives.map(shortName).join('/')}` : '';
       uiText(takeX, cmdY + 1, `SKILLS · ${skillText}${activeText}`.slice(0, Math.max(8, panel.w - barW - 20)), 'ui-blue', .55);
+
+      const interferenceLine = interference?.line?.();
+      if (interferencePause && interferenceLine) {
+        uiText(panel.x, cmdY + 3, String(interferenceLine.text || '').slice(0, panel.w), interferenceLine.stage === 'handoff' ? 'ui-danger' : 'ui-amber', .92);
+        return;
+      }
 
       if (phase === 'arrival') {
         // No title card: the stage is already on screen behind the entry wipe.

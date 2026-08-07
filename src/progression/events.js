@@ -20,13 +20,15 @@ export const EVENT_TYPES = Object.freeze({
   HUSH_MET: 'hush.met',
   BATTLE_STARTED: 'battle.started',
   BATTLE_FINISHED: 'battle.finished',
+  BATTLE_PERFORMANCE_PROPAGATED: 'battle.performance.propagated',
   PLAYBACK_DISCOVERED: 'playback.discovered',
+  PLAYBACK_HEARD: 'playback.heard',
   CONFESSION_COMMITTED: 'confession.committed',
   COFFEE_DRUNK: 'coffee.drunk',
   POWER_CIRCUIT_CHANGED: 'power.circuit.changed',
   CREDITS_VIEWED: 'credits.viewed',
   ENDING_COMMITTED: 'ending.committed',
-  RUN_FINISHED: 'run.finished',
+  RUN_FINISHED: 'run.finished', CAUSAL_TAPE_PROMOTED: 'causal.tape.promoted',
 });
 
 const known = new Set(Object.values(EVENT_TYPES));
@@ -52,12 +54,15 @@ const validators = Object.freeze({
   [EVENT_TYPES.HUSH_MET]: () => true,
   [EVENT_TYPES.BATTLE_STARTED]: (p) => stringId(p),
   [EVENT_TYPES.BATTLE_FINISHED]: (p) => stringId(p) && ['win', 'lose', 'abort'].includes(p?.result) && Number.isFinite(Number(p?.attempts)),
+  [EVENT_TYPES.BATTLE_PERFORMANCE_PROPAGATED]: (p) => stringId(p) && ['RESONATOR', 'ENSEMBLE', 'CORRECTION'].includes(p?.stage),
   [EVENT_TYPES.PLAYBACK_DISCOVERED]: (p) => stringId(p),
+  [EVENT_TYPES.PLAYBACK_HEARD]: (p) => typeof p?.roomId === 'string' && p.roomId.length > 0,
   [EVENT_TYPES.CONFESSION_COMMITTED]: (p) => typeof p?.kind === 'string',
   [EVENT_TYPES.COFFEE_DRUNK]: () => true,
   [EVENT_TYPES.POWER_CIRCUIT_CHANGED]: (p) => ['sp01','sp02','sp03'].includes(p?.circuit) && typeof p?.live === 'boolean',
   [EVENT_TYPES.CREDITS_VIEWED]: () => true,
   [EVENT_TYPES.ENDING_COMMITTED]: (p) => ENDING_IDS.includes(p?.endingId),
+  [EVENT_TYPES.CAUSAL_TAPE_PROMOTED]: (p) => typeof p?.contentHash === 'string' && p.contentHash.length > 0,
   [EVENT_TYPES.RUN_FINISHED]: (p) => !!p?.summary && typeof p.summary === 'object',
 });
 

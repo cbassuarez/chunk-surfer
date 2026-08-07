@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "id": "ending.helped",
+  "title": "He Tried to Help",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "ending",
+    "helped"
+  ],
+  "notes": "Replaces ending.helped.named / .unnamed, which were four lines. This is the guard's ending and he was not in it. Three fixes from the audit: the coffee is no longer explained conclusively (the certainty closed off what the rest of the game keeps open, and a man who is certain about the one kindness he was shown is a man who has stopped thinking); the arrival changes what the kindness was worth; and the point-of-view break is gone — this ends with him INSIDE, and the gate scene that follows is explicitly not his to watch.",
+  "regions": [
+    {
+      "id": "ending.helped.region",
+      "title": "He Tried to Help",
+      "kind": "ending",
+      "color": "#8a6a3b",
+      "nodeIds": [
+        "start"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "type": "ending",
+      "speaker": "THE CHAPEL",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You agree with it, and the coffee is still somewhere behind your teeth, hours cold and going nowhere.",
+          "id": "start.line.agree",
+          "when": "ending.arrival.agreed"
+        },
+        {
+          "who": "direction",
+          "text": "It takes the decision off you, and the coffee is still somewhere behind your teeth, hours cold and going nowhere.",
+          "id": "start.line.agree.beaten",
+          "when": "ending.arrival.defeated"
+        },
+        {
+          "who": "direction",
+          "text": "You ran for it and you did not make it, and the coffee is still somewhere behind your teeth, hours cold and going nowhere.",
+          "id": "start.line.agree.late",
+          "when": "ending.arrival.timedOut"
+        },
+        {
+          "who": "you",
+          "text": "He put something in it.",
+          "id": "start.line.realise"
+        },
+        {
+          "who": "direction",
+          "text": "You cannot make the thought go past that. There is no second half of it. There is a man in a hi-vis jacket in a lit booth at a gate, and a paper cup, and whatever he did or did not do with it, and it is not going to resolve tonight.",
+          "id": "start.line.unresolved"
+        },
+        {
+          "who": "you",
+          "text": "A stimulant. To hold it off. To buy me the night.",
+          "id": "start.line.theory.kind"
+        },
+        {
+          "who": "you",
+          "text": "Or nothing at all, and he is a man who makes people a hot drink because that is what he has got.",
+          "id": "start.line.theory.plain"
+        },
+        {
+          "who": "direction",
+          "text": "Both of those are men who knew what this building does. That is the part that does not go away whichever answer you pick.",
+          "id": "start.line.both"
+        },
+        {
+          "who": "direction",
+          "text": "He said it was longer than the last one lasted. He knew there was a last one. He knew there was a length to last.",
+          "id": "start.line.knew"
+        },
+        {
+          "who": "you",
+          "text": "How many of us has he made a coffee for.",
+          "id": "start.line.howmany"
+        },
+        {
+          "who": "direction",
+          "text": "The left column of that book is full of names all the way up the page, and he has been on that gate a long time, and he has written every one of them himself.",
+          "id": "start.line.column"
+        },
+        {
+          "who": "you",
+          "text": "He never once said don't go in.",
+          "id": "start.line.never"
+        },
+        {
+          "who": "direction",
+          "text": "No. He made you a drink and he wished you luck and he let you sign the left column, because his patch stopped at the yard and he has never once pretended otherwise, and because you would have gone in anyway, and both of those are true and neither of them is an excuse.",
+          "id": "start.line.excuse"
+        },
+        {
+          "who": "me",
+          "text": "It was real. He tried. And I still said her name.",
+          "id": "start.line.sarah",
+          "when": "ending.confession.said.sarah"
+        },
+        {
+          "who": "me",
+          "text": "He tried. And I still gave it the sentence. Whatever was in that cup, it was not enough to stop me talking.",
+          "id": "start.line.spoke",
+          "when": "ending.confession.spoken && !ending.confession.said.sarah"
+        },
+        {
+          "who": "me",
+          "text": "He tried, and I gave it nothing, and it made no difference at all. That is the thing I would like somebody to explain to me.",
+          "id": "start.line.silent",
+          "when": "ending.confession.nothing"
+        },
+        {
+          "who": "direction",
+          "text": "It was real, and it was kind, and it was not enough. The seal closes at 06:00 and you are on the inside of it, and you will not see what happens at the gate.",
+          "id": "start.line.seal"
+        }
+      ],
+      "id": "start"
+    }
+  }
+}

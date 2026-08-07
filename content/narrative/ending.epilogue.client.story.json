@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "ending.epilogue.client",
-  "title": "Guard Epilogue · client",
+  "title": "Coda · the account is closed",
   "status": "active",
   "entry": "start",
   "entries": [
@@ -11,13 +11,13 @@
     "ending",
     "epilogue"
   ],
-  "notes": "",
+  "notes": "The Seal's coda when the player disclosed something. The audit calls this the institutional heart of the ending and it was five lines. Nobody at W. Ellery has ever seen a ghost; they have seen an open account and a schedule of consent, and this is the scene where the paperwork wins. The guard is in the room and says almost nothing, which is his whole part in it.",
   "regions": [
     {
       "id": "ending.epilogue.client.region",
-      "title": "Guard Epilogue · client",
+      "title": "The account is closed",
       "kind": "ending",
-      "color": "#ad6a3b",
+      "color": "#7a3b3b",
       "nodeIds": [
         "start"
       ]
@@ -26,16 +26,16 @@
   "nodes": {
     "start": {
       "type": "ending",
+      "art": {
+        "id": "guard",
+        "mode": "hero",
+        "caption": "Gate booth / account closed",
+        "status": "STILL"
+      },
       "lines": [
         {
           "who": "direction",
-          "art": {
-            "id": "guard",
-            "mode": "hero",
-            "caption": "Gate booth / account closed",
-            "status": "STILL"
-          },
-          "text": "The gate booth. The bored man is not alone. Someone in a good coat is at the desk who was not here when you went in.",
+          "text": "The gate booth. The bored man is not alone. Someone in a good coat is at the desk who was not here when you went in, with a folder, at ten to six in the morning, which means they left home in the dark to be here for this.",
           "id": "start.line.1"
         },
         {
@@ -50,13 +50,58 @@
         },
         {
           "who": "direction",
-          "text": "The client signs the account closed. Nobody at W. Ellery has ever seen a ghost. They have seen a schedule of consent and an open account, and now a closed one. The left column got one more name. The right stays empty.",
+          "text": "Neither of them says what it is. There is no word for it in the folder and there does not need to be — there is a work order, and a contractor, and a site, and a date, and every one of those has a box.",
           "id": "start.line.4"
         },
         {
           "who": "client",
-          "text": "Good. Book the machines for 06:00.",
+          "text": "Signed for on arrival?",
           "id": "start.line.5"
+        },
+        {
+          "who": "guard",
+          "text": "Signed received. Left column.",
+          "id": "start.line.6"
+        },
+        {
+          "who": "client",
+          "text": "Good. That is the one that matters.",
+          "id": "start.line.7"
+        },
+        {
+          "who": "direction",
+          "text": "It is. It is the one that has mattered every time. A schedule of consent is a stack of paper in which everybody agreed to be where they were, and it is the only thing anybody at W. Ellery has ever needed, because nobody at W. Ellery has ever seen a ghost.",
+          "id": "start.line.8"
+        },
+        {
+          "who": "direction",
+          "text": "They have seen an open account, for a long time, on a building that keeps needing a survey. Now they have a closed one.",
+          "id": "start.line.9"
+        },
+        {
+          "who": "direction",
+          "text": "The client turns the book to the right column. RETURNED. It has been empty all the way up the page, and it is a column in a book at a gate, and they draw a single line through it and initial the line.",
+          "id": "start.line.10"
+        },
+        {
+          "who": "client",
+          "text": "That can come off the form for the next one. It confuses people.",
+          "id": "start.line.11"
+        },
+        {
+          "who": "direction",
+          "text": "The guard does not say anything. He has been on this gate a long time and he ruled that column himself, and he watches somebody strike it out with a fountain pen and does not say anything.",
+          "id": "start.line.12"
+        },
+        {
+          "who": "client",
+          "text": "Book the machines for 06:00.",
+          "id": "start.line.13"
+        },
+        {
+          "who": "direction",
+          "text": "The left column got one more name. It is the ninth on that page and the page is not the first page.",
+          "id": "start.line.14"
         }
       ],
       "id": "start"

@@ -18,10 +18,13 @@ import {
   normalizeStairAnomalyEnvironment,
   normalizeStairAnomalyLedger,
 } from '../game/stair-anomaly.js';
+import { normalizeReturnHistory } from './return-history.js';
+import { normalizeInterferenceRecord } from '../game/interference-case.js';
+import { freshReferenceExposure, normalizeReferenceExposure } from '../game/reference-exposure.js';
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 export const META_VERSION = 2;
-export const RUN_SCHEMA_VERSION = 2;
+export const RUN_SCHEMA_VERSION = 3;
 export const EVENT_SCHEMA_VERSION = 1;
 export const PROFILE_EXPORT_VERSION = 1;
 
@@ -49,6 +52,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   hushAudioDistortion: 'full',
   hushSilence: 'full',
   hushHiss: 'full',
+  hushWhispers: 'full',
   hushSuddenCuts: 'full',
   hushLightFlicker: 'full',
   hushCueCaptions: false,
@@ -74,7 +78,9 @@ export const DEFAULT_SETTINGS = Object.freeze({
   personalInterference: {
     enabled: false,
     sourceSteam: true,
-    sourceOs: true,
+    sourceOs: false,
+    sourceHost: true,
+    sourceMic: true,
     vfdText: true,
     localSpeech: false,
     intensity: 'standard',
@@ -96,6 +102,7 @@ export const DEFAULT_RULE_VALUES = Object.freeze({
 const uniqueStrings = (value) => [
   ...new Set((Array.isArray(value) ? value : []).filter((v) => typeof v === 'string')),
 ];
+const HUSH_SYNC_LABELS = new Set(['UNISON', 'COHERENT', 'DRIFT', 'CORRECTED']);
 
 const objectOr = (value, fallback = {}) => (
   value && typeof value === 'object' && !Array.isArray(value) ? value : fallback
@@ -145,6 +152,7 @@ export function freshLedger() {
     natatoriumWater: { ...DEFAULT_NATATORIUM_WATER_LEDGER },
     stairAnomaly: freshStairAnomalyLedger(),
     power: { live: [], everRestored: [] },
+    reference: freshReferenceExposure(),
   };
 }
 
@@ -196,6 +204,7 @@ export function freshRunRecord({
     },
     environment,
     ledger: freshLedger(),
+    interference: null,
     pendingReturn: null,
     finalizedReturn: null,
   };
@@ -240,6 +249,19 @@ export function freshMeta() {
     },
     challengeCompletions: { deadAir: false },
     returns: { records: {}, history: [] },
+    causalTape: {
+      status: 'none',
+      latestId: null,
+      contentHash: null,
+      topologyHash: null,
+      endingId: null,
+      durationMs: 0,
+      recordedAt: 0,
+      injuries: null,
+      failure: null,
+    },
+    hushRun: { completed: 0, bestSync: 0, bestGrade: null },
+    legacyTerminal: { opened: [], cursors: {}, lastFileId: null },
     cosmetics: { unlocked: [], selected: null },
     platform: { pendingAchievements: [], pendingStats: {}, lastSyncAt: 0 },
     presentation: { pendingReports: [], pendingNotices: [] },
@@ -264,9 +286,11 @@ export function normalizeSettings(value) {
     personalInterference: {
       enabled: !!personalSource.enabled,
       sourceSteam: personalSource.sourceSteam !== false,
-      sourceOs: personalSource.sourceOs !== false,
+      sourceOs: personalSource.sourceOs === true,
+      sourceHost: personalSource.sourceHost !== false,
+      sourceMic: personalSource.sourceMic !== false,
       vfdText: personalSource.vfdText !== false,
-      localSpeech: !!personalSource.localSpeech,
+      localSpeech: false,
       intensity,
     },
     controller,
@@ -274,7 +298,7 @@ export function normalizeSettings(value) {
   };
 }
 
-export function normalizeLedger(value) {
+export function normalizeLedger(value, { legacyFlags = null } = {}) {
   const source = objectOr(value);
   const takes = objectOr(source.takes);
   const battles = objectOr(source.battles);
@@ -318,10 +342,11 @@ export function normalizeLedger(value) {
       live: uniqueStrings(power.live).filter((id) => ['sp01','sp02','sp03'].includes(id)),
       everRestored: uniqueStrings(power.everRestored).filter((id) => ['sp01','sp02','sp03'].includes(id)),
     },
+    reference: normalizeReferenceExposure(source.reference, { legacyFlags }),
   };
 }
 
-export function normalizeRun(value, { meta = null, settings = null, activeFallback = false } = {}) {
+export function normalizeRun(value, { meta = null, settings = null, activeFallback = false, legacyFlags = null } = {}) {
   if (!value || typeof value !== 'object') {
     return activeFallback ? freshRunRecord({ meta, settings }) : null;
   }
@@ -384,7 +409,8 @@ export function normalizeRun(value, { meta = null, settings = null, activeFallba
         fallbackStairEnvironment || DEFAULT_STAIR_ANOMALY_ENVIRONMENT,
       )),
     },
-    ledger: normalizeLedger(source.ledger),
+    ledger: normalizeLedger(source.ledger, { legacyFlags }),
+    interference: normalizeInterferenceRecord(source.interference),
     pendingReturn: source.pendingReturn && typeof source.pendingReturn === 'object' ? source.pendingReturn : null,
     finalizedReturn: source.finalizedReturn && typeof source.finalizedReturn === 'object' ? source.finalizedReturn : null,
   };
@@ -414,6 +440,9 @@ export function normalizeMeta(value) {
   const cosmetics = objectOr(source.cosmetics);
   const platform = objectOr(source.platform);
   const presentation = objectOr(source.presentation);
+  const causalTape = objectOr(source.causalTape);
+  const hushRun = objectOr(source.hushRun);
+  const legacyTerminal = objectOr(source.legacyTerminal);
   const endingsSeen = uniqueStrings(source.endingsSeen).filter((id) => ENDING_IDS.includes(id));
 
   return {
@@ -449,7 +478,28 @@ export function normalizeMeta(value) {
     challengeCompletions: { deadAir: !!challenge.deadAir },
     returns: {
       records: { ...objectOr(returns.records) },
-      history: uniqueStrings(returns.history),
+      history: normalizeReturnHistory(returns.history),
+    },
+    causalTape: {
+      status: ['none', 'ready', 'failed', 'incompatible', 'filing'].includes(causalTape.status) ? causalTape.status : 'none',
+      latestId: typeof causalTape.latestId === 'string' ? causalTape.latestId : null,
+      contentHash: typeof causalTape.contentHash === 'string' ? causalTape.contentHash : null,
+      topologyHash: typeof causalTape.topologyHash === 'string' ? causalTape.topologyHash : null,
+      endingId: ENDING_IDS.includes(causalTape.endingId) ? causalTape.endingId : null,
+      durationMs: Math.max(0, Math.round(finiteOr(causalTape.durationMs, 0))),
+      recordedAt: Math.max(0, Math.round(finiteOr(causalTape.recordedAt, 0))),
+      injuries: causalTape.injuries == null ? null : Math.max(0, Math.floor(finiteOr(causalTape.injuries, 0))),
+      failure: typeof causalTape.failure === 'string' ? causalTape.failure.slice(0, 96) : null,
+    },
+    hushRun: {
+      completed: Math.max(0, Math.floor(finiteOr(hushRun.completed, 0))),
+      bestSync: Math.max(0, Math.min(100, Math.round(finiteOr(hushRun.bestSync, 0)))),
+      bestGrade: HUSH_SYNC_LABELS.has(hushRun.bestGrade) ? hushRun.bestGrade : null,
+    },
+    legacyTerminal: {
+      opened: uniqueStrings(legacyTerminal.opened).slice(0, 32),
+      cursors: Object.fromEntries(Object.entries(objectOr(legacyTerminal.cursors)).slice(0, 32).map(([id, cursor]) => [id, Math.max(0, Math.floor(finiteOr(cursor, 0)))])),
+      lastFileId: typeof legacyTerminal.lastFileId === 'string' ? legacyTerminal.lastFileId.slice(0, 96) : null,
     },
     cosmetics: {
       unlocked: uniqueStrings(cosmetics.unlocked),

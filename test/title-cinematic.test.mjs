@@ -23,12 +23,16 @@ test('title screen keeps canonical menu items and keyboard activation paths', ()
     'new-run',
     'archive',
     'return-index',
-    'just-surf',
+    'hush-run',
     'beta-notice',
     'settings',
   ]) {
     assert.match(source, new RegExp(`id: '${id}'`));
   }
+  assert.match(source, /replay \? \[\{ id: 'hush-run'/);
+  assert.match(source, /COMPLETE A RETURN WITH ≤ 1 INJURY/);
+  assert.match(source, /function hushLabel/);
+  assert.doesNotMatch(source, /just-surf|onJustSurf/);
   for (const key of ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Space']) {
     assert.match(source, new RegExp(key));
   }

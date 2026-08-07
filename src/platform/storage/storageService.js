@@ -71,6 +71,30 @@ export function deleteProfileQueued() {
   return enqueue(async () => { const profile = defaultProfile(); await storage.saveProfile(profile); return true; });
 }
 
+export async function loadLatestCausalTape() { return storage?.loadLatestCausalTape?.() || null; }
+export async function loadCausalDraft() { return storage?.loadCausalDraft?.() || null; }
+export async function loadSealedCausalDraft() { return storage?.loadSealedCausalDraft?.() || null; }
+export async function appendCausalDraftSegment(runId, segment, header = {}) {
+  if (!storage?.appendCausalDraftSegment) throw new Error('causal storage unavailable');
+  return storage.appendCausalDraftSegment(runId, segment, header);
+}
+export async function sealCausalDraft(runId, tape) {
+  if (!storage?.sealCausalDraft) throw new Error('causal storage unavailable');
+  return storage.sealCausalDraft(runId, tape);
+}
+export async function promoteCausalDraft(runId) {
+  if (!storage?.promoteCausalDraft) throw new Error('causal storage unavailable');
+  return storage.promoteCausalDraft(runId);
+}
+export async function discardCausalDraft(runId = null) { return storage?.discardCausalDraft?.(runId); }
+export async function loadHushRunSession() { return storage?.loadHushRunSession?.() || null; }
+export async function saveHushRunSession(session) {
+  if (!storage?.saveHushRunSession) return null;
+  return storage.saveHushRunSession(session);
+}
+export async function deleteHushRunSession() { return storage?.deleteHushRunSession?.(); }
+export async function deleteLatestCausalTape() { return storage?.deleteLatestCausalTape?.(); }
+
 export async function exportDiagnosticsForSupport() {
   return collectDiagnostics({ storage });
 }

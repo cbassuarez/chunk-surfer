@@ -54,12 +54,20 @@ const BAND_W = 86;
 // while he does it, and a centred panel over a 0.62 scrim buries the machine the
 // beat is narrating. Combined with `scrim: 0` it reads as the monitor band
 // talking under a take that is still visibly rolling.
+// `slate` and `blocksWorld` exist for one caller: the cold open, which used to be
+// a full-screen scene of its own (makeColdOpenScene) and is now a conversation
+// held at a window in the world. It is the same shell either way — the same
+// createConversation, transcript, choices and story art — so rather than keep two
+// presenters, the two things the black-screen version had that a thought does not
+// are options here. A thought is something you have while walking, so it still
+// defaults to letting the world through; a conversation with another person is
+// not, so that caller passes blocksWorld.
 export function makeThoughtScene({
-  id = 'thought', nodes, startAt = 'start', onDone, onChoice, cue, fx, audio, getAudio, replay = null,
-  scrim = 0.62, lensPreset = 'calm', anchor = 'center',
+  id = 'thought', nodes, startAt = 'start', onDone, onChoice, onLine, cue, fx, audio, getAudio, replay = null,
+  scrim = 0.62, lensPreset = 'calm', anchor = 'center', slate = '', blocksWorld = false,
 } = {}) {
   const convo = createConversation({
-    nodes, startAt, sceneId: `thought:${id}`, replay, onChoice, cue, fx, audio, getAudio,
+    nodes, startAt, sceneId: `thought:${id}`, replay, onChoice, onLine, cue, fx, audio, getAudio,
     volume: 0.24,
     onDone: () => { scenes.pop(); onDone?.(); },
   });
@@ -67,7 +75,7 @@ export function makeThoughtScene({
   return {
     id: `thought:${id}`,
     blocksInput: true,
-    blocksWorld: false,          // the corridor is still there. it is still walking.
+    blocksWorld,                 // the corridor is still there. it is still walking.
     lensPreset,
 
     enter() { convo.start(); },
@@ -143,6 +151,7 @@ export function makeThoughtScene({
           x: contentX,
           y: panel.y,
           width: contentW,
+          slate,
           system: v.speaker,
         });
 

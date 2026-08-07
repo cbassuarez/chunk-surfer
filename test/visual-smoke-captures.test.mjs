@@ -66,7 +66,7 @@ test('feature smoke captures the restored title, authored slates, cinematic roll
   assert.match(source, /__probe\.openCredits\(\)/);
   assert.match(source, /__probe\.endingCredits\('sacrifice'\)/);
   assert.match(source, /chunkSurf\.state\.phase,'hall'/);
-  assert.match(source, /__probe\.godWarpDock\(\)/);
+  assert.match(source, /__probe\.godWarpGetIn\(\)/);
   assert.match(source, /\[\['reduced',true\],\['full',false\]\]/);
   assert.match(source, /07c-stair-\$\{mode\}-phase-\$\{stage\+1\}\.png/);
   assert.match(source, /stairPerformance=await samplePerformance\(\)/);

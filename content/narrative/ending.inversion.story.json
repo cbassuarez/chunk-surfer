@@ -1,0 +1,235 @@
+{
+  "schemaVersion": 1,
+  "id": "ending.inversion",
+  "title": "The Other Door",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "ending",
+    "inversion"
+  ],
+  "notes": "Replaces ending.rescue.named / .unnamed and ending.inversion-final, which were three lines and four. Two audit fixes. The helper is still ambiguous — that is the point of it — but the ambiguity now MOVES: which candidates he can think of depends on what he did tonight, so a man who rescued somebody in Source and a man who never once looked at his own exit are standing in front of different doors. And the join to the gate scene is named rather than cut: he does not walk to that booth, he is at it, and the game says so instead of hoping nobody notices.",
+  "regions": [
+    {
+      "id": "ending.inversion.region",
+      "title": "The Other Door",
+      "kind": "ending",
+      "color": "#3b6a8a",
+      "nodeIds": [
+        "start",
+        "who",
+        "who.her",
+        "who.him",
+        "who.it",
+        "who.nobody",
+        "out"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "type": "dialogue",
+      "speaker": "THE OTHER DOOR",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "The new mark is a door you never wrote down. It is open. A shape holds it open, backlit, and you do not get to see the face.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "You have about four seconds to decide what you are looking at, and you are going through it either way, because it is open and the building is coming down.",
+          "id": "start.line.2"
+        }
+      ],
+      "goto": "who",
+      "id": "start"
+    },
+    "who": {
+      "type": "choice",
+      "kind": "hub",
+      "speaker": "THE OTHER DOOR",
+      "lines": [],
+      "choices": [
+        {
+          "text": "\"...Sarah?\"",
+          "goto": "who.her",
+          "when": "ending.confession.said.sarah",
+          "id": "who.choice.her"
+        },
+        {
+          "text": "\"You did the first four rooms.\"",
+          "goto": "who.him",
+          "id": "who.choice.him"
+        },
+        {
+          "text": "\"You have been wearing faces all night. Wear one now.\"",
+          "goto": "who.it",
+          "when": "ending.hush.contacts>=2",
+          "id": "who.choice.it"
+        },
+        {
+          "text": "Say nothing. It is a door and it is open.",
+          "goto": "who.nobody",
+          "id": "who.choice.nobody"
+        }
+      ],
+      "id": "who"
+    },
+    "who.her": {
+      "type": "dialogue",
+      "speaker": "THE OTHER DOOR",
+      "lines": [
+        {
+          "who": "me",
+          "text": "...Sarah?",
+          "id": "who.her.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "The shape does not answer and does not move and goes on holding the door, and you will spend the rest of your life deciding whether that was a kindness or whether there was simply nothing there to answer with.",
+          "id": "who.her.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "You said her name in a room with nobody in it, hours ago, and something wrote it down. This is the first time all night anything has done something with it other than say it back.",
+          "id": "who.her.line.3"
+        }
+      ],
+      "goto": "out",
+      "id": "who.her"
+    },
+    "who.him": {
+      "type": "dialogue",
+      "speaker": "THE OTHER DOOR",
+      "lines": [
+        {
+          "who": "you",
+          "text": "You did the first four rooms. You never came out.",
+          "id": "who.him.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "You left him in there. You had a way to bring him out and you used it on yourself, and that is not a criticism, it is a fact about a man in a building that was falling down.",
+          "id": "who.him.line.2",
+          "when": "ending.source.rescue"
+        },
+        {
+          "who": "direction",
+          "text": "You never found him. You were in the source and you came back out of it with a way to stop the room rather than a way to lift the man, and you chose the one you could carry.",
+          "id": "who.him.line.3",
+          "when": "ending.source.entered && !ending.source.rescue"
+        },
+        {
+          "who": "direction",
+          "text": "You never went looking for him at all. You knew there had been a last one, and you did the job, which is what anybody would have done and is exactly why it keeps working.",
+          "id": "who.him.line.4",
+          "when": "!ending.source.entered"
+        },
+        {
+          "who": "direction",
+          "text": "The shape holds the door. Whether that is a man returning a favour you did not do him is a question for later, and later is going to be a long time.",
+          "id": "who.him.line.5"
+        }
+      ],
+      "goto": "out",
+      "id": "who.him"
+    },
+    "who.it": {
+      "type": "dialogue",
+      "speaker": "THE OTHER DOOR",
+      "lines": [
+        {
+          "who": "you",
+          "text": "You have been wearing faces all night. Go on. Wear one now.",
+          "id": "who.it.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "It does not. That is what stops you in the doorway with a building coming down behind you: it has had every opportunity, and it is not taking this one.",
+          "id": "who.it.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "It reached you enough times tonight to know exactly which face would work, and it is standing there holding a fire door open with its shoulder like a man waiting for somebody to get a move on.",
+          "id": "who.it.line.3"
+        }
+      ],
+      "goto": "out",
+      "id": "who.it"
+    },
+    "who.nobody": {
+      "type": "dialogue",
+      "speaker": "THE OTHER DOOR",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You do not ask. You have been in this building for eight hours and the one thing it has taught you is that asking is how it gets in.",
+          "id": "who.nobody.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "It could be nobody. A fire door on a failing closer, hanging open in a draught, backlit by a corridor light that has no business still being on.",
+          "id": "who.nobody.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "That is the reading you can live with, and you take it, and you go through, and the shape does not follow you.",
+          "id": "who.nobody.line.3"
+        }
+      ],
+      "goto": "out",
+      "id": "who.nobody"
+    },
+    "out": {
+      "type": "ending",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You come out into the yard. The yard is not there.",
+          "id": "out.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "A clock restarts in front of you: --:--. Further off there is another grey door, exactly like the one you just came out of, and the distance to it is the distance you have just walked.",
+          "id": "out.line.2"
+        },
+        {
+          "who": "recordist",
+          "text": "Ha.",
+          "id": "out.line.3"
+        },
+        {
+          "who": "direction",
+          "text": "The recordist begins to laugh, low, and it does not stop when he stops. The signal has kept a usable reference of him. You did not save him. Somebody saved you.",
+          "id": "out.line.4"
+        },
+        {
+          "who": "you",
+          "text": "I have five clean rooms on a card in a bag and no idea what building they are of.",
+          "id": "out.line.5",
+          "when": "ending.takes.full"
+        },
+        {
+          "who": "direction",
+          "text": "AND THEN THE JOIN IS MISSING.",
+          "id": "out.line.6"
+        },
+        {
+          "who": "direction",
+          "text": "You do not walk to the gate. You do not cross a yard, or find a way round, or wake up. You are at the gate, and there is a bored man in a lit booth with a book, and the last thing you remember is a clock that had no numbers on it.",
+          "id": "out.line.7"
+        },
+        {
+          "who": "direction",
+          "text": "It is possible that hours have gone. It is possible that this is one more layer of a building that has been showing you doors all night. Nobody is going to tell you which, and the man in the booth is going to be entirely normal about it, and that is the part you will think about.",
+          "id": "out.line.8"
+        }
+      ],
+      "id": "out"
+    }
+  }
+}

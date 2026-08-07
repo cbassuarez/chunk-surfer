@@ -164,6 +164,7 @@ export function createHushAudioRuntime({
           blocked: !!ctx.blocked,
           finale: !!ctx.finale,
           battle: !!ctx.battle,
+          zone: ctx.zone ?? null,
         },
         state: mischief,
         now: clock(),

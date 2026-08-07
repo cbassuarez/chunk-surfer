@@ -5,6 +5,7 @@
 // any bank requested by a scene promoted to the front of the queue. Once those
 // authored anchors are resident, one visible material at a time may be
 // re-hallucinated at a performance-gated cadence and crossfaded in world space.
+import { runtimeParams } from '../platform/launch.js';
 import { profileBankRecipes } from '../render/look-profiles.js';
 import { assembleSurfacePrompt, estimateClipTokens, PROMPT_TOKEN_BUDGET } from './prompt-budget.js';
 import {
@@ -24,7 +25,98 @@ const MUTATION_OBSERVE_MS = 2_000;
 const BURST_SIZE = 384;
 const BURST_DEGRADED_SIZE = 320;
 
-export const NO_CHARACTERS = 'person, face, figure, hands, creature, animal, text, watermark, cartoon, bright, fog, smoke';
+export // ── the second lens layer ───────────────────────────────────────────────────
+// DeepDream, run in the sidecar on what the diffuser just produced (see
+// diffusion_server/dream.py). Off unless asked for: with no `dream` key the
+// server takes the path it always took.
+//
+// IT APPLIES TO THE BANKS THEMSELVES, not only to runtime mutations.
+//
+// Dreaming only mutations was the first attempt and it is invisible in practice:
+// the walls a player actually looks at are the authored boot banks, and a
+// mutation swaps one slot every few seconds behind a 48fps gate. You can stand
+// in a room for a minute and see nothing.
+//
+// The reason it was restricted was real, though — boot banks are content
+// addressed and cached to disk, so a dreamed bank written under a plain bank's
+// key would be served back to a client that never asked for one. The fix is to
+// put the settings IN the key (cache_contract.REQUEST_FIELDS), not to avoid the
+// path: now a dream request simply misses cache and generates, and turning it
+// off returns the ordinary banks untouched.
+//
+// THERE IS NO URL UNDER TAURI, which is why the query param alone was never
+// going to work: the desktop shell loads the app without a search string, and
+// runtimeParams() only sets renderer/lens defaults there for exactly that
+// reason. So the setting is read from a query param OR from localStorage, and
+// can be changed live from the console — which is the only control surface a
+// packaged build has before this gets a real settings entry.
+//
+//   ?dream=0.45              gain only              (browser)
+//   ?dream=0.45,faces,4,12   gain, layer, octaves, iterations
+//   __diffusion.setDream('0.45,faces')              (anywhere, live)
+//   __diffusion.setDream(null)                      off
+//
+// Layers, coarse to fine: edges · texture · objects · faces · deep.
+const DREAM_STORAGE_KEY = 'chunk-surfer:dream';
+let dreamState = () => null;
+function currentDream() {
+  if (DREAM_OVERRIDE) return DREAM_OVERRIDE;
+  try { return dreamFromRun(dreamState()); } catch (_) { return null; }
+}
+
+function parseDream(raw) {
+  if (!raw) return null;
+  const [gain, layer, octaves, iterations] = String(raw).split(',');
+  const g = Math.max(0, Math.min(1, Number(gain)));
+  if (!(g > 0)) return null;
+  return {
+    gain: g,
+    layer: layer || 'objects',
+    octaves: Number.isFinite(Number(octaves)) ? Number(octaves) : 3,
+    iterations: Number.isFinite(Number(iterations)) ? Number(iterations) : 10,
+  };
+}
+
+// THE RUN DRIVES IT. A global knob meant 0/5 takes looked like 5/5 and a coffee
+// run looked like a sober one, which is the opposite of what the feature is for:
+// the building gets to you as you work it, and the drug is not cosmetic.
+//
+// 0/5 sends NO dream key at all rather than gain 0 — that keeps the cache key
+// identical to an ordinary run, so a player who has recorded nothing reuses the
+// plain cached banks instead of regenerating a whole set that renders the same.
+const DREAM_BY_TAKES = [0.00, 0.12, 0.24, 0.40, 0.60, 0.85];
+// One step deeper into the network when the coffee is in him. See DREAM_LAYERS
+// in diffusion_server/dream.py: coarse to fine, objects -> faces is structure
+// giving way to anatomy.
+const DREAM_LAYER_LADDER = ['edges', 'texture', 'objects', 'faces', 'deep'];
+
+function dreamFromRun(state) {
+  const takes = Math.max(0, Math.min(5, Math.floor(Number(state?.takes) || 0)));
+  const gain = DREAM_BY_TAKES[takes];
+  if (!(gain > 0)) return null;
+  const drugged = !!state?.drankCoffee;
+  const layer = DREAM_LAYER_LADDER[Math.min(
+    DREAM_LAYER_LADDER.length - 1,
+    DREAM_LAYER_LADDER.indexOf('objects') + (drugged ? 1 : 0),
+  )];
+  return {
+    gain: Math.min(1, gain * (drugged ? 1.6 : 1)),
+    layer,
+    octaves: 3,
+    iterations: drugged ? 12 : 10,
+  };
+}
+
+// The manual override, which wins when set. It is the only control surface a
+// packaged Tauri build has, because there is no URL to put a query param on.
+let DREAM_OVERRIDE = (() => {
+  let raw = '';
+  try { raw = runtimeParams().get('dream') || ''; } catch (_) { /* no url */ }
+  if (!raw) { try { raw = globalThis.localStorage?.getItem(DREAM_STORAGE_KEY) || ''; } catch (_) {} }
+  return parseDream(raw);
+})();
+
+const NO_CHARACTERS = 'person, face, figure, hands, creature, animal, text, watermark, cartoon, bright, fog, smoke';
 
 export const SURFACE_NAMES = Object.freeze([
   'reclaimed brick wall', 'split-face stone wall', 'ash wood floor', 'quartzite floor',
@@ -200,8 +292,12 @@ export function surfaceDiffusionStart({
   applyBurst = null,
   profiles = profileBankRecipes(),
   onStatus = () => {},
+  // Takes recorded and whether he drank the coffee. Supplied by the caller so
+  // this module never reaches into game state itself.
+  dreamState: dreamStateProvider = null,
 }) {
   if (profiles.length !== 6) throw new Error('critical diffusion requires exactly six authored profiles');
+  if (typeof dreamStateProvider === 'function') dreamState = dreamStateProvider;
   const criticalBank = profiles[0]?.bankId;
   if (!criticalBank) throw new Error('critical diffusion requires a boot material bank');
   const total = profiles.length * SURFACE_NAMES.length;
@@ -212,6 +308,9 @@ export function surfaceDiffusionStart({
     criticalCompleted: 0, criticalReady: false,
     mutationsGenerated: 0, mutationsAccepted: 0, mutationsRejected: 0,
     mutationState: 'waiting', mutationDisabled: null, nextMutationAt: null,
+    // What the second lens layer is actually doing, so a quiet feature can be
+    // diagnosed from window.__diffusion.stats instead of by staring at a wall.
+    dream: null,   // filled per request; see currentDream()
   };
   const banks = new Map();
   let endpoint = url;
@@ -382,6 +481,7 @@ export function surfaceDiffusionStart({
       size: 512, cacheSchema: CACHE_SCHEMA,
       depthScale: depth ? 0.55 : undefined,
       depthSha256: depth ? heightSha256 : undefined,
+      dream: currentDream() || undefined,
     }));
     sentAt = performance.now();
     socket.send(packL2(payload, depth)); stats.framesOut += 1;
@@ -646,6 +746,7 @@ export function surfaceDiffusionStart({
           strength: recipe.strength, passes: 2, guidance: recipe.guidance,
           seedMode: 'walk', seed: (burstSerial * 7919) % 2_000_000_000,
           size, depthScale: recipe.depthScale ?? 0.6,
+          dream: currentDream() || undefined,
         }));
         sentAt = performance.now();
         socket.send(packL2(shot.frame, shot.depth));
@@ -836,6 +937,23 @@ export function surfaceDiffusionStart({
     bursting() { return burstUntil > performance.now(); },
     clampFrames(max) { frameCeiling = Math.max(1, Math.min(5, Math.floor(Number(max) || 5))); },
     setMoving() {}, nudge() {}, resetFeedback() {},
+    // Live, because a packaged build has no URL and no settings entry yet. It
+    // takes effect on the next request; call retry() to re-pull the banks.
+    setDream(spec) {
+      DREAM_OVERRIDE = typeof spec === 'string' || spec == null ? parseDream(spec) : spec;
+      try {
+        if (DREAM_OVERRIDE) globalThis.localStorage?.setItem(DREAM_STORAGE_KEY, `${DREAM_OVERRIDE.gain},${DREAM_OVERRIDE.layer},${DREAM_OVERRIDE.octaves},${DREAM_OVERRIDE.iterations}`);
+        else globalThis.localStorage?.removeItem(DREAM_STORAGE_KEY);
+      } catch (_) {}
+      return this.dream();
+    },
+    // What the next request will actually carry, override or not. The honest
+    // answer to "is this on", which stats alone could not give.
+    dream() {
+      const resolved = currentDream();
+      stats.dream = resolved ? { ...resolved, source: DREAM_OVERRIDE ? 'override' : 'run' } : null;
+      return stats.dream;
+    },
     stop() {
       stopped = true; sequence += 1;
       if (reconnectTimer != null) clearTimeout(reconnectTimer);

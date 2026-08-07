@@ -15,8 +15,8 @@ import {
 } from '../src/game/combat-state.js';
 import { runtimeBattle } from '../src/narrative/runtime-content.js';
 import { validateNarrativeDocument } from '../src/narrative/contracts.js';
-import { endingChoice, guardEpilogue } from '../src/data/conservatory-script.js';
-import { surfacedEnding } from '../src/data/chunk-surf-script.js';
+import { endingChoice } from '../src/data/conservatory-script.js';
+import { readFileSync } from 'node:fs';
 
 test('all 13 authored battle documents use combat metadata and contain no redaction challenges', async () => {
   const files = (await readdir('content/narrative')).filter((name) => /^battle\..*\.story\.json$/.test(name));
@@ -100,7 +100,17 @@ test('finale choice tree consumes combat-derived route availability without expo
 });
 
 test('surfaced ending and epilogue still acknowledge the recovered recordist', () => {
-  const ending = surfacedEnding({ sourceReading: { text: 'BODY BORROWED RETURN' } });
-  assert.ok(ending.some((line) => /BODY BORROWED RETURN/.test(line.text)));
-  assert.ok(guardEpilogue('surfaced').some((line) => /Two of you/.test(line.text)));
+  // surfacedEnding() was a JS function in data/chunk-surf-script.js and is now an
+  // authored document, so this reads the document. The guarantee is unchanged: the
+  // source reading he came back with is interpolated into the ending, and the gate
+  // scene counts two people.
+  const doc = JSON.parse(readFileSync('content/narrative/ending.surfaced.story.json', 'utf8'));
+  const lines = Object.values(doc.nodes).flatMap((node) => node.lines || []);
+  assert.ok(lines.some((line) => /\{source\}/.test(line.text)),
+    'the ending still quotes the source reading he came back with');
+  assert.ok(lines.some((line) => /recordist/i.test(line.who)),
+    'and the man being carried actually speaks in it');
+  const coda = JSON.parse(readFileSync('content/narrative/ending.epilogue.surfaced.story.json', 'utf8'));
+  const codaLines = Object.values(coda.nodes).flatMap((node) => node.lines || []);
+  assert.ok(codaLines.some((line) => /Two of you/.test(line.text)), 'the gate counts two people');
 });

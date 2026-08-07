@@ -1,4 +1,7 @@
 import { ENDING_IDS } from './schema.js';
+import { lastReturnRecord } from './return-history.js';
+import { secondShiftForEnding } from '../game/second-shift.js';
+import { normalizeInterferenceRecord } from '../game/interference-case.js';
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
@@ -17,13 +20,24 @@ export function returnDefinition(id) {
 export function returnIndexEntries(meta) {
   const seen = new Set((meta?.endingsSeen || []).filter((id) => ENDING_IDS.includes(id)));
   const revealClassifications = seen.size >= 2;
-  return RETURN_DEFS.map((def) => ({
-    ...def,
-    seen: seen.has(def.id),
-    displayTitle: seen.has(def.id) ? def.title : '████████████',
-    displayClassification: seen.has(def.id) || revealClassifications ? def.classification : '',
-    status: seen.has(def.id) ? 'FILED' : 'WITHHELD',
-  }));
+  const last = lastReturnRecord(meta);
+  const shift = secondShiftForEnding(last?.endingId);
+  const records = Object.values(meta?.returns?.records || {})
+    .filter((entry) => entry && typeof entry === 'object')
+    .sort((a, b) => (Number(b.completedAt) || 0) - (Number(a.completedAt) || 0));
+  return RETURN_DEFS.map((def) => {
+    const filed = records.find((entry) => entry.endingId === def.id);
+    return {
+      ...def,
+      seen: seen.has(def.id),
+      adjacent: !seen.has(def.id) && shift?.adjacentEndingId === def.id,
+      adjacentLead: shift?.adjacentEndingId === def.id ? shift.lead : '',
+      displayTitle: seen.has(def.id) ? def.title : '████████████',
+      displayClassification: seen.has(def.id) || revealClassifications || shift?.adjacentEndingId === def.id ? def.classification : '',
+      status: seen.has(def.id) ? 'FILED' : shift?.adjacentEndingId === def.id ? 'LEAD' : 'WITHHELD',
+      interference: normalizeInterferenceRecord(filed?.interference),
+    };
+  });
 }
 
 export function buildRunSummary({ endingId, save, meta, authoritative = {}, now = Date.now() } = {}) {
@@ -70,6 +84,7 @@ export function buildRunSummary({ endingId, save, meta, authoritative = {}, now 
       recovered: [...(ledger.equipment?.recovered || [])],
     },
     choices: clone(ledger.choices || {}),
+    interference: normalizeInterferenceRecord(authoritative.interference || run.interference),
     replay: clone(run.replay || {}),
     power: clone(ledger.power || { live: [], everRestored: [] }),
     unlockedAchievements: [],

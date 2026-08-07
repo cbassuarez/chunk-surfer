@@ -64,6 +64,8 @@ export function freshChunkSurfState({
   drankCoffee = false,
   hasRig = false,
   endingsSeen = [],
+  sourceGuidance = false,
+  evidenceTags = [],
   seed = 4417,
   returnPoint = null,
 } = {}) {
@@ -73,7 +75,11 @@ export function freshChunkSurfState({
     completed: false,
     phase: CHUNK_SURF_PHASE.HALL,
     seed: Number(seed) || 4417,
-    profile: chunkSurfRouteProfile({ drankCoffee, hasRig, endingsSeen }),
+    profile: {
+      ...chunkSurfRouteProfile({ drankCoffee, hasRig, endingsSeen }),
+      sourceGuidance: !!sourceGuidance,
+      evidenceTags: unique(evidenceTags),
+    },
     returnPoint: finitePoint(returnPoint),
     hallMaxDistance: 0,
     pageStage: 0,

@@ -10,6 +10,10 @@
       color-scheme: dark;
       background: #020807;
       --critical-bg: #020807;
+      /* Overwritten before first paint by the boot script below, from the
+         player's saved phosphor. The literal here is the amber default so a
+         first run, a cleared profile, or disabled storage still paints. */
+      --critical-fg: #F2A81E;
     }
 
     html,
@@ -19,7 +23,7 @@
       min-width: 100%;
       min-height: 100%;
       background: var(--critical-bg);
-      color: #dce8e5;
+      color: var(--critical-fg);
       overflow: hidden;
     }
 
@@ -63,8 +67,8 @@
       inset: 0;
       display: grid;
       place-items: center;
-      background: #020807;
-      color: #dce8e5;
+      background: var(--critical-bg);
+      color: var(--critical-fg);
       font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       letter-spacing: 0.08em;
       text-align: center;
@@ -74,6 +78,36 @@
   <script>
     (function () {
       var root = document.documentElement;
+
+      // THE LOADING SCREEN BELONGS TO THE PLAYER'S PHOSPHOR TOO.
+      //
+      // Everything after boot resolves colour through render/palette.js, but
+      // this paints before any module has loaded, so it had a grey-green
+      // literal baked in and a green-phosphor player was greeted by an amber
+      // machine wearing the wrong colour. Reading the saved setting here is the
+      // only way to have it right on the FIRST frame rather than after the
+      // stylesheet and the renderer arrive.
+      //
+      // These literals mirror palette.js THEMES/FORCED. They are duplicated
+      // knowingly: an import cannot run before first paint. palette.js remains
+      // the source of truth, and a value missing here simply falls back.
+      try {
+        var saved = window.localStorage.getItem('chunk-surfer:settings:v1');
+        var phosphor = saved ? (JSON.parse(saved) || {}).phosphor : null;
+        var LIT = {
+          faithful: '#F2A81E', amber: '#F2A81E', green: '#5BF08A',
+          aqua: '#66FFD4', filterBlue: '#7FD7FF', gold: '#FFE06A',
+          warmWhite: '#EAF8F2', ember: '#FF6A38', cyan: '#59E7E7'
+        };
+        if (typeof phosphor === 'string' && phosphor) {
+          // Named theme, or the custom hex the setting also accepts.
+          var lit = LIT[phosphor] || (/^#[0-9a-fA-F]{3,8}$/.test(phosphor) ? phosphor : null);
+          if (lit) root.style.setProperty('--critical-fg', lit);
+        }
+      } catch (_) {
+        // Private mode, disabled storage, corrupt JSON: keep the default.
+      }
+
       var sheet = document.getElementById('mainStyles');
       var marked = false;
       function markStylesReady() {
@@ -115,6 +149,6 @@
   <div id="hushJump"></div>
 </div>
 
-<script type="module" src="./src/main.js?v=20260710vfd2"></script>
+<script type="module" src="./src/main.js?v=20260803focus1"></script>
 </body>
 </html>

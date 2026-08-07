@@ -6,6 +6,22 @@ precision highp float;
 uniform sampler2D uSrc;
 uniform sampler2D uDepth;
 uniform sampler2D uPrev;
+uniform sampler2D uNoise;
+uniform vec2 uNoiseSize;
+uniform float uBlackPoint;
+uniform float uWhitePoint;
+uniform float uToneGamma;
+uniform float uLineAmount;
+uniform float uToneAmount;
+// The engraving, written beside the scene by the raymarch (see oMark in r3d.js).
+// R density, GB the coherence-weighted doubled-angle grain, A coherence.
+// R == 0 means no engraving for this fragment — sky, or a material slot whose
+// tiles have not been derived yet — and the procedural hash draws it instead.
+uniform sampler2D uMarks;
+uniform float uMarkDensityGain;
+// How hard the engraving follows the grain. 0 is the isotropic hash that
+// shipped, which makes it the A/B (see __probe.markGrain).
+uniform float uMarkGrainGain;
 uniform vec2 uRes;
 uniform vec3 uCam;
 uniform float uYaw;
@@ -48,12 +64,58 @@ uniform float uMovement;
 // is composed before this pass, but its Photoshop-style emissive result must
 // be restored after the one-bit recorder has encoded the rest of the world.
 uniform vec4 uHushBodyPost;
+// THE SCREEN. Which shape a mark is allowed to be — see pixel-mesh/screens.js,
+// which owns the catalogue and the CPU mirror these are tested against.
+// 0 stochastic (the isolated dots this shipped with), 1 hatch, 2 cross-hatch.
+uniform int uScreenKind;
+// Stroke period in SCREEN PIXELS, not world units. That is the whole reason
+// hatching survives distance: a world-space period mips down into the dust it
+// was meant to replace, so the frequency belongs to the plate while the
+// DIRECTION still comes from the world.
+uniform float uScreenPeriodPx;
+// Radians added to the grain direction for the three cross-hatch layers.
+uniform vec3 uScreenAngles;
+// The tone at which the second and third layers arrive. White line on a black
+// ground, so extra directions are extra LIGHT and come in as it brightens.
+uniform vec2 uScreenBands;
+uniform float uScreenSharpness;
+uniform float uScreenGrainFollow;
+uniform float uScreenJitter;
 out vec4 o;
 
 float hash21(vec2 p){
   p = fract(p * vec2(123.34, 345.45));
   p += dot(p, p + 34.345);
   return fract(p.x * p.y);
+}
+
+// THE MASK THE PICTURE IS MEASURED AGAINST.
+//
+// bayer4 below is a 4x4 ORDERED matrix: sixteen levels, repeating every four
+// cells. That periodicity is the square plaid on every flat wall, and it is not
+// in the signal — it is in the ruler. Blue noise has the same average density
+// with no periodic structure at any scale the eye integrates, so the dots stay
+// evenly spread at every threshold instead of snapping to a grid.
+// See tools/chunk_surfer/build-blue-noise.mjs for how the mask is built.
+float blueNoise(vec2 cellId){
+  return texture(uNoise, (cellId + 0.5) / uNoiseSize).r;
+}
+
+// LEVELS, WHICH IS THE STAGE THAT WAS MISSING.
+//
+// Everything downstream was being handed a signal that peaked around 0.28
+// against a threshold of 0.78, so nothing was ever selected and a room rendered
+// as sparse dust. There was no black point, no white point and no curve — only
+// a sliding cut point pretending to be one.
+//
+// Solid black and solid white have to be REACHABLE for a one-bit image to read
+// as an engraving rather than as static; the midtones are what the dither is
+// for. Authored per look profile, so calm becomes low-contrast-with-full-range
+// instead of no-signal.
+float levels(float v){
+  float lo = min(uBlackPoint, uWhitePoint - 0.001);
+  float t = clamp((v - lo) / max(1e-4, uWhitePoint - lo), 0.0, 1.0);
+  return pow(t, max(0.05, uToneGamma));
 }
 
 float bayer4(ivec2 p){
@@ -91,7 +153,113 @@ vec3 reconstructWorldMetres(vec2 frag, float packedDepth){
   return (uCam + rd * gridDistance) * uCellMeters;
 }
 
-float formStipple(vec3 worldMetres, float irregularity){
+// The density argument is the generated material's own local contrast, 0
+// where there is no engraving. It biases WHERE MARKS CLOT: a busy patch of
+// material pulls the threshold down and resolves into more marks, a smooth one
+// pushes it up and opens out. Measured across the six banks, this is where the
+// lens actually differs from itself — calm sits near 0.05 local contrast and
+// rupture near 0.14, a 191% spread — so it is the channel that makes a
+// profile's material legible as marks rather than as colour nobody ever sees.
+// LIFT THE TILE-SPACE LINE FIELD INTO THE WORLD, AFTER FILTERING.
+//
+// The mark buffer stores the grain as a doubled-angle vector in the surface's
+// own UV plane, with alpha naming which of the three axis-aligned planes that
+// is (see gMarkPlane in r3d.js). Decoding is deliberately done HERE, per
+// fragment, and not at the write: the doubled angle is the only encoding that
+// survives bilinear interpolation, because averaging two perpendicular grains
+// cancels to "uncertain" instead of to a confident perpendicular average. A
+// world-space direction vector written into the buffer would be filtered as a
+// vector and lose exactly that property.
+//
+// The half-angle is taken without atan. sqrt of the half-angle identities is
+// both cheaper and branch-free, and it always returns cos(phi) >= 0, which is a
+// canonical sign rather than an arbitrary one.
+//
+// The sign it picks still flips where the doubled angle crosses 180 degrees,
+// and that is FINE, which is the whole reason this works: the warp below uses
+// the direction only through dot(p,d)*d, so d and -d give an identical result.
+// A line field is what the material has; a line field is all it needs.
+//
+// Returns the world grain scaled by its coherence, so an isotropic surface
+// returns something short and warps by nothing.
+vec3 markGrainWorld(vec4 markSample){
+  vec2 doubled = markSample.gb * 2.0 - 1.0;
+  float coherence = length(doubled);
+  if(coherence < 0.004) return vec3(0.0);
+  vec2 u = doubled / coherence;
+  float c = sqrt(max(0.0, 0.5 * (1.0 + u.x)));
+  float sn = sqrt(max(0.0, 0.5 * (1.0 - u.x)));
+  if(u.y < 0.0) sn = -sn;
+  // Must mirror surfaceUv in r3d.js: 0 = XZ, 0.5 = ZY, 1 = XY.
+  float plane = markSample.a;
+  vec3 dir = plane < 0.25 ? vec3(c, 0.0, sn)
+           : plane < 0.75 ? vec3(0.0, sn, c)
+                          : vec3(c, sn, 0.0);
+  return dir * min(coherence, 1.0);
+}
+
+// THE GRAIN, BROUGHT ONTO THE PLATE.
+//
+// The stroke frequency has to live in screen space or it mips into dust, but the
+// stroke DIRECTION has to come from the world or the hatching stops describing
+// anything. Both at once needs the world grain expressed as a screen vector, and
+// that does not need a matrix: dFdx/dFdy of the reconstructed world position ARE
+// the screen-to-world Jacobian, so projecting the grain onto them maps it back.
+//
+// Degenerate cases — no grain, or a surface edge-on where the derivatives blow
+// up — return the fixed plate angle instead, the same way the markSample.r
+// sentinel already falls back for density.
+vec2 grainToScreen(vec3 grain, vec3 worldMetres, float fallbackAngle){
+  vec2 plate = vec2(cos(fallbackAngle), sin(fallbackAngle));
+  if(length(grain) < 0.004) return plate;
+  vec3 dWdx = dFdx(worldMetres), dWdy = dFdy(worldMetres);
+  vec2 dir = vec2(dot(grain, dWdx), dot(grain, dWdy));
+  float len = length(dir);
+  if(len < 1e-6) return plate;
+  // Coherence rides in the grain's length; a weakly directional surface should
+  // drift back to the plate angle rather than follow a direction it barely has.
+  float follow = clamp(uScreenGrainFollow * min(1.0, length(grain)), 0.0, 1.0);
+  return normalize(mix(plate, dir / len, follow));
+}
+
+// Distance ACROSS a stroke: 0 on the line, 1 midway between lines. Wrapped, so
+// there is no seam, and sign-invariant, which matters because the grain is a
+// LINE field — its direction is only defined up to a flip.
+float strokeDistance(vec2 fragPx, vec2 dir, float periodPx, float phase){
+  vec2 n = vec2(-dir.y, dir.x);
+  float p = dot(fragPx, n) / max(2.0, periodPx) + phase;
+  return abs(fract(p + 0.5) - 0.5) * 2.0;
+}
+
+vec2 rotateDir(vec2 d, float a){
+  float c = cos(a), s = sin(a);
+  return vec2(d.x * c - d.y * s, d.x * s + d.y * c);
+}
+
+// The screen. Mirrored on the CPU in pixel-mesh/screens.js, which is where the
+// stroke morphology is actually tested.
+float screenThreshold(vec2 fragPx, vec2 dir, float tone, float jitterValue, float stochastic){
+  if(uScreenKind == 0) return stochastic;
+  float phase = (jitterValue - 0.5) * uScreenJitter;
+  float t = pow(strokeDistance(fragPx, rotateDir(dir, uScreenAngles.x), uScreenPeriodPx, phase),
+                max(0.05, uScreenSharpness));
+  if(uScreenKind == 2){
+    // White line on a black ground: extra directions are extra LIGHT, so they
+    // arrive as the surface brightens. min() because a fragment near any active
+    // stroke is lit.
+    if(tone >= uScreenBands.x){
+      t = min(t, pow(strokeDistance(fragPx, rotateDir(dir, uScreenAngles.y), uScreenPeriodPx, phase),
+                     max(0.05, uScreenSharpness)));
+    }
+    if(tone >= uScreenBands.y){
+      t = min(t, pow(strokeDistance(fragPx, rotateDir(dir, uScreenAngles.z), uScreenPeriodPx, phase),
+                     max(0.05, uScreenSharpness)));
+    }
+  }
+  return clamp(t, 0.0, 1.0);
+}
+
+float formStipple(vec3 worldMetres, float irregularity, float density, vec3 grain){
   // Aperiodic samples are pinned to the surface, but they are only consulted
   // in the narrow half-tone region below. There is no material-wide dot,
   // hatch or Bayer screen to turn plaster and boards into diamond plate. A 3D
@@ -99,6 +267,23 @@ float formStipple(vec3 worldMetres, float irregularity){
   // normal, which used to flip at grazing angles as the player turned.
   float scale = max(12.0, uRecordingPatternScale);
   vec3 finePosition = worldMetres * scale;
+  // FOLLOW THE GRAIN. Compressing the sample key along the grain direction makes
+  // the hash cells longer that way, so marks elongate ALONG the floorboard
+  // instead of sitting on it as isotropic gravel. This is the half of the
+  // engraving the density term could not reach: density decides where marks
+  // clot, direction decides what they look like once they do.
+  //
+  // Sign-invariant by construction — d appears only as dot(p,d)*d — so the
+  // decoded direction's arbitrary sign cannot show up as a seam.
+  float grainStrength = length(grain);
+  if(grainStrength > 0.004){
+    vec3 d = grain / grainStrength;
+    // Negative: k < 0 stretches the feature along d. Clamped well clear of -1,
+    // where the coordinate would collapse and the whole surface would smear
+    // into a single streak.
+    float k = -clamp(uMarkGrainGain * grainStrength, 0.0, 0.82);
+    finePosition += d * dot(finePosition, d) * k;
+  }
   // Select an isotropic world-space mip from the largest pixel footprint.
   // This removes oblique-angle moire without rotating the mark field toward
   // either the camera or a privileged wall axis.
@@ -111,7 +296,11 @@ float formStipple(vec3 worldMetres, float irregularity){
   float fine = mix(recordingHash3(fineCellA), recordingHash3(fineCellB), fract(lod));
   vec3 broadCell = floor(finePosition * 0.173) + vec3(11.0, 29.0, 43.0);
   float broad = recordingHash3(broadCell);
-  return mix(fine, mix(fine, broad, 0.22), clamp(irregularity, 0.0, 1.0));
+  float threshold = mix(fine, mix(fine, broad, 0.22), clamp(irregularity, 0.0, 1.0));
+  // Pivot at the quiet end of the measured range so calm reads close to the
+  // procedural behaviour that shipped, and the louder banks earn their extra
+  // marks rather than the whole building drifting darker.
+  return clamp(threshold - (density - 0.22) * uMarkDensityGain, 0.0, 1.0);
 }
 
 // The acquisition clock deliberately advances in held phases. Smear crossfades
@@ -177,6 +366,24 @@ vec3 hushColorDodge(vec3 base,vec3 layer){
 void main(){
   vec2 frag = gl_FragCoord.xy;
   vec2 fullUv = clamp(frag / uRes, vec2(0.001), vec2(0.999));
+  // The world, the engraving and the direction the strokes will run, read once
+  // and shared. These used to be reconstructed further down, beside the capture
+  // pass that first needed them; the halftone needs the same direction, and two
+  // passes disagreeing about which way a mark points is how you get a hatch
+  // crossed with a stipple.
+  float packedDepth = texture(uDepth, fullUv).a;
+  vec3 worldMetres = reconstructWorldMetres(frag, packedDepth);
+  vec4 markSample = texture(uMarks, fullUv);
+  // R == 0 is the sentinel. Passing the pivot through leaves the threshold
+  // exactly as the hash produced it, so an underived slot is not a darker or
+  // lighter wall — it is the wall this game already drew.
+  float markDensity = markSample.r > 0.0 ? markSample.r : 0.22;
+  // The same sentinel governs direction: an underived slot has no grain either,
+  // and must warp by nothing rather than by whatever zero decodes to.
+  vec3 markGrain = markSample.r > 0.0 ? markGrainWorld(markSample) : vec3(0.0);
+  // A fixed plate angle for anything with no grain of its own, offset per screen
+  // cell so an entire untextured wall does not become one continuous comb.
+  vec2 screenDir = grainToScreen(markGrain, worldMetres, 0.6283);
   float cell = max(1.0, uCellPx);
   vec2 cellId = floor(frag / cell);
   vec2 cellCenter = (cellId + 0.5) * cell;
@@ -186,6 +393,10 @@ void main(){
   vec4 srcCell = texture(uSrc, cellUv);
   vec3 c = srcFull.rgb;
   float y = luma(srcCell.rgb);
+  // TONE FIRST, and it has to be first: the picture is the leveled luminance and
+  // everything downstream — material excitation, the halftone, the ink pair — is
+  // a modulation of it rather than a replacement for it.
+  float tone = levels(y);
 
   vec2 texel = 1.0 / uRes;
   vec4 sx0 = texture(uSrc, cellUv - vec2(texel.x * cell * 0.45, 0.0));
@@ -205,7 +416,10 @@ void main(){
 
   // Bright material and structural discontinuities excite the tube. Global
   // story pressure changes gain, but generated-material strength never does.
-  float materialSignal = smoothstep(0.18, 0.82, y) * 0.48;
+  // The 0.48 ceiling and the calm 0.58 multiplier below used to stop the tube
+  // blowing out. The levels curve owns that job now, so the material is allowed
+  // to reach the top of the range and the picture can contain white.
+  float materialSignal = tone;
   float excitation = clamp(max(edge, materialSignal) * (0.58 + eventSignal * 0.72)
     + eventSignal * 0.16, 0.0, 1.0);
   // A boiling world excites the tube. Surfaces that are churning glow rather
@@ -234,10 +448,21 @@ void main(){
     uRecordingScenePinning,
     uRecordingTemporalSmear
   );
+  // Blue noise carries the tonal fields; the ordered matrix is kept where the
+  // scene has a hard edge, because the shader's own note is right that ordered
+  // structure is what keeps architectural lines coherent. The organic term still rides
+  // on top as the acquisition's own unevenness.
+  // The screen decides the shape of a mark; the ordered matrix is still kept at
+  // hard edges, because the note above is right that ordered structure is what
+  // holds an architectural line together, and a hatch running along a wall does
+  // nothing for the wall's corner.
+  float screenMask = screenThreshold(frag, screenDir, clamp(y, 0.0, 1.0),
+    hash21(cellId * 0.317), blueNoise(cellId));
+  float maskThreshold = mix(screenMask, ordered, clamp(edge, 0.0, 1.0));
   float threshold = mix(
-    ordered,
+    maskThreshold,
     organic,
-    clamp(uRecordingIrregularity, 0.0, 1.0)
+    clamp(uRecordingIrregularity, 0.0, 1.0) * 0.5
   );
   float midtone =
     smoothstep(0.08, 0.45, y) *
@@ -258,9 +483,31 @@ void main(){
     (0.30 + 0.50 * midtone + 0.20 * edge);
   float recordedSignal = clamp(signalLevel + instability, 0.0, 1.25);
 
-  float coverageThreshold = mix(0.92, 0.20, clamp(uCoverage, 0.0, 1.0));
-  float selected = smoothstep(coverageThreshold - 0.10, coverageThreshold + 0.10, recordedSignal);
-  selected *= step(threshold, clamp(recordedSignal * (0.72 + uCoverage * 0.62), 0.0, 1.0));
+  // THE HALFTONE. A cell is on when the toned luminance beats the mask at that
+  // cell — that is the whole picture, and it is what gives solid blacks, solid
+  // whites and a dithered middle. uCoverage biases the exposure rather than
+  // gating the signal out of existence.
+  //
+  // IT USED TO GATE IT OUT OF EXISTENCE. As a straight addition, a coverage
+  // under 0.5 subtracts a CONSTANT — and a constant subtraction is a hard floor.
+  // calm (coverage .20) took 0.105 off every fragment, so nothing below y=0.037
+  // could ever select a cell; the get-in's walls sit at ambient .028 and were
+  // arithmetically incapable of a halftone. Measured: ~90% pure black, ~10% pure
+  // white, every intermediate bucket empty. Sparse dust, exactly as the levels()
+  // comment above warns.
+  //
+  // So the bias compresses toward the ends instead of translating through them.
+  // Negative scales toward black and positive lifts toward white, both
+  // proportionally, so a dim room keeps its ordering and its texture and neither
+  // end can push a fragment past the limit it is heading for.
+  float coverageBias = (clamp(uCoverage, 0.0, 1.0) - 0.5) * 0.35;
+  float exposure = coverageBias >= 0.0
+    ? tone + coverageBias * (1.0 - tone)
+    : tone * (1.0 + coverageBias * 2.0);
+  // The tube lifts it: excitation and phosphor memory push cells on early, so
+  // fear, audio and a boiling surface still read, and persistence still smears.
+  float lift = clamp(recordedSignal, 0.0, 1.25) * 0.45;
+  float selected = step(threshold, clamp(exposure + lift, 0.0, 1.0));
 
   vec2 local = fract(frag / cell) - 0.5;
   vec2 apertureScale = vec2(0.94, mix(0.62, 0.88, clamp(uAperture, 0.0, 1.0)));
@@ -308,11 +555,49 @@ void main(){
   paletted = clamp(paletted + sceneChroma * clamp(uPaletteChroma, 0.0, 0.6), 0.0, 1.0);
   vec3 encodedScene = mix(c, paletted, clamp(uPaletteAmount, 0.0, 1.0));
   vec3 finalColor = mix(encodedScene, phosphor, replaceAmount);
+
+  // ── TWO-TONE ───────────────────────────────────────────────────────────────
+  //
+  // THE HALFTONE HAS TO BE THE IMAGE. Everything above composites phosphor dots
+  // over a scene that is 78-94% raw PBR (uPaletteAmount runs 0.06..0.22), which
+  // is why a one-bit look was arithmetically unreachable no matter how good the
+  // threshold got: the dither was an overlay on a colour render, not the render.
+  //
+  // An engraving is two colours and a mask deciding between them. That is this:
+  // the ink pair comes from the palette that already exists, selected is the
+  // halftone built from levels + blue noise above, and the tube still speaks —
+  // excited cells take phosphor, faults take amber, so fear, audio, persistence
+  // and the boil all survive into a two-tone frame.
+  //
+  // uToneAmount is the commitment. At 0 this is exactly the composite that
+  // shipped; at 1 it is the engraving. Authored per look profile so the choice
+  // stays visible rather than buried in a shader.
+  vec3 inkDarkTone = palWorldDark();
+  vec3 inkLightTone = mix(palWorldMid(), palCream(), clamp(tone, 0.0, 1.0));
+  vec3 engraved = mix(inkDarkTone, inkLightTone, selected);
+  engraved = mix(engraved, phosphor, replaceAmount);
+  engraved = mix(engraved, palAmber(), fault);
+  // The scene's own chroma is allowed to bend the ink, so a boiling material is
+  // not flattened into pure monochrome and the generated colour still reads.
+  engraved = clamp(engraved + sceneChroma * clamp(uPaletteChroma, 0.0, 0.6) * 0.5, 0.0, 1.0);
+  finalColor = mix(finalColor, engraved, clamp(uToneAmount, 0.0, 1.0));
+  // THE LINE PASS. In every reference for this look, geometry is carried by
+  // crisp UNDITHERED contours and the dithered field only carries tone. That
+  // division is most of what separates an engraving from static: once the lines
+  // hold the structure, the fields are free to go quiet.
+  //
+  // Undithered on purpose. It is drawn from the same luma+depth discontinuity
+  // the threshold already uses, so it lands exactly on the silhouettes, and it
+  // picks black or white by what it sits on so a contour never disappears into
+  // the tone behind it.
+  float line = smoothstep(0.30, 0.72, edge) * clamp(uLineAmount, 0.0, 1.0);
+  vec3 inkDark = palWorldDark();
+  vec3 inkLight = palCream();
+  finalColor = mix(finalColor, tone > 0.5 ? inkDark : inkLight, line);
+
   float glow = (mem * 0.70 + edge * 0.30) * uGlowAmount * (1.0-uReduceFlash*0.68) * mix(1.0,0.78,uMovement);
   finalColor += palCyan() * glow * (0.22 + phosphorMask * 0.78);
 
-  float packedDepth = texture(uDepth, fullUv).a;
-  vec3 worldMetres = reconstructWorldMetres(frag, packedDepth);
   // The underlying PBR light is the form model. Neighbouring luminance gives
   // us a broad exposure volume; the centre sample restores just enough actual
   // material relief for boards, brick and cloth to remain distinct.
@@ -333,7 +618,16 @@ void main(){
   // shadow and strong light become coherent shapes, as in a one-bit engraving,
   // instead of carrying a procedural pattern across every visible surface.
   float halfTone = smoothstep(0.14, 0.76, formTone);
-  float stippleThreshold = formStipple(worldMetres, uRecordingIrregularity);
+  // The stipple is the stochastic screen; a hatch replaces it outright rather
+  // than modulating it, because a stroke crossed with a dot field reads as
+  // neither. Density still shifts the threshold either way, so a louder bank
+  // still earns its extra marks.
+  float stippleThreshold = formStipple(worldMetres, uRecordingIrregularity, markDensity, markGrain);
+  if(uScreenKind != 0){
+    float hatched = screenThreshold(frag, screenDir, halfTone,
+      recordingHash3(floor(worldMetres * 3.1)), stippleThreshold);
+    stippleThreshold = clamp(hatched - (markDensity - 0.22) * uMarkDensityGain, 0.0, 1.0);
+  }
   float captureBit = step(stippleThreshold, halfTone) * hasCapturedLight;
   captureBit = max(captureBit, step(0.82, formTone) * hasCapturedLight);
 

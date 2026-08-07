@@ -133,6 +133,9 @@ export function drawPlaybackOverlay({ snapshot, cols, rows, roomTitle, takeNumbe
   });
   uiText(body.x, infoY + 1, fit(`SEALED PRINT · ${view.printLabel}`, Math.floor(body.w * .62)), 'ui-primary', .72);
   uiText(body.x, infoY + 2, 'IN THE CANS ONLY', 'ui-blue', .72);
+  if(view.tapeDrift>=.18){
+    drawVfdText(body.x,infoY+3,'REF MATCH',{scale:.72,theme:'amber',alpha:.94});
+  }
 
   const meterW = Math.max(10, Math.floor(body.w * .28));
   const meterX = body.x + body.w - meterW;

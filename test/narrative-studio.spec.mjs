@@ -9,7 +9,6 @@ import { reachableNodeIds, validateAudioProject, validateMediaProject, validateN
 import { createCuePlayer } from '../src/audio/cue-player.js';
 import { authoredCue, dispatchAuthoredCue } from '../src/audio/authored-cues.js';
 import { SOUNDTRACK_GAIN, STORY_GAIN_BASELINES } from '../src/audio/story-audio.js';
-import { sacrificeEnding, rescueEnding, helpedEnding, druggedReveal, guardEpilogue } from '../src/data/conservatory-script.js';
 import { authoredCombatProfile } from '../src/data/combat-definitions.js';
 import { validateCombatDefinition } from '../src/game/combat-state.js';
 import { rehydrateBattle, rehydrateTree, runtimeBattle, runtimeCuesForLine, runtimeTree } from '../src/narrative/runtime-content.js';
@@ -185,21 +184,33 @@ assert.match(JSON.stringify(roomRuntime), /The Concert Hall/);
 const readStory = async (id) => JSON.parse(await readFile(`content/narrative/${id}.story.json`, 'utf8'));
 const withoutLineSourceIds = (lines) => lines.map((line) => {
   if (!line || typeof line !== 'object' || Array.isArray(line)) return line;
-  const { sourceId, ...visibleLine } = line;
+  // Semantic transport metadata is intentionally absent from the legacy prose
+  // compatibility builders; compare only the player-facing line contract.
+  const { sourceId, signalRole, ...visibleLine } = line;
   return visibleLine;
 });
 const runtimeStartLines = async (id) => withoutLineSourceIds(rehydrateTree(await readStory(id)).start.lines);
-for (const named of [false, true]) for (const injuries of [0, 2, 5]) {
-  const id = `ending.sacrifice.${named ? 'named' : 'unnamed'}.injuries-${injuries}`;
-  assert.deepEqual(await runtimeStartLines(id), sacrificeEnding({ named, injuries }), id);
-}
-for (const named of [false, true]) {
-  assert.deepEqual(await runtimeStartLines(`ending.rescue.${named ? 'named' : 'unnamed'}`), rescueEnding(named));
-  assert.deepEqual(await runtimeStartLines(`ending.helped.${named ? 'named' : 'unnamed'}`), helpedEnding({ named }));
-}
-assert.deepEqual(await runtimeStartLines('ending.drugged.complete'), druggedReveal({ takes: 5 }));
-assert.deepEqual(await runtimeStartLines('ending.drugged.partial'), druggedReveal({ takes: 4 }));
-for (const variant of ['out', 'client', 'nobody', 'helped', 'drugged']) assert.deepEqual(await runtimeStartLines(`ending.epilogue.${variant}`), guardEpilogue(variant));
+// THE SACRIFICE AND HELPED PARITY CHECKS ARE GONE, ON PURPOSE.
+//
+// This block exists to prove the migration into the studio pipeline did not
+// change a word — it compares each authored document against the legacy JS that
+// used to produce it. That is exactly right for a document that was copied, and
+// it becomes a lock on the door the moment a document is deliberately rewritten.
+//
+// ending.sacrifice and ending.helped are rewritten: twelve files and two files
+// collapsed into one apiece, reading the dossier instead of substituting an
+// ordinal and a name (see data/endings.js). Their legacy functions are dead and
+// have been deleted. Everything still migrated-and-unchanged is still checked.
+// ending.rescue.* and ending.drugged.* have gone the same way as the sacrifice:
+// eighteen authored variant files across the five endings are five conditional
+// documents now, so there is nothing left for a parity check to compare against.
+// The gate epilogues are still a straight migration and are still checked below.
+// The six gate epilogues have gone the same way as the endings themselves: they
+// were migrated faithfully, and then rewritten as proper codas that read the
+// dossier (the RETURNED column is used in four of them now rather than one). The
+// legacy guardEpilogue() is deleted, so there is nothing to compare against and
+// this parity check has done its job. What each coda must still CONTAIN is
+// asserted in test/ending-contract.spec.mjs, against the documents.
 for (const fixture of [
   ['nothing', { kind: 'nothing' }], ['name-sarah', { kind: 'name', value: 'Sarah' }],
   ['reason-money', { kind: 'reason', value: 'money' }], ['feeling', { kind: 'feeling', value: 'dread' }],

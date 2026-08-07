@@ -39,7 +39,7 @@ assert.deepEqual(loaded.meta.endingsSeen, ['sacrifice']);
 assert.equal(loaded.meta.hushMet, true);
 assert.equal(loaded.meta.leftMidRun, true);
 assert.equal(loaded.meta.stats.runsStarted, 3);
-assert.equal(loaded.save.version, 3);
+assert.equal(loaded.save.version, 4);
 assert.equal(loaded.save.flags.prologueDone, true);
 assert.equal(loaded.save.area, 'main_b3');
 assert.deepEqual(loaded.save.takes, ['main_b3']);
@@ -55,7 +55,7 @@ assert.equal(loaded.save.hushAudio, null);
 assert.equal(loaded.save.run.status, 'active');
 assert.equal(loaded.save.run.replay.isReplay, true);
 assert.equal(globalThis.localStorage.getItem('chunk-surfer:meta:v2') != null, true);
-assert.equal(globalThis.localStorage.getItem('chunk-surfer:save:v3') != null, true);
+assert.equal(globalThis.localStorage.getItem('chunk-surfer:save:v4') != null, true);
 
 // Corrupt new-version records repair safely and strip unknown achievements.
 globalThis.localStorage.setItem('chunk-surfer:meta:v2', JSON.stringify({
@@ -63,8 +63,8 @@ globalThis.localStorage.setItem('chunk-surfer:meta:v2', JSON.stringify({
   achievements: { ACH_FIRST_TAKE: { unlockedAt: 1 }, ACH_FAKE: { unlockedAt: 1 } },
   endingsSeen: 'not-an-array',
 }));
-globalThis.localStorage.setItem('chunk-surfer:save:v3', JSON.stringify({
-  version: 3,
+globalThis.localStorage.setItem('chunk-surfer:save:v4', JSON.stringify({
+  version: 4,
   settings: null,
   hushAudio: 'corrupt',
   run: {
@@ -92,7 +92,7 @@ assert.equal(repaired.save.hushAudio, null);
 
 // Bounded semantic HUSH state survives; runtime AudioNodes and buffers never
 // enter the save schema.
-globalThis.localStorage.setItem('chunk-surfer:save:v3', JSON.stringify({
+globalThis.localStorage.setItem('chunk-surfer:save:v4', JSON.stringify({
   ...repaired.save,
   hushAudio: {
     schema: 1,

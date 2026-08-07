@@ -140,6 +140,12 @@ export const NOISE = {
   perInjury: 0.09,       // a limp is loud, and loud is what finds you
   decayPerSec: 0.45,     // how fast the world forgets where you were. Slow
                          // enough that a footfall hangs in the air for a second.
+  // A SPRUNG FLOOR IS A DRUM. The dance wing is laid on battens over a void so
+  // it gives under a dancer, which means it also gives under you, and radiates.
+  // Concrete takes a footfall and keeps it; maple on battens hands it to the
+  // whole room. This is the only surface in the building that makes you louder,
+  // and it is why the wing is the worst place to be found in.
+  sprung: 1.55,
 };
 
 export const WORLD_LAYER = {

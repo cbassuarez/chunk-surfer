@@ -11,7 +11,11 @@ export const ROOMS = {
   main_b3: {
     label: 'studio B3',
     world: 'main_b3',                 // key into MANIFEST.worlds (audio source)
-    roomTone: { character: 0.75 },    // absorbent: foam, carpet, dead air
+    // B3 is one of the dance studios, not a treated live room: sprung maple, a
+    // mirrored wall and 3.6m of air. It sits between the practice wing (1.0) and
+    // the chapel (1.9) — brighter than anything upstairs is small enough to be,
+    // and the reason this room was worth putting on the work order at all.
+    roomTone: { character: 1.6 },
     stabs: 'auto',                    // 'auto' = pick transients from the world
   },
   the_tub: {

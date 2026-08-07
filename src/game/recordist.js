@@ -150,8 +150,13 @@ export function killTorch() { state.light = false; state.battery = 0; }
 
 // A step emits noise at the cell you stepped from. That cell is what the
 // presence investigates — not you. You are only ever where you were.
-export function emitStepNoise(x, y) {
-  const level = (state.slow ? NOISE.slow : NOISE.walk) + noiseFloor();
+// `surface` is a multiplier on the footfall itself, not on the noise floor: a
+// resonant floor makes the STEP loud, it does not make an injury worse. The
+// caller owns it, because the recordist knows what a footfall costs and only the
+// world knows what it is standing on.
+export function emitStepNoise(x, y, surface = 1) {
+  const scale = Number.isFinite(surface) && surface > 0 ? surface : 1;
+  const level = (state.slow ? NOISE.slow : NOISE.walk) * scale + noiseFloor();
   state.noise = Math.max(state.noise, level);
   state.lastNoiseAt = { x, y, t: performance.now() };
   handleRecordingNoise(level, 'you moved');

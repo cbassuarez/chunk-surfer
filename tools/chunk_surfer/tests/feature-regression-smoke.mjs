@@ -600,7 +600,7 @@ try {
     }
   }
   assert.ok(stairPerformance?.samples>=30,'active stair rendering must sustain the feature performance probe');
-  assert.equal(await page.evaluate(()=>window.__probe.godWarpDock()),true,'stair capture exits atomically back into the building');
+  assert.equal(await page.evaluate(()=>window.__probe.godWarpGetIn()),true,'stair capture exits atomically back into the building');
   await page.waitForFunction(()=>window.__probe?.stairAnomaly?.().active===false,{timeout:interactionTimeout});
   assert.equal(await page.evaluate(()=>window.__probe.clearDiagnosticScenes()),true);
   await page.waitForFunction(()=>window.__chunkParity?.().screen==='game',{timeout:interactionTimeout});
@@ -662,7 +662,7 @@ try {
   await page.setViewport(desktopViewport);
   await settleViewport();
 
-  assert.equal(await page.evaluate(()=>window.__probe.godWarpDock()),true,'God warp returns from Source to the loading dock');
+  assert.equal(await page.evaluate(()=>window.__probe.godWarpGetIn()),true,'God warp returns from Source to the get-in');
   await page.waitForFunction(()=>{
     const chunk=window.__probe.chunkSurf();
     const map=window.__probe.map();

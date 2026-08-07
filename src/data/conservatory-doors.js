@@ -3,6 +3,7 @@
 
 export const DOOR_ARCHETYPE = Object.freeze({
   PUBLIC_GLAZED_PAIR: 'public-glazed-pair',
+  BAY_GOODS_PAIR: 'bay-goods-pair',
   HALL_ACOUSTIC_PAIR: 'hall-acoustic-pair',
   CHAPEL_OAK_PAIR: 'chapel-oak-pair',
   PRACTICE_ACOUSTIC_SINGLE: 'practice-acoustic-single',
@@ -19,6 +20,17 @@ export const DOOR_ARCHETYPES = Object.freeze({
     aperture: { width: 1.95, height: 3.4 }, head: 'glazed-transom',
     construction: 'mahogany-glass', openSeconds: 1, closeSeconds: 1,
     closer: 'none', acousticLossDb: 6, mesh: 'door_leaf_public', frameMesh: 'door_frame_pair', headMesh: 'door_head_transom',
+  }),
+  // The bay's goods doors. Three metres of opening, two ribbed steel leaves, and
+  // the only thing in the building wide enough to get a flight case through — in
+  // a bay that has not seen a lorry in years. `services-core` is the key nobody
+  // is issued (see spur-substation), which is how a door says "barred from the
+  // inside" without inventing a lock state for it.
+  [DOOR_ARCHETYPE.BAY_GOODS_PAIR]: Object.freeze({
+    leafCount: 2, activeLeaves: [0, 1], leaf: { width: 1.48, height: 3.05, depth: .07 },
+    aperture: { width: 3.0, height: 3.4 }, head: 'masonry-infill',
+    construction: 'ribbed-galvanised-steel', openSeconds: 1.6, closeSeconds: 2.1,
+    closer: 'none', acousticLossDb: 11, mesh: 'door_leaf_bay_goods', frameMesh: 'door_frame_goods', headMesh: 'door_head_goods',
   }),
   [DOOR_ARCHETYPE.HALL_ACOUSTIC_PAIR]: Object.freeze({
     leafCount: 2, activeLeaves: [0], leaf: { width: 1.02, height: 2.35, depth: .08 },
@@ -107,13 +119,30 @@ export const CONSERVATORY_DOORS = Object.freeze([
   // The old lift landing, in B1's north wall. The master key still turns it, and
   // behind it is the shaft: a pit, no car, and eight metres of nothing overhead.
   D('b1-lift-hatch', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '87,23', { key: 'master', hinge: 'left', swing: 'shaft-in', widthAxis:'x' }),
-  // THE GREY DOOR. The one he came in through, in the yard-facing wall of the
-  // dock, dead centre and directly ahead of where he starts. Closed and keyed to
-  // his own master key, because he locked it behind himself eleven seconds ago.
-  // Nothing is authored on the far side of it: it is a threshold you can stand
-  // in and not pass, which is the point. It does not survive being looked at —
-  // see retireDoor / the post-door beat.
-  D('dock-grey-exterior', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '131,7', { open: false, key: 'master', hinge: 'left', swing: 'escape', widthAxis:'x' }),
+  // THE GREY DOOR. The one he comes in through — the get-in's west wall, facing
+  // the loading bay, dead centre of the bay mouth and directly ahead of where he
+  // starts out on the apron.
+  //
+  // It USED to be the door in a sealed room's north wall with nothing authored
+  // behind it: a threshold you could stand in and not pass. Now the far side is
+  // the bay, and he really does walk through it. Keyed to his own master key,
+  // which is why he can. The closer takes it shut behind him, and after that it
+  // behaves exactly as it always did — he never opens it a second time. Reaching
+  // for it runs the post-door beat and the beat retires it into masonry, so the
+  // bay, the yard and the weather go with it. See retireDoor / postDoorThought.
+  D('dock-grey-exterior', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '115,15', { open: false, key: 'master', hinge: 'left', swing: 'escape', widthAxis:'y' }),
+  // THE GOODS DOORS, which do not open.
+  //
+  // Three metres of the apron's east wall, two rows south of the grey door —
+  // deliberately not adjacent to it, because contiguous door cells compile into
+  // one portal and these are a different door with a different answer.
+  //
+  // `services-core` is the keyring nobody in this building is ever issued (see
+  // spur-substation), so the master key does not turn them and never will. That
+  // is the point: there is no lorry, the bay has not taken a delivery in years,
+  // and the man on foot uses the personnel door beside them. The refusal is in
+  // main.js, and the id is in EXIT_DOOR_IDS so the tutorial-era line plays too.
+  D('bay-goods-pair', DOOR_ARCHETYPE.BAY_GOODS_PAIR, '115,20', { open: false, key: 'services-core', hinge: 'left', swing: 'escape', widthAxis:'y' }),
   D('dock-foyer-service', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '149,27', { open: true, key: 'master', hinge: 'right', swing: 'escape', widthAxis:'y' }),
   D('dock-inner-service', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '131,33', { open: true, key: 'master', hinge: 'left', swing: 'escape' }),
   D('foh-office', DOOR_ARCHETYPE.STAFF_HALF_GLAZED, '179,41', { key: 'master', hinge: 'left', swing: 'office-in', widthAxis:'y' }),

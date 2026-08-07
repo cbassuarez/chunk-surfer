@@ -14,10 +14,12 @@
 // module only owns facing (N/E/S/W) and the camera.
 
 import { assetUrl } from '../platform/paths.js';
-import { CELL, EYE as EYE_METERS, MATERIAL, PLAN_SCALE } from '../data/floorplan/legend.js';
+import { AMBIENT_PLACE_SCALE, CELL, EYE as EYE_METERS, MATERIAL, PLAN_SCALE } from '../data/floorplan/legend.js';
 import * as P3 from './props3d.js';
 import { normalizePixelMeshSettings } from './pixel-mesh/settings.js';
 import { PIXEL_MESH_FRAG } from './pixel-mesh/shader.js';
+import { isScreen, screenUniforms } from './pixel-mesh/screens.js';
+import { MARK_FIELD_SIZE, MARK_FIELD_SOURCE, deriveMarkField } from './mark-field.js';
 import { getLookProfile } from './look-profiles.js';
 import { visualEffectsEnabled } from '../game/access.js';
 
@@ -35,6 +37,20 @@ let localShadowIndex=-1;
 let localShadowLight=null;
 let lightingAmbientColor=new Float32Array([.64,.65,.62]);
 let lightingAmbientIntensity=.022;
+// Scales the look profile's white point to the room actually being stood in. 1
+// is "use the profile as authored"; a dim interior asks for a fraction of it.
+let lightingWhitePointScale=1;
+// The taste dial for the above, so the ceiling can be A/B'd live without a
+// rebuild. 1 = the authored scale, 0 = the flat profile white point this shipped
+// with, which is the before-picture for the whole tone-floor fix.
+let whitePointZoneAmount=1;
+// Set by the sweep dial only; null means the zone decides.
+let whitePointScaleOverride=null;
+// Which screen the room asks for, and the dial that overrules it. Both null mean
+// the look profile decides, which is the ordinary case.
+let lightingScreenId=null;
+let screenOverrideId=null;
+const HUSH_AMBIENT_COLOR=new Float32Array([.26,.76,.54]);
 
 export function r3dSetRenderScale(value = 1) {
   const next = Math.max(0.5, Math.min(1, Number(value) || 1));
@@ -54,12 +70,13 @@ const BIOME_RGB = {
   pulse:     [0.47, 0.53, 0.47],
   resonance: [0.40, 0.53, 0.53],
 };
-// Zone → tint, indexed by the ZONE ids in data/floorplan/legend.js.
-// (none, dock, foyer, studio, natatorium, hall, practice, chapel, plant, stair,
-// source-space, outer chapel, bell tower, academic)
+// Zone → tint, indexed by the ZONE ids in data/floorplan/legend.js. This array
+// is POSITIONAL and must cover every zone: it stopped at 13 (academic) while the
+// enum had already grown to danceStudio and store, so those two sampled off the
+// end of a GLSL array — undefined, and in practice whatever 13 held.
 const ZONE_TINTS = new Float32Array([
   0.60, 0.60, 0.58,   // none
-  0.62, 0.60, 0.55,   // dock: sodium and rust
+  0.46, 0.56, 0.74,   // loading bay: wet tarmac under a cold overcast
   0.72, 0.68, 0.62,   // foyer
   0.67, 0.74, 0.63,   // studio B3
   0.57, 0.69, 0.80,   // natatorium
@@ -72,6 +89,9 @@ const ZONE_TINTS = new Float32Array([
   0.72, 0.75, 0.78,   // outer chapel: colder, lower stone
   0.73, 0.61, 0.42,   // bell tower: timber, bronze and dust
   0.67, 0.70, 0.64,   // academic: cold plaster, oxidised metal, dead planting
+  0.74, 0.70, 0.60,   // dance wing: sprung maple and mirror
+  0.52, 0.50, 0.47,   // prop store: a ceiling you can touch
+  0.62, 0.60, 0.55,   // the get-in: sodium and rust, as the old dock room was
 ]);
 
 const WORLD_RGB = {
@@ -173,8 +193,20 @@ uniform vec2 uTorchCone;
 uniform float uTorchSpill;
 uniform vec3 uAmbientColor;
 uniform float uAmbientIntensity;
+// How much ambient survives at distance, 0..1. Tunable live rather than
+// authored, because how dark the far end of an unlit corridor should be is a
+// judgement nobody can make from the source (see __probe.ambientFloor).
+uniform float uAmbientFloor;
+// Strength of the baked per-cell ambient, 0..1. 0 is the old flat per-zone
+// constant, which makes this the A/B (see __probe.ambientPlace).
+uniform float uAmbientPlace;
+uniform float uHushSense;
 uniform float uOpticalEffects;
 uniform float uReduceMotionOptical;
+// One number per run, so the night is the same night for its whole length and a
+// different one next time. Drives the moon: where it sits, how full it is, and
+// once in a while how close.
+uniform float uNightSeed;
 uniform int uLocalLightCount;
 uniform int uLocalShadowIndex;
 uniform vec4 uLocalLightPos[${MAX_LOCAL_LIGHTS}];
@@ -199,7 +231,20 @@ uniform mat4 uPropShadowMatrix;
 uniform float uPropShadowReady;
 uniform vec2 uPropShadowTexel;
 uniform sampler2D uWaterHeight;
-uniform sampler2DArray uSurfAlbedo, uSurfNormal, uSurfRough, uSurfHeight; // PBR surface layers
+uniform sampler2DArray uSurfAlbedo, uSurfNormal, uSurfMaterial; // PBR: albedo, normal, and (R roughness, G relief)
+// The engraving derived from each generated tile (render/mark-field.js). ONE
+// array, not the live/staged pair the dream layer uses: this pass has exactly
+// one spare texture unit and no more, so the staged bank's marks are folded in
+// behind the live ones at a fixed offset.
+uniform sampler2DArray uSurfMarks;
+// The marks array uses a FIXED per-slot stride so one allocation serves any
+// bank, while the dream array packs at that bank's own frame count. The two
+// layer indices are therefore NOT interchangeable and are computed apart.
+uniform float uMarkStride;        // layers per slot in the marks array
+uniform float uMarksLiveBase;     // first layer of the live half
+uniform float uMarksStageBase;    // ...and of the staged half
+uniform float uMarksReady[10];    // per slot: 1 once every frame of its boil is engraved
+uniform float uMarksReadyNext[10];
 uniform sampler2DArray uSurfDream, uSurfDreamNext;             // current + staged generated albedo
 uniform float uDreamMix[10];
 uniform float uDreamReady;
@@ -216,6 +261,24 @@ uniform float uDreamLumaHi;
 uniform float uDreamLumaHold;     // how hard authored exposure is enforced
 uniform float uAgitation;         // fear + onset: how hard the world is boiling
 float gBoilGlow=0.0;              // self-lit churn, written by surfaceTile
+// The engraving of whatever surface this fragment landed on. R density, GB the
+// coherence-weighted doubled-angle grain, A coherence.
+//
+// R == 0 IS THE SENTINEL for "no engraving here": real material always carries
+// some local contrast, so zero cannot occur naturally. It means sky, or a slot
+// whose tiles are not derived yet, and the recorder falls back to its
+// procedural hash there — exactly the behaviour that shipped before this.
+vec4 gMark=vec4(0.0);
+float gMarkBlend=0.0;
+// WHICH PLANE THE GRAIN LIES IN. The tile UV is axis-aligned (see surfaceUv), so
+// the surface tangent basis is one of exactly three, and naming it is all the
+// recorder needs to lift a 2D tile-space line field into world space. Written
+// beside gMark by architecturalSurface, which is the only place that knows both
+// the surface kind and the normal.
+//   0.0 = XZ (floor, ceiling): u=X v=Z
+//   0.5 = ZY (wall facing X):  u=Z v=Y
+//   1.0 = XY (wall facing Z):  u=X v=Y
+float gMarkPlane=0.0;
 uniform float uDreamRoughnessResponse;
 uniform float uDreamNormalResponse;
 uniform float uLocalDiffusion;
@@ -225,12 +288,14 @@ uniform float uPropNear;
 uniform float uPropFar;
 uniform vec2  uPlanSize;
 uniform vec2  uPlanOrigin;
-uniform float uUsePlan;      // 0 = procedural lattice (JUST SURF), 1 = the conservatory
-uniform vec3  uZoneTint[14];
+uniform float uUsePlan;      // 0 = procedural sample-field lattice, 1 = the conservatory
+uniform vec3  uZoneTint[17];
 uniform float uSourceReady;
 uniform vec4  uWaterBounds;  // min x, min z, max x, max z in runtime cells
 uniform vec4  uWaterParams;  // active, level metres, murk, reduce motion
-out vec4 o;
+layout(location=0) out vec4 o;
+// The engraving leaves on a second target; see the write at the end of main.
+layout(location=1) out vec4 oMark;
 
 // Height encoding must match world/floorplan.js exactly.
 const float H_MIN = -8.0;
@@ -242,6 +307,7 @@ const int FLAG_DOOR    = 2;
 const int FLAG_SKY     = 4;
 const int FLAG_BRICKED = 32;
 const int FLAG_CLOSED  = 64;
+const int FLAG_WALLED  = 128;
 const int MAT_SERVICE = ${MATERIAL.serviceConcrete};
 const int MAT_ACOUSTIC = ${MATERIAL.acousticFoam};
 const int MAT_POOL = ${MATERIAL.poolTile};
@@ -256,6 +322,7 @@ const int MAT_SOURCE_PATH = ${MATERIAL.sourcePath};
 const int MAT_SOURCE_PAGE = ${MATERIAL.sourcePage};
 const int MAT_SOURCE_FAULT = ${MATERIAL.sourceFault};
 const int MAT_ACADEMIC = ${MATERIAL.academicPlaster};
+const int MAT_TARMAC = ${MATERIAL.wetTarmac};
 
 bool waterActive(){ return uWaterParams.x > 0.5 && uUsePlan > 0.5; }
 bool inWaterBounds(vec2 p){
@@ -282,6 +349,27 @@ float hash01(float x, float y){ return fract(abs(sin(x*127.1 + y*311.7) * 43758.
 float noise2(vec2 p, float s, float seed){
   vec2 q = (p + vec2(seed, seed*1.3)) * s;
   return 0.5*sin(q.x*1.7 + cos(q.y*2.3)) + 0.5*cos(q.y*1.1 + sin(q.x*1.9));
+}
+// REAL VALUE NOISE, because noise2 above is not noise.
+//
+// noise2 is a sum of two sines — a smooth, strictly PERIODIC plaid. That is
+// fine for the wobble it was written for (worldIdx, the moon's maria, the
+// valley), but stacking four octaves of it and thresholding gives a regular
+// lattice of blobs, and a one-bit dither turns a regular lattice of blobs into
+// a regular lattice of DOTS. That is what the sky's cloud deck has been: not
+// weather, fireflies.
+//
+// Same signature and same [-1,1] range, so it drops straight into the
+// 0.5 + 0.5 * n() the sky already wraps every octave in.
+float vnoise(vec2 p, float s, float seed){
+  vec2 q = (p + vec2(seed, seed * 1.3)) * s;
+  vec2 i = floor(q), f = q - i;
+  vec2 u = f * f * (3.0 - 2.0 * f);          // smoothstep fade, C1 at the lattice
+  float a = hash01(i.x,       i.y      );
+  float b = hash01(i.x + 1.0, i.y      );
+  float c = hash01(i.x,       i.y + 1.0);
+  float d = hash01(i.x + 1.0, i.y + 1.0);
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y) * 2.0 - 1.0;
 }
 
 // Integer hash — bit-identical to the JS mirror in this file (collision must
@@ -321,12 +409,12 @@ bool hasCeiling(vec2 p){ return !isExpanse(int(floor(p.x)), int(floor(p.y))); }
 
 // A cell of the world. In story mode it is read from the authored floorplan
 // texture — the SAME array JS collision reads, so the drawn wall and the solid
-// wall cannot disagree. In JUST SURF it is the old procedural lattice.
-struct Cell { bool solid; float f; float c; int flags; int zone; int mat; };
+// wall cannot disagree. Developer sample-field labs use the procedural lattice.
+struct Cell { bool solid; float f; float c; int flags; int zone; int mat; float place; };
 
 Cell cellAtI(ivec2 p){
   Cell r;
-  r.flags = 0; r.zone = 0; r.mat = MAT_SERVICE;
+  r.flags = 0; r.zone = 0; r.mat = MAT_SERVICE; r.place = 1.0;
   if(uUsePlan < 0.5){
     r.solid = solidCell(vec2(p) + 0.5);
     r.f = 0.0;
@@ -335,7 +423,19 @@ Cell cellAtI(ivec2 p){
   }
   ivec2 local = p - ivec2(uPlanOrigin);
   if(local.x < 0 || local.y < 0 || local.x >= int(uPlanSize.x) || local.y >= int(uPlanSize.y)){
-    r.solid = true; r.f = 0.0; r.c = 0.0; r.flags = FLAG_SOLID;
+    // PAST THE EDGE OF THE BUILDING THERE IS WEATHER, NOT ROCK.
+    //
+    // This slice is the whole physical extent, never a moving window (see
+    // physicalRenderPlanFor), so a ray only gets here by leaving the building's
+    // entire footprint — and every cell on the footprint's rim is an authored
+    // wall, so from indoors nothing reaches this at all. It used to return
+    // solid, which was invisible for as long as the only way out was a bricked
+    // lift shaft. The loading bay opens west across the yard to this edge, and
+    // solid made it a black cliff fifty metres out.
+    //
+    // Open, no floor to land on, and flagged sky: the march runs out at MAXD
+    // and the ray resolves as sky.
+    r.solid = false; r.f = -1000.0; r.c = 90.0 / CELL_METERS; r.flags = FLAG_SKY;
     return r;
   }
   vec4 t = texelFetch(uPlan, local, 0);
@@ -344,11 +444,62 @@ Cell cellAtI(ivec2 p){
   r.f = (t.r * H_RANGE + H_MIN) / CELL_METERS;
   r.c = (t.g * H_RANGE + H_MIN) / CELL_METERS;
   r.zone = int(t.a * 255.0 + 0.5);
-  r.mat = int(texelFetch(uMat, local, 0).r * 255.0 + 0.5);
+  vec2 ma = texelFetch(uMat, local, 0).rg;
+  r.mat = int(ma.r * 255.0 + 0.5);
+  // G is the baked per-cell ambient multiplier: how much spill this PLACE gets,
+  // from its distance to an opening and how enclosed it is. AMBIENT_PLACE_SCALE
+  // in world/floorplan.js is the encode; 128 is neutral 1.0.
+  r.place = ma.g * ${AMBIENT_PLACE_SCALE.toFixed(1)};
   if(r.mat == 0) r.mat = MAT_SERVICE;
-  if((r.flags & FLAG_SKY) != 0) r.c = 90.0 / CELL_METERS;
+  // A sky cell has no ceiling to stop the ray, so its ceiling is pushed out of
+  // reach. The number is only ever read by the wall test below (the ceiling and
+  // header tests are both gated on FLAG_SKY), which means it is also the height
+  // anything solid beside a sky cell is drawn to — ninety metres of black slab.
+  //
+  // That is correct out in the yard, where nothing solid stands near enough to
+  // read, and inside the lift shaft, which wants to look bottomless. It is wrong
+  // in a bay with walls on three sides. FLAG_WALLED is the opt-out: the ray still
+  // leaves, and the walls stand at the height the glyph authored.
+  if((r.flags & FLAG_SKY) != 0 && (r.flags & FLAG_WALLED) == 0) r.c = 90.0 / CELL_METERS;
   return r;
 }
+// THE BAKED AMBIENT, SAMPLED SMOOTHLY.
+//
+// cellAt() reads this byte with texelFetch, which is a NEAREST fetch — one
+// value per cell, no interpolation — and ambient multiplies straight by it. So
+// every cell boundary in the building was a hard step in brightness, and the
+// one-bit dither did not cause the square plaid people were seeing, it merely
+// made an existing staircase visible. The blocks were the cells.
+//
+// This is the same byte, bilinear across the four cells around a WORLD point.
+// It is deliberately a separate read from cellAt's: the material id shares that
+// texel and must stay nearest, because interpolating an id blends brick into
+// tile and produces a material that does not exist.
+float ambientPlaceAt(vec2 world){
+  // Cell centres sit at +0.5, so shift by half a cell before flooring to get the
+  // four cells the point actually lies between rather than the four it is inside.
+  vec2 g = world - 0.5;
+  vec2 base = floor(g);
+  vec2 f = g - base;
+  float acc = 0.0;
+  for(int j = 0; j < 2; j++){
+    for(int i = 0; i < 2; i++){
+      ivec2 cell = ivec2(base) + ivec2(i, j) - ivec2(uPlanOrigin);
+      cell = clamp(cell, ivec2(0), ivec2(uPlanSize) - ivec2(1));
+      float w = (i == 0 ? 1.0 - f.x : f.x) * (j == 0 ? 1.0 - f.y : f.y);
+      acc += texelFetch(uMat, cell, 0).g * w;
+    }
+  }
+  // ONE STEP OF DITHER ON THE QUANTISATION. The field is a byte, so it arrives in
+  // 255 levels across a 0..AMBIENT_PLACE_SCALE range. Interpolating removes the
+  // squares but leaves those levels as contour rings, which a hard dither draws
+  // as thin bands instead of blocks. A per-pixel offset of about one level puts
+  // the contour below the noise floor.
+  float step = ${(AMBIENT_PLACE_SCALE / 255).toFixed(6)};
+  float jitter = (hash01(gl_FragCoord.x, gl_FragCoord.y) - 0.5) * step;
+  return max(0.0, acc * ${AMBIENT_PLACE_SCALE.toFixed(1)} + jitter);
+}
+
 float worldIdx(vec2 p){
   float wx = p.x + (noise2(p, 0.006, 17.0) + 0.5*noise2(p, 0.015, 29.0)) * (uTile.x*0.95);
   float wy = p.y + (noise2(p, 0.007, 41.0) + 0.5*noise2(p, 0.018, 53.0)) * (uTile.y*0.95);
@@ -452,6 +603,31 @@ vec3 surfaceTile(int slot, vec2 worldUv, float metresPerTile){
   vec3 dreamTcB=vec3(tc.xy+hallucinationWarp,float(slot)*max(1.0,uDreamFramesB));
   vec3 dreamB=textureGrad(uSurfDreamNext,dreamTcB,tcDx,tcDy).rgb;
   vec3 dream=mix(dreamA,dreamB,uDreamNextReady>.5?uDreamBankBlend:0.0);
+  // The engraving rides the SAME coordinates, boil phase and bank blend as the
+  // material it came from. Sharing them rather than recomputing is why the
+  // grain cannot slide out of register with its own wall. The arrays differ in
+  // resolution (128 against 512) but not in UV, and tcDx/tcDy are normalised
+  // derivatives, so one footprint filters both.
+  float markBankBlend=uDreamNextReady>.5?uDreamBankBlend:0.0;
+  float markSlotBase=float(slot)*uMarkStride;
+  vec3 markTcA0=vec3(dreamTcA0.xy,uMarksLiveBase+markSlotBase+mod(fa,framesA));
+  vec3 markTcA1=vec3(dreamTcA1.xy,uMarksLiveBase+markSlotBase+mod(fa+1.0,framesA));
+  vec4 markA=mix(
+    textureGrad(uSurfMarks,markTcA0,tcDx,tcDy),
+    textureGrad(uSurfMarks,markTcA1,tcDx,tcDy),
+    ft
+  );
+  vec4 markB=textureGrad(uSurfMarks,vec3(dreamTcB.xy,uMarksStageBase+markSlotBase),tcDx,tcDy);
+  // Decode to a signed line field BEFORE applying readiness. The other order is
+  // a trap: zeroing the stored 0..1 vector then decoding yields (-1,-1), which
+  // is not "no grain" but a confident grain at 225 degrees, on every slot that
+  // has not been derived yet.
+  markA.gb=markA.gb*2.0-1.0;
+  markB.gb=markB.gb*2.0-1.0;
+  markA*=uMarksReady[slot];
+  markB*=uMarksReadyNext[slot];
+  gMark=mix(markA,markB,markBankBlend);
+  gMarkBlend=1.0;
   // Transfer material detail, not the generated image's illumination or
   // palette. Dividing by a coarse mip extracts local grain/mortar/weathering;
   // multiplying that into the authored albedo keeps the room from becoming a
@@ -506,6 +682,7 @@ void surfaceSlot(int mat,int surf,vec2 uv,out int slot,out float tileM,out float
     else if(mat==MAT_METAL){slot=9;tileM=1.6;blend=.82;}        // plant → concrete cladding
     else if(mat==MAT_CHAPEL){slot=1;tileM=1.4;blend=.82;}       // chapel → split-face stone
     else if(mat==MAT_ACADEMIC){slot=7;tileM=2.2;blend=.80;}     // academic → pale worn stone/plaster
+    else if(mat==MAT_TARMAC){slot=9;tileM=1.2;blend=.70;}       // yard walls → concrete
     else {slot=0;tileM=1.4;blend=.80;}                          // general → reclaimed brick
   } else {                                                      // floor (surf==2)
     if(mat==MAT_ACOUSTIC||mat==MAT_PRACTICE||mat==MAT_ACADEMIC){slot=6;tileM=1.8;blend=.88;} // teaching floors → terrazzo
@@ -513,6 +690,7 @@ void surfaceSlot(int mat,int surf,vec2 uv,out int slot,out float tileM,out float
     else if(mat==MAT_CHAPEL){slot=3;tileM=2.0;blend=.90;}       // chapel → quartzite
     else if(mat==MAT_WET){slot=4;tileM=0.9;blend=.92;}          // pool interior → blue mosaic
     else if(mat==MAT_POOL){slot=5;tileM=1.0;blend=.90;}         // pool deck → white ceramic
+    else if(mat==MAT_TARMAC){slot=9;tileM=0.42;blend=.52;}      // the yard → wet aggregate, tiled LONG so it never reads as panels and blended LOW so it never reads as static
     else {slot=2;tileM=1.8;blend=.84;}                          // general → ash wood
   }
 }
@@ -539,10 +717,17 @@ float sourceLayerAt(vec2 worldCell){
   return texelFetch(uSourceLayer,local,0).r*255.0;
 }
 vec3 architecturalSurface(int mat,int surf,vec3 p,vec3 n,vec3 fallback){
-  if(uSurfacesReady<.5||surf==3)return fallback;
+  if(uSurfacesReady<.001||surf==3)return fallback;
   vec2 uv=surfaceUv(surf,p,n);
   int slot; float tileM; float blend; surfaceSlot(mat,surf,uv,slot,tileM,blend);
-  return mix(fallback,surfaceTile(slot,uv,tileM),blend);
+  vec3 tinted=mix(fallback,surfaceTile(slot,uv,tileM),blend);
+  // Must mirror surfaceUv exactly. If these two ever disagree the grain is
+  // lifted into the wrong plane and runs across the wall instead of along it.
+  gMarkPlane=surf!=1?0.0:(abs(n.x)>.5?0.5:1.0);
+  // Only the blended share of that tile is on the wall; a surface barely showing
+  // its generated material must not be engraved as if made entirely of it.
+  gMarkBlend*=blend;
+  return tinted;
 }
 float materialSeam(int mat, int surf, vec3 p, vec3 n){
   vec2 faceUv=surfaceUv(surf,p,n);
@@ -570,6 +755,11 @@ float materialSeam(int mat, int surf, vec3 p, vec3 n){
   if(mat == MAT_DOOR){
     return max(line1(p.y, 2.7, 0.030), line1(faceUv.x, 1.1, 0.025)) * 0.38;
   }
+  if(mat == MAT_TARMAC){
+    // No courses and no boards. A yard has expansion joints and patches, and
+    // they run a long way apart.
+    return max(line1(p.x, 6.4, 0.020), line1(p.z, 7.9, 0.020)) * 0.14;
+  }
   return (surf == 1 ? line1(p.y, 0.72, 0.026) : grid2(p.xz, 0.55, 0.040)) * 0.18;
 }
 vec3 materialBase(int mat, int surf, vec3 tint, vec3 biome, float rdv){
@@ -582,12 +772,14 @@ vec3 materialBase(int mat, int surf, vec3 tint, vec3 biome, float rdv){
   else if(mat == MAT_CHAPEL) base = vec3(0.60, 0.63, 0.60);
   else if(mat == MAT_METAL) base = vec3(0.34, 0.35, 0.32);
   else if(mat == MAT_DOOR) base = vec3(0.24, 0.28, 0.29);
+  else if(mat == MAT_TARMAC) base = vec3(0.145, 0.156, 0.180);
   if(surf == 3) base *= 0.58;
   if(surf == 2) base = mix(base, mix(biome, tint, 0.35), 0.22);
   return base * (0.56 + 0.55 * rdv);
 }
 float materialSpec(int mat){
   if(mat == MAT_WET) return 0.95;
+  if(mat == MAT_TARMAC) return 0.58;   // it has been raining on it all night
   if(mat == MAT_POOL) return 0.42;
   if(mat == MAT_DOOR) return 0.48;
   if(mat == MAT_METAL) return 0.36;
@@ -620,6 +812,307 @@ vec3 hushScreen(vec3 base,vec3 layer){
 vec3 hushColorDodge(vec3 base,vec3 layer){
   return min(vec3(1.0),base/max(vec3(0.075),vec3(1.0)-clamp(layer,0.0,0.90)));
 }
+
+// ── THE NIGHT ────────────────────────────────────────────────────────────────
+//
+// Half nine, raining, a condemned site on the edge of a northern town that still
+// has its lights on. Overcast, lit from underneath: there is a city under the
+// cloud base and a low deck bouncing its sodium back down, which is why a wet
+// British night is never actually dark. It has to sit well above the interior
+// ambient or the one opening in this building reads as another black wall.
+//
+// THIS IS A FUNCTION NOW, AND THAT IS THE POINT. It used to be inlined in the
+// ray-left-the-building branch, so the only thing that could see the sky was a
+// ray that escaped. The yard is fifty metres of WET TARMAC under all of this,
+// and wet tarmac at night is not a diffuse surface with a low albedo — it is a
+// bad mirror, and almost everything you can see in it is sky. Calling this with
+// a reflected direction is what puts the moon and the lit deck on the ground the
+// player is standing on. See the sheen in the floor branch of main().
+//
+// Rain is deliberately NOT in here. It is in the air between the eye and the
+// thing, not a property of the sky, and a reflection of it in a puddle would be
+// falling the wrong way.
+vec3 nightSky(vec3 dir){
+  float up = clamp(dir.y, -1.0, 1.0);
+  float horizon = 1.0 - smoothstep(0.0, 0.46, abs(up));
+  // A SOLID OVERCAST DOES NOT FALL AWAY THAT FAST. 0.80 put the sky at two
+  // thirds of the way to "deep" by thirty degrees up, which is the whole band a
+  // clamped neck can see — so the useful sky was a bright strip on the horizon
+  // and then night. A lit deck stays lit overhead; it only loses the sodium.
+  float zenith  = smoothstep(0.02, 1.05, up);
+  // THE NIGHT IS BLUE. It is half nine, it is raining, and the light in this sky
+  // is what is left of the day plus a town's worth of streetlamps on the
+  // underside of the cloud. The sodium is a stain near the horizon in one
+  // direction, not the colour of the sky — an earlier pass had it warm all over
+  // and the shot read as a sunset, which is the wrong story and the wrong hour.
+  vec3 sodium   = vec3(0.44, 0.25, 0.11);
+  vec3 ceiling  = vec3(0.215, 0.278, 0.400);
+  vec3 deep     = vec3(0.055, 0.082, 0.150);
+  vec3 col = mix(ceiling, deep, zenith) + sodium * horizon * horizon * 0.30;
+
+  // CLOUD.
+  //
+  // Projected onto a base a little over the roofline, so it drifts with the eye
+  // instead of sitting on the far plane like a painted flat. Four octaves, and
+  // the amplitudes are deliberately top-heavy: a one-bit dither cannot hold a
+  // gentle variation, so the big shapes have to carry it and the small ones only
+  // break the edges.
+  //
+  // The 0.22 floor was half the firefly problem. It is a flat-deck projection, so
+  // it goes singular at the horizon: at up = 0 it multiplied the sampling
+  // frequency by about nine, precisely where the eye spends its time when it is
+  // looking OUT of the bay. Four octaves at nine times frequency under a one-bit
+  // dither is a field of sparkle, however good the noise is.
+  vec2 cp = dir.xz / max(0.22, abs(up) + 0.22);
+  // FAST ENOUGH TO WATCH. 0.0025 was a deck that moved about a degree a minute,
+  // which is honest weather and no use at all to a man standing in a yard with
+  // his head back. This is a wind, and the whole point of opening the sky was
+  // that there is something up there worth stopping for.
+  float drift = uTime * 0.0140;
+  // THE BASE OCTAVE WAS BIGGER THAN THE SKY. At 0.34 one feature of the largest
+  // octave spans about three units of cp, and the whole band a clamped neck can
+  // see is barely one — so the shape that carries this deck was, from where the
+  // player stands, a constant. Everything overhead was the two small octaves and
+  // a dither, which is grain. These are the same four octaves an octave up.
+  float cloud = 0.50 * (0.5 + 0.5 * vnoise(cp + drift * 0.6, 0.85, 3.0))
+              + 0.27 * (0.5 + 0.5 * vnoise(cp + drift * 1.0, 2.00, 11.0))
+              + 0.15 * (0.5 + 0.5 * vnoise(cp + drift * 1.7, 4.60, 29.0))
+              + 0.08 * (0.5 + 0.5 * vnoise(cp + drift * 2.6, 9.50, 47.0));
+  // THE GATE WAS ABOVE THE EYE LINE.
+  //
+  // This used to be smoothstep(-0.12, 0.26, up): fully faded below fifteen
+  // degrees, fully present above. r3dLook clamps pitch to +-0.62rad, so the neck
+  // stops at 35.5 degrees, and from the yard the sky the player actually spends
+  // time in runs from the skyline to about thirty. The cloud was computed
+  // correctly, four octaves of it, and then multiplied out of the only band it
+  // was ever going to be seen in. Exactly the fault the moon's altitude band had,
+  // and the same fix.
+  //
+  // AND THE REMAP WAS BIASED TOWARD CLEAR. Four octaves of value noise average
+  // one half, so subtracting 0.32 and scaling by 1.32 left a mean cloud cover of
+  // about a quarter — which is to say the sky was mostly the BREAK term, mixing
+  // half of every pixel toward the dark. This is an overcast: the deck is the
+  // default and a break in it is the event.
+  cloud = clamp((cloud - 0.20) * 1.90, 0.0, 1.0) * smoothstep(-0.10, 0.05, up);
+
+  // THE DECK IS THE BRIGHT THING, AND IT WAS THE ONE TERM MISSING.
+  //
+  // Cloud fed three things and every one of them took light away: the halo round
+  // the moon, a thin sodium tint, and a mix toward "deep" on the thick parts.
+  // Nothing anywhere added the fact that actually makes an overcast city night
+  // legible — the underside of the deck is lit FROM BELOW, by the town, and it is
+  // the brightest thing in the frame after the moon. Four octaves of good noise
+  // were being computed and then rendered as an absence, which is why this sky
+  // dithered down to a flat grain.
+  //
+  // Thick deck catches the sodium and goes up. A break shows the real depth
+  // behind it and goes down. Both read hardest near the horizon, where the cloud
+  // is edge-on and there is a town's worth of it between you and the light.
+  vec3 deck = mix(ceiling * 1.14, ceiling * 1.34 + sodium * 0.30, horizon);
+  col = mix(col, deck, cloud * (0.56 + 0.34 * horizon));
+  col = mix(col, deep * 0.62, (1.0 - cloud) * smoothstep(0.02, 0.30, up) * 0.62);
+  col += sodium * 0.22 * cloud * (1.0 - zenith);
+
+  // THE MOON, which is behind all of it.
+  //
+  // Bearing, altitude and phase come from the run seed, so a given night has one
+  // moon in one place for its whole length. Every so often it comes in close and
+  // reads twice the size — a perigee moon, and the only thing in this game that
+  // is unambiguously beautiful.
+  //
+  // "WEST-ISH, MOSTLY" WAS THE WHOLE CIRCLE. The bearing used to be
+  // uNightSeed * 6.28318 - 2.30, which is a full turn: uniform over 360 degrees,
+  // with the subtraction only deciding where the seed's zero landed. The yard
+  // sees an arc of maybe 120 degrees west; everything else is behind the
+  // conservatory or behind the player's own shoulder, so three nights in four the
+  // moon was authored somewhere it could not be stood in front of. The ALTITUDE
+  // band was narrowed for exactly this reason and the bearing was left alone,
+  // which is how "there is no moon" survived that fix.
+  //
+  // moonDir.x is cos(mAz) and west is -x — the same axis the town glow reads as
+  // "the way the bay faces" — so PI is due west, down the gate line.
+  float mAz  = 3.14159 + (fract(uNightSeed * 2.71) - 0.5) * 2.10;
+  // ALTITUDE HAS TO FIT UNDER THE CAMERA. r3dLook clamps pitch to +-0.62rad, so
+  // the eye cannot rise past 35.5 degrees — you cannot crane your neck in this
+  // game. 0.26..0.39 is 19.4 to 32.6 degrees: a moon that sits differently every
+  // night and is always inside the cone the neck allows.
+  float mAlt = 0.26 + 0.13 * fract(uNightSeed * 7.13);
+  vec3 moonDir = normalize(vec3(cos(mAz) * (1.0 - mAlt), mAlt, sin(mAz) * (1.0 - mAlt)));
+  float super = step(0.82, fract(uNightSeed * 13.77));        // roughly one run in six
+  float mR = mix(0.026, 0.052, super);
+  float mCos = dot(dir, moonDir);
+  float mD = acos(clamp(mCos, -1.0, 1.0));
+
+  // Cloud in front of it eats it, which is what actually sells a moon on a night
+  // like this — it comes and goes.
+  float thinCloud = 1.0 - smoothstep(0.16, 0.72, cloud);
+
+  // GLOW FIRST, DISC LAST. The halo was being added over the top of the moon,
+  // which washed the disc out to the same value as the sky around it and left
+  // nothing on screen but a faint ring where the dither happened to break. The
+  // light around it has to go down before the thing itself does.
+  col += vec3(0.42, 0.46, 0.56) * exp(-mD / (mR * 4.2)) * 0.30 * thinCloud;
+  col += vec3(0.26, 0.30, 0.40) * exp(-mD / 0.50) * (0.16 + 0.30 * super);
+  // Cloud between you and it takes the moon's light rather than the moon, so the
+  // deck in front of it glows and the breaks stay dark.
+  col += vec3(0.40, 0.43, 0.52) * cloud * exp(-mD / 0.40) * 0.70;
+
+  // THE DISC.
+  //
+  // Two things made this render as an outline rather than as a moon. The maria
+  // were sampled from dir.xz divided by the disc radius, which at 0.026 is a
+  // frequency of about seventeen hundred — noise, not mottling, and the dither
+  // turned it into a ring. And the phase and cloud terms multiplied down to under
+  // a tenth on a thick night, so the fill sat at the value of the sky it was drawn
+  // on and only the edge survived.
+  //
+  // The moon is the one thing in this game that is unambiguously beautiful. It
+  // gets a floor.
+  float disc = 1.0 - smoothstep(mR * 0.92, mR * 1.01, mD);
+  vec3 toMoon = normalize(dir - moonDir * mCos);
+  vec3 mUp = normalize(cross(moonDir, vec3(0.0, 1.0, 0.0)) + vec3(1e-4));
+  vec2 face = vec2(dot(toMoon, mUp), toMoon.y) * (mD / max(mR, 1e-4));
+  float phase = smoothstep(-0.85, 0.75, face.x + (fract(uNightSeed * 3.31) - 0.5) * 2.2);
+  float maria = 0.88 + 0.12 * noise2(face * 1.9, 1.0, 5.0);
+  float lit = disc * (0.55 + 0.45 * phase) * (0.62 + 0.38 * thinCloud);
+  col = mix(col, vec3(1.34, 1.33, 1.26) * maria, lit);
+
+  // The glow the city throws onto the cloud above it, to the west, where the bay
+  // faces. Broad and shapeless: the light, not the source.
+  col += vec3(0.58, 0.33, 0.13)
+       * pow(clamp(-dir.x, 0.0, 1.0), 4.0) * pow(horizon, 2.2) * 0.70;
+
+  // ── THE CITY ───────────────────────────────────────────────────────────────
+  //
+  // Distant ground is drawn as DIRECTION, not as geometry. It is kilometres out,
+  // nothing about it is ever approached, and authoring it as cells was never
+  // possible anyway — the sub-basement owns every ground-level cell west of the
+  // bay. A skyline and a floor, which is also what this renderer is best at: a
+  // one-bit dither cannot hold a subtle gradient but it holds a hard black shape
+  // against a lit sky perfectly.
+  //
+  // IT USED TO BE A VALLEY. Hills, a treeline and a river, with a scatter of
+  // sodium in the trough for "a town". That is a lovely thing to stand in and it
+  // is the wrong planet: Ellery is a municipal conservatory of music with a
+  // chain-link yard, a skip and a barbed-wire fence, in a northern industrial
+  // city. You should be able to see what the building is on the edge OF.
+  //
+  // ONE SKYLINE, AND EVERYTHING UNDER IT IS GROUND. An earlier pass drew ridges
+  // as separate dark bands ABOVE the horizon and left the region between them
+  // dark, so the authored yard ran into a black stripe and then into a bright
+  // sky. Ground does not work like that. There is one edge; below it is the city,
+  // above it is weather.
+  //
+  // Sampled on the unit circle so it is periodic with no seam behind the player
+  // at +/-pi.
+  float azimuth = atan(dir.z, dir.x);
+  vec2 ap = vec2(cos(azimuth), sin(azimuth));
+  float west = clamp(-dir.x, 0.0, 1.0);
+
+  // THE ROOFS. A mill town seen from a yard is not a curve, it is a long low run
+  // of parallel ridges with the odd taller thing standing out of it. Two octaves
+  // of gentle undulation for the ground the city is built on, then a hard square
+  // wave at terrace frequency for the roofs themselves — that squared-off edge is
+  // the whole difference between a skyline and a hillside.
+  float ground = 0.021
+    + 0.011 * noise2(ap * 1.7, 1.0, 7.0)
+    + 0.005 * noise2(ap * 4.3, 1.0, 19.0);
+  float terrace = 0.0125 * step(0.42, 0.5 + 0.5 * noise2(ap * 9.0, 1.0, 37.0))
+                + 0.0060 * step(0.55, 0.5 + 0.5 * noise2(ap * 23.0, 1.0, 61.0));
+  // Sawtooth: a weaving shed roof, north lights, the one silhouette that says
+  // this town made something.
+  float saw = 0.0075 * abs(fract(azimuth * 26.0) - 0.5)
+            * step(0.62, 0.5 + 0.5 * noise2(ap * 3.1, 1.0, 43.0));
+  // Chimney stacks and vent cowls along the ridge, in place of a treeline.
+  float stacks = 0.0130 * step(0.955, hash01(floor(azimuth * 90.0), 3.0))
+               + 0.0060 * step(0.910, hash01(floor(azimuth * 210.0), 9.0));
+  float skyline = ground + terrace + saw + stacks;
+
+  // THE TALL THINGS, each a hard-edged block standing off the general roofline.
+  // Placed by bearing rather than by noise so a given night is always the same
+  // city and the player can learn it: two post-war housing slabs, a gasholder,
+  // a mill chimney and a tower crane, all clustered west and north-west where the
+  // bay faces and where he drove in from.
+  //
+  // A "block" is a window in azimuth with its own height; ridges add, so a block
+  // simply raises the skyline over its own arc.
+  float blocks = 0.0;
+  // slabs: wide, flat-topped, the tallest things out there
+  blocks = max(blocks, 0.093 * step(abs(azimuth - 2.86), 0.052));
+  blocks = max(blocks, 0.081 * step(abs(azimuth + 2.61), 0.044));
+  // the gasholder: a drum, so its top is a shallow arc rather than a line
+  {
+    float d = (azimuth - 3.02) / 0.105;
+    blocks = max(blocks, (0.050 + 0.012 * sqrt(max(0.0, 1.0 - d * d))) * step(abs(d), 1.0));
+  }
+  // the mill chimney: thin and the highest thing in the frame
+  blocks = max(blocks, 0.118 * step(abs(azimuth + 2.93), 0.0075));
+  // the tower crane: a mast, and a jib running off it one way
+  blocks = max(blocks, 0.104 * step(abs(azimuth - 2.42), 0.0055));
+  blocks = max(blocks, 0.101 * step(azimuth - 2.42, 0.0) * step(2.20, azimuth) * 0.985);
+  skyline = max(skyline, blocks);
+
+  // Depth below the skyline. The edge itself is the darkest thing in the frame —
+  // a wet slate roof against a lit overcast is very nearly black — and it opens
+  // out toward the near ground, which is catching the whole sky and has to meet
+  // the authored yard's own value without a seam.
+  float below = clamp((skyline - up) / 0.34, 0.0, 1.0);
+  vec3 land = mix(vec3(0.020, 0.028, 0.046), vec3(0.108, 0.135, 0.188),
+                  smoothstep(0.0, 1.0, below));
+
+  // The far side of the city, hazed most of the way back to the sky. Aerial
+  // perspective is the only depth cue a silhouette gets, so it is the whole
+  // reason this reads as distance and not as a cut-out.
+  float shoulder = 0.050
+    + 0.026 * noise2(ap * 1.1, 1.0, 23.0)
+    + 0.010 * noise2(ap * 3.3, 1.0, 31.0);
+  col = mix(col, mix(col, vec3(0.086, 0.108, 0.152), 0.82),
+            smoothstep(shoulder + 0.004, shoulder - 0.004, up));
+
+  col = mix(col, land, smoothstep(skyline + 0.0022, skyline - 0.0022, up));
+
+  // LIT WINDOWS, in the slabs. Not a texture — a lattice, because the one thing
+  // a tower block does at night is show you which flats are still up. Sampled in
+  // a grid tied to the block's own bearing so the columns stay vertical.
+  vec2 wp = vec2(azimuth * 620.0, up * 900.0);
+  float grid = step(0.62, fract(wp.x)) * step(0.55, fract(wp.y));
+  float inSlab = step(abs(azimuth - 2.86), 0.052) + step(abs(azimuth + 2.61), 0.044);
+  float windows = grid * clamp(inSlab, 0.0, 1.0)
+                * step(up, skyline) * step(0.030, up)
+                * step(0.72, hash01(floor(wp.x), floor(wp.y)));
+  col += vec3(0.95, 0.78, 0.44) * windows * 0.75;
+
+  // THE STREETS, in the trough under the roofline: points of sodium, never a
+  // shape. You never see the city, only that something out there is still
+  // switched on.
+  float trough = smoothstep(skyline - 0.002, skyline + 0.008, up)
+               * (1.0 - smoothstep(shoulder - 0.016, shoulder - 0.002, up));
+  vec2 tp = vec2(azimuth * 460.0, (up - skyline) * 2600.0);
+  float town = step(0.9800, hash01(floor(tp.x), floor(tp.y)))
+             * trough * (0.18 + 0.82 * pow(west, 1.4));
+  col += vec3(1.00, 0.58, 0.22) * town * 1.25;
+
+  // THE VIADUCT. A horizontal run of arches below the roofline, catching sky in
+  // the openings: the flattest, most legible piece of Victorian infrastructure
+  // there is, and the one that says this town was built to move things.
+  float viaY = skyline - 0.043;
+  float arch = step(0.36, fract(azimuth * 62.0));
+  float viaduct = (1.0 - smoothstep(0.0, 0.013, abs(up - viaY)))
+                * arch * step(up, skyline)
+                * smoothstep(0.35, 0.95, west);
+  col += vec3(0.30, 0.34, 0.42) * viaduct * 0.42;
+
+  // The aircraft warning light on the crane, and one on the taller slab. Slow, on
+  // a schedule of their own, and the only moving thing in the distance.
+  float beaconA = step(0.86, fract(uTime * 0.42))
+                * (1.0 - smoothstep(0.0, 0.0055, length(vec2(azimuth - 2.42, up - 0.104))));
+  float beaconB = step(0.90, fract(uTime * 0.31 + 0.5))
+                * (1.0 - smoothstep(0.0, 0.0045, length(vec2(azimuth - 2.86, up - 0.093))));
+  col += vec3(1.00, 0.16, 0.10) * (beaconA + beaconB) * 1.30;
+
+  return col;
+}
+
 void main(){
   vec2 uv = (gl_FragCoord.xy / uRes) * 2.0 - 1.0;
   uv.x *= uRes.x / uRes.y;
@@ -649,6 +1142,12 @@ void main(){
   int surf = 0;                 // 1 wall · 2 floor · 3 ceiling
   int hitZone = 0;
   int hitMat = MAT_SERVICE;
+  // The baked ambient of the cell the ray actually lands in, captured with the
+  // hit like zone and material rather than re-fetched during shading.
+  float hitPlace = 1.0;
+  // Whether the surface we ended up on stands under open sky. Ambient falloff is
+  // an indoor model and has to be switched off out there — see below.
+  bool  hitSky = false;
   vec3 n = vec3(0.0, 1.0, 0.0);
 
   ivec2 cell = ivec2(floor(ro.xz));
@@ -671,7 +1170,7 @@ void main(){
         if(tw >= tEnter && tw <= tExit){
           vec3 wp = ro + rd * tw;
           if(inWaterBounds(wp.xz)){
-            tHit = tw; surf = 4; n = vec3(0.0, 1.0, 0.0); hitZone = cur.zone; hitMat = MAT_WET; break;
+            tHit = tw; surf = 4; n = vec3(0.0, 1.0, 0.0); hitZone = cur.zone; hitMat = MAT_WET; hitPlace = cur.place; hitSky = (cur.flags & FLAG_SKY) != 0; break;
           }
         }
       }
@@ -679,14 +1178,14 @@ void main(){
       if(rd.y < -1e-4){
         float tf = (cur.f - ro.y) / rd.y;
         if(tf >= tEnter && tf <= tExit){
-          tHit = tf; surf = 2; n = vec3(0.0, 1.0, 0.0); hitZone = cur.zone; hitMat = cur.mat; break;
+          tHit = tf; surf = 2; n = vec3(0.0, 1.0, 0.0); hitZone = cur.zone; hitMat = cur.mat; hitPlace = cur.place; hitSky = (cur.flags & FLAG_SKY) != 0; break;
         }
       }
       // and its ceiling, unless it is open to the dark
       if(rd.y > 1e-4 && (cur.flags & FLAG_SKY) == 0){
         float tc = (cur.c - ro.y) / rd.y;
         if(tc >= tEnter && tc <= tExit){
-          tHit = tc; surf = 3; n = vec3(0.0, -1.0, 0.0); hitZone = cur.zone; hitMat = cur.mat; break;
+          tHit = tc; surf = 3; n = vec3(0.0, -1.0, 0.0); hitZone = cur.zone; hitMat = cur.mat; hitPlace = cur.place; hitSky = (cur.flags & FLAG_SKY) != 0; break;
         }
       }
     }
@@ -712,6 +1211,9 @@ void main(){
       tHit = tExit; surf = 1; n = wn;
       hitZone = nc.solid ? cur.zone : nc.zone;
       hitMat = closedLeaf ? MAT_DOOR : (nc.solid ? cur.mat : nc.mat);
+      // A wall belongs to the room you are standing in, not the rock behind it.
+      hitPlace = nc.solid ? cur.place : nc.place;
+      hitSky = ((nc.solid ? cur.flags : nc.flags) & FLAG_SKY) != 0;
       break;
     }
 
@@ -724,16 +1226,60 @@ void main(){
   // sparkle even when no authored effect was changing.
   float grain = hash01(gl_FragCoord.x, gl_FragCoord.y);
   if(tHit < 0.0){
-    // open sky above an expanse: near-black, nothing to see up there
-    float g = clamp(rd.y * 0.5 + 0.5, 0.0, 1.0);
-    col = mix(vec3(0.040, 0.043, 0.050), vec3(0.010, 0.010, 0.014), g);
-    col += texture(uRD, rd.xz * 0.4 + uTime * 0.004).g * 0.012;
+    // THE RAY LEFT THE BUILDING.
+    //
+    // For most of this game's life that could only happen over a bricked lift
+    // shaft, so it returned a two-stop black and the comment said "nothing to
+    // see up there", which was true. The loading bay opens west onto the yard,
+    // and it is the first time anything here looks outward — so this is now a
+    // sky, and it is the one in the cold open: half nine at night, raining, a
+    // condemned site on the edge of a town that still has its lights on.
+    //
+    // Source Space and the procedural sample field keep the void. They are not
+    // outdoors; they are nowhere, and a horizon would say the wrong thing.
+    if(uUsePlan < 0.5){
+      float g = clamp(rd.y * 0.5 + 0.5, 0.0, 1.0);
+      col = mix(vec3(0.040, 0.043, 0.050), vec3(0.010, 0.010, 0.014), g);
+      col += texture(uRD, rd.xz * 0.4 + uTime * 0.004).g * 0.012;
+    } else {
+      // ONE CALL. Everything that used to be inlined here — the deck, the
+      // moon, the skyline, the streets — lives in nightSky() now, so the wet
+      // ground can ask for the same sky it is reflecting. See the sheen below.
+      vec3 dir = normalize(rd);
+      col = nightSky(dir);
+
+      // RAIN.
+      //
+      // In the air, not on the lens, and falling in FRONT of the sky rather than
+      // being part of it. Two sheets at different scales gives it depth; the
+      // near one is faster and fatter. A per-cell hash over a square grid is
+      // white noise standing still, which is what the first pass looked like, so
+      // the cells are long and thin and the vertical term carries the time.
+      vec2 rBase = vec2(dir.x * 1.0 + dir.z * 0.16, dir.y);
+      float wet = 0.0;
+      for(int layer = 0; layer < 2; layer++){
+        float k = layer == 0 ? 1.0 : 1.9;
+        float speed = layer == 0 ? 9.0 : 15.0;
+        vec2 rp = vec2(rBase.x * 150.0 * k + float(layer) * 37.0,
+                       rBase.y * 22.0 * k - uTime * speed);
+        float cell = hash01(floor(rp.x), floor(rp.y));
+        float streak = step(0.9938, cell)
+                     * smoothstep(0.0, 0.30, fract(rp.y))
+                     * (1.0 - smoothstep(0.62, 1.0, fract(rp.y)));
+        wet += streak * (layer == 0 ? 1.0 : 0.62);
+      }
+      // Legible against the lit part of the sky and almost gone against the
+      // dark, which is how rain actually reads at night.
+      float rainLit = 0.22 + 0.78 * clamp(dot(col, vec3(0.32)), 0.0, 1.0);
+      col += vec3(0.27, 0.29, 0.34) * wet * rainLit
+           * uOpticalEffects * (1.0 - uReduceMotionOptical * 0.7);
+    }
   } else {
     vec3 pos = ro + rd * tHit;
     vec3 posM = pos * CELL_METERS;
     vec3 roM = ro * CELL_METERS;
     // Architecture is differentiated by material and light, never by the old
-    // zone-navigation colors. JUST SURF may keep its procedural world tint.
+    // zone-navigation colors. The procedural audio lab may keep its world tint.
     vec3 tint = (uUsePlan > 0.5) ? vec3(0.62) : uWorldTint[int(worldIdx(pos.xz))];
 
     // nearest-chunk biome blend + emissive glow
@@ -763,7 +1309,7 @@ void main(){
     if(surf == 1) rdv = mix(0.5, rdv, 0.45);   // mottling on walls, not marble
     float rim = smoothstep(0.16, 0.32, rdv) - smoothstep(0.32, 0.58, rdv);
     // The authored conservatory has real surface textures. Reaction-diffusion
-    // belongs to JUST SURF; on architecture it reads as rolling fog bands.
+    // belongs to the sample-field lab; on architecture it reads as rolling fog bands.
     if(uUsePlan>.5){rdv=.5;rim=0.0;}
 
     // Procedural courses are fallback geometry only. Drawing them over real
@@ -796,9 +1342,13 @@ void main(){
       n=normalize(n+T*grad.x*1.8+B*grad.y*1.8);
       surfRough=mix(.96,.48,smoothstep(.08,.82,sourceHeight));
       surfaceOcclusion=mix(.58,1.0,sourceHeight);
-    } else if(uSurfacesReady > 0.5 && surf != 3 && surf != 4){
+    } else if(uSurfacesReady > 0.001 && surf != 3 && surf != 4){
       int sslot; float stile, sblend;
       vec2 suv = surfaceUv(surf,posM,n);
+      // Read off the SAME normal surfaceUv just used. The normal map perturbs n
+      // below, and a plane chosen from the perturbed one would disagree with the
+      // UVs the grain was measured in.
+      gMarkPlane=surf!=1?0.0:(abs(n.x)>.5?0.5:1.0);
       surfaceSlot(hitMat, surf, suv, sslot, stile, sblend);
       vec3 sc = vec3(suv / stile, float(sslot));
       // Texture coordinates remain fixed to the authoritative world plane.
@@ -809,9 +1359,10 @@ void main(){
       if(dot(T, T) < 0.01) T = vec3(1.0, 0.0, 0.0);
       vec3 B = (surf == 1) ? vec3(0.0, 1.0, 0.0) : vec3(0.0, 0.0, 1.0);
       vec2 scDx=dFdx(sc.xy),scDy=dFdy(sc.xy);
-      float h0=textureGrad(uSurfHeight,sc,scDx,scDy).r;
+      vec2 material=textureGrad(uSurfMaterial,sc,scDx,scDy).rg;
+      float h0=material.g;
       vec3 nm = textureGrad(uSurfNormal,sc,scDx,scDy).rgb * 2.0 - 1.0;
-      surfRough = textureGrad(uSurfRough,sc,scDx,scDy).r;
+      surfRough = material.r;
       // The native reaction field and generated detail participate in the
       // physical response, not only in albedo. Geometry remains a flat,
       // authoritative collision plane; only micro-normal and roughness move.
@@ -844,17 +1395,20 @@ void main(){
       // Agitation deepens the relief rather than merely tinting it: a boiling
       // wall should catch the light differently, not just read a shade darker.
       float reliefGain=uDreamNormalResponse*(1.0+uAgitation*2.2)*(1.0+uDreamStructureMix*1.6);
-      nm.xy+=dreamSlope*reliefGain*slotResponse.w*14.0;
-      nm.xy+=materialRd*uLocalDiffusion*uDreamNormalResponse*slotResponse.w;
+      nm.xy+=dreamSlope*reliefGain*slotResponse.w*14.0*uSurfacesReady;
+      nm.xy+=materialRd*uLocalDiffusion*uDreamNormalResponse*slotResponse.w*uSurfacesReady;
       // Generated detail also roughens and polishes the surface, so the torch's
       // specular lobe crawls across it as the boil advances.
       float dreamRough=(dr+dl+du+dd)*.25-.5;
       surfRough=clamp(surfRough
-        +dreamRough*uDreamRoughnessResponse*(1.0+uAgitation*1.8)*slotResponse.z*2.2
-        +materialRd*uLocalDiffusion*uDreamRoughnessResponse*slotResponse.z,0.04,1.0);
+        +(dreamRough*uDreamRoughnessResponse*(1.0+uAgitation*1.8)*slotResponse.z*2.2
+        +materialRd*uLocalDiffusion*uDreamRoughnessResponse*slotResponse.z)*uSurfacesReady,0.04,1.0);
       n = normalize(n + (T * nm.x + B * nm.y) * 0.58);
-      surfaceOcclusion=mix(.68,1.0,smoothstep(.12,.88,h0));
-      pbrReady=true;pbrSlot=sslot;pbrTile=stile;pbrBlend=sblend;pbrUv=sc.xy*stile;
+      surfaceOcclusion=mix(1.0,mix(.68,1.0,smoothstep(.12,.88,h0)),uSurfacesReady);
+      // THE RAMP IS THE BLEND. At 0 this leaves pbrBlend at zero and the albedo
+      // below is exactly the procedural fallback; at 1 it is exactly the bank.
+      // Only the journey between them is new.
+      pbrReady=true;pbrSlot=sslot;pbrTile=stile;pbrBlend=sblend*uSurfacesReady;pbrUv=sc.xy*stile;
     }
     if(surf == 4){
       vec2 wuv=waterUv(pos.xz);
@@ -914,7 +1468,45 @@ void main(){
     // The unlit floor is deliberately lifted. With the torch off — or taken — a
     // dark-adapted eye still resolves a room: you are not blind, you simply
     // cannot see WELL. A black screen is not horror, it is a bug you cannot play.
-    float ambient = uAmbientIntensity * mix(1.0,1.12,uLight);
+    //
+    // BUT IT HAS TO FALL OFF, OR IT IS NOT LIGHT. This was a bare constant, so
+    // a wall one metre away and one thirty metres down a corridor received the
+    // same ambient — and with the torch off that leaves no depth cue at all,
+    // only silhouettes. The room read as wireframe: everything equally visible,
+    // nothing receding. Dark adaptation lets you resolve what is NEAR you; it
+    // does not show you the far end of an unlit building.
+    //
+    // Falls to a floor rather than to zero, so the original promise holds: the
+    // near room is still legible with no torch at all.
+    //
+    // AND IT IS A PROPERTY OF PLACE. The distance term above shapes ambient
+    // within one view; hitPlace decides how much this cell had to begin with,
+    // baked from its distance to an opening and how enclosed it is (see
+    // bakeAmbientField). Ambient IS spill from the openings, so a room four
+    // metres under the atrium skylight should not be lit like a corridor
+    // eighteen metres inside the building — which is what one number per zone
+    // did. uAmbientPlace is the strength: 0 restores the flat per-zone value.
+    // Sampled smoothly at the hit rather than taken from the cell the ray ended
+    // in — see ambientPlaceAt. hitPlace is still what the march carries, and is
+    // still the right value for anything that needs one number per cell.
+    float place = mix(1.0, ambientPlaceAt(pos.xz), uAmbientPlace);
+    // AMBIENT FALLS OFF INDOORS AND DOES NOT FALL OFF OUTDOORS.
+    //
+    // The reach below is an interior model, and a good one: it is what makes an
+    // unlit room recede instead of reading as wireframe. It is also squared, so
+    // by nine metres a surface keeps a quarter of its ambient and by thirty it
+    // keeps a twentieth.
+    //
+    // That is wrong under open sky, where the source is not a lamp in the room —
+    // it is the whole hemisphere, and it is no dimmer over the far end of the
+    // yard than over the near end. Applied out there it made fifty metres of
+    // authored ground render as a black band under a bright horizon, which is
+    // the one arrangement a night sky never produces.
+    float ambientReach = mix(3.5, 9.0, clamp(uAmbientIntensity * place * 26.0, 0.0, 1.0));
+    if(hitSky) ambientReach = 400.0;
+    float ambientFall = 1.0 / (1.0 + dist / max(0.75, ambientReach));
+    float ambient = uAmbientIntensity * place * mix(1.0,1.12,uLight)
+                  * mix(uAmbientFloor, 1.0, ambientFall * ambientFall);
 
     if(surf == 4){
       vec2 wuv=waterUv(pos.xz);
@@ -939,8 +1531,16 @@ void main(){
         albedo=ink*(.06+1.18*smoothstep(.035,.46,sourceHeight));
       }else{
         gBoilGlow=0.0;
+        gMark=vec4(0.0);gMarkBlend=0.0;
         albedo=materialBase(hitMat, surf, tint, biome, rdv);
-        albedo=pbrReady?mix(albedo,surfaceTile(pbrSlot,pbrUv,pbrTile),pbrBlend):architecturalSurface(hitMat,surf,posM,n,albedo);
+        // The fallback is ALWAYS the base now. It used to be an either/or with
+        // the generated tile, which is why arrival was a switch rather than a
+        // fade: there was nothing underneath to arrive over.
+        albedo=architecturalSurface(hitMat,surf,posM,n,albedo);
+        if(pbrReady){
+          albedo=mix(albedo,surfaceTile(pbrSlot,pbrUv,pbrTile),pbrBlend);
+          gMarkBlend*=pbrBlend;
+        }
       }
       // Roughness drives the highlight: a wet/polished tile (low roughness) throws
       // a tight bright spec; brick and wood stay matte. Tighten the lobe as it
@@ -955,6 +1555,62 @@ void main(){
           + rim * tint * (0.22 + uAudio * 0.45) * emis
           + glow * emis
           - seam * 0.30 * (uAmbientColor*ambient + uTorchColor*lamp);
+
+      // THE GROUND UNDER OPEN SKY REFLECTS THE SKY.
+      //
+      // Everything above is a lamp model: a source somewhere in the room, an
+      // occlusion term, a falloff. None of it describes standing outside, where
+      // the source is the entire hemisphere and the yard is bright for the same
+      // reason the cloud is. Routed through the zone ambient it kept arriving as
+      // an attenuated point light and fifty metres of tarmac stayed black under
+      // a white horizon.
+      //
+      // So: a hemispherical term, weighted by how much sky the surface faces —
+      // full for the ground, half for a wall — and deliberately immune to
+      // distance, because the sky does not get further away as you look further
+      // out. Held under the horizon's own value so the ground never out-reads
+      // the opening it is lit by.
+      if(hitSky){
+        float facingSky = 0.34 + 0.66 * clamp(n.y * 0.5 + 0.5, 0.0, 1.0);
+        col += albedo * vec3(0.092, 0.110, 0.150) * facingSky;
+
+        // AND WHEN IT IS WET, IT REFLECTS IT PROPERLY.
+        //
+        // The hemispherical term above is the diffuse half, and on tarmac — five
+        // per cent albedo, in the rain — the diffuse half is almost nothing.
+        // What you actually see standing in a yard at night is the sky LYING ON
+        // IT: the moon, the lit deck, the one sodium lamp on the column, all
+        // smeared out by the water. That is a grazing specular reflection, not a
+        // brighter floor, and no amount of raising the ambient was ever going to
+        // produce it — the yard stayed a black band under a white horizon
+        // through three passes of trying.
+        //
+        // This is why nightSky() is a function. The reflected ray gets the same
+        // deck, the same moon and the same skyline the eye gets, so everything
+        // authored up there arrives down here for nothing.
+        vec3 vDir = normalize(pos - ro);
+        vec3 refl = reflect(vDir, n);
+        // Only the sky half of the hemisphere. A reflected ray pointing into the
+        // ground has nothing to fetch — there is no second bounce here — so it is
+        // folded back up and damped rather than sampling the city upside down.
+        refl.y = abs(refl.y) * 0.85 + 0.02;
+        float fres = pow(1.0 - clamp(dot(-vDir, n), 0.0, 1.0), 4.0);
+        // Rain roughens it: a smear, not a mirror, breaking up where the water
+        // is moving. Tarmac has been rained on all night; a wall has not.
+        float ripple = 0.72 + 0.28 * vnoise(posM.xz * 0.9 + vec2(0.0, uTime * 0.55), 1.0, 13.0);
+        float wetness = (hitMat == MAT_TARMAC) ? (surf == 2 ? 1.0 : 0.30) : 0.22;
+        col += nightSky(refl) * (0.05 + 0.60 * fres) * wetness * ripple;
+      }
+      // HUSH does not carry a lamp. Its playable room-read is a low, static
+      // acoustic relief: boundaries and material seams gather density while
+      // the architecture remains dark. This is tied to the explicit camera
+      // sensory profile, so the story camera keeps its authored lighting.
+      float acousticDistance=1.0-smoothstep(4.0,35.0,length(posM-uCam));
+      float acousticGrazing=pow(1.0-abs(dot(n,normalize(toEye))),2.0);
+      float acousticBand=.5+.5*sin(length(posM-uCam)*3.2+float(hitMat)*.71);
+      float acousticRelief=uHushSense*(.34+seam*.92+rim*.28+acousticGrazing*.46+acousticBand*.06+abs(rdv-.5)*.14);
+      col+=vec3(.045,.42,.285)*acousticRelief*(.60+.40*acousticDistance);
+      col+=albedo*vec3(.09,.28,.20)*uHushSense*(.30+acousticGrazing*.32);
       if(waterActive() && surf == 1 && hitMat == MAT_WET){
         float caustic=(sin(posM.x*9.0+uTime*.9)+sin(posM.z*7.0-uTime*.7))*.5+.5;
         col+=vec3(.05,.08,.07)*caustic*lamp*.18*(1.0-uWaterParams.w*.75);
@@ -1156,6 +1812,19 @@ void main(){
   // is the convention every SD depth ControlNet was trained on (MiDaS), and
   // handing a depth ControlNet a linear far-is-bright map inverts the room.
   o = vec4(clamp(col,0.0,1.0), 1.0 / (1.0 + zView * 0.14));
+  // THE ENGRAVING LEAVES ON A SECOND TARGET. It cannot ride the first — RGB is
+  // the image, alpha already carries depth — and it cannot be recovered later:
+  // surface UV and slot exist only here, inside the march. The recorder must be
+  // handed it in screen space or draw with a procedural hash instead.
+  // Blend is applied to the SIGNED line field, before the bias — not to the
+  // stored byte afterwards. Scaling the biased value is what the previous write
+  // did, and it is wrong in a way that only shows up once anything reads these
+  // channels: a half-blended fragment with no grain at all stores 0.25, which
+  // decodes to -0.5, a confident grain out of nothing. Alpha now carries the
+  // tangent plane, which is an identity rather than a quantity and must not be
+  // scaled by anything.
+  float markBlend = clamp(gMarkBlend,0.0,1.0);
+  oMark = vec4(gMark.r*markBlend, gMark.gb*markBlend*0.5+0.5, gMarkPlane);
 }`;
 
 // ── Depth resolve ───────────────────────────────────────────────────────────
@@ -1303,6 +1972,15 @@ let gl = null, canvas = null;
 let progRD, progWater, progMarch, progPost, progDepth, progPixelMesh, progDatamosh, progTextSpace;
 // How frightened he is, 0..1. main.js owns the number; the post pass spends it.
 let fearLevel = 0;
+let nightSeed=0.37;
+// THE NIGHT IS DECIDED ONCE PER RUN, NOT PER FRAME.
+//
+// Everything the sky varies — the moon's bearing, its altitude, its phase and
+// whether this is the run where it comes in close — hangs off this. It must be
+// stable for the length of a run or the moon walks across the sky between
+// loads, and it must differ between runs or nobody ever sees the other nights.
+export function r3dSetNightSeed(v=0.37){nightSeed=Number.isFinite(+v)?((+v%1)+1)%1:0.37;return nightSeed;}
+export function r3dNightSeed(){return nightSeed;}
 export function r3dSetFear(v) { fearLevel = Math.max(0, Math.min(1, v || 0)); }
 
 export function r3dSetLocalLights(lights=[]){
@@ -1326,8 +2004,19 @@ export function r3dSetLightingContext(context={}){
   lightingAmbientColor=new Float32Array([
     Math.max(0,Number(color[0])||0),Math.max(0,Number(color[1])||0),Math.max(0,Number(color[2])||0),
   ]);
-  lightingAmbientIntensity=Math.max(.006,Math.min(.12,Number(context.ambientIntensity)||.022));
-  return{ambientColor:[...lightingAmbientColor],ambientIntensity:lightingAmbientIntensity};
+  // The ceiling used to be .12, which is generous for a room and silently ate
+  // anything authored for the outdoors — the loading bay asked for .155 and got
+  // .12 without a word, so raising the number in conservatory-lights.js did
+  // nothing at all. Rooms in this building run .014-.043; the bay is the sky.
+  lightingAmbientIntensity=Math.max(.006,Math.min(.45,Number(context.ambientIntensity)||.022));
+  // The room's own ceiling for the halftone (see zoneWhitePointScale). Absent or
+  // nonsense leaves the look profile's authored white point alone, so a space
+  // that never sets one behaves exactly as it did before this existed.
+  const scale=Number(context.whitePointScale);
+  lightingWhitePointScale=Number.isFinite(scale)&&scale>0?Math.max(.05,Math.min(4,scale)):1;
+  lightingScreenId=isScreen(context.screen)?context.screen:null;
+  return{ambientColor:[...lightingAmbientColor],ambientIntensity:lightingAmbientIntensity,
+    whitePointScale:lightingWhitePointScale,screen:lightingScreenId};
 }
 let lookFrom = getLookProfile('explore');
 let lookTarget = lookFrom;
@@ -1424,13 +2113,86 @@ export function r3dPixelMeshStatus() {
 let rdTexA, rdTexB, rdFboA, rdFboB, rdFlip = false, rdWarm = 0;
 let waterTexA, waterTexB, waterFboA, waterFboB, waterFlip = false, waterWasActive = false;
 let sceneTex, sceneFbo, fogTexture, surfaceTexture=null;
+// Screen-space engraving, written beside the scene by the march (see oMark).
+let markTex=null;
 let meshTexA=null, meshTexB=null, meshFboA=null, meshFboB=null, meshFlip=false;
 let datamoshSourceTex=null,datamoshSourceFbo=null,datamoshTexA=null,datamoshTexB=null,datamoshFboA=null,datamoshFboB=null,datamoshFlip=false;
 let datamoshActive=false,datamoshProgress=0,datamoshReducedMotion=false,lastPostSourceFbo=null;
-let surfAlbedoTex=null, surfNormalTex=null, surfRoughTex=null, surfHeightTex=null, surfDreamTex=null, surfDreamStageTex=null, anisoExt=null, anisoMax=1;
+let surfAlbedoTex=null, surfNormalTex=null, surfMaterialTex=null, surfDreamTex=null, surfDreamStageTex=null, anisoExt=null, anisoMax=1;
+// The engraving, derived from each generated tile as it arrives (see
+// render/mark-field.js). It is a strict parallel of the dream arrays — same
+// layer layout, same staging, same swap points — and it is deliberately managed
+// INSIDE the dream lifecycle functions rather than through an API of its own,
+// because a caller who could update one without the other would desync the
+// engraving from the material it was derived from.
+let surfMarkTex=null;
+let markDeriveMs=0, markDeriveCount=0, markLastMs=0;
+// Derivation is amortised across frames, and that is not an optimisation.
+// Measured: the tensor costs ~6ms and tiles arrive in BURSTS — a bank streams
+// ten slots and several land in one frame, which took the worst frame from a
+// baseline 9.3ms to 49.2ms. Anything over 33ms disables the lens for the
+// session, so a burst of arrivals would have switched the whole layer off.
+//
+// Only the pixel capture has to happen at arrival, because the caller closes
+// the ImageBitmap the moment applySurface returns (see diffusion.js). The
+// tensor can lag freely: the staging texture is not sampled until commit.
+const markQueue=[];
+let markEpoch=0;
+const MARK_FRAME_BUDGET_MS=8;
+const SURFACE_LAYERS=10,SURFACE_TILE=512;
+// Which slots actually have an engraving yet, counted per slot across its
+// frames. A slot that is not ready is drawn by the procedural hash — which is
+// precisely the behaviour that shipped before this existed, so a queue that has
+// not caught up degrades to the old look rather than to wrong data.
+//
+// This is what makes the flush unnecessary. Deriving every pending tile at the
+// commit that makes a bank visible just moved the burst: ten tiles in the one
+// frame took the worst frame to 56ms. Now a bank can become visible with its
+// engraving still arriving, slot by slot, over the following few frames.
+let markLiveBase=0;               // which half the shader reads as live
+const markReady=new Uint8Array(SURFACE_LAYERS);
+const markStageReady=new Uint8Array(SURFACE_LAYERS);
 let hushBodyTex=null,hushBodyReady=false,hushBodyLoadError=null;
 let hushBodyMode='live';
+const BLUE_NOISE_SIZE=64;
+let blueNoiseTex=null;
+// A mid-grey 1x1 stands in until the mask decodes. Without it the first frames
+// would threshold against an undefined sampler, which on some drivers is black —
+// i.e. everything on, a white screen, at exactly the moment the player boots.
+function ensureBlueNoise(gl){
+  if(blueNoiseTex) return blueNoiseTex;
+  blueNoiseTex=gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D,blueNoiseTex);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.R8,1,1,0,gl.RED,gl.UNSIGNED_BYTE,new Uint8Array([128]));
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT);
+  const img=new Image();
+  img.onload=()=>{
+    gl.bindTexture(gl.TEXTURE_2D,blueNoiseTex);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.R8,gl.RED,gl.UNSIGNED_BYTE,img);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT);
+  };
+  img.src=assetUrl('assets/blue-noise-64.png').href||String(assetUrl('assets/blue-noise-64.png'));
+  return blueNoiseTex;
+}
+
 let hushBodyManifestation=0;
+// HOW FAR THE GENERATED MATERIAL HAS ARRIVED, 0..1.
+//
+// This used to be the boolean `surfAlbedoTex && surfNormalTex && surfMaterialTex`
+// written straight into uSurfacesReady, which meant that on the frame the third
+// bank texture appeared EVERY surface in the building changed shading model at
+// once — albedo, normal map, roughness and occlusion together. That is the snap
+// between an unlit room and a lit one that has nothing to do with the torch.
+//
+// Same exponential approach the hush body uses below, for the same reason: the
+// thing should arrive rather than appear.
+let surfacesManifestation=0;
 let hushBodyLast={x:0,y:0,strength:.9};
 const HUSH_BODY_ASSET='assets/hush/hush-body-sdf.png';
 const HUSH_BODY_ASSET_REV='8f52397c';
@@ -1451,11 +2213,28 @@ export function r3dHushBodyStatus(){
     error:hushBodyLoadError,
   };
 }
-const SURFACE_LAYERS=10,SURFACE_TILE=512;
 // Five temporal frames of ten 512² surfaces, live plus staged, is the ceiling
 // the texture budget allows. WebGL2 guarantees 256 array layers, so the limit
 // here is memory, not the API.
 const MAX_DREAM_FRAMES=5;
+const MARK_HALF_LAYERS=SURFACE_LAYERS*MAX_DREAM_FRAMES;
+// How hard the material's own density pulls the recorder's threshold. This is
+// the first number in the engraving that is taste rather than measurement, so
+// it is tunable live from the probe rather than authored into look-profiles
+// before anybody has looked at it on a wall.
+let markDensityGain=0.55;
+// How hard the stipple follows the grain direction. 0 restores the isotropic
+// hash, which is the A/B for phase 3b.
+let markGrainGain=0.70;
+const markReadyScratch=new Float32Array(SURFACE_LAYERS);
+// A slot counts as engraved only once every frame of its boil is derived, so a
+// crossfade never blends a derived frame against an empty one. Anything short
+// of that reads as 0 and the recorder draws that slot with its procedural hash.
+function markReadyUniform(counts,frames){
+  const k=Math.max(1,Math.min(MAX_DREAM_FRAMES,frames||1));
+  for(let i=0;i<SURFACE_LAYERS;i++)markReadyScratch[i]=counts[i]>=k?1:0;
+  return markReadyScratch;
+}
 let surfDreamFrames=1,surfDreamStageFrames=1,dreamAgitation=0;
 const surfDreamMix=new Float32Array(SURFACE_LAYERS);
 let localDiffusionAvailability = 1;
@@ -1523,6 +2302,52 @@ function loadTextureArray(url, { srgb=false }={}){
     img.onerror=reject; img.src=url.href||String(url);
   });
 }
+// Roughness and relief are each ONE CHANNEL sampled at the SAME coordinates,
+// three lines apart, and each was costing a whole texture unit. Packing them
+// into one array — R roughness, G relief — frees a unit, and this pass has none
+// left: an M4 Pro reports MAX_TEXTURE_IMAGE_UNITS 16 and all sixteen are bound.
+//
+// That freed unit is what lets the engraving reach the recorder at all. The
+// alternative was folding the two dream arrays together, which would have meant
+// a fixed worst-case layer stride and turned a one-frame calm bank from 21MB of
+// texture into 105MB.
+//
+// Merged here rather than in the surface build so the authored assets stay two
+// legible greyscale maps that a person can open and look at.
+function loadPackedMaterialArray(roughUrl, heightUrl){
+  const plane=(url)=>new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>{
+      const size=img.width;
+      const cv=document.createElement('canvas');cv.width=size;cv.height=img.height;
+      cv.getContext('2d',{willReadFrequently:true}).drawImage(img,0,0);
+      resolve({size,layers:Math.round(img.height/size),
+        data:cv.getContext('2d',{willReadFrequently:true}).getImageData(0,0,size,img.height).data});
+    };
+    img.onerror=reject;img.src=url.href||String(url);
+  });
+  return Promise.all([plane(roughUrl),plane(heightUrl)]).then(([rough,height])=>{
+    if(rough.size!==height.size||rough.layers!==height.layers){
+      throw new Error(`roughness and relief atlases disagree: ${rough.size}x${rough.layers} vs ${height.size}x${height.layers}`);
+    }
+    const texels=rough.size*rough.size*rough.layers;
+    const packed=new Uint8Array(texels*4);
+    for(let i=0;i<texels;i++){
+      packed[i*4]=rough.data[i*4];       // roughness
+      packed[i*4+1]=height.data[i*4];    // relief
+      packed[i*4+3]=255;
+    }
+    const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D_ARRAY,t);
+    gl.texImage3D(gl.TEXTURE_2D_ARRAY,0,gl.RGBA8,rough.size,rough.size,rough.layers,0,gl.RGBA,gl.UNSIGNED_BYTE,packed);
+    gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_S,gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_T,gl.REPEAT);
+    if(anisoExt)gl.texParameterf(gl.TEXTURE_2D_ARRAY,anisoExt.TEXTURE_MAX_ANISOTROPY_EXT,anisoMax);
+    return t;
+  });
+}
 // A dream bank is SURFACE_LAYERS surfaces × K temporal frames, laid out as
 // layer = slot*K + frame. K is authored per look profile; one frame is the old
 // still behaviour, five is a surface visibly cooking.
@@ -1538,8 +2363,33 @@ function makeSurfaceDreamTexture(frames=1){
   gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
   return t;
 }
+// The mark array mirrors the dream array's layer layout exactly, at a quarter
+// the side. A mark field is low-frequency by nature — where marks clot and
+// which way they run — so 128px carries it, and the whole six-bank set costs
+// about a sixteenth of what the albedo does.
+//
+// NOT sRGB. The dream tiles are SRGB8_ALPHA8 because they are colour; this is
+// data. Density and a doubled-angle direction vector pushed through a gamma
+// decode would come out silently wrong in a way that looks plausible.
+// ONE texture for both halves, because the pass has exactly one spare unit.
+// Live occupies layers [0, MARK_HALF_LAYERS), staged [MARK_HALF_LAYERS, 2x), and
+// the swap flips which base the shader reads rather than exchanging textures.
+// A fixed stride wastes layers for a one-frame bank, which at 128px costs about
+// 3MB in total — the same trick on the 512px dream arrays would have cost 84MB.
+function makeSurfaceMarkTexture(){
+  const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D_ARRAY,t);
+  gl.texImage3D(gl.TEXTURE_2D_ARRAY,0,gl.RGBA8,MARK_FIELD_SIZE,MARK_FIELD_SIZE,MARK_HALF_LAYERS*2,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+  gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_S,gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_T,gl.REPEAT);
+  if(anisoExt)gl.texParameterf(gl.TEXTURE_2D_ARRAY,anisoExt.TEXTURE_MAX_ANISOTROPY_EXT,anisoMax);
+  gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
+  return t;
+}
 function initSurfaceDream(){
   surfDreamTex=makeSurfaceDreamTexture(1);surfDreamStageTex=makeSurfaceDreamTexture(1);
+  surfMarkTex=makeSurfaceMarkTexture();markLiveBase=0;
   surfDreamFrames=1;surfDreamStageFrames=1;
 }
 export function r3dBeginSurfaceDreamBank(bankId=null,frames=1){
@@ -1547,6 +2397,8 @@ export function r3dBeginSurfaceDreamBank(bankId=null,frames=1){
   if(surfDreamStageTex)gl.deleteTexture(surfDreamStageTex);
   const k=Math.max(1,Math.min(MAX_DREAM_FRAMES,Math.floor(Number(frames))||1));
   surfDreamStageTex=makeSurfaceDreamTexture(k);
+  // Anything still queued was staged for the texture just deleted.
+  markQueue.length=0;markEpoch+=1;markStageReady.fill(0);
   if(!surfDreamStageTex)return false;
   surfDreamStageFrames=k;
   surfDreamPendingBank=bankId;
@@ -1566,17 +2418,93 @@ export function r3dSetSurfaceDream(slot,frame,image,mix=.68){
   gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfDreamStageTex);
   gl.texSubImage3D(gl.TEXTURE_2D_ARRAY,0,0,0,slot*k+f,SURFACE_TILE,SURFACE_TILE,1,gl.RGBA,gl.UNSIGNED_BYTE,cv);
   surfDreamMix[slot]=Math.max(0,Math.min(.98,Number(mix)||0));
+  stageMarkField(image,slot,f);
   return true;
+}
+// Derive the engraving from the tile that just arrived.
+//
+// Deliberately from a MARK_FIELD_SOURCE-sized copy rather than the 512 canvas
+// above: at full resolution this costs ~28ms, and material-mutation.js kills
+// the whole lens for the session if generation overlaps a frame longer than
+// 33ms. The measurement behind that number, and what survives the downsample,
+// is documented on MARK_FIELD_SOURCE.
+function stageMarkField(image,slot,frame){
+  if(!surfMarkTex||!image)return false;
+  try{
+    // The only part that cannot wait: the bitmap is closed by the caller as
+    // soon as this returns.
+    const cv=document.createElement('canvas');cv.width=MARK_FIELD_SOURCE;cv.height=MARK_FIELD_SOURCE;
+    const ctx=cv.getContext('2d',{willReadFrequently:true});
+    ctx.drawImage(image,0,0,MARK_FIELD_SOURCE,MARK_FIELD_SOURCE);
+    markQueue.push({
+      pixels:ctx.getImageData(0,0,MARK_FIELD_SOURCE,MARK_FIELD_SOURCE).data,
+      slot,frame,epoch:markEpoch,
+    });
+  }catch(err){
+    // A tile without an engraving is drawn by the procedural hash, which is
+    // exactly the behaviour that shipped before this existed. Never fatal.
+    console.warn('[r3d] mark field capture failed',err);
+    return false;
+  }
+  return true;
+}
+function deriveQueuedMark(entry){
+  // A bank that began while this was queued deleted the texture it was staged
+  // for; its tile belongs to a material nobody is looking at any more.
+  if(entry.epoch!==markEpoch||!surfMarkTex)return false;
+  const started=globalThis.performance?.now?.()||Date.now();
+  try{
+    const field=deriveMarkField(entry.pixels,MARK_FIELD_SOURCE,MARK_FIELD_SOURCE);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfMarkTex);
+    // Always into the half that is NOT live, so an arriving bank never rewrites
+    // the engraving currently on the walls.
+    const stageBase=markLiveBase?0:MARK_HALF_LAYERS;
+    const layer=stageBase+entry.slot*MAX_DREAM_FRAMES+entry.frame;
+    gl.texSubImage3D(gl.TEXTURE_2D_ARRAY,0,0,0,layer,field.size,field.size,1,gl.RGBA,gl.UNSIGNED_BYTE,field.data);
+    // A slot is only engraved once every frame of its boil is, or the crossfade
+    // would blend a derived frame against an empty one.
+    const k=Math.max(1,surfDreamStageFrames);
+    if(entry.slot>=0&&entry.slot<SURFACE_LAYERS){
+      markStageReady[entry.slot]=Math.min(k,markStageReady[entry.slot]+1);
+    }
+  }catch(err){
+    console.warn('[r3d] mark field derivation failed',err);
+    return false;
+  }
+  markLastMs=(globalThis.performance?.now?.()||Date.now())-started;
+  markDeriveMs+=markLastMs;markDeriveCount+=1;
+  return true;
+}
+// Drained from the frame loop under a time budget, so a ten-tile arrival costs
+// ten quiet frames instead of one that kills the lens.
+// Exported because the banks stream during the opening credits and the menu,
+// when r3dFrame is not being called at all — the world is not being rendered
+// yet. Without a tick that runs regardless, every engraving for the first bank
+// sits in the queue until the player reaches gameplay.
+export function r3dDrainMarkFields(budgetMs=MARK_FRAME_BUDGET_MS){return drainMarkQueue(budgetMs);}
+function drainMarkQueue(budgetMs=MARK_FRAME_BUDGET_MS){
+  if(!markQueue.length)return 0;
+  const started=globalThis.performance?.now?.()||Date.now();
+  let done=0;
+  while(markQueue.length){
+    deriveQueuedMark(markQueue.shift());done+=1;
+    if(((globalThis.performance?.now?.()||Date.now())-started)>=budgetMs)break;
+  }
+  return done;
 }
 export function r3dCommitSurfaceDream(mix=.68,options={}){
   if(!gl||!surfDreamStageTex)return false;
   gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfDreamStageTex);
   gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
+  if(surfMarkTex){gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfMarkTex);gl.generateMipmap(gl.TEXTURE_2D_ARRAY);}
   surfDreamMix.fill(Math.max(0,Math.min(.98,Number(mix)||0)));
   const bankId=options.bankId??surfDreamPendingBank;
   const transitionMs=Math.max(0,Number(options.transitionMs)||0);
   if(!surfDreamReady||transitionMs<=0){
     [surfDreamTex,surfDreamStageTex]=[surfDreamStageTex,surfDreamTex];
+    markLiveBase=markLiveBase?0:MARK_HALF_LAYERS;
+    markReady.set(markStageReady);markStageReady.fill(0);
     [surfDreamFrames,surfDreamStageFrames]=[surfDreamStageFrames,surfDreamFrames];
     surfDreamReady=true;surfDreamNextReady=false;surfDreamActiveBank=bankId;surfDreamPendingBank=null;
     surfDreamTransitionMs=0;
@@ -1595,26 +2523,92 @@ export function r3dSetLocalDiffusionLevel(v=1){localDiffusionAvailability=Math.m
 // How hard the world is boiling right now: dread, the coffee onset, and battle
 // impacts all push here. It scales the boil rate, how much generated structure
 // reaches the wall, and phosphor excitation in the VFD pass.
+// 1 restores the flat constant this shipped with — the A/B for the falloff.
+let ambientFloor=0.18;
+export function r3dSetAmbientFloor(v=0.18){ambientFloor=Math.max(0,Math.min(1,Number(v)||0));return ambientFloor;}
+export function r3dAmbientFloor(){return ambientFloor;}
+let ambientPlace=1;
+export function r3dWorldYaw(){return yaw+planYaw;}
+export function r3dSetAmbientPlace(v=1){ambientPlace=Math.max(0,Math.min(1,v==null?1:Number(v)));return ambientPlace;}
+export function r3dAmbientPlace(){return ambientPlace;}
 export function r3dSetAgitation(v=0){dreamAgitation=Math.max(0,Math.min(1,Number(v)||0));}
+// How hard the generated material's density pulls the recorder's threshold.
+// 0 is exactly the procedural hash this game shipped with, which makes it the
+// A/B: set it to zero and the walls go back to being drawn by noise.
+export function r3dSetMarkDensityGain(v=0.55){markDensityGain=Math.max(0,Math.min(2,Number(v)||0));return markDensityGain;}
+export function r3dMarkDensityGain(){return markDensityGain;}
+export function r3dSetMarkGrainGain(v=0.70){markGrainGain=Math.max(0,Math.min(2,Number(v)||0));return markGrainGain;}
+export function r3dMarkGrainGain(){return markGrainGain;}
+// 0 restores the flat per-profile white point every room used to share, which is
+// the A/B for the tone floor: does a room lit to .028 read as an engraving, or
+// as sparse dust.
+export function r3dSetWhitePointZoneAmount(v=1){whitePointZoneAmount=Math.max(0,Math.min(1,Number(v)??1));return whitePointZoneAmount;}
+export function r3dWhitePointZoneAmount(){return whitePointZoneAmount;}
+export function r3dWhitePointScale(){return whitePointScaleOverride??lightingWhitePointScale;}
+// Forces the scale regardless of zone, so the ceiling can be SWEPT against
+// measured ink instead of derived from an authored ambient that turns out not to
+// predict screen luminance. null hands the room back its own.
+// The screen A/B. null hands it back to the room, then to the look profile.
+export function r3dSetScreenOverride(id=null){
+  screenOverrideId=isScreen(id)?id:null;
+  return screenOverrideId;
+}
+export function r3dScreen(){
+  return{override:screenOverrideId,zone:lightingScreenId,
+    effective:screenOverrideId??lightingScreenId??currentLook().vfd.screen??'stochastic'};
+}
+export function r3dSetWhitePointScaleOverride(v=null){
+  whitePointScaleOverride=v==null?null:Math.max(.002,Math.min(4,Number(v)||0));
+  return whitePointScaleOverride;
+}
 export function r3dAgitation(){return dreamAgitation;}
 function surfaceDreamBlend(nowMs=globalThis.performance?.now?.()||Date.now()){
   if(!surfDreamNextReady||!surfDreamTransitionMs)return 0;
   const t=Math.max(0,Math.min(1,(nowMs-surfDreamTransitionStart)/surfDreamTransitionMs));
   if(t>=1){
     [surfDreamTex,surfDreamStageTex]=[surfDreamStageTex,surfDreamTex];
+    markLiveBase=markLiveBase?0:MARK_HALF_LAYERS;
+    markReady.set(markStageReady);markStageReady.fill(0);
     [surfDreamFrames,surfDreamStageFrames]=[surfDreamStageFrames,surfDreamFrames];
     surfDreamReady=true;surfDreamNextReady=false;surfDreamActiveBank=surfDreamPendingBank;surfDreamPendingBank=null;surfDreamTransitionMs=0;
     return 0;
   }
   return t*t*(3-2*t);
 }
-export function r3dSurfaceDreamStats(){const look=currentLook();return{active:[...surfDreamMix].filter((v)=>v>0).length,mix:[...surfDreamMix],local:look.material.localDiffusion*localDiffusionAvailability,bank:surfDreamActiveBank,pendingBank:surfDreamPendingBank,transitioning:surfDreamNextReady,frames:surfDreamFrames,stagedFrames:surfDreamStageFrames,boilHz:look.material.boilHz??0,structureMix:look.material.structureMix??0,agitation:dreamAgitation,burst:burstMix};}
-export function r3dSurfaceStats(){return{albedo:!!surfAlbedoTex,normal:!!surfNormalTex,roughness:!!surfRoughTex,height:!!surfHeightTex,ready:!!(surfAlbedoTex&&surfNormalTex&&surfRoughTex&&surfHeightTex)};}
+export function r3dSurfaceDreamStats(){const look=currentLook();return{active:[...surfDreamMix].filter((v)=>v>0).length,mix:[...surfDreamMix],local:look.material.localDiffusion*localDiffusionAvailability,bank:surfDreamActiveBank,pendingBank:surfDreamPendingBank,transitioning:surfDreamNextReady,frames:surfDreamFrames,stagedFrames:surfDreamStageFrames,boilHz:look.material.boilHz??0,structureMix:look.material.structureMix??0,agitation:dreamAgitation,burst:burstMix,
+  // The engraving, and what it costs. lastMs is watched because the lens
+  // disables itself for the session on a single 33ms frame, so this number
+  // going up is the early warning for that.
+  marks:{ready:!!surfMarkTex,size:MARK_FIELD_SIZE,source:MARK_FIELD_SOURCE,
+    derived:markDeriveCount,queued:markQueue.length,lastMs:+markLastMs.toFixed(2),densityGain:markDensityGain,grainGain:markGrainGain,
+    avgMs:markDeriveCount?+(markDeriveMs/markDeriveCount).toFixed(2):0,
+    // Slots currently engraved rather than drawn by the procedural hash.
+    engraved:[...markReady].filter((v)=>v>0).length,staging:[...markStageReady].filter((v)=>v>0).length}};}
+export function r3dSurfaceStats(){return{albedo:!!surfAlbedoTex,normal:!!surfNormalTex,
+  // Roughness and relief share one array now (R and G), so they are ready together.
+  roughness:!!surfMaterialTex,height:!!surfMaterialTex,
+  ready:!!(surfAlbedoTex&&surfNormalTex&&surfMaterialTex)};}
 let planTexture = null, materialTexture = null, sourceLayerTexture = null, planW = 0, planH = 0;
+// The material/ambient bytes as last uploaded, so a region patch can rewrite
+// material without having to re-derive the baked ambient sharing the texture.
+let planMatAmb = null;
 let planOriginX = 0, planOriginY = 0, sourceSurfaceTexture = null;
 let uniforms = {};
 let facing = 0; // 0=N(0,-1) 1=E 2=S 3=W
 let yaw = 0, yawTarget = 0, pitch = 0, pitchTarget = 0;
+// HOW FAR THE WORLD IS TURNED UNDER THE PLAYER AT THIS POSITION.
+//
+// Non-zero only on the spiral. `yaw` stays the LOGICAL look angle — the thing
+// the mouse and r3dStepDelta's eight-way snap both write — and the offset is
+// added on the way into the shader, so "forward" on screen and "forward" in the
+// logical corridor stay the same direction on every tread. That is why nothing
+// about movement needs to change on a curved stair.
+//
+// Eased on its own clock. The offset is derived from position, and a raster
+// cannot put tread centres at even angles: the measured step is monotone but
+// uneven, 8.8 to 33.7 degrees against an 18.0 mean. Smoothing the camera is the
+// right answer to that; distorting the ring to hide it is not.
+let planYaw = 0, planYawTarget = 0;
 let camX = 0, camZ = 0, camY = EYE_METERS / CELL;
 let lastT = 0;
 let fogOrigin = [0, 0];
@@ -1665,10 +2659,17 @@ function makeTex(w, h, data = null, format = 'rgba8') {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
   return t;
 }
-function makeFbo(tex) {
+// `extra` attaches further colour targets. Only the scene uses it: the march is
+// the one pass that knows a fragment's surface UV and slot, so the engraving has
+// to leave alongside the image or it cannot be recovered downstream at all.
+function makeFbo(tex, extra = []) {
   const f = gl.createFramebuffer();
   gl.bindFramebuffer(gl.FRAMEBUFFER, f);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+  if (extra.length) {
+    extra.forEach((t, i) => gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1 + i, gl.TEXTURE_2D, t, 0));
+    gl.drawBuffers([gl.COLOR_ATTACHMENT0, ...extra.map((_, i) => gl.COLOR_ATTACHMENT1 + i)]);
+  }
   const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
   if (status !== gl.FRAMEBUFFER_COMPLETE) {
     console.warn('[r3d] framebuffer incomplete', status);
@@ -1927,9 +2928,58 @@ function runPixelMeshPass(state, now) {
   gl.bindTexture(gl.TEXTURE_2D, sceneTex);
   gl.uniform1i(pixelMeshU('uDepth'), 2);
 
+  // The engraving, in screen space. Unit 3 — this pass uses three samplers
+  // against a limit of sixteen, so unlike the raymarch it has room to spare.
+  gl.activeTexture(gl.TEXTURE3);
+  gl.bindTexture(gl.TEXTURE_2D, markTex);
+  gl.uniform1i(pixelMeshU('uMarks'), 3);
+  gl.uniform1f(pixelMeshU('uMarkDensityGain'), markDensityGain);
+  gl.uniform1f(pixelMeshU('uMarkGrainGain'), markGrainGain);
+
+  // THE SCREEN. The dial overrules the room, the room overrules the look, and
+  // the look is what an ordinary frame uses.
+  const screen = screenUniforms(screenOverrideId ?? lightingScreenId ?? look.vfd.screen ?? 'stochastic');
+  gl.uniform1i(pixelMeshU('uScreenKind'), screen.kind);
+  gl.uniform1f(pixelMeshU('uScreenPeriodPx'), screen.periodPx);
+  gl.uniform3f(pixelMeshU('uScreenAngles'), screen.angles[0], screen.angles[1], screen.angles[2]);
+  gl.uniform2f(pixelMeshU('uScreenBands'), screen.bands[0], screen.bands[1]);
+  gl.uniform1f(pixelMeshU('uScreenSharpness'), screen.sharpness);
+  gl.uniform1f(pixelMeshU('uScreenGrainFollow'), screen.grainFollow);
+  gl.uniform1f(pixelMeshU('uScreenJitter'), screen.jitter);
+
+  // The blue-noise threshold mask, on unit 4. NEAREST and REPEAT: it is a rank
+  // table, not an image — interpolating between two ranks invents a threshold
+  // that belongs to neither cell and reintroduces structure.
+  gl.activeTexture(gl.TEXTURE4);
+  gl.bindTexture(gl.TEXTURE_2D, ensureBlueNoise(gl));
+  gl.uniform1i(pixelMeshU('uNoise'), 4);
+  gl.uniform2f(pixelMeshU('uNoiseSize'), BLUE_NOISE_SIZE, BLUE_NOISE_SIZE);
+  // The profile says how this LOOK reads; the zone says how much light this ROOM
+  // has to read by. BOTH ENDS have to move together: scaling only the white point
+  // was the first version of this and it changed nothing, because the black point
+  // is the end the interiors actually fail. Measured raw, in byte terms against a
+  // black point at 1.3: the loading bay's walls sit at 51 with 0.2% underneath it,
+  // and the get-in's at 1.3 with 63% underneath — six times below the floor at the
+  // median. Nothing downstream of that can draw a mark.
+  const scale = whitePointScaleOverride ?? lightingWhitePointScale;
+  const blend = (authored, zoned) => zoned + (authored - zoned) * (1 - whitePointZoneAmount);
+  const authoredWhite = look.vfd.whitePoint ?? 1.0;
+  const authoredBlack = look.vfd.blackPoint ?? 0.0;
+  const black = blend(authoredBlack, authoredBlack * scale);
+  gl.uniform1f(pixelMeshU('uBlackPoint'), black);
+  // Floored clear of the black point so a scale can never invert the curve.
+  gl.uniform1f(pixelMeshU('uWhitePoint'),
+    Math.max(black + 0.002, blend(authoredWhite, authoredWhite * scale)));
+  gl.uniform1f(pixelMeshU('uToneGamma'), look.vfd.toneGamma ?? 1.0);
+  gl.uniform1f(pixelMeshU('uLineAmount'), look.vfd.lineAmount ?? 0.0);
+  gl.uniform1f(pixelMeshU('uToneAmount'), look.vfd.toneAmount ?? 0.0);
+
   gl.uniform2f(pixelMeshU('uRes'), uniforms.sceneW, uniforms.sceneH);
   gl.uniform3f(pixelMeshU('uCam'), camX, camY, camZ);
-  gl.uniform1f(pixelMeshU('uYaw'), yaw);
+  // World bearing, not the logical one. This uniform drives the VFD temporal
+  // reprojection: if the scene pass rotates on the spiral and this does not, the
+  // whole climb smears.
+  gl.uniform1f(pixelMeshU('uYaw'), yaw + planYaw);
   gl.uniform1f(pixelMeshU('uPitch'), pitch);
   gl.uniform1f(pixelMeshU('uCellMeters'), CELL);
   gl.uniform1f(pixelMeshU('uTime'), now);
@@ -2100,9 +3150,9 @@ export function r3dInit(mapEl) {
   Promise.all([
     loadTextureArray(assetUrl('assets/surfaces/surface-albedo.jpg'),{srgb:true}),
     loadTextureArray(assetUrl('assets/surfaces/surface-normal.png')),
-    loadTextureArray(assetUrl('assets/surfaces/surface-rough.jpg')),
-    loadTextureArray(assetUrl('assets/surfaces/surface-height.png')),
-  ]).then(([a,n,r,h])=>{surfAlbedoTex=a;surfNormalTex=n;surfRoughTex=r;surfHeightTex=h;surfaceTexture=a;})
+    loadPackedMaterialArray(assetUrl('assets/surfaces/surface-rough.jpg'),
+                            assetUrl('assets/surfaces/surface-height.png')),
+  ]).then(([a,n,m])=>{surfAlbedoTex=a;surfNormalTex=n;surfMaterialTex=m;surfaceTexture=a;})
     .catch((err)=>console.warn('surface arrays unavailable; using native material fallback',err));
   // The body is generated data, not an ordinary colour texture. Fingerprint
   // its URL so a running desktop/webview cannot retain an older matte/card
@@ -2122,6 +3172,7 @@ function resize() {
   const sw = Math.max(64, Math.round(canvas.width * RENDER_SCALE));
   const sh = Math.max(64, Math.round(canvas.height * RENDER_SCALE));
   if (sceneTex) { gl.deleteTexture(sceneTex); gl.deleteFramebuffer(sceneFbo); }
+  if (markTex) { gl.deleteTexture(markTex); markTex = null; }
   if (meshTexA) {
     gl.deleteTexture(meshTexA); gl.deleteTexture(meshTexB);
     gl.deleteFramebuffer(meshFboA); gl.deleteFramebuffer(meshFboB);
@@ -2134,7 +3185,12 @@ function resize() {
   // crawl sideways as the camera changed angle. RGB is explicitly clamped in
   // the raymarch shader, so this precision upgrade does not alter exposure.
   sceneTex = makeTex(sw, sh, null, 'rgba16f');
-  sceneFbo = makeFbo(sceneTex);
+  // RGBA8, not the scene's rgba16f: density, a doubled-angle direction and a
+  // coherence all live in 0..1, and test/mark-field.spec.mjs shows eight bits
+  // resolve the grain to about a tenth of a degree, far finer than the warp
+  // that consumes it. Half the bandwidth of matching the scene.
+  markTex = makeTex(sw, sh, null, 'rgba8');
+  sceneFbo = makeFbo(sceneTex, [markTex]);
   meshTexA = makeMeshTex(sw, sh);
   meshTexB = makeMeshTex(sw, sh);
   meshFboA = makeFbo(meshTexA);
@@ -2158,20 +3214,44 @@ export function r3dTurn(dir) {
   yawTarget = base * quarter;
   r3dResetVfdMemory();
 }
+// These caps are a rail against GARBAGE INPUT — a wild delta from a lost
+// pointer lock, a hot-plugged pad — and nothing else. They were ±.16 and ±.12
+// radians, which is not a garbage threshold: it is roughly what a hand actually
+// moves in one frame, so it silently became the sensitivity ceiling. The
+// clamp bit whenever dx*sensitivity exceeded 33, which at the top of the slider
+// is a movement of THREE PIXELS, making every setting above about 1.7
+// indistinguishable and the maximum feel slow.
+//
+// Pixel-space deltas are already bounded upstream (clampDelta in
+// pointer-mode.js), so these only need to be beyond anything a hand produces.
+const LOOK_YAW_LIMIT=.9;    // ~51 degrees in one frame
+const LOOK_PITCH_LIMIT=.35;
 export function r3dLook(yawDelta=0,pitchDelta=0) {
-  yawTarget += Math.max(-.16,Math.min(.16,Number(yawDelta)||0));
-  pitchTarget = Math.max(-.62,Math.min(.62,pitchTarget+Math.max(-.12,Math.min(.12,Number(pitchDelta)||0))));
+  yawTarget += Math.max(-LOOK_YAW_LIMIT,Math.min(LOOK_YAW_LIMIT,Number(yawDelta)||0));
+  pitchTarget = Math.max(-.62,Math.min(.62,pitchTarget+Math.max(-LOOK_PITCH_LIMIT,Math.min(LOOK_PITCH_LIMIT,Number(pitchDelta)||0))));
   facing=((Math.round(yawTarget/(Math.PI/2))%4)+4)%4;
   r3dResetVfdMemory();
   return {yaw:yawTarget,pitch:pitchTarget,facing};
 }
 export function r3dLookAngles(){return{yaw:yawTarget,pitch:pitchTarget,facing};}
+export function r3dSetLookAngles({ yaw: nextYaw = yawTarget, pitch: nextPitch = pitchTarget, immediate = true } = {}) {
+  yawTarget = Number.isFinite(Number(nextYaw)) ? Number(nextYaw) : yawTarget;
+  pitchTarget = Math.max(-.62, Math.min(.62, Number.isFinite(Number(nextPitch)) ? Number(nextPitch) : pitchTarget));
+  facing = ((Math.round(yawTarget / (Math.PI / 2)) % 4) + 4) % 4;
+  if (immediate) { yaw = yawTarget; pitch = pitchTarget; }
+  r3dResetVfdMemory();
+  return { yaw: yawTarget, pitch: pitchTarget, facing };
+}
 // Put the head back level. Windowed play could leave pitch parked near its
 // upper clamp — you spend the whole session looking at the ceiling — because
 // nothing ever recentred it after focus was lost and regained.
-export function r3dRecenterLook({ pitch = true, yaw = false } = {}) {
-  if (pitch) pitchTarget = 0;
-  if (yaw) { const q = Math.PI / 2; const k = Math.round(yawTarget / q); facing = ((k % 4) + 4) % 4; yawTarget = k * q; }
+export function r3dRecenterLook({ pitch: resetPitch = true, yaw: resetYaw = false, immediate = true } = {}) {
+  if (resetPitch) pitchTarget = 0;
+  if (resetYaw) { const q = Math.PI / 2; const k = Math.round(yawTarget / q); facing = ((k % 4) + 4) % 4; yawTarget = k * q; }
+  if (immediate) {
+    if (resetPitch) pitch = pitchTarget;
+    if (resetYaw) yaw = yawTarget;
+  }
   r3dResetVfdMemory();
   return { yaw: yawTarget, pitch: pitchTarget, facing };
 }
@@ -2223,10 +3303,21 @@ export function r3dSetPlan(rgba, w, h, material = null, options = {}) {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
+  // RG8, not R8: G carries the baked per-cell ambient (world/floorplan.js
+  // bakeAmbientField). It rides here rather than in a texture of its own
+  // because MAX_TEXTURE_IMAGE_UNITS is 16 on the target M4 Pro and all 16 are
+  // bound — adding a sampler to the scene pass costs one that does not exist.
+  // 255/AMBIENT_PLACE_SCALE is the neutral multiplier, so a plan slice with no
+  // baked field renders exactly as it did before this existed.
   const mat = material || new Uint8Array(w * h).fill(MATERIAL.serviceConcrete);
+  const amb = options.ambient || null;
+  const matAmb = new Uint8Array(w * h * 2);
+  const neutral = Math.round(255 / AMBIENT_PLACE_SCALE);   // encodes to exactly 1.0
+  for (let i = 0; i < w * h; i++) { matAmb[i * 2] = mat[i]; matAmb[i * 2 + 1] = amb ? amb[i] : neutral; }
+  planMatAmb = matAmb;
   materialTexture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, materialTexture);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, w, h, 0, gl.RED, gl.UNSIGNED_BYTE, mat);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG8, w, h, 0, gl.RG, gl.UNSIGNED_BYTE, matAmb);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -2308,13 +3399,21 @@ export function r3dPatchPlan(rgba, materialOrX, xOrY, yOrW, wOrH, maybeH) {
   gl.bindTexture(gl.TEXTURE_2D, planTexture);
   gl.texSubImage2D(gl.TEXTURE_2D, 0, x, y, w, h, gl.RGBA, gl.UNSIGNED_BYTE, sub);
   if (material && materialTexture) {
-    const mats = new Uint8Array(w * h);
+    // The texture is RG8 now, so this cannot upload RED — the format has to
+    // match the internal format's base format or the call throws. Patching from
+    // the retained packed buffer also keeps the baked ambient in G intact: a
+    // mutation moves a wall, it does not relight the building.
+    const mats = new Uint8Array(w * h * 2);
     for (let ry = 0; ry < h; ry++) {
-      const src = (y + ry) * planW + x;
-      mats.set(material.subarray(src, src + w), ry * w);
+      for (let rx = 0; rx < w; rx++) {
+        const src = (y + ry) * planW + x + rx, dst = (ry * w + rx) * 2;
+        mats[dst] = material[src];
+        mats[dst + 1] = planMatAmb ? planMatAmb[src * 2 + 1] : Math.round(255 / AMBIENT_PLACE_SCALE);
+        if (planMatAmb) planMatAmb[src * 2] = material[src];
+      }
     }
     gl.bindTexture(gl.TEXTURE_2D, materialTexture);
-    gl.texSubImage2D(gl.TEXTURE_2D, 0, x, y, w, h, gl.RED, gl.UNSIGNED_BYTE, mats);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, x, y, w, h, gl.RG, gl.UNSIGNED_BYTE, mats);
   }
 }
 
@@ -2417,6 +3516,10 @@ export function r3dFrame(state) {
   const now = performance.now() / 1000;
   const dt = Math.min(0.1, now - (lastT || now));
   lastT = now;
+  // Spend a slice of this frame on any engraving still owed. Doing it before
+  // the scene keeps the cost inside the frame's own budget rather than landing
+  // on top of an already-long one.
+  drainMarkQueue();
 
   // main.js supplies a frame-interpolated physical player position. The camera
   // is that position—never a follower with its own lag or acceleration state.
@@ -2428,6 +3531,11 @@ export function r3dFrame(state) {
   camX=nextCamX;
   camZ=nextCamZ;
   yaw += (yawTarget - yaw) * (1 - Math.exp(-dt * 12));
+  planYawTarget = Number(state.yawOffset) || 0;
+  // Shortest way round, so crossing the atan2 branch does not spin the camera.
+  const planYawDelta = Math.atan2(Math.sin(planYawTarget - planYaw), Math.cos(planYawTarget - planYaw));
+  planYaw += planYawDelta * (1 - Math.exp(-dt * 9));
+  const worldYaw = yaw + planYaw;
   pitch += (pitchTarget - pitch) * (1 - Math.exp(-dt * 14));
   // Eye height above whatever floor you are standing on. Eased, so a stair is
   // a climb rather than a series of teleports.
@@ -2447,6 +3555,10 @@ export function r3dFrame(state) {
   const torchConeOuter=Math.max(torchConeInner+.015,Math.min(.98,Number(torch.coneOuter)||.94));
   const torchSpill=Math.max(0,Math.min(.12,Number(torch.spill??.05)||0));
   const opticalEffects=visualEffectsEnabled()?1:0;
+  const sensoryProfile=String(state.sensoryProfile||'story');
+  const hushSense=sensoryProfile==='hush-prowl'?1:sensoryProfile==='hush-listen'?.75:0;
+  const frameAmbientColor=hushSense>0?HUSH_AMBIENT_COLOR:lightingAmbientColor;
+  const frameAmbientIntensity=hushSense>0?Math.max(lightingAmbientIntensity,.24):lightingAmbientIntensity;
 
   // Keep the gameplay presence authoritative while giving only its drawing a
   // short material resolve. Despawn keeps the last world position long enough
@@ -2462,6 +3574,14 @@ export function r3dFrame(state) {
       strength:Math.max(0,Math.min(1,Number(incomingHush.strength)||0)),
     };
   }
+  const surfacesTarget=(surfAlbedoTex&&surfNormalTex&&surfMaterialTex)?1:0;
+  // Slower than the hush body on the way in: this is a whole building's worth of
+  // surface changing, and it should read as the light finding the material, not
+  // as a cut. Instant on the way out, because losing the textures is a fault.
+  surfacesManifestation+= surfacesTarget
+    ? (surfacesTarget-surfacesManifestation)*(1-Math.exp(-dt*1.35))
+    : (surfacesTarget-surfacesManifestation);
+  if(Math.abs(surfacesTarget-surfacesManifestation)<.002)surfacesManifestation=surfacesTarget;
   const hushBodyTarget=incomingHush?1:0;
   const hushBodyRate=hushBodyTarget?7.2:4.0;
   hushBodyManifestation+=(hushBodyTarget-hushBodyManifestation)*(1-Math.exp(-dt*hushBodyRate));
@@ -2473,7 +3593,7 @@ export function r3dFrame(state) {
   if (textSpaceActive) {
     P3.renderPropPass({
       camX: camX * CELL, camY: camY * CELL, camZ: camZ * CELL,
-      yaw, pitch, light: 1, fogTexture, fogOrigin, fogSize: FOG_TEX,
+      yaw: worldYaw, pitch, light: 1, fogTexture, fogOrigin, fogSize: FOG_TEX,
       cellMeters: CELL, zoneTints: ZONE_TINTS,
       localLightCount: 0, localLightPositions, localLightColors,
       localShadowIndex:-1,shadowLight:null,
@@ -2513,12 +3633,12 @@ export function r3dFrame(state) {
 
   P3.renderPropPass({
     camX: camX * CELL, camY: camY * CELL, camZ: camZ * CELL,
-    yaw, pitch, light: torchPower, fogTexture, fogOrigin, fogSize:FOG_TEX,
+    yaw: worldYaw, pitch, light: torchPower, fogTexture, fogOrigin, fogSize:FOG_TEX,
     cellMeters:CELL, zoneTints:ZONE_TINTS,
     localLightCount,localLightPositions,localLightColors,
     localShadowIndex,shadowLight:localShadowLight,
     torch:{power:torchPower,color:torchColor,reach:torchReach,coneInner:torchConeInner,coneOuter:torchConeOuter,spill:torchSpill},
-    ambientColor:lightingAmbientColor,ambientIntensity:lightingAmbientIntensity,
+    ambientColor:frameAmbientColor,ambientIntensity:frameAmbientIntensity,
     planTexture,planSize:[planW,planH],planOrigin:[planOriginX,planOriginY],
   });
 
@@ -2530,7 +3650,7 @@ export function r3dFrame(state) {
   gl.uniform2f(U('uRes'), uniforms.sceneW, uniforms.sceneH);
   gl.uniform1f(U('uTime'), now);
   gl.uniform3f(U('uCam'), camX, camY, camZ);
-  gl.uniform1f(U('uYaw'), yaw);
+  gl.uniform1f(U('uYaw'), worldYaw);
   gl.uniform1f(U('uPitch'), pitch);
   gl.uniform2f(U('uTile'), state.tileW, state.tileH);
   gl.uniform1f(U('uWorldCount'), state.worldCount);
@@ -2548,8 +3668,12 @@ export function r3dFrame(state) {
   gl.uniform1f(U('uTorchReach'),torchReach);
   gl.uniform2f(U('uTorchCone'),torchConeInner,torchConeOuter);
   gl.uniform1f(U('uTorchSpill'),torchSpill);
-  gl.uniform3fv(U('uAmbientColor'),lightingAmbientColor);
-  gl.uniform1f(U('uAmbientIntensity'),lightingAmbientIntensity);
+  gl.uniform3fv(U('uAmbientColor'),frameAmbientColor);
+  gl.uniform1f(U('uAmbientIntensity'),frameAmbientIntensity);
+  gl.uniform1f(U('uAmbientFloor'),ambientFloor);
+  gl.uniform1f(U('uAmbientPlace'),ambientPlace);
+  gl.uniform1f(U('uNightSeed'),nightSeed);
+  gl.uniform1f(U('uHushSense'),hushSense);
   gl.uniform1f(U('uOpticalEffects'),opticalEffects);
   gl.uniform1f(U('uReduceMotionOptical'),pixelMeshSettings.reduceMotion?1:0);
   gl.uniform1i(U('uLocalLightCount'),localLightCount);
@@ -2595,14 +3719,20 @@ export function r3dFrame(state) {
   gl.uniform4f(U('uWaterParams'), water.active?1:0, Number(water.levelM ?? -0.06), Number(water.murk ?? 0.85), water.reduceMotion?1:0);
   const look=currentLook();
   const bankBlend=surfaceDreamBlend();
-  gl.uniform1f(U('uSurfacesReady'),surfAlbedoTex&&surfNormalTex&&surfRoughTex&&surfHeightTex?1:0);
-  if(surfAlbedoTex&&surfNormalTex&&surfRoughTex&&surfHeightTex){
+  gl.uniform1f(U('uSurfacesReady'),surfacesManifestation);
+  if(surfAlbedoTex&&surfNormalTex&&surfMaterialTex){
     gl.activeTexture(gl.TEXTURE6);gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfAlbedoTex);gl.uniform1i(U('uSurfAlbedo'),6);
     gl.activeTexture(gl.TEXTURE7);gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfNormalTex);gl.uniform1i(U('uSurfNormal'),7);
-    gl.activeTexture(gl.TEXTURE8);gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfRoughTex);gl.uniform1i(U('uSurfRough'),8);
+    gl.activeTexture(gl.TEXTURE8);gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfMaterialTex);gl.uniform1i(U('uSurfMaterial'),8);
     gl.activeTexture(gl.TEXTURE9);gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfDreamTex);gl.uniform1i(U('uSurfDream'),9);
-    gl.activeTexture(gl.TEXTURE10);gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfHeightTex);gl.uniform1i(U('uSurfHeight'),10);
     gl.activeTexture(gl.TEXTURE11);gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfDreamStageTex);gl.uniform1i(U('uSurfDreamNext'),11);
+    // Unit 10, freed by packing roughness and relief into one array.
+    gl.activeTexture(gl.TEXTURE10);gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfMarkTex);gl.uniform1i(U('uSurfMarks'),10);
+    gl.uniform1f(U('uMarkStride'),MAX_DREAM_FRAMES);
+    gl.uniform1f(U('uMarksLiveBase'),markLiveBase);
+    gl.uniform1f(U('uMarksStageBase'),markLiveBase?0:MARK_HALF_LAYERS);
+    gl.uniform1fv(U('uMarksReady[0]'),markReadyUniform(markReady,surfDreamFrames));
+    gl.uniform1fv(U('uMarksReadyNext[0]'),markReadyUniform(markStageReady,surfDreamStageFrames));
   }
   gl.uniform1f(U('uDreamReady'),surfDreamReady&&surfDreamMix.some((v)=>v>0)?1:0);
   gl.uniform1f(U('uDreamNextReady'),surfDreamNextReady?1:0);

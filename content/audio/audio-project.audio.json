@@ -3260,6 +3260,136 @@
         "mischief",
         "non-battle"
       ]
+    },
+    {
+      "id": "asset.whisper.whisper-01",
+      "kind": "file",
+      "path": "audio/game/whispers/whisper-01.mp3",
+      "tags": [
+        "whisper",
+        "hush",
+        "bed"
+      ]
+    },
+    {
+      "id": "asset.whisper.whisper-02",
+      "kind": "file",
+      "path": "audio/game/whispers/whisper-02.mp3",
+      "tags": [
+        "whisper",
+        "hush",
+        "bed"
+      ]
+    },
+    {
+      "id": "asset.whisper.whisper-03",
+      "kind": "file",
+      "path": "audio/game/whispers/whisper-03.mp3",
+      "tags": [
+        "whisper",
+        "hush",
+        "bed"
+      ]
+    },
+    {
+      "id": "asset.whisper.whisper-04",
+      "kind": "file",
+      "path": "audio/game/whispers/whisper-04.mp3",
+      "tags": [
+        "whisper",
+        "hush",
+        "bed"
+      ]
+    },
+    {
+      "id": "asset.whisper.whisper-05",
+      "kind": "file",
+      "path": "audio/game/whispers/whisper-05.mp3",
+      "tags": [
+        "whisper",
+        "hush",
+        "bed"
+      ]
+    },
+    {
+      "id": "asset.whisper.whisper-06",
+      "kind": "file",
+      "path": "audio/game/whispers/whisper-06.mp3",
+      "tags": [
+        "whisper",
+        "hush",
+        "bed"
+      ]
+    },
+    {
+      "id": "asset.whisper.whisper-07",
+      "kind": "file",
+      "path": "audio/game/whispers/whisper-07.mp3",
+      "tags": [
+        "whisper",
+        "hush",
+        "bed"
+      ]
+    },
+    {
+      "id": "asset.whisper.whisper-08",
+      "kind": "file",
+      "path": "audio/game/whispers/whisper-08.mp3",
+      "tags": [
+        "whisper",
+        "hush",
+        "bed"
+      ]
+    },
+    {
+      "id": "asset.whisper.whisper-09",
+      "kind": "file",
+      "path": "audio/game/whispers/whisper-09.mp3",
+      "tags": [
+        "whisper",
+        "hush",
+        "bed"
+      ]
+    },
+    {
+      "id": "asset.whisper.whisper-10",
+      "kind": "file",
+      "path": "audio/game/whispers/whisper-10.mp3",
+      "tags": [
+        "whisper",
+        "hush",
+        "bed"
+      ]
+    },
+    {
+      "id": "asset.whisper.whisper-11",
+      "kind": "file",
+      "path": "audio/game/whispers/whisper-11.mp3",
+      "tags": [
+        "whisper",
+        "hush",
+        "bed"
+      ]
+    },
+    {
+      "id": "asset.whisper.whisper-12",
+      "kind": "file",
+      "path": "audio/game/whispers/whisper-12.mp3",
+      "tags": [
+        "whisper",
+        "hush",
+        "bed"
+      ]
+    },
+    {
+      "id": "asset.whisper.whisper-13",
+      "kind": "file",
+      "path": "audio/game/whispers/whisper-13.mp3",
+      "tags": [
+        "whisper",
+        "hush",
+        "bed"
+      ]
     }
   ],
   "cues": [
@@ -3340,6 +3470,23 @@
           "gain": 0.57,
           "playbackRate": 1,
           "pan": 0
+        }
+      ]
+    },
+    {
+      "id": "booth.name-mask",
+      "title": "Booth rain name mask",
+      "bus": "sfx",
+      "concurrency": "restart",
+      "layers": [
+        {
+          "id": "booth.name-mask.layer",
+          "assetId": "asset.game.rain",
+          "gain": 0.92,
+          "playbackRate": 0.82,
+          "pan": 0,
+          "trimStart": 0.35,
+          "trimEnd": 1.75
         }
       ]
     },
@@ -4662,6 +4809,11 @@
       "id": "trigger.conservatory.cold_open_dialogue.tape.run.again.line.1.rewind",
       "event": "story.line:conservatory.cold_open_dialogue:tape.run.again.line.1",
       "cueId": "rewind"
+    },
+    {
+      "id": "trigger.conservatory.cold_open_dialogue.threshold.line.name-obscured.booth.name-mask",
+      "event": "story.line:conservatory.cold_open_dialogue:threshold.line.name-obscured",
+      "cueId": "booth.name-mask"
     },
     {
       "id": "trigger.conservatory.cold_open_dialogue.threshold.line.3.signature",

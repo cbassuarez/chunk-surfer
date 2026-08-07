@@ -74,7 +74,8 @@ export function makeTitleScene({
   buildLabel = '',
   onNewGame,
   onContinue,
-  onJustSurf,
+  onHush,
+  hushAvailability = null,
   onSettings,
   onArchive = () => {},
   onReturnIndex = () => {},
@@ -90,7 +91,7 @@ export function makeTitleScene({
     { id: 'new-run', label: 'new run', run: onNewGame, confirms: true, stay: true },
     { id: 'archive', label: 'achievements', stay: true, run: onArchive },
     { id: 'return-index', label: 'endings', stay: true, run: onReturnIndex },
-    { id: 'just-surf', label: 'just surf', run: onJustSurf },
+    ...(replay ? [{ id: 'hush-run', label: 'THE HUSH', run: onHush, stay: !hushAvailability?.ready, locked: !hushAvailability?.ready }] : []),
     { id: 'beta-notice', label: 'beta notice', stay: true, run: onBetaNotice },
     { id: 'settings', label: 'settings', stay: true, run: onSettings },
   ];
@@ -106,6 +107,16 @@ export function makeTitleScene({
 
   const columns = () => menuColumns;
   const rowsPerColumn = () => Math.ceil(items.length / columns());
+
+  function hushLabel() {
+    const label = 'THE HUSH';
+    const beat = Math.floor(t * 1.37);
+    if ((beat % 5) === 1 || (beat % 11) === 7) {
+      const index = (beat * 7 + 3) % label.length;
+      if (label[index] !== ' ') return `${label.slice(0, index)}?${label.slice(index + 1)}`;
+    }
+    return label;
+  }
 
   function primeAudio() {
     if (audioPrimed) return;
@@ -145,8 +156,9 @@ export function makeTitleScene({
     const item = items[sel];
     if (!item) return true;
 
-    if (item.disabled) {
+    if (item.disabled || item.locked) {
       AUDIO.menuMove();
+      item.run?.();
       disarm();
       return true;
     }
@@ -312,7 +324,10 @@ export function makeTitleScene({
         uiCenter(body.y + 10, 'AUDIOCORP LOCAL MONITOR READY', 'ui-secondary', 0.28);
       }
 
-      if (meta.hushMet) uiCenter(body.y + 9, 'THE HUSH HAS YOUR SIGNAL.', 'ui-danger');
+      if (items[sel]?.id === 'hush-run') uiCenter(body.y + 9, hushAvailability?.ready
+        ? (hushAvailability?.hasSession ? 'RESUME TAPE / RESTART TAPE' : 'CAUSE WHAT THE SOURCE TAPE ALREADY CONTAINS.')
+        : (hushAvailability?.message || 'COMPLETE A RETURN WITH ≤ 1 INJURY'), hushAvailability?.ready ? 'ui-danger' : 'ui-secondary');
+      else if (meta.hushMet) uiCenter(body.y + 9, 'THE HUSH HAS YOUR SIGNAL.', 'ui-danger');
       else if (meta.leftMidRun) uiCenter(body.y + 9, 'UNFINISHED RUN SAVED.', 'ui-danger');
       else if (replay) uiCenter(body.y + 9, 'ENDINGS AND ACHIEVEMENTS ARE AVAILABLE.', 'ui-amber');
       else uiCenter(body.y + 9, 'THE CASE FILE IS EMPTY.', 'ui-secondary');
@@ -326,7 +341,7 @@ export function makeTitleScene({
       items.forEach((item, i) => {
         const on = i === sel;
         const armed = item.confirms && confirmNewRun;
-        const labelText = armed ? TITLE_CONFIRM_PROMPT : item.label.toUpperCase();
+        const labelText = armed ? TITLE_CONFIRM_PROMPT : item.id === 'hush-run' ? hushLabel() : item.label.toUpperCase();
         const col = Math.floor(i / rowCount);
         const row = i % rowCount;
         const itemX = layout.colX[col] ?? layout.colX[0];

@@ -1255,7 +1255,7 @@ The action sounds in section 10 remain the interactive battle vocabulary. This s
 - [ ] `round-1.line.6`, on “pews return it four times” → four `battle_chapel_pew_return` layers; each return becomes slightly more present while remaining physically located at the pew banks.
 - [ ] `round-2.line.2`, on “four and one” → four clean-take room identities and chapel tone overlap briefly; on “It overlapped” → lock them into one impossible noise floor.
 - [ ] `round-2.line.3`, on “date is wrong by eleven years” → no clock or calendar sting; the stable file/machine bed is the evidence.
-- [ ] `round-3.line.2`, on “became the music” → transition the false signal from voice-edge to instrument/room process; on “wanted a body back” → narrow into close body resonance without a heartbeat hit.
+- [ ] `round-3.line.2`, on “retain the reference” → let one physical resonator join the monitor return; on “again” → repeat the same room response without adding a creature voice.
 - [ ] `round-3.line.3`, on “blower is off” → establish absent wind/mechanics; exactly on “organ is sounding anyway” → start `battle_chapel_organ_impossible_a/b` from pipe positions with no key or blower transient.
 - [ ] `round-3.line.6`, on “meter... sits flat” → keep organ audible in world/claim while the trusted recorder meter path remains flat; no meter sound.
 - [ ] `round-4.line.7`, on “run out of faces” → sequence `battle_chapel_face_off` for borrowed identities; at “the one it started with” → leave only the previous-recordist signal texture.

@@ -90,7 +90,34 @@ export const PROP_MESH = Object.freeze({
   box_office_desk:{w:1.15,d:.62,blocks:true}, program_stack:{w:.42,d:.32,blocks:false},
   cash_terminal:{w:.36,d:.28,blocks:false}, queue_stanchion:{w:.32,d:.32,blocks:false},
   notice_board:{w:1.2,d:.12,blocks:false}, pool_start_block:{w:.62,d:.72,blocks:true},
+  // The dance wing. The barre, the mirror and the stencil are wall furniture and
+  // must face away from masonry; the rail and the lino rolls stand on the floor.
+  dance_barre:{w:2.9,d:.22,h:1.14,blocks:false,mount:'wall'},
+  dance_mirror:{w:3.96,d:.10,h:2.60,blocks:false,mount:'wall'},
+  door_stencil:{w:.46,d:.04,h:.34,blocks:false,mount:'wall'},
+  costume_rail:{w:1.6,d:.55,h:1.62,blocks:true},
+  rolled_lino:{w:.62,d:.42,h:1.78,blocks:true},
   pool_lane_markings:{w:10.2,d:15.5,blocks:false},
+  bay_canopy:{w:7.4,d:7.6,blocks:false},
+  yard_booth:{w:3.4,d:3.0,blocks:false}, yard_fence_run:{w:.7,d:24.4,blocks:false},
+  yard_lamp_column:{w:2.4,d:.6,blocks:false}, yard_skip:{w:3.7,d:1.9,blocks:false},
+  yard_clutter:{w:6.0,d:3.2,blocks:false}, yard_markings:{w:16.0,d:13.0,blocks:false},
+  yard_sign:{w:1.9,d:.2,blocks:false}, yard_road:{w:34.4,d:11.0,blocks:false},
+  yard_gate_piers:{w:1.0,d:14.0,blocks:false}, yard_hedge_run:{w:2.0,d:11.6,blocks:false},
+  // The full depth of the yard now, not the 46.5 the yard used to be. The mesh
+  // is authored in absolute local z (-7.5..84.5) and is deliberately NOT centred
+  // on its anchor, so this footprint is nominal — nothing collides with it or
+  // picks it (blocks and interactive are both off).
+  conservatory_west_elevation:{w:1.9,d:92.0,blocks:false},
+  conservatory_stair_window:{w:.5,d:1.5,blocks:false},
+  // The near city. Same convention as the elevation: authored in absolute local
+  // coordinates off a yard anchor, so these footprints are nominal. None of them
+  // block, and nothing on the far side of the boundary is reachable.
+  city_frontage:{w:70.0,d:80.0,blocks:false},
+  city_bus_shelter:{w:2.9,d:5.0,blocks:false},
+  city_parked_car:{w:1.8,d:4.3,blocks:false},
+  yard_van:{w:2.9,d:6.4,h:2.6,blocks:true},
+  yard_van_lamp:{w:.4,d:.25,blocks:false},
   natatorium_roof_structure:{w:23.2,d:20.5,blocks:false},
   natatorium_perimeter_relief:{w:25.2,d:22.2,blocks:false},
   natatorium_cubicle_bank:{w:14.7,d:.35,blocks:false},
@@ -170,6 +197,186 @@ export const STRUCTURAL_COLLIDERS = Object.freeze([
 ]);
 
 export const CONSERVATORY_PROPS = [
+  // ── The loading bay: the canopy, and the building over it ──
+  // Both are architecture, not dressing: they are what you look at when you
+  // turn round from the grey door, and what stops the conservatory's own mass
+  // rendering as a black slab against the yard's sky.
+  P('bay-canopy','bay_canopy',53.0,7.5,0,{interactive:false,structural:true}),
+
+  // ── The yard, in layers ──
+  //
+  // Logical, not physical. The yard is parked at logical y200 with a physical
+  // origin out west (see loading_bay_yard), so a prop at physical (22,14) is
+  // authored here at (72,214).
+  //
+  // THE ARRANGEMENT IS THE POINT, AND IT IS DEPTH. Everything below used to sit
+  // five to fifteen metres off the dock, which put a booth, a skip, two bins and
+  // a lamp column across the one view in the game and turned a landscape into a
+  // yard sale. It reads as a tableau or it reads as clutter, and the difference
+  // is entirely how far away things are:
+  //
+  //   the dock and its markings   0-12m    the only things in the near field
+  //   the gate, booth and fence   28-32m   the boundary, and the last lit window
+  //   the road and its columns    36-55m   the middle distance
+  //   hills, town, horizon        beyond   drawn in the sky, not placed here
+  //
+  // Nothing goes in the first twenty-five metres except paint. Empty wet tarmac
+  // is what makes the rest of it look far away.
+  // BLOCKS MATTERS OUT HERE NOW. Every one of these was blocks:false on the
+  // stated grounds that "nothing out here is reachable, and collision on the far
+  // side of a kerb is just a trap waiting". That was true while the yard was a
+  // view. The dock steps and the seam at the head of them make it a place, so
+  // anything with a body gets one — otherwise the first thing the player learns
+  // about the outside is that they can walk through a skip.
+  //
+  // yard-gate-piers is the deliberate exception: it is ONE prop spanning the
+  // whole gate line, and pointInProp is a single box, so blocking it would seal
+  // the opening the gate exists to be. The hedges and fences either side are
+  // what actually bound the boundary.
+  P('yard-markings','yard_markings',94.0,207.5,0,{interactive:false,structural:true}),
+  P('yard-fence-west','yard_fence_run',70.0,210.0,0,{interactive:false,structural:true,blocks:true}),
+  P('yard-fence-north','yard_fence_run',83.0,201.5,Math.PI/2,{interactive:false,structural:true,blocks:true}),
+  // THE LODGE, which is the only thing in the game you talk to a person through.
+  // `inspectAt` is the window rather than the middle of the building, so the
+  // reticle and the walk-up both land where his face is.
+  P('yard-booth','yard_booth',74.0,214.0,-Math.PI/2,{
+    structural:true,blocks:true,action:'gate-lodge',label:'the lodge window',
+    inspectAt:{x:75.7,y:214.0},
+  }),
+  // ── THINGS TO READ ON THE WAY IN ────────────────────────────────────────
+  //
+  // The walk from the road to the grey door was sixty metres with exactly one
+  // interaction in it, and everything the player could have learned about this
+  // place before going in was in the guard's mouth. These are one line each and
+  // none of them are on the route: they are what the outside knows.
+  //
+  // Every one of them is a thing that only exists out here. Nothing inside the
+  // building tells you the pool has been dry for years, or that the demolition
+  // date is a fortnight away, or that the site notice has the wrong company on it.
+  P('yard-sign','yard_sign',70.5,213.5,Math.PI/2,{
+    structural:true,label:'the site notice',inspectAt:{x:71.4,y:213.5},
+    inspect:inspect(
+      'DEMOLITION NOTICE. Fourteen days. The contractor is a name you have never heard of and the client is W. ELLERY HOLDINGS, which is the name on your work order.',
+      'Fourteen days. It is the only date on this site that anybody has bothered to keep current.',
+    ),
+  }),
+  P('yard-lamp-column','yard_lamp_column',72.0,204.0,Math.PI,{interactive:false,structural:true,blocks:true}),
+  P('yard-skip','yard_skip',80.0,220.0,.18,{
+    structural:true,blocks:true,label:'the skip',inspectAt:{x:80.0,y:218.6},
+    inspect:inspect(
+      'A piano lid, snapped across the hinge. Hymn books, swollen to twice their thickness. A lane rope from a pool that has been dry longer than you have been doing this.',
+      'The building, in the order somebody decided it could be thrown away.',
+    ),
+  }),
+  P('yard-clutter','yard_clutter',86.0,203.0,-.34,{
+    structural:true,blocks:true,label:'stacked chairs',inspectAt:{x:86.0,y:204.4},
+    inspect:inspect(
+      'Forty stacking chairs under a tarpaulin, banded and labelled for collection. Somebody catalogued these. Nobody came.',
+      'Still banded. Still labelled. Still here.',
+    ),
+  }),
+  P('yard-road','yard_road',58.0,207.5,0,{interactive:false,structural:true}),
+
+  // ── THE VAN, WHICH IS WHERE HE STARTS ───────────────────────────────────
+  //
+  // He drove here. Everything in the bag came out of the back of this, and until
+  // now the bag simply existed on his shoulder from the first frame. The doors
+  // are open, the lamp is on, and the first [E] of the run is picking it up —
+  // an interaction with nothing at stake, taught before anything is at stake.
+  //
+  // Parked at the near kerb a few metres UP the road, with its back doors
+  // toward him — so the fade comes up on the road he walks and the open doors
+  // are the first thing in it, rather than on the back of a man facing his own
+  // bumper. Local +z is out of the doors, and the prop matrix takes local +z to
+  // world (-sin yaw, cos yaw), so PI/2 points them due west, back down the road.
+  P('yard-van','yard_van',66.0,204.8,Math.PI/2,{
+    structural:true,blocks:true,action:'yard-van',label:'the back of the van',
+    inspectAt:{x:63.6,y:204.8},
+  }),
+  P('yard-van-lamp','yard_van_lamp',65.6,204.8,0,{
+    interactive:false,structural:true,elevation:2.30,
+    lightMaintained:true,lightColor:[1,.86,.60],
+  }),
+
+  // ── The city, on the far side of the gate ────────────────────────────────
+  //
+  // The building used to stand in nothing. You could see forty metres of tarmac,
+  // a fence, and then a valley with a treeline in it — which is a lovely thing
+  // to look at and the wrong planet for a municipal conservatory with a skip in
+  // its yard. Everything past about eighty-five metres is the skyline in
+  // nightSky(); this is the part near enough to have parallax.
+  //
+  // All three are anchored on the road's own cell and reach a long way out of
+  // it, the same way yard-road already does. Nothing over there is reachable —
+  // the plan ends at the kerb and the ray leaves — so none of it blocks.
+  P('city-frontage','city_frontage',58.0,207.5,0,{interactive:false,structural:true}),
+  P('city-bus-shelter','city_bus_shelter',58.0,207.5,0,{
+    interactive:false,structural:true,renderOffsetX:-19.0,renderOffsetZ:-5.6,
+  }),
+  P('city-parked-car','city_parked_car',58.0,207.5,0,{
+    interactive:false,structural:true,yaw:0.06,renderOffsetX:-24.0,renderOffsetZ:4.4,
+  }),
+
+  // ── The boundary, which stands BETWEEN you and the man in the booth ──
+  //
+  // The booth is at logical x74, about twenty-two metres off the dock face, and
+  // until now there was nothing at all between it and the apron — you looked
+  // straight across empty tarmac at a lit window. The gate line goes in front of
+  // it at x77.5, so the read from the bay is: twenty metres of wet nothing, then
+  // a boundary, then the last lit window in the building behind it.
+  //
+  // It is deliberately not more chain-link. This is the back gate of a British
+  // conservatory of music: brick piers, stone caps, iron gates standing open,
+  // railings running out to meet the yard's fencing, and a laurel hedge nobody
+  // has cut in thirty years. The near field stays empty — that is still what
+  // makes the distance read (see the depth bands above).
+  // THE OPENING GOES ON THE ROAD'S CENTRELINE, NOT THE BOOTH'S. The bay mouth
+  // looks west along physical y7.5, which is also where yard-road runs — so the
+  // drive, the gate and the one sightline out of the building are the same line.
+  // Putting the gate on the booth's axis instead (y14) walled the mouth off with
+  // hedge, which is the only genuinely unforgivable thing you can do out here.
+  // The booth stays north of the opening, so you see it PAST the ironwork.
+  P('yard-gate-piers','yard_gate_piers',77.5,207.5,0,{interactive:false,structural:true}),
+  P('yard-hedge-near','yard_hedge_run',78.4,216.0,0,{interactive:false,structural:true,blocks:true}),
+  P('yard-hedge-far','yard_hedge_run',78.4,227.0,0,{interactive:false,structural:true,blocks:true}),
+
+  // THE SECOND YARD USED TO BE HERE, AND IT WAS STILL BEING DRAWN.
+  //
+  // The block above replaced an earlier arrangement that stood everything five
+  // to fifteen metres off the dock — but the earlier one was never deleted, and
+  // propsInit maps placements straight to instances with no dedup. So the yard
+  // had TWO booths, two lamp columns, two skips, two signs, two fence runs and
+  // two clutter piles, at two different distances, plus a second bay canopy
+  // drawn exactly on top of the first. propById() returned the far one and the
+  // renderer drew both, which is a very quiet way to be wrong.
+  //
+  // The near copy is why the gate read as being right on top of the yard: its
+  // booth sat at physical x40, about six metres off the dock face, in front of
+  // the far one it was supposed to have replaced. Removed 2026-08-05.
+
+  P('bay-west-elevation','conservatory_west_elevation',50.0,7.5,0,{interactive:false,structural:true}),
+  // THE OTHER LIT WINDOW.
+  //
+  // Its own prop rather than a pane inside the elevation, because emissive is a
+  // per-INSTANCE attribute in the mesh pass (see propEmissive in main.js) — a
+  // single lit opening cannot be authored inside a mesh that is otherwise dark.
+  //
+  // It is on the academic stair, four floors up, and it is the second light on
+  // the site after the lodge. There is no mains in this building; the guard says
+  // as much. Whatever that is, it is not on the schedule, and a player who
+  // notices it before going in has been told something.
+  //
+  // Anchored on the elevation's own cell and pushed north with renderOffsetZ,
+  // because a prop's centre has to land in open floorplan space (see
+  // test/conservatory-space-layout) and the wall it is set into is rock. Same
+  // dodge the elevation mesh itself uses to be ninety metres long from a
+  // one-metre anchor.
+  P('bay-stair-window','conservatory_stair_window',50.0,7.5,0,{
+    interactive:false,structural:true,elevation:11.30,
+    renderOffsetX:-0.10,renderOffsetZ:17.5,
+    lightMaintained:true,lightColor:[.86,.80,.62],
+  }),
+
   // ── Loading dock: LAST LOAD-OUT ──────────────────────────────────────────
   // The room has a three-metre freight spine at x64–66. Everything lives at
   // the perimeter so the setup is dense without becoming a prop maze.
@@ -432,11 +639,66 @@ export const CONSERVATORY_PROPS = [
   P('academic-stripped-office-cabinet','academic_filing_bank',18.2,276.0,0,{interactive:false}),
   P('academic-breach','academic_breach',17.5,267.7,0,{interactive:false,structural:true}),
 
-  // Studio B3: equipment, teaching overflow, and stacked desks against walls.
+  // ── THE SUB-BASEMENT DANCE WING ───────────────────────────────────────────
+  //
+  // Four studios off one low corridor, numbered from the stair inward: B1, B2,
+  // B3, and B5 across the passage. There is no B4 — the plant room is standing
+  // in it, which is also why the B3/B2 connecting door leads nowhere useful now.
+  //
+  // Wall furniture (barres, mirrors, stencils) is authored ON the interior cell
+  // that touches its wall, with yaw pointing INTO the room, so the masonry sits
+  // behind it: yaw 0 backs onto -y, PI onto +y, PI/2 onto -x, -PI/2 onto +x.
+  //
+  // MIND THE CONVERTER. Props resolve with round(metres * PLAN_SCALE) — NOT the
+  // metres*2+1 that FP.toRuntimePoint uses — so an authored metre lands on the
+  // FIRST half of an authored cell and a half-metre lands on the second. Against
+  // a wall that means: north/west furniture sits on (edge row + 1), south/east on
+  // (edge row + 1.5). Get it the wrong way round and the prop is inside the wall,
+  // where propsInit silently drops it and the room is simply empty.
+  //
+  // Studio B3: a dance studio with a take on it. The kit is the intrusion here,
+  // not the barre — somebody moved a rack into a room that still has its rail up.
   P('b3-desk-1','school_desk',8.0,8.0,Math.PI/2,{inspect:inspect('A desk pushed into the dead corner, its writing surface stippled with old tape marks.','Nothing is written on it now.')}),
   P('b3-desk-2','school_desk',8.0,9.0,Math.PI/2,{inspect:inspect('Another desk nested behind the first. Surplus becomes acoustic treatment if nobody moves it.','Two desks, making one bad absorber.')}),
   P('b3-rack-1','equipment_rack',23.0,16.5,Math.PI/2,{inspect:inspect('The rack is powered down. Three channels are still labelled in pencil.','No mains. No pilot lights.')}),
   P('b3-speaker-1','speaker_cabinet',22.7,8.0,Math.PI/2,{...play(PIANO,'A nearfield monitor with its cone pushed in and pulled back out.','The cone remembers a thumb.')}),
+  P('b3-mirror-north-a','dance_mirror',10.0,6.0,0,{inspect:inspect('Mirror glass in four-foot sections, floor to head height, held in an aluminium channel. Your torch comes back at you off it, twice as far away as it should be.','The room behind you in it is the room behind you.')}),
+  P('b3-mirror-north-b','dance_mirror',14.0,6.0,0,{interactive:false}),
+  P('b3-barre-east','dance_barre',24.5,11.0,-Math.PI/2,{inspect:inspect('A double barre, high rail and low, the varnish worn through to pale wood in a dozen places where hands went.','Thirty years of the same six inches.')}),
+
+  // Studio B2: the largest, and the only one still on a live circuit.
+  P('b2-mirror-north-a','dance_mirror',28.0,6.0,0,{inspect:inspect('The mirrored wall, and the room in it is not quite the room. The sections are out of plane by a degree or so, so the far corner arrives twice.','Two corners. One of them is the real one.')}),
+  P('b2-mirror-north-b','dance_mirror',32.0,6.0,0,{interactive:false}),
+  P('b2-mirror-north-c','dance_mirror',36.0,6.0,0,{interactive:false}),
+  P('b2-barre-south','dance_barre',34.0,16.5,Math.PI,{inspect:inspect('The long barre. Somebody has wound gaffer round a cracked bracket rather than replace it.','The tape is older than the crack.')}),
+  P('b2-barre-east','dance_barre',38.5,11.0,-Math.PI/2,{interactive:false}),
+  P('b2-piano','upright_piano',26.0,14.0,Math.PI/2,{...play(PIANO,'The rehearsal upright, lid down, castors sunk into the sprung floor where it has stood long enough to leave four dents.','It has not been tuned to anything in this building for a long time.')}),
+  P('b2-piano-stool','piano_bench',27.2,14.0,Math.PI/2,{inspect:inspect('A stool at the height somebody left it.','Still at their height.')}),
+  P('b2-notice','notice_board',26.0,9.0,Math.PI/2,{inspect:inspect('A timetable in a wall frame, gone the colour of weak tea. Grades one to six, Tuesday and Thursday, and a note about outdoor shoes.','Tuesday and Thursday, and nobody at all.')}),
+  P('b2-chairs','chair',29.0,18.0,0,{inspect:inspect('Chairs stacked four high in the short leg of the room, where they are out of the way of a class.','Out of the way of a class.')}),
+
+  // Studio B1: nearest the stair, and the first room the wing shows you.
+  P('b1-mirror-east','dance_mirror',48.5,16.0,-Math.PI/2,{inspect:inspect('A mirrored wall with a long diagonal crack across two sections, taped on the back so it holds together.','Taped, and holding.')}),
+  P('b1-barre-south','dance_barre',44.0,20.5,Math.PI,{inspect:inspect('The barre here has been taken down at one end and left hanging, so it runs at an angle no dancer could use.','Somebody started taking this room apart and stopped.')}),
+  P('b1-lino','rolled_lino',41.0,13.0,0,{inspect:inspect('Rolls of sprung-floor vinyl stood on end in the corner, taller than you, taped at the top and furred with dust.','Enough floor for a room nobody is going to lay it in.')}),
+
+  // Studio B5, across the corridor. There is no B4.
+  P('b5-barre-north','dance_barre',13.0,26.0,0,{inspect:inspect('A barre along the whole north wall, and the wall behind it is scuffed to shoulder height in one continuous band.','The band is exactly where a hand steadies itself.')}),
+  P('b5-mirror-south','dance_mirror',15.0,32.5,Math.PI,{inspect:inspect('The mirror in here has been taken off the wall and stood facing it, so what is hung on the room is four feet of grey backing board.','Somebody turned the mirror around. That is a decision, and it was made in here.')}),
+  P('b5-chairs','chair',21.0,30.0,0,{inspect:inspect('Chairs, stacked, in a room with the mirror facing the wall.','Stacked, and waiting on a room that has been turned off.')}),
+
+  // The prop store: the dead end opposite the stair.
+  P('store-rail-a','costume_rail',3.0,11.0,0,{inspect:inspect('A costume rail under dust sheets. Whatever is on it has kept its shape, which after this long means it was hung properly by somebody who cared.','Hung properly, and left.')}),
+  P('store-rail-b','costume_rail',3.0,15.0,0,{interactive:false}),
+  P('store-lino','rolled_lino',2.0,19.0,0,{interactive:false}),
+
+  // Stencilled door numbers, corridor side. The wing has no plaques and no signs
+  // — the numbers are painted straight onto the blockwork beside each opening.
+  P('b1-stencil','door_stencil',43.0,21.0,Math.PI/2,{interactive:false}),
+  P('b2-stencil','door_stencil',28.0,21.0,Math.PI/2,{interactive:false}),
+  P('b3-stencil','door_stencil',15.0,19.0,Math.PI/2,{inspect:inspect('B3, stencilled on the blockwork beside the opening. The work order in your pocket says the same thing.','B3. The one they picked.')}),
+  P('b5-stencil','door_stencil',12.0,25.0,Math.PI/2,{interactive:false}),
+  P('store-stencil','door_stencil',2.0,21.0,Math.PI/2,{interactive:false}),
 
   // Concert hall and its overflow. The grand is not an upright substitute.
   P('hall-structure','hall_structure',113.0,23.0,0,{interactive:false,structural:true}),
@@ -807,7 +1069,11 @@ export const CONSERVATORY_PROPS = [
   // the breaker state itself remains in the power runtime.
   P('light-dance-stair-casing','tower_bulkhead',45,20.5,Math.PI,{elevation:2.5,renderOffsetZ:.25,interactive:false,structural:true,lightMaintained:true,lightColor:[1,.48,.22]}),
   P('light-plant-service-casing','tower_bulkhead',35,26,0,{elevation:2.45,renderOffsetZ:-.25,interactive:false,structural:true,lightCircuit:'sp01',lightColor:[.69,.83,.70]}),
-  P('light-dance-work-casing','tower_bulkhead',18,6,0,{elevation:2.45,renderOffsetZ:-.25,interactive:false,structural:true,lightCircuit:'sp01',lightColor:[.78,.78,.65]}),
+  // One work light per lit studio, on the north wall, facing the room. B3's is
+  // the take room's only practical: it was authored zoned to the dance wing and
+  // therefore resolved for nobody standing in it.
+  P('light-b3-work-casing','tower_bulkhead',18,6,0,{elevation:2.45,renderOffsetZ:-.25,interactive:false,structural:true,lightCircuit:'sp01',lightColor:[.78,.78,.65]}),
+  P('light-dance-work-casing','tower_bulkhead',32,6,0,{elevation:2.45,renderOffsetZ:-.25,interactive:false,structural:true,lightCircuit:'sp01',lightColor:[.78,.78,.65]}),
   P('light-foh-west-casing','tower_bulkhead',75,12.5,-Math.PI/2,{elevation:3.25,renderOffsetX:-.25,interactive:false,structural:true,lightCircuit:'sp03',lightColor:[.74,.82,.78]}),
   P('light-foh-east-casing','tower_bulkhead',92,16.5,Math.PI,{elevation:3.25,renderOffsetZ:.25,interactive:false,structural:true,lightCircuit:'sp03',lightColor:[.74,.82,.78]}),
   P('light-pool-service-a-casing','tower_bulkhead',95.5,43,Math.PI/2,{elevation:3.3,renderOffsetX:.25,interactive:false,structural:true,lightCircuit:'sp02',lightColor:[.69,.83,.78]}),

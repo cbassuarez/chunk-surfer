@@ -1,4 +1,5 @@
 import { MATERIAL, ZONE } from '../data/floorplan/legend.js';
+import { lastReturnRecord } from '../progression/return-history.js';
 
 export const NATATORIUM_WATER_STATES = Object.freeze({
   DRAINED: 'drained',
@@ -40,10 +41,8 @@ const objectOr = (value, fallback = {}) => (
 );
 
 function lastEnding(meta = null) {
-  const history = Array.isArray(meta?.returns?.history) ? meta.returns.history : [];
-  const lastRecord = history.at(-1);
+  const lastRecord = lastReturnRecord(meta);
   if (typeof lastRecord?.endingId === 'string') return lastRecord.endingId;
-  if (typeof lastRecord?.id === 'string') return lastRecord.id;
   const seen = Array.isArray(meta?.endingsSeen) ? meta.endingsSeen : [];
   return typeof seen.at(-1) === 'string' ? seen.at(-1) : null;
 }

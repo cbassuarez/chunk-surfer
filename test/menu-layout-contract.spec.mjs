@@ -2,9 +2,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const title = fs.readFileSync('src/game/title.js', 'utf8');
-for (const id of ['continue', 'new-run', 'archive', 'return-index', 'just-surf', 'settings']) {
+for (const id of ['continue', 'new-run', 'archive', 'return-index', 'hush-run', 'settings']) {
 assert.match(title, new RegExp(`id: '${id}'`), `title keeps stable ${id} slot`);
 }
+assert.doesNotMatch(title,/just-surf|onJustSurf/,'production title removes the sample-field route');
 assert.match(title, /let sel = activeRun \? 0 : 1/, 'title defaults to NEW RUN when CONTINUE is unavailable');
 assert.match(title, /drawMachinePanel/, 'title uses the AUDIOCORP case-select panel');
 assert.match(title, /drawVfdText/, 'title uses the established VFD wordmark');

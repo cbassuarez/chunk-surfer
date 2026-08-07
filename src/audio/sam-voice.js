@@ -263,6 +263,16 @@ export const VOICE_PROFILES = {
   // heard through a wall: same transposition and smear, quieter, and with the top
   // taken off, because you are not meant to be sure you heard a person.
   unknown: { rate: 0.82, gain: 0.88, hp: 90, lp: 1150, smear: { time: 0.17, feedback: 0.38, mix: 0.44 } },
+  // The answer the rain took, at the booth and again on the tape. `unknown` is
+  // already tuned for "you are not meant to be sure you heard a person"; this is
+  // that, one turn further, for a thing you are not meant to be sure you heard at
+  // all. The top is off it entirely, the smear runs long enough that the syllable
+  // ends are gone before you can count them, and the gain sits under the rain
+  // rather than beside it.
+  //
+  // What it speaks is never a name — see obscuredNameUtterance. It is a shape
+  // with the same rhythm as the blots on the screen.
+  masked: { rate: 0.86, gain: 0.34, hp: 150, lp: 780, smear: { time: 0.23, feedback: 0.46, mix: 0.62 } },
   default: { rate: 1.0, gain: 1.0 },
 };
 

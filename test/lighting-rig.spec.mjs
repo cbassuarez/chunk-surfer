@@ -43,7 +43,7 @@ assert.equal(byId['natatorium-emergency-entry'].anchorPropId,'natatorium-light-e
 assert.equal(byId['natatorium-emergency-far'].anchorPropId,'natatorium-light-emergency-far');
 assert.equal(byId['organ-loft-exit'].anchorPropId,'tower-light-organ-exit');
 assert.equal(byId['nave-exit'].anchorPropId,'tower-light-nave-exit');
-assert.equal(byId['dock-grey-door-seam'].circuit,null,'dock seam is not the disconnected chandelier');
+assert.equal(byId['getin-grey-door-seam'].circuit,null,'get-in seam is not the disconnected chandelier');
 
 const room=(group,zone)=>({group,zone});
 const deadPlant=resolveLocalLights(room('basement',ZONE.plant),{liveCircuits:new Set()});
@@ -52,6 +52,12 @@ const livePlant=resolveLocalLights(room('basement',ZONE.plant),{liveCircuits:new
 assert.ok(livePlant.some((light)=>light.id==='plant-service-live'));
 assert.ok(!resolveLocalLights(room('basement',ZONE.danceStudio),{liveCircuits:new Set()}).some((light)=>light.circuit));
 assert.ok(resolveLocalLights(room('basement',ZONE.danceStudio),{liveCircuits:new Set(['sp01'])}).some((light)=>light.id==='dance-work-live'));
+// A studio's work light must resolve for somebody standing IN that studio. B3's
+// was zoned to the dance wing while standing in B3, so it lit nobody.
+assert.ok(resolveLocalLights(room('basement',ZONE.studio),{liveCircuits:new Set(['sp01'])}).some((light)=>light.id==='b3-work-live'),
+  'B3 work light resolves for the take room it stands in');
+assert.ok(!resolveLocalLights(room('basement',ZONE.studio),{liveCircuits:new Set()}).some((light)=>light.circuit),
+  'and it is dark until sp01 is live');
 
 const deadPool=resolveLocalLights(room('ground',ZONE.natatorium),{liveCircuits:new Set()});
 assert.ok(deadPool.every((light)=>!light.circuit));
@@ -74,7 +80,7 @@ assert.ok(failing(0)<failing(3),'failing maintained practical blinks instead of 
 const reducedSamples=Array.from({length:400},(_,index)=>emergencyBlinkState('academic-emergency-east-failing',index*.025,{effectsMode:'reduced'}));
 const reducedJumps=reducedSamples.slice(1).map((sample,index)=>Math.abs(sample.scale-reducedSamples[index].scale));
 assert.ok(Math.max(...reducedJumps)<.38,'reduced effects removes hard emergency-light stutters');
-assert.deepEqual(emergencyBlinkState('dock-grey-door-seam',12.25),emergencyBlinkState('dock-grey-door-seam',12.25),'cadence is deterministic');
+assert.deepEqual(emergencyBlinkState('getin-grey-door-seam',12.25),emergencyBlinkState('getin-grey-door-seam',12.25),'cadence is deterministic');
 assert.ok(Array.from({length:120},(_,index)=>index*.05).some((time)=>
   Math.abs(emergencyBlinkState('academic-emergency-west',time).scale-emergencyBlinkState('academic-emergency-east-failing',time).scale)>.6
 ),'adjacent emergency lights are staggered');

@@ -156,6 +156,51 @@ export function routeDesktopMenuAction(payload, handlers = {}) {
   }
 }
 
+// The keys a BROWSER owns, which a shipped game must not hand back to it.
+//
+// These are the other half of isReservedDesktopShortcut: that one lists keys the
+// desktop app claims for itself, this one lists keys it refuses to let the
+// webview action. In a packaged build they are not developer tools, they are
+// ways to break a run — and the reload is the worst of them, because it does not
+// look like a reload. Cmd+R restores the last committed position, so a player
+// who hits it mid-corridor is silently moved somewhere else and reports being
+// teleported. There is no bug at the destination; the reload IS the bug.
+//
+// Deliberately excludes anything isReservedDesktopShortcut already claims —
+// Cmd+P (print/pause), Cmd+F (find/fullscreen), Cmd+N, Cmd+M, Cmd+Q — those are
+// handled and preventDefault'd there, and listing them twice would mean whichever
+// check ran first decided the behaviour.
+//
+// Matches on `code` for the letter combinations because macOS rewrites `key`
+// under Option: Cmd+Alt+I arrives as key 'ˆ' and code 'KeyI'.
+export function isBrowserChromeShortcut(event) {
+  if (!event) return false;
+
+  const key = String(event.key || '').toLowerCase();
+  const code = String(event.code || '');
+  const primary = !!(event.metaKey || event.ctrlKey);
+
+  // Reload, hard reload, and the one that needs no modifier at all.
+  if (key === 'f5' || code === 'F5') return true;
+  if (primary && (key === 'r' || code === 'KeyR')) return true;
+
+  // Devtools. Cmd+Shift+C is the inspector, which is why plain Cmd+C — copy —
+  // must not match: the shift/alt requirement is what keeps it out.
+  if (key === 'f12' || code === 'F12') return true;
+  if (primary && (event.shiftKey || event.altKey)
+    && (code === 'KeyI' || code === 'KeyJ' || code === 'KeyC')) return true;
+
+  // View source and save-page: a game window is not a document.
+  if (primary && (key === 'u' || code === 'KeyU')) return true;
+  if (primary && (key === 's' || code === 'KeyS')) return true;
+
+  // Zoom. The renderer owns its own scale; browser zoom desynchronises the
+  // canvas from the pointer and there is no way back from inside the game.
+  if (primary && ['Equal', 'Minus', 'Digit0', 'NumpadAdd', 'NumpadSubtract', 'Numpad0'].includes(code)) return true;
+
+  return false;
+}
+
 export function isReservedDesktopShortcut(event) {
   if (!event) return false;
 

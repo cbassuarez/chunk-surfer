@@ -12,10 +12,11 @@ test('legacy sample field is locked through app boot and opening credits', () =>
   assert.match(suppression,/opening-credits/);
 });
 
-test('only the explicit JUST SURF lab authorizes legacy sample playback', () => {
+test('production modes revoke sample-field playback and only developer audio labs retain utilities', () => {
   assert.match(slice('function enterStory','function fireCue'),/sampleFieldEnabled=false/);
   assert.match(slice('function enterStory','function fireCue'),/silenceSampleField\(\)/);
-  assert.match(slice('function enterJustSurf','async function bootScenes'),/sampleFieldEnabled=true/);
+  assert.doesNotMatch(source,/function enterJustSurf|onJustSurf|id: 'just-surf'/);
+  assert.match(source,/hushaudiolab/);
   assert.doesNotMatch(slice('function enterRogue','const ARROW_KEYS'),/sampleFieldEnabled=true/);
 });
 

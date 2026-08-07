@@ -185,7 +185,7 @@
         },
         {
           "who": "surfer",
-          "text": "It listened until language was an encumbrance. It became the music. Then it wanted a body back. You are a body.",
+          "text": "Again from the first bar. Retain the reference. Correct the deviation. Again.",
           "channel": "before",
           "id": "round-3.line.2"
         },
@@ -203,7 +203,7 @@
         },
         {
           "who": "you",
-          "text": "I record rooms with nobody in them. It never once occurred to me that this suited me. That is not a wound. That is a man who is bad at something.",
+          "text": "I record rooms with nobody in them. It never once occurred to me that this suited me. That is not a wound. That is thirty years of being bad at the other thing.",
           "channel": "on-listen",
           "id": "round-3.line.5"
         },
@@ -225,7 +225,7 @@
       "type": "battle-round",
       "lines": [
         {
-          "who": "surfer",
+          "who": "recordist",
           "text": "Everybody has lost somebody.",
           "channel": "before",
           "id": "round-4.line.1"
@@ -335,7 +335,7 @@
       "lines": [
         {
           "who": "surfer",
-          "text": "Last page. The source is holding the pen out to you.",
+          "text": "Last page. Sign where it says received.",
           "channel": "before",
           "id": "round-5.line.1",
           "rate": 0.94

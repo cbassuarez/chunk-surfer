@@ -8,7 +8,7 @@ export const PROFILE_KEY = 'chunk-surfer:profile:v1';
 export const AUTOSAVE_KEY = 'chunk-surfer:save:autosave:v1';
 export const MIGRATION_KEY = 'chunk-surfer:migration:v1';
 
-export const LEGACY_SAVE_KEYS = ['chunk-surfer:save:v3', 'chunk-surfer:save:v2', 'chunk-surfer:save:v1'];
+export const LEGACY_SAVE_KEYS = ['chunk-surfer:save:v4', 'chunk-surfer:save:v3', 'chunk-surfer:save:v2', 'chunk-surfer:save:v1'];
 export const LEGACY_PROFILE_KEYS = ['chunk-surfer:meta:v2', 'chunk-surfer:meta:v1'];
 
 export const SAVE_SLOT_AUTOSAVE = 'autosave';
