@@ -15,7 +15,7 @@ import { testbed } from '../../../src/data/floorplan/testbed.js';
 import { conservatory } from '../../../src/data/floorplan/conservatory.js';
 import { PAGES, ROOM_CELLS, PLANT_RIG_CELL } from '../../../src/data/conservatory-script.js';
 import * as FP from '../../../src/world/floorplan.js';
-import { F, ZONE, MATERIAL, PLAN_SCALE } from '../../../src/data/floorplan/legend.js';
+import { F, ZONE, MATERIAL, PLAN_SCALE, HEADROOM } from '../../../src/data/floorplan/legend.js';
 
 let pass = true;
 const ck = (n, ok, x = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${x ? '  ' + x : ''}`); if (!ok) pass = false; };
@@ -106,7 +106,7 @@ ck('the bricked door seals the south branch', !reachable(rc(26, 10), rc(26, 12))
 
 // ── THE REAL BUILDING ───────────────────────────────────────────────────────
 console.log('\n── the conservatory ──');
-const cp = FP.compile(conservatory.levels, { width: conservatory.width, height: conservatory.height, widenCorridors: conservatory.widenCorridors,connectors:conservatory.connectors,doors:conservatory.doors });
+const cp = FP.compile(conservatory.levels, { width: conservatory.width, height: conservatory.height, widenCorridors: conservatory.widenCorridors,connectors:conservatory.connectors,edgePortals:conservatory.edgePortals,doors:conservatory.doors });
 FP.setSpawn(conservatory.spawn.x, conservatory.spawn.y);
 
 const STANDARD_KEYS = new Set(['master']);
@@ -153,11 +153,13 @@ const boxOfficeLocked=FP.canStep(officeStep.from.x,officeStep.from.y,officeStep.
 FP.setDoorOpen('foh-office',true);const boxOfficeMaster=FP.canStep(officeStep.from.x,officeStep.from.y,officeStep.to.x,officeStep.to.y,{keys:STANDARD_KEYS});
 ck('the box-office staff leaf answers only to the building master',!boxOfficeLocked.ok&&boxOfficeLocked.why==='locked'&&boxOfficeMaster.ok,JSON.stringify(boxOfficeLocked));
 
-// One glyph is one metre; only the three authored pairs have two leaves.
+// One glyph is one metre; only the explicitly scheduled public pairs have two leaves.
 const thresholdVolumes=cp.doorVolumes.map(v=>{let blocked=0;for(let yy=v.minY;yy<=v.maxY;yy++)for(let xx=v.minX;xx<=v.maxX;xx++)if(FP.isSolid(xx,yy))blocked++;return{...v,blocked};});
 const scheduled=FP.doorState();
 ck('all current portals have explicit stable definitions',scheduled.length===conservatory.doors.length&&scheduled.every((door)=>door.archetype!=='legacy'));
-ck('exactly three openings contain paired leaves',scheduled.filter((door)=>door.leafCount===2).length===3);
+ck('only the four scheduled openings contain paired leaves',
+  JSON.stringify(scheduled.filter((door)=>door.leafCount===2).map((door)=>door.id).sort())
+  ===JSON.stringify(['bay-goods-pair','chapel-c17','front-main','hall-vestibule']));
 ck('single glyphs remain one-metre apertures',scheduled.filter((door)=>door.leafCount===1).every((door)=>door.aperture.width<=1.05));
 const offCenter=scheduled.filter((door)=>{
   const xs=door.cells.map((cell)=>cell.x),ys=door.cells.map((cell)=>cell.y);
@@ -175,23 +177,39 @@ ck('the keyed chapel pair is locked across its active aperture',!!chapelVolume&&
 
 const atriumView=FP.physicalRenderPlanFor(...Object.values(rc(83,10)));
 const hallPhysical=FP.logicalToPhysical(...Object.values(rc(99,24)));
-ck('the hall opening is visible from the atrium render slice',!atriumView.solid[Math.floor(hallPhysical.z)*atriumView.w+Math.floor(hallPhysical.x)]);
+const viewIndex=(view,point)=>(Math.floor(point.z)-view.originY)*view.w+(Math.floor(point.x)-view.originX);
+ck('the hall opening is visible from the atrium render slice',!atriumView.solid[viewIndex(atriumView,hallPhysical)]);
 const hallView=FP.physicalRenderPlanFor(...Object.values(rc(102,15)));
 const atriumPhysical=FP.logicalToPhysical(...Object.values(rc(96,24)));
-ck('the atrium opening is visible from the hall render slice',!hallView.solid[Math.floor(atriumPhysical.z)*hallView.w+Math.floor(atriumPhysical.x)]);
+ck('the atrium opening is visible from the hall render slice',!hallView.solid[viewIndex(hallView,atriumPhysical)]);
 
-// The main stair is a spiral of winders: two half revolutions whose logical runs
-// are (120-122, 78-91) and (124-126, 78-91). Their treads wind away physically,
-// so the run is walked cell by cell rather than down an authored column.
-const stairView=FP.physicalRenderPlanFor(120,80);
-let hiddenStair=[];
-for(let z=78;z<=91;z++)for(const x of [120,124]){
-  const pp=FP.logicalToPhysical(x,z),pi=Math.floor(pp.z)*stairView.w+Math.floor(pp.x);
-  if(stairView.solid[pi])hiddenStair.push(`${x},${z}`);
-}
-ck('a stair renders as one continuous run with no transition slabs',hiddenStair.length===0,hiddenStair.join(' '));
-const upperLanding=FP.logicalToPhysical(124,93),upperLandingIndex=Math.floor(upperLanding.z)*stairView.w+Math.floor(upperLanding.x);
-ck('the upper landing is already open from the foot of its stair',!stairView.solid[upperLandingIndex],`${upperLanding.x},${upperLanding.z}`);
+// Four curving half-coils make two complete revolutions. The navigation raster
+// uses macro winders, while construction and fractional camera height retain
+// all 58 physical risers.
+const mainRuns=cp.stairRuns.filter((run)=>run.owner==='main-open-well');
+ck('the main stair is four curving half-coils',
+  mainRuns.length===4&&mainRuns.every((run)=>run.arcId>0)
+  &&mainRuns.every((run)=>Math.abs(cp.arcs[run.arcId-1].sweep-Math.PI)<1e-9));
+ck('the physical construction keeps 28 and 30 risers at 280mm going',
+  JSON.stringify(mainRuns.map((run)=>run.rises))===JSON.stringify([14,14,15,15])
+  &&mainRuns.every((run)=>Math.abs(run.going-.28)<1e-9));
+ck('all main flights use the dedicated two-metre-wide hero mesh',
+  mainRuns.every((run)=>run.renderMode==='hero-mesh'&&run.width===4));
+
+const landingContract=(at,size,height)=>{
+  const p=FP.toRuntimePoint(at,{center:false}),miss=[];
+  for(let y=0;y<size.y*PLAN_SCALE;y++)for(let x=0;x<size.x*PLAN_SCALE;x++){
+    const c=FP.cellAt(p.x+x,p.y+y),physical=FP.logicalToPhysical(p.x+x,p.y+y);
+    if(c?.zone!==ZONE.stair||Math.abs(c.floor-height)>.001||physical.spaceId!=='main_stair')miss.push(`${p.x+x},${p.y+y}`);
+  }
+  return miss;
+};
+const upperFloorLanding=landingContract({x:150,y:50},{x:6,y:4},4.8);
+const academicFloorLanding=landingContract({x:150,y:64},{x:6,y:4},10);
+ck('both six-by-four-metre floor landings are fully standable',
+  !upperFloorLanding.length&&!academicFloorLanding.length,
+  [...upperFloorLanding,...academicFloorLanding].join(' '));
+
 const basementView=FP.physicalRenderPlanFor(...Object.values(rc(57,22))),basementLanding=FP.logicalToPhysical(...Object.values(rc(46,22))),basementLandingIndex=Math.floor(basementLanding.z)*basementView.w+Math.floor(basementLanding.x);
 ck('the basement landing is already open from the foot of its stair',!basementView.solid[basementLandingIndex],`${basementLanding.x},${basementLanding.z}`);
 const ownedLanding=(spaceId,x0,y0)=>{
@@ -202,69 +220,85 @@ const ownedLanding=(spaceId,x0,y0)=>{
   }
   return misses;
 };
-// The spiral's landings are two three-cell bands at the well's north mouth (one
-// per coil, at 0m and 10m) and one full-width half-landing at 4.8m, in runtime
-// cells rather than 3x3 authored squares.
-const spiralOwned=(x0,x1,z0,z1)=>{
-  const misses=[];
-  for(let z=z0;z<=z1;z++)for(let x=x0;x<=x1;x++){
-    const cell=FP.cellAt(x,z),physical=FP.logicalToPhysical(x,z);
-    if(cell?.zone!==ZONE.stair||physical.spaceId!=='main_stair')misses.push(`${x},${z}`);
-  }
-  return misses;
-};
 const basementGroundLanding=ownedLanding('basement_stair',57,22),basementB3Landing=ownedLanding('basement_stair',45,22);
-const groundBand=spiralOwned(120,122,76,77),academicBand=spiralOwned(124,126,76,77),halfLanding=spiralOwned(120,131,92,95);
-ck('the spiral owns its two north bands and its half-landing',
-  groundBand.length===0&&academicBand.length===0&&halfLanding.length===0,
-  [...groundBand,...academicBand,...halfLanding].join(' '));
 ck('the basement stair owns explicit 3x3-metre landings at both ends',basementGroundLanding.length===0&&basementB3Landing.length===0,[...basementGroundLanding,...basementB3Landing].join(' '));
-ck('both main stair shells retain the reclaimed-brick service material',
-  FP.materialAt(121,84)===MATERIAL.serviceConcrete
-  && FP.materialAt(...Object.values(rc(52,22)))===MATERIAL.serviceConcrete,
-  `upper=${FP.materialAt(121,84)} basement=${FP.materialAt(...Object.values(rc(52,22)))}`);
-// A ring has no axis to restore. What the old check really protected is that the
-// stair delivers you into the gallery and on down the practice spine.
-const upperArrival=rc(66,55),restoredArrival={x:124,y:93};
-ck('the spiral half-landing opens onto the practice gallery',
-  FP.zoneAt(restoredArrival.x,restoredArrival.y)===ZONE.stair
-  &&FP.logicalToPhysical(restoredArrival.x,restoredArrival.y).spaceId==='main_stair'
-  &&!FP.isSolid(124,98));
-ck('the restored landing remains open to the existing practice corridor',FP.zoneAt(upperArrival.x,upperArrival.y)===ZONE.practice&&!FP.isSolid(upperArrival.x,upperArrival.y)&&reachable(restoredArrival,upperArrival,KEYRING));
-const climbable=(points)=>points.every(([ax,ay,bx,by])=>FP.canStep(ax,ay,bx,by,{keys:KEYRING}).ok&&FP.canStep(bx,by,ax,ay,{keys:KEYRING}).ok);
-ck('both main flights have continuous bidirectional climbable risers',climbable([
-  // Lower winders, north to south, then the step onto the half-landing.
-  ...Array.from({length:13},(_,i)=>[120,78+i,120,79+i]),
-  [120,91,120,92],
-  // Upper winders, south to north, then the step onto the academic band.
-  ...Array.from({length:13},(_,i)=>[124,91-i,124,90-i]),
-  [124,78,124,77],
-  // The basement flight is unchanged.
-  ...Array.from({length:20},(_,i)=>[114-i,47,113-i,47]),
-]));
+ck('both main stair systems retain the service-concrete material',
+  FP.materialAt(mainRuns[0].logical0[0],mainRuns[0].logical0[1])===MATERIAL.serviceConcrete
+  &&FP.materialAt(...Object.values(rc(52,22)))===MATERIAL.serviceConcrete);
+
+const edgePortals=FP.edgePortalState();
+ck('all ten open landing seams retain every authored lane',
+  JSON.stringify(edgePortals.map((portal)=>portal.lanes))===JSON.stringify([8,4,4,4,8,4,12,4,4,4]));
+let edgeFailures=[];
+const edgeBearing=(v)=>Math.atan2(v.x,-v.y);
+const normalizeAngle=(value)=>{while(value>Math.PI)value-=Math.PI*2;while(value<=-Math.PI)value+=Math.PI*2;return value;};
+for(const portal of edgePortals){
+  const forwardTurn=normalizeAngle(edgeBearing({x:-portal.to.exit.x,y:-portal.to.exit.y})-edgeBearing(portal.from.exit));
+  const reverseTurn=normalizeAngle(edgeBearing({x:-portal.from.exit.x,y:-portal.from.exit.y})-edgeBearing(portal.to.exit));
+  for(const pair of portal.pairs){
+    const forward=FP.canStep(pair.from.x,pair.from.y,pair.from.x+portal.from.exit.x,pair.from.y+portal.from.exit.y,{keys:KEYRING});
+    const reverse=FP.canStep(pair.to.x,pair.to.y,pair.to.x+portal.to.exit.x,pair.to.y+portal.to.exit.y,{keys:KEYRING});
+    if(!forward.ok||forward.redirect?.x!==pair.to.x||forward.redirect?.y!==pair.to.y)edgeFailures.push(`${portal.id}:forward`);
+    if(!reverse.ok||reverse.redirect?.x!==pair.from.x||reverse.redirect?.y!==pair.from.y)edgeFailures.push(`${portal.id}:reverse`);
+    if(Math.abs((forward.edgeTurn||0)-forwardTurn)>1e-9)edgeFailures.push(`${portal.id}:forward-heading`);
+    if(Math.abs((reverse.edgeTurn||0)-reverseTurn)>1e-9)edgeFailures.push(`${portal.id}:reverse-heading`);
+  }
+  for(let lane=0;lane<portal.pairs.length-1;lane++){
+    const a=portal.pairs[lane].from,b=portal.pairs[lane+1].from,lateral=FP.canStep(a.x,a.y,b.x,b.y,{keys:KEYRING});
+    if(!lateral.ok||lateral.edgePortal)edgeFailures.push(`${portal.id}:lateral-${lane}`);
+  }
+}
+ck('every seam reverses immediately and lateral landing travel never redirects',!edgeFailures.length,edgeFailures.slice(0,8).join(' '));
+
+const diagonalEdgeFailures=[];
+for(const portal of edgePortals){
+  for(const pair of portal.pairs){
+    const forward=FP.canStep(pair.from.x,pair.from.y,
+      pair.from.x+portal.from.exit.x+portal.from.along.x,
+      pair.from.y+portal.from.exit.y+portal.from.along.y,{keys:KEYRING});
+    const reverse=FP.canStep(pair.to.x,pair.to.y,
+      pair.to.x+portal.to.exit.x+portal.to.along.x,
+      pair.to.y+portal.to.exit.y+portal.to.along.y,{keys:KEYRING});
+    if(!forward.ok||forward.edgePortal!==portal.id)diagonalEdgeFailures.push(`${portal.id}:forward`);
+    if(!reverse.ok||reverse.edgePortal!==portal.id)diagonalEdgeFailures.push(`${portal.id}:reverse`);
+  }
+}
+ck('diagonal first-person strides cross every stair threshold in both directions',
+  !diagonalEdgeFailures.length,diagonalEdgeFailures.slice(0,8).join(' '));
+
+const climbFailures=[];
+for(const run of mainRuns){
+  const [x0,y0]=run.logical0,[x1,y1]=run.logical1,dx=Math.sign(x1-x0),dy=Math.sign(y1-y0),steps=Math.max(Math.abs(x1-x0),Math.abs(y1-y0));
+  for(let s=0;s<steps;s++){
+    const a=[x0+dx*s,y0+dy*s],b=[a[0]+dx,a[1]+dy];
+    if(!FP.canStep(...a,...b,{keys:KEYRING}).ok||!FP.canStep(...b,...a,{keys:KEYRING}).ok)climbFailures.push(`${run.flight}:${s}`);
+  }
+}
+ck('all four coils have continuous bidirectional climbable macro-risers',!climbFailures.length,climbFailures.join(' '));
+const profileFailures=[];
+for(const run of mainRuns)for(let riser=0;riser<=run.rises;riser++){
+  const t=riser/run.rises,lx=run.logical0[0]+(run.logical1[0]-run.logical0[0])*t,ly=run.logical0[1]+(run.logical1[1]-run.logical0[1])*t,p=FP.logicalToPhysical(lx,ly);
+  const got=FP.renderedFloorAt(lx,ly,p.x,p.z),want=run.fromH+(run.toH-run.fromH)*t;
+  if(Math.abs(got-want)>.001)profileFailures.push(`${run.flight}:${riser}`);
+}
+ck('fractional camera height follows every one of the 58 physical risers',!profileFailures.length,profileFailures.slice(0,8).join(' '));
+
 const embeddedWithoutDrift=(points)=>points.every(([x,y])=>{
   const p=FP.logicalToPhysical(x+.25,y+.25);
   return Math.abs(p.x-(x+.25))<1e-6&&Math.abs(p.z-(y+.25))<1e-6;
 });
-// The basement flight is still a pure translation and must stay one.
 ck('the basement stair collision and rendering share one physical footprint',
   embeddedWithoutDrift(Array.from({length:21},(_,i)=>[114-i,47])));
-// The spiral cannot satisfy that — asserting it would be asserting the stair is
-// straight. The correct generalisation is stronger: every tread lands inside the
-// well, the mapping is injective, and the well is filled. A duplicate is a tread
-// the camera does not move across; a hole is rock in the middle of a flight.
-const wellCells=[],claimed=new Set();
-for(let z=78;z<=91;z++)for(const x0 of [120,124])for(let x=x0;x<x0+2;x++){
-  const p=FP.logicalToPhysical(x,z);
-  wellCells.push([x,z,p.x,p.z]); claimed.add(`${p.x},${p.z}`);
+const compactHallCells=[];for(let y=0;y<cp.h;y++)for(let x=0;x<cp.w;x++){
+  const physical=FP.logicalToPhysical(x,y),cell=FP.cellAt(x,y);
+  if(physical.owner==='grand_ground_stair_hall'&&cell&&cell.ceil-cell.floor>=HEADROOM)compactHallCells.push([x,y]);
 }
-const outside=wellCells.filter(([,,px,pz])=>px<120||px>131||pz<78||pz>91);
-ck('every winder lands inside the stair well',outside.length===0,
-  outside.slice(0,4).map(([x,z,px,pz])=>`${x},${z}->${px},${pz}`).join(' '));
-ck('the spiral maps one logical tread to one physical cell',claimed.size===wellCells.length,
-  `${wellCells.length} logical -> ${claimed.size} physical`);
-const mainStairPortal=cp.stairPortals.find(p=>p.group0==='ground'&&p.group1==='upper'),basementStairPortal=cp.stairPortals.find(p=>p.group0==='ground'&&p.group1==='basement');
-ck('stairs terminate on their physical destination floors',!!mainStairPortal&&!!basementStairPortal,JSON.stringify(cp.stairPortals.slice(0,3)));
+ck('the ground approach is a compact 56m² gallery and landing, not a massive empty hall',compactHallCells.length===56*4,`${compactHallCells.length/4} m²`);
+const mainStairPortals=cp.stairPortals.filter((portal)=>portal.id?.startsWith('main-open-well:')),basementStairPortal=cp.stairPortals.find(p=>p.group0==='ground'&&p.group1==='basement');
+ck('stairs terminate on their physical destination floors',mainStairPortals.length===4&&!!basementStairPortal,JSON.stringify(cp.stairPortals.slice(0,5)));
+
+const upperArrival=rc(66,55),restoredArrival=rc(154,74);
+ck('the restored landing remains open to the existing practice corridor',FP.zoneAt(upperArrival.x,upperArrival.y)===ZONE.practice&&!FP.isSolid(upperArrival.x,upperArrival.y)&&reachable(restoredArrival,upperArrival,KEYRING));
 
 // The wing now sits on the main stair's axis: corridor at authored x60-62, west
 // rooms x52-58, east rooms x64-75. Coming up the stair you face straight down it.
@@ -416,7 +450,7 @@ ck('the chapel opens into a long 13m pointed-vault volume',Math.abs(FP.ceilAt(..
 //   node tools/chunk_surfer/tests/floorplan.mjs --map [--plan=testbed]
 if (process.argv.includes('--map')) {
   const which = process.argv.includes('--plan=testbed') ? testbed : conservatory;
-  const pp = FP.compile(which.levels, { width: which.width, height: which.height, widenCorridors: which.widenCorridors,connectors:which.connectors||[],doors:which===conservatory?which.doors:[] });
+  const pp = FP.compile(which.levels, { width: which.width, height: which.height, widenCorridors: which.widenCorridors,connectors:which.connectors||[],edgePortals:which.edgePortals||[],doors:which===conservatory?which.doors:[] });
   if(which===testbed)for (const d of which.doors || []) FP.setDoorKey(d.x, d.y, d.key,{open:true});
   else for(const door of FP.doorState())if(!door.keyId||KEYRING.has(door.keyId))FP.setDoorOpen(door.id,true);
   FP.setSpawn(which.spawn.x, which.spawn.y);

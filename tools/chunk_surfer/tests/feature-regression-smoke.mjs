@@ -471,7 +471,12 @@ try {
 
   await page.evaluate(()=>window.__probe.warpCell(80,31,2));
   assert.equal(await page.evaluate(()=>window.__probe.battleId('natatorium',false)),true);
-  if(await page.evaluate(()=>window.__scenes?.top?.()?.id==='loadout-briefing')){
+  // Every fight opens on the encounter transition now, not just the first one.
+  // The first press skips the lead-in (any key does); the second confirms the
+  // loadout and starts the fight.
+  if(await page.evaluate(()=>window.__scenes?.top?.()?.id==='encounter-start')){
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(()=>window.__scenes?.top?.()?.view?.()?.leadIn===false,{timeout:interactionTimeout});
     await page.keyboard.press('Enter');
   }
   await page.waitForFunction(()=>/^battle:/.test(window.__scenes?.top?.()?.id||''),{timeout:interactionTimeout});

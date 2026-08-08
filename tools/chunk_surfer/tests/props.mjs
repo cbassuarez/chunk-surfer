@@ -6,7 +6,7 @@ import * as PROPS from '../../../src/game/props.js';
 let pass=true;
 const ck=(name,ok,detail='')=>{console.log(`${ok?'PASS':'FAIL'}  ${name}${detail?'  '+detail:''}`);if(!ok)pass=false;};
 
-FP.compile(conservatory.levels,{width:conservatory.width,height:conservatory.height,widenCorridors:conservatory.widenCorridors,connectors:conservatory.connectors});
+FP.compile(conservatory.levels,{width:conservatory.width,height:conservatory.height,widenCorridors:conservatory.widenCorridors,connectors:conservatory.connectors,edgePortals:conservatory.edgePortals});
 for(const d of conservatory.doors||[])FP.setDoorKey(d.x,d.y,d.key);
 FP.setSpawn(conservatory.spawn.x,conservatory.spawn.y);
 

@@ -8,20 +8,23 @@ let pass=true;
 const ck=(name,ok,detail='')=>{console.log(`${ok?'PASS':'FAIL'}  ${name}${detail?'  '+detail:''}`);if(!ok)pass=false;};
 const main=fs.readFileSync(new URL('../../../src/main.js',import.meta.url),'utf8');
 
-FP.compile(conservatory.levels,{width:conservatory.width,height:conservatory.height,widenCorridors:conservatory.widenCorridors,connectors:conservatory.connectors});
-for(const d of conservatory.doors||[])FP.setDoorKey(d.x,d.y,d.key);
+FP.compile(conservatory.levels,{width:conservatory.width,height:conservatory.height,widenCorridors:conservatory.widenCorridors,connectors:conservatory.connectors,edgePortals:conservatory.edgePortals,doors:conservatory.doors});
 
-const box=FP.toRuntimePoint({x:89,y:20});
+const box=FP.toRuntimePoint({x:94,y:13});
 const chapel=FP.toRuntimePoint({x:92,y:58});
-ck('box-office staff leaf is locked without master',FP.canStep(box.x-2,box.y,box.x,box.y,{keys:new Set()}).why==='locked');
-ck('box-office staff leaf opens with master',FP.canStep(box.x-2,box.y,box.x,box.y,{keys:new Set(['master'])}).ok);
+ck('box-office staff leaf is locked without master',FP.canStep(box.x,box.y+2,box.x,box.y,{keys:new Set()}).why==='locked');
+ck('box-office staff leaf answers to master',FP.canStep(box.x,box.y+2,box.x,box.y,{keys:new Set(['master'])}).why==='closed');
+FP.setDoorOpen('foh-office',true);
+ck('box-office staff leaf opens after the master turns it',FP.canStep(box.x,box.y+2,box.x,box.y,{keys:new Set(['master'])}).ok);
 ck('chapel leaves remain locked to the standard ring',FP.canStep(chapel.x,chapel.y-2,chapel.x,chapel.y,{keys:new Set(['master'])}).why==='locked');
+ck('C-17 answers to the complete keyring',FP.canStep(chapel.x,chapel.y-2,chapel.x,chapel.y,{keys:new Set(['master','chapel'])}).why==='closed');
+FP.setDoorOpen('chapel-c17',true);
 ck('C-17 opens the complete chapel threshold',FP.canStep(chapel.x,chapel.y-2,chapel.x,chapel.y,{keys:new Set(['master','chapel'])}).ok);
 
 const log=PAGES.find((p)=>p.id==='page-6');
 const pageText=(page)=> (page?.body||[]).map((line)=>typeof line==='string'?line:line?.raw||'').join(' ');
 const logText=pageText(log);
-ck('sheet 6 supplies the first clue without the answer',/replacement core/i.test(logText)&&/front of house/i.test(logText)&&!/C-17/i.test(logText));
+ck('sheet 6 supplies the first clue without the answer',/replacement (?:lock )?core/i.test(logText)&&/front of house/i.test(logText)&&!/C-17/i.test(logText));
 ck('later sheets do not bypass the two-clue check',!/C-17/i.test(pageText(PAGES.find((p)=>p.id==='page-9'))));
 
 const choices=CHAPEL_KEY_CHECK.start.choices;

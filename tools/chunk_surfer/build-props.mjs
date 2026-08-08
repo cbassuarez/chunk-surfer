@@ -13,6 +13,11 @@ import {
   marimbaAccidentalX,
   marimbaNaturalX,
 } from '../../src/data/marimba-layout.js';
+import { ELLERY_MASSING, YARD_SERVICE_RANGES } from '../../src/data/exterior-district.js';
+import { conservatory } from '../../src/data/floorplan/conservatory.js';
+import { CELL, MATERIAL } from '../../src/data/floorplan/legend.js';
+import * as FP from '../../src/world/floorplan.js';
+import { wallRuns, wallRunsDigest } from '../../src/world/wall-contact.js';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const OUT_DIR = path.join(ROOT, 'public/assets');
@@ -50,11 +55,22 @@ materials.push({
   pbrMetallicRoughness:{baseColorFactor:[0.018,0.12,0.055,1],metallicFactor:.12,roughnessFactor:.22},
   emissiveFactor:[.04,.82,.20],
 });
+materials.push(
+  {name:'occupied warm glass',pbrMetallicRoughness:{baseColorFactor:[.38,.25,.10,1],metallicFactor:.02,roughnessFactor:.28},emissiveFactor:[.86,.53,.20]},
+  {name:'ellery red brick',pbrMetallicRoughness:{baseColorFactor:[.25,.095,.052,1],metallicFactor:0,roughnessFactor:.94}},
+  {name:'ellery dark brick',pbrMetallicRoughness:{baseColorFactor:[.13,.075,.058,1],metallicFactor:0,roughnessFactor:.96}},
+  {name:'wet slate',pbrMetallicRoughness:{baseColorFactor:[.075,.09,.105,1],metallicFactor:.03,roughnessFactor:.52}},
+  {name:'board marked concrete',pbrMetallicRoughness:{baseColorFactor:[.36,.37,.34,1],metallicFactor:0,roughnessFactor:.91}},
+  {name:'municipal glazed brick',pbrMetallicRoughness:{baseColorFactor:[.24,.39,.34,1],metallicFactor:.02,roughnessFactor:.35}},
+  {name:'pub green paint',pbrMetallicRoughness:{baseColorFactor:[.075,.18,.12,1],metallicFactor:0,roughnessFactor:.66}},
+  {name:'dull terracotta',pbrMetallicRoughness:{baseColorFactor:[.42,.17,.08,1],metallicFactor:0,roughnessFactor:.86}},
+);
 
 const MAT = {
   dark:0, wood:1, black:2, steel:3, ivory:4, brass:5, cloth:6, cone:7,
   paper:8, portrait:9, stone:10, plaster:11, bronze:12, soil:13, deadLeaf:14,
   poolBlue:15, poolMint:16, agedWhite:17, safetyRed:18, roofGlass:19, vfd:20,
+  warmWindow:21,brickRed:22,brickDark:23,slate:24,concrete:25,glazedBrick:26,pubGreen:27,terracotta:28,
 };
 
 // Real source models, supplied by the user (FabConvert / SketchUp conversions).
@@ -158,6 +174,57 @@ function addBeam(m,a,b,w,mat){
 
 function addQuad(m,a,b,c,d,mat){const g=group(m,mat),base=g.positions.length/3,u=b.map((q,i)=>q-a[i]),v=c.map((q,i)=>q-a[i]),n=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]],l=Math.hypot(...n)||1;for(const p of[a,b,c,d]){g.positions.push(...p);g.normals.push(...n.map(q=>q/l));}g.indices.push(base,base+1,base+2,base,base+2,base+3);}
 
+// Exterior roofs are authored as real silhouettes, never as a dark lid on a
+// box. `ridge` names the direction the ridge runs; the two roof planes are
+// double-sided because several perimeter views look up under deep wet eaves.
+function addPitchedRoof(m,{x,z,w,d,eaves,rise,mat=MAT.slate,gableMat=null,ridge='z',overhang=.28}){
+  const W=w+overhang*2,D=d+overhang*2;
+  const face=(a,b,c,d)=>{addQuad(m,a,b,c,d,mat);addQuad(m,d,c,b,a,mat);};
+  if(ridge==='z'){
+    face([x-W/2,eaves,z-D/2],[x-W/2,eaves,z+D/2],[x,eaves+rise,z+D/2],[x,eaves+rise,z-D/2]);
+    face([x,eaves+rise,z-D/2],[x,eaves+rise,z+D/2],[x+W/2,eaves,z+D/2],[x+W/2,eaves,z-D/2]);
+    if(gableMat!==null){
+      addTriangle(m,[x-W/2,eaves,z-D/2-.02],[x,eaves+rise,z-D/2-.02],[x+W/2,eaves,z-D/2-.02],gableMat);
+      addTriangle(m,[x+W/2,eaves,z+D/2+.02],[x,eaves+rise,z+D/2+.02],[x-W/2,eaves,z+D/2+.02],gableMat);
+    }
+    addBeam(m,[x-W/2,eaves,z-D/2],[x-W/2,eaves,z+D/2],.13,MAT.stone);
+    addBeam(m,[x+W/2,eaves,z-D/2],[x+W/2,eaves,z+D/2],.13,MAT.stone);
+    addBeam(m,[x,eaves+rise,z-D/2],[x,eaves+rise,z+D/2],.10,MAT.slate);
+  }else{
+    face([x-W/2,eaves,z-D/2],[x-W/2,eaves+rise,z],[x+W/2,eaves+rise,z],[x+W/2,eaves,z-D/2]);
+    face([x-W/2,eaves+rise,z],[x-W/2,eaves,z+D/2],[x+W/2,eaves,z+D/2],[x+W/2,eaves+rise,z]);
+    if(gableMat!==null){
+      addTriangle(m,[x-W/2-.02,eaves,z-D/2],[x-W/2-.02,eaves+rise,z],[x-W/2-.02,eaves,z+D/2],gableMat);
+      addTriangle(m,[x+W/2+.02,eaves,z+D/2],[x+W/2+.02,eaves+rise,z],[x+W/2+.02,eaves,z-D/2],gableMat);
+    }
+    addBeam(m,[x-W/2,eaves,z-D/2],[x+W/2,eaves,z-D/2],.13,MAT.stone);
+    addBeam(m,[x-W/2,eaves,z+D/2],[x+W/2,eaves,z+D/2],.13,MAT.stone);
+    addBeam(m,[x-W/2,eaves+rise,z],[x+W/2,eaves+rise,z],.10,MAT.slate);
+  }
+}
+
+function addBarrelRoof(m,{x,z,w,d,eaves,rise,mat=MAT.slate,glassFraction=.18,endMat=MAT.glazedBrick,segments=12}){
+  const front=z-d/2-.02,back=z+d/2+.02;
+  for(let i=0;i<segments;i++){
+    const ta=i/segments,tb=(i+1)/segments;
+    const xa=x-w/2+w*ta,xb=x-w/2+w*tb;
+    const ya=eaves+rise*Math.sin(Math.PI*ta),yb=eaves+rise*Math.sin(Math.PI*tb);
+    const centre=(ta+tb)/2-.5,roofMat=Math.abs(centre)<glassFraction/2?MAT.roofGlass:mat;
+    addQuad(m,[xa,ya,front],[xa,ya,back],[xb,yb,back],[xb,yb,front],roofMat);
+    addQuad(m,[xb,yb,front],[xb,yb,back],[xa,ya,back],[xa,ya,front],roofMat);
+    addQuad(m,[xa,eaves,front-.02],[xb,eaves,front-.02],[xb,yb,front-.02],[xa,ya,front-.02],endMat);
+    addQuad(m,[xb,eaves,back+.02],[xa,eaves,back+.02],[xa,ya,back+.02],[xb,yb,back+.02],endMat);
+  }
+  addBeam(m,[x-w/2,eaves,front],[x-w/2,eaves,back],.14,MAT.stone);
+  addBeam(m,[x+w/2,eaves,front],[x+w/2,eaves,back],.14,MAT.stone);
+}
+
+function addRoofLantern(m,{x,z,w,d,y,rise=.72}){
+  addBox(m,[x,y+.34,z],[w,.68,d],MAT.roofGlass);
+  for(const dx of[-w/2,w/2])addBox(m,[x+dx,y+.34,z],[.10,.78,d+.10],MAT.steel);
+  addPitchedRoof(m,{x,z,w,d,eaves:y+.68,rise,mat:MAT.roofGlass,ridge:'z',overhang:.10});
+}
+
 function addPlateBeamXY(m,a,b,w,mat){
   // A flat, double-sided steel member in the XY plane. Pool-roof ribs and
   // perforated ties are cut plate, so giving every short arc segment six box
@@ -236,6 +303,22 @@ function addSecondPerimeterWall(m,{
   for(const along of pilasters)addWallPilaster(m,{
     axis,plane,inside,along,y:dadoHeight,height:corniceY-dadoHeight,width:.38,depth:.30*reliefScale,mat:trimMat,
   });
+}
+
+// The front atrium is not the baths. Its walls are plain plaster at human
+// height, with the surviving civic order beginning safely above eye level.
+// Keeping this separate from addSecondPerimeterWall makes it impossible for a
+// future tiled-dado change to silently re-panel the atrium again.
+function addUpperCivicRelief(m,{axis,plane,inside,spans,pilasters=[],reliefScale=1,trimMat=MAT.plaster,capMat=MAT.stone}){
+  for(const [from,to] of spans){
+    addWallRun(m,{axis,plane,inside,from,to,y:4.54,height:.15,depth:.20*reliefScale,mat:trimMat});
+    addWallRun(m,{axis,plane,inside,from,to,y:4.69,height:.15,depth:.31*reliefScale,mat:capMat});
+    addWallRun(m,{axis,plane,inside,from,to,y:4.84,height:.08,depth:.39*reliefScale,mat:trimMat});
+  }
+  for(const along of pilasters){
+    addWallPilaster(m,{axis,plane,inside,along,y:2.42,height:2.12,width:.30,depth:.25*reliefScale,mat:trimMat});
+    addWallPilaster(m,{axis,plane,inside,along,y:4.39,height:.18,width:.54,depth:.31*reliefScale,mat:capMat});
+  }
 }
 
 function addTriangle(m,a,b,c,mat){
@@ -564,7 +647,22 @@ function addStringInstrument(m, {
   const m=mesh('equipment_rack'); addBox(m,[0,.80,0],[.62,1.60,.58],MAT.black);for(let i=0;i<6;i++){addBox(m,[0,.28+i*.22,-.302],[.54,.14,.025],MAT.steel);addCylinder(m,[.20,.28+i*.22,-.325],.018,.022,i===4?MAT.brass:MAT.paper,8);}
 }
 {
-  const m=mesh('ticket_counter');addBox(m,[0,.46,0],[2.8,.92,.72],MAT.dark);addBox(m,[0,.97,0],[3.0,.10,.82],MAT.wood);for(let x=-1.25;x<=1.25;x+=.5)addBox(m,[x,1.62,.30],[.025,1.25,.025],MAT.brass);addBox(m,[0,2.23,.30],[2.8,.04,.04],MAT.brass);
+  const m=mesh('ticket_counter');
+  addBox(m,[0,.46,0],[2.8,.92,.72],MAT.dark);addBox(m,[0,.97,0],[3.0,.10,.82],MAT.wood);
+  // A ticket window, not a brass fence against bare brick. Three dark wired-
+  // glass clerking lights sit behind the original grille and make the counter
+  // read as the public face of a room from across the atrium.
+  addBox(m,[0,1.62,.325],[2.82,1.28,.055],MAT.black);
+  for(const x of[-.9,0,.9])addBox(m,[x,1.62,.292],[.72,.96,.022],MAT.roofGlass);
+  // Pale civic trim makes the public function legible before the player is in
+  // interaction range; the dark wired glass alone disappears into the closed
+  // office when the front-of-house circuit is dead.
+  for(const x of[-1.43,-.47,.47,1.43])addBox(m,[x,1.68,.22],[.09,1.48,.15],MAT.agedWhite);
+  addBox(m,[0,2.39,.22],[3.02,.18,.15],MAT.agedWhite);
+  addBox(m,[0,2.57,.20],[1.78,.22,.12],MAT.dark);
+  addBox(m,[0,2.57,.13],[1.48,.055,.025],MAT.brass);
+  for(let x=-1.25;x<=1.25;x+=.5)addBox(m,[x,1.62,.265],[.025,1.25,.025],MAT.brass);
+  addBox(m,[0,2.23,.265],[2.8,.04,.04],MAT.brass);
 }
 {
   const m=mesh('box_office_desk');
@@ -729,6 +827,70 @@ function addStringInstrument(m, {
   addWallRun(m,{axis:'x',plane:11,inside:-1,from:-4.6,to:6.6,y:0,height:1.34,depth:.06,mat:MAT.poolMint});
   addWallRun(m,{axis:'x',plane:11,inside:-1,from:-4.6,to:6.6,y:0,height:.20,depth:.12,mat:MAT.poolBlue});
   addWallRun(m,{axis:'x',plane:11,inside:-1,from:-4.6,to:6.6,y:1.27,height:.14,depth:.14,mat:MAT.agedWhite});
+}
+{
+  // THE BATHS ENTRANCE. A civic pool needs a dry-to-wet sequence before it
+  // needs decorative clutter: terrazzo/mosaic underfoot, drains where outdoor
+  // shoes stop, an attendant's hatch, admission control, an accessible bypass,
+  // and wired-glass screens that reveal the humid hall without making another
+  // room. Everything stands off the centre axis and remains non-colliding; the
+  // floorplan is still the sole navigation/occlusion envelope.
+  const m=mesh('natatorium_entrance_fixtures');
+
+  // 1912 mosaic threshold and the later stainless trench drains.
+  addBox(m,[0,.018,-1.78],[5.8,.036,1.34],MAT.ivory);
+  for(let iz=0;iz<4;iz++)for(let ix=0;ix<14;ix++){
+    if((ix+iz)%3!==0)continue;
+    addBox(m,[-2.70+ix*.415,.041,-2.25+iz*.31],[.19,.012,.14],(ix+iz)%2?MAT.poolBlue:MAT.poolMint);
+  }
+  for(const z of[-.98,.92]){
+    addBox(m,[0,.045,z],[6.2,.07,.16],MAT.steel);
+    for(let x=-2.85;x<=2.85;x+=.30)addBox(m,[x,.087,z],[.045,.012,.11],MAT.dark);
+  }
+
+  // Wired-glass control screens. Their low tiled plinths stop well short of the
+  // centre; sight, air and the wide accessible lane all continue through.
+  for(const side of[-1,1]){
+    const x=side*3.55;
+    addBox(m,[x,.34,.38],[.16,.68,2.85],MAT.poolMint);
+    for(const z of[-.92,.02,1.00,1.80])addBox(m,[x,1.72,z],[.10,2.12,.08],MAT.agedWhite);
+    addBox(m,[x,2.76,.42],[.12,.12,2.92],MAT.agedWhite);
+    for(const z of[-.46,.50,1.40])addBox(m,[x,1.73,z],[.045,1.88,.76],MAT.roofGlass);
+  }
+
+  // Attendant hatch and towel return on the west side. The counter is turned
+  // toward the entering player, with the original grille surviving above it.
+  addBox(m,[-7.35,.48,-.35],[3.25,.96,.68],MAT.poolMint);
+  addBox(m,[-7.35,1.01,-.46],[3.46,.10,.88],MAT.stone);
+  addBox(m,[-7.35,2.13,-.05],[3.35,2.18,.12],MAT.agedWhite);
+  addBox(m,[-7.35,1.98,-.12],[2.86,1.48,.08],MAT.dark);
+  for(let x=-8.58;x<=-6.12;x+=.31)addCylinder(m,[x,1.98,-.19],.018,1.34,MAT.bronze,8);
+  addBox(m,[-8.58,.73,.10],[.92,.32,.12],MAT.dark);
+  addBox(m,[-8.58,.73,.02],[.78,.22,.025],MAT.paper);
+
+  // One old tripod turnstile survives beside a wide manual bypass. The bypass
+  // is the stronger line in the silhouette, making accessibility legible rather
+  // than leaving it as an invisible gameplay concession.
+  addCylinder(m,[1.88,.78,.22],.075,1.48,MAT.bronze,12);
+  addCylinder(m,[1.88,.83,.22],.16,.14,MAT.brass,12);
+  for(const angle of[-.62,.42,1.46])addBeam(m,[1.88,.84,.22],[1.88+Math.cos(angle)*.82,.84, .22+Math.sin(angle)*.82],.035,MAT.bronze);
+  for(const x of[-1.58,-.42]){
+    addCylinder(m,[x,.58,.54],.055,1.12,MAT.bronze,10);
+    addCylinder(m,[x,1.16,.54],.10,.08,MAT.brass,10);
+  }
+  addBeam(m,[-1.55,1.01,.54],[-.48,1.01,.54],.045,MAT.bronze);
+
+  // High municipal identity and humble service hardware: an enamel BATHS
+  // header, clock conduit, radiator and boot-scrape rail. These break the lobby
+  // into human-scale layers without putting scenery in the route.
+  addBox(m,[0,3.54,-1.78],[5.55,.78,.13],MAT.poolBlue);
+  addBox(m,[0,3.54,-1.86],[4.86,.50,.025],MAT.ivory);
+  for(const x of[5.55,6.03,6.51,6.99,7.47,7.95])addBox(m,[x,.66,1.66],[.24,1.14,.16],MAT.agedWhite);
+  addBox(m,[6.75,.12,1.66],[2.92,.20,.28],MAT.dark);
+  addBox(m,[7.55,1.62,1.68],[1.18,1.04,.24],MAT.steel);
+  addBox(m,[7.55,1.62,1.54],[.94,.80,.035],MAT.agedWhite);
+  addBox(m,[-5.18,.11,1.70],[2.25,.18,.34],MAT.dark);
+  for(let x=-6.08;x<=-4.28;x+=.30)addBox(m,[x,.22,1.70],[.08,.22,.36],MAT.wood);
 }
 {
   // Continuous changing cubicles line the outside walls, as at Warrender and
@@ -901,20 +1063,191 @@ function addStringInstrument(m, {
   // Offline fallback only. The accepted source replaces this mesh when the
   // ignored intake cache is present.
   const m=mesh('hall_seating');
-  for(let row=0;row<11;row++){const z=-8+row*1.55,y=row*.45;addBox(m,[0,y/2-.05,z],[24,y+.1,1.45],MAT.dark);for(let x=-10.8;x<=10.8;x+=.72){if(Math.abs(x)<.75)continue;addBox(m,[x,y+.38,z],[.54,.72,.55],MAT.cloth);}}
+  // THE GANGWAYS ARE THE FLOORPLAN'S. hallGroundProfile flags three aisles with
+  // F.STAIR, and game/props.js now derives the seating collision from exactly
+  // those flags rather than from a second guess authored in metres. The seats
+  // have to stop where the aisles start or the player walks through a row.
+  // Measured off the compiled plan at authored y=24: west ends at 102, centre
+  // runs 110.5-114, east begins at 122.5. The anchor is authored x=113, so in
+  // local metres that is seats from -11.0 to +9.5 with a hole at -2.5..+1.0.
+  // The transverse cross-over is at local z 0.15..1.85 (props.js keeps it, since
+  // hallGroundProfile's aisle test is x-only and cannot flag a gangway that runs
+  // across the bowl). The terrace platform still steps through it — it is a rake,
+  // not a hole — but no row of seats may stand in it.
+  const AISLE_MIN=-2.5,AISLE_MAX=1.0,SEAT_MIN=-11.0,SEAT_MAX=9.5,CROSS_MIN=.15,CROSS_MAX=1.85;
+  const PITCH=.72;
+  // A SEAT, NOT A CUBE.
+  //
+  // Each seat was one 0.54 x 0.72 x 0.55 box, so nine hundred of them read as a
+  // gravel bed. A Victorian house seat is a cast-iron end standard, a raked back,
+  // and a pan — and in a building nobody has sat in since April every pan is
+  // TIPPED UP, which is the whole silhouette of an empty auditorium and the thing
+  // a single box can never say. The standards are shared between neighbours, one
+  // per gap rather than two per seat, which is both how they are really built and
+  // what keeps this inside its triangle budget.
+  //
+  // Rows face -z: the stage is north of the bowl, so the back is at +z and the
+  // pan hangs vertically in front of it.
+  const seatRun=(x0,x1,y,z)=>{
+    if(x1-x0<PITCH*.5)return;
+    for(let x=x0;x<=x1+1e-6;x+=PITCH){
+      // The standard, with its arm cap rolled into the same box.
+      addBox(m,[x-PITCH/2,y+.32,z],[.055,.64,.54],MAT.dark);
+      if(x+PITCH>x1+1e-6)addBox(m,[x+PITCH/2,y+.32,z],[.055,.64,.54],MAT.dark);
+      // The back, raked back a few degrees off vertical.
+      addBox(m,[x,y+.72,z+.20],[.56,.60,.075],MAT.cloth,0,-.13);
+      // The pan, folded up against it. This is the one that matters.
+      addBox(m,[x,y+.40,z+.07],[.54,.44,.07],MAT.cloth,0,.09);
+    }
+  };
+  for(let row=0;row<11;row++){
+    const z=-8+row*1.55,y=row*.45;
+    addBox(m,[0,y/2-.05,z],[24,y+.1,1.45],MAT.dark);            // the terrace
+    addBox(m,[0,y-.02,z-.70],[24,.09,.10],MAT.wood);            // and its nosing
+    if(z+.28>CROSS_MIN&&z-.28<CROSS_MAX)continue;
+    seatRun(SEAT_MIN,AISLE_MIN-PITCH/2,y,z);
+    seatRun(AISLE_MAX+PITCH/2,SEAT_MAX,y,z);
+  }
 }
 {
   const m=mesh('hall_structure');
-  // Stage and proscenium.
-  addBox(m,[0,-2.35,-15],[26,.30,8],MAT.wood);addBox(m,[0,4.0,-10.8],[26,.55,.8],MAT.wood);
-  addBox(m,[-10.3,3.5,-10.8],[3.4,12,.9],MAT.wood);addBox(m,[10.3,3.5,-10.8],[3.4,12,.9],MAT.wood);addBox(m,[0,-.6,-11.15],[15.5,3.8,.22],MAT.cloth);
+  // A MODERN HALL INSERTED IN A VICTORIAN SHELL.
+  //
+  // Koerner Hall is a 2009 recital room built inside the Royal Conservatory's
+  // 1881 building on Bloor Street, which is exactly this room's situation. So the
+  // Victorian proscenium survives only as a plain masonry BAY and a timber hall
+  // stands inside it: portal, platform, choir gallery, organ. The fly tower over
+  // the top is a dead void nobody removed.
+  //
+  // WHY THIS IS STAGED IN DEPTH AND NOT MODELLED IN RELIEF.
+  //
+  // The torch is co-located with the eye, so lambert is exactly N·V: a face
+  // parallel to the wall gains NOTHING from standing proud of it, and a hundred
+  // mouldings on one plane render as one flat sheet. That is what was wrong with
+  // this — every box sat at z=-10.8. Only two things carry a prop here:
+  //   · a DEPTH BREAK, which needs 0.74m at ten metres and 1.9m at twenty before
+  //     it draws a contour, so these layers are METRES apart, not centimetres;
+  //   · a TONAL EDGE, needing ~0.10 luminance across one halftone cell, so each
+  //     layer alternates plaster (.617) against wood (.222) — a 2.8:1 ratio.
+  // And relief only ever reads through its RETURNS, so every tier below shows the
+  // house a riser, a soffit or a reveal rather than its face.
+  //
+  // Local metres against the anchor at authored (113,23). The depth planes:
+  //   BAY   -10.8   the old masonry opening (matches the existing colliders)
+  //   PORT  -12.2   the timber portal, 1.4m upstage of the bay
+  //   CHOIR -16.0 .. -18.3   three ranks rising to the back wall
+  //   ORGAN -18.9   against the stage house
+  const BAY=-10.8, PORT=-12.2, HOUSE=-2.5, STAGE=-1.5, HEAD=4.0, TOP=9.5;
+  const PIER=10.3, IN=8.6;
+
+  // The platform. Authored to hallStageProfile: top at -1.5, two step bays at
+  // local -6 and +5 rising -2.5 -> -2.16 -> -1.83 -> -1.5.
+  addBox(m,[0,(HOUSE+STAGE)/2,-15],[26,STAGE-HOUSE,8],MAT.wood);
+  for(const bx of [-6,5]){
+    addBox(m,[bx,-2.33,-12],[3.0,.34,1.0],MAT.wood);
+    addBox(m,[bx,-2.00,-13],[3.0,.34,1.0],MAT.wood);
+  }
+
+  // LAYER 1 — the Victorian bay. Plain, heavy, and DEEP: its reveal is the one
+  // return in this room every seat can see, so it is 2.1m front to back.
+  for(const sx of [-1,1]){
+    const x=sx*PIER;
+    addBox(m,[x,(HOUSE+TOP)/2,BAY],[3.2,TOP-HOUSE,1.40],MAT.plaster);
+    addBox(m,[sx*(IN+.30),(HOUSE+HEAD)/2,BAY-.35],[.60,HEAD-HOUSE,2.10],MAT.stone);
+  }
+  addBox(m,[0,HEAD+.55,BAY],[23.8,1.10,1.40],MAT.plaster);
+  addBox(m,[0,HEAD+.02,BAY-.35],[17.8,.36,2.10],MAT.stone);
+  addBox(m,[0,(HEAD+1.1+TOP)/2,BAY],[17.8,TOP-HEAD-1.1,1.00],MAT.plaster);
+
+  // LAYER 2 — the timber portal, 1.4m upstage and a size smaller. The gap
+  // between it and the bay is the depth break that makes this an opening you
+  // look THROUGH rather than a picture hung on a wall.
+  for(const sx of [-1,1]){
+    addBox(m,[sx*7.6,(STAGE+3.4)/2,PORT],[1.20,3.4-STAGE,.90],MAT.wood);
+    addBox(m,[sx*6.9,(STAGE+3.4)/2,PORT-.50],[.22,3.4-STAGE,1.90],MAT.dark);
+  }
+  addBox(m,[0,3.62,PORT],[16.4,.44,.90],MAT.wood);
+  addBox(m,[0,3.34,PORT-.50],[15.0,.20,1.90],MAT.dark);
+  // Slatted acoustic timber over the portal head. The slats are 260mm — above
+  // the 150mm that still reads from mid-stalls, below which this becomes noise.
+  for(let x=-7.0;x<=7.0;x+=.62) addBox(m,[x,4.90,PORT+.10],[.26,2.0,.30],MAT.wood);
+
+  // LAYER 3 — the choir gallery. Three ranks, each turning a riser face toward
+  // the house; the treads never read from down there and are not worth spending.
+  for(let t=0;t<3;t++){
+    const z=-16.0-t*1.15, top=STAGE+.45+t*.45;
+    addBox(m,[0,top-.06,z],[18.0-t*1.2,.12,1.15],MAT.wood);
+    addBox(m,[0,top-.28,z-.55],[18.0-t*1.2,.45,.14],MAT.dark);
+    for(let x=-7.5+t*.6;x<=7.5-t*.6;x+=1.5) addBox(m,[x,top+.42,z+.18],[.06,.84,.44],MAT.dark);
+  }
+
+  // LAYER 4 — the organ, against the stage house. Same idiom as
+  // tower_organ_case: a triangular envelope of pipes so the SILHOUETTE does the
+  // work, steel (.235) on a dark case (.106) so it has something to be light
+  // against, plus a specular channel the case has not got.
+  addBox(m,[0,1.35,-18.9],[11.0,5.6,.70],MAT.dark);
+  for(let i=-16;i<=16;i++){
+    const h=1.5+(1-Math.abs(i)/17)*3.1;
+    addCylinder(m,[i*.32,-.05+h/2,-18.5],.085,h,MAT.steel,8);
+  }
+  addBox(m,[0,4.30,-18.4],[11.4,.34,.90],MAT.wood);
   // Continuous lower and upper side/rear balconies.
   for(const y of [3.9,7.4]){addBox(m,[-12.0,y,3.0],[3.5,.22,28],MAT.wood);addBox(m,[12.0,y,3.0],[3.5,.22,28],MAT.wood);addBox(m,[0,y,14.5],[24,.22,4.5],MAT.wood);for(const x of[-10.25,10.25])addBox(m,[x,y+.58,3.0],[.08,1.12,28],MAT.brass);addBox(m,[0,y+.58,12.25],[20.5,1.12,.08],MAT.brass);}
-  // Stair surfaces are authored by the floorplan. Keeping them out of this
-  // structural mesh prevents duplicate visible flights from blocking the entry
-  // read from the box-office vestibule.
+  // THE GALLERIA FLIGHTS.
+  //
+  // These used to be left out on the grounds that the floorplan authors the
+  // stair surfaces, so a mesh would duplicate them. It does not: the scene
+  // shader is a sector DDA with ONE floor/ceiling pair per column, and while you
+  // stand in the hall the envelope collapses every hall column to min-floor and
+  // max-ceil so the balconies keep their sightlines. The consequence is that the
+  // flight is a floor which quietly ramps upward under your feet, with no risers,
+  // no soffit and no rail — a stair you can walk and cannot see, in the darkest
+  // aisle in the building. Both were reachable the whole time and neither read
+  // as a way up.
+  //
+  // Authored to the COMPILED treads, not by eye: the flights occupy physical
+  // x200-201 and x252-253 (runtime half-cells), z42-62, which is local x -12.75
+  // and +13.25, z -2..+8. West climbs south -0.74 -> 3.77 at 0.225 per half
+  // cell; east climbs north 7.50 -> 4.00 at 0.175. Change the floorplan and
+  // these must move with it or the steps stop matching the ground under them.
+  //
+  // ONLY THE EAST FLIGHT IS DRAWN. The west one is authored INSIDE the west
+  // seating aisle: `galleria_lower_stair` climbs -0.74 -> 4.00 through the exact
+  // volume the aisle ramps through (-0.74 -> 1.90 over the same rows), on a
+  // separate logical island that physicalReplace lets own the air. Two floors in
+  // one place — so the player walks the ramp to their seats and passes straight
+  // through drawn treads standing in it. Drawing that is worse than not drawing
+  // it: it makes a geometry fault read as intended architecture. The east flight
+  // has no such conflict — it sits SEVEN METRES above the gangway it crosses
+  // (phys 252: ground -0.30, hall_stair 6.80) — so it is drawn.
+  for(const f of [
+    {x: 13.25, h0: 7.50, dh:-0.175, rail: 12.70, newel: 12.70},
+  ]){
+    for(let i=0;i<20;i++){
+      const z=-2+i*.5, h=f.h0+i*f.dh;
+      addBox(m,[f.x,h-.06,z],[1.0,.12,.5],MAT.wood);                       // the going
+      addBox(m,[f.x,h-Math.abs(f.dh)/2-.06,z-.25],[1.0,Math.abs(f.dh),.06],MAT.dark); // the riser
+    }
+    // A rail on the open side only — the other side is the hall's own wall.
+    for(let i=0;i<20;i+=1){
+      const z=-2+i*.5, h=f.h0+i*f.dh;
+      if(i%4===0) addBox(m,[f.rail,h+.45,z],[.05,.90,.05],MAT.brass);
+      addBox(m,[f.rail,h+.92,z],[.06,.06,.5],MAT.brass);
+    }
+    // A newel at the foot, which is the whole point: something that reads as an
+    // invitation from the orchestra floor rather than as a darker piece of wall.
+    addBox(m,[f.newel,f.h0+.52,f.dh>0?-2.2:8.2],[.13,1.15,.13],MAT.wood);
+    addBox(m,[f.newel,f.h0+1.14,f.dh>0?-2.2:8.2],[.20,.10,.20],MAT.brass);
+  }
   // Acoustic reflector ribbons and two technical bridges.
-  for(let i=0;i<11;i++)addBox(m,[0,13.2+Math.sin(i*.7)*.65,-8+i*2.2],[20-i*.24,.16,.48],MAT.wood,(i-5)*.018);
+  // The sails. Homage, not lift: the reference fans dozens of blades the length
+  // of its room; this is the same idea at this room's scale. They are PITCHED so
+  // the stalls see their undersides, which is the only face a torch below them
+  // can light at all.
+  for(let i=0;i<19;i++){
+    const t=i/18, z=-17+t*30, y=12.4+Math.sin(t*3.1)*1.15, w=21-Math.abs(t-.35)*9;
+    addBox(m,[0,y,z],[w,.22,.62],MAT.wood,(t-.5)*.09,(t-.5)*.16);
+  }
   addBox(m,[0,11.6,-2.5],[24,.18,1.0],MAT.steel);addBox(m,[0,12.0,7.5],[24,.18,1.0],MAT.steel);
   for(let z=-7;z<11;z+=2.4){addBox(m,[-9.8,.16,z],[.16,.10,.34],MAT.brass);addBox(m,[9.8,.16,z],[.16,.10,.34],MAT.brass);}
 }
@@ -952,38 +1285,90 @@ function addStringInstrument(m, {
   for(const x of[-11.4,11.4])for(const z of[-12.4,-6.5,6.5,12.4])addCylinder(m,[x,-4.85,z],.16,9.7,MAT.plaster,12);
 }
 {
+  // FRONT OF HOUSE, before the hall proper. The floorplan owns the clear two-
+  // metre throat; this mesh gives it the architectural depth a civic concert
+  // hall entrance needs without adding a second collision envelope.
+  const m=mesh('hall_entrance_portal');
+  // Worn runner and brass threshold pull the eye through from almost four
+  // metres out in the atrium. +Z is the public/atrium side of the door.
+  addBox(m,[0,.018,1.95],[1.92,.036,3.90],MAT.cloth);
+  for(let z=.20;z<=3.72;z+=.44)addBox(m,[0,.042,z],[1.80,.012,.028],MAT.brass);
+  addBox(m,[0,.055,.10],[2.18,.11,.22],MAT.brass);
+
+  // Deep Edwardian oak casing over a later acoustic pair: stone plinths,
+  // panelled shafts, capitals, overpanel and a shallow projecting cornice.
+  for(const side of[-1,1]){
+    const x=side*1.42;
+    addBox(m,[x,.34,.02],[.62,.68,.58],MAT.stone);
+    addBox(m,[x,1.78,.02],[.46,2.22,.42],MAT.stone);
+    addBox(m,[x,2.96,.02],[.68,.26,.58],MAT.stone);
+    addBox(m,[x,1.74,.28],[.30,1.72,.08],MAT.wood);
+    addBox(m,[x,2.40,.33],[.24,.08,.10],MAT.brass);
+  }
+  addBox(m,[0,3.18,.02],[3.48,.38,.58],MAT.stone);
+  addBox(m,[0,3.56,.02],[3.78,.28,.72],MAT.stone);
+  addBox(m,[0,4.10,.02],[3.34,.78,.44],MAT.dark);
+  addBox(m,[0,4.10,.26],[2.72,.42,.055],MAT.brass);
+  for(const x of[-1.05,-.70,-.35,0,.35,.70,1.05])addBox(m,[x,4.10,.305],[.055,.22,.035],MAT.ivory);
+
+  // The vestibule has a ceiling and side returns, not just a decorated wall.
+  // Short coffers create repeated depth cues while leaving every walking and
+  // sight line open below them.
+  for(const z of[.34,1.15,1.96,2.77,3.58]){
+    addBox(m,[0,4.46,z],[3.34,.16,.24],MAT.wood);
+    addBox(m,[-1.63,2.72,z],[.14,3.48,.22],MAT.wood);
+    addBox(m,[1.63,2.72,z],[.14,3.48,.22],MAT.wood);
+  }
+  addBox(m,[0,4.52,1.96],[3.34,.10,3.78],MAT.plaster);
+}
+{
+  const m=mesh('hall_entrance_sign');
+  addBox(m,[0,.24,.03],[2.75,.48,.06],MAT.dark);
+  addBox(m,[0,.24,.068],[2.52,.32,.025],MAT.brass);
+  addBox(m,[0,.24,.086],[2.20,.18,.018],MAT.dark);
+  for(const x of[-.96,-.64,-.32,0,.32,.64,.96])addBox(m,[x,.24,.102],[.045,.10,.012],MAT.ivory);
+}
+{
+  // Front-of-house lamps are an inherited civic fitting, not the emergency
+  // bulkheads used in the service ranges. A warm opal lantern in a tarnished
+  // brass cradle makes the public threshold legible from the atrium.
+  const m=mesh('hall_entry_sconce');
+  addBox(m,[0,.25,.025],[.30,.50,.05],MAT.brass);
+  addBox(m,[0,.31,.10],[.22,.30,.14],MAT.ivory);
+  addBox(m,[0,.31,.185],[.26,.34,.035],MAT.brass);
+  addBox(m,[0,.08,.13],[.30,.055,.22],MAT.brass);
+  addBox(m,[0,.52,.13],[.30,.055,.22],MAT.brass);
+  for(const x of[-.12,.12])addBeam(m,[x,.10,.15],[x,.50,.15],.018,MAT.brass);
+}
+{
   // The old public atrium keeps only its high civic order: pilasters, picture
   // rail, cornice and blind arches. Lower base courses, dado rails and stiles
   // were visually reading as wainscoting throughout the atrium, so the actual
   // authored wall now runs cleanly from floor to the high relief. The municipal
   // baths relief is separate and deliberately retains its tiled dado.
   const m=mesh('front_atrium_perimeter_relief');
-  addSecondPerimeterWall(m,{
+  addUpperCivicRelief(m,{
     axis:'x',plane:-11.5,inside:1,spans:[[-10.5,-8.95],[-6.05,10.5]],
     pilasters:[-10.35,-8.95,-6.05,-3.0,.15,3.3,6.45,9.9],
-    stiles:[-10.35,-8.95,-6.05,-4.5,-3,-1.45,.15,1.7,3.3,4.85,6.45,8.1,9.9],
-    reliefScale:.36,lowerCourses:false,
+    reliefScale:.36,
   });
-  addSecondPerimeterWall(m,{
+  addUpperCivicRelief(m,{
     axis:'z',plane:-11,inside:1,spans:[[-10.9,-2.65],[-.35,10.9]],
     pilasters:[-10.65,-7.9,-5.25,-2.65,-.35,2.35,5.05,7.75,10.65],
-    stiles:[-10.65,-9.25,-7.9,-6.55,-5.25,-3.9,-2.65,-.35,1,2.35,3.7,5.05,6.4,7.75,9.1,10.65],
-    reliefScale:.36,lowerCourses:false,
+    reliefScale:.36,
   });
-  // The east side becomes a staff office and the narrow concert-hall
-  // vestibule south of the bricked service leaf. Stop the public-room order
-  // there completely: even shallow trim would steal too much of that passage.
-  addSecondPerimeterWall(m,{
-    axis:'z',plane:11,inside:-1,spans:[[-10.9,-2.65]],
-    pilasters:[-10.65,-7.9,-5.25,-2.65],
-    stiles:[-10.65,-9.25,-7.9,-6.55,-5.25,-3.9,-2.65],
-    reliefScale:.36,lowerCourses:false,
+  // The ticket office has moved to the entrance-side north-east corner. The
+  // civic order resumes only on the open promenade between that office and the
+  // concert-hall vestibule; neither enclosed room receives borrowed trim.
+  addUpperCivicRelief(m,{
+    axis:'z',plane:11,inside:-1,spans:[[-1.25,8.25]],
+    pilasters:[-1.05,1.6,4.25,6.9,8.1],
+    reliefScale:.36,
   });
-  addSecondPerimeterWall(m,{
+  addUpperCivicRelief(m,{
     axis:'x',plane:11.5,inside:-1,spans:[[-10.5,-1.75],[.75,10.5]],
     pilasters:[-10.25,-7.35,-4.45,-1.75,.75,3.7,6.65,9.9],
-    stiles:[-10.25,-8.8,-7.35,-5.9,-4.45,-3.05,-1.75,.75,2.25,3.7,5.2,6.65,8.15,9.9],
-    reliefScale:.36,lowerCourses:false,
+    reliefScale:.36,
   });
   for(const along of[-7.5,-4.5,-1.45,1.65,4.8,7.95])addWallArch(m,{
     axis:'x',plane:-11.5,inside:1,along,spring:3.05,radius:1.20,depth:.10,section:.065,mat:MAT.stone,
@@ -991,10 +1376,42 @@ function addStringInstrument(m, {
   for(const along of[-8.9,-6.15,1,3.7,6.4,9.1])addWallArch(m,{
     axis:'z',plane:-11,inside:1,along,spring:3.08,radius:1.03,depth:.10,section:.065,mat:MAT.plaster,
   });
-  // Only the public north part of the east wall receives blind arches.
-  for(const along of[-8.9,-6.15])addWallArch(m,{
+  // Only the public promenade part of the east wall receives blind arches.
+  for(const along of[.25,3.0,5.75])addWallArch(m,{
     axis:'z',plane:11,inside:-1,along,spring:3.08,radius:1.03,depth:.10,section:.065,mat:MAT.stone,
   });
+}
+{
+  // Ordinary civic furniture fixed to the walls: radiators, registers, a
+  // municipal clock, honour boards and coat hooks. One non-blocking mesh keeps
+  // all of it tight to the perimeter, leaving the ruined garden and every
+  // public route under floorplan authority.
+  const m=mesh('atrium_public_fittings');
+  const radiatorX=(x,z)=>{
+    addBox(m,[x,.48,z],[2.15,.78,.11],MAT.steel);
+    for(let fin=-.92;fin<=.92;fin+=.23)addBox(m,[x+fin,.49,z-.065],[.095,.84,.055],MAT.agedWhite);
+    addBox(m,[x-1.04,.10,z],[.07,.20,.16],MAT.brass);addBox(m,[x+1.04,.10,z],[.07,.20,.16],MAT.brass);
+  };
+  radiatorX(-2.6,-11.02);radiatorX(2.6,-11.02);radiatorX(-7.3,11.02);radiatorX(6.4,11.02);
+  // North-wall municipal clock, with a proper deep oak back and brass hands.
+  addBox(m,[7.8,3.12,-11.04],[1.38,1.38,.10],MAT.dark);
+  addBox(m,[7.8,3.12,-11.105],[1.14,1.14,.035],MAT.ivory);
+  addBeam(m,[7.8,3.12,-11.14],[7.8,3.50,-11.14],.026,MAT.black);
+  addBeam(m,[7.8,3.12,-11.14],[8.12,2.96,-11.14],.026,MAT.black);
+  // East-wall honours boards occupy the formerly blank public promenade.
+  for(const z of[.2,3.05,5.9]){
+    addBox(m,[10.96,2.02,z],[.10,1.72,2.05],MAT.dark);
+    addBox(m,[10.89,2.02,z],[.035,1.48,1.80],MAT.wood);
+    for(let yy=1.48;yy<=2.52;yy+=.26)addBox(m,[10.865,yy,z],[.018,.025,1.48],MAT.brass);
+  }
+  // Brass coat hooks and a low umbrella rail beside, but clear of, the public
+  // entrance pair. These never claim navigation cells.
+  addBox(m,[-10.94,1.58,-7.2],[.08,.14,2.35],MAT.dark);
+  for(let z=-8.15;z<=-6.25;z+=.38){
+    addBeam(m,[-10.88,1.58,z],[-10.68,1.48,z],.025,MAT.brass);
+  }
+  addBox(m,[-10.75,.34,-7.2],[.32,.08,2.0],MAT.brass);
+  for(const z of[-8.05,-7.5,-6.9,-6.35])addBox(m,[-10.75,.42,z],[.26,.76,.05],MAT.steel);
 }
 {
   const m=mesh('academic_skylight');
@@ -1319,6 +1736,16 @@ addMainStairDressing('academic_stair_dressing',{rise:5.2,run:10,steps:26,runner:
   addBox(m,[0,.38,.03],[1.35,.76,.06],MAT.brass);
   addBox(m,[0,.38,.067],[1.18,.59,.025],MAT.dark);
 }
+{
+  // A public-entrance enamel sign is deliberately not the tower's brass plate.
+  // Reusing tower_plaque in the atrium made a closure notice look like a route
+  // marker for a stair which is nowhere near this threshold.
+  const m=mesh('public_exit_sign');
+  addBox(m,[0,.31,.03],[2.30,.62,.06],MAT.pubGreen);
+  addBox(m,[0,.31,.068],[2.12,.46,.025],MAT.ivory);
+  addBox(m,[0,.31,.086],[1.84,.26,.018],MAT.pubGreen);
+  for(const x of[-.82,-.41,0,.41,.82])addBox(m,[x,.31,.102],[.055,.13,.012],MAT.ivory);
+}
 
 // Real source models replace (or add) named meshes. Each overwrites the
 // procedural mesh of the same name; new names (violin, plant_pipes) are added.
@@ -1391,6 +1818,323 @@ for(const [name,cfg] of Object.entries(SOURCES)){
   // A dead lamp on the soffit, and the live one beside it.
   for(const x of[-1.9,1.9]) addBox(m,[x,soffit-.30,0],[.52,.16,.20],MAT.agedWhite);
 }
+// ── THE ORDINARY CITY AROUND ELLERY ─────────────────────────────────────────
+//
+// A row is built in eight-metre deeds rather than as one extruded wall.  Every
+// deed gets its own cornice, roof, door, drainpipe and window rhythm, which is
+// the scale language the old forty-six-metre goods frontage was missing.
+function buildDistrictFrontage(name,variant){
+  const m=mesh(name),unitW=8,count=8;
+  const heights=variant==='civic'
+    ?[12.8,12.8,14.6,14.6,11.8,13.2,13.2,11.6]
+    :variant==='workshop'
+      ?[7.2,7.2,8.6,11.2,11.2,7.8,8.4,10.4]
+      :[11.2,11.2,12.4,12.4,10.8,10.8,13.0,13.0];
+  for(let i=0;i<count;i++){
+    const z=-32+unitW*(i+.5),h=heights[i],depth=variant==='workshop'?6.8:5.4;
+    if(variant==='passage'&&i===4){
+      // A real court mouth through the row: party walls, a shallow bridge and
+      // open floor below. The floorplan continues behind it, so this can never
+      // become a false entrance the player crosses through visible masonry.
+      addBox(m,[-depth/2,7.6,z],[depth,2.2,unitW-.18],MAT.brickRed);
+      addBox(m,[.08,6.48,z],[.20,.30,unitW],MAT.stone);
+      addBox(m,[-depth+.08,3.2,z-unitW/2+.08],[.18,6.4,.22],MAT.stone);
+      addBox(m,[-depth+.08,3.2,z+unitW/2-.08],[.18,6.4,.22],MAT.stone);
+      addBox(m,[.22,5.95,z],[.18,.22,.78],MAT.warmWindow);
+      continue;
+    }
+    const brick=variant==='civic'&&i<2?MAT.brickDark:(i%3===1?MAT.terracotta:MAT.brickRed);
+    addBox(m,[-depth/2,h/2,z],[depth,h,unitW-.16],brick);
+    addBox(m,[.06,.55,z],[.16,1.10,unitW-.18],MAT.stone);                 // plinth
+    addBox(m,[.08,h-.55,z],[.20,.24,unitW-.08],MAT.stone);               // cornice
+    // The corner pub is ordinary, open and warm. It is not another threat.
+    if(variant==='civic'&&i<2){
+      addBox(m,[.13,2.1,z],[.18,2.45,unitW-1.0],MAT.pubGreen);
+      for(const dz of[-2.35,0,2.35])addBox(m,[.25,2.15,z+dz],[.08,1.55,1.35],MAT.warmWindow);
+      addBox(m,[.26,3.65,z],[.09,.46,unitW-1.1],MAT.ivory);
+    }else if(variant==='workshop'&&h<9){
+      addBox(m,[.14,2.0,z],[.22,3.25,4.8],MAT.steel);
+      for(let y=.55;y<3.45;y+=.28)addBox(m,[.27,y,z],[.08,.08,4.6],MAT.black);
+      addBox(m,[.18,5.0,z],[.12,1.18,2.0],i%2?MAT.black:MAT.warmWindow);
+    }else{
+      // One real front door and two sash bays per deed. Upper lights are sparse;
+      // occupancy reads as lives behind glass, not as a lit texture atlas.
+      const floors=Math.max(2,Math.floor((h-1.5)/3.1));
+      addBox(m,[.16,1.45,z-2.75],[.22,2.65,1.05],i%2?MAT.pubGreen:MAT.agedWhite);
+      addBox(m,[.27,1.5,z-2.75],[.08,.20,.20],MAT.brass);
+      for(let floor=0;floor<floors;floor++)for(const dz of[-.75,2.15]){
+        const y=2.05+floor*3.05,lit=((i*5+floor*3+(dz>0?1:0))%7)<2;
+        addBox(m,[.14,y,z+dz],[.18,1.55,1.25],lit?MAT.warmWindow:MAT.black);
+        addBox(m,[.25,y,z+dz],[.08,.08,1.34],MAT.agedWhite);
+        addBox(m,[.25,y,z+dz],[.08,1.64,.08],MAT.agedWhite);
+        addBox(m,[.18,y+.91,z+dz],[.28,.16,1.52],MAT.stone);
+      }
+    }
+    // Slate pitches make one inhabited roofscape rather than a row of boxes.
+    const rise=variant==='workshop'&&h<9?1.1:2.0;
+    addQuad(m,[0,h,z-unitW/2],[-depth/2,h+rise,z-unitW/2],[-depth/2,h+rise,z+unitW/2],[0,h,z+unitW/2],MAT.slate);
+    addQuad(m,[-depth,h,z+unitW/2],[-depth/2,h+rise,z+unitW/2],[-depth/2,h+rise,z-unitW/2],[-depth,h,z-unitW/2],MAT.slate);
+    if(i%2===0){
+      addBox(m,[-depth*.58,h+rise+.75,z+2.25],[.85,1.5,1.15],MAT.brickDark);
+      for(const dz of[-.28,.28])addCylinder(m,[-depth*.58,h+rise+1.7,z+2.25+dz],.11,.42,MAT.stone,8);
+    }
+    // Working rainwater goods are the small repeated scale cue at street level.
+    addCylinder(m,[.20,h/2,z+unitW/2-.25],.065,h-.35,MAT.steel,8);
+  }
+  // Road-supply columns are part of the inhabited side, not Ellery's rig.
+  for(const z of[-25,-9,9,25]){
+    addCylinder(m,[1.75,3.0,z],.08,5.8,MAT.steel,8);
+    addBeam(m,[1.75,5.8,z],[2.5,6.25,z],.08,MAT.steel);
+    addBox(m,[2.75,6.25,z],[.65,.18,.28],MAT.warmWindow);
+  }
+}
+buildDistrictFrontage('district_terrace_frontage','terrace');
+buildDistrictFrontage('district_civic_frontage','civic');
+buildDistrictFrontage('district_workshop_frontage','workshop');
+buildDistrictFrontage('district_passage_frontage','passage');
+
+{
+  // Side walls and a closed occupied threshold for a short street court. Local
+  // +Z runs away from its mouth; one instance can be rotated onto every side of
+  // the block. The floor remains open floorplan space throughout.
+  const m=mesh('district_court_walls'),length=16,half=4.45;
+  for(const side of[-1,1]){
+    const mat=side<0?MAT.brickRed:MAT.brickDark,h=side<0?9.2:7.8;
+    addBox(m,[side*(half+.18),h/2,length/2],[.36,h,length],mat);
+    addBox(m,[side*half,.48,length/2],[.16,.96,length],MAT.stone);
+    for(let z=2.5;z<length-1;z+=4.2){
+      addBox(m,[side*half,1.48,z],[.18,2.55,1.15],z>10?MAT.agedWhite:MAT.black);
+      addBox(m,[side*half,5.10,z],[.18,1.40,1.22],z<7?MAT.warmWindow:MAT.black);
+      addBox(m,[side*half,5.92,z],[.20,.17,1.48],MAT.stone);
+    }
+    addCylinder(m,[side*half,h/2,length-.25],.07,h-.3,MAT.steel,8);
+  }
+  addBox(m,[0,4.0,length+.18],[8.9,8.0,.36],MAT.glazedBrick);
+  for(const x of[-2.8,0,2.8]){
+    addBox(m,[x,1.9,length-.02],[2.2,3.25,.18],MAT.steel);
+    for(let y=.55;y<3.25;y+=.32)addBox(m,[x,y,length-.13],[1.95,.07,.08],MAT.black);
+  }
+  addBox(m,[0,7.55,length-.04],[8.6,.28,.18],MAT.stone);
+}
+
+{
+  // THE TOWN BEYOND THE WALKABLE BLOCK. The collision plan ends at occupied
+  // thresholds; the rendered city does not. Three staggered rings of ordinary
+  // roofs, cross-streets and yards keep every outward look travelling through
+  // a district before it reaches the procedural skyline.
+  const m=mesh('district_outer_sprawl');
+  const X=(worldX)=>worldX+7,Z=(worldZ)=>worldZ+7; // instance anchor is (-7,-7)
+  const palette=[MAT.brickRed,MAT.terracotta,MAT.brickDark,MAT.concrete,MAT.glazedBrick];
+  const park={x0:-73,x1:-35,z0:-70,z1:-36};
+  function townBuilding({x,z,w,d,h,axis='x',inward=1,index=0}){
+    if(x+w/2>park.x0&&x-w/2<park.x1&&z+d/2>park.z0&&z-d/2<park.z1)return;
+    const mat=palette[index%palette.length];
+    addBox(m,[X(x),h/2,Z(z)],[w,h,d],mat);
+    addBox(m,[X(x),.48,Z(z)],[w+.08,.96,d+.08],MAT.stone);
+    addBox(m,[X(x),h-.38,Z(z)],[w+.16,.24,d+.16],MAT.stone);
+    const rise=1.3+(index%3)*.32;
+    if(axis==='x'){
+      addPitchedRoof(m,{x:X(x),z:Z(z),w,d,eaves:h,rise,mat:MAT.slate,gableMat:mat,ridge:'x'});
+      const floors=Math.max(2,Math.floor((h-1.2)/3));
+      for(const side of[-1,1]){
+        const face=z+side*(d/2+.06);
+        for(let wx=x-w/2+1.5;wx<x+w/2-1;wx+=2.8)for(let floor=0;floor<floors;floor++){
+          const lit=((Math.round(wx)+floor*3+index+(side>0?2:0))%13)===0;
+          const y=2.1+floor*2.8;
+          addBox(m,[X(wx),y,Z(face)],[1.05,1.35,.12],lit?MAT.warmWindow:MAT.black);
+          addBox(m,[X(wx),y+.77,Z(face+side*.04)],[1.30,.13,.16],MAT.stone);
+        }
+        addBox(m,[X(x-w*.28),1.42,Z(face+side*.03)],[1.02,2.55,.15],MAT.agedWhite);
+        addCylinder(m,[X(x+w/2-.22),h/2,Z(face+side*.08)],.065,h-.3,MAT.steel,8);
+      }
+      for(const side of[-1,1]){
+        const face=x+side*(w/2+.06);
+        addBox(m,[X(face),4.65,Z(z)],[.12,1.45,1.12],MAT.black);
+        addBox(m,[X(face+side*.04),5.48,Z(z)],[.16,.14,1.40],MAT.stone);
+      }
+    }else{
+      addPitchedRoof(m,{x:X(x),z:Z(z),w,d,eaves:h,rise,mat:MAT.slate,gableMat:mat,ridge:'z'});
+      const floors=Math.max(2,Math.floor((h-1.2)/3));
+      for(const side of[-1,1]){
+        const face=x+side*(w/2+.06);
+        for(let wz=z-d/2+1.5;wz<z+d/2-1;wz+=2.8)for(let floor=0;floor<floors;floor++){
+          const lit=((Math.round(wz)+floor*5+index+(side>0?3:0))%14)===0;
+          const y=2.1+floor*2.8;
+          addBox(m,[X(face),y,Z(wz)],[.12,1.35,1.05],lit?MAT.warmWindow:MAT.black);
+          addBox(m,[X(face+side*.04),y+.77,Z(wz)],[.16,.13,1.30],MAT.stone);
+        }
+        addBox(m,[X(face+side*.03),1.42,Z(z-d*.28)],[.15,2.55,1.02],MAT.agedWhite);
+        addCylinder(m,[X(face+side*.08),h/2,Z(z+d/2-.22)],.065,h-.3,MAT.steel,8);
+      }
+      for(const side of[-1,1]){
+        const face=z+side*(d/2+.06);
+        addBox(m,[X(x),4.65,Z(face)],[1.12,1.45,.12],MAT.black);
+        addBox(m,[X(x),5.48,Z(face+side*.04)],[1.40,.14,.16],MAT.stone);
+      }
+    }
+    if(index%3===0)addBox(m,[X(x+w*.22),h+rise+.85,Z(z-d*.18)],[.85,1.7,1.05],MAT.brickDark);
+  }
+  function rowX(z,from,to,inward,seed){
+    let x=from,i=0;
+    while(x<to){
+      const w=7+((i+seed)%4)*1.35,gap=1.0+((i+seed)%3)*.55;
+      townBuilding({x:x+w/2,z,w,d:9+((i+seed)%3)*1.4,h:8.4+((i*5+seed)%6)*1.05,axis:'x',inward,index:i+seed});
+      x+=w+gap;i++;
+    }
+  }
+  function rowZ(x,from,to,inward,seed){
+    let z=from,i=0;
+    while(z<to){
+      const d=7+((i+seed)%4)*1.3,gap=1.0+((i+seed)%3)*.5;
+      townBuilding({x,z:z+d/2,w:9+((i+seed)%3)*1.3,d,h:8.1+((i*3+seed)%6)*1.0,axis:'z',inward,index:i+seed});
+      z+=d+gap;i++;
+    }
+  }
+  // Gaps between the rows are real cross-streets in silhouette, not continuous
+  // facade bands. Staggering them also keeps repeated roof peaks from lining up.
+  for(const [z,seed] of[[-31,2],[-52,5],[-76,8]])rowX(z,-82,218,1,seed);
+  for(const [z,seed] of[[124,11],[148,14],[173,17]])rowX(z,-82,218,-1,seed);
+  for(const [x,seed] of[[-31,4],[-55,7],[-79,10]])rowZ(x,-18,116,1,seed);
+  for(const [x,seed] of[[162,13],[188,16],[214,19]])rowZ(x,-18,116,-1,seed);
+
+  // A small municipal park breaks the north-west roof field: iron edge, mature
+  // wet trees, a path cross and one low keeper's pavilion. It is scenery beyond
+  // the playable pavement, but it reads clearly through the corner and mews.
+  for(let x=park.x0;x<=park.x1;x+=3.2){
+    addBox(m,[X(x),.42,Z(park.z0)],[.06,.84,.06],MAT.steel);
+    addBox(m,[X(x),.42,Z(park.z1)],[.06,.84,.06],MAT.steel);
+  }
+  for(let z=park.z0;z<=park.z1;z+=3.2){
+    addBox(m,[X(park.x0),.42,Z(z)],[.06,.84,.06],MAT.steel);
+    addBox(m,[X(park.x1),.42,Z(z)],[.06,.84,.06],MAT.steel);
+  }
+  for(const z of[park.z0,park.z1])addBox(m,[X((park.x0+park.x1)/2),.78,Z(z)],[park.x1-park.x0,.07,.07],MAT.steel);
+  for(const x of[park.x0,park.x1])addBox(m,[X(x),.78,Z((park.z0+park.z1)/2)],[.07,.07,park.z1-park.z0],MAT.steel);
+  addBox(m,[X(-54),.035,Z(-53)],[36,.07,2.2],MAT.stone);
+  addBox(m,[X(-54),.04,Z(-53)],[2.2,.08,30],MAT.stone);
+  for(let i=0;i<18;i++){
+    const x=park.x0+4+((i*11)%31),z=park.z0+4+((i*17)%27),h=4.8+(i%4)*.7;
+    addCylinder(m,[X(x),h/2,Z(z)],.17,h,MAT.wood,8);
+    for(const [dx,dy,dz] of[[-.7,0,0],[.7,.2,0],[0,.45,-.6],[0,.15,.65]])
+      addCylinder(m,[X(x+dx),h+dy,Z(z+dz)],.75+(i%3)*.12,1.45,MAT.deadLeaf,9);
+  }
+  addBox(m,[X(-42),2.3,Z(-62)],[7.5,4.6,5.5],MAT.brickRed);
+  addBox(m,[X(-42),4.95,Z(-62)],[8.2,.7,6.2],MAT.slate);
+  addBox(m,[X(-42),2.0,Z(-59.2)],[1.5,2.7,.16],MAT.pubGreen);
+}
+
+function buildYardRange(name,range,kind){
+  const m=mesh(name),w=range.w,d=range.d,h=range.height,service=kind==='stores';
+  addBox(m,[0,h/2,0],[w,h,d],service?MAT.steel:(kind==='baths'?MAT.glazedBrick:MAT.brickRed));
+  for(const side of[-1,1]){
+    addBox(m,[0,.55,side*(d/2+.03)],[w+.1,1.1,.14],MAT.stone);
+    addBox(m,[0,h-.48,side*(d/2+.05)],[w+.2,.26,.16],MAT.stone);
+  }
+  // A real door every six metres; no elevation is permitted to become a blank
+  // industrial plane at eye height.
+  for(let x=-w/2+2.1;x<w/2-1;x+=4.2){
+    addBox(m,[x,1.55,-d/2-.10],[1.25,2.75,.18],MAT.agedWhite);
+    if(service){
+      addBox(m,[x,2.05,d/2+.11],[2.65,3.45,.18],MAT.steel);
+      for(let y=.62;y<3.55;y+=.34)addBox(m,[x,y,d/2+.23],[2.42,.07,.08],MAT.black);
+      addBox(m,[x,5.05,d/2+.12],[1.42,1.05,.18],MAT.black);
+      addBox(m,[x,5.67,d/2+.15],[1.68,.16,.22],MAT.stone);
+    }else{
+      addBox(m,[x,4.75,-d/2-.11],[1.35,1.55,.18],kind==='baths'?MAT.roofGlass:MAT.black);
+      addBox(m,[x,5.62,-d/2-.13],[1.58,.16,.22],MAT.stone);
+      addBox(m,[x,4.75,d/2+.11],[1.35,1.55,.18],kind==='baths'?MAT.roofGlass:MAT.black);
+      addBox(m,[x,5.62,d/2+.13],[1.58,.16,.22],MAT.stone);
+    }
+  }
+  for(const side of[-1,1]){
+    const face=side*(w/2+.10);
+    addBox(m,[face,4.45,0],[.18,1.55,1.35],service?MAT.steel:MAT.black);
+    addBox(m,[face+side*.03,5.34,0],[.22,.17,1.62],MAT.stone);
+    addCylinder(m,[face+side*.08,h/2,d/2-.30],.075,h-.3,MAT.steel,8);
+  }
+  const rise=service?.65:1.75;
+  addPitchedRoof(m,{x:0,z:0,w,d,eaves:h,rise,mat:service?MAT.steel:MAT.slate,gableMat:service?MAT.steel:(kind==='baths'?MAT.glazedBrick:MAT.brickRed),ridge:'z'});
+  for(const x of[-w/2+.35,w/2-.35]){
+    addCylinder(m,[x,h/2,-d/2-.17],.075,h-.3,MAT.steel,8);
+    addBox(m,[x,.13,-d/2-.42],[.18,.12,.62],MAT.steel);                  // drain shoe
+  }
+  if(kind==='baths')for(const x of[-w*.25,w*.25]){
+    addRoofLantern(m,{x,z:0,w:2.2,d:d*.55,y:h+rise-.12,rise:.48});       // repaired lanterns
+  }
+}
+const rangeById=Object.fromEntries(YARD_SERVICE_RANGES.map((range)=>[range.id,range]));
+buildYardRange('yard_stable_range',rangeById['yard-former-stables'],'stable');
+buildYardRange('yard_rehearsal_range',rangeById['yard-rehearsal-annex'],'rehearsal');
+buildYardRange('yard_baths_plant',rangeById['yard-baths-plant'],'baths');
+buildYardRange('yard_covered_stores',rangeById['yard-covered-stores'],'stores');
+
+{
+  const m=mesh('exterior_story_plaque');
+  addBox(m,[0,.42,0],[1.35,.84,.28],MAT.stone);
+  addBox(m,[0,.48,-.16],[1.08,.50,.05],MAT.terracotta);
+  for(let y=.30;y<=.62;y+=.16)addBox(m,[0,y,-.20],[.78,.035,.025],MAT.ivory);
+}
+{
+  const m=mesh('district_post_box');
+  addCylinder(m,[0,.64,0],.34,1.12,MAT.safetyRed,14);
+  addCylinder(m,[0,1.24,0],.36,.18,MAT.safetyRed,14);
+  addBox(m,[0,1.28,0],[.55,.16,.55],MAT.safetyRed);
+  addBox(m,[0,1.05,-.35],[.42,.11,.05],MAT.black);
+  addBox(m,[0,.78,-.36],[.32,.25,.04],MAT.ivory);
+}
+{
+  const m=mesh('district_bench');
+  for(const x of[-.85,.85]){
+    addBox(m,[x,.42,0],[.10,.82,.48],MAT.steel);
+    addBox(m,[x,.73,.18],[.10,.72,.08],MAT.steel,0,-.13);
+  }
+  for(const z of[-.18,0,.18])addBox(m,[0,.62,z],[2.0,.09,.12],MAT.wood);
+  for(let y=.82;y<1.24;y+=.16)addBox(m,[0,y,.23],[2.0,.09,.10],MAT.wood);
+}
+{
+  const m=mesh('district_bin_cluster');
+  for(const [x,z,mat] of[[-.42,0,MAT.dark],[.42,.12,MAT.pubGreen]]){
+    addBox(m,[x,.52,z],[.66,1.0,.66],mat);
+    addBox(m,[x,1.04,z-.04],[.72,.09,.72],MAT.black,0,-.08);
+    for(const dx of[-.23,.23])addCylinder(m,[x+dx,.10,z+.30],.08,.16,MAT.black,8);
+  }
+}
+{
+  const m=mesh('district_bollard_pair');
+  for(const x of[-1.25,1.25]){
+    addCylinder(m,[x,.48,0],.11,.96,MAT.steel,10);
+    addCylinder(m,[x,.88,0],.15,.16,MAT.steel,10);
+    addBox(m,[x,.62,-.12],[.20,.20,.04],MAT.agedWhite);
+  }
+}
+{
+  const m=mesh('ambient_late_bus');
+  addBox(m,[0,1.28,0],[2.45,2.55,9.2],MAT.safetyRed);
+  addBox(m,[0,2.43,0],[2.34,.18,9.0],MAT.agedWhite);
+  for(const x of[-1.24,1.24])for(const z of[-2.8,2.8])addCylinder(m,[x,.43,z],.42,.22,MAT.black,10);
+  for(const z of[-3.25,-1.55,.15,1.85,3.55])for(const x of[-1.235,1.235])addBox(m,[x,1.95,z],[.08,.82,1.22],MAT.warmWindow);
+  addBox(m,[0,1.9,-4.61],[1.95,.86,.08],MAT.warmWindow);
+  for(const x of[-.75,.75])addBox(m,[x,.88,-4.68],[.34,.18,.06],MAT.ivory);
+}
+{
+  const m=mesh('ambient_cyclist');
+  for(const z of[-.58,.58])addCylinder(m,[0,.52,z],.36,.08,MAT.black,12);
+  addBeam(m,[0,.52,-.58],[0,1.02,0],.055,MAT.steel);addBeam(m,[0,1.02,0],[0,.52,.58],.055,MAT.steel);addBeam(m,[0,.52,-.58],[0,.52,.58],.055,MAT.steel);
+  addCylinder(m,[0,1.52,-.02],.16,.28,MAT.dark,10);addBeam(m,[0,1.36,0],[0,.88,.05],.20,MAT.cloth);
+}
+{
+  const m=mesh('ambient_dog_walker');
+  addCylinder(m,[-.32,1.55,0],.15,.28,MAT.dark,10);addBox(m,[-.32,.92,0],[.42,1.05,.32],MAT.cloth);
+  for(const x of[-.47,-.17])addCylinder(m,[x,.32,0],.07,.64,MAT.dark,8);
+  addBox(m,[.45,.42,.12],[.70,.38,.32],MAT.dark);addBox(m,[.79,.52,.08],[.25,.28,.25],MAT.dark);
+  addBeam(m,[-.15,.92,.02],[.68,.62,.08],.025,MAT.steel);
+}
+{
+  const m=mesh('ambient_awning_figure');
+  addCylinder(m,[0,1.55,0],.15,.28,MAT.dark,10);addBox(m,[0,.88,0],[.46,1.08,.34],MAT.cloth);
+  for(const x of[-.14,.14])addCylinder(m,[x,.30,0],.065,.60,MAT.dark,8);
+}
+
 {
   // THE BUILDING, FROM THE YARD.
   //
@@ -1410,75 +2154,91 @@ for(const [name,cfg] of Object.entries(SOURCES)){
   // The yard runs the full depth now (YARD_H in floorplan/conservatory.js) and so
   // does this.
   //
-  // THE BANDS ARE THE CONTRACT. yardProfile authors a per-cell ceiling out in the
-  // yard and the raymarcher draws the rock behind this mesh up to exactly that
-  // number, so a parapet here that disagrees with YARD_ROOFLINE there is a mesh
-  // standing in front of a wall of a different height. Move one, move the other.
-  // Local z is worldY - 7.5 (the prop's anchor), which is where the offsets come
-  // from: yard y12 is z4.5, y30 is z22.5, y52 is z44.5.
+  // THE BANDS ARE THE CONTRACT. The floorplan and this mesh consume the same
+  // ELLERY_MASSING manifest. Local z is worldY - 7.5 (the prop's anchor), so
+  // changes to the institutional history cannot leave a different black wall
+  // behind the authored elevation.
   const m=mesh('conservatory_west_elevation');
   const zA=-7.5,zB=84.5,mouthA=-4.0,mouthB=3.6;
   const plinth=0.95;
-  const BANDS=[
-    // the bay and the get-in behind it: two storeys and a parapet
-    {z0:zA,   z1:4.5,  parapet:14.35, kind:'bay'},
-    // the academic wing, a floor higher, and the only lit window on this face
-    {z0:4.5,  z1:22.5, parapet:18.00, kind:'academic'},
-    // the concert hall's fly tower: blind, because there is a stage behind it
-    {z0:22.5, z1:44.5, parapet:21.00, kind:'flytower'},
-    // the back range — stores and plant, single storey, and nothing above it
-    {z0:44.5, z1:zB,   parapet:11.00, kind:'back'},
-  ];
+  const BANDS=ELLERY_MASSING.map((band)=>({
+    ...band,z0:band.y0-7.5,z1:band.y1-7.5,parapet:band.height,
+    kind:band.id==='hall'?'flytower':band.id,
+  }));
+  const phaseMaterial=(kind)=>({
+    service:MAT.steel,academic:MAT.concrete,flytower:MAT.brickDark,
+    school:MAT.brickRed,baths:MAT.glazedBrick,
+  }[kind]??MAT.brickRed);
   // A run of wall between z=a and z=b, up to `parapet`. Courses go in at floor
   // height and stop under the eaves, so a taller band simply gets more of them —
   // which is what actually distinguishes a fly tower from a store range.
-  function elevationRun(a,b,parapet){
+  function elevationRun(a,b,parapet,kind){
     if(b-a<=0.01) return;
     const eaves=parapet-1.20, mid=(a+b)/2, len=b-a;
+    const wallMat=phaseMaterial(kind);
     addBox(m,[.34,plinth/2,mid],[.68,plinth,len],MAT.stone);              // plinth
     const courses=[];
     for(let y=5.90;y<eaves-1.6;y+=3.65) courses.push(y);
     let from=plinth;
     for(const y of courses){
-      addBox(m,[.20,(from+y)/2,mid],[.40,y-from,len],MAT.plaster);        // brick
+      addBox(m,[.20,(from+y)/2,mid],[.40,y-from,len],wallMat);             // phase fabric
       addBox(m,[.30,y+.14,mid],[.60,.28,len],MAT.stone);                  // string course
       from=y+.28;
     }
-    addBox(m,[.20,(from+eaves)/2,mid],[.40,eaves-from,len],MAT.plaster);
+    addBox(m,[.20,(from+eaves)/2,mid],[.40,eaves-from,len],wallMat);
     addBox(m,[.36,(eaves+parapet)/2,mid],[.72,parapet-eaves,len],MAT.stone);
     addBox(m,[.46,parapet+.11,mid],[.92,.22,len],MAT.stone);              // coping
     return courses;
   }
   for(const band of BANDS){
+    if(band.kind==='flytower'){
+      // The stage tower is the only genuinely large volume, and it is set back
+      // eight metres behind a shorter backstage range. Narrow it at both ends
+      // so its silhouette is a theatre tower rising among roofs, not the middle
+      // of a ninety-metre factory extrusion.
+      const towerLen=(band.z1-band.z0)-6.0,mid=(band.z0+band.z1)/2;
+      const towerDepth=7.0,towerFace=band.setback||13.0,towerX=towerFace+towerDepth/2;
+      addBox(m,[towerX,band.parapet/2,mid],[towerDepth,band.parapet,towerLen],MAT.brickDark);
+      addBox(m,[towerFace-.08,.50,mid],[.20,.95,towerLen+.12],MAT.stone);
+      addBox(m,[towerFace-.10,band.parapet-.68,mid],[.24,.48,towerLen+.20],MAT.stone);
+      for(let z=mid-towerLen/2+3;z<mid+towerLen/2-2;z+=6){
+        for(let i=0;i<5;i++)addBox(m,[towerFace-.22,band.parapet-3.0+i*.27,z],[.16,.13,2.0],MAT.steel);
+      }
+      for(const z of[mid-towerLen/2+.3,mid+towerLen/2-.3])addBox(m,[towerFace-.25,band.parapet/2,z],[.55,band.parapet-.5,.55],MAT.stone);
+      // Tall blind stage walls still need a human module. Vent bays, bond
+      // strips and a stepped head make this a fly tower, not a warehouse cube.
+      for(const z of[mid-4.5,mid,mid+4.5]){
+        addBox(m,[towerFace-.24,8.3,z],[.18,4.4,2.25],MAT.brickDark);
+        for(let i=0;i<7;i++)addBox(m,[towerFace-.36,8.3-1.65+i*.55,z],[.12,.18,1.72],MAT.steel);
+        addBox(m,[towerFace-.32,10.72,z],[.24,.24,2.62],MAT.stone);
+      }
+      addBox(m,[towerX,band.parapet+.18,mid],[towerDepth+.45,.28,towerLen+.5],MAT.stone);
+      continue;
+    }
     // The mouth is a hole in the bay band and nowhere else.
     const runs=(band.z0<mouthB&&band.z1>mouthA)
       ? [[band.z0,mouthA],[mouthB,band.z1]]
       : [[band.z0,band.z1]];
-    for(const [a,b] of runs) elevationRun(a,b,band.parapet);
+    for(const [a,b] of runs) elevationRun(a,b,band.parapet,band.kind);
 
     const eaves=band.parapet-1.20;
     // Pilaster strips every three metres, skipping the mouth. They are what stop
     // ninety metres of brick reading as one extruded box at a grazing angle.
     for(let z=band.z0+1.5;z<=band.z1-1.5;z+=3.0){
       if(z>mouthA-.9&&z<mouthB+.9)continue;
-      addBox(m,[.52,(plinth+eaves)/2,z],[.30,eaves-plinth,.62],MAT.plaster);
+      addBox(m,[.52,(plinth+eaves)/2,z],[.30,eaves-plinth,.62],phaseMaterial(band.kind));
       addBox(m,[.60,eaves+.30,z],[.42,.46,.78],MAT.stone);                // corbel
     }
-    // A FLY TOWER HAS NO WINDOWS. There is a stage behind it and a grid over
-    // that; the only openings are the smoke vents at the top, which is the whole
-    // reason the silhouette reads as a theatre and not as offices.
-    if(band.kind==='flytower'){
-      for(let z=band.z0+4.0;z<=band.z1-4.0;z+=7.0){
-        for(let i=0;i<5;i++) addBox(m,[.16,eaves-2.6+i*.26,z],[.34,.14,2.2],MAT.steel);
-      }
-      continue;
-    }
-    // Round-headed service windows on the first floor and squarer ones above.
+    // Round-headed civic windows on the older ranges and squarer ones above.
     // Recessed, so they read as holes rather than as panels.
     for(let z=band.z0+3.0;z<=band.z1-3.0;z+=6.0){
       if(z>mouthA-1.5&&z<mouthB+1.5)continue;
-      addBox(m,[-.10,7.35,z],[.42,1.90,1.30],MAT.black);
-      addWallArch(m,{axis:'z',plane:0,inside:-1,along:z,spring:8.30,radius:.68,depth:.16,section:.13,mat:MAT.stone,segments:8});
+      if(band.parapet>8.8){
+        addBox(m,[-.10,7.35,z],[.42,1.90,1.30],MAT.black);
+        if(band.kind==='school'||band.kind==='baths')
+          addWallArch(m,{axis:'z',plane:0,inside:-1,along:z,spring:8.30,radius:.68,depth:.16,section:.13,mat:MAT.stone,segments:8});
+        else addBox(m,[.16,8.34,z],[.52,.20,1.52],MAT.stone);
+      }
       if(eaves>12.8){
         addBox(m,[-.06,11.30,z],[.34,1.55,1.05],MAT.black);
         addBox(m,[.16,12.16,z],[.52,.20,1.35],MAT.stone);                 // lintel
@@ -1487,6 +2247,96 @@ for(const [name,cfg] of Object.entries(SOURCES)){
         addBox(m,[-.06,14.95,z],[.34,1.55,1.05],MAT.black);
         addBox(m,[.16,15.81,z],[.52,.20,1.35],MAT.stone);
       }
+    }
+  }
+
+  // The 1936 fly tower is withdrawn behind a low backstage range. From the
+  // pavement and the gate its base is never allowed to meet the street as a
+  // blank factory wall; roofs and doors cross the foreground first.
+  {
+    const hall=ELLERY_MASSING.find((band)=>band.id==='hall');
+    const mid=(hall.y0+hall.y1)/2-7.5,len=hall.y1-hall.y0;
+    const gate=2.4,wingLen=(len-gate)/2;
+    for(const side of[-1,1]){
+      const wingZ=mid+side*(gate/2+wingLen/2);
+      addBox(m,[-4.0,hall.foreground/2,wingZ],[7.4,hall.foreground,wingLen],MAT.brickRed);
+      addPitchedRoof(m,{x:-4,z:wingZ,w:7.4,d:wingLen,eaves:hall.foreground,rise:1.45,mat:MAT.slate,gableMat:MAT.brickRed,ridge:'z'});
+      addBox(m,[-7.78,hall.foreground-.34,wingZ],[.22,.26,wingLen+.10],MAT.stone);
+    }
+    for(let z=hall.y0-7.5+2.5;z<hall.y1-7.5-1;z+=5.2){
+      if(Math.abs(z-mid)<gate*.72)continue;
+      addBox(m,[-7.74,1.65,z],[.18,2.85,1.42],MAT.agedWhite);
+      addBox(m,[-7.78,5.7,z],[.12,1.45,1.24],MAT.black);
+      addBox(m,[-7.82,6.53,z],[.20,.18,1.52],MAT.stone);
+    }
+    // A locked iron throat keeps the break in the range honest: it reads as a
+    // former carriage passage, not as an accidental hole in the asset.
+    for(const dz of[-gate/2,gate/2])addBox(m,[-7.72,2.15,mid+dz],[.22,4.3,.16],MAT.stone);
+    for(let z=mid-gate/2+.22;z<mid+gate/2;z+=.24)addBox(m,[-7.82,2.05,z],[.10,3.75,.07],MAT.steel);
+    addBox(m,[-7.82,4.12,mid],[.12,.16,gate],MAT.steel);
+  }
+  // 1888 gables and 1912 roof lanterns give the old ranges a domestic civic
+  // roofscape. The 1967 wing gets honest precast fins instead of fake history.
+  const schoolBand=BANDS.find((band)=>band.kind==='school');
+  const bathsBand=BANDS.find((band)=>band.kind==='baths');
+  const academicBand=BANDS.find((band)=>band.kind==='academic');
+  for(const z of[49.0,58.8]){
+    const eaves=schoolBand.parapet-1.15;
+    addTriangle(m,[.1,eaves,z-3.8],[.1,eaves+2.7,z],[.1,eaves,z+3.8],MAT.terracotta);
+    addBox(m,[.18,eaves-.8,z],[.24,1.65,6.8],MAT.brickRed);
+  }
+  for(const z of[69.5,78.5])addRoofLantern(m,{x:-.25,z,w:2.7,d:4.6,y:bathsBand.parapet-.5,rise:.55});
+  for(let z=6.4;z<21.4;z+=3.0)addBox(m,[-.28,academicBand.parapet/2,z],[1.20,academicBand.parapet-.8,.22],MAT.concrete);
+
+  // Projecting phase fronts give the arrival elevation actual depth. These are
+  // short, separately roofed ownerships—none longer than eight metres—so the
+  // whole institution can never collapse back into a single decorated slab.
+  for(const z of[8.4,17.0]){
+    addBox(m,[-1.45,6.0,z],[2.9,12.0,6.2],MAT.concrete);
+    addBox(m,[-3.00,.55,z],[.22,1.10,6.45],MAT.stone);
+    addBox(m,[-3.02,9.0,z],[.18,4.3,2.15],MAT.black);
+    for(const dz of[-2.55,0,2.55])addBox(m,[-3.14,6.0,z+dz],[.24,11.6,.34],MAT.concrete);
+    addBox(m,[-1.45,12.15,z],[3.25,.30,6.55],MAT.stone);
+  }
+  for(const z of[49.2,59.2]){
+    const w=3.4,d=7.4,h=9.4;
+    addBox(m,[-1.7,h/2,z],[w,h,d],MAT.brickRed);
+    addPitchedRoof(m,{x:-1.7,z,w,d,eaves:h,rise:2.35,mat:MAT.slate,gableMat:MAT.brickRed,ridge:'x'});
+    for(const dz of[-1.8,1.8]){
+      addBox(m,[-3.44,5.55,z+dz],[.16,2.35,1.15],MAT.black);
+      addBox(m,[-3.55,6.88,z+dz],[.22,.18,1.48],MAT.stone);
+      addBox(m,[-3.55,4.12,z+dz],[.22,.18,1.48],MAT.stone);
+    }
+    addBox(m,[-3.58,1.62,z],[.22,2.85,1.38],MAT.agedWhite);
+    addBox(m,[-3.62,3.18,z],[.26,.22,1.70],MAT.stone);
+  }
+  for(const z of[68.0,75.2,82.2]){
+    const w=2.5,d=5.8,h=7.65;
+    addBox(m,[-1.25,h/2,z],[w,h,d],MAT.glazedBrick);
+    addPitchedRoof(m,{x:-1.25,z,w,d,eaves:h,rise:1.0,mat:MAT.slate,gableMat:MAT.glazedBrick,ridge:'z'});
+    addBox(m,[-2.57,4.20,z],[.16,2.8,1.72],MAT.black);
+    addWallArch(m,{axis:'z',plane:-2.62,inside:-1,along:z,spring:5.62,radius:.92,depth:.12,section:.16,mat:MAT.stone,segments:10});
+    addBox(m,[-2.66,2.72,z],[.24,.22,2.08],MAT.stone);
+  }
+
+  // The collision mass begins at physical x50. Keep a thin authored skin half
+  // a metre out in the open yard so the ray-marched support can never win the
+  // depth test and show its generic rock material through this hero facade.
+  for(const band of BANDS){
+    if(band.kind==='flytower')continue;
+    const mid=(band.z0+band.z1)/2,len=band.z1-band.z0,h=band.parapet;
+    addBox(m,[-.65,h/2,mid],[.18,h-.08,len-.14],phaseMaterial(band.kind));
+    addBox(m,[-.77,.48,mid],[.18,.92,len-.06],MAT.stone);
+    for(let z=band.z0+1.5;z<band.z1-1;z+=3.0)addBox(m,[-.80,h/2,z],[.14,h-.45,.36],MAT.stone);
+    if(band.kind==='flytower'){
+      for(let z=band.z0+4;z<band.z1-2;z+=7)for(let i=0;i<5;i++)
+        addBox(m,[-.83,h-3.2+i*.27,z],[.12,.13,2.05],MAT.steel);
+    }else for(let z=band.z0+3;z<band.z1-2;z+=6){
+      if(h>8.8){
+        addBox(m,[-.82,7.35,z],[.13,1.90,1.30],MAT.black);
+        addBox(m,[-.84,8.35,z],[.14,.20,1.52],MAT.stone);
+      }
+      if(h>12.8)addBox(m,[-.82,11.30,z],[.13,1.55,1.05],MAT.black);
     }
   }
 
@@ -1507,13 +2357,14 @@ for(const [name,cfg] of Object.entries(SOURCES)){
   // The water tank on the fly tower — the tallest object on the site, and the
   // one a sprinkler main was fed from before the mains went off.
   {
-    const z=33.5,top=21.0;
-    for(const dz of[-2.1,2.1]) for(const dx of[-.4,1.6]){
+    const hall=ELLERY_MASSING.find((band)=>band.id==='hall');
+    const z=33.5,top=hall.height,tankX=hall.setback+3.5;
+    for(const dz of[-2.1,2.1]) for(const dx of[tankX-1,tankX+1]){
       addBox(m,[dx,top+1.4,z+dz],[.16,2.8,.16],MAT.steel);
     }
-    addBox(m,[.6,top+3.5,z],[3.0,1.5,5.2],MAT.steel);
-    addBox(m,[.6,top+4.32,z],[3.2,.14,5.4],MAT.steel);                     // lid
-    addCylinder(m,[.6,top+1.0,z-2.9],.11,2.0,MAT.steel,8);                 // downcomer
+    addBox(m,[tankX,top+3.5,z],[3.0,1.5,5.2],MAT.steel);
+    addBox(m,[tankX,top+4.32,z],[3.2,.14,5.4],MAT.steel);                   // lid
+    addCylinder(m,[tankX,top+1.0,z-2.9],.11,2.0,MAT.steel,8);               // downcomer
   }
   // Chimney stacks on the back range. Two of them, with pots, because the range
   // was heated by fires long before it was heated by anything else.
@@ -1543,6 +2394,187 @@ for(const [name,cfg] of Object.entries(SOURCES)){
       addBeam(m,[-1.50,y0,z+(flight%2?1.0:-1.0)],[-1.50,y0+3.65,z+(flight%2?-1.0:1.0)],.55,MAT.steel);
     }
     for(let y=0.4;y<15.6;y+=3.65) addCylinder(m,[-1.86,y+1.8,z-1.9],.06,3.6,MAT.steel,6);
+  }
+
+  // THE REST OF THE BLOCK. The west service elevation is the arrival face, but
+  // the player can now walk every street around Ellery. These three elevations
+  // therefore carry the same accumulated institution instead of exposing the
+  // ray-marched occupancy as an anonymous black cliff.
+  function crossStreetRange({z,outward,segments}){
+    let x=0;
+    for(let i=0;i<segments.length;i++){
+      const seg=segments[i],w=seg.w,h=seg.h,mat=seg.mat,mid=x+w/2;
+      const gap=.55+(i%3)*.22,bw=w-gap,depth=4.8+(i%3)*.7;
+      const setback=[0,2.2,.7,4.6,1.4,3.2,.4,4.0][i%8];
+      const bodyZ=z-outward*setback,face=bodyZ+outward*(depth/2+.08),back=bodyZ-outward*depth/2;
+      addBox(m,[mid,h/2,bodyZ],[bw,h,depth],mat);
+      addBox(m,[mid,.50,face],[bw+.08,.95,.18],MAT.stone);
+      addBox(m,[mid,h-.42,face],[bw+.16,.22,.20],MAT.stone);
+      const floorCount=Math.max(1,Math.floor((h-1.8)/3.0));
+      for(let bx=mid-bw/2+1.7;bx<mid+bw/2-1.0;bx+=3.1){
+        addBox(m,[bx,1.52,face+outward*.09],[1.12,2.62,.16],i%3===0?MAT.agedWhite:MAT.black);
+        for(let floor=0;floor<floorCount;floor++){
+          const y=4.75+floor*2.85;if(y>h-1.0)continue;
+          addBox(m,[bx,y,face+outward*.10],[1.20,1.44,.14],((i+floor)%8===0)?MAT.warmWindow:MAT.black);
+          addBox(m,[bx,y+.82,face+outward*.13],[1.48,.16,.20],MAT.stone);
+        }
+      }
+      // Older phases turn a pitched roof and a gable to the street. Later
+      // concrete/service pieces keep a shallow parapet, visibly grafted on.
+      if(mat===MAT.brickRed||mat===MAT.glazedBrick||mat===MAT.brickDark){
+        const rise=1.7+(i%2)*.55,xa=mid-bw/2,xb=mid+bw/2;
+        addPitchedRoof(m,{x:mid,z:bodyZ,w:bw,d:depth,eaves:h,rise,mat:MAT.slate,gableMat:mat,ridge:'x'});
+      }
+      // The block is walkable on both sides, so a rear elevation cannot be a
+      // blind extrusion. Quieter windows and a second stone band make it read
+      // as the back of an owned building rather than the end of the model.
+      const rear=bodyZ-outward*(depth/2+.08);
+      addBox(m,[mid,.50,rear],[bw+.08,.95,.18],MAT.stone);
+      addBox(m,[mid,h-.42,rear],[bw+.16,.22,.20],MAT.stone);
+      for(let bx=mid-bw/2+1.7;bx<mid+bw/2-1.0;bx+=3.1){
+        addBox(m,[bx,4.72,rear-outward*.09],[1.02,1.30,.14],MAT.black);
+        addBox(m,[bx,5.46,rear-outward*.12],[1.28,.14,.20],MAT.stone);
+      }
+      if(setback>1.5){
+        const streetFace=z+outward*2.96;
+        addBox(m,[mid,.48,streetFace],[bw,.96,.20],MAT.brickRed);
+        for(const px of[mid-bw/2+.25,mid+bw/2-.25])addBox(m,[px,1.05,streetFace],[.48,2.1,.48],MAT.stone);
+      }
+      // Each ownership ends in a rainwater pipe and a tiny step in the parapet.
+      addCylinder(m,[mid+bw/2-.18,h/2,face+outward*.16],.07,h-.30,MAT.steel,8);
+      x+=w;
+    }
+  }
+  crossStreetRange({z:-5.4,outward:-1,segments:[
+    {w:10,h:10.8,mat:MAT.steel},{w:9,h:12.8,mat:MAT.brickRed},
+    {w:11,h:10.6,mat:MAT.brickRed},{w:10,h:9.8,mat:MAT.brickDark},
+    {w:9,h:12.2,mat:MAT.glazedBrick},{w:10,h:10.5,mat:MAT.brickRed},
+    {w:9,h:9.2,mat:MAT.concrete},{w:10,h:11.4,mat:MAT.glazedBrick},
+  ]});
+  crossStreetRange({z:82.6,outward:1,segments:[
+    {w:9,h:9.8,mat:MAT.brickRed},{w:10,h:11.2,mat:MAT.brickRed},
+    {w:9,h:8.8,mat:MAT.glazedBrick},{w:11,h:10.2,mat:MAT.brickDark},
+    {w:10,h:9.6,mat:MAT.brickRed},{w:9,h:10.8,mat:MAT.concrete},
+    {w:10,h:11.6,mat:MAT.glazedBrick},{w:10,h:9.4,mat:MAT.steel},
+  ]});
+
+  // East elevation: a sequence of short phase bays. The lower range remains
+  // below the withdrawn hall tower, and blocked doors keep exploration outside.
+  for(const band of BANDS){
+    const len=band.z1-band.z0,h=Math.min(band.parapet,band.foreground||band.parapet);
+    const count=Math.max(2,Math.ceil(len/7.5)),bay=len/count;
+    for(let i=0;i<count;i++){
+      const z0=band.z0+i*bay,z1=band.z0+(i+1)*bay,mid=(z0+z1)/2;
+      const gap=.36+(i%2)*.18,depth=4.6+(i%3)*.6,setback=[0,2.8,.9,4.3][i%4];
+      const face=79.32-setback,bodyX=face-depth/2,mat=phaseMaterial(band.kind);
+      addBox(m,[bodyX,h/2,mid],[depth,h,bay-gap],mat);
+      addBox(m,[face+.08,.48,mid],[.18,.96,bay-gap+.06],MAT.stone);
+      addBox(m,[face+.10,h-.42,mid],[.20,.22,bay-gap+.12],MAT.stone);
+      addBox(m,[face+.14,1.55,mid],[.16,2.70,1.18],MAT.black);
+      if(band.kind!=='service'){
+        addBox(m,[face+.15,5.05,mid],[.14,1.45,1.22],((i+band.year)%9===0)?MAT.warmWindow:MAT.black);
+        addBox(m,[face+.18,5.90,mid],[.20,.18,1.50],MAT.stone);
+      }
+      if(mat===MAT.brickRed||mat===MAT.glazedBrick||mat===MAT.brickDark){
+        const rise=1.55+(i%2)*.4;
+        addPitchedRoof(m,{x:bodyX,z:mid,w:depth,d:bay-gap,eaves:h,rise,mat:MAT.slate,gableMat:mat,ridge:'z'});
+      }
+      if(setback>2){
+        addBox(m,[79.34,.52,mid],[.22,1.04,bay-gap],MAT.brickRed);
+        for(const z of[z0+gap/2+.22,z1-gap/2-.22])addBox(m,[79.36,1.1,z],[.48,2.2,.48],MAT.stone);
+      }
+      addCylinder(m,[face+.22,h/2,z1-gap/2-.16],.07,h-.30,MAT.steel,8);
+    }
+  }
+
+  // Distinct wings behind the perimeter make the site legible in parallax.
+  // They are deliberately separated by courts and links instead of filling the
+  // footprint with one roof slab.
+  function pitchedWing({x,z,w,d,h,mat,rise=2.2,windows=true}){
+    addBox(m,[x,h/2,z],[w,h,d],mat);
+    addPitchedRoof(m,{x,z,w,d,eaves:h,rise,mat:MAT.slate,gableMat:mat,ridge:'z'});
+    if(windows)for(const side of[-1,1])for(let wx=x-w/2+2;wx<x+w/2-1;wx+=3.2){
+      const face=z+side*(d/2+.10);
+      addBox(m,[wx,4.2,face],[1.15,1.65,.16],MAT.black);
+      addBox(m,[wx,5.14,face+side*.03],[1.45,.17,.20],MAT.stone);
+    }
+    if(windows)for(const side of[-1,1]){
+      const face=x+side*(w/2+.10);
+      addBox(m,[face,4.25,z],[.16,1.70,1.20],MAT.black);
+      addBox(m,[face+side*.03,5.22,z],[.20,.17,1.48],MAT.stone);
+    }
+    for(const px of[x-w/2+.35,x+w/2-.35])addCylinder(m,[px,h/2,z-d/2-.18],.07,h-.3,MAT.steel,8);
+  }
+  // 1888 school: three domestic-scale teaching pavilions around a court.
+  pitchedWing({x:22,z:56,w:12,d:15,h:9.8,mat:MAT.brickRed,rise:2.5});
+  pitchedWing({x:38,z:59,w:11,d:13,h:10.6,mat:MAT.brickRed,rise:2.7});
+  pitchedWing({x:28,z:72,w:14,d:9,h:9.2,mat:MAT.brickRed,rise:2.1});
+  addBox(m,[30,4.1,64],[5.8,8.2,3.2],MAT.brickRed);                       // narrow enclosed link
+  for(const z of[62.8,65.2])addBox(m,[30,4.4,z],[4.5,2.1,.14],MAT.black);
+
+  // 1912 baths: a low glazed-brick hall with a repeated arched side and roof
+  // lanterns. Its horizontal volume is intentionally lower than the school.
+  {
+    const x=60,z=77,w=23,d=10,h=8.2;
+    addBox(m,[x,h/2,z],[w,h,d],MAT.glazedBrick);
+    for(const side of[-1,1])for(let wx=x-w/2+2.4;wx<x+w/2-1;wx+=4.0){
+      const face=z+side*(d/2+.10);
+      addBox(m,[wx,4.0,face],[1.65,2.6,.16],MAT.black);
+      addWallArch(m,{axis:'x',plane:face+side*.02,inside:side,along:wx,spring:5.30,radius:.88,depth:.16,section:.14,mat:MAT.stone,segments:9});
+    }
+    for(const side of[-1,1])addBox(m,[x,h-.28,z+side*(d/2+.12)],[w+.2,.30,.22],MAT.stone);
+    addBarrelRoof(m,{x,z,w:w+.4,d:d+.4,eaves:h,rise:2.35,glassFraction:.20});
+    for(const wx of[x-6,x+6])addRoofLantern(m,{x:wx,z,w:3.2,d:6.2,y:h+1.15,rise:.62});
+    for(const wx of[x-w/2+.3,x+w/2-.3])addCylinder(m,[wx,h/2,z-d/2-.26],.075,h-.25,MAT.steel,8);
+  }
+
+  // 1967 academic block: narrower than the old school, with a concrete frame
+  // and a glazed link visibly stopping short of the Victorian masonry.
+  {
+    const x=34,z=16,w=17,d=13,h=13.4;
+    addBox(m,[x,5.1,z],[w,10.2,d],MAT.concrete);
+    addBox(m,[x,11.8,z+.55],[13.4,3.2,10.2],MAT.concrete);
+    for(const side of[-1,1])for(let wx=x-w/2+1.4;wx<x+w/2-.8;wx+=2.8){
+      const face=z+side*(d/2+.10);
+      addBox(m,[wx,6.0,face],[1.75,6.0,.16],MAT.black);
+      addBox(m,[wx,6.0,face+side*.09],[.16,9.2,.22],MAT.concrete);
+    }
+    for(const side of[-1,1])for(const px of[x-w/2,x+w/2])addBox(m,[px,5.2,z+side*(d/2+.25)],[.52,10.4,.52],MAT.concrete);
+    addBox(m,[x,10.16,z],[17.6,.22,13.6],MAT.stone);
+    addBox(m,[x,13.46,z+.55],[14.0,.22,10.8],MAT.stone);
+    addBox(m,[20,6.1,20],[11.0,4.0,3.0],MAT.roofGlass);
+  }
+
+  // 1908 chapel and bell tower. It arrives in the skyline before any complete
+  // reading of Ellery does; the low school and baths roofs hide its base from
+  // most street positions, as they should in an accumulated urban block.
+  {
+    const cx=55.0,cz=68.0,baseH=10.8,towerH=23.5;
+    addBox(m,[cx,baseH/2,cz],[16.0,baseH,9.5],MAT.brickRed);
+    addPitchedRoof(m,{x:cx,z:cz,w:16.0,d:9.5,eaves:baseH,rise:3.1,mat:MAT.slate,gableMat:MAT.brickRed,ridge:'z'});
+    // Narrow side aisles and five buttresses make the nave read as construction
+    // in depth, not as one chapel-sized cuboid.
+    for(const side of[-1,1])addBox(m,[cx+side*7.2,4.2,cz-.4],[2.0,8.4,10.8],MAT.brickRed);
+    for(const dx of[-7.4,-3.7,0,3.7,7.4]){
+      addBox(m,[cx+dx,5.7,cz+4.84],[1.18,3.05,.16],MAT.black);
+      addWallArch(m,{axis:'x',plane:cz+4.91,inside:1,along:cx+dx,spring:7.28,radius:.67,depth:.16,section:.14,mat:MAT.stone,segments:9});
+      addBox(m,[cx+dx,2.6,cz+5.22],[.46,5.2,.60],MAT.stone);
+    }
+    addBox(m,[cx,baseH+.10,cz],[16.7,.22,10.1],MAT.stone);
+    // The tower is a slender vertical room set behind the nave crossing.
+    addBox(m,[cx,towerH/2,cz-1.2],[6.4,towerH,6.4],MAT.brickRed);
+    for(const side of[-1,1])for(const zside of[-1,1])
+      addBox(m,[cx+side*3.18,towerH*.42,cz-1.2+zside*3.18],[.48,towerH*.84,.48],MAT.stone);
+    for(const y of[3.8,10.7,18.1,22.0])addBox(m,[cx,y,cz-1.2],[6.9,.26,6.9],MAT.stone);
+    for(const side of[-1,1])for(let i=0;i<5;i++){
+      addBox(m,[cx+side*3.24,19.5+i*.34,cz-1.2],[.16,.16,2.2],MAT.black);
+      addBox(m,[cx,19.5+i*.34,cz-1.2+side*3.24],[2.2,.16,.16],MAT.black);
+    }
+    const e=3.65,tz=cz-1.2,apex=[cx,towerH+4.2,tz];
+    addTriangle(m,[cx-e,towerH,tz-e],[cx+e,towerH,tz-e],apex,MAT.slate);
+    addTriangle(m,[cx+e,towerH,tz-e],[cx+e,towerH,tz+e],apex,MAT.slate);
+    addTriangle(m,[cx+e,towerH,tz+e],[cx-e,towerH,tz+e],apex,MAT.slate);
+    addTriangle(m,[cx-e,towerH,tz+e],[cx-e,towerH,tz-e],apex,MAT.slate);
   }
 }
 {
@@ -1915,17 +2947,69 @@ for(const [name,cfg] of Object.entries(SOURCES)){
   for(const dx of[-.66,.66]) addBox(m,[dx,.86,-3.36],[.34,.20,.12],MAT.ivory);   // heads
   // THE BACK DOORS, standing open. Each swung out about a hundred degrees, which
   // is what makes the silhouette read as "somebody is unloading" from the gate.
+  const doorYaw=1.75, doorHalf=.04;
   for(const s of[-1,1]){
-    addBox(m,[s*(bodyW/2+.42),1.57,2.62],[.86,1.86,.08],MAT.agedWhite,s*1.75);
+    addBox(m,[s*(bodyW/2+.42),1.57,2.62],[.86,1.86,.08],MAT.agedWhite,s*doorYaw);
     addBox(m,[s*(bodyW/2+.10),1.57,2.34],[.10,.30,.10],MAT.steel);   // hinge
   }
-  // Inside: the shelf the kit came off, and the tail lamp cluster.
-  addBox(m,[0,1.06,1.10],[1.70,.06,1.60],MAT.dark);
-  addBox(m,[-.55,1.20,1.40],[.52,.22,.62],MAT.cloth);                // a folded blanket
-  for(const dx of[-.82,.82]) addBox(m,[dx,1.02,2.56],[.22,.42,.08],MAT.safetyRed);
-  // Registration plate and the reflective chevrons every site van has.
-  addBox(m,[0,.86,2.58],[.72,.16,.06],MAT.ivory);
-  for(let i=-2;i<=2;i++) addBox(m,[i*.36,1.80,2.57],[.20,1.10,.05],i%2?MAT.safetyRed:MAT.ivory,0,.45);
+  // A POINT ON A DOOR LEAF, which is the whole fix here.
+  //
+  // The plate, the chevrons and the tail lamps used to be authored on the rear
+  // plane at z≈2.57, spanning x=-0.82..+0.82 — the geometry of a van with its
+  // doors SHUT. The doors are open, so all of it hung in the middle of the two
+  // metre aperture attached to nothing, in front of the load space, which is why
+  // the back of the van could not be read at all.
+  //
+  // addBox rotates local +x to (cos a, 0, sin a) and local +z to (-sin a, 0, cos a),
+  // so the leaf's OUTER face is local -z. u runs along the leaf, v is height.
+  // face: 1 is the leaf's outer skin, -1 the inner.
+  const leaf=(s,u,v,face=1)=>{
+    const a=s*doorYaw, c=Math.cos(a), sn=Math.sin(a), out=(doorHalf+.012)*face;
+    return [s*(bodyW/2+.42)+c*u+sn*out, 1.57+v, 2.62+sn*u-c*out];
+  };
+  // The reflective chevrons every site van has, on the outside of both leaves —
+  // which is also what makes the open doors read as a van from the gate rather
+  // than as two white panels.
+  // Chevrons on BOTH faces. Outside is where a real van carries them and what
+  // makes the shut doors read from the gate; inside is what the player actually
+  // walks up to, and a blank leaf tells them nothing about what they are looking
+  // at. Vans carry reflective strips inboard for exactly the same reason.
+  for(const s of[-1,1]){
+    for(const face of[1,-1]){
+      for(let i=-1;i<=1;i++){
+        addBox(m,leaf(s,i*.26,0,face),[.13,1.24,.02],i?MAT.safetyRed:MAT.ivory,s*doorYaw);
+      }
+    }
+    // The plate goes on one leaf, low, the way a real pair of doors carries it.
+    if(s<0) addBox(m,leaf(s,0,-.62,1),[.50,.11,.02],MAT.ivory,s*doorYaw);
+  }
+  // Rear corner posts, so the aperture has an edge and the lamps have something
+  // to be mounted ON. The body's sides sit at x=±1.0 and end at z=2.45; the lamps
+  // stand PROUD of the posts at 2.52 — inset even slightly and they read as two
+  // red strips loose inside the load bay rather than as lamps on the corners.
+  for(const dx of[-.955,.955]){
+    addBox(m,[dx,1.57,2.42],[.10,1.90,.10],MAT.agedWhite);
+    addBox(m,[dx,1.02,2.52],[.12,.34,.06],MAT.safetyRed);            // tail lamp
+  }
+
+  // THE LOAD SPACE. The first [E] in the game is shouldering the bag off this
+  // shelf, and takeTheBag() names what comes off it — recorder, torch,
+  // headphones, radio, the order folded twice in the side pocket. It was a shelf
+  // and a blanket, which is not a van somebody works out of.
+  // The shelf is HALF DEPTH and set back. Full depth made the load bay one flat
+  // plane from the doors to the bulkhead, so nothing under it could be seen and
+  // the interior read as a solid box with a lid.
+  const floorTop=floorY+.05;
+  addBox(m,[0,1.06,1.42],[1.70,.06,.96],MAT.wood);                   // the shelf
+  for(const dx of[-.78,.78]) addBox(m,[dx,.86,1.42],[.07,.46,.90],MAT.steel);  // its legs
+  addBox(m,[-.52,1.20,1.60],[.52,.22,.52],MAT.cloth);                // a folded blanket
+  // Where the bag has been sitting long enough to leave a clean rectangle.
+  addBox(m,[.30,1.10,1.34],[.44,.01,.34],MAT.black);
+  // On the floor, in front of the shelf, where they can actually be seen.
+  addCylinder(m,[.50,floorTop+.15,.62],.24,.30,MAT.steel,12);        // a cable drum
+  addBox(m,[-.54,floorTop+.21,.72],[.50,.42,.44],MAT.wood);          // a crate
+  addBox(m,[-.56,floorTop+.13,1.62],[.42,.26,.30],MAT.steel);        // toolbox
+  addBox(m,[.44,floorTop+.05,1.20],[.56,.10,.30],MAT.cloth);         // a coiled strap
 }
 {
   // The dome lamp in the back of it. Its own prop so it can be emissive and so
@@ -1964,6 +3048,127 @@ for(const [name,cfg] of Object.entries(SOURCES)){
   }
   for(const dx of[-.62,.62]) addBox(m,[dx,.74,-2.14],[.36,.18,.12],MAT.ivory);   // heads
   for(const dx of[-.62,.62]) addBox(m,[dx,.80,2.14],[.34,.20,.10],MAT.safetyRed);
+}
+
+// ── BASEBOARDS ───────────────────────────────────────────────────────────────
+//
+// Generated from the compiled floorplan, which is the only way this can be
+// attached. The previous attempt (addSecondPerimeterWall, above) built a second
+// wall from hand-typed axis/plane/spans values, so it did not know where the
+// real wall was and did not sit on one — its lower courses are switched off in
+// the atrium with a comment about them "reading as wainscoting", which is what a
+// base course looks like when it is floating.
+//
+// Here every segment takes its position, its base height, its material and its
+// space from the same per-cell data the raymarch uses. Nothing is typed.
+//
+// THE TRAP IS SPACES. Walls are drawn in a per-cell PHYSICAL frame, and on an
+// arc logicalToPhysical rotates along the tangent, so a logically straight run
+// can be physically curved. wallRuns already refuses to merge across an arc, a
+// step, a render group or a material; this then merges again in PHYSICAL space
+// and only where the cells really are contiguous and collinear, so a space whose
+// mapping jumps cannot be bridged either.
+const BASEBOARD = { height:0.115, proud:0.035, mesh:(g)=>`baseboard_${g}` };
+const baseboardAnchors = {};
+let baseboardPlanHash = '';
+{
+  FP.compile(conservatory.levels,{
+    width:conservatory.width, height:conservatory.height,
+    widenCorridors:conservatory.widenCorridors,
+    connectors:conservatory.connectors||[], edgePortals:conservatory.edgePortals||[],
+    doors:conservatory.doors||[],
+  });
+  const plan={size:FP.planSize,isSolid:FP.isSolid,floorAt:FP.floorAt,zoneAt:FP.zoneAt,
+    materialAt:FP.materialAt,doorAt:FP.doorAt,logicalToPhysical:FP.logicalToPhysical};
+
+  // Skirting takes the room's own material, so a timber hall does not get the
+  // chapel's stone. Anything unlisted is painted plaster, which is what most of
+  // this building actually has.
+  const skirtingMat=(m)=>m===MATERIAL.wood?MAT.wood
+    :m===MATERIAL.chapel?MAT.stone
+    :m===MATERIAL.pool||m===MATERIAL.wet?MAT.ivory
+    :m===MATERIAL.metal||m===MATERIAL.acoustic?MAT.steel
+    :MAT.plaster;
+
+  const runs=wallRuns(plan);
+  // THE STALENESS GUARD. The floorplan is edited constantly, sometimes by
+  // somebody else, and baked skirting that no longer matches its wall is the old
+  // bug wearing a new hat. Hash the RUNS rather than the source files: they are
+  // exactly the input this geometry is a function of, so the hash moves when and
+  // only when the baseboards would actually come out different.
+  baseboardPlanHash=crypto.createHash('sha256').update(wallRunsDigest(runs)).digest('hex');
+  const byGroup=new Map();
+  for(const r of runs){
+    if(!r.renderGroup)continue;
+    if(!byGroup.has(r.renderGroup))byGroup.set(r.renderGroup,[]);
+    byGroup.get(r.renderGroup).push(r);
+  }
+
+  let emitted=0;
+  for(const [group,groupRuns] of byGroup){
+    // The anchor is a real cell in this group, so the mesh hangs off a position
+    // the prop system already resolves; vertices are relative to it.
+    const first=groupRuns[0].cells[0];
+    const anchor=FP.logicalToPhysical(first.x,first.y);
+    baseboardAnchors[group]={mesh:BASEBOARD.mesh(group),anchor:{x:first.x,y:first.y}};
+    const m=mesh(BASEBOARD.mesh(group));
+    for(const r of groupRuns){
+      // THE NORMAL HAS TO BE MEASURED IN PHYSICAL SPACE, not carried over from
+      // the logical grid. A space's mapping can be rotated, in which case the
+      // logical normal points somewhere else entirely once it is drawn — which
+      // put skirting in the middle of the box-office floor the first time.
+      // Step one cell INTO the room and see which way that actually went.
+      const physNormal=(c)=>{
+        const inX=c.x+r.nx, inY=c.y+r.ny;
+        if(FP.isSolid(inX,inY))return {nx:r.nx,ny:r.ny};
+        const a=FP.logicalToPhysical(c.x,c.y), b=FP.logicalToPhysical(inX,inY);
+        const dx=b.x-a.x, dz=b.z-a.z;
+        if(Math.abs(dx)+Math.abs(dz)<1e-6)return {nx:r.nx,ny:r.ny};
+        return Math.abs(dx)>=Math.abs(dz)
+          ? {nx:Math.sign(dx),ny:0} : {nx:0,ny:Math.sign(dz)};
+      };
+      // Merge again in physical space. Two cells only join if their physical
+      // positions are exactly one cell apart along the run's axis and identical
+      // across it — which is false on an arc and false wherever a space's
+      // mapping jumps, and those are exactly the places a bridge would float.
+      let seg=null;
+      const flush=()=>{
+        if(!seg)return;
+        const along=(seg.hi-seg.lo+1)*CELL;
+        const cx=(seg.lo+seg.hi)/2+0.5, mid=seg.axis==='x'
+          ? {x:cx,z:seg.perp+0.5} : {x:seg.perp+0.5,z:cx};
+        // BACK to the wall, not out into the room. The cell centre is half a cell
+        // off the face; the skirting's own centre sits half its depth proud of it.
+        const back=0.5-BASEBOARD.proud/CELL/2;
+        const outX=-seg.n.nx*back, outZ=-seg.n.ny*back;
+        // A run travelling along physical x is a long box in x, and vice versa —
+        // read off the measured normal rather than the logical axis.
+        const alongX=seg.n.nx===0;
+        const size=alongX
+          ? [along,BASEBOARD.height,BASEBOARD.proud]
+          : [BASEBOARD.proud,BASEBOARD.height,along];
+        addBox(m,[
+          (mid.x+outX-anchor.x)*CELL,
+          (r.floor-anchor.y)+BASEBOARD.height/2,
+          (mid.z+outZ-anchor.z)*CELL,
+        ],size,skirtingMat(r.material));
+        emitted++; seg=null;
+      };
+      for(const c of r.cells){
+        const p=FP.logicalToPhysical(c.x,c.y);
+        const n=physNormal(c);
+        // The run travels across its own normal.
+        const axis=n.nx===0?'x':'z';
+        const lo=axis==='x'?p.x:p.z, perp=axis==='x'?p.z:p.x;
+        if(seg&&seg.axis===axis&&seg.perp===perp&&seg.n.nx===n.nx&&seg.n.ny===n.ny
+          &&Math.abs(lo-(seg.hi+1))<1e-6){seg.hi=lo;continue;}
+        flush();
+        seg={axis,lo,hi:lo,perp,n};
+      }
+      flush();
+    }
+  }
+  console.log(`  · baseboards: ${runs.length} runs -> ${emitted} segments across ${byGroup.size} render groups`);
 }
 
 const chunks=[]; let byteOffset=0;
@@ -2009,7 +3214,84 @@ for(const m of meshes.values()){
   stats.meshes[m.name]={triangles:tri,vertices:verts};stats.totalTriangles+=tri;
   meshBounds[m.name]={min:lo.map((v)=>+v.toFixed(3)),max:hi.map((v)=>+v.toFixed(3)),triangles:tri};
 }
+// Mesh bounds belong in the machine-readable stats file, not only in credits:
+// credits.json is a provenance document, and the runtime needs the real top of a
+// desk to stand a clipboard on it (see `on:` in game/props.js).
+// workSurfaces() is a function declaration below, so it hoists; the const does
+// not, which is why it is bound here rather than beside its definition.
+const meshSurfaces=workSurfaces();
+stats.bounds=Object.fromEntries(Object.entries(meshBounds).map(([k,v])=>[k,{min:v.min,max:v.max}]));
+stats.baseboards={planHash:baseboardPlanHash,groups:baseboardAnchors};
+stats.surfaces=meshSurfaces;
 fs.writeFileSync(STATS,JSON.stringify(stats,null,2)+'\n');
+
+// THE WORK SURFACE, which is not the top of the bounding box.
+//
+// `on:` wants the height you could stand a clipboard at, and a bounding box does
+// not know that: ticket_counter's box tops out at 2.25m because of its GRILLE,
+// and school_desk's at 1.10 because of its back. Putting a cash terminal on
+// either number is worse than the hand-typed value it replaces.
+//
+// So measure it: gather every upward-facing triangle, bucket by height, and take
+// the HIGHEST height that has a real amount of flat area at it. That is a
+// surface somebody could put something down on, and it is measured from the
+// geometry rather than typed beside it.
+function workSurfaces(){
+  const out={};
+  for(const m of meshes.values()){
+    const byY=new Map();
+    for(const g of m.groups.values()){
+      const P=g.positions, N=g.normals, I=g.indices;
+      for(let i=0;i<I.length;i+=3){
+        const a=I[i]*3,b=I[i+1]*3,c=I[i+2]*3;
+        // Upward-facing only. A downward face at the same height is a shelf's
+        // underside, and nothing rests on that.
+        if(N[a+1]<0.9||N[b+1]<0.9||N[c+1]<0.9)continue;
+        const ax=P[a],ay=P[a+1],az=P[a+2],bx=P[b],bz=P[b+2],cx=P[c],cz=P[c+2];
+        const area=Math.abs((bx-ax)*(cz-az)-(cx-ax)*(bz-az))/2;
+        if(area<=0)continue;
+        const key=Math.round(ay*100)/100;
+        byY.set(key,(byY.get(key)||0)+area);
+      }
+    }
+    // THE BIGGEST flat area, not the highest one. A counter's cap is higher than
+    // its serving ledge and a rack's crown is higher than its shelves, and in
+    // both cases the thing you put something down on is the broader face.
+    // Below MIN_AREA it is a rail, a lip or a moulding, not a surface at all.
+    const MIN_AREA=0.06;
+    const flat=[...byY.entries()].filter(([,a])=>a>=MIN_AREA)
+      .sort((p,q)=>(q[1]-p[1])||(q[0]-p[0]));
+    if(flat.length)out[m.name]=flat[0][0];
+  }
+  return out;
+}
+// A GENERATED MODULE, not JSON. The game imports this through vite and the tests
+// import it through node, and a plain .js module needs no import assertion in
+// either. It carries the two things only the builder can know: the real top of
+// every mesh (so a clipboard can be stood on a desk without typing a height),
+// and where the baked baseboards hang.
+fs.mkdirSync(path.join(ROOT,'src/data/generated'),{recursive:true});
+fs.writeFileSync(path.join(ROOT,'src/data/generated/prop-geometry.js'),
+`// GENERATED by tools/chunk_surfer/build-props.mjs — do not edit by hand.
+//
+// MESH_TOP is the real height of each mesh's bounding box, in metres, measured
+// from the geometry rather than typed. PROP_BOUNDS carries the full box for
+// footprint work. BASEBOARDS records which mesh holds each render group's baked
+// skirting, and PLAN_HASH is the hash of the wall runs it was generated from —
+// see test/baseboard-freshness.spec.mjs, which fails when the floorplan has
+// moved on and the pack has not been rebuilt.
+export const PLAN_HASH = ${JSON.stringify(baseboardPlanHash)};
+export const BASEBOARDS = Object.freeze(${JSON.stringify(baseboardAnchors)});
+export const PROP_BOUNDS = Object.freeze(${JSON.stringify(
+  Object.fromEntries(Object.entries(meshBounds).map(([k,v])=>[k,{min:v.min,max:v.max}])))});
+export const MESH_TOP = Object.freeze(${JSON.stringify(
+  Object.fromEntries(Object.entries(meshBounds).map(([k,v])=>[k,v.max[1]])))});
+// MESH_SURFACE is the highest height carrying a real amount of upward-facing
+// flat area — the height you could stand something at. NOT the same as MESH_TOP:
+// ticket_counter's box top is its grille at 2.25m and school_desk's is its back
+// at 1.10m, and neither is a surface. The on: field uses this one.
+export const MESH_SURFACE = Object.freeze(${JSON.stringify(meshSurfaces)});
+`);
 
 // credits.json binds provenance to the exact pack bytes and is checked by
 // tools/chunk_surfer/tests/glb.mjs. Meshes fed by a user-supplied source carry
