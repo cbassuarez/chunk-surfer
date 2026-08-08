@@ -74,6 +74,12 @@ export const ZONE = {
   // leads to — where a show is checked in, staged, and taken apart again. The
   // last load-out is still standing in it.
   getIn: 16,
+  // The city block is real floorplan space, not scenery outside the texture.
+  // These remain separate from dock so lighting, ambience and environmental
+  // audio can distinguish an inhabited public street from Ellery's dead yard.
+  street: 17,
+  civicCourt: 18,
+  serviceYard: 19,
 };
 
 // Which world (audio + prompt) a zone belongs to. Corridors borrow the room
@@ -101,6 +107,9 @@ export const ZONE_WORLD = {
   // shared world id is why LEVEL_CHECK_ROOM exists: a level check taken here
   // must not be filed as a B3 take.
   [ZONE.getIn]: 'main_b3',
+  [ZONE.street]: 'main_b3',
+  [ZONE.civicCourt]: 'main_b3',
+  [ZONE.serviceYard]: 'main_b3',
 };
 
 // Surface identity is deliberately not packed into F. Flags are collision and
@@ -130,11 +139,16 @@ export const MATERIAL = {
   // wood, so every serviceConcrete floor was being drawn as floorboards. Nobody
   // noticed indoors. Fifty metres of it under an open sky is a parquet yard.
   wetTarmac: 15,
+  wetPaving: 16,
+  wetSetts: 17,
 };
 
 export function materialForZone(zone) {
   switch (zone) {
     case ZONE.dock: return MATERIAL.wetTarmac;
+    case ZONE.street: return MATERIAL.wetTarmac;
+    case ZONE.civicCourt: return MATERIAL.wetPaving;
+    case ZONE.serviceYard: return MATERIAL.wetSetts;
     // B3 is a dance studio that happens to carry the take, so it is the same
     // sprung maple as the rest of the wing. It used to be acousticFoam, which
     // drew dark concrete cladding over a terrazzo floor and contradicted both
@@ -214,6 +228,12 @@ export const GLYPHS = {
   // exists to avoid. Anything you want to see OVER has to stay inside that
   // window.
   'w': { floor: 0.8, ceil: 24.0, sky: true, walled: true, zone: 'dock', material: 'wetTarmac' },
+  // The civic block. `e` is carriageway, `p` is a proper raised pavement and
+  // `s` is the band of old granite setts at the gutter. All three are open to
+  // the same rain; their distinct surfaces are what give the street a scale.
+  'e': { floor: 0.0,  ceil: 16.0, sky: true, walled: true, zone: 'street', material: 'wetTarmac' },
+  'p': { floor: 0.12, ceil: 16.0, sky: true, walled: true, zone: 'civicCourt', material: 'wetPaving' },
+  's': { floor: 0.025,ceil: 16.0, sky: true, walled: true, zone: 'street', material: 'wetSetts' },
   'F': { floor: 0.0, ceil: 6.5, zone: 'foyer', material: 'serviceConcrete' },
   'A': { floor: 0.0, ceil: 11.5, zone: 'foyer', material: 'serviceConcrete' },
   'B': { floor: 0.0, ceil: 3.2, zone: 'studio', material: 'woodVelvet' },

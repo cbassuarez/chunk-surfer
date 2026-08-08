@@ -21,6 +21,7 @@ import { PIXEL_MESH_FRAG } from './pixel-mesh/shader.js';
 import { isScreen, screenUniforms } from './pixel-mesh/screens.js';
 import { MARK_FIELD_SIZE, MARK_FIELD_SOURCE, deriveMarkField } from './mark-field.js';
 import { getLookProfile } from './look-profiles.js';
+import { LIGHT_KIND } from '../data/conservatory-lights.js';
 import { visualEffectsEnabled } from '../game/access.js';
 
 const MAX_CHUNKS = 48;
@@ -33,10 +34,23 @@ let RENDER_SCALE = 1;
 let localLightCount=0;
 const localLightPositions=new Float32Array(MAX_LOCAL_LIGHTS*4);
 const localLightColors=new Float32Array(MAX_LOCAL_LIGHTS*4);
+const localLightPenetrations=new Float32Array(MAX_LOCAL_LIGHTS);
+const localLightEmergency=new Float32Array(MAX_LOCAL_LIGHTS);
 let localShadowIndex=-1;
 let localShadowLight=null;
 let lightingAmbientColor=new Float32Array([.64,.65,.62]);
 let lightingAmbientIntensity=.022;
+// The room's floor-bounce, and the live dial for it (see __probe.bounce). 0 is
+// the flat-ambient behaviour that shipped, which is the A/B for black ceilings.
+let lightingBounceColor=new Float32Array([.64,.65,.62]);
+let lightingBounceIntensity=0;
+let bounceAmount=1;
+let bounceLampGain=2.4;
+// The weather's gain. 1 is as authored; 0 turns it off, which is the A/B for
+// "is the rain drawn at all, or drawn and then lost in the one-bit encode".
+let rainAmount=1;
+// Weather forced into a space with no sky. 0 everywhere except the source hall.
+let indoorRain=0;
 // Scales the look profile's white point to the room actually being stood in. 1
 // is "use the profile as authored"; a dim interior asks for a fraction of it.
 let lightingWhitePointScale=1;
@@ -92,6 +106,9 @@ const ZONE_TINTS = new Float32Array([
   0.74, 0.70, 0.60,   // dance wing: sprung maple and mirror
   0.52, 0.50, 0.47,   // prop store: a ceiling you can touch
   0.62, 0.60, 0.55,   // the get-in: sodium and rust, as the old dock room was
+  0.43, 0.49, 0.60,   // inhabited street: wet carriageway under town light
+  0.58, 0.56, 0.52,   // civic pavement: pale flags darkened by rain
+  0.36, 0.39, 0.43,   // service courts: old setts and patched channels
 ]);
 
 const WORLD_RGB = {
@@ -197,6 +214,34 @@ uniform float uAmbientIntensity;
 // authored, because how dark the far end of an unlit corridor should be is a
 // judgement nobody can make from the source (see __probe.ambientFloor).
 uniform float uAmbientFloor;
+// THE BOUNCE. Light that has already hit the floor and come back up.
+//
+// Ambient is uniform over the sphere, so a ceiling gets exactly what a floor
+// gets, and in this building that is nothing: measured raw against a black point
+// at byte 1.3, the get-in's ceiling sits at 1.47 unlit and only reaches 2.45 with
+// the torch ON, because the torch is a forward cone from eye height and the one
+// fitting hangs at 2.1m under a 5.5m ceiling. Walls reach 11.4 in the same frame.
+// So ceilings are not merely dark, they are the ONE surface no light source in
+// the room can address, which is why they read as pure black everywhere.
+//
+// This is the return trip, weighted onto downward-facing normals and gained by
+// the torch, so lighting the floor lights the ceiling above it the way it should
+// have all along.
+uniform vec3 uBounceColor;
+uniform float uBounceIntensity;
+uniform float uBounceLampGain;
+// The weather's own gain, so "is it drawn at all" is answerable without a
+// rebuild (see __probe.rain). 0 is no weather; 1 is as authored.
+uniform float uRainAmount;
+// WEATHER WHERE THERE IS NO SKY.
+//
+// Rain is gated on the eye standing in a cell flagged FLAG_SKY, which is right
+// for the building and means the procedural spaces (uUsePlan < .5) can never
+// have any. The source corridor wants exactly that and for exactly the wrong
+// reason: it is not outside, it is not even a room, and the rain coming through
+// it anyway is the point. Driven from the hall's own depth — see
+// tickSourceSpace.
+uniform float uRainIndoor;
 // Strength of the baked per-cell ambient, 0..1. 0 is the old flat per-zone
 // constant, which makes this the A/B (see __probe.ambientPlace).
 uniform float uAmbientPlace;
@@ -211,6 +256,10 @@ uniform int uLocalLightCount;
 uniform int uLocalShadowIndex;
 uniform vec4 uLocalLightPos[${MAX_LOCAL_LIGHTS}];
 uniform vec4 uLocalLightColor[${MAX_LOCAL_LIGHTS}];
+uniform float uLocalLightPenetration[${MAX_LOCAL_LIGHTS}];
+// 1 for a practical on the emergency circuit. Red is that circuit's word, and
+// this is how the lighting pass tells the shading pass who is allowed to use it.
+uniform float uLocalLightEmergency[${MAX_LOCAL_LIGHTS}];
 uniform int   uChunkCount;
 uniform vec4  uChunkA[${MAX_CHUNKS}]; // x, z, radius, activity
 uniform vec3  uChunkC[${MAX_CHUNKS}]; // biome rgb
@@ -283,13 +332,16 @@ uniform float uDreamRoughnessResponse;
 uniform float uDreamNormalResponse;
 uniform float uLocalDiffusion;
 uniform float uSurfacesReady;
+// Accepted work-order takes progressively replace photographed material with
+// the generated surface itself. These are multipliers on the current look, so
+// zero takes is bit-for-bit the authored profile that was already active.
 uniform float uPropsReady;
 uniform float uPropNear;
 uniform float uPropFar;
 uniform vec2  uPlanSize;
 uniform vec2  uPlanOrigin;
 uniform float uUsePlan;      // 0 = procedural sample-field lattice, 1 = the conservatory
-uniform vec3  uZoneTint[17];
+uniform vec3  uZoneTint[20];
 uniform float uSourceReady;
 uniform vec4  uWaterBounds;  // min x, min z, max x, max z in runtime cells
 uniform vec4  uWaterParams;  // active, level metres, murk, reduce motion
@@ -323,6 +375,10 @@ const int MAT_SOURCE_PAGE = ${MATERIAL.sourcePage};
 const int MAT_SOURCE_FAULT = ${MATERIAL.sourceFault};
 const int MAT_ACADEMIC = ${MATERIAL.academicPlaster};
 const int MAT_TARMAC = ${MATERIAL.wetTarmac};
+const int MAT_PAVING = ${MATERIAL.wetPaving};
+const int MAT_SETTS = ${MATERIAL.wetSetts};
+
+bool isRainGroundMat(int mat){return mat==MAT_TARMAC||mat==MAT_PAVING||mat==MAT_SETTS;}
 
 bool waterActive(){ return uWaterParams.x > 0.5 && uUsePlan > 0.5; }
 bool inWaterBounds(vec2 p){
@@ -682,7 +738,7 @@ void surfaceSlot(int mat,int surf,vec2 uv,out int slot,out float tileM,out float
     else if(mat==MAT_METAL){slot=9;tileM=1.6;blend=.82;}        // plant → concrete cladding
     else if(mat==MAT_CHAPEL){slot=1;tileM=1.4;blend=.82;}       // chapel → split-face stone
     else if(mat==MAT_ACADEMIC){slot=7;tileM=2.2;blend=.80;}     // academic → pale worn stone/plaster
-    else if(mat==MAT_TARMAC){slot=9;tileM=1.2;blend=.70;}       // yard walls → concrete
+    else if(isRainGroundMat(mat)){slot=9;tileM=1.2;blend=.70;}  // exterior retaining walls → concrete
     else {slot=0;tileM=1.4;blend=.80;}                          // general → reclaimed brick
   } else {                                                      // floor (surf==2)
     if(mat==MAT_ACOUSTIC||mat==MAT_PRACTICE||mat==MAT_ACADEMIC){slot=6;tileM=1.8;blend=.88;} // teaching floors → terrazzo
@@ -690,7 +746,9 @@ void surfaceSlot(int mat,int surf,vec2 uv,out int slot,out float tileM,out float
     else if(mat==MAT_CHAPEL){slot=3;tileM=2.0;blend=.90;}       // chapel → quartzite
     else if(mat==MAT_WET){slot=4;tileM=0.9;blend=.92;}          // pool interior → blue mosaic
     else if(mat==MAT_POOL){slot=5;tileM=1.0;blend=.90;}         // pool deck → white ceramic
-    else if(mat==MAT_TARMAC){slot=9;tileM=0.42;blend=.52;}      // the yard → wet aggregate, tiled LONG so it never reads as panels and blended LOW so it never reads as static
+    else if(mat==MAT_TARMAC){slot=9;tileM=0.42;blend=.52;}      // carriageway → wet aggregate
+    else if(mat==MAT_PAVING){slot=3;tileM=1.10;blend=.72;}      // pavement → worn civic flags
+    else if(mat==MAT_SETTS){slot=1;tileM=.46;blend=.68;}        // gutter and courts → small stone setts
     else {slot=2;tileM=1.8;blend=.84;}                          // general → ash wood
   }
 }
@@ -760,6 +818,8 @@ float materialSeam(int mat, int surf, vec3 p, vec3 n){
     // they run a long way apart.
     return max(line1(p.x, 6.4, 0.020), line1(p.z, 7.9, 0.020)) * 0.14;
   }
+  if(mat == MAT_PAVING)return max(line1(p.x,.92,.028),line1(p.z,1.24,.026))*.22;
+  if(mat == MAT_SETTS)return grid2(p.xz,.28,.032)*.30;
   return (surf == 1 ? line1(p.y, 0.72, 0.026) : grid2(p.xz, 0.55, 0.040)) * 0.18;
 }
 vec3 materialBase(int mat, int surf, vec3 tint, vec3 biome, float rdv){
@@ -773,6 +833,8 @@ vec3 materialBase(int mat, int surf, vec3 tint, vec3 biome, float rdv){
   else if(mat == MAT_METAL) base = vec3(0.34, 0.35, 0.32);
   else if(mat == MAT_DOOR) base = vec3(0.24, 0.28, 0.29);
   else if(mat == MAT_TARMAC) base = vec3(0.145, 0.156, 0.180);
+  else if(mat == MAT_PAVING) base = vec3(0.34, 0.35, 0.36);
+  else if(mat == MAT_SETTS) base = vec3(0.205, 0.22, 0.24);
   if(surf == 3) base *= 0.58;
   if(surf == 2) base = mix(base, mix(biome, tint, 0.35), 0.22);
   return base * (0.56 + 0.55 * rdv);
@@ -780,6 +842,8 @@ vec3 materialBase(int mat, int surf, vec3 tint, vec3 biome, float rdv){
 float materialSpec(int mat){
   if(mat == MAT_WET) return 0.95;
   if(mat == MAT_TARMAC) return 0.58;   // it has been raining on it all night
+  if(mat == MAT_PAVING) return 0.68;
+  if(mat == MAT_SETTS) return 0.61;
   if(mat == MAT_POOL) return 0.42;
   if(mat == MAT_DOOR) return 0.48;
   if(mat == MAT_METAL) return 0.36;
@@ -787,6 +851,33 @@ float materialSpec(int mat){
   if(mat == MAT_CHAPEL) return 0.18;
   if(mat == MAT_ACOUSTIC) return 0.035;
   return 0.08;
+}
+// RED IS THE EMERGENCY CIRCUIT'S WORD, AND NOBODY ELSE IN ELLERY MAY USE IT.
+//
+// conservatory-lights.js calls the emergency red "the one impossible colour in
+// Ellery", and the display honours that by letting chroma survive the one-bit
+// encode. But the display can only see the composited pixel, so it was honouring
+// red that had nothing to do with the circuit: sodium off a warm wall, a red
+// material under the torch, anything whose albedo happened to be red. Everything
+// shaded red before the shader came out red after it, and the emergency wash
+// stopped being an event because half the building was already speaking in it.
+//
+// The lighting pass is the only place that knows WHO lit a fragment, so the gate
+// belongs here. Redness that the emergency circuit did not pay for is pulled
+// back to its own luminance; every other hue is untouched, so sodium stays
+// amber, the sky stays cold, and the torch stays warm. It is a reservation of
+// one hue, not a desaturation of the room.
+float emergencyRedness(vec3 lit){
+  return (lit.r - max(lit.g, lit.b)) / max(lit.r, 1e-4);
+}
+vec3 reserveEmergencyRed(vec3 shaded, float emergencyShare){
+  // Amber and sodium live below .55; the authored emergency primary is .98.
+  float claim = smoothstep(.55, .84, emergencyRedness(shaded));
+  // A little emergency light justifies its own red — the circuit is dim by
+  // design and must not have to out-shout a torch to keep its colour.
+  float backing = clamp(emergencyShare * 4.0, 0.0, 1.0);
+  float grey = dot(shaded, vec3(.2126, .7152, .0722));
+  return mix(shaded, mix(vec3(grey), shaded, .18), claim * (1.0 - backing));
 }
 float propFlashShadow(vec3 world,vec3 normal,vec3 lightDir){
   if(uPropShadowReady<.5)return 1.0;
@@ -846,8 +937,10 @@ vec3 nightSky(vec3 dir){
   // direction, not the colour of the sky — an earlier pass had it warm all over
   // and the shot read as a sunset, which is the wrong story and the wrong hour.
   vec3 sodium   = vec3(0.44, 0.25, 0.11);
-  vec3 ceiling  = vec3(0.215, 0.278, 0.400);
-  vec3 deep     = vec3(0.055, 0.082, 0.150);
+  // Twilight, not a floodlit blue hour. The deck remains readable against the
+  // roofs, but sits one small stop below the earlier almost-daylight exterior.
+  vec3 ceiling  = vec3(0.194, 0.249, 0.358);
+  vec3 deep     = vec3(0.048, 0.073, 0.136);
   vec3 col = mix(ceiling, deep, zenith) + sodium * horizon * horizon * 0.30;
 
   // CLOUD.
@@ -908,7 +1001,7 @@ vec3 nightSky(vec3 dir){
   // Thick deck catches the sodium and goes up. A break shows the real depth
   // behind it and goes down. Both read hardest near the horizon, where the cloud
   // is edge-on and there is a town's worth of it between you and the light.
-  vec3 deck = mix(ceiling * 1.14, ceiling * 1.34 + sodium * 0.30, horizon);
+  vec3 deck = mix(ceiling * 1.11, ceiling * 1.27 + sodium * 0.27, horizon);
   col = mix(col, deck, cloud * (0.56 + 0.34 * horizon));
   col = mix(col, deep * 0.62, (1.0 - cloud) * smoothstep(0.02, 0.30, up) * 0.62);
   col += sodium * 0.22 * cloud * (1.0 - zenith);
@@ -1113,6 +1206,155 @@ vec3 nightSky(vec3 dir){
   return col;
 }
 
+// RAIN. Actual drops, in the world, with positions.
+//
+// What was here before was not rain. It was the angular field the rolling sky
+// and the fireflies are built from, repurposed: the cell grid was indexed by
+// RAY DIRECTION — bearing was rd.x + rd.z*.17, and the other axis rd.y — with the camera
+// position folded in only as a scalar offset. Every drop lived on a sphere
+// around the head. Its own comment claimed world metres and parallax and the
+// maths did neither: turning slid the pattern around the eye, the three "depth
+// sheets" were authored constants rather than anywhere a drop actually was, and
+// nothing ever converged toward a vanishing point, because a direction field has
+// no perspective to converge in.
+//
+// A drop is a thing in the world. So: sample the view ray at a few real depths,
+// take the WORLD POINT at each, and let the world lattice there decide whether a
+// drop is falling and where. Turning the camera now moves the eye through a
+// standing volume of rain instead of dragging the rain with it, near drops sweep
+// past faster than far ones because they genuinely are nearer, and a streak
+// leans with the wind because the segment it is drawn from leans.
+//
+// The cost is bounded by the sample count, not by a march: RAIN_TAPS points, each
+// a hash and a segment distance. Everything is derived from the world point P,
+// never from the ray direction.
+
+// How many world columns of rain a single ray will walk before giving up. Each
+// is one hash and — for the tenth or so that actually hold a drop — one segment
+// distance, so the cost is bounded and mostly early-out.
+// Thirteen broad cells replace twenty-two narrow ones: forty per cent fewer
+// worst-case column tests, with occupancy raised so the weather is denser even
+// though the shader does less work.
+const int RAIN_COLUMNS = 13;
+const float RAIN_CELL_M = 0.95;
+
+// Closest distance from the ray (ro, rd) to the segment a→b. Standard
+// segment-segment closest approach, with the ray clamped to s >= 0 so drops
+// behind the eye cannot draw.
+float rayToSegment(vec3 ro, vec3 rd, vec3 a, vec3 b){
+  vec3 u = rd, v = b - a, w = ro - a;
+  float A = dot(u,u), B = dot(u,v), C = dot(v,v), D = dot(u,w), E = dot(v,w);
+  float den = A*C - B*B;
+  float s, t;
+  if(den < 1e-6){ s = 0.0; t = clamp(E/max(C,1e-6), 0.0, 1.0); }
+  else { s = (B*E - C*D)/den; t = clamp((A*E - B*D)/den, 0.0, 1.0); }
+  s = max(s, 0.0);
+  return length((ro + u*s) - (a + v*t));
+}
+
+// One column of world: does it hold a drop right now, and does this ray cross it?
+float rainColumn(vec3 ro, vec3 rd, vec2 cell, float eyeY, float surfaceViewM, float reduced){
+  float seed = hash01(cell.x*1.7 + 11.0, cell.y*1.3 - 7.0);
+  // Rain is sparse — but not THIS sparse. At 0.90 the streaks read as the odd
+  // stray drop; a wet night wants air between them and still a curtain of them.
+  if(seed < 0.72) return 0.0;
+
+  float jitterX = hash01(cell.x + 31.0, cell.y - 17.0);
+  float jitterZ = hash01(cell.x - 53.0, cell.y + 29.0);
+  float clock = uTime * mix(1.0, 0.38, reduced);
+
+  // It falls, and it wraps. Fall speed and the wrap height are per-column, so the
+  // field does not pulse in unison the way one shared clock would make it.
+  float fallSpeed = mix(17.0, 27.0, seed);
+  float span = 7.0 + 5.0 * jitterX;
+  float phase = fract(seed*3.3 + clock * fallSpeed / span);
+  // Wrapped around the EYE's height, so there is always rain where you are
+  // looking without simulating a column from the cloud deck to the ground.
+  float topY = eyeY + span * 0.5 - phase * span;
+
+  // The streak is how far it travels while the shutter is open, leaned by wind.
+  float streak = mix(0.78, 1.62, seed) * mix(1.0, 0.38, reduced);
+  vec3 a = vec3(cell.x*RAIN_CELL_M + jitterX*RAIN_CELL_M, topY,
+                cell.y*RAIN_CELL_M + jitterZ*RAIN_CELL_M);
+  vec3 b = a - vec3(0.29*streak, streak, 0.10*streak);
+
+  // Thin in METRES, so perspective alone decides how wide it lands on screen.
+  float radius = 0.016 + 0.008 * jitterZ;
+  float d = rayToSegment(ro, rd, a, b);
+  return 1.0 - smoothstep(radius * 0.30, radius, d);
+}
+
+// WALK THE COLUMNS, do not sample depths.
+//
+// Sampling a handful of depths and looking up whatever cell each landed in was
+// the first attempt, and it drew specks rather than streaks: neighbouring pixels
+// along one drop land their taps in DIFFERENT cells, so each drop got found at a
+// point instead of along its length, and the streak came apart. Marching the
+// columns means every ray that crosses a drop finds the same drop, which is what
+// makes a streak a streak.
+//
+// A standard 2D DDA over the xz lattice, the same shape as the world march above.
+float rainVolume(vec3 ro, vec3 rd, float surfaceViewM){
+  float reduced = uReduceMotionOptical;
+  float range = min(surfaceViewM, 16.0);
+  float horiz = length(rd.xz);
+
+  vec2 pos = ro.xz / RAIN_CELL_M;
+  vec2 cell = floor(pos);
+  float acc = rainColumn(ro, rd, cell, ro.y, surfaceViewM, reduced);
+  // Looking straight up or down there is no horizontal march to make; the column
+  // overhead has already been tested and that is the honest answer.
+  if(horiz < 1e-3) return acc;
+
+  vec2 dirn = rd.xz / horiz;
+  vec2 stp = sign(dirn);
+  vec2 safe = max(abs(dirn), vec2(1e-6));
+  vec2 tDelta = 1.0 / safe;
+  vec2 tMax = (cell + max(stp, vec2(0.0)) - pos) / mix(safe, -safe, step(stp, vec2(-0.5)));
+  float travelled = 0.0;
+
+  for(int i = 0; i < RAIN_COLUMNS; i++){
+    if(tMax.x < tMax.y){ travelled = tMax.x; tMax.x += tDelta.x; cell.x += stp.x; }
+    else               { travelled = tMax.y; tMax.y += tDelta.y; cell.y += stp.y; }
+    // Cell units along the horizontal projection back into world metres of view.
+    float tWorld = travelled * RAIN_CELL_M / horiz;
+    if(tWorld > range || tWorld >= surfaceViewM) break;
+    float depthFade = 1.0 - smoothstep(surfaceViewM*0.72, surfaceViewM, tWorld);
+    acc = max(acc, rainColumn(ro, rd, cell, ro.y, surfaceViewM, reduced) * depthFade);
+  }
+  return acc * mix(1.0, 0.35, reduced);
+}
+
+// Sparse rings in the wet aggregate. This is surface response, not a second
+// particle system: one deterministic impact lives in some metre-wide cells,
+// expands, dies, and leaves the existing night-sky reflection to do the actual
+// lighting. The pattern is world anchored so it cannot swim under the player.
+float rainImpactRings(vec2 worldM){
+  float clock=uTime*mix(1.0,.36,uReduceMotionOptical);
+  vec2 q=worldM*.92,id=floor(q),p=fract(q)-.5;
+  float seed=hash01(id.x+17.0,id.y-43.0);
+  float present=step(.48,hash01(id.x-61.0,id.y+23.0));
+  vec2 center=vec2(
+    hash01(id.x+5.0,id.y+79.0),
+    hash01(id.x-37.0,id.y+11.0)
+  )*.48-.24;
+  float phase=fract(clock*2.18+seed);
+  float radius=phase*.44;
+  float ring=1.0-smoothstep(.018,.050,abs(length(p-center)-radius));
+  float life=smoothstep(.01,.06,phase)*(1.0-smoothstep(.52,.88,phase));
+  float strike=(1.0-smoothstep(.025,.105,length(p-center)))
+              *(1.0-smoothstep(.018,.12,phase));
+  // The crown throws two brief beads back off the tarmac. Analytic discs are
+  // substantially cheaper than another particle field and give the impact a
+  // visible upward/bounce beat before the spreading ring takes over.
+  vec2 gust=normalize(vec2(hash01(id.x+8.0,id.y-2.0)-.5,hash01(id.x-4.0,id.y+6.0)-.5)+vec2(.001));
+  float hop=sin(min(phase/.34,1.0)*3.14159)*.20;
+  float beadLife=1.0-smoothstep(.10,.38,phase);
+  float beadA=1.0-smoothstep(.018,.052,length(p-center-gust*hop));
+  float beadB=1.0-smoothstep(.016,.046,length(p-center+gust.yx*hop*.72));
+  return present*(ring*life+strike*.88+(beadA+beadB)*beadLife*.48)*mix(1.0,.14,uReduceMotionOptical);
+}
+
 void main(){
   vec2 uv = (gl_FragCoord.xy / uRes) * 2.0 - 1.0;
   uv.x *= uRes.x / uRes.y;
@@ -1151,11 +1393,17 @@ void main(){
   vec3 n = vec3(0.0, 1.0, 0.0);
 
   ivec2 cell = ivec2(floor(ro.xz));
+  Cell eyeCell=cellAtI(cell);
+  // SKY on the camera cell is the floorplan's semantic statement that the
+  // player is standing in the weather. It gates full-frame rain to the road,
+  // yard and open apron without leaking it into the chapel's broken pane or an
+  // interior skylight merely because this particular ray happens to see sky.
+  bool cameraInWeather=uUsePlan>.5&&(eyeCell.flags&FLAG_SKY)!=0;
   vec2 drd = 1.0 / max(abs(rd.xz), vec2(1e-5));
   ivec2 stp = ivec2(rd.x < 0.0 ? -1 : 1, rd.z < 0.0 ? -1 : 1);
   vec2 sideT = (vec2(cell) + max(vec2(stp), 0.0) - ro.xz) / (rd.xz + 1e-9);
 
-  Cell cur = cellAtI(cell);
+  Cell cur = eyeCell;
   float tEnter = 0.0;
 
   for(int i = 0; i < 192; i++){
@@ -1248,31 +1496,6 @@ void main(){
       vec3 dir = normalize(rd);
       col = nightSky(dir);
 
-      // RAIN.
-      //
-      // In the air, not on the lens, and falling in FRONT of the sky rather than
-      // being part of it. Two sheets at different scales gives it depth; the
-      // near one is faster and fatter. A per-cell hash over a square grid is
-      // white noise standing still, which is what the first pass looked like, so
-      // the cells are long and thin and the vertical term carries the time.
-      vec2 rBase = vec2(dir.x * 1.0 + dir.z * 0.16, dir.y);
-      float wet = 0.0;
-      for(int layer = 0; layer < 2; layer++){
-        float k = layer == 0 ? 1.0 : 1.9;
-        float speed = layer == 0 ? 9.0 : 15.0;
-        vec2 rp = vec2(rBase.x * 150.0 * k + float(layer) * 37.0,
-                       rBase.y * 22.0 * k - uTime * speed);
-        float cell = hash01(floor(rp.x), floor(rp.y));
-        float streak = step(0.9938, cell)
-                     * smoothstep(0.0, 0.30, fract(rp.y))
-                     * (1.0 - smoothstep(0.62, 1.0, fract(rp.y)));
-        wet += streak * (layer == 0 ? 1.0 : 0.62);
-      }
-      // Legible against the lit part of the sky and almost gone against the
-      // dark, which is how rain actually reads at night.
-      float rainLit = 0.22 + 0.78 * clamp(dot(col, vec3(0.32)), 0.0, 1.0);
-      col += vec3(0.27, 0.29, 0.34) * wet * rainLit
-           * uOpticalEffects * (1.0 - uReduceMotionOptical * 0.7);
     }
   } else {
     vec3 pos = ro + rd * tHit;
@@ -1455,6 +1678,7 @@ void main(){
     float lamp = lambert * falloff * nearSoft * 3.0 * beam * propShadow;   // a torch, not a flare
     if(uLocalShadowIndex>=0)lamp=lambert*falloff*nearSoft*3.0*beam;         // the map belongs to the hero practical
     vec3 localLight=vec3(0.0);
+    vec3 emergencyLight=vec3(0.0);
     for(int li=0;li<${MAX_LOCAL_LIGHTS};li++){
       if(li>=uLocalLightCount)break;
       vec3 delta=uLocalLightPos[li].xyz-posM;
@@ -1462,8 +1686,15 @@ void main(){
       float attenuation=pow(clamp(1.0-localDistance/radius,0.0,1.0),2.0);
       float localLambert=max(dot(n,normalize(delta)),0.0);
       float localShadow=li==uLocalShadowIndex?propFlashShadow(posM,n,normalize(delta)):1.0;
+      // The emergency figure is not a soft ambient occluder. Remap the shadow
+      // map's normal twenty-percent floor to near-black so the body reads as an
+      // apparition across the red field rather than a mild exposure change.
+      if(li==uLocalShadowIndex)localShadow=mix(.015,1.0,clamp((localShadow-.20)/.80,0.0,1.0));
       float architecturalShadow=architecturalLightVisibility(posM,uLocalLightPos[li].xyz);
-      localLight+=uLocalLightColor[li].rgb*uLocalLightColor[li].w*attenuation*localLambert*localShadow*architecturalShadow;
+      architecturalShadow=mix(architecturalShadow,1.0,clamp(uLocalLightPenetration[li],0.0,1.0));
+      vec3 contribution=uLocalLightColor[li].rgb*uLocalLightColor[li].w*attenuation*localLambert*localShadow*architecturalShadow;
+      localLight+=contribution;
+      emergencyLight+=contribution*clamp(uLocalLightEmergency[li],0.0,1.0);
     }
     // The unlit floor is deliberately lifted. With the torch off — or taken — a
     // dark-adapted eye still resolves a room: you are not blind, you simply
@@ -1507,6 +1738,13 @@ void main(){
     float ambientFall = 1.0 / (1.0 + dist / max(0.75, ambientReach));
     float ambient = uAmbientIntensity * place * mix(1.0,1.12,uLight)
                   * mix(uAmbientFloor, 1.0, ambientFall * ambientFall);
+    // n.y = +1 is a floor and gets least (it is the source, not the receiver);
+    // 0 is a wall; -1 is a ceiling and gets all of it. Gained by the torch so the
+    // return trip grows when the player actually lights the floor.
+    float bounceFacing = mix(0.22, 1.0, clamp(-n.y * 0.5 + 0.5, 0.0, 1.0));
+    float bounce = uBounceIntensity * place * bounceFacing
+                 * mix(uAmbientFloor, 1.0, ambientFall)
+                 * (1.0 + lamp * uBounceLampGain);
 
     if(surf == 4){
       vec2 wuv=waterUv(pos.xz);
@@ -1550,11 +1788,17 @@ void main(){
       float spec = specStr * pow(clamp(lambert, 0.0, 1.0), mix(6.0, 48.0, gloss)) * lamp;
 
       float emis = (surf == 2) ? 0.55 : (surf == 1 ? 0.30 : 0.12);
-      col = albedo * (uAmbientColor*ambient*surfaceOcclusion + uTorchColor*lamp + localLight + gBoilGlow)
+      vec3 incident = uAmbientColor*ambient*surfaceOcclusion + uBounceColor*bounce*surfaceOcclusion + uTorchColor*lamp + localLight + gBoilGlow;
+      col = albedo * incident
           + uTorchColor * vec3(0.55, 0.60, 0.62) * spec
           + rim * tint * (0.22 + uAudio * 0.45) * emis
           + glow * emis
           - seam * 0.30 * (uAmbientColor*ambient + uTorchColor*lamp);
+      // Measured against the light that arrived, not against the shaded pixel:
+      // a red wall reflects red whatever lit it, and albedo must not be able to
+      // buy the circuit's colour.
+      col = reserveEmergencyRed(col, dot(emergencyLight, vec3(.2126,.7152,.0722))
+        / max(dot(incident, vec3(.2126,.7152,.0722)), 1e-4));
 
       // THE GROUND UNDER OPEN SKY REFLECTS THE SKY.
       //
@@ -1597,9 +1841,17 @@ void main(){
         float fres = pow(1.0 - clamp(dot(-vDir, n), 0.0, 1.0), 4.0);
         // Rain roughens it: a smear, not a mirror, breaking up where the water
         // is moving. Tarmac has been rained on all night; a wall has not.
-        float ripple = 0.72 + 0.28 * vnoise(posM.xz * 0.9 + vec2(0.0, uTime * 0.55), 1.0, 13.0);
-        float wetness = (hitMat == MAT_TARMAC) ? (surf == 2 ? 1.0 : 0.30) : 0.22;
+        float impacts=(isRainGroundMat(hitMat)&&surf==2)
+          ?rainImpactRings(posM.xz)*uOpticalEffects
+          :0.0;
+        float ripple = 0.72 + 0.28 * vnoise(posM.xz * 0.9 + vec2(0.0, uTime * 0.55), 1.0, 13.0)
+                     + impacts*.26;
+        float wetness = isRainGroundMat(hitMat) ? (surf == 2 ? 1.0 : 0.30) : 0.22;
         col += nightSky(refl) * (0.05 + 0.60 * fres) * wetness * ripple;
+        // An impact only catches enough deck light to articulate the ring. It
+        // never becomes a glowing decal, and reduced/off optical effects leave
+        // the wet material and its static reflection intact.
+        col += vec3(.20,.27,.38)*impacts*(.30+.70*fres);
       }
       // HUSH does not carry a lamp. Its playable room-read is a low, static
       // acoustic relief: boundaries and material seams gather density while
@@ -1664,6 +1916,47 @@ void main(){
       float archView = zView;
       if(propView < archView + 0.015){ col = prop.rgb; zView = propView; }
     }
+  }
+
+  // Exterior humidity is a shallow, low-contrast veil in the distance, not the
+  // exploration fog deliberately excluded from the interior. It thickens at
+  // grazing angles and leaves nearby doors, kerbs and props crisp.
+  if(cameraInWeather){
+    float mug=smoothstep(8.0,34.0,zView)*(1.0-smoothstep(.28,.72,abs(rd.y)));
+    col=mix(col,vec3(.085,.108,.145),mug*.065);
+  }
+
+  // THE RAIN CROSSES THE WORLD.
+  //
+  // Compose after the prop pass so the van, fence, lamps and conservatory all
+  // receive the same weather as the ray-marched architecture. Each sheet is
+  // admitted only when its authored depth is in front of zView, so a nearby
+  // wall occludes rain while a distant elevation has real air moving across it.
+  // Keeping this before HUSH means the absence can still consume the weather.
+  // The indoor drive stands in for the sky gate, so a space with no sky over it
+  // can still be rained through when something has asked for it.
+  float rainGain=uRainAmount*(cameraInWeather?1.0:clamp(uRainIndoor,0.0,1.0));
+  if((cameraInWeather||uRainIndoor>.0)&&uOpticalEffects>.0&&rainGain>.0){
+    float rain=rainVolume(ro,rd,zView)*rainGain;
+    // A DROP HAS TO REACH SOLID, OR IT IS NOT A LINE.
+    //
+    // This used to add vec3(.30,.33,.40)*rain*backlight, which is right for a
+    // continuous-tone renderer and useless downstream of a one-bit encode.
+    // Measured in the yard: the raw pass shows the streaks plainly, and the
+    // encoded frame shows NONE of them at any gain. The sky is already a ~50%
+    // dense dither, and rain only lifted it from .147 to ~.26 luminance — which
+    // the halftone renders as a slightly denser patch of the same field, never as
+    // a stroke. Worse, the old backlight term scaled rain UP where the picture
+    // was already bright and DOWN over the dark ground where a streak had room to
+    // show, so it was loudest exactly where it could not be seen.
+    //
+    // So a drop is pushed clear of the white point instead of being added to what
+    // is behind it. It survives the encode as a solid mark on whatever field it
+    // crosses, which is the only way one bit can draw a line.
+    col=mix(col,vec3(.78,.83,.90),clamp(rain,0.0,1.0)*.84);
+    // A lit torch catches only the closest sheet, kept below the authored
+    // weather colour so turning it on does not turn the yard into white noise.
+    col+=uTorchColor*rain*uLight*.018;
   }
 
   // The HUSH is not a dark decal on the walls; it is a volume in which light
@@ -1985,13 +2278,17 @@ export function r3dSetFear(v) { fearLevel = Math.max(0, Math.min(1, v || 0)); }
 
 export function r3dSetLocalLights(lights=[]){
   P3.setPracticalLightFrame(lights);
-  localLightPositions.fill(0);localLightColors.fill(0);
+  localLightPositions.fill(0);localLightColors.fill(0);localLightPenetrations.fill(0);localLightEmergency.fill(0);
   localShadowIndex=-1;localShadowLight=null;
   localLightCount=Math.min(MAX_LOCAL_LIGHTS,Array.isArray(lights)?lights.length:0);
   for(let i=0;i<localLightCount;i++){
     const light=lights[i]||{},p=i*4,color=light.color||[1,.78,.52];
     localLightPositions[p]=Number(light.x)||0;localLightPositions[p+1]=Number(light.y)||0;localLightPositions[p+2]=Number(light.z)||0;localLightPositions[p+3]=Math.max(.01,Number(light.radius)||4);
     localLightColors[p]=Number(color[0])||0;localLightColors[p+1]=Number(color[1])||0;localLightColors[p+2]=Number(color[2])||0;localLightColors[p+3]=Math.max(0,Number(light.intensity)||0);
+    localLightPenetrations[i]=Math.max(0,Math.min(1,Number(light.penetration)||0));
+    // Authored kind, never inferred from the colour: a warm lamp and the
+    // emergency circuit are both red-dominant and only the rig knows which.
+    localLightEmergency[i]=light.kind===LIGHT_KIND.EMERGENCY?1:0;
     if(localShadowIndex<0&&light.castsShadow){
       localShadowIndex=i;
       localShadowLight={x:localLightPositions[p],y:localLightPositions[p+1],z:localLightPositions[p+2],shadowYaw:Number.isFinite(light.shadowYaw)?light.shadowYaw:0,shadowPitch:Number.isFinite(light.shadowPitch)?light.shadowPitch:0};
@@ -2015,8 +2312,15 @@ export function r3dSetLightingContext(context={}){
   const scale=Number(context.whitePointScale);
   lightingWhitePointScale=Number.isFinite(scale)&&scale>0?Math.max(.05,Math.min(4,scale)):1;
   lightingScreenId=isScreen(context.screen)?context.screen:null;
+  const bounceColor=Array.isArray(context.bounce?.color)?context.bounce.color:color;
+  lightingBounceColor=new Float32Array([
+    Math.max(0,Number(bounceColor[0])||0),Math.max(0,Number(bounceColor[1])||0),Math.max(0,Number(bounceColor[2])||0),
+  ]);
+  const bounce=Number(context.bounce?.intensity);
+  lightingBounceIntensity=Number.isFinite(bounce)?Math.max(0,Math.min(.6,bounce)):0;
   return{ambientColor:[...lightingAmbientColor],ambientIntensity:lightingAmbientIntensity,
-    whitePointScale:lightingWhitePointScale,screen:lightingScreenId};
+    whitePointScale:lightingWhitePointScale,screen:lightingScreenId,
+    bounceIntensity:lightingBounceIntensity};
 }
 let lookFrom = getLookProfile('explore');
 let lookTarget = lookFrom;
@@ -2548,6 +2852,16 @@ export function r3dWhitePointScale(){return whitePointScaleOverride??lightingWhi
 // Forces the scale regardless of zone, so the ceiling can be SWEPT against
 // measured ink instead of derived from an authored ambient that turns out not to
 // predict screen luminance. null hands the room back its own.
+// The bounce A/B. 0 is the flat ambient every room shared, which is the black
+// ceiling; lampGain is how much lighting the floor lights what is over it.
+export function r3dSetBounceAmount(v=1){bounceAmount=Math.max(0,Math.min(6,Number(v)??1));return bounceAmount;}
+export function r3dSetBounceLampGain(v=2.4){bounceLampGain=Math.max(0,Math.min(12,Number(v)??2.4));return bounceLampGain;}
+export function r3dBounce(){return{amount:bounceAmount,lampGain:bounceLampGain,
+  zoneIntensity:lightingBounceIntensity,effective:lightingBounceIntensity*bounceAmount};}
+export function r3dSetRainAmount(v=1){rainAmount=Math.max(0,Math.min(8,Number(v)??1));return rainAmount;}
+export function r3dRainAmount(){return rainAmount;}
+export function r3dSetIndoorRain(v=0){indoorRain=Math.max(0,Math.min(1,Number(v)||0));return indoorRain;}
+export function r3dIndoorRain(){return indoorRain;}
 // The screen A/B. null hands it back to the room, then to the look profile.
 export function r3dSetScreenOverride(id=null){
   screenOverrideId=isScreen(id)?id:null;
@@ -3144,6 +3458,7 @@ export function r3dInit(mapEl) {
     .then(()=>P3.addPropPack(assetUrl('assets/source-structures.glb')))
     .then(()=>P3.addPropPack(assetUrl('assets/conservatory-doors.glb')))
     .then(()=>P3.addPropPack(assetUrl('assets/tuning-fork.glb')))
+    .then(()=>P3.addPropPack(assetUrl('assets/conservatory-main-stair.glb')))
     .catch((err)=>console.warn('prop pack unavailable',err));
   P3.loadPortraitAtlas(assetUrl('assets/portraits/portrait-atlas.webp'))
     .catch((err)=>console.warn('portrait atlas unavailable',err));
@@ -3345,6 +3660,7 @@ export function r3dSetSourceScene(scene = {}) {
 }
 export function r3dSetHushProp(id) { P3.setHushProp(id); }
 export function r3dPropStats() { return P3.propPackStats(); }
+export function r3dPropInstanceIds() { return P3.propInstanceIds(); }
 
 // Rasterise only exact corpus lines into the material atlas. The texture is a
 // data source for albedo, glyph-edge normals and roughness; source materials do
@@ -3595,7 +3911,7 @@ export function r3dFrame(state) {
       camX: camX * CELL, camY: camY * CELL, camZ: camZ * CELL,
       yaw: worldYaw, pitch, light: 1, fogTexture, fogOrigin, fogSize: FOG_TEX,
       cellMeters: CELL, zoneTints: ZONE_TINTS,
-      localLightCount: 0, localLightPositions, localLightColors,
+      localLightCount: 0, localLightPositions, localLightColors, localLightPenetrations, localLightEmergency,
       localShadowIndex:-1,shadowLight:null,
       torch:{power:1,color:[1,1,1],reach:1,coneInner:.88,coneOuter:.94,spill:.05},
       ambientColor:lightingAmbientColor,ambientIntensity:lightingAmbientIntensity,
@@ -3635,7 +3951,7 @@ export function r3dFrame(state) {
     camX: camX * CELL, camY: camY * CELL, camZ: camZ * CELL,
     yaw: worldYaw, pitch, light: torchPower, fogTexture, fogOrigin, fogSize:FOG_TEX,
     cellMeters:CELL, zoneTints:ZONE_TINTS,
-    localLightCount,localLightPositions,localLightColors,
+    localLightCount,localLightPositions,localLightColors,localLightPenetrations,localLightEmergency,
     localShadowIndex,shadowLight:localShadowLight,
     torch:{power:torchPower,color:torchColor,reach:torchReach,coneInner:torchConeInner,coneOuter:torchConeOuter,spill:torchSpill},
     ambientColor:frameAmbientColor,ambientIntensity:frameAmbientIntensity,
@@ -3672,6 +3988,11 @@ export function r3dFrame(state) {
   gl.uniform1f(U('uAmbientIntensity'),frameAmbientIntensity);
   gl.uniform1f(U('uAmbientFloor'),ambientFloor);
   gl.uniform1f(U('uAmbientPlace'),ambientPlace);
+  gl.uniform3fv(U('uBounceColor'),lightingBounceColor);
+  gl.uniform1f(U('uBounceIntensity'),lightingBounceIntensity*bounceAmount);
+  gl.uniform1f(U('uBounceLampGain'),bounceLampGain);
+  gl.uniform1f(U('uRainAmount'),rainAmount);
+  gl.uniform1f(U('uRainIndoor'),indoorRain);
   gl.uniform1f(U('uNightSeed'),nightSeed);
   gl.uniform1f(U('uHushSense'),hushSense);
   gl.uniform1f(U('uOpticalEffects'),opticalEffects);
@@ -3680,6 +4001,8 @@ export function r3dFrame(state) {
   gl.uniform1i(U('uLocalShadowIndex'),localShadowIndex);
   gl.uniform4fv(U('uLocalLightPos[0]'),localLightPositions);
   gl.uniform4fv(U('uLocalLightColor[0]'),localLightColors);
+  gl.uniform1fv(U('uLocalLightPenetration[0]'),localLightPenetrations);
+  gl.uniform1fv(U('uLocalLightEmergency[0]'),localLightEmergency);
   gl.uniform1f(U('uUsePlan'), state.plan ? 1 : 0);
   if (state.plan && planTexture) {
     gl.activeTexture(gl.TEXTURE2);

@@ -60,9 +60,9 @@ function mesh(name,parts){
   meshes.push({name,primitives,extras:{triangles:meshTriangles}});nodes.push({name,mesh:meshes.length-1});return meshTriangles;
 }
 function frame(name,width,height,mat=MAT.dark,post=.08,depth=.12){mesh(name,[box(-width/2-post/2,height/2,0,post,height,depth,mat),box(width/2+post/2,height/2,0,post,height,depth,mat),box(0,height+post/2,0,width+post*2,post,depth,mat)]);}
-frame('door_frame_pair',2.06,2.40,MAT.dark,.10,.15);frame('door_frame_single_steel',1.02,2.16,MAT.green,.07,.11);frame('door_frame_single_oak',1.0,2.20,MAT.oak,.075,.12);frame('door_frame_tower',.94,2.0,MAT.oak,.08,.13);
+frame('door_frame_pair',2.06,2.40,MAT.dark,.10,.15);frame('door_frame_hall',2.06,2.40,MAT.oak,.15,.20);frame('door_frame_single_steel',1.02,2.16,MAT.green,.07,.11);frame('door_frame_single_oak',1.0,2.20,MAT.oak,.075,.12);frame('door_frame_tower',.94,2.0,MAT.oak,.08,.13);
 mesh('door_head_infill',[box(0,2.78,0,1.16,1.16,.16,MAT.stone)]);
-mesh('door_head_overpanel',[box(0,2.90,0,2.25,.90,.14,MAT.dark)]);
+mesh('door_head_overpanel',[box(0,2.90,0,2.25,.90,.14,MAT.oak),box(0,2.90,-.085,1.92,.11,.045,MAT.brass)]);
 mesh('door_head_tympanum',[box(0,2.92,0,2.20,.96,.18,MAT.dark),box(0,3.22,-.10,1.1,.10,.10,MAT.iron)]);
 mesh('door_head_tower',[box(0,2.68,0,1.12,1.45,.28,MAT.stone)]);
 // The goods opening is three metres wide, so it needs a head and a frame of its
@@ -81,7 +81,14 @@ leaf('door_leaf_practice',.95,2.15,.065,MAT.oak,[box(.475,.22,-.05,.87,.28,.025,
 leaf('door_leaf_staff',.95,2.15,.05,MAT.oak,[box(.475,1.55,-.042,.76,.86,.028,MAT.glass),box(.84,1.05,-.055,.13,.04,.04,MAT.brass)]);
 leaf('door_leaf_pool',1.05,2.15,.05,MAT.green,[box(.525,1.55,-.042,.30,.86,.028,MAT.glass),box(.525,.20,-.043,.97,.26,.026,MAT.kick)]);
 leaf('door_leaf_public',.88,2.35,.055,MAT.dark,[box(.44,1.49,-.047,.68,1.30,.025,MAT.glass),box(.44,.20,-.047,.80,.27,.025,MAT.brass),box(.76,1.08,-.06,.14,.04,.04,MAT.brass)]);
-leaf('door_leaf_hall',1.02,2.35,.08,MAT.dark,[box(.51,.20,-.058,.94,.28,.028,MAT.kick),box(.90,1.08,-.07,.14,.04,.05,MAT.brass),box(.025,1.175,0,.035,2.25,.10,MAT.rubber)]);
+leaf('door_leaf_hall',1.02,2.35,.08,MAT.oak,[
+  box(.51,.20,-.058,.94,.28,.028,MAT.kick),
+  box(.51,.73,-.058,.76,.58,.030,MAT.dark),
+  box(.51,1.62,-.058,.76,.76,.030,MAT.dark),
+  box(.51,1.12,-.076,.82,.055,.045,MAT.brass),
+  box(.90,1.08,-.082,.14,.05,.055,MAT.brass),
+  box(.025,1.175,0,.035,2.25,.10,MAT.rubber),
+]);
 leaf('door_leaf_chapel',.98,2.40,.075,MAT.dark,[box(.49,.56,-.057,.76,.76,.025,MAT.dark),box(.49,1.55,-.057,.76,.80,.025,MAT.dark),box(.86,1.12,-.07,.16,.045,.045,MAT.iron)]);
 leaf('door_leaf_tower',.90,1.95,.055,MAT.oak,[box(.45,.48,-.05,.82,.045,.035,MAT.iron),box(.45,1.00,-.05,.82,.045,.035,MAT.iron),box(.45,1.52,-.05,.82,.045,.035,MAT.iron),box(.78,.96,-.06,.14,.06,.045,MAT.iron)]);
 // THE GOODS DOORS. A metre and a half of steel per leaf, ribbed, with a kick

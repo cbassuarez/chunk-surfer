@@ -11,14 +11,18 @@ import {
 
 FP.compile(conservatory.levels,{
   width:conservatory.width,height:conservatory.height,widenCorridors:conservatory.widenCorridors,
-  connectors:conservatory.connectors,doors:conservatory.doors,
+  connectors:conservatory.connectors,edgePortals:conservatory.edgePortals,doors:conservatory.doors,
 });
 const doors=FP.doorState();
 assert.equal(doors.length,CONSERVATORY_DOORS.length,'the compiled door set exactly matches the authored schedule');
 assert.equal(new Set(doors.map((door)=>door.id)).size,doors.length,'all door IDs are stable and unique');
 assert.ok(doors.every((door)=>door.archetype!=='legacy'),'every portal has exactly one explicit definition');
-assert.equal(doors.filter((door)=>door.leafCount===2).length,4,'only the entrance, hall vestibule, chapel and the bay goods doors are pairs');
-assert.deepEqual(doors.filter((door)=>door.leafCount===2).map((door)=>door.id).sort(),['bay-goods-pair','chapel-c17','front-main','hall-vestibule']);
+assert.equal(doors.filter((door)=>door.leafCount===2).length,5,'public entrance, baths, hall, chapel and bay goods doors are pairs');
+assert.deepEqual(doors.filter((door)=>door.leafCount===2).map((door)=>door.id).sort(),['bay-goods-pair','chapel-c17','front-main','hall-vestibule','pool-lobby']);
+const poolDoor=doors.find((door)=>door.id==='pool-lobby');
+assert.equal(poolDoor.archetype,DOOR_ARCHETYPE.POOL_GLAZED_PAIR);
+assert.equal(poolDoor.aperture.width,2,'the municipal baths admits a school group through a real two-metre pair');
+assert.deepEqual(poolDoor.activeLeaves,[0,1]);
 // The goods doors are the widest opening in the building and the only one whose
 // key is never issued: barred from the inside, in a bay with no lorry.
 {
@@ -32,6 +36,8 @@ assert.deepEqual(doors.filter((door)=>door.leafCount===2).map((door)=>door.id).s
 }
 assert.ok(doors.filter((door)=>door.leafCount===1).every((door)=>door.aperture.width>=.9&&door.aperture.width<=1.05),'single apertures do not infer leaves from portal cell count');
 assert.deepEqual(doors.find((door)=>door.id==='chapel-c17').activeLeaves,[1],'C-17 releases only the right leaf');
+assert.deepEqual(doors.find((door)=>door.id==='hall-vestibule').renderGroups,['ground','hall'],'the hall pair is visible from both sides of the render-group seam');
+assert.equal(doors.find((door)=>door.id==='front-main').keyId,'closure-order','the closed public entrance is a truthful locked threshold, not an open doorway into missing space');
 for(const id of ['tower-hatch','bell-chamber-entry','organ-loft-service','organ-loft-nave'])assert.equal(doors.find((door)=>door.id===id).archetype,DOOR_ARCHETYPE.TOWER_SERVICE_SINGLE);
 for(const door of doors.filter((entry)=>entry.id.startsWith('academic-')))assert.equal(door.archetype,DOOR_ARCHETYPE.ACADEMIC_WIRED_GLASS);
 assert.equal(FP.sealedDoorways().length,1,'the x glyph is masonry with a surviving frame scar');
@@ -46,11 +52,12 @@ for(const door of doors){
 
 // Legacy coordinate IDs migrate into stable names without losing endpoint.
 FP.resetDoors();
-FP.loadDoorState({open:['186,116','129,113','51,25']});
+FP.loadDoorState({open:['186,116','129,113','51,25','169,55']});
 let migrated=Object.fromEntries(FP.doorState().map((door)=>[door.id,door]));
 assert.equal(migrated['chapel-c17'].state,DOOR_STATE.OPEN);
 assert.equal(migrated['practice-west-1'].state,DOOR_STATE.OPEN);
 assert.equal(migrated['practice-west-1'].wedge,true);
+assert.equal(migrated['pool-lobby'].state,DOOR_STATE.OPEN,'the former single-leaf pool coordinate migrates to the glazed pair');
 // '51,25' is the studio-to-studio door in the dance wing; it was called
 // b3-plant-service back when the plant room was on the other side of it.
 assert.equal(migrated['b3-b2-service'].state,DOOR_STATE.OPEN);
@@ -122,7 +129,7 @@ const scar=FP.sealedDoorways().find((entry)=>entry.cx===grey.cx&&entry.cy===grey
 assert.ok(scar,'the scar stands exactly where the door stood');
 // Indistinguishable from a doorway that was bricked up before he was born: the
 // authored 'x' glyph on the concert hall's staff door is the reference.
-const authoredScar=FP.sealedDoorways().find((entry)=>entry.id==='sealed:195,27');
+const authoredScar=FP.sealedDoorways().find((entry)=>entry.id==='sealed:195,33');
 const authoredCell={x:Math.round(authoredScar.cx),y:Math.round(authoredScar.cy)};
 for(const {x,y} of grey.cells){
   assert.ok(FP.isSolid(x,y),'the throat is masonry now');
@@ -139,7 +146,7 @@ assert.ok(!('dock-grey-exterior' in (FP.saveDoorState().states||{})),'a retired 
 assert.equal(FP.retireDoor('dock-grey-exterior'),false,'retiring it twice is a no-op');
 FP.compile(conservatory.levels,{
   width:conservatory.width,height:conservatory.height,widenCorridors:conservatory.widenCorridors,
-  connectors:conservatory.connectors,doors:conservatory.doors,
+  connectors:conservatory.connectors,edgePortals:conservatory.edgePortals,doors:conservatory.doors,
 });
 assert.equal(FP.doorState().length,CONSERVATORY_DOORS.length,'a fresh compile brings it back (the save flag is what keeps it gone)');
 

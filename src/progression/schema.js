@@ -21,6 +21,12 @@ import {
 import { normalizeReturnHistory } from './return-history.js';
 import { normalizeInterferenceRecord } from '../game/interference-case.js';
 import { freshReferenceExposure, normalizeReferenceExposure } from '../game/reference-exposure.js';
+import {
+  DEFAULT_PSYCH_PROFILE_SETTINGS,
+  freshPsychProfileState,
+  normalizePsychProfileSettings,
+  normalizePsychProfileState,
+} from '../game/psychological-profile.js';
 
 export const SAVE_VERSION = 4;
 export const META_VERSION = 2;
@@ -85,6 +91,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
     localSpeech: false,
     intensity: 'standard',
   },
+  psychProfile: DEFAULT_PSYCH_PROFILE_SETTINGS,
   controller: DEFAULT_CONTROLLER_SETTINGS,
   customShiftRules: null,
 });
@@ -222,6 +229,7 @@ export function freshMeta() {
     // and a version bump means accept again.
     eulaAccepted: '',
     eulaAcceptedAt: 0,
+    psychProfile: freshPsychProfileState(),
     // A semantic payload marker, bumped only when the offline PyTorch/model
     // bundle changes. This drives the one-time preparation explanation without
     // repeating it for ordinary saves or every application launch.
@@ -293,6 +301,7 @@ export function normalizeSettings(value) {
       localSpeech: false,
       intensity,
     },
+    psychProfile: normalizePsychProfileSettings(source.psychProfile, source),
     controller,
     micInput: normalizeMicInputSettings(source.micInput),
   };
@@ -453,6 +462,7 @@ export function normalizeMeta(value) {
     leftMidRun: !!source.leftMidRun,
     eulaAccepted: typeof source.eulaAccepted === 'string' ? source.eulaAccepted.slice(0, 40) : '',
     eulaAcceptedAt: Math.max(0, Math.floor(finiteOr(source.eulaAcceptedAt, 0))),
+    psychProfile: normalizePsychProfileState(source.psychProfile),
     lensRuntimeReady: typeof source.lensRuntimeReady === 'string' ? source.lensRuntimeReady.slice(0, 80) : '',
     lensRuntimeReadyAt: Math.max(0, Math.floor(finiteOr(source.lensRuntimeReadyAt, 0))),
     runs: Math.max(0, Math.floor(finiteOr(source.runs, 0))),

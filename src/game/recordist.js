@@ -95,6 +95,7 @@ const state = {
   lastNoiseAt: { x: 0, y: 0, t: 0 },   // where the presence goes looking
   slow: false,          // Shift held
   takes: [],            // completed room ids
+  places: {},           // roomId -> where in that room it was rolled
   contaminated: [],     // accepted rooms whose most recent take carried mains hum
   assistPause: 0,       // Story mode can hold the clock for small handling noise
 };
@@ -314,12 +315,23 @@ export function injure() {
 }
 
 export function setSlow(on) { state.slow = !!on; }
-export function addTake(roomId, { contaminated = false } = {}) {
+// WHERE IN THE ROOM IT WAS ROLLED.
+//
+// Only the concert hall has anywhere else to stand — the orchestra floor, the
+// stage, and two balconies, all one zone and all `amplifications`. Everywhere
+// else the room IS the position, so the place is simply null and nothing
+// downstream has to special-case a room with one floor in it.
+export function addTake(roomId, { contaminated = false, place = null } = {}) {
   if (!state.takes.includes(roomId)) state.takes.push(roomId);
   const dirty = new Set(state.contaminated);
   if (contaminated) dirty.add(roomId); else dirty.delete(roomId);
   state.contaminated = [...dirty];
+  // First clean take of a room owns its place. A tape does not re-roll, and
+  // sealTake has already chosen the guest by the time this is called.
+  if (place && !state.places[roomId]) state.places[roomId] = place;
 }
+export function takePlace(roomId) { return state.places[roomId] || null; }
+export function takePlaces() { return { ...state.places }; }
 export function hasTake(roomId) { return state.takes.includes(roomId); }
 export function takeIsContaminated(roomId) { return state.contaminated.includes(roomId); }
 export function contaminatedTakes() { return [...state.contaminated]; }
@@ -329,6 +341,7 @@ export function setTake(roomId, present = true) {
   else {
     state.takes = state.takes.filter((id) => id !== roomId);
     state.contaminated = state.contaminated.filter((id) => id !== roomId);
+    delete state.places[roomId];
   }
   return hasTake(roomId) === !!present;
 }
@@ -338,11 +351,14 @@ export function loadRecState(saved = {}) {
     injuries: saved.injuries || 0,
     takes: saved.takes || [],
     contaminated: [...new Set((saved.contaminated || []).filter((id) => (saved.takes || []).includes(id)))],
+    // Same hygiene as contaminated: a place for a take that is not in the list
+    // is a stale save, not a fact about tonight.
+    places: Object.fromEntries(Object.entries(saved.places || {}).filter(([id]) => (saved.takes || []).includes(id))),
     assistPause: 0,
     battery: saved.battery == null ? 1 : saved.battery,
     worldNoise: 0,
   });
 }
 export function saveRecState() {
-  return { injuries: state.injuries, takes: state.takes, contaminated: state.contaminated, battery: state.battery };
+  return { injuries: state.injuries, takes: state.takes, contaminated: state.contaminated, places: { ...state.places }, battery: state.battery };
 }

@@ -125,9 +125,11 @@ export function freshPracticeHauntState(seed = 0) {
 // still free that will take it, and the chairs fall over what is left. Doing it
 // in that order means the forbidden room does not always end up trading with the
 // same haunt. With eight rooms and one forbidden room this always fits.
-export function assignPracticeHaunts(seed = 0) {
+export function assignPracticeHaunts(seed = 0, { adaptiveBand = 0 } = {}) {
   const order = [...PRACTICE_ROOM_IDS];
-  let s = scramble(Number(seed) >>> 0);
+  const band = Math.max(-1, Math.min(1, Math.sign(Number(adaptiveBand) || 0)));
+  const profileSalt = band < 0 ? 0x2f6e2b1 : band > 0 ? 0x6a09e667 : 0;
+  let s = scramble((Number(seed) >>> 0) ^ profileSalt);
   for (let i = order.length - 1; i > 0; i--) {
     s = nextSeed(s);
     const j = s % (i + 1);
@@ -135,7 +137,8 @@ export function assignPracticeHaunts(seed = 0) {
   }
   const assignment = {};
   const taken = new Set();
-  for (const haunt of EXCLUSIVE_HAUNTS) {
+  const exclusiveOrder = band < 0 ? [...EXCLUSIVE_HAUNTS].reverse() : EXCLUSIVE_HAUNTS;
+  for (const haunt of exclusiveOrder) {
     const room = order.find((id) => !taken.has(id) && !HAUNT_FORBIDDEN_ROOMS.includes(id));
     if (!room) continue;
     assignment[room] = haunt;

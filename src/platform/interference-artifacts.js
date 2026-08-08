@@ -21,7 +21,16 @@ async function tauriFs() {
   try { return await import('@tauri-apps/plugin-fs'); } catch (_) { return null; }
 }
 
-export async function loadOrCreateInterferenceKey({ fsApi = null, cryptoApi = globalThis.crypto } = {}) {
+export async function loadOrCreateInterferenceKey({
+  fsApi = null,
+  cryptoApi = globalThis.crypto,
+  persist = true,
+} = {}) {
+  if (!persist) {
+    const ephemeral = new Uint8Array(32);
+    cryptoApi?.getRandomValues?.(ephemeral);
+    return ephemeral;
+  }
   const fs = fsApi || await tauriFs();
   if (!fs || !cryptoApi?.getRandomValues) {
     const ephemeral = new Uint8Array(32);
@@ -140,6 +149,14 @@ export async function revealInterferenceArtifact(caseId) {
   if (!paths?.appData) return { ok: false, unsupported: true };
   const separator = paths.appData.endsWith('/') || paths.appData.endsWith('\\') ? '' : '/';
   return revealPath(`${paths.appData}${separator}${ROOT}/${safeId}/index.html`);
+}
+
+export async function revealInterferenceFolder() {
+  if (!isTauriRuntime()) return { ok: false, unsupported: true };
+  const paths = await resolveDesktopPaths();
+  if (!paths?.appData) return { ok: false, unsupported: true };
+  const separator = paths.appData.endsWith('/') || paths.appData.endsWith('\\') ? '' : '/';
+  return revealPath(`${paths.appData}${separator}${ROOT}`);
 }
 
 const CASE_ID = (value) => /^FIELD-[0-9A-F]{8}$/u.test(String(value || '')) ? String(value) : null;

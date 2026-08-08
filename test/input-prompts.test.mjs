@@ -28,13 +28,14 @@ test('input prompts swap between keyboard and active controller labels', () => {
   assert.equal(inputPrompt('allow'), '[Y]');
 });
 
-test('mic permission question leads the no-recording assurance', () => {
+test('omnibus profile discloses microphone handling before the on/off choice', () => {
   const source = readFileSync('src/game/warning.js', 'utf8');
-  const questionAt = source.indexOf('Do you want to allow microphone access?');
-  const privacyAt = source.indexOf('Nothing is ever recorded. Nothing is uploaded.');
-  assert.ok(questionAt >= 0, 'missing explicit mic permission question');
-  assert.ok(privacyAt >= 0, 'missing no-recording assurance');
-  assert.ok(questionAt < privacyAt, 'permission question should appear before privacy assurance');
+  const disclosureAt = source.indexOf('Room-microphone loudness during declared authored moments');
+  const privacyAt = source.indexOf('Raw audio is never stored.');
+  const choiceAt = source.indexOf('Choose PROFILE ON or PROFILE OFF.');
+  assert.ok(disclosureAt >= 0, 'missing microphone disclosure');
+  assert.ok(privacyAt >= 0, 'missing raw-audio assurance');
+  assert.ok(choiceAt > privacyAt && privacyAt > disclosureAt, 'disclosure and assurance must precede the choice');
   assert.doesNotMatch(source, /\[Y\s*\/\s*A\]/);
 });
 

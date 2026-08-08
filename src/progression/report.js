@@ -71,6 +71,11 @@ export function buildRunSummary({ endingId, save, meta, authoritative = {}, now 
       aborted: Number(ledger.takes?.aborted) || 0,
       rooms: completedRooms,
       contaminated: contaminatedRooms,
+      // Where in the room each one was rolled. Only the concert hall has more
+      // than one answer; every other room reports nothing rather than a place
+      // that could only ever have one value.
+      places: Object.fromEntries(Object.entries(rec.places || ledger.takes?.places || {})
+        .filter(([roomId, place]) => place && completedRooms.includes(roomId))),
     },
     injuries,
     battles: clone(ledger.battles || { started: 0, won: 0, lost: 0, firstPassWon: 0, results: {} }),

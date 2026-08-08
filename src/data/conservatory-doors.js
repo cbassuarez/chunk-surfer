@@ -10,6 +10,7 @@ export const DOOR_ARCHETYPE = Object.freeze({
   SERVICE_FIRE_SINGLE: 'service-fire-single',
   STAFF_HALF_GLAZED: 'staff-half-glazed',
   POOL_FIRE_SINGLE: 'pool-fire-single',
+  POOL_GLAZED_PAIR: 'pool-glazed-pair',
   TOWER_SERVICE_SINGLE: 'tower-service-single',
   ACADEMIC_WIRED_GLASS: 'academic-wired-glass',
 });
@@ -36,7 +37,7 @@ export const DOOR_ARCHETYPES = Object.freeze({
     leafCount: 2, activeLeaves: [0], leaf: { width: 1.02, height: 2.35, depth: .08 },
     aperture: { width: 2.10, height: 3.4 }, head: 'acoustic-overpanel',
     construction: 'dark-oak-acoustic', openSeconds: .85, closeSeconds: 1.25,
-    closer: 'heavy', acousticLossDb: 18, mesh: 'door_leaf_hall', frameMesh: 'door_frame_pair', headMesh: 'door_head_overpanel',
+    closer: 'heavy', acousticLossDb: 18, mesh: 'door_leaf_hall', frameMesh: 'door_frame_hall', headMesh: 'door_head_overpanel',
   }),
   [DOOR_ARCHETYPE.CHAPEL_OAK_PAIR]: Object.freeze({
     leafCount: 2, activeLeaves: [1], leaf: { width: .98, height: 2.40, depth: .075 },
@@ -68,6 +69,12 @@ export const DOOR_ARCHETYPES = Object.freeze({
     construction: 'galvanised-wired-glass', openSeconds: .62, closeSeconds: .82,
     closer: 'standard', acousticLossDb: 9, mesh: 'door_leaf_pool', frameMesh: 'door_frame_single_steel', headMesh: 'door_head_infill',
   }),
+  [DOOR_ARCHETYPE.POOL_GLAZED_PAIR]: Object.freeze({
+    leafCount: 2, activeLeaves: [0, 1], leaf: { width: .91, height: 2.28, depth: .05 },
+    aperture: { width: 2.0, height: 3.4 }, head: 'glazed-transom',
+    construction: 'galvanised-wired-glass', openSeconds: .76, closeSeconds: 1.05,
+    closer: 'paired', acousticLossDb: 8, mesh: 'door_leaf_pool', frameMesh: 'door_frame_pair', headMesh: 'door_head_transom',
+  }),
   [DOOR_ARCHETYPE.TOWER_SERVICE_SINGLE]: Object.freeze({
     leafCount: 1, activeLeaves: [0], leaf: { width: .90, height: 1.95, depth: .055 },
     aperture: { width: 1, height: 3.4 }, head: 'low-stone-lintel',
@@ -85,16 +92,20 @@ export const DOOR_ARCHETYPES = Object.freeze({
 const D = (id, archetype, legacyId, options = {}) => {
   const at=options.at || (() => { const [x, y] = legacyId.split(',').map(Number); return { x: x / 2, y: y / 2 }; })();
   return Object.freeze({
-    id, archetype, legacyIds: legacyId ? [legacyId] : [], at, x:at.x, y:at.y,
+    id, archetype, legacyIds: [...new Set([legacyId,...(options.legacyIds||[])].filter(Boolean))], at, x:at.x, y:at.y,
     hinge: options.hinge || 'left', swing: options.swing || 'escape', widthAxis:options.widthAxis||'x',
     key: options.key || null, initialState: options.open ? 'open' : 'closed', open:!!options.open,
     wedged: !!options.wedged, closerArmed: !!options.closerArmed,
     activeLeaves: options.activeLeaves || DOOR_ARCHETYPES[archetype].activeLeaves,
+    renderGroups: Object.freeze([...(options.renderGroups || [])]),
   });
 };
 
 export const CONSERVATORY_DOORS = Object.freeze([
-  D('front-main', DOOR_ARCHETYPE.PUBLIC_GLAZED_PAIR, '159,7', { open: true, swing: 'outward', activeLeaves: [0, 1] }),
+  // The public front was sealed when Ellery closed. It is still an architectural
+  // entrance—not an open portal into an unbuilt outside—and the closure key is
+  // deliberately absent from the recordist's ring.
+  D('front-main', DOOR_ARCHETYPE.PUBLIC_GLAZED_PAIR, '159,7', { key:'closure-order', swing: 'outward', activeLeaves: [0, 1] }),
   D('hall-stage-service', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '197,23', { open: true, hinge: 'right', swing: 'stage-out', widthAxis:'y' }),
   // ── the sub-basement dance wing ───────────────────────────────────────────
   // Studio to studio through the old service wall: this used to be the way to
@@ -145,9 +156,13 @@ export const CONSERVATORY_DOORS = Object.freeze([
   D('bay-goods-pair', DOOR_ARCHETYPE.BAY_GOODS_PAIR, '115,20', { open: false, key: 'services-core', hinge: 'left', swing: 'escape', widthAxis:'y' }),
   D('dock-foyer-service', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '149,27', { open: true, key: 'master', hinge: 'right', swing: 'escape', widthAxis:'y' }),
   D('dock-inner-service', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '131,33', { open: true, key: 'master', hinge: 'left', swing: 'escape' }),
-  D('foh-office', DOOR_ARCHETYPE.STAFF_HALF_GLAZED, '179,41', { key: 'master', hinge: 'left', swing: 'office-in', widthAxis:'y' }),
-  D('hall-vestibule', DOOR_ARCHETYPE.HALL_ACOUSTIC_PAIR, '197,51', { hinge: 'right', swing: 'hall-out', activeLeaves: [0], widthAxis:'y' }),
-  D('pool-lobby', DOOR_ARCHETYPE.POOL_FIRE_SINGLE, '169,55', { hinge: 'right', swing: 'dry-out' }),
+  D('foh-office', DOOR_ARCHETYPE.STAFF_HALF_GLAZED, '189,27', { key: 'master', hinge: 'left', swing: 'office-in', widthAxis:'x' }),
+  D('hall-vestibule', DOOR_ARCHETYPE.HALL_ACOUSTIC_PAIR, '197,51', {
+    hinge:'right',swing:'hall-out',activeLeaves:[0],widthAxis:'y',renderGroups:['ground','hall'],
+  }),
+  D('pool-lobby', DOOR_ARCHETYPE.POOL_GLAZED_PAIR, '168,55', {
+    at:{x:84,y:27.5},legacyIds:['169,55'],hinge:'right',swing:'dry-out',activeLeaves:[0,1],
+  }),
   D('hall-rear-service', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '197,73', { open: true, hinge: 'left', swing: 'escape', widthAxis:'y' }),
   D('upper-bridge-west', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '154,111', { open: true, hinge: 'right', swing: 'escape', widthAxis:'y' }),
   D('upper-bridge-east', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '201,111', { open: true, hinge: 'left', swing: 'escape', widthAxis:'y' }),

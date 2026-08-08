@@ -1038,7 +1038,7 @@ export const COLD_OPEN = [];
 // thoughts, each once, at the point on the walk it belongs to.
 export const ARRIVAL_THOUGHTS = Object.freeze({
   gate: [
-    { who: 'direction', text: 'Out of the gate, and the yard opens up. Rain on the skips, and a hundred metres of nothing between here and the building.' },
+    { who: 'direction', text: 'Past the lodge, the old stable wall turns the yard into a chain of courts. Ellery keeps withdrawing behind them: school gables, baths lanterns, then the blind fly tower. Rain finds every roof on the way in.' },
   ],
   crossing: [
     { who: 'you', text: 'Basement first. It will be the hardest and I want it behind me.' },
@@ -1224,7 +1224,7 @@ export const PAGES = [
       '',
       'I want to write down that I heard the hall breathe, so I am writing it down and then I am writing down that a hall of this size has a thermal cycle and the seats are horsehair and it was breathing in the sense that a building breathes.',
       '',
-      'Practice wing next. Up the shaft stair off the ground spine, then west along the upper corridor. Four minutes if you know where you are going.',
+      'Practice wing next. Through the open stair hall off the ground spine, then straight across the upper landing. Four minutes if you know where you are going.',
       '',
       'Radio check missed. I will get the next one.',
     ],
@@ -1251,7 +1251,7 @@ export const PAGES = [
     ],
   },
   {
-    id: 'page-6', at: { x: 61, y: 30 }, room: 'lux_nova', decay: 0.28,
+    id: 'page-6', at: { x: 138, y: 27 }, room: 'lux_nova', decay: 0.28,
     title: 'log — 02:10', byline: 'sheet 6',
     body: [
       'Rang the client. Told them the chapel is locked and the key on the keyring is for the original chapel lock, not the replacement lock core.',

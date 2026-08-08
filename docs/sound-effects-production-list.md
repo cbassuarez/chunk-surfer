@@ -668,6 +668,17 @@ For treble/light, middle, and tenor/heavy weight classes, record:
 - [ ] `archive_tape_cryptic_room_bed`.
 - [ ] `kit_inventory_sequence` — torch, recorder, headphones, radio, keys, order as separable layers, not one fixed montage.
 - [ ] `title_world_drop` — optional transition into title, preserving the song as music.
+- [ ] `vigil_chair_arrival` — **P1, currently placeholdered.** The long stare (see
+  `src/game/yard-vigil.js`): a chair is standing in the yard behind the player,
+  and this is the only thing that makes them turn round to see it. The pin is
+  granted on SEEING the chair, not on the wait, so without this the whole beat can
+  pass unnoticed. It is fired panned to the chair's actual shoulder
+  (`vigilPan`), so it must survive hard stereo placement and read as coming from
+  a specific point behind, on wet tarmac, in rain. **It must not be a scare** —
+  the chair is deliberately placed five to nine metres back so this is a walk, not
+  a jump. Wood settling on a wet hard surface, quiet, once. It is currently
+  running `asset.game.door_close` at gain .34 and rate .82, which is audibly a
+  door and wants replacing.
 
 ### 13.2 Take milestones — P1
 

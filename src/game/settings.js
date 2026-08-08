@@ -24,20 +24,13 @@ import {
 } from '../platform/display-policy.js';
 import { formatFps } from '../platform/about-system.js';
 import {
-  PERSONAL_INTERFERENCE_INTENSITIES,
-  PERSONAL_INTERFERENCE_LABEL,
-  normalizePersonalInterferenceSettings,
-} from './personalized-interference.js';
+  PSYCH_PROFILE_MODULE_KEYS,
+  normalizePsychProfileSettings,
+  psychProfileChoice,
+  psychProfilePublicSummary,
+  psychProfileStatus,
+} from './psychological-profile.js';
 
-const MIC_LABEL = {
-  idle: 'OFF',
-  asking: 'ASKING…',
-  on: 'LIVE',
-  denied: 'BLOCKED',
-  unavailable: 'NO INPUT',
-  error: 'ERROR',
-  test: 'TEST',
-};
 const MIC_CHANNEL_MODES = ['mono', 'left', 'right'];
 const MIC_CHANNEL_LABEL = { mono: 'MONO MIX', left: 'LEFT', right: 'RIGHT' };
 const FX_MODES = ['off', 'reduced', 'full'];
@@ -197,22 +190,35 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
     patchMicInput({ channelMode: MIC_CHANNEL_MODES[(at + d + MIC_CHANNEL_MODES.length) % MIC_CHANNEL_MODES.length] });
   };
 
-  function personalInterference() {
-    return normalizePersonalInterferenceSettings(s().personalInterference);
+  function psychProfile() {
+    return normalizePsychProfileSettings(s().psychProfile, s());
   }
 
-  function setPersonalInterference(patch) {
-    const current = personalInterference();
-    set('personalInterference', normalizePersonalInterferenceSettings({ ...current, ...patch }));
-    hooks.onPersonalInterferenceChange?.();
+  function setPsychProfile(next, changedKey = null) {
+    const previous = psychProfile();
+    const normalized = normalizePsychProfileSettings(next);
+    set('psychProfile', normalized);
+    hooks.onPsychProfileChange?.({ previous, next: normalized, changedKey });
   }
 
-  function cyclePersonalInterferenceIntensity(d) {
-    const cur = personalInterference().intensity;
-    const i = Math.max(0, PERSONAL_INTERFERENCE_INTENSITIES.indexOf(cur));
-    setPersonalInterference({
-      intensity: PERSONAL_INTERFERENCE_INTENSITIES[(i + d + PERSONAL_INTERFERENCE_INTENSITIES.length) % PERSONAL_INTERFERENCE_INTENSITIES.length],
-    });
+  function setPsychModule(key, enabled) {
+    if (!PSYCH_PROFILE_MODULE_KEYS.includes(key)) return;
+    const current = psychProfile();
+    setPsychProfile({ ...current, modules: { ...current.modules, [key]: !!enabled } }, key);
+  }
+
+  function cycleWindowIntensity(d) {
+    const intensities = ['low', 'standard', 'hostile'];
+    const current = psychProfile();
+    const index = Math.max(0, intensities.indexOf(current.windowIntensity));
+    setPsychProfile({
+      ...current,
+      windowIntensity: intensities[(index + d + intensities.length) % intensities.length],
+    }, 'windowIntensity');
+  }
+
+  function profileSummary() {
+    return psychProfilePublicSummary(psychProfile(), hooks.psychProfileState?.(), micSnapshot().state);
   }
 
   // Display settings live in vfdSettings (applied live) AND in save.settings.vfd
@@ -431,11 +437,6 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           { id: 'resetInputBindings', label: 'RESET CONTROLLER',
             value: () => armedValue('resetInputBindings'),
             activate: () => arm('resetInputBindings', () => hooks.resetInputBindings?.() || hooks.resetControllerBindings?.()) },
-          { id: 'micStatus', label: 'MIC STATUS',
-            value: () => MIC_LABEL[micSnapshot().state || 'idle'] || 'OFF' },
-          { id: 'mic', label: 'USE ROOM MIC',
-            value: () => setting('mic', 'ask') === 'ask' ? 'ASK AT NEW GAME' : setting('mic', 'ask') === 'off' ? 'OFF' : 'ON',
-            adjust: () => set('mic', setting('mic', 'ask') === 'on' ? 'off' : 'on') },
           { id: 'micInput', label: 'MIC INPUT',
             value: micInputLabel,
             adjust: cycleMicInput,
@@ -443,8 +444,6 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           { id: 'micChannel', label: 'MIC CHANNEL',
             value: () => MIC_CHANNEL_LABEL[micInputPrefs().channelMode] || 'MONO MIX',
             adjust: cycleMicChannel },
-          { id: 'enableMic', label: 'ENABLE MIC',
-            value: () => inputPrompt('confirm'), activate: () => hooks.enableMic?.() },
           { id: 'testMic', label: 'TEST MIC',
             value: () => {
               const snap = micSnapshot();
@@ -455,6 +454,63 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
             activate: () => hooks.enableMic?.() },
           { id: 'rescanMic', label: 'RESCAN INPUTS',
             value: () => inputPrompt('confirm'), activate: () => hooks.refreshMicDevices?.() },
+        ],
+      },
+      {
+        id: 'profile', name: 'PROFILE',
+        rows: [
+          section('Psychological Profile'),
+          { id: 'profileStatus', label: 'PROFILE STATUS', value: () => psychProfileStatus(psychProfile()), selectable: false },
+          { id: 'profileMaster', label: 'PROFILE MASTER',
+            value: () => psychProfileStatus(psychProfile()),
+            adjust: () => {
+              const turnOn = psychProfileStatus(psychProfile()) !== 'FULL';
+              setPsychProfile(psychProfileChoice(turnOn, psychProfile()), 'master');
+            } },
+          { id: 'profileMicStatus', label: 'ROOM MICROPHONE',
+            value: () => profileSummary().micStatus,
+            adjust: () => setPsychModule('microphone', !psychProfile().modules.microphone) },
+          { id: 'profileSteam', label: 'STEAM DISPLAY NAME',
+            value: () => psychProfile().modules.steamName ? 'ON' : 'OFF',
+            adjust: () => setPsychModule('steamName', !psychProfile().modules.steamName) },
+          { id: 'profileOs', label: 'OS USERNAME',
+            value: () => psychProfile().modules.osUsername ? 'ON' : 'OFF',
+            adjust: () => setPsychModule('osUsername', !psychProfile().modules.osUsername) },
+          { id: 'profileHost', label: 'COMPUTER NAME',
+            value: () => psychProfile().modules.computerName ? 'ON' : 'OFF',
+            adjust: () => setPsychModule('computerName', !psychProfile().modules.computerName) },
+          { id: 'profileMicLabel', label: 'MICROPHONE LABEL',
+            value: () => psychProfile().modules.microphoneLabel ? 'ON' : 'OFF',
+            adjust: () => setPsychModule('microphoneLabel', !psychProfile().modules.microphoneLabel) },
+          { id: 'profileMeasure', label: 'BEHAVIORAL MEASUREMENT',
+            value: () => psychProfile().modules.behavioralMeasurement ? 'ON' : 'OFF',
+            adjust: () => setPsychModule('behavioralMeasurement', !psychProfile().modules.behavioralMeasurement) },
+          { id: 'profileAdaptive', label: 'ADAPTIVE DIFFICULTY',
+            value: () => psychProfile().modules.adaptiveDifficulty ? 'ON' : 'OFF',
+            adjust: () => setPsychModule('adaptiveDifficulty', !psychProfile().modules.adaptiveDifficulty) },
+          { id: 'profileWindow', label: 'WINDOW CHOREOGRAPHY',
+            value: () => psychProfile().modules.windowChoreography ? 'ON' : 'OFF',
+            adjust: () => setPsychModule('windowChoreography', !psychProfile().modules.windowChoreography) },
+          { id: 'profileWindowIntensity', label: 'WINDOW INTENSITY',
+            value: () => psychProfile().windowIntensity.toUpperCase(),
+            adjust: cycleWindowIntensity },
+          { id: 'profileFiles', label: 'FIELD-RETURN FILES',
+            value: () => psychProfile().modules.fieldReturnFiles ? 'ON' : 'OFF',
+            adjust: () => setPsychModule('fieldReturnFiles', !psychProfile().modules.fieldReturnFiles) },
+          section('Measured Categories'),
+          { id: 'profileMeasuredA', label: 'OBSERVES', value: () => 'TAKES · HUSH · PRACTICE', selectable: false },
+          { id: 'profileMeasuredB', label: 'OBSERVES', value: () => 'BATTLES · RESTORES', selectable: false },
+          { id: 'profileHandling', label: 'HANDLING', value: () => 'LOCAL ONLY · NO RAW LOG', selectable: false },
+          section('Controls'),
+          { id: 'profileRetryMic', label: 'RETRY MICROPHONE', value: () => inputPrompt('confirm'), activate: () => hooks.enableMic?.() },
+          { id: 'profileRestore', label: 'RESTORE WINDOWS', value: () => inputPrompt('confirm'), activate: () => hooks.restoreProfileWindows?.() },
+          { id: 'profileOpenReturns', label: 'OPEN RETURN FOLDER', value: () => inputPrompt('confirm'), activate: () => hooks.openReturnFolder?.() },
+          { id: 'profileResetInference', label: 'RESET INFERRED PROFILE',
+            value: () => armedValue('profileResetInference'),
+            activate: () => arm('profileResetInference', () => hooks.resetPsychProfile?.()) },
+          { id: 'profileErase', label: 'ERASE ALL PROFILE DATA',
+            value: () => armedValue('profileErase'),
+            activate: () => arm('profileErase', () => hooks.erasePsychProfileData?.()) },
         ],
       },
       {
@@ -475,33 +531,6 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           { id: 'dread', label: 'DREAD SPIKES',
             value: () => setting('reduceDread', false) ? 'REDUCED' : 'FULL',
             adjust: () => set('reduceDread', !setting('reduceDread', false)) },
-          section('Privacy & Horror'),
-          { id: 'personalInterference', label: 'PERSONALIZED INTERFERENCE',
-            value: () => personalInterference().enabled ? 'ON' : 'OFF',
-            adjust: () => setPersonalInterference({ enabled: !personalInterference().enabled }) },
-          { id: 'personalSourcesSteam', label: 'USE STEAM NAME',
-            value: () => personalInterference().sourceSteam ? 'ON' : 'OFF',
-            adjust: () => setPersonalInterference({ sourceSteam: !personalInterference().sourceSteam }) },
-          { id: 'personalSourcesOs', label: 'USE OS USERNAME',
-            value: () => personalInterference().sourceOs ? 'ON' : 'OFF',
-            adjust: () => setPersonalInterference({ sourceOs: !personalInterference().sourceOs }) },
-          { id: 'personalSourcesHost', label: 'USE COMPUTER NAME',
-            value: () => personalInterference().sourceHost ? 'ON' : 'OFF',
-            adjust: () => setPersonalInterference({ sourceHost: !personalInterference().sourceHost }) },
-          { id: 'personalSourcesMic', label: 'USE SELECTED MIC LABEL',
-            value: () => personalInterference().sourceMic ? 'ON' : 'OFF',
-            adjust: () => setPersonalInterference({ sourceMic: !personalInterference().sourceMic }) },
-          { id: 'personalVfdText', label: 'USE IN SYSTEM TEXT',
-            value: () => personalInterference().vfdText ? 'ON' : 'OFF',
-            adjust: () => setPersonalInterference({ vfdText: !personalInterference().vfdText }) },
-          { id: 'personalIntensity', label: 'INTERFERENCE INTENSITY',
-            value: () => PERSONAL_INTERFERENCE_LABEL[personalInterference().intensity] || 'STANDARD',
-            adjust: (d) => cyclePersonalInterferenceIntensity(d) },
-          { id: 'personalDisclosure', label: 'DATA CATEGORIES', value: () => 'STEAM / OS / HOST / MIC', selectable: false },
-          { id: 'personalHandling', label: 'DATA HANDLING', value: () => 'LOCAL ONLY · MEMORY FIRST', selectable: false },
-          { id: 'erasePersonalizedData', label: 'ERASE PERSONALIZED DATA',
-            value: () => armedValue('erasePersonalizedData'),
-            activate: () => arm('erasePersonalizedData', () => hooks.erasePersonalizedData?.()) },
           { id: 'hushDistortion', label: 'HUSH DISTORTION',
             value: () => HUSH_AUDIO_LABEL[setting('hushAudioDistortion', 'full')] || 'FULL',
             adjust: (d) => cycleSetting('hushAudioDistortion', HUSH_AUDIO_MODES, d, 'full') },

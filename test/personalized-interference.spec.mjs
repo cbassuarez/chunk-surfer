@@ -125,10 +125,14 @@ record = appendInterferenceRevision(record, {
   battleId: 'recording-2', stage: 'recognition', result: 'win', roomId: 'the_tub',
   choiceIds: ['conservatory:guard.radio.choice.1'], actionIds: ['monitor'], windowEvents: ['title:operator-resolved'],
   annotation: 'AUDIOCORP: OPERATOR PATH RESOLVED.',
+  responseClassification: 'VIGILANCE',
 });
 record = finalizeInterferenceRecord(record, 'inversion');
 assert.equal(record.classification, 'INVERSION');
 assert.equal(record.status, 'filed');
+assert.equal(record.responseClassification, 'VIGILANCE');
+assert.match(interferenceManifest(record), /RESPONSE CLASSIFICATION VIGILANCE/);
+assert.match(interferenceManifest(record), /ARCHITECTURAL EVENT HISTORY/);
 assert.equal(normalizeInterferenceRecord({ ...record, caseId: '../Secret' }).caseId, null);
 for (const output of [JSON.stringify(record), interferenceManifest(record), interferenceHtml(record)]) {
   assert.equal(output.includes('Sebastian Secret'), false);
@@ -155,15 +159,17 @@ assert.equal(denied.persona, null);
 assert.equal(denied.hostname, null);
 assert.equal(denied.mic, null);
 
-// The consent card itself: an explicit yes or no, never a menu confirm, and it
-// carries the sentence that says what it is for.
+// The omnibus itself: an explicit profile on/off choice with complete identity,
+// microphone, window, artifact, and local-only boundaries.
 const warningSource = readFileSync(new URL('../src/game/warning.js', import.meta.url), 'utf8');
-assert.match(warningSource, /askInterference/, 'the identity card is gated, not always shown');
-assert.match(warningSource, /onEnableInterference/);
-assert.match(warningSource, /Do you want to allow personalized interference\?/);
-assert.match(warningSource, /name you give the guard at the gate/, 'the card must disclose this use');
+assert.match(warningSource, /askProfile/, 'the durable omnibus is gated, not shown after consent');
+assert.match(warningSource, /onProfileOn/);
+assert.match(warningSource, /THIS GAME MEASURES YOU PSYCHOLOGICALLY/);
+assert.match(warningSource, /Steam display name only—never Steam ID, friends, or account enumeration/);
+assert.match(warningSource, /temporary, non-focus-stealing, game-owned echo windows/);
+assert.match(warningSource, /PROFILE OFF requests nothing/);
 const mainSourceForConsent = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
-assert.match(mainSourceForConsent, /askInterference:IS_TAURI/, 'never asked where there is nothing to read');
+assert.match(mainSourceForConsent, /consentVersion!==PSYCH_PROFILE_CONSENT_VERSION/);
 
 const wav = buildInterferenceWav(record, { sampleRate: 8000, seconds: 1 });
 assert.equal(new TextDecoder().decode(wav.slice(0, 4)), 'RIFF');
@@ -288,8 +294,8 @@ const windowEffects = createPersonalizedWindowEffects({
   sleep: async () => {},
   onEmergency: () => { emergencyCount += 1; },
 });
-await windowEffects.begin({ intensity: 'hostile', reducedMotion: false });
-await windowEffects.apply('overload', { title: 'AUDIOCORP / OVERLOAD' });
+const windowToken = await windowEffects.begin({ intensity: 'hostile', reducedMotion: false });
+await windowEffects.apply('overload', { title: 'AUDIOCORP / OVERLOAD', inputLocked: true, token: windowToken });
 assert.deepEqual(windowState, {
   title: 'Chunk Surfer', position: { x: 120, y: 80 }, size: { width: 1280, height: 800 },
   fullscreen: true, minimized: true, alwaysOnTop: false, focused: false, visible: true,

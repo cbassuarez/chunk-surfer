@@ -6,6 +6,8 @@ import {
   normalizeVigilState,
   reduceVigil,
   vigilSeat,
+  vigilSeatCandidates,
+  vigilPan,
 } from '../src/game/yard-vigil.js';
 import { PIN_SOURCES } from '../src/game/combat-progression.js';
 
@@ -99,6 +101,31 @@ const hold = (state, seconds, opts = {}) => {
 
   assert.ok(PIN_SOURCES.flags.includes(VIGIL.FLAG),
     'the flag the vigil sets is actually a pin source, or the reward is decorative');
+}
+
+// ── the seat has second choices, and the sound knows which shoulder ─────────
+{
+  const facing = { x: 100, y: 100, forwardX: 0, forwardY: -1, cellsPerMetre: 2 };
+  const seats = vigilSeatCandidates(facing);
+  assert.ok(seats.length > 1, 'one candidate is how the vigil silently never happened');
+  assert.deepEqual(seats[0], vigilSeat(facing), 'the ideal seat is still first and still preferred');
+  // Facing north (forwardY -1), every candidate is south of the player.
+  for (const s of seats) assert.ok(s.y > facing.y, 'a candidate landed in front of the player');
+  // The fallbacks straddle both shoulders, which is the point: a shelter behind
+  // blocks one side, not both.
+  assert.ok(seats.some((s) => s.x < facing.x) && seats.some((s) => s.x > facing.x),
+    'every fallback is on the same side as the first choice');
+
+  // The pan is the shoulder the chair is actually over. Facing north, a chair to
+  // the WEST (smaller x) is over the left shoulder and must pan left.
+  const west = vigilPan({ seatX: 90, seatY: 110, x: 100, y: 100, forwardX: 0, forwardY: -1 });
+  const east = vigilPan({ seatX: 110, seatY: 110, x: 100, y: 100, forwardX: 0, forwardY: -1 });
+  assert.ok(west < -0.1, `a chair to the west should pan left, got ${west}`);
+  assert.ok(east > 0.1, `a chair to the east should pan right, got ${east}`);
+  assert.equal(Math.sign(west), -Math.sign(east), 'the two shoulders are not opposites');
+  assert.ok(Math.abs(vigilPan({ seatX: 100, seatY: 100, x: 100, y: 100, forwardX: 0, forwardY: -1 })) < 1e-6,
+    'a chair on top of the player has no shoulder');
+  for (const p of [west, east]) assert.ok(p >= -1 && p <= 1, 'pan escaped the stereo field');
 }
 
 console.log('yard vigil specs passed');

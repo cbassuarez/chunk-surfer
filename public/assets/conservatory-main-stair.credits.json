@@ -1,0 +1,35 @@
+{
+  "pack": {
+    "filename": "conservatory-main-stair.glb",
+    "author": "Chunk Surfer project",
+    "source": "tools/chunk_surfer/build-main-stair.mjs",
+    "license": "project source",
+    "sha256": "7318295f664ffb1218ba348b07aafd064eefe1a0b23e8f2c855f9b56f9197bfc",
+    "triangles": 32900,
+    "bytes": 2116408,
+    "modifications": "Project-native deterministic geometry; metres, Y-up, centred on the physical main stair hall."
+  },
+  "meshes": [
+    {
+      "name": "main_open_well_stair",
+      "bounds": {
+        "min": [
+          -6.01,
+          -0.26,
+          -3.01
+        ],
+        "max": [
+          6.51,
+          14.61,
+          4.51
+        ]
+      },
+      "triangles": 32900,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-main-stair.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    }
+  ]
+}

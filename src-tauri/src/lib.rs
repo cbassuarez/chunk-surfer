@@ -4,10 +4,12 @@ mod desktop_menu;
 mod display_policy;
 mod identity;
 mod lens_service;
+mod window_choreography;
 
 pub fn run() {
     let app = tauri::Builder::default()
         .manage(lens_service::LensServiceState::default())
+        .manage(window_choreography::WindowChoreographyState::default())
         .plugin(tauri_plugin_opener::init())
         .plugin(
             tauri_plugin_log::Builder::new()
@@ -35,6 +37,11 @@ pub fn run() {
             display_policy::chunk_window_is_focused,
             display_policy::chunk_quit,
             identity::chunk_ephemeral_identity,
+            window_choreography::chunk_window_choreography_begin,
+            window_choreography::chunk_window_choreography_capabilities,
+            window_choreography::chunk_window_choreography_execute,
+            window_choreography::chunk_window_choreography_place_echo,
+            window_choreography::chunk_window_choreography_restore,
             lens_service::chunk_lens_bootstrap,
             lens_service::chunk_lens_retry,
             lens_service::chunk_lens_stop,

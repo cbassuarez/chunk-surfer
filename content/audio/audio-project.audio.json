@@ -3442,6 +3442,21 @@
       ]
     },
     {
+      "id": "vigil-chair",
+      "title": "vigil chair",
+      "bus": "sfx",
+      "concurrency": "overlap",
+      "layers": [
+        {
+          "id": "vigil-chair.layer",
+          "assetId": "asset.game.door_close",
+          "gain": 0.34,
+          "playbackRate": 0.82,
+          "pan": 0
+        }
+      ]
+    },
+    {
       "id": "bag",
       "title": "bag",
       "bus": "sfx",

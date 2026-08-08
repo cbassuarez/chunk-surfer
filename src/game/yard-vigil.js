@@ -88,17 +88,60 @@ export function reduceVigil(state, { dt = 0, eligible = false, moved = false, se
 // RUNTIME CELLS and PLACE_MIN_M/PLACE_MAX_M are in metres, and a cell is half a
 // metre. Passing 1 puts the chair at half the distance it says on the tin.
 export function vigilSeat({ x, y, forwardX, forwardY, cellsPerMetre = 1 }) {
+  return vigilSeatCandidates({ x, y, forwardX, forwardY, cellsPerMetre })[0];
+}
+
+// THE SEAT, AND ITS SECOND CHOICES.
+//
+// There used to be exactly one candidate, and if the arithmetic put it in a
+// fence the vigil simply did not happen. That was the right call when the yard
+// was bare and the player could be standing anywhere: better nothing than a
+// chair inside a skip. It stops being the right call the moment there is a
+// SHELTER out there inviting people to stand in a particular spot — because
+// "behind the player" is then reliably the shelter's own back wall, and the one
+// player who did exactly what the scene asked is the one who gets nothing.
+//
+// So the ideal seat is still first and still preferred; these are only consulted
+// when it will not stand up. Ordered by how close each is to the shot the vigil
+// wants: dead behind, then the other shoulder, then nearer, then wider.
+export function vigilSeatCandidates({ x, y, forwardX, forwardY, cellsPerMetre = 1 }) {
   const len = Math.hypot(forwardX, forwardY) || 1;
   const fx = forwardX / len, fy = forwardY / len;
-  const back = ((VIGIL.PLACE_MIN_M + VIGIL.PLACE_MAX_M) / 2) * cellsPerMetre;
-  // A little off the axis, so it is not sitting in the player's own footprints.
-  const side = 1.6 * cellsPerMetre;
-  return {
-    x: x - fx * back - fy * side,
-    y: y - fy * back + fx * side,
-    // Facing the way he was: the chair is watching what he was watching.
-    yaw: Math.atan2(fx, -fy),
-  };
+  const mid = (VIGIL.PLACE_MIN_M + VIGIL.PLACE_MAX_M) / 2;
+  // Facing the way he was: the chair is watching what he was watching.
+  const yaw = Math.atan2(fx, -fy);
+  const at = (backM, sideM) => ({
+    x: x - fx * backM * cellsPerMetre - fy * sideM * cellsPerMetre,
+    y: y - fy * backM * cellsPerMetre + fx * sideM * cellsPerMetre,
+    yaw,
+  });
+  return [
+    at(mid, 1.6),
+    at(mid, -1.6),
+    at(VIGIL.PLACE_MIN_M, 1.6),
+    at(VIGIL.PLACE_MIN_M, -1.6),
+    at(VIGIL.PLACE_MAX_M, 2.8),
+    at(VIGIL.PLACE_MAX_M, -2.8),
+  ];
+}
+
+// WHICH SHOULDER IT IS OVER, as a stereo pan in -1..1.
+//
+// The pin is granted when the chair is SEEN, and nothing ever made anybody turn
+// round — a player who held still with their back to it and walked off had
+// genuinely seen nothing, which is correct, and also meant the whole beat could
+// pass unnoticed. A sound behind the correct shoulder is the smallest thing that
+// makes someone look, and it tells no lies: the chair really is over there.
+export function vigilPan({ seatX, seatY, x, y, forwardX, forwardY }) {
+  const len = Math.hypot(forwardX, forwardY) || 1;
+  const fx = forwardX / len, fy = forwardY / len;
+  const dx = seatX - x, dy = seatY - y;
+  const d = Math.hypot(dx, dy);
+  if (d < 1e-6) return 0;
+  // Positive cross product is the player's right in this handedness (forward is
+  // +x with a screen-down +y), so the sign is the shoulder.
+  const cross = (fx * dy - fy * dx) / d;
+  return Math.max(-1, Math.min(1, cross));
 }
 
 export function normalizeVigilState(value) {

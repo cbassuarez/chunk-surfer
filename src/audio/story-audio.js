@@ -337,7 +337,8 @@ export function stopTyping({ fade = 0.12 } = {}) {
 // that has no room in it.
 
 let booth = null;   // { nodes:[], gain }
-let rainBed = null; // { nodes:[], gain } — its own bed, see startRain
+let rainBed = null; // { nodes:[], gain, surfaceGains } — its own bed, see startRain
+let rainSurfaceMix = { slate:0, glass:0, foliage:0, steel:0 };
 let tape = null;
 
 // One looping file, one gain, faded in. Returns null (and retries) if the
@@ -377,8 +378,37 @@ export function startRain({ gain = RAIN_GAIN, fade = 2.4 } = {}) {
   out.connect(outBus('sfx'));
   const nodes = [out];
   const rain = loopFile(STORY_AUDIO.rain, gain, fade, out);
-  if (rain) nodes.push(rain.src, rain.g);
-  rainBed = { nodes, gain: out };
+  const surfaceGains={};
+  if (rain) {
+    nodes.push(rain.src, rain.g);
+    // Four quiet resonances from the same world-space recording: slate's soft
+    // body, glass hiss, foliage patter and steel ping. They follow the material
+    // around the listener and vanish with the same door fade as the base bed.
+    const surfaces={
+      slate:{type:'bandpass',frequency:980,Q:.65,max:.095},
+      glass:{type:'highpass',frequency:3600,Q:.45,max:.060},
+      foliage:{type:'lowpass',frequency:1450,Q:.50,max:.070},
+      steel:{type:'bandpass',frequency:2700,Q:1.8,max:.050},
+    };
+    for(const [id,spec] of Object.entries(surfaces)){
+      const filter=ctx.createBiquadFilter(),surface=ctx.createGain();
+      filter.type=spec.type;filter.frequency.value=spec.frequency;filter.Q.value=spec.Q;
+      surface.gain.value=0;
+      rain.g.connect(filter);filter.connect(surface);surface.connect(out);
+      surfaceGains[id]={gain:surface,max:spec.max};nodes.push(filter,surface);
+    }
+  }
+  rainBed = { nodes, gain: out, surfaceGains };
+  setRainSurfaceMix(rainSurfaceMix,{fade,force:true});
+}
+
+export function setRainSurfaceMix(mix={}, {fade=.35,force=false}={}){
+  const next={};
+  for(const id of['slate','glass','foliage','steel'])next[id]=Math.max(0,Math.min(1,Number(mix[id])||0));
+  const changed=Object.keys(next).some((id)=>Math.abs(next[id]-rainSurfaceMix[id])>.015);
+  rainSurfaceMix=next;
+  if(!rainBed||(!changed&&!force))return;
+  for(const [id,surface] of Object.entries(rainBed.surfaceGains||{}))setGain(surface.gain,next[id]*surface.max,fade);
 }
 
 export function startBoothTone({ gain = BOOTH_GAIN, fade = 1.6 } = {}) {

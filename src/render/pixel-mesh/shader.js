@@ -649,6 +649,16 @@ void main(){
   // binary lighting or change which marks are present.
   vec3 broadColor = 0.20 * (c + sx0.rgb + sx1.rgb + sy0.rgb + sy1.rgb);
   float broadColorLuma = max(0.02, luma(broadColor));
+  // The same reservation the lighting pass applies (see reserveEmergencyRed in
+  // r3d.js), stated in the same units so the two cannot disagree. The old ratio
+  // floor of 1.8 admitted plain sodium — [1,.52,.18] measures 1.92 — so the
+  // recorder promoted every yard lamp and warm wall to the emergency primary.
+  // Upstream the circuit is now the only thing that can be this red at all;
+  // this keeps the acquisition honest if that ever stops being true.
+  float emergencyRedness=(broadColor.r-max(broadColor.g,broadColor.b))/max(broadColor.r,1e-4);
+  float emergencyRed=smoothstep(.025,.14,broadColor.r-max(broadColor.g,broadColor.b))
+    *smoothstep(.55,.84,emergencyRedness)
+    *captureBlackProtect;
   vec3 sourceChroma = clamp(
     (broadColor - vec3(broadColorLuma)) / max(0.06, broadColorLuma),
     vec3(-0.55),
@@ -663,6 +673,11 @@ void main(){
   vec3 captureLight = clamp(neutralLightInk + sourceChroma * inkChroma, 0.62, 1.0);
   captureLight *= luma(neutralLightInk) / max(0.001, luma(captureLight));
   captureLight = clamp(captureLight, 0.0, 1.0);
+  // One authored source is allowed to keep its literal colour. Emergency red
+  // is itself the event; translating it to the tube's default cyan/cream ink
+  // erased the state change and made a correct raw frame look unlit in game.
+  // Apply it only to selected light ink. Shadow/unselected marks remain black.
+  captureLight=mix(captureLight,vec3(.98,.018,.008),emergencyRed);
   vec3 oneBitScene = mix(captureDark, captureLight, captureBit);
   finalColor = mix(finalColor, oneBitScene, clamp(uRecordingCaptureMix, 0.0, 1.0));
 

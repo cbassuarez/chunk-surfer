@@ -90,7 +90,7 @@ console.log('map core tests ok');
 // pointed straight through corners. The cone is masked by the same open cells the
 // topology layer draws, so a wall stops it.
 {
-  const { SIGHT, openCellLookup, sightPolygon } = await import('../src/render/minimap.js');
+  const { SIGHT, openCellLookup, sightPolygon, visibilityLookup } = await import('../src/render/minimap.js');
 
   // A one-cell-wide corridor running north from the player, with a room to the
   // east that is NOT connected: nothing in it may be visible.
@@ -127,4 +127,26 @@ console.log('map core tests ok');
   for (const point of south) {
     assert.ok(point.y <= 11.5, 'a wall one cell away stops the cone dead');
   }
+
+  // Sight retains the compiled half-metre cells even when the map topology is
+  // simplified to one metre. A thin wall occupying half of one thumbnail cell
+  // must still occlude, and a live closed leaf must occlude its otherwise-open
+  // threshold.
+  const detailed = new Set();
+  for(let y=0;y<40;y++)for(let x=0;x<40;x++)detailed.add(`${x},${y}`);
+  for(let x=0;x<40;x++)detailed.delete(`${x},20`);
+  const detailedSight=visibilityLookup({open:new Set(['5,5']),visibilityOpen:detailed,visibilityScale:2});
+  assert.equal(detailedSight(5,9.75),true);
+  assert.equal(detailedSight(5,10.05),false,'the half-metre wall survives map simplification');
+
+  const doorSight=visibilityLookup({
+    open:new Set(Array.from({length:30},(_,y)=>`5,${y}`)),
+    doors:[{state:'closed',position:{x:5.5,y:8},widthAxis:'x',apertureWidth:1}],
+  });
+  assert.equal(doorSight(5.5,8),false,'a closed live leaf blocks sight');
+  assert.equal(doorSight(5.5,7.5),true);
+
+  const longCorridor=new Set(Array.from({length:40},(_,y)=>`5,${y}`));
+  const long=sightPolygon({origin:{x:5.5,y:30.5},heading:0,isOpen:openCellLookup({open:longCorridor}),radius:18});
+  assert.ok(30.5-long[Math.floor(long.length/2)].y>17,'the viewshed reaches the minimap edge instead of stopping at the old 14m cap');
 }

@@ -93,9 +93,9 @@ const cx = CENTRE.x * 2, cz = CENTRE.z * 2, ri = R_IN * 2, ro = R_OUT * 2;
 }
 
 {
-  // Risers. The last tread sits one riser BELOW the top, because `rises` counts
-  // the step onto the landing — that is what makes the arrival a step rather
-  // than a seam you are already level with.
+  // Macro collision reaches the destination landing exactly. Hero stairs may
+  // declare a denser physical riser cadence for the camera and mesh, but the
+  // final navigable cell must never stop one rise short of its landing.
   for (const [row, fromH, toH] of [[80, 0, 4.8], [90, 4.8, 10.0]]) {
     const hs = [];
     for (let s = 0; s < TREADS; s++) {
@@ -105,8 +105,7 @@ const cx = CENTRE.x * 2, cz = CENTRE.z * 2, ri = R_IN * 2, ro = R_OUT * 2;
     assert.equal(hs.length, TREADS, 'the whole run is walkable');
     // plan.floor is a Float32Array, so 4.8 stores as 4.800000190734863.
     assert.ok(Math.abs(hs[0] - fromH) < 1e-5, 'the first tread is at the bottom height');
-    const rise = (toH - fromH) / TREADS;
-    assert.ok(Math.abs(hs[TREADS - 1] - (toH - rise)) < 1e-6, 'the last tread is one riser short of the top');
+    assert.ok(Math.abs(hs[TREADS - 1] - toH) < 1e-5, 'the last macro tread reaches the top landing');
     for (let k = 1; k < hs.length; k++) {
       assert.ok(Math.abs(hs[k] - hs[k - 1]) <= STEP_UP + 1e-5,
         `riser ${(hs[k] - hs[k - 1]).toFixed(3)} exceeds STEP_UP`);

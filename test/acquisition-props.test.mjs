@@ -56,6 +56,7 @@ FP.compile(conservatory.levels, {
   height: conservatory.height,
   widenCorridors: conservatory.widenCorridors,
   connectors: conservatory.connectors,
+  edgePortals: conservatory.edgePortals,
 });
 for (const door of conservatory.doors || []) FP.setDoorKey(door.x, door.y, door.key);
 FP.setAllDoorsOpen(true);
@@ -129,7 +130,17 @@ for (const authored of plantPipes) {
   assert.ok(placed, `${authored.id} remains in walkable plant-room air`);
   assert.equal(placed.zone, 8, `${authored.id} remains inside the plant zone`);
   assert.equal(authored.mount, 'wall');
-  const behindX = placed.rx - Math.round(Math.sin(placed.yaw || 0));
+  // WHICH WAY A YAW FACES, taken from the renderer rather than from arithmetic.
+  // props3d.js modelMatrix rotates local +Z to world (-sin yaw, cos yaw), and the
+  // wall-asset convention is "origin is the back plane, +Z is the visible front"
+  // (see tower_bulkhead in build-props.mjs). So the wall sits opposite the facing,
+  // at (rx + sin, ry - cos).
+  //
+  // The X term used to be negated, which put the wall on the wrong side for every
+  // east/west mount. Measured across all 81 wall-mounted props: the old form found
+  // masonry behind 32 of them, this one finds 67 — exactly matching the contact
+  // normal, which is the ground truth the snapper works from.
+  const behindX = placed.rx + Math.round(Math.sin(placed.yaw || 0));
   const behindY = placed.ry - Math.round(Math.cos(placed.yaw || 0));
   assert.equal(FP.isSolid(behindX, behindY), true, `${authored.id} faces away from a solid wall`);
 }

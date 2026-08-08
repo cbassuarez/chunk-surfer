@@ -16,7 +16,9 @@ test('VFD compositor combines fine acquisition thresholds with selective phospho
   assert.match(shader, /texture\(uSrc,\s*cellUv\)/);
   assert.match(shader, /recordingNoise/);
   assert.match(shader, /recordedSignal/);
-  assert.match(shader, /mix\(\s*ordered,\s*organic/);
+  assert.match(shader, /emergencyRedDominance/);
+  assert.match(shader, /captureLight=mix\(captureLight,vec3\(\.98,\.018,\.008\),emergencyRed\)/);
+  assert.match(shader, /mix\(\s*maskThreshold,\s*organic/);
   assert.match(shader, /mix\(c,\s*paletted,\s*clamp\(uPaletteAmount/);
   assert.match(shader, /recordingHash3/);
   assert.match(shader, /formStipple/);

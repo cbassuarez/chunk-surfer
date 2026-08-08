@@ -131,6 +131,7 @@ export function normalizeHushContactContext(context = {}) {
     dialogueEligible: context.dialogueEligible !== false,
     takenEligible: context.takenEligible !== false,
     cooldownReady: context.cooldownReady !== false,
+    profileWeightShift: Math.max(-0.1, Math.min(0.1, Number(context.profileWeightShift) || 0)),
     state: normalizeHushContactDirectorState(context.state),
   };
 }
@@ -162,11 +163,11 @@ export function hushContactWeights(context = {}) {
   const brush = brushChanceFor(ctx);
   const remainder = 1 - brush.chance;
   const dialogueKindEligible = ctx.dialogueEligible && !ctx.forceDirect;
-  return Object.freeze({
-    brush: brush.chance,
-    taken: dialogueKindEligible && ctx.takenEligible ? remainder * 0.5 : 0,
-    hard: dialogueKindEligible && ctx.takenEligible ? remainder * 0.5 : remainder,
-  });
+  if (!dialogueKindEligible || !ctx.takenEligible) {
+    return Object.freeze({ brush: brush.chance, taken: 0, hard: remainder });
+  }
+  const hard = Math.max(0, Math.min(remainder, (remainder * 0.5) + ctx.profileWeightShift));
+  return Object.freeze({ brush: brush.chance, taken: remainder - hard, hard });
 }
 
 function nextDirectorState(state, kind, brushEligible) {

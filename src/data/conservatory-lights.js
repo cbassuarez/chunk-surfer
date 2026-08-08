@@ -21,6 +21,11 @@ export const LIGHT_BANDS = Object.freeze({
   [LIGHT_KIND.INDICATOR]: Object.freeze([.01, .2]),
 });
 
+// Not amber, not sodium, not a warm wayfinding lamp. The emergency circuit is
+// the one impossible colour in Ellery: a saturated electrical red that survives
+// both the material pass and the one-bit display's selective chroma.
+export const EMERGENCY_RED = Object.freeze([1, .018, .008]);
+
 export const LOCAL_LIGHT_SLOTS = 8;
 
 const AMBIENT = Object.freeze({
@@ -34,7 +39,10 @@ const AMBIENT = Object.freeze({
   // reaches — a local light with a nineteen-metre radius lights the near third
   // and leaves the rest black. Out here the sky IS the light source, so it has
   // to arrive as ambient or it does not arrive at all.
-  [ZONE.dock]: { color: [.40, .50, .70], intensity: .17 },
+  [ZONE.dock]: { color: [.38, .47, .66], intensity: .155 },
+  [ZONE.street]: { color: [.40, .47, .60], intensity: .142 },
+  [ZONE.civicCourt]: { color: [.45, .49, .57], intensity: .126 },
+  [ZONE.serviceYard]: { color: [.36, .42, .52], intensity: .104 },
   [ZONE.foyer]: { color: [.66, .71, .70], intensity: .034 },
   [ZONE.studio]: { color: [.48, .57, .45], intensity: .024 },
   [ZONE.natatorium]: { color: [.43, .63, .57], intensity: .040 },
@@ -42,7 +50,7 @@ const AMBIENT = Object.freeze({
   [ZONE.practice]: { color: [.66, .51, .35], intensity: .027 },
   [ZONE.chapel]: { color: [.72, .80, .88], intensity: .043 },
   [ZONE.plant]: { color: [.43, .48, .40], intensity: .020 },
-  [ZONE.stair]: { color: [.49, .50, .48], intensity: .018 },
+  [ZONE.stair]: { color: [.55, .52, .45], intensity: .024 },
   [ZONE.chapelOuter]: { color: [.54, .61, .66], intensity: .025 },
   [ZONE.bellTower]: { color: [.58, .45, .30], intensity: .025 },
   [ZONE.academic]: { color: [.62, .69, .70], intensity: .036 },
@@ -73,7 +81,9 @@ export const ZONE_WHITE_POINT_K = 4.5;
 // a stale ceiling behind. The dock opts out: out there the sky is the light
 // source, its ambient is already the .17 of an overcast rather than a floor to
 // climb off, and scaling it would only darken the one place with weather over it.
-const WHITE_POINT_SCALE_OVERRIDE = Object.freeze({ [ZONE.dock]: 1 });
+const WHITE_POINT_SCALE_OVERRIDE = Object.freeze({
+  [ZONE.dock]:1,[ZONE.street]:1,[ZONE.civicCourt]:1,[ZONE.serviceYard]:1,
+});
 
 export function zoneWhitePointScale(zone) {
   const override = WHITE_POINT_SCALE_OVERRIDE[zone];
@@ -82,10 +92,65 @@ export function zoneWhitePointScale(zone) {
   return (ambient.intensity * ZONE_WHITE_POINT_K) / REFERENCE_WHITE_POINT;
 }
 
+// THE RETURN TRIP.
+//
+// Ambient is uniform over the sphere, so it hands a ceiling exactly what it hands
+// a floor — and a ceiling is the one surface nothing else in these rooms can
+// reach. The torch is a forward cone from eye height and the fittings hang at
+// about two metres under five-and-a-half metre ceilings. Measured raw in the
+// get-in, against a black point at byte 1.3: walls go 1.3 → 11.4 when the torch
+// comes on, ceilings only 1.5 → 2.5, still 46% under the floor. That is why every
+// ceiling in the building reads as pure black.
+//
+// So each room gets a bounce, as a multiple of its own ambient, weighted onto
+// downward-facing normals and gained by the torch — light off the floor, coming
+// back up. The dock opts out: the sky already arrives from above out there, and a
+// bounce would only flatten the one place with real light in it.
+export const ZONE_BOUNCE_K = 3.0;
+const BOUNCE_OVERRIDE = Object.freeze({
+  [ZONE.dock]:0,[ZONE.street]:0,[ZONE.civicCourt]:0,[ZONE.serviceYard]:0,
+});
+
+export function zoneBounce(zone) {
+  const ambient = AMBIENT[zone] || AMBIENT[ZONE.none];
+  const override = BOUNCE_OVERRIDE[zone];
+  const intensity = Number.isFinite(override) ? override : ambient.intensity * ZONE_BOUNCE_K;
+  return { color: [...ambient.color], intensity };
+}
+
+// A LIGHT IS X-RAY IN ITS OWN ROOM AND ORDINARY EVERYWHERE ELSE.
+//
+// The auditorium's maintained lamps are authored to carry — radius 42-54 with
+// penetration .86-.92, which is what makes the hall one continuous red volume
+// rather than five pools around five fittings. But they also resolve for the
+// foyer, and penetration is what tells the raymarcher to ignore walls: at .90
+// the shader's blocked-visibility floor of .16 is remapped to .92, so every
+// atrium wall received the auditorium's red through thirty metres of building.
+// The whole atrium went red when the concert hall should only be leaking a
+// little around its doors.
+//
+// Declaring the light's HOME zone fixes it without touching the authored figures
+// or the look of the room the fitting is actually in. Outside home, penetration
+// collapses to a hair and reach is cut, which hands the spill back to
+// architecturalLightVisibility — so what reaches the foyer is what genuinely has
+// line of sight through the hall doors, and the rest of the atrium goes dark.
+// Reach outside home is the reach of the APERTURE, not of the fitting: what gets
+// out of a doorway behaves like a source at the doorway, so a fifty-metre
+// auditorium throw becomes an eleven-metre pool the far side of the threshold.
+// Measured at the S/P-03 panel eight metres into the atrium, .42 still left the
+// auditorium supplying 83% of the light there and the breaker with nothing to
+// give; at .22 the panel is the foyer's own darkness again.
+const SPILL_PENETRATION = .08;
+const SPILL_REACH = .22;
+
 const freezeLight = (id, kind, x, z, y, color, intensity, radius, extra = {}) => Object.freeze({
   id, kind, x, z, y,
-  color: Object.freeze(color),
-  intensity, radius,
+  color: kind === LIGHT_KIND.EMERGENCY ? EMERGENCY_RED : Object.freeze(color),
+  intensity,
+  // Emergency light is deliberately spatially wrong. It carries through the
+  // auditorium instead of dying around the fitting like an ordinary bulkhead.
+  radius: kind === LIGHT_KIND.EMERGENCY ? Math.max(30, radius) : radius,
+  penetration: kind === LIGHT_KIND.EMERGENCY ? .78 : 0,
   groups: Object.freeze(extra.groups || []),
   zones: Object.freeze(extra.zones || []),
   circuit: extra.circuit ?? null,
@@ -130,6 +195,39 @@ export const CONSERVATORY_LIGHTS = Object.freeze([
   L('bay-booth-window', LIGHT_KIND.FITTING, 24.0, 14.0, 1.9, [1, .80, .52], .74, 9.0,
     { groups:['ground'], zones:[ZONE.dock], flutter:{ amount:.04, steady:.90 } }),
 
+  // THE INHABITED BLOCK. Road-owned sodium, shop spill and ordinary domestic
+  // windows stay warm and limited. They belong to the town and stop resolving
+  // as soon as the player leaves its street and pavement zones for Ellery.
+  L('district-west-lamp-north', LIGHT_KIND.FITTING, -7, 18, 6.1, [1,.61,.28], .92, 20,
+    {groups:['ground'],zones:[ZONE.street,ZONE.civicCourt]}),
+  L('district-west-lamp-south', LIGHT_KIND.FITTING, -7, 78, 6.1, [1,.58,.25], .88, 20,
+    {groups:['ground'],zones:[ZONE.street,ZONE.civicCourt]}),
+  L('district-north-lamp-west', LIGHT_KIND.FITTING, 28, -7, 6.1, [1,.62,.30], .92, 20,
+    {groups:['ground'],zones:[ZONE.street,ZONE.civicCourt]}),
+  L('district-north-lamp-east', LIGHT_KIND.FITTING, 98, -7, 6.1, [1,.58,.25], .86, 20,
+    {groups:['ground'],zones:[ZONE.street,ZONE.civicCourt]}),
+  L('district-east-lamp-north', LIGHT_KIND.FITTING, 135, 20, 6.1, [1,.60,.28], .90, 20,
+    {groups:['ground'],zones:[ZONE.street,ZONE.civicCourt]}),
+  L('district-east-lamp-south', LIGHT_KIND.FITTING, 135, 78, 6.1, [1,.57,.24], .84, 20,
+    {groups:['ground'],zones:[ZONE.street,ZONE.civicCourt]}),
+  L('district-south-pub-spill', LIGHT_KIND.FITTING, 18, 99, 2.4, [1,.76,.46], .72, 13,
+    {groups:['ground'],zones:[ZONE.street,ZONE.civicCourt],flutter:{amount:.03,steady:.95}}),
+  L('district-south-lamp-east', LIGHT_KIND.FITTING, 106, 99, 6.1, [1,.60,.27], .88, 20,
+    {groups:['ground'],zones:[ZONE.street,ZONE.civicCourt]}),
+  // Cold overcast relief on Ellery itself. These reveal cornices and roof depth
+  // without suggesting a powered institution; warm sources remain exclusively
+  // town windows, the lodge and the impossible stair pane.
+  L('district-ellery-west-relief', LIGHT_KIND.SKY, 42, 40, 14, [.44,.52,.67], .56, 42,
+    {groups:['ground'],zones:[ZONE.street,ZONE.civicCourt,ZONE.dock]}),
+  L('district-ellery-east-relief', LIGHT_KIND.SKY, 136, 43, 13, [.43,.51,.66], .54, 40,
+    {groups:['ground'],zones:[ZONE.street,ZONE.civicCourt]}),
+  L('district-ellery-north-relief', LIGHT_KIND.SKY, 62, -8, 13, [.46,.54,.69], .52, 38,
+    {groups:['ground'],zones:[ZONE.street,ZONE.civicCourt]}),
+  L('district-ellery-south-relief', LIGHT_KIND.SKY, 67, 101, 13, [.42,.50,.65], .50, 38,
+    {groups:['ground'],zones:[ZONE.street,ZONE.civicCourt]}),
+  L('district-chapel-tower-relief', LIGHT_KIND.SKY, 105, 74, 23, [.48,.56,.72], .58, 44,
+    {groups:['ground'],zones:[ZONE.street,ZONE.civicCourt]}),
+
   // Basement and dance wing. The corridors deliberately remain absent.
   L('dance-stair-failing', LIGHT_KIND.EMERGENCY, 45.0, 20.75, -1.32, [1, .48, .22], .20, 6.0,
     { groups:['basement'], zones:[ZONE.danceStudio, ZONE.stair], anchorPropId:'light-dance-stair-casing', anchorOffset:[0,.18,0], flutter:{ amount:.17, steady:.20 } }),
@@ -159,6 +257,17 @@ export const CONSERVATORY_LIGHTS = Object.freeze([
     { groups:['ground'], zones:[ZONE.foyer], circuit:'sp03', anchorPropId:'light-foh-west-casing', anchorOffset:[0,.18,0], flutter:{ amount:.06, steady:.88 } }),
   L('foh-live-east', LIGHT_KIND.FITTING, 92.0, 16.75, 3.43, [.74, .82, .78], .88, 10,
     { groups:['ground'], zones:[ZONE.foyer], circuit:'sp03', anchorPropId:'light-foh-east-casing', anchorOffset:[0,.18,0], flutter:{ amount:.05, steady:.84 } }),
+  // The hall threshold sits on the same impossible battery circuit as the
+  // auditorium. The red snap must be legible from the foyer and from deep in the
+  // room, so these are cross-group emergency sources rather than warm sconces.
+  //
+  // Reach and exposure are separated here. The radius/penetration carries the
+  // red almost like an X-ray; intensity stays low enough in photometric luminance
+  // that restoring S/P-03 can still visibly relight the ordinary foyer.
+  L('hall-entrance-maintained-north',LIGHT_KIND.EMERGENCY,98.25,24.08,2.36,[1,0,0],.68,42,
+    {groups:['ground','hall'],zones:[ZONE.foyer,ZONE.hall],home:ZONE.hall,maintained:true,penetration:.86,anchorPropId:'hall-entrance-light-1',anchorOffset:[-1.15,.18,0]}),
+  L('hall-entrance-maintained-south',LIGHT_KIND.EMERGENCY,98.25,26.92,2.36,[1,0,0],.68,42,
+    {groups:['ground','hall'],zones:[ZONE.foyer,ZONE.hall],home:ZONE.hall,maintained:true,penetration:.86,anchorPropId:'hall-entrance-light-2',anchorOffset:[-1.15,.18,0]}),
   // Broad roof spill stays around one exposure unit. Scale comes from overlap,
   // radius and the long aperture, never a raw intensity of ten.
   L('natatorium-roof-spill-north', LIGHT_KIND.SKY, 80, 31, 9.4, [.55, .75, .72], 1.52, 20,
@@ -185,8 +294,8 @@ export const CONSERVATORY_LIGHTS = Object.freeze([
     { groups:['ground'], zones:[ZONE.natatorium], anchorPropId:'natatorium-light-emergency-far', anchorOffset:[0,.18,0] }),
 
   // Concert hall and the upper floor.
-  L('hall-stage-door-maintained', LIGHT_KIND.EMERGENCY, 98.75, 8.0, 2.83, [1, .40, .22], .48, 7.0,
-    { groups:['hall'], zones:[ZONE.hall], anchorPropId:'light-hall-stage-door-casing', anchorOffset:[0,.18,0] }),
+  L('hall-stage-door-maintained', LIGHT_KIND.EMERGENCY, 98.75, 8.0, 2.83, [1, 0, 0], .72, 52,
+    { groups:['ground','hall'], zones:[ZONE.foyer,ZONE.hall], home:ZONE.hall, penetration:.90, anchorPropId:'light-hall-stage-door-casing', anchorOffset:[0,.18,0] }),
   // The dead end's chandelier. ZONE.none ambient is 0.022 — without a practical
   // this room is a black corridor with furniture you cannot see. Anchored to the
   // fitting so moving it moves its light.
@@ -196,10 +305,31 @@ export const CONSERVATORY_LIGHTS = Object.freeze([
       flutter:{ amount:.05, steady:.88 } }),
   L('hall-lounge-live', LIGHT_KIND.FITTING, 98.75, 27.0, 3.28, [.78, .74, .62], .82, 10,
     { groups:['hall'], zones:[ZONE.hall], circuit:'sp03', anchorPropId:'light-hall-lounge-casing', anchorOffset:[0,.18,0], flutter:{ amount:.06, steady:.78 } }),
+  // THE GALLERIA FEET. Maintained, because these are the escape route off two
+  // balconies and are the one thing in a dead auditorium that would still be
+  // wired to a battery pack. They also do the level-design work: the aisles are
+  // the darkest part of this building and the flights in them were invisible, so
+  // the way up read as more black wall. A stair nobody can see is not a stair.
+  L('hall-galleria-west-foot', LIGHT_KIND.EMERGENCY, 100.25, 20.5, .62, [1, 0, 0], .72, 48,
+    { groups:['ground','hall'], zones:[ZONE.foyer,ZONE.hall], home:ZONE.hall, penetration:.88, anchorPropId:'light-hall-galleria-west-casing', anchorOffset:[0,.18,0] }),
+  L('hall-galleria-east-foot', LIGHT_KIND.EMERGENCY, 126.25, 31.5, 5.36, [1, 0, 0], .72, 54,
+    { groups:['ground','hall'], zones:[ZONE.foyer,ZONE.hall], home:ZONE.hall, penetration:.92, anchorPropId:'light-hall-galleria-east-casing', anchorOffset:[0,.18,0] }),
   L('practice-emergency-north', LIGHT_KIND.EMERGENCY, 59.5, 55.75, 7.48, [1, .52, .25], .42, 7.5,
     { groups:['upper'], zones:[ZONE.practice], anchorPropId:'light-practice-north-casing', anchorOffset:[0,.18,0] }),
   L('practice-emergency-south', LIGHT_KIND.EMERGENCY, 59.75, 81.0, 7.48, [1, .50, .24], .38, 7.5,
     { groups:['upper'], zones:[ZONE.practice], anchorPropId:'light-practice-south-casing', anchorOffset:[0,.18,0] }),
+  // The open-well stair is kept as a readable vertical room. These coincide
+  // with the opal bodies in the hero mesh, but remain ordinary authored lights
+  // so the renderer can illuminate real construction instead of relying on an
+  // emissive decal. Each level sees the next landing before committing to it.
+  L('main-stair-ground-opal', LIGHT_KIND.FITTING, 66.4, 38.8, 4.15, [1, .78, .51], .86, 9.5,
+    { groups:['ground'], zones:[ZONE.stair] }),
+  L('main-stair-upper-opal', LIGHT_KIND.FITTING, 66.4, 36, 8.85, [1, .78, .51], .92, 10.5,
+    { groups:['ground','upper'], zones:[ZONE.stair] }),
+  L('main-stair-academic-opal', LIGHT_KIND.FITTING, 66.4, 35.5, 13.25, [1, .80, .55], .88, 10.5,
+    { groups:['upper','academic'], zones:[ZONE.stair,ZONE.academic] }),
+  L('main-stair-loggia-maintained', LIGHT_KIND.EMERGENCY, 66.5, 36.5, 11.8, [1, .62, .32], .42, 7.2,
+    { groups:['academic'], zones:[ZONE.academic] }),
   L('chapel-cold-shaft', LIGHT_KIND.SKY, 93.5, 73.0, 13.8, [.70, .82, 1], 1.18, 17,
     { groups:['upper'], zones:[ZONE.chapel] }),
 
@@ -250,14 +380,38 @@ export function resolveLightingContext(context = {}) {
     ambientColor: [...ambient.color],
     ambientIntensity: ambient.intensity,
     whitePointScale: zoneWhitePointScale(zone),
+    bounce: zoneBounce(zone),
   };
 }
 
-// Maintained means the circuit and its ballast stay alive; it does not mean
-// the lamp presents a constant image. Each fixture owns a stable offset and
-// period so adjacent emergency lights breathe out of step instead of turning
-// the building into a synchronized alarm. The electrical hum is deliberately
-// resolved elsewhere and therefore remains continuous through the dark beat.
+// Maintained means the circuit and its ballast stay alive; it does not mean the
+// lamp presents a constant image. The electrical state is binary: full red or
+// black, with no cinematic fade pretending to be a failing lamp. Reduced/off
+// effects hold the lamp steadily on.
+//
+// THE EMERGENCY LAMPS ARE ONE CIRCUIT, AND THEY MUST BLINK LIKE ONE.
+//
+// They used to own private periods (3.9-5.2s) and private offsets spread across
+// a whole period. Six of them meet in the hall/foyer pair, and independent
+// phases at a 42% duty cycle leave EVERY lamp dark together 2.4% of the time —
+// measured. The room was therefore red continuously and the blink was invisible:
+// the player's report was "the lights do not flash at all now", and they were
+// right, because in aggregate they did not. A building on a failing battery pack
+// snaps the whole circuit at once.
+//
+// So the period and the dark window are shared, and the only per-lamp freedom is
+// a jitter of well under a fifth of a cycle — enough that the lamps arrive and
+// leave raggedly, like ballasts striking at their own speed, and nowhere near
+// enough to fill in the dark. The dark is now the majority of the cycle, which
+// is what makes the lit beat an event.
+export const EMERGENCY_CADENCE = Object.freeze({
+  period: 4.6,
+  // Fraction of the shared cycle the circuit is energised. The rest is black.
+  duty: .34,
+  // Fraction of a cycle a single lamp may lag the circuit.
+  jitter: .17,
+});
+
 function stableLightHash(id) {
   let hash = 2166136261;
   const text = String(id || 'emergency');
@@ -268,57 +422,79 @@ function stableLightHash(id) {
   return hash >>> 0;
 }
 
-const smooth01 = (value) => {
-  const t = Math.max(0, Math.min(1, Number(value) || 0));
-  return t * t * (3 - 2 * t);
-};
-
 export function emergencyBlinkState(id, timeSec = 0, { effectsMode = 'full' } = {}) {
   const hash = stableLightHash(id);
-  const period = 3.9 + ((hash >>> 8) % 13) / 10;
-  const offset = ((hash & 0xffff) / 0xffff) * period;
-  const cycleTime = Math.max(0, Number(timeSec) || 0) + offset;
+  const { period, duty, jitter } = EMERGENCY_CADENCE;
+  // Added, not subtracted: a lamp LEADS the circuit by its own ballast's margin,
+  // which keeps the whole rig energised at t=0 and leaves the deterministic
+  // photometry of a still frame unchanged. Visually a lead and a lag are the
+  // same ragged edge.
+  const lag = ((hash & 0xffff) / 0xffff) * jitter * period;
+  const cycleTime = Math.max(0, Number(timeSec) || 0) + lag;
   const pulseIndex = Math.floor(cycleTime / period);
   const phase = (cycleTime - pulseIndex * period) / period;
   const mode = ['full', 'reduced', 'off'].includes(effectsMode) ? effectsMode : 'full';
-  let scale = .018;
+  const snappedOn = phase < duty;
 
-  if (mode === 'full') {
-    // Two short catches precede the readable burn. They are authored and
-    // deterministic, so the fixture never produces temporal-noise shimmer.
-    if (phase >= .035 && phase < .065) scale = .42;
-    else if (phase >= .085 && phase < .115) scale = .72;
-    else if (phase >= .145 && phase < .54) {
-      const rise = smooth01((phase - .145) / .055);
-      const fall = 1 - smooth01((phase - .49) / .05);
-      scale = .88 + .12 * Math.min(rise, fall);
-    }
-  } else {
-    // Reduced and off modes preserve the on/off story while removing the two
-    // hard pre-flashes. Long fades make the same shadow composition readable.
-    const fade = mode === 'off' ? .085 : .055;
-    if (phase >= .09 && phase < .60) {
-      const rise = smooth01((phase - .09) / fade);
-      const fall = 1 - smooth01((phase - (.60 - fade)) / fade);
-      scale = .035 + .965 * Math.min(rise, fall);
-    }
-  }
-
-  const family = (hash >>> 20) % 3;
-  const carriesShadow = pulseIndex % 3 === family;
-  const revealStart = mode === 'full' ? .25 : .24;
-  const revealEnd = mode === 'full' ? .49 : .55;
-  const shadowReveal = carriesShadow && phase >= revealStart && phase < revealEnd
-    ? smooth01(Math.min((phase - revealStart) / .055, (revealEnd - phase) / .07))
-    : 0;
+  // REDUCED FLASH IS NOT NO FLASH.
+  //
+  // Both softened modes used to return a flat scale of 1, which means a player
+  // who turns FLASH / STROBE down — or ticks Reduce Flash in the desktop menu —
+  // gets the emergency circuit pinned permanently at full red. In the concert
+  // hall, where six of these lamps overlap, that is a room bathed in unchanging
+  // red with no cadence in it at all: the accessibility setting silently deleted
+  // the effect and left only the glare, which is the worst of both.
+  //
+  // So reduced keeps a cadence and throws away the strobe: one slow raised
+  // cosine at half the circuit's rate, never below .42, no edges. That is a
+  // ~0.11Hz modulation under 2.4:1 — an order of magnitude under the three-hertz
+  // photosensitivity threshold, and still unmistakably a pulse.
+  //
+  // Off is the real opt-out and stays steady, but it settles at the beat's own
+  // time-average rather than full: a player who asked for less must not be
+  // handed a brighter, redder building than everybody else.
+  const breathe = .71 + .29 * Math.cos((phase + pulseIndex) * Math.PI);
+  const scale = mode === 'full' ? (snappedOn ? 1 : 0)
+    : mode === 'reduced' ? breathe
+    : duty + (1 - duty) * .32;
+  // If the red is on, the frightening part is on. Shadow selection downstream
+  // still admits only one practical to the single shadow-map pass.
+  const shadowReveal = mode === 'off' ? 0
+    : mode === 'reduced' ? breathe
+    : (snappedOn ? 1 : 0);
 
   return Object.freeze({
-    scale: Math.max(.012, Math.min(1, scale)),
+    scale,
     shadowReveal,
     pulseIndex,
     phase,
     period,
   });
+}
+
+// THE CLOCK THE APPARITIONS MOVE ON.
+//
+// They drift slowly while you can see them and faster while the circuit is dark,
+// so between two red beats a silhouette has plainly moved and you never once
+// catch it moving. That is the whole trick, and it has to be a pure function of
+// wall-clock time because the light runtime holds no state between frames — so
+// the warp is integrated in closed form off the shared cadence above.
+//
+// Steady (reduced/off) effects get an unwarped clock: with no dark beat to hide
+// in there is nothing to hide, and a lamp that never blinks must not imply one.
+export const EMERGENCY_DARK_HASTE = 3.4;
+
+export function emergencyWanderClock(timeSec = 0, { effectsMode = 'full' } = {}) {
+  const time = Math.max(0, Number(timeSec) || 0);
+  const mode = ['full', 'reduced', 'off'].includes(effectsMode) ? effectsMode : 'full';
+  if (mode !== 'full') return time;
+  const { period, duty } = EMERGENCY_CADENCE;
+  const lit = duty * period;
+  const perCycle = lit + (period - lit) * EMERGENCY_DARK_HASTE;
+  const cycles = Math.floor(time / period);
+  const into = time - cycles * period;
+  const partial = into <= lit ? into : lit + (into - lit) * EMERGENCY_DARK_HASTE;
+  return cycles * perCycle + partial;
 }
 
 export function resolveLocalLights(context, {
@@ -347,7 +523,7 @@ export function resolveLocalLights(context, {
     const blink = light.kind === LIGHT_KIND.EMERGENCY
       ? emergencyBlinkState(light.id, timeSec, { effectsMode: resolvedEffectsMode })
       : null;
-    if (light.flutter) intensity = resolvedEffectsMode !== 'full'
+    if (light.flutter && light.kind !== LIGHT_KIND.EMERGENCY) intensity = resolvedEffectsMode !== 'full'
       ? light.flutter.steady
       : Math.min(LIGHT_BANDS[light.kind][1], light.intensity + flutter * light.flutter.amount);
     if (blink) intensity *= blink.scale;
@@ -355,6 +531,7 @@ export function resolveLocalLights(context, {
       ? anchorPosition(light.anchorPropId)
       : null;
     const offset = light.anchorOffset || [0,0,0];
+    const spilling = Number.isFinite(light.home) && Number.isFinite(zone) && zone !== light.home;
     out.push({
       id: light.id,
       x: anchored ? anchored.x + offset[0] : light.x,
@@ -362,7 +539,9 @@ export function resolveLocalLights(context, {
       z: anchored ? anchored.z + offset[2] : light.z,
       color: light.color,
       intensity,
-      radius: light.radius,
+      radius: spilling ? light.radius * SPILL_REACH : light.radius,
+      penetration: spilling ? Math.min(light.penetration || 0, SPILL_PENETRATION) : (light.penetration || 0),
+      spilling,
       kind: light.kind,
       circuit: light.circuit,
       maintained: light.maintained,
@@ -375,6 +554,7 @@ export function resolveLocalLights(context, {
       shadowReveal: blink?.shadowReveal ?? 0,
       pulseIndex: blink?.pulseIndex ?? null,
       castsShadow: !!light.castsShadow,
+      zone: Number.isFinite(zone) ? zone : 0,
     });
   }
   if (out.length <= slots) return out;

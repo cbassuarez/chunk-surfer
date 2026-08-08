@@ -14,7 +14,7 @@ import { buildMapModel, captureFloorplanMapSource } from '../src/game/map-model.
 
 FP.compile(conservatory.levels,{
   width:conservatory.width,height:conservatory.height,widenCorridors:conservatory.widenCorridors,
-  connectors:conservatory.connectors||[],doors:conservatory.doors||[],
+  connectors:conservatory.connectors||[],edgePortals:conservatory.edgePortals||[],doors:conservatory.doors||[],
 });
 FP.setSpawn(conservatory.spawn.x,conservatory.spawn.y);
 PROPS.propsInit(FP);
@@ -81,12 +81,17 @@ assert.equal(TARGETS.length,5);
 assert.equal(BUILDING_MAP.targets.length,5);
 assert.ok(!BUILDING_MAP.targets.some((target)=>target.logical.y>=240));
 
-// The flight to the third floor is the upper half of the main spiral now; its
-// logical run is at runtime (124-126, 78-91) and its old island is gone.
-assert.equal(FP.materialAt(124,84),MATERIAL.serviceConcrete,'the 3F stair keeps the service-stair concrete treatment');
+// The upper two half-coils remain service-concrete collision beneath the
+// dedicated project-native hero construction.
+const upperMainFlight=FP.floorplan().stairRuns.find((run)=>run.owner==='main-open-well'&&run.fromH===4.8);
+assert.ok(upperMainFlight,'the 3F spiral flight is compiled');
+assert.equal(FP.materialAt(upperMainFlight.logical0[0],upperMainFlight.logical0[1]),MATERIAL.serviceConcrete,
+  'the 3F stair keeps the service-stair concrete treatment');
 const stairClutterMeshes=new Set(['upper_stair_dressing','basement_stair_dressing','academic_stair_dressing','stair_smoke_door_open','stair_smoke_door_closed','stair_sconce_pair_opal','stair_bulkhead_pair','stair_pendant_opal','tower_stair_rail_low_up','tower_stair_rail_high_up','tower_stair_rail_high_down','tower_stair_rail_low_down']);
 assert.equal(CONSERVATORY_PROPS.some((prop)=>prop.id!=='tower-light-ringing'&&stairClutterMeshes.has(prop.mesh)),false,
   'every ordinary stair stays free of rails, frames, and decorative fixtures');
+assert.equal(CONSERVATORY_PROPS.find((prop)=>prop.id==='main-open-well-stair')?.mesh,'main_open_well_stair',
+  'the main spiral alone uses its dedicated hero construction');
 assert.equal(CONSERVATORY_PROPS.find((prop)=>prop.id==='tower-light-ringing')?.mesh,'stair_pendant_opal',
   'the ringing-room ceiling pendant is the sole deliberate exception');
 

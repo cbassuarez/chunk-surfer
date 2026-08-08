@@ -75,6 +75,7 @@ export function makeThoughtScene({
   return {
     id: `thought:${id}`,
     blocksInput: true,
+    allowsLook: true,
     blocksWorld,                 // the corridor is still there. it is still walking.
     lensPreset,
 

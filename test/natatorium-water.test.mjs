@@ -20,6 +20,7 @@ FP.compile(conservatory.levels, {
   height: conservatory.height,
   widenCorridors: conservatory.widenCorridors,
   connectors: conservatory.connectors || [],
+  edgePortals: conservatory.edgePortals || [],
 });
 
 const bounds = computeNatatoriumBasinBounds(FP);

@@ -37,7 +37,7 @@ import { buildRunSummary } from '../progression/report.js';
 import { ENDING_ARRIVAL, endingManifest } from '../data/endings.js';
 
 const EMPTY_SUMMARY = Object.freeze({
-  takes: { completed: 0, spoiled: 0, aborted: 0, rooms: [], contaminated: [] },
+  takes: { completed: 0, spoiled: 0, aborted: 0, rooms: [], contaminated: [], places: {} },
   injuries: 0,
   battles: { started: 0, won: 0, lost: 0, firstPassWon: 0, results: {} },
   disclosures: { found: 0, ids: [] },
@@ -51,6 +51,11 @@ const EMPTY_SUMMARY = Object.freeze({
 // answer — it is an answer, and it is the one the building finds most useful
 // (see guestLines in data/conservatory-script.js, which has always known this).
 const CONFESSION_KINDS = ['name', 'reason', 'feeling', 'nothing'];
+// The four places a hall take can be rolled from. This is a CLOSED list and the
+// flag projection enumerates it, so a new deck in the concert hall has to be
+// added here or an ending can never ask about it. `stair` is included because a
+// take rolled on the galleria flight is a real thing a player can do.
+const HALL_TAKE_PLACES = ['orchestra', 'stage', 'lower', 'upper', 'stair'];
 
 // EVERY DISCLOSURE IS A SENTENCE HE SAID OUT LOUD IN A ROOM.
 //
@@ -125,6 +130,7 @@ export function buildEndingDossier({
       clean,
       rooms,
       full: rooms.length >= 5,
+      places: { ...(takes.places || {}) },
     },
 
     injuries: Number(summary.injuries) || 0,
@@ -209,6 +215,16 @@ export function projectDossierFlags(dossier) {
   set('takes.aborted', dossier.takes.aborted);
   set('takes.contaminated', dossier.takes.contaminated);
   set('takes.full', dossier.takes.full);
+  // WHERE THE HALL TAKE WAS ROLLED, as booleans. `flagTest` only compares a
+  // numeric literal on the right, so an enumeration must arrive as one flag per
+  // value or `place=='upper'` silently degrades to a truthiness test. No hyphens
+  // either: flagTest tolerates one and validateConditionExpression does not, so a
+  // hyphenated flag works in the game and fails authoring validation.
+  const hallPlace = dossier.takes.places?.amplifications || null;
+  for (const place of HALL_TAKE_PLACES) set(`takes.hall.${place}`, hallPlace === place);
+  // Rolled from anywhere above the stalls. The two balconies are the reason the
+  // galleria stairs exist, so this is the flag an ending should usually ask.
+  set('takes.hall.aloft', hallPlace === 'lower' || hallPlace === 'upper');
 
   set('injuries', dossier.injuries);
   set('untouched', dossier.injuries === 0);

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 3,
   "id": "chunk-surf.source-atlas",
-  "corpusHash": 1350346303,
+  "corpusHash": 4127912712,
   "generatedFrom": [
     "src/game/chunk-surf-state.js",
     "src/game/presence.js",
@@ -27271,12 +27271,12 @@
       ],
       "sourceLines": [
         {
-          "id": "src/game/presence.js:492:921924637",
+          "id": "src/game/presence.js:502:921924637",
           "file": "src/game/presence.js",
-          "line": 492,
+          "line": 502,
           "text": "    state.tauntRequested = false;",
           "hash": 921924637,
-          "referenceHash": 1975794248,
+          "referenceHash": 481959942,
           "language": "javascript",
           "tokens": [
             {
@@ -27318,12 +27318,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:493:2405133266",
+          "id": "src/game/presence.js:503:2405133266",
           "file": "src/game/presence.js",
-          "line": 493,
+          "line": 503,
           "text": "    return true;",
           "hash": 2405133266,
-          "referenceHash": 2761993488,
+          "referenceHash": 2173126774,
           "language": "javascript",
           "tokens": [
             {
@@ -27347,12 +27347,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:494:3392712656",
+          "id": "src/game/presence.js:504:3392712656",
           "file": "src/game/presence.js",
-          "line": 494,
+          "line": 504,
           "text": "  }",
           "hash": 3392712656,
-          "referenceHash": 1149213035,
+          "referenceHash": 2445282293,
           "language": "javascript",
           "tokens": [
             {
@@ -27364,12 +27364,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:495:1893019650",
+          "id": "src/game/presence.js:505:1893019650",
           "file": "src/game/presence.js",
-          "line": 495,
+          "line": 505,
           "text": "  enterStand(now, 2600, 7200);",
           "hash": 1893019650,
-          "referenceHash": 2549946694,
+          "referenceHash": 2592006652,
           "language": "javascript",
           "tokens": [
             {
@@ -27429,12 +27429,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:496:3482313513",
+          "id": "src/game/presence.js:506:3482313513",
           "file": "src/game/presence.js",
-          "line": 496,
+          "line": 506,
           "text": "  return false;",
           "hash": 3482313513,
-          "referenceHash": 363432992,
+          "referenceHash": 2409679190,
           "language": "javascript",
           "tokens": [
             {
@@ -27458,12 +27458,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:497:4161554600",
+          "id": "src/game/presence.js:507:4161554600",
           "file": "src/game/presence.js",
-          "line": 497,
+          "line": 507,
           "text": "}",
           "hash": 4161554600,
-          "referenceHash": 1713840578,
+          "referenceHash": 1278696168,
           "language": "javascript",
           "tokens": [
             {
@@ -27475,12 +27475,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:499:3844010604",
+          "id": "src/game/presence.js:509:3844010604",
           "file": "src/game/presence.js",
-          "line": 499,
+          "line": 509,
           "text": "function processLightSound(lightSound, now) {",
           "hash": 3844010604,
-          "referenceHash": 3693818828,
+          "referenceHash": 2274649078,
           "language": "javascript",
           "tokens": [
             {
@@ -27534,12 +27534,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:500:616904982",
+          "id": "src/game/presence.js:510:616904982",
           "file": "src/game/presence.js",
-          "line": 500,
+          "line": 510,
           "text": "  if (!lightSound?.active || now < state.nextLightListenAt) return false;",
           "hash": 616904982,
-          "referenceHash": 3419781443,
+          "referenceHash": 3526220882,
           "language": "javascript",
           "tokens": [
             {
@@ -27641,12 +27641,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:501:1118823211",
+          "id": "src/game/presence.js:511:1118823211",
           "file": "src/game/presence.js",
-          "line": 501,
+          "line": 511,
           "text": "  state.nextLightListenAt = now + between(PRESENCE.lightHumMinIntervalMs, PRESENCE.lightHumMaxIntervalMs);",
           "hash": 1118823211,
-          "referenceHash": 3096943901,
+          "referenceHash": 1333163642,
           "language": "javascript",
           "tokens": [
             {
@@ -27754,12 +27754,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:502:3333038605",
+          "id": "src/game/presence.js:512:3333038605",
           "file": "src/game/presence.js",
-          "line": 502,
+          "line": 512,
           "text": "  const position = lightSound.position;",
           "hash": 3333038605,
-          "referenceHash": 1033992030,
+          "referenceHash": 1206735199,
           "language": "javascript",
           "tokens": [
             {
@@ -27807,12 +27807,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:503:1163634472",
+          "id": "src/game/presence.js:513:1163634472",
           "file": "src/game/presence.js",
-          "line": 503,
+          "line": 513,
           "text": "  if (!position || !Number.isFinite(position.x) || !Number.isFinite(position.y)) return false;",
           "hash": 1163634472,
-          "referenceHash": 2363008372,
+          "referenceHash": 2960629791,
           "language": "javascript",
           "tokens": [
             {
@@ -27986,12 +27986,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:504:3548093324",
+          "id": "src/game/presence.js:514:3548093324",
           "file": "src/game/presence.js",
-          "line": 504,
+          "line": 514,
           "text": "  const distance = Math.hypot(state.x - position.x, state.y - position.y);",
           "hash": 3548093324,
-          "referenceHash": 2889688155,
+          "referenceHash": 1711974876,
           "language": "javascript",
           "tokens": [
             {
@@ -28141,12 +28141,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:505:3558858791",
+          "id": "src/game/presence.js:515:3558858791",
           "file": "src/game/presence.js",
-          "line": 505,
+          "line": 515,
           "text": "  if (distance > PRESENCE.lightRadius * difficultyRules.hearingScale) return false;",
           "hash": 3558858791,
-          "referenceHash": 887578897,
+          "referenceHash": 1298127892,
           "language": "javascript",
           "tokens": [
             {
@@ -28242,12 +28242,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:506:3520272748",
+          "id": "src/game/presence.js:516:3520272748",
           "file": "src/game/presence.js",
-          "line": 506,
+          "line": 516,
           "text": "  const occlusion = Math.max(0, Number(lightSound.occlusionDb) || 0);",
           "hash": 3520272748,
-          "referenceHash": 797248127,
+          "referenceHash": 1668856486,
           "language": "javascript",
           "tokens": [
             {
@@ -28367,12 +28367,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:547:3546829327",
+          "id": "src/game/presence.js:557:3546829327",
           "file": "src/game/presence.js",
-          "line": 547,
+          "line": 557,
           "text": "  // envelope and become a hidden clue.",
           "hash": 3546829327,
-          "referenceHash": 3597418915,
+          "referenceHash": 4003952890,
           "language": "javascript",
           "tokens": [
             {
@@ -28384,12 +28384,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:548:2493800864",
+          "id": "src/game/presence.js:558:2493800864",
           "file": "src/game/presence.js",
-          "line": 548,
+          "line": 558,
           "text": "  const externalFresh = now < state.externalTargetUntil;",
           "hash": 2493800864,
-          "referenceHash": 4072904755,
+          "referenceHash": 3551959296,
           "language": "javascript",
           "tokens": [
             {
@@ -28449,12 +28449,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:549:3848131308",
+          "id": "src/game/presence.js:559:3848131308",
           "file": "src/game/presence.js",
-          "line": 549,
+          "line": 559,
           "text": "  if (sourceMode && !externalFresh && REC.currentWorldNoise() >= PRESENCE.noiseClueThreshold) {",
           "hash": 3848131308,
-          "referenceHash": 380823378,
+          "referenceHash": 486807751,
           "language": "javascript",
           "tokens": [
             {
@@ -28574,12 +28574,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:550:1924731751",
+          "id": "src/game/presence.js:560:1924731751",
           "file": "src/game/presence.js",
-          "line": 550,
+          "line": 560,
           "text": "    hear(rec.lastNoiseAt.x, rec.lastNoiseAt.y, REC.currentWorldNoise(), now, {",
           "hash": 1924731751,
-          "referenceHash": 2977166831,
+          "referenceHash": 1406057438,
           "language": "javascript",
           "tokens": [
             {
@@ -28723,12 +28723,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:551:3874072518",
+          "id": "src/game/presence.js:561:3874072518",
           "file": "src/game/presence.js",
-          "line": 551,
+          "line": 561,
           "text": "      confidence: .46, priority: .42, reason: 'LEGACY_WORLD_NOISE',",
           "hash": 3874072518,
-          "referenceHash": 3815021661,
+          "referenceHash": 1406447754,
           "language": "javascript",
           "tokens": [
             {
@@ -28806,12 +28806,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:552:2090475560",
+          "id": "src/game/presence.js:562:2090475560",
           "file": "src/game/presence.js",
-          "line": 552,
+          "line": 562,
           "text": "    });",
           "hash": 2090475560,
-          "referenceHash": 711635490,
+          "referenceHash": 2934914473,
           "language": "javascript",
           "tokens": [
             {
@@ -28835,12 +28835,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:553:3392712656",
+          "id": "src/game/presence.js:563:3392712656",
           "file": "src/game/presence.js",
-          "line": 553,
+          "line": 563,
           "text": "  }",
           "hash": 3392712656,
-          "referenceHash": 340088637,
+          "referenceHash": 3646700354,
           "language": "javascript",
           "tokens": [
             {
@@ -28852,12 +28852,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:554:3211021817",
+          "id": "src/game/presence.js:564:3211021817",
           "file": "src/game/presence.js",
-          "line": 554,
+          "line": 564,
           "text": "  if (!sourceMode) processLightSound(lightSound, now);",
           "hash": 3211021817,
-          "referenceHash": 4007005997,
+          "referenceHash": 3326765264,
           "language": "javascript",
           "tokens": [
             {
@@ -28935,12 +28935,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:555:3145036895",
+          "id": "src/game/presence.js:565:3145036895",
           "file": "src/game/presence.js",
-          "line": 555,
+          "line": 565,
           "text": "  resolveTargetToFloor(navigation);",
           "hash": 3145036895,
-          "referenceHash": 2668969704,
+          "referenceHash": 369061263,
           "language": "javascript",
           "tokens": [
             {
@@ -28976,12 +28976,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:557:2470391524",
+          "id": "src/game/presence.js:567:2470391524",
           "file": "src/game/presence.js",
-          "line": 557,
+          "line": 567,
           "text": "  // A sound is only useful for a few seconds. Losing it leaves a search origin,",
           "hash": 2470391524,
-          "referenceHash": 1653004375,
+          "referenceHash": 3507146494,
           "language": "javascript",
           "tokens": [
             {
@@ -28993,12 +28993,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:558:1170837856",
+          "id": "src/game/presence.js:568:1170837856",
           "file": "src/game/presence.js",
-          "line": 558,
+          "line": 568,
           "text": "  // not a hidden tether to the player.",
           "hash": 1170837856,
-          "referenceHash": 1338149248,
+          "referenceHash": 2439183143,
           "language": "javascript",
           "tokens": [
             {
@@ -29010,12 +29010,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:559:62141002",
+          "id": "src/game/presence.js:569:62141002",
           "file": "src/game/presence.js",
-          "line": 559,
+          "line": 569,
           "text": "  const sinceTarget = (now - state.targetSetAt) / 1000;",
           "hash": 62141002,
-          "referenceHash": 2955729141,
+          "referenceHash": 3542932118,
           "language": "javascript",
           "tokens": [
             {
@@ -29099,12 +29099,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:560:1452199963",
+          "id": "src/game/presence.js:570:1452199963",
           "file": "src/game/presence.js",
-          "line": 560,
+          "line": 570,
           "text": "  if (state.hasTarget && !externalFresh && sinceTarget > PRESENCE.memorySec * difficultyRules.memoryScale) {",
           "hash": 1452199963,
-          "referenceHash": 1807366194,
+          "referenceHash": 2204839485,
           "language": "javascript",
           "tokens": [
             {
@@ -29230,12 +29230,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:561:366629139",
+          "id": "src/game/presence.js:571:366629139",
           "file": "src/game/presence.js",
-          "line": 561,
+          "line": 571,
           "text": "    enterStand(now, 1600, 5200);",
           "hash": 366629139,
-          "referenceHash": 1243448543,
+          "referenceHash": 104508776,
           "language": "javascript",
           "tokens": [
             {
@@ -29295,12 +29295,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:728:1368872440",
+          "id": "src/game/presence.js:738:1368872440",
           "file": "src/game/presence.js",
-          "line": 728,
+          "line": 738,
           "text": "    }",
           "hash": 1368872440,
-          "referenceHash": 451200117,
+          "referenceHash": 1126923320,
           "language": "javascript",
           "tokens": [
             {
@@ -29312,12 +29312,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:729:3392712656",
+          "id": "src/game/presence.js:739:3392712656",
           "file": "src/game/presence.js",
-          "line": 729,
+          "line": 739,
           "text": "  }",
           "hash": 3392712656,
-          "referenceHash": 572126726,
+          "referenceHash": 1320709047,
           "language": "javascript",
           "tokens": [
             {
@@ -29329,12 +29329,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:730:4161554600",
+          "id": "src/game/presence.js:740:4161554600",
           "file": "src/game/presence.js",
-          "line": 730,
+          "line": 740,
           "text": "}",
           "hash": 4161554600,
-          "referenceHash": 1821415824,
+          "referenceHash": 1037688311,
           "language": "javascript",
           "tokens": [
             {
@@ -29346,12 +29346,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:732:2349445621",
+          "id": "src/game/presence.js:742:2349445621",
           "file": "src/game/presence.js",
-          "line": 732,
+          "line": 742,
           "text": "export function loadPresenceState(saved = {}) {",
           "hash": 2349445621,
-          "referenceHash": 1045828031,
+          "referenceHash": 559933560,
           "language": "javascript",
           "tokens": [
             {
@@ -29417,12 +29417,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:733:1940703736",
+          "id": "src/game/presence.js:743:1940703736",
           "file": "src/game/presence.js",
-          "line": 733,
+          "line": 743,
           "text": "  tableau = null;",
           "hash": 1940703736,
-          "referenceHash": 556892445,
+          "referenceHash": 1963068450,
           "language": "javascript",
           "tokens": [
             {
@@ -29452,12 +29452,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:734:3155563863",
+          "id": "src/game/presence.js:744:3155563863",
           "file": "src/game/presence.js",
-          "line": 734,
+          "line": 744,
           "text": "  // Saves retain what the player learned from prior contacts, never a live",
           "hash": 3155563863,
-          "referenceHash": 121383907,
+          "referenceHash": 1427864676,
           "language": "javascript",
           "tokens": [
             {
@@ -29469,12 +29469,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:735:3093049333",
+          "id": "src/game/presence.js:745:3093049333",
           "file": "src/game/presence.js",
-          "line": 735,
+          "line": 745,
           "text": "  // body. Module state survives New Game in the same process, so loading a",
           "hash": 3093049333,
-          "referenceHash": 3167927918,
+          "referenceHash": 1199983833,
           "language": "javascript",
           "tokens": [
             {
@@ -29486,12 +29486,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:736:1968875163",
+          "id": "src/game/presence.js:746:1968875163",
           "file": "src/game/presence.js",
-          "line": 736,
+          "line": 746,
           "text": "  // fresh record must explicitly revoke the previous run's manifestation.",
           "hash": 1968875163,
-          "referenceHash": 1646491597,
+          "referenceHash": 3951195764,
           "language": "javascript",
           "tokens": [
             {
@@ -29503,12 +29503,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:737:3518337213",
+          "id": "src/game/presence.js:747:3518337213",
           "file": "src/game/presence.js",
-          "line": 737,
+          "line": 747,
           "text": "  Object.assign(state, {",
           "hash": 3518337213,
-          "referenceHash": 2404807238,
+          "referenceHash": 1516627679,
           "language": "javascript",
           "tokens": [
             {
@@ -29556,12 +29556,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:738:2218331492",
+          "id": "src/game/presence.js:748:2218331492",
           "file": "src/game/presence.js",
-          "line": 738,
+          "line": 748,
           "text": "    active: false,",
           "hash": 2218331492,
-          "referenceHash": 950538788,
+          "referenceHash": 3858146517,
           "language": "javascript",
           "tokens": [
             {
@@ -29591,12 +29591,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:739:415872040",
+          "id": "src/game/presence.js:749:415872040",
           "file": "src/game/presence.js",
-          "line": 739,
+          "line": 749,
           "text": "    x: 0, y: 0,",
           "hash": 415872040,
-          "referenceHash": 396958471,
+          "referenceHash": 3655765888,
           "language": "javascript",
           "tokens": [
             {
@@ -29650,12 +29650,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:740:2044429904",
+          "id": "src/game/presence.js:750:2044429904",
           "file": "src/game/presence.js",
-          "line": 740,
+          "line": 750,
           "text": "    targetX: 0, targetY: 0,",
           "hash": 2044429904,
-          "referenceHash": 1747528327,
+          "referenceHash": 1928428538,
           "language": "javascript",
           "tokens": [
             {
@@ -29709,12 +29709,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:741:2015149321",
+          "id": "src/game/presence.js:751:2015149321",
           "file": "src/game/presence.js",
-          "line": 741,
+          "line": 751,
           "text": "    hasTarget: false,",
           "hash": 2015149321,
-          "referenceHash": 1624019337,
+          "referenceHash": 2432527044,
           "language": "javascript",
           "tokens": [
             {
@@ -29744,12 +29744,12 @@
           ]
         },
         {
-          "id": "src/game/presence.js:742:2347492960",
+          "id": "src/game/presence.js:752:2347492960",
           "file": "src/game/presence.js",
-          "line": 742,
+          "line": 752,
           "text": "    targetLevel: 0,",
           "hash": 2347492960,
-          "referenceHash": 600807541,
+          "referenceHash": 3564699964,
           "language": "javascript",
           "tokens": [
             {
@@ -99825,13 +99825,13 @@
         }
       ]
     },
-    "src/game/presence.js:492:921924637": {
-      "id": "src/game/presence.js:492:921924637",
+    "src/game/presence.js:502:921924637": {
+      "id": "src/game/presence.js:502:921924637",
       "file": "src/game/presence.js",
-      "line": 492,
+      "line": 502,
       "text": "    state.tauntRequested = false;",
       "hash": 921924637,
-      "referenceHash": 1975794248,
+      "referenceHash": 481959942,
       "language": "javascript",
       "tokens": [
         {
@@ -99872,13 +99872,13 @@
         }
       ]
     },
-    "src/game/presence.js:493:2405133266": {
-      "id": "src/game/presence.js:493:2405133266",
+    "src/game/presence.js:503:2405133266": {
+      "id": "src/game/presence.js:503:2405133266",
       "file": "src/game/presence.js",
-      "line": 493,
+      "line": 503,
       "text": "    return true;",
       "hash": 2405133266,
-      "referenceHash": 2761993488,
+      "referenceHash": 2173126774,
       "language": "javascript",
       "tokens": [
         {
@@ -99901,13 +99901,13 @@
         }
       ]
     },
-    "src/game/presence.js:494:3392712656": {
-      "id": "src/game/presence.js:494:3392712656",
+    "src/game/presence.js:504:3392712656": {
+      "id": "src/game/presence.js:504:3392712656",
       "file": "src/game/presence.js",
-      "line": 494,
+      "line": 504,
       "text": "  }",
       "hash": 3392712656,
-      "referenceHash": 1149213035,
+      "referenceHash": 2445282293,
       "language": "javascript",
       "tokens": [
         {
@@ -99918,13 +99918,13 @@
         }
       ]
     },
-    "src/game/presence.js:495:1893019650": {
-      "id": "src/game/presence.js:495:1893019650",
+    "src/game/presence.js:505:1893019650": {
+      "id": "src/game/presence.js:505:1893019650",
       "file": "src/game/presence.js",
-      "line": 495,
+      "line": 505,
       "text": "  enterStand(now, 2600, 7200);",
       "hash": 1893019650,
-      "referenceHash": 2549946694,
+      "referenceHash": 2592006652,
       "language": "javascript",
       "tokens": [
         {
@@ -99983,13 +99983,13 @@
         }
       ]
     },
-    "src/game/presence.js:496:3482313513": {
-      "id": "src/game/presence.js:496:3482313513",
+    "src/game/presence.js:506:3482313513": {
+      "id": "src/game/presence.js:506:3482313513",
       "file": "src/game/presence.js",
-      "line": 496,
+      "line": 506,
       "text": "  return false;",
       "hash": 3482313513,
-      "referenceHash": 363432992,
+      "referenceHash": 2409679190,
       "language": "javascript",
       "tokens": [
         {
@@ -100012,13 +100012,13 @@
         }
       ]
     },
-    "src/game/presence.js:497:4161554600": {
-      "id": "src/game/presence.js:497:4161554600",
+    "src/game/presence.js:507:4161554600": {
+      "id": "src/game/presence.js:507:4161554600",
       "file": "src/game/presence.js",
-      "line": 497,
+      "line": 507,
       "text": "}",
       "hash": 4161554600,
-      "referenceHash": 1713840578,
+      "referenceHash": 1278696168,
       "language": "javascript",
       "tokens": [
         {
@@ -100029,13 +100029,13 @@
         }
       ]
     },
-    "src/game/presence.js:499:3844010604": {
-      "id": "src/game/presence.js:499:3844010604",
+    "src/game/presence.js:509:3844010604": {
+      "id": "src/game/presence.js:509:3844010604",
       "file": "src/game/presence.js",
-      "line": 499,
+      "line": 509,
       "text": "function processLightSound(lightSound, now) {",
       "hash": 3844010604,
-      "referenceHash": 3693818828,
+      "referenceHash": 2274649078,
       "language": "javascript",
       "tokens": [
         {
@@ -100088,13 +100088,13 @@
         }
       ]
     },
-    "src/game/presence.js:500:616904982": {
-      "id": "src/game/presence.js:500:616904982",
+    "src/game/presence.js:510:616904982": {
+      "id": "src/game/presence.js:510:616904982",
       "file": "src/game/presence.js",
-      "line": 500,
+      "line": 510,
       "text": "  if (!lightSound?.active || now < state.nextLightListenAt) return false;",
       "hash": 616904982,
-      "referenceHash": 3419781443,
+      "referenceHash": 3526220882,
       "language": "javascript",
       "tokens": [
         {
@@ -100195,13 +100195,13 @@
         }
       ]
     },
-    "src/game/presence.js:501:1118823211": {
-      "id": "src/game/presence.js:501:1118823211",
+    "src/game/presence.js:511:1118823211": {
+      "id": "src/game/presence.js:511:1118823211",
       "file": "src/game/presence.js",
-      "line": 501,
+      "line": 511,
       "text": "  state.nextLightListenAt = now + between(PRESENCE.lightHumMinIntervalMs, PRESENCE.lightHumMaxIntervalMs);",
       "hash": 1118823211,
-      "referenceHash": 3096943901,
+      "referenceHash": 1333163642,
       "language": "javascript",
       "tokens": [
         {
@@ -100308,13 +100308,13 @@
         }
       ]
     },
-    "src/game/presence.js:502:3333038605": {
-      "id": "src/game/presence.js:502:3333038605",
+    "src/game/presence.js:512:3333038605": {
+      "id": "src/game/presence.js:512:3333038605",
       "file": "src/game/presence.js",
-      "line": 502,
+      "line": 512,
       "text": "  const position = lightSound.position;",
       "hash": 3333038605,
-      "referenceHash": 1033992030,
+      "referenceHash": 1206735199,
       "language": "javascript",
       "tokens": [
         {
@@ -100361,13 +100361,13 @@
         }
       ]
     },
-    "src/game/presence.js:503:1163634472": {
-      "id": "src/game/presence.js:503:1163634472",
+    "src/game/presence.js:513:1163634472": {
+      "id": "src/game/presence.js:513:1163634472",
       "file": "src/game/presence.js",
-      "line": 503,
+      "line": 513,
       "text": "  if (!position || !Number.isFinite(position.x) || !Number.isFinite(position.y)) return false;",
       "hash": 1163634472,
-      "referenceHash": 2363008372,
+      "referenceHash": 2960629791,
       "language": "javascript",
       "tokens": [
         {
@@ -100540,13 +100540,13 @@
         }
       ]
     },
-    "src/game/presence.js:504:3548093324": {
-      "id": "src/game/presence.js:504:3548093324",
+    "src/game/presence.js:514:3548093324": {
+      "id": "src/game/presence.js:514:3548093324",
       "file": "src/game/presence.js",
-      "line": 504,
+      "line": 514,
       "text": "  const distance = Math.hypot(state.x - position.x, state.y - position.y);",
       "hash": 3548093324,
-      "referenceHash": 2889688155,
+      "referenceHash": 1711974876,
       "language": "javascript",
       "tokens": [
         {
@@ -100695,13 +100695,13 @@
         }
       ]
     },
-    "src/game/presence.js:505:3558858791": {
-      "id": "src/game/presence.js:505:3558858791",
+    "src/game/presence.js:515:3558858791": {
+      "id": "src/game/presence.js:515:3558858791",
       "file": "src/game/presence.js",
-      "line": 505,
+      "line": 515,
       "text": "  if (distance > PRESENCE.lightRadius * difficultyRules.hearingScale) return false;",
       "hash": 3558858791,
-      "referenceHash": 887578897,
+      "referenceHash": 1298127892,
       "language": "javascript",
       "tokens": [
         {
@@ -100796,13 +100796,13 @@
         }
       ]
     },
-    "src/game/presence.js:506:3520272748": {
-      "id": "src/game/presence.js:506:3520272748",
+    "src/game/presence.js:516:3520272748": {
+      "id": "src/game/presence.js:516:3520272748",
       "file": "src/game/presence.js",
-      "line": 506,
+      "line": 516,
       "text": "  const occlusion = Math.max(0, Number(lightSound.occlusionDb) || 0);",
       "hash": 3520272748,
-      "referenceHash": 797248127,
+      "referenceHash": 1668856486,
       "language": "javascript",
       "tokens": [
         {
@@ -100921,13 +100921,13 @@
         }
       ]
     },
-    "src/game/presence.js:547:3546829327": {
-      "id": "src/game/presence.js:547:3546829327",
+    "src/game/presence.js:557:3546829327": {
+      "id": "src/game/presence.js:557:3546829327",
       "file": "src/game/presence.js",
-      "line": 547,
+      "line": 557,
       "text": "  // envelope and become a hidden clue.",
       "hash": 3546829327,
-      "referenceHash": 3597418915,
+      "referenceHash": 4003952890,
       "language": "javascript",
       "tokens": [
         {
@@ -100938,13 +100938,13 @@
         }
       ]
     },
-    "src/game/presence.js:548:2493800864": {
-      "id": "src/game/presence.js:548:2493800864",
+    "src/game/presence.js:558:2493800864": {
+      "id": "src/game/presence.js:558:2493800864",
       "file": "src/game/presence.js",
-      "line": 548,
+      "line": 558,
       "text": "  const externalFresh = now < state.externalTargetUntil;",
       "hash": 2493800864,
-      "referenceHash": 4072904755,
+      "referenceHash": 3551959296,
       "language": "javascript",
       "tokens": [
         {
@@ -101003,13 +101003,13 @@
         }
       ]
     },
-    "src/game/presence.js:549:3848131308": {
-      "id": "src/game/presence.js:549:3848131308",
+    "src/game/presence.js:559:3848131308": {
+      "id": "src/game/presence.js:559:3848131308",
       "file": "src/game/presence.js",
-      "line": 549,
+      "line": 559,
       "text": "  if (sourceMode && !externalFresh && REC.currentWorldNoise() >= PRESENCE.noiseClueThreshold) {",
       "hash": 3848131308,
-      "referenceHash": 380823378,
+      "referenceHash": 486807751,
       "language": "javascript",
       "tokens": [
         {
@@ -101128,13 +101128,30 @@
         }
       ]
     },
-    "src/game/presence.js:550:1924731751": {
-      "id": "src/game/presence.js:550:1924731751",
+    "src/game/presence.js:56:1376720189": {
+      "id": "src/game/presence.js:56:1376720189",
       "file": "src/game/presence.js",
-      "line": 550,
+      "line": 56,
+      "text": "  // Semantic monitor bands own ordinary player-noise acquisition. This is the",
+      "hash": 1376720189,
+      "referenceHash": 2115254680,
+      "language": "javascript",
+      "tokens": [
+        {
+          "text": "// Semantic monitor bands own ordinary player-noise acquisition. This is the",
+          "kind": "comment",
+          "start": 2,
+          "end": 78
+        }
+      ]
+    },
+    "src/game/presence.js:560:1924731751": {
+      "id": "src/game/presence.js:560:1924731751",
+      "file": "src/game/presence.js",
+      "line": 560,
       "text": "    hear(rec.lastNoiseAt.x, rec.lastNoiseAt.y, REC.currentWorldNoise(), now, {",
       "hash": 1924731751,
-      "referenceHash": 2977166831,
+      "referenceHash": 1406057438,
       "language": "javascript",
       "tokens": [
         {
@@ -101277,13 +101294,13 @@
         }
       ]
     },
-    "src/game/presence.js:551:3874072518": {
-      "id": "src/game/presence.js:551:3874072518",
+    "src/game/presence.js:561:3874072518": {
+      "id": "src/game/presence.js:561:3874072518",
       "file": "src/game/presence.js",
-      "line": 551,
+      "line": 561,
       "text": "      confidence: .46, priority: .42, reason: 'LEGACY_WORLD_NOISE',",
       "hash": 3874072518,
-      "referenceHash": 3815021661,
+      "referenceHash": 1406447754,
       "language": "javascript",
       "tokens": [
         {
@@ -101360,13 +101377,13 @@
         }
       ]
     },
-    "src/game/presence.js:552:2090475560": {
-      "id": "src/game/presence.js:552:2090475560",
+    "src/game/presence.js:562:2090475560": {
+      "id": "src/game/presence.js:562:2090475560",
       "file": "src/game/presence.js",
-      "line": 552,
+      "line": 562,
       "text": "    });",
       "hash": 2090475560,
-      "referenceHash": 711635490,
+      "referenceHash": 2934914473,
       "language": "javascript",
       "tokens": [
         {
@@ -101389,13 +101406,13 @@
         }
       ]
     },
-    "src/game/presence.js:553:3392712656": {
-      "id": "src/game/presence.js:553:3392712656",
+    "src/game/presence.js:563:3392712656": {
+      "id": "src/game/presence.js:563:3392712656",
       "file": "src/game/presence.js",
-      "line": 553,
+      "line": 563,
       "text": "  }",
       "hash": 3392712656,
-      "referenceHash": 340088637,
+      "referenceHash": 3646700354,
       "language": "javascript",
       "tokens": [
         {
@@ -101406,13 +101423,13 @@
         }
       ]
     },
-    "src/game/presence.js:554:3211021817": {
-      "id": "src/game/presence.js:554:3211021817",
+    "src/game/presence.js:564:3211021817": {
+      "id": "src/game/presence.js:564:3211021817",
       "file": "src/game/presence.js",
-      "line": 554,
+      "line": 564,
       "text": "  if (!sourceMode) processLightSound(lightSound, now);",
       "hash": 3211021817,
-      "referenceHash": 4007005997,
+      "referenceHash": 3326765264,
       "language": "javascript",
       "tokens": [
         {
@@ -101489,13 +101506,13 @@
         }
       ]
     },
-    "src/game/presence.js:555:3145036895": {
-      "id": "src/game/presence.js:555:3145036895",
+    "src/game/presence.js:565:3145036895": {
+      "id": "src/game/presence.js:565:3145036895",
       "file": "src/game/presence.js",
-      "line": 555,
+      "line": 565,
       "text": "  resolveTargetToFloor(navigation);",
       "hash": 3145036895,
-      "referenceHash": 2668969704,
+      "referenceHash": 369061263,
       "language": "javascript",
       "tokens": [
         {
@@ -101530,13 +101547,13 @@
         }
       ]
     },
-    "src/game/presence.js:557:2470391524": {
-      "id": "src/game/presence.js:557:2470391524",
+    "src/game/presence.js:567:2470391524": {
+      "id": "src/game/presence.js:567:2470391524",
       "file": "src/game/presence.js",
-      "line": 557,
+      "line": 567,
       "text": "  // A sound is only useful for a few seconds. Losing it leaves a search origin,",
       "hash": 2470391524,
-      "referenceHash": 1653004375,
+      "referenceHash": 3507146494,
       "language": "javascript",
       "tokens": [
         {
@@ -101547,13 +101564,13 @@
         }
       ]
     },
-    "src/game/presence.js:558:1170837856": {
-      "id": "src/game/presence.js:558:1170837856",
+    "src/game/presence.js:568:1170837856": {
+      "id": "src/game/presence.js:568:1170837856",
       "file": "src/game/presence.js",
-      "line": 558,
+      "line": 568,
       "text": "  // not a hidden tether to the player.",
       "hash": 1170837856,
-      "referenceHash": 1338149248,
+      "referenceHash": 2439183143,
       "language": "javascript",
       "tokens": [
         {
@@ -101564,13 +101581,13 @@
         }
       ]
     },
-    "src/game/presence.js:559:62141002": {
-      "id": "src/game/presence.js:559:62141002",
+    "src/game/presence.js:569:62141002": {
+      "id": "src/game/presence.js:569:62141002",
       "file": "src/game/presence.js",
-      "line": 559,
+      "line": 569,
       "text": "  const sinceTarget = (now - state.targetSetAt) / 1000;",
       "hash": 62141002,
-      "referenceHash": 2955729141,
+      "referenceHash": 3542932118,
       "language": "javascript",
       "tokens": [
         {
@@ -101653,30 +101670,30 @@
         }
       ]
     },
-    "src/game/presence.js:56:1376720189": {
-      "id": "src/game/presence.js:56:1376720189",
+    "src/game/presence.js:57:1069992629": {
+      "id": "src/game/presence.js:57:1069992629",
       "file": "src/game/presence.js",
-      "line": 56,
-      "text": "  // Semantic monitor bands own ordinary player-noise acquisition. This is the",
-      "hash": 1376720189,
-      "referenceHash": 2115254680,
+      "line": 57,
+      "text": "  // legacy-envelope fail-safe for partially initialized builds: regular",
+      "hash": 1069992629,
+      "referenceHash": 1010608661,
       "language": "javascript",
       "tokens": [
         {
-          "text": "// Semantic monitor bands own ordinary player-noise acquisition. This is the",
+          "text": "// legacy-envelope fail-safe for partially initialized builds: regular",
           "kind": "comment",
           "start": 2,
-          "end": 78
+          "end": 72
         }
       ]
     },
-    "src/game/presence.js:560:1452199963": {
-      "id": "src/game/presence.js:560:1452199963",
+    "src/game/presence.js:570:1452199963": {
+      "id": "src/game/presence.js:570:1452199963",
       "file": "src/game/presence.js",
-      "line": 560,
+      "line": 570,
       "text": "  if (state.hasTarget && !externalFresh && sinceTarget > PRESENCE.memorySec * difficultyRules.memoryScale) {",
       "hash": 1452199963,
-      "referenceHash": 1807366194,
+      "referenceHash": 2204839485,
       "language": "javascript",
       "tokens": [
         {
@@ -101801,13 +101818,13 @@
         }
       ]
     },
-    "src/game/presence.js:561:366629139": {
-      "id": "src/game/presence.js:561:366629139",
+    "src/game/presence.js:571:366629139": {
+      "id": "src/game/presence.js:571:366629139",
       "file": "src/game/presence.js",
-      "line": 561,
+      "line": 571,
       "text": "    enterStand(now, 1600, 5200);",
       "hash": 366629139,
-      "referenceHash": 1243448543,
+      "referenceHash": 104508776,
       "language": "javascript",
       "tokens": [
         {
@@ -101863,23 +101880,6 @@
           "kind": "punctuation",
           "start": 31,
           "end": 32
-        }
-      ]
-    },
-    "src/game/presence.js:57:1069992629": {
-      "id": "src/game/presence.js:57:1069992629",
-      "file": "src/game/presence.js",
-      "line": 57,
-      "text": "  // legacy-envelope fail-safe for partially initialized builds: regular",
-      "hash": 1069992629,
-      "referenceHash": 1010608661,
-      "language": "javascript",
-      "tokens": [
-        {
-          "text": "// legacy-envelope fail-safe for partially initialized builds: regular",
-          "kind": "comment",
-          "start": 2,
-          "end": 72
         }
       ]
     },
@@ -102417,40 +102417,6 @@
         }
       ]
     },
-    "src/game/presence.js:728:1368872440": {
-      "id": "src/game/presence.js:728:1368872440",
-      "file": "src/game/presence.js",
-      "line": 728,
-      "text": "    }",
-      "hash": 1368872440,
-      "referenceHash": 451200117,
-      "language": "javascript",
-      "tokens": [
-        {
-          "text": "}",
-          "kind": "punctuation",
-          "start": 4,
-          "end": 5
-        }
-      ]
-    },
-    "src/game/presence.js:729:3392712656": {
-      "id": "src/game/presence.js:729:3392712656",
-      "file": "src/game/presence.js",
-      "line": 729,
-      "text": "  }",
-      "hash": 3392712656,
-      "referenceHash": 572126726,
-      "language": "javascript",
-      "tokens": [
-        {
-          "text": "}",
-          "kind": "punctuation",
-          "start": 2,
-          "end": 3
-        }
-      ]
-    },
     "src/game/presence.js:73:4086023032": {
       "id": "src/game/presence.js:73:4086023032",
       "file": "src/game/presence.js",
@@ -102522,13 +102488,47 @@
         }
       ]
     },
-    "src/game/presence.js:730:4161554600": {
-      "id": "src/game/presence.js:730:4161554600",
+    "src/game/presence.js:738:1368872440": {
+      "id": "src/game/presence.js:738:1368872440",
       "file": "src/game/presence.js",
-      "line": 730,
+      "line": 738,
+      "text": "    }",
+      "hash": 1368872440,
+      "referenceHash": 1126923320,
+      "language": "javascript",
+      "tokens": [
+        {
+          "text": "}",
+          "kind": "punctuation",
+          "start": 4,
+          "end": 5
+        }
+      ]
+    },
+    "src/game/presence.js:739:3392712656": {
+      "id": "src/game/presence.js:739:3392712656",
+      "file": "src/game/presence.js",
+      "line": 739,
+      "text": "  }",
+      "hash": 3392712656,
+      "referenceHash": 1320709047,
+      "language": "javascript",
+      "tokens": [
+        {
+          "text": "}",
+          "kind": "punctuation",
+          "start": 2,
+          "end": 3
+        }
+      ]
+    },
+    "src/game/presence.js:74:4161554600": {
+      "id": "src/game/presence.js:74:4161554600",
+      "file": "src/game/presence.js",
+      "line": 74,
       "text": "}",
       "hash": 4161554600,
-      "referenceHash": 1821415824,
+      "referenceHash": 2051709955,
       "language": "javascript",
       "tokens": [
         {
@@ -102539,13 +102539,30 @@
         }
       ]
     },
-    "src/game/presence.js:732:2349445621": {
-      "id": "src/game/presence.js:732:2349445621",
+    "src/game/presence.js:740:4161554600": {
+      "id": "src/game/presence.js:740:4161554600",
       "file": "src/game/presence.js",
-      "line": 732,
+      "line": 740,
+      "text": "}",
+      "hash": 4161554600,
+      "referenceHash": 1037688311,
+      "language": "javascript",
+      "tokens": [
+        {
+          "text": "}",
+          "kind": "punctuation",
+          "start": 0,
+          "end": 1
+        }
+      ]
+    },
+    "src/game/presence.js:742:2349445621": {
+      "id": "src/game/presence.js:742:2349445621",
+      "file": "src/game/presence.js",
+      "line": 742,
       "text": "export function loadPresenceState(saved = {}) {",
       "hash": 2349445621,
-      "referenceHash": 1045828031,
+      "referenceHash": 559933560,
       "language": "javascript",
       "tokens": [
         {
@@ -102610,13 +102627,13 @@
         }
       ]
     },
-    "src/game/presence.js:733:1940703736": {
-      "id": "src/game/presence.js:733:1940703736",
+    "src/game/presence.js:743:1940703736": {
+      "id": "src/game/presence.js:743:1940703736",
       "file": "src/game/presence.js",
-      "line": 733,
+      "line": 743,
       "text": "  tableau = null;",
       "hash": 1940703736,
-      "referenceHash": 556892445,
+      "referenceHash": 1963068450,
       "language": "javascript",
       "tokens": [
         {
@@ -102645,13 +102662,13 @@
         }
       ]
     },
-    "src/game/presence.js:734:3155563863": {
-      "id": "src/game/presence.js:734:3155563863",
+    "src/game/presence.js:744:3155563863": {
+      "id": "src/game/presence.js:744:3155563863",
       "file": "src/game/presence.js",
-      "line": 734,
+      "line": 744,
       "text": "  // Saves retain what the player learned from prior contacts, never a live",
       "hash": 3155563863,
-      "referenceHash": 121383907,
+      "referenceHash": 1427864676,
       "language": "javascript",
       "tokens": [
         {
@@ -102662,13 +102679,13 @@
         }
       ]
     },
-    "src/game/presence.js:735:3093049333": {
-      "id": "src/game/presence.js:735:3093049333",
+    "src/game/presence.js:745:3093049333": {
+      "id": "src/game/presence.js:745:3093049333",
       "file": "src/game/presence.js",
-      "line": 735,
+      "line": 745,
       "text": "  // body. Module state survives New Game in the same process, so loading a",
       "hash": 3093049333,
-      "referenceHash": 3167927918,
+      "referenceHash": 1199983833,
       "language": "javascript",
       "tokens": [
         {
@@ -102679,13 +102696,13 @@
         }
       ]
     },
-    "src/game/presence.js:736:1968875163": {
-      "id": "src/game/presence.js:736:1968875163",
+    "src/game/presence.js:746:1968875163": {
+      "id": "src/game/presence.js:746:1968875163",
       "file": "src/game/presence.js",
-      "line": 736,
+      "line": 746,
       "text": "  // fresh record must explicitly revoke the previous run's manifestation.",
       "hash": 1968875163,
-      "referenceHash": 1646491597,
+      "referenceHash": 3951195764,
       "language": "javascript",
       "tokens": [
         {
@@ -102696,13 +102713,13 @@
         }
       ]
     },
-    "src/game/presence.js:737:3518337213": {
-      "id": "src/game/presence.js:737:3518337213",
+    "src/game/presence.js:747:3518337213": {
+      "id": "src/game/presence.js:747:3518337213",
       "file": "src/game/presence.js",
-      "line": 737,
+      "line": 747,
       "text": "  Object.assign(state, {",
       "hash": 3518337213,
-      "referenceHash": 2404807238,
+      "referenceHash": 1516627679,
       "language": "javascript",
       "tokens": [
         {
@@ -102749,13 +102766,13 @@
         }
       ]
     },
-    "src/game/presence.js:738:2218331492": {
-      "id": "src/game/presence.js:738:2218331492",
+    "src/game/presence.js:748:2218331492": {
+      "id": "src/game/presence.js:748:2218331492",
       "file": "src/game/presence.js",
-      "line": 738,
+      "line": 748,
       "text": "    active: false,",
       "hash": 2218331492,
-      "referenceHash": 950538788,
+      "referenceHash": 3858146517,
       "language": "javascript",
       "tokens": [
         {
@@ -102784,13 +102801,13 @@
         }
       ]
     },
-    "src/game/presence.js:739:415872040": {
-      "id": "src/game/presence.js:739:415872040",
+    "src/game/presence.js:749:415872040": {
+      "id": "src/game/presence.js:749:415872040",
       "file": "src/game/presence.js",
-      "line": 739,
+      "line": 749,
       "text": "    x: 0, y: 0,",
       "hash": 415872040,
-      "referenceHash": 396958471,
+      "referenceHash": 3655765888,
       "language": "javascript",
       "tokens": [
         {
@@ -102843,30 +102860,13 @@
         }
       ]
     },
-    "src/game/presence.js:74:4161554600": {
-      "id": "src/game/presence.js:74:4161554600",
+    "src/game/presence.js:750:2044429904": {
+      "id": "src/game/presence.js:750:2044429904",
       "file": "src/game/presence.js",
-      "line": 74,
-      "text": "}",
-      "hash": 4161554600,
-      "referenceHash": 2051709955,
-      "language": "javascript",
-      "tokens": [
-        {
-          "text": "}",
-          "kind": "punctuation",
-          "start": 0,
-          "end": 1
-        }
-      ]
-    },
-    "src/game/presence.js:740:2044429904": {
-      "id": "src/game/presence.js:740:2044429904",
-      "file": "src/game/presence.js",
-      "line": 740,
+      "line": 750,
       "text": "    targetX: 0, targetY: 0,",
       "hash": 2044429904,
-      "referenceHash": 1747528327,
+      "referenceHash": 1928428538,
       "language": "javascript",
       "tokens": [
         {
@@ -102919,13 +102919,13 @@
         }
       ]
     },
-    "src/game/presence.js:741:2015149321": {
-      "id": "src/game/presence.js:741:2015149321",
+    "src/game/presence.js:751:2015149321": {
+      "id": "src/game/presence.js:751:2015149321",
       "file": "src/game/presence.js",
-      "line": 741,
+      "line": 751,
       "text": "    hasTarget: false,",
       "hash": 2015149321,
-      "referenceHash": 1624019337,
+      "referenceHash": 2432527044,
       "language": "javascript",
       "tokens": [
         {
@@ -102954,13 +102954,13 @@
         }
       ]
     },
-    "src/game/presence.js:742:2347492960": {
-      "id": "src/game/presence.js:742:2347492960",
+    "src/game/presence.js:752:2347492960": {
+      "id": "src/game/presence.js:752:2347492960",
       "file": "src/game/presence.js",
-      "line": 742,
+      "line": 752,
       "text": "    targetLevel: 0,",
       "hash": 2347492960,
-      "referenceHash": 600807541,
+      "referenceHash": 3564699964,
       "language": "javascript",
       "tokens": [
         {
@@ -106924,9 +106924,9 @@
     "assign": {
       "id": "assign",
       "occurrence": {
-        "entryId": "src/game/presence.js:737:3518337213",
+        "entryId": "src/game/presence.js:747:3518337213",
         "file": "src/game/presence.js",
-        "line": 737,
+        "line": 747,
         "start": 9,
         "end": 15,
         "hash": 3518337213
@@ -107045,9 +107045,9 @@
     "between": {
       "id": "between",
       "occurrence": {
-        "entryId": "src/game/presence.js:501:1118823211",
+        "entryId": "src/game/presence.js:511:1118823211",
         "file": "src/game/presence.js",
-        "line": 501,
+        "line": 511,
         "start": 34,
         "end": 41,
         "hash": 1118823211
@@ -107331,9 +107331,9 @@
     "confidence": {
       "id": "confidence",
       "occurrence": {
-        "entryId": "src/game/presence.js:551:3874072518",
+        "entryId": "src/game/presence.js:561:3874072518",
         "file": "src/game/presence.js",
-        "line": 551,
+        "line": 561,
         "start": 6,
         "end": 16,
         "hash": 3874072518
@@ -107441,9 +107441,9 @@
     "currentWorldNoise": {
       "id": "currentWorldNoise",
       "occurrence": {
-        "entryId": "src/game/presence.js:549:3848131308",
+        "entryId": "src/game/presence.js:559:3848131308",
         "file": "src/game/presence.js",
-        "line": 549,
+        "line": 559,
         "start": 42,
         "end": 59,
         "hash": 3848131308
@@ -107474,9 +107474,9 @@
     "difficultyRules": {
       "id": "difficultyRules",
       "occurrence": {
-        "entryId": "src/game/presence.js:505:3558858791",
+        "entryId": "src/game/presence.js:515:3558858791",
         "file": "src/game/presence.js",
-        "line": 505,
+        "line": 515,
         "start": 40,
         "end": 55,
         "hash": 3558858791
@@ -107584,9 +107584,9 @@
     "enterStand": {
       "id": "enterStand",
       "occurrence": {
-        "entryId": "src/game/presence.js:495:1893019650",
+        "entryId": "src/game/presence.js:505:1893019650",
         "file": "src/game/presence.js",
-        "line": 495,
+        "line": 505,
         "start": 2,
         "end": 12,
         "hash": 1893019650
@@ -107683,9 +107683,9 @@
     "externalFresh": {
       "id": "externalFresh",
       "occurrence": {
-        "entryId": "src/game/presence.js:548:2493800864",
+        "entryId": "src/game/presence.js:558:2493800864",
         "file": "src/game/presence.js",
-        "line": 548,
+        "line": 558,
         "start": 8,
         "end": 21,
         "hash": 2493800864
@@ -107705,9 +107705,9 @@
     "externalTargetUntil": {
       "id": "externalTargetUntil",
       "occurrence": {
-        "entryId": "src/game/presence.js:548:2493800864",
+        "entryId": "src/game/presence.js:558:2493800864",
         "file": "src/game/presence.js",
-        "line": 548,
+        "line": 558,
         "start": 36,
         "end": 55,
         "hash": 2493800864
@@ -108057,9 +108057,9 @@
     "hasTarget": {
       "id": "hasTarget",
       "occurrence": {
-        "entryId": "src/game/presence.js:560:1452199963",
+        "entryId": "src/game/presence.js:570:1452199963",
         "file": "src/game/presence.js",
-        "line": 560,
+        "line": 570,
         "start": 12,
         "end": 21,
         "hash": 1452199963
@@ -108079,9 +108079,9 @@
     "hear": {
       "id": "hear",
       "occurrence": {
-        "entryId": "src/game/presence.js:550:1924731751",
+        "entryId": "src/game/presence.js:560:1924731751",
         "file": "src/game/presence.js",
-        "line": 550,
+        "line": 560,
         "start": 4,
         "end": 8,
         "hash": 1924731751
@@ -108101,9 +108101,9 @@
     "hearingScale": {
       "id": "hearingScale",
       "occurrence": {
-        "entryId": "src/game/presence.js:505:3558858791",
+        "entryId": "src/game/presence.js:515:3558858791",
         "file": "src/game/presence.js",
-        "line": 505,
+        "line": 515,
         "start": 56,
         "end": 68,
         "hash": 3558858791
@@ -108167,9 +108167,9 @@
     "hypot": {
       "id": "hypot",
       "occurrence": {
-        "entryId": "src/game/presence.js:504:3548093324",
+        "entryId": "src/game/presence.js:514:3548093324",
         "file": "src/game/presence.js",
-        "line": 504,
+        "line": 514,
         "start": 24,
         "end": 29,
         "hash": 3548093324
@@ -108354,9 +108354,9 @@
     "lastNoiseAt": {
       "id": "lastNoiseAt",
       "occurrence": {
-        "entryId": "src/game/presence.js:550:1924731751",
+        "entryId": "src/game/presence.js:560:1924731751",
         "file": "src/game/presence.js",
-        "line": 550,
+        "line": 560,
         "start": 13,
         "end": 24,
         "hash": 1924731751
@@ -108453,9 +108453,9 @@
     "lightHumMaxIntervalMs": {
       "id": "lightHumMaxIntervalMs",
       "occurrence": {
-        "entryId": "src/game/presence.js:501:1118823211",
+        "entryId": "src/game/presence.js:511:1118823211",
         "file": "src/game/presence.js",
-        "line": 501,
+        "line": 511,
         "start": 83,
         "end": 104,
         "hash": 1118823211
@@ -108464,9 +108464,9 @@
     "lightHumMinIntervalMs": {
       "id": "lightHumMinIntervalMs",
       "occurrence": {
-        "entryId": "src/game/presence.js:501:1118823211",
+        "entryId": "src/game/presence.js:511:1118823211",
         "file": "src/game/presence.js",
-        "line": 501,
+        "line": 511,
         "start": 51,
         "end": 72,
         "hash": 1118823211
@@ -108475,9 +108475,9 @@
     "lightRadius": {
       "id": "lightRadius",
       "occurrence": {
-        "entryId": "src/game/presence.js:505:3558858791",
+        "entryId": "src/game/presence.js:515:3558858791",
         "file": "src/game/presence.js",
-        "line": 505,
+        "line": 515,
         "start": 26,
         "end": 37,
         "hash": 3558858791
@@ -108486,9 +108486,9 @@
     "lightSound": {
       "id": "lightSound",
       "occurrence": {
-        "entryId": "src/game/presence.js:499:3844010604",
+        "entryId": "src/game/presence.js:509:3844010604",
         "file": "src/game/presence.js",
-        "line": 499,
+        "line": 509,
         "start": 27,
         "end": 37,
         "hash": 3844010604
@@ -108508,9 +108508,9 @@
     "loadPresenceState": {
       "id": "loadPresenceState",
       "occurrence": {
-        "entryId": "src/game/presence.js:732:2349445621",
+        "entryId": "src/game/presence.js:742:2349445621",
         "file": "src/game/presence.js",
-        "line": 732,
+        "line": 742,
         "start": 16,
         "end": 33,
         "hash": 2349445621
@@ -108596,9 +108596,9 @@
     "memoryScale": {
       "id": "memoryScale",
       "occurrence": {
-        "entryId": "src/game/presence.js:560:1452199963",
+        "entryId": "src/game/presence.js:570:1452199963",
         "file": "src/game/presence.js",
-        "line": 560,
+        "line": 570,
         "start": 94,
         "end": 105,
         "hash": 1452199963
@@ -108607,9 +108607,9 @@
     "memorySec": {
       "id": "memorySec",
       "occurrence": {
-        "entryId": "src/game/presence.js:560:1452199963",
+        "entryId": "src/game/presence.js:570:1452199963",
         "file": "src/game/presence.js",
-        "line": 560,
+        "line": 570,
         "start": 66,
         "end": 75,
         "hash": 1452199963
@@ -108662,9 +108662,9 @@
     "navigation": {
       "id": "navigation",
       "occurrence": {
-        "entryId": "src/game/presence.js:555:3145036895",
+        "entryId": "src/game/presence.js:565:3145036895",
         "file": "src/game/presence.js",
-        "line": 555,
+        "line": 565,
         "start": 23,
         "end": 33,
         "hash": 3145036895
@@ -108684,9 +108684,9 @@
     "nextLightListenAt": {
       "id": "nextLightListenAt",
       "occurrence": {
-        "entryId": "src/game/presence.js:500:616904982",
+        "entryId": "src/game/presence.js:510:616904982",
         "file": "src/game/presence.js",
-        "line": 500,
+        "line": 510,
         "start": 41,
         "end": 58,
         "hash": 616904982
@@ -108695,9 +108695,9 @@
     "noiseClueThreshold": {
       "id": "noiseClueThreshold",
       "occurrence": {
-        "entryId": "src/game/presence.js:549:3848131308",
+        "entryId": "src/game/presence.js:559:3848131308",
         "file": "src/game/presence.js",
-        "line": 549,
+        "line": 559,
         "start": 74,
         "end": 92,
         "hash": 3848131308
@@ -108750,9 +108750,9 @@
     "now": {
       "id": "now",
       "occurrence": {
-        "entryId": "src/game/presence.js:495:1893019650",
+        "entryId": "src/game/presence.js:505:1893019650",
         "file": "src/game/presence.js",
-        "line": 495,
+        "line": 505,
         "start": 13,
         "end": 16,
         "hash": 1893019650
@@ -108783,9 +108783,9 @@
     "occlusion": {
       "id": "occlusion",
       "occurrence": {
-        "entryId": "src/game/presence.js:506:3520272748",
+        "entryId": "src/game/presence.js:516:3520272748",
         "file": "src/game/presence.js",
-        "line": 506,
+        "line": 516,
         "start": 8,
         "end": 17,
         "hash": 3520272748
@@ -108794,9 +108794,9 @@
     "occlusionDb": {
       "id": "occlusionDb",
       "occurrence": {
-        "entryId": "src/game/presence.js:506:3520272748",
+        "entryId": "src/game/presence.js:516:3520272748",
         "file": "src/game/presence.js",
-        "line": 506,
+        "line": 516,
         "start": 50,
         "end": 61,
         "hash": 3520272748
@@ -109036,9 +109036,9 @@
     "position": {
       "id": "position",
       "occurrence": {
-        "entryId": "src/game/presence.js:502:3333038605",
+        "entryId": "src/game/presence.js:512:3333038605",
         "file": "src/game/presence.js",
-        "line": 502,
+        "line": 512,
         "start": 8,
         "end": 16,
         "hash": 3333038605
@@ -109047,9 +109047,9 @@
     "PRESENCE": {
       "id": "PRESENCE",
       "occurrence": {
-        "entryId": "src/game/presence.js:501:1118823211",
+        "entryId": "src/game/presence.js:511:1118823211",
         "file": "src/game/presence.js",
-        "line": 501,
+        "line": 511,
         "start": 42,
         "end": 50,
         "hash": 1118823211
@@ -109091,9 +109091,9 @@
     "priority": {
       "id": "priority",
       "occurrence": {
-        "entryId": "src/game/presence.js:551:3874072518",
+        "entryId": "src/game/presence.js:561:3874072518",
         "file": "src/game/presence.js",
-        "line": 551,
+        "line": 561,
         "start": 23,
         "end": 31,
         "hash": 3874072518
@@ -109102,9 +109102,9 @@
     "processLightSound": {
       "id": "processLightSound",
       "occurrence": {
-        "entryId": "src/game/presence.js:499:3844010604",
+        "entryId": "src/game/presence.js:509:3844010604",
         "file": "src/game/presence.js",
-        "line": 499,
+        "line": 509,
         "start": 9,
         "end": 26,
         "hash": 3844010604
@@ -109245,9 +109245,9 @@
     "reason": {
       "id": "reason",
       "occurrence": {
-        "entryId": "src/game/presence.js:551:3874072518",
+        "entryId": "src/game/presence.js:561:3874072518",
         "file": "src/game/presence.js",
-        "line": 551,
+        "line": 561,
         "start": 38,
         "end": 44,
         "hash": 3874072518
@@ -109256,9 +109256,9 @@
     "rec": {
       "id": "rec",
       "occurrence": {
-        "entryId": "src/game/presence.js:550:1924731751",
+        "entryId": "src/game/presence.js:560:1924731751",
         "file": "src/game/presence.js",
-        "line": 550,
+        "line": 560,
         "start": 9,
         "end": 12,
         "hash": 1924731751
@@ -109267,9 +109267,9 @@
     "REC": {
       "id": "REC",
       "occurrence": {
-        "entryId": "src/game/presence.js:549:3848131308",
+        "entryId": "src/game/presence.js:559:3848131308",
         "file": "src/game/presence.js",
-        "line": 549,
+        "line": 559,
         "start": 38,
         "end": 41,
         "hash": 3848131308
@@ -109388,9 +109388,9 @@
     "resolveTargetToFloor": {
       "id": "resolveTargetToFloor",
       "occurrence": {
-        "entryId": "src/game/presence.js:555:3145036895",
+        "entryId": "src/game/presence.js:565:3145036895",
         "file": "src/game/presence.js",
-        "line": 555,
+        "line": 565,
         "start": 2,
         "end": 22,
         "hash": 3145036895
@@ -109487,9 +109487,9 @@
     "saved": {
       "id": "saved",
       "occurrence": {
-        "entryId": "src/game/presence.js:732:2349445621",
+        "entryId": "src/game/presence.js:742:2349445621",
         "file": "src/game/presence.js",
-        "line": 732,
+        "line": 742,
         "start": 34,
         "end": 39,
         "hash": 2349445621
@@ -109564,9 +109564,9 @@
     "sinceTarget": {
       "id": "sinceTarget",
       "occurrence": {
-        "entryId": "src/game/presence.js:559:62141002",
+        "entryId": "src/game/presence.js:569:62141002",
         "file": "src/game/presence.js",
-        "line": 559,
+        "line": 569,
         "start": 8,
         "end": 19,
         "hash": 62141002
@@ -109630,9 +109630,9 @@
     "sourceMode": {
       "id": "sourceMode",
       "occurrence": {
-        "entryId": "src/game/presence.js:549:3848131308",
+        "entryId": "src/game/presence.js:559:3848131308",
         "file": "src/game/presence.js",
-        "line": 549,
+        "line": 559,
         "start": 6,
         "end": 16,
         "hash": 3848131308
@@ -109839,9 +109839,9 @@
     "tableau": {
       "id": "tableau",
       "occurrence": {
-        "entryId": "src/game/presence.js:733:1940703736",
+        "entryId": "src/game/presence.js:743:1940703736",
         "file": "src/game/presence.js",
-        "line": 733,
+        "line": 743,
         "start": 2,
         "end": 9,
         "hash": 1940703736
@@ -109960,9 +109960,9 @@
     "targetLevel": {
       "id": "targetLevel",
       "occurrence": {
-        "entryId": "src/game/presence.js:742:2347492960",
+        "entryId": "src/game/presence.js:752:2347492960",
         "file": "src/game/presence.js",
-        "line": 742,
+        "line": 752,
         "start": 4,
         "end": 15,
         "hash": 2347492960
@@ -109993,9 +109993,9 @@
     "targetSetAt": {
       "id": "targetSetAt",
       "occurrence": {
-        "entryId": "src/game/presence.js:559:62141002",
+        "entryId": "src/game/presence.js:569:62141002",
         "file": "src/game/presence.js",
-        "line": 559,
+        "line": 569,
         "start": 35,
         "end": 46,
         "hash": 62141002
@@ -110004,9 +110004,9 @@
     "targetX": {
       "id": "targetX",
       "occurrence": {
-        "entryId": "src/game/presence.js:740:2044429904",
+        "entryId": "src/game/presence.js:750:2044429904",
         "file": "src/game/presence.js",
-        "line": 740,
+        "line": 750,
         "start": 4,
         "end": 11,
         "hash": 2044429904
@@ -110015,9 +110015,9 @@
     "targetY": {
       "id": "targetY",
       "occurrence": {
-        "entryId": "src/game/presence.js:740:2044429904",
+        "entryId": "src/game/presence.js:750:2044429904",
         "file": "src/game/presence.js",
-        "line": 740,
+        "line": 750,
         "start": 16,
         "end": 23,
         "hash": 2044429904
@@ -110026,9 +110026,9 @@
     "tauntRequested": {
       "id": "tauntRequested",
       "occurrence": {
-        "entryId": "src/game/presence.js:492:921924637",
+        "entryId": "src/game/presence.js:502:921924637",
         "file": "src/game/presence.js",
-        "line": 492,
+        "line": 502,
         "start": 10,
         "end": 24,
         "hash": 921924637
@@ -114737,713 +114737,713 @@
       "hash": 578595883
     },
     {
-      "id": "src/game/presence.js:492:921924637:state:tauntRequested",
+      "id": "src/game/presence.js:502:921924637:state:tauntRequested",
       "from": "state",
       "to": "tauntRequested",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:492:921924637",
+      "entryId": "src/game/presence.js:502:921924637",
       "file": "src/game/presence.js",
-      "line": 492,
+      "line": 502,
       "hash": 921924637
     },
     {
-      "id": "src/game/presence.js:495:1893019650:enterStand:now",
+      "id": "src/game/presence.js:505:1893019650:enterStand:now",
       "from": "enterStand",
       "to": "now",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:495:1893019650",
+      "entryId": "src/game/presence.js:505:1893019650",
       "file": "src/game/presence.js",
-      "line": 495,
+      "line": 505,
       "hash": 1893019650
     },
     {
-      "id": "src/game/presence.js:499:3844010604:processLightSound:lightSound",
+      "id": "src/game/presence.js:509:3844010604:processLightSound:lightSound",
       "from": "processLightSound",
       "to": "lightSound",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:499:3844010604",
+      "entryId": "src/game/presence.js:509:3844010604",
       "file": "src/game/presence.js",
-      "line": 499,
+      "line": 509,
       "hash": 3844010604
     },
     {
-      "id": "src/game/presence.js:499:3844010604:processLightSound:now",
+      "id": "src/game/presence.js:509:3844010604:processLightSound:now",
       "from": "processLightSound",
       "to": "now",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:499:3844010604",
+      "entryId": "src/game/presence.js:509:3844010604",
       "file": "src/game/presence.js",
-      "line": 499,
+      "line": 509,
       "hash": 3844010604
     },
     {
-      "id": "src/game/presence.js:500:616904982:lightSound:active",
+      "id": "src/game/presence.js:510:616904982:lightSound:active",
       "from": "lightSound",
       "to": "active",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:500:616904982",
+      "entryId": "src/game/presence.js:510:616904982",
       "file": "src/game/presence.js",
-      "line": 500,
+      "line": 510,
       "hash": 616904982
     },
     {
-      "id": "src/game/presence.js:500:616904982:lightSound:now",
+      "id": "src/game/presence.js:510:616904982:lightSound:now",
       "from": "lightSound",
       "to": "now",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:500:616904982",
+      "entryId": "src/game/presence.js:510:616904982",
       "file": "src/game/presence.js",
-      "line": 500,
+      "line": 510,
       "hash": 616904982
     },
     {
-      "id": "src/game/presence.js:500:616904982:lightSound:state",
+      "id": "src/game/presence.js:510:616904982:lightSound:state",
       "from": "lightSound",
       "to": "state",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:500:616904982",
+      "entryId": "src/game/presence.js:510:616904982",
       "file": "src/game/presence.js",
-      "line": 500,
+      "line": 510,
       "hash": 616904982
     },
     {
-      "id": "src/game/presence.js:500:616904982:lightSound:nextLightListenAt",
+      "id": "src/game/presence.js:510:616904982:lightSound:nextLightListenAt",
       "from": "lightSound",
       "to": "nextLightListenAt",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:500:616904982",
+      "entryId": "src/game/presence.js:510:616904982",
       "file": "src/game/presence.js",
-      "line": 500,
+      "line": 510,
       "hash": 616904982
     },
     {
-      "id": "src/game/presence.js:501:1118823211:state:nextLightListenAt",
+      "id": "src/game/presence.js:511:1118823211:state:nextLightListenAt",
       "from": "state",
       "to": "nextLightListenAt",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:501:1118823211",
+      "entryId": "src/game/presence.js:511:1118823211",
       "file": "src/game/presence.js",
-      "line": 501,
+      "line": 511,
       "hash": 1118823211
     },
     {
-      "id": "src/game/presence.js:501:1118823211:state:now",
+      "id": "src/game/presence.js:511:1118823211:state:now",
       "from": "state",
       "to": "now",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:501:1118823211",
+      "entryId": "src/game/presence.js:511:1118823211",
       "file": "src/game/presence.js",
-      "line": 501,
+      "line": 511,
       "hash": 1118823211
     },
     {
-      "id": "src/game/presence.js:501:1118823211:state:between",
+      "id": "src/game/presence.js:511:1118823211:state:between",
       "from": "state",
       "to": "between",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:501:1118823211",
+      "entryId": "src/game/presence.js:511:1118823211",
       "file": "src/game/presence.js",
-      "line": 501,
+      "line": 511,
       "hash": 1118823211
     },
     {
-      "id": "src/game/presence.js:501:1118823211:state:PRESENCE",
+      "id": "src/game/presence.js:511:1118823211:state:PRESENCE",
       "from": "state",
       "to": "PRESENCE",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:501:1118823211",
+      "entryId": "src/game/presence.js:511:1118823211",
       "file": "src/game/presence.js",
-      "line": 501,
+      "line": 511,
       "hash": 1118823211
     },
     {
-      "id": "src/game/presence.js:501:1118823211:state:lightHumMinIntervalMs",
+      "id": "src/game/presence.js:511:1118823211:state:lightHumMinIntervalMs",
       "from": "state",
       "to": "lightHumMinIntervalMs",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:501:1118823211",
+      "entryId": "src/game/presence.js:511:1118823211",
       "file": "src/game/presence.js",
-      "line": 501,
+      "line": 511,
       "hash": 1118823211
     },
     {
-      "id": "src/game/presence.js:501:1118823211:state:lightHumMaxIntervalMs",
+      "id": "src/game/presence.js:511:1118823211:state:lightHumMaxIntervalMs",
       "from": "state",
       "to": "lightHumMaxIntervalMs",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:501:1118823211",
+      "entryId": "src/game/presence.js:511:1118823211",
       "file": "src/game/presence.js",
-      "line": 501,
+      "line": 511,
       "hash": 1118823211
     },
     {
-      "id": "src/game/presence.js:502:3333038605:position:lightSound",
+      "id": "src/game/presence.js:512:3333038605:position:lightSound",
       "from": "position",
       "to": "lightSound",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:502:3333038605",
+      "entryId": "src/game/presence.js:512:3333038605",
       "file": "src/game/presence.js",
-      "line": 502,
+      "line": 512,
       "hash": 3333038605
     },
     {
-      "id": "src/game/presence.js:503:1163634472:position:Number",
+      "id": "src/game/presence.js:513:1163634472:position:Number",
       "from": "position",
       "to": "Number",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:503:1163634472",
+      "entryId": "src/game/presence.js:513:1163634472",
       "file": "src/game/presence.js",
-      "line": 503,
+      "line": 513,
       "hash": 1163634472
     },
     {
-      "id": "src/game/presence.js:503:1163634472:position:isFinite",
+      "id": "src/game/presence.js:513:1163634472:position:isFinite",
       "from": "position",
       "to": "isFinite",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:503:1163634472",
+      "entryId": "src/game/presence.js:513:1163634472",
       "file": "src/game/presence.js",
-      "line": 503,
+      "line": 513,
       "hash": 1163634472
     },
     {
-      "id": "src/game/presence.js:503:1163634472:position:x",
+      "id": "src/game/presence.js:513:1163634472:position:x",
       "from": "position",
       "to": "x",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:503:1163634472",
+      "entryId": "src/game/presence.js:513:1163634472",
       "file": "src/game/presence.js",
-      "line": 503,
+      "line": 513,
       "hash": 1163634472
     },
     {
-      "id": "src/game/presence.js:503:1163634472:position:y",
+      "id": "src/game/presence.js:513:1163634472:position:y",
       "from": "position",
       "to": "y",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:503:1163634472",
+      "entryId": "src/game/presence.js:513:1163634472",
       "file": "src/game/presence.js",
-      "line": 503,
+      "line": 513,
       "hash": 1163634472
     },
     {
-      "id": "src/game/presence.js:504:3548093324:distance:Math",
+      "id": "src/game/presence.js:514:3548093324:distance:Math",
       "from": "distance",
       "to": "Math",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:504:3548093324",
+      "entryId": "src/game/presence.js:514:3548093324",
       "file": "src/game/presence.js",
-      "line": 504,
+      "line": 514,
       "hash": 3548093324
     },
     {
-      "id": "src/game/presence.js:504:3548093324:distance:hypot",
+      "id": "src/game/presence.js:514:3548093324:distance:hypot",
       "from": "distance",
       "to": "hypot",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:504:3548093324",
+      "entryId": "src/game/presence.js:514:3548093324",
       "file": "src/game/presence.js",
-      "line": 504,
+      "line": 514,
       "hash": 3548093324
     },
     {
-      "id": "src/game/presence.js:504:3548093324:distance:state",
+      "id": "src/game/presence.js:514:3548093324:distance:state",
       "from": "distance",
       "to": "state",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:504:3548093324",
+      "entryId": "src/game/presence.js:514:3548093324",
       "file": "src/game/presence.js",
-      "line": 504,
+      "line": 514,
       "hash": 3548093324
     },
     {
-      "id": "src/game/presence.js:504:3548093324:distance:x",
+      "id": "src/game/presence.js:514:3548093324:distance:x",
       "from": "distance",
       "to": "x",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:504:3548093324",
+      "entryId": "src/game/presence.js:514:3548093324",
       "file": "src/game/presence.js",
-      "line": 504,
+      "line": 514,
       "hash": 3548093324
     },
     {
-      "id": "src/game/presence.js:504:3548093324:distance:position",
+      "id": "src/game/presence.js:514:3548093324:distance:position",
       "from": "distance",
       "to": "position",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:504:3548093324",
+      "entryId": "src/game/presence.js:514:3548093324",
       "file": "src/game/presence.js",
-      "line": 504,
+      "line": 514,
       "hash": 3548093324
     },
     {
-      "id": "src/game/presence.js:504:3548093324:distance:y",
+      "id": "src/game/presence.js:514:3548093324:distance:y",
       "from": "distance",
       "to": "y",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:504:3548093324",
+      "entryId": "src/game/presence.js:514:3548093324",
       "file": "src/game/presence.js",
-      "line": 504,
+      "line": 514,
       "hash": 3548093324
     },
     {
-      "id": "src/game/presence.js:505:3558858791:distance:PRESENCE",
+      "id": "src/game/presence.js:515:3558858791:distance:PRESENCE",
       "from": "distance",
       "to": "PRESENCE",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:505:3558858791",
+      "entryId": "src/game/presence.js:515:3558858791",
       "file": "src/game/presence.js",
-      "line": 505,
+      "line": 515,
       "hash": 3558858791
     },
     {
-      "id": "src/game/presence.js:505:3558858791:distance:lightRadius",
+      "id": "src/game/presence.js:515:3558858791:distance:lightRadius",
       "from": "distance",
       "to": "lightRadius",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:505:3558858791",
+      "entryId": "src/game/presence.js:515:3558858791",
       "file": "src/game/presence.js",
-      "line": 505,
+      "line": 515,
       "hash": 3558858791
     },
     {
-      "id": "src/game/presence.js:505:3558858791:distance:difficultyRules",
+      "id": "src/game/presence.js:515:3558858791:distance:difficultyRules",
       "from": "distance",
       "to": "difficultyRules",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:505:3558858791",
+      "entryId": "src/game/presence.js:515:3558858791",
       "file": "src/game/presence.js",
-      "line": 505,
+      "line": 515,
       "hash": 3558858791
     },
     {
-      "id": "src/game/presence.js:505:3558858791:distance:hearingScale",
+      "id": "src/game/presence.js:515:3558858791:distance:hearingScale",
       "from": "distance",
       "to": "hearingScale",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:505:3558858791",
+      "entryId": "src/game/presence.js:515:3558858791",
       "file": "src/game/presence.js",
-      "line": 505,
+      "line": 515,
       "hash": 3558858791
     },
     {
-      "id": "src/game/presence.js:506:3520272748:occlusion:Math",
+      "id": "src/game/presence.js:516:3520272748:occlusion:Math",
       "from": "occlusion",
       "to": "Math",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:506:3520272748",
+      "entryId": "src/game/presence.js:516:3520272748",
       "file": "src/game/presence.js",
-      "line": 506,
+      "line": 516,
       "hash": 3520272748
     },
     {
-      "id": "src/game/presence.js:506:3520272748:occlusion:max",
+      "id": "src/game/presence.js:516:3520272748:occlusion:max",
       "from": "occlusion",
       "to": "max",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:506:3520272748",
+      "entryId": "src/game/presence.js:516:3520272748",
       "file": "src/game/presence.js",
-      "line": 506,
+      "line": 516,
       "hash": 3520272748
     },
     {
-      "id": "src/game/presence.js:506:3520272748:occlusion:Number",
+      "id": "src/game/presence.js:516:3520272748:occlusion:Number",
       "from": "occlusion",
       "to": "Number",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:506:3520272748",
+      "entryId": "src/game/presence.js:516:3520272748",
       "file": "src/game/presence.js",
-      "line": 506,
+      "line": 516,
       "hash": 3520272748
     },
     {
-      "id": "src/game/presence.js:506:3520272748:occlusion:lightSound",
+      "id": "src/game/presence.js:516:3520272748:occlusion:lightSound",
       "from": "occlusion",
       "to": "lightSound",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:506:3520272748",
+      "entryId": "src/game/presence.js:516:3520272748",
       "file": "src/game/presence.js",
-      "line": 506,
+      "line": 516,
       "hash": 3520272748
     },
     {
-      "id": "src/game/presence.js:506:3520272748:occlusion:occlusionDb",
+      "id": "src/game/presence.js:516:3520272748:occlusion:occlusionDb",
       "from": "occlusion",
       "to": "occlusionDb",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:506:3520272748",
+      "entryId": "src/game/presence.js:516:3520272748",
       "file": "src/game/presence.js",
-      "line": 506,
+      "line": 516,
       "hash": 3520272748
     },
     {
-      "id": "src/game/presence.js:548:2493800864:externalFresh:now",
+      "id": "src/game/presence.js:558:2493800864:externalFresh:now",
       "from": "externalFresh",
       "to": "now",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:548:2493800864",
+      "entryId": "src/game/presence.js:558:2493800864",
       "file": "src/game/presence.js",
-      "line": 548,
+      "line": 558,
       "hash": 2493800864
     },
     {
-      "id": "src/game/presence.js:548:2493800864:externalFresh:state",
+      "id": "src/game/presence.js:558:2493800864:externalFresh:state",
       "from": "externalFresh",
       "to": "state",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:548:2493800864",
+      "entryId": "src/game/presence.js:558:2493800864",
       "file": "src/game/presence.js",
-      "line": 548,
+      "line": 558,
       "hash": 2493800864
     },
     {
-      "id": "src/game/presence.js:548:2493800864:externalFresh:externalTargetUntil",
+      "id": "src/game/presence.js:558:2493800864:externalFresh:externalTargetUntil",
       "from": "externalFresh",
       "to": "externalTargetUntil",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:548:2493800864",
+      "entryId": "src/game/presence.js:558:2493800864",
       "file": "src/game/presence.js",
-      "line": 548,
+      "line": 558,
       "hash": 2493800864
     },
     {
-      "id": "src/game/presence.js:549:3848131308:sourceMode:externalFresh",
+      "id": "src/game/presence.js:559:3848131308:sourceMode:externalFresh",
       "from": "sourceMode",
       "to": "externalFresh",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:549:3848131308",
+      "entryId": "src/game/presence.js:559:3848131308",
       "file": "src/game/presence.js",
-      "line": 549,
+      "line": 559,
       "hash": 3848131308
     },
     {
-      "id": "src/game/presence.js:549:3848131308:sourceMode:REC",
+      "id": "src/game/presence.js:559:3848131308:sourceMode:REC",
       "from": "sourceMode",
       "to": "REC",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:549:3848131308",
+      "entryId": "src/game/presence.js:559:3848131308",
       "file": "src/game/presence.js",
-      "line": 549,
+      "line": 559,
       "hash": 3848131308
     },
     {
-      "id": "src/game/presence.js:549:3848131308:sourceMode:currentWorldNoise",
+      "id": "src/game/presence.js:559:3848131308:sourceMode:currentWorldNoise",
       "from": "sourceMode",
       "to": "currentWorldNoise",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:549:3848131308",
+      "entryId": "src/game/presence.js:559:3848131308",
       "file": "src/game/presence.js",
-      "line": 549,
+      "line": 559,
       "hash": 3848131308
     },
     {
-      "id": "src/game/presence.js:549:3848131308:sourceMode:PRESENCE",
+      "id": "src/game/presence.js:559:3848131308:sourceMode:PRESENCE",
       "from": "sourceMode",
       "to": "PRESENCE",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:549:3848131308",
+      "entryId": "src/game/presence.js:559:3848131308",
       "file": "src/game/presence.js",
-      "line": 549,
+      "line": 559,
       "hash": 3848131308
     },
     {
-      "id": "src/game/presence.js:549:3848131308:sourceMode:noiseClueThreshold",
+      "id": "src/game/presence.js:559:3848131308:sourceMode:noiseClueThreshold",
       "from": "sourceMode",
       "to": "noiseClueThreshold",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:549:3848131308",
+      "entryId": "src/game/presence.js:559:3848131308",
       "file": "src/game/presence.js",
-      "line": 549,
+      "line": 559,
       "hash": 3848131308
     },
     {
-      "id": "src/game/presence.js:550:1924731751:hear:rec",
+      "id": "src/game/presence.js:560:1924731751:hear:rec",
       "from": "hear",
       "to": "rec",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:550:1924731751",
+      "entryId": "src/game/presence.js:560:1924731751",
       "file": "src/game/presence.js",
-      "line": 550,
+      "line": 560,
       "hash": 1924731751
     },
     {
-      "id": "src/game/presence.js:550:1924731751:hear:lastNoiseAt",
+      "id": "src/game/presence.js:560:1924731751:hear:lastNoiseAt",
       "from": "hear",
       "to": "lastNoiseAt",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:550:1924731751",
+      "entryId": "src/game/presence.js:560:1924731751",
       "file": "src/game/presence.js",
-      "line": 550,
+      "line": 560,
       "hash": 1924731751
     },
     {
-      "id": "src/game/presence.js:550:1924731751:hear:x",
+      "id": "src/game/presence.js:560:1924731751:hear:x",
       "from": "hear",
       "to": "x",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:550:1924731751",
+      "entryId": "src/game/presence.js:560:1924731751",
       "file": "src/game/presence.js",
-      "line": 550,
+      "line": 560,
       "hash": 1924731751
     },
     {
-      "id": "src/game/presence.js:550:1924731751:hear:y",
+      "id": "src/game/presence.js:560:1924731751:hear:y",
       "from": "hear",
       "to": "y",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:550:1924731751",
+      "entryId": "src/game/presence.js:560:1924731751",
       "file": "src/game/presence.js",
-      "line": 550,
+      "line": 560,
       "hash": 1924731751
     },
     {
-      "id": "src/game/presence.js:550:1924731751:hear:REC",
+      "id": "src/game/presence.js:560:1924731751:hear:REC",
       "from": "hear",
       "to": "REC",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:550:1924731751",
+      "entryId": "src/game/presence.js:560:1924731751",
       "file": "src/game/presence.js",
-      "line": 550,
+      "line": 560,
       "hash": 1924731751
     },
     {
-      "id": "src/game/presence.js:550:1924731751:hear:currentWorldNoise",
+      "id": "src/game/presence.js:560:1924731751:hear:currentWorldNoise",
       "from": "hear",
       "to": "currentWorldNoise",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:550:1924731751",
+      "entryId": "src/game/presence.js:560:1924731751",
       "file": "src/game/presence.js",
-      "line": 550,
+      "line": 560,
       "hash": 1924731751
     },
     {
-      "id": "src/game/presence.js:550:1924731751:hear:now",
+      "id": "src/game/presence.js:560:1924731751:hear:now",
       "from": "hear",
       "to": "now",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:550:1924731751",
+      "entryId": "src/game/presence.js:560:1924731751",
       "file": "src/game/presence.js",
-      "line": 550,
+      "line": 560,
       "hash": 1924731751
     },
     {
-      "id": "src/game/presence.js:551:3874072518:confidence:priority",
+      "id": "src/game/presence.js:561:3874072518:confidence:priority",
       "from": "confidence",
       "to": "priority",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:551:3874072518",
+      "entryId": "src/game/presence.js:561:3874072518",
       "file": "src/game/presence.js",
-      "line": 551,
+      "line": 561,
       "hash": 3874072518
     },
     {
-      "id": "src/game/presence.js:551:3874072518:confidence:reason",
+      "id": "src/game/presence.js:561:3874072518:confidence:reason",
       "from": "confidence",
       "to": "reason",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:551:3874072518",
+      "entryId": "src/game/presence.js:561:3874072518",
       "file": "src/game/presence.js",
-      "line": 551,
+      "line": 561,
       "hash": 3874072518
     },
     {
-      "id": "src/game/presence.js:554:3211021817:sourceMode:processLightSound",
+      "id": "src/game/presence.js:564:3211021817:sourceMode:processLightSound",
       "from": "sourceMode",
       "to": "processLightSound",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:554:3211021817",
+      "entryId": "src/game/presence.js:564:3211021817",
       "file": "src/game/presence.js",
-      "line": 554,
+      "line": 564,
       "hash": 3211021817
     },
     {
-      "id": "src/game/presence.js:554:3211021817:sourceMode:lightSound",
+      "id": "src/game/presence.js:564:3211021817:sourceMode:lightSound",
       "from": "sourceMode",
       "to": "lightSound",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:554:3211021817",
+      "entryId": "src/game/presence.js:564:3211021817",
       "file": "src/game/presence.js",
-      "line": 554,
+      "line": 564,
       "hash": 3211021817
     },
     {
-      "id": "src/game/presence.js:554:3211021817:sourceMode:now",
+      "id": "src/game/presence.js:564:3211021817:sourceMode:now",
       "from": "sourceMode",
       "to": "now",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:554:3211021817",
+      "entryId": "src/game/presence.js:564:3211021817",
       "file": "src/game/presence.js",
-      "line": 554,
+      "line": 564,
       "hash": 3211021817
     },
     {
-      "id": "src/game/presence.js:555:3145036895:resolveTargetToFloor:navigation",
+      "id": "src/game/presence.js:565:3145036895:resolveTargetToFloor:navigation",
       "from": "resolveTargetToFloor",
       "to": "navigation",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:555:3145036895",
+      "entryId": "src/game/presence.js:565:3145036895",
       "file": "src/game/presence.js",
-      "line": 555,
+      "line": 565,
       "hash": 3145036895
     },
     {
-      "id": "src/game/presence.js:559:62141002:sinceTarget:now",
+      "id": "src/game/presence.js:569:62141002:sinceTarget:now",
       "from": "sinceTarget",
       "to": "now",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:559:62141002",
+      "entryId": "src/game/presence.js:569:62141002",
       "file": "src/game/presence.js",
-      "line": 559,
+      "line": 569,
       "hash": 62141002
     },
     {
-      "id": "src/game/presence.js:559:62141002:sinceTarget:state",
+      "id": "src/game/presence.js:569:62141002:sinceTarget:state",
       "from": "sinceTarget",
       "to": "state",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:559:62141002",
+      "entryId": "src/game/presence.js:569:62141002",
       "file": "src/game/presence.js",
-      "line": 559,
+      "line": 569,
       "hash": 62141002
     },
     {
-      "id": "src/game/presence.js:559:62141002:sinceTarget:targetSetAt",
+      "id": "src/game/presence.js:569:62141002:sinceTarget:targetSetAt",
       "from": "sinceTarget",
       "to": "targetSetAt",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:559:62141002",
+      "entryId": "src/game/presence.js:569:62141002",
       "file": "src/game/presence.js",
-      "line": 559,
+      "line": 569,
       "hash": 62141002
     },
     {
-      "id": "src/game/presence.js:560:1452199963:state:hasTarget",
+      "id": "src/game/presence.js:570:1452199963:state:hasTarget",
       "from": "state",
       "to": "hasTarget",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:560:1452199963",
+      "entryId": "src/game/presence.js:570:1452199963",
       "file": "src/game/presence.js",
-      "line": 560,
+      "line": 570,
       "hash": 1452199963
     },
     {
-      "id": "src/game/presence.js:560:1452199963:state:externalFresh",
+      "id": "src/game/presence.js:570:1452199963:state:externalFresh",
       "from": "state",
       "to": "externalFresh",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:560:1452199963",
+      "entryId": "src/game/presence.js:570:1452199963",
       "file": "src/game/presence.js",
-      "line": 560,
+      "line": 570,
       "hash": 1452199963
     },
     {
-      "id": "src/game/presence.js:560:1452199963:state:sinceTarget",
+      "id": "src/game/presence.js:570:1452199963:state:sinceTarget",
       "from": "state",
       "to": "sinceTarget",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:560:1452199963",
+      "entryId": "src/game/presence.js:570:1452199963",
       "file": "src/game/presence.js",
-      "line": 560,
+      "line": 570,
       "hash": 1452199963
     },
     {
-      "id": "src/game/presence.js:560:1452199963:state:PRESENCE",
+      "id": "src/game/presence.js:570:1452199963:state:PRESENCE",
       "from": "state",
       "to": "PRESENCE",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:560:1452199963",
+      "entryId": "src/game/presence.js:570:1452199963",
       "file": "src/game/presence.js",
-      "line": 560,
+      "line": 570,
       "hash": 1452199963
     },
     {
-      "id": "src/game/presence.js:560:1452199963:state:memorySec",
+      "id": "src/game/presence.js:570:1452199963:state:memorySec",
       "from": "state",
       "to": "memorySec",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:560:1452199963",
+      "entryId": "src/game/presence.js:570:1452199963",
       "file": "src/game/presence.js",
-      "line": 560,
+      "line": 570,
       "hash": 1452199963
     },
     {
-      "id": "src/game/presence.js:560:1452199963:state:difficultyRules",
+      "id": "src/game/presence.js:570:1452199963:state:difficultyRules",
       "from": "state",
       "to": "difficultyRules",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:560:1452199963",
+      "entryId": "src/game/presence.js:570:1452199963",
       "file": "src/game/presence.js",
-      "line": 560,
+      "line": 570,
       "hash": 1452199963
     },
     {
-      "id": "src/game/presence.js:560:1452199963:state:memoryScale",
+      "id": "src/game/presence.js:570:1452199963:state:memoryScale",
       "from": "state",
       "to": "memoryScale",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:560:1452199963",
+      "entryId": "src/game/presence.js:570:1452199963",
       "file": "src/game/presence.js",
-      "line": 560,
+      "line": 570,
       "hash": 1452199963
     },
     {
-      "id": "src/game/presence.js:561:366629139:enterStand:now",
+      "id": "src/game/presence.js:571:366629139:enterStand:now",
       "from": "enterStand",
       "to": "now",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:561:366629139",
+      "entryId": "src/game/presence.js:571:366629139",
       "file": "src/game/presence.js",
-      "line": 561,
+      "line": 571,
       "hash": 366629139
     },
     {
-      "id": "src/game/presence.js:732:2349445621:loadPresenceState:saved",
+      "id": "src/game/presence.js:742:2349445621:loadPresenceState:saved",
       "from": "loadPresenceState",
       "to": "saved",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:732:2349445621",
+      "entryId": "src/game/presence.js:742:2349445621",
       "file": "src/game/presence.js",
-      "line": 732,
+      "line": 742,
       "hash": 2349445621
     },
     {
-      "id": "src/game/presence.js:737:3518337213:Object:assign",
+      "id": "src/game/presence.js:747:3518337213:Object:assign",
       "from": "Object",
       "to": "assign",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:737:3518337213",
+      "entryId": "src/game/presence.js:747:3518337213",
       "file": "src/game/presence.js",
-      "line": 737,
+      "line": 747,
       "hash": 3518337213
     },
     {
-      "id": "src/game/presence.js:737:3518337213:Object:state",
+      "id": "src/game/presence.js:747:3518337213:Object:state",
       "from": "Object",
       "to": "state",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:737:3518337213",
+      "entryId": "src/game/presence.js:747:3518337213",
       "file": "src/game/presence.js",
-      "line": 737,
+      "line": 747,
       "hash": 3518337213
     },
     {
-      "id": "src/game/presence.js:739:415872040:x:y",
+      "id": "src/game/presence.js:749:415872040:x:y",
       "from": "x",
       "to": "y",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:739:415872040",
+      "entryId": "src/game/presence.js:749:415872040",
       "file": "src/game/presence.js",
-      "line": 739,
+      "line": 749,
       "hash": 415872040
     },
     {
-      "id": "src/game/presence.js:740:2044429904:targetX:targetY",
+      "id": "src/game/presence.js:750:2044429904:targetX:targetY",
       "from": "targetX",
       "to": "targetY",
       "kind": "same-line-reference",
-      "entryId": "src/game/presence.js:740:2044429904",
+      "entryId": "src/game/presence.js:750:2044429904",
       "file": "src/game/presence.js",
-      "line": 740,
+      "line": 750,
       "hash": 2044429904
     },
     {

@@ -153,7 +153,7 @@ const scheduler=createBellTowerRuntime({now:()=>scheduleNow,audio:{start(){},str
 scheduler.start();scheduleNow=600;scheduler.tick(.016);
 assert.ok(scheduled.some((delay)=>delay>0),'audio receives look-ahead scheduling before contact');
 
-FP.compile(conservatory.levels,{width:conservatory.width,height:conservatory.height,widenCorridors:conservatory.widenCorridors,connectors:conservatory.connectors,doors:conservatory.doors});
+FP.compile(conservatory.levels,{width:conservatory.width,height:conservatory.height,widenCorridors:conservatory.widenCorridors,connectors:conservatory.connectors,edgePortals:conservatory.edgePortals,doors:conservatory.doors});
 PROPS.propsInit(FP);
 const towerStairs=FP.floorplan().stairPortals.filter((entry)=>entry.id?.startsWith('tower-'));
 assert.equal(towerStairs.length,8,'four dog-leg stairs have two authored flights each');

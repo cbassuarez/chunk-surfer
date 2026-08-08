@@ -4,6 +4,7 @@
 // here is that the two agree about every prop in the wing.
 
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { conservatory } from '../src/data/floorplan/conservatory.js';
 import { CONSERVATORY_PROPS } from '../src/data/conservatory-props.js';
 import { ROOM_CELLS, TALISMAN_STAND } from '../src/data/conservatory-script.js';
@@ -34,6 +35,7 @@ FP.compile(conservatory.levels, {
   height: conservatory.height,
   widenCorridors: conservatory.widenCorridors,
   connectors: conservatory.connectors || [],
+  edgePortals: conservatory.edgePortals || [],
   doors: conservatory.doors || [],
 });
 for (const door of FP.doorState()) FP.setDoorOpen(door.id, true);
@@ -91,6 +93,19 @@ for (let seed = 0; seed < 200; seed++) {
       `seed ${seed} keeps the ${haunt} out of the talisman room`);
   }
 }
+for (const adaptiveBand of [-1, 0, 1]) {
+  const assignment = assignPracticeHaunts(991, { adaptiveBand });
+  assert.deepEqual(tally(assignment), { chairs: 2, hush: 1, tenant: 1 }, `band ${adaptiveBand} preserves the exact budget`);
+  for (const haunt of [PRACTICE_HAUNT.HUSH, PRACTICE_HAUNT.TENANT]) {
+    const room = Object.keys(assignment).find((id) => assignment[id] === haunt);
+    assert.ok(!HAUNT_FORBIDDEN_ROOMS.includes(room), `band ${adaptiveBand} preserves forbidden-room rules`);
+  }
+}
+assert.notDeepEqual(
+  assignPracticeHaunts(991, { adaptiveBand: -1 }),
+  assignPracticeHaunts(991, { adaptiveBand: 1 }),
+  'the bounded band changes deterministic placement and exclusive reveal order',
+);
 
 // Deterministic across calls, and neighbouring run ids must not deal the same
 // night — xorshift32 correlates on small seeds without the scramble.
@@ -133,6 +148,19 @@ for (const id of PRACTICE_ROOM_IDS) {
     `${id} leaves its upright where it was authored`);
 }
 assert.deepEqual(chairDriftFor('nowhere', [], 1), {}, 'an unknown room drifts nothing');
+
+// The room event must traverse the poses over time. The pure layout above owns
+// the destination; main owns the short-lived renderer tween that gets there.
+{
+  const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
+  const start=main.indexOf('function driftPracticeRoom(roomId)');
+  const end=main.indexOf('// ── the tenant',start);
+  const event=main.slice(start,end);
+  assert.match(event,/beginPracticePropMotion\(poses\)/,'the haunt starts a motion rather than writing its destination');
+  assert.doesNotMatch(event,/PROPS\.setPropDrift/,'the firing frame must not snap furniture to the final pose');
+  assert.match(main,/tickPracticePropMotion\(nowLoopMs\)/,'the frame clock advances the furniture motion');
+  assert.match(main,/const PRACTICE_PROP_MOVE_MS=1380/,'the move has enough duration to be seen and heard');
+}
 
 // The drift is render-only: applying it must leave the collision cell alone, or
 // a rearranged room could wall the player in.

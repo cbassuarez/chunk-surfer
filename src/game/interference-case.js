@@ -7,6 +7,13 @@ const ENDING_CLASSIFICATION = Object.freeze({
   drugged: 'CONTAMINATION',
   surfaced: 'EXTRACTION',
 });
+const RESPONSE_CLASSIFICATIONS = new Set([
+  'UNRESOLVED',
+  'VIGILANCE', 'LOW VIGILANCE',
+  'COMPOSURE', 'LOW COMPOSURE',
+  'EXPOSURE', 'LOW EXPOSURE',
+  'RESISTANCE', 'LOW RESISTANCE',
+]);
 
 const clampText = (value, limit = 96) => String(value || '').replace(/[\u0000-\u001f\u007f]/gu, ' ').trim().slice(0, limit);
 const unique = (values) => [...new Set((Array.isArray(values) ? values : []).filter(Boolean))];
@@ -77,6 +84,9 @@ export function normalizeInterferenceRecord(value) {
     tokens,
     revisions,
     classification: Object.values(ENDING_CLASSIFICATION).includes(source.classification) ? source.classification : null,
+    responseClassification: RESPONSE_CLASSIFICATIONS.has(source.responseClassification)
+      ? source.responseClassification
+      : 'UNRESOLVED',
     endingId: Object.prototype.hasOwnProperty.call(ENDING_CLASSIFICATION, source.endingId) ? source.endingId : null,
     status: ['open', 'contested', 'filed'].includes(source.status) ? source.status : 'open',
     artifactRevision: Math.max(0, Math.floor(Number(source.artifactRevision) || revisions.length)),
@@ -90,6 +100,7 @@ export function createInterferenceRecord(masked) {
     tokens: masked?.tokens || {},
     revisions: [],
     classification: null,
+    responseClassification: 'UNRESOLVED',
     endingId: null,
     status: 'open',
     artifactRevision: 0,
@@ -101,6 +112,9 @@ export function appendInterferenceRevision(record, revision = {}) {
   if (!current?.caseId) return null;
   const next = normalizeInterferenceRecord({
     ...current,
+    responseClassification: RESPONSE_CLASSIFICATIONS.has(revision.responseClassification)
+      ? revision.responseClassification
+      : current.responseClassification,
     status: revision.stage === 'handoff' ? 'contested' : current.status,
     artifactRevision: current.artifactRevision + 1,
     revisions: [...current.revisions, {
@@ -149,6 +163,7 @@ export function interferenceManifest(record) {
     `CASE ${safe.caseId}`,
     `STATUS ${safe.status.toUpperCase()}`,
     `CLASSIFICATION ${safe.classification || 'WITHHELD'}`,
+    `RESPONSE CLASSIFICATION ${safe.responseClassification}`,
     '',
     'RESOLVED CATEGORIES',
     `PERSONA ${safe.tokens.persona?.token || 'UNRESOLVED'} / ${safe.tokens.persona?.source || 'NONE'}`,
@@ -156,6 +171,7 @@ export function interferenceManifest(record) {
     `INPUT ${safe.tokens.mic?.token || 'UNRESOLVED'}`,
     '',
     'REVISION TRACE',
+    'ARCHITECTURAL EVENT HISTORY',
   ];
   const revisions = safe.endingId === 'inversion' ? [...safe.revisions].reverse() : safe.revisions;
   for (const revision of revisions) {
@@ -191,6 +207,7 @@ export function interferenceHtml(record) {
     :root{color-scheme:dark;background:#050707;color:#cad7c8;font:15px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace}body{max-width:920px;margin:0 auto;padding:40px 28px;background:linear-gradient(180deg,#081010,#030505)}h1{color:#d68a30;letter-spacing:.12em}h2{color:#789f9b;font-size:13px;letter-spacing:.2em;border-bottom:1px solid #26413e;padding-bottom:8px}table{width:100%;border-collapse:collapse;margin:22px 0}th,td{padding:8px;border-bottom:1px solid #162421;text-align:left}th{color:#718985}.classification{font-size:22px;color:#c76742}.revision{margin:18px 0;padding:16px;border:1px solid #263c38;background:#07100e}.revision header{display:flex;gap:18px;color:#789f9b}.revision header strong{color:#d7c88e}.revision header em{margin-left:auto;color:#8ba88f}.contested{border-color:#6e2929;box-shadow:inset 4px 0 #7a2727}.contested blockquote{color:#d45f56;transform:rotate(-.35deg);font-weight:700}footer{margin-top:36px;color:#64736e;font-size:12px}.redacted{background:#0b0d0c;color:#0b0d0c;padding:0 12px}</style></head><body>
     <p>AUDIOCORP / FIELD OPERATIONS / SIGNAL PATH</p><h1>FIELD RETURN ${escapeHtml(safe.caseId)}</h1>
     <p class="classification">${escapeHtml(safe.classification || 'CLASSIFICATION WITHHELD')} · ${escapeHtml(safe.status.toUpperCase())}</p>
+    <p>RESPONSE CLASSIFICATION: ${escapeHtml(safe.responseClassification)}</p>
     <h2>OPERATOR RESOLUTION</h2><table>${identityRows}</table>
     <h2>REVISION HISTORY</h2>${revisions || '<p>NO BATTLE REVISIONS FILED.</p>'}
     <footer>LOCAL-ONLY CASE MATERIAL. EXACT IDENTITY VALUES WERE HELD IN MEMORY AND REDACTED BEFORE FILING. NO MICROPHONE AUDIO WAS RECORDED.</footer>

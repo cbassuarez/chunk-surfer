@@ -224,18 +224,53 @@ export function openCellLookup({ open, runs }) {
   return (x, y) => (byRow.get(y) || []).some((run) => x >= run.x0 && x <= run.x1);
 }
 
+function pointInOrientedRect(x, y, rect) {
+  const dx = x - (Number(rect?.x) || 0), dy = y - (Number(rect?.y) || 0);
+  const yaw = -(Number(rect?.yaw) || 0), c = Math.cos(yaw), s = Math.sin(yaw);
+  const lx = dx * c - dy * s, ly = dx * s + dy * c;
+  return Math.abs(lx) <= Math.max(.02, Number(rect?.w) || 0) * .5
+    && Math.abs(ly) <= Math.max(.02, Number(rect?.d) || 0) * .5;
+}
+
+// Continuous map-space visibility. The ordinary map may simplify the building
+// to one-metre cells, but the viewshed samples the compiled half-metre floorplan,
+// live closed leaves and eye-height prop footprints. This is the same physical
+// frame the renderer and player marker use; no special exterior cone exists.
+export function visibilityLookup(command = {}) {
+  const scale = Math.max(1, Number(command.visibilityScale) || 1);
+  const detailed = command.visibilityOpen instanceof Set
+    ? (x, y) => command.visibilityOpen.has(`${Math.floor(x * scale)},${Math.floor(y * scale)}`)
+    : null;
+  const coarse = openCellLookup(command);
+  const openAt = detailed || ((x, y) => coarse(Math.floor(x), Math.floor(y)));
+  const closedDoors = (Array.isArray(command.doors) ? command.doors : [])
+    .filter((door) => door && door.state !== 'open' && door.open !== true);
+  const occluders = Array.isArray(command.occluders) ? command.occluders : [];
+  return (x, y) => {
+    if (!openAt(x, y)) return false;
+    for (const door of closedDoors) {
+      const dx = x - Number(door.position?.x), dy = y - Number(door.position?.y);
+      const along = door.widthAxis === 'y' ? Math.abs(dy) : Math.abs(dx);
+      const through = door.widthAxis === 'y' ? Math.abs(dx) : Math.abs(dy);
+      if (along <= Math.max(.1, Number(door.apertureWidth) || 1) * .5 && through <= .12) return false;
+    }
+    for (const rect of occluders) if (pointInOrientedRect(x, y, rect)) return false;
+    return true;
+  };
+}
+
 export const SIGHT = Object.freeze({
-  // A wide-ish human cone. Not the renderer's FOV — this is "what I could see if
-  // I looked", which is what a map is for.
-  halfAngle: Math.PI * 0.30,
-  rays: 41,
-  step: 0.34,
+  // Match the first-person projection (vertical focal length 1/.95 at 16:9),
+  // rather than drawing an abstract awareness wedge.
+  halfAngle: Math.atan(.95 * 16 / 9),
+  rays: 97,
+  step: 0.12,
 });
 
 // March each ray until it leaves open floor. Returns map-space endpoints, so the
 // caller can transform them and the wedge inherits any flip the map applies.
 export function sightPolygon({ origin, heading, isOpen, radius }) {
-  const reach = Math.max(2, Math.min(Number(radius) || 10, 14));
+  const reach = Math.max(2, Number(radius) || 10);
   const points = [];
   for (let i = 0; i < SIGHT.rays; i += 1) {
     const t = SIGHT.rays === 1 ? 0.5 : i / (SIGHT.rays - 1);
@@ -257,10 +292,10 @@ export function sightPolygon({ origin, heading, isOpen, radius }) {
 
 function drawSight(command) {
   const { origin, heading, transform, viewport, radius } = command;
-  const isOpen = openCellLookup(command);
+  const isOpen = visibilityLookup(command);
   // Standing in something the map does not consider open (a doorway mid-swing,
   // an unmapped cell) would otherwise produce a zero-length cone that flickers.
-  if (!isOpen(Math.floor(origin.x), Math.floor(origin.y))) return;
+  if (!isOpen(origin.x, origin.y)) return;
   const edge = sightPolygon({ origin, heading, isOpen, radius });
   if (edge.length < 3) return;
   const apex = transform.point(origin);
@@ -356,6 +391,41 @@ function drawMischiefBlink(commands, mischief, viewport) {
   });
 }
 
+// The emergency circuit's apparitions, for exactly as long as the red is on.
+// Deliberately NOT a marker: no ring, no icon, no glyph, nothing that shares a
+// vocabulary with a HUSH contact or a waypoint. Two crossed ticks — the shape a
+// display makes when it has a return it cannot classify — drawn faint and gone
+// before the player can count them. It confirms; it never tracks.
+function drawApparitionReturns(commands, apparitions, viewport) {
+  if (!apparitions?.points?.length) return;
+  const sight = commands.find((command) => command.kind === 'sight')
+    || commands.find((command) => command.kind === 'local-topology');
+  if (!sight?.transform) return;
+  const life = Math.max(1, Number(apparitions.life) || 1);
+  const t = Math.max(0, Math.min(1, Number(apparitions.age) / life));
+  const points = apparitions.points
+    .map((point) => sight.transform.point(point))
+    .filter((point) => point.x >= viewport.x - .5 && point.x <= viewport.x + viewport.w + .5)
+    .filter((point) => point.y >= viewport.y - .5 && point.y <= viewport.y + viewport.h + .5);
+  if (!points.length) return;
+  uiDraw(({ ctx, cellW, cellH }) => {
+    ctx.save();
+    ctx.strokeStyle = UI_COLOR.danger;
+    ctx.lineWidth = Math.max(1, cellW * .12);
+    ctx.globalAlpha = (1 - t) * .42;
+    for (const point of points) {
+      const cx = (point.x + .5) * cellW;
+      const cy = (point.y + .5) * cellH;
+      const r = Math.max(cellW, cellH) * .3;
+      ctx.beginPath();
+      ctx.moveTo(cx - r, cy - r); ctx.lineTo(cx + r, cy + r);
+      ctx.moveTo(cx + r, cy - r); ctx.lineTo(cx - r, cy + r);
+      ctx.stroke();
+    }
+    ctx.restore();
+  });
+}
+
 export function drawMinimap(model, opts = {}) {
   if (!model || typeof model !== 'object' || !model.player) return;
   const { cols } = uiSize();
@@ -391,6 +461,7 @@ export function drawMinimap(model, opts = {}) {
   drawTelemetryCrumbs(model, commands, viewport, now);
   drawCommands(commands, now);
   drawMischiefBlink(commands, opts.mischief, viewport);
+  drawApparitionReturns(commands, opts.apparitions, viewport);
 
   const floor = model.floors.find((candidate) => candidate.id === model.player.floorId);
   const floorTarget = commands.find((command) => command.kind === 'floor-target');

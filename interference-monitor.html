@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AUDIOCORP / MONITOR RETURN</title>
     <style>
-      :root{color-scheme:dark;background:#030606;color:#b7cec7;font:13px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace}*{box-sizing:border-box}body{margin:0;padding:18px;background:radial-gradient(circle at 20% 0,#0d1c19,#030606 65%);min-height:100vh}header{display:flex;justify-content:space-between;color:#c98a39;border-bottom:1px solid #2a403a;padding-bottom:9px;letter-spacing:.12em}#state{color:#74a49b}.meter{height:12px;margin:18px 0;border:1px solid #36534b;background:repeating-linear-gradient(90deg,#16352f 0 11px,#020606 11px 15px);box-shadow:0 0 16px #1e5d4a44}.row{display:grid;grid-template-columns:84px 1fr;gap:12px;padding:7px 0;border-bottom:1px solid #14231f}.label{color:#68827b}.value{color:#d5d0a3;overflow-wrap:anywhere}blockquote{margin:18px 0 0;padding:10px 13px;border-left:3px solid #7c2727;color:#d66d63;background:#160707;transform:rotate(-.25deg);display:none}footer{margin-top:18px;color:#71837d;font-size:11px}</style>
+      :root{color-scheme:dark;background:#030606;color:#b7cec7;font:13px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace}*{box-sizing:border-box}body{margin:0;padding:18px;background:radial-gradient(circle at 20% 0,#0d1c19,#030606 65%);min-height:100vh}header{display:flex;justify-content:space-between;color:#c98a39;border-bottom:1px solid #2a403a;padding-bottom:9px;letter-spacing:.12em}#state{color:#74a49b}.meter{height:12px;margin:18px 0;border:1px solid #36534b;background:repeating-linear-gradient(90deg,#16352f 0 11px,#020606 11px 15px);box-shadow:0 0 16px #1e5d4a44}.row{display:grid;grid-template-columns:84px 1fr;gap:12px;padding:7px 0;border-bottom:1px solid #14231f}.label{color:#68827b}.value{color:#d5d0a3;overflow-wrap:anywhere}blockquote{margin:18px 0 0;padding:10px 13px;border-left:3px solid #7c2727;color:#d66d63;background:#160707;transform:rotate(-.25deg);display:none}footer{margin-top:18px;color:#71837d;font-size:11px;display:flex;align-items:center;justify-content:space-between;gap:12px}button{border:1px solid #9f7138;background:#100d08;color:#dfb46d;font:inherit;padding:7px 10px;cursor:pointer}button:hover,button:focus{outline:1px solid #ddad61;background:#211507}:root[data-mode="echo"] body{background:linear-gradient(168deg,#0c1a17,#020303 56%,#10201c)}:root[data-mode="echo"] .meter{height:38vh;background:repeating-linear-gradient(106deg,#173a33 0 2px,transparent 2px 22px);clip-path:polygon(50% 0,100% 22%,86% 100%,14% 100%,0 22%)}:root[data-mode="echo"] .row{display:none}:root[data-mode="echo"] header{writing-mode:vertical-rl;height:28vh;position:absolute;right:18px}:root[data-mode="echo"] blockquote{margin-top:14vh}</style>
   </head>
   <body>
     <header><span>AUDIOCORP / SIGNAL PATH</span><span id="state">MONITOR RETURN</span></header>
@@ -14,7 +14,7 @@
     <div class="row"><span class="label">HOST</span><span class="value" id="host">WITHHELD</span></div>
     <div class="row"><span class="label">INPUT</span><span class="value" id="input">WITHHELD</span></div>
     <blockquote id="annotation"></blockquote>
-    <footer>HOLD ESC IN THE FIELD WINDOW TO RESTORE ALL GAME WINDOWS.</footer>
+    <footer><span>HOLD ESC HERE OR IN THE FIELD TO RESTORE.</span><button id="restore" type="button">RESTORE ALL WINDOWS</button></footer>
     <script type="module" src="/src/interference-monitor.js"></script>
   </body>
 </html>

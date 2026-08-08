@@ -57,16 +57,29 @@ function reachable(runtime,start,goal,maxVisited=180000){
   assert.equal(reachable(runtime,POINTS.fork,POINTS.recordist),true,'the central spine is reachable without tuning');
   assert.equal(reachable(runtime,POINTS.recordist,POINTS.body),true,'Body Return is reachable without tuning');
   assert.equal(reachable(runtime,POINTS.body,POINTS.final),true,'the final causeway reaches the horizon without tuning');
+  // THE SPINE IS TIERED NOW. "Every step is within the movement limit" was the
+  // old contract and it is exactly what made the field a lawn; the contract now
+  // is that every cliff on the spine is crossable — the runtime's own canStep
+  // answers yes, via a ladder or a chute — so the player is constrained but
+  // never stuck. (The reachability assertions above already prove the whole
+  // route end to end through that same canStep.)
   for(let y=POINTS.entry.y;y>=POINTS.body.y;y-=1){
     const here=runtime.geometry.cellAt(0,y),next=runtime.geometry.cellAt(0,y-1);
-    if(here&&next)assert.ok(Math.abs(here.floor-next.floor)<=.45,`spine step ${y} stays within the movement limit`);
+    if(!here||!next)continue;
+    if(Math.abs(here.floor-next.floor)<=.45)continue;
+    const step=runtime.geometry.canStep(0,y,0,y-1);
+    assert.ok(step.ok,`spine cliff at ${y} has no ladder or chute on it`);
+    assert.ok(step.via==='ladder'||step.via==='chute',`spine cliff at ${y} is crossed by neither`);
   }
 }
 
 {
   const state=withTuned(landscapeState(),'fork-room');
   const runtime=createSourceSpaceRuntime({initialState:state});
-  assert.match(runtime.sourceObjective().label,/RECORDIST TRACE — TUNE \[F\]/,'the objective names the actual input and action');
+  // The objective names the PLACE and its elevation now, not the button: the
+  // level is legible by geometry, so the label should read like a direction
+  // rather than like a control prompt.
+  assert.match(runtime.sourceObjective().label,/TRACE IS ONE TIER UP/,'the objective no longer says where to go');
   const diagonal={x:-22,y:-56};
   const tangent={x:-44,y:-28};
   const length=Math.hypot(tangent.x,tangent.y);
@@ -98,7 +111,7 @@ function reachable(runtime,start,goal,maxVisited=180000){
   let state=withTuned(landscapeState(),'fork-room','recordist-loop');
   state=apply(state,'LANDMARK_VISITED',{id:'body-room'});
   const runtime=createSourceSpaceRuntime({initialState:state});
-  assert.match(runtime.sourceObjective().label,/BODY RETURN — TUNE \[F\]/);
+  assert.match(runtime.sourceObjective().label,/BODY RETURN IS ABOVE THE TRACE/);
   runtime.onStep({x:70,y:-552},{x:80,y:-564,facing:0});
   assert.equal(runtime.state().phase,'landscape','merely visiting Body Return cannot satisfy an objective that asks the player to tune it');
 }

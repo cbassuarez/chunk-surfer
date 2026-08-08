@@ -19,6 +19,14 @@
 //
 import { F, ZONE } from './legend.js';
 import { CONSERVATORY_DOORS } from '../conservatory-doors.js';
+import {
+  DISTRICT_BOUNDS,
+  DISTRICT_LOGICAL_ORIGIN,
+  buildExteriorDistrictRows,
+  districtFacadeHeightAt,
+  districtLogicalAt,
+  elleryMassingAt,
+} from '../exterior-district.js';
 
 // The engine holds no geometry — edit these maps freely. To find a building
 // that has quietly sealed itself:
@@ -31,15 +39,61 @@ function hallGroundRows(){
     let c=(x===0||x===w-1||y===0||y===h-1)?'#':'H';
     if(y>0&&y<8&&x>0&&x<w-1)c='S';
     if(y>=8&&y<=31&&(x<=4||x>=25)&&x>0&&x<w-1)c='h';
-    if(y>=32&&y<h-1&&x>0&&x<w-1)c='r';
+    // The rear cross aisle runs between the arms, not under them. The lower
+    // balcony's arms come all the way back to this row at 4.00, and drawing the
+    // ramp beneath them would put two decks at one height in one volume.
+    if(y>=32&&y<h-1&&x>=5&&x<=24)c='r';
+    // and the strips the arms come back over are left unclaimed, so the arm deck
+    // is the only floor in that column rather than a second one under it.
+    if(y>=32&&y<h-1&&x>0&&x<w-1&&(x<5||x>24))c=' ';
     if(x===0&&(y===7||y===20||y===21||y===32))c='+';
     row+=c;
   }out.push(row);}return out;
 }
+// THE STAGE IS A PLATFORM, NOT A PATCH OF FLOOR.
+//
+// It was authored flat at -2.5 — the same height as the front of the house — so
+// there was no stage, only the part of the room the seats point at. The
+// hall_structure mesh has always drawn a deck at -2.2, which the player walked
+// straight through.
+//
+// A metre above the front stalls, which is a real platform height and is
+// deliberately more than STEP_UP: you cannot wander onto it, and you cannot step
+// off the front of it either. Two step bays inside the proscenium opening are
+// the way up, and they are the reason the position matters to a take.
+const STAGE_FLOOR=-1.5;
+function hallStageRows(){
+  const w=30,h=38,out=[];
+  for(let y=0;y<h;y++){let row='';for(let x=0;x<w;x++)row+=(y>=1&&y<=7&&x>=1&&x<=w-2)?'S':' ';out.push(row);}
+  return out;
+}
+function hallStageProfile(x,y,cell){
+  if(cell.solid||(cell.flags&(F.DOOR|F.BRICKED)))return null;
+  // Downstage left and right, inside the opening (authored x106-108, x117-119).
+  // Three risers of a third of a metre carry -2.5 up to -1.5.
+  const bay=(x>=8&&x<=10)||(x>=19&&x<=21);
+  if(bay&&y===7)return{floor:-2.16,ceil:15.5,flags:cell.flags|F.STAIR};
+  if(bay&&y===6)return{floor:-1.83,ceil:15.5,flags:cell.flags|F.STAIR};
+  return{floor:STAGE_FLOOR,ceil:15.5,flags:cell.flags&~F.STAIR};
+}
+const REAR_CROSS_FLOOR=2.5, BALCONY_DECK=4.0, HALL_ROWS=38;
 function hallGroundProfile(x,y,cell){
   if(cell.solid||(cell.flags&(F.DOOR|F.BRICKED)))return null;
   if(y<=7)return{floor:-2.5,ceil:15.5,flags:cell.flags&~F.STAIR};
-  if(y>=32)return{floor:2.5,ceil:3.8,flags:cell.flags&~F.STAIR};
+  // ONE RAMP. The rake does not stop at the back row — the rear cross aisle keeps
+  // climbing the last metre and a half and ARRIVES at the lower balcony's deck
+  // height. The bowl and the circle are one continuous surface, which is why
+  // there is no flight anywhere in this room: the risers are the stairs.
+  //
+  // Its ceiling rises from the old 3.8 — which was the underside of the lower
+  // balcony's own rear band, and that band is gone, because this IS that band now
+  // (see balconyRows) — but stops at 7.3, under the UPPER balcony's rear deck at
+  // 7.5. Opening it to the full house drove this span straight through that deck:
+  // 400 physical overlaps.
+  if(y>=32){
+    const climb=Math.min(1,(y-32)/(HALL_ROWS-2-32));
+    return{floor:REAR_CROSS_FLOOR+climb*(BALCONY_DECK-REAR_CROSS_FLOOR),ceil:7.3,flags:cell.flags|F.STAIR};
+  }
   // Eleven half-metre terraces align with the accepted seating bowl. Only the
   // centre and side aisles are stairs; seats are blocked by their authored
   // collision mask and never turn the whole hall into one enormous stair.
@@ -48,12 +102,17 @@ function hallGroundProfile(x,y,cell){
   const aisle=(x>=1&&x<=4)||(x>=13&&x<=16)||(x>=25&&x<=28);
   return{floor,ceil:(x<=4||x>=25)?3.8:15.5,flags:aisle?(cell.flags|F.STAIR):(cell.flags&~F.STAIR)};
 }
-function balconyRows(glyph){
+// `rear` draws the band across the back of the horseshoe. The LOWER balcony no
+// longer has one: the hall's own rear cross aisle climbs to 4.0 and is that band,
+// so drawing a second deck at the same height in the same place would be two
+// floors in one volume — the exact fault the galleria flight used to have. The
+// UPPER balcony keeps its rear, which is the only thing joining its two arms.
+function balconyRows(glyph,{rear=true}={}){
   const w=30,h=38,out=[];
   for(let y=0;y<h;y++){let row='';for(let x=0;x<w;x++){
     let c=' ';
     if(x===0||x===w-1||y===0||y===h-1)c='#';
-    else if((y>=8&&y<=35&&(x<=4||x>=25))||y>=32)c=glyph;
+    else if((y>=8&&y<=36&&(x<=4||x>=25))||(rear&&y>=32))c=glyph;
     row+=c;
   }out.push(row);}return out;
 }
@@ -105,7 +164,10 @@ function natatoriumRows(){
     // not a second lowered collision room; natatoriumProfile flattens it to
     // the deck so the renderer cannot build inner walls around it.
     let c=(x===0||x===w-1||y===0||y===h-1)?'#':'T';
-    if(y===0&&x===14)c='+';
+    // A municipal bath admitted crowds, school groups and stretchers through a
+    // proper glazed pair. Two adjacent glyphs compile as one two-metre portal;
+    // the old single fire leaf made the entire public entrance read as a closet.
+    if(y===0&&(x===13||x===14))c='+';
     // Five metres of dry lead-in lets the room reveal itself before the pool.
     // A narrower 12 x 16m basin reads longitudinally instead of swallowing the
     // hall as soon as the lobby leaf opens.
@@ -133,12 +195,15 @@ function frontAtriumRows(){
     let c=(x===0||x===w-1||y===0||y===h-1)?'#':'A';
     if(y===0&&(x===4||x===5))c='+';    // public glazed entrance pair
     if(x===0&&y===10)c='+';
-    if(x===w-1&&y===10)c='x';          // old staff door, visibly bricked
+    if(x===w-1&&y===13)c='x';          // old staff door, visibly bricked
     if(y===h-1&&x===11)c='+';
-    // Enclosed front-of-house office. The public sees the counter; the staff
-    // room itself is entered through the master-key leaf on its west wall.
-    if(x>=15&&y>=14&&y<=20)c=(x===15||x===w-1||y===14||y===20)?'#':'F';
-    if(x===15&&y===17)c='+';
+    // Compact entrance-side ticket office. It sits beside the public doors,
+    // where a municipal box office belongs, instead of forming a brick choke
+    // point immediately in front of the concert-hall portal. The public counter
+    // faces west; staff enter through the master-key leaf on the south wall.
+    if(x>=17&&y>=3&&y<=10)c=(x===17||x===w-1||y===3||y===10)?'#':'F';
+    if(x===17&&(y===6||y===7))c='F';    // ticket window behind the fitted counter
+    if(y===10&&x===20)c='+';
     // Acoustic lobby into the hall's rear cross aisle.
     if(x>=16&&y>=21&&y<=23)c='F';
     if(x===w-1&&(y===21||y===22))c='+';
@@ -154,22 +219,33 @@ function frontAtriumProfile(x,y,cell){
   return{ceil:gardenVoid?17:9.5};
 }
 
-// The main stair's well and its newel post, in physical runtime cells. The well
-// is the existing 6x6m shaft; the newel is a 2x2m column at its centre.
-const SPIRAL_WELL=Object.freeze({x0:120,x1:131,z0:78,z1:91});
-const SPIRAL_NEWEL=Object.freeze({x0:124,x1:127,z0:82,z1:85});
-
 export const ACADEMIC_ORIGIN=Object.freeze({x:0,y:240});
 export const ACADEMIC_PHYSICAL_ORIGIN=Object.freeze({x:50,y:0});
 export const ACADEMIC_BASE=10;
+// Pull the whole upper/practice-chapel assembly north as one Euclidean piece.
+// Its logical addresses stay untouched, so every room and interaction id is
+// stable; only the obsolete fifteen-metre stair feeder disappears.
+const UPPER_WING_Z_SHIFT=-9.5;
+const upperWingZ=(z)=>z+UPPER_WING_Z_SHIFT;
 // The LOCKED ones. (13,244) is not here any more: that leaf is the lobby's
 // corridor door, and the lobby is how you get round this floor.
 export const ACADEMIC_CLASSROOM_DOORS=Object.freeze([
   {x:9,y:244},{x:9,y:251},{x:13,y:251},
   {x:9,y:258},{x:13,y:258},{x:9,y:264},{x:13,y:264},
 ]);
-export const ACADEMIC_ENTRY=Object.freeze({x:8,y:275});
+export const ACADEMIC_ENTRY=Object.freeze({x:13,y:277});
 export const ACADEMIC_BREACH=Object.freeze({x:17,y:267});
+
+export const MAIN_STAIR_LAYOUT=Object.freeze({
+  revision:2,
+  groundHall:Object.freeze({x:138,y:26}),
+  groundLanding:Object.freeze({x:139,y:29}),
+  lowerStart:Object.freeze({x:134,y:50}),
+  upperLanding:Object.freeze({x:154,y:74}),
+  practiceMouth:Object.freeze({x:63,y:53}),
+  upperStart:Object.freeze({x:134,y:64}),
+  academicLanding:Object.freeze({x:13,y:277}),
+});
 
 function academicFloorRows(){
   const w=48,h=40,inside=(x,y)=>
@@ -262,6 +338,55 @@ function practiceWingRows(){
     row+=c;
   }out.push(row);}return out;
 }
+function groundStairHallRows(){
+  // One room, not an L-shaped collision maze. The narrow north arm replaces the
+  // obsolete stem; the broader south bay clears the whole six-metre coil plus a
+  // one-metre construction margin. Blank corners become the adjoining rooms'
+  // ordinary masonry, safely outside the stair and its landing apron.
+  const out=[];
+  for(let y=0;y<15;y++){
+    let row='';
+    for(let x=0;x<12;x++){
+      const approach=y<=7&&x>=3&&x<=9;
+      const stairBay=y>=7&&x>=2&&x<=10;
+      row+=approach||stairBay?',':' ';
+    }
+    out.push(row);
+  }
+  return out;
+}
+function groundStairHallProfile(x,y,cell){
+  if(cell.solid)return null;
+  const px=57+x+.5,pz=25+y+.5;
+  const insideHero=Math.hypot(px-63,pz-36)<=3.35;
+  const onLanding=px>=56.5&&px<=63.25&&pz>=32.5&&pz<=37.5;
+  if(insideHero&&!onLanding)return{ceil:4.55,collisionOnly:true,zone:ZONE.stair,flags:cell.flags&~F.MUTABLE};
+  return{ceil:4.55,zone:ZONE.stair,flags:cell.flags&~F.MUTABLE};
+}
+function upperStairHallRows(){
+  // The practice wing is brought up to the stair bay, so U1 is an actual room:
+  // landing, upward continuation, practice threshold and chapel route are all
+  // visible within eight metres. There is no feeder corridor behind it.
+  return Array.from({length:9},()=>','.repeat(12));
+}
+function upperStairHallProfile(x,y,cell){
+  if(cell.solid)return null;
+  const px=60+x+.5,pz=33.5+y+.5;
+  const insideHero=Math.hypot(px-63,pz-36)<=3.35;
+  const onLanding=px>=62&&px<=69&&pz>=32.5&&pz<=37.5;
+  if(insideHero&&!onLanding)return{ceil:9.75,collisionOnly:true,zone:ZONE.stair,flags:cell.flags&~F.MUTABLE};
+  return{ceil:9.75,zone:ZONE.stair,flags:cell.flags&~F.MUTABLE};
+}
+
+function academicStairLoggiaProfile(x,y,cell){
+  const profile=academicProfile(x,y,cell)||{};
+  if(cell.solid)return profile;
+  const px=54+x+.5,pz=34+y+.5;
+  const insideHero=Math.hypot(px-63,pz-36)<=3.35;
+  const onLanding=px>=63&&px<=70&&pz>=36&&pz<=41;
+  if(insideHero&&!onLanding)return{...profile,collisionOnly:true,zone:ZONE.stair,flags:cell.flags&~F.MUTABLE};
+  return profile;
+}
 function upperAtriumBridgeRows(){
   const w=24,h=5,out=[];
   for(let y=0;y<h;y++){let row='';for(let x=0;x<w;x++){
@@ -272,6 +397,7 @@ function upperAtriumBridgeRows(){
   }out.push(row);}return out;
 }
 function galleriaStairRows(x0){const out=[];for(let y=0;y<13;y++){let row='';for(let x=0;x<8;x++)row+=(y>0&&y<12&&x>=x0&&x<x0+2)?'/':' ';out.push(row);}return out;}
+
 
 // THE YARD, WHICH IS SCENERY AND NOT A ROOM.
 //
@@ -316,15 +442,8 @@ const YARD_W=50,YARD_H=93;
 // Banded along the yard's depth, so the elevation has a silhouette instead of an
 // extrusion. The mouth band matches `parapet` in the west elevation mesh
 // (tools/chunk_surfer/build-props.mjs) exactly; move one and move the other.
-const YARD_ROOFLINE=[
-  {to:12, ceil:14.35},   // the bay and its parapet
-  {to:30, ceil:18.00},   // the academic crown, a floor higher
-  {to:52, ceil:21.00},   // the hall's fly tower, the tallest thing on the site
-  {to:Infinity, ceil:11.00}, // the back range: roof plant, and nothing above it
-];
 function yardCeilAt(ry){
-  for(const band of YARD_ROOFLINE) if(ry<=band.to) return band.ceil;
-  return 24.0;
+  return elleryMassingAt(ry).height;
 }
 // The head of the basement stair breaks grade at +0.50m and stands in the middle
 // of all this. Lay the kerb glyph over it rather than leaving a hole: at 0.80m
@@ -407,7 +526,8 @@ function yardRows(){
       // doing real work: the main basement stair breaks grade at +0.20m behind
       // it, and at 0.80m the kerb clears that span.
       const mouth=y>=YARD_MOUTH.y0&&y<=YARD_MOUTH.y1;
-      const kerb=(x===YARD_W-1&&!mouth)||y===YARD_H-1
+      const southPerimeterOpening=y===YARD_H-1&&((x>=4&&x<=12)||(x>=34&&x<=42));
+      const kerb=(x===YARD_W-1&&!mouth)||(y===YARD_H-1&&!southPerimeterOpening)
         ||(x>=YARD_STAIR_HEAD.x0&&x<=YARD_STAIR_HEAD.x1&&y>=YARD_STAIR_HEAD.y0&&y<=YARD_STAIR_HEAD.y1);
       row+=kerb?'w':'Y';
     }
@@ -426,7 +546,19 @@ function basementProfile(_x,_y,cell){
   return (!cell.solid&&(cell.flags&F.SKY))?{ceil:-1.0}:null;
 }
 
+function exteriorDistrictProfile(rx,ry,cell){
+  if(cell.solid)return null;
+  const x=DISTRICT_BOUNDS.x0+rx,y=DISTRICT_BOUNDS.y0+ry;
+  return{ceil:districtFacadeHeightAt(x,y)};
+}
+
 const EUCLIDEAN_ADDITIONS=[
+  // A complete walkable street ring around Ellery. Its logical address sits
+  // beyond every existing floor so no save address moves; physicalOrigin is
+  // allowed to be negative and the physical slice now carries its own origin.
+  {id:'exterior_civic_block',layer:'ground',space:'exterior_civic_block',renderGroup:'ground',
+   origin:DISTRICT_LOGICAL_ORIGIN,physicalOrigin:{x:DISTRICT_BOUNDS.x0,y:DISTRICT_BOUNDS.y0},base:0,
+   rows:buildExteriorDistrictRows(),profile:exteriorDistrictProfile},
   {id:'loading_bay_yard',layer:'ground',space:'loading_bay',renderGroup:'ground',
    origin:{x:50,y:200},physicalOrigin:{x:0,y:0},base:0,rows:yardRows(),profile:yardProfile},
   {id:'front_atrium',replace:true,layer:'ground',space:'front_atrium',renderGroup:'ground',origin:{x:74,y:3},physicalOrigin:{x:74,y:3},base:0,rows:frontAtriumRows(),profile:frontAtriumProfile},
@@ -437,171 +569,195 @@ const EUCLIDEAN_ADDITIONS=[
   {id:'natatorium',replace:true,layer:'ground',space:'natatorium',renderGroup:'ground',origin:{x:70,y:27},physicalOrigin:{x:70,y:27},base:0,rows:natatoriumRows(),profile:natatoriumProfile},
   {id:'hall_box_office_link',replace:true,layer:'ground',space:'front_atrium',renderGroup:'hall',origin:{x:94,y:24},physicalOrigin:{x:94,y:24},base:0,rows:['FFFFHH','FFFFHH','FFFFHH']},
   {id:'hall_orchestra',replace:true,layer:'ground',space:'hall',renderGroup:'hall',origin:{x:98,y:4},physicalOrigin:{x:98,y:4},base:0,rows:hallGroundRows(),profile:hallGroundProfile},
-  {id:'hall_lower_balcony',layer:'hall_lower',space:'hall',renderGroup:'hall',origin:{x:0,y:40},physicalOrigin:{x:98,y:4},base:0,rows:balconyRows('L')},
+  // Declared AFTER the orchestra and with the same origin and physicalOrigin, so
+  // it replaces the stage rows in place rather than parking them on another
+  // logical island. That identity embedding is what lets ordinary steps carry
+  // the player up the bays without a connector — the seam the balconies need
+  // exists only because their logical cells live somewhere else entirely.
+  {id:'hall_stage',replace:true,layer:'hall_stage',space:'hall',renderGroup:'hall',origin:{x:98,y:4},physicalOrigin:{x:98,y:4},base:0,rows:hallStageRows(),profile:hallStageProfile},
+  {id:'hall_lower_balcony',layer:'hall_lower',space:'hall',renderGroup:'hall',origin:{x:0,y:40},physicalOrigin:{x:98,y:4},base:0,rows:balconyRows('L',{rear:false})},
   {id:'hall_upper_balcony',layer:'hall_upper',space:'hall',renderGroup:'hall',origin:{x:0,y:82},physicalOrigin:{x:98,y:4},base:0,rows:balconyRows('U')},
-  {id:'galleria_lower_stair',physicalReplace:true,layer:'hall_stair',space:'hall',renderGroup:'hall',origin:{x:32,y:40},physicalOrigin:{x:99,y:20},base:0,rows:galleriaStairRows(1),stairs:[{from:{x:33,y:41},to:{x:33,y:51},fromH:-.74,toH:4,width:2,head:2.6,zone:'hall',material:'woodVelvet'}]},
+  // galleria_lower_stair is GONE, and nothing replaces it. It climbed -0.74 ->
+  // 4.00 through the same rows the west aisle ramps through, two floors in one
+  // volume, so the player walked the ramp to their seats and passed through the
+  // flight. The rake carries that climb now: the bowl rises, the rear cross aisle
+  // keeps rising, and it arrives at the circle. One ramp, horseshoe-shaped, and
+  // the risers ARE the stairs.
   {id:'galleria_upper_stair',physicalReplace:true,layer:'hall_stair',space:'hall',renderGroup:'hall',origin:{x:40,y:40},physicalOrigin:{x:122,y:20},base:0,rows:galleriaStairRows(4),stairs:[{from:{x:44,y:51},to:{x:44,y:41},fromH:4,toH:7.5,width:2,head:2.6,zone:'hall',material:'woodVelvet'}]},
-  {id:'practice_wing',replace:true,layer:'upper',space:'practice',renderGroup:'upper',origin:{x:51,y:52},physicalOrigin:{x:51,y:52},base:4.8,rows:practiceWingRows()},
-  {id:'upper_atrium_bridge',replace:true,layer:'upper',space:'upper_atrium',renderGroup:'upper',origin:{x:77,y:53},physicalOrigin:{x:77,y:53},base:4.8,rows:upperAtriumBridgeRows()},
-  // The academic flight is visible immediately from the practice landing. It
-  // reverses beside the original upper stair, then meets the south end of the
-  // third-floor bridge without borrowing a classroom or hiding behind a seam.
-  // The academic flight is visible immediately from the practice landing. It
-  // reverses beside the original upper stair, then meets the south end of the
-  // third-floor bridge without borrowing a classroom or hiding behind a seam.
-  //
-  // The foot now stands IN the arrival hall's north edge rather than three metres
-  // out behind its back wall, so coming up the main stair the third-floor flight is
-  // beside you and in view instead of through the mouth at your shoulder.
-  //
-  // The trick is that logical and physical are decoupled here. Its LOGICAL cells
-  // stay outside the wing — they must, because a connector's redirect only fires
-  // where an ordinary step is blocked, and inside the hall you would simply walk
-  // across the seam and never take it. Only the PHYSICAL placement moved south,
-  // two metres, and `physicalReplace` lets those treads own the hall's air where
-  // they now overlap it (see writeStairCell).
-  // THE MAIN STAIR IS ONE SPIRAL, GROUND TO THIRD FLOOR — winders in a square
-  // well, wound around a solid newel post.
-  //
-  // It replaces two straight flights that shared this well with no wall between
-  // them, running opposite ways at different heights, where the third floor's
-  // foot landing stood INSIDE the second-floor hall — same height, same
-  // material, made invisible by physicalReplace, and reachable through exactly
-  // one half-metre tile. You could see the stair, walk its whole length, and
-  // never find the way on.
-  //
-  // WHY WINDERS IN A SQUARE, and not a ring. The scene shader is a sector DDA:
-  // one floor/ceiling pair per column. A rasterised CIRCLE therefore becomes a
-  // sawtooth of tiny wall faces where a smooth surface should be — and a ring
-  // floating in a square well has two of them, its outer edge and its open
-  // newel. Built that way first, it rendered as visual noise. Filling the well
-  // to its own straight walls and cutting a rectangular newel leaves every
-  // boundary straight except the radial tread edges, and those are nosings:
-  // exactly where a stair is supposed to have a vertical face.
-  //
-  // WHY HALF A REVOLUTION EACH. The building decides it. The ground corridor
-  // meets the well at the NORTH, the academic floor leaves at the NORTH, and the
-  // practice wing is SOUTH. A full turn returns you to the side you came in on,
-  // so it cannot serve a landing on the far side. Two half turns put the
-  // second-floor landing exactly where the practice wing already is.
-  //
-  // EVERY JUNCTION IS LOGICALLY ADJACENT. A connector is one cell, and a
-  // one-cell junction is the bug above. Only the physical embedding winds; the
-  // logical run is a straight corridor whose ends touch their landings, so
-  // ordinary steps carry the player the whole way:
-  //
-  //   ground corridor -> ground band -> lower coil -> landing -> gallery -> wing
-  //                                     landing -> upper coil -> academic band
-  //
-  // One seam survives, at the academic band, because the academic floor's
-  // logical space is nowhere near the shaft's — and it is the TOP of the stair,
-  // a dead end walked straight into, which is the arrangement that works
-  // everywhere else in this building.
-  {id:'main_spiral',layer:'main_stair',space:'main_stair',renderGroup:'upper',
-   origin:{x:60,y:38},physicalOrigin:{x:60,y:38},base:0,
-   rows:Array.from({length:9},()=> ' '.repeat(4)),stairs:[{
-    // The stair stands in other people's air — the academic floor at its top
-    // band, the upper layer where the winders pass. physicalReplace resolves
-    // those into one volume instead of two structures in one place.
-    id:'main-spiral',zone:'stair',material:'serviceConcrete',head:3.4,physicalReplace:true,
+  {id:'practice_wing',replace:true,physicalReplace:true,physicalStack:true,layer:'upper',space:'practice',renderGroup:'upper',origin:{x:51,y:52},physicalOrigin:{x:51,y:upperWingZ(52)},base:4.8,rows:practiceWingRows()},
+  {id:'upper_atrium_bridge',replace:true,physicalReplace:true,physicalStack:true,layer:'upper',space:'upper_atrium',renderGroup:'upper',origin:{x:77,y:53},physicalOrigin:{x:77,y:upperWingZ(53)},base:4.8,rows:upperAtriumBridgeRows()},
+  // Retire the one-metre stems in logical space. Their physical footprint is
+  // immediately reopened by the broad halls below, but old saves and pathfinding
+  // can no longer slip into the obsolete maze behind those halls.
+  {id:'ground_stair_stem_retired',replace:true,layer:'ground',space:'ground',renderGroup:'ground',
+   origin:{x:58,y:25},physicalOrigin:{x:58,y:25},base:0,rows:Array.from({length:19},()=> '#'.repeat(7))},
+  {id:'upper_stair_stem_retired',replace:true,layer:'upper',space:'upper',renderGroup:'upper',
+   origin:{x:58,y:44},physicalOrigin:{x:58,y:44},base:4.8,rows:Array.from({length:8},()=> '#'.repeat(7))},
+
+  // Ground/1F is now one axial room off the cross-spine. It is deliberately a
+  // separate logical island: the upper landing occupies the same Euclidean
+  // footprint, and edge portals join boundaries without turning either landing
+  // into a teleport trigger.
+  {id:'grand_ground_stair_hall',physicalReplace:true,layer:'main_stair_hall',space:'main_stair_hall',renderGroup:'ground',
+   origin:{x:134,y:20},physicalOrigin:{x:57,y:25},base:0,rows:groundStairHallRows(),profile:groundStairHallProfile},
+
+  // Four genuinely curving half-coils make two complete revolutions around a
+  // 1.3m open well. The collision grid uses macro winders; `rises` and `going`
+  // retain the real 28/30-riser construction for the hero mesh and fractional
+  // camera height. No inaccessible square wedge fill is presented as the stair.
+  {id:'main_open_well_stair',layer:'main_stair',space:'main_stair',renderGroup:'upper',
+   origin:{x:134,y:48},physicalOrigin:{x:60,y:38},base:0,rows:[''],stairs:[{
+    id:'main-open-well',zone:'stair',material:'serviceConcrete',head:3.4,physicalReplace:true,
     flights:[
-      {id:'lower-coil',from:{x:60,y:39},to:{x:60,y:45.5},
-       fromH:0,toH:4.8,width:2,rises:14,ceil:13.4,
-       groupFrom:'ground',groupTo:'upper',
-       arc:{center:{x:63,z:42},rInner:1.0,rOuter:4.4,rWalk:2.9,theta0:0,sweep:Math.PI,
-            bounds:SPIRAL_WELL,newelBox:SPIRAL_NEWEL}},
-      {id:'upper-coil',from:{x:62,y:45.5},to:{x:62,y:39},
-       fromH:4.8,toH:10,width:2,rises:14,ceil:13.4,
-       groupFrom:'upper',groupTo:'academic',
-       arc:{center:{x:63,z:42},rInner:1.0,rOuter:4.4,rWalk:2.9,theta0:Math.PI,sweep:Math.PI,
-            bounds:SPIRAL_WELL,newelBox:SPIRAL_NEWEL}},
+      {id:'ground-to-half',from:{x:134,y:50},to:{x:134,y:54},
+       fromH:0,toH:2.4,width:2,rises:14,going:.28,ceil:4.55,renderMode:'hero-mesh',groupFrom:'ground',groupTo:'upper',
+       arc:{center:{x:63,z:36},rInner:.65,rOuter:3,rWalk:2.65,theta0:0,sweep:Math.PI,snapEndpoints:true,openWell:{floor:-4,ceil:14}}},
+      {id:'half-to-upper',from:{x:138,y:54},to:{x:138,y:50},
+       fromH:2.4,toH:4.8,width:2,rises:14,going:.28,ceil:7.15,renderMode:'hero-mesh',groupFrom:'ground',groupTo:'upper',
+       arc:{center:{x:63,z:36},rInner:.65,rOuter:3,rWalk:2.65,theta0:Math.PI,sweep:Math.PI,snapEndpoints:true}},
+      {id:'upper-to-half',from:{x:134,y:64},to:{x:134,y:60},
+       fromH:4.8,toH:7.4,width:2,rises:15,going:.28,ceil:9.75,renderMode:'hero-mesh',groupFrom:'upper',groupTo:'academic',
+       arc:{center:{x:63,z:36},rInner:.65,rOuter:3,rWalk:2.65,theta0:Math.PI*5/9,sweep:Math.PI,snapEndpoints:true}},
+      {id:'half-to-academic',from:{x:138,y:60},to:{x:138,y:64},
+       fromH:7.4,toH:10,width:2,rises:15,going:.28,ceil:13.8,renderMode:'hero-mesh',groupFrom:'upper',groupTo:'academic',
+       arc:{center:{x:63,z:36},rInner:.65,rOuter:3,rWalk:2.65,theta0:Math.PI*14/9,sweep:Math.PI,snapEndpoints:true}},
     ],
     landings:[
-      {id:'ground-band',at:{x:60,y:38},size:{x:1.5,y:1},physicalAt:{x:60,z:38},height:0,ceil:4.5,renderGroup:'ground'},
-      {id:'academic-band',at:{x:62,y:38},size:{x:1.5,y:1},physicalAt:{x:62,z:38},height:10,ceil:13.4,renderGroup:'academic'},
-      // Two metres deep and the full width of the well, sitting directly
-      // against the last winder. A one-metre lip left the whole stair in your
-      // face at arm's length, and the step off the top tread crossed a 1.5m
-      // gap because the ring stopped short of it.
-      {id:'practice-landing',at:{x:60,y:46},size:{x:6,y:2},physicalAt:{x:60,z:46},height:4.8,ceil:8.2,renderGroup:'upper'},
+      {id:'upper-floor-landing',at:{x:150,y:50},size:{x:6,y:4},physicalAt:{x:62.5,z:33},height:4.8,ceil:9.75,renderGroup:'upper'},
+      {id:'academic-floor-landing',at:{x:150,y:64},size:{x:6,y:4},physicalAt:{x:63.5,z:36.5},height:10,ceil:13.8,renderGroup:'academic'},
     ],
   }]},
-  // The short run from the half-landing to the practice wing's north mouth.
-  // Identity-embedded and logically continuous with both, so no seam. `,` not
-  // `.`: widenCorridors would chew a mutable corridor's edges here.
-  {id:'spiral_gallery',replace:true,layer:'main_stair',space:'main_stair',renderGroup:'upper',
-   origin:{x:60,y:48},physicalOrigin:{x:60,y:48},base:4.8,
-   rows:Array.from({length:4},()=> ','.repeat(6))},
+
+  // U1 is a landing room, not a feeder corridor. The six-metre central void is
+  // flanked by two independently walkable three-metre galleries; they reunite
+  // in the south arrival hall directly against the practice wing.
+  {id:'grand_upper_stair_hall',physicalReplace:true,layer:'main_stair_hall',space:'main_stair_hall',renderGroup:'upper',
+   origin:{x:146,y:70},physicalOrigin:{x:60,y:33.5},base:4.8,rows:upperStairHallRows(),profile:upperStairHallProfile},
   {id:'academic_floor',layer:'academic',space:'academic',renderGroup:'academic',origin:ACADEMIC_ORIGIN,physicalOrigin:ACADEMIC_PHYSICAL_ORIGIN,base:ACADEMIC_BASE,rows:academicFloorRows(),profile:academicProfile},
+  // The top flight now arrives in a nine-metre-wide loggia. Opening the former
+  // reception partition provides west and east choices without touching either
+  // locked faculty room or any classroom bank.
+  {id:'academic_stair_loggia',replace:true,layer:'academic',space:'academic',renderGroup:'academic',
+   origin:{x:4,y:274},physicalOrigin:{x:54,y:34},base:ACADEMIC_BASE,rows:Array.from({length:6},()=> 'Q'.repeat(10)),profile:academicStairLoggiaProfile},
   // First seal the entire legacy chapel footprint. The new chapel is the
   // only module allowed to reopen cells inside it.
-  {id:'chapel_legacy_seal',replace:true,layer:'upper',space:'chapel_shell',renderGroup:'upper',origin:{x:81,y:58},physicalOrigin:{x:81,y:58},base:4.8,rows:Array.from({length:36},()=> '#'.repeat(30))},
-  {id:'chapel_nave',replace:true,layer:'upper',space:'chapel',renderGroup:'upper',origin:{x:86,y:58},physicalOrigin:{x:86,y:58},base:4.8,rows:chapelRows(),profile:chapelProfile},
+  {id:'chapel_legacy_seal',replace:true,layer:'upper',space:'chapel_shell',renderGroup:'upper',origin:{x:81,y:58},physicalOrigin:{x:81,y:upperWingZ(58)},base:4.8,rows:Array.from({length:36},()=> '#'.repeat(30))},
+  {id:'chapel_nave',replace:true,physicalReplace:true,physicalStack:true,layer:'upper',space:'chapel',renderGroup:'upper',origin:{x:86,y:58},physicalOrigin:{x:86,y:upperWingZ(58)},base:4.8,rows:chapelRows(),profile:chapelProfile},
   // The tower is one Euclidean route. Each U stair owns an explicit turret
   // footprint and only meets a room at an authored level seam. No inferred
   // endpoints and no physicalReplace overlays are used here.
-  {id:'tower_access_lower',layer:'tower_stair_lower',space:'stair_turret',renderGroup:'tower',origin:{x:0,y:150},physicalOrigin:{x:99,y:61},base:4.8,rows:doglegStairRows(),stairs:[{
+  {id:'tower_access_lower',physicalReplace:true,physicalStack:true,layer:'tower_stair_lower',space:'stair_turret',renderGroup:'tower',origin:{x:0,y:150},physicalOrigin:{x:99,y:upperWingZ(61)},base:4.8,rows:doglegStairRows(),stairs:[{
     id:'tower-access-lower',zone:'bellTower',material:'chapelStone',head:2.35,
     flights:[
-      {id:'flight-1',from:{x:2,y:151},to:{x:7,y:151},physicalFrom:{x:101,z:62},physicalTo:{x:106,z:62},fromH:4.8,toH:6.7,width:1.5,rises:10},
-      {id:'flight-2',from:{x:7,y:154},to:{x:2,y:154},physicalFrom:{x:106,z:65},physicalTo:{x:101,z:65},fromH:6.7,toH:8.6,width:1.5,rises:10},
+      {id:'flight-1',from:{x:2,y:151},to:{x:7,y:151},physicalFrom:{x:101,z:upperWingZ(62)},physicalTo:{x:106,z:upperWingZ(62)},fromH:4.8,toH:6.7,width:1.5,rises:10},
+      {id:'flight-2',from:{x:7,y:154},to:{x:2,y:154},physicalFrom:{x:106,z:upperWingZ(65)},physicalTo:{x:101,z:upperWingZ(65)},fromH:6.7,toH:8.6,width:1.5,rises:10},
     ],
     landings:[
-      {id:'narthex',at:{x:0,y:151},size:{x:3,y:2},physicalAt:{x:99,z:62},height:4.8},
-      {id:'turn',at:{x:7,y:151},size:{x:3,y:4},physicalAt:{x:106,z:62},height:6.7},
-      {id:'ringing',at:{x:0,y:154},size:{x:3,y:1},physicalAt:{x:99,z:65},height:8.6},
+      {id:'narthex',at:{x:0,y:151},size:{x:3,y:2},physicalAt:{x:99,z:upperWingZ(62)},height:4.8},
+      {id:'turn',at:{x:7,y:151},size:{x:3,y:4},physicalAt:{x:106,z:upperWingZ(62)},height:6.7},
+      {id:'ringing',at:{x:0,y:154},size:{x:3,y:1},physicalAt:{x:99,z:upperWingZ(65)},height:8.6},
     ],
   }]},
-  {id:'tower_ringing_room',layer:'tower_ringing',space:'ringing_room',renderGroup:'tower',origin:{x:16,y:150},physicalOrigin:{x:81,y:56},base:8.6,rows:towerRoomRows(18,16,{ringing:true})},
-  {id:'tower_access_upper',layer:'tower_stair_upper',space:'stair_turret',renderGroup:'tower',origin:{x:36,y:150},physicalOrigin:{x:99,y:61},base:8.6,rows:doglegStairRows(),stairs:[{
+  {id:'tower_ringing_room',physicalReplace:true,physicalStack:true,layer:'tower_ringing',space:'ringing_room',renderGroup:'tower',origin:{x:16,y:150},physicalOrigin:{x:81,y:upperWingZ(56)},base:8.6,rows:towerRoomRows(18,16,{ringing:true})},
+  {id:'tower_access_upper',physicalReplace:true,physicalStack:true,layer:'tower_stair_upper',space:'stair_turret',renderGroup:'tower',origin:{x:36,y:150},physicalOrigin:{x:99,y:upperWingZ(61)},base:8.6,rows:doglegStairRows(),stairs:[{
     id:'tower-access-upper',zone:'bellTower',material:'chapelStone',head:2.35,
     flights:[
-      {id:'flight-1',from:{x:38,y:151},to:{x:44,y:151},physicalFrom:{x:101,z:61},physicalTo:{x:107,z:61},fromH:8.6,toH:10.9,width:1.5,rises:12},
-      {id:'flight-2',from:{x:44,y:154},to:{x:38,y:154},physicalFrom:{x:107,z:64},physicalTo:{x:101,z:64},fromH:10.9,toH:13.2,width:1.5,rises:12},
+      {id:'flight-1',from:{x:38,y:151},to:{x:44,y:151},physicalFrom:{x:101,z:upperWingZ(61)},physicalTo:{x:107,z:upperWingZ(61)},fromH:8.6,toH:10.9,width:1.5,rises:12},
+      {id:'flight-2',from:{x:44,y:154},to:{x:38,y:154},physicalFrom:{x:107,z:upperWingZ(64)},physicalTo:{x:101,z:upperWingZ(64)},fromH:10.9,toH:13.2,width:1.5,rises:12},
     ],
     landings:[
-      {id:'ringing',at:{x:36,y:151},size:{x:3,y:2},physicalAt:{x:99,z:61},height:8.6},
-      {id:'turn',at:{x:44,y:151},size:{x:3,y:4},physicalAt:{x:107,z:61},height:10.9},
-      {id:'belfry',at:{x:36,y:154},size:{x:3,y:1},physicalAt:{x:99,z:64},height:13.2},
+      {id:'ringing',at:{x:36,y:151},size:{x:3,y:2},physicalAt:{x:99,z:upperWingZ(61)},height:8.6},
+      {id:'turn',at:{x:44,y:151},size:{x:3,y:4},physicalAt:{x:107,z:upperWingZ(61)},height:10.9},
+      {id:'belfry',at:{x:36,y:154},size:{x:3,y:1},physicalAt:{x:99,z:upperWingZ(64)},height:13.2},
     ],
   }]},
-  {id:'tower_bell_chamber',layer:'tower_chamber',space:'bell_chamber',renderGroup:'tower',origin:{x:52,y:150},physicalOrigin:{x:81,y:56},base:13.2,rows:towerRoomRows(18,16,{chamber:true}),profile:bellChamberProfile},
-  {id:'tower_escape_upper',layer:'tower_stair_escape_upper',space:'stair_turret',renderGroup:'tower',origin:{x:72,y:150},physicalOrigin:{x:99,y:68},base:8.6,rows:doglegStairRows(),stairs:[{
+  {id:'tower_bell_chamber',physicalReplace:true,physicalStack:true,layer:'tower_chamber',space:'bell_chamber',renderGroup:'tower',origin:{x:52,y:150},physicalOrigin:{x:81,y:upperWingZ(56)},base:13.2,rows:towerRoomRows(18,16,{chamber:true}),profile:bellChamberProfile},
+  {id:'tower_escape_upper',physicalReplace:true,physicalStack:true,layer:'tower_stair_escape_upper',space:'stair_turret',renderGroup:'tower',origin:{x:72,y:150},physicalOrigin:{x:99,y:upperWingZ(68)},base:8.6,rows:doglegStairRows(),stairs:[{
     id:'tower-escape-upper',zone:'bellTower',material:'chapelStone',head:2.35,
     flights:[
-      {id:'flight-1',from:{x:74,y:151},to:{x:80,y:151},physicalFrom:{x:101,z:69},physicalTo:{x:107,z:69},fromH:13.2,toH:10.9,width:1.5,rises:12},
-      {id:'flight-2',from:{x:80,y:154},to:{x:74,y:154},physicalFrom:{x:107,z:72},physicalTo:{x:101,z:72},fromH:10.9,toH:8.6,width:1.5,rises:12},
+      {id:'flight-1',from:{x:74,y:151},to:{x:80,y:151},physicalFrom:{x:101,z:upperWingZ(69)},physicalTo:{x:107,z:upperWingZ(69)},fromH:13.2,toH:10.9,width:1.5,rises:12},
+      {id:'flight-2',from:{x:80,y:154},to:{x:74,y:154},physicalFrom:{x:107,z:upperWingZ(72)},physicalTo:{x:101,z:upperWingZ(72)},fromH:10.9,toH:8.6,width:1.5,rises:12},
     ],
     landings:[
-      {id:'belfry',at:{x:72,y:151},size:{x:3,y:2},physicalAt:{x:99,z:69},height:13.2},
-      {id:'turn',at:{x:80,y:151},size:{x:3,y:4},physicalAt:{x:107,z:69},height:10.9},
-      {id:'loft',at:{x:72,y:154},size:{x:3,y:1},physicalAt:{x:99,z:73},height:8.6},
+      {id:'belfry',at:{x:72,y:151},size:{x:3,y:2},physicalAt:{x:99,z:upperWingZ(69)},height:13.2},
+      {id:'turn',at:{x:80,y:151},size:{x:3,y:4},physicalAt:{x:107,z:upperWingZ(69)},height:10.9},
+      {id:'loft',at:{x:72,y:154},size:{x:3,y:1},physicalAt:{x:99,z:upperWingZ(73)},height:8.6},
     ],
   }]},
-  {id:'tower_organ_loft',layer:'tower_loft',space:'organ_loft',renderGroup:'tower',origin:{x:88,y:150},physicalOrigin:{x:85,y:72},base:8.6,rows:organLoftRows()},
-  {id:'tower_escape_lower',layer:'tower_stair_escape_lower',space:'stair_turret',renderGroup:'tower',origin:{x:104,y:150},physicalOrigin:{x:99,y:79},base:4.8,rows:doglegStairRows(),stairs:[{
+  {id:'tower_organ_loft',physicalReplace:true,physicalStack:true,layer:'tower_loft',space:'organ_loft',renderGroup:'tower',origin:{x:88,y:150},physicalOrigin:{x:85,y:upperWingZ(72)},base:8.6,rows:organLoftRows()},
+  {id:'tower_escape_lower',physicalReplace:true,physicalStack:true,layer:'tower_stair_escape_lower',space:'stair_turret',renderGroup:'tower',origin:{x:104,y:150},physicalOrigin:{x:99,y:upperWingZ(79)},base:4.8,rows:doglegStairRows(),stairs:[{
     id:'tower-escape-lower',zone:'bellTower',material:'chapelStone',head:2.35,
     flights:[
-      {id:'flight-1',from:{x:106,y:151},to:{x:111,y:151},physicalFrom:{x:101,z:80},physicalTo:{x:106,z:80},fromH:8.6,toH:6.7,width:1.5,rises:10},
-      {id:'flight-2',from:{x:111,y:154},to:{x:106,y:154},physicalFrom:{x:106,z:83},physicalTo:{x:101,z:83},fromH:6.7,toH:4.8,width:1.5,rises:10},
+      {id:'flight-1',from:{x:106,y:151},to:{x:111,y:151},physicalFrom:{x:101,z:upperWingZ(80)},physicalTo:{x:106,z:upperWingZ(80)},fromH:8.6,toH:6.7,width:1.5,rises:10},
+      {id:'flight-2',from:{x:111,y:154},to:{x:106,y:154},physicalFrom:{x:106,z:upperWingZ(83)},physicalTo:{x:101,z:upperWingZ(83)},fromH:6.7,toH:4.8,width:1.5,rises:10},
     ],
     landings:[
-      {id:'loft',at:{x:104,y:151},size:{x:3,y:2},physicalAt:{x:98,z:79},height:8.6},
-      {id:'turn',at:{x:111,y:151},size:{x:3,y:4},physicalAt:{x:106,z:80},height:6.7},
-      {id:'nave',at:{x:104,y:154},size:{x:3,y:1},physicalAt:{x:99,z:82},height:4.8},
+      {id:'loft',at:{x:104,y:151},size:{x:3,y:2},physicalAt:{x:98,z:upperWingZ(79)},height:8.6},
+      {id:'turn',at:{x:111,y:151},size:{x:3,y:4},physicalAt:{x:106,z:upperWingZ(80)},height:6.7},
+      {id:'nave',at:{x:104,y:154},size:{x:3,y:1},physicalAt:{x:99,z:upperWingZ(82)},height:4.8},
     ],
   }]},
 ];
 
 export const conservatory = {
-  width: 132,
-  height: 300,
+  width: 240,
+  height: 480,
+  layoutRevision: 3,
+  positionMigrations:[
+    {id:'old-upper-coil',bounds:{x0:62,x1:64,y0:38,y1:47},to:MAIN_STAIR_LAYOUT.upperLanding,floor:4.8},
+    {id:'old-lower-coil',bounds:{x0:60,x1:62,y0:38,y1:47},to:MAIN_STAIR_LAYOUT.groundLanding,floor:0},
+    {id:'old-practice-gallery',bounds:{x0:58,x1:67,y0:46,y1:53},to:MAIN_STAIR_LAYOUT.upperLanding,floor:4.8},
+    {id:'old-upper-stem',bounds:{x0:58,x1:66,y0:44,y1:52},to:MAIN_STAIR_LAYOUT.upperLanding,floor:4.8},
+    {id:'old-ground-stem',bounds:{x0:58,x1:66,y0:25,y1:39},to:MAIN_STAIR_LAYOUT.groundHall,floor:0},
+    {id:'old-academic-seam',bounds:{x0:12,x1:15,y0:277,y1:280},to:MAIN_STAIR_LAYOUT.academicLanding,floor:10},
+    // Revision 3 inserts real low ranges into the previously empty yard. A save
+    // made inside one of those footprints returns to the clear arrival spine.
+    {id:'yard-former-stables',bounds:{x0:80,x1:92,y0:214,y1:222},to:{x:79,y:207},floor:0},
+    {id:'yard-rehearsal-annex',bounds:{x0:82,x1:96,y0:229,y1:239},to:{x:79,y:207},floor:0},
+    {id:'yard-baths-plant',bounds:{x0:82.5,x1:95.5,y0:249,y1:261},to:{x:79,y:207},floor:0},
+    {id:'yard-covered-stores',bounds:{x0:84,x1:96,y0:270.5,y1:283.5},to:{x:79,y:207},floor:0},
+  ],
   widenCorridors: true,
+  edgePortals:[
+    {id:'ground-spine-to-stair-hall',width:4,
+     from:{at:{x:61,y:24.5},along:{x:1,y:0},exit:{x:0,y:1}},
+     to:{at:{x:138,y:20},along:{x:1,y:0},exit:{x:0,y:-1}}},
+    {id:'ground-hall-to-lower-flight',width:2,
+     from:{at:{x:139.5,y:30},along:{x:0,y:-1},exit:{x:1,y:0}},
+     to:{at:{x:134,y:50},along:{x:1,y:0},exit:{x:0,y:-1}}},
+    {id:'lower-half-flight-seam',width:2,
+     from:{at:{x:134,y:54},along:{x:1,y:0},exit:{x:0,y:1}},
+     to:{at:{x:138,y:54},along:{x:1,y:0},exit:{x:0,y:1}}},
+    {id:'lower-flight-to-upper-floor-landing',width:2,
+     from:{at:{x:138,y:50},along:{x:1,y:0},exit:{x:0,y:-1}},
+     to:{at:{x:150,y:52},along:{x:0,y:-1},exit:{x:-1,y:0}}},
+    {id:'upper-floor-landing-to-hall',width:4,
+     from:{at:{x:155.5,y:50},along:{x:0,y:1},exit:{x:1,y:0}},
+     to:{at:{x:154,y:70},along:{x:0,y:1},exit:{x:-1,y:0}}},
+    {id:'upper-floor-landing-to-academic-flight',width:2,
+     from:{at:{x:151,y:53.5},along:{x:1,y:0},exit:{x:0,y:1}},
+     to:{at:{x:134,y:64},along:{x:1,y:0},exit:{x:0,y:1}}},
+    {id:'upper-landing-to-practice',width:6,
+     from:{at:{x:146,y:78.5},along:{x:1,y:0},exit:{x:0,y:1}},
+     to:{at:{x:60,y:52},along:{x:1,y:0},exit:{x:0,y:-1}}},
+    {id:'upper-half-flight-seam',width:2,
+     from:{at:{x:134,y:60},along:{x:1,y:0},exit:{x:0,y:-1}},
+     to:{at:{x:138,y:60},along:{x:1,y:0},exit:{x:0,y:-1}}},
+    {id:'academic-flight-to-floor-landing',width:2,
+     from:{at:{x:138,y:64},along:{x:1,y:0},exit:{x:0,y:1}},
+     to:{at:{x:150,y:64},along:{x:1,y:0},exit:{x:0,y:-1}}},
+    {id:'academic-floor-landing-to-loggia',width:2,
+     from:{at:{x:150,y:64},along:{x:0,y:1},exit:{x:-1,y:0}},
+     to:{at:{x:13.5,y:276.5},along:{x:0,y:1},exit:{x:1,y:0}}},
+  ],
   connectors:[
     // Logical seams coincide at identical physical landings. Height changes
     // happen on the ordinary stair cells between them, never in the connector.
-    {from:{x:100,y:21},to:{x:33,y:41}},
-    {from:{x:33,y:51},to:{x:2,y:67}},
+    // THE RAMP MEETS THE CIRCLE. The rear cross aisle climbs to 4.00 and the
+    // lower balcony's arms reach back to the same row, so each junction is one
+    // physical cell at one height — no flight, no level change in the seam.
+    {from:{x:103,y:40},to:{x:4,y:76}},
+    {from:{x:122,y:40},to:{x:25,y:76}},
     {from:{x:28,y:67},to:{x:44,y:51}},
     {from:{x:44,y:41},to:{x:28,y:99}},
     {from:{x:98,y:62},to:{x:0,y:151}},
@@ -612,24 +768,6 @@ export const conservatory = {
     {from:{x:72,y:154},to:{x:101,y:151}},
     {from:{x:100,y:157},to:{x:104,y:151}},
     {from:{x:104,y:154},to:{x:98,y:82}},
-    // Existing save addresses remain untouched; these seams enter the appended
-    // academic stair and then the third-floor bridge at identical elevations.
-    //
-    // DO NOT PUT `span` ON THESE. It was tried, to fix the reported "you get
-    // locked into paths" bug — the third floor's foot landing stands inside the
-    // second-floor hall, invisible, and a single-cell seam leaves its whole
-    // perimeter wall except one half-metre tile. Widening the seam does raise
-    // the ways in from 1 to 50. It also makes the return journey IMPOSSIBLE:
-    // measured, 3F->ground went from reachable in 2146 cells to unreachable.
-    //
-    // The reason is structural. A redirect fires on any successful step ONTO a
-    // seam cell, so once a seam covers an area rather than a junction, ordinary
-    // movement inside that area throws you onto the other logical island, where
-    // the next step is a wall. One cell works precisely because it is the only
-    // one. The real fix is to stop needing a hidden landing at all — see the
-    // spiral rebuild, which replaces this stair with one continuous run.
-    // Only ONE seam survives in the main stair, and it is the top of it.
-    {from:{x:62,y:38},to:{x:13,y:278}},
     // THE APRON TO THE YARD, at the top of the dock steps.
     //
     // The yard was built as scenery — a view with no connector, bounded by a
@@ -642,6 +780,13 @@ export const conservatory = {
     // steps (see YARD_STEPS), which is the only place the two floors meet
     // within a riser of each other.
     {from:{x:50,y:11},to:{x:99,y:211}},
+    // The old yard keeps every logical address. Three broad seams join its west,
+    // north and south edges to the new perimeter ring at the same physical
+    // pavement, making the full block optional without putting redirects across
+    // the direct van-to-door route.
+    {from:{x:50,y:204},to:districtLogicalAt(-1,4),span:{y:8}},
+    {from:{x:54,y:200},to:districtLogicalAt(4,-1),span:{x:10}},
+    {from:{x:54,y:292},to:districtLogicalAt(4,93),span:{x:8}},
   ],
   // ON THE ROAD, OUTSIDE THE GATE. He has parked and he is walking in.
   //

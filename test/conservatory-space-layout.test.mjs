@@ -16,6 +16,7 @@ FP.compile(conservatory.levels, {
   height: conservatory.height,
   widenCorridors: conservatory.widenCorridors,
   connectors: conservatory.connectors || [],
+  edgePortals: conservatory.edgePortals || [],
   doors: conservatory.doors || [],
 });
 for(const door of FP.doorState())FP.setDoorOpen(door.id,true);
@@ -149,8 +150,21 @@ const boxOfficeProps = placed.filter((prop) => prop.id.startsWith('box-office-')
 assert.ok(boxOfficeProps.length >= 10, 'box office should read as a stocked ticket office');
 assert.ok(byId['box-office-key-cabinet']?.action === 'chapel-key-cabinet', 'key cabinet interaction stays canonical');
 assert.ok(byId['box-office-ledger']?.action === 'rekey-ledger', 'rekey ledger interaction stays canonical');
-assert.ok(reachable(rt(88, 20), rt(94, 22)), 'box-office staff route stays walkable around counter and desk');
-assert.ok(PROPS.pathToProp(rt(88, 20).x, rt(88, 20).y, 'box-office-key-cabinet', KEYRING), 'key cabinet remains reachable');
+assert.ok(reachable(rt(90, 14), rt(94, 11.5)), 'entrance-side box-office staff route stays walkable around counter and desk');
+assert.ok(PROPS.pathToProp(rt(90, 14).x, rt(90, 14).y, 'box-office-key-cabinet', KEYRING), 'key cabinet remains reachable');
+
+// The visible public floor is one circulation field. These points trace both
+// sides of the garden, the cleared former box-office choke point and the hall
+// approach; a decorative prop may occupy its visible footprint, but it may not
+// create an invisible no-space cell in the advertised promenade.
+const atriumPublicStart=rt(80,5);
+for(const [x,y] of [[77,7],[77,15],[78,23],[90,14],[94,18],[96,22],[90,6]]){
+  const point=rt(x,y);
+  assert.ok(PROPS.propCanOccupy(point.x,point.y),`atrium circulation point ${x},${y} is visibly open and occupiable`);
+  assert.ok(reachable(atriumPublicStart,point),`atrium circulation point ${x},${y} remains connected to the public entrance`);
+}
+assert.ok(byId['atrium-public-fittings']&&!byId['atrium-public-fittings'].blocks,'wall fittings fill the atrium without claiming garden or circulation cells');
+assert.ok(!placed.some((prop)=>prop.id.startsWith('atrium-public-')&&prop.blocks&&prop.x>=79&&prop.x<=88&&prop.y>=8&&prop.y<=20),'new public furniture stays out of the ruined garden');
 
 assert.ok(reachable(rt(97, 25), rt(117, 10)), 'hall door to stage route remains clear');
 assert.ok(reachable(rt(97, 25), rt(100, 21)), 'hall door to lower galleria stair landing remains clear');
@@ -234,11 +248,14 @@ assert.equal(cubicles.length,2,'matching municipal changing-cubicle banks line b
 assert.ok(cubicles.every((prop)=>!prop.blocks&&prop.y===40.5),'cubicle banks stay shallow, wall-backed, and out of circulation');
 assert.deepEqual(cubicles.map((prop)=>prop.yaw).sort((a,b)=>a-b),[-Math.PI/2,Math.PI/2],'both cubicle banks face inward');
 assert.ok(byId['natatorium-end-window']?.structural&&!byId['natatorium-end-window']?.blocks,'the triple end window dresses the real far wall without becoming another wall');
+assert.ok(byId['natatorium-entrance-fixtures']?.structural&&!byId['natatorium-entrance-fixtures']?.blocks,'the baths admission sequence is dressing, never a second lobby shell');
+for(const id of['pool-entry-rules','pool-entry-first-aid'])assert.ok(byId[id]?.inspect,`${id} gives the entrance an occupied institutional threshold`);
 assert.equal(placed.filter((prop)=>prop.mesh==='pool_backstroke_flags').length,2,'two transverse flag lines establish the pool safety datum');
 assert.ok(byId['pool-lane-ropes']?.structural&&!byId['pool-lane-ropes']?.blocks,'lane ropes remain visual and never obstruct the walkable water');
 assert.equal(placed.filter((prop)=>prop.mesh==='pool_ladder').length,2,'steel ladders explain entering and leaving the basin from either deck');
 assert.equal(placed.filter((prop)=>prop.mesh==='changing_bench').length,2,'purpose-built slatted benches replace chapel furniture in the pool hall');
-assert.ok(placed.filter((prop)=>prop.zone===ZONE.natatorium).every((prop)=>prop.id==='pool-lane-markings'||prop.y>=32.4),'the first five metres inside the pool door remain clear');
+const entranceDressing=new Set(['natatorium-entrance-fixtures','pool-entry-rules','pool-entry-first-aid','natatorium-light-emergency-entry']);
+assert.ok(placed.filter((prop)=>prop.zone===ZONE.natatorium&&!entranceDressing.has(prop.id)).every((prop)=>prop.id==='pool-lane-markings'||prop.y>=32.4),'only wall-backed admission dressing occupies the dry lead-in');
 assert.ok(reachable(rt(84, 27), rt(84, 37)), 'natatorium lobby crosses the lead deck and enters the pool');
 assert.ok(reachable(rt(84, 27), rt(75, 45)), 'natatorium west deck perimeter remains walkable');
 assert.ok(reachable(rt(84, 27), rt(91, 34)), 'natatorium east deck and lane storage remain walkable');
@@ -251,19 +268,24 @@ assert.deepEqual({x:byId['pool-lane-markings']?.x,y:byId['pool-lane-markings']?.
 assert.equal(byId['pool-lifeguard-chair']?.yaw,-Math.PI/2,'lifeguard chair faces west across the pool');
 assert.equal(byId['pool-lane-reel']?.yaw,0,'lane reel sits square to the starting end');
 
+const hallPortal=byId['hall-entrance-portal'];
+assert.ok(hallPortal?.structural&&!hallPortal.blocks,'the concert-hall portal is architectural dressing, never a second collision throat');
+assert.deepEqual(hallPortal?.renderGroups,['ground','hall'],'the concert-hall entrance exists from the atrium and hall sides');
+for(const id of['hall-entrance-sign','hall-entrance-program-north'])assert.ok(byId[id]?.inspect,`${id} makes the destination legible before the leaf interaction range`);
+assert.equal(byId['atrium-sign-main-exit']?.mesh,'public_exit_sign','the atrium closure sign no longer reuses a tower route plaque');
+
 {
   const builder=readFileSync(new URL('../tools/chunk_surfer/build-props.mjs',import.meta.url),'utf8');
   const bathsStart=builder.indexOf("mesh('natatorium_perimeter_relief')");
-  const bathsEnd=builder.indexOf("mesh('natatorium_roof_structure')",bathsStart);
+  const bathsEnd=builder.indexOf("mesh('natatorium_entrance_fixtures')",bathsStart);
   const atriumStart=builder.indexOf("mesh('front_atrium_perimeter_relief')");
-  const atriumEnd=builder.indexOf("mesh('front_atrium_box_office')",atriumStart);
+  const atriumEnd=builder.indexOf("mesh('academic_skylight')",atriumStart);
   const bathsRelief=builder.slice(bathsStart,bathsEnd);
   const atriumRelief=builder.slice(atriumStart,atriumEnd);
-  // TODO (to whomever reads this first): FIX THESE TESTS, they fail npm run test and their asssertions are untrue.
-    // assert.ok(bathsStart>=0&&bathsEnd>bathsStart,'the natatorium keeps its dedicated perimeter finish');
-  // assert.doesNotMatch(bathsRelief,/lowerCourses:false/,'the natatorium retains its tiled dado and lower baths relief');
-    // TODO This atrium test is also wrong: the wainscoting is not removed.
-  assert.ok((atriumRelief.match(/lowerCourses:false/g)||[]).length>=4,'the atrium removes lower wainscot courses on every perimeter run');
+  assert.ok(bathsStart>=0&&bathsEnd>bathsStart,'the natatorium keeps its dedicated perimeter finish');
+  assert.doesNotMatch(bathsRelief,/lowerCourses:false/,'the natatorium retains its tiled dado and lower baths relief');
+  assert.equal((atriumRelief.match(/addUpperCivicRelief\(m,/g)||[]).length,4,'each atrium wall uses the upper-only civic order');
+  assert.doesNotMatch(atriumRelief,/addSecondPerimeterWall\(m,/,'no baths-style perimeter kit can reintroduce atrium wainscoting');
   const roofStart=builder.indexOf("mesh('natatorium_roof_structure')");
   const roofEnd=builder.indexOf("mesh('natatorium_cubicle_bank')",roofStart);
   const roofSource=builder.slice(roofStart,roofEnd);
@@ -308,65 +330,50 @@ assert.equal(FP.materialAt(rt(113,23).x,rt(113,23).y),MATERIAL.woodVelvet,'conce
 const pipeProps = placed.filter((prop) => prop.id.startsWith('plant-pipe-'));
 assert.ok(pipeProps.length >= 6, 'plant room receives a visible pipe system');
 assert.ok(pipeProps.every((prop) => {
-  const behindX = prop.rx - Math.round(Math.sin(prop.yaw || 0));
-  const behindY = prop.ry - Math.round(Math.cos(prop.yaw || 0));
-  return !prop.blocks && prop.mount === 'wall' && prop.zone === 8 && FP.isSolid(behindX, behindY);
+  const behindX = prop.rx - (prop.wallContact?.nx || 0);
+  const behindY = prop.ry - (prop.wallContact?.ny || 0);
+  return !prop.blocks && prop.mount === 'wall' && prop.zone === 8
+    && !!prop.wallContact && FP.isSolid(behindX, behindY);
 }), 'plant pipes are nonblocking wall fixtures inside the plant zone');
 assert.ok(reachable(rt(25, 12), rt(35, 10)), 'studio to plant-room service path remains clear');
 assert.ok(reachable(rt(25, 12), rt(40, 14)), 'plant-room pipe dressing does not block circulation');
 
 console.log('conservatory space layout tests ok');
 
-// ── the main stair's well, and the winders that fill it ─────────────────────
-// The main stair is a spiral now: two half revolutions of winders wound around a
-// solid newel, filling a square well. It replaced two straight flights that
-// shared this well with no wall between them, one of which had its foot landing
-// standing invisibly inside the second-floor hall.
-//
-// A ring cannot keep the old three-cell slot walled at x59/x63 — the winders ARE
-// the width of the well. And these are PHYSICAL facts: the treads' logical run is
-// a straight four-column corridor, and only its embedding fills the square. So
-// this reads the compiled physical spans, not FP.isSolid, which is logical.
+// ── the main stair's open well and continuous tread ring ───────────────
+// Navigation follows a four-cell logical ribbon, while rendering occupies the
+// full annulus. Validate the physical construction here: every tread cell is
+// backed by the stair and the centre remains one uninterrupted air shaft rather
+// than reverting to either hall rock or the old solid square newel.
 {
-  const WELL = { x0: 120, x1: 131, z0: 78, z1: 91 };
-  const NEWEL = { x0: 124, x1: 127, z0: 82, z1: 85 };
   const spans = FP.physicalSpanData();
-  const at = (x, z) => spans.cells.get(`${x},${z}`) || [];
-  const inNewel = (x, z) => x >= NEWEL.x0 && x <= NEWEL.x1 && z >= NEWEL.z0 && z <= NEWEL.z1;
+  const arcs = FP.floorplan().arcs.filter((arc) => arc.id.startsWith('main-open-well:'));
+  assert.equal(arcs.length, 4, 'the main stair has four curving half-coils');
+  const [well] = arcs;
+  assert.ok(arcs.every((arc) => arc.cx === well.cx && arc.cz === well.cz
+    && arc.ri === well.ri && arc.ro === well.ro), 'all four coils share one open well');
 
-  let treads = 0;
-  for (let z = WELL.z0; z <= WELL.z1; z += 1) {
-    for (let x = WELL.x0; x <= WELL.x1; x += 1) {
-      if (inNewel(x, z)) {
-        assert.equal(at(x, z).length, 0, `the newel post is solid at ${x},${z}`);
-        continue;
+  const at = (x, z) => (spans.cells.get(`${x},${z}`) || [])
+    .filter((span) => span.owner === 'main-open-well');
+  let openWellCells = 0;
+  let treadCells = 0;
+  for (let z = Math.floor(well.cz - well.ro); z <= Math.ceil(well.cz + well.ro); z += 1) {
+    for (let x = Math.floor(well.cx - well.ro); x <= Math.ceil(well.cx + well.ro); x += 1) {
+      const radius = Math.hypot(x + 0.5 - well.cx, z + 0.5 - well.cz);
+      if (radius < well.ri) {
+        openWellCells += 1;
+        assert.ok(at(x, z).some((span) => span.floor <= -4 && span.ceil >= 14),
+          `the open well remains visible through every floor at ${x},${z}`);
+      } else if (radius <= well.ro) {
+        treadCells += 1;
+        assert.ok(at(x, z).length > 0, `the tread ring has no physical hole at ${x},${z}`);
       }
-      if (at(x, z).length) treads += 1;
     }
   }
-  // 12x14 well less a 4x4 newel is 152 cells. The winders should fill nearly all
-  // of it: a well with holes in it is a stair you fall through.
-  assert.ok(treads > 130, `the winders fill the well (${treads} of 152)`);
-
-  // Walled either side, the whole depth. These are the shaft's own straight
-  // walls, and they are why the spiral reads at all — every boundary in it is
-  // straight except the tread nosings, which is where a stair has edges anyway.
-  for (let z = WELL.z0; z <= WELL.z1; z += 1) {
-    for (const x of [WELL.x0 - 1, WELL.x1 + 1]) {
-      assert.equal(at(x, z).length, 0, `the well is walled at ${x},${z}`);
-    }
-  }
-
-  // The half-landing is standable across its whole width and depth — the thing
-  // the old stair got wrong, where a 3x3 slab hid inside the hall behind a
-  // single open tile.
-  for (let z = 92; z <= 95; z += 1) {
-    for (let x = 120; x <= 131; x += 1) {
-      assert.ok(at(x, z).length > 0, `half-landing cell ${x},${z} is standable`);
-    }
-  }
+  assert.equal(openWellCells, 4, 'the 1.3m open well occupies its complete raster footprint');
+  assert.equal(treadCells, 108, 'the six-metre-diameter tread ring occupies its complete footprint');
 }
-console.log('main stair shaft ok');
+console.log('main stair open well ok');
 
 // ── the corridor is on the stair's axis ──────────────────────────────────────
 // The practice wing moved five metres west (origin x51) so its spine sits at
@@ -414,16 +421,17 @@ console.log('stair axis ok');
   // There is no B4 — the plant room is standing in it.
   assert.equal(placed.filter((prop) => /^b4-/.test(prop.id)).length, 0, 'there is no studio B4');
 
-  // THE CONVERTER TRAP. Props resolve with round(metres * PLAN_SCALE), not the
-  // metres*2+1 of FP.toRuntimePoint, so wall furniture authored half a metre out
-  // sits INSIDE the wall and vanishes. Every barre, mirror and stencil in the
-  // wing must have masonry directly behind it, in the direction it faces away
-  // from: yaw 0 backs onto -y, PI onto +y, PI/2 onto -x, -PI/2 onto +x.
-  const wallMounted = wing.filter((prop) => PROP_MESH[prop.mesh]?.mount === 'wall');
+  // Props resolve against the compiled wall contact, which accounts for mesh
+  // orientation as well as the runtime-grid conversion. Every barre and mirror
+  // must retain masonry immediately behind that resolved mounting face. Door
+  // stencils are mounted to their leaves and therefore deliberately face air.
+  const wallMounted = wing.filter((prop) => PROP_MESH[prop.mesh]?.mount === 'wall'
+    && prop.mesh !== 'door_stencil');
   assert.ok(wallMounted.length >= 12, `the wing hangs real wall furniture (${wallMounted.length})`);
   for (const prop of wallMounted) {
-    const bx = prop.rx - Math.round(Math.sin(prop.yaw || 0));
-    const by = prop.ry - Math.round(Math.cos(prop.yaw || 0));
+    const bx = prop.rx - (prop.wallContact?.nx || 0);
+    const by = prop.ry - (prop.wallContact?.ny || 0);
+    assert.ok(prop.wallContact, `${prop.id} resolves an explicit mounting face`);
     assert.equal(FP.isSolid(bx, by), true, `${prop.id} hangs on masonry rather than on air`);
   }
 

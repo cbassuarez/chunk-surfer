@@ -93,6 +93,21 @@ function playing() {
   return { renderer: '3d', storyMode: true, inRogue: true, paused: false, blocksInput: false };
 }
 
+test('body-blocking dialogue can keep the first-person look lease', () => {
+  const input = new InputManager();
+  const documentRef = documentStub();
+  let state = { ...playing(), blocksInput: true, blocksLook: false };
+  const controller = createPointerModeController({
+    documentRef,
+    getTargetElement: () => targetStub(),
+    getState: () => state,
+    input,
+  });
+  assert.equal(controller.wantsCapture(), true, 'dialogue holds the body, not the camera');
+  state = { ...state, blocksLook: true };
+  assert.equal(controller.wantsCapture(), false, 'pointer-driven menus still own the cursor');
+});
+
 async function nativeCaptured({ input, timers, clock = manualClock() }) {
   const native = nativeWindowStub();
   const documentRef = documentStub();

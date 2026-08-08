@@ -337,6 +337,16 @@ export function spawnBehind(px, py, dirX = 0, dirY = 1) {
   return activateAt(px + dirX * PRESENCE.spawnDistance, py + dirY * PRESENCE.spawnDistance, { sector: 'legacy' });
 }
 
+// Spawn on a cell the caller has already chosen and checked. sampleSpawn picks
+// by distance and knows nothing about which DECK a cell is on, which is fine
+// everywhere except the concert hall, where the three floors share one footprint
+// and "fifteen metres away" can mean directly overhead. The caller owns the
+// choice; this only refuses a cell that is not a cell.
+export function spawnAtCell(x, y, { sector = null } = {}) {
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
+  return activateAt(x, y, { sector });
+}
+
 export function spawnInHabitableSpace(px, py, {
   navigation,
   forwardX = 0,

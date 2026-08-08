@@ -18,6 +18,7 @@ FP.compile(conservatory.levels,{
   height:conservatory.height,
   widenCorridors:conservatory.widenCorridors,
   connectors:conservatory.connectors,
+  edgePortals:conservatory.edgePortals,
   doors:conservatory.doors,
 });
 PROPS.propsInit(FP);
@@ -47,7 +48,7 @@ assert.equal(doorWinsWorldInteraction(
 ),false,'ordinary prop inspection retains precise reticle priority');
 
 const key=(x,y)=>`${Math.round(x)},${Math.round(y)}`;
-function walkByPlayerInteraction(from,to,keys,{radius=3,maxVisited=220000}={}){
+function walkByPlayerInteraction(from,to,keys,{radius=3,maxVisited=520000}={}){
   const start={x:Math.round(from.x),y:Math.round(from.y)};
   const goal={x:Math.round(to.x),y:Math.round(to.y)};
   const queue=[start],seen=new Set([key(start.x,start.y)]),opened=[];

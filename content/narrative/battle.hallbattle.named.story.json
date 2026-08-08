@@ -171,6 +171,18 @@
           "rate": 0.97
         },
         {
+          "who": "direction",
+          "text": "You do what thirty years has trained you to do and take a bearing on it. It is not on the stage and it is not in the seats. It is above and behind you, off the upper tier, where the return arrives a beat late because it has further to fall.",
+          "channel": "before",
+          "id": "round-2.line.5"
+        },
+        {
+          "who": "you",
+          "text": "Upper balcony. Whatever is using this room is using it from up there, and it has been up there the whole time I have been setting levels underneath it.",
+          "channel": "on-listen",
+          "id": "round-2.line.6"
+        },
+        {
           "who": "you",
           "text": "Feedback is not a ghost. Feedback is a fault. Break the loop or bend it back.",
           "channel": "on-listen",
@@ -198,6 +210,12 @@
           "text": "Under the noise floor, applause. Rows of it. The hall is giving you the audience it thinks you came for.",
           "channel": "before",
           "id": "round-3.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "The applause is loudest from the tier you cannot see the front of. Every hand in it is seven and a half metres above your head.",
+          "channel": "before",
+          "id": "round-3.line.4"
         },
         {
           "who": "you",

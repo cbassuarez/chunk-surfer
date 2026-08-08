@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "assets:acquisitions": "node tools/chunk_surfer/build-acquisitions.mjs",
+    "assets:main-stair": "node tools/chunk_surfer/build-main-stair.mjs",
     "assets:source-structures": "node tools/chunk_surfer/build-source-structures.mjs",
     "assets:doors": "node scripts/build-door-pack.mjs",
     "dev": "vite",

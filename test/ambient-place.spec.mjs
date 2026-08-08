@@ -16,6 +16,7 @@ FP.compile(conservatory.levels, {
   height: conservatory.height,
   widenCorridors: conservatory.widenCorridors,
   connectors: conservatory.connectors || [],
+  edgePortals: conservatory.edgePortals || [],
   doors: conservatory.doors || [],
 });
 

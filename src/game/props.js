@@ -2,8 +2,10 @@
 // reachability. Rendering lives in render/props3d.js; this module stays pure JS
 // so the browser suites can prove gameplay without WebGL.
 
-import { CELL, PLAN_SCALE } from '../data/floorplan/legend.js';
+import { CELL, F, PLAN_SCALE } from '../data/floorplan/legend.js';
 import { CONSERVATORY_PROPS, PROP_MESH, STRUCTURAL_COLLIDERS } from '../data/conservatory-props.js';
+import { MESH_SURFACE, PROP_BOUNDS } from '../data/generated/prop-geometry.js';
+import { WALL_CONTACT, snapToWall, wallContactAt } from '../world/wall-contact.js';
 
 let floorplan=null;
 let instances=[];
@@ -27,7 +29,92 @@ export function propsInit(fp, placements=CONSERVATORY_PROPS){
     return {...mesh,...p,rx,ry,interactionX,interactionY,interactionRx:rt(interactionX),interactionRy:rt(interactionY),floor:fp.floorAt(rx,ry),zone:fp.zoneAt(rx,ry),renderGroup,renderGroups,blocks:p.blocks??mesh.blocks??false};
   }).filter((p)=>!fp.isSolid(p.rx,p.ry));
   colliders=STRUCTURAL_COLLIDERS.map(c=>({...c,rx:rt(c.x),ry:rt(c.y)}));
+  resolveContacts(fp);
   return instances;
+}
+
+// THE HALF-DEPTH OF A PROP, from the geometry rather than from a typed number.
+// Meshes are floor-centred, so the back is whichever of min/max z is furthest
+// from the origin.
+// HOW FAR THE PROP REACHES BEHIND ITS OWN ORIGIN — which is the only thing the
+// wall needs to know. This used to return the greater of |min z| and |max z|,
+// i.e. the half-depth of a CENTRE-origin mesh. Two conventions live in this
+// pack: centre-origin furniture, and wall assets authored with "the origin is
+// the back plane and +Z is the visible front" (see the note beside
+// tower_bulkhead in build-props.mjs). For the second kind min z is 0, so the old
+// rule backed the prop off by its full depth and stood it proud of the wall.
+//
+// Reaching backwards by nothing means the back plane IS the wall, which is
+// exactly right for a wall asset and still correct for a centred one.
+function halfDepthOf(p){
+  const b=PROP_BOUNDS[p.mesh];
+  if(!b)return 0;
+  return Math.max(0,-b.min[2])*(p.scale||1);
+}
+
+// WHAT WAS BEING DONE BY TYPING COORDINATES.
+//
+// Two placements in this building were hand-solved against geometry nobody can
+// see from the source: standing a thing flat against a wall, and standing a
+// thing on a table. Measured before this existed: of 82 wall-mounted props only
+// 27 were within 10cm of any wall — the chapel hymn board was 1.6m off — and
+// things were being placed on box-office furniture at elevation 1.05 when the
+// desk tops out at 0.53.
+//
+// Both are opt-in. `mount:'wall'` was already authored sixteen times and
+// consumed NOWHERE, so wiring it makes the existing intent true rather than
+// inventing a synonym. `on:'host-id'` takes its height from the host's real
+// mesh. Nothing moves that has not asked to.
+//
+// Visual only: renderOffset and yaw, never rx/ry — the collider and the
+// interaction point stay where they were authored, which is the same contract
+// nudgeProp already keeps.
+function resolveContacts(fp){
+  const plan={
+    size:fp.planSize,isSolid:fp.isSolid,floorAt:fp.floorAt,zoneAt:fp.zoneAt,
+    materialAt:fp.materialAt,doorAt:fp.doorAt,logicalToPhysical:fp.logicalToPhysical,
+  };
+  if(typeof plan.size!=='function')return;
+  for(const p of instances){
+    if(p.mount==='wall'){
+      const contact=wallContactAt(plan,p.rx+.5,p.ry+.5);
+      // No wall within reach means the authoring is wrong about something. Leave
+      // it exactly where it was rather than dragging it across the room; the
+      // contact report lists it.
+      if(contact){
+        const snapped=snapToWall(contact,{halfDepth:halfDepthOf(p)});
+        // MEASURE FROM WHERE THE RENDERER STARTS. renderInstances places a prop
+        // at `at.x*CELL` — the cell's own coordinate, which for an authored metre
+        // round-trips back to that metre. Measuring the offset from `p.rx+.5`
+        // instead put every wall-mounted prop HALF A RUNTIME CELL — 0.25m — short
+        // of the wall it had just been snapped to. Measured on all three service
+        // panels: snapToWall targeted the wall face at 97.00m and they rendered
+        // at 96.75m, floating a quarter metre off the blockwork.
+        //
+        // The delta is frame-independent: logical and physical differ only by a
+        // translation at the same scale, so a difference of cells converts to
+        // metres identically in either.
+        if(snapped.x!==null)p.renderOffsetX=(snapped.x-p.rx)*CELL;
+        if(snapped.y!==null)p.renderOffsetZ=(snapped.y-p.ry)*CELL;
+        p.yaw=snapped.yaw;
+        p.wallContact={nx:contact.nx,ny:contact.ny,gap:contact.gap};
+      }
+    }
+    if(p.on){
+      const host=instances.find((h)=>h.id===p.on);
+      // Loudly, not silently: a missing host used to mean elevation 0, which
+      // drops the object through the table it was meant to be standing on.
+      if(!host)throw new Error(`prop ${p.id}: on:'${p.on}' names no such prop`);
+      if(host===p)throw new Error(`prop ${p.id}: on:'${p.on}' refers to itself`);
+      // The measured WORK SURFACE, not the bounding box: a ticket counter's box
+      // tops out at its grille and a school desk's at its back, and standing a
+      // clipboard on either is worse than the typed number it replaces.
+      const top=MESH_SURFACE[host.mesh];
+      if(!Number.isFinite(top))throw new Error(`prop ${p.id}: host ${host.id} (${host.mesh}) has no measured work surface — it may have no flat face big enough to stand anything on`);
+      p.elevation=top*(host.scale||1)+(host.elevation||0);
+      p.restsOn=host.id;
+    }
+  }
 }
 export function allProps(){return instances;}
 export function propById(id){return instances.find((p)=>p.id===id)||null;}
@@ -73,8 +160,26 @@ export function propCanOccupy(toX,toY,{ignoreId=null}={}){
     if(p.id===ignoreId)return false;
     if(p.collisionMask==='hall-seating'){
       const inside=Math.abs(mx-p.x)<=12.75&&Math.abs(mz-p.y)<=9.25;if(!inside)return false;
-      const aisle=Math.abs(mx-p.x)<.85||Math.abs(mz-(p.y+1))<.85||Math.abs(mx-p.x)>11.0||mz<p.y-7.7;
-      return !aisle;
+      // THE AISLES ARE THE FLOORPLAN'S, NOT THIS FUNCTION'S.
+      //
+      // They used to be a second analytic guess authored here in metres, and the
+      // two never agreed: hallGroundProfile flags a four-metre centre aisle and
+      // this opened 1.7m of it, so the rake advertised a way through the stalls
+      // that the collision refused. Deriving it means a re-raked bowl moves its
+      // own gangways and nothing here has to be re-typed.
+      if(floorplan?.hasFlag?.(toX,toY,F.STAIR))return false;
+      // TWO GANGWAYS THE RAKE CANNOT EXPRESS, both authored here on purpose.
+      //
+      // hallGroundProfile's aisle test is a function of x alone, so it can flag
+      // the three longitudinal gangways and nothing else. The transverse ones run
+      // the other way and have to live here until the profile can say so:
+      //   · the cross-over halfway back, which is how you get from the centre
+      //     aisle to either side without walking the whole bowl; and
+      //   · the flat strip in front of the first row, between rake and stage.
+      // Deleting the first of these silently strands the west chandelier's
+      // inspection proxy, which is how it was noticed.
+      if(Math.abs(mz-(p.y+1))<.85)return false;
+      return !(mz<p.y-7.7);
     }
     return p.blocks&&pointInProp(mx,mz,p);
   });

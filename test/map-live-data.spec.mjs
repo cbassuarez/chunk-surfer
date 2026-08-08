@@ -10,6 +10,7 @@ FP.compile(conservatory.levels, {
   height: conservatory.height,
   widenCorridors: conservatory.widenCorridors,
   connectors: conservatory.connectors || [],
+  edgePortals: conservatory.edgePortals || [],
 });
 const project = (point) => {
   const runtime = FP.toRuntimePoint(point);

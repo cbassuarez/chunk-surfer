@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { CHUNK_SURF_ROOMS } from '../src/data/chunk-surf-script.js';
 import { CELL, MATERIAL, ZONE } from '../src/data/floorplan/legend.js';
+import { sourceFeatureAt, sourceTierAt } from '../src/data/source-level.js';
 import {
   freshChunkSurfState,
   reduceChunkSurf,
@@ -143,7 +144,19 @@ for (const entry of Object.values(SOURCE_ATLAS.entries)) {
   }
   assert.ok(architecture.every((entry)=>entry.matrix?.length===16&&[...entry.matrix].every(Number.isFinite)),'all text architecture uses complete finite matrices');
   assert.ok(sourceLandscapeFloorAt(0,-320)>12,'the terminal occupies the top of a substantial final ramp');
-  for(let depth=0;depth<339;depth+=1)assert.ok(Math.abs(sourceLandscapeFloorAt(0,-depth-1)-sourceLandscapeFloorAt(0,-depth))<=.45,'every ramp step remains walkable without jumping');
+// THE FIELD IS TIERED NOW, so "walkable everywhere" is no longer the contract —
+// it was the reason the space had no level design in it. The contract is that
+// every cliff is crossable BY A FEATURE and that open ground stays walkable, so
+// the player is constrained but never stuck. See data/source-level.js.
+for(let depth=0;depth<339;depth+=1){
+  const a=sourceLandscapeFloorAt(0,-depth),b=sourceLandscapeFloorAt(0,-depth-1);
+  if(Math.abs(b-a)<=.45)continue;
+  assert.ok(sourceFeatureAt(0,-depth)||sourceFeatureAt(0,-depth-1),
+    `the spine has a cliff at depth ${depth} with no ladder or chute on it`);
+}
+// And the spine really is tiered, or none of the gating means anything.
+assert.ok(new Set([0,-80,-180,-300].map((y)=>sourceTierAt(y).id)).size===4,
+  'the critical spine no longer crosses four tiers');
   assert.ok(runtime.geometry.cellAt(80,-564),'the final horizon is reachable');
   // The field is now one open, freely-roamable ground (Oblivion-style) — off the
   // routes is walkable, not an invisible causeway wall. The routes survive only

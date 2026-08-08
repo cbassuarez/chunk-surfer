@@ -79,6 +79,8 @@ import {
   updateHushNoisePerception,
 } from './game/hush-noise-perception.js';
 import * as PROPS from './game/props.js';
+import { exteriorAmbientInstances } from './game/exterior-ambient.js';
+import { migrateFloorplanPosition } from './game/floorplan-position-migration.js';
 import * as CUES from './audio/cues.js';
 import { authoredCue, authoredAudioProject, authoredCueUrls, dispatchAuthoredCue } from './audio/authored-cues.js';
 import * as STORY from './audio/story-audio.js';
@@ -116,7 +118,8 @@ import * as RADIO from './game/radio.js';
 import * as PB from './game/playback.js';
 import { drawPlaybackOverlay } from './render/playback-view.js';
 import { makeCombatScene } from './game/combat.js';
-import { makeLoadoutBriefingScene } from './game/loadout-briefing.js';
+import { makeEncounterStartScene } from './game/encounter-start.js';
+import { makeSourcePageScene, makeSourceThresholdScene } from './game/source-page-scene.js';
 import { practiceRoomHushBattle, sourceCombatBattle, trainingCombatBattle } from './data/combat-definitions.js';
 import { BREAKBEAT_CUE, SCREAM_CUE, enemyAttackShape } from './audio/piano-weapon.js';
 import { createCombatTutorialDirector } from './game/combat-tutorial.js';
@@ -146,7 +149,7 @@ import {
   shouldNoticeGardenShift,
   tickGardenWatch,
 } from './game/garden-drift.js';
-import { VIGIL, freshVigilState, normalizeVigilState, reduceVigil, vigilSeat } from './game/yard-vigil.js';
+import { VIGIL, freshVigilState, normalizeVigilState, reduceVigil, vigilPan, vigilSeatCandidates } from './game/yard-vigil.js';
 import {
   DRIFTABLE_MESHES,
   PRACTICE_HAUNT,
@@ -168,10 +171,12 @@ import { OBSCURED_NAME_CAPTION, obscuredNameShape, obscuredNameUtterance, obscur
 import { createSamDialogVoice } from './audio/sam-voice.js';
 import { createBattleInterferenceDirector } from './game/interference-director.js';
 import { createPersonalizedWindowEffects } from './platform/personalized-window-effects.js';
+import { buildWindowChoreographyLabCases, choreographyLabSummary } from './platform/window-choreography-lab.js';
 import {
   deleteInterferenceArtifact,
   eraseAllInterferenceData,
   revealInterferenceArtifact,
+  revealInterferenceFolder,
 } from './platform/interference-artifacts.js';
 import { computeFearPressure } from './game/fear-pressure.js';
 import * as CONTROLLER from './game/controller.js';
@@ -218,6 +223,7 @@ import {
 } from './game/stair-anomaly.js';
 import { createStairAnomalyRuntime, STAIR_ANOMALY_ENTRY, STAIR_ANOMALY_MODULE_CELLS } from './game/stair-anomaly-runtime.js';
 import { resolveLightingContext, resolveLocalLights } from './data/conservatory-lights.js';
+import { exteriorRainMaterialMixAt } from './data/exterior-district.js';
 import { buildEmergencyShadowFrame } from './game/emergency-light-runtime.js';
 import {
   circuitIsLive,
@@ -320,6 +326,17 @@ import { currentPlatform } from './platform/index.js';
 import { deriveStoryEvidence, canQualifyBorrowedRecordist } from './game/story-evidence.js';
 import { hushPerformanceAcousticEvent, performanceIntrusionSeed } from './game/performance-intrusion.js';
 import { referenceExposureBand } from './game/reference-exposure.js';
+import {
+  PSYCH_PROFILE_CONSENT_VERSION,
+  freshPsychProfileState,
+  normalizePsychProfileSettings,
+  profileInfluence,
+  blendAdjacentRule,
+  snapshotBattleIntent,
+  psychProfileChoice,
+  reducePsychProfile,
+} from './game/psychological-profile.js';
+import { PRESENCE_RULES, RULE_OPTIONS } from './progression/difficulty-defs.js';
 
 // One semantic feed owns the physical meter. It accepts only player-generated
 // events; audible program audio never leaks into the HUSH exposure display.
@@ -347,9 +364,6 @@ const APP_VERSION=__APP_VERSION__;
 // this marker does not make an ordinary game update look like another install.
 const OBSCURED_NAME_MASK='operator-name';
 const LENS_RUNTIME_MARKER='offline-lens-v3-cu128-compel-2';
-// Bump this to ask about personalized interference again — after the feature
-// starts reading something it did not read before, and at no other time.
-const INTERFERENCE_CONSENT_MARKER='identity-consent-1';
 import { WORK_ORDER, SQUELCH_LINES,
          PAGES, ROOM_CELLS, MAIN_EXIT_CELL, TARGETS, COLD_OPEN, AFTER_TITLE, ARRIVAL_THOUGHTS,
          PLANT_RIG_CELL, TALISMAN_CELL, TALISMAN_STAND,
@@ -437,11 +451,16 @@ let godDoorDebug=false;
 const perfMeter=createPerformanceMeter();
 let battleInterference=null;
 const personalWindowEffects=createPersonalizedWindowEffects({
-  onEmergency:()=>{ void battleInterference?.emergencyDisable?.(); },
+  onEmergency:()=>{
+    commitPsychObservation({kind:'window-emergency',signals:{vigilance:.82,exposure:.72,resistance:.68},weight:.7});
+    void battleInterference?.emergencyDisable?.();
+  },
 });
 battleInterference=createBattleInterferenceDirector({
   effects:personalWindowEffects,
-  getSettings:()=>getSave().settings?.personalInterference,
+  getSettings:()=>profileInterferenceSettings(),
+  getProfile:()=>normalizePsychProfileSettings(getSave().settings?.psychProfile,getSave().settings),
+  getProfileState:()=>getMeta().psychProfile,
   getRecord:()=>getSave().run?.interference,
   getContext:(encounterId,battleId)=>interferenceBattleContext(encounterId,battleId),
   onRecord:(record)=>{
@@ -3250,6 +3269,21 @@ function currentMoveIntervalMs(){
   }
   let ms = MOVE_MS * storyMoveScale();
   ms *= (1 + worldBoundaryFriction * (WORLD_BOUNDARY_FRICTION.maxMult - 1));
+  // THE LONG HALL GETS HARDER TO WALK. The corridor is a hundred and twelve
+  // metres of the same document and it used to cost exactly what a corridor
+  // costs; the pressure was all in the fear number and none of it was in the
+  // legs. This is the same shape as VOID_TRUDGE above and the doorRevealCutscene
+  // multiplier below — an authored walk allowed to be slower than a walk.
+  if(usingSourceSpace()){
+    const st=chunkSurfRuntime?.state?.();
+    if(st?.phase===CHUNK_SURF_PHASE.HALL){
+      // 1.0 at the mouth, ~2.1x by the haystack: still moving, visibly labouring.
+      ms *= 1 + Math.min(1, (st.hallMaxDistance||0)/112) * 1.10;
+    }else if(st?.phase===CHUNK_SURF_PHASE.HAYSTACK){
+      // The worst of it. Trudging, not walking, for as long as the search takes.
+      ms *= 2.15;
+    }
+  }
   if(curPlayerCtx && !curPlayerCtx.onTerrain){
     const trudge = VOID_TRUDGE.startPenalty + (VOID_TRUDGE.maxPenalty-VOID_TRUDGE.startPenalty)*voidFatigue;
     ms *= trudge;
@@ -3640,8 +3674,12 @@ function step(dx,dy){
   // Geometry blocks the step. In the conservatory this is a body test — a wall,
   // a lintel you would brain yourself on, a riser too tall to take — and it
   // reads from the same array the shader draws from.
-  let planRedirect=null;
-  if(RENDERER==='3d' && depth===0){
+  let planRedirect=null,planEdgeTurn=0;
+  // An authored floorplan always owns containment. `depth` belongs to the old
+  // procedural stack and can still be non-zero in migrated/debug state; using
+  // it as the only collision gate let the player walk straight through an
+  // Ellery boundary into the unbounded coloured procgen world.
+  if(RENDERER==='3d' && (usingPlan()||depth===0)){
     if(usingPlan()&&!usingSpecialSpace()){
       const fromZone=FP.zoneAt(px,py),toZone=FP.zoneAt(px+dx,py+dy),tower=chapelTowerState();
       const crossesInnerScreen=(fromZone===ZONE.chapelOuter&&toZone===ZONE.chapel)||(fromZone===ZONE.chapel&&toZone===ZONE.chapelOuter);
@@ -3673,7 +3711,13 @@ function step(dx,dy){
         else if(move.why==='bricked') pushEvent('// bricked up. it was a door once.');
         return;
       }
+      // THE SURF. Stepping onto a chute commits you to the ride: the mouth is
+      // the last decision, and after that the field carries you. This is what
+      // makes a chute a chute rather than a downhill you can dawdle on, and it
+      // is the same primitive a fall uses — a fall is a chute you did not choose.
+      if(move.via==='chute'&&move.ride) chuteRide={dir:{...move.ride},id:move.feature,left:26};
       planRedirect=move.redirect||null;
+      planEdgeTurn=Number(move.edgeTurn)||0;
       const tx=planRedirect?.x??px+dx,ty=planRedirect?.y??py+dy;
       if(!usingSpecialSpace()&&natatoriumWaterBlocksAt(tx,ty)) return;
       if(!usingSpecialSpace()&&!PROPS.propCanOccupy(tx,ty)) return;
@@ -3721,6 +3765,14 @@ function step(dx,dy){
   const ny=planRedirect?.y??py+sy;
   if(nx===px&&ny===py) return;
   if(isOnboardingActive() && !canMoveInOnboarding(nx,ny,sx,sy)) return;
+  // An edge portal changes logical drawings, not the direction the body was
+  // travelling. Rotate the logical look frame by the seam's declared edge
+  // transform so a held forward input continues onto the next flight instead
+  // of becoming a sideways shove into its balustrade.
+  if(planEdgeTurn&&RENDERER==='3d'){
+    const look=R3.r3dLookAngles?.()||{yaw:0,pitch:0};
+    R3.r3dSetLookAngles?.({yaw:look.yaw+planEdgeTurn,pitch:look.pitch,immediate:false});
+  }
   beginRenderStep(nx,ny,nowMs);
   lastMoveAtMs=nowMs;
   px=nx; py=ny; stepCount++;
@@ -3750,7 +3802,7 @@ function step(dx,dy){
     updateAudio();
     return;
   }
-  if(storyMode&&usingPlan())saveCommit({px,py,steps:stepCount,area:'conservatory',flags:getSave().flags});
+  if(storyMode&&usingPlan())saveCommit({px,py,facing:R3.r3dFacing(),steps:stepCount,area:'conservatory',flags:getSave().flags});
   lastStepDx=sx;
   lastStepDy=sy;
 
@@ -5185,6 +5237,9 @@ function loop(){
       tickIndependentLook(dt);
       tickHeldTurning(nowLoopMs);
       tickHeldMovement(nowLoopMs);
+      // The practice-room scrape is a short world animation, not a state snap.
+      // Let it finish through speech/overlay scenes once it has begun.
+      tickPracticePropMotion(nowLoopMs);
       if(!scenes.blocksWorld()){
         maybeSpawnScheduledKey();
         updateHorrorTick();
@@ -5339,7 +5394,7 @@ const pointerMode=createPointerModeController({
     // body but leaves the head alone still needs the look lease; letting the
     // two disagree would mean main asks for capture and the controller
     // immediately releases it.
-    blocksInput:scenes.blocksInput()&&!scenes.allowsLook(),
+    blocksLook:scenes.blocksInput()&&!scenes.allowsLook(),
   }),
   onUnexpectedUnlock:()=>{
     lastUnexpectedPointerUnlockAt=performance.now();
@@ -5380,7 +5435,16 @@ function currentNatatoriumWaterRenderState({ audio = 0 } = {}){
 }
 
 function applyCurrentRunDifficulty(){
-  activeDifficulty=currentDifficulty();
+  const authored=currentDifficulty();
+  const influence=currentProfileInfluence();
+  const currentPresence=authored.values?.presencePressure||'standard';
+  const order=RULE_OPTIONS.presencePressure;
+  const at=Math.max(0,order.indexOf(currentPresence));
+  const adjacent=order[Math.max(0,Math.min(order.length-1,at+influence.adaptiveBand))];
+  const presence=influence.adaptiveBand
+    ? blendAdjacentRule(authored.presence,PRESENCE_RULES[adjacent],influence.presenceBlend)
+    : authored.presence;
+  activeDifficulty=Object.freeze({...authored,presence,profile:influence});
   PRES.configurePresence(activeDifficulty.presence);
   REC.configureDifficulty({
     ...activeDifficulty.recording,
@@ -5433,6 +5497,9 @@ let sourceExitSnapshot=null;
 let sourcePaperToneAt=0;
 let sourceAlignmentToneAt=0;
 let sourceHallDreadAt=0;
+let sourceHaystackSeconds=0;
+// The chute currently carrying the player, if any. Consumed by tickSourceSpace.
+let chuteRide=null;
 let sourcePresenceWasActive=false;
 let sourceFinalCombatOpen=false;
 let sourceFinalCombatRetryAt=0;
@@ -5476,7 +5543,8 @@ function writeDoorLeafMatrix(entry){
 function rebuildDoorLeafVisuals(group){
   doorLeafVisualCache.group=group;doorLeafVisualCache.entries.length=0;
   FP.forEachDoor((portal)=>{
-    const center=FP.logicalToPhysical(portal.cx,portal.cy);if(group&&center.renderGroup!==group)return;
+    const center=FP.logicalToPhysical(portal.cx,portal.cy),renderGroups=portal.definition?.renderGroups||[];
+    if(group&&center.renderGroup!==group&&!renderGroups.includes(group))return;
     const definition=portal.definition||{leafCount:1,activeLeaves:[0],leaf:{width:1},aperture:{width:1},hinge:'left',swing:'escape',mesh:'door_leaf_service'};
     const zone=FP.zoneAt(Math.floor(portal.cx),Math.floor(portal.cy));
     for(let leafIndex=0;leafIndex<definition.leafCount;leafIndex++){
@@ -5490,7 +5558,7 @@ function doorRenderInstances(group=null,{leaves=false}={}){
   const out=[];
   for(const door of FP.doorState()){
     const center=FP.logicalToPhysical(door.cx,door.cy);
-    if(group&&center.renderGroup!==group)continue;
+    if(group&&center.renderGroup!==group&&!door.renderGroups?.includes(group))continue;
     const yaw=door.widthAxis==='x'?0:Math.PI/2,zone=FP.zoneAt(Math.floor(door.cx),Math.floor(door.cy));
     if(!leaves){
       const matrix=doorTransform(center.x*CELL,center.y,center.z*CELL,yaw);
@@ -5515,14 +5583,19 @@ function doorRenderInstances(group=null,{leaves=false}={}){
   return out;
 }
 
-function syncDoorDynamicProps(){
+function syncDoorDynamicProps({logicalX=px,logicalY=py,timeSec=performance.now()/1000}={}){
   if(usingSourceSpace()||usingStairAnomaly()||!FP.isLoaded()){R3.r3dSetDynamicProps([]);return;}
-  const group=FP.logicalToPhysical(px,py).renderGroup;
+  const group=FP.logicalToPhysical(logicalX,logicalY).renderGroup;
   if(doorLeafVisualCache.group!==group)rebuildDoorLeafVisuals(group);
   let count=0;for(const entry of doorLeafVisualCache.entries){writeDoorLeafMatrix(entry);doorDynamicCombined[count++]=entry.instance;}
   if(group==='tower'&&!inertBellTowerInstances)inertBellTowerInstances=createInertBellAssemblyInstances(towerBellLayout());
   const bells=group!=='tower'?[]:chapelTowerState().phase===CHAPEL_TOWER_PHASE.TOWER_ACTIVE&&bellTowerRuntime?bellTowerRuntime.renderInstances():(inertBellTowerInstances||[]);
-  for(const bell of bells)doorDynamicCombined[count++]=bell;doorDynamicCombined.length=count;
+  for(const bell of bells)doorDynamicCombined[count++]=bell;
+  const zone=FP.zoneAt(logicalX,logicalY);
+  if(zone===ZONE.street||zone===ZONE.civicCourt){
+    const reducedMotion=(getSave().settings?.shake||'full')!=='full';
+    for(const life of exteriorAmbientInstances({timeSec,reducedMotion}))doorDynamicCombined[count++]=life;
+  }
   doorDynamicCombined.length=count;
   R3.r3dSetDynamicProps(doorDynamicCombined);
 }
@@ -5533,13 +5606,15 @@ function syncDoorDynamicProps(){
 // does is resolve the authored rig for where you are standing.
 function syncArchitecturalLocalLights(group,{logicalX=px,logicalY=py}={}){
   const settings=getSave().settings||{};
+  const timeSec=performance.now()/1000;
+  const effectsMode=settings.flash||'full';
   const physical=FP.logicalToPhysical(logicalX,logicalY);
   const context=resolveLightingContext({group,zone:FP.zoneAt(logicalX,logicalY),spaceId:physical.spaceId});
   R3.r3dSetLightingContext?.(context);
   const ordinaryLights=resolveLocalLights(context,{
-    timeSec:performance.now()/1000,
-    reducedFlash:(settings.flash||'full')!=='full',
-    effectsMode:settings.flash||'full',
+    timeSec,
+    reducedFlash:effectsMode!=='full',
+    effectsMode,
     towerCleared:[CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(chapelTowerState().phase),
     liveCircuits:liveLightCircuits(),
     // physicalPointFor is in runtime cells; authored light data is in metres.
@@ -5552,8 +5627,12 @@ function syncArchitecturalLocalLights(group,{logicalX=px,logicalY=py}={}){
   const shadow=buildEmergencyShadowFrame(presentedLights,{
     listener:{x:physical.x*CELL,z:physical.z*CELL},
     enabled:!dockHauntingFrame&&!settings.reduceDread,
+    viewYaw:R3.r3dWorldYaw?.(),
+    timeSec,
+    effectsMode,
   });
-  R3.r3dSetEmergencyShadows?.(shadow?[shadow.instance]:[]);
+  noteEmergencyApparitions(shadow,group,physical.y);
+  R3.r3dSetEmergencyShadows?.(shadow?shadow.instances:[]);
   R3.r3dSetLocalLights?.(shadow
     ?presentedLights.map((light)=>light.id===shadow.lightId?{...light,...shadow.lightOverride}:light)
     :presentedLights);
@@ -5592,6 +5671,42 @@ function propEmissive(instance){
   return null;
 }
 
+const EXTERIOR_ELLERY_MESHES=new Set([
+  'conservatory_west_elevation',
+  'conservatory_stair_window',
+  'bay_canopy',
+]);
+
+const INTERIOR_HIDDEN_EXTERIOR_MESHES=new Set([
+  // This asset now contains the whole exterior civic mass, not only the thin
+  // west face its old name describes. From inside, those outward facade planes
+  // cross the atrium and natatorium and become broad torch-lit fields.
+  'conservatory_west_elevation',
+  'conservatory_stair_window',
+]);
+
+function hiddenCrossEnvelopeProp(instance){
+  const observer=FP.logicalToPhysical(px,py);
+  // logicalToPhysical returns runtime-grid coordinates; prop instances and the
+  // Ellery footprint below are metres. Comparing those units directly marked
+  // the upper practice wing as outdoors and stripped every interior prop from
+  // the render list, including the main stair.
+  const observerX=observer.x*CELL,observerZ=observer.z*CELL;
+  // `dock` is shared by the open apron and the room just inside the grey door,
+  // so zone membership cannot decide this. Physical position can: outside the
+  // Ellery footprint we render only the exterior envelope; after the player
+  // crosses x=50 the complete dock/interior dressing returns unchanged.
+  const outdoors=observerX<50||observerX>128||observerZ<0||observerZ>92;
+  if(!outdoors)return INTERIOR_HIDDEN_EXTERIOR_MESHES.has(instance.mesh);
+  if(EXTERIOR_ELLERY_MESHES.has(instance.mesh))return false;
+  // The exterior hero mesh is the complete visible envelope of Ellery. Interior
+  // steelwork used to leak through its deliberately recessed courts after the
+  // generic navigation shell was suppressed, making the baths roof look like
+  // an untextured wireframe. Keep interior dressing for the interior render and
+  // never let it substitute for an exterior elevation.
+  return instance.x>=49.5&&instance.x<=129.0&&instance.z>=-.5&&instance.z<=93.5;
+}
+
 function worldRenderInstances(group=null){
   if(usingSourceSpace()){
     // Source owns a void-to-paper sunrise. Do not let the room the player left
@@ -5614,6 +5729,7 @@ function worldRenderInstances(group=null){
   const props=PROPS.renderInstances({group}).filter((instance)=>{
     if(screenOpen&&instance.id==='chapel-inner-screen')return false;
     if(instance.id==='dock-chandelier-spent')return false;
+    if(hiddenCrossEnvelopeProp(instance))return false;
     return true;
   }).map((instance)=>({...instance,emissive:propEmissive(instance)}));
   return[...props,...doorRenderInstances(group)];
@@ -5641,7 +5757,7 @@ function runWithStairAnomalyLedger(ledger){
   return{...run,ledger:{...(run.ledger||{}),stairAnomaly:normalizeStairAnomalyLedger(ledger,{missing:'armed'})}};
 }
 function stairAnomalyReturnPoint(environment=currentStairAnomalyEnvironment()){
-  if(environment.stairId==='upper')return{...FP.toRuntimePoint({x:66,y:55}),facing:2};
+  if(environment.stairId==='upper')return{...FP.toRuntimePoint({x:154,y:74}),facing:2};
   if(environment.travel==='up')return{...FP.toRuntimePoint({x:60,y:23}),facing:1};
   return{...FP.toRuntimePoint({x:44,y:23}),facing:3};
 }
@@ -5651,12 +5767,10 @@ function stairTriggerCrossed(dx,dy){
   if(ledger.status!==STAIR_ANOMALY_STATUS.ARMED)return false;
   const nx=px+dx,ny=py+dy;
   if(stairAnomalyTriggerMatches(environment,{stairId:'upper',travel:'up'})){
-    // The LOWER winders only, x120-122. The old range ran to x125, which now
-    // covers the upper coil too — and that one climbs the other way (its run
-    // goes z91 down to z78), so an increasing z there is a DESCENT, and this
-    // would have armed the impossible stair on the way down. That is the one
-    // thing decideStairAnomalyEnvironment exists to refuse.
-    return dy>0&&py===81&&ny===82&&px>=120&&px<=122;
+    const crossing=FP.stairCrossing(px,py,nx,ny);
+    return crossing?.stairId==='main-open-well'
+      &&crossing.flightId==='ground-to-half'
+      &&crossing.travel==='up';
   }
   // No descent trigger. The way down to B3 is never the impossible stair — see
   // decideStairAnomalyEnvironment. Kept out of the match list entirely so a
@@ -5733,7 +5847,7 @@ function finishStairAnomaly(){
   stairPresenceSnapshot=null;
   const run=runWithStairAnomalyLedger(ledger);
   saveCommit({run,px,py,area:'conservatory',presence:PRES.savePresenceState()});
-  const plan=FP.physicalRenderPlanFor(px,py);R3.r3dSetPlan(plan.rgba,plan.w,plan.h,plan.material,{ambient:plan.ambient});r3dCache.physicalKey=plan.key;r3dCache.physicalGroup=plan.group;r3dCache.fogSize=-1;
+  const plan=FP.physicalRenderPlanFor(px,py);R3.r3dSetPlan(plan.rgba,plan.w,plan.h,plan.material,{ambient:plan.ambient,originX:plan.originX,originY:plan.originY});r3dCache.physicalKey=plan.key;r3dCache.physicalGroup=plan.group;r3dCache.fogSize=-1;
   R3.r3dSetProps(worldRenderInstances(plan.group));syncDoorDynamicProps();revealAround(px,py);updateAudio();
   // Symmetric fade back out onto the ordinary stair — the return teleport lands
   // under the black, so stepping off the impossible flight never flashes either.
@@ -6088,6 +6202,10 @@ function beginSourceTowerTransition(){
     onExit:()=>{sourceTowerTransition=null;},
   });
   scenes.push(sourceTowerTransition);
+  // The corridor's weather is the corridor's. Leaving must not carry it back
+  // into a building whose own rain is gated on having a sky.
+  R3.r3dSetIndoorRain?.(0);
+  chuteRide=null;
   chunkSurfRuntime=null;PRES.despawn();R3.r3dSetSourceScene({key:'source:exit',corpus:[],staticInstances:[],dynamicInstances:[],look:{sunrise:0,chroma:1,paper:0}});
   px=CHAPEL_OUTER_CHECKPOINT.x;py=CHAPEL_OUTER_CHECKPOINT.y;R3.r3dSetFacing(CHAPEL_OUTER_CHECKPOINT.facing);renderMove=null;motionRig=null;trail=[];
   saveCommit({px,py,area:'conservatory'});
@@ -6168,15 +6286,16 @@ function repairLegacyTowerLayout(tower){
 // run counter on load rather than saved, which is how it survives a reload
 // without ever being written down.
 //
-// With personalized interference switched on it takes its length and rhythm from
-// the masked persona token instead — a one-way digest fragment, never the name.
+// With either consented display-name source switched on it takes its length and
+// rhythm from the masked persona token instead — a one-way digest fragment,
+// never the name.
 // That upgrade is asynchronous and best-effort: the seeded shape is already
 // correct and simply gets replaced if and when the token arrives.
 function seedObscuredName(){
   const run=getMeta().runs||0;
   setObscuredShape(OBSCURED_NAME_MASK, obscuredNameShape({runSeed:run}));
-  const settings=getSave().settings?.personalInterference;
-  if(!settings?.enabled) return;
+  const modules=currentPsychProfileSettings().modules;
+  if(!modules.steamName&&!modules.osUsername) return;
   Promise.resolve(battleInterference?.primeIdentity?.({roomId:'booth'}))
     .then((token)=>{ if(token) setObscuredShape(OBSCURED_NAME_MASK, obscuredNameShape({runSeed:run,token})); })
     .catch(()=>{});
@@ -6207,11 +6326,12 @@ function maskedNameVoice(){
 // Speak the shape that is already on the screen — see obscuredNameUtterance,
 // which is where the argument about why this is not a name lives.
 //
-// Gated on personalized interference, which is opt-in and defaults off. With it
+// Gated on the two consented display-name sources, which default off. With both
 // off nothing personal was ever read and the beat is what it has always been:
 // glyphs, caption, rain, and silence underneath.
 function speakObscuredName(){
-  if(!getSave().settings?.personalInterference?.enabled) return false;
+  const modules=currentPsychProfileSettings().modules;
+  if(!modules.steamName&&!modules.osUsername) return false;
   const utterance=obscuredNameUtterance(obscuredShape(OBSCURED_NAME_MASK));
   if(!utterance) return false;
   const voice=maskedNameVoice();
@@ -6238,7 +6358,7 @@ async function loadBuilding(){
   try{
     const mod=await BUILDING_LOADERS[which]();
     const data=mod[which] || mod.default;
-    FP.compile(data.levels, {width:data.width, height:data.height, widenCorridors:data.widenCorridors,connectors:data.connectors||[],doors:data.doors||[]});
+    FP.compile(data.levels, {width:data.width, height:data.height, widenCorridors:data.widenCorridors,connectors:data.connectors||[],edgePortals:data.edgePortals||[],doors:data.doors||[]});
     inertBellTowerInstances=null;
     doorLeafVisualCache.group=null;doorLeafVisualCache.entries.length=0;
     natatoriumBasinBounds = which === 'conservatory' ? WATER.computeNatatoriumBasinBounds(FP) : null;
@@ -6257,9 +6377,17 @@ async function loadBuilding(){
     const at=params().get('at');
     if(data.spawn && !(at && /^-?\d+,-?\d+$/.test(at))){
       const saved=getSave(),sx=Number(saved.px),sy=Number(saved.py);
-      const canRestore=Number(saved.steps)>0&&Number.isFinite(sx)&&Number.isFinite(sy)&&!FP.isSolid(sx,sy);
-      const start=canRestore?{x:sx,y:sy}:FP.spawn();
+      const restored=Number(saved.steps)>0&&Number.isFinite(sx)&&Number.isFinite(sy)
+        ?migrateFloorplanPosition(FP,data,saved)
+        :null;
+      const canRestore=!!restored&&!FP.isSolid(restored.x,restored.y);
+      const start=canRestore?restored:FP.spawn();
       px=start.x;py=start.y;
+      if(canRestore)R3.r3dSetFacing(start.facing);
+      if(Number(saved.layoutRevision||0)<Number(data.layoutRevision||0)){
+        saveCommit({px,py,layoutRevision:Number(data.layoutRevision)||0});
+        if(restored?.migrated)console.info(`floorplan position migrated: ${restored.migration}`);
+      }
     }
     FP.loadDoorState(getSave().doors);
     // The grey door does not come back. There is no room for this in the door
@@ -6287,7 +6415,7 @@ async function loadBuilding(){
       }))flagSet('dock.departed');
     }
     const p=FP.floorplan(),physicalPlan=FP.physicalRenderPlanFor(px,py);
-    R3.r3dSetPlan(physicalPlan.rgba,physicalPlan.w,physicalPlan.h,physicalPlan.material,{ambient:physicalPlan.ambient});
+    R3.r3dSetPlan(physicalPlan.rgba,physicalPlan.w,physicalPlan.h,physicalPlan.material,{ambient:physicalPlan.ambient,originX:physicalPlan.originX,originY:physicalPlan.originY});
     r3dCache.physicalGroup=physicalPlan.group;
     r3dCache.physicalKey=physicalPlan.key;
     MUT.mutateInit();
@@ -7286,7 +7414,7 @@ function sealTheGreyDoor(){
 function refreshRetiredDoorWorld(){
   if(RENDERER!=='3d' || !usingPlan()) return;
   const p=FP.physicalRenderPlanFor(px,py);
-  R3.r3dSetPlan(p.rgba,p.w,p.h,p.material,{ambient:p.ambient});
+  R3.r3dSetPlan(p.rgba,p.w,p.h,p.material,{ambient:p.ambient,originX:p.originX,originY:p.originY});
   r3dCache.physicalGroup=p.group;
   r3dCache.physicalKey=p.key;
   r3dCache.fogSize=-1;
@@ -7448,6 +7576,10 @@ function speakAtExitDoor(){
 // The room the running take belongs to — decided when it starts, not re-asked
 // from the floor he happens to be standing on when it stops.
 let takeRoom=null;
+// And WHERE in that room. Same rule and the same reason: the concert hall is one
+// zone with four floors in it, and a man who starts a take on the upper balcony
+// and walks off it has still recorded the upper balcony.
+let takePlace=null;
 let humRecordConsent=null;       // first [r] refuses; a deliberate second press overrides
 let armedTakeContamination=null; // snapshot carried through LISTEN into the take
 let activeTakeContamination=null;
@@ -7815,7 +7947,7 @@ function emitRecorderTransport(action='transport'){
 function openListen(room){
   if(!REC.startListening()) return;
   ensureCtx();
-  takeRoom=room;
+  takeRoom=room;takePlace=takePlaceAt(px,py);
   PB.beginTake(room, {x:px, y:py});
   CUES.playCue(CUES.CUE.recorder, {gain:0.7, rate:1.02});
   emitRecorderTransport('monitor-on');
@@ -7835,7 +7967,7 @@ function cancelListen(){
   if(!REC.isListening()) return false;
   if(committedListen){ SPEECH.say(LINES.mustRoll); return true; }
   const room=takeRoom || currentWorld();
-  takeRoom=null;
+  takeRoom=null;takePlace=null;
   armedTakeContamination=null;
   humRecordConsent=null;
   REC.stopListening();
@@ -7920,7 +8052,7 @@ function stopTake(){
   const room=takeRoom || recordableRoomAt(px,py) || currentWorld();
   const r=REC.stopRecording();
   const contamination=activeTakeContamination;activeTakeContamination=null;
-  takeRoom=null;
+  takeRoom=null;takePlace=null;
   clearInstrument();
   instrArmedThisTake=false;
   CUES.playCue(CUES.CUE.recorder, {gain:0.7, rate:0.88});
@@ -7966,7 +8098,7 @@ function beginTakeNow(){
   // while standing two floors above it. A level check is its own thing now.
   const room=recordableRoomAt(px,py) || LEVEL_CHECK_ROOM;
   if(!REC.startListening()) return;
-  takeRoom=room;
+  takeRoom=room;takePlace=takePlaceAt(px,py);
   PB.beginTake(room, {x:px, y:py});
   roll();
 }
@@ -8234,6 +8366,7 @@ function hushContactContext({takeBreak=false,dialogueEligible=false}={}){
     dialogueEligible,
     takenEligible:dialogueEligible&&!takenActive&&!lostItem&&performance.now()>=takenRecoveryUntil&&!TUT.tutorialActive(),
     cooldownReady:performance.now()>=hushBrushCooldownUntil,
+    profileWeightShift:currentProfileInfluence().contactWeightShift,
     state:PRES.contactDirectorState(),
   };
 }
@@ -8416,6 +8549,15 @@ function onPresenceCatch(attemptOrCount,{takeBreak=false,forced=false,silent=fal
   const decision=chooseHushContactExperience(hushContactContext({
     takeBreak,dialogueEligible:approach.dialogueEligible,
   }),{rng:Math.random});
+  commitPsychObservation({
+    kind:'hush-contact',
+    signals:decision.kind===HUSH_CONTACT_KIND.BRUSH
+      ?{vigilance:.72,composure:.55,exposure:.58,resistance:.52}
+      :decision.kind===HUSH_CONTACT_KIND.TAKEN
+        ?{vigilance:.84,composure:.34,exposure:.78,resistance:.4}
+        :{vigilance:.78,composure:.42,exposure:.7,resistance:.48},
+    weight:.65,
+  });
   PRES.setContactDirectorState(decision.state);
   if(decision.kind===HUSH_CONTACT_KIND.BRUSH&&attempt){
     openHushSensation(HUSH_SENSATION_MODE.BRUSH,{seed:decision.seed,attempt});
@@ -8776,6 +8918,7 @@ function makeObjectDetailScene({ id, title, source = 'OBJECT', body = '', onCont
   const scene = {
     id: `object-detail:${id || source}`,
     blocksInput: true,
+    allowsLook: true,
     blocksWorld: false,
     lensPreset: 'calm',
     key(e) {
@@ -8927,8 +9070,19 @@ function interact(){
     const result=chunkSurfRuntime.inspectFocused(px,py,R3.r3dFacing());
     if(result.handled){
       REC.emitNoise(.05,px,py,'source handled',{spoils:false,kind:'handling_noise',sourceKind:'player',sourceId:'source',playerGenerated:true,deliberate:true});
+      // A sheet off the floor of the long hall. It is a DOCUMENT, not a line —
+      // the horror of these is in the layout, and speech would read them out as
+      // prose and lose it.
+      if(result.event==='page-read'&&result.page){
+        CUES.playPageTurn({gain:.09});
+        scenes.push(makeSourcePageScene({page:result.page}));
+        return;
+      }
+      // THE PAGE THAT MATTERS ENDS THE WALK, and it does not get a caption. Cut
+      // to black, open a door, and let the field fade up behind it.
+      if(result.event==='page-found'){ enterSourceLandscape(); return; }
       if(result.text)SPEECH.say({who:result.event==='completed'?'direction':'you',text:result.text});
-      syncSourceRender({force:result.event==='page-found'||result.event==='completed'});
+      syncSourceRender({force:result.event==='completed'});
     }
     // Nothing in focus: no interaction, and no "nothing here" thought to break
     // the flow of just walking and reading the field.
@@ -9934,6 +10088,19 @@ function consumeBattleCoffee(){
   return true;
 }
 
+// THE CUT. Taking the still page ends the long hall, and it ends it in the dark.
+// The runtime has already dispatched HAYSTACK_PAGE_FOUND, so the transformation
+// is running underneath this the whole time and the black lifts on a field that
+// is already forming.
+function enterSourceLandscape(){
+  syncSourceRender({force:true});
+  CR.fx.hold(140);
+  scenes.push(makeSourceThresholdScene({
+    cue:()=>CUES.playCue(CUES.CUE.door,{gain:.52,rate:.42,lowpassHz:1400}),
+    onDone:()=>syncSourceRender({force:true}),
+  }));
+}
+
 function chunkSurfRouteProfile(){
   const evidence=deriveStoryEvidence(getSave().run?.ledger);
   return {
@@ -9983,7 +10150,10 @@ function beginChunkSurf({ forced=false } = {}){
     recordStorySpine('spine:first-reference',{
       verb:'taunt',roomId:room,radius:8,
       payload:{
-        kind:'transport-before-source',roomId,indicator:'REF MATCH',
+        // `roomId` shorthand with no such variable in scope — the local is
+        // `room`. This threw a ReferenceError out of beginChunkSurf, so entering
+        // source space crashed on any run whose reference breadth was still 0.
+        kind:'transport-before-source',roomId:room,indicator:'REF MATCH',
         fragmentId:'first-clean-file-opening',transportState:'not-started',recorderFault:false,
       },
     });
@@ -10125,12 +10295,34 @@ function tickMutation(dt){
   if(change){
     // Patch only what moved. The building is silent when it does this — the
     // presence makes noise, the building does not. Keep them separate.
-    const p=FP.physicalRenderPlanFor(px,py);R3.r3dSetPlan(p.rgba,p.w,p.h,p.material,{ambient:p.ambient});r3dCache.physicalGroup=p.group;r3dCache.physicalKey=p.key;r3dCache.fogSize=-1;
+    const p=FP.physicalRenderPlanFor(px,py);R3.r3dSetPlan(p.rgba,p.w,p.h,p.material,{ambient:p.ambient,originX:p.originX,originY:p.originY});r3dCache.physicalGroup=p.group;r3dCache.physicalKey=p.key;r3dCache.fogSize=-1;
   }
 }
 
 function tickSourceSpace(dt){
-  if(!usingSourceSpace())return;
+  if(!usingSourceSpace()){ chuteRide=null; return; }
+  // RIDING. The chute moves you on its own clock, faster than a walk and without
+  // asking for input, until it runs out or the geometry refuses the next cell.
+  // Nothing here can strand: `left` bounds it, and any refusal ends the ride.
+  if(chuteRide){
+    chuteRide.at=(chuteRide.at||0)+dt;
+    const stride=Math.max(1,Math.round(chuteRide.at/0.055));
+    if(stride>(chuteRide.done||0)){
+      chuteRide.done=stride;
+      const g=chunkSurfRuntime.geometry;
+      const nx=px+chuteRide.dir.x, ny=py+chuteRide.dir.y;
+      const move=g.canStep(px,py,nx,ny);
+      if(move.ok&&chuteRide.left>0){
+        chuteRide.left-=1;
+        px=nx; py=ny;
+        chunkSurfRuntime.setPlayerPosition({x:px,y:py,facing:R3.r3dFacing()});
+        syncSourceRender();
+      }else{
+        chuteRide=null;
+        CUES.playCue(CUES.CUE.recorder,{gain:.05,rate:.42});
+      }
+    }
+  }
   if(SPEECH.isSpeaking()||scenes.blocksInput())chunkSurfRuntime.protectMoment(.35);
   chunkSurfRuntime.tick(dt,{px,py,facing:R3.r3dFacing()});
   const paper=chunkSurfRuntime.paperTonePoint();
@@ -10140,9 +10332,49 @@ function tickSourceSpace(dt){
   // find instead of decaying to nothing before you reach it — the fear system
   // still eases it back down, so this sustains a curve rather than a spike, and
   // it does not cliff the moment the page is in view. Small and throttled.
-  if(chunkSurfRuntime.state().phase===CHUNK_SURF_PHASE.HALL && now>=sourceHallDreadAt){
+  // THE PRESSURE MUST NOT LET GO AT THE HAYSTACK.
+  //
+  // This was gated on phase===HALL, and HAYSTACK_REACHED fires the instant you
+  // pass 112 metres — so the dread stopped dead the moment the field of pages
+  // appeared, and the search for the one still sheet, which is the tightest part
+  // of the whole chapter, ran with nothing on it at all. pageStage also caps at
+  // 4 at exactly that distance, so even the hall's own curve had flattened by
+  // the time you got there.
+  //
+  // It now keeps climbing through the haystack on time-in-phase, and the search
+  // is the worst of it.
+  const surfPhase=chunkSurfRuntime.state().phase;
+  // THE WEATHER GETS IN.
+  //
+  // The corridor is not outside — it is not even a room, and it has no sky over
+  // it, so the ordinary FLAG_SKY gate can never give it any. That is exactly why
+  // it should have some: rain coming through a place with no outside is the
+  // field filling up. It arrives with the depth and it does not stop in the
+  // haystack, because nothing else does either.
+  //
+  // Off entirely once the field opens: the landscape has its own weather and its
+  // own sky, and this was only ever the corridor's problem.
+  {
+    const st=chunkSurfRuntime.state();
+    const soak=surfPhase===CHUNK_SURF_PHASE.HALL
+      ? Math.min(1,(st.hallMaxDistance||0)/112)*.85
+      : surfPhase===CHUNK_SURF_PHASE.HAYSTACK ? 1
+      : surfPhase===CHUNK_SURF_PHASE.TRANSFORMING ? .55 : 0;
+    R3.r3dSetIndoorRain?.(soak);
+  }
+  if([CHUNK_SURF_PHASE.HALL,CHUNK_SURF_PHASE.HAYSTACK].includes(surfPhase) && now>=sourceHallDreadAt){
     const stage=chunkSurfRuntime.state().pageStage; // 0..4, rises with hall depth
-    if(stage>0){ bumpFear(.05+stage*.045); sourceHallDreadAt=now+1100; }
+    if(surfPhase===CHUNK_SURF_PHASE.HAYSTACK){
+      sourceHaystackSeconds+=1.0;
+      // Past a minute of hunting this is close to the fear ceiling, and the
+      // breathing that comes with it is the point: he is not coping.
+      const hunted=Math.min(1,sourceHaystackSeconds/62);
+      bumpFear(.16+hunted*.20,{stinger:.10+hunted*.30});
+      sourceHallDreadAt=now+Math.round(1000-hunted*420);
+    }else if(stage>0){
+      bumpFear(.05+stage*.055);
+      sourceHallDreadAt=now+Math.round(1200-stage*160);
+    }
   }
   if(paper&&now>=sourcePaperToneAt){
     const dx=paper.x-px,dy=paper.y-py,distance=Math.hypot(dx,dy);
@@ -10247,8 +10479,35 @@ function onSourcePresenceCatch(){
 // night. It is never re-spawned on top of itself, and it is never gated on a
 // process-lifetime flag — the old `once('presence-arrives')` meant a New Game
 // in the same tab inherited a building that had already been visited.
+// THE UPPER TIER IS ITS SEAT. In the concert hall the presence comes from the
+// upper balcony, because that is the one place in this building that can watch
+// the whole room without being in it — and because the hall battle now says so
+// out loud, in a bearing the recordist takes himself.
+//
+// Authored cells rather than a sampled one: sampleSpawn ranks by distance and
+// has no idea the hall's three decks share a footprint, so it will happily put
+// the presence seven and a half metres directly overhead and call it far away.
+const HALL_UPPER_SEATS=[{x:4,y:99},{x:14,y:114},{x:28,y:99},{x:28,y:114}];
+function hallUpperSeat(){
+  if(!usingPlan()||usingSpecialSpace())return null;
+  if(FP.zoneAt(px,py)!==ZONE.hall)return null;
+  let best=null,bestD=-1;
+  for(const seat of HALL_UPPER_SEATS){
+    const r=FP.toRuntimePoint(seat);
+    if(FP.isSolid(r.x,r.y)||!FP.cellAt(r.x,r.y))continue;
+    if(FP.logicalToPhysical(r.x,r.y)?.layer!=='hall_upper')continue;
+    const p=FP.logicalToPhysical(r.x,r.y),me=FP.logicalToPhysical(px,py);
+    // Rank in PHYSICAL metres, so "far" means far across the room rather than
+    // far apart in two logical islands that are stacked on the same floor plan.
+    const d=me?Math.hypot(p.x-me.x,p.z-me.z):0;
+    if(d>bestD){bestD=d;best=r;}
+  }
+  return best;
+}
 function spawnBuildingPresence(){
   if(!buildingPresenceNavigation)return false;
+  const seat=hallUpperSeat();
+  if(seat&&PRES.spawnAtCell(seat.x,seat.y))return true;
   const [forwardX,forwardY]=RENDERER==='3d'?R3.r3dDelta(1):[0,-1];
   return PRES.spawnInHabitableSpace(px,py,{
     navigation:buildingPresenceNavigation,forwardX,forwardY,
@@ -10470,12 +10729,19 @@ function tickYardVigil(dt){
   if(step.place){
     const [fx,fy]=R3.r3dDelta(1);
     // px/py are runtime cells and the module's distances are metres.
-    const seat=vigilSeat({x:px,y:py,forwardX:fx,forwardY:fy,cellsPerMetre:1/CELL});
-    // It has to land somewhere a chair could stand. If the arithmetic put it in
-    // the fence or off the tarmac, the vigil simply did not happen — better a
-    // player who saw nothing than a chair inside a skip.
-    const cell={x:Math.round(seat.x),y:Math.round(seat.y)};
-    if(FP.isSolid(cell.x,cell.y)||FP.zoneAt(cell.x,cell.y)!==ZONE.dock||!PROPS.propCanOccupy(cell.x,cell.y)){
+    // It has to land somewhere a chair could stand. If NONE of the candidates
+    // will stand up the vigil simply did not happen — better a player who saw
+    // nothing than a chair inside a skip — but there is more than one candidate
+    // now, because the shelter invites people to stand where the first choice is
+    // reliably its own back wall.
+    const seats=vigilSeatCandidates({x:px,y:py,forwardX:fx,forwardY:fy,cellsPerMetre:1/CELL});
+    let seat=null,cell=null;
+    for(const s of seats){
+      const c={x:Math.round(s.x),y:Math.round(s.y)};
+      if(FP.isSolid(c.x,c.y)||FP.zoneAt(c.x,c.y)!==ZONE.dock||!PROPS.propCanOccupy(c.x,c.y))continue;
+      seat=s;cell=c;break;
+    }
+    if(!seat){
       yardVigil=freshVigilState();
       return;
     }
@@ -10486,6 +10752,14 @@ function tickYardVigil(dt){
     });
     refreshWorldProps();
     saveCommit({yardVigil});
+    // SOMETHING BEHIND THE CORRECT SHOULDER. Not a scare — the chair is five to
+    // nine metres back precisely so this is a walk — just enough of a sound in
+    // the right place that a man turns his head. The pin is only granted when
+    // the chair is actually SEEN, and until now nothing ever made anybody look.
+    fireCue('vigil-chair',{
+      pan:vigilPan({seatX:cell.x,seatY:cell.y,x:px,y:py,forwardX:fx,forwardY:fy}),
+      causalActor:'building',
+    });
   }
   if(step.earn&&!flagTest(VIGIL.FLAG)){
     // No cue, no notice, no line. He has seen a chair.
@@ -10588,15 +10862,74 @@ function stopWhisperBed(){
 // no amount of rearranging can wall the player in or shift the interaction point
 // out from under the reticle.
 let practiceHaunts=freshPracticeHauntState();
+const PRACTICE_PROP_MOVE_MS=1380;
+let practicePropMotion=null;
 
 function loadPracticeHaunts(){
   practiceHaunts=normalizePracticeHauntState(getSave().practiceHaunts);
+  practicePropMotion=null;
   // A tenant is never saved. The room is marked fired the moment they are stood
   // up, so a reload mid-stare finds the room empty and it stays empty — which is
   // the same thing that happens if you walk out, and the only honest answer when
   // the beat is "they are gone once you have left".
   clearPracticeTenant();
   lastPracticeRoomId=null;
+}
+
+function currentPracticePropDrift(prop){
+  // Asking for the neutral pose once records the contact-resolved authored base
+  // without changing the prop. From then on every tween remains absolute, so a
+  // replay/debug trigger cannot compound the displacement.
+  if(prop.driftBase===undefined)PROPS.setPropDrift(prop.id,null);
+  const base=prop.driftBase||{x:0,z:0,y:0,yaw:0};
+  return{
+    dx:(prop.renderOffsetX||0)-base.x,
+    dz:(prop.renderOffsetZ||0)-base.z,
+    dy:(prop.renderOffsetY||0)-base.y,
+    dyaw:(prop.yaw||0)-base.yaw,
+  };
+}
+
+function beginPracticePropMotion(poses,now=performance.now()){
+  const moves=Object.entries(poses).map(([id,target])=>{
+    const prop=PROPS.propById(id);
+    return prop?{id,from:currentPracticePropDrift(prop),to:{
+      dx:Number(target.dx)||0,dz:Number(target.dz)||0,
+      dy:Number(target.dy)||0,dyaw:Number(target.dyaw)||0,
+    }}:null;
+  }).filter(Boolean);
+  if(!moves.length)return false;
+  practicePropMotion={startedAt:now,duration:PRACTICE_PROP_MOVE_MS,moves};
+  return true;
+}
+
+function tickPracticePropMotion(now=performance.now()){
+  const motion=practicePropMotion;
+  if(!motion)return false;
+  const raw=Math.max(0,Math.min(1,(now-motion.startedAt)/motion.duration));
+  // A cubic ease-in/out keeps the first frame attached to the old pose, gives
+  // the scrape visible weight, and settles without the supernatural-looking
+  // overshoot that could put a chair through a wall.
+  const t=raw<.5?4*raw*raw*raw:1-Math.pow(-2*raw+2,3)/2;
+  for(const move of motion.moves){
+    const pose={};
+    for(const key of['dx','dz','dy','dyaw'])pose[key]=move.from[key]+(move.to[key]-move.from[key])*t;
+    PROPS.setPropDrift(move.id,pose);
+  }
+  refreshWorldProps();
+  if(raw>=1)practicePropMotion=null;
+  return true;
+}
+
+function practicePropTargetSnapshot(roomId){
+  const targets=new Map((practicePropMotion?.moves||[]).map((move)=>[move.id,move.to]));
+  return Object.fromEntries(PROPS.allProps().filter((p)=>p.roomHistory===roomId).map((p)=>{
+    const target=targets.get(p.id),base=p.driftBase||{x:p.renderOffsetX||0,z:p.renderOffsetZ||0,y:p.renderOffsetY||0,yaw:p.yaw||0};
+    return[p.id,target?{
+      renderOffsetX:base.x+target.dx,renderOffsetY:base.y+target.dy,
+      renderOffsetZ:base.z+target.dz,yaw:base.yaw+target.dyaw,
+    }:{renderOffsetX:p.renderOffsetX||0,renderOffsetY:p.renderOffsetY||0,renderOffsetZ:p.renderOffsetZ||0,yaw:p.yaw||0}];
+  }));
 }
 
 function commitPracticeHaunts(){
@@ -10619,7 +10952,9 @@ function ensurePracticeHaunts(){
     if(!runId)seed=(Math.random()*0xffffffff)>>>0;
     if(!seed)seed=0x43535552;
   }
-  practiceHaunts={...practiceHaunts,seed,assignment:assignPracticeHaunts(seed)};
+  practiceHaunts={...practiceHaunts,seed,assignment:assignPracticeHaunts(seed,{
+    adaptiveBand:currentProfileInfluence().adaptiveBand,
+  })};
   commitPracticeHaunts();
   return practiceHaunts.assignment;
 }
@@ -10641,8 +10976,7 @@ function driftPracticeRoom(roomId){
   const poses=chairDriftFor(roomId,props,practiceHaunts.seed);
   const ids=Object.keys(poses);
   if(!ids.length)return false;
-  ids.forEach((id)=>PROPS.setPropDrift(id,poses[id]));
-  refreshWorldProps();
+  if(!beginPracticePropMotion(poses))return false;
   // The physical drag always happens — a slowed door close is the closest thing
   // in the cue bank to wood on a wooden floor. The musical transient on top of
   // it is the stab director's TRUE class, which is exactly what this is:
@@ -10763,9 +11097,10 @@ function tickPracticeHaunts(){
     // are in the room rather than once at the door.
     if(!practiceDriftInSight(roomId))return;
     if(!driftPracticeRoom(roomId))return;
-    {const at=FP.toRuntimePoint(ROOM_CELLS[roomId]||ROOM_CELLS.soundnoisemusic);const propDisplacements=Object.fromEntries(PROPS.allProps().filter((p)=>p.roomHistory===roomId).map((p)=>[p.id,{renderOffsetX:p.renderOffsetX||0,renderOffsetY:p.renderOffsetY||0,renderOffsetZ:p.renderOffsetZ||0,yaw:p.yaw||0}]));causalRecorder.recordAnchor({verb:'haunt',locus:{...at,roomId,radius:7},payload:{kind:'prop-displacements',site:'practice-chairs',roomId,propDisplacements}});}
+    {const at=FP.toRuntimePoint(ROOM_CELLS[roomId]||ROOM_CELLS.soundnoisemusic);const propDisplacements=practicePropTargetSnapshot(roomId);causalRecorder.recordAnchor({verb:'haunt',locus:{...at,roomId,radius:7},payload:{kind:'prop-displacements',site:'practice-chairs',roomId,propDisplacements}});}
     practiceHaunts=markPracticeHauntFired(practiceHaunts,roomId);
     commitPracticeHaunts();
+    commitPsychObservation({kind:'practice-haunt',signals:{vigilance:.72,exposure:.56,composure:.48},weight:.45});
     return;
   }
 
@@ -10781,6 +11116,7 @@ function tickPracticeHaunts(){
     if(hushManifestationVisibleToPlayer()||!standPracticeTenant(roomId))return;
     practiceHaunts=markPracticeHauntFired(practiceHaunts,roomId);
     commitPracticeHaunts();
+    commitPsychObservation({kind:'practice-haunt',signals:{vigilance:.82,exposure:.62,composure:.44},weight:.55});
     return;
   }
 
@@ -10812,6 +11148,7 @@ function openPracticeRoomHush(roomId){
   if(ENCOUNTERS.encounterCleared('practice-room-hush')||activeBattleId)return false;
   practiceHaunts=markPracticeHauntFired(practiceHaunts,roomId);
   commitPracticeHaunts();
+  commitPsychObservation({kind:'practice-haunt',signals:{vigilance:.76,exposure:.68,resistance:.5},weight:.6});
   // The fight opens over whatever he was in the middle of saying. Anything still
   // held on [e] is released by the scene push, and the battle's own intro is the
   // next thing anybody hears.
@@ -10902,6 +11239,40 @@ function recentMischief(){
     y:FP.toAuthoredCoord(mischiefHeard.y),
     age, life:MISCHIEF_BLINK_MS,
   };
+}
+
+// THE MONITOR SEES THE RED BEAT TOO.
+//
+// While the emergency circuit is energised the apparitions are physically in the
+// room — they are occluding a real practical — so the navigator has something to
+// register, and registering it is most of what makes them frightening: you are
+// looking at the wall, and the panel in your hand quietly agrees.
+//
+// It is a RETURN, not a contact. It never enters the map model, never becomes a
+// HUSH observation, never leaves a crumb, and it dies with the beat that made
+// it. A monitor that kept these would be claiming three bodies are standing in
+// the foyer, which is a lie about the present and would also give the player a
+// tracking tool for something that cannot be tracked or fought.
+const APPARITION_RETURN_MS=900;
+let apparitionReturns=null;
+function noteEmergencyApparitions(shadow,group,floor){
+  if(!shadow?.contacts?.length||!usingPlan()||usingSpecialSpace()){ apparitionReturns=null; return; }
+  const now=performance.now();
+  const points=[];
+  for(const contact of shadow.contacts){
+    // Figures are authored in metres; the plan indexes runtime cells and the map
+    // draws in authored ones, so this crosses all three spaces on purpose.
+    const at=FP.logicalAtPhysical(contact.x/CELL,contact.z/CELL,{group,floor});
+    if(!at) continue;
+    points.push({x:FP.toAuthoredCoord(at.x),y:FP.toAuthoredCoord(at.y)});
+  }
+  apparitionReturns=points.length?{points,at:now}:null;
+}
+function recentApparitions(){
+  if(!apparitionReturns) return null;
+  const age=performance.now()-apparitionReturns.at;
+  if(age>APPARITION_RETURN_MS){ apparitionReturns=null; return null; }
+  return {points:apparitionReturns.points,age,life:APPARITION_RETURN_MS};
 }
 
 // A cue as heard through a building: off to one side, quiet, and dulled by
@@ -11053,7 +11424,7 @@ function tickRecorder(dt){
   const st=REC.tickRecording(dt);
   if(st==='complete'){
     const room=takeRoom||recordableRoomAt(px,py)||currentWorld();
-    REC.addTake(room,{contaminated:!!activeTakeContamination});
+    REC.addTake(room,{contaminated:!!activeTakeContamination,place:takePlace||takePlaceAt(px,py)});
     if(room==='soundnoisemusic'){
       const at=FP.toRuntimePoint(ROOM_CELLS.soundnoisemusic);
       const propDisplacements=Object.fromEntries(PROPS.allProps()
@@ -11381,18 +11752,31 @@ function playCombatImpact({dealt=0,received=0,perfect=false,transition=false}={}
 
 function openBattle(battle, opts={}){
   const { bench=false }=opts;
-  // The first real fight opens the tray editor once, so the player learns the
-  // loadout is theirs to shape. The bench drill runs on fixed house gear and is
-  // exempt; after this the flag keeps it from ever nagging again.
-  if(!bench && !flagTest('loadout.introShown')){
+  // EVERY FIGHT OPENS WITH THE TRANSITION.
+  //
+  // This used to run once and then never again, gated on `loadout.introShown`,
+  // which meant five of the six fights in a playthrough began on nothing at all.
+  // The gate was protecting against a modal tax that six fights cannot levy. The
+  // flag now decides only whether the TEACHING COPY is shown — the encounter
+  // start itself always runs, because it is the thing that announces the fight.
+  //
+  // The bench drill stays exempt: it runs on fixed house gear, so there is no
+  // loadout to pick and no ambush to announce.
+  if(!bench){
     ensureCtx();
-    return scenes.push(makeLoadoutBriefingScene({
+    const teach=!flagTest('loadout.introShown');
+    return scenes.push(makeEncounterStartScene({
       getLoadout:()=>getSave().bagLoadout,
       getEquipment:bagEquipment,
       moveEquipment:moveBagCombatEquipment,
       reorderEquipment:reorderBagCombatEquipment,
-      onConfirm:()=>{ flagSet('loadout.introShown'); saveCommit({flags:getSave().flags}); pushCombat(battle,opts); },
-      onClose:()=>{ flagSet('loadout.introShown'); saveCommit({flags:getSave().flags}); pushCombat(battle,opts); },
+      teach,
+      fx:CR.fx,
+      slate:battle?.slate||battle?.combat?.slate||'SIGNAL / CONTACT',
+      onConfirm:()=>{
+        if(teach){ flagSet('loadout.introShown'); saveCommit({flags:getSave().flags}); }
+        pushCombat(battle,opts);
+      },
     }));
   }
   return pushCombat(battle,opts);
@@ -11400,6 +11784,8 @@ function openBattle(battle, opts={}){
 
 function pushCombat(battle, { onWin, onLose, onAbort, source=null, director=null, bench=false }={}){
   ensureCtx();
+  const profileBattle=snapshotBattleIntent(battle,currentProfileInfluence(),{tutorial:bench});
+  battle=profileBattle.definition;
   // Warm the surfer's breakbeat before the fight can ask for it. The cue player
   // returns silence for a file it has not decoded yet, so a backing that is only
   // ever requested mid-fight was never once actually heard.
@@ -11463,6 +11849,7 @@ function pushCombat(battle, { onWin, onLose, onAbort, source=null, director=null
     source,
     director,
     interference,
+    profileIntent:profileBattle.intent,
     environmentLighting:battleLighting,
     initialPerformanceIntrusion:bench?0:performanceIntrusionSeed(referenceExposure),
     onPerformanceStage:({stage,value})=>{
@@ -12170,6 +12557,22 @@ function sprungFloorAt(x,y){
   if(!usingPlan()||usingSpecialSpace()) return 1;
   return SPRUNG_ZONES.has(FP.zoneAt(x,y)) ? NOISE.sprung : 1;
 }
+
+// WHERE IN THE ROOM. Four of the five takes are rooms with one floor in them, so
+// the position is the room and this answers null. The concert hall is the
+// exception: orchestra, stage and two balconies are all ZONE.hall and all
+// `amplifications`, and the difference between standing in the stalls and
+// standing seven and a half metres above them is the whole point of the space.
+//
+// Keyed on the compiled LAYER rather than on height, because the layer is what
+// the three decks actually differ by — heights move when the rake is retuned.
+const HALL_DECK_PLACE={ hall_lower:'lower', hall_upper:'upper', hall_stair:'stair', hall_stage:'stage' };
+function takePlaceAt(x,y){
+  if(!usingPlan()||usingSpecialSpace()) return null;
+  if(FP.zoneAt(x,y)!==ZONE.hall) return null;
+  const layer=FP.logicalToPhysical(x,y)?.layer||'';
+  return HALL_DECK_PLACE[layer] || 'orchestra';
+}
 function interferenceBattleContext(encounterId,battleId){
   const save=getSave();
   const run=save.run;
@@ -12203,22 +12606,141 @@ function interferenceBattleContext(encounterId,battleId){
     micPermission:!!mic.active&&!!mic.deviceLabel,
     micLabel:mic.deviceLabel||'',
     reducedMotion:(getSave().settings?.shake||'full')!=='full',
+    fullscreen:!!document.fullscreenElement||currentDisplaySettings().displayMode==='game-mode',
+    run:{
+      preset:getSave().run?.rules?.currentPreset||getSave().run?.rules?.startedPreset||'contract',
+      custom:!!getSave().run?.rules?.custom,
+    },
   };
 }
-// Answering the identity card. Consent is written where the settings menu keeps
-// it, so every existing row and ERASE PERSONALIZED DATA keep working unchanged;
-// the meta marker only records that the question has been put.
-function setInterferenceConsent(allow){
+function currentPsychProfileSettings(){
+  const settings=getSave().settings||{};
+  return normalizePsychProfileSettings(settings.psychProfile,settings);
+}
+
+// Compatibility adapter for the already-authored identity and battle text.
+// The omnibus schema is authoritative; this object is never persisted as a
+// permission grant and can therefore be retired without a second migration.
+function profileInterferenceSettings(){
+  const profile=currentPsychProfileSettings();
+  const modules=profile.modules;
+  return {
+    enabled:modules.steamName||modules.osUsername||modules.computerName||modules.microphoneLabel
+      ||modules.windowChoreography||modules.fieldReturnFiles,
+    sourceSteam:modules.steamName,
+    sourceOs:modules.osUsername,
+    sourceHost:modules.computerName,
+    sourceMic:modules.microphoneLabel,
+    vfdText:modules.steamName||modules.osUsername||modules.computerName||modules.microphoneLabel,
+    localSpeech:false,
+    intensity:profile.windowIntensity,
+  };
+}
+
+function mirrorPsychProfileCompatibility(settings,profile){
+  const current=settings.personalInterference||{};
+  const adapted=profileInterferenceSettingsFrom(profile);
+  return {
+    ...settings,
+    mic:profile.modules.microphone?'on':'off',
+    psychProfile:profile,
+    personalInterference:{...current,...adapted},
+  };
+}
+
+function profileInterferenceSettingsFrom(profile){
+  const modules=profile.modules;
+  return {
+    enabled:modules.steamName||modules.osUsername||modules.computerName||modules.microphoneLabel
+      ||modules.windowChoreography||modules.fieldReturnFiles,
+    sourceSteam:modules.steamName,
+    sourceOs:modules.osUsername,
+    sourceHost:modules.computerName,
+    sourceMic:modules.microphoneLabel,
+    vfdText:modules.steamName||modules.osUsername||modules.computerName||modules.microphoneLabel,
+    localSpeech:false,
+    intensity:profile.windowIntensity,
+  };
+}
+
+function applyPsychProfileConsent(allow){
   const save=getSave();
-  const current=save.settings?.personalInterference||{};
-  saveCommit({settings:{...save.settings,personalInterference:{...current,enabled:!!allow}}});
-  metaCommit({interferenceAsked:INTERFERENCE_CONSENT_MARKER,interferenceAskedAt:Date.now()});
+  const profile=psychProfileChoice(!!allow,currentPsychProfileSettings());
+  saveCommit({settings:mirrorPsychProfileCompatibility(save.settings||{},profile)});
+  void battleInterference.settingsChanged();
+  if(allow)startRoomMic({force:true});
+  else{
+    MIC.micStop();
+    void personalWindowEffects.emergencyRestore?.({notify:false});
+  }
+}
+
+async function applyPsychProfileSettingsChange({previous,next,changedKey}={}){
+  const save=getSave();
+  const profile=normalizePsychProfileSettings(next||save.settings?.psychProfile,save.settings);
+  saveCommit({settings:mirrorPsychProfileCompatibility(save.settings||{},profile)});
+  const was=normalizePsychProfileSettings(previous||{},save.settings);
+  if(was.modules.microphone&&!profile.modules.microphone)MIC.micStop();
+  if(!was.modules.microphone&&profile.modules.microphone)startRoomMic({force:true});
+  if(was.modules.windowChoreography&&!profile.modules.windowChoreography){
+    await personalWindowEffects.emergencyRestore?.({notify:false});
+  }
+  await battleInterference.settingsChanged();
+  if(changedKey==='master'&&!Object.values(profile.modules).some(Boolean))MIC.micStop();
 }
 
 function disablePersonalizedInterference(){
   const save=getSave();
-  const current=save.settings?.personalInterference||{};
-  if(current.enabled)saveCommit({settings:{...save.settings,personalInterference:{...current,enabled:false}}});
+  const current=currentPsychProfileSettings();
+  if(!current.modules.windowChoreography)return;
+  const profile={...current,modules:{...current.modules,windowChoreography:false}};
+  saveCommit({settings:mirrorPsychProfileCompatibility(save.settings||{},profile)});
+}
+
+function commitPsychObservation(observation){
+  const profile=currentPsychProfileSettings();
+  if(!profile.modules.behavioralMeasurement)return getMeta().psychProfile;
+  const runId=getSave().run?.id||null;
+  const previous=getMeta().psychProfile;
+  const next=reducePsychProfile(previous,observation,{runId});
+  metaCommit({psychProfile:next});
+  if(next.classification!==previous?.classification&&next.classification!=='UNRESOLVED'){
+    pushEvent(`// RESPONSE CLASSIFIED: ${next.classification}.`);
+  }else if(next.sampleCount===1||next.sampleCount%6===0){
+    pushEvent('// PROFILE UPDATING.');
+  }
+  return next;
+}
+
+progressionEvents.on(EVENT_TYPES.TAKE_COMPLETED,()=>{
+  commitPsychObservation({kind:'take',signals:{composure:.72,resistance:.66,exposure:.34},weight:.55});
+  applyCurrentRunDifficulty();
+});
+progressionEvents.on(EVENT_TYPES.TAKE_SPOILED,()=>{
+  commitPsychObservation({kind:'take',signals:{vigilance:.74,exposure:.7,composure:.38},weight:.55});
+  applyCurrentRunDifficulty();
+});
+progressionEvents.on(EVENT_TYPES.BATTLE_FINISHED,(event)=>{
+  const won=event.payload?.result==='win';
+  commitPsychObservation({
+    kind:'battle',
+    signals:won
+      ?{resistance:.74,composure:.68,exposure:.46}
+      :{resistance:.38,composure:.34,exposure:.72,vigilance:.76},
+    weight:.8,
+  });
+  applyCurrentRunDifficulty();
+});
+
+function currentProfileInfluence(){
+  const profile=currentPsychProfileSettings();
+  const run=getSave().run;
+  return profileInfluence(getMeta().psychProfile,{
+    enabled:profile.modules.behavioralMeasurement,
+    adaptiveDifficulty:profile.modules.adaptiveDifficulty,
+    preset:run?.rules?.currentPreset||run?.rules?.startedPreset||'contract',
+    custom:!!run?.rules?.custom,
+  });
 }
 function acousticRoomAt(x,y){return usingSourceSpace()?'source_space':usingStairAnomaly()?'stair_anomaly':usingPlan()?(ZONE_ACOUSTIC_ROOM[FP.zoneAt(x,y)]||FP.worldAt(x,y)):currentWorld();}
 function currentAreaLabel(){
@@ -12493,6 +13015,40 @@ function planYawOffset(){
 // so its sight cone has to be in the physical frame too.
 function mapWorldHeading(){ return mapHeading()+planYawOffset(); }
 
+function currentMapVisibilityOccluders(source, physical){
+  if(!source||!physical||usingSpecialSpace())return[];
+  const stride=source.topologyStride||1,mapPerMetre=1/(CELL*stride),eyeY=physical.y+1.58;
+  const out=[];
+  for(const prop of PROPS.allProps?.()||[]){
+    if(!prop.blocks)continue;
+    const scale=Number(prop.scale)||1,base=(Number(prop.floor)||0)+(Number(prop.elevation)||0)+(Number(prop.renderOffsetY)||0);
+    const height=Math.max(.05,(Number(prop.h)||.7)*scale*(Number(prop.scaleY)||1));
+    if(eyeY<base-.08||eyeY>base+height+.08)continue;
+    const at=FP.logicalToPhysical(prop.rx,prop.ry);
+    if(at.renderGroup!==physical.renderGroup)continue;
+    out.push({
+      id:prop.id,
+      x:(at.x*CELL+(Number(prop.renderOffsetX)||0))*mapPerMetre,
+      y:(at.z*CELL+(Number(prop.renderOffsetZ)||0))*mapPerMetre,
+      w:Math.max(.08,(Number(prop.w)||.2)*scale*(Number(prop.scaleX)||1)*mapPerMetre),
+      d:Math.max(.08,(Number(prop.d)||.2)*scale*(Number(prop.scaleZ)||1)*mapPerMetre),
+      yaw:(Number(prop.yaw)||0)+(FP.arcYawOffset?.(prop.rx,prop.ry,at.x+.5,at.z+.5)||0),
+    });
+  }
+  for(const collider of PROPS.structuralColliders?.()||[]){
+    if(eyeY<(Number(collider.minElevation)||0)-.08||eyeY>(Number(collider.maxElevation)||0)+.08)continue;
+    out.push({
+      id:`structural:${collider.id}`,
+      x:(Number(collider.x)||0)*mapPerMetre,
+      y:(Number(collider.y)||0)*mapPerMetre,
+      w:Math.max(.08,(Number(collider.width)||.2)*mapPerMetre),
+      d:Math.max(.08,(Number(collider.depth)||.2)*mapPerMetre),
+      yaw:Number(collider.yaw)||0,
+    });
+  }
+  return out;
+}
+
 function currentFacilityMapModel(){
   if(usingSourceSpace()){
     const model=buildMapModel({source:null,job:bagJob(),navigation:activeDifficulty.navigation});
@@ -12517,6 +13073,8 @@ function currentFacilityMapModel(){
   const contactKey=`${contact.state}:${contact.observation?.observedAt||0}:${contact.observation?.floorId||''}`;
   const hushKey=rawHush?`${rawHush.floorId||''}:${Math.round(rawHush.position.x*2)}:${Math.round(rawHush.position.y*2)}:${rawHush.perception?.mode||'none'}:${rawHush.visible?1:0}`:'none';
   const tower=chapelTowerState(),towerKey=`${tower.phase}:${tower.ropeRoomVisited?1:0}:${tower.hatchInspected?1:0}`;
+  const visibilityOccluders=currentMapVisibilityOccluders(source,physical);
+  const visibilityKey=visibilityOccluders.map((entry)=>`${entry.id}:${Math.round(entry.x*8)}:${Math.round(entry.y*8)}:${Math.round(entry.yaw*20)}`).join('|');
   const discoveredFloorIds=flagGet('academic.entered')?new Set(['academic']):new Set();
   const discoveryKey=discoveredFloorIds.has('academic')?'academic':'base';
   const areaLabel=currentAreaLabel();
@@ -12525,7 +13083,7 @@ function currentFacilityMapModel(){
   // why the old facing tick appeared frozen and why the sight cone would not turn.
   // Quantised to ~6° so an idle mouse does not rebuild the model every frame.
   const headingKey=Math.round(mapWorldHeading()/(Math.PI/30));
-  const key=[Math.round(physical.x/2),Math.round(physical.z/2),Math.round(physical.y*4),headingKey,recordableRoomAt(px,py)||'',areaLabel,objective.target||'',job.rooms.map((room)=>room.recorded?'1':'0').join(''),doorKey,activeDifficulty.navigation.id||'',contactKey,hushKey,towerKey,discoveryKey].join('~');
+  const key=[Math.round(physical.x/2),Math.round(physical.z/2),Math.round(physical.y*4),headingKey,recordableRoomAt(px,py)||'',areaLabel,objective.target||'',job.rooms.map((room)=>room.recorded?'1':'0').join(''),doorKey,activeDifficulty.navigation.id||'',contactKey,hushKey,towerKey,discoveryKey,visibilityKey].join('~');
   if(facilityMapCache.key===key&&facilityMapCache.model)return facilityMapCache.model;
   const model=buildMapModel({
     source,job,objectiveState:objective,doors,contacts:[contact],navigation:activeDifficulty.navigation,discoveredFloorIds,
@@ -12541,7 +13099,7 @@ function currentFacilityMapModel(){
     ...rawHush,
     position:{x:rawHush.position.x/stride,y:rawHush.position.y/stride},
   }:null;
-  const liveModel={...model,hush};
+  const liveModel={...model,hush,visibilityOccluders};
   facilityMapCache={key,model:liveModel};
   return liveModel;
 }
@@ -12720,24 +13278,37 @@ function saveControllerSettings(controller){
   return next;
 }
 
-async function erasePersonalizedData(){
-  await personalWindowEffects.end();
+async function restorePsychProfileWindows(){
+  await personalWindowEffects.emergencyRestore?.({notify:false});
+  pushEvent('// game windows restored.');
+  return true;
+}
+
+function resetPsychProfileInference(){
+  metaCommit({psychProfile:freshPsychProfileState()});
+  pushEvent('// inferred response profile reset.');
+  return true;
+}
+
+async function erasePsychProfileData(){
+  await personalWindowEffects.emergencyRestore?.({notify:false});
   await eraseAllInterferenceData();
   battleInterference.clearRun();
+  MIC.micStop();
   const save=getSave();
-  const personal=save.settings?.personalInterference||{};
+  const profile=psychProfileChoice(false,currentPsychProfileSettings());
   const run=save.run?{...save.run,interference:null}:null;
   saveCommit({
     ...(run?{run}:{}),
-    settings:{...save.settings,personalInterference:{...personal,enabled:false}},
+    settings:mirrorPsychProfileCompatibility(save.settings||{},profile),
   });
   const meta=getMeta();
   const records=Object.fromEntries(Object.entries(meta.returns?.records||{}).map(([id,entry])=>[
     id,
     entry&&typeof entry==='object'?{...entry,interference:null}:entry,
   ]));
-  metaCommit({returns:{...meta.returns,records}});
-  pushEvent('// personalized data erased.');
+  metaCommit({returns:{...meta.returns,records},psychProfile:freshPsychProfileState()});
+  pushEvent('// psychological profile and field returns erased.');
   return true;
 }
 
@@ -12775,6 +13346,12 @@ function openSettings({ inGame=false, initialTab=null }={}){
         MIC.micStop();
         startRoomMic({ force:true, ...input });
       },
+      psychProfileState: ()=>getMeta().psychProfile,
+      onPsychProfileChange: applyPsychProfileSettingsChange,
+      restoreProfileWindows: restorePsychProfileWindows,
+      openReturnFolder: ()=>revealInterferenceFolder(),
+      resetPsychProfile: resetPsychProfileInference,
+      erasePsychProfileData,
       onQuitToTitle: returnToTitle,
       requestFullscreen: requestFullscreenSafe,
       focusPanel: ensureInteractionFocus,
@@ -12824,8 +13401,6 @@ function openSettings({ inGame=false, initialTab=null }={}){
       openCredits,
       resetDisplaySettings: resetDisplaySettingsFromMenu,
       onDisplayChange: updateDisplaySettings,
-      onPersonalInterferenceChange: () =>{ void battleInterference.settingsChanged(); },
-      erasePersonalizedData,
     },
   }));
 }
@@ -13033,7 +13608,7 @@ function godRestoreBuildingWorld(){
 function godSyncBuildingRender(){
   if(!FP.isLoaded()||usingSpecialSpace())return false;
   const plan=FP.physicalRenderPlanFor(px,py);
-  R3.r3dSetPlan(plan.rgba,plan.w,plan.h,plan.material,{ambient:plan.ambient});
+  R3.r3dSetPlan(plan.rgba,plan.w,plan.h,plan.material,{ambient:plan.ambient,originX:plan.originX,originY:plan.originY});
   r3dCache.physicalGroup=plan.group;r3dCache.physicalKey=plan.key;r3dCache.fogSize=-1;
   R3.r3dSetProps(worldRenderInstances(plan.group));
   R3.r3dSetSourceScene({key:'source:building',corpus:[],staticInstances:[],dynamicInstances:[],look:{sunrise:0,chroma:1,paper:0}});
@@ -13406,7 +13981,7 @@ function godTabs(){
       {id:'door-practice',label:'PRACTICE ACOUSTIC SINGLE',value:'[WARP]',closeMenu:true,activate:()=>godWarpToDoorArchetype(DOOR_ARCHETYPE.PRACTICE_ACOUSTIC_SINGLE)},
       {id:'door-fire',label:'SERVICE / FIRE SINGLE',value:'[WARP]',closeMenu:true,activate:()=>godWarpToDoorArchetype(DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE)},
       {id:'door-staff',label:'STAFF HALF-GLAZED',value:'[WARP]',closeMenu:true,activate:()=>godWarpToDoorArchetype(DOOR_ARCHETYPE.STAFF_HALF_GLAZED)},
-      {id:'door-pool',label:'POOL FIRE DOOR',value:'[WARP]',closeMenu:true,activate:()=>godWarpToDoorArchetype(DOOR_ARCHETYPE.POOL_FIRE_SINGLE)},
+      {id:'door-pool',label:'POOL GLAZED PAIR',value:'[WARP]',closeMenu:true,activate:()=>godWarpToDoorArchetype(DOOR_ARCHETYPE.POOL_GLAZED_PAIR)},
       {id:'door-tower',label:'TOWER SERVICE DOOR',value:'[WARP]',closeMenu:true,activate:()=>godWarpToDoorArchetype(DOOR_ARCHETYPE.TOWER_SERVICE_SINGLE)},
       section('Runtime controls'),
       {id:'door-focused',label:'TOGGLE FOCUSED DOOR',value:'[TOGGLE]',activate:godToggleFocusedDoor},
@@ -13993,24 +14568,9 @@ function enterSelectedRun(){
   if(qp.has('skipwarn')){ enterStory(); return; }
   MIC.micRefreshDevices?.();
   scenes.push(makeWarningScene({
-    onEnableMic:()=>{
-      const st=getSave().settings||{};
-      saveCommit({settings:{...st,mic:'on'}});
-      startRoomMic({ force:true });
-    },
-    onDisableMic:()=>{
-      const st=getSave().settings||{};
-      saveCommit({settings:{...st,mic:'off'}});
-      MIC.micStop();
-    },
-    // Asked once, on desktop, in front of the title — the same standing as the
-    // microphone, because it is the same kind of request. It was reachable only
-    // from the settings menu before, which is no way to ask to read somebody's
-    // Steam account. The marker follows the eulaAccepted / lensRuntimeReady
-    // convention, so answering it once settles it.
-    askInterference:IS_TAURI && getMeta().interferenceAsked!==INTERFERENCE_CONSENT_MARKER,
-    onEnableInterference:()=>setInterferenceConsent(true),
-    onDisableInterference:()=>setInterferenceConsent(false),
+    askProfile:currentPsychProfileSettings().consentVersion!==PSYCH_PROFILE_CONSENT_VERSION,
+    onProfileOn:()=>applyPsychProfileConsent(true),
+    onProfileOff:()=>applyPsychProfileConsent(false),
     onDone:enterStory,
   }));
 }
@@ -14289,7 +14849,7 @@ function drawStoryHud(){
   if(itemLost('map')){
     uiText(2, 5, 'PLAN  MISSING', 'ui-danger');
   } else if(nav.showMap){
-    drawMinimap(currentFacilityMapModel(),{now:performance.now(),mischief:recentMischief()});
+    drawMinimap(currentFacilityMapModel(),{now:performance.now(),mischief:recentMischief(),apparitions:recentApparitions()});
   } else if(wp){
     uiText(2, 5, 'PLAN  SIGNAL MINIMAL', 'ui-secondary');
   }
@@ -14665,7 +15225,7 @@ function installProbe(){
     cell:(x,y)=>activeGeometry()?.cellAt(x,y),
     materialAt:(x,y)=>activeGeometry()?.materialAt(x,y),
     canStep:(ax,ay,bx,by)=>usingSpecialSpace()?activeGeometry()?.canStep(ax,ay,bx,by):FP.canStep(ax,ay,bx,by,{keys:playerKeys}),
-    props:()=>({pack:R3.r3dPropStats(),instances:PROPS.allProps().map((p)=>({id:p.id,mesh:p.mesh,x:p.x,y:p.y,zone:p.zone,blocks:p.blocks})),learned:PROPS.learnedPlayable().map((p)=>p.id)}),
+    props:()=>({pack:R3.r3dPropStats(),renderedIds:R3.r3dPropInstanceIds?.()||[],instances:PROPS.allProps().map((p)=>({id:p.id,mesh:p.mesh,x:p.x,y:p.y,zone:p.zone,blocks:p.blocks,renderGroup:p.renderGroup,renderGroups:p.renderGroups})),learned:PROPS.learnedPlayable().map((p)=>p.id)}),
     performance:()=>perfMeter.snapshot(),
     performanceReset:()=>{perfMeter.reset();return true;},
     surfaceDream:()=>R3.r3dSurfaceDreamStats(),
@@ -14707,6 +15267,14 @@ function installProbe(){
     // directions as a surface brightens. null hands it back to the room, then to
     // the look profile. See pixel-mesh/screens.js.
     screen:(id)=>id===undefined?R3.r3dScreen?.():R3.r3dSetScreenOverride?.(id),
+    // THE FLOOR-BOUNCE, and the A/B for black ceilings. 0 restores the flat
+    // ambient every room shared, where a ceiling got exactly what a floor got and
+    // nothing in the room could reach it.
+    bounce:(v)=>v===undefined?R3.r3dBounce?.():R3.r3dSetBounceAmount?.(v),
+    bounceLampGain:(v)=>R3.r3dSetBounceLampGain?.(v),
+    // THE WEATHER'S GAIN. 0 is no rain at all, which is the A/B for whether the
+    // rain is drawn and then lost in the one-bit encode, or never drawn.
+    rain:(v)=>v===undefined?R3.r3dRainAmount?.():R3.r3dSetRainAmount?.(v),
     surfaces:()=>R3.r3dSurfaceStats(),
     pickProp:()=>focusedWorldProp(2),
     warp:(x,y,f)=>{ px=x; py=y; if(f!=null) R3.r3dSetFacing(f); trail=[]; revealAround(px,py); },
@@ -14798,7 +15366,7 @@ function installProbe(){
       const wp=OBJ.waypoint(); const home=FP.homeAnchor();
       const anchors=[]; if(wp) anchors.push({x:wp.x,y:wp.y}); if(home) anchors.push({x:home.x,y:home.y});
       const c=MUT.tryMutate(performance.now()+1e9, {px,py,facing,light:REC.lightOn()}, anchors);
-      if(c){const p=FP.physicalRenderPlanFor(px,py);R3.r3dSetPlan(p.rgba,p.w,p.h,p.material,{ambient:p.ambient});r3dCache.physicalGroup=p.group;r3dCache.physicalKey=p.key;r3dCache.fogSize=-1;}
+      if(c){const p=FP.physicalRenderPlanFor(px,py);R3.r3dSetPlan(p.rgba,p.w,p.h,p.material,{ambient:p.ambient,originX:p.originX,originY:p.originY});r3dCache.physicalGroup=p.group;r3dCache.physicalKey=p.key;r3dCache.fogSize=-1;}
       return c;
     },
     facing:()=>R3.r3dDelta(1),
@@ -14949,11 +15517,18 @@ function installProbe(){
     light:()=>{
       const physical=FP.logicalToPhysical(px,py);
       const context=resolveLightingContext({group:physical?.renderGroup,zone:FP.zoneAt(px,py),spaceId:physical?.spaceId});
-      return{on:REC.lightOn(),battery:+REC.batteryLevel().toFixed(3),context,
+      // The harness must see what the frame sees. Resolving at a hardcoded
+      // 'full' hid the case where a player's FLASH / STROBE setting was pinning
+      // the emergency circuit permanently on, which is exactly the fault this
+      // readout exists to catch.
+      const effectsMode=getSave().settings?.flash||'full';
+      return{on:REC.lightOn(),battery:+REC.batteryLevel().toFixed(3),context,effectsMode,
         rig:resolveLocalLights(context,{
           timeSec:performance.now()/1000,towerCleared:false,liveCircuits:liveLightCircuits(),
+          reducedFlash:effectsMode!=='full',effectsMode,
           origin:{x:physical.x*CELL,z:physical.z*CELL},anchorPosition:lightAnchorPosition,
-        }).map((l)=>({id:l.id,intensity:+l.intensity.toFixed(3),circuit:l.circuit||null}))};
+        }).map((l)=>({id:l.id,kind:l.kind,color:[...l.color],intensity:+l.intensity.toFixed(3),radius:l.radius,
+          penetration:l.penetration||0,shadowReveal:l.shadowReveal||0,emergencyPulse:l.emergencyPulse,circuit:l.circuit||null}))};
     },
     power:()=>normalizePowerState(getSave().power),
     setPower:(circuit,live=true)=>{
@@ -14974,6 +15549,13 @@ function installProbe(){
       room:practiceRoomHere()}),
     practiceDeal:(seed=null)=>godDealPracticeHaunts(seed),
     practiceFire:(kind)=>godFirePracticeHaunt(kind),
+    windowChoreographyLab:()=>choreographyLabSummary(buildWindowChoreographyLabCases()),
+    windowChoreographyPreview:async(stage='recognition',cueId='broadcast',intensity='hostile')=>{
+      const token=await personalWindowEffects.begin({stage,encounterId:stage==='finale'?'source-final':'',intensity,fullscreen:!!document.fullscreenElement});
+      const result=await personalWindowEffects.apply(cueId,{stage,inputLocked:true,token,title:`AUDIOCORP LAB / ${String(cueId).toUpperCase()}`});
+      await personalWindowEffects.end(token);
+      return result;
+    },
     mischiefAt:(dx,dy)=>{ mischiefHeard={x:px+(Number(dx)||0),y:py+(Number(dy)||0),at:performance.now()}; return recentMischief(); },
     // Headless Chrome keeps rAF running with the tab hidden, so a suite cannot
     // produce a real away-gap. This is the same call the long-frame path makes.
@@ -15348,7 +15930,7 @@ function render3d(){
     if(usingSourceSpace())syncSourceRender({force:true,x:viewX,y:viewY});
     else if(usingStairAnomaly())syncStairAnomalyRender({force:true});
     else{
-      R3.r3dSetPlan(slice.rgba,slice.w,slice.h,slice.material,{ambient:slice.ambient});
+      R3.r3dSetPlan(slice.rgba,slice.w,slice.h,slice.material,{ambient:slice.ambient,originX:slice.originX,originY:slice.originY});
       // The plan texture changes whenever the height band does — several times
       // on a stair. The PROP PACK and the fog only change when the render group
       // does, which on a climb is once. Rebuilding them on every band was the
@@ -15363,7 +15945,15 @@ function render3d(){
   // Emergency lamps are a small dynamic layer. Their cadence, emissive glass,
   // and occasional architecture-projected figure update every render frame;
   // static room geometry and the prop pack remain cached.
-  if(usingPlan()&&!usingSpecialSpace())syncArchitecturalLocalLights(physical.renderGroup,{logicalX:viewX,logicalY:viewY});
+  if(usingPlan()&&!usingSpecialSpace()){
+    const zone=FP.zoneAt(viewX,viewY);
+    const weathered=zone===ZONE.dock||zone===ZONE.street||zone===ZONE.civicCourt||zone===ZONE.serviceYard;
+    STORY.setRainSurfaceMix(weathered
+      ?exteriorRainMaterialMixAt(physical.x*CELL,physical.z*CELL)
+      :{slate:0,glass:0,foliage:0,steel:0});
+    syncDoorDynamicProps({logicalX:viewX,logicalY:viewY,timeSec:performance.now()/1000});
+    syncArchitecturalLocalLights(physical.renderGroup,{logicalX:viewX,logicalY:viewY});
+  }
   if(fog.size!==r3dCache.fogSize){
     if(usingSpecialSpace())R3.r3dUpdateFog(()=>2,physical.x,physical.z);
     else if(usingPlan())R3.r3dUpdateFog((fx,fy)=>{const l=FP.logicalAtPhysical(fx,fy,{group:physical.renderGroup,floor:physical.y});return l?fogGet(l.x,l.y):0;},physical.x,physical.z);
@@ -15419,7 +16009,7 @@ function render3d(){
     sensoryProfile:worldView?.sensoryProfile||'story',
     plan: usingPlan(),
     textSpace: sourceTextSpaceActive(),
-    floorH: worldView?.floorH??(usingSpecialSpace()?activeGeometry().floorAt(viewX,viewY):usingPlan()?FP.floorAt(viewX,viewY):floorHere()),
+    floorH: worldView?.floorH??(usingSpecialSpace()?activeGeometry().floorAt(viewX,viewY):usingPlan()?FP.renderedFloorAt(viewX,viewY,rendered.x,rendered.z):floorHere()),
     moveIntervalMs:currentMoveIntervalMs(),
     water:usingSpecialSpace()?{active:false}:currentNatatoriumWaterRenderState({audio:waterAudio}),
   });
@@ -15913,7 +16503,7 @@ function onBlur(){
 // just been dismissed, a keypress arriving while the pointer is loose. Doing only
 // one of them is what left the game focused but uncaptured, or captured but
 // staring at the ceiling.
-function resumeGameplayInput(reason='resume-input',{recenter=true}={}){
+function resumeGameplayInput(reason='resume-input',{recenter=false}={}){
   ensureInteractionFocus();
   if(recenter && RENDERER==='3d') R3.r3dRecenterLook?.({pitch:true});
   if(gameplayWantsPointerCapture() && !pointerMode.isTrueLocked?.()) void ensurePointerLock(reason);
@@ -15924,7 +16514,6 @@ function resumeGameplayInput(reason='resume-input',{recenter=true}={}){
 // fullscreen removes. Drop the lease so that offset is measured again rather
 // than left behind as a permanent tilt.
 function relearnPointerGeometry(reason='window-geometry-change'){
-  if(RENDERER==='3d') R3.r3dRecenterLook?.({pitch:true,immediate:true});
   if(pointerMode.isNativeCaptured?.()) pointerMode.release(reason);
   if(gameplayWantsPointerCapture()) void ensurePointerLock(reason);
 }
@@ -15974,7 +16563,6 @@ function onPointerEvent(e){
     // waiting until after it runs loses the only gesture WebView will accept.
     if(pointerEventHitsGameplaySurface(e)&&gameplayWantsPointerCapture()
       &&!pointerMode.isTrueLocked?.()&&!pointerMode.isNativeCaptured?.()){
-      R3.r3dRecenterLook?.({pitch:true,immediate:true});
       void ensurePointerLock('world-pointerdown');
     }
   }
@@ -16075,11 +16663,13 @@ async function boot(){
   window.addEventListener('message', ensureInteractionFocus, {passive:true});
   window.addEventListener('focus', ()=>{
     recoverInteractionFocus('window-focus');
-    // Focus is not a user gesture. Leave capture for the click which caused it;
-    // starting a doomed request here used to block that real gesture as
-    // "already in flight" and left the camera dead.
     ensureInteractionFocus();
     syncPointerMode('window-focus');
+    // Desktop builds can restore their native grab immediately on app return,
+    // and browsers which permit a re-lock do the same. This is deliberately a
+    // non-gesture attempt: the controller lets the next real click supersede a
+    // refused background request instead of treating it as already in flight.
+    if(gameplayWantsPointerCapture()) void pointerMode.attemptCapture('window-focus',{gesture:false});
   }, {passive:true});
   document.addEventListener('visibilitychange', ()=>{
     if(document.hidden){
@@ -16087,9 +16677,13 @@ async function boot(){
       void recoverInteractionAudio('visibility-hidden');
     } else {
       recoverInteractionFocus('visibility-visible');
+      if(gameplayWantsPointerCapture()) void pointerMode.attemptCapture('visibility-visible',{gesture:false});
     }
   });
-  window.addEventListener('pageshow', ()=>{ recoverInteractionFocus('pageshow'); }, {passive:true});
+  window.addEventListener('pageshow', ()=>{
+    recoverInteractionFocus('pageshow');
+    if(gameplayWantsPointerCapture()) void pointerMode.attemptCapture('pageshow',{gesture:false});
+  }, {passive:true});
   window.addEventListener('pagehide',()=>{
     resetMotionInput('pagehide', {stopRenderMove:true});
     void recoverInteractionAudio('pagehide');

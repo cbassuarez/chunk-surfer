@@ -15,6 +15,11 @@ import {
   reduceChunkSurf,
 } from './chunk-surf-state.js';
 import { chunkSurfRoom } from '../data/chunk-surf-script.js';
+import { sourcePageFor } from '../data/source-pages.js';
+import {
+  SOURCE_LADDERS, SOURCE_TIER_BY_ID,
+  sourceFeatureAt, sourceTierHeightAt, sourceTraversal,
+} from '../data/source-level.js';
 
 export const SOURCE_PLAN_WINDOW = 384;
 export const SOURCE_PLAN_SNAP = 16;
@@ -439,23 +444,53 @@ function landNoise(x, y) {
   const a = landHash(fx, fy), b = landHash(fx + 1, fy), c = landHash(fx, fy + 1), d = landHash(fx + 1, fy + 1);
   return (a * (1 - u) + b * u) * (1 - v) + (c * (1 - u) + d * u) * v; // 0..1
 }
+// THE FIELD IS TIERED NOW, AND THAT IS THE WHOLE POINT.
+//
+// This used to be a set of smooth ramps plus slope-bounded mounds, chosen "so
+// the whole field stays walkable" — which is precisely why the space had no
+// level design in it: nothing could be gated, no route cost anything, and every
+// destination was a straight line away. It is four plateaus separated by cliffs
+// taller than a step, joined by authored ladders and chutes (data/source-level.js).
+//
+// The mounds survive, scaled right down: enough that a tier reads as ground
+// rather than as a table, small enough that it never becomes an accidental ramp
+// between two tiers that are supposed to be a decision apart.
 export function sourceLandscapeFloorAt(localX, localY) {
   const lx = Number(localX) || 0, ly = Number(localY) || 0;
-  const depth = Math.max(0, -ly);
-  const branch = smoothstep(18, 90, Math.abs(lx)) * smoothstep(48, 105, depth) * (1 - smoothstep(145, 190, depth));
-  const approach = 3.2 * smoothstep(28, 86, depth);
-  const basin = -1.8 * smoothstep(118, 164, depth);
-  const bodyRamp = 4.8 * smoothstep(176, 232, depth);
-  const terminalRamp = 8.5 * smoothstep(246, 320, depth);
-  // Rolling mounds (broad) + finer unevenness, both slope-bounded so the whole
-  // field stays walkable while reading as real terrain rather than a flat plane.
-  const mounds = (landNoise(lx * 0.05 + 11, ly * 0.05) - 0.5) * 1.7
-    + (landNoise(lx * 0.12 + 37, ly * 0.12) - 0.5) * 0.55;
-  return approach + basin + bodyRamp + terminalRamp + branch * 1.4 + mounds;
+  const base = sourceTierHeightAt(ly);
+
+  // A ladder's footprint interpolates between the two tiers it joins, so the
+  // climb is geometry rather than teleportation, and the shaft reads from below.
+  const feature = sourceFeatureAt(lx, ly);
+  if (feature?.kind === 'ladder') {
+    const lower = SOURCE_TIER_BY_ID[feature.from]?.height ?? base;
+    const upper = SOURCE_TIER_BY_ID[feature.to]?.height ?? base;
+    const l = SOURCE_LADDERS.find((entry) => entry.id === feature.id);
+    // Across the boundary: below it is the lower tier, above it the upper.
+    const t = clamp01((l ? (l.y - ly) / Math.max(0.001, l.depth * 2) : 0) + 0.5);
+    return lower + (upper - lower) * t;
+  }
+  // A chute is a ramp you can only take downhill — the surf. It falls from its
+  // mouth to the tier below across its run.
+  if (feature?.kind === 'chute') {
+    const top = SOURCE_TIER_BY_ID[feature.from]?.height ?? base;
+    const bottom = SOURCE_TIER_BY_ID[feature.to]?.height ?? base;
+    return top + (bottom - top) * clamp01(feature.progress);
+  }
+
+  const mounds = (landNoise(lx * 0.05 + 11, ly * 0.05) - 0.5) * 0.42
+    + (landNoise(lx * 0.12 + 37, ly * 0.12) - 0.5) * 0.16;
+  return base + mounds;
 }
 
 function materialAtLandscape(localX, localY) {
   const p = { x: localX, y: localY };
+  // LEGIBILITY WITHOUT UI. A chute mouth and a ladder foot have to read from a
+  // distance in a space whose whole aesthetic is that it has no markers, so they
+  // read by MATERIAL — the same trick the routes already use. sourceFault is the
+  // brightest of the three and it is what a way up or down should be.
+  const feature = sourceFeatureAt(localX, localY);
+  if (feature) return MATERIAL.sourceFault;
   if (routeAt(p)) return MATERIAL.sourcePath;
   for (const point of Object.values(LANDMARK_OFFSETS)) {
     if (Math.hypot(localX - point.x, localY - point.y) <= 7) return MATERIAL.sourceFault;
@@ -524,6 +559,7 @@ export function createSourceSpaceRuntime({
   let transformElapsed = 0;
   let lastPlan = null;
   let lastFocus = null;
+  const readSheets = new Set();
   let completionSent = false;
   let pathCache = { key: '', path: [] };
   let protectionRemaining = 0;
@@ -637,7 +673,18 @@ export function createSourceSpaceRuntime({
       const from = cellAt(fromX, fromY), to = cellAt(toX, toY);
       if (!to) return { ok: false, why: 'wall' };
       if (to.ceil - to.floor < EYE + 0.2) return { ok: false, why: 'headroom' };
-      if (from && Math.abs(to.floor - from.floor) > 0.45) return { ok: false, why: 'too high' };
+      if (from && Math.abs(to.floor - from.floor) > 0.45) {
+        // THE ONE EXCEPTION. A tier boundary is taller than a step on purpose;
+        // a ladder is how you take it upward and a chute is how you take it
+        // down, and there is no third way. Everything the level gates, it gates
+        // here (see data/source-level.js).
+        const o = landscapeOrigin();
+        const via = sourceTraversal(
+          fromX - o.x, fromY - o.y, toX - o.x, toY - o.y, from.floor, to.floor,
+        );
+        if (!via.ok) return { ok: false, why: 'too high' };
+        return { ok: true, floor: to.floor, via: via.via, feature: via.id, ride: via.dir || null };
+      }
       return { ok: true, floor: to.floor };
     },
     floorAt: (x, y) => cellAt(x, y)?.floor ?? 0,
@@ -705,11 +752,11 @@ export function createSourceSpaceRuntime({
     } else if (state.phase === CHUNK_SURF_PHASE.TRANSFORMING) {
       objective = { id: 'source-opening', label: 'HOLD THE SOURCE', target: haystackPagePoint(), bearingEligible: false };
     } else if (!state.hasFork) {
-      objective = { id: 'fork-gate', label: 'FACE THE FORK GATE — TUNE [F]', target: landmarkPoint('fork-room'), bearingEligible: true };
+      objective = { id: 'fork-gate', label: 'CLIMB TO THE FORK', target: landmarkPoint('fork-room'), bearingEligible: true };
     } else if (!state.tuned.includes('recordist-loop')) {
-      objective = { id: 'recordist-loop', label: 'FACE THE RECORDIST TRACE — TUNE [F]', target: landmarkPoint('recordist-loop'), bearingEligible: true };
+      objective = { id: 'recordist-loop', label: 'THE TRACE IS ONE TIER UP', target: landmarkPoint('recordist-loop'), bearingEligible: true };
     } else if (!state.tuned.includes('body-room')) {
-      objective = { id: 'body-return', label: 'FACE BODY RETURN — TUNE [F]', target: landmarkPoint('body-room'), bearingEligible: true };
+      objective = { id: 'body-return', label: 'BODY RETURN IS ABOVE THE TRACE', target: landmarkPoint('body-room'), bearingEligible: true };
     } else if (state.phase === CHUNK_SURF_PHASE.FINAL && state.finalEncounter.status !== SOURCE_FINAL_STATUS.RESOLVED) {
       objective = { id: 'final-encounter', label: 'RESOLVE THE FINAL SOURCE', target: landmarkPoint('final-page'), bearingEligible: false };
     } else if (state.phase === CHUNK_SURF_PHASE.COMPLETED) {
@@ -810,9 +857,38 @@ export function createSourceSpaceRuntime({
     return { handled: true, state, checkpoint: checkpointPosition(state.checkpointId) };
   }
 
+  // THE SHEETS YOU CAN ACTUALLY READ.
+  //
+  // The hall used to be a hundred and twelve metres of scenery: sheets you
+  // walked past, exactly one of which was secretly real, none of which could be
+  // picked up. Walking that far past unreadable paper is a distance, not a beat.
+  //
+  // These are the floor-lying sheets from pageInstances (surface 3 and 4 of the
+  // five-way split), addressed by the same seed, so a page you read stays the
+  // page it was. The one that matters is still the one that does not move.
+  function readablePages() {
+    if (![CHUNK_SURF_PHASE.HALL, CHUNK_SURF_PHASE.HAYSTACK].includes(state.phase)) return [];
+    const count = pageCount(state.hallMaxDistance);
+    const out = [];
+    for (let i = 1; i < count; i += 1) {
+      if (i % 5 < 3) continue;                       // wall and ceiling sheets are out of reach
+      const r0 = rand(state.seed, i, 101), r1 = rand(state.seed, i, 211);
+      const reach = Math.max(36, Math.min(280, state.hallMaxDistance / CELL + 42));
+      out.push({
+        kind: 'source-sheet',
+        id: `source-sheet-${i}`,
+        index: i,
+        x: (r1 - 0.5) * HALL_HALF_WIDTH * 1.72,
+        y: -18 - r0 * reach,
+      });
+    }
+    return out;
+  }
+
   function focusAt(px, py, facing) {
     const candidates = [];
     if (state.phase === CHUNK_SURF_PHASE.HAYSTACK) candidates.push({ kind: 'haystack-page', id: 'source-page', ...haystackPagePoint() });
+    candidates.push(...readablePages());
     if ([CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase)) {
       for (const id of Object.keys(LANDMARK_OFFSETS)) {
         const point = landmarkPoint(id);
@@ -861,6 +937,13 @@ export function createSourceSpaceRuntime({
   function inspectFocused(px, py, facing) {
     const focus = focusAt(px, py, facing);
     if (!focus) return { handled: false };
+    if (focus.kind === 'source-sheet') {
+      const page = sourcePageFor(focus.index, state.pageStage, state.seed);
+      readSheets.add(focus.id);
+      // No dispatch and no protection: reading the paperwork is not progress and
+      // must not buy the player a pause from what is behind them.
+      return { handled: true, kind: 'page', page, text: '', event: 'page-read' };
+    }
     if (focus.kind === 'haystack-page') {
       const page = haystackPagePoint();
       dispatch({
@@ -868,7 +951,11 @@ export function createSourceSpaceRuntime({
         landscapeOrigin: { x: page.x, y: page.y - 8 },
       }, { immediate: true });
       transformElapsed = 0;
-      return { handled: true, text: 'One sheet does not move. The source printed on it lifts before the paper does.', event: 'page-found' };
+      // NO LINE HERE. This used to answer with 'One sheet does not move…', which
+      // the caller spoke — so the hardest walk in the game ended on a caption.
+      // The caller cuts to black on this event instead: a door, and then the
+      // field. Anything said here would be said over the top of that.
+      return { handled: true, text: '', event: 'page-found' };
     }
     if (focus.kind === 'landmark') {
       if (!focus.available) return { handled: true, text: 'The source is present, but its call site has not been reached.' };

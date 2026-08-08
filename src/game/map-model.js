@@ -91,6 +91,11 @@ export function captureFloorplanMapSource({
   const floors = definition.floors.map((floor) => ({
     ...floor,
     open: new Set(),
+    // The topology is intentionally coarsened for a quiet, readable map. Sight
+    // is not: it keeps the compiled half-metre physical cells so a thin wall,
+    // gate pier or exterior corner cannot disappear into a one-metre thumbnail.
+    visibilityOpen: new Set(),
+    visibilityScale: stride,
     bounds: { minX: 0, minY: 0, maxX: 1, maxY: 1 },
   }));
 
@@ -101,6 +106,7 @@ export function captureFloorplanMapSource({
       if (!floor) continue;
       const runtimeFloor = floors.find((candidate) => candidate.id === floor.id);
       runtimeFloor.open.add(mapKey(Math.floor(physicalX / stride), Math.floor(physicalY / stride)));
+      runtimeFloor.visibilityOpen.add(mapKey(physicalX, physicalY));
     }
   }
 
@@ -186,6 +192,8 @@ export function captureDoorMapState({ doors = [], projectLogical, source, hasKey
       // while the world still requires the player to open it.
       traversable: !locked,
       state: door.open ? 'open' : locked ? 'locked' : 'closed',
+      widthAxis: door.widthAxis || 'x',
+      apertureWidth: Math.max(.1, Number(door.aperture?.width) || 1),
     };
   });
 }

@@ -7,6 +7,11 @@ import {
   normalizeInterferenceRecord,
 } from './interference-case.js';
 import { loadOrCreateInterferenceKey, writeInterferenceArtifact } from '../platform/interference-artifacts.js';
+import {
+  freshPsychProfileState,
+  normalizePsychProfileSettings,
+  profileInfluence,
+} from './psychological-profile.js';
 
 const STAGE = Object.freeze({
   'practice-room-hush': 'foreshadow',
@@ -52,10 +57,13 @@ export function createBattleInterferenceDirector({
   effects = null,
   writeArtifact = writeInterferenceArtifact,
   getSettings = () => ({}),
+  getProfile = null,
+  getProfileState = () => freshPsychProfileState(),
   getContext = () => ({}),
   getRecord = () => null,
   onRecord = () => {},
   onEmergency = () => {},
+  onObservation = () => {},
 } = {}) {
   // Pull persisted state lazily. The director is constructed before the save
   // service has necessarily finished loading on desktop boot.
@@ -66,8 +74,32 @@ export function createBattleInterferenceDirector({
   const sessions = new Map();
 
   const settings = () => normalizePersonalInterferenceSettings(getSettings());
+  const profile = () => {
+    if (typeof getProfile === 'function') return normalizePsychProfileSettings(getProfile());
+    const legacy = settings();
+    return normalizePsychProfileSettings({
+      schema: 1,
+      consentVersion: legacy.enabled ? 'legacy-test' : '',
+      windowIntensity: legacy.intensity,
+      modules: {
+        microphone: false,
+        steamName: legacy.enabled && legacy.sourceSteam,
+        osUsername: legacy.enabled && legacy.sourceOs,
+        computerName: legacy.enabled && legacy.sourceHost,
+        microphoneLabel: legacy.enabled && legacy.sourceMic,
+        behavioralMeasurement: false,
+        adaptiveDifficulty: false,
+        windowChoreography: legacy.enabled,
+        fieldReturnFiles: legacy.enabled,
+      },
+    });
+  };
   const enabled = () => settings().enabled && !disabledForSession;
-  const safeWrite = (value) => Promise.resolve(writeArtifact?.(value)).catch(() => null);
+  const windowEnabled = () => enabled() && profile().modules.windowChoreography;
+  const fileEnabled = () => enabled() && profile().modules.fieldReturnFiles;
+  const safeWrite = (value) => fileEnabled()
+    ? Promise.resolve(writeArtifact?.(value)).catch(() => null)
+    : Promise.resolve({ ok: false, disabled: true });
 
   async function ensureRecord(context = {}) {
     if (!record?.caseId) record = normalizeInterferenceRecord(getRecord());
@@ -76,7 +108,9 @@ export function createBattleInterferenceDirector({
       micLabel: context.micLabel,
       micPermission: !!context.micPermission,
     });
-    const key = await loadKey();
+    // Identity-only personalization never touches disk. The durable masking key
+    // exists solely as part of the separately consented field-return module.
+    const key = await loadKey({ persist: fileEnabled() });
     const masked = await maskSnapshot(identity || {}, key);
     record = createInterferenceRecord(masked);
     onRecord(record);
@@ -136,7 +170,23 @@ export function createBattleInterferenceDirector({
     ]);
     if (session.stage !== 'foreshadow') await ensureRecord(context);
     const st = settings();
-    await effects?.begin?.({ intensity: st.intensity, reducedMotion: context.reducedMotion });
+    const run = context.run || {};
+    session.profileInfluence = profileInfluence(getProfileState(), {
+      enabled: profile().modules.behavioralMeasurement,
+      adaptiveDifficulty: profile().modules.adaptiveDifficulty,
+      preset: run.preset || context.preset || 'contract',
+      custom: !!(run.custom ?? context.custom),
+    });
+    if (windowEnabled()) {
+      session.effectToken = await effects?.begin?.({
+        stage: session.stage,
+        encounterId: session.encounterId,
+        intensity: st.intensity,
+        reducedMotion: context.reducedMotion,
+        fullscreen: !!context.fullscreen,
+        profile: session.profileInfluence,
+      });
+    }
     return true;
   }
 
@@ -148,14 +198,17 @@ export function createBattleInterferenceDirector({
     if (perfect) {
       session.perfectCounters += 1;
       session.windowEvents.push(`reject:${kind}`);
-      await effects?.reject?.({ ...sidecarPayload(session.stage, 'SIGNAL REJECTED'), kind });
+      if (windowEnabled()) await effects?.reject?.({ ...sidecarPayload(session.stage, 'SIGNAL REJECTED'), kind, inputLocked: true, token: session.effectToken });
       return 'rejected';
     }
     session.missedResponses += Math.max(0, Number(event.received) || 0) > 0 ? 1 : 0;
     session.windowEvents.push(kind);
-    await effects?.apply?.(kind, {
+    if (windowEnabled()) await effects?.apply?.(kind, {
       ...sidecarPayload(session.stage),
       kind,
+      stage: session.stage,
+      inputLocked: true,
+      token: session.effectToken,
       title: session.stage === 'handoff' ? `HUSH / ${record?.caseId || 'RETURN'}` : `AUDIOCORP / ${kind.toUpperCase()}`,
     });
     return kind;
@@ -171,19 +224,35 @@ export function createBattleInterferenceDirector({
       dwellMs: session.stage === 'foreshadow' ? 1200 : 2200,
       until: Date.now() + 6500,
     };
-    if (session.stage === 'recognition') {
+    if (session.stage === 'foreshadow') {
+      session.windowEvents.push('architecture:door-frame');
+      if (windowEnabled()) await effects?.apply?.('broadcast', {
+        state: 'UNREGISTERED RETURN',
+        operator: 'WITHHELD', host: 'WITHHELD', input: 'WITHHELD',
+        stage: session.stage,
+        inputLocked: true,
+        token: session.effectToken,
+        title: 'AUDIOCORP / UNREGISTERED FRAME',
+      });
+    } else if (session.stage === 'recognition') {
       session.windowEvents.push('title:operator-resolved');
       const payload = sidecarPayload(session.stage, 'OPERATOR RESOLVED');
-      await effects?.apply?.('broadcast', {
+      if (windowEnabled()) await effects?.apply?.('broadcast', {
         ...payload,
+        stage: session.stage,
+        inputLocked: true,
+        token: session.effectToken,
         title: `AUDIOCORP / ${payload.operator}`,
       });
     } else if (session.stage === 'handoff') {
       session.windowEvents.push('sidecar:handoff');
       const firstPass = session.phaseBreaks === 1;
       const payload = sidecarPayload(session.stage, firstPass ? 'AUDIOCORP DIAGNOSTIC' : 'CONTESTED HANDOFF');
-      await effects?.apply?.('broadcast', {
+      if (windowEnabled()) await effects?.apply?.('broadcast', {
         ...payload,
+        stage: session.stage,
+        inputLocked: true,
+        token: session.effectToken,
         annotation: firstPass
           ? 'UNATTRIBUTED REVISION: CHANNEL FOUND. AUTHORSHIP PENDING.'
           : 'RETURN PATH: WINDOW OWNERSHIP UNRESOLVED.',
@@ -210,13 +279,23 @@ export function createBattleInterferenceDirector({
           perfectCounters: Math.max(session.perfectCounters, Math.max(0, Number(metrics.perfectCounters) || 0)),
           missedResponses: Math.max(session.missedResponses, Math.max(0, Number(metrics.missedCounters) || 0)),
           annotation: annotationFor(session.stage, result),
+          responseClassification: session.profileInfluence?.classification || 'UNRESOLVED',
         });
         onRecord(record);
         await safeWrite(record);
+        onObservation({
+          kind: 'battle',
+          signals: {
+            resistance: Math.max(0, Math.min(1, 0.5 + ((session.perfectCounters - session.missedResponses) * 0.12))),
+            composure: result === 'win' ? 0.68 : result === 'lose' ? 0.32 : 0.5,
+            exposure: Math.max(0, Math.min(1, 0.45 + (session.missedResponses * 0.1))),
+          },
+          weight: 0.8,
+        });
       }
     } finally {
       liveLine = null;
-      await effects?.end?.();
+      await effects?.end?.(session.effectToken);
       sessions.delete(session.key);
     }
     return record;
@@ -237,6 +316,7 @@ export function createBattleInterferenceDirector({
       phaseBreak: () => phaseBreak(session),
       action: (id) => { if (id) session.actionIds.push(String(id).slice(0, 64)); },
       finish: (result, metrics) => finish(session, result, metrics),
+      influence: () => session.profileInfluence || profileInfluence(getProfileState(), { enabled: false }),
       line: () => liveLine && liveLine.until > Date.now() ? { ...liveLine } : null,
       statusLine: () => effects?.statusLine?.() || '',
     };
@@ -254,13 +334,13 @@ export function createBattleInterferenceDirector({
   async function settingsChanged() {
     identityCache.clear(); identity = null; liveLine = null;
     if (settings().enabled) disabledForSession = false;
-    if (!settings().enabled) await effects?.end?.();
+    if (!windowEnabled()) await effects?.emergencyRestore?.({ notify: false });
   }
 
   async function emergencyDisable() {
     disabledForSession = true;
     identityCache.clear(); identity = null; liveLine = null;
-    await effects?.end?.();
+    await effects?.emergencyRestore?.({ notify: false });
     onEmergency();
   }
 
@@ -292,6 +372,7 @@ export function createBattleInterferenceDirector({
       caseId: record?.caseId || null,
       identity: identityCache.debug(),
       activeStages: enabled() ? [...sessions.values()].map((entry) => entry.stage).filter(Boolean) : [],
+      battleIntents: [...sessions.values()].map((entry) => entry.profileInfluence?.battleIntent || null),
     }),
   };
 }

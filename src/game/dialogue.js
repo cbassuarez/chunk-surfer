@@ -138,6 +138,7 @@ function makeDialogueScene(nodeId) {
   return {
     id: `dialogue:${nodeId}`,
     blocksInput: true,
+    allowsLook: true,
     lensPreset: node.lensPreset || 'calm',
 
     update(dt) {

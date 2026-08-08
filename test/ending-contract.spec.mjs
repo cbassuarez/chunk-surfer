@@ -240,6 +240,57 @@ assert.ok(dossierFlagNames().includes('ending.takes.clean'));
 }
 
 console.log('ending contract specs passed');
+// ── WHERE THE HALL TAKE WAS ROLLED ──────────────────────────────────────────
+//
+// The concert hall is one zone with four floors in it, so `amplifications` alone
+// cannot say whether the minute was taken in the stalls or seven metres above
+// them. The place arrives as BOOLEANS because flagTest's comparison operator
+// only accepts a numeric literal on the right — a string compare degrades to a
+// truthiness test and every branch fires at once.
+{
+  const base = buildEndingDossier({ endingId: 'surfaced' });
+  const withPlace = (places) => ({ ...base, takes: { ...base.takes, completed: 1, rooms: ['amplifications'], places } });
+  const hallFlags = (places) => {
+    const flags = projectDossierFlags(withPlace(places));
+    return Object.fromEntries(Object.entries(flags)
+      .filter(([name]) => name.startsWith('ending.takes.hall.'))
+      .map(([name, value]) => [name.replace('ending.takes.hall.', ''), value]));
+  };
+
+  const upper = hallFlags({ amplifications: 'upper' });
+  assert.equal(upper.upper, true, 'an upper-balcony take says so');
+  assert.equal(upper.aloft, true, 'and counts as aloft');
+  assert.equal(upper.orchestra, false, 'and is not also the stalls');
+
+  const lower = hallFlags({ amplifications: 'lower' });
+  assert.equal(lower.lower, true);
+  assert.equal(lower.aloft, true, 'either balcony is aloft');
+
+  const stalls = hallFlags({ amplifications: 'orchestra' });
+  assert.equal(stalls.orchestra, true);
+  assert.equal(stalls.aloft, false, 'the stalls are not aloft');
+
+  // No hall take at all must not read as any place. A missing take is not a
+  // take from the floor.
+  for (const [name, value] of Object.entries(hallFlags({}))) {
+    assert.equal(value, false, `${name} is false when no hall take exists`);
+  }
+
+  // The grammar constraints, asserted rather than trusted.
+  for (const [name, value] of Object.entries(hallFlags({ amplifications: 'lower' }))) {
+    assert.equal(typeof value, 'boolean', `takes.hall.${name} is a boolean, not an enumeration`);
+    assert.ok(!name.includes('-'), `takes.hall.${name} carries no hyphen`);
+  }
+  // Every one of them must be reachable by an authored `when`, which means being
+  // in the declared flag list AND surviving the studio's expression validator.
+  const names = dossierFlagNames().filter((name) => name.startsWith('ending.takes.hall.'));
+  assert.ok(names.length >= 6, `every hall place is a declared flag (${names.length})`);
+  for (const name of names) {
+    assert.ok(validateConditionExpression(name).ok !== false, `${name} validates as an authored condition`);
+  }
+}
+console.log('  hall take placement flags ok');
+
 console.log('');
 console.log('  ⚠ ENDING AUDIO OUTSTANDING — all five endings play the opening title theme.');
 for (const entry of ENDING_AUDIO_TODO) {

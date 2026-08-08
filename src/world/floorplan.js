@@ -41,6 +41,10 @@ import { doorDefinitionWithArchetype } from '../data/conservatory-doors.js';
 export const H_MIN = -8;
 export const H_MAX = 24;
 const H_RANGE = H_MAX - H_MIN;
+// Negative world coordinates are valid now that the civic block surrounds the
+// existing zero-origin building. Keep an unmistakable sentinel instead of
+// overloading every point west or north of Ellery as "unmapped".
+const PHYSICAL_VOID = -2147483648;
 
 export const encodeH = (h) => Math.max(0, Math.min(255, Math.round(((h - H_MIN) / H_RANGE) * 255)));
 export const decodeH = (b) => (b / 255) * H_RANGE + H_MIN;
@@ -58,9 +62,13 @@ const plan = {
   rgba: null,    // Uint8Array, w*h*4 — exactly what the shader sees
   physicalX: null, physicalY: null, // runtime-cell embedding, logical -> Euclidean X/Z
   physicalReplace: null, // an authored structure owns its Euclidean air cell
+  physicalStack: null, // a higher authored floor caps, rather than erases, the room below
+  collisionOnly: null, // blocks navigation but contributes no generic wall/floor span
   layer: null, space: null, renderGroup: null,
   owner: null, ownershipConflicts: [],
   stairPortals: [],
+  stairRuns: [],
+  edgePortals: [],
   doorVolumes: [],
   physical: null,
   spawn: { x: 0, y: 0 },
@@ -93,7 +101,7 @@ export function toAuthoredCoord(v) { return Number(v) / PLAN_SCALE; }
 
 // ── compile ──────────────────────────────────────────────────────────────────
 // `levels` is [{ rows, origin, physicalOrigin?, base, layer?, renderGroup?, stairs? }]
-export function compile(levels, { width, height, widenCorridors = false, connectors = [], doors = [] } = {}) {
+export function compile(levels, { width, height, widenCorridors = false, connectors = [], edgePortals = [], doors = [] } = {}) {
   plan.loaded = false;
   plan.physical = null;
   const authoredW = width || Math.max(...levels.map((l) => l.origin.x + Math.max(...l.rows.map((r) => r.length))));
@@ -112,20 +120,28 @@ export function compile(levels, { width, height, widenCorridors = false, connect
   plan.zone = new Uint8Array(w * h);
   plan.material = new Uint8Array(w * h);
   plan.solid = new Uint8Array(w * h).fill(1);   // everything is rock until drawn
-  plan.physicalX = new Int32Array(w * h).fill(-1);
-  plan.physicalY = new Int32Array(w * h).fill(-1);
+  plan.physicalX = new Int32Array(w * h).fill(PHYSICAL_VOID);
+  plan.physicalY = new Int32Array(w * h).fill(PHYSICAL_VOID);
   plan.physicalReplace = new Uint8Array(w * h);
+  plan.physicalStack = new Uint8Array(w * h);
+  plan.collisionOnly = new Uint8Array(w * h);
   plan.layer = new Array(w * h).fill('');
   plan.space = new Array(w * h).fill('');
   plan.renderGroup = new Array(w * h).fill('');
   plan.owner = new Array(w * h).fill('');
   plan.ownershipConflicts = [];
   plan.stairPortals = [];
+  plan.stairRuns = [];
+  plan.edgePortals = [];
   plan.doorVolumes = [];
   // A helical flight's cells: which arc they belong to, and the arcs themselves.
   // Empty for every straight stair, which is all of them until a spiral exists.
   plan.arcId = new Uint16Array(w * h);
   plan.arcs = [];
+  // Straight compound flights can stack in one physical well just as helical
+  // coils do. Flight identity lets the renderer and the fractional foot-height
+  // sampler keep the observer on the run they are actually walking.
+  plan.flightId = new Uint16Array(w * h);
   // Physical cells a stair claims that no LOGICAL cell maps to. An arc rasterises
   // to an annulus whose wedges are not all the same size, so the surplus cells —
   // and the newel void — have real geometry but no address you can stand on.
@@ -151,6 +167,8 @@ export function compile(levels, { width, height, widenCorridors = false, connect
             physicalY:(physicalOrigin.y+ry)*PLAN_SCALE+sy,
             layer,space,renderGroup:cell.zone===ZONE.hall?'hall':renderGroup,
             owner:level.id||layer,replace:!!level.replace,physicalReplace:!!level.physicalReplace,
+            physicalStack:!!level.physicalStack,
+            collisionOnly:!!(level.collisionOnly||cell.collisionOnly),
           });
         }
       }
@@ -165,6 +183,7 @@ export function compile(levels, { width, height, widenCorridors = false, connect
       space:level.space||level.id||'stair',
       renderGroup:level.renderGroup||level.layer||'ground',
       physicalReplace:!!level.physicalReplace,
+      physicalStack:!!level.physicalStack,
       ...s,
     });
   }
@@ -181,6 +200,8 @@ export function compile(levels, { width, height, widenCorridors = false, connect
   // one-keypress teleport in the game.
   connectorMap.clear();
   for(const c of connectors) registerConnector(c);
+  edgePortalMap.clear();
+  for(const portal of edgePortals) registerEdgePortal(portal);
 
   plan.rgba = new Uint8Array(w * h * 4);
   for (let i = 0; i < w * h; i++) {
@@ -304,7 +325,7 @@ function writeCell(x, y, cell, meta=null) {
   plan.flags[i] = cell.flags;
   plan.zone[i] = cell.zone;
   plan.material[i] = cell.material || materialForZone(cell.zone);
-  if(meta){plan.physicalX[i]=meta.physicalX;plan.physicalY[i]=meta.physicalY;plan.physicalReplace[i]=meta.physicalReplace?1:0;plan.layer[i]=meta.layer;plan.space[i]=meta.space;plan.renderGroup[i]=meta.renderGroup;}
+  if(meta){plan.physicalX[i]=meta.physicalX;plan.physicalY[i]=meta.physicalY;plan.physicalReplace[i]=meta.physicalReplace?1:0;plan.physicalStack[i]=meta.physicalStack?1:0;plan.collisionOnly[i]=meta.collisionOnly?1:0;plan.layer[i]=meta.layer;plan.space[i]=meta.space;plan.renderGroup[i]=meta.renderGroup;}
 }
 
 function widenCorridorRuns() {
@@ -360,6 +381,8 @@ function openCorridorShoulder(x, y, src, originalSolid) {
   plan.physicalX[i]=plan.physicalX[src]+(x-(src%plan.w));
   plan.physicalY[i]=plan.physicalY[src]+(y-Math.floor(src/plan.w));
   plan.physicalReplace[i]=plan.physicalReplace[src];
+  plan.physicalStack[i]=plan.physicalStack[src];
+  plan.collisionOnly[i]=plan.collisionOnly[src];
   plan.layer[i]=plan.layer[src];plan.space[i]=plan.space[src];plan.renderGroup[i]=plan.renderGroup[src];
 }
 
@@ -395,17 +418,19 @@ function writeStairCell(x,y,{
   // authored level makes with `physicalReplace`. Without this a flight in a hall
   // is a second physical span at the hall's own coordinates, which the compiler
   // reports as an intersection (and is right to: two structures, one place).
-  physicalReplace=false,
+  physicalReplace=false,physicalStack=false,
   // Which arc this cell belongs to, 1-based into plan.arcs; 0 for the straight
   // stairs, which is every stair in the building until a spiral is authored.
   // A selector, not a value — the rotation itself is derived analytically from
   // the arc record, because a stored per-cell angle would step a whole wedge
   // every tread with nothing to interpolate against.
   arcId=0,
+  flightId=0,
 }){
   if(!inside(x,y))return;
   const i=idx(x,y);
   plan.arcId[i]=arcId;
+  plan.flightId[i]=flightId;
   plan.solid[i]=0;
   plan.floor[i]=floor;
   plan.ceil[i]=ceil;
@@ -415,6 +440,7 @@ function writeStairCell(x,y,{
   plan.physicalX[i]=Math.round(physicalX);
   plan.physicalY[i]=Math.round(physicalY);
   plan.physicalReplace[i]=physicalReplace?1:0;
+  plan.physicalStack[i]=physicalStack?1:0;
   plan.layer[i]=layer||'stair';
   plan.space[i]=space||'stair';
   plan.renderGroup[i]=renderGroup||'ground';
@@ -498,8 +524,8 @@ function rasteriseAnnulus({cx,cz,ri,ro,theta0,sweep,bounds,newelBox},count){
 // are what make the stair read anyway — authoring each tread's ceiling as the
 // floor of the coil above minus a slab draws the correct soffit at every bearing
 // without the renderer ever fetching the other span. The open well is delivered
-// separately, by `arc.newel`: a single-span column through the middle, which is
-// unambiguous from any height and is the view that actually says "spiral".
+// separately, by `arc.openWell`: a single-span air column through the middle,
+// which is unambiguous from any height and is the view that says "spiral".
 function arcFlight(id,flight,a,b,ctx){
   const arc=flight.arc;
   const steps=Math.max(Math.abs(b.x-a.x),Math.abs(b.y-a.y));
@@ -532,13 +558,27 @@ function arcFlight(id,flight,a,b,ctx){
     sign:arc.sign===-1?-1:1});
   const arcId=plan.arcs.length;
 
-  // `rises` counts every riser INCLUDING the one onto the landing at the top, so
-  // the last tread sits one riser short of it. That is what makes the arrival a
-  // step rather than a seam you are already standing level with.
+  // Navigation is still sampled on the half-metre grid, while a hero spiral can
+  // carry more physical risers than there are macro cells around the curve.
+  // Retain both facts: collision reaches the landing over `steps`, and camera /
+  // construction sampling follows the declared physical riser count.
   const rises=Math.max(1,Math.round(flight.rises??treads));
   const span=flight.toH-flight.fromH;
+  const run={
+    id:`${id}:${flight.id||plan.stairRuns.length+1}`,
+    owner:id,flight:flight.id||null,
+    p0:[cx,cz],p1:[cx,cz],logical0:[a.x,a.y],logical1:[b.x,b.y],
+    fromH:flight.fromH,toH:flight.toH,
+    width:runWidth,rises,
+    going:Number(flight.going)||.28,
+    renderMode:flight.renderMode||'raster',
+    group0:flight.groupFrom||ctx.renderGroup,group1:flight.groupTo||ctx.renderGroup,
+    arcId,
+  };
+  plan.stairRuns.push(run);
+  const flightId=plan.stairRuns.length;
   for(let s=0;s<treads;s++){
-    const t=Math.min(1,s/rises);
+    const t=Math.min(1,s/steps);
     const floor=flight.fromH+span*t;
     const ceil=flight.ceil!=null?flight.ceil
       :flight.ceilFrom!=null?flight.ceilFrom+((flight.ceilTo??flight.ceilFrom)-flight.ceilFrom)*t
@@ -550,7 +590,7 @@ function arcFlight(id,flight,a,b,ctx){
       floor,ceil,
       zone:flight.zone||ctx.zone,material:flight.material||ctx.material,
       layer:flight.layer||ctx.layer,space:flight.space||ctx.space,
-      renderGroup:stepGroup,owner:id,physicalReplace:ctx.physicalReplace,arcId,
+      renderGroup:stepGroup,owner:id,physicalReplace:ctx.physicalReplace,physicalStack:ctx.physicalStack,arcId,flightId,
     };
     // LANES ARE RADIUS BANDS, NOT RANKS WITHIN A WEDGE.
     //
@@ -568,17 +608,33 @@ function arcFlight(id,flight,a,b,ctx){
     for(let k=0;k<runWidth;k++){
       const target=innerR+(k+0.5)*band;
       let best=-1,bestD=Infinity;
-      for(let i=0;i<wedge.length;i++){
+      let selected=null;
+      // Consecutive hero flights share an authored bearing. A wedge-centre
+      // sample puts the last macro tread on one side of that bearing and the
+      // next flight's first tread on the other, leaving a one-to-three-cell
+      // camera jump at a landing that is visually continuous. Snap only the
+      // boundary tread to the exact radial line; the intermediate wedges keep
+      // their partitioned cells and therefore retain unique walkable columns.
+      if(arc.snapEndpoints&&(s===0||s===treads-1)){
+        const angle=geom.theta0+geom.sweep*(s===0?0:1);
+        selected={
+          px:Math.floor(geom.cx+Math.sin(angle)*target),
+          pz:Math.floor(geom.cz-Math.cos(angle)*target),
+        };
+        best=wedge.findIndex((candidate,index)=>!taken.has(index)&&candidate.px===selected.px&&candidate.pz===selected.pz);
+      }
+      if(!selected)for(let i=0;i<wedge.length;i++){
         if(taken.has(i))continue;
         const d=Math.abs(wedge[i].r-target);
         if(d<bestD){bestD=d;best=i;}
       }
-      if(best<0)break;
-      taken.add(best);
+      if(!selected&&best<0)break;
+      if(best>=0)taken.add(best);
+      selected=selected||wedge[best];
       writeStairCell(
         a.x+dx*s+logicalPx*k,
         a.y+dy*s+logicalPy*k,
-        {...cellOf,physicalX:wedge[best].px,physicalY:wedge[best].pz},
+        {...cellOf,physicalX:selected.px,physicalY:selected.pz},
       );
     }
     // Everything else in the wedge — the corners a square well has and a ring
@@ -591,7 +647,8 @@ function arcFlight(id,flight,a,b,ctx){
       px:wedge[k].px,pz:wedge[k].pz,floor,ceil,flags:F.STAIR,arcId,
       zone:cellOf.zone?ZONE[cellOf.zone]:ZONE.stair,
       material:cellOf.material?MATERIAL[cellOf.material]:MATERIAL.serviceConcrete,
-      layer:cellOf.layer,spaceId:cellOf.space,renderGroup:stepGroup,owner:id,
+      layer:cellOf.layer,spaceId:cellOf.space,renderGroup:stepGroup,owner:id,flightId,
+      physicalReplace:ctx.physicalReplace,physicalStack:ctx.physicalStack,
       });
     }
   }
@@ -599,11 +656,13 @@ function arcFlight(id,flight,a,b,ctx){
   // The well. One span, floor to lid, so every height resolves it identically and
   // you can see down it from the top and up it from the bottom. canStep refuses
   // it on the riser (the drop in is far past STEP_UP), so it is a view, not a fall.
-  if(arc.newel)for(const c of inner)plan.stairFill.push({
-    px:c.px,pz:c.pz,floor:arc.newel.floor,ceil:arc.newel.ceil,flags:F.STAIR,arcId,
+  const openWell=arc.openWell||arc.newel; // `newel` remains a compatibility alias.
+  if(openWell)for(const c of inner)plan.stairFill.push({
+    px:c.px,pz:c.pz,floor:openWell.floor,ceil:openWell.ceil,flags:F.STAIR,arcId,
     zone:ZONE.stair,material:MATERIAL.serviceConcrete,
     layer:flight.layer||ctx.layer,spaceId:flight.space||ctx.space,
-    renderGroup:flight.groupFrom||ctx.renderGroup,owner:id,
+    renderGroup:flight.groupFrom||ctx.renderGroup,owner:id,flightId,
+    physicalReplace:ctx.physicalReplace,physicalStack:ctx.physicalStack,
   });
 
   const portal={
@@ -618,6 +677,7 @@ function arcFlight(id,flight,a,b,ctx){
     arc:{...geom,treads,arcId},
     physicalFrom:{x:arc.center.x,z:arc.center.z??arc.center.y},
     physicalTo:{x:arc.center.x,z:arc.center.z??arc.center.y},
+    going:run.going,renderMode:run.renderMode,
   };
   plan.stairPortals.push(portal);
   return portal;
@@ -628,13 +688,13 @@ function arcFlight(id,flight,a,b,ctx){
 // risers, map connectors and movement manager all consume the same geometry.
 function compoundStair({
   id='stair',flights=[],landings=[],zone=null,material=null,
-  layer='stair',space='stair',renderGroup='ground',head=2.6,physicalReplace=false,
+  layer='stair',space='stair',renderGroup='ground',head=2.6,physicalReplace=false,physicalStack=false,
 }){
   const portals=[];
   for(const flight of flights){
     const a=toRuntimePoint(flight.from,{center:false});
     const b=toRuntimePoint(flight.to,{center:false});
-    if(flight.arc){portals.push(arcFlight(id,flight,a,b,{zone,material,layer,space,renderGroup,head,physicalReplace}));continue;}
+    if(flight.arc){portals.push(arcFlight(id,flight,a,b,{zone,material,layer,space,renderGroup,head,physicalReplace,physicalStack}));continue;}
     const p0=authoredPhysicalPoint(flight.physicalFrom);
     const p1=authoredPhysicalPoint(flight.physicalTo);
     if(!p0||!p1)throw new Error(`${id}/${flight.id||'flight'} requires physicalFrom and physicalTo`);
@@ -649,6 +709,18 @@ function compoundStair({
     const physicalWidthSign=flight.physicalWidthSign===-1?-1:1;
     const physicalPx=-(p1.y-p0.y)/physicalLength*physicalWidthSign;
     const physicalPy=(p1.x-p0.x)/physicalLength*physicalWidthSign;
+    const run={
+      id:`${id}:${flight.id||portals.length+1}`,
+      owner:id,flight:flight.id||null,
+      p0:[p0.x,p0.y],p1:[p1.x,p1.y],
+      fromH:flight.fromH,toH:flight.toH,
+      width:runWidth,rises,
+      going:Number(flight.going)||((physicalLength/PLAN_SCALE)/Math.max(1,rises-1)),
+      renderMode:flight.renderMode||'raster',
+      group0:flight.groupFrom||renderGroup,group1:flight.groupTo||renderGroup,
+    };
+    plan.stairRuns.push(run);
+    const flightId=plan.stairRuns.length;
     for(let s=0;s<=steps;s++){
       const rise=Math.min(rises,Math.floor(s*rises/steps));
       const t=rise/rises;
@@ -666,7 +738,8 @@ function compoundStair({
           physicalX:p0.x+physicalDx*s+physicalPx*k,
           physicalY:p0.y+physicalDy*s+physicalPy*k,
           layer:flight.layer||layer,space:flight.space||space,
-          renderGroup:stepGroup,owner:id,physicalReplace,
+          renderGroup:stepGroup,owner:id,physicalReplace,physicalStack,
+          flightId,
         },
       );
     }
@@ -677,6 +750,7 @@ function compoundStair({
       floor0:flight.fromH,floor1:flight.toH,radius:Math.max(6,runWidth*2),
       rises,riseHeight:Math.abs(flight.toH-flight.fromH)/rises,
       physicalFrom:{...flight.physicalFrom},physicalTo:{...flight.physicalTo},
+      going:run.going,renderMode:run.renderMode,
     };
     plan.stairPortals.push(portal);portals.push(portal);
   }
@@ -691,7 +765,7 @@ function compoundStair({
       zone:landing.zone||zone,material:landing.material||material,
       physicalX:p.x+ox,physicalY:p.y+oy,
       layer:landing.layer||layer,space:landing.space||space,
-      renderGroup:landing.renderGroup||renderGroup,owner:id,physicalReplace,
+      renderGroup:landing.renderGroup||renderGroup,owner:id,physicalReplace,physicalStack,
     });
   }
   return portals;
@@ -717,7 +791,7 @@ function rampStair(spec) {
     let best=null;
     for(let oy=-PLAN_SCALE*2;oy<=PLAN_SCALE*2;oy++)for(let ox=-PLAN_SCALE*2;ox<=PLAN_SCALE*2;ox++){
       const x=point.x+ox,y=point.y+oy;if(!inside(x,y))continue;const i=idx(x,y);
-      if(plan.solid[i]||plan.physicalX[i]<0)continue;
+      if(plan.solid[i]||plan.physicalX[i]===PHYSICAL_VOID)continue;
       const score=Math.hypot(ox,oy)+Math.abs(plan.floor[i]-height)*20;
       if(!best||score<best.score)best={score,i,x,y};
     }
@@ -787,11 +861,26 @@ export function hasFlag(x, y, f) { return (flagsAt(x, y) & f) !== 0; }
 // its head, and a riser it can take without thinking about it.
 export function canStep(fromX, fromY, toX, toY, { keys } = {}) {
   const a = cellAt(fromX, fromY);
-  const b = cellAt(toX, toY);
+  const sx=Math.floor(fromX),sy=Math.floor(fromY),tx=Math.floor(toX),ty=Math.floor(toY);
+  const dx=Math.sign(tx-sx),dy=Math.sign(ty-sy);
+  // First-person movement is usually diagonal because the camera can face any
+  // angle. An edge portal, however, is authored on one cardinal boundary. If a
+  // diagonal stride contains that outward component, cross the boundary and
+  // consume the lateral component on the next ordinary step. Requiring the
+  // player to align their view to an exact compass bearing made every stair
+  // threshold look blocked even though keyboard-only reachability passed.
+  const edge=edgePortalMap.get(`${sx},${sy}|${dx},${dy}`)
+    ||(dx&&dy&&(edgePortalMap.get(`${sx},${sy}|${dx},0`)
+      ||edgePortalMap.get(`${sx},${sy}|0,${dy}`)))
+    ||null;
+  const destination=edge?.redirect||null;
+  const b = destination?cellAt(destination.x,destination.y):cellAt(toX, toY);
   if (!b) return { ok: false, why: 'wall' };
+  const bx=Math.floor(destination?.x??toX),by=Math.floor(destination?.y??toY);
+  if(plan.collisionOnly?.[idx(bx,by)])return{ok:false,why:'wall'};
   if (b.flags & F.BRICKED) return { ok: false, why: 'bricked' };
   if (b.flags & F.DOOR) {
-    const keyId = doorKeyAt(toX, toY);
+    const keyId = doorKeyAt(destination?.x??toX, destination?.y??toY);
     if(b.flags&F.CLOSED){
       if(keyId && !(keys && keys.has(keyId))) return { ok: false, why: 'locked', keyId };
       return {ok:false,why:'closed',keyId:keyId||null};
@@ -799,6 +888,7 @@ export function canStep(fromX, fromY, toX, toY, { keys } = {}) {
   }
   if (b.ceil - b.floor < HEADROOM) return { ok: false, why: 'headroom' };
   if (a && Math.abs(b.floor - a.floor) > STEP_UP) return { ok: false, why: 'too high' };
+  if(destination)return{ok:true,floor:b.floor,redirect:{...destination},edgePortal:edge.id,edgeTurn:edge.turn||0};
   const redirect=connectorMap.get(`${Math.floor(toX)},${Math.floor(toY)}`)||null;
   return { ok: true, floor: b.floor, ...(redirect?{redirect:{...redirect}}:{}) };
 }
@@ -806,7 +896,67 @@ export function canStep(fromX, fromY, toX, toY, { keys } = {}) {
 // Logical cells stay unique for gameplay, while their physical embedding may
 // stack several levels over the same X/Z footprint.
 const connectorMap=new Map();
+const edgePortalMap=new Map();
 export function connectorDestination(x,y){const p=connectorMap.get(`${Math.floor(x)},${Math.floor(y)}`);return p?{...p}:null;}
+export function edgePortalDestination(x,y,dx,dy){
+  const portal=edgePortalMap.get(`${Math.floor(x)},${Math.floor(y)}|${Math.sign(dx)},${Math.sign(dy)}`);
+  return portal?{...portal.redirect,id:portal.id}:null;
+}
+export function edgePortalState(){
+  return(plan.edgePortals||[]).map((portal)=>({
+    ...portal,
+    from:{...portal.from,at:{...portal.from.at},along:{...portal.from.along},exit:{...portal.from.exit}},
+    to:{...portal.to,at:{...portal.to.at},along:{...portal.to.along},exit:{...portal.to.exit}},
+    pairs:portal.pairs.map((pair)=>({from:{...pair.from},to:{...pair.to}})),
+  }));
+}
+
+// A floor seam is crossed, never occupied. Each declaration pairs a strip of
+// boundary cells, and a redirect exists only for the outward step from those
+// cells. Walking along either landing is therefore ordinary movement, while an
+// immediate reversal crosses the same lane back instead of trapping the player
+// on a hidden logical island.
+function registerEdgePortal({id='edge-portal',from,to,width=1,bidirectional=true}){
+  const unit=(v)=>({x:Math.sign(Number(v?.x)||0),y:Math.sign(Number(v?.y)||0)});
+  const side=(entry,label)=>{
+    const at=toRuntimePoint(entry?.at||{}, {center:false});
+    const along=unit(entry?.along),exit=unit(entry?.exit);
+    if(Math.abs(along.x)+Math.abs(along.y)!==1||Math.abs(exit.x)+Math.abs(exit.y)!==1||along.x*exit.x+along.y*exit.y!==0){
+      throw new Error(`floorplan: ${id} ${label} requires perpendicular unit along/exit vectors`);
+    }
+    return{at,along,exit};
+  };
+  const a=side(from,'from'),b=side(to,'to'),lanes=Math.max(1,Math.round(Number(width)*PLAN_SCALE));
+  const bearing=(v)=>Math.atan2(v.x,-v.y);
+  const turn=(entry,otherExit)=>{
+    let value=bearing({x:-otherExit.x,y:-otherExit.y})-bearing(entry);
+    while(value>Math.PI)value-=Math.PI*2;
+    while(value<=-Math.PI)value+=Math.PI*2;
+    return value;
+  };
+  const forwardTurn=turn(a.exit,b.exit),reverseTurn=turn(b.exit,a.exit);
+  const pairs=[];
+  for(let lane=0;lane<lanes;lane++){
+    const ac={x:a.at.x+a.along.x*lane,y:a.at.y+a.along.y*lane};
+    const bc={x:b.at.x+b.along.x*lane,y:b.at.y+b.along.y*lane};
+    const ca=cellAt(ac.x,ac.y),cb=cellAt(bc.x,bc.y);
+    if(!ca||!cb)throw new Error(`floorplan: ${id} lane ${lane} ends in rock`);
+    const pa=logicalToPhysical(ac.x,ac.y),pb=logicalToPhysical(bc.x,bc.y);
+    const planar=Math.hypot(pa.x-pb.x,pa.z-pb.z),vertical=Math.abs(ca.floor-cb.floor);
+    if(planar>1.01||vertical>STEP_UP+1e-6)throw new Error(
+      `floorplan: ${id} lane ${lane} is discontinuous (${planar.toFixed(2)} cells, ${vertical.toFixed(2)}m)`,
+    );
+    const forward={id,lane,redirect:{...bc},turn:forwardTurn};
+    const reverse={id,lane,redirect:{...ac},turn:reverseTurn};
+    const ak=`${ac.x},${ac.y}|${a.exit.x},${a.exit.y}`;
+    const bk=`${bc.x},${bc.y}|${b.exit.x},${b.exit.y}`;
+    if(edgePortalMap.has(ak)||bidirectional&&edgePortalMap.has(bk))throw new Error(`floorplan: ${id} overlaps another edge portal`);
+    edgePortalMap.set(ak,forward);
+    if(bidirectional)edgePortalMap.set(bk,reverse);
+    pairs.push({from:ac,to:bc});
+  }
+  plan.edgePortals.push({id,width,lanes,bidirectional,from:{...a},to:{...b},pairs});
+}
 // A SEAM IS AN EDGE, NOT A KEYHOLE.
 //
 // This used to scan up to sixteen candidate cells at each end, score every pair,
@@ -872,21 +1022,27 @@ function registerConnector({from,to,bidirectional=true,span=null}){
 }
 
 function buildPhysicalSpans(){
-  let maxX=0,maxY=0;const cells=new Map();
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;const cells=new Map();
   for(let y=0;y<plan.h;y++)for(let x=0;x<plan.w;x++){
-    const i=idx(x,y);if(plan.solid[i]||plan.physicalX[i]<0)continue;
-    const px=plan.physicalX[i],py=plan.physicalY[i],key=`${px},${py}`;maxX=Math.max(maxX,px);maxY=Math.max(maxY,py);
+    // Collision-only hall cells remain ordinary AIR to the physical renderer.
+    // Omitting them turns the space around a hero mesh back into the compiler's
+    // default rock, which is exactly the leaking brick cylinder these cells are
+    // meant to prevent. Navigation rejects them in canStep; rendering must keep
+    // their full room volume so only the dedicated stair mesh is visible.
+    const i=idx(x,y);if(plan.solid[i]||plan.physicalX[i]===PHYSICAL_VOID)continue;
+    const px=plan.physicalX[i],py=plan.physicalY[i],key=`${px},${py}`;
+    minX=Math.min(minX,px);minY=Math.min(minY,py);maxX=Math.max(maxX,px);maxY=Math.max(maxY,py);
     if(!cells.has(key))cells.set(key,[]);
-    cells.get(key).push({floor:plan.floor[i],ceil:plan.ceil[i],flags:plan.flags[i],zone:plan.zone[i],material:plan.material[i],logicalX:x,logicalY:y,layer:plan.layer[i],spaceId:plan.space[i],renderGroup:plan.renderGroup[i],owner:plan.owner[i],arcId:plan.arcId[i],physicalReplace:!!plan.physicalReplace[i]});
+    cells.get(key).push({floor:plan.floor[i],ceil:plan.ceil[i],flags:plan.flags[i],zone:plan.zone[i],material:plan.material[i],logicalX:x,logicalY:y,layer:plan.layer[i],spaceId:plan.space[i],renderGroup:plan.renderGroup[i],owner:plan.owner[i],arcId:plan.arcId[i],flightId:plan.flightId[i],physicalReplace:!!plan.physicalReplace[i],physicalStack:!!plan.physicalStack[i]});
   }
   // Physical geometry a stair claims that no logical cell addresses: an arc's
   // surplus wedge cells and its newel void. They are real volume — drawn, and
   // stood on by way of the tread beside them — so they belong in the spans, but
   // they have no logical address and so cannot come from the scan above.
   for(const f of plan.stairFill){
-    const key=`${f.px},${f.pz}`;maxX=Math.max(maxX,f.px);maxY=Math.max(maxY,f.pz);
+    const key=`${f.px},${f.pz}`;minX=Math.min(minX,f.px);minY=Math.min(minY,f.pz);maxX=Math.max(maxX,f.px);maxY=Math.max(maxY,f.pz);
     if(!cells.has(key))cells.set(key,[]);
-    cells.get(key).push({floor:f.floor,ceil:f.ceil,flags:f.flags,zone:f.zone,material:f.material,logicalX:-1,logicalY:-1,layer:f.layer,spaceId:f.spaceId,renderGroup:f.renderGroup,owner:f.owner,arcId:f.arcId||0,physicalReplace:false});
+    cells.get(key).push({floor:f.floor,ceil:f.ceil,flags:f.flags,zone:f.zone,material:f.material,logicalX:-1,logicalY:-1,layer:f.layer,spaceId:f.spaceId,renderGroup:f.renderGroup,owner:f.owner,arcId:f.arcId||0,flightId:f.flightId||0,physicalReplace:!!f.physicalReplace,physicalStack:!!f.physicalStack});
   }
   let maxSpans=0,overlaps=[];
   const intersects=(a,b)=>a.floor<b.ceil-.01&&b.floor<a.ceil-.01;
@@ -895,7 +1051,20 @@ function buildPhysicalSpans(){
     // This removes duplicate representations of one real volume; undeclared
     // intersections remain compiler errors reported through `overlaps`.
     const ordered=[...list].sort((a,b)=>(b.physicalReplace?1:0)-(a.physicalReplace?1:0)||a.floor-b.floor),resolved=[];
-    for(const candidate of ordered){
+    for(let candidate of ordered){
+      // A declared higher floor is allowed to sit over an existing tall room.
+      // Cap the lower air volume at a real slab soffit; never discard the room
+      // below and never report the ordinary vertical stack as an intersection.
+      for(let index=0;index<resolved.length;index++){
+        const existing=resolved[index];
+        if(!intersects(candidate,existing))continue;
+        const high=candidate.floor>existing.floor?candidate:existing;
+        const low=high===candidate?existing:candidate;
+        if(!high.physicalStack||high.floor-low.floor<HEADROOM)continue;
+        const capped={...low,ceil:Math.min(low.ceil,high.floor-.25)};
+        if(high===candidate)resolved[index]=capped;
+        else candidate=capped;
+      }
       const hit=resolved.findIndex((span)=>intersects(candidate,span));
       if(hit<0){resolved.push(candidate);continue;}
       // A dog-leg's flight edge and its turn landing deliberately share one
@@ -905,13 +1074,55 @@ function buildPhysicalSpans(){
         if(candidate.floor<resolved[hit].floor)resolved[hit]=candidate;
         continue;
       }
+      // A hero flight cuts through a replacement hall volume. Both modules are
+      // allowed to replace the legacy plan, but only the stair is structural at
+      // this column, so it wins the shared air without turning a deliberate
+      // stair/hall composition into a compiler overlap.
+      if(candidate.physicalReplace&&resolved[hit].physicalReplace&&!!(candidate.flags&F.STAIR)!==!!(resolved[hit].flags&F.STAIR)){
+        if(candidate.flags&F.STAIR)resolved.splice(hit,1,candidate);
+        continue;
+      }
       if(candidate.physicalReplace&&!resolved[hit].physicalReplace){resolved.splice(hit,1,candidate);continue;}
       if(resolved[hit].physicalReplace&&!candidate.physicalReplace)continue;
       overlaps.push({key,a:resolved[hit],b:candidate});
     }
     resolved.sort((a,b)=>a.floor-b.floor);cells.set(key,resolved);maxSpans=Math.max(maxSpans,resolved.length);
   }
-  plan.physical={width:maxX+1,height:maxY+1,maxSpans,cells,overlaps,renderCache:new Map()};
+  if(!Number.isFinite(minX)){minX=0;minY=0;maxX=0;maxY=0;}
+  const width=maxX-minX+1,height=maxY-minY+1;
+
+  // Exterior lots are collision voids because their interiors are closed, but
+  // they are not geological walls. Flood the blank physical region OUTSIDE the
+  // continuous playable street ring and retain it as visual weather volume.
+  // Collision keeps using the logical solid map; only the renderer consumes
+  // this mask, allowing depth-tested town meshes to occupy the closed lots.
+  let visualVoid=null,visualExteriorVoid=null;
+  const hasExterior=[...cells.values()].some((spans)=>spans.some((span)=>
+    span.zone===ZONE.street||span.zone===ZONE.civicCourt||span.zone===ZONE.serviceYard));
+  if(hasExterior){
+    visualVoid=new Uint8Array(width*height);
+    visualExteriorVoid=new Uint8Array(width*height);
+    const occupied=new Uint8Array(width*height);
+    for(const key of cells.keys()){
+      const [px,py]=key.split(',').map(Number),lx=px-minX,ly=py-minY;
+      if(lx>=0&&ly>=0&&lx<width&&ly<height)occupied[ly*width+lx]=1;
+    }
+    for(let i=0;i<occupied.length;i++)if(!occupied[i])visualExteriorVoid[i]=1;
+    const queue=[],seed=(x,y)=>{
+      const i=y*width+x;if(occupied[i]||visualVoid[i])return;
+      visualVoid[i]=1;queue.push([x,y]);
+    };
+    for(let x=0;x<width;x++){seed(x,0);seed(x,height-1);}
+    for(let y=1;y<height-1;y++){seed(0,y);seed(width-1,y);}
+    for(let cursor=0;cursor<queue.length;cursor++){
+      const [x,y]=queue[cursor];
+      for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+        const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=width||ny>=height)continue;
+        seed(nx,ny);
+      }
+    }
+  }
+  plan.physical={originX:minX,originY:minY,width,height,maxSpans,cells,overlaps,visualVoid,visualExteriorVoid,renderCache:new Map()};
 }
 
 // HOW FAR THE WORLD IS TURNED UNDER YOU AT THIS POSITION.
@@ -951,7 +1162,55 @@ export function logicalToPhysical(x,y){
     const t=arcYawOffset(cx,cy,px+.5,pz+.5),c=Math.cos(t),s=Math.sin(t);
     rx=ox*c-oy*s;rz=ox*s+oy*c;
   }
-  return{x:px>=0?px+rx:x,z:pz>=0?pz+rz:y,y:plan.floor[i],arcId:id,owner:plan.owner[i],layer:plan.layer[i],spaceId:plan.space[i],renderGroup:plan.renderGroup[i]};
+  const mapped=px!==PHYSICAL_VOID&&pz!==PHYSICAL_VOID;
+  return{x:mapped?px+rx:x,z:mapped?pz+rz:y,y:plan.floor[i],arcId:id,flightId:plan.flightId[i],owner:plan.owner[i],layer:plan.layer[i],spaceId:plan.space[i],renderGroup:plan.renderGroup[i]};
+}
+
+// Collision remains on the half-metre grid, but the camera follows the real
+// tread cadence declared by the flight. This is the visual half of the macro-
+// tread contract: no 340mm camera lurches and no fake fourteen-step slab.
+export function renderedFloorAt(logicalX,logicalY,physicalX,physicalZ){
+  const cx=Math.floor(logicalX),cy=Math.floor(logicalY);
+  if(!inside(cx,cy))return 0;
+  const i=idx(cx,cy),runId=plan.flightId?.[i];
+  if(!runId)return plan.floor[i];
+  const run=plan.stairRuns[runId-1];
+  if(!run)return plan.floor[i];
+  const useLogical=run.arcId&&run.logical0&&run.logical1;
+  const start=useLogical?run.logical0:run.p0,end=useLogical?run.logical1:run.p1;
+  const point=useLogical?[logicalX,logicalY]:[physicalX,physicalZ];
+  const dx=end[0]-start[0],dz=end[1]-start[1],length2=dx*dx+dz*dz||1;
+  const progress=Math.max(0,Math.min(1,((point[0]-start[0])*dx+(point[1]-start[1])*dz)/length2));
+  const riser=Math.max(0,Math.min(run.rises,Math.floor(progress*run.rises+1e-6)));
+  return run.fromH+(run.toH-run.fromH)*(riser/run.rises);
+}
+
+export function stairCrossing(fromX,fromY,toX,toY){
+  const sx=Math.floor(fromX),sy=Math.floor(fromY),tx=Math.floor(toX),ty=Math.floor(toY);
+  const edge=edgePortalMap.get(`${sx},${sy}|${Math.sign(tx-sx)},${Math.sign(ty-sy)}`);
+  const destination=edge?.redirect||{x:tx,y:ty};
+  const a=cellAt(sx,sy),b=cellAt(destination.x,destination.y);
+  if(!a||!b)return null;
+  const ai=idx(sx,sy),bi=idx(destination.x,destination.y);
+  const runId=plan.flightId[bi]||plan.flightId[ai];
+  if(!runId)return null;
+  const run=plan.stairRuns[runId-1];
+  const delta=b.floor-a.floor;
+  const travel=delta>1e-4?'up':delta<-1e-4?'down':'level';
+  return{stairId:run.owner,flightId:run.flight,travel,fromH:a.floor,toH:b.floor,edgePortal:edge?.id||null};
+}
+
+export function nearestWalkable(x,y,{floor=null,radius=32}={}){
+  const sx=Math.floor(x),sy=Math.floor(y),limit=Math.max(0,Math.floor(radius));
+  let best=null;
+  for(let oy=-limit;oy<=limit;oy++)for(let ox=-limit;ox<=limit;ox++){
+    const cell=cellAt(sx+ox,sy+oy);if(!cell)continue;
+    const floorDelta=floor==null?0:Math.abs(cell.floor-floor);
+    if(floor!=null&&floorDelta>STEP_UP)continue;
+    const score=Math.hypot(ox,oy)+floorDelta*8;
+    if(!best||score<best.score)best={x:sx+ox,y:sy+oy,score};
+  }
+  return best?{x:best.x,y:best.y}:null;
 }
 
 export function physicalSpanData(){return plan.physical;}
@@ -1091,6 +1350,8 @@ const SPAN_WINDOW=1.0;
 
 export function physicalRenderPlanFor(x,y){
   const here=logicalToPhysical(x,y),group=here.renderGroup||here.layer||'ground';
+  const observerZone=zoneAt(x,y);
+  const exteriorObserver=observerZone===ZONE.dock||observerZone===ZONE.street||observerZone===ZONE.civicCourt||observerZone===ZONE.serviceYard;
   const band=Math.round(here.y/HEIGHT_BAND);
   // The single height this slice is built for. Everything below uses it — key,
   // filter and choice — so the cached slice always matches what it was keyed on.
@@ -1098,20 +1359,36 @@ export function physicalRenderPlanFor(x,y){
   // choice used the raw height, so two positions inside one band could want
   // different slices and whichever asked second silently got the first's.
   const hy=band*HEIGHT_BAND;
-  const cacheKey=`${group}:${here.layer}:${band}`;
+  const cacheKey=`${group}:${here.layer}:${band}:${exteriorObserver?'exterior':'enclosed'}`;
   if(plan.physical.renderCache.has(cacheKey))return plan.physical.renderCache.get(cacheKey);
-  const w=plan.physical.width,h=plan.physical.height,solid=new Uint8Array(w*h).fill(1),floor=new Float32Array(w*h),ceil=new Float32Array(w*h),flags=new Uint8Array(w*h),zone=new Uint8Array(w*h),material=new Uint8Array(w*h),rgba=new Uint8Array(w*h*4);
+  const w=plan.physical.width,h=plan.physical.height,originX=plan.physical.originX||0,originY=plan.physical.originY||0,solid=new Uint8Array(w*h).fill(1),floor=new Float32Array(w*h),ceil=new Float32Array(w*h),flags=new Uint8Array(w*h),zone=new Uint8Array(w*h),material=new Uint8Array(w*h),rgba=new Uint8Array(w*h*4);
+  const visualVoid=exteriorObserver?plan.physical.visualExteriorVoid:plan.physical.visualVoid;
+  if(exteriorObserver){
+    // From weathered public space the renderer draws the civic block's closed
+    // buildings entirely from authored depth-tested meshes. Navigation volumes
+    // inside those buildings must not punch generic rock through stepped
+    // façades, courtyards or roof gaps. Collision is unchanged and the enclosed
+    // slice returns the instant the grey door is crossed.
+    solid.fill(0);floor.fill(-8);ceil.fill(24);flags.fill(F.SKY);zone.fill(ZONE.street);material.fill(MATERIAL.wetTarmac);
+  }else if(visualVoid)for(let i=0;i<w*h;i++)if(visualVoid[i]){
+    // Eight metres below street grade prevents the non-walkable scenery volume
+    // acquiring a visible floor before a ray reaches the authored town mesh.
+    solid[i]=0;floor[i]=-8;ceil[i]=24;flags[i]=F.SKY;zone[i]=ZONE.street;material[i]=MATERIAL.wetTarmac;
+  }
   for(const [key,all] of plan.physical.cells){
     const [px,py]=key.split(',').map(Number);
-    const hallSpans=all.filter((s)=>s.spaceId==='hall');
+    const sceneSpans=exteriorObserver?all.filter((span)=>
+      span.zone===ZONE.street||span.zone===ZONE.civicCourt||span.zone===ZONE.serviceYard||span.zone===ZONE.dock):all;
+    if(!sceneSpans.length)continue;
+    const hallSpans=sceneSpans.filter((s)=>s.spaceId==='hall');
     const hallEnvelope=here.spaceId==='hall'&&here.layer!=='hall_stair'&&hallSpans.length;
     // The academic crown is a real inserted floor around the old entrance
     // atrium. Its centre has no academic collision cells at all; while walking
     // the gallery, retain the ground-floor atrium span there so the player can
     // see the garden ten metres below instead of a wall of unloaded rock.
     const academicAtriumVoid=here.renderGroup==='academic'
-      &&all.some((s)=>s.spaceId==='front_atrium')
-      &&!all.some((s)=>s.renderGroup==='academic');
+      &&sceneSpans.some((s)=>s.spaceId==='front_atrium')
+      &&!sceneSpans.some((s)=>s.renderGroup==='academic');
     // One coherent physical slice: nearby occupied floors plus every stair
     // run, regardless of its logical render group. Group-filtered slices cut
     // stairs in half and produced the horizontal slab / Platform 9¾ effect.
@@ -1120,8 +1397,8 @@ export function physicalRenderPlanFor(x,y){
       if(group===p.group1&&s.renderGroup===p.group0)return Math.hypot(px-p.p0[0],py-p.p0[1])<=p.radius;
       return false;
     });
-    let list=hallEnvelope?all.filter((s)=>s.spaceId==='hall'||s.spaceId==='front_atrium'):all.filter((s)=>(s.flags&F.STAIR)||Math.abs(s.floor-hy)<=SPAN_WINDOW||landingVisible(s)||(here.spaceId==='hall'&&s.spaceId==='front_atrium')||academicAtriumVoid);
-    if(!list.length)continue;const i=py*w+px;solid[i]=0;
+    let list=hallEnvelope?sceneSpans.filter((s)=>s.spaceId==='hall'||s.spaceId==='front_atrium'):sceneSpans.filter((s)=>(s.flags&F.STAIR)||Math.abs(s.floor-hy)<=SPAN_WINDOW||landingVisible(s)||(here.spaceId==='hall'&&s.spaceId==='front_atrium')||academicAtriumVoid);
+    if(!list.length)continue;const localX=px-originX,localY=py-originY;if(localX<0||localY<0||localX>=w||localY>=h)continue;const i=localY*w+localX;solid[i]=0;
     // Hall decks are structural meshes. The sector envelope remains the full
     // air volume so orchestra and both balconies retain reciprocal sightlines.
     if(hallEnvelope){floor[i]=Math.min(...list.map((s)=>s.floor));ceil[i]=Math.max(...list.map((s)=>s.ceil));const hall=list.find((s)=>s.zone===ZONE.hall)||list[0];flags[i]=hall.flags;zone[i]=hall.zone;material[i]=hall.material;}
@@ -1148,13 +1425,17 @@ export function physicalRenderPlanFor(x,y){
         const mine=list.filter((v)=>v.arcId===here.arcId);
         if(mine.length)pool=mine;
       }
+      if(here.flightId){
+        const mine=list.filter((v)=>v.flightId===here.flightId);
+        if(mine.length)pool=mine;
+      }
       const s=pool.reduce((best,v)=>Math.abs(v.floor-hy)<Math.abs(best.floor-hy)?v:best,pool[0]);
       floor[i]=s.floor;ceil[i]=s.ceil;flags[i]=s.flags;zone[i]=s.zone;material[i]=s.material;
     }
   }
   for(let i=0;i<w*h;i++){rgba[i*4]=solid[i]?0:encodeH(floor[i]);rgba[i*4+1]=solid[i]?0:encodeH(ceil[i]);rgba[i*4+2]=solid[i]?F.SOLID:flags[i];rgba[i*4+3]=solid[i]?0:zone[i];}
   const ambient=bakeAmbientField({w,h,solid,flags,floor,ceil});
-  const out={rgba,material,ambient,solid,floor,ceil,flags,zone,w,h,group,key:cacheKey};plan.physical.renderCache.set(cacheKey,out);return out;
+  const out={rgba,material,ambient,solid,floor,ceil,flags,zone,w,h,originX,originY,group,key:cacheKey};plan.physical.renderCache.set(cacheKey,out);return out;
 }
 
 // Door → key. Kept out of the grid (a byte has no room) in a sparse map that
@@ -1275,6 +1556,7 @@ export function doorState(){return doorPortals.map((portal)=>({
   activeLeaves:[...(portal.activeLeaves||[0])],aperture:{...(portal.aperture||{width:portal.cells.length/PLAN_SCALE,height:3.4})},leaf:{...(portal.leaf||{width:1,height:2.1,depth:.05})},
   hinge:portal.definition?.hinge||'left',swing:portal.definition?.swing||'escape',head:portal.definition?.head||'masonry-infill',
   mesh:portal.definition?.mesh||'door_leaf_service',frameMesh:portal.definition?.frameMesh||'door_frame_single',headMesh:portal.definition?.headMesh||'door_head_infill',
+  renderGroups:[...(portal.definition?.renderGroups||[])],
   cx:portal.cx,cy:portal.cy,widthAxis:portal.widthAxis,cells:portal.cells.map((c)=>({...c})),
 }));}
 export function forEachDoor(visitor){for(const portal of doorPortals)visitor(portal);return doorPortals.length;}
@@ -1343,7 +1625,7 @@ export function setSolid(x, y, solid) {
   plan.solid[i] = solid ? 1 : 0;
   if (solid) plan.material[i] = MATERIAL.none;
   else if (!plan.material[i]) plan.material[i] = materialForZone(plan.zone[i]);
-  if(!solid&&plan.physicalX[i]<0){for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(!inside(nx,ny))continue;const ni=idx(nx,ny);if(plan.solid[ni]||plan.physicalX[ni]<0)continue;plan.physicalX[i]=plan.physicalX[ni]-dx;plan.physicalY[i]=plan.physicalY[ni]-dy;plan.layer[i]=plan.layer[ni];plan.space[i]=plan.space[ni];plan.renderGroup[i]=plan.renderGroup[ni];plan.floor[i]=plan.floor[ni];plan.ceil[i]=plan.ceil[ni];plan.zone[i]=ZONE.none;break;}}
+  if(!solid&&plan.physicalX[i]===PHYSICAL_VOID){for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(!inside(nx,ny))continue;const ni=idx(nx,ny);if(plan.solid[ni]||plan.physicalX[ni]===PHYSICAL_VOID)continue;plan.physicalX[i]=plan.physicalX[ni]-dx;plan.physicalY[i]=plan.physicalY[ni]-dy;plan.layer[i]=plan.layer[ni];plan.space[i]=plan.space[ni];plan.renderGroup[i]=plan.renderGroup[ni];plan.floor[i]=plan.floor[ni];plan.ceil[i]=plan.ceil[ni];plan.zone[i]=ZONE.none;break;}}
   plan.rgba[i * 4 + 2] = solid ? F.SOLID : plan.flags[i];
   if (!solid) {
     plan.rgba[i * 4 + 0] = encodeH(plan.floor[i]);

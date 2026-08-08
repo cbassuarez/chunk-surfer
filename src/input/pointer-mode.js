@@ -174,7 +174,7 @@ export function createPointerModeController({
       && !!s.storyMode
       && !!s.inRogue
       && !s.paused
-      && !s.blocksInput;
+      && !(s.blocksLook ?? s.blocksInput);
   }
 
   function target() { return getTargetElement?.() || null; }
@@ -644,7 +644,13 @@ export function createPointerModeController({
 
     if (locked) backend.lastResult = 'locked';
     sync(reason);
-    if (lostUnexpectedly) onUnexpectedUnlock(reason);
+    if (lostUnexpectedly) {
+      onUnexpectedUnlock(reason);
+      // The callback may open pause (Escape unlock) and revoke the lease. If it
+      // did not—WebView focus churn during dialogue is the common case—recover
+      // without making the player alt-tab or donate another click.
+      if (wantsCapture()) fallbackToNativeOrRetry(`${reason}:unexpected-unlock`, captureGeneration);
+    }
   }
 
   function handlePointerLockError(err = null) {
@@ -806,7 +812,7 @@ export function createPointerModeController({
         storyMode: !!s.storyMode,
         inRogue: !!s.inRogue,
         paused: !!s.paused,
-        blocksInput: !!s.blocksInput,
+        blocksLook: !!(s.blocksLook ?? s.blocksInput),
       },
       backend: {
         kind: backend.kind,

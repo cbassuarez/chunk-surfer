@@ -36,6 +36,10 @@ assert.deepEqual(hushContactWeights({dialogueEligible:false,takenEligible:true,s
   'an anticipated contact cannot enter either dialogue path');
 assert.deepEqual(hushContactWeights({forceDirect:true,takenEligible:true,state:{}}),{brush:0,taken:0,hard:1},
   'sustained hot noise contact is immediate and dialogue-free');
+assert.deepEqual(hushContactWeights({takenEligible:true,profileWeightShift:.8,state:{}}),{brush:.25,taken:.275,hard:.475},
+  'profile pressure can move contact weights by no more than ten percentage points');
+assert.deepEqual(hushContactWeights({takenEligible:true,profileWeightShift:-.8,state:{}}),{brush:.25,taken:.475,hard:.275},
+  'profile relief uses the same bounded shift without changing contact caps');
 
 // Contact dialogue is spatially authored: the broad rear hemisphere qualifies,
 // while a side catch needs the slightly tighter quiet-surprise conditions.
