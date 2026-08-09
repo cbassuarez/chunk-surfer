@@ -111,9 +111,13 @@ export function makeTitleScene({
   function hushLabel() {
     const label = 'THE HUSH';
     const beat = Math.floor(t * 1.37);
-    if ((beat % 5) === 1 || (beat % 11) === 7) {
-      const index = (beat * 7 + 3) % label.length;
-      if (label[index] !== ' ') return `${label.slice(0, index)}?${label.slice(index + 1)}`;
+    // Keep the title readable, but let the substitution occupy roughly half of
+    // its display beats instead of only flashing occasionally. Never spend a
+    // corruption beat replacing the space between THE and HUSH.
+    if ((beat % 2) === 1 || (beat % 7) === 3) {
+      const corruptible = [0, 1, 2, 4, 5, 6, 7];
+      const index = corruptible[(beat * 7 + 3) % corruptible.length];
+      return `${label.slice(0, index)}?${label.slice(index + 1)}`;
     }
     return label;
   }
