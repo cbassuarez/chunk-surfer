@@ -32,12 +32,12 @@ const PROFILES = Object.freeze({
     signature: { id: 'echo', label: 'FOURTH RETURN', description: 'A missed response returns on the next hostile beat for +1 damage.' },
     music: { mode: 'fixed', lead: 'lead-1' },
     movements: [
-      movement('room', 'THE EMPTY ROOM', 4, [
+      movement('room', 'THE EMPTY ROOM', 5, [
         B('natatorium:meter', 'METER MOVES WITHOUT AIR', 2, { takeLabel: 'ROOM TONE', playbackDamage: 2 }),
         O('natatorium:pressure', 'PRESSURE BEHIND THE EARS', 2, { effect: 'ringing' }),
         C('natatorium:piano', 'PIANO WITH NO TRANSIENT', 2),
       ]),
-      movement('voice', 'THE VOICE ON TAPE', 4, [
+      movement('voice', 'THE VOICE ON TAPE', 5, [
         B('natatorium:voice', 'VOICE ON THE MONITOR PATH', 2, { takeLabel: 'VOICE PRINT', playbackDamage: 2 }),
         C('natatorium:memory', 'MEMORY PASSED AS SIGNAL', 2),
         O('natatorium:lean', 'THE ROOM LEANS CLOSER', 3, { effect: 'ringing' }),
@@ -46,7 +46,7 @@ const PROFILES = Object.freeze({
         // your board rather than reading from a fixed script.
         reactions: [{ when: 'take-loaded', use: 'natatorium:lean' }],
       }),
-      movement('hold', 'THE TAKE THAT HOLDS YOU', 4, [
+      movement('hold', 'THE TAKE THAT HOLDS YOU', 6, [
         B('natatorium:echo', 'FOURTH RETURN OF THE ECHO', 3, { takeLabel: 'EMPTY RETURN', playbackDamage: 2 }),
         // The pressure returns once as a second, lighter blow — a chained enemy
         // turn you brace for as one.
@@ -60,17 +60,17 @@ const PROFILES = Object.freeze({
     signature: { id: 'feedback', label: 'HOUSE RETURN', description: 'The first Playback in Noise each phase recoils for 1 Composure.' },
     music: { mode: 'fixed', lead: 'lead-3' },
     movements: [
-      movement('monitor', 'THE MONITOR RETURN', 4, [
+      movement('monitor', 'THE MONITOR RETURN', 6, [
         B('hall:send', 'HOUSE SEND ON AN OPEN FADER', 2, { takeLabel: 'HOUSE SEND', playbackDamage: 2 }),
         O('hall:bus', 'BUS VOLTAGE WITHOUT POWER', 2, { effect: 'ringing' }),
         C('hall:seat', 'A LISTENER IN THE EMPTY SEAT', 2),
       ]),
-      movement('return', 'THE HOUSE RETURN', 4, [
+      movement('return', 'THE HOUSE RETURN', 6, [
         B('hall:room', 'ROOM RETURN ON THE TAPE', 2, { takeLabel: 'HOUSE RETURN', playbackDamage: 2 }),
         L('hall:loop', 'OUTPUT PATCHED TO INPUT', 3),
         O('hall:clip', 'THE RETURN CLIPS RED', 3, { effect: 'ringing' }),
       ]),
-      movement('applause', 'APPLAUSE WITHOUT HANDS', 4, [
+      movement('applause', 'APPLAUSE WITHOUT HANDS', 6, [
         B('hall:applause', 'APPLAUSE IN THE NOISE FLOOR', 3, { takeLabel: 'EMPTY APPLAUSE', playbackDamage: 2 }),
         C('hall:audience', 'AUDIENCE REMOVED FROM VIEW', 2),
         O('hall:stack', 'THE STACK COMES UP AT ONCE', 3, { effect: 'ringing' }),
@@ -82,17 +82,17 @@ const PROFILES = Object.freeze({
     signature: { id: 'ensemble', label: 'ENSEMBLE STACK', description: 'Every third hostile beat gains +1 damage unless this movement was Tuned.' },
     music: { mode: 'fixed', lead: 'lead-2' },
     movements: [
-      movement('instrument', 'THE WRONG INSTRUMENT', 4, [
+      movement('instrument', 'THE WRONG INSTRUMENT', 5, [
         B('practice:two-notes', 'TWO NOTES ON THE TAKE', 2, { takeLabel: 'TWO WRONG NOTES', playbackDamage: 2 }),
         C('practice:piano', 'PIANO HIDDEN IN A DEAD ROOM', 2),
         O('practice:ensemble', 'EVERY STAND ANSWERS', 2, { effect: 'ringing' }),
       ]),
-      movement('player', 'THE PLAYER NOT PRESENT', 4, [
+      movement('player', 'THE PLAYER NOT PRESENT', 6, [
         B('practice:breath', 'BREATH BEFORE THE PHRASE', 2, { takeLabel: 'PLAYER BREATH', playbackDamage: 2 }),
         O('practice:downbeat', 'DOWNBEAT THROUGH THE FLOOR', 3, { effect: 'ringing' }),
         C('practice:chair', 'THE EMPTY CHAIR MOVES', 2),
       ]),
-      movement('score', 'THE SCORE WRITES BACK', 4, [
+      movement('score', 'THE SCORE WRITES BACK', 6, [
         B('practice:phrase', 'THE PHRASE PLAYS ITSELF', 3, { takeLabel: 'SELF-PLAYING PHRASE', playbackDamage: 2 }),
         C('practice:rest', 'REST BLACKED OUT OF THE BAR', 2),
         O('practice:finale', 'ALL PARTS AT FULL LEVEL', 3, { effect: 'ringing' }),

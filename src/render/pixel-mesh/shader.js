@@ -333,6 +333,12 @@ float recordingNoise(vec2 cellId, float clock, float scenePinning, float tempora
 }
 
 float luma(vec3 c){ return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
+// Emergency red is a reserved display primary. Keeping the dominance measure
+// named here makes the final acquisition gate auditable alongside the lighting
+// passes that remove unbacked red before it reaches this compositor.
+float emergencyRedDominance(vec3 color){
+  return (color.r-max(color.g,color.b))/max(color.r,1e-4);
+}
 vec3 palCyan(){ return vec3(0.380, 1.000, 0.900); }
 vec3 palCyanHot(){ return vec3(0.780, 1.000, 0.960); }
 vec3 palCyanDim(){ return vec3(0.060, 0.480, 0.440); }
@@ -655,9 +661,12 @@ void main(){
   // recorder promoted every yard lamp and warm wall to the emergency primary.
   // Upstream the circuit is now the only thing that can be this red at all;
   // this keeps the acquisition honest if that ever stops being true.
-  float emergencyRedness=(broadColor.r-max(broadColor.g,broadColor.b))/max(broadColor.r,1e-4);
+  float emergencyRedness=emergencyRedDominance(broadColor);
   float emergencyRed=smoothstep(.025,.14,broadColor.r-max(broadColor.g,broadColor.b))
-    *smoothstep(.55,.84,emergencyRedness)
+    // Upstream lighting has already neutralised unbacked red. Require the near-
+    // primary purity of the authored wash here as a second lock; warm surfaces,
+    // source faults and emissive props cannot reserve this display colour.
+    *smoothstep(.82,.94,emergencyRedness)
     *captureBlackProtect;
   vec3 sourceChroma = clamp(
     (broadColor - vec3(broadColorLuma)) / max(0.06, broadColorLuma),

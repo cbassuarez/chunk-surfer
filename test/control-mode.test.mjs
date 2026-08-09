@@ -49,3 +49,14 @@ test('mouse look settings are bounded and persist', () => {
   assert.equal(normalizeSettings({ mouseSensitivity: 'x' }).mouseSensitivity, 1);
   assert.equal(normalizeSettings({ mouseInvertY: true }).mouseInvertY, true);
 });
+
+test('tower rhythm assistance, haptics, and manual latency normalize explicitly', () => {
+  assert.equal(normalizeSettings({ towerPealAssist: 'guided' }).towerPealAssist, 'guided');
+  assert.equal(normalizeSettings({ towerPealAssist: 'wide' }).towerPealAssist, 'wide');
+  assert.equal(normalizeSettings({ towerPealAssist: 'adaptive' }).towerPealAssist, 'standard');
+  assert.equal(normalizeSettings({ haptics: 'reduced' }).haptics, 'reduced');
+  assert.equal(normalizeSettings({ haptics: 'invalid' }).haptics, 'full');
+  assert.equal(normalizeSettings({ rhythmTimingOffsetMs: 13 }).rhythmTimingOffsetMs, 15);
+  assert.equal(normalizeSettings({ rhythmTimingOffsetMs: 999 }).rhythmTimingOffsetMs, 250);
+  assert.equal(normalizeSettings({ rhythmTimingOffsetMs: -999 }).rhythmTimingOffsetMs, -250);
+});

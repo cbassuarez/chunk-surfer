@@ -48,11 +48,33 @@ assert.equal(placeAt(15, 12), null, 'studio B3 has no place');
 // necessary at all, and it is what defeats distance-ranked spawning.
 {
   const stalls = FP.logicalToPhysical(...Object.values(rt(102, 15)));
-  const lower = FP.logicalToPhysical(...Object.values(rt(1, 67)));
-  const upper = FP.logicalToPhysical(...Object.values(rt(28, 114)));
+  // Sampled at the REAR of each arm, where the decks keep their authored height.
+  // Forward of that they cascade toward the platform, one bowl riser per tier.
+  const lower = FP.logicalToPhysical(...Object.values(rt(1, 76)));
+  const upper = FP.logicalToPhysical(...Object.values(rt(28, 118)));
   for (const deck of [stalls, lower, upper]) assert.equal(deck.renderGroup, 'hall');
-  assert.equal(lower.y, 4, 'the lower balcony deck is four metres up');
-  assert.equal(upper.y, 7.5, 'the upper balcony deck is seven and a half');
+  assert.equal(lower.y, 4, 'the lower balcony deck starts four metres up');
+  assert.equal(upper.y, 7.5, 'the upper balcony deck starts seven and a half');
+
+  // THE CASCADE. Koerner's arms step down toward the platform instead of running
+  // level, and ours use the bowl's own 0.44 riser so the two read as one
+  // geometry. Every step has to stay walkable: the upper arm carries you to the
+  // galleria flight, so an arm you cannot traverse strands the top tier.
+  const KEYS = new Set(['master', 'chapel']);
+  for (const [name, lx, base] of [['lower west', 2, 40], ['lower east', 27, 40],
+                                  ['upper west', 2, 82], ['upper east', 27, 82]]) {
+    let worst = 0;
+    for (let ly = 8; ly < 36; ly += 1) {
+      const a = rt(lx, base + ly), b = rt(lx, base + ly + 1);
+      const ca = FP.cellAt(a.x, a.y), cb = FP.cellAt(b.x, b.y);
+      if (ca && cb) worst = Math.max(worst, Math.abs(cb.floor - ca.floor));
+      assert.ok(FP.canStep(a.x, a.y, b.x, b.y, { keys: KEYS }).ok, `${name} is walkable at local y${ly}`);
+    }
+    assert.ok(worst <= 0.45 + 1e-6, `${name} steps by no more than a riser (${worst.toFixed(2)}m)`);
+    const rear = FP.cellAt(...Object.values(rt(lx, base + 36))).floor;
+    const front = FP.cellAt(...Object.values(rt(lx, base + 10))).floor;
+    assert.ok(rear - front > 1.5, `${name} actually cascades (${rear} -> ${front})`);
+  }
 }
 
 // HALL_UPPER_SEATS in main.js. The presence takes the upper tier in the hall

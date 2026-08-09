@@ -16,6 +16,8 @@ import {
 } from '../src/data/exterior-district.js';
 import { CONSERVATORY_PROPS, PROP_MESH } from '../src/data/conservatory-props.js';
 import { exteriorAmbientInstances } from '../src/game/exterior-ambient.js';
+import { EXTERIOR_LORE, exteriorLoreLines } from '../src/data/exterior-lore.js';
+import * as PROPS from '../src/game/props.js';
 
 const plan=FP.compile(conservatory.levels,{
   width:conservatory.width,height:conservatory.height,
@@ -99,11 +101,43 @@ for(const name of ['district_terrace_frontage','district_civic_frontage','distri
 for(const inspectable of EXTERIOR_INSPECTABLES)assert.ok(propIds.has(inspectable.id));
 assert.ok(CONSERVATORY_PROPS.filter(({mesh})=>mesh==='city_parked_car').length>=8,'streets are insufficiently occupied');
 
+const loreProps=CONSERVATORY_PROPS.filter(({action})=>action==='exterior-lore');
+assert.equal(loreProps.length,3,'three optional exterior conversations are authored');
+assert.deepEqual(new Set(loreProps.map(({loreId})=>loreId)),new Set(Object.keys(EXTERIOR_LORE)));
+assert.ok(loreProps.every(({blocks})=>blocks===false),'side-lore locals never obstruct the route');
+for(const prop of loreProps){
+  assert.ok(exteriorLoreLines(prop.loreId)?.length>=2,`${prop.id} has no first conversation`);
+  assert.ok(exteriorLoreLines(prop.loreId,{revisited:true})?.length>=1,`${prop.id} has no revisit line`);
+}
+const lookBench=CONSERVATORY_PROPS.find(({id})=>id==='yard-look-bench');
+assert.equal(lookBench?.action,'yard-vigil-bench');
+assert.equal(PROP_MESH[lookBench?.mesh]?.blocks,false);
+PROPS.propsInit(FP);
+for(const prop of [...loreProps,lookBench]){
+  assert.ok(PROPS.propById(prop.id),`${prop.id} was filtered out of the compiled world`);
+  assert.ok(PROPS.pathToProp(FP.spawn().x,FP.spawn().y,prop.id,new Set()),`${prop.id} cannot be reached from arrival`);
+}
+
+const propStats=JSON.parse(readFileSync(new URL('../public/assets/conservatory-props.stats.json',import.meta.url),'utf8'));
+assert.ok(propStats.meshes.yard_van.triangles>=1200,'the van front has regressed to a block proxy');
+assert.ok(propStats.meshes.yard_look_bench.triangles>=180,'the sit/look bench needs a readable authored silhouette');
+assert.ok(propStats.bounds.yard_van.min[2]>=-3.6&&propStats.bounds.yard_van.max[2]<=3.1,'front detail escaped the established van footprint');
+
 const normal=exteriorAmbientInstances({timeSec:12,reducedMotion:false});
 const reduced=exteriorAmbientInstances({timeSec:12,reducedMotion:true});
 assert.equal(normal.length,EXTERIOR_AMBIENT_NODES.length);
 assert.ok(normal.every(({structural,ambient})=>!structural&&ambient),'ambient actors must never block routes');
 assert.notDeepEqual(normal.map(({x,z})=>[x,z]),reduced.map(({x,z})=>[x,z]),'reduced motion changes ambient cadence');
+const traffic=EXTERIOR_AMBIENT_NODES.filter(({kind})=>kind==='vehicle');
+assert.ok(traffic.length>=4,'the district needs a bus and several moving cars');
+const trafficAt12=normal.filter(({id})=>traffic.some((node)=>id===`exterior-ambient:${node.id}`));
+const trafficAt18=exteriorAmbientInstances({timeSec:18}).filter(({id})=>traffic.some((node)=>id===`exterior-ambient:${node.id}`));
+assert.notDeepEqual(trafficAt12.map(({x,z})=>[x,z]),trafficAt18.map(({x,z})=>[x,z]),'moving cars must advance along their roads');
+for(const instance of trafficAt12){
+  const node=traffic.find(({id})=>instance.id===`exterior-ambient:${id}`),dx=node.to.x-node.from.x,dz=node.to.z-node.from.z,len=Math.hypot(dx,dz);
+  const front=[Math.sin(instance.yaw),-Math.cos(instance.yaw)];
+  assert.ok((front[0]*dx+front[1]*dz)/len>.999,`${node.id} drives forward rather than reversing down-route`);
+}
 
 assert.ok(conservatory.positionMigrations.some(({id})=>id==='yard-former-stables'));
 assert.ok(DISTRICT_BOUNDS.x0<0&&DISTRICT_BOUNDS.y0<0);

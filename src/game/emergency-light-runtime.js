@@ -1,7 +1,8 @@
 // Emergency-light apparitions are a rendering event, never a second HUSH.
-// The returned figures are invisible in the colour pass and exist only as
-// practical-light occluders, so they cast across real floors and walls without
-// gaining collision, pursuit, contact, audio, or minimap state.
+// Like the HUSH body, they occupy world depth: real geometry that can be hidden
+// by doors, seats and walls. They are also practical-light occluders, so the
+// same bodies stand in the room, cast across it, and emit a local white field
+// without gaining collision, pursuit, contact, audio, or minimap state.
 //
 // THEY MILL. THEY DO NOT HUNT.
 //
@@ -41,6 +42,38 @@ const STAGE_SECTORS = 8;
 // backs off from you is a shadow that has noticed you.
 const MIN_APPROACH = 2.2;
 const MAX_PUSH = 3.2;
+// How far ahead of the player the crowd is aimed — roughly the far wall of a
+// room you are standing in. The lamp, the figures and this point are collinear,
+// which is what puts the shadow in the shot.
+const AIM_AHEAD = 8;
+
+// The projected shadow is already rendered independently from the body's own
+// emissive field. Most sightings should therefore read as a real obstruction
+// first and a white body second; the old values survive as a rare hard reveal.
+const APPARITION_PRESENTATION = Object.freeze({
+  shadow: Object.freeze({
+    emissive: .82,
+    practicalIntensity: .32,
+    practicalRadius: 3.8,
+  }),
+  hard: Object.freeze({
+    emissive: 2.6,
+    practicalIntensity: 1.05,
+    practicalRadius: 4.8,
+  }),
+});
+
+function neutralDirective(wander) {
+  return {
+    stageKey: null,
+    exposure: null,
+    card: null,
+    hiddenIndex: null,
+    yawOffsets: [0, 0, 0],
+    motionClocks: [wander, wander, wander],
+    hardRevealIndex: null,
+  };
+}
 
 const distanceSq = (a, b) => {
   const dx = (Number(a?.x) || 0) - (Number(b?.x) || 0);
@@ -86,7 +119,12 @@ function station(lightId, index) {
   return {
     // Fanned across the arc, then nudged, so three figures never line up.
     bearing: spread * STATION_ARC * .78 + (random() - .5) * STATION_ARC * .34,
-    radius: STATION_NEAR + random() * (STATION_FAR - STATION_NEAR),
+    // Held as a FRACTION of the available depth, not an absolute distance. When
+    // the player stands close to the fitting the band has to shrink, and
+    // clipping absolute radii against that cap pinned whoever was furthest out
+    // to a fixed point — a figure that has stopped moving is the one thing this
+    // whole system is not allowed to contain.
+    depth: random(),
     // Metres and radians of wander, and the rates that spend them. At these
     // rates a figure covers roughly five centimetres a second while you are
     // watching it, and the dark beat multiplies that — see emergencyWanderClock.
@@ -97,8 +135,10 @@ function station(lightId, index) {
     w2: .031 + random() * .027,
     p1: random() * Math.PI * 2,
     p2: random() * Math.PI * 2,
-    scaleX: .86 + random() * .62,
-    scaleY: .92 + random() * .78,
+    // Human variation, not monster scaling. The previous 1.48x-wide/1.70x-tall
+    // range turned a 1.7m body into a three-metre slab and erased the anatomy.
+    scaleX: .88 + random() * .16,
+    scaleY: .96 + random() * .12,
   };
 }
 
@@ -119,15 +159,53 @@ export function buildEmergencyShadowFrame(lights, {
   viewYaw = null,
   timeSec = 0,
   effectsMode = 'full',
+  stageKey = 'unknown',
+  director = null,
 } = {}) {
-  if (!enabled || !listener || !Array.isArray(lights)) return null;
+  // OFF and Reduce Dread suppression must be structural. Do not rely on the
+  // light resolver happening to zero shadowReveal/intensity upstream.
+  if (!enabled || effectsMode === 'off' || !listener || !Array.isArray(lights)) return null;
   const limitSq = Math.max(1, Number(maxDistance) || 12) ** 2;
+  // THE BODY AND ITS SHADOW OCCUPY THE SAME ROOM.
+  //
+  // The figure now owns world-depth geometry and a white practical of its own,
+  // but its cast shadow still has to land honestly. A shadow lands on a surface
+  // only when the figure is BETWEEN the lamp and that surface. The
+  // surface the player is looking at is ahead of them, so the lamp has to be
+  // behind them and the figures between the two — the ordinary experience of
+  // somebody standing behind you in a doorway, thrown ten metres up the wall you
+  // are facing.
+  //
+  // Staging the crowd between the lamp and the PLAYER (which is what "so their
+  // shadows are thrown where the player can see them" produced) casts every
+  // shadow backwards, past the camera, onto the wall behind. And last round I
+  // then made the hero lamp prefer fittings IN FRONT of the player, which is the
+  // worst possible pick: figures on the near side of a lamp you are facing throw
+  // their shadows directly away from you. Composed correctly, projected
+  // correctly, and landing where nobody would ever be looking.
+  //
+  // So: prefer a lamp behind the shoulder, and aim the crowd along the lamp →
+  // (the wall ahead of the player) line. Still stations, still milling, still
+  // incapable of approach — only the sector is chosen, and it is quantised.
+  const facing = Number.isFinite(viewYaw) ? { x: Math.sin(viewYaw), z: -Math.cos(viewYaw) } : null;
+  const behindShoulder = (light) => {
+    if (!facing) return 0;
+    const dx = (Number(light.x) || 0) - (Number(listener.x) || 0);
+    const dz = (Number(light.z) || 0) - (Number(listener.z) || 0);
+    const length = Math.hypot(dx, dz);
+    if (length < .001) return 0;
+    // Anything from beside you to directly behind throws forward into the view.
+    return (dx * facing.x + dz * facing.z) / length < .30 ? 1 : 0;
+  };
   const candidates = lights
     .filter((light) => Number(light?.shadowReveal) > .08 && Number(light?.intensity) > .01)
     .filter((light) => distanceSq(light, listener) <= limitSq)
     .sort((a, b) => {
       const reveal = Number(b.shadowReveal) - Number(a.shadowReveal);
-      return Math.abs(reveal) > .001 ? reveal : distanceSq(a, listener) - distanceSq(b, listener);
+      if (Math.abs(reveal) > .001) return reveal;
+      const throwing = behindShoulder(b) - behindShoulder(a);
+      if (throwing) return throwing;
+      return distanceSq(a, listener) - distanceSq(b, listener);
     });
   const light = candidates[0];
   if (!light) return null;
@@ -138,19 +216,31 @@ export function buildEmergencyShadowFrame(lights, {
   const listenerZ = Number(listener.z) || 0;
   const floorY = Number.isFinite(light.floorY) ? light.floorY : (Number(light.y) || 1.8) - 1.8;
   const wander = emergencyWanderClock(timeSec, { effectsMode });
+  const resolvedStageKey = `${String(stageKey || 'unknown')}:${light.id}`;
+  const directive = director?.resolve?.({
+    stageKey: resolvedStageKey,
+    pulseIndex: Number.isFinite(Number(light.pulseIndex)) ? Number(light.pulseIndex) : 0,
+    timeSec,
+    effectsMode,
+    wanderClock: wander,
+  }) || neutralDirective(wander);
 
-  // Which side of the fitting they are standing on tonight. Taken from the
-  // player because a crowd behind the lamp casts nothing anybody can see, and
-  // then quantised to eighths so it is a room fact rather than a camera fact.
-  let toListenerX = listenerX - lightX;
-  let toListenerZ = listenerZ - lightZ;
+  // The crowd is aimed at the wall the player is facing, not at the player. The
+  // lamp, the figures and that wall have to be collinear or there is no shadow
+  // in the shot; standing them between the lamp and the camera throws everything
+  // backwards over the player's shoulder onto a wall behind them.
+  const focusX = listenerX + (facing ? facing.x * AIM_AHEAD : 0);
+  const focusZ = listenerZ + (facing ? facing.z * AIM_AHEAD : 0);
+  let toListenerX = focusX - lightX;
+  let toListenerZ = focusZ - lightZ;
   if (Math.hypot(toListenerX, toListenerZ) < .2) {
-    const fallback = Number.isFinite(viewYaw)
-      ? { x: Math.sin(viewYaw), z: -Math.cos(viewYaw) }
-      : fallbackDirection(light.id);
+    const fallback = facing || fallbackDirection(light.id);
     toListenerX = fallback.x;
     toListenerZ = fallback.z;
   }
+  // The no-loom cap is still measured against the PLAYER, never against the aim
+  // point — the guarantee is about bodies and cameras, not about staging.
+  const playerReach = Math.hypot(listenerX - lightX, listenerZ - lightZ);
   // NOTHING MAY LOOM, AND THE CLAMP MUST BE GEOMETRY RATHER THAN A NUDGE.
   //
   // Pushing an offending figure further along its own bearing does not work: the
@@ -163,22 +253,43 @@ export function buildEmergencyShadowFrame(lights, {
   // When the player walks up to the fitting there is no room in front of it at
   // all, so the crowd takes the far side. You are then standing at the lamp with
   // three shadows thrown away from you across the room, which is not a downgrade.
-  const playerGap = Math.hypot(toListenerX, toListenerZ);
+  const playerGap = playerReach;
   const headroom = playerGap - MIN_APPROACH;
   const behind = headroom < STATION_NEAR;
   const sector = Math.PI * 2 / STAGE_SECTORS;
-  const stage = Math.round((Math.atan2(toListenerX, -toListenerZ) + (behind ? Math.PI : 0)) / sector) * sector;
-  const cap = behind ? STATION_FAR + MAX_PUSH : Math.min(STATION_FAR + MAX_PUSH, headroom);
+  // If the player is too close to leave the normal station band between them
+  // and the fitting, put the entire crowd on the fitting's far side. The old
+  // branch added PI to the wall-facing aim instead; depending on camera yaw that
+  // could rotate the crowd *onto* the player. Quantising the opposite of the
+  // lamp→player bearing preserves the same sector contract and makes the safety
+  // distance independent of where the camera is looking.
+  const playerBearing = playerGap > .001
+    ? Math.atan2(listenerX - lightX, -(listenerZ - lightZ))
+    : 0;
+  const stageAim = behind
+    ? playerBearing + Math.PI
+    : Math.atan2(toListenerX, -toListenerZ);
+  const stage = Math.round(stageAim / sector) * sector;
+  // The band the crowd may occupy, and the drift is scaled INTO it rather than
+  // clipped against it, so a tight band makes the milling smaller and never
+  // makes it stop.
+  const far = behind ? STATION_FAR : Math.min(STATION_FAR, Math.max(1.6, headroom));
+  const near = Math.min(STATION_NEAR, far * .55);
+  const squeeze = (far - near) / (STATION_FAR - STATION_NEAR);
 
   const placed = stationsFor(light.id).map((seed, index) => {
     // Bearing and distance run on the same two rates exchanged, so a figure
     // never moves along a straight line and never traces a closed loop.
-    const swing = drift(wander, seed.w1, seed.p1, seed.w2, seed.p2) * seed.swing;
-    const reach = drift(wander + 41.7, seed.w2, seed.p2, seed.w1, seed.p1) * seed.reach;
+    const bodyWander = Number.isFinite(directive.motionClocks?.[index])
+      ? directive.motionClocks[index]
+      : wander;
+    const swing = drift(bodyWander, seed.w1, seed.p1, seed.w2, seed.p2) * seed.swing;
+    const reach = drift(bodyWander + 41.7, seed.w2, seed.p2, seed.w1, seed.p1) * seed.reach * squeeze;
     const bearing = stage + seed.bearing + swing;
-    const radius = Math.min(cap, Math.max(1.2, seed.radius + reach));
+    const radialFloor = behind ? Math.max(near * .7, MIN_APPROACH) : near * .7;
+    const radius = Math.min(far, Math.max(radialFloor, near + seed.depth * (far - near) + reach));
     return {
-      seed, index, bearing, radius, swing,
+      seed, index, bearing, radius, swing, bodyWander,
       x: lightX + Math.sin(bearing) * radius,
       z: lightZ - Math.cos(bearing) * radius,
     };
@@ -194,22 +305,64 @@ export function buildEmergencyShadowFrame(lights, {
     : Math.atan2(toListenerX, -toListenerZ);
   const bodyDistance = placed.reduce((total, body) => total + body.radius, 0) / placed.length;
 
-  const instances = placed.map((body) => ({
-    id: `emergency-shadow:${light.id}:${body.index}`,
-    mesh: 'stair_shadow_figure',
-    x: body.x,
-    y: floorY,
-    z: body.z,
-    // Presenting the flat body to the lamp, plus a slow turn of the shoulders.
-    // The silhouette narrows and widens as it turns, so a figure that has barely
-    // crossed the floor has still visibly done something.
-    yaw: Math.atan2(body.x - lightX, -(body.z - lightZ)) + body.swing * body.seed.sway * 4.2,
-    scaleX: body.seed.scaleX,
-    scaleY: body.seed.scaleY,
-    structural: true,
-    shadowOnly: true,
-    zone: Number(light.zone) || 0,
-  }));
+  // Absence is a continuity error, not a new formation. Solve all three
+  // stations first, then omit one identity without re-spacing the survivors.
+  const visiblePlaced = placed.filter((body) => body.index !== directive.hiddenIndex);
+  const instances = visiblePlaced.slice(0, 3).map((body) => {
+    const presentation = directive.hardRevealIndex === body.index
+      ? APPARITION_PRESENTATION.hard
+      : APPARITION_PRESENTATION.shadow;
+    return {
+      id: `emergency-shadow:${light.id}:${body.index}`,
+      apparitionIndex: body.index,
+      // This figure has head, torso, separated legs and both arms. The old stair
+      // occluder had no arms and read as a stack of lighting primitives.
+      mesh: 'player_shadow_figure',
+      x: body.x,
+      y: floorY,
+      z: body.z,
+      // Presenting the flat body to the lamp, plus a slow turn of the shoulders.
+      // Director yaw is an authored continuity offset, never a player-facing
+      // calculation: this runtime remains the sole owner of world geometry.
+      yaw: Math.atan2(body.x - lightX, -(body.z - lightZ))
+        + body.swing * body.seed.sway * 4.2
+        + (Number(directive.yawOffsets?.[body.index]) || 0),
+      scaleX: body.seed.scaleX,
+      scaleY: body.seed.scaleY,
+      scaleZ: .92,
+      emissive: [1.0, .985, 1.0, presentation.emissive],
+      structural: true,
+      shadowOnly: false,
+      zone: Number(light.zone) || 0,
+    };
+  });
+
+  // A white body that does not affect its room is still a sprite. These are
+  // deliberately compact practicals: enough to lift the floor, nearby seat
+  // backs and the edge of another figure, never enough to replace the red wash.
+  const apparitionLights = instances.map((instance) => {
+    const presentation = directive.hardRevealIndex === instance.apparitionIndex
+      ? APPARITION_PRESENTATION.hard
+      : APPARITION_PRESENTATION.shadow;
+    return {
+      id: `apparition-white:${light.id}:${instance.apparitionIndex}`,
+      x: instance.x,
+      y: floorY + 1.12 * instance.scaleY,
+      z: instance.z,
+      color: [1.0, .97, 1.0],
+      intensity: presentation.practicalIntensity,
+      radius: presentation.practicalRadius,
+      penetration: 0,
+      kind: 'apparition',
+      zone: Number(light.zone) || 0,
+    };
+  });
+
+  const minimumPlayerDistance = instances.reduce((best, instance) => Math.min(
+    best,
+    Math.hypot(instance.x - listenerX, instance.z - listenerZ),
+  ), Infinity);
+  const stageSector = ((Math.round(stage / sector) % STAGE_SECTORS) + STAGE_SECTORS) % STAGE_SECTORS;
 
   return {
     lightId: light.id,
@@ -223,6 +376,23 @@ export function buildEmergencyShadowFrame(lights, {
     },
     instance: instances[0],
     instances,
+    apparitionLights,
+    director: {
+      stageKey: directive.stageKey || resolvedStageKey,
+      exposure: directive.exposure ?? null,
+      card: directive.card || null,
+      hardRevealIndex: directive.hardRevealIndex ?? null,
+    },
+    contract: {
+      version: 1,
+      figures: instances.length,
+      maximumFigures: 3,
+      minimumPlayerDistance,
+      minimumAllowedDistance: MIN_APPROACH,
+      stageSector,
+      effectsMode,
+      pulseIndex: Number.isFinite(Number(light.pulseIndex)) ? Number(light.pulseIndex) : null,
+    },
     // What the monitor is allowed to know: three positions, for as long as the
     // red is actually on. See emergencyContacts in main.js — this is a return of
     // the render event, not a contact, and it must decay with the beat.

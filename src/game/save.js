@@ -80,6 +80,7 @@ export const freshSave = ({ settings = DEFAULT_SETTINGS, run = null } = {}) => (
   power: freshPowerState(),
   dockHaunting: freshDockHauntingState(),
   practiceHaunts: freshPracticeHauntState(),
+  plantIncident: null,
   // The chair in the yard, and whether it has been looked at. Normalised on
   // read by game/yard-vigil.js rather than here, because the whole rule lives
   // in that module and this file has no business knowing what a vigil is.
@@ -225,7 +226,7 @@ function normalizeSaveV4(data, meta = null) {
     ? normalizeChapelTowerState(source.chapelTower)
     : inferLegacyChapelTower(source);
   const inferredTower=inferLegacyChapelTower(source);
-  if(chapelTower.phase==='foreshadow'&&inferredTower.phase!=='foreshadow')chapelTower={...chapelTower,...inferredTower,ropeRoomVisited:chapelTower.ropeRoomVisited,hatchInspected:chapelTower.hatchInspected,hammerIsolated:chapelTower.hammerIsolated,attempts:chapelTower.attempts};
+  if(chapelTower.phase==='foreshadow'&&inferredTower.phase!=='foreshadow')chapelTower={...chapelTower,...inferredTower,attempts:chapelTower.attempts};
 
   return {
     ...base,

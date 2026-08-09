@@ -29,7 +29,10 @@ const RD_SIZE = 256;
 const WATER_W = 96;
 const WATER_H = 54;
 const MAX_WATER_SOURCES = 4;
-const MAX_LOCAL_LIGHTS = 8;
+// Eight authored practical slots plus three apparition emitters. Keeping the
+// white bodies inside the same lighting path makes their spill hit architecture
+// and props identically instead of faking a screen-space halo.
+const MAX_LOCAL_LIGHTS = 12;
 let RENDER_SCALE = 1;
 let localLightCount=0;
 const localLightPositions=new Float32Array(MAX_LOCAL_LIGHTS*4);
@@ -340,6 +343,7 @@ uniform float uPropNear;
 uniform float uPropFar;
 uniform vec2  uPlanSize;
 uniform vec2  uPlanOrigin;
+uniform float uPlanHeightOffset;
 uniform float uUsePlan;      // 0 = procedural sample-field lattice, 1 = the conservatory
 uniform vec3  uZoneTint[20];
 uniform float uSourceReady;
@@ -497,8 +501,8 @@ Cell cellAtI(ivec2 p){
   vec4 t = texelFetch(uPlan, local, 0);
   r.flags = int(t.b * 255.0 + 0.5);
   r.solid = (r.flags & FLAG_SOLID) != 0;
-  r.f = (t.r * H_RANGE + H_MIN) / CELL_METERS;
-  r.c = (t.g * H_RANGE + H_MIN) / CELL_METERS;
+  r.f = (t.r * H_RANGE + H_MIN + uPlanHeightOffset) / CELL_METERS;
+  r.c = (t.g * H_RANGE + H_MIN + uPlanHeightOffset) / CELL_METERS;
   r.zone = int(t.a * 255.0 + 0.5);
   vec2 ma = texelFetch(uMat, local, 0).rg;
   r.mat = int(ma.r * 255.0 + 0.5);
@@ -873,11 +877,15 @@ float emergencyRedness(vec3 lit){
 vec3 reserveEmergencyRed(vec3 shaded, float emergencyShare){
   // Amber and sodium live below .55; the authored emergency primary is .98.
   float claim = smoothstep(.55, .84, emergencyRedness(shaded));
-  // A little emergency light justifies its own red — the circuit is dim by
-  // design and must not have to out-shout a torch to keep its colour.
+  // A little emergency contribution justifies its own red: falloff and
+  // occlusion must not make the circuit out-shout a torch to keep its colour.
   float backing = clamp(emergencyShare * 4.0, 0.0, 1.0);
   float grey = dot(shaded, vec3(.2126, .7152, .0722));
-  return mix(shaded, mix(vec3(grey), shaded, .18), claim * (1.0 - backing));
+  // No residual red. The one-bit pass deliberately preserves saturated red,
+  // so leaving even eighteen percent here let every red-painted surface claim
+  // the alarm's ink downstream. Provenance is binary: paid for by an emergency
+  // contribution, or neutral before acquisition.
+  return mix(shaded, vec3(grey), claim * (1.0 - backing));
 }
 float propFlashShadow(vec3 world,vec3 normal,vec3 lightDir){
   if(uPropShadowReady<.5)return 1.0;
@@ -886,6 +894,43 @@ float propFlashShadow(vec3 world,vec3 normal,vec3 lightDir){
   float bias=max(.00018,.00115*(1.0-max(dot(normal,lightDir),0.0))),visible=0.0;
   for(int y=0;y<2;y++)for(int x=0;x<2;x++){vec2 tap=(vec2(float(x),float(y))-.5)*uPropShadowTexel;visible+=q.z-bias<=texture(uPropShadow,q.xy+tap).r?1.0:0.0;}
   return mix(.20,1.0,visible*.25);
+}
+// THE GLOW, WHICH IS A DELIBERATELY BAD SHADOW LOOKUP.
+//
+// propFlashShadow above is a 2x2 PCF: its penumbra is one texel wide, which is a
+// hard edge and cannot carry a halo. This samples the same map on two wide rings
+// and returns the BLOCKED fraction, so it reads outside the silhouette and falls
+// off smoothly — a bloom around the body rather than an occlusion term. Nothing
+// about it is physically defensible and nothing about it needs to be: it is only
+// ever multiplied into an emissive white.
+//
+// IT ASKS "IS SOMETHING STANDING WELL IN FRONT OF ME", NOT "AM I IN SHADOW".
+//
+// A scaled-up bias is the obvious way to stop a wide tap self-shadowing, and it
+// does not work. A tap twenty texels away reads the depth of a DIFFERENT PART of
+// the same receiving surface, and on anything the lamp sees at an angle that
+// depth is legitimately nearer — so the surface reports itself blocked over
+// whole walls, and the auditorium grew a pale rectangle the exact shape of the
+// shadow map's frustum. Measured: a big soft patch where the sharp sample found
+// three small silhouettes.
+//
+// A gap test has no such failure. Self-shadowing across a few texels of slope is
+// a tiny depth difference; a body standing between this wall and the lamp is a
+// large one. GAP is expressed in the map's non-linear depth and works out to
+// roughly a metre at ten and a quarter of that up close — comfortably more than
+// any slope and comfortably less than a figure's stand-off.
+const float HALO_GAP=.00042;
+float propFlashHalo(vec3 world,vec3 normal,vec3 lightDir){
+  if(uPropShadowReady<.5)return 0.0;
+  vec4 clip=uPropShadowMatrix*vec4(world+normal*.008,1.0);if(clip.w<=0.0)return 0.0;
+  vec3 q=clip.xyz/clip.w*.5+.5;if(q.x<=0.0||q.x>=1.0||q.y<=0.0||q.y>=1.0||q.z<=0.0||q.z>=1.0)return 0.0;
+  float blocked=0.0;
+  for(int i=0;i<12;i++){
+    float angle=float(i)*.5236,ring=i<6?5.0:11.0;
+    vec2 tap=vec2(cos(angle),sin(angle))*ring*uPropShadowTexel;
+    blocked+=q.z-texture(uPropShadow,q.xy+tap).r>HALO_GAP?1.0:0.0;
+  }
+  return blocked/12.0;
 }
 float architecturalLightVisibility(vec3 fromM,vec3 toM){
   float distanceM=length(toM-fromM);int checks=int(clamp(ceil(distanceM),1.0,8.0));
@@ -1677,25 +1722,108 @@ void main(){
     float propShadow=propFlashShadow(posM,n,ldir);
     float lamp = lambert * falloff * nearSoft * 3.0 * beam * propShadow;   // a torch, not a flare
     if(uLocalShadowIndex>=0)lamp=lambert*falloff*nearSoft*3.0*beam;         // the map belongs to the hero practical
+    // THE FIGURES MUST BLOCK THE WHOLE RED FIELD, NOT ONE LAMP OF FIVE.
+    //
+    // The shadow map belongs to a single hero practical, and the silhouette used
+    // to be applied only to that lamp's own contribution. In the concert hall
+    // five emergency lamps overlap, so removing one of five was a twenty-percent
+    // dip — the apparitions were being submitted, the shadow pass was running,
+    // and there was simply nothing on screen to see. Measured: figures 3,
+    // shadow.active true, and no visible body.
+    //
+    // One shadow map, sampled once, applied to every emergency contribution. It
+    // is not what five lamps would really do, but the room only has one red in
+    // it and a body standing in that red blocks it. Nothing else is touched, so
+    // ordinary fittings and the torch keep their honest single-source shadows.
+    //
+    // AND THE SHADOW IS WHITE. See the long note beside apparitionWhite below.
+    float heroShadow=1.0,apparitionBody=0.0,apparitionHalo=0.0;
+    if(uLocalShadowIndex>=0){
+      vec3 heroDir=normalize(uLocalLightPos[uLocalShadowIndex].xyz-posM);
+      // Remapped hard: the normal twenty-percent shadow floor is an ambient
+      // occluder, and an apparition is not a mild exposure change.
+      float heroLit=clamp((propFlashShadow(posM,n,heroDir)-.20)/.80,0.0,1.0);
+      heroShadow=mix(.015,1.0,heroLit);
+      apparitionBody=1.0-heroLit;
+      // The halo is what the wide sample sees and the sharp one does not, so the
+      // glow stands OFF the silhouette instead of doubling its brightness.
+      apparitionHalo=max(propFlashHalo(posM,n,heroDir)-apparitionBody,0.0);
+    }
     vec3 localLight=vec3(0.0);
     vec3 emergencyLight=vec3(0.0);
+    // What the red WOULD have delivered here with nothing standing in the way.
+    // The white below is scaled by this and by nothing else, which is the whole
+    // discipline of the effect: no lamp reaching this surface, no apparition on
+    // it. A silhouette floating on an unlit wall is a decal, not a shadow.
+    vec3 emergencyReach=vec3(0.0);
     for(int li=0;li<${MAX_LOCAL_LIGHTS};li++){
       if(li>=uLocalLightCount)break;
       vec3 delta=uLocalLightPos[li].xyz-posM;
       float localDistance=length(delta),radius=max(.01,uLocalLightPos[li].w);
       float attenuation=pow(clamp(1.0-localDistance/radius,0.0,1.0),2.0);
       float localLambert=max(dot(n,normalize(delta)),0.0);
-      float localShadow=li==uLocalShadowIndex?propFlashShadow(posM,n,normalize(delta)):1.0;
-      // The emergency figure is not a soft ambient occluder. Remap the shadow
-      // map's normal twenty-percent floor to near-black so the body reads as an
-      // apparition across the red field rather than a mild exposure change.
-      if(li==uLocalShadowIndex)localShadow=mix(.015,1.0,clamp((localShadow-.20)/.80,0.0,1.0));
+      float emergency=clamp(uLocalLightEmergency[li],0.0,1.0);
+      float localShadow=max(float(li==uLocalShadowIndex),emergency)>.5?heroShadow:1.0;
       float architecturalShadow=architecturalLightVisibility(posM,uLocalLightPos[li].xyz);
       architecturalShadow=mix(architecturalShadow,1.0,clamp(uLocalLightPenetration[li],0.0,1.0));
-      vec3 contribution=uLocalLightColor[li].rgb*uLocalLightColor[li].w*attenuation*localLambert*localShadow*architecturalShadow;
+      vec3 unshadowed=uLocalLightColor[li].rgb*uLocalLightColor[li].w*attenuation*localLambert*architecturalShadow;
+      vec3 contribution=unshadowed*localShadow;
       localLight+=contribution;
-      emergencyLight+=contribution*clamp(uLocalLightEmergency[li],0.0,1.0);
+      emergencyLight+=contribution*emergency;
+      emergencyReach+=unshadowed*emergency;
     }
+    // A SHADOW THAT IS BLACK IS A HOLE. THIS ONE IS A PRESENCE.
+    //
+    // Subtracting the red where a body stands is what a body does, and it was
+    // also unreadable. The beat is the ONLY light in this room and it does not
+    // fill it — measured in the auditorium, 19% of the frame carries red and the
+    // rest is already black — so an absence of the only light is indistinguishable
+    // from the wall it was cast on. Three figures were being projected correctly
+    // and disappearing into the surrounding dark.
+    //
+    // So the occlusion is kept — the red still stops at the body, which is what
+    // makes the shape read as cast rather than painted — and the hole it leaves
+    // is filled with WHITE. A photographic negative of a shadow: the one thing in
+    // a red room that is neither red nor black, and the brightest thing on screen
+    // for as long as the beat holds.
+    //
+    // The red decides WHETHER, not how much. A first pass scaled the white
+    // linearly by the light that would have arrived and measured out at scene
+    // byte ~50 — brighter than the red around it, and still nowhere near white:
+    // the display buckets by luminance against a white point of byte 117, so
+    // anything under that lands in palWorldDark..palWorldMid and comes out a
+    // grey-blue smudge. A silhouette that is merely lighter than its background
+    // is not the note; the note is WHITE.
+    //
+    // So reach is a gate with a threshold, not a multiplier. Under it there is no
+    // apparition at all — a body needs a lamp behind it, and a figure floating on
+    // an unlit wall would be a decal. Over it the body is fully white regardless
+    // of how far down the room it is standing, which is also what makes the
+    // effect legible from the back of the auditorium.
+    //
+    // Measured against the reach the auditorium actually delivers (mean .36 over
+    // the lit frame): .06 is comfortably below anything the hall lamps put on a
+    // surface they light, .40 is comfortably above.
+    float apparitionReach=max(max(emergencyReach.r,emergencyReach.g),emergencyReach.b);
+    float apparitionLit=smoothstep(.06,.40,apparitionReach);
+    // AND THE PARTIAL OCCLUSION HAS TO READ AS HARD AS THE FULL.
+    //
+    // The shadow map is a 2x2 PCF, so occlusion arrives quantised to fifths and
+    // most of a silhouette's area is a fringe at a quarter or a half rather than
+    // solid. The black version got away with taking that linearly because it
+    // MULTIPLIES: a quarter-occluded pixel keeps a quarter of the red and reads
+    // as shadow immediately. An additive white taken linearly does the opposite —
+    // a quarter-occluded pixel gets a quarter of the white and vanishes, so the
+    // body came out as a faint core with nothing around it. The .45 power is the
+    // curve that makes a quarter of the occlusion worth half of the white, which
+    // is what the eye is already being told by the missing red.
+    float apparitionInk=pow(apparitionBody,.45);
+    // Aimed at byte ~190 against the display's byte-117 white point, so the body
+    // saturates palCream and reads as paper. The halo lands around byte 80 — two
+    // thirds of the way into the mauve->cream bucket, which is a white glow
+    // rather than a second body.
+    vec3 apparitionWhite=vec3(.94,.96,1.0)*apparitionInk*apparitionLit*.78;
+    vec3 apparitionGlow=vec3(.90,.93,1.0)*pow(apparitionHalo,.60)*apparitionLit*.34;
     // The unlit floor is deliberately lifted. With the torch off — or taken — a
     // dark-adapted eye still resolves a room: you are not blind, you simply
     // cannot see WELL. A black screen is not horror, it is a bug you cannot play.
@@ -1799,6 +1927,13 @@ void main(){
       // buy the circuit's colour.
       col = reserveEmergencyRed(col, dot(emergencyLight, vec3(.2126,.7152,.0722))
         / max(dot(incident, vec3(.2126,.7152,.0722)), 1e-4));
+      // Added AFTER the reservation and mostly outside albedo. Both are on
+      // purpose: the reservation must judge the red the circuit actually
+      // delivered rather than a pixel already whitened, and the apparition is not
+      // light landing on a wall — it is the figure, standing where the wall is.
+      // A third of the albedo is kept so it takes the surface's grain and does
+      // not read as a sticker laid over the room.
+      col += mix(vec3(1.0), albedo, .34) * (apparitionWhite + apparitionGlow);
 
       // THE GROUND UNDER OPEN SKY REFLECTS THE SKY.
       //
@@ -2534,9 +2669,37 @@ const markReadyScratch=new Float32Array(SURFACE_LAYERS);
 // A slot counts as engraved only once every frame of its boil is derived, so a
 // crossfade never blends a derived frame against an empty one. Anything short
 // of that reads as 0 and the recorder draws that slot with its procedural hash.
-function markReadyUniform(counts,frames){
+//
+// AND IT ARRIVES OVER A THIRD OF A SECOND, NOT IN ONE FRAME.
+//
+// This returned a hard 0-or-1, so the instant a slot finished engraving its mark
+// snapped in whole. Downstream that moves two things at once: markDensity jumps
+// off the 0.22 sentinel and formStipple shifts the global threshold with it, and
+// markGrain jumps from "no grain" to a real direction so screenDir rotates the
+// screen pattern. Which is exactly the reported fault — every couple of seconds
+// the dither snapped to a different density, or held its density and moved.
+// Slots finish one at a time, and the live/staged bank swap does the whole field
+// at once, which is the couple-of-seconds cadence.
+//
+// A ramp is safe here only because the surface pass decodes gb to SIGNED before
+// it multiplies by this (see the note beside markA.gb in the shader): scaling a
+// signed grain toward zero fades its coherence and preserves its direction. On
+// the raw 0..1 encoding the same multiply would decode to a confident grain at
+// 225 degrees, which is the trap that comment is about.
+//
+// Readiness itself stays all-or-nothing — a slot is engraved or it is not, and a
+// partial boil must never be blended against an empty frame. Only its ARRIVAL is
+// smoothed, from the moment it first reports complete.
+const MARK_FADE_MS=340;
+const markFadeStartLive=new Float32Array(SURFACE_LAYERS).fill(-1);
+const markFadeStartStage=new Float32Array(SURFACE_LAYERS).fill(-1);
+function markReadyUniform(counts,frames,started,now=performance.now()){
   const k=Math.max(1,Math.min(MAX_DREAM_FRAMES,frames||1));
-  for(let i=0;i<SURFACE_LAYERS;i++)markReadyScratch[i]=counts[i]>=k?1:0;
+  for(let i=0;i<SURFACE_LAYERS;i++){
+    if(counts[i]<k){ started[i]=-1; markReadyScratch[i]=0; continue; }
+    if(started[i]<0) started[i]=now;
+    markReadyScratch[i]=Math.min(1,(now-started[i])/MARK_FADE_MS);
+  }
   return markReadyScratch;
 }
 let surfDreamFrames=1,surfDreamStageFrames=1,dreamAgitation=0;
@@ -2906,7 +3069,7 @@ let planTexture = null, materialTexture = null, sourceLayerTexture = null, planW
 // The material/ambient bytes as last uploaded, so a region patch can rewrite
 // material without having to re-derive the baked ambient sharing the texture.
 let planMatAmb = null;
-let planOriginX = 0, planOriginY = 0, sourceSurfaceTexture = null;
+let planOriginX = 0, planOriginY = 0, planHeightOffset = 0, sourceSurfaceTexture = null;
 let uniforms = {};
 let facing = 0; // 0=N(0,-1) 1=E 2=S 3=W
 let yaw = 0, yawTarget = 0, pitch = 0, pitchTarget = 0;
@@ -3549,6 +3712,24 @@ export function r3dLook(yawDelta=0,pitchDelta=0) {
   return {yaw:yawTarget,pitch:pitchTarget,facing};
 }
 export function r3dLookAngles(){return{yaw:yawTarget,pitch:pitchTarget,facing};}
+// Project a physical world point (metres) through the same basis and 0.95 FOV
+// used by the raymarcher. UI attached to architecture can then follow the thing
+// itself while the player looks around instead of being painted at screen centre.
+export function r3dProjectWorld(point={}){
+  const tx=(Number(point.x)||0)/CELL,ty=(Number(point.y)||0)/CELL,tz=(Number(point.z)||0)/CELL;
+  const dx=tx-camX,dy=ty-camY,dz=tz-camZ,worldYaw=yaw+planYaw;
+  const cy=Math.cos(worldYaw),sy=Math.sin(worldYaw),pitchLength=Math.hypot(1,pitch);
+  const forward=[sy/pitchLength,pitch/pitchLength,-cy/pitchLength];
+  const right=[cy,0,sy];
+  const up=[-right[2]*forward[1],right[2]*forward[0]-right[0]*forward[2],right[0]*forward[1]];
+  const depth=dx*forward[0]+dy*forward[1]+dz*forward[2];
+  if(depth<=.01)return{x:.5,y:.5,depth,visible:false};
+  const viewX=(dx*right[0]+dz*right[2])/(depth*.95);
+  const viewY=(dx*up[0]+dy*up[1]+dz*up[2])/(depth*.95);
+  const aspect=Math.max(.1,(uniforms.sceneW||canvas?.width||1)/(uniforms.sceneH||canvas?.height||1));
+  const ndcX=viewX/aspect,ndcY=viewY;
+  return{x:(ndcX+1)*.5,y:(1-ndcY)*.5,depth,visible:Math.abs(ndcX)<=1.08&&Math.abs(ndcY)<=1.08};
+}
 export function r3dSetLookAngles({ yaw: nextYaw = yawTarget, pitch: nextPitch = pitchTarget, immediate = true } = {}) {
   yawTarget = Number.isFinite(Number(nextYaw)) ? Number(nextYaw) : yawTarget;
   pitchTarget = Math.max(-.62, Math.min(.62, Number.isFinite(Number(nextPitch)) ? Number(nextPitch) : pitchTarget));
@@ -3606,6 +3787,7 @@ export function r3dSetPlan(rgba, w, h, material = null, options = {}) {
   planW = w; planH = h;
   planOriginX = Number(options.originX) || 0;
   planOriginY = Number(options.originY) || 0;
+  planHeightOffset = Number(options.heightOffset) || 0;
   if (planTexture) gl.deleteTexture(planTexture);
   if (materialTexture) gl.deleteTexture(materialTexture);
   if (sourceLayerTexture) gl.deleteTexture(sourceLayerTexture);
@@ -4004,6 +4186,7 @@ export function r3dFrame(state) {
   gl.uniform1fv(U('uLocalLightPenetration[0]'),localLightPenetrations);
   gl.uniform1fv(U('uLocalLightEmergency[0]'),localLightEmergency);
   gl.uniform1f(U('uUsePlan'), state.plan ? 1 : 0);
+  gl.uniform1f(U('uPlanHeightOffset'), planHeightOffset);
   if (state.plan && planTexture) {
     gl.activeTexture(gl.TEXTURE2);
     gl.bindTexture(gl.TEXTURE_2D, planTexture);
@@ -4054,8 +4237,8 @@ export function r3dFrame(state) {
     gl.uniform1f(U('uMarkStride'),MAX_DREAM_FRAMES);
     gl.uniform1f(U('uMarksLiveBase'),markLiveBase);
     gl.uniform1f(U('uMarksStageBase'),markLiveBase?0:MARK_HALF_LAYERS);
-    gl.uniform1fv(U('uMarksReady[0]'),markReadyUniform(markReady,surfDreamFrames));
-    gl.uniform1fv(U('uMarksReadyNext[0]'),markReadyUniform(markStageReady,surfDreamStageFrames));
+    gl.uniform1fv(U('uMarksReady[0]'),markReadyUniform(markReady,surfDreamFrames,markFadeStartLive));
+    gl.uniform1fv(U('uMarksReadyNext[0]'),markReadyUniform(markStageReady,surfDreamStageFrames,markFadeStartStage));
   }
   gl.uniform1f(U('uDreamReady'),surfDreamReady&&surfDreamMix.some((v)=>v>0)?1:0);
   gl.uniform1f(U('uDreamNextReady'),surfDreamNextReady?1:0);

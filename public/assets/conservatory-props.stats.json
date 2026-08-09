@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-08T17:50:00.123Z",
-  "bytes": 20457768,
-  "totalTriangles": 279374,
+  "generatedAt": "2026-08-09T18:58:43.339Z",
+  "bytes": 21296472,
+  "totalTriangles": 290542,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -135,6 +135,26 @@
       "triangles": 24,
       "vertices": 48
     },
+    "rekey_ledger": {
+      "triangles": 108,
+      "vertices": 216
+    },
+    "chapel_key_cabinet": {
+      "triangles": 180,
+      "vertices": 360
+    },
+    "chapel_key_ring_ch04": {
+      "triangles": 204,
+      "vertices": 408
+    },
+    "chapel_key_ring_c17": {
+      "triangles": 216,
+      "vertices": 432
+    },
+    "chapel_key_ring_fohm": {
+      "triangles": 228,
+      "vertices": 456
+    },
     "dance_barre": {
       "triangles": 152,
       "vertices": 236
@@ -158,6 +178,14 @@
     "loose_note": {
       "triangles": 24,
       "vertices": 48
+    },
+    "loose_note_page6": {
+      "triangles": 84,
+      "vertices": 168
+    },
+    "story_waypoint_beacon": {
+      "triangles": 216,
+      "vertices": 432
     },
     "calibration_pin": {
       "triangles": 256,
@@ -243,6 +271,66 @@
       "triangles": 72,
       "vertices": 144
     },
+    "plant_calorifier": {
+      "triangles": 460,
+      "vertices": 532
+    },
+    "plant_pump_skid": {
+      "triangles": 176,
+      "vertices": 236
+    },
+    "plant_mcc_bank": {
+      "triangles": 288,
+      "vertices": 474
+    },
+    "plant_idf_frame": {
+      "triangles": 684,
+      "vertices": 1368
+    },
+    "plant_header_manifold": {
+      "triangles": 372,
+      "vertices": 678
+    },
+    "plant_gauge_needle_0": {
+      "triangles": 52,
+      "vertices": 70
+    },
+    "plant_gauge_needle_1": {
+      "triangles": 52,
+      "vertices": 70
+    },
+    "plant_gauge_needle_2": {
+      "triangles": 52,
+      "vertices": 70
+    },
+    "plant_overhead_header": {
+      "triangles": 168,
+      "vertices": 336
+    },
+    "plant_grated_steps": {
+      "triangles": 264,
+      "vertices": 528
+    },
+    "plant_steam": {
+      "triangles": 84,
+      "vertices": 168
+    },
+    "adjustable_spanner": {
+      "triangles": 36,
+      "vertices": 72
+    },
+    "stillson_wrench": {
+      "triangles": 48,
+      "vertices": 96
+    },
+    "walkie_radio": {
+      "triangles": 108,
+      "vertices": 156
+    },
+    "radio_carrier_led": {
+      "triangles": 12,
+      "vertices": 24
+    },
     "altar_table": {
       "triangles": 36,
       "vertices": 72
@@ -264,8 +352,8 @@
       "vertices": 18288
     },
     "hall_structure": {
-      "triangles": 3396,
-      "vertices": 5934
+      "triangles": 3948,
+      "vertices": 7038
     },
     "chapel_vault": {
       "triangles": 280,
@@ -294,6 +382,22 @@
     "atrium_public_fittings": {
       "triangles": 1020,
       "vertices": 2040
+    },
+    "atrium_entry_closure": {
+      "triangles": 324,
+      "vertices": 648
+    },
+    "atrium_formal_banner": {
+      "triangles": 108,
+      "vertices": 216
+    },
+    "atrium_suspended_lantern": {
+      "triangles": 432,
+      "vertices": 822
+    },
+    "atrium_waiting_rug": {
+      "triangles": 84,
+      "vertices": 168
     },
     "academic_skylight": {
       "triangles": 288,
@@ -504,12 +608,48 @@
       "vertices": 1080
     },
     "tower_rope": {
+      "triangles": 376,
+      "vertices": 424
+    },
+    "tower_rope_tenor": {
+      "triangles": 424,
+      "vertices": 478
+    },
+    "tower_rope_upper": {
+      "triangles": 40,
+      "vertices": 46
+    },
+    "tower_rope_sally": {
       "triangles": 88,
       "vertices": 100
+    },
+    "tower_rope_sally_tenor": {
+      "triangles": 424,
+      "vertices": 478
+    },
+    "tower_rope_tail": {
+      "triangles": 40,
+      "vertices": 46
+    },
+    "tower_rope_tail_tenor": {
+      "triangles": 40,
+      "vertices": 46
+    },
+    "tower_rope_guide": {
+      "triangles": 96,
+      "vertices": 108
+    },
+    "tower_dust_mote": {
+      "triangles": 12,
+      "vertices": 24
     },
     "tower_rope_mat": {
       "triangles": 168,
       "vertices": 180
+    },
+    "tower_rope_mat_tenor": {
+      "triangles": 648,
+      "vertices": 894
     },
     "tower_clock_hammer": {
       "triangles": 68,
@@ -619,6 +759,14 @@
       "triangles": 96,
       "vertices": 192
     },
+    "chapel_screen_signal": {
+      "triangles": 36,
+      "vertices": 72
+    },
+    "tower_exit_indicator": {
+      "triangles": 48,
+      "vertices": 96
+    },
     "tower_plaque": {
       "triangles": 24,
       "vertices": 48
@@ -708,16 +856,44 @@
       "vertices": 146
     },
     "conservatory_west_elevation": {
-      "triangles": 17820,
-      "vertices": 34486
+      "triangles": 17808,
+      "vertices": 34462
     },
     "conservatory_stair_window": {
       "triangles": 60,
       "vertices": 120
     },
     "yard_booth": {
-      "triangles": 440,
-      "vertices": 854
+      "triangles": 212,
+      "vertices": 398
+    },
+    "yard_booth_glazing": {
+      "triangles": 384,
+      "vertices": 768
+    },
+    "yard_booth_interior": {
+      "triangles": 1272,
+      "vertices": 1770
+    },
+    "yard_booth_practicals": {
+      "triangles": 88,
+      "vertices": 118
+    },
+    "yard_booth_guard_idle": {
+      "triangles": 116,
+      "vertices": 182
+    },
+    "yard_booth_guard_ledger": {
+      "triangles": 116,
+      "vertices": 182
+    },
+    "yard_booth_guard_handoff": {
+      "triangles": 104,
+      "vertices": 158
+    },
+    "yard_booth_handoff": {
+      "triangles": 56,
+      "vertices": 86
     },
     "yard_fence_run": {
       "triangles": 396,
@@ -760,16 +936,20 @@
       "vertices": 6050
     },
     "yard_van": {
-      "triangles": 700,
-      "vertices": 1222
+      "triangles": 1368,
+      "vertices": 2390
     },
     "yard_van_lamp": {
       "triangles": 24,
       "vertices": 48
     },
+    "yard_look_bench": {
+      "triangles": 204,
+      "vertices": 408
+    },
     "city_bus_shelter": {
-      "triangles": 144,
-      "vertices": 288
+      "triangles": 132,
+      "vertices": 264
     },
     "city_parked_car": {
       "triangles": 280,
@@ -780,12 +960,12 @@
       "vertices": 8928
     },
     "baseboard_hall": {
-      "triangles": 1824,
-      "vertices": 3648
+      "triangles": 2400,
+      "vertices": 4800
     },
     "baseboard_basement": {
-      "triangles": 2076,
-      "vertices": 4152
+      "triangles": 2136,
+      "vertices": 4272
     },
     "baseboard_upper": {
       "triangles": 2700,
@@ -1197,6 +1377,66 @@
         0.03
       ]
     },
+    "rekey_ledger": {
+      "min": [
+        -0.61,
+        0,
+        -0.122
+      ],
+      "max": [
+        0.61,
+        0.96,
+        0.05
+      ]
+    },
+    "chapel_key_cabinet": {
+      "min": [
+        -0.5,
+        0,
+        -0.13
+      ],
+      "max": [
+        0.5,
+        1.24,
+        0.23
+      ]
+    },
+    "chapel_key_ring_ch04": {
+      "min": [
+        -0.08,
+        0.018,
+        -0.13
+      ],
+      "max": [
+        0.08,
+        0.274,
+        0.245
+      ]
+    },
+    "chapel_key_ring_c17": {
+      "min": [
+        -0.08,
+        0.018,
+        -0.13
+      ],
+      "max": [
+        0.08,
+        0.274,
+        0.245
+      ]
+    },
+    "chapel_key_ring_fohm": {
+      "min": [
+        -0.08,
+        0.018,
+        -0.13
+      ],
+      "max": [
+        0.08,
+        0.274,
+        0.245
+      ]
+    },
     "dance_barre": {
       "min": [
         -1.315,
@@ -1267,6 +1507,30 @@
         0.16,
         0.022,
         0.21
+      ]
+    },
+    "loose_note_page6": {
+      "min": [
+        -0.217,
+        -0.001,
+        -0.267
+      ],
+      "max": [
+        0.227,
+        0.124,
+        0.335
+      ]
+    },
+    "story_waypoint_beacon": {
+      "min": [
+        -0.68,
+        0.01,
+        -0.68
+      ],
+      "max": [
+        0.68,
+        0.715,
+        0.68
       ]
     },
     "calibration_pin": {
@@ -1521,6 +1785,186 @@
         0.2
       ]
     },
+    "plant_calorifier": {
+      "min": [
+        -0.73,
+        0.05,
+        -0.91
+      ],
+      "max": [
+        0.73,
+        2.92,
+        0.719
+      ]
+    },
+    "plant_pump_skid": {
+      "min": [
+        -0.9,
+        0,
+        -0.44
+      ],
+      "max": [
+        0.92,
+        0.87,
+        0.44
+      ]
+    },
+    "plant_mcc_bank": {
+      "min": [
+        -1.35,
+        0,
+        -0.293
+      ],
+      "max": [
+        1.35,
+        2.16,
+        0.19
+      ]
+    },
+    "plant_idf_frame": {
+      "min": [
+        -1.125,
+        0.02,
+        -0.148
+      ],
+      "max": [
+        1.125,
+        1.78,
+        0.06
+      ]
+    },
+    "plant_header_manifold": {
+      "min": [
+        -2.25,
+        0,
+        -0.317
+      ],
+      "max": [
+        2.25,
+        2.18,
+        0.26
+      ]
+    },
+    "plant_gauge_needle_0": {
+      "min": [
+        -0.083,
+        2.111,
+        -0.23
+      ],
+      "max": [
+        0.026,
+        2.248,
+        -0.18
+      ]
+    },
+    "plant_gauge_needle_1": {
+      "min": [
+        -0.026,
+        2.111,
+        -0.23
+      ],
+      "max": [
+        0.026,
+        2.265,
+        -0.18
+      ]
+    },
+    "plant_gauge_needle_2": {
+      "min": [
+        -0.026,
+        2.111,
+        -0.23
+      ],
+      "max": [
+        0.067,
+        2.256,
+        -0.18
+      ]
+    },
+    "plant_overhead_header": {
+      "min": [
+        -3.75,
+        0.2,
+        -0.755
+      ],
+      "max": [
+        3.75,
+        3.12,
+        0.755
+      ]
+    },
+    "plant_grated_steps": {
+      "min": [
+        -1.5,
+        0,
+        -0.733
+      ],
+      "max": [
+        1.5,
+        1.103,
+        0.76
+      ]
+    },
+    "plant_steam": {
+      "min": [
+        -0.251,
+        0.174,
+        -0.197
+      ],
+      "max": [
+        0.254,
+        2.159,
+        0.207
+      ]
+    },
+    "adjustable_spanner": {
+      "min": [
+        -0.25,
+        -0.025,
+        -0.022
+      ],
+      "max": [
+        0.24,
+        0.075,
+        0.022
+      ]
+    },
+    "stillson_wrench": {
+      "min": [
+        -1.08,
+        -0.03,
+        -0.09
+      ],
+      "max": [
+        0.86,
+        0.25,
+        0.09
+      ]
+    },
+    "walkie_radio": {
+      "min": [
+        -0.11,
+        0,
+        -0.09
+      ],
+      "max": [
+        0.11,
+        0.53,
+        0.06
+      ]
+    },
+    "radio_carrier_led": {
+      "min": [
+        -0.026,
+        0.356,
+        -0.091
+      ],
+      "max": [
+        0.026,
+        0.384,
+        -0.073
+      ]
+    },
     "altar_table": {
       "min": [
         -0.9,
@@ -1585,7 +2029,7 @@
       "min": [
         -13.75,
         -2.5,
-        -19.25
+        -19
       ],
       "max": [
         13.75,
@@ -1675,6 +2119,54 @@
         11.01,
         3.81,
         11.1
+      ]
+    },
+    "atrium_entry_closure": {
+      "min": [
+        -1.175,
+        0,
+        -0.017
+      ],
+      "max": [
+        1.175,
+        1.598,
+        1.1
+      ]
+    },
+    "atrium_formal_banner": {
+      "min": [
+        -1.1,
+        0.055,
+        -0.055
+      ],
+      "max": [
+        1.1,
+        3.98,
+        0.107
+      ]
+    },
+    "atrium_suspended_lantern": {
+      "min": [
+        -0.74,
+        4.98,
+        -0.74
+      ],
+      "max": [
+        0.74,
+        16.71,
+        0.74
+      ]
+    },
+    "atrium_waiting_rug": {
+      "min": [
+        -1.9,
+        0,
+        -2.25
+      ],
+      "max": [
+        1.9,
+        0.061,
+        2.25
       ]
     },
     "academic_skylight": {
@@ -2303,14 +2795,110 @@
     },
     "tower_rope": {
       "min": [
-        -0.075,
+        -0.078,
         0,
-        -0.075
+        -0.078
       ],
       "max": [
-        0.075,
+        0.078,
         3.4,
-        0.075
+        0.078
+      ]
+    },
+    "tower_rope_tenor": {
+      "min": [
+        -0.086,
+        0,
+        -0.086
+      ],
+      "max": [
+        0.086,
+        3.24,
+        0.086
+      ]
+    },
+    "tower_rope_upper": {
+      "min": [
+        -0.025,
+        1.05,
+        -0.024
+      ],
+      "max": [
+        0.025,
+        3.35,
+        0.024
+      ]
+    },
+    "tower_rope_sally": {
+      "min": [
+        -0.078,
+        0.53,
+        -0.078
+      ],
+      "max": [
+        0.078,
+        1.31,
+        0.078
+      ]
+    },
+    "tower_rope_sally_tenor": {
+      "min": [
+        -0.086,
+        0.49,
+        -0.086
+      ],
+      "max": [
+        0.086,
+        1.33,
+        0.086
+      ]
+    },
+    "tower_rope_tail": {
+      "min": [
+        -0.027,
+        0,
+        -0.026
+      ],
+      "max": [
+        0.027,
+        0.86,
+        0.026
+      ]
+    },
+    "tower_rope_tail_tenor": {
+      "min": [
+        -0.03,
+        0,
+        -0.029
+      ],
+      "max": [
+        0.03,
+        0.78,
+        0.029
+      ]
+    },
+    "tower_rope_guide": {
+      "min": [
+        -0.095,
+        3.22,
+        -0.093
+      ],
+      "max": [
+        0.095,
+        3.38,
+        0.093
+      ]
+    },
+    "tower_dust_mote": {
+      "min": [
+        -0.016,
+        -0.005,
+        -0.016
+      ],
+      "max": [
+        0.016,
+        0.005,
+        0.016
       ]
     },
     "tower_rope_mat": {
@@ -2323,6 +2911,18 @@
         0.52,
         0.064,
         0.52
+      ]
+    },
+    "tower_rope_mat_tenor": {
+      "min": [
+        -0.64,
+        0,
+        -0.64
+      ],
+      "max": [
+        0.654,
+        0.079,
+        0.64
       ]
     },
     "tower_clock_hammer": {
@@ -2649,6 +3249,30 @@
         0.09
       ]
     },
+    "chapel_screen_signal": {
+      "min": [
+        -1.465,
+        0.19,
+        -0.163
+      ],
+      "max": [
+        1.465,
+        3.37,
+        -0.108
+      ]
+    },
+    "tower_exit_indicator": {
+      "min": [
+        -0.825,
+        0,
+        -0.219
+      ],
+      "max": [
+        0.825,
+        0.48,
+        0.089
+      ]
+    },
     "tower_plaque": {
       "min": [
         -0.675,
@@ -2917,7 +3541,7 @@
       "min": [
         -8.045,
         0,
-        -8.6
+        -10.565
       ],
       "max": [
         79.665,
@@ -2947,6 +3571,90 @@
         2.51,
         3.81,
         1.77
+      ]
+    },
+    "yard_booth_glazing": {
+      "min": [
+        -1.455,
+        1.45,
+        -1.375
+      ],
+      "max": [
+        1.43,
+        2.75,
+        1.27
+      ]
+    },
+    "yard_booth_interior": {
+      "min": [
+        -1.31,
+        0.04,
+        -1.17
+      ],
+      "max": [
+        1.27,
+        2.31,
+        1.03
+      ]
+    },
+    "yard_booth_practicals": {
+      "min": [
+        -0.86,
+        0.9,
+        -0.875
+      ],
+      "max": [
+        0.86,
+        2.815,
+        0.502
+      ]
+    },
+    "yard_booth_guard_idle": {
+      "min": [
+        -0.367,
+        0.85,
+        -0.117
+      ],
+      "max": [
+        0.669,
+        1.883,
+        0.436
+      ]
+    },
+    "yard_booth_guard_ledger": {
+      "min": [
+        -0.524,
+        0.85,
+        -0.746
+      ],
+      "max": [
+        0.11,
+        1.883,
+        -0.06
+      ]
+    },
+    "yard_booth_guard_handoff": {
+      "min": [
+        -0.624,
+        0.85,
+        -1.057
+      ],
+      "max": [
+        0.147,
+        1.883,
+        -0.147
+      ]
+    },
+    "yard_booth_handoff": {
+      "min": [
+        -0.8,
+        1.545,
+        -1.195
+      ],
+      "max": [
+        -0.4,
+        1.795,
+        -0.925
       ]
     },
     "yard_fence_run": {
@@ -3073,7 +3781,7 @@
       "min": [
         -1.539,
         0.23,
-        -3.42
+        -3.538
       ],
       "max": [
         1.539,
@@ -3091,6 +3799,18 @@
         0.19,
         0.095,
         0.12
+      ]
+    },
+    "yard_look_bench": {
+      "min": [
+        -0.347,
+        0.03,
+        -1.59
+      ],
+      "max": [
+        0.353,
+        1.208,
+        1.59
       ]
     },
     "city_bus_shelter": {
@@ -3191,7 +3911,7 @@
     }
   },
   "baseboards": {
-    "planHash": "489b1ed0f17c6d47c4210f1adbbe142997976b98f1045977812cd05927efa4df",
+    "planHash": "81ccab3e375062903313eaf7d64530b4a620e0a88899d45a40efce1fc483ab9a",
     "groups": {
       "ground": {
         "mesh": "baseboard_ground",
@@ -3264,10 +3984,14 @@
     "queue_stanchion": 0.08,
     "key_cabinet": 1.16,
     "notice_board": 0.9,
+    "rekey_ledger": 0.96,
+    "chapel_key_cabinet": 1.24,
     "dance_mirror": 2.58,
     "costume_rail": 1.52,
     "rolled_lino": 1.73,
     "loose_note": 0.02,
+    "loose_note_page6": 0.04,
+    "story_waypoint_beacon": 0.05,
     "natatorium_roof_structure": 8.82,
     "natatorium_perimeter_relief": 5.24,
     "natatorium_entrance_fixtures": 0.04,
@@ -3287,11 +4011,19 @@
     "plant_pipe_bank": 0.49,
     "plant_pipe_elbow": 0.32,
     "plant_pipe_valve": 0.17,
+    "plant_calorifier": 0.23,
+    "plant_pump_skid": 0.16,
+    "plant_mcc_bank": 2.16,
+    "plant_idf_frame": 1.78,
+    "plant_header_manifold": 1.66,
+    "plant_overhead_header": 2.85,
+    "plant_grated_steps": 0.4,
+    "stillson_wrench": 0.02,
     "altar_table": 0.9,
     "lectern": 0.16,
     "portrait_frame": 1.01,
     "hall_seating": 3.15,
-    "hall_structure": 7.51,
+    "hall_structure": -1.5,
     "chapel_vault": 12.96,
     "academic_atrium_structure": 0,
     "hall_entrance_portal": 4.57,
@@ -3299,6 +4031,10 @@
     "hall_entry_sconce": 0.55,
     "front_atrium_perimeter_relief": 4.92,
     "atrium_public_fittings": 0.87,
+    "atrium_entry_closure": 0.05,
+    "atrium_formal_banner": 3.98,
+    "atrium_suspended_lantern": 5.97,
+    "atrium_waiting_rug": 0.05,
     "academic_skylight": 6.75,
     "academic_frieze": 0.84,
     "academic_bust_plinth": 0.16,
@@ -3327,6 +4063,7 @@
     "tower_wheel_08": -0.03,
     "tower_frame": 0.2,
     "tower_rope_mat": 0.05,
+    "tower_rope_mat_tenor": 0.05,
     "tower_clock_hammer": 1.14,
     "tower_winch": 0.89,
     "tower_shutters": 3.35,
@@ -3352,6 +4089,7 @@
     "legacy_patchbay": 1.74,
     "legacy_transfer_deck": 0.92,
     "chapel_inner_screen": 3.53,
+    "tower_exit_indicator": 0.48,
     "tower_plaque": 0.76,
     "public_exit_sign": 0.62,
     "bay_canopy": 5.33,
@@ -3377,6 +4115,13 @@
     "conservatory_west_elevation": 8.4,
     "conservatory_stair_window": 1.04,
     "yard_booth": 0.2,
+    "yard_booth_glazing": 2.75,
+    "yard_booth_interior": 1.55,
+    "yard_booth_practicals": 2.82,
+    "yard_booth_guard_idle": 1.55,
+    "yard_booth_guard_ledger": 1.55,
+    "yard_booth_guard_handoff": 1.55,
+    "yard_booth_handoff": 1.62,
     "yard_fence_run": 0.28,
     "yard_lamp_column": 7.18,
     "yard_skip": 0.12,
@@ -3389,6 +4134,7 @@
     "city_frontage": 0.03,
     "yard_van": 2.57,
     "yard_van_lamp": 0.1,
+    "yard_look_bench": 0.61,
     "city_bus_shelter": 2.63,
     "city_parked_car": 0.95,
     "baseboard_ground": 0.12,

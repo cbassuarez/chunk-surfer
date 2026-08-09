@@ -6,7 +6,7 @@ export const DIFFICULTY_PRESETS = Object.freeze({
     name: 'STORY',
     subtitle: 'ASSISTED',
     rank: 0,
-    description: 'For the building, dialogue, and endings. The HUSH is less aggressive and mistakes are more forgiving.',
+    description: 'For the building, dialogue, and endings. The HUSH is less aggressive, and Second Breath is immediate when the kit runs dry.',
     intended: false,
     values: Object.freeze({
       presencePressure: 'reduced',
@@ -23,7 +23,7 @@ export const DIFFICULTY_PRESETS = Object.freeze({
     name: 'CONTRACT',
     subtitle: 'RECOMMENDED',
     rank: 1,
-    description: 'The intended first run. Standard pressure, recording rules, navigation, and timing.',
+    description: 'The intended first run. A spent kit can demand one deliberate Hold before Second Breath returns.',
     intended: true,
     values: Object.freeze({ ...DEFAULT_RULE_VALUES }),
   }),
@@ -32,7 +32,7 @@ export const DIFFICULTY_PRESETS = Object.freeze({
     name: 'NIGHT SHIFT',
     subtitle: 'SEVERE',
     rank: 2,
-    description: 'For players who want the same building with tighter margins and less guidance.',
+    description: 'For players who want tighter margins and less guidance. A spent kit demands two Holds before Second Breath.',
     intended: false,
     values: Object.freeze({
       presencePressure: 'severe',
@@ -49,7 +49,7 @@ export const DIFFICULTY_PRESETS = Object.freeze({
     name: 'DEAD AIR',
     subtitle: 'CHALLENGE',
     rank: 3,
-    description: 'The building expects you now. Strict takes, minimal navigation, severe pressure, and run certification.',
+    description: 'The building expects you now. Strict takes, minimal navigation, and three Holds before a spent kit finds Second Breath.',
     intended: false,
     values: Object.freeze({
       presencePressure: 'dead-air',
@@ -126,10 +126,13 @@ export const RECORDING_RULES = Object.freeze({
 });
 
 export const COMBAT_RULES = Object.freeze({
-  guided: Object.freeze({ id: 'guided', composureBonus: 2, holdPrevention: 3, intentLookahead: 2, recommended: true, safetyRelay: true, variant: 'standard' }),
-  standard: Object.freeze({ id: 'standard', composureBonus: 0, holdPrevention: 2, intentLookahead: 1, recommended: true, safetyRelay: false, variant: 'standard' }),
-  severe: Object.freeze({ id: 'severe', composureBonus: -1, holdPrevention: 2, intentLookahead: 1, recommended: false, safetyRelay: false, variant: 'severe' }),
-  'dead-air': Object.freeze({ id: 'dead-air', composureBonus: -2, holdPrevention: 2, intentLookahead: 1, recommended: false, safetyRelay: false, variant: 'dead-air' }),
+  // When the bag has no immediate way to damage or capture, HOLD earns a
+  // SECOND BREATH. Story has it immediately; Contract exposes one deliberate
+  // empty beat; the challenge modes demand a longer brace but never hard-lock.
+  guided: Object.freeze({ id: 'guided', composureBonus: 2, holdPrevention: 3, intentLookahead: 2, recoveryHolds: 0, recommended: true, safetyRelay: true, variant: 'standard' }),
+  standard: Object.freeze({ id: 'standard', composureBonus: 0, holdPrevention: 2, intentLookahead: 1, recoveryHolds: 1, recommended: true, safetyRelay: false, variant: 'standard' }),
+  severe: Object.freeze({ id: 'severe', composureBonus: -1, holdPrevention: 2, intentLookahead: 1, recoveryHolds: 2, recommended: false, safetyRelay: false, variant: 'severe' }),
+  'dead-air': Object.freeze({ id: 'dead-air', composureBonus: -2, holdPrevention: 2, intentLookahead: 1, recoveryHolds: 3, recommended: false, safetyRelay: false, variant: 'dead-air' }),
 });
 
 // Serialized saves migrate to combatAssistance, but this export keeps older

@@ -33,6 +33,26 @@ assert.equal(model.route.status, 'ok');
 assert.ok(model.route.nextConnectorId);
 assert.equal(mapSpaceByRoom(model, 'main_b3').floorId, 'b1');
 
+const arbitraryProp=buildMapModel({
+  source,job:mapLabJob(testCase),objectiveState:{target:'main_b3'},
+  activeWaypoint:{id:'story:ledger',label:'READ THE REKEY LEDGER',kind:'prop',propId:'box-office-ledger',floorId:'g',position:{x:20,y:12}},
+  player:{x:7,y:20,height:-4,roomId:null,heading:0},navigation:{id:'directional',showWaypoint:true,showCrossFloorConnector:true},
+});
+assert.equal(arbitraryProp.waypoint.id,'story:ledger');
+assert.equal(arbitraryProp.waypoint.propId,'box-office-ledger');
+assert.equal(arbitraryProp.waypoint.label,'READ THE REKEY LEDGER');
+assert.equal(arbitraryProp.waypoint.floorId,'g');
+assert.equal(arbitraryProp.route.status,'ok');
+assert.equal(arbitraryProp.spaces.filter((space)=>space.roomId).length,5,'all five recording-room targets remain available');
+const arbitraryDoor=buildMapModel({
+  source,job:mapLabJob(testCase),
+  activeWaypoint:{id:'story:chapel-c17',label:'OPEN C-17',kind:'door',doorId:'chapel-c17',floorId:'u1',position:{x:30,y:16}},
+  player:{x:20,y:12,height:0,roomId:null,heading:0},navigation:{id:'directional',showWaypoint:true,showCrossFloorConnector:true},
+});
+assert.equal(arbitraryDoor.waypoint.doorId,'chapel-c17');
+assert.equal(arbitraryDoor.waypoint.kind,'door');
+assert.deepEqual(arbitraryDoor.waypoint.position,{x:30,y:16});
+
 let nav = initialMapNav({ model, preferredRoomId: 'main_b3' });
 assert.equal(selectedMapSpace(nav, model).roomId, 'main_b3');
 nav = reduceMapNav(nav, { type: 'NEXT_FLOOR' }, model);
@@ -51,6 +71,15 @@ const mini = buildMinimapCommands({ model, viewport: { x: 0, y: 0, w: 18, h: 8 }
 assert.ok(mini.some((command) => command.kind === 'player'));
 assert.ok(mini.some((command) => command.kind === 'connector-target' || command.kind === 'connector-edge' || command.kind === 'floor-target'));
 assert.equal(mini.some((command) => command.kind === 'enemy'), false);
+
+const equipmentModel=buildMapModel({
+  source,job:mapLabJob(testCase),player:{x:7,y:20,height:-4,roomId:null,heading:0},
+  equipmentMarkers:[{id:'radio',kind:'radio',label:'RADIO',floorId:'b1',position:{x:9,y:10},carrierOpen:true}],
+});
+assert.equal(equipmentModel.equipmentMarkers.length,1);
+assert.equal(equipmentModel.contacts.length,0,'equipment does not enter the HUSH contact layer');
+const equipmentCommands=buildMinimapCommands({model:equipmentModel,viewport:{x:0,y:0,w:18,h:8},now:1000});
+assert.ok(equipmentCommands.some((command)=>command.kind==='equipment'&&command.carrierOpen),'radio marker is exact and pulses only from carrier state');
 
 const minimalModel = mapLabModel(MAP_LAB_CASES.find((entry) => entry.id === 'dead-air-contact'), source);
 const minimalCommands = buildMinimapCommands({ minimalModel, model: minimalModel, viewport: { x: 0, y: 0, w: 18, h: 8 }, now: 1000 });

@@ -72,16 +72,18 @@ export const EXTERIOR_LOTS = freeze([
 ]);
 
 export const EXTERIOR_AMBIENT_NODES = freeze([
-  freeze({id:'late-bus',mesh:'ambient_late_bus',route:'north',period:46,from:{x:-34,z:-7},to:{x:126,z:-7}}),
+  freeze({id:'late-bus',mesh:'ambient_late_bus',kind:'vehicle',route:'north',period:46,phase:.08,from:{x:-34,z:-7},to:{x:126,z:-7}}),
+  freeze({id:'north-night-car',mesh:'city_parked_car',kind:'vehicle',route:'north',period:38,phase:.44,from:{x:130,z:-10},to:{x:-38,z:-10}}),
+  freeze({id:'south-night-car',mesh:'city_parked_car',kind:'vehicle',route:'south',period:43,phase:.72,from:{x:-32,z:98},to:{x:124,z:98}}),
+  freeze({id:'west-night-car',mesh:'city_parked_car',kind:'vehicle',route:'west',period:35,phase:.25,from:{x:-8,z:-8},to:{x:-8,z:101}}),
   freeze({id:'cyclist',mesh:'ambient_cyclist',route:'south',period:31,from:{x:118,z:99},to:{x:-28,z:99}}),
   freeze({id:'dog-walker',mesh:'ambient_dog_walker',route:'west',period:58,from:{x:-4,z:88},to:{x:-4,z:8}}),
-  freeze({id:'awning-figure',mesh:'ambient_awning_figure',route:'still',period:1,from:{x:-13,z:26},to:{x:-13,z:26}}),
 ]);
 
 export const EXTERIOR_INSPECTABLES = freeze([
   freeze({id:'exterior-foundation-stone',physical:{x:67,y:-1},label:'the foundation stone',text:'ELLERY MUNICIPAL SCHOOL OF MUSIC · OPENED 1888. The older name is cut deeper than the current one.'}),
   freeze({id:'exterior-chapel-plaque',physical:{x:103,y:93},label:'the chapel plaque',text:'ELLERY COLLEGIATE CHAPEL · 1908. The tower came after the school and has spent a century pretending otherwise.'}),
-  freeze({id:'exterior-baths-mosaic',physical:{x:129,y:77},label:'the baths mosaic',text:'MUNICIPAL BATHS · 1912. Blue tesserae survive under the paint. The pool was public before it belonged to the conservatory.'}),
+  freeze({id:'exterior-baths-mosaic',physical:{x:129,y:77},label:'the baths mosaic',text:'MUNICIPAL BATHS · 1912. Blue tesserae survive under the paint. The pool was public before it belonged to the conservatoire.'}),
   freeze({id:'exterior-hall-stone',physical:{x:129,y:34},label:'the hall dedication',text:'CONCERT HALL · 1936. The fly tower is eight metres behind this low range, where a stage tower belongs.'}),
 ]);
 

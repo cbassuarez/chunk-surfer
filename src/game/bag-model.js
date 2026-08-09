@@ -87,11 +87,11 @@ const KNOWN_GEAR = Object.freeze({
     facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'STIMULANT'], ['BATTLE', 'STEADY HANDS · +3 COMPOSURE · ONE CUP']],
   },
   keyring: {
-    title: 'STANDARD KEYRING',
+    title: 'STANDARD KEY RING',
     subtitle: 'FACILITIES KEYS',
     icon: 'keyring',
     status: ['CARRIED', 'dim'],
-    description: 'The standard keyring supplied for the building.',
+    description: 'The standard key ring supplied for the building.',
     facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'ACCESS']],
   },
   'chapel-key': {
@@ -100,7 +100,15 @@ const KNOWN_GEAR = Object.freeze({
     icon: 'keyring',
     status: ['ADDED', 'complete'],
     description: 'A later-generation key tagged C-17.',
-    facts: [['POSITION', 'KEYRING'], ['FUNCTION', 'CHAPEL ACCESS']],
+    facts: [['POSITION', 'KEY RING'], ['FUNCTION', 'CHAPEL ACCESS']],
+  },
+  'key-c17': {
+    title: 'KEY RING',
+    subtitle: 'TAG C-17',
+    icon: 'keyring',
+    status: ['ADDED', 'dim'],
+    description: 'A tagged key ring taken from the box-office cabinet.',
+    facts: [['POSITION', 'KEY RING'], ['FUNCTION', 'UNKNOWN']],
   },
 });
 

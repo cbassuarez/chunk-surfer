@@ -20,6 +20,8 @@ export const STAIR_ANOMALY_STAGE = Object.freeze({
   COMPLETE: 4,
 });
 
+export const STAIR_ANOMALY_DARK_ESCAPE_MS = 20_000;
+
 const VALID_STAIRS = new Set(['upper', 'basement']);
 const VALID_TRAVEL = new Set(['up', 'down']);
 const VALID_VARIANTS = new Set(Object.values(STAIR_ANOMALY_VARIANT));
@@ -66,16 +68,16 @@ export function decideStairAnomalyEnvironment({ routeTrunk = 'baseline', runId =
   // NEVER on the way DOWN to the basement. That descent is the route to studio B3
   // — the first room on the order, walked before the player has done anything —
   // and an impossible stair there reads as the game being broken rather than the
-  // building being wrong. The seal variant keeps its inverted slope but happens on
-  // the climb OUT: you are trying to leave and it keeps taking you down.
+  // building being wrong. The seal variant therefore happens on the climb OUT;
+  // its atmosphere stays wrong, but its geometry honours the ascent you chose.
   if (routeTrunk === 'flooded-seal') {
-    return { stairId: 'basement', travel: 'up', visualSlope: 'down', variant: STAIR_ANOMALY_VARIANT.SEAL, seed };
+    return { stairId: 'basement', travel: 'up', visualSlope: 'up', variant: STAIR_ANOMALY_VARIANT.SEAL, seed };
   }
   if (routeTrunk === 'flooded-surface') {
     return { stairId: 'basement', travel: 'up', visualSlope: 'up', variant: STAIR_ANOMALY_VARIANT.SURFACE, seed };
   }
   if (routeTrunk === 'dry-inversion') {
-    return { stairId: 'upper', travel: 'up', visualSlope: 'down', variant: STAIR_ANOMALY_VARIANT.INVERSION, seed };
+    return { stairId: 'upper', travel: 'up', visualSlope: 'up', variant: STAIR_ANOMALY_VARIANT.INVERSION, seed };
   }
   if (routeTrunk === 'uncertain') {
     const basement = (seed & 1) === 1;
@@ -83,7 +85,7 @@ export function decideStairAnomalyEnvironment({ routeTrunk = 'baseline', runId =
       stairId: basement ? 'basement' : 'upper',
       // Always an ascent. See the seal note above: the descent to B3 is sacred.
       travel: 'up',
-      visualSlope: basement ? 'down' : 'up',
+      visualSlope: 'up',
       variant: STAIR_ANOMALY_VARIANT.UNCERTAIN,
       seed,
     };
@@ -96,7 +98,10 @@ export function normalizeStairAnomalyEnvironment(value, fallback = DEFAULT_STAIR
   const base = objectOr(fallback, DEFAULT_STAIR_ANOMALY_ENVIRONMENT);
   const stairId = VALID_STAIRS.has(source.stairId) ? source.stairId : base.stairId;
   const travel = VALID_TRAVEL.has(source.travel) ? source.travel : base.travel;
-  const visualSlope = VALID_TRAVEL.has(source.visualSlope) ? source.visualSlope : base.visualSlope;
+  // The anomaly can make a flight impossibly long; it cannot contradict the
+  // direction the player chose at its threshold. This also repairs old saves
+  // whose inversion variants persisted an opposing visual slope.
+  const visualSlope = travel;
   const variant = VALID_VARIANTS.has(source.variant) ? source.variant : base.variant;
   const seed = Math.max(1, Math.floor(Number(source.seed) || Number(base.seed) || 4417)) >>> 0;
   return { stairId, travel, visualSlope, variant, seed };

@@ -142,7 +142,7 @@ export function makeLensCalibrationScene({
 
       uiFill(0, 0, cols, rows, UI_COLOR.glass);
       uiCenter(y, 'CHUNK SURFER', 'ui-secondary');
-      uiCenter(y + 2, firstInstall ? 'FIRST LAUNCH · EXTRA CONTENT' : 'LOADING MATERIALS', 'ui-amber');
+      uiCenter(y + 2, firstInstall ? 'FIRST LAUNCH · EXTRA CONTENT' : 'LOADING MATERIALS', 'ui-primary');
 
       let cursor = y + 5;
       if (firstInstall) {
@@ -151,7 +151,7 @@ export function makeLensCalibrationScene({
           value: setupCompleted,
           max: setupTotal,
           label: 'LOCAL DIFFUSION RUNTIME',
-          tone: error ? 'enemy' : 'player',
+          tone: error ? 'enemy' : 'theme',
           lowDanger: !!error,
         });
         const setupPhase = SETUP_PHASES[setup.state] || setup.detail || 'PREPARING LOCAL RUNTIME';
@@ -164,7 +164,7 @@ export function makeLensCalibrationScene({
         value: completed,
         max: total,
         label: 'MATERIAL BANK',
-        tone: error ? 'enemy' : 'player',
+        tone: error ? 'enemy' : 'theme',
         lowDanger: !!error,
         now,
       });

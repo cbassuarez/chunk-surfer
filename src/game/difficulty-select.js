@@ -1,6 +1,7 @@
 import * as scenes from './scenes.js';
 import { uiCenter, uiFill, uiLine, uiSize, uiText, uiWrap } from '../render/ui.js';
 import { drawLocationIndicator, drawMachinePanel, drawVfdText } from '../render/presentation.js';
+import { createHitRegions } from '../render/hit-regions.js';
 import { UI_COLOR } from '../render/palette.js';
 import {
   cycleRuleValue,
@@ -50,8 +51,33 @@ export function makeDifficultySelectScene({
   let ruleSel = 0;
   let customValues = normalizeRuleValues(initialCustomValues || {});
   let t = 0;
+  const hits = createHitRegions();
 
   const selectedPreset = () => presets[sel] || presets[0];
+
+  function selectPreset(index, { sound = true } = {}) {
+    if (index < 0 || index >= presets.length || index === sel) return false;
+    sel = index;
+    if (sound) AUDIO.menuMove();
+    return true;
+  }
+
+  function selectRule(index, { sound = true } = {}) {
+    if (index < 0 || index >= RULE_ORDER.length || index === ruleSel) return false;
+    ruleSel = index;
+    if (sound) AUDIO.menuMove();
+    return true;
+  }
+
+  function cycleCustomRule(index, delta) {
+    selectRule(index, { sound: false });
+    const key = RULE_ORDER[index];
+    customValues = {
+      ...customValues,
+      [key]: cycleRuleValue(key, customValues[key], delta),
+    };
+    AUDIO.menuMove();
+  }
 
   function confirmPreset() {
     const preset = selectedPreset();
@@ -84,6 +110,12 @@ export function makeDifficultySelectScene({
     enter() { AUDIO.startMenuHiss(); },
     exit() { AUDIO.stopMenuHiss(); },
     update(dt) { t += dt; },
+
+    pointer(e) {
+      if (e.type === 'pointermove') hits.handle(e, { click: false });
+      else if (e.type === 'pointerdown') hits.handle(e);
+      return true;
+    },
 
     key(e) {
       const k = String(e.key || '').toLowerCase();
@@ -145,6 +177,7 @@ export function makeDifficultySelectScene({
     },
 
     render() {
+      hits.reset();
       const { cols, rows } = uiSize();
       uiFill(0, 0, cols, rows, UI_COLOR.glass);
       const w = Math.min(96, cols - 4);
@@ -180,6 +213,23 @@ export function makeDifficultySelectScene({
         const subStyle = locked ? 'ui-secondary' : on ? 'ui-primary' : 'ui-secondary';
         const mark = on ? '▸' : ' ';
         const lock = locked ? ' ◇' : '';
+        hits.add({
+          id: `difficulty:${preset.id}`,
+          kind: 'difficulty-preset',
+          x: body.x,
+          y: menuY + index * 3 - 0.35,
+          w: Math.max(1, listW - 1),
+          h: 2.35,
+          selected: on,
+          label: preset.name,
+          data: { index, preset: preset.id },
+          onHover: () => { if (mode === 'select') selectPreset(index); },
+          onClick: () => {
+            if (mode === 'custom' && index !== sel) mode = 'select';
+            selectPreset(index, { sound: false });
+            confirmPreset();
+          },
+        });
         uiText(body.x, menuY + index * 3, `${mark} ${preset.name}${lock}`, rowStyle, locked ? 0.52 : 1);
         uiText(
           body.x + 3,
@@ -212,6 +262,21 @@ export function makeDifficultySelectScene({
         uiText(detailX, ry, `${active ? '▸' : ' '} ${label}`.slice(0, 25), active ? 'ui-amber' : 'ui-secondary', locked ? 0.42 : 1);
         const vx = detailX + Math.max(26, Math.floor(detailW * 0.56));
         const rendered = active ? `◀ ${value} ▶` : value;
+        if (mode === 'custom') {
+          hits.add({
+            id: `difficulty-rule:${key}`,
+            kind: 'difficulty-rule',
+            x: detailX,
+            y: ry - 0.35,
+            w: Math.max(1, detailW),
+            h: 1.4,
+            selected: active,
+            label,
+            data: { index, key },
+            onHover: () => selectRule(index),
+            onClick: (_, event) => cycleCustomRule(index, Number(event?.cellX) < vx ? -1 : 1),
+          });
+        }
         uiText(vx, ry, rendered.slice(0, Math.max(1, detailX + detailW - vx)), locked ? 'ui-secondary' : danger ? 'ui-danger' : active ? 'ui-amber' : 'ui-blue', locked ? 0.46 : 1);
         ry += 2;
       }
@@ -225,6 +290,15 @@ export function makeDifficultySelectScene({
       } else if (danger && Math.floor(t * 3) % 2 === 0) {
         uiCenter(y + h - 3, 'DEAD AIR CERTIFICATION ENDS IF GAMEPLAY RULES ARE MADE EASIER', 'ui-danger');
       }
+    },
+
+    view() {
+      return {
+        mode,
+        selected: selectedPreset()?.id || null,
+        selectedRule: mode === 'custom' ? RULE_ORDER[ruleSel] : null,
+        hitRegions: hits.view(),
+      };
     },
   };
 }

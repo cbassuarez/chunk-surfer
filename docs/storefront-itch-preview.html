@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chunk Surfer — itch.io page preview</title>
+<!--
+  OFFLINE PREVIEW HARNESS. Not pasted anywhere.
+
+  This reproduces the real itch.io project-page DOM (verified against live
+  pages) around the two paste-ready files, and links docs/storefront-itch.css,
+  so the theme can be iterated in a browser without touching the live page.
+
+  Open it directly:  open docs/storefront-itch-preview.html
+-->
+<link rel="stylesheet" href="./storefront-itch.css">
+<style>
+  /* Stand-in for itch's own base stylesheet. Nothing here ships. */
+  *{box-sizing:border-box}
+  body{margin:0;background:#07090A;font-family:Lato,system-ui,sans-serif}
+  #wrapper{width:100%}
+  #inner_column{max-width:960px;margin:0 auto}
+  #header{text-align:center}
+  .columns{display:flex;gap:24px;padding:20px 24px 30px}
+  .left_col{flex:1 1 553px;min-width:0}
+  .right_col{flex:0 0 300px}
+  .view_game_page{padding:0 24px}
+  .uploads{margin-top:24px}
+  .upload_name{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+  .screenshot_list img{width:100%}
+  .footer{padding:0 24px;display:flex;gap:14px;align-items:center;justify-content:center}
+  table{width:100%;border-collapse:collapse}
+  .preview_seam{max-width:960px;margin:26px auto 0;padding:6px 10px;border:1px dashed #3a3a3a;
+    color:#6d6d6d;font:700 10px/1.4 ui-monospace,monospace;letter-spacing:.2em;text-transform:uppercase}
+</style>
+</head><body>
+
+<div class="preview_seam">Preview harness — itch.io project page, downloads only</div>
+
+<div class="main wrapper game_page_wrapper" id="wrapper">
+  <div class="inner_column size_large family_sans-serif" id="inner_column">
+
+    <div class="header align_center" id="header">
+      <h1 itemprop="name" class="game_title">Chunk Surfer</h1>
+    </div>
+
+    <div class="view_game_page page_widget base_widget buy_on_top" id="view_game_1">
+      <div class="header_buy_row">
+        <p>A downloadable game for Windows, macOS, and Linux</p>
+        <div class="buy_row"><div class="button_message">
+          <a class="button download_btn" href="#">Download Now</a>
+          <span class="buy_message"><span class="dollars">Name your own price</span></span>
+        </div></div>
+      </div>
+
+      <div class="columns">
+        <div class="left_col column">
+
+          <div class="formatted_description user_formatted">
+<p class="custom-index">ELLERY HOLDINGS ORDER 4417-C</p>
+
+<p class="custom-lede"><strong>Five rooms. Five clean takes and you&rsquo;re done&hellip; or so you think.</strong></p>
+
+<p>Record the sound of empty rooms in a condemned conservatory. Stay still. Stay silent. Finish before demolition begins.</p>
+
+<blockquote class="custom-workorder">
+  <p><strong class="custom-label">site</strong> <span class="custom-value">Ellery Conservatory of Music. Condemned.</span></p>
+  <p><strong class="custom-label">deliver</strong> <span class="custom-value">Five clean room-tone recordings.</span></p>
+  <p><strong class="custom-label">window</strong> <span class="custom-value">One night. Demolition begins at 06:00.</span></p>
+  <p><strong class="custom-label">rules</strong> <span class="custom-value">If you can hear yourself on the take, the take is not the room.</span></p>
+</blockquote>
+
+<p class="custom-status">ACCOUNT OPEN: CONTRACTOR PRESENT</p>
+
+<hr class="custom-break">
+
+<p class="custom-index">01 / CASE &mdash; first person audio-reactive horror</p>
+
+<h2>The job is to record nothing.</h2>
+
+<p><em>Chunk Surfer</em> is a short first-person psychological horror game about sound recording. As a field recordist in the condemned Ellery Conservatory, your job is to capture five clean room sounds as you evade invisible entities, confront your murky past, and figure out what happened to the previous recordist who tried to do this gig first.</p>
+
+<p>Monitor each space, roll the recorder, then stay still and silent &ndash; or, rather, vulnerable &ndash; for a whole minute. Movement or noise can invalidate the take. An optional computer microphone adds noise from your real room through local loudness analysis only; audio is never recorded or uploaded.</p>
+
+<p class="custom-index">02 / MATERIAL &mdash; offline shader diffusion over traditional PBR maps</p>
+
+<h2>Stable Diffusion in game shader stack.</h2>
+
+<p><em>Chunk Surfer</em> is perhaps the first 3D psychological horror game with a local Stable Diffusion material renderer that keeps generating during play: GPU-budgeted local Stable Diffusion designed as neural rendering shaders for video games.</p>
+
+<p><strong>Technical jargon:</strong> it does not redraw the camera image or replace the game&rsquo;s regular 3D texture maps. Instead, it layers machine learning hallucinations over authored PBR materials; every 5&ndash;15 seconds, when the frame budget permits, one visible surface is re-hallucinated and crossfaded into the building over 6&ndash;12 seconds. This is real-time AI texture crossfading rather than full-screen frame generation. On top of traditional PBR maps sits this hallucination engine, which itself sits under an 8-bit mesh.</p>
+
+<p>The result is a unique low-resolution look that is neither 8bit nor diffused nor traditional PBR texturing, but a mix of the three.</p>
+
+<p>Geometry, lighting, depth, movement, and UI remain native, while reaction-diffusion, VFD pixel-mesh, datamosh, and glass shaders complete the stack. The entire visual lens runs locally and offline on the player&rsquo;s GPU. No image is uploaded to a cloud service.</p>
+
+<p class="custom-index">03 / FIELD &mdash; listen. record. do not move.</p>
+
+<h2>Your movement betrays you.</h2>
+
+<p>Monitor each assigned space before committing to a take. Once the recorder rolls, light and movement become liabilities. A clean recording advances the work order. A contaminated one must be attempted again, and a loud mistake can give whatever else is in the building someone to follow.</p>
+
+<p>Your torch makes the conservatory visible but its battery is finite and its beam attracts attention. Footsteps, handling, and injuries make noise. Corridors outside your sight and hearing can change, so a remembered route may not remain the route you return to.</p>
+
+<p class="custom-index">04 / RECORD &mdash; redaction turn-based combat</p>
+
+<h2>Pick up the pieces.</h2>
+
+<p>Inspect the packet left by the previous contractor and play back what your recorder captured. Later encounters turn transcript redaction into a physical struggle: choose what to black out, protect what remains readable, and live with the record you produce.</p>
+
+<blockquote class="custom-quote">
+  <p>a game of redaction. black out the words that change your reality to favorable odds.</p>
+</blockquote>
+
+<p class="custom-index">05 / SOURCE &mdash; source space</p>
+
+<h2>The game&rsquo;s own files become the map.</h2>
+
+<p>The investigation eventually ruptures into literal source-code space, where the game&rsquo;s own files become terrain, passages, and surfaces that can be altered. The machinery behind the fiction is not a bonus menu. It is somewhere you go.</p>
+
+<p class="custom-index">06 / INPUT &mdash; let your room into the game&mdash;or do not</p>
+
+<h2>Your microphone is optional. Its consequences are not cosmetic.</h2>
+
+<p>When enabled, <em>Chunk Surfer</em> measures loudness locally while a take is rolling. Noise in your real room can contaminate a take or provoke an in-game response. It never records, stores, transmits, uploads, or plays back microphone audio.</p>
+
+<p>You can deny or revoke permission and complete the game without microphone input.</p>
+
+<p class="custom-index">07 / RELEASE &mdash; public beta</p>
+
+<h2>Now out for public beta testing.</h2>
+
+<p>This game is in its nascent stages. Expect some bugs. Dialog is very likely to change, story is not. Expected bugs list and feedback links incoming soon.</p>
+
+<ul class="custom-spec">
+  <li><strong class="custom-label">mac</strong> <span class="custom-value">apple silicon</span></li>
+  <li><strong class="custom-label">windows</strong> <span class="custom-value">x64 + nvidia cuda</span></li>
+  <li><strong class="custom-label">linux</strong> <span class="custom-value">appimage / deb &mdash; x64 + nvidia cuda</span></li>
+  <li><strong class="custom-label">beta</strong> <span class="custom-value">unsigned</span></li>
+</ul>
+
+<p class="custom-notice">Full requirements, first-launch approval steps and download sizes are in the install instructions below the downloads.</p>
+
+<h2 class="custom-warning-heading">content warning (general horror)</h2>
+
+<p class="custom-warning">Sustained dread, sudden loud sounds, a small number of deliberate jumpscares, and flashing or high-contrast strobing effects. Settings can reduce or disable intense physical presentation effects.</p>
+
+<hr class="custom-break">
+
+<p class="custom-index">order 4417-C remains open</p>
+
+<h2 class="custom-closer">Five rooms. Five clean takes.</h2>
+
+<p class="custom-signoff"><strong>Do you take the gig?</strong></p>
+          </div>
+
+          <div class="uploads">
+            <div class="upload_list_widget base_widget">
+              <div class="upload"><div class="info_column"><div class="upload_name">
+                <strong class="name">chunk-surfer-macos-arm64.zip</strong>
+                <span class="file_size"><span>4.1 GB</span></span>
+                <span class="download_platforms">macOS</span>
+              </div></div></div>
+              <div class="upload"><div class="info_column"><div class="upload_name">
+                <strong class="name">chunk-surfer-windows-x64.zip</strong>
+                <span class="file_size"><span>4.4 GB</span></span>
+                <span class="download_platforms">Windows</span>
+              </div></div></div>
+              <div class="upload"><div class="info_column"><div class="upload_name">
+                <strong class="name">chunk-surfer-linux-x64.AppImage</strong>
+                <span class="file_size"><span>4.3 GB</span></span>
+                <span class="download_platforms">Linux</span>
+              </div></div></div>
+            </div>
+          </div>
+
+          <h2>Install instructions</h2>
+          <div class="install_instructions user_formatted">
+<p class="custom-index">AUDIOCORP FIELD SERVICES &mdash; DEPLOYMENT NOTES</p>
+
+<p class="custom-lede"><strong>Unsigned beta. Your operating system will complain once. Here is how to get past it.</strong></p>
+
+<ul class="custom-spec">
+  <li><strong class="custom-label">mac</strong> <span class="custom-value">apple silicon &mdash; <code>chunk-surfer-macos-arm64.zip</code></span></li>
+  <li><strong class="custom-label">windows</strong> <span class="custom-value">x64 + nvidia cuda &mdash; <code>chunk-surfer-windows-x64.zip</code></span></li>
+  <li><strong class="custom-label">linux</strong> <span class="custom-value">x64 + nvidia cuda &mdash; <code>chunk-surfer-linux-x64.AppImage</code> or <code>chunk-surfer-linux-x64.deb</code></span></li>
+  <li><strong class="custom-label">gpu</strong> <span class="custom-value">the diffusion material lens needs NVIDIA CUDA on Windows and Linux, and runs on the integrated GPU on Apple Silicon</span></li>
+  <li><strong class="custom-label">disk</strong> <span class="custom-value">large. the model weights ship inside the download so the lens runs offline &mdash; exact sizes are on the file list above</span></li>
+  <li><strong class="custom-label">audio</strong> <span class="custom-value">headphones strongly recommended. the game is a listening test</span></li>
+</ul>
+
+<p class="custom-notice">Nothing is downloaded on first launch. The visual lens and its model resources are bundled, which is why the builds are unusually large. Once installed, the game never contacts a server and never uploads an image.</p>
+
+<h2>macOS</h2>
+
+<ol class="custom-steps">
+  <li>Unzip <code>chunk-surfer-macos-arm64.zip</code> and drag <strong>Chunk Surfer</strong> into <code>/Applications</code>.</li>
+  <li><strong>Right-click the app and choose Open</strong> &mdash; do not double-click it the first time. Confirm <strong>Open</strong> in the dialog.</li>
+  <li>If macOS refuses anyway, open <strong>System Settings &rarr; Privacy &amp; Security</strong>, scroll to the blocked-app notice, and press <strong>Open Anyway</strong>.</li>
+  <li>Still blocked? Clear the download quarantine flag in Terminal:<br>
+    <code>xattr -dr com.apple.quarantine /Applications/Chunk\ Surfer.app</code></li>
+</ol>
+
+<h2>Windows</h2>
+
+<ol class="custom-steps">
+  <li>Unzip <code>chunk-surfer-windows-x64.zip</code> somewhere you can write to &mdash; not inside the zip, and not <code>Program Files</code>.</li>
+  <li>Run <code>chunk-surfer.exe</code>.</li>
+  <li>SmartScreen will say <em>Windows protected your PC</em>. Choose <strong>More info</strong>, then <strong>Run anyway</strong>.</li>
+  <li>If the game starts and the world renders flat, your GPU driver is not exposing CUDA. Update your NVIDIA driver; the game remains playable without the lens.</li>
+</ol>
+
+<h2>Linux</h2>
+
+<ol class="custom-steps">
+  <li><strong>AppImage:</strong> mark it executable and run it &mdash;<br>
+    <code>chmod +x chunk-surfer-linux-x64.AppImage</code><br>
+    <code>./chunk-surfer-linux-x64.AppImage</code></li>
+  <li><strong>Debian / Ubuntu:</strong> <code>sudo apt install ./chunk-surfer-linux-x64.deb</code>, then launch <strong>Chunk Surfer</strong> from your applications menu.</li>
+  <li>The proprietary NVIDIA driver is required for the diffusion lens. Nouveau will run the game without it.</li>
+</ol>
+
+<h2>Microphone</h2>
+
+<p>The game asks for microphone permission on first launch. <strong>You can say no and finish the whole game.</strong></p>
+
+<p class="custom-notice">If you allow it, the game measures loudness in your room locally while a take is rolling, so real noise can contaminate a recording or provoke a response in the building. Audio is never recorded, stored, transmitted, uploaded, or played back through the game. Permission can be revoked at any time in your operating system's privacy settings, or in the game's own audio settings.</p>
+
+<h2>Controls</h2>
+
+<ul class="custom-spec">
+  <li><strong class="custom-label">[R]</strong> <span class="custom-value">listen &mdash; roll the recorder</span></li>
+  <li><strong class="custom-label">[F]</strong> <span class="custom-value">light &mdash; torch on and off</span></li>
+  <li><strong class="custom-label">rebind</strong> <span class="custom-value">everything is remappable in settings &rarr; controls</span></li>
+</ul>
+
+<h2 class="custom-warning-heading">content warning (general horror)</h2>
+
+<p class="custom-warning">Sustained dread, sudden loud sounds, a small number of deliberate jumpscares, and flashing or high-contrast strobing effects. Settings can reduce or disable intense physical presentation effects &mdash; set these before your first session if you need them.</p>
+
+<h2>Something went wrong</h2>
+
+<p>This is a public beta and it is early. Expect some bugs. Dialog is very likely to change, story is not.</p>
+
+<ul class="custom-spec">
+  <li><strong class="custom-label">report</strong> <span class="custom-value"><a href="https://cbassuarez.com/contact">cbassuarez.com/contact</a></span></li>
+  <li><strong class="custom-label">source</strong> <span class="custom-value"><a href="https://github.com/cbassuarez/chunk-surfer">github.com/cbassuarez/chunk-surfer</a></span></li>
+  <li><strong class="custom-label">notes</strong> <span class="custom-value"><a href="https://cbassuarez.com/labs/chunk-surfer/">cbassuarez.com/labs/chunk-surfer</a></span></li>
+</ul>
+
+<p class="custom-signoff"><strong>order 4417-C remains open.</strong></p>
+          </div>
+
+          <div class="game_comments_widget base_widget">
+            <h2>Comments</h2>
+            <div class="community_post">
+              <div class="post_header"><span class="post_author">someone</span>
+                <span class="post_date"><a href="#">3 days ago</a></span></div>
+              <div class="post_body user_formatted"><p>the room tone in the chapel broke me. amazing.</p></div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="right_col column">
+          <div class="game_info_panel_widget base_widget"><table><tbody>
+            <tr><td>Updated</td><td>2 hours ago</td></tr>
+            <tr><td>Status</td><td>In development</td></tr>
+            <tr><td>Platforms</td><td>Windows, macOS, Linux</td></tr>
+            <tr><td>Author</td><td><a href="#">seb suarez</a></td></tr>
+            <tr><td>Genre</td><td><a href="#">Survival</a></td></tr>
+            <tr><td>Tags</td><td><a href="#">Horror</a>, <a href="#">First-Person</a>, <a href="#">Psychological Horror</a></td></tr>
+          </tbody></table></div>
+          <div class="screenshot_list">
+            <a class="screenshot" href="#"><img src="./media/title-screen.png" alt="Chunk Surfer title screen"></a>
+            <a class="screenshot" href="#"><img src="./media/conservatory-lit.png" alt="A flashlight illuminates a dark corridor"></a>
+            <a class="screenshot" href="#"><img src="./media/redaction-battle.png" alt="A transcript redaction encounter"></a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer" id="view_game_footer">
+      <a href="#" class="icon_logo">itch.io</a>
+      <a href="#">Community</a><a href="#">Profile</a><a href="#">Report</a><a href="#">Embed</a>
+    </div>
+  </div>
+</div>
+</body></html>

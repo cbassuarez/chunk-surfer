@@ -15,6 +15,7 @@ import {
   combatMovesForTool,
   combatIntentLookahead,
   combatPrediction,
+  combatRecoveryStatus,
   combatResult,
   counterMovesForIntent,
   createCombatState,
@@ -57,7 +58,7 @@ test('signal combat is deterministic and a perfect response opens one non-chaini
   const playback = reduceCombat(left, { type: COMBAT_ACTION.PLAYBACK });
   assert.equal(playback.tempo, false);
   assert.equal(playback.turns, 1);
-  assert.equal(playback.movementCoherence, 1);
+  assert.equal(playback.movementCoherence, 2);
 });
 
 test('Tune is a free once-per-movement calibration and strengthens the next perfect response', () => {
@@ -68,7 +69,7 @@ test('Tune is a free once-per-movement calibration and strengthens the next perf
   assert.equal(combatIntentLookahead(state).length, 2);
   assert.equal(availableCombatActions(state).find((action) => action.id === COMBAT_ACTION.TUNE).enabled, false);
   state = reduceCombat(state, { type: COMBAT_ACTION.MONITOR });
-  assert.equal(state.movementCoherence, 3);
+  assert.equal(state.movementCoherence, 4);
   assert.equal(state.tuneBonus, 0);
 });
 
@@ -159,6 +160,23 @@ test('WHITEOUT is described as an active technique so the UI can surface it as a
   assert.equal(TECHNIQUE_DEFS.find((t) => t.id === TECHNIQUE.AFTERIMAGE).active, undefined);
 });
 
+test('a deep build chooses one encounter finisher instead of deleting every movement', () => {
+  let state = createCombatState(definition('hall'), {
+    battery: 1,
+    tools: { torch: true, recorder: true, rig: true },
+    techniques: [TECHNIQUE.WHITEOUT, TECHNIQUE.MASTER_TAKE, TECHNIQUE.RUNAWAY_FEEDBACK],
+  });
+  state.intentIndex = 2;
+  state = reduceCombat(state, { type: COMBAT_ACTION.WHITEOUT });
+  assert.equal(state.finisherUsed, COMBAT_ACTION.WHITEOUT);
+  const actions = availableCombatActions(state);
+  for (const id of [COMBAT_ACTION.WHITEOUT, COMBAT_ACTION.MASTER_TAKE, COMBAT_ACTION.RUNAWAY_FEEDBACK]) {
+    const move = actions.find((action) => action.id === id);
+    assert.equal(move.enabled, false, id);
+    assert.equal(move.reason, 'FINISHER SPENT', id);
+  }
+});
+
 test('Afterimage, Whiteout, Overdub, Punch In, and Feedback Loop resolve exactly once at their authored scopes', () => {
   let afterimage = createCombatState(definition(), { techniques: [TECHNIQUE.ROOM_TONE, TECHNIQUE.AFTERIMAGE] });
   afterimage.intentIndex = 2;
@@ -181,7 +199,7 @@ test('Afterimage, Whiteout, Overdub, Punch In, and Feedback Loop resolve exactly
 
   let punch = createCombatState(definition(), { techniques: [TECHNIQUE.PUNCH_IN] });
   punch = reduceCombat(punch, { type: COMBAT_ACTION.MONITOR });
-  assert.equal(punch.movementCoherence, 3);
+  assert.equal(punch.movementCoherence, 4);
   assert.deepEqual(punch.punchInMovements, [0]);
 
   let feedback = createCombatState(definition('hall'), {
@@ -290,6 +308,112 @@ test('injuries and all four combat assistance modes set transparent authored dif
   assert.equal(currentCombatIntent(night).kind, 'overload');
   assert.equal(currentCombatIntent(deadAir).kind, 'conceal');
   assert.equal(story.movementCoherence, deadAir.movementCoherence);
+  assert.deepEqual(
+    [story.difficulty.recoveryHolds, contract.difficulty.recoveryHolds, night.difficulty.recoveryHolds, deadAir.difficulty.recoveryHolds],
+    [0, 1, 2, 3],
+  );
+});
+
+test('spent kits get one authored dead beat on Standard, none on Story, and never enter a passive loop', () => {
+  const spent = (difficulty) => {
+    const state = createCombatState(definition(), {
+      difficulty,
+      battery: 0,
+      tools: { torch: false, recorder: false, rig: false, fork: false, radio: false, coffee: false },
+    });
+    state.composeMovements = [state.movementIndex];
+    return state;
+  };
+
+  let story = spent(COMBAT_RULES.guided);
+  assert.equal(combatRecoveryStatus(story).ready, true, 'Story never opens on a passive-only choice');
+  const storyBreath = availableCombatActions(story).find((move) => move.id === COMBAT_ACTION.COMPOSE);
+  assert.deepEqual(
+    { enabled: storyBreath.enabled, label: storyBreath.label, damage: storyBreath.damage },
+    { enabled: true, label: 'SECOND BREATH', damage: 1 },
+  );
+
+  let standard = spent(COMBAT_RULES.standard);
+  assert.deepEqual(
+    { ready: combatRecoveryStatus(standard).ready, remaining: combatRecoveryStatus(standard).remaining },
+    { ready: false, remaining: 1 },
+    'Contract exposes exactly one deliberate recovery beat',
+  );
+  standard = runCombatTurn(standard, { type: COMBAT_ACTION.HOLD });
+  assert.equal(combatRecoveryStatus(standard).ready, true);
+  assert.match(standard.last.notice, /SECOND BREATH READY/);
+  const before = standard.movementCoherence;
+  standard = runCombatTurn(standard, { type: COMBAT_ACTION.COMPOSE });
+  assert.equal(standard.movementCoherence, before - 1, 'Second Breath is a real progress action');
+  assert.equal(combatRecoveryStatus(standard).ready, true, 'the encounter never falls back into another dead beat');
+  assert.equal(availableCombatActions(standard).find((move) => move.id === COMBAT_ACTION.COMPOSE).enabled, true);
+});
+
+test('Story and Standard can finish every authored fight with a completely spent bag', () => {
+  for (const [mode, difficulty] of [['story', COMBAT_RULES.guided], ['standard', COMBAT_RULES.standard]]) {
+    for (const id of ['natatorium', 'hall', 'practice', 'chapel', 'source']) {
+      let state = createCombatState(definition(id), {
+        difficulty,
+        battery: 0,
+        tools: { torch: false, recorder: false, rig: false, fork: false, radio: false, coffee: false },
+      });
+      state.composeMovements = [0];
+      for (let guard = 0; !state.result && guard < 200; guard += 1) {
+        state = runCombatTurn(state, {
+          type: combatRecoveryStatus(state).ready ? COMBAT_ACTION.COMPOSE : COMBAT_ACTION.HOLD,
+        });
+      }
+      assert.equal(combatResult(state)?.result, 'win', `${mode}:${id}`);
+    }
+  }
+});
+
+test('challenge modes delay Second Breath transparently but still recover a completely spent kit', () => {
+  for (const [id, required] of [['severe', 2], ['dead-air', 3]]) {
+    let state = createCombatState(definition(), {
+      difficulty: COMBAT_RULES[id],
+      battery: 0,
+      tools: { torch: false, recorder: false, rig: false, fork: false, radio: false, coffee: false },
+    });
+    state.composeMovements = [0];
+    for (let held = 0; held < required; held += 1) {
+      assert.equal(combatRecoveryStatus(state).ready, false, `${id} hold ${held} is still pressure`);
+      state = runCombatTurn(state, { type: COMBAT_ACTION.HOLD });
+    }
+    assert.equal(combatRecoveryStatus(state).ready, true, `${id} eventually exposes a progress action`);
+  }
+});
+
+test('ordinary encounters resist one-button phase deletion without changing difficulty health', () => {
+  const natatorium = authoredCombatProfile('natatorium').movements.map((movement) => movement.coherence);
+  const hall = authoredCombatProfile('hall').movements.map((movement) => movement.coherence);
+  const practice = authoredCombatProfile('practice').movements.map((movement) => movement.coherence);
+  assert.deepEqual(natatorium, [5, 5, 6]);
+  assert.deepEqual(hall, [6, 6, 6]);
+  assert.deepEqual(practice, [5, 6, 6]);
+  assert.ok([...natatorium, ...hall, ...practice].every((coherence) => coherence > 3), 'an ordinary Noise-state EXPOSE cannot erase a movement');
+});
+
+test('competent Standard play keeps every ordinary encounter in a deliberate decision arc', () => {
+  for (const id of ['natatorium', 'hall', 'practice']) {
+    let state = createCombatState(definition(id), {
+      difficulty: COMBAT_RULES.standard,
+      tools: { torch: true, recorder: true, rig: false, fork: false, radio: false, coffee: false },
+    });
+    let decisions = 0;
+    while (!state.result && decisions < 40) {
+      const intent = currentCombatIntent(state);
+      const action = state.tempo
+        ? state.take ? COMBAT_ACTION.PLAYBACK : COMBAT_ACTION.END_TEMPO
+        : intent.kind === 'broadcast' ? COMBAT_ACTION.MONITOR
+          : intent.kind === 'conceal' ? COMBAT_ACTION.EXPOSE
+            : COMBAT_ACTION.HOLD;
+      state = runCombatTurn(state, { type: action, replaceTake: true });
+      decisions += 1;
+    }
+    assert.equal(combatResult(state)?.result, 'win', id);
+    assert.ok(decisions >= 9 && decisions <= 15, `${id} used ${decisions} decisions`);
+  }
 });
 
 test('every non-perfect main action produces understandable pressure accounting', () => {

@@ -159,3 +159,23 @@ test('legacy button tokens normalize into semantic bindings', () => {
   assert.equal(normalized.bindings.interact.id, 'west');
   assert.equal(normalized.bindings.menu.id, 'menu');
 });
+
+test('tower haptics support dual rumble, reduction, and explicit off', async () => {
+  controller.controllerResetForTest();
+  const calls=[];
+  const active=pad('DualSense Wireless Controller');
+  active.vibrationActuator={
+    type:'dual-rumble',
+    async playEffect(type,options){calls.push({type,options});return 'complete';},
+  };
+  controller.setControllerNavigatorForTest(nav([active]));
+  controller.gamepadTick();
+  assert.equal((await controller.pulseControllerHaptics({mode:'full',strongMagnitude:.8,weakMagnitude:.5,duration:90})).ok,true);
+  assert.equal(calls[0].type,'dual-rumble');
+  assert.equal(calls[0].options.strongMagnitude,.8);
+  await controller.pulseControllerHaptics({mode:'reduced',strongMagnitude:.8,weakMagnitude:.5,duration:90});
+  assert.ok(calls[1].options.strongMagnitude<calls[0].options.strongMagnitude);
+  const beforeOff=calls.length;
+  assert.equal((await controller.pulseControllerHaptics({mode:'off'})).reason,'disabled');
+  assert.equal(calls.length,beforeOff);
+});

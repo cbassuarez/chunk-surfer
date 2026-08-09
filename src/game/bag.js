@@ -491,6 +491,11 @@ export function makeBagScene({
       syncBagSelectionFromMap();
       remember();
     },
+    selectFloor(floorId){
+      setSection('map');
+      mapNav=reduceMapNav(mapNav,{type:'SELECT_FLOOR',floorId},model.map);
+      syncBagSelectionFromMap();remember();
+    },
 
     debugState() {
       return {

@@ -59,6 +59,11 @@ export function buildMapCommands({ model, nav, layout, now = 0 } = {}) {
     });
   }
 
+  for(const marker of model.equipmentMarkers||[]){
+    if(marker.floorId!==floor.id||!marker.position)continue;
+    commands.push({kind:'equipment',id:marker.id,label:marker.label,point:transform.point(marker.position),carrierOpen:!!marker.carrierOpen});
+  }
+
   if (model.player?.resolved && model.player.floorId === floor.id && model.player.position && model.policy?.showExactPlayer !== false) {
     commands.push({ kind: 'player', point: transform.point(model.player.position), heading: model.player.heading || 0 });
   }
@@ -125,6 +130,13 @@ export function buildMinimapCommands({ model, viewport, radius = 18, now = 0, as
     });
   }
   commands.push({ kind: 'player', point: transform.point(model.player.position), heading: model.player.heading || 0 });
+
+  for(const marker of model.equipmentMarkers||[]){
+    if(marker.floorId!==floor.id||!marker.position)continue;
+    const raw=transform.point(marker.position),inside=insideRect(raw,viewport,.7);
+    commands.push({kind:inside?'equipment':'equipment-edge',id:marker.id,label:marker.label,
+      point:inside?raw:clampMarkerToEdge(model.player.position,marker.position,viewport,.8,heading),carrierOpen:!!marker.carrierOpen});
+  }
 
   // Exact position is permitted only for a manifestation the player can see
   // right now. Losing sight removes the marker on the next model update.

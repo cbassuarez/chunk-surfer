@@ -86,6 +86,15 @@ for (const name of [
   'mallet_pair',
   'cable_coil',
   'open_instrument_case',
+  'atrium_entry_closure',
+  'atrium_formal_banner',
+  'atrium_suspended_lantern',
+  'atrium_waiting_rug',
+  'plant_calorifier','plant_pump_skid','plant_mcc_bank','plant_idf_frame',
+  'plant_header_manifold','plant_overhead_header','plant_grated_steps','plant_steam',
+  'plant_gauge_needle_0','plant_gauge_needle_1','plant_gauge_needle_2',
+  'adjustable_spanner','stillson_wrench','walkie_radio','radio_carrier_led',
+  'chapel_key_ring_ch04','chapel_key_ring_c17','chapel_key_ring_fohm',
 ]) {
   assert.ok(PROP_MESH[name], `missing prop mesh contract for ${name}`);
 }
@@ -148,10 +157,25 @@ assert.equal(PROPS.pickProp(dispatchAim.x, dispatchAim.y, 0, 2.5, { yaw:aimAt('d
 
 const boxOfficeProps = placed.filter((prop) => prop.id.startsWith('box-office-'));
 assert.ok(boxOfficeProps.length >= 10, 'box office should read as a stocked ticket office');
-assert.ok(byId['box-office-key-cabinet']?.action === 'chapel-key-cabinet', 'key cabinet interaction stays canonical');
+assert.equal(byId['box-office-key-cabinet']?.interactive,false,'key cabinet shell cannot steal focus');
+const cabinetRings=['box-office-key-ring-ch04','box-office-key-ring-c17','box-office-key-ring-fohm'].map((id)=>byId[id]);
+assert.deepEqual(cabinetRings.map((prop)=>prop?.keyTag),['CH-04','C-17','FOH-M'],'three separate ring props own the authored tags');
+assert.ok(cabinetRings.every((prop)=>prop?.action==='chapel-key-ring'),'every ring uses literal in-world selection');
 assert.ok(byId['box-office-ledger']?.action === 'rekey-ledger', 'rekey ledger interaction stays canonical');
 assert.ok(reachable(rt(90, 14), rt(94, 11.5)), 'entrance-side box-office staff route stays walkable around counter and desk');
 assert.ok(PROPS.pathToProp(rt(90, 14).x, rt(90, 14).y, 'box-office-key-cabinet', KEYRING), 'key cabinet remains reachable');
+for(const prop of cabinetRings)assert.ok(PROPS.pathToProp(rt(90,14).x,rt(90,14).y,prop.id,KEYRING),`${prop.keyTag} remains reachable`);
+
+// One ordinary standing position can address all three rings. Horizontal aim
+// separates the columns; pitch separates the two rings on the left column.
+const cabinetApproach=rt(94.8,9.45);
+const cabinetMx=(cabinetApproach.x+.5)*.5,cabinetMz=(cabinetApproach.y+.5)*.5;
+for(const prop of cabinetRings){
+  const dx=prop.interactionX-cabinetMx,dz=prop.interactionY-cabinetMz,d=Math.hypot(dx,dz);
+  const yaw=Math.atan2(dx,-dz);
+  const pitch=Math.atan2((prop.elevation+(prop.h||.28)*.5)-1.58,d);
+  assert.equal(PROPS.pickProp(cabinetApproach.x,cabinetApproach.y,0,2.8,{yaw,pitch})?.id,prop.id,`${prop.keyTag} owns its reticle pitch and position`);
+}
 
 // The visible public floor is one circulation field. These points trace both
 // sides of the garden, the cleared former box-office choke point and the hall
@@ -165,6 +189,23 @@ for(const [x,y] of [[77,7],[77,15],[78,23],[90,14],[94,18],[96,22],[90,6]]){
 }
 assert.ok(byId['atrium-public-fittings']&&!byId['atrium-public-fittings'].blocks,'wall fittings fill the atrium without claiming garden or circulation cells');
 assert.ok(!placed.some((prop)=>prop.id.startsWith('atrium-public-')&&prop.blocks&&prop.x>=79&&prop.x<=88&&prop.y>=8&&prop.y<=20),'new public furniture stays out of the ruined garden');
+const civicRuinIds=[
+  'atrium-entry-closure','atrium-banner-west','atrium-banner-east',
+  'atrium-lantern-north','atrium-lantern-south','atrium-waiting-rug',
+];
+assert.ok(civicRuinIds.every((id)=>byId[id]),'the civic-ruin pass has all six large visual anchors');
+for(const id of civicRuinIds){
+  assert.equal(byId[id].blocks,false,`${id} never changes the public circulation graph`);
+  assert.equal(byId[id].interactive,false,`${id} is architecture rather than another inspection target`);
+  assert.equal(byId[id].structural,true,`${id} participates in the structural prop pass`);
+}
+assert.equal(placed.filter((prop)=>prop.mesh==='atrium_formal_banner').length,2,'paired formal banners occupy both long walls');
+assert.equal(placed.filter((prop)=>prop.mesh==='atrium_suspended_lantern').length,2,'two long-drop lanterns occupy the garden void');
+assert.equal(placed.filter((prop)=>prop.mesh==='tower_plaque'&&prop.x>=74&&prop.x<=98&&prop.y>=3&&prop.y<=27).length,0,
+  'tower route plaques never appear anywhere in the front atrium');
+const frontMain=FP.doorState().find((door)=>door.id==='front-main');
+assert.ok(frontMain&&Math.abs(byId['atrium-entry-closure'].rx-frontMain.cx)<=1&&Math.abs(byId['atrium-entry-closure'].ry-frontMain.cy)<=1,
+  'the closure assembly is centred on the complete public threshold');
 
 assert.ok(reachable(rt(97, 25), rt(117, 10)), 'hall door to stage route remains clear');
 assert.ok(reachable(rt(97, 25), rt(100, 21)), 'hall door to lower galleria stair landing remains clear');
@@ -337,6 +378,19 @@ assert.ok(pipeProps.every((prop) => {
 }), 'plant pipes are nonblocking wall fixtures inside the plant zone');
 assert.ok(reachable(rt(25, 12), rt(35, 10)), 'studio to plant-room service path remains clear');
 assert.ok(reachable(rt(25, 12), rt(40, 14)), 'plant-room pipe dressing does not block circulation');
+for(const id of['plant-calorifier-north','plant-calorifier-south','plant-pump-north','plant-pump-south','plant-mcc-east','plant-idf-west','plant-overhead-header','plant-annex-steps','plant-heating-header']){
+  assert.ok(byId[id],`${id} is visibly authored in plant`);
+}
+for(const prop of placed.filter((entry)=>entry.id==='plant-rack-1'||entry.id.startsWith('plant-pipe-')||[
+  'plant-calorifier-north','plant-calorifier-south','plant-pump-north','plant-pump-south',
+  'plant-mcc-east','plant-idf-west','plant-overhead-header','plant-annex-steps',
+].includes(entry.id))){
+  assert.equal(prop.interactive,false,`${prop.id} is structural plant dressing, not another inspection target`);
+}
+assert.ok(reachable(rt(29.5,30.5),rt(38,32)),'plant spur still reaches the bent-rig cell');
+assert.ok(reachable(rt(29.5,30.5),rt(37.5,30)),'plant spur still reaches S/P-01');
+assert.ok(reachable(rt(29.5,30.5),rt(33,37.45)),'wide annex opening reaches the heating header');
+assert.ok(reachable(rt(70.5,6.25),rt(33,37.45)),'the oversized Stillson has a valid doorway route from the Get-In rack to the manifold');
 
 console.log('conservatory space layout tests ok');
 

@@ -9,7 +9,7 @@ import { uiCellMetrics, uiDraw, uiFill, uiGlyph, uiText, uiSize } from './ui.js'
 import { drawMachinePanel } from './presentation.js';
 import { themeRoleColor, UI_COLOR } from './palette.js';
 import { buildMinimapCommands } from './map-commands.js';
-import { drawAnomalyMarker, drawHushMarker, drawPlayerMarker, drawWaypointMarker } from './map-icons.js';
+import { drawAnomalyMarker, drawEquipmentMarker, drawHushMarker, drawPlayerMarker, drawWaypointMarker } from './map-icons.js';
 import { mapCurrentAreaLabel, mapFloor, newestMapContact } from '../game/map-model.js';
 import { shakeMode, visualEffectsEnabled } from '../game/access.js';
 
@@ -337,6 +337,7 @@ function drawCommands(commands, now) {
     else if (command.kind === 'sight') drawSight(command);
     else if (command.kind === 'player') drawPlayerMarker(command.point, command.heading, 1, { tick: !commands.some((c) => c.kind === 'sight') });
     else if (command.kind === 'waypoint' || command.kind === 'connector-target') drawWaypointMarker(command.point, .95);
+    else if(command.kind==='equipment'||command.kind==='equipment-edge')drawEquipmentMarker(command.point,command.carrierOpen ? .72+Math.sin(now*.007)*.2 : .72);
     else if (command.kind === 'waypoint-edge' || command.kind === 'connector-edge') {
       drawWaypointMarker(command.point, .92);
       if (command.floorDelta) uiGlyph(Math.round(command.point.x), Math.round(command.point.y) + 1, command.floorDelta > 0 ? '↑' : '↓', 'ui-blue', .78);

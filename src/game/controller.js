@@ -219,6 +219,40 @@ export function controllerRemapAction() { return capture?.action || null; }
 export function controllerSnapshot() { return { ...lastState, buttons: new Set(lastState.buttons), pressed: new Set(lastState.pressed), released: new Set(lastState.released), actions: new Set(lastState.actions) }; }
 export function controllerMotionAxes() { return lastState.connected && settings.enabled ? { ...lastState.axes } : { moveX: 0, moveY: 0, turnX: 0, lookY: 0 }; }
 
+// A single conservative haptics surface for authored gameplay. Browsers expose
+// either the modern dual-rumble actuator, a generic haptic actuator, or only
+// device vibration. Every branch is optional and a rejected actuator promise
+// is an ordinary unsupported-device result, never an input failure.
+export async function pulseControllerHaptics({
+  duration=90,
+  strongMagnitude=.7,
+  weakMagnitude=.35,
+  mode='full',
+}={}){
+  const resolvedMode=['off','reduced','full'].includes(mode)?mode:'full';
+  if(resolvedMode==='off')return{ok:false,reason:'disabled'};
+  const scale=resolvedMode==='reduced'?.42:1;
+  const milliseconds=Math.max(12,Math.min(800,Number(duration)||90));
+  const nav=navigatorOverride||globalThis.navigator;
+  const list=pads();
+  const pad=list.find((entry,index)=>(activePadId&&entry.id===activePadId)||(activePadIndex>=0&&index===activePadIndex))||list[0]||null;
+  const actuator=pad?.vibrationActuator||pad?.hapticActuators?.[0]||null;
+  if(typeof actuator?.playEffect==='function'){
+    try{
+      await actuator.playEffect(actuator.type||'dual-rumble',{
+        duration:milliseconds,startDelay:0,
+        strongMagnitude:Math.max(0,Math.min(1,(Number(strongMagnitude)||0)*scale)),
+        weakMagnitude:Math.max(0,Math.min(1,(Number(weakMagnitude)||0)*scale)),
+      });
+      return{ok:true,kind:'gamepad'};
+    }catch(_){/* fall through to device vibration */}
+  }
+  if(typeof nav?.vibrate==='function'){
+    try{if(nav.vibrate(Math.round(milliseconds*scale)))return{ok:true,kind:'device'};}catch(_){/* unavailable */}
+  }
+  return{ok:false,reason:'unavailable'};
+}
+
 export function beginControllerRemap(action, done) {
   if (!action) return false;
   capture = { action, done };

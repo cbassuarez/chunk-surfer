@@ -122,10 +122,16 @@ export function objectives({ rooms = [], notes = [], hasTake = () => false, labe
   };
 }
 
-export function loadObjState(saved = {}) {
+export function loadObjState(saved = {}, { validTargets = null } = {}) {
   state.read = saved.read || [];
-  state.waypoint = saved.waypoint || null;
-  state.target = saved.target || null;
+  const allowed=validTargets==null?null:new Set(validTargets||[]);
+  const target=saved.target || null;
+  // Older tower/finale builds serialized temporary story ids into this player
+  // slot. Keep page history, but discard those stale targets so the derived
+  // story-guidance layer can take over without resurrecting them later.
+  const valid=!target||allowed==null||allowed.has(target);
+  state.waypoint = valid ? (saved.waypoint || null) : null;
+  state.target = valid ? target : null;
 }
 export function saveObjState() {
   return { read: state.read, waypoint: state.waypoint, target: state.target };

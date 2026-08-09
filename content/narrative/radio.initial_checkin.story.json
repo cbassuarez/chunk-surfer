@@ -30,29 +30,29 @@
       "art": {
         "id": "walkie",
         "mode": "hero",
-        "caption": "Client radio / issued equipment",
+        "caption": "Field radio / carrier quiet",
         "status": "LIVE"
       },
       "lines": [
         {
           "who": "radio",
-          "text": "4417-C, go ahead.",
+          "text": "4417-C? You in yet?",
           "id": "start.line.1"
         }
       ],
       "choices": [
         {
-          "text": "Identify yourself.",
+          "text": "Yeah. I'm in.",
           "goto": "identify",
           "id": "start.choice.1"
         },
         {
-          "text": "Ask about the work order.",
+          "text": "Can you confirm the room list?",
           "goto": "work",
           "id": "start.choice.2"
         },
         {
-          "text": "Ask who is on the channel.",
+          "text": "Who've I got?",
           "goto": "channel",
           "id": "start.choice.3"
         }
@@ -64,23 +64,23 @@
       "art": {
         "id": "walkie",
         "mode": "hero",
-        "caption": "Client radio / issued equipment",
+        "caption": "Field radio / carrier quiet",
         "status": "LIVE"
       },
       "lines": [
         {
           "who": "me",
-          "text": "4417-C on site. Starting the basement rooms.",
+          "text": "Yeah. 4417-C. I'm in. Basement first.",
           "id": "identify.line.1"
         },
         {
           "who": "radio",
-          "text": "Copy. Top of the hour.",
+          "text": "Got you. Call again around the hour—if I'm still on this desk.",
           "id": "identify.line.2"
         },
         {
           "who": "direction",
-          "text": "A chair moves somewhere behind the voice. Someone laughs at something that is not you.",
+          "text": "Paper slides across a desk. A laugh in the room is cut off when the carrier closes.",
           "hold": 2.2,
           "id": "identify.line.3"
         }
@@ -92,23 +92,23 @@
       "art": {
         "id": "walkie",
         "mode": "hero",
-        "caption": "Client radio / issued equipment",
+        "caption": "Field radio / carrier quiet",
         "status": "LIVE"
       },
       "lines": [
         {
           "who": "me",
-          "text": "Confirming the order. Five room tones, one minute each.",
+          "text": "Just checking: five room tones, one minute apiece?",
           "id": "work.line.1"
         },
         {
           "who": "radio",
-          "text": "Five rooms. No handling noise. No light on the tape.",
+          "text": "That's it. Hands off the case, torch off while you're rolling.",
           "id": "work.line.2"
         },
         {
           "who": "direction",
-          "text": "The carrier closes cleanly enough to sound rehearsed.",
+          "text": "A telephone rings once behind the voice. The carrier clicks shut.",
           "hold": 1.8,
           "id": "work.line.3"
         }
@@ -120,23 +120,23 @@
       "art": {
         "id": "walkie",
         "mode": "hero",
-        "caption": "Client radio / issued equipment",
+        "caption": "Field radio / carrier quiet",
         "status": "LIVE"
       },
       "lines": [
         {
           "who": "me",
-          "text": "Who am I speaking to?",
+          "text": "Who've I got?",
           "id": "channel.line.1"
         },
         {
           "who": "radio",
-          "text": "Front desk relay. Do the rooms in whatever order the building gives you.",
+          "text": "Martin. Front desk relay. For the next twenty minutes, anyway.",
           "id": "channel.line.2"
         },
         {
           "who": "direction",
-          "text": "That should be a joke. It does not land like one.",
+          "text": "Someone asks him a question away from the microphone. He answers with his palm over the grille.",
           "hold": 2,
           "id": "channel.line.3"
         }

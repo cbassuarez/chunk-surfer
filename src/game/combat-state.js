@@ -215,6 +215,7 @@ function combatDifficulty(raw = {}) {
     composureBonus: integer(raw.composureBonus, 0),
     holdPrevention: Math.max(0, integer(raw.holdPrevention, 2)),
     intentLookahead: Math.max(1, integer(raw.intentLookahead, 1)),
+    recoveryHolds: Math.max(0, integer(raw.recoveryHolds, 1)),
     recommended: raw.recommended !== false,
     safetyRelay: !!raw.safetyRelay,
     variant: ['standard', 'severe', 'dead-air'].includes(raw.variant) ? raw.variant : 'standard',
@@ -367,10 +368,19 @@ export function createCombatState(definition, {
     coffeeUsed: false,
     masterTakeUsed: false,
     runawayUsed: false,
+    // The three branch capstones share one encounter limiter. A fully built
+    // loadout may choose its spectacular phase break, not erase three phases
+    // by firing WHITEOUT, MASTER TAKE, and RUNAWAY FEEDBACK back-to-back.
+    finisherUsed: null,
     signaturePressure: 0,
     punchInMovements: [],
     overdubMovements: [],
     composeMovements: [],
+    // If the loadout cannot attack or capture this beat, HOLD can recover the
+    // player's baseline SECOND BREATH. The unlock is encounter-wide: Contract
+    // gets the intended bad beat once, rather than every time a tool runs dry.
+    recoveryHolds: 0,
+    recoveryUnlocked: rules.recoveryHolds === 0,
     perfectCounters: 0,
     missedCounters: 0,
     damageTaken: 0,
@@ -559,6 +569,46 @@ function captureDamage(state, amount) {
   return base;
 }
 
+const IMMEDIATE_PROGRESS_ACTIONS = Object.freeze([
+  COMBAT_ACTION.EXPOSE,
+  COMBAT_ACTION.WHITEOUT,
+  COMBAT_ACTION.PLAYBACK,
+  COMBAT_ACTION.INVERT,
+  COMBAT_ACTION.MASTER_TAKE,
+  COMBAT_ACTION.RUNAWAY_FEEDBACK,
+]);
+
+// This is deliberately stricter than "some button is enabled". HOLD, WAIT,
+// TUNE, and a MONITOR pointed at an unrecordable intent can all spend a turn
+// without moving the fight. SECOND BREATH only appears when the player truly
+// has no immediate damage/capture route, so it cannot be farmed over a live kit.
+function hasImmediateProgress(state) {
+  if (IMMEDIATE_PROGRESS_ACTIONS.some((id) => actionAvailability(state, id).enabled)) return true;
+  const intent = currentCombatIntent(state);
+  if (intent?.recordable && actionAvailability(state, COMBAT_ACTION.MONITOR).enabled) return true;
+  if (actionAvailability(state, COMBAT_ACTION.RADIO_DECOY).enabled) {
+    return hasTechnique(state, TECHNIQUE.DEAD_AIR)
+      || intent?.kind === INTENT_KIND.BROADCAST
+      || intent?.kind === INTENT_KIND.LOOP;
+  }
+  return false;
+}
+
+export function combatRecoveryStatus(state) {
+  const required = Math.max(0, integer(state?.difficulty?.recoveryHolds, 1));
+  const holds = Math.max(0, integer(state?.recoveryHolds, 0));
+  const stranded = state?.phase === 'select' && !state?.result && !hasImmediateProgress(state);
+  const unlocked = !!state?.recoveryUnlocked || required === 0 || holds >= required;
+  return {
+    stranded,
+    holds,
+    required,
+    remaining: Math.max(0, required - holds),
+    unlocked,
+    ready: stranded && unlocked,
+  };
+}
+
 function applyEnemyIntent(state, intent, prevention) {
   const signature = state.definition.signature?.id;
   const echo = Math.max(0, integer(state.signaturePressure, 0));
@@ -603,6 +653,7 @@ function actionAvailability(state, actionId) {
     if (!state.tools.torch) return { enabled: false, reason: 'NO TORCH' };
     const whiteout = actionId === COMBAT_ACTION.WHITEOUT;
     if (whiteout && !hasTechnique(state, TECHNIQUE.WHITEOUT)) return { enabled: false, reason: 'TECHNIQUE LOCKED' };
+    if (whiteout && state.finisherUsed) return { enabled: false, reason: 'FINISHER SPENT' };
     if (whiteout && state.whiteoutUsed) return { enabled: false, reason: 'USED THIS ENCOUNTER' };
     const cost = .025 * state.torchDrainScale * (whiteout ? 2 : 1);
     if (state.battery + 1e-9 < cost) return { enabled: false, reason: 'BATTERY FLAT', cost };
@@ -628,17 +679,21 @@ function actionAvailability(state, actionId) {
     if (state.composure >= state.maxComposure) return { enabled: false, reason: 'COMPOSURE STEADY' };
   }
   if (actionId === COMBAT_ACTION.COMPOSE) {
+    const recovery = combatRecoveryStatus(state);
+    if (recovery.ready) return { enabled: true, recovery: true };
     if (state.composure >= state.maxComposure) return { enabled: false, reason: 'COMPOSED' };
     if ((state.composeMovements || []).includes(state.movementIndex)) return { enabled: false, reason: 'BREATH SPENT' };
   }
   if (actionId === COMBAT_ACTION.MASTER_TAKE) {
     if (!state.tools.recorder) return { enabled: false, reason: 'NO RECORDER' };
     if (!hasTechnique(state, TECHNIQUE.MASTER_TAKE)) return { enabled: false, reason: 'TECHNIQUE LOCKED' };
+    if (state.finisherUsed) return { enabled: false, reason: 'FINISHER SPENT' };
     if (state.masterTakeUsed) return { enabled: false, reason: 'USED THIS ENCOUNTER' };
   }
   if (actionId === COMBAT_ACTION.RUNAWAY_FEEDBACK) {
     if (!state.tools.rig) return { enabled: false, reason: 'NO BENT RIG' };
     if (!hasTechnique(state, TECHNIQUE.RUNAWAY_FEEDBACK)) return { enabled: false, reason: 'TECHNIQUE LOCKED' };
+    if (state.finisherUsed) return { enabled: false, reason: 'FINISHER SPENT' };
     if (state.runawayUsed) return { enabled: false, reason: 'USED THIS ENCOUNTER' };
   }
   if (actionId === COMBAT_ACTION.END_TEMPO && !state.tempo) return { enabled: false, reason: 'NO TEMPO' };
@@ -647,10 +702,13 @@ function actionAvailability(state, actionId) {
 
 export function availableCombatActions(state) {
   const intent = currentCombatIntent(state);
+  const recovery = combatRecoveryStatus(state);
   const actions = [
     {
       id: COMBAT_ACTION.HOLD, tool: COMBAT_TOOL.SELF, label: 'HOLD',
-      detail: `PREVENT ${defensivePrevention({ ...state, snr: SNR_STATE.SILENCE }, state.difficulty.holdPrevention)} · ENTER SILENCE`,
+      detail: recovery.stranded && !recovery.unlocked
+        ? `PREVENT ${defensivePrevention({ ...state, snr: SNR_STATE.SILENCE }, state.difficulty.holdPrevention)} · CATCH BREATH ${Math.min(recovery.required, recovery.holds + 1)} / ${recovery.required}`
+        : `PREVENT ${defensivePrevention({ ...state, snr: SNR_STATE.SILENCE }, state.difficulty.holdPrevention)} · ENTER SILENCE`,
       prevents: defensivePrevention({ ...state, snr: SNR_STATE.SILENCE }, state.difficulty.holdPrevention),
     },
     {
@@ -658,9 +716,16 @@ export function availableCombatActions(state) {
       detail: 'YIELD THE BEAT · FACE THE INTENT',
     },
     {
-      id: COMBAT_ACTION.COMPOSE, tool: COMBAT_TOOL.SELF, label: 'COMPOSE',
-      detail: `RESTORE ${composeHeal(state)} COMPOSURE · ONCE / MOVEMENT · ENTER SILENCE`,
+      id: COMBAT_ACTION.COMPOSE, tool: COMBAT_TOOL.SELF,
+      label: recovery.ready ? 'SECOND BREATH' : 'COMPOSE',
+      detail: recovery.ready
+        ? `RESTORE ${composeHeal(state)} · RETURN 1 COHERENCE · GUARD ${defensivePrevention({ ...state, snr: SNR_STATE.SILENCE }, Math.max(0, state.difficulty.holdPrevention - 1))}`
+        : `RESTORE ${composeHeal(state)} COMPOSURE · ONCE / MOVEMENT · ENTER SILENCE`,
       heals: composeHeal(state),
+      damage: recovery.ready ? 1 : 0,
+      prevents: recovery.ready
+        ? defensivePrevention({ ...state, snr: SNR_STATE.SILENCE }, Math.max(0, state.difficulty.holdPrevention - 1))
+        : 0,
     },
     // PARRY is no longer a move you pick — it is a reaction. When the adversary's
     // blow lands you time a guard against it (see REACTIVE_PARRY / combat.js), so
@@ -690,19 +755,19 @@ export function availableCombatActions(state) {
     },
     ...(hasTechnique(state, TECHNIQUE.WHITEOUT) ? [{
       id: COMBAT_ACTION.WHITEOUT, tool: COMBAT_TOOL.TORCH, label: 'WHITEOUT',
-      detail: '5 COHERENCE · ONCE / ENCOUNTER',
+      detail: '5 COHERENCE · ONE FINISHER / ENCOUNTER',
       damage: outgoingDamage({ ...state, snr: SNR_STATE.NOISE }, 4),
       once: true,
     }] : []),
     ...(state.tools.recorder && hasTechnique(state, TECHNIQUE.MASTER_TAKE) ? [{
       id: COMBAT_ACTION.MASTER_TAKE, tool: COMBAT_TOOL.RECORDER, label: 'MASTER TAKE',
-      detail: 'THE DEFINITIVE CAPTURE · 6 COHERENCE · ONCE / ENCOUNTER',
+      detail: 'THE DEFINITIVE CAPTURE · 6 COHERENCE · ONE FINISHER / ENCOUNTER',
       damage: outgoingDamage({ ...state, snr: SNR_STATE.SIGNAL }, 6),
       once: true,
     }] : []),
     ...(state.tools.rig && hasTechnique(state, TECHNIQUE.RUNAWAY_FEEDBACK) ? [{
       id: COMBAT_ACTION.RUNAWAY_FEEDBACK, tool: COMBAT_TOOL.RIG, label: 'RUNAWAY FEEDBACK',
-      detail: 'THE LOOP EATS ITSELF · 7 COHERENCE · ONCE / ENCOUNTER',
+      detail: 'THE LOOP EATS ITSELF · 7 COHERENCE · ONE FINISHER / ENCOUNTER',
       damage: outgoingDamage({ ...state, snr: SNR_STATE.SILENCE }, 7),
       once: true,
     }] : []),
@@ -892,6 +957,7 @@ export function reduceCombat(input, action = {}) {
 
   const movement = currentMovement(state);
   const intent = currentCombatIntent(state);
+  const recoveryBefore = combatRecoveryStatus(state);
   const bonusAction = !!state.tempo;
   const perfect = !bonusAction && actionCounterKinds(actionId).includes(intent?.kind);
   const takeBefore = state.take ? { ...state.take } : null;
@@ -912,6 +978,7 @@ export function reduceCombat(input, action = {}) {
     state.battery = Math.max(0, state.battery - cost);
     state.torchSpent += cost;
     state.whiteoutUsed ||= whiteout;
+    if (whiteout) state.finisherUsed = COMBAT_ACTION.WHITEOUT;
     dealt = applyDamageToEnemy(state, outgoingDamage(state, whiteout ? 4 : 2));
     // AFTERIMAGE raises the exposed residue to 2; OVEREXPOSE adds a further 1.
     state.exposedBonus = whiteout ? 0
@@ -947,10 +1014,12 @@ export function reduceCombat(input, action = {}) {
     notice = `PLAYBACK · ${dealt} COHERENCE${retained ? ' · RESIDUAL TAKE' : ''}`;
   } else if (actionId === COMBAT_ACTION.MASTER_TAKE) {
     state.masterTakeUsed = true;
+    state.finisherUsed = COMBAT_ACTION.MASTER_TAKE;
     dealt = applyDamageToEnemy(state, outgoingDamage(state, 6));
     notice = `MASTER TAKE · ${dealt} COHERENCE · THE ROOM IS ON TAPE`;
   } else if (actionId === COMBAT_ACTION.RUNAWAY_FEEDBACK) {
     state.runawayUsed = true;
+    state.finisherUsed = COMBAT_ACTION.RUNAWAY_FEEDBACK;
     state.take = null;
     dealt = applyDamageToEnemy(state, outgoingDamage(state, 7));
     notice = `RUNAWAY FEEDBACK · ${dealt} COHERENCE · THE LOOP EATS ITSELF`;
@@ -958,11 +1027,22 @@ export function reduceCombat(input, action = {}) {
     prevention = defensivePrevention(state, state.difficulty.holdPrevention);
     state.ringing = false;
     notice = `HOLD · PREVENT ${prevention}`;
+    if (recoveryBefore.stranded && !recoveryBefore.unlocked) {
+      state.recoveryHolds = Math.min(recoveryBefore.required, recoveryBefore.holds + 1);
+      state.recoveryUnlocked = state.recoveryHolds >= recoveryBefore.required;
+      notice += state.recoveryUnlocked
+        ? ' · SECOND BREATH READY'
+        : ` · CATCH BREATH ${state.recoveryHolds} / ${recoveryBefore.required}`;
+    }
   } else if (actionId === COMBAT_ACTION.COMPOSE) {
     const restored = Math.min(composeHeal(state), state.maxComposure - state.composure);
     state.composure += restored;
-    state.composeMovements.push(state.movementIndex);
-    notice = `COMPOSE · ${restored} COMPOSURE RECOVERED`;
+    if (!(state.composeMovements || []).includes(state.movementIndex)) state.composeMovements.push(state.movementIndex);
+    if (availability.recovery) {
+      prevention = defensivePrevention(state, Math.max(0, state.difficulty.holdPrevention - 1));
+      dealt = applyDamageToEnemy(state, 1);
+      notice = `SECOND BREATH · ${restored} COMPOSURE · ${dealt} COHERENCE RETURNED · PREVENT ${prevention}`;
+    } else notice = `COMPOSE · ${restored} COMPOSURE RECOVERED`;
   } else if (actionId === COMBAT_ACTION.INVERT) {
     const retain = hasTechnique(state, TECHNIQUE.FEEDBACK_LOOP) && !state.feedbackLoopUsed;
     // TAPE ECHO adds a further +1 to a retained Invert (feedback-loop chain).

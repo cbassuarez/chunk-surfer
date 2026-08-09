@@ -17,6 +17,16 @@ export function drawWaypointMarker(point, alpha = 1) {
   uiGlyph(Math.round(point.x), Math.round(point.y), '◆', 'ui-blue', alpha);
 }
 
+// Recoverable field equipment has its own public layer. It is deliberately an
+// amber boxed R: neither a blue story waypoint nor a red HUSH observation.
+export function drawEquipmentMarker(point,alpha=1){
+  if(!point)return;
+  const x=Math.round(point.x),y=Math.round(point.y);
+  uiGlyph(x,y,'R','ui-amber',alpha);
+  uiGlyph(x-1,y,'[','ui-secondary',alpha*.55);
+  uiGlyph(x+1,y,']','ui-secondary',alpha*.55);
+}
+
 // This is not a permanent enemy tracker. It is emitted only while main has
 // confirmed that the player can presently see the manifestation in the world.
 // The red question mark confirms the sighting without pretending the monitor

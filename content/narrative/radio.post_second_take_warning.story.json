@@ -30,29 +30,29 @@
       "art": {
         "id": "walkie",
         "mode": "hero",
-        "caption": "Client radio / carrier open",
+        "caption": "Field radio / carrier open",
         "status": "OPEN"
       },
       "lines": [
         {
           "who": "radio",
-          "text": "4417-C, go ahead.",
+          "text": "4417-C? Come back.",
           "id": "start.line.1"
         }
       ],
       "choices": [
         {
-          "text": "Report the second room.",
+          "text": "Two rooms down.",
           "goto": "report",
           "id": "start.choice.1"
         },
         {
-          "text": "Ask about the interference.",
+          "text": "There's somebody under you.",
           "goto": "interference",
           "id": "start.choice.2"
         },
         {
-          "text": "Ask if anyone else is transmitting.",
+          "text": "Anyone else on two?",
           "goto": "other",
           "id": "start.choice.3"
         }
@@ -64,18 +64,18 @@
       "art": {
         "id": "walkie",
         "mode": "hero",
-        "caption": "Client radio / issued equipment",
+        "caption": "Field radio / carrier unstable",
         "status": "LIVE"
       },
       "lines": [
         {
           "who": "me",
-          "text": "Second room is clean. Two on the card.",
+          "text": "Two rooms down. Both clean.",
           "id": "report.line.1"
         },
         {
           "who": "radio",
-          "text": "Copy. Tw— two on—",
+          "text": "Good. I've got two— hang on, say that again?",
           "id": "report.line.2"
         },
         {
@@ -83,16 +83,16 @@
           "art": {
             "id": "walkie",
             "mode": "hero",
-            "caption": "Client radio / carrier open",
+            "caption": "Field radio / carrier open",
             "status": "OPEN"
           },
-          "text": "The carrier stays open after the word should have ended.",
+          "text": "The carrier stays open. Under it, a second carrier tone rises and holds.",
           "hold": 2.2,
           "id": "report.line.3"
         },
         {
           "who": "radio",
-          "text": "Do not tap the set. If it drifts, let it drift.",
+          "text": "Don't touch the set. Just—leave it where it is.",
           "id": "report.line.4"
         }
       ],
@@ -103,18 +103,18 @@
       "art": {
         "id": "walkie",
         "mode": "hero",
-        "caption": "Client radio / issued equipment",
+        "caption": "Field radio / carrier unstable",
         "status": "LIVE"
       },
       "lines": [
         {
           "who": "me",
-          "text": "I am getting another signal under you.",
+          "text": "There's somebody under you. Same channel.",
           "id": "interference.line.1"
         },
         {
           "who": "radio",
-          "text": "No other channel assigned.",
+          "text": "There shouldn't be. I'm alone on two.",
           "id": "interference.line.2"
         },
         {
@@ -122,16 +122,16 @@
           "art": {
             "id": "walkie",
             "mode": "hero",
-            "caption": "Client radio / carrier open",
+            "caption": "Field radio / carrier open",
             "status": "BEAT"
           },
-          "text": "A dry click answers from inside the radio before the person does.",
+          "text": "A dry relay click comes through first. Then a chair scrapes beside his microphone.",
           "hold": 2,
           "id": "interference.line.3"
         },
         {
           "who": "radio",
-          "text": "Keep the next room short.",
+          "text": "Do the next one quick, would you? Then call me back.",
           "id": "interference.line.4"
         }
       ],
@@ -142,18 +142,18 @@
       "art": {
         "id": "walkie",
         "mode": "hero",
-        "caption": "Client radio / issued equipment",
+        "caption": "Field radio / carrier unstable",
         "status": "LIVE"
       },
       "lines": [
         {
           "who": "me",
-          "text": "Is anyone else on this channel?",
+          "text": "Anyone else on two with you?",
           "id": "other.line.1"
         },
         {
           "who": "radio",
-          "text": "Negative.",
+          "text": "No. Just me.",
           "id": "other.line.2"
         },
         {
@@ -161,16 +161,16 @@
           "art": {
             "id": "walkie",
             "mode": "hero",
-            "caption": "Client radio / carrier open",
+            "caption": "Field radio / carrier open",
             "status": "OPEN"
           },
-          "text": "Behind the negative, a breath arrives too close to the grille.",
+          "text": "A breath brushes the grille after he stops speaking. His chair is still moving farther away.",
           "hold": 2.4,
           "id": "other.line.3"
         },
         {
           "who": "radio",
-          "text": "If you hear yourself, stop answering.",
+          "text": "If it comes back in your voice, don't answer it. All right?",
           "id": "other.line.4"
         }
       ],

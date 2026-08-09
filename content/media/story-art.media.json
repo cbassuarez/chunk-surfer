@@ -138,11 +138,11 @@
       "id": "guard",
       "assetId": "guard.still",
       "label": "Guard",
-      "caption": "Gate booth / Ellery Conservatory",
+      "caption": "Gate booth / Ellery Conservatoire",
       "status": "STILL",
       "tone": "person",
       "mode": "hero",
-      "alt": "A portrait image representing the guard at Ellery Conservatory.",
+      "alt": "A portrait image representing the guard at Ellery Conservatoire.",
       "transform": {
         "focalPoint": {
           "x": 0.5,
@@ -159,7 +159,7 @@
       "status": "THRESHOLD",
       "tone": "threshold",
       "mode": "hero",
-      "alt": "A dark service door at the threshold of Ellery Conservatory.",
+      "alt": "A dark service door at the threshold of Ellery Conservatoire.",
       "transform": {
         "focalPoint": {
           "x": 0.5,
@@ -328,7 +328,7 @@
       "status": "THRESHOLD",
       "tone": "threshold",
       "mode": "hero",
-      "alt": "A wide dark yard between the gate booth and the conservatory, skips and rain.",
+      "alt": "A wide dark yard between the gate booth and the conservatoire, skips and rain.",
       "transform": {
         "focalPoint": {
           "x": 0.5,

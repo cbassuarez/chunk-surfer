@@ -9,10 +9,12 @@ import {
 } from '../src/progression/schema.js';
 import {
   LEGACY_STAIR_ANOMALY_LEDGER,
+  STAIR_ANOMALY_DARK_ESCAPE_MS,
   STAIR_ANOMALY_STAGE,
   STAIR_ANOMALY_STATUS,
   decideStairAnomalyEnvironment,
   freshStairAnomalyLedger,
+  normalizeStairAnomalyEnvironment,
   normalizeStairAnomalyLedger,
   reduceStairAnomaly,
 } from '../src/game/stair-anomaly.js';
@@ -24,13 +26,13 @@ import {
   stairAnomalyFloorAt,
 } from '../src/game/stair-anomaly-runtime.js';
 import { MATERIAL } from '../src/data/floorplan/legend.js';
+import { decodeH } from '../src/world/floorplan.js';
 
 const route = (routeTrunk, runId = 'run-stair') => decideStairAnomalyEnvironment({ routeTrunk, runId, now: 100 });
 assert.deepEqual({ ...route('baseline'), seed: 0 }, { stairId: 'upper', travel: 'up', visualSlope: 'up', variant: 'baseline', seed: 0 });
 // NEVER a descent. The way down to studio B3 is the first walk of the night and
-// an impossible stair there reads as a broken game, not a wrong building — so the
-// seal variant keeps its inverted slope and happens on the climb OUT.
-assert.deepEqual({ ...route('flooded-seal'), seed: 0 }, { stairId: 'basement', travel: 'up', visualSlope: 'down', variant: 'flooded-seal', seed: 0 });
+// an impossible stair there reads as a broken game, not a wrong building.
+assert.deepEqual({ ...route('flooded-seal'), seed: 0 }, { stairId: 'basement', travel: 'up', visualSlope: 'up', variant: 'flooded-seal', seed: 0 });
 for (const trunk of ['baseline', 'flooded-seal', 'flooded-surface', 'dry-inversion', 'uncertain']) {
   for (const runId of ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']) {
     assert.equal(decideStairAnomalyEnvironment({ routeTrunk: trunk, runId, now: 1 }).travel, 'up',
@@ -38,9 +40,17 @@ for (const trunk of ['baseline', 'flooded-seal', 'flooded-surface', 'dry-inversi
   }
 }
 assert.deepEqual({ ...route('flooded-surface'), seed: 0 }, { stairId: 'basement', travel: 'up', visualSlope: 'up', variant: 'flooded-surface', seed: 0 });
-assert.deepEqual({ ...route('dry-inversion'), seed: 0 }, { stairId: 'upper', travel: 'up', visualSlope: 'down', variant: 'dry-inversion', seed: 0 });
+assert.deepEqual({ ...route('dry-inversion'), seed: 0 }, { stairId: 'upper', travel: 'up', visualSlope: 'up', variant: 'dry-inversion', seed: 0 });
 assert.deepEqual(route('uncertain'), route('uncertain'));
 assert.notEqual(route('uncertain').variant, 'baseline');
+for (const trunk of ['baseline', 'flooded-seal', 'flooded-surface', 'dry-inversion', 'uncertain']) {
+  const selected = route(trunk);
+  assert.equal(selected.visualSlope, selected.travel, `${trunk} looks like the direction the player chose`);
+}
+assert.equal(normalizeStairAnomalyEnvironment({
+  stairId: 'upper', travel: 'down', visualSlope: 'up', variant: 'dry-inversion', seed: 7,
+}).visualSlope, 'down', 'legacy or future descents render downward rather than contradicting travel');
+assert.equal(STAIR_ANOMALY_DARK_ESCAPE_MS, 20_000, 'twenty seconds in darkness resolves the stair');
 
 assert.equal(SAVE_VERSION, 4, 'reference exposure migration bumps the outer save contract');
 assert.equal(RUN_SCHEMA_VERSION, 3, 'the causal/reference run contract is versioned');
@@ -96,6 +106,29 @@ assert.equal(completed, 1, 'completion callback is exactly once');
 const paced = createStairAnomalyRuntime({ environment: route('baseline'), initialLedger: freshStairAnomalyLedger() });
 assert.equal(paced.geometry.canStep(0, 0, 0, -1).ok, true);
 assert.equal(paced.geometry.canStep(0, -1, 0, -2).ok, true, 'no cadence throttle — the next tread is immediately climbable');
+
+// The texture window rebases after the first tread and every sixteen thereafter.
+// Its byte heights may change, but adding the separately supplied world offset
+// must reconstruct the same tread on both sides of that boundary. Otherwise the
+// whole flight moves ~3.5m while the camera eases and the slice fills the screen.
+const beforeRebase = paced.geometry.renderPlanFor(0, 0);
+const afterRebase = paced.geometry.renderPlanFor(0, -1);
+const decodedWorldFloor = (plan, worldX, worldY) => {
+  const localX = Math.floor(worldX) - plan.originX;
+  const localY = Math.floor(worldY) - plan.originY;
+  const index = (localY * plan.w + localX) * 4;
+  return decodeH(plan.rgba[index]) + plan.heightOffset;
+};
+const expectedSharedTread = stairAnomalyFloorAt(-1, route('baseline'));
+const beforeFloor = decodedWorldFloor(beforeRebase, 0, -1);
+const afterFloor = decodedWorldFloor(afterRebase, 0, -1);
+assert.ok(Math.abs(beforeFloor - expectedSharedTread) < .07, 'pre-boundary plan reconstructs world height');
+assert.ok(Math.abs(afterFloor - expectedSharedTread) < .07, 'post-boundary plan reconstructs world height');
+assert.ok(Math.abs(beforeFloor - afterFloor) < .07, 'the visible tread does not move when the plan window rebases');
+assert.ok(Math.abs(afterRebase.heightOffset - beforeRebase.heightOffset) > 3, 'the test crosses a material render-window rebase');
+const eyeBefore = paced.geometry.renderedFloorAt(0, -1, 0, -.99);
+const eyeAfter = paced.geometry.renderedFloorAt(0, -1, 0, -1.01);
+assert.ok(Math.abs(eyeAfter - eyeBefore) < .01, 'eye height follows continuous stair pitch across a tread edge');
 
 // One continuous flight, no loop: the floor rises monotonically the whole way,
 // never resetting to a landing (which is what made it feel like the same stairs
@@ -156,8 +189,20 @@ const mainSource = readFileSync(new URL('../src/main.js', import.meta.url), 'utf
 assert.match(propRenderer, /if\(!shadow&&i\.shadowOnly\)continue/, 'shadow-only bodies are omitted from the color pass');
 assert.match(propRenderer, /visibleGroups\(lightEye,64,\{shadow:true,emergencyOnly:!!practical&&emergencyShadowInstances\.length>0\}\)/, 'the practical shadow pass reaches the full emergency-light field');
 assert.match(propRenderer, /const instances=emergencyOnly\?emergencyShadowInstances:/, 'emergency practicals isolate their staged shadow-only figures');
-assert.match(architectureRenderer, /li==uLocalShadowIndex\?propFlashShadow/, 'the selected practical shadows architecture');
+// The selected practical shadows architecture. This used to pin the literal
+// `li==uLocalShadowIndex?propFlashShadow`, which stopped being true the moment
+// the one shadow map started being applied to the whole overlapping red field
+// rather than to its own lamp's contribution alone.
+assert.match(architectureRenderer, /heroShadow=mix\(\.015,1\.0,/, 'the selected practical shadows architecture');
+assert.match(architectureRenderer, /max\(float\(li==uLocalShadowIndex\),emergency\)>\.5\?heroShadow:1\.0/,
+  'and that one silhouette is applied to every emergency lamp, not just the one carrying the map');
 assert.match(architectureRenderer, /architecturalLightVisibility\(posM,uLocalLightPos\[li\]\.xyz\)/, 'bounded floorplan occlusion gates practical light');
+assert.match(architectureRenderer, /H_MIN \+ uPlanHeightOffset/, 'render-plan byte rebases are restored into continuous world height');
+assert.match(mainSource, /heightOffset:plan\.heightOffset/, 'the stair plan hands its world-height offset to the renderer');
+const escapeSource = mainSource.slice(mainSource.indexOf('const STAIR_ESCAPE'), mainSource.indexOf('function beginStairAnomaly'));
+assert.match(escapeSource, /dark: STAIR_ANOMALY_DARK_ESCAPE_MS/, 'the live escape uses the shared twenty-second contract');
+assert.match(mainSource, /Torch off, stand still, count to twenty, and put it back on/, 'the diegetic instruction matches the twenty-second contract');
+assert.doesNotMatch(mainSource, /Torch off, stand still, count to thirty, and put it back on/, 'no stale thirty-second instruction remains');
 const stageAudio = mainSource.slice(mainSource.indexOf('function onStairAnomalyStage'), mainSource.indexOf('function syncStairAnomalyRender'));
 assert.doesNotMatch(stageAudio, /REC\.emitNoise|PRES\./, 'environmental echoes never create player-generated HUSH events');
 const attention = mainSource.slice(mainSource.indexOf('function beginStairAttention'), mainSource.indexOf('function onStairAnomalyStage'));

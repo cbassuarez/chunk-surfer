@@ -79,7 +79,7 @@
       "lines": [
         {
           "who": "direction",
-          "text": "A lit booth at the vehicle gate. Coffee on a hotplate, key hooks, a stack of forms, a small television with the sound already off.",
+          "text": "A lit booth at the vehicle gate. Coffee on a hotplate, key in keyrings on key hooks, a stack of forms, a small television with the sound already off.",
           "id": "start.line.1"
         },
         {
@@ -94,17 +94,17 @@
         },
         {
           "who": "me",
-          "text": "The sound job. There should be a work order for me — requisition 4-4-1-7.",
+          "text": "Yeah, the sound job. There should be a work order for me, no?— requisition 4-4-1-7.",
           "id": "start.line.4"
         },
         {
           "who": "guard",
-          "text": "Came through around five today.",
+          "text": "Aye, came through around five today.",
           "id": "start.line.5"
         },
         {
           "who": "direction",
-          "text": "He finds a pen. It fails on the date line. He puts it back in the pot with the others.",
+          "text": "He finds a pen, and it immediately fails to write, so he puts it back in the pot with the others.",
           "id": "start.line.6",
           "cues": [
             "pens"
@@ -112,12 +112,12 @@
         },
         {
           "who": "guard",
-          "text": "My wife buys these. Twelve in a pack, and maybe two of them work if you hold them like a threat.",
+          "text": "My wife buys these. Twelve in a pack, and maybe three of them work if you hold them right.",
           "id": "start.line.7"
         },
         {
           "who": "guard",
-          "text": "Coffee if you want it. Work order is there. Keys when you sign.",
+          "text": "Coffee if you want it. Work order is there, keys when you sign.",
           "id": "start.line.8"
         }
       ],
@@ -354,7 +354,7 @@
         },
         {
           "who": "you",
-          "text": "Four hundred, half on acceptance. That's fine. That's more than fine.",
+          "text": "Four hundred, half on acceptance. That's fine. That's more than fine, actually.",
           "id": "order.line.2"
         }
       ],
@@ -850,7 +850,7 @@
       "lines": [
         {
           "who": "me",
-          "text": "You know anything about the building?",
+          "text": "Know anything about the building?",
           "id": "guard.line.1"
         },
         {
@@ -860,8 +860,13 @@
         },
         {
           "who": "direction",
-          "text": "He turns the television down... but the sound was already off.",
+          "text": "He turns the television down...",
           "id": "guard.line.3"
+        },
+        {
+          "id": "guard.line.4",
+          "who": "direction",
+          "text": "...but the sound was already off."
         }
       ],
       "revisitLines": [
@@ -1289,7 +1294,7 @@
       "lines": [
         {
           "who": "direction",
-          "text": "Four files on the card. Three are slated and clean — the last man announced the take and the room for each. Take three is already cued.",
+          "text": "There are files on the sound card. Three are slated and clean, and take three is already cued.",
           "id": "tape.line.1"
         },
         {
@@ -1299,7 +1304,7 @@
         },
         {
           "who": "direction",
-          "text": "Sixty clean seconds of bare room. A chair. He stands up. The file ends where it should.",
+          "text": "Sixty clean seconds of bare room, then a chair. He stands up, the file cuts off.",
           "id": "tape.line.3"
         }
       ],
@@ -1798,7 +1803,7 @@
         },
         {
           "who": "me",
-          "text": "That is a li— y'know what whatever, thanks.",
+          "text": "That is a little presum— y'know what, actually, thanks - I'll take a cuppa.",
           "id": "coffee.line.3"
         }
       ],
@@ -1963,12 +1968,12 @@
         },
         {
           "who": "guard",
-          "text": "Since April. Whole sub-level runs off one board, and that board's been dead longer than I've had this chair. Cellar-black, the lot of it.",
+          "text": "Since April. Whole sub-level runs off one board, and that board's been dead longer than I've had this chair. Cellar-black, the lot of it. Some other rooms might still have their emergency power, though it might not be quiet enough for you.",
           "id": "descent.line.3"
         },
         {
           "who": "you",
-          "text": "The darkest room in a dark building, then, and the deepest. Which settles the order: basement first — the hardest one, while my legs are still under me.",
+          "text": "Let's get this basement out of the way first. I'd rather do it while my eyes are still adjusting to the light.",
           "id": "descent.line.4"
         }
       ],

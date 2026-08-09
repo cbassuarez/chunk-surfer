@@ -24,7 +24,8 @@ for(const light of lights){
   assert.ok(Object.values(LIGHT_KIND).includes(light.kind),`${light.id} declares a known kind`);
   const[lo,hi]=LIGHT_BANDS[light.kind];
   assert.ok(light.intensity>=lo&&light.intensity<=hi,`${light.id} ${light.intensity} stays in ${lo}..${hi}`);
-  assert.ok(light.intensity<=1.8,`${light.id} cannot reintroduce the old 10x exposure scale`);
+  assert.ok(light.intensity<=(light.kind===LIGHT_KIND.EMERGENCY?3.6:1.8),
+    `${light.id} stays inside the authored ceiling for its light class`);
   assert.ok(light.radius>0&&light.color.length===3);
   assert.ok(light.groups.length&&light.zones.length,`${light.id} has spatial scope`);
   for(const axis of['x','y','z'])assert.ok(Number.isFinite(light[axis]),`${light.id} has ${axis}`);
@@ -48,11 +49,17 @@ assert.equal(byId['access-low'].kind,LIGHT_KIND.EMERGENCY);
 assert.equal(byId['access-low'].anchorPropId,'tower-light-lower');
 assert.equal(byId['academic-skylight-spill'].anchorPropId,'academic-skylight');
 assert.equal(byId['atrium-main-exit'].anchorPropId,'atrium-light-main-exit');
+assert.equal(byId['atrium-main-exit'].kind,LIGHT_KIND.FITTING,'the public closure uses an amber wayfinding pool, not the red alarm circuit');
+assert.equal(byId['atrium-main-exit'].circuit,null,'the chained public entrance remains legible before S/P-03 is restored');
+assert.equal(byId['atrium-main-exit'].maintained,true,'the entrance bulkhead is genuinely maintained');
+assert.ok(byId['atrium-main-exit'].intensity>=1,'the maintained entrance pool survives the torch-off display threshold');
+assert.ok(byId['foh-live-west'].intensity>=1.4&&byId['foh-live-west'].radius>=14,'the west fitting gives the waiting suite a substantial S/P-03 reveal');
+assert.ok(byId['foh-live-east'].intensity>=1.4&&byId['foh-live-east'].radius>=14,'the east fitting gives the box office a substantial S/P-03 reveal');
 assert.equal(byId['natatorium-emergency-entry'].anchorPropId,'natatorium-light-emergency-entry');
 assert.equal(byId['natatorium-emergency-far'].anchorPropId,'natatorium-light-emergency-far');
 assert.equal(byId['organ-loft-exit'].anchorPropId,'tower-light-organ-exit');
 assert.equal(byId['nave-exit'].anchorPropId,'tower-light-nave-exit');
-assert.equal(byId['getin-grey-door-seam'].circuit,null,'get-in seam is not the disconnected chandelier');
+assert.equal(byId['getin-grey-door-seam'].circuit,'sp03','get-in emergency light requires an explicitly restored area circuit');
 for(const id of['hall-entrance-maintained-north','hall-entrance-maintained-south']){
   assert.equal(byId[id].kind,LIGHT_KIND.EMERGENCY,`${id} participates in the red snap`);
   assert.equal(byId[id].maintained,true,`${id} survives the dead mains`);
@@ -63,12 +70,22 @@ for(const id of['hall-stage-door-maintained','hall-galleria-west-foot','hall-gal
   assert.ok(byId[id].groups.includes('ground')&&byId[id].zones.includes(ZONE.foyer),`${id} reaches the foyer from the auditorium`);
   assert.ok(byId[id].radius>=48&&byId[id].penetration>=.88,`${id} carries the long red x-ray field`);
 }
+assert.deepEqual(
+  lights.filter((light)=>light.kind===LIGHT_KIND.EMERGENCY&&!light.circuit).map((light)=>light.id).sort(),
+  [
+    'hall-entrance-maintained-north','hall-entrance-maintained-south',
+    'hall-stage-door-maintained','hall-galleria-west-foot','hall-galleria-east-foot',
+  ].sort(),
+  'the concert hall is the only emergency circuit alive before the user restores an area',
+);
 
 const room=(group,zone)=>({group,zone});
 const deadPlant=resolveLocalLights(room('basement',ZONE.plant),{liveCircuits:new Set()});
-assert.deepEqual(deadPlant.map((light)=>light.id),['plant-panel-green'],'dead plant room has indicators only');
+assert.deepEqual(deadPlant.map((light)=>light.id),['plant-panel-green','plant-entry-amber'],'dead plant room preserves the green pilot and maintained entrance bulkhead');
 const livePlant=resolveLocalLights(room('basement',ZONE.plant),{liveCircuits:new Set(['sp01'])});
 assert.ok(livePlant.some((light)=>light.id==='plant-service-live'));
+assert.ok(livePlant.some((light)=>light.id==='plant-switchgear-live'));
+assert.ok(livePlant.some((light)=>light.id==='plant-manifold-live'));
 assert.ok(!resolveLocalLights(room('basement',ZONE.danceStudio),{liveCircuits:new Set()}).some((light)=>light.circuit));
 assert.ok(resolveLocalLights(room('basement',ZONE.danceStudio),{liveCircuits:new Set(['sp01'])}).some((light)=>light.id==='dance-work-live'));
 // A studio's work light must resolve for somebody standing IN that studio. B3's
@@ -80,12 +97,23 @@ assert.ok(!resolveLocalLights(room('basement',ZONE.studio),{liveCircuits:new Set
 
 const deadPool=resolveLocalLights(room('ground',ZONE.natatorium),{liveCircuits:new Set()});
 assert.ok(deadPool.every((light)=>!light.circuit));
-const livePool=resolveLocalLights(room('ground',ZONE.natatorium),{liveCircuits:new Set(['sp02'])});
-assert.equal(livePool.filter((light)=>light.circuit==='sp02').length,2);
+const livePool=resolveLocalLights(room('ground',ZONE.natatorium),{liveCircuits:new Set(['sp02']),slots:99});
+assert.equal(livePool.filter((light)=>light.circuit==='sp02'&&light.kind===LIGHT_KIND.FITTING).length,2);
+assert.equal(livePool.filter((light)=>light.circuit==='sp02'&&light.kind===LIGHT_KIND.EMERGENCY).length,4,
+  'restoring S/P-02 explicitly enables the natatorium emergency bank');
 assert.ok(resolveLocalLights(room('ground',ZONE.foyer),{liveCircuits:new Set(['sp03'])}).some((light)=>light.id==='foh-live-west'));
 const deadFoyer=resolveLocalLights(room('ground',ZONE.foyer),{liveCircuits:new Set()});
 assert.ok(deadFoyer.some((light)=>light.id==='hall-entrance-maintained-north'));
 assert.ok(deadFoyer.some((light)=>light.id==='hall-entrance-maintained-south'));
+assert.ok(deadFoyer.some((light)=>light.id==='atrium-main-exit'),'the chained public entrance has a local pool with the house circuit dead');
+assert.ok(!deadFoyer.some((light)=>light.id==='foh-live-west'||light.id==='foh-live-east'),'the wider foyer remains dark until S/P-03 is restored');
+const deadPractice=resolveLocalLights(room('upper',ZONE.practice),{liveCircuits:new Set()});
+assert.equal(deadPractice.some((light)=>light.kind===LIGHT_KIND.EMERGENCY),false,
+  'practice-wing emergency lighting stays dark on a fresh run');
+const livePractice=resolveLocalLights(room('upper',ZONE.practice),{liveCircuits:new Set(['sp03'])});
+assert.deepEqual(livePractice.filter((light)=>light.kind===LIGHT_KIND.EMERGENCY).map((light)=>light.id).sort(),
+  ['practice-emergency-north','practice-emergency-south'],
+  'the practice bank comes alive only after its area circuit is restored');
 
 // THROWING A BREAKER HAS TO CHANGE THE LIGHT WHERE THE BREAKER IS.
 //
@@ -114,9 +142,9 @@ assert.ok(deadFoyer.some((light)=>light.id==='hall-entrance-maintained-south'));
   assert.ok(panelLive > whitePoint, 'and restoring the circuit takes it past');
   assert.ok(panelLive / panelDead > 1.6, 'by a margin a player can actually see');
 
-  // The far end is the other half of the circuit. foh-live-west is 22m from the
-  // panel against a radius-10 cutoff, so it contributes nothing there by design —
-  // it is not dead weight, it lights the end of the room the panel cannot.
+  // The far end is the other half of the circuit. The west fitting is centred
+  // over the waiting suite, so the group crosses the room's display threshold
+  // without borrowing the east box-office pool.
   assert.ok(litAt(78, 12, ['sp03']) * PLASTER > whitePoint, 'sp03 lights the west end of the foyer');
   assert.ok(litAt(78, 12, []) * PLASTER < whitePoint, 'which is dark until it is restored');
 
@@ -129,14 +157,17 @@ const contexts=[ZONE.dock,ZONE.studio,ZONE.natatorium,ZONE.hall,ZONE.practice,ZO
 assert.equal(new Set(contexts.map((context)=>`${context.ambientColor.join(',')}:${context.ambientIntensity}`)).size,contexts.length,
   'each major room has a distinct still-frame ambient signature');
 
-const failing=(timeSec,effectsMode='full')=>resolveLocalLights(room('academic',ZONE.academic),{timeSec,effectsMode})
+const failing=(timeSec,effectsMode='full')=>resolveLocalLights(room('academic',ZONE.academic),{timeSec,effectsMode,liveCircuits:new Set(['sp03'])})
   .find((light)=>light.id==='academic-emergency-east-failing').intensity;
 const fullBlinkSamples=Array.from({length:400},(_,index)=>emergencyBlinkState('academic-emergency-east-failing',index*.05));
 assert.deepEqual(new Set(fullBlinkSamples.map((sample)=>sample.scale)),new Set([0,1]),'an emergency practical snaps between black and full red with no ramp');
 assert.ok(fullBlinkSamples.every((sample)=>sample.scale===0||sample.shadowReveal===1),'every full-effects lit beat reveals the shadow pass');
 const failingIntensities=Array.from({length:400},(_,index)=>failing(index*.05));
 assert.deepEqual(new Set(failingIntensities),new Set([0,byId['academic-emergency-east-failing'].intensity]),'the powered beat neither fades nor flutters');
-assert.ok(failing(3)<failing(0),'failing maintained practical blinks instead of remaining at a fixed exposure');
+// Sampled inside the dark window rather than at a whole number of seconds: the
+// circuit runs at 1Hz now, so t=3 is the same phase as t=0 and always lit.
+assert.ok(failing(EMERGENCY_CADENCE.period*.8)<failing(0),
+  'failing maintained practical blinks instead of remaining at a fixed exposure');
 
 // THE CIRCUIT IS ONE CIRCUIT, AND THE DARK IS THE POINT.
 //
@@ -150,22 +181,49 @@ assert.ok(failing(3)<failing(0),'failing maintained practical blinks instead of 
   assert.equal(periods.size,1,'every emergency lamp runs the same battery pack cadence');
   assert.ok(circuit.every((id)=>emergencyBlinkState(id,0).scale===1),'a still frame catches the circuit energised');
   let dark=0,samples=0;
-  for(let time=0;time<180;time+=.02){
+  for(let time=0;time<180;time+=.002){
     samples++;
     if(!circuit.some((id)=>emergencyBlinkState(id,time).scale>0))dark++;
   }
-  assert.ok(dark/samples>.35,`the whole circuit is genuinely dark most beats (${(dark/samples*100).toFixed(1)}%)`);
-  // Ragged, not mechanical: the lamps must not snap as a single relay.
-  const edges=new Set(circuit.map((id)=>{
-    let last=emergencyBlinkState(id,0).scale;
-    for(let time=0;time<EMERGENCY_CADENCE.period;time+=.01){
-      const next=emergencyBlinkState(id,time).scale;
-      if(next!==last)return Number(time.toFixed(2));
-      last=next;
-    }
-    return -1;
-  }));
-  assert.ok(edges.size>1,'individual ballasts still strike at their own moment');
+  // THE DARK IS A FIXED WINDOW, NOT A FRACTION.
+  //
+  // This used to assert the dark was the MAJORITY of the cycle, which quietly
+  // coupled two independent quantities: the dark is the interval the apparitions
+  // move in and is calibrated in seconds against EMERGENCY_DARK_HASTE, while the
+  // hold is how long the player has to look at them. Expressed as a duty,
+  // lengthening the look shortened the walk. Both are pinned in seconds now.
+  assert.ok(Math.abs(EMERGENCY_CADENCE.dark-.672)<1e-9,'the dark window is the authored 0.672s');
+  const measuredDark=dark/samples*EMERGENCY_CADENCE.period;
+  assert.ok(Math.abs(measuredDark-EMERGENCY_CADENCE.dark)<.02,
+    `the circuit really is dark for that long (${measuredDark.toFixed(3)}s per cycle)`);
+  // A HOLD YOU CAN SEARCH A ROOM IN. Half a second is enough to know the room
+  // flashed and not enough to find anything in it, and finding the white body on
+  // the far wall is the entire beat.
+  assert.ok(EMERGENCY_CADENCE.hold>=1.5&&EMERGENCY_CADENCE.hold<=2,
+    'the lit beat is a look, not a stab');
+  assert.ok(Math.abs(EMERGENCY_CADENCE.period-(EMERGENCY_CADENCE.hold+EMERGENCY_CADENCE.dark))<1e-9
+    &&Math.abs(EMERGENCY_CADENCE.duty-EMERGENCY_CADENCE.hold/EMERGENCY_CADENCE.period)<1e-9,
+    'period and duty are derived from the two authored halves, never authored beside them');
+
+  // IN UNISON. NFPA 72 requires synchronised visual appliances to fire within
+  // 10ms of one another, and a room of strobes rippling out of step reads as a
+  // slow sectional wipe rather than an alarm — which is exactly what an earlier
+  // per-lamp jitter produced. Every lamp must change state on the same frame.
+  for(let time=0;time<EMERGENCY_CADENCE.period*3;time+=.004){
+    const states=new Set(circuit.map((id)=>emergencyBlinkState(id,time).scale));
+    assert.equal(states.size,1,`the circuit is one relay, not a chorus (t=${time.toFixed(3)})`);
+  }
+
+  // THE PHOTOSENSITIVITY CONTRACT IS THE ONLY HARD CEILING HERE.
+  //
+  // This used to also assert the rate sat inside EN 54-23's 0.5-2Hz appliance
+  // band. At a 1.75s hold it does not, and that is an authored decision rather
+  // than a regression: this is a failing battery pack in a condemned building,
+  // not a certified visual notification appliance, and the hold is the shot. The
+  // clinical threshold is 3Hz and only gets further away as the hold grows.
+  assert.ok(1/EMERGENCY_CADENCE.period<3,'the circuit stays under the photosensitivity threshold');
+  assert.ok(EMERGENCY_CADENCE.period<=6,'and is still a flashing lamp rather than a room light');
+
 }
 
 // SPILL. The auditorium's lamps are x-ray in the auditorium and ordinary in the
@@ -181,10 +239,14 @@ assert.ok(failing(3)<failing(0),'failing maintained practical blinks instead of 
     assert.equal(home.radius,byId[id].radius,`${id} keeps its authored reach inside the hall`);
     assert.ok(away.penetration<=.1,`${id} stops ignoring atrium walls once it is only leaking`);
     assert.ok(away.radius<home.radius*.5,`${id} loses the long throw once it is only leaking`);
-    assert.equal(away.intensity,home.intensity,'the fitting itself is not dimmed — only its reach through the building');
+    assert.ok(away.intensity>0&&away.intensity<home.intensity*.35,
+      `${id} leaks through the aperture without turning the foyer into the hall`);
   }
-  assert.equal(at(foyer,'atrium-main-exit').penetration,byId['atrium-main-exit'].penetration,
-    'a lamp standing in the room it lights is never treated as spill');
+  assert.equal(at(foyer,'atrium-main-exit').circuit,null,'the entrance wayfinding pool survives a dead S/P-03 circuit');
+  const poweredFoyer=resolveLocalLights(room('ground',ZONE.foyer),{origin:{x:96.5,z:16},liveCircuits:new Set(['sp03'])});
+  assert.equal(at(poweredFoyer,'atrium-main-exit').penetration,byId['atrium-main-exit'].penetration,
+    'the local entrance pool remains stable when the wider room is restored');
+  assert.ok(at(poweredFoyer,'foh-live-east'),'S/P-03 still adds the wider front-of-house reveal');
 }
 // REDUCED FLASH MUST NOT MEAN A PERMANENTLY LIT BUILDING.
 //
@@ -197,8 +259,11 @@ assert.ok(failing(3)<failing(0),'failing maintained practical blinks instead of 
   const reducedSamples=Array.from({length:800},(_,index)=>emergencyBlinkState('academic-emergency-east-failing',index*.025,{effectsMode:'reduced'}));
   const scales=reducedSamples.map((sample)=>sample.scale);
   const low=Math.min(...scales),high=Math.max(...scales);
-  assert.ok(high-low>.2,'reduced effects still pulses rather than pinning the lamp on');
-  assert.ok(low>.35,'and never snaps to black, which is the part that is a strobe');
+  // Deep enough to be seen. A shallow breathe is the original complaint with
+  // the pin taken out and nothing put back: the report that produced this test
+  // was made by a player sitting in the concert hall on REDUCED.
+  assert.ok(high/low>3.5,`reduced effects pulses deeply enough to read (${(high/low).toFixed(1)}:1)`);
+  assert.ok(low>.15,'and never snaps to black, which is the part that is a strobe');
   assert.ok(high<=1);
   // No edges: consecutive frames may only creep. This is the photosensitivity
   // contract — a slow raised cosine, not a fast ramp with the corners sanded.
@@ -211,22 +276,27 @@ assert.ok(failing(3)<failing(0),'failing maintained practical blinks instead of 
   assert.ok(offSamples.every((sample)=>sample.shadowReveal===0),'and the apparitions do not appear at all');
 }
 assert.deepEqual(emergencyBlinkState('getin-grey-door-seam',12.25),emergencyBlinkState('getin-grey-door-seam',12.25),'cadence is deterministic');
-assert.ok(Array.from({length:120},(_,index)=>index*.05).some((time)=>
-  Math.abs(emergencyBlinkState('academic-emergency-west',time).scale-emergencyBlinkState('academic-emergency-east-failing',time).scale)>.6
-),'adjacent emergency lights are staggered');
+// Adjacent emergency lights used to be asserted STAGGERED. That was the bug:
+// a building's emergency optics are one synchronised circuit, and staggering
+// them is what made the room ripple by section instead of snapping. Unison is
+// pinned above, against the whole circuit, at 4ms resolution.
+assert.ok(Array.from({length:250},(_,index)=>index*.02).every((time)=>
+  emergencyBlinkState('academic-emergency-west',time).scale===emergencyBlinkState('academic-emergency-east-failing',time).scale
+),'adjacent emergency lights fire together');
 const steadySky=resolveLocalLights(room('ground',ZONE.natatorium),{timeSec:1}).find((light)=>light.id==='natatorium-roof-spill-north');
 assert.equal(steadySky.intensity,1.52,'blinking does not modulate daylight or ordinary fittings');
 
 const anchored=resolveLocalLights(room('tower',ZONE.bellTower),{
   towerCleared:false,
+  liveCircuits:new Set(['sp03']),
   anchorPosition:(id)=>id==='tower-light-lower'?{x:7,y:8,z:9,floorY:6.2,yaw:.4}:null,
 }).find((light)=>light.id==='access-low');
 assert.deepEqual([anchored.x,anchored.y,anchored.z],[7,8.18,9],'moving a fitting moves its light');
 assert.equal(anchored.floorY,6.2,'anchored practical carries its floor into the shadow composition');
 
 const towerDark=resolveLocalLights(room('tower',ZONE.bellTower),{towerCleared:false,origin:{x:100,z:62}});
-assert.equal(towerDark.length,7);
-const towerLit=resolveLocalLights(room('tower',ZONE.bellTower),{towerCleared:true,origin:{x:100.5,z:82}});
+assert.deepEqual(towerDark.map((light)=>light.id),['louvre-spill'],'the tower emergency bank is dark before its area is restored');
+const towerLit=resolveLocalLights(room('tower',ZONE.bellTower),{towerCleared:true,origin:{x:100.5,z:82},liveCircuits:new Set(['sp03'])});
 assert.equal(towerLit.length,LOCAL_LIGHT_SLOTS);
 assert.ok(towerLit.some((light)=>light.id==='nave-exit'));
 assert.ok(!towerLit.some((light)=>light.id==='louvre-spill'));

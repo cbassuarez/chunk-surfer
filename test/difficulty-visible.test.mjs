@@ -7,6 +7,12 @@ test('difficulty select uses visible presets so locked Dead Air is shown', () =>
   assert.match(src, /visiblePresets\(meta\)/);
   assert.match(src, /preset\.locked/);
   assert.match(src, /COMPLETE ANY ENDING TO UNLOCK/);
+  assert.match(src, /createHitRegions/);
+  assert.match(src, /pointer\(e\)/);
+  assert.match(src, /onHover/);
+  assert.match(src, /onClick/);
+  assert.match(src, /difficulty-rule:/);
+  assert.match(src, /hitRegions: hits\.view\(\)/);
 });
 
 test('progression exposes visible presets without changing available presets', () => {

@@ -1,58 +1,113 @@
-<p><strong>Five rooms. Five clean takes. One condemned conservatory.</strong></p>
+<!--
+  FILE 1 of 2 — the DESCRIPTION.
+  Paste target: itch.io -> Edit game -> Description.
+  Companion files: docs/storefront-install-itch.html (Install instructions field)
+                   docs/storefront-itch.css        (Theme -> Custom CSS)
 
-<p><em>Chunk Surfer</em> is a short first-person psychological horror game about professional listening. As a field recordist in the condemned Ellery Conservatory, capture five clean room tones: the ambient sound of apparently empty rooms. Monitor each space, roll the recorder, then stay still and silent. Movement or noise can invalidate the take. An optional computer microphone adds noise from your real room through local loudness analysis only; audio is never recorded or uploaded.</p>
+  Voice and structure follow cbassuarez.com/labs/chunk-surfer — clipped lowercase
+  legends, sentence-case declarative headings, numbered case sections. The site's
+  sections 07 (evidence), 09 (press) and 10 (FAQ) are omitted here: itch has its
+  own gallery and info panel, and the FAQ is search-blueprint copy that does not
+  belong on a storefront. Remaining sections are renumbered contiguously.
 
-<p><strong>A 3D horror game with a local Stable Diffusion material renderer: authored surfaces remain underneath while visible materials re-hallucinate and crossfade during play.</strong></p>
+  Every class is `custom-` prefixed because itch's sanitizer strips any other
+  class from user content. The markup degrades on purpose: each label is
+  separated from its value by a real space, so if a class or a <span> is ever
+  stripped, the copy still reads as ordinary prose.
+-->
 
-<blockquote>
-  <p><strong>SITE</strong> &mdash; Ellery Conservatory of Music. Condemned.</p>
-  <p><strong>DELIVER</strong> &mdash; Five clean room-tone recordings.</p>
-  <p><strong>WINDOW</strong> &mdash; One night. Demolition begins at 06:00.</p>
-  <p><strong>RULE</strong> &mdash; If you can hear yourself on the take, the take is not the room.</p>
+<p class="custom-index">ELLERY HOLDINGS ORDER 4417-C</p>
+
+<p class="custom-lede"><strong>Five rooms. Five clean takes and you&rsquo;re done&hellip; or so you think.</strong></p>
+
+<p>Record the sound of empty rooms in a condemned conservatory. Stay still. Stay silent. Finish before demolition begins.</p>
+
+<blockquote class="custom-workorder">
+  <p><strong class="custom-label">site</strong> <span class="custom-value">Ellery Conservatory of Music. Condemned.</span></p>
+  <p><strong class="custom-label">deliver</strong> <span class="custom-value">Five clean room-tone recordings.</span></p>
+  <p><strong class="custom-label">window</strong> <span class="custom-value">One night. Demolition begins at 06:00.</span></p>
+  <p><strong class="custom-label">rules</strong> <span class="custom-value">If you can hear yourself on the take, the take is not the room.</span></p>
 </blockquote>
 
-<h2>Listen. Record. Do not move.</h2>
+<p class="custom-status">ACCOUNT OPEN: CONTRACTOR PRESENT</p>
 
-<p>Monitor each assigned space before committing to a take. Once the recorder rolls, light and movement become liabilities. A clean recording advances the work order. A contaminated one must be attempted again&mdash;and a loud mistake can give the building something to follow.</p>
+<hr class="custom-break">
 
-<h2>Spend light. Leave noise.</h2>
+<p class="custom-index">01 / CASE &mdash; first person audio-reactive horror</p>
 
-<p>Your torch makes the conservatory legible, but its battery is finite and its beam attracts attention. Footsteps, handling, and injuries make noise. Balance seeing the route ahead against announcing where you are. Corridors outside your sight and hearing can change, so a remembered route may not remain the route you return to.</p>
+<h2>The job is to record nothing.</h2>
 
-<h2>Watch the materials remember wrong.</h2>
+<p><em>Chunk Surfer</em> is a short first-person psychological horror game about sound recording. As a field recordist in the condemned Ellery Conservatory, your job is to capture five clean room sounds as you evade invisible entities, confront your murky past, and figure out what happened to the previous recordist who tried to do this gig first.</p>
 
-<p><em>Chunk Surfer</em> is, to our knowledge, the only 3D psychological horror game with a local Stable Diffusion material renderer that keeps generating during play. It does not redraw the camera image or replace the game&rsquo;s regular 3D texture maps. Instead, it layers AI-generated hallucinations over authored PBR materials; every 5&ndash;15 seconds, when the frame budget permits, one visible surface is re-hallucinated and crossfaded into the building over 6&ndash;12 seconds. Geometry, lighting, depth, movement, and UI remain native, while reaction-diffusion, VFD pixel-mesh, datamosh, and glass shaders complete the stack. The entire visual lens runs locally and offline on the player&rsquo;s GPU. No image is uploaded to a cloud service.</p>
+<p>Monitor each space, roll the recorder, then stay still and silent &ndash; or, rather, vulnerable &ndash; for a whole minute. Movement or noise can invalidate the take. An optional computer microphone adds noise from your real room through local loudness analysis only; audio is never recorded or uploaded.</p>
 
-<h2>Read what comes back.</h2>
+<p class="custom-index">02 / MATERIAL &mdash; offline shader diffusion over traditional PBR maps</p>
+
+<h2>Stable Diffusion in game shader stack.</h2>
+
+<p><em>Chunk Surfer</em> is perhaps the first 3D psychological horror game with a local Stable Diffusion material renderer that keeps generating during play: GPU-budgeted local Stable Diffusion designed as neural rendering shaders for video games.</p>
+
+<p><strong>Technical jargon:</strong> it does not redraw the camera image or replace the game&rsquo;s regular 3D texture maps. Instead, it layers machine learning hallucinations over authored PBR materials; every 5&ndash;15 seconds, when the frame budget permits, one visible surface is re-hallucinated and crossfaded into the building over 6&ndash;12 seconds. This is real-time AI texture crossfading rather than full-screen frame generation. On top of traditional PBR maps sits this hallucination engine, which itself sits under an 8-bit mesh.</p>
+
+<p>The result is a unique low-resolution look that is neither 8bit nor diffused nor traditional PBR texturing, but a mix of the three.</p>
+
+<p>Geometry, lighting, depth, movement, and UI remain native, while reaction-diffusion, VFD pixel-mesh, datamosh, and glass shaders complete the stack. The entire visual lens runs locally and offline on the player&rsquo;s GPU. No image is uploaded to a cloud service.</p>
+
+<p class="custom-index">03 / FIELD &mdash; listen. record. do not move.</p>
+
+<h2>Your movement betrays you.</h2>
+
+<p>Monitor each assigned space before committing to a take. Once the recorder rolls, light and movement become liabilities. A clean recording advances the work order. A contaminated one must be attempted again, and a loud mistake can give whatever else is in the building someone to follow.</p>
+
+<p>Your torch makes the conservatory visible but its battery is finite and its beam attracts attention. Footsteps, handling, and injuries make noise. Corridors outside your sight and hearing can change, so a remembered route may not remain the route you return to.</p>
+
+<p class="custom-index">04 / RECORD &mdash; redaction turn-based combat</p>
+
+<h2>Pick up the pieces.</h2>
 
 <p>Inspect the packet left by the previous contractor and play back what your recorder captured. Later encounters turn transcript redaction into a physical struggle: choose what to black out, protect what remains readable, and live with the record you produce.</p>
 
+<blockquote class="custom-quote">
+  <p>a game of redaction. black out the words that change your reality to favorable odds.</p>
+</blockquote>
+
+<p class="custom-index">05 / SOURCE &mdash; source space</p>
+
+<h2>The game&rsquo;s own files become the map.</h2>
+
 <p>The investigation eventually ruptures into literal source-code space, where the game&rsquo;s own files become terrain, passages, and surfaces that can be altered. The machinery behind the fiction is not a bonus menu. It is somewhere you go.</p>
 
-<h2>Let your room into the game&mdash;or do not.</h2>
+<p class="custom-index">06 / INPUT &mdash; let your room into the game&mdash;or do not</p>
 
-<p>Computer microphone input is optional. When enabled, <em>Chunk Surfer</em> measures loudness locally while a take is rolling. It never records, stores, transmits, or uploads audio. You can deny permission and complete the game without microphone input.</p>
+<h2>Your microphone is optional. Its consequences are not cosmetic.</h2>
 
-<p><strong>Complete the account before demolition begins.</strong></p>
+<p>When enabled, <em>Chunk Surfer</em> measures loudness locally while a take is rolling. Noise in your real room can contaminate a take or provoke an in-game response. It never records, stores, transmits, uploads, or plays back microphone audio.</p>
 
-<hr>
+<p>You can deny or revoke permission and complete the game without microphone input.</p>
 
-<h2>Beta build and installation</h2>
+<p class="custom-index">07 / RELEASE &mdash; public beta</p>
 
-<p><strong>This is a beta release.</strong> Save files, settings, performance, and packaging may change between builds.</p>
+<h2>Now out for public beta testing.</h2>
 
-<ul>
-  <li><strong>macOS:</strong> Apple Silicon build.</li>
-  <li><strong>Windows:</strong> 64-bit build. The bundled visual lens currently requires an NVIDIA GPU with CUDA support.</li>
-  <li><strong>Linux:</strong> 64-bit AppImage and Debian package. The bundled visual lens currently requires an NVIDIA GPU with CUDA support.</li>
-  <li><strong>Signing:</strong> Desktop beta builds are unsigned. Your operating system may show a warning; macOS may require manual approval the first time the app opens.</li>
-  <li><strong>Download size:</strong> Builds are unusually large because the visual lens and its supporting resources run locally and are bundled for offline use.</li>
+<p>This game is in its nascent stages. Expect some bugs. Dialog is very likely to change, story is not. Expected bugs list and feedback links incoming soon.</p>
+
+<ul class="custom-spec">
+  <li><strong class="custom-label">mac</strong> <span class="custom-value">apple silicon</span></li>
+  <li><strong class="custom-label">windows</strong> <span class="custom-value">x64 + nvidia cuda</span></li>
+  <li><strong class="custom-label">linux</strong> <span class="custom-value">appimage / deb &mdash; x64 + nvidia cuda</span></li>
+  <li><strong class="custom-label">beta</strong> <span class="custom-value">unsigned</span></li>
 </ul>
 
-<h2>Content warning</h2>
+<p class="custom-notice">Full requirements, first-launch approval steps and download sizes are in the install instructions below the downloads.</p>
 
-<p>Sustained dread, sudden loud sounds, a small number of deliberate jumpscares, and flashing or high-contrast strobing effects. Settings are available to reduce or disable intense physical presentation effects.</p>
+<h2 class="custom-warning-heading">content warning (general horror)</h2>
 
-<h2>Optional microphone input</h2>
+<p class="custom-warning">Sustained dread, sudden loud sounds, a small number of deliberate jumpscares, and flashing or high-contrast strobing effects. Settings can reduce or disable intense physical presentation effects.</p>
 
-<p>Microphone permission is optional. If enabled, the game performs local loudness analysis so sound in your room can contaminate an active take or provoke an in-game response. Audio is never recorded, stored, transmitted, or uploaded, and microphone input is never played through the game. You can refuse or revoke permission and complete the game without it.</p>
+<hr class="custom-break">
+
+<p class="custom-index">order 4417-C remains open</p>
+
+<h2 class="custom-closer">Five rooms. Five clean takes.</h2>
+
+<p class="custom-signoff"><strong>Do you take the gig?</strong></p>

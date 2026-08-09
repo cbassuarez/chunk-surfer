@@ -29,7 +29,7 @@
       "lines": [
         {
           "who": "you",
-          "text": "Before anything. You never set a level in a room you have not listened to.",
+          "text": "Before anything else, I should set my levels. Dunno how many recordings I've had to fix afterwards because I set my settings wrong. Not doing that tonight.",
           "id": "start.line.1"
         },
         {
@@ -58,22 +58,27 @@
       "lines": [
         {
           "who": "you",
-          "text": "Room tone. Sixty seconds of a room with nothing in it.",
+          "text": "Room tone. Sixty seconds of a room with nothing in it. ",
           "id": "what.line.1"
         },
         {
           "who": "you",
-          "text": "Not silence; there is no such thing. The air handler, the glass, the size of the place.",
+          "text": "Not silence; there really is no such thing. They cut in this room noise under dialogue so a scene doesn't go dead between lines. Every room has one, and every one is different; nobody has ever noticed a good one.",
           "id": "what.line.2"
         },
         {
-          "who": "you",
-          "text": "They cut it in under dialogue so a scene does not go dead between lines. Every room has one, and every one is different, and nobody has ever noticed a good one.",
-          "id": "what.line.3"
+          "id": "what.line.5",
+          "who": "direction",
+          "text": "You remember that old John Caid quote about silence: \"Try as we may to prepare silence, we only prepare the room in which something else is heard.\" That quote was drilled into your head as a music student; pedagogically, it made sense: silence is not empty, and even the tiny sounds you or others make matter almost more than the more noticeable ones. "
         },
         {
           "who": "direction",
-          "text": "Five recordings of a building that comes down on Thursday.",
+          "text": "You don't find any comfort in the quote in this place, however. You do ponder, though, just how much those words were presented, said, critiqued, and reanimated year after year in these halls. ",
+          "id": "what.line.3"
+        },
+        {
+          "who": "you",
+          "text": "Five recordings of a building that comes down Thursday. Better get to work. ",
           "id": "what.line.4"
         }
       ],
@@ -86,12 +91,12 @@
       "lines": [
         {
           "who": "direction",
-          "text": "The meter finds the dock. Minus fifty-four decibels. As you move, the recorder picks up your ruffling.",
+          "text": "The meter fluctuates, then settles. Minus fifty-four decibels. As you move, the recorder picks up your ruffling.",
           "id": "levels.line.1"
         },
         {
           "who": "you",
-          "text": "My jacket, my knee, my breathing can all ruin this recording.",
+          "text": "Weird. Thought this place was quiet. Looks like my jacket, my knee, my breathing can all ruin this recording.",
           "id": "levels.line.2"
         }
       ],

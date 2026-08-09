@@ -99,6 +99,16 @@ export const RINGING_SCORE = Object.freeze([
   Object.freeze({ id:'holding-course', type:'loop', source:Object.freeze(plainHuntMajor({courses:1}).map(Object.freeze)) }),
 ]);
 
+// The building-wide lure never performs the Stedman touch for the player. It
+// wakes the tenor, settles into rounds and Plain Hunt, then holds that course
+// until somebody takes the covering tenor in the ringing room.
+export const TOWER_LURE_SCORE = Object.freeze([
+  Object.freeze({ id:'tenor-awakens', type:'toll', bell:8, strokes:4 }),
+  Object.freeze({ id:'rounds', type:'rows', source:Object.freeze(rounds(8,8).map(Object.freeze)) }),
+  Object.freeze({ id:'plain-hunt', type:'rows', source:Object.freeze(plainHuntMajor({courses:2}).map(Object.freeze)) }),
+  Object.freeze({ id:'holding-course', type:'loop', source:Object.freeze(plainHuntMajor({courses:1}).map(Object.freeze)) }),
+]);
+
 export function scheduleRow(row, stroke, rowStartMs, rowIndex=0) {
   assertPermutation(row, row.length);
   const handstrokeGap=stroke==='hand'?PLACE_MS:0;

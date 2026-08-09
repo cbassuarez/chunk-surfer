@@ -3,7 +3,7 @@
 // physical interface, under pressure.
 
 import { uiDraw, uiFill, uiLine, uiStrokeRect, uiText } from './ui.js';
-import { UI_COLOR } from './palette.js';
+import { UI_COLOR, activeTheme } from './palette.js';
 import { drawBagIcon } from './bag-icons.js';
 import { loadStoryArtImage, resolveStoryArt } from '../game/story-art.js';
 import { SNR_TRIANGLE } from '../game/combat-state.js';
@@ -24,18 +24,29 @@ export function combatInjuryStage({ composure = 0, maxComposure = 1, injuries = 
   return 'steady';
 }
 
+export function combatTonePalette(tone = 'player') {
+  if (tone === 'enemy') {
+    return { fill: 'rgba(255,76,76,0.84)', pip: '#FF4C4C', outline: UI_COLOR.danger, dim: '#FF4C4C' };
+  }
+  if (tone === 'theme') {
+    const theme = activeTheme();
+    return { fill: theme.phosphor, pip: theme.phosphor, outline: theme.phosphor, dim: theme.dim };
+  }
+  return { fill: 'rgba(255,181,54,0.88)', pip: '#FFB536', outline: UI_COLOR.amber, dim: '#FFB536' };
+}
+
 export function drawCombatBar({
   x, y, w, value, max, label, tone = 'player', alpha = 1, lowDanger = true,
 } = {}) {
   const labelText = String(label || '').toUpperCase();
   const amount = `${Math.max(0, Math.round(value))}/${Math.max(1, Math.round(max))}`;
-  const fillColor = tone === 'enemy' ? 'rgba(255,76,76,0.84)' : 'rgba(255,181,54,0.88)';
+  const colors = combatTonePalette(tone);
   const low = lowDanger && value / Math.max(1, max) <= .25;
   uiText(x, y, labelText, tone === 'enemy' ? 'ui-danger' : low ? 'ui-danger' : 'ui-label', alpha);
   uiText(x + Math.max(0, w - amount.length), y, amount, tone === 'enemy' ? 'ui-danger' : low ? 'ui-danger' : 'ui-primary', alpha);
   uiFill(x, y + 1.15, w, .58, 'rgba(255,255,255,0.07)');
-  uiFill(x, y + 1.15, combatBarCells(value, max, w), .58, fillColor);
-  uiStrokeRect(x, y + 1.15, w, .58, tone === 'enemy' ? UI_COLOR.danger : UI_COLOR.amber, .42 * alpha, 1);
+  uiFill(x, y + 1.15, combatBarCells(value, max, w), .58, colors.fill);
+  uiStrokeRect(x, y + 1.15, w, .58, colors.outline, .42 * alpha, 1);
 }
 
 // ── the pip health readout ────────────────────────────────────────────────────
@@ -62,7 +73,8 @@ export function drawCombatPips({
   const ghostAlpha = Math.max(0, 1 - ghostAge / .65);
   const gap = .45;
   const pipW = Math.max(.9, (w - gap * (maxPips - 1)) / maxPips);
-  const phosphor = tone === 'enemy' ? '255,76,76' : '255,181,54';
+  const colors = combatTonePalette(tone);
+  const phosphor = colors.pip;
 
   uiDraw(({ ctx, dpr, cellW, cellH }) => {
     const py = (y + 1.08) * cellH * dpr;
@@ -98,14 +110,14 @@ export function drawCombatPips({
         ctx.shadowColor = 'rgba(148,224,164,1)';
         ctx.shadowBlur = 7 * dpr;
       } else if (lit) {
-        ctx.fillStyle = `rgba(${phosphor},.94)`;
+        ctx.fillStyle = phosphor;
         ctx.globalAlpha = alpha * pulse * duty;
-        ctx.shadowColor = `rgba(${phosphor},1)`;
+        ctx.shadowColor = phosphor;
         ctx.shadowBlur = 5.5 * dpr;
       } else {
         // Dormant segments stay faintly visible in their own phosphor, the way
         // unlit elements do on a real VFD.
-        ctx.fillStyle = `rgba(${phosphor},1)`;
+        ctx.fillStyle = colors.dim || phosphor;
         ctx.globalAlpha = alpha * .09;
       }
       ctx.fillRect(px, py, pw, ph);

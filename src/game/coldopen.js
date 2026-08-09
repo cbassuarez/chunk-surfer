@@ -406,7 +406,7 @@ export function makeWorldTitleScene({
       const x = Math.floor((cols - w) / 2), y = Math.floor((rows - h) / 2);
       const body = drawMachinePanel(x, y, w, h, { label:'PROGRAM', source:'ELLERY', meter:true });
       drawVfdText(Math.max(body.x, Math.floor((cols - 12) / 2)), body.y + 2, 'CHUNK SURFER', { color:UI_COLOR.primary });
-      uiText(Math.max(body.x, Math.floor((cols - 29) / 2)), body.y + 5, 'ELLERY CONSERVATORY OF MUSIC', 'ui-blue', up(2.4));
+      uiText(Math.max(body.x, Math.floor((cols - 30) / 2)), body.y + 5, 'ELLERY CONSERVATOIRE OF MUSIC', 'ui-blue', up(2.4));
       uiText(Math.max(body.x, Math.floor((cols - 31) / 2)), body.y + 7, '5 ROOMS / 1 CLEAN MINUTE EACH', 'ui-secondary', up(3.6));
     },
   };

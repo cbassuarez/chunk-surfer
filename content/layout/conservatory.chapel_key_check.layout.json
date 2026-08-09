@@ -2,16 +2,20 @@
   "schemaVersion": 1,
   "documentId": "conservatory.chapel_key_check",
   "positions": {
-    "start": {
+    "early_drop": {
       "x": 80,
       "y": 100
     },
-    "wrong": {
+    "known_drop": {
       "x": 440,
       "y": 100
     },
-    "right": {
+    "early_take": {
       "x": 800,
+      "y": 100
+    },
+    "known_take": {
+      "x": 1160,
       "y": 100
     }
   },

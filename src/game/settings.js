@@ -35,6 +35,8 @@ const MIC_CHANNEL_MODES = ['mono', 'left', 'right'];
 const MIC_CHANNEL_LABEL = { mono: 'MONO MIX', left: 'LEFT', right: 'RIGHT' };
 const FX_MODES = ['off', 'reduced', 'full'];
 const FX_LABEL = { off: 'OFF', reduced: 'REDUCED', full: 'FULL' };
+const PEAL_ASSIST_MODES = ['standard', 'guided', 'wide'];
+const PEAL_ASSIST_LABEL = { standard: 'STANDARD', guided: 'GUIDED', wide: 'WIDE' };
 const HINT_MODES = ['off', 'reduced', 'full'];
 const HINT_LABEL = { off: 'OFF', reduced: 'SPARSE', full: 'FULL' };
 const SEEN_TEXT_MODES = ['normal', 'fast', 'instant'];
@@ -528,6 +530,21 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           { id: 'shake', label: 'SCREEN SHAKE',
             value: () => FX_LABEL[setting('shake', 'full')] || 'FULL',
             adjust: (d) => cycleSetting('shake', FX_MODES, d, 'full') },
+          { id: 'haptics', label: 'HAPTICS',
+            value: () => FX_LABEL[setting('haptics', 'full')] || 'FULL',
+            adjust: (d) => cycleSetting('haptics', FX_MODES, d, 'full') },
+          section('Tower Peal'),
+          { id: 'towerPealAssist', label: 'PEAL ASSIST',
+            value: () => PEAL_ASSIST_LABEL[setting('towerPealAssist', 'standard')] || 'STANDARD',
+            adjust: (d) => cycleSetting('towerPealAssist', PEAL_ASSIST_MODES, d, 'standard') },
+          { id: 'rhythmTimingOffset', label: 'RHYTHM TIMING OFFSET',
+            value: () => {
+              const value=Number(setting('rhythmTimingOffsetMs',0))||0;
+              return `${value>0?'+':''}${value} MS`;
+            },
+            adjust: (d) => set('rhythmTimingOffsetMs', clamp(Math.round((Number(setting('rhythmTimingOffsetMs',0))||0)/5+d)*5,-250,250)) },
+          { id: 'calibratePeal', label: 'CALIBRATE BELL TIMING',
+            value: () => inputPrompt('confirm'), activate: () => hooks.openPealCalibration?.() },
           { id: 'dread', label: 'DREAD SPIKES',
             value: () => setting('reduceDread', false) ? 'REDUCED' : 'FULL',
             adjust: () => set('reduceDread', !setting('reduceDread', false)) },

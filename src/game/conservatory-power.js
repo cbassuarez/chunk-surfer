@@ -27,7 +27,7 @@ export const POWER_CIRCUITS = Object.freeze([
     id: POWER_CIRCUIT.SP03,
     panelId: 'acq-services-panel-foh',
     label: 'S/P-03',
-    serves: 'front of house, hall lounge and academic landing',
+    serves: 'front of house, hall support, practice wing, academic landing and tower escape route',
   }),
 ]);
 

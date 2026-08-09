@@ -66,9 +66,9 @@ function halfDepthOf(p){
 // inventing a synonym. `on:'host-id'` takes its height from the host's real
 // mesh. Nothing moves that has not asked to.
 //
-// Visual only: renderOffset and yaw, never rx/ry — the collider and the
-// interaction point stay where they were authored, which is the same contract
-// nudgeProp already keeps.
+// Visual contact resolution never moves collision. An implicit interaction
+// anchor, however, belongs to the rendered object and follows the snap. An
+// explicit inspectAt remains an authored override and is left untouched.
 function resolveContacts(fp){
   const plan={
     size:fp.planSize,isSolid:fp.isSolid,floorAt:fp.floorAt,zoneAt:fp.zoneAt,
@@ -98,6 +98,13 @@ function resolveContacts(fp){
         if(snapped.y!==null)p.renderOffsetZ=(snapped.y-p.ry)*CELL;
         p.yaw=snapped.yaw;
         p.wallContact={nx:contact.nx,ny:contact.ny,gap:contact.gap};
+        if(!Number.isFinite(p.inspectAt?.x)&&!Number.isFinite(p.inspectAt?.y)){
+          const at=fp.logicalToPhysical?.(p.rx,p.ry);
+          p.interactionX=(at?at.x*CELL:p.x)+(p.renderOffsetX||0);
+          p.interactionY=(at?at.z*CELL:p.y)+(p.renderOffsetZ||0);
+          p.interactionRx=rt(p.interactionX);
+          p.interactionRy=rt(p.interactionY);
+        }
       }
     }
     if(p.on){

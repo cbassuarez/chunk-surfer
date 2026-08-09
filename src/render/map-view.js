@@ -3,7 +3,7 @@
 import { uiDraw, uiGlyph, uiLine, uiText, uiWrap } from './ui.js';
 import { themeRoleColor } from './palette.js';
 import { buildMapCommands } from './map-commands.js';
-import { drawAnomalyMarker, drawAnomalyRegion, drawObjectiveMarker, drawPlayerMarker } from './map-icons.js';
+import { drawAnomalyMarker, drawAnomalyRegion, drawEquipmentMarker, drawObjectiveMarker, drawPlayerMarker } from './map-icons.js';
 import { mapLayoutFromBag } from './map-layout.js';
 import { mapCurrentAreaLabel, mapFloor, newestMapContact } from '../game/map-model.js';
 import { selectedMapSpace } from '../game/map-navigation.js';
@@ -126,6 +126,7 @@ function drawMapCommands(commands, viewport, now) {
       }
     }
     else if (command.kind === 'player') drawPlayerMarker(command.point, command.heading, 1);
+    else if (command.kind === 'equipment') drawEquipmentMarker(command.point,command.carrierOpen ? .72+Math.sin(now*7)*.2 : .72);
     else if (command.kind === 'anomaly-contact') drawAnomalyMarker(command, .82 + Math.sin(now * 12) * .16);
     else if (command.kind === 'anomaly-region') drawAnomalyRegion(command, .72);
   }

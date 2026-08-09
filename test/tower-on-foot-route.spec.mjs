@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { conservatory } from '../src/data/floorplan/conservatory.js';
 import { DOOR_BY_ID } from '../src/data/conservatory-doors.js';
-import { MAIN_EXIT_CELL } from '../src/data/conservatory-script.js';
+import { MAIN_EXIT_CELL, PAGES } from '../src/data/conservatory-script.js';
 import {
   BELL_CHAMBER_ANCHOR,
   BELL_RELAY_CLAMP_AUTHORED,
@@ -90,16 +90,16 @@ const doorIsOpen=(id)=>FP.doorState().find((door)=>door.id===id)?.open===true;
 let position=FP.spawn();
 let keys=new Set(['master']);
 
-// Page 6 is physically reachable, then the FOH office can be entered and both
-// pieces of the C-17 key interaction can be reached without a debug spawn.
-let leg=walkByPlayerInteraction(position,runtime({x:61,y:30}),keys);
+// Page 6 is physically reachable, then the FOH office can be entered and the
+// literal C-17 ring can be reached without a debug spawn.
+let leg=walkByPlayerInteraction(position,runtime(PAGES.find((page)=>page.id==='page-6').at),keys);
 position=leg.at;
-leg=walkByPlayerInteraction(position,interactionPoint('box-office-ledger'),keys);
+leg=walkByPlayerInteraction(position,interactionPoint('box-office-ledger'),keys,{radius:1});
 assert.equal(doorIsOpen('foh-office'),true,'the standard master key opens the FOH office through the public door interaction');
 position=leg.at;
-position=walkByPlayerInteraction(position,interactionPoint('box-office-key-cabinet'),keys).at;
+position=walkByPlayerInteraction(position,interactionPoint('box-office-key-ring-c17'),keys,{radius:1}).at;
 
-// The cabinet choice issues the chapel key in gameplay; model that inventory
+// Taking the physical ring issues the chapel key in gameplay; model that inventory
 // result, then keep walking through C-17 and the inner screen.
 keys=new Set([...keys,'chapel']);
 leg=walkByPlayerInteraction(position,runtime(CHAPEL_SCREEN_AUTHORED),keys);

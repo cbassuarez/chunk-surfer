@@ -178,6 +178,15 @@ for (const [name, profile] of [['natatoriumbattle', 'natatorium'], ['practicebat
 }
 const radioRuntime = runtimeTree('radio.pre_third_room_breakdown', { ROOMLABEL: 'THE CONCERT HALL' });
 assert.match(JSON.stringify(radioRuntime), /THE CONCERT HALL/);
+const radioAdapterSource=await readFile('src/data/radio-script.js','utf8');
+assert.match(radioAdapterSource,/runtimeTree\(`radio\.\$\{cueId\}`/,'radio compatibility imports the canonical Studio tree');
+assert.doesNotMatch(radioAdapterSource,/4417-C|because it is not yours|stays clipped/,'no parallel scripted radio copy survives');
+const conservatoryScriptSource=await readFile('src/data/conservatory-script.js','utf8');
+assert.doesNotMatch(conservatoryScriptSource,/export const (RADIO_DEAD|TRANSMISSIONS|RADIO_DEAD_LINE)/,'conservatory script no longer carries parallel radio dialogue');
+const radioDocuments=await Promise.all([
+  'radio.initial_checkin','radio.post_second_take_warning','radio.pre_third_room_breakdown','conservatory.radio_dead',
+].map((id)=>readFile(`content/narrative/${id}.story.json`,'utf8')));
+assert.doesNotMatch(radioDocuments.join('\n'),/because it is not yours|stays clipped to my belt|room to take the channel|It says it with your mouth/,'law-like ownership and authorial cause text is retired');
 const roomRuntime = runtimeTree('room-listen.main_b3', { label: 'The Concert Hall' });
 assert.match(JSON.stringify(roomRuntime), /The Concert Hall/);
 
@@ -231,7 +240,7 @@ badAudio.cues[0].layers[0].trimEnd = 1;
 assert.equal(validateAudioProject(badAudio).ok, false);
 const media = JSON.parse(await readFile('content/media/story-art.media.json', 'utf8'));
 assert.equal(validateMediaProject(media).ok, true);
-assert.equal(STORY_ART.guard.caption, 'Gate booth / Ellery Conservatory');
+assert.equal(STORY_ART.guard.caption, 'Gate booth / Ellery Conservatoire');
 assert.ok(STORY_ART.surfer.src.includes('story-art/surfer.png'));
 assert.equal(authoringMedia[0].id, 'story-art');
 assert.equal(authoringNarrative.length, authoringProject.narrative.length);

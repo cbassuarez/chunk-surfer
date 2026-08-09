@@ -64,7 +64,7 @@ const BAND_W = 86;
 // not, so that caller passes blocksWorld.
 export function makeThoughtScene({
   id = 'thought', nodes, startAt = 'start', onDone, onChoice, onLine, cue, fx, audio, getAudio, replay = null,
-  scrim = 0.62, lensPreset = 'calm', anchor = 'center', slate = '', blocksWorld = false,
+  scrim = 0.62, lensPreset = 'calm', anchor = 'center', slate = '', blocksWorld = false, worldView = null, onExit = null,
 } = {}) {
   const convo = createConversation({
     nodes, startAt, sceneId: `thought:${id}`, replay, onChoice, onLine, cue, fx, audio, getAudio,
@@ -80,8 +80,9 @@ export function makeThoughtScene({
     lensPreset,
 
     enter() { convo.start(); },
-    exit() { convo.stop(); audio?.stopTyping?.(); },
+    exit() { convo.stop(); audio?.stopTyping?.(); onExit?.(); },
     update(dt) { convo.update(dt); },
+    worldView:typeof worldView==='function'?worldView:undefined,
     view() { return convo.view(); },        // for the headless suites
     keyup(e) { return convo.keyup?.(e) || false; },
     key(e) {

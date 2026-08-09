@@ -100,7 +100,38 @@ function hallGroundProfile(x,y,cell){
   const terrace=Math.min(11,Math.floor((y-8)/2));
   const floor=-2.5+terrace*.44;
   const aisle=(x>=1&&x<=4)||(x>=13&&x<=16)||(x>=25&&x<=28);
-  return{floor,ceil:(x<=4||x>=25)?3.8:15.5,flags:aisle?(cell.flags|F.STAIR):(cell.flags&~F.STAIR)};
+  // Under the arms the ceiling is the arm's own soffit, so it cascades with it.
+  const soffit=(x<=4||x>=25)?balconyCascade(4.0,y)-.2:15.5;
+  return{floor,ceil:soffit,flags:aisle?(cell.flags|F.STAIR):(cell.flags&~F.STAIR)};
+}
+// THE ARMS CASCADE TOWARD THE PLATFORM.
+//
+// Koerner's side balconies step down in box tiers as they approach the
+// platform, rather than running level the length of the room. Ours did run
+// level, which is what made them read as two shelves.
+//
+// The rear keeps its authored height, because that is where the ramp arrives and
+// the seam depends on it. Each tier forward drops one BOWL RISER — the same 0.44
+// the rake steps by — so the balcony and the stalls are visibly the same
+// geometry, and every step stays under STEP_UP so the arm is walkable end to end
+// (the upper arm has to carry you to the galleria flight).
+//
+// The aisle underneath has to come down with it, or the arm's deck sinks through
+// its own soffit. hallGroundProfile calls this for exactly that reason.
+const BALCONY_STEP=.44, BALCONY_TIERS=5, ARM_REAR_ROW=36;
+function balconyCascade(base,localY){
+  const tier=Math.min(BALCONY_TIERS-1,Math.max(0,Math.floor((ARM_REAR_ROW-localY)/6)));
+  return base-tier*BALCONY_STEP;
+}
+function balconyProfile(base,clear){
+  return (x,y,cell)=>{
+    if(cell.solid||(cell.flags&(F.DOOR|F.BRICKED)))return null;
+    // Only the arms cascade. A rear band, where one exists, is the flat deck the
+    // two arms hang off and must stay level.
+    if(!((x<=4||x>=25)&&y>=8&&y<=ARM_REAR_ROW))return null;
+    const floor=balconyCascade(base,y);
+    return{floor,ceil:floor+clear};
+  };
 }
 // `rear` draws the band across the back of the horseshoe. The LOWER balcony no
 // longer has one: the hall's own rear cross aisle climbs to 4.0 and is that band,
@@ -575,15 +606,18 @@ const EUCLIDEAN_ADDITIONS=[
   // the player up the bays without a connector — the seam the balconies need
   // exists only because their logical cells live somewhere else entirely.
   {id:'hall_stage',replace:true,layer:'hall_stage',space:'hall',renderGroup:'hall',origin:{x:98,y:4},physicalOrigin:{x:98,y:4},base:0,rows:hallStageRows(),profile:hallStageProfile},
-  {id:'hall_lower_balcony',layer:'hall_lower',space:'hall',renderGroup:'hall',origin:{x:0,y:40},physicalOrigin:{x:98,y:4},base:0,rows:balconyRows('L',{rear:false})},
-  {id:'hall_upper_balcony',layer:'hall_upper',space:'hall',renderGroup:'hall',origin:{x:0,y:82},physicalOrigin:{x:98,y:4},base:0,rows:balconyRows('U')},
+  {id:'hall_lower_balcony',layer:'hall_lower',space:'hall',renderGroup:'hall',origin:{x:0,y:40},physicalOrigin:{x:98,y:4},base:0,rows:balconyRows('L',{rear:false}),profile:balconyProfile(4.0,3.3)},
+  {id:'hall_upper_balcony',layer:'hall_upper',space:'hall',renderGroup:'hall',origin:{x:0,y:82},physicalOrigin:{x:98,y:4},base:0,rows:balconyRows('U'),profile:balconyProfile(7.5,8.0)},
   // galleria_lower_stair is GONE, and nothing replaces it. It climbed -0.74 ->
   // 4.00 through the same rows the west aisle ramps through, two floors in one
   // volume, so the player walked the ramp to their seats and passed through the
   // flight. The rake carries that climb now: the bowl rises, the rear cross aisle
   // keeps rising, and it arrives at the circle. One ramp, horseshoe-shaped, and
   // the risers ARE the stairs.
-  {id:'galleria_upper_stair',physicalReplace:true,layer:'hall_stair',space:'hall',renderGroup:'hall',origin:{x:40,y:40},physicalOrigin:{x:122,y:20},base:0,rows:galleriaStairRows(4),stairs:[{from:{x:44,y:51},to:{x:44,y:41},fromH:4,toH:7.5,width:2,head:2.6,zone:'hall',material:'woodVelvet'}]},
+  // Its ends follow the cascade rather than the old flat decks: it leaves the
+  // lower arm at 3.56 (tier 1) and arrives on the upper at 6.18 (tier 3). Leaving
+  // them at 4.0/7.5 threw `discontinuous level seam ... 0.97m in height`.
+  {id:'galleria_upper_stair',physicalReplace:true,layer:'hall_stair',space:'hall',renderGroup:'hall',origin:{x:40,y:40},physicalOrigin:{x:122,y:20},base:0,rows:galleriaStairRows(4),stairs:[{from:{x:44,y:51},to:{x:44,y:41},fromH:3.56,toH:6.18,width:2,head:2.6,zone:'hall',material:'woodVelvet'}]},
   {id:'practice_wing',replace:true,physicalReplace:true,physicalStack:true,layer:'upper',space:'practice',renderGroup:'upper',origin:{x:51,y:52},physicalOrigin:{x:51,y:upperWingZ(52)},base:4.8,rows:practiceWingRows()},
   {id:'upper_atrium_bridge',replace:true,physicalReplace:true,physicalStack:true,layer:'upper',space:'upper_atrium',renderGroup:'upper',origin:{x:77,y:53},physicalOrigin:{x:77,y:upperWingZ(53)},base:4.8,rows:upperAtriumBridgeRows()},
   // Retire the one-metre stems in logical space. Their physical footprint is
@@ -869,7 +903,11 @@ export const conservatory = {
         '       #KKKKKKKKKKKKKKKK##;;;#MMMMMMMMMMM#',
         '       ###################;;;#MMMMMMMMMMM#',
         '                  #MMMMMM#;;;#MMMMMMMMMMM#',
-        '                  #MMMMMM#;;;#############',
+        // The old tank annex is part of the plant chamber again. Three lower
+        // grating cells cut through the former south wall; J retains its 400mm
+        // drop, so geometry can show the short service steps without inventing
+        // another locked room or connector.
+        '                  #MMMMMM#;;;###JJJ#######',
         '                  #MMMMMM+;;;#JJJJJJ#',
         '                  #MMMMMM#;;;+JJJJJJ#',
         '                  ############JJJJJJ#',

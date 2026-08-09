@@ -174,6 +174,17 @@ export function beginPresenceTableau({ x, y, snapshot = null } = {}) {
   return tableau.snapshot;
 }
 
+// Authored moving tableaux (the plant-room wrench haul) may advance the real
+// body while ordinary pursuit and contact remain frozen.  Keeping this mutation
+// here avoids callers reaching into presenceState and accidentally rearming a
+// catch or a sound belief.
+export function updatePresenceTableauPose({x,y,velocityX=0,velocityY=0,behaviorMode='investigate'}={}){
+  if(!tableau||!Number.isFinite(Number(x))||!Number.isFinite(Number(y)))return false;
+  state.x=Number(x);state.y=Number(y);state.velocityX=Number(velocityX)||0;state.velocityY=Number(velocityY)||0;
+  state.speed=Math.hypot(state.velocityX,state.velocityY);state.motionMode=state.speed>.01?'moving':'idle';
+  state.behaviorMode=behaviorMode;state.hasTarget=false;state.pendingContact=null;return true;
+}
+
 export function restorePresenceTableau(snapshot = tableau?.snapshot, now = performance.now()) {
   tableau = null;
   if (!snapshot?.active) {
@@ -408,6 +419,11 @@ export function commitForcedContact(now = performance.now()) {
   state.pendingContact = null;
   enterStand(state.lastCatchAt, 1800, 3800);
   return { count: state.caughtCount, awareness: state.awareness };
+}
+
+export function grantContactGrace(now=performance.now()){
+  if(!state.active||tableau)return false;
+  state.lastCatchAt=Number(now)||performance.now();state.pendingContact=null;return true;
 }
 
 export function releaseContactAttempt(id, {

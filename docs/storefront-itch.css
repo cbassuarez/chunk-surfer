@@ -1,0 +1,846 @@
+/* ===========================================================================
+   CHUNK SURFER — itch.io project page theme
+   Paste into: itch.io -> Edit game -> Theme -> Custom CSS
+   Companion markup: docs/storefront-copy-itch.html
+
+   The page is the same machine as the game: an AUDIOCORP faceplate. Matte
+   chassis, one black-glass display per block, silkscreen legends for labels,
+   lit amber phosphor for values. Two rules govern everything below, quoted
+   from src/render/presentation.js:1-10 —
+
+     1. NO GRADIENTS. A VFD is flat black glass.
+     2. TEXT IS A DOT MATRIX, not a segment font.
+
+   Gradients appear here only as flat two-stop fills (a hard-edged shape, not a
+   ramp) and as the front-glass vignette, which is an optical falloff in the
+   glass rather than a painted surface.
+
+   Rules from itch.io's CSS guide that shape this file:
+     - Everything is scoped inside #wrapper. That also wins the specificity
+       fight: itch's generated theme is scoped to .view_game_page (0-1-0), so
+       #wrapper (1-0-0) beats it without !important.
+     - Classes we author must start with `custom-` or the sanitizer strips them.
+     - Selectors off itch's stable list (.buy_row, .uploads, .upload,
+       .game_info_panel_widget, ...) are cosmetic only here. If itch renames
+       one, the page degrades to plain-but-correct — no layout depends on them.
+     - No external resources. Everything below is pure CSS. The game ships no
+       webfonts, so the page runs the same system mono stack the game does.
+     - The footer is styled, never hidden.
+   =========================================================================== */
+
+
+/* ---------------------------------------------------------------------------
+   1. TOKENS
+   The --cs-vfd-* block is lifted from styles.css:8-11 so the storefront and the
+   running game read from one palette (src/render/palette.js, `amber` theme —
+   the menus/documents/title-screen machine). The --itchio_* vars then drive
+   any control we don't reach individually, so nothing lands off-theme.
+   --------------------------------------------------------------------------- */
+#wrapper{
+  --cs-mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;
+
+  --cs-vfd-phosphor:#F2A81E;              /* the lit segment */
+  --cs-vfd-dim:rgba(242,168,30,.055);     /* dormant phosphor — the VFD tell */
+  --cs-vfd-counter:#FFD070;               /* numeric 7-seg readout */
+  --cs-vfd-silkscreen:#8C7C54;            /* printed legend, unlit */
+  --cs-vfd-wordmark:#C7B27E;              /* stamped brand text */
+  --cs-vfd-glass:#050505;                 /* the display itself */
+  --cs-vfd-danger:#FF6A5A;                /* reserved to the circuit that pays for it */
+
+  --cs-chassis:#101010;                   /* matte bezel */
+  --cs-hairline:#242424;                  /* bezel seam */
+  --cs-field:#07090A;                     /* the dark the unit sits in */
+  --cs-body:#B6AFA2;                      /* warm neutral prose, 7.6:1 on chassis */
+
+  --itchio_link_color:#F2A81E;
+  --itchio_button_color:#050505;
+  --itchio_button_fg_color:#F2A81E;
+  --itchio_button_hover_color:#F2A81E;
+  --itchio_button_active_color:#C7B27E;
+  --itchio_button_border_color:#8C7C54;
+  --itchio_button_shadow_color:transparent;  /* a faceplate casts no soft shadow */
+  --itchio_border_color:#242424;
+  --itchio_border_radius:0;                  /* punched apertures are square */
+}
+
+
+/* ---------------------------------------------------------------------------
+   2. CHASSIS
+   --------------------------------------------------------------------------- */
+#wrapper{
+  background:var(--cs-field);
+  color:var(--cs-body);
+  font-family:var(--cs-mono);
+  -webkit-font-smoothing:antialiased;
+}
+
+/* itch puts `family_sans-serif` on #inner_column; the ID selector overrides it. */
+#wrapper #inner_column{
+  position:relative;
+  font-family:var(--cs-mono);
+  background:var(--cs-chassis);
+  border:1px solid var(--cs-hairline);
+  border-radius:0;
+}
+
+/* The stamped faceplate strips. #inner_column contains the header, the game
+   page and itch's footer, so ::before and ::after are the literal top and
+   bottom edges of the unit. Each carries one punched screw head per end,
+   transcribed from the faceplate hardware in presentation.js:52-101 —
+   #8a887f at alpha .16 with a dark slot. */
+#wrapper #inner_column::before,
+#wrapper #inner_column::after{
+  display:block;
+  color:var(--cs-vfd-silkscreen);
+  font:700 10px/1.15 var(--cs-mono);
+  letter-spacing:.24em;
+  text-align:center;
+  text-transform:uppercase;
+  padding:10px 44px;
+  background-repeat:no-repeat;
+  background-image:
+    linear-gradient(rgba(5,5,5,.55),rgba(5,5,5,.55)),                        /* slot, left screw */
+    radial-gradient(circle at 50% 50%,rgba(138,136,127,.16) 0 46%,transparent 48%),
+    linear-gradient(rgba(5,5,5,.55),rgba(5,5,5,.55)),                        /* slot, right screw */
+    radial-gradient(circle at 50% 50%,rgba(138,136,127,.16) 0 46%,transparent 48%);
+  background-size:7px 1px,10px 10px,7px 1px,10px 10px;
+  background-position:left 17px center,left 15px center,right 17px center,right 15px center;
+}
+#wrapper #inner_column::before{
+  content:"AUDIOCORP \00B7 LOCAL MONITOR \00B7 SOURCE 4417-C";
+  border-bottom:1px solid var(--cs-hairline);
+}
+#wrapper #inner_column::after{
+  content:"ELLERY CONSERVATORY OF MUSIC \00B7 CONDEMNED \00B7 DEMOLITION 06:00";
+  border-top:1px solid var(--cs-hairline);
+}
+
+/* The display treatment, lifted from .cs-machine-glass (styles.css:76-84).
+   One black pane, one black border, one near-invisible inner hairline where
+   the glass meets the bezel. */
+#wrapper .custom-workorder,
+#wrapper .custom-warning,
+#wrapper .uploads,
+#wrapper .game_info_panel_widget{
+  background:var(--cs-vfd-glass);
+  border:1px solid #000;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.018);
+  border-radius:0;
+}
+
+
+/* ---------------------------------------------------------------------------
+   3. FRONT GLASS
+   The scanline pitch and the vignette falloff are transcribed from the baked
+   overlays in src/render/canvas.js:75-109 at the game's own alphas: a 1x4
+   pattern (2px clear, 2px at .55) composited at .16, and a radial falloff
+   ending at rgba(0,0,0,.42).
+
+   z-index 100 is deliberate. itch's own stacking tops out at 3 for page
+   content, while .content_warning_widget is 999, .lightbox 1001 and
+   .popup_details 1002 — so the glass sits over the page and under every
+   popup. pointer-events:none means it can never intercept a click either way.
+   --------------------------------------------------------------------------- */
+#wrapper::before,
+#wrapper::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:100;
+  pointer-events:none;
+}
+#wrapper::before{
+  background:radial-gradient(ellipse at 50% 42%,transparent 38%,rgba(0,0,0,.42) 100%);
+}
+#wrapper::after{
+  opacity:.16;
+  background-image:repeating-linear-gradient(to bottom,transparent 0 2px,rgba(0,0,0,.55) 2px 4px);
+}
+
+
+/* ---------------------------------------------------------------------------
+   4. THE WORDMARK
+   --------------------------------------------------------------------------- */
+#wrapper #header{
+  padding:34px 24px 26px;
+  border-bottom:1px solid var(--cs-hairline);
+  background:var(--cs-vfd-glass);
+}
+#wrapper #header h1.game_title{
+  position:relative;
+  display:inline-block;
+  margin:0;
+  color:var(--cs-vfd-phosphor);
+  font-family:var(--cs-mono);
+  font-size:clamp(26px,5.4vw,48px);
+  font-weight:700;
+  line-height:1.1;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  /* Halation in the front glass, verbatim from .cs-machine-phosphor
+     (styles.css:88). Spatial bloom only — a VFD dot stops emitting the moment
+     it is no longer addressed, so there is never a temporal trail. */
+  text-shadow:
+    0 0 3px var(--cs-vfd-phosphor),
+    0 0 10px color-mix(in srgb,var(--cs-vfd-phosphor) 28%,transparent);
+}
+
+/* Rule 2, literally. A dark screen with transparent holes is laid over the lit
+   glyphs, so the type is addressed dots rather than continuous strokes. The
+   screen is the same near-black as the glass behind it, so it is invisible
+   everywhere except where it punches the phosphor. The cell is sized in em so
+   the matrix scales with the clamp() above and stays ~7 rows to the cap. */
+#wrapper #header h1.game_title::after{
+  content:"";
+  position:absolute;
+  inset:-.08em -.04em;
+  pointer-events:none;
+  background-image:radial-gradient(circle at 50% 50%,transparent 0 40%,var(--cs-vfd-glass) 44%);
+  background-size:.105em .105em;
+}
+
+/* itch hides the h1 when a banner image is uploaded. We recommend publishing
+   without one so the wordmark above carries the page, but if a banner is used
+   it gets the glass treatment rather than floating loose on the bezel. */
+#wrapper #header.has_image img{
+  border:1px solid #000;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.018);
+  border-radius:0;
+}
+
+
+/* ---------------------------------------------------------------------------
+   5. THE BUY ROW AND EVERY BUTTON
+   A button is an aperture in the faceplate with a dormant segment behind it.
+   Hover addresses the segment fully. Transitions are 90ms linear because the
+   machine quantizes brightness rather than easing it (presentation.js:31).
+   --------------------------------------------------------------------------- */
+#wrapper .header_buy_row{
+  padding:14px 0 4px;
+}
+#wrapper .header_buy_row > p{
+  margin:0 0 10px;
+  color:var(--cs-vfd-silkscreen);
+  font-size:11px;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+}
+
+#wrapper .button,
+#wrapper .buy_btn,
+#wrapper .download_btn,
+#wrapper .donate_btn{
+  display:inline-block;
+  background:var(--cs-vfd-glass);
+  border:1px solid var(--cs-vfd-phosphor);
+  border-radius:0;
+  box-shadow:none;
+  color:var(--cs-vfd-phosphor);
+  font-family:var(--cs-mono);
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  text-shadow:0 0 3px color-mix(in srgb,var(--cs-vfd-phosphor) 55%,transparent);
+  padding:10px 20px;
+  transition:background 90ms linear,color 90ms linear;
+}
+#wrapper .button:hover,
+#wrapper .buy_btn:hover,
+#wrapper .download_btn:hover,
+#wrapper .donate_btn:hover{
+  background:var(--cs-vfd-phosphor);
+  color:var(--cs-vfd-glass);
+  text-shadow:none;
+}
+#wrapper .button:active,
+#wrapper .buy_btn:active,
+#wrapper .download_btn:active,
+#wrapper .donate_btn:active{
+  background:var(--cs-vfd-wordmark);
+  color:var(--cs-vfd-glass);
+}
+#wrapper .button:focus-visible,
+#wrapper .buy_btn:focus-visible,
+#wrapper .download_btn:focus-visible,
+#wrapper .donate_btn:focus-visible{
+  outline:2px solid var(--cs-vfd-counter);
+  outline-offset:2px;
+}
+#wrapper .buy_message,
+#wrapper .buy_message .dollars{
+  color:var(--cs-vfd-counter);
+  font-family:var(--cs-mono);
+  letter-spacing:.06em;
+}
+#wrapper .buy_message .sub{color:var(--cs-vfd-silkscreen);}
+
+
+/* ---------------------------------------------------------------------------
+   6. BODY COPY
+   The game reserves phosphor for readouts, never for prose. So does the page:
+   paragraphs run in a warm neutral, and only labels, values and emphasis are
+   allowed to be lit.
+
+   These rules deliberately target .user_formatted as well as
+   .formatted_description. .user_formatted is the class itch puts on every block
+   of author-written rich text, so the Install instructions field inherits the
+   same grammar without us having to guess the name of the container itch drops
+   it into — a name that is not on itch's stable list.
+   --------------------------------------------------------------------------- */
+#wrapper .formatted_description,
+#wrapper .user_formatted{
+  color:var(--cs-body);
+  font-family:var(--cs-mono);
+  font-size:15px;
+  line-height:1.62;
+}
+#wrapper .formatted_description p,
+#wrapper .user_formatted p{
+  max-width:68ch;
+  margin:0 0 1.15em;
+}
+#wrapper .formatted_description a,
+#wrapper .user_formatted a{
+  color:var(--cs-vfd-phosphor);
+  text-decoration:underline;
+  text-underline-offset:3px;
+}
+#wrapper .formatted_description strong,
+#wrapper .user_formatted strong{
+  color:var(--cs-vfd-phosphor);
+  font-weight:700;
+}
+/* The game has no italics. It changes brightness. This also sidesteps the
+   weak synthetic obliques most monospace stacks fall back to. */
+#wrapper .formatted_description em,
+#wrapper .user_formatted em{
+  color:var(--cs-vfd-counter);
+  font-style:normal;
+}
+
+#wrapper .formatted_description h2,
+#wrapper .user_formatted h2{
+  max-width:68ch;
+  margin:1.9em 0 .8em;
+  color:var(--cs-vfd-wordmark);
+  font-family:var(--cs-mono);
+  font-size:17px;
+  font-weight:700;
+  line-height:1.35;
+  letter-spacing:.06em;
+  text-transform:none;    /* the site's headings are sentences, not legends */
+}
+#wrapper .formatted_description hr,
+#wrapper .custom-break{
+  max-width:68ch;
+  margin:2.6em 0;
+  height:0;
+  border:0;
+  border-top:1px solid var(--cs-hairline);
+  background:none;
+}
+
+/* The numbered case legend — "01 / CASE — first person audio-reactive horror".
+   It carries the section break, so the heading under it sits tight. */
+#wrapper .custom-index{
+  max-width:68ch;
+  margin:2.9em 0 0;
+  padding-top:13px;
+  border-top:1px solid var(--cs-hairline);   /* the faceplate stamping line */
+  color:var(--cs-vfd-silkscreen);
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.24em;
+  line-height:1.5;
+  text-transform:uppercase;
+}
+#wrapper .custom-index + h2{margin-top:.55em;}
+#wrapper .custom-index:first-child{margin-top:0;padding-top:0;border-top:0;}
+
+/* An addressed status line. The bullet is the lit indicator beside it. */
+#wrapper .custom-status{
+  color:var(--cs-vfd-phosphor);
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.2em;
+  text-shadow:0 0 3px color-mix(in srgb,var(--cs-vfd-phosphor) 50%,transparent);
+}
+#wrapper .custom-status::before{content:"\25CF\00A0\00A0";}
+
+#wrapper .custom-lede{
+  color:var(--cs-vfd-counter);
+  font-size:18px;
+  line-height:1.5;
+  letter-spacing:.02em;
+}
+#wrapper .custom-lede strong{color:inherit;}
+
+#wrapper .custom-signoff{
+  color:var(--cs-vfd-phosphor);
+  font-size:16px;
+  letter-spacing:.06em;
+}
+#wrapper .custom-signoff strong{color:inherit;}
+
+#wrapper .custom-closer{
+  font-size:22px;
+  color:var(--cs-vfd-phosphor);
+  text-shadow:
+    0 0 3px var(--cs-vfd-phosphor),
+    0 0 10px color-mix(in srgb,var(--cs-vfd-phosphor) 28%,transparent);
+}
+
+#wrapper .custom-notice{
+  color:var(--cs-vfd-silkscreen);
+  font-size:14px;
+}
+
+/* The redaction pull-quote. Dormant phosphor rather than lit: it is a line
+   about blacking things out, so it sits at the dim end of the driver. */
+#wrapper .custom-quote{
+  max-width:68ch;
+  margin:1.6em 0 2em;
+  padding:2px 0 2px 16px;
+  border-left:2px solid var(--cs-vfd-phosphor);
+  background:var(--cs-vfd-dim);
+  quotes:none;
+}
+#wrapper .custom-quote p{
+  margin:0;
+  padding:10px 0;
+  color:var(--cs-vfd-counter);
+  font-size:15px;
+  line-height:1.5;
+}
+
+/* Filenames and shell commands are machine text: lit, on its own glass. */
+#wrapper .formatted_description code,
+#wrapper .user_formatted code{
+  padding:1px 5px;
+  background:rgba(242,168,30,.07);
+  border:1px solid rgba(242,168,30,.18);
+  color:var(--cs-vfd-phosphor);
+  font-family:var(--cs-mono);
+  font-size:.9em;
+  word-break:break-word;
+}
+
+/* Numbered install steps. The counter is a readout, so it takes the counter
+   colour and a fixed-width column, like every other value on the page. */
+#wrapper .custom-steps{
+  max-width:68ch;
+  margin:1.1em 0 2em;
+  padding:0;
+  list-style:none;
+  counter-reset:cs-step;
+}
+#wrapper .custom-steps > li{
+  display:grid;
+  grid-template-columns:3.2em minmax(0,1fr);
+  gap:0 .6em;
+  margin:0;
+  padding:10px 0;
+  border-bottom:1px solid #1a1a1a;
+  font-size:14px;
+  line-height:1.6;
+  list-style:none;
+}
+#wrapper .custom-steps > li::before{
+  counter-increment:cs-step;
+  content:counter(cs-step,decimal-leading-zero);
+  color:var(--cs-vfd-counter);
+  font-weight:700;
+  letter-spacing:.1em;
+}
+
+
+/* ---------------------------------------------------------------------------
+   7. THE WORK ORDER
+   The hero readout: silkscreen legend on the left, lit value on the right,
+   the same grammar the in-game panels use (.cs-machine-header, styles.css:58-75).
+   --------------------------------------------------------------------------- */
+#wrapper .custom-workorder{
+  max-width:68ch;
+  margin:2em 0;
+  padding:18px 20px 20px;
+  quotes:none;
+}
+#wrapper .custom-workorder::before{
+  content:"WORK ORDER \00B7 SOURCE 4417-C";
+  display:block;
+  margin-bottom:14px;
+  padding-bottom:10px;
+  border-bottom:1px solid rgba(140,124,84,.22);
+  color:var(--cs-vfd-silkscreen);
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.26em;
+}
+#wrapper .custom-workorder p{
+  display:grid;
+  grid-template-columns:7.5em minmax(0,1fr);
+  gap:0 1em;
+  max-width:none;
+  margin:0;
+  padding:7px 0;
+  border-bottom:1px solid rgba(255,255,255,.035);
+  font-size:14px;
+  line-height:1.5;
+}
+#wrapper .custom-workorder p:last-child{border-bottom:0;padding-bottom:0;}
+#wrapper .custom-workorder .custom-label{
+  color:var(--cs-vfd-silkscreen);
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.2em;
+  line-height:1.9;
+}
+#wrapper .custom-workorder .custom-value{
+  color:var(--cs-vfd-phosphor);
+  text-transform:uppercase;
+  text-shadow:
+    0 0 3px var(--cs-vfd-phosphor),
+    0 0 10px color-mix(in srgb,var(--cs-vfd-phosphor) 28%,transparent);
+}
+
+
+/* ---------------------------------------------------------------------------
+   8. SPEC ROWS
+   Reference data, not the order — same grammar one brightness tier down.
+   --------------------------------------------------------------------------- */
+#wrapper .custom-spec{
+  max-width:68ch;
+  margin:1.4em 0 2em;
+  padding:0;
+  list-style:none;
+  border-top:1px solid #1a1a1a;
+}
+#wrapper .custom-spec li{
+  display:grid;
+  grid-template-columns:7.5em minmax(0,1fr);
+  gap:0 1em;
+  margin:0;
+  padding:9px 0;
+  border-bottom:1px solid #1a1a1a;
+  font-size:14px;
+  line-height:1.55;
+  list-style:none;
+}
+/* Labels stay lowercase — the site's legends are lowercase and clipped, and
+   forcing caps here would fight the voice rather than match it. */
+#wrapper .custom-spec .custom-label{
+  color:var(--cs-vfd-silkscreen);
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.16em;
+  line-height:1.8;
+}
+#wrapper .custom-spec .custom-value{color:var(--cs-body);}
+#wrapper .custom-spec .custom-value a{word-break:break-word;}
+
+
+/* ---------------------------------------------------------------------------
+   9. THE ONE RED THING
+   Red belongs to the circuit that pays for it. On this page that circuit is
+   the strobe and jumpscare warning, and nothing else. Shadow verbatim from
+   .cs-machine-danger (styles.css:93).
+   --------------------------------------------------------------------------- */
+#wrapper h2.custom-warning-heading{
+  max-width:68ch;
+  margin:2.9em 0 0;
+  padding-top:13px;
+  border-top:1px solid rgba(255,106,90,.35);
+  color:var(--cs-vfd-danger);
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.24em;
+  text-transform:uppercase;
+}
+#wrapper .custom-warning{
+  max-width:68ch;
+  margin:.9em 0 2em;
+  padding:16px 18px;
+  border-color:rgba(255,106,90,.4);
+  color:#F0C7C0;
+  font-size:14px;
+}
+#wrapper .custom-warning::before{
+  content:"CAUTION";
+  display:block;
+  margin-bottom:10px;
+  color:var(--cs-vfd-danger);
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.26em;
+  text-shadow:
+    0 0 3px color-mix(in srgb,var(--cs-vfd-danger) 62%,transparent),
+    0 0 10px color-mix(in srgb,var(--cs-vfd-danger) 24%,transparent);
+}
+
+
+/* ---------------------------------------------------------------------------
+   10. DELIVERABLES
+   The download list is already a table of labels and numeric values, which is
+   what a VFD is for. File sizes take the counter colour, because a size is a
+   numeric readout and the machine has always drawn those in #FFD070.
+   --------------------------------------------------------------------------- */
+#wrapper .uploads{
+  margin:2em 0;
+  padding:18px 20px;
+}
+#wrapper .uploads::before{
+  content:"DELIVERABLES";
+  display:block;
+  margin-bottom:12px;
+  padding-bottom:10px;
+  border-bottom:1px solid rgba(140,124,84,.22);
+  color:var(--cs-vfd-silkscreen);
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.26em;
+}
+#wrapper .uploads > p{
+  color:var(--cs-vfd-silkscreen);
+  font-size:13px;
+  line-height:1.55;
+}
+#wrapper .upload{
+  padding:9px 0;
+  border-bottom:1px solid rgba(255,255,255,.035);
+}
+#wrapper .upload:last-child{border-bottom:0;}
+#wrapper .upload_name .name{
+  color:var(--cs-vfd-phosphor);
+  font-family:var(--cs-mono);
+  font-size:13px;
+  font-weight:700;
+  letter-spacing:.02em;
+  text-shadow:0 0 3px color-mix(in srgb,var(--cs-vfd-phosphor) 45%,transparent);
+}
+#wrapper .upload_name .file_size,
+#wrapper .upload_name .file_size span{
+  color:var(--cs-vfd-counter);
+  font-family:var(--cs-mono);
+  font-size:12px;
+  letter-spacing:.06em;
+}
+#wrapper .upload_name .download_platforms{
+  color:var(--cs-vfd-silkscreen);
+  opacity:.8;
+}
+#wrapper .upload_date,
+#wrapper .upload .file_size + span{
+  color:var(--cs-vfd-silkscreen);
+}
+
+
+/* ---------------------------------------------------------------------------
+   11. INFO PANEL
+   Status / Platforms / Author / Genre / Tags is the same label-and-value
+   grammar as the work order, so it gets the same treatment for free.
+   --------------------------------------------------------------------------- */
+#wrapper .game_info_panel_widget{
+  padding:14px 16px;
+  font-family:var(--cs-mono);
+  font-size:13px;
+}
+#wrapper .game_info_panel_widget td{
+  padding:5px 0;
+  vertical-align:top;
+}
+#wrapper .game_info_panel_widget td:first-child{
+  padding-right:14px;
+  color:var(--cs-vfd-silkscreen);
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+#wrapper .game_info_panel_widget td:last-child{color:var(--cs-body);}
+#wrapper .game_info_panel_widget a{
+  color:var(--cs-vfd-phosphor);
+  text-decoration:none;
+}
+#wrapper .game_info_panel_widget a:hover{text-decoration:underline;text-underline-offset:3px;}
+
+
+/* ---------------------------------------------------------------------------
+   12. SCREENSHOTS
+   Each still is its own display: black border, the bezel hairline, and the
+   panel drop from .cs-machine-panel (styles.css:56). A half-strength scanline
+   screen sits on the frame so the shots belong to the same glass as the page.
+   --------------------------------------------------------------------------- */
+#wrapper .screenshot_list .screenshot{
+  position:relative;
+  display:block;
+  margin-bottom:14px;
+  border:1px solid #000;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.018),0 18px 80px rgba(0,0,0,.72);
+  border-radius:0;
+  line-height:0;
+}
+#wrapper .screenshot_list .screenshot::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  opacity:.08;
+  background-image:repeating-linear-gradient(to bottom,transparent 0 2px,rgba(0,0,0,.55) 2px 4px);
+}
+#wrapper .screenshot_list img{
+  display:block;
+  max-width:100%;
+  border-radius:0;
+}
+
+
+/* ---------------------------------------------------------------------------
+   13. COMMENTS AND FOOTER
+   Light touch. Readability wins over theme in a comment thread, and the itch
+   footer stays fully visible and legible — that is a condition of using custom
+   CSS at all.
+   --------------------------------------------------------------------------- */
+#wrapper .game_comments_widget{
+  font-family:var(--cs-mono);
+  font-size:14px;
+}
+#wrapper .game_comments_widget .post_body{color:var(--cs-body);}
+#wrapper .game_comments_widget .post_author,
+#wrapper .game_comments_widget a{color:var(--cs-vfd-phosphor);}
+#wrapper .game_comments_widget .post_date,
+#wrapper .game_comments_widget .post_date a{color:var(--cs-vfd-silkscreen);}
+
+#wrapper .footer{
+  padding:16px 0 18px;
+  border-top:1px solid var(--cs-hairline);
+  color:var(--cs-vfd-silkscreen);
+  font-family:var(--cs-mono);
+  font-size:12px;
+}
+#wrapper .footer a{
+  color:var(--cs-vfd-wordmark);
+  text-decoration:none;
+}
+#wrapper .footer a:hover{
+  color:var(--cs-vfd-phosphor);
+  text-decoration:underline;
+  text-underline-offset:3px;
+}
+
+
+/* ---------------------------------------------------------------------------
+   14. THE MACHINE RUNNING
+   Three behaviours, all quoted from the game, all gated behind an explicit
+   motion preference. The page carries a strobe content warning, so nothing
+   here may move for a reader who has asked for stillness.
+   --------------------------------------------------------------------------- */
+@media (prefers-reduced-motion:no-preference){
+
+  /* Filament warm-up, from src/game/title.js:287-303. Sixteen steps because
+     the machine quantizes brightness and never tweens it (presentation.js:31:
+     pwm16 rounds to sixteenths). Brightness, not opacity — a filament comes up
+     to temperature, it does not fade in. */
+  #wrapper #header h1.game_title{
+    animation:
+      cs-vfd-warmup 420ms steps(16,end) both,
+      cs-vfd-blank 4.25s steps(1,end) 620ms infinite;
+  }
+
+  /* Periodic blanking, same source: 35ms at .68 every 4.25s. */
+  @keyframes cs-vfd-warmup{
+    from{filter:brightness(.06);}
+    to  {filter:brightness(1);}
+  }
+  @keyframes cs-vfd-blank{
+    0%,.8%   {opacity:.68;}
+    .9%,100% {opacity:1;}
+  }
+
+  /* Dormant-driver flicker on the lit values, verbatim from styles.css:95-98. */
+  #wrapper .custom-workorder .custom-value{
+    animation:cs-vfd-dom-flicker-low 2.8s steps(2,end) infinite;
+  }
+  @keyframes cs-vfd-dom-flicker-low{
+    0%,91%,100%{opacity:1}
+    92%{opacity:.93}
+    94%{opacity:.98}
+  }
+}
+
+
+/* ---------------------------------------------------------------------------
+   15. RESPONSIVE
+   Below 560px the label columns stack, the faceplate legends shorten, and the
+   screw heads come off — at that size they read as dirt on the screen rather
+   than as hardware.
+   --------------------------------------------------------------------------- */
+@media (max-width:760px){
+  #wrapper #header{padding:24px 16px 20px;}
+  #wrapper .formatted_description{font-size:14px;}
+}
+
+@media (max-width:560px){
+  #wrapper #inner_column::before,
+  #wrapper #inner_column::after{
+    padding:9px 14px;
+    background-image:none;
+    letter-spacing:.14em;
+    font-size:9px;
+  }
+  #wrapper #inner_column::before{content:"AUDIOCORP \00B7 SOURCE 4417-C";}
+  #wrapper #inner_column::after{content:"ELLERY CONSERVATORY \00B7 CONDEMNED";}
+
+  #wrapper #header h1.game_title{letter-spacing:.1em;}
+
+  #wrapper .custom-workorder p,
+  #wrapper .custom-spec li{
+    grid-template-columns:minmax(0,1fr);
+    gap:2px 0;
+  }
+  #wrapper .custom-workorder .custom-label,
+  #wrapper .custom-spec .custom-label{line-height:1.4;}
+
+  /* The step number keeps its column — it is the thing you scan for when you
+     are following instructions on a phone. */
+  #wrapper .custom-steps > li{grid-template-columns:2.4em minmax(0,1fr);}
+
+  #wrapper .custom-index{letter-spacing:.18em;}
+  #wrapper .custom-closer{font-size:19px;}
+
+  #wrapper .custom-workorder,
+  #wrapper .custom-warning,
+  #wrapper .uploads{padding-left:14px;padding-right:14px;}
+}
+
+
+/* ---------------------------------------------------------------------------
+   16. WHEN THE GLASS HAS TO COME OFF
+   High-contrast and forced-colours readers get the layout without the optics:
+   no scanlines, no vignette, no dot screen, and prose lifted to the game's
+   --cs-white. The instrument still reads as an instrument.
+   --------------------------------------------------------------------------- */
+@media (prefers-contrast:more){
+  #wrapper{--cs-body:#EAF2F0;}
+  #wrapper::before,
+  #wrapper::after,
+  #wrapper #header h1.game_title::after,
+  #wrapper .screenshot_list .screenshot::after{display:none;}
+  #wrapper .formatted_description h2{color:#EAF2F0;}
+  #wrapper .custom-workorder .custom-label,
+  #wrapper .custom-spec .custom-label,
+  #wrapper .uploads > p,
+  #wrapper .custom-notice{color:#D8CFB8;}
+}
+
+@media (forced-colors:active){
+  #wrapper::before,
+  #wrapper::after,
+  #wrapper #header h1.game_title::after,
+  #wrapper .screenshot_list .screenshot::after{display:none;}
+  #wrapper #header h1.game_title{text-shadow:none;}
+  #wrapper .custom-workorder .custom-value,
+  #wrapper .upload_name .name,
+  #wrapper .button{text-shadow:none;}
+}

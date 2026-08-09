@@ -40,7 +40,7 @@ export const WORK_ORDER = {
       ],
     },
     body: [
-    { raw: 'SITE      Ellery Conservatory of Music (condemned)' },
+    { raw: 'SITE      Ellery Conservatoire of Music (condemned)' },
     { raw: 'ADDRESS   Ellery Collegiate Buildings — ENGLAND' },
     { raw: 'WINDOW    one night. Demolition begins 06:00 Thursday.' },
     { raw: 'DELIVER   five room tones. Sixty seconds each, unbroken.' },
@@ -53,7 +53,7 @@ export const WORK_ORDER = {
     '',
     'Record: studio B3, the natatorium, the concert hall, the practice wing, and the chapel. Work in whatever order the building permits. It has been altered since the drawings were filed and we do not have current drawings, our apologies.',
     '',
-    'You carry the standard keyring. Where it does not open a door, try another route; we concede these buildings are rather old, you may be able to find other pathways where a key does not open a particular door. Do not force anything. Everything here is due to come down regardless, and we are most definitely not paying for a wall.',
+    'You carry the standard key ring. Where it does not open a door, try another route; we concede these buildings are rather old, you may be able to find other pathways where a key does not open a particular door. Do not force anything. Everything here is due to come down regardless, and we are most definitely not paying for a wall.',
     '',
     'Check in on the hour by radio.',
     '',
@@ -967,52 +967,6 @@ export const HUSH = {
   },
 };
 
-// ── the radio, afterwards ───────────────────────────────────────────────────
-// The guard told him twice. Shaking it is a price the player chooses, and it
-// is delivered by dialogue, and the building hears it.
-export const RADIO_DEAD = {
-  start: {
-    speaker: '',
-    lines: [
-      { who: 'direction', text: 'The frequency is gone. No hiss, no channel, not even the sound of a channel with nobody on it.' },
-      { who: 'you', text: "This damned thing's already mullered. Dead weight now. Or maybe it's just jammed?" },
-    ],
-    choices: [
-      { text: 'try channel two again', goto: 'again' },
-      { text: 'shake it', goto: 'shake' },
-      { text: 'clip it back on and get on with it', goto: 'clip' },
-    ],
-  },
-  again: {
-    speaker: '',
-    lines: [
-      { who: 'me', text: 'Four four one seven, radio check.' },
-      { who: 'direction', text: 'Nothing. Not silence; nothing.' },
-      { who: 'me', text: 'Four four one seven.' },
-    ],
-    choices: [
-      { text: 'shake it', goto: 'shake' },
-      { text: 'clip it back on', goto: 'clip' },
-    ],
-  },
-  shake: {
-    speaker: '',
-    lines: [
-      { who: 'direction', text: 'You shake it. Everybody shakes it.', cue: 'squelch', shake: 1.1, shakeMs: 260 },
-      { who: 'direction', text: 'A squelch, one syllable long, at about ninety decibels; this cannot be good to carry.' },
-      { who: 'you', text: 'He told me not to do that.' },
-      { who: 'you', text: 'He told me twice, and he thought it was funny, and it was.' },
-    ],
-    goto: 'clip',
-  },
-  clip: {
-    speaker: '',
-    lines: [
-      { who: 'direction', text: 'You keep it on your belt, but you suspect it could be better suited elsewhere.' },
-    ],
-  },
-};
-
 // After the booth: the yard, in the rain, and a key going into a grey door.
 // It ends on the key, because the title card goes here — and the door does not
 // shut until the title has faded and the song has gone with it.
@@ -1066,41 +1020,13 @@ export const AFTER_TITLE = [
   { who: 'you', text: 'Five rooms, a minute each, and then I drive home.', hold: 3.2 },
 ];
 
-// ── the radio ───────────────────────────────────────────────────────────────
-// Two transmissions. It works, and then it is a thing on your belt that makes
-// noise. It speaks: these go through the voice band, at radio pace, and the
-// player hears them the way the recordist does — while standing in a corridor,
-// unable to make them go faster.
-
-export const TRANSMISSIONS = [
-  // 1 — at the dock, before you go in. Ordinary, bureaucratic, and short.
-  [
-    { who: 'radio', text: '4417-C, go ahead.' },
-    { who: 'me', text: 'On site. Starting in the basement.' },
-    { who: 'radio', text: 'Copy. Top of the hour.' },
-    { who: 'direction', text: 'A chair, somewhere behind him. Someone else laughing at something else.', hold: 2.4 },
-  ],
-  // 2 — after the first take. Also ordinary. Until it is not.
-  [
-    { who: 'radio', text: '4417-C, go ahead.' },
-    { who: 'me', text: 'One down. Studio B3. Clean.' },
-    { who: 'radio', text: 'Copy. Th—' },
-    { who: 'direction', text: 'The carrier frequency opens; it stays open.', hold: 2.6 },
-    { who: 'direction', text: 'Something is close to the microphone on the other end.', hold: 2.8 },
-    { who: 'direction', text: 'Closer than a person sitting at a desk could possibly be.', hold: 3.0 },
-    // Eight seconds of a man working out what is on the other end, and then it
-    // is not a jump scare, because he already knew.
-    { who: 'direction', text: 'It is listening to you listen to it. It likes you, you know? Only reason you still have ears to hear, and a mouth to scream.', cue: 'scream', shake: 2.6, shakeMs: 900, hold: 4.2 },
-    { who: 'direction', text: 'The radio drops out.', hold: 2.2 },
-  ],
-];
-
-// After this, `radio.js` owns it, and it is a hazard.
-export const RADIO_DEAD_LINE = { who: 'you', text: 'Of course it dies. Truth be told, I hate checking in anyway. Keeps me away from the job.' };
+// Radio dialogue is authored only in content/narrative/radio.* and
+// conservatory.radio_dead. Runtime faults keep only their immediate sensory
+// captions here; they are equipment noise, not another dialogue source.
 export const SQUELCH_LINES = [
-  { who: 'direction', text: 'The radio squelches. Everything in the building with ears can hear that.' },
-  { who: 'direction', text: 'Static.' },
-  { who: 'direction', text: 'The radio clicks and hisses.' },
+  { who: 'direction', text: 'The carrier lamp flashes. A clipped squelch snaps from the grille.' },
+  { who: 'direction', text: 'White static rises for half a second and cuts cleanly off.' },
+  { who: 'direction', text: 'The radio gives a relay click, a breath of hiss, then nothing.' },
 ];
 
 // ── the previous recordist ──────────────────────────────────────────────────
@@ -1254,7 +1180,7 @@ export const PAGES = [
     id: 'page-6', at: { x: 138, y: 27 }, room: 'lux_nova', decay: 0.28,
     title: 'log — 02:10', byline: 'sheet 6',
     body: [
-      'Rang the client. Told them the chapel is locked and the key on the keyring is for the original chapel lock, not the replacement lock core.',
+      'Rang the client. Told them the chapel is locked and the key on the key ring is for the original chapel lock, not the replacement lock.',
       '',
       'Front of house kept the new spare under key control. Box office cabinet, according to the rekey invoice. The tag is in their ledger, not on this sheet.',
       '',
@@ -1333,31 +1259,31 @@ export const PAGES = [
 ];
 
 export const CHAPEL_KEY_CHECK = {
-  start: {
+  early_drop: {
     speaker:'FRONT OF HOUSE · KEY CONTROL',
     lines:[
-      {who:'direction',text:'Three hooks still carry keys. The ledger gives the replacement lock core one tag.'},
-      {who:'you',text:'Replacement lock core. Chapel. C-seventeen.'},
-    ],
-    choices:[
-      {text:'CH-04 / ORIGINAL LOCK',keyTag:'CH-04',goto:'wrong'},
-      {text:'C-17 / REPLACEMENT LOCK',keyTag:'C-17',goto:'right'},
-      {text:'FOH-M / MASTER KEY',keyTag:'FOH-M',goto:'wrong'},
+      {who:'direction',text:'The key ring slips from the hook, strikes the steel and swings back into place. The sound leaves the office before you do.'},
     ],
   },
-  wrong:{
+  known_drop:{
     speaker:'FRONT OF HOUSE · KEY CONTROL',
     lines:[
-      {who:'direction',text:'The wrong keyring drops against the steel cabinet. The sound leaves the office before you do.'},
-      {who:'you',text:'No. Read it properly.'},
+      {who:'direction',text:'The key ring slips from the hook, strikes the steel and swings back into place. The sound leaves the office before you do.'},
+      {who:'you',text:'Not C-seventeen.'},
     ],
-    goto:'start',
   },
-  right:{
+  early_take:{
     speaker:'FRONT OF HOUSE · KEY CONTROL',
     lines:[
-      {who:'direction',text:'C-17 comes off its hook. Brass, two cuts newer than everything else on the keyring.'},
-      {who:'you',text:'Chapel key. Replacement lock core.'},
+      {who:'direction',text:'C-17 comes off its hook.'},
+      {who:'you',text:'C-seventeen.'},
+    ],
+  },
+  known_take:{
+    speaker:'FRONT OF HOUSE · KEY CONTROL',
+    lines:[
+      {who:'direction',text:'C-17 comes off its hook. Brass, two cuts newer than the keys beside it.'},
+      {who:'you',text:'C-seventeen. Chapel.'},
     ],
   },
 };

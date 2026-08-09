@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 globalThis.document ||= { title: 'Chunk Surfer', baseURI: 'http://localhost/' };
 globalThis.window ||= globalThis;
@@ -8,22 +9,34 @@ globalThis.performance ||= { now: () => Date.now() };
 const radio = await import('../src/game/radio.js');
 const {
   RADIO_CUES,
+  RADIO_PHASE,
+  RADIO,
+  armDroppedRadioCall,
   activeRadioCue,
   consumeRadioCue,
+  dropRadio,
   isDead,
+  isFailing,
   loadRadioState,
+  missPendingRadioCue,
   pendingRadioCue,
+  pickUpRadio,
   queueRadioCue,
+  radioCallState,
+  radioInit,
   radioMilestones,
+  radioPhase,
   resetRadioState,
   resolveRadioCue,
   saveRadioState,
   shouldQueuePostSecondTake,
   shouldQueuePreThirdBreakdown,
+  tickRadio,
   transmit,
 } = radio;
 const { radioDialogue } = await import('../src/data/radio-script.js');
 const { STORY_ART } = await import('../src/game/story-art.js');
+const recordist = await import('../src/game/recordist.js');
 
 test('radio transmission count alone does not kill it', () => {
   resetRadioState();
@@ -32,7 +45,7 @@ test('radio transmission count alone does not kill it', () => {
   assert.equal(isDead(), false);
 });
 
-test('radio dies when the post-second-room breakdown resolves', () => {
+test('post-second call leaves a reachable failing phase; pre-third kills it', () => {
   resetRadioState();
   queueRadioCue(RADIO_CUES.POST_SECOND, { roomId: 'the_tub' });
   const cue = consumeRadioCue();
@@ -40,8 +53,15 @@ test('radio dies when the post-second-room breakdown resolves', () => {
   assert.equal(activeRadioCue().id, RADIO_CUES.POST_SECOND);
   assert.equal(isDead(), false);
   resolveRadioCue(RADIO_CUES.POST_SECOND);
-  assert.equal(isDead(), true);
+  assert.equal(isDead(), false);
+  assert.equal(isFailing(), true);
   assert.equal(radioMilestones()[RADIO_CUES.POST_SECOND], true);
+  assert.equal(shouldQueuePreThirdBreakdown({
+    completedTakes:2,nearestRoom:'the_tub',distanceMeters:8,thresholdMeters:8,
+  }),true);
+  queueRadioCue(RADIO_CUES.PRE_THIRD,{roomId:'the_tub'});
+  consumeRadioCue();resolveRadioCue(RADIO_CUES.PRE_THIRD);
+  assert.equal(isDead(),true);
 });
 
 test('post-second warning becomes eligible after any second completed recording', () => {
@@ -54,7 +74,7 @@ test('post-second warning becomes eligible after any second completed recording'
   assert.equal(shouldQueuePostSecondTake({ completedTakes: 2 }), false);
 });
 
-test('pre-third breakdown is unreachable after the second-room death', () => {
+test('pre-third breakdown is unreachable until post-second resolves', () => {
   resetRadioState();
   assert.equal(shouldQueuePreThirdBreakdown({
     completedTakes: 2,
@@ -70,7 +90,43 @@ test('pre-third breakdown is unreachable after the second-room death', () => {
     nearestRoom: 'amplifications',
     distanceMeters: 8,
     thresholdMeters: 8,
-  }), false);
+  }), true);
+});
+
+test('deployed calls ring in world and miss safely after 24 seconds',()=>{
+  resetRadioState();const missed=[],pulses=[];radioInit({missed:(cue)=>missed.push(cue),squelch:(event)=>pulses.push(event)});
+  assert.equal(dropRadio(10,20,{roomId:'PLANT ROOM',floorId:'basement',now:1000}),true);
+  assert.equal(queueRadioCue(RADIO_CUES.POST_SECOND,{now:1100}),true);
+  assert.equal(armDroppedRadioCall(1100),false,'queueing at a deployed set arms the call once');
+  assert.equal(radioCallState().status,'calling');
+  tickRadio(0,{px:0,py:0,now:1100,random:()=>.5});
+  assert.equal(pulses.at(-1).dropped,true);
+  tickRadio(0,{px:0,py:0,now:25101,random:()=>.5});
+  assert.equal(missed[0].id,RADIO_CUES.POST_SECOND);
+  assert.equal(radioPhase(),RADIO_PHASE.FAILING);
+});
+
+test('deployment cooldown and fault schedule survive pickup and save/load',()=>{
+  resetRadioState();const pulses=[];radioInit({squelch:(event)=>pulses.push(event)});
+  dropRadio(8,9,{roomId:'B3',floorId:'basement',now:1000});
+  const saved=saveRadioState(1200);
+  assert.ok(saved.scheduler.deployCooldownRemainingMs>34000);
+  pickUpRadio(8,9);dropRadio(12,13,{roomId:'PLANT',floorId:'basement',now:2000});
+  assert.equal(saveRadioState(2000).scheduler.pulseRemainingMs.length,3,'redeploy does not queue another cluster');
+  loadRadioState(saved,5000);
+  assert.ok(saveRadioState(5000).scheduler.deployCooldownRemainingMs>34000);
+});
+
+test('each scheduled pulse emits one semantic acoustic event at the physical radio',()=>{
+  resetRadioState();const acoustics=[];
+  recordist.setAcousticEmitter((event)=>{acoustics.push(event);return event;});
+  dropRadio(14,27,{roomId:'PLANT ROOM',floorId:'basement',now:1000});
+  const events=tickRadio(0,{px:90,py:90,now:3500,random:()=>.5});
+  assert.equal(events.filter((event)=>event.type==='pulse').length,1);
+  assert.equal(acoustics.length,1);
+  assert.deepEqual({kind:acoustics[0].kind,x:acoustics[0].x,y:acoustics[0].y,source:acoustics[0].source},
+    {kind:'radio_squelch',x:14,y:27,source:{kind:'equipment',id:'radio'}});
+  recordist.setAcousticEmitter(null);
 });
 
 test('loading an earlier post-second save migrates the radio to dead', () => {
@@ -93,6 +149,13 @@ test('radio save/load preserves milestones and pending cue', () => {
   });
 });
 
+test('saving during a carried conversation requeues the cue instead of softlocking it',()=>{
+  resetRadioState();queueRadioCue(RADIO_CUES.POST_SECOND,{roomId:'the_tub',reason:'active-save'});consumeRadioCue();
+  const saved=saveRadioState();resetRadioState();loadRadioState(saved);
+  assert.equal(pendingRadioCue().id,RADIO_CUES.POST_SECOND);
+  assert.equal(activeRadioCue(),null);
+});
+
 test('radio keeps one pending cue instead of overwriting it', () => {
   resetRadioState();
   assert.equal(queueRadioCue(RADIO_CUES.POST_SECOND, { reason: 'first' }), true);
@@ -113,4 +176,9 @@ test('radio dialogue trees have choices, terminals, and walkie art', () => {
       assert.equal(nodes[choice.goto].choices, undefined, `${cue}:${choice.goto} should terminate`);
     }
   }
+});
+
+test('a deployed dead radio cannot open its inspection prose globally',()=>{
+  const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
+  assert.match(main,/RADIO\.isDead\(\) && !RADIO\.isDropped\(\).*thoughtHad\('radio-dead'\)/);
 });

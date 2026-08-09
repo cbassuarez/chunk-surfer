@@ -37,14 +37,19 @@
       "lines": [
         {
           "who": "direction",
-          "text": "You reach back for the push bar instinctively.",
+          "text": "You reach back for the push bar instinctively...",
           "id": "self.line.1"
         },
         {
           "who": "direction",
-          "text": "Painted breeze block, cold, and a seam of mortar where your thumb expects a steel push bar.",
+          "text": "...and it's not there. The door is gone. ",
           "id": "self.line.2",
           "cue": "door.grey.seal"
+        },
+        {
+          "id": "self.line.13",
+          "who": "direction",
+          "text": "Stone, brick, and grout are all your hands feel as you frantically rub them where you remembered the door being. At least its not another hand."
         },
         {
           "who": "you",
@@ -53,7 +58,7 @@
         },
         {
           "who": "direction",
-          "text": "You go along the wall with the flat of your hand. Two metres to the left, and back to the right.",
+          "text": "You go along the wall with the flat of your palms.",
           "id": "self.line.4"
         },
         {
@@ -78,12 +83,12 @@
         },
         {
           "who": "direction",
-          "text": "Which is true. It is also exactly the reasoning that keeps a man *inside* a building and not darting back home to the kind of cotidian safety only jaffa cakes and Mr. Whiskers can provide.",
+          "text": "Which is true. It is also exactly the reasoning that keeps a man *inside* a building and not darting back home to the kind of quotidian safety only jaffa cakes and Mr. Whiskers can provide.",
           "id": "self.line.9"
         },
         {
           "who": "direction",
-          "text": "But for now, you trudge along in the dark.",
+          "text": "But for now, trudge along in the dark.",
           "id": "self.line.10"
         },
         {
@@ -93,13 +98,13 @@
         },
         {
           "who": "you",
-          "text": "Say it out loud. It works. It has always worked, and there is nobody here to hear it.",
+          "text": "Think out loud. Say the thing and then do it: it always works when we're scared. But we're not scared, absolutely not terrified right now...",
           "id": "self.line.12"
         }
       ],
       "choices": [
         {
-          "text": "\"I want to hear that natatorium. Six metres of tile and no water.\"",
+          "text": "\"I want to hear that natatorium. Six metres of tile and no water. It's got to be killer.\"",
           "goto": "done",
           "id": "self.choice.1",
           "mutations": {
@@ -110,7 +115,7 @@
           }
         },
         {
-          "text": "\"Four hundred quid. I am not walking out on a paid job.\"",
+          "text": "\"Four hundred quid. No recordings, no pay.\"",
           "goto": "done",
           "id": "self.choice.2",
           "mutations": {
@@ -121,7 +126,7 @@
           }
         },
         {
-          "text": "\"You don't leave a building angry. You finish, and you thank it.\"",
+          "text": "\"I can't leave this building without paying it the respect it deserves.\"",
           "goto": "done",
           "id": "self.choice.3",
           "mutations": {
@@ -392,7 +397,7 @@
       "lines": [
         {
           "who": "direction",
-          "text": "Sure, tell yourself that.",
+          "text": "Staying silent won't stop the night from progressing; you have the feeling silence is almost worse.",
           "id": "done.line.1"
         }
       ],

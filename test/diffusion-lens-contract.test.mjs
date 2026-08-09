@@ -19,6 +19,7 @@ test('boot hard-gates credits and title behind mandatory calibration', () => {
   assert.match(calibration, /SAFE TO MINIMIZE · KEEP CHUNK SURFER OPEN/);
   assert.match(calibration, /drawCombatBar/);
   assert.match(calibration, /drawCombatPips/);
+  assert.match(calibration, /tone: error \? 'enemy' : 'theme'/);
   assert.match(calibration, /lowDanger: !!error/);
   assert.match(calibration, /maxAutomaticRetries = 2/);
   assert.match(main, /lensRuntimeReady:LENS_RUNTIME_MARKER/);

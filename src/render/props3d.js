@@ -28,17 +28,17 @@ precision highp float;
 in vec3 vWorld,vNormal;in vec2 vUv;flat in int vZone;flat in int vPortrait;flat in int vStructural;flat in vec4 vEmissive;
 uniform vec3 uEye,uForward,uBase,uZoneTint[17];uniform float uLight,uAlphaCut,uBaseAlpha;uniform sampler2D uTex,uNormalTex,uOrmTex,uFogTex;uniform float uUseTex,uUseNormal,uUseOrm,uMetallic,uRoughness,uNormalScale,uFogSize,uCellMeters;uniform vec2 uFogOrigin;
 uniform vec3 uTorchColor,uAmbientColor;uniform float uTorchReach,uTorchSpill,uAmbientIntensity;uniform vec2 uTorchCone;
-uniform int uLocalLightCount,uLocalShadowIndex;uniform vec4 uLocalLightPos[8],uLocalLightColor[8];uniform float uLocalLightPenetration[8];
+uniform int uLocalLightCount,uLocalShadowIndex;uniform vec4 uLocalLightPos[12],uLocalLightColor[12];uniform float uLocalLightPenetration[12];
 // See reserveEmergencyRed in r3d.js: red belongs to the emergency circuit, and
 // props must reserve it on the same terms as the architecture or a red chair
 // sits in the auditorium glowing like a fitting.
-uniform float uLocalLightEmergency[8];
+uniform float uLocalLightEmergency[12];
 vec3 reserveEmergencyRed(vec3 shaded,float emergencyShare){
   float redness=(shaded.r-max(shaded.g,shaded.b))/max(shaded.r,1e-4);
   float claim=smoothstep(.55,.84,redness);
   float backing=clamp(emergencyShare*4.0,0.0,1.0);
   float grey=dot(shaded,vec3(.2126,.7152,.0722));
-  return mix(shaded,mix(vec3(grey),shaded,.18),claim*(1.0-backing));
+  return mix(shaded,vec3(grey),claim*(1.0-backing));
 }
 uniform sampler2D uPlanTex;uniform vec2 uPlanSize,uPlanOrigin;uniform float uPlanReady;
 uniform sampler2D uPortraitAtlas;uniform float uUsePortrait;
@@ -51,6 +51,24 @@ float flashlightShadow(vec3 world,vec3 normal,vec3 lightDir){
   float bias=max(.00018,.00115*(1.0-max(dot(normal,lightDir),0.0))),visible=0.0;
   for(int y=0;y<2;y++)for(int x=0;x<2;x++){vec2 tap=(vec2(float(x),float(y))-.5)*uShadowTexel;visible+=q.z-bias<=texture(uShadowTex,q.xy+tap).r?1.0:0.0;}
   return mix(.20,1.0,visible*.25);
+}
+// The wide, leaky twin that carries the apparition's glow — see the long note on
+// propFlashHalo in r3d.js, including why this is a depth-GAP test and not a
+// scaled bias. A scaled bias makes a slanted surface shadow itself over its
+// whole area; a gap test cannot, because slope is a small depth difference and a
+// body standing in front of a wall is a large one.
+const float HALO_GAP=.00042;
+float flashlightHalo(vec3 world,vec3 normal,vec3 lightDir){
+  if(uShadowReady<.5)return 0.0;
+  vec4 clip=uShadowMatrix*vec4(world+normal*.008,1.0);if(clip.w<=0.0)return 0.0;
+  vec3 q=clip.xyz/clip.w*.5+.5;if(q.x<=0.0||q.x>=1.0||q.y<=0.0||q.y>=1.0||q.z<=0.0||q.z>=1.0)return 0.0;
+  float blocked=0.0;
+  for(int i=0;i<12;i++){
+    float angle=float(i)*.5236,ring=i<6?5.0:11.0;
+    vec2 tap=vec2(cos(angle),sin(angle))*ring*uShadowTexel;
+    blocked+=q.z-texture(uShadowTex,q.xy+tap).r>HALO_GAP?1.0:0.0;
+  }
+  return blocked/12.0;
 }
 float architecturalLightVisibility(vec3 fromM,vec3 toM){
   if(uPlanReady<.5)return 1.0;
@@ -85,13 +103,27 @@ void main(){
   float reach=max(.35,uTorchReach);float falloff=1.0/(1.0+(.10/reach)*dist+(.045/(reach*reach))*dist*dist);float shadow=flashlightShadow(vWorld,n,ldir);
   float nearSoft=smoothstep(0.0,1.4,dist)*.55+.45;float beam=(cone+rim+spill)*uLight;
   float lamp=lambert*falloff*nearSoft*3.0*beam*(uLocalShadowIndex<0?shadow:1.0);float ambient=uAmbientIntensity*mix(1.0,1.12,uLight);vec3 localLight=vec3(0.0);vec3 emergencyLight=vec3(0.0);
-  for(int li=0;li<8;li++){if(li>=uLocalLightCount)break;vec3 delta=uLocalLightPos[li].xyz-vWorld;float d=length(delta),r=max(.01,uLocalLightPos[li].w);float att=pow(clamp(1.0-d/r,0.0,1.0),2.0);float ndl=max(dot(n,normalize(delta)),0.0);float localShadow=li==uLocalShadowIndex?flashlightShadow(vWorld,n,normalize(delta)):1.0;if(li==uLocalShadowIndex)localShadow=mix(.015,1.0,clamp((localShadow-.20)/.80,0.0,1.0));float arch=architecturalLightVisibility(vWorld,uLocalLightPos[li].xyz);arch=mix(arch,1.0,clamp(uLocalLightPenetration[li],0.0,1.0));vec3 contribution=uLocalLightColor[li].rgb*uLocalLightColor[li].w*att*ndl*localShadow*arch;localLight+=contribution;emergencyLight+=contribution*clamp(uLocalLightEmergency[li],0.0,1.0);}
+  // One shadow map, applied to the whole red field — see the long note in
+  // r3d.js. Five overlapping lamps made a single-lamp silhouette invisible.
+  // And the shadow it leaves is WHITE, for the reasons set out there too.
+  float heroShadow=1.0,apparitionBody=0.0,apparitionHalo=0.0;vec3 emergencyReach=vec3(0.0);
+  if(uLocalShadowIndex>=0){
+    vec3 heroDir=normalize(uLocalLightPos[uLocalShadowIndex].xyz-vWorld);
+    float heroLit=clamp((flashlightShadow(vWorld,n,heroDir)-.20)/.80,0.0,1.0);
+    heroShadow=mix(.015,1.0,heroLit);apparitionBody=1.0-heroLit;
+    apparitionHalo=max(flashlightHalo(vWorld,n,heroDir)-apparitionBody,0.0);
+  }
+  for(int li=0;li<12;li++){if(li>=uLocalLightCount)break;vec3 delta=uLocalLightPos[li].xyz-vWorld;float d=length(delta),r=max(.01,uLocalLightPos[li].w);float att=pow(clamp(1.0-d/r,0.0,1.0),2.0);float ndl=max(dot(n,normalize(delta)),0.0);float emergency=clamp(uLocalLightEmergency[li],0.0,1.0);float localShadow=max(float(li==uLocalShadowIndex),emergency)>.5?heroShadow:1.0;float arch=architecturalLightVisibility(vWorld,uLocalLightPos[li].xyz);arch=mix(arch,1.0,clamp(uLocalLightPenetration[li],0.0,1.0));vec3 unshadowed=uLocalLightColor[li].rgb*uLocalLightColor[li].w*att*ndl*arch;vec3 contribution=unshadowed*localShadow;localLight+=contribution;emergencyLight+=contribution*emergency;emergencyReach+=unshadowed*emergency;}
+  float apparitionReach=max(max(emergencyReach.r,emergencyReach.g),emergencyReach.b);
+  float apparitionLit=smoothstep(.06,.40,apparitionReach);
+  vec3 apparitionWhite=vec3(.94,.96,1.0)*pow(apparitionBody,.45)*apparitionLit*.78+vec3(.90,.93,1.0)*pow(apparitionHalo,.60)*apparitionLit*.34;
   vec3 base=uBase*texel.rgb;vec3 halfDir=normalize(ldir+normalize(toEye));float spec=pow(max(dot(n,halfDir),0.0),mix(72.0,5.0,rough))*mix(.08,.72,metal)*cone*falloff*shadow*uLight;
   vec3 incident=uAmbientColor*ambient+uTorchColor*lamp*(1.0-metal*.45)+localLight;
-  vec3 col=base*incident+uTorchColor*spec*mix(vec3(1.0),base,metal);
-  // The fitting's own glass is exempt: an authored emissive IS a source, so a
-  // red bulkhead reads red without having to be lit by one.
-  col=reserveEmergencyRed(col,dot(emergencyLight,vec3(.2126,.7152,.0722))/max(dot(incident,vec3(.2126,.7152,.0722)),1e-4))+vEmissive.rgb*vEmissive.a;
+  vec3 col=base*incident+uTorchColor*spec*mix(vec3(1.0),base,metal)+vEmissive.rgb*vEmissive.a;
+  // Apply the reservation AFTER emissive materials. A red-painted or red-lit
+  // surface does not become an emergency source merely because it glows.
+  col=reserveEmergencyRed(col,dot(emergencyLight,vec3(.2126,.7152,.0722))/max(dot(incident,vec3(.2126,.7152,.0722)),1e-4));
+  col+=mix(vec3(1.0),base,.34)*apparitionWhite;
   // OUTDOORS.
   //
   // Everything above is a lamp model: a source in the room, an occlusion term, a
@@ -310,6 +342,7 @@ function visibleGroups(eye,maxDistance,{shadow=false,emergencyOnly=false}={}){
   const instances=emergencyOnly?emergencyShadowInstances:[...staticInstances,...dynamicInstances,...emergencyShadowInstances];
   for(const i of instances){
     if(!shadow&&i.shadowOnly)continue;
+    if(shadow&&i.noShadow)continue;
     if(!propInstanceVisible(i,eye,maxDistance))continue;
     if(!groups.has(i.mesh))groups.set(i.mesh,[]);groups.get(i.mesh).push(i);
   }

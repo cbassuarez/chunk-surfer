@@ -3,8 +3,12 @@
   "id": "conservatory.chapel_key_check",
   "title": "Chapel Key Check",
   "status": "active",
-  "entry": "start",
-  "entries": [],
+  "entry": "early_take",
+  "entries": [
+    "early_drop",
+    "known_drop",
+    "known_take"
+  ],
   "tags": [],
   "notes": "",
   "regions": [
@@ -14,83 +18,75 @@
       "kind": "scene",
       "color": "#245c62",
       "nodeIds": [
-        "start",
-        "wrong",
-        "right"
+        "early_drop",
+        "known_drop",
+        "early_take",
+        "known_take"
       ]
     }
   ],
   "nodes": {
-    "start": {
+    "early_drop": {
       "speaker": "FRONT OF HOUSE · KEY CONTROL",
       "lines": [
         {
           "who": "direction",
-          "text": "Three hooks still carry keys. The ledger gives the replacement core one tag.",
-          "id": "start.line.1"
-        },
-        {
-          "who": "you",
-          "text": "Replacement core. Chapel. C-seventeen.",
-          "id": "start.line.2"
+          "text": "The key ring slips from the hook, strikes the steel and swings back into place. The sound leaves the office before you do.",
+          "id": "early_drop.line.1"
         }
       ],
-      "choices": [
-        {
-          "text": "CH-04 / ORIGINAL WARD",
-          "keyTag": "CH-04",
-          "goto": "wrong",
-          "id": "start.choice.1"
-        },
-        {
-          "text": "C-17 / REPLACEMENT CORE",
-          "keyTag": "C-17",
-          "goto": "right",
-          "id": "start.choice.2"
-        },
-        {
-          "text": "FOH-M / MASTER",
-          "keyTag": "FOH-M",
-          "goto": "wrong",
-          "id": "start.choice.3"
-        }
-      ],
-      "id": "start",
-      "type": "choice"
-    },
-    "wrong": {
-      "speaker": "FRONT OF HOUSE · KEY CONTROL",
-      "lines": [
-        {
-          "who": "direction",
-          "text": "The wrong ring drops against the steel cabinet. The sound leaves the office before you do.",
-          "id": "wrong.line.1"
-        },
-        {
-          "who": "you",
-          "text": "No. Read it properly.",
-          "id": "wrong.line.2"
-        }
-      ],
-      "goto": "start",
-      "id": "wrong",
+      "id": "early_drop",
       "type": "dialogue"
     },
-    "right": {
+    "known_drop": {
       "speaker": "FRONT OF HOUSE · KEY CONTROL",
       "lines": [
         {
           "who": "direction",
-          "text": "C-17 comes off its hook. Brass, two cuts newer than everything else on the keyring.",
-          "id": "right.line.1"
+          "text": "The key ring slips from the hook, strikes the steel and swings back into place. The sound leaves the office before you do.",
+          "id": "known_drop.line.1"
         },
         {
           "who": "you",
-          "text": "Chapel key. Replacement set.",
-          "id": "right.line.2"
+          "text": "Not C-seventeen.",
+          "id": "known_drop.line.2"
         }
       ],
-      "id": "right",
+      "id": "known_drop",
+      "type": "dialogue"
+    },
+    "early_take": {
+      "speaker": "FRONT OF HOUSE · KEY CONTROL",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "C-17 comes off its hook.",
+          "id": "early_take.line.1"
+        },
+        {
+          "who": "you",
+          "text": "C-seventeen.",
+          "id": "early_take.line.2"
+        }
+      ],
+      "id": "early_take",
+      "type": "dialogue"
+    },
+    "known_take": {
+      "speaker": "FRONT OF HOUSE · KEY CONTROL",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "C-17 comes off its hook. Brass, two cuts newer than the keys beside it.",
+          "id": "known_take.line.1"
+        },
+        {
+          "who": "you",
+          "text": "C-seventeen. Chapel.",
+          "id": "known_take.line.2"
+        }
+      ],
+      "id": "known_take",
       "type": "dialogue"
     }
   }

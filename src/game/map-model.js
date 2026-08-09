@@ -230,9 +230,11 @@ export function buildMapModel({
   source,
   job = { rooms: [], done: 0, total: 5 },
   objectiveState: objective = null,
+  activeWaypoint = null,
   player = null,
   doors = [],
   contacts = [],
+  equipmentMarkers = [],
   navigation = null,
   landmarkState = {},
   discoveredFloorIds = new Set(),
@@ -261,8 +263,8 @@ export function buildMapModel({
     return {
       version:1, floors:[fallbackFloor], connectors:[], doors:[], spaces,
       player:{resolved:false,floorId:'unknown',roomId:player?.roomId||null,areaLabel:player?.areaLabel||null,position:null,heading:Number(player?.heading)||0},
-      waypoint:waypointSpace?{roomId:waypointSpace.roomId,spaceId:waypointSpace.id,floorId:'unknown',position:null}:null,
-      route:{status:'unresolved',points:[],nextConnectorId:null,floorDelta:0}, contacts:[],
+      waypoint:activeWaypoint|| (waypointSpace?{roomId:waypointSpace.roomId,spaceId:waypointSpace.id,floorId:'unknown',position:null}:null),
+      route:{status:'unresolved',points:[],nextConnectorId:null,floorDelta:0}, contacts:[],equipmentMarkers:[],
       progress:{done:Number(job?.done)||0,total:Number(job?.total)||spaces.length},
       policy:resolveMapPolicy(navigation), warnings:['MAP GEOMETRY UNAVAILABLE'],
     };
@@ -330,12 +332,25 @@ export function buildMapModel({
   const waypointSpace = liveTargetRoomId
     ? (spaces.find((space) => space.roomId === liveTargetRoomId) || null)
     : null;
-  const waypoint = waypointSpace ? {
+  const roomWaypoint = waypointSpace ? {
     roomId: waypointSpace.roomId,
     spaceId: waypointSpace.id,
     floorId: waypointSpace.floorId,
     position: waypointSpace.position,
   } : null;
+  const waypoint=activeWaypoint?.position
+    ? {
+        id:activeWaypoint.id||null,
+        label:activeWaypoint.label||null,
+        kind:activeWaypoint.kind||'position',
+        roomId:activeWaypoint.roomId||null,
+        spaceId:activeWaypoint.spaceId||null,
+        propId:activeWaypoint.propId||null,
+        doorId:activeWaypoint.doorId||null,
+        floorId:activeWaypoint.floorId||null,
+        position:{x:Number(activeWaypoint.position.x),y:Number(activeWaypoint.position.y)},
+      }
+    : roomWaypoint;
 
   const route = resolveMapRoute({
     floors: visibleFloors,
@@ -348,6 +363,14 @@ export function buildMapModel({
   const normalizedContacts = (contacts || [])
     .map((contact) => normalizeContact(contact, source.topologyStride || 1))
     .filter(Boolean);
+  const normalizedEquipmentMarkers=(equipmentMarkers||[])
+    .filter((marker)=>marker&&typeof marker.id==='string'&&visibleFloorIds.has(marker.floorId))
+    .filter((marker)=>Number.isFinite(Number(marker.position?.x))&&Number.isFinite(Number(marker.position?.y)))
+    .map((marker)=>({
+      id:marker.id,kind:String(marker.kind||'equipment'),label:String(marker.label||marker.id).toUpperCase(),
+      floorId:marker.floorId,position:{x:Number(marker.position.x),y:Number(marker.position.y)},
+      carrierOpen:!!marker.carrierOpen,
+    }));
 
   const warnings = [];
   if (!playerState.resolved) warnings.push('CURRENT POSITION UNRESOLVED');
@@ -365,6 +388,7 @@ export function buildMapModel({
     waypoint,
     route,
     contacts: normalizedContacts,
+    equipmentMarkers:normalizedEquipmentMarkers,
     progress: {
       done: Math.max(0, Number(job?.done) || 0),
       total: Math.max(0, Number(job?.total) || spaces.length),

@@ -37,7 +37,15 @@ assert.deepEqual(poolDoor.activeLeaves,[0,1]);
 assert.ok(doors.filter((door)=>door.leafCount===1).every((door)=>door.aperture.width>=.9&&door.aperture.width<=1.05),'single apertures do not infer leaves from portal cell count');
 assert.deepEqual(doors.find((door)=>door.id==='chapel-c17').activeLeaves,[1],'C-17 releases only the right leaf');
 assert.deepEqual(doors.find((door)=>door.id==='hall-vestibule').renderGroups,['ground','hall'],'the hall pair is visible from both sides of the render-group seam');
-assert.equal(doors.find((door)=>door.id==='front-main').keyId,'closure-order','the closed public entrance is a truthful locked threshold, not an open doorway into missing space');
+const frontMain=doors.find((door)=>door.id==='front-main');
+assert.equal(frontMain.keyId,'closure-order','the closed public entrance is a truthful locked threshold, not an open doorway into missing space');
+assert.equal(CONSERVATORY_DOORS.filter((door)=>door.key==='closure-order').length,1,'the closure order is unique to the sealed public boundary');
+assert.equal(frontMain.state,DOOR_STATE.CLOSED,'the chained public pair never begins as an open route');
+const mainSource=readFileSync('src/main.js','utf8');
+assert.match(mainSource,/doorId==='front-main'[\s\S]*?Chained under the closure order\.[\s\S]*?service entrance is around the block/,
+  'the entrance interaction explains why this architectural door is not a route');
+assert.match(mainSource,/doorHud\.portal\.id==='front-main'\?'CHECK CHAINED ENTRANCE'/,
+  'the HUD never advertises the sealed boundary as a generic locked door');
 for(const id of ['tower-hatch','bell-chamber-entry','organ-loft-service','organ-loft-nave'])assert.equal(doors.find((door)=>door.id===id).archetype,DOOR_ARCHETYPE.TOWER_SERVICE_SINGLE);
 for(const door of doors.filter((entry)=>entry.id.startsWith('academic-')))assert.equal(door.archetype,DOOR_ARCHETYPE.ACADEMIC_WIRED_GLASS);
 assert.equal(FP.sealedDoorways().length,1,'the x glyph is masonry with a surviving frame scar');

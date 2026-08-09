@@ -1,0 +1,90 @@
+<!--
+  FILE 2 of 2 — the INSTALL INSTRUCTIONS.
+  Paste target: itch.io -> Edit game -> Install instructions
+                (the separate field below Description; itch renders it under the
+                 download list on the page and inside the itch app).
+  Companion files: docs/storefront-copy-itch.html (Description field)
+                   docs/storefront-itch.css       (Theme -> Custom CSS)
+
+  itch drops this field into its own .user_formatted container, and the class
+  name of that container is not on itch's stable list. Every rule that styles
+  this block therefore hangs off the `custom-` hooks below rather than off the
+  container, so it themes correctly wherever itch decides to put it.
+
+  Deliberately no hard-coded download sizes: itch already prints the real size
+  next to every file, and a number typed here goes stale the next build.
+-->
+
+<p class="custom-index">AUDIOCORP FIELD SERVICES &mdash; DEPLOYMENT NOTES</p>
+
+<p class="custom-lede"><strong>Unsigned beta. Your operating system will complain once. Here is how to get past it.</strong></p>
+
+<ul class="custom-spec">
+  <li><strong class="custom-label">mac</strong> <span class="custom-value">apple silicon &mdash; <code>chunk-surfer-macos-arm64.zip</code></span></li>
+  <li><strong class="custom-label">windows</strong> <span class="custom-value">x64 + nvidia cuda &mdash; <code>chunk-surfer-windows-x64.zip</code></span></li>
+  <li><strong class="custom-label">linux</strong> <span class="custom-value">x64 + nvidia cuda &mdash; <code>chunk-surfer-linux-x64.AppImage</code> or <code>chunk-surfer-linux-x64.deb</code></span></li>
+  <li><strong class="custom-label">gpu</strong> <span class="custom-value">the diffusion material lens needs NVIDIA CUDA on Windows and Linux, and runs on the integrated GPU on Apple Silicon</span></li>
+  <li><strong class="custom-label">disk</strong> <span class="custom-value">large. the model weights ship inside the download so the lens runs offline &mdash; exact sizes are on the file list above</span></li>
+  <li><strong class="custom-label">audio</strong> <span class="custom-value">headphones strongly recommended. the game is a listening test</span></li>
+</ul>
+
+<p class="custom-notice">Nothing is downloaded on first launch. The visual lens and its model resources are bundled, which is why the builds are unusually large. Once installed, the game never contacts a server and never uploads an image.</p>
+
+<h2>macOS</h2>
+
+<ol class="custom-steps">
+  <li>Unzip <code>chunk-surfer-macos-arm64.zip</code> and drag <strong>Chunk Surfer</strong> into <code>/Applications</code>.</li>
+  <li><strong>Right-click the app and choose Open</strong> &mdash; do not double-click it the first time. Confirm <strong>Open</strong> in the dialog.</li>
+  <li>If macOS refuses anyway, open <strong>System Settings &rarr; Privacy &amp; Security</strong>, scroll to the blocked-app notice, and press <strong>Open Anyway</strong>.</li>
+  <li>Still blocked? Clear the download quarantine flag in Terminal:<br>
+    <code>xattr -dr com.apple.quarantine /Applications/Chunk\ Surfer.app</code></li>
+</ol>
+
+<h2>Windows</h2>
+
+<ol class="custom-steps">
+  <li>Unzip <code>chunk-surfer-windows-x64.zip</code> somewhere you can write to &mdash; not inside the zip, and not <code>Program Files</code>.</li>
+  <li>Run <code>chunk-surfer.exe</code>.</li>
+  <li>SmartScreen will say <em>Windows protected your PC</em>. Choose <strong>More info</strong>, then <strong>Run anyway</strong>.</li>
+  <li>If the game starts and the world renders flat, your GPU driver is not exposing CUDA. Update your NVIDIA driver; the game remains playable without the lens.</li>
+</ol>
+
+<h2>Linux</h2>
+
+<ol class="custom-steps">
+  <li><strong>AppImage:</strong> mark it executable and run it &mdash;<br>
+    <code>chmod +x chunk-surfer-linux-x64.AppImage</code><br>
+    <code>./chunk-surfer-linux-x64.AppImage</code></li>
+  <li><strong>Debian / Ubuntu:</strong> <code>sudo apt install ./chunk-surfer-linux-x64.deb</code>, then launch <strong>Chunk Surfer</strong> from your applications menu.</li>
+  <li>The proprietary NVIDIA driver is required for the diffusion lens. Nouveau will run the game without it.</li>
+</ol>
+
+<h2>Microphone</h2>
+
+<p>The game asks for microphone permission on first launch. <strong>You can say no and finish the whole game.</strong></p>
+
+<p class="custom-notice">If you allow it, the game measures loudness in your room locally while a take is rolling, so real noise can contaminate a recording or provoke a response in the building. Audio is never recorded, stored, transmitted, uploaded, or played back through the game. Permission can be revoked at any time in your operating system's privacy settings, or in the game's own audio settings.</p>
+
+<h2>Controls</h2>
+
+<ul class="custom-spec">
+  <li><strong class="custom-label">[R]</strong> <span class="custom-value">listen &mdash; roll the recorder</span></li>
+  <li><strong class="custom-label">[F]</strong> <span class="custom-value">light &mdash; torch on and off</span></li>
+  <li><strong class="custom-label">rebind</strong> <span class="custom-value">everything is remappable in settings &rarr; controls</span></li>
+</ul>
+
+<h2 class="custom-warning-heading">content warning (general horror)</h2>
+
+<p class="custom-warning">Sustained dread, sudden loud sounds, a small number of deliberate jumpscares, and flashing or high-contrast strobing effects. Settings can reduce or disable intense physical presentation effects &mdash; set these before your first session if you need them.</p>
+
+<h2>Something went wrong</h2>
+
+<p>This is a public beta and it is early. Expect some bugs. Dialog is very likely to change, story is not.</p>
+
+<ul class="custom-spec">
+  <li><strong class="custom-label">report</strong> <span class="custom-value"><a href="https://cbassuarez.com/contact">cbassuarez.com/contact</a></span></li>
+  <li><strong class="custom-label">source</strong> <span class="custom-value"><a href="https://github.com/cbassuarez/chunk-surfer">github.com/cbassuarez/chunk-surfer</a></span></li>
+  <li><strong class="custom-label">notes</strong> <span class="custom-value"><a href="https://cbassuarez.com/labs/chunk-surfer/">cbassuarez.com/labs/chunk-surfer</a></span></li>
+</ul>
+
+<p class="custom-signoff"><strong>order 4417-C remains open.</strong></p>

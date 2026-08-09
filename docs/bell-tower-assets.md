@@ -1,5 +1,33 @@
 # Bell tower asset register
 
+## TODO — bespoke full-circle recording pass
+
+Status: **blocked on access to a suitable ring and recording session; not a
+code or prototype-bank blocker.** Do not remove the
+`prototype-clock-strike-derived` manifest status until every acceptance item
+below is complete.
+
+- [ ] Deliver 64 pitch-stable tonal files: eight bells × handstroke/backstroke
+  × four round robins, mono Broadcast WAV at 48 kHz/24-bit or better.
+- [ ] Capture separate rope, sally, wheel, bearing, stay, slider, frame,
+  shutter, and winch Foley with four to eight clean variations per repeated
+  mechanism.
+- [ ] Capture bell-chamber, ringing-room, nave, masonry-circulation, and
+  exterior impulse responses or swept-sine deconvolution sources.
+- [ ] Preserve raw attacks and unobstructed tails, one matched close-mic
+  position and polarity, conservative common gain, and exact zero-based
+  `contactOffsetSamples` for every tonal take.
+- [ ] Secure explicit perpetual interactive-game rights for the raw recordings,
+  derived assets, worldwide distribution, marketing capture, and future ports;
+  retain releases, invoices, source sheets, and performer/tower attribution.
+- [ ] Validate the replacement manifest, decode every slot, run a
+  phase-aligned prototype/final A/B, audit repetition over the complete
+  84-change touch, ship provenance and credits, and only then remove the
+  prototype bank and status.
+
+The production specification, intake path, naming contract, and acquisition
+order remain authoritative in **Production change-ringing stems** below.
+
 ## Development ringing bed
 
 - Bell-tower audio uses the licensed individual bell-stem manifest when available. If the manifest cannot be loaded, the runtime falls back to procedural bell synthesis. The obsolete continuous development peal is no longer supported.

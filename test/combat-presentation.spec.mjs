@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { combatActionReadout, combatBarCells, combatInjuryStage } from '../src/render/combat-view.js';
+import { combatActionReadout, combatBarCells, combatInjuryStage, combatTonePalette } from '../src/render/combat-view.js';
+import { applyVfdSettings, setActiveSurface, vfdSettings } from '../src/render/palette.js';
 import * as combatView from '../src/render/combat-view.js';
 import {
   ORDINARY_TURN_SECONDS,
@@ -25,6 +26,19 @@ test('health bars preserve exact ratios and embodied injury thresholds', () => {
   assert.equal(combatInjuryStage({ composure: 4, maxComposure: 8 }), 'wounded');
   assert.equal(combatInjuryStage({ composure: 2, maxComposure: 8 }), 'critical');
   assert.equal(combatInjuryStage({ composure: 8, maxComposure: 8, injuries: 2 }), 'wounded');
+});
+
+test('boot progress can use the selected phosphor instead of the combat-player amber', () => {
+  const prior = { ...vfdSettings };
+  try {
+    setActiveSurface('amber');
+    applyVfdSettings({ phosphor: 'green' });
+    assert.equal(combatTonePalette('theme').pip, '#5BF08A');
+    assert.equal(combatTonePalette('player').pip, '#FFB536');
+  } finally {
+    applyVfdSettings(prior);
+    setActiveSurface('amber');
+  }
 });
 
 test('first-person hands use stepped silhouettes and close over the held tool', () => {

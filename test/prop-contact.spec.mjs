@@ -42,6 +42,11 @@ const plan = {
   const unresolved = mounted.filter((p) => !p.wallContact);
   assert.deepEqual(unresolved.map((p) => p.id), [],
     'these asked to be mounted on a wall and no wall was found near them');
+  for(const p of mounted.filter((prop)=>!prop.inspectAt)){
+    const rendered=PROPS.renderInstances().find((instance)=>instance.id===p.id);
+    assert.ok(Math.abs(p.interactionX-rendered.x)<1e-9,`${p.id} implicit x interaction anchor did not follow wall snap`);
+    assert.ok(Math.abs(p.interactionY-rendered.z)<1e-9,`${p.id} implicit y interaction anchor did not follow wall snap`);
+  }
 
   const rested = instances.filter((p) => p.on);
   assert.ok(rested.length > 0, 'nothing is opted into surface mounting');
@@ -54,6 +59,29 @@ const plan = {
     assert.ok(Math.abs(p.elevation - surface) < 1e-6,
       `${p.id} is not standing on ${host.id}'s measured surface`);
   }
+}
+
+// The cabinet is authored with its decorated +Z face into the room and its
+// local rear plane exactly on the east wall.
+{
+  const cabinet=instances.find((p)=>p.id==='box-office-key-cabinet');
+  const rendered=PROPS.renderInstances().find((p)=>p.id===cabinet.id);
+  const bounds=PROP_BOUNDS[cabinet.mesh];
+  const contact=wallContactAt(plan,cabinet.rx+.5,cabinet.ry+.5);
+  const front={x:-Math.sin(rendered.yaw),z:Math.cos(rendered.yaw)};
+  assert.ok(Math.abs(front.x-contact.nx)<1e-9&&Math.abs(front.z-contact.ny)<1e-9,'cabinet +Z face does not point into the room');
+  const rear={x:rendered.x+front.x*bounds.min[2],z:rendered.z+front.z*bounds.min[2]};
+  if(contact.planeX!==null)assert.ok(Math.abs(rear.x-contact.planeX*.5)<1e-6,'cabinet rear plane does not meet the wall');
+  if(contact.planeY!==null)assert.ok(Math.abs(rear.z-contact.planeY*.5)<1e-6,'cabinet rear plane does not meet the wall');
+}
+
+// An authored inspectAt remains an explicit exception to anchor following.
+{
+  const inspectAt={x:95.5,y:9.5};
+  const [mounted]=PROPS.propsInit(FP,[{id:'explicit-anchor-proof',mesh:'chapel_key_cabinet',x:96.25,y:9.45,yaw:0,mount:'wall',inspectAt}]);
+  assert.equal(mounted.interactionX,inspectAt.x);
+  assert.equal(mounted.interactionY,inspectAt.y);
+  PROPS.propsInit(FP);
 }
 
 // A missing or self-referential host must throw rather than silently resolve to

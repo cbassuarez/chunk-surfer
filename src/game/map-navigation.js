@@ -132,6 +132,13 @@ export function reduceMapNav(state, event, model) {
     case 'NEXT_FLOOR': return changeFloor(current, 1, model);
     case 'PREV_FLOOR': return changeFloor(current, -1, model);
     case 'SELECT_ROOM': return selectRoom(current, event.roomId, model);
+    case 'SELECT_FLOOR': {
+      const floorId=String(event.floorId||'');
+      if(!visibleFloors(model).some((floor)=>floor.id===floorId))return current;
+      const selectedByFloor={...current.selectedByFloor};
+      if(!selectedByFloor[floorId])selectedByFloor[floorId]=firstSelectable(model,floorId)?.id||null;
+      return{...current,floorId,selectedByFloor,manuallyChangedFloor:true};
+    }
     case 'CENTER_PLAYER': return centerPlayer(current, model);
     case 'SET_VIEW_MODE': return { ...current, viewMode: event.mode === 'focus' ? 'focus' : 'overview' };
     case 'MODEL_REFRESH': return repairMapNav(current, model);

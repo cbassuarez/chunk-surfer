@@ -10,21 +10,25 @@ const smoothstep=(value)=>{
   return t*t*(3-2*t);
 };
 
-function routeProgress(timeSec,period){
+function routeProgress(timeSec,period,{vehicle=false}={}){
   const phase=((Number(timeSec)||0)/Math.max(1,Number(period)||1))%1;
   const wrapped=phase<0?phase+1:phase;
   // A long pause off camera at either end prevents traffic from reading as a
   // mechanical pendulum when the player waits at a corner.
   if(wrapped<.10)return 0;
   if(wrapped>.90)return 1;
-  return smoothstep((wrapped-.10)/.80);
+  const travel=clamp01((wrapped-.10)/.80);
+  // Engines hold road speed. Pedestrians and the cyclist ease their weight
+  // into the route; applying that same curve to traffic made every car surge
+  // and brake continuously like a showroom turntable.
+  return vehicle?travel:smoothstep(travel);
 }
 
 export function exteriorAmbientInstances({timeSec=0,reducedMotion=false}={}){
   return EXTERIOR_AMBIENT_NODES.map((node)=>{
     const moving=node.route!=='still';
     const t=moving
-      ?routeProgress((Number(timeSec)||0)*(reducedMotion?.55:1),node.period)
+      ?routeProgress(((Number(timeSec)||0)+Number(node.phase||0)*node.period)*(reducedMotion?.55:1),node.period,{vehicle:node.kind==='vehicle'})
       :0;
     const x=node.from.x+(node.to.x-node.from.x)*t;
     const z=node.from.z+(node.to.z-node.from.z)*t;
@@ -33,7 +37,10 @@ export function exteriorAmbientInstances({timeSec=0,reducedMotion=false}={}){
       id:`exterior-ambient:${node.id}`,
       mesh:node.mesh,
       x,y:0,z,
-      yaw:moving?Math.atan2(dx,dz):0,
+      // Traffic meshes are authored with their lamps/windscreen at local -Z.
+      // Under the prop matrix local -Z becomes [sin(yaw), -cos(yaw)], so this
+      // angle points the actual front—not merely the instance axis—down-route.
+      yaw:moving?(node.kind==='vehicle'?Math.atan2(dx,-dz):Math.atan2(dx,dz)):0,
       scale:1,
       zone:ZONE.street,
       structural:false,

@@ -3,10 +3,11 @@ import { readFileSync } from 'node:fs';
 import { applyPlaceNotation, ELLERY_BELLS, plainHuntMajor, RINGING_SCORE, STEDMAN_TRIPLES_84_WITH_TENOR } from '../src/data/bell-tower.js';
 import { createBellTowerAudio } from '../src/audio/bell-tower-audio.js';
 import { bellStemTemplate, chooseBellStem, loadBellStemBankFromUrl, validateBellStemManifest } from '../src/audio/bell-stem-manifest.js';
-import { BELL_CHAMBER_ANCHOR, ORGAN_LOFT_ANCHOR, RINGING_ROOM_ANCHOR, SHUTTER_WINCH_AUTHORED, createBellFrameLayout } from '../src/data/bell-tower-layout.js';
+import { BELL_CHAMBER_ANCHOR, CHAPEL_SCREEN_AUTHORED, ORGAN_LOFT_ANCHOR, RINGING_ROOM_ANCHOR, SHUTTER_WINCH_AUTHORED, TENOR_ROPE_AUTHORED, createBellFrameLayout } from '../src/data/bell-tower-layout.js';
 import {
   RELAY_INTERRUPT_LEAD_IN_MS,
   RELAY_INTERRUPT_CYCLE_MS,
+  BELL_STAND_SETTLE_MS,
   bellMotionPhaseAt,
   createBellTowerRuntime,
   createInertBellAssemblyInstances,
@@ -14,6 +15,7 @@ import {
   relayInterventionWindowAt,
   sweptCapsuleIntersectsHazard,
 } from '../src/game/bell-tower-runtime.js';
+import { hideStaticTowerRope, presentTowerRuntimeInstances } from '../src/game/tower-rope-presentation.js';
 import { conservatory } from '../src/data/floorplan/conservatory.js';
 import { CONSERVATORY_PROPS, STRUCTURAL_COLLIDERS } from '../src/data/conservatory-props.js';
 import * as PROPS from '../src/game/props.js';
@@ -100,8 +102,14 @@ try{
   towerAudio.start();
   towerAudio.strike({bell:1,stroke:'hand',rowIndex:0,place:0},ELLERY_BELLS[0],{delaySec:.2});
   assert.equal(towerAudio.snapshot().audioMode,'stems');
+  towerAudio.setWorldMix({gain:0,transmission:0,lowpassHz:650,pan:-.2});
+  assert.equal(towerAudio.snapshot().worldGain,0);assert.equal(towerAudio.snapshot().worldTransmission,0);
+  assert.deepEqual(towerAudio.snapshot().acousticLayers,['direct','early','late','mechanism','structure']);
+  assert.equal(towerAudio.setAcousticProfile('source_residue'),'source_residue');
+  towerAudio.setPerformanceIntensity(.8);towerAudio.setCodaProgress(.5);
+  assert.equal(towerAudio.snapshot().profile,'source_residue');assert.equal(towerAudio.snapshot().performanceIntensity,.8);assert.equal(towerAudio.snapshot().codaProgress,.5);
   assert.equal(stemStarts.length,1);
-  assert.equal(stemStarts[0].when,10.2);
+assert.equal(stemStarts[0].when,10.2);
   assert.equal(bedPlays,0);
 }finally{
   towerAudio.destroy();
@@ -127,7 +135,8 @@ assert.equal(runtime.renderInstances(),cachedInstances,'bell render instances ar
 assert.equal(runtime.hazardVolumes(),cachedHazards,'compound hazard instances are allocation-free after construction');
 assert.equal(runtime.requestStop().ok,true);
 for(;now<60_000&&runtime.state()!=='cleared';now+=250)runtime.tick(.25);
-assert.equal(runtime.state(),'cleared');assert.equal(cleared,1);assert.equal(runtime.renderInstances().length,40);
+assert.equal(runtime.state(),'cleared');assert.equal(cleared,1);assert.equal(runtime.renderInstances().length,72);
+assert.equal(runtime.renderInstances().filter((entry)=>entry.id.startsWith('tower-rope-')).length,32,'all eight ropes expose four articulated runtime parts');
 assert.equal(relayInterventionWindowAt(0).open,false);
 assert.equal(relayInterventionWindowAt(safeStrokeTimes[0]).open,true);
 
@@ -152,6 +161,24 @@ const scheduled=[];
 const scheduler=createBellTowerRuntime({now:()=>scheduleNow,audio:{start(){},strike(_record,_bell,options){scheduled.push(options.delaySec);}}});
 scheduler.start();scheduleNow=600;scheduler.tick(.016);
 assert.ok(scheduled.some((delay)=>delay>0),'audio receives look-ahead scheduling before contact');
+
+let codaNow=0,codaClears=0;
+const coda=createBellTowerRuntime({now:()=>codaNow,onCleared:()=>{codaClears++;}});
+coda.start();
+coda.beginPerformance();
+assert.equal(coda.requestPerformanceStand().ok,true);
+assert.equal(coda.snapshot().scheduledStrikeCount,16,'the finale schedules two complete eight-bell rounds');
+let codaStartedAt=null,midCoda=null;
+for(;codaNow<30_000&&coda.state()!=='cleared';codaNow+=100){
+  coda.tick(.1);
+  const snap=coda.snapshot();
+  if(codaStartedAt===null&&snap.codaProgress>0)codaStartedAt=codaNow;
+  if(!midCoda&&snap.codaProgress>=.45&&snap.codaProgress<=.55)midCoda={...snap};
+}
+assert.ok(codaStartedAt!==null&&codaNow-codaStartedAt>=BELL_STAND_SETTLE_MS-100,'the authored standing decay lasts ten seconds');
+assert.ok(midCoda&&midCoda.standingBellCount>0&&midCoda.standingBellCount<8,'bells stand in a deterministic sequence');
+assert.equal(coda.state(),'cleared');assert.equal(coda.snapshot().standingBellCount,8);assert.equal(codaClears,1);
+coda.tick(1);assert.equal(codaClears,1,'tower clearance remains exactly once');
 
 FP.compile(conservatory.levels,{width:conservatory.width,height:conservatory.height,widenCorridors:conservatory.widenCorridors,connectors:conservatory.connectors,edgePortals:conservatory.edgePortals,doors:conservatory.doors});
 PROPS.propsInit(FP);
@@ -201,6 +228,7 @@ const openDoorOnFoot=(id,keys)=>{
 };
 FP.resetDoors();
 assert.equal(pathExists({x:98,y:62},RINGING_ROOM_ANCHOR,new Set(['chapel'])),true,'narthex reaches ringing chamber before the chapter');
+assert.equal(pathExists(CHAPEL_SCREEN_AUTHORED,TENOR_ROPE_AUTHORED,new Set(['chapel','tower-live'])),true,'the chapel screen reaches the playable tenor rope entirely on foot');
 const hatch=FP.doorState().find((door)=>door.id==='tower-hatch');
 assert.equal(FP.canStep(hatch.cx+2,hatch.cy,hatch.cx,hatch.cy,{keys:new Set()}).ok,false,'belfry stair remains locked before tower-live');
 for(const id of ['tower-hatch','bell-chamber-entry'])openDoorOnFoot(id,new Set(['tower-live']));
@@ -211,6 +239,22 @@ assert.equal(pathExists({x:98,y:82},BELL_CHAMBER_ANCHOR,new Set(['tower-live','t
 assert.equal(pathExists(ORGAN_LOFT_ANCHOR,{x:98,y:82},new Set(['tower-cleared'])),true);
 assert.equal(readFileSync('src/main.js','utf8').includes('warpToAuthored'),false,'tower route contains no gameplay warp');
 assert.equal(CONSERVATORY_PROPS.filter((prop)=>prop.id.startsWith('tower-rope-')&&!prop.id.startsWith('tower-rope-mat')).length,8);
+const authoredRopes=CONSERVATORY_PROPS.filter((prop)=>/^tower-rope-\d+$/.test(prop.id));
+assert.equal(authoredRopes.filter((prop)=>prop.action==='tower-tenor-rope').length,1,'only the eighth rope is actionable');
+assert.equal(authoredRopes.find((prop)=>prop.id==='tower-rope-8').mesh,'tower_rope_tenor');
+assert.equal(CONSERVATORY_PROPS.find((prop)=>prop.id==='tower-rope-mat-8').mesh,'tower_rope_mat_tenor');
+const towerRopeAssetSource=readFileSync('tools/chunk_surfer/build-props.mjs','utf8').split("mesh('tower_rope')",2)[1].split("mesh('tower_rope_mat')",1)[0];
+assert.doesNotMatch(towerRopeAssetSource,/MAT\.safetyRed/,'tower sallies reserve saturated red for emergency lighting');
+assert.match(readFileSync('src/data/generated/prop-geometry.js','utf8'),/tower_dust_mote/,'the generated pack contains the phrase-escalation dust mote');
+const ropeParts=Array.from({length:8},(_,index)=>({id:`tower-rope-sally-${index+1}`,mesh:'tower_rope_sally'}));
+const automaticRopes=presentTowerRuntimeInstances(ropeParts,{tenorRopeTaken:false});
+assert.equal(automaticRopes.length,7,'automatic changes animate ropes one through seven');
+assert.equal(automaticRopes.some((entry)=>entry.id.endsWith('-8')),false,'the lower tenor stays visibly stationary before interaction');
+assert.equal(hideStaticTowerRope({id:'tower-rope-1'},{live:true}),true);
+assert.equal(hideStaticTowerRope({id:'tower-rope-8'},{live:true}),false,'the authored lower tenor remains while the seven move');
+assert.equal(presentTowerRuntimeInstances(ropeParts,{tenorRopeTaken:true}).find((entry)=>entry.id.endsWith('-8')).mesh,'tower_rope_sally_tenor');
+assert.deepEqual(presentTowerRuntimeInstances(ropeParts,{tenorRopeTaken:true,activeBells:[3,8]}).map((entry)=>entry.id),['tower-rope-sally-3','tower-rope-sally-8'],'Surfer subtraction removes the corresponding articulated ropes');
+assert.deepEqual(presentTowerRuntimeInstances(ropeParts,{tenorRopeTaken:true,activeBells:[8],highlightTenor:true})[0].emissive,[1,.52,.12,.62],'tenor guidance illuminates the rope itself');
 assert.equal(CONSERVATORY_PROPS.some((prop)=>prop.id==='tower-ringing-frame'),false,'ringing room contains no bell frame');
 assert.ok(STRUCTURAL_COLLIDERS.filter((collider)=>collider.id.startsWith('tower-frame-')).length>=8,'visible frame posts have matching collision');
 console.log('bell tower score and runtime tests ok');

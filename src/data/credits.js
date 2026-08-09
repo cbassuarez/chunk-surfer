@@ -5,7 +5,7 @@ export const CREDITS = Object.freeze([
     heading: 'Chunk Surfer',
     lines: Object.freeze([
       'A game by Sebastian Suarez-Solis',
-      'A haunting at Ellery Conservatory',
+      'A haunting at Ellery Conservatoire',
     ]),
   }),
   Object.freeze({

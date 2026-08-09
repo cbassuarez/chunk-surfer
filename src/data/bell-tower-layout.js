@@ -15,6 +15,7 @@ export const BELL_RELAY_CLAMP_AUTHORED = Object.freeze({ x:65.2, y:158 });
 export const ORGAN_LOFT_ANCHOR = Object.freeze({ x:94, y:154 });
 export const TOWER_ENTRY_AUTHORED = Object.freeze({ x:25, y:158, facing:0 });
 export const SHUTTER_WINCH_AUTHORED = Object.freeze({ x:68, y:163 });
+export const TENOR_ROPE_AUTHORED = Object.freeze({x:25+Math.cos(-Math.PI/2+7*Math.PI/4)*4,y:158+Math.sin(-Math.PI/2+7*Math.PI/4)*4});
 
 export const TOWER_ROUTE_ANCHORS = Object.freeze({
   lowerStair: Object.freeze({x:2,y:151,facing:1}),
@@ -53,6 +54,7 @@ export function createBellFrameLayout(bells, {
   centerX,
   centerZ,
   chamberFloorY=13.2,
+  ringingFloorY=8.6,
 } = {}) {
   if (!Number.isFinite(centerX) || !Number.isFinite(centerZ)) {
     throw new Error('bell frame requires a finite physical centre');
@@ -77,7 +79,9 @@ export function createBellFrameLayout(bells, {
       },
       ropeRoomPosition:{
         x:centerX+Math.cos(ropeAngle)*3.35,
+        y:ringingFloorY,
         z:centerZ+Math.sin(ropeAngle)*3.35,
+        yaw:ropeAngle+Math.PI/2,
       },
       visualScale,
       sweepRadius:1.05*visualScale,

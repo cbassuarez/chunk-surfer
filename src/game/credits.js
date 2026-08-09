@@ -344,9 +344,9 @@ export function makeCreditsScene({
         });
         uiText(centerX('RELEASE CREDITS', cols), Math.round(rows * 0.55), 'RELEASE CREDITS', 'ui-amber', alpha * 0.88);
         uiText(
-          centerX('A HAUNTING AT ELLERY CONSERVATORY', cols),
+          centerX('A HAUNTING AT ELLERY CONSERVATOIRE', cols),
           Math.round(rows * 0.55) + 2,
-          fit('A HAUNTING AT ELLERY CONSERVATORY', cols - 2),
+          fit('A HAUNTING AT ELLERY CONSERVATOIRE', cols - 2),
           'ui-secondary',
           alpha * 0.72,
         );

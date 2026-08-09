@@ -80,6 +80,7 @@ import {
 } from './game/hush-noise-perception.js';
 import * as PROPS from './game/props.js';
 import { exteriorAmbientInstances } from './game/exterior-ambient.js';
+import { exteriorLoreLines } from './data/exterior-lore.js';
 import { migrateFloorplanPosition } from './game/floorplan-position-migration.js';
 import * as CUES from './audio/cues.js';
 import { authoredCue, authoredAudioProject, authoredCueUrls, dispatchAuthoredCue } from './audio/authored-cues.js';
@@ -115,6 +116,7 @@ import * as STAB from './game/stabs.js';
 import * as OBJ from './game/objectives.js';
 import * as DOC from './game/document.js';
 import * as RADIO from './game/radio.js';
+import * as PLANT from './game/plant-incident.js';
 import * as PB from './game/playback.js';
 import { drawPlaybackOverlay } from './render/playback-view.js';
 import { makeCombatScene } from './game/combat.js';
@@ -130,7 +132,13 @@ import * as MIC from './game/mic.js';
 import { takeStamp, WORK_ORDER_STAMP } from './game/clock.js';
 import { drawMinimap, drawRecorderReturn } from './render/minimap.js';
 import { BUILDING_MAP } from './data/building-map.js';
+import { storyWayfindingCapturePreset } from './data/story-wayfinding-captures.js';
 import { captureDoorMapState, captureFloorplanMapSource, buildMapModel } from './game/map-model.js';
+import { floorForHeight } from './game/map-projection.js';
+import { resolveStoryGuidanceTarget, storyTargetRuntimePoint, storyTargetSharesRenderSpace } from './game/story-guidance.js';
+import { createObjectGuidanceTracker } from './game/waypoint-beacon.js';
+import { shouldHideCrossEnvelopeProp } from './game/prop-visibility.js';
+import { boothCameraFrame, boothPoseForSourceId } from './game/booth-presentation.js';
 import { createHushTelemetry } from './game/hush-telemetry.js';
 import { createHushAudioRuntime } from './game/hush-audio-runtime.js';
 import { applyHushTorchInterference, hushAbsenceLook, inactiveHushField } from './game/hush-field.js';
@@ -162,6 +170,14 @@ import {
   practiceRoomAt,
   tenantStandCandidates,
 } from './game/practice-rooms.js';
+import {
+  KEY_CABINET_RING,
+  keyCabinetKeyIdentified,
+  keyCabinetReactionNode,
+  keyCabinetSelection,
+  startKeyCabinetDrop,
+  stepKeyCabinetDrop,
+} from './game/key-cabinet.js';
 import { makeLensCalibrationScene } from './game/lens-calibration.js';
 import { makeEulaScene } from './game/eula-scene.js';
 import { eulaAccepted, eulaVersion } from './game/eula.js';
@@ -214,6 +230,7 @@ import {
 } from './game/chunk-surf-state.js';
 import { createSourceSpaceRuntime, sourceMatrix, SOURCE_ENTRY } from './game/source-space-runtime.js';
 import {
+  STAIR_ANOMALY_DARK_ESCAPE_MS,
   STAIR_ANOMALY_STATUS,
   freshStairAnomalyLedger,
   normalizeStairAnomalyEnvironment,
@@ -225,6 +242,7 @@ import { createStairAnomalyRuntime, STAIR_ANOMALY_ENTRY, STAIR_ANOMALY_MODULE_CE
 import { resolveLightingContext, resolveLocalLights } from './data/conservatory-lights.js';
 import { exteriorRainMaterialMixAt } from './data/exterior-district.js';
 import { buildEmergencyShadowFrame } from './game/emergency-light-runtime.js';
+import { createApparitionDirector } from './game/apparition-director.js';
 import {
   circuitIsLive,
   livePowerCircuits,
@@ -252,17 +270,17 @@ import { resolveTorchLook } from './render/lighting-model.js';
 import { buildChunkSurfGodPreset, CHUNK_SURF_GOD_PRESET } from './game/chunk-surf-god.js';
 import {
   CHAPEL_TOWER_PHASE,
-  TOWER_RELAY_REQUIRED_INTERRUPTS,
-  TOWER_RELAY_STAGE,
+  TOWER_PEAL_STAGE,
+  TOWER_STEDMAN_ROWS,
   chapelTowerKeyring,
   freshChapelTowerState,
   normalizeChapelTowerState,
   reduceChapelTower,
   towerObjective,
-  towerRelayStage,
+  towerPealStage,
 } from './game/chapel-tower-state.js';
 import { createSourceTowerTransitionScene } from './game/source-tower-transition-scene.js';
-import { applyTowerRelayAdvantage } from './game/tower-chapel-bridge.js';
+import { applyTowerPealAdvantage } from './game/tower-chapel-bridge.js';
 import {
   DOCK_HAUNTING_STATUS,
   DOCK_PORTAL,
@@ -280,9 +298,15 @@ import {
   reduceDockTransit,
 } from './game/get-in.js';
 import { createBellTowerRuntime, createInertBellAssemblyInstances } from './game/bell-tower-runtime.js';
+import { hideStaticTowerRope, presentTowerRuntimeInstances } from './game/tower-rope-presentation.js';
 import { createBellTowerAudio } from './audio/bell-tower-audio.js';
-import { ELLERY_BELLS } from './data/bell-tower.js';
+import { ELLERY_BELLS, TOWER_LURE_SCORE } from './data/bell-tower.js';
+import { createTowerBellDirector, towerBellSpatialFrame } from './game/tower-bell-director.js';
+import { createBellPealClock, createBellPealPerformance } from './game/bell-peal-performance.js';
+import { createBellPealScene } from './game/bell-peal-scene.js';
+import { createBellPealCalibrationScene } from './game/bell-peal-calibration-scene.js';
 import { DOOR_ARCHETYPE } from './data/conservatory-doors.js';
+import { GOD_LOCATION_HOOKS, godDoorHook } from './data/god-hooks.js';
 import {
   BELL_FRAME_AUTHORED,
   BELL_RELAY_CLAMP_AUTHORED,
@@ -291,6 +315,7 @@ import {
   CHAPEL_SCREEN_AUTHORED,
   ORGAN_LOFT_ANCHOR,
   SHUTTER_WINCH_AUTHORED,
+  TENOR_ROPE_AUTHORED,
   TOWER_ENTRY,
   TOWER_ENTRY_VIEW,
   TOWER_ROUTE_ANCHORS,
@@ -411,7 +436,7 @@ const chapelBoss=({kind='nothing',value=null}={})=>{
   if(kind==='name') variant=value==='Sarah'?'name-sarah':'name-other';
   else if(kind==='reason') variant=value==='money'?'reason-money':value==='superstition'?'reason-superstition':'reason-other';
   else if(kind==='feeling') variant='feeling';
-  return applyTowerRelayAdvantage(runtimeChapelBattle(`battle.chapel.${variant}`),chapelTowerState());
+  return applyTowerPealAdvantage(runtimeChapelBattle(`battle.chapel.${variant}`),chapelTowerState());
 };
 // The five ending trees are resolved by the CONTRACT now (data/endings.js), not
 // by five near-identical lookups here — sacrificeEnding, helpedEnding,
@@ -3268,6 +3293,7 @@ function currentMoveIntervalMs(){
     return Math.round(INTRO_SCENE.speedStartMs + (INTRO_SCENE.speedEndMs-INTRO_SCENE.speedStartMs)*p);
   }
   let ms = MOVE_MS * storyMoveScale();
+  if(storyMode&&PLANT.heavyWrenchDragging())ms*=1/.65;
   ms *= (1 + worldBoundaryFriction * (WORLD_BOUNDARY_FRICTION.maxMult - 1));
   // THE LONG HALL GETS HARDER TO WALK. The corridor is a hundred and twelve
   // metres of the same document and it used to cost exactly what a corridor
@@ -3558,6 +3584,12 @@ function audibleCandidates(){
 
 function updateAudio(){
   hushAudioMix?.setProgramMode?.(storyMode&&REC.isListening()?'monitor':'world');
+  if(storyMode&&REC.isListening()&&PLANT.plantHissing()){
+    STORY.startTapeHiss({gain:.14,fade:.35});
+    STORY.setTapeHissPressure(.34,{min:.12,max:.22,ramp:.28});
+  }else if(!REC.isRecording()){
+    STORY.stopTapeHiss({fade:.25});
+  }
   updateElectricalHum();
   if(sampleFieldSuppressed()){
     silenceSampleField();
@@ -3652,7 +3684,9 @@ function step(dx,dy){
   // earlier version locked movement outright, which reads as broken input.
   // Exception: the tutorial level check never fails — it teaches the posture, it
   // does not punish you for it, so the guided sequence can always complete.
-  if(storyMode && REC.isRecording() && !REC.isStalled() && !TUT.tutorialActive()) REC.spoilTake('you moved');
+  if(storyMode && REC.isRecording() && !REC.isStalled() && !TUT.tutorialActive()) REC.spoilTake('you moved',{
+    sourceKind:'player',sourceId:'player',playerGenerated:true,deliberate:true,
+  });
   const nowMs=performance.now();
   if(stairTriggerCrossed(dx,dy)){beginStairAnomaly();return;}
   // The first threshold. Until the levels are set and the six seconds held — both
@@ -3776,6 +3810,7 @@ function step(dx,dy){
   beginRenderStep(nx,ny,nowMs);
   lastMoveAtMs=nowMs;
   px=nx; py=ny; stepCount++;
+  if(storyMode&&usingPlan()&&!usingSpecialSpace())onPlantHaulStep(stepFrom,{x:px,y:py});
   if(storyMode&&usingPlan()&&!usingSpecialSpace())noteDockTransitStep(stepFrom,{x:px,y:py});
   // Contact is a spatial threshold, so resolve it on the movement frame that
   // actually crossed the body rather than waiting for the next render tick.
@@ -4073,6 +4108,8 @@ function setGameplayPaused(next, { announce=true }={}){
     return;
   }
   paused=next;
+  if(paused){bellPealPerformance?.suspend?.('pause');towerBellDirector?.suspend?.();}
+  else{towerBellDirector?.resume?.();bellPealPerformance?.resume?.('pause-resume');}
   resetMotionInput(paused ? 'pause-enter' : 'pause-exit', {stopRenderMove:paused});
   syncPointerMode(paused ? 'pause-enter' : 'pause-exit');
   if(paused){
@@ -5220,6 +5257,7 @@ function loop(){
       if (id.startsWith('battle:')) return ['recorder'];
       if (id === 'chunk-surf') return ['light', 'recorder', 'interact'];
       if (id === 'hush-run') return ['quiet', 'light', 'bag', 'recorder', 'interact', 'playback', 'mark'];
+      if (id === 'tower-tenor-performance') return ['mark', 'interact'];
       return [];
     })();
     CONTROLLER.gamepadTick({
@@ -5240,6 +5278,7 @@ function loop(){
       // The practice-room scrape is a short world animation, not a state snap.
       // Let it finish through speech/overlay scenes once it has begun.
       tickPracticePropMotion(nowLoopMs);
+      tickKeyCabinetMotion(nowLoopMs);
       if(!scenes.blocksWorld()){
         maybeSpawnScheduledKey();
         updateHorrorTick();
@@ -5252,6 +5291,7 @@ function loop(){
         tickStairAnomaly(dt);
         tickDoorRuntime(dt);
         speakAtExitDoor();
+        tickTowerBellDirector(dt);
         tickBellTower(dt);
         tickPresence(dt);
         tickHushMischief();
@@ -5271,6 +5311,10 @@ function loop(){
         tickMutation(dt);
         maybeWakeLens();
       }
+      // The tower transport is musical time, not world simulation. It keeps
+      // advancing beneath Source finale cards and other authored holds, but a
+      // real pause freezes it and the transition scene owns its own update.
+      if(scenes.blocksWorld()&&!paused&&!sourceTowerTransition)tickTowerBellDirector(dt);
       // Playback runs through scenes and through the document reader: the tape
       // does not stop because you looked at a piece of paper. Neither does he
       // stop thinking, and neither does the radio stop talking.
@@ -5378,6 +5422,10 @@ let lastUnexpectedPointerUnlockAt=0;
 let activeDifficulty=currentDifficulty();
 let facilityMapSource=null;
 let facilityMapCache={key:'',model:null};
+let boothPresentationPose='idle';
+const STORY_HIGHLIGHT_TRACKER=createObjectGuidanceTracker();
+let storyGuidanceHighlight={visible:false,propId:null,doorId:null,alpha:0};
+let storyGuidanceHighlightRenderKey='';
 const HUSH_MAP_TELEMETRY=createHushTelemetry({label:BUILDING_MAP.contact.label});
 let natatoriumBasinBounds=null;
 
@@ -5505,6 +5553,10 @@ let sourceFinalCombatOpen=false;
 let sourceFinalCombatRetryAt=0;
 let bellTowerRuntime=null;
 let bellTowerAudio=null;
+let towerBellDirector=null;
+let bellPealPerformance=null;
+let bellPealScene=null;
+let bellPealClock=null;
 let inertBellTowerInstances=null;
 let bellTowerImpactActive=false;
 let bellTowerCollisionEnabled=true;
@@ -5530,7 +5582,7 @@ function doorLeafMatrix(door,center,leafIndex,fraction){
   const inward=String(door.swing).includes('in')?-1:1,angle=(left?-1:1)*inward*Math.PI*.49*fraction;
   return doorMatMultiply(doorTransform(hingeX,center.y,hingeZ,yaw),doorTransform(0,0,0,angle,left?1:-1));
 }
-const doorLeafVisualCache={group:null,entries:[]};
+const doorLeafVisualCache={ready:false,entries:[]};
 const doorDynamicCombined=[];
 function writeDoorLeafMatrix(entry){
   const {portal,definition,center,leafIndex,matrix}=entry,pair=definition.leafCount===2,left=pair?leafIndex===0:definition.hinge!=='right';
@@ -5540,11 +5592,16 @@ function writeDoorLeafMatrix(entry){
   matrix[0]=c*reflect;matrix[1]=0;matrix[2]=s*reflect;matrix[3]=0;matrix[4]=0;matrix[5]=1;matrix[6]=0;matrix[7]=0;matrix[8]=-s;matrix[9]=0;matrix[10]=c;matrix[11]=0;
   matrix[12]=center.x*CELL+Math.cos(yaw)*hingeLocal;matrix[13]=center.y;matrix[14]=center.z*CELL+Math.sin(yaw)*hingeLocal;matrix[15]=1;
 }
-function rebuildDoorLeafVisuals(group){
-  doorLeafVisualCache.group=group;doorLeafVisualCache.entries.length=0;
+function rebuildDoorLeafVisuals(){
+  doorLeafVisualCache.ready=true;doorLeafVisualCache.entries.length=0;
   FP.forEachDoor((portal)=>{
-    const center=FP.logicalToPhysical(portal.cx,portal.cy),renderGroups=portal.definition?.renderGroups||[];
-    if(group&&center.renderGroup!==group&&!renderGroups.includes(group))return;
+    const center=FP.logicalToPhysical(portal.cx,portal.cy);
+    // A threshold is visible from whichever room can see it, not only from the
+    // logical render group that happened to author its centre cell. The prop
+    // pass already distance-culls every instance and composites it against the
+    // ray-marched depth buffer, so prefiltering here made the leaf disappear
+    // while it was in clear sight and snap in when the player crossed the
+    // render-group lead-in two or three cells before the aperture.
     const definition=portal.definition||{leafCount:1,activeLeaves:[0],leaf:{width:1},aperture:{width:1},hinge:'left',swing:'escape',mesh:'door_leaf_service'};
     const zone=FP.zoneAt(Math.floor(portal.cx),Math.floor(portal.cy));
     for(let leafIndex=0;leafIndex<definition.leafCount;leafIndex++){
@@ -5553,12 +5610,15 @@ function rebuildDoorLeafVisuals(group){
     }
   });
 }
-function doorRenderInstances(group=null,{leaves=false}={}){
+function doorRenderInstances({leaves=false}={}){
   if(!FP.isLoaded())return[];
   const out=[];
   for(const door of FP.doorState()){
     const center=FP.logicalToPhysical(door.cx,door.cy);
-    if(group&&center.renderGroup!==group&&!door.renderGroups?.includes(group))continue;
+    // Frames, heads and leaves share the same world-space visibility contract:
+    // submit them all, then let distance and depth decide what can be seen.
+    // Render-group ownership is a loading concern for room dressing; applying
+    // it to boundary architecture creates a discontinuity before every seam.
     const yaw=door.widthAxis==='x'?0:Math.PI/2,zone=FP.zoneAt(Math.floor(door.cx),Math.floor(door.cy));
     if(!leaves){
       const matrix=doorTransform(center.x*CELL,center.y,center.z*CELL,yaw);
@@ -5577,7 +5637,7 @@ function doorRenderInstances(group=null,{leaves=false}={}){
     }
   }
   if(!leaves)for(const scar of FP.sealedDoorways()){
-    const center=FP.logicalToPhysical(scar.cx,scar.cy);if(group&&center.renderGroup!==group)continue;
+    const center=FP.logicalToPhysical(scar.cx,scar.cy);
     out.push({id:scar.id,mesh:'door_sealed_scar',matrix:doorTransform(center.x*CELL,center.y,center.z*CELL,scar.widthAxis==='x'?0:Math.PI/2),zone:FP.zoneAt(scar.cx,scar.cy),structural:true});
   }
   return out;
@@ -5586,19 +5646,106 @@ function doorRenderInstances(group=null,{leaves=false}={}){
 function syncDoorDynamicProps({logicalX=px,logicalY=py,timeSec=performance.now()/1000}={}){
   if(usingSourceSpace()||usingStairAnomaly()||!FP.isLoaded()){R3.r3dSetDynamicProps([]);return;}
   const group=FP.logicalToPhysical(logicalX,logicalY).renderGroup;
-  if(doorLeafVisualCache.group!==group)rebuildDoorLeafVisuals(group);
-  let count=0;for(const entry of doorLeafVisualCache.entries){writeDoorLeafMatrix(entry);doorDynamicCombined[count++]=entry.instance;}
+  const guidance=currentStoryGuidanceFrame({logicalX,logicalY,nowMs:timeSec*1000,trackHighlight:true});
+  const nextHighlight={
+    visible:!!guidance.highlight?.visible,
+    propId:guidance.target?.propId||null,
+    doorId:guidance.target?.doorId||null,
+    alpha:Number(guidance.highlight?.alpha)||0,
+  };
+  const highlightKey=`${nextHighlight.visible}:${nextHighlight.propId||''}:${nextHighlight.doorId||''}:${nextHighlight.alpha.toFixed(2)}`;
+  if(highlightKey!==storyGuidanceHighlightRenderKey){
+    storyGuidanceHighlight=nextHighlight;storyGuidanceHighlightRenderKey=highlightKey;
+    if(RENDERER==='3d')R3.r3dSetProps(worldRenderInstances(group));
+  }
+  if(!doorLeafVisualCache.ready)rebuildDoorLeafVisuals();
+  let count=0;for(const entry of doorLeafVisualCache.entries){
+    writeDoorLeafMatrix(entry);const emissive=storyGuidanceEmissive(entry.instance,null);
+    doorDynamicCombined[count++]=emissive?{...entry.instance,emissive}:entry.instance;
+  }
   if(group==='tower'&&!inertBellTowerInstances)inertBellTowerInstances=createInertBellAssemblyInstances(towerBellLayout());
-  const bells=group!=='tower'?[]:chapelTowerState().phase===CHAPEL_TOWER_PHASE.TOWER_ACTIVE&&bellTowerRuntime?bellTowerRuntime.renderInstances():(inertBellTowerInstances||[]);
-  for(const bell of bells)doorDynamicCombined[count++]=bell;
+  const tower=chapelTowerState();
+  const bells=group!=='tower'?[]:tower.phase===CHAPEL_TOWER_PHASE.TOWER_ACTIVE&&bellTowerRuntime?bellTowerRuntime.renderInstances():(inertBellTowerInstances||[]);
+  const pealPresentation=bellPealPerformance?.snapshot?.();
+  for(const bell of presentTowerRuntimeInstances(bells,{
+    tenorRopeTaken:tower.tenorRopeTaken,
+    activeBells:pealPresentation?.activeBells||null,
+    highlightTenor:nextHighlight.visible&&nextHighlight.propId==='tower-rope-8',
+  }))doorDynamicCombined[count++]=bell;
+  const towerFrame=group==='tower'?bellTowerRuntime?.snapshot?.():null;
+  if(towerFrame&&['performance','performance-closing'].includes(towerFrame.runtimeMode)){
+    const reducedMotion=(getSave().settings?.shake||'full')!=='full';
+    const phraseStrength=(towerFrame.performancePhrase+1)/6*(1-(towerFrame.codaProgress||0));
+    const moteCount=Math.max(0,Math.floor(phraseStrength*24));
+    const ropeLogical=FP.toRuntimePoint(TENOR_ROPE_AUTHORED),ropePhysical=FP.logicalToPhysical(ropeLogical.x,ropeLogical.y);
+    const moteTime=reducedMotion?Math.floor(timeSec*2)/2:timeSec;
+    for(let index=0;index<moteCount;index++){
+      const seed=((index+1)*2654435761)>>>0,unit=(seed%1009)/1009,side=((seed>>>9)%997)/997,depth=((seed>>>19)%991)/991;
+      const fall=(unit+moteTime*(.018+((seed>>>6)%17)*.0012))%1;
+      doorDynamicCombined[count++]={
+        id:`tower-peal-dust-${index}`,mesh:'tower_dust_mote',
+        x:ropePhysical.x*CELL+(side-.5)*8.4,y:ropePhysical.y+.35+(1-fall)*3.15,z:ropePhysical.z*CELL+(depth-.5)*6.2,
+        yaw:(seed%628)/100,scale:.72+unit*.82,noShadow:true,structural:false,
+      };
+    }
+  }
   const zone=FP.zoneAt(logicalX,logicalY);
-  if(zone===ZONE.street||zone===ZONE.civicCourt){
+  // The authored road network is visible from the arrival yard as well as from
+  // the optional district loop. Traffic should already be alive when the fade
+  // comes up, not switch on at the first street-zone seam.
+  const exteriorVisible=zone===ZONE.street||zone===ZONE.civicCourt||(zone===ZONE.dock&&logicalY>=400);
+  if(exteriorVisible){
     const reducedMotion=(getSave().settings?.shake||'full')!=='full';
     for(const life of exteriorAmbientInstances({timeSec,reducedMotion}))doorDynamicCombined[count++]=life;
+  }
+  if(guidance.target?.propId==='chapel-inner-screen'){
+    const screen=PROPS.propById('chapel-inner-screen');
+    if(screen){
+      const at=FP.logicalToPhysical(screen.rx,screen.ry);
+      const steady=(getSave().settings?.flash||'full')==='off';
+      const signal=steady ? .40 : .34+.08*Math.sin(timeSec*2.1);
+      doorDynamicCombined[count++]={
+        id:'chapel-screen-signal',mesh:'chapel_screen_signal',
+        x:at.x*CELL+(Number(screen.renderOffsetX)||0),y:(Number(screen.floor)||at.y)+(Number(screen.elevation)||0),z:at.z*CELL+(Number(screen.renderOffsetZ)||0),
+        yaw:Number(screen.yaw)||0,emissive:[1,.57,.18,signal],noShadow:true,structural:false,
+      };
+    }
+  }
+  if(guidance.target?.id==='story:descend-nave'&&guidance.physical){
+    doorDynamicCombined[count++]={
+      id:'tower-live-exit-indicator',mesh:'tower_exit_indicator',
+      x:guidance.physical.x*CELL,y:guidance.physical.y+2.05,z:guidance.physical.z*CELL,
+      yaw:TOWER_ROUTE_ANCHORS.naveExit.facing*Math.PI/2,emissive:[.06,1,.25,.42],noShadow:true,structural:false,
+    };
+  }
+  const deployedRadio=RADIO.radioLocation();
+  if(deployedRadio){
+    const at=FP.logicalToPhysical(deployedRadio.x,deployedRadio.y);
+    const open=RADIO.radioCarrierOpen();
+    const glow=open?(.44+.18*Math.sin(timeSec*8.4)):.045;
+    doorDynamicCombined[count++]={
+      id:'dropped-radio-carrier-led',mesh:'radio_carrier_led',x:at.x*CELL,y:at.y+.08,z:at.z*CELL,
+      yaw:0,emissive:[.08,1,.30,glow],noShadow:true,structural:false,
+    };
+  }
+  if(PLANT.plantHissing()&&FP.zoneAt(px,py)===ZONE.plant){
+    const valve=FP.toRuntimePoint({x:33,y:38.35}),at=FP.logicalToPhysical(valve.x,valve.y);
+    doorDynamicCombined[count++]={
+      id:'plant-live-gauge-needle',mesh:`plant_gauge_needle_${Math.floor(timeSec*5)%3}`,
+      x:at.x*CELL,y:at.y,z:at.z*CELL,yaw:Math.PI,noShadow:true,structural:false,
+    };
   }
   doorDynamicCombined.length=count;
   R3.r3dSetDynamicProps(doorDynamicCombined);
 }
+
+// The last emergency shadow frame handed to the renderer, kept only so
+// __probe.apparitions can report what was actually submitted rather than what a
+// fresh rebuild would produce. Nothing in the game reads it.
+let lastEmergencyShadowFrame=null;
+const apparitionDirector=createApparitionDirector({
+  seed:`apparition-boot:${Math.floor(Number(performance.timeOrigin)||Date.now())}`,
+});
 
 // The building's practicals are AUTHORED now — see src/data/conservatory-lights.js.
 // This used to be two hardcoded blocks keyed on render group, which is why seven
@@ -5621,21 +5768,40 @@ function syncArchitecturalLocalLights(group,{logicalX=px,logicalY=py}={}){
     origin:{x:physical.x*CELL,z:physical.z*CELL},
     anchorPosition:lightAnchorPosition,
   });
+  const plantIncidentLight=group==='basement'&&context.zone===ZONE.plant&&PLANT.plantHissing()?{
+    id:'plant-header-hiss-side',x:32.15,y:-1.34,z:37.65,color:[1,.48,.20],intensity:.58,radius:4.2,
+    penetration:0,spilling:false,kind:'fitting',circuit:null,maintained:true,floorY:-4,nominalIntensity:.58,
+    emissiveScale:.72+.16*Math.sin(timeSec*5.1),emergencyPulse:null,shadowReveal:0,castsShadow:false,zone:ZONE.plant,
+  }:null;
+  const ordinaryWithIncident=plantIncidentLight?[...ordinaryLights,plantIncidentLight]:ordinaryLights;
   const presentedLights=group==='ground'&&dockHauntingFrame&&dockHauntingStagingPoint
-    ?dockHauntingLights(dockHauntingFrame,dockHauntingStagingPoint,ordinaryLights)
-    :ordinaryLights;
+    ?dockHauntingLights(dockHauntingFrame,dockHauntingStagingPoint,ordinaryWithIncident)
+    :ordinaryWithIncident;
+  const apparitionsEnabled=!dockHauntingFrame&&!settings.reduceDread&&effectsMode!=='off';
+  if(!apparitionsEnabled)apparitionDirector.suspend();
+  const apparitionStageKey=[
+    context.group||group||'unknown',
+    context.spaceId||`zone-${context.zone??'unknown'}`,
+  ].join(':');
   const shadow=buildEmergencyShadowFrame(presentedLights,{
     listener:{x:physical.x*CELL,z:physical.z*CELL},
-    enabled:!dockHauntingFrame&&!settings.reduceDread,
+    enabled:apparitionsEnabled,
     viewYaw:R3.r3dWorldYaw?.(),
     timeSec,
     effectsMode,
+    stageKey:apparitionStageKey,
+    director:apparitionDirector,
   });
   noteEmergencyApparitions(shadow,group,physical.y);
+  lastEmergencyShadowFrame=shadow;
   R3.r3dSetEmergencyShadows?.(shadow?shadow.instances:[]);
-  R3.r3dSetLocalLights?.(shadow
-    ?presentedLights.map((light)=>light.id===shadow.lightId?{...light,...shadow.lightOverride}:light)
-    :presentedLights);
+  const litPresentation=shadow
+    ?[
+        ...presentedLights.map((light)=>light.id===shadow.lightId?{...light,...shadow.lightOverride}:light),
+        ...(shadow.apparitionLights||[]),
+      ]
+    :presentedLights;
+  R3.r3dSetLocalLights?.(litPresentation);
 }
 
 function liveLightCircuits(){
@@ -5671,19 +5837,14 @@ function propEmissive(instance){
   return null;
 }
 
-const EXTERIOR_ELLERY_MESHES=new Set([
-  'conservatory_west_elevation',
-  'conservatory_stair_window',
-  'bay_canopy',
-]);
-
-const INTERIOR_HIDDEN_EXTERIOR_MESHES=new Set([
-  // This asset now contains the whole exterior civic mass, not only the thin
-  // west face its old name describes. From inside, those outward facade planes
-  // cross the atrium and natatorium and become broad torch-lit fields.
-  'conservatory_west_elevation',
-  'conservatory_stair_window',
-]);
+function storyGuidanceEmissive(instance,base=null){
+  if(!storyGuidanceHighlight.visible)return base;
+  const propMatch=storyGuidanceHighlight.propId&&instance.id===storyGuidanceHighlight.propId;
+  const doorMatch=storyGuidanceHighlight.doorId&&instance.doorId===storyGuidanceHighlight.doorId;
+  if(!propMatch&&!doorMatch)return base;
+  const strength=.30+Math.max(0,Math.min(1,storyGuidanceHighlight.alpha||0))*.42;
+  return[1,.52,.12,Math.max(strength,Number(base?.[3])||0)];
+}
 
 function hiddenCrossEnvelopeProp(instance){
   const observer=FP.logicalToPhysical(px,py);
@@ -5691,20 +5852,10 @@ function hiddenCrossEnvelopeProp(instance){
   // Ellery footprint below are metres. Comparing those units directly marked
   // the upper practice wing as outdoors and stripped every interior prop from
   // the render list, including the main stair.
-  const observerX=observer.x*CELL,observerZ=observer.z*CELL;
-  // `dock` is shared by the open apron and the room just inside the grey door,
-  // so zone membership cannot decide this. Physical position can: outside the
-  // Ellery footprint we render only the exterior envelope; after the player
-  // crosses x=50 the complete dock/interior dressing returns unchanged.
-  const outdoors=observerX<50||observerX>128||observerZ<0||observerZ>92;
-  if(!outdoors)return INTERIOR_HIDDEN_EXTERIOR_MESHES.has(instance.mesh);
-  if(EXTERIOR_ELLERY_MESHES.has(instance.mesh))return false;
-  // The exterior hero mesh is the complete visible envelope of Ellery. Interior
-  // steelwork used to leak through its deliberately recessed courts after the
-  // generic navigation shell was suppressed, making the baths roof look like
-  // an untextured wireframe. Keep interior dressing for the interior render and
-  // never let it substitute for an exterior elevation.
-  return instance.x>=49.5&&instance.x<=129.0&&instance.z>=-.5&&instance.z<=93.5;
+  return shouldHideCrossEnvelopeProp(instance,{
+    observerX:observer.x*CELL,
+    observerZ:observer.z*CELL,
+  });
 }
 
 function worldRenderInstances(group=null){
@@ -5726,13 +5877,21 @@ function worldRenderInstances(group=null){
   syncArchitecturalLocalLights(group);
   const tower=chapelTowerState();
   const screenOpen=[CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(tower.phase);
+  const liveRopes=tower.phase===CHAPEL_TOWER_PHASE.TOWER_ACTIVE&&!!bellTowerRuntime;
   const props=PROPS.renderInstances({group}).filter((instance)=>{
+    if(instance.id===KEY_CABINET_RING['C-17'].id&&(playerKeys.has('chapel')||flagTest('chapel.keyTaken')))return false;
     if(screenOpen&&instance.id==='chapel-inner-screen')return false;
+    if(hideStaticTowerRope(instance,{live:liveRopes,tenorRopeTaken:tower.tenorRopeTaken}))return false;
+    if(instance.id.startsWith('yard-booth-guard-')&&instance.id!==`yard-booth-guard-${boothPresentationPose}`)return false;
+    if(instance.id==='yard-booth-handoff'&&boothPresentationPose!=='handoff')return false;
     if(instance.id==='dock-chandelier-spent')return false;
     if(hiddenCrossEnvelopeProp(instance))return false;
     return true;
-  }).map((instance)=>({...instance,emissive:propEmissive(instance)}));
-  return[...props,...doorRenderInstances(group)];
+  }).map((instance)=>({...instance,emissive:storyGuidanceEmissive(instance,propEmissive(instance))}));
+  const architecture=doorRenderInstances().map((instance)=>{
+    const emissive=storyGuidanceEmissive(instance,null);return emissive?{...instance,emissive}:instance;
+  });
+  return[...props,...architecture];
 }
 
 function usingSourceSpace(){ return !!chunkSurfRuntime; }
@@ -5827,7 +5986,7 @@ function syncStairAnomalyRender({force=false}={}){
   if(!usingStairAnomaly())return false;
   const plan=stairAnomalyRuntime.geometry.renderPlanFor(px,py),key=`stair:${plan.key}`;
   if(force||key!==r3dCache.physicalKey){
-    R3.r3dSetPlan(plan.rgba,plan.w,plan.h,plan.material,{ambient:plan.ambient,originX:plan.originX,originY:plan.originY});
+    R3.r3dSetPlan(plan.rgba,plan.w,plan.h,plan.material,{ambient:plan.ambient,originX:plan.originX,originY:plan.originY,heightOffset:plan.heightOffset});
     r3dCache.physicalGroup='stair-anomaly';r3dCache.physicalKey=key;r3dCache.fogSize=-1;
   }
   R3.r3dSetProps(worldRenderInstances('stair-anomaly'));
@@ -5887,7 +6046,7 @@ function activateStairAnomaly(ledger,{position=null,fresh=false}={}){
 // and the stair is just a stair again, with the door where the door should be. It
 // is deliberately not signposted; the recordist works it out out loud once he has
 // been climbing long enough to be frightened.
-const STAIR_ESCAPE = Object.freeze({ dark: 30000, hintAfter: 42000 });
+const STAIR_ESCAPE = Object.freeze({ dark: STAIR_ANOMALY_DARK_ESCAPE_MS, hintAfter: 42000 });
 let stairDarkSince=0;
 let stairEscapeHinted=false;
 
@@ -5978,52 +6137,28 @@ function syncChapelTowerKeyring(tower=chapelTowerState()){
   playerKeys.delete('tower-cleared');
   for(const key of chapelTowerKeyring(tower))playerKeys.add(key);
 }
-function towerWaypointFor(tower=chapelTowerState()){
-  const objective=towerObjective(tower);
-  const authored={
-    'enter-source':CHAPEL_SCREEN_AUTHORED,
-    'follow-signal':CHAPEL_SCREEN_AUTHORED,
-    'ringing-room':{x:25,y:158},
-    'clock-hammer':{x:18,y:153},
-    'belfry-hatch':TOWER_ROUTE_ANCHORS.belfryDoor,
-    'break-relay':BELL_RELAY_CLAMP_AUTHORED,
-    'release-winch':TOWER_ROUTE_ANCHORS.winch,
-    'bells-settling':TOWER_ROUTE_ANCHORS.winch,
-    'descend-nave':TOWER_ROUTE_ANCHORS.naveExit,
-    'roll-fifth-take':CHAPEL_SCREEN_AUTHORED,
-  }[objective.id];
-  return authored?{objective,point:FP.toRuntimePoint(authored)}:{objective,point:null};
-}
 function towerCheckpointFor(tower=chapelTowerState()){
-  const stage=towerRelayStage(tower);
-  const authored=stage===TOWER_RELAY_STAGE.INTERRUPT
-    ? TOWER_ROUTE_ANCHORS.chamberEntry
-    : [TOWER_RELAY_STAGE.RELEASE,TOWER_RELAY_STAGE.SETTLING].includes(stage)
-      ? TOWER_ROUTE_ANCHORS.winch
-      : {x:25,y:158,facing:0};
+  const stage=towerPealStage(tower);
+  const authored=stage===TOWER_PEAL_STAGE.STANDING?TOWER_ROUTE_ANCHORS.ringingEntry:{x:25,y:158,facing:0};
   return{...FP.toRuntimePoint(authored),facing:authored.facing||0};
-}
-function syncTowerWaypoint(tower=chapelTowerState()){
-  const {objective,point}=towerWaypointFor(tower);
-  if(point)OBJ.setWaypoint(point.x,point.y,objective.id);
-  else if(tower.phase===CHAPEL_TOWER_PHASE.CHAPEL_FINAL)OBJ.clearWaypoint();
-  return OBJ.saveObjState();
 }
 function commitChapelTower(event,patch={}){
   const next=reduceChapelTower(chapelTowerState(),event);
   syncChapelTowerKeyring(next);
-  const obj=syncTowerWaypoint(next);
-  saveCommit({chapelTower:next,obj,...patch});
+  facilityMapCache={key:'',model:null};
+  saveCommit({chapelTower:next,...patch});
   return next;
 }
 
 function towerBellLayout(){
   const logical=FP.toRuntimePoint(BELL_FRAME_AUTHORED);
   const anchor=FP.logicalToPhysical(logical.x,logical.y);
+  const ringing=FP.toRuntimePoint(TENOR_ROPE_AUTHORED);
   return createBellFrameLayout(ELLERY_BELLS,{
     centerX:anchor.x*CELL,
     centerZ:anchor.z*CELL,
     chamberFloorY:FP.floorAt(logical.x,logical.y),
+    ringingFloorY:FP.floorAt(ringing.x,ringing.y),
   });
 }
 
@@ -6039,7 +6174,64 @@ function towerPlayerCapsule(out=towerPlayerCapsules[towerCapsuleWriteIndex]){
 }
 
 function stopBellTowerRuntime(){
+  if(bellPealScene)scenes.remove(bellPealScene);
+  bellPealScene=null;bellPealPerformance=null;bellPealClock=null;
+  towerBellDirector?.destroy?.({cut:false});towerBellDirector=null;
   bellTowerRuntime?.destroy?.();bellTowerRuntime=null;bellTowerAudio=null;resetTowerPlayerSweep();syncDoorDynamicProps();
+}
+
+function towerBellSource(){
+  const layout=towerBellLayout(),center=layout.reduce((out,bell)=>({x:out.x+bell.pivot.x/layout.length,y:out.y+bell.pivot.y/layout.length,z:out.z+bell.pivot.z/layout.length}),{x:0,y:0,z:0});
+  return center;
+}
+function towerBellSourceSpatial(){
+  const point=FP.toRuntimePoint(BELL_CHAMBER_ANCHOR);
+  return{areaId:'conservatory',roomId:'bell_tower',floorId:acousticFloorIdAt(point.x,point.y),position:{x:point.x,y:point.y}};
+}
+function towerBellListener({atTowerEntry=false}={}){
+  const sourceScreen=usingSourceSpace()?FP.toRuntimePoint(CHAPEL_SCREEN_AUTHORED):null;
+  const point=sourceScreen||(atTowerEntry?TOWER_ENTRY:{x:px,y:py}),physical=FP.logicalToPhysical(point.x,point.y);
+  return{x:physical.x*CELL,z:physical.z*CELL,y:physical.y+1.62,yaw:sourceScreen?CHAPEL_OUTER_CHECKPOINT.facing:mapHeading()};
+}
+function towerBellOcclusion(){
+  if(sourceTowerTransition)return 0;
+  const point=FP.toRuntimePoint(BELL_CHAMBER_ANCHOR);
+  const listener=usingSourceSpace()?FP.toRuntimePoint(CHAPEL_SCREEN_AUTHORED):{x:px,y:py};
+  return acousticOcclusionDb(towerBellSourceSpatial(),acousticSpatialAt(listener.x,listener.y));
+}
+function ensureTowerBellDirector({mode=null}={}){
+  if(towerBellDirector||bellTowerRuntime||!FP.isLoaded())return towerBellDirector;
+  ensureCtx();
+  if(!bellTowerAudio)bellTowerAudio=createBellTowerAudio({context:actx,destination:master||actx?.destination,origin:towerBellSource()});
+  towerBellDirector=createTowerBellDirector({
+    audio:bellTowerAudio,source:towerBellSource(),sourceSpatial:towerBellSourceSpatial(),emitAcousticEvent,
+    now:()=>actx?actx.currentTime*1000:performance.now(),
+  });
+  const tower=chapelTowerState(),nextMode=mode||tower.transportMode||'world';
+  towerBellDirector.start({
+    offsetMs:tower.transportElapsedMs,
+    nextMode,
+    washElapsedMs:tower.transportWashMs,
+    restoredTransitionProgress:tower.transportTransitionProgress,
+  });
+  return towerBellDirector;
+}
+function towerAcousticProfile({atTowerEntry=false}={}){
+  if(usingSourceSpace()||sourceTowerTransition)return'source_residue';
+  if(atTowerEntry)return'ringing_room';
+  const physical=usingPlan()?FP.logicalToPhysical(px,py):null;
+  if(physical?.spaceId==='bell_chamber')return'bell_chamber';
+  if(physical?.spaceId==='ringing_room')return'ringing_room';
+  if(physical?.spaceId==='organ_loft'||FP.zoneAt(px,py)===ZONE.chapel)return'nave';
+  if(FP.zoneAt(px,py)===ZONE.street||FP.zoneAt(px,py)===ZONE.civicCourt)return'exterior';
+  return'masonry';
+}
+function tickTowerBellDirector(dt,{atTowerEntry=false}={}){
+  const tower=chapelTowerState();
+  if(tower.phase===CHAPEL_TOWER_PHASE.FORESHADOW||[CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(tower.phase))return;
+  const director=ensureTowerBellDirector();if(!director)return;
+  const profile=towerAcousticProfile({atTowerEntry});if(bellTowerAudio?.snapshot?.().profile!==profile)bellTowerAudio?.setAcousticProfile?.(profile);
+  director.tick(dt,{listener:towerBellListener({atTowerEntry}),occlusionDb:towerBellOcclusion()});
 }
 
 function emitDoorArchitecture(portal,type,{playerGenerated=false}={}){
@@ -6081,7 +6273,7 @@ function failBellTower({hazardId='machinery'}={}){
       renderMove=null;motionRig=null;trail=[];resetTowerPlayerSweep();
       saveCommit({chapelTower:next,px,py,area:'bell-tower'});
       bellTowerImpactActive=false;
-      SPEECH.say({who:'you',text:'Back to the last safe landing. The relay count held.'});
+      SPEECH.say({who:'you',text:'Back to the ringing-room landing. The completed rows held.'});
     },
   });
 }
@@ -6089,45 +6281,87 @@ function failBellTower({hazardId='machinery'}={}){
 function completeBellTower(){
   if(chapelTowerState().phase!==CHAPEL_TOWER_PHASE.TOWER_ACTIVE)return;
   const next=commitChapelTower({type:'BELLS_STOOD'});
+  towerBellDirector?.stand?.();bellPealClock=null;
   saveCommit({chapelTower:next,doors:FP.saveDoorState(),px,py,area:'bell-tower'});syncDoorDynamicProps();
-  SPEECH.say({who:'direction',text:'The third timed deviation breaks the repeated row. The bells still decay; silence was never the protection. The service lock releases. Descend to the nave.'});
+  SPEECH.say({who:'direction',text:'Bells standing. The service lock releases. Descend to the nave.'});
 }
 
 function startBellTowerRuntime({retry=false,collisions=true,offsetMs=0}={}){
   ensureCtx();
-  const relayAt=FP.toRuntimePoint(BELL_RELAY_CLAMP_AUTHORED);
+  const ropeAt=FP.toRuntimePoint(TENOR_ROPE_AUTHORED);
   recordStorySpine('spine:bell-row',{
-    verb:'haunt',x:relayAt.x,y:relayAt.y,roomId:'bell_tower',radius:8,
-    payload:{kind:'relay-row-lock',row:'1-2-3-4 / 1-2-3-4',requiredDeviations:TOWER_RELAY_REQUIRED_INTERRUPTS,bpm:168},
+    verb:'haunt',x:ropeAt.x,y:ropeAt.y,roomId:'bell_tower',radius:8,
+    payload:{kind:'covering-tenor',method:'Stedman Triples',rows:TOWER_STEDMAN_ROWS},
   });
   bellTowerCollisionEnabled=!!collisions;
-  if(!bellTowerAudio)bellTowerAudio=createBellTowerAudio({context:actx,destination:master||actx?.destination});
+  let handoff=null;if(towerBellDirector){handoff=towerBellDirector.handoff();towerBellDirector=null;}
+  if(!bellTowerAudio)bellTowerAudio=createBellTowerAudio({context:actx,destination:master||actx?.destination,origin:towerBellSource()});
   if(!bellTowerRuntime)bellTowerRuntime=createBellTowerRuntime({
-    bells:towerBellLayout(),audio:bellTowerAudio,emitAcousticEvent,
+    score:TOWER_LURE_SCORE,bells:towerBellLayout(),audio:bellTowerAudio,emitAcousticEvent,
     onCollision:failBellTower,onCleared:completeBellTower,
+    now:()=>bellPealClock?.nowMs?.()??(actx?actx.currentTime*1000:performance.now()),
   });
   syncChapelTowerKeyring();
   resetTowerPlayerSweep();
-  const resolvedOffset=offsetMs==='stop-ready'?bellTowerRuntime.timing().finiteEndMs+25:Math.max(0,Number(offsetMs)||0);
-  bellTowerRuntime.start({
-    retry,
-    offsetMs:resolvedOffset,
-    interventions:chapelTowerState().relayInterruptions,
-  });
+  const resolvedOffset=offsetMs==='stop-ready'?bellTowerRuntime.timing().finiteEndMs+25:Math.max(0,Number(handoff?.elapsedMs??offsetMs??chapelTowerState().transportElapsedMs)||0);
+  bellTowerRuntime.start({retry,offsetMs:resolvedOffset});
+  if(chapelTowerState().pealCompleted){bellTowerRuntime.beginPerformance();bellTowerRuntime.requestPerformanceStand();}
   syncDoorDynamicProps();
   return bellTowerRuntime;
 }
 
+function startTenorPerformance(){
+  const tower=chapelTowerState();if(tower.phase!==CHAPEL_TOWER_PHASE.TOWER_ACTIVE||tower.pealCompleted)return false;
+  const runtime=bellTowerRuntime||startBellTowerRuntime({retry:true});
+  if(!tower.tenorRopeTaken)commitChapelTower({type:'TENOR_ROPE_TAKEN'});
+  const settings=getSave().settings||{};
+  bellPealClock=createBellPealClock({context:actx,timingOffsetMs:settings.rhythmTimingOffsetMs||0});bellPealClock.start(0);
+  runtime.beginPerformance();
+  bellPealPerformance=createBellPealPerformance({
+    initialRow:chapelTowerState().tenorRowsCompleted,
+    mode:settings.towerPealAssist||'standard',clock:bellPealClock,
+    onStrike:(record,options)=>{
+      runtime.queuePerformanceStrike(record,options);
+      if(options?.player){
+        void CONTROLLER.pulseControllerHaptics?.({duration:150,strongMagnitude:.88,weakMagnitude:.42,mode:getSave().settings?.haptics||'full'});
+        const shake=getSave().settings?.shake||'full';if(shake!=='off')CR.fx.shake(shake==='reduced' ? .08 : .22,shake==='reduced'?90:145);
+      }
+    },
+    onRow:({row})=>commitChapelTower({type:'TENOR_ROW_COMPLETED',row}),
+    onMiss:()=>{commitChapelTower({type:'TENOR_MISSED'});if((getSave().settings?.shake||'full')!=='off')CR.fx.shake(.10,90);},
+    onRecall:()=>runtime.resetPerformanceRow(),
+    onComplete:()=>{
+      commitChapelTower({type:'PEAL_COMPLETED'});runtime.requestPerformanceStand();
+      const scene=bellPealScene;bellPealScene=null;bellPealPerformance=null;if(scene)scenes.remove(scene);
+      SPEECH.say({who:'direction',text:'The touch comes round. Two rows of rounds remain. Stand clear.'});
+    },
+  });
+  bellPealScene=createBellPealScene({performance:bellPealPerformance,reducedMotion:()=>(getSave().settings?.shake||'full')!=='full',onGuidedPulse:()=>{
+    void CONTROLLER.pulseControllerHaptics?.({duration:42,strongMagnitude:.12,weakMagnitude:.25,mode:getSave().settings?.haptics||'full'});
+  },onRelease:(scene)=>{
+    scenes.remove(scene);bellPealScene=null;bellPealPerformance=null;
+    bellPealClock=null;
+    runtime.start({retry:true,offsetMs:runtime.timing().finiteEndMs+25});
+    SPEECH.say({who:'you',text:'Let go. The seven carry the course until I take the tenor again.'});
+  }});
+  scenes.push(bellPealScene);return true;
+}
+
 function tickBellTower(dt){
-  if(usingPlan()&&!usingSpecialSpace()&&FP.zoneAt(px,py)===ZONE.bellTower&&!chapelTowerState().ropeRoomVisited&&FP.floorAt(px,py)<12){
-    commitChapelTower({type:'ROPE_ROOM_VISITED'});
-    SPEECH.say({who:'you',text:'Rope room. Eight lines into one frame. Find what is driving them before I touch the bells.'});
+  if(usingPlan()&&!usingSpecialSpace()&&!chapelTowerState().corridorDiscovered&&FP.zoneAt(px,py)===ZONE.chapelOuter){
+    const sourceReady=chapelTowerState().phase===CHAPEL_TOWER_PHASE.SOURCE_READY;
+    commitChapelTower({type:'CHAPEL_CORRIDOR_REACHED'});
+    if(sourceReady)SPEECH.say({who:'direction',text:'The bells are directly above the inner screen. The corridor is carrying more than sound.'});
   }
   if(usingPlan()&&!usingSpecialSpace()&&chapelTowerState().phase===CHAPEL_TOWER_PHASE.TOWER_CLEARED&&!chapelTowerState().chapelReached&&FP.zoneAt(px,py)===ZONE.chapel){
     commitChapelTower({type:'CHAPEL_REACHED'});
     SPEECH.say({who:'direction',text:'The tower is silent above the nave. The recorder meter is moving anyway. Put the fifth take on tape.'});
   }
   if(chapelTowerState().phase!==CHAPEL_TOWER_PHASE.TOWER_ACTIVE||!bellTowerRuntime)return;
+  const profile=towerAcousticProfile();if(bellTowerAudio?.snapshot?.().profile!==profile)bellTowerAudio?.setAcousticProfile?.(profile);
+  const pealFrame=bellPealPerformance?.snapshot?.();
+  if(pealFrame){bellTowerRuntime.setPerformancePhrase?.(pealFrame.phrase);bellTowerAudio?.setPerformanceIntensity?.(pealFrame.phrase/5);}
+  bellTowerAudio?.setWorldMix?.(towerBellSpatialFrame({source:towerBellSource(),listener:towerBellListener(),occlusionDb:towerBellOcclusion(),mix:1}));
   const current=towerPlayerCapsule();
   if(current){towerPlayerSweep.previous=towerPreviousPlayerCapsule||current;towerPlayerSweep.current=current;}
   bellTowerRuntime.tick(dt,current?towerPlayerSweep:null);
@@ -6188,16 +6422,24 @@ function syncSourceRender({ force=false,x=px,y=py }={}){
 
 function beginSourceTowerTransition(){
   if(sourceTowerTransition||chapelTowerState().phase!==CHAPEL_TOWER_PHASE.TRANSITION_READY)return false;
+  const tower=chapelTowerState();
+  const initialProgress=tower.transportMode==='transition'?tower.transportTransitionProgress:0;
   const reducedMotion=(getSave().settings?.shake||'full')!=='full';
+  const director=ensureTowerBellDirector({mode:'source_muted'});
   sourceTowerTransition=createSourceTowerTransitionScene({
-    motionInput,renderer:R3,reducedMotion,worldView:()=>TOWER_ENTRY_VIEW,
+    motionInput,renderer:R3,reducedMotion,worldView:()=>TOWER_ENTRY_VIEW,initialProgress,
+    audio:{
+      start:(progress)=>director?.setTransitionProgress?.(progress),
+      setProgress:(progress)=>director?.setTransitionProgress?.(progress),
+      update:(dt)=>tickTowerBellDirector(dt,{atTowerEntry:true}),
+      destroy(){},
+    },
     onCommit:()=>{
       const next=commitChapelTower({type:'TRANSITION_COMMITTED'});
       px=TOWER_ENTRY.x;py=TOWER_ENTRY.y;R3.r3dSetFacing(TOWER_ENTRY.facing);renderMove=null;motionRig=null;trail=[];
       saveCommit({chapelTower:next,px,py,area:'bell-tower'});
       scenes.remove(sourceTowerTransition);sourceTowerTransition=null;
       startBellTowerRuntime({retry:false});
-      SPEECH.say({who:'direction',text:'The Source climbs into eight ropes. Above them, the tenor begins alone. Diagnose the relay before the whole frame takes the building.'});
     },
     onExit:()=>{sourceTowerTransition=null;},
   });
@@ -6208,8 +6450,19 @@ function beginSourceTowerTransition(){
   chuteRide=null;
   chunkSurfRuntime=null;PRES.despawn();R3.r3dSetSourceScene({key:'source:exit',corpus:[],staticInstances:[],dynamicInstances:[],look:{sunrise:0,chroma:1,paper:0}});
   px=CHAPEL_OUTER_CHECKPOINT.x;py=CHAPEL_OUTER_CHECKPOINT.y;R3.r3dSetFacing(CHAPEL_OUTER_CHECKPOINT.facing);renderMove=null;motionRig=null;trail=[];
-  saveCommit({px,py,area:'conservatory'});
+  const transport=director?.snapshot?.();
+  const persistedTower=transport?reduceChapelTower(chapelTowerState(),{
+    type:'BELL_TRANSPORT_SAVED',elapsedMs:transport.elapsedMs,mode:transport.mode,
+    washMs:transport.washMs,transitionProgress:transport.transitionProgress,
+  }):chapelTowerState();
+  saveCommit({chapelTower:persistedTower,px,py,area:'conservatory'});
   return true;
+}
+
+function resumeSourceTowerTransitionFromSave(){
+  const tower=chapelTowerState();
+  if(tower.phase!==CHAPEL_TOWER_PHASE.TRANSITION_READY||tower.transportMode!=='transition'||tower.transportTransitionProgress<=0)return false;
+  return beginSourceTowerTransition();
 }
 
 function restoreFromSourceSpace(completion,exitSnapshot){
@@ -6225,8 +6478,18 @@ function restoreFromSourceSpace(completion,exitSnapshot){
   else beginSourceTowerTransition();
 }
 
-function activateSourceSpace(state,{position=null}={}){
+function activateSourceSpace(state,{position=null,resume=false}={}){
   const normalized=normalizeChunkSurfState(state);
+  const tower=chapelTowerState();
+  if([CHAPEL_TOWER_PHASE.SOURCE_READY,CHAPEL_TOWER_PHASE.TRANSITION_READY].includes(tower.phase)){
+    const resumeMode=resume&&['source_wash','source_muted'].includes(tower.transportMode)?tower.transportMode:null;
+    const director=ensureTowerBellDirector({mode:resumeMode||'world'});
+    if(!resumeMode){
+      director?.enterSource?.();
+      const frame=director?.snapshot?.();
+      saveCommit({chapelTower:reduceChapelTower(tower,{type:'BELL_TRANSPORT_SAVED',elapsedMs:frame?.elapsedMs||tower.transportElapsedMs,mode:'source_wash',washMs:frame?.washMs||0,transitionProgress:0})});
+    }
+  }
   sourcePresenceWasActive=PRES.isActive();
   sourceFinalCombatOpen=false;
   PRES.despawn();
@@ -6259,7 +6522,7 @@ function resumeSourceSpaceFromSave(){
   const state=normalizeChunkSurfState(getSave().chunkSurf);
   if(!state.active)return false;
   const sx=Number(getSave().px),sy=Number(getSave().py);
-  activateSourceSpace(state,{position:Number.isFinite(sx)&&Number.isFinite(sy)?{x:sx,y:sy,facing:state.returnPoint?.facing??0}:null});
+  activateSourceSpace(state,{position:Number.isFinite(sx)&&Number.isFinite(sy)?{x:sx,y:sy,facing:state.returnPoint?.facing??0}:null,resume:true});
   return true;
 }
 
@@ -6360,7 +6623,7 @@ async function loadBuilding(){
     const data=mod[which] || mod.default;
     FP.compile(data.levels, {width:data.width, height:data.height, widenCorridors:data.widenCorridors,connectors:data.connectors||[],edgePortals:data.edgePortals||[],doors:data.doors||[]});
     inertBellTowerInstances=null;
-    doorLeafVisualCache.group=null;doorLeafVisualCache.entries.length=0;
+    doorLeafVisualCache.ready=false;doorLeafVisualCache.entries.length=0;
     natatoriumBasinBounds = which === 'conservatory' ? WATER.computeNatatoriumBasinBounds(FP) : null;
     facilityMapSource=null; facilityMapCache={key:'',model:null}; HUSH_MAP_TELEMETRY.reset();
     if(data.spawn) FP.setSpawn(data.spawn.x, data.spawn.y);
@@ -6423,6 +6686,8 @@ async function loadBuilding(){
     // across a reload — the building may move, the paper does not come back.
     if(which==='conservatory'){
       PROPS.propsInit(FP);
+      keyCabinetMotion=null;
+      syncKeyCabinetProps({refresh:false});
       buildingPresenceNavigation=createPresenceNavigation({
         isSolid:(x,y)=>FP.isSolid(x,y)||natatoriumWaterBlocksAt(x,y),
         canStep:(ax,ay,bx,by)=>FP.canStep(ax,ay,bx,by,{keys:playerKeys}),
@@ -6446,9 +6711,12 @@ async function loadBuilding(){
       }
       syncVisiblePages();
       syncStoryObjectProps();
+      syncPlantIncidentProps();
       R3.r3dSetProps(worldRenderInstances(physicalPlan.group));
+      const tower=chapelTowerState();
+      if([CHAPEL_TOWER_PHASE.SOURCE_READY,CHAPEL_TOWER_PHASE.TRANSITION_READY].includes(tower.phase))ensureTowerBellDirector({mode:tower.transportMode});
     } else { buildingPresenceNavigation=null; R3.r3dSetProps([]); }
-    if(!resumeStairAnomalyFromSave()&&!resumeSourceSpaceFromSave()&&!resumeDockHauntingFromSave()){
+    if(!resumeStairAnomalyFromSave()&&!resumeSourceSpaceFromSave()&&!resumeDockHauntingFromSave()&&!resumeSourceTowerTransitionFromSave()){
       revealAround(px,py);
       // A FIRST ARRIVAL FACES THE WAY IT WAS AUTHORED TO.
       //
@@ -6487,6 +6755,7 @@ async function loadBuilding(){
 // This is the one place that reaches for everything, so there is one answer to
 // "why can I hear the last run".
 function resetRunAudio(reason='run-reset'){
+  if(towerBellDirector||bellTowerRuntime||bellTowerAudio)stopBellTowerRuntime();
   SPEECH.clearSpeech();
   CUES.stopAllCues(0.06);
   clearInstrument();
@@ -6510,6 +6779,7 @@ function resetRunAudio(reason='run-reset'){
 function enterStory(){
   sampleFieldEnabled=false;
   storyMode=true;
+  apparitionDirector.reset({seed:`apparition-run:${Math.floor(performance.now())}`});
   // The legacy sample-field pursuer is process-lifetime state. Story runs use
   // the authored Presence director, and must never inherit that old body.
   resetHorrorState();
@@ -6525,10 +6795,14 @@ function enterStory(){
   REC.loadRecState(getSave().rec);
   PRES.loadPresenceState(getSave().presence);
   resetHushContactSession();
-  OBJ.loadObjState(getSave().obj);
-  if(chapelTowerState().phase!==CHAPEL_TOWER_PHASE.FORESHADOW)syncTowerWaypoint();
+  OBJ.loadObjState(getSave().obj,{validTargets:TARGETS});
   STAB.loadStabState(getSave().stabs);
   RADIO.loadRadioState(getSave().radio);
+  PLANT.loadPlantIncident(getSave().plantIncident);
+  // A save cannot resume with an unseen two-metre wrench already attached to
+  // the player's hand. It comes back exactly where it was, ready to grip; the
+  // protected pursuit is only rebuilt after the next authored scrape.
+  if(PLANT.heavyWrenchDragging())PLANT.dropHeavyWrench(PLANT.plantIncidentState().heavyPosition);
   PROPS.loadPropState(getSave().props);
   ENCOUNTERS.loadEncounterState(getSave().encounters);
   loadPracticeHaunts();
@@ -6551,7 +6825,7 @@ function enterStory(){
       },
       close:()=>saveCommit({ obj:OBJ.saveObjState() }),
     });
-  RADIO.radioInit({ squelch:onSquelch });
+  RADIO.radioInit({ squelch:onSquelch, missed:onRadioCueMissed });
   SPEECH.speechInit({
     audio:()=>{ ensureCtx(); return actx ? { ctx:actx, destination:dialogGain || master || actx.destination } : null; },
     typing:STORY,
@@ -6668,6 +6942,16 @@ function takeTheBag(){
   refreshWorldProps();
 }
 
+function talkToExteriorLocal(prop){
+  const revisited=PROPS.propState().inspected.has(prop.id);
+  const lines=exteriorLoreLines(prop.loreId||prop.id,{revisited});
+  if(!lines?.length)return false;
+  inspectPropTracked(prop.id);
+  saveCommit({props:PROPS.savePropState()});
+  SPEECH.sayAll(lines);
+  return true;
+}
+
 // ── the lodge ───────────────────────────────────────────────────────────────
 // THE HAND-OVER IS THE GATE NOW.
 //
@@ -6698,6 +6982,27 @@ function coldOpenStartNode(){
   return 'replay-condensed';
 }
 
+function setBoothPresentationPose(pose='idle'){
+  const next=['idle','ledger','handoff'].includes(pose)?pose:'idle';
+  if(next===boothPresentationPose)return;
+  boothPresentationPose=next;
+  refreshWorldProps();
+}
+
+function boothPoseForLine(line){
+  return boothPoseForSourceId(line?.sourceId);
+}
+
+function createBoothCameraFraming(){
+  const origin={x:px,y:py,...(R3.r3dLookAngles?.()||{yaw:mapHeading(),pitch:0})};
+  const inside=FP.toRuntimePoint({x:73.85,y:214});
+  const startedAt=performance.now();
+  return{
+    view:()=>boothCameraFrame({origin,target:inside,startedAt,nowMs:performance.now()}),
+    release:()=>R3.r3dSetLookAngles?.({yaw:origin.yaw,pitch:origin.pitch,immediate:true}),
+  };
+}
+
 function talkToTheLodge(){
   if(flagTest('prologueDone')){
     SPEECH.say({who:'you',text:'He has told me everything he is going to tell me. The keys are in my pocket and the job is in the basement.'});
@@ -6706,6 +7011,8 @@ function talkToTheLodge(){
   ensureCtx();
   STORY.startSoundtrack?.();
   STORY.startBoothTone?.();
+  const camera=createBoothCameraFraming();
+  setBoothPresentationPose('idle');
   const opened=converse('cold-open', COLD_OPEN_DIALOGUE, {
     startAt: coldOpenStartNode(),
     slate: 'W. ELLERY HOLDINGS · WORK ORDER 4417-C · ARCHIVAL CAPTURE',
@@ -6713,7 +7020,10 @@ function talkToTheLodge(){
     blocksWorld: true,
     scrim: 0.62,
     replayId: 'cold-open',
+    worldView:camera.view,
+    onExit:()=>{camera.release();setBoothPresentationPose('idle');},
     onLine:(line)=>{
+      setBoothPresentationPose(boothPoseForLine(line));
       // THE KEY ARRIVES WHEN IT IS HANDED OVER.
       //
       // `prologueDone` is what puts the master key on the ring
@@ -6746,7 +7056,7 @@ function talkToTheLodge(){
       // title, so the door lands in a mix that has emptied (see makeWorldTitleScene).
     },
   });
-  if(!opened) STORY.stopBoothTone?.({fade:0.4});
+  if(!opened){camera.release();setBoothPresentationPose('idle');STORY.stopBoothTone?.({fade:0.4});}
   return !!opened;
 }
 
@@ -6864,7 +7174,7 @@ function think(id, nodes, { startAt='start', onChoice, onDone, force=false }={})
 // take uses this: every take is guided by it. `?nothink=1` still bypasses.
 function converse(id, nodes, {
   startAt='start', onChoice, onLine, onDone, scrim=0.5, anchor='center',
-  slate='', blocksWorld=false, replayId=null,
+  slate='', blocksWorld=false, replayId=null, worldView=null, onExit=null,
 }={}){
   // No dialog here (a mechanism suite, or not story): the caller is left in
   // whatever state it set up, to be driven by the bare verbs. It does NOT
@@ -6880,7 +7190,7 @@ function converse(id, nodes, {
     // caller may keep its original replay id rather than take the conversation:
     // prefix every other tree gets.
     replay: createReplayService(replayId||`conversation:${id}`),
-    scrim, anchor, slate, blocksWorld,
+    scrim, anchor, slate, blocksWorld, worldView, onExit,
     onChoice: (c)=>{ applyStoryChoice(c); onChoice?.(c); },
     onLine,
     onDone,
@@ -7418,7 +7728,7 @@ function refreshRetiredDoorWorld(){
   r3dCache.physicalGroup=p.group;
   r3dCache.physicalKey=p.key;
   r3dCache.fogSize=-1;
-  doorLeafVisualCache.group=null;doorLeafVisualCache.entries.length=0;
+  doorLeafVisualCache.ready=false;doorLeafVisualCache.entries.length=0;
   facilityMapCache={key:null,model:null};
   syncStoryObjectProps();
   syncDoorDynamicProps();
@@ -7960,6 +8270,7 @@ function openListen(room){
 // are not allowed to just audition a room and walk off. Setting a level commits
 // you to rolling. After that the game trusts you to listen and leave freely.
 let committedListen=false;
+let activeTakeOrdinal=0;
 
 // Leaving a room without rolling. You heard it; you decided not to keep it —
 // unless the game has decided for you that this one you finish.
@@ -7983,7 +8294,14 @@ function cancelListen(){
 // move for forty-five seconds. This is the first thing that tells the building
 // someone is in it.
 function roll(){
+  if(PLANT.plantRecordingBlocked()){
+    SPEECH.say({who:'you',text:'PLANT PRESSURE. The monitor has the same service hiss in every room. No roll until the heating header is shut.'});
+    pushEvent('// PLANT PRESSURE / BUILDING NOISE');
+    return;
+  }
+  const takeSlot=REC.recState().takes.length+1;
   if(!REC.startRecording()) return;
+  activeTakeOrdinal=takeSlot;
   activeTakeContamination=armedTakeContamination&&armedTakeContamination.room===(takeRoom||currentWorld())
     ? {...armedTakeContamination,circuits:[...armedTakeContamination.circuits]}
     : null;
@@ -7992,7 +8310,6 @@ function roll(){
   committedListen=false;
   screamedThisTake=false;
   takeOrigin={x:px,y:py};
-  const takeSlot=REC.recState().takes.length+1;
   if(takeSlot===1&&(takeRoom||currentWorld())==='main_b3'){
     recordStorySpine('spine:b3-first-slate',{
       verb:'taunt',roomId:'main_b3',radius:7,
@@ -8051,6 +8368,7 @@ function stopTake(){
   if(!REC.isRecording()) return;
   const room=takeRoom || recordableRoomAt(px,py) || currentWorld();
   const r=REC.stopRecording();
+  activeTakeOrdinal=0;
   const contamination=activeTakeContamination;activeTakeContamination=null;
   takeRoom=null;takePlace=null;
   clearInstrument();
@@ -8117,7 +8435,7 @@ function beginTakeNow(){
 // and the radio takes nothing at all — which is somehow the worst of the four.
 const LOSABLE=['recorder','torch','map','radio'];
 let takenActive=false;
-let lostItem=null, lostAt=null;
+let lostItem=null, lostAt=null, lostItemGuess=null;
 let takenRecoveryUntil=0;
 let hushSensationMode=null;
 let hushSensationSerial=0;
@@ -8276,7 +8594,10 @@ function takeAnItem(){
   flagApply([`lost.${lostItem}`]);
   const guessRoom = Math.random()<0.25 ? where : pick(TARGETS.filter(r=>r!=='lux_nova' && r!==where));
   const g=FP.toRuntimePoint(ROOM_CELLS[guessRoom]);
-  OBJ.setWaypoint(g.x, g.y, `your ${lostItem}?`);
+  // Recovery uncertainty is session evidence, not the player's authored room
+  // mark and not a mandatory story objective. Keep the unreliable guess out of
+  // both navigation authorities so being taken cannot erase either one.
+  lostItemGuess={x:g.x,y:g.y,label:`your ${lostItem}?`};
 }
 
 // Walk over it and it is yours again. Nothing marks it. You simply find it.
@@ -8285,10 +8606,9 @@ function tickLostItem(){
   if(!lostItem || !lostAt || scenes.blocksWorld()) return;
   if(Math.hypot(px-lostAt.x, py-lostAt.y) > 2.0) return;
   const id=lostItem;
-  lostItem=null; lostAt=null;
+  lostItem=null; lostAt=null; lostItemGuess=null;
   takenRecoveryUntil=performance.now()+12000;
   flagApply([], [`lost.${id}`]);
-  OBJ.clearWaypoint();
   fireCue('bag');
   SPEECH.say(foundLine(id));
   saveCommit({ flags:getSave().flags });
@@ -8691,26 +9011,7 @@ function focusedWorldProp(maxMeters=2){
   return PROPS.pickProp(px,py,R3.r3dFacing(),maxMeters,{yaw:mapHeading(),pitch:look.pitch});
 }
 function focusedTowerRelay(maxMeters=4.2){
-  if(towerRelayStage(chapelTowerState())!==TOWER_RELAY_STAGE.INTERRUPT)return null;
-  const frame=PROPS.propById('tower-bell-frame');if(!frame)return null;
-  const mx=(px+.5)*CELL,mz=(py+.5)*CELL;
-  const dx=BELL_RELAY_CLAMP_AUTHORED.x-mx,dz=BELL_RELAY_CLAMP_AUTHORED.y-mz,d=Math.hypot(dx,dz);
-  if(d>maxMeters)return null;
-  const heading=mapHeading(),dot=(dx*Math.sin(heading)+dz*-Math.cos(heading))/Math.max(.001,d);
-  if(dot<.72)return null;
-  const aimAngle=Math.abs(Math.atan2(Math.sin(Math.atan2(dx,-dz)-heading),Math.cos(Math.atan2(dx,-dz)-heading)));
-  const halfAngle=Math.max(.10,Math.min(.48,Math.atan2(.65,Math.max(.05,d))));
-  if(aimAngle>halfAngle*1.2)return null;
-  return{
-    ...frame,
-    id:'tower-bell-relay-clamp',
-    label:'bell relay clamp',
-    action:'tower-relay-interrupt',
-    interactive:true,
-    distance:d,
-    aimAngle,
-    aimScore:aimAngle/halfAngle+d*.025,
-  };
+  void maxMeters;return null;
 }
 function focusedWorldDoor(maxCells=5){
   if(!usingPlan()||usingSpecialSpace())return null;
@@ -8740,7 +9041,7 @@ function lockedDoorThought(keyId, doorId=null){
     return'Locked, and my ring is empty. The keys are still in the lodge with the man I walked past.';
   }
   if(keyId==='chapel'){
-    if(!flagTest('chapel.clue.log'))return'Replacement lock core. Page 6 names the front-of-house office; read it in the bag.';
+    if(!flagTest('chapel.clue.log'))return'Replacement lock. Page 6 names the front-of-house office; read it in the bag.';
     if(!flagTest('chapel.clue.ledger'))return'Page 6 points to front of house. I still need the rekey ledger inside the office.';
     return'C-17. The rekey ledger says the tagged key is in the front-of-house cabinet.';
   }
@@ -8749,6 +9050,9 @@ function lockedDoorThought(keyId, doorId=null){
   // knows what a barred goods door is by the feel of it.
   if(doorId==='bay-goods-pair'){
     return'Barred from the inside, both leaves, drop bolts shot. Nothing has come through there in years — the small door is the way in.';
+  }
+  if(doorId==='front-main'){
+    return'Chained under the closure order. The service entrance is around the block; this is not a way out.';
   }
   if(keyId==='services-core')return'PLANT SERVICES — NO CONTRACTOR ACCESS. Nothing behind this door is on tonight’s route.';
   if(keyId==='academic-core')return'ACADEMIC CORE — NO CONTRACTOR ACCESS. These rooms are outside the work order.';
@@ -9057,7 +9361,7 @@ function interactChapelScreen(){
   }
   const tower=chapelTowerState(),ordinary=REC.recState().takes.filter((id)=>id&&id!=='lux_nova').length;
   if(ordinary<4){SPEECH.say({who:'you',text:'The collegiate chapel screen is locked from within. Four rooms remain the only honest work.'});return true;}
-  if(tower.phase===CHAPEL_TOWER_PHASE.SOURCE_READY){beginChunkSurf({forced:true});return true;}
+  if(tower.phase===CHAPEL_TOWER_PHASE.SOURCE_READY){if(!tower.corridorDiscovered)commitChapelTower({type:'CHAPEL_CORRIDOR_REACHED'});beginChunkSurf({forced:true});return true;}
   if(tower.phase===CHAPEL_TOWER_PHASE.TRANSITION_READY){beginSourceTowerTransition();return true;}
   if(tower.phase===CHAPEL_TOWER_PHASE.TOWER_ACTIVE){SPEECH.say({who:'direction',text:'The screen holds. Above it, the tower is already moving.'});return true;}
   return false;
@@ -9110,13 +9414,8 @@ function interact(){
   const lookYaw=mapHeading(),lookForward=[Math.sin(lookYaw),-Math.cos(lookYaw)];
   const doorHit=focus.doorWins?FP.interactDoor(px,py,lookForward,playerKeys):null;
   if(doorHit){
-    if(doorHit.id==='tower-hatch'&&!chapelTowerState().hatchInspected){
-      commitChapelTower({type:'BELL_HATCH_INSPECTED'});
-      SPEECH.say({who:'you',text:'Bell chamber hatch. The hasp follows the inner screen; the relay runs through the frame above it.'});
-    }
     if(!doorHit.ok){
       if(doorHit.keyId==='tower-live'){
-        if(!chapelTowerState().hatchInspected)commitChapelTower({type:'BELL_HATCH_INSPECTED'});
         SPEECH.say({who:'you',text:'Bell chamber. ACCESS RESTRICTED. The maintenance hasp is linked to the inner screen.'});
       }else SPEECH.say({who:'you',text:lockedDoorThought(doorHit.keyId,doorHit.id)});
       return;
@@ -9130,6 +9429,7 @@ function interact(){
         markThought('arrival.door');
         SPEECH.sayAll(ARRIVAL_THOUGHTS.door);
       }
+      if(doorHit.opened&&doorHit.id==='chapel-c17'&&playerKeys.has('chapel'))flagApply(['chapel.keyIdentified']);
       if(doorHit.removedWedge)SPEECH.say({who:'you',text:'The rubber wedge comes free. The closer takes the weight.'});
       saveCommit({doors:FP.saveDoorState()});
       facilityMapCache={key:null,model:null};syncDoorDynamicProps();
@@ -9139,40 +9439,29 @@ function interact(){
   if(interactNatatoriumWater()) return;
   const hit=focus.prop;
   if(hit){
-    if(hit.action==='tower-relay-interrupt'){
-      if(towerRelayStage(chapelTowerState())!==TOWER_RELAY_STAGE.INTERRUPT){
-        SPEECH.say({who:'you',text:'The frame is not the first fault. Rope, hammer, hatch. Diagnose it in order.'});
-        return;
-      }
-      const result=bellTowerRuntime?.interruptRelay?.()||{ok:false,reason:'inactive'};
-      if(!result.ok){
-        if(result.reason==='unsafe')SPEECH.say({who:'you',text:'Not against the moving wheel. Wait for the casting to pass balance, then cut the relay.'});
-        else if(result.reason==='already-cut')SPEECH.say({who:'you',text:'That clamp is already out. Let the next stroke expose the following one.'});
-        else SPEECH.say({who:'you',text:'The relay is not moving yet.'});
-        return;
-      }
-      const next=commitChapelTower({type:'RELAY_INTERRUPTED'});
-      CUES.playCue(CUES.CUE.keys,{gain:.36,rate:.52+next.relayInterruptions*.08});
-      CR.fx.shake(.24,180);
-      SPEECH.say({
-        who:result.complete?'direction':'you',
-        text:result.complete
-          ? 'Third deviation. The row cannot return to bar one. The shutter winch is free to take the remaining load.'
-          : `Deviation ${next.relayInterruptions} of ${TOWER_RELAY_REQUIRED_INTERRUPTS}. The same row is coming round again.`,
-      });
-      return;
-    }
+    if(hit.action==='tower-tenor-rope'){startTenorPerformance();return;}
     if(hit.id==='dropped-radio'){
+      const answering=RADIO.radioCalling();
       if(RADIO.pickUpRadio(px,py)){
         syncDroppedRadioProp();saveCommit({radio:RADIO.saveRadioState()});fireCue('bag');
         REC.emitNoise(.04,px,py,'radio recovered',{
           spoils:false,kind:'handling_noise',sourceKind:'equipment',sourceId:'radio',playerGenerated:true,deliberate:true,
         });
         emitProgress(EVENT_TYPES.EQUIPMENT_RECOVERED, { id:'radio' }, 'main.radioPickup');
-        SPEECH.say({who:'you',text:'Back on the belt. Still dead.'});
+        if(answering)maybeStartPendingRadioCue();
+        else SPEECH.say({who:'you',text:RADIO.isDead()?'Back on the belt. No carrier.':'Back on the belt.'});
       }
       return;
     }
+    if(hit.action==='plant-spanner'){
+      if(PLANT.collectPlantSpanner()){
+        syncPlantIncidentProps();savePlantIncident();fireCue('bag');
+        SPEECH.say({who:'you',text:'Adjustable spanner. Small enough for the side pocket.'});
+      }
+      return;
+    }
+    if(hit.action==='plant-heavy-wrench'){gripPlantHeavyWrench(hit);return;}
+    if(hit.action==='plant-header-valve'){interactPlantHeader();return;}
     if(instr&&!instr.silenced&&hit.id===instr.propId){silenceInstrument(hit.id);return;}
     if(REC.isRecording()){
       SPEECH.say({who:'you',text:'Not while the take is held. Find the source.'});
@@ -9233,47 +9522,32 @@ function interact(){
       if(line)SPEECH.say({who:'you',text:line});
       return;
     }
-    if(hit.action==='chapel-key-cabinet'){
-      if(playerKeys.has('chapel')){SPEECH.say({who:'you',text:'C-17. Already on the keyring.'});return;}
-      if(!flagTest('chapel.clue.log')||!flagTest('chapel.clue.ledger')){
-        SPEECH.say({who:'you',text:'Three tags, two generations of lock. I need the rekey sheet and the office ledger before I guess.'});return;
+    if(hit.action==='chapel-key-ring'){
+      const outcome=keyCabinetSelection(hit.keyTag);
+      if(outcome==='take'){
+        if(playerKeys.has('chapel'))return;
+        const identified=chapelKeyIsIdentified();
+        const items=new Set(getSave().items||[]);items.add('chapel_key');
+        playerKeys.add('chapel');flagApply(['chapel.keyTaken']);
+        saveCommit({items:[...items],flags:getSave().flags});fireCue('keys');
+        syncKeyCabinetProps();
+        emitProgress(EVENT_TYPES.ITEM_OBTAINED,{id:'chapel_key'},'main.chapelKey');
+        converse('chapel-key-check',CHAPEL_KEY_CHECK,{startAt:keyCabinetReactionNode(hit.keyTag,identified)});
+      }else if(outcome==='drop'){
+        beginKeyCabinetMotion(hit);
       }
-      converse('chapel-key-check',CHAPEL_KEY_CHECK,{
-        onChoice:(choice)=>{
-          if(choice?.keyTag==='C-17'){
-            const items=new Set(getSave().items||[]);items.add('chapel_key');
-            playerKeys.add('chapel');flagApply(['chapel.keyTaken']);
-            saveCommit({items:[...items],flags:getSave().flags});fireCue('keys');
-            emitProgress(EVENT_TYPES.ITEM_OBTAINED, { id:'chapel_key' }, 'main.chapelKey');
-          }else if(choice?.keyTag){
-            fireCue('keys');REC.emitNoise(.46,hit.rx,hit.ry,'keys struck the cabinet',{
-              kind:'keys_impact',sourceKind:'equipment',sourceId:'key-cabinet',playerGenerated:true,deliberate:true,
-            });STAB.reportThreat();
-          }
-        },
-      });
       return;
     }
     if(hit.action==='tower-hammer-isolator'){
-      if(chapelTowerState().hammerIsolated){SPEECH.say({who:'you',text:'Clock hammer isolated. The remaining drive is in the bell frame.'});return;}
-      commitChapelTower({type:'CLOCK_HAMMER_ISOLATED'});
-      if(instr?.propId==='tower-tenor-clock-hammer')silenceInstrument(instr.propId);
-      SPEECH.say({who:'you',text:'CLOCK HAMMER — ISOLATED. The linkage falls out of tension.'});
+      SPEECH.say({who:'you',text:'The clock hammer is already clear of the tenor. This is full-circle ringing now; the rope below is the only intervention.'});
       return;
     }
     if(hit.action==='tower-shutter-winch'){
-      if([CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(chapelTowerState().phase)){SPEECH.say({who:'you',text:'The pawl is released. The service stairs are open in both directions.'});return;}
-      if(towerRelayStage(chapelTowerState())!==TOWER_RELAY_STAGE.RELEASE){
-        const objective=towerObjective(chapelTowerState());
-        SPEECH.say({who:'you',text:`Not yet. ${objective.label.replaceAll('  ',' ')}.`});
-        return;
-      }
-      const result=bellTowerRuntime?.requestStop?.()||{ok:false};
-      if(!result.ok){SPEECH.say({who:'you',text:'The relay is still carrying the frame. Three clamps, then the pawl.'});return;}
-      if(!chapelTowerState().shuttersReleased)commitChapelTower({type:'SHUTTERS_RELEASED'});
-      SPEECH.say({who:'direction',text:'The shutters open. The damaged peal takes one short course to rounds and begins to stand.'});
+      SPEECH.say({who:'you',text:'The pawl is carrying the louvres, not the bells. Stopping them is a ringing-room job.'});
       return;
     }
+    if(hit.action==='yard-vigil-bench'){sitAtYardLookBench();return;}
+    if(hit.action==='exterior-lore'&&talkToExteriorLocal(hit))return;
     // The lodge window. The one conversation in the game that is with another
     // person, and the only place the master key comes from.
     if(hit.action==='gate-lodge'){ talkToTheLodge(); return; }
@@ -9397,6 +9671,8 @@ function bagEquipment(){
   const recorderMissing=itemLost('recorder');
   const radioDropped=RADIO.isDropped();
   const radioMissing=itemLost('radio');
+  const radio=RADIO.radioPresentation();
+  const plant=PLANT.plantIncidentState();
 
   return [
     {
@@ -9427,19 +9703,27 @@ function bagEquipment(){
     },
     {
       id:'radio',label:'radio',present:!radioDropped&&!radioMissing,battleCapable:true,
-      value:radioDropped?'DROPPED':radioMissing?'MISSING':RADIO.isDead()?'DEAD / DECOY':'LIVE',
+      value:radioMissing?'MISSING':`${radio.phase} · ${radio.activity}`,
       statusTone:radioDropped||radioMissing?'danger':'active',
-      location:radioDropped?'IN FIELD':radioMissing?'UNKNOWN':'CARRIED',
-      action:(!radioDropped&&!radioMissing)?dropRadioFromBag:null,
-      actionLabel:'SET DOWN',
-      destructive:true,
-      confirm:{title:'SET DOWN RADIO?',body:'THE RADIO WILL REMAIN IN THIS ROOM.'},
+      location:radioDropped?`DEPLOYED · ${(radio.dropped?.roomId||'IN FIELD').toUpperCase()}`:radioMissing?'UNKNOWN':'CARRIED',
+      action:radioMissing?null:radioDropped?openMapFromBag:dropRadioFromBag,
+      actionLabel:radioDropped?'SHOW ON MAP':RADIO.isFailing()||RADIO.isDead()?'SET AS DECOY':'DEPLOY RADIO',
+      destructive:false,
     },
+    ...(plant.spannerOwned?[{
+      id:'plant-spanner',label:'adjustable spanner',present:true,value:'READY',statusTone:'active',location:'CARRIED',
+    }]:[]),
+    ...(plant.heavyMode==='dragging'?[{
+      id:'plant-stillson',label:'oversized Stillson',present:true,battleCapable:false,value:'DRAGGING',statusTone:'danger',location:'TRAILING / NOT IN CASE',
+      action:dropPlantHeavyWrench,actionLabel:'DROP',destructive:false,
+    }]:[]),
     {
       id:'keyring',label:'standard keyring',value:'CARRIED',statusTone:'dim',
     },
     ...(playerKeys.has('chapel')?[{
-      id:'chapel-key',label:'chapel key · C-17',value:'ADDED',statusTone:'complete',
+      id:chapelKeyIsIdentified()?'chapel-key':'key-c17',
+      label:chapelKeyIsIdentified()?'chapel key · C-17':'key ring · tag C-17',
+      value:'ADDED',statusTone:chapelKeyIsIdentified()?'complete':'dim',
     }]:[]),
     ...(flagTest('has.coffee') && !flagTest('drank.coffee')?[{
       id:'coffee',label:"the guard's coffee",value:'GET COLD',statusTone:'metadata',battleCapable:true,
@@ -9513,6 +9797,8 @@ function openMapFromBag(){
   const bag=scenes.top();
   if(bag?.id==='bag'&&typeof bag.selectSection==='function'){
     bag.selectSection('map');
+    const floorId=RADIO.radioLocation()?.floorId;
+    if(floorId&&typeof bag.selectFloor==='function')bag.selectFloor(floorId);
     return true;
   }
   return false;
@@ -9522,8 +9808,8 @@ function syncDroppedRadioProp(){
   if(!FP.isLoaded())return;
   const at=RADIO.radioLocation();
   PROPS.setLooseProp('dropped-radio',at?{
-    mesh:'equipment_rack',rx:at.x,ry:at.y,scale:.22,yaw:0,
-    inspect:{first:'The radio lies where you put it.',again:'Still there. Still listening.'},
+    mesh:'walkie_radio',label:'radio',rx:at.x,ry:at.y,elevation:.08,scale:1,yaw:0,action:'dropped-radio',
+    inspect:{first:'The radio lies where you put it. Its carrier lamp is the only moving light.',again:'Still at floor level. The carrier lamp waits.'},
   }:null);
   if(RENDERER==='3d'){
     const group=FP.logicalToPhysical(px,py).renderGroup;
@@ -9537,6 +9823,26 @@ function refreshWorldProps(){
   R3.r3dSetProps(worldRenderInstances(group));
 }
 
+function chapelKeyIsIdentified(){
+  return keyCabinetKeyIdentified({
+    ledger:flagTest('chapel.clue.ledger'),
+    identified:flagTest('chapel.keyIdentified'),
+    corridorDiscovered:chapelTowerState().corridorDiscovered,
+  });
+}
+
+function syncKeyCabinetProps({refresh=true}={}){
+  if(!FP.isLoaded())return;
+  const hasKey=playerKeys.has('chapel')||flagTest('chapel.keyTaken');
+  const c17=PROPS.propById(KEY_CABINET_RING['C-17'].id);
+  if(c17)c17.interactive=!hasKey;
+  for(const tag of['CH-04','FOH-M']){
+    const prop=PROPS.propById(KEY_CABINET_RING[tag].id);
+    if(prop)prop.interactive=keyCabinetMotion?.id!==prop.id;
+  }
+  if(refresh)refreshWorldProps();
+}
+
 function syncVisiblePages(){
   if(!FP.isLoaded())return;
   const live=new Set(OBJ.allPages().map((p)=>`loose-page:${p.id}`));
@@ -9544,7 +9850,7 @@ function syncVisiblePages(){
     if(p.id.startsWith('loose-page:')&&!live.has(p.id))PROPS.setLooseProp(p.id,null);
   }
   OBJ.allPages().forEach((p,i)=>PROPS.setLooseProp(`loose-page:${p.id}`,{
-    mesh:'loose_note',rx:p.x,ry:p.y,elevation:.025,scale:1,
+    mesh:p.id==='page-6'?'loose_note_page6':'loose_note',rx:p.x,ry:p.y,elevation:p.id==='page-6' ? .07 : .025,scale:p.id==='page-6'?1.16:1,
     yaw:(i%5-2)*.17,interactive:false,
   }));
 }
@@ -9603,6 +9909,161 @@ function syncStoryObjectProps(){
       again:'A=440. And nothing else.',
     },
   });
+}
+
+// ── Plant pressure incident and the oversized Get-In Stillson ──────────────
+let plantHaulTrail=[];
+let plantHaulSnapshot=null;
+let plantHaulRestoreTimer=0;
+let lastPlantDragVector=null;
+
+function syncPlantIncidentProps(){
+  if(!FP.isLoaded()||planName!=='conservatory')return;
+  const st=PLANT.plantIncidentState();
+  if(st.spannerOwned)PROPS.setLooseProp('van-adjustable-spanner',null);
+  if(st.heavyMode!=='rack'){
+    const fallback=FP.toRuntimePoint({x:70.5,y:6.25});
+    const at=st.heavyPosition||fallback;
+    const atValve=FP.toRuntimePoint({x:33,y:37.45});
+    PROPS.setLooseProp('getin-heavy-stillson',{
+      mesh:'stillson_wrench',label:'oversized Stillson wrench',
+      rx:st.heavyMode==='used'?atValve.x:at.x,ry:st.heavyMode==='used'?atValve.y:at.y,
+      elevation:.06,scale:1,yaw:lastPlantDragVector?Math.atan2(lastPlantDragVector.y,lastPlantDragVector.x):Math.PI/2,
+      action:st.heavyMode==='used'?null:'plant-heavy-wrench',interactive:st.heavyMode!=='used',
+      inspect:{first:'A cast-iron Stillson nearly two metres long. It was made for a fixed plant, not a tool bag.',again:'Too large to carry. The jaw will fit the heating header.'},
+    });
+  }
+  const valve=FP.toRuntimePoint({x:33,y:37.5});
+  PROPS.setLooseProp('plant-header-steam',PLANT.plantHissing()?{
+    mesh:'plant_steam',rx:valve.x,ry:valve.y,elevation:.55,scale:1.25,yaw:0,interactive:false,structural:true,
+  }:null);
+  refreshWorldProps();
+}
+
+function savePlantIncident(){
+  saveCommit({plantIncident:PLANT.savePlantIncident()});
+  facilityMapCache={key:null,model:null};
+}
+
+function restorePlantHaulTableau(){
+  clearTimeout(plantHaulRestoreTimer);plantHaulRestoreTimer=0;
+  if(PRES.presenceTableauActive())PRES.endPresenceTableau(plantHaulSnapshot?.active?{restore:plantHaulSnapshot}:{despawn:true});
+  PRES.grantContactGrace?.();
+  plantHaulSnapshot=null;plantHaulTrail=[];lastPlantDragVector=null;
+  resetHushContactSession();
+}
+
+function plantHaulRearPose(){
+  let pose=PLANT.haulHushPose({trail:plantHaulTrail,player:{x:px,y:py}});
+  const v=lastPlantDragVector;
+  if(pose&&v&&((pose.x-px)*v.x+(pose.y-py)*v.y)>0)pose=null;
+  if(!pose){
+    const [fx,fy]=v&&Math.hypot(v.x,v.y)>.01?[v.x,v.y]:(RENDERER==='3d'?R3.r3dDelta(1):[0,-1]);
+    pose=buildingPresenceNavigation?.nearestWalkable?.({x:px-fx*D(10),y:py-fy*D(10)},D(2));
+  }
+  return pose;
+}
+
+function beginPlantHaulTableau(){
+  if(PRES.presenceTableauActive())return true;
+  plantHaulSnapshot=PRES.capturePresenceTableauState();
+  const pose=plantHaulRearPose();
+  if(!pose)return false;
+  PRES.beginPresenceTableau({x:pose.x,y:pose.y,snapshot:plantHaulSnapshot});
+  return true;
+}
+
+function updatePlantHaulPose(){
+  if(!PRES.presenceTableauActive())return;
+  const pose=plantHaulRearPose();
+  if(!pose)return;
+  const before=PRES.presenceState();
+  PRES.updatePresenceTableauPose({x:pose.x,y:pose.y,velocityX:pose.x-before.x,velocityY:pose.y-before.y,behaviorMode:'listen'});
+}
+
+function onPlantHaulStep(from,to){
+  if(!PLANT.heavyWrenchDragging())return;
+  const vector={x:to.x-from.x,y:to.y-from.y};
+  plantHaulTrail.push({...to});if(plantHaulTrail.length<2)plantHaulTrail.unshift({...from});
+  if(plantHaulTrail.length>96)plantHaulTrail.shift();
+  const moved=PLANT.moveHeavyWrench(from,{distanceMetres:Math.hypot(vector.x,vector.y)*CELL});
+  const turned=lastPlantDragVector&&(lastPlantDragVector.x!==vector.x||lastPlantDragVector.y!==vector.y);
+  const threshold=!!(FP.doorAt(from.x,from.y)||FP.doorAt(to.x,to.y));
+  lastPlantDragVector=vector;
+  syncPlantIncidentProps();
+  if(moved.scrape)beginPlantHaulTableau();
+  if(moved.scrape||((turned||threshold)&&PRES.presenceTableauActive())){
+    const level=(threshold||turned) ? 0.64 : 0.56;
+    REC.emitNoise(level,from.x,from.y,threshold?'the Stillson strikes a threshold':turned?'the Stillson jaw turns on concrete':'the Stillson drags over concrete',{
+      spoils:true,kind:'metal_drag',sourceKind:'player',sourceId:'getin-heavy-stillson',playerGenerated:true,deliberate:true,audibleToHush:true,
+    });
+  }
+  updatePlantHaulPose();
+  savePlantIncident();
+}
+
+function gripPlantHeavyWrench(hit){
+  const at={x:hit?.rx??px,y:hit?.ry??py};
+  if(!PLANT.gripHeavyWrench(at))return false;
+  clearTimeout(plantHaulRestoreTimer);plantHaulRestoreTimer=0;
+  plantHaulTrail=[...trail.map(({x,y})=>({x,y})),{x:px,y:py}];
+  lastPlantDragVector=null;
+  syncPlantIncidentProps();savePlantIncident();
+  SPEECH.say({who:'you',text:'Too long for the case. Drag it by the handle and keep the jaw behind me.'});
+  return true;
+}
+
+function dropPlantHeavyWrench(){
+  if(!PLANT.dropHeavyWrench(PLANT.plantIncidentState().heavyPosition||{x:px,y:py}))return false;
+  syncPlantIncidentProps();savePlantIncident();
+  SPEECH.say({who:'direction',text:'The iron settles flat. Behind you, the last scrape ends; the corridor holds its breath.'});
+  clearTimeout(plantHaulRestoreTimer);
+  plantHaulRestoreTimer=setTimeout(restorePlantHaulTableau,3200);
+  return true;
+}
+
+function makePlantIsolationScene(tool){
+  const duration=tool===PLANT.PLANT_TOOL.SPANNER?4000:9000;
+  let elapsed=0,finished=false;
+  const scene={
+    id:'plant-header-isolation',blocksInput:true,blocksWorld:false,allowsLook:true,lookProfile:'explore',
+    update(dt){
+      elapsed+=dt*1000;if(finished||elapsed<duration)return;finished=true;
+      PLANT.completePlantIsolation();
+      if(tool===PLANT.PLANT_TOOL.SPANNER){
+        REC.emitNoise(.11,px,py,'the adjustable spanner clicks once',{spoils:false,kind:'tool_click',sourceKind:'player',sourceId:'plant-spanner',playerGenerated:true,deliberate:true});
+      }else{
+        REC.emitNoise(.62,px,py,'the Stillson closes the heating header with a final clank',{spoils:false,kind:'metal_impact',sourceKind:'player',sourceId:'getin-heavy-stillson',playerGenerated:true,deliberate:true,audibleToHush:false});
+      }
+      syncPlantIncidentProps();savePlantIncident();restorePlantHaulTableau();updateAudio();scenes.remove(scene);
+      SPEECH.say({who:'direction',text:'The needle falls. Steam thins against the grating, and the wet pipe gives back one last tick.'});
+    },
+    key(){return true;},
+    render(){
+      const{cols,rows}=uiSize(),w=Math.min(48,cols-6),x=Math.floor((cols-w)/2),y=Math.max(3,rows-10);
+      const panel=drawMachinePanel(x,y,w,7,{label:'PLANT',source:'HEATING HEADER',meter:false,theme:'amber'});
+      drawVfdText(panel.x+1,panel.y+1,'ISOLATING',{theme:'amber',scale:.82});
+      drawLocationIndicator(panel.x+1,panel.y+3,Math.max(12,panel.w-4),Math.min(1,elapsed/duration),{theme:'amber'});
+    },
+  };
+  return scene;
+}
+
+function interactPlantHeader(){
+  if(!PLANT.plantRecordingBlocked()){
+    SPEECH.say({who:'you',text:'Heating header. Gauge steady, valve wired open for circulation.'});return true;
+  }
+  PLANT.acknowledgePlantToolNeed();
+  const header=FP.toRuntimePoint({x:33,y:37.45});
+  const heavy=PLANT.plantIncidentState();
+  const heavyReady=heavy.heavyMode==='dragging'&&heavy.heavyPosition&&Math.hypot(heavy.heavyPosition.x-header.x,heavy.heavyPosition.y-header.y)<=D(2.4);
+  const tool=PLANT.hasPlantSpanner()?PLANT.PLANT_TOOL.SPANNER:heavyReady?PLANT.PLANT_TOOL.STILLSON:null;
+  if(!tool){
+    SPEECH.say({who:'you',text:'The handwheel is hot and the gland is hissing. It needs a wrench—small enough to carry, or large enough to move this old iron.'});
+    syncPlantIncidentProps();savePlantIncident();return true;
+  }
+  if(!PLANT.beginPlantIsolation(tool,performance.now()))return true;
+  savePlantIncident();scenes.push(makePlantIsolationScene(tool));return true;
 }
 
 // Collectible calibration pins — diegetic brass pickups in the building's
@@ -9680,7 +10141,7 @@ function takeHostedPage(propId){
 }
 
 function dropRadioFromBag(){
-  if(!RADIO.dropRadio(px,py))return;
+  if(!RADIO.dropRadio(px,py,{roomId:currentAreaLabel(),floorId:acousticFloorIdAt(px,py)}))return;
   scenes.pop();
   syncDroppedRadioProp();
   saveCommit({radio:RADIO.saveRadioState()});
@@ -9688,7 +10149,7 @@ function dropRadioFromBag(){
     kind:'radio_drop',sourceKind:'equipment',sourceId:'radio',playerGenerated:true,deliberate:true,
   });
   emitProgress(EVENT_TYPES.EQUIPMENT_DROPPED, { id:'radio' }, 'main.dropRadioFromBag');
-  SPEECH.say({who:'you',text:RADIO.isDead()?'Leave it here. If it opens again, it opens here.':'Radio down. I can come back for it.'});
+  SPEECH.say({who:'you',text:RADIO.isDead()?'Set. If it clicks again, it clicks here.':'Radio down. Two seconds to clear the room.'});
 }
 
 // ── the radio ───────────────────────────────────────────────────────────────
@@ -9751,6 +10212,11 @@ function maybeStartPendingRadioCue(){
   if(radioCueBlocked()) return false;
   const pending=RADIO.pendingRadioCue();
   if(!pending) return false;
+  if(RADIO.isDropped()){
+    const armed=RADIO.armDroppedRadioCall();
+    if(armed){saveCommit({radio:RADIO.saveRadioState()});syncDroppedRadioProp();}
+    return armed||RADIO.radioCalling();
+  }
   const cue=RADIO.consumeRadioCue();
   if(!cue) return false;
   if(!RADIO.transmit([])){
@@ -9781,6 +10247,12 @@ function maybeStartPendingRadioCue(){
     return false;
   }
   return true;
+}
+
+function onRadioCueMissed(cue){
+  emitProgress(EVENT_TYPES.RADIO_CUE_MISSED,{id:cue.id,roomId:cue.roomId||null,reason:cue.reason||null},'main.radioCueMissed');
+  if(cue.id===RADIO.RADIO_CUES.PRE_THIRD)emitProgress(EVENT_TYPES.RADIO_DEAD,{id:'radio'},'main.radioCueMissed');
+  saveCommit({radio:RADIO.saveRadioState()});syncDroppedRadioProp();
 }
 
 function maybeQueueRadioProgressionCue(){
@@ -9824,53 +10296,31 @@ function onSquelch(ev){
     const dx=(ev.x??px)-px,dy=(ev.y??py)-py,d=Math.hypot(dx,dy);
     const [fx,fy]=RENDERER==='3d'?R3.r3dDelta(1):[0,-1];
     const pan=d>.001?Math.max(-1,Math.min(1,(dx*(-fy)+dy*fx)/d)):0;
+    const occlusionDb=acousticOcclusionDb(acousticSpatialAt(ev.x??px,ev.y??py),acousticSpatialAt(px,py));
+    const wallGain=Math.pow(10,-occlusionDb/20);
     // Still audible across a large wing, but plainly attached to the radio on
     // the floor rather than to the player's head or transcript.
-    CUES.playCue(CUES.CUE.recorder,{gain:Math.max(.045,.46/(1+d*.035)),rate:.42,pan});
+    CUES.playCue(CUES.CUE.recorder,{gain:Math.max(.018,.46/(1+d*.035)*wallGain),rate:.42,pan,lowpassHz:Math.max(480,3200-occlusionDb*70)});
   }else{
     CUES.playCue(CUES.CUE.recorder, {gain:0.5, rate:0.42});
     CR.fx.shake(0.5, 160);
     SPEECH.say(SQUELCH_LINES[(ev.index-1) % SQUELCH_LINES.length]);
   }
-  MUT.markHeard(ev.x??px, ev.y??py, 1);
   STAB.reportThreat();
 }
 
 function tickRadio(dt){
   if(!storyMode) return;
   maybeQueueRadioProgressionCue();
-  // It has stopped being a radio. The moment the scream has finished and the
-  // carrier line has been said, he is standing in a corridor holding a dead
-  // object, and he gets to decide once whether to do the thing he was told
-  // twice not to do. Waiting on the speech queue rather than on a stopwatch:
-  // a timeout guessed wrong every time the player hurried a line.
-  if(RADIO.isDead() && !thoughtHad('radio-dead') && !SPEECH.isSpeaking() && !scenes.blocksInput()){
+  // Once the dead set is physically back in hand, give its one close inspection
+  // beat. A deployed set never opens prose at a distance; it stays a world
+  // object until the player walks back and recovers it.
+  if(RADIO.isDead() && !RADIO.isDropped() && !thoughtHad('radio-dead') && !SPEECH.isSpeaking() && !scenes.blocksInput()){
     think('radio-dead', RADIO_DEAD);
     return;
   }
-  RADIO.tickRadio(dt, { expectation: STAB.expectation(), px, py });
-  tickRadioDecoy(dt);
-}
-
-// A radio you put down is still a radio: it squelches in an empty corridor and
-// the HUSH walks to it. This is the only thing in the bag that can lie for you,
-// and it costs you the check-in to use it.
-let radioDecoyNextAt=0;
-function tickRadioDecoy(dt){
-  if(!storyMode || usingSpecialSpace() || !PRES.isActive()) return;
-  const at=RADIO.radioLocation();
-  if(!at) { radioDecoyNextAt=0; return; }
-  const now=performance.now();
-  if(!radioDecoyNextAt){ radioDecoyNextAt=now+2200+Math.random()*2600; return; }
-  if(now<radioDecoyNextAt) return;
-  radioDecoyNextAt=now+3200+Math.random()*4200;
-  // Emitted AT THE RADIO, not at the player — that displacement is the entire
-  // mechanic. A dead radio still clicks; it just has less to say.
-  const level=RADIO.isDead()?0.22:0.38;
-  REC.emitNoise(level, at.x, at.y, 'the radio squelches where you left it', {
-    kind:'radio_squelch', sourceKind:'equipment', sourceId:'dropped-radio',
-    playerGenerated:false, deliberate:false, spoils:false, audibleToHush:true,
-  });
+  const events=RADIO.tickRadio(dt, { px, py });
+  if(events.length){saveCommit({radio:RADIO.saveRadioState()});facilityMapCache={key:null,model:null};}
 }
 
 // ── playback ────────────────────────────────────────────────────────────────
@@ -10172,7 +10622,6 @@ function beginChunkSurf({ forced=false } = {}){
     payload:{kind:'space-transition',fromSpaceId:'conservatory',toSpaceId:'source-space',sourceState:state,entry:{...SOURCE_ENTRY}},
   });
   causalRecorder.recordEvent({actor:'hush',type:'space.enter',payload:{spaceId:'source-space',entry:{...SOURCE_ENTRY},sourceState:state}});
-  OBJ.clearWaypoint();
   saveCommit({flags:getSave().flags,obj:OBJ.saveObjState(),chunkSurf:state,px:SOURCE_ENTRY.x,py:SOURCE_ENTRY.y,area:'source-space'});
   activateSourceSpace(state,{position:SOURCE_ENTRY});
   return true;
@@ -10446,9 +10895,9 @@ function tickStairAnomaly(_dt){
   if(!stairEscapeHinted && stairAnomalyEnteredAt && performance.now()-stairAnomalyEnteredAt>STAIR_ESCAPE.hintAfter){
     stairEscapeHinted=true;
     SPEECH.sayAll([
-      { who:'you', text:'This is not a stair. I have been on this for a minute and a half and it is not a stair.' },
+      { who:'you', text:'This is not a stair. I have been on this long enough and it is not a stair.' },
       { who:'you', text:"Right. Nothing in here is real while I can see it. So stop seeing it." },
-      { who:'you', text:`${BINDINGS.inputPrompt('light')}. Torch off, stand still, count to thirty, and put it back on.` },
+      { who:'you', text:`${BINDINGS.inputPrompt('light')}. Torch off, stand still, count to twenty, and put it back on.` },
     ]);
   }
 }
@@ -10697,12 +11146,51 @@ function tickGarden(){
 // the module is pure so that the rule can be tested without a browser, and this
 // is the only place that knows about cells, props and the save.
 let yardVigil=freshVigilState();
+let yardLookBenchScene=null;
+
+function leaveYardLookBench(){
+  if(!yardLookBenchScene)return false;
+  const scene=yardLookBenchScene;
+  scenes.remove(scene);
+  return true;
+}
+
+function sitAtYardLookBench(){
+  if(yardLookBenchScene)return true;
+  const scene={
+    id:'yard-look-bench',blocksInput:true,blocksWorld:false,allowsLook:true,lookProfile:'explore',
+    enter(){
+      flagSet('yard.bench.sat');
+      saveCommit({flags:getSave().flags});
+      SPEECH.say({who:'direction',text:'He sits under the dead timetable light. The yard, the roofs and the weather remain available to look at.'});
+    },
+    exit(){if(yardLookBenchScene===scene)yardLookBenchScene=null;},
+    key(e){
+      const key=String(e.key||'').toLowerCase(),code=String(e.code||'');
+      if(e.key==='Escape'||key==='e'||code==='KeyE'||key==='enter'||code==='Enter'){
+        e.preventDefault?.();leaveYardLookBench();return true;
+      }
+      return true;
+    },
+    render(){
+      const{cols,rows}=uiSize();
+      const parts=[{action:'interact',label:'STAND'}];
+      drawPromptParts(Math.max(2,Math.floor((cols-promptPartsWidth(parts))/2)),rows-2,parts,{role:'ui-amber',cols});
+      const instruction='LOOK AROUND';
+      uiText(Math.max(2,Math.floor((cols-instruction.length)/2)),rows-4,instruction,'ui-secondary',.82);
+    },
+  };
+  yardLookBenchScene=scene;
+  scenes.push(scene);
+  return true;
+}
 // The yard is the only outdoor place in the game, and this only means anything
 // before he has gone inside — once the title has landed the sky is somebody
 // else's problem.
 function vigilEligible(){
   if(planName!=='conservatory'||usingSpecialSpace())return false;
-  if(!storyMode||scenes.blocksInput()||scenes.blocksWorld())return false;
+  const seated=scenes.top({includeOverlay:true})===yardLookBenchScene;
+  if(!storyMode||((scenes.blocksInput()||scenes.blocksWorld())&&!seated))return false;
   if(flagTest('title.shown'))return false;
   // ZONE.dock is also the apron, which is under a canopy with a roof over most
   // of it. y>=400 is the yard proper — the same test the arrival thoughts use.
@@ -10864,6 +11352,41 @@ function stopWhisperBed(){
 let practiceHaunts=freshPracticeHauntState();
 const PRACTICE_PROP_MOVE_MS=1380;
 let practicePropMotion=null;
+let keyCabinetMotion=null;
+
+function beginKeyCabinetMotion(prop,now=performance.now()){
+  if(keyCabinetMotion||!prop?.id)return false;
+  const motion=startKeyCabinetDrop(prop.id,now);
+  if(!motion)return false;
+  keyCabinetMotion=motion;
+  PROPS.setPropDrift(prop.id,null);
+  const live=PROPS.propById(prop.id);if(live)live.interactive=false;
+  refreshWorldProps();
+  converse('chapel-key-check',CHAPEL_KEY_CHECK,{startAt:keyCabinetReactionNode(prop.keyTag,chapelKeyIsIdentified())});
+  return true;
+}
+
+function tickKeyCabinetMotion(now=performance.now()){
+  if(!keyCabinetMotion)return false;
+  const id=keyCabinetMotion.id;
+  const frame=stepKeyCabinetDrop(keyCabinetMotion,now);
+  keyCabinetMotion=frame.state;
+  if(frame.pose)PROPS.setPropDrift(id,frame.pose);
+  if(frame.impact){
+    const prop=PROPS.propById(id);
+    fireCue('keys');
+    REC.emitNoise(.46,prop?.rx??px,prop?.ry??py,'keys struck the cabinet',{
+      kind:'keys_impact',sourceKind:'equipment',sourceId:id,playerGenerated:true,deliberate:true,
+    });
+    STAB.reportThreat();
+  }
+  if(frame.done){
+    PROPS.setPropDrift(id,null);
+    const prop=PROPS.propById(id);if(prop)prop.interactive=true;
+  }
+  refreshWorldProps();
+  return true;
+}
 
 function loadPracticeHaunts(){
   practiceHaunts=normalizePracticeHauntState(getSave().practiceHaunts);
@@ -11446,15 +11969,15 @@ function tickRecorder(dt){
     }
     summonPresence('take-complete');
     STAB.reportRelief(0.55);          // a clean take is the biggest exhale there is
-    OBJ.clearWaypoint();
+    if(OBJ.targetRoom()===room)OBJ.clearWaypoint();
     if(sourceBecameReady){
-      const screen=FP.toRuntimePoint(CHAPEL_SCREEN_AUTHORED);
-      OBJ.setWaypoint(screen.x,screen.y,'inner chapel screen');
+      ensureTowerBellDirector({mode:'world'});
+      SPEECH.say({who:'direction',text:'Four tolls answer from the chapel tower. Stone and floors put distance around them; the corridor gives it back.'});
     }
     saveCommit({ rec:REC.saveRecState(), obj:OBJ.saveObjState() });
     stopTake();
-    // The second clean room is the last time the radio works. Its final cue is
-    // queued after the take result lands, then the carrier dies on resolve.
+    // The second clean room destabilizes the carrier. It remains alive long
+    // enough for the reachable approach-to-third-room breakdown.
     if(REC.recState().takes.length===2){
       once('radio-post-second', ()=>setTimeout(
         ()=>queueRadioStoryCue(RADIO.RADIO_CUES.POST_SECOND, { reason:'second-take-complete', roomId:room }),
@@ -11627,6 +12150,19 @@ function tickInstrument(){
 // the corner of your eye pays for it. A quiet slip is only a wasted take.
 function onTakeBroken(reason){
   STAB.reportThreat();
+  const spoilMeta=REC.recState().spoilMeta||{};
+  const plantTriggered=PLANT.triggerPlantIncident({
+    takeOrdinal:activeTakeOrdinal,spoiled:true,
+    playerGenerated:spoilMeta.playerGenerated===true&&spoilMeta.sourceId!=='room-mic',
+  });
+  if(plantTriggered){
+    // When the third take breaks here, the plant owns the interruption. The
+    // room instrument is disarmed rather than stacking a second authored hunt
+    // on top of the pressure incident.
+    instrArmedThisTake=false;clearInstrument();
+    syncPlantIncidentProps();savePlantIncident();
+    SPEECH.say({who:'direction',text:'A pressure hiss opens somewhere in the services. In the monitor it is already under the whole building.'});
+  }
   const caught = REC.currentNoise() >= ROOM_TONE.catchNoise;
   const byYou = reason==='you moved' || reason==='you reached for the light';
   SPEECH.say(pick(byYou ? LINES.flinch : LINES.whatWasThat));
@@ -12120,8 +12656,6 @@ function endSurfaced(){
   // the move interval (see currentMoveIntervalMs).
   escape={kind:'surfaced',stage:'exit',exitCell,deadlineMs:null,pace:objective?.pace||0};
   startEndingTimeline(objective?.timeline,{duringObjective:true});
-  OBJ.setWaypoint(exitCell.x,exitCell.y,objective?.label||'main entrance');
-  saveCommit({obj:OBJ.saveObjState()});
   applyLensPreset('explore');
   SPEECH.say({who:'recordist',text:'The tower is quiet. Do not let the chapel choose another cut. Walk me to the public door.'});
 }
@@ -12248,7 +12782,7 @@ function applyEndingEvent(step){
 // Play an ending: its arrival passage if this route has one, then the ending
 // itself, then the closing sheet, then the gate.
 function playEnding(endingId,arrival){
-  escape=null;OBJ.clearWaypoint();
+  escape=null;
   endingArrival=arrival;
   const dossier=currentEndingDossier(endingId,arrival);
   endingDossier=dossier;
@@ -12317,8 +12851,6 @@ function endSacrifice(arrival=ENDING_ARRIVAL.AGREED){
   escape={kind:'stay',stage:'commit',screenCell,deadlineMs:null,pace:objective?.pace||0};
   // The building closes behind him while he walks it (data/endings.js).
   startEndingTimeline(objective?.timeline,{duringObjective:true});
-  OBJ.setWaypoint(screenCell.x,screenCell.y,objective?.label||'chapel screen');
-  saveCommit({obj:OBJ.saveObjState()});
   applyLensPreset('battle');
   SPEECH.say({
     who:'direction',
@@ -12356,7 +12888,7 @@ function startEscape(){
   startEndingTimeline(endingManifest('inversion')?.objective?.timeline,{duringObjective:true});
   const searched=flagGet('door.grey.searched');
   const drift=searched?0:2;
-  OBJ.setWaypoint(door.x+drift, door.y, 'grey door');
+  escape.guidanceDoorCell={x:door.x+drift,y:door.y};
   // And a man who said something out loud at that wall is quicker back to it.
   if(searched==='tried' && escape.deadlineMs!=null) escape.deadlineMs+=6000;
   applyLensPreset('rupture');
@@ -12378,7 +12910,7 @@ function tickFinale(){
   // no argument, so a man who inverted the signal and was eleven seconds short
   // got the ending of a man who never tried. The arrival is the difference.
   if(escape.deadlineMs!=null && performance.now() > escape.deadlineMs){
-    escape=null; OBJ.clearWaypoint(); endSacrifice(ENDING_ARRIVAL.TIMED_OUT); return;
+    escape=null; endSacrifice(ENDING_ARRIVAL.TIMED_OUT); return;
   }
   const wp = escape.stage==='door' ? escape.doorCell : escape.rescueCell;
   if(Math.hypot(px-wp.x, py-wp.y) > 2.4) return;
@@ -12386,7 +12918,6 @@ function tickFinale(){
     escape.stage='at-door';
     presentFinale(FALSE_DOOR, { slate:'THE GREY DOOR', onDone:()=>{
       escape.stage='rescue';
-      OBJ.setWaypoint(escape.rescueCell.x, escape.rescueCell.y, 'main entrance');
     }});
   } else if(escape.stage==='rescue'){
     // You got out. Sober, the yard is not there and the clock restarts. Drunk,
@@ -12512,7 +13043,14 @@ function saveTick(dt){
   }
   const towerActive=chapelTowerState().phase===CHAPEL_TOWER_PHASE.TOWER_ACTIVE;
   const towerCheckpoint=towerActive?towerCheckpointFor():null;
+  const runtimeFrame=bellTowerRuntime?.snapshot?.();
+  const directorFrame=towerBellDirector?.snapshot?.()||(runtimeFrame?.runtimeMode==='automatic'?{elapsedMs:runtimeFrame.elapsedMs,mode:'tower'}:null);
+  const persistedTower=directorFrame?reduceChapelTower(chapelTowerState(),{
+    type:'BELL_TRANSPORT_SAVED',elapsedMs:directorFrame.elapsedMs,mode:directorFrame.mode,
+    washMs:directorFrame.washMs,transitionProgress:directorFrame.transitionProgress,
+  }):chapelTowerState();
   saveCommit({ px:towerCheckpoint?towerCheckpoint.x:px, py:towerCheckpoint?towerCheckpoint.y:py, steps:stepCount, area:usingSourceSpace()?'source-space':usingStairAnomaly()?'stair-anomaly':towerActive?'bell-tower':storyMode?'conservatory':getSave().area,
+    chapelTower:persistedTower,
     ...(usingSourceSpace()?{chunkSurf:chunkSurfRuntime.state()}:{}),
     playSeconds:(getSave().playSeconds||0)+4, hushAudio:hushAudioRuntime?.save?.()||getSave().hushAudio||null });
 }
@@ -12849,7 +13387,7 @@ function initHushAudioRuntime(){
     },
     playerSpatial:()=>({...acousticSpatialAt(px,py)}),
     occlusionDb:acousticOcclusionDb,
-    maskingDb:()=>bellTowerRuntime?.isRinging?.()?bellTowerRuntime.maskingDb():0,
+    maskingDb:()=>towerBellDirector?.maskingDb?.()||(bellTowerRuntime?.isRinging?.()?bellTowerRuntime.maskingDb():0),
     difficulty:()=>activeDifficulty,
     settings:()=>getSave().settings||{},
     context:()=>({
@@ -12906,6 +13444,76 @@ function mapProjectLogical(point,{authored=true}={}){
   const q=authored?FP.toRuntimePoint(point):point;
   const p=FP.logicalToPhysical(q.x,q.y);
   return{x:p.x,z:p.z,height:p.y,layer:p.layer,renderGroup:p.renderGroup,roomId:ZONE_RECORDING_ROOM[FP.zoneAt(q.x,q.y)]||null};
+}
+
+function currentStoryGuidanceTarget(){
+  const selected=OBJ.waypoint();
+  return resolveStoryGuidanceTarget({
+    prologueDone:flagTest('prologueDone'),
+    bagTaken:flagTest('bag.taken'),
+    benchVisited:flagTest('yard.bench.sat'),
+    tower:chapelTowerState(),
+    escape,
+    readPageIds:OBJ.objState().read,
+    chapelClueLog:flagTest('chapel.clue.log'),
+    chapelClueLedger:flagTest('chapel.clue.ledger'),
+    hasChapelKey:playerKeys.has('chapel')||flagTest('chapel.keyTaken'),
+    selectedWaypoint:selected,
+    selectedLabel:selected?.roomId?roomLabel(selected.roomId):'',
+  });
+}
+
+function currentStoryGuidanceFrame({logicalX=px,logicalY=py,nowMs=performance.now(),trackHighlight=false,trackBeacon=false}={}){
+  const target=currentStoryGuidanceTarget();
+  const point=storyTargetRuntimePoint(target,FP.toRuntimePoint);
+  if(!point){
+    const highlight=(trackHighlight||trackBeacon)?STORY_HIGHLIGHT_TRACKER.update({target:null,nowMs}):null;
+    return{target,point:null,physical:null,distance:Infinity,sameRenderedSpace:false,highlight};
+  }
+  const physical=FP.logicalToPhysical(point.x,point.y);
+  const observer=FP.logicalToPhysical(logicalX,logicalY);
+  const targetFloor=floorForHeight(BUILDING_MAP,physical.y,{renderGroup:physical.renderGroup});
+  const observerFloor=floorForHeight(BUILDING_MAP,observer.y,{renderGroup:observer.renderGroup});
+  const sameRenderedSpace=storyTargetSharesRenderSpace(target,{
+    targetRenderGroup:physical.renderGroup,
+    observerRenderGroup:observer.renderGroup,
+    targetFloorId:targetFloor?.id,
+    observerFloorId:observerFloor?.id,
+  });
+  const distance=Math.hypot((physical.x-observer.x)*CELL,(physical.z-observer.z)*CELL);
+  const highlight=(trackHighlight||trackBeacon)?STORY_HIGHLIGHT_TRACKER.update({
+    target,distance,nowMs,
+    mode:objectiveHintsMode(),
+    sameRenderGroup:sameRenderedSpace,
+    flash:getSave().settings?.flash||'full',
+  }):null;
+  return{target,point,physical,distance,sameRenderedSpace,highlight,targetFloor};
+}
+
+function mapWaypointForStory(source,frame=currentStoryGuidanceFrame()){
+  if(!source||!frame?.target||!frame.point||!frame.physical)return null;
+  const stride=source.topologyStride||1;
+  const floor=floorForHeight(BUILDING_MAP,frame.physical.y,{renderGroup:frame.physical.renderGroup});
+  return{
+    id:frame.target.id,
+    label:frame.target.label,
+    kind:frame.target.kind||'position',
+    roomId:frame.target.roomId||null,
+    propId:frame.target.propId||null,
+    doorId:frame.target.doorId||null,
+    floorId:floor?.id||null,
+    position:{x:frame.physical.x/stride,y:frame.physical.z/stride},
+  };
+}
+
+const STORY_BEARINGS=['north','northeast','east','southeast','south','southwest','west','northwest'];
+function storyGuidanceBearing(frame=currentStoryGuidanceFrame()){
+  if(!frame?.point)return null;
+  const dx=frame.point.x-px,dy=frame.point.y-py,distance=Math.hypot(dx,dy);
+  const angle=(Math.atan2(dx,-dy)+Math.PI*2)%(Math.PI*2);
+  const bearing=STORY_BEARINGS[Math.round(angle/(Math.PI/4))%8];
+  const far=distance>D(60)?'far off':distance>D(28)?'some way off':distance>D(12)?'nearby':'very close';
+  return{bearing,far,distance};
 }
 
 function currentFacilityMapSource(){
@@ -13069,10 +13677,19 @@ function currentFacilityMapModel(){
   });
   const job=bagJob();
   const objective=OBJ.objState();
+  const guidance=currentStoryGuidanceFrame();
+  const activeWaypoint=mapWaypointForStory(source,guidance);
+  const radioAt=RADIO.radioLocation();
+  const stride=source.topologyStride||1;
+  const radioPhysical=radioAt?mapProjectLogical(radioAt,{authored:false}):null;
+  const equipmentMarkers=radioAt&&radioPhysical?[{
+    id:'radio',kind:'radio',label:'RADIO',floorId:radioAt.floorId||acousticFloorIdAt(radioAt.x,radioAt.y),
+    position:{x:radioPhysical.x/stride,y:radioPhysical.z/stride},carrierOpen:RADIO.radioCarrierOpen(),
+  }]:[];
   const doorKey=doors.map((door)=>`${door.id}:${door.state}`).join('|');
   const contactKey=`${contact.state}:${contact.observation?.observedAt||0}:${contact.observation?.floorId||''}`;
   const hushKey=rawHush?`${rawHush.floorId||''}:${Math.round(rawHush.position.x*2)}:${Math.round(rawHush.position.y*2)}:${rawHush.perception?.mode||'none'}:${rawHush.visible?1:0}`:'none';
-  const tower=chapelTowerState(),towerKey=`${tower.phase}:${tower.ropeRoomVisited?1:0}:${tower.hatchInspected?1:0}`;
+  const tower=chapelTowerState(),towerKey=`${tower.phase}:${tower.corridorDiscovered?1:0}:${tower.tenorRowsCompleted}`;
   const visibilityOccluders=currentMapVisibilityOccluders(source,physical);
   const visibilityKey=visibilityOccluders.map((entry)=>`${entry.id}:${Math.round(entry.x*8)}:${Math.round(entry.y*8)}:${Math.round(entry.yaw*20)}`).join('|');
   const discoveredFloorIds=flagGet('academic.entered')?new Set(['academic']):new Set();
@@ -13083,18 +13700,19 @@ function currentFacilityMapModel(){
   // why the old facing tick appeared frozen and why the sight cone would not turn.
   // Quantised to ~6° so an idle mouse does not rebuild the model every frame.
   const headingKey=Math.round(mapWorldHeading()/(Math.PI/30));
-  const key=[Math.round(physical.x/2),Math.round(physical.z/2),Math.round(physical.y*4),headingKey,recordableRoomAt(px,py)||'',areaLabel,objective.target||'',job.rooms.map((room)=>room.recorded?'1':'0').join(''),doorKey,activeDifficulty.navigation.id||'',contactKey,hushKey,towerKey,discoveryKey,visibilityKey].join('~');
+  const guidanceKey=activeWaypoint?`${activeWaypoint.id}:${activeWaypoint.floorId||''}:${Math.round(activeWaypoint.position.x*4)}:${Math.round(activeWaypoint.position.y*4)}`:'none';
+  const equipmentKey=equipmentMarkers.map((marker)=>`${marker.id}:${marker.floorId}:${marker.position.x}:${marker.position.y}:${marker.carrierOpen?1:0}`).join('|');
+  const key=[Math.round(physical.x/2),Math.round(physical.z/2),Math.round(physical.y*4),headingKey,recordableRoomAt(px,py)||'',areaLabel,objective.target||'',guidanceKey,job.rooms.map((room)=>room.recorded?'1':'0').join(''),doorKey,activeDifficulty.navigation.id||'',contactKey,hushKey,towerKey,discoveryKey,visibilityKey,equipmentKey].join('~');
   if(facilityMapCache.key===key&&facilityMapCache.model)return facilityMapCache.model;
   const model=buildMapModel({
-    source,job,objectiveState:objective,doors,contacts:[contact],navigation:activeDifficulty.navigation,discoveredFloorIds,
+    source,job,objectiveState:objective,activeWaypoint,doors,contacts:[contact],equipmentMarkers,navigation:activeDifficulty.navigation,discoveredFloorIds,
     landmarkState:{
-      'landmark:ringing-room':{visible:tower.ropeRoomVisited},
-      'landmark:bell-chamber':{visible:tower.hatchInspected||[CHAPEL_TOWER_PHASE.TOWER_ACTIVE,CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(tower.phase),label:tower.phase===CHAPEL_TOWER_PHASE.FORESHADOW||tower.phase===CHAPEL_TOWER_PHASE.SOURCE_READY?'ACCESS RESTRICTED':'BELL CHAMBER'},
+      'landmark:ringing-room':{visible:[CHAPEL_TOWER_PHASE.TOWER_ACTIVE,CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(tower.phase)},
+      'landmark:bell-chamber':{visible:[CHAPEL_TOWER_PHASE.TOWER_ACTIVE,CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(tower.phase),label:tower.phase===CHAPEL_TOWER_PHASE.FORESHADOW||tower.phase===CHAPEL_TOWER_PHASE.SOURCE_READY?'ACCESS RESTRICTED':'BELL CHAMBER'},
       'landmark:organ-loft':{visible:[CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(tower.phase)},
     },
     player:{x:physical.x,y:physical.z,height:physical.y,renderGroup:physical.renderGroup,roomId:recordableRoomAt(px,py),areaLabel,heading:mapWorldHeading()},
   });
-  const stride=source.topologyStride||1;
   const hush=rawHush?{
     ...rawHush,
     position:{x:rawHush.position.x/stride,y:rawHush.position.y/stride},
@@ -13324,6 +13942,22 @@ function openControllerSettings(){
   }));
 }
 
+function openPealCalibration(){
+  ensureCtx();if(!actx)return false;
+  let calibration=null;
+  calibration=createBellPealCalibrationScene({
+    context:actx,destination:master||actx.destination,initialOffsetMs:getSave().settings?.rhythmTimingOffsetMs||0,
+    onDone:({offsetMs,samples,automaticLatencyMs})=>{
+      const settings=getSave().settings||{};saveCommit({settings:{...settings,rhythmTimingOffsetMs:offsetMs}});
+      if(calibration)scenes.remove(calibration);
+      pushEvent(samples.length>=2
+        ?`// bell timing calibrated: ${offsetMs>=0?'+':''}${offsetMs} ms (${Math.round(automaticLatencyMs)} ms device path).`
+        :'// bell timing calibration kept the current offset.');
+    },
+  });
+  scenes.push(calibration);return true;
+}
+
 function openSettings({ inGame=false, initialTab=null }={}){
   ensureCtx();
   MIC.micRefreshDevices?.();
@@ -13380,6 +14014,7 @@ function openSettings({ inGame=false, initialTab=null }={}){
       resetInputBindings,
       openControllerSettings,
       onControllerSettingsChange: saveControllerSettings,
+      openPealCalibration,
       exportProfile: exportProgressionProfile,
       importProfile: importProgressionProfile,
       currentArea: () => storyMode && inRogue ? roomLabel(currentWorld()) : (getSave().area || 'prologue'),
@@ -13643,6 +14278,45 @@ function godEnsureTestRun(){
   godSyncBuildingRender();
 }
 
+function godStoryWayfindingCapture(id){
+  const preset=storyWayfindingCapturePreset(id);if(!preset)throw new Error(`unknown story capture preset ${id}`);
+  godEnsureTestRun();
+  escape=null;endingTimeline=null;STORY_HIGHLIGHT_TRACKER.reset();storyGuidanceHighlight={visible:false,propId:null,doorId:null,alpha:0};storyGuidanceHighlightRenderKey='';setBoothPresentationPose('idle');
+  const save=getSave(),flags=save.flags||{},managed=['prologueDone','bag.taken','yard.bench.sat','chapel.clue.log','chapel.clue.ledger','chapel.keyTaken','chapel.keyIdentified'];
+  for(const key of managed)delete flags[key];
+  if(!['arrival-van','arrival-bench','arrival-lodge','booth-conversation'].includes(preset.state))flags.prologueDone=true;
+  if(['arrival-bench','arrival-lodge','booth-conversation'].includes(preset.state))flags['bag.taken']=true;
+  if(['arrival-lodge','booth-conversation'].includes(preset.state))flags['yard.bench.sat']=true;
+  const settings={...(save.settings||{}),objectiveHints:preset.hintMode||'full'};
+  const items=new Set(save.items||[]);items.delete('chapel_key');playerKeys.delete('chapel');
+  let tower=freshChapelTowerState(),read=OBJ.objState().read.filter((pageId)=>pageId!=='page-6');
+  if(['page-6','rekey-ledger','key-cabinet','chapel-screen'].includes(preset.state))tower={...tower,phase:CHAPEL_TOWER_PHASE.SOURCE_READY};
+  if(['rekey-ledger','key-cabinet','chapel-screen'].includes(preset.state)){read=[...read,'page-6'];flags['chapel.clue.log']=true;}
+  if(['key-cabinet','chapel-screen'].includes(preset.state))flags['chapel.clue.ledger']=true;
+  if(preset.state==='chapel-screen'){flags['chapel.keyTaken']=true;items.add('chapel_key');playerKeys.add('chapel');tower={...tower,corridorDiscovered:true};}
+  OBJ.loadObjState({...OBJ.saveObjState(),read},{validTargets:TARGETS});
+  saveCommit({flags,settings,items:[...items],chapelTower:tower,obj:OBJ.saveObjState()});
+  syncChapelTowerKeyring(tower);syncVisiblePages();syncKeyCabinetProps({refresh:false});
+
+  if(preset.state==='tenor')godEnterTowerPreset('tenor-rope');
+  else if(preset.state==='tower-descent')godEnterTowerPreset('nave-door');
+  else if(preset.state==='fifth-take')godEnterTowerPreset('chapel-final');
+  else{
+    if(preset.state==='ending-surfaced')endSurfaced();
+    else if(preset.state==='ending-stay')endSacrifice(ENDING_ARRIVAL.AGREED);
+    else if(preset.state==='ending-grey-door')startEscape();
+    else if(preset.state==='ending-rescue'){startEscape();escape.stage='rescue';}
+    if(preset.at){const point=FP.toRuntimePoint({x:preset.at[0],y:preset.at[1]});px=point.x;py=point.y;R3.r3dSetFacing(preset.facing??0);trail=[];renderMove=null;motionRig=null;}
+    godSyncBuildingRender();syncDoorDynamicProps();
+    if(preset.state==='booth-conversation')talkToTheLodge();
+  }
+  if(['tenor','tower-descent','fifth-take'].includes(preset.state)&&preset.at){
+    const point=FP.toRuntimePoint({x:preset.at[0],y:preset.at[1]});px=point.x;py=point.y;R3.r3dSetFacing(preset.facing??0);trail=[];renderMove=null;motionRig=null;godSyncBuildingRender();syncDoorDynamicProps();
+  }
+  facilityMapCache={key:'',model:null};
+  return{...preset,target:currentStoryGuidanceTarget(),position:{x:px,y:py}};
+}
+
 // THE BAY WARPS TO THE APRON, NOT TO THE NEAREST CELL THAT SAYS `dock`.
 //
 // The yard shares the bay's zone, and godFindZonePoint scores by distance to the
@@ -13653,40 +14327,29 @@ function godEnsureTestRun(){
 // start instead, which is the apron, and is the only part of the bay a player is
 // ever meant to stand on.
 function godWarpBayApron(){
-  godRestoreBuildingWorld();
-  const start=FP.spawn();
-  if(!start) return false;
-  px=start.x;py=start.y;trail=[];
-  revealAround(px,py);faceOpenDirection();
-  renderMove=null;motionRig=null;
-  godSyncBuildingRender();
-  saveCommit({px,py,area:'conservatory'});
-  pushEvent(`// god warp: ${currentAreaLabel()}.`);
-  return true;
+  return godWarpToHook('loading-bay');
 }
 
-function godFindZonePoint(zone){
-  if(!FP.isLoaded()) return null;
-  const plan=FP.floorplan();
-  const candidates=[];
-  for(let y=0;y<plan.h;y++){
-    for(let x=0;x<plan.w;x++){
-      const point=FP.toRuntimePoint({x,y});
-      if(FP.zoneAt(point.x,point.y)!==zone || FP.isSolid(point.x,point.y)) continue;
-      const score=Math.hypot(x-plan.w/2,y-plan.h/2);
-      candidates.push({x:point.x,y:point.y,score});
-    }
-  }
-  candidates.sort((a,b)=>a.score-b.score);
-  return candidates[0] || null;
+function godHookPoint(hook){
+  if(!FP.isLoaded()||!hook?.at)return null;
+  const point=FP.toRuntimePoint(hook.at);
+  const physical=FP.logicalToPhysical(point.x,point.y);
+  const valid=!FP.isSolid(point.x,point.y)
+    && PROPS.propCanOccupy(point.x,point.y)
+    && FP.zoneAt(point.x,point.y)===hook.zone
+    && physical?.renderGroup===hook.group
+    && physical?.spaceId===hook.component
+    && Math.abs(FP.floorAt(point.x,point.y)-hook.floor)<.12;
+  return valid?point:null;
 }
 
-function godWarpToZone(zone){
+function godWarpToHook(id){
   godRestoreBuildingWorld();
-  const point=godFindZonePoint(zone);
-  if(!point){ pushEvent('// god: area is not loaded yet.'); return false; }
+  const hook=GOD_LOCATION_HOOKS[id];
+  const point=godHookPoint(hook);
+  if(!point){ pushEvent(`// god: invalid authored hook ${id}.`); return false; }
   px=point.x;py=point.y;trail=[];
-  revealAround(px,py);faceOpenDirection();
+  revealAround(px,py);R3.r3dSetFacing(hook.facing);
   renderMove=null;motionRig=null;
   godSyncBuildingRender();
   saveCommit({px,py,area:'conservatory'});
@@ -13705,6 +14368,7 @@ function godSetChapelKey(on){
   if(on){items.add('chapel_key');playerKeys.add('chapel');flagApply(['chapel.keyTaken']);}
   else {items.delete('chapel_key');playerKeys.delete('chapel');flagApply([],['chapel.keyTaken']);}
   saveCommit({items:[...items],flags:getSave().flags});
+  syncKeyCabinetProps();
 }
 
 function godSetLostItem(id,on){
@@ -13714,7 +14378,7 @@ function godSetLostItem(id,on){
     lostAt={x:px+1,y:py};
     flagApply([`lost.${id}`]);
   }else if(lostItem===id){
-    lostItem=null;lostAt=null;
+    lostItem=null;lostAt=null;lostItemGuess=null;
   }
   saveCommit({flags:getSave().flags});
 }
@@ -13785,7 +14449,7 @@ async function godOpenCausalReturnFork(){
       {id:'spine:first-reference',at:35_000,order:3,verb:'taunt',required:true,locus:{x:59,y:67,floorH:-4,roomId:'plant-service-spur',spaceId:'conservatory',radius:3},payload:{kind:'exact-reference'}},
       {id:'spine:practice-wing',at:45_000,order:4,verb:'haunt',required:true,locus:{x:59,y:67,floorH:-4,roomId:'soundnoisemusic',spaceId:'conservatory',radius:3},payload:{kind:'correction-displacement'}},
       {id:'spine:source-threshold',at:55_000,order:5,verb:'manifest',required:true,locus:{x:SOURCE_ENTRY.x,y:SOURCE_ENTRY.y,floorH:0,roomId:'source_space',spaceId:'source-space',radius:3},payload:{kind:'source-transition',sourceState:freshChunkSurfState({seed:4417})}},
-      {id:'spine:bell-row',at:72_000,order:6,verb:'haunt',required:true,locus:{x:64,y:62,floorH:-4,roomId:'bell_tower',spaceId:'conservatory',radius:3},payload:{kind:'relay-row'}},
+      {id:'spine:bell-row',at:72_000,order:6,verb:'haunt',required:true,locus:{x:64,y:62,floorH:-4,roomId:'bell_tower',spaceId:'conservatory',radius:3},payload:{kind:'covering-tenor',method:'Stedman Triples'}},
       {id:'spine:chapel-contact',at:82_000,order:7,verb:'contact',required:true,locus:{x:68,y:61,floorH:-4,roomId:'lux_nova',spaceId:'conservatory',radius:3},weight:2,payload:{kind:'borrowed-body-contract-contact'}},
       {id:'fixture:taunt',at:18_000,order:0,verb:'taunt',locus:{x:55,y:73,floorH:-4,roomId:'plant-service-spur',radius:3},payload:{eventId:'fixture:taunt'}},
       {id:'fixture:haunt',at:42_000,order:1,verb:'haunt',locus:{x:59,y:67,floorH:-4,roomId:'plant-service-spur',radius:3},payload:{eventId:'fixture:haunt'}},
@@ -13834,6 +14498,7 @@ function godEnterTowerPreset(preset){
   if(preset==='lower-stair')point=route('lowerStair');
   else if(preset==='lower-turn')point=route('lowerTurn');
   else if(preset==='ringing-room')point=route('ringingEntry');
+  else if(preset==='tenor-rope'){phase=CHAPEL_TOWER_PHASE.TOWER_ACTIVE;point={...FP.toRuntimePoint({x:TENOR_ROPE_AUTHORED.x,y:TENOR_ROPE_AUTHORED.y+1}),facing:0};live=true;}
   else if(preset==='tower-arrival'){phase=CHAPEL_TOWER_PHASE.TOWER_ACTIVE;point={...TOWER_ENTRY};live=true;}
   else if(preset==='belfry-door'){phase=CHAPEL_TOWER_PHASE.TOWER_ACTIVE;point=route('belfryDoor');live=true;}
   else if(preset==='upper-turn'){phase=CHAPEL_TOWER_PHASE.TOWER_ACTIVE;point=route('upperTurn');live=true;}
@@ -13844,17 +14509,17 @@ function godEnterTowerPreset(preset){
   else if(preset==='organ-loft'){phase=CHAPEL_TOWER_PHASE.TOWER_CLEARED;point=route('organLoft');}
   else if(preset==='nave-door'){phase=CHAPEL_TOWER_PHASE.TOWER_CLEARED;point=route('naveDoor');}
   else if(preset==='nave-exit'){phase=CHAPEL_TOWER_PHASE.TOWER_CLEARED;point=route('naveExit');}
-  else if(preset==='chapel-final'){phase=CHAPEL_TOWER_PHASE.CHAPEL_FINAL;point={...(godFindZonePoint(ZONE.chapel)||CHAPEL_OUTER_CHECKPOINT),facing:0};}
+  else if(preset==='chapel-final'){phase=CHAPEL_TOWER_PHASE.CHAPEL_FINAL;point={...(godHookPoint(GOD_LOCATION_HOOKS.chapel)||CHAPEL_OUTER_CHECKPOINT),facing:0};}
   else if(preset!=='outer-chapel')throw new Error(`unknown tower God preset ${preset}`);
 
   const chapelTower={
     ...freshChapelTowerState(),
     phase,
-    ropeRoomVisited:preset!=='outer-chapel',
-    hatchInspected:['bell-frame','crossing','stop-ready','winch','service-stair','organ-loft','nave-door','nave-exit','chapel-final'].includes(preset),
-    hammerIsolated:['bell-frame','crossing','stop-ready','winch','service-stair','organ-loft','nave-door','nave-exit','chapel-final'].includes(preset),
-    relayInterruptions:['stop-ready','winch','service-stair','organ-loft','nave-door','nave-exit','chapel-final'].includes(preset)?TOWER_RELAY_REQUIRED_INTERRUPTS:0,
-    shuttersReleased:[CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(phase),
+    corridorDiscovered:preset!=='outer-chapel',
+    tenorRopeTaken:['bell-frame','crossing','stop-ready','winch'].includes(preset),
+    tenorRowsCompleted:['stop-ready','winch','service-stair','organ-loft','nave-door','nave-exit','chapel-final'].includes(preset)?TOWER_STEDMAN_ROWS:0,
+    pealCompleted:['stop-ready','winch','service-stair','organ-loft','nave-door','nave-exit','chapel-final'].includes(preset),
+    bellsStanding:[CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(phase),
     chapelReached:preset==='chapel-final',
   };
   px=point.x;py=point.y;trail=[];renderMove=null;motionRig=null;
@@ -13894,12 +14559,13 @@ function godRefreshDoors(){
 }
 
 function godWarpToDoorArchetype(archetype){
-  godEnsureTestRun();const door=FP.doorState().find((entry)=>entry.archetype===archetype);
-  if(!door){pushEvent(`// god: no ${archetype} door.`);return false;}
-  const offsets=door.widthAxis==='x'?[[0,-4],[0,4]]:[[-4,0],[4,0]];
-  const at=offsets.map(([dx,dy])=>({x:Math.round(door.cx+dx),y:Math.round(door.cy+dy),dx,dy})).find((point)=>!FP.isSolid(point.x,point.y));
-  if(!at)return false;px=at.x;py=at.y;trail=[];renderMove=null;motionRig=null;
-  const vx=door.cx-px,vy=door.cy-py;R3.r3dSetFacing(Math.abs(vx)>Math.abs(vy)?(vx>0?1:3):(vy>0?2:0));
+  godEnsureTestRun();const hook=godDoorHook(archetype);
+  const door=hook&&FP.doorState().find((entry)=>entry.id===hook.doorId);
+  if(!door){pushEvent(`// god: no authored ${archetype} door hook.`);return false;}
+  const authored={x:FP.toAuthoredCoord(door.cx)+hook.normal[0]*hook.distance,y:FP.toAuthoredCoord(door.cy)+hook.normal[1]*hook.distance};
+  const at=godHookPoint({...hook,at:authored});
+  if(!at){pushEvent(`// god: invalid door hook ${hook.doorId}.`);return false;}
+  px=at.x;py=at.y;trail=[];renderMove=null;motionRig=null;R3.r3dSetFacing(hook.facing);
   godSyncBuildingRender();syncDoorDynamicProps();saveCommit({px,py,area:'conservatory'});pushEvent(`// god door: ${door.id}.`);return true;
 }
 
@@ -13915,7 +14581,7 @@ function godToggleDoorDebug(){godDoorDebug=!godDoorDebug;godRefreshDoors();retur
 function godTabs(){
   const section=(label)=>({kind:'section',label});
   const ready=()=>storyMode&&inRogue&&FP.isLoaded();
-  const warp=(id,label,zone)=>({id,label,value:()=>ready()?'[WARP]':'START TEST RUN',closeMenu:true,activate:()=>{if(!ready())godEnsureTestRun();else godWarpToZone(zone);}});
+  const warp=(id,label,hookId)=>({id,label,value:()=>ready()?'[WARP]':'START TEST RUN',closeMenu:true,activate:()=>{if(!ready())godEnsureTestRun();else godWarpToHook(hookId);}});
   const toggleFlag=(id,label,flag)=>({id,label,value:()=>flagTest(flag)?'ON':'OFF',adjust:()=>godSetFlag(flag,!flagTest(flag))});
   const battle=(id,label,factory)=>({id,label,value:'[OPEN]',closeMenu:true,activate:()=>openGodBattle(factory(isNamed()))});
   return [
@@ -13929,15 +14595,15 @@ function godTabs(){
       {id:'stair-reset-global',label:'RESET STAIR · GLOBAL / FIRST-EVER',value:()=>`RUNS ${getMeta()?.runs||0} · [RESET]`,danger:true,activate:godResetStairGlobal},
       section('Locations'),
       {id:'warp-bay',label:'LOADING BAY',value:()=>ready()?'[WARP]':'START TEST RUN',closeMenu:true,activate:()=>{if(!ready())godEnsureTestRun();else godWarpBayApron();}},
-      warp('warp-getin','THE GET-IN',ZONE.getIn),
-      warp('warp-foyer','FRONT ATRIUM',ZONE.foyer),
-      warp('warp-studio','STUDIO B3',ZONE.studio),
-      warp('warp-natatorium','NATATORIUM',ZONE.natatorium),
-      warp('warp-hall','CONCERT HALL',ZONE.hall),
-      warp('warp-practice','PRACTICE WING',ZONE.practice),
-      warp('warp-academic','ACADEMIC GALLERY',ZONE.academic),
-      warp('warp-chapel','CHAPEL',ZONE.chapel),
-      warp('warp-plant','PLANT ROOM',ZONE.plant),
+      warp('warp-getin','THE GET-IN','get-in'),
+      warp('warp-foyer','FRONT ATRIUM','front-atrium'),
+      warp('warp-studio','STUDIO B3','studio-b3'),
+      warp('warp-natatorium','NATATORIUM','natatorium'),
+      warp('warp-hall','CONCERT HALL','concert-hall'),
+      warp('warp-practice','PRACTICE WING','practice-wing'),
+      warp('warp-academic','ACADEMIC GALLERY','academic-gallery'),
+      warp('warp-chapel','CHAPEL','chapel'),
+      warp('warp-plant','PLANT ROOM','plant-room'),
     ]},
     {id:'source-space',name:'SOURCE',rows:[
       section('Infinite Long Hall'),
@@ -13956,6 +14622,7 @@ function godTabs(){
       {id:'tower-lower-stair',label:'LOWER STAIR / FIRST FLIGHT',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterTowerPreset('lower-stair')},
       {id:'tower-lower-turn',label:'LOWER STAIR / TURN',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterTowerPreset('lower-turn')},
       {id:'tower-ringing-room',label:'RINGING ROOM / QUIET',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterTowerPreset('ringing-room')},
+      {id:'tower-tenor-rope',label:'TENOR ROPE / PLAYABLE TOUCH',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterTowerPreset('tenor-rope')},
       {id:'tower-crossing',label:'SOURCE → TOWER CROSSING',value:'[PLAY]',closeMenu:true,activate:godSourceTowerCrossing},
       section('Live machinery'),
       {id:'tower-arrival',label:'TOWER ARRIVAL / LIVE',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterTowerPreset('tower-arrival')},
@@ -13963,7 +14630,7 @@ function godTabs(){
       {id:'tower-upper-turn',label:'BELFRY STAIR / TURN',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterTowerPreset('upper-turn')},
       {id:'tower-chamber-entry',label:'BELL CHAMBER / VESTIBULE',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterTowerPreset('chamber-entry')},
       {id:'tower-frame',label:'EXPOSED FRAME CROSSING',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterTowerPreset('crossing')},
-      {id:'tower-stop-ready',label:'WINCH / STOP READY',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterTowerPreset('stop-ready')},
+      {id:'tower-stop-ready',label:'BELLS / STANDING SEQUENCE',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterTowerPreset('stop-ready')},
       section('Cleared route'),
       {id:'tower-service-stair',label:'SERVICE STAIR / CHAMBER',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterTowerPreset('service-stair')},
       {id:'tower-organ-loft',label:'ORGAN LOFT / CLEARED',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterTowerPreset('organ-loft')},
@@ -14502,6 +15169,7 @@ function returnToTitle(){
   sampleFieldEnabled=false;
   storyMode=false;
   hushRunActive=false;
+  apparitionDirector.reset();
   resetHorrorState();
   PRES.despawn();
   setGameplayPaused(false,{announce:false});
@@ -14844,21 +15512,21 @@ function drawStoryHud(){
   // The field navigator projects the same facility model used by the bag MAP.
   // If the issued plan is lost, the building remains but its instrumented
   // representation does not.
-  const wp=OBJ.waypoint();
+  const guidance=currentStoryGuidanceFrame();
   const nav=activeDifficulty.navigation;
   if(itemLost('map')){
     uiText(2, 5, 'PLAN  MISSING', 'ui-danger');
   } else if(nav.showMap){
     drawMinimap(currentFacilityMapModel(),{now:performance.now(),mischief:recentMischief(),apparitions:recentApparitions()});
-  } else if(wp){
+  } else if(guidance.point){
     uiText(2, 5, 'PLAN  SIGNAL MINIMAL', 'ui-secondary');
   }
 
   // The compass line exposes only the fields authorized by the current shift.
-  const bear=OBJ.bearingTo(px,py);
+  const bear=storyGuidanceBearing(guidance);
   if(bear && nav.showBearing){
     const parts=['TARGET'];
-    if(nav.showRoom) parts.push(roomLabel(OBJ.targetRoom()));
+    if(nav.showRoom) parts.push(guidance.target?.label||'WAYPOINT');
     parts.push(bear.bearing);
     if(nav.showDistance) parts.push(bear.far);
     const loc=parts.join(' / ').toUpperCase();
@@ -14878,16 +15546,17 @@ function drawStoryHud(){
   }
   {
     const tower=chapelTowerState();
-    if([CHAPEL_TOWER_PHASE.TOWER_ACTIVE,CHAPEL_TOWER_PHASE.TOWER_CLEARED].includes(tower.phase)){
+    if([CHAPEL_TOWER_PHASE.SOURCE_READY,CHAPEL_TOWER_PHASE.TRANSITION_READY,CHAPEL_TOWER_PHASE.TOWER_ACTIVE,CHAPEL_TOWER_PHASE.TOWER_CLEARED].includes(tower.phase)){
       const objective=towerObjective(tower);
-      uiText(2,2,objective.label.slice(0,Math.max(1,cols-4)),objective.id==='bells-settling'?'ui-secondary':'ui-amber');
-      if(objective.id==='break-relay'){
-        const snapshot=bellTowerRuntime?.snapshot?.();
-        drawVfdText(2,3,'ROW MATCH',{scale:1,role:'ui-amber'});
-        drawLocationIndicator(12,3,Math.min(18,Math.max(8,cols-42)),tower.relayInterruptions/TOWER_RELAY_REQUIRED_INTERRUPTS,{theme:'amber'});
-        const signal=snapshot?.relayWindowOpen?'RELAY WINDOW / CUT NOW':'RELAY WINDOW / HOLD';
-        uiText(Math.max(2,cols-signal.length-2),3,signal,snapshot?.relayWindowOpen?'ui-green':'ui-secondary');
+      const label=guidance.target?.label||objective.label;
+      uiText(2,2,label.slice(0,Math.max(1,cols-4)),objective.id==='bells-settling'?'ui-secondary':'ui-amber');
+      if(objective.id==='ring-stedman'){
+        drawVfdText(2,3,'TENOR ROWS',{scale:1,role:'ui-amber'});
+        drawLocationIndicator(14,3,Math.min(20,Math.max(8,cols-36)),tower.tenorRowsCompleted/TOWER_STEDMAN_ROWS,{theme:'amber'});
+        const misses=`MISSED  ${tower.tenorMisses}`;uiText(Math.max(2,cols-misses.length-2),3,misses,'ui-secondary');
       }
+    }else if(guidance.target&&!guidance.target.playerSelected){
+      uiText(2,2,guidance.target.label.slice(0,Math.max(1,cols-4)),'ui-amber');
     }
   }
   if(KEY_DEBUG){
@@ -14941,19 +15610,31 @@ const teach=tutorialPromptsEnabled() ? TUT.tutorialPrompt() : null;
     const greyFromInside=doorHud.portal.id===GREY_DOOR_ID&&!greyDoorRetired()&&FP.zoneAt(px,py)===ZONE.getIn;
     const action=greyFromInside
       ? 'THE DOOR YOU CAME IN THROUGH'
-      : runtime.wedge?'REMOVE WEDGE':runtime.state==='open'||runtime.state==='opening'?'CLOSE DOOR':hasKey?'OPEN DOOR':'TRY LOCKED DOOR';
+      : doorHud.portal.id==='front-main'?'CHECK CHAINED ENTRANCE'
+        : runtime.wedge?'REMOVE WEDGE':runtime.state==='open'||runtime.state==='opening'?'CLOSE DOOR':hasKey?'OPEN DOOR':'TRY LOCKED DOOR';
     hudPromptRow(rows-2,[{action:'interact',label:action}],cols,hasKey?'ui-amber':'ui-secondary');
   } else if(propHit){
     // The lodge is a person, so it gets a label of its own rather than a verb
     // and a noun — "INSPECT THE LODGE WINDOW" reads like furniture, and this is
     // the one thing in the building that answers back.
-    const verb=propHit.action==='tower-relay-interrupt'?'BREAK'
-      :propHit.action==='tower-shutter-winch'?'RELEASE'
-        :propHit.action==='tower-hammer-isolator'?'ISOLATE'
+    const verb=propHit.id==='dropped-radio'?(RADIO.radioCalling()?'ANSWER':'PICK UP')
+      :propHit.action==='plant-spanner'?'TAKE'
+      :propHit.action==='plant-heavy-wrench'?'GRIP'
+      :propHit.action==='plant-header-valve'&&PLANT.plantRecordingBlocked()?'ISOLATE'
+      :propHit.action==='tower-tenor-rope'?'TAKE'
+      :propHit.action==='chapel-key-ring'?'TAKE'
+      :propHit.action==='yard-vigil-bench'?'SIT'
+      :propHit.action==='exterior-lore'?'TALK TO'
+      :propHit.action==='tower-shutter-winch'?'INSPECT'
+        :propHit.action==='tower-hammer-isolator'?'INSPECT'
           :propHit.dockInvestigation?'INVESTIGATE':propHit.sampleFamily?.length?'PLAY':'INSPECT';
-    const propLabelText=propHit.action==='gate-lodge'
+    const propLabelText=propHit.id==='dropped-radio'
+      ? (RADIO.radioCalling()?'ANSWER RADIO':'PICK UP RADIO')
+      :propHit.action==='gate-lodge'
       ? (flagTest('prologueDone')?'THE LODGE WINDOW':'CHECK IN WITH THE GUARD')
-      : `${verb} ${propLabel(propHit)}`;
+      : propHit.action==='tower-tenor-rope'
+        ?`${verb} ${propLabel(propHit)} · ${String(getSave().settings?.towerPealAssist||'standard').toUpperCase()}`
+        : `${verb} ${propLabel(propHit)}`;
     hudPromptRow(rows-2,[{action:'interact',label:propLabelText}],cols,'ui-amber');
   } else if(teach){
     const prompt=teach.toUpperCase().slice(0,Math.max(1,cols-4));
@@ -15158,7 +15839,45 @@ function installProbe(){
     stairAnomalyPreset:(stage=0,reduced=false)=>stairAnomalyProbePreset(stage,reduced),
     testRun:()=>{ godEnsureTestRun(); return true; },
     godWarpBay:()=>godWarpBayApron(),
-    godWarpGetIn:()=>godWarpToZone(ZONE.getIn),
+    godWarpGetIn:()=>godWarpToHook('get-in'),
+    godWarpHook:(id)=>godWarpToHook(String(id||'')),
+    godWarpDoor:(archetype)=>godWarpToDoorArchetype(String(archetype||'')),
+    // Diagnostics use the same authored registry as the menu. A zone with no
+    // unique showcase is refused instead of reviving zone-centre search.
+    godWarpZone:(zone)=>{
+      const matches=Object.entries(GOD_LOCATION_HOOKS).filter(([,hook])=>hook.zone===Number(zone));
+      if(matches.length!==1){pushEvent(`// god: zone ${zone} has no unique authored hook.`);return false;}
+      return godWarpToHook(matches[0][0]);
+    },
+    plant:()=>PLANT.plantIncidentState(),
+    plantVisual:(preset='dormant')=>{
+      restorePlantHaulTableau();
+      const phase=preset==='sealed'?PLANT.PLANT_INCIDENT_PHASE.SEALED
+        :preset==='haul'?PLANT.PLANT_INCIDENT_PHASE.TOOL_REQUIRED
+        :preset==='hissing'?PLANT.PLANT_INCIDENT_PHASE.HISSING
+        :PLANT.PLANT_INCIDENT_PHASE.DORMANT;
+      const hauling=preset==='haul';
+      PLANT.loadPlantIncident({schema:1,phase,triggerTakeOrdinal:phase===PLANT.PLANT_INCIDENT_PHASE.DORMANT?0:2,
+        spannerOwned:false,heavyMode:hauling?'dragging':phase===PLANT.PLANT_INCIDENT_PHASE.SEALED?'used':'rack',
+        heavyPosition:hauling?{x:px,y:py}:null});
+      if(hauling){
+        const [fx,fy]=R3.r3dDelta(1);lastPlantDragVector={x:fx,y:fy};
+        plantHaulTrail=[{x:px-fx*D(14),y:py-fy*D(14)},{x:px-fx*D(10),y:py-fy*D(10)},{x:px,y:py}];
+        beginPlantHaulTableau();updatePlantHaulPose();
+      }
+      syncPlantIncidentProps();savePlantIncident();return{plant:PLANT.plantIncidentState(),presence:PRES.presenceState()};
+    },
+    radioVisual:(phase='live',{deployed=true,calling=false}={})=>{
+      const now=performance.now(),saved=RADIO.saveRadioState(now);
+      saved.schema=2;saved.phase=['live','failing','dead'].includes(phase)?phase:'live';saved.dead=saved.phase==='dead';
+      saved.pendingCue=null;saved.activeCue=null;saved.call={status:'idle',deadlineRemainingMs:0,nextPulseRemainingMs:0};
+      RADIO.loadRadioState(saved,now);
+      if(deployed&&!RADIO.isDropped())RADIO.dropRadio(px,py,{roomId:currentAreaLabel(),floorId:acousticFloorIdAt(px,py),now});
+      if(calling&&RADIO.radioPhase()!=='dead')RADIO.queueRadioCue(RADIO.radioPhase()==='failing'?RADIO.RADIO_CUES.PRE_THIRD:RADIO.RADIO_CUES.POST_SECOND,{roomId:currentWorld(),reason:'visual-smoke',now});
+      syncDroppedRadioProp();saveCommit({radio:RADIO.saveRadioState()});return RADIO.radioState();
+    },
+    openBag:()=>{openBag();return scenes.top()?.id||null;},
+    openRadioMap:()=>{if(scenes.top()?.id!=='bag')openBag();openMapFromBag();return scenes.top()?.id||null;},
     dockHaunting:()=>({
       active:!!dockHauntingScene,
       frame:dockHauntingFrame?{...dockHauntingFrame}:null,
@@ -15186,7 +15905,7 @@ function installProbe(){
     // The playable legs, for the harness. Each sets up the objective the way the
     // real route does — waypoint, pace and the timeline that runs while walking.
     endObjective:(kind)=>{
-      if(!kind){ escape=null; endingTimeline=null; OBJ.clearWaypoint(); return null; }
+      if(!kind){ escape=null; endingTimeline=null; return null; }
       finaleActive=true;
       if(kind==='stay') endSacrifice(ENDING_ARRIVAL.AGREED);
       else if(kind==='surfaced') endSurfaced();
@@ -15210,7 +15929,23 @@ function installProbe(){
       collisionEnabled:bellTowerCollisionEnabled,
       bellPivots:FP.isLoaded()?towerBellLayout().map((bell)=>({id:bell.id,...bell.pivot,visualScale:bell.visualScale})):[],
       audio:bellTowerAudio?.snapshot?.()||null,
+      director:towerBellDirector?.snapshot?.()||null,
+      peal:bellPealPerformance?.snapshot?.()||null,
     }),
+    towerPreset:(preset='ringing-room')=>{godEnterTowerPreset(preset);return window.__probe.chapelTower();},
+    towerCrossing:(reduced=false)=>{
+      const settings={...(getSave().settings||{}),shake:reduced?'reduced':'full'};saveCommit({settings});
+      godSourceTowerCrossing();return window.__probe.chapelTower();
+    },
+    towerPealPreset:(row=0,assist='guided')=>{
+      godEnterTowerPreset('tenor-rope');
+      const settings={...(getSave().settings||{}),towerPealAssist:['standard','guided','wide'].includes(assist)?assist:'guided'};
+      const chapelTower={...chapelTowerState(),tenorRopeTaken:false,tenorRowsCompleted:Math.max(0,Math.min(83,Math.floor(Number(row)||0))),pealCompleted:false,bellsStanding:false};
+      saveCommit({settings,chapelTower});startTenorPerformance();return window.__probe.chapelTower();
+    },
+    storyGuidance:()=>{const frame=currentStoryGuidanceFrame();return{target:frame.target,point:frame.point,distance:frame.distance,sameRenderedSpace:frame.sameRenderedSpace,highlight:STORY_HIGHLIGHT_TRACKER.snapshot()};},
+    storyCapturePreset:(id)=>godStoryWayfindingCapture(id),
+    setObjectiveHints:(mode='full')=>{const settings={...(getSave().settings||{}),objectiveHints:['full','reduced','off'].includes(mode)?mode:'full'};saveCommit({settings});STORY_HIGHLIGHT_TRACKER.reset();storyGuidanceHighlightRenderKey='';syncDoorDynamicProps();return settings.objectiveHints;},
     doors:()=>FP.doorState().map((door)=>({
       id:door.id,archetype:door.archetype,state:door.state,openFraction:door.openFraction,
       leafCount:door.leafCount,aperture:{...door.aperture},hinge:door.hinge,swing:door.swing,
@@ -15350,6 +16085,18 @@ function installProbe(){
       const now=R3.r3dLookAngles?.()||{yaw:0,pitch:0};
       R3.r3dLook?.(yaw-(now.yaw||0),pitch-(now.pitch||0));
       return R3.r3dLookAngles?.()??null;
+    },
+    // POINT THE CAMERA AT A WORLD BEARING, which neither look nor faceYaw can do.
+    // r3dLook takes a DELTA and clamps it per call, so handing it an absolute
+    // bearing turns the head a little way towards nothing in particular — a
+    // harness aimed that way reports "I cannot see the apparitions" while facing
+    // a corner. The plan is rotated under the camera, so the local yaw wanted is
+    // the world bearing less the plan's own.
+    lookAtWorld:(worldYaw=0,pitch=0)=>{
+      const local=R3.r3dLookAngles?.()||{yaw:0,pitch:0};
+      const planYaw=(R3.r3dWorldYaw?.()??0)-(local.yaw||0);
+      R3.r3dSetLookAngles?.({yaw:(Number(worldYaw)||0)-planYaw,pitch:Number(pitch)||0,immediate:true});
+      return R3.r3dWorldYaw?.();
     },
     lookAngles:()=>R3.r3dLookAngles?.()||null,
     stepDelta:(sign=1)=>R3.r3dStepDelta?.(sign)||null,
@@ -15528,8 +16275,125 @@ function installProbe(){
           reducedFlash:effectsMode!=='full',effectsMode,
           origin:{x:physical.x*CELL,z:physical.z*CELL},anchorPosition:lightAnchorPosition,
         }).map((l)=>({id:l.id,kind:l.kind,color:[...l.color],intensity:+l.intensity.toFixed(3),radius:l.radius,
-          penetration:l.penetration||0,shadowReveal:l.shadowReveal||0,emergencyPulse:l.emergencyPulse,circuit:l.circuit||null}))};
+          penetration:l.penetration||0,shadowReveal:l.shadowReveal||0,emergencyPulse:l.emergencyPulse,
+          circuit:l.circuit||null,powerMode:l.powerMode||null,maintained:!!l.maintained}))};
     },
+    apparitionGate:()=>{
+      const physical=FP.logicalToPhysical(px,py);
+      const context=resolveLightingContext({group:physical?.renderGroup,zone:FP.zoneAt(px,py),spaceId:physical?.spaceId});
+      const settings=getSave().settings||{};
+      const effectsMode=settings.flash||'full';
+      const rig=resolveLocalLights(context,{
+        timeSec:performance.now()/1000,
+        towerCleared:[CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(chapelTowerState().phase),
+        liveCircuits:liveLightCircuits(),reducedFlash:effectsMode!=='full',effectsMode,
+        origin:{x:physical.x*CELL,z:physical.z*CELL},anchorPosition:lightAnchorPosition,
+      });
+      const emergency=rig.filter((l)=>l.kind==='emergency'||l.shadowReveal>0).map((l)=>({
+        id:l.id,kind:l.kind,circuit:l.circuit||null,powerMode:l.powerMode||null,maintained:!!l.maintained,
+        intensity:+l.intensity.toFixed(3),shadowReveal:+(l.shadowReveal||0).toFixed(3),
+      }));
+      const candidates=rig.filter((l)=>Number(l?.shadowReveal)>.08&&Number(l?.intensity)>.01).map((l)=>({
+        id:l.id,circuit:l.circuit||null,powerMode:l.powerMode||null,maintained:!!l.maintained,
+        intensity:+l.intensity.toFixed(3),shadowReveal:+(l.shadowReveal||0).toFixed(3),
+      }));
+      return{context,effectsMode,reduceDread:!!settings.reduceDread,dockHauntingActive:!!dockHauntingFrame,
+        specialSpace:usingSpecialSpace(),sourceSpace:usingSourceSpace(),stairAnomaly:usingStairAnomaly(),
+        live:[...liveLightCircuits()],emergency,candidates,
+        submitted:lastEmergencyShadowFrame?{
+          active:true,
+          lightId:lastEmergencyShadowFrame.lightId,
+          figures:lastEmergencyShadowFrame.instances?.length||0,
+          presentation:lastEmergencyShadowFrame.director?.hardRevealIndex!=null?'hard':'shadow',
+          hardRevealIndex:lastEmergencyShadowFrame.director?.hardRevealIndex??null,
+          card:lastEmergencyShadowFrame.director?.card?.kind??null,
+          cardIndex:lastEmergencyShadowFrame.director?.card?.index??null,
+          exposure:lastEmergencyShadowFrame.director?.exposure??null,
+          minimumDistance:Number.isFinite(lastEmergencyShadowFrame.contract?.minimumPlayerDistance)
+            ?+lastEmergencyShadowFrame.contract.minimumPlayerDistance.toFixed(3):null,
+          stageSector:lastEmergencyShadowFrame.contract?.stageSector??null,
+          pulseIndex:lastEmergencyShadowFrame.contract?.pulseIndex??null,
+        }:{active:false,lightId:null,figures:0}};
+    },
+    // WHAT IS ACTUALLY ON THE SCREEN.
+    //
+    // The only honest instrument for a look regression. Every other readout here
+    // describes the model, which is exactly how "the emergency lights do not
+    // flash" survived three rounds of being declared fixed: the model flashed
+    // perfectly and the picture was never once measured. A harness cannot import
+    // the renderer itself and get this — under HMR it receives a second,
+    // uninitialised module instance and reads back nothing at all.
+    // Turning is mouse/controller only — turnHeldDir() is hardwired to 0 — so a
+    // headless harness has no way to look around, and "I cannot see the
+    // apparitions" is unanswerable without one.
+    look:(yaw=0,pitch=0)=>{ R3.r3dLook?.(Number(yaw)||0,Number(pitch)||0); return R3.r3dWorldYaw?.(); },
+    // A raw luma grid, so a harness can difference two frames. The apparitions
+    // are the only thing in a static shot that moves between beats, which makes
+    // "did anything actually occlude the red" answerable instead of a matter of
+    // squinting at a screenshot.
+    sceneGrid:(size=64)=>{
+      const canvas=R3.r3dCaptureSceneCanvas?.(size);
+      if(!canvas)return null;
+      const data=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+      const out=new Array(data.length/4);
+      for(let at=0;at<data.length;at+=4)out[at/4]=Math.round((data[at]+data[at+1]+data[at+2])/3);
+      return out;
+    },
+    sceneStats:(size=128)=>{
+      const canvas=R3.r3dCaptureSceneCanvas?.(size);
+      if(!canvas)return null;
+      const data=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+      const pixels=data.length/4;
+      let luma=0,lit=0,red=0,white=0;
+      for(let at=0;at<data.length;at+=4){
+        const level=(data[at]+data[at+1]+data[at+2])/3;
+        luma+=level;
+        if(level>18)lit++;
+        if(data[at]-Math.max(data[at+1],data[at+2])>24)red++;
+        // WHITE, WHICH IS THE APPARITION. The one thing in an emergency-lit room
+        // that is neither red nor black: bright, and with its blue channel up
+        // where the circuit's own light can never put it. Counting "bright"
+        // alone would count the red field itself at full beat.
+        if(level>96&&Math.min(data[at],data[at+1],data[at+2])>72)white++;
+      }
+      return{luma:+(luma/pixels).toFixed(2),litPct:+(lit/pixels*100).toFixed(1),
+        redPct:+(red/pixels*100).toFixed(1),whitePct:+(white/pixels*100).toFixed(2)};
+    },
+    // WHERE THE FIGURES ARE STANDING, so a harness can look AT them rather than
+    // sweeping the room hoping. Reads the last frame the light sync actually
+    // submitted, not a fresh rebuild: the question is what the renderer was
+    // given, and rebuilding it here would answer a different one.
+    apparitions:()=>{
+      if(!lastEmergencyShadowFrame)return{active:false,figures:0,lightId:null,bearings:[]};
+      const {lightId,instances,contacts}=lastEmergencyShadowFrame;
+      const eye=FP.logicalToPhysical(px,py);
+      return{
+        active:true,lightId,figures:instances?.length||0,
+        // Bearing from the player to each figure, in the same convention as
+        // r3dLook's yaw, so the harness can point the camera straight at one.
+        bearings:(contacts||[]).map((at)=>+Math.atan2(at.x-eye.x*CELL,-(at.z-eye.z*CELL)).toFixed(3)),
+        metres:(contacts||[]).map((at)=>[+at.x.toFixed(2),+at.z.toFixed(2)]),
+        bodies:(instances||[]).map((instance)=>({
+          id:instance.id,
+          index:instance.apparitionIndex,
+          x:+instance.x.toFixed(3),z:+instance.z.toFixed(3),yaw:+instance.yaw.toFixed(4),
+          distance:+Math.hypot(instance.x-eye.x*CELL,instance.z-eye.z*CELL).toFixed(3),
+          presentation:lastEmergencyShadowFrame.director?.hardRevealIndex===instance.apparitionIndex?'hard':'shadow',
+          motion:lastEmergencyShadowFrame.director?.card?.kind==='stillness'&&
+            lastEmergencyShadowFrame.director?.card?.index===instance.apparitionIndex?'still':'milling',
+        })),
+      };
+    },
+    apparitionDirector:()=>apparitionDirector.inspect(),
+    apparitionReset:(seed='apparition-harness-v1')=>apparitionDirector.reset({seed:String(seed||'apparition-harness-v1')}),
+    apparitionForce:(kind,index=null)=>apparitionDirector.forceNext({
+      card:String(kind||''),
+      index:Number.isInteger(index)?index:null,
+    }),
+    apparitionHardReveal:(index=null)=>apparitionDirector.forceNext({
+      presentation:'hard',
+      index:Number.isInteger(index)?index:null,
+    }),
     power:()=>normalizePowerState(getSave().power),
     setPower:(circuit,live=true)=>{
       const before=normalizePowerState(getSave().power);
@@ -15596,7 +16460,18 @@ function installProbe(){
     radio:()=>RADIO.radioState(),
     radioTransmit:(i)=>radioTransmit(i),
     radioKill:()=>RADIO.killRadio(),
-    radioTune:(o)=>Object.assign(RADIO.RADIO,o),
+    // Compatibility probe for the old browser harness. The production radio
+    // has one persisted scheduler now; forcing a pulse therefore edits a
+    // save-shaped snapshot instead of resurrecting the retired parallel timer.
+    radioTune:(o={})=>{
+      const now=performance.now(),saved=RADIO.saveRadioState(now);
+      if(o.phase==='live'||o.phase==='failing'||o.phase==='dead'){
+        saved.phase=o.phase;saved.dead=o.phase==='dead';
+      }
+      if(Number.isFinite(o.cooldownSec))saved.scheduler.deployCooldownRemainingMs=Math.max(0,o.cooldownSec*1000);
+      if(Number.isFinite(o.squelchAfterSec))saved.scheduler.pulseRemainingMs=[Math.max(0,o.squelchAfterSec*1000)];
+      return RADIO.loadRadioState(saved,now);
+    },
     radioTick:()=>RADIO.tickRadio(0.016,{expectation:STAB.expectation(),px,py}),
     // Forty-five seconds is the game. It is not the test.
     tuneRoomTone:(o)=>Object.assign(ROOM_TONE,o),
@@ -16009,7 +16884,7 @@ function render3d(){
     sensoryProfile:worldView?.sensoryProfile||'story',
     plan: usingPlan(),
     textSpace: sourceTextSpaceActive(),
-    floorH: worldView?.floorH??(usingSpecialSpace()?activeGeometry().floorAt(viewX,viewY):usingPlan()?FP.renderedFloorAt(viewX,viewY,rendered.x,rendered.z):floorHere()),
+    floorH: worldView?.floorH??(usingSpecialSpace()?(activeGeometry().renderedFloorAt?.(viewX,viewY,rendered.x,rendered.z)??activeGeometry().floorAt(viewX,viewY)):usingPlan()?FP.renderedFloorAt(viewX,viewY,rendered.x,rendered.z):floorHere()),
     moveIntervalMs:currentMoveIntervalMs(),
     water:usingSpecialSpace()?{active:false}:currentNatatoriumWaterRenderState({audio:waterAudio}),
   });
@@ -16195,7 +17070,7 @@ const CONTROLLER_KEY=Object.freeze({
 function controllerEvent(action, repeat=false){
   const [key,code]=CONTROLLER_KEY[action]||['',''];
   return {key,code,repeat,metaKey:false,ctrlKey:false,altKey:false,shiftKey:action==='quiet',target:null,
-    preventDefault(){},stopPropagation(){},controller:true,controllerAction:action};
+    timeStamp:performance.now(),preventDefault(){},stopPropagation(){},controller:true,controllerAction:action};
 }
 function controllerPress(action,repeat=false){ if(CONTROLLER_KEY[action]) onKey(controllerEvent(action,repeat)); }
 function controllerRelease(action){ if(CONTROLLER_KEY[action]) onKeyUp(controllerEvent(action,false)); }
@@ -16488,6 +17363,7 @@ function onKeyUp(e){
   }
 }
 function onBlur(){
+  bellPealPerformance?.suspend?.('focus-loss');
   // Releasing focus mid-press would otherwise leave keys "stuck".
   resetMotionInput('window-blur', {stopRenderMove:true});
   // Hand the cursor back to the OS. A native grab that survives alt-tab leaves
@@ -16662,6 +17538,7 @@ async function boot(){
   });
   window.addEventListener('message', ensureInteractionFocus, {passive:true});
   window.addEventListener('focus', ()=>{
+    if(!paused)bellPealPerformance?.resume?.('window-focus');
     recoverInteractionFocus('window-focus');
     ensureInteractionFocus();
     syncPointerMode('window-focus');
@@ -16673,9 +17550,11 @@ async function boot(){
   }, {passive:true});
   document.addEventListener('visibilitychange', ()=>{
     if(document.hidden){
+      bellPealPerformance?.suspend?.('visibility-hidden');
       resetMotionInput('visibility-hidden', {stopRenderMove:true});
       void recoverInteractionAudio('visibility-hidden');
     } else {
+      bellPealPerformance?.resume?.('visibility-visible');
       recoverInteractionFocus('visibility-visible');
       if(gameplayWantsPointerCapture()) void pointerMode.attemptCapture('visibility-visible',{gesture:false});
     }

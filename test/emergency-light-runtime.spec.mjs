@@ -13,11 +13,16 @@ assert.ok(frame,'a readable nearby pulse authors one shadow frame');
 assert.equal(frame.lightId,'near','unreachable distant practicals cannot steal the single practical shadow pass');
 assert.equal(frame.lightOverride.castsShadow,true);
 assert.ok(Number.isFinite(frame.lightOverride.shadowYaw));
-assert.equal(frame.instance.mesh,'stair_shadow_figure');
-assert.equal(frame.instance.shadowOnly,true,'the human form is absent from the colour pass');
+assert.equal(frame.instance.mesh,'player_shadow_figure');
+assert.equal(frame.instance.shadowOnly,false,'the human form occupies world depth in the colour pass');
+assert.deepEqual(frame.instance.emissive,[1,.985,1,2.6],'the figure itself is an overexposed white source');
 assert.equal(frame.instance.y,.5,'the body stands on the authored room floor');
 assert.equal(frame.instances.length,3,'one red snap projects a small impossible crowd, not a mild single shadow');
 assert.equal(new Set(frame.instances.map((instance)=>instance.id)).size,3);
+assert.equal(frame.apparitionLights.length,3,'each body emits a compact white field into the room');
+assert.ok(frame.apparitionLights.every((light)=>light.kind==='apparition'&&light.intensity>0&&light.radius>=4));
+assert.ok(frame.instances.every((instance)=>instance.scaleX>=.88&&instance.scaleX<=1.04&&instance.scaleY>=.96&&instance.scaleY<=1.08),
+  'the crowd keeps recognisably human proportions');
 assert.ok(frame.lightOverride.shadowPitch<0,'the practical aims down through the floor-standing figures');
 assert.equal('collision' in frame.instance,false);
 assert.equal('hush' in frame.instance,false);
@@ -27,20 +32,34 @@ assert.equal(buildEmergencyShadowFrame(lights,{listener:{x:2,z:1},enabled:false}
 assert.equal(buildEmergencyShadowFrame([{...lights[1],shadowReveal:0}],{listener:{x:2,z:1}}),null);
 assert.ok(buildEmergencyShadowFrame([{...lights[1],x:50}],{listener:{x:0,z:1}}),'the apparition remains eligible across the concert hall');
 
-// THE CROWD BELONGS TO THE ROOM, NOT TO THE CAMERA.
+// THE CROWD IS STAGED IN SECTORS, NOT WELDED TO THE CAMERA.
 //
 // The original staging put the three figures at fixed offsets along the view
-// axis, so they were welded to the player's face and swung with the mouse. The
-// stations are anchored to the practical now; the camera may not move them.
+// axis — a crowd swinging with the mouse. But the opposite extreme is just as
+// broken: a shadow only lands on a surface when the body is between the lamp and
+// that surface, so a crowd that ignores where you are looking throws everything
+// onto walls behind you. Staging follows the view, HARD-QUANTISED into eighths,
+// so a whole turn produces a handful of arrangements rather than a pan.
 {
   const lamp=[{id:'hall',x:20,y:2.4,z:20,floorY:0,intensity:.6,shadowReveal:1}];
   const listener={x:14,z:20};
-  const north=buildEmergencyShadowFrame(lamp,{listener,viewYaw:0});
-  const south=buildEmergencyShadowFrame(lamp,{listener,viewYaw:Math.PI});
-  assert.deepEqual(north.instances,south.instances,'turning on the spot cannot restage the apparitions');
-  for(const instance of north.instances){
-    const reach=Math.hypot(instance.x-20,instance.z-20);
-    assert.ok(reach>1.2&&reach<10,`a figure holds a station around the fitting (${reach.toFixed(1)}m)`);
+  const yaws=Array.from({length:64},(_,index)=>index/64*Math.PI*2);
+  const stagings=new Set(yaws.map((viewYaw)=>buildEmergencyShadowFrame(lamp,{listener,viewYaw})
+    .instances.map((instance)=>`${instance.x.toFixed(2)},${instance.z.toFixed(2)}`).join('|')));
+  assert.ok(stagings.size<=8,`a full turn produces at most one staging per sector (${stagings.size})`);
+  assert.ok(stagings.size>1,'and the sector does follow the view, or the shadow lands behind you');
+  // Nudging the camera a degree must change nothing at all.
+  assert.deepEqual(
+    buildEmergencyShadowFrame(lamp,{listener,viewYaw:.02}).instances,
+    buildEmergencyShadowFrame(lamp,{listener,viewYaw:.03}).instances,
+    'small camera movement cannot restage the apparitions');
+  for(const viewYaw of yaws){
+    for(const instance of buildEmergencyShadowFrame(lamp,{listener,viewYaw}).instances){
+      const reach=Math.hypot(instance.x-20,instance.z-20);
+      assert.ok(reach>1.2&&reach<10,`a figure holds a station around the fitting (${reach.toFixed(1)}m)`);
+      assert.ok(Math.hypot(instance.x-listener.x,instance.z-listener.z)>2,
+        'and no amount of turning brings one onto the camera');
+    }
   }
 }
 
@@ -118,12 +137,19 @@ const props=readFileSync(new URL('../src/render/props3d.js',import.meta.url),'ut
 const minimap=readFileSync(new URL('../src/render/minimap.js',import.meta.url),'utf8');
 assert.match(main,/viewYaw:R3\.r3dWorldYaw/,'the apparition receives the actual camera direction');
 assert.match(main,/shadow\?shadow\.instances:\[\]/,'all three authored figures reach the shadow pass');
+assert.match(main,/\.\.\.\(shadow\.apparitionLights\|\|\[\]\)/,'the bodies feed their white practicals into the world-light pass');
 assert.match(main,/noteEmergencyApparitions\(shadow/,'the red beat is offered to the navigator');
 assert.match(main,/apparitions:recentApparitions\(\)/,'and the navigator draws it');
 assert.match(main,/age>APPARITION_RETURN_MS/,'the return dies with the beat that made it');
 assert.match(renderer,/uLocalLightPenetration/,'the raymarched architecture receives emergency penetration');
 assert.match(props,/emergencyOnly:\!\!practical&&emergencyShadowInstances\.length>0/,'ordinary prop shadows cannot bury the apparition crowd');
 assert.match(props,/practical\?\.color\?/,'the visible fixture glass takes the resolved emergency red');
+assert.match(renderer,/return mix\(shaded, vec3\(grey\), claim \* \(1\.0 - backing\)\);/,
+  'raymarched surfaces cannot retain unbacked emergency red');
+assert.match(props,/return mix\(shaded,vec3\(grey\),claim\*\(1\.0-backing\)\);/,
+  'mesh surfaces obey the same red reservation');
+assert.ok(props.indexOf('vEmissive.rgb*vEmissive.a')<props.indexOf('col=reserveEmergencyRed'),
+  'emissive props are checked by the reservation rather than bypassing it');
 assert.match(minimap,/drawApparitionReturns/,'the panel has a vocabulary for an unclassified return');
 assert.equal(/apparition/i.test(readFileSync(new URL('../src/game/map-model.js',import.meta.url),'utf8')),false,
   'and it never enters the map model as a contact');

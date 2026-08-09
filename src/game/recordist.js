@@ -68,7 +68,7 @@ function spoilThreshold() {
   return ROOM_TONE.spoilNoise * Math.max(0.25, Number(difficultyRules.spoilNoiseScale) || 1);
 }
 
-function handleRecordingNoise(level, reason) {
+function handleRecordingNoise(level, reason, meta = {}) {
   if (state.phase !== 'recording' || state.stalled) return;
   const threshold = spoilThreshold();
   if (level <= threshold) return;
@@ -76,7 +76,7 @@ function handleRecordingNoise(level, reason) {
     state.assistPause = Math.max(state.assistPause, Number(difficultyRules.pauseSeconds) || 0.7);
     return;
   }
-  spoil(reason);
+  spoil(reason, meta);
 }
 
 const state = {
@@ -89,6 +89,7 @@ const state = {
                         // and you may move to go and silence it.
   spoiled: false,
   spoilReason: '',
+  spoilMeta: null,
   injuries: 0,          // permanent within a run; each one makes you louder
   noise: 0,             // current, decaying
   worldNoise: 0,        // remote sources the presence hears but this mic does not
@@ -117,7 +118,9 @@ export function currentWorldNoise() { return Math.max(state.noise, state.worldNo
 export function toggleLight() {
   if (!state.light && state.battery <= 0) return false;      // nothing to turn on
   state.light = !state.light;
-  if (state.phase === 'recording' && state.light) spoil('you reached for the light');
+  if (state.phase === 'recording' && state.light) spoil('you reached for the light', {
+    sourceKind:'player',sourceId:'player',playerGenerated:true,deliberate:true,
+  });
   return state.light;
 }
 
@@ -160,7 +163,9 @@ export function emitStepNoise(x, y, surface = 1) {
   const level = (state.slow ? NOISE.slow : NOISE.walk) * scale + noiseFloor();
   state.noise = Math.max(state.noise, level);
   state.lastNoiseAt = { x, y, t: performance.now() };
-  handleRecordingNoise(level, 'you moved');
+  handleRecordingNoise(level, 'you moved', {
+    sourceKind:'player',sourceId:'player',playerGenerated:true,deliberate:true,
+  });
   reportAcoustic({
     kind: inferAcousticKind('you moved', level, { step: true, slow: state.slow, injured: state.injuries > 0 }),
     level, x, y, reason: 'you moved', sourceKind: 'player', sourceId: 'player', spoils: true, deliberate: true,
@@ -187,7 +192,9 @@ export function emitNoise(level, x, y, reason = 'something moved', options = {})
   if (spoils) state.noise = Math.max(state.noise, heard);
   else state.worldNoise = Math.max(state.worldNoise, heard);
   if (x != null) state.lastNoiseAt = { x, y, t: performance.now() };
-  if (spoils) handleRecordingNoise(state.noise, reason);
+  if (spoils) handleRecordingNoise(state.noise, reason, {
+    sourceKind,sourceId,playerGenerated,deliberate,kind:kind || inferAcousticKind(reason, heard),
+  });
   reportAcoustic({
     kind: kind || inferAcousticKind(reason, heard),
     level: heard, x, y, reason, sourceKind, sourceId, playerGenerated,
@@ -203,7 +210,11 @@ export function emitNoise(level, x, y, reason = 'something moved', options = {})
 export function addNoise(level, x, y, reason = 'something moved', options = {}) {
   state.noise = Math.min(1, state.noise + level + noiseFloor());
   if (x != null) state.lastNoiseAt = { x, y, t: performance.now() };
-  handleRecordingNoise(state.noise, reason);
+  handleRecordingNoise(state.noise, reason, {
+    sourceKind:options.sourceKind || 'equipment',sourceId:options.sourceId || 'equipment',
+    playerGenerated:options.playerGenerated ?? false,deliberate:!!options.deliberate,
+    kind:options.kind || inferAcousticKind(reason, state.noise),
+  });
   reportAcoustic({
     kind: options.kind || inferAcousticKind(reason, state.noise),
     level: state.noise, x, y, reason,
@@ -249,6 +260,7 @@ export function startRecording() {
   state.assistPause = 0;
   state.spoiled = false;
   state.spoilReason = '';
+  state.spoilMeta = null;
   return true;
 }
 
@@ -271,17 +283,18 @@ export function stopRecording() {
   state.phase = 'idle';
   // The light does NOT come back by itself. Reaching for it is a decision you
   // make in the dark, every time, knowing what it costs.
-  const result = { completed, elapsed: state.takeElapsed, spoiled: state.spoiled, reason: state.spoilReason };
+  const result = { completed, elapsed: state.takeElapsed, spoiled: state.spoiled, reason: state.spoilReason, spoilMeta:state.spoilMeta?{...state.spoilMeta}:null };
   state.takeElapsed = 0;
   state.stalled = false;
   state.assistPause = 0;
   return result;
 }
 
-function spoil(reason) {
+function spoil(reason, meta = {}) {
   if (state.spoiled) return;
   state.spoiled = true;
   state.spoilReason = reason;
+  state.spoilMeta = meta && typeof meta === 'object' ? {...meta} : null;
 }
 export { spoil as spoilTake };
 
@@ -297,7 +310,9 @@ export function tickRecording(dt) {
   // not spoil it. Silence the instrument (resumeTake) to let it run again.
   if (state.stalled) return 'stalled';
   if (state.noise > spoilThreshold()) {
-    handleRecordingNoise(state.noise, 'the room was not empty');
+    handleRecordingNoise(state.noise, 'the room was not empty', {
+      sourceKind:'environment',sourceId:'room',playerGenerated:false,deliberate:false,
+    });
     if (state.spoiled) return 'spoiled';
     if (state.assistPause > 0) return 'paused';
   }

@@ -7,31 +7,42 @@ export const CHAPEL_TOWER_PHASE = Object.freeze({
   CHAPEL_FINAL: 'chapel_final',
 });
 
-export const TOWER_RELAY_STAGE = Object.freeze({
-  DIAGNOSE: 'diagnose',
-  INTERRUPT: 'interrupt',
-  RELEASE: 'release',
-  SETTLING: 'settling',
+export const TOWER_PEAL_STAGE = Object.freeze({
+  LOCATE: 'locate',
+  SOURCE: 'source',
+  TRANSITION: 'transition',
+  TAKE_TENOR: 'take_tenor',
+  PERFORM: 'perform',
+  STANDING: 'standing',
   DESCEND: 'descend',
   CHAPEL: 'chapel',
 });
 
+export const TOWER_STEDMAN_ROWS = 84;
+// Compatibility exports for debug tooling and older callers. They now describe
+// thirds of the Stedman touch rather than physical relay clamps.
+export const TOWER_RELAY_STAGE = TOWER_PEAL_STAGE;
 export const TOWER_RELAY_REQUIRED_INTERRUPTS = 3;
 
 const PHASES = new Set(Object.values(CHAPEL_TOWER_PHASE));
 
 export function freshChapelTowerState() {
   return {
-    schema: 3,
+    schema: 4,
     layoutSchema: 2,
     legacyLayout: false,
     phase: CHAPEL_TOWER_PHASE.FORESHADOW,
-    ropeRoomVisited: false,
-    hatchInspected: false,
-    hammerIsolated: false,
-    relayInterruptions: 0,
+    corridorDiscovered: false,
+    tenorRopeTaken: false,
+    tenorRowsCompleted: 0,
+    tenorMisses: 0,
+    pealCompleted: false,
+    bellsStanding: false,
+    transportElapsedMs: 0,
+    transportMode: 'dormant',
+    transportWashMs: 0,
+    transportTransitionProgress: 0,
     attempts: 0,
-    shuttersReleased: false,
     chapelReached: false,
   };
 }
@@ -39,61 +50,59 @@ export function freshChapelTowerState() {
 export function normalizeChapelTowerState(value) {
   const source = value && typeof value === 'object' ? value : {};
   const phase = PHASES.has(source.phase) ? source.phase : CHAPEL_TOWER_PHASE.FORESHADOW;
+  const legacy=Number(source.schema||0)<4;
+  const migratedRows=legacy
+    ? Math.min(TOWER_STEDMAN_ROWS,Math.max(0,Math.floor(Number(source.relayInterruptions)||0))*28)
+    : Math.max(0,Math.min(TOWER_STEDMAN_ROWS,Math.floor(Number(source.tenorRowsCompleted)||0)));
+  const cleared=[CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(phase);
+  const migratedComplete=cleared||!!source.pealCompleted||(legacy&&(!!source.shuttersReleased||Number(source.relayInterruptions)>=3));
   return {
     ...freshChapelTowerState(),
-    schema:3,
+    schema:4,
     layoutSchema:2,
     legacyLayout:!!source.legacyLayout||Number(source.layoutSchema??source.schema??1)<2,
     phase,
-    ropeRoomVisited: !!source.ropeRoomVisited,
-    hatchInspected: !!source.hatchInspected,
-    hammerIsolated: !!source.hammerIsolated,
-    relayInterruptions: Math.max(0, Math.min(
-      TOWER_RELAY_REQUIRED_INTERRUPTS,
-      Math.floor(Number(source.relayInterruptions) || 0),
-    )),
+    corridorDiscovered:!!source.corridorDiscovered,
+    tenorRopeTaken:!!source.tenorRopeTaken,
+    tenorRowsCompleted:migratedComplete?TOWER_STEDMAN_ROWS:migratedRows,
+    tenorMisses:Math.max(0,Math.floor(Number(source.tenorMisses)||0)),
+    pealCompleted:migratedComplete,
+    bellsStanding:cleared||!!source.bellsStanding,
+    transportElapsedMs:Math.max(0,Number(source.transportElapsedMs)||0),
+    transportMode:typeof source.transportMode==='string'?source.transportMode:(phase===CHAPEL_TOWER_PHASE.FORESHADOW?'dormant':'world'),
+    transportWashMs:Math.max(0,Number(source.transportWashMs)||0),
+    transportTransitionProgress:Math.max(0,Math.min(1,Number(source.transportTransitionProgress)||0)),
     attempts: Math.max(0, Math.floor(Number(source.attempts) || 0)),
-    shuttersReleased: phase === CHAPEL_TOWER_PHASE.TOWER_CLEARED
-      || phase === CHAPEL_TOWER_PHASE.CHAPEL_FINAL
-      || !!source.shuttersReleased,
     chapelReached: phase === CHAPEL_TOWER_PHASE.CHAPEL_FINAL || !!source.chapelReached,
   };
 }
 
-export function towerDiagnosisComplete(value) {
+export function towerPealStage(value) {
   const state = normalizeChapelTowerState(value);
-  return state.ropeRoomVisited && state.hatchInspected && state.hammerIsolated;
+  if (state.phase === CHAPEL_TOWER_PHASE.CHAPEL_FINAL || state.chapelReached) return TOWER_PEAL_STAGE.CHAPEL;
+  if (state.phase === CHAPEL_TOWER_PHASE.TOWER_CLEARED) return TOWER_PEAL_STAGE.DESCEND;
+  if (state.phase === CHAPEL_TOWER_PHASE.FORESHADOW) return TOWER_PEAL_STAGE.LOCATE;
+  if (state.phase === CHAPEL_TOWER_PHASE.SOURCE_READY) return state.corridorDiscovered?TOWER_PEAL_STAGE.SOURCE:TOWER_PEAL_STAGE.LOCATE;
+  if (state.phase === CHAPEL_TOWER_PHASE.TRANSITION_READY) return TOWER_PEAL_STAGE.TRANSITION;
+  if (state.phase !== CHAPEL_TOWER_PHASE.TOWER_ACTIVE || !state.tenorRopeTaken) return TOWER_PEAL_STAGE.TAKE_TENOR;
+  if (!state.pealCompleted) return TOWER_PEAL_STAGE.PERFORM;
+  return TOWER_PEAL_STAGE.STANDING;
 }
-
-export function towerRelayStage(value) {
-  const state = normalizeChapelTowerState(value);
-  if (state.phase === CHAPEL_TOWER_PHASE.CHAPEL_FINAL || state.chapelReached) return TOWER_RELAY_STAGE.CHAPEL;
-  if (state.phase === CHAPEL_TOWER_PHASE.TOWER_CLEARED) return TOWER_RELAY_STAGE.DESCEND;
-  if (state.phase !== CHAPEL_TOWER_PHASE.TOWER_ACTIVE || !towerDiagnosisComplete(state)) return TOWER_RELAY_STAGE.DIAGNOSE;
-  if (state.relayInterruptions < TOWER_RELAY_REQUIRED_INTERRUPTS) return TOWER_RELAY_STAGE.INTERRUPT;
-  if (!state.shuttersReleased) return TOWER_RELAY_STAGE.RELEASE;
-  return TOWER_RELAY_STAGE.SETTLING;
-}
+export const towerRelayStage=towerPealStage;
 
 export function towerObjective(value) {
   const state = normalizeChapelTowerState(value);
   if (state.phase === CHAPEL_TOWER_PHASE.SOURCE_READY) {
-    return { id: 'enter-source', label: 'ENTER SOURCE AT THE CHAPEL SCREEN' };
+    return state.corridorDiscovered
+      ? { id: 'enter-source', label: 'ENTER SOURCE AT THE INNER SCREEN' }
+      : { id: 'locate-bells', label: 'LOCATE THE BELLS' };
   }
   if (state.phase === CHAPEL_TOWER_PHASE.TRANSITION_READY) {
     return { id: 'follow-signal', label: 'FOLLOW THE SIGNAL INTO THE TOWER' };
   }
   if (state.phase === CHAPEL_TOWER_PHASE.TOWER_ACTIVE) {
-    if (!state.ropeRoomVisited) return { id: 'ringing-room', label: 'ENTER THE RINGING ROOM' };
-    if (!state.hammerIsolated) return { id: 'clock-hammer', label: 'ISOLATE THE CLOCK HAMMER' };
-    if (!state.hatchInspected) return { id: 'belfry-hatch', label: 'INSPECT THE BELFRY HATCH' };
-    if (state.relayInterruptions < TOWER_RELAY_REQUIRED_INTERRUPTS) {
-      return {
-        id: 'break-relay',
-        label: `BREAK THE BELL RELAY  ${state.relayInterruptions} / ${TOWER_RELAY_REQUIRED_INTERRUPTS}`,
-      };
-    }
-    if (!state.shuttersReleased) return { id: 'release-winch', label: 'RELEASE THE SHUTTER WINCH' };
+    if (!state.tenorRopeTaken) return { id: 'take-tenor', label: 'TAKE THE TENOR ROPE' };
+    if (!state.pealCompleted) return { id: 'ring-stedman', label: `RING STEDMAN  ${state.tenorRowsCompleted} / ${TOWER_STEDMAN_ROWS}` };
     return { id: 'bells-settling', label: 'STAND CLEAR — BELLS SETTLING' };
   }
   if (state.phase === CHAPEL_TOWER_PHASE.TOWER_CLEARED) {
@@ -125,7 +134,7 @@ export function inferLegacyChapelTower(source = {}) {
     takes.includes?.('lux_nova')
     || source.encounters?.cleared?.includes?.('chapel')
   ) {
-    return { ...freshChapelTowerState(), phase: CHAPEL_TOWER_PHASE.CHAPEL_FINAL, shuttersReleased: true };
+    return { ...freshChapelTowerState(), phase: CHAPEL_TOWER_PHASE.CHAPEL_FINAL, pealCompleted:true, bellsStanding:true, tenorRowsCompleted:TOWER_STEDMAN_ROWS };
   }
 
   if (source.flags?.['chunkSurf.completed']) {
@@ -151,18 +160,30 @@ export function reduceChapelTower(value, event = {}) {
 
   switch (event.type) {
     case 'ROPE_ROOM_VISITED':
-      return { ...state, ropeRoomVisited: true };
+      return state;
 
     case 'BELL_HATCH_INSPECTED':
-      return { ...state, hatchInspected: true };
+      return state;
 
     case 'CLOCK_HAMMER_ISOLATED':
-      return { ...state, hammerIsolated: true };
+      return state;
 
     case 'FOURTH_TAKE_COMPLETED':
       return state.phase === CHAPEL_TOWER_PHASE.FORESHADOW
-        ? { ...state, phase: CHAPEL_TOWER_PHASE.SOURCE_READY }
+        ? { ...state, phase: CHAPEL_TOWER_PHASE.SOURCE_READY, transportMode:'world', transportWashMs:0, transportTransitionProgress:0 }
         : state;
+
+    case 'CHAPEL_CORRIDOR_REACHED':
+      return {...state,corridorDiscovered:true};
+
+    case 'BELL_TRANSPORT_SAVED':
+      return {
+        ...state,
+        transportElapsedMs:Math.max(0,Number(event.elapsedMs)||0),
+        transportMode:String(event.mode||state.transportMode),
+        transportWashMs:Math.max(0,Number(event.washMs??state.transportWashMs)||0),
+        transportTransitionProgress:Math.max(0,Math.min(1,Number(event.transitionProgress??state.transportTransitionProgress)||0)),
+      };
 
     case 'SOURCE_COMPLETED':
       assertPhase(state, CHAPEL_TOWER_PHASE.SOURCE_READY, event.type);
@@ -173,44 +194,43 @@ export function reduceChapelTower(value, event = {}) {
       return {
         ...state,
         phase: CHAPEL_TOWER_PHASE.TOWER_ACTIVE,
-        relayInterruptions: 0,
-        shuttersReleased: false,
+        tenorRopeTaken:false,
         chapelReached: false,
+        transportMode:'tower',
+        transportTransitionProgress:1,
       };
 
     case 'TOWER_COLLISION':
       assertPhase(state, CHAPEL_TOWER_PHASE.TOWER_ACTIVE, event.type);
       return { ...state, attempts: state.attempts + 1 };
 
-    case 'RELAY_INTERRUPTED':
+    case 'TENOR_ROPE_TAKEN':
       assertPhase(state, CHAPEL_TOWER_PHASE.TOWER_ACTIVE, event.type);
-      if (!towerDiagnosisComplete(state)) {
-        throw new Error('chapel tower: RELAY_INTERRUPTED requires complete diagnosis');
-      }
-      return {
-        ...state,
-        relayInterruptions: Math.min(
-          TOWER_RELAY_REQUIRED_INTERRUPTS,
-          state.relayInterruptions + 1,
-        ),
-      };
+      return {...state,tenorRopeTaken:true};
 
-    case 'SHUTTERS_RELEASED':
+    case 'TENOR_ROW_COMPLETED':
       assertPhase(state, CHAPEL_TOWER_PHASE.TOWER_ACTIVE, event.type);
-      if (state.relayInterruptions < TOWER_RELAY_REQUIRED_INTERRUPTS) {
-        throw new Error('chapel tower: SHUTTERS_RELEASED requires interrupted relay');
-      }
-      return { ...state, shuttersReleased: true };
+      return {...state,tenorRowsCompleted:Math.max(state.tenorRowsCompleted,Math.min(TOWER_STEDMAN_ROWS,Math.floor(Number(event.row)||state.tenorRowsCompleted+1)))};
+
+    case 'TENOR_MISSED':
+      assertPhase(state, CHAPEL_TOWER_PHASE.TOWER_ACTIVE, event.type);
+      return {...state,tenorMisses:state.tenorMisses+1};
+
+    case 'PEAL_COMPLETED':
+      assertPhase(state, CHAPEL_TOWER_PHASE.TOWER_ACTIVE, event.type);
+      return {...state,tenorRowsCompleted:TOWER_STEDMAN_ROWS,pealCompleted:true};
 
     case 'BELLS_STOOD':
       assertPhase(state, CHAPEL_TOWER_PHASE.TOWER_ACTIVE, event.type);
-      if (!state.shuttersReleased) {
-        throw new Error('chapel tower: BELLS_STOOD requires released shutters');
+      if (!state.pealCompleted) {
+        throw new Error('chapel tower: BELLS_STOOD requires completed peal');
       }
       return {
         ...state,
         phase: CHAPEL_TOWER_PHASE.TOWER_CLEARED,
-        shuttersReleased: true,
+        bellsStanding:true,
+        transportMode:'stood',
+        transportTransitionProgress:1,
       };
 
     case 'CHAPEL_REACHED':

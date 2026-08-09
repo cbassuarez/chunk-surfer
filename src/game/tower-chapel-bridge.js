@@ -1,15 +1,13 @@
 import {
   CHAPEL_TOWER_PHASE,
-  TOWER_RELAY_REQUIRED_INTERRUPTS,
   normalizeChapelTowerState,
 } from './chapel-tower-state.js';
 
-export function applyTowerRelayAdvantage(battle, towerState) {
+export function applyTowerPealAdvantage(battle, towerState) {
   const tower = normalizeChapelTowerState(towerState);
-  const relayBroken = [CHAPEL_TOWER_PHASE.TOWER_CLEARED, CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(tower.phase)
-    && tower.relayInterruptions >= TOWER_RELAY_REQUIRED_INTERRUPTS
-    && tower.shuttersReleased;
-  if (!battle || !relayBroken) return battle;
+  const pealSilenced = [CHAPEL_TOWER_PHASE.TOWER_CLEARED, CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(tower.phase)
+    && tower.pealCompleted && tower.bellsStanding;
+  if (!battle || !pealSilenced) return battle;
 
   const combat = battle.combat || {};
   const movements = (combat.movements || []).map((movement, index) => index === 0
@@ -19,7 +17,7 @@ export function applyTowerRelayAdvantage(battle, towerState) {
       before: [
         {
           who: 'direction',
-          text: 'The chapel reaches for the tower carrier. The three broken relay clamps answer with silence.',
+          text: 'The chapel reaches for the tower carrier. The completed touch answers with silence.',
         },
         ...(movement.before || []),
       ],
@@ -39,7 +37,7 @@ export function applyTowerRelayAdvantage(battle, towerState) {
       ...combat,
       baseComposure: Math.max(1, Number(combat.baseComposure || 8) + 2),
       movements,
-      towerRelayBroken: true,
+      towerPealCompleted: true,
     },
   };
 }

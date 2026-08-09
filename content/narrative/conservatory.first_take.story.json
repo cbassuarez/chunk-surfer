@@ -38,7 +38,7 @@
       "lines": [
         {
           "who": "direction",
-          "text": "Foam on three walls, carpet, a dead ceiling. The quietest room in the building.",
+          "text": "Foam on three walls, carpet, a dead ceiling. This is by far the quietest room in the building.",
           "id": "start.line.1"
         },
         {
@@ -82,12 +82,12 @@
         },
         {
           "who": "you",
-          "text": "That is why the case has four gum rubber risers on it. Silicone under those. It cost more than the microphone.",
+          "text": "That is why the case has four gum rubber risers on it. Silicone under those. I think it cost more than the microphone.",
           "id": "floor.so.line.2"
         },
         {
           "who": "direction",
-          "text": "You have known that since your first week on a rig.",
+          "text": "You have known that since your first week with the rig, but you're nervous, making excuses.",
           "id": "floor.so.line.3"
         }
       ],
@@ -104,18 +104,8 @@
           "id": "floor.risers.line.1"
         },
         {
-          "who": "you",
-          "text": "So why did I do that.",
-          "id": "floor.risers.line.2"
-        },
-        {
-          "who": "you",
-          "text": "Because it is quiet in here, and I was hurrying, and I did not notice I was hurrying.",
-          "id": "floor.risers.line.3"
-        },
-        {
           "who": "direction",
-          "text": "Nothing has happened. Nobody has touched you. It is 22:04 and you have made your first mistake in a decade.",
+          "text": "You have quickly fixed your first mistake of the night. You get the feeling you need to be extra careful from here on out.",
           "id": "floor.risers.line.4"
         }
       ],
