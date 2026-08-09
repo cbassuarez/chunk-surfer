@@ -315,6 +315,37 @@ try {
     await settleViewport();
     await page.screenshot({path:path.join(output,name)});
   }
+  // Civic-ruin acceptance is a two-state composition check, not a prop-count
+  // check. With the torch off, the chained public boundary and large silhouettes
+  // must survive the dead house circuit; restoring S/P-03 should then reveal the
+  // waiting suite and box office without changing the garden's circulation.
+  const atriumCivicViews=[
+    ['03h-atrium-entrance',78.75,6,0],
+    ['03i-atrium-waiting',80,19,3],
+    ['03j-atrium-box-office',88,10,1],
+    ['03k-atrium-garden',83,7,2],
+    ['03l-atrium-hall-approach',95,24,1],
+  ];
+  await page.evaluate(()=>{window.__probe.setTorch(false);window.__probe.setPower('sp03',false);});
+  await page.evaluate(()=>window.__probe.warpCell(78.75,6,0));
+  await settleViewport();
+  const atriumDead=await page.evaluate(()=>window.__probe.light());
+  assert.ok(atriumDead.rig.some((light)=>light.id==='atrium-main-exit'),'the sealed entrance reads before S/P-03');
+  assert.ok(!atriumDead.rig.some((light)=>light.id==='foh-live-west'||light.id==='foh-live-east'),'general foyer fittings remain dead');
+  for(const state of['off','on']){
+    if(state==='on'){
+      await page.evaluate(()=>{window.__probe.setPower('sp03',true);window.__probe.warpCell(80,19,3);});
+      await settleViewport();
+      const atriumLive=await page.evaluate(()=>window.__probe.light());
+      assert.ok(atriumLive.rig.some((light)=>light.id==='foh-live-west'||light.id==='foh-live-east'),'S/P-03 reveals the wider front of house');
+    }
+    for(const [stem,x,y,facing] of atriumCivicViews){
+      await page.evaluate((ax,ay,af)=>window.__probe.warpCell(ax,ay,af),x,y,facing);
+      await settleViewport();
+      await page.screenshot({path:path.join(output,`${stem}-sp03-${state}.png`)});
+    }
+  }
+  await page.evaluate(()=>window.__probe.setPower('sp03',false));
   await page.evaluate(()=>window.__probe.setFlags(['academic.entered']));
   const discoveredAcademic=await page.evaluate(()=>window.__probe.map());
   assert.equal(discoveredAcademic.floors.find((floor)=>floor.id==='academic')?.shortLabel,'3F');
@@ -339,6 +370,24 @@ try {
     assert.equal(await page.evaluate(()=>window.__probe.closeGodMenu()),true);
     await page.waitForFunction(()=>window.__scenes?.top?.()?.id!=='god-menu',{timeout:interactionTimeout});
   });
+
+  // Every God row is also a fixed review camera. These captures make a stale
+  // hook visually obvious: the menu cannot quietly land on another cell with
+  // the same zone label and still pass acceptance.
+  for(const id of['loading-bay','get-in','front-atrium','studio-b3','natatorium','concert-hall','practice-wing','academic-gallery','chapel','plant-room']){
+    assert.equal(await page.evaluate((hook)=>window.__probe.godWarpHook(hook),id),true,`God hook ${id} resolves`);
+    await settleViewport();
+    await safeScreenshot(`04c-god-location-${id}.png`);
+  }
+  for(const [id,archetype] of[
+    ['front-main','public-glazed-pair'],['hall-vestibule','hall-acoustic-pair'],['chapel-c17','chapel-oak-pair'],
+    ['practice-west-1','practice-acoustic-single'],['plant-spur','service-fire-single'],['foh-office','staff-half-glazed'],
+    ['pool-lobby','pool-glazed-pair'],['tower-hatch','tower-service-single'],
+  ]){
+    assert.equal(await page.evaluate((kind)=>window.__probe.godWarpDoor(kind),archetype),true,`God door hook ${id} resolves`);
+    await settleViewport();
+    await safeScreenshot(`04d-god-door-${id}.png`);
+  }
 
   await smokeStep('open cold open diagnostic',async()=>{
     assert.equal(await page.evaluate(()=>window.__probe.coldOpen()),true);
@@ -531,14 +580,65 @@ try {
   await page.screenshot({path:path.join(output,'07o-hall-seating-rises-to-rear.png')});
   await page.evaluate(()=>{window.__probe.setPower('sp03',false);window.__probe.setTorch(false);});
 
-  await page.evaluate(()=>window.__probe.warpCell(35,29,1));
-  await page.screenshot({path:path.join(output,'07m-sp01-off.png')});
-  const livePlant=await page.evaluate(()=>{window.__probe.setPower('sp01',true);return{power:window.__probe.power(),light:window.__probe.light(),hum:window.__probe.electricalHum()};});
+  // Plant acceptance is a camera-locked before/after pair. Broad material
+  // masses must survive the dead circuit; S/P-01 then has to reveal machinery,
+  // switchgear and the annex rather than merely raising the HUD exposure.
+  await page.evaluate(()=>window.__probe.plantVisual('dormant'));
+  const plantViews=[
+    ['07p-plant-entrance-sp01-off.png','07p-plant-entrance-sp01-on.png',31,30.5,1],
+    ['07m-sp01-off.png','07m-sp01-on.png',35,35,0],
+    ['07p-plant-switchgear-sp01-off.png','07p-plant-switchgear-sp01-on.png',35.5,30,1],
+    ['07p-plant-annex-manifold-sp01-off.png','07p-plant-annex-manifold-sp01-on.png',33,35.8,2],
+  ];
+  for(const state of['off','on']){
+    await page.evaluate((live)=>window.__probe.setPower('sp01',live),state==='on');
+    for(const [offName,onName,x,y,facing] of plantViews){
+      await page.evaluate((ax,ay,af)=>window.__probe.warpCell(ax,ay,af),x,y,facing);
+      await settleViewport();
+      const filename=state==='on'?onName:offName;
+      await page.screenshot({path:path.join(output,filename)});
+    }
+  }
+  const livePlant=await page.evaluate(()=>({power:window.__probe.power(),light:window.__probe.light(),hum:window.__probe.electricalHum()}));
   assert.ok(livePlant.power.live.includes('sp01'));
   assert.ok(livePlant.light.rig.some((entry)=>entry.id==='plant-service-live'));
+  assert.ok(livePlant.light.rig.some((entry)=>entry.id==='plant-switchgear-live'));
+  assert.ok(livePlant.light.rig.some((entry)=>entry.id==='plant-manifold-live'));
   assert.equal(livePlant.hum.audible,true);
+
+  await page.evaluate(()=>{window.__probe.setPower('sp01',false);window.__probe.warpCell(33,35.8,2);window.__probe.plantVisual('hissing');});
   await settleViewport();
-  await page.screenshot({path:path.join(output,'07m-sp01-on.png')});
+  await page.screenshot({path:path.join(output,'07q-plant-manifold-hissing.png')});
+  assert.equal((await page.evaluate(()=>window.__probe.plant())).phase,'hissing');
+
+  await page.evaluate(()=>{window.__probe.warpCell(33,35.8,2);window.__probe.plantVisual('haul');window.__probe.warpCell(33,35.8,0);});
+  await settleViewport();
+  await page.screenshot({path:path.join(output,'07r-plant-heavy-wrench-pursuit.png')});
+  const haulVisual=await page.evaluate(()=>({plant:window.__probe.plant(),hush:window.__probe.presence()}));
+  assert.equal(haulVisual.plant.heavyMode,'dragging');
+  assert.equal(haulVisual.hush.tableau,true);
+  await page.evaluate(()=>window.__probe.plantVisual('dormant'));
+
+  // The same physical radio is captured in each phase, followed by its case
+  // and isolated map channel. Nothing here uses a HUSH or objective marker.
+  await page.evaluate(()=>window.__probe.warpCell(31,30.5,1));
+  await page.evaluate(()=>window.__probe.radioVisual('live',{deployed:true,calling:false}));
+  await settleViewport();
+  await page.screenshot({path:path.join(output,'07s-radio-deployed-live.png')});
+  await page.evaluate(()=>window.__probe.radioVisual('live',{deployed:true,calling:true}));
+  await settleViewport();
+  await page.screenshot({path:path.join(output,'07s-radio-deployed-calling.png')});
+  await page.evaluate(()=>window.__probe.openRadioMap());
+  await settleViewport();
+  await page.screenshot({path:path.join(output,'07s-radio-map-calling.png')});
+  await page.keyboard.press('Escape');
+  await page.evaluate(()=>window.__probe.radioVisual('dead',{deployed:true,calling:false}));
+  await settleViewport();
+  await page.screenshot({path:path.join(output,'07s-radio-deployed-dead.png')});
+  await page.evaluate(()=>window.__probe.openBag());
+  await settleViewport();
+  await page.screenshot({path:path.join(output,'07s-radio-bag-dead.png')});
+  await page.keyboard.press('Escape');
   await page.evaluate(()=>window.__probe.setPower('sp01',false));
 
   await page.evaluate(()=>window.__probe.warpCell(49,23,1));
@@ -666,6 +766,34 @@ try {
   }
   await page.setViewport(desktopViewport);
   await settleViewport();
+
+  // The Source handoff and all six ringing phrases are authored render states,
+  // not just model values. Capture them through the same God presets used for
+  // local acceptance so rope articulation, projected hands, cue geometry,
+  // escalation dust, reduced motion, and the standing room remain reviewable.
+  for(const [mode,reduced] of [['full',false],['reduced',true]]){
+    const crossing=await page.evaluate((isReduced)=>window.__probe.towerCrossing(isReduced),reduced);
+    assert.equal(crossing.phase,'transition_ready');
+    await page.keyboard.down('w');
+    await page.waitForFunction(()=>window.__probe.chapelTower().transitionProgress>=.52,{timeout:interactionTimeout});
+    await page.keyboard.up('w');
+    await safeScreenshot(`08a-source-tower-${mode}.png`);
+  }
+  const phraseRows=[0,14,28,42,56,70];
+  for(let phrase=0;phrase<phraseRows.length;phrase++){
+    const peal=await page.evaluate((row)=>window.__probe.towerPealPreset(row,'guided'),phraseRows[phrase]);
+    assert.equal(peal.peal?.phrase,phrase);
+    if(phrase===0)await safeScreenshot('08b-peal-count-in.png');
+    await new Promise((resolve)=>setTimeout(resolve,3400));
+    const ready=await page.evaluate(()=>window.__probe.chapelTower());
+    assert.equal(ready.peal?.phrase,phrase);
+    assert.equal(ready.peal?.armed,true);
+    await safeScreenshot(`08c-peal-phrase-${phrase+1}.png`);
+    await page.keyboard.press('e');
+  }
+  await page.evaluate(()=>window.__probe.towerPreset('stop-ready'));
+  await new Promise((resolve)=>setTimeout(resolve,14000));
+  await safeScreenshot('08d-bells-standing.png');
 
   assert.equal(await page.evaluate(()=>window.__probe.godWarpGetIn()),true,'God warp returns from Source to the get-in');
   await page.waitForFunction(()=>{

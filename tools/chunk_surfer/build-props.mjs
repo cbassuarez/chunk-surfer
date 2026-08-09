@@ -695,6 +695,48 @@ function addStringInstrument(m, {
   const m=mesh('key_cabinet');addBox(m,[0,.58,0],[.9,1.16,.22],MAT.steel);addBox(m,[0,.58,-.12],[.82,1.08,.025],MAT.dark);for(let y=.28;y<.98;y+=.22)for(let x=-.28;x<=.28;x+=.28)addCylinder(m,[x,y,-.15],.012,.04,MAT.brass,8);
 }
 {const m=mesh('notice_board');addBox(m,[0,.45,0],[1.2,.9,.06],MAT.dark);addBox(m,[0,.45,-.035],[1.08,.78,.02],MAT.paper);}
+{
+  const m=mesh('rekey_ledger');
+  addBox(m,[0,.48,0],[1.22,.96,.10],MAT.dark);
+  addBox(m,[0,.48,-.065],[1.08,.82,.035],MAT.paper);
+  addBox(m,[-.48,.48,-.095],[.07,.82,.035],MAT.safetyRed);
+  for(let y=.18;y<=.76;y+=.12)addBox(m,[.06,y,-.095],[.82,.018,.015],y===.54?MAT.safetyRed:MAT.dark);
+  addBox(m,[.37,.71,-.11],[.20,.09,.025],MAT.brass);
+}
+{
+  const m=mesh('chapel_key_cabinet');
+  // Wall assets present their decorated face on +Z. The back sheet reaches
+  // z=-.13, so wall contact can put that exact plane against masonry.
+  addBox(m,[0,.62,-.115],[.96,1.20,.03],MAT.steel);
+  addBox(m,[0,.62,-.092],[.88,1.10,.016],MAT.dark);
+  for(const x of[-.48,.48])addBox(m,[x,.62,.05],[.04,1.24,.36],MAT.steel);
+  for(const y of[.02,1.22])addBox(m,[0,y,.05],[1.00,.04,.36],MAT.steel);
+  addBox(m,[0,1.08,-.072],[.66,.12,.025],MAT.ivory);
+  // Four hooks, deliberately only four. The lower-right one stays empty.
+  for(const [x,y] of[[-.24,.82],[.24,.82],[-.24,.35],[.24,.35]]){
+    addBeam(m,[x,y,-.07],[x,y,.17],.025,MAT.brass);
+    addBeam(m,[x,y,.17],[x,y+.045,.205],.025,MAT.brass);
+  }
+}
+{
+  const addRing=(name,notches)=>{
+    const m=mesh(name),cx=0,cy=.18,cz=.225,segments=12;
+    // The tiny buried stud gives every independent ring the same rear datum as
+    // the cabinet. Its visible metal sits over the cabinet face on +Z.
+    addBox(m,[0,.225,-.125],[.026,.026,.01],MAT.brass);
+    for(let i=0;i<segments;i++){
+      const a=i/segments*Math.PI*2,b=(i+1)/segments*Math.PI*2;
+      addBeam(m,[cx+Math.cos(a)*.07,cy+Math.sin(a)*.085,cz],[cx+Math.cos(b)*.07,cy+Math.sin(b)*.085,cz],.018,MAT.brass);
+    }
+    addBox(m,[0,.055,.225],[.16,.075,.025],MAT.ivory);
+    for(let i=0;i<notches;i++)addBox(m,[-.045+i*.045,.055,.241],[.018,.045,.009],MAT.dark);
+    addBeam(m,[-.026,.13,.225],[-.045,.025,.225],.018,MAT.brass);
+    addBeam(m,[.025,.13,.225],[.052,.025,.225],.018,MAT.brass);
+  };
+  addRing('chapel_key_ring_ch04',1);
+  addRing('chapel_key_ring_c17',2);
+  addRing('chapel_key_ring_fohm',3);
+}
 // ── the sub-basement dance wing ─────────────────────────────────────────────
 // Wall-mounted, so all three are authored against z=0 with their depth running
 // into -z. The barre is the double height a teaching room has rather than the
@@ -750,6 +792,28 @@ function addStringInstrument(m, {
   // low-resolution depth pass without becoming a z-fighting floor decal.
   addBox(m,[0,.008,0],[.32,.016,.42],MAT.paper);
   addBox(m,[.115,.019,-.155],[.07,.006,.07],MAT.ivory,.16);
+}
+{
+  const m=mesh('loose_note_page6');
+  addBox(m,[0,.018,0],[.40,.036,.50],MAT.paper,-.04);
+  addBox(m,[.13,.085,-.17],[.14,.018,.15],MAT.ivory,.52,.42);
+  addBox(m,[-.16,.044,.18],[.09,.055,.30],MAT.ivory,-.08,.12);
+  for(let z=-.10;z<=.13;z+=.075)addBox(m,[-.03,.047,z],[.22,.010,.013],MAT.dark,-.04);
+}
+{
+  // Objective guidance is geometry in the scene, not a screen-space icon. The
+  // broken floor ring leaves the target itself visible, while the three raised
+  // ticks give it a readable vertical silhouette from a first-person camera.
+  const m=mesh('story_waypoint_beacon');
+  for(let i=0;i<12;i++){
+    const a=i*Math.PI/6,r=.58;
+    addBox(m,[Math.cos(a)*r,.032,Math.sin(a)*r],[.20,.045,.055],i%3===0?MAT.ivory:MAT.safetyRed,-a);
+  }
+  for(let i=0;i<3;i++){
+    const a=i*Math.PI*2/3,r=.43;
+    addBox(m,[Math.cos(a)*r,.34,Math.sin(a)*r],[.08,.62,.08],MAT.safetyRed,-a);
+    addBox(m,[Math.cos(a)*r,.68,Math.sin(a)*r],[.22,.07,.08],MAT.ivory,-a);
+  }
 }
 {
   // A calibration pin: the small brass alignment tool a recordist keeps for
@@ -1049,6 +1113,73 @@ function addStringInstrument(m, {
   addBox(m,[0,.70,.15],[.07,.48,.055],MAT.brass);
   addBox(m,[0,.70,.11],[.13,.13,.18],MAT.dark);
 }
+{
+  const m=mesh('plant_calorifier');
+  addCylinder(m,[0,1.38,0],.66,2.34,MAT.agedWhite,18);
+  addCylinder(m,[0,.14,0],.73,.18,MAT.dark,18);
+  for(const y of[.42,1.32,2.22])addCylinder(m,[0,y,0],.70,.075,MAT.brass,18);
+  addBox(m,[0,1.42,-.69],[.44,.58,.10],MAT.steel);addCylinder(m,[0,1.78,-.78],.13,.08,MAT.ivory,16);
+  addBeam(m,[0,2.52,0],[0,2.92,0],.10,MAT.steel);addBeam(m,[0,.20,0],[.72,.20,0],.10,MAT.steel);
+}
+{
+  const m=mesh('plant_pump_skid');
+  addBox(m,[0,.08,0],[1.80,.16,.88],MAT.dark);
+  addCylinder(m,[-.44,.44,0],.34,.56,MAT.steel,16);addCylinder(m,[.44,.44,0],.30,.56,MAT.brass,16);
+  addBeam(m,[-.88,.48,0],[-.76,.48,0],.10,MAT.steel);addBeam(m,[.74,.48,0],[.92,.48,0],.10,MAT.steel);
+  addBox(m,[.42,.78,0],[.48,.18,.46],MAT.dark);
+}
+{
+  const m=mesh('plant_mcc_bank');
+  addBox(m,[0,1.08,0],[2.70,2.16,.38],MAT.steel);
+  for(const x of[-.88,0,.88]){addBox(m,[x,1.12,-.205],[.78,1.92,.035],MAT.dark);for(const y of[.52,1.08,1.64])addBox(m,[x,y,-.235],[.56,.055,.025],MAT.paper);addCylinder(m,[x+.24,1.80,-.25],.045,.035,MAT.brass,10);}
+  addBox(m,[0,.16,-.24],[2.48,.10,.04],MAT.brass);
+}
+{
+  const m=mesh('plant_idf_frame');
+  addBox(m,[0,.90,0],[2.25,1.76,.12],MAT.dark);
+  for(const y of[.32,.58,.84,1.10,1.36,1.60]){addBox(m,[0,y,-.09],[2.02,.075,.06],MAT.ivory);for(let x=-.86;x<=.86;x+=.22)addBox(m,[x,y,-.135],[.035,.055,.025],(Math.round((x+1)*10)+Math.round(y*10))%3?MAT.brass:MAT.safetyRed);}
+  for(const x of[-1.0,1.0])addBeam(m,[x,.08,-.12],[x,1.72,-.12],.035,MAT.steel);
+}
+{
+  const m=mesh('plant_header_manifold');
+  for(const y of[.48,1.08,1.72])addBeam(m,[-2.25,y,0],[2.25,y,0],.13,y===1.08?MAT.agedWhite:MAT.steel);
+  for(const x of[-1.75,-.88,0,.88,1.75]){addBeam(m,[x,.22,0],[x,2.18,0],.09,MAT.steel);addBox(m,[x,1.12,-.12],[.34,.34,.20],MAT.brass);addBox(m,[x,1.52,-.19],[.62,.07,.06],MAT.safetyRed);addBox(m,[x,1.52,-.19],[.07,.62,.06],MAT.safetyRed);}
+  addCylinder(m,[0,2.12,-.12],.20,.08,MAT.ivory,18);
+  for(const x of[-2.15,2.15])addBox(m,[x,.98,.10],[.18,1.96,.32],MAT.dark);
+}
+for(const[index,angle]of[-.55,-.05,.42].entries()){
+  const m=mesh(`plant_gauge_needle_${index}`),length=.145;
+  addBeam(m,[0,2.12,-.205],[Math.sin(angle)*length,2.12+Math.cos(angle)*length,-.205],.018,MAT.black);
+  addCylinder(m,[0,2.12,-.205],.026,.018,MAT.black,10);
+}
+{
+  const m=mesh('plant_overhead_header');
+  for(const z of[-.68,0,.68]){addBeam(m,[-3.75,2.92,z],[3.75,2.92,z],.15,z===0?MAT.agedWhite:MAT.steel);for(const x of[-2.8,0,2.8])addBeam(m,[x,2.64,z],[x,3.12,z],.055,MAT.dark);}
+  for(const x of[-3.55,3.55])addBeam(m,[x,.20,0],[x,2.95,0],.13,MAT.steel);
+}
+{
+  const m=mesh('plant_grated_steps');
+  addBox(m,[0,.10,.42],[3.0,.20,.66],MAT.steel);addBox(m,[0,.30,-.32],[3.0,.20,.72],MAT.steel);
+  for(let x=-1.38;x<=1.38;x+=.18){addBox(m,[x,.215,.05],[.055,.025,1.42],MAT.dark);}
+  for(const x of[-1.45,1.45]){addBeam(m,[x,.18,.62],[x,1.08,-.72],.045,MAT.brass);addBeam(m,[x,1.08,-.72],[x,1.08,.62],.045,MAT.brass);}
+}
+{
+  const m=mesh('plant_steam');
+  for(let i=0;i<7;i++){const y=.18+i*.27,x=Math.sin(i*1.7)*(.12+i*.018),z=Math.cos(i*1.3)*.10;addBeam(m,[x,y,z],[x+Math.sin(i)*.10,y+.34,z+Math.cos(i)*.08],.055+i*.012,MAT.ivory);}
+}
+{
+  const m=mesh('adjustable_spanner');
+  addBeam(m,[-.16,.025,0],[.16,.025,0],.045,MAT.steel);addBox(m,[-.19,.025,0],[.12,.09,.045],MAT.steel);addBox(m,[.19,.025,0],[.10,.10,.045],MAT.brass);
+}
+{
+  const m=mesh('stillson_wrench');
+  addBeam(m,[-.78,.07,0],[.76,.07,0],.11,MAT.steel);addBox(m,[-.84,.08,0],[.26,.22,.16],MAT.safetyRed);addBox(m,[-.98,.16,0],[.20,.18,.18],MAT.steel);addBox(m,[.72,.07,0],[.28,.16,.14],MAT.dark);
+}
+{
+  const m=mesh('walkie_radio');
+  addBox(m,[0,.20,0],[.22,.40,.12],MAT.black);addBox(m,[0,.28,-.07],[.16,.13,.025],MAT.steel);addBox(m,[0,.37,-.08],[.05,.025,.02],MAT.vfd);addCylinder(m,[-.07,.45,0],.025,.16,MAT.black,8);addCylinder(m,[.07,.43,0],.035,.06,MAT.brass,10);
+}
+{const m=mesh('radio_carrier_led');addBox(m,[0,.37,-.082],[.052,.028,.018],MAT.vfd);}
 {const m=mesh('altar_table');addBox(m,[0,.84,0],[1.8,.12,.78],MAT.ivory);for(const x of[-.68,.68])addBox(m,[x,.42,0],[.14,.84,.58],MAT.wood);}
 {const m=mesh('lectern');addBox(m,[0,.08,0],[.58,.16,.55],MAT.wood);addBox(m,[0,.68,.08],[.12,1.2,.12],MAT.wood);addBox(m,[0,1.28,-.08],[.62,.08,.46],MAT.wood,-.22);}
 {const m=mesh('hymn_board');addBox(m,[0,.48,0],[.8,.96,.06],MAT.dark);for(let y=.2;y<=.7;y+=.25)addBox(m,[0,y,-.04],[.65,.03,.02],MAT.ivory);}
@@ -1135,8 +1266,13 @@ function addStringInstrument(m, {
   // Local metres against the anchor at authored (113,23). The depth planes:
   //   BAY   -10.8   the old masonry opening (matches the existing colliders)
   //   PORT  -12.2   the timber portal, 1.4m upstage of the bay
-  //   CHOIR -16.0 .. -18.3   three ranks rising to the back wall
-  //   ORGAN -18.9   against the stage house
+  //   CHOIR -15.4 .. -17.2   three ranks rising to the back wall
+  //   ORGAN -17.6   against the stage house
+  // The platform is authored y5-11, which is local z -18..-12, so EVERYTHING
+  // upstage has to live inside that. The choir and organ were first drawn at
+  // -16..-18.9 and the organ was simply inside the north wall, where the
+  // architecture pass occludes it: from the front row the whole back of the
+  // stage read as black.
   const BAY=-10.8, PORT=-12.2, HOUSE=-2.5, STAGE=-1.5, HEAD=4.0, TOP=9.5;
   const PIER=10.3, IN=8.6;
 
@@ -1175,9 +1311,9 @@ function addStringInstrument(m, {
   // LAYER 3 — the choir gallery. Three ranks, each turning a riser face toward
   // the house; the treads never read from down there and are not worth spending.
   for(let t=0;t<3;t++){
-    const z=-16.0-t*1.15, top=STAGE+.45+t*.45;
-    addBox(m,[0,top-.06,z],[18.0-t*1.2,.12,1.15],MAT.wood);
-    addBox(m,[0,top-.28,z-.55],[18.0-t*1.2,.45,.14],MAT.dark);
+    const z=-15.4-t*.90, top=STAGE+.45+t*.45;
+    addBox(m,[0,top-.06,z],[18.0-t*1.2,.12,.90],MAT.wood);
+    addBox(m,[0,top-.28,z-.44],[18.0-t*1.2,.45,.14],MAT.dark);
     for(let x=-7.5+t*.6;x<=7.5-t*.6;x+=1.5) addBox(m,[x,top+.42,z+.18],[.06,.84,.44],MAT.dark);
   }
 
@@ -1185,14 +1321,34 @@ function addStringInstrument(m, {
   // tower_organ_case: a triangular envelope of pipes so the SILHOUETTE does the
   // work, steel (.235) on a dark case (.106) so it has something to be light
   // against, plus a specular channel the case has not got.
-  addBox(m,[0,1.35,-18.9],[11.0,5.6,.70],MAT.dark);
+  addBox(m,[0,1.35,-17.60],[11.0,5.6,.70],MAT.dark);
   for(let i=-16;i<=16;i++){
     const h=1.5+(1-Math.abs(i)/17)*3.1;
-    addCylinder(m,[i*.32,-.05+h/2,-18.5],.085,h,MAT.steel,8);
+    addCylinder(m,[i*.32,-.05+h/2,-17.22],.085,h,MAT.steel,8);
   }
-  addBox(m,[0,4.30,-18.4],[11.4,.34,.90],MAT.wood);
-  // Continuous lower and upper side/rear balconies.
-  for(const y of [3.9,7.4]){addBox(m,[-12.0,y,3.0],[3.5,.22,28],MAT.wood);addBox(m,[12.0,y,3.0],[3.5,.22,28],MAT.wood);addBox(m,[0,y,14.5],[24,.22,4.5],MAT.wood);for(const x of[-10.25,10.25])addBox(m,[x,y+.58,3.0],[.08,1.12,28],MAT.brass);addBox(m,[0,y+.58,12.25],[20.5,1.12,.08],MAT.brass);}
+  addBox(m,[0,4.30,-17.15],[11.4,.34,.90],MAT.wood);
+  // THE ARMS CASCADE, so the decks are drawn in tiers rather than as two
+  // continuous shelves. This mirrors balconyCascade in the floorplan exactly —
+  // rear at the authored height, one 0.44 bowl riser down per tier of six cells
+  // — because a deck drawn level over a stepped floor is a deck you walk through.
+  //
+  // Local z maps to the arm's local y as z = (localY + 4) - 23, so the rear row
+  // (localY 36) is z=17 and the front (localY 8) is z=-11.
+  for(const base of [3.9,7.4]){
+    for(let tier=0;tier<5;tier++){
+      const y=base-tier*.44;
+      const zHi=17-tier*6, zLo=Math.max(-11,zHi-6);
+      const zc=(zHi+zLo)/2, d=zHi-zLo;
+      if(d<=0)continue;
+      for(const x of [-12.0,12.0]) addBox(m,[x,y,zc],[3.5,.22,d],MAT.wood);
+      // The riser between tiers, which is the return that actually reads.
+      if(tier<4)for(const x of [-12.0,12.0]) addBox(m,[x,y-.22,zLo],[3.5,.44,.16],MAT.dark);
+      for(const x of [-10.25,10.25]) addBox(m,[x,y+.58,zc],[.08,1.12,d],MAT.brass);
+    }
+    // The rear band is flat: it is the deck the arms hang off. Only the UPPER one
+    // is drawn — the lower balcony's rear is the hall's own rear cross aisle now.
+    if(base>5){ addBox(m,[0,base,14.5],[24,.22,4.5],MAT.wood); addBox(m,[0,base+.58,12.25],[20.5,1.12,.08],MAT.brass); }
+  }
   // THE GALLERIA FLIGHTS.
   //
   // These used to be left out on the grounds that the floorplan authors the
@@ -1414,6 +1570,73 @@ function addStringInstrument(m, {
   for(const z of[-8.05,-7.5,-6.9,-6.35])addBox(m,[-10.75,.42,z],[.26,.76,.05],MAT.steel);
 }
 {
+  // A sealed public entrance has to read at room scale, before it can offer an
+  // interaction. The origin is half a metre inside the door plane: the bands
+  // and chain sit back on z=0 while the worn mat projects into the atrium.
+  const m=mesh('atrium_entry_closure');
+  addBox(m,[0,.025,.55],[2.35,.05,1.10],MAT.cloth);
+  addBox(m,[0,.052,.55],[2.08,.018,.82],MAT.terracotta);
+  for(const x of[-.88,-.44,0,.44,.88])addBox(m,[x,.066,.55],[.035,.016,.70],MAT.agedWhite);
+  // Crossed closure bands behind the chain, broad enough to survive the 1-bit
+  // presentation without pretending to be another brass route plaque.
+  addBeam(m,[-.94,.76,.035],[.94,1.55,.035],.105,MAT.paper);
+  addBeam(m,[-.94,1.53,.042],[.94,.78,.042],.090,MAT.terracotta);
+  // One sagging chain across both meeting stiles. Alternating links exaggerate
+  // the silhouette just enough to remain legible from the garden.
+  addBeam(m,[-1.00,1.17,.10],[1.00,1.00,.10],.045,MAT.steel);
+  for(let i=0;i<13;i++){
+    const t=i/12,x=-.96+t*1.92,y=1.16-t*.15;
+    addBox(m,[x,y,.135],[.12,.065,.035],i%2?MAT.brass:MAT.steel,i%2?-.45:.45);
+  }
+  addBox(m,[0,1.00,.18],[.26,.30,.12],MAT.brass);
+  addBeam(m,[-.09,1.15,.18],[-.09,1.31,.18],.045,MAT.steel);
+  addBeam(m,[-.09,1.31,.18],[.09,1.31,.18],.045,MAT.steel);
+  addBeam(m,[.09,1.31,.18],[.09,1.15,.18],.045,MAT.steel);
+}
+{
+  // A municipal honour banner after decades of damp: intact at the rail,
+  // separated into unequal tails at the bottom. It is deliberately large and
+  // silent—the atrium needs a vertical order, not another inspection target.
+  const m=mesh('atrium_formal_banner');
+  addBox(m,[0,3.82,.025],[2.05,.12,.12],MAT.brass);
+  addBox(m,[0,2.45,.055],[1.82,2.62,.07],MAT.pubGreen);
+  addBox(m,[0,3.34,.095],[1.58,.16,.025],MAT.agedWhite);
+  addBox(m,[0,2.54,.095],[.18,1.34,.025],MAT.terracotta);
+  const tails=[[-.68,.86,1.55],[-.23,.70,1.23],[.22,.82,1.46],[.66,.58,1.05]];
+  for(const [x,y,h] of tails)addBox(m,[x,y,.055],[.38,h,.07],Math.abs(x)<.3?MAT.terracotta:MAT.pubGreen,(x*.08));
+  addBox(m,[0,3.93,.025],[2.20,.10,.16],MAT.dark);
+}
+{
+  // Two instances of this fitting occupy the old garden's enormous middle
+  // register. The chain reaches the 17m roof; the dead opal cage stops at 5.5m,
+  // safely above the player and below the academic crown sight line.
+  const m=mesh('atrium_suspended_lantern');
+  addBox(m,[0,16.63,0],[.70,.16,.70],MAT.brass);
+  addBeam(m,[0,16.55,0],[0,6.45,0],.045,MAT.steel);
+  for(let y=7.0;y<16.3;y+=.72)addBox(m,[0,y,0],[.13,.20,.055],y%1.44<.4?MAT.brass:MAT.steel,.55);
+  addCylinder(m,[0,6.25,0],.17,.30,MAT.brass,12);
+  for(const [x,z] of[[-.55,-.55],[-.55,.55],[.55,-.55],[.55,.55]]){
+    addBeam(m,[0,6.22,0],[x,5.92,z],.055,MAT.brass);
+    addBeam(m,[x,5.92,z],[x,4.98,z],.045,MAT.steel);
+  }
+  addBox(m,[0,5.48,0],[1.12,.82,1.12],MAT.ivory);
+  addBox(m,[0,5.92,0],[1.48,.10,1.48],MAT.brass);
+  addBox(m,[0,5.04,0],[1.48,.10,1.48],MAT.brass);
+  for(const [x,z] of[[-.69,-.69],[-.69,.69],[.69,-.69],[.69,.69]])addBeam(m,[x,5.02,z],[x,5.94,z],.055,MAT.brass);
+  // One opaque replacement pane, one missing pane: repair and neglect in the
+  // same object, readable as asymmetry rather than additional surface noise.
+  addBox(m,[0,5.48,-.59],[1.04,.70,.035],MAT.agedWhite);
+  addBox(m,[.59,5.48,0],[.035,.70,1.04],MAT.dark);
+}
+{
+  const m=mesh('atrium_waiting_rug');
+  addBox(m,[0,.018,0],[3.80,.036,4.50],MAT.cloth);
+  addBox(m,[0,.039,0],[3.48,.012,4.18],MAT.terracotta);
+  addBox(m,[0,.047,0],[3.10,.010,3.80],MAT.dark);
+  for(const z of[-1.72,1.72])addBox(m,[0,.055,z],[2.92,.012,.08],MAT.agedWhite);
+  for(const x of[-1.28,1.28])addBox(m,[x,.055,0],[.08,.012,3.36],MAT.agedWhite);
+}
+{
   const m=mesh('academic_skylight');
   for(let x=-11.5;x<=11.5;x+=2.3)addBeam(m,[x,6.8,-13],[x,6.8,13],.10,MAT.bronze);
   for(let z=-13;z<=13;z+=2.6)addBeam(m,[-11.5,6.8,z],[11.5,6.8,z],.10,MAT.bronze);
@@ -1543,8 +1766,44 @@ for(let id=1;id<=8;id++){
   for(const x of[-4.15,-2.08,0,2.08,4.15])addBox(m,[x,.10,0],[.22,.20,5.0],MAT.steel);
   for(const z of[-2.35,2.35])addBox(m,[0,.10,z],[9.0,.20,.28],MAT.steel);
 }
-{const m=mesh('tower_rope');addCylinder(m,[0,1.7,0],.025,3.4,MAT.paper,10);addCylinder(m,[0,.55,0],.075,.62,MAT.paper,12);}
+{
+  const m=mesh('tower_rope');
+  addCylinder(m,[0,1.7,0],.025,3.4,MAT.paper,10);
+  // Wool sallies are striped, bulky grips, not a second plain rope.
+  for(let i=0;i<7;i++)addCylinder(m,[0,.31+i*.095,0],.078,.095,i%2?MAT.brass:MAT.ivory,12);
+}
+{
+  const m=mesh('tower_rope_tenor');
+  addCylinder(m,[0,1.62,0],.028,3.24,MAT.paper,10);
+  // Lower covering position, with an amber/cream identity repeated at
+  // first-person scale even when the rest of the ring is moving.
+  for(let i=0;i<8;i++)addCylinder(m,[0,.20+i*.095,0],.086,.095,i%2?MAT.ivory:MAT.brass,12);
+}
+// Runtime-articulated ringing rope. These remain four ordinary static meshes in
+// the pack; the bell runtime supplies their matrices so the renderer does not
+// need glTF animation or skin support.
+{const m=mesh('tower_rope_upper');addCylinder(m,[0,2.20,0],.025,2.30,MAT.paper,10);}
+{const m=mesh('tower_rope_sally');addCylinder(m,[0,.92,0],.078,.70,MAT.paper,12);addCylinder(m,[0,.92,0],.030,.78,MAT.dark,10);}
+{const m=mesh('tower_rope_sally_tenor');for(let i=0;i<8;i++)addCylinder(m,[0,.58+i*.095,0],.086,.095,i%2?MAT.ivory:MAT.brass,12);addCylinder(m,[0,.91,0],.030,.84,MAT.dark,10);}
+{const m=mesh('tower_rope_tail');addCylinder(m,[0,.43,0],.027,.86,MAT.paper,10);}
+{const m=mesh('tower_rope_tail_tenor');addCylinder(m,[0,.39,0],.030,.78,MAT.paper,10);}
+{const m=mesh('tower_rope_guide');addCylinder(m,[0,3.34,0],.095,.07,MAT.dark,14);addCylinder(m,[0,3.30,0],.028,.16,MAT.paper,10);}
+{const m=mesh('tower_dust_mote');addBox(m,[0,0,0],[.032,.010,.032],MAT.agedWhite);}
 {const m=mesh('tower_rope_mat');addCylinder(m,[0,.025,0],.52,.05,MAT.cloth,24);addCylinder(m,[0,.055,0],.19,.018,MAT.dark,18);}
+{
+  const m=mesh('tower_rope_mat_tenor');
+  addCylinder(m,[0,.025,0],.64,.05,MAT.cloth,28);
+  addCylinder(m,[0,.057,-.17],.15,.018,MAT.ivory,20);addCylinder(m,[0,.069,-.17],.092,.020,MAT.dark,20);
+  addCylinder(m,[0,.057,.10],.15,.018,MAT.ivory,20);addCylinder(m,[0,.069,.10],.092,.020,MAT.dark,20);
+  addBox(m,[.25,.067,-.035],[.035,.018,.36],MAT.ivory,.62); // slash after 8
+  // TENOR, stencilled across the foot of the mat.
+  const stroke=(x,z,w,d,yaw=0)=>addBox(m,[x,.069,z],[w,.020,d],MAT.ivory,yaw),z=.37;
+  stroke(-.36,z,.035,.25);stroke(-.36,z-.11,.16,.035);
+  stroke(-.18,z,.035,.25);stroke(-.12,z-.11,.13,.035);stroke(-.12,z,.13,.035);stroke(-.12,z+.11,.13,.035);
+  stroke(.00,z,.035,.25);stroke(.14,z,.035,.25);stroke(.07,z,.035,.30,.48);
+  stroke(.26,z,.035,.25);stroke(.36,z,.035,.25);stroke(.31,z-.11,.12,.035);stroke(.31,z+.11,.12,.035);
+  stroke(.48,z,.035,.25);stroke(.57,z-.11,.14,.035);stroke(.57,z,.14,.035);stroke(.57,z-.03,.18,.035,.60);
+}
 {const m=mesh('tower_clock_hammer');addBeam(m,[0,.1,0],[.55,.95,0],.10,MAT.steel);addCylinder(m,[.62,1.02,0],.18,.24,MAT.steel,14);}
 {const m=mesh('tower_winch');addCylinder(m,[0,.72,0],.42,.34,MAT.steel,18);addCylinder(m,[0,.72,0],.10,.70,MAT.brass,12);addBeam(m,[0,.72,-.28],[.58,1.18,-.28],.07,MAT.brass);addCylinder(m,[.62,1.22,-.28],.09,.22,MAT.wood,12);}
 {const m=mesh('tower_shutters');for(let i=0;i<9;i++)addBox(m,[0,.25+i*.38,0],[3.4,.12,.16],MAT.wood,-.16);}
@@ -1729,6 +1988,18 @@ addMainStairDressing('academic_stair_dressing',{rise:5.2,run:10,steps:26,runner:
   addBox(m,[0,1.15,-.065],[.76,.10,.028],MAT.vfd);
 }
 {const m=mesh('chapel_inner_screen');for(const x of[-2.8,-1.4,0,1.4,2.8])addBox(m,[x,1.8,0],[.16,3.6,.18],MAT.wood);for(const y of[.15,1.8,3.45])addBox(m,[0,y,0],[6,.15,.18],MAT.wood);}
+{
+  const m=mesh('chapel_screen_signal');
+  addBox(m,[0,1.78,-.13],[.055,3.18,.045],MAT.warmWindow);
+  for(const x of[-1.40,1.40])addBox(m,[x,1.78,-.14],[.13,.46,.045],MAT.brass);
+}
+{
+  const m=mesh('tower_exit_indicator');
+  addBox(m,[0,.24,.02],[1.65,.48,.08],MAT.dark);
+  addBox(m,[0,.24,-.035],[1.48,.34,.035],MAT.vfd);
+  addBox(m,[-.22,.24,-.065],[.56,.075,.035],MAT.ivory,-.52);
+  addBox(m,[.22,.24,-.065],[.56,.075,.035],MAT.ivory,.52);
+}
 {
   // Like every wall fixture, the origin is the wall plane and +Z faces the
   // reader. This keeps plaques and exit markers from being embedded backwards.
@@ -2324,14 +2595,28 @@ buildYardRange('yard_covered_stores',rangeById['yard-covered-stores'],'stores');
   // depth test and show its generic rock material through this hero facade.
   for(const band of BANDS){
     if(band.kind==='flytower')continue;
-    const mid=(band.z0+band.z1)/2,len=band.z1-band.z0,h=band.parapet;
-    addBox(m,[-.65,h/2,mid],[.18,h-.08,len-.14],phaseMaterial(band.kind));
-    addBox(m,[-.77,.48,mid],[.18,.92,len-.06],MAT.stone);
-    for(let z=band.z0+1.5;z<band.z1-1;z+=3.0)addBox(m,[-.80,h/2,z],[.14,h-.45,.36],MAT.stone);
-    if(band.kind==='flytower'){
-      for(let z=band.z0+4;z<band.z1-2;z+=7)for(let i=0;i<5;i++)
-        addBox(m,[-.83,h-3.2+i*.27,z],[.12,.13,2.05],MAT.steel);
-    }else for(let z=band.z0+3;z<band.z1-2;z+=6){
+    const h=band.parapet;
+    // This backing skin used to span the complete service band after the
+    // decorated face had already cut out the loading-bay mouth. From outside it
+    // therefore won the depth test as a perfectly solid wall; from a slightly
+    // different angle the front face won and the aperture appeared again. The
+    // support skin is part of the same elevation contract and must carry the
+    // same opening through every course, plinth and pilaster.
+    const skinRuns=(band.z0<mouthB&&band.z1>mouthA)
+      ? [[band.z0,mouthA],[mouthB,band.z1]]
+      : [[band.z0,band.z1]];
+    for(const [a,b] of skinRuns){
+      const mid=(a+b)/2,len=b-a;
+      if(len<=.01)continue;
+      addBox(m,[-.65,h/2,mid],[.18,h-.08,Math.max(.02,len-.14)],phaseMaterial(band.kind));
+      addBox(m,[-.77,.48,mid],[.18,.92,Math.max(.02,len-.06)],MAT.stone);
+    }
+    for(let z=band.z0+1.5;z<band.z1-1;z+=3.0){
+      if(z>mouthA-.9&&z<mouthB+.9)continue;
+      addBox(m,[-.80,h/2,z],[.14,h-.45,.36],MAT.stone);
+    }
+    for(let z=band.z0+3;z<band.z1-2;z+=6){
+      if(z>mouthA-1.5&&z<mouthB+1.5)continue;
       if(h>8.8){
         addBox(m,[-.82,7.35,z],[.13,1.90,1.30],MAT.black);
         addBox(m,[-.84,8.35,z],[.14,.20,1.52],MAT.stone);
@@ -2400,13 +2685,23 @@ buildYardRange('yard_covered_stores',rangeById['yard-covered-stores'],'stores');
   // the player can now walk every street around Ellery. These three elevations
   // therefore carry the same accumulated institution instead of exposing the
   // ray-marched occupancy as an anonymous black cliff.
-  function crossStreetRange({z,outward,segments}){
+  function crossStreetRange({z,outward,segments,inwardLimit=null,limitUntilX=0}){
     let x=0;
     for(let i=0;i<segments.length;i++){
       const seg=segments[i],w=seg.w,h=seg.h,mat=seg.mat,mid=x+w/2;
       const gap=.55+(i%3)*.22,bw=w-gap,depth=4.8+(i%3)*.7;
       const setback=[0,2.2,.7,4.6,1.4,3.2,.4,4.0][i%8];
-      const bodyZ=z-outward*setback,face=bodyZ+outward*(depth/2+.08),back=bodyZ-outward*depth/2;
+      let bodyZ=z-outward*setback;
+      // The south return begins beside the open loading bay. Its first service
+      // ranges used to project 0.8m across the authored mouth; at a grazing
+      // angle their end wall became the enormous slatted wall in front of the
+      // dock. Keep those ranges behind the same aperture jamb until the bay's
+      // 30m service depth is clear.
+      if(outward<0&&Number.isFinite(inwardLimit)&&x<limitUntilX){
+        const inwardEdge=bodyZ-outward*depth/2;
+        if(inwardEdge>inwardLimit)bodyZ-=inwardEdge-inwardLimit;
+      }
+      const face=bodyZ+outward*(depth/2+.08),back=bodyZ-outward*depth/2;
       addBox(m,[mid,h/2,bodyZ],[bw,h,depth],mat);
       addBox(m,[mid,.50,face],[bw+.08,.95,.18],MAT.stone);
       addBox(m,[mid,h-.42,face],[bw+.16,.22,.20],MAT.stone);
@@ -2445,7 +2740,7 @@ buildYardRange('yard_covered_stores',rangeById['yard-covered-stores'],'stores');
       x+=w;
     }
   }
-  crossStreetRange({z:-5.4,outward:-1,segments:[
+  crossStreetRange({z:-5.4,outward:-1,inwardLimit:mouthA-.02,limitUntilX:30,segments:[
     {w:10,h:10.8,mat:MAT.steel},{w:9,h:12.8,mat:MAT.brickRed},
     {w:11,h:10.6,mat:MAT.brickRed},{w:10,h:9.8,mat:MAT.brickDark},
     {w:9,h:12.2,mat:MAT.glazedBrick},{w:10,h:10.5,mat:MAT.brickRed},
@@ -2593,52 +2888,85 @@ buildYardRange('yard_covered_stores',rangeById['yard-covered-stores'],'stores');
 }
 
 {
-  // THE PORTER'S LODGE. Old building, tired occupant.
-  //
-  // This was a 1970s prefab on a concrete pad — flat felt roof, aluminium
-  // glazing — which was the right man in the wrong building the moment the
-  // Victorian brick piers and iron gates went in beside it (see
-  // yard_gate_piers). It is the same brick as the piers now, with a stone cill
-  // and coping and a pitched slate roof: this was always the way in.
-  //
-  // What has NOT been rebuilt is the inside of it. Behind the glass there is a
-  // strip light, a kettle, a fan heater and a chair that does not match, because
-  // the institution stopped spending money on this gate about fifty years ago
-  // and the man on the last shift is sitting in the evidence. His is the only lit
-  // window on the site.
+  // The lodge is a window diorama. Shell, glazing, dressing, practical light,
+  // guard and handoff objects are separate runtime layers, so a story line can
+  // change the work being done without replacing the little building around it.
   const m=mesh('yard_booth');
-  addBox(m,[0,.10,0],[3.30,.20,2.90],MAT.stone);                     // plinth course
-  addBox(m,[0,.72,0],[2.86,1.24,2.46],MAT.dark);                     // brick, to the cill
-  addBox(m,[0,1.38,0],[2.98,.12,2.58],MAT.stone);                    // stone cill
-  // Sash windows on three sides. Two lights each, so the glazing bar reads.
-  for(const [dx,dz,w,d] of[[0,-1.22,2.70,.10],[0,1.22,2.70,.10],[-1.38,0,.10,2.30],[1.38,0,.10,2.30]]){
-    addBox(m,[dx,2.10,dz],[w,1.30,d],MAT.roofGlass);
-  }
-  for(const x of[-.90,0,.90]) addBox(m,[x,2.10,-1.24],[.07,1.30,.11],MAT.agedWhite);
-  for(const x of[-1.34,1.34]) addBox(m,[x,2.10,-1.24],[.10,1.30,.11],MAT.agedWhite);
-  addBox(m,[0,2.12,-1.25],[2.70,.09,.12],MAT.agedWhite);             // meeting rail
-  for(const z of[-.62,.62]) addBox(m,[-1.40,2.10,z],[.11,1.30,.07],MAT.agedWhite);
-  // Brick above the heads, then the eaves and a pitched slate roof.
+  addBox(m,[0,.10,0],[3.30,.20,2.90],MAT.stone);
+  addBox(m,[0,.72,0],[2.86,1.24,2.46],MAT.dark);
+  addBox(m,[0,1.38,0],[2.98,.12,2.58],MAT.stone);
   addBox(m,[0,2.86,0],[2.86,.22,2.46],MAT.dark);
-  addBox(m,[0,3.02,0],[3.22,.14,2.82],MAT.stone);                    // stone coping / eaves
-  for(let t=0;t<=1.001;t+=1/6){
-    const h=3.09+t*.62, w=3.16*(1-t*.86), d=2.76*(1-t*.86);
-    addBox(m,[0,h,0],[w,.11,d],MAT.black);                           // slate courses
-  }
-  addBox(m,[0,3.76,0],[.46,.10,.42],MAT.stone);                      // ridge
-  addBox(m,[1.44,1.70,0],[.10,2.10,.86],MAT.wood);                   // the door, painted
-  // THE SEVENTIES, INSIDE. A counter, a kettle, the log book, a fan heater on the
-  // floor, and a strip light that is the reason you can see any of it.
-  addBox(m,[-.58,1.52,-.90],[.94,.12,.62],MAT.wood);                 // counter
-  addBox(m,[-.84,1.68,-.90],[.17,.24,.17],MAT.steel);                // kettle
-  addBox(m,[-.28,1.62,-.90],[.32,.04,.24],MAT.paper);                // log book
-  addBox(m,[.62,1.66,-.86],[.34,.26,.22],MAT.agedWhite);             // fan heater on the sill
-  addBox(m,[.20,1.02,.72],[.46,.06,.44],MAT.dark);                   // the chair that does not match
-  addBox(m,[.20,1.34,.94],[.46,.58,.06],MAT.dark);
-  addBox(m,[0,2.78,0],[1.72,.07,.16],MAT.ivory);                     // the strip light
-  // The barrier arm across the gate, up, because there is nothing left to stop.
+  addBox(m,[0,3.02,0],[3.22,.14,2.82],MAT.stone);
+  for(let t=0;t<=1.001;t+=1/6){const h=3.09+t*.62,w=3.16*(1-t*.86),d=2.76*(1-t*.86);addBox(m,[0,h,0],[w,.11,d],MAT.black);}
+  addBox(m,[0,3.76,0],[.46,.10,.42],MAT.stone);
+  addBox(m,[1.44,1.70,0],[.10,2.10,.86],MAT.wood);
   addCylinder(m,[2.40,.58,1.66],.11,1.16,MAT.steel,8);
   addBeam(m,[2.40,1.10,1.66],[2.40,3.24,1.10],.09,MAT.safetyRed);
+}
+{
+  const m=mesh('yard_booth_glazing');
+  for(const [dx,dz,w,d] of[[0,-1.22,2.70,.10],[0,1.22,2.70,.10],[-1.38,0,.10,2.30],[1.38,0,.10,2.30]]){
+    if(w>d){addBox(m,[dx,1.48,dz],[w,.06,d],MAT.agedWhite);addBox(m,[dx,2.72,dz],[w,.06,d],MAT.agedWhite);for(const x of[dx-w/2,dx+w/2])addBox(m,[x,2.10,dz],[.06,1.30,d],MAT.agedWhite);}
+    else{addBox(m,[dx,1.48,dz],[w,.06,d],MAT.agedWhite);addBox(m,[dx,2.72,dz],[w,.06,d],MAT.agedWhite);for(const z of[dz-d/2,dz+d/2])addBox(m,[dx,2.10,z],[w,1.30,.06],MAT.agedWhite);}
+  }
+  // Sparse raised streaks catch the road and torch without becoming an opaque
+  // blue wall in the prop depth pass. The workplace remains readable behind it.
+  for(const x of[-1.12,-.72,-.18,.42,.98])addBox(m,[x,2.12+(x%2)*.08,-1.285],[.022,.92,.018],MAT.roofGlass,.03);
+  for(const x of[-.90,0,.90])addBox(m,[x,2.10,-1.24],[.07,1.30,.11],MAT.agedWhite);
+  for(const x of[-1.34,1.34])addBox(m,[x,2.10,-1.24],[.10,1.30,.11],MAT.agedWhite);
+  addBox(m,[0,2.12,-1.25],[2.70,.09,.12],MAT.agedWhite);
+  for(const z of[-.62,.62])addBox(m,[-1.40,2.10,z],[.11,1.30,.07],MAT.agedWhite);
+  // The lower left light is a sliding pass-through, visibly offset on its rail.
+  addBox(m,[-.57,1.67,-1.31],[1.08,.07,.13],MAT.steel);
+  addBox(m,[-.88,1.91,-1.30],[.46,.40,.045],MAT.roofGlass);
+  addBox(m,[-.30,1.91,-1.30],[.46,.40,.045],MAT.roofGlass);
+}
+{
+  const m=mesh('yard_booth_interior');
+  addBox(m,[-.45,1.48,-.83],[1.72,.14,.68],MAT.wood);                // public counter
+  addBox(m,[-.45,1.12,-.76],[1.58,.58,.48],MAT.dark);                // counter carcass
+  addBox(m,[.38,.86,.72],[1.20,.10,.62],MAT.wood);                  // work desk
+  addLegs(m,.38,.72,1.04,.48,.05,.78,MAT.steel,.022);
+  addBox(m,[.16,.98,.68],[.48,.36,.34],MAT.black);                  // muted CRT body
+  addBox(m,[-.50,1.58,-.84],[.48,.035,.34],MAT.paper);              // open ledger
+  for(let i=0;i<4;i++)addBox(m,[-.93+i*.18,1.61,-.83],[.14,.018,.24],MAT.paper,(i-1.5)*.035); // forms
+  addCylinder(m,[.02,1.66,-.81],.075,.24,MAT.dark,12);               // pen pot
+  for(const x of[-.035,.015,.065])addCylinder(m,[x,1.82,-.81],.010,.30,x<0?MAT.safetyRed:MAT.brass,8);
+  // Key board with real hooks and dangling keys.
+  addBox(m,[.91,1.95,.94],[.72,.72,.055],MAT.dark);
+  for(let row=0;row<3;row++)for(let col=0;col<4;col++){const x=.66+col*.16,y=1.74+row*.18;addCylinder(m,[x,y,.90],.010,.05,MAT.brass,8);if((row+col)%3)addBox(m,[x,y-.065,.88],[.025,.12,.018],MAT.brass);}
+  // Hotplate, kettle, cups and heater are deliberately domestic and tired.
+  addBox(m,[.72,1.55,-.78],[.34,.06,.28],MAT.black);
+  addCylinder(m,[.72,1.70,-.78],.12,.25,MAT.steel,14);
+  for(const x of[.38,.52]){addCylinder(m,[x,1.61,-.80],.055,.12,MAT.ivory,12);addBox(m,[x+.07,1.62,-.80],[.07,.025,.025],MAT.ivory);}
+  addBox(m,[.98,.42,.70],[.42,.54,.23],MAT.agedWhite);for(const y of[.25,.36,.47,.58])addBox(m,[.98,y,.575],[.30,.028,.018],MAT.dark);
+  // Mismatched chair: tubular legs, brown seat, vinyl back.
+  addBox(m,[.38,.60,.18],[.48,.08,.46],MAT.wood);addBox(m,[.38,1.02,.38],[.48,.58,.07],MAT.dark);
+  addLegs(m,.38,.18,.38,.34,.04,.54,MAT.steel,.018);
+}
+{
+  const m=mesh('yard_booth_practicals');
+  addBox(m,[.16,1.02,.49],[.38,.24,.025],MAT.vfd);                   // television light
+  addBox(m,[0,2.78,0],[1.72,.07,.16],MAT.warmWindow);               // strip light
+  addCylinder(m,[.72,1.60,-.78],.095,.025,MAT.safetyRed,16);         // hotplate element
+}
+const addBoothGuard=(m,{x=0,z=-.15,lean=0,arm='rest'}={})=>{
+  addBox(m,[x,1.20,z],[.52,.70,.28],MAT.cloth,lean);
+  addCylinder(m,[x,1.70,z-.02],.17,.30,MAT.wood,14);
+  addBox(m,[x-.03,1.86,z-.09],[.40,.045,.26],MAT.dark,lean);         // cap hides the face
+  addBox(m,[x,1.77,z-.16],[.26,.09,.05],MAT.dark,lean);
+  if(arm==='handoff')addBeam(m,[x-.18,1.47,z-.18],[-.58,1.58,-1.03],.09,MAT.wood);
+  else if(arm==='write'){addBeam(m,[x-.18,1.45,z-.14],[-.48,1.56,-.72],.085,MAT.wood);addBeam(m,[x+.18,1.45,z-.14],[-.16,1.54,-.70],.085,MAT.wood);}
+  else{addBeam(m,[x-.18,1.43,z-.10],[-.34,1.24,z-.30],.085,MAT.wood);addBeam(m,[x+.18,1.43,z-.10],[.34,1.24,z-.30],.085,MAT.wood);}
+};
+{const m=mesh('yard_booth_guard_idle');addBoothGuard(m,{x:.38,z:.23,lean:.28,arm:'rest'});}
+{const m=mesh('yard_booth_guard_ledger');addBoothGuard(m,{x:-.16,z:-.22,lean:-.08,arm:'write'});}
+{const m=mesh('yard_booth_guard_handoff');addBoothGuard(m,{x:-.12,z:-.30,lean:-.05,arm:'handoff'});}
+{
+  const m=mesh('yard_booth_handoff');
+  addBox(m,[-.60,1.61,-1.06],[.40,.025,.27],MAT.paper);
+  addCylinder(m,[-.47,1.67,-1.02],.012,.25,MAT.brass,8);
+  addBox(m,[-.72,1.65,-1.04],[.12,.035,.045],MAT.brass);
 }
 {
   // Chain-link on concrete posts, with the wire itself as a thin translucent
@@ -2940,11 +3268,88 @@ buildYardRange('yard_covered_stores',rangeById['yard-covered-stores'],'stores');
   addBox(m,[0,roofY,.35],[bodyW,.10,bodyL-.9],MAT.agedWhite);
   addBox(m,[0,floorY,.35],[bodyW,.10,bodyL-.9],MAT.dark);            // load floor
   addBox(m,[0,1.62,-2.10],[bodyW,1.90,.12],MAT.agedWhite);           // bulkhead
-  // The cab, lower and further forward.
-  addBox(m,[0,1.30,-2.75],[1.94,1.30,1.20],MAT.agedWhite);
-  addBox(m,[0,1.62,-3.32],[1.72,.66,.10],MAT.roofGlass);             // screen
-  for(const dx of[-.96,.96]) addBox(m,[dx,1.62,-2.90],[.09,.60,.90],MAT.roofGlass);
-  for(const dx of[-.66,.66]) addBox(m,[dx,.86,-3.36],[.34,.20,.12],MAT.ivory);   // heads
+  // THE CAB. This used to be one rectangular block with a glass rectangle and
+  // two ivory boxes on it. It described "van" from the side and became a flat
+  // low-poly face the moment the player walked around the open rear doors.
+  // Keep the established load box and footprint, but give the front an actual
+  // forward-control cab: tapered shell, raked split screen, pressed nose,
+  // recessed lamps and grille, seams, mirrors, wipers and working hardware.
+  const cabRing=(z,{w=.98,y0=.60,shoulder=1.24,roof=2.18}={})=>[
+    [-w*.80,y0,z],[w*.80,y0,z],[w,y0+.15,z],[w,shoulder,z],
+    [w*.72,roof,z],[-w*.72,roof,z],[-w,shoulder,z],[-w,y0+.15,z],
+  ];
+  addLoft(m,[
+    cabRing(-2.10,{w:1.00,y0:.58,shoulder:1.34,roof:2.40}),
+    cabRing(-2.72,{w:.99,y0:.58,shoulder:1.29,roof:2.27}),
+    cabRing(-3.08,{w:.94,y0:.58,shoulder:1.22,roof:2.10}),
+  ],MAT.agedWhite);
+
+  // A pressed lower nose whose chamfered shoulders catch a silhouette even in
+  // the one-bit renderer. It stops inside the old z=-3.42 bound.
+  const noseRing=(z,w,y0,y1)=>[
+    [-w*.78,y0,z],[w*.78,y0,z],[w,y0+.13,z],[w,y1-.13,z],
+    [w*.78,y1,z],[-w*.78,y1,z],[-w,y1-.13,z],[-w,y0+.13,z],
+  ];
+  addLoft(m,[noseRing(-2.96,.98,.55,1.26),noseRing(-3.39,.91,.55,1.20)],MAT.agedWhite);
+
+  // Sloped split windscreen. Both faces are authored because the cab interior
+  // remains visible through the open rear and the project materials are not
+  // assumed double-sided.
+  const screen=(a,b,c,d)=>{addQuad(m,a,b,c,d,MAT.roofGlass);addQuad(m,d,c,b,a,MAT.roofGlass);};
+  screen([-.82,1.28,-3.315],[-.055,1.28,-3.315],[-.055,2.015,-3.105],[-.66,2.015,-3.105]);
+  screen([.055,1.28,-3.315],[.82,1.28,-3.315],[.66,2.015,-3.105],[.055,2.015,-3.105]);
+  addBeam(m,[-.91,1.24,-3.33],[-.71,2.08,-3.09],.055,MAT.black);
+  addBeam(m,[.91,1.24,-3.33],[.71,2.08,-3.09],.055,MAT.black);
+  addBeam(m,[-.71,2.08,-3.09],[.71,2.08,-3.09],.055,MAT.black);
+  addBeam(m,[0,1.25,-3.34],[0,2.07,-3.10],.045,MAT.black);
+  addBeam(m,[-.83,1.25,-3.34],[.83,1.25,-3.34],.055,MAT.black);
+  // Wipers park asymmetrically instead of reading as another grille.
+  addBeam(m,[-.55,1.31,-3.355],[-.08,1.68,-3.255],.025,MAT.black);
+  addBeam(m,[.57,1.31,-3.355],[.10,1.61,-3.275],.025,MAT.black);
+  for(const dx of[-.55,.57])addCylinder(m,[dx,1.29,-3.36],.035,.035,MAT.steel,8);
+
+  // Side glass is trapezoidal and inset behind a real door frame. The old long
+  // glass boxes made the cab look like a glazed crate from either three-quarter.
+  const sideWindow=(s)=>{
+    const x=s*.995;
+    const points=[[x,1.29,-3.18],[x,1.30,-2.42],[x,2.18,-2.31],[x,2.02,-3.02]];
+    if(s>0)screen(points[0],points[1],points[2],points[3]);
+    else screen(points[3],points[2],points[1],points[0]);
+    addBeam(m,[x,1.25,-3.23],[x,2.22,-3.05],.045,MAT.black);
+    addBeam(m,[x,2.22,-3.05],[x,2.24,-2.25],.045,MAT.black);
+    addBeam(m,[x,1.25,-2.35],[x,2.24,-2.25],.045,MAT.black);
+    addBeam(m,[x,1.25,-3.23],[x,1.25,-2.35],.045,MAT.black);
+    // Door press line, gutter and handle.
+    addBeam(m,[s*1.008,.64,-2.34],[s*1.008,2.30,-2.22],.025,MAT.black);
+    addBeam(m,[s*1.02,2.34,-3.05],[s*1.02,2.38,-2.17],.035,MAT.steel);
+    addBox(m,[s*1.025,1.15,-2.48],[.035,.055,.28],MAT.black);
+  };
+  sideWindow(-1);sideWindow(1);
+
+  // Front fascia: a dark recess with individual slats and housings, not marks
+  // painted on the same plane as the body.
+  addBox(m,[0,.83,-3.425],[1.20,.34,.055],MAT.black);
+  for(let y=.70;y<=.96;y+=.065)addBox(m,[0,y,-3.465],[1.04,.025,.035],MAT.steel);
+  for(const s of[-1,1]){
+    addBox(m,[s*.68,.92,-3.43],[.43,.28,.07],MAT.black);
+    addBox(m,[s*.68,.94,-3.475],[.31,.17,.035],MAT.ivory);
+    addBox(m,[s*.86,.78,-3.47],[.12,.13,.035],MAT.brass);
+  }
+  addBox(m,[0,.48,-3.45],[1.96,.15,.13],MAT.steel);                 // bumper
+  addBox(m,[0,.34,-3.43],[1.56,.12,.08],MAT.black);                 // valance
+  addBox(m,[0,.58,-3.525],[.53,.13,.025],MAT.ivory);                // plate
+  addBox(m,[0,1.10,-3.43],[.16,.06,.035],MAT.brass);                // maker badge
+  addRingBeam(m,[.44,.35,-3.53],.095,.025,MAT.steel,10);            // tow eye
+
+  // Mirrors on long work-van arms, plus the small roof and bonnet seams which
+  // make a front feel assembled rather than extruded.
+  for(const s of[-1,1]){
+    addBeam(m,[s*.94,1.73,-2.94],[s*1.26,1.73,-3.10],.035,MAT.steel);
+    addBox(m,[s*1.30,1.73,-3.11],[.12,.34,.25],MAT.black,s*.08);
+    addBox(m,[s*1.29,1.73,-3.125],[.025,.27,.19],MAT.steel,s*.08);
+  }
+  addBeam(m,[-.70,2.09,-3.09],[.70,2.09,-3.09],.045,MAT.steel);
+  addBeam(m,[-.78,1.21,-3.405],[.78,1.21,-3.405],.025,MAT.black);
   // THE BACK DOORS, standing open. Each swung out about a hundred degrees, which
   // is what makes the silhouette read as "somebody is unloading" from the gate.
   const doorYaw=1.75, doorHalf=.04;
@@ -3020,6 +3425,21 @@ buildYardRange('yard_covered_stores',rangeById['yard-covered-stores'],'stores');
   addBox(m,[0,.07,0],[.38,.05,.24],MAT.steel);
 }
 {
+  // The addressable shelter bench. It is separate from the shelter mesh so the
+  // object-guidance pass can light the seat itself and [E] can sit on it.
+  const m=mesh('yard_look_bench');
+  for(const x of[-.24,-.08,.08,.24])addBox(m,[x,.57,0],[.13,.075,3.18],MAT.wood);
+  for(const y of[.77,.94,1.09])addBox(m,[-.31,y,0],[.075,.13,3.18],MAT.wood);
+  for(const z of[-1.38,1.38]){
+    addBox(m,[-.17,.30,z],[.10,.54,.10],MAT.steel);
+    addBox(m,[.22,.30,z],[.10,.54,.10],MAT.steel);
+    addBeam(m,[-.31,.52,z],[.34,.72,z],.07,MAT.steel);
+    addBeam(m,[-.31,.55,z],[-.31,1.14,z],.07,MAT.steel);
+  }
+  addBeam(m,[-.31,1.18,-1.50],[-.31,1.18,1.50],.055,MAT.steel);
+  addBeam(m,[.33,.60,-1.50],[.33,.60,1.50],.045,MAT.steel);
+}
+{
   // THE BUS SHELTER, on the near pavement, with one tube alive in it. It is the
   // last thing between the gate and the rest of the world, and if he had missed
   // the last one this is where he would be standing.
@@ -3032,7 +3452,6 @@ buildYardRange('yard_covered_stores',rangeById['yard-covered-stores'],'stores');
   for(const dz of[-2.24,2.24]) addBox(m,[0,1.35,dz],[2.40,2.20,.10],MAT.roofGlass);
   addBox(m,[0,2.56,0],[2.90,.14,5.00],MAT.steel);                    // canopy
   addBox(m,[0,2.40,0],[2.40,.10,4.20],MAT.ivory);                    // the tube in it
-  addBox(m,[-1.00,.62,0],[.60,.10,3.40],MAT.dark);                   // perch seat
   addBox(m,[1.28,1.45,-1.20],[.10,1.30,1.10],MAT.agedWhite);         // the timetable case
 }
 {

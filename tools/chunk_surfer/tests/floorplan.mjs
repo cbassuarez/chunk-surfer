@@ -441,8 +441,15 @@ for(let y=0;y<cp.h;y++)for(let x=0;x<cp.w;x++){
   if(planar>1.01||vertical>FP.STEP_UP+1e-6)badSeams.push(`${x},${y}->${to.x},${to.y} (${planar.toFixed(2)}c/${vertical.toFixed(2)}m)`);
 }
 ck('level seams preserve physical position and walking height',badSeams.length===0,badSeams.join(' '));
-const orchestra=FP.logicalToPhysical(...Object.values(rc(102,15))),lower=FP.logicalToPhysical(...Object.values(rc(1,67))),upper=FP.logicalToPhysical(...Object.values(rc(28,114)));
+// Sampled at the REAR of each arm (local y36 -> logical y76/y118), where the
+// decks keep their authored height. The arms cascade toward the platform now —
+// one bowl riser per tier — so a cell further forward is legitimately lower, and
+// this used to read 1,67 (tier 1) and assert it was still 4.0.
+const orchestra=FP.logicalToPhysical(...Object.values(rc(102,15))),lower=FP.logicalToPhysical(...Object.values(rc(1,76))),upper=FP.logicalToPhysical(...Object.values(rc(28,118)));
 ck('orchestra and both balconies occupy one Euclidean hall footprint',orchestra.renderGroup==='hall'&&lower.renderGroup==='hall'&&upper.renderGroup==='hall'&&lower.y===4&&upper.y===7.5,`floors ${orchestra.y}/${lower.y}/${upper.y}`);
+// And they really do cascade: the front of an arm stands lower than its rear.
+const lowerFront=FP.logicalToPhysical(...Object.values(rc(1,50)));
+ck('the arms step down toward the platform',lowerFront.y<lower.y-.4,`rear ${lower.y} front ${lowerFront.y}`);
 ck('orchestra, lower balcony and upper balcony are mutually reachable',reachable(rc(102,15),rc(1,67),KEYRING)&&reachable(rc(1,67),rc(28,114),KEYRING)&&reachable(rc(28,114),rc(102,15),KEYRING));
 ck('the chapel opens into a long 13m pointed-vault volume',Math.abs(FP.ceilAt(...Object.values(rc(90,82)))-FP.floorAt(...Object.values(rc(90,82)))-13)<.01);
 

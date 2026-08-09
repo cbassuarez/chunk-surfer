@@ -3,7 +3,7 @@ import fs from 'node:fs';
 // Pure regression for the title/service-menu keyboard path. This deliberately
 // includes code-only events used by remote keyboards and some browser shells.
 const classes=new Set();const focus={count:0};
-globalThis.document={body:{classList:{add:(v)=>classes.add(v),remove:(v)=>classes.delete(v)}},querySelector:()=>({setAttribute(){},focus(){focus.count++;}})};
+globalThis.document={baseURI:'http://localhost/',body:{classList:{add:(v)=>classes.add(v),remove:(v)=>classes.delete(v)}},querySelector:()=>({setAttribute(){},focus(){focus.count++;}})};
 globalThis.localStorage={getItem:()=>null,setItem(){},removeItem(){}};
 
 const scenes=await import('../../../src/game/scenes.js');
@@ -14,10 +14,11 @@ const {makeBagScene}=await import('../../../src/game/bag.js');
 let pass=true;const ck=(name,ok)=>{console.log(`${ok?'PASS':'FAIL'}  ${name}`);if(!ok)pass=false;};
 
 let selected='';
-scenes.push(makeTitleScene({onNewGame:()=>selected='new',onContinue:()=>selected='continue',onJustSurf:()=>selected='surf',onSettings:()=>selected='settings'}));
+scenes.push(makeTitleScene({onNewGame:()=>selected='new',onContinue:()=>selected='continue',onArchive:()=>selected='archive',onSettings:()=>selected='settings'}));
 ck('title takes focus when entered',focus.count===1&&classes.has('title-screen'));
 scenes.key({key:'Unidentified',code:'KeyS'});scenes.key({key:'Unidentified',code:'Enter'});
-ck('code-only keyboard selects and confirms title item',selected==='surf');
+ck('code-only keyboard selects and confirms title item',selected==='archive');
+scenes.pop();
 ck('leaving title clears its body state',!classes.has('title-screen'));
 
 scenes.push(makeSettingsScene());
@@ -32,11 +33,9 @@ scenes.update(12.1);
 ck('post-prologue title completes on its authored clock',scenes.depth()===0&&titleDone);
 
 let dropped=0;
-scenes.push(makeBagScene({equipment:[{id:'radio',label:'radio',action:()=>dropped++}],job:{rooms:[],unfiled:[],done:0,total:5}}));
+scenes.push(makeBagScene({equipment:[{id:'radio',label:'radio',action:()=>dropped++,destructive:false}],job:{rooms:[],unfiled:[],done:0,total:5}}));
 scenes.key({key:'Enter',code:'Enter'});
-ck('radio drop requires confirmation',dropped===0);
-scenes.key({key:'Enter',code:'Enter'});
-ck('bag gear rows expose the confirmed radio drop action',dropped===1);
+ck('reversible radio deployment acts without destructive confirmation',dropped===1);
 scenes.pop();
 
 const main=fs.readFileSync(new URL('../../../src/main.js',import.meta.url),'utf8');
@@ -54,5 +53,5 @@ ck('rendered movement interpolates between collision cells',
 ck('native key repeat cannot inject extra movement steps',
   main.includes('if(!e.repeat&&!alreadyHeld)'));
 ck('movement accepts code-only keyboard events',
-  main.includes("KeyW:'w'")&&main.includes('const moveKey=movementKey(e)'));
+  main.includes('function movementKey(e){ return movementCodeForEvent(e); }')&&main.includes('const moveKey=movementKey(e)'));
 if(!pass){console.error('\n❌ MENU INPUT FAILURES');process.exit(1);}console.log('\n✅ MENU INPUT PASSED');

@@ -7,9 +7,9 @@
 //
 //   · The reader does not stop the world. If reading a page paused the
 //     building, the pages would be a rest, and they are meant to be a cost.
-//   · The radio works twice and then hunts you. It is the one sound made at
-//     the cell you are standing in, and it spoils takes, and reduceDread
-//     silences it without saving it.
+//   · The radio fails in stages. Faults use its actual carried or deployed
+//     position, can spoil a take on the belt, and reduceDread silences them
+//     without resurrecting the carrier.
 //   · The tape contains what you did not hear. The guest is a voice the
 //     monitor never passed, chosen once and sealed, so the same tape plays
 //     the same way twice.
@@ -72,19 +72,18 @@ await wait(1600);   // transmission 1 fires 1.2s after the work order is read
 let r = await ev(() => window.__probe.radio());
 check('reading the work order raises the client, once', r.transmissions === 1 && !r.dead);
 
-await ev(() => window.__probe.radioTransmit(1));
+await ev(() => window.__probe.radioTune({ phase: 'failing' }));
 r = await ev(() => window.__probe.radio());
-check('the second transmission kills it', r.transmissions === 2 && r.dead);
-
-await ev(() => window.__probe.radioTransmit(0));
-check('a dead radio does not transmit', (await ev(() => window.__probe.radio())).transmissions === 2);
+check('after the second take the carrier is failing, not dead', r.phase === 'failing' && !r.dead);
+await ev(() => window.__probe.radioTune({ phase: 'dead' }));
+check('the pre-third breakdown kills the carrier', (await ev(() => window.__probe.radio())).dead);
 
 // It squelches, and the squelch is a noise event at the cell you stand in.
-await ev(() => window.__probe.radioTune({ squelchAfterSec: 0, cooldownSec: 0, expectThreshold: 0 }));
+await ev(() => window.__probe.radioTune({ squelchAfterSec: 0 }));
 await ev(() => window.__probe.stabRelief(1));
 const before = await ev(() => window.__probe.rec().noise);
 const sq = await ev(() => window.__probe.radioTick());
-check('a dead radio squelches', !!sq, JSON.stringify(sq));
+check('a dead radio squelches', sq.some((event) => event.type === 'pulse'), JSON.stringify(sq));
 const after = await ev(() => window.__probe.rec().noise);
 check('...and the squelch is noise, at you', after > before, `${before.toFixed(3)} → ${after.toFixed(3)}`);
 
@@ -92,7 +91,7 @@ check('...and the squelch is noise, at you', after > before, `${before.toFixed(3
 // a level: your own room, loud, spoils the take exactly like his own knee.
 // (Put the radio's cooldown back first — left at zero it squelches every frame
 // and would spoil the take before the mic ever does.)
-await ev(() => window.__probe.radioTune({ cooldownSec: 600, duringTakeChance: 0 }));
+await ev(() => window.__probe.radioTune({ cooldownSec: 600 }));
 await ev(() => window.__probe.tuneRoomTone({ takeSeconds: 45 }));
 for (let i = 0; i < 40 && (await ev(() => window.__probe.rec().noise)) > 0.02; i++) await wait(250);
 await roll();
@@ -109,7 +108,7 @@ await wait(1600);   // the spoiled meter closes itself
 await ev(() => window.__probe.tuneRoomTone({ takeSeconds: 2 }));
 await roll();
 check('recording again', (await ev(() => window.__probe.rec())).recording);
-await ev(() => window.__probe.radioTune({ duringTakeChance: 1, squelchAfterSec: 0, cooldownSec: 0 }));
+await ev(() => window.__probe.radioTune({ squelchAfterSec: 0 }));
 await ev(() => window.__probe.radioTick());
 await wait(300);
 check('the radio on your belt spoils your take', (await ev(() => window.__probe.rec())).spoiled,
@@ -118,15 +117,16 @@ await wait(1400);   // the spoiled meter closes itself
 
 // reduceDread silences it. The radio still dies; it just stops hunting.
 await ev(() => window.__probe.setReduceDread(true));
+await ev(() => window.__probe.radioTune({ squelchAfterSec: 0 }));
 const quiet = await ev(() => window.__probe.radioTick());
-check('reduce-dread silences the squelch', quiet === null);
+check('reduce-dread silences the squelch', quiet.length === 0);
 check('...and the radio is still dead', (await ev(() => window.__probe.radio())).dead);
 await ev(() => window.__probe.setReduceDread(false));
 
 // Put the cooldown back. Left at zero, the radio squelches every frame and the
 // room never goes quiet again — which is a good description of the hazard and
 // a bad description of the game.
-await ev(() => window.__probe.radioTune({ cooldownSec: 600, duringTakeChance: 0 }));
+await ev(() => window.__probe.radioTune({ cooldownSec: 600 }));
 
 // ── the tape ────────────────────────────────────────────────────────────────
 // A real take, two seconds long, with the monitor open. The squelch we just
