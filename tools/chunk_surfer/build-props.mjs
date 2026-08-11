@@ -65,12 +65,20 @@ materials.push(
   {name:'pub green paint',pbrMetallicRoughness:{baseColorFactor:[.075,.18,.12,1],metallicFactor:0,roughnessFactor:.66}},
   {name:'dull terracotta',pbrMetallicRoughness:{baseColorFactor:[.42,.17,.08,1],metallicFactor:0,roughnessFactor:.86}},
 );
+materials.push(
+  {name:'warm skin',pbrMetallicRoughness:{baseColorFactor:[.50,.28,.18,1],metallicFactor:0,roughnessFactor:.82}},
+  {name:'deep skin',pbrMetallicRoughness:{baseColorFactor:[.24,.115,.075,1],metallicFactor:0,roughnessFactor:.84}},
+  {name:'navy raincloth',pbrMetallicRoughness:{baseColorFactor:[.035,.075,.12,1],metallicFactor:0,roughnessFactor:.90}},
+  {name:'mustard wool',pbrMetallicRoughness:{baseColorFactor:[.47,.29,.055,1],metallicFactor:0,roughnessFactor:.96}},
+  {name:'denim',pbrMetallicRoughness:{baseColorFactor:[.075,.16,.23,1],metallicFactor:0,roughnessFactor:.88}},
+);
 
 const MAT = {
   dark:0, wood:1, black:2, steel:3, ivory:4, brass:5, cloth:6, cone:7,
   paper:8, portrait:9, stone:10, plaster:11, bronze:12, soil:13, deadLeaf:14,
   poolBlue:15, poolMint:16, agedWhite:17, safetyRed:18, roofGlass:19, vfd:20,
   warmWindow:21,brickRed:22,brickDark:23,slate:24,concrete:25,glazedBrick:26,pubGreen:27,terracotta:28,
+  skinWarm:29,skinDeep:30,navy:31,mustard:32,denim:33,
 };
 
 // Real source models, supplied by the user (FabConvert / SketchUp conversions).
@@ -155,6 +163,46 @@ function addCylinder(m,c,r,h,mat,sides=12){
       g.positions.push(cx+x*r,cy+(top?1:-1)*h/2,cz+z*r);g.normals.push(0,top?1:-1,0);
     }
     for(let i=0;i<sides;i++) top?g.indices.push(cb,cb+i+1,cb+i+2):g.indices.push(cb,cb+i+2,cb+i+1);
+  }
+}
+
+function addCylinderX(m,c,r,length,mat,sides=12){
+  const g=group(m,mat),base=g.positions.length/3,[cx,cy,cz]=c;
+  for(let i=0;i<=sides;i++){
+    const a=i/sides*Math.PI*2,y=Math.cos(a),z=Math.sin(a);
+    g.positions.push(cx-length/2,cy+y*r,cz+z*r,cx+length/2,cy+y*r,cz+z*r);
+    g.normals.push(0,y,z,0,y,z);
+  }
+  for(let i=0;i<sides;i++){const o=base+i*2;g.indices.push(o,o+1,o+3,o,o+3,o+2);}
+  for(const right of[false,true]){
+    const cb=g.positions.length/3,x=cx+(right?1:-1)*length/2;
+    g.positions.push(x,cy,cz);g.normals.push(right?1:-1,0,0);
+    for(let i=0;i<=sides;i++){
+      const a=i/sides*Math.PI*2,y=Math.cos(a),z=Math.sin(a);
+      g.positions.push(x,cy+y*r,cz+z*r);g.normals.push(right?1:-1,0,0);
+    }
+    for(let i=0;i<sides;i++)right
+      ?g.indices.push(cb,cb+i+1,cb+i+2)
+      :g.indices.push(cb,cb+i+2,cb+i+1);
+  }
+}
+
+function addEllipsoid(m,c,radii,mat,lat=8,lon=12){
+  const g=group(m,mat),base=g.positions.length/3,[cx,cy,cz]=c,[rx,ry,rz]=radii;
+  for(let iy=0;iy<=lat;iy++){
+    const v=iy/lat,phi=v*Math.PI-Math.PI/2,cp=Math.cos(phi),sp=Math.sin(phi);
+    for(let ix=0;ix<=lon;ix++){
+      const u=ix/lon,theta=u*Math.PI*2,ct=Math.cos(theta),st=Math.sin(theta);
+      const nx=cp*ct,ny=sp,nz=cp*st;
+      g.positions.push(cx+nx*rx,cy+ny*ry,cz+nz*rz);
+      const sx=nx/Math.max(.001,rx),sy=ny/Math.max(.001,ry),sz=nz/Math.max(.001,rz),nl=Math.hypot(sx,sy,sz)||1;
+      g.normals.push(sx/nl,sy/nl,sz/nl);
+    }
+  }
+  const stride=lon+1;
+  for(let iy=0;iy<lat;iy++)for(let ix=0;ix<lon;ix++){
+    const a=base+iy*stride+ix,b=a+stride;
+    g.indices.push(a,b,b+1,a,b+1,a+1);
   }
 }
 
@@ -1169,7 +1217,14 @@ for(const[index,angle]of[-.55,-.05,.42].entries()){
 }
 {
   const m=mesh('adjustable_spanner');
-  addBeam(m,[-.16,.025,0],[.16,.025,0],.045,MAT.steel);addBox(m,[-.19,.025,0],[.12,.09,.045],MAT.steel);addBox(m,[.19,.025,0],[.10,.10,.045],MAT.brass);
+  // The blue enamel is the remembered family resemblance in the source notes,
+  // and a deliberate value break against both the van shelf and wet concrete.
+  addBeam(m,[-.13,.032,0],[.15,.032,0],.052,MAT.poolBlue);
+  addBox(m,[-.19,.038,0],[.13,.105,.060],MAT.steel);
+  addBox(m,[-.215,.038,-.047],[.075,.105,.035],MAT.steel);
+  addBox(m,[-.155,.038,.047],[.055,.105,.035],MAT.steel);
+  addCylinder(m,[-.18,.095,0],.025,.05,MAT.brass,12);
+  addBox(m,[.18,.032,0],[.10,.075,.055],MAT.agedWhite);
 }
 {
   const m=mesh('stillson_wrench');
@@ -1947,6 +2002,75 @@ addMainStairDressing('academic_stair_dressing',{rise:5.2,run:10,steps:26,runner:
   addBox(m,[-.34,1.02,0],[.12,.76,.15],MAT.dark,.08);
   addBox(m,[.34,1.02,0],[.12,.76,.15],MAT.dark,-.08);
 }
+// APPARITION POSES. Additive by design: `player_shadow_figure` above is shared
+// by the HUSH/player-shadow path and remains byte-for-byte authored as before.
+// These seven bodies use the same foot pivot and ordinary adult envelope; what
+// changes is their social posture and the contour they project across a wall.
+{
+  const m=mesh('apparition_pose_neutral');
+  addCylinder(m,[0,1.58,0],.16,.30,MAT.dark,12);
+  addBox(m,[0,1.03,0],[.52,.82,.25],MAT.dark);
+  addBeam(m,[-.13,.66,0],[-.18,.03,0],.14,MAT.dark);
+  addBeam(m,[.13,.66,0],[.18,.03,0],.14,MAT.dark);
+  addBeam(m,[-.27,1.32,0],[-.31,.65,.01],.12,MAT.dark);
+  addBeam(m,[.27,1.32,0],[.31,.65,-.01],.12,MAT.dark);
+}
+{
+  const m=mesh('apparition_pose_side');
+  addCylinder(m,[.015,1.58,.025],.155,.30,MAT.dark,12);
+  addBox(m,[0,1.03,0],[.34,.82,.32],MAT.dark,.05);
+  addBeam(m,[-.08,.66,.02],[-.11,.03,.04],.13,MAT.dark);
+  addBeam(m,[.09,.66,-.02],[.13,.03,-.05],.13,MAT.dark);
+  addBeam(m,[-.17,1.31,.02],[-.19,.66,.12],.11,MAT.dark);
+  addBeam(m,[.17,1.31,-.02],[.19,.69,-.12],.11,MAT.dark);
+}
+{
+  const m=mesh('apparition_pose_stoop');
+  addCylinder(m,[0,1.55,-.16],.16,.29,MAT.dark,12);
+  addBox(m,[0,1.04,-.07],[.54,.82,.27],MAT.dark,0,.20);
+  addBeam(m,[-.14,.68,-.01],[-.23,.03,.04],.14,MAT.dark);
+  addBeam(m,[.14,.68,-.01],[.22,.03,-.02],.14,MAT.dark);
+  addBeam(m,[-.27,1.30,-.11],[-.36,.64,.02],.12,MAT.dark);
+  addBeam(m,[.27,1.30,-.11],[.36,.64,-.02],.12,MAT.dark);
+}
+{
+  const m=mesh('apparition_pose_head_turn');
+  addBox(m,[.07,1.58,-.01],[.27,.29,.23],MAT.dark,.42);
+  addBox(m,[0,1.03,0],[.52,.82,.25],MAT.dark);
+  addBeam(m,[.02,1.43,0],[.06,1.48,-.01],.12,MAT.dark);
+  addBeam(m,[-.13,.66,0],[-.19,.03,.01],.14,MAT.dark);
+  addBeam(m,[.13,.66,0],[.19,.03,-.01],.14,MAT.dark);
+  addBeam(m,[-.27,1.32,0],[-.34,.66,.03],.12,MAT.dark);
+  addBeam(m,[.27,1.32,0],[.30,.67,-.04],.12,MAT.dark);
+}
+{
+  const m=mesh('apparition_pose_arm_out');
+  addCylinder(m,[0,1.58,0],.16,.30,MAT.dark,12);
+  addBox(m,[0,1.03,0],[.52,.82,.25],MAT.dark);
+  addBeam(m,[-.13,.66,0],[-.19,.03,.01],.14,MAT.dark);
+  addBeam(m,[.13,.66,0],[.19,.03,-.01],.14,MAT.dark);
+  addBeam(m,[-.27,1.31,0],[-.35,.66,.03],.12,MAT.dark);
+  addBeam(m,[.26,1.31,0],[.58,1.12,-.03],.12,MAT.dark);
+  addBeam(m,[.58,1.12,-.03],[.72,.87,-.02],.105,MAT.dark);
+}
+{
+  const m=mesh('apparition_pose_weight_shift');
+  addCylinder(m,[.02,1.58,0],.16,.30,MAT.dark,12);
+  addBox(m,[.055,1.04,0],[.52,.82,.25],MAT.dark,-.10);
+  addBeam(m,[-.08,.67,.01],[-.27,.03,.03],.14,MAT.dark);
+  addBeam(m,[.19,.67,-.01],[.27,.03,-.05],.14,MAT.dark);
+  addBeam(m,[-.22,1.31,.01],[-.39,.72,.04],.12,MAT.dark);
+  addBeam(m,[.31,1.32,-.01],[.25,.66,-.04],.12,MAT.dark);
+}
+{
+  const m=mesh('apparition_pose_symmetric');
+  addCylinder(m,[0,1.58,0],.16,.30,MAT.dark,12);
+  addBox(m,[0,1.03,0],[.50,.82,.24],MAT.dark);
+  addBeam(m,[-.11,.66,0],[-.11,.03,0],.14,MAT.dark);
+  addBeam(m,[.11,.66,0],[.11,.03,0],.14,MAT.dark);
+  addBeam(m,[-.255,1.31,0],[-.255,.65,0],.115,MAT.dark);
+  addBeam(m,[.255,1.31,0],[.255,.65,0],.115,MAT.dark);
+}
 {
   const m=mesh('legacy_tape_rack');
   addBox(m,[0,1.04,0],[1.08,2.08,.42],MAT.steel);
@@ -2382,10 +2506,17 @@ buildYardRange('yard_covered_stores',rangeById['yard-covered-stores'],'stores');
   const m=mesh('ambient_late_bus');
   addBox(m,[0,1.28,0],[2.45,2.55,9.2],MAT.safetyRed);
   addBox(m,[0,2.43,0],[2.34,.18,9.0],MAT.agedWhite);
-  for(const x of[-1.24,1.24])for(const z of[-2.8,2.8])addCylinder(m,[x,.43,z],.42,.22,MAT.black,10);
+  for(const x of[-1.24,1.24])for(const z of[-2.8,2.8]){
+    addCylinderX(m,[x,.43,z],.42,.22,MAT.black,14);
+    addCylinderX(m,[x+(x<0?-.025:.025),.43,z],.19,.025,MAT.steel,12);
+  }
   for(const z of[-3.25,-1.55,.15,1.85,3.55])for(const x of[-1.235,1.235])addBox(m,[x,1.95,z],[.08,.82,1.22],MAT.warmWindow);
   addBox(m,[0,1.9,-4.61],[1.95,.86,.08],MAT.warmWindow);
-  for(const x of[-.75,.75])addBox(m,[x,.88,-4.68],[.34,.18,.06],MAT.ivory);
+  addBox(m,[0,2.36,-4.69],[1.42,.22,.055],MAT.warmWindow);           // route blind
+  addBox(m,[0,.63,-4.69],[1.72,.16,.055],MAT.steel);                 // bumper
+  for(const x of[-.75,.75])addBox(m,[x,.88,-4.72],[.38,.20,.07],MAT.warmWindow);
+  for(const x of[-.88,.88])addBox(m,[x,.78,4.62],[.28,.20,.07],MAT.safetyRed);
+  for(const x of[-1.38,1.38])addBox(m,[x,1.72,-4.34],[.14,.28,.32],MAT.black,.18*Math.sign(x));
 }
 {
   const m=mesh('ambient_cyclist');
@@ -2405,6 +2536,72 @@ buildYardRange('yard_covered_stores',rangeById['yard-covered-stores'],'stores');
   addCylinder(m,[0,1.55,0],.15,.28,MAT.dark,10);addBox(m,[0,.88,0],[.46,1.08,.34],MAT.cloth);
   for(const x of[-.14,.14])addCylinder(m,[x,.30,0],.065,.60,MAT.dark,8);
 }
+
+function buildExteriorLocal(name,{
+  skin=MAT.skinWarm,coat=MAT.navy,trouser=MAT.dark,hair=MAT.dark,
+  height=1.74,stance=.16,hat='none',bag=false,highVis=false,scarf=null,
+}={}){
+  const m=mesh(name),headY=height-.17,shoulderY=height-.48,hipY=.80;
+  // Weight-bearing legs are not parallel pegs: knees settle inward and the
+  // rain posture puts one foot half a step forward.
+  addBeam(m,[-stance,.07,-.055],[-stance*.62,hipY,0],.115,trouser);
+  addBeam(m,[ stance,.07, .055],[ stance*.62,hipY,0],.115,trouser);
+  for(const [x,z]of[[-stance,-.075],[stance,.09]])addBox(m,[x,.055,z-.035],[.24,.11,.40],MAT.black);
+  // Coat, lapels and collar create a front/back read at conversational range.
+  addBox(m,[0,(hipY+shoulderY)/2,.015],[.50,shoulderY-hipY+.18,.31],coat);
+  addBox(m,[0,hipY+.02,.03],[.42,.20,.30],coat);
+  addBox(m,[-.105,shoulderY-.14,-.165],[.17,.42,.035],coat,0,-.10);
+  addBox(m,[ .105,shoulderY-.14,-.165],[.17,.42,.035],coat,0,.10);
+  addCylinder(m,[0,headY-.20,0],.065,.15,skin,12);
+  // Arms finish in visible hands rather than disappearing into the torso.
+  addBeam(m,[-.25,shoulderY-.02,0],[-.29,hipY+.10,-.10],.105,coat);
+  addBeam(m,[ .25,shoulderY-.02,0],[ .22,hipY+.13,-.14],.105,coat);
+  addEllipsoid(m,[-.29,hipY+.08,-.11],[.07,.09,.055],skin,6,10);
+  addEllipsoid(m,[ .22,hipY+.11,-.15],[.07,.09,.055],skin,6,10);
+  // A face: cranium, ears, nose, eyes, brows and mouth all stand proud of local
+  // -Z, the direction the placed person faces. These marks survive the pixel
+  // mesh because none is thinner than roughly two centimetres.
+  addEllipsoid(m,[0,headY,0],[.145,.185,.125],skin,10,16);
+  for(const x of[-.15,.15])addEllipsoid(m,[x,headY-.005,0],[.025,.052,.026],skin,5,8);
+  addEllipsoid(m,[0,headY-.015,-.132],[.032,.052,.035],skin,6,10);
+  for(const x of[-.052,.052]){
+    addEllipsoid(m,[x,headY+.035,-.121],[.017,.013,.010],MAT.black,5,8);
+    addBox(m,[x,headY+.070,-.120],[.060,.016,.012],hair,x<0?-.07:.07);
+  }
+  addBox(m,[0,headY-.073,-.126],[.072,.014,.012],MAT.terracotta);
+  addBox(m,[0,headY+.13,.035],[.27,.10,.19],hair,0,-.12);
+  addBox(m,[0,headY+.035,.105],[.25,.20,.08],hair);
+  if(hat==='wool'){
+    addEllipsoid(m,[0,headY+.145,.01],[.165,.105,.145],MAT.mustard,7,14);
+    addBox(m,[0,headY+.09,-.02],[.34,.055,.29],MAT.mustard);
+  }else if(hat==='cap'){
+    addBox(m,[0,headY+.145,.005],[.31,.105,.25],MAT.dark,0,-.08);
+    addBox(m,[0,headY+.105,-.17],[.24,.035,.20],MAT.dark,0,-.10);
+  }
+  if(scarf!==null){
+    addBox(m,[0,headY-.245,-.035],[.30,.13,.25],scarf);
+    addBox(m,[.10,shoulderY-.22,-.18],[.105,.46,.055],scarf,0,-.08);
+  }
+  if(bag){
+    addBox(m,[.36,.68,.05],[.34,.52,.20],MAT.wood);
+    addBeam(m,[.20,shoulderY+.02,.02],[.42,.92,.04],.035,MAT.dark);
+  }
+  if(highVis){
+    addBox(m,[0,shoulderY-.10,-.172],[.48,.095,.025],MAT.agedWhite);
+    addBox(m,[0,hipY+.12,-.172],[.46,.075,.025],MAT.agedWhite);
+    addBox(m,[0,shoulderY+.07,-.176],[.065,.60,.025],MAT.agedWhite);
+  }
+}
+
+buildExteriorLocal('exterior_bus_woman',{
+  skin:MAT.skinDeep,coat:MAT.navy,trouser:MAT.denim,hair:MAT.black,height:1.70,hat:'wool',bag:true,scarf:MAT.mustard,
+});
+buildExteriorLocal('exterior_mews_neighbor',{
+  skin:MAT.skinWarm,coat:MAT.pubGreen,trouser:MAT.dark,hair:MAT.dark,height:1.78,hat:'cap',scarf:MAT.terracotta,
+});
+buildExteriorLocal('exterior_pub_driver',{
+  skin:MAT.skinWarm,coat:MAT.terracotta,trouser:MAT.denim,hair:MAT.dark,height:1.80,highVis:true,
+});
 
 {
   // THE BUILDING, FROM THE YARD.
@@ -3454,20 +3651,42 @@ const addBoothGuard=(m,{x=0,z=-.15,lean=0,arm='rest'}={})=>{
   addBox(m,[0,2.40,0],[2.40,.10,4.20],MAT.ivory);                    // the tube in it
   addBox(m,[1.28,1.45,-1.20],[.10,1.30,1.10],MAT.agedWhite);         // the timetable case
 }
-{
-  // A CAR THAT IS NOT HIS, parked half on the kerb the way they always are.
-  const m=mesh('city_parked_car');
-  addBox(m,[0,.62,0],[1.78,.66,4.30],MAT.dark);                      // body
-  addBox(m,[0,1.16,-.30],[1.64,.52,2.20],MAT.dark);                  // greenhouse
-  addBox(m,[0,1.16,-1.42],[1.44,.44,.10],MAT.roofGlass);             // screen
-  for(const dx of[-.84,.84]) addBox(m,[dx,1.16,-.30],[.10,.40,2.00],MAT.roofGlass);
-  addBox(m,[0,1.16,.82],[1.40,.42,.10],MAT.roofGlass);
-  for(const [dx,dz] of[[-.86,-1.42],[.86,-1.42],[-.86,1.40],[.86,1.40]]){
-    addCylinder(m,[dx,.32,dz],.32,.20,MAT.black,10);
+function buildStreetCar(name,{moving=false,body=MAT.dark}={}){
+  const m=mesh(name);
+  addBox(m,[0,.58,.02],[1.84,.54,4.34],body);                         // sill and lower body
+  addBox(m,[0,.81,-1.48],[1.76,.34,1.30],body,0,-.055);              // bonnet
+  addBox(m,[0,.79,1.61],[1.72,.31,.92],body,0,.04);                  // boot
+  addBox(m,[0,1.20,-.18],[1.58,.48,1.92],body);                      // passenger cell
+  addBox(m,[0,1.43,-.10],[1.28,.16,1.34],body);                      // roof crown
+  addBox(m,[0,1.19,-1.16],[1.42,.47,.075],MAT.roofGlass,0,-.35);     // raked windscreen
+  addBox(m,[0,1.18,.86],[1.40,.42,.075],MAT.roofGlass,0,.29);        // rear glass
+  for(const x of[-.805,.805]){
+    addBox(m,[x,1.20,-.20],[.065,.38,1.62],MAT.roofGlass);
+    addBox(m,[x,1.12,-1.04],[.19,.13,.28],body,.16*Math.sign(x));     // mirrors
   }
-  for(const dx of[-.62,.62]) addBox(m,[dx,.74,-2.14],[.36,.18,.12],MAT.ivory);   // heads
-  for(const dx of[-.62,.62]) addBox(m,[dx,.80,2.14],[.34,.20,.10],MAT.safetyRed);
+  for(const [x,z]of[[-.88,-1.39],[.88,-1.39],[-.88,1.43],[.88,1.43]]){
+    addCylinderX(m,[x,.35,z],.33,.22,MAT.black,16);
+    addCylinderX(m,[x+(x<0?-.025:.025),.35,z],.16,.026,MAT.steel,12);
+  }
+  addBox(m,[0,.60,-2.19],[1.20,.18,.06],MAT.black);                  // grille
+  for(const x of[-.62,.62])addBox(m,[x,.76,-2.205],[.40,.21,.075],moving?MAT.warmWindow:MAT.ivory);
+  addBox(m,[0,.49,-2.22],[.62,.12,.055],MAT.ivory);                  // front plate
+  for(const x of[-.62,.62])addBox(m,[x,.77,2.20],[.35,.20,.075],MAT.safetyRed);
+  addBox(m,[0,.50,2.22],[.62,.12,.055],MAT.ivory);                   // rear plate
+  // Door gaps, handles and bumpers are small, but together stop the vehicle
+  // reading as two dark boxes sliding down a spline.
+  for(const x of[-.925,.925]){
+    for(const z of[-.72,.72])addBox(m,[x,.84,z],[.025,.035,1.18],MAT.black);
+    for(const z of[-.62,.64])addBox(m,[x,1.00,z],[.030,.055,.22],MAT.brass);
+  }
+  addBox(m,[0,.40,-2.22],[1.74,.11,.08],MAT.steel);
+  addBox(m,[0,.41,2.22],[1.72,.11,.08],MAT.steel);
 }
+
+// Parked cars retain reflective lenses; live traffic gets emissive warm-glass
+// headlamps and a separately authored, more articulated road-car mesh.
+buildStreetCar('city_parked_car',{moving:false,body:MAT.dark});
+buildStreetCar('city_moving_car',{moving:true,body:MAT.terracotta});
 
 // ── BASEBOARDS ───────────────────────────────────────────────────────────────
 //

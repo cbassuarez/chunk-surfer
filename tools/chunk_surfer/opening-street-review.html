@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en" class="cs-styles-ready">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <base href="/">
+  <title>Opening Street Review</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div id="wrap">
+    <div id="introTitle">
+      <div id="introTitleAuthor"></div><div id="introTitleWork"></div>
+      <div id="introTitleDesc"></div><div id="introTitleSub"></div>
+    </div>
+    <div id="map"></div><div id="introVignette"></div><div id="hushJump"></div>
+  </div>
+  <pre id="openingStreetReviewStatus" style="position:fixed;left:-10000px;top:0;width:1px;height:1px;overflow:hidden"></pre>
+  <script type="module">
+    const waitFor=(predicate,timeout=180000)=>new Promise((resolve,reject)=>{
+      const started=Date.now(),tick=()=>{
+        let value=false;try{value=predicate();}catch(_){/* boot is still settling */}
+        if(value)resolve(value);else if(Date.now()-started>timeout)reject(new Error('opening street review timed out'));else setTimeout(tick,100);
+      };tick();
+    });
+    const settle=(ms)=>new Promise((resolve)=>setTimeout(resolve,ms));
+    const status=document.querySelector('#openingStreetReviewStatus');
+    const {OPENING_STREET_CAPTURE_PRESETS,OPENING_STREET_MESHES}=await import('/src/data/opening-street.js');
+    await import('/src/main.js');
+    await waitFor(()=>window.__probe?.plan?.().loaded&&window.__probe?.testRun);
+    const press=(key)=>{window.dispatchEvent(new KeyboardEvent('keydown',{key,code:key,bubbles:true}));window.dispatchEvent(new KeyboardEvent('keyup',{key,code:key,bubbles:true}));};
+    if(window.__scenes?.top?.()?.id==='eula'){press('Enter');await waitFor(()=>window.__scenes?.top?.()?.id!=='eula');}
+    await waitFor(()=>['opening-credits','title'].includes(window.__scenes?.top?.()?.id));
+    if(window.__scenes.top().id==='opening-credits')window.__scenes.top().update(30);
+    await waitFor(()=>window.__scenes?.top?.()?.id==='title');
+    window.__probe.testRun();
+    await waitFor(()=>window.__chunkParity?.().screen==='game');
+    await waitFor(()=>window.__probe.props?.().pack?.meshes>0);
+    window.__probe.setTorchBattery?.(1);window.__probe.setTorch?.(true);window.__probe.nightSeed?.(.37);
+
+    const reviewPreset={id:'material-review',file:'00-material-review.png',cell:[55,250],facing:1,pitch:-.03,diagnosticYaw:-Math.PI/2,diagnosticOffsetX:20,
+      materials:['asphalt','cobbles','grass','roughStone','brick','weatheredRender','modernCladding','corrugatedIron','boxProfile','rustyPaintedMetal','rustyMetal03','rustyMetal04']};
+    const presets=[reviewPreset,...OPENING_STREET_CAPTURE_PRESETS];
+    const gameplayMeshes=Object.keys(OPENING_STREET_MESHES);
+    let sequence=0;
+    async function samplePerformance(token,options){
+      window.__probe.propDiagnostics?.(true,[],options);
+      window.__probe.performanceReset?.();await settle(2600);if(token!==sequence)return null;
+      return window.__probe.performance?.()||null;
+    }
+    async function applyPreset(preset){
+      const token=++sequence;document.documentElement.dataset.openingStreetReady='0';
+      window.__probe.testRun();window.__probe.warpCell(...preset.cell,preset.facing);
+      window.__chunkSurferPixelMesh?.setDebugSource?.(preset.id==='material-review'?'world':'final');
+      const look=window.__probe.lookAngles?.()||{pitch:0};window.__probe.look?.(0,(preset.pitch||0)-(look.pitch||0));
+      const review=preset.id==='material-review';
+      window.__probe.propDiagnostics?.(true,review
+        ?[{id:'opening-street-material-review',mesh:'opening_street_review_plate',x:preset.cell[0],y:preset.cell[1],offsetX:preset.diagnosticOffsetX,yaw:preset.diagnosticYaw,scale:1}]
+        :[],review?{exclusive:true}:null);
+      let comparison=null;
+      if(review){
+        // The first upload/decode frame is intentionally outside the review
+        // sample. Measure the renderer after the diagnostic plate is resident.
+        await settle(3400);window.__probe.performanceReset?.();await settle(2600);
+      }
+      else{
+        const before=await samplePerformance(token,{excludeMeshes:gameplayMeshes});if(token!==sequence)return;
+        const after=await samplePerformance(token,null);if(token!==sequence)return;
+        const allowance=Math.max(1,(Number(before?.p95FrameMs)||0)*.05);
+        comparison={before,after,allowanceMs:allowance,
+          regressionMs:(Number(after?.p95FrameMs)||0)-(Number(before?.p95FrameMs)||0),
+          accepted:(Number(after?.p95FrameMs)||0)<=(Number(before?.p95FrameMs)||0)+allowance};
+      }
+      if(token!==sequence)return;
+      const data={id:preset.id,file:preset.file,camera:{cell:preset.cell,facing:preset.facing,pitch:preset.pitch||0},
+        expectedMaterials:preset.materials,visible:window.__probe.propDiagnostics?.()||null,
+        performance:window.__probe.performance?.()||null,pack:window.__probe.props?.().pack||null,
+        performanceComparison:comparison,
+        asset:await fetch('/assets/opening-street.stats.json').then((response)=>response.json())};
+      status.textContent=JSON.stringify(data);document.documentElement.dataset.openingStreetReady=preset.id;
+    }
+    window.__applyOpeningStreetReviewPreset=(id)=>{
+      const preset=presets.find((entry)=>entry.id===id);if(!preset)return false;
+      void applyPreset(preset);return true;
+    };
+    window.addEventListener('keydown',(event)=>{
+      const index=Number(event.key)-1;if(index>=0&&index<presets.length)void applyPreset(presets[index]);
+    },{capture:true});
+    const requested=new URLSearchParams(location.search).get('shot');
+    await applyPreset(presets.find((preset)=>preset.id===requested)||presets[0]);
+  </script>
+</body>
+</html>
