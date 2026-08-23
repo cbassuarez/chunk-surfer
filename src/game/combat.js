@@ -19,6 +19,7 @@ import {
   drawCombatToolTile,
   drawEnemyVoidStage,
   drawFirstPersonHands,
+  drawHouse,
   drawAttackNotes,
   drawOpponentCombatArt,
   drawSignalBeing,
@@ -28,30 +29,39 @@ import {
 import {
   COMBAT_ACTION,
   COMBAT_TOOL,
+  PARRY_TIER,
+  PARRY_TIERS,
   SOURCE_CHANNEL,
   availableCombatActions,
   availableCombatTools,
   combatIntentLookahead,
   combatMoveSubtext,
+  combatHouse,
   combatMovesForTool,
   combatPrediction,
   combatResult,
   counterMovesForIntent,
   createCombatState,
   currentCombatIntent,
+  predictedCombatIntent,
   reduceCombat,
+  rivalCombatIntent,
   advanceEnemy,
   selectEnemyIntents,
 } from './combat-state.js';
+import { readFidelity, thoughtTrace } from './thought-trace.js';
+import { GRID, HIT_QUALITY, QUALITY_PRESENTATION } from './combat-damage.js';
 
+import { visibleList } from './conversation.js';
 import { TECHNIQUE_DEFS } from './combat-progression.js';
 import {
   COMBAT_DIALOGUE_MIN_MANUAL_DWELL,
   battleDialoguePageView,
   battleLineAutoHoldSeconds,
+  hardWrapBattleText,
   shouldAutoAdvanceBattleLine,
 } from './combat-dialogue-model.js';
-import { enemyAttackCue, enemyAttackShape, enemyAttackVoice } from '../audio/piano-weapon.js';
+import { enemyAttackCue, enemyAttackShape, enemyAttackVoice, surferAggression } from '../audio/piano-weapon.js';
 import { performanceIntrusionStage, reducePerformanceIntrusion } from './performance-intrusion.js';
 
 // Which techniques are fired as moves in the fight (vs passives that change the
@@ -59,9 +69,26 @@ import { performanceIntrusionStage, reducePerformanceIntrusion } from './perform
 const ACTIVE_TECHNIQUE_IDS = new Set(TECHNIQUE_DEFS.filter((t) => t.active).map((t) => t.id));
 
 export const ORDINARY_TURN_SECONDS = 1.2;
-// The reactive-parry window, as a fraction of the enemy beat: you may guard from
-// here up to the impact (0.28). Bracing before it is guarding at air.
+// ── the parry window ────────────────────────────────────────────────────────
+// The blow lands at IMPACT. From WINDOW_LO up to it you may guard; before that
+// you are bracing at air.
+//
+// Two things were wrong with this and both were about the player never finding
+// it. It was BINARY — land the window and you turned the blow entirely, miss it
+// by a frame and you got NOTHING TO TURN — which teaches people not to reach for
+// it at all. And its only announcement anywhere in the fight was one line of
+// footer chrome, in the same slot that otherwise reads RESOLVING · [ENTER]
+// FAST-FORWARD, so most players never learned the mechanic existed.
+//
+// It is graded now (see PARRY_TIERS in combat-state.js), and it draws itself: a
+// lit tile in the command band and a meter that shows the window opening and
+// closing. See parryWindow() and the resolve branch of render().
+export const PARRY_IMPACT = 0.28;
 export const PARRY_WINDOW_LO = 0.06;
+// Where inside the window each grade sits, as a fraction of the window's width.
+// PERFECT is the slice against the impact: meeting the blow, not anticipating it.
+const PARRY_GOOD_AT = 0.40;
+const PARRY_PERFECT_AT = 0.75;
 const UTILITY_TURN_SECONDS = .82;
 const CPS = 40;
 const BATTLE_GRID_LABEL = '168 BPM / 4:4 / 40 BARS';
@@ -165,6 +192,13 @@ export function makeCombatScene({
   loadout = {},
   resources = {},
   source = null,
+  // Knowledge of what this player has already read, so a second run of a fight
+  // is not the same thirty-seven presses as the first. Combat never had one;
+  // conversation.js has had the acceleration since it shipped.
+  replay = null,
+  // What the opponent already knows about how this recordist plays, from
+  // earlier in the night. Null for the bench drill, which remembers nothing.
+  carriedRead = null,
   musicSession = null,
   director = null,
   interference = null,
@@ -185,6 +219,7 @@ export function makeCombatScene({
     torchDrainScale: loadout.torchDrainScale,
     tools: loadout.tools,
     techniques: loadout.techniques,
+    carriedRead,
     source,
   });
   let phase = 'arrival';
@@ -210,6 +245,35 @@ export function makeCombatScene({
   let turnStart = null;
   let takeConfirmation = false;
   let resolution = null;
+
+  // The parry window for the beat currently resolving, or null when there is
+  // nothing to parry. One function so the meter, the tile, the footer and the
+  // key handler can never disagree about when the window is open or which grade
+  // a press would earn.
+  //
+  // `parryWindowScale` (see COMBAT_RULES) widens the window by opening it
+  // earlier: STORY gives you most of the beat, DEAD AIR gives you the end of it.
+  function parryWindow() {
+    if (phase !== 'resolve' || !resolution) return null;
+    if (resolution.side !== 'enemy' || resolution.impactFired) return null;
+    const scale = Math.max(0.1, Number(state.difficulty?.parryWindowScale) || 1);
+    const width = (PARRY_IMPACT - PARRY_WINDOW_LO) * scale;
+    const open = Math.max(0, PARRY_IMPACT - width);
+    const at = clamp(resolution.elapsed / Math.max(1e-6, resolution.duration), 0, 1);
+    const through = width <= 0 ? 1 : clamp((at - open) / width, 0, 1);
+    return {
+      open,
+      close: PARRY_IMPACT,
+      width,
+      at,
+      through,
+      armed: at >= open,
+      spent: !!resolution.parryTried,
+      tier: through < PARRY_GOOD_AT ? PARRY_TIER.LATE
+        : through < PARRY_PERFECT_AT ? PARRY_TIER.GOOD
+          : PARRY_TIER.PERFECT,
+    };
+  }
   // Rotates the adversary's piano voice within a movement's stem set, so
   // successive enemy beats don't repeat the same note.
   let enemyBeatSeq = 0;
@@ -218,6 +282,11 @@ export function makeCombatScene({
   // is announced — the fight used to show numbers after the fact and expect the
   // player to work backwards from them to a move they never saw named.
   let strike = null;
+  // Whether the recordist's last read missed. Set when a blow arrives that the
+  // thought did not name, cleared once the next thought has owned up to it, so
+  // the correction is said exactly once and by the person who was wrong.
+  let readMissed = false;
+  const integer = (value, fallback = 0) => (Number.isFinite(Number(value)) ? Math.floor(Number(value)) : fallback);
   // The exchange the fight is on, shown by the turn glyph. One per player+enemy
   // beat pair; incremented as each turn settles into the next.
   let turnCount = 1;
@@ -252,10 +321,14 @@ export function makeCombatScene({
     // authored barks; render() computes the exact viewport for player-visible
     // pagination.
     const panelW = Math.min(118, cols - 4);
-    return {
-      width: Math.max(20, panelW - 4),
-      rows: Math.max(2, Math.min(6, rows - 20)),
-    };
+    const width = Math.max(20, panelW - 4);
+    const available = Math.max(2, Math.min(6, rows - 20));
+    // A lead-in eats rows off the top and indents the body, so the paging maths
+    // here has to know about it or the MORE state disagrees with what is drawn.
+    const lead = String(cur?.lead || '').trim();
+    if (!lead) return { width, rows: available };
+    const leadRows = hardWrapBattleText(lead, width).length;
+    return { width: Math.max(12, width - 2), rows: Math.max(1, available - leadRows) };
   }
 
   function currentBattleDialogueView({ width, rows } = {}) {
@@ -287,14 +360,65 @@ export function makeCombatScene({
     takeConfirmation = false;
     selectedMove = 0;
     repairSelection();
+    // The exchange is over and the beat is his again: this is where a bark
+    // lands, on top of the deck he is already reading.
+    nextBark();
   }
 
+  // A blocking block. The scene stops, the command deck goes away, and the
+  // player reads at their own pace. `before`, `after`, the intro and the two
+  // endings arrive this way.
+  //
+  // `when:` is honoured here and nowhere else in the fight — a line the flags
+  // hide never enters the queue. The rule comes from conversation.js so that a
+  // line cannot be invisible in a thought tree and visible in a battle.
   function speak(lines, then) {
-    queue = (lines || []).filter((line) => textOf(line)).slice();
+    queue = visibleList(lines || []).filter((line) => textOf(line)).slice();
     onTalkEnd = then || (() => {});
     phase = 'talk';
     nextLine();
   }
+
+  // ── barks ─────────────────────────────────────────────────────────────────
+  // `on-listen` used to be concatenated onto `before` and delivered as the
+  // second half of one block, which made the channel a fiction: a round
+  // authored in three movements arrived as one wall of prose with the fight
+  // waiting behind it.
+  //
+  // It means what it says now. These are the lines you hear WHILE the take is
+  // running — barked between exchanges, one per exchange, over the top of the
+  // command deck rather than in place of it. They do not block, they do not
+  // hide the intent card, and they time out on their own.
+  // The stable id of the line on screen, and whether this player has finished
+  // reading it in an earlier run. Authored lines carry `sourceId` through
+  // rehydration, so the key survives a rewrite of the surrounding tree.
+  let activeLineId = null;
+  let activeLineSeenBefore = false;
+  let confirmHeld = false;
+
+  let barkQueue = [];
+  let bark = null;
+  let barkHold = 0;
+
+  function armBarks(m) {
+    barkQueue = visibleList(m?.onListen || []).filter((line) => textOf(line));
+    bark = null;
+    barkHold = 0;
+  }
+
+  function nextBark() {
+    // Never on the opening beat. The block that set the scene has only just
+    // finished; a bark on top of it is the wall of prose again with extra steps.
+    if (bark || !barkQueue.length || integer(state.turnsInMovement, 0) < 1) return;
+    bark = barkQueue.shift();
+    barkHold = battleLineAutoHoldSeconds(bark);
+    const who = whoOf(bark);
+    const text = textOf(bark);
+    if (bark.cue) fx?.cue?.(bark.cue, { group: 'battle' });
+    if (text && isVoiced(who) && bark.voice !== false) voice.start(text, { speaker: who, rate: bark.rate || 1 });
+  }
+
+  function clearBark() { bark = null; barkHold = 0; }
 
   function nextLine() {
     stopVoice();
@@ -310,11 +434,15 @@ export function makeCombatScene({
       onTalkEnd();
       return;
     }
+    activeLineId = replay && (cur.sourceId || cur.id) ? `${battle.combat?.id || battle.id}:${cur.sourceId || cur.id}` : null;
+    activeLineSeenBefore = activeLineId ? replay.lineStatus?.(activeLineId) === 'seen-before-run' : false;
     const who = whoOf(cur);
     const text = textOf(cur);
     const spoken = text && isVoiced(who) && cur.voice !== false;
     musicSession?.setDialogueActive?.(!!spoken);
-    if (cur.cue) fx?.cue?.(cur.cue);
+    // Grouped, so stopCueGroup('battle') reaches it. Ungrouped, a line's cue
+    // outlived the fight that fired it.
+    if (cur.cue) fx?.cue?.(cur.cue, { group: 'battle' });
     if (spoken) handle = voice.start(text, { speaker: who, rate: cur.rate || 1 });
     else if (text) audio?.startTyping?.({ gain: TYPE_GAIN * (TYPE_LEVEL[who === 'direction' ? 'direction' : 'thought'] || 1) });
   }
@@ -322,7 +450,8 @@ export function makeCombatScene({
   function enterMovement(index = state.movementIndex) {
     const next = movement(index);
     playSound?.({ threat: next?.threat ?? .45 + index * .1 });
-    const lines = [...(next?.before || []), ...(next?.onListen || [])];
+    armBarks(next);
+    const lines = next?.before || [];
     if (lines.length) speak(lines, () => { beginToolSelection(); musicSession?.setDialogueActive?.(false); });
     else { beginToolSelection(); musicSession?.setDialogueActive?.(false); }
   }
@@ -396,7 +525,10 @@ export function makeCombatScene({
     impactFx = { at: now, dealt: impactDealt, received: last.received || 0 };
     // Hit-stop: the whole beat freezes for a few frames so the hit has weight.
     if (shakeMode() === 'full' && (impactDealt > 0 || last.received > 0)) {
-      hitstop = Math.min(.15, .05 + impactDealt * .012 + (last.received || 0) * .03);
+      // Divided by GRID because damage numbers are five times what they were
+      // when these coefficients were chosen; a critical would otherwise freeze
+      // the beat for the whole cap every time.
+      hitstop = Math.min(.15, .05 + (impactDealt * .012 + (last.received || 0) * .03) / GRID);
     }
     if (last.perfect && flashMode() === 'full') fx?.flash?.(60, 'rgba(255,214,120,0.30)');
     const enemyBeat = resolution.side === 'enemy';
@@ -413,8 +545,24 @@ export function makeCombatScene({
     } else if (!enemyBeat && last.dealt > 0) {
       barGhost.coherence = { from: before.movementCoherence, at: now };
       spawnPopup({ value: last.dealt, kind: 'dealt', anchor: 'enemy' });
-      fx?.flash?.(72, 'rgba(255,180,55,0.38)');
-      fx?.glitch?.(.24 + Math.min(.32, last.dealt * .07), 150);
+      // HOW WELL, not just how much. Damage is a band now (combat-damage.js) and
+      // where the hit landed inside it is the feedback on how the beat was
+      // played — so the tier is named, and the screen answers proportionally. A
+      // CLEAN hit says nothing, because "clean" is the thing that needs no word.
+      const grade = QUALITY_PRESENTATION[last.quality] || null;
+      if (grade?.label) {
+        spawnPopup({
+          text: grade.label,
+          role: last.quality === HIT_QUALITY.CRITICAL ? 'ui-amber'
+            : last.quality === HIT_QUALITY.GRAZE ? 'ui-secondary' : 'ui-primary',
+          anchor: 'enemy',
+          delay: .08,
+        });
+      }
+      const weight = grade?.weight ?? 1;
+      fx?.flash?.(72, `rgba(255,180,55,${(0.38 * weight).toFixed(3)})`);
+      fx?.glitch?.((.24 + Math.min(.32, last.dealt * .014)) * weight, 150);
+      if (last.quality === HIT_QUALITY.CRITICAL && shakeMode() === 'full') fx?.shake?.(.28, 200);
     }
     if (enemyBeat && last.parried) {
       // Turned. No composure lost this beat — the blow's force went back as
@@ -434,7 +582,8 @@ export function makeCombatScene({
         if (hit.received > 0) spawnPopup({ value: hit.received, kind: 'received', anchor: 'hands', delay: i * .16 });
       });
       fx?.flash?.(90, 'rgba(154,20,30,0.48)');
-      fx?.shake?.(.26 + Math.min(.50, last.received * .11), 220);
+      // /GRID: the coefficient predates the rescale (see combat-damage.js).
+      fx?.shake?.(.26 + Math.min(.50, last.received * .11 / GRID), 220);
     }
     if (!enemyBeat && (last.composureTo ?? 0) > (last.composureFrom ?? 0)) {
       barGhost.composure = { from: last.composureFrom, at: now };
@@ -525,9 +674,11 @@ export function makeCombatScene({
     }
     if (state.last?.transition?.to != null) {
       const old = movement(state.last.transition.from);
-      const nextMovement = movement(state.last.transition.to);
-      const lines = [...(old?.after || []), ...(nextMovement?.before || []), ...(nextMovement?.onListen || [])];
-      playSound?.({ threat: nextMovement?.threat ?? .55 });
+      // `after` used to be prepended to the NEXT movement's opening, so every
+      // button line in the game landed as somebody else's first line. It closes
+      // the movement it belongs to now, and the next one opens after it.
+      const closing = old?.after || [];
+      clearBark();
       resources.playImpact?.({ transition: true });
       interferencePause = true;
       Promise.resolve(interference?.phaseBreak?.({
@@ -540,8 +691,9 @@ export function makeCombatScene({
       })).catch(() => null).finally(() => {
         interferencePause = false;
         barGhost.coherence = null;
-        if (lines.length) speak(lines, beginToolSelection);
-        else beginToolSelection();
+        const openNext = () => enterMovement(state.movementIndex);
+        if (closing.length) speak(closing, openNext);
+        else openNext();
       });
       return;
     }
@@ -594,6 +746,11 @@ export function makeCombatScene({
     const before = state;
     const intents = selectEnemyIntents(state);
     const primary = intents[0] || null;
+    // Did the recordist have this one wrong? Asked here, against the state the
+    // blow is arriving out of, because advanceEnemy clears the misread when it
+    // writes the next commitment — and the answer has to survive into the
+    // thought that owns up to it a beat later.
+    readMissed = !!before.misread && before.misread.id !== primary?.id;
     const next = advanceEnemy(state);
     state = next;
     notice = state.last?.notice || '';
@@ -615,7 +772,10 @@ export function makeCombatScene({
       // and it goes out on the battle voice group, which is cut when the turn
       // settles. A stem still ringing in the next exchange — or out past the end
       // of the fight — is the surfer playing at a fight that is over.
-      if (cueId) fx?.cue?.(cueId, { group: 'battle', ...enemyAttackShape(cueId, beat) });
+      // The chop carries the opponent's mood: a cornered surfer is louder and
+      // holds the bite longer than one that is still taking your measure.
+      const lean = surferAggression(state.difficulty?.composureBonus, before.stance?.id);
+      if (cueId) fx?.cue?.(cueId, { group: 'battle', ...enemyAttackShape(cueId, beat, Math.random, lean) });
       strike = { ...enemyAttackVoice(primary.kind, cueId), label: primary.label, kind: primary.kind };
     } else strike = null;
     resolution = {
@@ -632,7 +792,17 @@ export function makeCombatScene({
   }
 
   function cycleChannel(delta) {
-    if (!state.source || !['tool', 'move'].includes(phase)) return;
+    if (!['tool', 'move'].includes(phase)) return;
+    // Q/E is "pick the thing on the left of the stage", and no encounter has
+    // both: the source battle arms a channel, the hall picks a section of the
+    // house. Sharing the binding keeps the deck's shape identical everywhere.
+    if (state.house) {
+      state = reduceCombat(state, { type: COMBAT_ACTION.TARGET, delta });
+      notice = state.last.notice;
+      audio?.menuMove?.();
+      return;
+    }
+    if (!state.source) return;
     const at = CHANNELS.findIndex((entry) => entry.id === state.source.armed);
     const next = CHANNELS[(at + delta + CHANNELS.length) % CHANNELS.length];
     state = reduceCombat(state, { type: COMBAT_ACTION.CHANNEL, channel: next.id });
@@ -730,7 +900,20 @@ export function makeCombatScene({
         phase,
         state: JSON.parse(JSON.stringify(state)),
         intent: currentCombatIntent(state),
+        // Both sides of the split, so a test can prove they are the same when
+        // the read is good and prove they differ when it is not.
+        predicted: predictedCombatIntent(state),
         lookahead: combatIntentLookahead(state),
+        // What the recordist thinks is coming, as the card is currently saying
+        // it. Exposed so the trace can be read back in tests without a canvas.
+        thought: thoughtTrace(state, {
+          intent: predictedCombatIntent(state),
+          alternative: rivalCombatIntent(state),
+          counters: counterMovesForIntent(state, predictedCombatIntent(state)),
+          wrong: readMissed,
+          fidelity: readFidelity(state),
+          house: combatHouse(state),
+        }),
         tools: availableCombatTools(state),
         moves: moves(),
         actions: availableCombatActions(state),
@@ -768,13 +951,24 @@ export function makeCombatScene({
         if (resolution.elapsed >= resolution.duration) finishResolution();
         return;
       }
+      if (bark) {
+        barkHold -= dt;
+        if (barkHold <= 0) clearBark();
+      }
       if (!cur || phase !== 'talk') return;
       const text = textOf(cur);
       held += dt;
       if (handle) {
         typed = handle.done() ? text.length : Math.min(text.length, handle.charsFor());
       } else if (typed < text.length) {
-        acc += dt;
+        // Hold confirm on a line you finished in an earlier run and it comes in
+        // fast — or instantly, if that is the setting. Only on a line you have
+        // ALREADY read: a first read is never hurried.
+        const mode = replay?.seenTextMode?.() || 'normal';
+        const accelerating = confirmHeld && activeLineSeenBefore && mode !== 'normal';
+        const scale = accelerating && mode === 'instant' ? 1e6 : accelerating ? 4 : 1;
+        if (accelerating) replay?.noteSeenTextAssist?.();
+        acc += dt * scale;
         typed = Math.min(text.length, Math.floor(acc * textCps(CPS) * (cur.rate || 1)));
         if (typed >= text.length) audio?.stopTyping?.();
       }
@@ -783,6 +977,7 @@ export function makeCombatScene({
       // advance:'auto', but the engine never advances ordinary story text on its
       // own and never silently discards wrapped overflow.
       if (typed >= text.length && (!handle || handle.done())) {
+        if (activeLineId) { replay?.markLine?.(activeLineId); activeLineId = null; }
         if (lineDoneAt == null) lineDoneAt = now;
         else if (shouldAutoAdvanceBattleLine(cur) && now - lineDoneAt >= battleLineAutoHoldSeconds(cur)) {
           const view = currentBattleDialogueView();
@@ -810,6 +1005,12 @@ export function makeCombatScene({
           // from a held confirm are ignored until keyup; controller-like confirm
           // pulses get a short time fallback so they cannot become permanently
           // locked if the platform never emits a keyup for synthetic actions.
+          confirmHeld = true;
+          // A held confirm on a line already read is an accelerator, not a
+          // press. Let it through to the reveal loop rather than swallowing it.
+          const replayMode = replay?.seenTextMode?.() || 'normal';
+          if (typed < text.length && activeLineSeenBefore && replayMode !== 'normal') return true;
+
           if (confirmAdvanceLocked) {
             if (e.repeat || now - confirmLockedAt < Math.max(0.24, COMBAT_DIALOGUE_MIN_MANUAL_DWELL)) return true;
             confirmAdvanceLocked = false;
@@ -850,14 +1051,21 @@ export function makeCombatScene({
         // Reactive parry: during the adversary's blow, before it lands, a timed
         // guard turns it back. The window is the pre-impact beat — brace too early
         // and you guard at air. This is the ONLY way to parry; never a chosen move.
-        if (confirm && resolution && resolution.side === 'enemy'
-            && !resolution.impactFired && !resolution.parryTried) {
+        const window = parryWindow();
+        if (confirm && window && !window.spent) {
           resolution.parryTried = true;
-          if (resolution.elapsed / resolution.duration >= PARRY_WINDOW_LO) {
-            state = reduceCombat(state, { type: COMBAT_ACTION.PARRY });
+          if (window.armed) {
+            state = reduceCombat(state, { type: COMBAT_ACTION.PARRY, tier: window.tier });
             resolution.after = state;
             resolution.parried = !!state.last?.parried;
-            if (resolution.parried) { fx?.flash?.(70, 'rgba(120,220,255,0.34)'); audio?.menuMove?.(); }
+            resolution.parryTier = state.last?.parryTier || window.tier;
+            if (resolution.parried) {
+              // The brighter the grade, the louder the answer.
+              const weight = window.tier === PARRY_TIER.PERFECT ? .44
+                : window.tier === PARRY_TIER.GOOD ? .30 : .18;
+              fx?.flash?.(70, `rgba(120,220,255,${weight})`);
+              audio?.menuMove?.();
+            }
           } else {
             resolution.parryWhiffed = true;
           }
@@ -892,6 +1100,7 @@ export function makeCombatScene({
     keyup(e) {
       if (isConfirmInput(e)) {
         confirmAdvanceLocked = false;
+        confirmHeld = false;
         return phase === 'talk';
       }
       return false;
@@ -946,11 +1155,19 @@ export function makeCombatScene({
               ? `${promptLine([{ action: 'select', label: '←→ ATTACK' }, { action: 'confirm', label: 'ACT' }])} · [↑] TOOL`
               : '[←→ / A D] ATTACK · [ENTER] ACT · [↑ / W] TOOL'
             : phase === 'resolve'
-              ? (resolution && resolution.side === 'enemy' && !resolution.impactFired && !resolution.parryTried
-                  ? 'THE BLOW LANDS · [SPACE] PARRY'
-                  : resolution && resolution.parried
-                    ? 'PARRIED · [ENTER] CONTINUE'
-                    : 'RESOLVING · [ENTER] FAST-FORWARD')
+              ? (() => {
+                const window = parryWindow();
+                if (window && !window.spent) {
+                  return window.armed
+                    ? `[SPACE] PARRY · ${PARRY_TIERS[window.tier]?.label || ''}`
+                    : 'THE BLOW IS COMING · [SPACE] ON IT, NOT BEFORE';
+                }
+                if (resolution?.parried) {
+                  return `${PARRY_TIERS[resolution.parryTier]?.label || 'PARRIED'} · [ENTER] CONTINUE`;
+                }
+                if (resolution?.parryWhiffed) return 'GUARDED AT AIR · [ENTER] CONTINUE';
+                return 'RESOLVING · [ENTER] FAST-FORWARD';
+              })()
               : promptLine([{ action: 'continue', label: 'CONTINUE' }]);
       const interferenceStatus = interference?.active?.() ? interference?.statusLine?.() : '';
       const panel = drawMachinePanel(x - 2, 1, w + 4, rows - 2, {
@@ -986,6 +1203,18 @@ export function makeCombatScene({
       if (signature?.label) {
         const tag = `SIGNATURE · ${signature.label}`;
         uiText(panel.x + Math.max(0, panel.w - tag.length), panel.y, tag, 'ui-amber', .66);
+      }
+      // THE OPPONENT'S POSTURE. Every preset gets this, including the one that
+      // gets nothing else — it is the floor the guidance ladder stands on.
+      //
+      // The stance is the honest half of the telegraph: what it wants is always
+      // true, and only which blow it picks inside that can be misread. A player
+      // who can see PRESSING knows it is overload-or-loop even when the card is
+      // wrong, or absent, so a perfect counter stays playable on odds.
+      const stanceId = String(state.stance?.id || '').toUpperCase();
+      if (stanceId) {
+        const tag = `${stanceId}`;
+        uiText(panel.x + Math.max(0, panel.w - tag.length), panel.y + 1, tag, 'ui-danger', .78);
       }
 
       // Health snaps at the moment of impact and leaves ghost pips behind —
@@ -1078,10 +1307,29 @@ export function makeCombatScene({
       // On the enemy beat, show the intent actually landing (a board-state
       // reaction may have overridden the cycle intent); otherwise show what the
       // player is bracing against.
+      // Before the blow, this is the READ — what the recordist believes is
+      // coming — because everything drawn from it is something they can see:
+      // the thought trace, and the shape the opponent takes on the stage. On
+      // the enemy beat it becomes the truth, which is how the misread is
+      // revealed: the thing that arrives is not the thing that was drawn.
       const intent = resolution?.side === 'enemy'
         ? { kind: resolution.action?.kind || currentCombatIntent(intentState)?.kind || null }
-        : currentCombatIntent(intentState);
-      if (art?.procedural) {
+        : predictedCombatIntent(intentState);
+      // THE HALL. One encounter has more than one thing in it, and a single
+      // figure on the void stage cannot say so. The house takes the same box the
+      // being would have had, so the stage, the banner and the attack notes all
+      // still land where they always did.
+      const house = combatHouse(intentState);
+      if (house) {
+        drawHouse(house, {
+          x: ex, y: stageY + 1, w: ew, h: Math.max(3, eh - 1),
+          now, reducedMotion,
+          // They watch you. The lean follows the selected tool across the deck,
+          // which is the only thing on screen that stands in for where he is.
+          watch: Math.sin(now * .55) * .5,
+          dim: transitioned ? .5 : 1,
+        });
+      } else if (art?.procedural) {
         drawSignalBeing(battle.combat.id, {
           x: ex, y: stageY, w: ew, h: eh,
           snr: state.snr,
@@ -1159,6 +1407,10 @@ export function makeCombatScene({
             uiText(intentX, stageY + 2, `${strike.label} · ${strike.instrument}`.slice(0, intentW), 'ui-amber', .9);
             const verdict = strikeVerdict(last, { parried: resolution.parried });
             uiText(intentX, stageY + 3, verdict.text.slice(0, intentW + 6), verdict.role, .95);
+            // The blow that arrived was not the blow the recordist named. Said
+            // plainly, at the moment it lands, so a misread reads as a thing
+            // that happened rather than as the card having glitched.
+            if (readMissed) uiText(intentX, stageY + 5, 'NOT WHAT YOU READ', 'ui-danger', .8);
             uiText(intentX, stageY + 4, impactLine.slice(0, intentW), 'ui-secondary', .75);
           } else if (last.perfect) {
             drawVfdText(intentX, stageY + 1, 'PERFECT RESPONSE', { scale: 2, role: 'ui-counter' });
@@ -1172,25 +1424,44 @@ export function makeCombatScene({
           drawVfdText(intentX, stageY + 1, 'TEMPO OPEN', { scale: 2, role: 'ui-counter' });
           uiText(intentX, stageY + 3, 'FREE ACTION · THE SIGNAL WAITS', 'ui-amber', .7);
           regionRects.tempo = { x: intentX, y: stageY + 1, w: intentW, h: 3.2 };
-        } else if (intent) {
-          uiText(intentX, stageY + 1, `INTENT · ${intent.label}`.slice(0, intentW), 'ui-danger');
-          uiText(intentX, stageY + 2, `${intent.kind.toUpperCase()} · ${intent.damage} DMG`.slice(0, intentW), 'ui-secondary', .8);
-          let intentRow = 3;
-          if (state.difficulty.recommended) {
-            const counters = counterMovesForIntent(intentState, intent);
-            const names = counters.length ? counters.map((move) => move.label).join(' / ') : '—';
-            uiText(intentX, stageY + intentRow, `COUNTER · ${names}`.slice(0, intentW), 'ui-counter', .8);
+        } else if (intent && ['full','trace'].includes(state.difficulty.guidance)) {
+          // Not a readout. A guess — see thought-trace.js. The recordist says
+          // what they reckon is coming and what they mean to do about it, and
+          // how sure they sound is itself the information the old INTENT · KIND
+          // · DMG · COUNTER card was spelling out in capitals.
+          //
+          // The counter no longer needs naming in prose: the move it points at
+          // is already lit green in the command band, which is where the
+          // player's hands are. The thought says why that tile is lit.
+          const fidelity = readFidelity(intentState);
+          const { lines: thought } = thoughtTrace(intentState, {
+            intent,
+            alternative: rivalCombatIntent(intentState),
+            counters: counterMovesForIntent(intentState, intent),
+            wrong: readMissed,
+            fidelity,
+            guidance: state.difficulty.guidance,
+            stance: state.stance?.id || null,
+            // Prevention only ever blunts the first hit of a chain, so a chained
+            // blow slips a guard that would otherwise have covered it.
+            chained: (selectEnemyIntents(intentState).length || 1) > 1,
+            chargeReady: availableCombatActions(intentState).some((move) => move.special && move.enabled),
+            house,
+          });
+          let intentRow = 1;
+          for (const line of thought) {
+            const role = line.tone === 'miss' || line.tone === 'warn' ? 'ui-danger'
+              : line.tone === 'plan' ? 'ui-counter'
+                : line.tone === 'stance' ? 'ui-amber' : 'ui-primary';
+            uiText(intentX, stageY + intentRow, line.text.slice(0, intentW), role, line.tone === 'read' ? .82 : .95);
             intentRow += 1;
           }
-          const lookahead = combatIntentLookahead(intentState);
-          if (lookahead.length > 1 && lookahead[1]) {
-            uiText(intentX, stageY + intentRow, `NEXT · ${lookahead[1].label}`.slice(0, intentW), 'ui-secondary', .5);
-            intentRow += 1;
-          }
-          // The surfer's guard is telegraphed here: swing into it and it slips or
-          // turns the hit, so the read is to set up instead.
+          // The surfer's guard is telegraphed here too, in the same voice:
+          // swing into it and it slips or turns the hit, so the read is to set
+          // up instead.
           if (state.enemyGuard) {
-            uiText(intentX, stageY + intentRow, `⚠ SET TO ${state.enemyGuard.mode === 'parry' ? 'TURN' : 'SLIP'} YOUR SWING`.slice(0, intentW), 'ui-danger', .85);
+            const guarding = state.enemyGuard.mode === 'parry' ? 'turn' : 'slip';
+            uiText(intentX, stageY + intentRow, `it's set to ${guarding} my swing.`.slice(0, intentW), 'ui-danger', .85);
             intentRow += 1;
           }
           regionRects.intent = { x: intentX, y: stageY + 1, w: intentW, h: intentRow + .2 };
@@ -1240,9 +1511,19 @@ export function makeCombatScene({
       });
       const takeText = `TAKE · ${state.take ? `${state.take.label} / ${state.take.damage}` : 'EMPTY'}`;
       const takeX = panel.x + barW + 3;
-      uiText(takeX, cmdY, takeText.slice(0, Math.max(8, panel.w - barW - 20)), 'ui-counter', .76);
-      regionRects.take = { x: takeX, y: cmdY, w: Math.min(takeText.length + 1, panel.w - barW - 20), h: 1.1 };
-      uiText(panel.x + Math.max(0, panel.w - 15), cmdY, `BATTERY · ${Math.round(state.battery * 100)}%`, 'ui-counter', .76);
+      uiText(takeX, cmdY, takeText.slice(0, Math.max(8, panel.w - barW - 26)), 'ui-counter', .76);
+      regionRects.take = { x: takeX, y: cmdY, w: Math.min(takeText.length + 1, panel.w - barW - 26), h: 1.1 };
+      // Charge, beside the take, because they are the two things the player
+      // spends. Drawn as filled and empty diamonds rather than a number: it is
+      // read at a glance, mid-beat, to answer one question — can I afford to be
+      // loud yet. It fills on a perfect counter or a landed parry, so a player
+      // watching it fill is watching their own reading pay out.
+      const charge = Math.max(0, Math.min(integer(state.maxCharge, 3), integer(state.charge, 0)));
+      const pips = `${'◆'.repeat(charge)}${'◇'.repeat(Math.max(0, integer(state.maxCharge, 3) - charge))}`;
+      const chargeX = panel.x + Math.max(0, panel.w - 26);
+      uiText(chargeX, cmdY, `CHARGE ${pips}`, charge > 0 ? 'ui-counter' : 'ui-secondary', charge > 0 ? .9 : .55);
+      regionRects.charge = { x: chargeX, y: cmdY, w: 12, h: 1.1 };
+      uiText(panel.x + Math.max(0, panel.w - 13), cmdY, `BATTERY · ${Math.round(state.battery * 100)}%`, 'ui-counter', .76);
       // Active techniques appear in the tool rail as moves you fire; the SKILLS
       // line lists the passives that just change the rules, so the two aren't
       // conflated into one opaque label.
@@ -1257,6 +1538,19 @@ export function makeCombatScene({
       if (interferencePause && interferenceLine) {
         uiText(panel.x, cmdY + 3, String(interferenceLine.text || '').slice(0, panel.w), interferenceLine.stage === 'handoff' ? 'ui-danger' : 'ui-amber', .92);
         return;
+      }
+
+      // A BARK, over the deck rather than in place of it.
+      //
+      // This is the whole point of the on-listen channel: the thing talks while
+      // the take is running, and the player keeps their hands on the tools. So
+      // it draws here — after the command band, before the deck is laid out —
+      // and it takes one row it can have without hiding a move. It cannot
+      // collide with the interference line above because that path returns.
+      if (bark && phase !== 'talk') {
+        const who = whoOf(bark);
+        const spoken = `${who === 'direction' ? '' : `${who} — `}${textOf(bark)}`;
+        uiText(panel.x, cmdY + 1, spoken.slice(0, panel.w), who === 'direction' ? 'ui-secondary' : 'ui-primary', .88);
       }
 
       if (phase === 'arrival') {
@@ -1277,13 +1571,34 @@ export function makeCombatScene({
         const dlgW = Math.max(20, panel.w - 2);
         const who = whoOf(cur);
         const text = textOf(cur);
-        const view = currentBattleDialogueView({ width: dlgW, rows: maxTextRows });
+        // A LEAD-IN. One utterance split across two registers: the first half
+        // arrives as an unattributed fragment and the text finishes it.
+        //
+        // This used to be authored by putting the fragment in `who`, which made
+        // it a SPEAKER — shouted in caps, hard-truncated at panel width with no
+        // overflow mark, and knocked out of VOICED so the line typed instead of
+        // speaking and the music never ducked for it. As its own field it keeps
+        // a real speaker, and it wraps.
+        const lead = String(cur.lead || '').trim();
+        const leadRows = lead ? hardWrapBattleText(lead, dlgW) : [];
+        const bodyIndent = lead ? 2 : 0;
+        const view = currentBattleDialogueView({
+          width: Math.max(12, dlgW - bodyIndent),
+          rows: Math.max(1, maxTextRows - leadRows.length),
+        });
 
         uiText(panel.x, speakerY, who.toUpperCase().slice(0, panel.w), 'ui-label');
-        view.rows.forEach((line, index) => uiText(
+        leadRows.forEach((line, index) => uiText(
           panel.x,
           textY + index,
           line.slice(0, dlgW),
+          'ui-secondary',
+          .74,
+        ));
+        view.rows.forEach((line, index) => uiText(
+          panel.x + bodyIndent,
+          textY + leadRows.length + index,
+          line.slice(0, dlgW - bodyIndent),
           who === 'direction' ? 'ui-secondary' : 'ui-primary',
         ));
 
@@ -1354,8 +1669,29 @@ export function makeCombatScene({
       regionRects.tools = { x: panel.x, y: listY, w: panel.w, h: toolH };
 
       moveRows = [];
+      // During the opponent's blow the band shows what is coming AND the answer
+      // to it. The parry used to live only in the footer, in the same slot that
+      // otherwise reads RESOLVING — so the one timed input in the game was the
+      // one thing the interface never offered. It is a tile now, lit while the
+      // window is open, naming the grade a press would earn right now.
+      const window = parryWindow();
+      const parryTile = window ? {
+        id: COMBAT_ACTION.PARRY,
+        tool: COMBAT_TOOL.SELF,
+        label: window.spent ? (resolution.parried ? PARRY_TIERS[resolution.parryTier]?.label || 'PARRY' : 'TOO EARLY')
+          : window.armed ? `PARRY · ${PARRY_TIERS[window.tier]?.label || ''}`.replace(' · PARRY', '')
+            : 'PARRY',
+        detail: window.spent ? (resolution.parried ? 'TURNED' : 'GUARDED AT AIR')
+          : window.armed ? '[SPACE] NOW · TURN THE BLOW'
+            : '[SPACE] ON THE BLOW · NOT BEFORE',
+        enabled: window.armed && !window.spent,
+        special: true,
+      } : null;
       const renderedMoves = phase === 'resolve' && resolution
-        ? [{ ...resolution.action, enabled: true, detail: resolution.after.last?.notice || resolution.action.detail }]
+        ? [
+          { ...resolution.action, enabled: true, detail: resolution.after.last?.notice || resolution.action.detail },
+          ...(parryTile ? [parryTile] : []),
+        ]
         : moves();
       const moveGap = .75;
       const visibleMoveCount = Math.max(1, Math.min(renderedMoves.length, Math.floor((panel.w + moveGap) / 17)));
@@ -1376,6 +1712,33 @@ export function makeCombatScene({
       if (moveWindow.start > 0) uiText(panel.x + .2, moveY + moveH - .8, '◀', 'ui-secondary', .75);
       if (moveWindow.start + moveWindow.items.length < renderedMoves.length) uiText(panel.x + panel.w - 1.2, moveY + moveH - .8, '▶', 'ui-secondary', .75);
       regionRects.moves = { x: panel.x, y: moveY, w: panel.w, h: moveH };
+
+      // THE PARRY METER. The blow travelling toward the window, the window
+      // itself, and the grade bands inside it. A timed input the player cannot
+      // see the shape of is a timed input they can only learn by accident.
+      if (window) {
+        const mx = panel.x;
+        const mw = panel.w;
+        const my = moveY + moveH + .35;
+        const cellAt = (fraction) => mx + mw * clamp(fraction, 0, 1);
+        const openX = cellAt(window.open);
+        const closeX = cellAt(window.close);
+        const goodX = cellAt(window.open + window.width * PARRY_GOOD_AT);
+        const perfectX = cellAt(window.open + window.width * PARRY_PERFECT_AT);
+        // The dead run before the window, then the three grades.
+        uiFill(mx, my, Math.max(0, openX - mx), .5, 'rgba(255,255,255,0.05)');
+        uiFill(openX, my, Math.max(0, goodX - openX), .5, 'rgba(120,220,255,0.16)');
+        uiFill(goodX, my, Math.max(0, perfectX - goodX), .5, 'rgba(120,220,255,0.30)');
+        uiFill(perfectX, my, Math.max(0, closeX - perfectX), .5, 'rgba(120,220,255,0.58)');
+        uiFill(closeX, my, Math.max(0, mx + mw - closeX), .5, 'rgba(255,255,255,0.05)');
+        // The blow, travelling.
+        const headX = cellAt(window.at);
+        uiFill(headX - .12, my - .25, .34, 1, window.spent ? UI_COLOR.secondary : UI_COLOR.amber);
+        const caption = window.spent
+          ? (resolution.parried ? 'TURNED' : 'GUARDED AT AIR')
+          : window.armed ? `[SPACE] · ${PARRY_TIERS[window.tier]?.label || 'PARRY'}` : 'THE BLOW IS COMING · [SPACE] TO PARRY';
+        uiText(mx, my + 1, caption.slice(0, mw), window.armed && !window.spent ? 'ui-amber' : 'ui-secondary', .8);
+      }
 
       // ── detail, notice, drill callout ──────────────────────────────────────
       if (detailY != null) {

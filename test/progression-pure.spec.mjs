@@ -37,6 +37,7 @@ import { deriveUnlocks, diffUnlocks } from '../src/progression/unlocks.js';
 import { buildRunSummary, returnIndexEntries } from '../src/progression/report.js';
 import { choiceContentId, lineContentId } from '../src/progression/knowledge.js';
 import { localStatKey, platformStatId, queueChangedStats } from '../src/progression/stat-defs.js';
+import { GRID } from '../src/game/combat-damage.js';
 
 const event = (type, payload = {}, seq = 1) => ({
   schema: EVENT_SCHEMA_VERSION,
@@ -64,7 +65,7 @@ assert.equal(contract.presence.huntSpeedScale, 1);
 assert.equal(contract.presence.hearingScale, 1);
 assert.equal(contract.recording.spoilNoiseScale, 1);
 assert.equal(contract.combat.composureBonus, 0);
-assert.equal(contract.combat.holdPrevention, 2);
+assert.equal(contract.combat.holdPrevention, 2 * GRID);
 assert.equal(contract.combat.intentLookahead, 1);
 assert.equal(contract.escape.seconds, 120);
 assert.equal(contract.torch.drainScale, 1);

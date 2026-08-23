@@ -82,7 +82,7 @@ export const PIECE_CATALOG = {
   the_tub: {
     title: 'THE TUB',
     year: '2026',
-    description: 'A harness-derived landscape of wet-air, trillion, acharia, xemf, and ultrachunk materials: procedural, bounded, and performative in its constraints.'
+    description: 'Forty-four wet-air, Xither, Trillion, Acharia, Xemf and ultrachunk recordings laid across THE TUB. Your position changes which files you hear.'
   },
   amplifications: {
     title: 'AMPLIFICATIONS',

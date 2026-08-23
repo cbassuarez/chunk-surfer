@@ -72,10 +72,10 @@ export const EXTERIOR_LOTS = freeze([
 ]);
 
 export const EXTERIOR_AMBIENT_NODES = freeze([
-  freeze({id:'late-bus',mesh:'ambient_late_bus',kind:'vehicle',route:'north',period:46,phase:.08,from:{x:-34,z:-7},to:{x:126,z:-7}}),
-  freeze({id:'north-night-car',mesh:'city_parked_car',kind:'vehicle',route:'north',period:38,phase:.44,from:{x:130,z:-10},to:{x:-38,z:-10}}),
-  freeze({id:'south-night-car',mesh:'city_parked_car',kind:'vehicle',route:'south',period:43,phase:.72,from:{x:-32,z:98},to:{x:124,z:98}}),
-  freeze({id:'west-night-car',mesh:'city_parked_car',kind:'vehicle',route:'west',period:35,phase:.25,from:{x:-8,z:-8},to:{x:-8,z:101}}),
+  freeze({id:'late-bus',mesh:'ambient_late_bus',kind:'vehicle',route:'north',period:46,phase:.08,headlights:true,from:{x:-34,z:-7},to:{x:126,z:-7}}),
+  freeze({id:'north-night-car',mesh:'city_moving_car',kind:'vehicle',route:'north',period:38,phase:.44,headlights:true,from:{x:130,z:-10},to:{x:-38,z:-10}}),
+  freeze({id:'south-night-car',mesh:'city_moving_car',kind:'vehicle',route:'south',period:43,phase:.72,headlights:true,from:{x:-32,z:98},to:{x:124,z:98}}),
+  freeze({id:'west-night-car',mesh:'city_moving_car',kind:'vehicle',route:'west',period:35,phase:.25,headlights:true,from:{x:-8,z:-8},to:{x:-8,z:101}}),
   freeze({id:'cyclist',mesh:'ambient_cyclist',route:'south',period:31,from:{x:118,z:99},to:{x:-28,z:99}}),
   freeze({id:'dog-walker',mesh:'ambient_dog_walker',route:'west',period:58,from:{x:-4,z:88},to:{x:-4,z:8}}),
 ]);
@@ -147,8 +147,17 @@ export function districtFacadeHeightAt(x,y){
 
 // A small filtered-rain mix follows the construction around the listener.  The
 // base rain bed never changes; these are quiet resonant surfaces laid under it.
+// The park in the south-west yard. Rain on a lawn under four trees is not rain
+// on fifty metres of tarmac, and this is the one place outdoors where that is
+// true — so foliage carries it and the steel of the yard drops away.
+export const YARD_PARK_RAIN_BOUNDS = freeze({ x0:1, x1:19, y0:22, y1:50 });
+
 export function exteriorRainMaterialMixAt(x,z){
   const px=Number(x)||0,pz=Number(z)||0;
+  if(px>=YARD_PARK_RAIN_BOUNDS.x0&&px<=YARD_PARK_RAIN_BOUNDS.x1
+    &&pz>=YARD_PARK_RAIN_BOUNDS.y0&&pz<=YARD_PARK_RAIN_BOUNDS.y1){
+    return{slate:.12,glass:.06,foliage:.74,steel:.08};
+  }
   if(px>=50&&px<=129&&pz>=0&&pz<=93){
     if(pz>67)return{slate:.78,glass:.20,foliage:.08,steel:.24};
     if(pz>27&&pz<55)return{slate:.18,glass:.16,foliage:.04,steel:.72};

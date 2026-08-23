@@ -5,6 +5,8 @@
 // The one zone that is outdoors. Baked into the fragment shader so a prop
 // standing in the yard is lit by the sky rather than by a lamp that is not there.
 import { ZONE } from '../data/floorplan/legend.js';
+import { PAPER_ATLAS_HANDLING } from '../generated/paper-catalog.js';
+import { PROP_BOUNDS } from '../data/generated/prop-geometry.js';
 
 const VERT=`#version 300 es
 precision highp float;
@@ -19,14 +21,25 @@ layout(location=7) in float aZone;
 layout(location=8) in float aPortrait;
 layout(location=9) in float aStructural;
 layout(location=10) in vec4 aEmissive;
+layout(location=11) in float aPaperIndex;
+layout(location=12) in vec4 aPaperHandling;
 uniform mat4 uView,uProj;
-out vec3 vWorld,vNormal;out vec2 vUv;flat out int vZone;flat out int vPortrait;flat out int vStructural;flat out vec4 vEmissive;
-void main(){mat4 m=mat4(aM0,aM1,aM2,aM3);vec4 w=m*vec4(aPos,1.0);vWorld=w.xyz;vNormal=normalize(transpose(inverse(mat3(m)))*aNormal);vUv=aUv;vZone=int(aZone+.5);vPortrait=int(aPortrait+.5);vStructural=int(aStructural+.5);vEmissive=aEmissive;gl_Position=uProj*uView*w;}`;
+out vec3 vWorld,vNormal;out vec2 vUv;flat out int vZone;flat out int vPortrait;flat out int vStructural;flat out vec4 vEmissive;flat out int vPaperIndex;flat out vec4 vPaperHandling;
+void main(){
+  mat4 m=mat4(aM0,aM1,aM2,aM3);vec3 local=aPos;int paper=int(floor(aPaperIndex+.5));
+  if(paper>=0){
+    float u=aUv.x,v=aUv.y;float disp=.00055*sin(3.14159265*u)*sin(3.14159265*v)+.00065*pow(abs(u-.5)*2.0,3.0);
+    if(aPaperHandling.x>=0.0)disp+=exp(-abs(v-aPaperHandling.x)*92.0)*aPaperHandling.y*.0012;
+    disp+=smoothstep(.62,1.0,u)*smoothstep(.62,1.0,v)*aPaperHandling.z*.0028;
+    local+=aNormal*disp;
+  }
+  vec4 w=m*vec4(local,1.0);vWorld=w.xyz;vNormal=normalize(transpose(inverse(mat3(m)))*aNormal);vUv=aUv;vZone=int(aZone+.5);vPortrait=int(aPortrait+.5);vStructural=int(aStructural+.5);vEmissive=aEmissive;vPaperIndex=paper;vPaperHandling=aPaperHandling;gl_Position=uProj*uView*w;
+}`;
 
 const FRAG=`#version 300 es
 precision highp float;
-in vec3 vWorld,vNormal;in vec2 vUv;flat in int vZone;flat in int vPortrait;flat in int vStructural;flat in vec4 vEmissive;
-uniform vec3 uEye,uForward,uBase,uZoneTint[17];uniform float uLight,uAlphaCut,uBaseAlpha;uniform sampler2D uTex,uNormalTex,uOrmTex,uFogTex;uniform float uUseTex,uUseNormal,uUseOrm,uMetallic,uRoughness,uNormalScale,uFogSize,uCellMeters;uniform vec2 uFogOrigin;
+in vec3 vWorld,vNormal;in vec2 vUv;flat in int vZone;flat in int vPortrait;flat in int vStructural;flat in vec4 vEmissive;flat in int vPaperIndex;flat in vec4 vPaperHandling;
+uniform vec3 uEye,uForward,uBase,uMaterialEmissive,uZoneTint[21];uniform float uLight,uAlphaCut,uBaseAlpha;uniform sampler2D uTex,uNormalTex,uOrmTex,uFogTex;uniform float uUseTex,uUseNormal,uUseOrm,uMetallic,uRoughness,uNormalScale,uAoStrength,uFogSize,uCellMeters;uniform vec2 uFogOrigin;
 uniform vec3 uTorchColor,uAmbientColor;uniform float uTorchReach,uTorchSpill,uAmbientIntensity;uniform vec2 uTorchCone;
 uniform int uLocalLightCount,uLocalShadowIndex;uniform vec4 uLocalLightPos[12],uLocalLightColor[12];uniform float uLocalLightPenetration[12];
 // See reserveEmergencyRed in r3d.js: red belongs to the emergency circuit, and
@@ -42,6 +55,7 @@ vec3 reserveEmergencyRed(vec3 shaded,float emergencyShare){
 }
 uniform sampler2D uPlanTex;uniform vec2 uPlanSize,uPlanOrigin;uniform float uPlanReady;
 uniform sampler2D uPortraitAtlas;uniform float uUsePortrait;
+uniform sampler2D uPaperAtlas;uniform float uUsePaperAtlas;uniform vec2 uPaperAtlasGrid;
 uniform sampler2D uShadowTex;uniform mat4 uShadowMatrix;uniform float uShadowReady;uniform vec2 uShadowTexel;
 out vec4 o;
 float flashlightShadow(vec3 world,vec3 normal,vec3 lightDir){
@@ -84,7 +98,19 @@ float architecturalLightVisibility(vec3 fromM,vec3 toM){
   return 1.0;
 }
 void main(){
+  if(uUsePaperAtlas>.5&&vPaperIndex>=0&&vPaperHandling.w>0.0&&vUv.y>.68){
+    float q=smoothstep(.68,1.0,vUv.y);float rag=(fract(sin((floor(vUv.y*170.0)+float(vPaperIndex)*13.7)*12.9898)*43758.5453)-.5)*.018;
+    if(vUv.x>1.0-vPaperHandling.w*q+rag*q)discard;
+  }
   vec4 texel=uUseTex>.5?texture(uTex,vUv):vec4(1.0);
+  if(uUsePaperAtlas>.5&&vPaperIndex>=0){
+    float cols=max(1.0,uPaperAtlasGrid.x),rows=max(1.0,uPaperAtlasGrid.y);
+    float idx=float(vPaperIndex),cx=mod(idx,cols),cy=floor(idx/cols);
+    vec2 local=clamp(vUv,.002,.998);
+    // Atlas is uploaded with Y flipped, matching ordinary GLB texture UVs.
+    vec2 paperUv=(vec2(cx,rows-1.0-cy)+local)/vec2(cols,rows);
+    texel=texture(uPaperAtlas,paperUv);
+  }
   if(uUsePortrait>.5){int slot=clamp(vPortrait,0,5);vec2 cell=vec2(float(slot%3),float(slot/3));vec2 local=clamp(vUv,.006,.994);texel=texture(uPortraitAtlas,(cell+local)/vec2(3.0,2.0));}
   if(texel.a*uBaseAlpha<uAlphaCut)discard;
   float memory=1.0;
@@ -98,6 +124,16 @@ void main(){
   }
   vec3 orm=uUseOrm>.5?texture(uOrmTex,vUv).rgb:vec3(1.0,uRoughness,uMetallic);
   float rough=clamp(orm.g*uRoughness,.08,1.0),metal=clamp(orm.b*uMetallic,0.0,1.0);
+  float ao=mix(1.0,orm.r,clamp(uAoStrength,0.0,1.0));
+  if(uUsePaperAtlas>.5&&vPaperIndex>=0){
+    // Fused toner changes the sheet's grazing response a little; it is not a
+    // black decal floating over generic prop plastic. Use the finished print
+    // itself as a low-cost process mask. Blue/black ink remains subtle and the
+    // bare stock stays very matte.
+    float ink=clamp(1.0-dot(texel.rgb,vec3(.2126,.7152,.0722)),0.0,1.0);
+    rough=mix(.86,.66,smoothstep(.10,.72,ink));
+    metal=0.0;
+  }
   float lambert=max(dot(n,ldir),0.0);vec3 fromEye=normalize(vWorld-uEye);float axis=dot(fromEye,uForward);
   float cone=smoothstep(uTorchCone.x,uTorchCone.y,axis);float rim=smoothstep(uTorchCone.x-.04,uTorchCone.x+.015,axis)*.30;float spill=smoothstep(.30,uTorchCone.x-.02,axis)*uTorchSpill;
   float reach=max(.35,uTorchReach);float falloff=1.0/(1.0+(.10/reach)*dist+(.045/(reach*reach))*dist*dist);float shadow=flashlightShadow(vWorld,n,ldir);
@@ -118,8 +154,8 @@ void main(){
   float apparitionLit=smoothstep(.06,.40,apparitionReach);
   vec3 apparitionWhite=vec3(.94,.96,1.0)*pow(apparitionBody,.45)*apparitionLit*.78+vec3(.90,.93,1.0)*pow(apparitionHalo,.60)*apparitionLit*.34;
   vec3 base=uBase*texel.rgb;vec3 halfDir=normalize(ldir+normalize(toEye));float spec=pow(max(dot(n,halfDir),0.0),mix(72.0,5.0,rough))*mix(.08,.72,metal)*cone*falloff*shadow*uLight;
-  vec3 incident=uAmbientColor*ambient+uTorchColor*lamp*(1.0-metal*.45)+localLight;
-  vec3 col=base*incident+uTorchColor*spec*mix(vec3(1.0),base,metal)+vEmissive.rgb*vEmissive.a;
+  vec3 incident=uAmbientColor*ambient*ao+uTorchColor*lamp*(1.0-metal*.45)+localLight;
+  vec3 col=base*incident+uTorchColor*spec*mix(vec3(1.0),base,metal)+vEmissive.rgb*vEmissive.a+uMaterialEmissive;
   // Apply the reservation AFTER emissive materials. A red-painted or red-lit
   // surface does not become an emergency source merely because it glows.
   col=reserveEmergencyRed(col,dot(emergencyLight,vec3(.2126,.7152,.0722))/max(dot(incident,vec3(.2126,.7152,.0722)),1e-4));
@@ -198,7 +234,8 @@ precision highp float;
 in vec2 vUv;uniform sampler2D uTex;uniform float uUseTex,uBaseAlpha,uAlphaCut;
 void main(){float alpha=uUseTex>.5?texture(uTex,vUv).a:1.0;if(alpha*uBaseAlpha<uAlphaCut)discard;}`;
 
-let gl=null,program=null,textProgram=null,shadowProgram=null,pack=null,staticInstances=[],dynamicInstances=[],emergencyShadowInstances=[],sourceStaticTextInstances=[],sourceStaticTextBatches=[],sourceVisibleBatchCount=0,sourceDynamicTextInstances=[],sourceTextCorpus=[],sourceSceneKey='',sourceCorpusKey='',portraitAtlas=null;
+let gl=null,program=null,textProgram=null,shadowProgram=null,pack=null,staticInstances=[],dynamicInstances=[],diagnosticInstances=[],emergencyShadowInstances=[],sourceStaticTextInstances=[],sourceStaticTextBatches=[],sourceVisibleBatchCount=0,sourceDynamicTextInstances=[],sourceTextCorpus=[],sourceSceneKey='',sourceCorpusKey='',portraitAtlas=null,paperAtlas=null,paperAtlasGrid=[1,1];
+let propDiagnosticsEnabled=false,propDiagnosticOptions=null,activePropDiagnostics=null,lastPropDiagnostics=null;
 let practicalLightFrameByPropId=new Map();
 let colorTex=null,depthTex=null,fbo=null,width=0,height=0;
 let shadowDepthTex=null,shadowFbo=null,shadowSize=0,shadowReady=false,shadowActive=false,shadowMatrix=new Float32Array(16);
@@ -229,8 +266,21 @@ function initTextPass(){
   gl.enableVertexAttribArray(7);gl.vertexAttribPointer(7,4,gl.FLOAT,false,stride,80);gl.vertexAttribDivisor(7,1);
   gl.bindVertexArray(null);
 }
-export function props3dInit(context){gl=context;program=makeProgram();shadowProgram=linkProgram(SHADOW_VERT,SHADOW_FRAG,'prop shadow');initTextPass();}
+export function props3dInit(context){
+  gl=context;
+  // Program-local uniform locations cannot survive a renderer re-init/HMR.
+  // Compile/link eagerly so a shader error is reported here rather than later
+  // as a misleading getUniformLocation() TypeError in the frame loop.
+  uniformCache.clear();textUniformCache.clear();shadowUniformCache.clear();
+  program=null;textProgram=null;shadowProgram=null;
+  const nextProgram=makeProgram();
+  const nextShadowProgram=linkProgram(SHADOW_VERT,SHADOW_FRAG,'prop shadow');
+  program=nextProgram;shadowProgram=nextShadowProgram;
+  initTextPass();
+  if(!gl.isProgram(program)||!gl.getProgramParameter(program,gl.LINK_STATUS))throw new Error('prop program unavailable after successful link');
+}
 export function loadPortraitAtlas(url){return new Promise((resolve,reject)=>{if(!gl){reject(new Error('props3dInit first'));return;}const img=new Image();img.onload=()=>{const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);gl.texImage2D(gl.TEXTURE_2D,0,gl.SRGB8_ALPHA8,gl.RGBA,gl.UNSIGNED_BYTE,img);gl.generateMipmap(gl.TEXTURE_2D);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);portraitAtlas=t;resolve(t);};img.onerror=reject;img.src=url.href||String(url);});}
+export function loadPaperAtlas(url,{columns=1,rows=1}={}){return new Promise((resolve,reject)=>{if(!gl){reject(new Error('props3dInit first'));return;}const img=new Image();img.onload=()=>{const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);gl.texImage2D(gl.TEXTURE_2D,0,gl.SRGB8_ALPHA8,gl.RGBA,gl.UNSIGNED_BYTE,img);gl.generateMipmap(gl.TEXTURE_2D);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);paperAtlas=t;paperAtlasGrid=[Math.max(1,columns|0),Math.max(1,rows|0)];resolve(t);};img.onerror=reject;img.src=url.href||String(url);});}
 function resizeShadowTarget(size){
   if(shadowDepthTex)gl.deleteTexture(shadowDepthTex);if(shadowFbo)gl.deleteFramebuffer(shadowFbo);
   shadowDepthTex=null;shadowFbo=null;shadowReady=false;shadowSize=size;
@@ -272,10 +322,10 @@ function nodeMatrix(n={}){
   return new Float32Array([(1-yy-zz)*s[0],(xy+wz)*s[0],(xz-wy)*s[0],0,(xy-wz)*s[1],(1-xx-zz)*s[1],(yz+wx)*s[1],0,(xz+wy)*s[2],(yz-wx)*s[2],(1-xx-yy)*s[2],0,t[0],t[1],t[2],1]);
 }
 
-async function makeTexture(json,bin,textureIndex){
+async function makeTexture(json,bin,textureIndex,{srgb=false}={}){
   if(textureIndex==null)return null;const texDef=json.textures?.[textureIndex],img=json.images?.[texDef?.source];if(!img?.bufferView)return null;
   const bv=json.bufferViews[img.bufferView],bytes=bin.slice(bv.byteOffset||0,(bv.byteOffset||0)+bv.byteLength),bmp=await createImageBitmap(new Blob([bytes],{type:img.mimeType||'image/png'}));
-  const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,bmp);gl.generateMipmap(gl.TEXTURE_2D);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);return t;
+  const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,srgb?gl.SRGB8_ALPHA8:gl.RGBA8,gl.RGBA,gl.UNSIGNED_BYTE,bmp);gl.generateMipmap(gl.TEXTURE_2D);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT);const anisotropy=gl.getExtension('EXT_texture_filter_anisotropic');if(anisotropy)gl.texParameterf(gl.TEXTURE_2D,anisotropy.TEXTURE_MAX_ANISOTROPY_EXT,Math.min(8,gl.getParameter(anisotropy.MAX_TEXTURE_MAX_ANISOTROPY_EXT)||1));bmp.close?.();return t;
 }
 
 async function parsePropPack(url){
@@ -284,7 +334,8 @@ async function parsePropPack(url){
   if(!json||!bin)throw new Error('prop pack missing JSON/BIN');
   if(json.animations||json.skins||json.extensionsUsed?.length||json.extensionsRequired?.length)throw new Error('prop pack contains unsupported animation, skin or extension');
   if(json.accessors?.some((a)=>a.sparse))throw new Error('prop pack contains sparse accessors');
-  const textures=await Promise.all((json.textures||[]).map((_,i)=>makeTexture(json,bin,i)));
+  const srgbTextures=new Set((json.materials||[]).map((material)=>material.pbrMetallicRoughness?.baseColorTexture?.index).filter(Number.isInteger));
+  const textures=await Promise.all((json.textures||[]).map((_,i)=>makeTexture(json,bin,i,{srgb:srgbTextures.has(i)})));
   const nodeByMesh=new Map();for(const n of json.nodes||[])if(n.mesh!=null&&!nodeByMesh.has(n.mesh))nodeByMesh.set(n.mesh,nodeMatrix(n));
   const catalog=new Map();
   for(let mi=0;mi<(json.meshes||[]).length;mi++){
@@ -294,8 +345,8 @@ async function parsePropPack(url){
       if(!norm)throw new Error(`${entry.name}: normals required`);const vao=gl.createVertexArray();gl.bindVertexArray(vao);
       const bind=(loc,data,size)=>{const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,size,gl.FLOAT,false,0,0);};bind(0,pos,3);bind(1,norm,3);bind(2,uv||new Float32Array(pos.length/3*2),2);
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,idx,gl.STATIC_DRAW);
-      gl.bindBuffer(gl.ARRAY_BUFFER,entry.instanceBuffer);const stride=23*4;for(let c=0;c<4;c++){gl.enableVertexAttribArray(3+c);gl.vertexAttribPointer(3+c,4,gl.FLOAT,false,stride,c*16);gl.vertexAttribDivisor(3+c,1);}gl.enableVertexAttribArray(7);gl.vertexAttribPointer(7,1,gl.FLOAT,false,stride,64);gl.vertexAttribDivisor(7,1);gl.enableVertexAttribArray(8);gl.vertexAttribPointer(8,1,gl.FLOAT,false,stride,68);gl.vertexAttribDivisor(8,1);gl.enableVertexAttribArray(9);gl.vertexAttribPointer(9,1,gl.FLOAT,false,stride,72);gl.vertexAttribDivisor(9,1);gl.enableVertexAttribArray(10);gl.vertexAttribPointer(10,4,gl.FLOAT,false,stride,76);gl.vertexAttribDivisor(10,1);
-      const matDef=json.materials?.[pd.material||0]||{},mat=matDef.pbrMetallicRoughness||{},alphaMode=matDef.alphaMode||'OPAQUE';if(alphaMode!=='OPAQUE'&&alphaMode!=='MASK')throw new Error(`${entry.name}: ${alphaMode} material unsupported`);entry.primitives.push({vao,count:idx.length,indexType:json.accessors[pd.indices].componentType,base:mat.baseColorFactor||[1,1,1,1],texture:textures[mat.baseColorTexture?.index]||null,normalTexture:textures[matDef.normalTexture?.index]||null,normalScale:matDef.normalTexture?.scale??1,ormTexture:textures[mat.metallicRoughnessTexture?.index]||null,metallic:mat.metallicFactor??1,roughness:mat.roughnessFactor??1,portrait:matDef.name==='portrait surface',alphaCut:alphaMode==='MASK'?(matDef.alphaCutoff??.5):0});
+      gl.bindBuffer(gl.ARRAY_BUFFER,entry.instanceBuffer);const stride=28*4;for(let c=0;c<4;c++){gl.enableVertexAttribArray(3+c);gl.vertexAttribPointer(3+c,4,gl.FLOAT,false,stride,c*16);gl.vertexAttribDivisor(3+c,1);}gl.enableVertexAttribArray(7);gl.vertexAttribPointer(7,1,gl.FLOAT,false,stride,64);gl.vertexAttribDivisor(7,1);gl.enableVertexAttribArray(8);gl.vertexAttribPointer(8,1,gl.FLOAT,false,stride,68);gl.vertexAttribDivisor(8,1);gl.enableVertexAttribArray(9);gl.vertexAttribPointer(9,1,gl.FLOAT,false,stride,72);gl.vertexAttribDivisor(9,1);gl.enableVertexAttribArray(10);gl.vertexAttribPointer(10,4,gl.FLOAT,false,stride,76);gl.vertexAttribDivisor(10,1);gl.enableVertexAttribArray(11);gl.vertexAttribPointer(11,1,gl.FLOAT,false,stride,92);gl.vertexAttribDivisor(11,1);gl.enableVertexAttribArray(12);gl.vertexAttribPointer(12,4,gl.FLOAT,false,stride,96);gl.vertexAttribDivisor(12,1);
+      const matDef=json.materials?.[pd.material||0]||{},mat=matDef.pbrMetallicRoughness||{},alphaMode=matDef.alphaMode||'OPAQUE';if(alphaMode!=='OPAQUE'&&alphaMode!=='MASK')throw new Error(`${entry.name}: ${alphaMode} material unsupported`);entry.primitives.push({vao,count:idx.length,indexType:json.accessors[pd.indices].componentType,base:mat.baseColorFactor||[1,1,1,1],emissive:Array.isArray(matDef.emissiveFactor)?matDef.emissiveFactor:[0,0,0],texture:textures[mat.baseColorTexture?.index]||null,normalTexture:textures[matDef.normalTexture?.index]||null,normalScale:matDef.normalTexture?.scale??1,ormTexture:textures[mat.metallicRoughnessTexture?.index]||null,metallic:mat.metallicFactor??1,roughness:mat.roughnessFactor??1,aoStrength:Number(matDef.occlusionTexture?.strength??matDef.extras?.openingStreetAoStrength)||0,materialRole:matDef.extras?.openingStreetRole||null,materialName:matDef.name||null,portrait:matDef.name==='portrait surface',alphaCut:alphaMode==='MASK'?(matDef.alphaCutoff??.5):0});
     }
     catalog.set(entry.name,entry);
   }
@@ -331,16 +382,49 @@ function view(eye,yaw,pitch=0){
   return new Float32Array([x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-x[0]*eye[0]-x[1]*eye[1]-x[2]*eye[2],-y[0]*eye[0]-y[1]*eye[1]-y[2]*eye[2],-z[0]*eye[0]-z[1]*eye[1]-z[2]*eye[2],1]);
 }
 
+// A PROP IS NOT A POINT, AND THE BIG ONES ARE NOT ANYWHERE NEAR THEIR ORIGIN.
+//
+// This used to cull on the distance from the eye to the instance's origin, which
+// is right for a chair and catastrophic for an envelope. `bay-west-elevation` is
+// the complete visible shell of Ellery — eighty-eight metres by ninety-six — and
+// it is addressed by a single point at (50, 7.5), down in the loading-bay corner
+// of it. Ninety metres from THAT corner is only sixty metres from the far side of
+// the building it is wrapping, so from the south street, the east street and the
+// whole south-east of the ring the entire conservatoire stopped being drawn and
+// the block behind it came through. The same arithmetic quietly dropped
+// district_outer_sprawl, city_frontage and the baseboards.
+//
+// So the reach is the cull distance plus the mesh's own footprint. The radius is
+// the largest horizontal extent from the origin, which is rotation-invariant and
+// therefore safe to cache per mesh and to apply before yaw is known — it is a
+// conservative bound, and a conservative bound is the only kind allowed here: a
+// prop wrongly kept is a few triangles, a prop wrongly dropped is a hole in the
+// world.
+const MESH_CULL_RADIUS=new Map();
+function meshCullRadius(mesh){
+  if(!mesh)return 0;
+  const cached=MESH_CULL_RADIUS.get(mesh);
+  if(cached!==undefined)return cached;
+  const b=PROP_BOUNDS[mesh];
+  const radius=b?Math.max(Math.abs(b.min[0]),Math.abs(b.max[0]),Math.abs(b.min[2]),Math.abs(b.max[2])):0;
+  MESH_CULL_RADIUS.set(mesh,radius);
+  return radius;
+}
 export function propInstanceVisible(instance,eye,maxDistance=90){
   const ix=Number.isFinite(instance?.x)?instance.x:instance?.matrix?.[12];
   const iz=Number.isFinite(instance?.z)?instance.z:instance?.matrix?.[14];
   if(!Number.isFinite(ix)||!Number.isFinite(iz))return false;
-  return Math.hypot(ix-eye[0],iz-eye[2])<=maxDistance;
+  const scale=Math.abs(Number(instance?.scale)||1)
+    *Math.max(Math.abs(Number(instance?.scaleX??1)),Math.abs(Number(instance?.scaleZ??1)));
+  return Math.hypot(ix-eye[0],iz-eye[2])<=maxDistance+meshCullRadius(instance?.mesh)*scale;
 }
 function visibleGroups(eye,maxDistance,{shadow=false,emergencyOnly=false}={}){
   const groups=new Map();
-  const instances=emergencyOnly?emergencyShadowInstances:[...staticInstances,...dynamicInstances,...emergencyShadowInstances];
+  const ordinary=propDiagnosticsEnabled&&propDiagnosticOptions?.exclusive
+    ?[]:[...staticInstances,...dynamicInstances,...emergencyShadowInstances];
+  const instances=emergencyOnly?emergencyShadowInstances:[...ordinary,...(propDiagnosticsEnabled?diagnosticInstances:[])];
   for(const i of instances){
+    if(propDiagnosticsEnabled&&propDiagnosticOptions?.excludedMeshes?.has(i.mesh))continue;
     if(!shadow&&i.shadowOnly)continue;
     if(shadow&&i.noShadow)continue;
     if(!propInstanceVisible(i,eye,maxDistance))continue;
@@ -348,8 +432,19 @@ function visibleGroups(eye,maxDistance,{shadow=false,emergencyOnly=false}={}){
   }
   return groups;
 }
-function uploadInstances(mesh,list){const data=new Float32Array(list.length*23);for(let k=0;k<list.length;k++){const at=k*23,authored=Array.isArray(list[k].emissive)?list[k].emissive:[0,0,0,0],practical=practicalLightFrameByPropId.get(list[k].id),emissive=practical?.color?[practical.color[0],practical.color[1],practical.color[2],authored[3]]:authored,lightScale=practical?.scale??1;data.set(modelMatrix(list[k],mesh.nodeMatrix),at);data[at+16]=list[k].zone||0;data[at+17]=list[k].portraitIndex||0;data[at+18]=list[k].structural?1:0;data[at+19]=Number(emissive[0])||0;data[at+20]=Number(emissive[1])||0;data[at+21]=Number(emissive[2])||0;data[at+22]=Math.max(0,(Number(emissive[3])||0)*lightScale);}gl.bindBuffer(gl.ARRAY_BUFFER,mesh.instanceBuffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.DYNAMIC_DRAW);}
+function uploadInstances(mesh,list){
+  const data=new Float32Array(list.length*28);
+  for(let k=0;k<list.length;k++){
+    const at=k*28,authored=Array.isArray(list[k].emissive)?list[k].emissive:[0,0,0,0],practical=practicalLightFrameByPropId.get(list[k].id),emissive=practical?.color?[practical.color[0],practical.color[1],practical.color[2],authored[3]]:authored,lightScale=practical?.scale??1;
+    data.set(modelMatrix(list[k],mesh.nodeMatrix),at);data[at+16]=list[k].zone||0;data[at+17]=list[k].portraitIndex||0;data[at+18]=list[k].structural?1:0;data[at+19]=Number(emissive[0])||0;data[at+20]=Number(emissive[1])||0;data[at+21]=Number(emissive[2])||0;data[at+22]=Math.max(0,(Number(emissive[3])||0)*lightScale);
+    const paperIndex=Number.isFinite(list[k].paperIndex)?Number(list[k].paperIndex):-1;data[at+23]=paperIndex;
+    const handling=paperIndex>=0&&Array.isArray(PAPER_ATLAS_HANDLING?.[paperIndex])?PAPER_ATLAS_HANDLING[paperIndex]:[-1,0,0,0];
+    data[at+24]=Number(handling[0])||0;if(handling[0]===-1)data[at+24]=-1;data[at+25]=Number(handling[1])||0;data[at+26]=Number(handling[2])||0;data[at+27]=Number(handling[3])||0;
+  }
+  gl.bindBuffer(gl.ARRAY_BUFFER,mesh.instanceBuffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.DYNAMIC_DRAW);
+}
 function renderShadowPass(eye,yaw,pitch,light,shadowLight=null){
+  if(!gl||!shadowProgram||!gl.isProgram(shadowProgram))return false;
   const practical=shadowLight&&Number.isFinite(shadowLight.x)&&Number.isFinite(shadowLight.y)&&Number.isFinite(shadowLight.z)?shadowLight:null;
   shadowActive=false;if(!shadowReady||!shadowFbo||(!practical&&light<=.001)||!pack)return false;
   const forward=[Math.sin(yaw),0,-Math.cos(yaw)],right=[Math.cos(yaw),0,Math.sin(yaw)];
@@ -363,12 +458,22 @@ function renderShadowPass(eye,yaw,pitch,light,shadowLight=null){
   // three human silhouettes in a pile of rectangular ordinary shadows.
   const groups=visibleGroups(lightEye,64,{shadow:true,emergencyOnly:!!practical&&emergencyShadowInstances.length>0});
   gl.bindFramebuffer(gl.FRAMEBUFFER,shadowFbo);gl.viewport(0,0,shadowSize,shadowSize);gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.enable(gl.POLYGON_OFFSET_FILL);gl.polygonOffset(1.2,2.0);gl.clearDepth(1);gl.clear(gl.DEPTH_BUFFER_BIT);gl.useProgram(shadowProgram);gl.uniformMatrix4fv(SU('uShadowMatrix'),false,shadowMatrix);
-  for(const[name,list]of groups){const mesh=pack.catalog.get(name);if(!mesh||!list.length)continue;uploadInstances(mesh,list);for(const primitive of mesh.primitives){gl.bindVertexArray(primitive.vao);gl.uniform1f(SU('uBaseAlpha'),primitive.base[3]??1);gl.uniform1f(SU('uAlphaCut'),primitive.alphaCut);gl.uniform1f(SU('uUseTex'),primitive.texture?1:0);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,primitive.texture);gl.uniform1i(SU('uTex'),0);gl.drawElementsInstanced(gl.TRIANGLES,primitive.count,primitive.indexType,0,list.length);}}
+  for(const[name,list]of groups){const mesh=pack.catalog.get(name);if(!mesh||!list.length)continue;uploadInstances(mesh,list);for(const primitive of mesh.primitives){gl.bindVertexArray(primitive.vao);gl.uniform1f(SU('uBaseAlpha'),primitive.base[3]??1);gl.uniform1f(SU('uAlphaCut'),primitive.alphaCut);gl.uniform1f(SU('uUseTex'),primitive.texture?1:0);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,primitive.texture);gl.uniform1i(SU('uTex'),0);gl.drawElementsInstanced(gl.TRIANGLES,primitive.count,primitive.indexType,0,list.length);if(activePropDiagnostics){activePropDiagnostics.shadowDrawCalls+=1;activePropDiagnostics.shadowTriangles+=primitive.count/3*list.length;}}}
   gl.disable(gl.POLYGON_OFFSET_FILL);gl.bindVertexArray(null);gl.bindFramebuffer(gl.FRAMEBUFFER,null);shadowActive=true;return true;
 }
 
 export function setPropInstances(next){staticInstances=Array.isArray(next)?next:[];}
 export function setDynamicPropInstances(next){dynamicInstances=Array.isArray(next)?next:[];}
+export function setDiagnosticPropInstances(next){diagnosticInstances=Array.isArray(next)?next:[];}
+export function setPropDiagnostics(enabled,options=null){
+  propDiagnosticsEnabled=!!enabled;
+  propDiagnosticOptions=propDiagnosticsEnabled?{
+    exclusive:!!options?.exclusive,
+    excludedMeshes:new Set(Array.isArray(options?.excludeMeshes)?options.excludeMeshes.filter(Boolean):[]),
+  }:null;
+  if(!propDiagnosticsEnabled){diagnosticInstances=[];activePropDiagnostics=null;lastPropDiagnostics=null;}
+  return propDiagnosticsEnabled;
+}
 export function setEmergencyShadowInstances(next){emergencyShadowInstances=Array.isArray(next)?next:[];}
 export function setPracticalLightFrame(lights){
   practicalLightFrameByPropId=new Map((Array.isArray(lights)?lights:[])
@@ -439,17 +544,21 @@ function renderSourceText(viewMatrix,projection,eye,forward,maxDistance){
 }
 
 export function renderPropPass({camX,camY,camZ,yaw,pitch=0,light=1,maxDistance=90,fogTexture,fogOrigin=[0,0],fogSize=256,cellMeters=.5,zoneTints,localLightCount=0,localLightPositions,localLightColors,localLightPenetrations,localLightEmergency=null,localShadowIndex=-1,shadowLight=null,torch={},ambientColor=[.64,.65,.62],ambientIntensity=.022,planTexture=null,planSize=[0,0],planOrigin=[0,0]}){
-  if(!gl||!fbo)return false;const cp=Math.cos(pitch),eye=[camX,camY,camZ],forward=[Math.sin(yaw)*cp,Math.sin(pitch),-Math.cos(yaw)*cp];
+  if(!gl||!fbo||!program||!gl.isProgram(program))return false;const cp=Math.cos(pitch),eye=[camX,camY,camZ],forward=[Math.sin(yaw)*cp,Math.sin(pitch),-Math.cos(yaw)*cp];
   const viewMatrix=view(eye,yaw,pitch),projection=perspective(width/height);
+  activePropDiagnostics=propDiagnosticsEnabled?{visibleMaterialRoles:new Set(),mainDrawCalls:0,shadowDrawCalls:0,renderedInstances:0,triangles:0,shadowTriangles:0}:null;
   renderShadowPass(eye,yaw,pitch,light,shadowLight);
   gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);gl.viewport(0,0,width,height);gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.clearColor(0,0,0,0);gl.clearDepth(1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(program);gl.uniformMatrix4fv(U('uView'),false,viewMatrix);gl.uniformMatrix4fv(U('uProj'),false,projection);gl.uniform3fv(U('uEye'),eye);gl.uniform3fv(U('uForward'),forward);gl.uniform1f(U('uLight'),light);gl.uniform3fv(U('uTorchColor'),torch.color||[1,.94,.82]);gl.uniform1f(U('uTorchReach'),Number(torch.reach)||1);gl.uniform2f(U('uTorchCone'),Number(torch.coneInner)||.88,Number(torch.coneOuter)||.94);gl.uniform1f(U('uTorchSpill'),Number(torch.spill??.05)||0);gl.uniform3fv(U('uAmbientColor'),ambientColor);gl.uniform1f(U('uAmbientIntensity'),Number(ambientIntensity)||.022);gl.uniform3fv(U('uZoneTint[0]'),zoneTints);gl.uniform2fv(U('uFogOrigin'),fogOrigin);gl.uniform1f(U('uFogSize'),fogSize);gl.uniform1f(U('uCellMeters'),cellMeters);gl.uniform1i(U('uLocalLightCount'),localLightCount);gl.uniform1i(U('uLocalShadowIndex'),localShadowIndex);if(localLightPositions)gl.uniform4fv(U('uLocalLightPos[0]'),localLightPositions);if(localLightColors)gl.uniform4fv(U('uLocalLightColor[0]'),localLightColors);if(localLightPenetrations)gl.uniform1fv(U('uLocalLightPenetration[0]'),localLightPenetrations);if(localLightEmergency)gl.uniform1fv(U('uLocalLightEmergency[0]'),localLightEmergency);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,fogTexture);gl.uniform1i(U('uFogTex'),1);gl.uniform1f(U('uShadowReady'),shadowActive?1:0);gl.uniformMatrix4fv(U('uShadowMatrix'),false,shadowMatrix);gl.uniform2f(U('uShadowTexel'),1/Math.max(1,shadowSize),1/Math.max(1,shadowSize));gl.activeTexture(gl.TEXTURE6);gl.bindTexture(gl.TEXTURE_2D,shadowDepthTex);gl.uniform1i(U('uShadowTex'),6);gl.uniform1f(U('uPlanReady'),planTexture&&planSize[0]>0&&planSize[1]>0?1:0);gl.uniform2f(U('uPlanSize'),planSize[0]||0,planSize[1]||0);gl.uniform2f(U('uPlanOrigin'),planOrigin[0]||0,planOrigin[1]||0);gl.activeTexture(gl.TEXTURE7);gl.bindTexture(gl.TEXTURE_2D,planTexture);gl.uniform1i(U('uPlanTex'),7);
   const groups=visibleGroups(eye,maxDistance);
   for(const [name,list] of groups){const m=pack?.catalog.get(name);if(!m||!list.length)continue;uploadInstances(m,list);
-    for(const p of m.primitives){gl.bindVertexArray(p.vao);gl.uniform3fv(U('uBase'),p.base.slice(0,3));gl.uniform1f(U('uBaseAlpha'),p.base[3]??1);gl.uniform1f(U('uAlphaCut'),p.alphaCut);gl.uniform1f(U('uUseTex'),p.texture?1:0);gl.uniform1f(U('uUseNormal'),p.normalTexture?1:0);gl.uniform1f(U('uUseOrm'),p.ormTexture?1:0);gl.uniform1f(U('uNormalScale'),p.normalScale??1);gl.uniform1f(U('uMetallic'),p.metallic??0);gl.uniform1f(U('uRoughness'),p.roughness??1);gl.uniform1f(U('uUsePortrait'),p.portrait&&portraitAtlas?1:0);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,p.texture);gl.uniform1i(U('uTex'),0);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,portraitAtlas);gl.uniform1i(U('uPortraitAtlas'),2);gl.activeTexture(gl.TEXTURE4);gl.bindTexture(gl.TEXTURE_2D,p.normalTexture);gl.uniform1i(U('uNormalTex'),4);gl.activeTexture(gl.TEXTURE5);gl.bindTexture(gl.TEXTURE_2D,p.ormTexture);gl.uniform1i(U('uOrmTex'),5);gl.drawElementsInstanced(gl.TRIANGLES,p.count,p.indexType,0,list.length);}
+    if(activePropDiagnostics)activePropDiagnostics.renderedInstances+=list.length;
+    for(const p of m.primitives){gl.bindVertexArray(p.vao);gl.uniform3fv(U('uBase'),p.base.slice(0,3));gl.uniform3fv(U('uMaterialEmissive'),p.emissive||[0,0,0]);gl.uniform1f(U('uBaseAlpha'),p.base[3]??1);gl.uniform1f(U('uAlphaCut'),p.alphaCut);gl.uniform1f(U('uUseTex'),p.texture?1:0);gl.uniform1f(U('uUseNormal'),p.normalTexture?1:0);gl.uniform1f(U('uUseOrm'),p.ormTexture?1:0);gl.uniform1f(U('uNormalScale'),p.normalScale??1);gl.uniform1f(U('uAoStrength'),p.aoStrength??0);gl.uniform1f(U('uMetallic'),p.metallic??0);gl.uniform1f(U('uRoughness'),p.roughness??1);gl.uniform1f(U('uUsePortrait'),p.portrait&&portraitAtlas?1:0);gl.uniform1f(U('uUsePaperAtlas'),name.startsWith('loose_note')&&paperAtlas?1:0);gl.uniform2f(U('uPaperAtlasGrid'),paperAtlasGrid[0],paperAtlasGrid[1]);gl.activeTexture(gl.TEXTURE8);gl.bindTexture(gl.TEXTURE_2D,paperAtlas);gl.uniform1i(U('uPaperAtlas'),8);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,p.texture);gl.uniform1i(U('uTex'),0);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,portraitAtlas);gl.uniform1i(U('uPortraitAtlas'),2);gl.activeTexture(gl.TEXTURE4);gl.bindTexture(gl.TEXTURE_2D,p.normalTexture);gl.uniform1i(U('uNormalTex'),4);gl.activeTexture(gl.TEXTURE5);gl.bindTexture(gl.TEXTURE_2D,p.ormTexture);gl.uniform1i(U('uOrmTex'),5);gl.drawElementsInstanced(gl.TRIANGLES,p.count,p.indexType,0,list.length);if(activePropDiagnostics){activePropDiagnostics.mainDrawCalls+=1;activePropDiagnostics.triangles+=p.count/3*list.length;if(p.materialRole)activePropDiagnostics.visibleMaterialRoles.add(p.materialRole);}}
   }
   renderSourceText(viewMatrix,projection,eye,forward,maxDistance);
+  if(activePropDiagnostics){lastPropDiagnostics={visibleMaterialRoles:[...activePropDiagnostics.visibleMaterialRoles].sort(),mainDrawCalls:activePropDiagnostics.mainDrawCalls,shadowDrawCalls:activePropDiagnostics.shadowDrawCalls,renderedInstances:activePropDiagnostics.renderedInstances,triangles:activePropDiagnostics.triangles,shadowTriangles:activePropDiagnostics.shadowTriangles};activePropDiagnostics=null;}
   gl.bindVertexArray(null);gl.disable(gl.CULL_FACE);gl.disable(gl.DEPTH_TEST);gl.bindFramebuffer(gl.FRAMEBUFFER,null);return true;
 }
 
-export function propPackStats(){return pack?{meshes:pack.catalog.size,instances:staticInstances.length,dynamicInstances:dynamicInstances.length,emergencyShadowInstances:emergencyShadowInstances.length,sourceText:sourceStaticTextInstances.length+sourceDynamicTextInstances.length,sourceStaticText:sourceStaticTextInstances.length,sourceDynamicText:sourceDynamicTextInstances.length,sourceStaticBatches:sourceStaticTextBatches.length,sourceVisibleBatches:sourceVisibleBatchCount,sourceSceneKey,sourceCorpusKey,textAtlasBuilds,shadow:{ready:shadowReady,active:shadowActive,size:shadowSize}}:null;}
+export function propPackStats(){return pack?{meshes:pack.catalog.size,instances:staticInstances.length,dynamicInstances:dynamicInstances.length,diagnosticInstances:propDiagnosticsEnabled?diagnosticInstances.length:0,diagnosticMeshes:propDiagnosticsEnabled?diagnosticInstances.map((instance)=>({mesh:instance.mesh,loaded:pack.catalog.has(instance.mesh),x:instance.x,y:instance.y,z:instance.z})):null,diagnosticOptions:propDiagnosticsEnabled?{exclusive:!!propDiagnosticOptions?.exclusive,excludedMeshes:[...(propDiagnosticOptions?.excludedMeshes||[])]}:null,emergencyShadowInstances:emergencyShadowInstances.length,sourceText:sourceStaticTextInstances.length+sourceDynamicTextInstances.length,sourceStaticText:sourceStaticTextInstances.length,sourceDynamicText:sourceDynamicTextInstances.length,sourceStaticBatches:sourceStaticTextBatches.length,sourceVisibleBatches:sourceVisibleBatchCount,sourceSceneKey,sourceCorpusKey,textAtlasBuilds,diagnosticsEnabled:propDiagnosticsEnabled,diagnostics:propDiagnosticsEnabled?lastPropDiagnostics:null,shadow:{ready:shadowReady,active:shadowActive,size:shadowSize}}:null;}
 export function propInstanceIds(){return staticInstances.map((instance)=>instance.id);}
+export function props3dDebugShaders(){return {vertex:VERT,fragment:FRAG,shadowVertex:SHADOW_VERT,shadowFragment:SHADOW_FRAG};}

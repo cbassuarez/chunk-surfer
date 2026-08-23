@@ -1,70 +1,71 @@
 {
-  "schemaVersion": 1,
-  "id": "ending.arrival.defeated",
-  "title": "Arrival · the chapel took it off you",
-  "status": "active",
-  "entry": "start",
-  "entries": [
+ "schemaVersion": 1,
+ "id": "ending.arrival.defeated",
+ "title": "Arrival · the chapel took it off you",
+ "status": "active",
+ "entry": "start",
+ "entries": [
+  "start"
+ ],
+ "tags": [
+  "ending",
+  "arrival"
+ ],
+ "notes": "Played BEFORE the staying endings when the player lost the chapel fight rather than agreeing. Losing used to hand straight to The Seal with nothing said, so a man who fought for twenty minutes and was beaten got the same opening line as a man who said yes. This is the difference. It is short on purpose: he is not in a state to narrate.",
+ "regions": [
+  {
+   "id": "ending.arrival.defeated.region",
+   "title": "Defeated",
+   "kind": "ending",
+   "color": "#8b3b3b",
+   "nodeIds": [
     "start"
-  ],
-  "tags": [
-    "ending",
-    "arrival"
-  ],
-  "notes": "Played BEFORE the staying endings when the player lost the chapel fight rather than agreeing. Losing used to hand straight to The Seal with nothing said, so a man who fought for twenty minutes and was beaten got the same opening line as a man who said yes. This is the difference. It is short on purpose: he is not in a state to narrate.",
-  "regions": [
-    {
-      "id": "ending.arrival.defeated.region",
-      "title": "Defeated",
-      "kind": "ending",
-      "color": "#8b3b3b",
-      "nodeIds": [
-        "start"
-      ]
-    }
-  ],
-  "nodes": {
-    "start": {
-      "type": "ending",
-      "lines": [
-        {
-          "who": "direction",
-          "text": "You do not agree to anything. You are simply not standing up any more, and the difference stops mattering somewhere on the way down.",
-          "id": "start.line.1"
-        },
-        {
-          "who": "you",
-          "text": "No. No, I had it. I had the shape of it.",
-          "id": "start.line.2"
-        },
-        {
-          "who": "direction",
-          "text": "The recorder is still running on the floor between you. It does not know the fight is over and it goes on doing the only thing it was ever asked to do.",
-          "id": "start.line.3"
-        },
-        {
-          "who": "surfer",
-          "text": "Again from the first bar.",
-          "id": "start.line.4"
-        },
-        {
-          "who": "direction",
-          "text": "It is not gloating. It cannot gloat. It has asked for another take, at the level it always asks, and there is nobody left in the room to refuse.",
-          "id": "start.line.5"
-        },
-        {
-          "who": "you",
-          "text": "It won every round it needed and lost the ones it did not. It was never in a hurry.",
-          "id": "start.line.6",
-          "when": "ending.battles.lost>=2"
-        },
-        {
-          "who": "direction",
-          "text": "There is no decision left to make. There is only the walk back to the screen, which is a decision you made twenty minutes ago without noticing.",
-          "id": "start.line.7"
-        }
-      ],
-      "id": "start"
-    }
+   ]
   }
+ ],
+ "nodes": {
+  "start": {
+   "type": "ending",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "You do not agree to anything. You are simply not standing up any more, and the difference stops mattering somewhere on the way down.",
+     "id": "start.line.1"
+    },
+    {
+     "who": "you",
+     "text": "No. No, I had it. I had the shape of it.",
+     "id": "start.line.2"
+    },
+    {
+     "who": "direction",
+     "text": "The recorder is still running on the floor between you. It does not know the fight is over and it goes on doing the only thing it was ever asked to do.",
+     "id": "start.line.3"
+    },
+    {
+     "who": "surfer",
+     "text": "Again from the first bar.",
+     "id": "start.line.4",
+     "quotes": "rehearsal"
+    },
+    {
+     "who": "direction",
+     "text": "It is not gloating. It cannot gloat. It has asked for another take, at the level it always asks, and there is nobody left in the room to refuse.",
+     "id": "start.line.5"
+    },
+    {
+     "who": "you",
+     "text": "It won every round it needed and lost the ones it did not. It was never in a hurry.",
+     "id": "start.line.6",
+     "when": "ending.battles.lost>=2"
+    },
+    {
+     "who": "direction",
+     "text": "There is no decision left to make. There is only the walk back to the screen, which is a decision you made twenty minutes ago without noticing.",
+     "id": "start.line.7"
+    }
+   ],
+   "id": "start"
+  }
+ }
 }

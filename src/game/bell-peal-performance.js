@@ -180,15 +180,21 @@ export function createBellPealPerformance({
   onComplete=()=>{},
 }={}){
   const assistMode=normalizePealAssistMode(mode),timing=timingForPealMode(assistMode);
-  let clockMs=0,phase='idle',phaseStartedMs=0,rowIndex=Math.max(0,Math.min(84,Math.floor(Number(initialRow)||0)));
+  const initialRowIndex=Math.max(0,Math.min(84,Math.floor(Number(initialRow)||0)));
+  const musicalOffsetMs=pealMusicalElapsedForRow(initialRowIndex);
+  let clockMs=0,phase='idle',phaseStartedMs=0,rowIndex=initialRowIndex;
   let rowStartedMs=0,automaticScheduled=false,tenorResolved=false,lastJudgement=null,misses=0,lastRawTick=null;
   let completionSent=false,suspendedFrom='idle',pressRawMs=-Infinity;
-  let interferenceRow=-1,interferenceFrame=null;
+  let performanceStartedMs=0,interferenceFrame=null;
 
   function currentInterference(){
-    if(interferenceRow!==rowIndex||!interferenceFrame){
-      interferenceRow=rowIndex;interferenceFrame=pealInterferenceAt(pealMusicalElapsedForRow(rowIndex));
-    }
+    // The Surfer edits the performance transport, not the save counter. Tying
+    // this to completed rows meant a player caught in recalls could postpone
+    // the subtraction indefinitely, and "the band returns at 1:30" stopped
+    // being true. Presets/resumed rows retain their authored musical offset;
+    // live time advances continuously and freezes with the audio clock.
+    const elapsed=musicalOffsetMs+Math.max(0,clockMs-performanceStartedMs-TENOR_TIMING.countInBeatMs*TENOR_TIMING.countInBeats);
+    interferenceFrame=pealInterferenceAt(elapsed);
     return interferenceFrame;
   }
 
@@ -227,7 +233,7 @@ export function createBellPealPerformance({
   function start(){
     if(rowIndex>=84){phase='complete';if(!completionSent){completionSent=true;onComplete({rows:rowIndex,misses});}return snapshot();}
     if(clock){if(phase==='suspended')clock.resume?.();else clock.start?.(clockMs);}
-    clockMs=rawNow(0);beginCountIn(phase==='suspended'?'resume':'start');return snapshot();
+    clockMs=rawNow(0);performanceStartedMs=clockMs;beginCountIn(phase==='suspended'?'resume':'start');return snapshot();
   }
   function suspend(reason='pause'){
     if(['idle','complete','suspended'].includes(phase))return snapshot();
@@ -285,7 +291,11 @@ export function createBellPealPerformance({
     const countIn=phase==='count_in'?Math.max(0,TENOR_TIMING.countInBeats-countInIndex):0;
     const judgementAgeMs=lastJudgement?Math.max(0,clockMs-lastJudgement.atMs):Infinity;
     const pull=Number.isFinite(pressRawMs)?Math.sin(Math.PI*clamp01((clockMs-pressRawMs)/680)):0;
-    const musicalElapsedMs=pealMusicalElapsedForRow(rowIndex),interference=currentInterference();
+    const interference=currentInterference(),musicalElapsedMs=interference.elapsedMs;
+    const rowElapsedMs=target?Math.max(0,clockMs-rowStartedMs):0;
+    const place=target?Math.max(0,Math.min(7,Math.floor(rowElapsedMs/PLACE_MS))):-1;
+    const placeProgress=target?clamp01((rowElapsedMs-place*PLACE_MS)/PLACE_MS):0;
+    const soundingBell=target?.row?.[place]??null;
     return{
       phase,clockMs,row:rowIndex,rows:84,misses,lastJudgement,target,deltaMs,countIn,
       countInCall:countInIndex>=0?PEAL_COUNT_IN_CALLS[countInIndex]:'',countInProgress:phase==='count_in'?clamp01((clockMs-phaseStartedMs)/(TENOR_TIMING.countInBeatMs*TENOR_TIMING.countInBeats)):0,
@@ -293,6 +303,7 @@ export function createBellPealPerformance({
       armed:!!target&&deltaMs>=-TENOR_TIMING.approachMs&&!tenorResolved,
       tenorResolved,mode:assistMode,guided:assistMode!==PEAL_ASSIST_MODE.STANDARD,timing,
       phrase:Math.min(5,Math.floor(Math.min(rowIndex,83)/14)),phraseRow:rowIndex%14,
+      place,placeProgress,soundingBell,
       judgementAgeMs,pull,musicalElapsedMs,interference,activeBells:interference.activeBells,hud:interference.hud,clock:clock?.snapshot?.()||null,
     };
   }

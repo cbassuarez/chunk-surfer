@@ -20,7 +20,6 @@ const audioProject = authoringAudioProject || { triggers: [] };
 // intentionally small and source-id addressed: these are voice/locality edits,
 // not a general string replacement pass.
 const LOCAL_ENGLISH_TEXT_POLISH = new Map([
-  ['conservatory.cold_open_dialogue:start.line.3', 'You all right? You here for the Ellery gig? Christ. They actually sent someone tonight.'],
   ['conservatory.cold_open_dialogue:start.line.5', 'Came through about five.'],
   ['conservatory.cold_open_dialogue:start.line.8', 'Coffee if you want it. It is not a proper brew, but it is hot. Work order is there. Keys when you sign.'],
   ['conservatory.cold_open_dialogue:order.rooms.power.line.1', 'The site office had the power cut months back — cheaper than paying for a building they are about to knock down.'],

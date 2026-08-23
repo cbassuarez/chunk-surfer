@@ -4896,44 +4896,34 @@
       "cueId": "freeze"
     },
     {
-      "id": "trigger.battle.natatoriumbattle.named.start.line.2.piano.diegetic.01",
-      "event": "story.line:battle.natatoriumbattle.named:start.line.2",
+      "id": "trigger.battle.natatorium.start.line.2.piano.diegetic.01",
+      "event": "story.line:battle.natatorium:start.line.2",
       "cueId": "piano.diegetic.01"
     },
     {
-      "id": "trigger.battle.natatoriumbattle.named.round-1.line.1.piano.diegetic.02",
-      "event": "story.line:battle.natatoriumbattle.named:round-1.line.1",
+      "id": "trigger.battle.natatorium.round-1.line.1.piano.diegetic.02",
+      "event": "story.line:battle.natatorium:round-1.line.1",
       "cueId": "piano.diegetic.02"
     },
     {
-      "id": "trigger.battle.natatoriumbattle.named.round-1.line.4.piano.diegetic.03",
-      "event": "story.line:battle.natatoriumbattle.named:round-1.line.4",
+      "id": "trigger.battle.natatorium.round-1.line.4.piano.diegetic.03",
+      "event": "story.line:battle.natatorium:round-1.line.4",
       "cueId": "piano.diegetic.03"
     },
     {
-      "id": "trigger.battle.natatoriumbattle.unnamed.start.line.2.piano.diegetic.01",
-      "event": "story.line:battle.natatoriumbattle.unnamed:start.line.2",
-      "cueId": "piano.diegetic.01"
-    },
-    {
-      "id": "trigger.battle.natatoriumbattle.unnamed.round-1.line.1.piano.diegetic.02",
-      "event": "story.line:battle.natatoriumbattle.unnamed:round-1.line.1",
-      "cueId": "piano.diegetic.02"
-    },
-    {
-      "id": "trigger.battle.natatoriumbattle.unnamed.round-1.line.4.piano.diegetic.03",
-      "event": "story.line:battle.natatoriumbattle.unnamed:round-1.line.4",
-      "cueId": "piano.diegetic.03"
-    },
-    {
-      "id": "trigger.battle.practicebattle.named.round-2.line.5.piano.diegetic.04",
-      "event": "story.line:battle.practicebattle.named:round-2.line.5",
+      "id": "trigger.battle.practice.start.line.2.piano.diegetic.04",
+      "event": "story.line:battle.practice:start.line.2",
       "cueId": "piano.diegetic.04"
     },
     {
-      "id": "trigger.battle.practicebattle.unnamed.round-2.line.5.piano.diegetic.04",
-      "event": "story.line:battle.practicebattle.unnamed:round-2.line.5",
-      "cueId": "piano.diegetic.04"
+      "id": "trigger.battle.practice.round-1.line.1.piano.diegetic.05",
+      "event": "story.line:battle.practice:round-1.line.1",
+      "cueId": "piano.diegetic.05"
+    },
+    {
+      "id": "trigger.battle.practice.round-2.line.6.piano.diegetic.05",
+      "event": "story.line:battle.practice:round-2.line.6",
+      "cueId": "piano.diegetic.05"
     }
   ],
   "acousticCatalogue": {

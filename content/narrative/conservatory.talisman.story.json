@@ -1,296 +1,297 @@
 {
-  "schemaVersion": 1,
-  "id": "conservatory.talisman",
-  "title": "Talisman",
-  "status": "active",
-  "entry": "start",
-  "entries": [
-    "start"
-  ],
-  "tags": [],
-  "notes": "",
-  "regions": [
-    {
-      "id": "conservatory.talisman.region",
-      "title": "Talisman",
-      "kind": "scene",
-      "color": "#245c62",
-      "nodeIds": [
-        "start",
-        "read",
-        "whose",
-        "strike",
-        "damp",
-        "pocket",
-        "leave"
-      ]
-    }
-  ],
-  "nodes": {
-    "start": {
-      "speaker": "THE PRACTICE WING",
-      "lines": [
-        {
-          "who": "direction",
-          "text": "On the desk of the music stand, in the dust, a tuning fork. Steel, stamped, older than the last refit.",
-          "id": "start.line.1"
-        },
-        {
-          "who": "you",
-          "text": "Somebody left a fork where the music goes. That is the least mysterious object I have ever found.",
-          "id": "start.line.2"
-        }
-      ],
-      "choices": [
-        {
-          "text": "pick it up",
-          "goto": "read",
-          "id": "start.choice.1"
-        },
-        {
-          "text": "leave it. it is a fork.",
-          "goto": "leave",
-          "id": "start.choice.2"
-        }
-      ],
-      "id": "start",
-      "type": "choice"
-    },
-    "read": {
-      "speaker": "THE PRACTICE WING",
-      "lines": [
-        {
-          "who": "direction",
-          "text": "It is engraved, badly, by hand, with a knife rather than a tool: A=440. And under that, smaller: AND NOTHING ELSE.",
-          "id": "read.line.1"
-        },
-        {
-          "who": "you",
-          "text": "\"And nothing else.\"",
-          "id": "read.line.2"
-        },
-        {
-          "who": "you",
-          "text": "That is not a joke a tuner makes. That is a joke a man makes at three in the morning about the only thing he still believes.",
-          "id": "read.line.3"
-        }
-      ],
-      "choices": [
-        {
-          "text": "strike it",
-          "goto": "strike",
-          "id": "read.choice.1"
-        },
-        {
-          "text": "whose was it?",
-          "goto": "whose",
-          "id": "read.choice.2"
-        },
-        {
-          "text": "pocket it and get on",
-          "goto": "pocket",
-          "id": "read.choice.3",
-          "mutations": {
-            "set": [
-              "has.fork"
-            ]
-          }
-        }
-      ],
-      "id": "read",
-      "type": "choice"
-    },
-    "whose": {
-      "speaker": "THE PRACTICE WING",
-      "lines": [
-        {
-          "who": "you",
-          "text": "A répétiteur, maybe. Somebody who tuned this room every morning for thirty years and never once got to play in it.",
-          "id": "whose.line.1"
-        },
-        {
-          "who": "direction",
-          "text": "There is a name scratched under the stamp, worn to nothing but the shape of a name.",
-          "id": "whose.line.2"
-        },
-        {
-          "who": "you",
-          "text": "They all end up as the shape of a name.",
-          "id": "whose.line.3"
-        }
-      ],
-      "choices": [
-        {
-          "text": "strike it",
-          "goto": "strike",
-          "id": "whose.choice.1"
-        },
-        {
-          "text": "pocket it and get on",
-          "goto": "pocket",
-          "id": "whose.choice.2",
-          "mutations": {
-            "set": [
-              "has.fork"
-            ]
-          }
-        }
-      ],
-      "id": "whose",
-      "type": "choice"
-    },
-    "strike": {
-      "speaker": "THE PRACTICE WING",
-      "lines": [
-        {
-          "who": "direction",
-          "text": "You strike it on your knee and hold it up, the way you have ten thousand times, and it gives you A.",
-          "id": "strike.line.1"
-        },
-        {
-          "who": "you",
-          "text": "Four-forty. Clean as anything.",
-          "id": "strike.line.2"
-        },
-        {
-          "who": "direction",
-          "text": "A struck fork dies in about ninety seconds. You count, because counting is what you are.",
-          "id": "strike.line.3"
-        },
-        {
-          "who": "you",
-          "text": "Ninety. A hundred. A hundred and forty.",
-          "id": "strike.line.4"
-        },
-        {
-          "who": "direction",
-          "text": "It does not decay. It sits exactly where it was struck, at exactly the level it was struck, and it goes on being A.",
-          "id": "strike.line.5"
-        },
-        {
-          "who": "you",
-          "text": "That is not possible. Energy leaves a system. That is not an opinion, that is the whole of physics.",
-          "id": "strike.line.6"
-        },
-        {
-          "who": "surfer",
-          "text": "Again. Hold the reference.",
-          "rate": 0.94,
-          "id": "strike.line.7"
-        },
-        {
-          "who": "you",
-          "text": "What.",
-          "id": "strike.line.8"
-        },
-        {
-          "who": "direction",
-          "text": "The building has been holding this note. Not making it — HOLDING it, the way a man holds a breath, and it has been holding it for a very long time.",
-          "id": "strike.line.9"
-        },
-        {
-          "who": "you",
-          "text": "Something in here listened to a sound so hard it would not let it stop.",
-          "id": "strike.line.10"
-        },
-        {
-          "who": "direction",
-          "text": "The room does not tell you whether it kept the note, or whether the exact note merely gave something in the room a straight line to follow.",
-          "id": "strike.line.11"
-        }
-      ],
-      "choices": [
-        {
-          "text": "stop it. damp it with your hand.",
-          "goto": "damp",
-          "id": "strike.choice.1"
-        },
-        {
-          "text": "pocket it and get on",
-          "goto": "pocket",
-          "id": "strike.choice.2",
-          "mutations": {
-            "set": [
-              "has.fork"
-            ]
-          }
-        }
-      ],
-      "id": "strike",
-      "type": "choice"
-    },
-    "damp": {
-      "speaker": "THE PRACTICE WING",
-      "lines": [
-        {
-          "who": "direction",
-          "text": "You close your hand around it. The steel is cold and perfectly still, and it has been perfectly still the whole time.",
-          "id": "damp.line.1"
-        },
-        {
-          "who": "you",
-          "text": "...it was not the fork.",
-          "id": "damp.line.2"
-        },
-        {
-          "who": "direction",
-          "text": "The A goes on, in the room, without it. Then it stops, all at once, the way a held breath stops.",
-          "id": "damp.line.3"
-        },
-        {
-          "who": "you",
-          "text": "That was not the fork. That was in here with me and it was being polite.",
-          "id": "damp.line.4"
-        }
-      ],
-      "choices": [
-        {
-          "text": "pocket it and get on",
-          "goto": "pocket",
-          "id": "damp.choice.1",
-          "mutations": {
-            "set": [
-              "has.fork"
-            ]
-          }
-        }
-      ],
-      "id": "damp",
-      "type": "choice"
-    },
-    "pocket": {
-      "speaker": "THE PRACTICE WING",
-      "lines": [
-        {
-          "who": "direction",
-          "text": "It goes in the top pocket, where a professional keeps the one tool he trusts.",
-          "id": "pocket.line.1"
-        },
-        {
-          "who": "you",
-          "text": "A=440. And nothing else. Right.",
-          "id": "pocket.line.2"
-        }
-      ],
-      "id": "pocket",
-      "type": "dialogue"
-    },
-    "leave": {
-      "speaker": "THE PRACTICE WING",
-      "lines": [
-        {
-          "who": "you",
-          "text": "It is a fork on a stand. I have four rooms.",
-          "id": "leave.line.1"
-        },
-        {
-          "who": "direction",
-          "text": "You leave the one object in this building that would have told you the truth.",
-          "id": "leave.line.2"
-        }
-      ],
-      "id": "leave",
-      "type": "dialogue"
-    }
+ "schemaVersion": 1,
+ "id": "conservatory.talisman",
+ "title": "Talisman",
+ "status": "active",
+ "entry": "start",
+ "entries": [
+  "start"
+ ],
+ "tags": [],
+ "notes": "",
+ "regions": [
+  {
+   "id": "conservatory.talisman.region",
+   "title": "Talisman",
+   "kind": "scene",
+   "color": "#245c62",
+   "nodeIds": [
+    "start",
+    "read",
+    "whose",
+    "strike",
+    "damp",
+    "pocket",
+    "leave"
+   ]
   }
+ ],
+ "nodes": {
+  "start": {
+   "speaker": "THE PRACTICE WING",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "On the desk of the music stand, in the dust, a tuning fork. Steel, stamped, older than the last refit.",
+     "id": "start.line.1"
+    },
+    {
+     "who": "you",
+     "text": "Somebody left a fork where the music goes. That is the least mysterious object I have ever found.",
+     "id": "start.line.2"
+    }
+   ],
+   "choices": [
+    {
+     "text": "pick it up",
+     "goto": "read",
+     "id": "start.choice.1"
+    },
+    {
+     "text": "leave it. it is a fork.",
+     "goto": "leave",
+     "id": "start.choice.2"
+    }
+   ],
+   "id": "start",
+   "type": "choice"
+  },
+  "read": {
+   "speaker": "THE PRACTICE WING",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "It is engraved, badly, by hand, with a knife rather than a tool: A=440. And under that, smaller: AND NOTHING ELSE.",
+     "id": "read.line.1"
+    },
+    {
+     "who": "you",
+     "text": "\"And nothing else.\"",
+     "id": "read.line.2"
+    },
+    {
+     "who": "you",
+     "text": "That is not a joke a tuner makes. That is a joke a man makes at three in the morning about the only thing he still believes.",
+     "id": "read.line.3"
+    }
+   ],
+   "choices": [
+    {
+     "text": "strike it",
+     "goto": "strike",
+     "id": "read.choice.1"
+    },
+    {
+     "text": "whose was it?",
+     "goto": "whose",
+     "id": "read.choice.2"
+    },
+    {
+     "text": "pocket it and get on",
+     "goto": "pocket",
+     "id": "read.choice.3",
+     "mutations": {
+      "set": [
+       "has.fork"
+      ]
+     }
+    }
+   ],
+   "id": "read",
+   "type": "choice"
+  },
+  "whose": {
+   "speaker": "THE PRACTICE WING",
+   "lines": [
+    {
+     "who": "you",
+     "text": "A répétiteur, maybe. Somebody who tuned this room every morning for thirty years and never once got to play in it.",
+     "id": "whose.line.1"
+    },
+    {
+     "who": "direction",
+     "text": "There is a name scratched under the stamp, worn to nothing but the shape of a name.",
+     "id": "whose.line.2"
+    },
+    {
+     "who": "you",
+     "text": "They all end up as the shape of a name.",
+     "id": "whose.line.3"
+    }
+   ],
+   "choices": [
+    {
+     "text": "strike it",
+     "goto": "strike",
+     "id": "whose.choice.1"
+    },
+    {
+     "text": "pocket it and get on",
+     "goto": "pocket",
+     "id": "whose.choice.2",
+     "mutations": {
+      "set": [
+       "has.fork"
+      ]
+     }
+    }
+   ],
+   "id": "whose",
+   "type": "choice"
+  },
+  "strike": {
+   "speaker": "THE PRACTICE WING",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "You strike it on your knee and hold it up, the way you have ten thousand times, and it gives you A.",
+     "id": "strike.line.1"
+    },
+    {
+     "who": "you",
+     "text": "Four-forty. Clean as anything.",
+     "id": "strike.line.2"
+    },
+    {
+     "who": "direction",
+     "text": "A struck fork dies in about ninety seconds. You count, because counting is what you are.",
+     "id": "strike.line.3"
+    },
+    {
+     "who": "you",
+     "text": "Ninety. A hundred. A hundred and forty.",
+     "id": "strike.line.4"
+    },
+    {
+     "who": "direction",
+     "text": "It does not decay. It sits exactly where it was struck, at exactly the level it was struck, and it goes on being A.",
+     "id": "strike.line.5"
+    },
+    {
+     "who": "you",
+     "text": "That is not possible. Energy leaves a system. That is not an opinion, that is the whole of physics.",
+     "id": "strike.line.6"
+    },
+    {
+     "who": "surfer",
+     "text": "Again. Hold the reference.",
+     "rate": 0.94,
+     "id": "strike.line.7",
+     "quotes": "rehearsal"
+    },
+    {
+     "who": "you",
+     "text": "What.",
+     "id": "strike.line.8"
+    },
+    {
+     "who": "direction",
+     "text": "The building has been holding this note. Not making it — HOLDING it, the way a man holds a breath, and it has been holding it for a very long time.",
+     "id": "strike.line.9"
+    },
+    {
+     "who": "you",
+     "text": "Something in here listened to a sound so hard it would not let it stop.",
+     "id": "strike.line.10"
+    },
+    {
+     "who": "direction",
+     "text": "The room does not tell you whether it kept the note, or whether the exact note merely gave something in the room a straight line to follow.",
+     "id": "strike.line.11"
+    }
+   ],
+   "choices": [
+    {
+     "text": "stop it. damp it with your hand.",
+     "goto": "damp",
+     "id": "strike.choice.1"
+    },
+    {
+     "text": "pocket it and get on",
+     "goto": "pocket",
+     "id": "strike.choice.2",
+     "mutations": {
+      "set": [
+       "has.fork"
+      ]
+     }
+    }
+   ],
+   "id": "strike",
+   "type": "choice"
+  },
+  "damp": {
+   "speaker": "THE PRACTICE WING",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "You close your hand around it. The steel is cold and perfectly still, and it has been perfectly still the whole time.",
+     "id": "damp.line.1"
+    },
+    {
+     "who": "you",
+     "text": "...it was not the fork.",
+     "id": "damp.line.2"
+    },
+    {
+     "who": "direction",
+     "text": "The A goes on, in the room, without it. Then it stops, all at once, the way a held breath stops.",
+     "id": "damp.line.3"
+    },
+    {
+     "who": "you",
+     "text": "That was not the fork. That was in here with me and it was being polite.",
+     "id": "damp.line.4"
+    }
+   ],
+   "choices": [
+    {
+     "text": "pocket it and get on",
+     "goto": "pocket",
+     "id": "damp.choice.1",
+     "mutations": {
+      "set": [
+       "has.fork"
+      ]
+     }
+    }
+   ],
+   "id": "damp",
+   "type": "choice"
+  },
+  "pocket": {
+   "speaker": "THE PRACTICE WING",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "It goes in the top pocket, where a professional keeps the one tool he trusts.",
+     "id": "pocket.line.1"
+    },
+    {
+     "who": "you",
+     "text": "A=440. And nothing else. Right.",
+     "id": "pocket.line.2"
+    }
+   ],
+   "id": "pocket",
+   "type": "dialogue"
+  },
+  "leave": {
+   "speaker": "THE PRACTICE WING",
+   "lines": [
+    {
+     "who": "you",
+     "text": "It is a fork on a stand. I have four rooms.",
+     "id": "leave.line.1"
+    },
+    {
+     "who": "direction",
+     "text": "You leave the one object in this building that would have told you the truth.",
+     "id": "leave.line.2"
+    }
+   ],
+   "id": "leave",
+   "type": "dialogue"
+  }
+ }
 }

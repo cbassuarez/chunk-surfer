@@ -1,0 +1,115 @@
+{
+  "id": "accessibility-off",
+  "family": "accessibility",
+  "effects": "off",
+  "seed": "review:off",
+  "capturedAt": "2026-08-11T03:53:50.021Z",
+  "gate": {
+    "context": {
+      "group": "hall",
+      "zone": 5,
+      "spaceId": "hall",
+      "ambientColor": [
+        0.5,
+        0.37,
+        0.31
+      ],
+      "ambientIntensity": 0.02,
+      "whitePointScale": 0.19565217391304346,
+      "bounce": {
+        "color": [
+          0.5,
+          0.37,
+          0.31
+        ],
+        "intensity": 0.06
+      }
+    },
+    "effectsMode": "off",
+    "reduceDread": false,
+    "dockHauntingActive": false,
+    "specialSpace": false,
+    "sourceSpace": false,
+    "stairAnomaly": false,
+    "live": [
+      "sp02",
+      "sp03"
+    ],
+    "emergency": [
+      {
+        "id": "hall-entrance-maintained-north",
+        "kind": "emergency",
+        "circuit": null,
+        "powerMode": "maintained",
+        "maintained": true,
+        "intensity": 1.788,
+        "shadowReveal": 0
+      },
+      {
+        "id": "hall-entrance-maintained-south",
+        "kind": "emergency",
+        "circuit": null,
+        "powerMode": "maintained",
+        "maintained": true,
+        "intensity": 1.788,
+        "shadowReveal": 0
+      },
+      {
+        "id": "hall-stage-door-maintained",
+        "kind": "emergency",
+        "circuit": null,
+        "powerMode": "maintained",
+        "maintained": true,
+        "intensity": 1.98,
+        "shadowReveal": 0
+      },
+      {
+        "id": "hall-galleria-west-foot",
+        "kind": "emergency",
+        "circuit": null,
+        "powerMode": "maintained",
+        "maintained": true,
+        "intensity": 1.898,
+        "shadowReveal": 0
+      },
+      {
+        "id": "hall-galleria-east-foot",
+        "kind": "emergency",
+        "circuit": null,
+        "powerMode": "maintained",
+        "maintained": true,
+        "intensity": 1.898,
+        "shadowReveal": 0
+      }
+    ],
+    "candidates": [],
+    "submitted": {
+      "active": false,
+      "lightId": null,
+      "figures": 0,
+      "visibleBodies": 0,
+      "shadowOnlyFigures": 0,
+      "shadowOnlyIndices": []
+    }
+  },
+  "apparitions": {
+    "active": false,
+    "figures": 0,
+    "visibleBodies": 0,
+    "shadowOnlyFigures": 0,
+    "shadowOnlyIndices": [],
+    "lightId": null,
+    "bearings": []
+  },
+  "scene": {
+    "luma": 29.95,
+    "litPct": 71.4,
+    "redPct": 85,
+    "whitePct": 0
+  },
+  "shadow": {
+    "ready": true,
+    "active": false,
+    "size": 1024
+  }
+}

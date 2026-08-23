@@ -1,0 +1,13 @@
+{
+  "splats": 115089,
+  "perSlice": 450,
+  "kinds": {
+    "flat": 44166,
+    "edge": 12933,
+    "mosh": 57990
+  },
+  "bytes": 1841424,
+  "audioBytes": 2277096,
+  "slices": 256,
+  "tapeSeconds": 259.390113
+}

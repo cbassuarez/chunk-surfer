@@ -5,7 +5,7 @@ import { ZONE } from './floorplan/legend.js';
 // coordinates here so a floorplan scale or a second disconnected zone cannot
 // silently move a review shot somewhere else.
 export const GOD_LOCATION_HOOKS = Object.freeze({
-  'loading-bay': Object.freeze({at:{x:57,y:207},facing:1,zone:ZONE.dock,group:'ground',floor:0,component:'loading_bay'}),
+  'loading-bay': Object.freeze({at:{x:53,y:10},facing:1,zone:ZONE.dock,group:'ground',floor:0,component:'ground'}),
   'get-in': Object.freeze({ at:{x:65,y:10}, facing:3, zone:ZONE.getIn, group:'ground', floor:0,component:'ground' }),
   'front-atrium': Object.freeze({ at:{x:83,y:7}, facing:2, zone:ZONE.foyer, group:'ground', floor:0,component:'front_atrium' }),
   'studio-b3': Object.freeze({ at:{x:15,y:12}, facing:0, zone:ZONE.studio, group:'basement', floor:-4,component:'basement' }),

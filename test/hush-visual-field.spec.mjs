@@ -83,7 +83,7 @@ test('the cover silhouette is a depth-aware world manifestation after the absenc
   const renderer = await readFile(new URL('../src/render/r3d.js', import.meta.url), 'utf8');
   const pixelMesh = await readFile(new URL('../src/render/pixel-mesh/shader.js', import.meta.url), 'utf8');
   const absencePass = renderer.indexOf('// The HUSH is not a dark decal on the walls');
-  const bodyPass = renderer.indexOf('// The cover-art figure is a real presence in the room');
+  const bodyPass = renderer.indexOf('compositeHushBody(uHushBody,uHushBodyLook');
   assert.ok(bodyPass > absencePass, 'the broad light-eating field resolves before the authored body composite');
   assert.match(renderer, /bodyView<zView\+\.012/, 'the silhouette is occluded by the nearest architecture or prop depth');
   assert.match(renderer, /Cell bodyCell=cellAtI/, 'the silhouette stands on the authored floor height');
@@ -130,9 +130,11 @@ test('the HUSH SDF is the compact, provenance-tracked cover figure', async () =>
   assert.equal(provenance.processed.sha256, createHash('sha256').update(png).digest('hex'));
 });
 
-test('special spaces suppress the building HUSH body and diagnostics expose its compositor', async () => {
+test('special spaces suppress the building HUSH body except Source, and diagnostics expose its compositor', async () => {
   const main = await readFile(new URL('../src/main.js', import.meta.url), 'utf8');
-  assert.match(main, /hushBodyAllowed:!worldView\?\.suppressActors&&!usingSpecialSpace\(\)/);
+  assert.match(main, /hushBodySpaceAllowed=!usingSpecialSpace\(\)\|\|usingSourceSpace\(\)/);
+  assert.match(main, /hushBodyAllowed:!worldView\?\.suppressActors&&hushBodySpaceAllowed/);
+  assert.match(main, /hushSecondary:renderedHushSecondary/, 'Source bracket does not supply the render-only forward manifestation');
   assert.match(main, /HUSH BODY COMPOSITE/);
   assert.match(main, /hushBody:\(\)=>R3\.r3dHushBodyStatus/);
 });

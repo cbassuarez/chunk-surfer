@@ -70,6 +70,15 @@ soloPerformance.start();soloPerformance.tick(TENOR_TIMING.countInBeatMs*TENOR_TI
 assert.deepEqual(soloPerformance.snapshot().activeBells,[8]);
 assert.equal(soloStrikes.filter((entry)=>!entry.options.player).length,0,'removed members leave actual audible holes rather than merely hiding UI');
 
+const clockDrivenInterference=createBellPealPerformance();
+clockDrivenInterference.start();
+clockDrivenInterference.tick(TENOR_TIMING.countInBeatMs*TENOR_TIMING.countInBeats/1000);
+clockDrivenInterference.tick(PEAL_INTERFERENCE.learningMs/1000);
+assert.equal(clockDrivenInterference.snapshot().row,0,'the timing proof remains on the same recalled row');
+assert.deepEqual(clockDrivenInterference.snapshot().interference.removedBells,[2],'Surfer subtraction follows live performance time even when the player is stuck on one row');
+clockDrivenInterference.tick((PEAL_INTERFERENCE.returnAtMs-PEAL_INTERFERENCE.learningMs)/1000);
+assert.deepEqual(clockDrivenInterference.snapshot().activeBells,[1,8],'the first rope returns at about 1:30 without requiring a particular completed-row count');
+
 let hitchAudio=0,hitchPerf=0,recalls=0;
 const hitchClock=createBellPealClock({context:{get currentTime(){return hitchAudio;},baseLatency:0,outputLatency:0},performanceApi:{now:()=>hitchPerf}});
 const hitchPerformance=createBellPealPerformance({clock:hitchClock,onRecall:()=>{recalls++;}});hitchPerformance.start();
@@ -98,5 +107,8 @@ const sceneSource=readFileSync('src/game/bell-peal-scene.js','utf8');
 assert.match(sceneSource,/drawMachinePanel\(/,'the peal uses the same screen-instrument chassis as combat');
 assert.match(sceneSource,/TENOR ABSENT/,'a missed tenor gets explicit visual feedback');
 assert.match(sceneSource,/MS \$\{side\}/,'judgements report signed early or late timing');
+assert.match(sceneSource,/suppressesHud:true/,'the peal instrument replaces rather than overlaps the ordinary exploration HUD');
+assert.match(sceneSource,/CURRENT CHANGE/,'the permutation is presented as the active change, not an unlabelled number strip');
+assert.match(sceneSource,/onCountInPulse/,'the count-in has an audible pulse hook');
 assert.doesNotMatch(sceneSource,/drawFirstPersonHands|r3dProjectWorld|anchor\?\./,'the retired world-anchored rope overlay is not rendered');
 console.log('bell peal performance tests ok');

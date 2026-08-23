@@ -65,12 +65,12 @@ const SETTING_HELP = Object.freeze({
     profileAdaptive: 'ADAPTIVE DIFFICULTY may move one bounded band at safe checkpoints. Authored assistance and accessibility remain authoritative.',
     profileWindow: 'WINDOW CHOREOGRAPHY affects only game-owned windows and never runs during actionable input.',
     profileWindowIntensity: 'LOW stays in-frame. STANDARD permits restrained geometry. HOSTILE permits the complete authored architecture.',
-    profileFiles: 'FIELD-RETURN FILES are local AUDIOCORP artifacts with coarse classification and architectural history only.',
+    profileFiles: 'INTERFERENCE FILES are stored locally and contain limited session summaries and architectural history, not raw behavioral logs.',
     profileRetryMic: 'RETRY MICROPHONE launches the operating-system permission request again.',
     profileRestore: 'RESTORE WINDOWS aborts the active score, restores the main frame, and closes every echo pane.',
-    profileOpenReturns: 'OPEN RETURN FOLDER reveals Chunk Surfer’s local game-data return folder.',
+    profileOpenReturns: 'OPEN INTERFERENCE FOLDER reveals the local folder that contains Chunk Surfer’s interference files.',
     profileResetInference: 'RESET INFERRED PROFILE returns the four fictional response dimensions to neutral.',
-    profileErase: 'ERASE ALL PROFILE DATA disables every module and deletes the profile, identity cache, masking key, and field returns.',
+    profileErase: 'ERASE ALL PROFILE DATA disables every module and deletes the profile, identity cache, masking key, and interference files.',
     default: 'This page controls every local psychological-profile module independently.',
   },
 
@@ -85,15 +85,15 @@ const SETTING_HELP = Object.freeze({
 
   challenge: {
     shift: 'CURRENT SHIFT is the rules profile selected when this run began.',
-    'challenge:presencePressure': 'PRESENCE PRESSURE changes how quickly and how well the HUSH tracks sound.',
+    'challenge:presencePressure': 'ENEMY PRESSURE changes how quickly threats move, how easily they hear you, and how long they keep tracking you.',
     'challenge:recordingForgiveness': 'RECORDING FORGIVENESS changes how minor handling noise affects an active take.',
     'challenge:combatAssistance': 'COMBAT ASSISTANCE changes intent guidance, Composure, guard strength, and enemy scripts.',
-    'challenge:navigationSignal': 'NAVIGATION SIGNAL changes how much waypoint information the field case supplies.',
-    'challenge:escapeTimer': 'ESCAPE TIMER changes the final timed window; OFF removes only that timer.',
-    'challenge:torchDrain': 'TORCH DRAIN changes battery consumption, not light intensity.',
-    'challenge:involuntaryBreath': 'INVOLUNTARY BREATH changes fear breathing and the noise it can create.',
-    certification: 'DEAD AIR certification ends only when a gameplay rule is made easier.',
-    default: 'Challenge settings change gameplay pressure. Accessibility settings never affect certification.',
+    'challenge:navigationSignal': 'NAVIGATION HELP changes how much route, room, distance, map, and waypoint information is shown.',
+    'challenge:escapeTimer': 'ESCAPE TIME changes how long you have during timed escapes; OFF removes the timer.',
+    'challenge:torchDrain': 'FLASHLIGHT DRAIN changes battery consumption, not light intensity.',
+    'challenge:involuntaryBreath': 'INVOLUNTARY BREATHING changes whether panic can make your character breathe loudly without input.',
+    certification: 'The DEAD AIR achievement is disabled for the run if a gameplay rule is made easier.',
+    default: 'Challenge settings change gameplay pressure. Accessibility settings never affect the DEAD AIR achievement.',
   },
 
   game: {

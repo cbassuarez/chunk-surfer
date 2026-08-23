@@ -1,0 +1,845 @@
+diff --git a/src/audio/self-audio-mask.js b/src/audio/self-audio-mask.js
+new file mode 100644
+index 0000000..406930d
+--- /dev/null
++++ b/src/audio/self-audio-mask.js
+@@ -0,0 +1,159 @@
++const finite = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
++const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, finite(value, min)));
++
++export function rmsForDb(db) {
++  const n = Number(db);
++  if (!Number.isFinite(n)) return 0;
++  return clamp(Math.pow(10, n / 20));
++}
++
++export function dbForRms(rms) {
++  const n = clamp(rms);
++  return n > 0 ? Math.max(-96, 20 * Math.log10(n)) : -96;
++}
++
++function nowMs() {
++  return typeof performance !== 'undefined' && typeof performance.now === 'function'
++    ? performance.now()
++    : Date.now();
++}
++
++function eventEnvelope(event, t, releaseMs) {
++  if (!event) return 0;
++  if (t < event.startMs) return 0;
++  const length = Math.max(1, event.endMs - event.startMs);
++  if (t <= event.endMs) {
++    const attack = Math.min(45, Math.max(8, length * 0.15));
++    return clamp((t - event.startMs) / Math.max(1, attack));
++  }
++  if (t <= event.endMs + releaseMs) {
++    return clamp(1 - ((t - event.endMs) / Math.max(1, releaseMs)));
++  }
++  return 0;
++}
++
++export function normalizeSelfAudioEvent(input = {}, atMs = nowMs()) {
++  const event = input && typeof input === 'object' ? input : {};
++  const sourceKind = String(event.source?.kind || 'environment');
++  const sourceId = String(event.source?.id || 'unknown');
++  const provenanceSystem = String(event.provenance?.system || '');
++
++  // The real microphone cannot be its own cancellation reference.
++  if (sourceId === 'room-mic' || provenanceSystem === 'room-mic') return null;
++  if (event.semantics?.audibleInWorld === false) return null;
++
++  const emittedAt = Number.isFinite(Number(event.emittedAt)) ? Number(event.emittedAt) : atMs;
++  const durationMs = Math.max(40, finite(event.acoustic?.durationMs, 300));
++  const levelDb = finite(event.acoustic?.levelDb, -38);
++  const rms = Math.max(0.004, rmsForDb(levelDb));
++
++  return {
++    id: String(event.id || `self-audio:${Math.round(emittedAt)}`),
++    kind: String(event.kind || 'game-output'),
++    source: { kind: sourceKind, id: sourceId },
++    startMs: emittedAt,
++    endMs: emittedAt + durationMs,
++    rms,
++    canSpoilTake: !!event.semantics?.canSpoilTake,
++    playerGenerated: !!event.semantics?.playerGenerated,
++  };
++}
++
++export function effectiveMicMeasurement(raw = {}, mask = {}) {
++  const rawRms = clamp(raw.rms);
++  const rawPeak = Math.max(rawRms, clamp(raw.peak));
++  const maskRms = clamp(mask.rms);
++  const maskGain = Math.max(0, finite(mask.maskGain, 1.35));
++
++  let effectiveRms = Math.max(0, rawRms - maskRms * maskGain);
++  const overMask = maskRms > 0 && rawRms > maskRms * 2.4;
++  if (overMask) effectiveRms = Math.max(effectiveRms, rawRms - maskRms * 0.45);
++
++  const effectivePeak = Math.max(effectiveRms, rawPeak - maskRms * maskGain * 0.8);
++
++  return {
++    raw: {
++      rms: rawRms,
++      peak: rawPeak,
++      clipped: !!raw.clipped || rawPeak >= 0.985,
++    },
++    mask: {
++      active: !!mask.active,
++      rms: maskRms,
++      peak: Math.max(maskRms, clamp(mask.peak)),
++      db: Number.isFinite(Number(mask.db)) ? Number(mask.db) : dbForRms(maskRms),
++      count: Math.max(0, Math.floor(finite(mask.count, 0))),
++      latencyMs: Math.max(0, finite(mask.latencyMs, 0)),
++    },
++    effective: {
++      rms: clamp(effectiveRms),
++      peak: clamp(effectivePeak),
++      clipped: !!raw.clipped && !mask.active,
++    },
++    gameEchoLikely: !!mask.active && rawRms <= Math.max(0.012, maskRms * 2.4),
++    playerNoiseLikely: rawRms > Math.max(0.012, maskRms * 2.4),
++  };
++}
++
++export function createSelfAudioMask({
++  latencyMs = 65,
++  maskGain = 1.35,
++  releaseMs = 160,
++  maxEvents = 48,
++} = {}) {
++  let events = [];
++  const config = {
++    latencyMs: Math.max(0, finite(latencyMs, 65)),
++    maskGain: Math.max(0, finite(maskGain, 1.35)),
++    releaseMs: Math.max(0, finite(releaseMs, 160)),
++    maxEvents: Math.max(1, Math.floor(finite(maxEvents, 48))),
++  };
++
++  function observe(event, atMs = nowMs()) {
++    const normalized = normalizeSelfAudioEvent(event, atMs);
++    if (!normalized) return false;
++    events.push(normalized);
++    if (events.length > config.maxEvents) events = events.slice(-config.maxEvents);
++    return true;
++  }
++
++  function sample(atMs = nowMs()) {
++    const t = finite(atMs, nowMs()) - config.latencyMs;
++    events = events.filter((event) => event.endMs + config.releaseMs > t);
++
++    let sum = 0;
++    let peak = 0;
++    let count = 0;
++    for (const event of events) {
++      const amp = eventEnvelope(event, t, config.releaseMs);
++      if (amp <= 0) continue;
++      const rms = event.rms * amp;
++      sum += rms * rms;
++      peak = Math.max(peak, rms);
++      count++;
++    }
++
++    const rms = clamp(Math.sqrt(sum));
++    return {
++      active: count > 0,
++      count,
++      rms,
++      peak,
++      db: dbForRms(rms),
++      latencyMs: config.latencyMs,
++      maskGain: config.maskGain,
++    };
++  }
++
++  function effective(raw, atMs = nowMs()) {
++    return effectiveMicMeasurement(raw, sample(atMs));
++  }
++
++  function clear() { events = []; }
++
++  function inspect(atMs = nowMs()) {
++    return { events: events.length, sample: sample(atMs), config: { ...config } };
++  }
++
++  return { observe, sample, effective, clear, inspect };
++}
+diff --git a/src/game/mic.js b/src/game/mic.js
+index 58bc074..6500e69 100644
+--- a/src/game/mic.js
++++ b/src/game/mic.js
+@@ -1,3 +1,5 @@
++import { effectiveMicMeasurement } from '../audio/self-audio-mask.js';
++
+ // The room you are actually in.
+ //
+ // A game about holding still and making no sound, played through a microphone
+@@ -39,6 +41,7 @@ let activeDeviceLabel = '';
+ let activeChannelCount = 0;
+ let testLevel = null;        // headless override
+ let spoilMutedUntil = 0;     // recorder transport cannot spoil its own take
++let selfAudioProvider = null;
+ 
+ const mediaDevices = () => globalThis.navigator?.mediaDevices || null;
+ 
+@@ -76,6 +79,7 @@ export function micDevices() {
+ 
+ export function micSnapshot() {
+   const measurement = micMeasurement();
++  const effective = micEffectiveMeasurement();
+   return {
+     state: micState(),
+     reason: stateReason,
+@@ -90,6 +94,11 @@ export function micSnapshot() {
+     level: measurement.rms,
+     peak: measurement.peak,
+     clipped: measurement.clipped,
++    effectiveLevel: effective.effective.rms,
++    effectivePeak: effective.effective.peak,
++    selfAudioMask: effective.mask,
++    gameEchoLikely: effective.gameEchoLikely,
++    playerNoiseLikely: effective.playerNoiseLikely,
+   };
+ }
+ 
+@@ -257,6 +266,43 @@ export function micMeasurement() {
+   return { rms, peak, clipped: peak >= .985 };
+ }
+ 
++
++export function micSetSelfAudioProvider(provider = null) {
++  selfAudioProvider = typeof provider === 'function' ? provider : null;
++}
++
++export function micSelfAudioMask(now = performance.now()) {
++  try {
++    return selfAudioProvider?.(now) || {
++      active: false,
++      rms: 0,
++      peak: 0,
++      db: -96,
++      count: 0,
++      latencyMs: 0,
++      maskGain: 1,
++    };
++  } catch (_) {
++    return {
++      active: false,
++      rms: 0,
++      peak: 0,
++      db: -96,
++      count: 0,
++      latencyMs: 0,
++      maskGain: 1,
++    };
++  }
++}
++
++export function micEffectiveMeasurement(now = performance.now()) {
++  return effectiveMicMeasurement(micMeasurement(), micSelfAudioMask(now));
++}
++
++export function micEffectiveLevel(now = performance.now()) {
++  return micEffectiveMeasurement(now).effective.rms;
++}
++
+ // Current loudness of the real room, RMS 0..1. A quiet room is ~0.005; talking
+ // is ~0.05–0.15; a shout is past 0.3.
+ export function micLevel() { return micMeasurement().rms; }
+diff --git a/src/game/recording-hallucinations.js b/src/game/recording-hallucinations.js
+new file mode 100644
+index 0000000..d813fbe
+--- /dev/null
++++ b/src/game/recording-hallucinations.js
+@@ -0,0 +1,119 @@
++const clamp01 = (value) => Math.max(0, Math.min(1, Number(value) || 0));
++
++function hashString(value) {
++  let h = 2166136261 >>> 0;
++  const s = String(value || '');
++  for (let i = 0; i < s.length; i++) {
++    h ^= s.charCodeAt(i);
++    h = Math.imul(h, 16777619) >>> 0;
++  }
++  return h >>> 0;
++}
++
++function unit(seed, serial, salt) {
++  let x = hashString(`${seed}:${serial}:${salt}`) || 1;
++  x ^= x << 13; x >>>= 0;
++  x ^= x >>> 17; x >>>= 0;
++  x ^= x << 5; x >>>= 0;
++  return (x >>> 0) / 0xffffffff;
++}
++
++function randomRange(seed, serial, salt, min, max) {
++  return min + (max - min) * unit(seed, serial, salt);
++}
++
++function pickKind(seed, serial, eligibility) {
++  const roll = unit(seed, serial, 'kind');
++  if (eligibility.pressure > 0.62 && roll < 0.42) return 'hard';
++  if (roll < 0.28) return 'peripheral';
++  if (roll < 0.58) return 'doorway';
++  if (roll < 0.80) return 'apparition-return';
++  return 'hard';
++}
++
++function makeState(seed) {
++  return {
++    seed: String(seed || 'recording-hallucinations:v1'),
++    serial: 0,
++    active: null,
++    cooldownUntilMs: 0,
++  };
++}
++
++export function recordingHallucinationEligibility({
++  recording = false,
++  stalled = false,
++  tutorial = false,
++  reduceDread = false,
++  effectsMode = 'full',
++  lightOn = false,
++  darkness = 1,
++  takeProgress = 0,
++  hushPressure = 0,
++  effectiveMicRms = 0,
++  spoilThreshold = 0.06,
++} = {}) {
++  if (!recording || stalled || tutorial) return { eligible: false, reason: 'inactive' };
++  if (reduceDread || effectsMode === 'off') return { eligible: false, reason: 'reduced' };
++
++  const dark = !lightOn || Number(darkness) >= 0.45;
++  if (!dark) return { eligible: false, reason: 'lit' };
++
++  const quiet = Number(effectiveMicRms) < Math.max(0.012, Number(spoilThreshold) * 0.75);
++  if (!quiet) return { eligible: false, reason: 'noisy' };
++
++  const progress = clamp01(takeProgress);
++  const pressure = clamp01(hushPressure);
++  if (progress < 0.10) return { eligible: false, reason: 'too-early' };
++
++  const intensity = Math.max(progress * 0.55, pressure * 0.90, progress > 0.33 ? 0.35 : 0);
++  if (intensity < 0.25) return { eligible: false, reason: 'low-intensity' };
++
++  return { eligible: true, intensity, progress, pressure };
++}
++
++export function tickRecordingHallucination(state, input = {}) {
++  const now = Math.max(0, Number(input.nowMs) || 0);
++
++  if (state.active && now >= state.active.expiresAtMs) state.active = null;
++
++  const eligibility = recordingHallucinationEligibility(input);
++  if (!eligibility.eligible) return { active: state.active, started: false, eligibility };
++  if (state.active) return { active: state.active, started: false, eligibility };
++  if (now < state.cooldownUntilMs) return { active: null, started: false, eligibility };
++
++  const serial = state.serial++;
++  const durationMs = randomRange(state.seed, serial, 'duration', 700, 1700);
++  const cooldownMs = randomRange(state.seed, serial, 'cooldown', 6500, 15000);
++  const kind = pickKind(state.seed, serial, eligibility);
++
++  state.active = {
++    id: `recording-false-hush:${serial}`,
++    kind,
++    startedAtMs: now,
++    expiresAtMs: now + durationMs,
++    intensity: Math.max(0.25, Math.min(1, eligibility.intensity)),
++    hard: kind === 'hard' || eligibility.intensity > 0.68,
++    mapReturn: kind === 'apparition-return',
++    serial,
++  };
++  state.cooldownUntilMs = now + cooldownMs;
++
++  return { active: state.active, started: true, eligibility };
++}
++
++export function createRecordingHallucinationDirector({ seed = 'recording-hallucinations:v1' } = {}) {
++  let state = makeState(seed);
++  return {
++    reset(nextSeed = seed) { state = makeState(nextSeed); },
++    clear() { state.active = null; state.cooldownUntilMs = 0; },
++    tick(input = {}) { return tickRecordingHallucination(state, input); },
++    inspect() {
++      return {
++        active: state.active ? { ...state.active } : null,
++        serial: state.serial,
++        cooldownUntilMs: state.cooldownUntilMs,
++      };
++    },
++  };
++}
+diff --git a/src/main.js b/src/main.js
+index 513fb77..baee723 100644
+--- a/src/main.js
++++ b/src/main.js
+@@ -24,6 +24,7 @@ import { fft, analyze, biomeFrom } from './audio/analysis.js';
+ import * as CR from './render/canvas.js';
+ import * as R3 from './render/r3d.js';
+ import * as MONITOR from './audio/monitor.js';
++import { createSelfAudioMask } from './audio/self-audio-mask.js';
+ import { emitAcousticEvent, onAcousticEvent } from './audio/acoustic-events.js';
+ import { createHushMix } from './audio/hush-mix.js';
+ import { createWhisperBed } from './audio/whisper-bed.js';
+@@ -132,6 +133,7 @@ import { normalizeCombatBuild } from './game/combat-progression.js';
+ import { availableBattleTools, moveCombatGear, reorderCombatGear } from './game/combat-loadout.js';
+ import * as ENCOUNTERS from './game/encounters.js';
+ import * as MIC from './game/mic.js';
++import { createRecordingHallucinationDirector } from './game/recording-hallucinations.js';
+ import { takeStamp, WORK_ORDER_STAMP } from './game/clock.js';
+ import { drawMinimap, drawRecorderReturn } from './render/minimap.js';
+ import { BUILDING_MAP } from './data/building-map.js';
+@@ -366,9 +368,12 @@ import {
+ } from './game/psychological-profile.js';
+ import { PRESENCE_RULES, RULE_OPTIONS } from './progression/difficulty-defs.js';
+ 
++const selfAudioMask=createSelfAudioMask({latencyMs:65,maskGain:1.35,releaseMs:160});
++
+ // One semantic feed owns the physical meter. It accepts only player-generated
+ // events; audible program audio never leaks into the HUSH exposure display.
+ onAcousticEvent((event)=>{
++  selfAudioMask.observe(event,event.emittedAt||performance.now());
+   MONITOR.monitorObserveAcousticEvent(event);
+   const causalActor=event.source?.kind==='player'?'playerShadow'
+     :event.source?.kind==='hush'?'hush'
+@@ -854,7 +859,8 @@ function ensureCtx({resume=true}={}){
+         // The transparent monitor node remains in the audible graph, but its
+         // display is fed only by semantic player noise and optional room-mic
+         // RMS. Program audio is never treated as HUSH exposure.
+-        MONITOR.monitorSetAuxInput(()=>MIC.micActive()?MIC.micMeasurement():0);
++        MIC.micSetSelfAudioProvider((now)=>selfAudioMask.sample(now));
++        MONITOR.monitorSetAuxInput(()=>MIC.micActive()?MIC.micEffectiveMeasurement().effective:0);
+ 
+         CUES.preloadAll(authoredCueUrls({excludeCuePrefixes:['battle.']}));
+         preloadBattleMusic();
+@@ -5762,6 +5768,10 @@ let lastEmergencyShadowFrame=null;
+ const apparitionDirector=createApparitionDirector({
+   seed:`apparition-boot:${Math.floor(Number(performance.timeOrigin)||Date.now())}`,
+ });
++const recordingHallucinations=createRecordingHallucinationDirector({
++  seed:`recording-hallucination:${Math.floor(Number(performance.timeOrigin)||Date.now())}`,
++});
++let recordingFalseHush=null;
+ 
+ // The building's practicals are AUTHORED now — see src/data/conservatory-lights.js.
+ // This used to be two hardcoded blocks keyed on render group, which is why seven
+@@ -8319,7 +8329,46 @@ function recordAction(){
+   openListen(room);
+ }
+ 
++
++function maskGameOutput({
++  id=null,kind='game-output',levelDb=-34,durationMs=300,sourceKind='system',sourceId='cue',family='ui',
++}={}){
++  selfAudioMask.observe({
++    id:id||`self-output:${kind}:${Math.round(performance.now())}`,
++    emittedAt:performance.now(),
++    kind,
++    source:{kind:sourceKind,id:sourceId},
++    acoustic:{levelDb,durationMs,spectrum:{low:.33,mid:.66,high:.33}},
++    semantics:{
++      playerGenerated:false,deliberate:false,audibleToHush:false,audibleToMonitor:false,
++      audibleInWorld:true,canSpoilTake:false,family,tags:['self-audio-mask'],
++    },
++    provenance:{system:'self-audio-mask'},
++  });
++}
++
++let takeHissMaskAt=0;
++function tickTakeSelfAudioMask(){
++  if(!REC.isRecording()) return;
++  const now=performance.now();
++  if(now-takeHissMaskAt<240) return;
++  takeHissMaskAt=now;
++  const p=REC.takeProgress();
++  maskGameOutput({
++    id:`take-hiss:${Math.floor(now/250)}`,
++    kind:'take_hiss',
++    levelDb:-42+p*8,
++    durationMs:340,
++    sourceKind:'system',sourceId:'take-hiss',family:'recorder',
++  });
++}
++
+ function emitRecorderTransport(action='transport'){
++  maskGameOutput({
++    id:`recorder-transport:${action}`,
++    kind:'recorder_transport',levelDb:-30,durationMs:520,
++    sourceKind:'equipment',sourceId:'recorder',family:'recorder',
++  });
+   REC.emitNoise(.025,px,py,`recorder ${action}`,{
+     spoils:false,
+     kind:'recorder_transport',
+@@ -8448,6 +8497,8 @@ function stopTake(){
+   const room=takeRoom || recordableRoomAt(px,py) || currentWorld();
+   const r=REC.stopRecording();
+   activeTakeOrdinal=0;
++  recordingFalseHush=null;
++  recordingHallucinations.clear();
+   const contamination=activeTakeContamination;activeTakeContamination=null;
+   takeRoom=null;takePlace=null;
+   clearInstrument();
+@@ -12102,11 +12153,70 @@ function playEnvironmentalTenorStrike(){
+     }
+   }
+   const room=recordableRoomAt(px,py)||currentWorld(),atSec=REC.recState().takeElapsed||20;
++  maskGameOutput({
++    id:'environmental-tenor-strike',kind:'bell_tenor_toll',levelDb:-24,durationMs:8200,
++    sourceKind:'environment',sourceId:'tower-tenor-clock-hammer',family:'bell',
++  });
+   PB.noteDiscrete(room,{cueId:'bell.tenor.clock',atSec,gain:1,pan:.34,provenance:{system:'chapel-clock',bell:8}});
+   emitAcousticEvent({kind:'bell_tenor_toll',source:{kind:'environment',id:'tower-tenor-clock-hammer'},spatial:acousticSpatialAt(px,py),semantics:{audibleToHush:true,audibleToMonitor:true,audibleInWorld:true,canBeMimicked:true,canSpoilTake:false,family:'bell',tags:['environmental','tenor']},provenance:{system:'chapel-clock',takeSlot:2}});
+   pushEvent('// [one deep bell, somewhere above the chapel]');
+ }
+ 
++
++function recordingFalseHushCandidate(event){
++  if(!usingPlan()||usingSpecialSpace()||!event)return null;
++  const yaw=R3.r3dWorldYaw?.() ?? mapHeading();
++  const forward={x:Math.sin(yaw),y:-Math.cos(yaw)};
++  const right={x:Math.cos(yaw),y:Math.sin(yaw)};
++  const serial=Number(event.serial)||0;
++  const pattern=[
++    {f:6.0,r:-2.2},{f:7.5,r:2.8},{f:4.5,r:0.0},
++    {f:8.5,r:-4.0},{f:5.5,r:4.0},{f:-3.2,r:3.8},
++  ];
++  for(let i=0;i<pattern.length;i++){
++    const p=pattern[(serial+i)%pattern.length];
++    const x=px+forward.x*p.f+right.x*p.r;
++    const y=py+forward.y*p.f+right.y*p.r;
++    if(solidAt(Math.round(x),Math.round(y)))continue;
++    const physical=FP.logicalToPhysical(x,y);
++    if(!physical)continue;
++    return{
++      x,y,kind:event.kind,hard:!!event.hard,expiresAtMs:event.expiresAtMs,
++      strength:Math.max(.78,Math.min(1,event.intensity+.18)),
++      radiusM:event.hard?6.6:5.2,
++    };
++  }
++  return null;
++}
++
++function tickRecordingHallucinations(dt){
++  const now=performance.now();
++  if(!storyMode||usingSpecialSpace()||!REC.isRecording()){
++    recordingFalseHush=null;
++    return;
++  }
++  const settings=getSave().settings||{};
++  const mic=MIC.micActive()?MIC.micEffectiveMeasurement(now):{effective:{rms:0}};
++  const pressureFrame=presentedFearPressure();
++  const pressure=Math.max(Number(pressureFrame?.overall)||0,Number(pressureFrame?.visualDread)||0,Number(pressureFrame?.monitorHiss)||0);
++  const result=recordingHallucinations.tick({
++    nowMs:now,recording:REC.isRecording(),stalled:REC.isStalled(),tutorial:TUT.tutorialActive(),
++    reduceDread:!!settings.reduceDread,effectsMode:settings.flash||'full',lightOn:REC.lightOn(),
++    darkness:REC.lightOn()?0:1,takeProgress:REC.takeProgress(),hushPressure:pressure,
++    effectiveMicRms:mic.effective.rms,spoilThreshold:MIC_LEVEL.spoil,
++  });
++  if(!result.active){recordingFalseHush=null;return;}
++  if(result.started){
++    recordingFalseHush=recordingFalseHushCandidate(result.active);
++    if(recordingFalseHush){
++      CR.fx.glitch(result.active.hard ? .55 : .28,result.active.hard?360:220);
++      if(result.active.hard)CR.fx.shake(.35,180);
++      apparitionDirector.forceNext({presentation:result.active.hard?'hard':undefined,card:result.active.hard?undefined:'reorientation'});
++    }
++  }
++  if(recordingFalseHush&&now>=recordingFalseHush.expiresAtMs)recordingFalseHush=null;
++}
++
+ function tickRecorder(dt){
+   if(!storyMode) return;
+   REC.decayNoise(dt);
+@@ -12122,7 +12232,9 @@ function tickRecorder(dt){
+       environmentalTenorFired=true;playEnvironmentalTenorStrike();
+     }
+     STORY.setTapeHissPressure(currentFearPressure({recordingProgress:p}).tapeHiss, { ...TAKE_HISS, ramp: 0.3 });
++    tickTakeSelfAudioMask();
+     tickMic();
++    tickRecordingHallucinations(dt);
+   }
+   const st=REC.tickRecording(dt);
+   if(st==='complete'){
+@@ -12182,7 +12294,8 @@ function tickRoomMicAcoustics(dt){
+   // The setup is not a trap, and the mic test least of all: the meter moves,
+   // and nothing in the building is told a word about it.
+   if(TUT.tutorialActive()||micCheckActive()) return;
+-  const level=MIC.micLevel();
++  const mic=MIC.micEffectiveMeasurement();
++  const level=mic.effective.rms;
+   if(level<0.035) return;
+   const now=performance.now();
+   if(now-roomMicAcousticAt<520) return;
+@@ -12197,7 +12310,7 @@ function tickRoomMicAcoustics(dt){
+       audibleToMonitor:false,audibleInWorld:true,canBeMimicked:false,canSpoilTake:false,
+       family:'voice',tags:['optional-mic','rms-only'],
+     },
+-    provenance:{system:'room-mic',activityOnly:true},
++    provenance:{system:'room-mic',activityOnly:true,rawRms:mic.raw.rms,effectiveRms:mic.effective.rms,selfAudioRms:mic.mask.rms},
+   });
+ }
+ function tickMic(){
+@@ -12206,7 +12319,8 @@ function tickMic(){
+   // monitor meter (the mic test) but never spoils the take or finds you. Nothing
+   // punishes you until setup is done and the night's work has actually begun.
+   if(TUT.tutorialActive()) return;
+-  const m=MIC.micLevel();
++  const measurement=MIC.micEffectiveMeasurement();
++  const m=measurement.effective.rms;
+   if(!MIC.micMaySpoil()) return;
+   if(m < MIC_LEVEL.spoil) return;
+   if(m >= MIC_LEVEL.scream && !screamedThisTake){
+@@ -12221,6 +12335,8 @@ function tickMic(){
+   const level=Math.max(0.20, Math.min(0.6, 0.20 + t*0.30));
+   REC.emitNoise(level, px, py, 'you made a sound',{
+     kind:'operator_voice_activity',sourceKind:'player',sourceId:'room-mic',playerGenerated:true,
++    micRawRms:measurement.raw.rms,micEffectiveRms:measurement.effective.rms,
++    selfAudioRms:measurement.mask.rms,selfAudioMaskActive:measurement.mask.active,
+   });
+ }
+ 
+@@ -16586,6 +16702,9 @@ function installProbe(){
+       presentation:'hard',
+       index:Number.isInteger(index)?index:null,
+     }),
++    selfAudioMask:()=>selfAudioMask.inspect(),
++    micEffective:()=>({mic:MIC.micSnapshot(),mask:selfAudioMask.inspect(),monitor:MONITOR.monitorSnapshot()}),
++    recordingHallucination:()=>({director:recordingHallucinations.inspect(),body:recordingFalseHush}),
+     power:()=>normalizePowerState(getSave().power),
+     setPower:(circuit,live=true)=>{
+       const before=normalizePowerState(getSave().power);
+@@ -17052,9 +17171,12 @@ function render3d(){
+         ? {...mapPoint({x:hush.x,y:hush.y}),strength:1,radiusM:6.4}
+         : null));
+   const sourceBracketBody=usingSourceSpace()?chunkSurfRuntime?.sourceBracketFrame?.():null;
++  const recordingFalseHushBody=!worldView?.suppressActors&&!usingSpecialSpace()&&storyMode&&recordingFalseHush&&performance.now()<recordingFalseHush.expiresAtMs
++    ? {...mapPoint({x:recordingFalseHush.x,y:recordingFalseHush.y}),strength:recordingFalseHush.strength,radiusM:recordingFalseHush.radiusM}
++    : null;
+   const renderedHushSecondary=!worldView?.suppressActors&&sourceBracketBody?.front?.visible
+     ? {...mapPoint({x:sourceBracketBody.front.x,y:sourceBracketBody.front.y}),strength:sourceBracketBody.front.strength,radiusM:5.2}
+-    : null;
++    : recordingFalseHushBody;
+   const hushSensory=String(worldView?.sensoryProfile||'').startsWith('hush') || worldView?.sensoryProfile==='borrow';
+   const baseTorchLook=resolveTorchLook({
+     on:hushSensory?false:storyMode?REC.lightOn():true,
+diff --git a/test/mic-self-audio-contract.test.mjs b/test/mic-self-audio-contract.test.mjs
+new file mode 100644
+index 0000000..473312a
+--- /dev/null
++++ b/test/mic-self-audio-contract.test.mjs
+@@ -0,0 +1,26 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { micEffectiveLevel, micEffectiveMeasurement, micSetSelfAudioProvider, micSnapshot, micTest } from '../src/game/mic.js';
++import { readFileSync } from 'node:fs';
++
++test.afterEach(() => {
++  micSetSelfAudioProvider(null);
++  micTest(null);
++});
++
++test('mic effective measurement subtracts the self-audio provider mask', () => {
++  micTest({ rms: 0.08, peak: 0.09 });
++  micSetSelfAudioProvider(() => ({ active: true, rms: 0.07, peak: 0.07, maskGain: 1.35, count: 1, latencyMs: 0 }));
++  const effective = micEffectiveMeasurement();
++  assert.equal(effective.raw.rms, 0.08);
++  assert.ok(effective.effective.rms < 0.01);
++  assert.equal(micEffectiveLevel(), effective.effective.rms);
++  assert.equal(micSnapshot().selfAudioMask.active, true);
++});
++
++test('main uses effective mic for monitor and take spoil', () => {
++  const source = readFileSync('src/main.js', 'utf8');
++  assert.match(source, /monitorSetAuxInput\(\(\)=>MIC\.micActive\(\)\?MIC\.micEffectiveMeasurement\(\)\.effective:0\)/);
++  assert.match(source, /const measurement=MIC\.micEffectiveMeasurement\(\);\n\s*const m=measurement\.effective\.rms;/);
++  assert.doesNotMatch(source, /const m=MIC\.micLevel\(\);\n\s*if\(!MIC\.micMaySpoil\(\)\) return;/);
++});
+diff --git a/test/recording-hallucination-integration-contract.test.mjs b/test/recording-hallucination-integration-contract.test.mjs
+new file mode 100644
+index 0000000..117e9eb
+--- /dev/null
++++ b/test/recording-hallucination-integration-contract.test.mjs
+@@ -0,0 +1,18 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { readFileSync } from 'node:fs';
++
++test('main wires recording hallucinations into the secondary HUSH body path', () => {
++  const source = readFileSync('src/main.js', 'utf8');
++  assert.match(source, /createRecordingHallucinationDirector/);
++  assert.match(source, /tickRecordingHallucinations/);
++  assert.match(source, /recordingFalseHush/);
++  assert.match(source, /recordingFalseHushBody/);
++  assert.match(source, /hushSecondary:renderedHushSecondary/);
++
++  const start = source.indexOf('const recordingFalseHushBody');
++  const end = source.indexOf('const hushSensory', start);
++  const secondary = source.slice(start, end);
++  assert.match(secondary, /sourceBracketBody/);
++  assert.match(secondary, /recordingFalseHushBody/);
++});
+diff --git a/test/recording-hallucinations.test.mjs b/test/recording-hallucinations.test.mjs
+new file mode 100644
+index 0000000..8162d1c
+--- /dev/null
++++ b/test/recording-hallucinations.test.mjs
+@@ -0,0 +1,71 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import {
++  createRecordingHallucinationDirector,
++  recordingHallucinationEligibility,
++} from '../src/game/recording-hallucinations.js';
++
++test('recording hallucinations require recording darkness and quiet', () => {
++  assert.equal(recordingHallucinationEligibility({
++    recording: false,
++    darkness: 1,
++    effectiveMicRms: 0,
++    takeProgress: 0.5,
++    hushPressure: 0.7,
++  }).eligible, false);
++
++  assert.equal(recordingHallucinationEligibility({
++    recording: true,
++    lightOn: true,
++    darkness: 0,
++    effectiveMicRms: 0,
++    takeProgress: 0.5,
++    hushPressure: 0.7,
++  }).eligible, false);
++
++  assert.equal(recordingHallucinationEligibility({
++    recording: true,
++    lightOn: false,
++    darkness: 1,
++    effectiveMicRms: 0.2,
++    spoilThreshold: 0.06,
++    takeProgress: 0.5,
++    hushPressure: 0.7,
++  }).eligible, false);
++
++  assert.equal(recordingHallucinationEligibility({
++    recording: true,
++    lightOn: false,
++    darkness: 1,
++    effectiveMicRms: 0,
++    spoilThreshold: 0.06,
++    takeProgress: 0.5,
++    hushPressure: 0.7,
++  }).eligible, true);
++});
++
++test('recording hallucination director starts, holds, expires, and cools down', () => {
++  const d = createRecordingHallucinationDirector({ seed: 'test' });
++  const base = {
++    recording: true,
++    lightOn: false,
++    darkness: 1,
++    effectiveMicRms: 0,
++    spoilThreshold: 0.06,
++    takeProgress: 0.5,
++    hushPressure: 0.8,
++    effectsMode: 'full',
++    reduceDread: false,
++  };
++
++  const first = d.tick({ ...base, nowMs: 1000 });
++  assert.equal(first.started, true);
++  assert.ok(first.active);
++
++  const held = d.tick({ ...base, nowMs: 1100 });
++  assert.equal(held.started, false);
++  assert.equal(held.active.id, first.active.id);
++
++  const expired = d.tick({ ...base, nowMs: first.active.expiresAtMs + 1 });
++  assert.equal(expired.started, false);
++});
+diff --git a/test/run-all.mjs b/test/run-all.mjs
+index f63b96f..daac3f4 100644
+--- a/test/run-all.mjs
++++ b/test/run-all.mjs
+@@ -51,6 +51,10 @@ const tests = [
+   'test/recordist-acoustics.spec.mjs',
+   'test/playback-presentation.spec.mjs',
+   'test/monitor-noise-perception.test.mjs',
++  'test/self-audio-mask.test.mjs',
++  'test/mic-self-audio-contract.test.mjs',
++  'test/recording-hallucinations.test.mjs',
++  'test/recording-hallucination-integration-contract.test.mjs',
+   'test/hush-audio-pure.spec.mjs',
+   'test/hush-visual-field.spec.mjs',
+   'test/hush-contact.spec.mjs',
+diff --git a/test/self-audio-mask.test.mjs b/test/self-audio-mask.test.mjs
+new file mode 100644
+index 0000000..47dd644
+--- /dev/null
++++ b/test/self-audio-mask.test.mjs
+@@ -0,0 +1,66 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import {
++  createSelfAudioMask,
++  dbForRms,
++  effectiveMicMeasurement,
++  rmsForDb,
++} from '../src/audio/self-audio-mask.js';
++
++test('self-audio mask converts between dB and bounded RMS', () => {
++  assert.equal(rmsForDb(-Infinity), 0);
++  assert.ok(rmsForDb(-24) > 0);
++  assert.equal(rmsForDb(12), 1);
++  assert.equal(dbForRms(0), -96);
++});
++
++test('known game output suppresses matching raw mic bleed', () => {
++  const mask = createSelfAudioMask({ latencyMs: 0, maskGain: 1.35 });
++  mask.observe({
++    emittedAt: 1000,
++    kind: 'take_hiss',
++    source: { kind: 'system', id: 'take-hiss' },
++    acoustic: { levelDb: -24, durationMs: 1000 },
++    semantics: { audibleInWorld: true, canSpoilTake: false },
++    provenance: { system: 'test' },
++  }, 1000);
++
++  const sample = mask.sample(1100);
++  const effective = effectiveMicMeasurement({ rms: sample.rms * 0.8, peak: sample.rms }, sample);
++
++  assert.ok(sample.active);
++  assert.ok(effective.effective.rms < 0.01);
++  assert.equal(effective.gameEchoLikely, true);
++});
++
++test('player voice above the mask survives suppression', () => {
++  const mask = createSelfAudioMask({ latencyMs: 0, maskGain: 1.35 });
++  mask.observe({
++    emittedAt: 1000,
++    kind: 'room-tone',
++    source: { kind: 'environment', id: 'room' },
++    acoustic: { levelDb: -28, durationMs: 1000 },
++    semantics: { audibleInWorld: true, canSpoilTake: false },
++  }, 1000);
++
++  const sample = mask.sample(1100);
++  const effective = effectiveMicMeasurement({ rms: Math.max(0.18, sample.rms * 3), peak: 0.22 }, sample);
++
++  assert.ok(effective.effective.rms > 0.06);
++  assert.equal(effective.playerNoiseLikely, true);
++});
++
++test('room mic does not mask itself', () => {
++  const mask = createSelfAudioMask({ latencyMs: 0 });
++  const ok = mask.observe({
++    emittedAt: 1000,
++    kind: 'operator_voice_activity',
++    source: { kind: 'player', id: 'room-mic' },
++    acoustic: { levelDb: -18, durationMs: 500 },
++    semantics: { audibleInWorld: true },
++    provenance: { system: 'room-mic' },
++  }, 1000);
++
++  assert.equal(ok, false);
++  assert.equal(mask.sample(1100).active, false);
++});

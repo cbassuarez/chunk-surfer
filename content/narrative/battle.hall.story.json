@@ -1,0 +1,611 @@
+{
+  "schemaVersion": 1,
+  "id": "battle.hall",
+  "title": "Hall Battle",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "battle"
+  ],
+  "notes": "",
+  "regions": [
+    {
+      "id": "battle.hall.region",
+      "title": "Hall Battle",
+      "kind": "scene",
+      "color": "#245c62",
+      "nodeIds": [
+        "start",
+        "round-1",
+        "round-2",
+        "round-3",
+        "outcome"
+      ]
+    },
+    {
+      "id": "battle.hall.endings",
+      "title": "Battle outcomes",
+      "kind": "ending",
+      "color": "#8b3c48",
+      "nodeIds": [
+        "win",
+        "lose"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "type": "battle",
+      "speaker": "THE HOUSE",
+      "art": {
+        "id": "tuningFork",
+        "mode": "boss",
+        "caption": "Reference tone / house return",
+        "status": "REFERENCE"
+      },
+      "lines": [
+        {
+          "who": "direction",
+          "text": "The hall takes your silence and returns it from the stage, the balconies, and somewhere behind you.",
+          "id": "start.line.1"
+        },
+        {
+          "who": "you",
+          "text": "That is a return. That is architecture. Keep it architecture.",
+          "id": "start.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "Then the return comes back with a shape in it, and the shape is seated.",
+          "id": "start.line.3"
+        },
+        {
+          "who": "you",
+          "text": "That is going on the take whether I like it or not. Forty seconds of it, at my level, with my name on the file.",
+          "when": "battle.occasion == recording-2",
+          "id": "start.line.4.held"
+        },
+        {
+          "who": "you",
+          "text": "The recorder is in the bag and the bag is by the door. Whatever this is, there will be no file of it.",
+          "when": "battle.occasion == pre-recording-4",
+          "id": "start.line.4.ambush"
+        }
+      ],
+      "goto": "round-1",
+      "id": "start"
+    },
+    "round-1": {
+      "type": "battle-round",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "The desk is dead and the send is live anyway. Whatever is on the house fader is coming up on its own.",
+          "channel": "before",
+          "id": "round-1.line.1"
+        },
+        {
+          "who": "you",
+          "text": "There are people in the seats. There are people in the seats and none of them arrived.",
+          "channel": "on-listen",
+          "id": "round-1.line.2"
+        },
+        {
+          "who": "you",
+          "text": "Count them. Always count. Six, eight — the number will not hold still.",
+          "channel": "on-listen",
+          "id": "round-1.line.3"
+        },
+        {
+          "who": "you",
+          "text": "Still rolling. Still rolling.",
+          "channel": "on-listen",
+          "when": "battle.occasion == recording-2",
+          "id": "round-1.bark.held"
+        },
+        {
+          "who": "you",
+          "text": "Nothing rolling. Nobody’s version of this but mine.",
+          "channel": "on-listen",
+          "when": "battle.occasion == pre-recording-4",
+          "id": "round-1.bark.ambush"
+        },
+        {
+          "who": "direction",
+          "text": "Not one of them is looking at the stage.",
+          "channel": "after",
+          "id": "round-1.line.4"
+        }
+      ],
+      "battle": {
+        "nature": "on the tape",
+        "threat": 0.44
+      },
+      "goto": "round-2",
+      "id": "round-1"
+    },
+    "round-2": {
+      "type": "battle-round",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You touch the fader, and every head in the building moves together, a beat late.",
+          "channel": "before",
+          "id": "round-2.line.1"
+        },
+        {
+          "who": "sarah",
+          "text": "Row F. You had the recorder on your knee. You were setting a level while I said it.",
+          "channel": "before",
+          "when": "battle.naming == yes",
+          "id": "round-2.line.2.named"
+        },
+        {
+          "who": "direction",
+          "text": "A voice uses the return without entering the room.",
+          "channel": "before",
+          "when": "battle.naming == no",
+          "id": "round-2.line.2.unnamed"
+        },
+        {
+          "who": "you",
+          "text": "Not a crowd. Sections. Upper balcony first, then the boxes.",
+          "channel": "on-listen",
+          "id": "round-2.line.3"
+        },
+        {
+          "who": "you",
+          "text": "Feedback is not a ghost. Feedback is a fault. But a fault does not sit down.",
+          "channel": "on-listen",
+          "id": "round-2.line.4"
+        },
+        {
+          "who": "direction",
+          "text": "They wait. Whatever they came for, they are content to wait for it.",
+          "channel": "after",
+          "id": "round-2.line.5"
+        }
+      ],
+      "battle": {
+        "nature": "not there",
+        "threat": 0.52
+      },
+      "goto": "round-3",
+      "id": "round-2"
+    },
+    "round-3": {
+      "type": "battle-round",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "Applause. Rows of it. And this time you can see the hands.",
+          "channel": "before",
+          "id": "round-3.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "They are applauding you. Not the stage. You, at the desk, with a bag and a boom pole.",
+          "channel": "before",
+          "id": "round-3.line.2"
+        },
+        {
+          "who": "you",
+          "text": "I am not the act. I have never once been the act.",
+          "channel": "on-listen",
+          "id": "round-3.line.3"
+        },
+        {
+          "who": "you",
+          "text": "I record rooms. I do not take a bow in them.",
+          "channel": "on-listen",
+          "id": "round-3.line.4"
+        },
+        {
+          "who": "you",
+          "text": "It does not want a take. It wants a performance, and it has picked me to give one.",
+          "channel": "after",
+          "id": "round-3.line.5"
+        }
+      ],
+      "battle": {
+        "nature": "not there",
+        "threat": 0.6
+      },
+      "goto": "outcome",
+      "id": "round-3"
+    },
+    "outcome": {
+      "type": "checkpoint",
+      "lines": [],
+      "choices": [
+        {
+          "id": "outcome.win",
+          "text": "Composure held",
+          "goto": "win",
+          "mechanic": "win"
+        },
+        {
+          "id": "outcome.lose",
+          "text": "Composure broke",
+          "goto": "lose",
+          "mechanic": "lose"
+        }
+      ],
+      "id": "outcome"
+    },
+    "win": {
+      "type": "ending",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Whatever they are, they are not an audience. An audience is here for the thing on the stage.",
+          "id": "win.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "The last reflection decays below the machine noise. You have a clean minute of a room that wanted you to stand up in it.",
+          "when": "battle.occasion == recording-2",
+          "id": "win.line.2.held"
+        },
+        {
+          "who": "direction",
+          "text": "The last reflection decays below the machine noise. Unrecorded, and you stayed in your chair anyway.",
+          "when": "battle.occasion == pre-recording-4",
+          "id": "win.line.2.ambush"
+        }
+      ],
+      "id": "win"
+    },
+    "lose": {
+      "type": "ending",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You bow. It is a small bow, barely a nod, and it is the most anyone in this building has got out of you all night.",
+          "id": "lose.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "The take dies with a full house listening.",
+          "when": "battle.occasion == recording-2",
+          "id": "lose.line.2.held"
+        },
+        {
+          "who": "direction",
+          "text": "There is no take to die. The house keeps you instead, for as long as it wants, and then lets you go.",
+          "when": "battle.occasion == pre-recording-4",
+          "id": "lose.line.2.ambush"
+        }
+      ],
+      "id": "lose"
+    }
+  },
+  "metadata": {
+    "id": "hall",
+    "enemy": "THE HOUSE",
+    "art": {
+      "id": "tuningFork",
+      "mode": "boss",
+      "caption": "Reference tone / house return",
+      "status": "REFERENCE"
+    },
+    "combat": {
+      "kind": "regular",
+      "music": {
+        "mode": "fixed",
+        "lead": "lead-3"
+      },
+      "house": {
+        "figures": null
+      },
+      "movements": [
+        {
+          "id": "seated",
+          "title": "THE HOUSE IS SEATED",
+          "coherence": 6,
+          "intents": [
+            {
+              "id": "hall:regard",
+              "label": "A FULL HOUSE REGARDS YOU",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "THE REGARD"
+            },
+            {
+              "id": "hall:shift",
+              "label": "EVERY SEAT SHIFTS AT ONCE",
+              "kind": "overload",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "hall:gap",
+              "label": "ONE SEAT EMPTIES WHEN YOU LOOK AT IT",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            }
+          ],
+          "severeIntents": [
+            {
+              "id": "hall:shift",
+              "label": "EVERY SEAT SHIFTS AT ONCE",
+              "kind": "overload",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "hall:gap",
+              "label": "ONE SEAT EMPTIES WHEN YOU LOOK AT IT",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "hall:regard",
+              "label": "A FULL HOUSE REGARDS YOU",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "THE REGARD"
+            }
+          ],
+          "deadAirIntents": [
+            {
+              "id": "hall:gap",
+              "label": "ONE SEAT EMPTIES WHEN YOU LOOK AT IT",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "hall:shift",
+              "label": "EVERY SEAT SHIFTS AT ONCE",
+              "kind": "overload",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "hall:regard",
+              "label": "A FULL HOUSE REGARDS YOU",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "THE REGARD"
+            }
+          ]
+        },
+        {
+          "id": "attention",
+          "title": "EVERY HEAD AT ONCE",
+          "coherence": 6,
+          "intents": [
+            {
+              "id": "hall:turn",
+              "label": "THE HOUSE TURNS ON YOUR LEVEL",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "THE TURN"
+            },
+            {
+              "id": "hall:loop",
+              "label": "OUTPUT PATCHED TO INPUT",
+              "kind": "loop",
+              "damage": 3,
+              "recordable": false,
+              "invertible": true,
+              "description": ""
+            },
+            {
+              "id": "hall:lean",
+              "label": "THE WHOLE TIER LEANS IN",
+              "kind": "overload",
+              "damage": 4,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            }
+          ],
+          "severeIntents": [
+            {
+              "id": "hall:loop",
+              "label": "OUTPUT PATCHED TO INPUT",
+              "kind": "loop",
+              "damage": 3,
+              "recordable": false,
+              "invertible": true,
+              "description": ""
+            },
+            {
+              "id": "hall:lean",
+              "label": "THE WHOLE TIER LEANS IN",
+              "kind": "overload",
+              "damage": 4,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "hall:turn",
+              "label": "THE HOUSE TURNS ON YOUR LEVEL",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "THE TURN"
+            }
+          ],
+          "deadAirIntents": [
+            {
+              "id": "hall:lean",
+              "label": "THE WHOLE TIER LEANS IN",
+              "kind": "overload",
+              "damage": 4,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "hall:loop",
+              "label": "OUTPUT PATCHED TO INPUT",
+              "kind": "loop",
+              "damage": 3,
+              "recordable": false,
+              "invertible": true,
+              "description": ""
+            },
+            {
+              "id": "hall:turn",
+              "label": "THE HOUSE TURNS ON YOUR LEVEL",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "THE TURN"
+            }
+          ]
+        },
+        {
+          "id": "applause",
+          "title": "APPLAUSE WITH HANDS",
+          "coherence": 6,
+          "intents": [
+            {
+              "id": "hall:applause",
+              "label": "APPLAUSE, AND THEY MEAN IT",
+              "kind": "broadcast",
+              "damage": 3,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "THE OVATION"
+            },
+            {
+              "id": "hall:standing",
+              "label": "THE ROW BEHIND YOU STANDS",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "hall:stack",
+              "label": "THE WHOLE HOUSE COMES UP AT ONCE",
+              "kind": "overload",
+              "damage": 4,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            }
+          ],
+          "severeIntents": [
+            {
+              "id": "hall:standing",
+              "label": "THE ROW BEHIND YOU STANDS",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "hall:stack",
+              "label": "THE WHOLE HOUSE COMES UP AT ONCE",
+              "kind": "overload",
+              "damage": 4,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "hall:applause",
+              "label": "APPLAUSE, AND THEY MEAN IT",
+              "kind": "broadcast",
+              "damage": 3,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "THE OVATION"
+            }
+          ],
+          "deadAirIntents": [
+            {
+              "id": "hall:stack",
+              "label": "THE WHOLE HOUSE COMES UP AT ONCE",
+              "kind": "overload",
+              "damage": 4,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "hall:standing",
+              "label": "THE ROW BEHIND YOU STANDS",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "hall:applause",
+              "label": "APPLAUSE, AND THEY MEAN IT",
+              "kind": "broadcast",
+              "damage": 3,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "THE OVATION"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

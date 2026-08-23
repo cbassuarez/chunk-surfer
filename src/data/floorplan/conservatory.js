@@ -20,6 +20,9 @@
 import { F, ZONE } from './legend.js';
 import { CONSERVATORY_DOORS } from '../conservatory-doors.js';
 import {
+  churchDoorAt, churchRoomAt, churchWallAt,
+} from '../st-brendans.js';
+import {
   DISTRICT_BOUNDS,
   DISTRICT_LOGICAL_ORIGIN,
   buildExteriorDistrictRows,
@@ -481,6 +484,52 @@ function yardCeilAt(ry){
 // it clears the stair's span, it is under the 1.0m slice window so it still
 // draws, and a low block in a yard reads as exactly what it is.
 const YARD_STAIR_HEAD={x0:13,x1:17,y0:18,y1:21};
+// ── the park ────────────────────────────────────────────────────────────────
+// The south-west quarter of the yard was fifty metres of wet tarmac with
+// nothing on it. It is a municipal park now: lawn, two crossing paths, and a
+// fountain at the crossing with the night's rain standing in it.
+//
+// The north edge is y22 and not further up for two reasons that happen to
+// agree. YARD_STAIR_HEAD sits at x13-17, y18-21 — a 0.80m kerb that clears the
+// basement stair's grade break behind it, structural, and not something to lay
+// a lawn over. And `yard-fence-west` runs out at z22.2, so starting here lets
+// the fence be the park's north-east boundary instead of a thing standing in it.
+const YARD_PARK={x0:1,x1:19,y0:22,y1:50};
+const YARD_PARK_SPINE=10;          // the north-south path, and the way in
+const YARD_PARK_CROSS=36;          // the east-west path
+// The fountain, at the crossing. Seven cells across to match the tiered basin
+// the mesh builds — and the glyph is not decoration: `n` is wetTile in `dock`,
+// and that zone-and-material pair is the ADDRESS the water body is found by
+// (game/water-bodies.js). Widening the basin widens the water.
+const YARD_PARK_BASIN={x0:7,x1:13,y0:33,y1:39};
+// ── st brendan's ────────────────────────────────────────────────────────────
+// The church on the tarmac past the park. Its plan lives in data/st-brendans.js
+// because the elevation mesh is built from the same manifest — a mesh modelled
+// against a remembered plan drifts off it the first time a transept moves, and
+// a church whose walls and whose mesh disagree is one you can see through.
+function churchGlyphAt(x,y){
+  const room=churchRoomAt(x,y);
+  if(room)return room==='tower'?'X':room==='nave'?'Z':'z';
+  // A door takes the height of the room behind it rather than punching a 3.4m
+  // hole through a thirteen-metre wall.
+  if(churchDoorAt(x,y))return '+';
+  if(churchWallAt(x,y))return '#';
+  return null;
+}
+// THE OUTSIDE OF IT IS NOT AUTHORED HERE, AND CANNOT BE.
+//
+// The yard's roofline trick (see YARD_ROOFLINE) raises a WALLED sky cell's
+// ceiling so the building beside it is drawn to a real height. That works for
+// Ellery because Ellery is raymarched from the yard. It cannot work here:
+// physicalRenderPlanFor gives an exterior observer a slice with no solid
+// geometry at all — outdoors, this game draws buildings from authored meshes,
+// which is what conservatory_west_elevation is. Raising the yard's ceiling
+// around the church would raise it around nothing.
+//
+// So the church is REAL INSIDE and needs an elevation mesh to be seen from the
+// tarmac. Its footprint keeps its floor in the exterior slice so the ground
+// stays continuous in the meantime; see the ZONE.church note in
+// world/floorplan.js.
 // The opening itself, in yard-local rows: the bay's three walls stand at y3 and
 // y12, so this is the clear width a lorry backs through.
 const YARD_MOUTH={y0:3,y1:12};
@@ -536,6 +585,9 @@ function yardProfile(rx,ry,cell){
   // ABSOLUTE, not headroom. The old line was `ceil: cell.ceil + floor`, which is
   // right for a room whose ceiling follows its floor down; a parapet does not get
   // lower because the tarmac in front of it was cut away for a lorry.
+  // The church's own rooms are interiors and keep every height they were
+  // authored with — the roofline below is the yard's business, not theirs.
+  if(churchRoomAt(rx,ry)||churchDoorAt(rx,ry)) return null;
   const ceil=yardCeilAt(ry);
   // Kerbs (the outer bound and the stair head) keep their authored floor; they
   // are clearing real spans and must not be dragged down with the yard.
@@ -560,7 +612,24 @@ function yardRows(){
       const southPerimeterOpening=y===YARD_H-1&&((x>=4&&x<=12)||(x>=34&&x<=42));
       const kerb=(x===YARD_W-1&&!mouth)||(y===YARD_H-1&&!southPerimeterOpening)
         ||(x>=YARD_STAIR_HEAD.x0&&x<=YARD_STAIR_HEAD.x1&&y>=YARD_STAIR_HEAD.y0&&y<=YARD_STAIR_HEAD.y1);
-      row+=kerb?'w':'Y';
+      // Kerb first, always. Everything below is landscaping and none of it is
+      // allowed to pave over a rise that is holding a grade break up.
+      if(kerb){ row+='w'; continue; }
+      // The church stands on the tarmac; the tarmac does not run through it.
+      const church=churchGlyphAt(x,y);
+      if(church){ row+=church; continue; }
+      const inPark=x>=YARD_PARK.x0&&x<=YARD_PARK.x1&&y>=YARD_PARK.y0&&y<=YARD_PARK.y1;
+      if(inPark){
+        const basin=x>=YARD_PARK_BASIN.x0&&x<=YARD_PARK_BASIN.x1
+          &&y>=YARD_PARK_BASIN.y0&&y<=YARD_PARK_BASIN.y1;
+        // The paths are the same ordinary tarmac as the yard they were cut
+        // into — a municipal park is not paved in anything nicer than the road
+        // outside it.
+        const path=x===YARD_PARK_SPINE||y===YARD_PARK_CROSS;
+        row+=basin?'n':path?'Y':'g';
+        continue;
+      }
+      row+='Y';
     }
     out.push(row);
   }
@@ -925,7 +994,7 @@ export const conservatory = {
         'DDDDDDD#IIIIIIIIIIIIIII# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
         'DDDDDDD#IIIIIIIIIIIIIII# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
         'DDDDDDD#IIIIIIIIIIIIIII# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
-        'DDDDDDD+IIIIIIIIIIIIIII# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
+        'DDDDDDD#IIIIIIIIIIIIIII# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
         'DDDDDDD#IIIIIIIIIIIIIII# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
         'DDDDDDD+IIIIIIIIIIIIIII# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
         'DDDDDDD+IIIIIIIIIIIIIII###FFFFFFFFFFFFFFF###HHHHHHHHHHHHHHHHH#',

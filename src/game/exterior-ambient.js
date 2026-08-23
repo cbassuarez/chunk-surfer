@@ -45,7 +45,52 @@ export function exteriorAmbientInstances({timeSec=0,reducedMotion=false}={}){
       zone:ZONE.street,
       structural:false,
       ambient:true,
+      headlights:!!node.headlights,
     };
+  });
+}
+
+// The lamps are not metadata. The warm-glass primitives make the two lenses
+// visible on the vehicle, while these short-lived point lights put the moving
+// pools on wet tarmac. Only the nearest two vehicles contribute so the fixed
+// eight-light architectural rig keeps its slots in the renderer's 12-light
+// budget.
+export function exteriorHeadlightLights({
+  timeSec=0,
+  reducedMotion=false,
+  origin={x:0,z:0},
+  maxVehicles=2,
+  maxDistance=48,
+}={}){
+  const ox=Number(origin?.x)||0,oz=Number(origin?.z)||0;
+  const vehicles=exteriorAmbientInstances({timeSec,reducedMotion})
+    .filter(({headlights})=>headlights)
+    .map((vehicle)=>({...vehicle,distance:Math.hypot(vehicle.x-ox,vehicle.z-oz)}))
+    .filter(({distance})=>distance<=Math.max(1,Number(maxDistance)||48))
+    .sort((a,b)=>a.distance-b.distance)
+    .slice(0,Math.max(0,Number(maxVehicles)||0));
+  return vehicles.flatMap((vehicle)=>{
+    const forwardX=Math.sin(vehicle.yaw),forwardZ=-Math.cos(vehicle.yaw);
+    const rightX=Math.cos(vehicle.yaw),rightZ=Math.sin(vehicle.yaw);
+    return[-.62,.62].map((side,index)=>({
+      id:`${vehicle.id}:headlight-${index+1}`,
+      headlightOf:vehicle.id,
+      x:vehicle.x+forwardX*3.20+rightX*side,
+      y:.72,
+      z:vehicle.z+forwardZ*3.20+rightZ*side,
+      color:[1,.78,.43],
+      intensity:.52,
+      radius:9.5,
+      penetration:.08,
+      spilling:false,
+      kind:'fitting',
+      circuit:null,
+      maintained:true,
+      nominalIntensity:.52,
+      emissiveScale:1,
+      castsShadow:false,
+      zone:ZONE.street,
+    }));
   });
 }
 

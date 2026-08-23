@@ -4,6 +4,7 @@ import { encodeH } from '../world/floorplan.js';
 import {
   CHUNK_SURF_HUSH_STAGE,
   CHUNK_SURF_PHASE,
+  HORIZON_EXIT,
   SOURCE_FINAL_OUTCOME,
   SOURCE_FINAL_STATUS,
   SOURCE_OPTIONAL_TRACES,
@@ -13,13 +14,55 @@ import {
   normalizeChunkSurfState,
   pageStageForDistance,
   reduceChunkSurf,
+  sourceBossAvailable,
 } from './chunk-surf-state.js';
 import { chunkSurfRoom } from '../data/chunk-surf-script.js';
-import { sourcePageFor } from '../data/source-pages.js';
+import { SOURCE_PAGES, sourcePageFor } from '../data/source-pages.js';
+import { ambientPaperDocumentId, paperAtlasIndex } from './paper-assets.js';
 import {
-  SOURCE_LADDERS, SOURCE_TIER_BY_ID,
-  sourceFeatureAt, sourceTierHeightAt, sourceTraversal,
+  SOURCE_DIALOGUE_FACT,
+  SOURCE_DIALOGUE_LIMITS,
+  assignSourceDialoguePage,
+  normalizeSourceDialogueState,
+  recordSourceDialogueFact,
+} from './source-dialogue.js';
+import {
+  hallRainFrame,
+  SOURCE_BRACKET,
+  SOURCE_HALL_END_METRES,
+  SOURCE_HAYSTACK,
+  SOURCE_SEARCH_START_METRES,
+  haystackFearFrame,
+  haystackMovementMultiplier,
+  haystackMoshFrame,
+  haystackPageGuidance,
+  haystackRainFrame,
+  sourceBracketFrame as buildSourceBracketFrame,
+  sourceStandingPressure,
+} from './source-haystack.js';
+import {
+  SOURCE_CHUTES, SOURCE_HORIZON, SOURCE_LIFTS, SOURCE_TIER_BY_ID,
+  sourceChuteById, sourceFeatureAt, sourceHorizonDepth, sourceHorizonSeconds,
+  sourceHorizonSlice, sourceLiftById, sourceTierAt,
+  sourceTierHeightAt, sourceTraversal,
 } from '../data/source-level.js';
+import {
+  SOURCE_LANDING_ENTRY_LOCAL,
+  SOURCE_LANDING_FIELD_EDGE_LOCAL_Y,
+  SOURCE_LANDING_HUSH_LOCAL,
+  SOURCE_LANDING_OPENING_LOCAL,
+  sourceLandingCellAt,
+  sourceLandingContract,
+  sourceLandingDoorPlacements,
+  sourceLandingLights,
+  sourceLandingPropPlacements,
+} from '../data/source-landing.js';
+import {
+  nextSourceContact,
+  normalizeSourceContactState,
+  resolveSourceContact,
+  sourceBossExposed,
+} from './source-contact.js';
 
 export const SOURCE_PLAN_WINDOW = 384;
 export const SOURCE_PLAN_SNAP = 16;
@@ -32,9 +75,10 @@ export const SOURCE_ENTRY = Object.freeze({ x: 0, y: 0, facing: 0 });
 
 const HALL_HALF_WIDTH = 6; // runtime cells = three metres from centre to wall
 const HALL_CEIL = 4.5;
-const HAYSTACK_METRES = 112;
+export const SOURCE_HALL_END_Y = -(SOURCE_HALL_END_METRES / CELL);
 const LANDSCAPE_W = 360; // 180 metres
 const LANDSCAPE_H = 340; // 170 metres
+const LANDSCAPE_FRONT = 18; // room behind the field origin, including the grey-door wall
 
 const LANDMARK_OFFSETS = Object.freeze({
   'fork-room': { x: 0, y: -42, sector: 'fork' },
@@ -73,11 +117,13 @@ const rand = (seed, index, salt = 0) => hash32((seed | 0) ^ Math.imul(index + 1,
 
 function pageCount(distance) {
   const d = Math.max(0, distance);
-  if (d < 28) return 180 + Math.floor(d / 28 * 60);
-  if (d < 56) return 240 + Math.floor((d - 28) / 28 * 80);
-  if (d < 84) return 320 + Math.floor((d - 56) / 28 * 110);
-  if (d < 112) return 430 + Math.floor((d - 84) / 28 * 170);
-  return 600;
+  // Density is a dramatic control, not an interaction count. Readable pages
+  // remain a subset while the renderer gets a much denser authored field.
+  if (d < 28) return 260 + Math.floor(d / 28 * 80);
+  if (d < 56) return 340 + Math.floor((d - 28) / 28 * 120);
+  if (d < 84) return 460 + Math.floor((d - 56) / 28 * 160);
+  if (d < 112) return 620 + Math.floor((d - 84) / 28 * 180);
+  return 960;
 }
 
 function sourceLines(sectorId) {
@@ -450,7 +496,7 @@ function landNoise(x, y) {
 // the whole field stays walkable" — which is precisely why the space had no
 // level design in it: nothing could be gated, no route cost anything, and every
 // destination was a straight line away. It is four plateaus separated by cliffs
-// taller than a step, joined by authored ladders and chutes (data/source-level.js).
+// taller than a step, joined by authored field lifts and chutes (data/source-level.js).
 //
 // The mounds survive, scaled right down: enough that a tier reads as ground
 // rather than as a table, small enough that it never becomes an accidental ramp
@@ -459,17 +505,11 @@ export function sourceLandscapeFloorAt(localX, localY) {
   const lx = Number(localX) || 0, ly = Number(localY) || 0;
   const base = sourceTierHeightAt(ly);
 
-  // A ladder's footprint interpolates between the two tiers it joins, so the
-  // climb is geometry rather than teleportation, and the shaft reads from below.
+  // A field lift is a vertical volume, not a disguised ramp. Its footprint keeps
+  // the height of whichever side of the boundary it occupies; the runtime owns
+  // the committed vertical travel and the camera's interpolated floor.
   const feature = sourceFeatureAt(lx, ly);
-  if (feature?.kind === 'ladder') {
-    const lower = SOURCE_TIER_BY_ID[feature.from]?.height ?? base;
-    const upper = SOURCE_TIER_BY_ID[feature.to]?.height ?? base;
-    const l = SOURCE_LADDERS.find((entry) => entry.id === feature.id);
-    // Across the boundary: below it is the lower tier, above it the upper.
-    const t = clamp01((l ? (l.y - ly) / Math.max(0.001, l.depth * 2) : 0) + 0.5);
-    return lower + (upper - lower) * t;
-  }
+  if (feature?.kind === 'lift') return base;
   // A chute is a ramp you can only take downhill — the surf. It falls from its
   // mouth to the tier below across its run.
   if (feature?.kind === 'chute') {
@@ -500,26 +540,42 @@ function materialAtLandscape(localX, localY) {
 
 function focusedCandidate(px, py, facing, candidates, maxCells = 6) {
   const dir = [[0, -1], [1, 0], [0, 1], [-1, 0]][((facing % 4) + 4) % 4];
-  return candidates.map((candidate) => {
+  const eligible = candidates.map((candidate) => {
     const dx = candidate.x - px, dy = candidate.y - py;
     const distance = Math.hypot(dx, dy);
     const dot = distance > 0.001 ? (dx * dir[0] + dy * dir[1]) / distance : 1;
-    return { ...candidate, distance, dot };
-  }).filter((candidate) => candidate.distance <= maxCells && candidate.dot >= 0.2)
-    .sort((a, b) => (b.dot - a.dot) || (a.distance - b.distance))[0] || null;
+    return {
+      ...candidate,
+      distance,
+      dot,
+      focusPriority: Number(candidate.focusPriority) || 0,
+    };
+  }).filter((candidate) => candidate.distance <= (Number(candidate.focusRadius) || maxCells) && candidate.dot >= 0.2)
+    .sort((a, b) => (b.dot - a.dot) || (a.distance - b.distance));
+
+  const best = eligible[0] || null;
+  if (!best) return null;
+  // Priority breaks a close perceptual tie only. It cannot pull the real page
+  // from off-axis or from materially farther away than the thing being aimed at.
+  return eligible.find((candidate) => candidate.focusPriority > best.focusPriority
+    && candidate.dot >= best.dot - 0.18
+    && candidate.distance <= best.distance + 1.5) || best;
 }
 
-function lineOfSight(cellAt, a, b) {
+function lineOfSight(canStep, a, b) {
   const distance = Math.hypot(b.x - a.x, b.y - a.y);
   const steps = Math.max(1, Math.ceil(distance * 2));
+  let previous = { x: a.x, y: a.y };
   for (let i = 1; i < steps; i += 1) {
     const t = i / steps;
-    if (!cellAt(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t)) return false;
+    const next = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+    if (!canStep(previous.x, previous.y, next.x, next.y)?.ok) return false;
+    previous = next;
   }
   return true;
 }
 
-function aStar(cellAt, start, goal, maxVisited = 30000) {
+function aStar(canStep, canOccupy, start, goal, maxVisited = 30000) {
   const sx = Math.floor(start.x), sy = Math.floor(start.y), gx = Math.floor(goal.x), gy = Math.floor(goal.y);
   const key = (x, y) => `${x},${y}`;
   const open = [{ x: sx, y: sy, g: 0, f: Math.hypot(gx - sx, gy - sy) }];
@@ -538,7 +594,8 @@ function aStar(cellAt, start, goal, maxVisited = 30000) {
     }
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
       const x = current.x + dx, y = current.y + dy;
-      if (!cellAt(x + 0.5, y + 0.5)) continue;
+      const next = { x: x + 0.5, y: y + 0.5 };
+      if (!canOccupy(next.x, next.y) || !canStep(current.x + 0.5, current.y + 0.5, next.x, next.y)?.ok) continue;
       const nk = key(x, y), ng = current.g + 1;
       if (ng >= (best.get(nk) ?? Infinity)) continue;
       best.set(nk, ng); parent.set(nk, { x: current.x, y: current.y });
@@ -555,6 +612,10 @@ export function createSourceSpaceRuntime({
   onScare = () => {},
 } = {}) {
   let state = normalizeChunkSurfState(initialState);
+  let sourceDialogue = normalizeSourceDialogueState(state.haystackDialogue, {
+    seed: state.seed,
+    facts: state.profile?.sourceMemoryFacts || {},
+  });
   let player = { x: SOURCE_ENTRY.x, y: SOURCE_ENTRY.y, facing: SOURCE_ENTRY.facing };
   let transformElapsed = 0;
   let lastPlan = null;
@@ -563,7 +624,27 @@ export function createSourceSpaceRuntime({
   let completionSent = false;
   let pathCache = { key: '', path: [] };
   let protectionRemaining = 0;
-  let restartGraceRemaining = 0;
+  let restartGraceRemaining = state.sourceContacts?.captures > 0 ? 5 : 0;
+  let captureMovementRequired = state.sourceContacts?.captures > 0;
+  let captureMovementAnchor = null;
+  let traversal = null;
+  let pendingContact = null;
+  let bossRequested = false;
+  let landingRainRemaining = state.landingWeatherSpent ? 0 : 12;
+  let phaseElapsed = 0;
+  // SEARCH begins in the final quarter of the tunnel. It is a continuous
+  // dramatic span, so this clock does not reset at HALL -> HAYSTACK.
+  let searchElapsed = state.phase === CHUNK_SURF_PHASE.HAYSTACK ? 12 : 0;
+  // The pressure floor belongs to the whole hall/search event, not to a phase.
+  // It is monotonic until the real page is taken.
+  let standingPressure = sourceStandingPressure({
+    hallMaxDistance: state.hallMaxDistance,
+    searchElapsed,
+  });
+  // A resumed haystack is already past the point at which weather has arrived.
+  let rainLatched = state.phase === CHUNK_SURF_PHASE.HAYSTACK;
+  let haystackWrongReads = 0;
+  let haystackReadImpulse = 0;
   let noProgressSeconds = 0;
   let lastObjectiveDistance = Infinity;
   let lastObjectiveId = '';
@@ -573,14 +654,52 @@ export function createSourceSpaceRuntime({
   const structures = sourceStructurePlacements(state.seed);
   let sourceCorpusCache = null;
 
+  const searchSpanActiveFor = (snapshot = state) => snapshot.phase === CHUNK_SURF_PHASE.HAYSTACK
+    || (snapshot.phase === CHUNK_SURF_PHASE.HALL
+      && (Number(snapshot.hallMaxDistance) || 0) >= SOURCE_SEARCH_START_METRES);
+
   function setState(next, { immediate = false } = {}) {
+    const previousPhase = state.phase;
+    const previousSearchSpan = searchSpanActiveFor(state);
     state = normalizeChunkSurfState(next);
+    if (state.landingWeatherSpent) landingRainRemaining = 0;
+    const nextSearchSpan = searchSpanActiveFor(state);
+    if (state.phase !== previousPhase) {
+      phaseElapsed = 0;
+      // HALL -> HAYSTACK is deliberately not a pressure boundary.
+      if (!(previousSearchSpan && nextSearchSpan)) {
+        searchElapsed = 0;
+        haystackReadImpulse = 0;
+        if (!nextSearchSpan) {
+          haystackWrongReads = 0;
+          rainLatched = false;
+          // TRANSFORMING is the first point where the sequence is allowed to
+          // release. Until then the floor only rises.
+          if (![CHUNK_SURF_PHASE.HALL, CHUNK_SURF_PHASE.HAYSTACK].includes(state.phase)) standingPressure = 0;
+        }
+      }
+    }
+    sourceDialogue = normalizeSourceDialogueState(state.haystackDialogue || sourceDialogue, {
+      seed: state.seed,
+      facts: state.profile?.sourceMemoryFacts || {},
+    });
     lastPlan = null;
     onState(state, { immediate });
     return state;
   }
 
   function dispatch(event, options) { return setState(reduceChunkSurf(state, event), options); }
+
+  function commitDialogue(next, { immediate = true } = {}) {
+    sourceDialogue = normalizeSourceDialogueState(next, { seed: state.seed, facts: state.profile?.sourceMemoryFacts || {} });
+    return setState({ ...state, haystackDialogue: sourceDialogue }, { immediate });
+  }
+
+  function rememberDialogueFact(key, value = true, { latencyReads = SOURCE_DIALOGUE_LIMITS.localFactLatencyReads } = {}) {
+    const existing = sourceDialogue.facts?.[key];
+    if (existing?.value === value) return sourceDialogue;
+    return commitDialogue(recordSourceDialogueFact(sourceDialogue, key, value, { latencyReads }), { immediate: true }).haystackDialogue;
+  }
   function landscapeOrigin() { return state.landscapeOrigin || { x: 0, y: -252 }; }
   function landmarkPoint(id) {
     const offset = LANDMARK_OFFSETS[id];
@@ -589,10 +708,22 @@ export function createSourceSpaceRuntime({
     return { id, x: origin.x + offset.x, y: origin.y + offset.y, sector: offset.sector };
   }
   function haystackPagePoint() {
-    const origin = state.haystackOrigin || { x: 0, y: -224 };
     const slot = state.interactivePageSlot ?? (state.seed >>> 0) % 12;
     const row = Math.floor(slot / 4), col = slot % 4;
-    return { x: origin.x - 4.5 + col * 3, y: origin.y - 14 - row * 5 };
+    // The still page lives on the playable side of the 112 m line. The corridor
+    // may continue visually forever, but nothing actionable is placed inside
+    // that visual-only continuation.
+    const longitudinalOffsets = [8, 16, 24]; // runtime cells: 4m, 8m, 12m back
+    return {
+      x: -4.5 + col * 3,
+      y: SOURCE_HALL_END_Y + longitudinalOffsets[row],
+    };
+  }
+
+  function sourceLandscapeOriginAfterHaystack() {
+    // Keep the later Source field anchored independently from whichever still
+    // page slot this run happened to receive.
+    return { x: 0, y: SOURCE_HALL_END_Y - 28 };
   }
 
   function inLandscape(x, y) {
@@ -600,7 +731,33 @@ export function createSourceSpaceRuntime({
     const o = landscapeOrigin(), lx = x - o.x, ly = y - o.y;
     const progress=state.phase===CHUNK_SURF_PHASE.TRANSFORMING?clamp01(transformElapsed/SOURCE_TRANSFORM_SECONDS):1;
     const revealedDepth=LANDSCAPE_H*clamp01((progress-.12)/.88);
-    return lx >= -LANDSCAPE_W / 2 && lx <= LANDSCAPE_W / 2 && ly <= 4 && ly >= -revealedDepth;
+    return lx >= -LANDSCAPE_W / 2 && lx <= LANDSCAPE_W / 2 && ly <= LANDSCAPE_FRONT && ly >= -revealedDepth;
+  }
+
+  // Out past the perimeter. Its own box, because the field's is 340 deep and the
+  // tape is 512 — which is also why the horizon does NOT join the anchored plan
+  // list in renderPlanFor(): the 384 window has to follow the body out here the
+  // way it followed him down the hall.
+  function inHorizon(x, y) {
+    if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return false;
+    const o = landscapeOrigin(), lx = x - o.x, ly = y - o.y;
+    return Math.abs(lx) <= SOURCE_HORIZON.halfWidth
+      && ly <= SOURCE_HORIZON.from && ly >= SOURCE_HORIZON.to;
+  }
+
+  function horizonCell(x, y) {
+    if (!inHorizon(x, y)) return null;
+    // Flat, open, and unlit by anything the building owns. No ceiling: what is
+    // overhead is the tape, and the tape is drawn by the splat pass, not by a
+    // cell. See horizon3d.js.
+    return {
+      floor: SOURCE_TIER_BY_ID.horizon.height,
+      ceil: HALL_CEIL * 4,
+      flags: 0,
+      zone: ZONE.none,
+      material: MATERIAL.none,
+      sourceHorizon: true,
+    };
   }
 
   function routeEnabled(route) {
@@ -627,19 +784,31 @@ export function createSourceSpaceRuntime({
     // the floor. The only wall is the field's own perimeter (rendered as visible
     // code, see perimeterWallInstances); beyond it is sky.
     if (!inLandscape(x, y)) return null;
+    const landing = sourceLandingCellAt(lx, ly);
+    if (landing?.owned) {
+      if (landing.solid) return null;
+      return {
+        floor: landing.floor,
+        ceil: landing.ceil,
+        flags: landing.flags,
+        zone: landing.zone,
+        material: landing.material,
+        sourceLanding: true,
+      };
+    }
+    // Only the room itself may project behind the field edge. Without this
+    // shared terrain carve-out, the otherwise open Source ground wraps around
+    // both side walls and reaches the sealed rear of the get-in.
+    if (ly > SOURCE_LANDING_FIELD_EDGE_LOCAL_Y) return null;
     if ([CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase)
         && sourceStructureCollisionAt(structures, lx, ly)) return null;
     const floor = sourceLandscapeFloorAt(lx, ly);
     return { floor, ceil: floor + 22, flags: F.SKY, zone: ZONE.sourceSpace, material: materialAtLandscape(lx, ly) };
   }
 
-  function hallCell(x, y) {
-    if ([CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase)) return null;
-    if (Math.abs(x) > HALL_HALF_WIDTH) return null;
-    if (y > 3) return null;
-    const barrierY = state.haystackOrigin ? state.haystackOrigin.y - 44 : -Infinity;
-    if ([CHUNK_SURF_PHASE.HAYSTACK, CHUNK_SURF_PHASE.TRANSFORMING].includes(state.phase) && y <= barrierY) return null;
-    const transformCode = state.phase === CHUNK_SURF_PHASE.TRANSFORMING && transformElapsed > SOURCE_TRANSFORM_SECONDS * 0.45;
+  function hallCellDescriptor() {
+    const transformCode = state.phase === CHUNK_SURF_PHASE.TRANSFORMING
+      && transformElapsed > SOURCE_TRANSFORM_SECONDS * 0.45;
     return {
       floor: 0,
       ceil: HALL_CEIL,
@@ -649,9 +818,38 @@ export function createSourceSpaceRuntime({
     };
   }
 
-  function cellAt(x, y) {
-    return landscapeCell(x, y) || hallCell(x, y);
+  function hallVisibleInPhase() {
+    return ![CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase);
   }
+
+  function physicalHallCell(x, y) {
+    if (!hallVisibleInPhase()) return null;
+    if (Math.abs(x) > HALL_HALF_WIDTH || y > 3) return null;
+    // BODY CONTRACT: 112 m is the end. This line never moves with the player or
+    // with haystackOrigin, and no HAYSTACK state opens more traversable corridor.
+    if (y < SOURCE_HALL_END_Y) return null;
+    return hallCellDescriptor();
+  }
+
+  function visualHallCell(x, y) {
+    if (!hallVisibleInPhase()) return null;
+    if (Math.abs(x) > HALL_HALF_WIDTH || y > 3) return null;
+    // EYE CONTRACT: there is deliberately no forward bound. The finite render
+    // plan/far plane is the only limit, so the hall appears to continue beyond
+    // the physical line without creating navigation, collision, or objectives.
+    return hallCellDescriptor();
+  }
+
+  function physicalCellAt(x, y) {
+    return horizonCell(x, y) || landscapeCell(x, y) || physicalHallCell(x, y);
+  }
+
+  function renderCellAt(x, y) {
+    return horizonCell(x, y) || landscapeCell(x, y) || visualHallCell(x, y);
+  }
+
+  // Internal navigation/pathfinding keeps using this alias. Rendering does not.
+  const cellAt = physicalCellAt;
 
   function sourceLayerAtWorld(x,y,cell){
     if(!cell||cell.material<MATERIAL.sourceField)return 0;
@@ -667,33 +865,52 @@ export function createSourceSpaceRuntime({
 
   const geometry = {
     id: 'source-space',
-    cellAt,
-    isSolid: (x, y) => !cellAt(x, y),
+    cellAt: physicalCellAt,
+    renderCellAt,
+    isSolid: (x, y) => !physicalCellAt(x, y),
     canStep(fromX, fromY, toX, toY) {
-      const from = cellAt(fromX, fromY), to = cellAt(toX, toY);
-      if (!to) return { ok: false, why: 'wall' };
+      const from = physicalCellAt(fromX, fromY), to = physicalCellAt(toX, toY);
+      if (!to) return {
+        ok: false,
+        why: hallVisibleInPhase() && Math.abs(toX) <= HALL_HALF_WIDTH && toY < SOURCE_HALL_END_Y
+          ? 'source-hall-boundary'
+          : 'wall',
+      };
       if (to.ceil - to.floor < EYE + 0.2) return { ok: false, why: 'headroom' };
-      if (from && Math.abs(to.floor - from.floor) > 0.45) {
+      if (from) {
         // THE ONE EXCEPTION. A tier boundary is taller than a step on purpose;
-        // a ladder is how you take it upward and a chute is how you take it
+        // a lift is how you take it upward and a chute is how you take it
         // down, and there is no third way. Everything the level gates, it gates
         // here (see data/source-level.js).
         const o = landscapeOrigin();
         const via = sourceTraversal(
           fromX - o.x, fromY - o.y, toX - o.x, toY - o.y, from.floor, to.floor,
         );
-        if (!via.ok) return { ok: false, why: 'too high' };
-        return { ok: true, floor: to.floor, via: via.via, feature: via.id, ride: via.dir || null };
+        if (via.ok) return {
+          ok: true,
+          floor: to.floor,
+          via: via.via,
+          feature: via.id,
+          ride: via.dir || null,
+          travel: via.travel || null,
+          fromTier: via.fromTier || null,
+          toTier: via.toTier || null,
+        };
+        const fromFeature=sourceFeatureAt(fromX-o.x,fromY-o.y);
+        const toFeature=sourceFeatureAt(toX-o.x,toY-o.y);
+        if(fromFeature?.kind==='chute'||toFeature?.kind==='chute')return{ok:false,why:'one-way chute'};
+        if (Math.abs(to.floor - from.floor) > 0.45) return { ok: false, why: 'too high' };
       }
       return { ok: true, floor: to.floor };
     },
-    floorAt: (x, y) => cellAt(x, y)?.floor ?? 0,
-    ceilAt: (x, y) => cellAt(x, y)?.ceil || HALL_CEIL,
-    zoneAt: (x, y) => cellAt(x, y)?.zone || ZONE.none,
-    materialAt: (x, y) => cellAt(x, y)?.material || MATERIAL.none,
+    floorAt: (x, y) => physicalCellAt(x, y)?.floor ?? 0,
+    renderedFloorAt: () => traversal?.floor ?? physicalCellAt(player.x, player.y)?.floor ?? 0,
+    ceilAt: (x, y) => physicalCellAt(x, y)?.ceil || HALL_CEIL,
+    zoneAt: (x, y) => physicalCellAt(x, y)?.zone || ZONE.none,
+    materialAt: (x, y) => physicalCellAt(x, y)?.material || MATERIAL.none,
     worldAt: () => 'source_space',
     areaLabelAt: () => 'source space',
-    logicalToPhysical: (x, y) => ({ x, z: y, y: cellAt(x, y)?.floor ?? 0, layer: 'source', spaceId: 'source-space', renderGroup: 'source-space' }),
+    logicalToPhysical: (x, y) => ({ x, z: y, y: physicalCellAt(x, y)?.floor ?? 0, layer: 'source', spaceId: 'source-space', renderGroup: 'source-space' }),
     renderPlanFor(x, y) {
       const half = SOURCE_PLAN_WINDOW / 2;
       const anchored = [CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase);
@@ -709,7 +926,7 @@ export function createSourceSpaceRuntime({
       const material = new Uint8Array(size * size);
       const sourceLayer = new Uint8Array(size * size);
       for (let py = 0; py < size; py += 1) for (let px = 0; px < size; px += 1) {
-        const c = cellAt(originX + px + 0.5, originY + py + 0.5), i = py * size + px;
+        const c = renderCellAt(originX + px + 0.5, originY + py + 0.5), i = py * size + px;
         if (!c) { rgba[i * 4 + 2] = F.SOLID; continue; }
         rgba[i * 4] = encodeH(c.floor);
         rgba[i * 4 + 1] = encodeH(c.ceil);
@@ -723,9 +940,37 @@ export function createSourceSpaceRuntime({
     },
   };
 
+  function haystackCheckpoint() {
+    return { x: 0, y: SOURCE_HALL_END_Y + 5, facing: 0 };
+  }
+
+  function landingWorld(local = SOURCE_LANDING_ENTRY_LOCAL) {
+    const o = landscapeOrigin();
+    return { x: o.x + local.x, y: o.y + local.y, facing: 0 };
+  }
+
+  function tierCheckpointId(tierId) { return `landing-${tierId}`; }
+
+  function tierCheckpoint(tierId) {
+    const o = landscapeOrigin();
+    if (tierId === 'arrival') return landingWorld();
+    if (tierId === 'fork') return { x: o.x, y: o.y - 48, facing: 0 };
+    if (tierId === 'trace') return { x: o.x, y: o.y - 128, facing: 0 };
+    if (tierId === 'return') return { x: o.x, y: o.y - 228, facing: 0 };
+    // Just over the seam, facing in. Far enough that the field is behind him and
+    // he cannot walk back out of it by accident.
+    if (tierId === 'horizon') return { x: o.x, y: o.y + SOURCE_HORIZON.from - SOURCE_HORIZON.entryStandoff, facing: 0 };
+    return landingWorld();
+  }
+
   function checkpointPosition(id = state.checkpoint?.id || state.checkpointId) {
     if (id === 'hall-entry') return { x: SOURCE_ENTRY.x, y: SOURCE_ENTRY.y, facing: 0 };
-    if (id === 'landscape-entry') { const o = landscapeOrigin(); return { x: o.x, y: o.y, facing: 0 }; }
+    if (id === 'haystack-entry' || state.phase === CHUNK_SURF_PHASE.HAYSTACK) return haystackCheckpoint();
+    if (id === 'landscape-entry' || id === 'landing-arrival') return landingWorld();
+    if (id === 'landing-fork') return tierCheckpoint('fork');
+    if (id === 'landing-trace') return tierCheckpoint('trace');
+    if (id === 'landing-return') return tierCheckpoint('return');
+    if (id === 'landing-horizon') return tierCheckpoint('horizon');
     const point = landmarkPoint(id);
     return point ? { x: point.x, y: point.y + 7, facing: 0 } : { x: SOURCE_ENTRY.x, y: SOURCE_ENTRY.y, facing: 0 };
   }
@@ -742,23 +987,149 @@ export function createSourceSpaceRuntime({
     protectionRemaining = Math.max(protectionRemaining, Math.max(0, Number(seconds) || 0));
   }
 
+  function traversalFrame() {
+    if (!traversal) return { active: false, grounded: true, locksMovement: false };
+    return {
+      active: true,
+      grounded: false,
+      locksMovement: true,
+      kind: traversal.kind,
+      id: traversal.id,
+      progress: clamp01(traversal.elapsed / traversal.duration),
+      x: traversal.x,
+      y: traversal.y,
+      floor: traversal.floor,
+      fromTier: traversal.fromTier,
+      toTier: traversal.toTier,
+    };
+  }
+
+  function beginTraversal({ move = null, from = player } = {}) {
+    if (traversal || pendingContact || !move?.via || !move.feature) return { handled: false, frame: traversalFrame() };
+    const o = landscapeOrigin();
+    const local = { x: Number(from.x) - o.x, y: Number(from.y) - o.y };
+    const startFloor = geometry.floorAt(from.x, from.y);
+    if (move.via === 'lift') {
+      const lift = sourceLiftById(move.feature);
+      if (!lift) return { handled: false, frame: traversalFrame() };
+      const lower = SOURCE_TIER_BY_ID[lift.from]?.height ?? startFloor;
+      const upper = SOURCE_TIER_BY_ID[lift.to]?.height ?? startFloor;
+      const goingUp = move.travel ? move.travel === 'up' : startFloor <= (lower + upper) * 0.5;
+      const targetLocalY = lift.y + (goingUp ? -(lift.depth + 1.25) : lift.depth + 1.25);
+      const targetLocalX = clamp(local.x, lift.x - lift.halfWidth + 0.75, lift.x + lift.halfWidth - 0.75);
+      const targetFloor = goingUp ? upper : lower;
+      const travelSeconds = Math.min(1.6, Math.abs(targetFloor - startFloor) / 5.5 + 0.4);
+      traversal = {
+        kind: 'lift', id: lift.id, elapsed: 0, duration: travelSeconds,
+        launch: 0.18, settle: 0.22,
+        start: { x: Number(from.x), y: Number(from.y), floor: startFloor },
+        end: { x: o.x + targetLocalX, y: o.y + targetLocalY, floor: targetFloor },
+        x: Number(from.x), y: Number(from.y), floor: startFloor,
+        fromTier: move.fromTier || (goingUp ? lift.from : lift.to),
+        toTier: move.toTier || (goingUp ? lift.to : lift.from),
+      };
+    } else if (move.via === 'chute') {
+      const chute = sourceChuteById(move.feature);
+      if (!chute) return { handled: false, frame: traversalFrame() };
+      const endLocal = {
+        x: chute.x + chute.dir.x * (chute.run - 1),
+        y: chute.y + chute.dir.y * (chute.run - 1),
+      };
+      const targetFloor = SOURCE_TIER_BY_ID[chute.to]?.height ?? sourceLandscapeFloorAt(endLocal.x, endLocal.y);
+      const gravityTime = Math.sqrt((2 * Math.max(0.1, startFloor - targetFloor)) / 12);
+      traversal = {
+        kind: 'chute', id: chute.id, elapsed: 0, duration: clamp(gravityTime, 0.55, 1.1),
+        start: { x: Number(from.x), y: Number(from.y), floor: startFloor },
+        end: { x: o.x + endLocal.x, y: o.y + endLocal.y, floor: targetFloor },
+        x: Number(from.x), y: Number(from.y), floor: startFloor,
+        fromTier: chute.from,
+        toTier: chute.to,
+      };
+    } else return { handled: false, frame: traversalFrame() };
+    protectMoment(traversal.duration + 0.35);
+    return { handled: true, frame: traversalFrame() };
+  }
+
+  function tickTraversal(dt) {
+    if (!traversal) return { active: false, completed: false, frame: traversalFrame() };
+    const ride = traversal;
+    ride.elapsed = Math.min(ride.duration, ride.elapsed + Math.max(0, Number(dt) || 0));
+    const raw = clamp01(ride.elapsed / ride.duration);
+    let travelT = raw;
+    if (ride.kind === 'lift') {
+      const launchT = ride.launch / ride.duration;
+      const settleT = 1 - ride.settle / ride.duration;
+      travelT = smoothstep(launchT, Math.max(launchT + 0.001, settleT), raw);
+    }
+    ride.x = ride.start.x + (ride.end.x - ride.start.x) * travelT;
+    ride.y = ride.start.y + (ride.end.y - ride.start.y) * travelT;
+    const baseFloor = ride.start.floor + (ride.end.floor - ride.start.floor) * travelT;
+    // Constant Source gravity: horizontal progress is linear while vertical
+    // displacement grows with t squared. The duration was derived from 12m/s²
+    // above, then clamped only for authored feel/safety.
+    ride.floor = ride.kind === 'chute'
+      ? ride.start.floor + (ride.end.floor - ride.start.floor) * raw * raw
+      : baseFloor;
+    player = { ...player, x: ride.x, y: ride.y };
+    if (raw < 1) return { active: true, completed: false, frame: traversalFrame() };
+    traversal = null;
+    player = { ...player, x: ride.end.x, y: ride.end.y };
+    const checkpointId = tierCheckpointId(ride.toTier);
+    if (ride.kind === 'lift') {
+      dispatch({ type: 'SOURCE_LIFT_COMPLETED', id: ride.id, checkpointId }, { immediate: true });
+      if (!state.landingWeatherSpent && ride.id === 'lift-fork') landingRainRemaining = Math.max(landingRainRemaining, 12);
+    } else {
+      dispatch({ type: 'CHECKPOINT_SET', id: checkpointId }, { immediate: true });
+    }
+    restartGraceRemaining = Math.max(restartGraceRemaining, 0.6);
+    const dropHeight=Math.max(0,ride.start.floor-ride.end.floor);
+    return { active: false, completed: true, kind: ride.kind, id: ride.id, dropHeight, impact:clamp01(dropHeight/6.2), frame: traversalFrame(), position: { ...player } };
+  }
+
   function sourceObjective() {
     const optionalProgress = { resolved: state.optionalTraces.length, total: SOURCE_OPTIONAL_TRACES.length };
+    const o = landscapeOrigin();
+    const localPlayer = { x: player.x - o.x, y: player.y - o.y };
     let objective;
-    if (state.phase === CHUNK_SURF_PHASE.HALL) {
-      objective = { id: 'long-hall', label: 'FOLLOW THE PAPER FIELD', target: { x: 0, y: -(HAYSTACK_METRES / CELL) }, bearingEligible: false };
+    if (state.phase === CHUNK_SURF_PHASE.HORIZON) {
+      // OUT HERE THE OLD OBJECTIVE WAS A LIE.
+      //
+      // With no HORIZON branch this fell through to the final `else` and read
+      // REACH THE FINAL HORIZON, pointed at `final-page` — a landmark BEHIND the
+      // body, inside a field that stops existing the moment the phase changes.
+      // There is one direction out here and no bearing to take: the objective is
+      // the walk itself.
+      const depth = sourceHorizonDepth(player.y - o.y);
+      objective = {
+        id: 'horizon-walk',
+        label: 'WALK THE TAPE',
+        target: null,
+        bearingEligible: false,
+        horizonDepth: depth,
+        horizonProgress: Math.max(0, Math.min(1, depth / SOURCE_HORIZON.length)),
+      };
+    } else if (state.phase === CHUNK_SURF_PHASE.HALL) {
+      objective = { id: 'long-hall', label: 'FOLLOW THE PAPER FIELD', target: { x: 0, y: -(SOURCE_HALL_END_METRES / CELL) }, bearingEligible: false };
     } else if (state.phase === CHUNK_SURF_PHASE.HAYSTACK) {
-      objective = { id: 'still-page', label: 'FIND THE STILL PAGE', target: haystackPagePoint(), bearingEligible: false };
-    } else if (state.phase === CHUNK_SURF_PHASE.TRANSFORMING) {
-      objective = { id: 'source-opening', label: 'HOLD THE SOURCE', target: haystackPagePoint(), bearingEligible: false };
+      objective = { id: 'still-page', label: 'FIND THE STILL PAGE', target: haystackPagePoint(), bearingEligible: true };
+    } else if (state.phase === CHUNK_SURF_PHASE.TRANSFORMING || !state.firstLiftCompleted) {
+      const outside = localPlayer.y <= SOURCE_LANDING_OPENING_LOCAL.y + 2;
+      objective = outside
+        ? { id: 'first-lift', label: 'ENTER THE RISING SOURCE', target: { x: o.x, y: o.y - 40 }, bearingEligible: true }
+        : { id: 'leave-get-in', label: 'LEAVE THE GET-IN', target: landingWorld(SOURCE_LANDING_OPENING_LOCAL), bearingEligible: true };
     } else if (!state.hasFork) {
-      objective = { id: 'fork-gate', label: 'CLIMB TO THE FORK', target: landmarkPoint('fork-room'), bearingEligible: true };
+      objective = { id: 'fork-gate', label: 'TUNE THE FORK', target: landmarkPoint('fork-room'), bearingEligible: true };
     } else if (!state.tuned.includes('recordist-loop')) {
       objective = { id: 'recordist-loop', label: 'THE TRACE IS ONE TIER UP', target: landmarkPoint('recordist-loop'), bearingEligible: true };
     } else if (!state.tuned.includes('body-room')) {
       objective = { id: 'body-return', label: 'BODY RETURN IS ABOVE THE TRACE', target: landmarkPoint('body-room'), bearingEligible: true };
     } else if (state.phase === CHUNK_SURF_PHASE.FINAL && state.finalEncounter.status !== SOURCE_FINAL_STATUS.RESOLVED) {
-      objective = { id: 'final-encounter', label: 'RESOLVE THE FINAL SOURCE', target: landmarkPoint('final-page'), bearingEligible: false };
+      objective = {
+        id: sourceBossExposed(state.sourceContacts) ? 'return-paths' : 'normal-exit',
+        label: sourceBossExposed(state.sourceContacts) ? 'CHOOSE A RETURN PATH' : 'LEAVE THE SOURCE',
+        target: landmarkPoint('final-page'),
+        bearingEligible: false,
+      };
     } else if (state.phase === CHUNK_SURF_PHASE.COMPLETED) {
       objective = { id: 'tower-crossing', label: 'MOVE FORWARD INTO THE TOWER', target: landmarkPoint('final-page'), bearingEligible: false };
     } else {
@@ -777,16 +1148,25 @@ export function createSourceSpaceRuntime({
       optionalProgress,
       bearing: objective.bearingEligible ? compassBearing(player, objective.target) : null,
       distance: Number.isFinite(distance) ? distance : null,
+      distanceMeters: Number.isFinite(distance) ? distance * CELL : null,
       alignmentPulse: noProgressSeconds >= 6,
       knownLandmarks,
       coherentRoute:state.profile?.sourceGuidance
         ? ['surfer-origin','work-order-loop','recordist-loop','body-room']
         : [],
+      tier: [CHUNK_SURF_PHASE.TRANSFORMING, CHUNK_SURF_PHASE.LANDSCAPE,
+        CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase)
+        ? sourceTierAt(localPlayer.y).id : null,
+      altitude: [CHUNK_SURF_PHASE.TRANSFORMING, CHUNK_SURF_PHASE.LANDSCAPE,
+        CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase)
+        ? sourceLandscapeFloorAt(localPlayer.x, localPlayer.y) : null,
+      bossExposed: sourceBossExposed(state.sourceContacts),
     };
   }
 
   function nearProtectedMoment() {
-    if ([CHUNK_SURF_PHASE.HAYSTACK, CHUNK_SURF_PHASE.TRANSFORMING, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase)) return true;
+    if (traversal || pendingContact || !state.firstLiftCompleted) return true;
+    if ([CHUNK_SURF_PHASE.TRANSFORMING, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase)) return true;
     if (state.phase !== CHUNK_SURF_PHASE.LANDSCAPE) return false;
     return Object.keys(LANDMARK_OFFSETS).some((id) => {
       const point = landmarkPoint(id);
@@ -794,15 +1174,200 @@ export function createSourceSpaceRuntime({
     });
   }
 
-  function hushMode() {
-    const protectedMoment = protectionRemaining > 0 || restartGraceRemaining > 0 || nearProtectedMoment();
-    const colliding = !!state.pursuitBeat && !protectedMoment;
+  function sourceBracketFrame() {
+    return buildSourceBracketFrame({
+      hallMaxDistance: state.hallMaxDistance,
+      player,
+      cellMetres: CELL,
+      enabled: [CHUNK_SURF_PHASE.HALL, CHUNK_SURF_PHASE.HAYSTACK].includes(state.phase),
+    });
+  }
+
+  function sourceLandingHushFrame() {
+    const active = [CHUNK_SURF_PHASE.TRANSFORMING, CHUNK_SURF_PHASE.LANDSCAPE].includes(state.phase)
+      && !state.firstLiftCompleted;
+    const point = landingWorld(SOURCE_LANDING_HUSH_LOCAL);
     return {
-      mode: colliding ? 'pursuit' : state.hushStage === CHUNK_SURF_HUSH_STAGE.ABSENT ? 'absent' : 'atmospheric',
+      active,
+      safe: true,
+      rear: {
+        visible: active,
+        x: point.x,
+        y: point.y,
+        strength: 0.96,
+      },
+    };
+  }
+
+  function hushMode() {
+    const hallSearch = state.phase === CHUNK_SURF_PHASE.HALL
+      && state.hallMaxDistance >= SOURCE_SEARCH_START_METRES;
+    const haystackHunt = state.phase === CHUNK_SURF_PHASE.HAYSTACK;
+    const searchActive = hallSearch || haystackHunt;
+    const bracket = sourceBracketFrame();
+    const landing = sourceLandingHushFrame();
+    const protectedMoment = protectionRemaining > 0 || restartGraceRemaining > 0 || nearProtectedMoment();
+
+    // SEARCH/HAYSTACK is a bracket, not a chase. The rear body keeps pace under
+    // authored tableau control and the forward body is render-only. Neither is
+    // allowed to resolve contact. Conventional Source pursuits remain available
+    // later in the landscape through the serialized pursuitBeat.
+    const laterPursuit = !bracket.active && !landing.active && state.firstLiftCompleted && !!state.pursuitBeat;
+    const present = bracket.active || landing.active || state.hushStage !== CHUNK_SURF_HUSH_STAGE.ABSENT;
+    const colliding = laterPursuit && !protectedMoment;
+    return {
+      mode: colliding ? 'pursuit' : present ? 'atmospheric' : 'absent',
       colliding,
       protected: protectedMoment,
-      pursuitBeat: state.pursuitBeat,
+      pursuitBeat: laterPursuit ? state.pursuitBeat : null,
+      haystackHunt,
+      hallSearch,
+      searchActive,
+      bracketActive: bracket.active,
+      landingTableau: landing.active,
+      rearPace: bracket.active,
+      frontManifestation: bracket.front.visible,
       restartGrace: restartGraceRemaining,
+      grounded: !traversal,
+    };
+  }
+
+  function latchedRain(raw, minimum = 0) {
+    const value = clamp01(raw);
+    if (value > 0.001) rainLatched = true;
+    return rainLatched ? Math.max(clamp01(minimum), value) : value;
+  }
+
+  function refreshStandingPressure() {
+    standingPressure = Math.max(
+      standingPressure,
+      sourceStandingPressure({
+        hallMaxDistance: state.hallMaxDistance,
+        searchElapsed,
+      }),
+    );
+    return standingPressure;
+  }
+
+  function pressureFrame({ reducedMotion = false } = {}) {
+    if (state.phase === CHUNK_SURF_PHASE.HAYSTACK) {
+      const standing = refreshStandingPressure();
+      const pressure = clamp(
+        standing + clamp01(haystackReadImpulse) * 0.08,
+        0,
+        SOURCE_HAYSTACK.maxPressure,
+      );
+      const authoredPressure = Math.max(SOURCE_HAYSTACK.entryPressure, pressure);
+      const pressureT = clamp01(
+        (authoredPressure - SOURCE_HAYSTACK.entryPressure)
+          / Math.max(0.001, SOURCE_HAYSTACK.maxPressure - SOURCE_HAYSTACK.entryPressure),
+      );
+      const rawRain = haystackRainFrame({ elapsed: searchElapsed, pressure: authoredPressure, seed: state.seed });
+      return {
+        phase: state.phase,
+        elapsed: phaseElapsed,
+        searchElapsed,
+        searchActive: true,
+        standingPressure: standing,
+        pressure,
+        fearFloor: clamp01(standing * 0.72),
+        movementMultiplier: haystackMovementMultiplier(authoredPressure),
+        fear: haystackFearFrame(authoredPressure),
+        // Once precipitation has arrived it may surge and recede, but it never
+        // returns to dry until the real page is taken.
+        rain: latchedRain(rawRain, 0.48 + pressureT * 0.18),
+        rainLatched,
+        mosh: haystackMoshFrame({
+          elapsed: searchElapsed,
+          seed: state.seed,
+          pressure: authoredPressure,
+          wrongReadImpulse: haystackReadImpulse,
+          reducedMotion,
+        }),
+        wrongReads: haystackWrongReads,
+        wrongReadImpulse: haystackReadImpulse,
+        noProgressSeconds,
+      };
+    }
+
+    if (state.phase === CHUNK_SURF_PHASE.HALL) {
+      const depth = clamp01((state.hallMaxDistance || 0) / SOURCE_HALL_END_METRES);
+      const searching = searchSpanActiveFor(state);
+      const standing = refreshStandingPressure();
+      const authoredPressure = Math.max(SOURCE_HAYSTACK.entryPressure, standing);
+      const rawRain = hallRainFrame({
+        elapsed: phaseElapsed,
+        distanceMetres: state.hallMaxDistance,
+        seed: state.seed,
+      });
+      const hallRainFloor = 0.16 + depth * 0.22;
+      return {
+        phase: state.phase,
+        elapsed: phaseElapsed,
+        searchElapsed,
+        searchActive: searching,
+        standingPressure: standing,
+        pressure: standing,
+        fearFloor: clamp01(standing * 0.72),
+        movementMultiplier: searching
+          ? Math.max(1 + depth * 1.10, 2.08 + smoothstep(0, 18, searchElapsed) * 0.12)
+          : 1 + depth * 1.10,
+        // The final quarter of the tunnel is already SEARCH. It gets the same
+        // authored cadence as the haystack and carries straight through the phase
+        // transition instead of dropping back to a softer beat.
+        fear: searching ? haystackFearFrame(authoredPressure) : null,
+        rain: latchedRain(rawRain, hallRainFloor),
+        rainLatched,
+        mosh: searching
+          ? haystackMoshFrame({
+            elapsed: searchElapsed,
+            seed: state.seed,
+            pressure: authoredPressure,
+            wrongReadImpulse: haystackReadImpulse,
+            reducedMotion,
+          })
+          : { active: false, amount: 0, cycle: -1 },
+        wrongReads: haystackWrongReads,
+        wrongReadImpulse: haystackReadImpulse,
+        noProgressSeconds,
+      };
+    }
+
+    const landingWeatherActive = !state.landingWeatherSpent
+      && [CHUNK_SURF_PHASE.TRANSFORMING, CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase);
+    const landingRain = landingWeatherActive
+      ? (state.firstLiftCompleted ? clamp01(landingRainRemaining / 12) : 1)
+      : 0;
+    return {
+      phase: state.phase,
+      elapsed: phaseElapsed,
+      searchElapsed,
+      searchActive: false,
+      standingPressure: 0,
+      pressure: 0,
+      fearFloor: 0,
+      // THE TAPE IS WALKED, NOT CROSSED.
+      //
+      // The horizon is 512 cells and the legs run one cell per 90ms, so the
+      // crossing took about forty-five seconds — and the piece hung on it is
+      // two hundred and fifty-nine. Position IS the playhead out here, so a
+      // sprint does not skip the score, it plays it at five and a half times
+      // speed: nobody had ever heard the recording they were walking through.
+      // It also pinned the score's one expressive parameter, the velocity bend,
+      // hard against its clamp for the whole walk.
+      //
+      // Slower legs fix all of it at once — the piece is mostly heard, the bend
+      // becomes expressive again, and the picture gets time to be looked at.
+      // The same mechanism the hall and the haystack use; see
+      // currentMoveIntervalMs.
+      movementMultiplier: state.phase === CHUNK_SURF_PHASE.HORIZON ? HORIZON_PACE : 1,
+      fear: null,
+      rain: landingRain,
+      rainLatched: landingRain > 0,
+      mosh: { active: false, amount: 0, cycle: -1 },
+      wrongReads: haystackWrongReads,
+      wrongReadImpulse: 0,
+      noProgressSeconds,
     };
   }
 
@@ -811,10 +1376,12 @@ export function createSourceSpaceRuntime({
     const depth = Math.max(0, o.y - player.y);
     const approach = smoothstep(270, 318, depth);
     const resolved = state.finalEncounter.status === SOURCE_FINAL_STATUS.RESOLVED || state.phase === CHUNK_SURF_PHASE.COMPLETED;
+    const understood = normalizeSourceContactState(state.sourceContacts).insights.length;
     return {
       sunrise: resolved ? 1 : approach,
-      chroma: 1 - approach * 0.72,
+      chroma: Math.max(0.18, 1 - approach * 0.72 - understood * 0.1),
       paper: resolved ? 1 : smoothstep(286, 318, depth),
+      intervalStability: understood / 3,
     };
   }
 
@@ -822,23 +1389,51 @@ export function createSourceSpaceRuntime({
     if (state.phase !== CHUNK_SURF_PHASE.FINAL || state.finalEncounter.status !== SOURCE_FINAL_STATUS.READY) return null;
     const final = landmarkPoint('final-page');
     if (!final || Math.hypot(player.x - final.x, player.y - final.y) > 12) return null;
-    const evidenceTags=new Set(state.profile?.evidenceTags||[]);
-    const evidenceRoute=['reference-pressure','student-performance','pre-roll-causality','contract-inheritance','borrowed-body']
-      .every((tag)=>evidenceTags.has(tag));
+    const exposed = sourceBossExposed(state.sourceContacts);
+    // The rig no longer decides whether there is a fight. It decides how badly
+    // it goes — see applyRigAdvantage() — and it still decides whether a win can
+    // reach the rescue, because inverting the contract is what the rig is for.
+    const rigAvailable = !!state.profile?.bestEligible;
+    const hurtBefore = state.injuriesAtEntry >= 1;
+    const available = sourceBossAvailable(state);
+    const bodyReturnAssist = state.tuned.includes('body-room') || state.recorded.includes('body-room');
     return {
-      schema: 1,
+      schema: 3,
       id: 'source-final',
-      adapter: 'combat-v1',
+      adapter: available && bossRequested ? 'combat-v1' : null,
       outcomes: Object.values(SOURCE_FINAL_OUTCOME),
-      rescueEligible: !!state.profile?.bestEligible
-        && state.hasFork
-        && (SOURCE_OPTIONAL_TRACES.every((id) => state.optionalTraces.includes(id))||evidenceRoute)
-        && state.recorded.includes('body-room'),
+      exposed,
+      hurtBefore,
+      rigAvailable,
+      bodyReturnAssist,
+      battleAvailable: available,
+      normalExitAvailable: true,
+      rescueEligible: available && rigAvailable,
       compatibility: { redactions: REDACTIONS.map(({ id, sourceAnchor }) => ({ id, sourceAnchor })) },
     };
   }
 
+  function requestBossBattle() {
+    const exposed = sourceBossExposed(state.sourceContacts);
+    const hurtBefore = state.injuriesAtEntry >= 1;
+    if (!sourceBossAvailable(state)) return { handled: true, available: false, exposed, hurtBefore };
+    bossRequested = true;
+    protectMoment(30);
+    return { handled: true, available: true, request: finalEncounterRequest() };
+  }
+
+  // Walking away from the fault no longer ends the chapter — it ends the FIELD.
+  // The reading is the same (contain, comfort) and the dossier still gets it,
+  // but the way out is over the seam and onto the tape. onComplete does not fire
+  // here; it fires at an exit, in chooseHorizonExit().
+  function completeNormalExit() {
+    if (state.phase !== CHUNK_SURF_PHASE.FINAL) return { handled: false, state };
+    dispatch({ type: 'SOURCE_NORMAL_EXIT' }, { immediate: true });
+    return enteredHorizon();
+  }
+
   function resolveFinalEncounter(result = {}) {
+    bossRequested = false;
     dispatch({ type: 'FINAL_ENCOUNTER_RESOLVED', result }, { immediate: true });
     if (state.finalEncounter.status !== SOURCE_FINAL_STATUS.RESOLVED) return { handled: false, state };
     dispatch({ type: 'SOURCE_COMPLETED' }, { immediate: true });
@@ -850,11 +1445,152 @@ export function createSourceSpaceRuntime({
     return { handled: true, state, completion: chunkSurfCompletion(state) };
   }
 
+  // Losing used to cost one tier of altitude and two and a half seconds, which
+  // is another way of saying it cost nothing. It costs the chapter now: it
+  // submits on your behalf, and the way out of the room you lost in is forward.
   function failFinalEncounter() {
+    bossRequested = false;
     dispatch({ type: 'FINAL_ENCOUNTER_LOST' }, { immediate: true });
-    protectionRemaining = Math.max(protectionRemaining, 4);
-    restartGraceRemaining = Math.max(restartGraceRemaining, 4);
-    return { handled: true, state, checkpoint: checkpointPosition(state.checkpointId) };
+    return enteredHorizon();
+  }
+
+  // Shared tail of both roads out. The body is put over the seam rather than
+  // walked there, because the field behind it is finished and re-entering it
+  // would be walking back into a chapter that has already closed.
+  function enteredHorizon() {
+    if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return { handled: false, state };
+    const entry = checkpointPosition('landing-horizon');
+    setPlayerPosition({ x: entry.x, y: entry.y, facing: entry.facing || 0 });
+    protectMoment(30);
+    protectionRemaining = Math.max(protectionRemaining, 30);
+    restartGraceRemaining = Math.max(restartGraceRemaining, 10);
+    return { handled: true, state, horizon: true, reason: state.horizon.reason, checkpoint: entry };
+  }
+
+  // THE HEAD THAT TALKS, AND WHERE IT STANDS.
+  //
+  // A third of the way in, and off to one side rather than across the path. He
+  // is not a gate and he is not a checkpoint; he is a thing you can walk past
+  // without ever finding out what he wanted, which is the only way the joke
+  // works. Everything he offers costs ten minutes and he says so.
+  const HORIZON_BUST_DEPTH = 168;
+  const HORIZON_BUST_LATERAL = -26;
+
+  // He is a bore, and he is a bore ON PURPOSE. Every line is him not answering,
+  // and the whole time he is being perfectly straight about what he is: a
+  // detour. The punchline is that he was never lying and you asked anyway.
+  const HORIZON_BUST_LINES = Object.freeze([
+    { who: 'bust', text: 'Oh, thank God. I have been out here with the orange side and the green side and nothing in between them but a seam.' },
+    { who: 'bust', text: 'Do not ask me the way. I will tell you, and you will not like how long it takes. I am told I am a detour. I have made my peace with it.' },
+    { who: 'you', text: 'How long.' },
+    { who: 'bust', text: 'Ten minutes. Possibly more, if you are bad at it. There are eight of them and they are extremely heavy and they go in an order.' },
+    { who: 'bust', text: 'Straight on is quicker. Straight on is always quicker. Straight on also arrives with nothing in your hands, but that is your business.' },
+    { who: 'bust', text: 'So. The long way, or the honest walk? I did warn you. I want that on the record. I AM the record, so it is on it.' },
+  ]);
+
+  // Where he stands, for anything that has to draw him.
+  //
+  // Depth passes straight through: one cell along the tape IS one tape unit,
+  // because 512 cells and 512 tape units are both 256 slices. Lateral does not
+  // — the corridor is wider than the picture — so the renderer scales it, and
+  // this reports the raw offset rather than guessing at the mapping.
+  function horizonBustPlacement() {
+    return { lateral: HORIZON_BUST_LATERAL, depth: HORIZON_BUST_DEPTH };
+  }
+
+  function horizonBustPoint() {
+    const o = landscapeOrigin();
+    return {
+      x: o.x + HORIZON_BUST_LATERAL,
+      y: o.y + SOURCE_HORIZON.from - HORIZON_BUST_DEPTH,
+    };
+  }
+
+  // How much of his patter the body has stood still for. He is a distraction by
+  // design: the offer is only made once he has been allowed to waste some.
+  //
+  // Deliberately not persisted: a reload puts him back at his first line, which
+  // is the right behaviour for a bore whose whole function is to waste time you
+  // have chosen to give him. What IS persisted is the exit he offers.
+  let horizonBustBeat = 0;
+  // The furthest whole slice the body has reached, so HORIZON_ADVANCED fires
+  // once per slice instead of once per footstep. Runtime-only; the durable
+  // figure is state.horizon.maxDepth, which this feeds.
+  let horizonDepthSlice = -1;
+
+  function talkToHorizonBust() {
+    if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return { handled: false, state };
+    horizonBustBeat += 1;
+    return { handled: true, beat: horizonBustBeat, offers: horizonBustBeat >= HORIZON_BUST_LINES.length };
+  }
+
+  function takeHorizonBustDetour() {
+    if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return { handled: false, state };
+    return chooseHorizonExit(HORIZON_EXIT.TOWER);
+  }
+
+  // Where he is on the tape, which is also when he is on it. The renderer, the
+  // score and the bust all read this one frame.
+  // Where the tail begins, as a fraction of the tape. One constant, so the
+  // score's fade and the picture's collapse cannot drift apart again.
+  const HORIZON_COLLAPSE_FROM = 0.88;
+  // How much slower than an ordinary walk the tape is. One number, because the
+  // right value is a matter of feel. Measured against the real base step of
+  // ~46ms a cell over 506 cells:
+  //
+  //     1   ~23s   score at 11x   the old sprint
+  //     6   ~140s  score at 1.9x  a walk, most of the piece heard
+  //     11  ~259s  score at 1:1   the whole piece, exactly once
+  //
+  // Six, because the piece wants to be heard and four and a half minutes of
+  // holding one key is a longer ask than anything else in the game makes.
+  const HORIZON_PACE = 6;
+  const progress01 = (depth) => Math.max(0, Math.min(1, depth / SOURCE_HORIZON.length));
+
+  function horizonFrame() {
+    if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return { active: false };
+    const o = landscapeOrigin();
+    const local = player.y - o.y;
+    const slice = sourceHorizonSlice(local);
+    const depth = sourceHorizonDepth(local);
+    return {
+      active: true,
+      reason: state.horizon.reason,
+      depth,
+      progress: depth / SOURCE_HORIZON.length,
+      seconds: sourceHorizonSeconds(local),
+      slice: slice.index,
+      sliceFraction: slice.fraction,
+      lateral: player.x - o.x,
+      // The tail of the piece is where the picture collapses. Nothing punishes
+      // him for standing in it; it simply stops having anything left to show.
+      collapsing: progress01(depth) > HORIZON_COLLAPSE_FROM,
+      // AND THE SAME THING AS A RAMP, WHICH IS WHAT THE RENDERER ASKED FOR.
+      //
+      // The boolean above is what the score reads. The renderer reads
+      // `collapse` — a 0..1 — and has done since it was written: it dims the
+      // void by `1 - collapse*0.85` and fades every splat by `1 - collapse*0.92`.
+      // Nothing ever set it, so `Number(undefined) || 0` pinned it at zero and
+      // the authored blackout was audio-only. The score went quiet over a
+      // picture that did not change.
+      collapse: HORIZON_COLLAPSE_FROM >= 1 ? 0
+        : Math.max(0, Math.min(1, (progress01(depth) - HORIZON_COLLAPSE_FROM) / (1 - HORIZON_COLLAPSE_FROM))),
+      // Declared rather than left to the renderer's `?? 1` default, so the one
+      // place that decides how bright the tape is, is this one.
+      exposure: 1,
+    };
+  }
+
+  function chooseHorizonExit(exit) {
+    if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return { handled: false, state };
+    dispatch({ type: 'HORIZON_EXIT_CHOSEN', exit }, { immediate: true });
+    if (state.horizon.exit !== exit) return { handled: false, state };
+    if (!completionSent) {
+      completionSent = true;
+      onComplete(chunkSurfCompletion(state), exitSnapshot());
+    }
+    protectMoment(30);
+    return { handled: true, state, exit, completion: chunkSurfCompletion(state) };
   }
 
   // THE SHEETS YOU CAN ACTUALLY READ.
@@ -874,42 +1610,114 @@ export function createSourceSpaceRuntime({
       if (i % 5 < 3) continue;                       // wall and ceiling sheets are out of reach
       const r0 = rand(state.seed, i, 101), r1 = rand(state.seed, i, 211);
       const reach = Math.max(36, Math.min(280, state.hallMaxDistance / CELL + 42));
-      out.push({
+      const candidate = {
         kind: 'source-sheet',
         id: `source-sheet-${i}`,
         index: i,
         x: (r1 - 0.5) * HALL_HALF_WIDTH * 1.72,
         y: -18 - r0 * reach,
-      });
+      };
+      // The visual paper field is allowed to continue through the impossible
+      // corridor. Interaction is not: every readable fake remains on the
+      // player's side of the physical boundary.
+      if (candidate.y < SOURCE_HALL_END_Y) continue;
+      out.push(candidate);
     }
     return out;
   }
 
   function focusAt(px, py, facing) {
     const candidates = [];
-    if (state.phase === CHUNK_SURF_PHASE.HAYSTACK) candidates.push({ kind: 'haystack-page', id: 'source-page', ...haystackPagePoint() });
+    if (state.phase === CHUNK_SURF_PHASE.HAYSTACK) candidates.push({
+      kind: 'haystack-page', id: 'source-page', ...haystackPagePoint(), focusPriority: 10, focusRadius: 7,
+    });
     candidates.push(...readablePages());
+    if (state.phase === CHUNK_SURF_PHASE.HORIZON) {
+      const bust = horizonBustPoint();
+      candidates.push({ kind: 'horizon-bust', id: 'horizon-bust', ...bust, focusPriority: 9, focusRadius: 8 });
+      return (lastFocus = focusedCandidate(px, py, facing, candidates, 8));
+    }
     if ([CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase)) {
       for (const id of Object.keys(LANDMARK_OFFSETS)) {
+        if (state.phase === CHUNK_SURF_PHASE.FINAL && id === 'final-page') continue;
         const point = landmarkPoint(id);
         if (point) candidates.push({ kind: 'landmark', available: available(id), ...point });
       }
+      if (state.phase === CHUNK_SURF_PHASE.FINAL) {
+        const final = landmarkPoint('final-page');
+        candidates.push({ kind: 'normal-exit', id: 'source-normal-exit', x: final.x - 5, y: final.y - 4, focusPriority: 8, focusRadius: 9 });
+        if (sourceBossExposed(state.sourceContacts)) {
+          candidates.push({
+            kind: 'boss-fault', id: 'source-boss-fault', x: final.x + 5, y: final.y - 4,
+            available: !!state.profile?.bestEligible, focusPriority: 9, focusRadius: 9,
+          });
+        }
+      }
     }
-    lastFocus = focusedCandidate(px, py, facing, candidates, state.phase === CHUNK_SURF_PHASE.HAYSTACK ? 5 : 8);
+    lastFocus = focusedCandidate(px, py, facing, candidates, state.phase === CHUNK_SURF_PHASE.HAYSTACK ? 6 : 8);
     if (state.armedRedaction && (lastFocus?.kind !== 'redaction' || lastFocus.id !== state.armedRedaction)) dispatch({ type: 'REDACTION_CANCELLED' });
     return lastFocus;
   }
 
   function onStep(from, to) {
     player = { ...player, ...to };
+    if(captureMovementRequired){
+      if(!captureMovementAnchor)captureMovementAnchor={x:Number(from.x),y:Number(from.y)};
+      if(Math.hypot(Number(to.x)-captureMovementAnchor.x,Number(to.y)-captureMovementAnchor.y)>=1.5){
+        captureMovementRequired=false;
+        captureMovementAnchor=null;
+      }
+    }
+    if (state.phase === CHUNK_SURF_PHASE.HORIZON) {
+      // Furthest in, not current — walking back up the tape is allowed and is
+      // most of the point, but it must not un-earn the ground he has decoded.
+      const depth = sourceHorizonDepth(to.y - landscapeOrigin().y);
+      // A SAVE PER FOOTSTEP IS NOT A CHECKPOINT.
+      //
+      // This dispatched on every step — eleven a second at pace — and every
+      // dispatch runs setState, which calls onState, which commits the save.
+      // What it was persisting is a monotone maxDepth that nothing reads back.
+      // Only tell the store when the furthest point actually moves, and only in
+      // whole slices, so the write rate follows the tape rather than the legs.
+      const slice = Math.floor(depth / SOURCE_HORIZON.sliceMetres);
+      if (slice > horizonDepthSlice) {
+        horizonDepthSlice = slice;
+        dispatch({ type: 'HORIZON_ADVANCED', depth });
+      }
+      // THE DEFAULT EXIT IS DOING NOTHING. Walk far enough and the recording
+      // runs out, and where it runs out is the nave. This is the exit that
+      // cannot be missed, which is exactly why it is the one that costs nothing
+      // and gives nothing — no bells, no advantage, just the way on.
+      if (depth >= SOURCE_HORIZON.length - 1) chooseHorizonExit(HORIZON_EXIT.CHAPEL);
+      return;
+    }
     if (state.phase === CHUNK_SURF_PHASE.HALL) {
       if (to.y > 1 && from.y <= 1) onScare({ reason: 'turned-back', at: { x: to.x, y: to.y } });
+      // A retreat is a lived event, not a coordinate leak. Record only the
+      // semantic fact after the player has genuinely made progress into the
+      // corridor, and delay its eligibility so the next sheet cannot visibly
+      // answer the input that produced it.
+      if (state.hallMaxDistance >= 10 && to.y > from.y + 0.35) {
+        rememberDialogueFact(SOURCE_DIALOGUE_FACT.TURNED_BACK_IN_SEARCH);
+      }
       const distance = Math.max(0, -to.y * CELL);
       dispatch({ type: 'HALL_ADVANCED', distance });
-      if (distance >= HAYSTACK_METRES) {
-        dispatch({ type: 'HAYSTACK_REACHED', origin: { x: to.x, y: to.y }, slot: (state.seed >>> 0) % 12 }, { immediate: true });
+      if (state.pageStage >= 1) rememberDialogueFact(SOURCE_DIALOGUE_FACT.RAIN_STARTED);
+      if (distance >= SOURCE_HALL_END_METRES) {
+        dispatch({
+          type: 'HAYSTACK_REACHED',
+          origin: { x: 0, y: SOURCE_HALL_END_Y },
+          slot: (state.seed >>> 0) % 12,
+        }, { immediate: true });
       }
       return;
+    }
+    if (state.phase === CHUNK_SURF_PHASE.HAYSTACK) {
+      const still = haystackPagePoint();
+      const before = Math.hypot(from.x - still.x, from.y - still.y);
+      const after = Math.hypot(to.x - still.x, to.y - still.y);
+      if (after <= 6) rememberDialogueFact(SOURCE_DIALOGUE_FACT.APPROACHED_STILL_PAGE);
+      if (before <= 6 && after >= 9) rememberDialogueFact(SOURCE_DIALOGUE_FACT.APPROACHED_THEN_RETREATED);
     }
     if ([CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase)) {
       // Walking near a landmark simply notes you were there (lore, and the record
@@ -938,17 +1746,27 @@ export function createSourceSpaceRuntime({
     const focus = focusAt(px, py, facing);
     if (!focus) return { handled: false };
     if (focus.kind === 'source-sheet') {
-      const page = sourcePageFor(focus.index, state.pageStage, state.seed);
+      const assigned = assignSourceDialoguePage(sourceDialogue, SOURCE_PAGES, {
+        sheetId: focus.id,
+        hallStage: state.pageStage,
+      });
+      if (assigned.assigned) commitDialogue(assigned.state, { immediate: true });
+      const page = assigned.page;
       readSheets.add(focus.id);
-      // No dispatch and no protection: reading the paperwork is not progress and
-      // must not buy the player a pause from what is behind them.
+      // Reading is not safety. The physical sheet is lazily assigned once and
+      // persisted, so revisiting or reloading can never rewrite it; in the
+      // haystack, stopping on a decoy still feeds the existing pressure field.
+      if (searchSpanActiveFor(state)) {
+        haystackWrongReads += 1;
+        haystackReadImpulse = Math.min(1, haystackReadImpulse + 0.42);
+      }
       return { handled: true, kind: 'page', page, text: '', event: 'page-read' };
     }
     if (focus.kind === 'haystack-page') {
       const page = haystackPagePoint();
       dispatch({
         type: 'HAYSTACK_PAGE_FOUND',
-        landscapeOrigin: { x: page.x, y: page.y - 8 },
+        landscapeOrigin: sourceLandscapeOriginAfterHaystack(),
       }, { immediate: true });
       transformElapsed = 0;
       // NO LINE HERE. This used to answer with 'One sheet does not move…', which
@@ -963,6 +1781,34 @@ export function createSourceSpaceRuntime({
       protectMoment(5);
       const room = chunkSurfRoom(focus.id);
       return { handled: true, text: room.inspect, source: exactLine(focus.sector, 0) };
+    }
+    if (focus.kind === 'horizon-bust') {
+      const talk = talkToHorizonBust();
+      return {
+        handled: true,
+        event: talk.offers ? 'horizon-bust-offer' : 'horizon-bust',
+        line: HORIZON_BUST_LINES[Math.min(talk.beat, HORIZON_BUST_LINES.length) - 1],
+        beat: talk.beat,
+        text: '',
+      };
+    }
+    if (focus.kind === 'normal-exit') {
+      const completed = completeNormalExit();
+      return { ...completed, event: 'horizon', text: '' };
+    }
+    if (focus.kind === 'boss-fault') {
+      const request = requestBossBattle();
+      if (request.available) return { handled: true, event: 'boss-requested', text: '' };
+      // Two ways to be inert, and they are not the same refusal. Without the
+      // insights there is nothing here he knows how to address; without the
+      // night having taken him, there is nothing here he believes is listening.
+      return {
+        handled: true,
+        event: 'boss-inert',
+        text: request.exposed
+          ? 'The return path is exposed and it is not for you. Nothing in this building has laid a hand on you tonight.'
+          : 'The return path is exposed. You have not heard enough of it to say anything back.',
+      };
     }
     return { handled: false };
   }
@@ -1000,8 +1846,22 @@ export function createSourceSpaceRuntime({
   function tick(dt, { px = player.x, py = player.y, facing = player.facing } = {}) {
     player = { x: px, y: py, facing };
     const elapsed = Math.max(0, Number(dt) || 0);
+    phaseElapsed += elapsed;
+    const searchActive = searchSpanActiveFor(state);
+    if (searchActive) searchElapsed += elapsed;
+    else if (state.phase === CHUNK_SURF_PHASE.HALL) searchElapsed = 0;
+    if ([CHUNK_SURF_PHASE.HALL, CHUNK_SURF_PHASE.HAYSTACK].includes(state.phase)) refreshStandingPressure();
     protectionRemaining = Math.max(0, protectionRemaining - elapsed);
     restartGraceRemaining = Math.max(0, restartGraceRemaining - elapsed);
+    if (state.firstLiftCompleted && !state.landingWeatherSpent && landingRainRemaining > 0) {
+      landingRainRemaining = Math.max(0, landingRainRemaining - elapsed);
+      if (landingRainRemaining <= 0) dispatch({ type: 'SOURCE_LANDING_WEATHER_SPENT' }, { immediate: true });
+    }
+    if (searchActive) {
+      haystackReadImpulse = Math.max(0, haystackReadImpulse - elapsed * 0.42);
+    } else {
+      haystackReadImpulse = 0;
+    }
     if (state.phase === CHUNK_SURF_PHASE.TRANSFORMING) {
       transformElapsed = Math.min(SOURCE_TRANSFORM_SECONDS, transformElapsed + elapsed);
       if (transformElapsed >= SOURCE_TRANSFORM_SECONDS) dispatch({ type: 'TRANSFORMATION_COMPLETED' }, { immediate: true });
@@ -1016,12 +1876,21 @@ export function createSourceSpaceRuntime({
     } else if (Number.isFinite(distance) && distance < lastObjectiveDistance - 0.75) {
       noProgressSeconds = 0;
       lastObjectiveDistance = distance;
-    } else if (Number.isFinite(distance) && !nearProtectedMoment()) {
+    } else if (Number.isFinite(distance) && (!nearProtectedMoment() || !state.firstLiftCompleted) && !traversal && !pendingContact) {
       noProgressSeconds += elapsed;
+      if (noProgressSeconds >= 8) rememberDialogueFact(SOURCE_DIALOGUE_FACT.STOOD_STILL_UNDER_PRESSURE);
     }
   }
 
-  function pageInstances(px, py, {time=0,reducedMotion=false}={}) {
+  function paperDocumentIdForSheet(index) {
+    const sheetId=`source-sheet-${index}`;
+    const assignedId=sourceDialogue.assignments?.[sheetId];
+    if(assignedId)return `source-page:${assignedId}`;
+    const fallback=sourcePageFor(index,state.pageStage,state.seed);
+    return fallback?`source-page:${fallback.id}`:ambientPaperDocumentId(state.seed,index);
+  }
+
+  function pageInstances(px, py, {time=0,reducedMotion=false,objectiveHints='full',flashMode='full'}={}) {
     if (![CHUNK_SURF_PHASE.HALL, CHUNK_SURF_PHASE.HAYSTACK, CHUNK_SURF_PHASE.TRANSFORMING].includes(state.phase)) return [];
     const count = pageCount(state.hallMaxDistance);
     const out = [];
@@ -1057,40 +1926,107 @@ export function createSourceSpaceRuntime({
         matrix: sourceMatrix({ x: rx, y: elevation, z: ry, scaleX: 1.05, scaleY: 1.05, scaleZ: 1.05, pitch, yaw, roll }),
         zone: ZONE.sourceSpace,
         structural: false,
+        paperIndex: paperAtlasIndex(paperDocumentIdForSheet(i)),
+        semantic: 'physical-paper',
       });
     }
-    if (state.phase === CHUNK_SURF_PHASE.HAYSTACK || state.phase === CHUNK_SURF_PHASE.TRANSFORMING) {
+
+    // THE AIR ITSELF IS FULL OF PAPER.
+    //
+    // Static authored sheets make density; this local, noninteractive swarm
+    // makes weather. Three deterministic flow families send sheets at the
+    // camera, past the player, and across the corridor. They are presentation
+    // only: readable page addresses remain world-authoritative and stable.
+    const searchWind = state.phase === CHUNK_SURF_PHASE.HAYSTACK
+      ? 1
+      : clamp01(((state.hallMaxDistance || 0) - 56) / 56);
+    const gustCount = reducedMotion
+      ? Math.floor(searchWind * 18)
+      : Math.floor(searchWind * (state.phase === CHUNK_SURF_PHASE.HAYSTACK ? 96 : 64));
+    if (gustCount > 0) {
+      const forward = [[0, -1], [1, 0], [0, 1], [-1, 0]][((player.facing % 4) + 4) % 4];
+      const right = [-forward[1], forward[0]];
+      const centerX = px * CELL, centerZ = py * CELL;
+      for (let i = 0; i < gustCount; i += 1) {
+        const a = rand(state.seed, i, 1201);
+        const b = rand(state.seed, i, 1213);
+        const c = rand(state.seed, i, 1229);
+        const d = rand(state.seed, i, 1249);
+        const cycle = 4.2 + a * 3.8;
+        const progress = reducedMotion
+          ? b
+          : ((Math.max(0, Number(time) || 0) / cycle + b) % 1);
+        const flow = i % 3;
+        let longitudinal = 0, lateral = 0;
+
+        if (flow === 0) {
+          // Head-on: from in front of the player to well behind them.
+          longitudinal = (11 + c * 7) - progress * (25 + d * 11);
+          lateral = (a - 0.5) * 7.5;
+        } else if (flow === 1) {
+          // Crosswind: sheets traverse the whole sightline.
+          longitudinal = (a - 0.5) * 14;
+          lateral = (-10 - c * 4) + progress * (20 + c * 8);
+        } else {
+          // Overtake: something catches you from behind and keeps going.
+          longitudinal = (-8 - c * 5) + progress * (20 + d * 9);
+          lateral = (b - 0.5) * 8.5;
+        }
+
+        const arch = Math.sin(Math.PI * progress);
+        const lift = reducedMotion
+          ? 0.22 + c * 0.45
+          : 0.28 + arch * (1.2 + c * 2.1) + Math.sin(time * (1.3 + d) + i) * 0.14;
+        const wx = centerX + forward[0] * longitudinal + right[0] * lateral;
+        const wz = centerZ + forward[1] * longitudinal + right[1] * lateral;
+        const spin = reducedMotion ? (c - 0.5) * 0.3 : time * (1.2 + d * 2.6) + i * 0.61;
+        out.push({
+          id: `source-wind-sheet-${i}`,
+          mesh: 'loose_note',
+          matrix: sourceMatrix({
+            x: wx,
+            y: lift,
+            z: wz,
+            scaleX: 0.90 + a * 0.30,
+            scaleY: 0.90 + a * 0.30,
+            scaleZ: 0.90 + a * 0.30,
+            pitch: reducedMotion ? 0.12 : 0.22 + Math.sin(spin * 0.7) * 0.68,
+            yaw: spin,
+            roll: reducedMotion ? (b - 0.5) * 0.25 : Math.sin(spin * 1.13) * 1.05,
+          }),
+          zone: ZONE.sourceSpace,
+          structural: false,
+          paperIndex: paperAtlasIndex(ambientPaperDocumentId(state.seed, 10000 + i)),
+          noShadow: true,
+          semantic: 'source-wind-paper',
+        });
+      }
+    }
+
+    if (state.phase === CHUNK_SURF_PHASE.HAYSTACK) {
       const correct = haystackPagePoint();
+      const guidance = state.phase === CHUNK_SURF_PHASE.HAYSTACK
+        ? haystackPageGuidance({ noProgressSeconds, hints: objectiveHints, flash: flashMode, time })
+        : { visible: false, strength: 0 };
       out.push({
         id: 'source-sheet-interactive',
         mesh: 'loose_note',
-        matrix: sourceMatrix({ x: correct.x * CELL, y: 0.021, z: correct.y * CELL, scaleX: 1.08, scaleY: 1.08, scaleZ: 1.08 }),
+        matrix: sourceMatrix({ x: correct.x * CELL, y: 0.026, z: correct.y * CELL, scaleX: 1.12, scaleY: 1.12, scaleZ: 1.12 }),
         zone: ZONE.sourceSpace,
         structural: false,
+        paperIndex: paperAtlasIndex('source-real-still'),
         interactiveId: 'source-page',
+        ...(guidance.visible ? { emissive: [
+          guidance.color?.[0] ?? 1.0,
+          guidance.color?.[1] ?? 0.52,
+          guidance.color?.[2] ?? 0.12,
+          guidance.strength,
+        ] } : null),
       });
     }
     return out;
   }
 
-  function pageTextInstances(px, py, options) {
-    const pages = pageInstances(px, py, options);
-    return pages.map((page, index) => {
-      const line = exactLine('hall', index);
-      const m = page.matrix || identity();
-      // The text plane is slightly enlarged and lifted to prevent z-fighting.
-      const decal = new Float32Array(m);
-      decal[12]+=m[4]*.008;decal[13]+=m[5]*.008;decal[14]+=m[6]*.008;
-      return {
-        id: `source-sheet-text-${index}`,
-        sourceId: line?.id,
-        text: line?.text || '',
-        matrix: mul(decal,mul(rotX(-Math.PI/2),scale(0.28,0.28,0.28))),
-        color: [0.16, 0.18, 0.16, 0.92],
-        semantic: 'page-source',
-      };
-    });
-  }
 
   function landscapeTextInstances() {
     if (![CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase)) return [];
@@ -1131,37 +2067,22 @@ export function createSourceSpaceRuntime({
         });
       }
     }
-    if (state.phase === CHUNK_SURF_PHASE.FINAL || state.phase === CHUNK_SURF_PHASE.COMPLETED) {
-      const final = landmarkPoint('final-page');
-      for (const redaction of REDACTIONS) {
-        const line = sourceLineByAnchor(redaction.sourceAnchor);
-        out.push({
-          id: `source-redaction-${redaction.id}`,
-          sourceId: line?.id,
-          text: line?.text || '',
-          matrix: sourceMatrix({ x: final.x + redaction.dx, y: 1.5, z: final.y - 4, scaleX: 3.6, scaleY: 0.58 }),
-          color: state.redaction === redaction.id ? [0.015, 0.015, 0.015, 1]
-            : state.armedRedaction === redaction.id ? [1, 0.08, 0.05, 1]
-              : state.armedRedaction ? [0.24, 0.24, 0.23, 0.55] : [0.96, 0.93, 0.82, 1],
-          semantic: `redaction:${redaction.id}`,
-          interactiveId: redaction.id,
-        });
-      }
-    }
     return out;
   }
 
   function densityWakeTextInstances(presence = null, time = 0) {
-    if (![CHUNK_SURF_HUSH_STAGE.STALK, CHUNK_SURF_HUSH_STAGE.HUNT, CHUNK_SURF_HUSH_STAGE.FINAL].includes(state.hushStage)) return [];
+    const runtimeHush = hushMode();
+    if (!runtimeHush.searchActive
+      && ![CHUNK_SURF_HUSH_STAGE.STALK, CHUNK_SURF_HUSH_STAGE.HUNT, CHUNK_SURF_HUSH_STAGE.FINAL].includes(state.hushStage)) return [];
     const hx=Number(presence?.x),hy=Number(presence?.y);
     if(!presence?.active||!Number.isFinite(hx)||!Number.isFinite(hy))return[];
     const velocity=presence?.velocity||{x:0,y:0};
     const direction=Math.hypot(Number(velocity.x)||0,Number(velocity.y)||0)>.02
       ?Math.atan2(Number(velocity.y)||0,Number(velocity.x)||0):time*.08;
     const lines = sourceLines('hush');
-    // HUSH never resolves into a body. Source can only show the architecture
-    // failing to hold its lines around a moving, deliberately empty centre: a
-    // wide wake of displaced fragments, never a head, torso, face, or outline.
+    // The visible body is now the anchor; this wake is what Source does AROUND
+    // it. Keep the displaced text broad enough that it reads as a pressure field
+    // rather than a second silhouette competing with the authored HUSH card.
     return Array.from({length:9},(_,index)=>{
       const side=index%2?1:-1;
       const behind=5+Math.floor(index/2)*2.4;
@@ -1222,6 +2143,30 @@ export function createSourceSpaceRuntime({
       overlapLayer: 'overlap',
     };
   };
+
+  function resolvedIntervalTextInstances(){
+    const count=normalizeSourceContactState(state.sourceContacts).insights.length;
+    if(!count)return[];
+    const o=landscapeOrigin(),depths=[-52,-138,-238],out=[];
+    for(let index=0;index<count;index+=1){
+      const worldY=o.y+depths[index],floor=sourceLandscapeFloorAt(0,depths[index]);
+      for(const side of [-1,1])out.push(sourcePanel({
+        id:`source-resolved-interval-${index}-${side<0?'left':'right'}`,
+        sector:index===0?'hall':index===1?'recordist':'body',lineIndex:17+index*23,
+        x:(o.x+side*5.5)*CELL,y:floor+.3,z:worldY*CELL,
+        scaleX:1.1,scaleY:5.6,yaw:Math.PI/2,
+        color:[.42,.88,.74,.76],semantic:'source-resolved-interval',overlapLayer:'resolved',
+      }));
+      out.push(sourcePanel({
+        id:`source-resolved-interval-${index}-span`,
+        sector:index===0?'hall':index===1?'recordist':'body',lineIndex:29+index*19,
+        x:o.x*CELL,y:floor+3.1,z:worldY*CELL,
+        scaleX:5.8,scaleY:.34,
+        color:[.68,1,.84,.88],semantic:'source-resolved-interval',overlapLayer:'resolved',
+      }));
+    }
+    return out;
+  }
 
   const sectorAtHallDepth = (depth) => ['hall', 'recordist', 'student', 'workOrder', 'body', 'hush'][Math.abs(Math.floor(depth / 18)) % 6];
   const routeVisual = (localX, localY) => {
@@ -1360,6 +2305,35 @@ export function createSourceSpaceRuntime({
       }));
     }
 
+    // The old connectors were only floor interpolation. These columns are the
+    // literal field lifts: readable from the previous tier, open on both ends,
+    // and tall enough that their travel direction is visible before commitment.
+    for (const lift of SOURCE_LIFTS) {
+      const worldX = o.x + lift.x, worldZ = o.y + lift.y;
+      if (!ownsWorld(worldX, worldZ)) continue;
+      const lower = SOURCE_TIER_BY_ID[lift.from]?.height ?? 0;
+      const upper = SOURCE_TIER_BY_ID[lift.to]?.height ?? lower;
+      const rows = Math.max(8, Math.ceil((upper - lower) / 0.42));
+      for (const side of [-1, 1]) for (let row = 0; row <= rows; row += 1) {
+        const t = row / rows;
+        out.push(sourcePanel({
+          id: `source-lift-${lift.id}-${side}-${row}`,
+          sector: row % 3 === 0 ? 'hush' : 'recordist',
+          lineIndex: row * 13 + (side > 0 ? 7 : 0),
+          x: (worldX + side * (lift.halfWidth - 0.5)) * CELL,
+          y: lower + 0.18 + (upper - lower) * t,
+          z: worldZ * CELL,
+          scaleX: 2.2,
+          scaleY: 0.26,
+          yaw: Math.PI / 2,
+          roll: side * 0.025,
+          color: row % 4 === 0 ? [1, 0.22, 0.10, 0.96] : [0.12, 0.92, 1, 0.82],
+          semantic: `text-traversal:lift:${lift.id}`,
+          overlapLayer: row % 2 ? 'overlap' : 'base',
+        }));
+      }
+    }
+
     // The field's edge is a WALL OF CODE, not an invisible boundary. Where the
     // ground runs out at the left/right perimeter, tall columns of source strings
     // stand up out of the floor so you can SEE the wall — the "made of code" of
@@ -1402,13 +2376,20 @@ export function createSourceSpaceRuntime({
     if (state.phase === CHUNK_SURF_PHASE.FINAL || state.phase === CHUNK_SURF_PHASE.COMPLETED) {
       const final = landmarkPoint('final-page');
       const base=sourceLandscapeFloorAt(LANDMARK_OFFSETS['final-page'].x,LANDMARK_OFFSETS['final-page'].y);
-      REDACTIONS.forEach((redaction, index) => out.push(sourcePanel({
-        id: `source-text-redaction-${redaction.id}`, sector: 'final', lineIndex: 9 + index, redact: true,
-        x: (final.x + redaction.dx) * CELL, y: base+1.15, z: (final.y - 4) * CELL,
-        scaleX: 3.4, scaleY: 0.36,
-        color: state.armedRedaction === redaction.id ? [1, 0.16, 0.10, 1] : [0.88, 0.94, 0.86, 1],
-        semantic: `text-endpoint:redaction:${redaction.id}`, interactiveId: redaction.id,
-      })));
+      out.push(sourcePanel({
+        id: 'source-text-normal-exit', sector: 'final', lineIndex: 9,
+        x: (final.x - 5) * CELL, y: base + 1.15, z: (final.y - 4) * CELL,
+        scaleX: 3.8, scaleY: 0.42,
+        color: [0.88, 0.94, 0.86, 1],
+        semantic: 'text-endpoint:normal-exit', interactiveId: 'source-normal-exit',
+      }));
+      if (sourceBossExposed(state.sourceContacts)) out.push(sourcePanel({
+        id: 'source-text-boss-fault', sector: 'hush', lineIndex: 6, redact: true,
+        x: (final.x + 5) * CELL, y: base + 1.15, z: (final.y - 4) * CELL,
+        scaleX: 3.8, scaleY: 0.42,
+        color: state.profile?.bestEligible ? [1, 0.16, 0.10, 1] : [0.34, 0.34, 0.32, 0.72],
+        semantic: 'text-endpoint:boss-fault', interactiveId: 'source-boss-fault',
+      }));
     }
     return out;
   }
@@ -1429,6 +2410,26 @@ export function createSourceSpaceRuntime({
     'upright_piano', 'grand_piano', 'marimba', 'timpani',
   ]);
   const SOURCE_LEAK_COUNT = 120;
+
+  function landingPropInstances() {
+    return [...sourceLandingPropPlacements(landscapeOrigin()),...sourceLandingDoorPlacements(landscapeOrigin())].map((placement) => ({
+      id: placement.id,
+      mesh: placement.mesh,
+      matrix: sourceMatrix({
+        x: placement.x * CELL,
+        y: placement.y,
+        z: placement.z * CELL,
+        yaw: placement.yaw,
+        scaleX: placement.scaleX ?? placement.scale,
+        scaleY: placement.scaleY ?? placement.scale,
+        scaleZ: placement.scaleZ ?? placement.scale,
+      }),
+      zone: ZONE.sourceSpace,
+      structural: true,
+      sourcePropId: placement.sourcePropId,
+      sourceDoorId: placement.sourceDoorId,
+    }));
+  }
 
   function structurePropInstances(px, py) {
     const o = landscapeOrigin();
@@ -1466,9 +2467,11 @@ export function createSourceSpaceRuntime({
   }
 
   function surfaceArchitectureInstances(px, py) {
-    if (![CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase)) return [];
+    if (![CHUNK_SURF_PHASE.TRANSFORMING, CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase)) return [];
     const o = landscapeOrigin();
-    const out = structurePropInstances(px, py);
+    const out = landingPropInstances();
+    if (state.phase === CHUNK_SURF_PHASE.TRANSFORMING) return out;
+    out.push(...structurePropInstances(px, py));
     for (let i = 0; i < SOURCE_LEAK_COUNT; i += 1) {
       const localX = (rand(state.seed, i, 71) - 0.5) * LANDSCAPE_W * 0.94;
       const depth = 8 + rand(state.seed, i, 131) * (LANDSCAPE_H - 16);
@@ -1550,8 +2553,8 @@ export function createSourceSpaceRuntime({
   }
 
   function propInstances(px = player.x, py = player.y, options = {}) {
-    if ([CHUNK_SURF_PHASE.HALL, CHUNK_SURF_PHASE.HAYSTACK, CHUNK_SURF_PHASE.TRANSFORMING].includes(state.phase)) return pageInstances(px, py, options);
-    if ([CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase)) {
+    if ([CHUNK_SURF_PHASE.HALL, CHUNK_SURF_PHASE.HAYSTACK].includes(state.phase)) return pageInstances(px, py, options);
+    if ([CHUNK_SURF_PHASE.TRANSFORMING, CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase)) {
       const arch = surfaceArchitectureInstances(px, py);
       if (options.reducedMotion || state.phase === CHUNK_SURF_PHASE.COMPLETED) return arch;
       return [...arch, ...driftInstances(px, py, options.time || 0)];
@@ -1585,7 +2588,7 @@ export function createSourceSpaceRuntime({
     const minTileX = Math.floor((o.x - LANDSCAPE_W / 2) / SOURCE_ARCH_TILE_CELLS);
     const maxTileX = Math.floor((o.x + LANDSCAPE_W / 2) / SOURCE_ARCH_TILE_CELLS);
     const minTileY = Math.floor((o.y - LANDSCAPE_H) / SOURCE_ARCH_TILE_CELLS);
-    const maxTileY = Math.floor((o.y + 4) / SOURCE_ARCH_TILE_CELLS);
+    const maxTileY = Math.floor((o.y + LANDSCAPE_FRONT) / SOURCE_ARCH_TILE_CELLS);
     const transformBand = state.phase === CHUNK_SURF_PHASE.TRANSFORMING
       ? Math.floor(clamp01(transformElapsed / SOURCE_TRANSFORM_SECONDS) * 8) : 8;
     const progressKey = `${state.phase}:${state.pageStage}:${transformBand}:${state.hasFork ? 1 : 0}:${state.tuned.includes('recordist-loop') ? 1 : 0}:${state.tuned.includes('body-room') ? 1 : 0}:${o.x}:${o.y}`;
@@ -1632,6 +2635,7 @@ export function createSourceSpaceRuntime({
     const cached = cachedArchitecture(px, py);
     const dynamicInstances = [
       ...interactionTextInstances(),
+      ...resolvedIntervalTextInstances(),
       ...densityWakeTextInstances(presence?.active ? presence : null, reducedMotion ? 0 : time),
     ];
     return {
@@ -1644,6 +2648,8 @@ export function createSourceSpaceRuntime({
       dynamicInstances,
       look: sourceLook(),
       objective: sourceObjective(),
+      weather: { rain: pressureFrame({ reducedMotion }).rain, moon: 1, clouds: 1 },
+      landing: sourceLandingContract(),
     };
   }
 
@@ -1655,31 +2661,75 @@ export function createSourceSpaceRuntime({
   const navigation = {
     canOccupy: (x, y) => !!cellAt(x, y),
     resolveMove(from, target, maxDistance) {
-      if (lineOfSight(cellAt, from, target)) {
+      if (lineOfSight(geometry.canStep, from, target)) {
         const dx = target.x - from.x, dy = target.y - from.y, d = Math.hypot(dx, dy);
         if (d < 0.001) return { ...from };
         const step = Math.min(d, maxDistance);
         const direct = { x: from.x + dx / d * step, y: from.y + dy / d * step };
-        if (cellAt(direct.x, direct.y)) return direct;
+        if (cellAt(direct.x, direct.y) && geometry.canStep(from.x, from.y, direct.x, direct.y).ok) return direct;
       }
       const key = `${Math.floor(from.x)},${Math.floor(from.y)}:${Math.floor(target.x)},${Math.floor(target.y)}`;
-      if (pathCache.key !== key || pathCache.path.length < 2) pathCache = { key, path: aStar(cellAt, from, target) };
+      if (pathCache.key !== key || pathCache.path.length < 2) {
+        pathCache = { key, path: aStar(geometry.canStep, (x, y) => !!cellAt(x, y), from, target) };
+      }
       while (pathCache.path.length > 1 && Math.hypot(pathCache.path[0].x - from.x, pathCache.path[0].y - from.y) < 0.45) pathCache.path.shift();
       const next = pathCache.path[0];
       if (!next) return { ...from };
       const dx = next.x - from.x, dy = next.y - from.y, d = Math.hypot(dx, dy);
       const step = Math.min(d, maxDistance);
       const moved = d > 0.001 ? { x: from.x + dx / d * step, y: from.y + dy / d * step } : { ...from };
-      return cellAt(moved.x, moved.y) ? moved : { ...from };
+      return cellAt(moved.x, moved.y) && geometry.canStep(from.x, from.y, moved.x, moved.y).ok ? moved : { ...from };
     },
   };
 
+  function beginHushContact() {
+    if (!hushMode().colliding || traversal || pendingContact || captureMovementRequired) return null;
+    rememberDialogueFact(SOURCE_DIALOGUE_FACT.HUSH_CONTACT, true, { latencyReads: 0 });
+    pendingContact = nextSourceContact(state.sourceContacts, { seed: state.seed });
+    protectionRemaining = Math.max(protectionRemaining, 30);
+    return pendingContact;
+  }
+
+  function contactDropTier() {
+    const o = landscapeOrigin();
+    const current = sourceTierAt(player.y - o.y).id;
+    if (current === 'return') return 'trace';
+    if (current === 'trace') return 'fork';
+    return 'arrival';
+  }
+
+  function resolveHushContactChoice(choiceId) {
+    if (!pendingContact) return { handled: false, checkpoint: checkpointPosition() };
+    const encounter = pendingContact;
+    const before = normalizeSourceContactState(state.sourceContacts);
+    const contact = resolveSourceContact(before, encounter, choiceId);
+    const insightGained = contact.insights.find((id) => !before.insights.includes(id)) || null;
+    const dropTier = contactDropTier();
+    const checkpointId = tierCheckpointId(dropTier);
+    dispatch({ type: 'SOURCE_CONTACT_RESOLVED', contact, checkpointId }, { immediate: true });
+    pendingContact = null;
+    protectionRemaining = Math.max(0, 1.25);
+    restartGraceRemaining = Math.max(restartGraceRemaining, 5);
+    captureMovementRequired = true;
+    captureMovementAnchor = { ...checkpointPosition(checkpointId) };
+    noProgressSeconds = 0;
+    return {
+      handled: true,
+      checkpoint: checkpointPosition(checkpointId),
+      insightGained,
+      bossExposed: sourceBossExposed(contact),
+      contact,
+      encounterId: encounter.id,
+    };
+  }
+
+  // Compatibility entry point for deterministic tests and old callers. The
+  // live game always opens the authored choice scene before relocation.
   function handleHushContact() {
-    if (!hushMode().colliding) return checkpointPosition();
-    dispatch({ type: 'HUSH_CONTACT' }, { immediate: true });
-    restartGraceRemaining = 4;
-    protectionRemaining = Math.max(protectionRemaining, 1.25);
-    return checkpointPosition();
+    const encounter = beginHushContact();
+    if (!encounter) return checkpointPosition();
+    const fallback = encounter.choices.find((choice) => !choice.aligns) || encounter.choices[0];
+    return resolveHushContactChoice(fallback?.id).checkpoint;
   }
 
   function sourceSurfaceLines(limit = 96) {
@@ -1712,16 +2762,56 @@ export function createSourceSpaceRuntime({
     };
   }
 
-  function setPlayerPosition(next) { player = { ...player, ...(next || {}) }; }
+  function setPlayerPosition(next) {
+    const candidate = { ...player, ...(next || {}) };
+    if ([CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase)) {
+      const o = landscapeOrigin();
+      const feature = sourceFeatureAt(candidate.x - o.x, candidate.y - o.y);
+      if (feature?.kind === 'lift') {
+        const lift = sourceLiftById(feature.id);
+        const upperSide = candidate.y - o.y <= lift.y;
+        candidate.y = o.y + lift.y + (upperSide ? -(lift.depth + 1.25) : lift.depth + 1.25);
+      } else if (feature?.kind === 'chute') {
+        const stable=checkpointPosition();
+        candidate.x=stable.x;candidate.y=stable.y;candidate.facing=stable.facing;
+      }
+    }
+    player = candidate;
+    if(captureMovementRequired&&!captureMovementAnchor){
+      captureMovementAnchor={x:candidate.x,y:candidate.y};
+    }
+  }
+
+  function textSpaceActive() {
+    return state.firstLiftCompleted
+      && [CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase);
+  }
+
+  function localLights() {
+    const understood=normalizeSourceContactState(state.sourceContacts).insights.length;
+    return sourceLandingLights(landscapeOrigin()).map((light)=>({
+      ...light,
+      intensity:light.intensity+understood*.18,
+      penetration:Math.min(1,light.penetration+understood*.025),
+    }));
+  }
 
   return {
     geometry,
     active: () => !!state.active,
     state: () => state,
     setPlayerPosition,
+    textSpaceActive,
+    localLights,
+    landingContract: sourceLandingContract,
+    sourceLandingHushFrame,
+    traversalFrame,
+    beginTraversal,
+    tickTraversal,
     onStep,
     tick,
     focusAt,
+    readablePagesProbe: () => readablePages().map(({ id, x, y, index }) => ({ id, x, y, index })),
     inspectFocused,
     tuneFocused,
     recordFocused,
@@ -1731,13 +2821,25 @@ export function createSourceSpaceRuntime({
     sourceScene,
     sourceObjective,
     sourceLook,
+    pressureFrame,
+    sourceBracketFrame,
     hushMode,
     protectMoment,
     finalEncounterRequest,
+    requestBossBattle,
+    completeNormalExit,
     resolveFinalEncounter,
     failFinalEncounter,
+    horizonFrame,
+    chooseHorizonExit,
+    horizonBustPoint,
+    horizonBustPlacement,
+    talkToHorizonBust,
+    takeHorizonBustDetour,
     navigation,
     checkpointPosition,
+    beginHushContact,
+    resolveHushContactChoice,
     handleHushContact,
     sourceSurfaceLines,
     paperTonePoint,
@@ -1750,6 +2852,34 @@ export function createSourceSpaceRuntime({
       focus: lastFocus ? { kind: lastFocus.kind, id: lastFocus.id, source: lastFocus.sourceAnchor || null } : null,
       objective: sourceObjective(),
       hush: hushMode(),
+      traversal: traversalFrame(),
+      horizonFrame: horizonFrame(),
+      landing: {
+        ...sourceLandingContract(),
+        tableau: sourceLandingHushFrame(),
+        textSpaceActive: textSpaceActive(),
+        weatherRemaining: landingRainRemaining,
+      },
+      contact: {
+        captures:normalizeSourceContactState(state.sourceContacts).captures,
+        insightIds:[...normalizeSourceContactState(state.sourceContacts).insights],
+        bossExposed: sourceBossExposed(state.sourceContacts),
+        pendingBeatId: pendingContact?.id || null,
+        movementRequired: captureMovementRequired,
+        graceSeconds: restartGraceRemaining,
+      },
+      haystack: pressureFrame({ reducedMotion: false }),
+      bracket: sourceBracketFrame(),
+      geometryBoundary: {
+        physicalBeyondBoundary: !!physicalCellAt(0, SOURCE_HALL_END_Y - 2),
+        visualBeyondBoundary: !!renderCellAt(0, SOURCE_HALL_END_Y - 2),
+        y: SOURCE_HALL_END_Y,
+        metres: SOURCE_HALL_END_METRES,
+      },
+      realPage: state.phase === CHUNK_SURF_PHASE.HAYSTACK ? {
+        ...haystackPagePoint(),
+        guided: true,
+      } : null,
       sourceSceneCacheSize: sceneCache.size,
       sourceStructureCount: structures.length,
       sourceSeededStructureCount: structures.filter((entry) => entry.seeded).length,

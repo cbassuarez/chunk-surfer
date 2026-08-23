@@ -22,6 +22,8 @@ import { conservatory } from '../src/data/floorplan/conservatory.js';
 import * as PROPS from '../src/game/props.js';
 import { MESH_SURFACE, PROP_BOUNDS } from '../src/data/generated/prop-geometry.js';
 import { wallContactAt } from '../src/world/wall-contact.js';
+import { CELL } from '../src/data/floorplan/legend.js';
+import { TENOR_ROPE_AUTHORED } from '../src/data/bell-tower-layout.js';
 
 FP.compile(conservatory.levels, {
   width: conservatory.width, height: conservatory.height,
@@ -34,6 +36,18 @@ const plan = {
   size: FP.planSize, isSolid: FP.isSolid, floorAt: FP.floorAt, zoneAt: FP.zoneAt,
   materialAt: FP.materialAt, doorAt: FP.doorAt, logicalToPhysical: FP.logicalToPhysical,
 };
+
+// Thin, high-value controls get a humane acquisition cone. The tenor is the
+// narrowest critical prop in the building and used to flicker out on adjacent
+// reticle pixels even from its authored drop-in position.
+{
+  const player=FP.toRuntimePoint({x:TENOR_ROPE_AUTHORED.x,y:TENOR_ROPE_AUTHORED.y+1});
+  const rope=PROPS.propById('tower-rope-8');
+  const mx=(player.x+.5)*CELL,mz=(player.y+.5)*CELL;
+  const exactYaw=Math.atan2(rope.interactionX-mx,-(rope.interactionY-mz));
+  const hit=PROPS.pickProp(player.x,player.y,0,3.2,{yaw:exactYaw+.14,pitch:-.18});
+  assert.equal(hit?.id,'tower-rope-8','the playable tenor cannot be acquired with a modest reticle offset');
+}
 
 // ── what opted in must have resolved ────────────────────────────────────────
 {

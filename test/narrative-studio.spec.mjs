@@ -147,6 +147,10 @@ assert.ok(invalidResult.errors.some((item) => item.message.includes('unknown med
 // node must be reachable from an entry (start or an alternate entry).
 const authored = JSON.parse(await readFile('content/narrative/conservatory.cold_open_dialogue.story.json', 'utf8'));
 assert.ok(authored.nodes.start, 'cold open has a start node');
+const authoredGuardArrival = authored.nodes.start.lines.find((line) => line.id === 'start.line.3');
+const runtimeGuardArrival = runtimeTree('conservatory.cold_open_dialogue').start.lines.find((line) => line.sourceId === 'start.line.3');
+assert.equal(runtimeGuardArrival?.text, authoredGuardArrival?.text,
+  'cold-open arrival wording is authored in Studio JSON, not replaced by the runtime adapter');
 const coldOpenIds = new Set(Object.keys(authored.nodes));
 for (const [nodeId, node] of Object.entries(authored.nodes)) {
   if (node.goto) assert.ok(coldOpenIds.has(node.goto), `cold-open node ${nodeId} goto resolves (${node.goto})`);
@@ -166,9 +170,9 @@ while (coldOpenPending.length) {
 }
 for (const id of coldOpenIds) assert.ok(coldOpenReachable.has(id), `cold-open node ${id} is reachable from an entry`);
 
-for (const [name, profile] of [['natatoriumbattle', 'natatorium'], ['practicebattle', 'practice'], ['hallbattle', 'hall']]) {
-  for (const named of [false, true]) {
-    const migrated = runtimeBattle(`battle.${name}.${named ? 'named' : 'unnamed'}`);
+for (const profile of ['natatorium', 'practice', 'hall']) {
+  {
+    const migrated = runtimeBattle(`battle.${profile}`);
     assert.equal(migrated.id, profile);
     assert.equal(migrated.combat.kind, 'regular');
     assert.equal(migrated.combat.movements.length, 3);
@@ -220,11 +224,11 @@ const runtimeStartLines = async (id) => withoutLineSourceIds(rehydrateTree(await
 // legacy guardEpilogue() is deleted, so there is nothing to compare against and
 // this parity check has done its job. What each coda must still CONTAIN is
 // asserted in test/ending-contract.spec.mjs, against the documents.
-for (const fixture of [
-  ['nothing', { kind: 'nothing' }], ['name-sarah', { kind: 'name', value: 'Sarah' }],
-  ['reason-money', { kind: 'reason', value: 'money' }], ['feeling', { kind: 'feeling', value: 'dread' }],
-]) {
-  const migrated = rehydrateBattle(await readStory(`battle.chapel.${fixture[0]}`));
+// One chapel document now, rather than one per confession. What the answer
+// changes is a thread conditioned inside this tree — see game/chapel-reading.js
+// — so there is a single migration to check rather than seven of the same one.
+{
+  const migrated = rehydrateBattle(await readStory('battle.chapel'));
   assert.equal(migrated.id, 'chapel');
   assert.equal(migrated.combat.kind, 'chapel');
   assert.equal(migrated.combat.movements.length, 5);

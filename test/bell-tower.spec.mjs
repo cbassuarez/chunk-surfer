@@ -83,6 +83,7 @@ const audioContext={
   createGain:()=>node({gain:param(1)}),
   createMediaElementSource:()=>node(),
   createBufferSource:()=>node({buffer:null,start(when,offset=0){if(this.buffer===decodedBuffer)stemStarts.push({when,offset});},stop(){}}),
+  createOscillator:()=>node({type:'sine',frequency:param(0),detune:param(0),start(){},stop(){}}),
   createStereoPanner:()=>node({pan:param(0)}),
   createBiquadFilter:()=>node({frequency:param(0),Q:param(0)}),
   createBuffer:(_channels,length)=>({getChannelData:()=>new Float32Array(length)}),
@@ -108,7 +109,14 @@ try{
   assert.equal(towerAudio.setAcousticProfile('source_residue'),'source_residue');
   towerAudio.setPerformanceIntensity(.8);towerAudio.setCodaProgress(.5);
   assert.equal(towerAudio.snapshot().profile,'source_residue');assert.equal(towerAudio.snapshot().performanceIntensity,.8);assert.equal(towerAudio.snapshot().codaProgress,.5);
-  assert.equal(stemStarts.length,1);
+  towerAudio.resetPerformance();
+  assert.equal(towerAudio.snapshot().profile,'ringing_room');
+  assert.equal(towerAudio.snapshot().audible,true,'taking the tenor reopens an audible bus even after a zero-gain Source handoff');
+  assert.equal(towerAudio.snapshot().scheduledStrikes,0);
+  towerAudio.strike({bell:8,stroke:'hand',rowIndex:0,place:7},ELLERY_BELLS[7]);
+  assert.equal(towerAudio.snapshot().scheduledStrikes,1,'a legitimate peal contact reaches the physical bell output');
+  assert.equal(towerAudio.snapshot().lastStrike.bell,8);
+  assert.equal(stemStarts.length,2);
 assert.equal(stemStarts[0].when,10.2);
   assert.equal(bedPlays,0);
 }finally{

@@ -233,6 +233,23 @@ export function reduceChapelTower(value, event = {}) {
         transportTransitionProgress:1,
       };
 
+    // The tape let him off at the nave instead of the stair. The tower route is
+    // spent without ever having been rung — no peal, no bells standing, so
+    // applyTowerPealAdvantage() declines on its own and he walks into the chapel
+    // with the carrier still live. That is the cost of not taking the detour,
+    // and the bust did tell him.
+    case 'TOWER_BYPASSED':
+      assertPhase(state, CHAPEL_TOWER_PHASE.TRANSITION_READY, event.type);
+      return {
+        ...state,
+        phase: CHAPEL_TOWER_PHASE.TOWER_CLEARED,
+        pealCompleted: false,
+        bellsStanding: false,
+        chapelReached: true,
+        transportMode: 'world',
+        transportTransitionProgress: 0,
+      };
+
     case 'CHAPEL_REACHED':
       assertPhase(state, CHAPEL_TOWER_PHASE.TOWER_CLEARED, event.type);
       return { ...state, chapelReached: true };

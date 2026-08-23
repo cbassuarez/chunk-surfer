@@ -27,6 +27,10 @@
 // "the light came back and it is not where it was".
 
 import { emergencyWanderClock } from '../data/conservatory-lights.js';
+import {
+  resolveApparitionComposition,
+  validApparitionComposition,
+} from '../data/apparition-staging.js';
 
 // Stations sit out in the room, far enough from the fitting to throw a long
 // shadow and close enough to stay inside the single shadow-map frustum.
@@ -63,12 +67,31 @@ const APPARITION_PRESENTATION = Object.freeze({
   }),
 });
 
+// Semantic pose identity belongs to the coordinate-blind director. Asset names
+// do not: this is the one translation boundary, with the shared legacy body as
+// a deliberate fallback for stale/invalid directives and older harnesses.
+export const APPARITION_POSE_MESH = Object.freeze({
+  neutral: 'apparition_pose_neutral',
+  side: 'apparition_pose_side',
+  stoop: 'apparition_pose_stoop',
+  head_turn: 'apparition_pose_head_turn',
+  arm_out: 'apparition_pose_arm_out',
+  weight_shift: 'apparition_pose_weight_shift',
+  symmetric: 'apparition_pose_symmetric',
+});
+
+export function meshForApparitionPose(poseId) {
+  return APPARITION_POSE_MESH[poseId] || 'player_shadow_figure';
+}
+
 function neutralDirective(wander) {
   return {
     stageKey: null,
     exposure: null,
     card: null,
     hiddenIndex: null,
+    shadowOnlyIndices: [],
+    poseIds: ['neutral', 'side', 'weight_shift'],
     yawOffsets: [0, 0, 0],
     motionClocks: [wander, wander, wander],
     hardRevealIndex: null,
@@ -161,6 +184,9 @@ export function buildEmergencyShadowFrame(lights, {
   effectsMode = 'full',
   stageKey = 'unknown',
   director = null,
+  renderGroup = null,
+  compositionResolver = resolveApparitionComposition,
+  preferredLightId = null,
 } = {}) {
   // OFF and Reduce Dread suppression must be structural. Do not rely on the
   // light resolver happening to zero shadowReveal/intensity upstream.
@@ -207,14 +233,30 @@ export function buildEmergencyShadowFrame(lights, {
       if (throwing) return throwing;
       return distanceSq(a, listener) - distanceSq(b, listener);
     });
-  const light = candidates[0];
+  // Capture/debug tooling may pin the practical after it has observed a real
+  // candidate. This keeps a probe-directed camera turn from selecting a second
+  // lamp and invalidating the shot it was turning to inspect. Ordinary play
+  // never supplies the option and retains the established ranking unchanged.
+  // Multi-level rooms share a render group. Prefer a practical on the player's
+  // current landing before applying the established planar ranking; otherwise
+  // a tower lamp five metres overhead can stage ordinary-sized bodies against
+  // the ceiling and make them loom through perspective alone.
+  const levelCandidates = Number.isFinite(listener.y)
+    ? candidates.filter((candidate) => Math.abs(
+      (Number.isFinite(candidate.floorY) ? candidate.floorY : (Number(candidate.y) || 1.8) - 1.8)
+        - listener.y,
+    ) <= 2.6)
+    : candidates;
+  const rankedCandidates = levelCandidates.length ? levelCandidates : candidates;
+  const light = rankedCandidates.find((candidate) => candidate.id === preferredLightId)
+    || rankedCandidates[0];
   if (!light) return null;
 
   const lightX = Number(light.x) || 0;
   const lightZ = Number(light.z) || 0;
   const listenerX = Number(listener.x) || 0;
   const listenerZ = Number(listener.z) || 0;
-  const floorY = Number.isFinite(light.floorY) ? light.floorY : (Number(light.y) || 1.8) - 1.8;
+  let floorY = Number.isFinite(light.floorY) ? light.floorY : (Number(light.y) || 1.8) - 1.8;
   const wander = emergencyWanderClock(timeSec, { effectsMode });
   const resolvedStageKey = `${String(stageKey || 'unknown')}:${light.id}`;
   const directive = director?.resolve?.({
@@ -224,6 +266,20 @@ export function buildEmergencyShadowFrame(lights, {
     effectsMode,
     wanderClock: wander,
   }) || neutralDirective(wander);
+  let composition = null;
+  try {
+    const candidate = compositionResolver?.({
+      lightId: light.id,
+      zone: Number(light.zone),
+      group: renderGroup,
+    });
+    composition = validApparitionComposition(candidate) ? candidate : null;
+  } catch {
+    // Authored staging is optional art direction. A malformed/custom resolver
+    // must lose the composition, never the apparition or its safety proof.
+    composition = null;
+  }
+  if (composition?.floorMode === 'listener' && Number.isFinite(listener.y)) floorY = listener.y;
 
   // The crowd is aimed at the wall the player is facing, not at the player. The
   // lamp, the figures and that wall have to be collinear or there is no shadow
@@ -268,13 +324,20 @@ export function buildEmergencyShadowFrame(lights, {
     : 0;
   const stageAim = behind
     ? playerBearing + Math.PI
-    : Math.atan2(toListenerX, -toListenerZ);
-  const stage = Math.round(stageAim / sector) * sector;
+    : composition?.stageYaw ?? Math.atan2(toListenerX, -toListenerZ);
+  // The close-to-fitting branch always wins and remains quantised away from the
+  // player. At ordinary distances an authored world yaw is intentionally stable
+  // under camera motion; procedural staging retains the established sectors.
+  const stage = !behind && composition
+    ? composition.stageYaw
+    : Math.round(stageAim / sector) * sector;
   // The band the crowd may occupy, and the drift is scaled INTO it rather than
   // clipped against it, so a tight band makes the milling smaller and never
   // makes it stop.
-  const far = behind ? STATION_FAR : Math.min(STATION_FAR, Math.max(1.6, headroom));
-  const near = Math.min(STATION_NEAR, far * .55);
+  const authoredFar = STATION_FAR * (composition?.farScale || 1);
+  const authoredNear = STATION_NEAR * (composition?.nearScale || 1);
+  const far = behind ? authoredFar : Math.min(authoredFar, Math.max(1.6, headroom));
+  const near = Math.min(authoredNear, far * .55);
   const squeeze = (far - near) / (STATION_FAR - STATION_NEAR);
 
   const placed = stationsFor(light.id).map((seed, index) => {
@@ -283,11 +346,15 @@ export function buildEmergencyShadowFrame(lights, {
     const bodyWander = Number.isFinite(directive.motionClocks?.[index])
       ? directive.motionClocks[index]
       : wander;
-    const swing = drift(bodyWander, seed.w1, seed.p1, seed.w2, seed.p2) * seed.swing;
-    const reach = drift(bodyWander + 41.7, seed.w2, seed.p2, seed.w1, seed.p1) * seed.reach * squeeze;
-    const bearing = stage + seed.bearing + swing;
+    const slot = composition?.stations[index] || null;
+    const swing = drift(bodyWander, seed.w1, seed.p1, seed.w2, seed.p2)
+      * seed.swing * (slot?.swingScale ?? 1);
+    const reach = drift(bodyWander + 41.7, seed.w2, seed.p2, seed.w1, seed.p1)
+      * seed.reach * (slot?.reachScale ?? 1) * squeeze;
+    const bearing = stage + (slot?.bearingOffset ?? seed.bearing) + swing;
     const radialFloor = behind ? Math.max(near * .7, MIN_APPROACH) : near * .7;
-    const radius = Math.min(far, Math.max(radialFloor, near + seed.depth * (far - near) + reach));
+    const depth = slot?.depth ?? seed.depth;
+    const radius = Math.min(far, Math.max(radialFloor, near + depth * (far - near) + reach));
     return {
       seed, index, bearing, radius, swing, bodyWander,
       x: lightX + Math.sin(bearing) * radius,
@@ -309,15 +376,15 @@ export function buildEmergencyShadowFrame(lights, {
   // stations first, then omit one identity without re-spacing the survivors.
   const visiblePlaced = placed.filter((body) => body.index !== directive.hiddenIndex);
   const instances = visiblePlaced.slice(0, 3).map((body) => {
-    const presentation = directive.hardRevealIndex === body.index
+    const shadowOnly = directive.shadowOnlyIndices?.includes(body.index) === true;
+    const presentation = !shadowOnly && directive.hardRevealIndex === body.index
       ? APPARITION_PRESENTATION.hard
       : APPARITION_PRESENTATION.shadow;
     return {
       id: `emergency-shadow:${light.id}:${body.index}`,
       apparitionIndex: body.index,
-      // This figure has head, torso, separated legs and both arms. The old stair
-      // occluder had no arms and read as a stack of lighting primitives.
-      mesh: 'player_shadow_figure',
+      poseId: directive.poseIds?.[body.index] || 'neutral',
+      mesh: meshForApparitionPose(directive.poseIds?.[body.index]),
       x: body.x,
       y: floorY,
       z: body.z,
@@ -332,7 +399,7 @@ export function buildEmergencyShadowFrame(lights, {
       scaleZ: .92,
       emissive: [1.0, .985, 1.0, presentation.emissive],
       structural: true,
-      shadowOnly: false,
+      shadowOnly,
       zone: Number(light.zone) || 0,
     };
   });
@@ -340,7 +407,7 @@ export function buildEmergencyShadowFrame(lights, {
   // A white body that does not affect its room is still a sprite. These are
   // deliberately compact practicals: enough to lift the floor, nearby seat
   // backs and the edge of another figure, never enough to replace the red wash.
-  const apparitionLights = instances.map((instance) => {
+  const apparitionLights = instances.filter((instance) => !instance.shadowOnly).map((instance) => {
     const presentation = directive.hardRevealIndex === instance.apparitionIndex
       ? APPARITION_PRESENTATION.hard
       : APPARITION_PRESENTATION.shadow;
@@ -381,11 +448,24 @@ export function buildEmergencyShadowFrame(lights, {
       stageKey: directive.stageKey || resolvedStageKey,
       exposure: directive.exposure ?? null,
       card: directive.card || null,
+      poseIds: Array.isArray(directive.poseIds) ? [...directive.poseIds] : null,
+      shadowOnlyIndices: Array.isArray(directive.shadowOnlyIndices)
+        ? [...directive.shadowOnlyIndices]
+        : [],
       hardRevealIndex: directive.hardRevealIndex ?? null,
+    },
+    composition: {
+      id: composition?.id || 'procedural',
+      source: composition ? 'authored' : 'procedural',
+      stageYaw: stage,
     },
     contract: {
       version: 1,
       figures: instances.length,
+      visibleBodies: instances.filter((instance) => !instance.shadowOnly).length,
+      shadowOnlyFigures: instances.filter((instance) => instance.shadowOnly).length,
+      shadowOnlyIndices: instances.filter((instance) => instance.shadowOnly)
+        .map((instance) => instance.apparitionIndex),
       maximumFigures: 3,
       minimumPlayerDistance,
       minimumAllowedDistance: MIN_APPROACH,

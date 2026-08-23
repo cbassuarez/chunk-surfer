@@ -23,10 +23,26 @@ const REDUCED_STILL_RAMP_SEC = 1.8;
 const REDUCED_STILL_HOLD_MIN = 5;
 const REDUCED_STILL_HOLD_MAX = 8;
 
+export const APPARITION_POSE_IDS = Object.freeze([
+  'neutral',
+  'side',
+  'stoop',
+  'head_turn',
+  'arm_out',
+  'weight_shift',
+  'symmetric',
+]);
+
+const QUIET_POSE_IDS = Object.freeze(['neutral', 'side', 'stoop', 'weight_shift']);
+const ACCENT_POSE_IDS = Object.freeze(['head_turn', 'arm_out', 'symmetric']);
+
 const FULL_CARD_WEIGHTS = Object.freeze([
-  ['reorientation', .45],
-  ['stillness', .35],
-  ['absence', .20],
+  ['reorientation', .30],
+  ['stillness', .25],
+  ['absence', .15],
+  ['substitution', .18],
+  ['peripheral', .07],
+  ['delayed_reveal', .05],
 ]);
 
 const REDUCED_CARD_WEIGHTS = Object.freeze([
@@ -86,6 +102,24 @@ function serialKey(state, family, serial, suffix) {
   return [state.key, family, serial, suffix];
 }
 
+function initialPoseIds(seed, key) {
+  const chosen = [];
+  for (let index = 0; index < FIGURE_COUNT; index++) {
+    // One conspicuous initial pose is possible, never likely. Most first
+    // sightings should be ordinary people before continuity makes them wrong.
+    const accented = index === FIGURE_COUNT - 1
+      && unit(seed, key, 'initial-pose', 'accent') < .16;
+    const preferred = accented ? ACCENT_POSE_IDS : QUIET_POSE_IDS;
+    const candidates = preferred.filter((poseId) => !chosen.includes(poseId));
+    const pool = candidates.length
+      ? candidates
+      : APPARITION_POSE_IDS.filter((poseId) => !chosen.includes(poseId));
+    const at = Math.floor(unit(seed, key, 'initial-pose', index) * pool.length);
+    chosen.push(pool[Math.min(pool.length - 1, at)] || 'neutral');
+  }
+  return chosen;
+}
+
 function stateView(state) {
   return {
     key: state.key,
@@ -93,6 +127,7 @@ function stateView(state) {
     exposure: state.exposure,
     lastPulse: state.lastPulse,
     needsRebase: state.needsRebase,
+    poseIds: [...state.poseIds],
     yawOffsets: [...state.yawOffsets],
     clockOffsets: [...state.clockOffsets],
     active: state.active ? { ...state.active } : null,
@@ -107,7 +142,7 @@ function stateView(state) {
   };
 }
 
-function makeState(key) {
+function makeState(key, poseIds) {
   return {
     key,
     mode: null,
@@ -115,6 +150,7 @@ function makeState(key) {
     lastPulse: null,
     lastTimeSec: null,
     needsRebase: true,
+    poseIds: [...poseIds],
     yawOffsets: [0, 0, 0],
     clockOffsets: [0, 0, 0],
     active: null,
@@ -171,7 +207,7 @@ export function createApparitionDirector({ seed = 'apparitions:v1' } = {}) {
     const key = String(stageKey || 'unknown');
     let state = stages.get(key);
     if (!state) {
-      state = makeState(key);
+      state = makeState(key, initialPoseIds(currentSeed, key));
       stages.set(key, state);
     }
     return state;
@@ -243,6 +279,11 @@ export function createApparitionDirector({ seed = 'apparitions:v1' } = {}) {
     );
   }
 
+  function chooseEdgeIndex(state, serial, forcedIndex = null) {
+    if (forcedIndex === 0 || forcedIndex === FIGURE_COUNT - 1) return forcedIndex;
+    return randomUnit(state, 'event', serial, 'edge-index') < .5 ? 0 : FIGURE_COUNT - 1;
+  }
+
   function chooseYawTarget(state, serial, index) {
     const current = state.yawOffsets[index] || 0;
     const minimumDelta = 18 * Math.PI / 180;
@@ -252,10 +293,17 @@ export function createApparitionDirector({ seed = 'apparitions:v1' } = {}) {
     return list[at];
   }
 
+  function chooseSubstitutionPose(state, serial, index) {
+    const current = state.poseIds[index] || 'neutral';
+    const candidates = APPARITION_POSE_IDS.filter((poseId) => poseId !== current);
+    const at = randomInt(state, 'event', serial, `substitution-pose-${index}`, 0, candidates.length - 1);
+    return candidates[at] || 'neutral';
+  }
+
   function consumeForcedCard(mode) {
     const forced = pendingForced;
     if (!forced?.card) return null;
-    if (mode === 'reduced' && forced.card === 'absence') return null;
+    if (mode === 'reduced' && !REDUCED_CARD_WEIGHTS.some(([kind]) => kind === forced.card)) return null;
     pendingForced = null;
     return forced;
   }
@@ -274,7 +322,9 @@ export function createApparitionDirector({ seed = 'apparitions:v1' } = {}) {
       randomUnit(state, 'event', serial, 'card'),
       state.lastCard,
     );
-    const index = chooseIndex(state, 'event', serial, card, forced?.index);
+    const index = card === 'peripheral'
+      ? chooseEdgeIndex(state, serial, forced?.index)
+      : chooseIndex(state, 'event', serial, card, forced?.index);
     const forcedFlag = !!forced;
 
     if (card === 'reorientation') {
@@ -294,13 +344,44 @@ export function createApparitionDirector({ seed = 'apparitions:v1' } = {}) {
         startedExposure: state.exposure,
         untilExposure: state.exposure + duration - 1,
       };
-    } else {
+    } else if (card === 'absence') {
       const duration = randomInt(state, 'event', serial, 'absence-duration', 1, 2);
       state.active = {
         kind: 'absence',
         index,
         startedExposure: state.exposure,
         untilExposure: state.exposure + duration - 1,
+      };
+    } else if (card === 'substitution') {
+      const fromPose = state.poseIds[index] || 'neutral';
+      const toPose = chooseSubstitutionPose(state, serial, index);
+      state.poseIds[index] = toPose;
+      state.active = {
+        kind: 'substitution',
+        index,
+        fromPose,
+        toPose,
+        startedExposure: state.exposure,
+        untilExposure: state.exposure,
+      };
+    } else if (card === 'peripheral') {
+      state.active = {
+        kind: 'peripheral',
+        index,
+        startedExposure: state.exposure,
+        untilExposure: state.exposure,
+      };
+    } else {
+      const delayBeats = randomInt(state, 'event', serial, 'delayed-reveal-beats', 1, 2);
+      state.active = {
+        kind: 'delayed_reveal',
+        index,
+        poseId: state.poseIds[index] || 'neutral',
+        freezeClock: input.wanderClock + state.clockOffsets[index],
+        startedExposure: state.exposure,
+        shadowUntilExposure: state.exposure + delayBeats - 1,
+        revealExposure: state.exposure + delayBeats,
+        untilExposure: state.exposure + delayBeats,
       };
     }
 
@@ -454,24 +535,41 @@ export function createApparitionDirector({ seed = 'apparitions:v1' } = {}) {
       yawOffsets[active.index] = active.fromYaw + (active.targetYaw - active.fromYaw) * eased;
     }
 
-    if (active?.kind === 'stillness') {
+    if (active?.kind === 'stillness' || active?.kind === 'delayed_reveal') {
       motionClocks[active.index] = input.effectsMode === 'reduced'
         ? reducedStillClock(active, input.timeSec)
         : active.freezeClock;
     }
+
+    const delayedPhase = active?.kind === 'delayed_reveal'
+      ? state.exposure <= active.shadowUntilExposure ? 'shadow' : 'reveal'
+      : null;
+    const shadowOnlyIndices = active?.kind === 'peripheral'
+      || (active?.kind === 'delayed_reveal' && delayedPhase === 'shadow')
+      ? [active.index]
+      : [];
+    const hardRevealIndex = input.effectsMode === 'full' && state.hardPulse === input.pulseIndex
+      && !shadowOnlyIndices.includes(state.hardRevealIndex)
+      && active?.kind !== 'delayed_reveal'
+      ? state.hardRevealIndex
+      : null;
 
     return {
       stageKey: state.key,
       mode: input.effectsMode,
       exposure: state.exposure,
       pulseIndex: input.pulseIndex,
-      card: active ? { kind: active.kind, index: active.index } : null,
+      card: active ? {
+        kind: active.kind,
+        index: active.index,
+        ...(delayedPhase ? { phase: delayedPhase } : {}),
+      } : null,
       hiddenIndex: active?.kind === 'absence' ? active.index : null,
+      shadowOnlyIndices,
+      poseIds: [...state.poseIds],
       yawOffsets,
       motionClocks,
-      hardRevealIndex: input.effectsMode === 'full' && state.hardPulse === input.pulseIndex
-        ? state.hardRevealIndex
-        : null,
+      hardRevealIndex,
       debug: {
         lastCard: state.lastCard,
         nextEventExposure: state.nextEventExposure,
@@ -602,7 +700,14 @@ export function createApparitionDirector({ seed = 'apparitions:v1' } = {}) {
   }
 
   function forceNext(cue = {}) {
-    const card = ['reorientation', 'stillness', 'absence'].includes(cue?.card) ? cue.card : null;
+    const card = [
+      'reorientation',
+      'stillness',
+      'absence',
+      'substitution',
+      'peripheral',
+      'delayed_reveal',
+    ].includes(cue?.card) ? cue.card : null;
     const presentation = cue?.presentation === 'hard' ? 'hard' : null;
     if (!card && !presentation) return false;
     pendingForced = {
@@ -613,11 +718,23 @@ export function createApparitionDirector({ seed = 'apparitions:v1' } = {}) {
     return true;
   }
 
+  // Capture/debug surface only: semantic and coordinate-blind. Runtime game
+  // behavior never calls this; it lets the art-review harness exercise every
+  // generated pose without teaching the director about meshes or world space.
+  function setPoses(stageKey, poseIds) {
+    if (!Array.isArray(poseIds) || poseIds.length !== FIGURE_COUNT
+      || poseIds.some((poseId) => !APPARITION_POSE_IDS.includes(poseId))) return false;
+    const state = getState(stageKey);
+    state.poseIds = [...poseIds];
+    return true;
+  }
+
   return Object.freeze({
     resolve,
     suspend,
     reset,
     inspect,
     forceNext,
+    setPoses,
   });
 }

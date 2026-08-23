@@ -80,6 +80,24 @@ export const ZONE = {
   street: 17,
   civicCourt: 18,
   serviceYard: 19,
+  // ST BRENDAN'S, and why it is not any of the zones above.
+  //
+  // physicalRenderPlanFor treats dock/street/civicCourt/serviceYard as EXTERIOR
+  // zones: standing in one, it wipes the raymarched slice to open sky and keeps
+  // only outdoor spans, because outdoors this game draws its buildings from
+  // meshes and not from cells. A church authored on the yard's own zone
+  // therefore survived that filter and was drawn as loose volumes standing in a
+  // void with its floor eight metres down — a floating island with a
+  // thirty-two-metre slab for a tower.
+  //
+  // It is not chapel/chapelOuter/bellTower either: ZONE_WORLD maps those to
+  // lux_nova and bell_tower, which the finale, the take targets and the tower
+  // phase all read, and a different building across a yard must not report the
+  // player as standing in the nave that ends the game.
+  //
+  // So it gets its own, which is what it wanted all along, and which is where
+  // the bells will hang off when they are wired.
+  church: 20,
 };
 
 // Which world (audio + prompt) a zone belongs to. Corridors borrow the room
@@ -110,7 +128,31 @@ export const ZONE_WORLD = {
   [ZONE.street]: 'main_b3',
   [ZONE.civicCourt]: 'main_b3',
   [ZONE.serviceYard]: 'main_b3',
+  // Neutral on purpose: a room tone, not a take target, and nothing that any
+  // chapel or tower logic reads.
+  [ZONE.church]: 'main_b3',
 };
+
+// OUTDOORS IS A PROPERTY OF THE ZONE, NOT OF WHERE YOU ARE STANDING.
+//
+// This exists because two systems used to answer that question differently and
+// the loading bay apron fell in the gap between them. physicalRenderPlanFor
+// asked the ZONE and wiped its slice to open sky; prop-visibility asked the
+// POSITION (x<50||x>128||z<0||z>92) and hid the exterior elevation. The apron is
+// authored as weather — glyph 'D', "THE LOADING BAY APRON, WHICH IS OUTSIDE" —
+// but it sits at x51..57 inside the building's own footprint, so it answered
+// "outside" to one and "inside" to the other.
+//
+// The result was sixteen cells with no ray-marched walls (the zone had removed
+// them) AND no elevation mesh (the position had removed that), standing among
+// every interior prop. A completely see-through building, at the spot the
+// opening puts the player.
+//
+// So there is one predicate now and everything asks it.
+export const OUTDOOR_ZONES = Object.freeze([
+  ZONE.dock, ZONE.street, ZONE.civicCourt, ZONE.serviceYard,
+]);
+export const isOutdoorZone = (zone) => OUTDOOR_ZONES.includes(zone);
 
 // Surface identity is deliberately not packed into F. Flags are collision and
 // traversal. Materials are a parallel texture channel for the renderer.
@@ -141,6 +183,11 @@ export const MATERIAL = {
   wetTarmac: 15,
   wetPaving: 16,
   wetSetts: 17,
+  // Soaked municipal grass. The park in the south-west yard is the only ground
+  // in the game that is soft, and it needed its own id for the same reason
+  // wetTarmac did: without one it falls through surfaceSlot's general case and
+  // a lawn is drawn as ash floorboards.
+  wetGrass: 18,
 };
 
 export function materialForZone(zone) {
@@ -160,6 +207,7 @@ export function materialForZone(zone) {
     case ZONE.chapel: return MATERIAL.chapelStone;
     case ZONE.chapelOuter: return MATERIAL.chapelStone;
     case ZONE.bellTower: return MATERIAL.chapelStone;
+    case ZONE.church: return MATERIAL.chapelStone;
     case ZONE.academic: return MATERIAL.academicPlaster;
     case ZONE.plant: return MATERIAL.metalPlant;
     // Sprung maple and a mirrored wall — the same surface B3 has, because B3 is
@@ -231,6 +279,40 @@ export const GLYPHS = {
   // The civic block. `e` is carriageway, `p` is a proper raised pavement and
   // `s` is the band of old granite setts at the gutter. All three are open to
   // the same rain; their distinct surfaces are what give the street a scale.
+  // The park. Grass sits a couple of centimetres above the tarmac it was laid
+  // into, which is under canStep's 0.45m limit in both directions, so the kerb
+  // between path and lawn is a thing you feel rather than a thing that stops
+  // you. WALLED and ceil 24.0 for the same reason 'Y' is: yardProfile bands the
+  // roofline of the building next to it along the yard's depth, and a sky cell
+  // that opts out of that gets the full 90m ceiling and no top edge.
+  'g': { floor: 0.02, ceil: 24.0, sky: true, walled: true, zone: 'dock', material: 'wetGrass' },
+  // The fountain basin. Ankle deep, and you step down into it — 0.30m against
+  // the 0.45m limit — because the thing in the water has to be reachable
+  // without inventing a way to lean over a rim. wetTile is what the water pass
+  // looks for; see the water-body registry in game/water-bodies.js.
+  'n': { floor: -0.30, ceil: 24.0, sky: true, walled: true, zone: 'dock', material: 'wetTile' },
+  // ── ST BRENDAN'S, ON THE TARMAC PAST THE PARK ────────────────────────────
+  //
+  // The south end of the yard was another fifty metres of nothing, the way the
+  // south-west quarter was before the park went in. There is a church on it now.
+  //
+  // ZONE IS `dock`, DELIBERATELY, AND IT IS THE ONE THING HERE THAT IS A
+  // COMPROMISE. The semantically right zones exist — chapel, chapelOuter,
+  // bellTower — and every one of them is wired into the conservatoire's own
+  // chapel: ZONE_WORLD maps them to lux_nova and bell_tower, which is what the
+  // finale, the take targets and the tower phase all read. Standing in a
+  // different building on the far side of a yard must not report the player as
+  // standing in the nave that ends the game. So the cells carry the yard's zone
+  // and the church's SURFACE, and the stone is doing the identifying. When the
+  // bells are wired this should be promoted to a zone of its own rather than
+  // borrowed from either neighbour.
+  //
+  // Not sky, so the rain stops at the door and the ray does not run to 90m.
+  'Z': { floor: 0.0, ceil: 13.0, zone: 'church', material: 'chapelStone' },  // nave and crossing
+  'z': { floor: 0.0, ceil: 9.0, zone: 'church', material: 'chapelStone' },  // chancel, lower than the nave it opens off
+  // The tower. Empty, and tall enough to hang eight bells in when the time
+  // comes; see ELLERY_BELLS and the ringing room in bell-tower-layout.js.
+  'X': { floor: 0.0, ceil: 18.0, zone: 'church', material: 'chapelStone' },
   'e': { floor: 0.0,  ceil: 16.0, sky: true, walled: true, zone: 'street', material: 'wetTarmac' },
   'p': { floor: 0.12, ceil: 16.0, sky: true, walled: true, zone: 'civicCourt', material: 'wetPaving' },
   's': { floor: 0.025,ceil: 16.0, sky: true, walled: true, zone: 'street', material: 'wetSetts' },

@@ -1,0 +1,206 @@
+{
+  "id": "space-academic",
+  "family": "space",
+  "location": "academic",
+  "seed": "review:space:academic",
+  "capturedAt": "2026-08-11T03:53:19.853Z",
+  "gate": {
+    "context": {
+      "group": "academic",
+      "zone": 13,
+      "spaceId": "academic",
+      "ambientColor": [
+        0.62,
+        0.69,
+        0.7
+      ],
+      "ambientIntensity": 0.036,
+      "whitePointScale": 0.35217391304347817,
+      "bounce": {
+        "color": [
+          0.62,
+          0.69,
+          0.7
+        ],
+        "intensity": 0.10799999999999998
+      }
+    },
+    "effectsMode": "full",
+    "reduceDread": false,
+    "dockHauntingActive": false,
+    "specialSpace": false,
+    "sourceSpace": false,
+    "stairAnomaly": false,
+    "live": [
+      "sp02",
+      "sp03"
+    ],
+    "emergency": [
+      {
+        "id": "academic-emergency-west",
+        "kind": "emergency",
+        "circuit": "sp03",
+        "powerMode": "circuit",
+        "maintained": false,
+        "intensity": 0.54,
+        "shadowReveal": 1
+      },
+      {
+        "id": "academic-emergency-east-failing",
+        "kind": "emergency",
+        "circuit": "sp03",
+        "powerMode": "circuit",
+        "maintained": false,
+        "intensity": 0.22,
+        "shadowReveal": 1
+      },
+      {
+        "id": "main-stair-loggia-maintained",
+        "kind": "emergency",
+        "circuit": "sp03",
+        "powerMode": "circuit",
+        "maintained": false,
+        "intensity": 0.42,
+        "shadowReveal": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": "academic-emergency-west",
+        "circuit": "sp03",
+        "powerMode": "circuit",
+        "maintained": false,
+        "intensity": 0.54,
+        "shadowReveal": 1
+      },
+      {
+        "id": "academic-emergency-east-failing",
+        "circuit": "sp03",
+        "powerMode": "circuit",
+        "maintained": false,
+        "intensity": 0.22,
+        "shadowReveal": 1
+      },
+      {
+        "id": "main-stair-loggia-maintained",
+        "circuit": "sp03",
+        "powerMode": "circuit",
+        "maintained": false,
+        "intensity": 0.42,
+        "shadowReveal": 1
+      }
+    ],
+    "submitted": {
+      "active": true,
+      "lightId": "academic-emergency-west",
+      "figures": 3,
+      "visibleBodies": 3,
+      "shadowOnlyFigures": 0,
+      "shadowOnlyIndices": [],
+      "presentation": "shadow",
+      "compositionId": "academic-corridor-termination",
+      "compositionSource": "authored",
+      "hardRevealIndex": null,
+      "card": null,
+      "cardIndex": null,
+      "cardPhase": null,
+      "exposure": 1,
+      "minimumDistance": 4.974,
+      "stageSector": 0,
+      "pulseIndex": 8
+    }
+  },
+  "apparitions": {
+    "active": true,
+    "lightId": "academic-emergency-west",
+    "figures": 3,
+    "visibleBodies": 3,
+    "shadowOnlyFigures": 0,
+    "shadowOnlyIndices": [],
+    "compositionId": "academic-corridor-termination",
+    "compositionSource": "authored",
+    "stageYaw": 0,
+    "poseIds": [
+      "weight_shift",
+      "stoop",
+      "side"
+    ],
+    "bearings": [
+      1.394,
+      1.369,
+      1.4
+    ],
+    "pitches": [
+      -0.124,
+      -0.107,
+      -0.104
+    ],
+    "metres": [
+      [
+        78.4,
+        5.63
+      ],
+      [
+        79.15,
+        5.35
+      ],
+      [
+        79.38,
+        5.48
+      ]
+    ],
+    "bodies": [
+      {
+        "id": "emergency-shadow:academic-emergency-west:0",
+        "index": 0,
+        "poseId": "weight_shift",
+        "shadowOnly": false,
+        "x": 78.397,
+        "y": 10,
+        "z": 5.627,
+        "yaw": -0.373,
+        "distance": 4.974,
+        "presentation": "shadow",
+        "motion": "milling"
+      },
+      {
+        "id": "emergency-shadow:academic-emergency-west:1",
+        "index": 1,
+        "poseId": "stoop",
+        "shadowOnly": false,
+        "x": 79.145,
+        "y": 10,
+        "z": 5.347,
+        "yaw": 0.1354,
+        "distance": 5.762,
+        "presentation": "shadow",
+        "motion": "milling"
+      },
+      {
+        "id": "emergency-shadow:academic-emergency-west:2",
+        "index": 2,
+        "poseId": "side",
+        "shadowOnly": false,
+        "x": 79.378,
+        "y": 10,
+        "z": 5.485,
+        "yaw": 0.0893,
+        "distance": 5.965,
+        "presentation": "shadow",
+        "motion": "milling"
+      }
+    ]
+  },
+  "scene": {
+    "luma": 24.06,
+    "litPct": 45.2,
+    "redPct": 20.2,
+    "whitePct": 4.52
+  },
+  "shadow": {
+    "ready": true,
+    "active": true,
+    "size": 1024
+  },
+  "effects": "full"
+}

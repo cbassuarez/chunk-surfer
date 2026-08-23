@@ -3,13 +3,13 @@
 // A scene is { id, enter?, exit?, update?(dt), render?(), key?(e)->bool,
 //              pointer?(e)->bool,
 //              blocksInput?:bool, blocksWorld?:bool, tracksMotion?:bool,
-//              allowsLook?:bool,
+//              allowsLook?:bool, suppressesHud?:bool,
 //              lookProfile?:string, lensPreset?:string (legacy alias) }
 //
 // `blocksInput` stops the player walking (dialogue, menus). `blocksWorld`
-// additionally freezes world simulation (the hush keeps hunting during
-// dialogue unless a scene says otherwise — which is a rule we break exactly
-// once, on purpose, in M4).
+// additionally freezes world simulation. `sourcePressureLive` is narrower: it
+// marks an input-modal Source scene whose world/pressure must continue even
+// though the player's locomotion is held.
 
 const stack = [];
 const listeners = new Set();
@@ -103,6 +103,7 @@ export function has(id) { return stack.some((s) => s.id === id); }
 
 export function blocksInput() { return stack.some((s) => s.blocksInput); }
 export function blocksWorld() { return stack.some((s) => s.blocksWorld); }
+export function suppressesHud() { return stack.some((s) => s.suppressesHud); }
 export function tracksMotion() { return !!top()?.tracksMotion; }
 // A tableau may hold the body while leaving the head alone. This is narrower
 // than tracksMotion: it never records locomotion, it only keeps first-person

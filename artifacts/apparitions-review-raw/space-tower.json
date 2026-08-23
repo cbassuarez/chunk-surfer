@@ -1,0 +1,257 @@
+{
+  "id": "space-tower",
+  "family": "space",
+  "location": "tower",
+  "seed": "review:space:tower",
+  "capturedAt": "2026-08-11T03:45:19.804Z",
+  "gate": {
+    "context": {
+      "group": "tower",
+      "zone": 12,
+      "spaceId": "ringing_room",
+      "ambientColor": [
+        0.58,
+        0.45,
+        0.3
+      ],
+      "ambientIntensity": 0.025,
+      "whitePointScale": 0.24456521739130435,
+      "bounce": {
+        "color": [
+          0.58,
+          0.45,
+          0.3
+        ],
+        "intensity": 0.07500000000000001
+      }
+    },
+    "effectsMode": "full",
+    "reduceDread": false,
+    "dockHauntingActive": false,
+    "specialSpace": false,
+    "sourceSpace": false,
+    "stairAnomaly": false,
+    "live": [
+      "sp02",
+      "sp03"
+    ],
+    "emergency": [
+      {
+        "id": "access-low",
+        "kind": "emergency",
+        "circuit": "sp03",
+        "powerMode": "circuit",
+        "maintained": false,
+        "intensity": 0.72,
+        "shadowReveal": 1
+      },
+      {
+        "id": "access-high",
+        "kind": "emergency",
+        "circuit": "sp03",
+        "powerMode": "circuit",
+        "maintained": false,
+        "intensity": 0.65,
+        "shadowReveal": 1
+      },
+      {
+        "id": "ringing-pendant",
+        "kind": "emergency",
+        "circuit": "sp03",
+        "powerMode": "circuit",
+        "maintained": false,
+        "intensity": 0.58,
+        "shadowReveal": 1
+      },
+      {
+        "id": "chamber-entry",
+        "kind": "emergency",
+        "circuit": "sp03",
+        "powerMode": "circuit",
+        "maintained": false,
+        "intensity": 0.54,
+        "shadowReveal": 1
+      },
+      {
+        "id": "winch-lamp",
+        "kind": "emergency",
+        "circuit": "sp03",
+        "powerMode": "circuit",
+        "maintained": false,
+        "intensity": 0.74,
+        "shadowReveal": 1
+      },
+      {
+        "id": "service-landing",
+        "kind": "emergency",
+        "circuit": "sp03",
+        "powerMode": "circuit",
+        "maintained": false,
+        "intensity": 0.61,
+        "shadowReveal": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": "access-low",
+        "circuit": "sp03",
+        "powerMode": "circuit",
+        "maintained": false,
+        "intensity": 0.72,
+        "shadowReveal": 1
+      },
+      {
+        "id": "access-high",
+        "circuit": "sp03",
+        "powerMode": "circuit",
+        "maintained": false,
+        "intensity": 0.65,
+        "shadowReveal": 1
+      },
+      {
+        "id": "ringing-pendant",
+        "circuit": "sp03",
+        "powerMode": "circuit",
+        "maintained": false,
+        "intensity": 0.58,
+        "shadowReveal": 1
+      },
+      {
+        "id": "chamber-entry",
+        "circuit": "sp03",
+        "powerMode": "circuit",
+        "maintained": false,
+        "intensity": 0.54,
+        "shadowReveal": 1
+      },
+      {
+        "id": "winch-lamp",
+        "circuit": "sp03",
+        "powerMode": "circuit",
+        "maintained": false,
+        "intensity": 0.74,
+        "shadowReveal": 1
+      },
+      {
+        "id": "service-landing",
+        "circuit": "sp03",
+        "powerMode": "circuit",
+        "maintained": false,
+        "intensity": 0.61,
+        "shadowReveal": 1
+      }
+    ],
+    "submitted": {
+      "active": true,
+      "lightId": "ringing-pendant",
+      "figures": 3,
+      "visibleBodies": 3,
+      "shadowOnlyFigures": 0,
+      "shadowOnlyIndices": [],
+      "presentation": "shadow",
+      "compositionId": "tower-landing-severe",
+      "compositionSource": "authored",
+      "hardRevealIndex": null,
+      "card": null,
+      "cardIndex": null,
+      "cardPhase": null,
+      "exposure": 1,
+      "minimumDistance": 4.058,
+      "stageSector": 2,
+      "pulseIndex": 10
+    }
+  },
+  "apparitions": {
+    "active": true,
+    "lightId": "ringing-pendant",
+    "figures": 3,
+    "visibleBodies": 3,
+    "shadowOnlyFigures": 0,
+    "shadowOnlyIndices": [],
+    "compositionId": "tower-landing-severe",
+    "compositionSource": "authored",
+    "stageYaw": 1.5707963267948966,
+    "poseIds": [
+      "weight_shift",
+      "stoop",
+      "symmetric"
+    ],
+    "bearings": [
+      -1.904,
+      -2.041,
+      -2.206
+    ],
+    "pitches": [
+      -0.132,
+      -0.147,
+      -0.152
+    ],
+    "metres": [
+      [
+        92.6,
+        54.02
+      ],
+      [
+        93.28,
+        54.39
+      ],
+      [
+        93.73,
+        54.91
+      ]
+    ],
+    "bodies": [
+      {
+        "id": "emergency-shadow:ringing-pendant:0",
+        "index": 0,
+        "poseId": "weight_shift",
+        "shadowOnly": false,
+        "x": 92.595,
+        "y": 8.6,
+        "z": 54.023,
+        "yaw": 1.317,
+        "distance": 4.661,
+        "presentation": "shadow",
+        "motion": "milling"
+      },
+      {
+        "id": "emergency-shadow:ringing-pendant:1",
+        "index": 1,
+        "poseId": "stoop",
+        "shadowOnly": false,
+        "x": 93.279,
+        "y": 8.6,
+        "z": 54.392,
+        "yaw": 1.5012,
+        "distance": 4.174,
+        "presentation": "shadow",
+        "motion": "milling"
+      },
+      {
+        "id": "emergency-shadow:ringing-pendant:2",
+        "index": 2,
+        "poseId": "symmetric",
+        "shadowOnly": false,
+        "x": 93.734,
+        "y": 8.6,
+        "z": 54.908,
+        "yaw": 1.6402,
+        "distance": 4.058,
+        "presentation": "shadow",
+        "motion": "milling"
+      }
+    ]
+  },
+  "scene": {
+    "luma": 40.91,
+    "litPct": 31.9,
+    "redPct": 32.2,
+    "whitePct": 23.52
+  },
+  "shadow": {
+    "ready": true,
+    "active": true,
+    "size": 1024
+  },
+  "effects": "full"
+}

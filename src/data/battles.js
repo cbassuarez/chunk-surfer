@@ -550,7 +550,7 @@ export function chapelBoss({ kind = 'nothing', value = null, listened = 5 } = {}
       { who: 'surfer', text: 'Take five.', rate: 0.94 },
       { who: 'surfer', text: 'COME CLOSER', rate: 0.94 },
       { who: 'you', text: "There is not a person in the chapel... or there shouldn't be, but I'm getting the feeling I'm in heart of the building. Is that...? " },
-      { who: 'direction', text: `It has put on a face while you were not looking. It is wearing ${face.label.toLowerCase()}.` },
+      { who: 'direction', text: `The damaged monitor still shows the chapel. Its heading now reads ${face.label}.` },
     ],
     rounds: [
       {

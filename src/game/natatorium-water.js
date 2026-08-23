@@ -1,4 +1,5 @@
 import { MATERIAL, ZONE } from '../data/floorplan/legend.js';
+import { computeWaterBounds, pointInBounds } from './water-bodies.js';
 import { lastReturnRecord } from '../progression/return-history.js';
 
 export const NATATORIUM_WATER_STATES = Object.freeze({
@@ -115,32 +116,16 @@ export function natatoriumWaterActive(run = null) {
   return run?.environment?.natatoriumWater === NATATORIUM_WATER_STATES.MURKY;
 }
 
+// The bath's own bounds. The scan that used to live here is now
+// computeWaterBounds in water-bodies.js, with its two constants lifted into
+// arguments so a second body could use it; this is the natatorium asking that
+// scan its own question. Kept so every existing caller reads the same as before.
 export function computeNatatoriumBasinBounds(fp) {
-  const plan = fp?.floorplan?.() || fp;
-  if (!plan?.w || !plan?.h || !plan.material || !plan.zone || !plan.solid) return null;
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-  let count = 0;
-  for (let y = 0; y < plan.h; y += 1) {
-    for (let x = 0; x < plan.w; x += 1) {
-      const i = y * plan.w + x;
-      if (plan.solid[i]) continue;
-      if (plan.zone[i] !== ZONE.natatorium || plan.material[i] !== MATERIAL.wetTile) continue;
-      minX = Math.min(minX, x);
-      minY = Math.min(minY, y);
-      maxX = Math.max(maxX, x + 1);
-      maxY = Math.max(maxY, y + 1);
-      count += 1;
-    }
-  }
-  return count > 0 ? { minX, minY, maxX, maxY, count } : null;
+  return computeWaterBounds(fp, { zone: ZONE.natatorium, material: MATERIAL.wetTile });
 }
 
 export function pointInNatatoriumBasin(x, y, bounds) {
-  if (!bounds) return false;
-  return x >= bounds.minX && x < bounds.maxX && y >= bounds.minY && y < bounds.maxY;
+  return pointInBounds(x, y, bounds);
 }
 
 export function waterUvForPoint(x, y, bounds) {

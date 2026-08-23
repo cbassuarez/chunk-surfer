@@ -131,7 +131,10 @@ test('mic denied permission is separate from no-input state', async () => {
 
 test('mic passes selected device constraints and analyzes selected stereo channel', async () => {
   let constraints = null;
-  const stream = fakeStream({ deviceId: 'usb-interface', channelCount: 2 });
+  const stream = fakeStream({
+    deviceId: 'usb-interface', channelCount: 2,
+    echoCancellation: true, noiseSuppression: false, autoGainControl: false,
+  });
   installMediaDevices({
     addEventListener() {},
     enumerateDevices: async () => [
@@ -156,6 +159,10 @@ test('mic passes selected device constraints and analyzes selected stereo channe
   assert.equal(snap.channelCount, 2);
   assert.equal(constraints.audio.deviceId.exact, 'usb-interface');
   assert.equal(constraints.audio.channelCount.ideal, 2);
+  assert.deepEqual(constraints.audio.echoCancellation, { ideal: true });
+  assert.equal(constraints.audio.noiseSuppression, false);
+  assert.equal(constraints.audio.autoGainControl, false);
+  assert.equal(snap.processing.echoCancellation, true);
   assert.equal(ctx.splitterChannel, 1);
   ctx.sample = 0.5;
   assert.equal(micLevel(), 0.5);

@@ -64,11 +64,23 @@ const battleFixture = { combat: { movements: [{ intents: [
   { id: 'quiet', kind: 'conceal', damage: 1 },
   { id: 'hard', kind: 'overload', damage: 3 },
 ] }] } };
+// The profile leans the opponent's MOOD now. It used to re-sort each movement's
+// intent array so the harshest blows came first, which was a real difficulty
+// lever back when the opponent read its moves off the array in order — and
+// became a no-op dressed as one the moment it started choosing instead.
 const pressureBattle = snapshotBattleIntent(battleFixture, { adaptiveBand: 1 });
 assert.equal(pressureBattle.intent, 'pressure');
-assert.deepEqual(pressureBattle.definition.combat.movements[0].intents.map((entry) => entry.id), ['hard', 'quiet']);
+assert.equal(pressureBattle.pressureBias, 1, 'pressure arrives as a lean, not a re-sort');
+assert.equal(snapshotBattleIntent(battleFixture, { adaptiveBand: -1 }).pressureBias, -1, 'and relief leans the other way');
+assert.deepEqual(
+  pressureBattle.definition.combat.movements[0].intents.map((entry) => entry.id),
+  ['quiet', 'hard'],
+  'authored content is handed back exactly as authored',
+);
 assert.deepEqual(battleFixture.combat.movements[0].intents.map((entry) => entry.id), ['quiet', 'hard'], 'the authored definition is not mutated');
-assert.equal(snapshotBattleIntent(battleFixture, { adaptiveBand: 1 }, { tutorial: true }).intent, 'baseline');
+const benched = snapshotBattleIntent(battleFixture, { adaptiveBand: 1 }, { tutorial: true });
+assert.equal(benched.intent, 'baseline');
+assert.equal(benched.pressureBias, 0, 'the bench drill is never leaned on');
 
 let state = freshPsychProfileState();
 for (let index = 0; index < 12; index += 1) {

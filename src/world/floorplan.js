@@ -21,7 +21,7 @@
 
 import {
   F, ZONE, ZONE_WORLD, MATERIAL, cellFor, materialForZone,
-  EYE, STEP_UP, HEADROOM, PLAN_SCALE, AMBIENT_PLACE_SCALE
+  EYE, STEP_UP, HEADROOM, PLAN_SCALE, AMBIENT_PLACE_SCALE, isOutdoorZone
 } from '../data/floorplan/legend.js';
 import {
   DOOR_STATE,
@@ -1351,7 +1351,9 @@ const SPAN_WINDOW=1.0;
 export function physicalRenderPlanFor(x,y){
   const here=logicalToPhysical(x,y),group=here.renderGroup||here.layer||'ground';
   const observerZone=zoneAt(x,y);
-  const exteriorObserver=observerZone===ZONE.dock||observerZone===ZONE.street||observerZone===ZONE.civicCourt||observerZone===ZONE.serviceYard;
+  // The same predicate prop-visibility asks, so the walls and the skin can
+  // never disagree about which side of the envelope you are on.
+  const exteriorObserver=isOutdoorZone(observerZone);
   const band=Math.round(here.y/HEIGHT_BAND);
   // The single height this slice is built for. Everything below uses it — key,
   // filter and choice — so the cached slice always matches what it was keyed on.
@@ -1362,6 +1364,10 @@ export function physicalRenderPlanFor(x,y){
   const cacheKey=`${group}:${here.layer}:${band}:${exteriorObserver?'exterior':'enclosed'}`;
   if(plan.physical.renderCache.has(cacheKey))return plan.physical.renderCache.get(cacheKey);
   const w=plan.physical.width,h=plan.physical.height,originX=plan.physical.originX||0,originY=plan.physical.originY||0,solid=new Uint8Array(w*h).fill(1),floor=new Float32Array(w*h),ceil=new Float32Array(w*h),flags=new Uint8Array(w*h),zone=new Uint8Array(w*h),material=new Uint8Array(w*h),rgba=new Uint8Array(w*h*4);
+  // Cells where a church contributes its ground to an outdoor slice. Their
+  // ceiling is resolved from the yard AFTER the sweep, once the neighbours
+  // exist to read it off — see the note below.
+  const churchGround=[],yardCeilByRow=new Float32Array(plan.physical.height);
   const visualVoid=exteriorObserver?plan.physical.visualExteriorVoid:plan.physical.visualVoid;
   if(exteriorObserver){
     // From weathered public space the renderer draws the civic block's closed
@@ -1377,8 +1383,17 @@ export function physicalRenderPlanFor(x,y){
   }
   for(const [key,all] of plan.physical.cells){
     const [px,py]=key.split(',').map(Number);
+    // ZONE.church is kept from outside for its GROUND only, and that is worth
+    // being precise about. The exterior slice has no solid geometry by design —
+    // walls out here are meshes — so a church's wall cells are dropped either
+    // way. What must not be dropped is the floor it stands on: without its span
+    // the footprint falls through to the fill's −8m and the yard acquires a
+    // thirty-metre pit exactly where a building is supposed to be. Its walls
+    // arrive when its elevation mesh does; see conservatory_west_elevation for
+    // how Ellery does the same thing.
     const sceneSpans=exteriorObserver?all.filter((span)=>
-      span.zone===ZONE.street||span.zone===ZONE.civicCourt||span.zone===ZONE.serviceYard||span.zone===ZONE.dock):all;
+      span.zone===ZONE.street||span.zone===ZONE.civicCourt||span.zone===ZONE.serviceYard
+      ||span.zone===ZONE.dock||span.zone===ZONE.church):all;
     if(!sceneSpans.length)continue;
     const hallSpans=sceneSpans.filter((s)=>s.spaceId==='hall');
     const hallEnvelope=here.spaceId==='hall'&&here.layer!=='hall_stair'&&hallSpans.length;
@@ -1431,7 +1446,42 @@ export function physicalRenderPlanFor(x,y){
       }
       const s=pool.reduce((best,v)=>Math.abs(v.floor-hy)<Math.abs(best.floor-hy)?v:best,pool[0]);
       floor[i]=s.floor;ceil[i]=s.ceil;flags[i]=s.flags;zone[i]=s.zone;material[i]=s.material;
+      // OUTDOORS THE CHURCH IS GROUND AND NOTHING ELSE.
+      //
+      // Keeping its span stops the footprint falling to the fill's −8m, but
+      // keeping its CEILING is what drew the monolith. The exterior slice is
+      // filled to 24m; a nave that punches 13m into that is a ceiling step, and
+      // r3d draws a ceiling step as geometry hanging from the higher side. Over
+      // an open yard that is a black slab in the sky with nothing underneath it,
+      // which is exactly what it looked like.
+      //
+      // So the floor survives the filter and the roof does not. The roof arrives
+      // when the elevation mesh does, the way Ellery's already has.
+      if(exteriorObserver){
+        // The yard bands its ceiling along its DEPTH, so a row is exactly the
+        // right granularity to read a church's roofline off.
+        if(s.zone===ZONE.dock)yardCeilByRow[localY]=Math.max(yardCeilByRow[localY]||0,s.ceil);
+        if(s.zone===ZONE.church){churchGround.push(i);flags[i]=F.SKY;}
+      }
     }
+  }
+  // THE CHURCH'S ROOFLINE IS THE YARD'S, AND ONLY THE YARD KNOWS IT.
+  //
+  // Outdoors the church is ground and nothing else — its walls and roof are a
+  // mesh's job — but the ceiling it carries still has to AGREE with the tarmac
+  // around it. Any disagreement is a ceiling step, and r3d draws a ceiling step
+  // as geometry hanging from the higher side: over an open yard, a slab in the
+  // sky with nothing underneath it.
+  //
+  // The right value cannot be authored here, because the yard bands its ceiling
+  // along its depth so Ellery's elevation has a silhouette (see YARD_ROOFLINE):
+  // the correct height is 17.6m beside the concert hall and 9.6m down by the
+  // baths. So it is read off the yard's own row. Neighbour search was the first
+  // attempt and does not work — a church cell's neighbours are mostly the
+  // slice's FILL, which is the flat 24 that caused the step in the first place.
+  for(const i of churchGround){
+    const cy=(i-(i%w))/w;
+    ceil[i]=yardCeilByRow[cy]||24;
   }
   for(let i=0;i<w*h;i++){rgba[i*4]=solid[i]?0:encodeH(floor[i]);rgba[i*4+1]=solid[i]?0:encodeH(ceil[i]);rgba[i*4+2]=solid[i]?F.SOLID:flags[i];rgba[i*4+3]=solid[i]?0:zone[i];}
   const ambient=bakeAmbientField({w,h,solid,flags,floor,ceil});

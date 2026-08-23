@@ -1,6 +1,10 @@
 import { assetUrl } from '../platform/paths.js';
 import { runtimeParams } from '../platform/launch.js';
 import { authoredCue } from './authored-cues.js';
+import {
+  OPENING_BED_LOOP_SECONDS,
+  nextOpeningBedDownbeatAt,
+} from './opening-bed-transport.js';
 
 // Story-only beds.
 //
@@ -21,6 +25,7 @@ const ENDING_BED_PLACEHOLDER = assetUrl('audio/game/title_song.mp3');
 
 export const STORY_AUDIO = {
   title: assetUrl('audio/game/title_song.mp3'),
+  openingBed: assetUrl('audio/game/opening_scene_bed_pre_cold_open.mp3'),
   // The credits roll gets its own piece. It plays through the same soundtrack
   // slot as the title bed, which is what guarantees the two can never overlap.
   credits: assetUrl('audio/game/credits_song.mp3'),
@@ -77,6 +82,7 @@ function authoredGain(cueId, fallback = 1) {
 export const STORY_GAIN_BASELINES = Object.freeze({
   typing: 0.55,
   title: 0.42,
+  openingBed: 0.30,
   // Louder than the title bed: nothing competes with it. The credits roll has
   // no dialogue, no foley and no room tone over the top, so the bed IS the
   // scene rather than a floor under one.
@@ -91,6 +97,7 @@ export const TYPE_LEVEL = { thought: 1.0, direction: 1.15 };   // narration type
 // The song is the piece. It is not background: it carries the booth and it
 // carries the title, and it is the last thing the player hears before the door.
 export const SOUNDTRACK_GAIN = queryGain('songgain', STORY_GAIN_BASELINES.title * authoredGain('story.title'));
+export const OPENING_BED_GAIN = queryGain('openingbedgain', STORY_GAIN_BASELINES.openingBed * authoredGain('story.openingBed', 1));
 export const CREDITS_GAIN = queryGain('creditsgain', STORY_GAIN_BASELINES.credits * authoredGain('story.credits'));
 export const SOUNDTRACK_DUCK = SOUNDTRACK_GAIN * 0.55;         // audible, out of the way
 export const BOOTH_GAIN = STORY_GAIN_BASELINES.booth * authoredGain('story.booth');
@@ -103,7 +110,8 @@ let audioBuses = { dialog: null, sfx: null, music: null, menu: null };
 const buffers = new Map();
 const pending = new Map();
 
-let soundtrack = null; // { src, gain, startedAt, stopping }
+let soundtrack = null; // { src, gain, startedAt, stopping, track }
+let openingBed = null; // { src, hp, lp, gain, startedAt, downbeatAt, stopping, target }
 let typing = null;     // { gain, hp, lp, active, timer, targetGain }
 let menuHiss = null;
 
@@ -152,6 +160,26 @@ function setGain(gainNode, value, rampSec = 0.5) {
   gainNode.gain.linearRampToValueAtTime(Math.max(0, value), now + Math.max(0.02, rampSec));
 }
 
+function setGainAt(gainNode, value, at, rampSec = 0.01) {
+  if (!ctx || !gainNode) return;
+  const now = ctx.currentTime;
+  const start = Math.max(now, Number.isFinite(Number(at)) ? Number(at) : now);
+  const ramp = Math.max(0.005, Number.isFinite(Number(rampSec)) ? Number(rampSec) : 0.005);
+  gainNode.gain.cancelScheduledValues(start);
+  gainNode.gain.setValueAtTime(gainNode.gain.value, start);
+  gainNode.gain.linearRampToValueAtTime(Math.max(0, value), start + ramp);
+}
+
+function rampParam(param, value, rampSec = 0.12) {
+  if (!ctx || !param) return;
+  const now = ctx.currentTime;
+  const target = Number(value);
+  if (!Number.isFinite(target)) return;
+  param.cancelScheduledValues(now);
+  param.setValueAtTime(param.value, now);
+  param.linearRampToValueAtTime(target, now + Math.max(0.01, rampSec));
+}
+
 // The player's music level, a scalar over SOUNDTRACK_GAIN. 1 is the mix as
 // authored; 0 is silence. Rides the live soundtrack when changed.
 let musicScale = 1;
@@ -161,18 +189,25 @@ function trackGain(track) {
 export function setMusicVolume(v) {
   musicScale = Math.max(0, Math.min(1, Number(v)));
   if (soundtrack && !soundtrack.stopping) setGain(soundtrack.gain, trackGain(soundtrack.track) * musicScale, 0.15);
+  if (openingBed && !openingBed.stopping) {
+    const target = openingBed.target?.gain ?? 1;
+    setGain(openingBed.gain, target * OPENING_BED_GAIN * musicScale, 0.15);
+  }
 }
 export function musicVolume() { return musicScale; }
 
 // One soundtrack at a time, whichever track it is. Asking for a different
 // track than the one playing swaps it; asking for the same one just re-ramps,
 // which is what makes this safe to call from a scene's enter() every time.
-export function startSoundtrack({ track = 'title', gain = null, fade = 2.8 } = {}) {
+export function startSoundtrack({ track = 'title', gain = null, fade = 2.8, at = null, offset = 0 } = {}) {
   if (!ctx || !bus) return null;
   const url = STORY_AUDIO[track] || STORY_AUDIO.title;
   const level = gain == null ? trackGain(track) * musicScale : gain;
   const buf = buffers.get(url);
-  if (!buf) { preload(url).then(() => startSoundtrack({ track, gain, fade })); return null; }
+  if (!buf) {
+    preload(url).then(() => startSoundtrack({ track, gain, fade, at, offset }));
+    return null;
+  }
   if (soundtrack && !soundtrack.stopping) {
     if (soundtrack.track === track) {
       setGain(soundtrack.gain, level, fade);
@@ -182,21 +217,159 @@ export function startSoundtrack({ track = 'title', gain = null, fade = 2.8 } = {
   }
 
   const now = ctx.currentTime;
+  const startAt = Math.max(now, Number.isFinite(Number(at)) ? Number(at) : now);
   const src = ctx.createBufferSource();
   src.buffer = buf;
   src.loop = true;
   const g = ctx.createGain();
-  g.gain.setValueAtTime(0, now);
+  g.gain.setValueAtTime(0, startAt);
   src.connect(g);
-    g.connect(outBus('music'));
-  try { src.start(now); } catch (_) { return null; }
-  soundtrack = { src, gain: g, startedAt: now, stopping: false, track };
-  setGain(g, level, fade);
+  g.connect(outBus('music'));
+  try { src.start(startAt, Math.max(0, Number(offset) || 0)); } catch (_) { return null; }
+  soundtrack = { src, gain: g, startedAt: startAt, stopping: false, track };
+  setGainAt(g, level, startAt, fade);
   src.onended = () => {
     try { src.disconnect(); g.disconnect(); } catch (_) {}
     if (soundtrack?.src === src) soundtrack = null;
   };
   return soundtrack;
+}
+
+
+export function startOpeningSceneBed({ gain = OPENING_BED_GAIN, fade = 1.8 } = {}) {
+  if (!ctx || !bus || openingBed) return openingBed;
+  const url = STORY_AUDIO.openingBed;
+  const buf = buffers.get(url);
+  if (!buf) {
+    preload(url).then(() => { if (!openingBed) startOpeningSceneBed({ gain, fade }); });
+    preload(STORY_AUDIO.title);
+    return null;
+  }
+
+  const now = ctx.currentTime;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+  src.loopStart = 0;
+  src.loopEnd = Math.min(OPENING_BED_LOOP_SECONDS, Math.max(0.25, buf.duration - 0.004));
+
+  const hp = ctx.createBiquadFilter();
+  hp.type = 'highpass';
+  hp.frequency.setValueAtTime(45, now);
+  hp.Q.setValueAtTime(0.55, now);
+
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.setValueAtTime(16000, now);
+  lp.Q.setValueAtTime(0.55, now);
+
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0, now);
+  src.connect(hp);
+  hp.connect(lp);
+  lp.connect(g);
+  g.connect(outBus('music'));
+
+  try { src.start(now); } catch (_) {
+    try { src.disconnect(); hp.disconnect(); lp.disconnect(); g.disconnect(); } catch (_) {}
+    return null;
+  }
+
+  openingBed = {
+    src,
+    hp,
+    lp,
+    gain: g,
+    startedAt: now,
+    downbeatAt: now,
+    stopping: false,
+    target: { gain: 1, hpHz: 45, lpHz: 16000, q: 0.55 },
+  };
+
+  setGain(g, gain * musicScale, fade);
+  preload(STORY_AUDIO.title);
+
+  src.onended = () => {
+    try { src.disconnect(); hp.disconnect(); lp.disconnect(); g.disconnect(); } catch (_) {}
+    if (openingBed?.src === src) openingBed = null;
+  };
+  return openingBed;
+}
+
+export function setOpeningSceneBedProximity(profile = {}, { fade = 0.16 } = {}) {
+  if (!ctx || !openingBed || openingBed.stopping) return false;
+  const next = {
+    gain: Math.max(0, Number(profile.gain) || 0),
+    hpHz: Math.max(10, Number(profile.hpHz) || 45),
+    lpHz: Math.max(100, Number(profile.lpHz) || 16000),
+    q: Math.max(0.1, Number(profile.q) || 0.55),
+  };
+  openingBed.target = next;
+  setGain(openingBed.gain, next.gain * OPENING_BED_GAIN * musicScale, fade);
+  rampParam(openingBed.hp.frequency, next.hpHz, fade);
+  rampParam(openingBed.lp.frequency, next.lpHz, fade);
+  rampParam(openingBed.hp.Q, next.q, fade);
+  rampParam(openingBed.lp.Q, next.q, fade);
+  return true;
+}
+
+export function stopOpeningSceneBed({ fade = 0.2 } = {}) {
+  if (!openingBed) return;
+  const b = openingBed;
+  openingBed = null;
+  b.stopping = true;
+  setGain(b.gain, 0, fade);
+  globalThis.setTimeout?.(() => {
+    try { b.src.stop(); } catch (_) {}
+    for (const n of [b.src, b.hp, b.lp, b.gain]) {
+      try { n.disconnect(); } catch (_) {}
+    }
+  }, Math.max(40, fade * 1000 + 80));
+}
+
+function hardStopOpeningSceneBedAt(at) {
+  if (!ctx || !openingBed) return false;
+  const b = openingBed;
+  openingBed = null;
+  b.stopping = true;
+  const stopAt = Math.max(ctx.currentTime, Number.isFinite(Number(at)) ? Number(at) : ctx.currentTime);
+  setGainAt(b.gain, 0, stopAt, 0.008);
+  try { b.src.stop(stopAt + 0.012); } catch (_) {}
+  globalThis.setTimeout?.(() => {
+    for (const n of [b.src, b.hp, b.lp, b.gain]) {
+      try { n.disconnect(); } catch (_) {}
+    }
+  }, Math.max(40, (stopAt - ctx.currentTime) * 1000 + 80));
+  return true;
+}
+
+export function commitOpeningSceneBedToColdOpenTitle({ fade = 0.012 } = {}) {
+  if (!ctx || !bus) {
+    startSoundtrack({ track: 'title', fade: 0.04 });
+    return { scheduled: false, at: 0, delaySeconds: 0, reason: 'no-context' };
+  }
+
+  const titleBuf = buffers.get(STORY_AUDIO.title);
+  const missingOpeningBed = !openingBed || openingBed.stopping;
+  if (missingOpeningBed || !titleBuf) {
+    stopOpeningSceneBed({ fade: 0.04 });
+    startSoundtrack({ track: 'title', fade: 0.04 });
+    return {
+      scheduled: false,
+      at: ctx.currentTime,
+      delaySeconds: 0,
+      reason: missingOpeningBed ? 'no-opening-bed' : 'title-not-loaded',
+    };
+  }
+
+  const at = nextOpeningBedDownbeatAt(ctx.currentTime, openingBed.downbeatAt);
+  hardStopOpeningSceneBedAt(at);
+  const title = startSoundtrack({ track: 'title', at, fade, offset: 0 });
+  if (!title) {
+    startSoundtrack({ track: 'title', fade: 0.04 });
+    return { scheduled: false, at: ctx.currentTime, delaySeconds: 0, reason: 'title-start-failed' };
+  }
+  return { scheduled: true, at, delaySeconds: Math.max(0, at - ctx.currentTime), reason: 'scheduled' };
 }
 
 export function fadeSoundtrack({ fade = 7.0 } = {}) {
@@ -302,6 +475,17 @@ export function audioState() {
     songTrack: soundtrack?.track || null,
     songLoaded: buffers.has(STORY_AUDIO.title),
     creditsLoaded: buffers.has(STORY_AUDIO.credits),
+    openingBed: openingBed
+      ? {
+          gain: +openingBed.gain.gain.value.toFixed(4),
+          hpHz: +openingBed.hp.frequency.value.toFixed(1),
+          lpHz: +openingBed.lp.frequency.value.toFixed(1),
+          startedAt: +openingBed.startedAt.toFixed(2),
+          downbeatAt: +openingBed.downbeatAt.toFixed(2),
+          stopping: !!openingBed.stopping,
+        }
+      : null,
+    openingBedLoaded: buffers.has(STORY_AUDIO.openingBed),
     booth: booth ? +booth.gain.gain.value.toFixed(4) : null,
     tape: +tapeHissGain().toFixed(4),
     tapeLoaded: buffers.has(STORY_AUDIO.tape),
@@ -597,6 +781,7 @@ export function menuConfirm(){click({freq:380,gain:.055,dur:.045,destination:'me
 export function stopAll() {
   stopTyping({ fade: 0.04 });
   stopTapeHiss({ fade: 0.2 });
+  stopOpeningSceneBed({ fade: 0.2 });
   stopBoothTone({ fade: 0.4 });
   stopRain({ fade: 0.4 });
   fadeSoundtrack({ fade: 0.5 });

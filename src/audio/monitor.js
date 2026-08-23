@@ -26,6 +26,8 @@ const CLIP_PEAK = 0.985;
 
 let ctx = null;
 let analyser = null;
+let programTimeData = null;
+let programFrequencyData = null;
 let peak = 0;
 let peakUntil = 0;
 let clipUntil = 0;
@@ -42,10 +44,63 @@ export function monitorInit(audioCtx, destination) {
   analyser.fftSize = 1024;
   analyser.smoothingTimeConstant = 0;
   analyser.channelCountMode = 'max';
+  programTimeData = new Float32Array(analyser.fftSize);
+  programFrequencyData = typeof analyser.getFloatFrequencyData === 'function'
+    ? new Float32Array(analyser.frequencyBinCount)
+    : null;
   peak = 0;
   peakUntil = clipUntil = 0;
   if (destination) analyser.connect(destination);
   return analyser;
+}
+
+function coarseSpectrum(node, frequencyData, bands = 8) {
+  if (!node || !frequencyData || typeof node.getFloatFrequencyData !== 'function') return null;
+  node.getFloatFrequencyData(frequencyData);
+  const out = new Array(bands).fill(0);
+  const maxBin = frequencyData.length;
+  for (let band = 0; band < bands; band++) {
+    const low = Math.max(1, Math.floor(Math.pow(maxBin, band / bands)));
+    const high = Math.max(low + 1, Math.floor(Math.pow(maxBin, (band + 1) / bands)));
+    let power = 0;
+    let count = 0;
+    for (let index = low; index < Math.min(maxBin, high); index++) {
+      const db = Number(frequencyData[index]);
+      if (!Number.isFinite(db)) continue;
+      const amplitude = Math.pow(10, db / 20);
+      power += amplitude * amplitude;
+      count++;
+    }
+    out[band] = count ? Math.sqrt(power / count) : 0;
+  }
+  return out;
+}
+
+// The analyser is the actual final game-output bus immediately before the
+// system speakers. Its waveform never drives the visible exposure meter; it is
+// only an acoustic echo reference for the optional room microphone. Measuring
+// here covers continuous room tone, tape hiss, hum, dialogue and future sounds
+// without requiring every audio producer to maintain a guessed dB envelope.
+export function monitorProgramMeasurement() {
+  if (!analyser || !programTimeData || typeof analyser.getFloatTimeDomainData !== 'function') {
+    return { active: false, rms: 0, peak: 0, clipped: false, spectrum: null };
+  }
+  analyser.getFloatTimeDomainData(programTimeData);
+  let sum = 0;
+  let peak = 0;
+  for (let index = 0; index < programTimeData.length; index++) {
+    const value = Number(programTimeData[index]) || 0;
+    sum += value * value;
+    peak = Math.max(peak, Math.abs(value));
+  }
+  const rms = Math.sqrt(sum / Math.max(1, programTimeData.length));
+  return {
+    active: rms > .0005 || peak > .002,
+    rms,
+    peak,
+    clipped: peak >= CLIP_PEAK,
+    spectrum: coarseSpectrum(analyser, programFrequencyData),
+  };
 }
 
 const dbFor = (rms) => rms > 0 ? Math.max(-96, 20 * Math.log10(rms)) : -96;
@@ -165,6 +220,7 @@ export function monitorSetAuxInput(provider = null) { auxiliaryInput = typeof pr
 
 export function monitorReset() {
   ctx = analyser = null;
+  programTimeData = programFrequencyData = null;
   peak = 0;
   peakUntil = clipUntil = 0;
   injected = null;

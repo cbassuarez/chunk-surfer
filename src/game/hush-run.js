@@ -219,7 +219,7 @@ export function makeHushRunScene({
       flash(`ACOUSTIC SEAM / ${seam.id || 'CROSSED'}`);
       return;
     }
-    flash('NO CAUSAL LOCUS');
+    flash('NO RECORDED EVENT HERE');
   }
 
   function move(dx, dy) {
@@ -366,7 +366,7 @@ export function makeHushRunScene({
           position = activeSpace?.describePosition?.(entered || { ...anchor.locus }) || { ...position, ...anchor.locus };
         }
         onCausalCorrection(anchor);
-        flash(`CAUSAL CORRECTION / ${anchor.verb.toUpperCase()}`);
+        flash(`TIMING CORRECTION / ${anchor.verb.toUpperCase()}`);
       });
       if(borrowHeld&&state.borrowMs>=3000){borrowHeld=false;borrowExhausted=true;R3.r3dSetLookAngles({...prowlLook,immediate:true});}
       saveClock += playbackWall;
@@ -401,12 +401,12 @@ export function makeHushRunScene({
         uiFill(0, 0, cols, rows, UI_COLOR.glass);
         const panelW = Math.min(70, cols - 4), panelH = Math.min(24, rows - 4);
         const body = drawMachinePanel(Math.floor((cols - panelW) / 2), Math.floor((rows - panelH) / 2), panelW, panelH, {
-          label: 'CAUSAL TRANSPORT', source: 'SOURCE TAPE', meter: false, theme: 'green', model: 'CT-02',
+          label: 'THE HUSH', source: 'SAVED RUN', meter: false, theme: 'green', model: 'CT-02',
           footer: 'ENTER SELECT   ESC TITLE',
         });
-        drawVfdText(body.x, body.y, 'SECOND TRACK HELD', { scale: 1, theme: 'green' });
-        uiText(body.x, body.y + 3, 'AN UNFINISHED CAUSAL PASS REMAINS ON THIS TAPE.', 'ui-secondary');
-        ['RESUME TAPE', 'RESTART TAPE'].forEach((label, index) => uiText(body.x + 3, body.y + 6 + index * 4, `${resumeChoice === index ? '▸' : ' '} ${label}`, resumeChoice === index ? 'ui-amber' : 'ui-secondary'));
+        drawVfdText(body.x, body.y, 'UNFINISHED PLAYTHROUGH', { scale: 1, theme: 'green' });
+        uiText(body.x, body.y + 3, 'YOU HAVE AN UNFINISHED HUSH PLAYTHROUGH.', 'ui-secondary');
+        ['CONTINUE', 'RESTART'].forEach((label, index) => uiText(body.x + 3, body.y + 6 + index * 4, `${resumeChoice === index ? '▸' : ' '} ${label}`, resumeChoice === index ? 'ui-amber' : 'ui-secondary'));
         return;
       }
       if (phase === 'report') {
@@ -414,7 +414,7 @@ export function makeHushRunScene({
         const report = hushPlaybackReport(state);
         const w = Math.min(76, cols - 4), h = Math.min(32, rows - 4);
         const body = drawMachinePanel(Math.floor((cols - w) / 2), Math.floor((rows - h) / 2), w, h, {
-          label: 'SECOND TRACK', source: report.label, meter: false, theme: 'green', model: 'CT-02',
+          label: 'THE HUSH', source: 'COMPLETE', meter: false, theme: 'green', model: 'CT-02',
           footer: 'ENTER RETURN TO TITLE',
         });
         drawVfdCounter(body.x, body.y, String(report.synchronization).padStart(3, '0'), { scale: 2, theme: 'green' });
@@ -424,7 +424,7 @@ export function makeHushRunScene({
           uiText(body.x + 2, body.y + 7 + index * 2, label, 'ui-secondary');
           uiText(body.x + 28, body.y + 7 + index * 2, String(value), 'ui-primary');
         });
-        uiText(body.x + 2, body.y + body.h - 2, 'NO NEW RETURN FILED. ORIGINAL CASE UNCHANGED.', 'ui-label');
+        uiText(body.x + 2, body.y + body.h - 2, 'YOUR ORIGINAL ENDING HAS NOT CHANGED.', 'ui-label');
         return;
       }
       if (terminalOpen) {
@@ -459,14 +459,14 @@ export function makeHushRunScene({
       if (cameraMode === 'listen') {
         uiFill(0, 0, cols, rows, UI_COLOR.glass);
         const field = drawMachinePanel(1, 1, cols - 2, rows - 2, {
-          label: 'ACOUSTIC FIELD DISPLAY', source: `TAPE ${transportRate}X`, meter: false, theme: 'green', model: 'AF-08',
+          label: 'ACOUSTIC FIELD DISPLAY', source: `REPLAY ${transportRate}X`, meter: false, theme: 'green', model: 'AF-08',
           footer: 'SPACE PROWL   E CAUSE/SEAM   P BORROW   SHIFT SPOOL',
         });
         drawVfdText(field.x, field.y, 'LISTEN', { scale: 1, theme: 'green' });
         drawVfdCounter(field.x + Math.max(12, field.w - 10), field.y, formatTapeTime(state.timeMs), { theme: 'green' });
         uiText(field.x, field.y + 2, recordedAnchor
           ? `${recordedAnchor.verb.toUpperCase()}  T-${(remaining / 1000).toFixed(1)}  ${armed ? 'ARMED' : arming ? 'WINDOW OPEN' : 'PENDING'}  ${locusDistance.toFixed(1)}M`
-          : 'END OF CAUSAL INDEX', armed ? 'ui-primary' : arming ? 'ui-danger' : 'ui-secondary');
+          : 'END OF RECORDED EVENTS', armed ? 'ui-primary' : arming ? 'ui-danger' : 'ui-secondary');
         uiText(field.x, field.y + 3, `PLAYER SHADOW PERCEPTION ${playerShadowPerception ? 'DIRECT / POWER LOCKED' : 'EXCLUDED'}   DENSITY ${Math.round(state.density).toString().padStart(3, '0')}`, playerShadowPerception ? 'ui-danger' : 'ui-label');
         const cells = listenCells(position, 14);
         const cx = Math.floor(field.x + field.w / 2), cy = Math.floor(field.y + field.h / 2) + 1;
@@ -483,7 +483,7 @@ export function makeHushRunScene({
         if (s) uiText(cx + Math.round(s.x - position.x), cy + Math.round(s.y - position.y), '○', 'ui-blue');
         if (recordedAnchor) uiText(cx + Math.round(recordedAnchor.locus.x - position.x), cy + Math.round(recordedAnchor.locus.y - position.y), '+', 'ui-danger');
         uiText(cx, cy, '●', 'ui-amber');
-        uiText(field.x, field.y + field.h - 2, '● HUSH   ○ PLAYER SHADOW   + CAUSAL LOCUS   = ACOUSTIC SEAM   × PERCEPTION', 'ui-label');
+        uiText(field.x, field.y + field.h - 2, '● HUSH   ○ PLAYER SHADOW   + RECORDED EVENT   = ACOUSTIC SEAM   × PERCEPTION', 'ui-label');
         if (message && performance.now() < messageUntil) uiCenter(field.y + field.h - 4, message, message.includes('CORRECTION') ? 'ui-danger' : 'ui-amber');
         return;
       }
@@ -491,14 +491,14 @@ export function makeHushRunScene({
       const panelW = Math.min(104, cols - 2), panelH = Math.min(15, rows - 2);
       const panelX = Math.floor((cols - panelW) / 2), panelY = rows - panelH - 1;
       const transport = drawMachinePanel(panelX, panelY, panelW, panelH, {
-        label: 'CAUSAL TRANSPORT', source: borrowed ? 'PLAYER SHADOW' : `TAPE ${transportRate}X`, meter: false, theme: 'green', model: 'CT-02',
+        label: 'THE HUSH', source: borrowed ? 'PLAYER SHADOW' : `REPLAY ${transportRate}X`, meter: false, theme: 'green', model: 'CT-02',
         footer: 'E CAUSE/SEAM  R TAUNT  B HAUNT  F MANIFEST  P BORROW  SPACE LISTEN  SHIFT SPOOL',
       });
       drawVfdText(transport.x, transport.y, borrowed ? 'BORROW' : 'PROWL', { scale: 1, theme: 'green' });
       drawVfdCounter(transport.x + Math.max(12, transport.w - 10), transport.y, formatTapeTime(state.timeMs), { theme: 'green' });
       uiText(transport.x, transport.y + 2, recordedAnchor
-        ? `${recordedAnchor.verb.toUpperCase()}  T-${(remaining / 1000).toFixed(1)}  ${armed ? 'ARMED / AWAIT CANONICAL TIME' : arming ? 'ARMING WINDOW' : 'PENDING'}  ${locusDistance.toFixed(1)}M`
-        : 'NO REMAINING CAUSAL LOCUS', armed ? 'ui-primary' : arming ? 'ui-danger' : 'ui-secondary');
+        ? `${recordedAnchor.verb.toUpperCase()}  T-${(remaining / 1000).toFixed(1)}  ${armed ? 'READY / WAIT FOR RECORDED TIME' : arming ? 'TIMING WINDOW' : 'PENDING'}  ${locusDistance.toFixed(1)}M`
+        : 'NO REMAINING RECORDED EVENT', armed ? 'ui-primary' : arming ? 'ui-danger' : 'ui-secondary');
       uiText(transport.x, transport.y + 4, `DENSITY ${Math.round(state.density).toString().padStart(3, '0')}  PROTECTED 025`, 'ui-label');
       drawLocationIndicator(transport.x + 26, transport.y + 4, Math.min(28, Math.max(8, transport.w - 52)), state.density / 100, { theme: 'green' });
       uiText(transport.x + Math.max(56, transport.w - 27), transport.y + 4, playerShadowPerception ? 'DIRECT PERCEPTION / LOCK' : 'PLAYER SHADOW EXCLUDED', playerShadowPerception ? 'ui-danger' : 'ui-secondary');

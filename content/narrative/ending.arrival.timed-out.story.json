@@ -1,86 +1,87 @@
 {
-  "schemaVersion": 1,
-  "id": "ending.arrival.timed-out",
-  "title": "Arrival · the clock beat you",
-  "status": "active",
-  "entry": "start",
-  "entries": [
+ "schemaVersion": 1,
+ "id": "ending.arrival.timed-out",
+ "title": "Arrival · the clock beat you",
+ "status": "active",
+ "entry": "start",
+ "entries": [
+  "start"
+ ],
+ "tags": [
+  "ending",
+  "arrival"
+ ],
+ "notes": "Played BEFORE the staying endings when the player began the inversion and missed a deadline. Running out of time used to convert silently into The Seal, so a man who inverted the signal, ran for a door that moved, ran again for a second one and was eleven seconds short got the ending of a man who never tried. This is the difference. He knows exactly how close it was, because he is a person who reads timecode for a living.",
+ "regions": [
+  {
+   "id": "ending.arrival.timed-out.region",
+   "title": "Timed out",
+   "kind": "ending",
+   "color": "#8b6a3b",
+   "nodeIds": [
     "start"
-  ],
-  "tags": [
-    "ending",
-    "arrival"
-  ],
-  "notes": "Played BEFORE the staying endings when the player began the inversion and missed a deadline. Running out of time used to convert silently into The Seal, so a man who inverted the signal, ran for a door that moved, ran again for a second one and was eleven seconds short got the ending of a man who never tried. This is the difference. He knows exactly how close it was, because he is a person who reads timecode for a living.",
-  "regions": [
-    {
-      "id": "ending.arrival.timed-out.region",
-      "title": "Timed out",
-      "kind": "ending",
-      "color": "#8b6a3b",
-      "nodeIds": [
-        "start"
-      ]
-    }
-  ],
-  "nodes": {
-    "start": {
-      "type": "ending",
-      "lines": [
-        {
-          "who": "direction",
-          "text": "The floor stops going. That is the first thing you notice, and it is the wrong thing to be relieved about.",
-          "id": "start.line.1"
-        },
-        {
-          "who": "you",
-          "text": "No — no, it was there, it was RIGHT there, I could see the frame of it —",
-          "id": "start.line.2"
-        },
-        {
-          "who": "direction",
-          "text": "Everything that was coming down has finished coming down, and everything that was not is exactly where it was. The building has stopped failing because it has stopped needing to.",
-          "id": "start.line.3"
-        },
-        {
-          "who": "surfer",
-          "text": "Correct the deviation.",
-          "id": "start.line.4"
-        },
-        {
-          "who": "you",
-          "text": "The circuit was good. The circuit WAS good.",
-          "id": "start.line.5"
-        },
-        {
-          "who": "direction",
-          "text": "It does not tell him he was slow. It does not have to, and it has no words of its own to do it with. It asks for the correction, at the same level it has asked all night, and the deviation it means is him.",
-          "id": "start.line.6"
-        },
-        {
-          "who": "direction",
-          "text": "He has read timecode for thirty years. He knows precisely how short he was, and he knows it in frames, and he will know it for the rest of the time he has, which is not long.",
-          "id": "start.line.7"
-        },
-        {
-          "who": "you",
-          "text": "I went to that door on the first night. I put my hand on it. I knew where it was.",
-          "id": "start.line.8",
-          "when": "ending.door.searched"
-        },
-        {
-          "who": "you",
-          "text": "I never once went and looked at my own way out. Not in eight hours. I had the plan and I trusted the plan.",
-          "id": "start.line.9",
-          "when": "!ending.door.searched"
-        },
-        {
-          "who": "direction",
-          "text": "The chapel has not moved. It did not have to. It only had to be the last place with a floor.",
-          "id": "start.line.10"
-        }
-      ],
-      "id": "start"
-    }
+   ]
   }
+ ],
+ "nodes": {
+  "start": {
+   "type": "ending",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "The floor stops going. That is the first thing you notice, and it is the wrong thing to be relieved about.",
+     "id": "start.line.1"
+    },
+    {
+     "who": "you",
+     "text": "No — no, it was there, it was RIGHT there, I could see the frame of it —",
+     "id": "start.line.2"
+    },
+    {
+     "who": "direction",
+     "text": "Everything that was coming down has finished coming down, and everything that was not is exactly where it was. The building has stopped failing because it has stopped needing to.",
+     "id": "start.line.3"
+    },
+    {
+     "who": "surfer",
+     "text": "Correct the deviation.",
+     "id": "start.line.4",
+     "quotes": "rehearsal"
+    },
+    {
+     "who": "you",
+     "text": "The circuit was good. The circuit WAS good.",
+     "id": "start.line.5"
+    },
+    {
+     "who": "direction",
+     "text": "It does not tell him he was slow. It does not have to, and it has no words of its own to do it with. It asks for the correction, at the same level it has asked all night, and the deviation it means is him.",
+     "id": "start.line.6"
+    },
+    {
+     "who": "direction",
+     "text": "He has read timecode for thirty years. He knows precisely how short he was, and he knows it in frames, and he will know it for the rest of the time he has, which is not long.",
+     "id": "start.line.7"
+    },
+    {
+     "who": "you",
+     "text": "I went to that door on the first night. I put my hand on it. I knew where it was.",
+     "id": "start.line.8",
+     "when": "ending.door.searched"
+    },
+    {
+     "who": "you",
+     "text": "I never once went and looked at my own way out. Not in eight hours. I had the plan and I trusted the plan.",
+     "id": "start.line.9",
+     "when": "!ending.door.searched"
+    },
+    {
+     "who": "direction",
+     "text": "The chapel has not moved. It did not have to. It only had to be the last place with a floor.",
+     "id": "start.line.10"
+    }
+   ],
+   "id": "start"
+  }
+ }
 }

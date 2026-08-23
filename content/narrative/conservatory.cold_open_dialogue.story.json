@@ -89,7 +89,7 @@
         },
         {
           "who": "guard",
-          "text": "You here for the Ellery gig? Christ. They actually sent someone tonight.",
+          "text": "You all right? You here for the Ellery gig? Christ. They actually sent someone tonight.",
           "id": "start.line.3"
         },
         {
@@ -1463,12 +1463,22 @@
         },
         {
           "who": "recordist",
-          "text": "No! Why do you know this?! Who are you?",
+          "text": "No!",
           "id": "tape.run.line.10"
         },
         {
+          "who": "recordist",
+          "text": "How do you know this?!",
+          "id": "tape.run.line.10a"
+        },
+        {
+          "who": "recordist",
+          "text": "Who are you?",
+          "id": "tape.run.line.10b"
+        },
+        {
           "who": "direction",
-          "text": "Thirty seconds of the room, at the same level as before.",
+          "text": "Thirty seconds of room tone, at the same level as before.",
           "id": "tape.run.line.11"
         },
         {
@@ -1503,14 +1513,14 @@
         },
         {
           "who": "recordist",
-          "text": "You will bring me another, and will lose them together.",
+          "text": "Bring me another, and we will lose them together.",
           "id": "tape.run.line.18"
         }
       ],
       "revisitLines": [
         {
           "who": "direction",
-          "text": "The fourth take waits at the same place. The voice. The room. Come closer.",
+          "text": "The fourth take begins at the same place. The voice. The room. Come closer.",
           "id": "tape.run.revisit.line.1"
         }
       ],

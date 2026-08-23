@@ -1,0 +1,705 @@
+{
+  "schemaVersion": 1,
+  "id": "battle.natatorium",
+  "title": "Natatorium Battle",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "battle"
+  ],
+  "notes": "",
+  "regions": [
+    {
+      "id": "battle.natatorium.region",
+      "title": "Natatorium Battle",
+      "kind": "scene",
+      "color": "#245c62",
+      "nodeIds": [
+        "start",
+        "round-1",
+        "round-2",
+        "round-3",
+        "outcome"
+      ]
+    },
+    {
+      "id": "battle.natatorium.endings",
+      "title": "Battle outcomes",
+      "kind": "ending",
+      "color": "#8b3c48",
+      "nodeIds": [
+        "win",
+        "lose"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "type": "battle",
+      "speaker": "THE SOUND OF SILENCE",
+      "art": {
+        "id": "tuningFork",
+        "mode": "boss",
+        "caption": "Reference tone / dry room",
+        "status": "REFERENCE"
+      },
+      "lines": [
+        {
+          "who": "direction",
+          "text": "Forty seconds into the take. Six metres of tile, no water, and the meter dead flat where a room this size has no business being.",
+          "id": "start.line.1.held",
+          "when": "battle.occasion == recording-2"
+        },
+        {
+          "who": "direction",
+          "text": "No take. You came back for the wide pair and the lid of the case is still shut. Six metres of tile, no water, and the room already listening.",
+          "id": "start.line.1.ambush",
+          "when": "battle.occasion == pre-recording-4"
+        },
+        {
+          "who": "direction",
+          "text": "And then, far off, a piano. Two notes. The wrong two notes.",
+          "id": "start.line.2"
+        },
+        {
+          "who": "you",
+          "text": "There is no piano in a natatorium.",
+          "id": "start.line.3"
+        },
+        {
+          "who": "you",
+          "text": "There is no piano in a building that has had its power off since April.",
+          "id": "start.line.4"
+        },
+        {
+          "who": "you",
+          "text": "I do not stop a take for a noise. Thirty years, and I have never once stopped a take for a noise.",
+          "id": "start.line.5.held",
+          "when": "battle.occasion == recording-2"
+        },
+        {
+          "who": "you",
+          "text": "Nothing is running. Nothing is armed. Whatever this is, I am hearing it with my own ears and no one else will ever hear it.",
+          "id": "start.line.5.ambush",
+          "when": "battle.occasion == pre-recording-4"
+        }
+      ],
+      "goto": "round-1",
+      "id": "start"
+    },
+    "round-1": {
+      "type": "battle-round",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "It comes again. Closer, or louder, or you are leaning towards it — you cannot tell which and that is the problem.",
+          "id": "round-1.line.1",
+          "channel": "before"
+        },
+        {
+          "who": "you",
+          "text": "No transient. No air moving. No felt on a string.",
+          "id": "round-1.line.2",
+          "channel": "on-listen"
+        },
+        {
+          "who": "you",
+          "text": "There is nothing there. There is nothing there and I can hear it.",
+          "id": "round-1.line.3",
+          "channel": "on-listen"
+        },
+        {
+          "who": "you",
+          "text": "Forty-one seconds. Forty-two. It is going on the tape either way.",
+          "id": "round-1.bark.held",
+          "channel": "on-listen",
+          "when": "battle.occasion == recording-2"
+        },
+        {
+          "who": "you",
+          "text": "There is no tape running on this. Whatever happens here happens once.",
+          "id": "round-1.bark.ambush",
+          "channel": "on-listen",
+          "when": "battle.occasion == pre-recording-4"
+        },
+        {
+          "who": "direction",
+          "text": "The tile gives it back to you four times and each return is thinner than the last.",
+          "id": "round-1.line.4",
+          "channel": "after"
+        }
+      ],
+      "battle": {
+        "nature": "not there",
+        "threat": 0.42
+      },
+      "goto": "round-2",
+      "id": "round-1"
+    },
+    "round-2": {
+      "type": "battle-round",
+      "lines": [
+        {
+          "who": "sarah",
+          "text": "Don’t record this.",
+          "id": "round-2.line.1.named",
+          "channel": "before",
+          "when": "battle.naming == yes"
+        },
+        {
+          "who": "unknown",
+          "text": "Don’t record this.",
+          "id": "round-2.line.1.unnamed",
+          "channel": "before",
+          "when": "battle.naming == no"
+        },
+        {
+          "who": "me",
+          "text": "I'm not recording.",
+          "id": "round-2.line.2",
+          "channel": "before"
+        },
+        {
+          "who": "sarah",
+          "text": "You’re always recording.",
+          "id": "round-2.line.3.named",
+          "channel": "before",
+          "when": "battle.naming == yes"
+        },
+        {
+          "who": "unknown",
+          "text": "You’re always recording.",
+          "id": "round-2.line.3.unnamed",
+          "channel": "before",
+          "when": "battle.naming == no"
+        },
+        {
+          "who": "direction",
+          "text": "She is right. The meter is moving.",
+          "id": "round-2.line.4",
+          "channel": "before"
+        },
+        {
+          "who": "you",
+          "text": "That is a take. That is a level and a room and a date, and I made it, and I did not ask.",
+          "id": "round-2.line.5",
+          "channel": "on-listen"
+        },
+        {
+          "who": "you",
+          "text": "Sarah hated the playback. Six years of empty rooms, and I never asked why that suited me.",
+          "id": "round-2.line.6.named",
+          "channel": "on-listen",
+          "when": "battle.naming == yes"
+        },
+        {
+          "who": "you",
+          "text": "She hated the playback. Six years of empty rooms, and I never asked why that suited me.",
+          "id": "round-2.line.6.unnamed",
+          "channel": "on-listen",
+          "when": "battle.naming == no"
+        },
+        {
+          "who": "you",
+          "text": "I recorded Sarah for three years and I called it not recording.",
+          "id": "round-2.line.7.named",
+          "channel": "after",
+          "when": "battle.naming == yes"
+        },
+        {
+          "who": "you",
+          "text": "I recorded her for three years and I called it not recording.",
+          "id": "round-2.line.7.unnamed",
+          "channel": "after",
+          "when": "battle.naming == no"
+        }
+      ],
+      "battle": {
+        "nature": "on the tape",
+        "threat": 0.5
+      },
+      "goto": "round-3",
+      "id": "round-2"
+    },
+    "round-3": {
+      "type": "battle-round",
+      "lines": [
+        {
+          "who": "sarah",
+          "text": "You never played me back. Not once. I used to think it was kindness.",
+          "id": "round-3.line.1.named",
+          "channel": "before",
+          "when": "battle.naming == yes"
+        },
+        {
+          "who": "unknown",
+          "text": "You never played me back. Not once. I used to think it was kindness.",
+          "id": "round-3.line.1.unnamed",
+          "channel": "before",
+          "when": "battle.naming == no"
+        },
+        {
+          "who": "me",
+          "text": "It was. You hated it.",
+          "id": "round-3.line.2",
+          "channel": "before"
+        },
+        {
+          "who": "sarah",
+          "text": "I hated hearing myself. You liked that I hated it. It meant you got to keep it all and never once be asked about it.",
+          "id": "round-3.line.3.named",
+          "channel": "before",
+          "when": "battle.naming == yes"
+        },
+        {
+          "who": "unknown",
+          "text": "I hated hearing myself. You liked that I hated it. It meant you got to keep it all and never once be asked about it.",
+          "id": "round-3.line.3.unnamed",
+          "channel": "before",
+          "when": "battle.naming == no"
+        },
+        {
+          "who": "you",
+          "text": "She is not in the room. She is not on the tape. She was never in the signal path at all.",
+          "id": "round-3.line.4",
+          "channel": "on-listen"
+        },
+        {
+          "who": "you",
+          "text": "I brought her in here. This is the one recording I have ever made that has me in it.",
+          "id": "round-3.line.5",
+          "channel": "on-listen"
+        },
+        {
+          "who": "direction",
+          "text": "The meter, which has never lied to you, sits at the bottom of the scale, and something keeps playing.",
+          "id": "round-3.line.6",
+          "channel": "after"
+        }
+      ],
+      "battle": {
+        "nature": "not there",
+        "threat": 0.58
+      },
+      "goto": "outcome",
+      "id": "round-3"
+    },
+    "outcome": {
+      "type": "checkpoint",
+      "lines": [],
+      "choices": [
+        {
+          "id": "outcome.win",
+          "text": "Composure held",
+          "goto": "win",
+          "mechanic": "win"
+        },
+        {
+          "id": "outcome.lose",
+          "text": "Composure broke",
+          "goto": "lose",
+          "mechanic": "lose"
+        }
+      ],
+      "id": "outcome"
+    },
+    "win": {
+      "type": "ending",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Nothing there. It fed me a piano and I fed it back its own empty room until it ran out of room.",
+          "id": "win.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "The tile stops answering. The meter holds. You have a clean minute of a room that tried very hard to put something in it.",
+          "id": "win.line.2.held",
+          "when": "battle.occasion == recording-2"
+        },
+        {
+          "who": "direction",
+          "text": "The tile stops answering. Nothing recorded any of it. You will have to be the sort of man who believes himself.",
+          "id": "win.line.2.ambush",
+          "when": "battle.occasion == pre-recording-4"
+        }
+      ],
+      "id": "win"
+    },
+    "lose": {
+      "type": "ending",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "Your composure goes between beats. You are answering the piano before you know you have decided to.",
+          "id": "lose.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "The take dies. Somewhere far off, satisfied, the room stops playing.",
+          "id": "lose.line.2.held",
+          "when": "battle.occasion == recording-2"
+        },
+        {
+          "who": "direction",
+          "text": "There is no take to die. Only you, on the tile, having lost something you cannot play back to check.",
+          "id": "lose.line.2.ambush",
+          "when": "battle.occasion == pre-recording-4"
+        }
+      ],
+      "id": "lose"
+    }
+  },
+  "metadata": {
+    "id": "natatorium",
+    "enemy": "THE SOUND OF SILENCE",
+    "art": {
+      "id": "tuningFork",
+      "mode": "boss",
+      "caption": "Reference tone / dry room",
+      "status": "REFERENCE"
+    },
+    "combat": {
+      "kind": "regular",
+      "music": {
+        "mode": "fixed",
+        "lead": "lead-1"
+      },
+      "movements": [
+        {
+          "id": "room",
+          "title": "THE EMPTY ROOM",
+          "coherence": 5,
+          "intents": [
+            {
+              "id": "natatorium:meter",
+              "label": "METER MOVES WITHOUT AIR",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "ROOM TONE"
+            },
+            {
+              "id": "natatorium:pressure",
+              "label": "PRESSURE BEHIND THE EARS",
+              "kind": "overload",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "natatorium:piano",
+              "label": "PIANO WITH NO TRANSIENT",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            }
+          ],
+          "severeIntents": [
+            {
+              "id": "natatorium:pressure",
+              "label": "PRESSURE BEHIND THE EARS",
+              "kind": "overload",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "natatorium:piano",
+              "label": "PIANO WITH NO TRANSIENT",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "natatorium:meter",
+              "label": "METER MOVES WITHOUT AIR",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "ROOM TONE"
+            }
+          ],
+          "deadAirIntents": [
+            {
+              "id": "natatorium:piano",
+              "label": "PIANO WITH NO TRANSIENT",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "natatorium:pressure",
+              "label": "PRESSURE BEHIND THE EARS",
+              "kind": "overload",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "natatorium:meter",
+              "label": "METER MOVES WITHOUT AIR",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "ROOM TONE"
+            }
+          ]
+        },
+        {
+          "id": "voice",
+          "title": "THE VOICE ON TAPE",
+          "coherence": 5,
+          "intents": [
+            {
+              "id": "natatorium:voice",
+              "label": "VOICE ON THE MONITOR PATH",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "VOICE PRINT"
+            },
+            {
+              "id": "natatorium:memory",
+              "label": "MEMORY PASSED AS SIGNAL",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "natatorium:lean",
+              "label": "THE ROOM LEANS CLOSER",
+              "kind": "overload",
+              "damage": 4,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            }
+          ],
+          "severeIntents": [
+            {
+              "id": "natatorium:memory",
+              "label": "MEMORY PASSED AS SIGNAL",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "natatorium:lean",
+              "label": "THE ROOM LEANS CLOSER",
+              "kind": "overload",
+              "damage": 4,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "natatorium:voice",
+              "label": "VOICE ON THE MONITOR PATH",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "VOICE PRINT"
+            }
+          ],
+          "deadAirIntents": [
+            {
+              "id": "natatorium:lean",
+              "label": "THE ROOM LEANS CLOSER",
+              "kind": "overload",
+              "damage": 4,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "natatorium:memory",
+              "label": "MEMORY PASSED AS SIGNAL",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "natatorium:voice",
+              "label": "VOICE ON THE MONITOR PATH",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "VOICE PRINT"
+            }
+          ],
+          "reactions": [
+            {
+              "when": "take-loaded",
+              "use": "natatorium:lean"
+            }
+          ]
+        },
+        {
+          "id": "hold",
+          "title": "THE TAKE THAT HOLDS YOU",
+          "coherence": 6,
+          "intents": [
+            {
+              "id": "natatorium:echo",
+              "label": "FOURTH RETURN OF THE ECHO",
+              "kind": "broadcast",
+              "damage": 3,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "EMPTY RETURN"
+            },
+            {
+              "id": "natatorium:depth",
+              "label": "BLACK WATER PRESSURE",
+              "kind": "overload",
+              "damage": 4,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing",
+              "followups": [
+                {
+                  "id": "natatorium:depth-echo",
+                  "kind": "overload",
+                  "damage": 1
+                }
+              ]
+            },
+            {
+              "id": "natatorium:absence",
+              "label": "ABSENCE WEARING HER VOICE",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            }
+          ],
+          "severeIntents": [
+            {
+              "id": "natatorium:depth",
+              "label": "BLACK WATER PRESSURE",
+              "kind": "overload",
+              "damage": 4,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing",
+              "followups": [
+                {
+                  "id": "natatorium:depth-echo",
+                  "kind": "overload",
+                  "damage": 1
+                }
+              ]
+            },
+            {
+              "id": "natatorium:absence",
+              "label": "ABSENCE WEARING HER VOICE",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "natatorium:echo",
+              "label": "FOURTH RETURN OF THE ECHO",
+              "kind": "broadcast",
+              "damage": 3,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "EMPTY RETURN"
+            }
+          ],
+          "deadAirIntents": [
+            {
+              "id": "natatorium:absence",
+              "label": "ABSENCE WEARING HER VOICE",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "natatorium:depth",
+              "label": "BLACK WATER PRESSURE",
+              "kind": "overload",
+              "damage": 4,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing",
+              "followups": [
+                {
+                  "id": "natatorium:depth-echo",
+                  "kind": "overload",
+                  "damage": 1
+                }
+              ]
+            },
+            {
+              "id": "natatorium:echo",
+              "label": "FOURTH RETURN OF THE ECHO",
+              "kind": "broadcast",
+              "damage": 3,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "EMPTY RETURN"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

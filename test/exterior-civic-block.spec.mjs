@@ -15,8 +15,9 @@ import {
   districtLogicalAt,
 } from '../src/data/exterior-district.js';
 import { CONSERVATORY_PROPS, PROP_MESH } from '../src/data/conservatory-props.js';
-import { exteriorAmbientInstances } from '../src/game/exterior-ambient.js';
-import { EXTERIOR_LORE, exteriorLoreLines } from '../src/data/exterior-lore.js';
+import { exteriorAmbientInstances, exteriorHeadlightLights } from '../src/game/exterior-ambient.js';
+import { EXTERIOR_LORE, exteriorLoreConversation, exteriorLoreLines } from '../src/data/exterior-lore.js';
+import { YARD_BENCH_ACTION, yardBenchSeatPose, yardBenchSitFrame, yardBenchStandFrame } from '../src/game/yard-bench-action.js';
 import * as PROPS from '../src/game/props.js';
 
 const plan=FP.compile(conservatory.levels,{
@@ -108,7 +109,19 @@ assert.ok(loreProps.every(({blocks})=>blocks===false),'side-lore locals never ob
 for(const prop of loreProps){
   assert.ok(exteriorLoreLines(prop.loreId)?.length>=2,`${prop.id} has no first conversation`);
   assert.ok(exteriorLoreLines(prop.loreId,{revisited:true})?.length>=1,`${prop.id} has no revisit line`);
+  const conversation=exteriorLoreConversation(prop.loreId);
+  assert.equal(conversation.startAt,'start');
+  assert.ok(Object.keys(conversation.tree).length>=10,`${prop.id} is still a short speech rather than a conversation tree`);
+  assert.ok(conversation.tree.start.choices.length>=4,`${prop.id} has no meaningful opening decision board`);
+  assert.equal(exteriorLoreConversation(prop.loreId,{revisited:true}).startAt,'return');
+  for(const [nodeId,node] of Object.entries(conversation.tree)){
+    if(node.goto)assert.ok(conversation.tree[node.goto],`${prop.id}:${nodeId} points to missing dialogue node ${node.goto}`);
+    for(const choice of node.choices||[])assert.ok(!choice.goto||conversation.tree[choice.goto],`${prop.id}:${nodeId} points to missing dialogue node ${choice.goto}`);
+  }
 }
+assert.deepEqual(loreProps.map(({mesh})=>mesh),[
+  'exterior_bus_woman','exterior_mews_neighbor','exterior_pub_driver',
+]);
 const lookBench=CONSERVATORY_PROPS.find(({id})=>id==='yard-look-bench');
 assert.equal(lookBench?.action,'yard-vigil-bench');
 assert.equal(PROP_MESH[lookBench?.mesh]?.blocks,false);
@@ -122,6 +135,26 @@ const propStats=JSON.parse(readFileSync(new URL('../public/assets/conservatory-p
 assert.ok(propStats.meshes.yard_van.triangles>=1200,'the van front has regressed to a block proxy');
 assert.ok(propStats.meshes.yard_look_bench.triangles>=180,'the sit/look bench needs a readable authored silhouette');
 assert.ok(propStats.bounds.yard_van.min[2]>=-3.6&&propStats.bounds.yard_van.max[2]<=3.1,'front detail escaped the established van footprint');
+assert.ok(propStats.meshes.city_moving_car.triangles>=500,'moving traffic regressed to a sliding low-detail car proxy');
+for(const mesh of['exterior_bus_woman','exterior_mews_neighbor','exterior_pub_driver']){
+  assert.ok(propStats.meshes[mesh].triangles>=500,`${mesh} has regressed to a featureless figure`);
+}
+
+const compiledBench=PROPS.propById('yard-look-bench');
+const seat=yardBenchSeatPose(compiledBench);
+assert.ok(Math.abs(seat.yaw-Math.PI/2)>.05,'the authored seat does not turn to compose the gate overlook');
+const sitEnd=yardBenchSitFrame({origin:{x:seat.approachX,y:seat.approachY,yaw:seat.yaw-Math.PI,pitch:0},seat,elapsed:YARD_BENCH_ACTION.sitDuration});
+assert.equal(sitEnd.done,true);
+assert.deepEqual([sitEnd.x,sitEnd.y],[seat.x,seat.y]);
+assert.ok(sitEnd.floorOffset<-.65,'sitting never lowers the first-person eye to seated height');
+const standEnd=yardBenchStandFrame({seat,look:{yaw:seat.yaw,pitch:seat.pitch},elapsed:YARD_BENCH_ACTION.standDuration});
+assert.equal(standEnd.done,true);
+assert.deepEqual([standEnd.x,standEnd.y],[seat.approachX,seat.approachY]);
+
+const spanner=CONSERVATORY_PROPS.find(({id})=>id==='van-adjustable-spanner');
+assert.ok(spanner.elevation>=1,'the optional spanner has fallen back onto the wet floor');
+assert.match(spanner.label,/blue-handled/);
+assert.equal(spanner.y,CONSERVATORY_PROPS.find(({id})=>id==='yard-van').y,'the spanner is not on the van shelf');
 
 const normal=exteriorAmbientInstances({timeSec:12,reducedMotion:false});
 const reduced=exteriorAmbientInstances({timeSec:12,reducedMotion:true});
@@ -130,7 +163,9 @@ assert.ok(normal.every(({structural,ambient})=>!structural&&ambient),'ambient ac
 assert.notDeepEqual(normal.map(({x,z})=>[x,z]),reduced.map(({x,z})=>[x,z]),'reduced motion changes ambient cadence');
 const traffic=EXTERIOR_AMBIENT_NODES.filter(({kind})=>kind==='vehicle');
 assert.ok(traffic.length>=4,'the district needs a bus and several moving cars');
+assert.ok(traffic.every(({headlights})=>headlights),'every moving road vehicle must carry working night lamps');
 const trafficAt12=normal.filter(({id})=>traffic.some((node)=>id===`exterior-ambient:${node.id}`));
+assert.ok(trafficAt12.every(({headlights})=>headlights),'headlight state was dropped from the runtime traffic instances');
 const trafficAt18=exteriorAmbientInstances({timeSec:18}).filter(({id})=>traffic.some((node)=>id===`exterior-ambient:${node.id}`));
 assert.notDeepEqual(trafficAt12.map(({x,z})=>[x,z]),trafficAt18.map(({x,z})=>[x,z]),'moving cars must advance along their roads');
 for(const instance of trafficAt12){
@@ -138,6 +173,17 @@ for(const instance of trafficAt12){
   const front=[Math.sin(instance.yaw),-Math.cos(instance.yaw)];
   assert.ok((front[0]*dx+front[1]*dz)/len>.999,`${node.id} drives forward rather than reversing down-route`);
 }
+const headlightPools=exteriorHeadlightLights({timeSec:12,origin:{x:trafficAt12[0].x,z:trafficAt12[0].z}});
+assert.equal(headlightPools.length,4,'the two nearest road vehicles need paired headlight pools');
+assert.ok(headlightPools.every(({color,intensity,radius})=>color[0]>color[2]&&intensity>0&&radius>=8),'headlights do not illuminate warm wet-road pools');
+for(const pool of headlightPools){
+  const car=normal.find(({id})=>id===pool.headlightOf);
+  const ahead=(pool.x-car.x)*Math.sin(car.yaw)+(pool.z-car.z)*-Math.cos(car.yaw);
+  assert.ok(ahead>3,'a headlight pool is not projected ahead of its moving car');
+}
+const propRendererSource=readFileSync(new URL('../src/render/props3d.js',import.meta.url),'utf8');
+assert.match(propRendererSource,/matDef\.emissiveFactor/,'GLB emissive headlamp materials are ignored by the prop renderer');
+assert.match(propRendererSource,/\+uMaterialEmissive/,'visible headlamp emission is not applied to prop colour');
 
 assert.ok(conservatory.positionMigrations.some(({id})=>id==='yard-former-stables'));
 assert.ok(DISTRICT_BOUNDS.x0<0&&DISTRICT_BOUNDS.y0<0);

@@ -1,0 +1,967 @@
+{
+  "schemaVersion": 1,
+  "id": "battle.chapel",
+  "title": "Chapel",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "battle"
+  ],
+  "notes": "",
+  "regions": [
+    {
+      "id": "battle.chapel.region",
+      "title": "Chapel",
+      "kind": "scene",
+      "color": "#245c62",
+      "nodeIds": [
+        "start",
+        "round-1",
+        "round-2",
+        "round-3",
+        "round-4",
+        "round-5",
+        "outcome"
+      ]
+    },
+    {
+      "id": "battle.chapel.endings",
+      "title": "Battle outcomes",
+      "kind": "ending",
+      "color": "#8b3c48",
+      "nodeIds": [
+        "win",
+        "lose"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "type": "battle",
+      "speaker": "WHAT YOU WOULD NOT NAME",
+      "art": {
+        "id": "circuitBentInterface",
+        "mode": "boss",
+        "caption": "Damaged monitor path / chapel",
+        "status": "SIGNAL"
+      },
+      "lines": [
+        {
+          "who": "direction",
+          "text": "The chapel. Two banks of pews, an organ with the wind isolated, and the fifth room tone you were sent for. Something unnerves you, enough for you to want to steel yourself.",
+          "cues": [
+            "freeze"
+          ],
+          "id": "start.line.1"
+        },
+        {
+          "who": "recordist",
+          "text": "Take five.",
+          "id": "start.line.2"
+        },
+        {
+          "who": "surfer",
+          "text": "Take five.",
+          "quotes": "slate",
+          "rate": 0.74,
+          "id": "start.line.3"
+        },
+        {
+          "who": "surfer",
+          "text": "COME CLOSER",
+          "quotes": "monitor",
+          "rate": 0.4,
+          "id": "start.line.callback"
+        },
+        {
+          "who": "you",
+          "text": "I don't quite know what's going on anymore. Is this real? Is that...",
+          "id": "start.line.4"
+        },
+        {
+          "who": "direction",
+          "text": "Why did you come here? To let go of the past? To let go of everything?",
+          "id": "start.line.5"
+        },
+        {
+          "who": "direction",
+          "text": "You knew what this job would cost you.",
+          "id": "start.line.6"
+        }
+      ],
+      "goto": "round-1",
+      "id": "start"
+    },
+    "round-1": {
+      "type": "battle-round",
+      "lines": [
+        {
+          "who": "surfer",
+          "text": "You came. Christ. They actually sent someone tonight.",
+          "channel": "before",
+          "quotes": "recordist",
+          "rate": 0.98,
+          "id": "round-1.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "you you you you you you you you you you you you you you you",
+          "channel": "before",
+          "id": "round-1.line.3"
+        },
+        {
+          "who": "surfer",
+          "text": "is that why we're here?",
+          "channel": "on-listen",
+          "lead": "do you think you've ever felt anything",
+          "quotes": "confession",
+          "id": "round-1.line.4"
+        },
+        {
+          "who": "you",
+          "text": "i don't know anything anymore. i don't know what i don't know what i don't i don't i do-",
+          "channel": "on-listen",
+          "lead": "i don't really know",
+          "id": "round-1.line.5"
+        },
+        {
+          "who": "surfer",
+          "text": "silence.",
+          "channel": "after",
+          "lead": "or do you think all you've ever felt is",
+          "quotes": "confession",
+          "id": "round-1.line.6"
+        }
+      ],
+      "battle": {
+        "nature": "do you remember?",
+        "threat": 0.5
+      },
+      "goto": "round-2",
+      "id": "round-1"
+    },
+    "round-2": {
+      "type": "battle-round",
+      "lines": [
+        {
+          "who": "recordist",
+          "text": "it's not so bad.",
+          "channel": "before",
+          "id": "round-2.line.1"
+        },
+        {
+          "who": "you",
+          "text": "what?",
+          "channel": "before",
+          "id": "round-2.line.2"
+        },
+        {
+          "who": "you",
+          "text": "You're not suggesting joining that- that beast.",
+          "channel": "on-listen",
+          "id": "round-2.line.3"
+        },
+        {
+          "who": "recordist",
+          "text": "you don't really have a choice, do you?",
+          "channel": "on-listen",
+          "id": "round-2.line.4"
+        },
+        {
+          "who": "recordist",
+          "text": "one more and I am out of here. that is what I said too.",
+          "channel": "after",
+          "id": "round-2.line.5"
+        }
+      ],
+      "battle": {
+        "nature": "on the tape",
+        "threat": 0.66
+      },
+      "goto": "round-3",
+      "id": "round-2"
+    },
+    "round-3": {
+      "type": "battle-round",
+      "lines": [
+        {
+          "who": "recordist",
+          "text": "Then bring me one. Bring me the one you lost and I will let the rest of it be nothing.",
+          "channel": "before",
+          "rate": 0.97,
+          "id": "round-3.line.1"
+        },
+        {
+          "who": "surfer",
+          "text": "Again from the first bar. Retain the reference. Correct the deviation. Again.",
+          "channel": "before",
+          "quotes": "rehearsal",
+          "id": "round-3.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "The organ blower is off and the organ is sounding anyway.",
+          "channel": "before",
+          "id": "round-3.line.3"
+        },
+        {
+          "who": "you",
+          "text": "It wants me to agree that you have been carrying something into every empty room for years.",
+          "channel": "on-listen",
+          "id": "round-3.line.4"
+        },
+        {
+          "who": "you",
+          "text": "I record rooms with nobody in them. It never once occurred to me that this suited me.",
+          "channel": "on-listen",
+          "id": "round-3.line.5"
+        },
+        {
+          "who": "direction",
+          "text": "The meter, which has never lied to you, sits flat at the bottom of the scale.",
+          "channel": "after",
+          "id": "round-3.line.6"
+        }
+      ],
+      "battle": {
+        "nature": "not there",
+        "threat": 0.8
+      },
+      "goto": "round-4",
+      "id": "round-3"
+    },
+    "round-4": {
+      "type": "battle-round",
+      "lines": [
+        {
+          "who": "recordist",
+          "text": "Everybody has lost somebody.",
+          "channel": "before",
+          "id": "round-4.line.1"
+        },
+        {
+          "who": "me",
+          "text": "No.",
+          "channel": "before",
+          "id": "round-4.line.2"
+        },
+        {
+          "who": "surfer",
+          "text": "...no?",
+          "channel": "before",
+          "quotes": "confession",
+          "id": "round-4.line.3"
+        },
+        {
+          "who": "me",
+          "text": "No. I came here to record five rooms. I have recorded five rooms.",
+          "channel": "before",
+          "id": "round-4.line.4"
+        },
+        {
+          "who": "surfer",
+          "text": "oh. you thought the deal was the rooms for the money.",
+          "channel": "on-listen",
+          "quotes": "contract",
+          "id": "round-4.line.5"
+        },
+        {
+          "who": "surfer",
+          "text": "that may have been your deal, my deal was always the conservatoire for your soul.",
+          "channel": "on-listen",
+          "quotes": "contract",
+          "id": "round-4.line.6"
+        },
+        {
+          "who": "direction",
+          "text": "it is running out of faces to wear, bodies to drain. it needs another, and right now 'another' is you",
+          "channel": "after",
+          "id": "round-4.line.7"
+        }
+      ],
+      "battle": {
+        "nature": "not there",
+        "threat": 0.92
+      },
+      "goto": "round-5",
+      "id": "round-4"
+    },
+    "round-5": {
+      "type": "battle-round",
+      "lines": [
+        {
+          "who": "surfer",
+          "text": "Everything feels light, i i i i i i i i i i i i i i i i",
+          "channel": "before",
+          "quotes": "recordist",
+          "rate": 0.94,
+          "id": "round-5.line.1"
+        },
+        {
+          "who": "surfer",
+          "text": "were an impossibility.",
+          "channel": "before",
+          "lead": "you you you you",
+          "rate": 0.98,
+          "quotes": "recordist",
+          "id": "round-5.line.2"
+        },
+        {
+          "who": "surfer",
+          "text": "and yet i can't even remember your face.",
+          "channel": "on-listen",
+          "lead": "and yet",
+          "quotes": "recordist",
+          "id": "round-5.line.3"
+        },
+        {
+          "who": "surfer",
+          "text": "and yet i can't even remember my face.",
+          "channel": "on-listen",
+          "quotes": "recordist",
+          "id": "round-5.line.4"
+        },
+        {
+          "who": "you",
+          "text": "then let go. let yourself be silent. rest.",
+          "channel": "after",
+          "id": "round-5.line.5"
+        }
+      ],
+      "battle": {
+        "nature": "not there",
+        "threat": 0.98
+      },
+      "goto": "outcome",
+      "id": "round-5"
+    },
+    "outcome": {
+      "type": "checkpoint",
+      "lines": [],
+      "choices": [
+        {
+          "id": "outcome.win",
+          "text": "Composure held",
+          "goto": "win",
+          "mechanic": "win"
+        },
+        {
+          "id": "outcome.lose",
+          "text": "Composure broke",
+          "goto": "lose",
+          "mechanic": "lose"
+        }
+      ],
+      "id": "outcome"
+    },
+    "win": {
+      "type": "ending",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Huh? There's nothing here?",
+          "id": "win.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "The organ stops; the air thins.",
+          "id": "win.line.2"
+        }
+      ],
+      "id": "win"
+    },
+    "lose": {
+      "type": "ending",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You give yourself to the primordial forces before you.",
+          "id": "lose.line.1"
+        },
+        {
+          "who": "recordist",
+          "text": "There. Do you feel that pressure? That power?",
+          "id": "lose.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "The take keeps going, the recorder stuck on the REC button, empty, in a room with nobody to stop it.",
+          "id": "lose.line.3"
+        }
+      ],
+      "id": "lose"
+    }
+  },
+  "metadata": {
+    "id": "chapel",
+    "enemy": "THE SURFER",
+    "art": {
+      "id": "circuitBentInterface",
+      "mode": "boss",
+      "caption": "Damaged monitor path / chapel",
+      "status": "SIGNAL"
+    },
+    "combat": {
+      "kind": "chapel",
+      "music": {
+        "mode": "movement",
+        "movementLeads": [
+          "lead-1",
+          "lead-2",
+          "lead-3",
+          "lead-1",
+          "lead-3"
+        ]
+      },
+      "movements": [
+        {
+          "id": "room",
+          "title": "THE ROOM",
+          "coherence": 3,
+          "intents": [
+            {
+              "id": "chapel:room-tone",
+              "label": "ROOM TONE CLAIMS A BODY",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "ROOM CLAIM"
+            },
+            {
+              "id": "chapel:not-empty",
+              "label": "NOT WRITTEN INTO EMPTY",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "chapel:walls",
+              "label": "THE WALLS CLOSE THE CIRCUIT",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            }
+          ],
+          "severeIntents": [
+            {
+              "id": "chapel:not-empty",
+              "label": "NOT WRITTEN INTO EMPTY",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "chapel:walls",
+              "label": "THE WALLS CLOSE THE CIRCUIT",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "chapel:room-tone",
+              "label": "ROOM TONE CLAIMS A BODY",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "ROOM CLAIM"
+            }
+          ],
+          "deadAirIntents": [
+            {
+              "id": "chapel:walls",
+              "label": "THE WALLS CLOSE THE CIRCUIT",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "chapel:not-empty",
+              "label": "NOT WRITTEN INTO EMPTY",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "chapel:room-tone",
+              "label": "ROOM TONE CLAIMS A BODY",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "ROOM CLAIM"
+            }
+          ]
+        },
+        {
+          "id": "recordist",
+          "title": "THE PREVIOUS RECORDIST",
+          "coherence": 3,
+          "intents": [
+            {
+              "id": "chapel:body",
+              "label": "BORROWED BODY ON THE MONITOR",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "BORROWED BODY",
+              "takeTag": "body"
+            },
+            {
+              "id": "chapel:consent",
+              "label": "CONSENT BURIED UNDER NOISE",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "chapel:previous",
+              "label": "PREVIOUS RECORDIST HELD OFF-MIC",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            }
+          ],
+          "severeIntents": [
+            {
+              "id": "chapel:consent",
+              "label": "CONSENT BURIED UNDER NOISE",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "chapel:previous",
+              "label": "PREVIOUS RECORDIST HELD OFF-MIC",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "chapel:body",
+              "label": "BORROWED BODY ON THE MONITOR",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "BORROWED BODY",
+              "takeTag": "body"
+            }
+          ],
+          "deadAirIntents": [
+            {
+              "id": "chapel:previous",
+              "label": "PREVIOUS RECORDIST HELD OFF-MIC",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "chapel:consent",
+              "label": "CONSENT BURIED UNDER NOISE",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "chapel:body",
+              "label": "BORROWED BODY ON THE MONITOR",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "BORROWED BODY",
+              "takeTag": "body"
+            }
+          ]
+        },
+        {
+          "id": "surfer",
+          "title": "THE SURFER",
+          "coherence": 3,
+          "intents": [
+            {
+              "id": "chapel:surfer",
+              "label": "SURFER PRINT ON THE TAPE",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "SURFER PRINT"
+            },
+            {
+              "id": "chapel:wearing",
+              "label": "THE THING WEARING THE WORD",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "chapel:process",
+              "label": "PROCESS WITHOUT AN OPERATOR",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            }
+          ],
+          "severeIntents": [
+            {
+              "id": "chapel:wearing",
+              "label": "THE THING WEARING THE WORD",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "chapel:process",
+              "label": "PROCESS WITHOUT AN OPERATOR",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "chapel:surfer",
+              "label": "SURFER PRINT ON THE TAPE",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "SURFER PRINT"
+            }
+          ],
+          "deadAirIntents": [
+            {
+              "id": "chapel:process",
+              "label": "PROCESS WITHOUT AN OPERATOR",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "chapel:wearing",
+              "label": "THE THING WEARING THE WORD",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "chapel:surfer",
+              "label": "SURFER PRINT ON THE TAPE",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "SURFER PRINT"
+            }
+          ]
+        },
+        {
+          "id": "contract",
+          "title": "THE CONTRACT",
+          "coherence": 3,
+          "intents": [
+            {
+              "id": "chapel:terms",
+              "label": "TERMS READ INTO THE RECORDER",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "CONTRACT TERMS"
+            },
+            {
+              "id": "chapel:contract-loop",
+              "label": "AGREEMENT FED BACK AS CONSENT",
+              "kind": "loop",
+              "damage": 3,
+              "recordable": false,
+              "invertible": true,
+              "description": ""
+            },
+            {
+              "id": "chapel:signature",
+              "label": "SIGNATURE DRIVEN PAST ZERO",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            }
+          ],
+          "severeIntents": [
+            {
+              "id": "chapel:contract-loop",
+              "label": "AGREEMENT FED BACK AS CONSENT",
+              "kind": "loop",
+              "damage": 3,
+              "recordable": false,
+              "invertible": true,
+              "description": ""
+            },
+            {
+              "id": "chapel:signature",
+              "label": "SIGNATURE DRIVEN PAST ZERO",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "chapel:terms",
+              "label": "TERMS READ INTO THE RECORDER",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "CONTRACT TERMS"
+            }
+          ],
+          "deadAirIntents": [
+            {
+              "id": "chapel:signature",
+              "label": "SIGNATURE DRIVEN PAST ZERO",
+              "kind": "overload",
+              "damage": 3,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "chapel:contract-loop",
+              "label": "AGREEMENT FED BACK AS CONSENT",
+              "kind": "loop",
+              "damage": 3,
+              "recordable": false,
+              "invertible": true,
+              "description": ""
+            },
+            {
+              "id": "chapel:terms",
+              "label": "TERMS READ INTO THE RECORDER",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "CONTRACT TERMS"
+            }
+          ]
+        },
+        {
+          "id": "source",
+          "title": "THE SOURCE",
+          "coherence": 3,
+          "intents": [
+            {
+              "id": "chapel:body-return",
+              "label": "BODY BORROWED RETURN",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "BODY BORROWED RETURN",
+              "takeTag": "body"
+            },
+            {
+              "id": "chapel:source-pressure",
+              "label": "THE SOURCE PRESSES FOR AN ANSWER",
+              "kind": "overload",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "chapel:release-take",
+              "label": "RELEASE PRINT ON THE RETURN",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "SIGNAL RELEASE"
+            },
+            {
+              "id": "chapel:source-loop",
+              "label": "SIGNAL PROCESS RELEASE",
+              "kind": "loop",
+              "damage": 3,
+              "recordable": false,
+              "invertible": true,
+              "description": ""
+            }
+          ],
+          "severeIntents": [
+            {
+              "id": "chapel:source-pressure",
+              "label": "THE SOURCE PRESSES FOR AN ANSWER",
+              "kind": "overload",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "chapel:release-take",
+              "label": "RELEASE PRINT ON THE RETURN",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "SIGNAL RELEASE"
+            },
+            {
+              "id": "chapel:source-loop",
+              "label": "SIGNAL PROCESS RELEASE",
+              "kind": "loop",
+              "damage": 3,
+              "recordable": false,
+              "invertible": true,
+              "description": ""
+            },
+            {
+              "id": "chapel:body-return",
+              "label": "BODY BORROWED RETURN",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "BODY BORROWED RETURN",
+              "takeTag": "body"
+            }
+          ],
+          "deadAirIntents": [
+            {
+              "id": "chapel:source-loop",
+              "label": "SIGNAL PROCESS RELEASE",
+              "kind": "loop",
+              "damage": 3,
+              "recordable": false,
+              "invertible": true,
+              "description": ""
+            },
+            {
+              "id": "chapel:release-take",
+              "label": "RELEASE PRINT ON THE RETURN",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "SIGNAL RELEASE"
+            },
+            {
+              "id": "chapel:source-pressure",
+              "label": "THE SOURCE PRESSES FOR AN ANSWER",
+              "kind": "overload",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "chapel:body-return",
+              "label": "BODY BORROWED RETURN",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "BODY BORROWED RETURN",
+              "takeTag": "body"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

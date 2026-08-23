@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-09T18:58:43.339Z",
-  "bytes": 21296472,
-  "totalTriangles": 290542,
+  "generatedAt": "2026-08-23T03:09:54.642Z",
+  "bytes": 22686412,
+  "totalTriangles": 313754,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -316,8 +316,8 @@
       "vertices": 168
     },
     "adjustable_spanner": {
-      "triangles": 36,
-      "vertices": 72
+      "triangles": 108,
+      "vertices": 174
     },
     "stillson_wrench": {
       "triangles": 48,
@@ -743,6 +743,34 @@
       "triangles": 108,
       "vertices": 174
     },
+    "apparition_pose_neutral": {
+      "triangles": 108,
+      "vertices": 174
+    },
+    "apparition_pose_side": {
+      "triangles": 108,
+      "vertices": 174
+    },
+    "apparition_pose_stoop": {
+      "triangles": 108,
+      "vertices": 174
+    },
+    "apparition_pose_head_turn": {
+      "triangles": 84,
+      "vertices": 168
+    },
+    "apparition_pose_arm_out": {
+      "triangles": 120,
+      "vertices": 198
+    },
+    "apparition_pose_weight_shift": {
+      "triangles": 108,
+      "vertices": 174
+    },
+    "apparition_pose_symmetric": {
+      "triangles": 108,
+      "vertices": 174
+    },
     "legacy_tape_rack": {
       "triangles": 960,
       "vertices": 1920
@@ -819,6 +847,10 @@
       "triangles": 776,
       "vertices": 1452
     },
+    "st_brendan_church": {
+      "triangles": 7200,
+      "vertices": 14412
+    },
     "exterior_story_plaque": {
       "triangles": 60,
       "vertices": 120
@@ -840,8 +872,8 @@
       "vertices": 232
     },
     "ambient_late_bus": {
-      "triangles": 340,
-      "vertices": 544
+      "triangles": 668,
+      "vertices": 968
     },
     "ambient_cyclist": {
       "triangles": 184,
@@ -854,6 +886,18 @@
     "ambient_awning_figure": {
       "triangles": 116,
       "vertices": 146
+    },
+    "exterior_bus_woman": {
+      "triangles": 1484,
+      "vertices": 1288
+    },
+    "exterior_mews_neighbor": {
+      "triangles": 1276,
+      "vertices": 1144
+    },
+    "exterior_pub_driver": {
+      "triangles": 1264,
+      "vertices": 1120
     },
     "conservatory_west_elevation": {
       "triangles": 17808,
@@ -951,13 +995,25 @@
       "triangles": 132,
       "vertices": 264
     },
+    "park_fountain": {
+      "triangles": 8204,
+      "vertices": 9846
+    },
+    "park_marble_eyes": {
+      "triangles": 776,
+      "vertices": 744
+    },
     "city_parked_car": {
-      "triangles": 280,
-      "vertices": 424
+      "triangles": 784,
+      "vertices": 1168
+    },
+    "city_moving_car": {
+      "triangles": 784,
+      "vertices": 1168
     },
     "baseboard_ground": {
-      "triangles": 4464,
-      "vertices": 8928
+      "triangles": 5040,
+      "vertices": 10080
     },
     "baseboard_hall": {
       "triangles": 2400,
@@ -1919,14 +1975,14 @@
     },
     "adjustable_spanner": {
       "min": [
-        -0.25,
-        -0.025,
-        -0.022
+        -0.255,
+        -0.014,
+        -0.065
       ],
       "max": [
-        0.24,
-        0.075,
-        0.022
+        0.23,
+        0.12,
+        0.065
       ]
     },
     "stillson_wrench": {
@@ -3201,6 +3257,90 @@
         0.16
       ]
     },
+    "apparition_pose_neutral": {
+      "min": [
+        -0.37,
+        0.024,
+        -0.16
+      ],
+      "max": [
+        0.37,
+        1.73,
+        0.16
+      ]
+    },
+    "apparition_pose_side": {
+      "min": [
+        -0.245,
+        0.023,
+        -0.175
+      ],
+      "max": [
+        0.245,
+        1.73,
+        0.18
+      ]
+    },
+    "apparition_pose_stoop": {
+      "min": [
+        -0.419,
+        0.015,
+        -0.32
+      ],
+      "max": [
+        0.419,
+        1.695,
+        0.144
+      ]
+    },
+    "apparition_pose_head_turn": {
+      "min": [
+        -0.4,
+        0.022,
+        -0.17
+      ],
+      "max": [
+        0.36,
+        1.725,
+        0.15
+      ]
+    },
+    "apparition_pose_arm_out": {
+      "min": [
+        -0.41,
+        0.022,
+        -0.16
+      ],
+      "max": [
+        0.769,
+        1.73,
+        0.16
+      ]
+    },
+    "apparition_pose_weight_shift": {
+      "min": [
+        -0.448,
+        0.008,
+        -0.16
+      ],
+      "max": [
+        0.37,
+        1.73,
+        0.16
+      ]
+    },
+    "apparition_pose_symmetric": {
+      "min": [
+        -0.313,
+        0.03,
+        -0.16
+      ],
+      "max": [
+        0.313,
+        1.73,
+        0.16
+      ]
+    },
     "legacy_tape_rack": {
       "min": [
         -0.54,
@@ -3429,6 +3569,18 @@
         6.8
       ]
     },
+    "st_brendan_church": {
+      "min": [
+        -11.7,
+        0,
+        -19.87
+      ],
+      "max": [
+        12.7,
+        19.3,
+        17.86
+      ]
+    },
     "exterior_story_plaque": {
       "min": [
         -0.675,
@@ -3491,14 +3643,14 @@
     },
     "ambient_late_bus": {
       "min": [
-        -1.66,
+        -1.478,
         0.005,
-        -4.71
+        -4.755
       ],
       "max": [
-        1.66,
+        1.478,
         2.555,
-        4.6
+        4.655
       ]
     },
     "ambient_cyclist": {
@@ -3535,6 +3687,42 @@
         0.23,
         1.69,
         0.17
+      ]
+    },
+    "exterior_bus_woman": {
+      "min": [
+        -0.36,
+        0,
+        -0.31
+      ],
+      "max": [
+        0.53,
+        1.78,
+        0.255
+      ]
+    },
+    "exterior_mews_neighbor": {
+      "min": [
+        -0.36,
+        0,
+        -0.31
+      ],
+      "max": [
+        0.302,
+        1.817,
+        0.255
+      ]
+    },
+    "exterior_pub_driver": {
+      "min": [
+        -0.36,
+        0,
+        -0.31
+      ],
+      "max": [
+        0.302,
+        1.821,
+        0.255
       ]
     },
     "conservatory_west_elevation": {
@@ -3825,16 +4013,52 @@
         2.5
       ]
     },
-    "city_parked_car": {
+    "park_fountain": {
       "min": [
-        -1.18,
-        0.22,
-        -2.2
+        -3.854,
+        -0.4,
+        -3.854
       ],
       "max": [
-        1.18,
-        1.42,
-        2.19
+        3.854,
+        5.1,
+        3.854
+      ]
+    },
+    "park_marble_eyes": {
+      "min": [
+        -0.378,
+        0,
+        -0.252
+      ],
+      "max": [
+        0.254,
+        0.048,
+        0.237
+      ]
+    },
+    "city_parked_car": {
+      "min": [
+        -0.99,
+        0.02,
+        -2.26
+      ],
+      "max": [
+        0.99,
+        1.51,
+        2.26
+      ]
+    },
+    "city_moving_car": {
+      "min": [
+        -0.99,
+        0.02,
+        -2.26
+      ],
+      "max": [
+        0.99,
+        1.51,
+        2.26
       ]
     },
     "baseboard_ground": {
@@ -3911,7 +4135,7 @@
     }
   },
   "baseboards": {
-    "planHash": "81ccab3e375062903313eaf7d64530b4a620e0a88899d45a40efce1fc483ab9a",
+    "planHash": "76fd5b647f9b85e1f1bfa4dfad650ffd6e8e757fb1de2377cc9224936effd36c",
     "groups": {
       "ground": {
         "mesh": "baseboard_ground",
@@ -4085,6 +4309,13 @@
     "stair_pendant_opal": -1.07,
     "stair_shadow_figure": 1.41,
     "player_shadow_figure": 1.44,
+    "apparition_pose_neutral": 1.44,
+    "apparition_pose_side": 1.44,
+    "apparition_pose_stoop": 1.42,
+    "apparition_pose_head_turn": 1.44,
+    "apparition_pose_arm_out": 1.44,
+    "apparition_pose_weight_shift": 1.45,
+    "apparition_pose_symmetric": 1.44,
     "legacy_tape_rack": 2.08,
     "legacy_patchbay": 1.74,
     "legacy_transfer_deck": 0.92,
@@ -4103,6 +4334,7 @@
     "yard_rehearsal_range": 8.8,
     "yard_baths_plant": 7.2,
     "yard_covered_stores": 6.4,
+    "st_brendan_church": 0.95,
     "exterior_story_plaque": 0.84,
     "district_post_box": 1.33,
     "district_bench": 0.67,
@@ -4112,6 +4344,9 @@
     "ambient_cyclist": 0.56,
     "ambient_dog_walker": 0.61,
     "ambient_awning_figure": 1.42,
+    "exterior_bus_woman": 0.11,
+    "exterior_mews_neighbor": 0.11,
+    "exterior_pub_driver": 0.11,
     "conservatory_west_elevation": 8.4,
     "conservatory_stair_window": 1.04,
     "yard_booth": 0.2,
@@ -4136,7 +4371,9 @@
     "yard_van_lamp": 0.1,
     "yard_look_bench": 0.61,
     "city_bus_shelter": 2.63,
-    "city_parked_car": 0.95,
+    "park_fountain": 0.46,
+    "city_parked_car": 0.85,
+    "city_moving_car": 0.85,
     "baseboard_ground": 0.12,
     "baseboard_hall": 9.11,
     "baseboard_basement": 0.12,

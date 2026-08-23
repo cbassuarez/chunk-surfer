@@ -9,10 +9,12 @@ export function createPerformanceMeter({
   let frameMs = null;
   let lastFrameMs = null;
 
-  function snapshot() {
+  function snapshot(includePercentiles = true) {
+    const ordered=includePercentiles&&frames.length?[...frames].sort((a,b)=>a-b):null;
     return {
       fps,
       frameMs,
+      p95FrameMs: ordered?.[Math.max(0,Math.ceil(ordered.length*.95)-1)]??null,
       lastFrameMs,
       maxFrameMs: frames.length ? Math.max(...frames) : null,
       spikesAbove50: frames.filter((value) => value > 50).length,
@@ -33,7 +35,10 @@ export function createPerformanceMeter({
       fps = 1000 / avg;
     }
     last = current;
-    return snapshot();
+    // The render loop does not consume this value. Keep the historical return
+    // shape without sorting the sample window on every frame; capture and
+    // diagnostics callers request the complete percentile snapshot explicitly.
+    return snapshot(false);
   }
 
   function reset() {

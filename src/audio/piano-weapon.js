@@ -96,8 +96,12 @@ export const SCREAM_CHOP = Object.freeze({
 // How this beat's cue should be played: always a chop, never the whole take.
 // `beat` walks the chop through the file so successive hits are successive bars
 // rather than the same bar over and over.
-export function enemyAttackShape(cueId, beat = 0, random = Math.random) {
+export function enemyAttackShape(cueId, beat = 0, random = Math.random, aggression = 0.5) {
   const pick = ([lo, hi]) => lo + random() * (hi - lo);
+  // How hard it is leaning, 0..1. A cornered or pressing surfer plays louder
+  // and holds the chop a little longer; one that is still testing you barely
+  // raises its voice. The mood is audible before it is legible.
+  const lean = clamp(Number(aggression) || 0.5, 0.2, 0.9);
   if (cueId === SCREAM_CUE) {
     return {
       rate: pick(SCREAM_CHOP.rate),
@@ -114,16 +118,26 @@ export function enemyAttackShape(cueId, beat = 0, random = Math.random) {
   }
   return {
     trimStart: wrap(beat, 64) * WEAPON_CHOP.step,
-    sliceSeconds: WEAPON_CHOP.slice,
+    sliceSeconds: WEAPON_CHOP.slice * (0.85 + lean * 0.3),
     wrapStart: true,
     fadeIn: WEAPON_CHOP.fadeIn,
     fadeOut: WEAPON_CHOP.fadeOut,
+    gainScale: 0.8 + lean * 0.35,
   };
 }
 
-// A read of the fight, 0..1, that a meaner difficulty pushes higher.
-export function surferAggression(composureBonus = 0) {
-  return clamp(0.5 - (Number(composureBonus) || 0) * 0.15, 0.2, 0.9);
+// A read of the fight, 0..1, that a meaner difficulty pushes higher — and that
+// the opponent's current mood pushes further. Feeds the chop: see
+// enemyAttackShape. `pressing` and `cornered` are the two postures where it
+// stops pacing and starts hitting, and they should not sound the same as
+// `testing` does.
+const STANCE_LEAN = Object.freeze({
+  testing: -0.15, setting: -0.05, mirroring: 0.05, pressing: 0.18, cornered: 0.25,
+});
+
+export function surferAggression(composureBonus = 0, stance = null) {
+  const base = 0.5 - (Number(composureBonus) || 0) * 0.15;
+  return clamp(base + (STANCE_LEAN[stance] || 0), 0.2, 0.9);
 }
 
 // The cue the surfer strikes with on this enemy beat: the instrument of its

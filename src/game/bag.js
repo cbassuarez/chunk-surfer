@@ -58,6 +58,7 @@ export function makeBagScene({
   onApplySkills = null,
   readDocument = () => {},
   markRoom = () => false,
+  onItemAction = () => false,
   onClose = () => {},
   forceLayout = null,
   debug = null,
@@ -206,8 +207,12 @@ export function makeBagScene({
 
   function close() {
     remember();
-    scenes.pop();
-    onClose();
+    // Close the case itself, not whichever overlay happens to be at the top of
+    // the stack. Overlay scenes above the bag may decline the key and let the
+    // bag handle it; a blind pop() removes the overlay and leaves the player
+    // trapped in the case.
+    const removed = scenes.remove(scene);
+    if (removed) onClose();
   }
 
   function applyChosenSkills() {
@@ -418,8 +423,22 @@ export function makeBagScene({
         : { changed: false, reason: 'unavailable' };
       ok = !!result?.changed;
       if (!ok) { notice = 'TRAY ORDER UNCHANGED'; noticeUntil = t + 2.0; AUDIO.menuMove?.(); }
-    } else if (entry.kind === 'gear' && typeof entry.source?.action === 'function') {
-      entry.source.action(); ok = true;
+    } else if (entry.kind === 'gear' && entry.actions?.primary?.id === actionId) {
+      const action = entry.actions.primary;
+      if (action.closeBefore) close();
+      const result = onItemAction({
+        itemId: entry.sourceId,
+        entryId: entry.id,
+        actionId: action.id,
+        mode: action.mode,
+      });
+      ok = result !== false && result?.handled !== false;
+      // Compatibility for isolated presentation fixtures that still pass the
+      // pre-registry callback shape. The live inventory never takes this path.
+      if (!ok && typeof entry.source?.action === 'function') {
+        entry.source.action();
+        ok = true;
+      }
     }
 
     if (ok) {

@@ -13,14 +13,15 @@ assert.ok(frame,'a readable nearby pulse authors one shadow frame');
 assert.equal(frame.lightId,'near','unreachable distant practicals cannot steal the single practical shadow pass');
 assert.equal(frame.lightOverride.castsShadow,true);
 assert.ok(Number.isFinite(frame.lightOverride.shadowYaw));
-assert.equal(frame.instance.mesh,'player_shadow_figure');
+assert.equal(frame.instance.poseId,'neutral');
+assert.equal(frame.instance.mesh,'apparition_pose_neutral');
 assert.equal(frame.instance.shadowOnly,false,'the human form occupies world depth in the colour pass');
-assert.deepEqual(frame.instance.emissive,[1,.985,1,2.6],'the figure itself is an overexposed white source');
+assert.deepEqual(frame.instance.emissive,[1,.985,1,.82],'ordinary apparitions stay shadow-dominant');
 assert.equal(frame.instance.y,.5,'the body stands on the authored room floor');
 assert.equal(frame.instances.length,3,'one red snap projects a small impossible crowd, not a mild single shadow');
 assert.equal(new Set(frame.instances.map((instance)=>instance.id)).size,3);
 assert.equal(frame.apparitionLights.length,3,'each body emits a compact white field into the room');
-assert.ok(frame.apparitionLights.every((light)=>light.kind==='apparition'&&light.intensity>0&&light.radius>=4));
+assert.ok(frame.apparitionLights.every((light)=>light.kind==='apparition'&&light.intensity>0&&light.radius>=3.5));
 assert.ok(frame.instances.every((instance)=>instance.scaleX>=.88&&instance.scaleX<=1.04&&instance.scaleY>=.96&&instance.scaleY<=1.08),
   'the crowd keeps recognisably human proportions');
 assert.ok(frame.lightOverride.shadowPitch<0,'the practical aims down through the floor-standing figures');
@@ -28,6 +29,23 @@ assert.equal('collision' in frame.instance,false);
 assert.equal('hush' in frame.instance,false);
 assert.equal('contact' in frame.instance,false);
 assert.deepEqual(buildEmergencyShadowFrame(lights,{listener:{x:2,z:1}}),frame,'the same pulse composes the same shadow');
+{
+  const readable=[
+    {id:'capture-a',x:4,y:2,z:1,floorY:0,intensity:.4,shadowReveal:1},
+    {id:'capture-b',x:7,y:2,z:1,floorY:0,intensity:.4,shadowReveal:1},
+  ];
+  assert.equal(buildEmergencyShadowFrame(readable,{
+    listener:{x:2,z:1},preferredLightId:'capture-b',
+  }).lightId,'capture-b','a capture may pin an already-readable practical without changing ordinary ranking');
+  assert.equal(buildEmergencyShadowFrame(readable,{
+    listener:{x:2,z:1},preferredLightId:'missing',
+  }).lightId,'capture-a','an invalid capture pin falls back to the live candidate ranking');
+  assert.equal(buildEmergencyShadowFrame([
+    {id:'overhead',x:3,y:7.8,floorY:6,intensity:.4,shadowReveal:1},
+    {id:'same-landing',x:7,y:1.8,floorY:0,intensity:.4,shadowReveal:1},
+  ],{listener:{x:2,y:0,z:1}}).lightId,'same-landing',
+  'a nearer lamp on another storey cannot stage ceiling-height bodies over the player');
+}
 assert.equal(buildEmergencyShadowFrame(lights,{listener:{x:2,z:1},enabled:false}),null);
 assert.equal(buildEmergencyShadowFrame([{...lights[1],shadowReveal:0}],{listener:{x:2,z:1}}),null);
 assert.ok(buildEmergencyShadowFrame([{...lights[1],x:50}],{listener:{x:0,z:1}}),'the apparition remains eligible across the concert hall');

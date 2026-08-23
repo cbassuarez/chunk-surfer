@@ -1,0 +1,635 @@
+{
+  "id": "arrival",
+  "file": "01-arrival.png",
+  "camera": {
+    "cell": [
+      57,
+      207
+    ],
+    "facing": 1,
+    "pitch": 0
+  },
+  "expectedMaterials": [
+    "asphalt",
+    "grass",
+    "smallTree"
+  ],
+  "visible": {
+    "visibleMaterialRoles": [
+      "asphalt",
+      "boxProfile",
+      "brick",
+      "cobbles",
+      "corrugatedIron",
+      "grass",
+      "modernCladding",
+      "roughStone",
+      "rustyMetal03",
+      "rustyMetal04",
+      "rustyPaintedMetal",
+      "smallTree",
+      "weatheredRender"
+    ],
+    "mainDrawCalls": 299,
+    "shadowDrawCalls": 257,
+    "renderedInstances": 184,
+    "triangles": 253634,
+    "shadowTriangles": 242098
+  },
+  "performance": {
+    "fps": 24.849522337082206,
+    "frameMs": 40.24222222202354,
+    "lastFrameMs": 40.3999999910593,
+    "maxFrameMs": 58.70000000298023,
+    "spikesAbove50": 6,
+    "samples": 45
+  },
+  "pack": {
+    "meshes": 304,
+    "instances": 178,
+    "dynamicInstances": 57,
+    "diagnosticInstances": 0,
+    "diagnosticMeshes": [],
+    "emergencyShadowInstances": 0,
+    "sourceText": 0,
+    "sourceStaticText": 0,
+    "sourceDynamicText": 0,
+    "sourceStaticBatches": 0,
+    "sourceVisibleBatches": 0,
+    "sourceSceneKey": "source:building",
+    "sourceCorpusKey": "",
+    "textAtlasBuilds": 0,
+    "diagnosticsEnabled": true,
+    "diagnostics": {
+      "visibleMaterialRoles": [
+        "asphalt",
+        "boxProfile",
+        "brick",
+        "cobbles",
+        "corrugatedIron",
+        "grass",
+        "modernCladding",
+        "roughStone",
+        "rustyMetal03",
+        "rustyMetal04",
+        "rustyPaintedMetal",
+        "smallTree",
+        "weatheredRender"
+      ],
+      "mainDrawCalls": 299,
+      "shadowDrawCalls": 257,
+      "renderedInstances": 184,
+      "triangles": 253634,
+      "shadowTriangles": 242098
+    },
+    "shadow": {
+      "ready": true,
+      "active": true,
+      "size": 1024
+    }
+  },
+  "asset": {
+    "file": "opening-street.glb",
+    "bytes": 32982924,
+    "sha256": "9e977a1fa96a6a9acfd10816447aec0ad16b428861f6059a5b66a83580ac7501",
+    "totalTriangles": 30102,
+    "textureCount": 42,
+    "estimatedMipmappedTextureBytes": 218103808,
+    "meshes": [
+      {
+        "index": 0,
+        "name": "opening_street_ground",
+        "triangles": 10,
+        "vertices": 20,
+        "primitives": 3,
+        "bounds": {
+          "min": [
+            -17,
+            0.03500000014901161,
+            -9.175000190734863
+          ],
+          "max": [
+            24.5,
+            0.04500000178813934,
+            20.25
+          ]
+        }
+      },
+      {
+        "index": 1,
+        "name": "opening_street_frontage",
+        "triangles": 10,
+        "vertices": 20,
+        "primitives": 3,
+        "bounds": {
+          "min": [
+            -0.27000001072883606,
+            0.03999999910593033,
+            -7.5
+          ],
+          "max": [
+            -0.23999999463558197,
+            8.449999809265137,
+            84.5
+          ]
+        }
+      },
+      {
+        "index": 2,
+        "name": "opening_street_service_history",
+        "triangles": 58,
+        "vertices": 116,
+        "primitives": 6,
+        "bounds": {
+          "min": [
+            -5.925000190734863,
+            0.019999999552965164,
+            6.889999866485596
+          ],
+          "max": [
+            10,
+            6.420000076293945,
+            65.5
+          ]
+        }
+      },
+      {
+        "index": 3,
+        "name": "opening_street_review_plate",
+        "triangles": 24,
+        "vertices": 48,
+        "primitives": 12,
+        "bounds": {
+          "min": [
+            -10,
+            0.03999999910593033,
+            -1.5
+          ],
+          "max": [
+            14,
+            3.049999952316284,
+            8
+          ]
+        }
+      },
+      {
+        "index": 4,
+        "name": "opening_street_tree_small",
+        "triangles": 30000,
+        "vertices": 77089,
+        "primitives": 2,
+        "bounds": {
+          "min": [
+            -1.3851964473724365,
+            0.0482046902179718,
+            -2.099900722503662
+          ],
+          "max": [
+            1.4191280603408813,
+            4.55819034576416,
+            2.1006033420562744
+          ]
+        }
+      }
+    ],
+    "images": [
+      {
+        "index": 0,
+        "name": "asphalt-normal",
+        "mimeType": "image/png",
+        "bytes": 2593925,
+        "width": 1024,
+        "height": 1024,
+        "format": "png"
+      },
+      {
+        "index": 1,
+        "name": "asphalt-albedo",
+        "mimeType": "image/jpeg",
+        "bytes": 1741215,
+        "width": 2048,
+        "height": 2048,
+        "format": "jpeg"
+      },
+      {
+        "index": 2,
+        "name": "asphalt-orm",
+        "mimeType": "image/png",
+        "bytes": 1082082,
+        "width": 1024,
+        "height": 1024,
+        "format": "png"
+      },
+      {
+        "index": 3,
+        "name": "cobbles-normal",
+        "mimeType": "image/png",
+        "bytes": 2694949,
+        "width": 1024,
+        "height": 1024,
+        "format": "png"
+      },
+      {
+        "index": 4,
+        "name": "cobbles-albedo",
+        "mimeType": "image/jpeg",
+        "bytes": 1080056,
+        "width": 2048,
+        "height": 2048,
+        "format": "jpeg"
+      },
+      {
+        "index": 5,
+        "name": "cobbles-orm",
+        "mimeType": "image/png",
+        "bytes": 1024208,
+        "width": 1024,
+        "height": 1024,
+        "format": "png"
+      },
+      {
+        "index": 6,
+        "name": "grass-normal",
+        "mimeType": "image/png",
+        "bytes": 607112,
+        "width": 512,
+        "height": 512,
+        "format": "png"
+      },
+      {
+        "index": 7,
+        "name": "grass-albedo",
+        "mimeType": "image/png",
+        "bytes": 1013764,
+        "width": 1024,
+        "height": 1024,
+        "format": "png"
+      },
+      {
+        "index": 8,
+        "name": "grass-orm",
+        "mimeType": "image/png",
+        "bytes": 220754,
+        "width": 512,
+        "height": 512,
+        "format": "png"
+      },
+      {
+        "index": 9,
+        "name": "roughStone-normal",
+        "mimeType": "image/png",
+        "bytes": 2773919,
+        "width": 1024,
+        "height": 1024,
+        "format": "png"
+      },
+      {
+        "index": 10,
+        "name": "roughStone-albedo",
+        "mimeType": "image/jpeg",
+        "bytes": 1262019,
+        "width": 2048,
+        "height": 2048,
+        "format": "jpeg"
+      },
+      {
+        "index": 11,
+        "name": "roughStone-orm",
+        "mimeType": "image/png",
+        "bytes": 1040028,
+        "width": 1024,
+        "height": 1024,
+        "format": "png"
+      },
+      {
+        "index": 12,
+        "name": "weatheredRender-normal",
+        "mimeType": "image/png",
+        "bytes": 621375,
+        "width": 512,
+        "height": 512,
+        "format": "png"
+      },
+      {
+        "index": 13,
+        "name": "weatheredRender-albedo",
+        "mimeType": "image/jpeg",
+        "bytes": 260335,
+        "width": 1024,
+        "height": 1024,
+        "format": "jpeg"
+      },
+      {
+        "index": 14,
+        "name": "weatheredRender-orm",
+        "mimeType": "image/png",
+        "bytes": 160345,
+        "width": 512,
+        "height": 512,
+        "format": "png"
+      },
+      {
+        "index": 15,
+        "name": "brick-normal",
+        "mimeType": "image/png",
+        "bytes": 2864620,
+        "width": 1024,
+        "height": 1024,
+        "format": "png"
+      },
+      {
+        "index": 16,
+        "name": "brick-albedo",
+        "mimeType": "image/jpeg",
+        "bytes": 1548954,
+        "width": 2048,
+        "height": 2048,
+        "format": "jpeg"
+      },
+      {
+        "index": 17,
+        "name": "brick-orm",
+        "mimeType": "image/png",
+        "bytes": 771186,
+        "width": 1024,
+        "height": 1024,
+        "format": "png"
+      },
+      {
+        "index": 18,
+        "name": "corrugatedIron-normal",
+        "mimeType": "image/png",
+        "bytes": 531491,
+        "width": 512,
+        "height": 512,
+        "format": "png"
+      },
+      {
+        "index": 19,
+        "name": "corrugatedIron-albedo",
+        "mimeType": "image/jpeg",
+        "bytes": 201491,
+        "width": 1024,
+        "height": 1024,
+        "format": "jpeg"
+      },
+      {
+        "index": 20,
+        "name": "corrugatedIron-orm",
+        "mimeType": "image/png",
+        "bytes": 288268,
+        "width": 512,
+        "height": 512,
+        "format": "png"
+      },
+      {
+        "index": 21,
+        "name": "rustyPaintedMetal-normal",
+        "mimeType": "image/png",
+        "bytes": 338280,
+        "width": 512,
+        "height": 512,
+        "format": "png"
+      },
+      {
+        "index": 22,
+        "name": "rustyPaintedMetal-albedo",
+        "mimeType": "image/jpeg",
+        "bytes": 101759,
+        "width": 1024,
+        "height": 1024,
+        "format": "jpeg"
+      },
+      {
+        "index": 23,
+        "name": "rustyPaintedMetal-orm",
+        "mimeType": "image/png",
+        "bytes": 1510,
+        "width": 512,
+        "height": 512,
+        "format": "png"
+      },
+      {
+        "index": 24,
+        "name": "rustyMetal03-normal",
+        "mimeType": "image/png",
+        "bytes": 292181,
+        "width": 512,
+        "height": 512,
+        "format": "png"
+      },
+      {
+        "index": 25,
+        "name": "rustyMetal03-albedo",
+        "mimeType": "image/jpeg",
+        "bytes": 209395,
+        "width": 1024,
+        "height": 1024,
+        "format": "jpeg"
+      },
+      {
+        "index": 26,
+        "name": "rustyMetal03-orm",
+        "mimeType": "image/png",
+        "bytes": 1510,
+        "width": 512,
+        "height": 512,
+        "format": "png"
+      },
+      {
+        "index": 27,
+        "name": "rustyMetal04-normal",
+        "mimeType": "image/png",
+        "bytes": 500954,
+        "width": 512,
+        "height": 512,
+        "format": "png"
+      },
+      {
+        "index": 28,
+        "name": "rustyMetal04-albedo",
+        "mimeType": "image/jpeg",
+        "bytes": 287421,
+        "width": 1024,
+        "height": 1024,
+        "format": "jpeg"
+      },
+      {
+        "index": 29,
+        "name": "rustyMetal04-orm",
+        "mimeType": "image/png",
+        "bytes": 1510,
+        "width": 512,
+        "height": 512,
+        "format": "png"
+      },
+      {
+        "index": 30,
+        "name": "modernCladding-normal",
+        "mimeType": "image/png",
+        "bytes": 312506,
+        "width": 512,
+        "height": 512,
+        "format": "png"
+      },
+      {
+        "index": 31,
+        "name": "modernCladding-albedo",
+        "mimeType": "image/jpeg",
+        "bytes": 80974,
+        "width": 1024,
+        "height": 1024,
+        "format": "jpeg"
+      },
+      {
+        "index": 32,
+        "name": "modernCladding-orm",
+        "mimeType": "image/png",
+        "bytes": 1510,
+        "width": 512,
+        "height": 512,
+        "format": "png"
+      },
+      {
+        "index": 33,
+        "name": "boxProfile-normal",
+        "mimeType": "image/png",
+        "bytes": 362879,
+        "width": 512,
+        "height": 512,
+        "format": "png"
+      },
+      {
+        "index": 34,
+        "name": "boxProfile-albedo",
+        "mimeType": "image/jpeg",
+        "bytes": 53169,
+        "width": 1024,
+        "height": 1024,
+        "format": "jpeg"
+      },
+      {
+        "index": 35,
+        "name": "boxProfile-orm",
+        "mimeType": "image/png",
+        "bytes": 1510,
+        "width": 512,
+        "height": 512,
+        "format": "png"
+      },
+      {
+        "index": 36,
+        "name": "smallTree-branch-normal",
+        "mimeType": "image/png",
+        "bytes": 598677,
+        "width": 512,
+        "height": 512,
+        "format": "png"
+      },
+      {
+        "index": 37,
+        "name": "smallTree-branch-albedo",
+        "mimeType": "image/jpeg",
+        "bytes": 136208,
+        "width": 1024,
+        "height": 1024,
+        "format": "jpeg"
+      },
+      {
+        "index": 38,
+        "name": "smallTree-branch-orm",
+        "mimeType": "image/png",
+        "bytes": 165114,
+        "width": 512,
+        "height": 512,
+        "format": "png"
+      },
+      {
+        "index": 39,
+        "name": "smallTree-leaves-normal",
+        "mimeType": "image/png",
+        "bytes": 544295,
+        "width": 512,
+        "height": 512,
+        "format": "png"
+      },
+      {
+        "index": 40,
+        "name": "smallTree-leaves-albedo",
+        "mimeType": "image/png",
+        "bytes": 983039,
+        "width": 1024,
+        "height": 1024,
+        "format": "png"
+      },
+      {
+        "index": 41,
+        "name": "smallTree-leaves-orm",
+        "mimeType": "image/png",
+        "bytes": 151382,
+        "width": 512,
+        "height": 512,
+        "format": "png"
+      }
+    ],
+    "gameplayDrawCalls": 14,
+    "limits": {
+      "bytes": 67108864,
+      "triangles": 45000,
+      "textureDimension": 2048,
+      "estimatedMipmappedTextureBytes": 268435456,
+      "mainPassDrawCalls": 14
+    },
+    "materialAreas": {
+      "opening_street_ground": {
+        "asphalt": 244.8,
+        "cobbles": 36,
+        "grass": 9.57
+      },
+      "opening_street_frontage": {
+        "roughStone": 79.336,
+        "weatheredRender": 43.13,
+        "brick": 148.6
+      },
+      "opening_street_service_history": {
+        "corrugatedIron": 142.44,
+        "rustyPaintedMetal": 19.53,
+        "rustyMetal03": 5.676,
+        "rustyMetal04": 6.4364,
+        "modernCladding": 73.58,
+        "boxProfile": 156
+      },
+      "opening_street_review_plate": {
+        "asphalt": 12,
+        "cobbles": 12,
+        "grass": 12,
+        "roughStone": 12,
+        "brick": 12,
+        "weatheredRender": 12,
+        "modernCladding": 12,
+        "corrugatedIron": 12,
+        "boxProfile": 12,
+        "rustyPaintedMetal": 12,
+        "rustyMetal03": 12,
+        "rustyMetal04": 12
+      }
+    },
+    "tree": {
+      "sourceTriangles": 2590098,
+      "triangles": 30000,
+      "budget": 30000,
+      "bounds": {
+        "min": [
+          -1.30031,
+          -2.8636,
+          -0.12183
+        ],
+        "max": [
+          1.58605,
+          1.36337,
+          4.47817
+        ]
+      }
+    }
+  }
+}

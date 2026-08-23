@@ -1,18 +1,27 @@
 import { INTENT_KIND } from '../game/combat-state.js';
+import { GRID } from '../game/combat-damage.js';
 
-const intent = (id, label, kind, damage = 2, options = {}) => ({
+const intent = (id, label, kind, damage = 2 * GRID, options = {}) => ({
   id, label, kind, damage,
   recordable: kind === INTENT_KIND.BROADCAST,
   invertible: kind === INTENT_KIND.LOOP,
-  playbackDamage: kind === INTENT_KIND.BROADCAST ? Math.max(1, Math.min(3, options.playbackDamage ?? damage)) : undefined,
+  playbackDamage: kind === INTENT_KIND.BROADCAST ? Math.max(GRID, Math.min(3 * GRID, options.playbackDamage ?? damage)) : undefined,
   description: options.description || '',
   ...options,
 });
 
-const B = (id, label, damage = 2, options = {}) => intent(id, label, INTENT_KIND.BROADCAST, damage, options);
-const C = (id, label, damage = 2, options = {}) => intent(id, label, INTENT_KIND.CONCEAL, damage, options);
-const O = (id, label, damage = 2, options = {}) => intent(id, label, INTENT_KIND.OVERLOAD, damage, options);
-const L = (id, label, damage = 3, options = {}) => intent(id, label, INTENT_KIND.LOOP, damage, options);
+// Damage bands, and why they are where they are. Every number here is in GRID
+// units — the whole scale was multiplied by five so that outgoing damage could
+// become a readable range rather than a flat integer (see combat-damage.js).
+// A guard prevents 10–15, so a blow at 10 is a nuisance a braced recordist
+// erases, and a blow at 20 is one they can only blunt. The heavy kinds live
+// above the guard on purpose: the fight used to sit entirely underneath it,
+// which meant a competent player finished every encounter untouched and the
+// whole thing was decorative.
+const B = (id, label, damage = 2 * GRID, options = {}) => intent(id, label, INTENT_KIND.BROADCAST, damage, options);
+const C = (id, label, damage = 2 * GRID, options = {}) => intent(id, label, INTENT_KIND.CONCEAL, damage, options);
+const O = (id, label, damage = 2 * GRID, options = {}) => intent(id, label, INTENT_KIND.OVERLOAD, damage, options);
+const L = (id, label, damage = 4 * GRID, options = {}) => intent(id, label, INTENT_KIND.LOOP, damage, options);
 const S = (id, label, options = {}) => intent(id, label, INTENT_KIND.SILENCE, 0, options);
 
 function movement(id, title, coherence, intents, { reactions = null, severeIntents = null, deadAirIntents = null } = {}) {
@@ -26,54 +35,74 @@ function movement(id, title, coherence, intents, { reactions = null, severeInten
   };
 }
 
+// A movement whose script does not change with the preset. Used by the bench
+// drill, which is pinnedCycle and therefore teaches the same lesson in the same
+// order however hard the night is set.
+function pinned(id, title, coherence, intents, options = {}) {
+  return movement(id, title, coherence, intents, { ...options, severeIntents: intents, deadAirIntents: intents });
+}
+
 const PROFILES = Object.freeze({
   natatorium: Object.freeze({
     kind: 'regular',
     signature: { id: 'echo', label: 'FOURTH RETURN', description: 'A missed response returns on the next hostile beat for +1 damage.' },
     music: { mode: 'fixed', lead: 'lead-1' },
     movements: [
-      movement('room', 'THE EMPTY ROOM', 5, [
-        B('natatorium:meter', 'METER MOVES WITHOUT AIR', 2, { takeLabel: 'ROOM TONE', playbackDamage: 2 }),
-        O('natatorium:pressure', 'PRESSURE BEHIND THE EARS', 2, { effect: 'ringing' }),
-        C('natatorium:piano', 'PIANO WITH NO TRANSIENT', 2),
+      movement('room', 'THE EMPTY ROOM', 25, [
+        B('natatorium:meter', 'METER MOVES WITHOUT AIR', 10, { takeLabel: 'ROOM TONE', playbackDamage: 10 }),
+        O('natatorium:pressure', 'PRESSURE BEHIND THE EARS', 10, { effect: 'ringing' }),
+        C('natatorium:piano', 'PIANO WITH NO TRANSIENT', 10),
       ]),
-      movement('voice', 'THE VOICE ON TAPE', 5, [
-        B('natatorium:voice', 'VOICE ON THE MONITOR PATH', 2, { takeLabel: 'VOICE PRINT', playbackDamage: 2 }),
-        C('natatorium:memory', 'MEMORY PASSED AS SIGNAL', 2),
-        O('natatorium:lean', 'THE ROOM LEANS CLOSER', 3, { effect: 'ringing' }),
+      movement('voice', 'THE VOICE ON TAPE', 25, [
+        B('natatorium:voice', 'VOICE ON THE MONITOR PATH', 10, { takeLabel: 'VOICE PRINT', playbackDamage: 10 }),
+        C('natatorium:memory', 'MEMORY PASSED AS SIGNAL', 10),
+        O('natatorium:lean', 'THE ROOM LEANS CLOSER', 20, { effect: 'ringing' }),
       ], {
         // Hoard a take and the room leans on you for it — the opponent reacts to
         // your board rather than reading from a fixed script.
         reactions: [{ when: 'take-loaded', use: 'natatorium:lean' }],
       }),
-      movement('hold', 'THE TAKE THAT HOLDS YOU', 6, [
-        B('natatorium:echo', 'FOURTH RETURN OF THE ECHO', 3, { takeLabel: 'EMPTY RETURN', playbackDamage: 2 }),
+      movement('hold', 'THE TAKE THAT HOLDS YOU', 30, [
+        B('natatorium:echo', 'FOURTH RETURN OF THE ECHO', 15, { takeLabel: 'EMPTY RETURN', playbackDamage: 10 }),
         // The pressure returns once as a second, lighter blow — a chained enemy
         // turn you brace for as one.
-        O('natatorium:depth', 'BLACK WATER PRESSURE', 3, { effect: 'ringing', followups: [{ id: 'natatorium:depth-echo', kind: 'overload', damage: 1 }] }),
-        C('natatorium:absence', 'ABSENCE WEARING HER VOICE', 2),
+        O('natatorium:depth', 'BLACK WATER PRESSURE', 20, { effect: 'ringing', followups: [{ id: 'natatorium:depth-echo', kind: 'overload', damage: 5 }] }),
+        C('natatorium:absence', 'ABSENCE WEARING HER VOICE', 10),
       ]),
     ],
   }),
+  // THE ONLY FIGHT WITH MORE THAN ONE THING IN IT.
+  //
+  // The hall's blows were all written for an empty house — A LISTENER IN THE
+  // EMPTY SEAT, APPLAUSE IN THE NOISE FLOOR, AUDIENCE REMOVED FROM VIEW — and
+  // the recordist's refusal was "nobody is sitting there". The seats are full
+  // now (see battle-house.js), so that refusal is off the table and the blows
+  // have to come from people rather than from architecture.
+  //
+  // `house` is what turns this profile into a group fight. Nothing else in the
+  // combat layer needs to know: every path behaves exactly as it did when the
+  // field is absent, which it is for all five other encounters.
   hall: Object.freeze({
     kind: 'regular',
     signature: { id: 'feedback', label: 'HOUSE RETURN', description: 'The first Playback in Noise each phase recoils for 1 Composure.' },
     music: { mode: 'fixed', lead: 'lead-3' },
+    house: { figures: null },
     movements: [
-      movement('monitor', 'THE MONITOR RETURN', 6, [
-        B('hall:send', 'HOUSE SEND ON AN OPEN FADER', 2, { takeLabel: 'HOUSE SEND', playbackDamage: 2 }),
-        O('hall:bus', 'BUS VOLTAGE WITHOUT POWER', 2, { effect: 'ringing' }),
-        C('hall:seat', 'A LISTENER IN THE EMPTY SEAT', 2),
+      movement('seated', 'THE HOUSE IS SEATED', 30, [
+        B('hall:regard', 'A FULL HOUSE REGARDS YOU', 10, { takeLabel: 'THE REGARD', playbackDamage: 10 }),
+        O('hall:shift', 'EVERY SEAT SHIFTS AT ONCE', 10, { effect: 'ringing' }),
+        C('hall:gap', 'ONE SEAT EMPTIES WHEN YOU LOOK AT IT', 10),
       ]),
-      movement('return', 'THE HOUSE RETURN', 6, [
-        B('hall:room', 'ROOM RETURN ON THE TAPE', 2, { takeLabel: 'HOUSE RETURN', playbackDamage: 2 }),
-        L('hall:loop', 'OUTPUT PATCHED TO INPUT', 3),
-        O('hall:clip', 'THE RETURN CLIPS RED', 3, { effect: 'ringing' }),
+      movement('attention', 'EVERY HEAD AT ONCE', 30, [
+        B('hall:turn', 'THE HOUSE TURNS ON YOUR LEVEL', 10, { takeLabel: 'THE TURN', playbackDamage: 10 }),
+        L('hall:loop', 'OUTPUT PATCHED TO INPUT', 15),
+        O('hall:lean', 'THE WHOLE TIER LEANS IN', 20, { effect: 'ringing' }),
       ]),
-      movement('applause', 'APPLAUSE WITHOUT HANDS', 6, [
-        B('hall:applause', 'APPLAUSE IN THE NOISE FLOOR', 3, { takeLabel: 'EMPTY APPLAUSE', playbackDamage: 2 }),
-        C('hall:audience', 'AUDIENCE REMOVED FROM VIEW', 2),
-        O('hall:stack', 'THE STACK COMES UP AT ONCE', 3, { effect: 'ringing' }),
+      // The old title was APPLAUSE WITHOUT HANDS. There are hands.
+      movement('applause', 'APPLAUSE WITH HANDS', 30, [
+        B('hall:applause', 'APPLAUSE, AND THEY MEAN IT', 15, { takeLabel: 'THE OVATION', playbackDamage: 10 }),
+        C('hall:standing', 'THE ROW BEHIND YOU STANDS', 10),
+        O('hall:stack', 'THE WHOLE HOUSE COMES UP AT ONCE', 20, { effect: 'ringing' }),
       ]),
     ],
   }),
@@ -82,20 +111,20 @@ const PROFILES = Object.freeze({
     signature: { id: 'ensemble', label: 'ENSEMBLE STACK', description: 'Every third hostile beat gains +1 damage unless this movement was Tuned.' },
     music: { mode: 'fixed', lead: 'lead-2' },
     movements: [
-      movement('instrument', 'THE WRONG INSTRUMENT', 5, [
-        B('practice:two-notes', 'TWO NOTES ON THE TAKE', 2, { takeLabel: 'TWO WRONG NOTES', playbackDamage: 2 }),
-        C('practice:piano', 'PIANO HIDDEN IN A DEAD ROOM', 2),
-        O('practice:ensemble', 'EVERY STAND ANSWERS', 2, { effect: 'ringing' }),
+      movement('instrument', 'THE WRONG INSTRUMENT', 25, [
+        B('practice:two-notes', 'TWO NOTES ON THE TAKE', 10, { takeLabel: 'TWO WRONG NOTES', playbackDamage: 10 }),
+        C('practice:piano', 'PIANO HIDDEN IN A DEAD ROOM', 10),
+        O('practice:ensemble', 'EVERY STAND ANSWERS', 10, { effect: 'ringing' }),
       ]),
-      movement('player', 'THE PLAYER NOT PRESENT', 6, [
-        B('practice:breath', 'BREATH BEFORE THE PHRASE', 2, { takeLabel: 'PLAYER BREATH', playbackDamage: 2 }),
-        O('practice:downbeat', 'DOWNBEAT THROUGH THE FLOOR', 3, { effect: 'ringing' }),
-        C('practice:chair', 'THE EMPTY CHAIR MOVES', 2),
+      movement('player', 'THE PLAYER NOT PRESENT', 30, [
+        B('practice:breath', 'BREATH BEFORE THE PHRASE', 10, { takeLabel: 'PLAYER BREATH', playbackDamage: 10 }),
+        O('practice:downbeat', 'DOWNBEAT THROUGH THE FLOOR', 20, { effect: 'ringing' }),
+        C('practice:chair', 'THE EMPTY CHAIR MOVES', 10),
       ]),
-      movement('score', 'THE SCORE WRITES BACK', 6, [
-        B('practice:phrase', 'THE PHRASE PLAYS ITSELF', 3, { takeLabel: 'SELF-PLAYING PHRASE', playbackDamage: 2 }),
-        C('practice:rest', 'REST BLACKED OUT OF THE BAR', 2),
-        O('practice:finale', 'ALL PARTS AT FULL LEVEL', 3, { effect: 'ringing' }),
+      movement('score', 'THE SCORE WRITES BACK', 30, [
+        B('practice:phrase', 'THE PHRASE PLAYS ITSELF', 15, { takeLabel: 'SELF-PLAYING PHRASE', playbackDamage: 10 }),
+        C('practice:rest', 'REST BLACKED OUT OF THE BAR', 10),
+        O('practice:finale', 'ALL PARTS AT FULL LEVEL', 20, { effect: 'ringing' }),
       ]),
     ],
   }),
@@ -104,31 +133,31 @@ const PROFILES = Object.freeze({
     signature: { id: 'contract', label: 'CHAIN OF PROOF', description: 'Perfect tool responses preserve evidence used by the final contract.' },
     music: { mode: 'movement', movementLeads: ['lead-1', 'lead-2', 'lead-3', 'lead-1', 'lead-3'] },
     movements: [
-      movement('room', 'THE ROOM', 4, [
-        B('chapel:room-tone', 'ROOM TONE CLAIMS A BODY', 2, { takeLabel: 'ROOM CLAIM', playbackDamage: 2 }),
-        C('chapel:not-empty', 'NOT WRITTEN INTO EMPTY', 2),
-        O('chapel:walls', 'THE WALLS CLOSE THE CIRCUIT', 3, { effect: 'ringing' }),
+      movement('room', 'THE ROOM', 20, [
+        B('chapel:room-tone', 'ROOM TONE CLAIMS A BODY', 10, { takeLabel: 'ROOM CLAIM', playbackDamage: 10 }),
+        C('chapel:not-empty', 'NOT WRITTEN INTO EMPTY', 10),
+        O('chapel:walls', 'THE WALLS CLOSE THE CIRCUIT', 20, { effect: 'ringing' }),
       ]),
-      movement('recordist', 'THE PREVIOUS RECORDIST', 4, [
-        B('chapel:body', 'BORROWED BODY ON THE MONITOR', 2, { takeLabel: 'BORROWED BODY', takeTag: 'body', playbackDamage: 2 }),
-        O('chapel:consent', 'CONSENT BURIED UNDER NOISE', 3, { effect: 'ringing' }),
-        C('chapel:previous', 'PREVIOUS RECORDIST HELD OFF-MIC', 2),
+      movement('recordist', 'THE PREVIOUS RECORDIST', 20, [
+        B('chapel:body', 'BORROWED BODY ON THE MONITOR', 10, { takeLabel: 'BORROWED BODY', takeTag: 'body', playbackDamage: 10 }),
+        O('chapel:consent', 'CONSENT BURIED UNDER NOISE', 20, { effect: 'ringing' }),
+        C('chapel:previous', 'PREVIOUS RECORDIST HELD OFF-MIC', 10),
       ]),
-      movement('surfer', 'THE SURFER', 4, [
-        B('chapel:surfer', 'SURFER PRINT ON THE TAPE', 2, { takeLabel: 'SURFER PRINT', playbackDamage: 2 }),
-        C('chapel:wearing', 'THE THING WEARING THE WORD', 2),
-        O('chapel:process', 'PROCESS WITHOUT AN OPERATOR', 3, { effect: 'ringing' }),
+      movement('surfer', 'THE SURFER', 20, [
+        B('chapel:surfer', 'SURFER PRINT ON THE TAPE', 10, { takeLabel: 'SURFER PRINT', playbackDamage: 10 }),
+        C('chapel:wearing', 'THE THING WEARING THE WORD', 10),
+        O('chapel:process', 'PROCESS WITHOUT AN OPERATOR', 20, { effect: 'ringing' }),
       ]),
-      movement('contract', 'THE CONTRACT', 4, [
-        B('chapel:terms', 'TERMS READ INTO THE RECORDER', 2, { takeLabel: 'CONTRACT TERMS', playbackDamage: 2 }),
-        L('chapel:contract-loop', 'AGREEMENT FED BACK AS CONSENT', 3),
-        O('chapel:signature', 'SIGNATURE DRIVEN PAST ZERO', 3, { effect: 'ringing' }),
+      movement('contract', 'THE CONTRACT', 20, [
+        B('chapel:terms', 'TERMS READ INTO THE RECORDER', 10, { takeLabel: 'CONTRACT TERMS', playbackDamage: 10 }),
+        L('chapel:contract-loop', 'AGREEMENT FED BACK AS CONSENT', 15),
+        O('chapel:signature', 'SIGNATURE DRIVEN PAST ZERO', 20, { effect: 'ringing' }),
       ]),
-      movement('source', 'THE SOURCE', 4, [
-        B('chapel:body-return', 'BODY BORROWED RETURN', 2, { takeLabel: 'BODY BORROWED RETURN', takeTag: 'body', playbackDamage: 2 }),
-        O('chapel:source-pressure', 'THE SOURCE PRESSES FOR AN ANSWER', 2, { effect: 'ringing' }),
-        B('chapel:release-take', 'RELEASE PRINT ON THE RETURN', 2, { takeLabel: 'SIGNAL RELEASE', playbackDamage: 2 }),
-        L('chapel:source-loop', 'SIGNAL PROCESS RELEASE', 3),
+      movement('source', 'THE SOURCE', 20, [
+        B('chapel:body-return', 'BODY BORROWED RETURN', 10, { takeLabel: 'BODY BORROWED RETURN', takeTag: 'body', playbackDamage: 10 }),
+        O('chapel:source-pressure', 'THE SOURCE PRESSES FOR AN ANSWER', 10, { effect: 'ringing' }),
+        B('chapel:release-take', 'RELEASE PRINT ON THE RETURN', 10, { takeLabel: 'SIGNAL RELEASE', playbackDamage: 10 }),
+        L('chapel:source-loop', 'SIGNAL PROCESS RELEASE', 15),
       ]),
     ],
   }),
@@ -137,18 +166,29 @@ const PROFILES = Object.freeze({
   // — the combat tutorial director scripts one lesson per beat against it.
   training: Object.freeze({
     kind: 'regular',
+    // Pinned to its script. The drill's lesson steps are written against this
+    // order beat for beat and each waits on a specific perfect counter before
+    // releasing the next move (combat-tutorial.js). A teaching sequence is the
+    // one place an opponent with opinions is simply wrong.
+    pinnedCycle: true,
     music: { mode: 'fixed', lead: 'lead-1' },
     movements: [
-      movement('drill-a', 'CALIBRATION TONE', 8, [
-        B('training:tone', 'TEST TONE ON THE BENCH SEND', 1, { takeLabel: 'TEST TONE', playbackDamage: 2 }),
-        B('training:print', 'CLEAN PRINT, EASY CAPTURE', 1, { takeLabel: 'CLEAN PRINT', playbackDamage: 2 }),
-        C('training:mask', 'THE TONE HIDES IN THE FLOOR', 1),
-        O('training:swell', 'LEVEL SWELL PAST ZERO', 2, { effect: 'ringing' }),
+      // `pinned` keeps the severe and dead-air scripts IDENTICAL to the standard
+      // one. Every other profile gets auto-rotated variants, which is what makes
+      // the meaner presets throw a different order — but the drill's lesson steps
+      // are written against this order beat for beat, so a rotation would have
+      // the director waiting on a counter the opponent is not going to offer, and
+      // would open the drill on two blows the recorder cannot capture.
+      pinned('drill-a', 'CALIBRATION TONE', 40, [
+        B('training:tone', 'TEST TONE ON THE BENCH SEND', 5, { takeLabel: 'TEST TONE', playbackDamage: 10 }),
+        B('training:print', 'CLEAN PRINT, EASY CAPTURE', 5, { takeLabel: 'CLEAN PRINT', playbackDamage: 10 }),
+        C('training:mask', 'THE TONE HIDES IN THE FLOOR', 5),
+        O('training:swell', 'LEVEL SWELL PAST ZERO', 10, { effect: 'ringing' }),
       ]),
-      movement('drill-b', 'PLAYBACK PROOF', 6, [
-        B('training:slate', 'SLATE READ ONTO THE TAPE', 2, { takeLabel: 'BENCH SLATE', playbackDamage: 2 }),
-        O('training:spike', 'A SPIKE YOU MUST SIT OUT', 2, { effect: 'ringing' }),
-        C('training:fade', 'IT PRETENDS TO LEAVE', 1),
+      pinned('drill-b', 'PLAYBACK PROOF', 30, [
+        B('training:slate', 'SLATE READ ONTO THE TAPE', 10, { takeLabel: 'BENCH SLATE', playbackDamage: 10 }),
+        O('training:spike', 'A SPIKE YOU MUST SIT OUT', 10, { effect: 'ringing' }),
+        C('training:fade', 'IT PRETENDS TO LEAVE', 5),
       ]),
     ],
   }),
@@ -157,21 +197,21 @@ const PROFILES = Object.freeze({
     signature: { id: 'routing', label: 'THREE RETURNS', description: 'Every perfect response and phase break commits signal to the armed return channel.' },
     music: { mode: 'movement', movementLeads: ['lead-1', 'lead-2', 'lead-3'] },
     movements: [
-      movement('call-site', 'THE CALL SITE', 5, [
-        B('source:address', 'THE RECORDIST AT THIS ADDRESS', 2, { takeLabel: 'CALL SITE', playbackDamage: 2 }),
-        C('source:alias', 'AN ALIAS WEARING YOUR NAME', 2),
-        O('source:stack', 'THE STACK OPENS UNDERFOOT', 3, { effect: 'ringing' }),
+      movement('call-site', 'THE CALL SITE', 25, [
+        B('source:address', 'THE RECORDIST AT THIS ADDRESS', 10, { takeLabel: 'CALL SITE', playbackDamage: 10 }),
+        C('source:alias', 'AN ALIAS WEARING YOUR NAME', 10),
+        O('source:stack', 'THE STACK OPENS UNDERFOOT', 20, { effect: 'ringing' }),
       ]),
-      movement('borrowed-body', 'THE BORROWED BODY', 5, [
-        B('source:body', 'BODY RETURN ON THE MONITOR', 2, { takeLabel: 'BORROWED BODY', takeTag: 'body', playbackDamage: 2 }),
-        L('source:recursion', 'RECORDIST CALLS RECORDIST', 3),
-        O('source:wear', 'THE BODY TAKES THE SIGNAL', 3, { effect: 'ringing' }),
+      movement('borrowed-body', 'THE BORROWED BODY', 25, [
+        B('source:body', 'BODY RETURN ON THE MONITOR', 10, { takeLabel: 'BORROWED BODY', takeTag: 'body', playbackDamage: 10 }),
+        L('source:recursion', 'RECORDIST CALLS RECORDIST', 15),
+        O('source:wear', 'THE BODY TAKES THE SIGNAL', 20, { effect: 'ringing' }),
       ]),
-      movement('final-clause', 'THE FINAL CLAUSE', 5, [
-        B('source:return', 'RETURN VALUE STILL SPEAKING', 3, { takeLabel: 'RETURN VALUE', takeTag: 'body', playbackDamage: 3 }),
-        L('source:final-loop', 'SOURCE FED BACK INTO SURFER', 3),
-        C('source:redact', 'THE CLAUSE HIDES ITS SUBJECT', 2),
-        S('source:silence', 'SILENCE CLAIMS THE OUTPUT', { effect: 'recover', recover: 1 }),
+      movement('final-clause', 'THE FINAL CLAUSE', 25, [
+        B('source:return', 'RETURN VALUE STILL SPEAKING', 15, { takeLabel: 'RETURN VALUE', takeTag: 'body', playbackDamage: 15 }),
+        L('source:final-loop', 'SOURCE FED BACK INTO SURFER', 15),
+        C('source:redact', 'THE CLAUSE HIDES ITS SUBJECT', 10),
+        S('source:silence', 'SILENCE CLAIMS THE OUTPUT', { effect: 'recover', recover: 5 }),
       ]),
     ],
   }),
@@ -194,9 +234,40 @@ export function authoredCombatProfile(id) {
   return JSON.parse(JSON.stringify(profile));
 }
 
+// The one thing a story snapshot may still say: what the opponent's phases and
+// blows are CALLED. Matched by intent id, never by position, so re-ordering the
+// authored script can never hang a name on somebody else's move.
+function reworded(movement, snapshot) {
+  if (!snapshot) return null;
+  const named = new Map((snapshot.intents || []).filter((intent) => intent?.label).map((intent) => [intent.id, intent.label]));
+  if (!named.size && !snapshot.title) return null;
+  const relabel = (intents) => (Array.isArray(intents)
+    ? intents.map((intent) => (named.has(intent.id) ? { ...intent, label: named.get(intent.id) } : intent))
+    : intents);
+  return {
+    ...(snapshot.title ? { title: snapshot.title } : {}),
+    intents: relabel(movement.intents),
+    ...(movement.severeIntents ? { severeIntents: relabel(movement.severeIntents) } : {}),
+    ...(movement.deadAirIntents ? { deadAirIntents: relabel(movement.deadAirIntents) } : {}),
+  };
+}
+
+// Narrative JSON owns prose and intent wording; the authored profile owns every
+// mechanic. These two used to be rivals — whichever had movements won outright,
+// and the JSON always did, because the importer freezes a copy of the profile
+// into metadata.combat. That copy was taken before reactions, followups and the
+// opponent's authoring fields existed, so the story battles have been quietly
+// running an obsolete script: the natatorium's authored reaction, the one with
+// the comment about reading your board instead of a fixed list, has never once
+// fired in a shipped fight.
+//
+// So the authored profile is the spine now and the snapshot may only re-word
+// what it names. Anything authored in this file reaches the story battles
+// without regenerating content/ — which matters, because the chapel's five
+// movements are hand-authored past what the importer would write back.
 export function attachCombatDefinition(battle, combat = null) {
   const authored = authoredCombatProfile(battle.id);
-  const profile = combat?.movements?.length ? JSON.parse(JSON.stringify(combat)) : authored;
+  const snapshot = combat?.movements?.length ? combat : null;
   const rounds = battle.rounds || [];
   return {
     ...battle,
@@ -204,16 +275,16 @@ export function attachCombatDefinition(battle, combat = null) {
       id: battle.id,
       enemy: battle.enemy,
       art: battle.art || null,
-      baseComposure: 8,
-      kind: profile.kind,
-      signature: profile.signature || authored.signature,
-      music: profile.music || authored.music,
-      movements: profile.movements.map((movement, index) => ({
+      baseComposure: 8 * GRID,
+      kind: authored.kind,
+      signature: authored.signature,
+      music: authored.music,
+      // Only the hall declares one. Absent everywhere else, which is what keeps
+      // every other encounter on the single-opponent path unchanged.
+      ...(authored.house ? { house: authored.house } : {}),
+      movements: authored.movements.map((movement, index) => ({
         ...movement,
-        // Narrative JSON owns prose and intent wording; the authored combat
-        // profile owns balance so old story variants cannot silently pin an
-        // obsolete health curve.
-        coherence: authored.movements[index]?.coherence ?? movement.coherence,
+        ...reworded(movement, snapshot?.movements?.[index]),
         before: rounds[index]?.before || [],
         onListen: rounds[index]?.onListen || [],
         after: rounds[index]?.after || [],
@@ -228,9 +299,10 @@ export function trainingCombatDefinition() {
   const profile = authoredCombatProfile('training');
   return {
     id: 'training',
+    pinnedCycle: profile.pinnedCycle,
     enemy: 'THE THING NOT THERE YET',
     art: null,
-    baseComposure: 8,
+    baseComposure: 8 * GRID,
     kind: profile.kind,
     signature: null,
     music: profile.music,
@@ -252,13 +324,24 @@ export function trainingCombatBattle() {
     //
     // The count and the drift that get him here are the daydream beat, which runs
     // during the take itself (see beginDaydream in main.js). By the time this
-    // opens he has already said the demon part out loud.
+    // opens he has already said the demon part out loud — and the tape was
+    // rolling, because the recorder does not stop until the ripple.
+    //
+    // So the opening no longer measures the thing. It used to say "nine feet of
+    // it, in the deep end, exactly as daft as he described", but the joke is
+    // drawn from four DAYDREAM_SILLY variants and only two of them mention
+    // either — three runs in four, the game asserted he had described something
+    // he had not. What is constant across all four is the shape of it: he said a
+    // thing out loud onto his own tape, and the building can now quote him. That
+    // is the rule the whole night runs on (see signal-role.js: the Surfer may
+    // only ever repeat), and this is the first time it is demonstrated, on the
+    // cheapest possible stakes, before anything is at risk.
     intro: [
-      { who: 'direction', text: 'And there it is. Nine feet of it, in the deep end, exactly as daft as he described.' },
-      { who: 'you', text: "Oh, that's not fair. I was joking. I was making a joke." },
+      { who: 'direction', text: 'And there it is. Not a shape in the dark — the shape you just described, out loud, to nobody, with the tape running.' },
+      { who: 'you', text: 'That was a joke. I was passing the time. You do not get to have that one.' },
     ],
-    win: [{ who: 'direction', text: 'You blink. The dock, the dark, the meter still under sixty, your feet exactly where you left them. Six seconds. You have been standing here six seconds.' }],
-    lose: [{ who: 'direction', text: 'You blink, and lose the thread of it, and it is only the dock again. Six seconds, a good level, and a slightly stupid feeling. Nothing touched you. Nothing has started yet.' }],
+    win: [{ who: 'direction', text: 'You blink. The dock, the dark, the meter still under sixty, your feet exactly where you left them. Six seconds, and you held every one of them. Whatever that was, you already know what you do about it.' }],
+    lose: [{ who: 'direction', text: 'You blink, and lose the thread of it, and it is only the dock again. Six seconds, a good level, and a slightly stupid feeling. Nothing touched you. Nothing has started yet — and you have already told it what you are frightened of.' }],
   };
 }
 
@@ -278,7 +361,7 @@ export function practiceRoomHushDefinition() {
     id: 'practice-room-hush',
     enemy: 'THE ROOM THAT WAS PRACTISING',
     art: null,
-    baseComposure: 8,
+    baseComposure: 8 * GRID,
     kind: profile.kind,
     signature: profile.signature,
     music: profile.music,
@@ -309,29 +392,34 @@ export function practiceRoomHushBattle() {
   };
 }
 
-export function sourceCombatDefinition() {
+export function sourceCombatDefinition({ bodyReturn = false } = {}) {
   const profile = authoredCombatProfile('source');
   return {
     id: 'source-final',
     enemy: 'THE THING WEARING THE RECORDIST',
     art: { id: 'surfer', mode: 'boss', caption: 'Source / borrowed body', status: 'RETURN' },
-    baseComposure: 8,
+    baseComposure: (bodyReturn ? 10 : 8) * GRID,
     kind: profile.kind,
     signature: profile.signature,
     music: profile.music,
-    movements: profile.movements,
+    movements: profile.movements.map((entry) => entry.id === 'borrowed-body' && bodyReturn
+      ? { ...entry, coherence: 4 * GRID }
+      : entry),
+    bodyReturnAssist: !!bodyReturn,
   };
 }
 
-export function sourceCombatBattle() {
-  const combat = sourceCombatDefinition();
+export function sourceCombatBattle(options = {}) {
+  const combat = sourceCombatDefinition(options);
   return {
     id: combat.id,
     enemy: combat.enemy,
     art: combat.art,
     combat,
+    // Rig-neutral. What he is holding when the channels open is the rig
+    // bridge's line to say — see applyRigAdvantage() in source-rig-bridge.js.
     intro: [
-      { who: 'direction', text: 'The final page does not wait for a mark. Its three return channels rise out of the source at once.' },
+      { who: 'direction', text: 'The exposed fault opens. Three return channels rise out of the source at once.' },
       { who: 'you', text: 'Return. Isolate. Open. I decide where every signal goes.' },
     ],
     win: [{ who: 'direction', text: 'The clause loses coherence. The armed channel takes the return value.' }],

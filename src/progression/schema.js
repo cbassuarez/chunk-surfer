@@ -20,6 +20,7 @@ import {
 } from '../game/stair-anomaly.js';
 import { normalizeReturnHistory } from './return-history.js';
 import { normalizeInterferenceRecord } from '../game/interference-case.js';
+import { carriedRead, readFromCarried } from '../game/enemy-mind.js';
 import { freshReferenceExposure, normalizeReferenceExposure } from '../game/reference-exposure.js';
 import {
   DEFAULT_PSYCH_PROFILE_SETTINGS,
@@ -215,6 +216,15 @@ export function freshRunRecord({
     environment,
     ledger: freshLedger(),
     interference: null,
+    // What the thing in the building has worked out about how this recordist
+    // plays: which verbs they reach for and which they land. Carried between
+    // encounters so the chapel opens already knowing you.
+    //
+    // Deliberately NOT part of the psychological profile. That module is
+    // consent-gated and its own header promises it never receives input
+    // histories, which is exactly what this is. This is in-fiction memory —
+    // the opponent has been listening all night — not measurement of a person.
+    enemyRead: null,
     pendingReturn: null,
     finalizedReturn: null,
   };
@@ -426,6 +436,9 @@ export function normalizeRun(value, { meta = null, settings = null, activeFallba
     },
     ledger: normalizeLedger(source.ledger, { legacyFlags }),
     interference: normalizeInterferenceRecord(source.interference),
+    // Absent on saves written before the opponent could remember anything, in
+    // which case the night simply starts with it knowing nothing about you.
+    enemyRead: source.enemyRead ? carriedRead(readFromCarried(source.enemyRead)) : null,
     pendingReturn: source.pendingReturn && typeof source.pendingReturn === 'object' ? source.pendingReturn : null,
     finalizedReturn: source.finalizedReturn && typeof source.finalizedReturn === 'object' ? source.finalizedReturn : null,
   };

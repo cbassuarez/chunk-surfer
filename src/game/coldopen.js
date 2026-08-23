@@ -298,7 +298,7 @@ export function makeArrivalScene({ onDone, audio, duration = 2.6 } = {}) {
     blocksWorld: false,
     lensPreset: 'calm',
 
-    enter() { audio?.startRain?.(); },
+    enter() { audio?.startRain?.(); audio?.startOpeningSceneBed?.(); },
     update(dt) { t += dt; if (t >= duration) finish(); },
     // No skipping. It is two and a half seconds and it is the first thing the
     // game says.
@@ -311,6 +311,40 @@ export function makeArrivalScene({ onDone, audio, duration = 2.6 } = {}) {
       const k = Math.min(1, Math.max(0, (t - duration * 0.18) / (duration * 0.82)));
       const alpha = (1 - k) * (1 - k) * (1 - k);
       if (alpha > 0.002) uiFill(0, 0, cols, rows, `rgba(4,5,7,${alpha.toFixed(3)})`);
+    },
+  };
+}
+
+
+export function makeBoothDownbeatHoldScene({ duration = 0, onDone, scrim = 0.28 } = {}) {
+  let t = 0;
+  let done = false;
+
+  function finish() {
+    if (done) return;
+    done = true;
+    scenes.pop();
+    onDone?.();
+  }
+
+  return {
+    id: 'booth-downbeat-hold',
+    blocksInput: true,
+    blocksWorld: true,
+    lensPreset: 'booth',
+
+    update(dt) {
+      t += Math.max(0, Number(dt) || 0);
+      if (t >= duration) finish();
+    },
+
+    key() { return true; },
+    keyup() { return true; },
+
+    render() {
+      if (scrim <= 0) return;
+      const { cols, rows } = uiSize();
+      uiFill(0, 0, cols, rows, `rgba(4,5,7,${Math.min(1, Math.max(0, scrim)).toFixed(3)})`);
     },
   };
 }

@@ -18,21 +18,19 @@ assert.equal(doors.length,CONSERVATORY_DOORS.length,'the compiled door set exact
 assert.equal(new Set(doors.map((door)=>door.id)).size,doors.length,'all door IDs are stable and unique');
 assert.ok(doors.every((door)=>door.archetype!=='legacy'),'every portal has exactly one explicit definition');
 assert.equal(doors.filter((door)=>door.leafCount===2).length,5,'public entrance, baths, hall, chapel and bay goods doors are pairs');
-assert.deepEqual(doors.filter((door)=>door.leafCount===2).map((door)=>door.id).sort(),['bay-goods-pair','chapel-c17','front-main','hall-vestibule','pool-lobby']);
+assert.deepEqual(doors.filter((door)=>door.leafCount===2).map((door)=>door.id).sort(),['chapel-c17','dock-grey-exterior','front-main','hall-vestibule','pool-lobby']);
 const poolDoor=doors.find((door)=>door.id==='pool-lobby');
 assert.equal(poolDoor.archetype,DOOR_ARCHETYPE.POOL_GLAZED_PAIR);
 assert.equal(poolDoor.aperture.width,2,'the municipal baths admits a school group through a real two-metre pair');
 assert.deepEqual(poolDoor.activeLeaves,[0,1]);
-// The goods doors are the widest opening in the building and the only one whose
-// key is never issued: barred from the inside, in a bay with no lorry.
+// The goods doors are the widest opening in the building and the canonical
+// arrival threshold: one real pair, one stable story identity.
 {
-  const goods=doors.find((door)=>door.id==='bay-goods-pair');
+  const goods=doors.find((door)=>door.id==='dock-grey-exterior');
   assert.equal(goods.aperture.width,3,'three metres of opening');
   assert.equal(goods.cells.length,12,'three authored metres of portal, not one widened cell');
-  assert.equal(goods.keyId,'services-core','the keyring nobody is issued');
-  assert.ok(!doors.find((door)=>door.id==='dock-grey-exterior').cells
-    .some((cell)=>goods.cells.some((other)=>other.x===cell.x&&other.y===cell.y)),
-  'and they are a separate portal from the personnel door beside them');
+  assert.equal(goods.keyId,'master','the recordist opens the pair with the issued key');
+  assert.equal(doors.some((door)=>door.id==='bay-goods-pair'),false,'no duplicate goods/personnel story portal remains');
 }
 assert.ok(doors.filter((door)=>door.leafCount===1).every((door)=>door.aperture.width>=.9&&door.aperture.width<=1.05),'single apertures do not infer leaves from portal cell count');
 assert.deepEqual(doors.find((door)=>door.id==='chapel-c17').activeLeaves,[1],'C-17 releases only the right leaf');
@@ -106,6 +104,11 @@ const grey=FP.doorState().find((door)=>door.id==='dock-grey-exterior');
 assert.ok(grey,'the grey door he came in through exists');
 assert.equal(grey.keyId,'master','it is locked, and he is the man with the key');
 assert.equal(grey.widthAxis,'y','it sits in a north-south wall');
+assert.equal(grey.archetype,'bay-goods-pair','the good double goods doors are the canonical arrival threshold');
+assert.equal(grey.leafCount,2,'the arrival threshold has two real leaves');
+assert.equal(grey.aperture.width,3,'the arrival threshold keeps the three-metre goods opening');
+assert.deepEqual(grey.activeLeaves,[0,1],'both goods leaves participate in the arrival door');
+assert.equal(FP.doorState().some((door)=>door.id==='bay-goods-pair'),false,'there is no duplicate story-facing goods portal');
 FP.setSpawn(conservatory.spawn.x,conservatory.spawn.y);
 const spawnCell=FP.spawn();
 const approach=FP.toRuntimePoint(conservatory.greyDoorApproach);
@@ -114,7 +117,7 @@ const approach=FP.toRuntimePoint(conservatory.greyDoorApproach);
 // across the yard. The walk is played now, so he starts out on the road and the
 // door is the END of it — see the spine in conservatory.js. What has to stay
 // true is that the door is dead ahead of the APRON, which is where he arrives.
-const apronMark=FP.toRuntimePoint({x:53,y:7});
+const apronMark=FP.toRuntimePoint({x:53,y:10});
 assert.equal(FP.zoneAt(apronMark.x,apronMark.y),ZONE.dock,'the apron mark is on the loading bay');
 assert.ok(grey.cells.some((cell)=>cell.y===apronMark.y),'it is dead ahead of the apron');
 assert.ok(grey.cx>apronMark.x,'...and due east of it, in the wall he walks up to');

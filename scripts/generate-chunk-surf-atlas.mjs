@@ -30,7 +30,7 @@ const SOURCE_FILES = Object.freeze([
   'src/data/battles.js',
   'src/progression/runtime.js',
   'src/progression/events.js',
-  'content/narrative/battle.chapel.feeling.story.json',
+  'content/narrative/battle.chapel.story.json',
   'content/narrative/conservatory.cold_open_dialogue.story.json',
 ]);
 

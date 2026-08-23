@@ -252,6 +252,7 @@ function drawReadyNow(model, entries, selectedId, rect) {
 
 function storageBadge(entry) {
   if (!entry) return { text: 'EMPTY', cls: 'ui-secondary' };
+  if (entry.source?.deployed) return { text: 'DEPLOYED', cls: 'ui-blue' };
   if (entry.present === false) return { text: 'MISSING', cls: 'ui-danger' };
   if (entry.compartment === 'top') return { text: 'ASSIGNED ABOVE', cls: 'ui-amber' };
   if (entry.battleCapable) return { text: 'PRESS T', cls: 'ui-blue' };
@@ -312,6 +313,11 @@ function kitVerdict(entry) {
   if (!entry) {
     return { tone: 'empty', cls: 'ui-secondary', title: 'NOTHING HERE', copy: 'Pick a storage item and press T to put it in READY NOW.' };
   }
+  if (entry.present === false) {
+    return entry.source?.deployed
+      ? { tone: 'deployed', cls: 'ui-blue', title: 'DEPLOYED / NOT READY', copy: 'The tray assignment is remembered. The item is physically in the field.' }
+      : { tone: 'missing', cls: 'ui-danger', title: 'NOT CARRIED', copy: 'The tray assignment is remembered until the item is recovered.' };
+  }
   if (entry.compartment === 'top') {
     return { tone: 'ready', cls: 'ui-amber', title: 'USABLE DURING CONTACT', copy: 'This item is in READY NOW. It can be reached when the room goes bad.' };
   }
@@ -360,11 +366,20 @@ function drawKitDetail(entry, rect, nav, motion, now) {
   }
 
   const actionY = rect.y + rect.h - 2;
-  let action = '[ENTER] USE / INSPECT';
-  if (entry?.compartment === 'top') action = '[R] CLEAR READY SLOT   [ENTER] USE';
-  else if (entry?.battleCapable) action = '[T] PUT IN READY NOW   [ENTER] INSPECT';
-  else if (entry?.present === false) action = 'NOT CARRIED';
-  uiText(rect.x + 1, actionY, clip(action, rect.w - 2), entry?.battleCapable ? 'ui-amber' : 'ui-label', .72);
+  const detailAction = bagKitDetailAction(entry);
+  uiText(rect.x + 1, actionY, clip(detailAction, rect.w - 2), entry?.battleCapable ? 'ui-amber' : 'ui-label', .72);
+}
+
+export function bagKitDetailAction(entry) {
+  if (!entry) return 'NO ITEM SELECTED';
+  const actions = [];
+  if (entry.actions?.secondary?.id === 'move-storage') actions.push('[R] CLEAR READY SLOT');
+  else if (entry.actions?.secondary?.id === 'move-top') actions.push('[T] PUT IN READY NOW');
+  if (entry.actions?.primary) actions.push(`[${inputPromptLabel('confirm')}] ${entry.actions.primary.label}`);
+  if (actions.length) return actions.join('   ');
+  if (entry.actionReason) return entry.actionReason;
+  if (entry.present === false) return 'NOT CARRIED';
+  return 'NO DIRECT ACTION';
 }
 
 function drawKitLoadoutView(model, nav, layout, motion, now) {

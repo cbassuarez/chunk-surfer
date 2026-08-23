@@ -24,6 +24,24 @@ export const ACOUSTIC_CATALOGUE = Object.freeze({
   operator_voice_activity: D({ levelDb: -30, durationMs: 480, spectrum: S(.18, .84, .52), impulsiveness: .14, family: 'voice', canBeMimicked: false }),
   bell_tenor_toll: D({ levelDb: -4, durationMs: 9000, spectrum: S(1, .78, .34), impulsiveness: .82, family: 'bell', canBeMimicked: true }),
   bell_change_strike: D({ levelDb: -2, durationMs: 11000, spectrum: S(.94, .86, .52), impulsiveness: .88, family: 'bell', canBeMimicked: false }),
+  // THE FOUNTAIN. The only continuous source in the catalogue, and the only one
+  // that is not something anybody did.
+  //
+  // Everything above is an EVENT — a footstep, a door, a bell — with a start and
+  // an end, which is why they all carry an impulsiveness worth reading. Running
+  // water never starts. The duration here is a nominal analysis window rather
+  // than a length, because the entry exists to describe a steady state.
+  //
+  // It earns its place by MASKING. The park fountain is on a supply that was
+  // never on Ellery's meter, so it has run every night since the building shut,
+  // and a body standing beside it is harder to hear — see fountainMaskingDb in
+  // audio/fountain-water.js, which derives its ceiling from this levelDb rather
+  // than from a number typed twice. The bells are the precedent: they mask too,
+  // through the same maskingDb hook in acoustic-propagation.js.
+  //
+  // Not mimickable. The HUSH does a great many things in this building; putting
+  // a municipal water supply back on is not one of them.
+  fountain_water: D({ levelDb: -26, durationMs: 1000, spectrum: S(.22, .68, .74), impulsiveness: .06, family: 'water', canBeMimicked: false }),
 });
 
 export function catalogueEntry(kind) {

@@ -251,34 +251,23 @@ export function blendAdjacentRule(current, adjacent, amount) {
   return Object.freeze(blended);
 }
 
+// The profile's read of the player, turned into one number the fight can use.
+//
+// This used to reach into the definition and re-sort every movement's intent
+// array so the harshest blows came first. That worked when the opponent read
+// its moves off the array in order. It no longer does — it chooses — so a
+// re-sorted array is a no-op dressed as difficulty, and worse, it mutated
+// authored content to say something it does not mean.
+//
+// Now it hands over `pressureBias`, and the mood machine decides what to do
+// with it: a pressured player gets leaned on, a struggling one gets a breath.
+// The definition is returned untouched.
 export function snapshotBattleIntent(definition, influence, { tutorial = false } = {}) {
   const band = tutorial ? 0 : Math.max(-1, Math.min(1, Number(influence?.adaptiveBand) || 0));
   const intent = band < 0 ? 'relief' : band > 0 ? 'pressure' : 'baseline';
-  if (!definition || typeof definition !== 'object' || band === 0) {
-    return Object.freeze({ definition, intent, adaptiveBand: band });
-  }
-  const copy = typeof structuredClone === 'function'
-    ? structuredClone(definition)
-    : JSON.parse(JSON.stringify(definition));
-  const movements = copy.combat?.movements || copy.movements || [];
-  const score = (entry) => {
-    const damage = Number(entry?.damage) || 0;
-    const pressure = entry?.kind === 'overload' || entry?.kind === 'loop' ? 0.5 : 0;
-    const relief = entry?.kind === 'silence' || entry?.kind === 'conceal' ? -0.25 : 0;
-    return damage + pressure + relief;
-  };
-  for (const movement of movements) {
-    for (const key of ['intents', 'severeIntents']) {
-      if (!Array.isArray(movement[key])) continue;
-      movement[key] = movement[key]
-        .map((entry, index) => ({ entry, index }))
-        .sort((a, b) => (band > 0 ? score(b.entry) - score(a.entry) : score(a.entry) - score(b.entry)) || (a.index - b.index))
-        .map(({ entry }) => entry);
-    }
-    // DEAD AIR's authored list is never touched, even when the caller passes a
-    // stale influence. Its certification sequence remains byte-stable.
-  }
-  return Object.freeze({ definition: copy, intent, adaptiveBand: band });
+  // DEAD AIR's certification run is never leaned on in either direction, and
+  // neither is the bench drill.
+  return Object.freeze({ definition, intent, adaptiveBand: band, pressureBias: band });
 }
 
 export function psychProfilePublicSummary(settings, state, micState = 'off') {

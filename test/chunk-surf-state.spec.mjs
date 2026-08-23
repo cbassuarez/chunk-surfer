@@ -34,6 +34,15 @@ function completeCandidate(redaction = 'body', { best = true } = {}) {
     state = event(state, 'LANDMARK_TUNED', { id });
   }
   state = event(state, 'LANDMARK_RECORDED', { id: 'body-room' });
+  if (best) state = event(state, 'SOURCE_CONTACT_RESOLVED', {
+    checkpointId: 'landing-return',
+    contact: {
+      captures: 3,
+      insights: ['music-human-name', 'surfer-vessel', 'borrowed-body-return'],
+      seenBeats: ['music-1', 'vessel-1', 'body-1'],
+      lastChoiceId: 'body-1.return',
+    },
+  });
   state = event(state, 'FINAL_REACHED');
   state = event(state, 'REDACTION_ARMED', { id: redaction });
   state = event(state, 'REDACTION_CONFIRMED', { id: redaction });
@@ -53,10 +62,25 @@ assert.equal(inferLegacyChunkSurf({flags:{[CHUNK_SURF_FLAGS.completed]:true}}).f
   const migrated=normalizeChunkSurfState({
     schema:2,active:true,phase:'landscape',profile:{bestEligible:true},tuned:['fork-room','surfer-origin'],recorded:['work-order-loop'],redaction:null,
   });
-  assert.equal(migrated.schema,3);
+  assert.equal(migrated.schema,4);
   assert.deepEqual(migrated.optionalTraces,['surfer-origin','work-order-loop'],'schema-2 Tune and Record evidence migrates without loss');
   assert.equal(migrated.finalEncounter.status,SOURCE_FINAL_STATUS.LOCKED);
   assert.deepEqual(migrated.checkpoint,{id:'hall-entry',facing:0});
+  // Saves written before the horizon existed carry no injury snapshot and no
+  // tape. Zero only ever closes the fault, never opens one, so an old save can
+  // lose the optional fight but can never be handed it unearned.
+  assert.equal(migrated.injuriesAtEntry,0,'pre-horizon saves do not invent a prior injury');
+  assert.deepEqual(migrated.horizon,{entered:false,reason:null,exit:null,maxDepth:0});
+}
+
+{
+  const legacyLandscape=normalizeChunkSurfState({schema:3,active:true,phase:'landscape'});
+  assert.equal(legacyLandscape.firstLiftCompleted,true,'old landscape saves resume above the landing tutorial');
+  assert.equal(legacyLandscape.landingWeatherSpent,true,'old landscape saves do not restart landing weather');
+  assert.deepEqual(legacyLandscape.sourceContacts.insights,[]);
+  const newRun=freshChunkSurfState();
+  assert.equal(newRun.firstLiftCompleted,false);
+  assert.equal(newRun.landingWeatherSpent,false);
 }
 
 {
@@ -140,6 +164,10 @@ assert.equal(inferLegacyChunkSurf({flags:{[CHUNK_SURF_FLAGS.completed]:true}}).f
   const hunt=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.HUNT);
   const finalRun=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FINAL_RUN);
   const final=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FINAL);
+  const landing=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.LANDING);
+  const firstLift=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FIRST_LIFT);
+  const insights=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.ALL_INSIGHTS);
+  const normalExit=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.NORMAL_EXIT);
   assert.equal(entry.state.phase,CHUNK_SURF_PHASE.HALL);
   assert.equal(storm.state.pageStage,3);
   assert.equal(haystack.state.phase,CHUNK_SURF_PHASE.HAYSTACK);
@@ -149,6 +177,10 @@ assert.equal(inferLegacyChunkSurf({flags:{[CHUNK_SURF_FLAGS.completed]:true}}).f
   assert.equal(finalRun.state.pursuitBeat,SOURCE_PURSUIT_BEAT.FINAL_RUN);
   assert.equal(final.state.phase,CHUNK_SURF_PHASE.FINAL);
   assert.equal(final.state.active,true);
+  assert.equal(landing.state.firstLiftCompleted,false);
+  assert.equal(firstLift.state.firstLiftCompleted,true);
+  assert.equal(insights.state.sourceContacts.insights.length,3);
+  assert.equal(normalExit.state.phase,CHUNK_SURF_PHASE.FINAL);
 }
 
 console.log('chunk-surf-state specs passed');

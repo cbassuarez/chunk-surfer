@@ -1,3 +1,5 @@
+import { effectiveMicMeasurement } from '../audio/self-audio-mask.js';
+
 // The room you are actually in.
 //
 // A game about holding still and making no sound, played through a microphone
@@ -26,6 +28,7 @@ const DEFAULT_INPUT = Object.freeze({
 let ctx = null;
 let analyser = null;
 let data = null;
+let frequencyData = null;
 let stream = null;
 let source = null;
 let splitter = null;
@@ -37,8 +40,10 @@ let deviceChangeBound = false;
 let activeInput = { ...DEFAULT_INPUT };
 let activeDeviceLabel = '';
 let activeChannelCount = 0;
+let activeProcessing = { echoCancellation: null, noiseSuppression: null, autoGainControl: null };
 let testLevel = null;        // headless override
 let spoilMutedUntil = 0;     // recorder transport cannot spoil its own take
+let selfAudioProvider = null;
 
 const mediaDevices = () => globalThis.navigator?.mediaDevices || null;
 
@@ -76,6 +81,7 @@ export function micDevices() {
 
 export function micSnapshot() {
   const measurement = micMeasurement();
+  const effective = micEffectiveMeasurement();
   return {
     state: micState(),
     reason: stateReason,
@@ -86,10 +92,16 @@ export function micSnapshot() {
     deviceLabel: activeDeviceLabel || activeInput.lastDeviceLabel || '',
     channelMode: activeInput.channelMode,
     channelCount: activeChannelCount,
+    processing: { ...activeProcessing },
     canSelectDevice: !!mediaDevices()?.enumerateDevices,
     level: measurement.rms,
     peak: measurement.peak,
     clipped: measurement.clipped,
+    effectiveLevel: effective.effective.rms,
+    effectivePeak: effective.effective.peak,
+    selfAudioMask: effective.mask,
+    gameEchoLikely: effective.gameEchoLikely,
+    playerNoiseLikely: effective.playerNoiseLikely,
   };
 }
 
@@ -157,9 +169,13 @@ function classifyGetUserMediaFailure(err) {
 
 function audioConstraints(input) {
   const audio = {
-    echoCancellation: input.echoCancellation,
-    noiseSuppression: input.noiseSuppression,
-    autoGainControl: input.autoGainControl,
+    // Prefer system/browser processing without making unsupported processing a
+    // hard getUserMedia failure. Built-in laptop speaker/mic pairs benefit most
+    // from the platform AEC; the measured final-output reference below catches
+    // residual echo that survives it.
+    echoCancellation: input.echoCancellation ? { ideal: true } : false,
+    noiseSuppression: input.noiseSuppression ? { ideal: true } : false,
+    autoGainControl: input.autoGainControl ? { ideal: true } : false,
     channelCount: { ideal: input.channelMode === 'mono' ? 1 : 2 },
   };
   if (input.deviceId && input.deviceId !== 'default') audio.deviceId = { exact: input.deviceId };
@@ -183,6 +199,14 @@ function connectAnalyser(s, input, settings = {}) {
   analyser.fftSize = 1024;
   analyser.smoothingTimeConstant = 0.2;
   data = new Float32Array(analyser.fftSize);
+  frequencyData = typeof analyser.getFloatFrequencyData === 'function'
+    ? new Float32Array(analyser.frequencyBinCount)
+    : null;
+  activeProcessing = {
+    echoCancellation: typeof settings.echoCancellation === 'boolean' ? settings.echoCancellation : null,
+    noiseSuppression: typeof settings.noiseSuppression === 'boolean' ? settings.noiseSuppression : null,
+    autoGainControl: typeof settings.autoGainControl === 'boolean' ? settings.autoGainControl : null,
+  };
 
   const desiredChannel = input.channelMode === 'right' ? 1 : 0;
   const count = Number(settings.channelCount) || (input.channelMode === 'mono' ? 1 : 2);
@@ -204,7 +228,9 @@ function stopStream(nextState = 'idle', reason = '') {
   splitter = null;
   analyser = null;
   data = null;
+  frequencyData = null;
   activeChannelCount = 0;
+  activeProcessing = { echoCancellation: null, noiseSuppression: null, autoGainControl: null };
   setState(nextState, reason);
 }
 
@@ -245,7 +271,10 @@ export function micMeasurement() {
     if (testLevel && typeof testLevel === 'object') {
       const rms = clampLevel(testLevel.rms);
       const peak = Math.max(rms, clampLevel(testLevel.peak));
-      return { rms, peak, clipped: !!testLevel.clipped || peak >= .985 };
+      return {
+        rms, peak, clipped: !!testLevel.clipped || peak >= .985,
+        ...(Array.isArray(testLevel.spectrum) ? { spectrum: [...testLevel.spectrum] } : {}),
+      };
     }
     const rms = clampLevel(testLevel);
     return { rms, peak: rms, clipped: rms >= .985 };
@@ -254,7 +283,67 @@ export function micMeasurement() {
   analyser.getFloatTimeDomainData(data);
   const rms = micRms(data);
   const peak = micPeak(data);
-  return { rms, peak, clipped: peak >= .985 };
+  const spectrum = micSpectrum(analyser, frequencyData);
+  return { rms, peak, clipped: peak >= .985, ...(spectrum ? { spectrum } : {}) };
+}
+
+function micSpectrum(node, bins, bands = 8) {
+  if (!node || !bins || typeof node.getFloatFrequencyData !== 'function') return null;
+  node.getFloatFrequencyData(bins);
+  const out = new Array(bands).fill(0);
+  const maxBin = bins.length;
+  for (let band = 0; band < bands; band++) {
+    const low = Math.max(1, Math.floor(Math.pow(maxBin, band / bands)));
+    const high = Math.max(low + 1, Math.floor(Math.pow(maxBin, (band + 1) / bands)));
+    let power = 0;
+    let count = 0;
+    for (let index = low; index < Math.min(maxBin, high); index++) {
+      const db = Number(bins[index]);
+      if (!Number.isFinite(db)) continue;
+      const amplitude = Math.pow(10, db / 20);
+      power += amplitude * amplitude;
+      count++;
+    }
+    out[band] = count ? Math.sqrt(power / count) : 0;
+  }
+  return out;
+}
+
+
+export function micSetSelfAudioProvider(provider = null) {
+  selfAudioProvider = typeof provider === 'function' ? provider : null;
+}
+
+export function micSelfAudioMask(now = performance.now()) {
+  try {
+    return selfAudioProvider?.(now) || {
+      active: false,
+      rms: 0,
+      peak: 0,
+      db: -96,
+      count: 0,
+      latencyMs: 0,
+      maskGain: 1,
+    };
+  } catch (_) {
+    return {
+      active: false,
+      rms: 0,
+      peak: 0,
+      db: -96,
+      count: 0,
+      latencyMs: 0,
+      maskGain: 1,
+    };
+  }
+}
+
+export function micEffectiveMeasurement(now = performance.now()) {
+  return effectiveMicMeasurement(micMeasurement(), micSelfAudioMask(now));
+}
+
+export function micEffectiveLevel(now = performance.now()) {
+  return micEffectiveMeasurement(now).effective.rms;
 }
 
 // Current loudness of the real room, RMS 0..1. A quiet room is ~0.005; talking

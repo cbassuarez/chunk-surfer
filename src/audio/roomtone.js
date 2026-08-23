@@ -91,10 +91,25 @@ export function loadFootsteps() {
   return stepsPending;
 }
 
-export function footstep(level = 0.22) {
+/**
+ * @param level   how loud the footfall is
+ * @param muffle  0..1. THE GROUND IS NOT ALWAYS GROUND.
+ *
+ * These are a recording of a man walking on floorboards, which is right for a
+ * building and wrong everywhere else. Out on the horizon the body is standing
+ * on a video tape in a void — his own arrival line is "the ground out here is
+ * not ground" — and the boards were playing anyway, which put a corridor under
+ * a place that has no floor.
+ *
+ * Muffling rather than silencing: silence makes walking feel broken, and a
+ * footfall with its top gone and its room gone reads as a step onto something
+ * that is not a surface, which is exactly the intended feeling.
+ */
+export function footstep(level = 0.22, { muffle = 0 } = {}) {
   if (!ctx || !bus || level <= 0.001) return;
   if (!stepsBuf) { loadFootsteps(); return; }       // the first step of a run is silent
   const now = ctx.currentTime;
+  const dull = Math.max(0, Math.min(1, Number(muffle) || 0));
 
   // A window somewhere in the file, long enough to contain one footfall.
   const dur = 0.16 + Math.random() * 0.14;
@@ -103,7 +118,7 @@ export function footstep(level = 0.22) {
 
   const src = ctx.createBufferSource();
   src.buffer = stepsBuf;
-  src.playbackRate.setValueAtTime(0.90 + Math.random() * 0.20, now);
+  src.playbackRate.setValueAtTime((0.90 + Math.random() * 0.20) * (1 - dull * 0.22), now);
 
   // A hard gate on both ends: we are cutting into the middle of a recording and
   // must not bring its edges with us.
@@ -115,14 +130,25 @@ export function footstep(level = 0.22) {
 
   let out = env;
   let pan = null;
+  let dampen = null;
+  if (dull > 0.001) {
+    dampen = ctx.createBiquadFilter();
+    dampen.type = 'lowpass';
+    dampen.frequency.setValueAtTime(6000 - dull * 5200, now);
+    dampen.Q.setValueAtTime(0.5, now);
+    out.connect(dampen);
+    out = dampen;
+  }
   if (ctx.createStereoPanner) {
     pan = ctx.createStereoPanner();
-    pan.pan.setValueAtTime((Math.random() * 2 - 1) * 0.22, now);
-    env.connect(pan);
+    // The scatter narrows as the ground goes: a step with no room around it has
+    // nowhere to be.
+    pan.pan.setValueAtTime((Math.random() * 2 - 1) * 0.22 * (1 - dull * 0.7), now);
+    out.connect(pan);
     out = pan;
   }
   src.connect(env);
   out.connect(bus);
   try { src.start(now, offset, dur); src.stop(now + dur + 0.02); } catch (_) { return; }
-  src.onended = () => { try { src.disconnect(); env.disconnect(); pan?.disconnect(); } catch (_) {} };
+  src.onended = () => { try { src.disconnect(); env.disconnect(); pan?.disconnect(); dampen?.disconnect(); } catch (_) {} };
 }

@@ -1,0 +1,283 @@
+{
+ "schemaVersion": 1,
+ "id": "source-space.contact",
+ "title": "Source Space Contact",
+ "status": "active",
+ "entry": "music-1",
+ "entries": [
+  "music-1",
+  "music-2",
+  "vessel-1",
+  "vessel-2",
+  "body-1",
+  "body-2",
+  "residue-1"
+ ],
+ "tags": [
+  "source-space",
+  "contact",
+  "chunk-surfer"
+ ],
+ "notes": "Capture dialogue remains unattributed. HUSH is never a speaking character.",
+ "regions": [
+  {
+   "id": "source-space.contact.region",
+   "title": "Contact",
+   "kind": "scene",
+   "color": "#163b37",
+   "nodeIds": [
+    "music-1",
+    "music-2",
+    "vessel-1",
+    "vessel-2",
+    "body-1",
+    "body-2",
+    "residue-1"
+   ]
+  }
+ ],
+ "nodes": {
+  "music-1": {
+   "id": "music-1",
+   "type": "dialogue",
+   "speaker": "SOURCE / UNATTRIBUTED",
+   "insightId": "music-human-name",
+   "lines": [
+    {
+     "id": "music-1.line.1",
+     "who": "direction",
+     "signalRole": "unattributed",
+     "text": "The interval arrives before the impact. The field prints a word underneath it: MUSIC."
+    },
+    {
+     "id": "music-1.line.2",
+     "who": "surfer",
+     "signalRole": "chunkSurferTrace",
+     "text": "That was the name on the listening side.",
+     "quotes": "signal"
+    }
+   ],
+   "choices": [
+    {
+     "id": "music-1.name",
+     "text": "A human name for what crossed the room.",
+     "aligns": true
+    },
+    {
+     "id": "music-1.object",
+     "text": "A thing the room made."
+    },
+    {
+     "id": "music-1.memory",
+     "text": "A memory repeating itself."
+    }
+   ]
+  },
+  "music-2": {
+   "id": "music-2",
+   "type": "dialogue",
+   "speaker": "SOURCE / UNATTRIBUTED",
+   "insightId": "music-human-name",
+   "lines": [
+    {
+     "id": "music-2.line.1",
+     "who": "direction",
+     "signalRole": "unattributed",
+     "text": "Notation grows over the fault, but the pressure beneath it is older than any stave."
+    },
+    {
+     "id": "music-2.line.2",
+     "who": "surfer",
+     "signalRole": "chunkSurferTrace",
+     "text": "You named the mark. You did not name what left it.",
+     "quotes": "signal"
+    }
+   ],
+   "choices": [
+    {
+     "id": "music-2.score",
+     "text": "The score is the source."
+    },
+    {
+     "id": "music-2.name",
+     "text": "The score is only our notation for it.",
+     "aligns": true
+    },
+    {
+     "id": "music-2.noise",
+     "text": "There is no difference between it and noise."
+    }
+   ]
+  },
+  "vessel-1": {
+   "id": "vessel-1",
+   "type": "dialogue",
+   "speaker": "SOURCE / BORROWED TRACE",
+   "insightId": "surfer-vessel",
+   "lines": [
+    {
+     "id": "vessel-1.line.1",
+     "who": "direction",
+     "signalRole": "unattributed",
+     "text": "A second outline stands inside the first. Only the outside one follows the correction tone."
+    },
+    {
+     "id": "vessel-1.line.2",
+     "who": "surfer",
+     "signalRole": "chunkSurferTrace",
+     "text": "I kept the reference until the reference kept me.",
+     "quotes": "signal"
+    }
+   ],
+   "choices": [
+    {
+     "id": "vessel-1.same",
+     "text": "They are the same body."
+    },
+    {
+     "id": "vessel-1.vessel",
+     "text": "One force, using a conditioned vessel.",
+     "aligns": true
+    },
+    {
+     "id": "vessel-1.mask",
+     "text": "The outside shape is a disguise."
+    }
+   ]
+  },
+  "vessel-2": {
+   "id": "vessel-2",
+   "type": "dialogue",
+   "speaker": "SOURCE / BORROWED TRACE",
+   "insightId": "surfer-vessel",
+   "lines": [
+    {
+     "id": "vessel-2.line.1",
+     "who": "direction",
+     "signalRole": "unattributed",
+     "text": "The silhouette separates into an instruction and the person trained to obey it."
+    },
+    {
+     "id": "vessel-2.line.2",
+     "who": "surfer",
+     "signalRole": "chunkSurferTrace",
+     "text": "The correction needed hands. Mine were already in position.",
+     "quotes": "signal"
+    }
+   ],
+   "choices": [
+    {
+     "id": "vessel-2.person",
+     "text": "The person made the force."
+    },
+    {
+     "id": "vessel-2.vessel",
+     "text": "The person carried it without becoming it.",
+     "aligns": true
+    },
+    {
+     "id": "vessel-2.possession",
+     "text": "Nothing of the person remains."
+    }
+   ]
+  },
+  "body-1": {
+   "id": "body-1",
+   "type": "dialogue",
+   "speaker": "SOURCE / RETURN PATH",
+   "insightId": "borrowed-body-return",
+   "lines": [
+    {
+     "id": "body-1.line.1",
+     "who": "direction",
+     "signalRole": "unattributed",
+     "text": "The body address and the source address disagree. The fault keeps trying to reconcile them."
+    },
+    {
+     "id": "body-1.line.2",
+     "who": "surfer",
+     "signalRole": "chunkSurferTrace",
+     "text": "A borrowed channel can still be closed at the send.",
+     "quotes": "signal"
+    }
+   ],
+   "choices": [
+    {
+     "id": "body-1.return",
+     "text": "Separate the carrier from what it carries.",
+     "aligns": true
+    },
+    {
+     "id": "body-1.destroy",
+     "text": "Destroy both addresses."
+    },
+    {
+     "id": "body-1.keep",
+     "text": "Keep the channel open and contain it here."
+    }
+   ]
+  },
+  "body-2": {
+   "id": "body-2",
+   "type": "dialogue",
+   "speaker": "SOURCE / RETURN PATH",
+   "insightId": "borrowed-body-return",
+   "lines": [
+    {
+     "id": "body-2.line.1",
+     "who": "direction",
+     "signalRole": "unattributed",
+     "text": "BODY and SOURCE occupy one return line. The line is joined, not sealed."
+    },
+    {
+     "id": "body-2.line.2",
+     "who": "surfer",
+     "signalRole": "chunkSurferTrace",
+     "text": "Do not mistake a held note for a permanent one.",
+     "quotes": "signal"
+    }
+   ],
+   "choices": [
+    {
+     "id": "body-2.fuse",
+     "text": "The joined line cannot be divided."
+    },
+    {
+     "id": "body-2.return",
+     "text": "A joined line can be routed apart.",
+     "aligns": true
+    },
+    {
+     "id": "body-2.silence",
+     "text": "Silence the whole path."
+    }
+   ]
+  },
+  "residue-1": {
+   "id": "residue-1",
+   "type": "dialogue",
+   "speaker": "SOURCE / RESIDUE",
+   "lines": [
+    {
+     "id": "residue-1.line.1",
+     "who": "direction",
+     "signalRole": "unattributed",
+     "text": "The three resolved intervals hold. The impact can no longer move them."
+    },
+    {
+     "id": "residue-1.line.2",
+     "who": "surfer",
+     "signalRole": "chunkSurferTrace",
+     "text": "You have enough of the return to expose it. Exposure is not victory.",
+     "quotes": "signal"
+    }
+   ],
+   "choices": [
+    {
+     "id": "residue-1.continue",
+     "text": "Get up and keep moving."
+    }
+   ]
+  }
+ }
+}

@@ -62,6 +62,10 @@ export function repairBagSelection(state, model) {
   let sectionId = ids.includes(requested) ? requested : ids[0];
   const selected = { ...(state?.selected || {}) };
   const scroll = { ...(state?.scroll || {}) };
+  if (['gear:chapel-key', 'gear:key-c17', 'gear:services-core-key'].includes(selected.kit)) {
+    selected.kit = 'gear:keyring';
+  }
+  if (selected.kit === 'gear:marble-head') selected.kit = 'gear:marble-eyes';
   if (selected.manifest && !selected.map) selected.map = selected.manifest;
   if (scroll.manifest != null && scroll.map == null) scroll.map = scroll.manifest;
   delete selected.manifest;

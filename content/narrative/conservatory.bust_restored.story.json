@@ -1,0 +1,82 @@
+{
+ "schemaVersion": 1,
+ "id": "conservatory.bust_restored",
+ "title": "What It Saw From Here",
+ "status": "active",
+ "entry": "start",
+ "entries": [
+  "start"
+ ],
+ "tags": [],
+ "notes": "",
+ "regions": [
+  {
+   "id": "conservatory.bust_restored.region",
+   "title": "What It Saw From Here",
+   "kind": "scene",
+   "color": "#3d3d4a",
+   "nodeIds": [
+    "start"
+   ]
+  }
+ ],
+ "nodes": {
+  "start": {
+   "speaker": "THE GALLERY",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "The break takes first time. Old stone finds old stone and there is a sound like a door closing somewhere else in the building.",
+     "id": "start.line.1"
+    },
+    {
+     "who": "you",
+     "text": "There. That is the most I can do for you.",
+     "id": "start.line.2"
+    },
+    {
+     "who": "direction",
+     "text": "Two eyes, wet from the fountain, pointing at the doorway rather than at him.",
+     "id": "start.line.3"
+    },
+    {
+     "who": "unknown",
+     "text": "Thirty-one years of the same corridor.",
+     "id": "start.line.4"
+    },
+    {
+     "who": "you",
+     "text": "...say again?",
+     "id": "start.line.5"
+    },
+    {
+     "who": "unknown",
+     "text": "Nobody comes up here. That is what a gallery is for. So I watched the stair instead, and the stair is honest.",
+     "id": "start.line.6"
+    },
+    {
+     "who": "unknown",
+     "text": "A man came up in March with the plant keys still on him after they had asked for them back. He sat on the bench where you are standing and he did not want to go home.",
+     "id": "start.line.7"
+    },
+    {
+     "who": "unknown",
+     "text": "He did not hand them in. He put them under the felt, in the base of the head that sits off-square, four along from me. He said he would come back for them and he was telling the truth. He simply did not.",
+     "id": "start.line.8"
+    },
+    {
+     "who": "you",
+     "text": "Under the felt.",
+     "id": "start.line.9"
+    },
+    {
+     "who": "unknown",
+     "text": "The spur. Plant services. Whatever it is you can hear down there, he could hear it too, and he wanted to be able to get back in.",
+     "id": "start.line.10"
+    }
+   ],
+   "id": "start",
+   "type": "dialogue"
+  }
+ }
+}

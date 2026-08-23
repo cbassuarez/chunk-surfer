@@ -1,4 +1,5 @@
 import { validateConditionExpression } from './conditions.js';
+import { TRACE_SOURCES, isTraceSource } from './signal-role.js';
 
 const ID = /^[a-z0-9][a-z0-9._-]*$/i;
 export const NARRATIVE_SCHEMA_VERSION = 1;
@@ -101,6 +102,14 @@ export function validateNarrativeDocument(doc, options = {}) {
       else if (seenContentIds.has(item.id)) issue(errors, `nodes.${nodeId}.lines.${index}.id`, 'must be unique in document');
       else seenContentIds.add(item.id);
       condition(errors, `nodes.${nodeId}.lines.${index}.when`, item?.when);
+      // The Chunk Surfer has nothing of its own to say. A trace must name the
+      // recorded or institutional language it is repeating — see TRACE_SOURCES
+      // in signal-role.js. Checked here as well as at attach time so a bad
+      // source is caught by `npm run studio:validate` rather than at runtime.
+      if (String(item?.who || '').trim().toLowerCase() === 'surfer' && !isTraceSource(item?.quotes)) {
+        issue(errors, `nodes.${nodeId}.lines.${index}.quotes`,
+          `a Chunk Surfer trace must quote a known source (${Object.keys(TRACE_SOURCES).join(', ')})`);
+      }
       validateCueRefs(errors, `nodes.${nodeId}.lines.${index}.cues`, item?.cues, cueIds);
       validateArtRef(errors, `nodes.${nodeId}.lines.${index}.art`, item?.art || item?.artId, mediaIds);
     }

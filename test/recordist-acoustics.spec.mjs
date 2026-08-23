@@ -27,8 +27,10 @@ REC.emitNoise(.20, 3, 4, 'bookkeeping reinforcement', {
   sourceId: 'take-break',
   playerGenerated: false,
   audibleToHush: false,
+  audibleToMonitor: false,
 });
 assert.equal(events.at(-1).audibleToHush, false);
+assert.equal(events.at(-1).audibleToMonitor, false);
 
 REC.addTake('the_tub',{contaminated:true});
 assert.equal(REC.hasTake('the_tub'),true);

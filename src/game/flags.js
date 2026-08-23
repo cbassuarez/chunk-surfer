@@ -18,7 +18,22 @@ export function flagSet(name, value = true) {
 export function flagClear(name) { flagSet(name, false); }
 export function flagBump(name, by = 1) { flagSet(name, (Number(flagGet(name)) || 0) + by); }
 
-const CMP = /^([A-Za-z_][\w.]*)\s*(>=|<=|==|!=|>|<)\s*(-?\d+(?:\.\d+)?)$/;
+// Mirrors narrative/conditions.js exactly. It used to accept only a numeric
+// right-hand side and then coerce BOTH sides with Number(), which meant an
+// authored `confession.kind == name` passed the studio validator — that grammar
+// has always allowed strings — and then silently evaluated false forever at
+// runtime. No shipped content relied on the old behaviour: every authored
+// comparison in content/ is numeric, and those still compare as numbers.
+const CMP = /^([A-Za-z_][\w.]*)\s*(>=|<=|==|!=|>|<)\s*(.+)$/;
+
+function literal(value) {
+  const src = String(value).trim();
+  if (/^-?\d+(?:\.\d+)?$/.test(src)) return Number(src);
+  if (src === 'true') return true;
+  if (src === 'false') return false;
+  if (src === 'null') return null;
+  return src.replace(/^(['"])(.*)\1$/, '$2');
+}
 
 function atom(expr) {
   const s = expr.trim();
@@ -26,15 +41,16 @@ function atom(expr) {
   if (s.startsWith('!')) return !atom(s.slice(1));
   const m = CMP.exec(s);
   if (m) {
-    const left = Number(flagGet(m[1])) || 0;
-    const right = Number(m[3]);
+    const left = flagGet(m[1]);
+    const right = literal(m[3]);
     switch (m[2]) {
-      case '>=': return left >= right;
-      case '<=': return left <= right;
-      case '==': return left === right;
-      case '!=': return left !== right;
-      case '>': return left > right;
-      case '<': return left < right;
+      // Ordering is arithmetic; equality compares whatever is actually there.
+      case '>=': return Number(left) >= Number(right);
+      case '<=': return Number(left) <= Number(right);
+      case '>': return Number(left) > Number(right);
+      case '<': return Number(left) < Number(right);
+      case '==': return left == right;   // eslint-disable-line eqeqeq
+      case '!=': return left != right;   // eslint-disable-line eqeqeq
     }
   }
   return !!flagGet(s);

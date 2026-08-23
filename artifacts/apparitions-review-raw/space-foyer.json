@@ -1,0 +1,240 @@
+{
+  "id": "space-foyer",
+  "family": "space",
+  "location": "foyer",
+  "seed": "review:space:foyer",
+  "capturedAt": "2026-08-11T03:45:10.925Z",
+  "gate": {
+    "context": {
+      "group": "hall",
+      "zone": 2,
+      "spaceId": "front_atrium",
+      "ambientColor": [
+        0.66,
+        0.71,
+        0.7
+      ],
+      "ambientIntensity": 0.034,
+      "whitePointScale": 0.33260869565217394,
+      "bounce": {
+        "color": [
+          0.66,
+          0.71,
+          0.7
+        ],
+        "intensity": 0.10200000000000001
+      }
+    },
+    "effectsMode": "full",
+    "reduceDread": false,
+    "dockHauntingActive": false,
+    "specialSpace": false,
+    "sourceSpace": false,
+    "stairAnomaly": false,
+    "live": [
+      "sp02",
+      "sp03"
+    ],
+    "emergency": [
+      {
+        "id": "hall-entrance-maintained-north",
+        "kind": "emergency",
+        "circuit": null,
+        "powerMode": "maintained",
+        "maintained": true,
+        "intensity": 0.91,
+        "shadowReveal": 1
+      },
+      {
+        "id": "hall-entrance-maintained-south",
+        "kind": "emergency",
+        "circuit": null,
+        "powerMode": "maintained",
+        "maintained": true,
+        "intensity": 0.91,
+        "shadowReveal": 1
+      },
+      {
+        "id": "hall-stage-door-maintained",
+        "kind": "emergency",
+        "circuit": null,
+        "powerMode": "maintained",
+        "maintained": true,
+        "intensity": 1.008,
+        "shadowReveal": 1
+      },
+      {
+        "id": "hall-galleria-west-foot",
+        "kind": "emergency",
+        "circuit": null,
+        "powerMode": "maintained",
+        "maintained": true,
+        "intensity": 0.966,
+        "shadowReveal": 1
+      },
+      {
+        "id": "hall-galleria-east-foot",
+        "kind": "emergency",
+        "circuit": null,
+        "powerMode": "maintained",
+        "maintained": true,
+        "intensity": 0.966,
+        "shadowReveal": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": "hall-entrance-maintained-north",
+        "circuit": null,
+        "powerMode": "maintained",
+        "maintained": true,
+        "intensity": 0.91,
+        "shadowReveal": 1
+      },
+      {
+        "id": "hall-entrance-maintained-south",
+        "circuit": null,
+        "powerMode": "maintained",
+        "maintained": true,
+        "intensity": 0.91,
+        "shadowReveal": 1
+      },
+      {
+        "id": "hall-stage-door-maintained",
+        "circuit": null,
+        "powerMode": "maintained",
+        "maintained": true,
+        "intensity": 1.008,
+        "shadowReveal": 1
+      },
+      {
+        "id": "hall-galleria-west-foot",
+        "circuit": null,
+        "powerMode": "maintained",
+        "maintained": true,
+        "intensity": 0.966,
+        "shadowReveal": 1
+      },
+      {
+        "id": "hall-galleria-east-foot",
+        "circuit": null,
+        "powerMode": "maintained",
+        "maintained": true,
+        "intensity": 0.966,
+        "shadowReveal": 1
+      }
+    ],
+    "submitted": {
+      "active": true,
+      "lightId": "hall-entrance-maintained-north",
+      "figures": 3,
+      "visibleBodies": 3,
+      "shadowOnlyFigures": 0,
+      "shadowOnlyIndices": [],
+      "presentation": "shadow",
+      "compositionId": "foyer-threshold-group",
+      "compositionSource": "authored",
+      "hardRevealIndex": null,
+      "card": null,
+      "cardIndex": null,
+      "cardPhase": null,
+      "exposure": 1,
+      "minimumDistance": 4.654,
+      "stageSector": 0,
+      "pulseIndex": 6
+    }
+  },
+  "apparitions": {
+    "active": true,
+    "lightId": "hall-entrance-maintained-north",
+    "figures": 3,
+    "visibleBodies": 3,
+    "shadowOnlyFigures": 0,
+    "shadowOnlyIndices": [],
+    "compositionId": "foyer-threshold-group",
+    "compositionSource": "authored",
+    "stageYaw": 0,
+    "poseIds": [
+      "stoop",
+      "side",
+      "weight_shift"
+    ],
+    "bearings": [
+      -0.204,
+      0.017,
+      0.2
+    ],
+    "pitches": [
+      -0.132,
+      -0.115,
+      -0.124
+    ],
+    "metres": [
+      [
+        96.06,
+        20.94
+      ],
+      [
+        97.09,
+        20.14
+      ],
+      [
+        97.99,
+        20.61
+      ]
+    ],
+    "bodies": [
+      {
+        "id": "emergency-shadow:hall-entrance-maintained-north:0",
+        "index": 0,
+        "poseId": "stoop",
+        "shadowOnly": false,
+        "x": 96.055,
+        "y": 0,
+        "z": 20.943,
+        "yaw": -0.4322,
+        "distance": 4.654,
+        "presentation": "shadow",
+        "motion": "milling"
+      },
+      {
+        "id": "emergency-shadow:hall-entrance-maintained-north:1",
+        "index": 1,
+        "poseId": "side",
+        "shadowOnly": false,
+        "x": 97.091,
+        "y": 0,
+        "z": 20.143,
+        "yaw": 0.0006,
+        "distance": 5.358,
+        "presentation": "shadow",
+        "motion": "milling"
+      },
+      {
+        "id": "emergency-shadow:hall-entrance-maintained-north:2",
+        "index": 2,
+        "poseId": "weight_shift",
+        "shadowOnly": false,
+        "x": 97.992,
+        "y": 0,
+        "z": 20.61,
+        "yaw": 0.3082,
+        "distance": 4.99,
+        "presentation": "shadow",
+        "motion": "milling"
+      }
+    ]
+  },
+  "scene": {
+    "luma": 20.08,
+    "litPct": 31.9,
+    "redPct": 62.7,
+    "whitePct": 0.99
+  },
+  "shadow": {
+    "ready": true,
+    "active": true,
+    "size": 1024
+  },
+  "effects": "full"
+}

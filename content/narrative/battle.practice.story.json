@@ -1,0 +1,673 @@
+{
+  "schemaVersion": 1,
+  "id": "battle.practice",
+  "title": "Practice Wing Battle",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "battle"
+  ],
+  "notes": "",
+  "regions": [
+    {
+      "id": "battle.practice.region",
+      "title": "Practice Wing Battle",
+      "kind": "scene",
+      "color": "#245c62",
+      "nodeIds": [
+        "start",
+        "round-1",
+        "round-2",
+        "round-3",
+        "outcome"
+      ]
+    },
+    {
+      "id": "battle.practice.endings",
+      "title": "Battle outcomes",
+      "kind": "ending",
+      "color": "#8b3c48",
+      "nodeIds": [
+        "win",
+        "lose"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "type": "battle",
+      "speaker": "THE SOUND OF SILENCE",
+      "art": {
+        "id": "tuningFork",
+        "mode": "boss",
+        "caption": "Reference tone / wrong music",
+        "status": "REFERENCE"
+      },
+      "lines": [
+        {
+          "who": "direction",
+          "text": "Forty seconds into the take. Eight practice rooms and the ensemble room off one corridor, every door open. Seven uprights with their lids up; stands and cases in the rooms without them.",
+          "id": "start.line.1.held",
+          "when": "battle.occasion == recording-2"
+        },
+        {
+          "who": "direction",
+          "text": "No take yet. Eight practice rooms and the ensemble room off one corridor, every door open. Seven uprights with their lids up, and one of them is being played.",
+          "id": "start.line.1.ambush",
+          "when": "battle.occasion == pre-recording-4"
+        },
+        {
+          "who": "direction",
+          "text": "Music, far off. Not a note struck — music, playing, the way it plays from another room in a house.",
+          "id": "start.line.2"
+        },
+        {
+          "who": "you",
+          "text": "There was no power when I came in. There is no power now.",
+          "id": "start.line.3"
+        },
+        {
+          "who": "you",
+          "text": "Forty seconds of usable wing. I am not throwing that away for a noise.",
+          "id": "start.line.4.held",
+          "when": "battle.occasion == recording-2"
+        },
+        {
+          "who": "you",
+          "text": "The recorder is not even out. There will be no file. There will be nothing to check this against.",
+          "id": "start.line.4.ambush",
+          "when": "battle.occasion == pre-recording-4"
+        }
+      ],
+      "goto": "round-1",
+      "id": "start"
+    },
+    "round-1": {
+      "type": "battle-round",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "It resolves, for a second, into something you know. A phrase, taken badly, with a stop in the middle where the player lost it and went back.",
+          "id": "round-1.line.1",
+          "channel": "before"
+        },
+        {
+          "who": "you",
+          "text": "That is off a file. One of mine. It is on a drive in a box in a spare room.",
+          "id": "round-1.line.2",
+          "channel": "on-listen"
+        },
+        {
+          "who": "you",
+          "text": "That is her playing, and she is behind a conversation. I was recording the conversation.",
+          "id": "round-1.line.3",
+          "channel": "on-listen"
+        },
+        {
+          "who": "you",
+          "text": "Still rolling. It is going on the tape either way.",
+          "id": "round-1.bark.held",
+          "channel": "on-listen",
+          "when": "battle.occasion == recording-2"
+        },
+        {
+          "who": "you",
+          "text": "Nothing is catching this. Only me.",
+          "id": "round-1.bark.ambush",
+          "channel": "on-listen",
+          "when": "battle.occasion == pre-recording-4"
+        },
+        {
+          "who": "you",
+          "text": "Three years of Sarah’s voice. Nine minutes of her playing, and the nine minutes are an accident.",
+          "id": "round-1.line.4.named",
+          "channel": "after",
+          "when": "battle.naming == yes"
+        },
+        {
+          "who": "you",
+          "text": "Three years of her voice. Nine minutes of her playing, and the nine minutes are an accident.",
+          "id": "round-1.line.4.unnamed",
+          "channel": "after",
+          "when": "battle.naming == no"
+        }
+      ],
+      "battle": {
+        "nature": "on the tape",
+        "threat": 0.44
+      },
+      "goto": "round-2",
+      "id": "round-1"
+    },
+    "round-2": {
+      "type": "battle-round",
+      "lines": [
+        {
+          "who": "sarah",
+          "text": "You kept all of it, then.",
+          "id": "round-2.line.1.named",
+          "channel": "before",
+          "when": "battle.naming == yes"
+        },
+        {
+          "who": "unknown",
+          "text": "You kept all of it, then.",
+          "id": "round-2.line.1.unnamed",
+          "channel": "before",
+          "when": "battle.naming == no"
+        },
+        {
+          "who": "me",
+          "text": "I keep everything. That is the job. That has always been the job.",
+          "id": "round-2.line.2",
+          "channel": "before"
+        },
+        {
+          "who": "sarah",
+          "text": "You kept me changing. You never once kept me working.",
+          "id": "round-2.line.3.named",
+          "channel": "before",
+          "when": "battle.naming == yes"
+        },
+        {
+          "who": "unknown",
+          "text": "You kept me changing. You never once kept me working.",
+          "id": "round-2.line.3.unnamed",
+          "channel": "before",
+          "when": "battle.naming == no"
+        },
+        {
+          "who": "you",
+          "text": "She is not at the piano. There is not a piano in this wing with a string left under tension.",
+          "id": "round-2.line.4",
+          "channel": "on-listen"
+        },
+        {
+          "who": "you",
+          "text": "I know which drive. I know the folder. I have never opened the folder.",
+          "id": "round-2.line.5",
+          "channel": "on-listen"
+        },
+        {
+          "who": "direction",
+          "text": "The phrase stops at the same bar it stopped at before, and goes back, and takes it again.",
+          "id": "round-2.line.6",
+          "channel": "after"
+        }
+      ],
+      "battle": {
+        "nature": "not there",
+        "threat": 0.52
+      },
+      "goto": "round-3",
+      "id": "round-2"
+    },
+    "round-3": {
+      "type": "battle-round",
+      "lines": [
+        {
+          "who": "sarah",
+          "text": "You were so good about it. Every appointment. Every form. You told people you were proud of me.",
+          "id": "round-3.line.1.named",
+          "channel": "before",
+          "when": "battle.naming == yes"
+        },
+        {
+          "who": "unknown",
+          "text": "You were so good about it. Every appointment. Every form. You told people you were proud of me.",
+          "id": "round-3.line.1.unnamed",
+          "channel": "before",
+          "when": "battle.naming == no"
+        },
+        {
+          "who": "me",
+          "text": "I was proud of you.",
+          "id": "round-3.line.2",
+          "channel": "before"
+        },
+        {
+          "who": "sarah",
+          "text": "You were proud of the change. You liked who I was turning into and you liked being the one standing next to her.",
+          "id": "round-3.line.3.named",
+          "channel": "before",
+          "when": "battle.naming == yes"
+        },
+        {
+          "who": "unknown",
+          "text": "You were proud of the change. You liked who I was turning into and you liked being the one standing next to her.",
+          "id": "round-3.line.3.unnamed",
+          "channel": "before",
+          "when": "battle.naming == no"
+        },
+        {
+          "who": "sarah",
+          "text": "You never asked what I wanted to make. Not in three years. You asked what I wanted to be called.",
+          "id": "round-3.line.4.named",
+          "channel": "before",
+          "when": "battle.naming == yes"
+        },
+        {
+          "who": "unknown",
+          "text": "You never asked what I wanted to make. Not in three years. You asked what I wanted to be called.",
+          "id": "round-3.line.4.unnamed",
+          "channel": "before",
+          "when": "battle.naming == no"
+        },
+        {
+          "who": "you",
+          "text": "That is the whole complaint. It is correct. It has always been correct.",
+          "id": "round-3.line.5",
+          "channel": "on-listen"
+        },
+        {
+          "who": "you",
+          "text": "I was interested in her becoming someone. Never in what she was going to do.",
+          "id": "round-3.line.6",
+          "channel": "on-listen"
+        },
+        {
+          "who": "you",
+          "text": "And she is still not in this building. Both of those are true and this room only wants the one.",
+          "id": "round-3.line.7",
+          "channel": "after"
+        }
+      ],
+      "battle": {
+        "nature": "on the tape",
+        "threat": 0.6
+      },
+      "goto": "outcome",
+      "id": "round-3"
+    },
+    "outcome": {
+      "type": "checkpoint",
+      "lines": [],
+      "choices": [
+        {
+          "id": "outcome.win",
+          "text": "Composure held",
+          "goto": "win",
+          "mechanic": "win"
+        },
+        {
+          "id": "outcome.lose",
+          "text": "Composure broke",
+          "goto": "lose",
+          "mechanic": "lose"
+        }
+      ],
+      "id": "outcome"
+    },
+    "win": {
+      "type": "ending",
+      "lines": [
+        {
+          "who": "you",
+          "text": "You are not her. What I did to her stands. You only get one of those, and it is not the one you came in here for.",
+          "id": "win.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "The phrase does not resolve. It stops at the bar it always stopped at, and this time nothing takes it again. You have a clean minute of eight empty rooms.",
+          "id": "win.line.2.held",
+          "when": "battle.occasion == recording-2"
+        },
+        {
+          "who": "direction",
+          "text": "The phrase does not resolve. It stops at the bar it always stopped at, and nothing takes it again, and no machine in the building can tell you it happened.",
+          "id": "win.line.2.ambush",
+          "when": "battle.occasion == pre-recording-4"
+        }
+      ],
+      "id": "win"
+    },
+    "lose": {
+      "type": "ending",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You answer her. You explain. You have explained this before, in a kitchen, and it did not work then either.",
+          "id": "lose.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "The take dies mid-bar.",
+          "id": "lose.line.2.held",
+          "when": "battle.occasion == recording-2"
+        },
+        {
+          "who": "direction",
+          "text": "Nothing dies, because nothing was running. You simply stand in a corridor of open doors, agreeing.",
+          "id": "lose.line.2.ambush",
+          "when": "battle.occasion == pre-recording-4"
+        }
+      ],
+      "id": "lose"
+    }
+  },
+  "metadata": {
+    "id": "practice",
+    "enemy": "THE SOUND OF SILENCE",
+    "art": {
+      "id": "tuningFork",
+      "mode": "boss",
+      "caption": "Reference tone / wrong music",
+      "status": "REFERENCE"
+    },
+    "combat": {
+      "kind": "regular",
+      "music": {
+        "mode": "fixed",
+        "lead": "lead-2"
+      },
+      "movements": [
+        {
+          "id": "instrument",
+          "title": "THE WRONG INSTRUMENT",
+          "coherence": 5,
+          "intents": [
+            {
+              "id": "practice:two-notes",
+              "label": "TWO NOTES ON THE TAKE",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "TWO WRONG NOTES"
+            },
+            {
+              "id": "practice:piano",
+              "label": "PIANO HIDDEN IN A DEAD ROOM",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "practice:ensemble",
+              "label": "EVERY STAND ANSWERS",
+              "kind": "overload",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            }
+          ],
+          "severeIntents": [
+            {
+              "id": "practice:piano",
+              "label": "PIANO HIDDEN IN A DEAD ROOM",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "practice:ensemble",
+              "label": "EVERY STAND ANSWERS",
+              "kind": "overload",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "practice:two-notes",
+              "label": "TWO NOTES ON THE TAKE",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "TWO WRONG NOTES"
+            }
+          ],
+          "deadAirIntents": [
+            {
+              "id": "practice:ensemble",
+              "label": "EVERY STAND ANSWERS",
+              "kind": "overload",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "practice:piano",
+              "label": "PIANO HIDDEN IN A DEAD ROOM",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "practice:two-notes",
+              "label": "TWO NOTES ON THE TAKE",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "TWO WRONG NOTES"
+            }
+          ]
+        },
+        {
+          "id": "player",
+          "title": "THE PLAYER NOT PRESENT",
+          "coherence": 6,
+          "intents": [
+            {
+              "id": "practice:breath",
+              "label": "BREATH BEFORE THE PHRASE",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "PLAYER BREATH"
+            },
+            {
+              "id": "practice:downbeat",
+              "label": "DOWNBEAT THROUGH THE FLOOR",
+              "kind": "overload",
+              "damage": 4,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "practice:chair",
+              "label": "THE EMPTY CHAIR MOVES",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            }
+          ],
+          "severeIntents": [
+            {
+              "id": "practice:downbeat",
+              "label": "DOWNBEAT THROUGH THE FLOOR",
+              "kind": "overload",
+              "damage": 4,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "practice:chair",
+              "label": "THE EMPTY CHAIR MOVES",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "practice:breath",
+              "label": "BREATH BEFORE THE PHRASE",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "PLAYER BREATH"
+            }
+          ],
+          "deadAirIntents": [
+            {
+              "id": "practice:chair",
+              "label": "THE EMPTY CHAIR MOVES",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "practice:downbeat",
+              "label": "DOWNBEAT THROUGH THE FLOOR",
+              "kind": "overload",
+              "damage": 4,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "practice:breath",
+              "label": "BREATH BEFORE THE PHRASE",
+              "kind": "broadcast",
+              "damage": 2,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "PLAYER BREATH"
+            }
+          ]
+        },
+        {
+          "id": "score",
+          "title": "THE SCORE WRITES BACK",
+          "coherence": 6,
+          "intents": [
+            {
+              "id": "practice:phrase",
+              "label": "THE PHRASE PLAYS ITSELF",
+              "kind": "broadcast",
+              "damage": 3,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "SELF-PLAYING PHRASE"
+            },
+            {
+              "id": "practice:rest",
+              "label": "REST BLACKED OUT OF THE BAR",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "practice:finale",
+              "label": "ALL PARTS AT FULL LEVEL",
+              "kind": "overload",
+              "damage": 4,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            }
+          ],
+          "severeIntents": [
+            {
+              "id": "practice:rest",
+              "label": "REST BLACKED OUT OF THE BAR",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "practice:finale",
+              "label": "ALL PARTS AT FULL LEVEL",
+              "kind": "overload",
+              "damage": 4,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "practice:phrase",
+              "label": "THE PHRASE PLAYS ITSELF",
+              "kind": "broadcast",
+              "damage": 3,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "SELF-PLAYING PHRASE"
+            }
+          ],
+          "deadAirIntents": [
+            {
+              "id": "practice:finale",
+              "label": "ALL PARTS AT FULL LEVEL",
+              "kind": "overload",
+              "damage": 4,
+              "recordable": false,
+              "invertible": false,
+              "description": "",
+              "effect": "ringing"
+            },
+            {
+              "id": "practice:rest",
+              "label": "REST BLACKED OUT OF THE BAR",
+              "kind": "conceal",
+              "damage": 2,
+              "recordable": false,
+              "invertible": false,
+              "description": ""
+            },
+            {
+              "id": "practice:phrase",
+              "label": "THE PHRASE PLAYS ITSELF",
+              "kind": "broadcast",
+              "damage": 3,
+              "recordable": true,
+              "invertible": false,
+              "playbackDamage": 2,
+              "description": "",
+              "takeLabel": "SELF-PLAYING PHRASE"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

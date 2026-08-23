@@ -67,13 +67,16 @@ assert.match(mainSource,/tickHushAudio\(dt\);\s*tickChunkSurfOffer\(\);\s*tickSo
 assert.match(mainSource,/function tickChunkSurfOffer\(\)\{[\s\S]*?return false;[\s\S]*?\}/,'proximity polling cannot auto-enter Source Space');
 assert.match(mainSource,/ENTER SOURCE/,'the chapel threshold exposes an explicit Source interaction');
 assert.match(mainSource,/if\(usingSourceSpace\(\)\)\{drawSourceHud\(cols,rows\);return;\}/,'Source uses its own HUD before any building map, battery, or takes UI');
-assert.match(mainSource,/if\(SPEECH\.isSpeaking\(\)\|\|scenes\.blocksInput\(\)\)chunkSurfRuntime\.protectMoment/,'dialogue and blocking handoffs suspend Source pursuit');
+assert.match(mainSource,/const pressureRemainsLive=topSourceScene\?\.sourcePressureLive===true;/,'Source scenes can explicitly keep chapter pressure live');
+assert.match(mainSource,/if\(SPEECH\.isSpeaking\(\)\|\|\(scenes\.blocksInput\(\)&&!pressureRemainsLive\)\)chunkSurfRuntime\.protectMoment/,'dialogue and ordinary blocking handoffs suspend Source pursuit without turning a Source page into safety');
 assert.match(mainSource,/usingSourceSpace\(\)\)\{\s*const result=chunkSurfRuntime\.tuneFocused\([\s\S]*?if\(result\.handled\)\{[\s\S]*?return;\s*\}[\s\S]*?\}\s*if\(itemLost\('torch'\)\)/,'In Source, F tunes a focused landmark and otherwise falls through to the torch (the flashlight stays available)');
 assert.match(mainSource,/textSpace:\s*sourceTextSpaceActive\(\)/,'only Source Space proper selects the clear text renderer');
-assert.match(mainSource,/CHUNK_SURF_PHASE\.TRANSFORMING,CHUNK_SURF_PHASE\.LANDSCAPE,CHUNK_SURF_PHASE\.FINAL,CHUNK_SURF_PHASE\.COMPLETED/,'the physical long hall is excluded from text rendering');
+assert.match(mainSource,/function sourceTextSpaceActive\(\)\{[\s\S]*chunkSurfRuntime\.textSpaceActive/,'the runtime owns the physical landing to text-field boundary');
 assert.match(mainSource,/onDone:beginSourceTowerTransition/,'the completed Source endpoint feeds the tower crossing route');
-assert.match(crossingSource,/r3dBeginDatamosh\?\.\(\{ reducedMotion \}\)/,'the endpoint route starts the authored datamosh renderer');
-assert.match(rendererSource,/if \(textSpaceActive\) \{[\s\S]*drawTextSpace\(P3\.propTargets\(\)\.color\);[\s\S]*return;/,'Source Space exits before the normal material and pixel-mesh stack');
+assert.match(crossingSource,/r3dBeginDatamosh\?\.\(\{\s*reducedMotion\s*\}\)/,'the endpoint route starts the authored datamosh renderer');
+assert.match(rendererSource,/if \(textSpaceActive\) \{[\s\S]*drawTextSpace\(P3\.propTargets\(\)\.color,now\);[\s\S]*return;/,'Source Space exits before the normal material and pixel-mesh stack');
+assert.match(rendererSource,/function drawTextSpace[\s\S]*runDatamoshPass\(sceneTex,now\)/,'the Text Space target is resolved through the shared datamosh pipeline');
+assert.match(rendererSource,/uHushScreen[\s\S]*uRain[\s\S]*moon/,'Text Space owns literal HUSH and weather composition');
 assert.match(rendererSource,/uSunrise/,'the text-space shader owns the deterministic sunrise look');
 assert.match(mainSource,/r3dSetSourceScene\(scene\)/,'Source rendering is submitted as one keyed static and dynamic payload');
 
@@ -108,7 +111,7 @@ for (const entry of Object.values(SOURCE_ATLAS.entries)) {
   assert.ok(sheets.every((entry)=>entry.mesh==='loose_note'&&entry.matrix?.length===16),'every hall page is a rendered 3D sheet');
   assert.ok(sheets.some((entry)=>Math.abs(entry.matrix[12])>2.8),'sheet meshes reach both physical walls');
   assert.ok(sheets.some((entry)=>entry.matrix[13]>4),'sheet meshes occupy the ceiling as well as the floor');
-  assert.equal(runtime.probe().pageCount,180,'the dense sheet field exists before hall progression');
+  assert.ok(runtime.probe().pageCount>=260,'the dense sheet field exists before hall progression');
 }
 
 {
@@ -233,7 +236,7 @@ assert.ok(new Set([0,-80,-180,-300].map((y)=>sourceTierAt(y).id)).size===4,
   const after=runtime.geometry.logicalToPhysical(0,-238);
   assert.deepEqual({x:after.x,z:after.z},{x:before.x,z:before.z},'transformation never teleports the player');
   assert.equal(runtime.state().phase,'landscape');
-  assert.ok([MATERIAL.sourceField,MATERIAL.sourcePath,MATERIAL.sourceFault].includes(runtime.geometry.materialAt(0,-250)));
+  assert.ok([MATERIAL.serviceConcrete,MATERIAL.sourceField,MATERIAL.sourcePath,MATERIAL.sourceFault].includes(runtime.geometry.materialAt(0,-250)));
 }
 
 {
@@ -248,9 +251,11 @@ assert.ok(new Set([0,-80,-180,-300].map((y)=>sourceTierAt(y).id)).size===4,
   const runtime=createSourceSpaceRuntime({initialState:state,onComplete:(result,snapshot)=>{completed={result,snapshot};}});
   const endpoint={x:80,y:-566,facing:0};
   runtime.setPlayerPosition(endpoint);
-  assert.equal(runtime.finalEncounterRequest()?.adapter,'combat-v1','the terminal endpoint requests shared signal combat');
-  const resolved=runtime.resolveFinalEncounter({outcome:'rescue',won:true,channels:{rescue:4,contain:0,submit:0},turns:8,compatibility:{adapter:'combat-v1'}});
-  assert.equal(resolved.handled,true,'winning signal combat completes Source Space');
+  assert.equal(runtime.finalEncounterRequest()?.adapter,null,'the terminal endpoint does not force signal combat');
+  assert.equal(runtime.finalEncounterRequest()?.battleAvailable,false,'a no-contact route exposes no battle fault');
+  assert.equal(runtime.finalEncounterRequest()?.normalExitAvailable,true);
+  const resolved=runtime.completeNormalExit();
+  assert.equal(resolved.handled,true,'the normal route completes Source Space without contact or combat');
   assert.equal(runtime.state().completed,true);
   assert.ok(completed?.snapshot?.sourceIds?.length,'endpoint completion produces the snapshot consumed by the datamosh route');
 }

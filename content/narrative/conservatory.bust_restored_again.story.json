@@ -1,0 +1,42 @@
+{
+ "schemaVersion": 1,
+ "id": "conservatory.bust_restored_again",
+ "title": "What It Saw From Here (Again)",
+ "status": "active",
+ "entry": "start",
+ "entries": [
+  "start"
+ ],
+ "tags": [],
+ "notes": "",
+ "regions": [
+  {
+   "id": "conservatory.bust_restored_again.region",
+   "title": "What It Saw From Here (Again)",
+   "kind": "scene",
+   "color": "#3d3d4a",
+   "nodeIds": [
+    "start"
+   ]
+  }
+ ],
+ "nodes": {
+  "start": {
+   "speaker": "THE GALLERY",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "Wet marble, and two eyes still pointing at the stair.",
+     "id": "start.line.1"
+    },
+    {
+     "who": "unknown",
+     "text": "Under the felt. The head that sits off-square, four along. He never came back for it.",
+     "id": "start.line.2"
+    }
+   ],
+   "id": "start",
+   "type": "dialogue"
+  }
+ }
+}

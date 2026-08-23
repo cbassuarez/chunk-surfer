@@ -279,7 +279,7 @@ const PRE = Object.freeze({
     start:{speaker:'THE SHUTTER',lines:[
       {who:'direction',text:revisited
         ? 'The long steel bar waits in its clips along the shutter.'
-        : 'A steel bar runs shoulder-high along the loading shutter. The whole wall seems to be holding its breath through it.'},
+        : 'A steel bar runs shoulder-high across the loading shutter. Put a knuckle to it and the whole wall rings.'},
       {who:'you',text:auditioned?'I felt that one in my teeth.':'That will travel.'},
     ],goto:'hub'},
     hub:{speaker:'THE SHUTTER',lines:[],choices:[

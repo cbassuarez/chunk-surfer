@@ -218,9 +218,9 @@ export function pickProp(px,py,facing,maxMeters=2,{yaw=null,pitch=null,eyeHeight
     // Rank by reticle alignment before proximity. The angular footprint keeps
     // a broad road case forgiving while preventing its edge from stealing a
     // clipboard, latch, or reel handle the player is actually aiming at.
-    const radius=Math.max(.12,Math.min(.7,((Math.max(p.w,p.d)||.32)*(p.scale||1))/2+.12));
-    const halfAngle=Math.max(.08,Math.min(.58,Math.atan2(radius,Math.max(.05,d))));
-    if(ang>halfAngle*1.2)continue;
+    const radius=Math.max(.20,Math.min(.78,((Math.max(p.w,p.d)||.32)*(p.scale||1))/2+.16));
+    const halfAngle=Math.max(.12,Math.min(.62,Math.atan2(radius,Math.max(.05,d))));
+    if(ang>halfAngle*1.4)continue;
     let verticalPenalty=0;
     if(Number.isFinite(pitch)){
       const h=Math.max(.12,(p.h||.55)*(p.scale||1));

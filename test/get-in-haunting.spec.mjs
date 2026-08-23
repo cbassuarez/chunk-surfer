@@ -126,10 +126,13 @@ assert.match(dockRuntime,/stopCueGroup\('dock-haunting',\.001\)/,'the hard cut o
 assert.match(dockRuntime,/Stack teardown is not contact[\s\S]*?onExit:[\s\S]*?PRES\.endPresenceTableau/,
   'leaving the scene stack preserves active persistence instead of faking physical contact');
 
-for(const id of ['feeling','name-other','name-sarah','nothing','reason-money','reason-other','reason-superstition']){
-  const story=JSON.parse(readFileSync(new URL(`../content/narrative/battle.chapel.${id}.story.json`,import.meta.url),'utf8'));
+// One chapel document now rather than seven, so the callback is asserted once.
+// The line still has to be there: COME CLOSER is the dock's command coming back
+// at the fifth take, and it is the whole reason the dock beat exists.
+{
+  const story=JSON.parse(readFileSync(new URL('../content/narrative/battle.chapel.story.json',import.meta.url),'utf8'));
   assert.ok(story.nodes.start.lines.some((line)=>line.who==='surfer'&&line.text==='COME CLOSER'),
-    `${id} repeats the dock command at the fifth-take introduction`);
+    'the chapel repeats the dock command at the fifth-take introduction');
 }
 assert.match(dockEndingBeat({spent:true})[0].text,/come closer/i);
 assert.deepEqual(dockEndingBeat({spent:false}),[]);

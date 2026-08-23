@@ -3,10 +3,10 @@
 // material. It never creates a floating world marker.
 
 export const OBJECT_GUIDANCE = Object.freeze({
-  stallMs:20_000,
-  progressDistance:3,
-  visibleMs:8_000,
-  cooldownMs:30_000,
+  stallMs:8_000,
+  progressDistance:1.25,
+  visibleMs:18_000,
+  cooldownMs:8_000,
 });
 
 export function createObjectGuidanceTracker(options={}){

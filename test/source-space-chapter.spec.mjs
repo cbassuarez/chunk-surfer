@@ -14,9 +14,11 @@ const POINTS={
 };
 const apply=(state,type,details={})=>reduceChunkSurf(state,{type,...details});
 
-function landscapeState(){
+function landscapeState({injuries=1}={}){
   let state=freshChunkSurfState({drankCoffee:true,hasRig:true,seed:4417,returnPoint:{x:10,y:20,facing:1}});
-  state=apply(state,'SOURCE_ENTERED',{returnPoint:state.returnPoint});
+  // The night took him once before he came in here. That is the first gate on
+  // the fault now — see sourceBossAvailable().
+  state=apply(state,'SOURCE_ENTERED',{returnPoint:state.returnPoint,injuries});
   state=apply(state,'HALL_ADVANCED',{distance:112});
   state=apply(state,'HAYSTACK_REACHED',{origin:{x:0,y:-224},slot:0});
   state=apply(state,'HAYSTACK_PAGE_FOUND',{landscapeOrigin:ORIGIN});
@@ -62,19 +64,20 @@ function reachable(runtime,start,goal,maxVisited=180000){
   // is that every cliff on the spine is crossable — the runtime's own canStep
   // answers yes, via a ladder or a chute — so the player is constrained but
   // never stuck. (The reachability assertions above already prove the whole
-  // route end to end through that same canStep.)
+    // route end to end through that same canStep.)
   for(let y=POINTS.entry.y;y>=POINTS.body.y;y-=1){
     const here=runtime.geometry.cellAt(0,y),next=runtime.geometry.cellAt(0,y-1);
     if(!here||!next)continue;
     if(Math.abs(here.floor-next.floor)<=.45)continue;
     const step=runtime.geometry.canStep(0,y,0,y-1);
     assert.ok(step.ok,`spine cliff at ${y} has no ladder or chute on it`);
-    assert.ok(step.via==='ladder'||step.via==='chute',`spine cliff at ${y} is crossed by neither`);
+    assert.ok(step.via==='lift'||step.via==='chute',`spine cliff at ${y} is crossed by neither`);
   }
 }
 
 {
-  const state=withTuned(landscapeState(),'fork-room');
+  let state=withTuned(landscapeState(),'fork-room');
+  state=apply(state,'SOURCE_LIFT_COMPLETED',{id:'lift-fork',checkpointId:'landing-fork'});
   const runtime=createSourceSpaceRuntime({initialState:state});
   // The objective names the PLACE and its elevation now, not the button: the
   // level is legible by geometry, so the label should read like a direction
@@ -93,22 +96,21 @@ function reachable(runtime,start,goal,maxVisited=180000){
 }
 
 {
-  // Exploration-first: leaving a landmark no longer arms a pursuit or checkpoints
-  // the player. The hush stalks the field as atmosphere — visible and in motion —
-  // but it never stops the walk or resets progress.
-  const state=withTuned(landscapeState(),'fork-room','recordist-loop');
+  // The landing tableau is safe. The first completed lift is the explicit
+  // pursuit activation seam; ordinary landscape movement cannot arm it early.
+  let state=withTuned(landscapeState(),'fork-room','recordist-loop');
   const runtime=createSourceSpaceRuntime({initialState:state});
-  const before=[...runtime.state().tuned];
-  runtime.onStep({x:0,y:-402},{x:0,y:-407,facing:0});
-  assert.equal(runtime.state().pursuitBeat,null,'movement never arms a pursuit');
-  assert.equal(runtime.hushMode().colliding,false,'the hush never hard-stops exploration');
-  runtime.onStep({x:0,y:-470},{x:0,y:-478,facing:0});
-  assert.equal(runtime.state().pursuitBeat,null,'and it stays that way as you keep wandering');
-  assert.deepEqual(runtime.state().tuned,before,'wandering preserves resolved evidence');
+  assert.equal(runtime.hushMode().landingTableau,true);
+  assert.equal(runtime.hushMode().colliding,false);
+  state=apply(state,'SOURCE_LIFT_COMPLETED',{id:'lift-fork',checkpointId:'landing-fork'});
+  const active=createSourceSpaceRuntime({initialState:state});
+  assert.equal(active.state().pursuitBeat,SOURCE_PURSUIT_BEAT.BODY_RUN);
+  assert.equal(active.hushMode().colliding,true,'the first lift activates ordinary pursuit');
 }
 
 {
   let state=withTuned(landscapeState(),'fork-room','recordist-loop');
+  state=apply(state,'SOURCE_LIFT_COMPLETED',{id:'lift-fork',checkpointId:'landing-fork'});
   state=apply(state,'LANDMARK_VISITED',{id:'body-room'});
   const runtime=createSourceSpaceRuntime({initialState:state});
   assert.match(runtime.sourceObjective().label,/BODY RETURN IS ABOVE THE TRACE/);
@@ -119,6 +121,12 @@ function reachable(runtime,start,goal,maxVisited=180000){
 {
   let state=withTuned(landscapeState(),'fork-room','recordist-loop','surfer-origin','work-order-loop','body-room');
   state=apply(state,'LANDMARK_RECORDED',{id:'body-room'});
+  state=apply(state,'SOURCE_CONTACT_RESOLVED',{checkpointId:'landing-return',contact:{
+    captures:3,
+    insights:['music-human-name','surfer-vessel','borrowed-body-return'],
+    seenBeats:['music-1','vessel-1','body-1'],
+    lastChoiceId:'body-1.return',
+  }});
   state=apply(state,'PURSUIT_STARTED',{id:SOURCE_PURSUIT_BEAT.FINAL_RUN});
   const runtime=createSourceSpaceRuntime({initialState:state});
   runtime.onStep({x:70,y:-552},{x:80,y:-564,facing:0});
@@ -127,13 +135,16 @@ function reachable(runtime,start,goal,maxVisited=180000){
   const attempts=runtime.state().attempts;
   runtime.handleHushContact();
   assert.equal(runtime.state().attempts,attempts,'protected final interactions cannot reset the player');
-  assert.equal(runtime.finalEncounterRequest().adapter,'combat-v1','the final page opens the shared deterministic combat contract');
+  assert.equal(runtime.finalEncounterRequest().adapter,null,'the optional battle never begins merely by reaching the horizon');
+  assert.equal(runtime.finalEncounterRequest().normalExitAvailable,true);
+  assert.equal(runtime.requestBossBattle().available,true);
+  assert.equal(runtime.finalEncounterRequest().adapter,'combat-v1','selecting the exposed fault opens the shared deterministic combat contract');
   const result=runtime.resolveFinalEncounter({outcome:SOURCE_FINAL_OUTCOME.RESCUE,won:true,channels:{rescue:4,contain:1,submit:0},turns:9,compatibility:{fightVersion:'signal-combat'}});
   assert.equal(result.handled,true);
   assert.equal(runtime.state().completed,true);
   assert.equal(runtime.state().finalEncounter.compatibility.fightVersion,'signal-combat');
   assert.deepEqual(runtime.state().finalEncounter.channels,{rescue:4,contain:1,submit:0});
-  assert.equal(runtime.state().finalEncounter.rescuedRecordist,true,'profile, both optional loops, and Body Return evidence unlock rescue');
+  assert.equal(runtime.state().finalEncounter.rescuedRecordist,true,'rig and three acquired insights unlock the Source-side rescue condition');
   assert.equal(runtime.sourceLook().sunrise,1,'encounter resolution completes the white-paper sunrise');
 }
 

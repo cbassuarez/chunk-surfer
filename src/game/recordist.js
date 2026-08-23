@@ -36,13 +36,14 @@ function reportAcoustic({
   deliberate = false,
   sampleId = null,
   audibleToHush = true,
+  audibleToMonitor = true,
 } = {}) {
   if (!acousticEmitter) return null;
   try {
     return acousticEmitter({
       kind: kind || inferAcousticKind(reason, level),
       level, x, y, reason, spoils, deliberate, sampleId,
-      playerGenerated, audibleToHush,
+      playerGenerated, audibleToHush, audibleToMonitor,
       source: { kind: sourceKind, id: sourceId },
     });
   } catch (error) {
@@ -185,6 +186,7 @@ export function emitNoise(level, x, y, reason = 'something moved', options = {})
     deliberate = false,
     sampleId = null,
     audibleToHush = true,
+    audibleToMonitor = true,
   } = options || {};
   // Preserve the pre-acoustic-system gameplay envelope exactly. Noise-floor
   // injury is a property of the operator/take, not of semantic source labels.
@@ -198,7 +200,7 @@ export function emitNoise(level, x, y, reason = 'something moved', options = {})
   reportAcoustic({
     kind: kind || inferAcousticKind(reason, heard),
     level: heard, x, y, reason, sourceKind, sourceId, playerGenerated,
-    spoils, deliberate, sampleId, audibleToHush,
+    spoils, deliberate, sampleId, audibleToHush, audibleToMonitor,
   });
 }
 
@@ -223,6 +225,7 @@ export function addNoise(level, x, y, reason = 'something moved', options = {}) 
     playerGenerated: options.playerGenerated ?? false,
     spoils: true, deliberate: !!options.deliberate, sampleId: options.sampleId || null,
     audibleToHush: options.audibleToHush !== false,
+    audibleToMonitor: options.audibleToMonitor !== false,
   });
 }
 

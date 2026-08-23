@@ -16,6 +16,7 @@
 import { assetUrl } from '../platform/paths.js';
 import { AMBIENT_PLACE_SCALE, CELL, EYE as EYE_METERS, MATERIAL, PLAN_SCALE } from '../data/floorplan/legend.js';
 import * as P3 from './props3d.js';
+import * as HZ from './horizon3d.js';
 import { normalizePixelMeshSettings } from './pixel-mesh/settings.js';
 import { PIXEL_MESH_FRAG } from './pixel-mesh/shader.js';
 import { isScreen, screenUniforms } from './pixel-mesh/screens.js';
@@ -23,6 +24,7 @@ import { MARK_FIELD_SIZE, MARK_FIELD_SOURCE, deriveMarkField } from './mark-fiel
 import { getLookProfile } from './look-profiles.js';
 import { LIGHT_KIND } from '../data/conservatory-lights.js';
 import { visualEffectsEnabled } from '../game/access.js';
+import { PAPER_ATLAS } from '../generated/paper-catalog.js';
 
 const MAX_CHUNKS = 48;
 const RD_SIZE = 256;
@@ -112,6 +114,7 @@ const ZONE_TINTS = new Float32Array([
   0.43, 0.49, 0.60,   // inhabited street: wet carriageway under town light
   0.58, 0.56, 0.52,   // civic pavement: pale flags darkened by rain
   0.36, 0.39, 0.43,   // service courts: old setts and patched channels
+  0.78, 0.80, 0.84,   // st brendan's: limewashed stone, colder than Ellery's chapel
 ]);
 
 const WORLD_RGB = {
@@ -269,8 +272,10 @@ uniform vec3  uChunkC[${MAX_CHUNKS}]; // biome rgb
 uniform vec4  uKey;          // x, z, active, -
 uniform vec4  uDoor;
 uniform vec4  uHush;         // x, z, absorption strength, radius in metres
-uniform vec4  uHushBody;     // x, z, manifestation, texture ready
-uniform vec4  uHushBodyLook; // height metres, width metres, glow, composite mode
+uniform vec4  uHushBody;          // x, z, manifestation, texture ready
+uniform vec4  uHushBodyLook;      // height metres, width metres, glow, composite mode
+uniform vec4  uHushBodySecondary; // render-only second manifestation
+uniform vec4  uHushBodyLookSecondary;
 uniform sampler2D uHushBodyTex;
 uniform sampler2D uPlan;     // the authored building: R=floor G=ceil B=flags A=zone
 uniform sampler2D uMat;      // R=material id
@@ -345,7 +350,7 @@ uniform vec2  uPlanSize;
 uniform vec2  uPlanOrigin;
 uniform float uPlanHeightOffset;
 uniform float uUsePlan;      // 0 = procedural sample-field lattice, 1 = the conservatory
-uniform vec3  uZoneTint[20];
+uniform vec3  uZoneTint[21];
 uniform float uSourceReady;
 uniform vec4  uWaterBounds;  // min x, min z, max x, max z in runtime cells
 uniform vec4  uWaterParams;  // active, level metres, murk, reduce motion
@@ -381,8 +386,9 @@ const int MAT_ACADEMIC = ${MATERIAL.academicPlaster};
 const int MAT_TARMAC = ${MATERIAL.wetTarmac};
 const int MAT_PAVING = ${MATERIAL.wetPaving};
 const int MAT_SETTS = ${MATERIAL.wetSetts};
+const int MAT_GRASS = ${MATERIAL.wetGrass};
 
-bool isRainGroundMat(int mat){return mat==MAT_TARMAC||mat==MAT_PAVING||mat==MAT_SETTS;}
+bool isRainGroundMat(int mat){return mat==MAT_TARMAC||mat==MAT_PAVING||mat==MAT_SETTS||mat==MAT_GRASS;}
 
 bool waterActive(){ return uWaterParams.x > 0.5 && uUsePlan > 0.5; }
 bool inWaterBounds(vec2 p){
@@ -753,6 +759,7 @@ void surfaceSlot(int mat,int surf,vec2 uv,out int slot,out float tileM,out float
     else if(mat==MAT_TARMAC){slot=9;tileM=0.42;blend=.52;}      // carriageway → wet aggregate
     else if(mat==MAT_PAVING){slot=3;tileM=1.10;blend=.72;}      // pavement → worn civic flags
     else if(mat==MAT_SETTS){slot=1;tileM=.46;blend=.68;}        // gutter and courts → small stone setts
+    else if(mat==MAT_GRASS){slot=8;tileM=.70;blend=.44;}        // the park → rammed earth, worn thin so the green carries it
     else {slot=2;tileM=1.8;blend=.84;}                          // general → ash wood
   }
 }
@@ -822,6 +829,9 @@ float materialSeam(int mat, int surf, vec3 p, vec3 n){
     // they run a long way apart.
     return max(line1(p.x, 6.4, 0.020), line1(p.z, 7.9, 0.020)) * 0.14;
   }
+  // Grass has no courses, no joints and no grid. Anything regular drawn into
+  // it reads as paving that has been painted green.
+  if(mat == MAT_GRASS)return 0.0;
   if(mat == MAT_PAVING)return max(line1(p.x,.92,.028),line1(p.z,1.24,.026))*.22;
   if(mat == MAT_SETTS)return grid2(p.xz,.28,.032)*.30;
   return (surf == 1 ? line1(p.y, 0.72, 0.026) : grid2(p.xz, 0.55, 0.040)) * 0.18;
@@ -839,6 +849,9 @@ vec3 materialBase(int mat, int surf, vec3 tint, vec3 biome, float rdv){
   else if(mat == MAT_TARMAC) base = vec3(0.145, 0.156, 0.180);
   else if(mat == MAT_PAVING) base = vec3(0.34, 0.35, 0.36);
   else if(mat == MAT_SETTS) base = vec3(0.205, 0.22, 0.24);
+  // Municipal grass at night in the rain is not green, it is a dark blue-green
+  // that only admits to being green where a lamp reaches it.
+  else if(mat == MAT_GRASS) base = vec3(0.105, 0.150, 0.108);
   if(surf == 3) base *= 0.58;
   if(surf == 2) base = mix(base, mix(biome, tint, 0.35), 0.22);
   return base * (0.56 + 0.55 * rdv);
@@ -848,6 +861,7 @@ float materialSpec(int mat){
   if(mat == MAT_TARMAC) return 0.58;   // it has been raining on it all night
   if(mat == MAT_PAVING) return 0.68;
   if(mat == MAT_SETTS) return 0.61;
+  if(mat == MAT_GRASS) return 0.14;   // soaked, but it drinks the light instead of throwing it back
   if(mat == MAT_POOL) return 0.42;
   if(mat == MAT_DOOR) return 0.48;
   if(mat == MAT_METAL) return 0.36;
@@ -1398,6 +1412,125 @@ float rainImpactRings(vec2 worldM){
   float beadA=1.0-smoothstep(.018,.052,length(p-center-gust*hop));
   float beadB=1.0-smoothstep(.016,.046,length(p-center+gust.yx*hop*.72));
   return present*(ring*life+strike*.88+(beadA+beadB)*beadLife*.48)*mix(1.0,.14,uReduceMotionOptical);
+}
+
+void compositeHushBody(
+  vec4 bodySpec,
+  vec4 bodyLook,
+  vec3 ro,
+  vec3 rd,
+  vec3 fwd,
+  inout vec3 col,
+  inout float zView
+){
+  // The cover-art figure is a real presence in the room, not a screen decal.
+  // Intersect a vertical cylindrical billboard at the HUSH position and test
+  // that depth against the already-composed architecture + prop surface. The
+  // body therefore vanishes behind doors, walls and road cases while retaining
+  // its authored front silhouette from every approach direction.
+  if(bodySpec.w > 0.5 && bodySpec.z > 0.001 && bodyLook.w < 2.5){
+    vec2 bodyCenter=bodySpec.xy+vec2(.5);
+    vec2 planeNormal=normalize(ro.xz-bodyCenter+vec2(.0001));
+    vec2 planeRight=vec2(-planeNormal.y,planeNormal.x);
+    float planeDenom=dot(rd.xz,planeNormal);
+    float safePlaneDenom=abs(planeDenom)<.0001?-.0001:planeDenom;
+    float bodyT=dot(bodyCenter-ro.xz,planeNormal)/safePlaneDenom;
+    float bodyView=bodyT*CELL_METERS*max(.001,dot(rd,fwd));
+    float bodyRange=length(bodyCenter-ro.xz)*CELL_METERS;
+    Cell bodyCell=cellAtI(ivec2(floor(bodyCenter)));
+    float bodyBase=bodyCell.f+.025/CELL_METERS;
+    vec3 bodyHit=ro+rd*bodyT;
+    vec2 bodyUv=vec2(
+      dot(bodyHit.xz-bodyCenter,planeRight)*CELL_METERS/max(.1,bodyLook.y)+.5,
+      (bodyHit.y-bodyBase)*CELL_METERS/max(.2,bodyLook.x)
+    );
+    bool insideCard=bodyT>0.0&&bodyUv.x>0.0&&bodyUv.x<1.0&&bodyUv.y>0.0&&bodyUv.y<1.0;
+    bool bodyVisible=insideCard&&bodyView<zView+.012&&bodyRange>.22;
+    if(bodyVisible){
+      vec4 bodySample=texture(uHushBodyTex,bodyUv);
+      float sdf=(bodySample.r-.5)*56.0;
+      // Never let minification turn the SDF derivative into card coverage.
+      // At distance fwidth can span many source texels; unbounded, that makes
+      // the zero-crossing wide enough to resolve the transparent billboard as
+      // a rectangle.  The authored body only needs a couple of SDF texels of
+      // antialiasing at any range.
+      float aa=clamp(fwidth(sdf)*1.35,.7,2.6);
+      float cardDistance=min(
+        min(bodyUv.x,1.0-bodyUv.x),
+        min(bodyUv.y,1.0-bodyUv.y)
+      );
+      // The feet intentionally sit near the bottom of the texture, so the
+      // outer glow can reach the card boundary even though the body cannot.
+      // Fade the last few transparent texels for every manifestation channel
+      // (including depth) so a clipped halo can never draw a straight edge.
+      float cardFade=smoothstep(.008,.055,cardDistance);
+      // The source-alpha channel carries a faint matte over the original
+      // smart-object bounds. Treating it as literal coverage exposed the
+      // entire rectangular card. Only the authored opaque figure and the SDF
+      // interior are allowed to become body coverage.
+      float sourceCoverage=smoothstep(.28,.72,bodySample.g)*cardFade;
+      float silhouette=max(sourceCoverage,smoothstep(-aa,aa,sdf))*cardFade;
+      float edge=exp(-abs(sdf)/max(1.15,aa*1.4))*cardFade;
+      float outsideDistance=max(0.0,-sdf);
+      // A Photoshop-style outer glow has finite support. The old exponential
+      // had a non-zero tail at every pixel of the billboard, which the
+      // recording acquisition pass correctly revealed as a box.
+      float haloSupport=1.0-smoothstep(9.0,14.0,outsideDistance);
+      float outer=exp(-outsideDistance/5.2)*haloSupport*(1.0-silhouette)*cardFade;
+      float rangeFade=smoothstep(.22,.68,bodyRange);
+      float manifestation=clamp(bodySpec.z*rangeFade,0.0,1.0);
+      // In/out is a material apparition, not character animation: the figure
+      // remains perfectly still while its lower and upper contours resolve at
+      // slightly different rates. Reduced motion still sees the same static
+      // final silhouette because this contains no time-driven motion.
+      float resolveBand=1.0-smoothstep(-.18,1.12,bodyUv.y-(manifestation-.5)*1.55);
+      float resolved=manifestation*mix(manifestation,resolveBand,.28);
+      float mode=bodyLook.w;
+      float coreEnabled=mode<1.5?1.0:0.0;
+      float glowEnabled=(mode<.5||(mode>1.5&&mode<2.5))?1.0:0.0;
+      float bodyAlpha=clamp(silhouette*resolved*coreEnabled,0.0,1.0);
+      float outlineAlpha=clamp(edge*resolved*coreEnabled,0.0,1.0);
+      float fieldAlpha=clamp(
+        (outer*.48+edge*.08)*bodyLook.z*resolved*glowEnabled,
+        0.0,
+        .72
+      );
+      // The cover figure is negative first: its surrounding field eats the
+      // available light, and the human mass consumes almost everything that
+      // remains.  The card itself never participates because every term is
+      // derived from the guarded SDF coverage above.
+      col*=1.0-clamp(fieldAlpha*.44+bodyAlpha*.88,0.0,.965);
+      // Photoshop ordering from the cover, kept deliberately low-energy:
+      // a cold Screen haze gives the absence an edge, then Color Dodge raises
+      // only the local boundary.  Neither operation fills the person.
+      vec3 negativeTint=vec3(.045,.105,.115);
+      vec3 glowLayer=negativeTint*(outer*.24+edge*.055)*bodyLook.z*resolved*glowEnabled;
+      col=hushScreen(col,glowLayer);
+      vec3 bodySeed=negativeTint*(.020+edge*.026)*bodyAlpha;
+      col=hushScreen(col,bodySeed);
+      vec3 dodgeLayer=vec3(.025,.065,.072)*outlineAlpha;
+      vec3 dodged=hushColorDodge(col,dodgeLayer);
+      col=mix(col,dodged,outlineAlpha*.24);
+      // The recording-acquisition pass intentionally reduces ordinary light
+      // to one-bit ink. Reserve two chroma keys for this authored compositor
+      // so that pass can reconstruct the PSD ordering *after* acquisition
+      // instead of collapsing the figure and its glow into a white contour.
+      // These are not visible cards: both keys are bounded by the actual SDF.
+      float acquisitionGlow=clamp((outer*.82+edge*.11)*resolved*glowEnabled,0.0,1.0);
+      float acquisitionBody=bodyAlpha;
+      col=mix(col,vec3(.018,.355,.145),acquisitionGlow*.72);
+      // The reserved body key is diagnostic transport, not display colour.
+      // The acquisition pass consumes it and restores a light-eating mass;
+      // carrying the full silhouette avoids reducing the cover to line art.
+      col=mix(col,vec3(.016,.245,.735),acquisitionBody*.94);
+      // The billboard is only an intersection aid.  It must never become a
+      // rectangular depth surface: doing so makes the fog/post stack reveal
+      // the transparent card as a black slab.  Only authored body coverage
+      // writes depth; the outer glow remains light with no geometry of its own.
+      if(silhouette*resolved>.018) zView=min(zView,bodyView);
+    }
+  }
+
 }
 
 void main(){
@@ -2122,113 +2255,10 @@ void main(){
     col*=1.0-absorption;
   }
 
-  // The cover-art figure is a real presence in the room, not a screen decal.
-  // Intersect a vertical cylindrical billboard at the HUSH position and test
-  // that depth against the already-composed architecture + prop surface. The
-  // body therefore vanishes behind doors, walls and road cases while retaining
-  // its authored front silhouette from every approach direction.
-  if(uHushBody.w > 0.5 && uHushBody.z > 0.001 && uHushBodyLook.w < 2.5){
-    vec2 bodyCenter=uHushBody.xy+vec2(.5);
-    vec2 planeNormal=normalize(ro.xz-bodyCenter+vec2(.0001));
-    vec2 planeRight=vec2(-planeNormal.y,planeNormal.x);
-    float planeDenom=dot(rd.xz,planeNormal);
-    float safePlaneDenom=abs(planeDenom)<.0001?-.0001:planeDenom;
-    float bodyT=dot(bodyCenter-ro.xz,planeNormal)/safePlaneDenom;
-    float bodyView=bodyT*CELL_METERS*max(.001,dot(rd,fwd));
-    float bodyRange=length(bodyCenter-ro.xz)*CELL_METERS;
-    Cell bodyCell=cellAtI(ivec2(floor(bodyCenter)));
-    float bodyBase=bodyCell.f+.025/CELL_METERS;
-    vec3 bodyHit=ro+rd*bodyT;
-    vec2 bodyUv=vec2(
-      dot(bodyHit.xz-bodyCenter,planeRight)*CELL_METERS/max(.1,uHushBodyLook.y)+.5,
-      (bodyHit.y-bodyBase)*CELL_METERS/max(.2,uHushBodyLook.x)
-    );
-    bool insideCard=bodyT>0.0&&bodyUv.x>0.0&&bodyUv.x<1.0&&bodyUv.y>0.0&&bodyUv.y<1.0;
-    bool bodyVisible=insideCard&&bodyView<zView+.012&&bodyRange>.22;
-    if(bodyVisible){
-      vec4 bodySample=texture(uHushBodyTex,bodyUv);
-      float sdf=(bodySample.r-.5)*56.0;
-      // Never let minification turn the SDF derivative into card coverage.
-      // At distance fwidth can span many source texels; unbounded, that makes
-      // the zero-crossing wide enough to resolve the transparent billboard as
-      // a rectangle.  The authored body only needs a couple of SDF texels of
-      // antialiasing at any range.
-      float aa=clamp(fwidth(sdf)*1.35,.7,2.6);
-      float cardDistance=min(
-        min(bodyUv.x,1.0-bodyUv.x),
-        min(bodyUv.y,1.0-bodyUv.y)
-      );
-      // The feet intentionally sit near the bottom of the texture, so the
-      // outer glow can reach the card boundary even though the body cannot.
-      // Fade the last few transparent texels for every manifestation channel
-      // (including depth) so a clipped halo can never draw a straight edge.
-      float cardFade=smoothstep(.008,.055,cardDistance);
-      // The source-alpha channel carries a faint matte over the original
-      // smart-object bounds. Treating it as literal coverage exposed the
-      // entire rectangular card. Only the authored opaque figure and the SDF
-      // interior are allowed to become body coverage.
-      float sourceCoverage=smoothstep(.28,.72,bodySample.g)*cardFade;
-      float silhouette=max(sourceCoverage,smoothstep(-aa,aa,sdf))*cardFade;
-      float edge=exp(-abs(sdf)/max(1.15,aa*1.4))*cardFade;
-      float outsideDistance=max(0.0,-sdf);
-      // A Photoshop-style outer glow has finite support. The old exponential
-      // had a non-zero tail at every pixel of the billboard, which the
-      // recording acquisition pass correctly revealed as a box.
-      float haloSupport=1.0-smoothstep(9.0,14.0,outsideDistance);
-      float outer=exp(-outsideDistance/5.2)*haloSupport*(1.0-silhouette)*cardFade;
-      float rangeFade=smoothstep(.22,.68,bodyRange);
-      float manifestation=clamp(uHushBody.z*rangeFade,0.0,1.0);
-      // In/out is a material apparition, not character animation: the figure
-      // remains perfectly still while its lower and upper contours resolve at
-      // slightly different rates. Reduced motion still sees the same static
-      // final silhouette because this contains no time-driven motion.
-      float resolveBand=1.0-smoothstep(-.18,1.12,bodyUv.y-(manifestation-.5)*1.55);
-      float resolved=manifestation*mix(manifestation,resolveBand,.28);
-      float mode=uHushBodyLook.w;
-      float coreEnabled=mode<1.5?1.0:0.0;
-      float glowEnabled=(mode<.5||(mode>1.5&&mode<2.5))?1.0:0.0;
-      float bodyAlpha=clamp(silhouette*resolved*coreEnabled,0.0,1.0);
-      float outlineAlpha=clamp(edge*resolved*coreEnabled,0.0,1.0);
-      float fieldAlpha=clamp(
-        (outer*.48+edge*.08)*uHushBodyLook.z*resolved*glowEnabled,
-        0.0,
-        .72
-      );
-      // The cover figure is negative first: its surrounding field eats the
-      // available light, and the human mass consumes almost everything that
-      // remains.  The card itself never participates because every term is
-      // derived from the guarded SDF coverage above.
-      col*=1.0-clamp(fieldAlpha*.44+bodyAlpha*.88,0.0,.965);
-      // Photoshop ordering from the cover, kept deliberately low-energy:
-      // a cold Screen haze gives the absence an edge, then Color Dodge raises
-      // only the local boundary.  Neither operation fills the person.
-      vec3 negativeTint=vec3(.045,.105,.115);
-      vec3 glowLayer=negativeTint*(outer*.24+edge*.055)*uHushBodyLook.z*resolved*glowEnabled;
-      col=hushScreen(col,glowLayer);
-      vec3 bodySeed=negativeTint*(.020+edge*.026)*bodyAlpha;
-      col=hushScreen(col,bodySeed);
-      vec3 dodgeLayer=vec3(.025,.065,.072)*outlineAlpha;
-      vec3 dodged=hushColorDodge(col,dodgeLayer);
-      col=mix(col,dodged,outlineAlpha*.24);
-      // The recording-acquisition pass intentionally reduces ordinary light
-      // to one-bit ink. Reserve two chroma keys for this authored compositor
-      // so that pass can reconstruct the PSD ordering *after* acquisition
-      // instead of collapsing the figure and its glow into a white contour.
-      // These are not visible cards: both keys are bounded by the actual SDF.
-      float acquisitionGlow=clamp((outer*.82+edge*.11)*resolved*glowEnabled,0.0,1.0);
-      float acquisitionBody=bodyAlpha;
-      col=mix(col,vec3(.018,.355,.145),acquisitionGlow*.72);
-      // The reserved body key is diagnostic transport, not display colour.
-      // The acquisition pass consumes it and restores a light-eating mass;
-      // carrying the full silhouette avoids reducing the cover to line art.
-      col=mix(col,vec3(.016,.245,.735),acquisitionBody*.94);
-      // The billboard is only an intersection aid.  It must never become a
-      // rectangular depth surface: doing so makes the fog/post stack reveal
-      // the transparent card as a black slab.  Only authored body coverage
-      // writes depth; the outer glow remains light with no geometry of its own.
-      if(silhouette*resolved>.018) zView=min(zView,bodyView);
-    }
-  }
+  // The same SDF compositor is used for both positions. uHush remains a single
+  // gameplay field; the secondary card is only a visual contradiction.
+  compositeHushBody(uHushBody,uHushBodyLook,ro,rd,fwd,col,zView);
+  compositeHushBody(uHushBodySecondary,uHushBodyLookSecondary,ro,rd,fwd,col,zView);
 
   col += (grain - 0.5) * 0.035;             // film grain
   // The expressive post pass owns the fear vignette. A second fixed vignette
@@ -2274,22 +2304,12 @@ void main(){
 // stops seeing in colour), and pushes the chromatic split — the picture stops
 // holding itself together. Recording grain is a separate acquisition layer:
 // fine, luma-shaped, black-protected, and phase-held rather than animated snow.
-const POST_FRAG = COMMON_GLSL + `
-uniform sampler2D uSrc;
-uniform vec2 uRes;
-uniform float uFear;      // 0..1
-uniform float uTimeP;
-uniform float uGlassStrength;
-uniform float uGlassFringe;
-uniform float uGlassBloom;
-uniform float uGlassGrain;
-uniform float uRecordingPostGrain;
-uniform float uRecordingLumaGrain;
-uniform float uRecordingTemporalHz;
-uniform float uRecordingTemporalSmear;
-uniform float uReduceFlash;
-uniform float uReduceMotion;
-out vec4 o;
+// The grain of a recorded medium, shared by the two passes that need one: the
+// VFD's post stack and the horizon's projector. It lived inside POST_FRAG,
+// which is why the projection pass referencing it failed to compile in
+// silence — a bad program leaves the previously bound one in place, so the
+// horizon kept presenting through the plain copy and looked untouched.
+const GRAIN_GLSL = `
 float h21(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float grainClock(float time, float hz, float reduceMotion){
   return time * max(0.0, hz) * (1.0 - clamp(reduceMotion, 0.0, 1.0));
@@ -2312,6 +2332,24 @@ float correlatedGrain(vec2 p, float clock, float temporalSmear){
   float phaseMix=smoothstep(0.0,1.0,fract(clock))*clamp(temporalSmear,0.0,1.0);
   return mix(phaseGrain(p,phase),phaseGrain(p,phase+1.0),phaseMix);
 }
+`;
+
+const POST_FRAG = COMMON_GLSL + GRAIN_GLSL + `
+uniform sampler2D uSrc;
+uniform vec2 uRes;
+uniform float uFear;      // 0..1
+uniform float uTimeP;
+uniform float uGlassStrength;
+uniform float uGlassFringe;
+uniform float uGlassBloom;
+uniform float uGlassGrain;
+uniform float uRecordingPostGrain;
+uniform float uRecordingLumaGrain;
+uniform float uRecordingTemporalHz;
+uniform float uRecordingTemporalSmear;
+uniform float uReduceFlash;
+uniform float uReduceMotion;
+out vec4 o;
 void main(){
   vec2 uv = gl_FragCoord.xy / uRes;
   float f = clamp(uFear, 0.0, 1.0);
@@ -2374,11 +2412,21 @@ void main(){
 // fear or material stack used by the physical building.
 const TEXT_SPACE_FRAG = COMMON_GLSL + `
 uniform sampler2D uText;
+uniform sampler2D uHushBodyTex;
 uniform vec2 uRes;
 uniform float uSunrise;
 uniform float uSourceChroma;
 uniform float uPaper;
+uniform float uTime;
+uniform float uNightSeed;
+uniform float uRain;
+uniform float uReducedMotion;
+uniform vec2 uView;
+uniform vec2 uMoonCloud;
+uniform vec4 uHushScreen;
+uniform float uHushAmount;
 out vec4 o;
+float sourceHash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 void main(){
   vec2 uv=gl_FragCoord.xy/uRes;
   float shift=(1.0+2.4*uSourceChroma)/uRes.x;
@@ -2387,17 +2435,167 @@ void main(){
   vec4 right=texture(uText,uv+vec2(shift,0.0));
   float glyphAlpha=max(center.a,max(left.a,right.a));
   vec3 glyph=mix(center.rgb,vec3(right.r,center.g,left.b),uSourceChroma);
-  vec3 voidColor=vec3(.0015,.003,.004);
+  vec3 voidColor=mix(vec3(.0015,.003,.004),vec3(.014,.020,.031),smoothstep(.08,.92,uv.y));
+  float cloudPhase=uNightSeed*91.7+uTime*.006*(1.0-uReducedMotion);
+  float cloudBand=sin(uv.x*9.0+cloudPhase)+sin(uv.x*17.0-uv.y*5.0+cloudPhase*.7);
+  float clouds=smoothstep(1.0,1.68,cloudBand+sourceHash(floor(uv*vec2(24.0,9.0)))*.7)
+    *smoothstep(.34,.62,uv.y)*.13;
+  voidColor+=vec3(.055,.064,.083)*clouds*uMoonCloud.y;
+  float moonBearing=.785398+(uNightSeed-.5)*.24;
+  float moonDelta=atan(sin(moonBearing-uView.x),cos(moonBearing-uView.x));
+  vec2 moonCenter=vec2(.5+moonDelta/2.2,.76+fract(uNightSeed*7.1)*.08-uView.y*.45);
+  float moon=1.0-smoothstep(.029,.038,length((uv-moonCenter)*vec2(uRes.x/uRes.y,1.0)));
+  voidColor=mix(voidColor,vec3(.72,.77,.80),moon*.86*uMoonCloud.x);
   vec3 darkScene=glyph+voidColor*(1.0-glyphAlpha);
+  if(uRain>.001){
+    vec2 rainUv=uv*vec2(94.0,38.0);
+    rainUv.y+=uTime*38.0*(1.0-uReducedMotion);
+    rainUv.x+=rainUv.y*.19;
+    vec2 rainCell=floor(rainUv),rainLocal=fract(rainUv);
+    float admitted=step(.82,sourceHash(rainCell+floor(uNightSeed*101.0)));
+    float streak=(1.0-smoothstep(.025,.12,abs(rainLocal.x-.5)))*smoothstep(.0,.16,rainLocal.y)*(1.0-smoothstep(.58,1.0,rainLocal.y));
+    darkScene=mix(darkScene,vec3(.34,.43,.54),streak*admitted*uRain*.34);
+  }
+  if(uHushAmount>.001&&uHushScreen.z>.001&&uHushScreen.w>.001){
+    vec2 bodyUv=(uv-uHushScreen.xy)/uHushScreen.zw+vec2(.5);
+    float card=min(min(bodyUv.x,1.0-bodyUv.x),min(bodyUv.y,1.0-bodyUv.y));
+    if(card>0.0){
+      vec4 bodySample=texture(uHushBodyTex,bodyUv);
+      float sdf=(bodySample.r-.5)*56.0;
+      float aa=clamp(fwidth(sdf)*1.35,.7,2.6);
+      float fade=smoothstep(.008,.055,card);
+      float silhouette=max(smoothstep(.28,.72,bodySample.g),smoothstep(-aa,aa,sdf))*fade;
+      float halo=exp(-max(0.0,-sdf)/5.4)*fade*(1.0-silhouette);
+      darkScene=mix(darkScene,vec3(.0001,.0003,.0004),silhouette*uHushAmount*.98);
+      darkScene+=vec3(.10,.18,.20)*halo*uHushAmount*.42;
+    }
+  }
   vec3 paper=vec3(.965,.925,.835);
   vec3 paperScene=mix(paper,vec3(.012,.010,.009),smoothstep(.02,.72,glyphAlpha));
   float lightMix=clamp(max(uSunrise,uPaper*.72),0.0,1.0);
   o=vec4(mix(darkScene,paperScene,lightMix),1.0);
 }`;
 
+const COPY_FRAG = COMMON_GLSL + `
+uniform sampler2D uSrc;
+uniform vec2 uRes;
+out vec4 o;
+void main(){o=texture(uSrc,gl_FragCoord.xy/uRes);}`;
+
+// THE HORIZON IS PROJECTED, NOT DISPLAYED.
+//
+// Everywhere else in the game the image reaches the screen through the VFD —
+// halftone, palette, persistence, the whole instrument. The horizon is
+// deliberately the one place that is in colour, and the halftone would take
+// that straight back off it. But it was going out through a raw bilinear blit,
+// which is not the same decision: it meant the one sequence in the game with no
+// optical character at all, a flat texture copy of a float buffer.
+//
+// So it gets a pass of its own, and the vocabulary is FILM rather than
+// electronics — because what the body is walking through is a projection of a
+// recording, not a readout of a signal:
+//
+//   HALATION    bright fields bleed warm and wide into their surroundings, the
+//               way emulsion blooms around a hot highlight. Not the vertical
+//               aperture-grille halo POST_FRAG uses; that is a CRT artefact and
+//               this is not a CRT.
+//   GATE WEAVE  a sub-pixel drift and a hair of rotation on a slow irregular
+//               clock. One cue, and the strongest one available: nothing reads
+//               as "projected" faster than a frame that will not sit still.
+//   EMULSION    density-dependent grain, heaviest in the midtones and protected
+//               in the blacks, reusing correlatedGrain from GRAIN_GLSL rather
+//               than inventing a second grain in the same renderer.
+//   DITHER      ordered 4x4, because the tape is almost entirely large smooth
+//               gradients and an 8-bit present bands them visibly. This is the
+//               cheapest win in the pass.
+//   BURN        the edges fall off the way a projected frame does, without the
+//               hard circular vignette of a lens.
+const PROJECTION_FRAG = COMMON_GLSL + GRAIN_GLSL + `
+uniform sampler2D uSrc;
+uniform vec2 uRes;
+uniform float uTime;
+uniform float uHalation;   // warm bleed around bright fields
+uniform float uWeave;      // gate instability
+uniform float uGrain;      // emulsion density
+uniform float uBurn;       // edge falloff
+uniform float uCollapse;   // the tail of the tape, taking the picture with it
+uniform float uReduceMotion;
+out vec4 o;
+
+// Bayer 4x4, matching src/render/pixel-mesh/dither.js so the two agree.
+float bayer4(vec2 p){
+  int x=int(mod(p.x,4.0)), y=int(mod(p.y,4.0));
+  int i=y*4+x;
+  float m[16]=float[16](0.,8.,2.,10.,12.,4.,14.,6.,3.,11.,1.,9.,15.,7.,13.,5.);
+  return m[i]/16.0;
+}
+
+void main(){
+  vec2 texel = 1.0 / uRes;
+  float still = 1.0 - clamp(uReduceMotion, 0.0, 1.0);
+
+  // GATE WEAVE. Two incommensurate rates so it never finds a loop, plus a rare
+  // larger jump — the frame catching in the gate rather than drifting in it.
+  float t = uTime;
+  float catchPhase = floor(t * 0.37);
+  float caught = step(0.86, h21(vec2(catchPhase, 3.7))) * (1.0 - smoothstep(0.0, 0.22, fract(t * 0.37)));
+  vec2 weave = vec2(
+    sin(t * 1.7) * 0.6 + sin(t * 0.41) * 0.4,
+    cos(t * 1.31) * 0.5 + sin(t * 0.27) * 0.5 + caught * 3.4
+  ) * uWeave * still * texel;
+  float roll = (sin(t * 0.23) * 0.6 + sin(t * 0.61) * 0.4) * uWeave * still * 0.0006;
+  vec2 uv = gl_FragCoord.xy * texel + weave;
+  vec2 centred = uv - 0.5;
+  uv = 0.5 + mat2(cos(roll), -sin(roll), sin(roll), cos(roll)) * centred;
+
+  vec3 c = texture(uSrc, uv).rgb;
+
+  // HALATION. A wide cross of taps weighted by their own brightness, so only
+  // hot areas bleed, and biased warm because that is what emulsion does.
+  if (uHalation > 0.001) {
+    vec3 bleed = vec3(0.0);
+    float wsum = 0.0;
+    for (int i = 1; i <= 4; i += 1) {
+      float r = float(i) * 2.5;
+      float w = 1.0 / (1.0 + r * 0.55);
+      bleed += texture(uSrc, uv + vec2(r, 0.0) * texel).rgb * w;
+      bleed += texture(uSrc, uv - vec2(r, 0.0) * texel).rgb * w;
+      bleed += texture(uSrc, uv + vec2(0.0, r) * texel).rgb * w;
+      bleed += texture(uSrc, uv - vec2(0.0, r) * texel).rgb * w;
+      wsum += w * 4.0;
+    }
+    bleed /= max(0.0001, wsum);
+    float hot = smoothstep(0.35, 0.95, dot(bleed, vec3(0.2126, 0.7152, 0.0722)));
+    c += bleed * vec3(1.0, 0.78, 0.52) * hot * uHalation;
+  }
+
+  // EMULSION. Midtone-weighted and black-protected: grain in the shadows is
+  // video noise, and this is not video.
+  float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
+  float density = smoothstep(0.02, 0.30, lum) * (1.0 - smoothstep(0.62, 1.0, lum));
+  float g = correlatedGrain(gl_FragCoord.xy, t * 14.0 * still, 0.55) - 0.5;
+  c += g * density * uGrain;
+
+  // BURN. Soft, rectangular-ish falloff — a projected frame going off at the
+  // edges, not a lens vignetting a circle.
+  vec2 e = abs(centred) * 2.0;
+  float burn = 1.0 - uBurn * (pow(max(e.x, 0.0), 3.2) * 0.55 + pow(max(e.y, 0.0), 2.6) * 0.75);
+  c *= clamp(burn, 0.0, 1.0);
+
+  // The tail. The void behind already dims and the splats already fade; this is
+  // the projector losing the lamp as well, so the collapse is one gesture.
+  c *= 1.0 - clamp(uCollapse, 0.0, 1.0) * 0.55;
+
+  // DITHER, last, against the 8-bit present. The tape is enormous smooth
+  // gradients and without this they band.
+  c += (bayer4(gl_FragCoord.xy) - 0.5) / 255.0;
+
+  o = vec4(c, 1.0);
+}`;
+
 // ── GL plumbing ──────────────────────────────────────────────────────────────
 let gl = null, canvas = null;
-let progRD, progWater, progMarch, progPost, progDepth, progPixelMesh, progDatamosh, progTextSpace;
+let progRD, progWater, progMarch, progPost, progDepth, progPixelMesh, progDatamosh, progTextSpace, progCopy, progProjection;
 // How frightened he is, 0..1. main.js owns the number; the post pass spends it.
 let fearLevel = 0;
 let nightSeed=0.37;
@@ -2621,6 +2819,7 @@ function ensureBlueNoise(gl){
 }
 
 let hushBodyManifestation=0;
+let hushBodySecondaryManifestation=0;
 // HOW FAR THE GENERATED MATERIAL HAS ARRIVED, 0..1.
 //
 // This used to be the boolean `surfAlbedoTex && surfNormalTex && surfMaterialTex`
@@ -2632,7 +2831,8 @@ let hushBodyManifestation=0;
 // Same exponential approach the hush body uses below, for the same reason: the
 // thing should arrive rather than appear.
 let surfacesManifestation=0;
-let hushBodyLast={x:0,y:0,strength:.9};
+let hushBodyLast={x:0,y:0,strength:.9,heightM:1.83,widthM:.58,glow:null,mode:null};
+let hushBodySecondaryLast={x:0,y:0,strength:.9,heightM:1.83,widthM:.58,glow:null,mode:null};
 const HUSH_BODY_ASSET='assets/hush/hush-body-sdf.png';
 const HUSH_BODY_ASSET_REV='8f52397c';
 export const HUSH_BODY_MODES=Object.freeze(['live','core','glow','off']);
@@ -2647,6 +2847,7 @@ export function r3dHushBodyStatus(){
     ready:hushBodyReady,
     mode:hushBodyMode,
     manifestation:hushBodyManifestation,
+    secondaryManifestation:hushBodySecondaryManifestation,
     asset:HUSH_BODY_ASSET,
     revision:HUSH_BODY_ASSET_REV,
     error:hushBodyLoadError,
@@ -2713,6 +2914,212 @@ let vfdMovement = 0;
 let vfdPreviousX = null, vfdPreviousZ = null;
 let textSpaceActive = false;
 let sourceLook = { sunrise: 0, chroma: 1, paper: 0 };
+
+// THE HORIZON. Set by main.js from the runtime's horizonFrame(); the renderer
+// never works out where on the tape the body is, it is told.
+let horizonState = { active: false, slice: 0, lateral: 0, collapse: 0, exposure: 1 };
+let horizonReadyState = false;
+
+export function r3dSetHorizon(frame = null) {
+  if (!frame?.active) { horizonState = { ...horizonState, active: false }; return false; }
+  horizonState = {
+    active: true,
+    slice: Number(frame.slice || 0) + Math.max(0, Math.min(1, Number(frame.sliceFraction) || 0)),
+    // Where across the corridor he is standing, in the tape's own metres. The
+    // pass needs this for the same reason it needs the slice: the tape is not
+    // in world space and the renderer is told, never works it out.
+    //
+    // THE CORRIDOR IS MAPPED ONTO THE PICTURE, NOT CONVERTED INTO IT.
+    //
+    // The two spaces do not share a scale, and it took getting this wrong twice
+    // to see why. On the Z axis one runtime CELL is one tape unit — forced by
+    // the slice mapping, since 512 cells and 512 tape units are both 256 slices
+    // — so treating lateral as metres and halving it was wrong, and it put the
+    // bust eighty-four units from the camera that was supposed to be beside him.
+    //
+    // But passing it straight through is wrong too: the walkable corridor is
+    // +-96 and the picture only +-64, so the body could walk clean off the side
+    // of the frame. The corridor is therefore SCALED onto the picture — walk to
+    // the edge of what you are allowed and you are at the edge of the image.
+    lateral: (Number(frame.lateral) || 0) * HORIZON_LATERAL_SCALE,
+    collapse: Math.max(0, Math.min(1, Number(frame.collapse) || 0)),
+    exposure: Math.max(0, Math.min(2, Number(frame.exposure ?? 1))),
+  };
+  return true;
+}
+
+export async function r3dLoadHorizon() {
+  if (horizonReadyState) return true;
+  try {
+    HZ.horizonInit(gl);
+    await HZ.horizonLoad({ bin: assetUrl('assets/horizon-tape.bin'), json: assetUrl('assets/horizon-tape.json') });
+    horizonReadyState = HZ.horizonReady();
+    // He stands beside the walk, at the depth the runtime puts him. Built here
+    // because the tape's own scales and floor are only known once the manifest
+    // has landed.
+    if (horizonReadyState) HZ.horizonSetBust({ ...horizonBust, centreY: horizonEyeHeight() });
+  } catch (error) {
+    // The tape is a built asset. A run that has not baked it should still be
+    // playable — the horizon goes dark rather than taking the renderer down.
+    console.warn('horizon tape unavailable:', error?.message || error);
+    horizonReadyState = false;
+  }
+  return horizonReadyState;
+}
+
+export function r3dHorizonReady() { return horizonReadyState; }
+
+// What the horizon pass is actually being told, for the probe. The tape is
+// authored in its OWN space (see horizon-tape.json: floor, sliceMetres, span)
+// and the camera is fed from the world, so being able to read both at once is
+// the difference between diagnosing this and guessing at it.
+let horizonSuppress = false;
+export function r3dHorizonSuppress(v) { horizonSuppress = !!v; return horizonSuppress; }
+
+export function r3dHorizonDebug() {
+  const m = HZ.horizonManifest?.() || null;
+  return {
+    ...horizonState,
+    ready: horizonReadyState,
+    stats: { ...HZ.horizonStats }, suppressed: horizonSuppress,
+    bust: { ...horizonBust, present: HZ.horizonBustPresent?.() || false, eyeY: horizonEyeHeight() },
+    tape: m ? { slices: m.slices, floor: m.floor, sliceMetres: m.sliceMetres, span: m.span } : null,
+    cam: { camX, camY, camZ, CELL, worldX: camX * CELL, worldY: camY * CELL, worldZ: camZ * CELL,
+           yaw, planYaw, pitch },
+  };
+}
+
+// The void the tape hangs in. Not black: the recording's own tail collapses
+// through magenta into a very dark plum, and the ground it stands on should
+// already be that colour before he gets there.
+const HORIZON_VOID = [0.035, 0.008, 0.042];
+// Where the eye sits up the frame, as a fraction of its height. Slightly under
+// half: dead centre reads as a screen, and a little low keeps some of the sense
+// that the recording is taller than you are without burying you under it.
+const HORIZON_EYE_AT = 0.44;
+// Live tuning surface for the horizon's feel, so the values can be found by
+// looking rather than by rebuilding. See __probe.horizonTune().
+const horizonTune = { nearFade: 9, reach: 44, eyeAt: HORIZON_EYE_AT };
+// The projection's own look. Not a `glass` block and not a `vfd` block: those
+// describe an instrument, and this describes a lamp and a strip of film.
+const HORIZON_PROJECTION = { halation: 0.34, weave: 0.9, grain: 0.055, burn: 0.30 };
+// Where the bust stands, in TAPE metres. Mirrors HORIZON_BUST_DEPTH / _LATERAL
+// in source-space-runtime.js, converted from cells; r3dSetHorizonBust lets the
+// runtime correct it rather than leaving two constants to drift.
+// Picture half-width over corridor half-width: 64 / 96.
+const HORIZON_LATERAL_SCALE = 64 / 96;
+let horizonBust = { x: -26 * HORIZON_LATERAL_SCALE, depth: 168, height: 13 };
+// The height the view is centred on, in tape units — where the bust has to live
+// if he is to be looked at rather than looked over.
+function horizonEyeHeight() {
+  const tape = HZ.horizonManifest();
+  return (Number(tape?.floor) || 0) + (Number(tape?.span?.y) || 40) * horizonTune.eyeAt;
+}
+
+export function r3dSetHorizonBust({ lateral = null, depth = null, height = null } = {}) {
+  horizonBust = {
+    ...horizonBust,
+    ...(lateral == null ? {} : { x: lateral * HORIZON_LATERAL_SCALE }),
+    ...(depth == null ? {} : { depth }),
+    ...(height == null ? {} : { height }),
+  };
+  if (horizonReadyState) HZ.horizonSetBust({ ...horizonBust, centreY: horizonEyeHeight() });
+  return { ...horizonBust };
+}
+export function r3dHorizonProjection(next = {}) { Object.assign(HORIZON_PROJECTION, next); return { ...HORIZON_PROJECTION }; }
+
+function presentProjection(texture, now) {
+  gl.useProgram(progProjection);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0, 0, canvas.width, canvas.height);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  const u = (name) => gl.getUniformLocation(progProjection, name);
+  gl.uniform1i(u('uSrc'), 0);
+  gl.uniform2f(u('uRes'), canvas.width, canvas.height);
+  gl.uniform1f(u('uTime'), now);
+  gl.uniform1f(u('uHalation'), HORIZON_PROJECTION.halation);
+  gl.uniform1f(u('uWeave'), HORIZON_PROJECTION.weave);
+  gl.uniform1f(u('uGrain'), HORIZON_PROJECTION.grain);
+  gl.uniform1f(u('uBurn'), HORIZON_PROJECTION.burn);
+  gl.uniform1f(u('uCollapse'), horizonState.collapse);
+  gl.uniform1f(u('uReduceMotion'), pixelMeshSettings.reduceMotion ? 1 : 0);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+export function r3dHorizonTune(next = {}) { Object.assign(horizonTune, next); return { ...horizonTune }; }
+
+function drawHorizon(now) {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, sceneFbo);
+  gl.viewport(0, 0, uniforms.sceneW, uniforms.sceneH);
+  // THE ENGRAVING TARGET IS NOT WANTED OUT HERE.
+  //
+  // sceneFbo is MRT — colour plus the mark/engraving buffer the march writes so
+  // downstream passes can recover a surface. Nothing past the perimeter is made
+  // of the building, so there is no surface to recover, and leaving both draw
+  // buffers live meant ~29k blended instances paid for a second write nobody
+  // reads. The shader still declares both outputs (it must, or the draws are
+  // rejected outright); this stops the second one costing bandwidth.
+  gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.NONE]);
+  const dim = 1 - horizonState.collapse * 0.85;
+  gl.clearColor(HORIZON_VOID[0] * dim, HORIZON_VOID[1] * dim, HORIZON_VOID[2] * dim, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  if (horizonReadyState && !horizonSuppress) {
+    // THE TAPE IS NOT IN WORLD SPACE.
+    //
+    // It is baked in its own metres: x across the corridor about zero, z running
+    // 0 to -512 back from the head of the tape, and y up from the tier floor
+    // (build-horizon-tape.mjs, FLOOR = SOURCE_TIER_BY_ID.horizon.height — which
+    // is why the height, alone of the three, IS the world's).
+    //
+    // This passed the world camera straight in. Measured at the head of the
+    // tape, that put the eye at z = -298.75 while the slice it was meant to be
+    // standing on sat at z = -6, so the entire recording was 293 metres behind a
+    // far plane of 120 and not one splat was ever inside the frustum. The
+    // horizon has never drawn; what everyone saw was the void clear behind it.
+    const tape = HZ.horizonManifest();
+    const sliceMetres = Number(tape?.sliceMetres) || 2;
+    // STAND IN THE PICTURE, NOT UNDERNEATH IT.
+    //
+    // The bake hangs the frame with its BOTTOM edge on the tier floor and makes
+    // it forty metres tall, while the eye sits 1.62m up. So the centre of the
+    // picture was 18.4 metres overhead at every distance and the body walked
+    // along beneath it seeing the bottom sliver — which is exactly what the
+    // first screenshots showed: picture in the upper third, void below.
+    //
+    // Lifting the tape camera is render-side and costs nothing; re-hanging the
+    // frame would mean a re-bake. The standing eye height comes off first and
+    // the wanted height up the frame goes back on, so head bob and any crouch
+    // still move the view.
+    const spanY = Number(tape?.span?.y) || 40;
+    const eyeUpTheFrame = spanY * horizonTune.eyeAt;
+    const { view, projection } = HZ.horizonCamera({
+      camX: horizonState.lateral,
+      camY: camY * CELL - EYE_METERS + eyeUpTheFrame,
+      camZ: -horizonState.slice * sliceMetres,
+      yaw: yaw + planYaw, pitch,
+      aspect: uniforms.sceneW / Math.max(1, uniforms.sceneH),
+    });
+    HZ.horizonRender({
+      view, projection,
+      slice: horizonState.slice,
+      collapse: horizonState.collapse,
+      exposure: horizonState.exposure,
+      nearFade: horizonTune.nearFade,
+      reach: horizonTune.reach,
+      boil: now * 0.6,
+    });
+  }
+  // The VFD never runs out here. This is the one place in the game that is in
+  // colour and the halftone would take it straight back off again.
+  pixelMeshStatus.enabled = false;
+  // Hand the framebuffer back the way every other pass expects to find it.
+  gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]);
+  const resolved = runDatamoshPass(sceneTex, now);
+  // Out through the projector, not through a texture copy. See PROJECTION_FRAG.
+  presentProjection(resolved, now);
+  lastPostSourceFbo = sceneFbo;
+}
+let sourceWeather = { rain: 0, moon: 1, clouds: 1 };
 const pixelMeshUniformCache = new Map();
 const postUniformCache = new Map();
 const textSpaceUniformCache = new Map();
@@ -3199,20 +3606,55 @@ function textSpaceU(name) {
   return textSpaceUniformCache.get(name);
 }
 
-function drawTextSpace(texture) {
+function sourceHushProjection(body=hushBodyLast,amount=hushBodyManifestation){
+  if(!hushBodyReady||hushBodyMode==='off'||amount<=.001)return{x:.5,y:.5,w:0,h:0,amount:0};
+  const floorM=Number.isFinite(Number(body.floorH))?Number(body.floorH):0;
+  const base=r3dProjectWorld({x:(body.x+.5)*CELL,y:floorM+.02,z:(body.y+.5)*CELL});
+  const top=r3dProjectWorld({x:(body.x+.5)*CELL,y:floorM+body.heightM,z:(body.y+.5)*CELL});
+  if(!base.visible&&!top.visible)return{x:.5,y:.5,w:0,h:0,amount:0};
+  const h=Math.max(.012,Math.abs(base.y-top.y));
+  const aspect=Math.max(.1,(uniforms.sceneW||1)/(uniforms.sceneH||1));
+  const w=Math.max(.006,h*(body.widthM/body.heightM)/aspect);
+  return{x:(base.x+top.x)*.5,y:1-(base.y+top.y)*.5,w,h,amount:Math.max(0,Math.min(1,amount))};
+}
+
+function presentTexture(texture){
+  gl.useProgram(progCopy);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+  gl.viewport(0,0,canvas.width,canvas.height);
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);
+  gl.uniform1i(gl.getUniformLocation(progCopy,'uSrc'),0);
+  gl.uniform2f(gl.getUniformLocation(progCopy,'uRes'),canvas.width,canvas.height);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+}
+
+function drawTextSpace(texture,now) {
   gl.useProgram(progTextSpace);
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  gl.viewport(0, 0, canvas.width, canvas.height);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, sceneFbo);
+  gl.viewport(0, 0, uniforms.sceneW, uniforms.sceneH);
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.uniform1i(textSpaceU('uText'), 0);
-  gl.uniform2f(textSpaceU('uRes'), canvas.width, canvas.height);
+  gl.uniform2f(textSpaceU('uRes'), uniforms.sceneW, uniforms.sceneH);
   gl.uniform1f(textSpaceU('uSunrise'), Math.max(0, Math.min(1, Number(sourceLook.sunrise) || 0)));
   gl.uniform1f(textSpaceU('uSourceChroma'), Math.max(0, Math.min(1, Number(sourceLook.chroma) || 0)));
   gl.uniform1f(textSpaceU('uPaper'), Math.max(0, Math.min(1, Number(sourceLook.paper) || 0)));
+  gl.uniform1f(textSpaceU('uTime'),now);
+  gl.uniform1f(textSpaceU('uNightSeed'),nightSeed);
+  gl.uniform1f(textSpaceU('uRain'),Math.max(0,Math.min(1,Number(sourceWeather.rain)||indoorRain||0)));
+  gl.uniform1f(textSpaceU('uReducedMotion'),pixelMeshSettings.reduceMotion?1:0);
+  gl.uniform2f(textSpaceU('uView'),yaw+planYaw,pitch);
+  gl.uniform2f(textSpaceU('uMoonCloud'),Math.max(0,Math.min(1,Number(sourceWeather.moon)||0)),Math.max(0,Math.min(1,Number(sourceWeather.clouds)||0)));
+  const body=sourceHushProjection();
+  gl.uniform4f(textSpaceU('uHushScreen'),body.x,body.y,body.w,body.h);
+  gl.uniform1f(textSpaceU('uHushAmount'),body.amount);
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,hushBodyReady?hushBodyTex:texture);
+  gl.uniform1i(textSpaceU('uHushBodyTex'),1);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   pixelMeshStatus.enabled = false;
-  lastPostSourceFbo = null;
+  const resolved=runDatamoshPass(sceneTex,now);
+  presentTexture(resolved);
+  lastPostSourceFbo = sceneFbo;
 }
 
 const DATAMOSH_FRAG=`#version 300 es
@@ -3236,7 +3678,13 @@ void main(){
   vec3 source=texture(uSource,uv+motion*.25).rgb;
   vec3 tower=texture(uTower,uv-motion).rgb;
   vec3 previous=texture(uPrevious,uv-motion*.7).rgb;
-  float reveal=smoothstep(seed-.12,seed+.12,uProgress);
+  float sourceLuma=dot(source,vec3(.2126,.7152,.0722));
+  float towerLuma=dot(tower,vec3(.2126,.7152,.0722));
+  // Blocks break on picture energy as well as time. Bright Source structure
+  // tears through first while the hall's darker macroblocks persist as P-frame
+  // residue, so this reads as a damaged physical transition rather than a wipe.
+  float lumaBreak=(towerLuma-sourceLuma)*.22*(1.0-uReducedMotion);
+  float reveal=smoothstep(seed-.12,seed+.12,uProgress+lumaBreak);
   vec3 current=mix(source,tower,reveal);
   float retention=(1.0-uReducedMotion)*mix(.15,.78,uProgress)*step(.18,seed);
   vec3 carried=mix(current,previous,retention);
@@ -3495,10 +3943,11 @@ function runPixelMeshPass(state, now) {
   gl.uniform1f(pixelMeshU('uShadowLift'), look.vfd.shadowLift ?? 0);
   gl.uniform1f(pixelMeshU('uAgitation'), dreamAgitation);
   const hushBodyModeIndex=Math.max(0,HUSH_BODY_MODES.indexOf(hushBodyMode));
-  const hushBodyPostActive=state?.hushBodyAllowed!==false&&hushBodyReady&&hushBodyManifestation>.001&&hushBodyModeIndex<3;
+  const hushBodyPostManifestation=Math.max(hushBodyManifestation,hushBodySecondaryManifestation);
+  const hushBodyPostActive=state?.hushBodyAllowed!==false&&hushBodyReady&&hushBodyPostManifestation>.001&&hushBodyModeIndex<3;
   gl.uniform4f(
     pixelMeshU('uHushBodyPost'),
-    hushBodyManifestation,
+    hushBodyPostManifestation,
     hushBodyPostActive?1:0,
     hushBodyModeIndex<2?1:0,
     hushBodyModeIndex===0||hushBodyModeIndex===2?1:0,
@@ -3559,6 +4008,8 @@ export function r3dInit(mapEl) {
   progPost = program(POST_FRAG);
   progDepth = program(DEPTH_FRAG);
   progDatamosh = program(DATAMOSH_FRAG);
+  progCopy = program(COPY_FRAG);
+  progProjection = program(PROJECTION_FRAG);
   try { progBurst = program(BURST_FRAG); } catch (_) { progBurst = null; }
   progTextSpace = program(TEXT_SPACE_FRAG);
   try {
@@ -3618,6 +4069,7 @@ export function r3dInit(mapEl) {
   resize();
   P3.loadPropPack(assetUrl('assets/conservatory-props.glb'))
     .then(()=>P3.addPropPack(assetUrl('assets/conservatory-acquisitions.glb')))
+    .then(()=>P3.addPropPack(assetUrl('assets/opening-street.glb')))
     .then(()=>P3.addPropPack(assetUrl('assets/source-structures.glb')))
     .then(()=>P3.addPropPack(assetUrl('assets/conservatory-doors.glb')))
     .then(()=>P3.addPropPack(assetUrl('assets/tuning-fork.glb')))
@@ -3625,6 +4077,8 @@ export function r3dInit(mapEl) {
     .catch((err)=>console.warn('prop pack unavailable',err));
   P3.loadPortraitAtlas(assetUrl('assets/portraits/portrait-atlas.webp'))
     .catch((err)=>console.warn('portrait atlas unavailable',err));
+  P3.loadPaperAtlas(assetUrl(PAPER_ATLAS.path),{columns:PAPER_ATLAS.columns,rows:PAPER_ATLAS.rows})
+    .catch((err)=>console.warn('paper atlas unavailable; sheets retain stock material',err));
   Promise.all([
     loadTextureArray(assetUrl('assets/surfaces/surface-albedo.jpg'),{srgb:true}),
     loadTextureArray(assetUrl('assets/surfaces/surface-normal.png')),
@@ -3832,6 +4286,8 @@ export function r3dSetPlan(rgba, w, h, material = null, options = {}) {
 
 export function r3dSetProps(instances) { P3.setPropInstances(instances); }
 export function r3dSetDynamicProps(instances) { P3.setDynamicPropInstances(instances); }
+export function r3dSetDiagnosticProps(instances) { P3.setDiagnosticPropInstances(instances); }
+export function r3dSetPropDiagnostics(enabled,options=null) { return P3.setPropDiagnostics(enabled,options); }
 export function r3dSetEmergencyShadows(instances) { P3.setEmergencyShadowInstances(instances); }
 export function r3dSetSourceTextInstances(instances) { P3.setSourceTextInstances(instances); }
 export function r3dSetSourceScene(scene = {}) {
@@ -3839,6 +4295,9 @@ export function r3dSetSourceScene(scene = {}) {
   sourceLook = scene.look && typeof scene.look === 'object'
     ? { sunrise: scene.look.sunrise, chroma: scene.look.chroma, paper: scene.look.paper }
     : { sunrise: 0, chroma: 1, paper: 0 };
+  sourceWeather = scene.weather && typeof scene.weather === 'object'
+    ? { rain: scene.weather.rain, moon: scene.weather.moon, clouds: scene.weather.clouds }
+    : { rain: 0, moon: 1, clouds: 1 };
 }
 export function r3dSetHushProp(id) { P3.setHushProp(id); }
 export function r3dPropStats() { return P3.propPackStats(); }
@@ -4065,11 +4524,30 @@ export function r3dFrame(state) {
   const incomingHush=hushBodyRenderAllowed&&state.hush&&Number.isFinite(state.hush.x)&&Number.isFinite(state.hush.y)
     ? state.hush
     : null;
+  const incomingHushSecondary=hushBodyRenderAllowed&&state.hushSecondary
+    &&Number.isFinite(state.hushSecondary.x)&&Number.isFinite(state.hushSecondary.y)
+    ?state.hushSecondary:null;
   if(incomingHush){
     hushBodyLast={
       x:Number(incomingHush.x),
       y:Number(incomingHush.y),
       strength:Math.max(0,Math.min(1,Number(incomingHush.strength)||0)),
+      heightM:Math.max(1.2,Math.min(2.4,Number(incomingHush.heightM)||1.83)),
+      widthM:Math.max(.35,Math.min(1.0,Number(incomingHush.widthM)||.58)),
+      glow:Number.isFinite(Number(incomingHush.glow))?Math.max(.4,Math.min(3.2,Number(incomingHush.glow))):null,
+      mode:typeof incomingHush.mode==='string'?incomingHush.mode:null,
+      floorH:Number.isFinite(Number(incomingHush.floorH))?Number(incomingHush.floorH):0,
+    };
+  }
+  if(incomingHushSecondary){
+    hushBodySecondaryLast={
+      x:Number(incomingHushSecondary.x),
+      y:Number(incomingHushSecondary.y),
+      strength:Math.max(0,Math.min(1,Number(incomingHushSecondary.strength)||0)),
+      heightM:Math.max(1.2,Math.min(2.4,Number(incomingHushSecondary.heightM)||1.83)),
+      widthM:Math.max(.35,Math.min(1.0,Number(incomingHushSecondary.widthM)||.58)),
+      glow:Number.isFinite(Number(incomingHushSecondary.glow))?Math.max(.4,Math.min(3.2,Number(incomingHushSecondary.glow))):null,
+      mode:typeof incomingHushSecondary.mode==='string'?incomingHushSecondary.mode:null,
     };
   }
   const surfacesTarget=(surfAlbedoTex&&surfNormalTex&&surfMaterialTex)?1:0;
@@ -4081,25 +4559,38 @@ export function r3dFrame(state) {
     : (surfacesTarget-surfacesManifestation);
   if(Math.abs(surfacesTarget-surfacesManifestation)<.002)surfacesManifestation=surfacesTarget;
   const hushBodyTarget=incomingHush?1:0;
+  const hushBodySecondaryTarget=incomingHushSecondary?1:0;
   const hushBodyRate=hushBodyTarget?7.2:4.0;
+  const hushBodySecondaryRate=hushBodySecondaryTarget?5.4:4.0;
   hushBodyManifestation+=(hushBodyTarget-hushBodyManifestation)*(1-Math.exp(-dt*hushBodyRate));
+  hushBodySecondaryManifestation+=(hushBodySecondaryTarget-hushBodySecondaryManifestation)*(1-Math.exp(-dt*hushBodySecondaryRate));
   if(Math.abs(hushBodyTarget-hushBodyManifestation)<.002)hushBodyManifestation=hushBodyTarget;
+  if(Math.abs(hushBodySecondaryTarget-hushBodySecondaryManifestation)<.002)hushBodySecondaryManifestation=hushBodySecondaryTarget;
 
   gl.disable(gl.DEPTH_TEST);
   textSpaceActive = !!state.textSpace;
+
+  // PAST THE PERIMETER. Its own branch, before the text space and before the
+  // march, for the same reason the text space has one: nothing out there is made
+  // of the building. No reaction-diffusion, no water, no props, no marks, no
+  // VFD — a splat cloud in a void, in colour, and then straight to the screen.
+  if (horizonState.active) {
+    drawHorizon(now);
+    return;
+  }
 
   if (textSpaceActive) {
     P3.renderPropPass({
       camX: camX * CELL, camY: camY * CELL, camZ: camZ * CELL,
       yaw: worldYaw, pitch, light: 1, fogTexture, fogOrigin, fogSize: FOG_TEX,
       cellMeters: CELL, zoneTints: ZONE_TINTS,
-      localLightCount: 0, localLightPositions, localLightColors, localLightPenetrations, localLightEmergency,
-      localShadowIndex:-1,shadowLight:null,
+      localLightCount, localLightPositions, localLightColors, localLightPenetrations, localLightEmergency,
+      localShadowIndex,shadowLight:localShadowLight,
       torch:{power:1,color:[1,1,1],reach:1,coneInner:.88,coneOuter:.94,spill:.05},
       ambientColor:lightingAmbientColor,ambientIntensity:lightingAmbientIntensity,
       planTexture,planSize:[planW,planH],planOrigin:[planOriginX,planOriginY],
     });
-    drawTextSpace(P3.propTargets().color);
+    drawTextSpace(P3.propTargets().color,now);
     return;
   }
 
@@ -4201,7 +4692,8 @@ export function r3dFrame(state) {
   // WebGL2 only guarantees sixteen fragment samplers and this pass already
   // uses them all. Source Space suppresses building actors, so its corpus atlas
   // and the HUSH SDF safely share unit 13 without ever being sampled together.
-  const hushBodyTextureActive=hushBodyRenderAllowed&&hushBodyReady&&hushBodyManifestation>.001&&hushBodyMode!=='off';
+  const hushBodyTextureActive=hushBodyRenderAllowed&&hushBodyReady
+    &&(hushBodyManifestation>.001||hushBodySecondaryManifestation>.001)&&hushBodyMode!=='off';
   const unit13Texture=hushBodyTextureActive?hushBodyTex:sourceSurfaceTexture;
   gl.uniform1f(U('uSourceReady'),sourceSurfaceTexture&&!hushBodyTextureActive?1:0);
   gl.activeTexture(gl.TEXTURE13);gl.bindTexture(gl.TEXTURE_2D,unit13Texture);gl.uniform1i(U('uSourceSurface'),13);gl.uniform1i(U('uHushBodyTex'),13);
@@ -4273,8 +4765,15 @@ export function r3dFrame(state) {
   gl.uniform4f(U('uDoor'), state.door?.x ?? 0, state.door?.y ?? 0, state.door ? 1 : 0, 0);
   gl.uniform4f(U('uHush'), state.hush?.x ?? 0, state.hush?.y ?? 0, state.hush?.strength ?? 0, state.hush?.radiusM ?? 0);
   const hushBodyModeIndex=Math.max(0,HUSH_BODY_MODES.indexOf(hushBodyMode));
+  const hushBodyLastMode=HUSH_BODY_MODES.includes(hushBodyLast.mode)?HUSH_BODY_MODES.indexOf(hushBodyLast.mode):hushBodyModeIndex;
+  const hushBodySecondaryMode=HUSH_BODY_MODES.includes(hushBodySecondaryLast.mode)?HUSH_BODY_MODES.indexOf(hushBodySecondaryLast.mode):hushBodyModeIndex;
   gl.uniform4f(U('uHushBody'),hushBodyLast.x,hushBodyLast.y,hushBodyRenderAllowed?hushBodyManifestation:0,hushBodyTextureActive?1:0);
-  gl.uniform4f(U('uHushBodyLook'),1.83,.58,.88+hushBodyLast.strength*.22,hushBodyModeIndex);
+  gl.uniform4f(U('uHushBodyLook'),hushBodyLast.heightM,hushBodyLast.widthM,
+    hushBodyLast.glow??(.88+hushBodyLast.strength*.22),hushBodyLastMode);
+  gl.uniform4f(U('uHushBodySecondary'),hushBodySecondaryLast.x,hushBodySecondaryLast.y,
+    hushBodyRenderAllowed?hushBodySecondaryManifestation:0,hushBodyTextureActive?1:0);
+  gl.uniform4f(U('uHushBodyLookSecondary'),hushBodySecondaryLast.heightM,hushBodySecondaryLast.widthM,
+    hushBodySecondaryLast.glow??(.88+hushBodySecondaryLast.strength*.22),hushBodySecondaryMode);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 
   const pixelSourceTex = runPixelMeshPass(state, now);

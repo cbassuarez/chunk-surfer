@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  BASE_MAX_CHARGE,
+  CHARGE_COST,
   COMBAT_ACTION,
   COMBAT_TOOL,
   SNR_STATE,
@@ -25,6 +27,7 @@ import {
   advanceEnemy,
   selectEnemyIntents,
   validateCombatDefinition,
+  ACTION_BAND,
 } from '../src/game/combat-state.js';
 import { authoredCombatProfile, sourceCombatDefinition } from '../src/data/combat-definitions.js';
 import { COMBAT_RULES } from '../src/progression/difficulty-defs.js';
@@ -37,13 +40,30 @@ import {
   normalizeCombatBuild,
   techniqueAvailability,
 } from '../src/game/combat-progression.js';
+import { GRID, HIT_QUALITY } from '../src/game/combat-damage.js';
 
 const definition = (id = 'natatorium') => ({
   id,
   enemy: id.toUpperCase(),
-  baseComposure: 8,
+  baseComposure: 8 * GRID,
   ...authoredCombatProfile(id),
 });
+
+// Outgoing damage is a BAND now (see combat-damage.js), so asserting an exact
+// number would be asserting the draw rather than the rule. These say the two
+// things that are actually promised: the hit landed inside the range the tile
+// advertised, and it was graded.
+const dealtInBand = (state, message) => {
+  const band = state.last?.band;
+  const dealt = state.last?.dealt ?? 0;
+  assert.ok(band, `${message}: the hit recorded no band`);
+  assert.ok(
+    dealt >= band.min && dealt <= band.max,
+    `${message}: ${dealt} is outside the advertised ${band.min}–${band.max}`,
+  );
+  assert.ok(Object.values(HIT_QUALITY).includes(state.last.quality), `${message}: the hit was not graded`);
+  return dealt;
+};
 
 test('signal combat is deterministic and a perfect response opens one non-chaining Tempo action', () => {
   const initial = createCombatState(definition(), { battery: 1 });
@@ -53,12 +73,19 @@ test('signal combat is deterministic and a perfect response opens one non-chaini
   assert.deepEqual(left, right);
   assert.equal(left.tempo, true);
   assert.equal(left.perfectCounters, 1);
-  assert.equal(left.take.damage, 2);
+  assert.equal(left.take.damage, 2 * GRID);
+
+  // MONITOR is a regular attack now, not only a capture: listening closely
+  // takes something off the thing whether or not there was a take in it.
+  dealtInBand(left, 'the capture also chipped it');
+  assert.ok(left.movementCoherence < initial.movementCoherence, 'the capture also chipped it');
+  assert.equal(left.charge, 2, 'and reading the blow right paid a charge');
 
   const playback = reduceCombat(left, { type: COMBAT_ACTION.PLAYBACK });
   assert.equal(playback.tempo, false);
   assert.equal(playback.turns, 1);
-  assert.equal(playback.movementCoherence, 2);
+  dealtInBand(playback, 'playback spends the take for a banded swing');
+  assert.ok(playback.movementCoherence < left.movementCoherence);
 });
 
 test('Tune is a free once-per-movement calibration and strengthens the next perfect response', () => {
@@ -68,17 +95,44 @@ test('Tune is a free once-per-movement calibration and strengthens the next perf
   assert.equal(state.turns, 0);
   assert.equal(combatIntentLookahead(state).length, 2);
   assert.equal(availableCombatActions(state).find((action) => action.id === COMBAT_ACTION.TUNE).enabled, false);
+  const beforeChip = state.movementCoherence;
   state = reduceCombat(state, { type: COMBAT_ACTION.MONITOR });
-  assert.equal(state.movementCoherence, 4);
+  // The chip is banded; the resonant bonus is a flat add on top of it, so the
+  // total is the band plus the bonus and the bonus is what this asserts.
+  const chip = state.last.dealt;
+  assert.ok(chip > state.last.band.max, 'the resonant bonus lands on top of the banded chip');
+  assert.equal(beforeChip - state.movementCoherence, chip);
   assert.equal(state.tuneBonus, 0);
 });
 
-test('torch spends the shared scaled battery and flat battery disables it', () => {
-  const state = createCombatState(definition(), { battery: .05, torchDrainScale: 1.35 });
-  const next = reduceCombat(state, { type: COMBAT_ACTION.EXPOSE });
-  assert.equal(+next.torchSpent.toFixed(5), .03375);
-  assert.equal(+next.battery.toFixed(5), .01625);
-  assert.equal(availableCombatActions(next).find((action) => action.id === COMBAT_ACTION.EXPOSE).enabled, false);
+test('EXPOSE is free and a flat battery cannot disarm the recordist', () => {
+  // The battery is a RUN resource that exploration drains by the second, so
+  // billing the primary attack to it meant a player could walk the building and
+  // arrive at the chapel unable to fight — which forced every encounter to be
+  // balanced for an empty bag, which let a full one walk through it. Pointing
+  // the torch is free now. Burning it out is not.
+  const flat = createCombatState(definition(), { battery: 0, torchDrainScale: 1.35 });
+  const expose = availableCombatActions(flat).find((action) => action.id === COMBAT_ACTION.EXPOSE);
+  assert.equal(expose.enabled, true, 'a dead battery does not take the torch away');
+  const next = reduceCombat(flat, { type: COMBAT_ACTION.EXPOSE });
+  assert.equal(next.torchSpent, 0);
+  assert.equal(next.battery, 0);
+  assert.ok(next.movementCoherence < flat.movementCoherence, 'and it still does its work');
+});
+
+test('WHITEOUT is what the battery is for, on top of its charge', () => {
+  const build = { techniques: [TECHNIQUE.AFTERIMAGE, TECHNIQUE.WHITEOUT], battery: .2, torchDrainScale: 1.35 };
+  const ready = createCombatState(definition(), build);
+  ready.charge = 3;
+  const whiteout = availableCombatActions(ready).find((action) => action.id === COMBAT_ACTION.WHITEOUT);
+  assert.equal(whiteout.enabled, true);
+  const fired = reduceCombat(ready, { type: COMBAT_ACTION.WHITEOUT });
+  assert.equal(+fired.torchSpent.toFixed(5), .0675, 'the special bills the battery');
+  assert.equal(fired.charge, 3 - CHARGE_COST[COMBAT_ACTION.WHITEOUT]);
+
+  const dim = createCombatState(definition(), { ...build, battery: .01 });
+  dim.charge = 3;
+  assert.equal(availableCombatActions(dim).find((action) => action.id === COMBAT_ACTION.WHITEOUT).reason, 'BATTERY FLAT');
 });
 
 test('occupied Take requires explicit replacement', () => {
@@ -105,19 +159,35 @@ test('the locked techniques preserve their tier and equipment contracts', () => 
   const migrated = normalizeCombatBuild(null, ['recording-2', 'pre-recording-4']);
   assert.equal(migrated.unspent, 2);
   assert.deepEqual(normalizeCombatBuild({ techniques: [TECHNIQUE.WHITEOUT] }, ['recording-2']).techniques, []);
-  assert.equal(techniqueAvailability(migrated, TECHNIQUE.FEEDBACK_LOOP, { hasRig: true }).reason, 'TIER I REQUIRED');
+  assert.equal(techniqueAvailability(migrated, TECHNIQUE.RUNAWAY_FEEDBACK, { hasRig: true }).reason, 'TIER I REQUIRED');
   assert.equal(techniqueAvailability(migrated, TECHNIQUE.OVERDUB, { hasRig: false }).reason, 'BENT RIG REQUIRED');
   const first = learnCombatTechnique(migrated, TECHNIQUE.OVERDUB, { hasRig: true });
-  const second = learnCombatTechnique(first.build, TECHNIQUE.FEEDBACK_LOOP, { hasRig: true });
+  const second = learnCombatTechnique(first.build, TECHNIQUE.RUNAWAY_FEEDBACK, { hasRig: true });
   assert.equal(second.changed, true);
-  assert.deepEqual(second.build.techniques, [TECHNIQUE.OVERDUB, TECHNIQUE.FEEDBACK_LOOP]);
+  assert.deepEqual(second.build.techniques, [TECHNIQUE.OVERDUB, TECHNIQUE.RUNAWAY_FEEDBACK]);
   assert.equal(second.build.unspent, 0);
 });
 
-test('the tree is deeper and pins come from more than two fixed fights', () => {
-  // The deepened tree: torch/recorder/rig/nerve each cap at a tier III, and the
-  // tree now spans six branches (adding nerve/fork/radio) with raised caps.
-  assert.equal(TECHNIQUE_DEFS.filter((t) => t.tier === 3).length, 4, 'the deep branches each gain a tier III');
+test('the tree buys regulars flat and specials two pins deep', () => {
+  // Two tracks, because there are two kinds of thing worth buying. FLAT
+  // upgrades make the moves you always have better and can be taken in any
+  // order, so an early pin is useful before any branch pays off. TOOL branches
+  // hold the SPECIALS — and no special may cost more than two of a run's six
+  // pins, which RUNAWAY FEEDBACK used to, at four.
+  const depth = (id, seen = 0) => {
+    const def = TECHNIQUE_DEFS.find((entry) => entry.id === id);
+    return def?.requires ? depth(def.requires, seen + 1) : seen + 1;
+  };
+  const specials = TECHNIQUE_DEFS.filter((t) => /SPECIAL/.test(t.detail));
+  assert.ok(specials.length >= 4, 'every tool that can be loud has something loud to buy');
+  for (const special of specials) {
+    assert.equal(special.track, 'tool', `${special.label} is bought through its tool`);
+    assert.ok(depth(special.id) <= 2, `${special.label} costs ${depth(special.id)} pins to reach`);
+  }
+  const flat = TECHNIQUE_DEFS.filter((t) => t.track === 'flat');
+  assert.ok(flat.length >= 8, 'there is a real flat track, not a token one');
+  assert.ok(flat.some((t) => !t.requires), 'and some of it is reachable with a single pin');
+  assert.ok(!flat.some((t) => /SPECIAL/.test(t.detail)), 'nothing loud hides in the flat track');
   assert.ok(new Set(TECHNIQUE_DEFS.map((t) => t.branch)).size >= 6, 'the tree spans torch/recorder/rig plus nerve/fork/radio');
   assert.ok(MAX_PINS >= 4 && MAX_TECHNIQUES >= 4);
   // Pins accrue from regular battle clears and from set pickup flags, capped.
@@ -149,7 +219,7 @@ test('a tier-III chain can be learned and its effect resolves in combat', () => 
   let state = createCombatState(definition(), { battery: 1, techniques: build.techniques });
   state.intentIndex = 2; // conceal, so EXPOSE is not a perfect counter
   state = reduceCombat(state, { type: COMBAT_ACTION.EXPOSE });
-  assert.equal(state.exposedBonus, 3, 'AFTERIMAGE 2 + OVEREXPOSE 1');
+  assert.equal(state.exposedBonus, 3 * GRID, 'AFTERIMAGE 2 + OVEREXPOSE 1, in grid units');
 });
 
 test('WHITEOUT is described as an active technique so the UI can surface it as a move', () => {
@@ -160,47 +230,90 @@ test('WHITEOUT is described as an active technique so the UI can surface it as a
   assert.equal(TECHNIQUE_DEFS.find((t) => t.id === TECHNIQUE.AFTERIMAGE).active, undefined);
 });
 
-test('a deep build chooses one encounter finisher instead of deleting every movement', () => {
+test('specials are paced by charge, not by one shared use per encounter', () => {
+  // Three pins into three specials used to buy exactly one firing, because all
+  // three shared a single lock. Charge replaces that: they cost what they are
+  // worth, they can be fired again, and what refills them is reading the
+  // opponent correctly.
   let state = createCombatState(definition('hall'), {
     battery: 1,
     tools: { torch: true, recorder: true, rig: true },
     techniques: [TECHNIQUE.WHITEOUT, TECHNIQUE.MASTER_TAKE, TECHNIQUE.RUNAWAY_FEEDBACK],
   });
+  state.charge = state.maxCharge;
   state.intentIndex = 2;
-  state = reduceCombat(state, { type: COMBAT_ACTION.WHITEOUT });
-  assert.equal(state.finisherUsed, COMBAT_ACTION.WHITEOUT);
-  const actions = availableCombatActions(state);
-  for (const id of [COMBAT_ACTION.WHITEOUT, COMBAT_ACTION.MASTER_TAKE, COMBAT_ACTION.RUNAWAY_FEEDBACK]) {
-    const move = actions.find((action) => action.id === id);
-    assert.equal(move.enabled, false, id);
-    assert.equal(move.reason, 'FINISHER SPENT', id);
-  }
+  // It counters the conceal it was aimed at, so the beat pays a charge back on
+  // the way out — spending well is partly self-funding.
+  const spent = reduceCombat(state, { type: COMBAT_ACTION.WHITEOUT });
+  assert.equal(spent.last.perfect, true);
+  assert.equal(spent.charge, state.maxCharge - CHARGE_COST[COMBAT_ACTION.WHITEOUT] + 1);
+
+  // What is still open is a question of what you can afford, not of what you
+  // have already used.
+  const actions = availableCombatActions(spent);
+  const master = actions.find((action) => action.id === COMBAT_ACTION.MASTER_TAKE);
+  assert.equal(master.enabled, spent.charge >= CHARGE_COST[COMBAT_ACTION.MASTER_TAKE]);
+  const runaway = actions.find((action) => action.id === COMBAT_ACTION.RUNAWAY_FEEDBACK);
+  assert.equal(runaway.enabled, false, 'the loudest one is out of reach on the change left');
+  assert.match(runaway.reason, /CHARGE/);
+
+  // Refill and the same special comes round again.
+  const refilled = { ...spent, charge: spent.maxCharge };
+  assert.equal(availableCombatActions(refilled).find((a) => a.id === COMBAT_ACTION.WHITEOUT).enabled, true);
+});
+
+test('charge is earned by reading the opponent, and it has a ceiling', () => {
+  const state = createCombatState(definition(), {});
+  assert.equal(state.charge, 1, 'the cheap utility special is in reach from the first beat');
+  assert.equal(state.maxCharge, BASE_MAX_CHARGE);
+  const perfect = reduceCombat(state, { type: COMBAT_ACTION.MONITOR });
+  assert.equal(perfect.charge, 2);
+  assert.match(perfect.last.notice, /\+1 CHARGE/);
+
+  // HEADROOM is a flat pin: it raises the ceiling rather than unlocking anything.
+  const deep = createCombatState(definition(), { techniques: [TECHNIQUE.HEADROOM] });
+  assert.equal(deep.maxCharge, BASE_MAX_CHARGE + 2);
+
+  const capped = createCombatState(definition(), {});
+  capped.charge = capped.maxCharge;
+  assert.equal(reduceCombat(capped, { type: COMBAT_ACTION.MONITOR }).charge, capped.maxCharge, 'charge does not overflow');
 });
 
 test('Afterimage, Whiteout, Overdub, Punch In, and Feedback Loop resolve exactly once at their authored scopes', () => {
   let afterimage = createCombatState(definition(), { techniques: [TECHNIQUE.ROOM_TONE, TECHNIQUE.AFTERIMAGE] });
   afterimage.intentIndex = 2;
   afterimage = reduceCombat(afterimage, { type: COMBAT_ACTION.EXPOSE });
-  assert.equal(afterimage.exposedBonus, 2);
+  assert.equal(afterimage.exposedBonus, 2 * GRID);
   afterimage = reduceCombat(afterimage, { type: COMBAT_ACTION.PLAYBACK });
   assert.equal(afterimage.last.transition.to, 1);
 
   let whiteout = createCombatState(definition(), { techniques: [TECHNIQUE.WHITEOUT], battery: 1 });
+  whiteout.charge = whiteout.maxCharge;
   whiteout.intentIndex = 2;
   whiteout = reduceCombat(whiteout, { type: COMBAT_ACTION.WHITEOUT });
-  assert.equal(whiteout.whiteoutUsed, true);
   assert.equal(whiteout.exposedBonus, 0);
   assert.equal(+whiteout.torchSpent.toFixed(3), .05);
 
   let overdub = createCombatState(definition(), { tools: { rig: true }, techniques: [TECHNIQUE.ROOM_TONE, TECHNIQUE.OVERDUB] });
   overdub = reduceCombat(overdub, { type: COMBAT_ACTION.PLAYBACK });
-  assert.equal(overdub.take.damage, 1);
+  assert.equal(overdub.take.damage, GRID);
   assert.deepEqual(overdub.overdubMovements, [0]);
 
+  // PUNCH IN is a flat upgrade to a regular now: it doubles MONITOR's chip
+  // every beat, rather than adding one hit once per movement.
+  const plain = reduceCombat(createCombatState(definition(), {}), { type: COMBAT_ACTION.MONITOR });
   let punch = createCombatState(definition(), { techniques: [TECHNIQUE.PUNCH_IN] });
   punch = reduceCombat(punch, { type: COMBAT_ACTION.MONITOR });
-  assert.equal(punch.movementCoherence, 4);
-  assert.deepEqual(punch.punchInMovements, [0]);
+  // Both chips are banded, so this compares the ranges rather than two draws:
+  // PUNCH IN doubles the centre, and the bands do not overlap.
+  assert.ok(punch.last.band.min > plain.last.band.max, 'PUNCH IN is worth a whole band, every capture');
+  assert.ok(plain.movementCoherence > punch.movementCoherence, 'and it lands harder in practice');
+  // Not spent after one: the second capture chips from the same widened band.
+  // (Compared on the chip rather than on the bar, because a chip that big can
+  // finish a phase and roll the bar back up to the next movement's coherence.)
+  const again = reduceCombat({ ...punch, tempo: false, take: null }, { type: COMBAT_ACTION.MONITOR });
+  assert.deepEqual(again.last.band, punch.last.band, 'and it is not spent after one');
+  assert.ok(again.last.dealt >= again.last.band.min, 'the second capture chips just as hard');
 
   let feedback = createCombatState(definition('hall'), {
     tools: { rig: true }, techniques: [TECHNIQUE.ROOM_TONE, TECHNIQUE.FEEDBACK_LOOP],
@@ -230,7 +343,10 @@ test('tool use drives player SNR and each state changes the visible combat math'
   let noisy = createCombatState(definition(), {});
   noisy = reduceCombat(noisy, { type: COMBAT_ACTION.EXPOSE });
   assert.equal(noisy.snr, SNR_STATE.NOISE);
-  assert.equal(noisy.last.dealt, 3);
+  // NOISE lifts the whole band rather than adding to a finished number, so what
+  // this checks is that the swing landed inside the raised range.
+  dealtInBand(noisy, 'a torch swing thrown from Noise');
+  assert.ok(noisy.last.band.min > ACTION_BAND[COMBAT_ACTION.EXPOSE].min, 'Noise lifted the band');
 
   let silent = createCombatState(definition(), {});
   silent.intentIndex = 2;
@@ -244,24 +360,30 @@ test('tool use drives player SNR and each state changes the visible combat math'
   signal = runCombatTurn(signal, { type: COMBAT_ACTION.STEADY_HANDS });
   assert.equal(signal.snr, SNR_STATE.SIGNAL);
   assert.equal(signal.last.consumed, COMBAT_TOOL.COFFEE);
-  assert.equal(signal.last.received, 3, 'Signal is strong but brittle on a missed read');
+  assert.equal(signal.last.received, 3 * GRID, 'Signal is strong but brittle on a missed read');
 });
 
-test('radio is a one-use battle move that burns its frequency and can counter a broadcast', () => {
+test('the radio is the cheap special: one charge, and it comes back', () => {
   let state = createCombatState(definition(), { tools: { radio: true } });
+  assert.equal(state.charge, 1, 'affordable from the first beat');
   state = reduceCombat(state, { type: COMBAT_ACTION.RADIO_DECOY });
-  assert.equal(state.radioUsed, true);
   assert.equal(state.snr, SNR_STATE.NOISE);
   assert.equal(state.perfectCounters, 1);
-  assert.equal(state.last.dealt, 2);
-  assert.equal(combatMovesForTool(state, COMBAT_TOOL.RADIO)[0].enabled, false);
+  dealtInBand(state, 'the decoy has teeth, banded like everything else');
+  assert.equal(state.recommitted, true, 'and it makes the room decide again');
+  // Spent, not burned: the frequency is not gone forever, it is just unaffordable
+  // until reading the opponent pays for it again.
+  assert.equal(state.charge, 1 - CHARGE_COST[COMBAT_ACTION.RADIO_DECOY] + 1, 'the perfect counter it landed paid a charge back');
+  const broke = { ...state, charge: 0 };
+  assert.equal(combatMovesForTool(broke, COMBAT_TOOL.RADIO)[0].enabled, false);
+  assert.match(combatMovesForTool(broke, COMBAT_TOOL.RADIO)[0].reason, /CHARGE/);
 });
 
 test('encounter signatures materially alter pressure while remaining authored data', () => {
   let echo = createCombatState(definition('natatorium'), {});
-  echo.signaturePressure = 1;
+  echo.signaturePressure = GRID;
   echo = runCombatTurn(echo, { type: COMBAT_ACTION.EXPOSE });
-  assert.equal(echo.last.received, 3);
+  assert.equal(echo.last.received, 3 * GRID);
 
   let feedback = createCombatState(definition('hall'), { techniques: [TECHNIQUE.ROOM_TONE] });
   feedback = reduceCombat(feedback, { type: COMBAT_ACTION.PLAYBACK });
@@ -275,7 +397,7 @@ test('encounter signatures materially alter pressure while remaining authored da
   let ensemble = createCombatState(definition('practice'), {});
   ensemble.turnsInMovement = 2;
   ensemble = runCombatTurn(ensemble, { type: COMBAT_ACTION.EXPOSE });
-  assert.equal(ensemble.last.received, 3);
+  assert.equal(ensemble.last.received, 3 * GRID);
 });
 
 test('a clean regular fight lands inside the authored 8–12 decision arc', () => {
@@ -284,7 +406,9 @@ test('a clean regular fight lands inside the authored 8–12 decision arc', () =
   while (!state.result && decisions < 30) {
     const intent = currentCombatIntent(state);
     const action = state.tempo
-      ? state.take ? COMBAT_ACTION.PLAYBACK : COMBAT_ACTION.END_TEMPO
+      // A free bonus action is never spent on nothing now: with no take to
+      // play back, clean play reaches for the regular that costs nothing.
+      ? state.take ? COMBAT_ACTION.PLAYBACK : COMBAT_ACTION.EXPOSE
       : intent.kind === 'broadcast' ? COMBAT_ACTION.MONITOR
         : intent.kind === 'conceal' ? COMBAT_ACTION.EXPOSE
           : intent.kind === 'overload' ? COMBAT_ACTION.HOLD
@@ -301,9 +425,9 @@ test('injuries and all four combat assistance modes set transparent authored dif
   const contract = createCombatState(definition(), { difficulty: COMBAT_RULES.standard });
   const night = createCombatState(definition(), { difficulty: COMBAT_RULES.severe });
   const deadAir = createCombatState(definition(), { difficulty: COMBAT_RULES['dead-air'] });
-  assert.deepEqual([story.maxComposure, contract.maxComposure, night.maxComposure, deadAir.maxComposure], [10, 8, 7, 6]);
-  assert.equal(createCombatState(definition(), { injuries: 3 }).maxComposure, 5);
-  assert.equal(createCombatState(definition(), { injuries: 99 }).maxComposure, 4);
+  assert.deepEqual([story.maxComposure, contract.maxComposure, night.maxComposure, deadAir.maxComposure], [50, 40, 35, 30]);
+  assert.equal(createCombatState(definition(), { injuries: 3 * GRID }).maxComposure, 5 * GRID);
+  assert.equal(createCombatState(definition(), { injuries: 999 }).maxComposure, 4 * GRID, 'the floor holds');
   assert.equal(combatIntentLookahead(story).length, 2);
   assert.equal(currentCombatIntent(night).kind, 'overload');
   assert.equal(currentCombatIntent(deadAir).kind, 'conceal');
@@ -330,7 +454,7 @@ test('spent kits get one authored dead beat on Standard, none on Story, and neve
   const storyBreath = availableCombatActions(story).find((move) => move.id === COMBAT_ACTION.COMPOSE);
   assert.deepEqual(
     { enabled: storyBreath.enabled, label: storyBreath.label, damage: storyBreath.damage },
-    { enabled: true, label: 'SECOND BREATH', damage: 1 },
+    { enabled: true, label: 'SECOND BREATH', damage: GRID },
   );
 
   let standard = spent(COMBAT_RULES.standard);
@@ -344,7 +468,7 @@ test('spent kits get one authored dead beat on Standard, none on Story, and neve
   assert.match(standard.last.notice, /SECOND BREATH READY/);
   const before = standard.movementCoherence;
   standard = runCombatTurn(standard, { type: COMBAT_ACTION.COMPOSE });
-  assert.equal(standard.movementCoherence, before - 1, 'Second Breath is a real progress action');
+  assert.equal(standard.movementCoherence, before - GRID, 'Second Breath is a real progress action');
   assert.equal(combatRecoveryStatus(standard).ready, true, 'the encounter never falls back into another dead beat');
   assert.equal(availableCombatActions(standard).find((move) => move.id === COMBAT_ACTION.COMPOSE).enabled, true);
 });
@@ -388,10 +512,10 @@ test('ordinary encounters resist one-button phase deletion without changing diff
   const natatorium = authoredCombatProfile('natatorium').movements.map((movement) => movement.coherence);
   const hall = authoredCombatProfile('hall').movements.map((movement) => movement.coherence);
   const practice = authoredCombatProfile('practice').movements.map((movement) => movement.coherence);
-  assert.deepEqual(natatorium, [5, 5, 6]);
-  assert.deepEqual(hall, [6, 6, 6]);
-  assert.deepEqual(practice, [5, 6, 6]);
-  assert.ok([...natatorium, ...hall, ...practice].every((coherence) => coherence > 3), 'an ordinary Noise-state EXPOSE cannot erase a movement');
+  assert.deepEqual(natatorium, [25, 25, 30]);
+  assert.deepEqual(hall, [30, 30, 30]);
+  assert.deepEqual(practice, [25, 30, 30]);
+  assert.ok([...natatorium, ...hall, ...practice].every((coherence) => coherence > 3 * GRID), 'an ordinary Noise-state EXPOSE cannot erase a movement');
 });
 
 test('competent Standard play keeps every ordinary encounter in a deliberate decision arc', () => {
@@ -404,7 +528,10 @@ test('competent Standard play keeps every ordinary encounter in a deliberate dec
     while (!state.result && decisions < 40) {
       const intent = currentCombatIntent(state);
       const action = state.tempo
-        ? state.take ? COMBAT_ACTION.PLAYBACK : COMBAT_ACTION.END_TEMPO
+        // Competent play does not hand a free action back. The regulars cost
+        // nothing, so there is always something better to do with a bonus beat
+        // than close the channel.
+        ? state.take ? COMBAT_ACTION.PLAYBACK : COMBAT_ACTION.EXPOSE
         : intent.kind === 'broadcast' ? COMBAT_ACTION.MONITOR
           : intent.kind === 'conceal' ? COMBAT_ACTION.EXPOSE
             : COMBAT_ACTION.HOLD;
@@ -420,7 +547,7 @@ test('every non-perfect main action produces understandable pressure accounting'
   let state = createCombatState(definition(), {});
   state = runCombatTurn(state, { type: COMBAT_ACTION.EXPOSE });
   assert.equal(state.missedCounters, 1);
-  assert.equal(state.damageTaken, 2);
+  assert.equal(state.damageTaken, 2 * GRID);
 });
 
 test('Source channels are visible, tie to the armed channel, and Rescue stability is explicit', () => {
@@ -429,6 +556,16 @@ test('Source channels are visible, tie to the armed channel, and Rescue stabilit
   assert.equal(combatPrediction(state).outcome, SOURCE_CHANNEL.SUBMIT);
   state = reduceCombat(state, { type: COMBAT_ACTION.MONITOR });
   assert.equal(state.source.channels.submit, 1);
+});
+
+test('Body Return is an optional Source battle advantage', () => {
+  const ordinary = sourceCombatDefinition();
+  const assisted = sourceCombatDefinition({ bodyReturn: true });
+  assert.equal(ordinary.baseComposure, 8 * GRID);
+  assert.equal(assisted.baseComposure, 10 * GRID);
+  assert.equal(ordinary.movements.find((entry) => entry.id === 'borrowed-body').coherence, 5 * GRID);
+  assert.equal(assisted.movements.find((entry) => entry.id === 'borrowed-body').coherence, 4 * GRID);
+  assert.equal(assisted.bodyReturnAssist, true);
 });
 
 test('all authored profiles validate and expose a recorder-only path in every movement', () => {
@@ -467,23 +604,58 @@ test('definition validation rejects a deterministic recovery softlock', () => {
   assert.ok(validateCombatDefinition(locked).some((error) => error.includes('recovery can lock')));
 });
 
-test('a zero-battery no-rig player can clear every authored script variant through Monitor, Hold, and Playback', () => {
+test('a worn bag is never a fight you cannot win', () => {
+  // The floor contract, and the reason the whole economy was rebuilt. Every
+  // damage source used to be gated on something that ran out — the torch on a
+  // battery that exploration drains, playback on a take the opponent had to
+  // offer, the specials on one shared use — so a player could arrive at an
+  // encounter genuinely unable to fight, and every encounter had to be balanced
+  // for that.
+  //
+  // Two claims, because they are different promises. The realistic worst kit is
+  // a torch and a recorder with the battery flat: that must clear every
+  // encounter on every preset, and it does. A bag stripped to ONE tool — which
+  // only happens while the HUSH is holding the other, and only until you walk
+  // over it again — must still clear the presets the game recommends. On severe
+  // it may not, and that is what opting into severe buys.
+  const COUNTER_FOR = { broadcast: COMBAT_ACTION.MONITOR, overload: COMBAT_ACTION.HOLD, conceal: COMBAT_ACTION.EXPOSE, loop: COMBAT_ACTION.INVERT, silence: COMBAT_ACTION.EXPOSE };
+  const clears = (id, difficulty, tools) => {
+    let state = createCombatState(definition(id), { battery: 0, tools, difficulty });
+    for (let guard = 0; !state.result && guard < 300; guard += 1) {
+      const open = availableCombatActions(state).filter((move) => move.enabled).map((move) => move.id);
+      const intent = currentCombatIntent(state);
+      const wanted = COUNTER_FOR[intent.kind];
+      // The proxy player counters what it can read and cashes its takes in —
+      // and, since the meaner presets are allowed to demand it, does not walk
+      // into a blow that would kill it. That one defensive rule is the whole of
+      // what 'competent' means here: it never spends a resource, never needs a
+      // technique, and is visible on the card before the beat is committed.
+      const action = state.tempo
+        ? (state.take && open.includes(COMBAT_ACTION.PLAYBACK) ? COMBAT_ACTION.PLAYBACK
+          : open.includes(COMBAT_ACTION.EXPOSE) ? COMBAT_ACTION.EXPOSE : COMBAT_ACTION.END_TEMPO)
+        : intent.damage >= state.composure && open.includes(COMBAT_ACTION.HOLD) ? COMBAT_ACTION.HOLD
+          : state.take && open.includes(COMBAT_ACTION.PLAYBACK) && wanted !== COMBAT_ACTION.MONITOR ? COMBAT_ACTION.PLAYBACK
+            : open.includes(wanted) ? wanted
+              : open.includes(COMBAT_ACTION.EXPOSE) ? COMBAT_ACTION.EXPOSE
+                : open.includes(COMBAT_ACTION.MONITOR) ? COMBAT_ACTION.MONITOR : COMBAT_ACTION.HOLD;
+      state = runCombatTurn(state, { type: action, replaceTake: true });
+    }
+    return combatResult(state)?.result === 'win';
+  };
+  const encounters = ['natatorium', 'hall', 'practice', 'chapel', 'source'];
+
+  // A flat torch and a recorder: every encounter, every preset.
   for (const [mode, difficulty] of Object.entries(COMBAT_RULES)) {
-    for (const id of ['natatorium', 'hall', 'practice', 'chapel', 'source']) {
-      let state = createCombatState(definition(id), { battery: 0, tools: { rig: false, fork: false }, difficulty });
-      for (let guard = 0; !state.result && guard < 300; guard++) {
-        const intent = currentCombatIntent(state);
-        if (state.tempo) {
-          state = state.take
-            ? runCombatTurn(state, { type: COMBAT_ACTION.PLAYBACK })
-            : runCombatTurn(state, { type: COMBAT_ACTION.END_TEMPO });
-        } else if (intent.kind === 'broadcast') {
-          if (state.take) state = runCombatTurn(state, { type: COMBAT_ACTION.PLAYBACK });
-          else state = runCombatTurn(state, { type: COMBAT_ACTION.MONITOR });
-        } else if (state.take) state = runCombatTurn(state, { type: COMBAT_ACTION.PLAYBACK });
-        else state = runCombatTurn(state, { type: COMBAT_ACTION.HOLD });
-      }
-      assert.equal(combatResult(state)?.result, 'win', `${mode}:${id} remains winnable without torch or rig`);
+    for (const id of encounters) {
+      assert.ok(clears(id, difficulty, { rig: false, fork: false }),
+        `${mode}:${id} is winnable on a flat torch and a recorder`);
+    }
+  }
+  // One tool, on the presets the game recommends.
+  for (const mode of ['guided', 'standard']) {
+    for (const id of encounters) {
+      assert.ok(clears(id, COMBAT_RULES[mode], { torch: false, rig: false, fork: false }),
+        `${mode}:${id} is winnable on a recorder alone`);
     }
   }
 });
@@ -514,11 +686,14 @@ test('move metadata and subtext derive from the live rules tables for every acti
   assert.ok(counters.includes(COMBAT_ACTION.RADIO_DECOY));
   assert.ok(!counters.includes(COMBAT_ACTION.HOLD));
   // The triangle widget data matches the resolution math.
-  assert.equal(SNR_TRIANGLE[SNR_STATE.NOISE].dmgMod, 1);
-  assert.equal(SNR_TRIANGLE[SNR_STATE.SILENCE].dmgMod, -1);
+  assert.equal(SNR_TRIANGLE[SNR_STATE.NOISE].dmgMod, GRID);
+  assert.equal(SNR_TRIANGLE[SNR_STATE.SILENCE].dmgMod, -GRID);
   assert.equal(SNR_TRIANGLE[SNR_STATE.SIGNAL].fragile, true);
+  // Noise lifts the BAND rather than the finished number, so the promise the
+  // widget makes is that the range moved up — and that the roll stayed in it.
   const inNoise = reduceCombat(state, { type: COMBAT_ACTION.EXPOSE });
-  assert.equal(inNoise.last.dealt, 2 + SNR_TRIANGLE[SNR_STATE.NOISE].dmgMod);
+  dealtInBand(inNoise, 'a Noise-state torch swing');
+  assert.ok(inNoise.last.band.min > ACTION_BAND[COMBAT_ACTION.EXPOSE].min, 'Noise lifted the band');
 });
 
 test('the training profile validates on every difficulty variant and its drill script holds', () => {
@@ -559,19 +734,19 @@ test('the training profile validates on every difficulty variant and its drill s
 const enemyDef = ({ reactions, followups } = {}) => ({
   id: 'enemy-fixture',
   enemy: 'FIXTURE',
-  baseComposure: 12,
+  baseComposure: 12 * GRID,
   movements: [{
     id: 'only',
     title: 'ONLY MOVEMENT',
-    coherence: 40,
+    coherence: 40 * GRID,
     reactions,
     intents: [
-      { id: 'fx:broadcast', label: 'BROADCAST', kind: 'broadcast', damage: 2, recordable: true, playbackDamage: 2 },
-      { id: 'fx:overload', label: 'OVERLOAD', kind: 'overload', damage: 3, ...(followups ? { followups } : {}) },
-      { id: 'fx:react', label: 'REACTION', kind: 'overload', damage: 4 },
+      { id: 'fx:broadcast', label: 'BROADCAST', kind: 'broadcast', damage: 2 * GRID, recordable: true, playbackDamage: 2 * GRID },
+      { id: 'fx:overload', label: 'OVERLOAD', kind: 'overload', damage: 3 * GRID, ...(followups ? { followups } : {}) },
+      { id: 'fx:react', label: 'REACTION', kind: 'overload', damage: 4 * GRID },
     ],
-    severeIntents: [{ id: 'fx:broadcast', label: 'BROADCAST', kind: 'broadcast', damage: 2, recordable: true, playbackDamage: 2 }],
-    deadAirIntents: [{ id: 'fx:broadcast', label: 'BROADCAST', kind: 'broadcast', damage: 2, recordable: true, playbackDamage: 2 }],
+    severeIntents: [{ id: 'fx:broadcast', label: 'BROADCAST', kind: 'broadcast', damage: 2 * GRID, recordable: true, playbackDamage: 2 * GRID }],
+    deadAirIntents: [{ id: 'fx:broadcast', label: 'BROADCAST', kind: 'broadcast', damage: 2 * GRID, recordable: true, playbackDamage: 2 * GRID }],
   }],
 });
 
@@ -581,13 +756,13 @@ test('the player step yields to a pending enemy phase; advanceEnemy resolves it'
   const afterPlayer = reduceCombat(initial, { type: COMBAT_ACTION.EXPOSE });
   assert.equal(afterPlayer.phase, 'enemy');
   assert.equal(afterPlayer.last.received, 0, 'the enemy has not acted in the player step');
-  assert.equal(afterPlayer.last.dealt, 3, 'the player damage is already recorded');
+  dealtInBand(afterPlayer, 'the player damage is already recorded');
   assert.match(afterPlayer.last.notice, /ENEMY INCOMING/);
 
   const afterEnemy = advanceEnemy(afterPlayer);
   assert.equal(afterEnemy.phase, 'select');
-  assert.equal(afterEnemy.last.received, 2, 'the broadcast lands its 2 on the enemy turn');
-  assert.equal(afterEnemy.composure, initial.composure - 2);
+  assert.equal(afterEnemy.last.received, 2 * GRID, 'the broadcast lands its blow on the enemy turn');
+  assert.equal(afterEnemy.composure, initial.composure - 2 * GRID);
   assert.equal(afterEnemy.turns, 1, 'the intent cursor advances on the enemy turn, not before');
 
   // advanceEnemy is inert unless a turn is pending.
@@ -600,8 +775,8 @@ test('a full turn is deterministic and reads back as one result', () => {
   const left = runCombatTurn(initial, { type: COMBAT_ACTION.EXPOSE });
   const right = runCombatTurn(initial, { type: COMBAT_ACTION.EXPOSE });
   assert.deepEqual(left, right);
-  assert.equal(left.last.dealt, 3);
-  assert.equal(left.last.received, 2);
+  dealtInBand(left, 'a full turn reads back as one result');
+  assert.equal(left.last.received, 2 * GRID);
 });
 
 test('WAIT yields the beat and the enemy still takes its turn', () => {
@@ -611,47 +786,82 @@ test('WAIT yields the beat and the enemy still takes its turn', () => {
   assert.equal(afterPlayer.phase, 'enemy');
   assert.equal(afterPlayer.last.dealt, 0, 'WAIT spends nothing and deals nothing');
   const full = advanceEnemy(afterPlayer);
-  assert.equal(full.composure, initial.composure - 2, 'the enemy hits an undefended player');
+  assert.equal(full.composure, initial.composure - 2 * GRID, 'the enemy hits an undefended player');
   assert.ok(availableCombatActions(initial).some((move) => move.id === COMBAT_ACTION.WAIT && move.enabled));
 });
 
-test('a movement reaction overrides the cycle intent by board state', () => {
+test('a movement reaction overrides the cycle intent, and the card says so a beat early', () => {
   const def = enemyDef({ reactions: [{ when: 'take-loaded', use: 'fx:react' }] });
   // With no take, selection follows the authored cycle (broadcast at index 0).
   const plain = createCombatState(def, {});
   assert.deepEqual(selectEnemyIntents(plain).map((i) => i.id), ['fx:broadcast']);
-  // With a take loaded, the reaction swaps in the harsher intent.
+
+  // The opponent reads the board when it DECIDES, which is the beat before it
+  // throws. Hoard a take through a beat and the next commitment is the harsher
+  // intent.
   const loaded = createCombatState(def, {});
   loaded.snr = SNR_STATE.NOISE;
   loaded.take = { id: 't', label: 'T', damage: 2, tag: null };
-  assert.deepEqual(selectEnemyIntents(loaded).map((i) => i.id), ['fx:react']);
-  const resolved = advanceEnemy(reduceCombat(loaded, { type: COMBAT_ACTION.WAIT }));
-  assert.equal(resolved.last.received, 4, 'the reaction intent lands its heavier hit');
+  const decided = advanceEnemy(reduceCombat(loaded, { type: COMBAT_ACTION.WAIT }));
+
+  // The point of writing the choice down: the telegraph names the blow while
+  // the player can still answer it, and the blow that lands is that one.
+  assert.equal(decided.committed.id, 'fx:react', 'the opponent has committed to the reaction');
+  assert.deepEqual(selectEnemyIntents(decided).map((i) => i.id), ['fx:react']);
+
+  const resolved = advanceEnemy(reduceCombat(decided, { type: COMBAT_ACTION.WAIT }));
+  assert.equal(resolved.last.enemyHits[0].intentId, 'fx:react', 'it threw what it showed');
+  assert.equal(resolved.last.received, 4 * GRID, 'the reaction intent lands its heavier hit');
+});
+
+test('the committed blow is the blow that lands, however often it is asked for', () => {
+  // selectEnemyIntents runs twice per enemy beat — the scene names the blow,
+  // then the reducer resolves it. A chooser that decided on each call would let
+  // those disagree, so the choosing happens once and both calls read the note.
+  const state = createCombatState(enemyDef({ reactions: [{ when: 'noise', use: 'fx:react' }] }), {});
+  state.snr = SNR_STATE.NOISE;
+  const pending = reduceCombat(state, { type: COMBAT_ACTION.WAIT });
+  const named = selectEnemyIntents(pending).map((i) => i.id);
+  assert.deepEqual(selectEnemyIntents(pending).map((i) => i.id), named, 'asking twice gives one answer');
+  const resolved = advanceEnemy(pending);
+  assert.deepEqual(resolved.last.enemyHits.map((hit) => hit.intentId), named, 'and it is what landed');
+});
+
+test('a perfect counter refuses the blow without changing the opponent\'s mind', () => {
+  // The enemy beat is skipped entirely on a perfect counter. It still wanted
+  // that move; the player simply refused it, so the commitment stands and the
+  // same blow comes again rather than being silently re-rolled.
+  const state = createCombatState(enemyDef(), { tools: { recorder: true } });
+  assert.equal(state.committed.id, 'fx:broadcast');
+  const countered = reduceCombat(state, { type: COMBAT_ACTION.MONITOR });
+  assert.equal(countered.last.perfect, true, 'MONITOR counters a broadcast');
+  assert.equal(countered.phase, 'select', 'the opponent never got its beat');
+  assert.equal(countered.committed.id, 'fx:broadcast', 'and it has not changed its mind');
 });
 
 test('an intent with followups chains multiple hits and prevention blunts only the first', () => {
-  const def = enemyDef({ followups: [{ id: 'fx:echo', kind: 'overload', damage: 1 }] });
+  const def = enemyDef({ followups: [{ id: 'fx:echo', kind: 'overload', damage: GRID }] });
   const state = createCombatState(def, {});
   state.snr = SNR_STATE.NOISE;
   state.intentIndex = 1; // point at the overload intent that carries the followup
   const chained = advanceEnemy(reduceCombat(state, { type: COMBAT_ACTION.WAIT }));
   assert.equal(chained.last.enemyHits.length, 2, 'the enemy turn is two hits');
-  assert.equal(chained.last.enemyHits[0].received, 3, 'undefended, the primary lands full');
-  assert.equal(chained.last.received, 4, '3 + 1 across the chain');
+  assert.equal(chained.last.enemyHits[0].received, 3 * GRID, 'undefended, the primary lands full');
+  assert.equal(chained.last.received, 4 * GRID, '3 + 1 across the chain');
 
-  // THROW VOICE guards 2 (and does not counter overload, so the turn still
+  // THROW VOICE guards (and does not counter overload, so the turn still
   // happens). The prevention blunts the primary but not the chained hit.
   const guarded = createCombatState(def, { tools: { radio: true } });
   guarded.snr = SNR_STATE.NOISE;
   guarded.intentIndex = 1;
   const held = runCombatTurn(guarded, { type: COMBAT_ACTION.RADIO_DECOY });
   assert.equal(held.last.enemyHits.length, 2);
-  assert.equal(held.last.enemyHits[0].received, 2, 'prevention blunts the primary 3 → 2');
-  assert.equal(held.last.enemyHits[1].received, 1, 'prevention does not carry to the second hit');
+  assert.ok(held.last.enemyHits[0].received < 3 * GRID, 'prevention blunts the primary');
+  assert.equal(held.last.enemyHits[1].received, GRID, 'prevention does not carry to the second hit');
 });
 
 test('followups and reactions validate as authored data', () => {
-  assert.deepEqual(validateCombatDefinition(enemyDef({ followups: [{ id: 'fx:echo', kind: 'overload', damage: 1 }] })), []);
+  assert.deepEqual(validateCombatDefinition(enemyDef({ followups: [{ id: 'fx:echo', kind: 'overload', damage: GRID }] })), []);
   assert.deepEqual(validateCombatDefinition(enemyDef({ reactions: [{ when: 'take-loaded', use: 'fx:react' }] })), []);
   const badReaction = validateCombatDefinition(enemyDef({ reactions: [{ when: 'take-loaded', use: 'fx:nowhere' }] }));
   assert.ok(badReaction.some((error) => error.includes('reaction points at unknown intent')));
@@ -685,14 +895,27 @@ test('PARRY turns the blow that just landed: composure restored, force reflected
 test('enemy guard: on severe it arms when hurt and slips your committed swing; standard never sees it', () => {
   // Arming — severe difficulty, the surfer on the back foot, you just hit it.
   let s = createCombatState(definition(), { difficulty: COMBAT_RULES.severe, battery: 1 });
-  s.movementMaxCoherence = 4;
-  s.movementCoherence = 2;                 // at the 50% threshold
+  s.movementMaxCoherence = 4 * GRID;
+  s.movementCoherence = 2 * GRID;          // at the 50% threshold
   s.phase = 'enemy';
-  s.pendingEnemy = { prevention: 0, playerDealt: 2, playerNotice: '' };
+  s.pendingEnemy = { prevention: 0, playerDealt: 2 * GRID, playerNotice: '' };
   s = advanceEnemy(s);
   assert.ok(s.enemyGuard, 'a hurt surfer on severe sets to guard');
 
-  // Spending — a committed swing is turned: no coherence lost, dealt zeroed, spent.
+  // A PERFECT COUNTER READS THROUGH IT. The guard is the surfer reading your
+  // swing; countering is you reading its blow, and the better read wins — which
+  // is also what makes the guard baitable rather than a tax.
+  const read = reduceCombat(s, { ...{ type: COMBAT_ACTION.EXPOSE } });
+  assert.equal(read.last.perfect, true, 'EXPOSE counters the committed conceal');
+  assert.equal(read.last.enemyDodge, undefined, 'the counter is not slipped');
+  assert.ok(read.last.dealt > 0, 'and it lands');
+  assert.equal(read.enemyGuard, null, 'but it spends the guard all the same');
+
+  // Spending — an uncountered swing is turned: no coherence lost, dealt zeroed.
+  // (Severe runs its own rotated intent script, so the beat EXPOSE cannot answer
+  // is found rather than assumed.)
+  s.intentIndex = 0;
+  assert.notEqual(currentCombatIntent(s).kind, 'conceal', 'this beat is not one EXPOSE answers');
   const coh = s.movementCoherence;
   s.battery = 1;
   const swing = reduceCombat(s, { type: COMBAT_ACTION.EXPOSE });
@@ -701,12 +924,27 @@ test('enemy guard: on severe it arms when hurt and slips your committed swing; s
   assert.equal(swing.last.dealt, 0);
   assert.equal(swing.enemyGuard, null, 'the guard is spent, not permanent');
 
-  // Standard difficulty never arms it (keeps ordinary fights deterministic).
-  let n = createCombatState(definition(), { difficulty: COMBAT_RULES.standard, battery: 1 });
-  n.movementMaxCoherence = 4;
-  n.movementCoherence = 2;
-  n.phase = 'enemy';
-  n.pendingEnemy = { prevention: 0, playerDealt: 2, playerNotice: '' };
-  n = advanceEnemy(n);
-  assert.equal(n.enemyGuard, null, 'standard fights never see the guard');
+  // The guard is a DIFFICULTY LEVER now, not a side effect of a health number.
+  // Contract sees it — on a long cooldown, so it is an event rather than a wall —
+  // and only the assisted preset is exempt.
+  const arm = (difficulty) => {
+    let n = createCombatState(definition(), { difficulty, battery: 1 });
+    n.movementMaxCoherence = 4 * GRID;
+    n.movementCoherence = 2 * GRID;
+    n.phase = 'enemy';
+    n.pendingEnemy = { prevention: 0, playerDealt: 2 * GRID, playerNotice: '' };
+    return advanceEnemy(n).enemyGuard;
+  };
+  assert.equal(arm(COMBAT_RULES.guided), null, 'the assisted preset never sees the guard');
+  assert.equal(arm(COMBAT_RULES.standard)?.mode, 'dodge', 'Contract sees it slip a swing');
+  assert.equal(arm(COMBAT_RULES['dead-air'])?.mode, 'parry', 'and the meanest preset turns it back');
+
+  // It is a cooldown, so it cannot fire on consecutive beats.
+  let cooled = createCombatState(definition(), { difficulty: COMBAT_RULES.standard, battery: 1 });
+  cooled.movementMaxCoherence = 4 * GRID;
+  cooled.movementCoherence = 2 * GRID;
+  cooled.lastGuardBeat = cooled.cycleIndex;
+  cooled.phase = 'enemy';
+  cooled.pendingEnemy = { prevention: 0, playerDealt: 2 * GRID, playerNotice: '' };
+  assert.equal(advanceEnemy(cooled).enemyGuard, null, 'a guard just spent cannot be set again');
 });

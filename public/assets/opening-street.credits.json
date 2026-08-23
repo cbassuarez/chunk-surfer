@@ -1,0 +1,433 @@
+{
+  "file": "opening-street.glb",
+  "pack": {
+    "sha256": "3eb8d1a327cae230fd256f24eebe1a308c94278c62d46a7bc61731d88a9b7d7c",
+    "bytes": 32984064,
+    "triangles": 30118
+  },
+  "license": {
+    "id": "CC0-1.0",
+    "url": "https://polyhaven.com/license"
+  },
+  "sources": [
+    {
+      "role": "asphalt",
+      "sourceName": "asphalt_02",
+      "sourceUrl": "https://polyhaven.com/a/asphalt_02",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "archive": "asphalt_02_4k.blend.zip",
+      "archiveSha256": "029d10a116da565c4a2afb2a3de34daeff670d08bf4f304769b2821c887e802f",
+      "sourceResolution": 4096,
+      "runtimeResolution": {
+        "albedo": 2048,
+        "normalOrm": 1024
+      },
+      "uvScaleMetres": 3,
+      "targetHeight": null,
+      "colorSpace": {
+        "albedo": "sRGB",
+        "normal": "linear",
+        "orm": "linear"
+      },
+      "normalStrength": 0.58,
+      "aoStrength": 0.22,
+      "heightTreatment": "build metadata only; no runtime displacement",
+      "maps": {
+        "albedo": "textures/asphalt_02_diff_4k.jpg",
+        "normal": "textures/asphalt_02_nor_gl_4k.exr",
+        "roughness": "textures/asphalt_02_rough_4k.jpg",
+        "metallic": null,
+        "alpha": null,
+        "height": "textures/asphalt_02_disp_4k.png"
+      }
+    },
+    {
+      "role": "cobbles",
+      "sourceName": "cobblestone_floor_001",
+      "sourceUrl": "https://polyhaven.com/a/cobblestone_floor_001",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "archive": "cobblestone_floor_001_4k.blend.zip",
+      "archiveSha256": "40587fe3a06e4e9d171b8a560633e2b396485d9f2d64a45c4506b25313e0e506",
+      "sourceResolution": 4096,
+      "runtimeResolution": {
+        "albedo": 2048,
+        "normalOrm": 1024
+      },
+      "uvScaleMetres": 2.4,
+      "targetHeight": null,
+      "colorSpace": {
+        "albedo": "sRGB",
+        "normal": "linear",
+        "orm": "linear"
+      },
+      "normalStrength": 0.64,
+      "aoStrength": 0.3,
+      "heightTreatment": "build metadata only; no runtime displacement",
+      "maps": {
+        "albedo": "textures/cobblestone_floor_001_diff_4k.jpg",
+        "normal": "textures/cobblestone_floor_001_nor_gl_4k.exr",
+        "roughness": "textures/cobblestone_floor_001_rough_4k.jpg",
+        "metallic": null,
+        "alpha": null,
+        "height": "textures/cobblestone_floor_001_disp_4k.png"
+      }
+    },
+    {
+      "role": "weatheredRender",
+      "sourceName": "medieval_wall_01",
+      "sourceUrl": "https://polyhaven.com/a/medieval_wall_01",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "archive": "medieval_wall_01_4k.blend.zip",
+      "archiveSha256": "afe75b735681839f9caaff0e7c6271908bfdad50dbf6c1cf734f89e1db559d17",
+      "sourceResolution": 4096,
+      "runtimeResolution": {
+        "albedo": 1024,
+        "normalOrm": 512
+      },
+      "uvScaleMetres": 3.2,
+      "targetHeight": null,
+      "colorSpace": {
+        "albedo": "sRGB",
+        "normal": "linear",
+        "orm": "linear"
+      },
+      "normalStrength": 0.42,
+      "aoStrength": 0.18,
+      "heightTreatment": "build metadata only; no runtime displacement",
+      "maps": {
+        "albedo": "textures/medieval_wall_01_diff_4k.jpg",
+        "normal": "textures/medieval_wall_01_nor_gl_4k.exr",
+        "roughness": "textures/medieval_wall_01_rough_4k.jpg",
+        "metallic": null,
+        "alpha": null,
+        "height": "textures/medieval_wall_01_disp_4k.png"
+      }
+    },
+    {
+      "role": "roughStone",
+      "sourceName": "castle_wall_varriation",
+      "sourceUrl": "https://polyhaven.com/a/castle_wall_varriation",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "archive": "castle_wall_varriation_4k.blend.zip",
+      "archiveSha256": "0c9ed23ab809e3d0afee2ecd11f93c54899b75e5999a64536b4a206e1c7ca580",
+      "sourceResolution": 4096,
+      "runtimeResolution": {
+        "albedo": 2048,
+        "normalOrm": 1024
+      },
+      "uvScaleMetres": 2,
+      "targetHeight": null,
+      "colorSpace": {
+        "albedo": "sRGB",
+        "normal": "linear",
+        "orm": "linear"
+      },
+      "normalStrength": 0.52,
+      "aoStrength": 0.28,
+      "heightTreatment": "build metadata only; no runtime displacement",
+      "maps": {
+        "albedo": "textures/castle_wall_varriation_diff_4k.jpg",
+        "normal": "textures/castle_wall_varriation_nor_gl_4k.exr",
+        "roughness": "textures/castle_wall_varriation_rough_4k.jpg",
+        "metallic": null,
+        "alpha": null,
+        "height": "textures/castle_wall_varriation_disp_4k.png"
+      }
+    },
+    {
+      "role": "modernCladding",
+      "sourceName": "exterior_wall_cladding_02",
+      "sourceUrl": "https://polyhaven.com/a/exterior_wall_cladding_02",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "archive": "exterior_wall_cladding_02_4k.blend.zip",
+      "archiveSha256": "dff69641958aa19cc5f3006217c75a3ebf314f04650026f60e28fcf1fda1eaa7",
+      "sourceResolution": 4096,
+      "runtimeResolution": {
+        "albedo": 1024,
+        "normalOrm": 512
+      },
+      "uvScaleMetres": 2,
+      "targetHeight": null,
+      "colorSpace": {
+        "albedo": "sRGB",
+        "normal": "linear",
+        "orm": "linear"
+      },
+      "normalStrength": 0.48,
+      "aoStrength": 0.12,
+      "heightTreatment": "build metadata only; no runtime displacement",
+      "maps": {
+        "albedo": "textures/exterior_wall_cladding_02_diff_4k.jpg",
+        "normal": "textures/exterior_wall_cladding_02_nor_gl_4k.exr",
+        "roughness": "textures/exterior_wall_cladding_02_rough_4k.exr",
+        "metallic": null,
+        "alpha": null,
+        "height": "textures/exterior_wall_cladding_02_disp_4k.png"
+      }
+    },
+    {
+      "role": "grass",
+      "sourceName": "grass_medium_01",
+      "sourceUrl": "https://polyhaven.com/a/grass_medium_01",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "archive": "grass_medium_01_4k.blend.zip",
+      "archiveSha256": "b73d1015d943b483e70d5a414fff0e60abcba74cdd72d4255538291ab56a7d7f",
+      "sourceResolution": 4096,
+      "runtimeResolution": {
+        "albedo": 1024,
+        "normalOrm": 512
+      },
+      "uvScaleMetres": 2,
+      "targetHeight": null,
+      "colorSpace": {
+        "albedo": "sRGB",
+        "alpha": "linear",
+        "normal": "linear",
+        "orm": "linear"
+      },
+      "normalStrength": 0.38,
+      "aoStrength": 0.16,
+      "heightTreatment": "build metadata only; no runtime displacement",
+      "maps": {
+        "albedo": "textures/grass_medium_01_diff_4k.jpg",
+        "normal": "textures/grass_medium_01_nor_gl_4k.exr",
+        "roughness": "textures/grass_medium_01_rough_4k.exr",
+        "metallic": null,
+        "alpha": "textures/grass_medium_01_alpha_4k.png",
+        "height": null
+      }
+    },
+    {
+      "role": "smallTree",
+      "sourceName": "tree_small_02",
+      "sourceUrl": "https://polyhaven.com/a/tree_small_02",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "archive": "tree_small_02_4k.blend.zip",
+      "archiveSha256": "605284fcbe01560f6598ee8c72d3ba0edd19537a3b9e878b5752b576d65b1f63",
+      "sourceResolution": 4096,
+      "runtimeResolution": {
+        "albedo": 1024,
+        "normalOrm": 512
+      },
+      "uvScaleMetres": null,
+      "targetHeight": 4.6,
+      "colorSpace": {
+        "albedo": "sRGB",
+        "alpha": "linear",
+        "normal": "linear",
+        "orm": "linear"
+      },
+      "normalStrength": 0.44,
+      "aoStrength": 0.2,
+      "heightTreatment": "build metadata only; no runtime displacement",
+      "maps": {
+        "branchAlbedo": "textures/tree_small_02_branch_diff_4k.png",
+        "branchNormal": "textures/tree_small_02_branch_nor_gl_4k.png",
+        "branchRoughness": "textures/tree_small_02_branch_rough_4k.png",
+        "leafAlbedo": "textures/tree_small_02_leaves_diff_4k.png",
+        "leafNormal": "textures/tree_small_02_leaves_nor_gl_4k.png",
+        "leafRoughness": "textures/tree_small_02_leaves_rough_4k.png",
+        "leafAlpha": "textures/tree_small_02_leaves_alpha_4k.png"
+      }
+    },
+    {
+      "role": "brick",
+      "sourceName": "random_bricks_thick",
+      "sourceUrl": "https://polyhaven.com/a/random_bricks_thick",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "archive": "random_bricks_thick_4k.blend.zip",
+      "archiveSha256": "7297856338ec404a9153aa2c4efd4d53d9d0c99d68232051a8e1e0114f41ef35",
+      "sourceResolution": 4096,
+      "runtimeResolution": {
+        "albedo": 2048,
+        "normalOrm": 1024
+      },
+      "uvScaleMetres": 1,
+      "targetHeight": null,
+      "colorSpace": {
+        "albedo": "sRGB",
+        "normal": "linear",
+        "orm": "linear"
+      },
+      "normalStrength": 0.48,
+      "aoStrength": 0.24,
+      "heightTreatment": "build metadata only; no runtime displacement",
+      "maps": {
+        "albedo": "textures/random_bricks_thick_diff_4k.jpg",
+        "normal": "textures/random_bricks_thick_nor_gl_4k.exr",
+        "roughness": "textures/random_bricks_thick_rough_4k.jpg",
+        "metallic": null,
+        "alpha": null,
+        "height": "textures/random_bricks_thick_disp_4k.png"
+      }
+    },
+    {
+      "role": "corrugatedIron",
+      "sourceName": "corrugated_iron",
+      "sourceUrl": "https://polyhaven.com/a/corrugated_iron",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "archive": "corrugated_iron_4k.blend.zip",
+      "archiveSha256": "a8f4371469e0bfce520cc1b6a756902ea876553e256084efbfc0972d4b3ad721",
+      "sourceResolution": 4096,
+      "runtimeResolution": {
+        "albedo": 1024,
+        "normalOrm": 512
+      },
+      "uvScaleMetres": 2,
+      "targetHeight": null,
+      "colorSpace": {
+        "albedo": "sRGB",
+        "normal": "linear",
+        "orm": "linear"
+      },
+      "normalStrength": 0.58,
+      "aoStrength": 0.16,
+      "heightTreatment": "build metadata only; no runtime displacement",
+      "maps": {
+        "albedo": "textures/corrugated_iron_diff_4k.jpg",
+        "normal": "textures/corrugated_iron_nor_gl_4k.exr",
+        "roughness": "textures/corrugated_iron_rough_4k.exr",
+        "metallic": "textures/corrugated_iron_metal_4k.exr",
+        "alpha": null,
+        "height": "textures/corrugated_iron_disp_4k.png"
+      }
+    },
+    {
+      "role": "boxProfile",
+      "sourceName": "box_profile_metal_sheet",
+      "sourceUrl": "https://polyhaven.com/a/box_profile_metal_sheet",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "archive": "box_profile_metal_sheet_4k.blend.zip",
+      "archiveSha256": "bfd4731b76ca21e4ae40b86c83c8df00a36fb8978ef073186b1dde571d95cc0e",
+      "sourceResolution": 4096,
+      "runtimeResolution": {
+        "albedo": 1024,
+        "normalOrm": 512
+      },
+      "uvScaleMetres": 2,
+      "targetHeight": null,
+      "colorSpace": {
+        "albedo": "sRGB",
+        "normal": "linear",
+        "orm": "linear"
+      },
+      "normalStrength": 0.52,
+      "aoStrength": 0.12,
+      "heightTreatment": "build metadata only; no runtime displacement",
+      "maps": {
+        "albedo": "textures/box_profile_metal_sheet_diff_4k.jpg",
+        "normal": "textures/box_profile_metal_sheet_nor_gl_4k.exr",
+        "roughness": "textures/box_profile_metal_sheet_rough_4k.exr",
+        "metallic": "textures/box_profile_metal_sheet_metal_4k.exr",
+        "alpha": null,
+        "height": "textures/box_profile_metal_sheet_disp_4k.png"
+      }
+    },
+    {
+      "role": "rustyMetal03",
+      "sourceName": "rusty_metal_03",
+      "sourceUrl": "https://polyhaven.com/a/rusty_metal_03",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "archive": "rusty_metal_03_4k.blend.zip",
+      "archiveSha256": "2380cef17f25fa9080f4da9d5109a7cda634e4ec9af7d2e5e2d9c6deebd303eb",
+      "sourceResolution": 4096,
+      "runtimeResolution": {
+        "albedo": 1024,
+        "normalOrm": 512
+      },
+      "uvScaleMetres": 1,
+      "targetHeight": null,
+      "colorSpace": {
+        "albedo": "sRGB",
+        "normal": "linear",
+        "orm": "linear"
+      },
+      "normalStrength": 0.42,
+      "aoStrength": 0.2,
+      "heightTreatment": "build metadata only; no runtime displacement",
+      "maps": {
+        "albedo": "textures/rusty_metal_03_diff_4k.jpg",
+        "normal": "textures/rusty_metal_03_nor_gl_4k.exr",
+        "roughness": "textures/rusty_metal_03_rough_4k.exr",
+        "metallic": null,
+        "alpha": null,
+        "height": "textures/rusty_metal_03_disp_4k.png"
+      }
+    },
+    {
+      "role": "rustyMetal04",
+      "sourceName": "rusty_metal_04",
+      "sourceUrl": "https://polyhaven.com/a/rusty_metal_04",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "archive": "rusty_metal_04_4k.blend.zip",
+      "archiveSha256": "0c51795530a7a5cc8b36dde7813be147693844bb446e472415f80c1b077adb63",
+      "sourceResolution": 4096,
+      "runtimeResolution": {
+        "albedo": 1024,
+        "normalOrm": 512
+      },
+      "uvScaleMetres": 1,
+      "targetHeight": null,
+      "colorSpace": {
+        "albedo": "sRGB",
+        "normal": "linear",
+        "orm": "linear"
+      },
+      "normalStrength": 0.44,
+      "aoStrength": 0.22,
+      "heightTreatment": "build metadata only; no runtime displacement",
+      "maps": {
+        "albedo": "textures/rusty_metal_04_diff_4k.jpg",
+        "normal": "textures/rusty_metal_04_nor_gl_4k.exr",
+        "roughness": "textures/rusty_metal_04_rough_4k.exr",
+        "metallic": "textures/rusty_metal_04_metal_4k.exr",
+        "alpha": null,
+        "height": "textures/rusty_metal_04_disp_4k.png"
+      }
+    },
+    {
+      "role": "rustyPaintedMetal",
+      "sourceName": "rusty_painted_metal",
+      "sourceUrl": "https://polyhaven.com/a/rusty_painted_metal",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "archive": "rusty_painted_metal_4k.blend.zip",
+      "archiveSha256": "c1b1ca251344426c747d168cff81099527dd3726eb639726428cb7ab8170b041",
+      "sourceResolution": 4096,
+      "runtimeResolution": {
+        "albedo": 1024,
+        "normalOrm": 512
+      },
+      "uvScaleMetres": 2,
+      "targetHeight": null,
+      "colorSpace": {
+        "albedo": "sRGB",
+        "normal": "linear",
+        "orm": "linear"
+      },
+      "normalStrength": 0.5,
+      "aoStrength": 0.2,
+      "heightTreatment": "build metadata only; no runtime displacement",
+      "maps": {
+        "albedo": "textures/rusty_painted_metal_diff_4k.jpg",
+        "normal": "textures/rusty_painted_metal_nor_gl_4k.exr",
+        "roughness": "textures/rusty_painted_metal_rough_4k.exr",
+        "metallic": null,
+        "alpha": null,
+        "height": "textures/rusty_painted_metal_disp_4k.png"
+      }
+    }
+  ]
+}

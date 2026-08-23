@@ -53,6 +53,14 @@ test('the drill advances one lesson per scripted turn against the training profi
   assert.equal(play(COMBAT_ACTION.EXPOSE), true);
   assert.equal(director.step().id, 'stance');
   assert.equal(play(COMBAT_ACTION.HOLD), true);
+  // The parry lesson. It is the one step a headless walkthrough cannot satisfy —
+  // the parry is a timed press against the blow while it lands, not a move — so
+  // this is also the test that its `patience` is real: yield twice and the drill
+  // moves on rather than trapping a player on a timing.
+  assert.equal(director.step().id, 'parry');
+  assert.equal(play(COMBAT_ACTION.WAIT), false, 'one missed attempt does not advance');
+  assert.equal(director.step().id, 'parry');
+  assert.equal(play(COMBAT_ACTION.WAIT), true, 'the second one gives up on the player, not the reverse');
   // The last lesson is free play: it never auto-advances, and every step so
   // far has a prompt and (until now) a spotlight region.
   assert.equal(director.step().id, 'free');
@@ -68,7 +76,7 @@ test('every scripted lesson only allows moves the training state can actually ta
   let state = trainingState();
   const order = [
     COMBAT_ACTION.HOLD, COMBAT_ACTION.MONITOR, COMBAT_ACTION.PLAYBACK,
-    COMBAT_ACTION.EXPOSE, COMBAT_ACTION.HOLD,
+    COMBAT_ACTION.EXPOSE, COMBAT_ACTION.HOLD, COMBAT_ACTION.WAIT, COMBAT_ACTION.WAIT,
   ];
   for (const actionId of order) {
     const moves = director.filterMoves(availableCombatActions(state));

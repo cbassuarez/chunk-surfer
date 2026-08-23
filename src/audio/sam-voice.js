@@ -254,6 +254,11 @@ export const VOICE_PROFILES = {
   // does not quite land in the room with you. Never in front of him.
   sarah: { rate: 1.02, gain: 0.95, hp: 200, lp: 3400, smear: { time: 0.11, feedback: 0.30, mix: 0.35 } },
   guard: { rate: 1.0, gain: 1.0, hp: 190, lp: 3600 },
+  // Street voices are dry and local. Small spectral/rate separations keep the
+  // three optional conversations from borrowing the lodge guard's voiceprint.
+  'woman at the shelter': { rate: 1.08, gain: .96, hp: 175, lp: 4400 },
+  'man under the awning': { rate: .92, gain: 1.0, hp: 125, lp: 3900 },
+  'driver by the pub yard': { rate: 1.02, gain: 1.03, hp: 150, lp: 4200 },
   radio: { rate: 0.94, gain: 1.15, hp: 420, lp: 2600, drive: 0.55, squelch: 0.012 },
   recordist: { rate: 0.98, gain: 0.95, hp: 120, lp: 5200, hiss: 0.010, wobble: 0.006 },
   surfer: { rate: 0.80, gain: 1.05, hp: 60, lp: 1500, smear: { time: 0.19, feedback: 0.42, mix: 0.5 } },
@@ -515,5 +520,8 @@ export function createSamDialogVoice({ volume = 0.22, getAudio = null } = {}) {
 // for. The whole horror of it is that he HEARS it, so it must never be typed —
 // a typed "Who did you lose." is his own thought, which is a completely
 // different and much smaller scene.
-export const VOICED = new Set(['me', 'guard', 'radio', 'recordist', 'surfer', 'client', 'sarah', 'unknown']);
+export const VOICED = new Set([
+  'me','guard','radio','recordist','surfer','client','sarah','unknown',
+  'woman at the shelter','man under the awning','driver by the pub yard',
+]);
 export const isVoiced = (who) => VOICED.has(who);

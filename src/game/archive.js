@@ -6,6 +6,8 @@ import { achievementEntries } from '../progression/achievements.js';
 import * as AUDIO from '../audio/story-audio.js';
 import { promptLine } from './bindings.js';
 import { returnFileEntries } from './second-shift.js';
+import { returnDefinition } from '../progression/report.js';
+import { endingHintForEnding } from './post-run-copy.js';
 
 const CATEGORY_ORDER = ['work', 'disclosures', 'returns', 'method'];
 const CATEGORY_LABEL = { work: 'STORY', disclosures: 'SECRETS', returns: 'ENDINGS', method: 'CHALLENGES' };
@@ -62,8 +64,8 @@ export function makeArchiveScene({ meta, onClose = () => {} } = {}) {
         footerParts: [{ action: 'tabNext', label: 'TAB' }, { action: 'select', label: 'ENTRY' }, { action: 'back', label: 'CLOSE' }],
         meter: false,
       });
-      drawVfdText(body.x, body.y, tab === 0 ? 'ACHIEVEMENTS' : 'RETURN FILES', { color: UI_COLOR.amber, max: body.w });
-      uiText(body.x + Math.max(20, body.w - 36), body.y, tab === 0 ? '[ACHIEVEMENTS]  RETURN FILES' : ' ACHIEVEMENTS  [RETURN FILES]', 'ui-label');
+      drawVfdText(body.x, body.y, tab === 0 ? 'ACHIEVEMENTS' : 'RUN HISTORY', { color: UI_COLOR.amber, max: body.w });
+      uiText(body.x + Math.max(20, body.w - 38), body.y, tab === 0 ? '[ACHIEVEMENTS]  RUN HISTORY' : ' ACHIEVEMENTS  [RUN HISTORY]', 'ui-label');
       let tx = body.x;
       if (tab === 0) CATEGORY_ORDER.forEach((id, i) => {
         const on = i === category;
@@ -82,9 +84,10 @@ export function makeArchiveScene({ meta, onClose = () => {} } = {}) {
       list.slice(scroll, scroll + cap).forEach((entry, j) => {
         const i = scroll + j, on = i === sel;
         if (tab === 1) {
-          const title = String(entry.summary?.endingId || 'return').replaceAll('-', ' ').toUpperCase();
-          uiText(body.x, body.y + 5 + j, `${on ? '▸' : ' '} ${title}`.slice(0, listW - 9), on ? 'ui-amber' : 'ui-primary');
-          uiText(body.x + listW - 5, body.y + 5 + j, 'FILED', 'ui-green');
+          const ending = returnDefinition(entry.summary?.endingId);
+          const title = ending?.title || String(entry.summary?.endingId || 'ending').replaceAll('-', ' ').toUpperCase();
+          uiText(body.x, body.y + 5 + j, `${on ? '▸' : ' '} ${title}`.slice(0, listW - 12), on ? 'ui-amber' : 'ui-primary');
+          uiText(body.x + listW - 9, body.y + 5 + j, 'COMPLETED', 'ui-green');
           return;
         }
         const hidden = entry.hidden && !entry.unlocked;
@@ -96,25 +99,29 @@ export function makeArchiveScene({ meta, onClose = () => {} } = {}) {
 
       const entry = list[sel];
       if (!entry) {
-        uiText(body.x, body.y + 6, 'NO ENTRIES FILED IN THIS CATEGORY', 'ui-secondary');
-        uiWrap('This index is available now. It will populate as the case records story progress, endings, and challenges.', body.w).slice(0, Math.max(0, body.h - 10)).forEach((line, i) => uiText(body.x, body.y + 8 + i, line, 'ui-secondary', .72));
+        if (tab === 1) {
+          uiText(body.x, body.y + 6, 'NO COMPLETED RUNS', 'ui-secondary');
+          uiWrap('Finish the story to add its ending, unlocked hint, and archived document here.', body.w).slice(0, Math.max(0, body.h - 10))
+            .forEach((line, i) => uiText(body.x, body.y + 8 + i, line, 'ui-secondary', .72));
+        } else {
+          uiText(body.x, body.y + 6, 'NO ENTRIES IN THIS CATEGORY', 'ui-secondary');
+          uiWrap('This index will populate as you make story progress, find endings, and complete challenges.', body.w).slice(0, Math.max(0, body.h - 10))
+            .forEach((line, i) => uiText(body.x, body.y + 8 + i, line, 'ui-secondary', .72));
+        }
         return;
       }
       const dx = divider + 3, dw = body.x + body.w - dx;
       if (tab === 1) {
-        if (!entry) {
-          uiText(dx, body.y + 5, 'NO RETURNS FILED', 'ui-secondary');
-          uiWrap('Complete a story return to add its physical residue and second-shift lead here.', dw).forEach((line, i) => uiText(dx, body.y + 8 + i, line, 'ui-secondary'));
-          return;
-        }
-        uiText(dx, body.y + 5, String(entry.summary?.endingId || 'return').replaceAll('-', ' ').toUpperCase(), 'ui-amber');
-        uiText(dx, body.y + 7, `EVIDENCE  ${String(entry.evidenceLabel || 'unfiled').toUpperCase()}`.slice(0, dw), 'ui-label');
-        uiText(dx, body.y + 9, `RESIDUE   ${String(entry.residueLabel || 'unfiled').toUpperCase()}`.slice(0, dw), 'ui-blue');
-        uiText(dx, body.y + 11, 'SECOND-SHIFT LEAD', 'ui-label');
+        const ending = returnDefinition(entry.summary?.endingId);
+        uiText(dx, body.y + 5, ending?.title || String(entry.summary?.endingId || 'ending').replaceAll('-', ' ').toUpperCase(), 'ui-amber');
+        uiText(dx, body.y + 7, 'COMPLETED', 'ui-green');
+        uiText(dx, body.y + 10, 'HINT FOR ANOTHER ENDING', 'ui-label');
         let ry = body.y + 12;
-        uiWrap(entry.lead || 'No adjacent lead has been filed.', dw).slice(0, 3)
+        uiWrap(endingHintForEnding(entry.summary?.endingId) || 'Try changing a major choice near the end of the story.', dw).slice(0, 3)
           .forEach((line, i) => uiText(dx, ry + i, line, 'ui-primary'));
         ry += 4;
+        uiText(dx, ry, 'ARCHIVED STORY DOCUMENT', 'ui-label');
+        ry += 2;
         // THE DOCUMENT THE ENDING LEFT BEHIND. This is what W. Ellery wrote about
         // a night nobody at W. Ellery attended — the only voice in this game that
         // was not in the building, and the reason the return files are worth

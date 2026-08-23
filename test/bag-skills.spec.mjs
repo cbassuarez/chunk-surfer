@@ -57,7 +57,7 @@ for (const branch of empty.branches) {
 // The two tier-4 specials belong to their branches, not to a seventh column.
 assert.equal(find(empty, TECHNIQUE.MASTER_TAKE).branch, 'recorder');
 assert.equal(find(empty, TECHNIQUE.RUNAWAY_FEEDBACK).branch, 'rig');
-assert.equal(empty.maxTier, 4);
+assert.equal(empty.maxTier, 5);
 
 // ── three states, and a locked node says why by NAME ────────────────────────
 assert.equal(skillState({ owned: true, enabled: false }), SKILL_STATE.OWNED);
@@ -85,11 +85,14 @@ assert.match(find(noRig, TECHNIQUE.OVERDUB).blockedBy, /PLANT ROOM/, '...and whe
 
 // ── moves and passives are stated, not coded in guillemets ──────────────────
 assert.equal(skillKindLabel({ active: true }), 'MANUAL TECHNIQUE');
-assert.equal(skillKindLabel({ special: true }), 'SIGNATURE MOVE');
+assert.equal(skillKindLabel({ special: true }), 'SPECIAL · COSTS CHARGE');
 assert.equal(skillKindLabel({}), 'PASSIVE EFFECT');
 assert.equal(skillKindLabel(find(funded, TECHNIQUE.AFTERIMAGE)), 'PASSIVE EFFECT');
-assert.equal(skillKindLabel(find(funded, TECHNIQUE.WHITEOUT)), 'MANUAL TECHNIQUE');
-assert.equal(skillKindLabel(find(funded, TECHNIQUE.MASTER_TAKE)), 'SIGNATURE MOVE');
+// Every special is the same kind of thing now: charge-priced, repeatable, and
+// named as such wherever the player meets it. WHITEOUT used to be sorted apart
+// from MASTER TAKE only because they were limited in different ways.
+assert.equal(skillKindLabel(find(funded, TECHNIQUE.WHITEOUT)), 'SPECIAL · COSTS CHARGE');
+assert.equal(skillKindLabel(find(funded, TECHNIQUE.MASTER_TAKE)), 'SPECIAL · COSTS CHARGE');
 
 // ── only affordable nodes offer the buy ─────────────────────────────────────
 for (const entry of flat(funded)) {

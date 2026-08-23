@@ -41,7 +41,7 @@ function impulseBuffer(ctx,profileName){
 }
 
 function unavailableAudio(){
-  return{start(){},strike(){},setShutters(){},setWorldMix(){},setAcousticProfile(){},setCodaProgress(){},setPerformanceIntensity(){},resetPerformance(){},releaseShutters(){},stand(){},cut(){},destroy(){},loadStems:async()=>null,maskingDb:()=>0,snapshot:()=>({audioMode:'unavailable',stemStatus:'unavailable'})};
+  return{start(){},strike(){},setShutters(){},setWorldMix(){},setAcousticProfile(){},setCodaProgress(){},setPerformanceIntensity(){},resetPerformance(){},releaseShutters(){},stand(){},cut(){},destroy(){},loadStems:async()=>null,maskingDb:()=>0,snapshot:()=>({audioMode:'unavailable',stemStatus:'unavailable',scheduledStrikes:0,lastStrike:null,audible:false})};
 }
 
 // Licensed tonal stems remain untouched and pitch-stable. Everything which
@@ -95,7 +95,7 @@ export function createBellTowerAudio({
   }
 
   const active=new Set();let masking=0,shutters=0,worldGain=1,worldTransmission=.08,worldLowpassHz=12000,worldPanValue=0,codaProgress=0;
-  let profileName='ringing_room',activeReverb=0,performanceIntensity=0;
+  let profileName='ringing_room',activeReverb=0,performanceIntensity=0,scheduledStrikes=0,lastStrike=null;
   let stemSource=stemManifest||stemManifestUrl,stemBank=null,stemStatus=stemSource?'loading':'absent',stemError=null,stemPromise=null,loadingSource=null;
 
   function loadStems(nextSource=stemSource){
@@ -145,6 +145,7 @@ export function createBellTowerAudio({
       for(const[ratio,gain,duration]of partials)oscillator(base*ratio,when,gain*weight,duration,record.stroke==='hand'?-2:2,internal);
       oscillator(base,when+.018,.065*weight*shutters,9.5,0,exterior);
     }
+    scheduledStrikes+=1;lastStrike={bell:Number(record.bell)||0,stroke:record.stroke||null,rowIndex:Number(record.rowIndex)||0,place:Number(record.place)||0,when};
     masking=Math.min(24,masking+2.8);
   }
 
@@ -179,7 +180,17 @@ export function createBellTowerAudio({
   function start(){
     const t=ctx.currentTime;tonalMaster.gain.cancelScheduledValues?.(t);tonalMaster.gain.setValueAtTime(Math.max(.0001,tonalMaster.gain.value),t);tonalMaster.gain.linearRampToValueAtTime(.72,t+.08);codaProgress=0;setShutters(0);applyWorldMix(.08);masking=0;
   }
-  function resetPerformance(){cut();start();}
+  function resetPerformance(){
+    cut();
+    // Source wash and standing bells are allowed to take this shared physical
+    // bus to true silence. A player taking the tenor is a new foreground
+    // performance: restore an audible ringing-room path immediately instead
+    // of waiting for a later spatial tick to undo a zero-gain handoff.
+    worldGain=1;worldTransmission=.38;worldLowpassHz=12000;worldPanValue=0;
+    performanceIntensity=0;codaProgress=0;
+    scheduledStrikes=0;lastStrike=null;
+    start();setAcousticProfile('ringing_room',.04);
+  }
   function stand(){masking=0;codaProgress=1;worldGain=0;worldTransmission=0;applyWorldMix(.8);}
   function destroy(){
     cut();for(const node of[internal,exterior,mechanism,structureInput,tonalMaster,directFilter,directGain,earlyGain,lateFilter,structureFilter,structureGain,spatial,pan,limiter,...earlyDelays.flatMap((entry)=>[entry.delay,entry.gain]),...reverbs.flatMap((entry)=>[entry.convolver,entry.gain])]){try{node?.disconnect?.();}catch(_){/* best effort */}}
@@ -188,6 +199,6 @@ export function createBellTowerAudio({
     start,strike,loadStems,setShutters,setWorldMix,setAcousticProfile,setCodaProgress,setPerformanceIntensity,resetPerformance,
     releaseShutters:()=>setShutters(.02),stand,cut,destroy,
     maskingDb:()=>{masking*=.985;return masking;},
-    snapshot:()=>({activeVoices:active.size,shutters,worldGain,worldTransmission,worldLowpassHz,worldPan:worldPanValue,maskingDb:masking,origin,stemStatus,stemCount:stemBank?.size||0,stemError,audioMode:stemBank?'stems':'synthesis',profile:profileName,codaProgress,performanceIntensity,limiter:!!limiter,acousticLayers:['direct','early','late','mechanism','structure']}),
+    snapshot:()=>({activeVoices:active.size,shutters,worldGain,worldTransmission,worldLowpassHz,worldPan:worldPanValue,maskingDb:masking,origin,stemStatus,stemCount:stemBank?.size||0,stemError,audioMode:stemBank?'stems':'synthesis',profile:profileName,codaProgress,performanceIntensity,limiter:!!limiter,scheduledStrikes,lastStrike,audible:worldGain>.001||worldTransmission>.001,acousticLayers:['direct','early','late','mechanism','structure']}),
   };
 }

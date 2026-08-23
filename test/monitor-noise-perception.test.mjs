@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import {
   MONITOR_BAND,
   monitorBandForDb,
+  monitorInit,
   monitorObserveAcousticEvent,
+  monitorProgramMeasurement,
   monitorReset,
   monitorSetAuxInput,
   monitorSnapshot,
@@ -40,6 +42,27 @@ test('monitor bands describe exposure rather than clipping', () => {
   assert.equal(monitorSnapshotForRms(.15).band, MONITOR_BAND.HOT, 'loud speech is a pinpoint, not a clip indicator');
   assert.equal(monitorBandForDb(-19, { previousBand: MONITOR_BAND.HOT, hysteresisDb: 2 }), MONITOR_BAND.HOT);
   assert.equal(monitorBandForDb(-21, { previousBand: MONITOR_BAND.HOT, hysteresisDb: 2 }), MONITOR_BAND.MID_HOT);
+});
+
+test('final output analyser is available as isolation reference without driving exposure', () => {
+  monitorReset();
+  const analyser = {
+    fftSize: 0,
+    frequencyBinCount: 8,
+    smoothingTimeConstant: 1,
+    channelCountMode: 'explicit',
+    connect() {},
+    getFloatTimeDomainData(values) { values.fill(.05); },
+    getFloatFrequencyData(values) { values.fill(-24); },
+  };
+  monitorInit({ createAnalyser: () => analyser }, {});
+  const program = monitorProgramMeasurement();
+  assert.equal(program.active, true);
+  assert.ok(Math.abs(program.rms - .05) < 1e-6);
+  assert.equal(program.spectrum.length, 8);
+  assert.equal(monitorSnapshot(1000).band, MONITOR_BAND.NORMAL,
+    'the actual speaker bus is a cancellation reference, never exposure evidence');
+  monitorReset();
 });
 
 test('monitor ignores system audio and accepts only player sound plus an active mic feed', () => {

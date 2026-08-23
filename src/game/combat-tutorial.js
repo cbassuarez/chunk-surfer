@@ -4,7 +4,9 @@
 //
 // The step order is written against the `training` profile's intent script in
 // src/data/combat-definitions.js (tone → print → mask → swell). Changing one
-// without the other breaks the drill.
+// without the other breaks the drill — which is why those movements are built
+// with `pinned()` there, so the severe and dead-air presets do not rotate the
+// script out from under these steps.
 
 import { COMBAT_ACTION } from './combat-state.js';
 
@@ -44,6 +46,24 @@ export const COMBAT_TUTORIAL_STEPS = Object.freeze([
     say: 'DRILL · NOISE HITS HARDER BUT GUARDS WORSE. USE THE OPEN CHANNEL TO SETTLE BACK OUT OF IT.',
     until: (last) => [COMBAT_ACTION.HOLD, COMBAT_ACTION.MONITOR, COMBAT_ACTION.END_TEMPO].includes(last.action),
   }),
+  // THE PARRY, WHICH NOTHING ELSE IN THE GAME TEACHES.
+  //
+  // It is the only timed input in the fight and it lives outside the move menu —
+  // it fires against the blow while the blow is landing — so a player who is
+  // never shown it simply never finds it. The drill hands them one blow with
+  // nothing else to do about it.
+  //
+  // `patience` because this is a drill and not a wall: land it and the lesson is
+  // learned, miss it twice and it moves on anyway rather than holding a player
+  // on a timing they are not going to get on the bench.
+  Object.freeze({
+    id: 'parry',
+    allow: Object.freeze([COMBAT_ACTION.WAIT]),
+    spotlight: 'moves',
+    say: 'DRILL · YIELD THE BEAT AND WATCH THE METER. WHEN THE BLOW REACHES THE LIT BAND, PRESS TO PARRY.',
+    patience: 2,
+    until: (last) => last.parried === true,
+  }),
   Object.freeze({
     id: 'free',
     allow: null,
@@ -56,6 +76,9 @@ export const COMBAT_TUTORIAL_STEPS = Object.freeze([
 export function createCombatTutorialDirector(steps = COMBAT_TUTORIAL_STEPS) {
   let index = 0;
   let skipped = false;
+  // Turns spent on the current step without satisfying it. Only steps that
+  // declare `patience` care; everything else waits as long as it takes.
+  let attempts = 0;
   const current = () => (skipped || index >= steps.length ? null : steps[index]);
   return {
     active: () => !!current(),
@@ -72,11 +95,17 @@ export function createCombatTutorialDirector(steps = COMBAT_TUTORIAL_STEPS) {
     advance(before, after) {
       const step = current();
       if (!step) return false;
-      if (!step.until(after?.last || {}, after)) return false;
+      if (!step.until(after?.last || {}, after)) {
+        attempts += 1;
+        // A step with patience gives up on the player rather than the other way
+        // round: the drill never becomes something you can be stuck inside.
+        if (!(step.patience > 0 && attempts >= step.patience)) return false;
+      }
       index += 1;
+      attempts = 0;
       return true;
     },
     skip() { skipped = true; },
-    snapshot: () => ({ id: current()?.id || null, index, total: steps.length, skipped }),
+    snapshot: () => ({ id: current()?.id || null, index, total: steps.length, skipped, attempts }),
   };
 }

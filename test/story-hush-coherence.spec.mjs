@@ -71,10 +71,15 @@ assert.equal(performanceIntrusionSeed({density:45}),.14);
 assert.equal(reducePerformanceIntrusion(performanceIntrusionSeed({density:45}),{missed:true}).stage,'RESONATOR','COHERENT reference reaches the room after one incorrect return');
 assert.equal(reducePerformanceIntrusion(performanceIntrusionSeed({density:90}),{correct:true}).stage,'MONITOR','variation can still discharge a saturated head start');
 
-assert.equal(attachSignalRole({who:'surfer',text:'Take five.'}).signalRole,'chunkSurferTrace');
+// The Chunk Surfer has nothing of its own to say. It used to be held to that by
+// a list of literal sentences in the engine; it is held to it now by having to
+// name WHERE it heard the line — which is the same rule, asked as a question the
+// author answers rather than a list they join. See TRACE_SOURCES.
+assert.equal(attachSignalRole({who:'surfer',text:'Take five.',quotes:'slate'}).signalRole,'chunkSurferTrace');
 assert.equal(attachSignalRole({who:'recordist',text:'Take four.'}).signalRole,'playerShadowReturn');
 assert.throws(()=>attachSignalRole({who:'hush',text:'forbidden'}),/nonverbal/);
 assert.throws(()=>attachSignalRole({who:'surfer',text:'I can explain what HUSH is.'}),/only repeat recorded or institutional language/);
+assert.throws(()=>attachSignalRole({who:'surfer',text:'Take five.',quotes:'somewhere'}),/unknown Chunk Surfer trace source/);
 
 function validateStoryRoles(value,file){
   if(Array.isArray(value)){value.forEach((entry)=>validateStoryRoles(entry,file));return;}

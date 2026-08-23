@@ -9,7 +9,7 @@
 import { CHAPEL_TOWER_PHASE, normalizeChapelTowerState } from './chapel-tower-state.js';
 
 export const STORY_GUIDANCE_ANCHORS = Object.freeze({
-  van: Object.freeze({ x:63.6, y:204.8 }),
+  van: Object.freeze({ x:63.6, y:208.0 }),
   lookBench: Object.freeze({ x:53.25, y:205.0 }),
   lodge: Object.freeze({ x:75.7, y:214.0 }),
   page6: Object.freeze({ x:138, y:27 }),
@@ -32,7 +32,7 @@ const target = (id, label, authored, extra={}) => Object.freeze({
 
 export const STORY_TARGET = Object.freeze({
   van: target('story:yard-van','GET THE KIT FROM THE VAN',STORY_GUIDANCE_ANCHORS.van,{kind:'prop',propId:'yard-van'}),
-  lookBench: target('story:yard-look-bench','SIT DOWN AND LOOK',STORY_GUIDANCE_ANCHORS.lookBench,{kind:'prop',propId:'yard-look-bench'}),
+  lookBench: target('story:yard-look-bench','TURN AROUND AND SIT ON THE SHELTER BENCH',STORY_GUIDANCE_ANCHORS.lookBench,{kind:'prop',propId:'yard-look-bench'}),
   lodge: target('story:lodge','CHECK IN WITH THE GUARD',STORY_GUIDANCE_ANCHORS.lodge,{kind:'prop',propId:'yard-booth'}),
   page6: target('story:page-6','FIND PAGE 6',STORY_GUIDANCE_ANCHORS.page6,{kind:'prop',propId:'loose-page:page-6'}),
   readPage6: Object.freeze({id:'story:read-page-6',label:'READ PAGE 6 IN THE BAG',kind:'interface',required:true,point:null}),

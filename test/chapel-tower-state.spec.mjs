@@ -12,6 +12,7 @@ import {
   towerPealStage,
 } from '../src/game/chapel-tower-state.js';
 import { applyTowerPealAdvantage } from '../src/game/tower-chapel-bridge.js';
+import { GRID } from '../src/game/combat-damage.js';
 
 let state=freshChapelTowerState();
 assert.equal(state.schema,4);assert.equal(state.layoutSchema,2);assert.equal(state.legacyLayout,false);
@@ -36,11 +37,11 @@ assert.deepEqual(chapelTowerKeyring(state),['tower-live','tower-cleared']);asser
 state=reduceChapelTower(state,{type:'CHAPEL_REACHED'});assert.equal(towerObjective(state).id,'roll-fifth-take');
 state=reduceChapelTower(state,{type:'CHAPEL_FINALE_STARTED'});assert.equal(state.phase,CHAPEL_TOWER_PHASE.CHAPEL_FINAL);
 
-const baseBattle={intro:[],combat:{baseComposure:8,movements:[{coherence:3,before:[]},{coherence:4,before:[]}]}};
+const baseBattle={intro:[],combat:{baseComposure:8*GRID,movements:[{coherence:3*GRID,before:[]},{coherence:4*GRID,before:[]}]}};
 const bridgedBattle=applyTowerPealAdvantage(baseBattle,state);
-assert.equal(bridgedBattle.combat.towerPealCompleted,true);assert.equal(bridgedBattle.combat.baseComposure,10);
+assert.equal(bridgedBattle.combat.towerPealCompleted,true);assert.equal(bridgedBattle.combat.baseComposure,10*GRID);
 assert.equal('towerRelayBroken' in bridgedBattle.combat,false);
-assert.equal(bridgedBattle.combat.movements[0].coherence,2);
+assert.equal(bridgedBattle.combat.movements[0].coherence,2*GRID);
 
 assert.throws(()=>reduceChapelTower(freshChapelTowerState(),{type:'SOURCE_COMPLETED'}),/requires source_ready/);
 assert.throws(()=>reduceChapelTower(

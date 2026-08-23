@@ -1,0 +1,189 @@
+{
+  "id": "space-natatorium",
+  "family": "space",
+  "location": "natatorium",
+  "seed": "review:space:natatorium",
+  "capturedAt": "2026-08-11T03:53:18.209Z",
+  "gate": {
+    "context": {
+      "group": "ground",
+      "zone": 4,
+      "spaceId": "natatorium",
+      "ambientColor": [
+        0.43,
+        0.63,
+        0.57
+      ],
+      "ambientIntensity": 0.04,
+      "whitePointScale": 0.3913043478260869,
+      "bounce": {
+        "color": [
+          0.43,
+          0.63,
+          0.57
+        ],
+        "intensity": 0.12
+      }
+    },
+    "effectsMode": "full",
+    "reduceDread": false,
+    "dockHauntingActive": false,
+    "specialSpace": false,
+    "sourceSpace": false,
+    "stairAnomaly": false,
+    "live": [
+      "sp02",
+      "sp03"
+    ],
+    "emergency": [
+      {
+        "id": "natatorium-emergency-east",
+        "kind": "emergency",
+        "circuit": "sp02",
+        "powerMode": "circuit",
+        "maintained": false,
+        "intensity": 0.4,
+        "shadowReveal": 1
+      },
+      {
+        "id": "natatorium-emergency-far",
+        "kind": "emergency",
+        "circuit": "sp02",
+        "powerMode": "circuit",
+        "maintained": false,
+        "intensity": 0.36,
+        "shadowReveal": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": "natatorium-emergency-east",
+        "circuit": "sp02",
+        "powerMode": "circuit",
+        "maintained": false,
+        "intensity": 0.4,
+        "shadowReveal": 1
+      },
+      {
+        "id": "natatorium-emergency-far",
+        "circuit": "sp02",
+        "powerMode": "circuit",
+        "maintained": false,
+        "intensity": 0.36,
+        "shadowReveal": 1
+      }
+    ],
+    "submitted": {
+      "active": true,
+      "lightId": "natatorium-emergency-east",
+      "figures": 3,
+      "visibleBodies": 3,
+      "shadowOnlyFigures": 0,
+      "shadowOnlyIndices": [],
+      "presentation": "shadow",
+      "compositionId": "natatorium-pool-edge",
+      "compositionSource": "authored",
+      "hardRevealIndex": null,
+      "card": null,
+      "cardIndex": null,
+      "cardPhase": null,
+      "exposure": 2,
+      "minimumDistance": 6.856,
+      "stageSector": 6,
+      "pulseIndex": 8
+    }
+  },
+  "apparitions": {
+    "active": true,
+    "lightId": "natatorium-emergency-east",
+    "figures": 3,
+    "visibleBodies": 3,
+    "shadowOnlyFigures": 0,
+    "shadowOnlyIndices": [],
+    "compositionId": "natatorium-pool-edge",
+    "compositionSource": "authored",
+    "stageYaw": -1.5707963267948966,
+    "poseIds": [
+      "neutral",
+      "side",
+      "stoop"
+    ],
+    "bearings": [
+      0.04,
+      -0.142,
+      0.059
+    ],
+    "pitches": [
+      -0.09,
+      -0.079,
+      -0.065
+    ],
+    "metres": [
+      [
+        92.77,
+        39.65
+      ],
+      [
+        91.39,
+        38.75
+      ],
+      [
+        93.07,
+        36.92
+      ]
+    ],
+    "bodies": [
+      {
+        "id": "emergency-shadow:natatorium-emergency-east:0",
+        "index": 0,
+        "poseId": "neutral",
+        "shadowOnly": false,
+        "x": 92.774,
+        "y": 0,
+        "z": 39.649,
+        "yaw": -1.8799,
+        "distance": 6.856,
+        "presentation": "shadow",
+        "motion": "milling"
+      },
+      {
+        "id": "emergency-shadow:natatorium-emergency-east:1",
+        "index": 1,
+        "poseId": "side",
+        "shadowOnly": false,
+        "x": 91.395,
+        "y": 0,
+        "z": 38.754,
+        "yaw": -1.6554,
+        "distance": 7.824,
+        "presentation": "shadow",
+        "motion": "milling"
+      },
+      {
+        "id": "emergency-shadow:natatorium-emergency-east:2",
+        "index": 2,
+        "poseId": "stoop",
+        "shadowOnly": false,
+        "x": 93.07,
+        "y": 0,
+        "z": 36.92,
+        "yaw": -0.9172,
+        "distance": 9.597,
+        "presentation": "shadow",
+        "motion": "milling"
+      }
+    ]
+  },
+  "scene": {
+    "luma": 19.33,
+    "litPct": 28.5,
+    "redPct": 1.1,
+    "whitePct": 1.11
+  },
+  "shadow": {
+    "ready": true,
+    "active": true,
+    "size": 1024
+  },
+  "effects": "full"
+}

@@ -1,13 +1,15 @@
 import * as scenes from './scenes.js';
-import { uiSize, uiFill, uiText } from '../render/ui.js';
-import { drawMachinePanel } from '../render/presentation.js';
+import { uiSize, uiFill } from '../render/ui.js';
+import { sourcePageDocument } from '../data/source-pages.js';
+import { makeDocumentScene } from './document.js';
 
 // READING ONE OF THE PAGES IN THE LONG HALL.
 //
 // Deliberately not speech. These are documents whose horror is in their LAYOUT —
 // a field filled in four times, a line losing a word per repetition, a column
 // with no opposite column — and speech would read them out as prose and throw
-// all of that away. They go on the machine panel, monospaced, as found.
+// all of that away. They use the ordinary physical-document renderer so the
+// wrongness remains in the authored form, not in a separate UI dialect.
 //
 // It blocks input, because reading requires stopping. It does NOT call the
 // runtime's protectMoment: stopping to read is not progress and must not buy a
@@ -18,13 +20,15 @@ import { drawMachinePanel } from '../render/presentation.js';
 // move…" — spoken over the top of a five-second transformation. The hardest walk
 // in the game ended on a subtitle.
 //
-// So: cut to black on the frame it is taken, put a door in the dark, and let the
-// field fade up behind it. The runtime's transformation runs underneath the
-// whole time, so the black lifts on a source space already forming rather than
-// on a static plate.
-export const SOURCE_THRESHOLD = Object.freeze({ hold: 1.6, fade: 1.8 });
+// So: cover only the unsafe render-mode switch, then hold the final physical
+// frame inside a four-second macroblock resolve into the reconstructed landing.
+// Reduced Motion receives the same geography as stepped blocks, without smear,
+// chroma displacement or flashes.
+export const SOURCE_THRESHOLD = Object.freeze({ cover: 0.12, total: 4.0, reducedSteps: 8 });
 
-export function makeSourceThresholdScene({ onDone = () => {}, cue = () => {} } = {}) {
+export function makeSourceThresholdScene({
+  onDone = () => {}, cue = () => {}, renderer = null, reducedMotion = false,
+} = {}) {
   let elapsed = 0;
   let done = false;
   let opened = false;
@@ -37,19 +41,24 @@ export function makeSourceThresholdScene({ onDone = () => {}, cue = () => {} } =
     view: () => ({
       id: 'source-threshold',
       elapsed: +elapsed.toFixed(3),
-      alpha: elapsed < SOURCE_THRESHOLD.hold ? 1
-        : Math.max(0, 1 - (elapsed - SOURCE_THRESHOLD.hold) / SOURCE_THRESHOLD.fade),
+      alpha: Math.max(0, 1 - elapsed / SOURCE_THRESHOLD.cover),
+      progress: Math.max(0, Math.min(1, (elapsed - SOURCE_THRESHOLD.cover) / (SOURCE_THRESHOLD.total - SOURCE_THRESHOLD.cover))),
+      reducedMotion,
       done,
     }),
     enter() {
       // The door is the only thing in the dark. It lands a beat after the cut, so
       // the black registers as a cut rather than as a transition with a sound on it.
       if (!opened) { opened = true; cue(); }
+      renderer?.r3dSetDatamoshProgress?.(0);
     },
     update(dt) {
       if (done) return;
       elapsed += Math.max(0, Number(dt) || 0);
-      if (elapsed >= SOURCE_THRESHOLD.hold + SOURCE_THRESHOLD.fade) {
+      const raw = Math.max(0, Math.min(1, (elapsed - SOURCE_THRESHOLD.cover) / (SOURCE_THRESHOLD.total - SOURCE_THRESHOLD.cover)));
+      const progress = reducedMotion ? Math.floor(raw * SOURCE_THRESHOLD.reducedSteps) / SOURCE_THRESHOLD.reducedSteps : raw;
+      renderer?.r3dSetDatamoshProgress?.(progress);
+      if (elapsed >= SOURCE_THRESHOLD.total) {
         done = true;
         scenes.pop();
         onDone();
@@ -60,42 +69,34 @@ export function makeSourceThresholdScene({ onDone = () => {}, cue = () => {} } =
     key() { return true; },
     render() {
       const { cols, rows } = uiSize();
-      const a = elapsed < SOURCE_THRESHOLD.hold ? 1
-        : Math.max(0, 1 - (elapsed - SOURCE_THRESHOLD.hold) / SOURCE_THRESHOLD.fade);
+      const a = Math.max(0, 1 - elapsed / SOURCE_THRESHOLD.cover);
       if (a > 0) uiFill(0, 0, cols, rows, `rgba(0,0,0,${a.toFixed(3)})`);
     },
+    exit() { renderer?.r3dEndDatamosh?.(); },
   };
 }
 
 export function makeSourcePageScene({ page = null, onClose = () => {} } = {}) {
-  const lines = page?.lines || [];
-  let closed = false;
-  const close = () => { if (closed) return; closed = true; scenes.pop(); onClose(); };
+  const doc = sourcePageDocument(page);
+  if (!doc) return null;
+
+  const scene = makeDocumentScene(doc, {
+    id: 'source-page',
+    onSceneClose: onClose,
+    lookProfile: 'hush',
+    // Locomotion stops so the page can be read; Source does not. main.js uses
+    // this semantic marker to avoid turning blocksInput into HUSH protection.
+    sourcePressureLive: true,
+  });
 
   return {
-    id: 'source-page',
-    blocksInput: true,
-    blocksWorld: true,
-    lensPreset: 'hush',
+    ...scene,
     pageId: page?.id || null,
-    view: () => ({ id: 'source-page', page: page?.id || null, lines: [...lines] }),
-    key() { close(); return true; },
-    pointer(e) { if (e.type === 'pointerdown') close(); return true; },
-    render() {
-      const { cols, rows } = uiSize();
-      uiFill(0, 0, cols, rows, 'rgba(2,2,3,.93)');
-      const width = Math.min(72, cols - 8);
-      const panel = drawMachinePanel(Math.floor((cols - width) / 2), 3, width, rows - 6, {
-        label: 'SOURCE / PAGE', source: 'FOUND', meter: false,
-        footer: 'ANY KEY · PUT IT DOWN',
-      });
-      lines.forEach((line, i) => {
-        // The first line is the form's own header; the rest is what happened to
-        // it. Later lines dim, because the page is losing its nerve as it goes.
-        const fade = i === 0 ? 1 : Math.max(0.42, 1 - i * 0.11);
-        uiText(panel.x, panel.y + 1 + i * 1.35, String(line).slice(0, panel.w),
-          i === 0 ? 'ui-label' : 'ui-primary', fade);
-      });
-    },
+    view: () => ({
+      id: 'source-page',
+      page: page?.id || null,
+      lines: [...(page?.lines || [])],
+      documentId: doc.id,
+    }),
   };
 }

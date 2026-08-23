@@ -36,7 +36,7 @@ test('cold open data uses story art refs', () => {
 });
 
 test('battle data has boss art scaffold', () => {
-  const data = readFileSync('content/narrative/battle.chapel.nothing.story.json', 'utf8');
+  const data = readFileSync('content/narrative/battle.chapel.story.json', 'utf8');
   assert.match(data, /"id": "circuitBentInterface"/);
 });
 

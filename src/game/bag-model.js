@@ -86,6 +86,22 @@ const KNOWN_GEAR = Object.freeze({
     description: 'Coffee from the service booth. Still technically warm.',
     facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'STIMULANT'], ['BATTLE', 'STEADY HANDS · +3 COMPOSURE · ONE CUP']],
   },
+  'plant-spanner': {
+    title: 'ADJUSTABLE SPANNER',
+    subtitle: 'PLANT TOOL / SIDE POCKET',
+    icon: 'spanner',
+    status: ['READY', 'active'],
+    description: 'A compact adjustable spanner set close to the heating-header gland size.',
+    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'PLANT ISOLATION']],
+  },
+  'marble-eyes': {
+    title: 'TWO MARBLE EYES',
+    subtitle: 'BROKEN PORTRAIT BUST',
+    icon: 'bust',
+    status: ['CARRIED', 'active'],
+    description: 'A cleanly broken pair of marble eyes recovered from the yard fountain.',
+    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'RETURN TO MATCHING BUST']],
+  },
   keyring: {
     title: 'STANDARD KEY RING',
     subtitle: 'FACILITIES KEYS',
@@ -188,7 +204,24 @@ export function normalizeEquipment(item, index = 0) {
     : profile.facts.map(([k, v]) => [k, k === 'POSITION' && !present ? (raw.location || 'NOT CARRIED') : v]);
 
   let primary = null;
-  if (present && typeof raw.action === 'function') {
+  let actionReason = '';
+  const resolvedAction = raw.primaryAction || raw.actions?.primary || null;
+  if (resolvedAction && resolvedAction.enabled !== false) {
+    primary = {
+      id: resolvedAction.id,
+      label: displayTitle(resolvedAction.label),
+      mode: resolvedAction.mode || 'command',
+      enabled: true,
+      reason: '',
+      closeBefore: !!resolvedAction.closeBefore,
+      destructive: !!resolvedAction.confirm,
+      confirm: resolvedAction.confirm || null,
+    };
+  } else if (resolvedAction) {
+    actionReason = displayTitle(resolvedAction.reason || 'ACTION UNAVAILABLE');
+  } else if (present && typeof raw.action === 'function') {
+    // Compatibility for small render labs and older fixtures. The live game
+    // supplies semantic descriptors and dispatches them through one boundary.
     const defaultLabel = profile.key === 'radio'
       ? 'SET DOWN'
       : profile.key === 'coffee'
@@ -200,6 +233,10 @@ export function normalizeEquipment(item, index = 0) {
     primary = {
       id: raw.actionId || (profile.key === 'radio' ? 'drop' : profile.key === 'coffee' ? 'consume' : 'activate'),
       label: displayTitle(raw.actionLabel || defaultLabel),
+      mode: 'command',
+      enabled: true,
+      reason: '',
+      closeBefore: false,
       destructive: !!destructive,
       confirm: destructive
         ? {
@@ -225,6 +262,8 @@ export function normalizeEquipment(item, index = 0) {
     description: String(raw.description || profile.description),
     facts,
     badges: Array.isArray(raw.badges) ? raw.badges : [],
+    actionReason: actionReason || (raw.actionReason ? displayTitle(raw.actionReason) : ''),
+    automaticUse: raw.automaticUse || null,
     actions: { primary, secondary: null },
     source: raw,
   };
@@ -482,11 +521,16 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, loa
   const normalizedLoadout = normalizeCombatLoadout(loadout);
   const kit = (Array.isArray(equipment) ? equipment : []).map(normalizeEquipment).map((entry) => {
     const battleCapable = entry.source?.battleCapable ?? isBattleGear(entry.sourceId);
-    const compartment = battleCapable ? combatCompartment(normalizedLoadout, entry.sourceId) : 'storage';
+    const assignedCompartment = battleCapable ? combatCompartment(normalizedLoadout, entry.sourceId) : 'storage';
+    // A saved tray assignment survives loss/deployment, but READY NOW only
+    // depicts gear physically in hand. Recovery restores the same slot/order.
+    const compartment = battleCapable && entry.present ? assignedCompartment : 'storage';
     const topIndex = normalizedLoadout.top.indexOf(entry.sourceId);
     const compartmentLabel = compartment === 'top'
       ? `READY NOW ${topIndex + 1}/${normalizedLoadout.capacity}`
-      : battleCapable ? 'BAG STORAGE / NOT READY' : 'BAG STORAGE';
+      : battleCapable && !entry.present && assignedCompartment === 'top'
+        ? `NOT CARRIED / READY SLOT ${topIndex + 1} RESERVED`
+        : battleCapable ? 'BAG STORAGE / NOT READY' : 'BAG STORAGE';
     return {
       ...entry,
       battleCapable,

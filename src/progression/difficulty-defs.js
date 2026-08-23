@@ -4,9 +4,9 @@ export const DIFFICULTY_PRESETS = Object.freeze({
   story: Object.freeze({
     id: 'story',
     name: 'STORY',
-    subtitle: 'ASSISTED',
+    subtitle: 'EASIER',
     rank: 0,
-    description: 'For the building, dialogue, and endings. The HUSH is less aggressive, and Second Breath is immediate when the kit runs dry.',
+    description: 'Focus on exploration and story. Enemies are less aggressive, recording mistakes are more forgiving, navigation gives more help, escape timers are longer, and the flashlight lasts longer.',
     intended: false,
     values: Object.freeze({
       presencePressure: 'reduced',
@@ -23,16 +23,16 @@ export const DIFFICULTY_PRESETS = Object.freeze({
     name: 'CONTRACT',
     subtitle: 'RECOMMENDED',
     rank: 1,
-    description: 'The intended first run. A spent kit can demand one deliberate Hold before Second Breath returns.',
+    description: 'The recommended first playthrough. Standard enemy behavior, recording rules, navigation, timers, resources, and combat assistance.',
     intended: true,
     values: Object.freeze({ ...DEFAULT_RULE_VALUES }),
   }),
   night: Object.freeze({
     id: 'night',
     name: 'NIGHT SHIFT',
-    subtitle: 'SEVERE',
+    subtitle: 'HARD',
     rank: 2,
-    description: 'For players who want tighter margins and less guidance. A spent kit demands two Holds before Second Breath.',
+    description: 'A harder playthrough. Enemies are more aggressive, recordings are less forgiving, navigation gives less help, escape timers are shorter, and the flashlight drains faster.',
     intended: false,
     values: Object.freeze({
       presencePressure: 'severe',
@@ -47,9 +47,9 @@ export const DIFFICULTY_PRESETS = Object.freeze({
   'dead-air': Object.freeze({
     id: 'dead-air',
     name: 'DEAD AIR',
-    subtitle: 'CHALLENGE',
+    subtitle: 'VERY HARD',
     rank: 3,
-    description: 'The building expects you now. Strict takes, minimal navigation, and three Holds before a spent kit finds Second Breath.',
+    description: 'The hardest preset. Enemies are at their most aggressive, recordings use strict failure rules, navigation help is minimal, escape timers are shortest, and resources are most limited.',
     intended: false,
     values: Object.freeze({
       presencePressure: 'dead-air',
@@ -76,13 +76,24 @@ export const RULE_OPTIONS = Object.freeze({
 });
 
 export const RULE_LABELS = Object.freeze({
-  presencePressure: 'PRESENCE PRESSURE',
+  presencePressure: 'ENEMY PRESSURE',
   recordingForgiveness: 'RECORDING FORGIVENESS',
   combatAssistance: 'COMBAT ASSISTANCE',
-  navigationSignal: 'NAVIGATION SIGNAL',
-  escapeTimer: 'ESCAPE TIMER',
-  torchDrain: 'TORCH DRAIN',
-  involuntaryBreath: 'INVOLUNTARY BREATH',
+  navigationSignal: 'NAVIGATION HELP',
+  escapeTimer: 'ESCAPE TIME',
+  torchDrain: 'FLASHLIGHT DRAIN',
+  involuntaryBreath: 'INVOLUNTARY BREATHING',
+});
+
+
+export const RULE_HELP = Object.freeze({
+  presencePressure: 'Changes how quickly threats move, how easily they hear you, and how long they track your last known position.',
+  recordingForgiveness: 'Changes how much accidental noise can occur before a recording is spoiled.',
+  combatAssistance: 'Changes combat difficulty: how reliably your attacks land well, how often the opponent can slip a swing, how wide the parry window is, defensive assistance, and recovery when your available actions run out.',
+  navigationSignal: 'Changes how much route, room, distance, map, and waypoint information is shown while navigating.',
+  escapeTimer: 'Changes how much time you have during timed escapes. OFF removes the timer.',
+  torchDrain: 'Changes how quickly flashlight power is consumed.',
+  involuntaryBreath: 'Changes whether panic can make your character breathe loudly without input, and how severe it can become.',
 });
 
 export const VALUE_LABELS = Object.freeze({
@@ -125,14 +136,66 @@ export const RECORDING_RULES = Object.freeze({
   strict: Object.freeze({ minorNoise: 'spoil', spoilNoiseScale: 0.90 }),
 });
 
+// `pressureBias` is the one lever the presets do not set: it is supplied per
+// fight from the psychological profile's adaptive band, and it leans the
+// opponent's mood toward pressing or toward giving you a breath. See
+// enemy-mind.js — before this, the profile expressed itself by silently
+// re-sorting the authored intent array, which the opponent no longer reads in
+// order and which therefore did nothing at all.
+// HOW MUCH THE FIGHT TALKS YOU THROUGH ITSELF.
+//
+// One rung removed per preset, so difficulty is a question of how much you are
+// told rather than only of how hard you are hit:
+//
+//   full   the recordist's read, the opponent's mood said out loud, a warning
+//          before a chained blow, and a note when a special is worth spending
+//   trace  the read, hedged, and it can be wrong
+//   tile   no prose at all — the counter still lights green in the command band
+//   none   nothing but the opponent's posture, which never lies
+//
+// The stance readout in the header is NOT part of this ladder. It is the floor
+// underneath it and every preset gets it, because it is what makes a fight
+// with no prose in it readable at all.
+export const COMBAT_GUIDANCE = Object.freeze({
+  FULL: 'full', TRACE: 'trace', TILE: 'tile', NONE: 'none',
+});
+
+// DIFFICULTY IS A MECHANICS LADDER NOW, NOT ONLY A GUIDANCE ONE.
+//
+// The guidance rungs above are still the spine — how much the fight says out
+// loud is the most humane thing to scale. But CONTRACT and NIGHT SHIFT used to
+// play almost identically: a point of composure and a point of guard between
+// them, and nothing else. Three levers make the presets differ in PLAY:
+//
+//   bandFloorBonus     how much of an outgoing damage band the assist hands you
+//                      for free (see combat-damage.js). On GUIDED your hits land
+//                      well whether or not you read the beat; on DEAD AIR every
+//                      point above the floor of the band has to be earned.
+//   enemyGuardCooldown how often the opponent may read a committed swing coming
+//                      and set to slip it, counted in enemy beats. The guard
+//                      already existed and was documented as difficulty-gated;
+//                      this is the gate. null means never. It is a COOLDOWN and
+//                      not a chance on purpose: a defence that fires on a hidden
+//                      die reads as the game cheating, whereas one that fires
+//                      whenever the surfer is hurt and has had time to recover
+//                      is something a player can learn and bait.
+//   parryWindowScale   how wide the reactive-parry window is. STORY gives you
+//                      most of the beat; DEAD AIR gives you the end of it.
+//
+// Composure and guard are in GRID units (combat-damage.js) like every other
+// combat number: a point used to be a fifth of a phase and is now a twenty-fifth.
 export const COMBAT_RULES = Object.freeze({
   // When the bag has no immediate way to damage or capture, HOLD earns a
   // SECOND BREATH. Story has it immediately; Contract exposes one deliberate
   // empty beat; the challenge modes demand a longer brace but never hard-lock.
-  guided: Object.freeze({ id: 'guided', composureBonus: 2, holdPrevention: 3, intentLookahead: 2, recoveryHolds: 0, recommended: true, safetyRelay: true, variant: 'standard' }),
-  standard: Object.freeze({ id: 'standard', composureBonus: 0, holdPrevention: 2, intentLookahead: 1, recoveryHolds: 1, recommended: true, safetyRelay: false, variant: 'standard' }),
-  severe: Object.freeze({ id: 'severe', composureBonus: -1, holdPrevention: 2, intentLookahead: 1, recoveryHolds: 2, recommended: false, safetyRelay: false, variant: 'severe' }),
-  'dead-air': Object.freeze({ id: 'dead-air', composureBonus: -2, holdPrevention: 2, intentLookahead: 1, recoveryHolds: 3, recommended: false, safetyRelay: false, variant: 'dead-air' }),
+  //
+  // This matters less than it used to: SHOUT is always in the bag, so a dry kit
+  // is slow rather than stranded and SECOND BREATH is a reward for a deliberate
+  // brace instead of a rescue from a soft-lock.
+  guided: Object.freeze({ guidance: COMBAT_GUIDANCE.FULL, id: 'guided', composureBonus: 10, holdPrevention: 15, intentLookahead: 2, recoveryHolds: 0, recommended: true, safetyRelay: true, variant: 'standard', bandFloorBonus: 0.35, enemyGuardCooldown: null, parryWindowScale: 1.6 }),
+  standard: Object.freeze({ guidance: COMBAT_GUIDANCE.TRACE, id: 'standard', composureBonus: 0, holdPrevention: 10, intentLookahead: 1, recoveryHolds: 1, recommended: true, safetyRelay: false, variant: 'standard', bandFloorBonus: 0.12, enemyGuardCooldown: 4, parryWindowScale: 1 }),
+  severe: Object.freeze({ guidance: COMBAT_GUIDANCE.TILE, id: 'severe', composureBonus: -5, holdPrevention: 10, intentLookahead: 1, recoveryHolds: 2, recommended: false, safetyRelay: false, variant: 'severe', bandFloorBonus: 0.04, enemyGuardCooldown: 2, parryWindowScale: 0.85 }),
+  'dead-air': Object.freeze({ guidance: COMBAT_GUIDANCE.NONE, id: 'dead-air', composureBonus: -10, holdPrevention: 10, intentLookahead: 1, recoveryHolds: 3, recommended: false, safetyRelay: false, variant: 'dead-air', bandFloorBonus: 0, enemyGuardCooldown: 1, parryWindowScale: 0.7 }),
 });
 
 // Serialized saves migrate to combatAssistance, but this export keeps older

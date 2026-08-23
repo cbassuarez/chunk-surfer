@@ -38,7 +38,10 @@ const MIN_DWELL = 0.25;         // before [space] is heard at all
 export const textOf = (l) => String(l?.text ?? l ?? '');
 export const whoOf = (l) => l?.who || 'direction';
 
-function visibleByFlag(item) {
+// Exported because the battle scene needs exactly this rule and there must not
+// be two of it: a line that is invisible in a thought tree and visible in a
+// fight is a line that will be wrong in one of them.
+export function visibleByFlag(item) {
   const expr = item?.['if'];
   if (expr == null || expr === '') return true;
   try { return flagTest(expr); }
@@ -48,7 +51,7 @@ function visibleByFlag(item) {
   }
 }
 
-function visibleList(list = []) {
+export function visibleList(list = []) {
   return (Array.isArray(list) ? list : []).filter(visibleByFlag);
 }
 

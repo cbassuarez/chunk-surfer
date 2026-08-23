@@ -8,7 +8,7 @@ import {
   normalizeRuleValues,
   visiblePresets,
 } from '../progression/difficulty.js';
-import { RULE_LABELS, VALUE_LABELS } from '../progression/difficulty-defs.js';
+import { RULE_HELP, RULE_LABELS, VALUE_LABELS } from '../progression/difficulty-defs.js';
 import { deriveUnlocks } from '../progression/unlocks.js';
 import * as AUDIO from '../audio/story-audio.js';
 import { promptLine } from './bindings.js';
@@ -29,7 +29,7 @@ const CUSTOM_PRESET = Object.freeze({
   subtitle: 'CUSTOM RULES',
   rank: 4,
   intended: false,
-  description: 'Adjust the gameplay rules directly. Custom runs preserve story and ordinary achievements but do not receive Dead Air certification.',
+  description: 'Adjust individual difficulty settings. Story progress and most achievements are unchanged, but custom settings cannot earn the Dead Air achievement.',
 });
 
 export function makeDifficultySelectScene({
@@ -247,10 +247,13 @@ export function makeDifficultySelectScene({
       const danger = preset.id === 'dead-air';
       const locked = !!preset.locked;
       uiText(detailX, body.y + 3, `${preset.name} / ${locked ? 'LOCKED' : preset.subtitle}`, locked ? 'ui-secondary' : danger ? 'ui-danger' : 'ui-amber', locked ? 0.6 : 1);
-      if (locked) uiText(detailX, body.y + 4, 'COMPLETE ANY ENDING TO UNLOCK.', 'ui-blue', 0.78);
-      else if (preset.intended) uiText(detailX, body.y + 4, 'THE INTENDED FIRST RUN.', 'ui-blue');
-      else if (preset.id === 'custom') uiText(detailX, body.y + 4, 'NO DEAD AIR CERTIFICATION.', 'ui-blue');
-      uiWrap(locked ? `${preset.description} Locked until the building has been survived once.` : preset.description, detailW).slice(0, 3).forEach((line, i) =>
+      if (locked) uiText(detailX, body.y + 4, 'COMPLETE THE STORY ONCE TO UNLOCK.', 'ui-blue', 0.78);
+      else if (preset.intended) uiText(detailX, body.y + 4, 'RECOMMENDED FOR A FIRST PLAYTHROUGH.', 'ui-blue');
+      else if (preset.id === 'custom') uiText(detailX, body.y + 4, 'CUSTOM SETTINGS CANNOT EARN THE DEAD AIR ACHIEVEMENT.', 'ui-blue');
+      const explanation = mode === 'custom'
+        ? RULE_HELP[RULE_ORDER[ruleSel]] || preset.description
+        : locked ? `${preset.description} Complete the story once to unlock this preset.` : preset.description;
+      uiWrap(explanation, detailW).slice(0, 3).forEach((line, i) =>
         uiText(detailX, body.y + 6 + i, line, locked ? 'ui-secondary' : 'ui-primary', locked ? 0.58 : 1));
 
       let ry = body.y + 11;
@@ -286,9 +289,9 @@ export function makeDifficultySelectScene({
         theme: danger ? 'amber' : 'green',
       });
       if (preset.locked) {
-        uiCenter(y + h - 3, 'LOCKED · COMPLETE ANY ENDING TO UNLOCK DEAD AIR', 'ui-secondary');
+        uiCenter(y + h - 3, 'LOCKED · COMPLETE THE STORY ONCE TO UNLOCK DEAD AIR', 'ui-secondary');
       } else if (danger && Math.floor(t * 3) % 2 === 0) {
-        uiCenter(y + h - 3, 'DEAD AIR CERTIFICATION ENDS IF GAMEPLAY RULES ARE MADE EASIER', 'ui-danger');
+        uiCenter(y + h - 3, 'MAKING THE GAME EASIER WILL DISABLE THE DEAD AIR ACHIEVEMENT FOR THIS RUN', 'ui-danger');
       }
     },
 

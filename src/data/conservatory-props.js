@@ -7,6 +7,8 @@ import {
   YARD_SERVICE_RANGES,
   districtLogicalAt,
 } from './exterior-district.js';
+import { OPENING_STREET_MESHES, OPENING_STREET_PROPS } from './opening-street.js';
+import { YARD_PARK_MESHES, YARD_PARK_PROPS } from './yard-park.js';
 import { BASEBOARDS } from './generated/prop-geometry.js';
 
 const P = (id, mesh, x, y, yaw = 0, extra = {}) => ({ id, mesh, x, y, yaw, scale:1, ...extra });
@@ -77,6 +79,8 @@ const DOCK_REEL = [{worldId:'dock_reel',fileLabel:'01'}];
 const DOCK_SHUTTER = [{worldId:'dock_shutter',fileLabel:'01'}];
 
 export const PROP_MESH = Object.freeze({
+  ...OPENING_STREET_MESHES,
+  ...YARD_PARK_MESHES,
   school_desk:{w:.72,d:.78,blocks:true}, pew:{w:2.8,d:.72,blocks:true},
   chair:{w:.52,d:.56,blocks:false}, music_stand:{w:.45,d:.45,blocks:false},
   instrument_case:{w:1.25,d:.5,blocks:false}, equipment_cart:{w:1.2,d:.72,blocks:true},
@@ -151,6 +155,7 @@ export const PROP_MESH = Object.freeze({
   city_bus_shelter:{w:2.9,d:5.0,blocks:false},
   yard_look_bench:{w:.78,d:3.4,h:1.12,blocks:false},
   city_parked_car:{w:1.8,d:4.3,blocks:false},
+  city_moving_car:{w:1.9,d:4.5,h:1.5,blocks:false},
   district_terrace_frontage:{w:5.5,d:64.0,blocks:false},
   district_civic_frontage:{w:6.5,d:64.0,blocks:false},
   district_workshop_frontage:{w:7.0,d:64.0,blocks:false},
@@ -163,6 +168,11 @@ export const PROP_MESH = Object.freeze({
   district_bollard_pair:{w:2.8,d:.5,h:1.1,blocks:false},
   exterior_story_plaque:{w:1.35,d:.28,h:1.0,blocks:false},
   yard_stable_range:{w:12,d:8,h:7.4,blocks:true},
+  // ST BRENDAN'S. blocks:false is not an oversight — the church's walls are real
+  // raymarched cells (ZONE.church) and already collide. A blocking prop box here
+  // would be a solid twenty-five by thirty-six metre slab over the whole
+  // footprint, sealing the inside of the building off from its own doors.
+  st_brendan_church:{w:24.4,d:37.7,h:19.3,blocks:false},
   yard_rehearsal_range:{w:14,d:10,h:8.8,blocks:true},
   yard_baths_plant:{w:13,d:12,h:7.2,blocks:true},
   yard_covered_stores:{w:12,d:13,h:6.4,blocks:true},
@@ -170,6 +180,9 @@ export const PROP_MESH = Object.freeze({
   ambient_cyclist:{w:.7,d:1.8,h:1.75,blocks:false},
   ambient_dog_walker:{w:1.8,d:1.5,h:1.8,blocks:false},
   ambient_awning_figure:{w:.65,d:.45,h:1.78,blocks:false},
+  exterior_bus_woman:{w:.85,d:.62,h:1.76,blocks:false},
+  exterior_mews_neighbor:{w:.82,d:.60,h:1.82,blocks:false},
+  exterior_pub_driver:{w:.88,d:.66,h:1.84,blocks:false},
   yard_van:{w:2.9,d:6.6,h:2.6,blocks:true},
   yard_van_lamp:{w:.4,d:.25,blocks:false},
   natatorium_roof_structure:{w:23.2,d:20.5,blocks:false},
@@ -214,6 +227,13 @@ export const PROP_MESH = Object.freeze({
   stair_sconce_pair_opal:{w:3,d:.55,blocks:false}, stair_bulkhead_pair:{w:3,d:.5,blocks:false},
   stair_pendant_opal:{w:.6,d:.6,h:1.4,blocks:false,mount:'ceiling'}, stair_shadow_figure:{w:.65,d:.3,blocks:false},
   player_shadow_figure:{w:.62,d:.28,h:1.78,blocks:false,mount:'floor'},
+  apparition_pose_neutral:{w:.72,d:.32,h:1.78,blocks:false,mount:'floor'},
+  apparition_pose_side:{w:.48,d:.38,h:1.78,blocks:false,mount:'floor'},
+  apparition_pose_stoop:{w:.78,d:.48,h:1.74,blocks:false,mount:'floor'},
+  apparition_pose_head_turn:{w:.76,d:.34,h:1.78,blocks:false,mount:'floor'},
+  apparition_pose_arm_out:{w:1.12,d:.36,h:1.78,blocks:false,mount:'floor'},
+  apparition_pose_weight_shift:{w:.82,d:.36,h:1.78,blocks:false,mount:'floor'},
+  apparition_pose_symmetric:{w:.66,d:.30,h:1.78,blocks:false,mount:'floor'},
   legacy_tape_rack:{w:1.08,d:.42,h:2.08,blocks:true,mount:'floor'},
   legacy_patchbay:{w:1.28,d:.36,h:1.74,blocks:true,mount:'floor'},
   legacy_transfer_deck:{w:1.48,d:.78,h:1.24,blocks:true,mount:'floor'},
@@ -275,6 +295,24 @@ const BASEBOARD_PROPS = Object.entries(BASEBOARDS).map(([group, b]) =>
   }));
 
 export const CONSERVATORY_PROPS = [
+  ...OPENING_STREET_PROPS,
+  ...YARD_PARK_PROPS,
+
+  // ── behind the plant-services door ────────────────────────────────────────
+  // The substation has been drawn into the sub-basement plan since the spur was
+  // authored, and sealed behind a key nothing in the building issued. It is
+  // worth walking into now — the bust upstairs says where the key went — so it
+  // is dressed rather than left as an empty box.
+  //
+  // Only this room. `spur-tank` has the same lock on it but it is a SECOND door
+  // into the plant annex, which the wide annex opening already reaches and which
+  // holds the heating header the Stillson has to get to. Dressing that side put
+  // blocking geometry across a route the plant incident depends on.
+  P('spur-substation-mcc','plant_mcc_bank',21.4,35.0,Math.PI/2,{interactive:false,structural:true,blocks:true,
+    inspect:inspect('Switchgear, dead, with the isolator handles all thrown the same way and a strip of tape across them somebody wrote on in 1994.','Dead switchgear. Tape, and a date, and a hand that is not yours.')}),
+  P('spur-substation-idf','plant_idf_frame',23.4,36.4,0,{interactive:false,structural:true,blocks:true}),
+  P('spur-substation-steps','plant_grated_steps',22.2,34.3,0,{interactive:false,structural:true,blocks:false}),
+
   ...BASEBOARD_PROPS,
   // The centre of the new logical ground hall maps to physical (63m, 37m),
   // which is also the deterministic asset's local origin. It is visible from
@@ -289,6 +327,35 @@ export const CONSERVATORY_PROPS = [
   // turn round from the grey door, and what stops the conservatory's own mass
   // rendering as a black slab against the yard's sky.
   P('bay-canopy','bay_canopy',53.0,7.5,0,{interactive:false,structural:true}),
+  // The apron is a working loading throat, not four anonymous planes. These
+  // shallow fixtures stay on the real floorplan walls (mount:'wall') and use
+  // bay ids so the exterior visibility pass retains them on the walk in.
+  P('bay-apron-route-board','notice_board',51.4,4.0,0,{
+    mount:'wall',elevation:1.18,interactive:false,structural:true,blocks:false,
+  }),
+  P('bay-apron-conduit-north','plant_pipe_bank',54.3,4.0,0,{
+    mount:'wall',elevation:2.08,interactive:false,structural:true,blocks:false,
+  }),
+  P('bay-apron-bulkhead-north','tower_bulkhead',55.7,4.0,0,{
+    mount:'wall',elevation:2.78,interactive:false,structural:true,blocks:false,
+    lightMaintained:true,lightColor:[1,.64,.34],
+  }),
+  P('bay-apron-loading-notice','notice_board',51.4,11.0,Math.PI,{
+    mount:'wall',elevation:1.18,interactive:false,structural:true,blocks:false,
+  }),
+  P('bay-apron-conduit-south','plant_pipe_bank',54.3,11.0,Math.PI,{
+    mount:'wall',elevation:2.08,interactive:false,structural:true,blocks:false,
+  }),
+  P('bay-apron-bulkhead-south','tower_bulkhead',55.7,11.0,Math.PI,{
+    mount:'wall',elevation:2.78,interactive:false,structural:true,blocks:false,
+    lightMaintained:true,lightColor:[1,.58,.28],
+  }),
+  P('bay-apron-bay-number','door_stencil',56.0,7.8,-Math.PI/2,{
+    mount:'wall',elevation:1.72,interactive:false,structural:true,blocks:false,
+  }),
+  P('bay-apron-isolator','power_box_01',56.0,6.2,-Math.PI/2,{
+    mount:'wall',elevation:1.08,interactive:false,structural:true,blocks:false,
+  }),
 
   // ── The yard, in layers ──
   //
@@ -383,11 +450,11 @@ export const CONSERVATORY_PROPS = [
   // are the first thing in it, rather than on the back of a man facing his own
   // bumper. Local +z is out of the doors, and the prop matrix takes local +z to
   // world (-sin yaw, cos yaw), so PI/2 points them due west, back down the road.
-  P('yard-van','yard_van',66.0,204.8,Math.PI/2,{
+  P('yard-van','yard_van',66.0,208.0,Math.PI/2,{
     structural:true,blocks:true,action:'yard-van',label:'the back of the van',
-    inspectAt:{x:63.6,y:204.8},
+    inspectAt:{x:63.6,y:208.0},
   }),
-  P('yard-van-lamp','yard_van_lamp',65.6,204.8,0,{
+  P('yard-van-lamp','yard_van_lamp',65.6,208.0,0,{
     interactive:false,structural:true,elevation:2.30,
     lightMaintained:true,lightColor:[1,.86,.60],
   }),
@@ -419,8 +486,11 @@ export const CONSERVATORY_PROPS = [
   P('yard-look-bench','yard_look_bench',52.5,205.0,0,{
     structural:true,blocks:false,action:'yard-vigil-bench',label:'the shelter bench',
     inspectAt:{x:53.25,y:205.0},interactionPriority:2,
+    // The seated eye clears the van and composes the gate piers, lodge and the
+    // accumulated Ellery roofline rather than staring squarely into a vehicle.
+    seatYaw:Math.PI/2+.12,seatPitch:-.055,seatEyeDrop:.72,
   }),
-  P('yard-bus-waiter','ambient_awning_figure',54.15,206.55,-Math.PI/2,{
+  P('yard-bus-waiter','exterior_bus_woman',54.15,206.55,0,{
     structural:true,blocks:false,action:'exterior-lore',loreId:'yard-bus-waiter',
     label:'the woman at the shelter',inspectAt:{x:54.15,y:206.15},interactionPriority:3,
   }),
@@ -463,11 +533,11 @@ export const CONSERVATORY_PROPS = [
   DP('city-bus-shelter-bench','yard_look_bench',-12,16,0,{interactive:false,structural:true,blocks:false}),
   // Ordinary locals stay put so they remain genuinely talkable. Moving traffic
   // and passers-by remain presentation-only ambient instances.
-  DP('district-mews-neighbor','ambient_awning_figure',-13,26,Math.PI/2,{
+  DP('district-mews-neighbor','exterior_mews_neighbor',-13,26,Math.PI/2,{
     structural:true,blocks:false,action:'exterior-lore',loreId:'district-mews-neighbor',
     label:'the man under the awning',interactionPriority:3,
   }),
-  DP('district-pub-driver','ambient_awning_figure',18,105,Math.PI,{
+  DP('district-pub-driver','exterior_pub_driver',18,105,Math.PI,{
     structural:true,blocks:false,action:'exterior-lore',loreId:'district-pub-driver',
     label:'the driver by the pub yard',interactionPriority:3,
   }),
@@ -500,6 +570,18 @@ export const CONSERVATORY_PROPS = [
       `The ${range.year} range still gives the larger building its scale.`,
     ),
   })),
+
+  // ST BRENDAN'S, on the tarmac past the park. Logical coords, like the ranges
+  // above: the yard island is parked at (50,200), so this is yard-local (16,
+  // 70.5) — the centre of CHURCH_BOUNDS in data/st-brendans.js, which is also
+  // the origin the mesh was built around.
+  P('brendan-church','st_brendan_church',66,270.5,0,{
+    structural:true,blocks:false,label:'st brendan\u2019s',
+    inspect:inspect(
+      'A parish church, hard against the yard wall. Older than the conservatoire and outliving it: the school went up in 1888 and this was already here.',
+      'The tower has louvres and no bells that anyone has heard.',
+    ),
+  }),
 
   // ── The boundary, which stands BETWEEN you and the man in the booth ──
   //
@@ -618,7 +700,7 @@ export const CONSERVATORY_PROPS = [
   }),
   P('dock-shutter-bar','plant_pipe_straight',72.4,12.45,0,{
     label:'singing shutter bar',scale:.88,blocks:false,inspectAt:{x:71.4,y:12.45},dockInvestigation:true,
-    ...play(DOCK_SHUTTER,'A steel bar carrying the whole shutter’s held breath.','Put a hand on it and the room goes quiet.'),
+    ...play(DOCK_SHUTTER,'A steel bar runs shoulder-high across the loading shutter. Put a knuckle to it and the whole wall rings.','Put a hand on it and the room goes quiet.'),
     acousticKind:'structure_impact',hushPlayback:{mode:'interval',minMs:6100,maxMs:9000},
     aftermathInspect:{
       unheard:{first:'The bar hums under your hand. You never knocked it before.',again:'The shutter is still. Something in it is not.'},
@@ -1132,7 +1214,7 @@ export const CONSERVATORY_PROPS = [
   P('chapel-lectern','lectern',88.2,88.5,.15,{inspect:inspect('A lectern with the service book removed and the ribbon left behind.','The ribbon marks nothing.')}),
   // Measured at 1.6m off the nearest wall before `mount` did anything.
   P('chapel-hymn-board','hymn_board',97.4,87.8,0,{mount:'wall',elevation:1.4,inspect:inspect('The hymn board still reads 17 · 44 · 91. Nobody cleared the last service.','17 · 44 · 91.')}),
-  P('chapel-portrait-pollaiuolo','portrait_frame',88.0,59.0,0,{elevation:1.55,portraitIndex:4,inspect:inspect('Piero del Pollaiuolo. Portrait of a Woman. Profile, tempera, gold held quietly at the edge.','Her profile is exact and unreachable.')}),
+  P('chapel-portrait-pollaiuolo','portrait_frame',88.0,59.0,0,{elevation:1.55,portraitIndex:4,inspect:inspect('Piero del Pollaiuolo. Portrait of a Woman. Profile in tempera; gold remains along the edge.','Her profile is exact and unreachable.')}),
   P('chapel-portrait-netherlandish','portrait_frame',96.0,59.0,0,{elevation:1.55,portraitIndex:5,inspect:inspect('Portrait of a Woman, Netherlandish or French. The old label cannot decide.','The frame can decide nothing either.')}),
   P('acq-chapel-lantern-narthex-north','lantern_chandelier_01',92.5,61.0,0,{
     scale:1.15,elevation:3.15,
@@ -1410,6 +1492,6 @@ export const CONSERVATORY_PROPS = [
     inspect:inspect('A heating header with one isolation stem shivering under load. The gauge needle is hard against its stop.','The isolation stem is still moving under your hand.')}),
   // Optional quiet buff in the open van; guaranteed noisy fallback in the
   // Get-In. Runtime replaces/removes these same ids as they are collected.
-  P('van-adjustable-spanner','adjustable_spanner',64.9,202.2,.18,{action:'plant-spanner',label:'adjustable spanner',interactionPriority:4,inspect:inspect('Your adjustable spanner, half under the folded blanket.','The van shelf is bare where it lay.')}),
+  P('van-adjustable-spanner','adjustable_spanner',64.6,208.0,.18,{elevation:1.14,action:'plant-spanner',label:'blue-handled adjustable spanner',interactionPriority:5,inspect:inspect('Your blue-handled adjustable spanner, laid across the lit shelf beside the blanket.','The bright rectangle on the van shelf is bare where it lay.')}),
   P('getin-heavy-stillson','stillson_wrench',70.5,6.25,.08,{action:'plant-heavy-wrench',label:'oversized Stillson wrench',interactionPriority:4,inspect:inspect('A Stillson nearly two metres long, left across the maintenance rack.','Too large for the field case. It will have to travel on the floor.')}),
 ];

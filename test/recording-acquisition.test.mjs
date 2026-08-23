@@ -137,9 +137,17 @@ test('renderer wires both acquisition stages and transitions recording profiles'
 });
 
 test('Source Space remains outside physical recording acquisition', () => {
+  // Sliced to the END OF ITS OWN TEMPLATE LITERAL, not to the next section
+  // comment. Reaching for the section marker meant this quietly policed every
+  // shader that happened to be declared after TEXT_SPACE_FRAG, and it failed
+  // the moment the horizon's projector — which is a different shader, and is
+  // supposed to have a grain, because it is a projection of a recording — was
+  // added in the gap. The guarantee is about the text-space shader; the slice
+  // should be too.
   const start = renderer.indexOf('const TEXT_SPACE_FRAG');
-  const end = renderer.indexOf('// ── GL plumbing', start);
-  assert.ok(start >= 0 && end > start);
+  assert.ok(start >= 0, 'the text-space shader exists');
+  const end = renderer.indexOf('`;', renderer.indexOf('`', start));
+  assert.ok(end > start, 'and its literal terminates');
   const textSpaceShader = renderer.slice(start, end);
   assert.doesNotMatch(textSpaceShader, /uRecording|correlatedGrain|blackProtect/);
 });

@@ -2,29 +2,23 @@
   "schemaVersion": 1,
   "id": "chunk-surfer",
   "narrative": [
-    "narrative/battle.chapel.feeling.story.json",
-    "narrative/battle.chapel.name-other.story.json",
-    "narrative/battle.chapel.name-sarah.story.json",
-    "narrative/battle.chapel.nothing.story.json",
-    "narrative/battle.chapel.reason-money.story.json",
-    "narrative/battle.chapel.reason-other.story.json",
-    "narrative/battle.chapel.reason-superstition.story.json",
-    "narrative/battle.hallbattle.named.story.json",
-    "narrative/battle.hallbattle.unnamed.story.json",
-    "narrative/battle.natatoriumbattle.named.story.json",
-    "narrative/battle.natatoriumbattle.unnamed.story.json",
-    "narrative/battle.practicebattle.named.story.json",
-    "narrative/battle.practicebattle.unnamed.story.json",
+    "narrative/battle.chapel.story.json",
+    "narrative/battle.hall.story.json",
+    "narrative/battle.natatorium.story.json",
+    "narrative/battle.practice.story.json",
     "narrative/conservatory.bent_rig.story.json",
     "narrative/conservatory.bust_answer.story.json",
     "narrative/conservatory.bust_fragment.story.json",
     "narrative/conservatory.bust_pin.story.json",
+    "narrative/conservatory.bust_restored.story.json",
+    "narrative/conservatory.bust_restored_again.story.json",
     "narrative/conservatory.bust_talk.story.json",
     "narrative/conservatory.bust_turn.story.json",
     "narrative/conservatory.chapel_key_check.story.json",
     "narrative/conservatory.cold_open_dialogue.story.json",
     "narrative/conservatory.first_take.story.json",
     "narrative/conservatory.hush.story.json",
+    "narrative/conservatory.park_eyes.story.json",
     "narrative/conservatory.level_check.story.json",
     "narrative/conservatory.post_door.story.json",
     "narrative/conservatory.radio_dead.story.json",
@@ -62,7 +56,8 @@
     "narrative/room-listen.lux_nova.story.json",
     "narrative/room-listen.main_b3.story.json",
     "narrative/room-listen.soundnoisemusic.story.json",
-    "narrative/room-listen.the_tub.story.json"
+    "narrative/room-listen.the_tub.story.json",
+    "narrative/source-space.contact.story.json"
   ],
   "audio": [
     "audio/audio-project.audio.json"
@@ -82,9 +77,12 @@
     "conservatory.bust_pin",
     "conservatory.bust_answer",
     "conservatory.bust_fragment",
+    "conservatory.bust_restored",
+    "conservatory.bust_restored_again",
     "conservatory.bust_talk",
     "conservatory.talisman",
     "conservatory.chapel_key_check",
+    "source-space.contact",
     "room-listen.main_b3",
     "radio.initial_checkin",
     "ending.choice.base"
@@ -114,7 +112,10 @@
         "conservatory.bust_talk",
         "conservatory.bust_turn",
         "conservatory.bust_fragment",
+        "conservatory.bust_restored",
+        "conservatory.bust_restored_again",
         "conservatory.bust_answer",
+        "conservatory.park_eyes",
         "conservatory.bust_pin"
       ]
     },
@@ -158,19 +159,18 @@
       "title": "Battle branches",
       "kind": "branch",
       "documents": [
-        "battle.natatoriumbattle.unnamed",
-        "battle.practicebattle.unnamed",
-        "battle.hallbattle.unnamed",
-        "battle.natatoriumbattle.named",
-        "battle.practicebattle.named",
-        "battle.hallbattle.named",
-        "battle.chapel.nothing",
-        "battle.chapel.name-sarah",
-        "battle.chapel.name-other",
-        "battle.chapel.reason-money",
-        "battle.chapel.reason-superstition",
-        "battle.chapel.reason-other",
-        "battle.chapel.feeling"
+        "battle.chapel",
+        "battle.natatorium",
+        "battle.practice",
+        "battle.hall"
+      ]
+    },
+    {
+      "id": "source-space",
+      "title": "Source Space contact",
+      "kind": "branch",
+      "documents": [
+        "source-space.contact"
       ]
     },
     {

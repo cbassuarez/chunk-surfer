@@ -1,0 +1,13 @@
+{
+  "pack": {
+    "filename": "horizon-tape.bin",
+    "author": "Chunk Surfer project",
+    "source": "tools/chunk_surfer/build-horizon-tape.mjs",
+    "origin": "Cyber Theremin I.mp4",
+    "license": "project source",
+    "sha256": "48673139c2c0b2ed86e4b60ceda2f5abf95263edc6b587075f9e4365f6e6cb51",
+    "modifications": "Video sampled to evenly spaced slices, block-classified by luma variance, and baked as depth-sorted splats where Z is the recording timeline. Audio downmixed to mono Opus.",
+    "splats": 115089,
+    "bytes": 1841424
+  }
+}

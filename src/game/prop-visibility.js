@@ -1,3 +1,5 @@
+import { isOutdoorZone } from '../data/floorplan/legend.js';
+
 // Cross-envelope visibility for the authored Ellery prop pack.
 //
 // Exterior observers see the complete civic-block shell. Interior observers
@@ -9,6 +11,7 @@ const EXTERIOR_ELLERY_MESHES=new Set([
   'conservatory_west_elevation',
   'conservatory_stair_window',
   'bay_canopy',
+  'opening_street_frontage',
 ]);
 
 const INTERIOR_HIDDEN_EXTERIOR_MESHES=new Set([
@@ -16,16 +19,24 @@ const INTERIOR_HIDDEN_EXTERIOR_MESHES=new Set([
   'conservatory_stair_window',
 ]);
 
-export function isExteriorObserver({x=0,z=0}={}){
-  return x<50||x>128||z<0||z>92;
+// WHICH SIDE OF THE ENVELOPE THE OBSERVER IS ON, asked of the ZONE.
+//
+// This used to be a bounding box on x/z, and the loading bay apron broke it: the
+// apron is authored as weather but stands inside the building's footprint, so
+// the box called it interior while the renderer's own test called it exterior —
+// and between the two answers the walls and the skin both disappeared. See
+// OUTDOOR_ZONES in floorplan/legend.js for the whole account.
+export function isExteriorObserver({zone=null}={}){
+  return isOutdoorZone(zone);
 }
 
 export function isLoadingBaySightlineProp(instance){
-  return String(instance?.id||'').startsWith('dock-');
+  const id=String(instance?.id||'');
+  return id.startsWith('dock-')||id.startsWith('bay-');
 }
 
-export function shouldHideCrossEnvelopeProp(instance,{observerX=0,observerZ=0}={}){
-  if(!isExteriorObserver({x:observerX,z:observerZ})){
+export function shouldHideCrossEnvelopeProp(instance,{observerZone=null}={}){
+  if(!isExteriorObserver({zone:observerZone})){
     return INTERIOR_HIDDEN_EXTERIOR_MESHES.has(instance?.mesh);
   }
   if(EXTERIOR_ELLERY_MESHES.has(instance?.mesh))return false;

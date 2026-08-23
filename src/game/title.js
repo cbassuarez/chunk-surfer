@@ -15,6 +15,7 @@ import { UI_COLOR, activeTheme } from '../render/palette.js';
 import { getMeta, hasActiveRun } from './save.js';
 import * as AUDIO from '../audio/story-audio.js';
 import { promptLine } from './bindings.js';
+import { hushAvailabilityCopy } from './post-run-copy.js';
 
 const TITLE_CONFIRM_PROMPT = 'START NEW RUN? PRESS ENTER AGAIN';
 const TITLE_MENU_TWO_COLUMN_MIN_W = 64;
@@ -328,9 +329,10 @@ export function makeTitleScene({
         uiCenter(body.y + 10, 'AUDIOCORP LOCAL MONITOR READY', 'ui-secondary', 0.28);
       }
 
-      if (items[sel]?.id === 'hush-run') uiCenter(body.y + 9, hushAvailability?.ready
-        ? (hushAvailability?.hasSession ? 'RESUME TAPE / RESTART TAPE' : 'CAUSE WHAT THE SOURCE TAPE ALREADY CONTAINS.')
-        : (hushAvailability?.message || 'COMPLETE A RETURN WITH ≤ 1 INJURY'), hushAvailability?.ready ? 'ui-danger' : 'ui-secondary');
+      if (items[sel]?.id === 'hush-run') {
+        const hushHelp = hushAvailabilityCopy(hushAvailability || {});
+        uiCenter(body.y + 9, hushHelp.short, hushHelp.enabled ? 'ui-danger' : 'ui-secondary');
+      }
       else if (meta.hushMet) uiCenter(body.y + 9, 'THE HUSH HAS YOUR SIGNAL.', 'ui-danger');
       else if (meta.leftMidRun) uiCenter(body.y + 9, 'UNFINISHED RUN SAVED.', 'ui-danger');
       else if (replay) uiCenter(body.y + 9, 'ENDINGS AND ACHIEVEMENTS ARE AVAILABLE.', 'ui-amber');

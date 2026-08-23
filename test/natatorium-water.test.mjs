@@ -164,7 +164,7 @@ const listen = applyNatatoriumWaterTextVariant(runtimeTree('room-listen.the_tub'
 assert.doesNotMatch(JSON.stringify(listen), /no water|empty pool/i);
 assert.match(JSON.stringify(listen), /black-green water|water it should not have/i);
 
-const battle = applyNatatoriumWaterTextVariant(runtimeBattle('battle.natatoriumbattle.unnamed'), murkyRun);
+const battle = applyNatatoriumWaterTextVariant(runtimeBattle('battle.natatorium'), murkyRun);
 assert.doesNotMatch(JSON.stringify(battle.intro), /no water/i);
 assert.match(JSON.stringify(battle.intro), /black-green water/i);
 

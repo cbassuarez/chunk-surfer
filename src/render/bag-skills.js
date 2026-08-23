@@ -46,8 +46,14 @@ export const BRANCH_LABEL = Object.freeze({
 });
 
 // Capability belongs in the detail card, not the node's ownership badge.
+// SPECIAL is the word the fight itself uses — it is on the move tile and in the
+// charge readout — so it is the word here too. There used to be a distinction
+// between a 'manual technique' and a 'signature move', which meant the
+// difference between an active you could use freely and a finisher you got once
+// per encounter. Nothing is once per encounter any more: a special is a special,
+// and what separates it from a regular is that it costs charge.
 export function skillKindLabel(entry) {
-  if (entry?.special) return 'SIGNATURE MOVE';
+  if (entry?.special) return 'SPECIAL · COSTS CHARGE';
   if (entry?.active) return 'MANUAL TECHNIQUE';
   return 'PASSIVE EFFECT';
 }

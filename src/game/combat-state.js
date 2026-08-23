@@ -15,6 +15,9 @@ export const COMBAT_ACTION = Object.freeze({
   TUNE: 'tune',
   CHANNEL: 'channel',
   END_TEMPO: 'end-tempo',
+  // Point at a section of the house. Not a move: it costs no beat and the
+  // opponent does not answer it, the same way arming a source channel does not.
+  TARGET: 'target',
   WHITEOUT: 'whiteout',
   RADIO_DECOY: 'radio-decoy',
   STEADY_HANDS: 'steady-hands',
@@ -31,6 +34,21 @@ export const COMBAT_ACTION = Object.freeze({
   // Yield the beat and face the enemy with no move of your own. The deliberate
   // "do nothing" that only means something once the enemy takes a real turn.
   WAIT: 'wait',
+  // THE FLOOR. No tool, no charge, no take, no cooldown, never unavailable: the
+  // recordist's own voice thrown at the thing.
+  //
+  // This exists because of a specific failure. Every other attack in the bag can
+  // run out — the torch can be missing, the recorder can be missing, PLAYBACK
+  // needs a take, INVERT needs a take AND a loop, every special needs charge —
+  // and when they all did, the only legal move left was HOLD. A fight that
+  // reduces to bracing until a rescue valve opens is not a fight, and the
+  // recovery machinery below (hasImmediateProgress, recoveryHolds, SECOND
+  // BREATH) was built to paper over exactly that.
+  //
+  // With SHOUT in the kit an empty bag is SLOW, never STRANDED. It is deliberately
+  // the weakest thing you can do and it counters nothing, so it never competes
+  // with a tool that fits the beat — it just means there is always a way forward.
+  SHOUT: 'shout',
 });
 
 export const COMBAT_TOOL = Object.freeze({
@@ -99,6 +117,10 @@ export const TECHNIQUE = Object.freeze({
   MISDIRECTION: 'radio.misdirection',
   MASTER_TAKE: 'recorder.master-take',
   RUNAWAY_FEEDBACK: 'rig.runaway-feedback',
+  // Flat upgrades: the regulars and the body, buyable in any order.
+  HEADROOM: 'nerve.headroom',
+  BRACE: 'nerve.brace',
+  DEEP_RESERVE: 'nerve.deep-reserve',
 });
 
 const ACTION_COUNTER = Object.freeze({
@@ -113,6 +135,7 @@ const ACTION_COUNTER = Object.freeze({
 const ACTION_TOOL = Object.freeze({
   [COMBAT_ACTION.HOLD]: COMBAT_TOOL.SELF,
   [COMBAT_ACTION.WAIT]: COMBAT_TOOL.SELF,
+  [COMBAT_ACTION.SHOUT]: COMBAT_TOOL.SELF,
   [COMBAT_ACTION.COMPOSE]: COMBAT_TOOL.SELF,
   [COMBAT_ACTION.PARRY]: COMBAT_TOOL.SELF,
   [COMBAT_ACTION.END_TEMPO]: COMBAT_TOOL.SELF,
@@ -132,6 +155,7 @@ const ACTION_SNR = Object.freeze({
   [COMBAT_ACTION.MONITOR]: SNR_STATE.SIGNAL,
   [COMBAT_ACTION.TUNE]: SNR_STATE.SIGNAL,
   [COMBAT_ACTION.STEADY_HANDS]: SNR_STATE.SIGNAL,
+  [COMBAT_ACTION.SHOUT]: SNR_STATE.NOISE,
   [COMBAT_ACTION.EXPOSE]: SNR_STATE.NOISE,
   [COMBAT_ACTION.WHITEOUT]: SNR_STATE.NOISE,
   [COMBAT_ACTION.PLAYBACK]: SNR_STATE.NOISE,
@@ -149,16 +173,19 @@ const ACTION_SNR = Object.freeze({
 // fragile-signal penalty in applyEnemyIntent.
 export const SNR_TRIANGLE = Object.freeze({
   [SNR_STATE.SIGNAL]: Object.freeze({
-    dmgMod: 0, guardMod: 1, captureMod: 0, fragile: true,
-    blurb: '+1 GUARD · CLEAN CAPTURE · +1 DMG WHEN HIT',
+    dmgMod: 0, guardMod: GRID, captureMod: 0, fragile: true,
+    blurb: `+${GRID} GUARD · CLEAN CAPTURE · +${GRID} DMG WHEN HIT`,
+    dmgShare: 0,
   }),
   [SNR_STATE.NOISE]: Object.freeze({
-    dmgMod: 1, guardMod: -1, captureMod: -1, fragile: false,
-    blurb: '+1 DMG DEALT · -1 GUARD · -1 CAPTURE',
+    dmgMod: GRID, guardMod: -GRID, captureMod: -GRID, fragile: false,
+    blurb: `+25% DMG DEALT · -${GRID} GUARD · -${GRID} CAPTURE`,
+    dmgShare: 0.25,
   }),
   [SNR_STATE.SILENCE]: Object.freeze({
-    dmgMod: -1, guardMod: 1, captureMod: 0, fragile: false,
-    blurb: '+1 GUARD · -1 DMG DEALT',
+    dmgMod: -GRID, guardMod: GRID, captureMod: 0, fragile: false,
+    blurb: `+${GRID} GUARD · -25% DMG DEALT`,
+    dmgShare: -0.25,
   }),
 });
 
@@ -182,6 +209,46 @@ const finite = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(
 const integer = (value, fallback = 0) => Math.floor(finite(value, fallback));
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const unique = (values) => [...new Set((Array.isArray(values) ? values : []).filter((value) => typeof value === 'string' && value))];
+import { readFidelity } from './thought-trace.js';
+import {
+  EARNED,
+  GRID,
+  HIT_QUALITY,
+  bandFrom,
+  bandText,
+  makeBand,
+  resolveHit,
+  shiftBand,
+  tightenBand,
+} from './combat-damage.js';
+import {
+  chooseIntent,
+  carriedRead,
+  emptyEnemyRead,
+  isParched,
+  plausibleAlternative,
+  nextStance,
+  observeEnemyBeat,
+  observePlayerBeat,
+  observeRefusal,
+  openingStance,
+  readFromCarried,
+  resetReadForMovement,
+} from './enemy-mind.js';
+import {
+  actingRow,
+  commitHouseBeat,
+  createHouse,
+  houseCleared,
+  houseView,
+  houseStrikeFor,
+  isGroupSpecial,
+  moveHouseTarget,
+  strikeHouse,
+  strikeHouseAll,
+  targetRow,
+} from './battle-house.js';
+
 const clone = (value) => JSON.parse(JSON.stringify(value));
 const hasTechnique = (state, id) => state.techniques.includes(id);
 const currentMovement = (state) => state.definition.movements[state.movementIndex] || null;
@@ -196,7 +263,254 @@ function intentsFor(movement, variant) {
 export function currentCombatIntent(state) {
   const intents = intentsFor(currentMovement(state), state.difficulty.variant);
   if (!intents.length) return null;
+  // The written commitment is authoritative — but only while it still describes
+  // this beat. A caller that moves intentIndex by hand invalidates the note and
+  // falls through to the authored cycle, which is what a hand-built state means.
+  const committed = state.committed;
+  if (committed && committed.index === state.intentIndex) {
+    const written = intents.find((intent) => intent.id === committed.id);
+    if (written) return written;
+  }
   return intents[state.intentIndex % intents.length];
+}
+
+// ── the commitment ──────────────────────────────────────────────────────────
+// The opponent decides its next blow at the END of the beat before it throws
+// one, and the decision is written down. Everything downstream quotes the note
+// instead of deciding again: the card the player reads, the strike banner, the
+// attack cue, and the reducer that applies the damage.
+//
+// This is not bookkeeping. selectEnemyIntents runs twice per enemy beat — the
+// scene calls it to name the blow, advanceEnemy calls it to resolve one — and
+// today those agree only because selection is a pure count over an unchanged
+// state. The moment the opponent chooses rather than counts, re-deriving would
+// let the banner announce one blow while a different one lands. A written
+// commitment makes the two agree by construction rather than by luck.
+function commitNextIntent(state) {
+  const missedLast = !!state.misread;
+  state.committed = null;
+  state.misread = null;
+  if (state.result || state.phase === 'done') return;
+  const movement = currentMovement(state);
+  if (!movement) return;
+  const intents = intentsFor(movement, state.difficulty.variant);
+  if (!intents.length) return;
+  const chosen = chooseEnemyIntent(state, movement, intents);
+  if (!chosen) return;
+  state.committed = { id: chosen.id, index: state.intentIndex };
+  maybeMisread(state, movement, intents, chosen, missedLast);
+  // Against a group, the blow and the section throwing it are one decision.
+  if (state.house) commitHouseBeat(state.house, state.cycleIndex);
+}
+
+// Whether the recordist reads this one wrong.
+//
+// The opponent has already committed, honestly, and will throw exactly what it
+// committed to. What can fail is the person watching it — and because the card
+// has said "i think" since the first beat of the fight, a failure lands as the
+// character having been wrong rather than as the game having cheated.
+//
+// The budget is the whole safety argument, so it is enforced here rather than
+// trusted to the odds:
+const MISREADS_PER_MOVEMENT = Object.freeze({ chapel: 2, source: 2 });
+
+// How much of the recordist's doubt actually becomes error.
+//
+// Confidence and correctness are different things, and conflating them was the
+// first version's mistake: read fidelity straight off as a miss chance and dead
+// air misreads every other beat, which is not a feint, it is an unreliable
+// narrator. A person can be unsure and right — usually is — so only a fraction
+// of the doubt cashes out as a wrong read.
+const MISREAD_SCALE = 0.55;
+// And they must be spaced. Back-to-back misses read as a broken card rather
+// than as a bad night, so there are always clean beats between them.
+//
+// Counted in ENEMY BEATS, not in cycleIndex. cycleIndex also advances on TEMPO
+// bonus actions, so a gap measured in it can be two wide while the player
+// experiences two misreads in a row with nothing between them.
+const MISREAD_GAP = 2;
+
+function maybeMisread(state, movement, intents, committed, missedLast) {
+  // Never during a lesson. Never on a movement's opening beat, when the player
+  // has just been handed new prose and no footing. Never twice running, which
+  // is where a wrong read stops being a moment and becomes a broken interface.
+  // And never while composure is critical: a misread there is a death spiral,
+  // and the fight has better ways to be frightening.
+  if (state.definition.pinnedCycle) return;
+  // Guided never misreads. It is the preset for a player who wants the story
+  // and the safety relay, and handing them a card that can be wrong is exactly
+  // the hazard they opted out of. Confidence still varies in the prose; only
+  // the error is switched off.
+  if (state.difficulty.recommended && integer(state.difficulty.composureBonus, 0) > 0) return;
+  if (missedLast) return;
+  if (integer(state.read?.beats, 0) === 0) return;
+  if (state.composure <= Math.max(2, state.maxComposure * 0.25)) return;
+  const since = integer(state.read?.beats, 0) - integer(state.lastMisreadBeat, -99);
+  if (since < MISREAD_GAP) return;
+
+  const ceiling = MISREADS_PER_MOVEMENT[state.definition.kind] ?? 1;
+  if (integer(state.misreadsThisMovement, 0) >= ceiling) return;
+
+  // The fork buys a true read. A reference pitch is a reference because it does
+  // not lie to you.
+  if (state.tuneUsedMovement === state.movementIndex) return;
+
+  const fidelity = readFidelity(state);
+  if (unitFor(state, 'misread') >= (1 - fidelity) * MISREAD_SCALE) return;
+
+  const context = mindContext(state, movement, intents);
+  context.stanceId = state.stance?.id || 'testing';
+  const believed = plausibleAlternative(context, committed);
+  if (!believed) return;
+  state.misread = { id: believed.id, index: state.intentIndex };
+  state.misreadsThisMovement = integer(state.misreadsThisMovement, 0) + 1;
+  state.lastMisreadBeat = integer(state.read?.beats, 0);
+}
+
+// One deterministic 0..1 per beat per purpose. Same FNV-1a walk the rest of the
+// game uses for stateless draws, so the night replays unchanged from a reload.
+function unitFor(state, purpose) {
+  const key = `${state.definition.id}:${state.seed || 0}:${purpose}:${state.movementIndex}:${state.cycleIndex}`;
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < key.length; i += 1) {
+    hash ^= key.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return (hash >>> 0) / 4294967296;
+}
+
+// Which kinds of blow the player could actually answer right now. Handed to the
+// mind so it can decline to throw something unanswerable — a flat torch should
+// not invite an evening of conceals.
+//
+// Asked against a select-phase copy because the commitment is written from
+// inside the enemy beat, when every move is legitimately disabled; the question
+// is what the player will be able to do when it is their turn again.
+function answerableKinds(state) {
+  const asking = { ...state, phase: 'select' };
+  const answerable = {};
+  for (const [actionId, kind] of Object.entries(ACTION_COUNTER)) {
+    if (!answerable[kind]) answerable[kind] = actionAvailability(asking, actionId).enabled;
+  }
+  // HOLD is in the bag whatever else has run out, and it answers an overload.
+  answerable[INTENT_KIND.OVERLOAD] = true;
+  return answerable;
+}
+
+// Everything the opponent's mind is allowed to know, assembled here so that
+// module never reaches into combat state directly.
+function mindContext(state, movement, intents) {
+  const damages = intents.map((intent) => integer(intent.damage, 0));
+  return {
+    intents,
+    movement,
+    movementIndex: state.movementIndex,
+    // The beat it is committing to, which is the cursor everything else reads.
+    cursor: integer(state.intentIndex, 0),
+    // The monotonic beat counter, used only to seed the draw.
+    cycleIndex: integer(state.cycleIndex, 0),
+    stance: state.stance,
+    read: state.read || emptyEnemyRead(),
+    difficulty: state.difficulty,
+    canAnswer: answerableKinds(state),
+    counterFor: ACTION_COUNTER,
+    // A teaching sequence is the one place an opponent with opinions is wrong.
+    pinned: !!state.definition.pinnedCycle,
+    // The authored script's average damage per beat: the pace the fight was
+    // balanced at, and the line the governor pulls back toward.
+    cycleAverage: damages.length ? damages.reduce((sum, value) => sum + value, 0) / damages.length : 0,
+    // Same fight, same choices, every time. Keyed on the encounter rather than
+    // on a mutable stream, so a reload plays the night back unchanged.
+    seed: `${state.definition.id}:${state.seed || 0}`,
+    board: {
+      take: !!state.take,
+      snr: state.snr,
+      ringing: !!state.ringing,
+      composure: state.composure,
+      maxComposure: state.maxComposure,
+      coherence: state.movementCoherence,
+      maxCoherence: state.movementMaxCoherence,
+      signaturePressure: integer(state.signaturePressure, 0),
+      dealtThisMovement: integer(state.movementDamage, 0),
+      beats: integer(state.read?.beats, 0),
+      ensembleBeat: state.definition.signature?.id === 'ensemble'
+        && (state.turnsInMovement + 1) % 3 === 0
+        && state.tuneUsedMovement !== state.movementIndex,
+    },
+  };
+}
+
+// The choice. A mood that persists, and a weighted draw inside it — see
+// enemy-mind.js for why it is two layers and not one.
+//
+// Note what moving the decision to commit time costs and buys: the board is read
+// a beat earlier, as it stands when the opponent decides rather than after the
+// player has moved. It buys the only thing that matters — the card cannot
+// promise one blow and deliver another.
+function chooseEnemyIntent(state, movement, intents) {
+  const context = mindContext(state, movement, intents);
+  const stanceId = nextStance(context);
+  state.stance = stanceId === state.stance?.id
+    ? { id: stanceId, dwell: integer(state.stance?.dwell, 0) }
+    : { id: stanceId, dwell: 0 };
+  context.stanceId = stanceId;
+
+  // A movement's authored `reactions` are the older, blunter form of the same
+  // idea and still win outright when they match: an author saying "when this is
+  // true, throw THAT" outranks anything the weights come up with.
+  // ...unless the recordist is parched. An authored reaction that fires on a
+  // board state the player controls — `take-loaded` is the shipped one — repeats
+  // for as long as that state holds, so a recordist who hoards a take locked the
+  // natatorium's second movement onto one non-recordable blow forever and the
+  // recorder branch closed down completely. The reaction is there to punish
+  // hoarding, not to end the take economy.
+  const parched = isParched(intents, state.read || emptyEnemyRead());
+  for (const reaction of (Array.isArray(movement.reactions) ? movement.reactions : [])) {
+    if (!reactionMatches(state, reaction)) continue;
+    const override = intents.find((intent) => intent.id === reaction.use);
+    if (override && !(parched && !override.recordable)) return override;
+  }
+  return chooseIntent(context);
+}
+
+// ── ground truth, and the read ──────────────────────────────────────────────
+// currentCombatIntent is what the opponent WILL throw. predictedCombatIntent is
+// what the recordist THINKS it will throw. Keeping these apart is the whole of
+// the feint, and the split has to be enforced rather than merely intended:
+//
+//   currentCombatIntent   — the reducer, and nothing else. It scores the beat.
+//   predictedCombatIntent — every single thing the player can see.
+//
+// Get that backwards anywhere and the misread is worthless, because the command
+// band quietly tells the truth: the tile that lights green names the real kind,
+// INVERT greying out is a perfect LOOP detector, and SECOND BREATH appearing or
+// not is a tell. A lie the interface immediately corrects is not a lie.
+//
+// Today the read is always right — nothing calls for a wrong one yet — so this
+// returns the truth and the split is dormant plumbing. It is written now
+// because retrofitting it later means auditing every readout in the fight.
+export function predictedCombatIntent(state) {
+  const misread = state?.misread;
+  if (misread && misread.index === state.intentIndex) {
+    const intents = intentsFor(currentMovement(state), state.difficulty.variant);
+    const believed = intents.find((intent) => intent.id === misread.id);
+    if (believed) return believed;
+  }
+  return currentCombatIntent(state);
+}
+
+// The other thing it might be. The recordist's read is a guess, and a guess
+// that cannot name its rival is not a guess — it is a readout with a question
+// mark on it. This is the authored cycle's next position, which is the most
+// plausible wrong answer there is: the thing the opponent would be doing if it
+// were still the metronome it used to be.
+export function rivalCombatIntent(state) {
+  const intents = intentsFor(currentMovement(state), state.difficulty.variant);
+  if (intents.length < 2) return null;
+  const believed = predictedCombatIntent(state);
+  const rival = intents[(state.intentIndex + 1) % intents.length];
+  if (rival && rival.id !== believed?.id) return rival;
+  return intents.find((intent) => intent.id !== believed?.id) || null;
 }
 
 export function combatIntentLookahead(state) {
@@ -213,9 +527,25 @@ function combatDifficulty(raw = {}) {
   return {
     id: typeof raw.id === 'string' ? raw.id : 'standard',
     composureBonus: integer(raw.composureBonus, 0),
-    holdPrevention: Math.max(0, integer(raw.holdPrevention, 2)),
+    // -1..1. Leans the opponent's mood; see enemy-mind.js nextStance.
+    pressureBias: Math.max(-1, Math.min(1, finite(raw.pressureBias, 0))),
+    // How much the fight talks you through itself: full | trace | tile | none.
+    // See COMBAT_GUIDANCE in progression/difficulty-defs.js.
+    guidance: ['full', 'trace', 'tile', 'none'].includes(raw.guidance) ? raw.guidance : 'trace',
+    holdPrevention: Math.max(0, integer(raw.holdPrevention, 2 * GRID)),
     intentLookahead: Math.max(1, integer(raw.intentLookahead, 1)),
     recoveryHolds: Math.max(0, integer(raw.recoveryHolds, 1)),
+    // How much of an outgoing band the assist hands you for free, how often the
+    // opponent slips a committed swing, and how wide the parry window is. See
+    // COMBAT_RULES in progression/difficulty-defs.js — these are what make
+    // CONTRACT and NIGHT SHIFT different fights rather than different captions.
+    bandFloorBonus: Math.max(0, Math.min(1, finite(raw.bandFloorBonus, 0.12))),
+    // null / 0 means the opponent never guards. Otherwise: enemy beats between
+    // guards, so a lower number is a meaner fight.
+    enemyGuardCooldown: Number.isFinite(Number(raw.enemyGuardCooldown)) && Number(raw.enemyGuardCooldown) > 0
+      ? Math.max(1, integer(raw.enemyGuardCooldown, 4))
+      : null,
+    parryWindowScale: Math.max(0.1, finite(raw.parryWindowScale, 1)),
     recommended: raw.recommended !== false,
     safetyRelay: !!raw.safetyRelay,
     variant: ['standard', 'severe', 'dead-air'].includes(raw.variant) ? raw.variant : 'standard',
@@ -289,10 +619,10 @@ export function validateCombatDefinition(definition) {
       }
       const recorderDamage = intents
         .filter((intent) => intent.kind === INTENT_KIND.BROADCAST && intent.recordable)
-        .reduce((total, intent) => total + clamp(integer(intent.playbackDamage, intent.damage || 2), 1, 3), 0);
+        .reduce((total, intent) => total + clamp(integer(intent.playbackDamage, intent.damage || 2 * GRID), GRID, 3 * GRID), 0);
       const recovery = intents
         .filter((intent) => intent.effect === 'recover')
-        .reduce((total, intent) => total + Math.max(1, integer(intent.recover, 1)), 0);
+        .reduce((total, intent) => total + Math.max(GRID, integer(intent.recover, GRID)), 0);
       if (recorderDamage <= recovery) {
         errors.push(`${definition.id}:${movement?.id || '?'}:${variant} recovery can lock the recorder-only path`);
       }
@@ -309,19 +639,22 @@ export function createCombatState(definition, {
   tools = {},
   techniques = [],
   source = null,
+  carriedRead = null,
+  seed = 0,
 } = {}) {
   const errors = validateCombatDefinition(definition);
   if (errors.length) throw new Error(`invalid signal combat: ${errors.join('; ')}`);
   const rules = combatDifficulty(difficulty);
-  const baseComposure = Math.max(1, integer(definition.baseComposure, 8) + rules.composureBonus);
-  const maxComposure = Math.max(4, baseComposure - Math.max(0, integer(injuries, 0)));
+  const reserve = unique(techniques).includes(TECHNIQUE.DEEP_RESERVE) ? 2 * GRID : 0;
+  const baseComposure = Math.max(1, integer(definition.baseComposure, 8 * GRID) + rules.composureBonus + reserve);
+  const maxComposure = Math.max(4 * GRID, baseComposure - Math.max(0, integer(injuries, 0)));
   const normalizedTechniques = unique(techniques).filter((id) => Object.values(TECHNIQUE).includes(id));
   const roomTone = normalizedTechniques.includes(TECHNIQUE.ROOM_TONE)
-    ? { id: 'room-tone', label: 'ROOM TONE', damage: 2, tag: 'room' }
+    ? { id: 'room-tone', label: 'ROOM TONE', damage: 2 * GRID, tag: 'room' }
     : null;
   const first = definition.movements[0];
   const sourceEnabled = definition.kind === 'source' || !!source;
-  return {
+  const state = {
     schema: COMBAT_SCHEMA,
     definition: clone(definition),
     // 'select' — the player is choosing; 'enemy' — the player has acted and the
@@ -335,7 +668,25 @@ export function createCombatState(definition, {
     movementIndex: 0,
     movementCoherence: integer(first.coherence, 1),
     movementMaxCoherence: integer(first.coherence, 1),
+    // Two jobs that used to be one. intentIndex names the beat the opponent has
+    // COMMITTED to, and `committed` is the note it wrote; cycleIndex is the
+    // monotonic beat counter, the place in the authored script the fight would
+    // be at if nobody were choosing. They part company the moment they can.
     intentIndex: 0,
+    cycleIndex: 0,
+    committed: null,
+    // What the recordist BELIEVES is committed, when that differs. Null while
+    // the read is good; see predictedCombatIntent.
+    misread: null,
+    // The opponent's posture, and what it has worked out about the person
+    // across from it. The read opens from whatever the night has already taught
+    // it — see enemy-mind.js, and note it is not the psych profile.
+    stance: openingStance(),
+    read: readFromCarried(carriedRead),
+    misreadsThisMovement: 0,
+    lastMisreadBeat: -99,
+    // Damage it has dealt in this movement, for the pace governor.
+    movementDamage: 0,
     turns: 0,
     turnsInMovement: 0,
     composure: maxComposure,
@@ -361,17 +712,14 @@ export function createCombatState(definition, {
     tempo: false,
     tuneUsedMovement: null,
     tuneBonus: 0,
-    whiteoutUsed: false,
+    // Earned by reading the opponent right; spent on specials. See CHARGE_COST.
+    // Opens on one, so the cheap utility special — the radio's thrown voice — is
+    // in reach from the first beat and the loud ones have to be earned.
+    charge: 1,
+    maxCharge: BASE_MAX_CHARGE + (normalizedTechniques.includes(TECHNIQUE.HEADROOM) ? 2 : 0),
     feedbackLoopUsed: false,
     feedbackMovements: [],
-    radioUsed: false,
     coffeeUsed: false,
-    masterTakeUsed: false,
-    runawayUsed: false,
-    // The three branch capstones share one encounter limiter. A fully built
-    // loadout may choose its spectacular phase break, not erase three phases
-    // by firing WHITEOUT, MASTER TAKE, and RUNAWAY FEEDBACK back-to-back.
-    finisherUsed: null,
     signaturePressure: 0,
     punchInMovements: [],
     overdubMovements: [],
@@ -390,11 +738,29 @@ export function createCombatState(definition, {
     actionLog: [],
     last: { notice: first.title || first.id, transition: null, action: null, perfect: false },
     difficulty: rules,
+    seed: integer(seed, 0),
     // The surfer's own defence. On the meaner difficulties it reads a committed
     // swing coming and sets to slip it — a dodge eats the hit, a parry eats it and
     // nicks your composure. Armed on the enemy beat (telegraphed), spent on your
     // next swing. null when it is not guarding. (See advanceEnemy + reduceCombat.)
     enemyGuard: null,
+    // The beat the last guard was set on, so the cooldown is measurable.
+    lastGuardBeat: -999,
+    // The stance the current beat was entered in, so a move can be credited for
+    // the stance it was PLANNED from rather than the one it creates. Written by
+    // reduceCombat, read by earnedFloor.
+    snrBefore: SNR_STATE.SIGNAL,
+    // RUNAWAY FEEDBACK deafens the room for one beat; THROW VOICE makes it decide
+    // again. Both are consumed by advanceEnemy, which is where the enemy turn is.
+    skipEnemyBeat: false,
+    recommitted: false,
+    // THE HOUSE. Null for every fight but the hall, and every code path above
+    // behaves exactly as it did when it is null. See battle-house.js — and note
+    // this is the battle UI's audience, not the world's apparitions, whose
+    // director keeps its no-player-coordinates boundary.
+    house: definition.house
+      ? createHouse({ seed: `${definition.id || 'house'}:${integer(seed, 0)}`, ...definition.house })
+      : null,
     source: sourceEnabled ? {
       enabled: true,
       armed: Object.values(SOURCE_CHANNEL).includes(source?.armed) ? source.armed : SOURCE_CHANNEL.RESCUE,
@@ -406,6 +772,10 @@ export function createCombatState(definition, {
       rescueEligible: !!source?.rescueEligible,
     } : null,
   };
+  // The opponent is already decided before the player has done anything. The
+  // first card is a real commitment, not a placeholder read off the script.
+  commitNextIntent(state);
+  return state;
 }
 
 function predictedSourceOutcome(source) {
@@ -437,13 +807,20 @@ function addSourcePoint(state, amount = 1) {
 
 function advanceIntent(state) {
   state.intentIndex += 1;
+  state.cycleIndex += 1;
   state.turns += 1;
   state.turnsInMovement += 1;
   state.tempo = false;
+  // The one seam where the opponent decides. Every path that ends a beat comes
+  // through here, so there is exactly one place a choice is ever made.
+  commitNextIntent(state);
 }
 
 function finishCombat(state, result) {
   state.phase = 'done';
+  // Nothing is coming. Both win and loss reach here through advanceIntent,
+  // which will have written a commitment for a beat that will never be thrown.
+  state.committed = null;
   const sourceOutcome = state.source ? predictedSourceOutcome(state.source) : null;
   const returnProof = state.proofs.includes('return.recordist') && state.proofs.includes('return.source');
   const inversionProof = state.tools.rig && state.proofs.includes('invert.contract') && state.proofs.includes('invert.source');
@@ -478,6 +855,10 @@ function finishCombat(state, result) {
     techniques: [...state.techniques],
     toolsUsed: { ...state.toolsUsed },
     proofs: [...state.proofs],
+    // What the thing across from you worked out about how you play. Carried
+    // into the run so the next encounter — and the chapel especially — opens
+    // already knowing you. See enemy-mind.js.
+    enemyRead: carriedRead(state.read),
     source: state.source ? {
       outcome: sourceOutcome,
       channels: { ...state.source.channels },
@@ -514,6 +895,7 @@ function completeMovement(state) {
   state.movementCoherence = integer(movement.coherence, 1);
   state.movementMaxCoherence = integer(movement.coherence, 1);
   state.intentIndex = 0;
+  state.cycleIndex = 0;
   state.turns += 1;
   state.turnsInMovement = 0;
   state.tempo = false;
@@ -521,12 +903,42 @@ function completeMovement(state) {
   state.ringing = false;
   state.signaturePressure = 0;
   state.tuneBonus = 0;
+  state.movementDamage = 0;
+  state.misread = null;
+  state.misreadsThisMovement = 0;
+  state.lastMisreadBeat = -99;
+  // A new phase is a new posture. What it threw and how hard it leaned belong to
+  // the movement that just ended; what it has learned about the person across
+  // from it does not.
+  state.stance = openingStance();
+  state.read = resetReadForMovement(state.read || emptyEnemyRead());
+  commitNextIntent(state);
   state.last.transition = { from: finishedIndex, to: state.movementIndex };
 }
 
-function applyDamageToEnemy(state, amount) {
+// One choke point for everything the player lands, which is why the house can
+// hang off it without every action needing to know a crowd exists.
+//
+// Coherence still runs the movement — the pacing, the transitions, the proof
+// walk all key on it and none of that changes. What the house adds is WHERE the
+// blow went: against a group, damage is also a count of people who stop being
+// there. A loud special reaches every occupied row; anything else lands on the
+// section the cursor is pointing at, and a parry goes back at whoever threw it.
+function applyDamageToEnemy(state, amount, actionId = null) {
   const damage = Math.max(0, integer(amount, 0));
   state.movementCoherence = Math.max(0, state.movementCoherence - damage);
+  if (state.house && damage > 0) {
+    const strike = houseStrikeFor(actionId, !!state.last?.perfect);
+    if (strike === 'group') strikeHouseAll(state.house, 1);
+    else if (strike === 'single') {
+      // A parry goes back at whoever threw it; everything else lands where the
+      // cursor is pointing.
+      const rowId = actionId === COMBAT_ACTION.PARRY
+        ? (actingRow(state.house)?.id || targetRow(state.house)?.id)
+        : targetRow(state.house)?.id;
+      if (rowId) strikeHouse(state.house, rowId, 1);
+    }
+  }
   return damage;
 }
 
@@ -537,19 +949,96 @@ function shiftSnr(state, actionId) {
   return { from: previous, to: next, changed: previous !== next };
 }
 
-function outgoingDamage(state, amount) {
-  const base = Math.max(0, integer(amount, 0));
-  if (!base) return 0;
-  if (state.snr === SNR_STATE.NOISE) return base + 1;
-  if (state.snr === SNR_STATE.SILENCE) return Math.max(1, base - 1);
-  return base;
+// ── outgoing damage, as a band ──────────────────────────────────────────────
+// Every attack is a RANGE now, and where inside the range a blow lands is
+// earned. The arithmetic lives in combat-damage.js; this section is the bridge
+// between it and the board — what each move's band is, what about the current
+// beat lifts its floor, and where the deterministic draw comes from.
+//
+// The tiles show the band and the popup shows the tier, so the player's question
+// is answerable without a single exact number being promised: "I don't know what
+// this will do, but I know it hits harder than my regular, and I know reading
+// the beat right will push it up."
+
+// The fixed bands. Derived bands (PLAYBACK off its take, INVERT off the blow it
+// turns, MONITOR off its chip) are built with bandFrom at the call site,
+// because their centre is board state rather than a constant.
+export const ACTION_BAND = Object.freeze({
+  // The floor: always available, always the weakest thing in the bag. Half a
+  // torch swing, so reaching for it is never the best answer and never no answer.
+  [COMBAT_ACTION.SHOUT]: bandFrom(GRID),
+  // The workhorse. Two of these is most of a phase, which is the pace the whole
+  // fight was authored at.
+  [COMBAT_ACTION.EXPOSE]: bandFrom(2 * GRID),
+  // The specials sit close together on purpose. They used to be 4 / 6 / 7 — three
+  // sizes of the same hammer — and the only question a player could ask was
+  // which number was biggest. They are separated by what they DO now (see the
+  // reducer), so their damage is allowed to be comparable.
+  [COMBAT_ACTION.WHITEOUT]: bandFrom(4 * GRID),
+  [COMBAT_ACTION.MASTER_TAKE]: bandFrom(4.4 * GRID),
+  [COMBAT_ACTION.RUNAWAY_FEEDBACK]: bandFrom(4.8 * GRID),
+});
+
+// Stance moves the whole band rather than the finished number, so what the tile
+// promises is the range that is actually rolled.
+//
+// The shift is PROPORTIONAL, not flat. A flat point was fine when every attack
+// dealt 2 and it was worth half of one; on the current grid a flat GRID would be
+// a quarter of a torch swing and the whole of a monitor chip, so SILENCE would
+// erase the recorder's chip entirely while barely troubling the torch. A quarter
+// of the blow means stance is worth the same to every move that uses it.
+export const STANCE_SHARE = 0.25;
+
+function stanceDamageShift(state, band) {
+  const mid = (Math.max(0, band?.min || 0) + Math.max(0, band?.max || 0)) / 2;
+  if (mid <= 0) return 0;
+  const step = Math.max(1, Math.round(mid * STANCE_SHARE));
+  if (state.snr === SNR_STATE.NOISE) return step;
+  if (state.snr === SNR_STATE.SILENCE) return -step;
+  return 0;
+}
+
+export function outgoingBand(state, band) {
+  const source = makeBand(band?.min, band?.max);
+  if (source.max <= 0) return makeBand(0, 0);
+  const shifted = shiftBand(source, stanceDamageShift(state, source));
+  // A blow that exists never rounds away to nothing.
+  return makeBand(Math.max(1, shifted.min), Math.max(1, shifted.max));
+}
+
+// What about THIS beat lifts the floor. Every term is a skill the fight already
+// asks for; none of them is a purchase or a die.
+function earnedFloor(state, actionId, { perfect = false, setup = false } = {}) {
+  let earned = Math.max(0, finite(state.difficulty?.bandFloorBonus, 0));
+  if (perfect) earned += EARNED.PERFECT_COUNTER;
+  // Acting from the stance the move belongs in. Read off the pre-shift stance:
+  // shiftSnr has usually already moved it, and rewarding a move for the stance
+  // it puts you in rather than the one you brought would reward nothing.
+  if (state.snrBefore && ACTION_SNR[actionId] === state.snrBefore) earned += EARNED.STANCE_ALIGNED;
+  if (state.tuneUsedMovement === state.movementIndex) earned += EARNED.TUNE_HELD;
+  if (setup) earned += EARNED.SETUP;
+  return Math.max(0, Math.min(1, earned));
+}
+
+// Roll a band and put it on the board. The single door every point of outgoing
+// damage goes through, so the quality tier can never be missing from a hit.
+function strike(state, band, actionId, options = {}) {
+  const rolled = outgoingBand(state, band);
+  const hit = resolveHit(rolled, {
+    earned: earnedFloor(state, actionId, options),
+    draw: unitFor(state, `hit:${actionId}`),
+  });
+  const dealt = applyDamageToEnemy(state, hit.value, actionId);
+  state.last.quality = dealt > 0 ? hit.quality : HIT_QUALITY.MISS;
+  state.last.band = rolled;
+  return dealt;
 }
 
 function defensivePrevention(state, amount) {
   const base = Math.max(0, integer(amount, 0));
-  if (state.snr === SNR_STATE.SIGNAL) return base + 1;
-  if (state.snr === SNR_STATE.NOISE) return Math.max(0, base - 1);
-  if (state.snr === SNR_STATE.SILENCE) return base + 1;
+  if (state.snr === SNR_STATE.SIGNAL) return base + GRID;
+  if (state.snr === SNR_STATE.NOISE) return Math.max(0, base - GRID);
+  if (state.snr === SNR_STATE.SILENCE) return base + GRID;
   return base;
 }
 
@@ -557,18 +1046,83 @@ function defensivePrevention(state, amount) {
 // discipline branch. Kept as one source so the move detail, the subtext, and the
 // reducer can never disagree about the number.
 function composeHeal(state) {
-  return 2 + (hasTechnique(state, TECHNIQUE.STEADY_NERVE) ? 1 : 0);
+  return 2 * GRID + (hasTechnique(state, TECHNIQUE.STEADY_NERVE) ? GRID : 0);
 }
+// BRACE (flat) puts another point behind the hands. Shared so the tile readout
+// and the reducer cannot drift.
+function holdPrevention(state) {
+  return integer(state.difficulty.holdPrevention, 2 * GRID) + (hasTechnique(state, TECHNIQUE.BRACE) ? GRID : 0);
+}
+
+// ── the parry, graded ───────────────────────────────────────────────────────
+// It used to be one binary: land the window and you turned the whole blow and
+// sent it back, miss it and you got NOTHING TO TURN. A timed input with a cliff
+// at both ends teaches players not to attempt it, which is the opposite of what
+// a parry is for. Three grades means reaching for it is always worth something
+// and only the top of the window pays for everything.
+export const PARRY_TIER = Object.freeze({ LATE: 'late', GOOD: 'good', PERFECT: 'perfect' });
+export const PARRY_TIERS = Object.freeze({
+  [PARRY_TIER.LATE]: Object.freeze({ label: 'LATE PARRY', restore: 0.5, reflect: 0, charge: 0 }),
+  [PARRY_TIER.GOOD]: Object.freeze({ label: 'PARRY', restore: 1, reflect: 0.5, charge: 0 }),
+  [PARRY_TIER.PERFECT]: Object.freeze({ label: 'PERFECT PARRY', restore: 1, reflect: 1, charge: 1 }),
+});
+
 function parryReflect(state) {
-  return 2 + (hasTechnique(state, TECHNIQUE.RIPOSTE) ? 2 : 0);
+  return 2 * GRID + (hasTechnique(state, TECHNIQUE.RIPOSTE) ? 2 * GRID : 0);
+}
+
+// ── charge ──────────────────────────────────────────────────────────────────
+// Specials used to be one apiece per encounter, and worse, all three shared a
+// single lock: three pins into three specials still bought one use. That made
+// them a moment rather than a rhythm, and it pushed every fight onto resources
+// that ran out — which is why the opponent had to be tuned soft enough to beat
+// with an empty bag, which is why a full bag walked through it.
+//
+// Charge replaces all of that. Regulars are free and unlimited; specials cost
+// charge; charge is earned by reading the opponent correctly. Play well and you
+// get to be loud, repeatedly. Play badly and you still have every regular in
+// the bag, so you are never disarmed — only slower.
+export const CHARGE_COST = Object.freeze({
+  [COMBAT_ACTION.RADIO_DECOY]: 1,
+  [COMBAT_ACTION.WHITEOUT]: 2,
+  [COMBAT_ACTION.MASTER_TAKE]: 2,
+  [COMBAT_ACTION.RUNAWAY_FEEDBACK]: 3,
+});
+export const BASE_MAX_CHARGE = 3;
+
+export const chargeCost = (actionId) => CHARGE_COST[actionId] || 0;
+
+function earnCharge(state, amount = 1) {
+  const before = integer(state.charge, 0);
+  state.charge = Math.min(integer(state.maxCharge, BASE_MAX_CHARGE), before + Math.max(0, integer(amount, 0)));
+  return state.charge - before;
+}
+
+function spendCharge(state, actionId) {
+  state.charge = Math.max(0, integer(state.charge, 0) - chargeCost(actionId));
+}
+
+// What MONITOR takes off the opponent just for listening closely. PUNCH IN
+// doubles it. Kept here so the tile readout and the reducer cannot disagree.
+function monitorChip(state) {
+  return GRID + (hasTechnique(state, TECHNIQUE.PUNCH_IN) ? GRID : 0);
 }
 
 function captureDamage(state, amount) {
-  const base = clamp(integer(amount, 1), 1, 4);
-  if (state.snr === SNR_STATE.NOISE) return Math.max(1, base - 1);
+  const base = clamp(integer(amount, GRID), GRID, 4 * GRID);
+  if (state.snr === SNR_STATE.NOISE) return Math.max(1, base - GRID);
   return base;
 }
 
+// SHOUT is deliberately NOT in this list, even though it is always enabled and
+// always deals damage. The question this predicate asks is "does the bag have a
+// real route right now", and the answer when the only thing left is your own
+// voice is no. Counting it would make the predicate permanently true and quietly
+// delete SECOND BREATH.
+//
+// What HAS changed is the stakes of a no. Being stranded used to mean HOLD was
+// the only legal move; it now means the good options are gone and the floor is
+// still there. The rescue valve became a reward for choosing to brace.
 const IMMEDIATE_PROGRESS_ACTIONS = Object.freeze([
   COMBAT_ACTION.EXPOSE,
   COMBAT_ACTION.WHITEOUT,
@@ -584,7 +1138,10 @@ const IMMEDIATE_PROGRESS_ACTIONS = Object.freeze([
 // has no immediate damage/capture route, so it cannot be farmed over a live kit.
 function hasImmediateProgress(state) {
   if (IMMEDIATE_PROGRESS_ACTIONS.some((id) => actionAvailability(state, id).enabled)) return true;
-  const intent = currentCombatIntent(state);
+  // The READ, not the truth: whether the recordist reckons they have a route is
+  // the question, and SECOND BREATH appearing on a beat they misread would be
+  // the interface knowing better than they do.
+  const intent = predictedCombatIntent(state);
   if (intent?.recordable && actionAvailability(state, COMBAT_ACTION.MONITOR).enabled) return true;
   if (actionAvailability(state, COMBAT_ACTION.RADIO_DECOY).enabled) {
     return hasTechnique(state, TECHNIQUE.DEAD_AIR)
@@ -615,34 +1172,35 @@ function applyEnemyIntent(state, intent, prevention) {
   state.signaturePressure = 0;
   const ensemble = signature === 'ensemble'
     && (state.turnsInMovement + 1) % 3 === 0
-    && state.tuneUsedMovement !== state.movementIndex ? 1 : 0;
-  const fragileSignal = state.snr === SNR_STATE.SIGNAL ? 1 : 0;
+    && state.tuneUsedMovement !== state.movementIndex ? GRID : 0;
+  const fragileSignal = state.snr === SNR_STATE.SIGNAL ? GRID : 0;
   const damage = Math.max(0,
     integer(intent?.damage, 0) + echo + ensemble + fragileSignal
     - Math.max(0, integer(prevention, 0)),
   );
   if (damage > 0) {
     if (state.difficulty.safetyRelay && !state.safetyRelayUsed && damage >= state.composure) {
-      state.damageTaken += Math.max(0, state.composure - 1);
-      state.composure = 1;
+      state.damageTaken += Math.max(0, state.composure - GRID);
+      state.composure = GRID;
       state.safetyRelayUsed = true;
       state.last.notice += ' · SAFETY RELAY REMAINS AT 1';
     } else {
       state.composure = Math.max(0, state.composure - damage);
       state.damageTaken += damage;
     }
+    state.movementDamage = integer(state.movementDamage, 0) + damage;
   }
   if (intent?.effect === 'ringing') state.ringing = true;
   if (intent?.effect === 'corrupt-take') state.take = null;
   if (intent?.effect === 'recover') {
-    state.movementCoherence = Math.min(state.movementMaxCoherence, state.movementCoherence + Math.max(1, integer(intent.recover, 1)));
+    state.movementCoherence = Math.min(state.movementMaxCoherence, state.movementCoherence + Math.max(GRID, integer(intent.recover, GRID)));
   }
-  if (signature === 'echo') state.signaturePressure = 1;
+  if (signature === 'echo') state.signaturePressure = GRID;
   return damage;
 }
 
 function actionAvailability(state, actionId) {
-  const intent = currentCombatIntent(state);
+  const intent = predictedCombatIntent(state);
   if (state.phase !== 'select') return { enabled: false, reason: 'NOT SELECTING' };
   if (actionId === COMBAT_ACTION.TUNE) {
     if (!state.tools.fork) return { enabled: false, reason: 'NO FORK' };
@@ -652,12 +1210,19 @@ function actionAvailability(state, actionId) {
   if (actionId === COMBAT_ACTION.EXPOSE || actionId === COMBAT_ACTION.WHITEOUT) {
     if (!state.tools.torch) return { enabled: false, reason: 'NO TORCH' };
     const whiteout = actionId === COMBAT_ACTION.WHITEOUT;
-    if (whiteout && !hasTechnique(state, TECHNIQUE.WHITEOUT)) return { enabled: false, reason: 'TECHNIQUE LOCKED' };
-    if (whiteout && state.finisherUsed) return { enabled: false, reason: 'FINISHER SPENT' };
-    if (whiteout && state.whiteoutUsed) return { enabled: false, reason: 'USED THIS ENCOUNTER' };
-    const cost = .025 * state.torchDrainScale * (whiteout ? 2 : 1);
+    if (!whiteout) return { enabled: true, cost: 0 };
+    // EXPOSE is free. It used to bill the battery, and because the battery is a
+    // RUN resource that exploration drains by the second, a recordist could
+    // walk the building and arrive at the chapel with their only reliable
+    // attack already spent — which meant every encounter had to be balanced for
+    // a bag that might be empty, which meant a full bag walked through it. The
+    // torch costs nothing to point. It costs something to burn out.
+    if (!hasTechnique(state, TECHNIQUE.WHITEOUT)) return { enabled: false, reason: 'TECHNIQUE LOCKED' };
+    const cost = .05 * state.torchDrainScale;
     if (state.battery + 1e-9 < cost) return { enabled: false, reason: 'BATTERY FLAT', cost };
-    return { enabled: true, cost };
+    const charge = chargeCost(COMBAT_ACTION.WHITEOUT);
+    if (state.charge < charge) return { enabled: false, reason: `NEEDS ${charge} CHARGE`, cost, charge };
+    return { enabled: true, cost, charge };
   }
   if (actionId === COMBAT_ACTION.MONITOR && !state.tools.recorder) return { enabled: false, reason: 'NO RECORDER' };
   if (actionId === COMBAT_ACTION.PLAYBACK) {
@@ -667,11 +1232,18 @@ function actionAvailability(state, actionId) {
   if (actionId === COMBAT_ACTION.INVERT) {
     if (!state.tools.rig) return { enabled: false, reason: 'NO BENT RIG' };
     if (!state.take) return { enabled: false, reason: 'NO TAKE' };
-    if (!intent?.invertible) return { enabled: false, reason: 'INTENT CANNOT INVERT' };
+    // It used to grey out against anything but a loop, which made the button
+    // itself a loop detector: with a rig and a take in hand, whether INVERT was
+    // available told you the opponent's kind for free, every beat, and no
+    // misread could survive that. The rig turns whatever is coming; whether
+    // there is anything in it to turn is answered when you commit, the way
+    // MONITOR answers 'no stable take'.
   }
   if (actionId === COMBAT_ACTION.RADIO_DECOY) {
     if (!state.tools.radio) return { enabled: false, reason: 'NO RADIO' };
-    if (state.radioUsed) return { enabled: false, reason: 'FREQUENCY BURNED' };
+    const charge = chargeCost(actionId);
+    if (state.charge < charge) return { enabled: false, reason: `NEEDS ${charge} CHARGE`, charge };
+    return { enabled: true, charge };
   }
   if (actionId === COMBAT_ACTION.STEADY_HANDS) {
     if (!state.tools.coffee) return { enabled: false, reason: 'NO COFFEE' };
@@ -687,29 +1259,60 @@ function actionAvailability(state, actionId) {
   if (actionId === COMBAT_ACTION.MASTER_TAKE) {
     if (!state.tools.recorder) return { enabled: false, reason: 'NO RECORDER' };
     if (!hasTechnique(state, TECHNIQUE.MASTER_TAKE)) return { enabled: false, reason: 'TECHNIQUE LOCKED' };
-    if (state.finisherUsed) return { enabled: false, reason: 'FINISHER SPENT' };
-    if (state.masterTakeUsed) return { enabled: false, reason: 'USED THIS ENCOUNTER' };
+    const charge = chargeCost(actionId);
+    if (state.charge < charge) return { enabled: false, reason: `NEEDS ${charge} CHARGE`, charge };
+    return { enabled: true, charge };
   }
   if (actionId === COMBAT_ACTION.RUNAWAY_FEEDBACK) {
     if (!state.tools.rig) return { enabled: false, reason: 'NO BENT RIG' };
     if (!hasTechnique(state, TECHNIQUE.RUNAWAY_FEEDBACK)) return { enabled: false, reason: 'TECHNIQUE LOCKED' };
-    if (state.finisherUsed) return { enabled: false, reason: 'FINISHER SPENT' };
-    if (state.runawayUsed) return { enabled: false, reason: 'USED THIS ENCOUNTER' };
+    const charge = chargeCost(actionId);
+    if (state.charge < charge) return { enabled: false, reason: `NEEDS ${charge} CHARGE`, charge };
+    return { enabled: true, charge };
   }
   if (actionId === COMBAT_ACTION.END_TEMPO && !state.tempo) return { enabled: false, reason: 'NO TEMPO' };
   return { enabled: true };
 }
 
+// A tile's numbers. `damage` stays a SCALAR — the band's midpoint, i.e. what the
+// move is worth on an average beat — because plenty of callers legitimately want
+// to compare or sum move values. `damageBand` is what the player is SHOWN, and
+// it is the range that will actually be rolled (stance already folded in), so
+// the tile can never promise a number the reducer will not honour.
+function bandFields(state, band) {
+  const rolled = outgoingBand(state, band);
+  return {
+    damage: Math.round((rolled.min + rolled.max) / 2),
+    damageBand: rolled,
+  };
+}
+
 export function availableCombatActions(state) {
-  const intent = currentCombatIntent(state);
+  // Everything below is a readout. It describes the fight the recordist thinks
+  // they are in — see predictedCombatIntent.
+  const intent = predictedCombatIntent(state);
   const recovery = combatRecoveryStatus(state);
+  // The tiles are written VERB FIRST. A player choosing a move is asking "what
+  // will this do", not "how much will this do", and the old copy answered the
+  // second question with a number that was a lie the moment stance changed.
+  const noise = { ...state, snr: SNR_STATE.NOISE };
+  const signal = { ...state, snr: SNR_STATE.SIGNAL };
+  const silence = { ...state, snr: SNR_STATE.SILENCE };
   const actions = [
+    {
+      id: COMBAT_ACTION.SHOUT, tool: COMBAT_TOOL.SELF, label: 'SHOUT',
+      detail: `THE FALLBACK · NO TOOL, NO COST, NEVER EMPTY · ${bandText(outgoingBand(noise, ACTION_BAND[COMBAT_ACTION.SHOUT]))} COHERENCE`,
+      regular: true,
+      ...bandFields(noise, ACTION_BAND[COMBAT_ACTION.SHOUT]),
+    },
     {
       id: COMBAT_ACTION.HOLD, tool: COMBAT_TOOL.SELF, label: 'HOLD',
       detail: recovery.stranded && !recovery.unlocked
-        ? `PREVENT ${defensivePrevention({ ...state, snr: SNR_STATE.SILENCE }, state.difficulty.holdPrevention)} · CATCH BREATH ${Math.min(recovery.required, recovery.holds + 1)} / ${recovery.required}`
-        : `PREVENT ${defensivePrevention({ ...state, snr: SNR_STATE.SILENCE }, state.difficulty.holdPrevention)} · ENTER SILENCE`,
-      prevents: defensivePrevention({ ...state, snr: SNR_STATE.SILENCE }, state.difficulty.holdPrevention),
+        ? `BRACE · PREVENT ${defensivePrevention(silence, holdPrevention(state))} · CATCH BREATH ${Math.min(recovery.required, recovery.holds + 1)} / ${recovery.required}`
+        : `BRACE · PREVENT ${defensivePrevention(silence, holdPrevention(state))} · CHIPS ON A READ · ENTER SILENCE`,
+      prevents: defensivePrevention(silence, holdPrevention(state)),
+      ...bandFields(silence, bandFrom(GRID)),
+      regular: true,
     },
     {
       id: COMBAT_ACTION.WAIT, tool: COMBAT_TOOL.SELF, label: 'WAIT',
@@ -719,72 +1322,91 @@ export function availableCombatActions(state) {
       id: COMBAT_ACTION.COMPOSE, tool: COMBAT_TOOL.SELF,
       label: recovery.ready ? 'SECOND BREATH' : 'COMPOSE',
       detail: recovery.ready
-        ? `RESTORE ${composeHeal(state)} · RETURN 1 COHERENCE · GUARD ${defensivePrevention({ ...state, snr: SNR_STATE.SILENCE }, Math.max(0, state.difficulty.holdPrevention - 1))}`
-        : `RESTORE ${composeHeal(state)} COMPOSURE · ONCE / MOVEMENT · ENTER SILENCE`,
+        ? `RECOVER · RESTORE ${composeHeal(state)} · RETURN ${GRID} COHERENCE · GUARD ${defensivePrevention(silence, Math.max(0, holdPrevention(state) - GRID))}`
+        : `RECOVER · RESTORE ${composeHeal(state)} COMPOSURE · ONCE / MOVEMENT · ENTER SILENCE`,
       heals: composeHeal(state),
-      damage: recovery.ready ? 1 : 0,
+      damage: recovery.ready ? GRID : 0,
       prevents: recovery.ready
-        ? defensivePrevention({ ...state, snr: SNR_STATE.SILENCE }, Math.max(0, state.difficulty.holdPrevention - 1))
+        ? defensivePrevention(silence, Math.max(0, holdPrevention(state) - GRID))
         : 0,
     },
     // PARRY is no longer a move you pick — it is a reaction. When the adversary's
-    // blow lands you time a guard against it (see REACTIVE_PARRY / combat.js), so
+    // blow lands you time a guard against it (see PARRY_TIERS / combat.js), so
     // it never sits in the tool menu.
     {
       id: COMBAT_ACTION.EXPOSE, tool: COMBAT_TOOL.TORCH, label: 'EXPOSE',
-      detail: `${outgoingDamage({ ...state, snr: SNR_STATE.NOISE }, 2)} COHERENCE · ENTER NOISE`,
-      damage: outgoingDamage({ ...state, snr: SNR_STATE.NOISE }, 2),
+      detail: `SET UP · ${bandText(outgoingBand(noise, ACTION_BAND[COMBAT_ACTION.EXPOSE]))} COHERENCE · LEAVES RESIDUE FOR PLAYBACK · ENTER NOISE`,
+      regular: true,
+      ...bandFields(noise, ACTION_BAND[COMBAT_ACTION.EXPOSE]),
     },
     {
       id: COMBAT_ACTION.MONITOR, tool: COMBAT_TOOL.RECORDER, label: 'MONITOR',
-      detail: 'CAPTURE BROADCAST · ENTER SIGNAL',
-      prevents: defensivePrevention({ ...state, snr: SNR_STATE.SIGNAL }, 1),
+      detail: `BUILD · CAPTURE A BROADCAST · ${bandText(outgoingBand(signal, bandFrom(monitorChip(state))))} COHERENCE · ENTER SIGNAL`,
+      // The recorder is a regular too: rolling on the thing costs it something
+      // whether or not there is a stable take in it. Without this the whole
+      // floor rests on the torch, and a missing torch is a fight you cannot win
+      // rather than a fight you have to work for.
+      ...bandFields(signal, bandFrom(monitorChip(state))),
+      prevents: defensivePrevention(signal, GRID),
       captures: true,
     },
     {
       id: COMBAT_ACTION.PLAYBACK, tool: COMBAT_TOOL.RECORDER, label: 'PLAYBACK',
-      detail: state.take ? `${state.take.damage}+ COHERENCE · CONSUME ${state.take.label}` : 'NO TAKE LOADED',
-      damage: state.take ? outgoingDamage({ ...state, snr: SNR_STATE.NOISE }, integer(state.take.damage, 0) + state.exposedBonus) : 0,
+      detail: state.take
+        ? `CASH IN · SPEND ${state.take.label}${state.exposedBonus ? ' · RESIDUE LOADED' : ''}`
+        : 'NO TAKE LOADED',
+      ...(state.take
+        ? bandFields(noise, bandFrom(integer(state.take.damage, 0) + state.exposedBonus))
+        : { damage: 0, damageBand: makeBand(0, 0) }),
       consumesTake: true,
     },
     {
       id: COMBAT_ACTION.INVERT, tool: COMBAT_TOOL.RIG, label: 'INVERT',
-      detail: 'CONSUME TAKE · RETURN LOOP · ENTER SILENCE',
-      damage: intent?.invertible ? outgoingDamage({ ...state, snr: SNR_STATE.SILENCE }, integer(intent?.damage, 0)) : 0,
+      detail: 'TURN A LOOP · SPEND TAKE · RETURN ITS OWN FORCE · ENTER SILENCE',
+      ...(intent?.invertible
+        ? bandFields(silence, bandFrom(integer(intent?.damage, 0)))
+        : { damage: 0, damageBand: makeBand(0, 0) }),
       consumesTake: true,
     },
     ...(hasTechnique(state, TECHNIQUE.WHITEOUT) ? [{
       id: COMBAT_ACTION.WHITEOUT, tool: COMBAT_TOOL.TORCH, label: 'WHITEOUT',
-      detail: '5 COHERENCE · ONE FINISHER / ENCOUNTER',
-      damage: outgoingDamage({ ...state, snr: SNR_STATE.NOISE }, 4),
-      once: true,
+      detail: `SPECIAL · ${chargeCost(COMBAT_ACTION.WHITEOUT)} CHARGE · IT LANDS WHATEVER THEY DO · CLEARS A SET GUARD · BURNS BATTERY`,
+      ...bandFields(noise, ACTION_BAND[COMBAT_ACTION.WHITEOUT]),
+      special: true, charge: chargeCost(COMBAT_ACTION.WHITEOUT),
     }] : []),
     ...(state.tools.recorder && hasTechnique(state, TECHNIQUE.MASTER_TAKE) ? [{
       id: COMBAT_ACTION.MASTER_TAKE, tool: COMBAT_TOOL.RECORDER, label: 'MASTER TAKE',
-      detail: 'THE DEFINITIVE CAPTURE · 6 COHERENCE · ONE FINISHER / ENCOUNTER',
-      damage: outgoingDamage({ ...state, snr: SNR_STATE.SIGNAL }, 6),
-      once: true,
+      detail: `SPECIAL · ${chargeCost(COMBAT_ACTION.MASTER_TAKE)} CHARGE · NEVER A GRAZE · LEAVES A STRONG TAKE LOADED`,
+      ...bandFields(signal, tightenBand(ACTION_BAND[COMBAT_ACTION.MASTER_TAKE], 0.5)),
+      special: true, charge: chargeCost(COMBAT_ACTION.MASTER_TAKE),
     }] : []),
     ...(state.tools.rig && hasTechnique(state, TECHNIQUE.RUNAWAY_FEEDBACK) ? [{
       id: COMBAT_ACTION.RUNAWAY_FEEDBACK, tool: COMBAT_TOOL.RIG, label: 'RUNAWAY FEEDBACK',
-      detail: 'THE LOOP EATS ITSELF · 7 COHERENCE · ONE FINISHER / ENCOUNTER',
-      damage: outgoingDamage({ ...state, snr: SNR_STATE.SILENCE }, 7),
-      once: true,
+      detail: `SPECIAL · ${chargeCost(COMBAT_ACTION.RUNAWAY_FEEDBACK)} CHARGE · REACHES THE WHOLE ROOM · IT LOSES ITS NEXT BEAT`,
+      ...bandFields(silence, ACTION_BAND[COMBAT_ACTION.RUNAWAY_FEEDBACK]),
+      special: true, charge: chargeCost(COMBAT_ACTION.RUNAWAY_FEEDBACK),
     }] : []),
     ...(state.tools.fork ? [{
       id: COMBAT_ACTION.TUNE, tool: COMBAT_TOOL.FORK, label: 'TUNE',
-      detail: `FREE · REVEAL ${hasTechnique(state, TECHNIQUE.PERFECT_PITCH) ? 'THREE' : 'TWO'} INTENTS · ENTER SIGNAL`,
+      // It used to reveal the next two or three entries in the list. There is
+      // no list any more — only one blow is ever committed — so the fork does
+      // the thing a reference pitch actually does: it gives you a true one. For
+      // the rest of the movement your read cannot be wrong, and every swing you
+      // throw lands higher in its band.
+      detail: 'READ · FREE · YOUR READ HOLDS THIS MOVEMENT · EVERY HIT LANDS HIGHER · ENTER SIGNAL',
       reveals: hasTechnique(state, TECHNIQUE.PERFECT_PITCH) ? 3 : 2, free: true,
     }] : []),
     ...(state.tools.radio ? [{
       id: COMBAT_ACTION.RADIO_DECOY, tool: COMBAT_TOOL.RADIO, label: 'THROW VOICE',
-      detail: 'PREVENT 2 · BURN FREQUENCY · ENTER NOISE',
-      prevents: 2, once: true,
+      detail: `SPECIAL · ${chargeCost(COMBAT_ACTION.RADIO_DECOY)} CHARGE · IT DECIDES AGAIN · PREVENT ${defensivePrevention(noise, 2 * GRID + (hasTechnique(state, TECHNIQUE.MISDIRECTION) ? GRID : 0))} · ENTER NOISE`,
+      prevents: defensivePrevention(noise, 2 * GRID + (hasTechnique(state, TECHNIQUE.MISDIRECTION) ? GRID : 0)),
+      ...bandFields(noise, bandFrom(hasTechnique(state, TECHNIQUE.DEAD_AIR) ? 2 * GRID : GRID)),
+      special: true, charge: chargeCost(COMBAT_ACTION.RADIO_DECOY),
     }] : []),
     ...(state.tools.coffee ? [{
       id: COMBAT_ACTION.STEADY_HANDS, tool: COMBAT_TOOL.COFFEE, label: 'STEADY HANDS',
-      detail: 'RESTORE 3 COMPOSURE · CONSUME · ENTER SIGNAL',
-      heals: 3, once: true,
+      detail: `RECOVER · RESTORE ${3 * GRID} COMPOSURE · CONSUME · ENTER SIGNAL`,
+      heals: 3 * GRID, once: true,
     }] : []),
     ...(state.tempo ? [{
       id: COMBAT_ACTION.END_TEMPO, tool: COMBAT_TOOL.SELF, label: 'CLOSE CHANNEL',
@@ -797,6 +1419,7 @@ export function availableCombatActions(state) {
     const countersKinds = actionCounterKinds(action.id);
     return {
       damage: 0,
+      damageBand: makeBand(0, 0),
       prevents: 0,
       heals: 0,
       reflects: 0,
@@ -804,7 +1427,12 @@ export function availableCombatActions(state) {
       ...availability,
       countersKinds,
       stanceShift: ACTION_SNR[action.id] || null,
-      perfect: countersKinds.includes(intent?.kind),
+      // The green tile and its diamond. This is the last explicit help in the
+      // fight — with the prose gone it is still the answer, handed over every
+      // beat — so the bottom rung of the guidance ladder takes it away too.
+      // `countersKinds` is untouched: the RULE still knows what counters what,
+      // and only the telling of it is withheld.
+      perfect: state.difficulty.guidance !== 'none' && countersKinds.includes(intent?.kind),
     };
   });
 }
@@ -814,7 +1442,7 @@ export function availableCombatActions(state) {
 export function combatMoveSubtext(state, move) {
   if (!move) return { short: '', long: '' };
   const bits = [];
-  if (move.damage) bits.push(`${move.damage} DMG`);
+  if (move.damage) bits.push(`${move.damageBand ? bandText(move.damageBand) : move.damage} DMG`);
   if (move.prevents) bits.push(`GUARD ${move.prevents}`);
   if (move.reflects) bits.push(`REFLECT ${move.reflects}`);
   if (move.heals) bits.push(`+${move.heals} COMPOSURE`);
@@ -902,15 +1530,27 @@ export function reduceCombat(input, action = {}) {
     const hits = Array.isArray(state.last?.enemyHits) ? state.last.enemyHits : [];
     const blowKinds = [INTENT_KIND.BROADCAST, INTENT_KIND.OVERLOAD, INTENT_KIND.LOOP];
     const blows = hits.filter((h) => blowKinds.includes(h.kind));
+    const tier = PARRY_TIERS[action.tier] ? action.tier : PARRY_TIER.PERFECT;
+    const grade = PARRY_TIERS[tier];
+    const took = blows.reduce((sum, h) => sum + Math.max(0, integer(h.received, 0)), 0);
     const room = Math.max(0, state.maxComposure - state.composure);
-    const restored = Math.min(room, blows.reduce((sum, h) => sum + Math.max(0, integer(h.received, 0)), 0));
+    const restored = Math.min(room, Math.round(took * grade.restore));
     state.composure = Math.min(state.maxComposure, state.composure + restored);
-    const reflected = blows.length ? applyDamageToEnemy(state, outgoingDamage(state, parryReflect(state))) : 0;
+    const reflected = blows.length && grade.reflect > 0
+      ? applyDamageToEnemy(state, Math.round(parryReflect(state) * grade.reflect), COMBAT_ACTION.PARRY)
+      : 0;
+    // Meeting the blow on the beat pays the same as reading it. The parry is the
+    // only timed input in the fight and it was the only skill in it that bought
+    // the player nothing.
+    const charged = blows.length && grade.charge ? earnCharge(state, grade.charge) : 0;
     state.last = {
       ...(state.last || {}),
-      notice: blows.length ? `PARRY · ${restored} TURNED · ${reflected} REFLECTED` : 'PARRY · NOTHING TO TURN',
+      notice: blows.length
+        ? `${grade.label} · ${restored} TURNED${reflected ? ` · ${reflected} REFLECTED` : ''}${charged ? ` · +${charged} CHARGE` : ''}`
+        : 'PARRY · NOTHING TO TURN',
       action: COMBAT_ACTION.PARRY,
       parried: blows.length > 0,
+      parryTier: blows.length ? tier : null,
       parryRestored: restored,
       dealt: integer(state.last?.dealt, 0) + reflected,
       received: Math.max(0, integer(state.last?.received, 0) - restored),
@@ -919,6 +1559,14 @@ export function reduceCombat(input, action = {}) {
   }
 
   if (state.phase !== 'select' || state.result) return state;
+
+  if (actionId === COMBAT_ACTION.TARGET) {
+    if (state.house) {
+      moveHouseTarget(state.house, action.delta);
+      state.last = { ...(state.last || {}), notice: `TARGET · ${targetRow(state.house)?.label || ''}`, action: actionId };
+    }
+    return state;
+  }
 
   if (actionId === COMBAT_ACTION.CHANNEL) {
     if (state.source && Object.values(SOURCE_CHANNEL).includes(action.channel)) {
@@ -939,10 +1587,14 @@ export function reduceCombat(input, action = {}) {
     state.tuneUsedMovement = state.movementIndex;
     // RESONANCE (fork) doubles the resonant bonus a TUNE leaves on the next
     // perfect counter.
-    state.tuneBonus = hasTechnique(state, TECHNIQUE.RESONANCE) ? 2 : 1;
+    state.tuneBonus = hasTechnique(state, TECHNIQUE.RESONANCE) ? 2 * GRID : GRID;
+    // A reference pitch is a reference because it does not lie to you. Whatever
+    // the recordist had wrong a moment ago, they have it right now, and for the
+    // rest of this movement their read holds (see maybeMisread).
+    state.misread = null;
     toolCount(state, 'fork');
     state.last = {
-      notice: 'FORK CALIBRATED · SIGNAL CLEAN · NEXT TWO INTENTS REVEALED',
+      notice: 'FORK CALIBRATED · SIGNAL CLEAN · YOUR READ HOLDS THIS MOVEMENT',
       transition: null, action: actionId, perfect: false,
       snrFrom: snrShift.from, snrTo: snrShift.to, dealt: 0, received: 0,
     };
@@ -963,6 +1615,9 @@ export function reduceCombat(input, action = {}) {
   const takeBefore = state.take ? { ...state.take } : null;
   const composureBefore = state.composure;
   const coherenceBefore = state.movementCoherence;
+  // The stance you arrived in, kept before shiftSnr overwrites it: earnedFloor
+  // rewards planning the sequence, not the stance the move itself puts you in.
+  state.snrBefore = state.snr;
   const snrShift = shiftSnr(state, actionId);
   let prevention = 0;
   let enemyDamage = 0;
@@ -977,56 +1632,98 @@ export function reduceCombat(input, action = {}) {
     const cost = availability.cost || 0;
     state.battery = Math.max(0, state.battery - cost);
     state.torchSpent += cost;
-    state.whiteoutUsed ||= whiteout;
-    if (whiteout) state.finisherUsed = COMBAT_ACTION.WHITEOUT;
-    dealt = applyDamageToEnemy(state, outgoingDamage(state, whiteout ? 4 : 2));
-    // AFTERIMAGE raises the exposed residue to 2; OVEREXPOSE adds a further 1.
+    if (whiteout) {
+      spendCharge(state, COMBAT_ACTION.WHITEOUT);
+      // WHITEOUT'S VERB: IT LANDS, WHATEVER THEY DO.
+      // Nothing about a flash of white can be slipped, so a set guard is simply
+      // gone. That — not its damage — is what two charge buys: the one answer to
+      // an opponent that has read you and is waiting to turn your swing.
+      state.enemyGuard = null;
+    }
+    dealt = strike(state, ACTION_BAND[actionId], actionId, { perfect });
+    // AFTERIMAGE raises the exposed residue; OVEREXPOSE adds a further point.
     state.exposedBonus = whiteout ? 0
-      : (hasTechnique(state, TECHNIQUE.AFTERIMAGE) ? 2 : 1) + (hasTechnique(state, TECHNIQUE.OVEREXPOSE) ? 1 : 0);
+      : (hasTechnique(state, TECHNIQUE.AFTERIMAGE) ? 2 * GRID : GRID) + (hasTechnique(state, TECHNIQUE.OVEREXPOSE) ? GRID : 0);
     notice = `${whiteout ? 'WHITEOUT' : 'EXPOSE'} · ${dealt} COHERENCE`;
   } else if (actionId === COMBAT_ACTION.MONITOR) {
-    prevention = defensivePrevention(state, 1);
+    // The take-slot question is asked BEFORE anything lands. It used to be asked
+    // after: the chip was applied, then the function returned to wait for a
+    // confirmation, and the beat never happened — so every press of MONITOR
+    // against a full slot dealt free damage and cost nothing. Cheap against a
+    // coherence bar and unmissable against the house, where each press quietly
+    // removed a person and the prompt just came back.
+    if (intent?.recordable && state.take && !action.replaceTake) {
+      state.last = { notice: 'TAKE SLOT OCCUPIED · CONFIRM REPLACEMENT', transition: null, action: actionId, perfect: false, needsTakeConfirmation: true };
+      return state;
+    }
+    prevention = defensivePrevention(state, GRID);
+    dealt = strike(state, bandFrom(monitorChip(state)), actionId, { perfect });
     if (intent?.recordable) {
-      if (state.take && !action.replaceTake) {
-        state.last = { notice: 'TAKE SLOT OCCUPIED · CONFIRM REPLACEMENT', transition: null, action: actionId, perfect: false, needsTakeConfirmation: true };
-        return state;
-      }
       state.take = {
         id: intent.id,
         label: intent.takeLabel || intent.label,
         damage: captureDamage(state, intent.playbackDamage ?? intent.damage ?? 2),
         tag: intent.takeTag || null,
       };
-      notice = `CAPTURED · ${state.take.label}`;
-    } else notice = 'MONITORING · NO STABLE TAKE';
+      notice = `CAPTURED · ${state.take.label} · ${dealt} COHERENCE`;
+    } else notice = `MONITORING · NO STABLE TAKE · ${dealt} COHERENCE`;
   } else if (actionId === COMBAT_ACTION.PLAYBACK) {
-    dealt = applyDamageToEnemy(state, outgoingDamage(state, integer(state.take?.damage, 0) + state.exposedBonus));
+    // Cashing in. EXPOSE first and the residue both raises the band and counts as
+    // SETUP, which lifts the floor — the sequence is worth more than the sum.
+    dealt = strike(
+      state,
+      bandFrom(integer(state.take?.damage, 0) + state.exposedBonus),
+      actionId,
+      { perfect, setup: state.exposedBonus > 0 },
+    );
     // OVERDUB (rig branch) and MULTITRACK (recorder branch) both leave a residual
     // take once per movement; MULTITRACK needs no rig.
     const canResidual = (hasTechnique(state, TECHNIQUE.OVERDUB) && state.tools.rig)
       || hasTechnique(state, TECHNIQUE.MULTITRACK);
     const retained = canResidual && !state.overdubMovements.includes(state.movementIndex);
     if (retained) {
-      state.take = { id: `${takeBefore.id}:overdub`, label: `${takeBefore.label} / OVERDUB`, damage: 1, tag: takeBefore.tag };
+      state.take = { id: `${takeBefore.id}:overdub`, label: `${takeBefore.label} / OVERDUB`, damage: GRID, tag: takeBefore.tag };
       state.overdubMovements.push(state.movementIndex);
     } else state.take = null;
     state.exposedBonus = 0;
     notice = `PLAYBACK · ${dealt} COHERENCE${retained ? ' · RESIDUAL TAKE' : ''}`;
   } else if (actionId === COMBAT_ACTION.MASTER_TAKE) {
-    state.masterTakeUsed = true;
-    state.finisherUsed = COMBAT_ACTION.MASTER_TAKE;
-    dealt = applyDamageToEnemy(state, outgoingDamage(state, 6));
+    spendCharge(state, actionId);
+    // MASTER TAKE'S VERB: IT ALWAYS GIVES YOU A TAKE.
+    // The definitive capture, so its band is tightened toward the top — a take
+    // you called definitive is not allowed to come out a graze — and it installs
+    // a strong take with no capture window and no recordable intent needed. It is
+    // the special you spend when the bag is dry: it pays for the NEXT beat too.
+    dealt = strike(state, tightenBand(ACTION_BAND[actionId], 0.5), actionId, { perfect });
+    state.take = {
+      id: `${state.definition.id}:master-take`,
+      label: 'MASTER TAKE',
+      damage: captureDamage(state, 3 * GRID),
+      tag: 'master',
+    };
     notice = `MASTER TAKE · ${dealt} COHERENCE · THE ROOM IS ON TAPE`;
   } else if (actionId === COMBAT_ACTION.RUNAWAY_FEEDBACK) {
-    state.runawayUsed = true;
-    state.finisherUsed = COMBAT_ACTION.RUNAWAY_FEEDBACK;
+    spendCharge(state, actionId);
     state.take = null;
-    dealt = applyDamageToEnemy(state, outgoingDamage(state, 7));
-    notice = `RUNAWAY FEEDBACK · ${dealt} COHERENCE · THE LOOP EATS ITSELF`;
+    // RUNAWAY FEEDBACK'S VERB: IT BUYS YOU A TURN.
+    // The loop eats itself and the room with it — every occupied row of the house
+    // at once (see houseStrikeFor), and the opponent loses its next beat because
+    // it is inside the noise too. Three charge is expensive; what it buys is not
+    // a bigger number but a beat of your own, which is the only thing in the
+    // fight that cannot be bought any other way.
+    dealt = strike(state, ACTION_BAND[actionId], actionId, { perfect });
+    state.skipEnemyBeat = true;
+    notice = `RUNAWAY FEEDBACK · ${dealt} COHERENCE · THE LOOP EATS ITSELF · THE ROOM IS DEAF`;
   } else if (actionId === COMBAT_ACTION.HOLD) {
-    prevention = defensivePrevention(state, state.difficulty.holdPrevention);
+    prevention = defensivePrevention(state, holdPrevention(state));
     state.ringing = false;
-    notice = `HOLD · PREVENT ${prevention}`;
+    // Bracing correctly is a regular attack, not a dead turn. HOLD used to be
+    // the one perfect counter that made no progress at all, so an opponent that
+    // leaned on overloads could stall the fight indefinitely against a player
+    // doing exactly the right thing. Meeting the blow on your hands costs it
+    // something.
+    if (perfect) dealt = strike(state, bandFrom(GRID), actionId, { perfect });
+    notice = `HOLD · PREVENT ${prevention}${dealt ? ` · ${dealt} COHERENCE` : ''}`;
     if (recoveryBefore.stranded && !recoveryBefore.unlocked) {
       state.recoveryHolds = Math.min(recoveryBefore.required, recoveryBefore.holds + 1);
       state.recoveryUnlocked = state.recoveryHolds >= recoveryBefore.required;
@@ -1039,33 +1736,53 @@ export function reduceCombat(input, action = {}) {
     state.composure += restored;
     if (!(state.composeMovements || []).includes(state.movementIndex)) state.composeMovements.push(state.movementIndex);
     if (availability.recovery) {
-      prevention = defensivePrevention(state, Math.max(0, state.difficulty.holdPrevention - 1));
-      dealt = applyDamageToEnemy(state, 1);
+      prevention = defensivePrevention(state, Math.max(0, holdPrevention(state) - GRID));
+      dealt = applyDamageToEnemy(state, GRID, actionId);
       notice = `SECOND BREATH · ${restored} COMPOSURE · ${dealt} COHERENCE RETURNED · PREVENT ${prevention}`;
     } else notice = `COMPOSE · ${restored} COMPOSURE RECOVERED`;
   } else if (actionId === COMBAT_ACTION.INVERT) {
-    const retain = hasTechnique(state, TECHNIQUE.FEEDBACK_LOOP) && !state.feedbackLoopUsed;
-    // TAPE ECHO adds a further +1 to a retained Invert (feedback-loop chain).
-    const echoBonus = retain && hasTechnique(state, TECHNIQUE.TAPE_ECHO) ? 1 : 0;
-    dealt = applyDamageToEnemy(state, outgoingDamage(state, integer(intent?.damage, 0) + (retain ? 1 : 0) + echoBonus));
-    if (retain) state.feedbackLoopUsed = true;
-    else state.take = null;
-    notice = `INVERT · ${dealt} RETURNED${retain ? ' · TAKE RETAINED' : ''}${echoBonus ? ' · TAPE ECHO' : ''}`;
+    if (!intent?.invertible) {
+      // You went to turn a loop and there was no loop in it. The beat is gone
+      // and the opponent still gets its turn — but the take stays in the slot,
+      // the same mercy MONITOR gets when it finds nothing to record. Committing
+      // on a bad read should cost you the exchange, not the night.
+      notice = 'INVERT · NOTHING TO TURN';
+    } else {
+      const retain = hasTechnique(state, TECHNIQUE.FEEDBACK_LOOP) && !state.feedbackLoopUsed;
+      // TAPE ECHO adds a further +1 to a retained Invert (feedback-loop chain).
+      const echoBonus = retain && hasTechnique(state, TECHNIQUE.TAPE_ECHO) ? GRID : 0;
+      dealt = strike(state, bandFrom(integer(intent?.damage, 0) + (retain ? GRID : 0) + echoBonus), actionId, { perfect });
+      if (retain) state.feedbackLoopUsed = true;
+      else state.take = null;
+      notice = `INVERT · ${dealt} RETURNED${retain ? ' · TAKE RETAINED' : ''}${echoBonus ? ' · TAPE ECHO' : ''}`;
+    }
   } else if (actionId === COMBAT_ACTION.RADIO_DECOY) {
-    state.radioUsed = true;
+    spendCharge(state, actionId);
     // MISDIRECTION (radio) guards +1; DEAD_AIR gives the decoy teeth — 2 coherence
     // against any intent, not just broadcast/loop.
-    prevention = defensivePrevention(state, 2 + (hasTechnique(state, TECHNIQUE.MISDIRECTION) ? 1 : 0));
+    prevention = defensivePrevention(state, 2 * GRID + (hasTechnique(state, TECHNIQUE.MISDIRECTION) ? GRID : 0));
     const deadAir = hasTechnique(state, TECHNIQUE.DEAD_AIR);
     if (deadAir || intent?.kind === INTENT_KIND.BROADCAST || intent?.kind === INTENT_KIND.LOOP) {
-      dealt = applyDamageToEnemy(state, outgoingDamage(state, deadAir ? 2 : 1));
+      dealt = strike(state, bandFrom(deadAir ? 2 * GRID : GRID), actionId, { perfect });
     }
-    notice = `THROW VOICE · PREVENT ${prevention} · FREQUENCY BURNED${dealt ? ` · ${dealt} COHERENCE` : ''}`;
+    // THROW VOICE'S VERB: IT CHANGES WHAT IS COMING.
+    // The decoy is the cheapest special in the bag and the only one that is not
+    // about damage at all: the opponent commits to a blow against a recordist who
+    // is not where it thought, and has to decide again. One charge turns a beat
+    // you cannot answer into a fresh read — which is a different kind of answer
+    // from a bigger swing, and the reason the radio is worth a slot.
+    state.recommitted = true;
+    notice = `THROW VOICE · PREVENT ${prevention}${dealt ? ` · ${dealt} COHERENCE` : ''} · THE ROOM DECIDES AGAIN`;
   } else if (actionId === COMBAT_ACTION.STEADY_HANDS) {
     state.coffeeUsed = true;
-    const restored = Math.min(3, state.maxComposure - state.composure);
+    const restored = Math.min(3 * GRID, state.maxComposure - state.composure);
     state.composure += restored;
     notice = `STEADY HANDS · ${restored} COMPOSURE RESTORED · CUP EMPTY`;
+  } else if (actionId === COMBAT_ACTION.SHOUT) {
+    // Your own voice, into the room, at the thing. Costs nothing, needs nothing,
+    // counters nothing. The fight always has a way forward in it.
+    dealt = strike(state, ACTION_BAND[actionId], actionId, { perfect });
+    notice = `SHOUT · ${dealt} COHERENCE`;
   } else if (actionId === COMBAT_ACTION.WAIT) {
     // No move, no guard: the beat passes to the enemy with nothing spent.
     notice = 'HOLD POSITION';
@@ -1077,23 +1794,32 @@ export function reduceCombat(input, action = {}) {
     // SECOND WIND (nerve): reading the fight keeps you in it — every perfect
     // counter restores a point of composure.
     if (hasTechnique(state, TECHNIQUE.SECOND_WIND) && state.composure < state.maxComposure) {
-      state.composure += 1;
-      notice += ' · SECOND WIND +1';
+      state.composure = Math.min(state.maxComposure, state.composure + GRID);
+      notice += ` · SECOND WIND +${GRID}`;
     }
     if (state.tuneBonus > 0) {
       const bonus = state.tuneBonus;
-      dealt += applyDamageToEnemy(state, bonus);
+      dealt += applyDamageToEnemy(state, bonus, actionId);
       state.tuneBonus = 0;
-      notice += bonus > 1 ? ' · RESONANT +2' : ' · RESONANT +1';
+      notice += ` · RESONANT +${bonus}`;
     }
-    if (actionId === COMBAT_ACTION.MONITOR && hasTechnique(state, TECHNIQUE.PUNCH_IN) && !state.punchInMovements.includes(state.movementIndex)) {
-      dealt += applyDamageToEnemy(state, 1);
-      state.punchInMovements.push(state.movementIndex);
-      notice += ' · PUNCH IN +1';
-    }
-    notice += ' · PERFECT RESPONSE';
+    // Reading the opponent right is what pays for being loud. Specials are no
+    // longer one apiece per encounter — they run on charge, and charge comes
+    // from the counter triangle and from a timed parry. It ties the whole
+    // special economy to the skill the fight is actually about, and it means a
+    // player who is reading well gets to spend, while one who is not still has
+    // every regular in the bag and can never be disarmed.
+    const gained = earnCharge(state, 1);
+    notice += gained ? ' · PERFECT RESPONSE · +1 CHARGE' : ' · PERFECT RESPONSE';
   } else if (!bonusAction) {
     state.missedCounters += 1;
+  }
+
+  // A counter that went through a set guard spends it anyway: the surfer
+  // committed to slipping and the moment is gone.
+  if (perfect && state.enemyGuard && dealt > 0 && !bonusAction) {
+    state.enemyGuard = null;
+    notice += ' · READ THROUGH THE GUARD';
   }
 
   maybeEarnProof(state, movement, actionId, perfect, takeBefore);
@@ -1103,31 +1829,60 @@ export function reduceCombat(input, action = {}) {
       && state.snr === SNR_STATE.NOISE
       && !state.feedbackMovements.includes(state.movementIndex)) {
     state.feedbackMovements.push(state.movementIndex);
-    state.composure = Math.max(0, state.composure - 1);
-    state.damageTaken += 1;
-    enemyDamage += 1;
-    notice += ' · HOUSE RETURN -1 COMPOSURE';
+    state.composure = Math.max(0, state.composure - GRID);
+    state.damageTaken += GRID;
+    enemyDamage += GRID;
+    notice += ` · HOUSE RETURN -${GRID} COMPOSURE`;
   }
 
   // The surfer slips it. If it set to guard on its last beat (see advanceEnemy)
   // and you committed a swing, the hit is turned: a dodge gives the coherence
   // back, a parry gives it back AND nicks your composure. Setup moves (no damage)
   // slip past a guard — the read is not to swing into it. Spent once, then down.
-  if (state.enemyGuard && dealt > 0 && !bonusAction) {
+  //
+  // A PERFECT COUNTER GOES THROUGH IT. The guard is the opponent reading your
+  // swing; a perfect counter is you reading its blow, and the better read wins.
+  // Without this the fight punishes the single skill it is built to reward — a
+  // player who answered the intent correctly watched the answer evaporate — and
+  // it makes the guard baitable, which is what turns it from a tax into a tell:
+  // spend it with a swing you do not mind losing, then counter into the opening.
+  if (state.enemyGuard && dealt > 0 && !bonusAction && !perfect) {
     state.movementCoherence = coherenceBefore;   // exactly undoes the swing (even if it clamped)
     const parry = state.enemyGuard.mode === 'parry';
     const nick = parry ? Math.max(1, Math.round(dealt * 0.4)) : 0;
     if (nick) { state.composure = Math.max(0, state.composure - nick); state.damageTaken += nick; }
     state.last.enemyDodge = { mode: parry ? 'parry' : 'dodge', turned: dealt, nick };
+    // The only MISS in the game, and it always has a visible cause: the opponent
+    // set to slip you and you swung anyway. A hit is never graded MISS by a bad
+    // draw, which is what keeps the bands feeling fair.
+    state.last.quality = HIT_QUALITY.MISS;
     notice = `${notice} · ${parry ? `PARRIED · ${nick} TO COMPOSURE` : 'DODGED'}`;
     dealt = 0;
     state.enemyGuard = null;
   }
 
+  // What the opponent learns from this beat. Recorded before the beat advances,
+  // so the choice made in advanceIntent is made knowing it.
+  state.read = observePlayerBeat(state.read || emptyEnemyRead(), {
+    actionId: bonusAction ? null : actionId,
+    perfect,
+    kind: intent?.kind || null,
+    takeHeld: !!state.take,
+  });
+  // A refused blow was still a blow it offered. advanceEnemy never runs on a
+  // perfect counter, so this is the only place the opponent can notice.
+  if (perfect && intent?.id) state.read = observeRefusal(state.read, intent.id);
+
   if (state.composure <= 0) {
     state.last.notice = `${notice} · COMPOSURE LOST`;
     advanceIntent(state);
     finishCombat(state, 'lose');
+  } else if (state.house && houseCleared(state.house)) {
+    // An empty house is the end of the fight, whatever movement it happens in.
+    // There is nothing left to answer, and running the remaining rounds against
+    // nobody would be the game insisting on a script the player has finished.
+    state.last.notice = `${notice} · THE HOUSE IS EMPTY`;
+    finishCombat(state, 'win');
   } else if (state.movementCoherence <= 0) {
     state.last.notice = notice;
     completeMovement(state);
@@ -1183,7 +1938,7 @@ function reactionMatches(state, reaction) {
   const threshold = integer(reaction?.threshold, 0);
   switch (reaction?.when) {
     case 'take-loaded': return !!state.take;
-    case 'low-composure': return state.composure <= (threshold || 3);
+    case 'low-composure': return state.composure <= (threshold || 3 * GRID);
     case 'noise': return state.snr === SNR_STATE.NOISE;
     case 'silence': return state.snr === SNR_STATE.SILENCE;
     case 'signal': return state.snr === SNR_STATE.SIGNAL;
@@ -1192,23 +1947,15 @@ function reactionMatches(state, reaction) {
   }
 }
 
-// The opponent's turn, as data. The base is the authored intent cycle; a
-// movement may override it by board state (reactions), and an intent may chain
-// extra hits (followups). With neither authored, this returns exactly the one
-// intent the old inline path resolved — today's fights are unchanged.
+// The opponent's turn, as data: the blow it committed to, plus any extra hits
+// that intent chains. This is a LOOKUP and must stay one — the choosing happens
+// once, at commitNextIntent, a beat earlier. The scene calls this to name the
+// blow and advanceEnemy calls it to resolve the same blow; if it decided
+// anything, those two calls would disagree.
 export function selectEnemyIntents(state) {
-  const movement = currentMovement(state);
-  const base = currentCombatIntent(state);
-  if (!base) return [];
-  let primary = base;
-  const reactions = Array.isArray(movement?.reactions) ? movement.reactions : [];
-  for (const reaction of reactions) {
-    if (!reactionMatches(state, reaction)) continue;
-    const intents = intentsFor(movement, state.difficulty.variant);
-    const override = intents.find((intent) => intent.id === reaction.use);
-    if (override) { primary = override; break; }
-  }
-  const followups = Array.isArray(primary?.followups) ? primary.followups : [];
+  const primary = currentCombatIntent(state);
+  if (!primary) return [];
+  const followups = Array.isArray(primary.followups) ? primary.followups : [];
   return [primary, ...followups];
 }
 
@@ -1220,6 +1967,35 @@ export function advanceEnemy(input) {
   const state = clone(input);
   if (state.phase !== 'enemy' || state.result) return state;
   const pending = state.pendingEnemy || { prevention: 0, playerNotice: '' };
+
+  // RUNAWAY FEEDBACK deafened the room. The opponent's committed blow is not
+  // cancelled — it is still written down, and it is still what lands next beat —
+  // it simply does not get thrown this one. That is the difference between a
+  // special that buys a turn and a special that erases a threat.
+  if (state.skipEnemyBeat) {
+    state.skipEnemyBeat = false;
+    state.pendingEnemy = null;
+    Object.assign(state.last, {
+      received: 0,
+      enemyHits: [],
+      composureTo: state.composure,
+      notice: `${pending.playerNotice || state.last?.notice || ''} · THE ROOM MISSES ITS BEAT`,
+    });
+    state.read = observeEnemyBeat(state.read || emptyEnemyRead(), { intentId: null });
+    state.stance = { ...(state.stance || openingStance()), dwell: integer(state.stance?.dwell, 0) + 1 };
+    state.phase = 'select';
+    return state;
+  }
+
+  // THROW VOICE made it commit against somebody who was not there. It decides
+  // again, from the board as it now stands — which is why a decoy is an answer
+  // to a beat you cannot counter rather than a way to survive one.
+  if (state.recommitted) {
+    state.recommitted = false;
+    state.committed = null;
+    commitNextIntent(state);
+  }
+
   const intents = selectEnemyIntents(state);
   const hits = [];
   let prevention = Math.max(0, integer(pending.prevention, 0));
@@ -1253,21 +2029,44 @@ export function advanceEnemy(input) {
     advanceIntent(state);
     finishCombat(state, 'lose');
   } else {
-    advanceIntent(state);
-    state.phase = 'select';
     // The surfer's defence, on the meaner difficulties only: once you've hurt it
     // and it is on the back foot in this movement, it sets to slip your next
     // committed swing (spent in reduceCombat). A reaction to being hit while low —
     // telegraphed, not a coin flip — so standard/guided fights never see it, and a
     // meaner surfer (dead-air) turns the hit back instead of only slipping it.
-    const bonus = integer(state.difficulty?.composureBonus, 0);
-    if (bonus < 0 && !state.enemyGuard
+    //
+    // Set BEFORE the beat advances, so the opponent chooses its next blow
+    // knowing it is guarding. Deciding to guard and deciding what to throw are
+    // one thought, and they happen in that order.
+    // It used to key off composureBonus < 0, which meant it was a side effect of
+    // a health number and CONTRACT never saw it at all. `enemyGuardCooldown` is
+    // the gate now (see COMBAT_RULES): how many enemy beats must pass between
+    // guards, or null for a surfer that never sets one.
+    //
+    // A cooldown rather than a chance, deliberately. The preconditions already
+    // make this a reaction — it only sets after you have hurt it, and only while
+    // it is on the back foot in this movement — and a player can watch that,
+    // learn it, and bait it with a cheap swing. A hidden die could not be
+    // learned, only resented.
+    const cooldown = state.difficulty?.enemyGuardCooldown;
+    const sinceGuard = integer(state.cycleIndex, 0) - integer(state.lastGuardBeat, -999);
+    if (cooldown && !state.enemyGuard
+        && sinceGuard >= cooldown
         && integer(pending.playerDealt, 0) > 0
         && state.movementMaxCoherence > 0
         && state.movementCoherence > 0
         && state.movementCoherence <= state.movementMaxCoherence * 0.5) {
-      state.enemyGuard = { mode: bonus <= -2 ? 'parry' : 'dodge' };
+      // A meaner surfer turns the hit back instead of only slipping it.
+      state.enemyGuard = { mode: cooldown <= 1 ? 'parry' : 'dodge' };
+      state.lastGuardBeat = integer(state.cycleIndex, 0);
     }
+    // The mood only ages on beats the opponent actually took. A recordist
+    // chaining perfect counters skips the enemy beat entirely, and if dwell
+    // ticked there they could rush it through postures it never got to express.
+    state.read = observeEnemyBeat(state.read || emptyEnemyRead(), { intentId: hits[0]?.intentId || null });
+    state.stance = { ...(state.stance || openingStance()), dwell: integer(state.stance?.dwell, 0) + 1 };
+    advanceIntent(state);
+    state.phase = 'select';
   }
   return state;
 }
@@ -1279,6 +2078,12 @@ export function advanceEnemy(input) {
 export function runCombatTurn(state, action) {
   const afterPlayer = reduceCombat(state, action);
   return afterPlayer.phase === 'enemy' ? advanceEnemy(afterPlayer) : afterPlayer;
+}
+
+// What the battle UI draws and the thought trace talks about. Null for every
+// fight that is one thing in one room.
+export function combatHouse(state) {
+  return houseView(state?.house || null);
 }
 
 export function combatResult(state) {

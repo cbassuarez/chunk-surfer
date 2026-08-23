@@ -1,347 +1,348 @@
 {
-  "schemaVersion": 1,
-  "id": "ending.drugged",
-  "title": "Cold, Bitter, Gone",
-  "status": "active",
-  "entry": "start",
-  "entries": [
-    "start"
-  ],
-  "tags": [
-    "ending",
-    "drugged"
-  ],
-  "notes": "Replaces ending.drugged.complete / .partial, which differed by one word and declared a mundane answer four lines after the player walked out of a building that had stopped having a shape. The audit is right that the main scene and the gate scene argued rather than escalated. So nobody adjudicates it now: he plays the night back and the tape is a hub of EVIDENCE, and the evidence does not agree. The mundane reading covers the takes, the time and the cup. It does not cover the marks on him or the kit that is not in the van, and those are the two he keeps coming back to. He can leave whenever he likes; the file is closed either way.",
-  "regions": [
-    {
-      "id": "ending.drugged.region",
-      "title": "Cold, Bitter, Gone",
-      "kind": "ending",
-      "color": "#6a5a3b",
-      "nodeIds": [
-        "start",
-        "tape",
-        "tape.takes",
-        "tape.marks",
-        "tape.kit",
-        "tape.cup",
-        "tape.dock",
-        "out"
-      ]
-    }
-  ],
-  "nodes": {
-    "start": {
-      "type": "dialogue",
-      "speaker": "THE CAR PARK",
-      "lines": [
-        {
-          "who": "direction",
-          "text": "You are in the car park. The skips are where the skips are. The building stands, unlit, four storeys of ordinary Victorian brick with a demolition notice on the gate, and there is nothing whatever the matter with it.",
-          "id": "start.line.1"
-        },
-        {
-          "who": "you",
-          "text": "...what was in that coffee.",
-          "id": "start.line.2"
-        },
-        {
-          "who": "direction",
-          "text": "It is five in the morning and you are standing in a car park asking a question you cannot answer, holding an empty cup, and the answer is going to have to come off the tape because there is nowhere else left for it to come from.",
-          "id": "start.line.3"
-        },
-        {
-          "who": "direction",
-          "text": "You put the headphones on, out of thirty years of habit, and you play the night back.",
-          "id": "start.line.4",
-          "cues": [
-            "story.tape"
-          ]
-        }
-      ],
-      "goto": "tape",
-      "id": "start"
-    },
-    "tape": {
-      "type": "choice",
-      "kind": "hub",
-      "speaker": "PLAYBACK",
-      "lines": [],
-      "choices": [
-        {
-          "text": "Play the takes through.",
-          "goto": "tape.takes",
-          "id": "tape.choice.takes"
-        },
-        {
-          "text": "Roll your sleeve up.",
-          "goto": "tape.marks",
-          "when": "ending.injuries>=1",
-          "id": "tape.choice.marks"
-        },
-        {
-          "text": "Go through the bag.",
-          "goto": "tape.kit",
-          "when": "!ending.equipment.complete",
-          "id": "tape.choice.kit"
-        },
-        {
-          "text": "Look at the cup.",
-          "goto": "tape.cup",
-          "id": "tape.choice.cup"
-        },
-        {
-          "text": "Scrub back to the loading dock.",
-          "goto": "tape.dock",
-          "when": "ending.dock.spent",
-          "id": "tape.choice.dock"
-        },
-        {
-          "text": "Take the headphones off.",
-          "goto": "out",
-          "id": "tape.choice.out"
-        }
-      ],
-      "id": "tape"
-    },
-    "tape.takes": {
-      "type": "dialogue",
-      "speaker": "PLAYBACK",
-      "lines": [
-        {
-          "who": "recordist",
-          "text": "Take one.",
-          "id": "tape.takes.line.slate"
-        },
-        {
-          "who": "you",
-          "text": "That is me. Breathing. Talking to a room. Take two is footsteps. Take three is a man saying a name into a space with nobody in it.",
-          "id": "tape.takes.line.1"
-        },
-        {
-          "who": "direction",
-          "text": "Five files, and not one clean minute among them. Room tone with a man walking about in it.",
-          "id": "tape.takes.line.full",
-          "when": "ending.takes.full"
-        },
-        {
-          "who": "direction",
-          "text": "Every file you did manage, and not one clean minute among them. Room tone with a man walking about in it.",
-          "id": "tape.takes.line.partial",
-          "when": "!ending.takes.full"
-        },
-        {
-          "who": "you",
-          "text": "Eight hours in a condemned building, off my face on a stranger's coffee, narrating. That is what this is. That is all this is.",
-          "id": "tape.takes.line.2"
-        },
-        {
-          "who": "direction",
-          "text": "It fits. It fits so well that you play the third one again to hear it fit, and on the second pass the man in the room is talking to something, and there is a shape to the gaps he leaves.",
-          "id": "tape.takes.line.3"
-        },
-        {
-          "who": "you",
-          "text": "That is pacing. That is a man pausing for breath.",
-          "id": "tape.takes.line.4"
-        },
-        {
-          "who": "direction",
-          "text": "Under the last sentence the recorder still reads PRE -01.8, which is a pre-roll level from a transport that has not started, and you have never once seen that on a machine you were holding.",
-          "id": "tape.takes.line.5"
-        }
-      ],
-      "goto": "tape",
-      "id": "tape.takes"
-    },
-    "tape.marks": {
-      "type": "dialogue",
-      "speaker": "THE CAR PARK",
-      "lines": [
-        {
-          "who": "direction",
-          "text": "You roll the sleeve up under a sodium lamp in a car park at five in the morning, which is not a thing you have ever had to do after a job.",
-          "id": "tape.marks.line.1"
-        },
-        {
-          "who": "you",
-          "text": "Once. It got me once and I have the mark for it.",
-          "id": "tape.marks.line.one",
-          "when": "ending.injuries==1"
-        },
-        {
-          "who": "you",
-          "text": "Twice. There are two of them and they do not match each other.",
-          "id": "tape.marks.line.two",
-          "when": "ending.injuries==2"
-        },
-        {
-          "who": "you",
-          "text": "Three. I have got three, and I can tell you which room each one is from, which is not how a hallucination works.",
-          "id": "tape.marks.line.three",
-          "when": "ending.injuries>=3"
-        },
-        {
-          "who": "you",
-          "text": "A man off his face in the dark walks into things. That is all this is. That is exactly what that is.",
-          "id": "tape.marks.line.explain"
-        },
-        {
-          "who": "direction",
-          "text": "It is a good explanation. It is the explanation you would give somebody else. It does not explain the shape of them, and you have been looking at the shape of them for a minute and a half.",
-          "id": "tape.marks.line.shape"
-        }
-      ],
-      "goto": "tape",
-      "id": "tape.marks"
-    },
-    "tape.kit": {
-      "type": "dialogue",
-      "speaker": "THE CAR PARK",
-      "lines": [
-        {
-          "who": "direction",
-          "text": "You go through the bag on the bonnet of the van, in the rain, the way you went through it at the start of the night. It is a shorter job than it was.",
-          "id": "tape.kit.line.1"
-        },
-        {
-          "who": "you",
-          "text": "So where is it.",
-          "id": "tape.kit.line.2"
-        },
-        {
-          "who": "direction",
-          "text": "If nothing was in that building, then a man who was in it on his own put his own kit down somewhere and walked away from it, and did not notice, and cannot now say where.",
-          "id": "tape.kit.line.3"
-        },
-        {
-          "who": "you",
-          "text": "Which is possible. Which is entirely possible. I have known men lose a boom in a field.",
-          "id": "tape.kit.line.4"
-        },
-        {
-          "who": "direction",
-          "text": "It is in there now, whatever it is, in a building that comes down at six. You are not going back in for it and you both know why, and the why is not the coffee.",
-          "id": "tape.kit.line.5"
-        }
-      ],
-      "goto": "tape",
-      "id": "tape.kit"
-    },
-    "tape.cup": {
-      "type": "dialogue",
-      "speaker": "THE CAR PARK",
-      "lines": [
-        {
-          "who": "direction",
-          "text": "The cup is in your hand. It is empty. You do not remember finishing it and you have been holding it for eight hours.",
-          "id": "tape.cup.line.1"
-        },
-        {
-          "who": "you",
-          "text": "Nobody carries a cup round a job for eight hours.",
-          "id": "tape.cup.line.2"
-        },
-        {
-          "who": "direction",
-          "text": "This is the piece of evidence that does the most work, and it is the piece of evidence that proves the least: it is a paper cup. It could mean a man was drugged. It could mean a man was frightened enough to hold on to the last thing anybody gave him.",
-          "id": "tape.cup.line.3"
-        },
-        {
-          "who": "you",
-          "text": "He is still on the gate. I could go and ask him.",
-          "id": "tape.cup.line.4"
-        },
-        {
-          "who": "direction",
-          "text": "You could. You are going to. And whatever he says, you will have to decide whether to believe a man who has been on that gate all night.",
-          "id": "tape.cup.line.5"
-        }
-      ],
-      "goto": "tape",
-      "id": "tape.cup"
-    },
-    "tape.dock": {
-      "type": "dialogue",
-      "speaker": "PLAYBACK",
-      "lines": [
-        {
-          "who": "direction",
-          "text": "You scrub back to the loading dock, early on, before any of it. The transport counts up. There is a room, and there is you in it, and there is something that is not you.",
-          "id": "tape.dock.line.1"
-        },
-        {
-          "who": "surfer",
-          "text": "Come closer.",
-          "id": "tape.dock.line.2"
-        },
-        {
-          "who": "direction",
-          "text": "It is on the tape. Whatever it is, it went through a microphone and onto a card, and a card does not have a nervous system and has never once had a bad night.",
-          "id": "tape.dock.line.3"
-        },
-        {
-          "who": "you",
-          "text": "It is me. It is me saying it. Rooms do that — you talk in a big empty room and it comes back to you off the far wall and you do not recognise it.",
-          "id": "tape.dock.line.4"
-        },
-        {
-          "who": "direction",
-          "text": "You play it eleven times. It does not stop being on the tape, and you do not stop having an explanation for it, and neither of those changes on the twelfth.",
-          "id": "tape.dock.line.5"
-        }
-      ],
-      "goto": "tape",
-      "id": "tape.dock"
-    },
-    "out": {
-      "type": "ending",
-      "lines": [
-        {
-          "who": "direction",
-          "text": "You take the headphones off. The car park is a car park. The building is a building. Both of those are true at five in the morning and neither of them was true an hour ago.",
-          "id": "out.line.1"
-        },
-        {
-          "who": "you",
-          "text": "No money. No takes. A note in a file somewhere: this contractor could not be relied upon.",
-          "id": "out.line.2"
-        },
-        {
-          "who": "direction",
-          "text": "That will be the finding, because it is the only finding anybody can write down. There is no box on the form for the other one.",
-          "id": "out.line.3"
-        },
-        {
-          "who": "you",
-          "text": "And I still said her name into an empty room, and I do not know who I said it to.",
-          "id": "out.line.4",
-          "when": "ending.confession.said.sarah"
-        },
-        {
-          "who": "you",
-          "text": "And I still said it out loud, whatever it was, and it is on a card in a bag in a car park.",
-          "id": "out.line.5",
-          "when": "ending.confession.spoken && !ending.confession.said.sarah"
-        },
-        {
-          "who": "you",
-          "text": "And I gave it nothing all night, which is either very good discipline or nothing to do with me at all.",
-          "id": "out.line.6",
-          "when": "ending.confession.nothing"
-        },
-        {
-          "who": "direction",
-          "text": "You will pick one of the two explanations before the end of the week. You can carry a great deal out to a van at five in the morning, and not both of these. Which one you pick will not be decided by the evidence. It will be decided by which one you can get up in the morning with.",
-          "id": "out.line.7"
-        },
-        {
-          "who": "direction",
-          "text": "The file closes on the coffee. Under the last sentence, the recorder still reads PRE -01.8.",
-          "id": "out.line.8"
-        }
-      ],
-      "id": "out"
-    }
+ "schemaVersion": 1,
+ "id": "ending.drugged",
+ "title": "Cold, Bitter, Gone",
+ "status": "active",
+ "entry": "start",
+ "entries": [
+  "start"
+ ],
+ "tags": [
+  "ending",
+  "drugged"
+ ],
+ "notes": "Replaces ending.drugged.complete / .partial, which differed by one word and declared a mundane answer four lines after the player walked out of a building that had stopped having a shape. The audit is right that the main scene and the gate scene argued rather than escalated. So nobody adjudicates it now: he plays the night back and the tape is a hub of EVIDENCE, and the evidence does not agree. The mundane reading covers the takes, the time and the cup. It does not cover the marks on him or the kit that is not in the van, and those are the two he keeps coming back to. He can leave whenever he likes; the file is closed either way.",
+ "regions": [
+  {
+   "id": "ending.drugged.region",
+   "title": "Cold, Bitter, Gone",
+   "kind": "ending",
+   "color": "#6a5a3b",
+   "nodeIds": [
+    "start",
+    "tape",
+    "tape.takes",
+    "tape.marks",
+    "tape.kit",
+    "tape.cup",
+    "tape.dock",
+    "out"
+   ]
   }
+ ],
+ "nodes": {
+  "start": {
+   "type": "dialogue",
+   "speaker": "THE CAR PARK",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "You are in the car park. The skips are where the skips are. The building stands, unlit, four storeys of ordinary Victorian brick with a demolition notice on the gate, and there is nothing whatever the matter with it.",
+     "id": "start.line.1"
+    },
+    {
+     "who": "you",
+     "text": "...what was in that coffee.",
+     "id": "start.line.2"
+    },
+    {
+     "who": "direction",
+     "text": "It is five in the morning and you are standing in a car park asking a question you cannot answer, holding an empty cup, and the answer is going to have to come off the tape because there is nowhere else left for it to come from.",
+     "id": "start.line.3"
+    },
+    {
+     "who": "direction",
+     "text": "You put the headphones on, out of thirty years of habit, and you play the night back.",
+     "id": "start.line.4",
+     "cues": [
+      "story.tape"
+     ]
+    }
+   ],
+   "goto": "tape",
+   "id": "start"
+  },
+  "tape": {
+   "type": "choice",
+   "kind": "hub",
+   "speaker": "PLAYBACK",
+   "lines": [],
+   "choices": [
+    {
+     "text": "Play the takes through.",
+     "goto": "tape.takes",
+     "id": "tape.choice.takes"
+    },
+    {
+     "text": "Roll your sleeve up.",
+     "goto": "tape.marks",
+     "when": "ending.injuries>=1",
+     "id": "tape.choice.marks"
+    },
+    {
+     "text": "Go through the bag.",
+     "goto": "tape.kit",
+     "when": "!ending.equipment.complete",
+     "id": "tape.choice.kit"
+    },
+    {
+     "text": "Look at the cup.",
+     "goto": "tape.cup",
+     "id": "tape.choice.cup"
+    },
+    {
+     "text": "Scrub back to the loading dock.",
+     "goto": "tape.dock",
+     "when": "ending.dock.spent",
+     "id": "tape.choice.dock"
+    },
+    {
+     "text": "Take the headphones off.",
+     "goto": "out",
+     "id": "tape.choice.out"
+    }
+   ],
+   "id": "tape"
+  },
+  "tape.takes": {
+   "type": "dialogue",
+   "speaker": "PLAYBACK",
+   "lines": [
+    {
+     "who": "recordist",
+     "text": "Take one.",
+     "id": "tape.takes.line.slate"
+    },
+    {
+     "who": "you",
+     "text": "That is me. Breathing. Talking to a room. Take two is footsteps. Take three is a man saying a name into a space with nobody in it.",
+     "id": "tape.takes.line.1"
+    },
+    {
+     "who": "direction",
+     "text": "Five files, and not one clean minute among them. Room tone with a man walking about in it.",
+     "id": "tape.takes.line.full",
+     "when": "ending.takes.full"
+    },
+    {
+     "who": "direction",
+     "text": "Every file you did manage, and not one clean minute among them. Room tone with a man walking about in it.",
+     "id": "tape.takes.line.partial",
+     "when": "!ending.takes.full"
+    },
+    {
+     "who": "you",
+     "text": "Eight hours in a condemned building, off my face on a stranger's coffee, narrating. That is what this is. That is all this is.",
+     "id": "tape.takes.line.2"
+    },
+    {
+     "who": "direction",
+     "text": "It fits. It fits so well that you play the third one again to hear it fit, and on the second pass the man in the room is talking to something, and there is a shape to the gaps he leaves.",
+     "id": "tape.takes.line.3"
+    },
+    {
+     "who": "you",
+     "text": "That is pacing. That is a man pausing for breath.",
+     "id": "tape.takes.line.4"
+    },
+    {
+     "who": "direction",
+     "text": "Under the last sentence the recorder still reads PRE -01.8, which is a pre-roll level from a transport that has not started, and you have never once seen that on a machine you were holding.",
+     "id": "tape.takes.line.5"
+    }
+   ],
+   "goto": "tape",
+   "id": "tape.takes"
+  },
+  "tape.marks": {
+   "type": "dialogue",
+   "speaker": "THE CAR PARK",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "You roll the sleeve up under a sodium lamp in a car park at five in the morning, which is not a thing you have ever had to do after a job.",
+     "id": "tape.marks.line.1"
+    },
+    {
+     "who": "you",
+     "text": "Once. It got me once and I have the mark for it.",
+     "id": "tape.marks.line.one",
+     "when": "ending.injuries==1"
+    },
+    {
+     "who": "you",
+     "text": "Twice. There are two of them and they do not match each other.",
+     "id": "tape.marks.line.two",
+     "when": "ending.injuries==2"
+    },
+    {
+     "who": "you",
+     "text": "Three. I have got three, and I can tell you which room each one is from, which is not how a hallucination works.",
+     "id": "tape.marks.line.three",
+     "when": "ending.injuries>=3"
+    },
+    {
+     "who": "you",
+     "text": "A man off his face in the dark walks into things. That is all this is. That is exactly what that is.",
+     "id": "tape.marks.line.explain"
+    },
+    {
+     "who": "direction",
+     "text": "It is a good explanation. It is the explanation you would give somebody else. It does not explain the shape of them, and you have been looking at the shape of them for a minute and a half.",
+     "id": "tape.marks.line.shape"
+    }
+   ],
+   "goto": "tape",
+   "id": "tape.marks"
+  },
+  "tape.kit": {
+   "type": "dialogue",
+   "speaker": "THE CAR PARK",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "You go through the bag on the bonnet of the van, in the rain, the way you went through it at the start of the night. It is a shorter job than it was.",
+     "id": "tape.kit.line.1"
+    },
+    {
+     "who": "you",
+     "text": "So where is it.",
+     "id": "tape.kit.line.2"
+    },
+    {
+     "who": "direction",
+     "text": "If nothing was in that building, then a man who was in it on his own put his own kit down somewhere and walked away from it, and did not notice, and cannot now say where.",
+     "id": "tape.kit.line.3"
+    },
+    {
+     "who": "you",
+     "text": "Which is possible. Which is entirely possible. I have known men lose a boom in a field.",
+     "id": "tape.kit.line.4"
+    },
+    {
+     "who": "direction",
+     "text": "It is in there now, whatever it is, in a building that comes down at six. You are not going back in for it and you both know why, and the why is not the coffee.",
+     "id": "tape.kit.line.5"
+    }
+   ],
+   "goto": "tape",
+   "id": "tape.kit"
+  },
+  "tape.cup": {
+   "type": "dialogue",
+   "speaker": "THE CAR PARK",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "The cup is in your hand. It is empty. You do not remember finishing it and you have been holding it for eight hours.",
+     "id": "tape.cup.line.1"
+    },
+    {
+     "who": "you",
+     "text": "Nobody carries a cup round a job for eight hours.",
+     "id": "tape.cup.line.2"
+    },
+    {
+     "who": "direction",
+     "text": "This is the piece of evidence that does the most work, and it is the piece of evidence that proves the least: it is a paper cup. It could mean a man was drugged. It could mean a man was frightened enough to hold on to the last thing anybody gave him.",
+     "id": "tape.cup.line.3"
+    },
+    {
+     "who": "you",
+     "text": "He is still on the gate. I could go and ask him.",
+     "id": "tape.cup.line.4"
+    },
+    {
+     "who": "direction",
+     "text": "You could. You are going to. And whatever he says, you will have to decide whether to believe a man who has been on that gate all night.",
+     "id": "tape.cup.line.5"
+    }
+   ],
+   "goto": "tape",
+   "id": "tape.cup"
+  },
+  "tape.dock": {
+   "type": "dialogue",
+   "speaker": "PLAYBACK",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "You scrub back to the loading dock, early on, before any of it. The transport counts up. There is a room, and there is you in it, and there is something that is not you.",
+     "id": "tape.dock.line.1"
+    },
+    {
+     "who": "surfer",
+     "text": "Come closer.",
+     "id": "tape.dock.line.2",
+     "quotes": "monitor"
+    },
+    {
+     "who": "direction",
+     "text": "It is on the tape. Whatever it is, it went through a microphone and onto a card, and a card does not have a nervous system and has never once had a bad night.",
+     "id": "tape.dock.line.3"
+    },
+    {
+     "who": "you",
+     "text": "It is me. It is me saying it. Rooms do that — you talk in a big empty room and it comes back to you off the far wall and you do not recognise it.",
+     "id": "tape.dock.line.4"
+    },
+    {
+     "who": "direction",
+     "text": "You play it eleven times. It does not stop being on the tape, and you do not stop having an explanation for it, and neither of those changes on the twelfth.",
+     "id": "tape.dock.line.5"
+    }
+   ],
+   "goto": "tape",
+   "id": "tape.dock"
+  },
+  "out": {
+   "type": "ending",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "You take the headphones off. The car park is a car park. The building is a building. Both of those are true at five in the morning and neither of them was true an hour ago.",
+     "id": "out.line.1"
+    },
+    {
+     "who": "you",
+     "text": "No money. No takes. A note in a file somewhere: this contractor could not be relied upon.",
+     "id": "out.line.2"
+    },
+    {
+     "who": "direction",
+     "text": "That will be the finding, because it is the only finding anybody can write down. There is no box on the form for the other one.",
+     "id": "out.line.3"
+    },
+    {
+     "who": "you",
+     "text": "And I still said her name into an empty room, and I do not know who I said it to.",
+     "id": "out.line.4",
+     "when": "ending.confession.said.sarah"
+    },
+    {
+     "who": "you",
+     "text": "And I still said it out loud, whatever it was, and it is on a card in a bag in a car park.",
+     "id": "out.line.5",
+     "when": "ending.confession.spoken && !ending.confession.said.sarah"
+    },
+    {
+     "who": "you",
+     "text": "And I gave it nothing all night, which is either very good discipline or nothing to do with me at all.",
+     "id": "out.line.6",
+     "when": "ending.confession.nothing"
+    },
+    {
+     "who": "direction",
+     "text": "You will pick one of the two explanations before the end of the week. You can carry a great deal out to a van at five in the morning, and not both of these. Which one you pick will not be decided by the evidence. It will be decided by which one you can get up in the morning with.",
+     "id": "out.line.7"
+    },
+    {
+     "who": "direction",
+     "text": "The file closes on the coffee. Under the last sentence, the recorder still reads PRE -01.8.",
+     "id": "out.line.8"
+    }
+   ],
+   "id": "out"
+  }
+ }
 }

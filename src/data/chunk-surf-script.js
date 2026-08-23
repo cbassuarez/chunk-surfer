@@ -12,6 +12,12 @@ export const CHUNK_SURF_FLAGS = Object.freeze({
   optionalWorkOrder: 'chunkSurf.optional.workOrder',
   correctRedaction: 'chunkSurf.correctRedaction',
   bestEligible: 'chunkSurf.bestEligible',
+  // Past the last page, when the surfer was never settled. See THE HORIZON in
+  // chunk-surf-state.js.
+  horizon: 'chunkSurf.horizon',
+  horizonLost: 'chunkSurf.horizon.lost',
+  horizonExitChapel: 'chunkSurf.horizon.exit.chapel',
+  horizonExitTower: 'chunkSurf.horizon.exit.tower',
 });
 
 export const CHUNK_SURF_ROOMS = Object.freeze([

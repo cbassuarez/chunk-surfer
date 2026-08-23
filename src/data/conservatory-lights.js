@@ -240,6 +240,48 @@ export const CONSERVATORY_LIGHTS = Object.freeze([
   // Sodium on the road's own column, too far to hear and too far to help.
   L('bay-yard-sodium', LIGHT_KIND.FITTING, 22.0, 4.0, 6.6, [1, .52, .18], 1.05, 22.0,
     { groups:['ground'], zones:[ZONE.dock] }),
+  // The park's one working column, at the corner of the crossing paths. Sodium,
+  // like the road's, because a municipal park and a municipal road were lit by
+  // the same department out of the same store — and because the one thing that
+  // has to read at the far end of that lawn is the fountain, which is directly
+  // under it. Anchored to the column so the glow comes out of a visible fitting
+  // rather than out of the air above the grass.
+  L('yard-park-sodium', LIGHT_KIND.FITTING, 12.5, 33.0, 6.6, [1, .54, .21], .96, 19.0,
+    { groups:['ground'], zones:[ZONE.dock], anchorPropId:'yard-park-lamp', anchorOffset:[0,.20,0] }),
+  // ── ST BRENDAN'S ─────────────────────────────────────────────────────────
+  //
+  // Nothing in this building has power and nothing in it is lit. What is in here
+  // is weather: the moon coming down the belfry shaft and in through the lancets,
+  // which is why these are cold, dim and high. LIGHT_KIND.SKY rather than
+  // FITTING — there is no fitting, and putting one in would be inventing a
+  // caretaker this church has not had in years.
+  //
+  // The intensities look high for moonlight and are not negotiable: LIGHT_BANDS
+  // floors SKY at .45, because a sky legitimately runs an order above a bulkhead.
+  // The dimness in here is bought with RADIUS instead — short reaches that die
+  // before they touch a wall, which is what a shaft of light actually does.
+  //
+  // Authored on ZONE.church so none of it spills into the yard's sodium.
+  //
+  // Down the tower: eighteen metres of shaft with louvres at the head, so the
+  // light arrives from directly above and dies long before the floor.
+  L('brendan-tower-shaft', LIGHT_KIND.SKY, 16.0, 57.0, 15.4, [.62, .70, .86], .78, 11.0,
+    { groups:['ground'], zones:[ZONE.church] }),
+  // The nave, under the lancets. Two of them, north and south of the crossing,
+  // because one lamp in the middle of a thirty-metre nave reads as a bulb.
+  L('brendan-nave-north', LIGHT_KIND.SKY, 16.0, 66.0, 10.2, [.58, .66, .84], .54, 12.0,
+    { groups:['ground'], zones:[ZONE.church] }),
+  L('brendan-nave-south', LIGHT_KIND.SKY, 16.0, 76.0, 10.2, [.58, .66, .84], .54, 12.0,
+    { groups:['ground'], zones:[ZONE.church] }),
+  // The crossing, where the transept lancets meet the nave's and there is
+  // genuinely more sky above you than anywhere else in the building.
+  L('brendan-crossing', LIGHT_KIND.SKY, 16.0, 74.0, 10.6, [.60, .68, .86], .64, 14.0,
+    { groups:['ground'], zones:[ZONE.church] }),
+  // The chancel is lower, smaller and further from every opening. It stays the
+  // darkest thing in here on purpose — it is the end of the building.
+  L('brendan-chancel', LIGHT_KIND.SKY, 16.0, 84.0, 7.4, [.54, .60, .78], .47, 7.5,
+    { groups:['ground'], zones:[ZONE.church] }),
+
   // The booth window. The only lit one on the site, and the last shift in it.
   L('bay-booth-window', LIGHT_KIND.FITTING, 24.0, 14.0, 2.0, [1, .82, .58], .92, 12.0,
     { groups:['ground'], zones:[ZONE.dock], flutter:{ amount:.04, steady:.90 } }),

@@ -81,6 +81,9 @@ export const freshSave = ({ settings = DEFAULT_SETTINGS, run = null } = {}) => (
   dockHaunting: freshDockHauntingState(),
   practiceHaunts: freshPracticeHauntState(),
   plantIncident: null,
+  // The head from the fountain in the park, and whether the gallery has it back.
+  // Normalised on read by game/marble-head.js, same as plantIncident above.
+  marbleHead: null,
   // The chair in the yard, and whether it has been looked at. Normalised on
   // read by game/yard-vigil.js rather than here, because the whole rule lives
   // in that module and this file has no business knowing what a vigil is.

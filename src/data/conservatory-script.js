@@ -24,8 +24,10 @@
 //     a man who took a contract, and a building that wanted one thing, and a
 //     transaction that closed.
 //
-// PAGE DECAY: `decay` 0..1 erodes glyphs (see game/document.js). It rises with
-// page number. It is the ink and the paper, and it says nothing about his mind.
+// LEGACY PAGE DECAY: `decay` is retained as authored compatibility metadata.
+// The offline paper compiler maps it to a physical reproduction profile
+// (handled original / copy generation); runtime code never erodes or rewrites
+// these strings. It is production history, and it says nothing about his mind.
 
 export const WORK_ORDER = {
   id: 'work-order',
@@ -675,6 +677,47 @@ export const BUST_FRAGMENT = {
   },
 };
 
+// THE ONE THAT GETS ITS EYES BACK.
+//
+// Half of this face has been in a fountain in the park across the yard since
+// before tonight. Put it back and the bust is the only thing in the building
+// that has been in one place the whole time and was facing the right way — so
+// what it has to offer is not a secret, it is an eyewitness account. It watched
+// a plant engineer come through with a key he was not supposed to still have,
+// and it watched where he put it.
+//
+// It does not hand anything over. A bust with a key in it is nonsense. It tells
+// you what it saw, and the walk down is yours.
+export const BUST_RESTORED = {
+  start: {
+    speaker: 'THE GALLERY',
+    lines: [
+      { who: 'direction', text: 'The break takes first time. Old stone finds old stone and there is a sound like a door closing somewhere else in the building.' },
+      { who: 'you', text: 'There. That is the most I can do for you.' },
+      { who: 'direction', text: 'Two eyes, wet from the fountain, pointing at the doorway rather than at him.' },
+      { who: 'unknown', text: 'Thirty-one years of the same corridor.' },
+      { who: 'you', text: '...say again?' },
+      { who: 'unknown', text: 'Nobody comes up here. That is what a gallery is for. So I watched the stair instead, and the stair is honest.' },
+      { who: 'unknown', text: 'A man came up in March with the plant keys still on him after they had asked for them back. He sat on the bench where you are standing and he did not want to go home.' },
+      { who: 'unknown', text: 'He did not hand them in. He put them under the felt, in the base of the head that sits off-square, four along from me. He said he would come back for them and he was telling the truth. He simply did not.' },
+      { who: 'you', text: 'Under the felt.' },
+      { who: 'unknown', text: 'The spur. Plant services. Whatever it is you can hear down there, he could hear it too, and he wanted to be able to get back in.' },
+    ],
+  },
+};
+
+// Said again, on a later visit. It is the only useful thing it knows and it
+// would be cruel to make somebody find the park twice.
+export const BUST_RESTORED_AGAIN = {
+  start: {
+    speaker: 'THE GALLERY',
+    lines: [
+      { who: 'direction', text: 'Wet marble, and two eyes still pointing at the stair.' },
+      { who: 'unknown', text: 'Under the felt. The head that sits off-square, four along. He never came back for it.' },
+    ],
+  },
+};
+
 // THE ONE THAT ANSWERS. It comes back in a voice that is not his — `unknown`, the
 // same voice the surfer has, and the only line in the gallery he does not say
 // himself. Nothing about this is explained and nothing is granted by it.
@@ -1317,7 +1360,7 @@ export const PROLOGUE_THOUGHTS = {
     playback: { who: 'you', text: 'Check it before I count it.' },
     playbackNone: { who: 'you', text: 'Nothing recorded in here yet.' },
     pageRoom: (room) => ({ who: 'you', text: `His log. He hadn't done ${room} either.` }),
-    pageAny: { who: 'you', text: "His log. Same list, same order. He was working it the way I am. Am I– am I headed towards a trap? I could always leave..." },
+    pageAny: { who: 'you', text: 'His log. Same rooms, same order. He started where I did. I can still leave.' },
   },
   // He talked to the guard. He keeps thinking about a man who went home at ten.
   guard: {

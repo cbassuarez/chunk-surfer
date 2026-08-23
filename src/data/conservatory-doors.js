@@ -130,9 +130,12 @@ export const CONSERVATORY_DOORS = Object.freeze([
   // The old lift landing, in B1's north wall. The master key still turns it, and
   // behind it is the shaft: a pit, no car, and eight metres of nothing overhead.
   D('b1-lift-hatch', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '87,23', { key: 'master', hinge: 'left', swing: 'shaft-in', widthAxis:'x' }),
-  // THE GREY DOOR. The one he comes in through — the get-in's west wall, facing
-  // the loading bay, dead centre of the bay mouth and directly ahead of where he
-  // starts out on the apron.
+  // THE GREY GOODS DOORS. The pair he comes in through — the get-in's west wall,
+  // facing the loading bay and directly ahead of the apron. The former personnel
+  // leaf beside them was a duplicate story threshold: the building had acquired
+  // two different answers to "the door you came in through". Keep the stable id
+  // every progression/save contract already uses, but give it the real three-
+  // metre pair and its two active leaves.
   //
   // It USED to be the door in a sealed room's north wall with nothing authored
   // behind it: a threshold you could stand in and not pass. Now the far side is
@@ -141,19 +144,9 @@ export const CONSERVATORY_DOORS = Object.freeze([
   // behaves exactly as it always did — he never opens it a second time. Reaching
   // for it runs the post-door beat and the beat retires it into masonry, so the
   // bay, the yard and the weather go with it. See retireDoor / postDoorThought.
-  D('dock-grey-exterior', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '115,15', { open: false, key: 'master', hinge: 'left', swing: 'escape', widthAxis:'y' }),
-  // THE GOODS DOORS, which do not open.
-  //
-  // Three metres of the apron's east wall, two rows south of the grey door —
-  // deliberately not adjacent to it, because contiguous door cells compile into
-  // one portal and these are a different door with a different answer.
-  //
-  // `services-core` is the keyring nobody in this building is ever issued (see
-  // spur-substation), so the master key does not turn them and never will. That
-  // is the point: there is no lorry, the bay has not taken a delivery in years,
-  // and the man on foot uses the personnel door beside them. The refusal is in
-  // main.js, and the id is in EXIT_DOOR_IDS so the tutorial-era line plays too.
-  D('bay-goods-pair', DOOR_ARCHETYPE.BAY_GOODS_PAIR, '115,20', { open: false, key: 'services-core', hinge: 'left', swing: 'escape', widthAxis:'y' }),
+  D('dock-grey-exterior', DOOR_ARCHETYPE.BAY_GOODS_PAIR, '115,20', {
+    open:false,key:'master',hinge:'left',swing:'escape',widthAxis:'y',activeLeaves:[0,1],
+  }),
   D('dock-foyer-service', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '149,27', { open: true, key: 'master', hinge: 'right', swing: 'escape', widthAxis:'y' }),
   D('dock-inner-service', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '131,33', { open: true, key: 'master', hinge: 'left', swing: 'escape' }),
   D('foh-office', DOOR_ARCHETYPE.STAFF_HALF_GLAZED, '189,27', { key: 'master', hinge: 'left', swing: 'office-in', widthAxis:'x' }),
@@ -199,6 +192,16 @@ export const CONSERVATORY_DOORS = Object.freeze([
   D('academic-gallery-lobby',DOOR_ARCHETYPE.ACADEMIC_WIRED_GLASS,'45,489',{open:true,hinge:'left',swing:'gallery-in',widthAxis:'y'}),
   D('academic-office-locked-1',DOOR_ARCHETYPE.ACADEMIC_WIRED_GLASS,null,{at:{x:3,y:269},key:'academic-core',hinge:'left',swing:'office-in',widthAxis:'x'}),
   D('academic-office-locked-2',DOOR_ARCHETYPE.ACADEMIC_WIRED_GLASS,null,{at:{x:9,y:269},key:'academic-core',hinge:'right',swing:'office-in',widthAxis:'x'}),
+  // ── st brendan's, on the tarmac past the park ─────────────────────────────
+  // Three thresholds and no locks: the yard into the tower, the tower into the
+  // nave, the nave into the chancel. Oak, because it is a church and because the
+  // conservatoire's own chapel is oak — the two buildings were put up eighty
+  // years apart by people with the same catalogue.
+  //
+  // All three stand open. Nothing has been keeping this building shut.
+  D('brendan-west-door',DOOR_ARCHETYPE.CHAPEL_OAK_PAIR,null,{at:{x:66,y:254},open:true,hinge:'left',swing:'tower-in',widthAxis:'x'}),
+  D('brendan-tower-nave',DOOR_ARCHETYPE.CHAPEL_OAK_PAIR,null,{at:{x:66,y:260},open:true,hinge:'left',swing:'nave-in',widthAxis:'x'}),
+  D('brendan-chancel',DOOR_ARCHETYPE.CHAPEL_OAK_PAIR,null,{at:{x:66,y:280},open:true,hinge:'right',swing:'chancel-in',widthAxis:'x'}),
 ]);
 
 export const DOOR_BY_ID = Object.freeze(Object.fromEntries(CONSERVATORY_DOORS.map((door) => [door.id, door])));

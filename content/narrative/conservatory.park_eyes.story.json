@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "id": "conservatory.park_eyes",
+  "title": "The Coins in the Basin",
+  "status": "active",
+  "entry": "start",
+  "entries": ["start"],
+  "tags": [],
+  "notes": "Reached only with the torch actually on the basin. Two of the coins are not coins. Taking them is undoing what somebody did to a face; leaving them is letting it stand. Terminal either way for the run.",
+  "regions": [
+    {
+      "id": "conservatory.park_eyes.region",
+      "title": "The fountain, with the light on it",
+      "kind": "scene",
+      "color": "#3d5262",
+      "nodeIds": ["start", "closer", "take", "leave"]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "speaker": "THE BASIN",
+      "lines": [
+        { "who": "direction", "text": "The torch finds the bottom of the fountain. Coins, a lot of them, gone green and flat under the falling water.", "id": "start.line.1" },
+        { "who": "you", "text": "People wishing on a building that shut.", "id": "start.line.2" },
+        { "who": "direction", "text": "Two of them are not lying flat.", "id": "start.line.3" }
+      ],
+      "choices": [
+        { "text": "look closer at the two that are not flat", "goto": "closer", "id": "start.choice.1" },
+        { "text": "leave the wishing well alone", "goto": "leave", "eyeChoice": "leave", "id": "start.choice.2" }
+      ],
+      "id": "start",
+      "type": "choice"
+    },
+    "closer": {
+      "speaker": "THE BASIN",
+      "lines": [
+        { "who": "direction", "text": "They are domed. Marble, not metal, and cut across the front the way an iris is cut.", "id": "closer.line.1" },
+        { "who": "you", "text": "Those are eyes.", "id": "closer.line.2", "hold": 0.8 },
+        { "who": "you", "text": "Somebody took them out of a face and carried them across the yard and put them in the water.", "id": "closer.line.3" },
+        { "who": "direction", "text": "The falls keep going over them. They have been under this for a while.", "id": "closer.line.4" }
+      ],
+      "choices": [
+        { "text": "take them out of the water", "goto": "take", "eyeChoice": "take", "id": "closer.choice.1" },
+        { "text": "put them back where they were", "goto": "leave", "eyeChoice": "leave", "id": "closer.choice.2" }
+      ],
+      "id": "closer",
+      "type": "choice"
+    },
+    "take": {
+      "speaker": "",
+      "lines": [
+        { "who": "direction", "text": "Colder than the water. They sit in the palm like two wet pebbles and they do not look like anything at all out of the light.", "id": "take.line.1" },
+        { "who": "you", "text": "Whoever did this did not throw them. They put them down.", "id": "take.line.2" }
+      ],
+      "id": "take",
+      "type": "dialogue"
+    },
+    "leave": {
+      "speaker": "",
+      "lines": [
+        { "who": "direction", "text": "The silt takes them back over. The falls keep going, and the coins go on being coins.", "id": "leave.line.1" },
+        { "who": "you", "text": "Not mine. Somebody wanted them down there.", "id": "leave.line.2", "hold": 0.6 },
+        { "who": "you", "text": "They can stay down there.", "id": "leave.line.3" }
+      ],
+      "id": "leave",
+      "type": "dialogue"
+    }
+  }
+}

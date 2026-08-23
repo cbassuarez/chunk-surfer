@@ -14,6 +14,10 @@ import {
   marimbaNaturalX,
 } from '../../src/data/marimba-layout.js';
 import { ELLERY_MASSING, YARD_SERVICE_RANGES } from '../../src/data/exterior-district.js';
+import {
+  CHURCH, CHURCH_BOUNDS, CHURCH_HEIGHTS, CHURCH_SKIN,
+  churchWallAt, churchWallExposed, churchWallHeight,
+} from '../../src/data/st-brendans.js';
 import { conservatory } from '../../src/data/floorplan/conservatory.js';
 import { CELL, MATERIAL } from '../../src/data/floorplan/legend.js';
 import * as FP from '../../src/world/floorplan.js';
@@ -2462,6 +2466,112 @@ buildYardRange('yard_stable_range',rangeById['yard-former-stables'],'stable');
 buildYardRange('yard_rehearsal_range',rangeById['yard-rehearsal-annex'],'rehearsal');
 buildYardRange('yard_baths_plant',rangeById['yard-baths-plant'],'baths');
 buildYardRange('yard_covered_stores',rangeById['yard-covered-stores'],'stores');
+// ── ST BRENDAN'S ────────────────────────────────────────────────────────────
+//
+// The church on the tarmac past the park. Built from the SAME manifest the
+// floorplan lays its rooms from (data/st-brendans.js), for exactly the reason
+// that file exists: an elevation modelled against a remembered plan drifts off
+// it the first time a transept moves.
+//
+// IT IS A SKIN, NOT A SOLID. The church stands at x<50, so isExteriorObserver
+// calls you exterior even standing in the nave and this mesh is never culled —
+// while physicalRenderPlanFor keys off the ZONE and still gives you real
+// raymarched walls inside. Both occupy the same cells. So the mesh dresses only
+// the outer CHURCH_SKIN of each one-metre wall cell: from the yard you see this,
+// from the nave you see the rock, and the mesh sits buried inside that rock
+// where nothing can ever look at it. No coincident surfaces, by construction.
+//
+// Windows are recessed panels rather than voids, because addBox cannot subtract
+// — the same way buildYardRange does its openings.
+function buildStBrendans(){
+  const m=mesh('st_brendan_church');
+  const cx=(CHURCH_BOUNDS.x0+CHURCH_BOUNDS.x1)/2, cz=(CHURCH_BOUNDS.y0+CHURCH_BOUNDS.y1)/2;
+  const X=(x)=>x-cx, Z=(y)=>y-cz;
+  const S=CHURCH_SKIN, PLINTH=0.95;
+  const FACES=[[0,-1],[0,1],[-1,0],[1,0]];
+
+  // Every exposed face of every wall cell, dressed to the height of the tallest
+  // room that wall touches — so a transept gable does not take chancel eaves.
+  const exposed=[];
+  for(let y=CHURCH_BOUNDS.y0;y<=CHURCH_BOUNDS.y1;y++){
+    for(let x=CHURCH_BOUNDS.x0;x<=CHURCH_BOUNDS.x1;x++){
+      if(!churchWallAt(x,y))continue;
+      const h=churchWallHeight(x,y);
+      for(const [dx,dy] of FACES){
+        if(!churchWallExposed(x,y,dx,dy))continue;
+        exposed.push({x,y,dx,dy,h});
+        const px=X(x+0.5)+dx*(0.5-S/2), pz=Z(y+0.5)+dy*(0.5-S/2);
+        addBox(m,[px,h/2,pz],[dx?S:1,h,dy?S:1],MAT.stone);
+        // A plinth, proud of the wall. Stone churches sit on one, and it is most
+        // of what stops an elevation reading as a flat panel at eye height.
+        addBox(m,[px+dx*0.10,PLINTH/2,pz+dy*0.10],[dx?S+.2:1.02,PLINTH,dy?S+.2:1.02],MAT.stone);
+        addBox(m,[px+dx*0.06,h-0.34,pz+dy*0.06],[dx?S+.12:1.02,.30,dy?S+.12:1.02],MAT.stone);
+      }
+    }
+  }
+
+  // BUTTRESSES AND LANCETS. Stepped piers every four metres along the tall
+  // faces, with a lancet in the bay between each pair. This is the difference
+  // between a Gothic parish church and a shed with a pointed roof.
+  for(const f of exposed){
+    if(f.h<10)continue;                                   // the chancel stays plain
+    const along=f.dx?f.y:f.x;
+    const px=X(f.x+0.5)+f.dx*0.5, pz=Z(f.y+0.5)+f.dy*0.5;
+    if(along%4===0){
+      for(const [depth,top] of [[.62,f.h*0.62],[.40,f.h*0.86]]){
+        addBox(m,[px+f.dx*depth/2,top/2,pz+f.dy*depth/2],[f.dx?depth:.85,top,f.dy?depth:.85],MAT.stone);
+        addBox(m,[px+f.dx*depth/2,top+.12,pz+f.dy*depth/2],[f.dx?depth+.16:1.0,.24,f.dy?depth+.16:1.0],MAT.stone);
+      }
+    }else if(along%4===2){
+      const sill=3.1,head=f.h-3.4;
+      addBox(m,[px+f.dx*.06,(sill+head)/2,pz+f.dy*.06],[f.dx?.14:.52,head-sill,f.dy?.14:.52],MAT.warmWindow);
+      addBox(m,[px+f.dx*.10,head+.28,pz+f.dy*.10],[f.dx?.20:.72,.30,f.dy?.20:.72],MAT.stone);
+      addBox(m,[px+f.dx*.10,sill-.16,pz+f.dy*.10],[f.dx?.22:.78,.20,f.dy?.22:.78],MAT.stone);
+    }
+  }
+
+  // ROOFS. Steep slate, each volume ridged along its own long axis, so the
+  // transepts read as arms crossing the nave rather than as a wider nave.
+  const nave=CHURCH.nave,tr=CHURCH.transept,ch=CHURCH.chancel,tw=CHURCH.tower;
+  const roof=(r,eaves,rise,ridge)=>addPitchedRoof(m,{
+    x:X((r.x0+r.x1)/2+0.5),z:Z((r.y0+r.y1)/2+0.5),
+    w:(r.x1-r.x0)+3,d:(r.y1-r.y0)+3,
+    eaves,rise,mat:MAT.slate,gableMat:MAT.stone,ridge,overhang:.34,
+  });
+  roof(nave,CHURCH_HEIGHTS.nave,4.6,'z');
+  roof(tr,CHURCH_HEIGHTS.nave,4.2,'x');
+  roof(ch,CHURCH_HEIGHTS.chancel,3.2,'z');
+
+  // THE TOWER. Crenellated head, louvred belfry, and nothing inside it — the
+  // shaft is eighteen metres of empty cell waiting for eight bells.
+  const tx=X((tw.x0+tw.x1)/2+0.5), tz=Z((tw.y0+tw.y1)/2+0.5);
+  const tW=(tw.x1-tw.x0)+3, tD=(tw.y1-tw.y0)+3, TH=CHURCH_HEIGHTS.tower;
+  for(const [dx,dy] of FACES){
+    const fx=tx+dx*(tW/2), fz=tz+dy*(tD/2);
+    for(let i=0;i<7;i++){
+      addBox(m,[fx+dx*.10,TH-4.6+i*.42,fz+dy*.10],[dx?.18:1.9,.26,dy?.18:1.9],MAT.black);
+    }
+    addBox(m,[fx+dx*.14,TH-1.55,fz+dy*.14],[dx?.26:2.3,.34,dy?.26:2.3],MAT.stone);
+    addBox(m,[fx+dx*.34,TH*0.34,fz+dy*.34],[dx?.68:1.1,TH*0.68,dy?.68:1.1],MAT.stone);
+  }
+  const par=TH+0.2;
+  addBox(m,[tx,par-.35,tz],[tW+.5,.70,tD+.5],MAT.stone);
+  for(let i=0;i<=Math.round(tW);i+=2){
+    const px=tx-tW/2+i;
+    for(const s of[-1,1])addBox(m,[px,par+.55,tz+s*(tD/2+.12)],[.72,1.10,.42],MAT.stone);
+  }
+  for(let i=0;i<=Math.round(tD);i+=2){
+    const pz=tz-tD/2+i;
+    for(const s of[-1,1])addBox(m,[tx+s*(tW/2+.12),par+.55,pz],[.42,1.10,.72],MAT.stone);
+  }
+  // The west door, under a pointed arch, in the north face of the tower.
+  const dx0=X(CHURCH.doors[0].x+0.5), dz0=Z(CHURCH.doors[0].y+0.5)-tD/2;
+  addBox(m,[dx0,1.35,dz0-.10],[1.9,2.70,.30],MAT.dark);
+  addBox(m,[dx0,2.85,dz0-.16],[2.5,.36,.42],MAT.stone);
+  for(const s of[-1,1])addBox(m,[dx0+s*1.25,1.5,dz0-.14],[.34,3.0,.38],MAT.stone);
+}
+buildStBrendans();
+
 
 {
   const m=mesh('exterior_story_plaque');
@@ -3650,6 +3760,178 @@ const addBoothGuard=(m,{x=0,z=-.15,lean=0,arm='rest'}={})=>{
   addBox(m,[0,2.56,0],[2.90,.14,5.00],MAT.steel);                    // canopy
   addBox(m,[0,2.40,0],[2.40,.10,4.20],MAT.ivory);                    // the tube in it
   addBox(m,[1.28,1.45,-1.20],[.10,1.30,1.10],MAT.agedWhite);         // the timetable case
+}
+{
+  // THE FOUNTAIN, in the middle of the park's crossing paths.
+  //
+  // Municipal, tiered, and — this is the point of it — STILL RUNNING. Nothing
+  // else on this site works. The corporation that put it up in the 1880s paid
+  // for a supply that was never on the building's meter, so when Ellery was
+  // closed and the power was cut, the one machine nobody switched off went on
+  // playing to an empty park. It is the only moving thing outdoors.
+  //
+  // THE BASIN FLOOR IS NOT HERE. It is authored in the plan as a glyph 0.30m
+  // down in `wetTile` — that zone-and-material pair is the address the water
+  // pass looks a body up by (see game/water-bodies.js). Modelling a basin here
+  // as well would put a stone lid over the water. What this mesh owes the scene
+  // is everything ABOVE that surface: the kerb you step over, the two bowls, and
+  // the water in the air between them.
+  //
+  // Eight sides rather than sixteen, because an octagon is what a Victorian
+  // corporation actually built and because the flats catch the light as facets
+  // instead of averaging into a cylinder.
+  const m=mesh('park_fountain');
+  const SIDES=8, R=3.30, DROP=-.30;
+  const oct=(i)=>((i+.5)/SIDES)*Math.PI*2;
+  const seg=(r)=>r*2*Math.tan(Math.PI/SIDES)+.06;
+  // A ring laid FLAT. addRingBeam draws in the XY plane and addRingBeamYZ in the
+  // YZ plane — both vertical — so a moulding round a bowl needs its own. Every
+  // one of these was a hoop standing on edge over the fountain until it did.
+  const ringXZ=(y,radius,section,mat,segments=20)=>{
+    for(let i=0;i<segments;i++){
+      const a=(i/segments)*Math.PI*2;
+      addBox(m,[Math.cos(a)*radius,y,Math.sin(a)*radius],
+        [section,section,radius*2*Math.tan(Math.PI/segments)+section*.5],mat,a);
+    }
+  };
+
+  // ── the kerb, and the step down into it ──────────────────────────────────
+  for(let i=0;i<SIDES;i++){
+    const a=oct(i), cx=Math.cos(a)*R, cz=Math.sin(a)*R;
+    addBox(m,[cx,DROP+.38,cz],[.42,.76,seg(R)],MAT.stone,a);            // kerb
+    addBox(m,[cx,.47,cz],[.56,.14,seg(R)+.06],MAT.plaster,a,(i%3===0?.015:0)); // coping, a little uneven
+    addBox(m,[Math.cos(a)*(R-.30),DROP+.10,Math.sin(a)*(R-.30)],[.22,.20,seg(R-.30)],MAT.stone,a); // inner offset
+    // A corner pier on the alternate flats, with a weathered cap.
+    if(i%2===0){
+      const px=Math.cos(a)*(R+.16), pz=Math.sin(a)*(R+.16);
+      addBox(m,[px,.30,pz],[.46,1.40,.46],MAT.stone,a);
+      addBox(m,[px,1.04,pz],[.60,.14,.60],MAT.plaster,a);
+      addEllipsoid(m,[px,1.20,pz],[.19,.20,.19],MAT.stone,6,8);
+    }
+  }
+
+  // ── the pedestal ─────────────────────────────────────────────────────────
+  addCylinder(m,[0,DROP+.16,0],1.05,.32,MAT.stone,SIDES);               // sunk plinth
+  addCylinder(m,[0,DROP+.40,0],.86,.20,MAT.plaster,SIDES);              // torus course
+  ringXZ(DROP+.52,.80,.09,MAT.stone,16);
+  addCylinder(m,[0,.42,0],.52,1.20,MAT.stone,12);                       // the shaft
+  // Fluting: twelve reeds up the shaft. This is most of the intricacy read at
+  // arm's length, and it costs twelve boxes.
+  for(let i=0;i<12;i++){
+    const a=(i/12)*Math.PI*2;
+    addBox(m,[Math.cos(a)*.53,.42,Math.sin(a)*.53],[.09,1.14,.09],MAT.plaster,a);
+  }
+  ringXZ(1.02,.60,.07,MAT.stone,16);                                    // astragal
+
+  // ── the lower bowl ───────────────────────────────────────────────────────
+  const LOW_Y=1.34, LOW_R=1.58;
+  addCylinder(m,[0,LOW_Y-.22,0],LOW_R*.42,.34,MAT.stone,12);            // the cup under it
+  addCylinder(m,[0,LOW_Y,0],LOW_R,.20,MAT.plaster,SIDES*2);
+  ringXZ(LOW_Y+.11,LOW_R-.03,.10,MAT.stone,24);                         // the lip water runs over
+  // Gadroons round the underside — the lobed ornament that makes a bowl read as
+  // carved rather than turned.
+  for(let i=0;i<20;i++){
+    const a=(i/20)*Math.PI*2;
+    addEllipsoid(m,[Math.cos(a)*(LOW_R*.78),LOW_Y-.16,Math.sin(a)*(LOW_R*.78)],[.15,.11,.22],MAT.plaster,6,8);
+  }
+  // Four mask spouts on the cardinals, spitting inward and down.
+  for(let i=0;i<4;i++){
+    const a=(i/4)*Math.PI*2, mx=Math.cos(a)*(LOW_R-.06), mz=Math.sin(a)*(LOW_R-.06);
+    addEllipsoid(m,[mx,LOW_Y+.02,mz],[.17,.20,.14],MAT.plaster,7,9);
+    addCylinder(m,[mx,LOW_Y-.06,mz],.045,.16,MAT.bronze,8);
+  }
+
+  // ── the upper bowl and the finial ────────────────────────────────────────
+  addCylinder(m,[0,LOW_Y+.62,0],.30,1.00,MAT.stone,10);                 // upper shaft
+  ringXZ(LOW_Y+1.06,.34,.06,MAT.stone,14);
+  const UP_Y=2.36, UP_R=.92;
+  addCylinder(m,[0,UP_Y-.16,0],UP_R*.44,.26,MAT.stone,10);
+  addCylinder(m,[0,UP_Y,0],UP_R,.15,MAT.plaster,SIDES*2);
+  ringXZ(UP_Y+.08,UP_R-.03,.08,MAT.stone,20);
+  for(let i=0;i<14;i++){
+    const a=(i/14)*Math.PI*2;
+    addEllipsoid(m,[Math.cos(a)*(UP_R*.76),UP_Y-.12,Math.sin(a)*(UP_R*.76)],[.10,.08,.15],MAT.plaster,6,8);
+  }
+  addCylinder(m,[0,UP_Y+.34,0],.17,.52,MAT.stone,10);                   // the stem
+  addEllipsoid(m,[0,UP_Y+.68,0],[.20,.24,.20],MAT.plaster,8,10);        // the knop
+  addCylinder(m,[0,UP_Y+.88,0],.055,.16,MAT.bronze,10);                 // the nozzle
+
+  // ── THE WATER IN THE AIR ─────────────────────────────────────────────────
+  //
+  // Not fluid — geometry. A jet standing off the nozzle, and the sheets falling
+  // bowl to bowl and bowl to basin. roofGlass is the one translucent material in
+  // the palette, so it is what water is made of here.
+  //
+  // The falls are drawn as a few tapering elements rather than one column: a
+  // single cylinder reads as a glass rod, and three stepped ones read as
+  // something that is moving even before anything animates it.
+  const JET_Y=UP_Y+.96;
+  for(let i=0;i<5;i++){
+    const t=i/5;
+    addCylinder(m,[0,JET_Y+.34+t*1.05,0],.052-t*.030,.42,MAT.roofGlass,8);
+  }
+  addEllipsoid(m,[0,JET_Y+1.62,0],[.11,.16,.11],MAT.roofGlass,6,8);     // the break at the top
+  // Upper bowl → lower bowl, off the lip on four sides.
+  for(let i=0;i<4;i++){
+    const a=(i/4)*Math.PI*2+.39;
+    const x=Math.cos(a)*(UP_R-.10), z=Math.sin(a)*(UP_R-.10);
+    addBox(m,[x,(UP_Y+LOW_Y)/2+.08,z],[.20,UP_Y-LOW_Y-.18,.055],MAT.roofGlass,a);
+  }
+  // Lower bowl → basin, off the mask spouts.
+  for(let i=0;i<4;i++){
+    const a=(i/4)*Math.PI*2;
+    const x=Math.cos(a)*(LOW_R-.08), z=Math.sin(a)*(LOW_R-.08);
+    addBox(m,[x,(LOW_Y+DROP)/2+.02,z],[.26,LOW_Y-DROP-.20,.06],MAT.roofGlass,a);
+  }
+  // And the disturbance where each fall lands, so the surface is never a mirror.
+  for(let i=0;i<4;i++){
+    const a=(i/4)*Math.PI*2;
+    const fx=Math.cos(a)*(LOW_R-.08), fz=Math.sin(a)*(LOW_R-.08);
+    for(const [rr,ss] of [[.30,.035],[.52,.025]]){
+      for(let k=0;k<12;k++){
+        const t=(k/12)*Math.PI*2;
+        addBox(m,[fx+Math.cos(t)*rr,DROP+.055,fz+Math.sin(t)*rr],[ss,ss,rr*2*Math.tan(Math.PI/12)],MAT.roofGlass,t);
+      }
+    }
+  }
+
+  // Silt and leaf litter, banked to one side the way it settles. A working
+  // fountain in a closed park is still a neglected one — nobody has been out
+  // here with a net since the building shut.
+  for(let i=0;i<17;i++){
+    const a=(i*2.399), r=.95+((i*7)%9)/9*1.95;
+    addBox(m,[Math.cos(a)*r,DROP+.015,Math.sin(a)*r],[.22+(i%3)*.07,.02,.14],i%3===0?MAT.soil:MAT.deadLeaf,a);
+  }
+}
+{
+  // THE EYES IN THE WATER.
+  //
+  // Two marble eyes, face up under a working fountain. Not a head — the head is
+  // upstairs on its plinth in the academic gallery, and it has a jaw and part of
+  // a mouth and no eyes. Somebody took the eyes out of it and put them in a
+  // basin across the yard, which is a thing you do to a face you do not want
+  // looking at you.
+  //
+  // THEY ARE MEANT TO READ AS PENNIES FIRST. Small, pale, convex, lying among
+  // coins in a municipal fountain — which is exactly what two round white things
+  // in a wishing well look like until you are close enough to see that they are
+  // not stamped. So: coin-scale, coin-thickness, and a scatter of actual coins
+  // around them doing the misdirection.
+  const m=mesh('park_marble_eyes');
+  // The eyes. Domed, not discs — the iris is cut, and the dome is what stops
+  // them being coins once the torch is actually on them.
+  for(const [x,z,yaw] of[[-.055,-.02,.22],[.058,.03,-.14]]){
+    addCylinder(m,[x,.012,z],.037,.024,MAT.plaster,12);            // the ball, sunk in silt
+    addEllipsoid(m,[x,.028,z],[.036,.020,.036],MAT.plaster,7,10);  // the dome
+    addCylinder(m,[x,.041,z],.014,.006,MAT.stone,10,yaw);          // the cut iris
+  }
+  // The coins they are lying among. This is the whole trick and it costs eight
+  // cylinders: without them the eyes are two odd white objects, and with them
+  // they are two of the pennies until you look properly.
+  for(let i=0;i<8;i++){
+    const a=(i*2.399), r=.10+((i*5)%7)/7*.30;
+    addCylinder(m,[Math.cos(a)*r,.006,Math.sin(a)*r],.026,.008,i%3===0?MAT.stone:MAT.bronze,10);
+  }
 }
 function buildStreetCar(name,{moving=false,body=MAT.dark}={}){
   const m=mesh(name);
