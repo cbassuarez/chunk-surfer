@@ -20,7 +20,7 @@
 //  Pure geometry + drawing. Gameplay authority (what a pin buys, what a tier
 //  requires) stays in combat-progression.js.
 
-import { uiFill, uiLine, uiStrokeRect, uiText } from './ui.js';
+import { uiFill, uiLine, uiStrokeRect, uiText, uiWrap } from './ui.js';
 import { UI_COLOR } from './palette.js';
 import { drawBagIcon } from './bag-icons.js';
 import { drawVfdText } from './presentation.js';
@@ -76,7 +76,7 @@ export function skillsTreeLayout({ region, branches, maxTier }) {
   // deepest tier print over it on a short panel — a floor that forces overflow is
   // not a floor.
   const minTreeH = rows + 2;
-  const detailRows = clamp(region.h - headlineH - minTreeH, 2, 4);
+  const detailRows = clamp(region.h - headlineH - minTreeH, 3, 6);
   const treeH = Math.max(rows, region.h - detailRows - headlineH);
   // Six columns must FIT, whatever the terminal. A minimum column width wide
   // enough for a name forced six of them off the edge of a small panel, so the
@@ -237,14 +237,17 @@ export function drawSkillsSection({ model, layout, selectedId, now = 0 }) {
   uiLine(d.x, d.y - .4, d.x + d.w, d.y - .4, UI_COLOR.frame, .3);
   if (!selected) return;
   uiText(d.x, d.y, fit(`${BRANCH_LABEL[selected.branch] || selected.branch} · ${selected.label} · ${skillKindLabel(selected)}`, d.w), 'ui-blue', .85);
-  uiText(d.x, d.y + 1, fit(selected.detail, d.w), 'ui-primary', .9);
+  const descriptionRows=Math.max(1,d.h-3);
+  uiWrap(selected.detail,Math.max(8,Math.floor(d.w))).slice(0,descriptionRows)
+    .forEach((line,index)=>uiText(d.x,d.y+1+index,fit(line,d.w),'ui-primary',.9));
   // What to do about it, in the imperative, including WHY not.
   const call = selected.state === SKILL_STATE.OWNED ? 'INSTALLED'
-    : selected.state === SKILL_STATE.PENDING ? `CHOSEN · ${selected.buyPrompt}`
-      : selected.state === SKILL_STATE.AFFORDABLE ? `[ENTER] CHOOSE · ${selected.buyPrompt}`
+    : selected.state === SKILL_STATE.PENDING ? `[ENTER] UNDO CHOICE · ${selected.buyPrompt}`
+      : selected.state === SKILL_STATE.AFFORDABLE ? `[ENTER] CHOOSE · COST 1 PIN · ${pins.unspent} REMAIN · ${selected.buyPrompt}`
         : selected.blockedBy;
-  uiText(d.x, d.y + 2, fit(call, d.w),
+  uiText(d.x, d.y + d.h - 2, fit(call, d.w),
     selected.state === SKILL_STATE.OWNED ? 'ui-green'
       : selected.state === SKILL_STATE.PENDING || selected.state === SKILL_STATE.AFFORDABLE ? 'ui-amber' : 'ui-danger', .9);
+  uiText(d.x,d.y+d.h-1,fit('◆ INSTALLED   ◈ CHOSEN   ◇ AVAILABLE   · LOCKED',d.w),'ui-label',.62);
   void now;
 }

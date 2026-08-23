@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { hushStatus, minimapTelemetryCrumbs } from '../src/render/minimap.js';
+import { hushStatus, minimapTargetReadout, minimapTelemetryCrumbs } from '../src/render/minimap.js';
 import { buildMinimapCommands } from '../src/render/map-commands.js';
 
 test('minimap confirms what HUSH knows about the player without drawing a noise layer', () => {
@@ -94,4 +94,40 @@ test('minimap reveals the HUSH body only during direct visual confirmation', () 
     viewport: { x: 0, y: 0, w: 20, h: 10 },
   });
   assert.ok(edge.some((command) => command.kind === 'hush-visible-edge'), 'the same confirmed marker clamps to the edge');
+});
+
+test('minimap target rail names the actual target and reports bearing and range', () => {
+  const model={
+    player:{floorId:'g',position:{x:4,y:8}},
+    waypoint:{id:'story:key-cabinet',label:'SELECT THE CHAPEL KEY',floorId:'g',position:{x:7,y:4}},
+    route:{floorDelta:0},spaces:[],
+  };
+  assert.deepEqual(minimapTargetReadout(model),{
+    label:'SELECT THE CHAPEL KEY',bearing:'NE',distanceM:5,floorDelta:0,sameFloor:true,
+  });
+  const crossFloor=minimapTargetReadout({...model,waypoint:{...model.waypoint,floorId:'u1',position:null},route:{floorDelta:1}});
+  assert.deepEqual(crossFloor,{
+    label:'SELECT THE CHAPEL KEY',bearing:'',distanceM:null,floorDelta:1,sameFloor:false,
+  });
+});
+
+test('minimap carries local route, thresholds, connectors and sanitized HUSH awareness', () => {
+  const commands=buildMinimapCommands({
+    model:{
+      player:{resolved:true,floorId:'g',position:{x:0,y:0},heading:0},
+      floors:[{id:'g',open:new Set(['0,0','0,-1'])}],
+      policy:{minimapMode:'topology',showMapTopology:true,showRoute:true},
+      route:{status:'ok',nextConnectorId:'stairs',points:[{x:0,y:0},{x:0,y:-1}]},
+      doors:[{id:'door',floorId:'g',position:{x:0,y:-1},state:'closed'}],
+      connectors:[{id:'stairs',a:{floorId:'g',position:{x:1,y:0}},b:{floorId:'u1',position:{x:1,y:0}}}],
+      contacts:[],
+      hush:{active:true,visible:false,floorId:'g',position:{x:9,y:9},perception:{mode:'clue',label:'HEARD',detail:'YOU'}},
+    },
+    viewport:{x:0,y:0,w:24,h:12},
+  });
+  assert.ok(commands.some((command)=>command.kind==='route-local'));
+  assert.ok(commands.some((command)=>command.kind==='door-local'));
+  assert.ok(commands.some((command)=>command.kind==='connector-local'&&command.selected));
+  assert.ok(commands.some((command)=>command.kind==='hush-awareness'));
+  assert.ok(!commands.some((command)=>command.kind==='hush-visible'), 'awareness never reveals the unseen body');
 });

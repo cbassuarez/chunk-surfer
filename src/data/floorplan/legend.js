@@ -95,8 +95,7 @@ export const ZONE = {
   // phase all read, and a different building across a yard must not report the
   // player as standing in the nave that ends the game.
   //
-  // So it gets its own, which is what it wanted all along, and which is where
-  // the bells will hang off when they are wired.
+  // So it gets its own acoustic identity without becoming a recording target.
   church: 20,
 };
 
@@ -128,9 +127,9 @@ export const ZONE_WORLD = {
   [ZONE.street]: 'main_b3',
   [ZONE.civicCourt]: 'main_b3',
   [ZONE.serviceYard]: 'main_b3',
-  // Neutral on purpose: a room tone, not a take target, and nothing that any
-  // chapel or tower logic reads.
-  [ZONE.church]: 'main_b3',
+  // A room tone, not a take target, and nothing that any chapel or tower logic
+  // reads. Its manifest reuses the lux_nova material without reusing its id.
+  [ZONE.church]: 'st_brendans',
 };
 
 // OUTDOORS IS A PROPERTY OF THE ZONE, NOT OF WHERE YOU ARE STANDING.
@@ -296,23 +295,14 @@ export const GLYPHS = {
   // The south end of the yard was another fifty metres of nothing, the way the
   // south-west quarter was before the park went in. There is a church on it now.
   //
-  // ZONE IS `dock`, DELIBERATELY, AND IT IS THE ONE THING HERE THAT IS A
-  // COMPROMISE. The semantically right zones exist — chapel, chapelOuter,
-  // bellTower — and every one of them is wired into the conservatoire's own
-  // chapel: ZONE_WORLD maps them to lux_nova and bell_tower, which is what the
-  // finale, the take targets and the tower phase all read. Standing in a
-  // different building on the far side of a yard must not report the player as
-  // standing in the nave that ends the game. So the cells carry the yard's zone
-  // and the church's SURFACE, and the stone is doing the identifying. When the
-  // bells are wired this should be promoted to a zone of its own rather than
-  // borrowed from either neighbour.
-  //
-  // Not sky, so the rain stops at the door and the ray does not run to 90m.
-  'Z': { floor: 0.0, ceil: 13.0, zone: 'church', material: 'chapelStone' },  // nave and crossing
-  'z': { floor: 0.0, ceil: 9.0, zone: 'church', material: 'chapelStone' },  // chancel, lower than the nave it opens off
-  // The tower. Empty, and tall enough to hang eight bells in when the time
-  // comes; see ELLERY_BELLS and the ringing room in bell-tower-layout.js.
-  'X': { floor: 0.0, ceil: 18.0, zone: 'church', material: 'chapelStone' },
+  // These cells have their own non-recordable acoustic identity. Not sky, so
+  // the rain stops at the threshold and the ray does not run to 90m.
+  'Z': { floor: 0.0, ceil: 9.6, zone: 'church', material: 'chapelStone' },   // nave and transepts
+  'z': { floor: 0.0, ceil: 7.4, zone: 'church', material: 'chapelStone' },   // raised choir
+  'c': { floor: 0.0, ceil: 5.8, zone: 'church', material: 'chapelStone' },   // aisles, chapel, sacristy
+  'X': { floor: 0.0, ceil: 12.4, zone: 'church', material: 'chapelStone' },  // crossing under the central tower
+  'l': { floor: 0.0, ceil: 5.4, zone: 'church', material: 'chapelStone' },   // organ loft / triforium, base +4.6
+  'b': { floor: 0.0, ceil: 4.0, zone: 'church', material: 'chapelStone' },   // belfry, base +10.2
   'e': { floor: 0.0,  ceil: 16.0, sky: true, walled: true, zone: 'street', material: 'wetTarmac' },
   'p': { floor: 0.12, ceil: 16.0, sky: true, walled: true, zone: 'civicCourt', material: 'wetPaving' },
   's': { floor: 0.025,ceil: 16.0, sky: true, walled: true, zone: 'street', material: 'wetSetts' },

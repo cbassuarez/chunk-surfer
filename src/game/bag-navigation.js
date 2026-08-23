@@ -68,8 +68,12 @@ export function repairBagSelection(state, model) {
   if (selected.kit === 'gear:marble-head') selected.kit = 'gear:marble-eyes';
   if (selected.manifest && !selected.map) selected.map = selected.manifest;
   if (scroll.manifest != null && scroll.map == null) scroll.map = scroll.manifest;
+  if (selected.files && !selected.sheets) selected.sheets = selected.files;
+  if (scroll.files != null && scroll.sheets == null) scroll.sheets = scroll.files;
   delete selected.manifest;
   delete scroll.manifest;
+  delete selected.files;
+  delete scroll.files;
 
   for (const id of ids) {
     const section = bagSection(model, id);

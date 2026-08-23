@@ -1,17 +1,24 @@
-import { POWER_CIRCUIT, livePowerCircuits, powerCircuitDefinition } from '../game/conservatory-power.js';
+import { POWER_CIRCUIT, POWER_CIRCUIT_IDS, livePowerCircuits, powerCircuitDefinition } from '../game/conservatory-power.js';
 
 // Audible ballast clusters, in authored building metres. These are not sound
 // events and never enter the HUSH noise envelope: they are continuous room tone.
-export const ELECTRICAL_HUM_SOURCES = Object.freeze([
-  Object.freeze({ id: 'sp01-plant', circuit: POWER_CIRCUIT.SP01, x: 37.2, z: 30.0, radius: 20, gain: .28 }),
+const ELECTRICAL_HUM_LAYOUT = Object.freeze({
+  [POWER_CIRCUIT.SP01]: Object.freeze([
+    Object.freeze({ id: 'sp01-plant', x: 37.2, z: 30.0, radius: 20, gain: .28 }),
   // In B2, where the wing's lit fitting is. It used to sit at z:41, which is off
   // the south edge of the authored sub-basement entirely — the wing's own hum
   // was emitting from solid rock and only ever clipped the far side of room 5.
-  Object.freeze({ id: 'sp01-dance', circuit: POWER_CIRCUIT.SP01, x: 32.0, z: 16.0, radius: 13, gain: .20 }),
-  Object.freeze({ id: 'sp02-pool', circuit: POWER_CIRCUIT.SP02, x: 91.5, z: 42.0, radius: 24, gain: .25 }),
-  Object.freeze({ id: 'sp03-foh', circuit: POWER_CIRCUIT.SP03, x: 92.0, z: 15.5, radius: 21, gain: .23 }),
-  Object.freeze({ id: 'sp03-hall', circuit: POWER_CIRCUIT.SP03, x: 102.0, z: 17.5, radius: 18, gain: .19 }),
-]);
+    Object.freeze({ id: 'sp01-dance', x: 32.0, z: 16.0, radius: 13, gain: .20 }),
+  ]),
+  [POWER_CIRCUIT.SP02]: Object.freeze([Object.freeze({ id: 'sp02-pool', x: 91.5, z: 42.0, radius: 24, gain: .25 })]),
+  [POWER_CIRCUIT.SP03]: Object.freeze([Object.freeze({ id: 'sp03-foh', x: 92.0, z: 15.5, radius: 21, gain: .23 })]),
+  [POWER_CIRCUIT.SP04]: Object.freeze([Object.freeze({ id: 'sp04-practice', x: 56.0, z: 43.5, radius: 27, gain: .22 })]),
+  [POWER_CIRCUIT.SP05]: Object.freeze([Object.freeze({ id: 'sp05-academic', x: 59.5, z: 39.5, radius: 30, gain: .22 })]),
+});
+
+export const ELECTRICAL_HUM_SOURCES = Object.freeze(POWER_CIRCUIT_IDS.flatMap((circuit)=>(
+  ELECTRICAL_HUM_LAYOUT[circuit]||[]
+).map((source)=>Object.freeze({...source,circuit}))));
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 

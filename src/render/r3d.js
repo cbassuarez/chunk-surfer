@@ -123,6 +123,7 @@ const WORLD_RGB = {
   amplifications:  [0.79, 0.66, 0.90],
   soundnoisemusic: [0.88, 0.73, 0.52],
   lux_nova:        [0.88, 0.92, 1.00],
+  st_brendans:      [0.78, 0.82, 0.90],
 };
 
 const COMMON_GLSL = `#version 300 es
@@ -466,7 +467,7 @@ bool solidCell(vec2 p){
   int lx = cx - bx*BLOCK, lz = cz - bz*BLOCK;
   if(lx < LANE || lz < LANE) return false;      // corridor lane: always walkable
   if(ihash2(bx, bz) % 10u < 4u) return false;   // 40% of blocks are open rooms
-  vec2 cc = vec2(float(cx)+0.5, float(cz)+0.5); // never entomb a beacon
+  vec2 cc = vec2(float(cx)+0.5, float(cz)+0.5); // never entomb the key or exit
   if(uKey.z>0.5  && dot(cc-uKey.xy,  cc-uKey.xy)  < 4.0) return false;
   if(uDoor.z>0.5 && dot(cc-uDoor.xy, cc-uDoor.xy) < 4.0) return false;
   return true;
@@ -2151,20 +2152,12 @@ void main(){
     // side of an atrium remain readable before the player crosses them.
   }
 
-  // beacons: vertical light-beams for key/door (2D ray closest-approach)
+  // Shared ground-plane ray for volumetric effects below. Keys and exits remain
+  // real objects with map/edge guidance; they must not project world-space light
+  // columns. At long range those unbounded columns read as a beacon punched
+  // through the opening horizon, before the player has earned any destination.
   vec2 ro2 = ro.xz, rd2 = normalize(rd.xz + vec2(1e-5));
   float span = (tHit > 0.0 ? tHit : 110.0 / CELL_METERS) * length(rd.xz) / max(length(rd), 1e-4);
-  if(uKey.z > 0.5){
-    float s = clamp(dot(uKey.xy - ro2, rd2), 0.0, span);
-    float d = length(ro2 + rd2*s - uKey.xy) * CELL_METERS;
-    float pulse = 0.5 + 0.3*sin(uTime*2.6);
-    col += vec3(1.0, 0.98, 0.9) * (exp(-d*d*6.0)*0.9 + exp(-d*d*0.3)*0.22) * pulse;
-  }
-  if(uDoor.z > 0.5){
-    float s = clamp(dot(uDoor.xy - ro2, rd2), 0.0, span);
-    float d = length(ro2 + rd2*s - uDoor.xy) * CELL_METERS;
-    col += vec3(0.75, 0.85, 1.0) * (exp(-d*d*4.0)*0.8 + exp(-d*d*0.25)*0.2);
-  }
   // Mesh props were rasterised with the exact same camera before this pass.
   // Reconstruct their view-space depth and compare it to the sector hit: a
   // piano behind a wall stays behind the wall, while a desk in front of it is
@@ -2229,7 +2222,7 @@ void main(){
 
   // The HUSH is not a dark decal on the walls; it is a volume in which light
   // stops arriving. Apply the absence after the prop composite so furniture,
-  // practical highlights, beacons and architecture all disappear into the
+  // practical highlights and architecture all disappear into the
   // same shadow. Reduced/off effects hold the edge still but never relight it.
   if(uHush.z > 0.001){
     // Clip the volume to the closest composed surface. A HUSH behind a road
@@ -2519,6 +2512,7 @@ uniform float uWeave;      // gate instability
 uniform float uGrain;      // emulsion density
 uniform float uBurn;       // edge falloff
 uniform float uCollapse;   // the tail of the tape, taking the picture with it
+uniform float uEdge;       // how far out of the frame the body has wandered
 uniform float uReduceMotion;
 out vec4 o;
 
@@ -2581,6 +2575,12 @@ void main(){
   vec2 e = abs(centred) * 2.0;
   float burn = 1.0 - uBurn * (pow(max(e.x, 0.0), 3.2) * 0.55 + pow(max(e.y, 0.0), 2.6) * 0.75);
   c *= clamp(burn, 0.0, 1.0);
+
+  // WANDERING OUT OF THE PICTURE. The burn closes in from the sides as the body
+  // leaves the lit part of the frame — the projected image running out at its
+  // own edge rather than the body meeting a wall, which is what is actually
+  // happening out there.
+  c *= 1.0 - clamp(uEdge, 0.0, 1.0) * 0.5 * smoothstep(0.15, 1.0, abs(centred.x) * 2.0);
 
   // The tail. The void behind already dims and the splats already fade; this is
   // the projector losing the lamp as well, so the collapse is one gesture.
@@ -2917,7 +2917,7 @@ let sourceLook = { sunrise: 0, chroma: 1, paper: 0 };
 
 // THE HORIZON. Set by main.js from the runtime's horizonFrame(); the renderer
 // never works out where on the tape the body is, it is told.
-let horizonState = { active: false, slice: 0, lateral: 0, collapse: 0, exposure: 1 };
+let horizonState = { active: false, slice: 0, lateral: 0, edge: 0, collapse: 0, exposure: 1 };
 let horizonReadyState = false;
 
 export function r3dSetHorizon(frame = null) {
@@ -2942,6 +2942,9 @@ export function r3dSetHorizon(frame = null) {
     // of the frame. The corridor is therefore SCALED onto the picture — walk to
     // the edge of what you are allowed and you are at the edge of the image.
     lateral: (Number(frame.lateral) || 0) * HORIZON_LATERAL_SCALE,
+    // How far outside the picture the body has strayed. The projector loses the
+    // frame at the edges rather than the world ending at a line.
+    edge: Math.max(0, Math.min(1, Number(frame.edge) || 0)),
     collapse: Math.max(0, Math.min(1, Number(frame.collapse) || 0)),
     exposure: Math.max(0, Math.min(2, Number(frame.exposure ?? 1))),
   };
@@ -3042,7 +3045,10 @@ function presentProjection(texture, now) {
   gl.uniform1f(u('uWeave'), HORIZON_PROJECTION.weave);
   gl.uniform1f(u('uGrain'), HORIZON_PROJECTION.grain);
   gl.uniform1f(u('uBurn'), HORIZON_PROJECTION.burn);
-  gl.uniform1f(u('uCollapse'), horizonState.collapse);
+  // The edge reads as the same failure as the tail, because it is the same
+  // failure: the recording running out. One rides depth, one rides sideways.
+  gl.uniform1f(u('uCollapse'), Math.max(horizonState.collapse, horizonState.edge * 0.72));
+  gl.uniform1f(u('uEdge'), horizonState.edge);
   gl.uniform1f(u('uReduceMotion'), pixelMeshSettings.reduceMotion ? 1 : 0);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 }

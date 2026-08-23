@@ -30,7 +30,7 @@
 // ours is an ending that does not land. Anything that must hit an exact line goes
 // on the line as a cue instead.
 
-import { ENDING_IDS } from '../progression/schema.js';
+import { ENDING_IDS, POWER_CIRCUIT_IDS } from '../progression/schema.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ⚠ EVERY SOUND IN EVERY ENDING IS A PLACEHOLDER. ⚠
@@ -153,7 +153,9 @@ export const ENDING_MANIFEST = Object.freeze({
       Object.freeze({ at: 0.0, kind: ENDING_EVENT.LENS, value: 'battle' }),
       Object.freeze({ at: 6.0, kind: ENDING_EVENT.CIRCUIT, value: 'sp01', on: false }),
       Object.freeze({ at: 11.0, kind: ENDING_EVENT.CIRCUIT, value: 'sp02', on: false }),
+      Object.freeze({ at: 14.0, kind: ENDING_EVENT.CIRCUIT, value: 'sp04', on: false }),
       Object.freeze({ at: 16.0, kind: ENDING_EVENT.CIRCUIT, value: 'sp03', on: false }),
+      Object.freeze({ at: 18.0, kind: ENDING_EVENT.CIRCUIT, value: 'sp05', on: false }),
       Object.freeze({ at: 21.0, kind: ENDING_EVENT.HUSH, value: 'stage' }),
       Object.freeze({ at: 27.0, kind: ENDING_EVENT.TORCH, on: false }),
       Object.freeze({ at: 28.0, kind: ENDING_EVENT.POSSESS, value: 'rupture', amount: 3 }),
@@ -192,6 +194,8 @@ export const ENDING_MANIFEST = Object.freeze({
       Object.freeze({ at: 0.0, kind: ENDING_EVENT.LENS, value: 'battle' }),
       Object.freeze({ at: 8.0, kind: ENDING_EVENT.CIRCUIT, value: 'sp01', on: false }),
       Object.freeze({ at: 15.0, kind: ENDING_EVENT.CIRCUIT, value: 'sp02', on: false }),
+      Object.freeze({ at: 18.0, kind: ENDING_EVENT.CIRCUIT, value: 'sp04', on: false }),
+      Object.freeze({ at: 21.0, kind: ENDING_EVENT.CIRCUIT, value: 'sp05', on: false }),
       Object.freeze({ at: 22.0, kind: ENDING_EVENT.HUSH, value: 'stage' }),
       Object.freeze({ at: 30.0, kind: ENDING_EVENT.LENS, value: 'calm' }),
     ]),
@@ -222,7 +226,10 @@ export const ENDING_MANIFEST = Object.freeze({
         Object.freeze({ at: 17.0, kind: ENDING_EVENT.CIRCUIT, value: 'sp01', on: false }),
         Object.freeze({ at: 23.0, kind: ENDING_EVENT.SHAKE, amount: 2.1, ms: 1200 }),
         Object.freeze({ at: 24.0, kind: ENDING_EVENT.FLASH, ms: 180 }),
+        Object.freeze({ at: 25.0, kind: ENDING_EVENT.CIRCUIT, value: 'sp04', on: false }),
         Object.freeze({ at: 31.0, kind: ENDING_EVENT.CIRCUIT, value: 'sp02', on: false }),
+        Object.freeze({ at: 34.0, kind: ENDING_EVENT.CIRCUIT, value: 'sp05', on: false }),
+        Object.freeze({ at: 36.0, kind: ENDING_EVENT.CIRCUIT, value: 'sp03', on: false }),
         Object.freeze({ at: 38.0, kind: ENDING_EVENT.SHAKE, amount: 2.6, ms: 1400 }),
       ]),
     }),
@@ -263,7 +270,10 @@ export const ENDING_MANIFEST = Object.freeze({
         Object.freeze({ at: 17.0, kind: ENDING_EVENT.CIRCUIT, value: 'sp01', on: false }),
         Object.freeze({ at: 23.0, kind: ENDING_EVENT.SHAKE, amount: 2.1, ms: 1200 }),
         Object.freeze({ at: 24.0, kind: ENDING_EVENT.FLASH, ms: 180 }),
+        Object.freeze({ at: 25.0, kind: ENDING_EVENT.CIRCUIT, value: 'sp04', on: false }),
         Object.freeze({ at: 31.0, kind: ENDING_EVENT.CIRCUIT, value: 'sp02', on: false }),
+        Object.freeze({ at: 34.0, kind: ENDING_EVENT.CIRCUIT, value: 'sp05', on: false }),
+        Object.freeze({ at: 36.0, kind: ENDING_EVENT.CIRCUIT, value: 'sp03', on: false }),
         Object.freeze({ at: 38.0, kind: ENDING_EVENT.SHAKE, amount: 2.6, ms: 1400 }),
       ]),
     }),
@@ -362,6 +372,7 @@ export function endingContractErrors() {
         if (!Object.values(ENDING_EVENT).includes(step.kind)) errors.push(`${id} ${where} timeline uses unknown event ${step.kind}`);
         if (!Number.isFinite(step.at) || step.at < 0) errors.push(`${id} ${where} timeline step ${step.kind} has no time`);
         if (step.kind === ENDING_EVENT.SAY && !String(step.text || '').trim()) errors.push(`${id} ${where} timeline has a SAY with nothing to say`);
+        if (step.kind === ENDING_EVENT.CIRCUIT && !POWER_CIRCUIT_IDS.includes(step.value)) errors.push(`${id} ${where} timeline switches unknown circuit ${step.value}`);
         if (step.kind === ENDING_EVENT.CIRCUIT && typeof step.on !== 'boolean') errors.push(`${id} ${where} timeline switches ${step.value} neither on nor off`);
       }
     }

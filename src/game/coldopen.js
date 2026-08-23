@@ -366,7 +366,7 @@ export function makeBoothDownbeatHoldScene({ duration = 0, onDone, scrim = 0.28 
 // every existing caller and the god menu are unchanged.
 export function makeWorldTitleScene({
   onDone, audio, cue, camera = null,
-  duration = 12.0, turn = 1.3, iris = 1.6,
+  duration = 12.0, turn = 1.3, iris = 1.6, threshold = null,
 } = {}) {
   let t = 0;
   let done = false;
@@ -438,10 +438,38 @@ export function makeWorldTitleScene({
 
       const w = Math.min(72, cols - 4), h = Math.min(17, rows - 4);
       const x = Math.floor((cols - w) / 2), y = Math.floor((rows - h) / 2);
-      const body = drawMachinePanel(x, y, w, h, { label:'PROGRAM', source:'ELLERY', meter:true });
-      drawVfdText(Math.max(body.x, Math.floor((cols - 12) / 2)), body.y + 2, 'CHUNK SURFER', { color:UI_COLOR.primary });
-      uiText(Math.max(body.x, Math.floor((cols - 30) / 2)), body.y + 5, 'ELLERY CONSERVATOIRE OF MUSIC', 'ui-blue', up(2.4));
-      uiText(Math.max(body.x, Math.floor((cols - 31) / 2)), body.y + 7, '5 ROOMS / 1 CLEAN MINUTE EACH', 'ui-secondary', up(3.6));
+      const body = drawMachinePanel(x, y, w, h, {
+        label:threshold?'THRESHOLD':'PROGRAM',source:threshold?.source||'ELLERY',meter:true,
+      });
+      if(threshold){
+        const name=String(threshold.title||'GET-IN').toUpperCase();
+        drawVfdText(Math.max(body.x,Math.floor((cols-name.length)/2)),body.y+1,name,{color:UI_COLOR.amber,alpha:up(.35,.9)});
+        const detail=String(threshold.detail||'SERVICE ENTRY / INTERIOR').toUpperCase();
+        uiText(Math.max(body.x,Math.floor((cols-detail.length)/2)),body.y+3,detail,'ui-secondary',up(.8,1.1));
+        drawVfdText(Math.max(body.x,Math.floor((cols-12)/2)),body.y+6,'CHUNK SURFER',{color:UI_COLOR.primary,alpha:up(1.8,1.4)});
+        uiText(Math.max(body.x,Math.floor((cols-30)/2)),body.y+9,'ELLERY CONSERVATOIRE OF MUSIC','ui-blue',up(3.0));
+        uiText(Math.max(body.x,Math.floor((cols-31)/2)),body.y+11,'5 ROOMS / 1 CLEAN MINUTE EACH','ui-secondary',up(4.1));
+      }else{
+        drawVfdText(Math.max(body.x, Math.floor((cols - 12) / 2)), body.y + 2, 'CHUNK SURFER', { color:UI_COLOR.primary });
+        uiText(Math.max(body.x, Math.floor((cols - 30) / 2)), body.y + 5, 'ELLERY CONSERVATOIRE OF MUSIC', 'ui-blue', up(2.4));
+        uiText(Math.max(body.x, Math.floor((cols - 31) / 2)), body.y + 7, '5 ROOMS / 1 CLEAN MINUTE EACH', 'ui-secondary', up(3.6));
+      }
     },
   };
+}
+
+// The title is earned at a literal threshold, so the arrival gets a named
+// presenter rather than asking every caller to remember the framing contract.
+// The turn, closer, iris and threshold slate all complete before the internal
+// debrief is allowed to open.
+export function makeGetInArrivalScene(options = {}) {
+  return makeWorldTitleScene({
+    ...options,
+    threshold:{
+      title:'GET-IN',
+      detail:'SERVICE ENTRY / WEATHER CUT',
+      source:'GET-IN',
+      ...(options.threshold||{}),
+    },
+  });
 }

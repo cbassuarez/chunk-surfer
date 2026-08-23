@@ -22,6 +22,8 @@ import { normalizeReturnHistory } from './return-history.js';
 import { normalizeInterferenceRecord } from '../game/interference-case.js';
 import { carriedRead, readFromCarried } from '../game/enemy-mind.js';
 import { freshReferenceExposure, normalizeReferenceExposure } from '../game/reference-exposure.js';
+import { POWER_CIRCUIT_IDS } from '../game/conservatory-power.js';
+export { POWER_CIRCUIT_IDS } from '../game/conservatory-power.js';
 import {
   DEFAULT_PSYCH_PROFILE_SETTINGS,
   freshPsychProfileState,
@@ -364,8 +366,8 @@ export function normalizeLedger(value, { legacyFlags = null } = {}) {
     natatoriumWater: normalizeNatatoriumWaterLedger(source.natatoriumWater),
     stairAnomaly: normalizeStairAnomalyLedger(source.stairAnomaly),
     power: {
-      live: uniqueStrings(power.live).filter((id) => ['sp01','sp02','sp03'].includes(id)),
-      everRestored: uniqueStrings(power.everRestored).filter((id) => ['sp01','sp02','sp03'].includes(id)),
+      live: uniqueStrings(power.live).filter((id) => POWER_CIRCUIT_IDS.includes(id)),
+      everRestored: uniqueStrings(power.everRestored).filter((id) => POWER_CIRCUIT_IDS.includes(id)),
     },
     reference: normalizeReferenceExposure(source.reference, { legacyFlags }),
   };

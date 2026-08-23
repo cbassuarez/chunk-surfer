@@ -49,7 +49,7 @@ function acquire(now, startedAt, duration = 0.14) {
 export function bagListCapacity(layout, sectionId) {
   const usable = Math.max(1, layout.list.h - 2);
   if (sectionId === 'kit') return Math.max(1, Math.floor(usable / 2));
-  if (sectionId === 'files') return Math.max(1, Math.floor(usable / 2));
+  if (sectionId === 'sheets' || sectionId === 'files') return Math.max(1, Math.floor(usable / 2));
   return Math.max(1, usable);
 }
 
@@ -60,7 +60,7 @@ function drawTabs(model, nav, layout, pulse) {
   const gap = compact ? 1 : 2;
 
   const labels = tabs.map((tab) => {
-    const short = tab.id === 'kit' ? 'K' : tab.id === 'map' ? 'M' : tab.id === 'skills' ? 'S' : 'F';
+    const short = tab.id === 'kit' ? 'I' : tab.id === 'map' ? 'M' : tab.id === 'skills' ? 'K' : 'S';
     const core = compact ? `${short} ${tab.countLabel}` : `${tab.label} ${tab.countLabel}`;
     return tab.id === active ? `[${compact ? '' : ' '}${core}${compact ? '' : ' '}]` : core;
   });
@@ -85,7 +85,7 @@ function sectionHeader(sectionId) {
   if (sectionId === 'kit') return 'CASE INDEX';
   if (sectionId === 'map') return 'FACILITY MAP';
   if (sectionId === 'skills') return 'RECORDER MODIFICATIONS';
-  return 'FILE INDEX';
+  return 'SHEET INDEX';
 }
 
 function drawKitList(entries, selectedId, rect, scroll, capacity, pulse) {
@@ -382,30 +382,72 @@ export function bagKitDetailAction(entry) {
   return 'NO DIRECT ACTION';
 }
 
-function drawKitLoadoutView(model, nav, layout, motion, now) {
-  const section = bagSection(model, 'kit') || { entries: [] };
-  const selected = bagEntry(model, 'kit', nav.selected?.kit);
-  const region = kitRegion(layout);
-  const ruleH = drawKitRuleStrip(region, model);
-  const readyH = region.h >= 18 ? 8 : 6;
-  const readyRect = { x: region.x, y: region.y + ruleH, w: region.w, h: readyH };
-  drawReadyNow(model, section.entries, selected?.id || null, readyRect);
-
-  const belowY = readyRect.y + readyRect.h + 1;
-  const belowH = Math.max(5, region.y + region.h - belowY);
-  const wide = region.w >= 66 && belowH >= 9;
-
-  if (wide) {
-    const storageW = clamp(Math.floor(region.w * .56), 30, Math.max(30, region.w - 24));
-    const storageRect = { x: region.x, y: belowY, w: storageW, h: belowH };
-    const detailRect = { x: storageRect.x + storageRect.w + 2, y: belowY, w: Math.max(18, region.x + region.w - storageRect.x - storageRect.w - 2), h: belowH };
-    drawBagStorage(section.entries, selected?.id || null, storageRect);
-    drawKitDetail(selected, detailRect, nav, motion, now);
-  } else {
-    const storageH = Math.max(5, Math.floor(belowH * .52));
-    drawBagStorage(section.entries, selected?.id || null, { x: region.x, y: belowY, w: region.w, h: storageH });
-    drawKitDetail(selected, { x: region.x, y: belowY + storageH + 1, w: region.w, h: Math.max(5, belowH - storageH - 1) }, nav, motion, now);
+export function bagInventoryGeometry(model, nav, layout) {
+  const region=kitRegion(layout);
+  const readyH=5;
+  const contentY=region.y+readyH+1;
+  const contentH=Math.max(5,region.y+region.h-contentY);
+  if(region.w>=66&&contentH>=8){
+    const listW=clamp(Math.floor(region.w*.42),27,38);
+    return{region,ready:{x:region.x,y:region.y,w:region.w,h:readyH},
+      list:{x:region.x,y:contentY,w:listW,h:contentH},
+      detail:{x:region.x+listW+2,y:contentY,w:region.w-listW-2,h:contentH}};
   }
+  const listH=Math.max(4,Math.floor(contentH*.46));
+  return{region,ready:{x:region.x,y:region.y,w:region.w,h:readyH},
+    list:{x:region.x,y:contentY,w:region.w,h:listH},
+    detail:{x:region.x,y:contentY+listH+1,w:region.w,h:Math.max(4,contentH-listH-1)}};
+}
+
+function drawInventoryList(entries,selectedId,rect,scroll,pulse){
+  uiText(rect.x,rect.y,'ALL ITEMS','ui-label',.72);
+  rightText(rect.x,rect.y,rect.w,`${entries.length} CARRIED / TRACKED`,'ui-blue',.52);
+  const cap=Math.max(1,Math.floor((rect.h-1)/2));
+  entries.slice(scroll,scroll+cap).forEach((entry,index)=>{
+    const y=rect.y+1+index*2,on=entry.id===selectedId;
+    uiFill(rect.x,y,rect.w,1.8,on?'rgba(216,138,59,.13)':'rgba(255,255,255,.018)');
+    uiText(rect.x,y,on?'▸':' ',on?'ui-amber':'ui-secondary',on ? .9 : .5);
+    uiText(rect.x+2,y,clip(entry.title,Math.max(8,rect.w-14)),on?'ui-amber':entry.present?'ui-primary':'ui-secondary',on?1:.75);
+    const slot=entry.compartment==='top'?`SET ${entry.topIndex+1}`:entry.source?.deployed?'DEPLOYED':'BAG';
+    rightText(rect.x,y,rect.w,slot,entry.compartment==='top'?'ui-amber':entry.source?.deployed?'ui-blue':'ui-label',on ? .9 : .55);
+    uiText(rect.x+2,y+1,clip(entry.subtitle,rect.w-3),'ui-secondary',on ? .64 : .42);
+  });
+}
+
+function drawInventoryActions(entry,rect,nav,motion,now){
+  drawMicroBox(rect,{active:true});
+  if(!entry){uiText(rect.x+1,rect.y+1,'NO ITEM SELECTED','ui-secondary',.6);return;}
+  const focused=!!nav.actionFocus,index=Math.max(0,Number(nav.actionIndex)||0);
+  uiText(rect.x+1,rect.y+1,clip(entry.title,rect.w-2),'ui-amber',.95);
+  const descriptionRows=Math.min(3,Math.max(1,rect.h-8));
+  drawDescription(entry.description||'',rect.x+1,rect.y+2,rect.w-2,descriptionRows,'ui-secondary');
+  const start=rect.y+2+descriptionRows+1;
+  const actions=entry.actionList||[];
+  uiText(rect.x+1,start-1,focused?'ACTIONS · SELECT ONE':'ACTIONS · [ENTER / →] FOCUS','ui-label',focused ? .8 : .58);
+  const visible=Math.max(1,rect.y+rect.h-start);
+  actions.slice(0,visible).forEach((action,i)=>{
+    const on=focused&&i===index;
+    uiText(rect.x+1,start+i,on?'▸':' ',on?'ui-amber':'ui-secondary',on?1:.45);
+    const verb=action.verb==='special'?action.label:`${action.verb.toUpperCase()}${action.label!==action.verb.toUpperCase()?` · ${action.label}`:''}`;
+    const reason=!action.enabled?` — ${action.reason}`:action.exitPolicy==='close'?' — CLOSES BAG':'';
+    uiText(rect.x+3,start+i,clip(`${verb}${reason}`,rect.w-4),!action.enabled?'ui-secondary':on?'ui-amber':'ui-primary',!action.enabled ? .42 : on ? 1 : .72);
+  });
+  void motion;void now;
+}
+
+function drawKitLoadoutView(model, nav, layout, motion, now) {
+  const section=bagSection(model,'kit')||{entries:[]};
+  const selected=bagEntry(model,'kit',nav.selected?.kit);
+  const geo=bagInventoryGeometry(model,nav,layout);
+  // The ready tray is a summary only. Every item appears exactly once in the
+  // catalog below, with its numbered assignment shown beside it.
+  drawReadyNow(model,section.entries,selected?.id||null,geo.ready);
+  const cap=Math.max(1,Math.floor((geo.list.h-1)/2));
+  const at=Math.max(0,section.entries.findIndex((entry)=>entry.id===selected?.id));
+  const scroll=Math.max(0,Math.min(Number(nav.scroll?.kit)||0,Math.max(0,section.entries.length-cap)));
+  const visibleScroll=at<scroll?at:at>=scroll+cap?at-cap+1:scroll;
+  drawInventoryList(section.entries,selected?.id||null,geo.list,visibleScroll,acquire(now,motion.selectionChangedAt));
+  drawInventoryActions(selected,geo.detail,nav,motion,now);
 }
 
 function drawList(model, nav, layout, motion, now) {
@@ -562,6 +604,8 @@ export function bagActionRail(entry, mode) {
     return [[inputPromptLabel('confirm'), 'CONFIRM'], [inputPromptLabel('back'), 'CANCEL'], [inputPromptLabel('bag'), 'CLOSE']];
   }
 
+  if(entry?.kind==='gear')return [[inputPromptLabel('confirm'),'ACTIONS'],[inputPromptLabel('bag'),'CLOSE BAG']];
+  if(entry?.kind==='file')return [[inputPromptLabel('confirm'),'INSPECT SHEET'],[inputPromptLabel('bag'),'CLOSE BAG']];
   const out = [];
   if (entry?.actions?.primary) out.push([inputPromptLabel('confirm'), entry.actions.primary.label]);
 
@@ -625,7 +669,7 @@ export function drawBagGuide({ guide, region, nudge = 1 }) {
   uiText(region.x + 2, region.y + region.h - 1, clip(foot, region.w - 2), refused ? 'ui-amber' : 'ui-secondary', refused ? .95 : .6);
 }
 
-export function drawBagView({ model, nav, mapNav = null, layout, hint = '', guide = null, guideNudge = 1, motion, now, drawContent = null }) {
+export function drawBagView({ model, nav, mapNav = null, layout, hint = '', guide = null, guideNudge = 1, motion, now, drawContent = null, overrideActions = null }) {
   const selected = bagEntry(model, nav.sectionId, nav.selected?.[nav.sectionId]);
   const sectionPulse = acquire(now, motion.sectionChangedAt);
   drawTabs(model, nav, layout, sectionPulse);
@@ -659,9 +703,9 @@ export function drawBagView({ model, nav, mapNav = null, layout, hint = '', guid
   if (guide && layout.guide) drawBagGuide({ guide, region: layout.guide, nudge: guideNudge });
 
   // A locked case does not advertise the keys it is refusing.
-  actions = guide
+  actions = overrideActions || (guide
     ? [[inputPromptLabel(guide.action || 'confirm'), String(guide.title || '').toUpperCase()], [inputPromptLabel('bag'), 'CLOSE']]
-    : nav.mode === 'confirm' ? bagActionRail(selected, nav.mode) : (actions || bagActionRail(selected, nav.mode));
+    : nav.mode === 'confirm' ? bagActionRail(selected, nav.mode) : (actions || bagActionRail(selected, nav.mode)));
   const actionText = clip(actionRailText(actions, layout.actionRail.w), layout.actionRail.w);
   uiText(layout.actionRail.x, layout.actionRail.y, actionText, nav.mode === 'confirm' ? 'ui-danger' : 'ui-label', nav.mode === 'confirm' ? .92 : .72);
 }

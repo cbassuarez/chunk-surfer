@@ -10,9 +10,11 @@ export function resolveMapAction(selected, actionId, api = {}) {
     case 'unmark':
     case 'mark-waypoint':
     case 'clear-waypoint':
-      return selected.roomId && typeof api.markRoom === 'function'
-        ? !!api.markRoom(selected.roomId)
-        : false;
+      return typeof api.markSpace === 'function'
+        ? !!api.markSpace(selected)
+        : selected.roomId && typeof api.markRoom === 'function'
+          ? !!api.markRoom(selected.roomId)
+          : false;
 
     case 'read-attached': {
       const doc = selected.objective?.notes?.[0] || selected.attached || null;
@@ -32,7 +34,7 @@ export function mapActionRail(selected, { floorCount = 1 } = {}) {
     if (selected?.objective?.notes?.length || selected?.attached) actions.push([inputPromptLabel('confirm'), 'OPEN FILE']);
     if (selected?.waypoint || selected?.marked) actions.push([inputPromptLabel('interact'), 'CLEAR TARGET']);
     else if (selected && selected.waypointable !== false) actions.push([inputPromptLabel('interact'), 'SET TARGET']);
-    actions.push([inputPromptLabel('back'), 'CLOSE']);
+    actions.push([inputPromptLabel('back'), 'CLOSE BAG']);
     return actions;
   }
   const actions = [[inputPromptLabel('move'), 'SELECT ROOM']];
@@ -41,6 +43,6 @@ export function mapActionRail(selected, { floorCount = 1 } = {}) {
   if (selected?.objective?.notes?.length || selected?.attached) actions.push([inputPromptLabel('confirm'), 'OPEN FILE']);
   if (selected?.waypoint || selected?.marked) actions.push([inputPromptLabel('mark'), 'CLEAR TARGET']);
   else if (selected && selected.waypointable !== false) actions.push([inputPromptLabel('mark'), 'SET TARGET']);
-  actions.push([inputPromptLabel('bag'), 'CLOSE']);
+  actions.push([inputPromptLabel('bag'), 'CLOSE BAG']);
   return actions;
 }

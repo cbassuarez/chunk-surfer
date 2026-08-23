@@ -21,7 +21,7 @@ export function createObjectGuidanceTracker(options={}){
       if(!id){reset(null,Infinity,now);return{visible:false,alpha:0,pulse:false,stalled:false,targetId:null};}
       if(id!==state.targetId)reset(id,d,now);
       if(Number.isFinite(d)&&d<=state.bestDistance-rules.progressDistance){
-        state.bestDistance=d;state.lastProgressAt=now;state.visibleUntil=0;
+        state.bestDistance=d;state.lastProgressAt=now;state.visibleUntil=0;state.cooldownUntil=0;
       }
       const stalled=now-state.lastProgressAt>=rules.stallMs;
       if(mode==='reduced'&&stalled&&now>=state.cooldownUntil){

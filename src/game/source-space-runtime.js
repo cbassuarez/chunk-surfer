@@ -1,6 +1,7 @@
 import SOURCE_ATLAS from '../../content/chunk-surf/source-atlas.json' with { type: 'json' };
 import { CELL, EYE, F, MATERIAL, ZONE } from '../data/floorplan/legend.js';
 import { encodeH } from '../world/floorplan.js';
+import { HORIZON_PROFILE } from '../data/generated/horizon-profile.js';
 import {
   CHUNK_SURF_HUSH_STAGE,
   CHUNK_SURF_PHASE,
@@ -738,11 +739,65 @@ export function createSourceSpaceRuntime({
   // tape is 512 — which is also why the horizon does NOT join the anchored plan
   // list in renderPlanFor(): the 384 window has to follow the body out here the
   // way it followed him down the hall.
+  // THE WALK FOLLOWS THE PICTURE.
+  //
+  // This used to be a hard axis-aligned box — a 512-cell tube of fixed width —
+  // which is why the horizon was two minutes of holding one key. The data
+  // comment on halfWidth has always said the edge is "soft, a wash, not a wall"
+  // and the implementation has never been anything of the sort.
+  //
+  // It is the recording's shape now. HORIZON_PROFILE carries, per slice, where
+  // the picture's bright mass sits across the corridor and how wide its
+  // substance actually is — both measured off the shipped bake. The walkable
+  // ground is centred on the light and reaches as far as the picture does, so
+  // the route drifts as the recording drifts, and where the tape has little
+  // left to show there is correspondingly little to stand on.
+  //
+  // Beyond it is not a wall. It is the end of the picture, and there is nothing
+  // out there at all — see horizonEdge() for what the approach feels like.
+  function horizonBand(ly) {
+    const depth = Math.max(0, Math.min(SOURCE_HORIZON.length, SOURCE_HORIZON.from - ly));
+    const at = depth / SOURCE_HORIZON.sliceMetres;
+    const i = Math.max(0, Math.min(HORIZON_PROFILE.slices - 1, Math.floor(at)));
+    const j = Math.min(HORIZON_PROFILE.slices - 1, i + 1);
+    const t = at - i;
+    const lerp = (arr) => arr[i] + (arr[j] - arr[i]) * t;
+    // Tape units and runtime cells run 1:1 along the tape; across it the
+    // corridor is mapped onto the picture, so the profile's units come back
+    // through the same scale (see r3d's HORIZON_LATERAL_SCALE).
+    const centre = lerp(HORIZON_PROFILE.com) / HORIZON_LATERAL_SCALE;
+    // A PATH THROUGH THE PICTURE, NOT THE WHOLE OF IT.
+    //
+    // Taking the full width of the recording's substance gave a corridor 80 to
+    // 96 cells across, and against that the drift is nothing: you could hold one
+    // key down the middle and never touch an edge, which is the straight walk
+    // this was supposed to stop being.
+    //
+    // Narrow enough that the wander has to be steered, wide enough that
+    // steering is not a tightrope: the body walks in the lit part of the frame
+    // and the recording continues past it on both sides, which is the right
+    // relationship anyway. You are inside the picture, not filling it.
+    const reach = Math.max(HORIZON_MIN_HALF_WIDTH,
+      Math.min(HORIZON_MAX_HALF_WIDTH, lerp(HORIZON_PROFILE.spread) * 0.62 / HORIZON_LATERAL_SCALE));
+    return { centre, reach, mosh: lerp(HORIZON_PROFILE.mosh), lum: lerp(HORIZON_PROFILE.lum) };
+  }
+
+  // How far outside the picture the body is, 0 inside and 1 at the last step it
+  // is allowed. The renderer and the score both want this: walking out of the
+  // recording should be felt before it is refused.
+  function horizonEdge(x, y) {
+    const o = landscapeOrigin();
+    const band = horizonBand(y - o.y);
+    const over = Math.abs((x - o.x) - band.centre) - band.reach;
+    return Math.max(0, Math.min(1, over / HORIZON_EDGE_FADE + 1));
+  }
+
   function inHorizon(x, y) {
     if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return false;
     const o = landscapeOrigin(), lx = x - o.x, ly = y - o.y;
-    return Math.abs(lx) <= SOURCE_HORIZON.halfWidth
-      && ly <= SOURCE_HORIZON.from && ly >= SOURCE_HORIZON.to;
+    if (ly > SOURCE_HORIZON.from || ly < SOURCE_HORIZON.to) return false;
+    const band = horizonBand(ly);
+    return Math.abs(lx - band.centre) <= band.reach;
   }
 
   function horizonCell(x, y) {
@@ -1474,18 +1529,42 @@ export function createSourceSpaceRuntime({
   // without ever finding out what he wanted, which is the only way the joke
   // works. Everything he offers costs ten minutes and he says so.
   const HORIZON_BUST_DEPTH = 168;
-  const HORIZON_BUST_LATERAL = -26;
+  // HE STANDS ON THE ROUTE, NOT BESIDE IT.
+  //
+  // He was a fixed twenty-six cells off the centre line, from when the corridor
+  // was a straight tube and being off to one side was the whole of his staging.
+  // With the walk following the picture that number means nothing — the path is
+  // somewhere else by then — and the only authored beat in five hundred metres
+  // was parked in the dark where nobody had a reason to go.
+  //
+  // Offset from the PATH instead: far enough off the middle of it that he is
+  // passed rather than collided with, close enough that walking the tape walks
+  // you to him.
+  const HORIZON_BUST_OFFSET = -9;
+  const horizonBustLateral = () =>
+    horizonBand(SOURCE_HORIZON.from - HORIZON_BUST_DEPTH).centre + HORIZON_BUST_OFFSET;
 
   // He is a bore, and he is a bore ON PURPOSE. Every line is him not answering,
   // and the whole time he is being perfectly straight about what he is: a
   // detour. The punchline is that he was never lying and you asked anyway.
+  // PLACEHOLDER. Deliberately, visibly, unmistakably placeholder.
+  //
+  // Every line describes the job it is doing instead of doing it, at length and
+  // with feeling. This is scaffolding: it holds the beat's shape — six presses,
+  // the offer landing on the sixth — so the pacing can be walked and felt while
+  // the real words are written. Replace all of it.
+  //
+  // (It may also survive. A monument that can only describe the function it was
+  // installed to perform is not off-theme for this game, and the register is
+  // close enough to the Surfer's that keeping it would be a decision rather
+  // than an oversight. That is for the author to decide, not this comment.)
   const HORIZON_BUST_LINES = Object.freeze([
-    { who: 'bust', text: 'Oh, thank God. I have been out here with the orange side and the green side and nothing in between them but a seam.' },
-    { who: 'bust', text: 'Do not ask me the way. I will tell you, and you will not like how long it takes. I am told I am a detour. I have made my peace with it.' },
-    { who: 'you', text: 'How long.' },
-    { who: 'bust', text: 'Ten minutes. Possibly more, if you are bad at it. There are eight of them and they are extremely heavy and they go in an order.' },
-    { who: 'bust', text: 'Straight on is quicker. Straight on is always quicker. Straight on also arrives with nothing in your hands, but that is your business.' },
-    { who: 'bust', text: 'So. The long way, or the honest walk? I did warn you. I want that on the record. I AM the record, so it is on it.' },
+    { who: 'bust', text: '[PLACEHOLDER] What follows is an opening line: the long, unhurried kind whose task is less to say anything than to establish that a thing out here is willing to speak to you at all, and which therefore spends itself entirely on establishing that.' },
+    { who: 'bust', text: '[PLACEHOLDER] And this is the second beat, in which the speaker declines to give directions — a refusal that will be dressed, when the real words arrive, as weary honesty, and which functions here only to mark the place where the refusal goes.' },
+    { who: 'you', text: '[PLACEHOLDER] Here the recordist interrupts, briefly, because six uninterrupted paragraphs from a stone head would be a monologue and the shape being tested is a conversation.' },
+    { who: 'bust', text: '[PLACEHOLDER] The fourth line quantifies the detour. Its real version will name a number of minutes and a number of heavy objects in an order, and its purpose is to make the offer sound expensive before the offer is made.' },
+    { who: 'bust', text: '[PLACEHOLDER] The fifth exists to state the alternative, which is simply to keep walking, and to make that alternative sound both quicker and poorer — a sentence doing the work of a fork in a road that is not otherwise forked.' },
+    { who: 'bust', text: '[PLACEHOLDER] And this last one is the offer itself, the line the previous five have been buying: the point at which standing still long enough turns into a choice, and the walk either continues or does not.' },
   ]);
 
   // Where he stands, for anything that has to draw him.
@@ -1495,13 +1574,13 @@ export function createSourceSpaceRuntime({
   // — the corridor is wider than the picture — so the renderer scales it, and
   // this reports the raw offset rather than guessing at the mapping.
   function horizonBustPlacement() {
-    return { lateral: HORIZON_BUST_LATERAL, depth: HORIZON_BUST_DEPTH };
+    return { lateral: horizonBustLateral(), depth: HORIZON_BUST_DEPTH };
   }
 
   function horizonBustPoint() {
     const o = landscapeOrigin();
     return {
-      x: o.x + HORIZON_BUST_LATERAL,
+      x: o.x + horizonBustLateral(),
       y: o.y + SOURCE_HORIZON.from - HORIZON_BUST_DEPTH,
     };
   }
@@ -1513,6 +1592,28 @@ export function createSourceSpaceRuntime({
   // is the right behaviour for a bore whose whole function is to waste time you
   // have chosen to give him. What IS persisted is the exit he offers.
   let horizonBustBeat = 0;
+  // WHERE THE RECORDING CHANGES.
+  //
+  // Read off the tape rather than chosen: the macroblock damage begins around
+  // depth 42 and clears again around 358, so the crossing already has three
+  // acts — clean, ruined, clean — with the bust standing inside the ruined one
+  // and the collapse waiting past the end of it. Nothing had ever marked them,
+  // so a walk with a shape played as a walk with none.
+  //
+  // Each fires once, on the step that crosses it.
+  const HORIZON_MARKERS = Object.freeze([
+    { id: 'damage-begins', depth: 42 },
+    { id: 'damage-ends', depth: 358 },
+  ]);
+  const horizonMarkersSeen = new Set();
+  let horizonMarkerPending = null;
+  // Read and clear: the caller speaks it, and it must not be spoken twice.
+  function takeHorizonMarker() {
+    const marker = horizonMarkerPending;
+    horizonMarkerPending = null;
+    return marker;
+  }
+
   // The furthest whole slice the body has reached, so HORIZON_ADVANCED fires
   // once per slice instead of once per footstep. Runtime-only; the durable
   // figure is state.horizon.maxDepth, which this feeds.
@@ -1534,6 +1635,16 @@ export function createSourceSpaceRuntime({
   // Where the tail begins, as a fraction of the tape. One constant, so the
   // score's fade and the picture's collapse cannot drift apart again.
   const HORIZON_COLLAPSE_FROM = 0.88;
+  // Picture half-width over corridor half-width, mirroring the renderer: the
+  // profile is in tape units and the runtime walks in cells.
+  const HORIZON_LATERAL_SCALE = 64 / 96;
+  // The corridor never pinches below this, however little the tape has left —
+  // a path that closes to a point is a soft-lock, not a mood. And never opens
+  // past this, or the drift stops being something the legs have to answer.
+  const HORIZON_MIN_HALF_WIDTH = 15;
+  const HORIZON_MAX_HALF_WIDTH = 32;
+  // How many cells of approach the edge is felt over.
+  const HORIZON_EDGE_FADE = 18;
   // How much slower than an ordinary walk the tape is. One number, because the
   // right value is a matter of feel. Measured against the real base step of
   // ~46ms a cell over 506 cells:
@@ -1573,6 +1684,12 @@ export function createSourceSpaceRuntime({
       // Nothing ever set it, so `Number(undefined) || 0` pinned it at zero and
       // the authored blackout was audio-only. The score went quiet over a
       // picture that did not change.
+      // How far out of the picture the body has wandered, 0..1. The edge of a
+      // recording is not a wall and should not behave like one — it is the
+      // place the recording stops having anything, and the approach to it
+      // should darken and thin before the step is refused.
+      edge: horizonEdge(player.x, player.y),
+      band: horizonBand(local),
       collapse: HORIZON_COLLAPSE_FROM >= 1 ? 0
         : Math.max(0, Math.min(1, (progress01(depth) - HORIZON_COLLAPSE_FROM) / (1 - HORIZON_COLLAPSE_FROM))),
       // Declared rather than left to the renderer's `?? 1` default, so the one
@@ -1634,7 +1751,10 @@ export function createSourceSpaceRuntime({
     candidates.push(...readablePages());
     if (state.phase === CHUNK_SURF_PHASE.HORIZON) {
       const bust = horizonBustPoint();
-      candidates.push({ kind: 'horizon-bust', id: 'horizon-bust', ...bust, focusPriority: 9, focusRadius: 8 });
+      // Radius widened with him: he is a monument standing on the route now, and
+          // needing to be within eight cells of a thing that size to notice it is
+          // a reticle problem, not a staging one.
+          candidates.push({ kind: 'horizon-bust', id: 'horizon-bust', ...bust, focusPriority: 9, focusRadius: 20 });
       return (lastFocus = focusedCandidate(px, py, facing, candidates, 8));
     }
     if ([CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase)) {
@@ -1679,6 +1799,12 @@ export function createSourceSpaceRuntime({
       // What it was persisting is a monotone maxDepth that nothing reads back.
       // Only tell the store when the furthest point actually moves, and only in
       // whole slices, so the write rate follows the tape rather than the legs.
+      for (const marker of HORIZON_MARKERS) {
+        if (depth >= marker.depth && !horizonMarkersSeen.has(marker.id)) {
+          horizonMarkersSeen.add(marker.id);
+          horizonMarkerPending = marker.id;
+        }
+      }
       const slice = Math.floor(depth / SOURCE_HORIZON.sliceMetres);
       if (slice > horizonDepthSlice) {
         horizonDepthSlice = slice;
@@ -2834,6 +2960,9 @@ export function createSourceSpaceRuntime({
     chooseHorizonExit,
     horizonBustPoint,
     horizonBustPlacement,
+    horizonBand,
+    horizonEdge,
+    takeHorizonMarker,
     talkToHorizonBust,
     takeHorizonBustDetour,
     navigation,

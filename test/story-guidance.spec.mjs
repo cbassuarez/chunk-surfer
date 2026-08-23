@@ -7,13 +7,15 @@ import { STORY_TARGET, resolveStoryGuidanceTarget, storyTargetSharesRenderSpace 
 const phase=(value,patch={})=>({...freshChapelTowerState(),phase:value,...patch});
 const target=(patch={})=>resolveStoryGuidanceTarget({
   prologueDone:true,
+  getInEntered:true,
   tower:phase(CHAPEL_TOWER_PHASE.FORESHADOW),
   ...patch,
 });
 
 assert.equal(resolveStoryGuidanceTarget().id,'story:yard-van');
-assert.equal(resolveStoryGuidanceTarget({bagTaken:true}).id,'story:yard-look-bench');
-assert.equal(resolveStoryGuidanceTarget({bagTaken:true,benchVisited:true}).id,'story:lodge');
+assert.equal(resolveStoryGuidanceTarget({bagTaken:true}).id,'story:lodge','the optional shelter never replaces the check-in route');
+assert.equal(resolveStoryGuidanceTarget({prologueDone:true}).id,'story:get-in','the handoff routes all the way to the arrival threshold');
+assert.equal(STORY_TARGET.lookBench.required,false,'the shelter remains optional atmosphere');
 assert.equal(target({selectedWaypoint:{x:10,y:12,roomId:'main_b3'},selectedLabel:'Studio B3'}).id,'room:main_b3');
 
 const sourceReady=phase(CHAPEL_TOWER_PHASE.SOURCE_READY);
@@ -55,7 +57,7 @@ assert.equal(storyTargetSharesRenderSpace({kind:'position'}, {
 }),true);
 
 const mandatoryProps=new Set([
-  'yard-van','yard-look-bench','yard-booth','loose-page:page-6','box-office-ledger','box-office-key-cabinet','chapel-inner-screen','tower-rope-8',
+  'yard-van','yard-booth','loose-page:page-6','box-office-ledger','box-office-key-cabinet','chapel-inner-screen','tower-rope-8',
 ]);
 for(const optional of ['yard-van-bag','story-bent-rig','dock-power-panel','calibration-pin-1'])assert.equal(mandatoryProps.has(optional),false);
 

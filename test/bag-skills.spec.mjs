@@ -39,7 +39,7 @@ const find = (tree, id) => flat(tree).find((entry) => entry.techniqueId === id);
 
 // ── it is a section of the case, like KIT and MAP ────────────────────────────
 const fresh = buildBagModel({});
-assert.deepEqual(fresh.sections.map((s) => s.id), ['kit', 'map', 'files', 'skills'],
+assert.deepEqual(fresh.sections.map((s) => s.id), ['kit', 'map', 'sheets', 'skills'],
   'SKILLS is a fourth tab, not a separate screen');
 assert.ok(skillsOf(fresh).entries.length === TECHNIQUE_DEFS.length,
   'every technique is an addressable entry, so the shared nav can select it');
@@ -109,7 +109,7 @@ const after = treeFor(build, true, normalizeCombatBuild(null, PIN_SOURCES.encoun
 assert.equal(find(after, TECHNIQUE.AFTERIMAGE).state, SKILL_STATE.PENDING);
 assert.equal(find(after, TECHNIQUE.WHITEOUT).state, SKILL_STATE.AFFORDABLE, 'the chain opens up');
 assert.equal(after.pins.unspent, before - 1, 'and it cost a pin');
-assert.equal(find(after, TECHNIQUE.AFTERIMAGE).actions.primary, null, 'a chosen node is not re-buyable');
+assert.equal(find(after, TECHNIQUE.AFTERIMAGE).actions.primary.id, 'undo-skill', 'a chosen node can be undone but not re-bought');
 assert.equal(after.pins.pending, 1, 'the case distinguishes this session from installed modifications');
 
 // ── the count on the tab is about the urgent thing ──────────────────────────

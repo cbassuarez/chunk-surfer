@@ -41,10 +41,24 @@ await page.setViewport({ width: 1024, height: 640 });
 const glErrors = [];
 page.on('console', (m) => { if (/GL_INVALID|missing fragment shader outputs/i.test(m.text())) glErrors.push(m.text()); });
 
+// A dev server reloads the page whenever the module graph changes, and it will
+// do it in the middle of a run — which surfaces as "Execution context was
+// destroyed" from whichever evaluate happened to be in flight, i.e. as a
+// failure in an unrelated assertion. Wait for the page to stop moving before
+// trusting anything on it.
+let lastNavigation = Date.now();
+page.on('framenavigated', (f) => { if (f === page.mainFrame()) lastNavigation = Date.now(); });
+const ready = async () => {
+  await page.waitForFunction(() => window.__chunkSurferPixelMesh?.status?.()?.framesRendered > 4,
+    { timeout: 20 * 60 * 1000, polling: 500 });
+};
 await page.goto(`${BASE}/index.html?mode=story&renderer=3d&skiptut=1&nothink=1&nomic=1&sam=0`,
   { waitUntil: 'domcontentloaded', timeout: 60000 });
-await page.waitForFunction(() => window.__chunkSurferPixelMesh?.status?.()?.framesRendered > 4,
-  { timeout: 20 * 60 * 1000, polling: 500 });
+await ready();
+for (let i = 0; i < 40 && Date.now() - lastNavigation < 2500; i += 1) {
+  await new Promise((r) => setTimeout(r, 500));
+  await ready().catch(() => {});
+}
 
 const settle = (n = 60) => page.evaluate((n) => new Promise((r) => {
   let i = 0; const step = () => (++i >= n ? r() : requestAnimationFrame(step)); requestAnimationFrame(step);

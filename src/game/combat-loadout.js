@@ -73,6 +73,38 @@ export function moveCombatGear(loadout, id, destination) {
   };
 }
 
+// Assign a tool to an explicit numbered contact slot. Replacing a storage item
+// moves the previous occupant back into storage; moving a tool that is already
+// ready swaps the two slots. The UI can therefore promise a numbered slot
+// without first forcing the player to clear it manually.
+export function assignCombatGearSlot(loadout, id, slotIndex) {
+  const normalized = normalizeCombatLoadout(loadout);
+  const key = sourceId(id);
+  const slot = Math.floor(Number(slotIndex));
+  if (!isBattleGear(key)) return { loadout: normalized, changed: false, reason: 'not-battle-gear' };
+  if (!Number.isFinite(slot) || slot < 0 || slot >= normalized.capacity) {
+    return { loadout: normalized, changed: false, reason: 'invalid-slot' };
+  }
+
+  const top = [...normalized.top];
+  const from = top.indexOf(key);
+  if (from === slot) return { loadout: normalized, changed: false, reason: 'already-in-slot' };
+
+  if (from >= 0) {
+    if (slot < top.length) [top[from], top[slot]] = [top[slot], top[from]];
+    else {
+      top.splice(from, 1);
+      top.push(key);
+    }
+  } else if (slot < top.length) {
+    top[slot] = key;
+  } else {
+    top.push(key);
+  }
+
+  return { loadout: { ...normalized, top }, changed: true, reason: null };
+}
+
 // Reorder a piece of gear within the tray. The tray order is the in-fight tool
 // rail order (availableBattleTools returns tools in `top` order, and combat
 // honours that), so this is how the player shapes which tool sits first.

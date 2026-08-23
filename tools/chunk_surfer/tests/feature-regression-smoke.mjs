@@ -547,7 +547,8 @@ try {
   // Lighting signatures are judged through the shipped renderer. Power and
   // torch are held off here so each room has to identify itself by its own
   // maintained practical, sky and ambient response rather than by the HUD.
-  for(const circuit of ['sp01','sp02','sp03'])await page.evaluate((id)=>window.__probe.setPower(id,false),circuit);
+  const switchableCircuits=await page.evaluate(()=>window.__probe.powerCircuits());
+  for(const circuit of switchableCircuits)await page.evaluate((id)=>window.__probe.setPower(id,false),circuit);
   await page.evaluate(()=>window.__probe.hush());
   await page.evaluate(()=>window.__probe.setTorch(false));
   const lightingViews=[

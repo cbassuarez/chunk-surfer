@@ -10,8 +10,12 @@ import {
 import { OPENING_STREET_MESHES, OPENING_STREET_PROPS } from './opening-street.js';
 import { YARD_PARK_MESHES, YARD_PARK_PROPS } from './yard-park.js';
 import { BASEBOARDS } from './generated/prop-geometry.js';
+import { CHURCH_COLLIDERS } from './st-brendans.js';
 
 const P = (id, mesh, x, y, yaw = 0, extra = {}) => ({ id, mesh, x, y, yaw, scale:1, ...extra });
+const CPG = (x,y) => ({x:112+x,y:125+y});
+const CPL = (x,y) => ({x:140+x,y:183+y});
+const CPB = (x,y) => ({x:170+x,y:169+y});
 const DP = (id,mesh,physicalX,physicalY,yaw=0,extra={}) => {
   const point=districtLogicalAt(physicalX,physicalY);
   return P(id,mesh,point.x,point.y,yaw,extra);
@@ -31,7 +35,7 @@ export const PROCUREMENT_COHORTS = Object.freeze({
   hall_lighting_refit:Object.freeze({kind:'contract',era:'major hall refit',markPrefix:'H/L',summary:'A matched pair of chandeliers above the stalls.'}),
   hall_lounge_replacement:Object.freeze({kind:'contract',era:'later public-room refit',markPrefix:'H/S',summary:'Two replacement Chesterfields at the rear cross aisle.'}),
   chapel_foundation_1908:Object.freeze({kind:'commission',era:'1908',markPrefix:'EC/C',summary:'Purpose-made chapel fixtures, score cabinets and the presider chair.'}),
-  services_rewire:Object.freeze({kind:'contract',era:'late services refit',markPrefix:'S/P',summary:'Matching distribution panels installed across three service zones.'}),
+  services_rewire:Object.freeze({kind:'contract',era:'late services refit',markPrefix:'S/P',summary:'Matching distribution panels installed across five occupied service zones.'}),
   maintenance_purchase:Object.freeze({kind:'contract',era:'final maintenance period',markPrefix:'M/L',summary:'A paired purchase of portable inspection lamps.'}),
 });
 
@@ -172,7 +176,11 @@ export const PROP_MESH = Object.freeze({
   // raymarched cells (ZONE.church) and already collide. A blocking prop box here
   // would be a solid twenty-five by thirty-six metre slab over the whole
   // footprint, sealing the inside of the building off from its own doors.
-  st_brendan_church:{w:24.4,d:37.7,h:19.3,blocks:false},
+  st_brendan_church:{w:18.8,d:31.9,h:17.35,blocks:false},
+  cathedral_font:{w:1.0,d:1.0,h:1.18,blocks:true},
+  cathedral_pulpitum:{w:8.0,d:.55,h:2.65,blocks:false},
+  cathedral_tomb:{w:2.1,d:.85,h:1.05,blocks:true},
+  cathedral_monument:{w:1.25,d:.42,h:2.5,blocks:false},
   yard_rehearsal_range:{w:14,d:10,h:8.8,blocks:true},
   yard_baths_plant:{w:13,d:12,h:7.2,blocks:true},
   yard_covered_stores:{w:12,d:13,h:6.4,blocks:true},
@@ -257,6 +265,11 @@ export const PROP_MESH = Object.freeze({
   wooden_chair_01:{w:.688,d:.658,h:2.274,blocks:false,mount:'floor'},
   power_box_01:{w:.665,d:.418,h:.822,blocks:false,mount:'wall'},
   portable_searchlight:{w:.165,d:.253,h:.185,blocks:false,mount:'floor'},
+  // Generated skirting meshes are real prop-pack members too. Their extents
+  // come from the generated geometry table at render time; these non-blocking
+  // registry entries make the placement contract truthful for every group,
+  // including the cathedral's new skirting pass.
+  ...Object.fromEntries(Object.values(BASEBOARDS).map(({mesh})=>[mesh,{w:1,d:1,blocks:false}])),
 });
 
 // Visible structure has matching height-aware collision. Coordinates are
@@ -279,6 +292,23 @@ export const STRUCTURAL_COLLIDERS = Object.freeze([
     {id:`tower-frame-${side?'east':'west'}-tie-s`,kind:'obb',x,y:159.4,width:.22,depth:1.7,yaw:0,minElevation:13.2,maxElevation:15.9,spaceId:'bell_chamber'},
   ]),
   {id:'tower-loft-rail',kind:'obb',x:94,y:156.7,width:10,depth:.16,yaw:0,minElevation:8.6,maxElevation:9.75,spaceId:'organ_loft'},
+  ...CHURCH_COLLIDERS.map((collider)=>{
+    const point=collider.floor>=10?CPB(collider.x,collider.y)
+      :collider.floor>=4.5?CPL(collider.x,collider.y):CPG(collider.x,collider.y);
+    const diameter=(collider.radius||0)*2;
+    return{id:collider.id,kind:'obb',x:point.x,y:point.y,
+      width:collider.w||diameter,depth:collider.d||diameter,yaw:0,
+      minElevation:collider.floor,maxElevation:collider.ceil,
+      spaceId:collider.floor>=10?'cathedral_belfry':collider.floor>=4.5?'cathedral_loft':'cathedral_ground'};
+  }),
+  // Exterior players remain on the yard component. Mirror the projections
+  // that extend beyond the masonry mask there, otherwise a buttress can be
+  // visible and solid from inside while remaining intangible from the yard.
+  ...CHURCH_COLLIDERS.filter((collider)=>collider.floor===0&&collider.id.startsWith('cathedral-buttress-')).map((collider)=>({
+    id:`${collider.id}-yard`,kind:'obb',x:50+collider.x,y:200+collider.y,
+    width:collider.w,depth:collider.d,yaw:0,
+    minElevation:collider.floor,maxElevation:collider.ceil,spaceId:'loading_bay',
+  })),
 ]);
 
 // THE BAKED SKIRTING, one mesh per render group.
@@ -571,17 +601,33 @@ export const CONSERVATORY_PROPS = [
     ),
   })),
 
-  // ST BRENDAN'S, on the tarmac past the park. Logical coords, like the ranges
-  // above: the yard island is parked at (50,200), so this is yard-local (16,
-  // 70.5) — the centre of CHURCH_BOUNDS in data/st-brendans.js, which is also
-  // the origin the mesh was built around.
-  P('brendan-church','st_brendan_church',66,270.5,0,{
-    structural:true,blocks:false,label:'st brendan\u2019s',
+  // ST BRENDAN'S, on the tarmac past the park. Its logical anchor belongs to
+  // the cathedral component; CPG(16,70.5) still resolves to the same physical
+  // centre the mesh was authored around. Keeping the hero off the sealed yard
+  // underlay prevents prop initialisation from discarding it as embedded.
+  P('brendan-church','st_brendan_church',CPG(16,70.5).x,CPG(16,70.5).y,0,{
+    structural:true,blocks:false,label:'St Brendan\u2019s Cathedral',renderGroups:['ground','cathedral'],
     inspect:inspect(
-      'A parish church, hard against the yard wall. Older than the conservatoire and outliving it: the school went up in 1888 and this was already here.',
-      'The tower has louvres and no bells that anyone has heard.',
+      'St Brendan\u2019s Cathedral. Rubble stone, slate, a crossing tower and a west door with no exterior handle. Older than the conservatoire and outliving it.',
+      'St Brendan\u2019s Cathedral. Intact, disused, and shut from this side.',
     ),
   }),
+  ...[62.3,65.2,68.1].flatMap((y,i)=>[
+    P(`brendan-pew-n-${i+1}`,'pew',CPG(13.6,y).x,CPG(13.6,y).y,0,{renderGroups:['ground'],inspect:inspect('A short oak pew. The aisle end is dark with old hands; the rest has gone grey with dust.','Dust in the mouldings. No service sheet.')}),
+    P(`brendan-pew-s-${i+1}`,'pew',CPG(18.4,y).x,CPG(18.4,y).y,0,{renderGroups:['ground'],inspect:inspect('The matching pew has a warped kneeler and a numbered brass plate.','A number for a congregation that is not here.')}),
+  ]),
+  ...[78.0,80.3].flatMap((y,i)=>[
+    P(`brendan-choir-stall-n-${i+1}`,'pew',CPG(13.0,y).x,CPG(13.0,y).y,Math.PI/2,{scale:.72,renderGroups:['ground'],inspect:inspect('Choir stalls under misericords blackened by age.','The seat lifts. The carving underneath is worn smooth.')}),
+    P(`brendan-choir-stall-s-${i+1}`,'pew',CPG(19.0,y).x,CPG(19.0,y).y,Math.PI/2,{scale:.72,renderGroups:['ground'],inspect:inspect('Choir stalls facing the empty centre line.','No books. No cushions. No recent dust broken.')}),
+  ]),
+  P('brendan-pulpitum','cathedral_pulpitum',CPG(16,76.05).x,CPG(16,76.05).y,0,{structural:true,blocks:false,renderGroups:['ground'],inspect:inspect('An open stone pulpitum. Two flights of pierced tracery leave the centre passage clear.','A screen that divides without sealing.')}),
+  P('brendan-font','cathedral_font',CPG(16,59.2).x,CPG(16,59.2).y,0,{renderGroups:['ground'],inspect:inspect('A battered octagonal font. The bowl is dry except for plaster grit.','Stone dust in the bowl.')}),
+  P('brendan-lectern','lectern',CPG(14.5,77.2).x,CPG(14.5,77.2).y,.12,{renderGroups:['ground'],inspect:inspect('A brass lectern gone green at the joints. The service book is gone.','The ribbon remains, marking air.')}),
+  P('brendan-altar','altar_table',CPG(16,82.5).x,CPG(16,82.5).y,0,{elevation:.25,renderGroups:['ground'],inspect:inspect('The altar stands one step above the choir. Linen and vessels were removed carefully.','Bare stone and four pale footmarks.')}),
+  P('brendan-side-monument','cathedral_monument',CPG(9.7,79).x,CPG(9.7,79).y,Math.PI/2,{structural:true,blocks:false,renderGroups:['ground'],inspect:inspect('A wall monument with its face and dates abraded before the cathedral closed.','The name was removed deliberately.')}),
+  P('brendan-sacristy-tomb','cathedral_tomb',CPG(22,79).x,CPG(22,79).y,0,{renderGroups:['ground'],inspect:inspect('A chest tomb pressed into the sacristy wall. Bird lime has found it even here.','A stone sleeper under dust and feathers.')}),
+  P('brendan-organ-case','tower_organ_case',CPL(16,58.2).x,CPL(16,58.2).y,Math.PI,{structural:true,blocks:true,renderGroups:['cathedral']}),
+  P('brendan-organ-console','organ_console',CPL(16,60).x,CPL(16,60).y,0,{renderGroups:['cathedral'],...play('lux_nova','A small loft organ. The blower cable has been cut back to the wall and every stop is in.','No power. No wind.')}),
 
   // ── The boundary, which stands BETWEEN you and the man in the booth ──
   //
@@ -929,11 +975,11 @@ export const CONSERVATORY_PROPS = [
   P('academic-garden-leaves-south','academic_leaf_litter',84.8,19.1,-.18,{renderGroups:['ground','academic'],interactive:false}),
   P('academic-light-emergency-west','tower_bulkhead',28.5,248.0,Math.PI/2,{
     elevation:1.62,renderOffsetX:.25,renderGroups:['ground','academic'],interactive:false,structural:true,
-    lightMaintained:true,lightColor:[1,.62,.32],
+    lightCircuit:'sp05',lightColor:[1,.018,.008],
   }),
   P('academic-light-emergency-east-failing','tower_bulkhead',46.5,263.0,Math.PI/2,{
     elevation:1.62,renderOffsetX:.25,renderGroups:['ground','academic'],interactive:false,structural:true,
-    lightMaintained:true,lightColor:[1,.57,.28],
+    lightCircuit:'sp05',lightColor:[1,.018,.008],
   }),
 
   // Six anonymous bust stations establish the gallery cadence. Four retain a
@@ -1402,26 +1448,40 @@ export const CONSERVATORY_PROPS = [
   // object visibly clip through the natatorium leaf.
   P('natatorium-light-emergency-entry','tower_bulkhead',84.5,27.5,Math.PI/2,{
     elevation:1.62,renderOffsetX:.25,interactive:false,structural:true,
-    lightMaintained:true,lightColor:[1,.65,.36],
+    lightCircuit:'sp02',lightColor:[1,.018,.008],
   }),
   P('natatorium-light-emergency-west','tower_bulkhead',71.0,38.5,-Math.PI/2,{
     elevation:1.62,renderOffsetX:-.25,interactive:false,structural:true,
-    lightMaintained:true,lightColor:[1,.62,.32],
+    lightCircuit:'sp02',lightColor:[1,.018,.008],
   }),
   P('natatorium-light-emergency-east','tower_bulkhead',95.5,38.5,Math.PI/2,{
     elevation:1.62,renderOffsetX:.25,interactive:false,structural:true,
-    lightMaintained:true,lightColor:[1,.62,.32],
+    lightCircuit:'sp02',lightColor:[1,.018,.008],
   }),
   P('natatorium-light-emergency-far','tower_bulkhead',84.0,49.5,Math.PI,{
     elevation:1.62,renderOffsetZ:.25,interactive:false,structural:true,
-    lightMaintained:true,lightColor:[1,.60,.30],
+    lightCircuit:'sp02',lightColor:[1,.018,.008],
   }),
   P('acq-services-panel-foh','power_box_01',96.5,16.0,Math.PI/2,{
     scaleX:1.76,scaleY:1.63,elevation:1.45,renderOffsetX:.25,
     provenance:provenance('services_rewire','S/P-03','front-of-house panel; typed circuit card'),
     inspectAt:{x:95.25,y:16.0},
     interaction:'action',action:'power-panel-sp03',interactionPriority:2,
-    inspect:inspect('The front-of-house panel, S/P-03. Its typed circuit card lists foyer, box office and hall lounge; the main isolator is down.','S/P-03. A neat card for three dead circuits.'),
+    inspect:inspect('The front-of-house panel, S/P-03. Its typed circuit card lists the get-in, foyer and box office; the main isolator is down.','S/P-03. A neat card for three dead circuits.'),
+  }),
+  P('acq-services-panel-practice','power_box_01',56.0,53.0,0,{
+    scaleX:1.76,scaleY:1.63,elevation:1.45,mount:'wall',
+    provenance:provenance('services_rewire','S/P-04','practice landing panel; pencil room numbers over typed labels'),
+    inspectAt:{x:56.0,y:54.0},
+    interaction:'action',action:'power-panel-sp04',interactionPriority:2,
+    inspect:inspect('The practice-floor panel, S/P-04. Room numbers have been pencilled over a typed teaching-wing schedule; every breaker is open.','S/P-04. The pencil is newer than the dead ballast.'),
+  }),
+  P('acq-services-panel-academic','power_box_01',9.5,279.5,Math.PI,{
+    scaleX:1.76,scaleY:1.63,elevation:1.45,mount:'wall',
+    provenance:provenance('services_rewire','S/P-05','academic loggia panel; gallery and classroom schedule'),
+    inspectAt:{x:9.5,y:278.75},
+    interaction:'action',action:'power-panel-sp05',interactionPriority:2,
+    inspect:inspect('The academic-floor panel, S/P-05, is fixed to the loggia wall where the stair arrives. Gallery and classroom banks are listed separately; every breaker is open.','S/P-05. Last in the numbered run, nearest the way down.'),
   }),
   P('plant-rack-1','equipment_rack',38.5,28,Math.PI/2,{interactive:false,structural:true}),
   P('acq-services-panel-plant','power_box_01',39.5,30,Math.PI/2,{
@@ -1435,29 +1495,31 @@ export const CONSERVATORY_PROPS = [
   // anchors to these casings, so a fitting cannot drift away from the thing
   // that appears to emit it. `lightCircuit` is presentation metadata only;
   // the breaker state itself remains in the power runtime.
-  P('light-dance-stair-casing','tower_bulkhead',45,20.5,Math.PI,{elevation:2.5,renderOffsetZ:.25,interactive:false,structural:true,lightMaintained:true,lightColor:[1,.48,.22]}),
+  P('light-dance-stair-casing','tower_bulkhead',45,20.5,Math.PI,{elevation:2.5,renderOffsetZ:.25,interactive:false,structural:true,lightCircuit:'sp01',lightColor:[1,.018,.008]}),
   P('light-plant-service-casing','tower_bulkhead',35,26,0,{elevation:2.45,renderOffsetZ:-.25,interactive:false,structural:true,lightCircuit:'sp01',lightColor:[.69,.83,.70]}),
-  P('light-plant-entry-casing','tower_bulkhead',30.1,30.5,-Math.PI/2,{elevation:2.25,mount:'wall',interactive:false,structural:true,lightMaintained:true,lightColor:[1,.56,.24]}),
+  P('light-plant-entry-casing','tower_bulkhead',30.1,30.5,-Math.PI/2,{elevation:2.25,mount:'wall',interactive:false,structural:true,lightCircuit:'sp01',lightColor:[1,.018,.008]}),
   P('light-plant-switchgear-casing','tower_bulkhead',38.8,28.7,Math.PI/2,{elevation:2.55,mount:'wall',interactive:false,structural:true,lightCircuit:'sp01',lightColor:[.66,.82,.72]}),
   P('light-plant-manifold-casing','tower_bulkhead',33,38.35,Math.PI,{elevation:2.35,mount:'wall',interactive:false,structural:true,lightCircuit:'sp01',lightColor:[.70,.84,.74]}),
   // One work light per lit studio, on the north wall, facing the room. B3's is
   // the take room's only practical: it was authored zoned to the dance wing and
   // therefore resolved for nobody standing in it.
   P('light-b3-work-casing','tower_bulkhead',18,6,0,{elevation:2.45,renderOffsetZ:-.25,interactive:false,structural:true,lightCircuit:'sp01',lightColor:[.78,.78,.65]}),
+  P('light-b3-emergency-casing','tower_bulkhead',23.5,20.5,Math.PI,{elevation:2.15,renderOffsetZ:.25,interactive:false,structural:true,lightCircuit:'sp01',lightColor:[1,.018,.008]}),
   P('light-dance-work-casing','tower_bulkhead',32,6,0,{elevation:2.45,renderOffsetZ:-.25,interactive:false,structural:true,lightCircuit:'sp01',lightColor:[.78,.78,.65]}),
   P('light-foh-west-casing','tower_bulkhead',75,18.5,-Math.PI/2,{elevation:3.25,renderOffsetX:-.25,interactive:false,structural:true,lightCircuit:'sp03',lightColor:[.74,.82,.78]}),
   P('light-foh-east-casing','tower_bulkhead',92,10.5,Math.PI,{elevation:3.25,renderOffsetZ:.25,interactive:false,structural:true,lightCircuit:'sp03',lightColor:[.74,.82,.78]}),
+  P('light-foh-emergency-casing','tower_bulkhead',96.5,18.5,Math.PI/2,{elevation:2.15,renderOffsetX:.25,interactive:false,structural:true,lightCircuit:'sp03',lightColor:[1,.018,.008]}),
   P('light-pool-service-a-casing','tower_bulkhead',95.5,43,Math.PI/2,{elevation:3.3,renderOffsetX:.25,interactive:false,structural:true,lightCircuit:'sp02',lightColor:[.69,.83,.78]}),
   P('light-pool-service-b-casing','tower_bulkhead',71,43,-Math.PI/2,{elevation:3.3,renderOffsetX:-.25,interactive:false,structural:true,lightCircuit:'sp02',lightColor:[.67,.81,.76]}),
   P('light-hall-stage-door-casing','tower_bulkhead',99,8,-Math.PI/2,{elevation:5.15,renderOffsetX:-.25,interactive:false,structural:true,lightMaintained:true,lightColor:[1,.018,.008]}),
-  P('light-hall-lounge-casing','tower_bulkhead',99,27,-Math.PI/2,{elevation:3.1,renderOffsetX:-.25,interactive:false,structural:true,lightCircuit:'sp03',lightColor:[.78,.74,.62]}),
+  P('light-hall-lounge-casing','tower_bulkhead',99,27,-Math.PI/2,{elevation:3.1,renderOffsetX:-.25,interactive:false,structural:true,lightMaintained:true,lightColor:[.78,.74,.62]}),
   // At the foot of each galleria flight, on the hall's own side wall. Elevation
   // is absolute world height, so each sits ~1.4m above the tread it stands over:
   // the west foot is at -0.74 and the east at 4.00.
   P('light-hall-galleria-west-casing','tower_bulkhead',99,20.5,-Math.PI/2,{elevation:.62,renderOffsetX:-.25,interactive:false,structural:true,lightMaintained:true,lightColor:[1,.018,.008]}),
   P('light-hall-galleria-east-casing','tower_bulkhead',126.5,31.5,-Math.PI/2,{elevation:5.36,renderOffsetX:.25,interactive:false,structural:true,lightMaintained:true,lightColor:[1,.018,.008]}),
-  P('light-practice-north-casing','tower_bulkhead',59.5,55.5,Math.PI,{elevation:2.5,renderOffsetZ:.25,interactive:false,structural:true,lightMaintained:true,lightColor:[1,.52,.25]}),
-  P('light-practice-south-casing','tower_bulkhead',60,81,-Math.PI/2,{elevation:2.5,renderOffsetX:-.25,interactive:false,structural:true,lightMaintained:true,lightColor:[1,.50,.24]}),
+  P('light-practice-north-casing','tower_bulkhead',59.5,55.5,Math.PI,{elevation:2.5,renderOffsetZ:.25,interactive:false,structural:true,lightCircuit:'sp04',lightColor:[1,.018,.008]}),
+  P('light-practice-south-casing','tower_bulkhead',60,81,-Math.PI/2,{elevation:2.5,renderOffsetX:-.25,interactive:false,structural:true,lightCircuit:'sp04',lightColor:[1,.018,.008]}),
   // The sealed spur-substation is audible from the story route but has no
   // ordinary door. These objects are permanent building history; only the
   // separate HUSH navigation policy can cross the service seam to see them.

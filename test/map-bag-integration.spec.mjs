@@ -8,7 +8,7 @@ const testCase = MAP_LAB_CASES[1];
 const job = mapLabJob(testCase);
 const map = mapLabModel(testCase);
 const model = buildBagModel({ equipment: ['light'], job, map });
-assert.deepEqual(model.sections.map((section) => section.id), ['kit', 'map', 'files', 'skills']);
+assert.deepEqual(model.sections.map((section) => section.id), ['kit', 'map', 'sheets', 'skills']);
 assert.equal(normalizeBagSectionId('manifest'), 'map');
 assert.equal(bagSection(model, 'manifest').id, 'map');
 assert.equal(bagEntry(model, 'map', 'room:main_b3').floorId, 'b1');

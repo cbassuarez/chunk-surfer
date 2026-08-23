@@ -21,6 +21,7 @@ import {
   normalizeCombatBuild,
   techniqueAvailability,
 } from './combat-progression.js';
+import { sheetDialogueFor } from './bag-sheets.js';
 
 export const EMPTY_JOB = Object.freeze({
   rooms: [],
@@ -150,6 +151,16 @@ export function slug(value = '') {
 
 function displayTitle(value = '') {
   return String(value || 'ENTRY').trim().toUpperCase();
+}
+
+function actionDescriptor(id, verb, label, {
+  enabled = true, reason = '', confirm = null, exitPolicy = 'stay', special = false,
+} = {}) {
+  return {
+    id, verb, label: displayTitle(label || verb), enabled: !!enabled,
+    reason: enabled ? '' : displayTitle(reason || 'UNAVAILABLE'),
+    confirm: confirm || null, exitPolicy, special: !!special,
+  };
 }
 
 function gearKey(raw) {
@@ -361,22 +372,27 @@ function documentIssued(doc) {
 
 function documentBadges(doc) {
   const out = Array.isArray(doc?.badges) ? [...doc.badges] : [];
-  if (doc?.unread) out.push('NEW');
+  const id=String(doc?.id||'').toLowerCase(),title=String(doc?.title||'').toLowerCase();
+  if(id.includes('work-order')||title.includes('work order'))out.push('WORK ORDER');
+  if (doc?.unread) out.push('UNREAD');
   if (doc?.updated) out.push('UPDATED');
   if (doc?.newlyFiled) out.push('FILED');
   return [...new Set(out.map(displayTitle))];
 }
 
-export function normalizeFiles(job = EMPTY_JOB) {
+export function normalizeFiles(job = EMPTY_JOB, map = null, sheetInsights = null) {
   const files = [];
   const rooms = Array.isArray(job.rooms) ? job.rooms : [];
 
   for (const room of rooms) {
     for (const doc of Array.isArray(room.notes) ? room.notes : []) {
+      const space=map?.spaces?.find((candidate)=>candidate.roomId===room.roomId)||null;
+      const floor=map?.floors?.find((candidate)=>candidate.id===space?.floorId)||null;
       files.push(normalizeFile(doc, {
         roomId: room.roomId,
-        folder: room.label,
+        folder: `${floor?.label ? `${floor.label} · ` : ''}${room.label}`,
         marked: !!room.marked,
+        insightComplete:!!sheetInsights?.inspected?.includes?.(doc?.id),
       }));
     }
   }
@@ -386,21 +402,24 @@ export function normalizeFiles(job = EMPTY_JOB) {
       roomId: null,
       folder: 'UNFILED',
       marked: false,
+      insightComplete:!!sheetInsights?.inspected?.includes?.(doc?.id),
     }));
   }
 
   return files;
 }
 
-function normalizeFile(doc, { roomId, folder, marked = false }) {
+function normalizeFile(doc, { roomId, folder, marked = false, insightComplete = false }) {
   const raw = doc || {};
   const title = displayTitle(raw.title || raw.id || 'DOCUMENT');
   const preview = firstBodyText(raw).replace(/\s+/g, ' ').trim();
   const read = raw.read === true;
+  const insight=sheetDialogueFor(raw.id);
+  const badges=[...(insight?['IMPORTANT']:[]),...(String(folder||'').toUpperCase()==='UNFILED'?['UNFILED']:[]),...documentBadges(raw)];
 
   return {
     id: `file:${raw.id || slug(title)}`,
-    section: 'files',
+    section: 'sheets',
     kind: 'file',
     title,
     subtitle: documentType(raw),
@@ -414,8 +433,17 @@ function normalizeFile(doc, { roomId, folder, marked = false }) {
       ['FILED UNDER', displayTitle(folder || 'UNFILED')],
       ['ISSUED', documentIssued(raw)],
       ['STATUS', read ? 'READ' : 'FILED'],
+      ['INDICATORS', badges.length?[...new Set(badges)].join(' · '):'--'],
     ],
-    badges: documentBadges(raw),
+    important:!!insight,
+    insight,
+    insightComplete:!!insightComplete,
+    badges:[...new Set(badges)],
+    actionList: [
+      actionDescriptor('read','inspect','INSPECT SHEET'),
+      ...(insight&&insightComplete?[actionDescriptor('review-insight','review','REVIEW NOTES',{special:true})]:[]),
+      ...(roomId?[actionDescriptor(marked?'unmark-room':'mark-room','waypoint',marked?'CLEAR WAYPOINT':`MARK ${displayTitle(folder)}`)]:[]),
+    ],
     actions: {
       primary: { id: 'read', label: 'READ', destructive: false },
       secondary: roomId
@@ -430,7 +458,7 @@ function normalizeFile(doc, { roomId, folder, marked = false }) {
   };
 }
 
-export const BAG_SECTION_ALIASES = Object.freeze({ manifest: 'map' });
+export const BAG_SECTION_ALIASES = Object.freeze({ manifest: 'map', files: 'sheets' });
 
 export function normalizeBagSectionId(sectionId) {
   return BAG_SECTION_ALIASES[sectionId] || sectionId;
@@ -479,8 +507,15 @@ function buildSkillsSection({ build, settledBuild = null, hasRig }) {
                   : current.unspent <= 0 ? 'NEEDS A PIN · NONE SPARE'
                     : String(availability.reason || 'LOCKED'),
           buyPrompt: 'TAKES EFFECT WHEN THE CASE CLOSES',
+          actionList: pending
+            ? [actionDescriptor('undo-skill','undo','UNDO CHOICE')]
+            : (!owned && availability.enabled)
+              ? [actionDescriptor('fit-skill','choose','CHOOSE')]
+              : [],
           actions: {
-            primary: (!owned && availability.enabled)
+            primary: pending
+              ? { id:'undo-skill',label:'UNDO CHOICE',destructive:false }
+              : (!owned && availability.enabled)
               ? { id: 'fit-skill', label: 'CHOOSE', destructive: false }
               : null,
           },
@@ -510,7 +545,7 @@ function buildSkillsSection({ build, settledBuild = null, hasRig }) {
   };
 }
 
-export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, loadout = null, build = null, settledBuild = null, hasRig = false } = {}) {
+export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, loadout = null, build = null, settledBuild = null, hasRig = false, sheetInsights = null } = {}) {
   const safeJob = {
     ...EMPTY_JOB,
     ...(job || {}),
@@ -531,6 +566,31 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, loa
       : battleCapable && !entry.present && assignedCompartment === 'top'
         ? `NOT CARRIED / READY SLOT ${topIndex + 1} RESERVED`
         : battleCapable ? 'BAG STORAGE / NOT READY' : 'BAG STORAGE';
+    const primary=entry.actions?.primary||null;
+    const primaryIsInspect=String(primary?.id||'').startsWith('inspect-');
+    const primaryIsDrop=primary?.id==='radio-deploy'||primary?.id==='drop';
+    const primaryIsSpecial=primary?.id==='radio-show-map';
+    const setAction=battleCapable
+      ? actionDescriptor(compartment==='top'?'unset-slot':'set-slot',compartment==='top'?'unset':'set',compartment==='top'?'UNSET':'SET',{
+          enabled:entry.present,reason:entry.present?'':'ITEM NOT CARRIED',
+        })
+      : actionDescriptor('set-slot','set','SET',{enabled:false,reason:'NOT CONTACT GEAR'});
+    const useAction=!primaryIsInspect&&!primaryIsDrop&&!primaryIsSpecial&&primary
+      ? actionDescriptor(primary.id,'use',primary.label,{enabled:primary.enabled!==false,reason:primary.reason,confirm:primary.confirm,exitPolicy:primary.closeBefore?'close':'stay'})
+      : actionDescriptor('use-unavailable','use','USE',{enabled:false,reason:entry.present?'NO DIRECT USE':'ITEM NOT CARRIED'});
+    const dropAction=entry.sourceId==='radio'
+      ? primaryIsDrop
+        ? actionDescriptor(primary.id,'drop','DROP / DEPLOY HERE',{
+            enabled:entry.present,reason:entry.present?'':'ALREADY DEPLOYED',exitPolicy:'close',
+            confirm:{title:'DROP RADIO HERE?',body:'THE RADIO WILL REMAIN HERE UNTIL YOU RECOVER IT.'},
+          })
+        : actionDescriptor('radio-deploy','drop','DROP / DEPLOY HERE',{enabled:false,reason:entry.source?.deployed?'ALREADY DEPLOYED':'ITEM NOT CARRIED'})
+      : actionDescriptor('drop-unavailable','drop','DROP',{enabled:false,reason:entry.present?'NO SAFE WORLD PLACEMENT':'ITEM NOT CARRIED'});
+    const actionList=[
+      setAction,useAction,dropAction,
+      actionDescriptor('inspect-item','inspect','INSPECT',{enabled:true}),
+      ...(primaryIsSpecial?[actionDescriptor(primary.id,'special',primary.label,{enabled:primary.enabled!==false,reason:primary.reason,special:true})]:[]),
+    ];
     return {
       ...entry,
       battleCapable,
@@ -538,6 +598,7 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, loa
       topIndex,
       facts: [['COMPARTMENT', compartmentLabel], ...entry.facts],
       badges: [compartment === 'top' ? `READY ${topIndex + 1}` : 'STORAGE', ...entry.badges],
+      actionList,
       actions: {
         ...entry.actions,
         secondary: battleCapable && entry.present
@@ -555,10 +616,6 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, loa
           : null,
       },
     };
-  }).sort((a, b) => {
-    if (a.compartment !== b.compartment) return a.compartment === 'top' ? -1 : 1;
-    if (a.compartment === 'top') return a.topIndex - b.topIndex;
-    return 0;
   });
   const total = Math.max(0, Number(safeJob.total) || safeJob.rooms.length || 0);
   const mapEntries = safeJob.rooms.map((room, index) => {
@@ -575,14 +632,14 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, loa
       source: { ...entry.source, mapSpace: space },
     } : entry;
   });
-  const files = normalizeFiles(safeJob);
+  const files = normalizeFiles(safeJob,map,sheetInsights);
   const done = clampInt(safeJob.done, 0, total || Math.max(0, safeJob.done || 0));
 
   return {
     sections: [
-      { id: 'kit', label: 'KIT', countLabel: `${kit.filter((e) => e.present && e.compartment === 'top').length}/${normalizedLoadout.capacity}`, entries: kit },
+      { id: 'kit', label: 'INVENTORY', countLabel: `${kit.length}`, entries: kit },
       { id: 'map', label: 'MAP', countLabel: `${done}/${total}`, entries: mapEntries, map },
-      { id: 'files', label: 'FILES', countLabel: String(files.length).padStart(2, '0'), entries: files },
+      { id: 'sheets', label: 'SHEETS', countLabel: String(files.length).padStart(2, '0'), entries: files },
       buildSkillsSection({ build, settledBuild, hasRig }),
     ],
     progress: { done, total },

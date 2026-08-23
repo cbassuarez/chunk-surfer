@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 
-import { ENDING_IDS } from '../src/progression/schema.js';
+import { ENDING_IDS, POWER_CIRCUIT_IDS } from '../src/progression/schema.js';
 import { validateConditionExpression } from '../src/narrative/conditions.js';
 import {
   ENDING_ARRIVAL,
@@ -24,6 +24,13 @@ import {
 assert.deepEqual(endingContractErrors(), [], 'the ending manifest is internally consistent');
 for (const id of ENDING_IDS) {
   assert.ok(endingManifest(id), `${id} has a manifest entry`);
+  const manifest=endingManifest(id);
+  const switchedOff=new Set([
+    ...(manifest.objective?.timeline||[]),
+    ...(manifest.environment||[]),
+  ].filter((step)=>step.kind==='circuit'&&step.on===false).map((step)=>step.value));
+  if(switchedOff.size)assert.ok(POWER_CIRCUIT_IDS.every((circuit)=>switchedOff.has(circuit)),
+    `${id} blackout owns every canonical switchable circuit`);
 }
 
 // EVERY ARRIVAL REACHES SOMETHING. This is the audit's actual complaint made

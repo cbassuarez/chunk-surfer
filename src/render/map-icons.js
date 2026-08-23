@@ -13,8 +13,21 @@ export function drawPlayerMarker(point, heading = 0, alpha = 1, { tick = true } 
   uiLine(point.x, point.y, point.x + dx, point.y + dy, themeRoleColor('counter'), alpha, 1.25);
 }
 
-export function drawWaypointMarker(point, alpha = 1) {
-  uiGlyph(Math.round(point.x), Math.round(point.y), '◆', 'ui-blue', alpha);
+export function drawWaypointMarker(point, alpha = 1, {edgeDirection='',playerSelected=false}={}) {
+  if(!point)return;
+  const x=Math.round(point.x),y=Math.round(point.y);
+  uiGlyph(x,y,playerSelected?'◇':'◆','ui-blue',alpha);
+  if(edgeDirection){
+    const ox=edgeDirection==='→'?-1:edgeDirection==='←'?1:0;
+    const oy=edgeDirection==='↓'?-1:edgeDirection==='↑'?1:0;
+    uiGlyph(x+ox,y+oy,edgeDirection,'ui-blue',alpha*.82);
+    return;
+  }
+  // A target is an instrument acquisition, not another one-cell room mark.
+  // Keep the centre readable but give it enough footprint to survive noisy map
+  // topology and the small HUD viewport.
+  uiGlyph(x-1,y,'[','ui-blue',alpha*.58);
+  uiGlyph(x+1,y,']','ui-blue',alpha*.58);
 }
 
 // Recoverable field equipment has its own public layer. It is deliberately an
@@ -31,9 +44,45 @@ export function drawEquipmentMarker(point,alpha=1){
 // confirmed that the player can presently see the manifestation in the world.
 // The red question mark confirms the sighting without pretending the monitor
 // understands what the manifestation is.
-export function drawHushMarker(point, alpha = 1) {
+export function drawHushMarker(point, alpha = 1, {edgeDirection=''}={}) {
   if (!point) return;
-  uiGlyph(Math.round(point.x), Math.round(point.y), '?', 'ui-danger', alpha);
+  const x=Math.round(point.x),y=Math.round(point.y);
+  uiGlyph(x,y,'?','ui-danger',alpha);
+  if(edgeDirection){
+    const ox=edgeDirection==='→'?-1:edgeDirection==='←'?1:0;
+    const oy=edgeDirection==='↓'?-1:edgeDirection==='↑'?1:0;
+    uiGlyph(x+ox,y+oy,edgeDirection,'ui-danger',alpha*.86);
+    return;
+  }
+  uiGlyph(x-1,y-1,'⌜','ui-danger',alpha*.7);
+  uiGlyph(x+1,y-1,'⌝','ui-danger',alpha*.7);
+  uiGlyph(x-1,y+1,'⌞','ui-danger',alpha*.7);
+  uiGlyph(x+1,y+1,'⌟','ui-danger',alpha*.7);
+}
+
+// HUSH knowledge is centred on the player because that is the fact the monitor
+// is allowed to reveal. It never implies a hidden HUSH bearing or body position.
+export function drawHushAwareness(command,alpha=1){
+  if(!command?.point)return;
+  const mode=String(command.mode||'none');
+  if(mode==='none')return;
+  const danger=mode==='locked'||mode==='direct'||mode==='pinpoint';
+  const role=danger?'danger':'counter';
+  uiDraw(({ctx,dpr,cellW,cellH})=>{
+    const cx=(command.point.x+.5)*cellW*dpr;
+    const cy=(command.point.y+.5)*cellH*dpr;
+    const rx=Math.max(3*dpr,cellW*dpr*(danger?1.7:1.25));
+    const ry=Math.max(3*dpr,cellH*dpr*(danger?1.05:.78));
+    ctx.save();
+    ctx.globalAlpha=alpha*(danger ? .72 : .46);
+    ctx.strokeStyle=themeRoleColor(role);
+    ctx.lineWidth=Math.max(.75*dpr,1);
+    if(!danger)ctx.setLineDash([2*dpr,3*dpr]);
+    ctx.beginPath();
+    ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+  });
 }
 
 export function drawObjectiveMarker(command, alpha = 1) {

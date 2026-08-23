@@ -9,7 +9,7 @@ FP.compile(conservatory.levels,{width:conservatory.width,height:conservatory.hei
 PROPS.propsInit(FP);
 
 test('every God location is one authored scale conversion with its exact facing and context',()=>{
-  assert.equal(Object.keys(GOD_LOCATION_HOOKS).length,10);
+  assert.equal(Object.keys(GOD_LOCATION_HOOKS).length,19);
   for(const[id,hook]of Object.entries(GOD_LOCATION_HOOKS)){
     const at=FP.toRuntimePoint(hook.at),physical=FP.logicalToPhysical(at.x,at.y);
     assert.equal(FP.isSolid(at.x,at.y),false,id);

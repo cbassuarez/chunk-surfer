@@ -84,7 +84,7 @@ assert.ok(equipmentCommands.some((command)=>command.kind==='equipment'&&command.
 const minimalModel = mapLabModel(MAP_LAB_CASES.find((entry) => entry.id === 'dead-air-contact'), source);
 const minimalCommands = buildMinimapCommands({ minimalModel, model: minimalModel, viewport: { x: 0, y: 0, w: 18, h: 8 }, now: 1000 });
 assert.equal(minimalCommands.some((command) => command.kind === 'local-topology'), false);
-assert.ok(minimalCommands.some((command) => command.kind === 'anomaly-contact' || command.kind === 'anomaly-edge'));
+assert.equal(minimalCommands.some((command) => command.kind === 'anomaly-contact' || command.kind === 'anomaly-edge'),false,'unseen point telemetry never becomes an exact map coordinate');
 
 const hushModel={
   ...minimalModel,
@@ -95,7 +95,7 @@ assert.equal(hushCommands.some((command)=>String(command.kind).startsWith('hush'
 const seenHushCommands=buildMinimapCommands({model:{...hushModel,hush:{...hushModel.hush,visible:true}},viewport:{x:0,y:0,w:18,h:8},now:1000});
 assert.ok(seenHushCommands.some((command)=>command.kind==='hush-visible'),'a directly seen manifestation is confirmed on the minimap');
 const mapIconSource=readFileSync('src/render/map-icons.js','utf8');
-assert.match(mapIconSource,/uiGlyph\(Math\.round\(point\.x\), Math\.round\(point\.y\), '\?', 'ui-danger'/,'the visible manifestation is a themed red question mark');
+assert.match(mapIconSource,/export function drawHushMarker[\s\S]*uiGlyph\(x,y,'\?','ui-danger'/,'the visible manifestation is a themed red question mark');
 assert.doesNotMatch(mapIconSource,/ctx\.arc\(cx, cy - unit/,'the retired humanoid marker is gone');
 
 const edge = clampMarkerToEdge({ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 0, y: 0, w: 20, h: 10 }, 1);

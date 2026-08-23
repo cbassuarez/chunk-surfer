@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 
 import { ZONE } from '../src/data/floorplan/legend.js';
+import { CONSERVATORY_PROPS } from '../src/data/conservatory-props.js';
 import {
   LIGHT_BANDS,
   LIGHT_KIND,
@@ -60,6 +61,8 @@ assert.equal(byId['natatorium-emergency-far'].anchorPropId,'natatorium-light-eme
 assert.equal(byId['organ-loft-exit'].anchorPropId,'tower-light-organ-exit');
 assert.equal(byId['nave-exit'].anchorPropId,'tower-light-nave-exit');
 assert.equal(byId['getin-grey-door-seam'].circuit,'sp03','get-in emergency light requires an explicitly restored area circuit');
+assert.equal(CONSERVATORY_PROPS.find((prop)=>prop.id==='light-hall-lounge-casing')?.lightMaintained,true,
+  'the maintained concert-hall fitting stays emissive with S/P-03 off');
 for(const id of['hall-entrance-maintained-north','hall-entrance-maintained-south']){
   assert.equal(byId[id].kind,LIGHT_KIND.EMERGENCY,`${id} participates in the red snap`);
   assert.equal(byId[id].maintained,true,`${id} survives the dead mains`);
@@ -71,7 +74,7 @@ for(const id of['hall-stage-door-maintained','hall-galleria-west-foot','hall-gal
   assert.ok(byId[id].radius>=48&&byId[id].penetration>=.88,`${id} carries the long red x-ray field`);
 }
 assert.deepEqual(
-  lights.filter((light)=>light.kind===LIGHT_KIND.EMERGENCY&&!light.circuit).map((light)=>light.id).sort(),
+  lights.filter((light)=>light.kind===LIGHT_KIND.EMERGENCY&&light.maintained).map((light)=>light.id).sort(),
   [
     'hall-entrance-maintained-north','hall-entrance-maintained-south',
     'hall-stage-door-maintained','hall-galleria-west-foot','hall-galleria-east-foot',
@@ -81,8 +84,9 @@ assert.deepEqual(
 
 const room=(group,zone)=>({group,zone});
 const deadPlant=resolveLocalLights(room('basement',ZONE.plant),{liveCircuits:new Set()});
-assert.deepEqual(deadPlant.map((light)=>light.id),['plant-panel-green','plant-entry-amber'],'dead plant room preserves the green pilot and maintained entrance bulkhead');
+assert.deepEqual(deadPlant.map((light)=>light.id),['plant-panel-green'],'dead plant room preserves only the independent green pilot');
 const livePlant=resolveLocalLights(room('basement',ZONE.plant),{liveCircuits:new Set(['sp01'])});
+assert.ok(livePlant.some((light)=>light.id==='plant-emergency'));
 assert.ok(livePlant.some((light)=>light.id==='plant-service-live'));
 assert.ok(livePlant.some((light)=>light.id==='plant-switchgear-live'));
 assert.ok(livePlant.some((light)=>light.id==='plant-manifold-live'));
@@ -92,6 +96,8 @@ assert.ok(resolveLocalLights(room('basement',ZONE.danceStudio),{liveCircuits:new
 // was zoned to the dance wing while standing in B3, so it lit nobody.
 assert.ok(resolveLocalLights(room('basement',ZONE.studio),{liveCircuits:new Set(['sp01'])}).some((light)=>light.id==='b3-work-live'),
   'B3 work light resolves for the take room it stands in');
+assert.ok(resolveLocalLights(room('basement',ZONE.studio),{liveCircuits:new Set(['sp01'])}).some((light)=>light.id==='b3-emergency'),
+  'B3 receives the same red emergency loop as the rest of its circuit');
 assert.ok(!resolveLocalLights(room('basement',ZONE.studio),{liveCircuits:new Set()}).some((light)=>light.circuit),
   'and it is dark until sp01 is live');
 
@@ -102,6 +108,8 @@ assert.equal(livePool.filter((light)=>light.circuit==='sp02'&&light.kind===LIGHT
 assert.equal(livePool.filter((light)=>light.circuit==='sp02'&&light.kind===LIGHT_KIND.EMERGENCY).length,4,
   'restoring S/P-02 explicitly enables the natatorium emergency bank');
 assert.ok(resolveLocalLights(room('ground',ZONE.foyer),{liveCircuits:new Set(['sp03'])}).some((light)=>light.id==='foh-live-west'));
+assert.ok(resolveLocalLights(room('ground',ZONE.foyer),{liveCircuits:new Set(['sp03'])}).some((light)=>light.id==='foh-emergency'),
+  'S/P-03 owns a local atrium apparition source rather than borrowing the hall');
 const deadFoyer=resolveLocalLights(room('ground',ZONE.foyer),{liveCircuits:new Set()});
 assert.ok(deadFoyer.some((light)=>light.id==='hall-entrance-maintained-north'));
 assert.ok(deadFoyer.some((light)=>light.id==='hall-entrance-maintained-south'));
@@ -110,7 +118,7 @@ assert.ok(!deadFoyer.some((light)=>light.id==='foh-live-west'||light.id==='foh-l
 const deadPractice=resolveLocalLights(room('upper',ZONE.practice),{liveCircuits:new Set()});
 assert.equal(deadPractice.some((light)=>light.kind===LIGHT_KIND.EMERGENCY),false,
   'practice-wing emergency lighting stays dark on a fresh run');
-const livePractice=resolveLocalLights(room('upper',ZONE.practice),{liveCircuits:new Set(['sp03'])});
+const livePractice=resolveLocalLights(room('upper',ZONE.practice),{liveCircuits:new Set(['sp04'])});
 assert.deepEqual(livePractice.filter((light)=>light.kind===LIGHT_KIND.EMERGENCY).map((light)=>light.id).sort(),
   ['practice-emergency-north','practice-emergency-south'],
   'the practice bank comes alive only after its area circuit is restored');
@@ -157,7 +165,7 @@ const contexts=[ZONE.dock,ZONE.studio,ZONE.natatorium,ZONE.hall,ZONE.practice,ZO
 assert.equal(new Set(contexts.map((context)=>`${context.ambientColor.join(',')}:${context.ambientIntensity}`)).size,contexts.length,
   'each major room has a distinct still-frame ambient signature');
 
-const failing=(timeSec,effectsMode='full')=>resolveLocalLights(room('academic',ZONE.academic),{timeSec,effectsMode,liveCircuits:new Set(['sp03'])})
+const failing=(timeSec,effectsMode='full')=>resolveLocalLights(room('academic',ZONE.academic),{timeSec,effectsMode,liveCircuits:new Set(['sp05'])})
   .find((light)=>light.id==='academic-emergency-east-failing').intensity;
 const fullBlinkSamples=Array.from({length:400},(_,index)=>emergencyBlinkState('academic-emergency-east-failing',index*.05));
 assert.deepEqual(new Set(fullBlinkSamples.map((sample)=>sample.scale)),new Set([0,1]),'an emergency practical snaps between black and full red with no ramp');
@@ -241,12 +249,19 @@ assert.ok(failing(EMERGENCY_CADENCE.period*.8)<failing(0),
     assert.ok(away.radius<home.radius*.5,`${id} loses the long throw once it is only leaking`);
     assert.ok(away.intensity>0&&away.intensity<home.intensity*.35,
       `${id} leaks through the aperture without turning the foyer into the hall`);
+    assert.equal(away.spilling,true,`${id} is marked as cross-zone spill for apparition ownership`);
+    assert.equal(away.sourceZone,ZONE.hall,`${id} retains hall ownership while spilling`);
+    assert.equal(away.zone,ZONE.foyer,`${id} records the player zone separately from source ownership`);
+    assert.equal(home.spilling,false,`${id} remains locally owned inside the hall`);
   }
   assert.equal(at(foyer,'atrium-main-exit').circuit,null,'the entrance wayfinding pool survives a dead S/P-03 circuit');
-  const poweredFoyer=resolveLocalLights(room('ground',ZONE.foyer),{origin:{x:96.5,z:16},liveCircuits:new Set(['sp03'])});
+  const poweredFoyer=resolveLocalLights(room('ground',ZONE.foyer),{origin:{x:96.5,z:16},liveCircuits:new Set(['sp03']),slots:99});
   assert.equal(at(poweredFoyer,'atrium-main-exit').penetration,byId['atrium-main-exit'].penetration,
     'the local entrance pool remains stable when the wider room is restored');
   assert.ok(at(poweredFoyer,'foh-live-east'),'S/P-03 still adds the wider front-of-house reveal');
+  assert.equal(at(poweredFoyer,'foh-emergency').sourceZone,ZONE.foyer,
+    'S/P-03 provides an atrium-owned emergency source rather than borrowing a hall source');
+  assert.equal(at(poweredFoyer,'foh-emergency').spilling,false);
 }
 // REDUCED FLASH MUST NOT MEAN A PERMANENTLY LIT BUILDING.
 //
@@ -287,8 +302,8 @@ const steadySky=resolveLocalLights(room('ground',ZONE.natatorium),{timeSec:1}).f
 assert.equal(steadySky.intensity,1.52,'blinking does not modulate daylight or ordinary fittings');
 
 const anchored=resolveLocalLights(room('tower',ZONE.bellTower),{
+  towerActive:true,
   towerCleared:false,
-  liveCircuits:new Set(['sp03']),
   anchorPosition:(id)=>id==='tower-light-lower'?{x:7,y:8,z:9,floorY:6.2,yaw:.4}:null,
 }).find((light)=>light.id==='access-low');
 assert.deepEqual([anchored.x,anchored.y,anchored.z],[7,8.18,9],'moving a fitting moves its light');
@@ -296,7 +311,7 @@ assert.equal(anchored.floorY,6.2,'anchored practical carries its floor into the 
 
 const towerDark=resolveLocalLights(room('tower',ZONE.bellTower),{towerCleared:false,origin:{x:100,z:62}});
 assert.deepEqual(towerDark.map((light)=>light.id),['louvre-spill'],'the tower emergency bank is dark before its area is restored');
-const towerLit=resolveLocalLights(room('tower',ZONE.bellTower),{towerCleared:true,origin:{x:100.5,z:82},liveCircuits:new Set(['sp03'])});
+const towerLit=resolveLocalLights(room('tower',ZONE.bellTower),{towerActive:true,towerCleared:true,origin:{x:100.5,z:82}});
 assert.equal(towerLit.length,LOCAL_LIGHT_SLOTS);
 assert.ok(towerLit.some((light)=>light.id==='nave-exit'));
 assert.ok(!towerLit.some((light)=>light.id==='louvre-spill'));

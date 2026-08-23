@@ -224,6 +224,12 @@ export function buildEmergencyShadowFrame(lights, {
     return (dx * facing.x + dz * facing.z) / length < .30 ? 1 : 0;
   };
   const candidates = lights
+    // Cross-zone light may leak through a real doorway, but the bodies belong
+    // to the practical's home room. A spilled hall source can tint the atrium;
+    // it cannot stage hall apparitions there.
+    .filter((light) => !light?.spilling)
+    .filter((light) => !Number.isFinite(light?.sourceZone) || !Number.isFinite(light?.zone)
+      || light.sourceZone === light.zone)
     .filter((light) => Number(light?.shadowReveal) > .08 && Number(light?.intensity) > .01)
     .filter((light) => distanceSq(light, listener) <= limitSq)
     .sort((a, b) => {

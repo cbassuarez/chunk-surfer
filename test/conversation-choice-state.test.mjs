@@ -53,3 +53,37 @@ test('an empty terminal node closes the conversation instead of leaving an empty
   assert.equal(done, 1);
   assert.equal(convo.view().finished, true);
 });
+
+test('a resolved line snapshots its value when Continue advances into it', () => {
+  let timerSecond = 1;
+  let resolutions = 0;
+  const convo = createConversation({
+    sceneId: 'level-check-clock',
+    beats: [
+      { who: 'direction', text: 'Rolling.', voice: false },
+      {
+        who: 'you',
+        voice: false,
+        resolveText: () => {
+          resolutions += 1;
+          return `${timerSecond}.`;
+        },
+      },
+      { who: 'direction', text: 'Settled.', voice: false },
+    ],
+  });
+
+  convo.start();
+  convo.update(1);
+  timerSecond = 4;
+  convo.key({ key: 'Enter' });
+  assert.equal(convo.view().line.text, '4.');
+  assert.equal(resolutions, 1);
+
+  timerSecond = 9;
+  convo.update(1);
+  assert.equal(convo.view().line.text, '4.', 'the clock does not rewrite an active line');
+  convo.key({ key: ' ' });
+  assert.equal(convo.view().history.at(-1).text, '4.');
+  assert.equal(resolutions, 1);
+});

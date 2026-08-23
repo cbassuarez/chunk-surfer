@@ -129,6 +129,11 @@ export function captureFloorplanMapSource({
       height: Number(projected.height ?? projected.y) || 0,
     };
   });
+  const spaces=(definition.spaces||[]).map((space)=>{
+    const projected=projectLogical(space.logical);
+    const floor=floorForHeight(definition,projected.height??projected.y,{renderGroup:projected.renderGroup});
+    return{...space,floorId:floor?.id||null,position:{x:Number(projected.x)/stride,y:Number(projected.z??projected.mapY??projected.y)/stride},height:Number(projected.height??projected.y)||0};
+  });
   const landmarks=(definition.landmarks||[]).map((landmark)=>{
     const projected=projectLogical(landmark.logical),floor=floorForHeight(definition,projected.height??projected.y,{renderGroup:projected.renderGroup});
     return{...landmark,floorId:floor?.id||null,position:{x:Number(projected.x)/stride,y:Number(projected.z??projected.mapY??projected.y)/stride},height:Number(projected.height??projected.y)||0};
@@ -159,7 +164,7 @@ export function captureFloorplanMapSource({
     definition,
     topologyStride: stride,
     floors,
-    targets,landmarks,
+    targets,spaces,landmarks,
     connectors,
     physicalWidth: Math.ceil((physical.width || 1) / stride),
     physicalHeight: Math.ceil((physical.height || 1) / stride),
@@ -176,7 +181,8 @@ export function captureDoorMapState({ doors = [], projectLogical, source, hasKey
   return doors.map((door) => {
     const projected = projectLogical({ x: door.cx, y: door.cy }, { authored: false });
     const floor = floorForHeight(source.definition, projected.height ?? projected.y, { renderGroup: projected.renderGroup });
-    const locked = !door.open && !!door.keyId && !hasKey(door.keyId);
+    const blocked = !door.open && !!(door.sealed || door.blocked || door.retired);
+    const locked = !door.open && !blocked && !!door.keyId && !hasKey(door.keyId);
     const closed = !door.open;
     return {
       id: door.id,
@@ -190,8 +196,8 @@ export function captureDoorMapState({ doors = [], projectLogical, source, hasKey
       locked,
       // An unlocked closed door is traversable: route assistance may lead to it,
       // while the world still requires the player to open it.
-      traversable: !locked,
-      state: door.open ? 'open' : locked ? 'locked' : 'closed',
+      traversable: !locked && !blocked,
+      state: door.open ? 'open' : blocked ? 'sealed' : locked ? 'locked' : 'closed',
       widthAxis: door.widthAxis || 'x',
       apertureWidth: Math.max(.1, Number(door.aperture?.width) || 1),
     };
@@ -231,6 +237,7 @@ export function buildMapModel({
   job = { rooms: [], done: 0, total: 5 },
   objectiveState: objective = null,
   activeWaypoint = null,
+  playerWaypoint = null,
   player = null,
   doors = [],
   contacts = [],
@@ -238,6 +245,7 @@ export function buildMapModel({
   navigation = null,
   landmarkState = {},
   discoveredFloorIds = new Set(),
+  visitedSpaceIds = new Set(),
 } = {}) {
   if (!source) {
     const rooms = Array.isArray(job?.rooms) ? job.rooms : [];
@@ -273,16 +281,24 @@ export function buildMapModel({
   const policy = resolveMapPolicy(navigation);
   const playerState = normalizePlayer(source, player);
   const discovered = discoveredFloorIds instanceof Set ? discoveredFloorIds : new Set(discoveredFloorIds || []);
-  const visibleFloors = source.floors.filter((floor) => floor.visibility !== 'discovered' || discovered.has(floor.id) || playerState.floorId === floor.id);
+  const visited = visitedSpaceIds instanceof Set ? visitedSpaceIds : new Set(visitedSpaceIds || []);
+  // The issued plan always exposes the building's five structural floors.
+  // Discovery changes room/landmark status; it no longer makes an entire floor
+  // tab vanish from the player's map.
+  const visibleFloors = source.floors.map((floor)=>({
+    ...floor,
+    discovered:floor.visibility!=='discovered'||discovered.has(floor.id)||playerState.floorId===floor.id,
+  }));
   const visibleFloorIds = new Set(visibleFloors.map((floor) => floor.id));
   const visibleConnectors = source.connectors.filter((connector) => visibleFloorIds.has(connector.a.floorId) && visibleFloorIds.has(connector.b.floorId));
   const visibleDoors = doors.filter((door) => !door.floorId || visibleFloorIds.has(door.floorId));
-  const spaces = source.targets.filter((target)=>visibleFloorIds.has(target.floorId)).map((target) => {
+  let spaces = source.targets.filter((target)=>visibleFloorIds.has(target.floorId)).map((target) => {
     const room = roomEntry(job, target.roomId) || {};
     const notes = Array.isArray(room.notes) ? room.notes : [];
     const current = playerState.roomId === target.roomId;
     const marked = objective?.target === target.roomId || !!room.marked;
     const state = objectiveState({ ...room, current, marked });
+    const entrances=(target.doorIds||[]).map((id)=>visibleDoors.find((door)=>door.id===id)||{id,state:'unknown',open:false,locked:false,traversable:false});
     return {
       id: `space:${target.roomId}`,
       roomId: target.roomId,
@@ -291,11 +307,14 @@ export function buildMapModel({
       shortLabel: String(target.shortLabel || room.label || target.roomId)
         .split(/\s+/).map((word) => word[0] || '').join('').slice(0, 4).toUpperCase(),
       position: target.position,
+      logical: target.logical || null,
       selectable: target.selectable !== false,
       waypointable: target.waypointable !== false,
       visibility: target.visibility || 'issued',
       current,
+      visited:current||visited.has(`space:${target.roomId}`),
       waypoint: marked,
+      entrances,
       objective: {
         required: true,
         sequence: target.sequence,
@@ -309,6 +328,20 @@ export function buildMapModel({
       },
     };
   });
+  for(const authored of source.spaces||[]){
+    if(!visibleFloorIds.has(authored.floorId))continue;
+    const current=playerState.floorId===authored.floorId&&playerState.position&&authored.position
+      ? Math.hypot(playerState.position.x-authored.position.x,playerState.position.y-authored.position.y)<=Number(authored.currentRadius||5)
+      : false;
+    const entrances=(authored.doorIds||[]).map((id)=>visibleDoors.find((door)=>door.id===id)||{id,state:'unknown',open:false,locked:false,traversable:false});
+    spaces.push({
+      id:authored.id,kind:'facility',roomId:authored.roomId||null,floorId:authored.floorId,
+      label:String(authored.label||authored.id).toUpperCase(),shortLabel:String(authored.shortLabel||authored.label||authored.id).toUpperCase(),
+      position:authored.position,logical:authored.logical||null,selectable:authored.selectable!==false,
+      waypointable:authored.waypointable!==false,visibility:authored.visibility||'issued',current,waypoint:false,
+      visited:current||visited.has(authored.id)||!!authored.visited,entrances,objective:null,
+    });
+  }
   for(const landmark of source.landmarks||[]){
     const live=landmarkState?.[landmark.id]||{};
     if(!visibleFloorIds.has(landmark.floorId))continue;
@@ -323,7 +356,7 @@ export function buildMapModel({
         visibility:'unknown',unknown:true,current:false,waypoint:false,objective:null});
       continue;
     }
-    spaces.push({id:landmark.id,kind:'landmark',roomId:null,floorId:landmark.floorId,label:String(live.label||landmark.label).toUpperCase(),shortLabel:landmark.shortLabel||'LAND',position:landmark.position,selectable:landmark.selectable!==false,waypointable:false,visibility:'discovered',current:false,waypoint:false,objective:null});
+    spaces.push({id:landmark.id,kind:'landmark',roomId:null,floorId:landmark.floorId,label:String(live.label||landmark.label).toUpperCase(),shortLabel:landmark.shortLabel||'LAND',position:landmark.position,logical:landmark.logical||null,selectable:landmark.selectable!==false,waypointable:landmark.waypointable!==false,visibility:'discovered',current:false,waypoint:false,entrances:[],objective:null});
   }
 
   // Same rule as the unresolved-player path above: a target must be a real room
@@ -333,16 +366,27 @@ export function buildMapModel({
     ? (spaces.find((space) => space.roomId === liveTargetRoomId) || null)
     : null;
   const roomWaypoint = waypointSpace ? {
+    label: waypointSpace.label,
+    kind: 'room',
+    playerSelected: true,
     roomId: waypointSpace.roomId,
     spaceId: waypointSpace.id,
     floorId: waypointSpace.floorId,
     position: waypointSpace.position,
   } : null;
-  const waypoint=activeWaypoint?.position
+  const explicitPlayerWaypoint=playerWaypoint?.position
+    ? {
+        id:playerWaypoint.id||playerWaypoint.spaceId||null,label:playerWaypoint.label||null,kind:'space',playerSelected:true,
+        roomId:playerWaypoint.roomId||null,spaceId:playerWaypoint.spaceId||null,floorId:playerWaypoint.floorId||null,
+        position:{x:Number(playerWaypoint.position.x),y:Number(playerWaypoint.position.y)},
+      }
+    : null;
+  const guidanceWaypoint=activeWaypoint?.position
     ? {
         id:activeWaypoint.id||null,
         label:activeWaypoint.label||null,
         kind:activeWaypoint.kind||'position',
+        playerSelected:!!activeWaypoint.playerSelected,
         roomId:activeWaypoint.roomId||null,
         spaceId:activeWaypoint.spaceId||null,
         propId:activeWaypoint.propId||null,
@@ -350,7 +394,12 @@ export function buildMapModel({
         floorId:activeWaypoint.floorId||null,
         position:{x:Number(activeWaypoint.position.x),y:Number(activeWaypoint.position.y)},
       }
-    : roomWaypoint;
+    : null;
+  // A schema-2 personal space mark is explicit and stays independent. Legacy
+  // room targets yield to current mandatory guidance so an old save cannot
+  // hide the active story beacon behind a stale five-room target.
+  const waypoint=explicitPlayerWaypoint||guidanceWaypoint||roomWaypoint;
+  spaces=spaces.map((space)=>({...space,waypoint:!!(waypoint?.spaceId&&waypoint.spaceId===space.id)}));
 
   const route = resolveMapRoute({
     floors: visibleFloors,
@@ -358,6 +407,8 @@ export function buildMapModel({
     doors: visibleDoors,
     player: playerState,
     waypoint,
+    playerWaypoint:explicitPlayerWaypoint||roomWaypoint,
+    guidanceWaypoint,
   });
 
   const normalizedContacts = (contacts || [])
@@ -386,12 +437,14 @@ export function buildMapModel({
     spaces,
     player: playerState,
     waypoint,
+    playerWaypoint:explicitPlayerWaypoint||roomWaypoint,
+    guidanceWaypoint,
     route,
     contacts: normalizedContacts,
     equipmentMarkers:normalizedEquipmentMarkers,
     progress: {
       done: Math.max(0, Number(job?.done) || 0),
-      total: Math.max(0, Number(job?.total) || spaces.length),
+      total: Math.max(0, Number.isFinite(Number(job?.total)) ? Number(job.total) : spaces.filter((space)=>space.objective).length),
     },
     policy,
     warnings,

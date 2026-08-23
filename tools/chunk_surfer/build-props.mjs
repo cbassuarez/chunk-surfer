@@ -15,7 +15,7 @@ import {
 } from '../../src/data/marimba-layout.js';
 import { ELLERY_MASSING, YARD_SERVICE_RANGES } from '../../src/data/exterior-district.js';
 import {
-  CHURCH, CHURCH_BOUNDS, CHURCH_HEIGHTS, CHURCH_SKIN,
+  CHURCH, CHURCH_BOUNDS, CHURCH_BUTTRESSES, CHURCH_HEIGHTS, CHURCH_SKIN,
   churchWallAt, churchWallExposed, churchWallHeight,
 } from '../../src/data/st-brendans.js';
 import { conservatory } from '../../src/data/floorplan/conservatory.js';
@@ -2490,8 +2490,9 @@ function buildStBrendans(){
   const S=CHURCH_SKIN, PLINTH=0.95;
   const FACES=[[0,-1],[0,1],[-1,0],[1,0]];
 
-  // Every exposed face of every wall cell, dressed to the height of the tallest
-  // room that wall touches — so a transept gable does not take chancel eaves.
+  // Rubble wall skins, all derived from the same cells collision uses. Thin dark
+  // repairs and water courses break the material without pretending to cut
+  // openings through the collision wall.
   const exposed=[];
   for(let y=CHURCH_BOUNDS.y0;y<=CHURCH_BOUNDS.y1;y++){
     for(let x=CHURCH_BOUNDS.x0;x<=CHURCH_BOUNDS.x1;x++){
@@ -2506,71 +2507,170 @@ function buildStBrendans(){
         // of what stops an elevation reading as a flat panel at eye height.
         addBox(m,[px+dx*0.10,PLINTH/2,pz+dy*0.10],[dx?S+.2:1.02,PLINTH,dy?S+.2:1.02],MAT.stone);
         addBox(m,[px+dx*0.06,h-0.34,pz+dy*0.06],[dx?S+.12:1.02,.30,dy?S+.12:1.02],MAT.stone);
+        if((x*17+y*11+dx*5+dy*7)%9===0)addBox(m,
+          [px+dx*.075,1.42,pz+dy*.075],[dx?.08:.72,.34,dy?.08:.72],MAT.brickDark);
       }
     }
   }
 
-  // BUTTRESSES AND LANCETS. Stepped piers every four metres along the tall
-  // faces, with a lancet in the bay between each pair. This is the difference
-  // between a Gothic parish church and a shed with a pointed roof.
+  // Manifest-authored stepped buttresses. Their runtime colliders come from the
+  // same records, so these projections are never decorative noclip geometry.
+  for(const b of CHURCH_BUTTRESSES){
+    addBox(m,[X(b.x),b.h*.42,Z(b.y)],[b.w,b.h*.84,b.d],MAT.stone);
+    addBox(m,[X(b.x),b.h*.84+.09,Z(b.y)],[b.w+.14,.18,b.d+.14],MAT.stone);
+    addBox(m,[X(b.x),b.h*.93,Z(b.y)],[b.w*.72,b.h*.18,b.d*.72],MAT.stone);
+  }
+
+  // Restrained lancets and Y-tracery sit in the exposed bays. Recessed dark
+  // glass is backed by real wall; this generator is additive, not boolean.
   for(const f of exposed){
-    if(f.h<10)continue;                                   // the chancel stays plain
+    if(f.h<5.7)continue;
     const along=f.dx?f.y:f.x;
     const px=X(f.x+0.5)+f.dx*0.5, pz=Z(f.y+0.5)+f.dy*0.5;
-    if(along%4===0){
-      for(const [depth,top] of [[.62,f.h*0.62],[.40,f.h*0.86]]){
-        addBox(m,[px+f.dx*depth/2,top/2,pz+f.dy*depth/2],[f.dx?depth:.85,top,f.dy?depth:.85],MAT.stone);
-        addBox(m,[px+f.dx*depth/2,top+.12,pz+f.dy*depth/2],[f.dx?depth+.16:1.0,.24,f.dy?depth+.16:1.0],MAT.stone);
-      }
-    }else if(along%4===2){
-      const sill=3.1,head=f.h-3.4;
-      addBox(m,[px+f.dx*.06,(sill+head)/2,pz+f.dy*.06],[f.dx?.14:.52,head-sill,f.dy?.14:.52],MAT.warmWindow);
-      addBox(m,[px+f.dx*.10,head+.28,pz+f.dy*.10],[f.dx?.20:.72,.30,f.dy?.20:.72],MAT.stone);
-      addBox(m,[px+f.dx*.10,sill-.16,pz+f.dy*.10],[f.dx?.22:.78,.20,f.dy?.22:.78],MAT.stone);
+    if(along%3===1){
+      const sill=2.65, head=Math.min(f.h-.85,6.75), tall=Math.max(.9,head-sill);
+      addBox(m,[px+f.dx*.055,sill+tall/2,pz+f.dy*.055],[f.dx?.10:.46,tall,f.dy?.10:.46],MAT.black);
+      addWallArch(m,{axis:f.dx?'z':'x',plane:f.dx?px:pz,inside:f.dx?f.dx:f.dy,
+        along:f.dx?pz:px,spring:head-.42,radius:.28,depth:.08,section:.07,mat:MAT.stone,segments:7});
+      addBox(m,[px+f.dx*.09,sill-.13,pz+f.dy*.09],[f.dx?.18:.68,.18,f.dy?.18:.68],MAT.stone);
+      if(f.h>8)addBeam(m,[px+f.dx*.11,head-.12,pz+f.dy*.11],[px+f.dx*.11,head+.62,pz+f.dy*.11],.055,MAT.stone);
     }
   }
 
-  // ROOFS. Steep slate, each volume ridged along its own long axis, so the
-  // transepts read as arms crossing the nave rather than as a wider nave.
-  const nave=CHURCH.nave,tr=CHURCH.transept,ch=CHURCH.chancel,tw=CHURCH.tower;
-  const roof=(r,eaves,rise,ridge)=>addPitchedRoof(m,{
+  const rooms=Object.fromEntries(CHURCH.rooms.map((room)=>[room.id,room]));
+  const roof=(r,eaves,rise,ridge,pad=.8)=>addPitchedRoof(m,{
     x:X((r.x0+r.x1)/2+0.5),z:Z((r.y0+r.y1)/2+0.5),
-    w:(r.x1-r.x0)+3,d:(r.y1-r.y0)+3,
-    eaves,rise,mat:MAT.slate,gableMat:MAT.stone,ridge,overhang:.34,
+    w:(r.x1-r.x0)+pad,d:(r.y1-r.y0)+pad,
+    eaves,rise,mat:MAT.slate,gableMat:MAT.stone,ridge,overhang:.24,
   });
-  roof(nave,CHURCH_HEIGHTS.nave,4.6,'z');
-  roof(tr,CHURCH_HEIGHTS.nave,4.2,'x');
-  roof(ch,CHURCH_HEIGHTS.chancel,3.2,'z');
+  roof(rooms.nave,CHURCH_HEIGHTS.nave,2.65,'z',1.0);
+  roof(rooms.north_aisle,CHURCH_HEIGHTS.aisle,1.45,'z',1.0);
+  roof(rooms.south_aisle,CHURCH_HEIGHTS.aisle,1.45,'z',1.0);
+  roof({x0:9,y0:71,x1:23,y1:75},CHURCH_HEIGHTS.nave,2.25,'x',1.0);
+  roof(rooms.choir,CHURCH_HEIGHTS.choir,2.35,'z',1.0);
+  roof(rooms.side_chapel,CHURCH_HEIGHTS.aisle,1.35,'z',.8);
+  roof(rooms.sacristy,CHURCH_HEIGHTS.ancillary,1.15,'z',.8);
 
-  // THE TOWER. Crenellated head, louvred belfry, and nothing inside it — the
-  // shaft is eighteen metres of empty cell waiting for eight bells.
-  const tx=X((tw.x0+tw.x1)/2+0.5), tz=Z((tw.y0+tw.y1)/2+0.5);
-  const tW=(tw.x1-tw.x0)+3, tD=(tw.y1-tw.y0)+3, TH=CHURCH_HEIGHTS.tower;
+  // Central crossing tower: square, weighty, louvred, then a modest broached
+  // slate spire. No west-work and no crenellations.
+  const tx=X(16),tz=Z(73),tW=7.0,tD=5.8,TH=CHURCH_HEIGHTS.belfry;
   for(const [dx,dy] of FACES){
     const fx=tx+dx*(tW/2), fz=tz+dy*(tD/2);
-    for(let i=0;i<7;i++){
-      addBox(m,[fx+dx*.10,TH-4.6+i*.42,fz+dy*.10],[dx?.18:1.9,.26,dy?.18:1.9],MAT.black);
+    addBox(m,[fx,11.25,fz],[dx?.46:tW,TH-8.2,dy?.46:tD],MAT.stone);
+    for(let i=-2;i<=2;i++){
+      const along=i*.48;
+      addBox(m,[fx+dx*.25+(dy?along:0),12.05,fz+dy*.25+(dx?along:0)],
+        [dx?.12:.28,2.1,dy?.12:.28],MAT.black,dx?0:.18);
     }
-    addBox(m,[fx+dx*.14,TH-1.55,fz+dy*.14],[dx?.26:2.3,.34,dy?.26:2.3],MAT.stone);
-    addBox(m,[fx+dx*.34,TH*0.34,fz+dy*.34],[dx?.68:1.1,TH*0.68,dy?.68:1.1],MAT.stone);
+    addBox(m,[fx+dx*.12,13.42,fz+dy*.12],[dx?.24:tW+.18,.25,dy?.24:tD+.18],MAT.stone);
   }
-  const par=TH+0.2;
-  addBox(m,[tx,par-.35,tz],[tW+.5,.70,tD+.5],MAT.stone);
-  for(let i=0;i<=Math.round(tW);i+=2){
-    const px=tx-tW/2+i;
-    for(const s of[-1,1])addBox(m,[px,par+.55,tz+s*(tD/2+.12)],[.72,1.10,.42],MAT.stone);
+  const spireY=13.85,halfX=3.18,halfZ=2.58,apex=[tx,CHURCH_HEIGHTS.spire,tz];
+  for(const [a,b] of[
+    [[tx-halfX,spireY,tz-halfZ],[tx+halfX,spireY,tz-halfZ]],
+    [[tx+halfX,spireY,tz-halfZ],[tx+halfX,spireY,tz+halfZ]],
+    [[tx+halfX,spireY,tz+halfZ],[tx-halfX,spireY,tz+halfZ]],
+    [[tx-halfX,spireY,tz+halfZ],[tx-halfX,spireY,tz-halfZ]],
+  ]){addTriangle(m,a,b,apex,MAT.slate);addTriangle(m,apex,b,a,MAT.slate);}
+  addCylinder(m,[tx,17.18,tz],.055,.34,MAT.steel,8);
+
+  // West portal and south-transept porch, both recessed behind ashlar orders.
+  const westX=X(16.5),westZ=Z(55.35);
+  addBox(m,[westX,1.42,westZ-.18],[1.85,2.84,.28],MAT.dark);
+  for(const s of[-1,1])addBox(m,[westX+s*1.15,1.55,westZ-.20],[.34,3.10,.38],MAT.stone);
+  addWallArch(m,{axis:'x',plane:westZ-.18,inside:-1,along:westX,spring:2.62,radius:1.12,depth:.12,section:.18,mat:MAT.stone,segments:11});
+  const porchX=X(24.55),porchZ=Z(73.5);
+  addBox(m,[porchX,2.35,porchZ-1.25],[1.45,4.7,.42],MAT.stone);
+  addBox(m,[porchX,2.35,porchZ+1.25],[1.45,4.7,.42],MAT.stone);
+  addPitchedRoof(m,{x:porchX,z:porchZ,w:1.7,d:3.2,eaves:4.7,rise:1.25,mat:MAT.slate,gableMat:MAT.stone,ridge:'x',overhang:.18});
+
+  // Triple lancets in the square-ended east wall and a repaired west gable.
+  for(const x of[-1.15,0,1.15]){
+    addBox(m,[X(16.5)+x,4.5,Z(85.45)+.06],[.58,3.55,.12],MAT.black);
+    addWallArch(m,{axis:'x',plane:Z(85.45)+.08,inside:1,along:X(16.5)+x,spring:6.08,radius:.30,depth:.06,section:.07,mat:MAT.stone,segments:7});
   }
-  for(let i=0;i<=Math.round(tD);i+=2){
-    const pz=tz-tD/2+i;
-    for(const s of[-1,1])addBox(m,[tx+s*(tW/2+.12),par+.55,pz],[.42,1.10,.72],MAT.stone);
+
+  // Interior arcades and clustered crossing piers. The openings remain clear;
+  // these are structure around circulation, not a second collision wall.
+  for(const x of[12.1,20.9])for(const y of[60.5,63.7,66.9,70.1]){
+    addCylinder(m,[X(x),3.25,Z(y)],.34,6.5,MAT.stone,12);
+    for(const dx of[-.28,.28])addCylinder(m,[X(x)+dx,3.0,Z(y)],.12,5.8,MAT.stone,10);
   }
-  // The west door, under a pointed arch, in the north face of the tower.
-  const dx0=X(CHURCH.doors[0].x+0.5), dz0=Z(CHURCH.doors[0].y+0.5)-tD/2;
-  addBox(m,[dx0,1.35,dz0-.10],[1.9,2.70,.30],MAT.dark);
-  addBox(m,[dx0,2.85,dz0-.16],[2.5,.36,.42],MAT.stone);
-  for(const s of[-1,1])addBox(m,[dx0+s*1.25,1.5,dz0-.14],[.34,3.0,.38],MAT.stone);
+  for(const [x,y] of[[12.15,71.15],[19.85,71.15],[12.15,74.85],[19.85,74.85]]){
+    addCylinder(m,[X(x),4.9,Z(y)],.46,9.8,MAT.stone,12);
+    for(let a=0;a<4;a++)addCylinder(m,[X(x)+Math.cos(a*Math.PI/2)*.38,4.2,Z(y)+Math.sin(a*Math.PI/2)*.38],.13,8.4,MAT.stone,8);
+  }
+  for(const x of[12.1,20.9])for(const y of[62.1,65.3,68.5]){
+    addWallArch(m,{axis:'z',plane:X(x),inside:x<16?1:-1,along:Z(y),spring:4.5,radius:1.45,depth:.11,section:.18,mat:MAT.stone,segments:10});
+  }
+
+  // Dark St Davids-like panelled timber ceiling: transverse principals, a
+  // central ridge and simple pendants. A roof can be stone outside and timber
+  // from below without asking the raymarcher to fake a vault.
+  for(const y of[60.0,63.2,66.4,69.6,76.8,79.8,82.8]){
+    addBeam(m,[X(12.0),8.72,Z(y)],[X(21.0),8.72,Z(y)],.16,MAT.dark);
+    addCylinder(m,[X(16.5),8.25,Z(y)],.12,.78,MAT.dark,10);
+    addCylinder(m,[X(16.5),7.82,Z(y)],.19,.18,MAT.dark,10);
+  }
+  addBeam(m,[X(16.5),9.02,Z(58.8)],[X(16.5),9.02,Z(84.1)],.13,MAT.dark);
+
+  // Walks and rails at 4.6m, then the belfry deck and six-bell timber frame.
+  addBox(m,[X(16),4.55,Z(59.2)],[7.0,.18,4.4],MAT.dark);
+  for(const x of[10.5,21.5])addBox(m,[X(x),4.55,Z(67)],[1.55,.18,16.0],MAT.dark);
+  addBox(m,[X(16),4.55,Z(73)],[11.0,.18,4.2],MAT.dark);
+  for(const x of[10,22])addBox(m,[X(x),5.05,Z(67)],[.16,1.0,16.0],MAT.dark);
+  addBox(m,[X(16),10.14,Z(73)],[6.6,.16,4.2],MAT.dark);
+  for(const x of[14,16,18]){
+    for(const z of[71.2,74.8])addBox(m,[X(x),11.8,Z(z)],[.24,3.2,.24],MAT.dark);
+    addBeam(m,[X(x),13.1,Z(71.2)],[X(x),13.1,Z(74.8)],.18,MAT.dark);
+  }
+  let bell=0;
+  for(const x of[14,16,18])for(const y of[72,74]){
+    bell+=1;
+    addCylinder(m,[X(x),11.55,Z(y)],.38,.52,MAT.brass,14);
+    addCylinder(m,[X(x),11.22,Z(y)],.48,.20,MAT.brass,14);
+    addCylinder(m,[X(x),12.03,Z(y)],.08,.52,MAT.steel,8);
+  }
+  for(let i=0;i<18;i++)addBox(m,[X(13.3+(i%6)*.56),10.27,Z(71.3+Math.floor(i/6)*1.25)],[.08,.04,.14],i%4?MAT.deadLeaf:MAT.ivory,i*.31);
+
+  // Stair turrets read outside as round ashlar drums. The actual climb is the
+  // floorplan's authored helical tread field, not these skins.
+  for(const [x,y,h] of[[10.5,64.5,6.2],[21.5,79.5,6.2],[10.5,73.5,11.0],[21.5,73.5,11.0]]){
+    addCylinder(m,[X(x),h/2,Z(y)],1.52,h,MAT.stone,16);
+    addCylinder(m,[X(x),h-.35,Z(y)],1.62,.32,MAT.stone,16);
+  }
 }
 buildStBrendans();
+
+// Cathedral furniture with silhouettes the general chapel pack does not own.
+{
+  const m=mesh('cathedral_font');
+  addCylinder(m,[0,.13,0],.42,.26,MAT.stone,8);
+  addCylinder(m,[0,.58,0],.22,.72,MAT.stone,8);
+  addCylinder(m,[0,1.00,0],.50,.28,MAT.stone,8);
+  addCylinder(m,[0,1.09,0],.34,.12,MAT.black,8);
+}
+{
+  const m=mesh('cathedral_pulpitum');
+  for(const x of[-3.35,-2.65,-1.95,1.95,2.65,3.35])addCylinder(m,[x,1.28,0],.16,2.56,MAT.stone,10);
+  addBox(m,[-2.65,.26,0],[2.55,.52,.52],MAT.stone);
+  addBox(m,[2.65,.26,0],[2.55,.52,.52],MAT.stone);
+  addBox(m,[-2.65,2.48,0],[2.75,.24,.58],MAT.stone);
+  addBox(m,[2.65,2.48,0],[2.75,.24,.58],MAT.stone);
+  for(const x of[-2.95,-2.35,2.35,2.95])addWallArch(m,{axis:'x',plane:-.30,inside:-1,along:x,spring:1.68,radius:.28,depth:.08,section:.08,mat:MAT.stone,segments:7});
+}
+{
+  const m=mesh('cathedral_tomb');
+  addBox(m,[0,.34,0],[2.1,.68,.85],MAT.stone);
+  addBox(m,[0,.76,0],[2.0,.16,.78],MAT.stone);
+  addEllipsoid(m,[0,.90,0],[.72,.15,.25],MAT.stone,8,14);
+}
+{
+  const m=mesh('cathedral_monument');
+  addBox(m,[0,1.18,0],[1.25,2.36,.30],MAT.stone);
+  addBox(m,[0,.22,-.12],[1.42,.24,.42],MAT.stone);
+  addWallArch(m,{axis:'x',plane:-.20,inside:-1,along:0,spring:1.70,radius:.46,depth:.06,section:.08,mat:MAT.brickDark,segments:9});
+  addBox(m,[0,1.02,-.20],[.62,.78,.05],MAT.brickDark);
+}
 
 
 {

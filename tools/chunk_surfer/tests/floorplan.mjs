@@ -153,13 +153,13 @@ const boxOfficeLocked=FP.canStep(officeStep.from.x,officeStep.from.y,officeStep.
 FP.setDoorOpen('foh-office',true);const boxOfficeMaster=FP.canStep(officeStep.from.x,officeStep.from.y,officeStep.to.x,officeStep.to.y,{keys:STANDARD_KEYS});
 ck('the box-office staff leaf answers only to the building master',!boxOfficeLocked.ok&&boxOfficeLocked.why==='locked'&&boxOfficeMaster.ok,JSON.stringify(boxOfficeLocked));
 
-// One glyph is one metre; only the explicitly scheduled public pairs have two leaves.
+// One glyph is one metre; only explicitly scheduled pairs have two leaves.
 const thresholdVolumes=cp.doorVolumes.map(v=>{let blocked=0;for(let yy=v.minY;yy<=v.maxY;yy++)for(let xx=v.minX;xx<=v.maxX;xx++)if(FP.isSolid(xx,yy))blocked++;return{...v,blocked};});
 const scheduled=FP.doorState();
 ck('all current portals have explicit stable definitions',scheduled.length===conservatory.doors.length&&scheduled.every((door)=>door.archetype!=='legacy'));
-ck('only the four scheduled openings contain paired leaves',
+ck('only the seven scheduled openings contain paired leaves',
   JSON.stringify(scheduled.filter((door)=>door.leafCount===2).map((door)=>door.id).sort())
-  ===JSON.stringify(['bay-goods-pair','chapel-c17','front-main','hall-vestibule']));
+  ===JSON.stringify(['brendan-south-porch','brendan-west-door','chapel-c17','dock-grey-exterior','front-main','hall-vestibule','pool-lobby']));
 ck('single glyphs remain one-metre apertures',scheduled.filter((door)=>door.leafCount===1).every((door)=>door.aperture.width<=1.05));
 const offCenter=scheduled.filter((door)=>{
   const xs=door.cells.map((cell)=>cell.x),ys=door.cells.map((cell)=>cell.y);

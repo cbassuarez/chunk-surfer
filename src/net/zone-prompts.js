@@ -42,6 +42,7 @@ export const ZONE_SEEDS = {
   amplifications: 31_415,
   soundnoisemusic: 57_721,
   lux_nova: 66_260,
+  st_brendans: 73_108,
 };
 export function seedFor(worldId, inExpanse) {
   return (ZONE_SEEDS[worldId] || 1) + (inExpanse ? 7 : 0);
@@ -79,6 +80,10 @@ const WORLD_PROMPTS = {
   lux_nova: {
     corridor: 'chapel side aisle, locked threshold, pale limestone, ribbed stone, organ pipes rising in darkness, cold clerestory light',
     expanse: 'a ruined nave with a clearly visible organ loft and side aisles, cold clerestory openings, pale mineral stains on stone',
+  },
+  st_brendans: {
+    corridor: 'disused medieval cathedral side aisle, weathered rubble stone, clustered piers, open stone screen, dark panelled timber ceiling, cold lancet light, dust and bird debris',
+    expanse: 'a compact cruciform cathedral nave under a central crossing tower, organ loft and triforium walks, square-ended choir, pale window shafts, wet slate and repaired stone',
   },
 };
 

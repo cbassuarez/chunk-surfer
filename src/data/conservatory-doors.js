@@ -31,7 +31,7 @@ export const DOOR_ARCHETYPES = Object.freeze({
     leafCount: 2, activeLeaves: [0, 1], leaf: { width: 1.48, height: 3.05, depth: .07 },
     aperture: { width: 3.0, height: 3.4 }, head: 'masonry-infill',
     construction: 'ribbed-galvanised-steel', openSeconds: 1.6, closeSeconds: 2.1,
-    closer: 'none', acousticLossDb: 11, mesh: 'door_leaf_bay_goods', frameMesh: 'door_frame_goods', headMesh: 'door_head_goods',
+    closer: 'standard', acousticLossDb: 11, mesh: 'door_leaf_bay_goods', frameMesh: 'door_frame_goods', headMesh: 'door_head_goods',
   }),
   [DOOR_ARCHETYPE.HALL_ACOUSTIC_PAIR]: Object.freeze({
     leafCount: 2, activeLeaves: [0], leaf: { width: 1.02, height: 2.35, depth: .08 },
@@ -96,6 +96,8 @@ const D = (id, archetype, legacyId, options = {}) => {
     hinge: options.hinge || 'left', swing: options.swing || 'escape', widthAxis:options.widthAxis||'x',
     key: options.key || null, initialState: options.open ? 'open' : 'closed', open:!!options.open,
     wedged: !!options.wedged, closerArmed: !!options.closerArmed,
+    closer: options.closer || DOOR_ARCHETYPES[archetype].closer,
+    access: options.access || 'both', insideSide: options.insideSide === -1 ? -1 : 1,
     activeLeaves: options.activeLeaves || DOOR_ARCHETYPES[archetype].activeLeaves,
     renderGroups: Object.freeze([...(options.renderGroups || [])]),
   });
@@ -192,16 +194,18 @@ export const CONSERVATORY_DOORS = Object.freeze([
   D('academic-gallery-lobby',DOOR_ARCHETYPE.ACADEMIC_WIRED_GLASS,'45,489',{open:true,hinge:'left',swing:'gallery-in',widthAxis:'y'}),
   D('academic-office-locked-1',DOOR_ARCHETYPE.ACADEMIC_WIRED_GLASS,null,{at:{x:3,y:269},key:'academic-core',hinge:'left',swing:'office-in',widthAxis:'x'}),
   D('academic-office-locked-2',DOOR_ARCHETYPE.ACADEMIC_WIRED_GLASS,null,{at:{x:9,y:269},key:'academic-core',hinge:'right',swing:'office-in',widthAxis:'x'}),
-  // ── st brendan's, on the tarmac past the park ─────────────────────────────
-  // Three thresholds and no locks: the yard into the tower, the tower into the
-  // nave, the nave into the chancel. Oak, because it is a church and because the
-  // conservatoire's own chapel is oak — the two buildings were put up eighty
-  // years apart by people with the same catalogue.
-  //
-  // All three stand open. Nothing has been keeping this building shut.
-  D('brendan-west-door',DOOR_ARCHETYPE.CHAPEL_OAK_PAIR,null,{at:{x:66,y:254},open:true,hinge:'left',swing:'tower-in',widthAxis:'x'}),
-  D('brendan-tower-nave',DOOR_ARCHETYPE.CHAPEL_OAK_PAIR,null,{at:{x:66,y:260},open:true,hinge:'left',swing:'nave-in',widthAxis:'x'}),
-  D('brendan-chancel',DOOR_ARCHETYPE.CHAPEL_OAK_PAIR,null,{at:{x:66,y:280},open:true,hinge:'right',swing:'chancel-in',widthAxis:'x'}),
+  // ── st brendan's cathedral ────────────────────────────────────────────────
+  // Both leaves are honest outward exits with working closers, but there is no
+  // exterior latch. The runtime enforces this direction even if debug state or
+  // a saved snapshot has left a leaf open.
+  D('brendan-west-door',DOOR_ARCHETYPE.CHAPEL_OAK_PAIR,null,{
+    at:{x:128,y:180},hinge:'left',swing:'outward',widthAxis:'x',activeLeaves:[0,1],
+    access:'exit-only',insideSide:1,closer:'standard',
+  }),
+  D('brendan-south-porch',DOOR_ARCHETYPE.CHAPEL_OAK_PAIR,null,{
+    at:{x:136,y:198},hinge:'right',swing:'outward',widthAxis:'y',activeLeaves:[0],
+    access:'exit-only',insideSide:-1,closer:'standard',
+  }),
 ]);
 
 export const DOOR_BY_ID = Object.freeze(Object.fromEntries(CONSERVATORY_DOORS.map((door) => [door.id, door])));

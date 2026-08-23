@@ -118,13 +118,13 @@ function drawTurn(ctx,doc,turn,rect){
 }
 
 export function readDocument(doc){if(!doc)return null;return scenes.push(makeDocumentScene(doc));}
-export function makeDocumentScene(doc,{id=`doc:${doc?.id||'document'}`,onSceneClose=null,onSceneTurn=null,lookProfile='calm',sourcePressureLive=false}={}){
-  let page=0,turn=null;const total=paperPageCount(doc),closeCallback=typeof onSceneClose==='function'?onSceneClose:onClose,turnCallback=typeof onSceneTurn==='function'?onSceneTurn:onTurn,resolved=paperAssetProbe(doc);
-  function close(){scenes.pop();closeCallback(doc);}
+export function makeDocumentScene(doc,{id=`doc:${doc?.id||'document'}`,onSceneClose=null,onSceneTurn=null,lookProfile='calm',sourcePressureLive=false,embedded=false,initialPage=0}={}){
+  let page=clamp(Math.floor(Number(initialPage)||0),0,Math.max(0,paperPageCount(doc)-1)),turn=null;const total=paperPageCount(doc),closeCallback=typeof onSceneClose==='function'?onSceneClose:onClose,turnCallback=typeof onSceneTurn==='function'?onSceneTurn:onTurn,resolved=paperAssetProbe(doc);
+  function close(){if(!embedded)scenes.pop();closeCallback(doc,{page,total});}
   function turnTo(next){const target=clamp(Math.floor(Number(next)||0),0,total-1);if(target===page||turn)return;const prev=page;void paperImageState(doc,target);turn={from:prev,to:target,t:0};page=target;turnCallback({doc,page:target,prev,total,dir:Math.sign(target-prev)||1});}
-  function next(){if(page<total-1)turnTo(page+1);else close();}
+  function next(){if(page<total-1)turnTo(page+1);else if(!embedded)close();}
   return {
-    id,blocksInput:true,blocksWorld:false,lookProfile,lensPreset:lookProfile,sourcePressureLive:!!sourcePressureLive,
+    id,blocksInput:true,blocksWorld:!!embedded,lookProfile,lensPreset:lookProfile,sourcePressureLive:!!sourcePressureLive,
     enter(){void preloadPaperDocument(doc);},
     update(dt){if(turn){turn.t+=Math.max(0,Number(dt)||0);if(turn.t>=TURN_SECONDS)turn=null;}},
     view:()=>({id,page,total,documentId:doc?.id||null,paper:resolved,paper3d:paper3dProbe(),turning:!!turn}),
@@ -132,9 +132,16 @@ export function makeDocumentScene(doc,{id=`doc:${doc?.id||'document'}`,onSceneCl
       uiScrim(.84);
       uiDraw((surface)=>{const {ctx}=surface,rect=inspectRect(surface);paperStage(ctx,rect);if(turn)drawTurn(ctx,doc,turn,rect);else drawPhysicalPage(ctx,doc,page,rect);});
       const {cols,rows}=uiSize(),left=total>1?`${page+1} / ${total}`:'A4';
-      const nav=total<=1?promptLine([{action:'back',label:'CLOSE'}]):page===0?promptLine([{action:'confirm',label:'NEXT'},{action:'back',label:'CLOSE'}]):page===total-1?promptLine([{action:'select',label:'BACK'},{action:'back',label:'CLOSE'}]):promptLine([{action:'select',label:'PAGE'},{action:'back',label:'CLOSE'}]);
-      uiText(3,rows-2,left,'t-dim',.70);uiText(Math.max(3,cols-nav.length-3),rows-2,nav,'t-dim',.78);if(!resolved.resolved)uiText(3,1,'PAPER ASSET NOT BUILT','t-dim',.55);
+      const nav=embedded
+        ? `${page>0?'[←] PREVIOUS   ':''}${page<total-1?'[→ / ENTER] NEXT   ':''}[ESC] BACK   [B] CLOSE BAG`
+        : total<=1?promptLine([{action:'back',label:'CLOSE'}]):page===0?promptLine([{action:'confirm',label:'NEXT'},{action:'back',label:'CLOSE'}]):page===total-1?promptLine([{action:'select',label:'BACK'},{action:'back',label:'CLOSE'}]):promptLine([{action:'select',label:'PAGE'},{action:'back',label:'CLOSE'}]);
+      if(embedded)uiText(3,1,`SHEETS / ${String(doc?.title||doc?.id||'DOCUMENT').toUpperCase()}`,'ui-label',.72);
+      uiText(3,rows-2,left,'t-dim',.70);uiText(Math.max(3,cols-nav.length-3),rows-2,nav,'t-dim',.78);if(!resolved.resolved)uiText(3,embedded?2:1,'PAPER ASSET NOT BUILT','t-dim',.55);
     },
-    key(e){const raw=e.key||'',k=raw.toLowerCase(),code=e.code||'';if(raw==='ArrowRight'||raw==='PageDown'||raw===' '||raw==='Enter'||k==='d'||k==='j'||code==='Space'){next();return true;}if(raw==='ArrowLeft'||raw==='PageUp'||k==='a'||k==='h'){turnTo(page-1);return true;}if(raw==='ArrowDown'){next();return true;}if(raw==='ArrowUp'){turnTo(page-1);return true;}if(raw==='Escape'||k==='e'){close();return true;}return true;},
+    key(e){const raw=e.key||'',k=raw.toLowerCase(),code=e.code||'';if(raw==='ArrowRight'||raw==='PageDown'||raw===' '||raw==='Enter'||k==='d'||k==='j'||code==='Space'){next();return true;}if(raw==='ArrowLeft'||raw==='PageUp'||k==='a'||k==='h'){turnTo(page-1);return true;}if(raw==='ArrowDown'){next();return true;}if(raw==='ArrowUp'){turnTo(page-1);return true;}if(raw==='Escape'||k==='e'||e.controllerAction==='back'){close();return true;}return true;},
   };
+}
+
+export function makeEmbeddedDocumentReader(doc,options={}){
+  return makeDocumentScene(doc,{...options,embedded:true});
 }

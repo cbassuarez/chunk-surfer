@@ -20,7 +20,8 @@
 import { F, ZONE } from './legend.js';
 import { CONSERVATORY_DOORS } from '../conservatory-doors.js';
 import {
-  churchDoorAt, churchRoomAt, churchWallAt,
+  CHURCH_BOUNDS, CHURCH_LEVELS, churchGroundRows,
+  churchDoorAt, churchRoomAt, churchVolumeAt, churchWallAt,
 } from '../st-brendans.js';
 import {
   DISTRICT_BOUNDS,
@@ -508,13 +509,50 @@ const YARD_PARK_BASIN={x0:7,x1:13,y0:33,y1:39};
 // against a remembered plan drifts off it the first time a transept moves, and
 // a church whose walls and whose mesh disagree is one you can see through.
 function churchGlyphAt(x,y){
-  const room=churchRoomAt(x,y);
-  if(room)return room==='tower'?'X':room==='nave'?'Z':'z';
+  const volume=churchVolumeAt(x,y);
+  if(volume)return volume==='crossing'?'X':volume==='nave'?'Z':volume==='choir'?'z':'c';
   // A door takes the height of the room behind it rather than punching a 3.4m
   // hole through a thirteen-metre wall.
   if(churchDoorAt(x,y))return '+';
   if(churchWallAt(x,y))return '#';
   return null;
+}
+const CATHEDRAL_GROUND_ORIGIN={x:120,y:180};
+const CATHEDRAL_LOFT_ORIGIN={x:150,y:240};
+const CATHEDRAL_BELFRY_ORIGIN={x:180,y:240};
+const cathedralGroundLogical=(x,y)=>({
+  x:CATHEDRAL_GROUND_ORIGIN.x+x-CHURCH_BOUNDS.x0,
+  y:CATHEDRAL_GROUND_ORIGIN.y+y-CHURCH_BOUNDS.y0,
+});
+const cathedralLoftLogical=(x,y)=>({x:CATHEDRAL_LOFT_ORIGIN.x+x-10,y:CATHEDRAL_LOFT_ORIGIN.y+y-57});
+const cathedralBelfryLogical=(x,y)=>({x:CATHEDRAL_BELFRY_ORIGIN.x+x-10,y:CATHEDRAL_BELFRY_ORIGIN.y+y-71});
+function cathedralLoftRows(){
+  const out=[];
+  for(let y=57;y<=82;y+=1){let row='';for(let x=10;x<=22;x+=1){
+    const organ=x>=11&&x<=19&&y>=57&&y<=61;
+    const north=x<=11&&y>=59&&y<=75;
+    const south=x>=21&&y>=59&&y<=82;
+    const crossing=y>=71&&y<=75;
+    row+=organ||north||south||crossing?'l':' ';
+  }out.push(row);}return out;
+}
+function cathedralBelfryRows(){
+  const out=[];
+  for(let y=71;y<=75;y+=1){let row='';for(let x=10;x<=21;x+=1){
+    const chamber=x>=13&&x<=19;
+    const passage=y===72;
+    row+=chamber||passage?'b':' ';
+  }out.push(row);}return out;
+}
+function cathedralTurret(id,from,to,center,fromH,toH,groupFrom,groupTo){
+  return{id,zone:'church',material:'chapelStone',head:2.15,flights:[{
+    id:'spiral',from,to,fromH,toH,width:.5,rises:24,groupFrom,groupTo,
+    arc:{center:{x:center.x,z:center.y},rInner:.32,rOuter:1.48,rWalk:1.1,
+      theta0:0,sweep:Math.PI*2,snapEndpoints:true},
+  }],landings:[
+    {id:'foot',at:from,size:{x:.5,y:.5},physicalAt:{x:center.x-.5,z:center.y-1.5},height:fromH,renderGroup:groupFrom},
+    {id:'head',at:to,size:{x:.5,y:.5},physicalAt:{x:center.x-.5,z:center.y-1.5},height:toH,renderGroup:groupTo},
+  ]};
 }
 // THE OUTSIDE OF IT IS NOT AUTHORED HERE, AND CANNOT BE.
 //
@@ -585,14 +623,14 @@ function yardProfile(rx,ry,cell){
   // ABSOLUTE, not headroom. The old line was `ceil: cell.ceil + floor`, which is
   // right for a room whose ceiling follows its floor down; a parapet does not get
   // lower because the tarmac in front of it was cut away for a lorry.
-  // The church's own rooms are interiors and keep every height they were
-  // authored with — the roofline below is the yard's business, not theirs.
-  if(churchRoomAt(rx,ry)||churchDoorAt(rx,ry)) return null;
   const ceil=yardCeilAt(ry);
   // Kerbs (the outer bound and the stair head) keep their authored floor; they
   // are clearing real spans and must not be dragged down with the yard.
   if(cell.floor!==0) return {ceil};
   return {floor:yardFloorAt(rx,ry),ceil};
+}
+function cathedralGroundProfile(_rx,ry,cell){
+  return cell.zone===ZONE.dock?{ceil:yardCeilAt(CHURCH_BOUNDS.y0+ry)}:null;
 }
 function yardRows(){
   const out=[];
@@ -615,9 +653,13 @@ function yardRows(){
       // Kerb first, always. Everything below is landscaping and none of it is
       // allowed to pave over a rise that is holding a grade break up.
       if(kerb){ row+='w'; continue; }
-      // The church stands on the tarmac; the tarmac does not run through it.
-      const church=churchGlyphAt(x,y);
-      if(church){ row+=church; continue; }
+      // The cathedral has its own logical component, but the yard component
+      // still exists beneath the physical replacement. Seal that hidden copy
+      // of the footprint so a player on the yard layer cannot walk through the
+      // rendered stone while remaining, invisibly, in `loading_bay`. The two
+      // exterior threshold cells live just beyond this mask, so an interior
+      // player can still emerge into the yard.
+      if(churchGlyphAt(x,y)!==null){ row+='#'; continue; }
       const inPark=x>=YARD_PARK.x0&&x<=YARD_PARK.x1&&y>=YARD_PARK.y0&&y<=YARD_PARK.y1;
       if(inPark){
         const basin=x>=YARD_PARK_BASIN.x0&&x<=YARD_PARK_BASIN.x1
@@ -661,6 +703,37 @@ const EUCLIDEAN_ADDITIONS=[
    rows:buildExteriorDistrictRows(),profile:exteriorDistrictProfile},
   {id:'loading_bay_yard',layer:'ground',space:'loading_bay',renderGroup:'ground',
    origin:{x:50,y:200},physicalOrigin:{x:0,y:0},base:0,rows:yardRows(),profile:yardProfile},
+  // St Brendan's owns its plan instead of borrowing the yard component. The
+  // Y cells in the concave corners preserve continuous tarmac while every wall,
+  // room and threshold inside the compact envelope has one named owner.
+  {id:CHURCH_LEVELS.ground.id,replace:true,physicalReplace:true,layer:'cathedral_ground',
+   space:'cathedral_ground',renderGroup:CHURCH_LEVELS.ground.renderGroup,
+   origin:CATHEDRAL_GROUND_ORIGIN,physicalOrigin:{x:CHURCH_BOUNDS.x0,y:CHURCH_BOUNDS.y0},base:0,
+   rows:churchGroundRows('Y'),profile:cathedralGroundProfile},
+  // One exterior cell beyond each one-way leaf gives the crossing somewhere to
+  // land before its physical seam hands movement back to the yard component.
+  {id:'cathedral_west_threshold',physicalReplace:true,layer:'cathedral_threshold',space:'cathedral_threshold',renderGroup:'ground',
+   origin:{x:128,y:179},physicalOrigin:{x:16,y:54},base:0,rows:['Y'],profile:(_x,_y,cell)=>({...cell,ceil:yardCeilAt(54)})},
+  {id:'cathedral_south_threshold',physicalReplace:true,layer:'cathedral_threshold',space:'cathedral_threshold',renderGroup:'ground',
+   origin:{x:137,y:198},physicalOrigin:{x:25,y:73},base:0,rows:['Y'],profile:(_x,_y,cell)=>({...cell,ceil:yardCeilAt(73)})},
+  {id:CHURCH_LEVELS.loft.id,physicalReplace:true,physicalStack:true,layer:'cathedral_loft',
+   space:'cathedral_loft',renderGroup:CHURCH_LEVELS.loft.renderGroup,
+   origin:CATHEDRAL_LOFT_ORIGIN,physicalOrigin:{x:10,y:57},base:CHURCH_LEVELS.loft.base,
+   rows:cathedralLoftRows()},
+  {id:CHURCH_LEVELS.belfry.id,physicalReplace:true,physicalStack:true,layer:'cathedral_belfry',
+   space:'cathedral_belfry',renderGroup:CHURCH_LEVELS.belfry.renderGroup,
+   origin:CATHEDRAL_BELFRY_ORIGIN,physicalOrigin:{x:10,y:71},base:CHURCH_LEVELS.belfry.base,
+   rows:cathedralBelfryRows()},
+  // Four compact medieval stair turrets form a complete circuit: two ways from
+  // the nave to the triforium and two opposing ways between walk and belfry.
+  {id:'cathedral_stair_north_lower',physicalReplace:true,physicalStack:true,layer:'cathedral_stair',space:'cathedral_stair',renderGroup:'cathedral',origin:{x:0,y:0},physicalOrigin:{x:0,y:0},base:0,rows:[''],
+   stairs:[cathedralTurret('cathedral-north-lower',{x:150,y:300},{x:156,y:300},{x:10.5,y:64.5},0,4.6,'ground','cathedral')]},
+  {id:'cathedral_stair_south_lower',physicalReplace:true,physicalStack:true,layer:'cathedral_stair',space:'cathedral_stair',renderGroup:'cathedral',origin:{x:0,y:0},physicalOrigin:{x:0,y:0},base:0,rows:[''],
+   stairs:[cathedralTurret('cathedral-south-lower',{x:164,y:300},{x:170,y:300},{x:21.5,y:79.5},0,4.6,'ground','cathedral')]},
+  {id:'cathedral_stair_south_upper',physicalReplace:true,physicalStack:true,layer:'cathedral_stair',space:'cathedral_stair',renderGroup:'cathedral',origin:{x:0,y:0},physicalOrigin:{x:0,y:0},base:0,rows:[''],
+   stairs:[cathedralTurret('cathedral-south-upper',{x:178,y:300},{x:185,y:300},{x:21.5,y:73.5},4.6,10.2,'cathedral','cathedral')]},
+  {id:'cathedral_stair_north_upper',physicalReplace:true,physicalStack:true,layer:'cathedral_stair',space:'cathedral_stair',renderGroup:'cathedral',origin:{x:0,y:0},physicalOrigin:{x:0,y:0},base:0,rows:[''],
+   stairs:[cathedralTurret('cathedral-north-upper',{x:192,y:300},{x:199,y:300},{x:10.5,y:73.5},10.2,4.6,'cathedral','cathedral')]},
   {id:'front_atrium',replace:true,layer:'ground',space:'front_atrium',renderGroup:'ground',origin:{x:74,y:3},physicalOrigin:{x:74,y:3},base:0,rows:frontAtriumRows(),profile:frontAtriumProfile},
   // The get-in and the replacement atrium each own one metre of this old thick
   // wall. Author both cells as one single-leaf throat; leaf count remains
@@ -871,6 +944,18 @@ export const conservatory = {
     {from:{x:72,y:154},to:{x:101,y:151}},
     {from:{x:100,y:157},to:{x:104,y:151}},
     {from:{x:104,y:154},to:{x:98,y:82}},
+    // St Brendan's vertical circuit. Every seam is the same Euclidean cell at
+    // the same height; only the stable logical address changes.
+    {from:cathedralGroundLogical(10,63),to:{x:150,y:300}},
+    {from:{x:156,y:300},to:cathedralLoftLogical(10,63)},
+    {from:cathedralGroundLogical(21,78),to:{x:164,y:300}},
+    {from:{x:170,y:300},to:cathedralLoftLogical(21,78)},
+    {from:cathedralLoftLogical(21,72),to:{x:178,y:300}},
+    {from:{x:185,y:300},to:cathedralBelfryLogical(21,72)},
+    {from:cathedralBelfryLogical(10,72),to:{x:192,y:300}},
+    {from:{x:199,y:300},to:cathedralLoftLogical(10,72)},
+    {from:{x:128,y:179},to:{x:66,y:254}},
+    {from:{x:137,y:198},to:{x:75,y:273}},
     // THE APRON TO THE YARD, at the top of the dock steps.
     //
     // The yard was built as scenery — a view with no connector, bounded by a

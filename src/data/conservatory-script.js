@@ -1054,11 +1054,15 @@ export const ARRIVAL_THOUGHTS = Object.freeze({
 // the other side of it, listening. "Darker than the yard" finally means
 // something, because there was a yard and it was dark and he was in it.
 export const AFTER_TITLE = [
-  { who: 'you', art: { id: 'door', mode: 'hero', caption: 'Inside / the door shut', status: 'THRESHOLD' }, text: 'Right. That is the weather dealt with.', hold: 2.4 },
-  { who: 'you', artClear: true, text: 'Darker than the yard. Which is not great, because the yard was dark.', hold: 2.6 },
+  // This is the internal debrief after the threshold cutscene. Keep a real
+  // image in the left lane for the whole exchange: first the door he earned,
+  // then the kit he has to trust. A one-line plate that immediately vanished
+  // made the large shell collapse back into an ordinary transcript.
+  { who: 'you', art: { id: 'door', mode: 'hero', caption: 'Inside / the door shut', status: 'THRESHOLD' }, artHold: true, artScope: 'scene', text: 'Right. That is the weather dealt with.', hold: 2.4 },
+  { who: 'you', text: 'Darker than the yard. Which is not great, because the yard was dark.', hold: 2.6 },
   { who: 'you', text: 'And quieter. No rain in here. No rain, no traffic, no plant, no lift.', hold: 2.8 },
   { who: 'you', text: 'Minus sixty decibels, near enough, before I have taken the recorder out of the bag.', hold: 2.8 },
-  { who: 'direction', art: { id: 'flashlight', mode: 'hero', caption: 'Kit check / by feel', status: 'KIT' }, text: 'You put the bag down and go through it by feel.', cue: 'bag', hold: 2.6 },
+  { who: 'direction', art: { id: 'flashlight', mode: 'hero', caption: 'Kit check / by feel', status: 'KIT' }, artHold: true, artScope: 'scene', text: 'You put the bag down and go through it by feel.', cue: 'bag', hold: 2.6 },
   { who: 'you', text: 'Torch. Recorder. Headphones. Radio. Keys. The order, folded twice.', cue: 'kit', hold: 2.8 },
   { who: 'you', text: 'Five rooms, a minute each, and then I drive home.', hold: 3.2 },
 ];

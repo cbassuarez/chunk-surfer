@@ -30,9 +30,10 @@ test('story art assets are optimized for fast decode', () => {
 });
 
 test('cold open data uses story art refs', () => {
-  const data = readFileSync('src/data/conservatory-script.js', 'utf8');
-  assert.match(data, /art:\s*\{\s*id:\s*'guard'/);
-  assert.match(data, /art:\s*\{\s*id:\s*'door'/);
+  const authored = readFileSync('content/narrative/conservatory.cold_open_dialogue.story.json', 'utf8');
+  const runtime = readFileSync('src/data/conservatory-script.js', 'utf8');
+  assert.match(authored, /"art":\s*\{\s*"id":\s*"guard"/);
+  assert.match(runtime, /art:\s*\{\s*id:\s*'door'/);
 });
 
 test('battle data has boss art scaffold', () => {

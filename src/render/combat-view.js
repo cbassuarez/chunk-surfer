@@ -49,30 +49,100 @@ export function drawCombatBar({
   uiStrokeRect(x, y + 1.15, w, .58, colors.outline, .42 * alpha, 1);
 }
 
-// ── the pip health readout ────────────────────────────────────────────────────
-// Composure and coherence are small integers, so health is discrete pips, not
-// a ratio bar: every point is a fat phosphor block you can count at a glance.
-// A point just lost stays behind as a white-hot ghost pip that flickers out;
-// a point just gained flashes in green before settling to the tone color.
-export function drawCombatPips({
+// ── the fixed-resolution VFD health readout ──────────────────────────────────
+// Health is logical data, not a promise of one piece of display hardware per
+// point. The battle can carry 40+ points now, so the faceplate always exposes a
+// calibrated sixteen-element readout, banked four at a time, with the exact
+// number beside it. That is how the rest of this interface treats meters too:
+// a stable physical scale with a separate authoritative counter.
+export const COMBAT_GAUGE_SEGMENTS = 16;
+export const COMBAT_GAUGE_BANK_SIZE = 4;
+
+export function combatGaugeSegments(value, max, segments = COMBAT_GAUGE_SEGMENTS) {
+  const count = Math.max(1, Math.round(Number(segments) || COMBAT_GAUGE_SEGMENTS));
+  const maximum = Math.max(1, Number(max) || 1);
+  const current = clamp(value, 0, maximum);
+  if (current <= 0) return 0;
+  return Math.min(count, Math.max(1, Math.ceil((current / maximum) * count)));
+}
+
+export function combatGaugeState({
+  value = 0,
+  max = 1,
+  ghostFrom = null,
+  segments = COMBAT_GAUGE_SEGMENTS,
+} = {}) {
+  const maximum = Math.max(1, Number(max) || 1);
+  const currentValue = clamp(value, 0, maximum);
+  const previousValue = ghostFrom == null ? currentValue : clamp(ghostFrom, 0, maximum);
+  const filled = combatGaugeSegments(currentValue, maximum, segments);
+  const previousFilled = combatGaugeSegments(previousValue, maximum, segments);
+  const delta = currentValue - previousValue;
+  return Object.freeze({
+    segments: Math.max(1, Math.round(Number(segments) || COMBAT_GAUGE_SEGMENTS)),
+    currentValue,
+    previousValue,
+    maximum,
+    filled,
+    previousFilled,
+    lost: Math.max(0, previousFilled - filled),
+    gained: Math.max(0, filled - previousFilled),
+    sameBucketChange: delta !== 0 && previousFilled === filled,
+    delta,
+    leadingIndex: filled > 0 ? filled - 1 : 0,
+  });
+}
+
+export function combatGaugeGeometry({
+  x = 0,
+  w = 0,
+  segments = COMBAT_GAUGE_SEGMENTS,
+  bankSize = COMBAT_GAUGE_BANK_SIZE,
+  minorGap = .26,
+  majorGap = .72,
+} = {}) {
+  const count = Math.max(1, Math.round(Number(segments) || COMBAT_GAUGE_SEGMENTS));
+  const bank = Math.max(1, Math.round(Number(bankSize) || COMBAT_GAUGE_BANK_SIZE));
+  const width = Math.max(0, Number(w) || 0);
+  const gaps = Array.from({ length: Math.max(0, count - 1) }, (_, index) =>
+    (index + 1) % bank === 0 ? Math.max(0, majorGap) : Math.max(0, minorGap));
+  const gapWidth = gaps.reduce((sum, gap) => sum + gap, 0);
+  const segmentWidth = Math.max(0, (width - gapWidth) / count);
+  let cursor = Number(x) || 0;
+  const cells = [];
+  for (let index = 0; index < count; index += 1) {
+    cells.push(Object.freeze({ index, x: cursor, w: segmentWidth, bank: Math.floor(index / bank) }));
+    cursor += segmentWidth + (gaps[index] || 0);
+  }
+  return Object.freeze({
+    x: Number(x) || 0,
+    w: width,
+    segments: count,
+    bankSize: bank,
+    segmentWidth,
+    gapWidth,
+    end: cells.length ? cells.at(-1).x + cells.at(-1).w : Number(x) || 0,
+    cells: Object.freeze(cells),
+  });
+}
+
+export function drawCombatGauge({
   x, y, w, value, max, label, tone = 'player',
   ghostFrom = null, ghostAge = 0, now = 0, alpha = 1, lowDanger = true,
 } = {}) {
-  const maxPips = Math.max(1, Math.round(max));
-  const current = Math.max(0, Math.min(maxPips, Math.round(value)));
-  const low = lowDanger && tone !== 'enemy' && current / maxPips <= .25;
+  const gauge = combatGaugeState({ value, max, ghostFrom });
+  const current = Math.max(0, Math.round(gauge.currentValue));
+  const maximum = Math.max(1, Math.round(gauge.maximum));
+  const low = lowDanger && tone !== 'enemy' && gauge.currentValue / gauge.maximum <= .25;
   const pulse = low ? .70 + .30 * Math.sin(now * 6) : 1;
   const labelRole = tone === 'enemy' || low ? 'ui-danger' : 'ui-label';
-  uiText(x, y, String(label || '').toUpperCase(), labelRole, alpha * pulse);
-  const amount = `${current}/${maxPips}`;
+  const amount = `${current}/${maximum}`;
+  const labelWidth = Math.max(0, Math.floor(w) - amount.length - 2);
+  uiText(x, y, String(label || '').toUpperCase().slice(0, labelWidth), labelRole, alpha * pulse);
   uiText(x + Math.max(0, w - amount.length), y, amount, tone === 'enemy' || low ? 'ui-danger' : 'ui-primary', alpha);
 
-  const from = ghostFrom == null ? current : Math.max(0, Math.min(maxPips, Math.round(ghostFrom)));
-  const lostGhosts = Math.max(0, from - current);
-  const gainedGhosts = Math.max(0, current - from);
   const ghostAlpha = Math.max(0, 1 - ghostAge / .65);
-  const gap = .45;
-  const pipW = Math.max(.9, (w - gap * (maxPips - 1)) / maxPips);
+  const geometry = combatGaugeGeometry({ x, w });
   const colors = combatTonePalette(tone);
   const phosphor = colors.pip;
 
@@ -89,12 +159,14 @@ export function drawCombatPips({
     ctx.strokeStyle = '#000';
     ctx.lineWidth = dpr;
     ctx.strokeRect(gx + .5 * dpr, py - .14 * cellH * dpr + .5 * dpr, gw - dpr, ph + .28 * cellH * dpr - dpr);
-    for (let i = 0; i < maxPips; i++) {
-      const px = (x + i * (pipW + gap)) * cellW * dpr;
-      const pw = pipW * cellW * dpr;
-      const lit = i < current;
-      const lostGhost = !lit && i < current + lostGhosts && ghostAlpha > 0;
-      const gainedGhost = lit && i >= current - gainedGhosts && ghostAlpha > 0;
+    for (const cell of geometry.cells) {
+      const i = cell.index;
+      const px = cell.x * cellW * dpr;
+      const pw = cell.w * cellW * dpr;
+      const lit = i < gauge.filled;
+      const lostGhost = !lit && i < gauge.filled + gauge.lost && ghostAlpha > 0;
+      const gainedGhost = lit && i >= gauge.filled - gauge.gained && ghostAlpha > 0;
+      const bucketPulse = gauge.sameBucketChange && i === gauge.leadingIndex && ghostAlpha > 0;
       // Multiplex scan artifact: each segment is addressed, not painted.
       const duty = .90 + .10 * Math.sin(now * 112 + i * .61);
       ctx.save();
@@ -109,6 +181,12 @@ export function drawCombatPips({
         ctx.globalAlpha = alpha * duty;
         ctx.shadowColor = 'rgba(148,224,164,1)';
         ctx.shadowBlur = 7 * dpr;
+      } else if (bucketPulse) {
+        const micro = .62 + .38 * Math.sin(now * 38 + i);
+        ctx.fillStyle = gauge.delta > 0 ? 'rgba(148,224,164,.98)' : 'rgba(255,244,230,1)';
+        ctx.globalAlpha = alpha * ghostAlpha * micro;
+        ctx.shadowColor = gauge.delta > 0 ? 'rgba(148,224,164,1)' : 'rgba(255,220,180,1)';
+        ctx.shadowBlur = 8 * dpr;
       } else if (lit) {
         ctx.fillStyle = phosphor;
         ctx.globalAlpha = alpha * pulse * duty;
@@ -1254,6 +1332,7 @@ export function drawFirstPersonHands(toolId, {
   resolveProgress = 0,
   reducedMotion = false,
   hurt = 0,
+  brace = false,
 } = {}) {
   const severity = injury === 'critical' ? 3 : injury === 'wounded' ? 2 : injury === 'hurt' ? 1 : 0;
   const flinch = clamp(hurt, 0, 1);
@@ -1263,14 +1342,14 @@ export function drawFirstPersonHands(toolId, {
   const palette = HAND_PALETTE[snr] || HAND_PALETTE.signal;
 
   const leftCells = left && {
-    x: left.x + tremor + punch * .8 - flinch * .6,
-    y: left.y + bob * .22 - punch * 1.4 + flinch * 1.3,
+    x: left.x + tremor + punch * .8 - flinch * .6 + (brace ? left.w * .08 : 0),
+    y: left.y + bob * .22 - punch * 1.4 + flinch * 1.3 + (brace ? .45 : 0),
     w: left.w,
     h: left.h,
   };
   const rightCells = right && {
-    x: right.x + tremor - punch * .8 + flinch * .6,
-    y: right.y + Math.sin(now * 1.4 + .9) * (reducedMotion ? 0 : .16) - punch * 1.4 + flinch * 1.3,
+    x: right.x + tremor - punch * .8 + flinch * .6 - (brace ? right.w * .08 : 0),
+    y: right.y + Math.sin(now * 1.4 + .9) * (reducedMotion ? 0 : .16) - punch * 1.4 + flinch * 1.3 + (brace ? .45 : 0),
     w: right.w,
     h: right.h,
   };

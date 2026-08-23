@@ -5,7 +5,8 @@
 
 import * as scenes from './scenes.js';
 import * as AUDIO from '../audio/story-audio.js';
-import { uiScrim, uiSize } from '../render/ui.js';
+import { uiFill, uiScrim, uiSize, uiStrokeRect, uiText, uiWrap } from '../render/ui.js';
+import { UI_COLOR } from '../render/palette.js';
 import { drawMachinePanel } from '../render/presentation.js';
 import { buildBagModel, bagEntry, bagSection, EMPTY_JOB, normalizeBagSectionId } from './bag-model.js';
 import {
@@ -18,11 +19,16 @@ import {
 import { initialMapNav, reduceMapNav, selectedMapSpace } from './map-navigation.js';
 import { resolveMapAction } from './map-actions.js';
 import { bagLayout, bagPanelBounds } from '../render/bag-layout.js';
-import { bagGuideRows, bagListCapacity, drawBagView } from '../render/bag-view.js';
-import { drawSkillsSection } from '../render/bag-skills.js';
-import { learnCombatTechnique, normalizeCombatBuild } from './combat-progression.js';
+import { bagGuideRows, bagInventoryGeometry, bagListCapacity, drawBagView } from '../render/bag-view.js';
+import { drawSkillsSection, skillsTreeLayout } from '../render/bag-skills.js';
+import { learnCombatTechnique, normalizeCombatBuild, TECHNIQUE_DEFS } from './combat-progression.js';
+import { createHitRegions } from '../render/hit-regions.js';
+import { makeEmbeddedDocumentReader } from './document.js';
+import { sheetDialogueFor, sheetInsightComplete } from './bag-sheets.js';
+import { mapLayoutFromBag } from '../render/map-layout.js';
 
 let rememberedNav = null;
+let rememberedSheetPages = {};
 
 function actionContext(entry, action) {
   return { entryId: entry?.id, actionId: action?.id, confirm: action?.confirm || null };
@@ -41,6 +47,7 @@ export function makeBagScene({
   loadout = null,
   getLoadout = null,
   moveEquipment = null,
+  assignEquipmentSlot = null,
   reorderEquipment = null,
   getJob = null,
   getMap = null,
@@ -58,8 +65,13 @@ export function makeBagScene({
   onApplySkills = null,
   readDocument = () => {},
   markRoom = () => false,
+  markSpace = null,
   onItemAction = () => false,
+  getItemInspection = () => null,
+  getSheetInsights = () => null,
+  onSheetInsight = () => false,
   onClose = () => {},
+  onClearInput = () => {},
   forceLayout = null,
   debug = null,
   memory = null,
@@ -75,6 +87,7 @@ export function makeBagScene({
   const guideSource = typeof getGuide === 'function' ? getGuide : () => guide;
   const buildSource = typeof getBuild === 'function' ? getBuild : () => null;
   const rigSource = typeof hasRig === 'function' ? hasRig : () => false;
+  const sheetInsightSource=typeof getSheetInsights==='function'?getSheetInsights:()=>null;
 
   const settledBuild = normalizeCombatBuild(buildSource());
   let workingBuild = settledBuild;
@@ -82,7 +95,7 @@ export function makeBagScene({
   let skillsApplied = false;
   let model = buildBagModel({
     equipment: equipmentSource(), job: jobSource(), map: mapSource(), loadout: loadoutSource(),
-    build: workingBuild, settledBuild, hasRig: rigSource(),
+    build: workingBuild, settledBuild, hasRig: rigSource(), sheetInsights:sheetInsightSource(),
   });
   let nav = (memory || rememberedNav) ? repairBagSelection(memory || rememberedNav, model) : initialBagState(model, focus || {});
   let mapNav = initialMapNav({ model: model.map, preferredRoomId: focus?.entryId?.replace(/^room:/, '') || null });
@@ -90,6 +103,9 @@ export function makeBagScene({
   let t = 0;
   let notice = '';
   let noticeUntil = 0;
+  const hits=createHitRegions();
+  const routes=[{type:'root'}];
+  const sheetPages={...rememberedSheetPages};
   let appliedFocusKey = '';
   let guideNudge = 99;   // seconds since the lock last refused a press
   const motion = { openedAt: 0, sectionChangedAt: 0, selectionChangedAt: 0, actionAt: 0 };
@@ -118,6 +134,7 @@ export function makeBagScene({
       mode: 'browse',
       pendingAction: null,
     };
+    rememberedSheetPages={...sheetPages};
     onRemember(rememberedNav);
   }
 
@@ -197,7 +214,7 @@ export function makeBagScene({
   function refresh() {
     model = buildBagModel({
       equipment: equipmentSource(), job: jobSource(), map: mapSource(), loadout: loadoutSource(),
-      build: workingBuild, settledBuild, hasRig: rigSource(),
+      build: workingBuild, settledBuild, hasRig: rigSource(), sheetInsights:sheetInsightSource(),
     });
     nav = reduceBagNav(nav, { type: 'MODEL_REFRESH' }, model);
     mapNav = reduceMapNav(mapNav, { type: 'MODEL_REFRESH' }, model.map);
@@ -212,7 +229,68 @@ export function makeBagScene({
     // bag handle it; a blind pop() removes the overlay and leaves the player
     // trapped in the case.
     const removed = scenes.remove(scene);
-    if (removed) onClose();
+    if (removed) {
+      onClearInput();
+      onClose();
+    }
+  }
+
+  function currentRoute(){return routes[routes.length-1]||routes[0];}
+  function syncActionPresentation(){
+    const route=currentRoute();
+    nav={...nav,actionFocus:route?.type==='item-actions',actionIndex:route?.type==='item-actions'?route.index||0:0};
+  }
+  function pushRoute(route){
+    if(!route)return;
+    routes.push(route);
+    syncActionPresentation();
+    motion.actionAt=t;
+  }
+  function popRoute(){
+    if(routes.length<=1)return false;
+    const route=routes.pop();
+    route.reader?.exit?.();
+    syncActionPresentation();
+    AUDIO.menuMove?.();
+    return true;
+  }
+
+  function openImportantSheetDialogue(doc,{review=false}={}){
+    const tree=sheetDialogueFor(doc?.id);
+    if(!tree)return false;
+    pushRoute({type:'sheet-dialog',document:doc,tree,index:0,answer:null,review:!!review});
+    return true;
+  }
+
+  function finishSheetReader(route){
+    const top=currentRoute();
+    if(top===route)routes.pop();
+    syncActionPresentation();
+    const doc=route.document;
+    const tree=sheetDialogueFor(doc?.id);
+    if(tree&&!sheetInsightComplete(sheetInsightSource(),doc.id))openImportantSheetDialogue(doc);
+  }
+
+  function openSheet(doc){
+    if(!doc)return false;
+    // Progression observes the inspection immediately, exactly as it did when
+    // the old document scene was pushed. Presentation now stays inside the bag.
+    readDocument(doc);
+    const route={type:'sheet-reader',document:doc,reader:null};
+    route.reader=makeEmbeddedDocumentReader(doc,{
+      initialPage:sheetPages[doc.id]||0,
+      onSceneTurn:({page})=>{sheetPages[doc.id]=page;remember();},
+      onSceneClose:(_closed,{page}={})=>{sheetPages[doc.id]=Number(page)||0;remember();finishSheetReader(route);},
+    });
+    pushRoute(route);
+    route.reader.enter?.();
+    return true;
+  }
+
+  function openItemInspection(entry){
+    if(!entry)return false;
+    pushRoute({type:'item-inspect',entryId:entry.id,tree:getItemInspection(entry.sourceId)||null,page:0});
+    return true;
   }
 
   function applyChosenSkills() {
@@ -223,6 +301,7 @@ export function makeBagScene({
   }
 
   function setSection(sectionId) {
+    if(routes.length>1){routes.splice(1);syncActionPresentation();}
     const normalized = normalizeBagSectionId(sectionId);
     const before = nav.sectionId;
     nav = reduceBagNav(nav, { type: 'SELECT_SECTION', sectionId: normalized }, model);
@@ -377,33 +456,68 @@ export function makeBagScene({
     }
   }
 
-  function execute(entry, actionId) {
+  function removePendingTechnique(id){
+    if(!chosenTechniqueIds.includes(id))return false;
+    const remove=new Set([id]);
+    let changed=true;
+    while(changed){
+      changed=false;
+      for(const definition of TECHNIQUE_DEFS){
+        if(definition.requires&&remove.has(definition.requires)&&chosenTechniqueIds.includes(definition.id)&&!remove.has(definition.id)){
+          remove.add(definition.id);changed=true;
+        }
+      }
+    }
+    workingBuild=normalizeCombatBuild({...workingBuild,techniques:workingBuild.techniques.filter((technique)=>!remove.has(technique))});
+    chosenTechniqueIds=chosenTechniqueIds.filter((technique)=>!remove.has(technique));
+    notice=`${entryLabelForTechnique(id)} UNDONE`;
+    noticeUntil=t+2.2;
+    return true;
+  }
+
+  function entryLabelForTechnique(id){
+    return model.sections.find((section)=>section.id==='skills')?.entries.find((entry)=>entry.techniqueId===id)?.label||'CHOICE';
+  }
+
+  function actionFor(entry,actionId){
+    return entry?.actionList?.find((action)=>action.id===actionId)
+      || [entry?.actions?.primary,entry?.actions?.secondary,entry?.actions?.tertiary].find((action)=>action?.id===actionId)
+      || null;
+  }
+
+  function execute(entry, actionId, {confirmed=false}={}) {
     if (!entry || !actionId) return false;
+    const descriptor=actionFor(entry,actionId);
+    if(descriptor?.enabled===false){notice=descriptor.reason||'UNAVAILABLE';noticeUntil=t+2.4;AUDIO.menuMove?.();return false;}
+    if(descriptor?.confirm&&!confirmed){pushRoute({type:'confirm',entryId:entry.id,actionId,descriptor});AUDIO.menuConfirm?.();return true;}
     let ok = false;
 
     if (nav.sectionId === 'map') {
       const selected = selectedMapSpace(mapNav, model.map);
-      ok = resolveMapAction(selected, actionId, { readDocument, markRoom });
+      if(actionId==='read-attached')ok=selected?.objective?.notes?.[0]?openSheet(selected.objective.notes[0]):false;
+      else ok = resolveMapAction(selected, actionId, { readDocument:openSheet, markRoom, markSpace:markSpace||null });
     } else if (entry.kind === 'file' && actionId === 'read') {
-      readDocument(entry.source); ok = true;
+      ok=openSheet(entry.source);
+    } else if(entry.kind==='file'&&actionId==='review-insight'){
+      ok=openImportantSheetDialogue(entry.source,{review:true});
     } else if (entry.kind === 'file' && (actionId === 'mark-room' || actionId === 'unmark-room')) {
-      ok = entry.roomId ? markRoom(entry.roomId) : false;
+      const selected=model.map?.spaces?.find((space)=>space.roomId===entry.roomId)||null;
+      ok=selected&&typeof markSpace==='function'?!!markSpace(selected):(entry.roomId ? markRoom(entry.roomId) : false);
     } else if (entry.kind === 'room' && (actionId === 'mark' || actionId === 'unmark')) {
-      ok = markRoom(entry.roomId);
+      const selected=selectedMapSpace(mapNav,model.map);
+      ok=selected&&typeof markSpace==='function'?!!markSpace(selected):markRoom(entry.roomId);
     } else if (entry.kind === 'room' && actionId === 'read-attached') {
-      if (entry.attached) { readDocument(entry.attached); ok = true; }
-    } else if (entry.kind === 'gear' && (actionId === 'move-top' || actionId === 'move-storage')) {
-      const result = typeof moveEquipment === 'function'
-        ? moveEquipment(entry.sourceId, actionId === 'move-top' ? 'top' : 'storage')
-        : { changed: false, reason: 'unavailable' };
-      ok = !!result?.changed;
-      if (!ok) {
-        notice = result?.reason === 'top-full'
-          ? `TOP COMPARTMENT FULL · ${model.loadout.capacity}/${model.loadout.capacity} · MOVE ONE TO STORAGE FIRST`
-          : 'LOADOUT UNCHANGED';
-        noticeUntil = t + 2.4;
-        AUDIO.menuMove?.();
-      }
+      if (entry.attached) ok=openSheet(entry.attached);
+    } else if(entry.kind==='gear'&&actionId==='set-slot'){
+      pushRoute({type:'slot-picker',entryId:entry.id,index:Math.max(0,entry.topIndex)});ok=true;
+    } else if(entry.kind==='gear'&&(actionId==='unset-slot'||actionId==='move-storage')){
+      const result=typeof moveEquipment==='function'?moveEquipment(entry.sourceId,'storage'):{changed:false,reason:'unavailable'};
+      ok=!!result?.changed;
+      if(!ok){notice='READY SLOT UNCHANGED';noticeUntil=t+2.0;}
+    } else if(entry.kind==='gear'&&actionId==='inspect-item'){
+      ok=openItemInspection(entry);
+    } else if (entry.kind === 'gear' && actionId === 'move-top') {
+      pushRoute({type:'slot-picker',entryId:entry.id,index:0});ok=true;
     } else if (entry.kind === 'skill' && actionId === 'fit-skill') {
       const result = learnCombatTechnique(workingBuild, entry.techniqueId, { hasRig: rigSource() });
       ok = !!result.changed;
@@ -417,41 +531,40 @@ export function makeBagScene({
         noticeUntil = t + 2.6;
         AUDIO.menuMove?.();
       }
+    } else if(entry.kind==='skill'&&actionId==='undo-skill'){
+      ok=removePendingTechnique(entry.techniqueId);
     } else if (entry.kind === 'gear' && actionId === 'reorder-up') {
-      const result = typeof reorderEquipment === 'function'
-        ? reorderEquipment(entry.sourceId, 'up')
-        : { changed: false, reason: 'unavailable' };
+      const result = typeof reorderEquipment === 'function' ? reorderEquipment(entry.sourceId, 'up') : { changed: false, reason: 'unavailable' };
       ok = !!result?.changed;
       if (!ok) { notice = 'TRAY ORDER UNCHANGED'; noticeUntil = t + 2.0; AUDIO.menuMove?.(); }
-    } else if (entry.kind === 'gear' && entry.actions?.primary?.id === actionId) {
-      const action = entry.actions.primary;
-      if (action.closeBefore) close();
-      const result = onItemAction({
-        itemId: entry.sourceId,
-        entryId: entry.id,
-        actionId: action.id,
-        mode: action.mode,
-      });
-      ok = result !== false && result?.handled !== false;
-      // Compatibility for isolated presentation fixtures that still pass the
-      // pre-registry callback shape. The live inventory never takes this path.
-      if (!ok && typeof entry.source?.action === 'function') {
-        entry.source.action();
-        ok = true;
-      }
+    } else if (entry.kind === 'gear' && (descriptor||entry.actions?.primary)) {
+      const action=descriptor||entry.actions.primary;
+      if(action.exitPolicy==='close'||action.closeBefore)close();
+      const result=onItemAction({itemId:entry.sourceId,entryId:entry.id,actionId:action.id,mode:action.mode||action.verb});
+      ok=result!==false&&result?.handled!==false;
+      if(!ok&&typeof entry.source?.action==='function'){entry.source.action();ok=true;}
     }
 
     if (ok) {
       motion.actionAt = t;
       AUDIO.menuConfirm();
-      // Callbacks such as radio/coffee may have removed this scene already.
-      if (scenes.top()?.id === 'bag') refresh();
+      if(descriptor?.exitPolicy!=='close')refresh();
     }
     return ok;
   }
 
   function activatePrimary() {
     const entry = currentBagEntry(nav, model);
+    if(nav.sectionId==='kit'&&entry?.kind==='gear'){
+      pushRoute({type:'item-actions',entryId:entry.id,index:0});
+      AUDIO.menuConfirm?.();
+      return;
+    }
+    if(nav.sectionId==='map'){
+      const selected=selectedMapSpace(mapNav,model.map);
+      if(selected?.objective?.notes?.[0])openSheet(selected.objective.notes[0]);
+      return;
+    }
     const action = entry?.actions?.primary;
     if (!action) return;
     if (action.destructive) {
@@ -463,6 +576,14 @@ export function makeBagScene({
   }
 
   function activateSecondary() {
+    if(nav.sectionId==='map'){
+      const selected=selectedMapSpace(mapNav,model.map);
+      if(!selected||selected.waypointable===false)return;
+      const actionId=selected.waypoint?'clear-waypoint':'mark-waypoint';
+      const entry=currentBagEntry(nav,model)||{id:`room:${selected.roomId||selected.id}`,kind:'room',roomId:selected.roomId,actionList:[]};
+      execute(entry,actionId);
+      return;
+    }
     const entry = currentBagEntry(nav, model);
     const action = entry?.actions?.secondary;
     if (action) execute(entry, action.id);
@@ -475,17 +596,239 @@ export function makeBagScene({
   }
 
   function confirmPending() {
-    const pending = nav.pendingAction;
-    if (!pending) return;
+    const pending=currentRoute();
+    if(pending?.type!=='confirm')return;
+    routes.pop();syncActionPresentation();
     const entry = bagEntry(model, nav.sectionId, pending.entryId);
-    nav = reduceBagNav(nav, { type: 'CANCEL' }, model);
-    execute(entry, pending.actionId);
+    execute(entry, pending.actionId,{confirmed:true});
+  }
+
+  const confirmInput=(e)=>e.key==='Enter'||e.code==='Enter'||e.key===' '||e.code==='Space'||e.controllerAction==='confirm';
+  const backInput=(e)=>e.key==='Escape'||e.code==='Escape'||e.controllerAction==='back'||e.controllerAction==='menu';
+  const bagCloseInput=(e)=>String(e.key||'').toLowerCase()==='b'||e.code==='KeyB'||e.controllerAction==='bag';
+  const upInput=(e)=>e.key==='ArrowUp'||String(e.key||'').toLowerCase()==='w'||e.code==='KeyW';
+  const downInput=(e)=>e.key==='ArrowDown'||String(e.key||'').toLowerCase()==='s'||e.code==='KeyS';
+
+  function handleRouteKey(e){
+    const route=currentRoute();
+    if(route.type==='root')return false;
+    if(route.type==='sheet-reader'){
+      if(backInput(e)){route.reader.key?.(e);return true;}
+      route.reader.key?.(e);return true;
+    }
+    if(route.type==='confirm'){
+      if(confirmInput(e)){confirmPending();return true;}
+      if(backInput(e)){popRoute();return true;}
+      return true;
+    }
+    if(route.type==='item-actions'){
+      const entry=bagEntry(model,'kit',route.entryId);
+      const actions=entry?.actionList||[];
+      if(upInput(e)||downInput(e)){
+        route.index=(route.index+(downInput(e)?1:-1)+Math.max(1,actions.length))%Math.max(1,actions.length);
+        syncActionPresentation();AUDIO.menuMove?.();return true;
+      }
+      if(confirmInput(e)){
+        const action=actions[route.index||0];
+        if(action?.enabled===false){notice=action.reason;noticeUntil=t+2.4;AUDIO.menuMove?.();return true;}
+        if(action){routes.pop();syncActionPresentation();execute(entry,action.id);}
+        return true;
+      }
+      if(backInput(e)||e.key==='ArrowLeft'){popRoute();return true;}
+      return true;
+    }
+    if(route.type==='slot-picker'){
+      const capacity=Math.max(1,model.loadout?.capacity||4);
+      if(upInput(e)||e.key==='ArrowLeft'){route.index=(route.index-1+capacity)%capacity;AUDIO.menuMove?.();return true;}
+      if(downInput(e)||e.key==='ArrowRight'){route.index=(route.index+1)%capacity;AUDIO.menuMove?.();return true;}
+      if(confirmInput(e)){
+        const entry=bagEntry(model,'kit',route.entryId);
+        const result=typeof assignEquipmentSlot==='function'?assignEquipmentSlot(entry?.sourceId,route.index):{changed:false,reason:'unavailable'};
+        if(result?.changed){popRoute();refresh();AUDIO.menuConfirm?.();}
+        else{notice=result?.reason==='already-in-slot'?'ALREADY SET IN THAT SLOT':'READY SLOT UNCHANGED';noticeUntil=t+2.2;AUDIO.menuMove?.();}
+        return true;
+      }
+      if(backInput(e)){popRoute();return true;}
+      return true;
+    }
+    if(route.type==='sheet-dialog'){
+      if(route.answer){
+        if(confirmInput(e)||backInput(e)){route.answer=null;AUDIO.menuMove?.();return true;}
+        return true;
+      }
+      const choices=route.tree?.choices||[];
+      if(upInput(e)||downInput(e)){
+        route.index=(route.index+(downInput(e)?1:-1)+Math.max(1,choices.length))%Math.max(1,choices.length);
+        AUDIO.menuMove?.();return true;
+      }
+      if(confirmInput(e)){
+        const choice=choices[route.index||0];
+        if(choice?.done){
+          if(!route.review)onSheetInsight(route.document?.id);
+          popRoute();refresh();AUDIO.menuConfirm?.();
+        }else if(choice){route.answer=choice;AUDIO.menuConfirm?.();}
+        return true;
+      }
+      if(backInput(e)){popRoute();return true;}
+      return true;
+    }
+    if(route.type==='item-inspect'){
+      if(backInput(e)||confirmInput(e)){popRoute();return true;}
+      return true;
+    }
+    if(backInput(e)){popRoute();return true;}
+    return true;
+  }
+
+  const fit=(value,width)=>{const s=String(value??'');const w=Math.max(1,Math.floor(width));return s.length<=w?s:w<=1?'…':`${s.slice(0,w-1)}…`;};
+  function contentRegion(layout){
+    return layout.mode==='wide'
+      ? {x:layout.list.x,y:layout.list.y,w:(layout.detail.x+layout.detail.w)-layout.list.x,h:layout.list.h}
+      : {x:layout.list.x,y:layout.detail.y,w:layout.list.w,h:(layout.list.y+layout.list.h)-layout.detail.y};
+  }
+  function panel(rect,{danger=false}={}){
+    uiFill(rect.x,rect.y,rect.w,rect.h,danger?'rgba(70,22,12,.28)':'rgba(255,255,255,.025)');
+    uiStrokeRect(rect.x,rect.y,rect.w,rect.h,danger?UI_COLOR.danger:UI_COLOR.frame,danger ? .65 : .35,1);
+  }
+  function wrapped(textValue,x,y,w,maxRows,cls='ui-secondary',alpha=.76){
+    const lines=uiWrap(String(textValue||''),Math.max(8,w)).slice(0,Math.max(0,maxRows));
+    lines.forEach((line,index)=>uiText(x,y+index,fit(line,w),cls,alpha));
+    return lines.length;
+  }
+
+  function drawSubview(route,rect){
+    panel(rect,{danger:route.type==='confirm'});
+    const x=rect.x+2,y=rect.y+1,w=Math.max(8,rect.w-4),h=Math.max(4,rect.h-2);
+    if(route.type==='confirm'){
+      const entry=bagEntry(model,nav.sectionId,route.entryId);
+      uiText(x,y,fit(route.descriptor?.confirm?.title||`CONFIRM ${entry?.title||'ACTION'}?`,w),'ui-danger',1);
+      wrapped(route.descriptor?.confirm?.body||'THIS CANNOT BE UNDONE.',x,y+2,w,Math.max(1,h-5),'ui-primary',.85);
+      uiText(x,y+h-2,'[ENTER] CONFIRM','ui-danger',.95);
+      uiText(x+Math.max(18,Math.floor(w*.45)),y+h-2,'[ESC] CANCEL','ui-secondary',.75);
+      return;
+    }
+    if(route.type==='slot-picker'){
+      const entry=bagEntry(model,'kit',route.entryId),slots=Array.from({length:model.loadout.capacity},(_,index)=>model.loadout.top[index]||null);
+      uiText(x,y,`SET ${entry?.title||'ITEM'} · CHOOSE A CONTACT SLOT`,'ui-amber',.95);
+      uiText(x,y+1,'AN OCCUPIED SLOT RETURNS ITS OLD ITEM TO BAG STORAGE.','ui-secondary',.68);
+      const rowY=y+3,rowW=Math.max(10,Math.floor((w-Math.max(0,slots.length-1))/slots.length));
+      slots.forEach((itemId,index)=>{
+        const bx=x+index*(rowW+1),on=index===(route.index||0);
+        uiFill(bx,rowY,rowW,4,on?'rgba(216,138,59,.18)':'rgba(255,255,255,.025)');
+        uiStrokeRect(bx,rowY,rowW,4,on?UI_COLOR.amber:UI_COLOR.frame,on ? .9 : .3,on?1.5:1);
+        uiText(bx+1,rowY,`[${index+1}]`,on?'ui-amber':'ui-blue',on?1:.65);
+        const occupant=model.sections.find((section)=>section.id==='kit')?.entries.find((candidate)=>candidate.sourceId===itemId);
+        uiText(bx+1,rowY+2,fit(occupant?.title||'EMPTY',rowW-2),occupant?'ui-primary':'ui-secondary',on ? .9 : .55);
+      });
+      uiText(x,y+h-2,'[← / →] SLOT   [ENTER] SET   [ESC] BACK   [B] CLOSE BAG','ui-label',.75);
+      return;
+    }
+    if(route.type==='item-inspect'){
+      const entry=bagEntry(model,'kit',route.entryId);
+      uiText(x,y,fit(`INVENTORY / ${entry?.title||'ITEM'}`,w),'ui-amber',1);
+      let cy=y+2;
+      cy+=wrapped(entry?.description||'',x,cy,w,3,'ui-primary',.82)+1;
+      for(const [label,value] of entry?.facts||[]){
+        if(cy>=y+h-3)break;
+        uiText(x,cy,fit(label,14),'ui-label',.62);uiText(x+16,cy,fit(value,w-16),'ui-primary',.78);cy++;
+      }
+      const lines=route.tree?.start?.lines||[];
+      if(lines.length&&cy<y+h-2){cy++;for(const line of lines){if(cy>=y+h-2)break;cy+=wrapped(line?.text||line,x,cy,w,2,line?.who==='you'?'ui-amber':'ui-secondary',.78);}}
+      uiText(x,y+h-1,'[ESC / ENTER] BACK   [B] CLOSE BAG','ui-label',.72);
+      return;
+    }
+    if(route.type==='sheet-dialog'){
+      uiText(x,y,fit(`SHEETS / IMPORTANT / ${route.tree?.title||route.document?.title||''}`,w),'ui-amber',1);
+      if(route.answer){
+        uiText(x,y+2,route.answer.label,'ui-blue',.86);
+        wrapped(route.answer.text,x,y+4,w,Math.max(1,h-7),'ui-primary',.9);
+        uiText(x,y+h-1,'[ENTER / ESC] QUESTIONS   [B] CLOSE BAG','ui-label',.72);
+        return;
+      }
+      uiText(x,y+2,route.tree?.prompt||'WHAT MATTERS HERE?','ui-primary',.9);
+      (route.tree?.choices||[]).forEach((choice,index)=>{
+        const row=y+4+index,on=index===(route.index||0);
+        uiText(x,row,on?'▸':' ',on?'ui-amber':'ui-secondary',on?1:.5);
+        uiText(x+2,row,choice.label,on?'ui-amber':'ui-primary',on?1:.76);
+      });
+      uiText(x,y+h-1,'[↑ / ↓] CHOOSE   [ENTER] OPEN   [ESC] BACK   [B] CLOSE BAG','ui-label',.72);
+    }
+  }
+
+  function selectEntry(sectionId,entryId){
+    nav=reduceBagNav(nav,{type:'SELECT_ENTRY',sectionId,entryId},model);
+    motion.selectionChangedAt=t;remember();
+  }
+
+  function addHit(region){hits.add(region);}
+  function registerCommonHits(outer,layout){
+    addHit({id:'bag:close',kind:'bag-close',x:outer.x+outer.w-18,y:outer.y,w:18,h:2,label:'CLOSE BAG',onClick:close});
+    const sections=model.sections||[],compact=layout.mode==='compact',gap=compact?1:2;
+    const labels=sections.map((section)=>{
+      const short=section.id==='kit'?'I':section.id==='map'?'M':section.id==='skills'?'K':'S';
+      const core=compact?`${short} ${section.countLabel}`:`${section.label} ${section.countLabel}`;
+      return section.id===nav.sectionId?`[${compact?'':' '}${core}${compact?'':' '}]`:core;
+    });
+    const total=labels.reduce((sum,label)=>sum+label.length,0)+gap*Math.max(0,labels.length-1);
+    let tabX=layout.tabs.x+Math.max(0,Math.floor((layout.tabs.w-total)/2));
+    sections.forEach((section,index)=>{
+      const width=Math.min(labels[index].length,Math.max(1,layout.tabs.x+layout.tabs.w-tabX));
+      addHit({id:`bag:tab:${section.id}`,kind:'bag-tab',x:tabX,y:layout.tabs.y,w:width,h:2,label:section.label,onClick:()=>setSection(section.id)});
+      tabX+=labels[index].length+gap;
+    });
+  }
+
+  function registerRootHits(layout){
+    if(nav.sectionId==='kit'){
+      const geo=bagInventoryGeometry(model,nav,layout),entries=model.sections.find((section)=>section.id==='kit')?.entries||[];
+      const cap=Math.max(1,Math.floor((geo.list.h-1)/2)),selected=bagEntry(model,'kit',nav.selected?.kit),at=Math.max(0,entries.findIndex((entry)=>entry.id===selected?.id));
+      const scroll=Math.max(0,Math.min(at>=cap?at-cap+1:0,Math.max(0,entries.length-cap)));
+      entries.slice(scroll,scroll+cap).forEach((entry,index)=>addHit({id:`bag:item:${entry.id}`,kind:'bag-item',x:geo.list.x,y:geo.list.y+1+index*2,w:geo.list.w,h:2,label:entry.title,onHover:()=>selectEntry('kit',entry.id),onClick:()=>{selectEntry('kit',entry.id);pushRoute({type:'item-actions',entryId:entry.id,index:0});}}));
+      const detailRows=Math.min(3,Math.max(1,geo.detail.h-8)),start=geo.detail.y+2+detailRows+1;
+      (selected?.actionList||[]).forEach((action,index)=>addHit({id:`bag:action:${action.id}`,kind:'bag-action',x:geo.detail.x+1,y:start+index,w:Math.max(1,geo.detail.w-2),h:1,label:action.label,disabled:!action.enabled,onHover:()=>{const route=currentRoute();if(route.type==='item-actions'){route.index=index;syncActionPresentation();}},onClick:()=>{
+        if(!action.enabled){notice=action.reason;noticeUntil=t+2.2;return;}
+        if(currentRoute().type==='item-actions'){routes.pop();syncActionPresentation();}
+        execute(selected,action.id);
+      }}));
+    }else if(nav.sectionId==='sheets'){
+      const section=model.sections.find((candidate)=>candidate.id==='sheets'),cap=bagListCapacity(layout,'sheets'),scroll=nav.scroll?.sheets||0;
+      (section?.entries||[]).slice(scroll,scroll+cap).forEach((entry,index)=>addHit({id:`bag:sheet:${entry.id}`,kind:'bag-sheet',x:layout.list.x,y:layout.list.y+2+index*2,w:layout.list.w,h:1,label:entry.title,onHover:()=>selectEntry('sheets',entry.id),onClick:()=>{selectEntry('sheets',entry.id);openSheet(entry.source);}}));
+    }else if(nav.sectionId==='map'){
+      const mapLayout=mapLayoutFromBag(layout),floors=model.map?.floors||[];
+      let floorX=mapLayout.floorRail.x;
+      floors.forEach((floor)=>{
+        const width=`[${floor.shortLabel||floor.label}]`.length;
+        addHit({id:`bag:floor:${floor.id}`,kind:'map-floor',x:floorX,y:mapLayout.floorRail.y,w:width,h:1,label:floor.label,onClick:()=>scene.selectFloor(floor.id)});
+        floorX+=width+1;
+      });
+      const floorSpaces=(model.map?.spaces||[]).filter((space)=>space.floorId===mapNav.floorId&&space.selectable!==false);
+      const listRows=Math.max(1,Math.min(floorSpaces.length,Math.floor(mapLayout.detail.h*.44)));
+      const selectedAt=Math.max(0,floorSpaces.findIndex((space)=>space.id===selectedMapSpace(mapNav,model.map)?.id));
+      const start=Math.max(0,Math.min(selectedAt-Math.floor(listRows/2),floorSpaces.length-listRows));
+      floorSpaces.slice(start,start+listRows).forEach((space,index)=>addHit({id:`bag:space:${space.id}`,kind:'map-space',x:mapLayout.detail.x,y:mapLayout.detail.y+1+index,w:mapLayout.detail.w,h:1,label:space.label,onHover:()=>{mapNav=reduceMapNav(mapNav,{type:'SELECT_SPACE',spaceId:space.id},model.map);remember();},onClick:()=>{mapNav=reduceMapNav(mapNav,{type:'SELECT_SPACE',spaceId:space.id},model.map);remember();}}));
+    }else if(nav.sectionId==='skills'){
+      const section=model.sections.find((candidate)=>candidate.id==='skills'),region=contentRegion(layout),tree=skillsTreeLayout({region,branches:section?.tree?.branches||[],maxTier:section?.tree?.maxTier||1});
+      (section?.tree?.branches||[]).forEach((branch,branchIndex)=>branch.entries.forEach((entry)=>addHit({id:`bag:skill:${entry.id}`,kind:'bag-skill',x:tree.columnX(branchIndex)+.5,y:tree.tileY(entry.tier),w:tree.tileW,h:Math.max(1,tree.tileH-.35),label:entry.label,onHover:()=>selectSkill(entry),onClick:()=>{selectSkill(entry);if(entry.actions?.primary)execute(entry,entry.actions.primary.id);}})));
+    }
+  }
+
+  function registerSubviewHits(route,layout){
+    const rect=contentRegion(layout),x=rect.x+2,y=rect.y+1,w=rect.w-4,h=rect.h-2;
+    if(route.type==='confirm'){
+      addHit({id:'bag:confirm',kind:'bag-confirm',x,y:y+h-3,w:16,h:2,label:'CONFIRM',onClick:confirmPending});
+      addHit({id:'bag:cancel',kind:'bag-cancel',x:x+18,y:y+h-3,w:16,h:2,label:'CANCEL',onClick:popRoute});
+    }else if(route.type==='slot-picker'){
+      const capacity=Math.max(1,model.loadout.capacity),rowW=Math.max(10,Math.floor((w-Math.max(0,capacity-1))/capacity));
+      for(let index=0;index<capacity;index++)addHit({id:`bag:slot:${index}`,kind:'bag-slot',x:x+index*(rowW+1),y:y+3,w:rowW,h:4,label:`SLOT ${index+1}`,onHover:()=>{route.index=index;},onClick:()=>{route.index=index;handleRouteKey({key:'Enter',code:'Enter'});}});
+    }else if(route.type==='sheet-dialog'&&!route.answer){
+      (route.tree?.choices||[]).forEach((choice,index)=>addHit({id:`bag:sheet-choice:${choice.id}`,kind:'sheet-choice',x,y:y+4+index,w,h:1,label:choice.label,onHover:()=>{route.index=index;},onClick:()=>{route.index=index;handleRouteKey({key:'Enter',code:'Enter'});}}));
+    }else addHit({id:'bag:subview-back',kind:'bag-back',x,y,w,h,label:'BACK',onClick:popRoute});
   }
 
   const scene = {
     id: 'bag',
     blocksInput: true,
-    blocksWorld: false,
+    blocksWorld: true,
     lensPreset: 'calm',
 
     enter() {
@@ -498,6 +841,7 @@ export function makeBagScene({
 
     update(dt) {
       t += dt;
+      currentRoute()?.reader?.update?.(dt);
       guideNudge += dt;
       if (notice && t >= noticeUntil) notice = '';
       pinGuide(activeGuide());
@@ -520,24 +864,19 @@ export function makeBagScene({
       return {
         model, nav, mapNav, selected: currentBagEntry(nav, model), mapSelected: selectedMapSpace(mapNav, model.map),
         chosenTechniqueIds: [...chosenTechniqueIds], workingBuild: structuredClone(workingBuild),
+        route:{...currentRoute(),reader:currentRoute()?.reader?.view?.()||null},hitRegions:hits.view(),sheetPages:{...sheetPages},
       };
     },
 
-    exit() { applyChosenSkills(); },
+    exit() { currentRoute()?.reader?.exit?.(); applyChosenSkills(); },
 
     key(e) {
       const raw = e.key || '';
       const k = raw.toLowerCase();
       const code = e.code || '';
-      const closeKey = raw === 'Escape' || code === 'Escape' || k === 'b' || code === 'KeyB';
-
-      if (nav.mode === 'confirm') {
-        if (raw === 'Enter' || code === 'Enter' || raw === ' ' || code === 'Space') { confirmPending(); return true; }
-        if (closeKey) { close(); return true; }
-        return true;
-      }
-
-      if (closeKey) { close(); return true; }
+      if (bagCloseInput(e)) { close(); return true; }
+      if(currentRoute().type!=='root')return handleRouteKey(e);
+      if (backInput(e)) { close(); return true; }
 
       // The lock. One control is live; the rest of the case answers with the
       // callout, not with a refusal he would have to listen to later.
@@ -553,11 +892,11 @@ export function makeBagScene({
         return true;
       }
 
-      if (raw === 'Tab') { e.preventDefault?.(); selectSection(e.shiftKey ? -1 : 1); return true; }
+      if (raw === 'Tab'||e.controllerAction==='tabNext'||e.controllerAction==='tabPrev') { e.preventDefault?.(); selectSection(e.shiftKey||e.controllerAction==='tabPrev' ? -1 : 1); return true; }
 
       if (raw === '1' || code === 'Digit1') { setSection('kit'); return true; }
       if (raw === '2' || code === 'Digit2') { setSection('map'); return true; }
-      if (raw === '3' || code === 'Digit3') { setSection('files'); return true; }
+      if (raw === '3' || code === 'Digit3') { setSection('sheets'); return true; }
       if (raw === '4' || code === 'Digit4') { setSection('skills'); return true; }
 
       if (nav.sectionId === 'skills') {
@@ -566,12 +905,11 @@ export function makeBagScene({
         if (raw === 'ArrowLeft' || k === 'a' || code === 'KeyA') { moveSkill(-1, 0); return true; }
         if (raw === 'ArrowRight' || k === 'd' || code === 'KeyD') { moveSkill(1, 0); return true; }
       } else if (nav.sectionId === 'kit') {
-        if (k === 't' || code === 'KeyT') { readyOrClearKitEntry('ready'); return true; }
+        if (k === 't' || code === 'KeyT') { execute(currentBagEntry(nav,model),'set-slot'); return true; }
         if (k === 'r' || code === 'KeyR') { readyOrClearKitEntry('clear'); return true; }
-        if (raw === 'ArrowUp' || k === 'w' || code === 'KeyW') { moveKitSpatial(0, -1); return true; }
-        if (raw === 'ArrowDown' || k === 's' || code === 'KeyS') { moveKitSpatial(0, 1); return true; }
-        if (raw === 'ArrowLeft' || k === 'a' || code === 'KeyA') { moveKitSpatial(-1, 0); return true; }
-        if (raw === 'ArrowRight' || k === 'd' || code === 'KeyD') { moveKitSpatial(1, 0); return true; }
+        if (raw === 'ArrowUp' || k === 'w' || code === 'KeyW') { moveList(-1); return true; }
+        if (raw === 'ArrowDown' || k === 's' || code === 'KeyS') { moveList(1); return true; }
+        if (raw === 'ArrowRight' || k === 'd' || code === 'KeyD') { activatePrimary(); return true; }
       } else if (nav.sectionId === 'map') {
         if (raw === '[' || code === 'BracketLeft') { changeFloor(-1); return true; }
         if (raw === ']' || code === 'BracketRight') { changeFloor(1); return true; }
@@ -588,8 +926,6 @@ export function makeBagScene({
         if (raw === 'ArrowLeft' || k === 'a' || code === 'KeyA') { moveMap({ x: -1, y: 0 }); return true; }
         if (raw === 'ArrowRight' || k === 'd' || code === 'KeyD') { moveMap({ x: 1, y: 0 }); return true; }
       } else {
-        if (raw === 'ArrowLeft' || raw === '[') { selectSection(-1); return true; }
-        if (raw === 'ArrowRight' || raw === ']') { selectSection(1); return true; }
         if (raw === 'ArrowUp' || k === 'w' || code === 'KeyW') { moveList(-1); return true; }
         if (raw === 'ArrowDown' || k === 's' || code === 'KeyS') { moveList(1); return true; }
       }
@@ -600,7 +936,25 @@ export function makeBagScene({
       return true;
     },
 
+    pointer(e){
+      if(e.type==='pointermove'){hits.handle(e,{click:false});return true;}
+      if(e.type==='pointerdown'){hits.handle(e);return true;}
+      return true;
+    },
+
     render() {
+      hits.reset();
+      const route=currentRoute();
+      if(route.type==='sheet-reader'){
+        const size=uiSize(),reader=route.reader.view?.()||{page:0,total:1};
+        addHit({id:'bag:sheet-close',kind:'bag-close',x:Math.max(0,size.cols-20),y:0,w:20,h:3,label:'CLOSE BAG',onClick:close});
+        addHit({id:'bag:sheet-back',kind:'bag-back',x:0,y:Math.max(0,size.rows-4),w:Math.max(8,Math.floor(size.cols*.25)),h:4,label:'BACK TO SHEETS',onClick:()=>route.reader.key?.({key:'Escape',code:'Escape'})});
+        if(reader.page>0)addHit({id:'bag:sheet-prev',kind:'sheet-page',x:Math.floor(size.cols*.25),y:Math.max(0,size.rows-4),w:Math.floor(size.cols*.25),h:4,label:'PREVIOUS PAGE',onClick:()=>route.reader.key?.({key:'ArrowLeft',code:'ArrowLeft'})});
+        if(reader.page<reader.total-1)addHit({id:'bag:sheet-next',kind:'sheet-page',x:Math.floor(size.cols*.5),y:Math.max(0,size.rows-4),w:Math.floor(size.cols*.5),h:4,label:'NEXT PAGE',onClick:()=>route.reader.key?.({key:'ArrowRight',code:'ArrowRight'})});
+        route.reader.render?.();
+        debug?.({ model, nav, mapNav, layout:null, selected: currentBagEntry(nav, model), route, hitRegions:hits.view(), t });
+        return;
+      }
       applyFocus(focusSource());
       const size = uiSize();
       const outer = bagPanelBounds(size);
@@ -620,18 +974,25 @@ export function makeBagScene({
         nav = ensureBagSelectionVisible(nav, model, bagListCapacity(layout, nav.sectionId));
       }
       const skills = nav.sectionId === 'skills';
+      const subview=!['root','item-actions'].includes(route.type);
       const liveHint = guided ? '' : (notice || (nav.sectionId === 'kit'
-        ? 'READY NOW WORKS DURING CONTACT · BAG STORAGE DOES NOT · [T] READY · [R] CLEAR'
+        ? 'ONE INVENTORY · NUMBERED READY SLOTS · SELECT AN ITEM FOR SET / USE / DROP / INSPECT'
         : skills
           ? 'CHOOSE RECORDER MODIFICATIONS · THEY TAKE EFFECT WHEN THE CASE CLOSES'
           : hintSource()));
       drawBagView({ model, nav, mapNav, layout, hint: liveHint, guide: guided, guideNudge, motion, now: t,
         // The tree owns the content area for its own section; the tabs, task line
         // and action rail around it stay exactly as they are everywhere else.
-        drawContent: skills
+        drawContent: subview
+          ? (region)=>drawSubview(route,region)
+          : skills
           ? (region) => drawSkillsSection({ model, layout: region, selectedId: selectedSkill()?.id || null, now: t })
-          : null });
-      debug?.({ model, nav, mapNav, layout, selected: currentBagEntry(nav, model), t });
+          : null,
+        overrideActions:subview?[['ESC','BACK'],['B','CLOSE BAG']]:null });
+      uiText(Math.max(outer.x+2,outer.x+outer.w-18),outer.y,'[B] CLOSE BAG','ui-amber',.9);
+      registerCommonHits(outer,layout);
+      if(subview)registerSubviewHits(route,layout);else registerRootHits(layout);
+      debug?.({ model, nav, mapNav, layout, selected: currentBagEntry(nav, model), route, hitRegions:hits.view(), t });
     },
   };
 

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   COMBAT_TOP_CAPACITY,
+  assignCombatGearSlot,
   availableBattleTools,
   freshCombatLoadout,
   moveCombatGear,
@@ -43,6 +44,13 @@ test('reordering the tray moves gear and holds at the edges', () => {
   assert.deepEqual(reorderCombatGear(start, 'light', 'up'), { loadout: start, changed: false, reason: 'at-edge' });
   assert.equal(reorderCombatGear(start, 'coffee', 'up').reason, 'not-in-top');
   assert.equal(reorderCombatGear(start, 'light', 'sideways').reason, 'invalid-direction');
+});
+
+test('explicit slot assignment replaces storage gear and swaps ready gear',()=>{
+  const start=normalizeCombatLoadout({top:['light','recorder','radio']});
+  assert.deepEqual(assignCombatGearSlot(start,'coffee',1).loadout.top,['light','coffee','radio']);
+  assert.deepEqual(assignCombatGearSlot(start,'radio',0).loadout.top,['radio','recorder','light']);
+  assert.equal(assignCombatGearSlot(start,'map',0).reason,'not-battle-gear');
 });
 
 test('the tray order is the in-fight tool rail order', () => {

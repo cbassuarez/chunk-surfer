@@ -324,21 +324,10 @@ export function trainingCombatBattle() {
     //
     // The count and the drift that get him here are the daydream beat, which runs
     // during the take itself (see beginDaydream in main.js). By the time this
-    // opens he has already said the demon part out loud — and the tape was
-    // rolling, because the recorder does not stop until the ripple.
-    //
-    // So the opening no longer measures the thing. It used to say "nine feet of
-    // it, in the deep end, exactly as daft as he described", but the joke is
-    // drawn from four DAYDREAM_SILLY variants and only two of them mention
-    // either — three runs in four, the game asserted he had described something
-    // he had not. What is constant across all four is the shape of it: he said a
-    // thing out loud onto his own tape, and the building can now quote him. That
-    // is the rule the whole night runs on (see signal-role.js: the Surfer may
-    // only ever repeat), and this is the first time it is demonstrated, on the
-    // cheapest possible stakes, before anything is at risk.
+    // opens he has already said the demon part out loud.
     intro: [
-      { who: 'direction', text: 'And there it is. Not a shape in the dark — the shape you just described, out loud, to nobody, with the tape running.' },
-      { who: 'you', text: 'That was a joke. I was passing the time. You do not get to have that one.' },
+      { who: 'direction', text: 'And there it is. Nine feet of it, in the deep end, exactly as daft as he described.' },
+      { who: 'you', text: "Oh, that's not fair. I was joking. I was making a joke." },
     ],
     win: [{ who: 'direction', text: 'You blink. The dock, the dark, the meter still under sixty, your feet exactly where you left them. Six seconds, and you held every one of them. Whatever that was, you already know what you do about it.' }],
     lose: [{ who: 'direction', text: 'You blink, and lose the thread of it, and it is only the dock again. Six seconds, a good level, and a slightly stupid feeling. Nothing touched you. Nothing has started yet — and you have already told it what you are frightened of.' }],

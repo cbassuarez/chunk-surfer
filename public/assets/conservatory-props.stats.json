@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-23T03:09:54.642Z",
-  "bytes": 22686412,
-  "totalTriangles": 313754,
+  "generatedAt": "2026-08-23T04:30:10.697Z",
+  "bytes": 23331436,
+  "totalTriangles": 323710,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -848,8 +848,24 @@
       "vertices": 1452
     },
     "st_brendan_church": {
-      "triangles": 7200,
-      "vertices": 14412
+      "triangles": 13468,
+      "vertices": 23798
+    },
+    "cathedral_font": {
+      "triangles": 128,
+      "vertices": 152
+    },
+    "cathedral_pulpitum": {
+      "triangles": 624,
+      "vertices": 1044
+    },
+    "cathedral_tomb": {
+      "triangles": 248,
+      "vertices": 183
+    },
+    "cathedral_monument": {
+      "triangles": 144,
+      "vertices": 288
     },
     "exterior_story_plaque": {
       "triangles": 60,
@@ -1012,8 +1028,8 @@
       "vertices": 1168
     },
     "baseboard_ground": {
-      "triangles": 5040,
-      "vertices": 10080
+      "triangles": 5664,
+      "vertices": 11328
     },
     "baseboard_hall": {
       "triangles": 2400,
@@ -1034,6 +1050,10 @@
     "baseboard_tower": {
       "triangles": 4644,
       "vertices": 9288
+    },
+    "baseboard_cathedral": {
+      "triangles": 1920,
+      "vertices": 3840
     }
   },
   "bounds": {
@@ -3571,14 +3591,62 @@
     },
     "st_brendan_church": {
       "min": [
-        -11.7,
+        -8.2,
         0,
-        -19.87
+        -15.245
       ],
       "max": [
-        12.7,
-        19.3,
-        17.86
+        9.6,
+        17.35,
+        16.2
+      ]
+    },
+    "cathedral_font": {
+      "min": [
+        -0.5,
+        0,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        1.15,
+        0.5
+      ]
+    },
+    "cathedral_pulpitum": {
+      "min": [
+        -4.025,
+        0,
+        -0.42
+      ],
+      "max": [
+        4.025,
+        2.6,
+        0.29
+      ]
+    },
+    "cathedral_tomb": {
+      "min": [
+        -1.05,
+        0,
+        -0.425
+      ],
+      "max": [
+        1.05,
+        1.05,
+        0.425
+      ]
+    },
+    "cathedral_monument": {
+      "min": [
+        -0.71,
+        0,
+        -0.33
+      ],
+      "max": [
+        0.71,
+        2.36,
+        0.15
       ]
     },
     "exterior_story_plaque": {
@@ -4132,10 +4200,22 @@
         8.515,
         22
       ]
+    },
+    "baseboard_cathedral": {
+      "min": [
+        -2,
+        -2.3,
+        0
+      ],
+      "max": [
+        12,
+        5.715,
+        26
+      ]
     }
   },
   "baseboards": {
-    "planHash": "76fd5b647f9b85e1f1bfa4dfad650ffd6e8e757fb1de2377cc9224936effd36c",
+    "planHash": "afa3d2233e40c55a6b7158bc110280317d0321cd2b12d67ada9663d257f8017e",
     "groups": {
       "ground": {
         "mesh": "baseboard_ground",
@@ -4177,6 +4257,13 @@
         "anchor": {
           "x": 0,
           "y": 302
+        }
+      },
+      "cathedral": {
+        "mesh": "baseboard_cathedral",
+        "anchor": {
+          "x": 302,
+          "y": 480
         }
       }
     }
@@ -4334,7 +4421,11 @@
     "yard_rehearsal_range": 8.8,
     "yard_baths_plant": 7.2,
     "yard_covered_stores": 6.4,
-    "st_brendan_church": 0.95,
+    "st_brendan_church": 4.64,
+    "cathedral_font": 1.14,
+    "cathedral_pulpitum": 2.6,
+    "cathedral_tomb": 0.68,
+    "cathedral_monument": 0.34,
     "exterior_story_plaque": 0.84,
     "district_post_box": 1.33,
     "district_bench": 0.67,
@@ -4379,6 +4470,7 @@
     "baseboard_basement": 0.12,
     "baseboard_upper": 0.12,
     "baseboard_academic": 2.71,
-    "baseboard_tower": 3.92
+    "baseboard_tower": 3.92,
+    "baseboard_cathedral": 0.12
   }
 }

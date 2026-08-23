@@ -182,16 +182,18 @@ test('legacy per-key selections migrate to the aggregated keyring', () => {
 test('the bag emits one semantic item intent instead of invoking entry callbacks', () => {
   const intents = [];
   const scene = makeBagScene({
-    equipment: [{ id: 'plant-spanner', present: true, primaryAction: resolveBagItemAction('plant-spanner') }],
+    equipment: [{ id: 'light', present: true, battleCapable: true, primaryAction: resolveBagItemAction('light') }],
     onItemAction: (intent) => { intents.push(intent); return { handled: true }; },
   });
   scene.enter();
   scene.key({ key: 'Enter', code: 'Enter' });
+  scene.key({ key: 'ArrowDown', code: 'ArrowDown' });
+  scene.key({ key: 'Enter', code: 'Enter' });
   assert.deepEqual(intents, [{
-    itemId: 'plant-spanner',
-    entryId: 'gear:plant-spanner',
-    actionId: 'inspect-plant-spanner',
-    mode: BAG_ACTION_MODE.DIALOG,
+    itemId: 'light',
+    entryId: 'gear:light',
+    actionId: 'light-toggle',
+    mode: 'use',
   }]);
 });
 

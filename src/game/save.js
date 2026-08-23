@@ -50,6 +50,9 @@ import { freshCombatLoadout, normalizeCombatLoadout } from './combat-loadout.js'
 import { freshPowerState, normalizePowerState } from './conservatory-power.js';
 import { freshDockHauntingState, normalizeDockHauntingState } from './get-in.js';
 import { freshPracticeHauntState, normalizePracticeHauntState } from './practice-rooms.js';
+import { freshBasementWatcherState, normalizeBasementWatcherState } from './basement-watcher.js';
+import { freshBagSheetState, normalizeBagSheetState } from './bag-sheets.js';
+import { freshBagMapState, normalizeBagMapState } from './bag-map-state.js';
 
 const SAVE_KEY = 'chunk-surfer:save:v4';
 const LEGACY_SAVE_KEYS = STORAGE_LEGACY_SAVE_KEYS.filter((key) => key !== SAVE_KEY);
@@ -74,12 +77,15 @@ export const freshSave = ({ settings = DEFAULT_SETTINGS, run = null } = {}) => (
   playSeconds: 0,
   steps: 0,
   bagNav: null,
+  bagSheets: freshBagSheetState(),
+  bagMap: freshBagMapState(),
   hushAudio: null,
   chunkSurf: freshChunkSurfState(),
   chapelTower: freshChapelTowerState(),
   power: freshPowerState(),
   dockHaunting: freshDockHauntingState(),
   practiceHaunts: freshPracticeHauntState(),
+  basementWatcher: freshBasementWatcherState(),
   plantIncident: null,
   // The head from the fountain in the park, and whether the gallery has it back.
   // Normalised on read by game/marble-head.js, same as plantIncident above.
@@ -244,6 +250,8 @@ function normalizeSaveV4(data, meta = null) {
     encounters: { ...base.encounters, ...(source.encounters && typeof source.encounters === 'object' ? source.encounters : {}) },
     combatBuild: normalizeCombatBuild(source.combatBuild, source.encounters?.cleared, source.flags),
     bagLoadout: normalizeCombatLoadout(source.bagLoadout),
+    bagSheets: normalizeBagSheetState(source.bagSheets),
+    bagMap: normalizeBagMapState(source.bagMap),
     doors: normalizeDoorSave(source.doors),
     hushAudio: normalizeHushAudioSave(source.hushAudio),
     chunkSurf,
@@ -251,6 +259,7 @@ function normalizeSaveV4(data, meta = null) {
     power: normalizePowerState(source.power),
     dockHaunting: normalizeDockHauntingState(source.dockHaunting),
     practiceHaunts: normalizePracticeHauntState(source.practiceHaunts),
+    basementWatcher: normalizeBasementWatcherState(source.basementWatcher),
     settings,
     run: sanitizeRun(normalizeRun(source.run, {
       meta,

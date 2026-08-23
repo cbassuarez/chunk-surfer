@@ -99,3 +99,10 @@ test('the training battle ships intro, win, and lose dialogue and step metadata 
   assert.ok(COMBAT_TUTORIAL_STEPS.every((step) => step.id && step.say));
   assert.throws(() => { COMBAT_TUTORIAL_STEPS[0].say = 'x'; });
 });
+
+test('the training nightmare preserves the authored level-check joke payoff', () => {
+  assert.deepEqual(trainingCombatBattle().intro, [
+    { who: 'direction', text: 'And there it is. Nine feet of it, in the deep end, exactly as daft as he described.' },
+    { who: 'you', text: "Oh, that's not fair. I was joking. I was making a joke." },
+  ]);
+});

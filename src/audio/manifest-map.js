@@ -54,6 +54,14 @@ export const ROOMS = {
     roomTone: { character: 2.2 },
     stabs: 'auto',
   },
+  st_brendans: {
+    label: "St Brendan's Cathedral",
+    // Reuse the existing stone source material, but keep a distinct room id so
+    // this disused building can never satisfy chapel, tower or take logic.
+    world: 'lux_nova',
+    roomTone: { character: 2.5 },
+    stabs: 'auto',
+  },
   source_space: {
     label: 'source space',
     world: 'main_b3',

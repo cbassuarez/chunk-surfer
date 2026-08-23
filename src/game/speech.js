@@ -31,11 +31,27 @@ let onCue = () => {};
 let voice = createSamDialogVoice({ volume: 0.20 });
 let curVoice = null;
 let typing = null;
+let contextHandler = () => null;
+let nowHandler = () => performance.now();
 
-export function speechInit({ cue, audio, typing: typingBus } = {}) {
+// The band is a presentation surface, not a mailbox. Every transient line is
+// dispatched with a lease: where it was true, how long it may wait before it
+// starts, and (for an authored action) whether that action still exists. A
+// failed lease drops the whole chain, not just the first stale sentence; the
+// second half of an abandoned action is never allowed to arrive on its own.
+export const SPEECH_DISPATCH = Object.freeze({
+  maxWaitMs: 8_000,
+});
+
+const dispatches = new Map();
+let dispatchSerial = 0;
+
+export function speechInit({ cue, audio, typing: typingBus, context, now } = {}) {
   if (cue) onCue = cue;
   if (audio) voice = createSamDialogVoice({ volume: 0.20, getAudio: audio });
   if (typingBus) typing = typingBus;
+  if (context) contextHandler = context;
+  if (now) nowHandler = now;
   voice.warm?.();
 }
 
@@ -48,6 +64,136 @@ function normalize(line) {
   return src;
 }
 
+function nowMs() {
+  const value = Number(nowHandler?.());
+  return Number.isFinite(value) ? value : performance.now();
+}
+
+function contextKey() {
+  const value = contextHandler?.();
+  if (value == null || value === '') return null;
+  if (typeof value === 'object') return value.key == null ? null : String(value.key);
+  return String(value);
+}
+
+function transientByDefault(line) {
+  return line.persist !== true && (line.who === 'you' || line.who === 'direction');
+}
+
+function invalidateDispatch(token, { stopCurrent = true } = {}) {
+  const state = dispatches.get(token);
+  if (state) state.active = false;
+  let changed = !!state;
+  for (let i = q.length - 1; i >= 0; i--) {
+    if (q[i].__dispatch?.token === token) { q.splice(i, 1); changed = true; }
+  }
+  if (stopCurrent && cur?.__dispatch?.token === token) {
+    curVoice?.stop?.();
+    curVoice = null;
+    typing?.stopTyping?.();
+    cur = null;
+    typed = 0;
+    acc = 0;
+    dwell = 0;
+    changed = true;
+  }
+  dispatches.delete(token);
+  return changed;
+}
+
+function supersedeDispatch(token, { interrupt = false } = {}) {
+  const state = dispatches.get(token);
+  if (!state) return invalidateDispatch(token, { stopCurrent: interrupt });
+  // A non-interrupting replacement may let the sentence already on screen
+  // finish, but its dependent tail is gone. Give it a private family so another
+  // firing does not keep finding it as the replaceable action.
+  if (!interrupt && cur?.__dispatch?.token === token) {
+    for (let i = q.length - 1; i >= 0; i--) {
+      if (q[i].__dispatch?.token === token) q.splice(i, 1);
+    }
+    state.family = `${state.family}:superseded:${dispatchSerial + 1}`;
+    return true;
+  }
+  return invalidateDispatch(token);
+}
+
+function dispatchValid(state, at = nowMs()) {
+  if (!state?.active) return false;
+  if (state.context != null && contextKey() !== state.context) return false;
+  if (state.valid) {
+    try { if (!state.valid()) return false; }
+    catch (err) {
+      console.warn('[speech] dispatch validity failed', err);
+      return false;
+    }
+  }
+  // Once a chain has started, its own progress owns its timing. The deadline is
+  // only for getting the first line onto the band; otherwise a deliberate
+  // three-line action could expire merely because its first two lines were long.
+  if (!state.started && Number.isFinite(state.maxWaitMs) && at - state.createdAt > state.maxWaitMs) return false;
+  return true;
+}
+
+function enqueue(line, state, { delayMs, gapMs } = {}) {
+  const next = normalize(line);
+  const last = q.length ? q[q.length - 1] : cur;
+  if (last && last.who === next.who && last.text === next.text) return false;
+  Object.defineProperty(next, '__dispatch', {
+    value: {
+      token: state.token,
+      delayMs: Math.max(0, Number(delayMs ?? next.delayMs) || 0),
+      gapMs: Math.max(0, Number(gapMs ?? next.gapMs) || 0),
+    },
+    enumerable: false,
+  });
+  q.push(next);
+  while (new Set(q.map((entry) => entry.__dispatch?.token)).size > MAX_QUEUED) {
+    const oldest = q[0];
+    // The cap counts moments, not sentences. One authored six- or seven-line
+    // action is one moment and remains intact; the seventh unrelated button
+    // press retires the oldest moment atomically.
+    supersedeDispatch(oldest.__dispatch?.token);
+  }
+  return true;
+}
+
+// An explicit action lease. `replace` makes a repeated interaction supersede
+// an older firing of the same action; `cancel()` is called by an escaped scene;
+// and `valid` covers richer state such as "the recorder is still listening".
+// Callers that only need a contextual sequence can keep using sayAll().
+export function createSpeechDispatch({
+  id = 'speech', context = 'auto', maxWaitMs = SPEECH_DISPATCH.maxWaitMs,
+  replace = true, interrupt = false, valid = null,
+} = {}) {
+  const family = String(id || 'speech');
+  if (replace) {
+    for (const state of [...dispatches.values()]) {
+      if (state.family === family) supersedeDispatch(state.token, { interrupt });
+    }
+  }
+  const token = `${family}:${++dispatchSerial}`;
+  const state = {
+    token, family, active: true, createdAt: nowMs(), started: false,
+    lastCompletedAt: null,
+    context: context === 'auto' ? contextKey() : (context == null ? null : String(context)),
+    maxWaitMs: Number.isFinite(Number(maxWaitMs)) ? Math.max(0, Number(maxWaitMs)) : Infinity,
+    valid: typeof valid === 'function' ? valid : null,
+  };
+  dispatches.set(token, state);
+  const api = {
+    id: token,
+    say(line, options = {}) { if (!state.active) return false; return enqueue(line, state, options); },
+    sayAll(lines = [], options = {}) {
+      let accepted = 0;
+      for (const line of lines) if (enqueue(line, state, options)) accepted++;
+      return accepted;
+    },
+    cancel() { return invalidateDispatch(token); },
+    active() { return !!dispatches.get(token)?.active; },
+  };
+  return Object.freeze(api);
+}
+
 // A thought is a moment, not a mailbox. Never let low-priority chatter (fiddling
 // in the bag, repeated marks) pile into minutes of unstoppable monitor text.
 //
@@ -57,16 +203,39 @@ function normalize(line) {
 // survives that is capped: only the most recent handful is kept, because the
 // oldest queued thought is the one least worth hearing by the time it comes up.
 const MAX_QUEUED = 6;
-export function say(line) {
+export function say(line, options = {}) {
   const next = normalize(line);
   const last = q.length ? q[q.length - 1] : cur;
   if (last && last.who === next.who && last.text === next.text) return;
-  q.push(next);
-  if (q.length > MAX_QUEUED) q.splice(0, q.length - MAX_QUEUED);
+  const dispatch = createSpeechDispatch({
+    id: options.id || `line:${dispatchSerial + 1}`,
+    context: options.context !== undefined ? options.context : (transientByDefault(next) ? 'auto' : null),
+    maxWaitMs: options.maxWaitMs ?? next.maxWaitMs ?? SPEECH_DISPATCH.maxWaitMs,
+    replace: options.replace ?? false,
+    interrupt: options.interrupt ?? false,
+    valid: options.valid,
+  });
+  dispatch.say(next, options);
+  return dispatch;
 }
-export function sayAll(lines = []) { for (const l of lines) say(l); }
+export function sayAll(lines = [], options = {}) {
+  const normalized = (Array.isArray(lines) ? lines : []).map(normalize);
+  if (!normalized.length) return null;
+  const contextual = normalized.some(transientByDefault);
+  const dispatch = createSpeechDispatch({
+    id: options.id || `sequence:${dispatchSerial + 1}`,
+    context: options.context !== undefined ? options.context : (contextual ? 'auto' : null),
+    maxWaitMs: options.maxWaitMs ?? SPEECH_DISPATCH.maxWaitMs,
+    replace: options.replace ?? false,
+    interrupt: options.interrupt ?? false,
+    valid: options.valid,
+  });
+  dispatch.sayAll(normalized, options);
+  return dispatch;
+}
 export function clearSpeech() {
   q.length = 0;
+  dispatches.clear();
   curVoice?.stop?.();
   curVoice = null;
   typing?.stopTyping?.();
@@ -76,6 +245,17 @@ export function clearSpeech() {
 }
 export function isSpeaking() { return !!cur || q.length > 0; }
 export function speaking() { return cur; }
+
+export function speechDispatchSnapshot() {
+  return {
+    current: cur?.__dispatch?.token || null,
+    queued: q.map((line) => line.__dispatch?.token || null),
+    dispatches: [...dispatches.values()].map((state) => ({
+      id: state.token, family: state.family, active: state.active, started: state.started,
+      context: state.context, createdAt: state.createdAt, lastCompletedAt: state.lastCompletedAt,
+    })),
+  };
+}
 
 function cps() { return textCps(42); }
 
@@ -101,10 +281,30 @@ function holdFor(line) {
 }
 
 export function updateSpeech(dt) {
+  const at = nowMs();
+  if (cur) {
+    const state = dispatches.get(cur.__dispatch?.token);
+    if (!dispatchValid(state, at)) invalidateDispatch(cur.__dispatch?.token);
+  }
   if (!cur) {
-    if (!q.length) return;
-    begin(q.shift());
-    return;
+    for (let i = 0; i < q.length;) {
+      const candidate = q[i];
+      const meta = candidate.__dispatch || {};
+      const state = dispatches.get(meta.token);
+      if (!dispatchValid(state, at)) {
+        invalidateDispatch(meta.token, { stopCurrent: false });
+        continue;
+      }
+      const readyAt = state.started
+        ? (state.lastCompletedAt ?? at) + meta.gapMs
+        : state.createdAt + meta.delayMs;
+      if (at < readyAt) { i++; continue; }
+      q.splice(i, 1);
+      state.started = true;
+      begin(candidate);
+      break;
+    }
+    if (!cur) return;
   }
   if (curVoice && typed < cur.text.length) {
     typing?.stopTyping?.();
@@ -124,15 +324,24 @@ export function updateSpeech(dt) {
   typing?.stopTyping?.();
   dwell += dt;
   if (dwell >= holdFor(cur)) {
+    const token = cur.__dispatch?.token;
     curVoice?.stop?.();
     curVoice = null;
     cur = null;
+    const state = dispatches.get(token);
+    if (state) {
+      state.lastCompletedAt = at;
+      if (!q.some((line) => line.__dispatch?.token === token)) dispatches.delete(token);
+    }
   }
 }
 
 // [space] fills the line in. Pressing it again lets the line go.
 export function skipSpeech() {
   if (!cur) return false;
+  const token = cur.__dispatch?.token;
+  const state = dispatches.get(token);
+  if (!dispatchValid(state)) { invalidateDispatch(token); return false; }
   if (typed < cur.text.length) {
     typed = cur.text.length;
     acc = cur.text.length / cps();
@@ -144,6 +353,10 @@ export function skipSpeech() {
   curVoice = null;
   typing?.stopTyping?.();
   cur = null;
+  if (state) {
+    state.lastCompletedAt = nowMs();
+    if (!q.some((line) => line.__dispatch?.token === token)) dispatches.delete(token);
+  }
   return true;
 }
 

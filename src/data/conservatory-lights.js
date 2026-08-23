@@ -6,6 +6,7 @@
 // circuit filtering, so a fitting in the next room cannot steal a slot.
 
 import { ZONE } from './floorplan/legend.js';
+import { CHURCH_LIGHTS } from './st-brendans.js';
 
 export const LIGHT_KIND = Object.freeze({
   SKY: 'sky',
@@ -263,24 +264,9 @@ export const CONSERVATORY_LIGHTS = Object.freeze([
   //
   // Authored on ZONE.church so none of it spills into the yard's sodium.
   //
-  // Down the tower: eighteen metres of shaft with louvres at the head, so the
-  // light arrives from directly above and dies long before the floor.
-  L('brendan-tower-shaft', LIGHT_KIND.SKY, 16.0, 57.0, 15.4, [.62, .70, .86], .78, 11.0,
-    { groups:['ground'], zones:[ZONE.church] }),
-  // The nave, under the lancets. Two of them, north and south of the crossing,
-  // because one lamp in the middle of a thirty-metre nave reads as a bulb.
-  L('brendan-nave-north', LIGHT_KIND.SKY, 16.0, 66.0, 10.2, [.58, .66, .84], .54, 12.0,
-    { groups:['ground'], zones:[ZONE.church] }),
-  L('brendan-nave-south', LIGHT_KIND.SKY, 16.0, 76.0, 10.2, [.58, .66, .84], .54, 12.0,
-    { groups:['ground'], zones:[ZONE.church] }),
-  // The crossing, where the transept lancets meet the nave's and there is
-  // genuinely more sky above you than anywhere else in the building.
-  L('brendan-crossing', LIGHT_KIND.SKY, 16.0, 74.0, 10.6, [.60, .68, .86], .64, 14.0,
-    { groups:['ground'], zones:[ZONE.church] }),
-  // The chancel is lower, smaller and further from every opening. It stays the
-  // darkest thing in here on purpose — it is the end of the building.
-  L('brendan-chancel', LIGHT_KIND.SKY, 16.0, 84.0, 7.4, [.54, .60, .78], .47, 7.5,
-    { groups:['ground'], zones:[ZONE.church] }),
+  ...CHURCH_LIGHTS.map((light)=>L(`brendan-${light.id}`,LIGHT_KIND.SKY,
+    light.x,light.y,light.h,[.58,.67,.86],light.intensity,light.radius,
+    {groups:['ground','cathedral'],zones:[ZONE.church]})),
 
   // The booth window. The only lit one on the site, and the last shift in it.
   L('bay-booth-window', LIGHT_KIND.FITTING, 24.0, 14.0, 2.0, [1, .82, .58], .92, 12.0,
@@ -320,12 +306,12 @@ export const CONSERVATORY_LIGHTS = Object.freeze([
     {groups:['ground'],zones:[ZONE.street,ZONE.civicCourt]}),
 
   // Basement and dance wing. The corridors deliberately remain absent.
-  L('dance-stair-failing', LIGHT_KIND.EMERGENCY, 45.0, 20.75, -1.32, [1, .48, .22], .20, 6.0,
+  L('dance-stair-failing', LIGHT_KIND.EMERGENCY, 45.0, 20.75, -1.32, EMERGENCY_RED, .38, 6.0,
     { groups:['basement'], zones:[ZONE.danceStudio, ZONE.stair], circuit:'sp01', anchorPropId:'light-dance-stair-casing', anchorOffset:[0,.18,0], flutter:{ amount:.17, steady:.20 } }),
   L('plant-panel-green', LIGHT_KIND.INDICATOR, 37.55, 30.0, -2.0, [.18, 1, .30], .10, 2.2,
     { groups:['basement'], zones:[ZONE.plant] }),
-  L('plant-entry-amber', LIGHT_KIND.FITTING, 30.35, 30.5, -1.72, [1,.56,.24], .76, 5.8,
-    { groups:['basement'], zones:[ZONE.plant], maintained:true, anchorPropId:'light-plant-entry-casing', anchorOffset:[0,.18,0] }),
+  L('plant-emergency', LIGHT_KIND.EMERGENCY, 30.35, 30.5, -1.72, EMERGENCY_RED, .44, 7.0,
+    { groups:['basement'], zones:[ZONE.plant], circuit:'sp01', anchorPropId:'light-plant-entry-casing', anchorOffset:[0,.18,0] }),
   L('plant-service-live', LIGHT_KIND.FITTING, 35.0, 25.75, -1.37, [.69, .83, .70], .88, 9.0,
     { groups:['basement'], zones:[ZONE.plant], circuit:'sp01', anchorPropId:'light-plant-service-casing', anchorOffset:[0,.18,0], flutter:{ amount:.06, steady:.84 } }),
   L('plant-switchgear-live', LIGHT_KIND.FITTING, 38.75, 28.7, -1.22, [.66,.82,.72], .82, 8.2,
@@ -338,16 +324,18 @@ export const CONSERVATORY_LIGHTS = Object.freeze([
   // stood in B2, eight metres away through a wall. B3 has no other practical.
   L('b3-work-live', LIGHT_KIND.FITTING, 18.0, 5.75, -1.37, [.78, .78, .65], .82, 9.0,
     { groups:['basement'], zones:[ZONE.studio], circuit:'sp01', anchorPropId:'light-b3-work-casing', anchorOffset:[0,.18,0], flutter:{ amount:.07, steady:.78 } }),
+  L('b3-emergency', LIGHT_KIND.EMERGENCY, 23.5, 20.75, -1.67, EMERGENCY_RED, .40, 7.0,
+    { groups:['basement'], zones:[ZONE.studio], circuit:'sp01', anchorPropId:'light-b3-emergency-casing', anchorOffset:[0,.18,0] }),
   L('dance-work-live', LIGHT_KIND.FITTING, 32.0, 5.75, -1.37, [.78, .78, .65], .82, 9.0,
     { groups:['basement'], zones:[ZONE.danceStudio], circuit:'sp01', anchorPropId:'light-dance-work-casing', anchorOffset:[0,.18,0], flutter:{ amount:.07, steady:.78 } }),
 
   // Ground/atrium and natatorium.
   L('academic-skylight-spill', LIGHT_KIND.SKY, 85, 15, 16.25, [.52, .67, .80], 1.12, 24,
     { groups:['ground','academic'], zones:[ZONE.foyer,ZONE.academic], anchorPropId:'academic-skylight', anchorOffset:[0,6.25,0] }),
-  L('academic-emergency-west', LIGHT_KIND.EMERGENCY, 78.75, 8, 11.8, [1, .62, .32], .54, 7.2,
-    { groups:['academic'], zones:[ZONE.academic], circuit:'sp03', anchorPropId:'academic-light-emergency-west', anchorOffset:[0,.18,0] }),
-  L('academic-emergency-east-failing', LIGHT_KIND.EMERGENCY, 96.75, 23, 11.8, [1, .57, .28], .22, 6.4,
-    { groups:['academic'], zones:[ZONE.academic], circuit:'sp03', anchorPropId:'academic-light-emergency-east-failing', anchorOffset:[0,.18,0], flutter:{ amount:.16, steady:.22 } }),
+  L('academic-emergency-west', LIGHT_KIND.EMERGENCY, 78.75, 8, 11.8, EMERGENCY_RED, .54, 7.2,
+    { groups:['academic'], zones:[ZONE.academic], circuit:'sp05', anchorPropId:'academic-light-emergency-west', anchorOffset:[0,.18,0] }),
+  L('academic-emergency-east-failing', LIGHT_KIND.EMERGENCY, 96.75, 23, 11.8, EMERGENCY_RED, .22, 6.4,
+    { groups:['academic'], zones:[ZONE.academic], circuit:'sp05', anchorPropId:'academic-light-emergency-east-failing', anchorOffset:[0,.18,0], flutter:{ amount:.16, steady:.22 } }),
   // The public entrance is permanently chained, so its local wayfinding body
   // survives the dead house circuit. This is a small amber maintained fitting,
   // not part of the concert hall's building-wide red emergency snap.
@@ -357,6 +345,8 @@ export const CONSERVATORY_LIGHTS = Object.freeze([
     { groups:['ground'], zones:[ZONE.foyer], circuit:'sp03', anchorPropId:'light-foh-west-casing', anchorOffset:[0,.18,0], flutter:{ amount:.06, steady:1.46 } }),
   L('foh-live-east', LIGHT_KIND.FITTING, 92.0, 10.5, 3.43, [.74, .82, .78], 1.46, 15,
     { groups:['ground'], zones:[ZONE.foyer], circuit:'sp03', anchorPropId:'light-foh-east-casing', anchorOffset:[0,.18,0], flutter:{ amount:.05, steady:1.41 } }),
+  L('foh-emergency', LIGHT_KIND.EMERGENCY, 96.75, 18.5, 2.33, EMERGENCY_RED, .46, 7.2,
+    { groups:['ground'], zones:[ZONE.foyer], circuit:'sp03', anchorPropId:'light-foh-emergency-casing', anchorOffset:[0,.18,0] }),
   // The hall threshold sits on the same impossible battery circuit as the
   // auditorium. The red snap must be legible from the foyer and from deep in the
   // room, so these are cross-group emergency sources rather than warm sconces.
@@ -405,7 +395,7 @@ export const CONSERVATORY_LIGHTS = Object.freeze([
       anchorPropId:'deadend-ground-chandelier', anchorOffset:[0,-.28,0],
       flutter:{ amount:.05, steady:.88 } }),
   L('hall-lounge-live', LIGHT_KIND.FITTING, 98.75, 27.0, 3.28, [.78, .74, .62], .82, 10,
-    { groups:['hall'], zones:[ZONE.hall], circuit:'sp03', anchorPropId:'light-hall-lounge-casing', anchorOffset:[0,.18,0], flutter:{ amount:.06, steady:.78 } }),
+    { groups:['hall'], zones:[ZONE.hall], maintained:true, anchorPropId:'light-hall-lounge-casing', anchorOffset:[0,.18,0], flutter:{ amount:.06, steady:.78 } }),
   // THE GALLERIA FEET. Maintained, because these are the escape route off two
   // balconies and are the one thing in a dead auditorium that would still be
   // wired to a battery pack. They also do the level-design work: the aisles are
@@ -415,10 +405,10 @@ export const CONSERVATORY_LIGHTS = Object.freeze([
     { groups:['ground','hall'], zones:[ZONE.foyer,ZONE.hall], home:ZONE.hall, maintained:true, penetration:.88, anchorPropId:'light-hall-galleria-west-casing', anchorOffset:[0,.18,0] }),
   L('hall-galleria-east-foot', LIGHT_KIND.EMERGENCY, 126.25, 31.5, 5.36, [1, 0, 0], 3.45, 54,
     { groups:['ground','hall'], zones:[ZONE.foyer,ZONE.hall], home:ZONE.hall, maintained:true, penetration:.92, anchorPropId:'light-hall-galleria-east-casing', anchorOffset:[0,.18,0] }),
-  L('practice-emergency-north', LIGHT_KIND.EMERGENCY, 59.5, 55.75, 7.48, [1, .52, .25], .42, 7.5,
-    { groups:['upper'], zones:[ZONE.practice], circuit:'sp03', anchorPropId:'light-practice-north-casing', anchorOffset:[0,.18,0] }),
-  L('practice-emergency-south', LIGHT_KIND.EMERGENCY, 59.75, 81.0, 7.48, [1, .50, .24], .38, 7.5,
-    { groups:['upper'], zones:[ZONE.practice], circuit:'sp03', anchorPropId:'light-practice-south-casing', anchorOffset:[0,.18,0] }),
+  L('practice-emergency-north', LIGHT_KIND.EMERGENCY, 59.5, 55.75, 7.48, EMERGENCY_RED, .42, 7.5,
+    { groups:['upper'], zones:[ZONE.practice], circuit:'sp04', anchorPropId:'light-practice-north-casing', anchorOffset:[0,.18,0] }),
+  L('practice-emergency-south', LIGHT_KIND.EMERGENCY, 59.75, 81.0, 7.48, EMERGENCY_RED, .38, 7.5,
+    { groups:['upper'], zones:[ZONE.practice], circuit:'sp04', anchorPropId:'light-practice-south-casing', anchorOffset:[0,.18,0] }),
   // The open-well stair is kept as a readable vertical room. These coincide
   // with the opal bodies in the hero mesh, but remain ordinary authored lights
   // so the renderer can illuminate real construction instead of relying on an
@@ -430,34 +420,33 @@ export const CONSERVATORY_LIGHTS = Object.freeze([
   L('main-stair-academic-opal', LIGHT_KIND.FITTING, 66.4, 35.5, 13.25, [1, .80, .55], .88, 10.5,
     { groups:['upper','academic'], zones:[ZONE.stair,ZONE.academic] }),
   L('main-stair-loggia-maintained', LIGHT_KIND.EMERGENCY, 66.5, 36.5, 11.8, [1, .62, .32], .42, 7.2,
-    { groups:['academic'], zones:[ZONE.academic], circuit:'sp03' }),
+    { groups:['academic'], zones:[ZONE.academic], circuit:'sp05' }),
   L('chapel-cold-shaft', LIGHT_KIND.SKY, 93.5, 73.0, 13.8, [.70, .82, 1], 1.18, 17,
     { groups:['upper'], zones:[ZONE.chapel] }),
 
-  // Tower fittings are attached to their actual casings. They keep their S/P-03
-  // runtime gate here: the bell/peal route owns its own phase machinery and must
-  // not become globally live just because ordinary emergency egress units are
-  // battery-maintained.
+  // Tower fittings are attached to their actual casings and belong only to the
+  // bell/peal route's phase machinery. No occupied-floor breaker can light or
+  // extinguish them.
   L('access-low', LIGHT_KIND.EMERGENCY, 100, 61.75, 6.65, [1, .68, .38], .72, 5.2,
-    { groups:['tower'], zones:[ZONE.bellTower], circuit:'sp03', anchorPropId:'tower-light-lower', anchorOffset:[0,.18,0] }),
+    { groups:['tower'], zones:[ZONE.bellTower], phase:'tower', anchorPropId:'tower-light-lower', anchorOffset:[0,.18,0] }),
   L('access-high', LIGHT_KIND.EMERGENCY, 106, 63.25, 13.13, [1, .70, .42], .65, 5.0,
-    { groups:['tower'], zones:[ZONE.bellTower], circuit:'sp03', anchorPropId:'tower-light-upper', anchorOffset:[0,.18,0] }),
+    { groups:['tower'], zones:[ZONE.bellTower], phase:'tower', anchorPropId:'tower-light-upper', anchorOffset:[0,.18,0] }),
   L('ringing-pendant', LIGHT_KIND.EMERGENCY, 90, 64, 11.55, [1, .72, .46], .58, 7.5,
-    { groups:['tower'], zones:[ZONE.bellTower], circuit:'sp03', anchorPropId:'tower-light-ringing', anchorOffset:[0,-1.25,0] }),
+    { groups:['tower'], zones:[ZONE.bellTower], phase:'tower', anchorPropId:'tower-light-ringing', anchorOffset:[0,-1.25,0] }),
   L('chamber-entry', LIGHT_KIND.EMERGENCY, 97.75, 63.5, 15.65, [.92, .80, .61], .54, 5.0,
-    { groups:['tower'], zones:[ZONE.bellTower], circuit:'sp03', anchorPropId:'tower-light-entry', anchorOffset:[0,.18,0] }),
+    { groups:['tower'], zones:[ZONE.bellTower], phase:'tower', anchorPropId:'tower-light-entry', anchorOffset:[0,.18,0] }),
   L('louvre-spill', LIGHT_KIND.SKY, 97, 61, 17.4, [.50, .66, .82], 1.22, 8.2,
     { groups:['tower'], zones:[ZONE.bellTower] }),
   L('winch-lamp', LIGHT_KIND.EMERGENCY, 97.75, 68.5, 15.25, [1, .74, .43], .74, 5.4,
-    { groups:['tower'], zones:[ZONE.bellTower], circuit:'sp03', anchorPropId:'tower-light-winch', anchorOffset:[0,.18,0] }),
+    { groups:['tower'], zones:[ZONE.bellTower], phase:'tower', anchorPropId:'tower-light-winch', anchorOffset:[0,.18,0] }),
   L('service-landing', LIGHT_KIND.EMERGENCY, 106, 70.25, 13.13, [1, .69, .40], .61, 5.0,
-    { groups:['tower'], zones:[ZONE.bellTower], circuit:'sp03', anchorPropId:'tower-light-service', anchorOffset:[0,.18,0] }),
+    { groups:['tower'], zones:[ZONE.bellTower], phase:'tower', anchorPropId:'tower-light-service', anchorOffset:[0,.18,0] }),
   L('organ-exit', LIGHT_KIND.SKY, 98, 79, 10.25, [.78, .88, 1], 1.25, 7,
     { groups:['tower'], zones:[ZONE.bellTower], phase:'cleared' }),
   L('organ-loft-exit', LIGHT_KIND.EMERGENCY, 98.5, 78.75, 10.25, [1, .72, .42], .56, 5.4,
-    { groups:['tower'], zones:[ZONE.bellTower], circuit:'sp03', phase:'cleared', anchorPropId:'tower-light-organ-exit', anchorOffset:[0,.18,0] }),
+    { groups:['tower'], zones:[ZONE.bellTower], phase:'cleared', anchorPropId:'tower-light-organ-exit', anchorOffset:[0,.18,0] }),
   L('nave-exit', LIGHT_KIND.EMERGENCY, 100.5, 82, 6.45, [1, .73, .42], .66, 5.8,
-    { groups:['tower'], zones:[ZONE.bellTower], circuit:'sp03', phase:'cleared', anchorPropId:'tower-light-nave-exit', anchorOffset:[0,.18,0] }),
+    { groups:['tower'], zones:[ZONE.bellTower], phase:'cleared', anchorPropId:'tower-light-nave-exit', anchorOffset:[0,.18,0] }),
 ]);
 
 const byGroup = new Map();
@@ -675,6 +664,7 @@ export function resolveLocalLights(context, {
   reducedFlash = false,
   effectsMode = null,
   towerCleared = false,
+  towerActive = false,
   liveCircuits = null,
   origin = null,
   slots = LOCAL_LIGHT_SLOTS,
@@ -690,6 +680,7 @@ export function resolveLocalLights(context, {
   const out = [];
   for (const light of rig) {
     if (Number.isFinite(zone) && light.zones.length && !light.zones.includes(zone)) continue;
+    if (light.phase === 'tower' && !towerActive) continue;
     if (light.phase === 'cleared' && !towerCleared) continue;
     if (!lightHasRuntimePower(light, live)) continue;
     let intensity = light.intensity;
@@ -705,6 +696,9 @@ export function resolveLocalLights(context, {
       : null;
     const offset = light.anchorOffset || [0,0,0];
     const spilling = Number.isFinite(light.home) && Number.isFinite(zone) && zone !== light.home;
+    const sourceZone = Number.isFinite(light.home)
+      ? light.home
+      : (light.zones.length === 1 ? light.zones[0] : zone);
     out.push({
       id: light.id,
       x: anchored ? anchored.x + offset[0] : light.x,
@@ -715,6 +709,7 @@ export function resolveLocalLights(context, {
       radius: spilling ? light.radius * SPILL_REACH : light.radius,
       penetration: spilling ? Math.min(light.penetration || 0, SPILL_PENETRATION) : (light.penetration || 0),
       spilling,
+      sourceZone,
       kind: light.kind,
       circuit: light.circuit,
       powerMode: light.powerMode,

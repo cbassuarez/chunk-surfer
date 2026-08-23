@@ -18,16 +18,19 @@ import { PLAN_SCALE } from '../data/floorplan/legend.js';
 const D = (n) => n * PLAN_SCALE;
 
 const state = {
+  schema: 2,
   pages: new Map(),        // "x,y" -> {x, y, roomId, id}
   read: [],                // page ids read this run
   waypoint: null,          // {x, y, roomId} — the only navigation you get
   target: null,            // roomId the client wants recorded next
+  playerWaypoint: null,    // schema 2: arbitrary canonical facility space
   pickupRadius: D(1.4),
 };
 
 export function objState() { return state; }
 export function waypoint() { return state.waypoint; }
 export function targetRoom() { return state.target; }
+export function playerWaypoint() { return state.playerWaypoint; }
 export function pagesRead() { return state.read.length; }
 
 const key = (x, y) => `${Math.round(x)},${Math.round(y)}`;
@@ -69,8 +72,33 @@ export function tryPickup(px, py) {
 export function setWaypoint(x, y, roomId) {
   state.waypoint = { x: Math.round(x), y: Math.round(y), roomId };
   state.target = roomId;
+  state.playerWaypoint = {
+    kind: 'space', spaceId: `space:${roomId}`, roomId, floorId: null,
+    x: Math.round(x), y: Math.round(y), position: null,
+  };
 }
-export function clearWaypoint() { state.waypoint = null; state.target = null; }
+export function setPlayerWaypoint(value) {
+  if (!value || typeof value !== 'object' || !value.spaceId) return false;
+  const x = Number(value.x), y = Number(value.y);
+  state.playerWaypoint = {
+    kind: 'space',
+    spaceId: String(value.spaceId),
+    roomId: typeof value.roomId === 'string' ? value.roomId : null,
+    floorId: typeof value.floorId === 'string' ? value.floorId : null,
+    x: Number.isFinite(x) ? Math.round(x) : null,
+    y: Number.isFinite(y) ? Math.round(y) : null,
+    position: value.position && Number.isFinite(Number(value.position.x)) && Number.isFinite(Number(value.position.y))
+      ? { x: Number(value.position.x), y: Number(value.position.y) }
+      : null,
+    label: typeof value.label === 'string' ? value.label : null,
+  };
+  state.waypoint = Number.isFinite(x) && Number.isFinite(y)
+    ? { x: Math.round(x), y: Math.round(y), roomId: state.playerWaypoint.roomId }
+    : null;
+  state.target = state.playerWaypoint.roomId;
+  return true;
+}
+export function clearWaypoint() { state.waypoint = null; state.target = null; state.playerWaypoint = null; }
 
 export function distanceToWaypoint(px, py) {
   if (!state.waypoint) return Infinity;
@@ -122,9 +150,16 @@ export function objectives({ rooms = [], notes = [], hasTake = () => false, labe
   };
 }
 
-export function loadObjState(saved = {}, { validTargets = null } = {}) {
+export function loadObjState(saved = {}, { validTargets = null, validSpaces = null } = {}) {
   state.read = saved.read || [];
   const allowed=validTargets==null?null:new Set(validTargets||[]);
+  const allowedSpaces=validSpaces==null?null:new Set(validSpaces||[]);
+  if(Number(saved.schema)>=2 && saved.playerWaypoint?.spaceId){
+    const candidate=saved.playerWaypoint;
+    const validSpace=allowedSpaces==null||allowedSpaces.has(candidate.spaceId);
+    const validRoom=!candidate.roomId||allowed==null||allowed.has(candidate.roomId);
+    if(validSpace&&validRoom){setPlayerWaypoint(candidate);return;}
+  }
   const target=saved.target || null;
   // Older tower/finale builds serialized temporary story ids into this player
   // slot. Keep page history, but discard those stale targets so the derived
@@ -132,7 +167,11 @@ export function loadObjState(saved = {}, { validTargets = null } = {}) {
   const valid=!target||allowed==null||allowed.has(target);
   state.waypoint = valid ? (saved.waypoint || null) : null;
   state.target = valid ? target : null;
+  state.playerWaypoint = valid && target && state.waypoint ? {
+    kind:'space',spaceId:`space:${target}`,roomId:target,floorId:null,
+    x:Number(state.waypoint.x),y:Number(state.waypoint.y),position:null,label:null,
+  } : null;
 }
 export function saveObjState() {
-  return { read: state.read, waypoint: state.waypoint, target: state.target };
+  return { schema:2, read: state.read, playerWaypoint:state.playerWaypoint, waypoint: state.waypoint, target: state.target };
 }

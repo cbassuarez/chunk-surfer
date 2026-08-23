@@ -1,4 +1,4 @@
-import { ENDING_IDS, EVENT_SCHEMA_VERSION } from './schema.js';
+import { ENDING_IDS, EVENT_SCHEMA_VERSION, POWER_CIRCUIT_IDS } from './schema.js';
 
 export const EVENT_TYPES = Object.freeze({
   RUN_STARTED: 'run.started',
@@ -61,7 +61,7 @@ const validators = Object.freeze({
   [EVENT_TYPES.PLAYBACK_HEARD]: (p) => typeof p?.roomId === 'string' && p.roomId.length > 0,
   [EVENT_TYPES.CONFESSION_COMMITTED]: (p) => typeof p?.kind === 'string',
   [EVENT_TYPES.COFFEE_DRUNK]: () => true,
-  [EVENT_TYPES.POWER_CIRCUIT_CHANGED]: (p) => ['sp01','sp02','sp03'].includes(p?.circuit) && typeof p?.live === 'boolean',
+  [EVENT_TYPES.POWER_CIRCUIT_CHANGED]: (p) => POWER_CIRCUIT_IDS.includes(p?.circuit) && typeof p?.live === 'boolean',
   [EVENT_TYPES.CREDITS_VIEWED]: () => true,
   [EVENT_TYPES.ENDING_COMMITTED]: (p) => ENDING_IDS.includes(p?.endingId),
   [EVENT_TYPES.CAUSAL_TAPE_PROMOTED]: (p) => typeof p?.contentHash === 'string' && p.contentHash.length > 0,

@@ -9,12 +9,14 @@ import { uiCellMetrics, uiDraw, uiFill, uiGlyph, uiText, uiSize } from './ui.js'
 import { drawMachinePanel } from './presentation.js';
 import { themeRoleColor, UI_COLOR } from './palette.js';
 import { buildMinimapCommands } from './map-commands.js';
-import { drawAnomalyMarker, drawEquipmentMarker, drawHushMarker, drawPlayerMarker, drawWaypointMarker } from './map-icons.js';
+import { drawAnomalyMarker, drawEquipmentMarker, drawHushAwareness, drawHushMarker, drawPlayerMarker, drawWaypointMarker } from './map-icons.js';
 import { mapCurrentAreaLabel, mapFloor, newestMapContact } from '../game/map-model.js';
 import { shakeMode, visualEffectsEnabled } from '../game/access.js';
 
 let lastHushStatusKey = '';
 let hushStatusPulseUntil = 0;
+let lastTargetStatusKey = '';
+let targetStatusPulseUntil = 0;
 
 const clip = (value, width) => {
   const text = String(value ?? '');
@@ -28,11 +30,34 @@ function roomLabel(model, roomId, fallback = 'UNKNOWN') {
 
 function targetLabel(model) {
   if (!model?.waypoint) return 'NONE';
+  if(model.waypoint.label)return String(model.waypoint.label).toUpperCase();
   return roomLabel(model, model.waypoint.roomId, 'TARGET');
 }
 
 function currentLabel(model) {
   return mapCurrentAreaLabel(model);
+}
+
+const TARGET_BEARINGS=['N','NE','E','SE','S','SW','W','NW'];
+
+export function minimapTargetReadout(model){
+  const waypoint=model?.waypoint;
+  if(!waypoint)return null;
+  const label=targetLabel(model);
+  const sameFloor=waypoint.floorId===model?.player?.floorId;
+  if(!sameFloor||!waypoint.position||!model?.player?.position){
+    return{label,bearing:'',distanceM:null,floorDelta:Number(model?.route?.floorDelta)||0,sameFloor:false};
+  }
+  const dx=waypoint.position.x-model.player.position.x;
+  const dy=waypoint.position.y-model.player.position.y;
+  const angle=(Math.atan2(dx,-dy)+Math.PI*2)%(Math.PI*2);
+  return{
+    label,
+    bearing:TARGET_BEARINGS[Math.round(angle/(Math.PI/4))%8],
+    distanceM:Math.hypot(dx,dy),
+    floorDelta:0,
+    sameFloor:true,
+  };
 }
 
 export function hushStatus(model, now = 0) {
@@ -120,6 +145,17 @@ function hushStatusPulse(hush, now) {
   return life * (shakeMode() === 'full' ? 0.06 : 0.028);
 }
 
+function targetStatusPulse(waypoint, now) {
+  const key = waypoint ? `${waypoint.id || waypoint.label || 'target'}:${waypoint.floorId || ''}` : 'none';
+  if (!lastTargetStatusKey) lastTargetStatusKey = key;
+  else if (key !== lastTargetStatusKey) {
+    lastTargetStatusKey = key;
+    if (visualEffectsEnabled()) targetStatusPulseUntil = Number(now) + 240;
+  }
+  if (!visualEffectsEnabled() || Number(now) >= targetStatusPulseUntil) return 0;
+  return Math.max(0, (targetStatusPulseUntil - Number(now)) / 240) * 0.045;
+}
+
 function drawConfidenceTicks(panel, model) {
   const contact = newestMapContact(model);
   const state = String(contact?.state || '').toLowerCase();
@@ -127,7 +163,7 @@ function drawConfidenceTicks(panel, model) {
   const confidence = Math.max(0, Math.min(1, Number(contact?.observation?.confidence) || 0));
   uiDraw(({ ctx, dpr, cellW, cellH }) => {
     const baseX = (panel.x + panel.w - 4.2) * cellW * dpr;
-    const baseY = (panel.y + 2.45) * cellH * dpr;
+    const baseY = (panel.y + .48) * cellH * dpr;
     ctx.save();
     ctx.strokeStyle = themeRoleColor(state === 'acquiring' ? 'counter' : 'silkscreen');
     ctx.lineWidth = Math.max(0.6, dpr * 0.5);
@@ -206,6 +242,28 @@ function drawLocalTopology(command) {
         ctx.fillRect(point.x * cellW * dpr, point.y * cellH * dpr, Math.max(1, cellW * 0.48) * dpr, Math.max(1, cellH * 0.48) * dpr);
       }
     }
+
+    // Trace only the exposed edges of known walkable cells. The fill remains
+    // quiet; this hairline is what turns an amber smear into readable rooms,
+    // corridors and thresholds without inventing architectural information.
+    const isOpen=openCellLookup({open,runs});
+    ctx.beginPath();
+    ctx.globalAlpha=.38;
+    ctx.strokeStyle=themeRoleColor('silkscreen');
+    ctx.lineWidth=Math.max(.55*dpr,.75);
+    const x0=Math.floor(minX),x1=Math.ceil(maxX),y0=Math.floor(minY),y1=Math.ceil(maxY);
+    const line=(a,b)=>{
+      ctx.moveTo(a.x*cellW*dpr,a.y*cellH*dpr);
+      ctx.lineTo(b.x*cellW*dpr,b.y*cellH*dpr);
+    };
+    for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+      if(!isOpen(x,y))continue;
+      if(!isOpen(x,y-1))line(project({x,y}),project({x:x+1,y}));
+      if(!isOpen(x+1,y))line(project({x:x+1,y}),project({x:x+1,y:y+1}));
+      if(!isOpen(x,y+1))line(project({x:x+1,y:y+1}),project({x,y:y+1}));
+      if(!isOpen(x-1,y))line(project({x,y:y+1}),project({x,y}));
+    }
+    ctx.stroke();
     ctx.restore();
   });
 }
@@ -331,22 +389,57 @@ function drawSight(command) {
   });
 }
 
+function drawLocalRoute(command){
+  if(!command?.points?.length)return;
+  uiDraw(({ctx,dpr,cellW,cellH})=>{
+    ctx.save();
+    if(command.viewport){
+      ctx.beginPath();
+      ctx.rect(command.viewport.x*cellW*dpr,command.viewport.y*cellH*dpr,command.viewport.w*cellW*dpr,command.viewport.h*cellH*dpr);
+      ctx.clip();
+    }
+    ctx.globalAlpha=command.status==='ok' ? .5 : .28;
+    ctx.strokeStyle=themeRoleColor(command.status==='ok'?'counter':'danger');
+    ctx.lineWidth=Math.max(.8*dpr,1);
+    ctx.setLineDash([3*dpr,3*dpr]);
+    ctx.beginPath();
+    command.points.forEach((point,index)=>{
+      const x=point.x*cellW*dpr,y=point.y*cellH*dpr;
+      if(index)ctx.lineTo(x,y);else ctx.moveTo(x,y);
+    });
+    ctx.stroke();ctx.restore();
+  });
+}
+
+const COMMAND_LAYER=Object.freeze({
+  'local-topology':0,sight:10,'route-local':20,'door-local':30,'connector-local':32,
+  waypoint:40,'waypoint-edge':40,'connector-target':40,'connector-edge':40,
+  equipment:50,'equipment-edge':50,'anomaly-contact':60,'anomaly-edge':60,
+  'hush-awareness':70,player:80,'hush-visible':90,'hush-visible-edge':90,
+});
+
 function drawCommands(commands, now) {
-  for (const command of commands) {
+  const ordered=[...commands].sort((a,b)=>(COMMAND_LAYER[a.kind]??45)-(COMMAND_LAYER[b.kind]??45));
+  const hasSight=commands.some((command)=>command.kind==='sight');
+  for (const command of ordered) {
     if (command.kind === 'local-topology') drawLocalTopology(command);
     else if (command.kind === 'sight') drawSight(command);
-    else if (command.kind === 'player') drawPlayerMarker(command.point, command.heading, 1, { tick: !commands.some((c) => c.kind === 'sight') });
-    else if (command.kind === 'waypoint' || command.kind === 'connector-target') drawWaypointMarker(command.point, .95);
+    else if(command.kind==='route-local')drawLocalRoute(command);
+    else if(command.kind==='door-local')uiGlyph(Math.round(command.point.x),Math.round(command.point.y),command.state==='locked'?'╫':command.state==='closed'?'┼':'·',command.state==='locked'?'ui-danger':'ui-label',command.state==='open' ? .34 : .62);
+    else if(command.kind==='connector-local')uiGlyph(Math.round(command.point.x),Math.round(command.point.y),'↕',command.selected?'ui-blue':'ui-label',command.selected ? .9 : .48);
+    else if(command.kind==='hush-awareness')drawHushAwareness(command,.7+Math.abs(Math.sin(now*.006))*.2);
+    else if (command.kind === 'player') drawPlayerMarker(command.point, command.heading, 1, { tick: !hasSight });
+    else if (command.kind === 'waypoint' || command.kind === 'connector-target') drawWaypointMarker(command.point, .95,{playerSelected:command.playerSelected});
     else if(command.kind==='equipment'||command.kind==='equipment-edge')drawEquipmentMarker(command.point,command.carrierOpen ? .72+Math.sin(now*.007)*.2 : .72);
     else if (command.kind === 'waypoint-edge' || command.kind === 'connector-edge') {
-      drawWaypointMarker(command.point, .92);
+      drawWaypointMarker(command.point,.92,{edgeDirection:command.edgeDirection,playerSelected:command.playerSelected});
       if (command.floorDelta) uiGlyph(Math.round(command.point.x), Math.round(command.point.y) + 1, command.floorDelta > 0 ? '↑' : '↓', 'ui-blue', .78);
     }
     else if (command.kind === 'anomaly-contact' || command.kind === 'anomaly-edge') {
       drawAnomalyMarker(command, .80 + Math.sin(now * 12) * .14);
     }
     else if (command.kind === 'hush-visible' || command.kind === 'hush-visible-edge') {
-      drawHushMarker(command.point, .82 + Math.sin(now * 9) * .12);
+      drawHushMarker(command.point,.82+Math.sin(now*.009)*.12,{edgeDirection:command.edgeDirection});
     }
   }
 }
@@ -429,48 +522,65 @@ function drawApparitionReturns(commands, apparitions, viewport) {
 
 export function drawMinimap(model, opts = {}) {
   if (!model || typeof model !== 'object' || !model.player) return;
-  const { cols } = uiSize();
-  const width = Math.max(24, Math.floor(opts.bounds?.w || 28));
-  const height = Math.max(12, Math.floor(opts.bounds?.h || 14));
+  const { cols,rows } = uiSize();
+  const width = Math.min(Math.max(26,Math.floor(opts.bounds?.w||32)),Math.max(26,cols-4));
+  const height = Math.min(Math.max(13,Math.floor(opts.bounds?.h||17)),Math.max(13,rows-5));
   const x0 = Math.floor(opts.bounds?.x ?? (cols - width - 2));
   const y0 = Math.floor(opts.bounds?.y ?? 2);
   const now = opts.now || 0;
   const target = targetLabel(model);
   const here = currentLabel(model);
   const hush = hushStatus(model, now);
+  const floor=model.floors.find((candidate)=>candidate.id===model.player.floorId);
+  const targetReadout=minimapTargetReadout(model);
   const panel = drawMachinePanel(x0, y0, width, height, {
-    label: 'MAP',
-    source: opts.source || `TARGET ${clip(target, 10)}`,
+    label: 'FIELD NAV',model:'FN-12',
+    source:opts.source||'',
     meter: false,
-    theme: hush.cls === 'ui-danger' ? 'green' : 'amber',
+    theme: hush.cls === 'ui-danger' ? 'amber' : 'green',
   });
   const panelPulse = hushStatusPulse(hush, now);
+  const targetPulse = targetStatusPulse(model.waypoint, now);
+  if (targetPulse > 0) uiFill(panel.x, panel.y, panel.w, panel.h, `rgba(80,174,255,${targetPulse})`);
   if (panelPulse > 0) uiFill(panel.x, panel.y, panel.w, panel.h, `rgba(255,118,65,${panelPulse})`);
   const viewport = {
-    x: panel.x + 1,
-    y: panel.y + 3,
-    w: Math.max(8, panel.w - 2),
-    h: Math.max(4, panel.h - 6),
+    x:panel.x,
+    y:panel.y+1,
+    w:Math.max(8,panel.w),
+    h:Math.max(5,panel.h-3),
   };
 
-  uiText(panel.x, panel.y, `YOU ${clip(here, Math.max(4, panel.w - 4))}`, 'ui-green', .78);
-  uiText(panel.x, panel.y + 1, `TARGET ${clip(target, Math.max(4, panel.w - 7))}`, model.waypoint ? 'ui-blue' : 'ui-secondary', .74);
-  uiText(panel.x, panel.y + 2, `HUSH ${clip(hush.label, 8)} ${clip(hush.detail, Math.max(3, panel.w - 16))}`, hush.cls, .76);
-  drawConfidenceTicks(panel, model);
+  const floorTag=String(floor?.shortLabel||floor?.label||'--').toUpperCase();
+  if(targetReadout){
+    const range=targetReadout.sameFloor
+      ?`${targetReadout.bearing} ${Math.max(0,Math.round(targetReadout.distanceM||0))}M`
+      :targetReadout.floorDelta
+        ?`${targetReadout.floorDelta>0?'+':''}${targetReadout.floorDelta}F`
+        :'OTHER FL';
+    const room=clip(target,Math.max(4,panel.w-range.length-4));
+    uiText(panel.x,panel.y,`◆ ${room}`,'ui-blue',.9);
+    uiText(panel.x+Math.max(0,panel.w-range.length),panel.y,range,'ui-blue',.74);
+  }else{
+    uiText(panel.x+Math.max(0,panel.w-floorTag.length),panel.y,floorTag,'ui-label',.5);
+  }
+  if(!targetReadout)drawConfidenceTicks(panel, model);
 
   const commands = buildMinimapCommands({ model, viewport, radius: opts.radius || 18, now, aspect: uiCellMetrics().aspect });
   drawTelemetryCrumbs(model, commands, viewport, now);
-  drawCommands(commands, now);
   drawMischiefBlink(commands, opts.mischief, viewport);
   drawApparitionReturns(commands, opts.apparitions, viewport);
+  drawCommands(commands, now);
 
-  const floor = model.floors.find((candidate) => candidate.id === model.player.floorId);
   const floorTarget = commands.find((command) => command.kind === 'floor-target');
   const anomalyFloor = commands.find((command) => command.kind === 'anomaly-floor');
-  let footer = floor?.label || 'POSITION UNKNOWN';
+  const hushHasSignal=!!model.hush?.active||!!newestMapContact(model)?.observation;
+  let footer=`YOU · ${here}`;
+  let footerCls='ui-green';
   if (anomalyFloor?.delta) footer = `HUSH ${anomalyFloor.delta > 0 ? '+' : ''}${anomalyFloor.delta} FLOOR`;
   else if (floorTarget?.delta) footer = `TARGET ${floorTarget.delta > 0 ? '+' : ''}${floorTarget.delta} FLOOR`;
-  uiText(panel.x, panel.y + panel.h - 1, clip(footer, panel.w), floorTarget?.delta || anomalyFloor?.delta ? 'ui-blue' : 'ui-label', .72);
+  else if(hushHasSignal){footer=`HUSH · ${hush.label}${hush.detail?` · ${hush.detail}`:''}`;footerCls=hush.cls;}
+  if(floorTarget?.delta||anomalyFloor?.delta)footerCls='ui-blue';
+  uiText(panel.x,panel.y+panel.h-1,clip(footer,panel.w),footerCls,.72);
   drawFloorDeltaLed(panel, anomalyFloor?.delta || floorTarget?.delta || 0);
   if (opts.expanded) uiText(panel.x, panel.y + panel.h, '[GREEN] YOU · [BLUE] TARGET · [RED ?] HUSH (SEEN)', 'ui-secondary', .66);
 }

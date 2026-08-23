@@ -857,6 +857,28 @@ export function flagsAt(x, y) { const c = cellAt(x, y); return c ? c.flags : F.S
 export function materialAt(x, y) { const c = cellAt(x, y); return c ? c.material : MATERIAL.none; }
 export function hasFlag(x, y, f) { return (flagsAt(x, y) & f) !== 0; }
 
+function portalSide(portal,x,y){
+  const along=portal?.widthAxis==='x'?y:x;
+  const plane=portal?.widthAxis==='x'?portal.cy:portal.cx;
+  return Math.sign(along-plane);
+}
+
+function exitOnlyStep(portal,sx,sy,bx,by,sourcePortal,targetPortal){
+  if(portal?.definition?.access!=='exit-only')return null;
+  const inside=portal.definition.insideSide===-1?-1:1;
+  // Approaching the threshold from outside is refused before leaf state is
+  // considered, so forced-open and restored-open leaves cannot become entries.
+  if(targetPortal===portal&&sourcePortal!==portal&&portalSide(portal,sx,sy)!==inside){
+    return{ok:false,why:'exit-only',id:portal.id};
+  }
+  // Once centred in the aperture, only the outward half of the crossing is
+  // legal. This closes the reverse-traversal hole on wide two-leaf portals.
+  if(sourcePortal===portal&&targetPortal!==portal&&portalSide(portal,bx,by)===inside){
+    return{ok:false,why:'exit-only',id:portal.id};
+  }
+  return null;
+}
+
 // A step is a body moving, not a camera: it needs somewhere to stand, room for
 // its head, and a riser it can take without thinking about it.
 export function canStep(fromX, fromY, toX, toY, { keys } = {}) {
@@ -877,6 +899,10 @@ export function canStep(fromX, fromY, toX, toY, { keys } = {}) {
   const b = destination?cellAt(destination.x,destination.y):cellAt(toX, toY);
   if (!b) return { ok: false, why: 'wall' };
   const bx=Math.floor(destination?.x??toX),by=Math.floor(destination?.y??toY);
+  const sourcePortal=doorAt(sx,sy),targetPortal=doorAt(bx,by);
+  const accessPortal=targetPortal||sourcePortal;
+  const accessRefusal=exitOnlyStep(accessPortal,sx,sy,bx,by,sourcePortal,targetPortal);
+  if(accessRefusal)return accessRefusal;
   if(plan.collisionOnly?.[idx(bx,by)])return{ok:false,why:'wall'};
   if (b.flags & F.BRICKED) return { ok: false, why: 'bricked' };
   if (b.flags & F.DOOR) {
@@ -888,6 +914,10 @@ export function canStep(fromX, fromY, toX, toY, { keys } = {}) {
   }
   if (b.ceil - b.floor < HEADROOM) return { ok: false, why: 'headroom' };
   if (a && Math.abs(b.floor - a.floor) > STEP_UP) return { ok: false, why: 'too high' };
+  if(accessPortal?.definition?.access==='exit-only'&&accessPortal.open){
+    accessPortal.autoCloseSide=accessPortal.definition.insideSide===-1?-1:1;
+    accessPortal.runtime.closerArmed=true;
+  }
   if(destination)return{ok:true,floor:b.floor,redirect:{...destination},edgePortal:edge.id,edgeTurn:edge.turn||0};
   const redirect=connectorMap.get(`${Math.floor(toX)},${Math.floor(toY)}`)||null;
   return { ok: true, floor: b.floor, ...(redirect?{redirect:{...redirect}}:{}) };
@@ -1537,6 +1567,10 @@ export function doorNear(px,py,facing=[0,-1],maxCells=5){
 export function interactDoor(px,py,facing,keys){
   const hit=doorNear(px,py,facing);if(!hit)return null;
   const {portal}=hit;
+  const side=portalSide(portal,px,py);
+  if(portal.definition?.access==='exit-only'&&side!==(portal.definition.insideSide===-1?-1:1)){
+    return{ok:false,why:'exit-only',id:portal.id,archetype:portal.definition?.archetype||null};
+  }
   const opening=portal.runtime.state===DOOR_STATE.CLOSED||portal.runtime.state===DOOR_STATE.CLOSING;
   if(opening&&portal.keyId&&!(keys&&keys.has(portal.keyId)))return{ok:false,why:'locked',id:portal.id,keyId:portal.keyId,archetype:portal.definition?.archetype||null};
   const along=portal.widthAxis==='x'?py:px,plane=portal.widthAxis==='x'?portal.cy:portal.cx;
@@ -1607,6 +1641,7 @@ export function doorState(){return doorPortals.map((portal)=>({
   hinge:portal.definition?.hinge||'left',swing:portal.definition?.swing||'escape',head:portal.definition?.head||'masonry-infill',
   mesh:portal.definition?.mesh||'door_leaf_service',frameMesh:portal.definition?.frameMesh||'door_frame_single',headMesh:portal.definition?.headMesh||'door_head_infill',
   renderGroups:[...(portal.definition?.renderGroups||[])],
+  access:portal.definition?.access||'both',insideSide:portal.definition?.insideSide===-1?-1:1,
   cx:portal.cx,cy:portal.cy,widthAxis:portal.widthAxis,cells:portal.cells.map((c)=>({...c})),
 }));}
 export function forEachDoor(visitor){for(const portal of doorPortals)visitor(portal);return doorPortals.length;}

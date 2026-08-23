@@ -1,4 +1,4 @@
-import { ENDING_IDS } from './schema.js';
+import { ENDING_IDS, POWER_CIRCUIT_IDS } from './schema.js';
 import { EVENT_TYPES } from './events.js';
 
 const endingDef = (id, name) => ({
@@ -123,9 +123,9 @@ export const ACHIEVEMENT_DEFS = Object.freeze([
   },
   {
     id: 'ACH_BUILDING_ALIVE', name: 'The Building, Briefly Alive',
-    description: 'Restore all three distribution circuits in one run.', category: 'method', hidden: false,
+    description: 'Restore all five distribution circuits in one run.', category: 'method', hidden: false,
     events: [EVENT_TYPES.RUN_FINISHED],
-    test: ({ run }) => ['sp01','sp02','sp03'].every((id) => run?.ledger?.power?.everRestored?.includes(id)),
+    test: ({ run }) => POWER_CIRCUIT_IDS.every((id) => run?.ledger?.power?.everRestored?.includes(id)),
   },
 ]);
 

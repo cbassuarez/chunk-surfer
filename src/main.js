@@ -133,13 +133,15 @@ import { practiceRoomHushBattle, sourceCombatBattle, trainingCombatBattle } from
 import { BREAKBEAT_CUE, SCREAM_CUE, enemyAttackShape } from './audio/piano-weapon.js';
 import { createCombatTutorialDirector } from './game/combat-tutorial.js';
 import { normalizeCombatBuild } from './game/combat-progression.js';
-import { availableBattleTools, moveCombatGear, reorderCombatGear } from './game/combat-loadout.js';
+import { assignCombatGearSlot, availableBattleTools, moveCombatGear, reorderCombatGear } from './game/combat-loadout.js';
 import * as ENCOUNTERS from './game/encounters.js';
 import * as MIC from './game/mic.js';
 import { createRecordingHallucinationDirector } from './game/recording-hallucinations.js';
 import { takeStamp, WORK_ORDER_STAMP } from './game/clock.js';
 import { drawMinimap, drawRecorderReturn } from './render/minimap.js';
-import { BUILDING_MAP } from './data/building-map.js';
+import { drawTakeRail } from './render/field-deck.js';
+import { fieldDeckLayout, hudReminderVisible } from './render/hud-layout.js';
+import { BUILDING_MAP, FACILITY_SPACE_IDS } from './data/building-map.js';
 import { storyWayfindingCapturePreset } from './data/story-wayfinding-captures.js';
 import { captureDoorMapState, captureFloorplanMapSource, buildMapModel } from './game/map-model.js';
 import { floorForHeight } from './game/map-projection.js';
@@ -157,6 +159,8 @@ import { flashMode, objectiveHintsMode, shakeMode, tutorialPromptsEnabled } from
 import { doorWinsWorldInteraction } from './game/interaction-focus.js';
 import { createInteractionLatch } from './game/interaction-latch.js';
 import { makeBagScene } from './game/bag.js';
+import { completeSheetInsight } from './game/bag-sheets.js';
+import { normalizeBagMapState, visitBagMapSpace } from './game/bag-map-state.js';
 import {
   BAG_AUTOMATIC_USE,
   bagInspectionDialogue,
@@ -164,7 +168,7 @@ import {
   resolveBagItemAction,
   resolveBagOwnership,
 } from './game/bag-items.js';
-import { makeArrivalScene, makeBoothDownbeatHoldScene, makeColdOpenScene, makeWorldTitleScene } from './game/coldopen.js';
+import { makeArrivalScene, makeBoothDownbeatHoldScene, makeColdOpenScene, makeGetInArrivalScene, makeWorldTitleScene } from './game/coldopen.js';
 import { makeOpeningCreditsScene } from './game/opening-credits.js';
 import {
   createGardenWatchState,
@@ -187,6 +191,16 @@ import {
   practiceRoomAt,
   tenantStandCandidates,
 } from './game/practice-rooms.js';
+import {
+  applyBasementWatcherHuntResult,
+  BASEMENT_WATCHER_ROOM_IDS,
+  BASEMENT_WATCHER_ROOMS,
+  ensureBasementWatcherState,
+  freshBasementWatcherState,
+  markBasementWatcherSeen,
+  normalizeBasementWatcherState,
+  resolveBasementWatcherMovement,
+} from './game/basement-watcher.js';
 import {
   KEY_CABINET_RING,
   keyCabinetKeyIdentified,
@@ -265,11 +279,13 @@ import { exteriorRainMaterialMixAt } from './data/exterior-district.js';
 import { buildEmergencyShadowFrame, meshForApparitionPose } from './game/emergency-light-runtime.js';
 import { createApparitionDirector } from './game/apparition-director.js';
 import {
+  POWER_CIRCUIT_IDS,
   circuitIsLive,
   livePowerCircuits,
   normalizePowerState,
   powerCircuitDefinition,
   powerCircuitForPanel,
+  setPowerCircuit,
   togglePowerCircuit,
 } from './game/conservatory-power.js';
 // THE ENDING CONTRACT. One entry per terminal id, played by ending-runtime.js.
@@ -1052,6 +1068,11 @@ const WORLD_VISUALS = {
     tintClass: 't-world-lux_nova',
     borderClass: 't-world-border-lux_nova',
     borderGlyphs: ['|', '!', ';', ':']
+  },
+  st_brendans: {
+    tintClass: 't-world-lux_nova',
+    borderClass: 't-world-border-lux_nova',
+    borderGlyphs: ['|', ':', '+', ';']
   }
 };
 function worldVisual(worldId){ return WORLD_VISUALS[worldId] || WORLD_VISUALS.main_b3; }
@@ -3896,6 +3917,7 @@ function step(dx,dy){
   beginRenderStep(nx,ny,nowMs);
   lastMoveAtMs=nowMs;
   px=nx; py=ny; stepCount++;
+  if(storyMode&&usingPlan()&&!usingSpecialSpace())noteBasementWatcherMovement();
   if(storyMode&&usingPlan()&&!usingSpecialSpace())onPlantHaulStep(stepFrom,{x:px,y:py});
   if(storyMode&&usingPlan()&&!usingSpecialSpace())noteDockTransitStep(stepFrom,{x:px,y:py});
   // Contact is a spatial threshold, so resolve it on the movement frame that
@@ -5385,6 +5407,7 @@ function loop(){
         tickGarden();
         tickYardVigil(dt);
         tickPracticeHaunts();
+        tickBasementWatcher();
         tickWhisperBed(dt);
         tickStabs(dt);
         tickPages();
@@ -5801,6 +5824,8 @@ function syncDoorDynamicProps({logicalX=px,logicalY=py,timeSec=performance.now()
       };
     }
   }
+  const watcher=basementWatcherRenderInstance(group);
+  if(watcher)doorDynamicCombined[count++]=watcher;
   // Recording hallucinations borrow the authored apparition pose library but
   // remain render-only dynamic props: no collision, shadow contact, local
   // light, HUSH state, save data or map presence.
@@ -5879,12 +5904,16 @@ function syncArchitecturalLocalLights(group,{logicalX=px,logicalY=py}={}){
   const effectsMode=settings.flash||'full';
   const physical=FP.logicalToPhysical(logicalX,logicalY);
   const context=resolveLightingContext({group,zone:FP.zoneAt(logicalX,logicalY),spaceId:physical.spaceId});
+  const towerPhase=chapelTowerState().phase;
+  const towerActive=[CHAPEL_TOWER_PHASE.TOWER_ACTIVE,CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(towerPhase);
+  const towerCleared=[CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(towerPhase);
   R3.r3dSetLightingContext?.(context);
   const ordinaryLights=resolveLocalLights(context,{
     timeSec,
     reducedFlash:effectsMode!=='full',
     effectsMode,
-    towerCleared:[CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(chapelTowerState().phase),
+    towerActive,
+    towerCleared,
     liveCircuits:liveLightCircuits(),
     // physicalPointFor is in runtime cells; authored light data is in metres.
     origin:{x:physical.x*CELL,z:physical.z*CELL},
@@ -7052,7 +7081,7 @@ function enterStory(){
   REC.loadRecState(getSave().rec);
   PRES.loadPresenceState(getSave().presence);
   resetHushContactSession();
-  OBJ.loadObjState(getSave().obj,{validTargets:TARGETS});
+  OBJ.loadObjState(getSave().obj,{validTargets:TARGETS,validSpaces:FACILITY_SPACE_IDS});
   STAB.loadStabState(getSave().stabs);
   RADIO.loadRadioState(getSave().radio);
   PLANT.loadPlantIncident(getSave().plantIncident);
@@ -7064,6 +7093,7 @@ function enterStory(){
   PROPS.loadPropState(getSave().props);
   ENCOUNTERS.loadEncounterState(getSave().encounters);
   loadPracticeHaunts();
+  loadBasementWatcher();
   loadThoughtState(getSave().thoughts);
   restoreYardVigil();
   stepCount=Math.max(0,Number(getSave().steps)||0);
@@ -7088,6 +7118,10 @@ function enterStory(){
     audio:()=>{ ensureCtx(); return actx ? { ctx:actx, destination:dialogGain || master || actx.destination } : null; },
     typing:STORY,
     cue:fireCue,
+    // Small-shell thoughts inherit the place that made them true. Crossing a
+    // threshold invalidates anything that has not reached the band yet (and
+    // cuts an active thought that no longer describes the room on screen).
+    context:currentSpeechContextKey,
   });
   TUT.tutorialInit({ say:SPEECH.say,
     // Six seconds is a level check. It sets the gate flag, hands the recorder
@@ -7868,7 +7902,11 @@ function noteArrivalCrossing(to){
   if(previous!==ZONE.dock||zone!==ZONE.getIn)return;
   flagApply(['title.shown']);
   saveCommit({flags:getSave().flags});
-  scenes.push(makeWorldTitleScene({
+  // The threshold cutscene owns the band completely. Any yard observation that
+  // was still waiting is no longer true indoors and must not surface after the
+  // title in front of the internal debrief.
+  SPEECH.clearSpeech();
+  scenes.push(makeGetInArrivalScene({
     audio: STORY,
     cue: fireCue,
     // HE LOOKS BACK. The title used to cut from whatever was under the cursor on
@@ -7934,7 +7972,7 @@ function noteDockTransitStep(from,to){
   // one exact transition. This catches the same fact by evidence, every step,
   // so a missed crossing cannot withhold the dock haunting and everything else
   // keyed on departure for the rest of the run. It sets the flag only — the
-  // post-door thought below still belongs to the real crossing.
+  // door-memory beat still belongs to a deliberate reach for the goods doors.
   if(dockDepartureIsEvident({
     departed:flagTest('dock.departed'),
     // stepCount is the live truth; getSave().steps is only committed AFTER
@@ -7944,7 +7982,6 @@ function noteDockTransitStep(from,to){
     steps:Math.max(stepCount,Number(getSave().steps)||0),
     inDockZone:atHomeThreshold(to.x,to.y),
   }))flagSet('dock.departed');
-  if(dockTransit.departedNow&&setupComplete()&&!greyDoorRetired()&&!scenes.blocksInput())postDoorThought();
   // Walking off the dock is where the building starts talking. It never stops
   // for the rest of the run — including on a return to the dock, because by then
   // it is not the dock doing it.
@@ -8038,11 +8075,10 @@ function refreshRetiredDoorWorld(){
 // `force` — and if the scene still declines for any reason, the press seals the
 // wall itself rather than doing nothing at all.
 function tryTheGreyDoor(focus=null){
-  // This beat is post-setup only. Before the recorder setup is complete, the
-  // same physical door is just another attempted exit and the tutorial refusal
-  // owns it. That keeps an early [E] from firing "the door you came in through"
-  // while the player is still trying to satisfy the setup funnel.
-  if(!storyMode||!usingPlan()||usingSpecialSpace()||!setupComplete()||greyDoorRetired()) return false;
+  // This is a memory beat, not one of the setup exits. Once he has crossed into
+  // Get In, reaching for either goods leaf owns the press regardless of whether
+  // the recorder check is finished.
+  if(!storyMode||!usingPlan()||usingSpecialSpace()||greyDoorRetired()) return false;
   if(FP.zoneAt(px,py)!==ZONE.getIn) return false;
   const portal=focus?.doorWins ? focus.door?.portal : greyDoorNear();
   if(portal?.id!==GREY_DOOR_ID) return false;
@@ -8149,7 +8185,6 @@ function refuseDockExit({speak=true}={}){
 // threshold refusal is, and it never stops him: it is a man talking himself out
 // of leaving, and after setup these doors open like any other.
 const SETUP_EXIT_DOOR_IDS=new Set([
-  GREY_DOOR_ID,
   'front-main',
   DOCK_PORTAL.FOYER,
   DOCK_PORTAL.SERVICE,
@@ -8254,24 +8289,35 @@ function daydreamBeat(){
   const drift=shufflePick(DAYDREAM_DRIFT, 3);
   const silly=shufflePick(DAYDREAM_SILLY, 1)[0];
   const pause={ who:'you', text:'...' };
+  let levelSetContinueSecond=0;
+  const countAtContinue=(suffix='.')=>({
+    who:'you',
+    resolveText:()=>{
+      // Match the whole second shown on the DA-1000 counter. Conversation lines
+      // resolve as the Continue press advances into them, so this is the second
+      // the player actually chose rather than a scripted count.
+      levelSetContinueSecond=Math.max(0,Math.floor(Number(REC.recState().takeElapsed)||0));
+      return `${levelSetContinueSecond}${suffix}`;
+    },
+  });
   return [
     { who:'direction', text:'Rolling. Feet still, hands off the light, and nothing to do for six seconds but count them.' },
-    { who:'you', text:'One.' },
+    countAtContinue(),
     pause,
-    { who:'you', text:'Two.' },
+    countAtContinue(),
     pause,
-    { who:'you', text:'Three.' },
+    countAtContinue(),
     { who:'you', text:drift[0] },
     pause,
-    { who:'you', text:'Four.' },
+    countAtContinue(),
     { who:'you', text:drift[1] },
     pause,
-    { who:'you', text:'Five.' },
+    countAtContinue(),
     { who:'you', text:drift[2] },
     { who:'you', text:silly },
     { who:'you', text:'Heh.' },
     pause,
-    { who:'you', text:'Six. There. That is a level.' },
+    countAtContinue('. There. That is a level.'),
     { who:'direction', text:'The needle settles. So do your eyes.' },
   ];
 }
@@ -9553,11 +9599,11 @@ function stopHeldPropPlay(fade=.08){
 function progressionDocumentId(doc){
   return String(doc?.id || doc?.title || 'document').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 }
-function readDocumentTracked(doc){
+function readDocumentTracked(doc,{present=true}={}){
   if(!doc) return false;
   const id=progressionDocumentId(doc);
   const known=!!getMeta().knowledge?.documents?.[id];
-  DOC.readDocument(known?{...doc,byline:`KNOWN · ${doc.byline||'REACQUIRED THIS RETURN'}`} : doc);
+  if(present)DOC.readDocument(known?{...doc,byline:`KNOWN · ${doc.byline||'REACQUIRED THIS RETURN'}`} : doc);
   emitProgress(EVENT_TYPES.DOCUMENT_READ, { id }, 'main.readDocumentTracked');
   return true;
 }
@@ -9889,9 +9935,9 @@ function interact(){
     });
     if(pickUpPage()) return;
   }
-  // Until setup is done, every attempted exit from the get-in belongs to the
-  // tutorial funnel. Only after that can the grey-door memory beat take the same
-  // physical threshold.
+  // Until setup is done, attempted exits from Get In belong to the tutorial
+  // funnel. The goods doors are the exception: they are a memory beat, not a
+  // usable exit, and are handled immediately below.
   if(trySetupExitDoor(focus)) return;
   if(tryTheGreyDoor(focus)) return;
   if(tryDockHauntingDoor(focus))return;
@@ -9899,7 +9945,9 @@ function interact(){
   const doorHit=focus.doorWins?FP.interactDoor(px,py,lookForward,playerKeys):null;
   if(doorHit){
     if(!doorHit.ok){
-      if(doorHit.keyId==='tower-live'){
+      if(doorHit.why==='exit-only'){
+        SPEECH.say({who:'you',text:'No handle on this side.'});
+      }else if(doorHit.keyId==='tower-live'){
         SPEECH.say({who:'you',text:'Bell chamber. ACCESS RESTRICTED. The maintenance hasp is linked to the inner screen.'});
       }else SPEECH.say({who:'you',text:lockedDoorThought(doorHit.keyId,doorHit.id)});
       return;
@@ -10117,6 +10165,33 @@ function markRoom(room){
   return true;
 }
 
+// Personal map marks are independent of the current story guidance. The map
+// passes its canonical space rather than coercing every landing, corridor and
+// tower room into one of the five recording-job room ids.
+function markMapSpace(space){
+  if(!space?.id||space.waypointable===false)return false;
+  const current=OBJ.playerWaypoint();
+  if(current?.spaceId===space.id){
+    OBJ.clearWaypoint();
+    saveCommit({obj:OBJ.saveObjState()});
+    facilityMapCache={key:'',model:null};
+    fireCue('bag');
+    SPEECH.say({who:'you',text:`${space.label}. Clear.`});
+    return true;
+  }
+  const runtime=space.logical?FP.toRuntimePoint(space.logical):space.roomId&&ROOM_CELLS[space.roomId]?FP.toRuntimePoint(ROOM_CELLS[space.roomId]):null;
+  const changed=OBJ.setPlayerWaypoint({
+    spaceId:space.id,roomId:space.roomId||null,floorId:space.floorId||null,
+    x:runtime?.x,y:runtime?.y,position:space.position||null,label:space.label||null,
+  });
+  if(!changed)return false;
+  saveCommit({obj:OBJ.saveObjState()});
+  facilityMapCache={key:'',model:null};
+  fireCue('bag');
+  SPEECH.say({who:'you',text:`${space.label}. Marked.`});
+  return true;
+}
+
 // The paper, as the bag sees it: everything he has actually picked up, plus the
 // work order, which files under studio B3 because that is the room it tells him
 // to do first.
@@ -10257,6 +10332,12 @@ function reorderBagCombatEquipment(id,direction){
   return result;
 }
 
+function assignBagCombatEquipmentSlot(id,slotIndex){
+  const result=assignCombatGearSlot(getSave().bagLoadout,id,slotIndex);
+  if(result.changed)saveCommit({bagLoadout:result.loadout});
+  return result;
+}
+
 // The footer hint is for the un-guided case. A tutorial step is not a hint: it
 // takes the case's own callout band (see tutorialGuide / drawBagGuide), which
 // locks the surface and says WHY, so a required step can never be mistaken for
@@ -10264,7 +10345,7 @@ function reorderBagCombatEquipment(id,direction){
 function bagHint(){ return ''; }
 
 function bagFocus(){
-  if(TUT.tutorialStep()==='read') return {sectionId:'files',entryId:'file:work-order'};
+  if(TUT.tutorialStep()==='read') return {sectionId:'sheets',entryId:'file:work-order'};
   if(TUT.tutorialStep()==='mark') return {sectionId:'map',roomId:'main_b3',entryId:'room:main_b3',onceKey:'tutorial:mark-main-b3'};
   return null;
 }
@@ -10320,6 +10401,7 @@ function openBag({ focus:focusOverride=null }={}){
     getEquipment:bagEquipment,
     getLoadout:()=>getSave().bagLoadout,
     moveEquipment:moveBagCombatEquipment,
+    assignEquipmentSlot:assignBagCombatEquipmentSlot,
     reorderEquipment:reorderBagCombatEquipment,
     getJob:bagJob,
     getMap:currentFacilityMapModel,
@@ -10333,15 +10415,24 @@ function openBag({ focus:focusOverride=null }={}){
     memory:getSave().bagNav,
     onRemember:(bagNav)=>saveCommit({bagNav}),
     onItemAction:dispatchBagItemAction,
+    getItemInspection:(itemId)=>bagInspectionDialogue(itemId,bagInspectionContext()),
+    getSheetInsights:()=>getSave().bagSheets,
+    onSheetInsight:(documentId)=>{
+      const next=completeSheetInsight(getSave().bagSheets,documentId);
+      saveCommit({bagSheets:next});
+      return true;
+    },
     getMonitorSource:()=>MIC.micActive()?'ROOM MIC LIVE':'FIELD LIVE',
     readDocument:(doc)=>{
-      readDocumentTracked(doc);
+      readDocumentTracked(doc,{present:false});
       if(doc?.id==='work-order') markWorkOrderRead();
       if(doc?.id==='page-6'){
         flagApply(['chapel.clue.log']);saveCommit({flags:getSave().flags});
       }
     },
     markRoom,
+    markSpace:markMapSpace,
+    onClearInput:()=>resetMotionInput('bag-close',{stopRenderMove:true}),
   }));
 }
 
@@ -11485,6 +11576,27 @@ function placeHorizonBust(){
   if(at) R3.r3dSetHorizonBust?.(at);
 }
 
+// THE CROSSING HAS THREE ACTS, BECAUSE THE RECORDING DOES.
+//
+// PLACEHOLDER TEXT, and deliberately obvious about it — each line describes the
+// beat it is standing in for rather than playing it. The shape is the point:
+// the tape's macroblock damage begins around depth 42 and clears again around
+// 358, which gives the walk a clean opening, a ruined middle with the bust
+// inside it, and a clean stretch before the collapse. Those transitions are
+// measured off the bake (see build-horizon-profile.mjs), not chosen.
+//
+// Replace the words. Keep the placements.
+const HORIZON_MARKER_LINES = Object.freeze({
+  'damage-begins': { who:'you', text:'[PLACEHOLDER] A line marking the moment the picture starts coming apart — written, when it is written, as the recordist noticing damage rather than being frightened by it, because he is a man who knows what a codec failing looks like.' },
+  'damage-ends': { who:'you', text:'[PLACEHOLDER] And a line for the moment it stops: the tape holding together again, which should read as worse rather than better, since nothing out here has been repaired and something has evidently decided to be legible.' },
+});
+
+function speakHorizonMarker(){
+  const id=chunkSurfRuntime?.takeHorizonMarker?.();
+  const line=id&&HORIZON_MARKER_LINES[id];
+  if(line) SPEECH.say(line);
+}
+
 // Whether the body is out past the perimeter, for anything that needs to stop
 // behaving like a building.
 function horizonUnderfoot(){
@@ -11544,6 +11656,7 @@ function tickSourceSpace(dt){
     if(PRES.isActive())PRES.despawn();
     sourceFearFloor=0;
     tickHorizonScore(horizon,dt);
+    speakHorizonMarker();
     syncSourceRender();
     return;
   }
@@ -12235,6 +12348,104 @@ function stopWhisperBed(){
   whisperProgress=0;
   whisperGrainsAnnounced=false;
   whisperTakeTarget=null;
+}
+
+// ── the basement watcher ─────────────────────────────────────────────────────
+// One persisted figure in B1 or B5. It is a look-and-move trigger for the real
+// Presence, never a second adversary and never a second pursuit implementation.
+let basementWatcher=freshBasementWatcherState();
+
+function basementWatcherRunId(){return getSave().run?.id||'legacy-run';}
+
+function commitBasementWatcher(){
+  saveCommit({basementWatcher:{...basementWatcher}});
+  return basementWatcher;
+}
+
+function loadBasementWatcher(){
+  basementWatcher=ensureBasementWatcherState(getSave().basementWatcher,basementWatcherRunId());
+  commitBasementWatcher();
+}
+
+function basementWatcherDefinition(){
+  return BASEMENT_WATCHER_ROOMS[basementWatcher.roomId]||null;
+}
+
+function basementWatcherStand(){
+  const definition=basementWatcherDefinition();
+  return definition?FP.toRuntimePoint(definition.stand):null;
+}
+
+function basementWatcherRenderInstance(group){
+  if(group!=='basement'||basementWatcher.resolved||getSave().settings?.reduceDread)return null;
+  if(scenes.blocksInput()||activeBattleId||usingSpecialSpace())return null;
+  const definition=basementWatcherDefinition(),logical=basementWatcherStand();
+  if(!definition||!logical)return null;
+  const at=FP.logicalToPhysical(logical.x,logical.y);
+  if(!at||at.renderGroup!=='basement')return null;
+  return{
+    id:`basement-watcher:${definition.id}`,
+    mesh:meshForApparitionPose('head_turn'),poseId:'head_turn',apparitionIndex:0,
+    x:at.x*CELL,y:at.y,z:at.z*CELL,yaw:definition.yaw,
+    scaleX:.96,scaleY:1.03,scaleZ:.72,
+    emissive:[.82,.92,1,1.72],noShadow:false,structural:false,
+    zone:FP.zoneAt(logical.x,logical.y),basementWatcher:true,
+  };
+}
+
+function tickBasementWatcher(){
+  if(!storyMode||!usingPlan()||usingSpecialSpace()||basementWatcher.resolved||basementWatcher.armed)return;
+  if(getSave().settings?.reduceDread||scenes.blocksInput()||REC.isRecording()||activeBattleId)return;
+  if(PRES.publicSnapshot().tableau)return;
+  const group=FP.logicalToPhysical(px,py).renderGroup;
+  if(!basementWatcherRenderInstance(group))return;
+  const at=basementWatcherStand();
+  if(!at||!pointInSight(at.x,at.y))return;
+  const next=markBasementWatcherSeen(basementWatcher);
+  if(!next.armed)return;
+  basementWatcher=next;
+  commitBasementWatcher();
+}
+
+function basementWatcherSpawnCell(){
+  const definition=basementWatcherDefinition();
+  for(const candidate of definition?.spawnCandidates||[]){
+    const at=FP.toRuntimePoint(candidate);
+    if(solidAt(at.x,at.y)||!PROPS.propCanOccupy(at.x,at.y))continue;
+    return at;
+  }
+  return null;
+}
+
+function resolveBasementWatcherHunt({roll=null}={}){
+  const run=getSave().run||{};
+  const result=resolveBasementWatcherMovement(basementWatcher,{
+    runId:basementWatcherRunId(),
+    currentPreset:run.rules?.currentPreset||run.rules?.startedPreset||'contract',
+    startedPreset:run.rules?.startedPreset||'contract',
+    roll,
+  });
+  if(!result.changed)return result;
+  basementWatcher=result.state;
+  applyBasementWatcherHuntResult(result,{
+    isActive:()=>PRES.isActive(),
+    spawn:()=>{
+      const spawn=basementWatcherSpawnCell();
+      return !!spawn&&PRES.spawnAtCell(spawn.x,spawn.y,{sector:`watcher-${basementWatcher.roomId}`});
+    },
+    retarget:()=>PRES.offerSoundTarget({
+      position:{x:px,y:py},level:.92,confidence:1,
+      expiresAt:performance.now()+8000,priority:1,reason:'WATCHER_MOVEMENT',
+    }),
+  });
+  saveCommit({basementWatcher:{...basementWatcher},presence:PRES.savePresenceState()});
+  return result;
+}
+
+function noteBasementWatcherMovement(){
+  if(!basementWatcher.armed||basementWatcher.resolved)return false;
+  if(getSave().settings?.reduceDread||scenes.blocksInput()||activeBattleId||PRES.publicSnapshot().tableau)return false;
+  return resolveBasementWatcherHunt().changed;
 }
 
 // ── the practice suite ───────────────────────────────────────────────────────
@@ -13810,12 +14021,9 @@ function applyEndingEvent(step){
   if(step.kind===ENDING_EVENT.FLASH){ CR.fx.flash(Number(step.ms)||120,'rgba(6,6,8,0.85)'); return; }
   if(step.kind===ENDING_EVENT.CUE){ fireCue(step.value); return; }
   if(step.kind===ENDING_EVENT.CIRCUIT){
-    const power=togglePowerCircuit(getSave().power,step.value,{at:Date.now()});
-    // togglePowerCircuit flips; only write when the result is what was asked for,
-    // so a circuit that was already dead is not switched back on by an ending
-    // that meant to kill it.
-    if(circuitIsLive(power,step.value)!==!!step.on) return;
-    saveCommit({power});
+    const transition=setPowerCircuit(getSave().power,step.value,step.on,{at:Date.now()});
+    if(!transition.changed)return;
+    saveCommit({power:transition.state});
     updateElectricalHum();
     refreshWorldProps();
     return;
@@ -14136,14 +14344,14 @@ function floorHere(){ return usingSpecialSpace()?activeGeometry().floorAt(px,py)
 // only the room you are actually in.
 const ZONE_RECORDING_ROOM={ [ZONE.studio]:'main_b3', [ZONE.natatorium]:'the_tub', [ZONE.hall]:'amplifications',
                   [ZONE.practice]:'soundnoisemusic', [ZONE.chapel]:'lux_nova' };
-const ZONE_ACOUSTIC_ROOM={...ZONE_RECORDING_ROOM,[ZONE.chapelOuter]:'chapel_outer',[ZONE.bellTower]:'bell_tower'};
+const ZONE_ACOUSTIC_ROOM={...ZONE_RECORDING_ROOM,[ZONE.chapelOuter]:'chapel_outer',[ZONE.bellTower]:'bell_tower',[ZONE.church]:'st_brendans'};
 const ZONE_AREA={ [ZONE.dock]:'the loading bay', [ZONE.getIn]:'the get-in', [ZONE.foyer]:'front atrium', [ZONE.studio]:'studio B3',
   [ZONE.natatorium]:'the natatorium', [ZONE.hall]:'the concert hall', [ZONE.practice]:'the practice wing',
   [ZONE.chapel]:'chapel nave', [ZONE.chapelOuter]:'outer chapel', [ZONE.bellTower]:'bell tower', [ZONE.academic]:'academic gallery', [ZONE.plant]:'plant room', [ZONE.stair]:'building stair',
   // The dance wing reads as one area on purpose: the recordist has no work order
   // for these rooms and no name for them beyond what is stencilled on the door.
   // B3 is one of them — it reads as itself only because the work order names it.
-  [ZONE.danceStudio]:'the dance wing', [ZONE.store]:'the prop store' };
+  [ZONE.danceStudio]:'the dance wing', [ZONE.store]:'the prop store', [ZONE.church]:'St Brendan’s Cathedral' };
 function recordableRoomAt(x,y){ return usingSpecialSpace()?null:usingPlan() ? (ZONE_RECORDING_ROOM[FP.zoneAt(x,y)] || null) : currentWorld(); }
 // The sub-basement studios are the building's only sprung floors — maple on
 // battens over a void, which is a drum. B3 is one of them, so the loudest place
@@ -14531,12 +14739,23 @@ function mapProjectLogical(point,{authored=true}={}){
   return{x:p.x,z:p.z,height:p.y,layer:p.layer,renderGroup:p.renderGroup,roomId:ZONE_RECORDING_ROOM[FP.zoneAt(q.x,q.y)]||null};
 }
 
+function currentSpeechContextKey(){
+  if(!storyMode)return null;
+  if(usingSourceSpace())return'source-space';
+  if(usingStairAnomaly())return'stair-anomaly';
+  if(usingPlan()&&FP.isLoaded()){
+    const physical=FP.logicalToPhysical(px,py);
+    return`${planName}:${physical.renderGroup}:${FP.zoneAt(px,py)}`;
+  }
+  return`${planName||'world'}:${currentWorld()||'unknown'}`;
+}
+
 function currentStoryGuidanceTarget(){
   const selected=OBJ.waypoint();
   return resolveStoryGuidanceTarget({
     prologueDone:flagTest('prologueDone'),
     bagTaken:flagTest('bag.taken'),
-    benchVisited:flagTest('yard.bench.sat'),
+    getInEntered:flagTest('title.shown'),
     tower:chapelTowerState(),
     escape,
     readPageIds:OBJ.objState().read,
@@ -14583,6 +14802,7 @@ function mapWaypointForStory(source,frame=currentStoryGuidanceFrame()){
     id:frame.target.id,
     label:frame.target.label,
     kind:frame.target.kind||'position',
+    playerSelected:!!frame.target.playerSelected,
     roomId:frame.target.roomId||null,
     propId:frame.target.propId||null,
     doorId:frame.target.doorId||null,
@@ -14746,6 +14966,38 @@ function currentMapVisibilityOccluders(source, physical){
   return out;
 }
 
+function currentPlayerMapWaypoint(source){
+  const saved=OBJ.playerWaypoint();
+  if(!saved?.spaceId||!source)return null;
+  const authored=(source.targets||[]).find((space)=>`space:${space.roomId}`===saved.spaceId)
+    ||(source.spaces||[]).find((space)=>space.id===saved.spaceId)
+    ||(source.landmarks||[]).find((space)=>space.id===saved.spaceId)
+    ||null;
+  if(!authored)return null;
+  return{
+    ...saved,
+    label:saved.label||authored.label||null,
+    floorId:authored.floorId||saved.floorId||null,
+    position:authored.position||saved.position||null,
+  };
+}
+
+function currentVisitedMapSpaces(source,playerPosition,playerFloorId,roomId){
+  let state=normalizeBagMapState(getSave().bagMap),changed=false;
+  const visit=(spaceId)=>{
+    const result=visitBagMapSpace(state,spaceId);state=result.state;changed=result.changed||changed;
+  };
+  if(roomId)visit(`space:${roomId}`);
+  const nearest=[...(source.spaces||[]),...(source.landmarks||[])]
+    .filter((space)=>space.floorId===playerFloorId&&space.position)
+    .map((space)=>({space,distance:Math.hypot(space.position.x-playerPosition.x,space.position.y-playerPosition.y)}))
+    .filter(({space,distance})=>distance<=Number(space.currentRadius||5))
+    .sort((a,b)=>a.distance-b.distance)[0]?.space||null;
+  if(nearest)visit(nearest.id);
+  if(changed)saveCommit({bagMap:state});
+  return new Set(state.visited);
+}
+
 function currentFacilityMapModel(){
   if(usingSourceSpace()){
     const model=buildMapModel({source:null,job:bagJob(),navigation:activeDifficulty.navigation});
@@ -14768,6 +15020,7 @@ function currentFacilityMapModel(){
   const objective=OBJ.objState();
   const guidance=currentStoryGuidanceFrame();
   const activeWaypoint=mapWaypointForStory(source,guidance);
+  const playerWaypoint=currentPlayerMapWaypoint(source);
   const radioAt=RADIO.radioLocation();
   const stride=source.topologyStride||1;
   const radioPhysical=radioAt?mapProjectLogical(radioAt,{authored:false}):null;
@@ -14784,29 +15037,41 @@ function currentFacilityMapModel(){
   const discoveredFloorIds=flagGet('academic.entered')?new Set(['academic']):new Set();
   const discoveryKey=discoveredFloorIds.has('academic')?'academic':'base';
   const areaLabel=currentAreaLabel();
-  // The heading is PART OF THE KEY. It was not, so turning on the spot never
-  // invalidated the cache and the map kept drawing last frame's facing — which is
-  // why the old facing tick appeared frozen and why the sight cone would not turn.
-  // Quantised to ~6° so an idle mouse does not rebuild the model every frame.
-  const headingKey=Math.round(mapWorldHeading()/(Math.PI/30));
+  const playerHeading=mapWorldHeading();
+  const playerPosition={x:physical.x/stride,y:physical.z/stride};
+  const roomId=recordableRoomAt(px,py)||null;
+  const playerFloorId=floorForHeight(BUILDING_MAP,physical.y,{renderGroup:physical.renderGroup})?.id||null;
+  const visitedSpaceIds=currentVisitedMapSpaces(source,playerPosition,playerFloorId,roomId);
+  const visitKey=[...visitedSpaceIds].sort().join('|');
+  const hush=rawHush?{
+    ...rawHush,
+    position:{x:rawHush.position.x/stride,y:rawHush.position.y/stride},
+  }:null;
   const guidanceKey=activeWaypoint?`${activeWaypoint.id}:${activeWaypoint.floorId||''}:${Math.round(activeWaypoint.position.x*4)}:${Math.round(activeWaypoint.position.y*4)}`:'none';
+  const playerWaypointKey=playerWaypoint?`${playerWaypoint.spaceId}:${playerWaypoint.floorId||''}`:'none';
   const equipmentKey=equipmentMarkers.map((marker)=>`${marker.id}:${marker.floorId}:${marker.position.x}:${marker.position.y}:${marker.carrierOpen?1:0}`).join('|');
-  const key=[Math.round(physical.x/2),Math.round(physical.z/2),Math.round(physical.y*4),headingKey,recordableRoomAt(px,py)||'',areaLabel,objective.target||'',guidanceKey,job.rooms.map((room)=>room.recorded?'1':'0').join(''),doorKey,activeDifficulty.navigation.id||'',contactKey,hushKey,towerKey,discoveryKey,visibilityKey,equipmentKey].join('~');
-  if(facilityMapCache.key===key&&facilityMapCache.model)return facilityMapCache.model;
+  const key=[Math.round(physical.x/2),Math.round(physical.z/2),Math.round(physical.y*4),roomId||'',areaLabel,objective.target||'',playerWaypointKey,guidanceKey,job.rooms.map((room)=>room.recorded?'1':'0').join(''),doorKey,activeDifficulty.navigation.id||'',contactKey,hushKey,towerKey,discoveryKey,visitKey,visibilityKey,equipmentKey].join('~');
+  // Topology, route and job state are the expensive cached layer. Player pose and
+  // confirmed HUSH pose are a live frame layered over it, so the heading-up map
+  // moves continuously instead of waiting for a two-cell / six-degree cache step.
+  if(facilityMapCache.key===key&&facilityMapCache.model){
+    const cached=facilityMapCache.model;
+    return{
+      ...cached,
+      player:{...cached.player,roomId,areaLabel,position:playerPosition,heading:playerHeading},
+      hush,visibilityOccluders,
+    };
+  }
   const model=buildMapModel({
-    source,job,objectiveState:objective,activeWaypoint,doors,contacts:[contact],equipmentMarkers,navigation:activeDifficulty.navigation,discoveredFloorIds,
+    source,job,objectiveState:objective,activeWaypoint,playerWaypoint,doors,contacts:[contact],equipmentMarkers,navigation:activeDifficulty.navigation,discoveredFloorIds,visitedSpaceIds,
     landmarkState:{
       'landmark:ringing-room':{visible:[CHAPEL_TOWER_PHASE.TOWER_ACTIVE,CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(tower.phase)},
       'landmark:bell-chamber':{visible:[CHAPEL_TOWER_PHASE.TOWER_ACTIVE,CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(tower.phase),label:tower.phase===CHAPEL_TOWER_PHASE.FORESHADOW||tower.phase===CHAPEL_TOWER_PHASE.SOURCE_READY?'ACCESS RESTRICTED':'BELL CHAMBER'},
       'landmark:organ-loft':{visible:[CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(tower.phase)},
     },
-    player:{x:physical.x,y:physical.z,height:physical.y,renderGroup:physical.renderGroup,roomId:recordableRoomAt(px,py),areaLabel,heading:mapWorldHeading()},
+    player:{x:physical.x,y:physical.z,height:physical.y,renderGroup:physical.renderGroup,roomId,areaLabel,heading:playerHeading},
   });
-  const hush=rawHush?{
-    ...rawHush,
-    position:{x:rawHush.position.x/stride,y:rawHush.position.y/stride},
-  }:null;
-  const liveModel={...model,hush,visibilityOccluders};
+  const liveModel={...model,player:{...model.player,position:playerPosition,heading:playerHeading},hush,visibilityOccluders};
   facilityMapCache={key,model:liveModel};
   return liveModel;
 }
@@ -15385,7 +15650,7 @@ function godStoryWayfindingCapture(id){
   if(['rekey-ledger','key-cabinet','chapel-screen'].includes(preset.state)){read=[...read,'page-6'];flags['chapel.clue.log']=true;}
   if(['key-cabinet','chapel-screen'].includes(preset.state))flags['chapel.clue.ledger']=true;
   if(preset.state==='chapel-screen'){flags['chapel.keyTaken']=true;items.add('chapel_key');playerKeys.add('chapel');tower={...tower,corridorDiscovered:true};}
-  OBJ.loadObjState({...OBJ.saveObjState(),read},{validTargets:TARGETS});
+  OBJ.loadObjState({...OBJ.saveObjState(),read},{validTargets:TARGETS,validSpaces:FACILITY_SPACE_IDS});
   saveCommit({flags,settings,items:[...items],chapelTower:tower,obj:OBJ.saveObjState()});
   syncChapelTowerKeyring(tower);syncVisiblePages();syncKeyCabinetProps({refresh:false});
 
@@ -15722,6 +15987,19 @@ function godTabs(){
       warp('warp-academic','ACADEMIC GALLERY','academic-gallery'),
       warp('warp-chapel','CHAPEL','chapel'),
       warp('warp-plant','PLANT ROOM','plant-room'),
+    ]},
+    {id:'cathedral',name:'CATHEDRAL',rows:[
+      section("St Brendan's Cathedral"),
+      warp('cathedral-exterior','EXTERIOR REVIEW','cathedral-exterior'),
+      warp('cathedral-west-nave','WEST NAVE','cathedral-west-nave'),
+      warp('cathedral-crossing','CROSSING','cathedral-crossing'),
+      warp('cathedral-choir','CHOIR','cathedral-choir'),
+      warp('cathedral-side-chapel','SIDE CHAPEL','cathedral-side-chapel'),
+      warp('cathedral-sacristy','SACRISTY','cathedral-sacristy'),
+      section('Upper circuit'),
+      warp('cathedral-organ-loft','ORGAN LOFT','cathedral-organ-loft'),
+      warp('cathedral-triforium','TRIFORIUM WALK','cathedral-triforium'),
+      warp('cathedral-belfry','BELFRY','cathedral-belfry'),
     ]},
     {id:'source-space',name:'SOURCE',rows:[
       section('Infinite Long Hall'),
@@ -16637,6 +16915,7 @@ function drawSourceHud(cols,rows){
 function drawStoryHud(){
   if(!storyMode || scenes.blocksWorld() || scenes.suppressesHud()) return;
   const { cols, rows }=uiSize();
+  const deck=fieldDeckLayout({cols,rows});
   if(usingSourceSpace()){drawSourceHud(cols,rows);return;}
 
   // ROLLING. The take takes over the screen: the dark room you are locked in,
@@ -16645,12 +16924,11 @@ function drawStoryHud(){
   if(REC.isRecording()){ drawTakeOverlay(cols, rows); SPEECH.drawSpeech(); return; }
 
   const rec=REC.recState();
-  if(!rec.light && !REC.isListening()) uiText(2, 3, 'LIGHT  OFF', 'ui-secondary');
   // The battery only becomes a fact when it starts being a problem.
   {
     const b=REC.batteryLevel();
-    if(b<=0) uiText(14, 3, 'CELL  FLAT', 'ui-danger');
-    else if(b<0.35) uiText(14, 3, `CELL  ${Math.round(b*100)}%`, b<0.15?'ui-danger':'ui-amber');
+    if(b<=0) uiText(deck.objective.x,deck.objective.y+1,'CELL  FLAT','ui-danger');
+    else if(b<0.35) uiText(deck.objective.x,deck.objective.y+1,`CELL  ${Math.round(b*100)}%`,b<0.15?'ui-danger':'ui-amber');
   }
 
   // The field navigator projects the same facility model used by the bag MAP.
@@ -16658,31 +16936,29 @@ function drawStoryHud(){
   // representation does not.
   const guidance=currentStoryGuidanceFrame();
   const nav=activeDifficulty.navigation;
+  const navigatorVisible=!itemLost('map')&&!!nav.showMap;
   if(itemLost('map')){
-    uiText(2, 5, 'PLAN  MISSING', 'ui-danger');
+    uiText(deck.objective.x,deck.objective.y+1,'PLAN  MISSING','ui-danger');
   } else if(nav.showMap){
-    drawMinimap(currentFacilityMapModel(),{now:performance.now(),mischief:recentMischief(),apparitions:recentApparitions()});
+    drawMinimap(currentFacilityMapModel(),{bounds:deck.navigator,now:performance.now(),mischief:recentMischief(),apparitions:recentApparitions()});
   } else if(guidance.point){
-    uiText(2, 5, 'PLAN  SIGNAL MINIMAL', 'ui-secondary');
+    uiText(deck.objective.x,deck.objective.y+1,'PLAN  SIGNAL MINIMAL','ui-secondary');
   }
 
   // The compass line exposes only the fields authorized by the current shift.
   const bear=storyGuidanceBearing(guidance);
-  if(bear && nav.showBearing){
+  if(bear&&nav.showBearing&&!navigatorVisible){
     const parts=['TARGET'];
     if(nav.showRoom) parts.push(guidance.target?.label||'WAYPOINT');
     parts.push(bear.bearing);
     if(nav.showDistance) parts.push(bear.far);
     const loc=parts.join(' / ').toUpperCase();
-    uiText(2, 4, loc.slice(0, Math.max(12, cols-28)), 'ui-blue');
+    uiText(deck.objective.x,deck.objective.y,loc.slice(0,deck.objective.w),'ui-blue');
   }
 
   // Takes: the job, counted.
   const takes=rec.takes.length;
-  uiText(2, 1, 'TAKES', 'ui-label');
-  drawVfdCounter(9, 1, String(takes));
-  uiText(11, 1, '/ 5', 'ui-blue');
-  if(rec.injuries) uiText(16, 1, `HURT ×${rec.injuries}`, 'ui-danger');
+  drawTakeRail({x:deck.takes.x,y:deck.takes.y,done:takes,total:5,injuries:rec.injuries});
   const reference=getSave().run?.ledger?.reference;
   if((reference?.breadth||0)>0){
     const label=`RETURN ${String(reference.breadth).padStart(2,'0')} / ${referenceExposureBand(reference)}`;
@@ -16693,14 +16969,14 @@ function drawStoryHud(){
     if([CHAPEL_TOWER_PHASE.SOURCE_READY,CHAPEL_TOWER_PHASE.TRANSITION_READY,CHAPEL_TOWER_PHASE.TOWER_ACTIVE,CHAPEL_TOWER_PHASE.TOWER_CLEARED].includes(tower.phase)){
       const objective=towerObjective(tower);
       const label=guidance.target?.label||objective.label;
-      uiText(2,2,label.slice(0,Math.max(1,cols-4)),objective.id==='bells-settling'?'ui-secondary':'ui-amber');
+      if(!navigatorVisible)uiText(deck.objective.x,deck.objective.y,label.slice(0,deck.objective.w),objective.id==='bells-settling'?'ui-secondary':'ui-amber');
       if(objective.id==='ring-stedman'){
         drawVfdText(2,3,'TENOR ROWS',{scale:1,role:'ui-amber'});
         drawLocationIndicator(14,3,Math.min(20,Math.max(8,cols-36)),tower.tenorRowsCompleted/TOWER_STEDMAN_ROWS,{theme:'amber'});
         const misses=`MISSED  ${tower.tenorMisses}`;uiText(Math.max(2,cols-misses.length-2),3,misses,'ui-secondary');
       }
-    }else if(guidance.target&&!guidance.target.playerSelected){
-      uiText(2,2,guidance.target.label.slice(0,Math.max(1,cols-4)),'ui-amber');
+    }else if(guidance.target&&!guidance.target.playerSelected&&!navigatorVisible){
+      uiText(deck.objective.x,deck.objective.y,guidance.target.label.slice(0,deck.objective.w),'ui-amber');
     }
   }
   if(KEY_DEBUG){
@@ -16749,16 +17025,18 @@ const teach=tutorialPromptsEnabled() ? TUT.tutorialPrompt() : null;
   } else if(doorHud){
     const hasKey=!doorHud.portal.keyId||playerKeys.has(doorHud.portal.keyId);
     const runtime=doorHud.portal.runtime;
-    // He does not operate the exit he has lost. He reaches for it — but only
-    // once he is inside and it IS lost. Walking up to it from the bay he has not
-    // come in through anything yet, and it is an ordinary door with his key in
-    // his pocket. Same test as tryTheGreyDoor, for the same reason.
+    // He does not operate the exit he has lost. He reaches for it once he is
+    // inside. Walking up to it from the bay is still an ordinary keyed door.
     const setupExit=setupExitDoorFromFocus(interactionFocus);
-    const greyFromInside=setupComplete()&&doorHud.portal.id===GREY_DOOR_ID&&!greyDoorRetired()&&FP.zoneAt(px,py)===ZONE.getIn;
+    const greyFromInside=doorHud.portal.id===GREY_DOOR_ID&&!greyDoorRetired()&&FP.zoneAt(px,py)===ZONE.getIn;
+    const exitOnlyOutside=doorHud.portal.definition?.access==='exit-only'
+      && (doorHud.portal.widthAxis==='x'?Math.sign(py-doorHud.portal.cy):Math.sign(px-doorHud.portal.cx))
+        !==(doorHud.portal.definition?.insideSide===-1?-1:1);
     const action=setupExit
       ? (flagTest('setup.levels')?'HOLD THE CHECK FIRST':'SET LEVELS FIRST')
       : greyFromInside
         ? 'THE DOOR YOU CAME IN THROUGH'
+        : exitOnlyOutside?'NO HANDLE ON THIS SIDE'
         : doorHud.portal.id==='front-main'?'CHECK CHAINED ENTRANCE'
           : runtime.wedge?'REMOVE WEDGE':runtime.state==='open'||runtime.state==='opening'?'CLOSE DOOR':hasKey?'OPEN DOOR':'TRY LOCKED DOOR';
     hudPromptRow(rows-2,[{action:'interact',label:action}],cols,hasKey?'ui-amber':'ui-secondary');
@@ -16804,22 +17082,30 @@ const teach=tutorialPromptsEnabled() ? TUT.tutorialPrompt() : null;
     } else {
       uiText(px0, rows-2, prompt, 'ui-amber');
     }
-  } else if(hintMode !== 'off') {
-    const done = REC.hasTake(currentWorld());
-    const parts = [
-      { action: 'light', label: rec.light ? 'LIGHT OFF' : 'LIGHT' },
-      ...(done ? [] : [{ action: 'recorder', label: 'LISTEN' }]),
-      { action: 'bag', label: 'BAG' },
-      ...(hintMode === 'full' && PB.hasTake(currentWorld())
-        ? [{ action: 'playback', label: PB.isPlaying() ? 'STOP PLAYBACK' : 'PLAYBACK' }] : []),
-      ...(hintMode === 'full' ? [{ action: 'menu', label: 'PAUSE' }] : []),
-    ];
-    if(cols<72){
-      drawPromptParts(2,rows-3,parts.slice(0,2),{role:'ui-secondary',cols});
-      drawPromptParts(2,rows-2,parts.slice(2),{role:'ui-secondary',cols});
-    } else {
-      const w=promptPartsWidth(parts);
-      drawPromptParts(Math.max(2, cols - w - 2), rows-2, parts, {role:'ui-secondary',cols});
+  } else {
+    const inputState=motionInput.debugState();
+    const showReminder=hintMode!=='off'&&hudReminderVisible({
+      now:performance.now(),
+      lastKeyAt:inputState.lastKeyAt,
+      lastPointerAt:inputState.lastPointerDeltaAt,
+    });
+    if(showReminder){
+      const done = REC.hasTake(currentWorld());
+      const parts = [
+        { action: 'light', label: rec.light ? 'LIGHT OFF' : 'LIGHT' },
+        ...(done ? [] : [{ action: 'recorder', label: 'LISTEN' }]),
+        { action: 'bag', label: 'BAG' },
+        ...(hintMode === 'full' && PB.hasTake(currentWorld())
+          ? [{ action: 'playback', label: PB.isPlaying() ? 'STOP PLAYBACK' : 'PLAYBACK' }] : []),
+        ...(hintMode === 'full' ? [{ action: 'menu', label: 'PAUSE' }] : []),
+      ];
+      if(cols<72){
+        drawPromptParts(2,rows-3,parts.slice(0,2),{role:'ui-secondary',cols});
+        drawPromptParts(2,rows-2,parts.slice(2),{role:'ui-secondary',cols});
+      } else {
+        const w=promptPartsWidth(parts);
+        drawPromptParts(Math.max(2, cols - w - 2), rows-2, parts, {role:'ui-secondary',cols});
+      }
     }
   }
 
@@ -16829,7 +17115,7 @@ const teach=tutorialPromptsEnabled() ? TUT.tutorialPrompt() : null;
     takeNumber:Math.max(0,TARGETS.indexOf(playback.roomId)+1),
   });
 
-  const monitorY=cols<72?rows-5:rows-4;
+  const monitorY=deck.monitor.y;
   const monitor=monitorDisplaySnapshot();
   drawVfdMeter(11, monitorY, 12, monitor,{theme:'green',bandThresholds:MONITOR.MONITOR_DANGER_THRESHOLDS});
   uiText(2, monitorY, 'MONITOR', 'ui-label');
@@ -17440,7 +17726,7 @@ function installProbe(){
       const effectsMode=getSave().settings?.flash||'full';
       return{on:REC.lightOn(),battery:+REC.batteryLevel().toFixed(3),context,effectsMode,
         rig:resolveLocalLights(context,{
-          timeSec:performance.now()/1000,towerCleared:false,liveCircuits:liveLightCircuits(),
+          timeSec:performance.now()/1000,towerActive:false,towerCleared:false,liveCircuits:liveLightCircuits(),
           reducedFlash:effectsMode!=='full',effectsMode,
           origin:{x:physical.x*CELL,z:physical.z*CELL},anchorPosition:lightAnchorPosition,
         }).map((l)=>({id:l.id,kind:l.kind,color:[...l.color],intensity:+l.intensity.toFixed(3),radius:l.radius,
@@ -17454,6 +17740,7 @@ function installProbe(){
       const effectsMode=settings.flash||'full';
       const rig=resolveLocalLights(context,{
         timeSec:performance.now()/1000,
+        towerActive:[CHAPEL_TOWER_PHASE.TOWER_ACTIVE,CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(chapelTowerState().phase),
         towerCleared:[CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(chapelTowerState().phase),
         liveCircuits:liveLightCircuits(),reducedFlash:effectsMode!=='full',effectsMode,
         origin:{x:physical.x*CELL,z:physical.z*CELL},anchorPosition:lightAnchorPosition,
@@ -17462,7 +17749,7 @@ function installProbe(){
         id:l.id,kind:l.kind,circuit:l.circuit||null,powerMode:l.powerMode||null,maintained:!!l.maintained,
         intensity:+l.intensity.toFixed(3),shadowReveal:+(l.shadowReveal||0).toFixed(3),
       }));
-      const candidates=rig.filter((l)=>Number(l?.shadowReveal)>.08&&Number(l?.intensity)>.01).map((l)=>({
+      const candidates=rig.filter((l)=>!l?.spilling&&Number(l?.shadowReveal)>.08&&Number(l?.intensity)>.01).map((l)=>({
         id:l.id,circuit:l.circuit||null,powerMode:l.powerMode||null,maintained:!!l.maintained,
         intensity:+l.intensity.toFixed(3),shadowReveal:+(l.shadowReveal||0).toFixed(3),
       }));
@@ -17613,12 +17900,10 @@ function installProbe(){
       return window.__probe.recordingHallucination();
     },
     power:()=>normalizePowerState(getSave().power),
+    powerCircuits:()=>[...POWER_CIRCUIT_IDS],
     setPower:(circuit,live=true)=>{
-      const before=normalizePowerState(getSave().power);
-      const wanted=!!live;
-      const isLive=before.live.includes(circuit);
-      const next=isLive===wanted?before:togglePowerCircuit(before,circuit,{at:Date.now()}).state;
-      saveCommit({power:next});
+      const transition=setPowerCircuit(getSave().power,circuit,live,{at:Date.now()});
+      saveCommit({power:transition.state});
       godSyncBuildingRender();
       updateElectricalHum();
       return normalizePowerState(getSave().power);
@@ -17627,6 +17912,33 @@ function installProbe(){
     garden:()=>({epoch:gardenEpoch,layout:gardenLayoutId,inside:inTheGarden(),watch:{...gardenWatch},
       poses:GARDEN_DRIFT_PROPS.map((id)=>{const q=PROPS.propById(id);return q?{id,ox:+(q.renderOffsetX||0).toFixed(4),oz:+(q.renderOffsetZ||0).toFixed(4),yaw:+(q.yaw||0).toFixed(4),rx:q.rx,ry:q.ry}:null;})}),
     shiftGarden:(reason='probe')=>shiftGarden(reason),
+    basementWatcher:()=>({
+      ...basementWatcher,
+      definition:basementWatcherDefinition(),
+      stand:basementWatcherStand(),
+      hushActive:PRES.isActive(),
+    }),
+    basementWatcherReset:(roomId=null)=>{
+      basementWatcher=ensureBasementWatcherState(
+        normalizeBasementWatcherState(freshBasementWatcherState()),
+        basementWatcherRunId(),
+      );
+      if(BASEMENT_WATCHER_ROOM_IDS.includes(roomId))basementWatcher={...basementWatcher,roomId};
+      commitBasementWatcher();
+      godSyncBuildingRender();
+      return window.__probe.basementWatcher();
+    },
+    basementWatcherArm:()=>{
+      basementWatcher=markBasementWatcherSeen(basementWatcher);
+      commitBasementWatcher();
+      return window.__probe.basementWatcher();
+    },
+    basementWatcherMove:(roll=null)=>{
+      const sample=roll===null||roll===undefined?null:Number(roll);
+      resolveBasementWatcherHunt({roll:Number.isFinite(sample)?sample:null});
+      godSyncBuildingRender();
+      return window.__probe.basementWatcher();
+    },
     practiceHaunts:()=>({...practiceHaunts,assignment:practiceHaunts.assignment?{...practiceHaunts.assignment}:null,
       room:practiceRoomHere()}),
     practiceDeal:(seed=null)=>godDealPracticeHaunts(seed),

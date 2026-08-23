@@ -12,6 +12,7 @@ export const STORY_GUIDANCE_ANCHORS = Object.freeze({
   van: Object.freeze({ x:63.6, y:208.0 }),
   lookBench: Object.freeze({ x:53.25, y:205.0 }),
   lodge: Object.freeze({ x:75.7, y:214.0 }),
+  getIn: Object.freeze({ x:57.5, y:10.0 }),
   page6: Object.freeze({ x:138, y:27 }),
   rekeyLedger: Object.freeze({ x:92.25, y:12.25 }),
   keyCabinet: Object.freeze({ x:96.25, y:9.45 }),
@@ -32,8 +33,12 @@ const target = (id, label, authored, extra={}) => Object.freeze({
 
 export const STORY_TARGET = Object.freeze({
   van: target('story:yard-van','GET THE KIT FROM THE VAN',STORY_GUIDANCE_ANCHORS.van,{kind:'prop',propId:'yard-van'}),
-  lookBench: target('story:yard-look-bench','TURN AROUND AND SIT ON THE SHELTER BENCH',STORY_GUIDANCE_ANCHORS.lookBench,{kind:'prop',propId:'yard-look-bench'}),
+  // The shelter is an invitation to notice the yard, never a mandatory story
+  // gate. It remains addressable for capture/review, but it cannot replace the
+  // route to the person holding the building key.
+  lookBench: target('story:yard-look-bench','TURN AROUND AND SIT ON THE SHELTER BENCH',STORY_GUIDANCE_ANCHORS.lookBench,{kind:'prop',propId:'yard-look-bench',required:false}),
   lodge: target('story:lodge','CHECK IN WITH THE GUARD',STORY_GUIDANCE_ANCHORS.lodge,{kind:'prop',propId:'yard-booth'}),
+  getIn: target('story:get-in','ENTER THE GET-IN',STORY_GUIDANCE_ANCHORS.getIn,{kind:'door',doorId:'dock-grey-exterior'}),
   page6: target('story:page-6','FIND PAGE 6',STORY_GUIDANCE_ANCHORS.page6,{kind:'prop',propId:'loose-page:page-6'}),
   readPage6: Object.freeze({id:'story:read-page-6',label:'READ PAGE 6 IN THE BAG',kind:'interface',required:true,point:null}),
   rekeyLedger: target('story:rekey-ledger','READ THE REKEY LEDGER',STORY_GUIDANCE_ANCHORS.rekeyLedger,{kind:'prop',propId:'box-office-ledger'}),
@@ -73,7 +78,7 @@ function selectedRoomTarget(selectedWaypoint,selectedLabel=''){
 export function resolveStoryGuidanceTarget({
   prologueDone=false,
   bagTaken=false,
-  benchVisited=false,
+  getInEntered=false,
   tower=null,
   escape=null,
   readPageIds=[],
@@ -85,9 +90,9 @@ export function resolveStoryGuidanceTarget({
 }={}){
   if(!prologueDone){
     if(!bagTaken)return STORY_TARGET.van;
-    if(!benchVisited)return STORY_TARGET.lookBench;
     return STORY_TARGET.lodge;
   }
+  if(!getInEntered)return STORY_TARGET.getIn;
   const ending=finaleTarget(escape);if(ending)return ending;
 
   const state=normalizeChapelTowerState(tower);

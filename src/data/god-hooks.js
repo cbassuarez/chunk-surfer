@@ -1,5 +1,18 @@
 import { DOOR_ARCHETYPE } from './conservatory-doors.js';
 import { ZONE } from './floorplan/legend.js';
+import { CHURCH_BOUNDS, CHURCH_GOD_HOOKS, CHURCH_LEVELS } from './st-brendans.js';
+
+const cathedralHook = (hook) => {
+  const zone=ZONE[hook.zone];
+  let at;
+  if(hook.component==='loading_bay')at={x:50+hook.x,y:200+hook.y};
+  else if(hook.component===CHURCH_LEVELS.ground.id)at={x:120+hook.x-CHURCH_BOUNDS.x0,y:180+hook.y-CHURCH_BOUNDS.y0};
+  else if(hook.component===CHURCH_LEVELS.loft.id)at={x:150+hook.x-10,y:240+hook.y-57};
+  else at={x:180+hook.x-10,y:240+hook.y-71};
+  const facing=hook.id==='cathedral-exterior'||hook.id==='cathedral-west-nave'?2
+    :hook.id==='cathedral-choir'?0:hook.id==='cathedral-side-chapel'?3:1;
+  return Object.freeze({at,facing,zone,group:hook.group,floor:hook.floor,component:hook.component});
+};
 
 // God-menu warps are camera setups, not searches.  Keep the authored metre
 // coordinates here so a floorplan scale or a second disconnected zone cannot
@@ -15,6 +28,7 @@ export const GOD_LOCATION_HOOKS = Object.freeze({
   'academic-gallery': Object.freeze({ at:{x:23,y:246}, facing:2, zone:ZONE.academic, group:'academic', floor:10,component:'academic' }),
   chapel: Object.freeze({ at:{x:92,y:74}, facing:0, zone:ZONE.chapel, group:'upper', floor:4.8,component:'chapel' }),
   'plant-room': Object.freeze({ at:{x:31,y:30.5}, facing:1, zone:ZONE.plant, group:'basement', floor:-4,component:'basement' }),
+  ...Object.fromEntries(CHURCH_GOD_HOOKS.map((hook)=>[hook.id,cathedralHook(hook)])),
 });
 
 // Each door row owns a stable physical leaf and the circulation-side review

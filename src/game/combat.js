@@ -1,5 +1,5 @@
-// Player-paced signal combat: deterministic rules, staged over a readable
-// 1.2-second action beat, presented as an abstract fight void — the opponent
+// Player-paced signal combat: deterministic rules, ordinary actions staged over
+// a readable 1.2-second beat and reactive strikes over a four-beat phrase — the opponent
 // floats top-centre, the recordist's hands rise from the bottom foreground,
 // and the command band underneath spells out what every move actually does.
 
@@ -15,7 +15,7 @@ import {
   combatInjuryStage,
   drawBattleWipe,
   drawCombatActionTile,
-  drawCombatPips,
+  drawCombatGauge,
   drawCombatToolTile,
   drawEnemyVoidStage,
   drawFirstPersonHands,
@@ -26,6 +26,7 @@ import {
   drawStanceTriangle,
   drawTurnGlyph,
 } from '../render/combat-view.js';
+import { combatHudLayout } from '../render/combat-hud-layout.js';
 import {
   COMBAT_ACTION,
   COMBAT_TOOL,
@@ -63,6 +64,13 @@ import {
 } from './combat-dialogue-model.js';
 import { enemyAttackCue, enemyAttackShape, enemyAttackVoice, surferAggression } from '../audio/piano-weapon.js';
 import { performanceIntrusionStage, reducePerformanceIntrusion } from './performance-intrusion.js';
+import {
+  PARRY_CONTACT_HOLD_SECONDS,
+  PARRY_REACTION_SECONDS,
+  isParryableEnemyAction,
+  parryInputDecision,
+  parryOpportunitySnapshot,
+} from './combat-parry.js';
 
 // Which techniques are fired as moves in the fight (vs passives that change the
 // rules). Derived from the authored descriptor so new actives need no code here.
@@ -80,15 +88,9 @@ export const ORDINARY_TURN_SECONDS = 1.2;
 // footer chrome, in the same slot that otherwise reads RESOLVING · [ENTER]
 // FAST-FORWARD, so most players never learned the mechanic existed.
 //
-// It is graded now (see PARRY_TIERS in combat-state.js), and it draws itself: a
-// lit tile in the command band and a meter that shows the window opening and
-// closing. See parryWindow() and the resolve branch of render().
-export const PARRY_IMPACT = 0.28;
-export const PARRY_WINDOW_LO = 0.06;
-// Where inside the window each grade sits, as a fraction of the window's width.
-// PERFECT is the slice against the impact: meeting the blow, not anticipating it.
-const PARRY_GOOD_AT = 0.40;
-const PARRY_PERFECT_AT = 0.75;
+// It is graded now (see PARRY_TIERS in combat-state.js), and it takes over the
+// command band while a real struck blow is incoming. See parryWindow() and the
+// reaction branch of render().
 const UTILITY_TURN_SECONDS = .82;
 const CPS = 40;
 const BATTLE_GRID_LABEL = '168 BPM / 4:4 / 40 BARS';
@@ -142,26 +144,6 @@ function opponentArt(ref, combatId = '') {
   // Encounters without authored raster art get the procedural signal-being
   // instead of borrowing another opponent's portrait.
   return ['surfer', 'guard'].includes(id) ? ref : { procedural: true, id: String(combatId || 'signal') };
-}
-
-function combatStageHeight({ panel, stageY, compact, sourceActive, phase }) {
-  const sourceReserve = sourceActive ? 5 : 0;
-  const talk = phase === 'talk';
-  const choosing = phase === 'tool' || phase === 'move';
-  const reserveBelowStage = talk
-    ? (compact ? 10 : 13)
-    : choosing
-      ? (compact ? 10 + sourceReserve : 14 + sourceReserve)
-      : (compact ? 8 + sourceReserve : 12 + sourceReserve);
-  const available = panel.h - (stageY - panel.y) - reserveBelowStage;
-
-  if (talk) {
-    return Math.max(compact ? 5 : 7, Math.min(compact ? 8 : 10, available));
-  }
-
-  return compact
-    ? Math.max(6, available)
-    : Math.max(9, Math.min(15, available));
 }
 
 // How it went, in the words a recordist would use. This is the "IT WAS SUPER
@@ -252,27 +234,72 @@ export function makeCombatScene({
   // a press would earn.
   //
   // `parryWindowScale` (see COMBAT_RULES) widens the window by opening it
-  // earlier: STORY gives you most of the beat, DEAD AIR gives you the end of it.
+  // earlier. Seconds, grades, input grace, and the visible track all come from
+  // one pure snapshot so there is no second, almost-matching UI definition.
   function parryWindow() {
     if (phase !== 'resolve' || !resolution) return null;
-    if (resolution.side !== 'enemy' || resolution.impactFired) return null;
-    const scale = Math.max(0.1, Number(state.difficulty?.parryWindowScale) || 1);
-    const width = (PARRY_IMPACT - PARRY_WINDOW_LO) * scale;
-    const open = Math.max(0, PARRY_IMPACT - width);
-    const at = clamp(resolution.elapsed / Math.max(1e-6, resolution.duration), 0, 1);
-    const through = width <= 0 ? 1 : clamp((at - open) / width, 0, 1);
-    return {
-      open,
-      close: PARRY_IMPACT,
-      width,
-      at,
-      through,
-      armed: at >= open,
-      spent: !!resolution.parryTried,
-      tier: through < PARRY_GOOD_AT ? PARRY_TIER.LATE
-        : through < PARRY_PERFECT_AT ? PARRY_TIER.GOOD
-          : PARRY_TIER.PERFECT,
-    };
+    return parryOpportunitySnapshot({
+      side: resolution.side,
+      actionKind: resolution.action?.kind,
+      elapsed: resolution.elapsed,
+      duration: resolution.duration,
+      windowScale: state.difficulty?.parryWindowScale,
+      attempted: resolution.parryTried,
+      buffered: resolution.parryBuffered,
+      parried: resolution.parried,
+      whiffed: resolution.parryWhiffed,
+      tier: resolution.parryTier,
+      impactFired: resolution.impactFired,
+    });
+  }
+
+  function commitParry(tier = PARRY_TIER.LATE) {
+    if (!resolution || resolution.parryTried) return false;
+    resolution.parryBuffered = false;
+    resolution.parryTried = true;
+    state = reduceCombat(state, { type: COMBAT_ACTION.PARRY, tier });
+    resolution.after = state;
+    resolution.parried = !!state.last?.parried;
+    resolution.parryTier = state.last?.parryTier || tier;
+    if (resolution.parried) {
+      const weight = tier === PARRY_TIER.PERFECT ? .44
+        : tier === PARRY_TIER.GOOD ? .30 : .18;
+      fx?.flash?.(70, `rgba(120,220,255,${weight})`);
+      audio?.menuMove?.();
+    }
+    return true;
+  }
+
+  function attemptParry(event = {}) {
+    const opportunity = parryWindow();
+    if (!opportunity || resolution?.impactFired) return false;
+    const keyboardPress = event.key === ' ' || event.key === 'Enter' || event.key === 'z';
+    const decision = parryInputDecision(opportunity, {
+      repeat: event.repeat,
+      held: keyboardPress && confirmHeld,
+    });
+    if (decision === 'ignore') return true;
+    if (keyboardPress) confirmHeld = true;
+    if (decision === 'buffer') {
+      resolution.parryBuffered = true;
+      resolution.parryEarly = false;
+      notice = 'CONTACT ARMED';
+      audio?.menuMove?.();
+      return true;
+    }
+    if (decision === 'parry') {
+      commitParry(opportunity.tier);
+      return true;
+    }
+    if (decision === 'miss') {
+      resolution.parryTried = true;
+      resolution.parryWhiffed = true;
+      notice = 'MISSED CONTACT';
+      return true;
+    }
+    resolution.parryEarly = true;
+    notice = 'WAIT FOR CONTACT';
+    return true;
   }
   // Rotates the adversary's piano voice within a movement's stem set, so
   // successive enemy beats don't repeat the same note.
@@ -298,6 +325,7 @@ export function makeCombatScene({
   let toolRows = [];
   let moveRows = [];
   let channelRows = [];
+  let reactionRect = null;
   let skipRect = null;
   let skipArmed = false;
   let regionRects = {};
@@ -784,9 +812,16 @@ export function makeCombatScene({
       action: { id: 'enemy', tool: COMBAT_TOOL.SELF, label: primary?.label || 'INTENT', kind: primary?.kind || null },
       side: 'enemy',
       elapsed: 0,
-      // A chained turn takes proportionally longer so each hit reads.
-      duration: ORDINARY_TURN_SECONDS * Math.max(1, next.last?.enemyHits?.length || 1),
+      // Struck blows receive a four-beat reaction phrase. Other enemy actions
+      // keep the ordinary duration; the score conductor itself is untouched.
+      duration: isParryableEnemyAction(primary?.kind)
+        ? PARRY_REACTION_SECONDS
+        : ORDINARY_TURN_SECONDS * Math.max(1, next.last?.enemyHits?.length || 1),
       impactFired: false,
+      parryBuffered: false,
+      parryTried: false,
+      parryWhiffed: false,
+      parryEarly: false,
     };
     phase = 'resolve';
   }
@@ -924,7 +959,13 @@ export function makeCombatScene({
         selectedTool,
         selectedMove,
         notice,
-        resolution: resolution ? { elapsed: resolution.elapsed, duration: resolution.duration, action: resolution.action.id, side: resolution.side } : null,
+        resolution: resolution ? {
+          elapsed: resolution.elapsed,
+          duration: resolution.duration,
+          action: resolution.action.id,
+          side: resolution.side,
+          parry: parryWindow(),
+        } : null,
         statePhase: state.phase,
         tutorial: director?.snapshot?.() || null,
       };
@@ -947,7 +988,18 @@ export function makeCombatScene({
       }
       if (phase === 'resolve' && resolution) {
         resolution.elapsed += dt;
-        if (!resolution.impactFired && resolution.elapsed / resolution.duration >= .28) fireImpact();
+        const opportunity = parryWindow();
+        if (opportunity?.buffered && opportunity.armed && !resolution.parryTried) {
+          commitParry(PARRY_TIER.LATE);
+        }
+        if (opportunity && !resolution.parryWindowSignaled && opportunity.phase === 'open') {
+          resolution.parryWindowSignaled = true;
+          audio?.menuMove?.();
+        }
+        const impactAt = opportunity
+          ? opportunity.impactSeconds + PARRY_CONTACT_HOLD_SECONDS
+          : resolution.duration * .28;
+        if (!resolution.impactFired && resolution.elapsed >= impactAt) fireImpact();
         if (resolution.elapsed >= resolution.duration) finishResolution();
         return;
       }
@@ -1048,27 +1100,13 @@ export function makeCombatScene({
         return true;
       }
       if (phase === 'resolve') {
-        // Reactive parry: during the adversary's blow, before it lands, a timed
-        // guard turns it back. The window is the pre-impact beat — brace too early
-        // and you guard at air. This is the ONLY way to parry; never a chosen move.
-        const window = parryWindow();
-        if (confirm && window && !window.spent) {
-          resolution.parryTried = true;
-          if (window.armed) {
-            state = reduceCombat(state, { type: COMBAT_ACTION.PARRY, tier: window.tier });
-            resolution.after = state;
-            resolution.parried = !!state.last?.parried;
-            resolution.parryTier = state.last?.parryTier || window.tier;
-            if (resolution.parried) {
-              // The brighter the grade, the louder the answer.
-              const weight = window.tier === PARRY_TIER.PERFECT ? .44
-                : window.tier === PARRY_TIER.GOOD ? .30 : .18;
-              fx?.flash?.(70, `rgba(120,220,255,${weight})`);
-              audio?.menuMove?.();
-            }
-          } else {
-            resolution.parryWhiffed = true;
-          }
+        // A parryable enemy strike owns confirm until contact. It cannot be
+        // accidentally fast-forwarded out from under the player, and an early
+        // press outside the small buffer teaches WAIT without spending the try.
+        const opportunity = parryWindow();
+        if (confirm && opportunity && !resolution.impactFired) return attemptParry(e);
+        if (confirm && opportunity && resolution.impactFired) {
+          finishResolution();
           return true;
         }
         if (confirm && resolution && resolution.elapsed >= .22) {
@@ -1107,9 +1145,16 @@ export function makeCombatScene({
     },
 
     pointer(e) {
-      if (!['tool', 'move'].includes(phase) || e.type !== 'pointerdown') return true;
+      if (e.type !== 'pointerdown') return true;
       const x = Math.floor(Number(e.cellX));
       const y = Math.floor(Number(e.cellY));
+      if (phase === 'resolve' && reactionRect
+        && x >= reactionRect.x && x < reactionRect.x + reactionRect.w
+        && y >= reactionRect.y && y < reactionRect.y + reactionRect.h) {
+        attemptParry({ key: 'pointer' });
+        return true;
+      }
+      if (!['tool', 'move'].includes(phase)) return true;
       if (skipRect && x >= skipRect.x && x < skipRect.x + skipRect.w && y >= skipRect.y && y < skipRect.y + skipRect.h) {
         skipDrill();
         return true;
@@ -1144,6 +1189,9 @@ export function makeCombatScene({
       const w = Math.min(118, cols - 4);
       const x = Math.floor((cols - w) / 2);
       const choosing = ['tool', 'move'].includes(phase);
+      const parryPrompt = activeInputPromptDevice() === 'controller'
+        ? promptLine([{ action: 'confirm', label: 'PARRY' }])
+        : '[SPACE] PARRY';
       const footer = phase === 'arrival'
         ? '168 BPM · LOCKING DOWNBEAT'
         : phase === 'tool'
@@ -1156,22 +1204,23 @@ export function makeCombatScene({
               : '[←→ / A D] ATTACK · [ENTER] ACT · [↑ / W] TOOL'
             : phase === 'resolve'
               ? (() => {
-                const window = parryWindow();
-                if (window && !window.spent) {
-                  return window.armed
-                    ? `[SPACE] PARRY · ${PARRY_TIERS[window.tier]?.label || ''}`
-                    : 'THE BLOW IS COMING · [SPACE] ON IT, NOT BEFORE';
+                const opportunity = parryWindow();
+                if (opportunity && !opportunity.spent) {
+                  if (opportunity.buffered) return `CONTACT ARMED · ${parryPrompt}`;
+                  return opportunity.armed
+                    ? `${parryPrompt} · ${PARRY_TIERS[opportunity.tier]?.label || ''}`
+                    : `WAIT FOR CONTACT · ${parryPrompt}`;
                 }
                 if (resolution?.parried) {
                   return `${PARRY_TIERS[resolution.parryTier]?.label || 'PARRIED'} · [ENTER] CONTINUE`;
                 }
-                if (resolution?.parryWhiffed) return 'GUARDED AT AIR · [ENTER] CONTINUE';
+                if (opportunity) return 'MISSED CONTACT · [ENTER] CONTINUE';
                 return 'RESOLVING · [ENTER] FAST-FORWARD';
               })()
               : promptLine([{ action: 'continue', label: 'CONTINUE' }]);
       const interferenceStatus = interference?.active?.() ? interference?.statusLine?.() : '';
       const panel = drawMachinePanel(x - 2, 1, w + 4, rows - 2, {
-        label: 'AUDIOCORP / SIGNAL COMBAT', source: state.source ? 'SOURCE' : 'FIELD', meter: true,
+        label: 'SIGNAL COMBAT', source: state.source ? 'SOURCE' : 'FIELD', meter: true,
         footer: interferenceStatus ? `${footer} · ${interferenceStatus}` : footer,
       });
       skipRect = null;
@@ -1186,7 +1235,13 @@ export function makeCombatScene({
         uiText(skipX, skipY, skipLabel, skipArmed ? 'ui-danger' : 'ui-amber', skipArmed ? .95 : .72);
         skipRect = { x: skipX, y: skipY, w: skipLabel.length, h: 1 };
       }
-      const compact = panel.h < 20;
+      const reaction = parryWindow();
+      const hudMode = reaction ? 'reaction'
+        : phase === 'talk' ? 'dialogue'
+          : phase === 'arrival' ? 'arrival' : 'command';
+      const layout = combatHudLayout({ panel, mode: hudMode, sourceActive: !!state.source });
+      const compact = layout.compact;
+      reactionRect = null;
       const visual = visualState();
       const movementData = movement(visual.movementIndex) || movement();
       const art = opponentArt(
@@ -1204,20 +1259,7 @@ export function makeCombatScene({
         const tag = `SIGNATURE · ${signature.label}`;
         uiText(panel.x + Math.max(0, panel.w - tag.length), panel.y, tag, 'ui-amber', .66);
       }
-      // THE OPPONENT'S POSTURE. Every preset gets this, including the one that
-      // gets nothing else — it is the floor the guidance ladder stands on.
-      //
-      // The stance is the honest half of the telegraph: what it wants is always
-      // true, and only which blow it picks inside that can be misread. A player
-      // who can see PRESSING knows it is overload-or-loop even when the card is
-      // wrong, or absent, so a perfect counter stays playable on odds.
-      const stanceId = String(state.stance?.id || '').toUpperCase();
-      if (stanceId) {
-        const tag = `${stanceId}`;
-        uiText(panel.x + Math.max(0, panel.w - tag.length), panel.y + 1, tag, 'ui-danger', .78);
-      }
-
-      // Health snaps at the moment of impact and leaves ghost pips behind —
+      // Health snaps at the moment of impact and leaves ghost segments behind —
       // before the hit lands, the bars still show the pre-hit reading.
       const preImpact = !!resolution && !resolution.impactFired;
       const snap = preImpact ? resolution.before : state;
@@ -1227,10 +1269,9 @@ export function makeCombatScene({
         : { ghostFrom: null, ghostAge: 0 });
 
       const movementCount = battle.combat.movements.length;
-      const barW = Math.min(38, Math.floor(panel.w * .34));
-      const enemyBarY = compact ? panel.y + 1 : panel.y + 2;
-      drawCombatPips({
-        x: panel.x, y: enemyBarY, w: barW,
+      const enemyBarY = layout.enemyGauge.y;
+      drawCombatGauge({
+        x: layout.enemyGauge.x, y: enemyBarY, w: layout.enemyGauge.w,
         value: transitioned ? 0 : snap.movementCoherence,
         max: snap.movementMaxCoherence,
         label: `${movementData?.title || 'COHERENCE'} ${visual.movementIndex + 1}/${movementCount}`,
@@ -1238,18 +1279,15 @@ export function makeCombatScene({
         now,
         ...ghostFor(barGhost.coherence),
       });
-      const intrusionW=Math.min(20,Math.max(10,Math.floor(panel.w*.18)));
-      const intrusionX=panel.x+barW+2;
-      if(intrusionX+intrusionW<panel.x+panel.w-12){
-        drawVfdText(intrusionX,enemyBarY,`RETURN ${performanceStage}`.slice(0,intrusionW),{scale:1,role:performanceStage==='CORRECTION'?'ui-danger':'ui-amber'});
-        drawLocationIndicator(intrusionX,enemyBarY+1,intrusionW,performanceIntrusion,{theme:performanceStage==='CORRECTION'?'red':'amber'});
+      if(layout.returnMonitor.w >= 10){
+        drawVfdText(layout.returnMonitor.x,enemyBarY,`RETURN ${performanceStage}`.slice(0,Math.floor(layout.returnMonitor.w)),{scale:1,role:performanceStage==='CORRECTION'?'ui-danger':'ui-amber'});
+        drawLocationIndicator(layout.returnMonitor.x,enemyBarY+1,layout.returnMonitor.w,performanceIntrusion,{theme:performanceStage==='CORRECTION'?'red':'amber'});
       }
 
       // Whose beat it is + the exchange count, as a persistent glyph readout in
       // the header. The enemy beat is the opponent's turn; anything else is yours.
-      const glyphW = 11;
-      if (!compact && panel.w > barW + glyphW + 2) {
-        drawTurnGlyph(panel.x + panel.w - glyphW, enemyBarY, {
+      if (layout.turn.w > 0) {
+        drawTurnGlyph(layout.turn.x, enemyBarY, {
           active: resolution?.side === 'enemy' ? 'enemy' : 'player',
           turn: turnCount,
           reducedMotion: shakeMode() !== 'full',
@@ -1259,14 +1297,8 @@ export function makeCombatScene({
 
       // ── the void stage: one continuous backdrop, opponent right-of-centre in
       // an oblique fight stance, hands rising from the near-left ──────────────
-      const stageY = enemyBarY + 2;
-      const stageH = combatStageHeight({
-        panel,
-        stageY,
-        compact,
-        sourceActive: !!state.source,
-        phase,
-      });
+      const stageY = layout.stage.y;
+      const stageH = layout.stage.h;
       const reducedMotion = shakeMode() !== 'full';
       const introP = Math.min(1, introElapsed / 1.05);
       const introIn = reducedMotion ? 1 : ease(introP);
@@ -1382,10 +1414,11 @@ export function makeCombatScene({
         resolveProgress: visual.progress,
         reducedMotion,
         hurt: hurtNow,
+        brace: !!reaction && reaction.phase !== 'resolved',
       });
 
       // ── stage overlays: intent card (left) and stance triangle (right) ─────
-      const showOverlays = !['arrival', 'talk'].includes(phase);
+      const showOverlays = !['arrival', 'talk'].includes(phase) && !reaction;
       const intentX = panel.x + 1;
       const intentW = Math.min(34, Math.floor(panel.w * .30));
       if (showOverlays) {
@@ -1470,8 +1503,15 @@ export function makeCombatScene({
         const stW = Math.max(20, Math.min(26, Math.floor(panel.w * .24)));
         const stX = panel.x + panel.w - stW - 1;
         const pendingShift = phase === 'move' ? moves()[selectedMove]?.stanceShift || null : null;
-        const stanceRect = drawStanceTriangle(stX, stageY + 1, stW, { snr: state.snr, pendingShift, compact });
-        regionRects.stance = stanceRect;
+        const stanceId = String(state.stance?.id || 'reading').toUpperCase();
+        if (compact) {
+          uiText(stX, stageY + 1, `${stanceId} · ${String(state.snr || '').toUpperCase()}`.slice(0, stW), 'ui-amber', .75);
+          regionRects.stance = { x: stX, y: stageY + 1, w: stW, h: 1 };
+        } else {
+          uiText(stX, stageY + 1, `SNR · ${stanceId}`.slice(0, stW), 'ui-label', .62);
+          const stanceRect = drawStanceTriangle(stX, stageY + 2, stW, { snr: state.snr, pendingShift, compact: false });
+          regionRects.stance = { ...stanceRect, y: stageY + 1, h: stanceRect.h + 1 };
+        }
       }
 
       // ── floating damage numbers ─────────────────────────────────────────────
@@ -1499,20 +1539,23 @@ export function makeCombatScene({
       drawBattleWipe({ x: panel.x, y: stageY, w: panel.w, h: stageH, progress: introP, reducedMotion });
 
       // ── the command band ────────────────────────────────────────────────────
-      const cmdY = stageY + stageH + 1;
-      const bottom = panel.y + panel.h - 2;
+      const cmdY = layout.playerGauge.y;
+      const bottom = layout.contentBottom;
       uiLine(panel.x, cmdY - .4, panel.x + panel.w, cmdY - .4, UI_COLOR.frame, .55);
-      drawCombatPips({
-        x: panel.x, y: cmdY, w: barW,
+      drawCombatGauge({
+        x: layout.playerGauge.x, y: cmdY, w: layout.playerGauge.w,
         value: snap.composure, max: snap.maxComposure,
         label: 'COMPOSURE',
         now,
         ...ghostFor(barGhost.composure),
       });
+      const resourceText = (cell, text, role = 'ui-counter', alpha = .76) => {
+        if (!cell || cell.w < 3) return;
+        uiText(cell.x, cell.y, String(text).slice(0, Math.max(1, Math.floor(cell.w))), role, alpha);
+      };
       const takeText = `TAKE · ${state.take ? `${state.take.label} / ${state.take.damage}` : 'EMPTY'}`;
-      const takeX = panel.x + barW + 3;
-      uiText(takeX, cmdY, takeText.slice(0, Math.max(8, panel.w - barW - 26)), 'ui-counter', .76);
-      regionRects.take = { x: takeX, y: cmdY, w: Math.min(takeText.length + 1, panel.w - barW - 26), h: 1.1 };
+      resourceText(layout.resourceCells.take, takeText);
+      regionRects.take = layout.resourceCells.take;
       // Charge, beside the take, because they are the two things the player
       // spends. Drawn as filled and empty diamonds rather than a number: it is
       // read at a glance, mid-beat, to answer one question — can I afford to be
@@ -1520,23 +1563,19 @@ export function makeCombatScene({
       // watching it fill is watching their own reading pay out.
       const charge = Math.max(0, Math.min(integer(state.maxCharge, 3), integer(state.charge, 0)));
       const pips = `${'◆'.repeat(charge)}${'◇'.repeat(Math.max(0, integer(state.maxCharge, 3) - charge))}`;
-      const chargeX = panel.x + Math.max(0, panel.w - 26);
-      uiText(chargeX, cmdY, `CHARGE ${pips}`, charge > 0 ? 'ui-counter' : 'ui-secondary', charge > 0 ? .9 : .55);
-      regionRects.charge = { x: chargeX, y: cmdY, w: 12, h: 1.1 };
-      uiText(panel.x + Math.max(0, panel.w - 13), cmdY, `BATTERY · ${Math.round(state.battery * 100)}%`, 'ui-counter', .76);
-      // Active techniques appear in the tool rail as moves you fire; the SKILLS
-      // line lists the passives that just change the rules, so the two aren't
-      // conflated into one opaque label.
+      resourceText(layout.resourceCells.charge, `CHARGE ${pips}`, charge > 0 ? 'ui-counter' : 'ui-secondary', charge > 0 ? .9 : .55);
+      regionRects.charge = layout.resourceCells.charge;
+      resourceText(layout.resourceCells.battery, `CELL · ${Math.round(state.battery * 100)}%`);
+      regionRects.battery = layout.resourceCells.battery;
       const shortName = (id) => id.split('.').pop().replaceAll('-', ' ').toUpperCase();
       const passives = state.techniques.filter((id) => !ACTIVE_TECHNIQUE_IDS.has(id));
       const actives = state.techniques.filter((id) => ACTIVE_TECHNIQUE_IDS.has(id));
-      const skillText = passives.length ? passives.map(shortName).join(' / ') : 'NONE';
-      const activeText = actives.length ? ` · ACTIVE ${actives.map(shortName).join('/')}` : '';
-      uiText(takeX, cmdY + 1, `SKILLS · ${skillText}${activeText}`.slice(0, Math.max(8, panel.w - barW - 20)), 'ui-blue', .55);
+      resourceText(layout.resourceCells.mods, `MODS · ${state.techniques.length}`, state.techniques.length ? 'ui-blue' : 'ui-secondary', state.techniques.length ? .75 : .5);
+      regionRects.mods = layout.resourceCells.mods;
 
       const interferenceLine = interference?.line?.();
       if (interferencePause && interferenceLine) {
-        uiText(panel.x, cmdY + 3, String(interferenceLine.text || '').slice(0, panel.w), interferenceLine.stage === 'handoff' ? 'ui-danger' : 'ui-amber', .92);
+        uiText(layout.body.x, layout.body.y, String(interferenceLine.text || '').slice(0, layout.body.w), interferenceLine.stage === 'handoff' ? 'ui-danger' : 'ui-amber', .92);
         return;
       }
 
@@ -1550,13 +1589,13 @@ export function makeCombatScene({
       if (bark && phase !== 'talk') {
         const who = whoOf(bark);
         const spoken = `${who === 'direction' ? '' : `${who} — `}${textOf(bark)}`;
-        uiText(panel.x, cmdY + 1, spoken.slice(0, panel.w), who === 'direction' ? 'ui-secondary' : 'ui-primary', .88);
+        uiText(layout.detail.x, layout.detail.y, spoken.slice(0, layout.detail.w), who === 'direction' ? 'ui-secondary' : 'ui-primary', .88);
       }
 
       if (phase === 'arrival') {
         // No title card: the stage is already on screen behind the entry wipe.
         // The footer carries the BPM lock; one dim status line is enough.
-        uiText(panel.x, cmdY + 2, `ACQUIRING · GRID ${BATTLE_GRID_LABEL}`.slice(0, panel.w), 'ui-secondary', .55);
+        uiText(layout.arrival.x, layout.arrival.y, `ACQUIRING · GRID ${BATTLE_GRID_LABEL}`.slice(0, layout.arrival.w), 'ui-secondary', .55);
         return;
       }
 
@@ -1564,10 +1603,10 @@ export function makeCombatScene({
         // Dialogue gets a real command-card region during battles. Long lines are
         // paged with a visible MORE state instead of being silently dropped, and
         // the combat stage is slightly shorter while this card is active.
-        const speakerY = cmdY + 2;
+        const speakerY = layout.dialogue.y;
         const textY = speakerY + 1;
         const hintY = bottom;
-        const maxTextRows = Math.max(2, hintY - textY);
+        const maxTextRows = Math.max(2, Math.floor(hintY - textY));
         const dlgW = Math.max(20, panel.w - 2);
         const who = whoOf(cur);
         const text = textOf(cur);
@@ -1618,13 +1657,76 @@ export function makeCombatScene({
         return;
       }
 
+      if (reaction && resolution) {
+        // The reaction is the control surface now, not a tiny second action
+        // card. The entire panel is also the pointer target for the same
+        // semantic input used by Space and controller Confirm.
+        const box = layout.reaction;
+        reactionRect = box;
+        toolRows = [];
+        moveRows = [];
+        channelRows = [];
+        uiFill(box.x, box.y, box.w, box.h, 'rgba(7,10,13,.94)');
+        uiStrokeRect(box.x, box.y, box.w, box.h, reaction.armed ? UI_COLOR.amber : UI_COLOR.frame, reaction.armed ? .88 : .42, reaction.armed ? 1.6 : 1);
+        const contentY = box.y + Math.max(.25, (box.h - 6.4) / 2);
+        const incoming = `INCOMING — ${String(strike?.label || resolution.action?.label || 'CONTACT').toUpperCase()}`;
+        drawVfdText(box.x + 1, contentY + .3, incoming.slice(0, Math.max(12, Math.floor(box.w * .66))), {
+          scale: compact ? 1 : 1.35,
+          role: reaction.armed || reaction.contact ? 'ui-danger' : 'ui-amber',
+        });
+        const promptX = box.x + Math.max(1, box.w - parryPrompt.length - 1);
+        uiText(promptX, contentY + .47, parryPrompt, reaction.armed ? 'ui-counter' : 'ui-amber', reaction.armed ? 1 : .68);
+
+        const trackX = box.x + 1;
+        const trackW = Math.max(8, box.w - 2);
+        const trackY = contentY + 3.05;
+        const trackH = compact ? .95 : 1.25;
+        const atX = (progress) => trackX + trackW * clamp(progress, 0, 1);
+        const openX = atX(reaction.openProgress);
+        const goodX = atX(reaction.goodProgress);
+        const perfectX = atX(reaction.perfectProgress);
+        const impactX = atX(reaction.impactProgress);
+        const contactX = atX(reaction.contactEndProgress);
+        uiText(trackX, trackY - 1, 'WAIT', 'ui-secondary', .5);
+        uiText(openX, trackY - 1, 'TURN', 'ui-blue', .7);
+        uiText(perfectX, trackY - 1, 'PERFECT', 'ui-counter', .9);
+        uiFill(trackX, trackY, Math.max(0, openX - trackX), trackH, 'rgba(255,255,255,.045)');
+        uiFill(openX, trackY, Math.max(0, goodX - openX), trackH, 'rgba(120,220,255,.15)');
+        uiFill(goodX, trackY, Math.max(0, perfectX - goodX), trackH, 'rgba(120,220,255,.30)');
+        uiFill(perfectX, trackY, Math.max(0, impactX - perfectX), trackH, 'rgba(120,220,255,.60)');
+        uiFill(impactX, trackY, Math.max(.3, contactX - impactX), trackH, 'rgba(255,244,230,.75)');
+        uiFill(contactX, trackY, Math.max(0, trackX + trackW - contactX), trackH, 'rgba(255,255,255,.035)');
+        uiStrokeRect(trackX, trackY, trackW, trackH, UI_COLOR.frame, .55, 1);
+        const headX = atX(reaction.progress);
+        uiFill(headX - .22, trackY - .35, .5, trackH + .7, reaction.spent ? UI_COLOR.secondary : reaction.armed ? UI_COLOR.primary : UI_COLOR.amber);
+        uiLine(impactX, trackY - .55, impactX, trackY + trackH + .55, UI_COLOR.danger, .82, 1.35);
+
+        const result = resolution.parried
+          ? `${PARRY_TIERS[resolution.parryTier]?.label || 'TURNED'} · TURNED`
+          : resolution.impactFired || resolution.parryWhiffed
+            ? 'MISSED CONTACT'
+            : reaction.buffered
+              ? 'HOLD — CONTACT ARMED'
+              : reaction.armed
+                ? `NOW — ${PARRY_TIERS[reaction.tier]?.label || 'PARRY'}`
+                : resolution.parryEarly
+                  ? 'WAIT FOR CONTACT · RELEASE AND PRESS AGAIN'
+                  : 'HOLD — WAIT FOR CONTACT';
+        const resultRole = resolution.parried ? 'ui-counter'
+          : resolution.impactFired || resolution.parryWhiffed ? 'ui-danger'
+            : reaction.armed ? 'ui-amber' : 'ui-secondary';
+        uiText(box.x + 1, Math.min(box.y + box.h - 1.1, trackY + trackH + .85), result.slice(0, Math.max(1, Math.floor(box.w - 2))), resultRole, .95);
+        regionRects.reaction = box;
+        return;
+      }
+
       // ── icon-forward command deck ─────────────────────────────────────────
-      let listY = cmdY + 2;
+      let listY = layout.channels.h ? layout.channels.y : layout.tools.y;
       channelRows = [];
       if (state.source) {
         const prediction = combatPrediction(state);
         const channelGap = .8;
-        const channelH = 2.35;
+        const channelH = Math.max(2.1, layout.channels.h - .55);
         const channelW = (panel.w - channelGap * (CHANNELS.length - 1)) / CHANNELS.length;
         CHANNELS.forEach((channel, index) => {
           const armed = channel.id === state.source.armed;
@@ -1636,11 +1738,10 @@ export function makeCombatScene({
           channelRows.push({ id: channel.id, x, y: listY, w: channelW, h: channelH });
         });
         uiText(panel.x, listY + channelH + .2, `SIGNAL ROUTE · ${prediction.outcome.toUpperCase()}`.slice(0, panel.w), 'ui-blue', .6);
-        listY += channelH + 1.25;
+        listY = layout.tools.y;
       }
 
-      const detailY = compact ? null : panel.y + panel.h - 3;
-      const listBottom = (detailY ?? bottom) - 1;
+      const detailY = layout.detail.y;
       const centredWindow = (list, selected, visible) => {
         if (list.length <= visible) return { start: 0, items: list };
         const start = Math.min(Math.max(0, selected - Math.floor(visible / 2)), list.length - visible);
@@ -1653,103 +1754,68 @@ export function makeCombatScene({
       const visibleToolCount = Math.max(1, Math.min(toolList.length, Math.floor((panel.w + toolGap) / 14)));
       const toolWindow = centredWindow(toolList, selectedTool, visibleToolCount);
       const toolW = (panel.w - toolGap * Math.max(0, toolWindow.items.length - 1)) / Math.max(1, toolWindow.items.length);
-      const toolH = Math.max(2.35, Math.min(2.9, listBottom - listY - 3.9));
-      toolWindow.items.forEach((tool, slot) => {
-        const index = toolWindow.start + slot;
-        const x = panel.x + slot * (toolW + toolGap);
-        drawCombatToolTile(tool, {
-          x, y: listY, w: toolW, h: toolH,
-          selected: index === selectedTool,
-          focused: phase === 'tool' && index === selectedTool,
+      const toolRect = compact ? layout.carousel : layout.tools;
+      const showToolRow = !compact || phase === 'tool';
+      if (showToolRow) {
+        listY = toolRect.y;
+        toolWindow.items.forEach((tool, slot) => {
+          const index = toolWindow.start + slot;
+          const x = panel.x + slot * (toolW + toolGap);
+          drawCombatToolTile(tool, {
+            x, y: listY, w: toolW, h: toolRect.h,
+            selected: index === selectedTool,
+            focused: phase === 'tool' && index === selectedTool,
+          });
+          toolRows.push({ index, x, y: listY, w: toolW, h: toolRect.h });
         });
-        toolRows.push({ index, x, y: listY, w: toolW, h: toolH });
-      });
-      if (toolWindow.start > 0) uiText(panel.x + .2, listY + toolH - .8, '◀', 'ui-secondary', .75);
-      if (toolWindow.start + toolWindow.items.length < toolList.length) uiText(panel.x + panel.w - 1.2, listY + toolH - .8, '▶', 'ui-secondary', .75);
-      regionRects.tools = { x: panel.x, y: listY, w: panel.w, h: toolH };
+        if (toolWindow.start > 0) uiText(panel.x + .2, listY + toolRect.h - .8, '◀', 'ui-secondary', .75);
+        if (toolWindow.start + toolWindow.items.length < toolList.length) uiText(panel.x + panel.w - 1.2, listY + toolRect.h - .8, '▶', 'ui-secondary', .75);
+        regionRects.tools = toolRect;
+      }
 
       moveRows = [];
-      // During the opponent's blow the band shows what is coming AND the answer
-      // to it. The parry used to live only in the footer, in the same slot that
-      // otherwise reads RESOLVING — so the one timed input in the game was the
-      // one thing the interface never offered. It is a tile now, lit while the
-      // window is open, naming the grade a press would earn right now.
-      const window = parryWindow();
-      const parryTile = window ? {
-        id: COMBAT_ACTION.PARRY,
-        tool: COMBAT_TOOL.SELF,
-        label: window.spent ? (resolution.parried ? PARRY_TIERS[resolution.parryTier]?.label || 'PARRY' : 'TOO EARLY')
-          : window.armed ? `PARRY · ${PARRY_TIERS[window.tier]?.label || ''}`.replace(' · PARRY', '')
-            : 'PARRY',
-        detail: window.spent ? (resolution.parried ? 'TURNED' : 'GUARDED AT AIR')
-          : window.armed ? '[SPACE] NOW · TURN THE BLOW'
-            : '[SPACE] ON THE BLOW · NOT BEFORE',
-        enabled: window.armed && !window.spent,
-        special: true,
-      } : null;
       const renderedMoves = phase === 'resolve' && resolution
-        ? [
-          { ...resolution.action, enabled: true, detail: resolution.after.last?.notice || resolution.action.detail },
-          ...(parryTile ? [parryTile] : []),
-        ]
+        ? [{ ...resolution.action, enabled: true, detail: resolution.after.last?.notice || resolution.action.detail }]
         : moves();
       const moveGap = .75;
       const visibleMoveCount = Math.max(1, Math.min(renderedMoves.length, Math.floor((panel.w + moveGap) / 17)));
       const moveWindow = centredWindow(renderedMoves, selectedMove, visibleMoveCount);
-      const moveY = listY + toolH + .65;
+      const moveRect = compact ? layout.carousel : layout.actions;
+      const moveY = moveRect.y;
       const moveW = (panel.w - moveGap * Math.max(0, moveWindow.items.length - 1)) / Math.max(1, moveWindow.items.length);
-      const moveH = Math.max(2.35, Math.min(3.25, listBottom - moveY));
-      moveWindow.items.forEach((move, slot) => {
-        const index = moveWindow.start + slot;
-        const x = panel.x + slot * (moveW + moveGap);
-        drawCombatActionTile(move, {
-          x, y: moveY, w: moveW, h: moveH,
-          selected: index === selectedMove,
-          focused: phase === 'move' && index === selectedMove,
+      const showMoveRow = !compact || phase !== 'tool';
+      if (showMoveRow) {
+        moveWindow.items.forEach((move, slot) => {
+          const index = moveWindow.start + slot;
+          const x = panel.x + slot * (moveW + moveGap);
+          drawCombatActionTile(move, {
+            x, y: moveY, w: moveW, h: moveRect.h,
+            selected: index === selectedMove,
+            focused: phase === 'move' && index === selectedMove,
+          });
+          moveRows.push({ id: move.id, index, x, y: moveY, w: moveW, h: moveRect.h });
         });
-        moveRows.push({ id: move.id, index, x, y: moveY, w: moveW, h: moveH });
-      });
-      if (moveWindow.start > 0) uiText(panel.x + .2, moveY + moveH - .8, '◀', 'ui-secondary', .75);
-      if (moveWindow.start + moveWindow.items.length < renderedMoves.length) uiText(panel.x + panel.w - 1.2, moveY + moveH - .8, '▶', 'ui-secondary', .75);
-      regionRects.moves = { x: panel.x, y: moveY, w: panel.w, h: moveH };
-
-      // THE PARRY METER. The blow travelling toward the window, the window
-      // itself, and the grade bands inside it. A timed input the player cannot
-      // see the shape of is a timed input they can only learn by accident.
-      if (window) {
-        const mx = panel.x;
-        const mw = panel.w;
-        const my = moveY + moveH + .35;
-        const cellAt = (fraction) => mx + mw * clamp(fraction, 0, 1);
-        const openX = cellAt(window.open);
-        const closeX = cellAt(window.close);
-        const goodX = cellAt(window.open + window.width * PARRY_GOOD_AT);
-        const perfectX = cellAt(window.open + window.width * PARRY_PERFECT_AT);
-        // The dead run before the window, then the three grades.
-        uiFill(mx, my, Math.max(0, openX - mx), .5, 'rgba(255,255,255,0.05)');
-        uiFill(openX, my, Math.max(0, goodX - openX), .5, 'rgba(120,220,255,0.16)');
-        uiFill(goodX, my, Math.max(0, perfectX - goodX), .5, 'rgba(120,220,255,0.30)');
-        uiFill(perfectX, my, Math.max(0, closeX - perfectX), .5, 'rgba(120,220,255,0.58)');
-        uiFill(closeX, my, Math.max(0, mx + mw - closeX), .5, 'rgba(255,255,255,0.05)');
-        // The blow, travelling.
-        const headX = cellAt(window.at);
-        uiFill(headX - .12, my - .25, .34, 1, window.spent ? UI_COLOR.secondary : UI_COLOR.amber);
-        const caption = window.spent
-          ? (resolution.parried ? 'TURNED' : 'GUARDED AT AIR')
-          : window.armed ? `[SPACE] · ${PARRY_TIERS[window.tier]?.label || 'PARRY'}` : 'THE BLOW IS COMING · [SPACE] TO PARRY';
-        uiText(mx, my + 1, caption.slice(0, mw), window.armed && !window.spent ? 'ui-amber' : 'ui-secondary', .8);
+        if (moveWindow.start > 0) uiText(panel.x + .2, moveY + moveRect.h - .8, '◀', 'ui-secondary', .75);
+        if (moveWindow.start + moveWindow.items.length < renderedMoves.length) uiText(panel.x + panel.w - 1.2, moveY + moveRect.h - .8, '▶', 'ui-secondary', .75);
+        regionRects.moves = moveRect;
       }
 
       // ── detail, notice, drill callout ──────────────────────────────────────
-      if (detailY != null) {
+      if (!bark) {
         const highlighted = phase === 'move'
           ? renderedMoves[selectedMove]
           : phase === 'resolve' && resolution ? resolution.action : null;
-        if (highlighted) {
+        const modifierNames = [...passives, ...actives].map(shortName);
+        if (phase === 'tool') {
+          const tool = activeTool();
+          const summary = `TOOLS · ${tool.label} · ${tool.ready === false ? 'LOCKED' : 'READY'}${modifierNames.length ? ` · MOD ${modifierNames.join(' / ')}` : ''}`;
+          uiText(layout.detail.x, detailY, summary.slice(0, layout.detail.w), tool.ready === false ? 'ui-danger' : 'ui-secondary', .64);
+        } else if (highlighted) {
           const long = highlighted.enabled === false
             ? `${highlighted.label} — ${highlighted.reason || 'UNAVAILABLE'}`
             : combatMoveSubtext(state, highlighted).long;
-          uiText(panel.x, detailY, long.slice(0, panel.w), 'ui-secondary', .6);
+          const summary = `${long}${modifierNames.length ? ` · MOD ${modifierNames.join(' / ')}` : ''}`;
+          uiText(layout.detail.x, detailY, summary.slice(0, layout.detail.w), 'ui-secondary', .6);
         }
       }
 

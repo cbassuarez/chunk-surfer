@@ -1,7 +1,7 @@
 import * as scenes from './scenes.js';
 import { uiCenter, uiFill, uiSize } from '../render/ui.js';
 import { UI_COLOR } from '../render/palette.js';
-import { drawCombatBar, drawCombatPips } from '../render/combat-view.js';
+import { drawCombatBar, drawCombatGauge } from '../render/combat-view.js';
 
 const SETUP_PHASES = Object.freeze({
   checking: 'VERIFYING BUNDLED CONTENT',
@@ -159,7 +159,7 @@ export function makeLensCalibrationScene({
         cursor += 6;
       }
 
-      drawCombatPips({
+      drawCombatGauge({
         x, y: cursor, w: width,
         value: completed,
         max: total,

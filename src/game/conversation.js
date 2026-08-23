@@ -23,7 +23,7 @@
 // Node shape:
 //   { speaker, lines:[line], choices:[choice], goto, tape }
 // Line shape:
-//   { who, text, prompt?, cue?, hold?, rate?, shake?, flash?, say?:false }
+//   { who, text, resolveText?, prompt?, cue?, hold?, rate?, shake?, flash?, say?:false }
 // Choice shape:
 //   { text, goto?, set?, clear?, exit? }
 
@@ -109,7 +109,13 @@ export function createConversation({
   // played at once, and the ending told the player both that it never touched
   // them and that it reached them three times, in consecutive sentences.
   const visibleBeats = () => visibleList(beats);
-  const line = () => (mode === 'nodes' ? nodeLines()[lineIdx] : visibleBeats()[beatIdx]);
+  const sourceLine = () => (mode === 'nodes' ? nodeLines()[lineIdx] : visibleBeats()[beatIdx]);
+  // A resolved line is a snapshot, not a getter. The level-check count uses
+  // this to quote the recorder clock at the Continue press which advanced into
+  // the line; keeping that value fixed prevents the displayed text and voice
+  // from changing again while the player sits on it.
+  let activeLine = null;
+  const line = () => activeLine || sourceLine();
 
   function updateStoryArtShot(l = line()) {
     const sourceId = String(l?.sourceId || l?.id || '');
@@ -203,7 +209,11 @@ export function createConversation({
 
   // Before he speaks, you decide that he speaks.
     function beginLine() {
-      const l = line();
+      const source = sourceLine();
+      const l = source && typeof source.resolveText === 'function'
+        ? { ...source, text: String(source.resolveText()) }
+        : source;
+      activeLine = l;
       if (!l) {
         if (mode === 'nodes') {
           if (branchOptions().length) { openBranch(); return; }
@@ -251,6 +261,7 @@ export function createConversation({
     history.length = 0;
     mode = 'beats';
     beatIdx = 0;
+    activeLine = null;
     pending = null;
     if (!visibleBeats().length) { finish(); return; }
     beginLine();
@@ -269,6 +280,7 @@ export function createConversation({
     choiceIdx = 0;
     history.length = 0;
     pending = null;
+    activeLine = null;
     resetLine();
 
     const n = nodes[id];
@@ -309,6 +321,7 @@ export function createConversation({
       commitLine();
       beatIdx++;
       if (beatIdx >= visibleBeats().length) { finish(); return; }
+      activeLine = null;
       beginLine();
       return;
     }
@@ -316,6 +329,7 @@ export function createConversation({
     if (lineIdx < ls.length - 1) {
       commitLine();
       lineIdx++;
+      activeLine = null;
       beginLine();
       return;
     }

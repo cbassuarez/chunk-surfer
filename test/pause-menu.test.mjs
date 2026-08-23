@@ -28,7 +28,7 @@ test('bag owns Escape before the run-level pause route', () => {
   assert.equal(shouldOpenPauseForEvent({storyMode:false,key:'Escape',topSceneId:'bag'}),false);
 });
 
-test('the bag closes with Escape or B, including from confirmation', async () => {
+test('Escape unwinds one bag route while B closes the whole bag from confirmation', async () => {
   const previousDocument=globalThis.document;
   globalThis.document={
     baseURI:'http://localhost/',
@@ -43,13 +43,24 @@ test('the bag closes with Escape or B, including from confirmation', async () =>
     const escapeBag=makeBagScene({equipment,job,onClose:()=>{closed++;}});
     scenes.replace(escapeBag);
     escapeBag.key({key:'Enter',code:'Enter'});
-    assert.equal(escapeBag.debugState().nav.mode,'confirm');
+    escapeBag.key({key:'ArrowDown',code:'ArrowDown'});
+    escapeBag.key({key:'ArrowDown',code:'ArrowDown'});
+    escapeBag.key({key:'Enter',code:'Enter'});
+    assert.equal(escapeBag.debugState().route.type,'confirm');
+    escapeBag.key({key:'Escape',code:'Escape'});
+    assert.equal(escapeBag.debugState().route.type,'root');
+    assert.equal(scenes.top(),escapeBag);
     escapeBag.key({key:'Escape',code:'Escape'});
     assert.equal(scenes.top(),null);
     assert.equal(closed,1);
 
     const toggleBag=makeBagScene({equipment,job,onClose:()=>{closed++;}});
     scenes.push(toggleBag);
+    toggleBag.key({key:'Enter',code:'Enter'});
+    toggleBag.key({key:'ArrowDown',code:'ArrowDown'});
+    toggleBag.key({key:'ArrowDown',code:'ArrowDown'});
+    toggleBag.key({key:'Enter',code:'Enter'});
+    assert.equal(toggleBag.debugState().route.type,'confirm');
     toggleBag.key({key:'b',code:'KeyB'});
     assert.equal(scenes.top(),null);
     assert.equal(closed,2);

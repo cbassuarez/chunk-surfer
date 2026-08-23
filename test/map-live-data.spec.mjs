@@ -43,7 +43,7 @@ const model = buildMapModel({
 assert.equal(model.route.status, 'ok');
 assert.ok(model.route.nextConnectorId);
 assert.equal(model.route.floorDelta, 2);
-assert.equal(model.floors.some((floor)=>floor.id==='academic'),false);
+assert.equal(model.floors.some((floor)=>floor.id==='academic'),true,'every structural floor has a direct tab before discovery');
 
 const academicPoint=project({x:8,y:275});
 const academicModel=buildMapModel({
@@ -53,7 +53,7 @@ const academicModel=buildMapModel({
 });
 assert.equal(academicModel.player.floorId,'academic');
 assert.equal(academicModel.floors.find((floor)=>floor.id==='academic')?.label,'THIRD FLOOR');
-assert.equal(academicModel.spaces.some((space)=>space.floorId==='academic'),false);
+assert.equal(academicModel.spaces.some((space)=>space.floorId==='academic'),true,'the issued plan retains named third-floor geography');
 
 const towerPlayer = buildMapModel({
   source, job, objectiveState:{target:'lux_nova'}, doors:[], contacts:[], navigation:{id:'directional'},
@@ -93,12 +93,12 @@ console.log('live map data tests ok');
   const nav = initialMapNav({ model });
   const layout = { mapViewport: { x: 2, y: 2, w: 60, h: 20 } };
   // The basement page holds the room he is standing in: labelled and bright.
-  const here = buildMapCommands({ model, nav, layout }).filter((c) => c.kind === 'objective');
+  const here = buildMapCommands({ model, nav, layout }).filter((c) => c.kind === 'objective'&&c.sequence);
   assert.equal(here.length, 1);
   assert.ok(here[0].showLabel && !here[0].dimLabel, 'the room you are in is labelled and bright');
   // The ground floor holds two takes, neither of them current nor the target.
   const ground = buildMapCommands({ model, nav: { ...nav, floorId: 'g' }, layout })
-    .filter((c) => c.kind === 'objective');
+    .filter((c) => c.kind === 'objective'&&c.sequence);
   assert.equal(ground.length, 2, 'the tub and the hall');
   assert.ok(ground.every((c) => c.showLabel), 'no objective hides its name');
   assert.ok(ground.every((c) => c.dimLabel), 'and the ones you have not chosen are dimmed, not hidden');
@@ -160,5 +160,8 @@ console.log('unknown-room markers ok');
   }
   // A real one still resolves.
   assert.equal(model.waypoint?.roomId, 'lux_nova');
+  assert.equal(model.waypoint?.label, 'LUX_NOVA');
+  assert.equal(model.waypoint?.kind, 'room');
+  assert.equal(model.waypoint?.playerSelected, true);
 }
 console.log('waypoint resolution ok');

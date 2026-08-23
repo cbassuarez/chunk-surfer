@@ -112,6 +112,17 @@ function selectRoom(state, roomId, model) {
   };
 }
 
+function selectSpace(state, spaceId, model) {
+  const target = mapSpace(model, spaceId);
+  if (!target || target.selectable === false) return state;
+  return {
+    ...state,
+    floorId: target.floorId,
+    selectedByFloor: { ...state.selectedByFloor, [target.floorId]: target.id },
+    manuallyChangedFloor: false,
+  };
+}
+
 function centerPlayer(state, model) {
   const room = model?.player?.roomId ? mapSpaceByRoom(model, model.player.roomId) : null;
   const floorId = model?.player?.floorId || room?.floorId;
@@ -132,6 +143,7 @@ export function reduceMapNav(state, event, model) {
     case 'NEXT_FLOOR': return changeFloor(current, 1, model);
     case 'PREV_FLOOR': return changeFloor(current, -1, model);
     case 'SELECT_ROOM': return selectRoom(current, event.roomId, model);
+    case 'SELECT_SPACE': return selectSpace(current, event.spaceId, model);
     case 'SELECT_FLOOR': {
       const floorId=String(event.floorId||'');
       if(!visibleFloors(model).some((floor)=>floor.id===floorId))return current;

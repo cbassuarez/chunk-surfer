@@ -45,10 +45,9 @@ for (const testCase of MAP_LAB_CASES.filter((entry) => entry.contact)) {
 
   assert.equal(mapCommands.some((command) => command.kind === 'enemy'), false);
   assert.equal(minimapCommands.some((command) => command.kind === 'enemy'), false);
-  assert.ok(
-    [...mapCommands, ...minimapCommands].some((command) => command.kind.startsWith('anomaly-')),
-    `${testCase.id} should expose evidence-derived anomaly commands`,
-  );
+  const anomaly=[...mapCommands,...minimapCommands].some((command)=>command.kind.startsWith('anomaly-'));
+  if(testCase.contact==='locked')assert.equal(anomaly,false,`${testCase.id} keeps unseen point telemetry in the status rail`);
+  else assert.equal(anomaly,true,`${testCase.id} may expose a non-exact evidence region`);
 }
 
 console.log('map information firewall tests ok');

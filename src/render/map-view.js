@@ -31,7 +31,7 @@ function currentRoomLabel(model) {
 
 function targetRoomLabel(model) {
   if (!model?.waypoint) return 'NO TARGET';
-  return roomLabel(model, model.waypoint.roomId, 'TARGET');
+  return model.waypoint.label || roomLabel(model, model.waypoint.roomId, 'TARGET');
 }
 
 function routeLabel(model) {
@@ -107,7 +107,11 @@ function drawMapCommands(commands, viewport, now) {
   for (const command of commands) {
     if (command.kind === 'topology') drawTopology(command, viewport);
     else if (command.kind === 'route') drawRoute(command);
-    else if (command.kind === 'door') uiGlyph(Math.round(command.point.x), Math.round(command.point.y), command.state === 'locked' ? '╫' : command.state === 'closed' ? '┼' : '·', command.state === 'locked' ? 'ui-danger' : command.state === 'closed' ? 'ui-amber' : 'ui-label', .72);
+    else if (command.kind === 'door') {
+      const glyph=command.state==='locked'?'╫':command.state==='sealed'||command.state==='blocked'?'▓':command.state==='unknown'?'?':command.state==='closed'?'┼':'·';
+      const cls=command.state==='locked'||command.state==='sealed'||command.state==='blocked'?'ui-danger':command.state==='closed'?'ui-amber':command.state==='unknown'?'ui-secondary':'ui-label';
+      uiGlyph(Math.round(command.point.x),Math.round(command.point.y),glyph,cls,.72);
+    }
     else if (command.kind === 'connector') uiGlyph(Math.round(command.point.x), Math.round(command.point.y), '↕', command.selected ? 'ui-blue' : 'ui-label', command.selected ? .96 : .62);
     else if (command.kind === 'objective') {
       drawObjectiveMarker(command, command.selected ? .82 + Math.sin(now * 7) * .16 : .82);
@@ -126,6 +130,7 @@ function drawMapCommands(commands, viewport, now) {
       }
     }
     else if (command.kind === 'player') drawPlayerMarker(command.point, command.heading, 1);
+    else if (command.kind === 'hush-visible') drawAnomalyMarker(command,.9+Math.sin(now*10)*.08);
     else if (command.kind === 'equipment') drawEquipmentMarker(command.point,command.carrierOpen ? .72+Math.sin(now*7)*.2 : .72);
     else if (command.kind === 'anomaly-contact') drawAnomalyMarker(command, .82 + Math.sin(now * 12) * .16);
     else if (command.kind === 'anomaly-region') drawAnomalyRegion(command, .72);
@@ -134,6 +139,7 @@ function drawMapCommands(commands, viewport, now) {
 
 function progressText(model, width) {
   const parts = (model.spaces || [])
+    .filter((space) => space.objective)
     .sort((a, b) => a.objective.sequence - b.objective.sequence)
     .map((space) => `${space.shortLabel || space.objective.sequence} ${space.objective.recorded ? '■' : space.waypoint ? '◆' : space.current ? '●' : '□'}`);
   return clip(parts.join('  '), width);
@@ -148,16 +154,10 @@ function ageText(contact, now) {
 function drawSystemStatus(model, rect, now) {
   const route = routeLabel(model);
   const hush = hushStatus(model, now);
-  const rows = [
-    ['YOU', currentRoomLabel(model), 'ui-green'],
-    ['TARGET', targetRoomLabel(model), model.waypoint ? 'ui-blue' : 'ui-secondary'],
-    ['ROUTE', route.text, route.cls],
-    ['HUSH', `${hush.label} · ${hush.detail}`, hush.cls],
-  ];
-  rows.forEach(([label, value, cls], index) => {
-    uiText(rect.x, rect.y + index, label, 'ui-label', .62);
-    uiText(rect.x + 9, rect.y + index, clip(value, rect.w - 9), cls, .82);
-  });
+  const you=clip(currentRoomLabel(model),Math.max(8,Math.floor(rect.w*.28)));
+  const target=clip(targetRoomLabel(model),Math.max(8,Math.floor(rect.w*.25)));
+  uiText(rect.x,rect.y,clip(`YOU ${you} · MARK ${target}`,Math.max(1,rect.w-22)),'ui-primary',.78);
+  rightText(rect.x,rect.y,rect.w,`HUSH ${hush.label} · ${route.text}`,hush.cls==='ui-danger'?hush.cls:route.cls,.72);
 }
 
 function drawLegend(rect) {
@@ -180,50 +180,54 @@ function drawLegend(rect) {
   }
 }
 
-function drawDetail(model, nav, rect, now) {
-  const selected = selectedMapSpace(nav, model);
-  const contact = newestMapContact(model);
-  const hush = hushStatus(model, now);
-  uiText(rect.x, rect.y, 'SELECTION', 'ui-label', .66);
-  if (!selected) {
-    uiText(rect.x, rect.y + 1, 'NO ROOM SELECTED', 'ui-secondary', .55);
-  } else {
-    uiText(rect.x, rect.y + 1, clip(selected.label, rect.w), selected.current ? 'ui-green' : selected.waypoint ? 'ui-blue' : 'ui-amber', .92);
-    uiText(rect.x, rect.y + 2, `TAKE ${String(selected.objective.sequence).padStart(2, '0')} / ${String(model.progress.total).padStart(2, '0')}`, 'ui-label', .64);
-    const facts = [
-      ['STATE', selected.objective.recorded ? 'RECORDED' : selected.waypoint ? 'TARGET' : selected.current ? 'YOU ARE HERE' : 'UNRECORDED'],
-      ['FLOOR', mapFloor(model, selected.floorId)?.label || 'UNKNOWN'],
-      ['TIME', selected.objective.stamp || '--:--'],
-      ['FILES', String(selected.objective.fileCount || 0).padStart(2, '0')],
-    ];
-    facts.forEach(([label, value], index) => {
-      uiText(rect.x, rect.y + 4 + index, label, 'ui-label', .62);
-      uiText(rect.x + 9, rect.y + 4 + index, clip(value, rect.w - 9), selected.objective.recorded ? 'ui-green' : selected.waypoint ? 'ui-blue' : 'ui-primary', .78);
-    });
-    if (selected.objective.notes?.[0] && rect.h >= 12) {
-      uiText(rect.x, rect.y + 9, 'FILE', 'ui-label', .62);
-      uiText(rect.x + 9, rect.y + 9, clip(selected.objective.notes[0].title || selected.objective.notes[0].id, rect.w - 9), 'ui-blue', .76);
-    }
-  }
+function spaceState(space){
+  if(space.current)return['●','CURRENT','ui-green'];
+  if(space.waypoint)return['◆','WAYPOINT','ui-blue'];
+  if(space.objective?.recorded)return['■','RECORDED','ui-green'];
+  if(space.unknown)return['?','UNKNOWN','ui-secondary'];
+  if(space.visited)return['◇','VISITED','ui-primary'];
+  return['·','NOT VISITED','ui-secondary'];
+}
 
-  const hy = rect.y + Math.max(12, Math.floor(rect.h * .52));
-  if (hy < rect.y + rect.h - 2) {
-    uiLine(rect.x, hy - 1, rect.x + rect.w, hy - 1, undefined, .24);
-    uiText(rect.x, hy, 'HUSH', 'ui-label', .66);
-    uiText(rect.x + 9, hy, clip(`${hush.label} · ${hush.detail}`, rect.w - 9), hush.cls, .82);
-    if (contact?.observation) {
-      uiText(rect.x, hy + 2, 'AGE', 'ui-label', .62);
-      uiText(rect.x + 9, hy + 2, ageText(contact, now), hush.cls, .76);
-      uiText(rect.x, hy + 3, 'FLOOR', 'ui-label', .62);
-      uiText(rect.x + 9, hy + 3, mapFloor(model, contact.observation.floorId)?.label || 'UNKNOWN', hush.cls, .76);
-      const room = model.policy?.contactShowRoom === false ? 'HIDDEN BY RULE' : roomLabel(model, contact.observation.roomId, 'NO ROOM LOCK');
-      uiText(rect.x, hy + 4, 'ROOM', 'ui-label', .62);
-      uiText(rect.x + 9, hy + 4, clip(room, rect.w - 9), hush.cls, .76);
-    } else {
-      const lines = uiWrap('No current acoustic contact. The map only shows HUSH when the game has evidence.', Math.max(10, rect.w));
-      lines.slice(0, Math.max(0, rect.y + rect.h - hy - 2)).forEach((line, index) => uiText(rect.x, hy + 2 + index, line, 'ui-secondary', .62));
-    }
+function entranceState(entrance){
+  const state=String(entrance?.state||'unknown').toLowerCase();
+  if(state==='blocked'||state==='sealed')return['SEALED / BLOCKED','ui-danger'];
+  if(state==='locked')return['LOCKED','ui-danger'];
+  if(state==='closed')return['CLOSED','ui-amber'];
+  if(state==='open')return['OPEN','ui-green'];
+  return['UNKNOWN','ui-secondary'];
+}
+
+function drawDetail(model, nav, rect) {
+  const selected = selectedMapSpace(nav, model);
+  const spaces=(model.spaces||[]).filter((space)=>space.floorId===nav.floorId&&space.selectable!==false);
+  const listRows=Math.max(1,Math.min(spaces.length,Math.floor(rect.h*.44)));
+  const selectedAt=Math.max(0,spaces.findIndex((space)=>space.id===selected?.id));
+  const start=Math.max(0,Math.min(selectedAt-Math.floor(listRows/2),spaces.length-listRows));
+  uiText(rect.x,rect.y,`ROOMS · ${mapFloor(model,nav.floorId)?.label||'UNKNOWN'}`,'ui-label',.68);
+  spaces.slice(start,start+listRows).forEach((space,index)=>{
+    const on=space.id===selected?.id,[mark,,cls]=spaceState(space),row=rect.y+1+index;
+    uiText(rect.x,row,on?'▸':' ',on?'ui-amber':'ui-secondary',on?1:.4);
+    uiText(rect.x+2,row,mark,cls,on?1:.64);
+    uiText(rect.x+4,row,clip(space.label,Math.max(1,rect.w-4)),on?'ui-amber':cls,on?1:.68);
+  });
+  const sy=rect.y+listRows+2;
+  if(sy>=rect.y+rect.h||!selected)return;
+  uiLine(rect.x,sy-1,rect.x+rect.w,sy-1,undefined,.26);
+  const [,stateLabel,stateCls]=spaceState(selected);
+  uiText(rect.x,sy,clip(selected.label,rect.w),selected.waypoint?'ui-blue':selected.current?'ui-green':'ui-amber',.94);
+  uiText(rect.x,sy+1,clip(`${stateLabel} · ${mapFloor(model,selected.floorId)?.label||'UNKNOWN'}`,rect.w),stateCls,.75);
+  let row=sy+3;
+  if(selected.objective&&row<rect.y+rect.h){
+    uiText(rect.x,row,clip(`WORK ORDER ${String(selected.objective.sequence).padStart(2,'0')} · ${selected.objective.fileCount||0} SHEET${selected.objective.fileCount===1?'':'S'}`,rect.w),'ui-blue',.7);row+=2;
   }
+  const entrances=selected.entrances||[];
+  if(row<rect.y+rect.h)uiText(rect.x,row++,entrances.length?'ENTRANCES':'ENTRANCES · NONE LISTED','ui-label',.62);
+  entrances.forEach((entrance,index)=>{
+    if(row>=rect.y+rect.h)return;
+    const [label,cls]=entranceState(entrance);
+    uiText(rect.x,row,clip(`${index+1} ${entrance.id} · ${label}`,rect.w),cls,.76);row++;
+  });
 }
 
 export function drawMapView({ model, nav, bagLayout, now = 0 }) {
@@ -233,11 +237,15 @@ export function drawMapView({ model, nav, bagLayout, now = 0 }) {
   const route = routeLabel(model);
   const hush = hushStatus(model, clockMs);
 
-  uiText(layout.floorRail.x, layout.floorRail.y, `FLOOR ${floor?.shortLabel || '--'} · ${clip(floor?.label || 'MAP UNAVAILABLE', 24)}`, 'ui-label', .78);
-  rightText(layout.floorRail.x, layout.floorRail.y, layout.floorRail.w, `${model.progress.done}/${model.progress.total} TAKES · HUSH ${hush.label}`, hush.cls, .74);
+  let fx=layout.floorRail.x;
+  (model.floors||[]).forEach((candidate)=>{
+    const label=`[${candidate.shortLabel||candidate.label}]`,active=candidate.id===floor?.id;
+    if(fx+label.length<=layout.floorRail.x+layout.floorRail.w){uiText(fx,layout.floorRail.y,label,active?'ui-amber':'ui-secondary',active?1:.58);fx+=label.length+1;}
+  });
+  rightText(layout.floorRail.x,layout.floorRail.y,layout.floorRail.w,`${model.progress.done}/${model.progress.total} TAKES`,model.progress.done===model.progress.total?'ui-green':'ui-blue',.7);
 
-  drawSystemStatus(model, { x: layout.mapViewport.x, y: layout.mapViewport.y, w: layout.mapViewport.w, h: 4 }, clockMs);
-  const viewport = { ...layout.mapViewport, y: layout.mapViewport.y + 5, h: Math.max(4, layout.mapViewport.h - 7) };
+  drawSystemStatus(model,{x:layout.mapViewport.x,y:layout.mapViewport.y,w:layout.mapViewport.w,h:1},clockMs);
+  const viewport={...layout.mapViewport,y:layout.mapViewport.y+2,h:Math.max(4,layout.mapViewport.h-4)};
   uiLine(viewport.x, viewport.y - .45, viewport.x + viewport.w, viewport.y - .45, undefined, .24);
   const commands = buildMapCommands({ model, nav, layout: { ...layout, mapViewport: viewport }, now: clockMs });
   drawMapCommands(commands, viewport, now);
@@ -245,7 +253,7 @@ export function drawMapView({ model, nav, bagLayout, now = 0 }) {
   drawLegend({ x: layout.mapViewport.x, y: layout.mapViewport.y + layout.mapViewport.h - 1, w: layout.mapViewport.w, h: 2 });
 
   if (layout.dividerX != null) uiLine(layout.dividerX, layout.mapViewport.y - 1, layout.dividerX, layout.mapViewport.y + layout.mapViewport.h, undefined, .34);
-  drawDetail(model, nav, layout.detail, clockMs);
+  drawDetail(model,nav,layout.detail);
   uiText(layout.progressRail.x, layout.progressRail.y, progressText(model, layout.progressRail.w), 'ui-blue', .68);
   rightText(layout.progressRail.x, layout.progressRail.y, layout.progressRail.w, route.text, route.cls, .68);
   return { layout, commands, selected: selectedMapSpace(nav, model), actions: mapActionRail(selectedMapSpace(nav, model), { floorCount: model.floors?.length || 1 }) };

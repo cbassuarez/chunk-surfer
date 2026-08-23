@@ -17,8 +17,8 @@ const doors=FP.doorState();
 assert.equal(doors.length,CONSERVATORY_DOORS.length,'the compiled door set exactly matches the authored schedule');
 assert.equal(new Set(doors.map((door)=>door.id)).size,doors.length,'all door IDs are stable and unique');
 assert.ok(doors.every((door)=>door.archetype!=='legacy'),'every portal has exactly one explicit definition');
-assert.equal(doors.filter((door)=>door.leafCount===2).length,5,'public entrance, baths, hall, chapel and bay goods doors are pairs');
-assert.deepEqual(doors.filter((door)=>door.leafCount===2).map((door)=>door.id).sort(),['chapel-c17','dock-grey-exterior','front-main','hall-vestibule','pool-lobby']);
+assert.equal(doors.filter((door)=>door.leafCount===2).length,7,'public, baths, hall, chapel, bay goods and both cathedral doors are pairs');
+assert.deepEqual(doors.filter((door)=>door.leafCount===2).map((door)=>door.id).sort(),['brendan-south-porch','brendan-west-door','chapel-c17','dock-grey-exterior','front-main','hall-vestibule','pool-lobby']);
 const poolDoor=doors.find((door)=>door.id==='pool-lobby');
 assert.equal(poolDoor.archetype,DOOR_ARCHETYPE.POOL_GLAZED_PAIR);
 assert.equal(poolDoor.aperture.width,2,'the municipal baths admits a school group through a real two-metre pair');
@@ -54,6 +54,43 @@ for(const door of doors){
   assert.equal(door.cx,(Math.min(...xs)+Math.max(...xs))/2,`${door.id} frame is centred across the complete threshold width`);
   assert.equal(door.cy,(Math.min(...ys)+Math.max(...ys))/2,`${door.id} frame is centred across the complete threshold depth`);
   assert.ok(door.cells.every(({x,y})=>FP.cellAt(x,y)&&!FP.isSolid(x,y)&&!(FP.flagsAt(x,y)&F.BRICKED)),`${door.id} owns one fully clear masonry-free throat`);
+}
+
+// St Brendan's leaves are exits, not locks. Exterior interaction has no handle,
+// and open/debug/restored state still cannot reverse the crossing.
+{
+  const cathedral=doors.filter((door)=>door.id.startsWith('brendan-'));
+  assert.deepEqual(cathedral.map((door)=>door.id).sort(),['brendan-south-porch','brendan-west-door']);
+  FP.setAllDoorsOpen(true);
+  for(const door of FP.doorState().filter((entry)=>entry.id.startsWith('brendan-'))){
+    assert.equal(door.access,'exit-only',door.id);assert.equal(door.closer,'standard',door.id);
+    const axis=door.widthAxis==='x'?'y':'x',cross=axis==='x'?'y':'x';
+    const inside={x:Math.round(door.cx),y:Math.round(door.cy)},outside={...inside};
+    inside[axis]+=door.insideSide*2;outside[axis]-=door.insideSide*2;
+    inside[cross]=outside[cross]=Math.round(door[cross==='x'?'cx':'cy']);
+    assert.equal(FP.canStep(outside.x,outside.y,Math.round(door.cx),Math.round(door.cy)).why,'exit-only',`${door.id} forced-open entry`);
+    assert.equal(FP.canStep(Math.round(door.cx),Math.round(door.cy),inside.x,inside.y).why,'exit-only',`${door.id} reverse crossing`);
+    assert.equal(FP.canStep(inside.x,inside.y,Math.round(door.cx),Math.round(door.cy)).ok,true,`${door.id} outbound approach`);
+    const toward=door.widthAxis==='x'?[0,door.insideSide]:[door.insideSide,0];
+    assert.equal(FP.interactDoor(outside.x,outside.y,toward,new Set()).why,'exit-only',`${door.id} exterior interaction`);
+  }
+  FP.resetDoors();
+  let west=FP.doorState().find((door)=>door.id==='brendan-west-door');
+  const inside={x:Math.round(west.cx),y:Math.round(west.cy)+2};
+  assert.equal(FP.interactDoor(inside.x,inside.y,[0,-1],new Set()).opened,true,'the west leaf opens from inside');
+  FP.tickDoors(2,{playerX:inside.x,playerY:inside.y});
+  west=FP.doorState().find((door)=>door.id==='brendan-west-door');
+  assert.equal(west.state,'open');
+  FP.canStep(inside.x,inside.y,Math.round(west.cx),Math.round(west.cy));
+  FP.canStep(Math.round(west.cx),Math.round(west.cy),Math.round(west.cx),Math.round(west.cy)-2);
+  FP.tickDoors(.01,{playerX:Math.round(west.cx),playerY:Math.round(west.cy)-4});
+  assert.equal(FP.doorState().find((door)=>door.id==='brendan-west-door').state,'closing','clearing the exit requests its closer');
+  FP.tickDoors(2,{playerX:Math.round(west.cx),playerY:Math.round(west.cy)-4});
+  assert.equal(FP.doorState().find((door)=>door.id==='brendan-west-door').state,'closed','the exit auto-closes behind the player');
+  FP.loadDoorState({schema:2,states:{'brendan-west-door':{state:'open',wedge:false,closerArmed:false}}});
+  west=FP.doorState().find((door)=>door.id==='brendan-west-door');
+  assert.equal(west.state,'open','an open saved leaf restores as open');
+  assert.equal(FP.canStep(Math.round(west.cx),Math.round(west.cy)-2,Math.round(west.cx),Math.round(west.cy)).why,'exit-only','restore does not turn the west exit into an entrance');
 }
 
 // Legacy coordinate IDs migrate into stable names without losing endpoint.

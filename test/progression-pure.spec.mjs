@@ -4,6 +4,7 @@ import {
   DEFAULT_RULE_VALUES,
   ENDING_IDS,
   EVENT_SCHEMA_VERSION,
+  POWER_CIRCUIT_IDS,
   freshLedger,
   freshMeta,
   freshRunRecord,
@@ -123,7 +124,8 @@ assert.equal(cannotRequalify.integrity.deadAir.invalidations.length, 1);
 assert.equal(validateEvent(event(EVENT_TYPES.TAKE_COMPLETED, { roomId: 'main_b3', elapsed: 45 })), true);
 assert.equal(validateEvent(event(EVENT_TYPES.TAKE_COMPLETED, { roomId: 'main_b3' })), false);
 assert.equal(validateEvent(event(EVENT_TYPES.POWER_CIRCUIT_CHANGED, { circuit: 'sp01', live: true })), true);
-assert.equal(validateEvent(event(EVENT_TYPES.POWER_CIRCUIT_CHANGED, { circuit: 'sp04', live: true })), false);
+assert.equal(validateEvent(event(EVENT_TYPES.POWER_CIRCUIT_CHANGED, { circuit: 'sp04', live: true })), true);
+assert.equal(validateEvent(event(EVENT_TYPES.POWER_CIRCUIT_CHANGED, { circuit: 'sp06', live: true })), false);
 assert.equal(validateEvent(event(EVENT_TYPES.CREDITS_VIEWED)), true);
 assert.equal(validateEvent(event('made.up', {})), false);
 const seen = [];
@@ -201,7 +203,7 @@ assert.deepEqual(
   ['ACH_RELEASE_RECORD'],
 );
 const allPowerRun = freshRunRecord({ now: 1, id: 'run_power' });
-for (const [index, circuit] of ['sp01', 'sp02', 'sp03'].entries()) {
+for (const [index, circuit] of POWER_CIRCUIT_IDS.entries()) {
   allPowerRun.ledger = reduceRunLedger(allPowerRun.ledger,
     event(EVENT_TYPES.POWER_CIRCUIT_CHANGED, { circuit, live: true }, index + 1));
 }

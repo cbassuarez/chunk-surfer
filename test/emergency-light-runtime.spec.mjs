@@ -46,6 +46,16 @@ assert.deepEqual(buildEmergencyShadowFrame(lights,{listener:{x:2,z:1}}),frame,'t
   ],{listener:{x:2,y:0,z:1}}).lightId,'same-landing',
   'a nearer lamp on another storey cannot stage ceiling-height bodies over the player');
 }
+{
+  const local={id:'foyer-local',x:7,y:2,z:1,floorY:0,intensity:.3,shadowReveal:1,spilling:false};
+  const hallSpill={id:'hall-spill',x:3,y:2,z:1,floorY:0,intensity:1,shadowReveal:1,spilling:true};
+  assert.equal(buildEmergencyShadowFrame([hallSpill,local],{listener:{x:2,z:1}}).lightId,'foyer-local',
+    'local emergency ownership outranks a stronger hall source leaking through the threshold');
+  assert.equal(buildEmergencyShadowFrame([hallSpill],{listener:{x:2,z:1}}),null,
+    'hall spill may light the atrium but cannot stage hall apparitions there');
+  assert.equal(buildEmergencyShadowFrame([{...local,sourceZone:4,zone:2}],{listener:{x:2,z:1}}),null,
+    'an unmarked cross-zone source still cannot stage apparitions outside its owning zone');
+}
 assert.equal(buildEmergencyShadowFrame(lights,{listener:{x:2,z:1},enabled:false}),null);
 assert.equal(buildEmergencyShadowFrame([{...lights[1],shadowReveal:0}],{listener:{x:2,z:1}}),null);
 assert.ok(buildEmergencyShadowFrame([{...lights[1],x:50}],{listener:{x:0,z:1}}),'the apparition remains eligible across the concert hall');

@@ -2,7 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { combatActionReadout, combatBarCells, combatInjuryStage, combatTonePalette } from '../src/render/combat-view.js';
+import {
+  combatActionReadout,
+  combatBarCells,
+  combatGaugeGeometry,
+  combatGaugeSegments,
+  combatGaugeState,
+  combatInjuryStage,
+  combatTonePalette,
+} from '../src/render/combat-view.js';
 import { applyVfdSettings, setActiveSurface, vfdSettings } from '../src/render/palette.js';
 import * as combatView from '../src/render/combat-view.js';
 import {
@@ -26,6 +34,19 @@ test('health bars preserve exact ratios and embodied injury thresholds', () => {
   assert.equal(combatInjuryStage({ composure: 4, maxComposure: 8 }), 'wounded');
   assert.equal(combatInjuryStage({ composure: 2, maxComposure: 8 }), 'critical');
   assert.equal(combatInjuryStage({ composure: 8, maxComposure: 8, injuries: 2 }), 'wounded');
+});
+
+test('combat health uses a fixed sixteen-element VFD scale', () => {
+  assert.equal(combatGaugeSegments(0, 40), 0);
+  assert.equal(combatGaugeSegments(1, 40), 1);
+  assert.equal(combatGaugeSegments(20, 40), 8);
+  assert.equal(combatGaugeSegments(40, 40), 16);
+  assert.equal(combatGaugeSegments(75, 75), 16);
+  const geometry = combatGaugeGeometry({ x: 7, w: 38 });
+  assert.equal(geometry.cells.length, 16);
+  assert.ok(geometry.end <= 45 + Number.EPSILON);
+  assert.ok(geometry.cells[4].x - (geometry.cells[3].x + geometry.cells[3].w) > geometry.cells[1].x - (geometry.cells[0].x + geometry.cells[0].w));
+  assert.equal(combatGaugeState({ value: 39, max: 40, ghostFrom: 40 }).sameBucketChange, true);
 });
 
 test('boot progress can use the selected phosphor instead of the combat-player amber', () => {
@@ -75,14 +96,14 @@ test('fight voids retain low-alpha room memory without new combat semantics', ()
   assert.doesNotMatch(combatViewSource, /roomMemory.*attack|roomMemory.*damage/i);
 });
 
-test('hits carry weight: hit-stop, ghost pips, damage popups, entry wipe, impact audio', () => {
+test('hits carry weight: hit-stop, ghost gauge, damage popups, entry wipe, impact audio', () => {
   assert.match(combatSceneSource, /hitstop = Math\.min/);
-  assert.match(combatSceneSource, /drawCombatPips\(/);
+  assert.match(combatSceneSource, /drawCombatGauge\(/);
   assert.match(combatSceneSource, /barGhost\.coherence = \{ from: before\.movementCoherence/);
   assert.match(combatSceneSource, /drawVfdCounter\(/);
   assert.match(combatSceneSource, /drawBattleWipe\(/);
   assert.match(combatSceneSource, /playImpact\?\.\(/);
-  assert.match(combatViewSource, /export function drawCombatPips/);
+  assert.match(combatViewSource, /export function drawCombatGauge/);
   assert.match(combatViewSource, /export function drawBattleWipe/);
 });
 

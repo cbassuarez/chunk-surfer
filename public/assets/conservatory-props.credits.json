@@ -4,10 +4,10 @@
     "author": "Chunk Surfer project",
     "source": "tools/chunk_surfer/build-props.mjs",
     "license": "project source (mixed: see meshes)",
-    "sha256": "f3aa097407bb2703b5286af726fca33b1b995b1d295d30124aa327267e4f0632",
+    "sha256": "4bebca8781f222a78477b7e09a3b84098d972ac061e185390f7a822f933cfb08",
     "modifications": "Metres, Y-up, ground-centred. Procedural fallback geometry plus user-supplied source meshes (unverified provenance) baked, re-axised, height-scaled, and vertex-cluster decimated under budget.",
-    "triangles": 313754,
-    "bytes": 22686412
+    "triangles": 323710,
+    "bytes": 23331436
   },
   "meshes": [
     {
@@ -4445,17 +4445,101 @@
       "name": "st_brendan_church",
       "bounds": {
         "min": [
-          -11.7,
+          -8.2,
           0,
-          -19.87
+          -15.245
         ],
         "max": [
-          12.7,
-          19.3,
-          17.86
+          9.6,
+          17.35,
+          16.2
         ]
       },
-      "triangles": 7200,
+      "triangles": 13468,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "cathedral_font",
+      "bounds": {
+        "min": [
+          -0.5,
+          0,
+          -0.5
+        ],
+        "max": [
+          0.5,
+          1.15,
+          0.5
+        ]
+      },
+      "triangles": 128,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "cathedral_pulpitum",
+      "bounds": {
+        "min": [
+          -4.025,
+          0,
+          -0.42
+        ],
+        "max": [
+          4.025,
+          2.6,
+          0.29
+        ]
+      },
+      "triangles": 624,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "cathedral_tomb",
+      "bounds": {
+        "min": [
+          -1.05,
+          0,
+          -0.425
+        ],
+        "max": [
+          1.05,
+          1.05,
+          0.425
+        ]
+      },
+      "triangles": 248,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "cathedral_monument",
+      "bounds": {
+        "min": [
+          -0.71,
+          0,
+          -0.33
+        ],
+        "max": [
+          0.71,
+          2.36,
+          0.15
+        ]
+      },
+      "triangles": 144,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -5316,7 +5400,7 @@
           120
         ]
       },
-      "triangles": 5040,
+      "triangles": 5664,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -5422,6 +5506,27 @@
         ]
       },
       "triangles": 4644,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "baseboard_cathedral",
+      "bounds": {
+        "min": [
+          -2,
+          -2.3,
+          0
+        ],
+        "max": [
+          12,
+          5.715,
+          26
+        ]
+      },
+      "triangles": 1920,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
