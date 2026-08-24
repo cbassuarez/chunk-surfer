@@ -52,9 +52,18 @@ export const OPENING_STREET_PROPS = freeze([
   freeze({id:'opening-street-park-laurel',mesh:'opening_park_laurel',fallbackMesh:VEGETATION_FALLBACKS.opening_park_laurel,x:69,y:200,yaw:Math.PI/2,scale:1,interactive:false,structural:true,blocks:false}),
   // A few deliberate seams, not a procedural carpet. They thicken the lawn
   // edge while keeping the entrance, benches and service approach open.
-  freeze({id:'opening-street-park-nettles',mesh:'vegetation_nettle_cluster',x:63.2,y:197.1,yaw:.26,scale:.86,interactive:false,structural:true,blocks:false}),
-  freeze({id:'opening-street-park-weeds',mesh:'vegetation_weed_cluster',x:74.7,y:198.7,yaw:-.48,scale:.92,interactive:false,structural:true,blocks:false}),
-  freeze({id:'opening-street-park-grass-edge',mesh:'vegetation_grass_edge',x:65.0,y:196.2,yaw:Math.PI/2,scale:1,interactive:false,structural:true,blocks:false}),
+  //
+  // THE LAWN'S NORTH EDGE IS y200 AND NOT A METRE FURTHER.
+  //
+  // These three were authored at y196-199, which is solid ground — the frontage
+  // wall, not the grass in front of it. propsInit drops a prop whose centre is
+  // embedded, so all three were silently discarded and the lawn edge they exist
+  // to thicken was bare. Growth belongs against the boundary, so they sit just
+  // inside it: a nettle bed and a weed clump in the two corners nothing else
+  // uses, and the grass run along the wall between them.
+  freeze({id:'opening-street-park-nettles',mesh:'vegetation_nettle_cluster',x:63.2,y:200.7,yaw:.26,scale:.86,interactive:false,structural:true,blocks:false}),
+  freeze({id:'opening-street-park-weeds',mesh:'vegetation_weed_cluster',x:76.4,y:200.6,yaw:-.48,scale:.92,interactive:false,structural:true,blocks:false}),
+  freeze({id:'opening-street-park-grass-edge',mesh:'vegetation_grass_edge',x:65.6,y:200.4,yaw:Math.PI/2,scale:1,interactive:false,structural:true,blocks:false}),
   freeze({id:'opening-street-park-leaf-fall',mesh:'vegetation_leaf_scatter',x:72.9,y:201.7,yaw:-.18,scale:.82,interactive:false,structural:true,blocks:false}),
 ]);
 

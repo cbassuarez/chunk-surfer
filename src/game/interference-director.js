@@ -12,11 +12,24 @@ import {
   normalizePsychProfileSettings,
   profileInfluence,
 } from './psychological-profile.js';
+import {
+  advanceWindowChannelScene,
+  availableWindowReturnTier,
+  canonicalWindowChannelBattleId,
+  chargeWindowReturn,
+  compileWindowChannelScene,
+  freshWindowChannelProgress,
+  movementWindowTableau,
+  spendWindowReturn,
+} from './window-channel.js';
 
 const STAGE = Object.freeze({
   'practice-room-hush': 'foreshadow',
   'recording-2': 'recognition',
   'pre-recording-4': 'control',
+  natatorium: 'recognition',
+  hall: 'control',
+  practice: 'control',
   chapel: 'handoff',
   'source-final': 'handoff',
 });
@@ -117,14 +130,22 @@ export function createBattleInterferenceDirector({
     return record;
   }
 
-  function sidecarPayload(stage, state = 'MONITOR RETURN') {
-    const showExact = settings().vfdText !== false;
+  function sidecarPayload(session, state = 'MONITOR RETURN') {
+    const tableau = movementWindowTableau({
+      battleId: session?.battleId,
+      movementId: session?.movement?.id,
+    });
     return {
       state,
-      operator: showExact ? identity?.persona?.value || 'OPERATOR UNRESOLVED' : record?.tokens?.persona?.token || 'OPERATOR MASKED',
-      host: stage === 'recognition' ? 'WITHHELD' : showExact ? identity?.hostname?.value || 'HOST UNRESOLVED' : record?.tokens?.hostname?.token || 'HOST MASKED',
-      input: stage === 'recognition' ? 'WITHHELD' : showExact ? identity?.mic?.value || 'INPUT UNRESOLVED' : record?.tokens?.mic?.token || 'INPUT MASKED',
-      annotation: stage === 'handoff' ? 'I KNOW WHICH WINDOW YOU KEEP RETURNING TO.' : '',
+      battleId: tableau?.battleId || session?.channelBattle || '',
+      movementId: tableau?.movementId || session?.movement?.id || '',
+      title: tableau?.title || 'AUDIOCORP / WINDOW CHANNEL',
+      caption: tableau?.caption || (session?.stage === 'handoff'
+        ? 'THE HANDOFF CONTINUES OUTSIDE THE FRAME.'
+        : 'THE RETURN PATH HAS FOUND ANOTHER SURFACE.'),
+      palette: tableau?.palette || null,
+      motifs: tableau?.motifs || null,
+      tableau,
     };
   }
 
@@ -200,21 +221,143 @@ export function createBattleInterferenceDirector({
     return true;
   }
 
+  async function movementChanged(session, event = {}) {
+    session.movement = {
+      id: String(event.id || ''),
+      index: Math.max(0, Math.floor(Number(event.index) || 0)),
+      title: String(event.title || '').slice(0, 64),
+    };
+    const tableau = movementWindowTableau({ battleId: session.battleId, movementId: session.movement.id });
+    if (!tableau || !windowEnabled()) return tableau;
+    const context = getContext(session.encounterId, session.battleId) || {};
+    await effects?.arrangeMovement?.(tableau, {
+      token: session.effectToken,
+      forceInternal: context.inputDevice === 'controller',
+    });
+    return tableau;
+  }
+
+  async function beginChannelAttack(session, event = {}) {
+    if (!windowEnabled() || !session.channelBattle || !effects?.beginWindowChannel) return { outcome: 'skip' };
+    const movementIndex = Math.max(0, Math.floor(Number(event.movementIndex) || 0));
+    if (session.channelMovements.has(movementIndex)) return { outcome: 'skip', duplicate: true };
+    const scene = compileWindowChannelScene({
+      battleId: session.battleId,
+      movementId: event.movementId,
+      movementIndex,
+      movementTitle: event.movementTitle,
+      intentId: event.intentId,
+      intentLabel: event.intentLabel,
+      intentKind: event.intentKind,
+      windowScale: event.windowScale,
+    });
+    if (!scene) return { outcome: 'skip' };
+    session.channelMovements.add(movementIndex);
+    session.activeChannelScene = scene;
+    session.windowEvents.push(`channel:${scene.movementId}:${scene.intentId}`);
+    const context = getContext(session.encounterId, session.battleId) || {};
+    const result = await effects.beginWindowChannel(scene, {
+      token: session.effectToken,
+      forceInternal: context.inputDevice === 'controller',
+    });
+    const eventScene = advanceWindowChannelScene(scene, {
+      phase: result?.outcome === 'cut' ? 'cut' : result?.outcome === 'timeout' ? 'damage' : 'impact',
+      outcome: result?.outcome || 'skip',
+      damage: 0,
+    }) || scene;
+    session.activeChannelScene = eventScene;
+    session.activeChannelResult = result;
+    await effects?.noteWindowChannelEvent?.(eventScene, { token: session.effectToken });
+    if (result?.outcome === 'timeout') {
+      session.missedResponses += 1;
+      session.windowEvents.push(`channel-timeout:${scene.movementId}`);
+    } else if (result?.outcome === 'cut') {
+      session.windowEvents.push(`channel-cut:${scene.movementId}`);
+    }
+    return { ...result, scene: eventScene, deadlineMs: scene.deadlineMs };
+  }
+
+  async function completeChannelDefense(session, { allowReturn = true } = {}) {
+    const scene = session.activeChannelScene;
+    if (!scene || session.activeChannelResult?.outcome !== 'cut') return { defended: false, charge: session.windowProgress.charge };
+    session.windowProgress = chargeWindowReturn(session.windowProgress, { defended: true });
+    const tier = availableWindowReturnTier(session.windowProgress);
+    if (!tier || !allowReturn || !windowEnabled() || !effects?.offerWindowReturn) {
+      return { defended: true, charge: session.windowProgress.charge, tier: 0, returned: false, hits: 0 };
+    }
+    const context = getContext(session.encounterId, session.battleId) || {};
+    const choice = await effects.offerWindowReturn(scene, {
+      token: session.effectToken,
+      tier,
+      forceInternal: context.inputDevice === 'controller',
+    });
+    if (choice?.outcome !== 'return') {
+      session.activeChannelScene = advanceWindowChannelScene(scene, {
+        phase: 'return', outcome: 'held', returnTier: tier,
+      }) || scene;
+      await effects?.noteWindowChannelEvent?.(session.activeChannelScene, { token: session.effectToken });
+      session.windowEvents.push(`return-held:${tier}`);
+      return { defended: true, charge: session.windowProgress.charge, tier, returned: false, hits: 0 };
+    }
+    const spent = spendWindowReturn(session.windowProgress);
+    session.windowProgress = spent.state;
+    session.activeChannelScene = advanceWindowChannelScene(scene, {
+      phase: 'return', outcome: 'return', returnTier: spent.tier, returnHits: spent.hits,
+    }) || scene;
+    await effects?.noteWindowChannelEvent?.(session.activeChannelScene, { token: session.effectToken });
+    session.windowEvents.push(`return-fired:${spent.tier}`);
+    return {
+      defended: true,
+      charge: session.windowProgress.charge,
+      tier: spent.tier,
+      returned: true,
+      hits: spent.hits,
+    };
+  }
+
+  async function resolveChannel(session) {
+    const tableau = movementWindowTableau({ battleId: session.battleId, movementId: session.movement?.id });
+    const restored = advanceWindowChannelScene(session.activeChannelScene, {
+      phase: 'restored', outcome: session.activeChannelResult?.outcome || 'resolved',
+    });
+    if (restored) await effects?.noteWindowChannelEvent?.(restored, { token: session.effectToken });
+    session.activeChannelScene = null;
+    session.activeChannelResult = null;
+    if (!windowEnabled() || !tableau) return false;
+    const context = getContext(session.encounterId, session.battleId) || {};
+    return effects?.resolveWindowChannel?.(tableau, {
+      token: session.effectToken,
+      forceInternal: context.inputDevice === 'controller',
+    });
+  }
+
   async function impact(session, event = {}) {
     if (!enabled() || !session.stage || session.stage === 'foreshadow' || session.stage === 'recognition') return null;
     const kind = WINDOW_KIND[event.kind] || null;
     if (!kind) return null;
     const perfect = !!event.perfect || !!event.parried;
+    if (session.channelBattle && session.activeChannelScene) {
+      if (perfect) session.perfectCounters += 1;
+      session.windowEvents.push(`${perfect ? 'channel-rejected' : 'channel-landed'}:${kind}`);
+      session.activeChannelScene = advanceWindowChannelScene(session.activeChannelScene, {
+        phase: perfect ? 'parry' : 'damage',
+        outcome: perfect ? 'parried' : 'landed',
+        parried: perfect,
+        damage: Math.max(0, Number(event.received) || 0),
+      }) || session.activeChannelScene;
+      await effects?.noteWindowChannelEvent?.(session.activeChannelScene, { token: session.effectToken });
+      return perfect ? 'rejected' : kind;
+    }
     if (perfect) {
       session.perfectCounters += 1;
       session.windowEvents.push(`reject:${kind}`);
-      if (windowEnabled()) await effects?.reject?.({ ...sidecarPayload(session.stage, 'SIGNAL REJECTED'), kind, inputLocked: true, token: session.effectToken });
+      if (windowEnabled()) await effects?.reject?.({ ...sidecarPayload(session, 'SIGNAL REJECTED'), kind, inputLocked: true, token: session.effectToken });
       return 'rejected';
     }
     session.missedResponses += Math.max(0, Number(event.received) || 0) > 0 ? 1 : 0;
     session.windowEvents.push(kind);
     if (windowEnabled()) await effects?.apply?.(kind, {
-      ...sidecarPayload(session.stage),
+      ...sidecarPayload(session),
       kind,
       stage: session.stage,
       inputLocked: true,
@@ -246,20 +389,24 @@ export function createBattleInterferenceDirector({
       });
     } else if (session.stage === 'recognition') {
       session.windowEvents.push('title:operator-resolved');
-      const payload = sidecarPayload(session.stage, 'OPERATOR RESOLVED');
+      const payload = sidecarPayload(session, 'OPERATOR RESOLVED');
       if (windowEnabled()) await effects?.apply?.('broadcast', {
         ...payload,
+        phase: 'phase-break',
+        resolution: { phaseBreak: true, outcome: 'movement-break' },
         stage: session.stage,
         inputLocked: true,
         token: session.effectToken,
-        title: `AUDIOCORP / ${payload.operator}`,
+        title: payload.title,
       });
     } else if (session.stage === 'handoff') {
       session.windowEvents.push('sidecar:handoff');
       const firstPass = session.phaseBreaks === 1;
-      const payload = sidecarPayload(session.stage, firstPass ? 'AUDIOCORP DIAGNOSTIC' : 'CONTESTED HANDOFF');
+      const payload = sidecarPayload(session, firstPass ? 'AUDIOCORP DIAGNOSTIC' : 'CONTESTED HANDOFF');
       if (windowEnabled()) await effects?.apply?.('broadcast', {
         ...payload,
+        phase: 'phase-break',
+        resolution: { phaseBreak: true, outcome: firstPass ? 'diagnostic' : 'handoff' },
         stage: session.stage,
         inputLocked: true,
         token: session.effectToken,
@@ -311,17 +458,33 @@ export function createBattleInterferenceDirector({
     return record;
   }
 
-  function forBattle(encounterId, battleId = encounterId) {
+  function forBattle(encounterId, battleId = encounterId, recovery = null) {
     const stage = interferenceStageForBattle(encounterId, battleId);
     const key = `${encounterId}:${battleId}`;
+    const canonicalBattle = canonicalWindowChannelBattleId(battleId);
+    const recoveredBattle = canonicalWindowChannelBattleId(recovery?.battleId);
+    const recoveredMovements = canonicalBattle && recoveredBattle === canonicalBattle
+      ? (Array.isArray(recovery?.movements) ? recovery.movements : [])
+        .map((value) => Math.max(0, Math.floor(Number(value) || 0)))
+        .filter((value, index, list) => list.indexOf(value) === index)
+      : [];
     const session = {
       key, encounterId, battleId, stage,
+      channelBattle: canonicalBattle,
+      channelMovements: new Set(recoveredMovements),
+      windowProgress: freshWindowChannelProgress(battleId, recovery),
+      movement: null, activeChannelScene: null, activeChannelResult: null,
       actionIds: [], windowEvents: [], perfectCounters: 0, missedResponses: 0, phaseBreaks: 0, variant: 0,
     };
     sessions.set(key, session);
     return {
       active: () => enabled() && !!stage,
       enter: () => enter(session),
+      movement: (event) => movementChanged(session, event),
+      beginWindowChannel: (event) => beginChannelAttack(session, event),
+      completeWindowDefense: (options) => completeChannelDefense(session, options),
+      resolveWindowChannel: () => resolveChannel(session),
+      windowChannelInput: (action) => effects?.channelInput?.(action) || false,
       impact: (event) => impact(session, event),
       phaseBreak: () => phaseBreak(session),
       action: (id) => { if (id) session.actionIds.push(String(id).slice(0, 64)); },
@@ -329,6 +492,13 @@ export function createBattleInterferenceDirector({
       influence: () => session.profileInfluence || profileInfluence(getProfileState(), { enabled: false }),
       line: () => liveLine && liveLine.until > Date.now() ? { ...liveLine } : null,
       statusLine: () => effects?.statusLine?.() || '',
+      channelState: () => ({
+        battleId: session.channelBattle,
+        charge: session.windowProgress.charge,
+        returned: session.windowProgress.returned,
+        movementCount: session.channelMovements.size,
+        movements: [...session.channelMovements].sort((a, b) => a - b),
+      }),
     };
   }
 

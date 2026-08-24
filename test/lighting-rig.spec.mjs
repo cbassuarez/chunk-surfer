@@ -6,6 +6,7 @@ import {
   LIGHT_BANDS,
   LIGHT_KIND,
   EMERGENCY_CADENCE,
+  EMERGENCY_PRESENTATION_FLOOR,
   EMERGENCY_RED,
   LIGHT_RIGS,
   LOCAL_LIGHT_SLOTS,
@@ -171,7 +172,14 @@ const fullBlinkSamples=Array.from({length:400},(_,index)=>emergencyBlinkState('a
 assert.deepEqual(new Set(fullBlinkSamples.map((sample)=>sample.scale)),new Set([0,1]),'an emergency practical snaps between black and full red with no ramp');
 assert.ok(fullBlinkSamples.every((sample)=>sample.scale===0||sample.shadowReveal===1),'every full-effects lit beat reveals the shadow pass');
 const failingIntensities=Array.from({length:400},(_,index)=>failing(index*.05));
-assert.deepEqual(new Set(failingIntensities),new Set([0,byId['academic-emergency-east-failing'].intensity]),'the powered beat neither fades nor flutters');
+// TWO STATES, AND ONLY TWO. The number is the presentation floor now, not the
+// authored one: EMERGENCY_PRESENTATION_FLOOR raises an ACTIVE emergency source
+// when the rig is resolved for rendering, while allAuthoredLights keeps showing
+// the physical fitting that was authored. What this assertion is actually about
+// is unchanged — a failing practical snaps between off and full, with no ramp
+// and no flutter in between.
+const failingLit=Math.max(EMERGENCY_PRESENTATION_FLOOR.intensity,byId['academic-emergency-east-failing'].intensity);
+assert.deepEqual(new Set(failingIntensities),new Set([0,failingLit]),'the powered beat neither fades nor flutters');
 // Sampled inside the dark window rather than at a whole number of seconds: the
 // circuit runs at 1Hz now, so t=3 is the same phase as t=0 and always lit.
 assert.ok(failing(EMERGENCY_CADENCE.period*.8)<failing(0),

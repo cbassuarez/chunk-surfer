@@ -305,7 +305,34 @@ assert.equal(byId['natatorium-hall-shell'], undefined, 'the natatorium has no fr
 assert.equal(byId['natatorium-vault'], undefined, 'the natatorium has no freestanding inner roof shell');
 assert.equal(byId['natatorium-sign-exit'], undefined, 'the natatorium threshold has no tower plaque intersecting its door leaf');
 assert.equal(byId['pool-lane-markings']?.elevation, .05, 'longitudinal lane markings sit just above the basin floor');
-assert.deepEqual({x:byId['pool-lane-markings']?.x,y:byId['pool-lane-markings']?.y},{x:84,y:40.5},'lane markings are centred in the shifted pool');
+// THE LANE AXIS IS ONE NUMBER, AND EVERYTHING THAT SWIMS ON IT AGREES.
+//
+// This used to hard-code the axis, so moving the lanes — east, to clear the west
+// access handrail — made a correct change look like a regression, and left the
+// backstroke flags behind on the old centre without anything noticing. What
+// actually matters is that the markings, the ropes, the blocks you dive from and
+// the flags you count strokes against are all on the SAME line, and that the line
+// is inside the water.
+const laneBlocks=placed.filter((prop)=>prop.mesh==='pool_start_block').map((prop)=>prop.x);
+assert.equal(laneBlocks.length,5,'five lanes');
+const laneAxis=(Math.min(...laneBlocks)+Math.max(...laneBlocks))/2;
+for(const id of ['pool-lane-markings','pool-lane-ropes','pool-flags-near','pool-flags-far']){
+  assert.ok(Math.abs((byId[id]?.x ?? NaN)-laneAxis)<1e-6,`${id} is off the lane axis`);
+}
+assert.equal(byId['pool-lane-markings']?.y,40.5,'the markings run the length of the basin');
+// And the swim is in the pool: the basin is the sunken natatorium floor, read
+// off the compiled plan rather than remembered here.
+let basinMinX=Infinity,basinMaxX=-Infinity;
+for(let x=70;x<=100;x+=.5)for(let y=28;y<=52;y+=.5){
+  const at=rt(x,y);
+  const cell=FP.cellAt(at.x,at.y);
+  if(cell&&cell.zone===ZONE.natatorium&&cell.floor<-.5){
+    basinMinX=Math.min(basinMinX,x);basinMaxX=Math.max(basinMaxX,x);
+  }
+}
+assert.ok(Number.isFinite(basinMinX),'the basin is sunken ground the plan can be asked about');
+assert.ok(laneAxis>basinMinX&&laneAxis<basinMaxX,'the lane axis falls inside the water');
+assert.ok(Math.min(...laneBlocks)>=basinMinX&&Math.max(...laneBlocks)<=basinMaxX,'every lane starts over the basin');
 assert.equal(byId['pool-lifeguard-chair']?.yaw,-Math.PI/2,'lifeguard chair faces west across the pool');
 assert.equal(byId['pool-lane-reel']?.yaw,0,'lane reel sits square to the starting end');
 

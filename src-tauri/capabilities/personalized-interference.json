@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "personalized-interference",
-  "description": "Restricts opted-in choreography to Chunk Surfer's main window, monitor return, and three fixed game-owned echo panes.",
+  "description": "Restricts opted-in choreography to Chunk Surfer's main window and three fixed game-owned combat channels.",
   "windows": ["main", "interference-monitor", "interference-echo-1", "interference-echo-2", "interference-echo-3"],
   "permissions": [
     "core:event:allow-emit-to",
@@ -28,6 +28,7 @@
     "core:window:allow-set-size",
     "core:window:allow-set-fullscreen",
     "core:window:allow-set-always-on-top",
+    "core:window:allow-set-focus",
     "core:window:allow-request-user-attention"
   ]
 }

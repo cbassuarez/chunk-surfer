@@ -317,30 +317,77 @@ void main(){
   oMark = vec4(0.0);
 }`;
 
+// THE ONE SOLID THING IN THE RECORDING.
+//
+// The bust used to be another cloud of camera-facing quads assembled into a
+// head-like silhouette. That made its pedestal no more solid than the tape and
+// erased the sculpture whenever the viewing angle changed. The authored GLB
+// gets a deliberately small opaque triangle pass instead: real normals, real
+// self-occlusion, and a separately modelled stone pedestal.
+const MODEL_VERT = `#version 300 es
+precision highp float;
+layout(location=0) in vec3 aPosition;
+layout(location=1) in vec3 aNormal;
+uniform mat4 uView, uProj;
+uniform vec3 uOrigin;
+uniform float uScale;
+out vec3 vNormal;
+out vec3 vPosition;
+void main(){
+  vec3 world = aPosition * uScale + uOrigin;
+  vPosition = world;
+  vNormal = normalize(aNormal);
+  gl_Position = uProj * uView * vec4(world, 1.0);
+}`;
+
+const MODEL_FRAG = `#version 300 es
+precision highp float;
+in vec3 vNormal;
+in vec3 vPosition;
+layout(location=0) out vec4 o;
+layout(location=1) out vec4 oMark;
+uniform vec4 uBaseColor;
+uniform vec3 uEmissive;
+uniform float uRole;
+uniform float uRecognized;
+uniform float uReturned;
+uniform float uExposure;
+
+float hash31(vec3 p){ return fract(sin(dot(p, vec3(41.3, 289.1, 113.7))) * 43758.5453); }
+void main(){
+  vec3 n = normalize(vNormal);
+  vec3 key = normalize(vec3(-0.42, 0.76, 0.49));
+  float diffuse = max(0.0, dot(n, key));
+  float underside = max(0.0, dot(n, normalize(vec3(0.36, -0.18, -0.91))));
+  float grain = hash31(floor(vPosition * 9.0));
+  vec3 base = uBaseColor.rgb;
+  // The seal is bronze until recognition. Once the returned or carried eyes
+  // answer it, the metal holds a restrained cold/warm votive light.
+  vec3 recognition = mix(vec3(0.76, 0.50, 0.20), vec3(0.28, 0.84, 0.78), uReturned);
+  if (uRole > 1.5) base = mix(base, recognition, uRecognized * 0.38);
+  vec3 colour = base * (0.23 + diffuse * 0.72 + underside * 0.12);
+  colour *= 0.93 + grain * 0.12;
+  colour += uEmissive;
+  if (uRole > 1.5) colour += recognition * uRecognized * 0.28;
+  o = vec4(colour * uExposure, 1.0);
+  oMark = vec4(0.0);
+}`;
+
 let gl = null;
 let program = null;
 let groundProgram = null;
+let modelProgram = null;
 let groundUniforms = new Map();
+let modelUniforms = new Map();
 let vao = null;
 let quadBuffer = null;
 let splatBuffer = null;
 let manifest = null;
 let ready = false;
 let uniforms = new Map();
-// A FIGURE MADE OF THE SAME STUFF AS THE TAPE.
-//
-// The only authored beat in five hundred metres is a talking bust a third of
-// the way in, and he had no body: drawHorizon returns before the prop pass and
-// nothing out here ever calls r3dSetProps, so he was an [F] prompt hanging in a
-// void, thirteen metres off the walking line, and trivially missed by anyone
-// not sweeping the dark with the focus reticle.
-//
-// He is not imported from the building. Nothing out here is made of the
-// building — so he is generated as splats in the tape's own space, drawn by the
-// same program, blended into the same slices. Out on the tape he is part of the
-// recording, which is exactly what the writing says he is.
-let markerBuffer = null;
-let markerRecords = 0;
+let bustPrimitives = [];
+let bustHeight = 1;
+let bustPlacement = null;
 let markerSlice = 0;
 
 const U = (name) => {
@@ -351,6 +398,11 @@ const U = (name) => {
 const GU = (name) => {
   if (!groundUniforms.has(name)) groundUniforms.set(name, gl.getUniformLocation(groundProgram, name));
   return groundUniforms.get(name);
+};
+
+const MU = (name) => {
+  if (!modelUniforms.has(name)) modelUniforms.set(name, gl.getUniformLocation(modelProgram, name));
+  return modelUniforms.get(name);
 };
 
 function compile(type, src) {
@@ -379,8 +431,16 @@ export function horizonInit(context) {
   if (!gl.getProgramParameter(groundProgram, gl.LINK_STATUS)) {
     throw new Error(`horizon ground program: ${gl.getProgramInfoLog(groundProgram)}`);
   }
+  modelProgram = gl.createProgram();
+  gl.attachShader(modelProgram, compile(gl.VERTEX_SHADER, MODEL_VERT));
+  gl.attachShader(modelProgram, compile(gl.FRAGMENT_SHADER, MODEL_FRAG));
+  gl.linkProgram(modelProgram);
+  if (!gl.getProgramParameter(modelProgram, gl.LINK_STATUS)) {
+    throw new Error(`horizon model program: ${gl.getProgramInfoLog(modelProgram)}`);
+  }
   uniforms = new Map();
   groundUniforms = new Map();
+  modelUniforms = new Map();
   vao = gl.createVertexArray();
   quadBuffer = gl.createBuffer();
   gl.bindVertexArray(vao);
@@ -393,11 +453,93 @@ export function horizonInit(context) {
   return true;
 }
 
-export async function horizonLoad({ bin = 'assets/horizon-tape.bin', json = 'assets/horizon-tape.json' } = {}) {
+const COMPONENT = Object.freeze({ 5120: Int8Array, 5121: Uint8Array, 5122: Int16Array, 5123: Uint16Array, 5125: Uint32Array, 5126: Float32Array });
+const COMPONENT_BYTES = Object.freeze({ 5120: 1, 5121: 1, 5122: 2, 5123: 2, 5125: 4, 5126: 4 });
+const COMPONENT_GET = Object.freeze({ 5120: 'getInt8', 5121: 'getUint8', 5122: 'getInt16', 5123: 'getUint16', 5125: 'getUint32', 5126: 'getFloat32' });
+const ELEMENTS = Object.freeze({ SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4 });
+
+function parseGlb(arrayBuffer) {
+  const data = new DataView(arrayBuffer);
+  if (data.getUint32(0, true) !== 0x46546c67 || data.getUint32(4, true) !== 2) throw new Error('horizon bust is not GLB 2');
+  let cursor = 12, json = null, bin = null;
+  while (cursor + 8 <= arrayBuffer.byteLength) {
+    const length = data.getUint32(cursor, true), type = data.getUint32(cursor + 4, true);
+    if (type === 0x4e4f534a) json = JSON.parse(new TextDecoder().decode(new Uint8Array(arrayBuffer, cursor + 8, length)));
+    if (type === 0x004e4942) bin = new Uint8Array(arrayBuffer, cursor + 8, length);
+    cursor += 8 + length;
+  }
+  if (!json || !bin) throw new Error('horizon bust GLB is missing JSON or BIN');
+  if (json.animations || json.skins || json.extensionsUsed?.length || json.extensionsRequired?.length) {
+    throw new Error('horizon bust GLB contains unsupported animation, skin, or extension data');
+  }
+  return { json, bin };
+}
+
+function glbAccessor(json, bin, index) {
+  const accessor = json.accessors?.[index], view = json.bufferViews?.[accessor?.bufferView];
+  const Ctor = COMPONENT[accessor?.componentType], components = ELEMENTS[accessor?.type];
+  if (!accessor || !view || !Ctor || !components || accessor.sparse) throw new Error(`unsupported horizon bust accessor ${index}`);
+  const componentBytes = COMPONENT_BYTES[accessor.componentType];
+  const stride = view.byteStride || componentBytes * components;
+  const offset = (view.byteOffset || 0) + (accessor.byteOffset || 0);
+  const source = new DataView(bin.buffer, bin.byteOffset, bin.byteLength);
+  const output = new Ctor(accessor.count * components), getter = COMPONENT_GET[accessor.componentType];
+  for (let row = 0; row < accessor.count; row += 1) for (let column = 0; column < components; column += 1) {
+    output[row * components + column] = source[getter](offset + row * stride + column * componentBytes, true);
+  }
+  return output;
+}
+
+async function loadHorizonBust(url) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`horizon bust ${response.status}`);
+  const { json, bin } = parseGlb(await response.arrayBuffer());
+  const required = new Set(['horizon_bust_portrait', 'horizon_bust_pedestal', 'horizon_bust_seal']);
+  const primitives = [];
+  let minY = Infinity, maxY = -Infinity;
+  for (const mesh of json.meshes || []) {
+    required.delete(mesh.name);
+    const role = mesh.name === 'horizon_bust_portrait' ? 0 : mesh.name === 'horizon_bust_pedestal' ? 1 : 2;
+    for (const primitive of mesh.primitives || []) {
+      if (primitive.mode != null && primitive.mode !== 4) throw new Error(`${mesh.name}: triangles required`);
+      const positions = glbAccessor(json, bin, primitive.attributes?.POSITION);
+      const normals = glbAccessor(json, bin, primitive.attributes?.NORMAL);
+      const indices = glbAccessor(json, bin, primitive.indices);
+      if (!(positions instanceof Float32Array) || !(normals instanceof Float32Array)) throw new Error(`${mesh.name}: float position/normal required`);
+      for (let index = 1; index < positions.length; index += 3) { minY = Math.min(minY, positions[index]); maxY = Math.max(maxY, positions[index]); }
+      const vao = gl.createVertexArray();
+      gl.bindVertexArray(vao);
+      const bind = (location, values) => {
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer); gl.bufferData(gl.ARRAY_BUFFER, values, gl.STATIC_DRAW);
+        gl.enableVertexAttribArray(location); gl.vertexAttribPointer(location, 3, gl.FLOAT, false, 0, 0);
+        return buffer;
+      };
+      const positionBuffer = bind(0, positions), normalBuffer = bind(1, normals);
+      const indexBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+      const material = json.materials?.[primitive.material || 0] || {};
+      const pbr = material.pbrMetallicRoughness || {};
+      primitives.push({
+        vao, positionBuffer, normalBuffer, indexBuffer, count: indices.length,
+        indexType: indices instanceof Uint32Array ? gl.UNSIGNED_INT : indices instanceof Uint16Array ? gl.UNSIGNED_SHORT : gl.UNSIGNED_BYTE,
+        base: pbr.baseColorFactor || [1, 1, 1, 1], emissive: material.emissiveFactor || [0, 0, 0], role,
+      });
+    }
+  }
+  gl.bindVertexArray(null); gl.bindBuffer(gl.ARRAY_BUFFER, null); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+  if (required.size) throw new Error(`horizon bust GLB missing ${[...required].join(', ')}`);
+  bustPrimitives = primitives;
+  bustHeight = Math.max(0.001, maxY - minY);
+  return true;
+}
+
+export async function horizonLoad({ bin = 'assets/horizon-tape.bin', json = 'assets/horizon-tape.json', bust = 'assets/horizon-bust.glb' } = {}) {
   if (!gl || !program) return false;
   const [meta, bytes] = await Promise.all([
     fetch(json).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`horizon manifest ${r.status}`)))),
     fetch(bin).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`horizon tape ${r.status}`)))),
+    loadHorizonBust(bust),
   ]);
   const expected = meta.splats * meta.recordBytes;
   if (bytes.byteLength !== expected) {
@@ -412,99 +554,15 @@ export async function horizonLoad({ bin = 'assets/horizon-tape.bin', json = 'ass
   return true;
 }
 
-// Build the bust: a plinth, a shoulder mass and a head, scattered as splats and
-// quantised into the same 16-byte record the bake uses so the existing vertex
-// attributes read it unchanged. Deterministic — the same figure every run.
 export function horizonSetBust({ x = 0, depth = 0, height = 12, centreY = null, eyes = false, eyeMode = 'untouched' } = {}) {
-  if (!gl || !program || !manifest) return false;
-  const posScale = manifest.posScale, sizeScale = manifest.sizeScale;
-  // HE IS THE SIZE OF THE PICTURE, NOT THE SIZE OF A MAN.
-  //
-  // A garden bust would be right if the eye were where a body's eye is. It is
-  // not: the frame is forty units tall and the view is centred on it, so the
-  // eye rides seventeen units above the floor and anything standing on that
-  // floor is a speck at the bottom of the screen, under the HUD.
-  //
-  // He is a monument inside a recording. Building him around the eye line at
-  // the scale of the thing he is standing in is both the only way he is visible
-  // and the more truthful reading of what he is.
+  if (!gl || !program || !manifest || !bustPrimitives.length) return false;
   const floor = (centreY == null ? Number(manifest.floor) || 0 : centreY) - height * 0.5;
-  const z = -depth;
-  let seed = 0x8f1b;
-  const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
-
-  const parts = [];
-  const push = (cx, cy, cz, sx, sy, rgb, kind, alpha) =>
-    parts.push({ cx, cy, cz, sx, sy, rgb, kind, alpha });
-
-  // HE HAS TO SEPARATE FROM THE PICTURE HE IS STANDING IN.
-  //
-  // The tape is large saturated colour fields, so a mid-grey bust sits at the
-  // same luminance as everything around him and dissolves. Marble that is
-  // brighter than anything the recording does, on a plinth darker than anything
-  // it does, is what makes a solid object read inside a flat one.
-  //
-  // Plinth: a squat column, near-black so the figure silhouettes off it.
-  for (let i = 0; i < 70; i += 1) {
-    const t = i / 70;
-    push(x + (rnd() - 0.5) * 1.5, floor + t * height * 0.52, z + (rnd() - 0.5) * 1.2,
-      0.85 + rnd() * 0.5, 0.6 + rnd() * 0.4, [0.10, 0.09, 0.13], 0, 240);
-  }
-  // Shoulders, then the head — brighter, so he reads against a dark tape.
-  for (let i = 0; i < 46; i += 1) {
-    push(x + (rnd() - 0.5) * 2.0, floor + height * (0.52 + rnd() * 0.16), z + (rnd() - 0.5) * 1.3,
-      0.9 + rnd() * 0.5, 0.55 + rnd() * 0.3, [0.86, 0.84, 0.79], 1, 244);
-  }
-  for (let i = 0; i < 54; i += 1) {
-    const a = rnd() * Math.PI * 2, r = Math.sqrt(rnd());
-    push(x + Math.cos(a) * r * 0.72, floor + height * (0.74 + rnd() * 0.22), z + Math.sin(a) * r * 0.62,
-      0.5 + rnd() * 0.3, 0.45 + rnd() * 0.25, [0.98, 0.97, 0.93], 1, 252);
-  }
-  // Two sockets, because a head without them is a boulder.
-  for (const side of [-1, 1]) {
-    for (let i = 0; i < 6; i += 1) {
-      push(x + side * 0.26 + (rnd() - 0.5) * 0.18, floor + height * 0.855 + (rnd() - 0.5) * 0.1,
-        z + 0.44, 0.24, 0.2, [0.06, 0.05, 0.07], 2, 255);
-    }
-  }
-  if (eyes) {
-    const marble = eyeMode === 'returned' ? [0.62, 0.92, 0.90] : [0.92, 0.90, 0.82];
-    for (const side of [-1, 1]) {
-      for (let i = 0; i < 9; i += 1) {
-        push(x + side * 0.26 + (rnd() - 0.5) * 0.10, floor + height * 0.855 + (rnd() - 0.5) * 0.07,
-          z + 0.48, 0.14, 0.12, marble, 2, 255);
-      }
-    }
-  }
-
-  const stride = manifest.recordBytes;
-  const bytes = new ArrayBuffer(parts.length * stride);
-  const view = new DataView(bytes);
-  parts.forEach((part, i) => {
-    const o = i * stride;
-    view.setInt16(o + 0, Math.round(part.cx * posScale), true);
-    view.setInt16(o + 2, Math.round(part.cy * posScale), true);
-    view.setInt16(o + 4, Math.round(part.cz * posScale), true);
-    view.setUint8(o + 6, Math.max(1, Math.min(255, Math.round(part.sx * sizeScale))));
-    view.setUint8(o + 7, Math.max(1, Math.min(255, Math.round(part.sy * sizeScale))));
-    view.setUint8(o + 8, Math.round(part.rgb[0] * 255));
-    view.setUint8(o + 9, Math.round(part.rgb[1] * 255));
-    view.setUint8(o + 10, Math.round(part.rgb[2] * 255));
-    view.setUint8(o + 11, part.alpha);
-    view.setUint8(o + 12, Math.round(rnd() * 255));
-    view.setUint8(o + 13, part.kind);
-  });
-
-  if (!markerBuffer) markerBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, markerBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, bytes, gl.STATIC_DRAW);
-  gl.bindBuffer(gl.ARRAY_BUFFER, null);
-  markerRecords = parts.length;
+  bustPlacement = { x, z: -depth, floor, height, scale: height / bustHeight, eyes: !!eyes, eyeMode: String(eyeMode) };
   markerSlice = depth / (Number(manifest.sliceMetres) || 2);
   return true;
 }
 
-export function horizonBustPresent() { return markerRecords > 0; }
+export function horizonBustPresent() { return !!bustPlacement && bustPrimitives.length > 0; }
 
 export function horizonReady() { return ready; }
 // Per-frame draw accounting, for the probe. "It went black" has too many
@@ -516,9 +574,34 @@ export function horizonManifest() { return manifest; }
 export function horizonDispose() {
   if (!gl) return;
   if (splatBuffer) gl.deleteBuffer(splatBuffer);
-  if (markerBuffer) gl.deleteBuffer(markerBuffer);
-  splatBuffer = null; markerBuffer = null; markerRecords = 0;
+  for (const primitive of bustPrimitives) {
+    gl.deleteVertexArray(primitive.vao); gl.deleteBuffer(primitive.positionBuffer);
+    gl.deleteBuffer(primitive.normalBuffer); gl.deleteBuffer(primitive.indexBuffer);
+  }
+  splatBuffer = null; bustPrimitives = []; bustPlacement = null;
   manifest = null; ready = false;
+}
+
+function drawHorizonBust(view, projection, exposure, collapse) {
+  if (!horizonBustPresent()) return false;
+  gl.useProgram(modelProgram);
+  gl.uniformMatrix4fv(MU('uView'), false, view); gl.uniformMatrix4fv(MU('uProj'), false, projection);
+  gl.uniform3f(MU('uOrigin'), bustPlacement.x, bustPlacement.floor, bustPlacement.z);
+  gl.uniform1f(MU('uScale'), bustPlacement.scale);
+  gl.uniform1f(MU('uRecognized'), bustPlacement.eyes ? 1 : 0);
+  gl.uniform1f(MU('uReturned'), bustPlacement.eyeMode === 'returned' ? 1 : 0);
+  gl.uniform1f(MU('uExposure'), Math.max(0.08, exposure * (1 - collapse * 0.92)));
+  gl.disable(gl.BLEND); gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true);
+  for (const primitive of bustPrimitives) {
+    gl.bindVertexArray(primitive.vao);
+    gl.uniform4fv(MU('uBaseColor'), primitive.base); gl.uniform3fv(MU('uEmissive'), primitive.emissive);
+    gl.uniform1f(MU('uRole'), primitive.role);
+    gl.drawElements(gl.TRIANGLES, primitive.count, primitive.indexType, 0);
+    horizonStats.draws += 1; horizonStats.instances += primitive.count / 3;
+  }
+  gl.disable(gl.DEPTH_TEST); gl.depthMask(false); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+  gl.useProgram(program); gl.bindVertexArray(vao);
+  return true;
 }
 
 // Re-point the instance attributes at one slice's run of records. This is the
@@ -650,14 +733,11 @@ export function horizonRender({
   // back-to-front walk rather than being pasted over the top of it. Drawn when
   // the loop passes his slice, which is what puts tape in front of him when he
   // is behind you.
-  let bustDrawn = markerRecords === 0;
+  let bustDrawn = !horizonBustPresent();
   const drawBust = () => {
     if (bustDrawn) return;
     bustDrawn = true;
-    gl.uniform1f(U('uSliceFade'), Math.max(0, Math.min(1, exposure * (1 - collapse * 0.92))));
-    pointAt(0, markerBuffer);
-    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, markerRecords);
-    horizonStats.draws += 1; horizonStats.instances += markerRecords;
+    drawHorizonBust(view, projection, exposure, collapse);
   };
 
   for (const index of drawOrder) {

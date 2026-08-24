@@ -47,6 +47,7 @@ pub fn run() {
             lens_service::chunk_lens_stop,
         ])
         .setup(|app| {
+            window_choreography::recover_stale_snapshot(app.handle());
             desktop_menu::install(app)?;
             display_policy::enforce_window_floor(app.handle());
             Ok(())
@@ -60,6 +61,7 @@ pub fn run() {
         ) {
             use tauri::Manager;
             app.state::<lens_service::LensServiceState>().stop();
+            window_choreography::restore_on_exit(app);
         }
     });
 }

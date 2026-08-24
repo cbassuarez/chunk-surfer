@@ -24,7 +24,20 @@ const chapel = compileWindowChoreography({ token, stage: 'handoff', cueId: 'broa
 assert.equal(chapel.echoes.length, 2);
 const finale = compileWindowChoreography({ token, stage: 'handoff', encounterId: 'source-final', cueId: 'loop', intensity: 'hostile', inputLocked: true });
 assert.equal(finale.stage, 'finale');
-assert.equal(finale.echoes.length, 3);
+assert.equal(finale.echoes.length, 2, 'monitor plus two echoes keeps the total at four windows');
+
+const held = compileWindowChoreography({
+  token,
+  stage: 'control',
+  cueId: 'overload',
+  intensity: 'hostile',
+  inputLocked: true,
+  hold: true,
+  mainGeometry: { x: .31, y: .17, width: .54, height: .71 },
+});
+assert.equal(held.hold, true);
+assert.equal(held.main.length, 2, 'a battle-scoped composition stays displaced until explicit resolution');
+assert.deepEqual(held.main.at(-1).geometry, { x: .38, y: .23, width: .4, height: .59 });
 
 assert.equal(compileWindowChoreography({ token, stage: 'handoff', cueId: 'broadcast', intensity: 'low', inputLocked: true }).displayMode, 'internal');
 assert.equal(compileWindowChoreography({ token, stage: 'handoff', cueId: 'broadcast', intensity: 'hostile', fullscreen: true, inputLocked: true }).displayMode, 'internal');

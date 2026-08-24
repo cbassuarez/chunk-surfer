@@ -61,7 +61,7 @@
         },
         {
           "who": "direction",
-          "text": "And then, far off, a piano. Two notes. The wrong two notes.",
+          "text": "And then, far off, a piano. Two notes. The wrong two notes. The downbeat lands. The coping rises past your eyes without your feet moving.",
           "id": "start.line.2"
         },
         {
@@ -71,7 +71,7 @@
         },
         {
           "who": "you",
-          "text": "There is no piano in a building that has had its power off since April.",
+          "text": "There is no piano in a building that has had its power off since April. My cuffs are dry. The meter bubbles anyway.",
           "id": "start.line.4"
         },
         {
@@ -127,7 +127,7 @@
         },
         {
           "who": "direction",
-          "text": "The tile gives it back to you four times and each return is thinner than the last.",
+          "text": "The drain gives it back to you four times and each return comes from farther below.",
           "id": "round-1.line.4",
           "channel": "after"
         }
@@ -178,7 +178,7 @@
         },
         {
           "who": "direction",
-          "text": "She is right. The meter is moving.",
+          "text": "She is right. The meter is moving below the waterline.",
           "id": "round-2.line.4",
           "channel": "before"
         },
@@ -275,7 +275,7 @@
         },
         {
           "who": "direction",
-          "text": "The meter, which has never lied to you, sits at the bottom of the scale, and something keeps playing.",
+          "text": "The meter, which has never lied to you, sits on the bottom of the pool, and something keeps playing above it.",
           "id": "round-3.line.6",
           "channel": "after"
         }
@@ -311,18 +311,18 @@
       "lines": [
         {
           "who": "you",
-          "text": "Nothing there. It fed me a piano and I fed it back its own empty room until it ran out of room.",
+          "text": "Nothing there. It fed me a piano and I fed it back its own empty room until the waterline fell away.",
           "id": "win.line.1"
         },
         {
           "who": "direction",
-          "text": "The tile stops answering. The meter holds. You have a clean minute of a room that tried very hard to put something in it.",
+          "text": "You surface without moving. Your cuffs, case and clothes are dry. The meter holds a clean minute of a room that tried very hard to put something in it.",
           "id": "win.line.2.held",
           "when": "battle.occasion == recording-2"
         },
         {
           "who": "direction",
-          "text": "The tile stops answering. Nothing recorded any of it. You will have to be the sort of man who believes himself.",
+          "text": "You surface without moving. Your cuffs, case and clothes are dry. Nothing recorded any of it. You will have to be the sort of man who believes himself.",
           "id": "win.line.2.ambush",
           "when": "battle.occasion == pre-recording-4"
         }
@@ -334,18 +334,18 @@
       "lines": [
         {
           "who": "direction",
-          "text": "Your composure goes between beats. You are answering the piano before you know you have decided to.",
+          "text": "Your composure goes between beats. The water acquires weight. You are answering the piano before you know you have decided to.",
           "id": "lose.line.1"
         },
         {
           "who": "direction",
-          "text": "The take dies. Somewhere far off, satisfied, the room stops playing.",
+          "text": "The take dies. You come back soaked through, with a full torch pack drowned. Somewhere far off, satisfied, the room stops playing.",
           "id": "lose.line.2.held",
           "when": "battle.occasion == recording-2"
         },
         {
           "who": "direction",
-          "text": "There is no take to die. Only you, on the tile, having lost something you cannot play back to check.",
+          "text": "There is no take to die. Only you, soaked through on the tile, with a full torch pack drowned and something lost that you cannot play back to check.",
           "id": "lose.line.2.ambush",
           "when": "battle.occasion == pre-recording-4"
         }
@@ -366,17 +366,34 @@
       "kind": "regular",
       "music": {
         "mode": "fixed",
-        "lead": "lead-1"
+        "lead": "lead-1",
+        "submersion": {
+          "enabled": true,
+          "at": "downbeat",
+          "lowpassHz": 720,
+          "q": 0.8,
+          "dryLeak": 0.08,
+          "rampSeconds": 0.18,
+          "surfaceSeconds": 0.6
+        }
+      },
+      "presentation": {
+        "mode": "submerged",
+        "movementDepths": [
+          0.35,
+          0.68,
+          1
+        ]
       },
       "movements": [
         {
           "id": "room",
-          "title": "THE EMPTY ROOM",
+          "title": "THE SURFACE CLOSES",
           "coherence": 5,
           "intents": [
             {
               "id": "natatorium:meter",
-              "label": "METER MOVES WITHOUT AIR",
+              "label": "METER MOVES BELOW THE WATERLINE",
               "kind": "broadcast",
               "damage": 2,
               "recordable": true,
@@ -387,7 +404,7 @@
             },
             {
               "id": "natatorium:pressure",
-              "label": "PRESSURE BEHIND THE EARS",
+              "label": "WATER HAMMERS BEHIND THE EARS",
               "kind": "overload",
               "damage": 2,
               "recordable": false,
@@ -397,7 +414,7 @@
             },
             {
               "id": "natatorium:piano",
-              "label": "PIANO WITH NO TRANSIENT",
+              "label": "TWO NOTES THROUGH THE SURFACE",
               "kind": "conceal",
               "damage": 2,
               "recordable": false,
@@ -408,7 +425,7 @@
           "severeIntents": [
             {
               "id": "natatorium:pressure",
-              "label": "PRESSURE BEHIND THE EARS",
+              "label": "WATER HAMMERS BEHIND THE EARS",
               "kind": "overload",
               "damage": 2,
               "recordable": false,
@@ -418,7 +435,7 @@
             },
             {
               "id": "natatorium:piano",
-              "label": "PIANO WITH NO TRANSIENT",
+              "label": "TWO NOTES THROUGH THE SURFACE",
               "kind": "conceal",
               "damage": 2,
               "recordable": false,
@@ -427,7 +444,7 @@
             },
             {
               "id": "natatorium:meter",
-              "label": "METER MOVES WITHOUT AIR",
+              "label": "METER MOVES BELOW THE WATERLINE",
               "kind": "broadcast",
               "damage": 2,
               "recordable": true,
@@ -440,7 +457,7 @@
           "deadAirIntents": [
             {
               "id": "natatorium:piano",
-              "label": "PIANO WITH NO TRANSIENT",
+              "label": "TWO NOTES THROUGH THE SURFACE",
               "kind": "conceal",
               "damage": 2,
               "recordable": false,
@@ -449,7 +466,7 @@
             },
             {
               "id": "natatorium:pressure",
-              "label": "PRESSURE BEHIND THE EARS",
+              "label": "WATER HAMMERS BEHIND THE EARS",
               "kind": "overload",
               "damage": 2,
               "recordable": false,
@@ -459,7 +476,7 @@
             },
             {
               "id": "natatorium:meter",
-              "label": "METER MOVES WITHOUT AIR",
+              "label": "METER MOVES BELOW THE WATERLINE",
               "kind": "broadcast",
               "damage": 2,
               "recordable": true,
@@ -472,12 +489,12 @@
         },
         {
           "id": "voice",
-          "title": "THE VOICE ON TAPE",
+          "title": "THE VOICE IN THE DRAIN",
           "coherence": 5,
           "intents": [
             {
               "id": "natatorium:voice",
-              "label": "VOICE ON THE MONITOR PATH",
+              "label": "HER VOICE IN THE DRAIN RETURN",
               "kind": "broadcast",
               "damage": 2,
               "recordable": true,
@@ -488,7 +505,7 @@
             },
             {
               "id": "natatorium:memory",
-              "label": "MEMORY PASSED AS SIGNAL",
+              "label": "SILT PASSED AS MEMORY",
               "kind": "conceal",
               "damage": 2,
               "recordable": false,
@@ -497,7 +514,7 @@
             },
             {
               "id": "natatorium:lean",
-              "label": "THE ROOM LEANS CLOSER",
+              "label": "UNDERTOW TAKES THE CASE",
               "kind": "overload",
               "damage": 4,
               "recordable": false,
@@ -509,7 +526,7 @@
           "severeIntents": [
             {
               "id": "natatorium:memory",
-              "label": "MEMORY PASSED AS SIGNAL",
+              "label": "SILT PASSED AS MEMORY",
               "kind": "conceal",
               "damage": 2,
               "recordable": false,
@@ -518,7 +535,7 @@
             },
             {
               "id": "natatorium:lean",
-              "label": "THE ROOM LEANS CLOSER",
+              "label": "UNDERTOW TAKES THE CASE",
               "kind": "overload",
               "damage": 4,
               "recordable": false,
@@ -528,7 +545,7 @@
             },
             {
               "id": "natatorium:voice",
-              "label": "VOICE ON THE MONITOR PATH",
+              "label": "HER VOICE IN THE DRAIN RETURN",
               "kind": "broadcast",
               "damage": 2,
               "recordable": true,
@@ -541,7 +558,7 @@
           "deadAirIntents": [
             {
               "id": "natatorium:lean",
-              "label": "THE ROOM LEANS CLOSER",
+              "label": "UNDERTOW TAKES THE CASE",
               "kind": "overload",
               "damage": 4,
               "recordable": false,
@@ -551,7 +568,7 @@
             },
             {
               "id": "natatorium:memory",
-              "label": "MEMORY PASSED AS SIGNAL",
+              "label": "SILT PASSED AS MEMORY",
               "kind": "conceal",
               "damage": 2,
               "recordable": false,
@@ -560,7 +577,7 @@
             },
             {
               "id": "natatorium:voice",
-              "label": "VOICE ON THE MONITOR PATH",
+              "label": "HER VOICE IN THE DRAIN RETURN",
               "kind": "broadcast",
               "damage": 2,
               "recordable": true,
@@ -579,12 +596,12 @@
         },
         {
           "id": "hold",
-          "title": "THE TAKE THAT HOLDS YOU",
+          "title": "THE DEEP END",
           "coherence": 6,
           "intents": [
             {
               "id": "natatorium:echo",
-              "label": "FOURTH RETURN OF THE ECHO",
+              "label": "FOURTH RETURN FROM THE BOTTOM",
               "kind": "broadcast",
               "damage": 3,
               "recordable": true,
@@ -612,7 +629,7 @@
             },
             {
               "id": "natatorium:absence",
-              "label": "ABSENCE WEARING HER VOICE",
+              "label": "THE LADDER IS NOT ABOVE YOU",
               "kind": "conceal",
               "damage": 2,
               "recordable": false,
@@ -640,7 +657,7 @@
             },
             {
               "id": "natatorium:absence",
-              "label": "ABSENCE WEARING HER VOICE",
+              "label": "THE LADDER IS NOT ABOVE YOU",
               "kind": "conceal",
               "damage": 2,
               "recordable": false,
@@ -649,7 +666,7 @@
             },
             {
               "id": "natatorium:echo",
-              "label": "FOURTH RETURN OF THE ECHO",
+              "label": "FOURTH RETURN FROM THE BOTTOM",
               "kind": "broadcast",
               "damage": 3,
               "recordable": true,
@@ -662,7 +679,7 @@
           "deadAirIntents": [
             {
               "id": "natatorium:absence",
-              "label": "ABSENCE WEARING HER VOICE",
+              "label": "THE LADDER IS NOT ABOVE YOU",
               "kind": "conceal",
               "damage": 2,
               "recordable": false,
@@ -688,7 +705,7 @@
             },
             {
               "id": "natatorium:echo",
-              "label": "FOURTH RETURN OF THE ECHO",
+              "label": "FOURTH RETURN FROM THE BOTTOM",
               "kind": "broadcast",
               "damage": 3,
               "recordable": true,

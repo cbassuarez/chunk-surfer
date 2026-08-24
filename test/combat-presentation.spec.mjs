@@ -10,11 +10,13 @@ import {
   combatGaugeState,
   combatInjuryStage,
   combatTonePalette,
+  submergedBattleFrame,
 } from '../src/render/combat-view.js';
 import { applyVfdSettings, setActiveSurface, vfdSettings } from '../src/render/palette.js';
 import * as combatView from '../src/render/combat-view.js';
 import {
   ORDINARY_TURN_SECONDS,
+  combatEnemyAttackAudioShape,
   combatDeckDirection,
   combatDeckNavigation,
 } from '../src/game/combat.js';
@@ -235,4 +237,29 @@ test('the opponent throws note sprites while its attack plays', () => {
   const still = attackNoteLayout({ count: 4, now: 9.1, seed: 7, reducedMotion: true });
   assert.ok(still.every((note) => note.sway === 0));
   assert.deepEqual(still, attackNoteLayout({ count: 4, now: 21.7, seed: 7, reducedMotion: true }));
+});
+
+test('the natatorium alone gets a deterministic submerged stage', () => {
+  assert.equal(submergedBattleFrame({ presentation: { mode: 'ordinary' } }), null);
+  const dry = submergedBattleFrame({
+    presentation: { mode: 'submerged', movementDepths: [.35, .68, 1] },
+    music: { submersion: { phase: 'dry', wetMix: 0, progress: 0 } },
+    movementIndex: 0,
+  });
+  assert.deepEqual(dry, { phase: 'dry', wetMix: 0, plunge: 0, depth: .35, visualClass: 'pressure-field' });
+  const wet = submergedBattleFrame({
+    presentation: { mode: 'submerged', movementDepths: [.35, .68, 1] },
+    music: { submersion: { phase: 'submerged', wetMix: .92, progress: 1 } },
+    movementIndex: 1,
+    intent: { presentation: { visualClass: 'drain-return' } },
+  });
+  assert.deepEqual(wet, { phase: 'submerged', wetMix: .92, plunge: 1, depth: .68, visualClass: 'drain-return' });
+  assert.match(combatViewSource, /const tick=reducedMotion\?0:now/,
+    'reduced motion freezes the pressure and silt field without removing its static read');
+  assert.deepEqual(combatEnemyAttackAudioShape({ gain: .4 }, { mode: 'submerged' }), { gain: .4, lowpassHz: 640 });
+  assert.deepEqual(combatEnemyAttackAudioShape({ gain: .4 }, { mode: 'ordinary' }), { gain: .4 },
+    'every non-natatorium encounter retains its current attack audio graph');
+  const field = combatSceneSource.indexOf('drawSubmergedBattleField({');
+  const hands = combatSceneSource.indexOf('drawFirstPersonHands(selectedToolId');
+  assert.ok(field >= 0 && hands > field, 'dry player tools and hands stay in front of the submerged adversary field');
 });

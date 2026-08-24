@@ -1,5 +1,6 @@
 import SOURCE_ATLAS from '../../content/chunk-surf/source-atlas.json' with { type: 'json' };
 import { CELL, EYE, F, MATERIAL, ZONE } from '../data/floorplan/legend.js';
+import { SCENE_DOCK_LABEL } from '../data/space-labels.js';
 import { encodeH } from '../world/floorplan.js';
 import { HORIZON_PROFILE } from '../data/generated/horizon-profile.js';
 import {
@@ -59,6 +60,9 @@ import {
   SOURCE_LANDING_FIELD_EDGE_LOCAL_Y,
   SOURCE_LANDING_HUSH_LOCAL,
   SOURCE_LANDING_OPENING_LOCAL,
+  SOURCE_LANDING_PORTAL_DOOR_ID,
+  SOURCE_LANDING_PORTAL_LOCAL,
+  sourceEmergencyFrame,
   sourceLandingCellAt,
   sourceLandingContract,
   sourceLandingDoorPlacements,
@@ -71,6 +75,11 @@ import {
   resolveSourceContact,
   sourceBossExposed,
 } from './source-contact.js';
+import {
+  HORIZON_BUST_RECOGNITION,
+  HORIZON_BUST_REFUSAL,
+  horizonBustAudience,
+} from './horizon-bust.js';
 
 export const SOURCE_PLAN_WINDOW = 384;
 export const SOURCE_PLAN_SNAP = 16;
@@ -79,6 +88,7 @@ export const SOURCE_ARCH_TILE_RADIUS = 2;
 export const SOURCE_ARCH_MAX_INSTANCES = 20000;
 export const SOURCE_SEEDED_STRUCTURE_COUNT = 14;
 export const SOURCE_TRANSFORM_SECONDS = 5.5;
+export const SOURCE_LANDING_PORTAL_SECONDS = 2.2;
 export const SOURCE_ENTRY = Object.freeze({ x: 0, y: 0, facing: 0 });
 
 const HALL_HALF_WIDTH = 6; // runtime cells = three metres from centre to wall
@@ -658,6 +668,7 @@ export function createSourceSpaceRuntime({
   let bossRequested = state.finale?.route === SOURCE_FINALE_ROUTE.CONTACT
     && state.finale?.stage === SOURCE_FINALE_STAGE.CONTACT_COMMITTED;
   let landingRainRemaining = state.landingWeatherSpent ? 0 : 12;
+  let landingPortalElapsed = state.landingDoorOpen ? SOURCE_LANDING_PORTAL_SECONDS : 0;
   let phaseElapsed = 0;
   // SEARCH begins in the final quarter of the tunnel. It is a continuous
   // dramatic span, so this clock does not reset at HALL -> HAYSTACK.
@@ -716,6 +727,22 @@ export function createSourceSpaceRuntime({
   }
 
   function dispatch(event, options) { return setState(reduceChunkSurf(state, event), options); }
+
+  function landingPortalFrame() {
+    const requested = !!state.landingDoorOpen;
+    const raw = requested ? clamp01(landingPortalElapsed / SOURCE_LANDING_PORTAL_SECONDS) : 0;
+    const progress = smoothstep(0, 1, raw);
+    return Object.freeze({
+      id: SOURCE_LANDING_PORTAL_DOOR_ID,
+      requested,
+      progress,
+      passable: requested && (raw >= .58 || state.firstLiftCompleted),
+      complete: requested && raw >= 1,
+      locksMovement: false,
+      redPressure: requested ? .28 + progress * .72 : 0,
+      depth: requested ? progress * 7 : 0,
+    });
+  }
 
   function commitDialogue(next, { immediate = true } = {}) {
     sourceDialogue = normalizeSourceDialogueState(next, { seed: state.seed, facts: state.profile?.sourceMemoryFacts || {} });
@@ -865,7 +892,7 @@ export function createSourceSpaceRuntime({
     // the floor. The only wall is the field's own perimeter (rendered as visible
     // code, see perimeterWallInstances); beyond it is sky.
     if (!inLandscape(x, y)) return null;
-    const landing = sourceLandingCellAt(lx, ly);
+    const landing = sourceLandingCellAt(lx, ly, { portalOpen: landingPortalFrame().passable });
     if (landing?.owned) {
       if (landing.solid) return null;
       return {
@@ -957,6 +984,7 @@ export function createSourceSpaceRuntime({
           ? 'source-hall-boundary'
           : 'wall',
       };
+      if (horizonBustBlocks(toX, toY)) return { ok: false, why: 'horizon pedestal' };
       if (to.ceil - to.floor < EYE + 0.2) return { ok: false, why: 'headroom' };
       if (from) {
         // THE ONE EXCEPTION. A tier boundary is taller than a step on purpose;
@@ -979,7 +1007,18 @@ export function createSourceSpaceRuntime({
         };
         const fromFeature=sourceFeatureAt(fromX-o.x,fromY-o.y);
         const toFeature=sourceFeatureAt(toX-o.x,toY-o.y);
-        if(fromFeature?.kind==='chute'||toFeature?.kind==='chute')return{ok:false,why:'one-way chute'};
+        if(fromFeature?.kind==='chute'||toFeature?.kind==='chute'){
+          const chuteFeature=fromFeature?.kind==='chute'?fromFeature:toFeature;
+          const chute=sourceChuteById(chuteFeature.id);
+          const along=chute
+            ? (Number(toX)-Number(fromX))*chute.dir.x+(Number(toY)-Number(fromY))*chute.dir.y
+            : 0;
+          // One-way means no climbing. It does not mean the final ramp cell is
+          // a cage: once the remaining drop is an ordinary step, continuing
+          // downhill or stepping sideways onto the lower tier must work.
+          if(along>=-0.001&&Math.abs(to.floor-from.floor)<=.45)return{ok:true,floor:to.floor};
+          return{ok:false,why:'one-way chute'};
+        }
         // A lift's deck is ordinary walkable floor on either landing. Only the
         // forbidden downward tier crossing is one-way; treating the whole
         // capture rectangle as a wall traps the rider on arrival.
@@ -1004,7 +1043,9 @@ export function createSourceSpaceRuntime({
       const originX = landscapePlan?.x ?? Math.floor((x - half) / SOURCE_PLAN_SNAP) * SOURCE_PLAN_SNAP;
       const originY = landscapePlan?.y ?? Math.floor((y - half) / SOURCE_PLAN_SNAP) * SOURCE_PLAN_SNAP;
       const o = landscapeOrigin();
-      const key = `${state.phase}:${state.pageStage}:${o.x}:${o.y}:${originX}:${originY}`;
+      const portalPlanState = landingPortalFrame().passable ? 'open'
+        : state.landingDoorOpen ? 'opening' : 'closed';
+      const key = `${state.phase}:${state.pageStage}:${portalPlanState}:${o.x}:${o.y}:${originX}:${originY}`;
       if (lastPlan?.key === key) return lastPlan;
       const size = SOURCE_PLAN_WINDOW;
       const rgba = new Uint8Array(size * size * 4);
@@ -1045,6 +1086,8 @@ export function createSourceSpaceRuntime({
     // Just over the seam, facing in. Far enough that the field is behind him and
     // he cannot walk back out of it by accident.
     if (tierId === 'horizon') return { x: o.x, y: o.y + SOURCE_HORIZON.from - SOURCE_HORIZON.entryStandoff, facing: 0 };
+    // And the same again for the bell passage: over its own seam, facing in.
+    if (tierId === 'bells') return { x: o.x, y: o.y + SOURCE_BELLS.from - SOURCE_BELLS.entryStandoff, facing: 0 };
     return landingWorld();
   }
 
@@ -1056,6 +1099,13 @@ export function createSourceSpaceRuntime({
     if (id === 'landing-trace') return tierCheckpoint('trace');
     if (id === 'landing-return') return tierCheckpoint('return');
     if (id === 'landing-horizon') return tierCheckpoint('horizon');
+    // A RELOAD IN THE PASSAGE RESUMES IN THE PASSAGE.
+    //
+    // Without this the id fell through to landmarkPoint, found nothing, and
+    // returned the hall entry — so closing the app four hundred metres down the
+    // bell road put the body back at the start of the chapter with the route
+    // already committed and no way back to it.
+    if (id === 'bells-entry') return tierCheckpoint('bells');
     const point = landmarkPoint(id);
     return point ? { x: point.x, y: point.y + 7, facing: 0 } : { x: SOURCE_ENTRY.x, y: SOURCE_ENTRY.y, facing: 0 };
   }
@@ -1197,9 +1247,11 @@ export function createSourceSpaceRuntime({
       objective = { id: 'still-page', label: 'FIND THE STILL PAGE', target: haystackPagePoint(), bearingEligible: true };
     } else if (state.phase === CHUNK_SURF_PHASE.TRANSFORMING || !state.firstLiftCompleted) {
       const outside = localPlayer.y <= SOURCE_LANDING_OPENING_LOCAL.y + 2;
-      objective = outside
+      objective = !state.landingDoorOpen
+        ? { id: 'open-foh-door', label: 'OPEN THE FOH DOOR', target: landingWorld(SOURCE_LANDING_PORTAL_LOCAL), bearingEligible: true }
+        : outside
         ? { id: 'first-lift', label: 'ENTER THE RISING SOURCE', target: { x: o.x, y: o.y - 40 }, bearingEligible: true }
-        : { id: 'leave-get-in', label: 'LEAVE THE GET-IN', target: landingWorld(SOURCE_LANDING_OPENING_LOCAL), bearingEligible: true };
+        : { id: 'leave-get-in', label: `LEAVE THE ${SCENE_DOCK_LABEL}`, target: landingWorld(SOURCE_LANDING_OPENING_LOCAL), bearingEligible: true };
     } else if (state.phase === CHUNK_SURF_PHASE.FINAL && state.finalEncounter.status !== SOURCE_FINAL_STATUS.RESOLVED) {
       objective = {
         id: sourceBossExposed(state.sourceContacts) ? 'return-paths' : 'normal-exit',
@@ -1588,26 +1640,6 @@ export function createSourceSpaceRuntime({
   const horizonBustLateral = () =>
     horizonBand(SOURCE_HORIZON.from - HORIZON_BUST_DEPTH).centre + HORIZON_BUST_OFFSET;
 
-  // Appended to the bust's patter, and only when the player was told. It never
-  // becomes a fourth beat on its own: it lands on the last line, which is the
-  // line that carries the offer.
-  const HORIZON_BUST_RECOGNITION = Object.freeze(
-    { who: 'you', text: 'The man in the yellow cagoule had this on a laminated map. One instrument, he said. He could not prove a word of it.' },
-  );
-
-  const HORIZON_BUST_LINES = Object.freeze({
-    carried: Object.freeze([
-      { who: 'direction', text: 'The weight in the case shifts. Two marble eyes strike the brass catches from inside.' },
-      { who: 'bust', text: 'You carried sight out of the building. That is enough. I can show you what the bells are looking at.' },
-      { who: 'bust', text: 'It is the longer way. The machinery moves whether you understand it or not, and at the end it will hear you.' },
-    ]),
-    returned: Object.freeze([
-      { who: 'direction', text: 'Wet pupils open in the Horizon stone. They are the eyes you returned, looking here from the gallery.' },
-      { who: 'bust', text: 'You gave sight back to its proper face. It has been looking through me ever since.' },
-      { who: 'bust', text: 'I can show you what the bells are looking at. It is the longer way, and at the end it will hear you.' },
-    ]),
-  });
-
   // Where he stands, for anything that has to draw him.
   //
   // Depth passes straight through: one cell along the tape IS one tape unit,
@@ -1632,12 +1664,22 @@ export function createSourceSpaceRuntime({
     };
   }
 
-  // How much of his patter the body has stood still for. He is a distraction by
-  // design: the offer is only made once he has been allowed to waste some.
+  function horizonBustBlocks(x, y) {
+    if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return false;
+    const point = horizonBustPoint();
+    // The asset is 5.2 tape metres wide. Horizon lateral is compressed by 2/3
+    // in the renderer, so its truthful body-space footprint is just under four
+    // cells either side of the authored anchor. The shallow depth keeps the
+    // monument solid without turning it into a wall across the walk.
+    return Math.abs(Number(x) - point.x) < 4.15 && Math.abs(Number(y) - point.y) < 2.35;
+  }
+
+  // How much of the audience has been heard. The offer is deliberately held
+  // until recognition, history, route, and consequence have each had a beat;
+  // a secret door should feel conferred, not sold from an interaction prompt.
   //
-  // Deliberately not persisted: a reload puts him back at his first line, which
-  // is the right behaviour for a bore whose whole function is to waste time you
-  // have chosen to give him. What IS persisted is the exit he offers.
+  // Deliberately not persisted: a reload restarts the audience, while the route
+  // decision itself remains durable and cannot be offered twice.
   let horizonBustBeat = 0;
   // WHERE THE RECORDING CHANGES.
   //
@@ -1670,16 +1712,21 @@ export function createSourceSpaceRuntime({
     if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return { handled: false, state };
     const evidence = horizonBustEyeEvidence(state.profile?.marbleEyes);
     if (!evidence.eligible) {
+      horizonBustBeat = Math.min(HORIZON_BUST_REFUSAL.length, horizonBustBeat + 1);
+      // Preserve the route decision on first contact for old saves and callers;
+      // the remaining refusal beats are presentation, not a temporary opening.
       dispatch({ type: 'HORIZON_BUST_DECIDED', decision: 'declined' }, { immediate: true });
       return {
         handled: true,
         eligible: false,
         evidence,
-        line: { who: 'bust', text: 'No. You saw what sight cost and left it where it was. Keep walking.' },
+        beat: horizonBustBeat,
+        line: HORIZON_BUST_REFUSAL[horizonBustBeat - 1],
+        offers: false,
       };
     }
     dispatch({ type: 'HORIZON_BUST_RECOGNIZED', eligible: true }, { immediate: true });
-    const lines = HORIZON_BUST_LINES[evidence.mode];
+    const lines = horizonBustAudience(evidence.mode);
     horizonBustBeat = Math.min(lines.length, horizonBustBeat + 1);
     const last = horizonBustBeat >= lines.length;
     return {
@@ -1956,6 +2003,15 @@ export function createSourceSpaceRuntime({
 
   function focusAt(px, py, facing) {
     const candidates = [];
+    if ([CHUNK_SURF_PHASE.TRANSFORMING, CHUNK_SURF_PHASE.LANDSCAPE].includes(state.phase)
+        && !state.firstLiftCompleted && !landingPortalFrame().complete) {
+      candidates.push({
+        kind: 'source-landing-door', id: SOURCE_LANDING_PORTAL_DOOR_ID,
+        ...landingWorld(SOURCE_LANDING_PORTAL_LOCAL),
+        open: !!state.landingDoorOpen,
+        focusPriority: 12, focusRadius: 9,
+      });
+    }
     if (state.phase === CHUNK_SURF_PHASE.HAYSTACK) candidates.push({
       kind: 'haystack-page', id: 'source-page', ...haystackPagePoint(), focusPriority: 10, focusRadius: 7,
     });
@@ -2087,6 +2143,15 @@ export function createSourceSpaceRuntime({
   function inspectFocused(px, py, facing) {
     const focus = focusAt(px, py, facing);
     if (!focus) return { handled: false };
+    if (focus.kind === 'source-landing-door') {
+      if (!state.landingDoorOpen) {
+        landingPortalElapsed = 0;
+        dispatch({ type: 'SOURCE_LANDING_DOOR_OPENED' }, { immediate: true });
+        protectMoment(SOURCE_LANDING_PORTAL_SECONDS + .4);
+        return { handled: true, event: 'landing-door-opened', text: '' };
+      }
+      return { handled: true, event: 'landing-door-opening', text: '' };
+    }
     if (focus.kind === 'source-sheet') {
       const assigned = assignSourceDialoguePage(sourceDialogue, SOURCE_PAGES, {
         sheetId: focus.id,
@@ -2170,6 +2235,12 @@ export function createSourceSpaceRuntime({
     player = { x: px, y: py, facing };
     const elapsed = Math.max(0, Number(dt) || 0);
     phaseElapsed += elapsed;
+    if (state.landingDoorOpen && landingPortalElapsed < SOURCE_LANDING_PORTAL_SECONDS) {
+      landingPortalElapsed = Math.min(SOURCE_LANDING_PORTAL_SECONDS, landingPortalElapsed + elapsed);
+      // The door leaf and the collision aperture both live in the render-plan
+      // cache, so invalidate it throughout the authored opening move.
+      lastPlan = null;
+    }
     const searchActive = searchSpanActiveFor(state);
     if (searchActive) searchElapsed += elapsed;
     else if (state.phase === CHUNK_SURF_PHASE.HALL) searchElapsed = 0;
@@ -2735,7 +2806,9 @@ export function createSourceSpaceRuntime({
   const SOURCE_LEAK_COUNT = 120;
 
   function landingPropInstances() {
-    return [...sourceLandingPropPlacements(landscapeOrigin()),...sourceLandingDoorPlacements(landscapeOrigin())].map((placement) => ({
+    const portal = landingPortalFrame();
+    const ordinary = [...sourceLandingPropPlacements(landscapeOrigin()),
+      ...sourceLandingDoorPlacements(landscapeOrigin(), { portalProgress: portal.progress })].map((placement) => ({
       id: placement.id,
       mesh: placement.mesh,
       matrix: sourceMatrix({
@@ -2752,6 +2825,34 @@ export function createSourceSpaceRuntime({
       sourcePropId: placement.sourcePropId,
       sourceDoorId: placement.sourceDoorId,
     }));
+    if (!portal.requested) return ordinary;
+    const o = landscapeOrigin();
+    // The leaf opens onto a sequence of thresholds which cannot all occupy the
+    // same depth. They grow out of register as the hinge moves: real meshes,
+    // impossible spacing, no camera seizure and no change to the Loading Bay
+    // wall behind the player.
+    const depthCount = Math.max(1, Math.ceil(portal.depth));
+    for (let index = 0; index < depthCount; index += 1) {
+      const t = (index + 1) / 7;
+      ordinary.push({
+        id: `source-landing-portal-depth-${index}`,
+        mesh: index % 2 ? 'tower_louvres' : 'tower_bulkhead',
+        matrix: sourceMatrix({
+          x: (o.x + SOURCE_LANDING_PORTAL_LOCAL.x + Math.sin(index * 1.7) * .34) * CELL,
+          y: .55 + index * .38,
+          z: (o.y + SOURCE_LANDING_PORTAL_LOCAL.y - 2.2 - index * 2.35) * CELL,
+          yaw: index % 2 ? Math.PI / 2 : 0,
+          roll: (index - 3) * .018,
+          scaleX: 1.15 + index * .18,
+          scaleY: 1.25 + index * .14,
+          scaleZ: 1.1 + index * .12,
+        }),
+        emissive: index % 3 === 1 ? [0.02, .28, .42, .36] : [1, .004, .001, .52 + portal.progress * .36],
+        zone: ZONE.sourceSpace, structural: true,
+        sourceConnector: 'foh-source-aperture',
+      });
+    }
+    return ordinary;
   }
 
   // CONNECTORS HAVE TO EXIST BEFORE THE TEXT FIELD DOES.
@@ -3277,11 +3378,12 @@ export function createSourceSpaceRuntime({
       && [CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase);
   }
 
-  function localLights() {
+  function localLights({ time = phaseElapsed, reducedMotion = false, flashMode = 'full' } = {}) {
     const understood=normalizeSourceContactState(state.sourceContacts).insights.length;
+    const emergency=sourceEmergencyFrame(time,{reducedEffects:reducedMotion||flashMode!=='full'});
     return sourceLandingLights(landscapeOrigin()).map((light)=>({
       ...light,
-      intensity:light.intensity+understood*.18,
+      intensity:(light.intensity+understood*.18)*emergency.lightScale,
       penetration:Math.min(1,light.penetration+understood*.025),
     }));
   }
@@ -3293,6 +3395,7 @@ export function createSourceSpaceRuntime({
     setPlayerPosition,
     textSpaceActive,
     localLights,
+    landingPortalFrame,
     landingContract: sourceLandingContract,
     sourceLandingHushFrame,
     traversalFrame,
@@ -3354,6 +3457,7 @@ export function createSourceSpaceRuntime({
       landing: {
         ...sourceLandingContract(),
         tableau: sourceLandingHushFrame(),
+        portal: landingPortalFrame(),
         textSpaceActive: textSpaceActive(),
         weatherRemaining: landingRainRemaining,
       },

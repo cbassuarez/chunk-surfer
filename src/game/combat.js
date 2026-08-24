@@ -23,7 +23,9 @@ import {
   drawAttackNotes,
   drawOpponentCombatArt,
   drawSignalBeing,
+  drawSubmergedBattleField,
   drawStanceTriangle,
+  submergedBattleFrame,
   drawTurnGlyph,
 } from '../render/combat-view.js';
 import { combatHudLayout } from '../render/combat-hud-layout.js';
@@ -48,6 +50,7 @@ import {
   reduceCombat,
   rivalCombatIntent,
   advanceEnemy,
+  applyWindowChannelReturn,
   selectEnemyIntents,
 } from './combat-state.js';
 import { readFidelity, thoughtTrace } from './thought-trace.js';
@@ -71,12 +74,17 @@ import {
   parryInputDecision,
   parryOpportunitySnapshot,
 } from './combat-parry.js';
+import { channelElapsedToParrySeconds } from './window-channel.js';
 
 // Which techniques are fired as moves in the fight (vs passives that change the
 // rules). Derived from the authored descriptor so new actives need no code here.
 const ACTIVE_TECHNIQUE_IDS = new Set(TECHNIQUE_DEFS.filter((t) => t.active).map((t) => t.id));
 
 export const ORDINARY_TURN_SECONDS = 1.2;
+
+export function combatEnemyAttackAudioShape(shape = {}, presentation = null) {
+  return presentation?.mode === 'submerged' ? { ...shape, lowpassHz: 640 } : { ...shape };
+}
 // ── the parry window ────────────────────────────────────────────────────────
 // The blow lands at IMPACT. From WINDOW_LO up to it you may guard; before that
 // you are bracing at air.
@@ -268,6 +276,35 @@ export function makeCombatScene({
         : tier === PARRY_TIER.GOOD ? .30 : .18;
       fx?.flash?.(70, `rgba(120,220,255,${weight})`);
       audio?.menuMove?.();
+      if (resolution.windowChannel?.outcome === 'cut' && !resolution.windowDefenseRequested) {
+        const pendingResolution = resolution;
+        pendingResolution.windowDefenseRequested = true;
+        pendingResolution.windowDefenseDone = false;
+        pendingResolution.windowDefensePending = Promise.resolve(interference?.completeWindowDefense?.({
+          // RETURN may finish this movement, but it may never be fired after an
+          // authored finale has already completed the combat.
+          allowReturn: !state.result,
+        })).then((result) => {
+          if (resolution !== pendingResolution) return result;
+          pendingResolution.windowDefense = result || null;
+          if (result?.returned && result.hits > 0 && !state.result) {
+            const beforeReturn = state;
+            state = applyWindowChannelReturn(state, { hits: result.hits, tier: result.tier });
+            pendingResolution.after = state;
+            notice = state.last?.notice || notice;
+            barGhost.coherence = { from: beforeReturn.movementCoherence, at: now };
+            spawnPopup({
+              text: result.hits > 1 ? 'FULL RETURN' : 'RETURN',
+              role: 'ui-blue',
+              anchor: 'enemy',
+            });
+          }
+          return result;
+        }).catch(() => null).finally(() => {
+          if (resolution !== pendingResolution) return;
+          pendingResolution.windowDefenseDone = true;
+        });
+      }
     }
     return true;
   }
@@ -480,6 +517,11 @@ export function makeCombatScene({
   function enterMovement(index = state.movementIndex) {
     const next = movement(index);
     playSound?.({ threat: next?.threat ?? .45 + index * .1 });
+    void Promise.resolve(interference?.movement?.({
+      id: next?.id || '',
+      index,
+      title: next?.title || next?.label || next?.id || '',
+    })).catch(() => null);
     armBarks(next);
     const lines = next?.before || [];
     if (lines.length) speak(lines, () => { beginToolSelection(); musicSession?.setDialogueActive?.(false); });
@@ -498,7 +540,7 @@ export function makeCombatScene({
     if (musicFinished) return;
     musicFinished = true;
     musicSession?.setDialogueActive?.(false);
-    musicSession?.finish?.();
+    musicSession?.finish?.(state.result?.result||'win');
   }
 
   function deliverResult() {
@@ -506,8 +548,13 @@ export function makeCombatScene({
     resultDelivered = true;
     fx?.stopCues?.();   // the last blow does not outlive the fight
     const metrics = combatResult(state) || {};
+    const windowChannelRecovery = interference?.channelState?.() || null;
     const legacyMetrics = {
       ...metrics,
+      continuation: {
+        ...(metrics.continuation || {}),
+        ...(windowChannelRecovery?.battleId ? { windowChannel: windowChannelRecovery } : {}),
+      },
       attempts: Math.max(1, Number(metrics.turns) || 1),
       playerHealth: metrics.composure,
       enemyHealth: 0,
@@ -636,6 +683,7 @@ export function makeCombatScene({
 
   function finishResolution() {
     if (!resolution) return;
+    if (resolution.windowDefensePending && !resolution.windowDefenseDone) return;
     if (resolution.interferencePending && !resolution.interferenceDone) {
       if (!resolution.interferenceWaiting) {
         const pendingResolution = resolution;
@@ -646,6 +694,20 @@ export function makeCombatScene({
           pendingResolution.interferenceDone = true;
           pendingResolution.interferenceWaiting = false;
           interferencePause = false;
+          finishResolution();
+        });
+      }
+      return;
+    }
+    if (resolution.windowChannel?.scene && !resolution.windowChannelResolved) {
+      if (!resolution.windowChannelResolvePending) {
+        const pendingResolution = resolution;
+        pendingResolution.windowChannelResolvePending = Promise.resolve(
+          interference?.resolveWindowChannel?.(),
+        ).catch(() => null).finally(() => {
+          if (resolution !== pendingResolution) return;
+          pendingResolution.windowChannelResolved = true;
+          pendingResolution.windowChannelResolvePending = null;
           finishResolution();
         });
       }
@@ -805,13 +867,20 @@ export function makeCombatScene({
       // The chop carries the opponent's mood: a cornered surfer is louder and
       // holds the bite longer than one that is still taking your measure.
       const lean = surferAggression(state.difficulty?.composureBonus, before.stance?.id);
-      if (cueId) fx?.cue?.(cueId, { group: 'battle', ...enemyAttackShape(cueId, beat, Math.random, lean) });
+      if (cueId) {
+        const shape=combatEnemyAttackAudioShape(
+          {group:'battle',...enemyAttackShape(cueId,beat,Math.random,lean)},
+          battle.combat.presentation,
+        );
+        fx?.cue?.(cueId,shape);
+      }
       strike = { ...enemyAttackVoice(primary.kind, cueId), label: primary.label, kind: primary.kind };
     } else strike = null;
     resolution = {
       before,
       after: next,
       action: { id: 'enemy', tool: COMBAT_TOOL.SELF, label: primary?.label || 'INTENT', kind: primary?.kind || null },
+      intent:primary,
       side: 'enemy',
       elapsed: 0,
       // Struck blows receive a four-beat reaction phrase. Other enemy actions
@@ -825,7 +894,41 @@ export function makeCombatScene({
       parryWhiffed: false,
       parryEarly: false,
     };
-    phase = 'resolve';
+    const canOpenChannel = isParryableEnemyAction(primary?.kind)
+      && typeof interference?.beginWindowChannel === 'function';
+    if (!canOpenChannel) {
+      phase = 'resolve';
+      return;
+    }
+    const pendingResolution = resolution;
+    phase = 'channel';
+    pendingResolution.windowChannelPending = Promise.resolve(interference.beginWindowChannel({
+      movementIndex: before.movementIndex,
+      movementId: movement(before.movementIndex)?.id || '',
+      movementTitle: movement(before.movementIndex)?.title || movement(before.movementIndex)?.label || '',
+      intentId: primary?.id || '',
+      intentLabel: primary?.label || '',
+      intentKind: primary?.kind || '',
+      windowScale: state.difficulty?.parryWindowScale,
+    })).then((result) => {
+      if (resolution !== pendingResolution || !sceneEntered) return;
+      pendingResolution.windowChannel = result || { outcome: 'skip' };
+      if (result?.outcome === 'cut') {
+        pendingResolution.elapsed = channelElapsedToParrySeconds(result.elapsedMs, result.deadlineMs);
+        notice = 'CHANNEL CUT · PARRY THE BLOW';
+      } else if (result?.outcome === 'timeout') {
+        // The enemy reducer already applied exactly one ordinary damage packet.
+        // Spending the parry here prevents a second reaction without adding a
+        // second hit of our own.
+        pendingResolution.elapsed = PARRY_CONTACT_HOLD_SECONDS + channelElapsedToParrySeconds(1, 1);
+        pendingResolution.parryTried = true;
+        pendingResolution.parryWhiffed = true;
+        notice = 'WINDOW CHANNEL LANDED';
+      }
+      phase = 'resolve';
+    }).catch(() => {
+      if (resolution === pendingResolution && sceneEntered) phase = 'resolve';
+    });
   }
 
   function cycleChannel(delta) {
@@ -956,6 +1059,7 @@ export function makeCombatScene({
         actions: availableCombatActions(state),
         prediction: combatPrediction(state),
         music: musicSession?.snapshot?.() || null,
+        presentation:battle.combat.presentation||null,
         performanceIntrusion,
         performanceStage,
         selectedTool,
@@ -967,7 +1071,15 @@ export function makeCombatScene({
           action: resolution.action.id,
           side: resolution.side,
           parry: parryWindow(),
+          windowChannel: resolution.windowChannel ? {
+            outcome: resolution.windowChannel.outcome,
+            elapsedMs: resolution.windowChannel.elapsedMs,
+            deadlineMs: resolution.windowChannel.deadlineMs,
+            reacquiredMain: !!resolution.windowChannel.reacquiredMain,
+          } : phase === 'channel' ? { outcome: 'pending' } : null,
+          windowDefense: resolution.windowDefense || null,
         } : null,
+        windowChannel: interference?.channelState?.() || null,
         statePhase: state.phase,
         tutorial: director?.snapshot?.() || null,
       };
@@ -989,6 +1101,10 @@ export function makeCombatScene({
         return;
       }
       if (phase === 'resolve' && resolution) {
+        // Choosing whether to send a charged RETURN is part of the combined
+        // defense. The ordinary parry clock and impact cannot advance behind
+        // that game-owned prompt.
+        if (resolution.windowDefensePending && !resolution.windowDefenseDone) return;
         resolution.elapsed += dt;
         const opportunity = parryWindow();
         if (opportunity?.buffered && opportunity.armed && !resolution.parryTried) {
@@ -1101,7 +1217,16 @@ export function makeCombatScene({
         }
         return true;
       }
+      if (phase === 'channel') {
+        if (e.controllerAction === 'confirm') interference?.windowChannelInput?.('confirm');
+        return true;
+      }
       if (phase === 'resolve') {
+        if (resolution?.windowDefensePending && !resolution.windowDefenseDone) {
+          if (e.controllerAction === 'confirm') interference?.windowChannelInput?.('confirm');
+          else if (back) interference?.windowChannelInput?.('decline');
+          return true;
+        }
         // A parryable enemy strike owns confirm until contact. It cannot be
         // accidentally fast-forwarded out from under the player, and an early
         // press outside the small buffer teaches WAIT without spending the try.
@@ -1196,6 +1321,10 @@ export function makeCombatScene({
         : '[SPACE] PARRY';
       const footer = phase === 'arrival'
         ? '168 BPM · LOCKING DOWNBEAT'
+        : phase === 'channel'
+          ? activeInputPromptDevice() === 'controller'
+            ? `${promptLine([{ action: 'confirm', label: 'CUT / REACQUIRE' }])} · THEN PARRY`
+            : 'CUT EVERY HOSTILE WINDOW · CLICK BACK HERE · THEN PARRY'
         : phase === 'tool'
           ? activeInputPromptDevice() === 'controller'
             ? '[STICK / D-PAD ←→] TOOL · [↓] ACTIONS'
@@ -1347,7 +1476,7 @@ export function makeCombatScene({
       // the enemy beat it becomes the truth, which is how the misread is
       // revealed: the thing that arrives is not the thing that was drawn.
       const intent = resolution?.side === 'enemy'
-        ? { kind: resolution.action?.kind || currentCombatIntent(intentState)?.kind || null }
+        ? (resolution.intent||{ kind: resolution.action?.kind || currentCombatIntent(intentState)?.kind || null })
         : predictedCombatIntent(intentState);
       // THE HALL. One encounter has more than one thing in it, and a single
       // figure on the void stage cannot say so. The house takes the same box the
@@ -1390,6 +1519,17 @@ export function makeCombatScene({
           knock: dealtFlash * 1.4,
         });
       }
+
+      const submerged=submergedBattleFrame({
+        music:musicSession?.snapshot?.()||null,
+        presentation:battle.combat.presentation,
+        movementIndex:visual.movementIndex,
+        intent,
+      });
+      drawSubmergedBattleField({
+        x:panel.x,y:stageY,w:panel.w,h:stageH,frame:submerged,now,reducedMotion,
+        resolveProgress:visual.progress,
+      });
 
       const selectedToolId = resolution?.action?.tool || activeTool().id;
       const injury = combatInjuryStage({ composure: snap.composure, maxComposure: snap.maxComposure, injuries: state.injuries });

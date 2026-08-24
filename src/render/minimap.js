@@ -54,7 +54,8 @@ export function minimapTargetReadout(model){
   return{
     label,
     bearing:TARGET_BEARINGS[Math.round(angle/(Math.PI/4))%8],
-    distanceM:Math.hypot(dx,dy),
+    distanceM:waypoint.suppressExactDistance?null:Math.hypot(dx,dy),
+    ...(waypoint.suppressExactDistance?{distanceSuppressed:true}:{}),
     floorDelta:0,
     sameFloor:true,
   };
@@ -437,10 +438,19 @@ function drawCommands(commands, now) {
     else if(command.kind==='connector-local')uiGlyph(Math.round(command.point.x),Math.round(command.point.y),'↕',command.selected?'ui-blue':'ui-label',command.selected ? .9 : .48);
     else if(command.kind==='hush-awareness')drawHushAwareness(command,.7+Math.abs(Math.sin(now*.006))*.2);
     else if (command.kind === 'player') drawPlayerMarker(command.point, command.heading, 1, { tick: !hasSight });
-    else if (command.kind === 'waypoint' || command.kind === 'connector-target') drawWaypointMarker(command.point, .95,{playerSelected:command.playerSelected});
+    else if (command.kind === 'waypoint' || command.kind === 'connector-target') {
+      if(command.corrupted&&command.glitchPhase===2)continue;
+      drawWaypointMarker(command.point,command.corrupted ? .78 : .95,{playerSelected:command.playerSelected});
+      if(command.corrupted){
+        const x=Math.round(command.point.x),y=Math.round(command.point.y);
+        uiGlyph(x-1,y,'[','ui-danger',.72);
+        uiGlyph(x+1+(command.glitchPhase===3?1:0),y,']','ui-danger',.72);
+      }
+    }
     else if(command.kind==='equipment'||command.kind==='equipment-edge')drawEquipmentMarker(command.point,command.carrierOpen ? .72+Math.sin(now*.007)*.2 : .72);
     else if (command.kind === 'waypoint-edge' || command.kind === 'connector-edge') {
-      drawWaypointMarker(command.point,.92,{edgeDirection:command.edgeDirection,playerSelected:command.playerSelected});
+      if(command.corrupted&&command.glitchPhase===2)continue;
+      drawWaypointMarker(command.point,command.corrupted ? .76 : .92,{edgeDirection:command.edgeDirection,playerSelected:command.playerSelected});
       if (command.floorDelta) uiGlyph(Math.round(command.point.x), Math.round(command.point.y) + 1, command.floorDelta > 0 ? '↑' : '↓', 'ui-blue', .78);
     }
     else if (command.kind === 'anomaly-contact' || command.kind === 'anomaly-edge') {
@@ -561,7 +571,9 @@ export function drawMinimap(model, opts = {}) {
   const floorTag=String(floor?.shortLabel||floor?.label||'--').toUpperCase();
   if(targetReadout){
     const range=targetReadout.sameFloor
-      ?`${targetReadout.bearing} ${Math.max(0,Math.round(targetReadout.distanceM||0))}M`
+      ?targetReadout.distanceSuppressed
+        ?`${targetReadout.bearing} / RANGE LOST`
+        :`${targetReadout.bearing} ${Math.max(0,Math.round(targetReadout.distanceM||0))}M`
       :targetReadout.floorDelta
         ?`${targetReadout.floorDelta>0?'+':''}${targetReadout.floorDelta}F`
         :'OTHER FL';

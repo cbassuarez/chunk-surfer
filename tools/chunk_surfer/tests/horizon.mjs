@@ -211,9 +211,9 @@ check(lit.corner / lit.centre < flat.corner / flat.centre - 0.1,
 //
 // The bust is the only authored beat in the whole crossing and he had no
 // representation of any kind — the prop pass never runs past the perimeter, so
-// he was an [F] prompt in a void thirteen metres off the walking line. He is
-// built as splats in the tape's own space now, out of the same material as
-// everything else out there.
+// he was an [F] prompt in a void thirteen metres off the walking line. He now
+// has a dedicated indexed GLB pass: opaque portrait, pedestal, and bronze seal,
+// self-occluding inside the otherwise translucent recording.
 //
 // Placed straight ahead for the measurement, because whether he is VISIBLE is
 // the question, not whether he happens to be in shot from a fixed stop.

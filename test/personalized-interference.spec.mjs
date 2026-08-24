@@ -166,7 +166,8 @@ assert.match(warningSource, /askProfile/, 'the durable omnibus is gated, not sho
 assert.match(warningSource, /onProfileOn/);
 assert.match(warningSource, /THIS GAME MEASURES YOU PSYCHOLOGICALLY/);
 assert.match(warningSource, /Steam display name only—never Steam ID, friends, or account enumeration/);
-assert.match(warningSource, /temporary, non-focus-stealing, game-owned echo windows/);
+assert.match(warningSource, /move, resize, and focus this game’s/);
+assert.match(warningSource, /up to three temporary game-owned channel windows/);
 assert.match(warningSource, /PROFILE OFF requests nothing/);
 const mainSourceForConsent = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
 assert.match(mainSourceForConsent, /consentVersion!==PSYCH_PROFILE_CONSENT_VERSION/);
@@ -206,6 +207,9 @@ assert.equal(interferenceStageForBattle('training'), null);
 assert.equal(interferenceStageForBattle('practice-room-hush'), 'foreshadow');
 assert.equal(interferenceStageForBattle('recording-2'), 'recognition');
 assert.equal(interferenceStageForBattle('pre-recording-4'), 'control');
+assert.equal(interferenceStageForBattle('natatorium'), 'recognition');
+assert.equal(interferenceStageForBattle('hall'), 'control');
+assert.equal(interferenceStageForBattle('practice'), 'control');
 assert.equal(interferenceStageForBattle('chapel'), 'handoff');
 assert.equal(interferenceStageForBattle('other', 'source-final'), 'handoff');
 
@@ -324,5 +328,14 @@ const gitignore = readFileSync(new URL('../.gitignore', import.meta.url), 'utf8'
 assert.match(gitignore, /^steam_appid\.txt$/m);
 const directorSource = readFileSync(new URL('../src/game/interference-director.js', import.meta.url), 'utf8');
 assert.doesNotMatch(directorSource, /SPEECH|speech|console\.|analytics|telemetry/);
+const sidecarSource = readFileSync(new URL('../src/interference-monitor.js', import.meta.url), 'utf8');
+assert.doesNotMatch(sidecarSource, /persona|hostname|micLabel|OPERATOR/,
+  'battle sidecars have no identity or generic operator-telemetry surface');
+const settingsSource = readFileSync(new URL('../src/game/settings.js', import.meta.url), 'utf8');
+assert.match(settingsSource, /ON · MOVES \+ FOCUSES/);
+assert.match(settingsSource, /PREVIEW WINDOW CHANNEL/);
+const nativeWindowSource = readFileSync(new URL('../src-tauri/src/window_choreography.rs', import.meta.url), 'utf8');
+assert.match(nativeWindowSource, /window-choreography-recovery\.json/);
+assert.match(nativeWindowSource, /recover_stale_snapshot/);
 
 console.log('personalized interference contracts passed');

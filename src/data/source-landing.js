@@ -51,21 +51,29 @@ export function sourceLandingAuthoredFromLocal(localX = 0, localY = 0) {
 export const SOURCE_LANDING_ENTRY_LOCAL = Object.freeze(
   sourceLandingLocalFromAuthored(conservatory.greyDoorApproach || { x: 65, y: 10 }),
 );
-export const SOURCE_LANDING_OPENING_LOCAL = Object.freeze(
-  sourceLandingLocalFromAuthored({ x: SOURCE_GET_IN_BOUNDS.maxX + 3.5, y: CENTRE.y }),
-);
+export const SOURCE_LANDING_PORTAL_DOOR_ID = 'dock-foyer-service';
+export const SOURCE_LANDING_REAR_DOOR_ID = 'dock-grey-exterior';
+const portalDoor = CONSERVATORY_DOORS.find((door) => door.id === SOURCE_LANDING_PORTAL_DOOR_ID);
+if (!portalDoor) throw new Error(`Source landing requires ${SOURCE_LANDING_PORTAL_DOOR_ID}`);
+const portalDoorArchetype = DOOR_ARCHETYPES[portalDoor.archetype];
+if (!portalDoorArchetype) throw new Error(`Source landing requires archetype ${portalDoor.archetype}`);
+export const SOURCE_LANDING_PORTAL_LOCAL = Object.freeze(sourceLandingLocalFromAuthored(portalDoor));
+export const SOURCE_LANDING_OPENING_LOCAL = Object.freeze(sourceLandingLocalFromAuthored({
+  x: SOURCE_GET_IN_BOUNDS.maxX + 2,
+  y: portalDoor.y,
+}));
 export const SOURCE_LANDING_HUSH_LOCAL = Object.freeze(
   sourceLandingLocalFromAuthored({ x: SOURCE_GET_IN_BOUNDS.minX + 1.25, y: CENTRE.y }),
 );
-// The get-in projects out of the rear edge of the Source field. Generic terrain
-// may meet its removed forward wall, but must not continue beside the shell and
+// The Scene Dock projects out of the rear edge of the Source field. Generic
+// terrain may meet its FOH aperture, but must not continue beside the shell and
 // offer a route around the sealed grey-door plane.
 export const SOURCE_LANDING_FIELD_EDGE_LOCAL_Y = sourceLandingLocalFromAuthored({
   x: SOURCE_GET_IN_BOUNDS.maxX + 1,
   y: CENTRE.y,
 }).y;
 
-export function sourceLandingCellAt(localX, localY) {
+export function sourceLandingCellAt(localX, localY, { portalOpen = false } = {}) {
   const authored = sourceLandingAuthoredFromLocal(localX, localY);
   const envelope = authored.x >= SOURCE_GET_IN_BOUNDS.minX - 1
     && authored.x < SOURCE_GET_IN_BOUNDS.maxX + 2
@@ -76,7 +84,18 @@ export function sourceLandingCellAt(localX, localY) {
   const forwardWall = Math.floor(authored.x) === SOURCE_GET_IN_BOUNDS.maxX + 1
     && authored.y >= SOURCE_GET_IN_BOUNDS.minY
     && authored.y < SOURCE_GET_IN_BOUNDS.maxY + 1;
-  if (forwardWall) return { owned: false, opening: true };
+  if (forwardWall) {
+    // The transformed room keeps a real east wall. Only the half-glazed FOH
+    // leaf opens into Source; treating this whole plane as absent is what let
+    // the player phase through the closed door and made the threshold feel
+    // like scenery instead of an event.
+    const portalHalfWidth = portalDoorArchetype.aperture.width / (2 * CELL) + .2;
+    const inPortal = Math.abs(Number(localX) - SOURCE_LANDING_PORTAL_LOCAL.x) <= portalHalfWidth;
+    if (!inPortal) return { owned: true, solid: true, glyph: '#' };
+    return portalOpen
+      ? { owned: false, opening: true, portal: SOURCE_LANDING_PORTAL_DOOR_ID }
+      : { owned: true, solid: true, glyph: '+', portal: SOURCE_LANDING_PORTAL_DOOR_ID };
+  }
   const descriptor = GLYPHS[glyph];
   if (!descriptor || descriptor.solid || glyph === '#') return { owned: true, solid: true, glyph };
   if (glyph !== 'I' && glyph !== '+') return { owned: false, glyph };
@@ -127,28 +146,35 @@ export function sourceLandingPropPlacements(origin = { x: 0, y: 0 }) {
   });
 }
 
-export const SOURCE_GET_IN_DOOR_IDS = Object.freeze(CONSERVATORY_DOORS
-  .filter((door) => Number(door.x) >= SOURCE_GET_IN_BOUNDS.minX - 1
-    && Number(door.x) <= SOURCE_GET_IN_BOUNDS.maxX + 1
-    && Number(door.y) >= SOURCE_GET_IN_BOUNDS.minY - 1
-    && Number(door.y) <= SOURCE_GET_IN_BOUNDS.maxY + 1)
-  .map((door) => door.id));
+// Explicit ownership matters here. The west goods pair remains the sealed
+// Loading Bay/HUSH side; the FOH leaf alone becomes the Source portal. The
+// south services pair belongs to the ordinary corridor and is not cloned.
+export const SOURCE_GET_IN_DOOR_IDS = Object.freeze([
+  SOURCE_LANDING_REAR_DOOR_ID,
+  SOURCE_LANDING_PORTAL_DOOR_ID,
+]);
 
-export function sourceLandingDoorPlacements(origin = { x: 0, y: 0 }) {
+export function sourceLandingDoorPlacements(origin = { x: 0, y: 0 }, { portalProgress = 0 } = {}) {
+  const opening = Math.max(0, Math.min(1, Number(portalProgress) || 0));
   return CONSERVATORY_DOORS.filter((door) => SOURCE_GET_IN_DOOR_IDS.includes(door.id)).flatMap((door) => {
     const archetype=DOOR_ARCHETYPES[door.archetype];
     if(!archetype)return[];
     const local=sourceLandingLocalFromAuthored(door);
-    // Rotating the physical room clockwise turns this y-axis goods pair into an
-    // x-axis pair. The leaves are closed and inert; Source has no back route.
+    // Rotating the physical room clockwise turns these y-axis leaves onto the
+    // Source wall. The goods pair remains inert; the FOH leaf receives the one
+    // authored opening fraction below.
     const centre={x:Number(origin.x)+local.x,z:Number(origin.y)+local.y};
     const leaves=Array.from({length:archetype.leafCount},(_,leafIndex)=>{
       const left=archetype.leafCount===2?leafIndex===0:door.hinge!=='right';
       const hingeLocal=left?-archetype.aperture.width/2:archetype.aperture.width/2;
+      const portalLeaf = door.id === SOURCE_LANDING_PORTAL_DOOR_ID;
       return{
         id:`source-landing:door-leaf:${door.id}:${leafIndex}`,
         sourceDoorId:door.id,mesh:archetype.mesh,
-        x:centre.x+hingeLocal/CELL,y:0,z:centre.z,yaw:0,scaleX:left?1:-1,
+        x:centre.x+hingeLocal/CELL,y:0,z:centre.z,
+        yaw:portalLeaf ? -Math.PI * .54 * opening : 0,
+        scaleX:left?1:-1,
+        sourcePortalLeaf:portalLeaf,
         zone:ZONE.sourceSpace,structural:true,
       };
     });
@@ -157,6 +183,25 @@ export function sourceLandingDoorPlacements(origin = { x: 0, y: 0 }) {
       {id:`source-landing:door-head:${door.id}`,sourceDoorId:door.id,mesh:archetype.headMesh,...centre,y:0,yaw:0,zone:ZONE.sourceSpace,structural:true},
       ...leaves,
     ];
+  });
+}
+
+// One maintained emergency circuit, with the slightly irregular double-pulse
+// of an old contactor. Reduced effects hold the mean level: presentation may
+// steady, but the room never loses the red information altogether.
+export function sourceEmergencyFrame(timeSeconds = 0, { reducedEffects = false } = {}) {
+  const t = Math.max(0, Number(timeSeconds) || 0);
+  if (reducedEffects) return Object.freeze({ cycle: 0.78, wash: 0.72, lightScale: 0.88 });
+  const phase = t % 3.2;
+  const pulse = phase < .18 ? 1
+    : phase < .42 ? .48
+      : phase < .64 ? .92
+        : phase < .92 ? .56
+          : .42 + .08 * Math.sin((phase - .92) * 2.4);
+  return Object.freeze({
+    cycle: Math.max(.38, Math.min(1, pulse)),
+    wash: .52 + pulse * .34,
+    lightScale: .72 + pulse * .42,
   });
 }
 
@@ -186,7 +231,7 @@ export function sourceLandingLights(origin = { x: 0, y: 0 }) {
     castsShadow: true,
     shadowYaw: Math.PI,
   }, {
-    // The removed wall opens onto real props and the first impossible objects.
+    // The FOH aperture opens onto real props and the first impossible objects.
     // This maintained fitting establishes that they belong to the playable
     // world without exposing the rest of the field.
     id: 'source-landing:opening-emergency',
@@ -226,11 +271,13 @@ export function sourceLandingContract() {
     centre: { ...CENTRE },
     entry: { ...SOURCE_LANDING_ENTRY_LOCAL },
     opening: { ...SOURCE_LANDING_OPENING_LOCAL },
+    portal: { id: SOURCE_LANDING_PORTAL_DOOR_ID, ...SOURCE_LANDING_PORTAL_LOCAL },
     hush: { ...SOURCE_LANDING_HUSH_LOCAL },
     fieldEdgeY: SOURCE_LANDING_FIELD_EDGE_LOCAL_Y,
     propIds: [...SOURCE_GET_IN_PROP_IDS],
     doorIds: [...SOURCE_GET_IN_DOOR_IDS],
-    forwardWallRemoved: true,
+    forwardWallRemoved: false,
+    portalRequiresInteraction: true,
     emergencyLightId: sourceSeam?.id || null,
     emergencyLightIds: sourceLandingLights().map((light) => light.id),
   };

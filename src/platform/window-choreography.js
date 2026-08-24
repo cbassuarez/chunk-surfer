@@ -41,7 +41,9 @@ function echoBudget(stage, intensity, cueId, inputLocked) {
   // STANDARD's one auxiliary surface is the existing monitor-return sidecar.
   // Echo panes are reserved for the hostile chapel/finale architecture.
   if (intensity === 'standard') return 0;
-  if (stage === 'finale') return 3;
+  // The monitor return is itself an auxiliary window. Two echoes plus it keep
+  // the entire cast at four windows including the game.
+  if (stage === 'finale') return 2;
   if (stage === 'handoff') return 2;
   return 0;
 }
@@ -72,6 +74,8 @@ export function compileWindowChoreography({
   inputLocked = false,
   variant = 0,
   narrativeTiming = false,
+  mainGeometry = null,
+  hold = false,
 } = {}) {
   if (typeof token !== 'string' || !/^[a-z0-9-]{8,96}$/iu.test(token)) return null;
   if (!WINDOW_CUE_IDS.includes(cueId)) return null;
@@ -81,7 +85,14 @@ export function compileWindowChoreography({
   if (disruptive && !inputLocked) return null;
   if (cueId === 'conceal' && (safeIntensity !== 'hostile' || !inputLocked)) return null;
   const shape = ROOM_SHAPES[safeStage];
-  const target = geometryFor(shape, cueId, variant);
+  const authoredGeometry = mainGeometry && ['x', 'y', 'width', 'height']
+    .every((key) => Number.isFinite(Number(mainGeometry[key])))
+    ? {
+        x: unit(mainGeometry.x), y: unit(mainGeometry.y),
+        width: unit(mainGeometry.width), height: unit(mainGeometry.height),
+      }
+    : null;
+  const target = geometryFor(authoredGeometry || shape, cueId, variant);
   const displayMode = fullscreen || !nativePositioning || safeIntensity === 'low' || !inputLocked ? 'internal' : 'native';
   const durationBeats = cueId === 'silence' ? 2 : cueId === 'reject' ? 1 : 3;
   const echoes = echoBudget(safeStage, safeIntensity, cueId, inputLocked);
@@ -98,7 +109,11 @@ export function compileWindowChoreography({
       bpm: narrativeTiming ? null : BPM,
       durationMs: Math.round(durationBeats * BEAT_MS),
     }),
-    main: Object.freeze([
+    hold: !!hold,
+    main: Object.freeze(hold ? [
+      frame(0, REST, shape.aperture),
+      frame(cueId === 'reject' ? 0.25 : 1, target, cueId === 'conceal' ? 'occluded' : shape.aperture),
+    ] : [
       frame(0, REST, shape.aperture),
       frame(cueId === 'reject' ? 0.25 : 1, target, cueId === 'conceal' ? 'occluded' : shape.aperture),
       frame(durationBeats, REST, cueId === 'reject' ? 'rejected' : 'restored'),

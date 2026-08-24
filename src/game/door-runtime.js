@@ -91,9 +91,36 @@ export function normalizeDoorSave(value) {
 }
 
 export function pointInDoorSweep(portal, x, y, radius = .72) {
-  const dx = Number(x) - portal.cx, dy = Number(y) - portal.cy;
-  const leafReachCells = Math.max(1.4, (portal.leaf?.width || 1) * 2 + radius);
-  const cross = portal.widthAxis === 'x' ? Math.abs(dx) : Math.abs(dy);
-  const along = portal.widthAxis === 'x' ? Math.abs(dy) : Math.abs(dx);
-  return cross <= leafReachCells && along <= leafReachCells;
+  const px=Number(x),py=Number(y),padding=Math.max(0,Number(radius)||0);
+  if(!Number.isFinite(px)||!Number.isFinite(py))return false;
+  const leafCount=portal.leafCount||portal.definition?.leafCount||1;
+  const active=new Set(portal.activeLeaves||portal.definition?.activeLeaves||Array.from({length:leafCount},(_,index)=>index));
+  const apertureM=Number(portal.aperture?.width||portal.definition?.aperture?.width||portal.leaf?.width||1);
+  const reach=Math.max(.1,Number(portal.leaf?.width||portal.definition?.leaf?.width||1)*2);
+  const axisAngle=portal.widthAxis==='x'?0:Math.PI/2;
+  const inward=String(portal.swing||portal.definition?.swing||'escape').includes('in')?-1:1;
+  const angularDelta=(a,b)=>Math.atan2(Math.sin(a-b),Math.cos(a-b));
+  const pointSegmentDistance=(ax,ay,bx,by)=>{
+    const vx=bx-ax,vy=by-ay,den=vx*vx+vy*vy;
+    const t=den>0?Math.max(0,Math.min(1,((px-ax)*vx+(py-ay)*vy)/den)):0;
+    return Math.hypot(px-(ax+vx*t),py-(ay+vy*t));
+  };
+  for(let leafIndex=0;leafIndex<leafCount;leafIndex+=1){
+    if(!active.has(leafIndex))continue;
+    const pair=leafCount===2,left=pair?leafIndex===0:String(portal.hinge||portal.definition?.hinge||'left')!=='right';
+    // Door dimensions are authored in metres; the runtime collision field is
+    // sampled at two cells per metre.
+    const hingeOffset=(left?-1:1)*apertureM;
+    const hx=portal.cx+Math.cos(axisAngle)*hingeOffset,hy=portal.cy+Math.sin(axisAngle)*hingeOffset;
+    const closedAngle=axisAngle+(left?0:Math.PI);
+    const sweep=(left?-1:1)*inward*Math.PI*.49;
+    const openAngle=closedAngle+sweep;
+    const dx=px-hx,dy=py-hy,r=Math.hypot(dx,dy),relative=angularDelta(Math.atan2(dy,dx),closedAngle);
+    const insideAngle=sweep>=0?(relative>=0&&relative<=sweep):(relative<=0&&relative>=sweep);
+    if(insideAngle&&r<=reach+padding)return true;
+    const closedX=hx+Math.cos(closedAngle)*reach,closedY=hy+Math.sin(closedAngle)*reach;
+    const openX=hx+Math.cos(openAngle)*reach,openY=hy+Math.sin(openAngle)*reach;
+    if(pointSegmentDistance(hx,hy,closedX,closedY)<=padding||pointSegmentDistance(hx,hy,openX,openY)<=padding)return true;
+  }
+  return false;
 }

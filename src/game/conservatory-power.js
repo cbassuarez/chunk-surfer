@@ -2,6 +2,8 @@
 // rendering, audio and recording all consume the same normalized state instead
 // of each inventing a second idea of what "power is on" means.
 
+import { SCENE_DOCK_NAME } from '../data/space-labels.js';
+
 export const POWER_STATE_SCHEMA = 2;
 
 export const POWER_CIRCUIT = Object.freeze({
@@ -29,7 +31,7 @@ export const POWER_CIRCUITS = Object.freeze([
     id: POWER_CIRCUIT.SP03,
     panelId: 'acq-services-panel-foh',
     label: 'S/P-03',
-    serves: 'front of house, the get-in and the atrium',
+    serves: `front of house, the ${SCENE_DOCK_NAME} and the atrium`,
   }),
   Object.freeze({
     id: POWER_CIRCUIT.SP04,

@@ -261,6 +261,7 @@ uniform float uAmbientPlace;
 uniform float uHushSense;
 uniform float uOpticalEffects;
 uniform float uReduceMotionOptical;
+uniform float uDockHauntingFade;
 // One number per run, so the night is the same night for its whole length and a
 // different one next time. Drives the moon: where it sits, how full it is, and
 // once in a while how close.
@@ -362,6 +363,7 @@ uniform vec3  uZoneTint[21];
 uniform float uSourceReady;
 uniform vec4  uWaterBounds;  // min x, min z, max x, max z in runtime cells
 uniform vec4  uWaterParams;  // active, level metres, murk, reduce motion
+uniform vec4  uWaterCamera;  // submerged, depth metres, soaked, reserved
 layout(location=0) out vec4 o;
 // The engraving leaves on a second target; see the write at the end of main.
 layout(location=1) out vec4 oMark;
@@ -409,8 +411,9 @@ vec2 waterUv(vec2 p){
 }
 float waterHeightAt(vec2 p){
   if(!inWaterBounds(p)) return 0.0;
+  if(uWaterParams.w > 0.5) return 0.0;
   float h = texture(uWaterHeight, waterUv(p)).r - 0.5;
-  return h * (uWaterParams.w > 0.5 ? 0.06 : 0.20);
+  return h * 0.20;
 }
 float waterEdge(vec2 p){
   if(!inWaterBounds(p)) return 0.0;
@@ -1627,7 +1630,7 @@ void main(){
         if(tw >= tEnter && tw <= tExit){
           vec3 wp = ro + rd * tw;
           if(inWaterBounds(wp.xz)){
-            tHit = tw; surf = 4; n = vec3(0.0, 1.0, 0.0); hitZone = cur.zone; hitMat = MAT_WET; hitPlace = cur.place; hitSky = (cur.flags & FLAG_SKY) != 0; break;
+            tHit = tw; surf = 4; n = vec3(0.0, ro.y<waterY?-1.0:1.0, 0.0); hitZone = cur.zone; hitMat = MAT_WET; hitPlace = cur.place; hitSky = (cur.flags & FLAG_SKY) != 0; break;
           }
         }
       }
@@ -1849,7 +1852,8 @@ void main(){
       float hR=texture(uWaterHeight,clamp(wuv+vec2(texel.x,0.0),vec2(0.0),vec2(1.0))).r;
       float hD=texture(uWaterHeight,clamp(wuv-vec2(0.0,texel.y),vec2(0.0),vec2(1.0))).r;
       float hU=texture(uWaterHeight,clamp(wuv+vec2(0.0,texel.y),vec2(0.0),vec2(1.0))).r;
-      n=normalize(vec3(-(hR-hL)*2.8,1.0,-(hU-hD)*2.8));
+      float waterSide=uWaterCamera.x>.5?-1.0:1.0;
+      n=normalize(vec3(-(hR-hL)*2.8,waterSide,-(hU-hD)*2.8));
     }
     if(!pbrReady&&!sourceMaterial)seam=materialSeam(hitMat,surf,posM,n);
 
@@ -2040,8 +2044,9 @@ void main(){
 
     if(surf == 4){
       vec2 wuv=waterUv(pos.xz);
-      float film=texture(uRD,wuv*1.8+vec2(uTime*.006,-uTime*.004)).g;
-      float slow=sin((wuv.x*2.7+wuv.y*1.9+uTime*.11)*6.28318)*.5+.5;
+      float waterTime=uTime*(1.0-uWaterParams.w);
+      float film=texture(uRD,wuv*1.8+vec2(waterTime*.006,-waterTime*.004)).g;
+      float slow=sin((wuv.x*2.7+wuv.y*1.9+waterTime*.11)*6.28318)*.5+.5;
       float scum=waterEdge(pos.xz);
       vec3 deep=vec3(0.010,0.026,0.018);
       vec3 mold=vec3(0.045,0.092,0.050);
@@ -2209,6 +2214,25 @@ void main(){
     }
   }
 
+  // BELOW THE COPING. Apply the volume after mesh compositing so props and the
+  // height field live in the same water. Red dies first, green-black survives,
+  // and reduced motion holds both caustics and particulate perfectly still.
+  if(uWaterCamera.x>.5){
+    float murk=clamp(uWaterParams.z,0.0,1.0);
+    float travel=max(0.0,zView);
+    vec3 transmission=exp(-travel*mix(vec3(.17,.085,.13),vec3(.34,.14,.22),murk));
+    vec3 deepWater=vec3(.006,.025,.017);
+    float absorption=1.0-exp(-travel*(.055+murk*.075));
+    col=col*transmission+deepWater*absorption*(.62+murk*.30);
+    float heldTime=uTime*(1.0-uWaterParams.w);
+    float caustic=(sin(gl_FragCoord.x*.095+heldTime*.72)+sin(gl_FragCoord.y*.071-heldTime*.53))*.5+.5;
+    caustic*=smoothstep(.05,.65,abs(rd.y))*(1.0-smoothstep(7.0,28.0,travel));
+    col+=vec3(.025,.072,.045)*caustic*.18;
+    vec2 particleCell=floor(gl_FragCoord.xy/vec2(6.0,8.0));
+    float particle=step(.9925,hash01(particleCell.x+floor(heldTime*.7)*3.0,particleCell.y-floor(heldTime*.5)*5.0));
+    col+=vec3(.16,.20,.15)*particle*(.025+.035*murk);
+  }
+
   // Exterior humidity is a shallow, low-contrast veil in the distance, not the
   // exploration fog deliberately excluded from the interior. It thickens at
   // grazing angles and leaves nearby doors, kerbs and props crisp.
@@ -2278,10 +2302,22 @@ void main(){
     col*=1.0-absorption;
   }
 
+  // The Scene Dock room disappears before the body card is composed.  Applying
+  // this to the finished frame would erase the HUSH too, turning an authored
+  // approach into an indiscriminate screen fade.
+  col*=1.0-clamp(uDockHauntingFade,0.0,.995);
+
   // The same SDF compositor is used for both positions. uHush remains a single
   // gameplay field; the secondary card is only a visual contradiction.
   compositeHushBody(uHushBody,uHushBodyLook,ro,rd,fwd,col,zView);
   compositeHushBody(uHushBodySecondary,uHushBodyLookSecondary,ro,rd,fwd,col,zView);
+
+  if(uWaterCamera.z>.5){
+    float edge=smoothstep(.28,.76,length(uv));
+    col=mix(col,col*vec3(.66,.82,.76),edge*.10);
+    float damp=hash01(floor(gl_FragCoord.x/19.0),floor(gl_FragCoord.y/23.0));
+    col*=1.0-step(.972,damp)*edge*.045;
+  }
 
   col += (grain - 0.5) * 0.035;             // film grain
   // The expressive post pass owns the fear vignette. A second fixed vignette
@@ -2372,6 +2408,7 @@ uniform float uRecordingTemporalHz;
 uniform float uRecordingTemporalSmear;
 uniform float uReduceFlash;
 uniform float uReduceMotion;
+uniform float uSourceEmergency;
 out vec4 o;
 void main(){
   vec2 uv = gl_FragCoord.xy / uRes;
@@ -2427,6 +2464,15 @@ void main(){
   // overwhelm the recorded medium or lift an unlit room.
   float eyeAmp=(0.003*uGlassGrain+f*0.012)*flashSafe*blackProtect;
   c+=g*(recordingAmp+eyeAmp);
+  // The Scene Dock side of Source still uses the ordinary VFD chain. Apply
+  // the wash after fear, glass and acquisition grain so it cannot be erased by
+  // the same post stack that previously swallowed the raw emergency light.
+  float ePhase=mod(uTimeP,3.2);
+  float ePulse=uReduceFlash>.5?.78:(ePhase<.18?1.0:ePhase<.42?.48:ePhase<.64?.92:ePhase<.92?.56:.46+.04*sin((ePhase-.92)*2.4));
+  float eLuma=dot(c,vec3(.2126,.7152,.0722));
+  float eMask=(.12+.18*(1.0-eLuma))*(.72+.28*smoothstep(.02,.92,uv.y));
+  float eWash=clamp(uSourceEmergency*ePulse*eMask,0.0,.38);
+  c=mix(c,c*vec3(1.18,.36,.20)+vec3(.22,.001,0.0)*(.38+.62*(1.0-eLuma)),eWash);
   o=vec4(c,1.0);
 }`;
 
@@ -2444,6 +2490,7 @@ uniform float uTime;
 uniform float uNightSeed;
 uniform float uRain;
 uniform float uReducedMotion;
+uniform float uSourceEmergency;
 uniform vec2 uView;
 uniform vec2 uMoonCloud;
 uniform vec4 uHushScreen;
@@ -2496,7 +2543,17 @@ void main(){
   vec3 paper=vec3(.965,.925,.835);
   vec3 paperScene=mix(paper,vec3(.012,.010,.009),smoothstep(.02,.72,glyphAlpha));
   float lightMix=clamp(max(uSunrise,uPaper*.72),0.0,1.0);
-  o=vec4(mix(darkScene,paperScene,lightMix),1.0);
+  vec3 composed=mix(darkScene,paperScene,lightMix);
+  // Text Space bypasses the ordinary pixel mesh. Preserve the emergency
+  // circuit after paper, chroma and HUSH have resolved so downstream grading
+  // cannot turn the only impossible colour back into grey.
+  float ePhase=mod(uTime,3.2);
+  float ePulse=uReducedMotion>.5?.78:(ePhase<.18?1.0:ePhase<.42?.48:ePhase<.64?.92:ePhase<.92?.56:.46+.04*sin((ePhase-.92)*2.4));
+  float eLuma=dot(composed,vec3(.2126,.7152,.0722));
+  float eMask=(.15+.20*(1.0-eLuma))*(.72+.28*smoothstep(.02,.92,uv.y));
+  float eWash=clamp(uSourceEmergency*ePulse*eMask,0.0,.42);
+  composed=mix(composed,composed*vec3(1.20,.34,.18)+vec3(.24,.001,0.0)*(.42+.58*(1.0-eLuma)),eWash);
+  o=vec4(composed,1.0);
 }`;
 
 const COPY_FRAG = COMMON_GLSL + `
@@ -2958,6 +3015,7 @@ let vfdMovement = 0;
 let vfdPreviousX = null, vfdPreviousZ = null;
 let textSpaceActive = false;
 let sourceLook = { sunrise: 0, chroma: 1, paper: 0 };
+let sourceEmergencyStrength = 0;
 
 // THE HORIZON. Set by main.js from the runtime's horizonFrame(); the renderer
 // never works out where on the tape the body is, it is told.
@@ -3019,7 +3077,11 @@ export async function r3dLoadHorizon() {
   if (horizonReadyState) return true;
   try {
     HZ.horizonInit(gl);
-    await HZ.horizonLoad({ bin: assetUrl('assets/horizon-tape.bin'), json: assetUrl('assets/horizon-tape.json') });
+    await HZ.horizonLoad({
+      bin: assetUrl('assets/horizon-tape.bin'),
+      json: assetUrl('assets/horizon-tape.json'),
+      bust: assetUrl('assets/horizon-bust.glb'),
+    });
     horizonReadyState = HZ.horizonReady();
     // He stands beside the walk, at the depth the runtime puts him. Built here
     // because the tape's own scales and floor are only known once the manifest
@@ -3793,6 +3855,7 @@ function drawTextSpace(texture,now) {
   gl.uniform1f(textSpaceU('uNightSeed'),nightSeed);
   gl.uniform1f(textSpaceU('uRain'),Math.max(0,Math.min(1,Number(sourceWeather.rain)||indoorRain||0)));
   gl.uniform1f(textSpaceU('uReducedMotion'),pixelMeshSettings.reduceMotion?1:0);
+  gl.uniform1f(textSpaceU('uSourceEmergency'),sourceEmergencyStrength);
   gl.uniform2f(textSpaceU('uView'),yaw+planYaw,pitch);
   gl.uniform2f(textSpaceU('uMoonCloud'),Math.max(0,Math.min(1,Number(sourceWeather.moon)||0)),Math.max(0,Math.min(1,Number(sourceWeather.clouds)||0)));
   const body=sourceHushProjection();
@@ -3816,6 +3879,7 @@ uniform vec2 uResolution;
 uniform float uProgress;
 uniform float uTime;
 uniform float uReducedMotion;
+uniform float uSourceEmergency;
 out vec4 outColor;
 float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
 void main(){
@@ -3841,6 +3905,14 @@ void main(){
   float chroma=.009*uProgress*(1.0-uReducedMotion);
   carried.r=mix(carried.r,texture(uTower,uv+vec2(chroma,0)).r,reveal);
   carried.b=mix(carried.b,texture(uSource,uv-vec2(chroma,0)).b,1.0-reveal);
+  // This pass can be the final writer for both physical and Text Space Source
+  // frames during a threshold. Reassert the circuit here as well, after motion
+  // retention, or old non-red P-frames can cover the maintained wash.
+  float ePhase=mod(uTime,3.2);
+  float ePulse=uReducedMotion>.5?.78:(ePhase<.18?1.0:ePhase<.42?.48:ePhase<.64?.92:ePhase<.92?.56:.46+.04*sin((ePhase-.92)*2.4));
+  float eLuma=dot(carried,vec3(.2126,.7152,.0722));
+  float eWash=clamp(uSourceEmergency*ePulse*(.10+.14*(1.0-eLuma)),0.0,.30);
+  carried=mix(carried,carried*vec3(1.16,.38,.22)+vec3(.20,.001,0.0)*(.38+.62*(1.0-eLuma)),eWash);
   outColor=vec4(carried,1.0);
 }`;
 
@@ -3865,7 +3937,7 @@ function runDatamoshPass(towerTex,now){
   gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,datamoshSourceTex);gl.uniform1i(u('uSource'),0);
   gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,towerTex);gl.uniform1i(u('uTower'),1);
   gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,previous||datamoshSourceTex);gl.uniform1i(u('uPrevious'),2);
-  gl.uniform2f(u('uResolution'),uniforms.sceneW,uniforms.sceneH);gl.uniform1f(u('uProgress'),datamoshProgress);gl.uniform1f(u('uTime'),now);gl.uniform1f(u('uReducedMotion'),datamoshReducedMotion?1:0);
+  gl.uniform2f(u('uResolution'),uniforms.sceneW,uniforms.sceneH);gl.uniform1f(u('uProgress'),datamoshProgress);gl.uniform1f(u('uTime'),now);gl.uniform1f(u('uReducedMotion'),datamoshReducedMotion?1:0);gl.uniform1f(u('uSourceEmergency'),sourceEmergencyStrength);
   gl.drawArrays(gl.TRIANGLES,0,3);gl.bindFramebuffer(gl.FRAMEBUFFER,null);return dstTex;
 }
 
@@ -4453,6 +4525,13 @@ export function r3dSetSourceScene(scene = {}) {
     ? { rain: scene.weather.rain, moon: scene.weather.moon, clouds: scene.weather.clouds }
     : { rain: 0, moon: 1, clouds: 1 };
 }
+export function r3dSetSourceEmergency(value = 0) {
+  const strength = value && typeof value === 'object'
+    ? (value.enabled === false ? 0 : Number(value.strength ?? 1))
+    : Number(value);
+  sourceEmergencyStrength = Math.max(0, Math.min(1.5, Number.isFinite(strength) ? strength : 0));
+  return sourceEmergencyStrength;
+}
 export function r3dSetHushProp(id) { P3.setHushProp(id); }
 export function r3dPropStats() { return P3.propPackStats(); }
 export function r3dPropInstanceIds() { return P3.propInstanceIds(); }
@@ -4620,7 +4699,7 @@ function updateWaterField(water, dt) {
 
 // state: { px, py, tileW, tileH, worldCount, worldTints:[[r,g,b]×5],
 //          chunks:[{x,y,r,act,col}], key:{x,y}|null, door:{x,y}|null,
-//          hush:{x,y,strength}|null, audio:0..1 }
+//          hush:{x,y,strength}|null, dockHauntingFade:0..1, audio:0..1 }
 export function r3dFrame(state) {
   if (!gl) return;
   lastBeacons = { key: state.key || null, door: state.door || null };
@@ -4827,6 +4906,7 @@ export function r3dFrame(state) {
   gl.uniform1f(U('uHushSense'),hushSense);
   gl.uniform1f(U('uOpticalEffects'),opticalEffects);
   gl.uniform1f(U('uReduceMotionOptical'),pixelMeshSettings.reduceMotion?1:0);
+  gl.uniform1f(U('uDockHauntingFade'),Math.max(0,Math.min(.995,Number(state.dockHauntingFade)||0)));
   gl.uniform1i(U('uLocalLightCount'),localLightCount);
   gl.uniform1i(U('uLocalShadowIndex'),localShadowIndex);
   gl.uniform4fv(U('uLocalLightPos[0]'),localLightPositions);
@@ -4872,6 +4952,7 @@ export function r3dFrame(state) {
   const bounds=water.basinBounds||{};
   gl.uniform4f(U('uWaterBounds'), bounds.minX||0, bounds.minY||0, bounds.maxX||0, bounds.maxY||0);
   gl.uniform4f(U('uWaterParams'), water.active?1:0, Number(water.levelM ?? -0.06), Number(water.murk ?? 0.85), water.reduceMotion?1:0);
+  gl.uniform4f(U('uWaterCamera'), water.cameraSubmerged?1:0, Number(water.submersionDepthM)||0, water.soaked?1:0, 0);
   const look=currentLook();
   const bankBlend=surfaceDreamBlend();
   gl.uniform1f(U('uSurfacesReady'),surfacesManifestation);
@@ -4957,6 +5038,7 @@ export function r3dFrame(state) {
   gl.uniform1f(postU('uRecordingTemporalSmear'), postLook.recording.temporalSmear);
   gl.uniform1f(postU('uReduceFlash'), pixelMeshSettings.reduceFlash?1:0);
   gl.uniform1f(postU('uReduceMotion'), pixelMeshSettings.reduceMotion?1:0);
+  gl.uniform1f(postU('uSourceEmergency'),sourceEmergencyStrength);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 }
 

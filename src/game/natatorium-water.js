@@ -31,6 +31,9 @@ export const DEFAULT_NATATORIUM_WATER_LEDGER = Object.freeze({
   choice: null,
   routeBias: null,
   rippleSerial: 0,
+  soaked: false,
+  defeats: 0,
+  batteryLost: 0,
 });
 
 const VALID_WATER = new Set(Object.values(NATATORIUM_WATER_STATES));
@@ -109,6 +112,9 @@ export function normalizeNatatoriumWaterLedger(value) {
     choice: typeof source.choice === 'string' && source.choice ? source.choice.slice(0, 48) : null,
     routeBias,
     rippleSerial: Math.max(0, Math.floor(Number(source.rippleSerial) || 0)),
+    soaked: !!source.soaked,
+    defeats: Math.max(0, Math.floor(Number(source.defeats) || 0)),
+    batteryLost: Math.max(0, Number(source.batteryLost) || 0),
   };
 }
 
@@ -218,12 +224,32 @@ export function recordNatatoriumWaterChoice(run, choice) {
       ? NATATORIUM_WATER_BIASES.INVERSION
       : NATATORIUM_WATER_BIASES.SEAL;
   ledger.natatoriumWater = {
+    ...water,
     seen: true,
     choice: normalizedChoice,
     routeBias,
     rippleSerial: water.rippleSerial + 1,
   };
   next.ledger = ledger;
+  return next;
+}
+
+export function natatoriumDefeatBattery(charge) {
+  const before=Math.max(0,Number(charge)||0);
+  const after=Math.max(0,before-1);
+  return {before,after,lost:before-after,torchOff:after<=0};
+}
+
+export function recordNatatoriumDefeat(run,{batteryLost=0}={}) {
+  const next={...(run||{})},ledger={...(next.ledger||{})};
+  const water=normalizeNatatoriumWaterLedger(ledger.natatoriumWater);
+  ledger.natatoriumWater={
+    ...water,
+    soaked:true,
+    defeats:water.defeats+1,
+    batteryLost:water.batteryLost+Math.max(0,Number(batteryLost)||0),
+  };
+  next.ledger=ledger;
   return next;
 }
 

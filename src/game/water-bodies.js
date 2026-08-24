@@ -27,14 +27,15 @@ export const WATER_BODIES = Object.freeze([
     id: 'natatorium',
     zone: ZONE.natatorium,
     material: MATERIAL.wetTile,
-    // Fifteen millimetres. It is not a full bath; it is what did not drain.
-    levelM: 0.015,
+    // Twelve centimetres below the coping. The two-metre basin is full enough
+    // to take the player's eye below the surface at the bottom without putting
+    // a sheet of water across the surrounding deck.
+    levelM: -0.12,
     murk: 0.86,
     // Gated on the night's history, not on where you are standing. See
     // decideNatatoriumWaterEnvironment.
     active: (run) => run?.environment?.natatoriumWater === NATATORIUM_WATER_STATES.MURKY,
-    // Wading is refused here: the basin is a place you look into.
-    blocks: true,
+    blocks: false,
     ripples: true,
   }),
   Object.freeze({
@@ -178,8 +179,8 @@ export function nearestWaterBody(bodies, x, y, run = null) {
   return best;
 }
 
-// Whether a body refuses to be walked into. The bath does; the fountain does
-// not, and that difference is the whole reason this is per-body data.
+// Whether a body refuses to be walked into. Both current bodies are traversable,
+// but keeping the rule per body avoids coupling future water to that choice.
 export function waterBlocksAt(bodies, x, y, run = null) {
   const body = waterBodyAt(bodies, x, y, run);
   return !!body && body.blocks;

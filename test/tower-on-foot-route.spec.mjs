@@ -26,6 +26,7 @@ FP.setSpawn(conservatory.spawn.x,conservatory.spawn.y);
 FP.resetDoors();
 
 const expectedKeys={
+  'pool-lobby':null,
   'foh-office':'master',
   'chapel-c17':'chapel',
   'tower-hatch':'tower-live',
@@ -35,7 +36,7 @@ const expectedKeys={
 };
 assert.deepEqual([...STORY_ROUTE_DOOR_IDS].sort(),Object.keys(expectedKeys).sort());
 for(const [id,key] of Object.entries(expectedKeys)){
-  assert.equal(DOOR_BY_ID[id]?.key,key,`${id} is wired to the issued story keyring`);
+  assert.equal(DOOR_BY_ID[id]?.key??null,key,`${id} has the intended route-door access`);
 }
 
 assert.equal(doorWinsWorldInteraction(

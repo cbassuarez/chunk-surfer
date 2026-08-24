@@ -51,6 +51,20 @@ export function uiCurrentScale() { return uiScale; }
 export function uiSize() { return { cols, rows }; }
 export function uiClear() { if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height); }
 export function uiCanvasSize() { return { width: canvas?.width || 0, height: canvas?.height || 0 }; }
+// Multiply everything already drawn on the transparent UI surface without
+// laying a dark rectangle over the 3D world beneath it.  Callers can then draw
+// the one piece of chrome that must remain legible after this pass.
+export function uiAttenuate(alpha = 1) {
+  if (!ctx || !canvas) return;
+  const amount = Math.max(0, Math.min(1, Number(alpha) || 0));
+  if (amount >= .9999) return;
+  ctx.save();
+  ctx.globalCompositeOperation = 'destination-in';
+  ctx.globalAlpha = amount;
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.restore();
+}
 export function uiPointFromClient(clientX, clientY) {
   // Pointer picking must use the actual rendered overlay rectangle, not the
   // nominal cell size. In windowed desktop shells the CSS rect, DPR/backing

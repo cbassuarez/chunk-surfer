@@ -125,7 +125,11 @@ test('the fountain is a second body of water, and it is not the swimming bath', 
   assert.ok(fountain.murk < bath.murk, 'you can see into the fountain — there is something in it');
   assert.ok(fountain.levelM > bath.levelM, 'and it is deeper than what failed to drain out of the bath');
   assert.equal(fountain.blocks, false, 'you step down into it');
-  assert.equal(bath.blocks, true, 'the bath is a place you look into');
+  // The bath is a place you WALK INTO now. It was authored as a look-only body
+  // when the basin was a flat lid; the natatorium pass lowered it to -2m and
+  // gave it a west access stair, so a filled return is waded rather than
+  // admired — which is the whole point of the plunge in the battle above it.
+  assert.equal(bath.blocks, false, 'the bath is a place you wade into');
 
   const basin = at(10, 36);
   assert.equal(waterBodyAt(bodies, basin.x, basin.y, null)?.id, 'park-fountain');

@@ -6,13 +6,13 @@
 //
 // This room used to be the loading dock, which it never was — it is sealed, and
 // no lorry has ever been in it. The real loading bay is now authored outside it,
-// past the grey door, and this room is called the get-in.
+// past the grey door, and this room is presented as the Scene Dock.
 //
 // The identifiers did not follow, on purpose. `dock-foyer-service`,
 // `dock.departed`, the `dockHaunting` save key and every `dock-*` prop id are
 // written into player saves — they are a wire format, not prose. Renaming them
 // buys a nicer grep and costs a migration for every existing run. So the file
-// name and the player-facing labels say get-in, the persisted strings say dock,
+// name and the player-facing labels say Scene Dock, the persisted strings say dock,
 // and everything genuinely belonging to the new bay outside is prefixed `bay-`.
 // If you are reading a `dock` string here, it means this room.
 
@@ -87,6 +87,69 @@ export function dockHauntingStaging({ entryPortal = null, variant = null } = {})
   return selected === DOCK_HAUNTING_VARIANT.WEST_DESK
     ? { variant: selected, x: 59, y: 5.6, yaw: Math.PI / 2, concealment: 'west signing desk and searchlight' }
     : { variant: selected, x: 69, y: 5.55, yaw: Math.PI, concealment: 'north side of the chandelier cage' };
+}
+
+export const DOCK_HAUNTING_GUIDANCE_ID = 'story:hush-compliance';
+export const DOCK_HAUNTING_ACTION_LABEL = 'COME CLOSER';
+
+const DOCK_GUIDANCE_OFFSETS = Object.freeze({
+  [DOCK_HAUNTING_VARIANT.WEST_DESK]: Object.freeze([
+    Object.freeze({ x: 0, y: 0 }), Object.freeze({ x: 1, y: 0 }),
+    Object.freeze({ x: 0, y: 1 }), Object.freeze({ x: .5, y: -.5 }),
+    Object.freeze({ x: 0, y: 0 }),
+  ]),
+  [DOCK_HAUNTING_VARIANT.NORTH_CAGE]: Object.freeze([
+    Object.freeze({ x: 0, y: 0 }), Object.freeze({ x: -1, y: 0 }),
+    Object.freeze({ x: .5, y: .5 }), Object.freeze({ x: 1, y: 0 }),
+    Object.freeze({ x: 0, y: 0 }),
+  ]),
+});
+
+const dockGuidanceSeed = (value) => {
+  let hash = 2166136261;
+  for (const char of String(value || 'run')) {
+    hash ^= char.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+};
+
+// An authored lure, never a read of HUSH's general simulation position. The
+// marker is allowed to lie by one nearby cell because the thing in the room is
+// issuing the command; collision/contact continue to use the real staged body.
+export function dockHauntingGuidance({
+  active = false,
+  staging = null,
+  pressure = 0,
+  nowMs = 0,
+  runId = 'run',
+  effects = 'full',
+} = {}) {
+  if (!active || !staging || !Number.isFinite(Number(staging.x)) || !Number.isFinite(Number(staging.y))) return null;
+  const mode = normalizeDockEffects(effects);
+  const variant = Object.values(DOCK_HAUNTING_VARIANT).includes(staging.variant)
+    ? staging.variant
+    : DOCK_HAUNTING_VARIANT.NORTH_CAGE;
+  const offsets = DOCK_GUIDANCE_OFFSETS[variant];
+  const seed = dockGuidanceSeed(`${runId}:${variant}`);
+  const cadence = mode === 'full' ? 430 : 760;
+  const phase = mode === 'off' ? 0 : (Math.floor(Math.max(0, finite(nowMs)) / cadence) + seed) % offsets.length;
+  const offset = mode === 'off' ? offsets[0] : offsets[phase];
+  const labels = mode === 'off'
+    ? [`[ ${DOCK_HAUNTING_ACTION_LABEL} ]`]
+    : [DOCK_HAUNTING_ACTION_LABEL, 'COME CLOS—', ' ', 'COME  CLOSER', DOCK_HAUNTING_ACTION_LABEL];
+  return Object.freeze({
+    id: DOCK_HAUNTING_GUIDANCE_ID,
+    label: labels[phase % labels.length],
+    coordinateSpace: 'authored',
+    authored: Object.freeze({ x: Number(staging.x) + offset.x, y: Number(staging.y) + offset.y }),
+    kind: 'hush-lure',
+    required: true,
+    corrupted: true,
+    glitchPhase: phase,
+    suppressExactDistance: true,
+    pressure: clamp01(pressure),
+  });
 }
 
 // The setup gate always blocks an early exit, but its explanatory line belongs
@@ -174,6 +237,29 @@ export function dockHauntingPressure(distanceMeters) {
   const linear = clamp01((DOCK_HAUNTING_PRESSURE.outerMeters - distance) / span);
   // Smoothstep has no visible kink when the player crosses the outer boundary.
   return linear * linear * (3 - 2 * linear);
+}
+
+// One spatial curve owns the Scene Dock's visual compliance beat.  The world
+// and the instrument chrome disappear together, while the command itself stays
+// readable; contact tears the active frame down and therefore restores both on
+// that same update.  Reduced-effects modes keep the authored spatial cue but
+// leave progressively more visual context at the closest point.
+export function dockHauntingVisibility(snapshot = null, effects = snapshot?.effects) {
+  if (!snapshot || snapshot.resolved) {
+    return { pressure: 0, worldFade: 0, hudAlpha: 1, promptAlpha: 1 };
+  }
+  const pressure = clamp01(snapshot.effectPressure ?? snapshot.pressure);
+  const onset = clamp01((pressure - .04) / .96);
+  const fade = onset * onset * (3 - 2 * onset);
+  const mode = normalizeDockEffects(effects);
+  const worldPeak = mode === 'full' ? .985 : mode === 'reduced' ? .92 : .82;
+  const hudPeak = mode === 'full' ? .97 : mode === 'reduced' ? .88 : .72;
+  return {
+    pressure,
+    worldFade: fade * worldPeak,
+    hudAlpha: 1 - fade * hudPeak,
+    promptAlpha: 1,
+  };
 }
 
 export function dockHauntingMoveScale(pressure) {

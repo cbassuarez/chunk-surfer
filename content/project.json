@@ -17,6 +17,8 @@
     "narrative/conservatory.chapel_key_check.story.json",
     "narrative/conservatory.cold_open_dialogue.story.json",
     "narrative/conservatory.first_take.story.json",
+    "narrative/conservatory.heavy_wrench.story.json",
+    "narrative/conservatory.van_kit.story.json",
     "narrative/conservatory.hush.story.json",
     "narrative/conservatory.park_eyes.story.json",
     "narrative/conservatory.level_check.story.json",
@@ -124,6 +126,8 @@
         "conservatory.bust_restored_again",
         "conservatory.bust_answer",
         "conservatory.park_eyes",
+        "conservatory.heavy_wrench",
+        "conservatory.van_kit",
         "conservatory.bust_pin"
       ]
     },

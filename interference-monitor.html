@@ -3,18 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AUDIOCORP / MONITOR RETURN</title>
+    <title>AUDIOCORP / WINDOW CHANNEL</title>
     <style>
-      :root{color-scheme:dark;background:#030606;color:#b7cec7;font:13px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace}*{box-sizing:border-box}body{margin:0;padding:18px;background:radial-gradient(circle at 20% 0,#0d1c19,#030606 65%);min-height:100vh}header{display:flex;justify-content:space-between;color:#c98a39;border-bottom:1px solid #2a403a;padding-bottom:9px;letter-spacing:.12em}#state{color:#74a49b}.meter{height:12px;margin:18px 0;border:1px solid #36534b;background:repeating-linear-gradient(90deg,#16352f 0 11px,#020606 11px 15px);box-shadow:0 0 16px #1e5d4a44}.row{display:grid;grid-template-columns:84px 1fr;gap:12px;padding:7px 0;border-bottom:1px solid #14231f}.label{color:#68827b}.value{color:#d5d0a3;overflow-wrap:anywhere}blockquote{margin:18px 0 0;padding:10px 13px;border-left:3px solid #7c2727;color:#d66d63;background:#160707;transform:rotate(-.25deg);display:none}footer{margin-top:18px;color:#71837d;font-size:11px;display:flex;align-items:center;justify-content:space-between;gap:12px}button{border:1px solid #9f7138;background:#100d08;color:#dfb46d;font:inherit;padding:7px 10px;cursor:pointer}button:hover,button:focus{outline:1px solid #ddad61;background:#211507}:root[data-mode="echo"] body{background:linear-gradient(168deg,#0c1a17,#020303 56%,#10201c)}:root[data-mode="echo"] .meter{height:38vh;background:repeating-linear-gradient(106deg,#173a33 0 2px,transparent 2px 22px);clip-path:polygon(50% 0,100% 22%,86% 100%,14% 100%,0 22%)}:root[data-mode="echo"] .row{display:none}:root[data-mode="echo"] header{writing-mode:vertical-rl;height:28vh;position:absolute;right:18px}:root[data-mode="echo"] blockquote{margin-top:14vh}</style>
+      :root{color-scheme:dark;--bg:#030606;--line:#74a49b;--ink:#d5d0a3;--wound:#381315;background:var(--bg);color:var(--ink);font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace}*{box-sizing:border-box}body{margin:0;padding:14px;background:radial-gradient(circle at 50% 8%,color-mix(in srgb,var(--line) 13%,var(--bg)),var(--bg) 62%);min-height:100vh;overflow:hidden}main{height:calc(100vh - 28px);display:grid;grid-template-rows:auto minmax(120px,1fr) auto auto;gap:10px;border:1px solid color-mix(in srgb,var(--line) 55%,transparent);padding:11px;box-shadow:inset 0 0 70px rgba(0,0,0,.52)}header{display:flex;justify-content:space-between;gap:10px;color:var(--line);border-bottom:1px solid color-mix(in srgb,var(--line) 45%,transparent);padding-bottom:8px;letter-spacing:.12em;white-space:nowrap;overflow:hidden}header span{overflow:hidden;text-overflow:ellipsis}#state{color:var(--ink)}#tableau{width:100%;height:100%;min-height:140px;background:var(--bg);border:1px solid color-mix(in srgb,var(--line) 42%,transparent);cursor:default}#caption{min-height:2.9em;color:var(--ink);letter-spacing:.06em;white-space:pre-line}#action{display:none;justify-self:center;border:1px solid var(--line);background:color-mix(in srgb,var(--wound) 72%,black);color:var(--ink);font:inherit;letter-spacing:.14em;padding:10px 16px;cursor:pointer}#action:hover,#action:focus{outline:2px solid var(--ink);outline-offset:2px}body[data-interactive="true"] #tableau{cursor:pointer}body[data-interactive="true"] #action{display:block}footer{position:absolute;right:25px;bottom:20px;display:flex;align-items:center;gap:10px;color:color-mix(in srgb,var(--line) 72%,transparent);font-size:10px}#restore{border:1px solid color-mix(in srgb,var(--line) 75%,transparent);background:#050707;color:var(--line);font:inherit;padding:5px 8px;cursor:pointer}:root[data-mode="echo"] header{writing-mode:vertical-rl;position:absolute;right:20px;top:20px;height:42vh;border:0;border-left:1px solid var(--line);padding:0 0 0 8px}:root[data-mode="echo"] main{padding-right:44px}:root[data-mode="echo"] #caption{font-size:11px}:root[data-mode="echo"] footer span{display:none}
+    </style>
   </head>
-  <body>
-    <header><span>AUDIOCORP / SIGNAL PATH</span><span id="state">MONITOR RETURN</span></header>
-    <div class="meter" aria-hidden="true"></div>
-    <div class="row"><span class="label">OPERATOR</span><span class="value" id="operator">UNRESOLVED</span></div>
-    <div class="row"><span class="label">HOST</span><span class="value" id="host">WITHHELD</span></div>
-    <div class="row"><span class="label">INPUT</span><span class="value" id="input">WITHHELD</span></div>
-    <blockquote id="annotation"></blockquote>
-    <footer><span>HOLD ESC HERE OR IN THE FIELD TO RESTORE.</span><button id="restore" type="button">RESTORE ALL WINDOWS</button></footer>
+  <body data-interactive="false">
+    <main>
+      <header><span id="title">AUDIOCORP / WINDOW CHANNEL</span><span id="state">MONITOR RETURN</span></header>
+      <canvas id="tableau" aria-label="A battle-specific interference tableau"></canvas>
+      <div id="caption">THE RETURN PATH IS QUIET.</div>
+      <button id="action" type="button">CUT THIS CHANNEL</button>
+    </main>
+    <footer><span>HOLD ESC TO RESTORE ALL GAME WINDOWS.</span><button id="restore" type="button">RESTORE</button></footer>
     <script type="module" src="/src/interference-monitor.js"></script>
   </body>
 </html>

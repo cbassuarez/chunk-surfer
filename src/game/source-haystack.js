@@ -300,6 +300,7 @@ export function haystackPageGuidance({
 
 export function sourceFocusActionLabel(focus) {
   if (!focus) return null;
+  if (focus.kind === 'source-landing-door') return focus.open ? 'FOH DOOR OPEN' : 'OPEN FOH DOOR';
   if (focus.kind === 'haystack-page') return 'TAKE THE STILL PAGE';
   if (focus.kind === 'normal-exit') return 'LEAVE SOURCE SPACE';
   if (focus.kind === 'boss-fault') return focus.available === false ? 'RETURN PATH EXPOSED / NO INTERFACE' : 'CONNECT THE RIG';

@@ -161,6 +161,10 @@ export function freshChunkSurfState({
     interactivePageSlot: null,
     haystackDialogue: null,
     sourceContacts: normalizeSourceContactState(),
+    // The Scene Dock survives the transformation as a real room. Its FOH leaf
+    // is the one deliberate interaction between that room and Source: closed
+    // on arrival, opened by the player, and durable across a reload.
+    landingDoorOpen: false,
     firstLiftCompleted: false,
     landingWeatherSpent: false,
     hasFork: false,
@@ -323,6 +327,7 @@ export function normalizeChunkSurfState(value = null, fallback = {}) {
     landscapeOrigin: finitePoint(value.landscapeOrigin),
     interactivePageSlot: value.interactivePageSlot == null ? null : Math.max(0, Math.floor(Number(value.interactivePageSlot) || 0)),
     sourceContacts: normalizeSourceContactState(value.sourceContacts),
+    landingDoorOpen: !!value.landingDoorOpen,
     firstLiftCompleted: value.firstLiftCompleted == null ? legacyLandscape : !!value.firstLiftCompleted,
     landingWeatherSpent: value.landingWeatherSpent == null ? legacyLandscape : !!value.landingWeatherSpent,
     hasFork: !!value.hasFork,
@@ -456,6 +461,9 @@ export function reduceChunkSurf(value, event = {}) {
           ? SOURCE_PURSUIT_BEAT.BODY_RUN : state.pursuitBeat,
       };
     }
+
+    case 'SOURCE_LANDING_DOOR_OPENED':
+      return state.landingDoorOpen ? state : { ...state, landingDoorOpen: true };
 
     case 'SOURCE_LANDING_WEATHER_SPENT':
       return { ...state, landingWeatherSpent: true };
@@ -696,6 +704,7 @@ export function reduceChunkSurf(value, event = {}) {
         phase: tower ? CHUNK_SURF_PHASE.BELLS : CHUNK_SURF_PHASE.COMPLETED,
         horizon: { ...state.horizon, exit: event.exit },
         checkpointId: tower ? 'bells-entry' : state.checkpointId,
+        checkpoint: tower ? { id: 'bells-entry', facing: 0 } : state.checkpoint,
         finale: {
           ...state.finale,
           route: requestedRoute,

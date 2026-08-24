@@ -764,7 +764,35 @@ export function resolveLocalLights(context, {
   // their deliberately steady/softened red presentation. This priority also
   // applies to callers without an origin so the emergency contract does not
   // accidentally depend on distance sorting being requested.
-  const priority = (light) => light.kind === LIGHT_KIND.EMERGENCY && light.intensity > .01 ? 0 : 1;
+//
+  // AND A ROOM'S OWN FITTINGS OUTRANK ANOTHER ROOM'S SPILL.
+  //
+  // Spill is a courtesy: light from next door, already cut to SPILL_INTENSITY
+  // and SPILL_REACH, so that a doorway is not a hard edge. It is never the
+  // reason you can see the room you are standing in. Without this tier the
+  // foyer resolved five spill sources from the hall and the academic wing ahead
+  // of its own S/P-03 fittings and lost them both off the end of the budget —
+  // restoring the house circuit lit nothing a player standing in the atrium
+  // could see. That was latent before the emergency hoist above (the foyer had
+  // exactly eight and nothing had to be dropped); hoisting one light was enough
+  // to push the room's own primaries over the edge, which is how it surfaced.
+  //
+  // AND THE EMERGENCY PRIORITY IS ABOUT THIS ROOM'S ALARM, NOT NEXT DOOR'S.
+  //
+  // The hall's threshold sources are authored as cross-group EMERGENCY bodies on
+  // purpose, so the red snap is legible from the foyer as well as from inside the
+  // auditorium. Given a blanket emergency hoist, all five of them outrank the
+  // foyer's own S/P-03 fittings, and the atrium resolved six red spill sources
+  // and none of its own light: restoring the house circuit lit nothing a player
+  // standing there could see.
+  //
+  // Four tiers, in the order a room is actually read: its own alarm, its own
+  // fittings, the alarm next door, and then everything else that leaks in.
+  const priority = (light) => {
+    const emergency = light.kind === LIGHT_KIND.EMERGENCY && light.intensity > .01;
+    if (!light.spilling) return emergency ? 0 : 1;
+    return emergency ? 2 : 3;
+  };
   if (!origin) return out.sort((a, b) => priority(a) - priority(b)).slice(0, slots);
   const near = (light) => {
     const dx = light.x - (Number(origin.x) || 0);

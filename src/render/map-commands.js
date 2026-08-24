@@ -205,6 +205,8 @@ export function buildMinimapCommands({ model, viewport, radius = 18, now = 0, as
         point: inside ? raw : clampMarkerToEdge(model.player.position, model.waypoint.position, viewport, 0.8, heading),
         edgeDirection:inside?'':edgeDirection(raw,viewport),
         floorDelta:0,label:model.waypoint.label||null,playerSelected:!!model.waypoint.playerSelected,
+        corrupted:!!model.waypoint.corrupted,glitchPhase:Number(model.waypoint.glitchPhase)||0,
+        suppressExactDistance:!!model.waypoint.suppressExactDistance,
         distanceM:Math.hypot(model.waypoint.position.x-model.player.position.x,model.waypoint.position.y-model.player.position.y),
       });
     } else {
@@ -217,6 +219,8 @@ export function buildMinimapCommands({ model, viewport, radius = 18, now = 0, as
           point: inside ? raw : clampMarkerToEdge(model.player.position, target, viewport, 0.8, heading),
           edgeDirection:inside?'':edgeDirection(raw,viewport),
           floorDelta:model.route?.floorDelta||0,label:model.waypoint.label||null,playerSelected:!!model.waypoint.playerSelected,
+          corrupted:!!model.waypoint.corrupted,glitchPhase:Number(model.waypoint.glitchPhase)||0,
+          suppressExactDistance:!!model.waypoint.suppressExactDistance,
           distanceM:Math.hypot(target.x-model.player.position.x,target.y-model.player.position.y),
         });
       } else {

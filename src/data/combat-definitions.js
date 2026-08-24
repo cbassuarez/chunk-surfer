@@ -46,28 +46,32 @@ const PROFILES = Object.freeze({
   natatorium: Object.freeze({
     kind: 'regular',
     signature: { id: 'echo', label: 'FOURTH RETURN', description: 'A missed response returns on the next hostile beat for +1 damage.' },
-    music: { mode: 'fixed', lead: 'lead-1' },
+    music: {
+      mode: 'fixed', lead: 'lead-1',
+      submersion: { enabled:true, at:'downbeat', lowpassHz:720, q:.8, dryLeak:.08, rampSeconds:.18, surfaceSeconds:.6 },
+    },
+    presentation: { mode:'submerged', movementDepths:[.35,.68,1] },
     movements: [
-      movement('room', 'THE EMPTY ROOM', 25, [
-        B('natatorium:meter', 'METER MOVES WITHOUT AIR', 10, { takeLabel: 'ROOM TONE', playbackDamage: 10 }),
-        O('natatorium:pressure', 'PRESSURE BEHIND THE EARS', 10, { effect: 'ringing' }),
-        C('natatorium:piano', 'PIANO WITH NO TRANSIENT', 10),
+      movement('room', 'THE SURFACE CLOSES', 25, [
+        B('natatorium:meter', 'METER MOVES BELOW THE WATERLINE', 10, { takeLabel: 'ROOM TONE', playbackDamage: 10, presentation:{visualClass:'meter-return'} }),
+        O('natatorium:pressure', 'WATER HAMMERS BEHIND THE EARS', 10, { effect: 'ringing', presentation:{visualClass:'pressure-field'} }),
+        C('natatorium:piano', 'TWO NOTES THROUGH THE SURFACE', 10, { presentation:{visualClass:'surface-notes'} }),
       ]),
-      movement('voice', 'THE VOICE ON TAPE', 25, [
-        B('natatorium:voice', 'VOICE ON THE MONITOR PATH', 10, { takeLabel: 'VOICE PRINT', playbackDamage: 10 }),
-        C('natatorium:memory', 'MEMORY PASSED AS SIGNAL', 10),
-        O('natatorium:lean', 'THE ROOM LEANS CLOSER', 20, { effect: 'ringing' }),
+      movement('voice', 'THE VOICE IN THE DRAIN', 25, [
+        B('natatorium:voice', 'HER VOICE IN THE DRAIN RETURN', 10, { takeLabel: 'VOICE PRINT', playbackDamage: 10, presentation:{visualClass:'drain-return'} }),
+        C('natatorium:memory', 'SILT PASSED AS MEMORY', 10, { presentation:{visualClass:'silt-memory'} }),
+        O('natatorium:lean', 'UNDERTOW TAKES THE CASE', 20, { effect: 'ringing', presentation:{visualClass:'undertow'} }),
       ], {
         // Hoard a take and the room leans on you for it — the opponent reacts to
         // your board rather than reading from a fixed script.
         reactions: [{ when: 'take-loaded', use: 'natatorium:lean' }],
       }),
-      movement('hold', 'THE TAKE THAT HOLDS YOU', 30, [
-        B('natatorium:echo', 'FOURTH RETURN OF THE ECHO', 15, { takeLabel: 'EMPTY RETURN', playbackDamage: 10 }),
+      movement('hold', 'THE DEEP END', 30, [
+        B('natatorium:echo', 'FOURTH RETURN FROM THE BOTTOM', 15, { takeLabel: 'EMPTY RETURN', playbackDamage: 10, presentation:{visualClass:'bottom-return'} }),
         // The pressure returns once as a second, lighter blow — a chained enemy
         // turn you brace for as one.
-        O('natatorium:depth', 'BLACK WATER PRESSURE', 20, { effect: 'ringing', followups: [{ id: 'natatorium:depth-echo', kind: 'overload', damage: 5 }] }),
-        C('natatorium:absence', 'ABSENCE WEARING HER VOICE', 10),
+        O('natatorium:depth', 'BLACK WATER PRESSURE', 20, { effect: 'ringing', presentation:{visualClass:'depth-pressure'}, followups: [{ id: 'natatorium:depth-echo', kind: 'overload', damage: 5 }] }),
+        C('natatorium:absence', 'THE LADDER IS NOT ABOVE YOU', 10, { presentation:{visualClass:'ladder-absence'} }),
       ]),
     ],
   }),
@@ -279,6 +283,7 @@ export function attachCombatDefinition(battle, combat = null) {
       kind: authored.kind,
       signature: authored.signature,
       music: authored.music,
+      ...(authored.presentation ? { presentation:authored.presentation } : {}),
       // Only the hall declares one. Absent everywhere else, which is what keeps
       // every other encounter on the single-opponent path unchanged.
       ...(authored.house ? { house: authored.house } : {}),

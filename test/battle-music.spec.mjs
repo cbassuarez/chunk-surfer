@@ -37,10 +37,11 @@ function audioBuffer({ channels = 2, length = 9600, sampleRate = 168, label = ''
   };
 }
 
-function fakeContext() {
+function fakeContext({ filters = false } = {}) {
   const starts = [];
   const stops = [];
   const gains = [];
+  const biquads = [];
   const context = {
     currentTime: 10,
     sampleRate: 168,
@@ -67,7 +68,18 @@ function fakeContext() {
       return source;
     },
   };
-  return { context, starts, stops, gains };
+  if (filters) context.createBiquadFilter = () => {
+    const node = {
+      type: 'lowpass',
+      frequency: fakeParam(350),
+      Q: fakeParam(1),
+      connect() {},
+      disconnect() {},
+    };
+    biquads.push(node);
+    return node;
+  };
+  return { context, starts, stops, gains, biquads };
 }
 
 function fixtureBank() {
@@ -236,6 +248,52 @@ abortSession.abort();
 assert.equal(abortSession.snapshot().status, 'fading');
 assert.ok(abortAudio.stops.every((entry) => Math.abs(entry.when - (abortAudio.context.currentTime + .12)) < 1e-9), 'aborts use the 100ms fade plus a short stop guard');
 
+const submergedProfile = authoredCombatProfile('natatorium').music;
+const submergedAudio = fakeContext({ filters: true });
+const submerged = createBattleMusicSession({
+  combatId: 'natatorium', runId: 'run-submerged', musicProfile: submergedProfile,
+  context: submergedAudio.context, destination: submergedAudio.context.destination, bufferBank: fixtureBank(),
+});
+const dryArrival = await submerged.start();
+assert.equal(dryArrival.submersion.phase, 'dry', 'the musical pickup and battle entry remain dry');
+assert.equal(dryArrival.submersion.at, dryArrival.downbeatAt, 'the plunge begins at the exact score downbeat');
+assert.equal(dryArrival.submersion.available, true);
+assert.equal(submergedAudio.biquads[0].type, 'lowpass');
+assert.equal(submergedAudio.biquads[0].frequency.value, 720);
+assert.equal(submergedAudio.biquads[0].Q.value, .8);
+const wetEnd = dryArrival.downbeatAt + .18;
+assert.ok(submergedAudio.gains[1].gain.calls.some((call) => call[0] === 'ramp' && call[1] === .08 && call[2] === wetEnd));
+assert.ok(submergedAudio.gains[2].gain.calls.some((call) => call[0] === 'ramp' && call[1] === .92 && call[2] === wetEnd));
+const wetSettled = wetEnd + .001;
+submergedAudio.context.currentTime = wetSettled;
+assert.equal(submerged.update().submersion.phase, 'submerged');
+assert.ok(Math.abs(submerged.snapshot().submersion.wetMix - .92) < 1e-9);
+submerged.finish('win');
+const resurfacing = submerged.snapshot().submersion;
+assert.equal(resurfacing.phase, 'resurfacing');
+assert.equal(resurfacing.resurfaceEndAt, wetSettled + .6, 'victory resurfaces before the ordinary musical fade');
+assert.ok(submergedAudio.stops.every((entry) => entry.when >= wetSettled + .6 + BATTLE_BAR_SECONDS));
+
+const defeatAudio = fakeContext({ filters: true });
+const defeated = createBattleMusicSession({
+  combatId: 'natatorium', runId: 'run-defeat', musicProfile: submergedProfile,
+  context: defeatAudio.context, destination: defeatAudio.context.destination, bufferBank: fixtureBank(),
+});
+await defeated.start();
+defeatAudio.context.currentTime = defeated.snapshot().downbeatAt + .18;
+defeated.finish('lose');
+assert.equal(defeated.snapshot().submersion.resurfaceAt, null, 'defeat remains filtered throughout its fade');
+
+const noFilterAudio = fakeContext();
+const noFilter = createBattleMusicSession({
+  combatId: 'natatorium', runId: 'run-no-filter', musicProfile: submergedProfile,
+  context: noFilterAudio.context, destination: noFilterAudio.context.destination, bufferBank: fixtureBank(),
+});
+const noFilterStart = await noFilter.start();
+assert.equal(noFilterStart.submersion.available, false, 'missing filter support falls back to the dry audio graph');
+noFilterAudio.context.currentTime = noFilterStart.downbeatAt + .181;
+assert.equal(noFilter.update().submersion.phase, 'submerged', 'presentation timing survives the audio-filter fallback');
+
 const unavailableAudio = fakeContext();
 const unavailableBank = fixtureBank();
 unavailableBank.delete('bed');
@@ -246,7 +304,19 @@ const unavailable = createBattleMusicSession({
 assert.equal((await unavailable.start()).status, 'unavailable');
 assert.equal(unavailableAudio.starts.length, 0, 'missing bed never produces a partial entrance');
 
-assert.deepEqual(authoredCombatProfile('natatorium').music, { mode: 'fixed', lead: 'lead-1' });
+assert.deepEqual(authoredCombatProfile('natatorium').music, {
+  mode: 'fixed',
+  lead: 'lead-1',
+  submersion: {
+    enabled: true,
+    at: 'downbeat',
+    lowpassHz: 720,
+    q: .8,
+    dryLeak: .08,
+    rampSeconds: .18,
+    surfaceSeconds: .6,
+  },
+});
 assert.deepEqual(authoredCombatProfile('practice').music, { mode: 'fixed', lead: 'lead-2' });
 assert.deepEqual(authoredCombatProfile('hall').music, { mode: 'fixed', lead: 'lead-3' });
 assert.deepEqual(sourceCombatDefinition().music.movementLeads, ['lead-1', 'lead-2', 'lead-3']);

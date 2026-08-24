@@ -8,6 +8,7 @@ export const DOOR_ARCHETYPE = Object.freeze({
   CHAPEL_OAK_PAIR: 'chapel-oak-pair',
   PRACTICE_ACOUSTIC_SINGLE: 'practice-acoustic-single',
   SERVICE_FIRE_SINGLE: 'service-fire-single',
+  SERVICE_WIRED_PAIR: 'service-wired-pair',
   STAFF_HALF_GLAZED: 'staff-half-glazed',
   POOL_FIRE_SINGLE: 'pool-fire-single',
   POOL_GLAZED_PAIR: 'pool-glazed-pair',
@@ -57,6 +58,15 @@ export const DOOR_ARCHETYPES = Object.freeze({
     construction: 'grey-green-steel', openSeconds: .55, closeSeconds: .78,
     closer: 'standard', acousticLossDb: 9, mesh: 'door_leaf_service', frameMesh: 'door_frame_single_steel', headMesh: 'door_head_infill',
   }),
+  // The Scene Dock's freight route. This is a working pair rather than a
+  // single leaf hidden in a one-metre stem: wired glass catches the torch,
+  // while the full opening continues the three-metre handling lane.
+  [DOOR_ARCHETYPE.SERVICE_WIRED_PAIR]: Object.freeze({
+    leafCount: 2, activeLeaves: [0, 1], leaf: { width: .91, height: 2.20, depth: .05 },
+    aperture: { width: 2.0, height: 3.4 }, head: 'glazed-transom',
+    construction: 'galvanised-wired-glass', openSeconds: .72, closeSeconds: 1.02,
+    closer: 'paired', acousticLossDb: 9, mesh: 'door_leaf_pool', frameMesh: 'door_frame_pair', headMesh: 'door_head_transom',
+  }),
   [DOOR_ARCHETYPE.STAFF_HALF_GLAZED]: Object.freeze({
     leafCount: 1, activeLeaves: [0], leaf: { width: .95, height: 2.15, depth: .05 },
     aperture: { width: 1, height: 3.4 }, head: 'masonry-infill',
@@ -73,7 +83,7 @@ export const DOOR_ARCHETYPES = Object.freeze({
     leafCount: 2, activeLeaves: [0, 1], leaf: { width: .91, height: 2.28, depth: .05 },
     aperture: { width: 2.0, height: 3.4 }, head: 'glazed-transom',
     construction: 'galvanised-wired-glass', openSeconds: .76, closeSeconds: 1.05,
-    closer: 'paired', acousticLossDb: 8, mesh: 'door_leaf_pool', frameMesh: 'door_frame_pair', headMesh: 'door_head_transom',
+    closer: 'paired', acousticLossDb: 8, mesh: 'door_leaf_pool_pair', frameMesh: 'door_frame_pair', headMesh: 'door_head_transom',
   }),
   [DOOR_ARCHETYPE.TOWER_SERVICE_SINGLE]: Object.freeze({
     leafCount: 1, activeLeaves: [0], leaf: { width: .90, height: 1.95, depth: .055 },
@@ -149,8 +159,15 @@ export const CONSERVATORY_DOORS = Object.freeze([
   D('dock-grey-exterior', DOOR_ARCHETYPE.BAY_GOODS_PAIR, '115,20', {
     open:false,key:'master',hinge:'left',swing:'escape',widthAxis:'y',activeLeaves:[0,1],
   }),
-  D('dock-foyer-service', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '149,27', { open: true, key: 'master', hinge: 'right', swing: 'escape', widthAxis:'y' }),
-  D('dock-inner-service', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '131,33', { open: true, key: 'master', hinge: 'left', swing: 'escape' }),
+  // Both Scene Dock exits now occupy the wall they visually belong to. Their
+  // ids and old addresses remain save aliases; only the live portal centres
+  // move to the direct, one-wall-deep thresholds.
+  D('dock-foyer-service', DOOR_ARCHETYPE.STAFF_HALF_GLAZED, '149,27', {
+    at:{x:74,y:13.5},open:true,key:'master',hinge:'right',swing:'escape',widthAxis:'y',
+  }),
+  D('dock-inner-service', DOOR_ARCHETYPE.SERVICE_WIRED_PAIR, '131,33', {
+    at:{x:65,y:15.5},open:true,key:'master',hinge:'left',swing:'escape',widthAxis:'x',activeLeaves:[0,1],
+  }),
   D('foh-office', DOOR_ARCHETYPE.STAFF_HALF_GLAZED, '189,27', { key: 'master', hinge: 'left', swing: 'office-in', widthAxis:'x' }),
   D('hall-vestibule', DOOR_ARCHETYPE.HALL_ACOUSTIC_PAIR, '197,51', {
     hinge:'right',swing:'hall-out',activeLeaves:[0],widthAxis:'y',renderGroups:['ground','hall'],

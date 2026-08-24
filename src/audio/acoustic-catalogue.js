@@ -46,6 +46,46 @@ export const ACOUSTIC_CATALOGUE = Object.freeze({
   // outdoor mix. Four decibels of cover is a fountain you can hide a footstep
   // near, which is the fact this entry exists to state.
   fountain_water: D({ levelDb: -32, durationMs: 1000, spectrum: S(.22, .68, .74), impulsiveness: .06, family: 'water', canBeMimicked: false }),
+
+  // ── THE PLANT, AND THE TOOLS THAT SHUT IT ────────────────────────────────
+  //
+  // These four were being EMITTED without ever being DEFINED. emitNoise passes
+  // `kind` through verbatim, bypassing inferAcousticKind, so an unknown kind
+  // does not throw and does not warn — it silently resolves to the generic
+  // defaults in normalizeAcousticEvent: 300ms, spectrum .33/.66/.33,
+  // impulsiveness .5, family 'handling'. Which is to say a two-metre cast-iron
+  // Stillson dragged down a flight of stairs was filed next to picking up a
+  // clipboard, and nothing anywhere said so.
+  //
+  // They share a family so the HUSH's family cooldowns treat the whole plant
+  // errand as one activity rather than as four unrelated noises.
+
+  // Cast iron over concrete. The loudest sustained thing the player can do, and
+  // the only one that never starts: impulsiveness is near zero because a drag
+  // has no attack, which is exactly what separates it from the strike below.
+  metal_drag: D({ levelDb: -16, durationMs: 900, spectrum: S(.74, .56, .62), impulsiveness: .08, family: 'tool', canBeMimicked: false }),
+  // The same iron meeting a riser. A drag and a strike are acoustic opposites
+  // and used to be the same catalogue entry — this is the one the stairs needed.
+  metal_stair_strike: D({ levelDb: -8, durationMs: 480, spectrum: S(.88, .72, .78), impulsiveness: .95, family: 'tool', canBeMimicked: false }),
+  // The Stillson closing the pipe. One clank, and the errand is over.
+  metal_impact: D({ levelDb: -12, durationMs: 700, spectrum: S(.68, .74, .82), impulsiveness: .92, family: 'tool', canBeMimicked: true }),
+  // The adjustable spanner doing the same job quietly. This is what having had
+  // the sense to pick up the small tool actually sounds like.
+  tool_click: D({ levelDb: -40, durationMs: 90, spectrum: S(.10, .52, .80), impulsiveness: .88, family: 'tool', canBeMimicked: true }),
+
+  // Not the player. Every chair in a practice room moving at once, which is the
+  // building doing something rather than somebody doing something to it.
+  furniture_scrape: D({ levelDb: -20, durationMs: 620, spectrum: S(.62, .58, .44), impulsiveness: .34, family: 'furniture', canBeMimicked: false }),
+
+  // Cloth and body weight over stone. Not an impact and not a tool: a soft,
+  // low, continuous load being moved by someone who is trying not to drop it.
+  // Deliberately quiet — this one is inaudible to the HUSH where it is emitted,
+  // and it is in the catalogue so that stays a decision rather than an accident.
+  body_drag: D({ levelDb: -34, durationMs: 820, spectrum: S(.66, .38, .14), impulsiveness: .10, family: 'body', canBeMimicked: false }),
+  // The HUSH speaking. Distinct from operator_voice_activity, which is a living
+  // person's throat: this one is the building using a voice, so it can never be
+  // mimicked — there is nothing to mimic it WITH.
+  voice: D({ levelDb: -22, durationMs: 900, spectrum: S(.24, .82, .46), impulsiveness: .12, family: 'voice', canBeMimicked: false }),
 });
 
 export function catalogueEntry(kind) {

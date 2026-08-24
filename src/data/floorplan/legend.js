@@ -310,7 +310,7 @@ export const GLYPHS = {
   'A': { floor: 0.0, ceil: 11.5, zone: 'foyer', material: 'serviceConcrete' },
   'B': { floor: 0.0, ceil: 3.2, zone: 'studio', material: 'woodVelvet' },
   'T': { floor: 0.0, ceil: 9.5, zone: 'natatorium', material: 'poolTile' },
-  'W': { floor: -1.6, ceil: 9.5, zone: 'natatorium', material: 'wetTile' },
+  'W': { floor: -2.0, ceil: 9.5, zone: 'natatorium', material: 'wetTile' },
   'H': { floor: 0.0, ceil: 15.5, zone: 'hall', material: 'woodVelvet' },
   'S': { floor: -2.5, ceil: 15.5, zone: 'hall', material: 'woodVelvet' },
   'R': { floor: 2.5, ceil: 15.5, zone: 'hall', material: 'woodVelvet' },

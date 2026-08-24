@@ -8,6 +8,7 @@ import {
   DOOR_STATE, advanceDoor, beginDoorClose, beginDoorOpen, doorBlocksPassage,
   freshDoorRuntime, normalizeDoorSave, pointInDoorSweep, stableDoorEndpoint,
 } from '../src/game/door-runtime.js';
+import { STORY_ROUTE_DOOR_IDS, doorWinsWorldInteraction } from '../src/game/interaction-focus.js';
 
 FP.compile(conservatory.levels,{
   width:conservatory.width,height:conservatory.height,widenCorridors:conservatory.widenCorridors,
@@ -17,12 +18,18 @@ const doors=FP.doorState();
 assert.equal(doors.length,CONSERVATORY_DOORS.length,'the compiled door set exactly matches the authored schedule');
 assert.equal(new Set(doors.map((door)=>door.id)).size,doors.length,'all door IDs are stable and unique');
 assert.ok(doors.every((door)=>door.archetype!=='legacy'),'every portal has exactly one explicit definition');
-assert.equal(doors.filter((door)=>door.leafCount===2).length,7,'public, baths, hall, chapel, bay goods and both cathedral doors are pairs');
-assert.deepEqual(doors.filter((door)=>door.leafCount===2).map((door)=>door.id).sort(),['brendan-south-porch','brendan-west-door','chapel-c17','dock-grey-exterior','front-main','hall-vestibule','pool-lobby']);
+assert.equal(doors.filter((door)=>door.leafCount===2).length,8,'public, baths, hall, chapel, Scene Dock freight, bay goods and both cathedral doors are pairs');
+assert.deepEqual(doors.filter((door)=>door.leafCount===2).map((door)=>door.id).sort(),['brendan-south-porch','brendan-west-door','chapel-c17','dock-grey-exterior','dock-inner-service','front-main','hall-vestibule','pool-lobby']);
 const poolDoor=doors.find((door)=>door.id==='pool-lobby');
 assert.equal(poolDoor.archetype,DOOR_ARCHETYPE.POOL_GLAZED_PAIR);
 assert.equal(poolDoor.aperture.width,2,'the municipal baths admits a school group through a real two-metre pair');
 assert.deepEqual(poolDoor.activeLeaves,[0,1]);
+assert.equal(poolDoor.mesh,'door_leaf_pool_pair');
+assert.deepEqual(poolDoor.leaf,{width:.91,height:2.28,depth:.05});
+assert.ok(poolDoor.aperture.width-poolDoor.leaf.width*2>=.18-1e-9,'closed leaves retain a meeting-stile gap and never overlap at centre');
+assert.ok(STORY_ROUTE_DOOR_IDS.includes('pool-lobby'));
+assert.equal(doorWinsWorldInteraction({aimScore:.20},{aimScore:.50,portal:{id:'pool-lobby'}}),true,
+  'the full glazed pair wins focus against adjacent lobby dressing');
 // The goods doors are the widest opening in the building and the canonical
 // arrival threshold: one real pair, one stable story identity.
 {
@@ -31,6 +38,26 @@ assert.deepEqual(poolDoor.activeLeaves,[0,1]);
   assert.equal(goods.cells.length,12,'three authored metres of portal, not one widened cell');
   assert.equal(goods.keyId,'master','the recordist opens the pair with the issued key');
   assert.equal(doors.some((door)=>door.id==='bay-goods-pair'),false,'no duplicate goods/personnel story portal remains');
+}
+
+// The full pair is one manual target. Repeated E presses during travel are
+// acknowledgements, never reversals; closing is available only at the endpoint.
+{
+  FP.resetDoors();
+  const first=FP.interactDoor(165,52,[0,1],new Set());
+  assert.equal(first.id,'pool-lobby');assert.equal(first.opened,true);
+  for(const x of[166,167,168,169,170]){
+    const repeat=FP.interactDoor(x,52,[0,1],new Set());
+    assert.equal(repeat.id,'pool-lobby',`the usable target spans the pair at x=${x}`);
+    assert.equal(repeat.opening,true);assert.equal(repeat.closed,undefined);
+  }
+  FP.tickDoors(.2,{playerX:168,playerY:52});
+  const partial=FP.doorState().find((door)=>door.id==='pool-lobby');
+  assert.equal(partial.state,DOOR_STATE.OPENING);assert.ok(partial.openFraction>0&&partial.openFraction<1);
+  assert.equal(FP.interactDoor(168,52,[0,1],new Set()).opening,true,'opening input remains idempotent in motion');
+  FP.tickDoors(2,{playerX:168,playerY:52});
+  assert.equal(FP.doorState().find((door)=>door.id==='pool-lobby').state,DOOR_STATE.OPEN);
+  assert.equal(FP.interactDoor(168,52,[0,1],new Set()).closed,true,'only the fully open endpoint accepts deliberate closing');
 }
 assert.ok(doors.filter((door)=>door.leafCount===1).every((door)=>door.aperture.width>=.9&&door.aperture.width<=1.05),'single apertures do not infer leaves from portal cell count');
 assert.deepEqual(doors.find((door)=>door.id==='chapel-c17').activeLeaves,[1],'C-17 releases only the right leaf');
@@ -121,6 +148,10 @@ advanceDoor(closer,practiceDef,.5,{sweepOccupied:true});assert.equal(closer.open
 advanceDoor(closer,practiceDef,.5,{sweepOccupied:false});assert.ok(closer.openFraction<1);
 assert.equal(pointInDoorSweep({cx:10,cy:10,widthAxis:'x',leaf:{width:1}},10.2,10.1),true);
 assert.equal(pointInDoorSweep({cx:10,cy:10,widthAxis:'x',leaf:{width:1}},20,20),false);
+assert.equal(pointInDoorSweep(poolDoor,166.8,53.2),true,'the left glazed leaf sector is occupied');
+assert.equal(pointInDoorSweep(poolDoor,168.2,53.2),true,'the right glazed leaf sector is occupied');
+assert.equal(pointInDoorSweep(poolDoor,poolDoor.cx,poolDoor.cy+1.8),false,
+  'space outside the paired swept sectors no longer pauses the closer as a broad square did');
 assert.deepEqual(stableDoorEndpoint(closer).state,DOOR_STATE.CLOSED);
 
 // Closed material losses participate in line traces; opening removes them.
@@ -202,7 +233,12 @@ assert.equal(FP.doorState().length,CONSERVATORY_DOORS.length,'a fresh compile br
 const bytes=readFileSync('public/assets/conservatory-doors.glb');assert.equal(bytes.slice(0,4).toString(),'glTF');assert.ok(statSync('public/assets/conservatory-doors.glb').size<2.5*1024*1024);
 const jsonLen=bytes.readUInt32LE(12),json=JSON.parse(bytes.slice(20,20+jsonLen).toString());
 assert.equal(json.animations,undefined);assert.equal(json.skins,undefined);
-const names=new Set(json.meshes.map((mesh)=>mesh.name));for(const name of ['door_frame_pair','door_head_transom','door_leaf_service','door_leaf_chapel','door_sealed_scar'])assert.ok(names.has(name));
+const names=new Set(json.meshes.map((mesh)=>mesh.name));for(const name of ['door_frame_pair','door_head_transom','door_leaf_service','door_leaf_pool_pair','door_leaf_chapel','door_sealed_scar'])assert.ok(names.has(name));
+const poolLeafMesh=json.meshes.find((mesh)=>mesh.name==='door_leaf_pool_pair');
+const poolLeafCore=json.accessors[poolLeafMesh.primitives[0].attributes.POSITION];
+assert.ok(Math.abs((poolLeafCore.max[0]-poolLeafCore.min[0])-.91)<1e-6);
+assert.ok(Math.abs((poolLeafCore.max[1]-poolLeafCore.min[1])-2.28)<1e-6);
+assert.ok(Math.abs((poolLeafCore.max[2]-poolLeafCore.min[2])-.05)<1e-6);
 const leafMeshes=json.meshes.filter((mesh)=>mesh.name.startsWith('door_leaf_'));assert.ok(leafMeshes.every((mesh)=>mesh.extras.triangles<600));
 assert.ok(json.meshes.reduce((sum,mesh)=>sum+mesh.extras.triangles,0)<8000);
 for(const name of ['warm oak veneer','dark mahogany oak','grey green fire steel']){

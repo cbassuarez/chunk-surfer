@@ -7,6 +7,7 @@
 // mark, and gives the HUD, map and 3D renderer one shared target contract.
 
 import { CHAPEL_TOWER_PHASE, normalizeChapelTowerState } from './chapel-tower-state.js';
+import { SCENE_DOCK_LABEL } from '../data/space-labels.js';
 
 export const STORY_GUIDANCE_ANCHORS = Object.freeze({
   van: Object.freeze({ x:63.6, y:208.0 }),
@@ -38,7 +39,7 @@ export const STORY_TARGET = Object.freeze({
   // route to the person holding the building key.
   lookBench: target('story:yard-look-bench','TURN AROUND AND SIT ON THE SHELTER BENCH',STORY_GUIDANCE_ANCHORS.lookBench,{kind:'prop',propId:'yard-look-bench',required:false}),
   lodge: target('story:lodge','CHECK IN WITH THE GUARD',STORY_GUIDANCE_ANCHORS.lodge,{kind:'prop',propId:'yard-booth'}),
-  getIn: target('story:get-in','ENTER THE GET-IN',STORY_GUIDANCE_ANCHORS.getIn,{kind:'door',doorId:'dock-grey-exterior'}),
+  getIn: target('story:get-in',`ENTER THE ${SCENE_DOCK_LABEL}`,STORY_GUIDANCE_ANCHORS.getIn,{kind:'door',doorId:'dock-grey-exterior'}),
   page6: target('story:page-6','FIND PAGE 6',STORY_GUIDANCE_ANCHORS.page6,{kind:'prop',propId:'loose-page:page-6'}),
   readPage6: Object.freeze({id:'story:read-page-6',label:'READ PAGE 6 IN THE BAG',kind:'interface',required:true,point:null}),
   rekeyLedger: target('story:rekey-ledger','READ THE REKEY LEDGER',STORY_GUIDANCE_ANCHORS.rekeyLedger,{kind:'prop',propId:'box-office-ledger'}),

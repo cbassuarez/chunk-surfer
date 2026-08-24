@@ -2,17 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-test('the Get-In crossing owns a threshold cutscene before internal dialogue', () => {
+test('the Scene Dock crossing owns the title but does not spend the missing-door interaction', () => {
   const main = readFileSync('src/main.js', 'utf8');
   const start = main.indexOf('function beginGetInArrivalTitle');
   const end = main.indexOf('function noteArrivalThoughts', start);
   const body = main.slice(start, end);
   assert.match(body, /SPEECH\.clearSpeech\(\)/, 'yard chatter cannot leak across the cut');
   assert.match(body, /makeWorldTitleScene\(/, 'the physical crossing opens the world title');
-  assert.ok(body.indexOf('makeWorldTitleScene(') < body.indexOf('beginMandatoryPostDoor('), 'the title owns the frame before the full door tree');
-  assert.match(body, /restore:\(\)=>\{\}/, 'the title leaves the head on the door for the masonry beat');
-  assert.match(body, /onDone:\(\)=>beginMandatoryPostDoor\(\{restorePose:entryPose\}\)/,
-    'the full post-door tree receives the crossing pose and owns setup handoff');
+  assert.match(body, /restore:\(pose\)=>restoreOpeningEntryPose\(pose\)/,
+    'the title returns the head to the entered pose instead of forcing the door beat');
+  assert.match(body, /onDone:\(\)=>TUT\.startTutorial\(\)/,
+    'setup begins after the title without waiting for the optional door search');
+  assert.doesNotMatch(body, /postDoorThought|beginDoorSearchBeat/,
+    'crossing alone cannot trigger the missing-door tree');
   assert.doesNotMatch(body, /AFTER_TITLE/, 'the small beat list is no longer in the arrival chain');
 });
 
@@ -28,7 +30,7 @@ test('one exterior interact opens the goods doors and performs the physical cros
   assert.match(body,/beginGetInArrivalTitle\(\)/,'the title begins only after the body is inside');
   assert.ok(main.indexOf('tryGetInDoorEntry(focus)')<main.indexOf('const doorHit=focus.doorWins?FP.interactDoor'),
     'the authored arrival consumes E before the generic open/close path');
-  assert.match(main,/\? 'ENTER GET-IN'/,'the HUD advertises the complete action rather than OPEN DOOR');
+  assert.match(main,/\? `ENTER \$\{SCENE_DOCK_LABEL\}`/,'the HUD advertises the complete Scene Dock action rather than OPEN DOOR');
 });
 
 test('the crossing plays the full cinematic title beat, in the world', () => {
@@ -41,7 +43,7 @@ test('the crossing plays the full cinematic title beat, in the world', () => {
   assert.match(source, /camera\?\.restore\?\.\(entryPose\)/, 'the scene gives the head back where it found it');
 });
 
-test('the automatic post-door debrief is the full authored choice tree', () => {
+test('interacting with the goods door from inside opens the full authored missing-door tree', () => {
   const authored=JSON.parse(readFileSync('content/narrative/conservatory.post_door.story.json','utf8'));
   const expected={self:{lines:13,choices:4},guard:{lines:13,choices:3},tape:{lines:14,choices:4}};
   for(const [id,counts] of Object.entries(expected)){
@@ -53,9 +55,18 @@ test('the automatic post-door debrief is the full authored choice tree', () => {
     assert.match(copy,/bag/i,`${id} names the bag before setup`);
   }
   const main=readFileSync('src/main.js','utf8');
+  const start=main.indexOf('function tryTheGreyDoor');
+  const end=main.indexOf('function postDoorThought',start);
+  const body=main.slice(start,end);
+  assert.match(body,/flagSet\('opening\.postDoor\.started'\)/,
+    'the actual inside-door interaction durably owns the trigger');
+  assert.match(body,/beginDoorSearchBeat\(\{restorePose\}\)/,
+    'the interaction hands into the complete tree');
   assert.match(main,/opening\.postDoor\.complete/,'completion survives reload');
   assert.match(main,/postDoorThought\(finish,\{escapable:false,allowsLook:false\}\)/,
-    'the mandatory tree cannot be escaped or looked away from before the seal');
+    'once deliberately started, the tree cannot be escaped or looked away from before the seal');
+  assert.match(main,/if\(!flagTest\('opening\.postDoor\.started'\)\|\|openingPostDoorComplete\(\)\)return false/,
+    'reload resumes only a tree the player actually triggered');
   assert.match(main,/resumeOpeningPostDoorFromSave\(\)/,'an interrupted opening resumes before setup');
 });
 

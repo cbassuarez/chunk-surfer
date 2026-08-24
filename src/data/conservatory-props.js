@@ -15,6 +15,15 @@ import { CHURCH_COLLIDERS } from './st-brendans.js';
 import { VEGETATION_FALLBACKS, VEGETATION_MESHES } from './vegetation.js';
 
 const P = (id, mesh, x, y, yaw = 0, extra = {}) => ({ id, mesh, x, y, yaw, scale:1, ...extra });
+
+// The swimmable centre of the natatorium, and the five lane centres on it.
+// Every lane fixture — markings, ropes, backstroke flags, starting blocks —
+// hangs off these two so they can never drift apart again. 1.95m pitch puts the
+// outer lanes at 80.1 and 87.9, clear of the west access stair (x77..79) and
+// inside the east coping (x89.25).
+const POOL_LANE_CENTRE_X = 84.0;
+const POOL_LANE_PITCH = 1.95;
+const POOL_LANE_X = [-2,-1,0,1,2].map((n) => POOL_LANE_CENTRE_X + n * POOL_LANE_PITCH);
 const CPG = (x,y) => ({x:112+x,y:125+y});
 const CPL = (x,y) => ({x:140+x,y:183+y});
 const CPB = (x,y) => ({x:170+x,y:169+y});
@@ -129,6 +138,7 @@ export const PROP_MESH = Object.freeze({
   box_office_desk:{w:1.15,d:.62,blocks:true}, program_stack:{w:.42,d:.32,blocks:false},
   cash_terminal:{w:.36,d:.28,blocks:false}, queue_stanchion:{w:.32,d:.32,blocks:false},
   notice_board:{w:1.2,d:.12,blocks:false}, pool_start_block:{w:.62,d:.72,blocks:true},
+  pool_access_handrail:{w:1.9,d:5.2,h:3.05,blocks:false},
   // The dance wing. The barre, the mirror and the stencil are wall furniture and
   // must face away from masonry; the rail and the lino rolls stand on the floor.
   dance_barre:{w:2.9,d:.22,h:1.14,blocks:false,mount:'wall'},
@@ -139,6 +149,9 @@ export const PROP_MESH = Object.freeze({
   pool_lane_markings:{w:10.2,d:15.5,blocks:false},
   bay_canopy:{w:8.2,d:9.2,h:5.7,blocks:false},
   getin_sightline_shell:{w:16.6,d:12.5,h:5.7,blocks:false},
+  scene_dock_roof_structure:{w:16.6,d:12.5,h:5.7,blocks:false},
+  scene_dock_sign_foh:{w:2.3,d:.10,h:.58,blocks:false,mount:'wall'},
+  scene_dock_sign_services:{w:2.7,d:.10,h:.86,blocks:false,mount:'wall'},
   yard_dock_access:{w:4.4,d:9.2,h:2.0,blocks:false},
   yard_booth:{w:3.4,d:3.0,blocks:false}, yard_booth_glazing:{w:3.1,d:2.7,blocks:false},
   yard_booth_interior:{w:2.7,d:2.4,blocks:false}, yard_booth_practicals:{w:2,d:2,blocks:false},
@@ -377,6 +390,12 @@ export const CONSERVATORY_PROPS = [
   // goods doors; prop-visibility hides it again as soon as the real Get-In
   // becomes the active envelope.
   P('bay-getin-sightline','getin_sightline_shell',53.0,7.5,0,{interactive:false,structural:true}),
+  // One roof, seen from both sides of the goods threshold. Unlike the exterior
+  // sightline shell this is never visibility-switched, so entering the room
+  // cannot replace rafters and ceiling panels with a flat black plane.
+  P('dock-scene-roof','scene_dock_roof_structure',53.0,7.5,0,{
+    interactive:false,structural:true,blocks:false,
+  }),
   // The apron is a working loading throat, not four anonymous planes. These
   // shallow fixtures stay on the real floorplan walls (mount:'wall') and use
   // bay ids so the exterior visibility pass retains them on the walk in.
@@ -785,6 +804,9 @@ export const CONSERVATORY_PROPS = [
   // The room has a three-metre freight spine at x64–66. Everything lives at
   // the perimeter so the setup is dense without becoming a prop maze.
   P('dock-level-check-box','tower_rope_mat',65.0,10.0,0,{interactive:false,blocks:false,scale:1.45,elevation:.018}),
+  P('dock-sign-studios-plant','scene_dock_sign_services',62.4,14.55,0,{
+    mount:'wall',elevation:2.42,interactive:false,structural:true,blocks:false,
+  }),
   P('dock-desk-1','school_desk',60.0,6.0,.15,{
     label:'signing desk',inspectAt:{x:59.6,y:7.0},dockInvestigation:true,
     inspect:inspect('A school desk doing the job of a dispatch station. Somebody meant to come back to it.','The little desk is still waiting for the rest of its shift.'),
@@ -809,8 +831,8 @@ export const CONSERVATORY_PROPS = [
       again:'Click. Nothing. Somehow that is comforting now.',
     },
   }),
-  P('dock-hand-truck','equipment_cart',72.6,5.35,Math.PI/2,{
-    label:'strapped hand truck',scale:.72,inspectAt:{x:71.7,y:5.5},dockInvestigation:true,
+  P('dock-hand-truck','equipment_cart',70.8,5.35,Math.PI/2,{
+    label:'strapped hand truck',scale:.72,inspectAt:{x:70.1,y:5.5},dockInvestigation:true,
     inspect:inspect('A hand truck tied up neatly before it ever carried the load.','FRAME FIRST, still chalked across its foot.'),
   }),
   P('dock-freight-crates','equipment_rack',72.1,7.45,0,{
@@ -1480,8 +1502,8 @@ export const CONSERVATORY_PROPS = [
   // room envelope. Nothing below the roof spans the hall, and both cubicle
   // banks are shallow wall furniture, so this cannot regress into the former
   // room-inside-a-room failure.
-  P('natatorium-roof-structure','natatorium_roof_structure',83.0,38.5,0,{interactive:false,structural:true}),
-  P('natatorium-perimeter-relief','natatorium_perimeter_relief',83.0,38.5,0,{interactive:false,structural:true}),
+  P('natatorium-roof-structure','natatorium_roof_structure',83.0,38.5,0,{interactive:false,structural:true,floorOverride:0}),
+  P('natatorium-perimeter-relief','natatorium_perimeter_relief',83.0,38.5,0,{interactive:false,structural:true,floorOverride:0}),
   // A real baths entrance: the dry lobby has an admission point, wet/dry
   // drains, glazed control screens and a clear accessible lane before the pool
   // reveals itself. It is dressing, not a second collision envelope.
@@ -1502,12 +1524,21 @@ export const CONSERVATORY_PROPS = [
     inspect:inspect('The pool clock stopped at twenty-seven past. Chlorine has greened the screws but not moved the hands.','Still twenty-seven past.'),
   }),
 
-  P('pool-lane-markings','pool_lane_markings',84,40.5,0,{interactive:false,structural:true,elevation:.05}),
-  P('pool-lane-ropes','pool_lane_ropes',84,40.5,0,{interactive:false,structural:true,elevation:.015}),
-  P('pool-flags-near','pool_backstroke_flags',84,36.0,0,{interactive:false,structural:true}),
-  P('pool-flags-far','pool_backstroke_flags',84,45.5,0,{interactive:false,structural:true}),
-  P('pool-ladder-west','pool_ladder',77.7,40.0,-Math.PI/2,{interactive:false,structural:true}),
-  P('pool-ladder-east','pool_ladder',90.3,44.0,Math.PI/2,{interactive:false,structural:true}),
+  // ONE CENTRE FOR EVERY LANE FIXTURE, and it is the swimmable water rather than
+  // the basin box. The -2m basin runs x77.5..89.25, but the west access stair
+  // eats x77..79 down its shallow end, so what you can actually swim is x79..89
+  // and its centre is 84.0 — which is what the space-layout contract asserts.
+  //
+  // These were authored at 85.075 (the box centre plus a nudge), which pushed
+  // lane five and its starting block through the east coping: the markings ran
+  // to x89.5 against a wall at x89.25, and the outermost block stood on it.
+  P('pool-lane-markings','pool_lane_markings',POOL_LANE_CENTRE_X,40.5,0,{interactive:false,structural:true,elevation:.05}),
+  P('pool-lane-ropes','pool_lane_ropes',POOL_LANE_CENTRE_X,40.5,0,{interactive:false,structural:true,elevation:.015,waterlineBody:'natatorium'}),
+  P('pool-flags-near','pool_backstroke_flags',POOL_LANE_CENTRE_X,36.0,0,{interactive:false,structural:true,floorOverride:0}),
+  P('pool-flags-far','pool_backstroke_flags',POOL_LANE_CENTRE_X,45.5,0,{interactive:false,structural:true,floorOverride:0}),
+  P('pool-access-handrail','pool_access_handrail',79,35.5,0,{interactive:false,structural:true,floorOverride:-2}),
+  P('pool-ladder-west','pool_ladder',77.7,40.0,-Math.PI/2,{interactive:false,structural:true,floorOverride:0}),
+  P('pool-ladder-east','pool_ladder',90.3,44.0,Math.PI/2,{interactive:false,structural:true,floorOverride:0}),
   P('pool-lifebuoy-west','pool_lifebuoy',71.4,42.0,-Math.PI/2,{
     elevation:1.55,inspectAt:{x:72.3,y:42.0},
     inspect:inspect('A cork lifebuoy repainted until its name has disappeared. The rope is stiff with old pool water.','Layers of municipal red. No readable name.'),
@@ -1526,7 +1557,7 @@ export const CONSERVATORY_PROPS = [
   }),
   P('pool-lifeguard-chair','lifeguard_chair',92.5,40.5,-Math.PI/2,{inspect:inspect('A lifeguard chair on the east deck, facing across the pool.','The rescue tube is gone.')}),
   P('pool-lane-reel','lane_reel',92.7,34.2,0,{inspect:inspect('A lane-line reel staged beside the starting end, one cracked float still wound onto it.','The handle turns half a revolution.')}),
-  ...[79.2,81.6,84.0,86.4,88.8].map((x,i)=>P(`pool-start-${i+1}`,'pool_start_block',x,32.4,Math.PI,{inspect:inspect('A starting block, its number plate removed.','Four bolt heads and a paler rectangle.')})),
+  ...POOL_LANE_X.map((x,i)=>P(`pool-start-${i+1}`,'pool_start_block',x,32.4,Math.PI,{floorOverride:0,inspect:inspect('A starting block, its number plate removed.','Four bolt heads and a paler rectangle.')})),
   ...[80.4,82.8,85.2,87.6].map((x,i)=>P(`pool-drain-${i+1}`,'drain_grille',x,46.0,0,{elevation:.06,inspect:inspect('A basin drain furred white with old pool salts.','The salts trace every slot.')})),
   P('acq-services-panel-pool','power_box_01',95.5,44.8,Math.PI/2,{
     scaleX:1.76,scaleY:1.63,elevation:1.45,renderOffsetX:.25,
@@ -1559,7 +1590,7 @@ export const CONSERVATORY_PROPS = [
     provenance:provenance('services_rewire','S/P-03','front-of-house panel; typed circuit card'),
     inspectAt:{x:95.25,y:16.0},
     interaction:'action',action:'power-panel-sp03',interactionPriority:2,
-    inspect:inspect('The front-of-house panel, S/P-03. Its typed circuit card lists the get-in, foyer and box office; the main isolator is down.','S/P-03. A neat card for three dead circuits.'),
+    inspect:inspect('The front-of-house panel, S/P-03. Its typed circuit card lists the Scene Dock, foyer and box office; the main isolator is down.','S/P-03. A neat card for three dead circuits.'),
   }),
   P('acq-services-panel-practice','power_box_01',56.0,53.0,0,{
     scaleX:1.76,scaleY:1.63,elevation:1.45,mount:'wall',
@@ -1649,11 +1680,19 @@ export const CONSERVATORY_PROPS = [
   P('plant-idf-west','plant_idf_frame',30.15,27.9,Math.PI/2,{mount:'wall',interactive:false,structural:true}),
   P('plant-overhead-header','plant_overhead_header',35.0,30.5,0,{elevation:.05,interactive:false,structural:true}),
   P('plant-annex-steps','plant_grated_steps',33.0,35.35,0,{interactive:false,structural:true}),
-  P('plant-heating-header','plant_header_manifold',33.0,38.35,Math.PI,{mount:'wall',action:'plant-header-valve',label:'heating header valve',interactionPriority:3,inspectAt:{x:33,y:37.45},
-    inspect:inspect('A heating header with one isolation stem shivering under load. The gauge needle is hard against its stop.','The isolation stem is still moving under your hand.')}),
+  // THE PIPE. The id stays `plant-heating-header` because renaming it churns
+  // props and saves for nothing, but nothing the player ever reads calls it a
+  // header — it is a pipe, it is hissing, and that is the whole of what he
+  // needs to know about it.
+  P('plant-heating-header','plant_header_manifold',33.0,38.35,Math.PI,{mount:'wall',action:'plant-header-valve',label:'the hissing pipe',interactionPriority:3,inspectAt:{x:33,y:37.45},
+    inspect:inspect('A heating pipe running the length of the wall, and one isolation valve on it shivering under the load. Steam is getting out somewhere behind the wheel, in a thin continuous note.','Still hissing. The gauge needle is hard against its stop.')}),
   // Optional quiet buff in the open van; guaranteed noisy fallback in the
   // Get-In. Runtime replaces/removes these same ids as they are collected.
-  P('van-adjustable-spanner','adjustable_spanner',64.6,208.0,.18,{elevation:1.14,action:'plant-spanner',label:'blue-handled adjustable spanner',interactionPriority:5,inspect:inspect('Your blue-handled adjustable spanner, laid across the lit shelf beside the blanket.','The bright rectangle on the van shelf is bare where it lay.')}),
+  // ON THE SHELF, AND NOT ITS OWN INTERACTION. You can see it from outside the
+  // van, which is the point of it being lit — but taking it happens inside the
+  // one van beat, along with the case, the order and the badge. Two [E] targets
+  // a foot apart made the opening a hunt for the second one.
+  P('van-adjustable-spanner','adjustable_spanner',64.6,208.0,.18,{elevation:1.14,interactive:false,structural:true,label:'blue-handled adjustable spanner'}),
   P('getin-heavy-stillson','stillson_wrench',70.5,6.25,.08,{action:'plant-heavy-wrench',label:'oversized Stillson wrench',interactionPriority:4,inspect:inspect('A Stillson nearly two metres long, left across the maintenance rack.','Too large for the field case. It will have to travel on the floor.')}),
 
   // ── THE VIGIL ────────────────────────────────────────────────────────────

@@ -11,6 +11,15 @@ export const BATTLE_GEAR = Object.freeze({
   'tuning-fork': Object.freeze({ toolId: 'fork', label: 'TUNING FORK' }),
   radio: Object.freeze({ toolId: 'radio', label: 'RADIO' }),
   coffee: Object.freeze({ toolId: 'coffee', label: 'COFFEE' }),
+  // THE FILM BADGE. Assignable to a quick slot like anything else in this
+  // registry, and that is the entire cost of it: four slots, seven things worth
+  // considering, and one of them will not help.
+  //
+  // Its toolId reaches combat-state and is never read — tools are resolved by
+  // explicit name (torch/recorder/rig/fork/radio/coffee) and `order` is filtered
+  // against COMBAT_TOOL, so this falls out of both. Inert by construction rather
+  // than by a special case, which is why it needs no special case.
+  badge: Object.freeze({ toolId: 'badge', label: 'FILM BADGE' }),
 });
 
 export const DEFAULT_COMBAT_TOP = Object.freeze(['light', 'recorder', 'radio']);

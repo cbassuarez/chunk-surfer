@@ -10,6 +10,7 @@
     "assets:main-stair": "node tools/chunk_surfer/build-main-stair.mjs",
     "assets:source-structures": "node tools/chunk_surfer/build-source-structures.mjs",
     "assets:horizon-tape": "node tools/chunk_surfer/build-horizon-tape.mjs",
+    "assets:horizon-bust": "node tools/chunk_surfer/build-horizon-bust.mjs",
     "assets:doors": "node scripts/build-door-pack.mjs",
     "dev": "vite",
     "assets:tuning-fork": "node scripts/generate-tuning-fork-glb.mjs",

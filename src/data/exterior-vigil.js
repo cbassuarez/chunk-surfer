@@ -28,7 +28,7 @@ export function vigilApproachPoint({x,y,yaw}){
 
 export const VIGIL_MIN_CORRIDOR=4;
 export const VIGIL_CLEARANCES=deepFreeze([
-  {id:'arrival',x0:-2,x1:52,y0:-2,y1:21,note:'road, lodge, gate, dock and Get-In'},
+  {id:'arrival',x0:-2,x1:52,y0:-2,y1:21,note:'road, lodge, gate, loading bay and Scene Dock'},
   {id:'park-spine',x0:7,x1:14,y0:20,y1:38,note:'park entrance and basin path'},
   {id:'park-cross',x0:3,x1:16,y0:32,y1:41,note:'park cross path and fountain kerb'},
   {id:'west-door',x0:13,x1:26,y0:47,y1:56,note:'cathedral west apron'},

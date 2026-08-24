@@ -13,6 +13,7 @@ import {
   dockHauntingMilestonesCrossed,
   dockHauntingMoveScale,
   dockHauntingPressure,
+  dockHauntingVisibility,
   dockHauntingStaging,
   freshDockTransitState,
   makeLoadingDockHauntingScene,
@@ -68,6 +69,22 @@ assert.equal(dockHauntingMoveScale(0),1);
 assert.equal(dockHauntingMoveScale(1),4);
 assert.deepEqual(dockHauntingMilestonesCrossed(1,DOCK_HAUNTING_MILESTONES.slice(0,3)),DOCK_HAUNTING_MILESTONES.slice(3));
 
+const visibilityWalk=pressureWalk.map((pressure)=>dockHauntingVisibility({pressure,effectPressure:pressure,effects:'full'}));
+for(let i=1;i<visibilityWalk.length;i++){
+  assert.ok(visibilityWalk[i].worldFade>=visibilityWalk[i-1].worldFade,'the room fade follows proximity monotonically');
+  assert.ok(visibilityWalk[i].hudAlpha<=visibilityWalk[i-1].hudAlpha,'HUD chrome fades with the room');
+}
+const peakVisibility=dockHauntingVisibility({pressure:1,effectPressure:1,effects:'full'});
+assert.ok(peakVisibility.worldFade>.98,'the room reaches near-black at contact range');
+assert.ok(peakVisibility.hudAlpha<.04,'ordinary HUD chrome nearly disappears at contact range');
+assert.equal(peakVisibility.promptAlpha,1,'the required contact instruction stays readable');
+const reducedVisibility=dockHauntingVisibility({pressure:1,effectPressure:1,effects:'reduced'});
+const steadyVisibility=dockHauntingVisibility({pressure:1,effectPressure:1,effects:'off'});
+assert.ok(reducedVisibility.worldFade<peakVisibility.worldFade&&steadyVisibility.worldFade<reducedVisibility.worldFade,
+  'reduced-effects settings retain more room context without removing the spatial cue');
+assert.deepEqual(dockHauntingVisibility(null),{pressure:0,worldFade:0,hudAlpha:1,promptAlpha:1},
+  'tearing down the contact frame restores world and HUD immediately');
+
 let distance=12;
 const fired=[];
 const frames=[];
@@ -115,6 +132,11 @@ for(const retired of ['RUPTURE','BLACKOUT','dock-surfer-reflection','dock-surfer
   assert.equal(source.includes(retired),false,`the get-in no longer depends on ${retired}`);
 }
 const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
+const renderer=readFileSync(new URL('../src/render/r3d.js',import.meta.url),'utf8');
+assert.match(renderer,/col\*=1\.0-clamp\(uDockHauntingFade[\s\S]*?compositeHushBody\(uHushBody/,
+  'the room fades before the HUSH body is composited, so the approached body remains visible');
+assert.match(main,/drawFearOverlay[\s\S]*?applyDockHauntingHudFade\(\)[\s\S]*?scenes\.render/,
+  'all ordinary HUD and fear chrome is attenuated before the contact instruction is redrawn');
 const dockRuntime=main.slice(
   main.indexOf('// ── the get-in: LAST LOAD-OUT / impossible return'),
   main.indexOf("const GREY_DOOR_ID='dock-grey-exterior'"),

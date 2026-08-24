@@ -101,8 +101,26 @@ export async function preload(url) {
   return job;
 }
 
-export function preloadAll(urls) {
-  return Promise.all(urls.flat().map(preload));
+export async function preloadAll(urls, { concurrency = 2 } = {}) {
+  const queue = [...new Set((urls || []).flat().filter(Boolean))];
+  if (!queue.length) return [];
+  const results = new Array(queue.length);
+  let next = 0;
+  const workers = Math.max(1, Math.min(queue.length, Math.floor(Number(concurrency) || 1)));
+
+  // decodeAudioData is asynchronous, but asking it to unpack the whole authored
+  // corpus at once still saturates the decoder pool. On a new run that burst
+  // shared the first ten seconds with the opening music and made the bed tear.
+  // A tiny bounded queue keeps the same warm cache without treating startup as
+  // a batch-conversion job.
+  await Promise.all(Array.from({ length: workers }, async () => {
+    while (next < queue.length) {
+      const index = next;
+      next += 1;
+      results[index] = await preload(queue[index]);
+    }
+  }));
+  return results;
 }
 // gain: linear. rate: playbackRate (a tired switch is a slower switch).
 // pan: -1..1. Returns the source, so a caller can stop a long cue early.

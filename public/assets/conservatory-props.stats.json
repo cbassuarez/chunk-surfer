@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-24T01:11:12.277Z",
-  "bytes": 25826860,
-  "totalTriangles": 354082,
+  "generatedAt": "2026-08-24T03:15:26.198Z",
+  "bytes": 26555264,
+  "totalTriangles": 363874,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -230,6 +230,10 @@
     "pool_ladder": {
       "triangles": 108,
       "vertices": 216
+    },
+    "pool_access_handrail": {
+      "triangles": 216,
+      "vertices": 432
     },
     "pool_lifebuoy": {
       "triangles": 104,
@@ -828,8 +832,12 @@
       "vertices": 1492
     },
     "getin_sightline_shell": {
-      "triangles": 252,
-      "vertices": 504
+      "triangles": 144,
+      "vertices": 288
+    },
+    "scene_dock_roof_structure": {
+      "triangles": 576,
+      "vertices": 1152
     },
     "yard_dock_access": {
       "triangles": 536,
@@ -932,40 +940,48 @@
       "vertices": 146
     },
     "exterior_bus_woman": {
-      "triangles": 384,
-      "vertices": 678
+      "triangles": 588,
+      "vertices": 1050
     },
     "exterior_mews_neighbor": {
-      "triangles": 360,
-      "vertices": 630
+      "triangles": 564,
+      "vertices": 1002
     },
     "exterior_pub_driver": {
-      "triangles": 348,
-      "vertices": 624
+      "triangles": 552,
+      "vertices": 996
+    },
+    "scene_dock_sign_foh": {
+      "triangles": 2316,
+      "vertices": 4632
+    },
+    "scene_dock_sign_services": {
+      "triangles": 2196,
+      "vertices": 4392
     },
     "vigil_ruth_mallory": {
-      "triangles": 336,
-      "vertices": 600
+      "triangles": 540,
+      "vertices": 972
     },
     "vigil_leila_hart": {
-      "triangles": 348,
-      "vertices": 606
+      "triangles": 552,
+      "vertices": 978
     },
     "vigil_owen_pryce": {
-      "triangles": 360,
-      "vertices": 630
+      "triangles": 564,
+      "vertices": 1002
     },
     "vigil_denise_okafor": {
-      "triangles": 336,
-      "vertices": 600
+      "triangles": 540,
+      "vertices": 972
     },
     "vigil_malcolm_vey": {
-      "triangles": 348,
-      "vertices": 606
+      "triangles": 552,
+      "vertices": 978
     },
     "vigil_kit_renshaw": {
-      "triangles": 324,
-      "vertices": 576
+      "triangles": 528,
+      "vertices": 948
     },
     "vigil_part_ruth_binder": {
       "triangles": 24,
@@ -992,52 +1008,52 @@
       "vertices": 216
     },
     "vigil_figure_umbrella_a": {
-      "triangles": 564,
-      "vertices": 1056
+      "triangles": 768,
+      "vertices": 1428
     },
     "vigil_figure_umbrella_b": {
-      "triangles": 576,
-      "vertices": 1062
+      "triangles": 780,
+      "vertices": 1434
     },
     "vigil_figure_placard_a": {
-      "triangles": 348,
-      "vertices": 606
+      "triangles": 552,
+      "vertices": 978
     },
     "vigil_figure_placard_b": {
-      "triangles": 324,
-      "vertices": 576
+      "triangles": 528,
+      "vertices": 948
     },
     "vigil_figure_flask_a": {
-      "triangles": 448,
-      "vertices": 730
+      "triangles": 652,
+      "vertices": 1102
     },
     "vigil_figure_flask_b": {
-      "triangles": 460,
-      "vertices": 736
+      "triangles": 664,
+      "vertices": 1108
     },
     "vigil_figure_seated_a": {
-      "triangles": 444,
-      "vertices": 816
+      "triangles": 648,
+      "vertices": 1188
     },
     "vigil_figure_seated_b": {
-      "triangles": 456,
-      "vertices": 822
+      "triangles": 660,
+      "vertices": 1194
     },
     "vigil_figure_pamphlets_a": {
-      "triangles": 360,
-      "vertices": 648
+      "triangles": 564,
+      "vertices": 1020
     },
     "vigil_figure_pamphlets_b": {
-      "triangles": 384,
-      "vertices": 678
+      "triangles": 588,
+      "vertices": 1050
     },
     "vigil_figure_camera_a": {
-      "triangles": 408,
-      "vertices": 744
+      "triangles": 612,
+      "vertices": 1116
     },
     "vigil_figure_camera_b": {
-      "triangles": 432,
-      "vertices": 774
+      "triangles": 636,
+      "vertices": 1146
     },
     "vigil_part_sign_save": {
       "triangles": 1848,
@@ -1196,8 +1212,8 @@
       "vertices": 1168
     },
     "baseboard_ground": {
-      "triangles": 5952,
-      "vertices": 11904
+      "triangles": 6264,
+      "vertices": 12528
     },
     "baseboard_hall": {
       "triangles": 2400,
@@ -1875,12 +1891,12 @@
     },
     "pool_lane_ropes": {
       "min": [
-        -3.66,
+        -2.985,
         0.025,
         -7.45
       ],
       "max": [
-        3.66,
+        2.985,
         0.125,
         7.45
       ]
@@ -1907,6 +1923,18 @@
         0.41,
         1.243,
         0.547
+      ]
+    },
+    "pool_access_handrail": {
+      "min": [
+        -0.882,
+        0.03,
+        -2.92
+      ],
+      "max": [
+        0.882,
+        3.022,
+        2.92
       ]
     },
     "pool_lifebuoy": {
@@ -1971,12 +1999,12 @@
     },
     "pool_lane_markings": {
       "min": [
-        -5.325,
+        -4.425,
         0,
         -7.675
       ],
       "max": [
-        5.325,
+        4.425,
         0.043,
         7.675
       ]
@@ -3709,6 +3737,18 @@
         7.87
       ]
     },
+    "scene_dock_roof_structure": {
+      "min": [
+        4.25,
+        0,
+        -4.22
+      ],
+      "max": [
+        20.25,
+        5.5,
+        7.72
+      ]
+    },
     "yard_dock_access": {
       "min": [
         -1.61,
@@ -4043,6 +4083,30 @@
         0.384,
         1.77,
         0.315
+      ]
+    },
+    "scene_dock_sign_foh": {
+      "min": [
+        -1.15,
+        -0.29,
+        -0.072
+      ],
+      "max": [
+        1.15,
+        0.29,
+        0.033
+      ]
+    },
+    "scene_dock_sign_services": {
+      "min": [
+        -1.35,
+        -0.43,
+        -0.072
+      ],
+      "max": [
+        1.35,
+        0.43,
+        0.033
       ]
     },
     "vigil_ruth_mallory": {
@@ -4804,7 +4868,7 @@
     "baseboard_ground": {
       "min": [
         -80,
-        -1.8,
+        -2,
         -32
       ],
       "max": [
@@ -4887,7 +4951,7 @@
     }
   },
   "baseboards": {
-    "planHash": "5897aadb0bfbb467c163f985ff52d0900043026af2f8793ec42d757061c7990a",
+    "planHash": "e0b3372bcfa83301c9503eeb293aa61cc8d027b9af80e0fa1f619f022c670fe9",
     "groups": {
       "ground": {
         "mesh": "baseboard_ground",
@@ -4985,6 +5049,7 @@
     "pool_lane_ropes": 0.13,
     "pool_backstroke_flags": 2.77,
     "pool_ladder": 0.05,
+    "pool_access_handrail": 2.98,
     "pool_start_block": 0.77,
     "lifeguard_chair": 1.51,
     "lane_reel": 0.19,
@@ -5087,7 +5152,8 @@
     "tower_plaque": 0.76,
     "public_exit_sign": 0.62,
     "bay_canopy": 5.15,
-    "getin_sightline_shell": 5.5,
+    "getin_sightline_shell": 0.07,
+    "scene_dock_roof_structure": 5.5,
     "yard_dock_access": -0.3,
     "district_terrace_frontage": 13,
     "district_civic_frontage": 12.8,
@@ -5113,29 +5179,31 @@
     "ambient_cyclist": 0.56,
     "ambient_dog_walker": 0.61,
     "ambient_awning_figure": 1.42,
-    "exterior_bus_woman": 0.69,
-    "exterior_mews_neighbor": 0.69,
-    "exterior_pub_driver": 0.69,
-    "vigil_ruth_mallory": 0.69,
-    "vigil_leila_hart": 0.69,
-    "vigil_owen_pryce": 0.69,
-    "vigil_denise_okafor": 0.69,
-    "vigil_malcolm_vey": 0.69,
-    "vigil_kit_renshaw": 0.69,
+    "exterior_bus_woman": 0.04,
+    "exterior_mews_neighbor": 0.04,
+    "exterior_pub_driver": 0.04,
+    "scene_dock_sign_foh": 0.29,
+    "scene_dock_sign_services": 0.43,
+    "vigil_ruth_mallory": 0.04,
+    "vigil_leila_hart": 0.04,
+    "vigil_owen_pryce": 0.04,
+    "vigil_denise_okafor": 0.04,
+    "vigil_malcolm_vey": 0.04,
+    "vigil_kit_renshaw": 0.04,
     "vigil_part_owen_umbrella": 1.14,
     "vigil_part_kit_microphone": 1.68,
     "vigil_figure_umbrella_a": 1.14,
     "vigil_figure_umbrella_b": 1.14,
-    "vigil_figure_placard_a": 0.69,
-    "vigil_figure_placard_b": 0.69,
-    "vigil_figure_flask_a": 0.69,
-    "vigil_figure_flask_b": 0.69,
-    "vigil_figure_seated_a": 0.48,
-    "vigil_figure_seated_b": 0.48,
-    "vigil_figure_pamphlets_a": 0.69,
-    "vigil_figure_pamphlets_b": 0.69,
-    "vigil_figure_camera_a": 0.69,
-    "vigil_figure_camera_b": 0.69,
+    "vigil_figure_placard_a": 0.04,
+    "vigil_figure_placard_b": 0.04,
+    "vigil_figure_flask_a": 0.04,
+    "vigil_figure_flask_b": 0.04,
+    "vigil_figure_seated_a": 0.04,
+    "vigil_figure_seated_b": 0.04,
+    "vigil_figure_pamphlets_a": 0.04,
+    "vigil_figure_pamphlets_b": 0.04,
+    "vigil_figure_camera_a": 0.04,
+    "vigil_figure_camera_b": 0.04,
     "vigil_part_sign_save": 2.2,
     "vigil_part_sign_strike": 2.2,
     "vigil_part_sign_chapel": 2.2,

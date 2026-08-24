@@ -486,6 +486,55 @@ export function drawEnemyVoidStage(profileKey, {
   });
 }
 
+export function submergedBattleFrame({ music=null, presentation=null, movementIndex=0, intent=null }={}) {
+  if(presentation?.mode!=='submerged')return null;
+  const depths=Array.isArray(presentation.movementDepths)?presentation.movementDepths:[.35,.68,1];
+  const submersion=music?.submersion||null;
+  return{
+    phase:submersion?.phase||'dry',
+    wetMix:clamp(submersion?.wetMix||0,0,1),
+    plunge:clamp(submersion?.progress||0,0,1),
+    depth:clamp(depths[Math.max(0,Math.floor(movementIndex))]??depths.at(-1)??1,0,1),
+    visualClass:intent?.presentation?.visualClass||'pressure-field',
+  };
+}
+
+// Natatorium-only battle volume. It is drawn over the ordinary void so combat
+// layout and opponent art stay unchanged; the downbeat simply raises a hard
+// waterline through that stage and leaves intent-specific pressure in its wake.
+export function drawSubmergedBattleField({
+  x,y,w,h,frame=null,now=0,reducedMotion=false,resolveProgress=0,
+}={}){
+  if(!frame||frame.wetMix<=.001)return;
+  uiDraw(({ctx,dpr,cellW,cellH})=>{
+    const px=x*cellW*dpr,py=y*cellH*dpr,pw=w*cellW*dpr,ph=h*cellH*dpr;
+    const waterTop=py+ph*(1-frame.plunge);
+    const tick=reducedMotion?0:now;
+    ctx.save();ctx.beginPath();ctx.rect(px,py,pw,ph);ctx.clip();
+    ctx.fillStyle=`rgba(3,30,25,${(.18+.22*frame.depth)*frame.wetMix})`;
+    ctx.fillRect(px,waterTop,pw,py+ph-waterTop);
+    ctx.fillStyle=`rgba(95,175,145,${.38*frame.wetMix})`;
+    ctx.fillRect(px,waterTop,pw,Math.max(dpr,ph*.014));
+    const line=Math.max(dpr,ph*.009),alpha=(.10+.14*resolveProgress)*frame.wetMix;
+    ctx.fillStyle=`rgba(118,178,151,${alpha})`;
+    const cls=frame.visualClass;
+    if(cls==='meter-return'||cls==='bottom-return'){
+      for(let index=0;index<5;index+=1){const yy=waterTop+ph*(.09+index*.12);ctx.fillRect(px+pw*(.08+index*.035),yy,pw*(.66-index*.055),line);}
+    }else if(cls==='pressure-field'||cls==='depth-pressure'){
+      for(let index=0;index<4;index+=1){const inset=pw*(.08+index*.07),yy=waterTop+ph*(.08+index*.06);ctx.strokeStyle=`rgba(118,178,151,${alpha*(1-index*.14)})`;ctx.lineWidth=line;ctx.strokeRect(px+inset,yy,pw-inset*2,Math.max(line,ph*(.74-index*.12)));}
+    }else if(cls==='surface-notes'){
+      for(let index=0;index<7;index+=1){const xx=px+pw*(.10+index*.12),rise=reducedMotion ? .12 : ((tick*.08+index*.13)%1)*.36;ctx.fillRect(xx,waterTop+ph*(.08+rise),pw*.018,ph*.055);}
+    }else if(cls==='drain-return'||cls==='ladder-absence'){
+      const lx=px+pw*.22;for(let index=0;index<6;index+=1){ctx.fillRect(lx,waterTop+ph*(.09+index*.10),pw*.17,line);ctx.fillRect(lx,waterTop+ph*.07,pw*.012,ph*.64);ctx.fillRect(lx+pw*.16,waterTop+ph*.07,pw*.012,ph*.64);}
+    }else if(cls==='undertow'){
+      const shift=reducedMotion?0:((tick*.08)%1)*pw*.14;for(let index=-1;index<8;index+=1){const xx=px+index*pw*.16+shift;ctx.save();ctx.translate(xx,waterTop);ctx.rotate(-.28);ctx.fillRect(0,0,pw*.035,ph);ctx.restore();}
+    }else{
+      for(let index=0;index<42;index+=1){const hx=((index*37)%101)/101,hy=((index*67)%97)/97,drift=reducedMotion?0:Math.sin(tick*.7+index)*.012;ctx.fillRect(px+(hx+drift)*pw,waterTop+hy*Math.max(0,py+ph-waterTop),line,line);}
+    }
+    ctx.restore();
+  });
+}
+
 export function drawOpponentCombatArt(ref, {
   x, y, w, h, coherence, maxCoherence, snr = 'signal', resolveProgress = 0, reduceFlash = false,
   oblique = 0, hitFlash = 0, knock = 0,

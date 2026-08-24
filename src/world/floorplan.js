@@ -1571,6 +1571,9 @@ export function interactDoor(px,py,facing,keys){
   if(portal.definition?.access==='exit-only'&&side!==(portal.definition.insideSide===-1?-1:1)){
     return{ok:false,why:'exit-only',id:portal.id,archetype:portal.definition?.archetype||null};
   }
+  if(portal.runtime.state===DOOR_STATE.OPENING){
+    return{ok:true,opened:false,opening:true,id:portal.id,keyId:portal.keyId,archetype:portal.definition?.archetype||null,construction:portal.definition?.construction||'steel'};
+  }
   const opening=portal.runtime.state===DOOR_STATE.CLOSED||portal.runtime.state===DOOR_STATE.CLOSING;
   if(opening&&portal.keyId&&!(keys&&keys.has(portal.keyId)))return{ok:false,why:'locked',id:portal.id,keyId:portal.keyId,archetype:portal.definition?.archetype||null};
   const along=portal.widthAxis==='x'?py:px,plane=portal.widthAxis==='x'?portal.cy:portal.cx;
@@ -1580,6 +1583,10 @@ export function interactDoor(px,py,facing,keys){
     if(portal.definition?.closer!=='none')portal.runtime.closerArmed=true;
     return{ok:true,opened,id:portal.id,keyId:portal.keyId,archetype:portal.definition?.archetype||null,construction:portal.definition?.construction||'steel'};
   }
+  // Only the stable, fully-open endpoint accepts a deliberate close. Repeated
+  // presses during the opening animation are handled above and can never make
+  // a paired leaf reverse into the player.
+  if(portal.runtime.state!==DOOR_STATE.OPEN)return{ok:true,closed:false,id:portal.id,keyId:portal.keyId,archetype:portal.definition?.archetype||null,construction:portal.definition?.construction||'steel'};
   const removedWedge=portal.runtime.wedge;
   const closed=beginDoorClose(portal.runtime,{removeWedge:true});
   if(portal.definition?.closer!=='none')portal.runtime.closerArmed=true;

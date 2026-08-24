@@ -1063,7 +1063,7 @@ function addStringInstrument(m, {
 }
 {
   const m=mesh('pool_lane_ropes');
-  for(const x of[-3.6,-1.2,1.2,3.6]){
+  for(const x of[-2.925,-.975,.975,2.925]){
     addBeam(m,[x,.065,-7.45],[x,.065,7.45],.035,MAT.steel);
     let n=0;
     for(let z=-7.25;z<=7.25;z+=.52,n++)addBox(m,[x,.075,z],[.12,.10,.28],n%5===0?MAT.safetyRed:n%2?MAT.agedWhite:MAT.poolBlue);
@@ -1086,6 +1086,21 @@ function addStringInstrument(m, {
   }
   for(let i=0;i<4;i++)addBeam(m,[-.29,.18+i*.20,.46-i*.055],[.29,.18+i*.20,.46-i*.055],.045,MAT.steel);
   addBox(m,[0,.025,-.02],[.82,.05,.18],MAT.ivory);
+}
+{
+  // A conventional two-sided access rail following the five-metre pool stair.
+  // Its origin is the -2m basin bottom; the north returns therefore finish at
+  // deck + 1m while the south returns finish one metre above the bottom.
+  const m=mesh('pool_access_handrail');
+  for(const x of[-.86,.86]){
+    addBeam(m,[x,3.0,-2.5],[x,1.0,2.5],.045,MAT.steel);
+    for(let index=0;index<=5;index+=1){
+      const t=index/5,z=-2.5+t*5,treadY=2.0*(1-t);
+      addBeam(m,[x,treadY+.03,z],[x,treadY+1.0,z],.038,MAT.steel);
+    }
+    addBeam(m,[x,3.0,-2.5],[x,3.0,-2.92],.045,MAT.steel);
+    addBeam(m,[x,1.0,2.5],[x,1.0,2.92],.045,MAT.steel);
+  }
 }
 {
   const m=mesh('pool_lifebuoy');
@@ -1127,7 +1142,7 @@ function addStringInstrument(m, {
 {const m=mesh('drain_grille');addBox(m,[0,.025,0],[1.2,.05,.18],MAT.steel);for(let x=-.52;x<=.52;x+=.13)addBox(m,[x,.055,0],[.025,.03,.15],MAT.dark);}
 {
   const m=mesh('pool_lane_markings');
-  for(const x of[-4.8,-2.4,0,2.4,4.8]){
+  for(const x of[-3.9,-1.95,0,1.95,3.9]){
     addBox(m,[x,.018,0],[.16,.036,15.35],MAT.ivory);
     addBox(m,[x,.022,-6.75],[1.05,.042,.15],MAT.dark);
   }
@@ -2269,9 +2284,9 @@ for(const [name,cfg] of Object.entries(SOURCES)){
   // THE GET-IN, SEEN FROM THE WEATHER.
   //
   // Exterior rendering deliberately omits the ray-marched interior plan. This
-  // aligned sightline shell supplies the floor, three enclosing walls, ceiling
-  // and roof steel visible through the open goods doors. It carries no
-  // collision and prop-visibility removes it once the observer is indoors.
+  // aligned sightline shell supplies the floor and enclosing walls visible
+  // through the open goods doors. The ceiling and roof steel are a separate,
+  // shared mesh below so entering the room never swaps one roof for another.
   const m=mesh('getin_sightline_shell');
   const entryX=4.25,farX=20.25,northZ=-4.25,southZ=7.75,ceiling=5.50;
   const doorZ=2.75,doorHalf=1.62,doorA=doorZ-doorHalf,doorB=doorZ+doorHalf;
@@ -2285,15 +2300,42 @@ for(const [name,cfg] of Object.entries(SOURCES)){
   addBox(m,[farX,ceiling/2,(northZ+southZ)/2],[.24,ceiling,southZ-northZ],MAT.glazedBrick);
   addBox(m,[(entryX+farX)/2,ceiling/2,northZ],[farX-entryX,ceiling,.24],MAT.glazedBrick);
   addBox(m,[(entryX+farX)/2,ceiling/2,southZ],[farX-entryX,ceiling,.24],MAT.glazedBrick);
-  addBox(m,[(entryX+farX)/2,ceiling-.05,(northZ+southZ)/2],[farX-entryX,.10,southZ-northZ],MAT.agedWhite);
-  // Deep transverse rafters and three continuous longitudinal girders keep the
-  // ceiling from reading as another unmodelled plane from the threshold.
-  for(let x=entryX+.7;x<farX-.2;x+=2.35)addBeam(m,[x,ceiling-.24,northZ+.12],[x,ceiling-.24,southZ-.12],.16,MAT.steel);
-  for(const z of[-2.6,1.75,6.1])addBeam(m,[entryX,ceiling-.42,z],[farX,ceiling-.42,z],.20,MAT.steel);
+  // The stepped northeast services pocket matches the room plan. The far wall
+  // remains behind it, as real backing masonry, while the projecting masses
+  // make the Scene Dock read as an adapted service volume rather than a cube.
+  addBox(m,[19.00,ceiling/2,-3.75],[2.5,ceiling,1.0],MAT.glazedBrick);
+  addBox(m,[19.50,ceiling/2,-2.75],[1.5,ceiling,1.0],MAT.glazedBrick);
   // A dark base course gives all three walls a readable foot in torchlight.
   addBox(m,[farX-.14,.22,(northZ+southZ)/2],[.08,.44,southZ-northZ],MAT.brickDark);
   addBox(m,[(entryX+farX)/2,.22,northZ+.14],[farX-entryX,.44,.08],MAT.brickDark);
   addBox(m,[(entryX+farX)/2,.22,southZ-.14],[farX-entryX,.44,.08],MAT.brickDark);
+}
+{
+  // THE SCENE DOCK ROOF, FROM BOTH SIDES OF THE GOODS DOORS.
+  //
+  // The collision ceiling remains the floorplan's continuous 5.5m plane. This
+  // non-colliding construction layer gives that plane a material, joints and
+  // load path without introducing stepped DDA headers or a second room shell.
+  const m=mesh('scene_dock_roof_structure');
+  const entryX=4.25,farX=20.25,northZ=-4.25,southZ=7.75,ceiling=5.50;
+  const span=farX-entryX,panelCount=8,panelW=span/panelCount;
+  for(let index=0;index<panelCount;index+=1){
+    const x=entryX+(index+.5)*panelW;
+    const material=index===2||index===6?MAT.roofGlass:MAT.agedWhite;
+    addBox(m,[x,ceiling-.055,(northZ+southZ)/2],[panelW-.055,.11,southZ-northZ-.08],material);
+    // Paired shallow ribs make each fibre-cement/corrugated bay catch a torch
+    // sweep instead of reading as one unlit textureless slab.
+    for(const edge of[-.36,.36])addBeam(m,[x+edge,ceiling-.13,northZ+.08],[x+edge,ceiling-.13,southZ-.08],.025,MAT.steel);
+  }
+  // Deep transverse rafters and continuous longitudinal girders carry the roof.
+  for(let x=entryX+.7;x<farX-.2;x+=2.35)addBeam(m,[x,ceiling-.25,northZ+.12],[x,ceiling-.25,southZ-.12],.16,MAT.steel);
+  for(const z of[-2.6,1.75,6.1])addBeam(m,[entryX,ceiling-.44,z],[farX,ceiling-.44,z],.20,MAT.steel);
+  // Shallow wall piers terminate the frames. They are construction, not hidden
+  // collision: every pier remains inside the authored wall envelope.
+  for(let x=entryX+.7;x<farX-.2;x+=2.35){
+    addBox(m,[x,2.62,northZ+.12],[.28,5.24,.18],MAT.steel);
+    addBox(m,[x,2.62,southZ-.12],[.28,5.24,.18],MAT.steel);
+  }
 }
 {
   // TWO HONEST WAYS ONTO THE DOCK.
@@ -2906,6 +2948,53 @@ function buildExteriorLocal(name,{
   }else{
     addBox(m,[headX-.13,headY-.12,-.025],[.11,.26,.26],coat,-.18);
   }
+  // ── THE TAILORING ────────────────────────────────────────────────────────
+  //
+  // What separates a coat from a box is where it is SEWN, and none of that was
+  // here: the figures read as blocked-in silhouettes because every edge was a
+  // primitive boundary rather than a seam. This is the tailoring, in the same
+  // faceted grammar as the rest of the body — hard planes and six-sided stock,
+  // no organic forms.
+  //
+  // Deliberately still no eyes, brows, nose, mouth or spherical cranium. The
+  // head stays obscured; what gains detail is everything a wet coat actually
+  // shows at ten metres in sodium light: a buttoned placket catching the light
+  // down the front, a belt breaking the waist, cuffs and turn-ups closing the
+  // limbs off, a yoke seam across the shoulders, and boots with a sole.
+  const front=-.175, back=.16;
+  // The placket and its buttons. Proud of the coat front by a couple of
+  // centimetres, which is what survives the pixel mesh.
+  addBox(m,[shoulderX*.6,(hipY+shoulderY)/2-.02,front-.012],[.085,shoulderY-hipY+.10,.028],coat,turn*.22);
+  for(const t of [.20,.48,.76]){
+    const y=shoulderY-.12-t*(shoulderY-hipY+.02);
+    addBox(m,[shoulderX*.6,y,front-.030],[.055,.050,.022],MAT.dark,turn*.22);
+  }
+  // The waist. A coat with no belt line is a tube; this is the one horizontal
+  // that makes the taper above it read as a taper.
+  addBox(m,[shoulderX*.5,hipY+.06,.02],[.52,.075,.36],MAT.dark,turn*.20);
+  // The yoke seam across the shoulders, and the collar band standing behind the
+  // neck. Both are back-facing: they do the work when the figure is turned away.
+  addBox(m,[shoulderX,shoulderY-.06,back],[.46,.055,.045],MAT.dark,turn*.24);
+  addBox(m,[headX,headY-.245,.055],[.30,.115,.075],scarf??coat,turn*.12,.10);
+  // Cuffs, closing the sleeves at the glove. Six-sided stock, like the hands.
+  for(let i=0;i<2;i+=1){
+    const hand=hands[i],elbow=elbows[i];
+    const t=.80;
+    addCylinder(m,[
+      elbow[0]+(hand[0]-elbow[0])*t,
+      elbow[1]+(hand[1]-elbow[1])*t,
+      elbow[2]+(hand[2]-elbow[2])*t,
+    ],.082,.085,MAT.dark,6);
+  }
+  // Turn-ups at the ankle, and boots that have a sole and a heel rather than
+  // being one slab of black. All of it inside the existing shoe footprint.
+  for(const side of [-1,1]){
+    const x=side<0?-stance*.58:stance*.48, foot=side<0?-stance:stance;
+    const zc=side<0?-.16:.10, tilt=side<0?.05:-.04;
+    addBox(m,[x*.9,.235,zc*.35],[.24,.075,.235],trouser,0,side*.03);
+    addBox(m,[foot,.018,zc],[.27,.035,.42],MAT.dark,tilt);
+    addBox(m,[foot,.088,zc-.145],[.23,.095,.13],MAT.dark,tilt);
+  }
   if(scarf!==null)addBox(m,[.10+shoulderX,shoulderY-.25,-.19],[.105,.42,.055],scarf,0,-.08);
   if(bag){addBox(m,[.36,.68,.05],[.34,.52,.20],MAT.wood);addBeam(m,[.20,shoulderY+.02,.02],[.42,.92,.04],.035,MAT.dark);}
   if(highVis){
@@ -3060,6 +3149,24 @@ function buildVigilSign(name,words,{w=1.34,boardY=1.78,lean=0,banner=false}={}){
   const gap=Math.min(.26,h/(lines.length+.45)),top=boardY+(lines.length-1)*gap/2;
   lines.forEach((line,index)=>raisedVigilLine(m,line,{w,y:top-index*gap,z:z-.038,pitch:lean}));
 }
+
+function buildSceneDockSign(name,lines,{w=2.30,h=.58}={}){
+  const m=mesh(name);
+  addBox(m,[0,0,0],[w,h,.065],MAT.pubGreen);
+  addBox(m,[0,0,-.038],[w-.08,h-.08,.018],MAT.dark);
+  const gap=h/(lines.length+.35),top=(lines.length-1)*gap/2;
+  lines.forEach((line,index)=>raisedVigilLine(m,line,{
+    w:w-.12,y:top-index*gap,z:-.057,mat:MAT.agedWhite,
+  }));
+  // Dirty ivory surround and two phosphor corner tabs make the sign readable
+  // on emergency light or torch alone; it never depends on restored S/P-03.
+  addBox(m,[0,h/2-.025,-.06],[w,.05,.025],MAT.ivory);
+  addBox(m,[0,-h/2+.025,-.06],[w,.05,.025],MAT.ivory);
+  for(const x of[-w/2+.06,w/2-.06])addBox(m,[x,0,-.06],[.05,h,.025],MAT.ivory);
+}
+
+buildSceneDockSign('scene_dock_sign_foh',['FRONT OF HOUSE']);
+buildSceneDockSign('scene_dock_sign_services',['STUDIOS / PLANT'],{w:2.70,h:.86});
 
 // Six named bodies, six independent pieces of kit. Conversation settles the
 // relevant part without ever shifting the actor's collider or focus anchor.

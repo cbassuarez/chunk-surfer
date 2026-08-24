@@ -152,3 +152,17 @@ export function footstep(level = 0.22, { muffle = 0 } = {}) {
   try { src.start(now, offset, dur); src.stop(now + dur + 0.02); } catch (_) { return; }
   src.onended = () => { try { src.disconnect(); env.disconnect(); pan?.disconnect(); dampen?.disconnect(); } catch (_) {} };
 }
+
+// Audible water stays outside the stealth model. main.js emits the unchanged
+// footstep noise first, then adds this short filtered splash for the player.
+export function waterFootstep(level = 0.12) {
+  if(!ctx||!bus||level<=.001)return;
+  const now=ctx.currentTime,src=ctx.createBufferSource(),buffer=ctx.createBuffer(1,Math.floor(ctx.sampleRate*.18),ctx.sampleRate),data=buffer.getChannelData(0);
+  let low=0;for(let index=0;index<data.length;index+=1){low=low*.86+(Math.random()*2-1)*.14;data[index]=low*(1-index/data.length);}
+  src.buffer=buffer;
+  const filter=ctx.createBiquadFilter();filter.type='bandpass';filter.frequency.setValueAtTime(520,now);filter.Q.setValueAtTime(.65,now);
+  const gain=ctx.createGain();gain.gain.setValueAtTime(Math.min(.22,level),now);gain.gain.exponentialRampToValueAtTime(.0005,now+.18);
+  src.connect(filter);filter.connect(gain);gain.connect(bus);
+  try{src.start(now);src.stop(now+.2);}catch(_){return;}
+  src.onended=()=>{try{src.disconnect();filter.disconnect();gain.disconnect();}catch(_){}};
+}

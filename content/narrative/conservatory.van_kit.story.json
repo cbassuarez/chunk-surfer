@@ -1,0 +1,224 @@
+{
+ "schemaVersion": 1,
+ "id": "conservatory.van_kit",
+ "title": "The Back of the Van",
+ "status": "active",
+ "entry": "start",
+ "entries": [
+  "start"
+ ],
+ "tags": [],
+ "notes": "The opening, and one action. Everything in the van is here: the case, the order, the spanner, the badge. The spanner is the whole plant arc in miniature \u2014 take it now and the pipe costs four seconds later; leave it and it costs a two-metre Stillson dragged seventy-seven metres. Nothing says so.",
+ "regions": [
+  {
+   "id": "conservatory.van_kit.region",
+   "title": "The back of the van",
+   "kind": "scene",
+   "color": "#3f4a3a",
+   "nodeIds": [
+    "start",
+    "hub",
+    "order",
+    "spanner",
+    "spanner_taken",
+    "badge",
+    "badge_taken",
+    "leave"
+   ]
+  }
+ ],
+ "nodes": {
+  "start": {
+   "speaker": "THE VAN",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "The doors go back on a shelf of somebody else's leavings and one case that is yours.",
+     "id": "start.line.1"
+    },
+    {
+     "who": "you",
+     "text": "Right. Five rooms, a minute each, and then I drive home.",
+     "id": "start.line.2"
+    }
+   ],
+   "choices": [
+    {
+     "text": "take the case",
+     "goto": "hub",
+     "id": "start.choice.1"
+    }
+   ],
+   "id": "start",
+   "type": "choice"
+  },
+  "hub": {
+   "speaker": "THE VAN",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "Recorder, torch, headphones, radio. The order folded twice in the side pocket. The shelf light picks out what else is up there.",
+     "id": "hub.line.1"
+    }
+   ],
+   "choices": [
+    {
+     "text": "read the order again",
+     "goto": "order",
+     "if": "!van.order.read",
+     "id": "hub.choice.1"
+    },
+    {
+     "text": "the spanner on the shelf",
+     "goto": "spanner",
+     "if": "!van.spanner.taken",
+     "id": "hub.choice.2"
+    },
+    {
+     "text": "the badge on the bulkhead clip",
+     "goto": "badge",
+     "if": "!badge.taken",
+     "id": "hub.choice.3"
+    },
+    {
+     "text": "shut the doors",
+     "goto": "leave",
+     "id": "hub.choice.4"
+    }
+   ],
+   "id": "hub",
+   "type": "choice"
+  },
+  "order": {
+   "speaker": "",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "Five rooms, typed. A minute of clean tone in each. Signed by somebody at a desk who has never been inside this building at night.",
+     "id": "order.line.1"
+    },
+    {
+     "who": "you",
+     "text": "One minute. Which is a minute of nothing happening, and that is the hard part.",
+     "id": "order.line.2"
+    }
+   ],
+   "set": [
+    "van.order.read"
+   ],
+   "goto": "hub",
+   "id": "order",
+   "type": "dialogue"
+  },
+  "spanner": {
+   "speaker": "THE SHELF",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "Your own adjustable spanner, blue-handled, laid across the lit shelf beside the blanket.",
+     "id": "spanner.line.1"
+    },
+    {
+     "who": "you",
+     "text": "That is not a recording job. That is a job I did last month and never put back in the toolbox.",
+     "id": "spanner.line.2"
+    }
+   ],
+   "choices": [
+    {
+     "text": "drop it in the side pocket",
+     "goto": "spanner_taken",
+     "vanChoice": "spanner",
+     "set": [
+      "van.spanner.taken"
+     ],
+     "id": "spanner.choice.1"
+    },
+    {
+     "text": "leave it on the shelf",
+     "goto": "hub",
+     "id": "spanner.choice.2"
+    }
+   ],
+   "id": "spanner",
+   "type": "choice"
+  },
+  "spanner_taken": {
+   "speaker": "",
+   "lines": [
+    {
+     "who": "you",
+     "text": "Weighs nothing. It can come.",
+     "id": "spanner_taken.line.1"
+    }
+   ],
+   "goto": "hub",
+   "id": "spanner_taken",
+   "type": "dialogue"
+  },
+  "badge": {
+   "speaker": "THE BULKHEAD",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "A film badge on a spring clip, screwed to the bulkhead above the shelf. The name strip has gone grey and soft with handling.",
+     "id": "badge.line.1"
+    },
+    {
+     "who": "you",
+     "text": "Not mine. Whoever had this van before me had one and never handed it back.",
+     "id": "badge.line.2",
+     "hold": 0.6
+    },
+    {
+     "who": "direction",
+     "text": "The expiry is printed small along the edge. It ran out a long time ago and nobody came to collect it.",
+     "id": "badge.line.3"
+    }
+   ],
+   "choices": [
+    {
+     "text": "clip it to the case",
+     "goto": "badge_taken",
+     "vanChoice": "badge",
+     "set": [
+      "badge.taken"
+     ],
+     "id": "badge.choice.1"
+    },
+    {
+     "text": "leave it on the bulkhead",
+     "goto": "hub",
+     "id": "badge.choice.2"
+    }
+   ],
+   "id": "badge",
+   "type": "choice"
+  },
+  "badge_taken": {
+   "speaker": "",
+   "lines": [
+    {
+     "who": "you",
+     "text": "It goes where it goes.",
+     "id": "badge_taken.line.1"
+    }
+   ],
+   "goto": "hub",
+   "id": "badge_taken",
+   "type": "dialogue"
+  },
+  "leave": {
+   "speaker": "",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "The doors go, and the last light he owns goes with them.",
+     "id": "leave.line.1"
+    }
+   ],
+   "id": "leave",
+   "type": "dialogue"
+  }
+ }
+}

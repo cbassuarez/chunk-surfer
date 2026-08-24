@@ -80,6 +80,15 @@ leaf('door_leaf_service',1,2.10,.045,MAT.green,[box(.50,.19,-.035,.92,.26,.025,M
 leaf('door_leaf_practice',.95,2.15,.065,MAT.oak,[box(.475,.22,-.05,.87,.28,.025,MAT.kick),box(.475,1.58,-.05,.24,.36,.025,MAT.glass),box(.84,1.08,-.06,.13,.04,.04,MAT.brass),box(.025,1.075,0,.035,2.05,.08,MAT.rubber)]);
 leaf('door_leaf_staff',.95,2.15,.05,MAT.oak,[box(.475,1.55,-.042,.76,.86,.028,MAT.glass),box(.84,1.05,-.055,.13,.04,.04,MAT.brass)]);
 leaf('door_leaf_pool',1.05,2.15,.05,MAT.green,[box(.525,1.55,-.042,.30,.86,.028,MAT.glass),box(.525,.20,-.043,.97,.26,.026,MAT.kick)]);
+// The public baths pair has its own measured leaf. Reusing the 1.05 x 2.15m
+// fire-door mesh put 140mm of leaf through the centre meeting stile and left
+// the transom datum visibly short of the authored 2.28m head.
+leaf('door_leaf_pool_pair',.91,2.28,.05,MAT.green,[
+  box(.455,1.62,-.042,.30,.94,.028,MAT.glass),
+  box(.455,.20,-.043,.83,.26,.026,MAT.kick),
+  box(.81,1.12,-.058,.12,.045,.04,MAT.iron),
+  box(.018,1.14,0,.036,2.20,.075,MAT.rubber),
+]);
 leaf('door_leaf_public',.88,2.35,.055,MAT.dark,[box(.44,1.49,-.047,.68,1.30,.025,MAT.glass),box(.44,.20,-.047,.80,.27,.025,MAT.brass),box(.76,1.08,-.06,.14,.04,.04,MAT.brass)]);
 leaf('door_leaf_hall',1.02,2.35,.08,MAT.oak,[
   box(.51,.20,-.058,.94,.28,.028,MAT.kick),

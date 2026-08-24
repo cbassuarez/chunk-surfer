@@ -7,6 +7,7 @@
 
 import { ROOM_CELLS, TARGETS } from './conservatory-script.js';
 import { BELL_CHAMBER_ANCHOR, ORGAN_LOFT_ANCHOR, RINGING_ROOM_ANCHOR } from './bell-tower-layout.js';
+import { SCENE_DOCK_LABEL } from './space-labels.js';
 
 const freezePoint = (point) => Object.freeze({ x: Number(point.x), y: Number(point.y) });
 const S = (id, label, logical, extra = {}) => Object.freeze({
@@ -42,7 +43,7 @@ export const FACILITY_SPACES = Object.freeze([
   S('lift-shaft','OLD LIFT SHAFT',{x:44,y:10},{shortLabel:'LIFT',doorIds:['b1-lift-hatch']}),
 
   S('loading-bay','LOADING BAY',{x:53,y:8},{shortLabel:'BAY',doorIds:['dock-grey-exterior']}),
-  S('get-in','GET IN',{x:65,y:9},{shortLabel:'GETIN',doorIds:['dock-grey-exterior','dock-inner-service']}),
+  S('get-in',SCENE_DOCK_LABEL,{x:65,y:9},{shortLabel:'DOCK',doorIds:['dock-grey-exterior','dock-foyer-service','dock-inner-service']}),
   S('atrium','ATRIUM / FRONT OF HOUSE',{x:81,y:10},{shortLabel:'FOH',doorIds:['dock-foyer-service','foh-office','hall-vestibule']}),
   S('box-office','BOX OFFICE',{x:93,y:10},{shortLabel:'BOX',doorIds:['foh-office']}),
   S('ground-spine','GROUND SPINE',{x:68,y:23},{shortLabel:'SPINE'}),

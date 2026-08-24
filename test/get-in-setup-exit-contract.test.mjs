@@ -38,6 +38,8 @@ test('grey-door memory beat is setup-independent and uses focused door context',
   assert.doesNotMatch(body, /setupComplete\(\)/, 'grey-door beat is available before the level check');
   assert.match(body, /focus\?\.doorWins/, 'grey-door beat consumes the focused door instead of a broad scan first');
   assert.match(body, /portal\?\.id!==GREY_DOOR_ID/, 'grey-door beat requires the actual grey door');
+  assert.match(body, /FP\.zoneAt\(px,py\)!==ZONE\.getIn/, 'the loading-bay side cannot trigger the inside memory beat');
+  assert.match(body, /opening\.postDoor\.started/, 'the interaction records that the player deliberately began the beat');
 });
 
 test('interact checks setup exits before the distinct grey-door beat', () => {

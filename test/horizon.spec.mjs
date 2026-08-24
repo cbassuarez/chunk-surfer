@@ -10,6 +10,7 @@ import {
 } from '../src/game/chunk-surf-state.js';
 import { buildChunkSurfGodPreset, CHUNK_SURF_GOD_PRESET } from '../src/game/chunk-surf-god.js';
 import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
+import { HORIZON_BUST_AUDIENCE } from '../src/game/horizon-bust.js';
 import { applyRigAdvantage } from '../src/game/source-rig-bridge.js';
 import { sourceCombatBattle } from '../src/data/combat-definitions.js';
 
@@ -96,9 +97,11 @@ function onTape({marbleEyes=null,completions=null}={}) {
   // He does not hand over the detour on the first word. He warns you first, at
   // length, which is the joke: nobody can say they were not told.
   let offered = false;
-  for (let i = 0; i < 2; i += 1) offered = offered || runtime.talkToHorizonBust().offers;
-  assert.equal(offered, false, 'the bust warns you before he offers anything');
-  assert.equal(runtime.talkToHorizonBust().offers, true, 'and then he offers');
+  for (let i = 0; i < HORIZON_BUST_AUDIENCE.carried.length - 1; i += 1) {
+    offered = offered || runtime.talkToHorizonBust().offers;
+  }
+  assert.equal(offered, false, 'recognition, history, route, and consequence precede the invitation');
+  assert.equal(runtime.talkToHorizonBust().offers, true, 'the final audience beat offers the seal');
   assert.equal(runtime.decideHorizonBust(true).accepted,true,'the proposition, not the eyes, commits Tower');
 
   // THE DETOUR OPENS A PLACE, IT DOES NOT CLOSE THE CHAPTER.

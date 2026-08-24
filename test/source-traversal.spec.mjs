@@ -94,6 +94,15 @@ assert.doesNotMatch(runtimeSource,/emitNoise|MONITOR\./,'Source weather, contact
     const uphill=createSourceSpaceRuntime({initialState:built.state}).geometry.canStep(low.x,low.y,upTo.x,upTo.y);
     assert.equal(uphill.ok,false,`${chute.id} became climbable`);
     assert.equal(uphill.why,'one-way chute');
+
+    let landed;
+    for(let i=0;i<180&&!landed?.completed;i+=1)landed=runtime.tickTraversal(1/60);
+    assert.equal(landed?.completed,true,`${chute.id} did not finish`);
+    const exit=runtime.geometry.canStep(
+      landed.position.x,landed.position.y,
+      landed.position.x+chute.dir.x,landed.position.y+chute.dir.y,
+    );
+    assert.equal(exit.ok,true,`${chute.id} trapped the player on its bottom lip`);
   }
 }
 
@@ -123,7 +132,7 @@ assert.doesNotMatch(runtimeSource,/emitNoise|MONITOR\./,'Source weather, contact
 }
 
 {
-  const built = buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FIRST_LIFT, { seed: 4417 });
+  const built = buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FIRST_CONTACT, { seed: 4417 });
   const runtime = createSourceSpaceRuntime({ initialState: built.state });
   runtime.setPlayerPosition({ x: ORIGIN.x + 30, y: ORIGIN.y - 240, facing: 0 });
   const encounter = runtime.beginHushContact();

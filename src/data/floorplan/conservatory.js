@@ -7,7 +7,7 @@
 //   sub-basement  (left, -4m)    the dance wing: B3 · B2 · B1 · room 5 · the
 //                                prop store · the plant room · two locked
 //                                service rooms · the bricked lift shaft
-//   ground        (top right)    the loading bay · the get-in · foyer · concert
+//   ground        (top right)    the loading bay · Scene Dock · foyer · concert
 //                                hall · the natatorium
 //   upper         (+4.8m)              the practice wing · the vaulted chapel
 //   academic      (+10m)       locked instruction rooms · offices · atrium crown
@@ -195,9 +195,9 @@ function bellChamberProfile(x,y,cell){return cell.solid?null:{ceil:22.0};}
 function natatoriumRows(){
   const w=27,h=24,out=[];
   for(let y=0;y<h;y++){let row='';for(let x=0;x<w;x++){
-    // One outer room envelope. The W rectangle is a surface/material change,
-    // not a second lowered collision room; natatoriumProfile flattens it to
-    // the deck so the renderer cannot build inner walls around it.
+    // One outer room envelope. The W rectangle is the real two-metre basin;
+    // its only ordinary transition back to deck height is the stair authored
+    // on the level below.
     let c=(x===0||x===w-1||y===0||y===h-1)?'#':'T';
     // A municipal bath admitted crowds, school groups and stretchers through a
     // proper glazed pair. Two adjacent glyphs compile as one two-metre portal;
@@ -215,14 +215,13 @@ function natatoriumProfile(_x,_y,cell){
   // Collision and sector traversal own one continuous room volume. Encoding a
   // pitched roof as stepped per-cell ceiling heights makes every height change
   // a visible header in the DDA renderer, so keep this envelope continuous.
-  // `W` historically sat 1.6m lower than the deck. In the height-field
-  // renderer that becomes a complete rectangular wall shell, trapping a
-  // smaller "natatorium" inside the room. Keep its wet-tile identity but make
-  // the playable surface continuous; water/lanes provide the pool image.
+  // The basin is deliberately a real height-field depression now. Its vertical
+  // tile faces are the pool walls; the west access stair supplies the legal
+  // walkable transition, so no invisible collision lid is needed.
   // The academic crown begins at 10m over this physical footprint. Stop the
   // pool hall below that slab; the old 11.2m envelope literally intersected
   // its walls and models, producing the nested room visible from the deck.
-  return{floor:cell.zone===ZONE.natatorium&&cell.floor<0?0:cell.floor,ceil:9.5,flags:cell.flags&~F.STAIR};
+  return{floor:cell.floor,ceil:9.5,flags:cell.flags};
 }
 function frontAtriumRows(){
   const w=24,h=25,out=[];
@@ -761,11 +760,24 @@ const EUCLIDEAN_ADDITIONS=[
   {id:'cathedral_stair_north_upper',physicalReplace:true,physicalStack:true,layer:'cathedral_stair',space:'cathedral_stair',renderGroup:'cathedral',origin:{x:0,y:0},physicalOrigin:{x:0,y:0},base:0,rows:[''],
    stairs:[cathedralTurret('cathedral-north-upper',{x:192,y:300},{x:199,y:300},{x:10.5,y:73.5},10.2,4.6,'cathedral','cathedral')]},
   {id:'front_atrium',replace:true,layer:'ground',space:'front_atrium',renderGroup:'ground',origin:{x:74,y:3},physicalOrigin:{x:74,y:3},base:0,rows:frontAtriumRows(),profile:frontAtriumProfile},
-  // The get-in and the replacement atrium each own one metre of this old thick
-  // wall. Author both cells as one single-leaf throat; leaf count remains
-  // explicit in the door schedule.
-  {id:'getin_foyer_threshold',replace:true,layer:'ground',space:'front_atrium',renderGroup:'ground',origin:{x:73,y:13},physicalOrigin:{x:73,y:13},base:0,rows:['++']},
-  {id:'natatorium',replace:true,layer:'ground',space:'natatorium',renderGroup:'ground',origin:{x:70,y:27},physicalOrigin:{x:70,y:27},base:0,rows:natatoriumRows(),profile:natatoriumProfile},
+  // The Scene Dock now reaches the atrium's own wall leaf directly. The former
+  // two-cell replacement made a two-metre threshold that read as a twisting
+  // vestibule and briefly left the player in unzoned space.
+  // NO physicalReplace HERE. The basin is a real depression because the profile
+  // hands `cell.floor` through and the west stair supplies the walkable
+  // transition — claiming the physical span as well adds nothing (the physical
+  // render bytes are identical either way) and makes the pool hall's 0-9.5m
+  // volume collide with main_stair_hall's 4.8-9.75m landing along its east
+  // edge: 36 cells of overlapping rooms at x142-143, which is what
+  // physicalSpanData().overlaps is there to catch.
+  {id:'natatorium',replace:true,layer:'ground',space:'natatorium',renderGroup:'ground',origin:{x:70,y:27},physicalOrigin:{x:70,y:27},base:0,rows:natatoriumRows(),profile:natatoriumProfile,
+   stairs:[{
+     // Five metres, ten 200mm risers, two metres wide. The first tread is flush
+     // with the north deck; the last arrives on the -2m basin floor. Width grows
+     // east, leaving the west pool wall available for both handrail returns.
+     from:{x:78,y:33},to:{x:78,y:37.5},fromH:0,toH:-2,width:2,ceil:9.5,
+     zone:'natatorium',material:'wetTile',layer:'ground',space:'natatorium',renderGroup:'ground',
+   }]},
   {id:'hall_box_office_link',replace:true,layer:'ground',space:'front_atrium',renderGroup:'hall',origin:{x:94,y:24},physicalOrigin:{x:94,y:24},base:0,rows:['FFFFHH','FFFFHH','FFFFHH']},
   {id:'hall_orchestra',replace:true,layer:'ground',space:'hall',renderGroup:'hall',origin:{x:98,y:4},physicalOrigin:{x:98,y:4},base:0,rows:hallGroundRows(),profile:hallGroundProfile},
   // Declared AFTER the orchestra and with the same origin and physicalOrigin, so
@@ -1100,8 +1112,8 @@ export const conservatory = {
         '',
         '',
         '######################## ################# ###################',
-        'DDDDDDD#IIIIIIIIIIIIIII# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
-        'DDDDDDD#IIIIIIIIIIIIIII# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
+        'DDDDDDD#IIIIIIIIIIIII### #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
+        'DDDDDDD#IIIIIIIIIIIIII## #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
         'DDDDDDD#IIIIIIIIIIIIIII# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
         'DDDDDDD#IIIIIIIIIIIIIII# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
         'DDDDDDD#IIIIIIIIIIIIIII# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
@@ -1109,15 +1121,15 @@ export const conservatory = {
         'DDDDDDD+IIIIIIIIIIIIIII###FFFFFFFFFFFFFFF###HHHHHHHHHHHHHHHHH#',
         'DDDDDDD+IIIIIIIIIIIIIII.+.FFFFFFFFFFFFFFF.x.HHHHHHHHHHHHHHHHH#',
         '########IIIIIIIIIIIIIII###FFFFFFFFFFFFFFF###HHHHHHHHHHHHHHHHH#',
+        '       #IIIIIIIIIIIIIIII #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
         '       #IIIIIIIIIIIIIII# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
-        '       #IIIIIIIIIIIIIII# #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
-        '       ########.######## #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
-        '              #+#        #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
-        '              #.#        ########.######## #HHHHHHHHHHHHHHHHH#',
-        '              #.#               #.#        #HHHHHHHHHHHHHHHHH#',
-        '              #.#               #.#        #HHHHHHHHHHHHHHHHH#',
-        '              #.#               #.#        #HHHHHHHHHHHHHHHHH#',
-        ' ##############.###########     #.#        #HHHHHHHHHHHHHHHHH#',
+        '       #######++######## #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
+        '             #...#       #FFFFFFFFFFFFFFF# #HHHHHHHHHHHHHHHHH#',
+        '             #...#       ########.######## #HHHHHHHHHHHHHHHHH#',
+        '             #...#              #.#        #HHHHHHHHHHHHHHHHH#',
+        '             #...#              #.#        #HHHHHHHHHHHHHHHHH#',
+        '             #...#              #.#        #HHHHHHHHHHHHHHHHH#',
+        ' #############...##########     #.#        #HHHHHHHHHHHHHHHHH#',
         ' #,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,#.#        #HHHHHHHHHHHHHHHHH#',
         ' #,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,#.#        #HHHHHHHHHHHHHHHHH#',
         ' #,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,#.#        #HHHHHHHHHHHHHHHHH#',

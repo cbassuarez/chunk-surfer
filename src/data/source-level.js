@@ -210,7 +210,7 @@ export const SOURCE_BELL_PASSAGE = Object.freeze([
 
   // ── act two: the place where time is null ────────────────────────────────
   // One you walk under. The mouth clears a standing body by a metre and a half.
-  bell('bells-null-canopy', 'tower_bell_06', 2, -1036, 30, { yaw: 0.15, elevation: 32.2, blocks: false }),
+  bell('bells-null-canopy', 'tower_bell_06', 2, -1036, 30, { yaw: 0.15, elevation: 33.9, blocks: false }),
   // A wheel with no bell in it, standing on its rim.
   Object.freeze({
     id: 'bells-null-wheel', mesh: 'tower_wheel_01', x: -22, y: -1044, scale: 11,

@@ -79,7 +79,6 @@ export function beginPlantIsolation(tool,now=0){
   state.phase=PLANT_INCIDENT_PHASE.ISOLATING;state.activeTool=tool;state.isolationStartedAt=Math.max(0,Number(now)||0);return true;
 }
 
-export function plantIsolationDurationMs(){return state.activeTool===PLANT_TOOL.SPANNER?4000:9000;}
 export function completePlantIsolation(){
   if(state.phase!==PLANT_INCIDENT_PHASE.ISOLATING)return false;
   if(state.activeTool===PLANT_TOOL.STILLSON)state.heavyMode='used';

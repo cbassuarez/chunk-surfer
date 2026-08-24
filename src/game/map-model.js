@@ -423,6 +423,9 @@ export function buildMapModel({
         spaceId:activeWaypoint.spaceId||null,
         propId:activeWaypoint.propId||null,
         doorId:activeWaypoint.doorId||null,
+        corrupted:!!activeWaypoint.corrupted,
+        glitchPhase:Number(activeWaypoint.glitchPhase)||0,
+        suppressExactDistance:!!activeWaypoint.suppressExactDistance,
         floorId:activeWaypoint.floorId||null,
         position:{x:Number(activeWaypoint.position.x),y:Number(activeWaypoint.position.y)},
       }

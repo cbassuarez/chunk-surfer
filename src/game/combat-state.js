@@ -1128,6 +1128,46 @@ function parryReflect(state) {
   return 2 * GRID + (hasTechnique(state, TECHNIQUE.RIPOSTE) ? 2 * GRID : 0);
 }
 
+// A completed hostile-window defense can be sent back through the same
+// coherence path as a perfect parry. It is deliberately a separate reducer
+// entry point: RETURN is battle-channel state, not another command-card action,
+// and therefore cannot appear in the ordinary move deck or consume a turn.
+export function applyWindowChannelReturn(input, { hits = 1, tier = 2 } = {}) {
+  const state = clone(input);
+  if (state.result || state.phase === 'done') return state;
+  const returnHits = clamp(integer(hits, 1), 1, 2);
+  const coherenceFrom = state.movementCoherence;
+  state.last = { ...(state.last || {}), transition: null };
+  const dealt = applyDamageToEnemy(
+    state,
+    parryReflect(state) * returnHits,
+    COMBAT_ACTION.PARRY,
+  );
+  state.last = {
+    ...(state.last || {}),
+    notice: `WINDOW RETURN · ${dealt} REFLECTED${returnHits > 1 ? ' · FULL CHANNEL' : ''}`,
+    action: 'window-return',
+    windowReturn: { tier: tier >= 3 ? 3 : 2, hits: returnHits },
+    dealt: integer(state.last?.dealt, 0) + dealt,
+    transition: null,
+  };
+  state.actionLog.push({
+    turn: state.turns,
+    movement: currentMovement(state)?.id || null,
+    action: 'window-return',
+    perfect: true,
+    bonus: true,
+    dealt,
+    received: 0,
+  });
+  if (state.movementCoherence <= 0) completeMovement(state);
+  else state.last.transition = null;
+  state.last.windowReturn = { tier: tier >= 3 ? 3 : 2, hits: returnHits };
+  state.last.coherenceFrom = coherenceFrom;
+  state.last.coherenceTo = state.movementCoherence;
+  return state;
+}
+
 // ── charge ──────────────────────────────────────────────────────────────────
 // Specials used to be one apiece per encounter, and worse, all three shared a
 // single lock: three pins into three specials still bought one use. That made

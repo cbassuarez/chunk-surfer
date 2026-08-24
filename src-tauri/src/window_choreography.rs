@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::{
+    fs,
+    path::PathBuf,
     sync::Mutex,
     thread,
     time::{Duration, Instant},
@@ -7,6 +9,12 @@ use std::{
 use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize, WebviewWindow};
 
 const ECHO_LABELS: [&str; 3] = [
+    "interference-echo-1",
+    "interference-echo-2",
+    "interference-echo-3",
+];
+const CHANNEL_LABELS: [&str; 4] = [
+    "interference-monitor",
     "interference-echo-1",
     "interference-echo-2",
     "interference-echo-3",
@@ -20,6 +28,43 @@ struct WindowSnapshot {
     fullscreen: bool,
     minimized: bool,
     always_on_top: bool,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+struct RecoverySnapshot {
+    x: i32,
+    y: i32,
+    width: u32,
+    height: u32,
+    fullscreen: bool,
+    minimized: bool,
+    always_on_top: bool,
+}
+
+impl From<&WindowSnapshot> for RecoverySnapshot {
+    fn from(value: &WindowSnapshot) -> Self {
+        Self {
+            x: value.position.x,
+            y: value.position.y,
+            width: value.size.width,
+            height: value.size.height,
+            fullscreen: value.fullscreen,
+            minimized: value.minimized,
+            always_on_top: value.always_on_top,
+        }
+    }
+}
+
+impl From<RecoverySnapshot> for WindowSnapshot {
+    fn from(value: RecoverySnapshot) -> Self {
+        Self {
+            position: PhysicalPosition::new(value.x, value.y),
+            size: PhysicalSize::new(value.width, value.height),
+            fullscreen: value.fullscreen,
+            minimized: value.minimized,
+            always_on_top: value.always_on_top,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -62,6 +107,8 @@ pub struct WindowChoreographyPlan {
     cue_id: String,
     display_mode: String,
     input_locked: bool,
+    #[serde(default)]
+    hold: bool,
     main: Vec<WindowKeyframe>,
 }
 
@@ -167,6 +214,55 @@ fn restore_snapshot(window: &WebviewWindow, snapshot: &WindowSnapshot) {
     }
 }
 
+fn recovery_path(app: &AppHandle) -> Option<PathBuf> {
+    app.path()
+        .app_data_dir()
+        .ok()
+        .map(|dir| dir.join("window-choreography-recovery.json"))
+}
+
+fn persist_recovery(app: &AppHandle, snapshot: &WindowSnapshot) -> Result<(), String> {
+    let path = recovery_path(app).ok_or_else(|| "window recovery path unavailable".to_string())?;
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|err| err.to_string())?;
+    }
+    let payload =
+        serde_json::to_vec(&RecoverySnapshot::from(snapshot)).map_err(|err| err.to_string())?;
+    fs::write(path, payload).map_err(|err| err.to_string())
+}
+
+fn clear_recovery(app: &AppHandle) {
+    if let Some(path) = recovery_path(app) {
+        let _ = fs::remove_file(path);
+    }
+}
+
+// A hard process exit cannot run the ordinary session cleanup. The snapshot is
+// intentionally the only choreography data that crosses a launch boundary; it
+// contains desktop geometry, no battle, identity, or player-history fields.
+pub fn recover_stale_snapshot(app: &AppHandle) -> bool {
+    let Some(path) = recovery_path(app) else {
+        return false;
+    };
+    let snapshot = fs::read(&path)
+        .ok()
+        .and_then(|bytes| serde_json::from_slice::<RecoverySnapshot>(&bytes).ok())
+        .map(WindowSnapshot::from);
+    let restored = if let (Some(snapshot), Ok(window)) = (snapshot, main_window(app)) {
+        restore_snapshot(&window, &snapshot);
+        true
+    } else {
+        false
+    };
+    close_echoes(app);
+    let _ = fs::remove_file(path);
+    restored
+}
+
+pub fn restore_on_exit(app: &AppHandle) -> bool {
+    restore_if_current(app, None)
+}
+
 fn monitor_rect(window: &WebviewWindow) -> Result<(i32, i32, u32, u32, f64), String> {
     let monitor = window
         .current_monitor()
@@ -262,6 +358,7 @@ fn restore_if_current(app: &AppHandle, token: Option<&str>) -> bool {
     if let (Some(snapshot), Ok(window)) = (snapshot, main_window(app)) {
         restore_snapshot(&window, &snapshot);
     }
+    clear_recovery(app);
     close_echoes(app);
     true
 }
@@ -288,6 +385,7 @@ pub fn chunk_window_choreography_begin(app: AppHandle, token: String) -> Result<
         close_echoes(&app);
     }
     let snapshot = capture(&window)?;
+    persist_recovery(&app, &snapshot)?;
     *active = Some(ActiveSession {
         token,
         snapshot,
@@ -311,7 +409,7 @@ pub fn chunk_window_choreography_place_echo(
     count: u8,
 ) -> Result<bool, String> {
     if !native_positioning_supported()
-        || !ECHO_LABELS.contains(&label.as_str())
+        || !CHANNEL_LABELS.contains(&label.as_str())
         || index >= 3
         || count == 0
         || count > 3
@@ -414,7 +512,9 @@ pub fn chunk_window_choreography_execute(
         if let Ok(mut active) = state.0.lock() {
             if let Some(session) = active.as_mut() {
                 session.executing_since = None;
-                restore_snapshot(&window, &session.snapshot);
+                if !plan.hold {
+                    restore_snapshot(&window, &session.snapshot);
+                }
             }
         };
     }
@@ -462,6 +562,7 @@ mod tests {
             cue_id: cue.into(),
             display_mode: "native".into(),
             input_locked: locked,
+            hold: false,
             main: vec![
                 WindowKeyframe {
                     at_ms: 0,

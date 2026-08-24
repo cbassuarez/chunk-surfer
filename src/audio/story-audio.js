@@ -143,13 +143,28 @@ export async function preload(url) {
   return job;
 }
 
-export function preloadAll() {
+export function preloadOpeningAudio() {
+  // These are the only beds and textures the player can reach before the lodge
+  // handoff. Keep them ahead of the wider authored corpus so dismissing the
+  // advisory never starts the opening while its own decoder is queued behind a
+  // battle stem.
+  return Promise.all([
+    STORY_AUDIO.title,
+    STORY_AUDIO.openingBed,
+    STORY_AUDIO.rain,
+    STORY_AUDIO.booth,
+    STORY_AUDIO.typing,
+  ].map(preload));
+}
+
+export async function preloadAll() {
   // The credits piece is six megabytes and is not needed until the roll, which
   // fetches it lazily on enter. Preloading it at boot would buy nothing and
   // cost the whole download before the first frame.
-  return Promise.all(
-    Object.entries(STORY_AUDIO).filter(([key]) => key !== 'credits').map(([, url]) => preload(url)),
-  );
+  await preloadOpeningAudio();
+  return Promise.all([
+    STORY_AUDIO.tape,
+  ].map(preload));
 }
 
 function setGain(gainNode, value, rampSec = 0.5) {

@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "id": "conservatory.heavy_wrench",
+  "title": "The Stillson",
+  "status": "active",
+  "entry": "start",
+  "entries": ["start"],
+  "tags": [],
+  "notes": "At the oversized Stillson in the get-in. Taking it is a commitment: it never enters the case, so from here it is dragged until it is set down. The refusal is not a dead end — the wrench stays where it is and can be taken later.",
+  "regions": [
+    {
+      "id": "conservatory.heavy_wrench.region",
+      "title": "The maintenance rack",
+      "kind": "scene",
+      "color": "#5a4a3a",
+      "nodeIds": ["start", "weigh", "take", "leave"]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "speaker": "THE RACK",
+      "lines": [
+        { "who": "direction", "text": "A Stillson nearly two metres long, laid across the maintenance rack with the jaw hanging off the end of it.", "id": "start.line.1" },
+        { "who": "you", "text": "That is not a tool, that is a fixture. Somebody bolted this building together with it.", "id": "start.line.2" }
+      ],
+      "choices": [
+        { "text": "take the weight of it", "goto": "weigh", "id": "start.choice.1" },
+        { "text": "leave it on the rack", "goto": "leave", "wrenchChoice": "leave", "id": "start.choice.2" }
+      ],
+      "id": "start",
+      "type": "choice"
+    },
+    "weigh": {
+      "speaker": "THE RACK",
+      "lines": [
+        { "who": "direction", "text": "It comes up off the rack about a foot and stops. Both hands, and it is still going down at one end.", "id": "weigh.line.1" },
+        { "who": "you", "text": "No. It does not go in the case and it does not go on a shoulder.", "id": "weigh.line.2", "hold": 0.7 },
+        { "who": "you", "text": "It goes on the floor, behind me, all the way down. And every foot of that is a noise.", "id": "weigh.line.3" }
+      ],
+      "choices": [
+        { "text": "drag it", "goto": "take", "wrenchChoice": "take", "id": "weigh.choice.1" },
+        { "text": "put it back and find the small one", "goto": "leave", "wrenchChoice": "leave", "id": "weigh.choice.2" }
+      ],
+      "id": "weigh",
+      "type": "choice"
+    },
+    "take": {
+      "speaker": "",
+      "lines": [
+        { "who": "you", "text": "Right. Handle in both hands, jaw behind me, and do not stop on the stairs.", "id": "take.line.1" }
+      ],
+      "id": "take",
+      "type": "dialogue"
+    },
+    "leave": {
+      "speaker": "",
+      "lines": [
+        { "who": "direction", "text": "It goes back across the rack with the jaw hanging off the end of it, where it has been since the works.", "id": "leave.line.1" },
+        { "who": "you", "text": "There will be a spanner in this building somewhere. There always is.", "id": "leave.line.2" }
+      ],
+      "id": "leave",
+      "type": "dialogue"
+    }
+  }
+}

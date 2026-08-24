@@ -86,7 +86,11 @@ async function loadBuffer(id, fetchImpl = globalThis.fetch) {
 
 export async function preloadBattleMusic({ fetchImpl = globalThis.fetch } = {}) {
   if (!ctx || typeof fetchImpl !== 'function') return new Map();
-  await Promise.all(Object.keys(BATTLE_AUDIO).map((id) => loadBuffer(id, fetchImpl)));
+  // Battle audio is background-warmed after the opening. Decode it in authored
+  // order instead of submitting ten large buffers simultaneously; the latter
+  // could starve a live opening bed even though every individual decode was
+  // technically asynchronous.
+  for (const id of Object.keys(BATTLE_AUDIO)) await loadBuffer(id, fetchImpl);
   for (const id of ['bed', ...LEAD_IDS]) {
     const raw = buffers.get(id);
     const aligned = alignBattleBuffer(ctx, raw);
@@ -188,9 +192,21 @@ function normalizedProfile(profile = {}) {
   const mode = profile.mode === 'movement' ? 'movement' : 'fixed';
   const requested = mode === 'movement' ? profile.movementLeads : [profile.lead];
   const valid = (requested || []).map(String).filter((id) => LEAD_IDS.includes(id));
-  return mode === 'movement'
+  const base=mode === 'movement'
     ? { mode, movementLeads: valid.length ? valid : [...LEAD_IDS] }
     : { mode, lead: valid[0] || 'lead-1' };
+  const wet=profile.submersion;
+  if(!wet?.enabled)return base;
+  const dryLeak=Number(wet.dryLeak);
+  return {...base,submersion:{
+    enabled:true,
+    at:wet.at==='downbeat'?'downbeat':'downbeat',
+    lowpassHz:Math.max(120,Number(wet.lowpassHz)||720),
+    q:Math.max(.01,Number(wet.q)||.8),
+    dryLeak:Math.max(0,Math.min(.4,Number.isFinite(dryLeak)?dryLeak:.08)),
+    rampSeconds:Math.max(.02,Number(wet.rampSeconds)||.18),
+    surfaceSeconds:Math.max(.02,Number(wet.surfaceSeconds)||.6),
+  }};
 }
 
 export function createBattleMusicSession({
@@ -209,6 +225,9 @@ export function createBattleMusicSession({
   let startPromise = null;
   let master = null;
   let roomLeak = null;
+  let dryGain = null;
+  let wetGain = null;
+  let wetFilter = null;
   let bank = bufferBank;
   let status = contextRef && destination ? 'idle' : 'unavailable';
   let entryVariant = null;
@@ -225,6 +244,10 @@ export function createBattleMusicSession({
   let finishing = false;
   let stopped = false;
   let intrusion = 0;
+  let submersionAt = null;
+  let submersionEndAt = null;
+  let resurfaceAt = null;
+  let resurfaceEndAt = null;
 
   function now() { return Number(contextRef?.currentTime) || 0; }
   function registerNode(node) { if (node) graphNodes.add(node); return node; }
@@ -299,6 +322,17 @@ export function createBattleMusicSession({
     cancelParam(master.gain, at);
     paramValueAt(master.gain, master.gain.value, at);
     rampParam(master.gain, masterTarget(), at + (dialogueActive ? .18 : .36));
+  }
+  function scheduleSubmersion(when){
+    if(!profile.submersion)return false;
+    const start=Math.max(now(),Number(when)||now()),end=start+profile.submersion.rampSeconds;
+    submersionAt=start;submersionEndAt=end;
+    if(!dryGain||!wetGain)return false;
+    cancelParam(dryGain.gain,start);cancelParam(wetGain.gain,start);
+    paramValueAt(dryGain.gain,1,start);paramValueAt(wetGain.gain,0,start);
+    rampParam(dryGain.gain,profile.submersion.dryLeak,end);
+    rampParam(wetGain.gain,1-profile.submersion.dryLeak,end);
+    return true;
   }
   function ensureLead(id, when) {
     const selected = availableLead(id);
@@ -401,7 +435,13 @@ export function createBattleMusicSession({
       }
       master = registerNode(contextRef.createGain());
       paramValueAt(master.gain, masterTarget(), now());
-      master.connect(destination);
+      if(profile.submersion&&contextRef.createBiquadFilter&&contextRef.createGain){
+        dryGain=registerNode(contextRef.createGain());wetGain=registerNode(contextRef.createGain());wetFilter=registerNode(contextRef.createBiquadFilter());
+        paramValueAt(dryGain.gain,1,now());paramValueAt(wetGain.gain,0,now());
+        wetFilter.type='lowpass';paramValueAt(wetFilter.frequency,profile.submersion.lowpassHz,now());paramValueAt(wetFilter.Q,profile.submersion.q,now());
+        master.connect(dryGain);dryGain.connect(destination);
+        master.connect(wetFilter);wetFilter.connect(wetGain);wetGain.connect(destination);
+      }else master.connect(destination);
       // The composition begins only in the monitor return. Intrusion opens a
       // second, filtered physical path: first one resonator, then the room. It
       // remains program audio, never player noise, even when the architecture
@@ -413,7 +453,8 @@ export function createBattleMusicSession({
         paramValueAt(roomFilter.Q,1.8,now());
         roomLeak=registerNode(contextRef.createGain());
         paramValueAt(roomLeak.gain,roomLeakTarget(),now());
-        master.connect(roomFilter);roomFilter.connect(roomLeak);roomLeak.connect(destination);
+        master.connect(roomFilter);roomFilter.connect(roomLeak);
+        if(wetFilter){roomLeak.connect(dryGain);roomLeak.connect(wetFilter);}else roomLeak.connect(destination);
       }
       entryVariant = chooseEntryPair();
       // A fill and its tail are ONE hit, split either side of beat one, and they
@@ -431,6 +472,7 @@ export function createBattleMusicSession({
       const fillSeconds = fill?.duration || 0;
       const countInBars = fillSeconds ? Math.max(1, Math.ceil(fillSeconds / BATTLE_BAR_SECONDS)) : 0;
       downbeatAt = readyAt + countInBars * BATTLE_BAR_SECONDS;
+      scheduleSubmersion(downbeatAt);
       const fillAt = downbeatAt - fillSeconds;
       if (fill) connectSource(`entry-${entryVariant}-fill`, fill, fillAt);
       connectSource('bed', bankBuffer(bank, 'bed'), downbeatAt, { loop: true });
@@ -441,22 +483,30 @@ export function createBattleMusicSession({
     })();
     return startPromise;
   }
-  function stopWithFade(seconds) {
+  function stopWithFade(seconds,{result='abort'}={}) {
     if (stopped || finishing) return;
     finishing = true;
     status = 'fading';
     const at = now();
-    const endAt = at + Math.max(.02, Number(seconds) || .02);
+    let fadeAt=at;
+    if(result==='win'&&profile.submersion&&dryGain&&wetGain){
+      const surfaceSeconds=profile.submersion.surfaceSeconds;
+      resurfaceAt=at;resurfaceEndAt=at+surfaceSeconds;fadeAt=resurfaceEndAt;
+      cancelParam(dryGain.gain,at);cancelParam(wetGain.gain,at);
+      paramValueAt(dryGain.gain,dryGain.gain.value,at);paramValueAt(wetGain.gain,wetGain.gain.value,at);
+      rampParam(dryGain.gain,1,resurfaceEndAt);rampParam(wetGain.gain,0,resurfaceEndAt);
+    }
+    const endAt = fadeAt + Math.max(.02, Number(seconds) || .02);
     if (master) {
-      cancelParam(master.gain, at);
-      paramValueAt(master.gain, master.gain.value, at);
+      cancelParam(master.gain, fadeAt);
+      paramValueAt(master.gain, master.gain.value, fadeAt);
       rampParam(master.gain, 0, endAt);
     }
     for (const source of activeSources) { try { source.stop(endAt + .02); } catch (_) {} }
     stopped = true;
   }
-  function finish() { stopWithFade(BATTLE_BAR_SECONDS); }
-  function abort() { stopWithFade(.1); }
+  function finish(result='win') { stopWithFade(BATTLE_BAR_SECONDS,{result}); }
+  function abort() { stopWithFade(.1,{result:'abort'}); }
   function snapshot() {
     const at = now();
     const gridBar = downbeatAt == null || at < downbeatAt ? 0 : Math.floor((at - downbeatAt) / BATTLE_BAR_SECONDS) + 1;
@@ -464,6 +514,22 @@ export function createBattleMusicSession({
       : status === 'fading' ? 'fading'
         : activeLead && windowStartAt != null && at >= windowStartAt && at < windowEndAt ? 'solo'
           : restUntil != null && at < restUntil ? 'rest' : status;
+    let submersion=null;
+    if(profile.submersion){
+      const plungeProgress=submersionAt==null||at<submersionAt?0:Math.max(0,Math.min(1,(at-submersionAt)/Math.max(.001,profile.submersion.rampSeconds)));
+      const surfaceProgress=resurfaceAt==null?0:Math.max(0,Math.min(1,(at-resurfaceAt)/Math.max(.001,profile.submersion.surfaceSeconds)));
+      const wetMix=resurfaceAt!=null
+        ?(1-profile.submersion.dryLeak)*(1-surfaceProgress)
+        :(1-profile.submersion.dryLeak)*plungeProgress;
+      submersion={
+        available:!!wetFilter,
+        phase:resurfaceAt!=null?(surfaceProgress>=1?'dry':'resurfacing'):plungeProgress<=0?'dry':plungeProgress<1?'plunging':'submerged',
+        at:submersionAt,endAt:submersionEndAt,resurfaceAt,resurfaceEndAt,
+        progress:resurfaceAt!=null?1-surfaceProgress:plungeProgress,
+        wetMix,dryMix:1-wetMix,
+        lowpassHz:profile.submersion.lowpassHz,q:profile.submersion.q,dryLeak:profile.submersion.dryLeak,
+      };
+    }
     return {
       status,
       phase,
@@ -482,6 +548,7 @@ export function createBattleMusicSession({
       dialogueActive,
       intrusion,
       roomLeakGain:roomLeakTarget(),
+      submersion,
       sourceCount: activeSources.size,
     };
   }

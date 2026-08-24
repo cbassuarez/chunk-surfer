@@ -1,0 +1,35 @@
+{
+  "file": "horizon-bust.glb",
+  "generator": "tools/chunk_surfer/build-horizon-bust.mjs",
+  "bytes": 301840,
+  "sha256": "5197cfcc344d23552d7273344a9fd6a8e2895a998b00a53b235a10431e5066d8",
+  "totalTriangles": 10324,
+  "totalVertices": 7283,
+  "bounds": {
+    "min": [
+      -2.6,
+      0,
+      -2.05
+    ],
+    "max": [
+      2.6,
+      12.068,
+      2.05
+    ]
+  },
+  "meshes": {
+    "horizon_bust_portrait": {
+      "triangles": 9800,
+      "vertices": 5711,
+      "sourceMesh": "marble_bust_01"
+    },
+    "horizon_bust_pedestal": {
+      "triangles": 72,
+      "vertices": 216
+    },
+    "horizon_bust_seal": {
+      "triangles": 452,
+      "vertices": 1356
+    }
+  }
+}

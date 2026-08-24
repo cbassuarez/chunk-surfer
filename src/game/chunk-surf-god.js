@@ -70,10 +70,21 @@ export function buildChunkSurfGodPreset(id, options = {}) {
     return { state, position };
   }
 
+  // This hook means the approach to the first lift. It previously dispatched
+  // its completion and dropped the player forty-eight cells into the field,
+  // turning on the entire Text Space compositor in the same frame as the warp.
+  // Apart from being the wrong review location, that was the heaviest possible
+  // Source initialization path and could take the renderer down with it.
+  if (id === CHUNK_SURF_GOD_PRESET.FIRST_LIFT) {
+    state = dispatch(state, { type: 'SOURCE_LANDING_DOOR_OPENED' });
+    position = { x: LANDSCAPE_ORIGIN.x, y: LANDSCAPE_ORIGIN.y - 35, facing: 0 };
+    return { state, position };
+  }
+
   state = dispatch(state,
     { type: 'SOURCE_LIFT_COMPLETED', id: 'lift-fork', checkpointId: 'landing-fork' },
   );
-  if (id === CHUNK_SURF_GOD_PRESET.FIRST_LIFT || id === CHUNK_SURF_GOD_PRESET.FIRST_CONTACT) {
+  if (id === CHUNK_SURF_GOD_PRESET.FIRST_CONTACT) {
     position = { x: LANDSCAPE_ORIGIN.x, y: LANDSCAPE_ORIGIN.y - 48, facing: 0 };
     return { state, position };
   }

@@ -196,7 +196,10 @@ const propRenderer = readFileSync(new URL('../src/render/props3d.js', import.met
 const architectureRenderer = readFileSync(new URL('../src/render/r3d.js', import.meta.url), 'utf8');
 const mainSource = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
 assert.match(propRenderer, /if\(!shadow&&i\.shadowOnly\)continue/, 'shadow-only bodies are omitted from the color pass');
-assert.match(propRenderer, /visibleGroups\(lightEye,64,\{shadow:true,emergencyOnly:!!practical&&emergencyShadowInstances\.length>0\}\)/, 'the practical shadow pass reaches the full emergency-light field');
+// The option bag has grown a `lodEye` since this was written. What the contract
+// is about is the first three arguments and the emergency-only flag — match those
+// and let the bag carry whatever else the renderer needs.
+assert.match(propRenderer, /visibleGroups\(lightEye,64,\{shadow:true,emergencyOnly:!!practical&&emergencyShadowInstances\.length>0\b/, 'the practical shadow pass reaches the full emergency-light field');
 assert.match(propRenderer, /const instances=emergencyOnly\?emergencyShadowInstances:/, 'emergency practicals isolate their staged shadow-only figures');
 // The selected practical shadows architecture. This used to pin the literal
 // `li==uLocalShadowIndex?propFlashShadow`, which stopped being true the moment

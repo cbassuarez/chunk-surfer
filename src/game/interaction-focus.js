@@ -1,4 +1,5 @@
 export const STORY_ROUTE_DOOR_IDS = Object.freeze([
+  'pool-lobby',
   'foh-office',
   'chapel-c17',
   'tower-hatch',

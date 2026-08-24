@@ -90,6 +90,37 @@ function heard(id, naming, occasion) {
   return { lines, text: lines.map((line) => line.text).join('\n') };
 }
 
+test('the natatorium keeps its mechanics but reauthors every attack below the surface', () => {
+  const battle = runtimeBattle('battle.natatorium');
+  assert.equal(battle.combat.presentation.mode, 'submerged');
+  assert.deepEqual(battle.combat.presentation.movementDepths, [.35, .68, 1]);
+  assert.deepEqual(battle.combat.music.submersion, {
+    enabled: true, at: 'downbeat', lowpassHz: 720, q: .8, dryLeak: .08, rampSeconds: .18, surfaceSeconds: .6,
+  });
+  const labels = Object.fromEntries(battle.combat.movements.flatMap((movement) => movement.intents.map((intent) => [intent.id, intent.label])));
+  assert.deepEqual(labels, {
+    'natatorium:meter': 'METER MOVES BELOW THE WATERLINE',
+    'natatorium:pressure': 'WATER HAMMERS BEHIND THE EARS',
+    'natatorium:piano': 'TWO NOTES THROUGH THE SURFACE',
+    'natatorium:voice': 'HER VOICE IN THE DRAIN RETURN',
+    'natatorium:memory': 'SILT PASSED AS MEMORY',
+    'natatorium:lean': 'UNDERTOW TAKES THE CASE',
+    'natatorium:echo': 'FOURTH RETURN FROM THE BOTTOM',
+    'natatorium:depth': 'BLACK WATER PRESSURE',
+    'natatorium:absence': 'THE LADDER IS NOT ABOVE YOU',
+  });
+  assert.ok(battle.combat.movements.flatMap((movement) => movement.intents)
+    .every((intent) => intent.presentation?.visualClass), 'every submerged intent declares a visual class');
+  for (const occasion of ['recording-2', 'pre-recording-4']) {
+    const text = heard('battle.natatorium', 'yes', occasion).text;
+    assert.match(text, /coping rises past your eyes/i);
+    assert.match(text, /cuffs, case and clothes are dry/i, 'victory explicitly surfaces the player dry');
+    assert.match(text, /water acquires weight/i);
+    assert.match(text, /soaked through/i);
+    assert.match(text, /torch pack drowned/i);
+  }
+});
+
 test('the broken pronoun interpolation stays fixed, and only the named thread says the name', () => {
   for (const id of ['battle.natatorium', 'battle.practice']) {
     const unnamed = heard(id, 'no', 'recording-2').text;

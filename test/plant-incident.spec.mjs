@@ -14,11 +14,10 @@ test('plant incident triggers once from a player spoil on take two or three only
   assert.equal(plant.plantIncidentState().triggerTakeOrdinal,2);
 });
 
-test('the baggable spanner bypasses hauling and seals quietly in four seconds',()=>{
+test('the baggable spanner bypasses hauling and can begin the physical isolation',()=>{
   plant.resetPlantIncident();plant.collectPlantSpanner();
   plant.triggerPlantIncident({takeOrdinal:3,spoiled:true,playerGenerated:true});
   assert.equal(plant.beginPlantIsolation(plant.PLANT_TOOL.SPANNER,100),true);
-  assert.equal(plant.plantIsolationDurationMs(),4000);
   assert.equal(plant.completePlantIsolation(),true);
   assert.equal(plant.plantIncidentState().phase,plant.PLANT_INCIDENT_PHASE.SEALED);
   assert.equal(plant.plantRecordingBlocked(),false);
@@ -35,7 +34,6 @@ test('the Stillson cannot enter the bag, scrapes every 1.5m, and preserves posit
   assert.equal(plant.heavyWrenchDragging(),true);
   assert.deepEqual(plant.plantIncidentState().heavyPosition,{x:138,y:12});
   assert.equal(plant.beginPlantIsolation(plant.PLANT_TOOL.STILLSON,500),true);
-  assert.equal(plant.plantIsolationDurationMs(),9000);
 });
 
 test('haul pose remains in the authored rear band and never jumps ahead',()=>{

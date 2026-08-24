@@ -8,10 +8,15 @@ import {
   computeNatatoriumBasinBounds,
   decideNatatoriumWaterEnvironment,
   makeNatatoriumRippleSources,
+  natatoriumDefeatBattery,
   natatoriumWaterBlocks,
+  normalizeNatatoriumWaterLedger,
+  recordNatatoriumDefeat,
   recordNatatoriumWaterChoice,
   waterUvForPoint,
 } from '../src/game/natatorium-water.js';
+import { WATER_BODIES } from '../src/game/water-bodies.js';
+import * as PROPS from '../src/game/props.js';
 import { freshRunRecord, normalizeRun } from '../src/progression/schema.js';
 import { runtimeBattle, runtimeTree } from '../src/narrative/runtime-content.js';
 
@@ -30,6 +35,50 @@ assert.deepEqual(
   'water basin bounds are derived from authored W cells',
 );
 assert.equal(bounds.count, 768);
+assert.equal(WATER_BODIES.find((body) => body.id === 'natatorium').levelM, -.12);
+
+assert.equal(FP.floorAt(168, 82), -2, 'the existing basin footprint now sits two metres below deck');
+const stairFloors = Array.from({ length: 11 }, (_, index) => FP.floorAt(156, 66 + index));
+assert.equal(stairFloors.length - 1, 10, 'the west access stair has ten risers');
+assert.ok(stairFloors.every((floor, index) => Math.abs(floor - index * -.2) < 1e-5));
+for (let index = 0; index < stairFloors.length - 1; index += 1) {
+  assert.ok(Math.abs(stairFloors[index + 1] - stairFloors[index]) <= .45);
+  assert.equal(FP.canStep(156, 66 + index, 156, 67 + index).ok, true);
+  assert.equal(FP.canStep(156, 67 + index, 156, 66 + index).ok, true);
+}
+
+function reachable(from, to) {
+  const queue = [from];
+  const visited = new Set([from.join(',')]);
+  for (let index = 0; index < queue.length; index += 1) {
+    const [x, y] = queue[index];
+    if (x === to[0] && y === to[1]) return true;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const next = [x + dx, y + dy];
+      const key = next.join(',');
+      if (visited.has(key) || !FP.canStep(x, y, next[0], next[1]).ok) continue;
+      visited.add(key);
+      queue.push(next);
+    }
+  }
+  return false;
+}
+FP.setDoorOpen('pool-lobby', true);
+assert.equal(reachable([168, 52], [156, 77]), true, 'the open lobby pair reaches the basin bottom by ordinary walking');
+assert.equal(reachable([156, 77], [168, 52]), true, 'the same stair returns from bottom to deck and lobby');
+
+const poolProps = PROPS.propsInit(FP).filter((prop) => prop.id.startsWith('pool-') || prop.id.startsWith('natatorium-'));
+const prop = (id) => poolProps.find((entry) => entry.id === id);
+assert.equal(prop('pool-lane-markings').floor, -2, 'lane markings follow the basin bottom');
+assert.equal(prop('pool-drain-1').floor, -2, 'drains follow the basin bottom');
+assert.equal(prop('pool-flags-near').floor, 0, 'flags remain deck anchored');
+assert.equal(prop('pool-ladder-west').floor, 0, 'ladders remain deck anchored');
+assert.equal(prop('natatorium-roof-structure').floor, 0, 'the roof envelope remains deck anchored');
+assert.equal(prop('pool-lane-ropes').floor, -2, 'drained lane ropes rest on the bottom');
+assert.equal(prop('pool-lane-ropes').waterlineBody, 'natatorium', 'filled lane ropes opt into waterline anchoring');
+assert.equal(poolProps.filter((entry) => entry.id.startsWith('pool-start-')).length, 5);
+assert.ok(poolProps.filter((entry) => entry.id.startsWith('pool-start-')).every((entry) => entry.x > 80),
+  'all five starting blocks remain clear of the two-metre west stair');
 
 for (const y of [29, 30, 31, 32]) {
   const point = FP.toRuntimePoint({ x: 84, y });
@@ -122,6 +171,20 @@ assert.ok(['murky', 'drained'].includes(druggedB.natatoriumWater));
 const oldRun = normalizeRun({ id: 'old', status: 'active', ledger: {} });
 assert.equal(oldRun.environment.natatoriumWater, 'drained', 'old saves repair to drained baseline');
 assert.equal(oldRun.ledger.natatoriumWater.seen, false);
+assert.deepEqual(
+  normalizeNatatoriumWaterLedger(oldRun.ledger.natatoriumWater),
+  { seen: false, choice: null, routeBias: null, rippleSerial: 0, soaked: false, defeats: 0, batteryLost: 0 },
+  'old saves safely acquire the defeat ledger fields',
+);
+
+for (const [before, after, lost] of [[1, 0, 1], [1.5, .5, 1], [.4, 0, .4], [0, 0, 0]]) {
+  assert.deepEqual(natatoriumDefeatBattery(before), { before, after, lost, torchOff: after === 0 });
+}
+const defeatedOnce = recordNatatoriumDefeat(firstRun, { batteryLost: 1 });
+const defeatedTwice = recordNatatoriumDefeat(defeatedOnce, { batteryLost: .4 });
+assert.equal(defeatedTwice.ledger.natatoriumWater.soaked, true);
+assert.equal(defeatedTwice.ledger.natatoriumWater.defeats, 2);
+assert.equal(defeatedTwice.ledger.natatoriumWater.batteryLost, 1.4);
 
 const murkyRun = freshRunRecord({
   id: 'murky',
@@ -180,6 +243,15 @@ assert.match(rendererSource, /uWaterBounds/);
 assert.match(rendererSource, /cur\.mat == MAT_WET/);
 assert.match(rendererSource, /surf = 4/);
 assert.match(rendererSource, /DEPTH RIDES IN THE ALPHA CHANNEL/);
+assert.match(rendererSource, /uWaterCamera/);
+assert.match(rendererSource, /water\.soaked/);
+assert.match(mainSource, /submersionDepthM/);
+assert.match(mainSource, /ms\*=1\.45/);
+assert.match(mainSource, /RT\.waterFootstep/);
+assert.match(mainSource, /applyNatatoriumBattleDefeat/);
+assert.match(mainSource, /battle\.combat\?\.id==='natatorium'/,
+  'only a live natatorium encounter routes through the soaked battery consequence');
+assert.match(mainSource, /SOAKED/);
 // The roof spill moved out of main.js into the authored rig
 // (src/data/conservatory-lights.js). Assert the lights themselves rather than a
 // string in the hub: the natatorium is one of only two places in the building with

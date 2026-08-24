@@ -22,7 +22,8 @@ function landscapeState({injuries=1}={}){
   state=apply(state,'HALL_ADVANCED',{distance:112});
   state=apply(state,'HAYSTACK_REACHED',{origin:{x:0,y:-224},slot:0});
   state=apply(state,'HAYSTACK_PAGE_FOUND',{landscapeOrigin:ORIGIN});
-  return apply(state,'TRANSFORMATION_COMPLETED');
+  state=apply(state,'TRANSFORMATION_COMPLETED');
+  return apply(state,'SOURCE_LANDING_DOOR_OPENED');
 }
 
 function reachable(runtime,start,goal,maxVisited=180000){

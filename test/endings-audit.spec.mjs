@@ -159,6 +159,36 @@ assert.match(mainSource,/escape\.stage='service-road'/,'surfaced continues down 
 assert.match(mainSource,/sign-returned-alan/,'surfaced ends only after both names reach RETURNED');
 assert.match(mainSource,/escape=\{kind:'stay',stage:'commit'/,'sacrifice and helped require the chapel-screen commitment');
 assert.match(mainSource,/escape=\{ kind:'inversion',stage:'door'/,'inversion retains the playable two-door escape');
+
+// The early Scene Dock choice and the late ending choice are separate verbs.
+// Touching the vanished goods door teaches the route; it does not choose an
+// ending. At the Chapel, a player still needs the bent rig and must explicitly
+// choose the inversion. A combat proof remains the second authored way to learn
+// that route.
+{
+  const touchStart=mainSource.indexOf('function tryTheGreyDoor');
+  const touchEnd=mainSource.indexOf('function postDoorThought',touchStart);
+  const touch=mainSource.slice(touchStart,touchEnd);
+  assert.match(touch,/opening\.postDoor\.started/,'only the inside-door interaction starts the search beat');
+
+  const thoughtStart=touchEnd;
+  const thoughtEnd=mainSource.indexOf('\nfunction ',thoughtStart+1);
+  const thought=mainSource.slice(thoughtStart,thoughtEnd);
+  assert.match(thought,/door\.grey\.searched=/,'completing the beat records knowledge of the missing exit');
+  assert.doesNotMatch(thought,/finale\.grant\.route\.inversion/,
+    'the early beat records knowledge rather than forging a Chapel combat proof');
+
+  const qualifyStart=mainSource.indexOf('function canInvertEnding');
+  const qualifyEnd=mainSource.indexOf('\nfunction ',qualifyStart+1);
+  const qualify=mainSource.slice(qualifyStart,qualifyEnd);
+  assert.match(qualify,/if\(!flagTest\('has\.interface'\)\) return false/,'the bent rig remains required');
+  assert.match(qualify,/proven \|\| learned/,'combat proof or the deliberate door search can qualify inversion');
+
+  const choiceStart=mainSource.indexOf('function openEndingChoice');
+  const choiceEnd=mainSource.indexOf('\nfunction ',choiceStart+1);
+  const choice=mainSource.slice(choiceStart,choiceEnd);
+  assert.match(choice,/endingChoice\(\{/,'the route is still offered at the explicit Chapel ending board');
+}
 // WHICH GATE SCENE CLOSES AN ENDING MOVED INTO THE CONTRACT.
 //
 // It was a five-branch ternary in finishEnding that no ending could see. The
