@@ -1,7 +1,9 @@
 // Runtime-only identity for battle-bound personalized interference.
 //
-// Exact values may be rendered during an opted-in battle, but they must never
-// enter settings, saves, diagnostics, logs, filenames, telemetry, or speech.
+// Exact values may be rendered during an opted-in battle, and the separately
+// consented persona may be synthesized locally for the booth name exchange.
+// They must never enter settings, saves, diagnostics, logs, filenames,
+// telemetry, captions, transcripts, tapes, or exported artifacts.
 
 import { isTauriRuntime } from '../platform/detect.js';
 
@@ -19,7 +21,8 @@ export const DEFAULT_PERSONAL_INTERFERENCE = Object.freeze({
   sourceHost: true,
   sourceMic: true,
   vfdText: true,
-  // Retained only as a migration sink. Arbitrary identity is never spoken.
+  // Retained only as a migration sink. Booth synthesis is authorized by the
+  // individual Steam/OS modules, never by this legacy blanket switch.
   localSpeech: false,
   intensity: 'standard',
 });

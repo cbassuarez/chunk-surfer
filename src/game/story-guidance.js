@@ -59,6 +59,7 @@ function runtimeTarget(id,label,point,extra={}){
 
 function finaleTarget(escape){
   if(!escape)return null;
+  if(escape.kind==='cathedral-carry')return runtimeTarget('story:cathedral-carry','CARRY HIM THROUGH THE VISITOR SHOP',escape.exitCell,{kind:'position'});
   if(escape.kind==='surfaced')return runtimeTarget('story:ending-surfaced','CARRY HIM TO THE MAIN ENTRANCE',escape.exitCell,{kind:'position'});
   if(escape.kind==='stay')return runtimeTarget('story:ending-stay','PUT YOUR HAND ON THE INNER SCREEN',escape.screenCell,{kind:'position',propId:'chapel-inner-screen'});
   if(escape.kind==='inversion'){

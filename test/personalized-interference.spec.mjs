@@ -209,6 +209,13 @@ assert.equal(interferenceStageForBattle('pre-recording-4'), 'control');
 assert.equal(interferenceStageForBattle('chapel'), 'handoff');
 assert.equal(interferenceStageForBattle('other', 'source-final'), 'handoff');
 
+const disabledDirector=createBattleInterferenceDirector({
+  identityCache:createEphemeralIdentityCache({provider:async()=>{throw new Error('disabled identity must not be requested');}}),
+  getSettings:()=>normalizePersonalInterferenceSettings({enabled:false}),
+});
+assert.equal(await disabledDirector.primePersona({roomId:'booth'}),null,
+  'profile-off booth speech receives no literal persona and uses the obscured fallback');
+
 const identityCache = createEphemeralIdentityCache({ provider: async () => rawSnapshot });
 const effectsLog = [];
 const artifacts = [];
@@ -228,6 +235,10 @@ const director = createBattleInterferenceDirector({
   getContext: () => ({ roomId: 'the_tub', choiceIds: ['choice:guard'], micPermission: true, micLabel: 'Secret Microphone' }),
   onRecord: (value) => { persisted = value; },
 });
+assert.match(await director.primeIdentity({ roomId: 'booth' }), /^OPERATOR [0-9A-F]{4}$/,
+  'the existing masked-token priming contract is unchanged');
+assert.equal(await director.primePersona({ roomId: 'booth' }), 'Sebastian Secret',
+  'the opted-in sanitized persona is available to local booth synthesis');
 const hook = director.forBattle('recording-2', 'natatorium');
 await hook.enter();
 await hook.phaseBreak();

@@ -32,7 +32,7 @@ const said = [];
 const base = {
   px: 0, py: 0, light: false, recording: false, takeElapsed: 0, spoiled: false,
   spoilReason: '', slow: false, workOrderRead: false, marked: null,
-  rehearsed: false, leftDock: false,
+  leftDock: false,
 };
 const run = (ctx) => tickTutorial(0.1, { ...base, ...ctx });
 
@@ -67,18 +67,15 @@ assert.equal(tutorialGuide('world'), null, 'a surface only ever gets its own gui
 // ── the level check comes before the waypoint ───────────────────────────────
 // A bearing means nothing to a player who has not done anything yet, and
 // everything to one who is about to walk into a building. So: light, the order,
-// the six seconds and the daydream, and THEN write down where you are going.
+// the six seconds, and THEN write down where you are going.
 run({ light: true, workOrderRead: true });
 assert.equal(tutorialStep(), 'level', 'the recorder comes before the plan');
 assert.equal(tutorialGuide('bag'), null, 'the level check does not happen in the bag');
 
-// Six clean seconds sets levels. The step stays put, because the daydream comes
-// out of it and the next step's line must not land on top of the drill.
+// Six clean seconds sets levels and hands directly to the waypoint. Combat waits
+// until a real take is contaminated.
 run({ light: true, workOrderRead: true, recording: true, takeElapsed: LEVEL_CHECK_SECONDS });
-assert.equal(tutorialStep(), 'level', 'levels good is not the end of setting up');
-
-run({ light: true, workOrderRead: true, rehearsed: true });
-assert.equal(tutorialStep(), 'mark', 'the daydream hands over to the waypoint');
+assert.equal(tutorialStep(), 'mark', 'the level check hands directly to the waypoint');
 
 // ── and the waypoint is the last thing, guided hardest ──────────────────────
 const markGuide = tutorialGuide('bag');
@@ -90,10 +87,10 @@ assert.ok(/FIRST/.test(markGuide.why), '...and why this room goes first');
 // It is the one verb the setup has not shown, so its prompt sends them to the bag.
 assert.match(tutorialPrompt(), /bag/i, 'the last step points at the case');
 
-run({ light: true, workOrderRead: true, rehearsed: true, marked: 'main_b3' });
+run({ light: true, workOrderRead: true, marked: 'main_b3' });
 assert.equal(tutorialStep(), 'go', 'a marked room finishes the setup');
 
-run({ light: true, workOrderRead: true, rehearsed: true, marked: 'main_b3', leftDock: true });
+run({ light: true, workOrderRead: true, marked: 'main_b3', leftDock: true });
 assert.equal(tutorialActive(), false, 'leaving the dock ends the setup');
 
 // Spoiling costs nothing: the step is never failed, only unfinished.

@@ -99,12 +99,12 @@ export const WORK_ORDER = {
 // while reading the order and while alone in the dark. Getting this backwards
 // makes him either a mute or a man muttering at a stranger.
 //
-// THE TAPE. The third trunk is where the game says what it is about, and it
-// says it in the only place it is allowed to: inside a recording, to somebody
-// else, five weeks ago. The thing on the tape wants the genre's premise. It
-// asks for a dead woman to be. The man on the tape does not have one, and it
-// keeps asking, because the demand is the horror and the grief was always the
-// cover story.
+// THE TAPE. Every trunk can choose to hear where the game says what it is
+// about, and it says it in the only place it is allowed to: inside a recording,
+// to somebody else, five weeks ago. The thing on the tape wants the genre's
+// premise. It asks for a dead woman to be. The man on the tape does not have
+// one, and it keeps asking, because the demand is the horror and the grief was
+// always the cover story.
 
 // COLD_OPEN_DIALOGUE moved out of source. The cold open is now authored
 // directly as the single source of record in the studio document
@@ -1044,28 +1044,6 @@ export const ARRIVAL_THOUGHTS = Object.freeze({
     { who: 'direction', text: 'The key turns. The door is heavier than it looks, the way fire doors are.' },
   ],
 });
-
-// ...and then the title. And THEN the door, into a silence the song has just
-// vacated. The loudest thing that happens all night lands on an empty mix.
-// It no longer REPORTS the arrival. The player has just walked the yard, turned
-// the key and stepped through, and the closer has shut the door behind them on
-// screen — so the beat that used to open with "the service door closes behind
-// you" now begins where the man actually is, which is standing in the dark on
-// the other side of it, listening. "Darker than the yard" finally means
-// something, because there was a yard and it was dark and he was in it.
-export const AFTER_TITLE = [
-  // This is the internal debrief after the threshold cutscene. Keep a real
-  // image in the left lane for the whole exchange: first the door he earned,
-  // then the kit he has to trust. A one-line plate that immediately vanished
-  // made the large shell collapse back into an ordinary transcript.
-  { who: 'you', art: { id: 'door', mode: 'hero', caption: 'Inside / the door shut', status: 'THRESHOLD' }, artHold: true, artScope: 'scene', text: 'Right. That is the weather dealt with.', hold: 2.4 },
-  { who: 'you', text: 'Darker than the yard. Which is not great, because the yard was dark.', hold: 2.6 },
-  { who: 'you', text: 'And quieter. No rain in here. No rain, no traffic, no plant, no lift.', hold: 2.8 },
-  { who: 'you', text: 'Minus sixty decibels, near enough, before I have taken the recorder out of the bag.', hold: 2.8 },
-  { who: 'direction', art: { id: 'flashlight', mode: 'hero', caption: 'Kit check / by feel', status: 'KIT' }, artHold: true, artScope: 'scene', text: 'You put the bag down and go through it by feel.', cue: 'bag', hold: 2.6 },
-  { who: 'you', text: 'Torch. Recorder. Headphones. Radio. Keys. The order, folded twice.', cue: 'kit', hold: 2.8 },
-  { who: 'you', text: 'Five rooms, a minute each, and then I drive home.', hold: 3.2 },
-];
 
 // Radio dialogue is authored only in content/narrative/radio.* and
 // conservatory.radio_dead. Runtime faults keep only their immediate sensory

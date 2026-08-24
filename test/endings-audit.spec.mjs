@@ -154,7 +154,9 @@ for (const id of [
 // Every terminal choice hands back to an embodied world action before its final
 // text: walk the surfaced route, touch the chapel screen to stay, or run the
 // inversion from the chapel where the choice was actually made.
-assert.match(mainSource,/escape=\{kind:'surfaced',stage:'exit'/,'surfaced walks to the public exit');
+assert.match(mainSource,/escape=\{kind:'surfaced',stage:'public-doors'/,'surfaced carries Alan through the public exit');
+assert.match(mainSource,/escape\.stage='service-road'/,'surfaced continues down the service road');
+assert.match(mainSource,/sign-returned-alan/,'surfaced ends only after both names reach RETURNED');
 assert.match(mainSource,/escape=\{kind:'stay',stage:'commit'/,'sacrifice and helped require the chapel-screen commitment');
 assert.match(mainSource,/escape=\{ kind:'inversion',stage:'door'/,'inversion retains the playable two-door escape');
 // WHICH GATE SCENE CLOSES AN ENDING MOVED INTO THE CONTRACT.

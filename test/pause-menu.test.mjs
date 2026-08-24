@@ -25,6 +25,8 @@ test('bag owns Escape before the run-level pause route', () => {
   assert.equal(shouldOpenPauseForEvent({storyMode:true,key:'Escape',topSceneId:'bag'}),false);
   assert.equal(shouldOpenPauseForEvent({storyMode:true,code:'Escape',topSceneId:'bag'}),false);
   assert.equal(shouldOpenPauseForEvent({storyMode:true,key:'Escape',topSceneId:'cold-open'}),true);
+  assert.equal(shouldOpenPauseForEvent({storyMode:true,key:'Escape',topSceneId:'thought:inspect',localEscape:true}),false,
+    'an optional action shell owns Escape so it can cancel its dependent chain');
   assert.equal(shouldOpenPauseForEvent({storyMode:false,key:'Escape',topSceneId:'bag'}),false);
 });
 

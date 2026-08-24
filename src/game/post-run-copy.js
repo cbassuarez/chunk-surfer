@@ -79,6 +79,10 @@ export const NEXT_ENDING_HINTS = Object.freeze({
   inversion: 'The broken rig can do more than reverse the signal. Look for proof that the other recordist can still be recovered.',
   drugged: 'Keep the coffee choice, but stay when the chapel asks for its final answer instead of escaping.',
   surfaced: 'Instead of releasing the other recordist, try giving the chapel the agreement it asks for.',
+  'contact-won': 'At the Source fault, walk away. Evidence about the gallery eyes can open a route through the bells.',
+  'contact-lost': 'Make Contact again with a different loadout or combat assistance setting. This route never opens Horizon.',
+  'tower-won': 'Walk away at the Source fault, then refuse the Horizon bust and continue to Ellery Chapel.',
+  'tower-lost': 'Return the gallery eyes or carry them into Source, accept the bust, and prepare for two connected signal phases.',
 });
 
 export const HUSH_COPY = Object.freeze({

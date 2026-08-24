@@ -157,9 +157,8 @@ test('rain on a lawn under four trees is not rain on fifty metres of tarmac', ()
 // ── what stands on it ───────────────────────────────────────────────────────
 
 test('the park is furnished out of the catalogue that was already there', () => {
-  // Only the fountain and the head are new meshes. Benches, hedges, trees and
-  // the lamp column are all pieces the district and the opening street already
-  // own — a park should not cost a furniture set.
+  // Only the fountain and the head use park-specific gameplay meshes. The hero
+  // vegetation variants belong to the shared world catalogue.
   const novel = ['park_fountain', 'park_marble_eyes'];
   const used = [...new Set(YARD_PARK_PROPS.map((prop) => prop.mesh))];
   for (const mesh of used) {
@@ -170,7 +169,7 @@ test('the park is furnished out of the catalogue that was already there', () => 
   }
   // Exactly one way in, so it reads as a place you enter rather than a texture
   // you walk over.
-  const hedges = YARD_PARK_PROPS.filter((prop) => prop.mesh === 'yard_hedge_run');
+  const hedges = YARD_PARK_PROPS.filter((prop) => ['yard_hedge_run','yard_hedge_dense','yard_hedge_corner'].includes(prop.mesh));
   assert.ok(hedges.length >= 3, 'the west and south edges are closed');
   assert.ok(hedges.every((prop) => prop.blocks === true), 'and the hedge is a hedge, not a decal');
 });

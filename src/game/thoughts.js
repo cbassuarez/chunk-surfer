@@ -65,17 +65,27 @@ const BAND_W = 86;
 export function makeThoughtScene({
   id = 'thought', nodes, startAt = 'start', onDone, onChoice, onLine, cue, fx, audio, getAudio, replay = null,
   scrim = 0.62, lensPreset = 'calm', anchor = 'center', slate = '', blocksWorld = false, worldView = null, onExit = null,
+  escapable = true, allowsLook = true, onCancel = null,
 } = {}) {
+  let completed = false;
+  let cancelled = false;
+  let scene = null;
   const convo = createConversation({
     nodes, startAt, sceneId: `thought:${id}`, replay, onChoice, onLine, cue, fx, audio, getAudio,
     volume: 0.24,
-    onDone: () => { scenes.pop(); onDone?.(); },
+    onDone: () => {
+      if (completed || cancelled) return;
+      completed = true;
+      scenes.remove(scene);
+      onDone?.();
+    },
   });
 
-  return {
+  scene = {
     id: `thought:${id}`,
     blocksInput: true,
-    allowsLook: true,
+    allowsLook,
+    handlesEscape: !!escapable,
     blocksWorld,                 // the corridor is still there. it is still walking.
     lensPreset,
 
@@ -86,7 +96,14 @@ export function makeThoughtScene({
     view() { return convo.view(); },        // for the headless suites
     keyup(e) { return convo.keyup?.(e) || false; },
     key(e) {
-      if (e.key === 'Escape') return true;   // you do not get to stop thinking
+      if (e.key === 'Escape') {
+        if (!escapable) return true;
+        if (cancelled || completed) return true;
+        cancelled = true;
+        scenes.remove(scene);
+        onCancel?.();
+        return true;
+      }
       return convo.key(e);
     },
 
@@ -286,6 +303,7 @@ export function makeThoughtScene({
         }
       },
   };
+  return scene;
 }
 
 // ── which thoughts have already been had ────────────────────────────────────

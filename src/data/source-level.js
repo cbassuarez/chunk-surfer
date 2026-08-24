@@ -50,6 +50,18 @@ export const SOURCE_TIERS = Object.freeze([
   // fall. You walk out through the perimeter — the one wall the field has — and
   // the ground simply keeps going, and some way out there it stops being ground.
   Object.freeze({ id: 'horizon',  from: -340, to: -852, height: 15.2, field: false }),
+  // THE BELLS. Where the tower road goes, and it is not a cut.
+  //
+  // Taking the bust's detour used to hand the player eight and a half seconds of
+  // datamosh with hand-rolled wireframe machinery drawn over it, and then put
+  // them in the belfry. This is the same journey walked: four hundred metres of
+  // the same flat ground the tape stands on, with the real bell meshes standing
+  // in it at every wrong size, and a room resolving out of the far end.
+  //
+  // Same height as the horizon for the same reason the horizon shares the return
+  // tier's: nothing between them is a climb. You walk out of the recording and
+  // the ground keeps going.
+  Object.freeze({ id: 'bells',    from: -852, to: -1284, height: 15.2, field: false }),
 ]);
 
 // The tiered landscape proper. Altitude is the currency here and every boundary
@@ -102,6 +114,202 @@ export function sourceHorizonSlice(y) {
   return { index, fraction: exact - index };
 }
 
+// ── THE BELL PASSAGE ────────────────────────────────────────────────────────
+//
+// A place where time is null. Six bells were cast for one tower and hung in one
+// frame at one size; out here they are the same six objects at every size they
+// could have been, standing in a ground that does not end, sounding without
+// being rung.
+//
+// It is a WALK, not a corridor puzzle: nothing here can be collided with badly,
+// nothing here is timed, and the only thing to do is keep going forward until
+// the room at the end stops being a shape on the horizon.
+export const SOURCE_BELLS = Object.freeze({
+  from: -852,
+  to: -1284,
+  length: 432,
+  // Where the body is put when the bust's detour is taken. Past the seam, the
+  // same standoff the horizon uses, so he does not arrive with his back inside
+  // the recording he just left.
+  entryStandoff: 8,
+  // Lateral half-width. Wider than the tape's walking band — this is an open
+  // ground, and the only thing keeping anybody on course is the room.
+  halfWidth: 58,
+  // THE ROOM. Three walls of St Brendan's belfry standing in the field, with the
+  // way in where the fourth wall is not. Crossing this depth is the commit.
+  room: Object.freeze({
+    at: -1252,
+    // Authored in metres about the room's own centre; the belfry chamber is
+    // thirteen by nine inside its frame.
+    halfX: 6.5,
+    halfZ: 4.5,
+    height: 11.0,
+    // Where the passage hands over. The player is standing at the threshold and
+    // walking forward; this is the last metre of source space.
+    threshold: -1246,
+  }),
+  // How far out the room begins to resolve, and where it is unmistakable. The
+  // whole third act of the walk is a shape getting closer.
+  resolveFrom: -1010,
+  resolveTo: -1210,
+});
+
+export function sourceBellsDepth(y) {
+  const ly = Number(y) || 0;
+  return Math.max(0, Math.min(SOURCE_BELLS.length, SOURCE_BELLS.from - ly));
+}
+
+// 0 out on the open ground, 1 standing at the door. The renderer fades the room
+// up on this and the audio opens the tower bed on it.
+export function sourceBellsRoomResolve(y) {
+  const ly = Number(y) || 0;
+  const span = SOURCE_BELLS.resolveFrom - SOURCE_BELLS.resolveTo;
+  if (!(span > 0)) return 0;
+  const t = (SOURCE_BELLS.resolveFrom - ly) / span;
+  return Math.max(0, Math.min(1, t));
+}
+
+// ── WHAT IS STANDING IN IT ──────────────────────────────────────────────────
+//
+// The six bells of St Brendan's, the frame they hang in, their wheels and their
+// clappers — the same meshes the real belfry is built from (build-props.mjs,
+// tower_*) — at every size except the one they are.
+//
+// The bell mesh hangs from its headstock: the crown is at y +0.14 and the mouth
+// at -1.02, about 1.28 across. So `elevation` is where the headstock is, and a
+// bell whose mouth sits on the ground is at elevation 1.02 * scale.
+//
+// Three acts over four hundred and thirty metres, and the whole shape of it is
+// scale losing its mind and then getting it back:
+//
+//   ARCHITECTURE   bells the size of buildings, half sunk, dead still. You walk
+//                  between them the way you walk between blocks of flats.
+//   NULL           the place where time is not. Bells at coin scale scattered
+//                  across the ground; one you pass underneath; a frame with
+//                  nothing hung in it; a wheel with no bell; one inverted and
+//                  filling with nothing. Sizes stop meaning anything.
+//   RESOLUTION     six bells, in order, at true scale, in a real frame — which
+//                  is the ring you are about to be standing under.
+//
+// Nothing here is a puzzle and nothing here is timed. `blocks` is for the few
+// that are large enough that walking through them would be the thing you noticed.
+const bell = (id, mesh, x, y, scale, extra = {}) => Object.freeze({
+  id, mesh, x, y, scale, yaw: 0, elevation: 1.02 * scale, ...extra,
+});
+
+export const SOURCE_BELL_PASSAGE = Object.freeze([
+  // ── act one: architecture ────────────────────────────────────────────────
+  bell('bells-arch-west', 'tower_bell_04', -34, -880, 26, { yaw: 0.22, sink: 9.5, blocks: true }),
+  bell('bells-arch-east', 'tower_bell_01', 31, -898, 22, { yaw: -0.34, sink: 7.0, blocks: true }),
+  bell('bells-arch-far', 'tower_bell_06', -8, -946, 34, { yaw: 0.08, sink: 16.0, blocks: true }),
+  Object.freeze({
+    id: 'bells-arch-frame', mesh: 'tower_frame', x: 26, y: -962, scale: 9,
+    yaw: -0.5, elevation: 0, blocks: true,
+  }),
+  bell('bells-arch-lean', 'tower_bell_01', -40, -1002, 18, { yaw: 1.1, roll: 0.42, sink: 3.2, blocks: true }),
+
+  // ── act two: the place where time is null ────────────────────────────────
+  // One you walk under. The mouth clears a standing body by a metre and a half.
+  bell('bells-null-canopy', 'tower_bell_06', 2, -1036, 30, { yaw: 0.15, elevation: 32.2, blocks: false }),
+  // A wheel with no bell in it, standing on its rim.
+  Object.freeze({
+    id: 'bells-null-wheel', mesh: 'tower_wheel_01', x: -22, y: -1044, scale: 11,
+    yaw: 1.35, elevation: 11.6, blocks: true,
+  }),
+  // Inverted, and filling with nothing.
+  bell('bells-null-inverted', 'tower_bell_04', 24, -1058, 14, { yaw: -0.2, roll: Math.PI, elevation: 0.4, blocks: true }),
+  // A clapper on its own, the size of a tree.
+  Object.freeze({
+    id: 'bells-null-clapper', mesh: 'tower_clapper_01', x: -13, y: -1072, scale: 16,
+    yaw: 0.6, elevation: 20.6, blocks: false,
+  }),
+  // And the coins: the same six bells at the size of the things people throw
+  // into a fountain, scattered where you have to walk over them.
+  ...[
+    [-6.4, -1078, 0.34], [-2.1, -1082, 0.28], [1.8, -1080, 0.41], [4.6, -1086, 0.31],
+    [-4.9, -1090, 0.36], [0.7, -1094, 0.26], [3.2, -1098, 0.44], [-2.8, -1102, 0.30],
+    [6.1, -1092, 0.35], [-7.7, -1096, 0.24],
+  ].map(([x, y, scale], index) => bell(
+    `bells-null-coin-${index + 1}`, `tower_bell_0${(index % 6) + 1}`, x, y, scale,
+    { yaw: index * 0.9, blocks: false },
+  )),
+  bell('bells-null-sunk', 'tower_bell_02', -30, -1108, 20, { yaw: 0.9, sink: 18.4, blocks: true }),
+
+  // ── act three: resolution ────────────────────────────────────────────────
+  // Six bells, in order, at true scale, hung as they are hung. The last hundred
+  // and forty metres is the passage remembering what a ring is.
+  ...[1, 2, 3, 4, 5, 6].map((n, index) => bell(
+    `bells-ring-${n}`, `tower_bell_0${n}`,
+    (index - 2.5) * 3.4, -1150 - index * 9, 1 + index * 0.06,
+    { yaw: index * 0.14 - 0.35, elevation: 3.6, blocks: false },
+  )),
+  Object.freeze({
+    id: 'bells-ring-frame', mesh: 'tower_frame', x: 0, y: -1196, scale: 1.35,
+    yaw: 0, elevation: 0, blocks: false,
+  }),
+]);
+
+// ── THE ROOM AT THE END ─────────────────────────────────────────────────────
+//
+// Three walls of St Brendan's belfry, standing in a field that has no reason to
+// contain them. The fourth wall is the way you came, which is source space, and
+// that is the whole image: a real room with one side open onto the thing it was
+// always inside.
+//
+// Built from the belfry's own meshes — louvres, frame, catwalk, the six bells —
+// so that walking through the open side and arriving in the real chamber is
+// continuous rather than a cut. What resolves out of the passage IS the room the
+// game puts you in.
+const room = SOURCE_BELLS.room;
+const roomPart = (id, mesh, dx, dz, extra = {}) => Object.freeze({
+  id: `bells-room-${id}`, mesh, x: dx, y: room.at + dz,
+  scale: 1, yaw: 0, elevation: 0, ...extra,
+});
+
+export const SOURCE_BELLS_ROOM = Object.freeze([
+  // The floor of it, which is the one thing that says this is a room and not a
+  // facade: it stands proud of the field by a step.
+  roomPart('deck', 'tower_catwalk', 0, 0, { scale: 1.16, elevation: 0.0, blocks: false }),
+  // West and east walls, louvred, two courses high. Louvres are 6m by 3.5m and
+  // thin, so a wall is a small tiling rather than a new mesh.
+  ...[0, 1].flatMap((course) => [
+    Object.freeze({
+      id: `bells-room-west-${course + 1}`, mesh: 'tower_louvres',
+      x: -room.halfX, y: room.at, scale: 1.5, yaw: Math.PI / 2,
+      elevation: course * 5.25, blocks: true,
+    }),
+    Object.freeze({
+      id: `bells-room-east-${course + 1}`, mesh: 'tower_louvres',
+      x: room.halfX, y: room.at, scale: 1.5, yaw: -Math.PI / 2,
+      elevation: course * 5.25, blocks: true,
+    }),
+  ]),
+  // And the far wall, which is the one you are walking at.
+  ...[0, 1].map((course) => Object.freeze({
+    id: `bells-room-far-${course + 1}`, mesh: 'tower_louvres',
+    x: 0, y: room.at - room.halfZ, scale: 2.2, yaw: 0,
+    elevation: course * 7.7, blocks: true,
+  })),
+  // The frame, and the ring in it. Six bells, mouth down, in order, at the size
+  // they have always been.
+  roomPart('frame', 'tower_frame', 0, 0, { scale: 1.4, blocks: false }),
+  ...[1, 2, 3, 4, 5, 6].map((n, index) => Object.freeze({
+    id: `bells-room-bell-${n}`, mesh: `tower_bell_0${n}`,
+    x: (index % 3 - 1) * 3.1, y: room.at + (index < 3 ? 1.6 : -1.6),
+    scale: 1, yaw: 0, elevation: 5.4, blocks: false,
+  })),
+  ...[1, 2, 3, 4, 5, 6].map((n, index) => Object.freeze({
+    id: `bells-room-wheel-${n}`, mesh: `tower_wheel_0${n}`,
+    x: (index % 3 - 1) * 3.1 + 1.35, y: room.at + (index < 3 ? 1.6 : -1.6),
+    scale: 1, yaw: Math.PI / 2, elevation: 5.4, blocks: false,
+  })),
+]);
+
+export function inSourceBellsRoom(x, y) {
+  const room = SOURCE_BELLS.room;
+  return Math.abs(Number(x) || 0) <= room.halfX && (Number(y) || 0) <= room.threshold;
+}
+
 export const SOURCE_TIER_BY_ID = Object.freeze(
   Object.fromEntries(SOURCE_TIERS.map((t) => [t.id, t])),
 );
@@ -136,9 +344,8 @@ export const SOURCE_CHUTES = Object.freeze([
   Object.freeze({ id: 'chute-work-order', x: 78, y: -118, from: 'trace', to: 'fork', halfWidth: 3.5, run: 20, dir: { x: 0, y: 1 } }),
 ]);
 
-// Which landmark stands on which tier. The narrative's required/optional split
-// (CHUNK_SURF_ROOMS) becomes elevation: the fork gates everything above it, and
-// body-room is the last thing before the page.
+// Which landmark stands on which tier. Elevation paces the authored field, but
+// no carried tool or landmark interaction gates its connectors or final page.
 export const SOURCE_LANDMARK_TIER = Object.freeze({
   'fork-room': 'fork',
   'surfer-origin': 'fork',
@@ -160,7 +367,7 @@ export function sourceTierHeightAt(y) {
   return sourceTierAt(y).height;
 }
 
-// A ladder occupies a small footprint straddling the tier boundary; a chute is a
+// A lift occupies a small footprint straddling the tier boundary; a chute is a
 // run leading away from one. Both are looked up by position, so the runtime does
 // not have to know the level's shape — only that features exist.
 export function sourceFeatureAt(x, y) {
@@ -188,35 +395,47 @@ export function sourceFeatureAt(x, y) {
 // building. Ladders and chutes are the authored exceptions to that single line
 // and nothing else in the engine changes.
 //
-//   a field lift carries in both directions;
+//   a field lift carries upward only;
 //   a chute is passable DOWNWARD only, because that is what makes it a chute
 //   and not a ramp.
 export function sourceTraversal(fromX, fromY, toX, toY, fromFloor, toFloor) {
   const a = sourceFeatureAt(fromX, fromY);
   const b = sourceFeatureAt(toX, toY);
-  // A lift answers from its authored lower/upper side, not from the sampled
-  // terrain immediately outside it. Those samples carry a few centimetres of
-  // mound noise, which could make the first step into a perfectly flat lift look
-  // microscopically downhill and suppress the committed rise.
-  const liftFeature = b?.kind === 'lift' ? b : a?.kind === 'lift' ? a : null;
-  if (liftFeature) {
-    const lift = sourceLiftById(liftFeature.id);
-    if (lift) {
-      const travel = Number(fromY) > lift.y ? 'up' : 'down';
-      return {
-        ok: true,
-        via: 'lift',
-        id: lift.id,
-        travel,
-        fromTier: travel === 'up' ? lift.from : lift.to,
-        toTier: travel === 'up' ? lift.to : lift.from,
-      };
+  // Test the whole attempted segment, not only its two samples. Keyboard steps
+  // are short, but controller cadence and diagonal degradation can cross a thin
+  // edge without either endpoint landing squarely inside it.
+  const segmentHitsLift = (lift) => {
+    const steps = Math.max(1, Math.ceil(Math.hypot(Number(toX) - Number(fromX), Number(toY) - Number(fromY)) * 2));
+    for (let index = 0; index <= steps; index += 1) {
+      const t = index / steps;
+      const x = Number(fromX) + (Number(toX) - Number(fromX)) * t;
+      const y = Number(fromY) + (Number(toY) - Number(fromY)) * t;
+      if (near(x, lift.x, lift.halfWidth) && near(y, lift.y, lift.depth)) return true;
     }
+    return false;
+  };
+  const lift = SOURCE_LIFTS.find(segmentHitsLift) || null;
+  if (lift) {
+    const upper = SOURCE_TIER_BY_ID[lift.to]?.height ?? Number(toFloor);
+    const movingIntoField = Number(toY) < Number(fromY) - 0.001;
+    const standingBelow = Number(fromY) > lift.y && Number(fromFloor) < upper - 0.45;
+    if (movingIntoField && standingBelow) return {
+      ok: true,
+      via: 'lift',
+      id: lift.id,
+      travel: 'up',
+      fromTier: lift.from,
+      toTier: lift.to,
+    };
   }
   const chute = a?.kind === 'chute' ? a : b?.kind === 'chute' ? b : null;
   const chuteDirection = chute ? (Number(toX) - Number(fromX)) * chute.dir.x
     + (Number(toY) - Number(fromY)) * chute.dir.y : 0;
-  if (chute && chuteDirection > 0.001 && Number(toFloor) <= Number(fromFloor)) {
+  const chuteDefinition = chute ? sourceChuteById(chute.id) : null;
+  const chuteBottom = chuteDefinition ? SOURCE_TIER_BY_ID[chuteDefinition.to]?.height ?? Number(toFloor) : Number(toFloor);
+  if (chute && chuteDirection > 0.001
+      && Number(toFloor) < Number(fromFloor) - 0.001
+      && Number(fromFloor) > chuteBottom + 0.45) {
     return { ok: true, via: 'chute', id: chute.id, dir: chute.dir };
   }
   return { ok: false };

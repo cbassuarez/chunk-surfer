@@ -8,8 +8,9 @@ import * as AUDIO from '../audio/story-audio.js';
 
 const LOCAL_ESCAPE_SCENES = new Set(['pause', 'settings', 'god-menu', 'bag', 'combat-calibration']);
 
-export function shouldOpenPauseForEvent({ storyMode = false, key = '', code = '', topSceneId = '' } = {}) {
+export function shouldOpenPauseForEvent({ storyMode = false, key = '', code = '', topSceneId = '', localEscape = false } = {}) {
   if (!storyMode || (key !== 'Escape' && code !== 'Escape')) return false;
+  if (localEscape) return false;
   return !LOCAL_ESCAPE_SCENES.has(topSceneId);
 }
 

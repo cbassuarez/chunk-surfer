@@ -131,14 +131,24 @@ export function createBattleInterferenceDirector({
   function lineFor(stage, variant = 0) {
     if (stage === 'foreshadow') return 'UNREGISTERED MONITOR RETURN / OPERATOR RESOLUTION WITHHELD';
     if (stage === 'recognition') {
-      const tag = identity?.persona?.source === 'steam' ? 'STEAM PERSONA' : identity?.persona?.source === 'os' ? 'LOCAL OPERATOR' : 'OPERATOR';
+      // THIS IS THE LINE WHERE IT SAYS YOUR REAL NAME.
+      //
+      // It used to read "LOCAL OPERATOR PATH RESOLVED: <you>", which is a log
+      // entry — and a log entry is the one thing this beat must not be. The
+      // machine has just found the person on the other side of the glass, and
+      // what it does with that is not file it. It says the name, and then it
+      // cannot stop saying the name.
+      //
+      // The stutter is the read head sticking on the syllable it likes: I, eye,
+      // I. Kept uppercase because the VFD has no lower case, and kept to three
+      // variants so a second encounter is not the same sentence.
       const display = settings().vfdText !== false
         ? identity?.persona?.value || 'UNRESOLVED'
         : record?.tokens?.persona?.token || 'OPERATOR MASKED';
       return [
-        `${tag} PATH RESOLVED: ${display}`,
-        `RETURN ADDRESS CONFIRMED / ${tag}: ${display}`,
-        `OPERATOR ON THIS CHANNEL: ${display}`,
+        `IIIII I I SEE YOU ${display} I EYE EYEYEY I CAN SEEEE YOU ${display}`,
+        `${display}. ${display}. THERE YOU ARE. I I I HAVE BEEN LOOKING RIGHT AT YOU ${display}`,
+        `EYE EYE I KNOW WHICH ONE OF YOU IS ${display} I SEEEE YOU I SEE YOU I SEE`,
       ][variant % 3];
     }
     if (stage === 'control') {
@@ -364,6 +374,19 @@ export function createBattleInterferenceDirector({
         return primed?.tokens?.persona?.token || null;
       } catch (_) {
         return null;   // masking unavailable is an ordinary fallback, never a crash
+      }
+    },
+    // The booth is allowed to SAY the separately consented display name while
+    // keeping every written and durable surface masked. Return the sanitized
+    // value from the runtime-only identity cache; never copy it into the case,
+    // debug payload, save callback or an error message.
+    async primePersona(context = {}) {
+      if (!enabled()) return null;
+      try {
+        if (!identity) identity = await identityCache.request(settings(), context);
+        return identity?.persona?.value || null;
+      } catch (_) {
+        return null;
       }
     },
     clearRun() { record = null; identity = null; liveLine = null; sessions.clear(); identityCache.clear(); },

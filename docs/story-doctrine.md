@@ -24,7 +24,7 @@ Player-noise perception accepts player-generated diegetic sound and allowed micr
 
 ## The unresolved name
 
-The gate guard asks for the operator's name and visibly accepts an answer. Rain masks the answer in every presentation and accessibility captions print `[NAME OBSCURED]`. Persistence records only `operator.name.received = true`. No literal operator name is permitted in saves, tapes, captions, diagnostics, telemetry, or exports.
+The gate guard asks for the operator's name and visibly accepts two answers. Rain masks both written presentations and accessibility captions print `[NAME OBSCURED]`. When a Steam display name or OS username has been separately enabled, the sanitized value may be synthesized locally beneath those two booth lines; it remains runtime-only and the repeat is clearer. Without a permitted value, the voice uses the stable obscured-shape syllables. Persistence records only `operator.name.received = true`. No literal operator name is permitted in saves, tapes, captions, transcripts, replay data, diagnostics, telemetry, or exports, and the B3 pre-roll echo never repeats it.
 
 ## Endings
 

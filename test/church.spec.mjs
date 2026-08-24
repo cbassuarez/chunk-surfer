@@ -6,7 +6,9 @@ import { conservatory as d } from '../src/data/floorplan/conservatory.js';
 import { F, ZONE, ZONE_WORLD } from '../src/data/floorplan/legend.js';
 import {
   CHURCH, CHURCH_BOUNDS, CHURCH_BUTTRESSES, CHURCH_COLLIDERS,
-  CHURCH_HEIGHTS, CHURCH_LEVELS, churchDoorAt, churchRoomAt, churchWallAt,
+  CHURCH_EXPLORATION_EXIT_DOOR_ID, CHURCH_HEIGHTS, CHURCH_LEVELS,
+  CHURCH_TOWER_ENDING_EXIT_DOOR_ID, churchDoorAt, churchRoomAt,
+  churchTowerCarryDoorAccess, churchWallAt,
 } from '../src/data/st-brendans.js';
 import { PROP_BOUNDS } from '../src/data/generated/prop-geometry.js';
 import { STRUCTURAL_COLLIDERS } from '../src/data/conservatory-props.js';
@@ -107,6 +109,9 @@ FP.setAllDoorsOpen(true);
     ['organ loft',L(16,59)],['north triforium',L(10,68)],['south triforium',L(21,78)],['belfry',B(15,72)],
     ['west yard',Y(16,54)],['south porch yard',Y(25,73)],
   ])assert.ok(reached(inside,point,2),`${name} is outside the cathedral circuit`);
+
+  const carryingRoute=flood(G(16,73),{props:true});
+  assert.ok(reached(carryingRoute,Y(16,54),2),'nave furniture leaves the mandatory west-door drag clear');
 }
 
 // Direction is enforced at both interaction and traversal boundaries. An open
@@ -125,6 +130,11 @@ for(const door of FP.doorState().filter((entry)=>entry.id.startsWith('brendan-')
   const facing=door.widthAxis==='x'?[0,door.insideSide]:[door.insideSide,0];
   assert.equal(FP.interactDoor(outside.x,outside.y,facing,new Set()).why,'exit-only',door.id);
 }
+assert.equal(CHURCH_EXPLORATION_EXIT_DOOR_ID,'brendan-west-door');
+assert.equal(CHURCH_TOWER_ENDING_EXIT_DOOR_ID,'brendan-west-door');
+assert.deepEqual(churchTowerCarryDoorAccess(CHURCH_EXPLORATION_EXIT_DOOR_ID),{allowed:true,completesEnding:true,reason:null});
+assert.deepEqual(churchTowerCarryDoorAccess('brendan-south-porch'),{allowed:false,completesEnding:false,reason:'west-door-route'});
+assert.deepEqual(churchTowerCarryDoorAccess(CHURCH_TOWER_ENDING_EXIT_DOOR_ID),{allowed:true,completesEnding:true,reason:null});
 
 // Every projected stone element has a live height-aware collider. Furnishings
 // leave each God-hook cell clear; the hero prop's broad bounds block nothing.

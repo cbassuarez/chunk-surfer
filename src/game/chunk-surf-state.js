@@ -17,6 +17,17 @@ export const CHUNK_SURF_PHASE = Object.freeze({
   // fifth tier on the same landscape. It is not a reward and not a punishment,
   // it is the part of the chapter that happens when the chapter did not close.
   HORIZON: 'horizon',
+  // THE BELL PASSAGE. The tower road, walked.
+  //
+  // Taking the bust's detour used to end the chapter on the spot and hand main.js
+  // eight seconds of datamosh to play over a warp. It is a place now: four
+  // hundred metres of the same ground, the tower's own bells standing in it at
+  // every size they are not, and St Brendan's belfry resolving out of the far
+  // end with one wall missing. Walking in through that wall is what completes.
+  //
+  // It is still Source space — same runtime, same area, the tier past the tape
+  // (SOURCE_BELLS in data/source-level.js).
+  BELLS: 'bells',
   COMPLETED: 'completed',
 });
 
@@ -33,6 +44,33 @@ export const HORIZON_REASON = Object.freeze({
 export const HORIZON_EXIT = Object.freeze({
   CHAPEL: 'chapel',
   TOWER: 'tower',
+});
+
+// The three mutually-exclusive roads after the final Source fault.  This is
+// durable state rather than a presentation flag: once one of these is committed
+// neither a reload nor an already-earned Chapel qualification may substitute a
+// different ending family.
+export const SOURCE_FINALE_ROUTE = Object.freeze({
+  CONTACT: 'contact',
+  TOWER: 'tower',
+  CHAPEL: 'chapel',
+});
+
+export const SOURCE_FINALE_STAGE = Object.freeze({
+  UNCOMMITTED: 'uncommitted',
+  CONTACT_COMMITTED: 'contact-committed',
+  HORIZON: 'horizon',
+  TOWER_COMMITTED: 'tower-committed',
+  CATHEDRAL: 'cathedral',
+  CATHEDRAL_FIGHT: 'cathedral-fight',
+  TOWER_ESCAPE: 'tower-escape',
+  CHAPEL_COMMITTED: 'chapel-committed',
+  RESOLVED: 'resolved',
+});
+
+export const SOURCE_FINALE_RESULT = Object.freeze({
+  WON: 'won',
+  LOST: 'lost',
 });
 
 export const CHUNK_SURF_HUSH_STAGE = Object.freeze({
@@ -64,6 +102,9 @@ export const SOURCE_OPTIONAL_TRACES = Object.freeze(['surfer-origin', 'work-orde
 const PHASES = new Set(Object.values(CHUNK_SURF_PHASE));
 const HORIZON_REASONS = new Set(Object.values(HORIZON_REASON));
 const HORIZON_EXITS = new Set(Object.values(HORIZON_EXIT));
+const FINALE_ROUTES = new Set(Object.values(SOURCE_FINALE_ROUTE));
+const FINALE_STAGES = new Set(Object.values(SOURCE_FINALE_STAGE));
+const FINALE_RESULTS = new Set(Object.values(SOURCE_FINALE_RESULT));
 const HUSH_STAGES = new Set(Object.values(CHUNK_SURF_HUSH_STAGE));
 const PURSUIT_BEATS = new Set(Object.values(SOURCE_PURSUIT_BEAT));
 const FINAL_STATUSES = new Set(Object.values(SOURCE_FINAL_STATUS));
@@ -95,11 +136,12 @@ export function freshChunkSurfState({
   sourceGuidance = false,
   evidenceTags = [],
   sourceMemoryFacts = {},
+  marbleEyes = null,
   seed = 4417,
   returnPoint = null,
 } = {}) {
   return {
-    schema: 4,
+    schema: 5,
     active: false,
     completed: false,
     phase: CHUNK_SURF_PHASE.HALL,
@@ -109,6 +151,7 @@ export function freshChunkSurfState({
       sourceGuidance: !!sourceGuidance,
       evidenceTags: unique(evidenceTags),
       sourceMemoryFacts: sourceMemoryFacts && typeof sourceMemoryFacts === 'object' && !Array.isArray(sourceMemoryFacts) ? { ...sourceMemoryFacts } : {},
+      marbleEyes: ['carried', 'returned', 'declined', 'in-the-water'].includes(marbleEyes) ? marbleEyes : null,
     },
     returnPoint: finitePoint(returnPoint),
     hallMaxDistance: 0,
@@ -150,11 +193,22 @@ export function freshChunkSurfState({
     // it cannot be earned late — see sourceBossAvailable().
     injuriesAtEntry: 0,
     horizon: freshHorizon(),
+    finale: freshFinale(),
   };
 }
 
 function freshHorizon() {
   return { entered: false, reason: null, exit: null, maxDepth: 0 };
+}
+
+function freshFinale() {
+  return {
+    route: null,
+    stage: SOURCE_FINALE_STAGE.UNCOMMITTED,
+    result: null,
+    bust: { recognized: false, decision: null },
+    compatibility: {},
+  };
 }
 
 function normalizeHorizon(value = null) {
@@ -194,6 +248,7 @@ export function normalizeChunkSurfState(value = null, fallback = {}) {
     ...fallback,
     drankCoffee: value.profile?.mandatory,
     hasRig: value.profile?.bestEligible,
+    marbleEyes: value.profile?.marbleEyes,
     seed: value.seed,
     returnPoint: value.returnPoint,
   });
@@ -212,6 +267,29 @@ export function normalizeChunkSurfState(value = null, fallback = {}) {
       : phase === CHUNK_SURF_PHASE.FINAL ? SOURCE_FINAL_STATUS.READY : SOURCE_FINAL_STATUS.LOCKED);
   const finalOutcome = FINAL_OUTCOMES.has(rawFinal.outcome) ? rawFinal.outcome : legacyOutcome;
   const pursuitsCleared = unique(value.pursuitsCleared).filter((id) => PURSUIT_BEATS.has(id));
+  const rawFinale = value.finale && typeof value.finale === 'object' && !Array.isArray(value.finale)
+    ? value.finale : {};
+  let finaleRoute = FINALE_ROUTES.has(rawFinale.route) ? rawFinale.route : null;
+  let finaleStage = FINALE_STAGES.has(rawFinale.stage) ? rawFinale.stage : SOURCE_FINALE_STAGE.UNCOMMITTED;
+  let finaleResult = FINALE_RESULTS.has(rawFinale.result) ? rawFinale.result : null;
+  const legacyFinale = Number(value.schema) < 5;
+  if (legacyFinale) {
+    if (phase === CHUNK_SURF_PHASE.HORIZON) finaleStage = SOURCE_FINALE_STAGE.HORIZON;
+    if (value.horizon?.exit === HORIZON_EXIT.TOWER) {
+      finaleRoute = SOURCE_FINALE_ROUTE.TOWER;
+      finaleStage = SOURCE_FINALE_STAGE.TOWER_COMMITTED;
+    } else if (value.horizon?.exit === HORIZON_EXIT.CHAPEL) {
+      finaleRoute = SOURCE_FINALE_ROUTE.CHAPEL;
+      finaleStage = SOURCE_FINALE_STAGE.CHAPEL_COMMITTED;
+    } else if ((value.completed || phase === CHUNK_SURF_PHASE.COMPLETED) && rawFinal.won !== false) {
+      // Before schema 5 a resolved fault with no Horizon exit silently became
+      // the Ellery tower.  It is the old shape of a Contact victory and now
+      // lands on that terminal result instead of changing routes after reload.
+      finaleRoute = SOURCE_FINALE_ROUTE.CONTACT;
+      finaleStage = SOURCE_FINALE_STAGE.RESOLVED;
+      finaleResult = SOURCE_FINALE_RESULT.WON;
+    }
+  }
   const legacyLandscape = value.firstLiftCompleted == null
     && [CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(phase);
   let checkpointId = typeof value.checkpoint?.id === 'string' && value.checkpoint.id
@@ -225,12 +303,19 @@ export function normalizeChunkSurfState(value = null, fallback = {}) {
   return {
     ...base,
     ...value,
-    schema: 4,
+    schema: 5,
     active: !!value.active && phase !== CHUNK_SURF_PHASE.COMPLETED,
     completed: !!value.completed || phase === CHUNK_SURF_PHASE.COMPLETED,
     phase,
     seed: Number(value.seed) || base.seed,
-    profile: value.profile && typeof value.profile === 'object' ? { ...base.profile, ...value.profile } : base.profile,
+    profile: value.profile && typeof value.profile === 'object'
+      ? {
+          ...base.profile,
+          ...value.profile,
+          marbleEyes: ['carried', 'returned', 'declined', 'in-the-water'].includes(value.profile.marbleEyes)
+            ? value.profile.marbleEyes : null,
+        }
+      : base.profile,
     returnPoint: finitePoint(value.returnPoint),
     hallMaxDistance,
     pageStage: Math.max(pageStageForDistance(hallMaxDistance), Math.min(4, Math.floor(Number(value.pageStage) || 0))),
@@ -277,6 +362,20 @@ export function normalizeChunkSurfState(value = null, fallback = {}) {
     // never opens one.
     injuriesAtEntry: Math.max(0, Math.floor(Number(value.injuriesAtEntry) || 0)),
     horizon: normalizeHorizon(value.horizon),
+    finale: {
+      route: finaleRoute,
+      stage: finaleStage,
+      result: finaleResult,
+      bust: {
+        recognized: !!rawFinale.bust?.recognized,
+        decision: ['accepted', 'declined'].includes(rawFinale.bust?.decision) ? rawFinale.bust.decision : null,
+      },
+      compatibility: {
+        ...(rawFinale.compatibility && typeof rawFinale.compatibility === 'object' && !Array.isArray(rawFinale.compatibility)
+          ? rawFinale.compatibility : {}),
+        ...(legacyFinale ? { migratedFrom: `source-schema-${Number(value.schema) || 0}` } : {}),
+      },
+    },
   };
 }
 
@@ -373,7 +472,16 @@ export function reduceChunkSurf(value, event = {}) {
 
     case 'LANDMARK_VISITED':
       if (!event.id) return state;
-      return { ...state, visited: add(state.visited, event.id) };
+      return {
+        ...state,
+        visited: add(state.visited, event.id),
+        // Optional evidence is spatial now. Legacy Tune/Record events remain
+        // readable below, but a new run earns these traces by actually finding
+        // their authored places.
+        optionalTraces: optionalTraceFor(event.id)
+          ? add(state.optionalTraces, event.id)
+          : state.optionalTraces,
+      };
 
     case 'LANDMARK_TUNED': {
       if (!event.id) return state;
@@ -418,7 +526,7 @@ export function reduceChunkSurf(value, event = {}) {
       return { ...state, attempts: state.attempts + 1, armedRedaction: null };
 
     case 'FINAL_REACHED':
-      if (!state.tuned.includes('body-room')) return state;
+      if (state.phase !== CHUNK_SURF_PHASE.LANDSCAPE) return state;
       return {
         ...state,
         phase: CHUNK_SURF_PHASE.FINAL,
@@ -429,6 +537,20 @@ export function reduceChunkSurf(value, event = {}) {
         checkpointId: 'final-page',
         checkpoint: { id: 'final-page', facing: 0 },
         finalEncounter: { ...state.finalEncounter, status: SOURCE_FINAL_STATUS.READY },
+      };
+
+    case 'CONTACT_COMMITTED':
+      if (state.phase !== CHUNK_SURF_PHASE.FINAL
+        || state.finalEncounter.status !== SOURCE_FINAL_STATUS.READY
+        || (state.finale.route && state.finale.route !== SOURCE_FINALE_ROUTE.CONTACT)) return state;
+      return {
+        ...state,
+        finale: {
+          ...state.finale,
+          route: SOURCE_FINALE_ROUTE.CONTACT,
+          stage: SOURCE_FINALE_STAGE.CONTACT_COMMITTED,
+          result: null,
+        },
       };
 
     case 'FINAL_ENCOUNTER_RESOLVED': {
@@ -460,6 +582,13 @@ export function reduceChunkSurf(value, event = {}) {
           },
           turns: Math.max(0, Math.floor(Number(event.result?.turns) || 0)),
         },
+        finale: state.finale.route === SOURCE_FINALE_ROUTE.CONTACT
+          ? {
+              ...state.finale,
+              stage: SOURCE_FINALE_STAGE.RESOLVED,
+              result: SOURCE_FINALE_RESULT.WON,
+            }
+          : state.finale,
       };
     }
 
@@ -467,7 +596,7 @@ export function reduceChunkSurf(value, event = {}) {
     // unchanged and the dossier still gets it. What changed is where it puts
     // you: the chapter does not close on a page you declined to turn.
     case 'SOURCE_NORMAL_EXIT': {
-      if (state.phase !== CHUNK_SURF_PHASE.FINAL) return state;
+      if (state.phase !== CHUNK_SURF_PHASE.FINAL || state.finale.route === SOURCE_FINALE_ROUTE.CONTACT) return state;
       const resolved = reduceChunkSurf(state, {
         type: 'FINAL_ENCOUNTER_RESOLVED',
         result: {
@@ -487,24 +616,25 @@ export function reduceChunkSurf(value, event = {}) {
         horizon: { ...freshHorizon(), entered: true, reason: HORIZON_REASON.WALKED_AWAY },
         checkpointId: 'landing-horizon',
         checkpoint: { id: 'landing-horizon', facing: 0 },
+        finale: { ...resolved.finale, route: null, stage: SOURCE_FINALE_STAGE.HORIZON, result: null },
       };
     }
 
-    // Losing used to be a respawn one tier down and a rematch in two and a half
-    // seconds, which is the same as losing not counting. It counts now: it
-    // submits, and it puts you out on the tape with the reading it earned.
+    // Contact is a declared point of no return.  Losing here is a terminal
+    // result, not a hidden route into the safer Horizon branch.
     case 'FINAL_ENCOUNTER_LOST':
-      if (state.phase !== CHUNK_SURF_PHASE.FINAL || state.finalEncounter.status !== SOURCE_FINAL_STATUS.READY) return state;
+      if (state.phase !== CHUNK_SURF_PHASE.FINAL
+        || state.finalEncounter.status !== SOURCE_FINAL_STATUS.READY
+        || state.finale.route !== SOURCE_FINALE_ROUTE.CONTACT) return state;
       return {
         ...state,
+        active: false,
+        completed: true,
         attempts: state.attempts + 1,
         armedRedaction: null,
-        phase: CHUNK_SURF_PHASE.HORIZON,
+        phase: CHUNK_SURF_PHASE.COMPLETED,
         redaction: 'source',
         bestEligible: false,
-        horizon: { ...freshHorizon(), entered: true, reason: HORIZON_REASON.LOST },
-        checkpointId: 'landing-horizon',
-        checkpoint: { id: 'landing-horizon', facing: 0 },
         finalEncounter: {
           ...state.finalEncounter,
           status: SOURCE_FINAL_STATUS.RESOLVED,
@@ -512,7 +642,12 @@ export function reduceChunkSurf(value, event = {}) {
           won: false,
           rescuedRecordist: false,
           legacyRedaction: 'source',
-          compatibility: { ...state.finalEncounter.compatibility, adapter: 'combat-v1', route: 'horizon-lost' },
+          compatibility: { ...state.finalEncounter.compatibility, adapter: 'combat-v1', route: 'contact-terminal' },
+        },
+        finale: {
+          ...state.finale,
+          stage: SOURCE_FINALE_STAGE.RESOLVED,
+          result: SOURCE_FINALE_RESULT.LOST,
         },
       };
 
@@ -522,16 +657,88 @@ export function reduceChunkSurf(value, event = {}) {
       return { ...state, horizon: { ...state.horizon, maxDepth } };
     }
 
+    case 'HORIZON_BUST_RECOGNIZED':
+      if (state.phase !== CHUNK_SURF_PHASE.HORIZON || !event.eligible || state.finale.bust.decision) return state;
+      return { ...state, finale: { ...state.finale, bust: { ...state.finale.bust, recognized: true } } };
+
+    case 'HORIZON_BUST_DECIDED': {
+      if (state.phase !== CHUNK_SURF_PHASE.HORIZON || state.finale.bust.decision) return state;
+      const accepted = event.decision === 'accepted' && state.finale.bust.recognized;
+      return {
+        ...state,
+        finale: {
+          ...state.finale,
+          route: accepted ? SOURCE_FINALE_ROUTE.TOWER : SOURCE_FINALE_ROUTE.CHAPEL,
+          stage: accepted ? SOURCE_FINALE_STAGE.TOWER_COMMITTED : SOURCE_FINALE_STAGE.CHAPEL_COMMITTED,
+          bust: { ...state.finale.bust, decision: accepted ? 'accepted' : 'declined' },
+        },
+      };
+    }
+
     case 'HORIZON_EXIT_CHOSEN': {
       if (state.phase !== CHUNK_SURF_PHASE.HORIZON || !HORIZON_EXITS.has(event.exit)) return state;
+      const requestedRoute = event.exit === HORIZON_EXIT.TOWER ? SOURCE_FINALE_ROUTE.TOWER : SOURCE_FINALE_ROUTE.CHAPEL;
+      if (state.finale.route && state.finale.route !== requestedRoute) return state;
+      if (requestedRoute === SOURCE_FINALE_ROUTE.TOWER && state.finale.bust.decision !== 'accepted') return state;
+      // THE CHAPEL CLOSES THE CHAPTER. THE TOWER OPENS A PLACE.
+      //
+      // Straight on is still straight on: the chapel exit ends Source space where
+      // it always did. The detour does not — it is the bell passage now, and the
+      // chapter stays open and stays ACTIVE until the body walks into the room at
+      // the end of it. The route and the stage commit here, though, because the
+      // decision was made at the bust and reloading in the passage must not offer
+      // it again.
+      const tower = requestedRoute === SOURCE_FINALE_ROUTE.TOWER;
+      return {
+        ...state,
+        active: tower,
+        completed: !tower,
+        phase: tower ? CHUNK_SURF_PHASE.BELLS : CHUNK_SURF_PHASE.COMPLETED,
+        horizon: { ...state.horizon, exit: event.exit },
+        checkpointId: tower ? 'bells-entry' : state.checkpointId,
+        finale: {
+          ...state.finale,
+          route: requestedRoute,
+          stage: tower ? SOURCE_FINALE_STAGE.TOWER_COMMITTED : SOURCE_FINALE_STAGE.CHAPEL_COMMITTED,
+        },
+      };
+    }
+
+    // The last metre of Source space. Walking through the missing wall of the
+    // belfry is what ends the chapter on the tower road; main.js then puts the
+    // body in the real chamber, which is the same room, built from the same
+    // meshes, one step further on.
+    case 'BELLS_ROOM_ENTERED': {
+      if (state.phase !== CHUNK_SURF_PHASE.BELLS) return state;
       return {
         ...state,
         active: false,
         completed: true,
         phase: CHUNK_SURF_PHASE.COMPLETED,
-        horizon: { ...state.horizon, exit: event.exit },
+        finale: { ...state.finale, stage: SOURCE_FINALE_STAGE.TOWER_COMMITTED },
       };
     }
+
+    case 'CATHEDRAL_ENTERED':
+      if (state.finale.route !== SOURCE_FINALE_ROUTE.TOWER
+        || ![SOURCE_FINALE_STAGE.TOWER_COMMITTED, SOURCE_FINALE_STAGE.CATHEDRAL].includes(state.finale.stage)) return state;
+      return { ...state, finale: { ...state.finale, stage: SOURCE_FINALE_STAGE.CATHEDRAL } };
+
+    case 'CATHEDRAL_FIGHT_STARTED':
+      if (state.finale.route !== SOURCE_FINALE_ROUTE.TOWER || state.finale.stage !== SOURCE_FINALE_STAGE.CATHEDRAL) return state;
+      return { ...state, finale: { ...state.finale, stage: SOURCE_FINALE_STAGE.CATHEDRAL_FIGHT } };
+
+    case 'CATHEDRAL_FIGHT_WON':
+      if (state.finale.route !== SOURCE_FINALE_ROUTE.TOWER || state.finale.stage !== SOURCE_FINALE_STAGE.CATHEDRAL_FIGHT) return state;
+      return { ...state, finale: { ...state.finale, stage: SOURCE_FINALE_STAGE.TOWER_ESCAPE, result: SOURCE_FINALE_RESULT.WON } };
+
+    case 'CATHEDRAL_FIGHT_LOST':
+      if (state.finale.route !== SOURCE_FINALE_ROUTE.TOWER || state.finale.stage !== SOURCE_FINALE_STAGE.CATHEDRAL_FIGHT) return state;
+      return { ...state, finale: { ...state.finale, stage: SOURCE_FINALE_STAGE.RESOLVED, result: SOURCE_FINALE_RESULT.LOST } };
+
+    case 'TOWER_ESCAPE_COMPLETED':
+      if (state.finale.route !== SOURCE_FINALE_ROUTE.TOWER || state.finale.stage !== SOURCE_FINALE_STAGE.TOWER_ESCAPE) return state;
+      return { ...state, finale: { ...state.finale, stage: SOURCE_FINALE_STAGE.RESOLVED, result: SOURCE_FINALE_RESULT.WON } };
 
     case 'REDACTION_ARMED':
       if (state.phase !== CHUNK_SURF_PHASE.FINAL || !['comfort', 'body', 'source'].includes(event.id)) return state;
@@ -555,7 +762,15 @@ export function reduceChunkSurf(value, event = {}) {
       // Out on the tape the chapter closes at an exit, not at a resolution.
       // HORIZON_EXIT_CHOSEN is the only way off it.
       if (state.phase === CHUNK_SURF_PHASE.HORIZON) return state;
-      return { ...state, active: false, completed: true, phase: CHUNK_SURF_PHASE.COMPLETED };
+      return {
+        ...state,
+        active: false,
+        completed: true,
+        phase: CHUNK_SURF_PHASE.COMPLETED,
+        finale: state.finale.route === SOURCE_FINALE_ROUTE.CONTACT
+          ? { ...state.finale, stage: SOURCE_FINALE_STAGE.RESOLVED, result: state.finale.result || SOURCE_FINALE_RESULT.WON }
+          : state.finale,
+      };
 
     default:
       return state;
@@ -567,11 +782,13 @@ export function chunkSurfFlagsForState(value) {
   return [
     CHUNK_SURF_FLAGS.entered,
     ...(state.completed ? [CHUNK_SURF_FLAGS.completed] : []),
+    // These tool-derived checks are retained as legacy alternatives, while new
+    // Source runs project the same downstream evidence from spatial discovery.
     ...(state.hasFork ? [CHUNK_SURF_FLAGS.fork] : []),
-    ...(state.tuned.includes('body-room') ? [CHUNK_SURF_FLAGS.trueLine] : []),
-    ...(state.tuned.includes('recordist-loop') || state.recorded.includes('recordist-loop') ? [CHUNK_SURF_FLAGS.optionalRecordist] : []),
-    ...(state.tuned.includes('surfer-origin') || state.recorded.includes('surfer-origin') ? [CHUNK_SURF_FLAGS.optionalSurfer] : []),
-    ...(state.tuned.includes('work-order-loop') || state.recorded.includes('work-order-loop') ? [CHUNK_SURF_FLAGS.optionalWorkOrder] : []),
+    ...(state.visited.includes('body-room') || state.tuned.includes('body-room') ? [CHUNK_SURF_FLAGS.trueLine] : []),
+    ...(state.visited.includes('recordist-loop') || state.tuned.includes('recordist-loop') || state.recorded.includes('recordist-loop') ? [CHUNK_SURF_FLAGS.optionalRecordist] : []),
+    ...(state.visited.includes('surfer-origin') || state.tuned.includes('surfer-origin') || state.recorded.includes('surfer-origin') ? [CHUNK_SURF_FLAGS.optionalSurfer] : []),
+    ...(state.visited.includes('work-order-loop') || state.tuned.includes('work-order-loop') || state.recorded.includes('work-order-loop') ? [CHUNK_SURF_FLAGS.optionalWorkOrder] : []),
     ...(state.finalEncounter.outcome === SOURCE_FINAL_OUTCOME.RESCUE || state.redaction === 'body' ? [CHUNK_SURF_FLAGS.correctRedaction] : []),
     ...(state.bestEligible ? [CHUNK_SURF_FLAGS.bestEligible] : []),
     ...(state.horizon.entered ? [CHUNK_SURF_FLAGS.horizon] : []),
@@ -584,6 +801,14 @@ export function chunkSurfFlagsForState(value) {
 export function chunkSurfCompletion(value) {
   const state = normalizeChunkSurfState(value);
   if (!state.completed) return { completed: false, bestEligible: false, savedRecordist: false, flags: [] };
+  const route = state.finale.route
+    || (state.horizon.exit === HORIZON_EXIT.TOWER ? SOURCE_FINALE_ROUTE.TOWER
+      : state.horizon.exit === HORIZON_EXIT.CHAPEL ? SOURCE_FINALE_ROUTE.CHAPEL : null);
+  const result = state.finale.result;
+  const endingId = route === SOURCE_FINALE_ROUTE.CONTACT && result
+    ? `contact-${result}`
+    : route === SOURCE_FINALE_ROUTE.TOWER && result
+      ? `tower-${result}` : null;
   return {
     completed: true,
     bestEligible: !!state.bestEligible,
@@ -593,6 +818,11 @@ export function chunkSurfCompletion(value) {
     // null when the chapter closed at the fault. main.js reads this to choose
     // between the tower crossing and the chapel.
     horizonExit: state.horizon.exit,
+    route,
+    result,
+    endingId,
+    transitionTarget: route === SOURCE_FINALE_ROUTE.CONTACT ? 'ending'
+      : route === SOURCE_FINALE_ROUTE.TOWER ? 'cathedral' : 'chapel',
     flags: chunkSurfFlagsForState(state),
   };
 }
@@ -616,6 +846,13 @@ export function inferLegacyChunkSurf(save = {}) {
       compatibility: { migratedFrom: 'legacy-flags' },
       channels: { rescue: 0, contain: 1, submit: 0 },
       turns: 0,
+    },
+    finale: {
+      ...state.finale,
+      route: SOURCE_FINALE_ROUTE.CONTACT,
+      stage: SOURCE_FINALE_STAGE.RESOLVED,
+      result: SOURCE_FINALE_RESULT.WON,
+      compatibility: { migratedFrom: 'legacy-flags' },
     },
   });
   if (entered) return { ...state, active: true, phase: CHUNK_SURF_PHASE.HALL };
@@ -653,5 +890,10 @@ export function chunkSurfProbe(value) {
     injuriesAtEntry: state.injuriesAtEntry,
     bossAvailable: sourceBossAvailable(state),
     horizon: { ...state.horizon },
+    finale: {
+      ...state.finale,
+      bust: { ...state.finale.bust },
+      compatibility: { ...state.finale.compatibility },
+    },
   };
 }

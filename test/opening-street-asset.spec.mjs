@@ -72,11 +72,13 @@ assert.equal(stats.bytes,bytes.length);
 assert.ok(stats.bytes<=manifest.limits.bytes);
 assert.ok(stats.totalTriangles<=manifest.limits.triangles);
 assert.ok(stats.estimatedMipmappedTextureBytes<=manifest.limits.estimatedMipmappedTextureBytes);
+assert.ok(stats.estimatedMipmappedTextureBytes<=128*1024*1024,'opening residency stays below 128 MiB mipmapped');
 assert.ok(stats.images.every((image)=>image.width<=manifest.limits.textureDimension&&image.height<=manifest.limits.textureDimension));
 assert.equal(stats.textureCount,42);
 assert.equal(stats.gameplayDrawCalls,14);
 assert.ok(stats.gameplayDrawCalls<=manifest.limits.mainPassDrawCalls);
 assert.ok(stats.tree.triangles<=manifest.sources.find((source)=>source.role==='smallTree').triangleBudget);
+assert.ok(stats.tree.triangles<=8000,'the background tree does not spend a hero-character mesh budget');
 
 assert.equal(gltf.animations,undefined);
 assert.equal(gltf.skins,undefined);

@@ -13,12 +13,15 @@ export const BASEMENT_WATCHER_ROOMS = Object.freeze({
   [BASEMENT_WATCHER_ROOM.B1]: Object.freeze({
     id: BASEMENT_WATCHER_ROOM.B1,
     label: 'Studio B1',
-    stand: Object.freeze({ x: 44.5, y: 10.5 }),
+    // The room proper is south of the bricked lift pocket. The old 10.5 mark
+    // stood in that pocket, outside the studio whose name the encounter uses.
+    stand: Object.freeze({ x: 44.5, y: 13.5 }),
     yaw: Math.PI,
+    bounds: Object.freeze({ minX: 40, minY: 12, maxX: 49, maxY: 21 }),
     spawnCandidates: Object.freeze([
-      Object.freeze({ x: 44.5, y: 10.5 }),
-      Object.freeze({ x: 45.0, y: 10.0 }),
-      Object.freeze({ x: 44.0, y: 10.0 }),
+      Object.freeze({ x: 44.5, y: 13.5 }),
+      Object.freeze({ x: 45.0, y: 14.0 }),
+      Object.freeze({ x: 44.0, y: 14.0 }),
     ]),
   }),
   [BASEMENT_WATCHER_ROOM.B5]: Object.freeze({
@@ -26,6 +29,7 @@ export const BASEMENT_WATCHER_ROOMS = Object.freeze({
     label: 'Studio B5',
     stand: Object.freeze({ x: 17.0, y: 29.5 }),
     yaw: 0,
+    bounds: Object.freeze({ minX: 8, minY: 26, maxX: 24, maxY: 33 }),
     spawnCandidates: Object.freeze([
       Object.freeze({ x: 17.0, y: 29.5 }),
       Object.freeze({ x: 18.0, y: 29.5 }),
@@ -35,6 +39,29 @@ export const BASEMENT_WATCHER_ROOMS = Object.freeze({
 });
 
 export const BASEMENT_WATCHER_ROOM_IDS = Object.freeze(Object.keys(BASEMENT_WATCHER_ROOMS));
+
+// Half-open authored bounds name the air inside each studio, not its doorway.
+// Keeping the threshold out is deliberate: neither the body nor any evidence
+// of it is allowed to occupy the shared corridor or the B1 lift pocket.
+export function basementWatcherRoomContains(roomId, point) {
+  const bounds = BASEMENT_WATCHER_ROOMS[roomId]?.bounds;
+  if (!bounds || !point || !Number.isFinite(Number(point.x)) || !Number.isFinite(Number(point.y))) return false;
+  const x = Number(point.x), y = Number(point.y);
+  return x >= bounds.minX && x < bounds.maxX && y >= bounds.minY && y < bounds.maxY;
+}
+
+export function basementWatcherSignalContained(roomId, actor, observer) {
+  return basementWatcherRoomContains(roomId, actor)
+    && basementWatcherRoomContains(roomId, observer);
+}
+
+export const BASEMENT_WATCHER_ISOLATION_DB = 120;
+
+export function basementWatcherAcousticIsolationDb(roomId, source, listener) {
+  return basementWatcherSignalContained(roomId, source, listener)
+    ? 0
+    : BASEMENT_WATCHER_ISOLATION_DB;
+}
 
 function hash32(text) {
   let hash = 2166136261;
@@ -143,15 +170,27 @@ export function resolveBasementWatcherMovement(value, {
 
 // Keep the encounter's only side effect injectable: the main runtime supplies
 // the existing Presence spawn/target operations, while deterministic tests can
-// prove that an inactive HUSH is spawned and an active HUSH is only retargeted.
+// prove that a fresh HUSH spawns inside the room and an already-active single
+// Presence body is placed there before it is retargeted.
 export function applyBasementWatcherHuntResult(result, {
   isActive = () => false,
   spawn = () => false,
+  confine = () => false,
   retarget = () => false,
 } = {}) {
-  if (!result?.huntTriggered) return { spawned: false, retargeted: false };
+  if (!result?.huntTriggered) return { spawned: false, confined: false, retargeted: false };
+  const wasActive = !!isActive();
   let spawned = false;
-  if (!isActive()) spawned = !!spawn();
+  let confined = false;
+  if (!wasActive) {
+    spawned = !!spawn();
+    confined = spawned;
+  } else {
+    // There is one Presence actor. If another beat already has it live, move
+    // that same body onto the watcher cell so this encounter cannot inherit a
+    // body standing somewhere beyond the room it is about to be locked into.
+    confined = !!confine();
+  }
   const retargeted = isActive() ? !!retarget() : false;
-  return { spawned, retargeted };
+  return { spawned, confined, retargeted };
 }

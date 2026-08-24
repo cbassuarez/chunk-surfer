@@ -14,6 +14,8 @@
 // the yard island is parked at logical (50, 200) with a physical origin of
 // (0, 0), so a prop at physical (10, 36) is written here as (60, 236).
 
+import { VEGETATION_FALLBACKS } from './vegetation.js';
+
 const freeze = (value) => Object.freeze(value);
 
 // Physical metres, matching YARD_PARK in floorplan/conservatory.js. Kept here
@@ -52,19 +54,28 @@ export const YARD_PARK_PROPS = freeze([
   freeze({ id: 'yard-park-bench-east', mesh: 'district_bench', x: 65.6, y: 238.0, yaw: Math.PI, scale: 1, interactive: false, structural: true, blocks: false }),
 
   // One tree in each lawn quarter, off the paths by more than their own spread.
-  freeze({ id: 'yard-park-tree-nw', mesh: 'opening_street_tree_small', x: 54.5, y: 227, yaw: .31, scale: 1, interactive: false, structural: true, blocks: false }),
-  freeze({ id: 'yard-park-tree-ne', mesh: 'opening_street_tree_small', x: 65.5, y: 226.5, yaw: -.62, scale: 1, interactive: false, structural: true, blocks: false }),
-  freeze({ id: 'yard-park-tree-sw', mesh: 'opening_street_tree_small', x: 54, y: 244.5, yaw: 1.04, scale: 1, interactive: false, structural: true, blocks: false }),
-  freeze({ id: 'yard-park-tree-se', mesh: 'opening_street_tree_small', x: 65, y: 245, yaw: -.18, scale: 1, interactive: false, structural: true, blocks: false }),
+  freeze({ id: 'yard-park-tree-nw', mesh: 'opening_street_tree_small', x: 54.5, y: 227, yaw: .31, scale: .94, interactive: false, structural: true, blocks: false }),
+  freeze({ id: 'yard-park-tree-ne', mesh: 'opening_street_tree_small_b', fallbackMesh:VEGETATION_FALLBACKS.opening_street_tree_small_b, x: 65.5, y: 226.5, yaw: -.62, scale: 1.04, interactive: false, structural: true, blocks: false }),
+  freeze({ id: 'yard-park-tree-sw', mesh: 'opening_street_tree_small_c', fallbackMesh:VEGETATION_FALLBACKS.opening_street_tree_small_c, x: 54, y: 244.5, yaw: 1.04, scale: .98, interactive: false, structural: true, blocks: false }),
+  freeze({ id: 'yard-park-tree-se', mesh: 'opening_street_tree_small_b', fallbackMesh:VEGETATION_FALLBACKS.opening_street_tree_small_b, x: 65, y: 245, yaw: -.18, scale: 1.08, interactive: false, structural: true, blocks: false }),
 
   // Hedge along the west and south edges. These block, and that is the point:
   // the park has one way in, at the head of its path, so it reads as a place you
   // enter rather than a texture you walk over. The east side is left open to the
   // yard, where yard-fence-west already runs out.
-  freeze({ id: 'yard-park-hedge-west-north', mesh: 'yard_hedge_run', blocks: true, x: 51, y: 227.8, yaw: 0, scale: 1, interactive: false, structural: true }),
+  freeze({ id: 'yard-park-hedge-west-north', mesh: 'yard_hedge_dense', fallbackMesh:VEGETATION_FALLBACKS.yard_hedge_dense, blocks: true, x: 51, y: 227.8, yaw: 0, scale: 1, interactive: false, structural: true }),
   freeze({ id: 'yard-park-hedge-west-south', mesh: 'yard_hedge_run', blocks: true, x: 51, y: 239.4, yaw: 0, scale: 1, interactive: false, structural: true }),
-  freeze({ id: 'yard-park-hedge-south-west', mesh: 'yard_hedge_run', blocks: true, x: 56, y: 250.6, yaw: Math.PI / 2, scale: 1, interactive: false, structural: true }),
-  freeze({ id: 'yard-park-hedge-south-east', mesh: 'yard_hedge_run', blocks: true, x: 64, y: 250.6, yaw: Math.PI / 2, scale: 1, interactive: false, structural: true }),
+  freeze({ id: 'yard-park-hedge-south-west', mesh: 'yard_hedge_corner', fallbackMesh:VEGETATION_FALLBACKS.yard_hedge_corner, blocks: true, x: 56, y: 250.6, yaw: Math.PI / 2, scale: 1, interactive: false, structural: true }),
+  freeze({ id: 'yard-park-hedge-south-east', mesh: 'yard_hedge_dense', fallbackMesh:VEGETATION_FALLBACKS.yard_hedge_dense, blocks: true, x: 64, y: 250.6, yaw: Math.PI / 2, scale: 1, interactive: false, structural: true }),
+
+  // Plant only the seams. The paths, fountain, benches and the single entrance
+  // stay visibly and physically clear.
+  freeze({ id:'yard-park-nettles-west', mesh:'vegetation_nettle_cluster', x:52.1, y:232.2, yaw:.21, scale:.94, interactive:false, structural:true, blocks:false }),
+  freeze({ id:'yard-park-weeds-east', mesh:'vegetation_weed_cluster', x:67.7, y:243.1, yaw:-.43, scale:1.06, interactive:false, structural:true, blocks:false }),
+  freeze({ id:'yard-park-grass-north-east', mesh:'vegetation_grass_edge', x:66.8, y:224.0, yaw:.08, scale:.92, interactive:false, structural:true, blocks:false }),
+  freeze({ id:'yard-park-grass-south', mesh:'vegetation_grass_edge', x:59.0, y:249.4, yaw:Math.PI/2, scale:1, interactive:false, structural:true, blocks:false }),
+  freeze({ id:'yard-park-leaves-west', mesh:'vegetation_leaf_scatter', x:52.6, y:242.2, yaw:.17, scale:.88, interactive:false, structural:true, blocks:false }),
+  freeze({ id:'yard-park-leaves-south', mesh:'vegetation_leaf_scatter', x:64.8, y:249.2, yaw:-.24, scale:.82, interactive:false,structural:true, blocks:false }),
 
   // THE EYES. In the water, off the pedestal so the falls do not sit on top of
   // them and the silt does not take them. There is no `action` on this any more:

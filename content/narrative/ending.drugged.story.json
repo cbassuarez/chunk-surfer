@@ -37,7 +37,7 @@
    "lines": [
     {
      "who": "direction",
-     "text": "You are in the car park. The skips are where the skips are. The building stands, unlit, four storeys of ordinary Victorian brick with a demolition notice on the gate, and there is nothing whatever the matter with it.",
+     "text": "You wake in the driver's seat of the van. Rain crosses the windscreen; the skips are where the skips are, and the building beyond them is ordinary Victorian brick with a demolition notice on the gate.",
      "id": "start.line.1"
     },
     {
@@ -47,12 +47,12 @@
     },
     {
      "who": "direction",
-     "text": "It is five in the morning and you are standing in a car park asking a question you cannot answer, holding an empty cup, and the answer is going to have to come off the tape because there is nowhere else left for it to come from.",
+     "text": "It is five in the morning. The empty cup is in the holder, the recorder and bag are on the passenger seat, and the answer is going to have to come off the tape because there is nowhere else left for it to come from.",
      "id": "start.line.3"
     },
     {
      "who": "direction",
-     "text": "You put the headphones on, out of thirty years of habit, and you play the night back.",
+     "text": "You find the headphones still on your head, out of thirty years of habit, and play the night back without leaving the seat.",
      "id": "start.line.4",
      "cues": [
       "story.tape"
@@ -160,7 +160,7 @@
    "lines": [
     {
      "who": "direction",
-     "text": "You roll the sleeve up under a sodium lamp in a car park at five in the morning, which is not a thing you have ever had to do after a job.",
+     "text": "You roll the sleeve up under the van's weak cabin lamp at five in the morning, which is not a thing you have ever had to do after a job.",
      "id": "tape.marks.line.1"
     },
     {
@@ -201,7 +201,7 @@
    "lines": [
     {
      "who": "direction",
-     "text": "You go through the bag on the bonnet of the van, in the rain, the way you went through it at the start of the night. It is a shorter job than it was.",
+     "text": "You pull the bag across from the passenger seat and inspect it in your lap, the way you went through it at the start of the night. It is a shorter job than it was.",
      "id": "tape.kit.line.1"
     },
     {

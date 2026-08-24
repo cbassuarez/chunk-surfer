@@ -51,11 +51,13 @@ function lightHasRuntimePower(light, live) {
   }
 }
 
-// Emergency red is not a maintained exit sign. It is the concert hall's visual
+// Emergency red is not a maintained exit sign. It is the building's visual
 // alarm: a short, extremely high-candela exposure that should feel physical.
 // Ordinary fittings retain the conservative 1.8 ceiling; the alarm owns a
-// separate 3.6 ceiling because five broad sources have to turn the auditorium
-// into one red volume after falloff, occlusion and the one-bit acquisition pass.
+// separate 3.6 ceiling because it must remain legible after falloff, occlusion
+// and the one-bit acquisition pass. Persistence is a power-mode concern: the
+// concert hall is special because its emergency sources are maintained, not
+// because they use a different red-light renderer.
 export const LIGHT_BANDS = Object.freeze({
   [LIGHT_KIND.SKY]: Object.freeze([.45, 1.8]),
   [LIGHT_KIND.FITTING]: Object.freeze([.70, 1.6]),
@@ -67,6 +69,22 @@ export const LIGHT_BANDS = Object.freeze({
 // the one impossible colour in Ellery: a saturated electrical red that survives
 // both the material pass and the one-bit display's selective chroma.
 export const EMERGENCY_RED = Object.freeze([1, .018, .008]);
+
+// Every emergency source uses the same presentation floor as the weakest
+// working concert-hall source. Authored values stay untouched so inspection,
+// reconstruction and non-runtime consumers still see the physical fitting that
+// was authored; the floor is applied only when the architectural rig is resolved
+// for rendering. Stronger authored emergency sources keep their stronger values.
+//
+// This is deliberately a FLOOR rather than a second hall profile: a circuit-fed
+// emergency fitting should look like the hall while its circuit is live, but it
+// must still disappear when that circuit is dead. LIGHT_POWER_MODE owns that
+// persistence independently below.
+export const EMERGENCY_PRESENTATION_FLOOR = Object.freeze({
+  intensity: 3.25,
+  radius: 42,
+  penetration: .86,
+});
 
 export const LOCAL_LIGHT_SLOTS = 8;
 
@@ -195,8 +213,9 @@ const freezeLight = (id, kind, x, z, y, color, intensity, radius, extra = {}) =>
     id, kind, x, z, y,
     color: kind === LIGHT_KIND.EMERGENCY ? EMERGENCY_RED : Object.freeze(color),
     intensity,
-    // Emergency light is deliberately spatially wrong. It carries through the
-    // auditorium instead of dying around the fitting like an ordinary bulkhead.
+    // Preserve the legacy authored emergency envelope for consumers that inspect
+    // the rig directly. resolveLocalLights raises an *active* emergency source to
+    // the shared presentation floor without rewriting this source data.
     radius: kind === LIGHT_KIND.EMERGENCY ? Math.max(30, radius) : radius,
     penetration: kind === LIGHT_KIND.EMERGENCY ? .78 : 0,
     ...extra,
@@ -683,8 +702,17 @@ export function resolveLocalLights(context, {
     if (light.phase === 'tower' && !towerActive) continue;
     if (light.phase === 'cleared' && !towerCleared) continue;
     if (!lightHasRuntimePower(light, live)) continue;
-    let intensity = light.intensity;
-    const blink = light.kind === LIGHT_KIND.EMERGENCY
+    const emergency = light.kind === LIGHT_KIND.EMERGENCY;
+    let intensity = emergency
+      ? Math.max(EMERGENCY_PRESENTATION_FLOOR.intensity, light.intensity)
+      : light.intensity;
+    const radius = emergency
+      ? Math.max(EMERGENCY_PRESENTATION_FLOOR.radius, light.radius)
+      : light.radius;
+    const penetration = emergency
+      ? Math.max(EMERGENCY_PRESENTATION_FLOOR.penetration, light.penetration || 0)
+      : (light.penetration || 0);
+    const blink = emergency
       ? emergencyBlinkState(light.id, timeSec, { effectsMode: resolvedEffectsMode })
       : null;
     if (light.flutter && light.kind !== LIGHT_KIND.EMERGENCY) intensity = resolvedEffectsMode !== 'full'
@@ -706,8 +734,8 @@ export function resolveLocalLights(context, {
       z: anchored ? anchored.z + offset[2] : light.z,
       color: light.color,
       intensity: spilling ? intensity * SPILL_INTENSITY : intensity,
-      radius: spilling ? light.radius * SPILL_REACH : light.radius,
-      penetration: spilling ? Math.min(light.penetration || 0, SPILL_PENETRATION) : (light.penetration || 0),
+      radius: spilling ? radius * SPILL_REACH : radius,
+      penetration: spilling ? Math.min(penetration, SPILL_PENETRATION) : penetration,
       spilling,
       sourceZone,
       kind: light.kind,
@@ -727,11 +755,21 @@ export function resolveLocalLights(context, {
     });
   }
   if (out.length <= slots) return out;
-  if (!origin) return out.slice(0, slots);
+  // An active emergency beat is part of the room's authored state, not an
+  // optional nearby practical. Dense rigs (the natatorium is the important
+  // case) can otherwise spend all eight architectural slots on sky/work lights
+  // before the red sources reach the renderer. Prioritise only emergency lights
+  // that are actually emitting this frame: the dark half of the full cadence
+  // still yields its slots back to ordinary lights, while reduced/off modes keep
+  // their deliberately steady/softened red presentation. This priority also
+  // applies to callers without an origin so the emergency contract does not
+  // accidentally depend on distance sorting being requested.
+  const priority = (light) => light.kind === LIGHT_KIND.EMERGENCY && light.intensity > .01 ? 0 : 1;
+  if (!origin) return out.sort((a, b) => priority(a) - priority(b)).slice(0, slots);
   const near = (light) => {
     const dx = light.x - (Number(origin.x) || 0);
     const dz = light.z - (Number(origin.z ?? origin.y) || 0);
     return dx * dx + dz * dz;
   };
-  return out.sort((a, b) => near(a) - near(b)).slice(0, slots);
+  return out.sort((a, b) => priority(a) - priority(b) || near(a) - near(b)).slice(0, slots);
 }

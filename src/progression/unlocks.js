@@ -6,6 +6,10 @@ export const ENDING_REPLAY_UNLOCKS = Object.freeze({
   inversion: Object.freeze({ archiveEntry: 'engineering-appendix', cosmetic: 'reverse-phase', titleDetail: 'reversed-waveform' }),
   drugged: Object.freeze({ archiveEntry: 'contaminant-report', titleDetail: 'coffee-ring' }),
   surfaced: Object.freeze({ archiveEntry: 'other-recordist', cosmetic: 'source-clean', titleDetail: 'returned-body' }),
+  'contact-won': Object.freeze({ archiveEntry: 'open-channel-log', titleDetail: 'open-channel' }),
+  'contact-lost': Object.freeze({ archiveEntry: 'no-return-notice', titleDetail: 'terminal-carrier' }),
+  'tower-won': Object.freeze({ archiveEntry: 'cathedral-return-sheet', cosmetic: 'cathedral-dust', titleDetail: 'gift-shop-exit' }),
+  'tower-lost': Object.freeze({ archiveEntry: 'full-peal-report', titleDetail: 'six-bell-return' }),
 });
 
 export function deriveUnlocks(meta) {

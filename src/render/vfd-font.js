@@ -91,6 +91,13 @@ const G = {
   '◀': [0b00010, 0b00110, 0b01110, 0b11110, 0b01110, 0b00110, 0b00010],
   '●': [0, 0b01110, 0b11111, 0b11111, 0b11111, 0b01110, 0],
   '○': [0, 0b01110, 0b10001, 0b10001, 0b10001, 0b01110, 0],
+  // The navigation target, filled and hollow. Both were being asked for by the
+  // minimap and the field case (the target readout's prefix, and the centre of
+  // the [ ] marker) and neither existed in the ROM, so uiGlyph drew nothing at
+  // all — right position, right colour, no pixels. A waypoint that renders as
+  // an empty pair of brackets is the map failing at its one job.
+  '◆': [0, 0b00100, 0b01110, 0b11111, 0b01110, 0b00100, 0],
+  '◇': [0, 0b00100, 0b01010, 0b10001, 0b01010, 0b00100, 0],
   '×': [0, 0b10001, 0b01010, 0b00100, 0b01010, 0b10001, 0],
   '✓': [0, 0, 0b00001, 0b00010, 0b10100, 0b01000, 0],
   '▮': [0b01110, 0b01110, 0b01110, 0b01110, 0b01110, 0b01110, 0b01110],

@@ -21,6 +21,11 @@ const S = (id, label, logical, extra = {}) => Object.freeze({
   currentRadius: Number(extra.currentRadius) || 5,
   ...extra,
 });
+const A=(id,label,logical,extra={})=>S(id,label,logical,{
+  floorId:'academic',
+  mapPosition:freezePoint({x:logical.x+50.5,y:logical.y-239.5}),
+  ...extra,
+});
 
 // The paper plan names the building, not only the five rooms on the work order.
 // These anchors stay explicit because a zone id cannot distinguish B1 from B2,
@@ -53,24 +58,24 @@ export const FACILITY_SPACES = Object.freeze([
   S('practice-6','PRACTICE ROOM 6',{x:68,y:76},{shortLabel:'P6',doorIds:['practice-east-3']}),
   S('practice-7','PRACTICE ROOM 7',{x:56,y:83},{shortLabel:'P7',doorIds:['practice-west-4']}),
   S('practice-8','PRACTICE ROOM 8',{x:68,y:83},{shortLabel:'P8',doorIds:['practice-east-4']}),
-  S('ensemble-room','ENSEMBLE ROOM',{x:78,y:70},{shortLabel:'ENS',doorIds:['practice-side']}),
+  S('ensemble-room','ENSEMBLE ROOM',{x:72,y:80},{shortLabel:'ENS',doorIds:['practice-side']}),
   S('chapel-narthex','CHAPEL NARTHEX',{x:92,y:59},{shortLabel:'NAR',doorIds:['chapel-c17']}),
 
-  S('academic-loggia','ACADEMIC STAIR LOGGIA',{x:13,y:277},{shortLabel:'LOG'}),
-  S('academic-gallery','ACADEMIC GALLERY',{x:32,y:255},{shortLabel:'GAL',currentRadius:8}),
-  S('academic-lobby','ACADEMIC LOBBY',{x:17,y:242},{shortLabel:'LOBBY',doorIds:['academic-lobby-core','academic-gallery-lobby']}),
-  S('academic-core','ACADEMIC CORE CORRIDOR',{x:11,y:255},{shortLabel:'CORE'}),
-  S('classroom-west-1','CLASSROOM WEST 1',{x:5,y:247},{shortLabel:'W1',doorIds:['academic-classroom-west-1']}),
-  S('classroom-west-2','CLASSROOM WEST 2',{x:5,y:254},{shortLabel:'W2',doorIds:['academic-classroom-west-2']}),
-  S('classroom-east-2','CLASSROOM EAST 2',{x:17,y:254},{shortLabel:'E2',doorIds:['academic-classroom-east-2']}),
-  S('classroom-west-3','CLASSROOM WEST 3',{x:5,y:261},{shortLabel:'W3',doorIds:['academic-classroom-west-3']}),
-  S('classroom-east-3','CLASSROOM EAST 3',{x:17,y:261},{shortLabel:'E3',doorIds:['academic-classroom-east-3']}),
-  S('classroom-west-4','CLASSROOM WEST 4',{x:5,y:267},{shortLabel:'W4',doorIds:['academic-classroom-west-4']}),
-  S('classroom-east-4','CLASSROOM EAST 4',{x:17,y:267},{shortLabel:'E4',doorIds:['academic-classroom-east-4']}),
-  S('faculty-office-west','FACULTY OFFICE WEST',{x:3,y:274},{shortLabel:'FOW',doorIds:['academic-office-locked-1']}),
-  S('faculty-office-east','FACULTY OFFICE EAST',{x:9,y:274},{shortLabel:'FOE',doorIds:['academic-office-locked-2']}),
-  S('academic-reception','ACADEMIC RECEPTION',{x:15,y:274},{shortLabel:'RECEP'}),
-  S('stripped-office','STRIPPED OFFICE',{x:22,y:274},{shortLabel:'OFF'}),
+  A('academic-loggia','ACADEMIC STAIR LOGGIA',{x:13,y:277},{shortLabel:'LOG'}),
+  A('academic-gallery','ACADEMIC GALLERY',{x:32,y:255},{shortLabel:'GAL',currentRadius:8}),
+  A('academic-lobby','ACADEMIC LOBBY',{x:17,y:242},{shortLabel:'LOBBY',doorIds:['academic-lobby-core','academic-gallery-lobby']}),
+  A('academic-core','ACADEMIC CORE CORRIDOR',{x:11,y:255},{shortLabel:'CORE'}),
+  A('classroom-west-1','CLASSROOM WEST 1',{x:5,y:247},{shortLabel:'W1',doorIds:['academic-classroom-west-1']}),
+  A('classroom-west-2','CLASSROOM WEST 2',{x:5,y:254},{shortLabel:'W2',doorIds:['academic-classroom-west-2']}),
+  A('classroom-east-2','CLASSROOM EAST 2',{x:17,y:254},{shortLabel:'E2',doorIds:['academic-classroom-east-2']}),
+  A('classroom-west-3','CLASSROOM WEST 3',{x:5,y:261},{shortLabel:'W3',doorIds:['academic-classroom-west-3']}),
+  A('classroom-east-3','CLASSROOM EAST 3',{x:17,y:261},{shortLabel:'E3',doorIds:['academic-classroom-east-3']}),
+  A('classroom-west-4','CLASSROOM WEST 4',{x:5,y:267},{shortLabel:'W4',doorIds:['academic-classroom-west-4']}),
+  A('classroom-east-4','CLASSROOM EAST 4',{x:17,y:267},{shortLabel:'E4',doorIds:['academic-classroom-east-4']}),
+  A('faculty-office-west','FACULTY OFFICE WEST',{x:3,y:274},{shortLabel:'FOW',doorIds:['academic-office-locked-1']}),
+  A('faculty-office-east','FACULTY OFFICE EAST',{x:9,y:274},{shortLabel:'FOE',doorIds:['academic-office-locked-2']}),
+  A('academic-reception','ACADEMIC RECEPTION',{x:15,y:274},{shortLabel:'RECEP'}),
+  A('stripped-office','STRIPPED OFFICE',{x:22,y:274},{shortLabel:'OFF'}),
 ]);
 
 const TARGET_DOORS = Object.freeze({

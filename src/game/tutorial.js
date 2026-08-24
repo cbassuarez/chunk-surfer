@@ -6,11 +6,11 @@
 // order and the tutorial simply agrees with you and moves on.
 //
 // The level check is the ONE deliberate exception: the recordist will not roll a
-// take that counts until he has set his levels at B3, in the dark, and rehearsed
-// the room he dreads. This is not a UI lock dressed as fiction — it is the man's
-// own discipline. You go to B3 first and set up first because that is the job,
-// and until you have, `setup.levels`/`combat.trained` stay unset and the recorder
-// refuses (see main.js recordAction / onLevelsSet).
+// take that counts until he has set his levels in the get-in, in the dark, and
+// rehearsed the room he dreads. This is not a UI lock dressed as fiction — it is
+// the man's own discipline. You set up first because that is the job, and until
+// you have, `setup.levels`/`combat.trained` stay unset and the recorder refuses
+// (see main.js recordAction / onLevelsSet).
 //
 // The level check itself is a real take, on the real recorder, in the real dark:
 // light out, feet still, monitor open. Six seconds instead of forty-five, and
@@ -53,6 +53,7 @@ const state = {
 const STEPS = [
   {
     id: 'light',
+    objective: 'TORCH ON',
     // He is standing in a loading dock with the door shut. There is nothing.
     line: { who: 'you', text: "Can't see my hand." },
     prompt: () => `${inputPrompt('light')}  light`,
@@ -61,6 +62,7 @@ const STEPS = [
   },
   {
     id: 'read',
+    objective: 'READ THE WORK ORDER',
     line: { who: 'you', text: "Work order's in my jacket. Five rooms, one clean minute each." },
     // Both verbs, because he has both. The order of the setup is his discipline,
     // not a lock: pressing the recorder here already works (firstTakeIntercept
@@ -83,15 +85,16 @@ const STEPS = [
   },
   {
     // Levels, the mic test, and the daydream that rehearses the fight are one
-    // step, because they are one thing he does: he sets up, on the dock, before
-    // he goes anywhere. The step does not end when the meter reads good — it ends
-    // when he has also run the worst room in his head, or the next step's line
-    // lands on top of the drill.
+    // step, because they are one thing he does: he sets up, in the get-in,
+    // before he goes anywhere. The step does not end when the meter reads good —
+    // it ends when he has also run the worst room in his head, or the next
+    // step's line lands on top of the drill.
     //
     // This is a level check, NOT a take. It is set here, in the dark, on the
-    // dock floor; the five rooms are recorded in the five rooms. (main.js keeps
+    // get-in floor; the five rooms are recorded in the five rooms. (main.js keeps
     // them apart: see LEVEL_CHECK_ROOM / beginTakeNow.)
     id: 'level',
+    objective: 'SET YOUR LEVELS',
     line: { who: 'you', text: 'Levels, before anything. Headphones on, hear the room — then roll, and hold still.' },
     prompt: () => `${inputPrompt('recorder')}  listen, then ${inputPrompt('recorder')} to roll`,
     done: (c) => c.levelChecked && c.rehearsed !== false,
@@ -107,6 +110,7 @@ const STEPS = [
     // walk into a building. The bag prompt flashes while this step is live (see
     // drawStoryHud) because it is the one verb they have not been shown yet.
     id: 'mark',
+    objective: 'MARK STUDIO B3',
     line: { who: 'you', text: 'Right. Before I go anywhere — write down where I am going.' },
     prompt: () => promptLine([
       { action: 'bag', label: 'bag  -  mark studio B3' },
@@ -124,6 +128,7 @@ const STEPS = [
   },
   {
     id: 'go',
+    objective: 'LEAVE THE DOCK',
     line: { who: 'you', text: 'Inner door, south end. Down to B3 — follow the bearing. That mark is the whole point of making it.' },
     prompt: () => promptLine([{ action: 'move', label: 'move' }, { action: 'quiet', label: 'quietly' }], { separator: '     ' }),
     // Leaving the dock ends the setup. Walking softly is offered, never
@@ -146,10 +151,23 @@ export function startTutorial() {
   state.seen.clear();
   state.slowUsed = false;
   state.startedAt = performance.now();
+  levelChecked = false;
+  spoiltOnce = false;
 }
 export function skipTutorial() { state.active = false; state.step = STEPS.length; }
 export function tutorialActive() { return state.active && state.step < STEPS.length; }
 export function tutorialStep() { return tutorialActive() ? STEPS[state.step].id : null; }
+// The setup step as an OBJECTIVE, for the navigator slot.
+//
+// The prompt names a key; this names the job. During setup the objective slot
+// is empty — story guidance has no target until B3 is marked, which is itself
+// the last thing the setup teaches — so the one part of the HUD whose whole
+// purpose is "here is what you are doing" said nothing for the entire get-in.
+export function tutorialObjective() {
+  if (!tutorialActive()) return null;
+  return STEPS[state.step].objective || null;
+}
+
 export function tutorialPrompt() {
   if (!tutorialActive()) return null;
   const prompt = STEPS[state.step].prompt;

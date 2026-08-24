@@ -35,8 +35,6 @@ const MIC_CHANNEL_MODES = ['mono', 'left', 'right'];
 const MIC_CHANNEL_LABEL = { mono: 'MONO MIX', left: 'LEFT', right: 'RIGHT' };
 const FX_MODES = ['off', 'reduced', 'full'];
 const FX_LABEL = { off: 'OFF', reduced: 'REDUCED', full: 'FULL' };
-const PEAL_ASSIST_MODES = ['standard', 'guided', 'wide'];
-const PEAL_ASSIST_LABEL = { standard: 'STANDARD', guided: 'GUIDED', wide: 'WIDE' };
 const HINT_MODES = ['off', 'reduced', 'full'];
 const HINT_LABEL = { off: 'OFF', reduced: 'SPARSE', full: 'FULL' };
 const SEEN_TEXT_MODES = ['normal', 'fast', 'instant'];
@@ -103,6 +101,20 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
 
   function displaySettings() {
     return normalizeDisplaySettings(s().display || {});
+  }
+
+  // WHETHER THE WINDOWS CAN ACTUALLY MOVE.
+  //
+  // Native choreography needs a window to move, so both the JS compiler
+  // (platform/window-choreography.js) and the Rust executor refuse while the
+  // app is fullscreen — and DISPLAY MODE / FULLSCREEN is exactly that state.
+  // The module still runs; it draws its apertures inside the frame instead.
+  // Saying only "ON" there is a lie of omission: a player testing in fullscreen
+  // turns the setting on, sees no window ever move, and concludes it is broken.
+  function windowChoreographyIsInFrameOnly() {
+    if (displaySettings().displayMode === 'game-mode') return true;
+    if (typeof document !== 'undefined' && document.fullscreenElement) return true;
+    return psychProfile().windowIntensity === 'low';
   }
 
   function patchDisplaySettings(patch) {
@@ -491,8 +503,15 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
             value: () => psychProfile().modules.adaptiveDifficulty ? 'ON' : 'OFF',
             adjust: () => setPsychModule('adaptiveDifficulty', !psychProfile().modules.adaptiveDifficulty) },
           { id: 'profileWindow', label: 'WINDOW CHOREOGRAPHY',
-            value: () => psychProfile().modules.windowChoreography ? 'ON' : 'OFF',
+            value: () => (psychProfile().modules.windowChoreography
+              ? (windowChoreographyIsInFrameOnly() ? 'ON · IN FRAME ONLY' : 'ON · MOVES WINDOWS')
+              : 'OFF'),
             adjust: () => setPsychModule('windowChoreography', !psychProfile().modules.windowChoreography) },
+          { id: 'profileWindowNote', label: '', selectable: false,
+            value: () => (psychProfile().modules.windowChoreography && windowChoreographyIsInFrameOnly()
+              ? 'FULLSCREEN AND LOW INTENSITY KEEP IT INSIDE THE FRAME'
+              : ''),
+          },
           { id: 'profileWindowIntensity', label: 'WINDOW INTENSITY',
             value: () => psychProfile().windowIntensity.toUpperCase(),
             adjust: cycleWindowIntensity },
@@ -533,18 +552,6 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           { id: 'haptics', label: 'HAPTICS',
             value: () => FX_LABEL[setting('haptics', 'full')] || 'FULL',
             adjust: (d) => cycleSetting('haptics', FX_MODES, d, 'full') },
-          section('Tower Peal'),
-          { id: 'towerPealAssist', label: 'PEAL ASSIST',
-            value: () => PEAL_ASSIST_LABEL[setting('towerPealAssist', 'standard')] || 'STANDARD',
-            adjust: (d) => cycleSetting('towerPealAssist', PEAL_ASSIST_MODES, d, 'standard') },
-          { id: 'rhythmTimingOffset', label: 'RHYTHM TIMING OFFSET',
-            value: () => {
-              const value=Number(setting('rhythmTimingOffsetMs',0))||0;
-              return `${value>0?'+':''}${value} MS`;
-            },
-            adjust: (d) => set('rhythmTimingOffsetMs', clamp(Math.round((Number(setting('rhythmTimingOffsetMs',0))||0)/5+d)*5,-250,250)) },
-          { id: 'calibratePeal', label: 'CALIBRATE BELL TIMING',
-            value: () => inputPrompt('confirm'), activate: () => hooks.openPealCalibration?.() },
           { id: 'dread', label: 'DREAD SPIKES',
             value: () => setting('reduceDread', false) ? 'REDUCED' : 'FULL',
             adjust: () => set('reduceDread', !setting('reduceDread', false)) },

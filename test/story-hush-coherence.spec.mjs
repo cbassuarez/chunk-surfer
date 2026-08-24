@@ -112,11 +112,15 @@ for(const file of storyFiles){
 const coldOpen=JSON.parse(readFileSync('content/narrative/conservatory.cold_open_dialogue.story.json','utf8'));
 const threshold=coldOpen.nodes.threshold.lines;
 const masked=threshold.find((line)=>line.id==='threshold.line.name-obscured');
+const repeated=threshold.find((line)=>line.id==='threshold.line.name-repeat');
 assert.equal(masked.text,OBSCURED_NAME_CAPTION,'the caption survives as the accessible fallback');
 assert.equal(masked.mask,'operator-name','and the line is drawn as a shape, not as the caption');
-assert.equal(masked.voice,false,'it is typed, never spoken');
+assert.equal(masked.voice,false,'the authored row is typed; local voice never becomes line text');
 assert.deepEqual(masked.cues,['booth.name-mask'],'the rain can never be unbound from it');
 assert.ok(masked.prompt&&!masked.prompt.includes('OBSCURED'),'you do not press a redaction stamp to speak');
+assert.equal(repeated?.text,OBSCURED_NAME_CAPTION,'the requested repeat stays masked too');
+assert.equal(repeated?.voice,false,'the repeated literal voice also remains outside the transcript');
+assert.deepEqual(repeated?.cues,['booth.name-mask'],'the repeat remains under the rain');
 assert.ok(threshold.find((line)=>line.id==='threshold.line.name-accepted'),'he still visibly accepts it');
 // The same shape stands in the RETURNED box: somebody was already written in,
 // and it is the same illegible thing you just gave.
@@ -145,6 +149,10 @@ const mainSource=readFileSync('src/main.js','utf8');
 assert.match(mainSource,/operator\.name\.received/);
 assert.doesNotMatch(mainSource,/operator\.name\s*=/,'only the semantic received fact may persist');
 assert.doesNotMatch(JSON.stringify(freshSave()),/operatorName|operator_name|literalName/);
+assert.match(mainSource,/speakBoothName\(\{repeat:repeatedName\}\)/,'both masked booth rows own local-only speech');
+assert.match(mainSource,/ephemeralOperatorName\|\|fallback/,'missing or disabled identity keeps the obscured voice fallback');
+assert.match(mainSource,/speakObscuredNameEcho\(\)/,'the B3 pre-roll uses the non-personal echo path');
+assert.doesNotMatch(mainSource,/SPEECH\.say\([^\n]*ephemeralOperatorName/,'the literal persona cannot enter presented text');
 
 const anchors=CAUSAL_SPINE_IDS.map((id,index)=>({
   id,at:1000+index*1000,order:index,verb:id.endsWith('contact')?'contact':'haunt',required:true,
@@ -167,7 +175,9 @@ assert.equal(enactCausalAnchor(playback,'haunt',{x:0,y:0,spaceId:'source-space'}
 const audioProject=JSON.parse(readFileSync('content/audio/audio-project.audio.json','utf8'));
 assert.ok(audioProject.cues.find((cue)=>cue.id==='booth.name-mask'));
 assert.ok(audioProject.triggers.find((trigger)=>trigger.event.endsWith('threshold.line.name-obscured')));
-assert.match(readFileSync('docs/story-doctrine.md','utf8'),/HUSH is older than music/);
+const doctrine=readFileSync('docs/story-doctrine.md','utf8');
+assert.match(doctrine,/HUSH is older than music/);
+assert.match(doctrine,/synthesized locally beneath those two booth lines/);
 const sourceRuntime=readFileSync('src/game/source-space-runtime.js','utf8');
 assert.doesNotMatch(sourceRuntime,/source-hush-|text-actor:hush|pose:\s*['"]standing['"].*source:\s*['"]hush/i,'Source may not assemble a visible HUSH body');
 assert.match(sourceRuntime,/source-density-wake-/,'Source visualizes displaced architecture around an unseen agency');

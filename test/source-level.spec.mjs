@@ -24,11 +24,21 @@ import { sourceLandscapeFloorAt } from '../src/game/source-space-runtime.js';
     const rise = SOURCE_FIELD_TIERS[i].height - SOURCE_FIELD_TIERS[i - 1].height;
     assert.ok(rise > 0.45 * 3, `${SOURCE_FIELD_TIERS[i].id} is only ${rise}m above the tier below — walkable`);
   }
-  assert.ok(SOURCE_FIELD_TIERS.length === SOURCE_TIERS.length - 1, 'the horizon is the only non-field tier');
+  // TWO non-field tiers now, and both for the same reason: the horizon is the
+  // recording past the perimeter, and the bell passage is what the tower road
+  // is instead of a datamosh cut. Neither is in the altitude economy, and
+  // neither may be a climb or a fall from what it adjoins.
+  assert.deepEqual(
+    SOURCE_TIERS.filter((tier) => !tier.field).map((tier) => tier.id),
+    ['horizon', 'bells'],
+    'only the horizon and the bell passage stand outside the field',
+  );
   assert.equal(sourceTierAt(0).id, 'arrival');
   assert.equal(sourceTierAt(-100).id, 'fork');
   assert.equal(sourceTierAt(-300).id, 'return');
   assert.equal(sourceTierAt(-500).id, 'horizon');
+  assert.equal(sourceTierAt(-1000).id, 'bells');
+  assert.equal(sourceTierHeightAt(-1000), sourceTierHeightAt(-500), 'the bells are not a climb off the tape');
   assert.ok(sourceTierHeightAt(-300) > sourceTierHeightAt(0), 'the field does not rise into the page');
   // Stepping over the perimeter must not be a drop, or arriving on the tape
   // reads as falling out of the level rather than walking out of it.
@@ -74,24 +84,22 @@ import { sourceLandscapeFloorAt } from '../src/game/source-space-runtime.js';
 }
 
 {
-  // A field lift goes both ways. A chute goes one.
+  // A field lift goes up. A chute goes down. Neither reverses.
   assert.equal(SOURCE_LADDERS, SOURCE_LIFTS, 'legacy saves retain the old connector export');
   for (const l of SOURCE_LIFTS) {
     assert.equal(sourceFeatureAt(l.x,l.y).kind,'lift');
     for (const offset of [-l.halfWidth + .5, 0, l.halfWidth - .5]) {
       const x=l.x+offset;
-      const up=sourceTraversal(x,l.y+l.depth+1,x,l.y+l.depth,4.23,4.2);
+      const fromY=l.y+l.depth+1,toY=l.y+l.depth;
+      const up=sourceTraversal(x,fromY,x,toY,sourceLandscapeFloorAt(x,fromY),sourceLandscapeFloorAt(x,toY));
       assert.deepEqual(
         {via:up.via,travel:up.travel,fromTier:up.fromTier,toTier:up.toTier},
         {via:'lift',travel:'up',fromTier:l.from,toTier:l.to},
         `${l.id} cannot rise when the noisy approach is slightly above its lower deck`,
       );
-      const down=sourceTraversal(x,l.y-l.depth-1,x,l.y-l.depth,8.97,9.0);
-      assert.deepEqual(
-        {via:down.via,travel:down.travel,fromTier:down.fromTier,toTier:down.toTier},
-        {via:'lift',travel:'down',fromTier:l.to,toTier:l.from},
-        `${l.id} cannot descend when the noisy approach is slightly below its upper deck`,
-      );
+      const downFromY=l.y-l.depth-1,downToY=l.y-l.depth;
+      const down=sourceTraversal(x,downFromY,x,downToY,sourceLandscapeFloorAt(x,downFromY),sourceLandscapeFloorAt(x,downToY));
+      assert.equal(down.ok,false,`${l.id} can be ridden downward`);
     }
   }
 
@@ -111,7 +119,7 @@ import { sourceLandscapeFloorAt } from '../src/game/source-space-runtime.js';
 //
 // A flood fill over the landscape using ONLY legal steps, the same shape of
 // route proof test/tower-on-foot-route.spec.mjs runs for the conservatory.
-function reachable(start, { withFork = true } = {}) {
+function reachable(start) {
   const STEP = 1;
   const key = (x, y) => `${Math.round(x)},${Math.round(y)}`;
   const seen = new Set([key(start.x, start.y)]);
@@ -122,9 +130,6 @@ function reachable(start, { withFork = true } = {}) {
     if (Math.abs(b - a) <= 0.45) return true;
     const via = sourceTraversal(ax, ay, bx, by, a, b);
     if (!via.ok) return false;
-    // The fork gates everything above the fork tier: without it, the ladders out
-    // of the fork tier do not answer. This is the capability gate, not a wall.
-    if (!withFork && via.via === 'lift' && b > a && sourceTierAt(by).id !== 'fork') return false;
     return true;
   };
   while (queue.length) {
@@ -171,9 +176,7 @@ function reachable(start, { withFork = true } = {}) {
 // route can strand a player above the level.
 {
   for (const tier of SOURCE_FIELD_TIERS.slice(1)) {
-    const out = SOURCE_CHUTES.some((c) => c.from === tier.id)
-      || SOURCE_LIFTS.some((l) => l.to === tier.id);
-    assert.ok(out, `${tier.id} has no way off it`);
+    assert.ok(SOURCE_CHUTES.some((c) => c.from === tier.id), `${tier.id} has no downward chute`);
   }
   // And the spokes return: both optional traces have a chute back to the spine.
   for (const id of ['chute-student', 'chute-work-order']) {

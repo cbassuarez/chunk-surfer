@@ -52,6 +52,20 @@ test('the bag owns nested sheet routes, freezes the world, restores pages, and B
   assert.equal(reads,2);
 });
 
+test('the bag lab host receives the same close request from a nested route',()=>{
+  let closes=0,clears=0;
+  const hosted=makeBagScene({
+    embeddedHost:true,job:job(),focus:{sectionId:'sheets',entryId:'file:work-order'},readDocument:()=>{},
+    onClose:()=>{closes++;},onClearInput:()=>{clears++;},
+  });
+  hosted.enter();
+  hosted.key(key('Enter'));
+  assert.equal(hosted.debugState().route.type,'sheet-reader');
+  hosted.key({key:'b',code:'KeyB'});
+  assert.equal(closes,1);
+  assert.equal(clears,1);
+});
+
 test('important-sheet inspection completes once, then becomes optional REVIEW',()=>{
   let insights=freshBagSheetState(),completions=0;
   const bag=makeBagScene({
@@ -92,9 +106,9 @@ test('inventory actions stay explicit and only the radio can be dropped safely',
   const radioDrop=bagEntry(model,'kit','gear:radio').actionList.find((action)=>action.verb==='drop');
   assert.equal(radioDrop.enabled,true);assert.ok(radioDrop.confirm);assert.equal(radioDrop.exitPolicy,'close');
   const lightDrop=bagEntry(model,'kit','gear:light').actionList.find((action)=>action.verb==='drop');
-  assert.equal(lightDrop.enabled,false);assert.match(lightDrop.reason,/WORLD PLACEMENT/);
+  assert.equal(lightDrop.enabled,false);assert.equal(lightDrop.reason,"CAN'T LEAVE THIS ITEM BEHIND");
   const spannerSet=bagEntry(model,'kit','gear:plant-spanner').actionList.find((action)=>action.verb==='set');
-  assert.equal(spannerSet.enabled,false);assert.equal(spannerSet.reason,'NOT CONTACT GEAR');
+  assert.equal(spannerSet.enabled,false);assert.equal(spannerSet.reason,'NOT USED IN A FIGHT');
 });
 
 test('numbered ready slots replace storage gear and swap already-ready gear',()=>{

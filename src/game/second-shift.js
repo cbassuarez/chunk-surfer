@@ -33,6 +33,26 @@ export const SECOND_SHIFT_BY_ENDING = Object.freeze({
     lead: 'The second returned name was timestamped before either arrival.',
     adjacentEndingId: 'sacrifice', adjacentClassification: 'CONTAINMENT',
   }),
+  'contact-won': Object.freeze({
+    evidence:'open-channel-log',residue:'open-channel',evidenceLabel:'OPEN CHANNEL LOG',residueLabel:'CARRIER STILL ANSWERING',
+    lead:'The open carrier has a second exit condition; refuse contact and follow the evidence with sight.',
+    adjacentEndingId:'tower-won',adjacentClassification:'TOWER / EXTRACTION',
+  }),
+  'contact-lost': Object.freeze({
+    evidence:'no-return-notice',residue:'terminal-carrier',evidenceLabel:'NO RETURN NOTICE',residueLabel:'WARNING ACKNOWLEDGED',
+    lead:'The terminal route was chosen deliberately. A new run can walk away before contact.',
+    adjacentEndingId:'contact-won',adjacentClassification:'CONTACT / VICTORY',
+  }),
+  'tower-won': Object.freeze({
+    evidence:'cathedral-return-sheet',residue:'gift-shop-exit',evidenceLabel:'CATHEDRAL RETURN SHEET',residueLabel:'TWO OUT / NONE IN',
+    lead:'The visitor return omits the route that stayed inside Source and never reached the Cathedral.',
+    adjacentEndingId:'contact-won',adjacentClassification:'CONTACT / VICTORY',
+  }),
+  'tower-lost': Object.freeze({
+    evidence:'full-peal-report',residue:'six-bell-return',evidenceLabel:'FULL PEAL REPORT',residueLabel:'TWO CARRIERS IN THE WAVEFORM',
+    lead:'The second phase kept the pressure spent in the first. Return better prepared and sever the carrier line.',
+    adjacentEndingId:'tower-won',adjacentClassification:'TOWER / EXTRACTION',
+  }),
 });
 
 export function secondShiftForEnding(endingId) {

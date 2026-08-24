@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "ending.contact-lost",
+  "title": "No Return",
+  "status": "active",
+  "entry": "start",
+  "entries": ["start"],
+  "tags": ["ending", "contact"],
+  "notes": "Terminal Contact defeat. There is deliberately no Horizon fallback.",
+  "regions": [{"id":"ending.contact-lost.region","title":"No Return","kind":"ending","color":"#8e4f58","nodeIds":["start"]}],
+  "nodes": {"start":{"type":"ending","speaker":"NO RETURN","lines":[
+    {"id":"start.line.1","who":"direction","text":"The monitor clips. Not loudly. Perfectly."},
+    {"id":"start.line.2","who":"direction","text":"You knew the term before you opened it. The fault repeats the warning now without words, using the body that agreed as its meter."},
+    {"id":"start.line.3","who":"you","text":"No. I am still—"},
+    {"id":"start.line.4","who":"direction","text":"The sentence has no return value."},
+    {"id":"start.line.5","who":"direction","text":"Perhaps a man is dying somewhere ordinary and has built this entire field in the interval between one heartbeat and the next."},
+    {"id":"start.line.6","who":"direction","text":"Perhaps there is no somewhere ordinary left, and the chunk has reached the part of the carrier that believed it was a man."},
+    {"id":"start.line.7","who":"direction","text":"The recording cannot distinguish them. Neither can you."},
+    {"id":"start.line.8","who":"direction","text":"No Horizon opens under the page. Nothing lets you walk the loss into another ending."},
+    {"id":"start.line.9","who":"direction","text":"NO RETURN."}
+  ]}}
+}

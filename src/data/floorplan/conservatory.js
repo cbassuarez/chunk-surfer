@@ -498,11 +498,25 @@ const YARD_STAIR_HEAD={x0:13,x1:17,y0:18,y1:21};
 const YARD_PARK={x0:1,x1:19,y0:22,y1:50};
 const YARD_PARK_SPINE=10;          // the north-south path, and the way in
 const YARD_PARK_CROSS=36;          // the east-west path
-// The fountain, at the crossing. Seven cells across to match the tiered basin
-// the mesh builds — and the glyph is not decoration: `n` is wetTile in `dock`,
-// and that zone-and-material pair is the ADDRESS the water body is found by
-// (game/water-bodies.js). Widening the basin widens the water.
+// The fountain, at the crossing. The glyph is not decoration: `n` is wetTile in
+// `dock`, and that zone-and-material pair is the ADDRESS the water body is found
+// by (game/water-bodies.js). Widening the basin widens the water.
+//
+// IT IS AN OCTAGON, BECAUSE THE FOUNTAIN IS. This used to be a 7x7 RECTANGLE
+// under a round kerb, so the wet tile — and with it the water surface, which the
+// shader masks by material — ran out past the stone in four square corners and
+// sat on the lawn. The kerb the mesh builds is an eight-sided ring at R=3.30
+// with its flats on the cardinals (build-props.mjs, park_fountain); rasterised
+// at 3.2m on a one-metre grid that is rows of 3/5/7/7/7/5/3, which is the same
+// octagon. The corners it gives back become lawn, so the grass now runs right up
+// to the coping.
+const YARD_PARK_BASIN_CENTRE={x:10.5,y:36.5};
+const YARD_PARK_BASIN_R=3.2;
 const YARD_PARK_BASIN={x0:7,x1:13,y0:33,y1:39};
+const inYardParkBasin=(x,y)=>Math.hypot(
+  x+.5-YARD_PARK_BASIN_CENTRE.x,
+  y+.5-YARD_PARK_BASIN_CENTRE.y,
+)<=YARD_PARK_BASIN_R;
 // ── st brendan's ────────────────────────────────────────────────────────────
 // The church on the tarmac past the park. Its plan lives in data/st-brendans.js
 // because the elevation mesh is built from the same manifest — a mesh modelled
@@ -590,7 +604,7 @@ const YARD_MOUTH={y0:3,y1:12};
 // hide both ends of it.
 const YARD_DROP=-0.85, YARD_DROP_FROM=45, YARD_RAMP_TO=38;
 const YARD_DROP_BAND={y0:2,y1:11};
-// THE DOCK STEPS. A lorry uses the face; a man uses these.
+// THE DOCK STEPS. A lorry uses the face; a person uses these.
 //
 // The 0.85m drop at the dock face is the whole reason the bay reads as a dock
 // rather than as a door onto a car park, so it stays — but 0.85m is nearly twice
@@ -599,15 +613,28 @@ const YARD_DROP_BAND={y0:2,y1:11};
 // fine now that the gate, the hedge and the man in the booth are things you walk
 // to.
 //
-// So four risers are cut into the north end of the mouth, in the last row of the
-// drop band, where the bay's own wall hides them from most of the yard. Each
-// riser is 0.21m and the top one lands 0.21m under the apron lip, so every step
-// of the walk down is inside STEP_UP with room to spare.
-const YARD_STEPS={y:11,x0:46,x1:49};
+// One half-metre lane at the far end of a nine-metre loading face was not a
+// route. It was a keyhole: the obvious straight walk met the 0.85m dock rise,
+// while the only legal crossing hid against the north return wall. Keep the
+// raised lorry face in the middle, but cut two proper pedestrian flights into
+// its ends. The south flight lines up with the goods doors; the north flight
+// gives the bay a second honest way on and off instead of a single failure
+// point.
+//
+// Four shallow risers remain inside STEP_UP. The bays are deliberately broad
+// enough for head-relative/diagonal movement and are paired with directional
+// edge portals below, so crossing a flight never rewrites the player's logical
+// address merely because they walked along the apron.
+const YARD_STEP_RUN={x0:46,x1:49};
+const YARD_STEP_BAYS=Object.freeze([
+  Object.freeze({id:'north',y0:4,y1:5}),
+  Object.freeze({id:'goods',y0:9,y1:11}),
+]);
+const yardStepBayAt=(y)=>YARD_STEP_BAYS.find((bay)=>y>=bay.y0&&y<=bay.y1)||null;
 function yardFloorAt(x,y){
   if(y<YARD_DROP_BAND.y0||y>YARD_DROP_BAND.y1) return 0;
-  if(y===YARD_STEPS.y&&x>=YARD_STEPS.x0&&x<=YARD_STEPS.x1){
-    const rise=(x-YARD_STEPS.x0+1)/(YARD_STEPS.x1-YARD_STEPS.x0+2);
+  if(yardStepBayAt(y)&&x>=YARD_STEP_RUN.x0&&x<=YARD_STEP_RUN.x1){
+    const rise=(x-YARD_STEP_RUN.x0+1)/(YARD_STEP_RUN.x1-YARD_STEP_RUN.x0+2);
     return YARD_DROP*(1-rise);
   }
   if(x>=YARD_DROP_FROM) return YARD_DROP;
@@ -662,8 +689,7 @@ function yardRows(){
       if(churchGlyphAt(x,y)!==null){ row+='#'; continue; }
       const inPark=x>=YARD_PARK.x0&&x<=YARD_PARK.x1&&y>=YARD_PARK.y0&&y<=YARD_PARK.y1;
       if(inPark){
-        const basin=x>=YARD_PARK_BASIN.x0&&x<=YARD_PARK_BASIN.x1
-          &&y>=YARD_PARK_BASIN.y0&&y<=YARD_PARK_BASIN.y1;
+        const basin=inYardParkBasin(x,y);
         // The paths are the same ordinary tarmac as the yard they were cut
         // into — a municipal park is not paved in anything nicer than the road
         // outside it.
@@ -895,6 +921,16 @@ export const conservatory = {
   ],
   widenCorridors: true,
   edgePortals:[
+    // The yard and apron are two stable logical components occupying adjacent
+    // physical cells. These directional seams own the COMPLETE stair heads,
+    // not one lucky half-metre tile. Width is authored metres and expands to
+    // four north lanes plus six goods-door lanes at runtime.
+    {id:'loading-bay-north-steps',width:2,
+     from:{at:{x:50,y:4},along:{x:0,y:1},exit:{x:-1,y:0}},
+     to:{at:{x:99.5,y:204},along:{x:0,y:1},exit:{x:1,y:0}}},
+    {id:'loading-bay-goods-steps',width:3,
+     from:{at:{x:50,y:9},along:{x:0,y:1},exit:{x:-1,y:0}},
+     to:{at:{x:99.5,y:209},along:{x:0,y:1},exit:{x:1,y:0}}},
     {id:'ground-spine-to-stair-hall',width:4,
      from:{at:{x:61,y:24.5},along:{x:1,y:0},exit:{x:0,y:1}},
      to:{at:{x:138,y:20},along:{x:1,y:0},exit:{x:0,y:-1}}},
@@ -956,18 +992,6 @@ export const conservatory = {
     {from:{x:199,y:300},to:cathedralLoftLogical(10,72)},
     {from:{x:128,y:179},to:{x:66,y:254}},
     {from:{x:137,y:198},to:{x:75,y:273}},
-    // THE APRON TO THE YARD, at the top of the dock steps.
-    //
-    // The yard was built as scenery — a view with no connector, bounded by a
-    // kerb canStep refuses — because nothing out there was ever meant to be
-    // reached. The gate, the hedge and the man in the booth change that.
-    //
-    // No `span`, for exactly the reason set out above: a wide seam here would
-    // cover open tarmac at the mouth, and every ordinary step across it would
-    // rewrite the player's address mid-stride. One cell, at the head of the
-    // steps (see YARD_STEPS), which is the only place the two floors meet
-    // within a riser of each other.
-    {from:{x:50,y:11},to:{x:99,y:211}},
     // The old yard keeps every logical address. Three broad seams join its west,
     // north and south edges to the new perimeter ring at the same physical
     // pavement, making the full block optional without putting redirects across

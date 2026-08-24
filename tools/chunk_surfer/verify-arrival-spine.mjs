@@ -35,6 +35,18 @@ const wait = (f, t = 240000) => page.waitForFunction(f, { timeout: t });
 const top = () => page.evaluate(() => window.__scenes?.top?.()?.id || null);
 const flag = (k) => page.evaluate((n) => !!window.__probe.flag(n), k);
 const pos = () => page.evaluate(() => window.__probe.pos());
+const focusGreyDoorFromBay = async () => {
+  const door = await page.evaluate(() => (window.__probe.doors() || []).find((entry) => entry.id === 'dock-grey-exterior'));
+  assert.ok(door, 'the canonical grey door exists before the crossing');
+  // Derive the diagnostic seat from the live portal. The pair has moved before;
+  // copied warp literals quietly aimed the verifier at the van instead.
+  const offset = 4;
+  await page.evaluate(({ x, y }) => window.__probe.warpRuntime(x, y, 1), {
+    x: door.cx - offset,
+    y: door.cy,
+  });
+  return door;
+};
 const shot = async (name) => { await new Promise((r) => setTimeout(r, 500)); await page.screenshot({ path: path.join(output, name) }); };
 
 await page.goto('http://127.0.0.1:5199/index.html?nomic=1&sam=0&diffusion='
@@ -78,7 +90,7 @@ await shot('01-spawned-on-the-road.png');
 }
 
 // ── 2. the grey door refuses before he has asked for the keys ───────────────
-await page.evaluate(() => window.__probe.warpCell(56, 7, 1));   // facing 1 = east, measured
+await focusGreyDoorFromBay(); // facing 1 = east, on the live bay-side seat
 await shot('02-grey-door-before-the-keys.png');
 await page.keyboard.press('e');
 await new Promise((r) => setTimeout(r, 400));
@@ -108,26 +120,24 @@ if (await top()) {
   console.log('STUCK. current view:', JSON.stringify(v)?.slice(0, 1200));
 }
 assert.equal(await top(), null, 'the conversation finished');
-console.log('prologueDone after the conversation:', await flag('prologueDone'));
-await page.evaluate(() => window.__probe.warpCell(56, 7, 1));
+assert.equal(await flag('prologueDone'), true, 'the hand-over completes the prologue');
+assert.ok(await page.evaluate(() => window.__probe.keys().includes('master')), 'the master key arrives during the hand-over');
+await focusGreyDoorFromBay();
 await shot('05-grey-door-with-the-keys.png');
 await page.keyboard.press('e');
-await new Promise((r) => setTimeout(r, 900));
-console.log('grey door state:', JSON.stringify(await page.evaluate(() => (window.__probe.doors()||[]).filter((d)=>d.id==='dock-grey-exterior'||d.id==='bay-goods-pair').map((d)=>({id:d.id,state:d.state,key:d.keyId})))));
-console.log('title.shown before crossing:', await flag('title.shown'));
+await new Promise((r) => setTimeout(r, 250));
+const greyDoor=await page.evaluate(() => (window.__probe.doors()||[]).find((d)=>d.id==='dock-grey-exterior'));
+assert.ok(greyDoor, 'the canonical grey door exists');
+assert.ok(['opening','open'].includes(greyDoor.state), `the keyed interaction opens the grey door (${greyDoor.state})`);
+assert.equal(await flag('title.shown'), false, 'opening the door does not fire the threshold title early');
+assert.equal(await top(), 'get-in-door-entry', 'the same interact edge owns the physical walk through the aperture');
 
-// WALKED, not warped: the title fires from noteDockTransitStep, which only runs
-// on a real step. A warp would move him through the wall without ever crossing.
-for (let i = 0; i < 14 && !(await flag('title.shown')); i++) {
-  await page.keyboard.down('ArrowUp');
-  await new Promise((r) => setTimeout(r, 320));
-  await page.keyboard.up('ArrowUp');
-  await new Promise((r) => setTimeout(r, 120));
-  if (i === 0) console.log('  after one hold:', JSON.stringify(await pos()));
-}
-console.log('position after walking east:', JSON.stringify(await pos()));
-console.log('title.shown after crossing:', await flag('title.shown'));
-console.log('scene after crossing:', await top());
+// WALKED, not warped: E now owns a timed world-view/body path. The title is
+// still withheld until that action has physically landed inside.
+await new Promise((r) => setTimeout(r, 3000));
+console.log('position after authored door entry:', JSON.stringify(await pos()));
+assert.equal(await flag('title.shown'), true, 'the completed E-owned crossing fires the title');
+assert.equal(await top(), 'world-title', 'the earned Get-In scene owns the frame at the crossing');
 // The title opens IN THE WORLD: he turns back to the door, the closer takes it,
 // and the last of the yard narrows to nothing before the type comes up. Three
 // frames across the lead-in, because the whole point of it is what it looks like.
@@ -136,6 +146,15 @@ await new Promise((r) => setTimeout(r, 1100));
 await shot('06b-title-lead-iris.png');
 await new Promise((r) => setTimeout(r, 1400));
 await shot('06-the-title.png');
+
+// The earned slate must finish before the internal voice arrives. Its first
+// frame keeps the closed goods doors in the left image lane; later beats retain
+// that lane and change the plate to the flashlight rather than collapsing back
+// to a text-only shell.
+await wait(() => window.__scenes?.top?.()?.id === 'after-title', 15000);
+const debrief = await page.evaluate(() => window.__scenes.top().view?.() || null);
+assert.equal(debrief?.art?.id, 'door', 'the internal debrief opens with the door image in its left lane');
+await shot('07-after-title-door-debrief.png');
 
 console.log(errors.length ? `PAGE ERRORS:\n  ${errors.join('\n  ')}` : 'no page errors');
 await browser.close();

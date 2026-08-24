@@ -32,11 +32,11 @@ export function fixtureMapSource() {
       { id: 'u1', order: 1, label: 'UPPER', shortLabel: 'U1', bounds: { minX: 0, minY: 0, maxX: 44, maxY: 26 }, open: u1, runs: runsForRect(0, 0, 44, 26) },
     ],
     targets: [
-      { id: 'target:main_b3', roomId: 'main_b3', sequence: 1, label: 'STUDIO B3', shortLabel: 'B3', floorId: 'b1', position: { x: 10, y: 10 }, selectable: true, waypointable: true },
-      { id: 'target:the_tub', roomId: 'the_tub', sequence: 2, label: 'THE NATATORIUM', shortLabel: 'NAT', floorId: 'g', position: { x: 12, y: 15 }, selectable: true, waypointable: true },
-      { id: 'target:amplifications', roomId: 'amplifications', sequence: 3, label: 'THE CONCERT HALL', shortLabel: 'HALL', floorId: 'g', position: { x: 34, y: 9 }, selectable: true, waypointable: true },
-      { id: 'target:soundnoisemusic', roomId: 'soundnoisemusic', sequence: 4, label: 'THE PRACTICE WING', shortLabel: 'WING', floorId: 'u1', position: { x: 13, y: 18 }, selectable: true, waypointable: true },
-      { id: 'target:lux_nova', roomId: 'lux_nova', sequence: 5, label: 'THE CHAPEL', shortLabel: 'CHAP', floorId: 'u1', position: { x: 35, y: 16 }, selectable: true, waypointable: true },
+      { id: 'target:main_b3', roomId: 'main_b3', sequence: 1, label: 'STUDIO B3', shortLabel: 'B3', floorId: 'b1', position: { x: 10, y: 10 }, selectable: true, waypointable: true,doorIds:['fixture-b3'] },
+      { id: 'target:the_tub', roomId: 'the_tub', sequence: 2, label: 'THE NATATORIUM', shortLabel: 'NAT', floorId: 'g', position: { x: 12, y: 15 }, selectable: true, waypointable: true,doorIds:['fixture-pool'] },
+      { id: 'target:amplifications', roomId: 'amplifications', sequence: 3, label: 'THE CONCERT HALL', shortLabel: 'HALL', floorId: 'g', position: { x: 34, y: 9 }, selectable: true, waypointable: true,doorIds:['fixture-hall-a','fixture-hall-b'] },
+      { id: 'target:soundnoisemusic', roomId: 'soundnoisemusic', sequence: 4, label: 'THE PRACTICE WING', shortLabel: 'WING', floorId: 'u1', position: { x: 13, y: 18 }, selectable: true, waypointable: true,doorIds:['fixture-practice'] },
+      { id: 'target:lux_nova', roomId: 'lux_nova', sequence: 5, label: 'THE CHAPEL', shortLabel: 'CHAP', floorId: 'u1', position: { x: 35, y: 16 }, selectable: true, waypointable: true,doorIds:['fixture-chapel'] },
     ],
     connectors: [
       { id: 'connector:b1-g', kind: 'stairs', a: { floorId: 'b1', position: { x: 39, y: 22 } }, b: { floorId: 'g', position: { x: 5, y: 22 } } },
@@ -89,6 +89,13 @@ export function mapLabModel(testCase, source = fixtureMapSource()) {
     job: mapLabJob(testCase),
     objectiveState: { target: testCase.target },
     player: { resolved: true, x: testCase.player.position.x, y: testCase.player.position.y, height: testCase.player.floorId === 'b1' ? -4 : testCase.player.floorId === 'u1' ? 5 : 0, roomId: testCase.player.roomId, heading: Math.PI / 2 },
-    doors: [], contacts: contact ? [contact] : [], navigation: policy(testCase.policy),
+    doors: [
+      {id:'fixture-b3',floorId:'b1',position:{x:9,y:10},state:'open',open:true,traversable:true},
+      {id:'fixture-pool',floorId:'g',position:{x:11,y:15},state:'locked',open:false,locked:true,traversable:false},
+      {id:'fixture-hall-a',floorId:'g',position:{x:33,y:9},state:'closed',open:false,traversable:true},
+      {id:'fixture-hall-b',floorId:'g',position:{x:35,y:9},state:'sealed',open:false,traversable:false},
+      {id:'fixture-practice',floorId:'u1',position:{x:12,y:18},state:'closed',open:false,traversable:true},
+      {id:'fixture-chapel',floorId:'u1',position:{x:34,y:16},state:'unknown',open:false,traversable:false},
+    ], contacts: contact ? [contact] : [], navigation: policy(testCase.policy),
   });
 }

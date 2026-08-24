@@ -278,6 +278,12 @@ export const VOICE_PROFILES = {
   // What it speaks is never a name — see obscuredNameUtterance. It is a shape
   // with the same rhythm as the blots on the screen.
   masked: { rate: 0.86, gain: 0.34, hp: 150, lp: 780, smear: { time: 0.23, feedback: 0.46, mix: 0.62 } },
+  // The literal, consented booth answer never enters a dialogue line: these
+  // profiles put a local-only synthesis beneath the same masked ASCII row.
+  // The first pass is rain-softened; the requested repeat opens the band,
+  // raises the level and shortens the tail without turning into clean VO.
+  'booth-name': { rate: 0.90, gain: 0.48, hp: 145, lp: 1180, smear: { time: 0.18, feedback: 0.34, mix: 0.46 } },
+  'booth-name-repeat': { rate: 0.94, gain: 0.72, hp: 120, lp: 2200, smear: { time: 0.11, feedback: 0.22, mix: 0.25 } },
   default: { rate: 1.0, gain: 1.0 },
 };
 

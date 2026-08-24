@@ -63,11 +63,17 @@ export const WATER_BODIES = Object.freeze([
     // Radius is in basin-normalised UV, like every other ripple source.
     flow: Object.freeze({
       falls: 4,
-      // LOW_R (1.58m) over the basin half-width (3.5m).
-      radius: 0.45,
-      strength: 0.030,
+      // Where the sheets actually land, over the basin half-width (3.5m): the
+      // mask spouts throw clear of the lip, so the impact ring sits at
+      // LOW_R + 0.12 = 1.70m rather than under the bowl.
+      radius: 0.49,
+      // Heavier than it was. The falls are real sheets now (build-props.mjs,
+      // park_fountain) and a surface that barely moves under them reads as a
+      // photograph of a fountain — this is the only water in the game that is
+      // being fed rather than left.
+      strength: 0.052,
       // The jet is off-centre from any one fall, so the middle never settles.
-      centreStrength: 0.018,
+      centreStrength: 0.030,
     }),
     // You step down into it — 0.30m against canStep's 0.45m limit — because the
     // thing in the water has to be reachable without inventing a way to lean.

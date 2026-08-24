@@ -77,7 +77,7 @@ const KNOWN_GEAR = Object.freeze({
     icon: 'radio',
     status: ['LIVE', 'active'],
     description: 'Portable service radio assigned with the work order.',
-    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'CHECK-IN / FIELD CONTACT'], ['BATTLE', 'THROW VOICE · GUARD 2 · COUNTERS BROADCAST · ONCE PER FIGHT']],
+    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'RADIO CHECK-IN'], ['BATTLE', 'THROW VOICE · GUARD 2 · COUNTERS BROADCAST · ONCE PER FIGHT']],
   },
   coffee: {
     title: "THE GUARD'S COFFEE",
@@ -557,15 +557,15 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, loa
   const kit = (Array.isArray(equipment) ? equipment : []).map(normalizeEquipment).map((entry) => {
     const battleCapable = entry.source?.battleCapable ?? isBattleGear(entry.sourceId);
     const assignedCompartment = battleCapable ? combatCompartment(normalizedLoadout, entry.sourceId) : 'storage';
-    // A saved tray assignment survives loss/deployment, but READY NOW only
+    // A saved quick-slot assignment survives loss/deployment, but the slot row only
     // depicts gear physically in hand. Recovery restores the same slot/order.
     const compartment = battleCapable && entry.present ? assignedCompartment : 'storage';
     const topIndex = normalizedLoadout.top.indexOf(entry.sourceId);
     const compartmentLabel = compartment === 'top'
-      ? `READY NOW ${topIndex + 1}/${normalizedLoadout.capacity}`
+      ? `QUICK SLOT ${topIndex + 1} OF ${normalizedLoadout.capacity}`
       : battleCapable && !entry.present && assignedCompartment === 'top'
-        ? `NOT CARRIED / READY SLOT ${topIndex + 1} RESERVED`
-        : battleCapable ? 'BAG STORAGE / NOT READY' : 'BAG STORAGE';
+        ? `NOT CARRIED / QUICK SLOT ${topIndex + 1} KEPT`
+        : battleCapable ? 'IN BAG / NOT SET FOR A FIGHT' : 'IN BAG';
     const primary=entry.actions?.primary||null;
     const primaryIsInspect=String(primary?.id||'').startsWith('inspect-');
     const primaryIsDrop=primary?.id==='radio-deploy'||primary?.id==='drop';
@@ -574,10 +574,18 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, loa
       ? actionDescriptor(compartment==='top'?'unset-slot':'set-slot',compartment==='top'?'unset':'set',compartment==='top'?'UNSET':'SET',{
           enabled:entry.present,reason:entry.present?'':'ITEM NOT CARRIED',
         })
-      : actionDescriptor('set-slot','set','SET',{enabled:false,reason:'NOT CONTACT GEAR'});
+      : actionDescriptor('set-slot','set','SET',{enabled:false,reason:'NOT USED IN A FIGHT'});
+    const unavailableUseReason = ({
+      interface: 'SET IT IN A QUICK SLOT',
+      'tuning-fork': 'SET IT IN A QUICK SLOT',
+      radio: 'CHOOSE DROP TO PLACE THE RADIO',
+      'plant-spanner': 'USE AT THE HEATING HEADER',
+      'marble-eyes': 'USE AT THE BLIND BUST',
+      keyring: 'USED AUTOMATICALLY AT LOCKED DOORS',
+    })[entry.sourceId] || 'NO USE AVAILABLE FROM THE BAG';
     const useAction=!primaryIsInspect&&!primaryIsDrop&&!primaryIsSpecial&&primary
       ? actionDescriptor(primary.id,'use',primary.label,{enabled:primary.enabled!==false,reason:primary.reason,confirm:primary.confirm,exitPolicy:primary.closeBefore?'close':'stay'})
-      : actionDescriptor('use-unavailable','use','USE',{enabled:false,reason:entry.present?'NO DIRECT USE':'ITEM NOT CARRIED'});
+      : actionDescriptor('use-unavailable','use','USE',{enabled:false,reason:entry.present?unavailableUseReason:'ITEM NOT CARRIED'});
     const dropAction=entry.sourceId==='radio'
       ? primaryIsDrop
         ? actionDescriptor(primary.id,'drop','DROP / DEPLOY HERE',{
@@ -585,7 +593,7 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, loa
             confirm:{title:'DROP RADIO HERE?',body:'THE RADIO WILL REMAIN HERE UNTIL YOU RECOVER IT.'},
           })
         : actionDescriptor('radio-deploy','drop','DROP / DEPLOY HERE',{enabled:false,reason:entry.source?.deployed?'ALREADY DEPLOYED':'ITEM NOT CARRIED'})
-      : actionDescriptor('drop-unavailable','drop','DROP',{enabled:false,reason:entry.present?'NO SAFE WORLD PLACEMENT':'ITEM NOT CARRIED'});
+      : actionDescriptor('drop-unavailable','drop','DROP',{enabled:false,reason:entry.present?"CAN'T LEAVE THIS ITEM BEHIND":'ITEM NOT CARRIED'});
     const actionList=[
       setAction,useAction,dropAction,
       actionDescriptor('inspect-item','inspect','INSPECT',{enabled:true}),
@@ -597,14 +605,14 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, loa
       compartment,
       topIndex,
       facts: [['COMPARTMENT', compartmentLabel], ...entry.facts],
-      badges: [compartment === 'top' ? `READY ${topIndex + 1}` : 'STORAGE', ...entry.badges],
+      badges: [compartment === 'top' ? `SLOT ${topIndex + 1}` : 'IN BAG', ...entry.badges],
       actionList,
       actions: {
         ...entry.actions,
         secondary: battleCapable && entry.present
           ? {
               id: compartment === 'top' ? 'move-storage' : 'move-top',
-              label: compartment === 'top' ? 'CLEAR READY SLOT' : 'PUT IN READY NOW',
+              label: compartment === 'top' ? 'CLEAR QUICK SLOT' : 'PUT IN QUICK SLOT',
               destructive: false,
             }
           : null,

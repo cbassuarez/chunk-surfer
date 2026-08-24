@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-08-11T05:34:58.430Z",
+  "generatedAt": "2026-08-23T05:30:34.286Z",
   "file": "opening-street.glb",
   "build": {
     "file": "opening-street.glb",
-    "bytes": 32984064,
-    "sha256": "3eb8d1a327cae230fd256f24eebe1a308c94278c62d46a7bc61731d88a9b7d7c",
-    "totalTriangles": 30118,
+    "bytes": 15033528,
+    "sha256": "64639979fe4c7d3b13295714d299d851f36294f4e02098030fcb3801deef0641",
+    "totalTriangles": 8118,
     "textureCount": 42,
-    "estimatedMipmappedTextureBytes": 218103808,
+    "estimatedMipmappedTextureBytes": 117440512,
     "meshes": [
       {
         "index": 0,
@@ -88,19 +88,19 @@
       {
         "index": 4,
         "name": "opening_street_tree_small",
-        "triangles": 30000,
-        "vertices": 77089,
+        "triangles": 8000,
+        "vertices": 22142,
         "primitives": 2,
         "bounds": {
           "min": [
-            -1.3851964473724365,
-            0.0482046902179718,
-            -2.099900722503662
+            -1.3758302927017212,
+            0.07269927859306335,
+            -2.080634117126465
           ],
           "max": [
-            1.4191280603408813,
+            1.3811899423599243,
             4.55819034576416,
-            2.1006033420562744
+            2.047299861907959
           ]
         }
       }
@@ -110,54 +110,54 @@
         "index": 0,
         "name": "asphalt-normal",
         "mimeType": "image/png",
-        "bytes": 2593925,
-        "width": 1024,
-        "height": 1024,
+        "bytes": 597462,
+        "width": 512,
+        "height": 512,
         "format": "png"
       },
       {
         "index": 1,
         "name": "asphalt-albedo",
         "mimeType": "image/jpeg",
-        "bytes": 1741215,
-        "width": 2048,
-        "height": 2048,
+        "bytes": 403356,
+        "width": 1024,
+        "height": 1024,
         "format": "jpeg"
       },
       {
         "index": 2,
         "name": "asphalt-orm",
         "mimeType": "image/png",
-        "bytes": 1082082,
-        "width": 1024,
-        "height": 1024,
+        "bytes": 255279,
+        "width": 512,
+        "height": 512,
         "format": "png"
       },
       {
         "index": 3,
         "name": "cobbles-normal",
         "mimeType": "image/png",
-        "bytes": 2694949,
-        "width": 1024,
-        "height": 1024,
+        "bytes": 671582,
+        "width": 512,
+        "height": 512,
         "format": "png"
       },
       {
         "index": 4,
         "name": "cobbles-albedo",
         "mimeType": "image/jpeg",
-        "bytes": 1080056,
-        "width": 2048,
-        "height": 2048,
+        "bytes": 273372,
+        "width": 1024,
+        "height": 1024,
         "format": "jpeg"
       },
       {
         "index": 5,
         "name": "cobbles-orm",
         "mimeType": "image/png",
-        "bytes": 1024208,
-        "width": 1024,
-        "height": 1024,
+        "bytes": 254528,
+        "width": 512,
+        "height": 512,
         "format": "png"
       },
       {
@@ -191,54 +191,54 @@
         "index": 9,
         "name": "roughStone-normal",
         "mimeType": "image/png",
-        "bytes": 2773919,
-        "width": 1024,
-        "height": 1024,
+        "bytes": 686189,
+        "width": 512,
+        "height": 512,
         "format": "png"
       },
       {
         "index": 10,
         "name": "roughStone-albedo",
         "mimeType": "image/jpeg",
-        "bytes": 1262019,
-        "width": 2048,
-        "height": 2048,
+        "bytes": 330447,
+        "width": 1024,
+        "height": 1024,
         "format": "jpeg"
       },
       {
         "index": 11,
         "name": "roughStone-orm",
         "mimeType": "image/png",
-        "bytes": 1040028,
-        "width": 1024,
-        "height": 1024,
+        "bytes": 261615,
+        "width": 512,
+        "height": 512,
         "format": "png"
       },
       {
         "index": 12,
         "name": "brick-normal",
         "mimeType": "image/png",
-        "bytes": 2864620,
-        "width": 1024,
-        "height": 1024,
+        "bytes": 721541,
+        "width": 512,
+        "height": 512,
         "format": "png"
       },
       {
         "index": 13,
         "name": "brick-albedo",
         "mimeType": "image/jpeg",
-        "bytes": 1548954,
-        "width": 2048,
-        "height": 2048,
+        "bytes": 383951,
+        "width": 1024,
+        "height": 1024,
         "format": "jpeg"
       },
       {
         "index": 14,
         "name": "brick-orm",
         "mimeType": "image/png",
-        "bytes": 771186,
-        "width": 1024,
-        "height": 1024,
+        "bytes": 187551,
+        "width": 512,
+        "height": 512,
         "format": "png"
       },
       {
@@ -490,7 +490,7 @@
       "bytes": 67108864,
       "triangles": 45000,
       "textureDimension": 2048,
-      "estimatedMipmappedTextureBytes": 268435456,
+      "estimatedMipmappedTextureBytes": 134217728,
       "mainPassDrawCalls": 14
     },
     "materialAreas": {
@@ -529,8 +529,8 @@
     },
     "tree": {
       "sourceTriangles": 2590098,
-      "triangles": 30000,
-      "budget": 30000,
+      "triangles": 8000,
+      "budget": 8000,
       "bounds": {
         "min": [
           -1.30031,
@@ -556,8 +556,8 @@
       "archiveSha256": "029d10a116da565c4a2afb2a3de34daeff670d08bf4f304769b2821c887e802f",
       "sourceResolution": 4096,
       "runtimeResolution": {
-        "albedo": 2048,
-        "normalOrm": 1024
+        "albedo": 1024,
+        "normalOrm": 512
       },
       "uvScaleMetres": 3,
       "targetHeight": null,
@@ -588,8 +588,8 @@
       "archiveSha256": "40587fe3a06e4e9d171b8a560633e2b396485d9f2d64a45c4506b25313e0e506",
       "sourceResolution": 4096,
       "runtimeResolution": {
-        "albedo": 2048,
-        "normalOrm": 1024
+        "albedo": 1024,
+        "normalOrm": 512
       },
       "uvScaleMetres": 2.4,
       "targetHeight": null,
@@ -652,8 +652,8 @@
       "archiveSha256": "0c9ed23ab809e3d0afee2ecd11f93c54899b75e5999a64536b4a206e1c7ca580",
       "sourceResolution": 4096,
       "runtimeResolution": {
-        "albedo": 2048,
-        "normalOrm": 1024
+        "albedo": 1024,
+        "normalOrm": 512
       },
       "uvScaleMetres": 2,
       "targetHeight": null,
@@ -783,8 +783,8 @@
       "archiveSha256": "7297856338ec404a9153aa2c4efd4d53d9d0c99d68232051a8e1e0114f41ef35",
       "sourceResolution": 4096,
       "runtimeResolution": {
-        "albedo": 2048,
-        "normalOrm": 1024
+        "albedo": 1024,
+        "normalOrm": 512
       },
       "uvScaleMetres": 1,
       "targetHeight": null,
@@ -1168,8 +1168,8 @@
       "archiveSha256": "029d10a116da565c4a2afb2a3de34daeff670d08bf4f304769b2821c887e802f",
       "sourceResolution": 4096,
       "runtimeResolution": {
-        "albedo": 2048,
-        "normalOrm": 1024
+        "albedo": 1024,
+        "normalOrm": 512
       },
       "uvScaleMetres": 3,
       "targetHeight": null,
@@ -1200,8 +1200,8 @@
       "archiveSha256": "40587fe3a06e4e9d171b8a560633e2b396485d9f2d64a45c4506b25313e0e506",
       "sourceResolution": 4096,
       "runtimeResolution": {
-        "albedo": 2048,
-        "normalOrm": 1024
+        "albedo": 1024,
+        "normalOrm": 512
       },
       "uvScaleMetres": 2.4,
       "targetHeight": null,
@@ -1264,8 +1264,8 @@
       "archiveSha256": "0c9ed23ab809e3d0afee2ecd11f93c54899b75e5999a64536b4a206e1c7ca580",
       "sourceResolution": 4096,
       "runtimeResolution": {
-        "albedo": 2048,
-        "normalOrm": 1024
+        "albedo": 1024,
+        "normalOrm": 512
       },
       "uvScaleMetres": 2,
       "targetHeight": null,
@@ -1395,8 +1395,8 @@
       "archiveSha256": "7297856338ec404a9153aa2c4efd4d53d9d0c99d68232051a8e1e0114f41ef35",
       "sourceResolution": 4096,
       "runtimeResolution": {
-        "albedo": 2048,
-        "normalOrm": 1024
+        "albedo": 1024,
+        "normalOrm": 512
       },
       "uvScaleMetres": 1,
       "targetHeight": null,

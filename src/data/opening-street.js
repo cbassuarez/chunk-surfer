@@ -2,6 +2,8 @@
 // source names stop at the build manifest; gameplay owns stable role and mesh
 // names, while the existing floorplan remains the sole collision authority.
 
+import { VEGETATION_FALLBACKS } from './vegetation.js';
+
 const freeze = (value) => Object.freeze(value);
 
 export const OPENING_STREET_ASSETS = freeze({
@@ -47,7 +49,13 @@ export const OPENING_STREET_PROPS = freeze([
   freeze({id:'opening-street-municipal-tree',mesh:'opening_street_tree_small',x:74,y:201,yaw:-.24,scale:1,interactive:false,structural:true,blocks:false}),
   freeze({id:'opening-street-park-bench-west',mesh:'district_bench',x:66.5,y:201.5,yaw:Math.PI/2,scale:1,interactive:false,structural:true,blocks:false}),
   freeze({id:'opening-street-park-bench-east',mesh:'district_bench',x:71.5,y:201.5,yaw:-Math.PI/2,scale:1,interactive:false,structural:true,blocks:false}),
-  freeze({id:'opening-street-park-laurel',mesh:'yard_hedge_run',x:69,y:200,yaw:Math.PI/2,scale:1,interactive:false,structural:true,blocks:false}),
+  freeze({id:'opening-street-park-laurel',mesh:'opening_park_laurel',fallbackMesh:VEGETATION_FALLBACKS.opening_park_laurel,x:69,y:200,yaw:Math.PI/2,scale:1,interactive:false,structural:true,blocks:false}),
+  // A few deliberate seams, not a procedural carpet. They thicken the lawn
+  // edge while keeping the entrance, benches and service approach open.
+  freeze({id:'opening-street-park-nettles',mesh:'vegetation_nettle_cluster',x:63.2,y:197.1,yaw:.26,scale:.86,interactive:false,structural:true,blocks:false}),
+  freeze({id:'opening-street-park-weeds',mesh:'vegetation_weed_cluster',x:74.7,y:198.7,yaw:-.48,scale:.92,interactive:false,structural:true,blocks:false}),
+  freeze({id:'opening-street-park-grass-edge',mesh:'vegetation_grass_edge',x:65.0,y:196.2,yaw:Math.PI/2,scale:1,interactive:false,structural:true,blocks:false}),
+  freeze({id:'opening-street-park-leaf-fall',mesh:'vegetation_leaf_scatter',x:72.9,y:201.7,yaw:-.18,scale:.82,interactive:false,structural:true,blocks:false}),
 ]);
 
 export const OPENING_STREET_CAPTURE_PRESETS = freeze([

@@ -15,7 +15,7 @@ import { shouldHideCrossEnvelopeProp } from '../src/game/prop-visibility.js';
 const stats=JSON.parse(fs.readFileSync('public/assets/opening-street.stats.json','utf8'));
 assert.equal(Object.keys(OPENING_STREET_ASSETS).length,13);
 assert.equal(Object.keys(OPENING_STREET_MESHES).length,4);
-assert.equal(OPENING_STREET_PROPS.length,7);
+assert.equal(OPENING_STREET_PROPS.length,11);
 assert.equal(OPENING_STREET_CAPTURE_PRESETS.length,5);
 assert.deepEqual(OPENING_STREET_CAPTURE_PRESETS.map((preset)=>preset.id),[
   'arrival','frontage','service-lane-entrance','service-yard','modern-annex',
@@ -29,6 +29,8 @@ for(const id of OPENING_STREET_PARK.furnitureIds){
   assert.ok(OPENING_STREET_PROPS.some((prop)=>prop.id===id&&prop.blocks===false),`${id} is missing from the non-blocking park`);
 }
 assert.equal(OPENING_STREET_PROPS.filter((prop)=>prop.mesh==='district_bench').length,2,'the pocket park has two ordinary municipal benches');
+assert.equal(OPENING_STREET_PROPS.filter((prop)=>prop.mesh.startsWith('vegetation_')).length,4,'groundcover is sparse and authored rather than a lawn-wide scatter');
+assert.equal(OPENING_STREET_PROPS.find((prop)=>prop.id==='opening-street-park-laurel').mesh,'opening_park_laurel','the pocket park uses a compact specimen rather than an eleven-metre hedge');
 assert.equal(OPENING_STREET_REVIEW_INSTANCE.mesh,'opening_street_review_plate');
 assert.ok(!OPENING_STREET_PROPS.some((prop)=>prop.mesh===OPENING_STREET_REVIEW_INSTANCE.mesh));
 for(const [name,contract] of Object.entries(OPENING_STREET_MESHES)){

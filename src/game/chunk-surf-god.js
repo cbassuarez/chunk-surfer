@@ -98,9 +98,9 @@ export function buildChunkSurfGodPreset(id, options = {}) {
   }
 
   state = dispatch(state,
-    { type: 'LANDMARK_TUNED', id: 'fork-room' },
+    { type: 'LANDMARK_VISITED', id: 'fork-room' },
     { type: 'CHECKPOINT_SET', id: 'fork-room' },
-    { type: 'LANDMARK_TUNED', id: 'recordist-loop' },
+    { type: 'LANDMARK_VISITED', id: 'recordist-loop' },
     { type: 'CHECKPOINT_SET', id: 'recordist-loop' },
     { type: 'PURSUIT_STARTED', id: SOURCE_PURSUIT_BEAT.BODY_RUN },
   );
@@ -111,10 +111,9 @@ export function buildChunkSurfGodPreset(id, options = {}) {
 
   state = dispatch(state,
     { type: 'PURSUIT_CLEARED', id: SOURCE_PURSUIT_BEAT.BODY_RUN },
-    { type: 'LANDMARK_TUNED', id: 'surfer-origin' },
-    { type: 'LANDMARK_TUNED', id: 'work-order-loop' },
-    { type: 'LANDMARK_TUNED', id: 'body-room' },
-    { type: 'LANDMARK_RECORDED', id: 'body-room' },
+    { type: 'LANDMARK_VISITED', id: 'surfer-origin' },
+    { type: 'LANDMARK_VISITED', id: 'work-order-loop' },
+    { type: 'LANDMARK_VISITED', id: 'body-room' },
     { type: 'CHECKPOINT_SET', id: 'body-room' },
     { type: 'PURSUIT_STARTED', id: SOURCE_PURSUIT_BEAT.FINAL_RUN },
   );

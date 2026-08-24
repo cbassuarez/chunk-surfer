@@ -1,7 +1,7 @@
 // AUDIOCORP field case.
 //
-// KIT, MAP, and FILES share one live model. The field continues behind the
-// case; navigation state is presentation memory, never gameplay truth.
+// Inventory, Map, Sheets and Skills share one paused workspace. Navigation
+// state is presentation memory; world simulation never advances underneath it.
 
 import * as scenes from './scenes.js';
 import * as AUDIO from '../audio/story-audio.js';
@@ -77,6 +77,7 @@ export function makeBagScene({
   memory = null,
   onRemember = () => {},
   getMonitorSource = null,
+  embeddedHost = false,
 } = {}) {
   const equipmentSource = typeof getEquipment === 'function' ? getEquipment : () => equipment;
   const loadoutSource = typeof getLoadout === 'function' ? getLoadout : () => loadout;
@@ -222,15 +223,18 @@ export function makeBagScene({
     remember();
   }
 
-  function close() {
+  function close({suppressReopen=false}={}) {
     remember();
     // Close the case itself, not whichever overlay happens to be at the top of
     // the stack. Overlay scenes above the bag may decline the key and let the
     // bag handle it; a blind pop() removes the overlay and leaves the player
     // trapped in the case.
-    const removed = scenes.remove(scene);
+    // Labs may host this scene inside their own wrapper so they can add fixture
+    // controls without duplicating the bag. In that case the host owns the
+    // stack removal and `onClose` is the request to remove it.
+    const removed = embeddedHost ? true : scenes.remove(scene);
     if (removed) {
-      onClearInput();
+      onClearInput({suppressReopen});
       onClose();
     }
   }
@@ -513,7 +517,7 @@ export function makeBagScene({
     } else if(entry.kind==='gear'&&(actionId==='unset-slot'||actionId==='move-storage')){
       const result=typeof moveEquipment==='function'?moveEquipment(entry.sourceId,'storage'):{changed:false,reason:'unavailable'};
       ok=!!result?.changed;
-      if(!ok){notice='READY SLOT UNCHANGED';noticeUntil=t+2.0;}
+      if(!ok){notice='QUICK SLOT UNCHANGED';noticeUntil=t+2.0;}
     } else if(entry.kind==='gear'&&actionId==='inspect-item'){
       ok=openItemInspection(entry);
     } else if (entry.kind === 'gear' && actionId === 'move-top') {
@@ -561,8 +565,12 @@ export function makeBagScene({
       return;
     }
     if(nav.sectionId==='map'){
-      const selected=selectedMapSpace(mapNav,model.map);
-      if(selected?.objective?.notes?.[0])openSheet(selected.objective.notes[0]);
+      // CONFIRM ON A PLAN MARKS THE PLAN. Enter used to open whatever sheet
+      // happened to be pinned to the selected room, so the map's own confirm key
+      // read as "open a document" — the one verb the map is for was on a key
+      // nobody had been told about. Setting the target is the primary action;
+      // the attached file keeps its own action on the rail ([R]).
+      activateSecondary();
       return;
     }
     const action = entry?.actions?.primary;
@@ -590,6 +598,11 @@ export function makeBagScene({
   }
 
   function activateTertiary() {
+    if(nav.sectionId==='map'){
+      const selected=selectedMapSpace(mapNav,model.map);
+      if(selected?.objective?.notes?.[0])openSheet(selected.objective.notes[0]);
+      return;
+    }
     const entry = currentBagEntry(nav, model);
     const action = entry?.actions?.tertiary;
     if (action) execute(entry, action.id);
@@ -645,7 +658,7 @@ export function makeBagScene({
         const entry=bagEntry(model,'kit',route.entryId);
         const result=typeof assignEquipmentSlot==='function'?assignEquipmentSlot(entry?.sourceId,route.index):{changed:false,reason:'unavailable'};
         if(result?.changed){popRoute();refresh();AUDIO.menuConfirm?.();}
-        else{notice=result?.reason==='already-in-slot'?'ALREADY SET IN THAT SLOT':'READY SLOT UNCHANGED';noticeUntil=t+2.2;AUDIO.menuMove?.();}
+        else{notice=result?.reason==='already-in-slot'?'ALREADY SET IN THAT SLOT':'QUICK SLOT UNCHANGED';noticeUntil=t+2.2;AUDIO.menuMove?.();}
         return true;
       }
       if(backInput(e)){popRoute();return true;}
@@ -709,8 +722,8 @@ export function makeBagScene({
     }
     if(route.type==='slot-picker'){
       const entry=bagEntry(model,'kit',route.entryId),slots=Array.from({length:model.loadout.capacity},(_,index)=>model.loadout.top[index]||null);
-      uiText(x,y,`SET ${entry?.title||'ITEM'} · CHOOSE A CONTACT SLOT`,'ui-amber',.95);
-      uiText(x,y+1,'AN OCCUPIED SLOT RETURNS ITS OLD ITEM TO BAG STORAGE.','ui-secondary',.68);
+      uiText(x,y,`SET ${entry?.title||'ITEM'} · CHOOSE A QUICK SLOT`,'ui-amber',.95);
+      uiText(x,y+1,'IF THE SLOT IS FULL, ITS OLD ITEM STAYS IN THE BAG.','ui-secondary',.68);
       const rowY=y+3,rowW=Math.max(10,Math.floor((w-Math.max(0,slots.length-1))/slots.length));
       slots.forEach((itemId,index)=>{
         const bx=x+index*(rowW+1),on=index===(route.index||0);
@@ -785,7 +798,8 @@ export function makeBagScene({
       const scroll=Math.max(0,Math.min(at>=cap?at-cap+1:0,Math.max(0,entries.length-cap)));
       entries.slice(scroll,scroll+cap).forEach((entry,index)=>addHit({id:`bag:item:${entry.id}`,kind:'bag-item',x:geo.list.x,y:geo.list.y+1+index*2,w:geo.list.w,h:2,label:entry.title,onHover:()=>selectEntry('kit',entry.id),onClick:()=>{selectEntry('kit',entry.id);pushRoute({type:'item-actions',entryId:entry.id,index:0});}}));
       const detailRows=Math.min(3,Math.max(1,geo.detail.h-8)),start=geo.detail.y+2+detailRows+1;
-      (selected?.actionList||[]).forEach((action,index)=>addHit({id:`bag:action:${action.id}`,kind:'bag-action',x:geo.detail.x+1,y:start+index,w:Math.max(1,geo.detail.w-2),h:1,label:action.label,disabled:!action.enabled,onHover:()=>{const route=currentRoute();if(route.type==='item-actions'){route.index=index;syncActionPresentation();}},onClick:()=>{
+      const visibleActions=Math.max(1,geo.detail.y+geo.detail.h-start);
+      (selected?.actionList||[]).slice(0,visibleActions).forEach((action,index)=>addHit({id:`bag:action:${action.id}`,kind:'bag-action',x:geo.detail.x+1,y:start+index,w:Math.max(1,geo.detail.w-2),h:1,label:action.label,disabled:!action.enabled,onHover:()=>{const route=currentRoute();if(route.type==='item-actions'){route.index=index;syncActionPresentation();}},onClick:()=>{
         if(!action.enabled){notice=action.reason;noticeUntil=t+2.2;return;}
         if(currentRoute().type==='item-actions'){routes.pop();syncActionPresentation();}
         execute(selected,action.id);
@@ -805,7 +819,11 @@ export function makeBagScene({
       const listRows=Math.max(1,Math.min(floorSpaces.length,Math.floor(mapLayout.detail.h*.44)));
       const selectedAt=Math.max(0,floorSpaces.findIndex((space)=>space.id===selectedMapSpace(mapNav,model.map)?.id));
       const start=Math.max(0,Math.min(selectedAt-Math.floor(listRows/2),floorSpaces.length-listRows));
-      floorSpaces.slice(start,start+listRows).forEach((space,index)=>addHit({id:`bag:space:${space.id}`,kind:'map-space',x:mapLayout.detail.x,y:mapLayout.detail.y+1+index,w:mapLayout.detail.w,h:1,label:space.label,onHover:()=>{mapNav=reduceMapNav(mapNav,{type:'SELECT_SPACE',spaceId:space.id},model.map);remember();},onClick:()=>{mapNav=reduceMapNav(mapNav,{type:'SELECT_SPACE',spaceId:space.id},model.map);remember();}}));
+      floorSpaces.slice(start,start+listRows).forEach((space,index)=>addHit({id:`bag:space:${space.id}`,kind:'map-space',x:mapLayout.detail.x,y:mapLayout.detail.y+1+index,w:mapLayout.detail.w,h:1,label:space.label,onHover:()=>{mapNav=reduceMapNav(mapNav,{type:'SELECT_SPACE',spaceId:space.id},model.map);remember();},onClick:()=>{
+        const alreadySelected=selectedMapSpace(mapNav,model.map)?.id===space.id;
+        mapNav=reduceMapNav(mapNav,{type:'SELECT_SPACE',spaceId:space.id},model.map);remember();
+        if(alreadySelected&&space.waypointable!==false)activateSecondary();
+      }}));
     }else if(nav.sectionId==='skills'){
       const section=model.sections.find((candidate)=>candidate.id==='skills'),region=contentRegion(layout),tree=skillsTreeLayout({region,branches:section?.tree?.branches||[],maxTier:section?.tree?.maxTier||1});
       (section?.tree?.branches||[]).forEach((branch,branchIndex)=>branch.entries.forEach((entry)=>addHit({id:`bag:skill:${entry.id}`,kind:'bag-skill',x:tree.columnX(branchIndex)+.5,y:tree.tileY(entry.tier),w:tree.tileW,h:Math.max(1,tree.tileH-.35),label:entry.label,onHover:()=>selectSkill(entry),onClick:()=>{selectSkill(entry);if(entry.actions?.primary)execute(entry,entry.actions.primary.id);}})));
@@ -874,7 +892,7 @@ export function makeBagScene({
       const raw = e.key || '';
       const k = raw.toLowerCase();
       const code = e.code || '';
-      if (bagCloseInput(e)) { close(); return true; }
+      if (bagCloseInput(e)) { close({suppressReopen:true}); return true; }
       if(currentRoute().type!=='root')return handleRouteKey(e);
       if (backInput(e)) { close(); return true; }
 
@@ -947,11 +965,24 @@ export function makeBagScene({
       const route=currentRoute();
       if(route.type==='sheet-reader'){
         const size=uiSize(),reader=route.reader.view?.()||{page:0,total:1};
-        addHit({id:'bag:sheet-close',kind:'bag-close',x:Math.max(0,size.cols-20),y:0,w:20,h:3,label:'CLOSE BAG',onClick:close});
+        route.reader.render?.();
+        uiFill(0,0,size.cols,3,'rgba(8,10,11,.94)');
+        const compactTabs=size.cols<58,closeW=Math.min(14,Math.max(8,size.cols)),closeX=Math.max(0,size.cols-closeW);
+        let tabX=2;
+        for(const section of model.sections||[]){
+          const short=section.id==='kit'?'I':section.id==='map'?'M':section.id==='skills'?'K':'S';
+          const name=compactTabs?short:section.label;
+          const label=`[${section.id==='sheets'?' ':''}${name}${section.id==='sheets'?' ':''}]`;
+          uiText(tabX,0,label,section.id==='sheets'?'ui-amber':'ui-secondary',section.id==='sheets'?1:.68);
+          addHit({id:`bag:sheet-tab:${section.id}`,kind:'bag-tab',x:tabX,y:0,w:label.length,h:2,label:section.label,onClick:()=>setSection(section.id)});
+          tabX+=label.length+2;
+        }
+        uiText(2,1,fit(`FIELD CASE / SHEETS / ${route.document?.title||route.document?.id||'DOCUMENT'}`,Math.max(8,closeX-3)),'ui-label',.72);
+        uiText(closeX,1,'[B] CLOSE BAG','ui-amber',.9);
+        addHit({id:'bag:sheet-close',kind:'bag-close',x:closeX,y:1,w:closeW,h:2,label:'CLOSE BAG',onClick:close});
         addHit({id:'bag:sheet-back',kind:'bag-back',x:0,y:Math.max(0,size.rows-4),w:Math.max(8,Math.floor(size.cols*.25)),h:4,label:'BACK TO SHEETS',onClick:()=>route.reader.key?.({key:'Escape',code:'Escape'})});
         if(reader.page>0)addHit({id:'bag:sheet-prev',kind:'sheet-page',x:Math.floor(size.cols*.25),y:Math.max(0,size.rows-4),w:Math.floor(size.cols*.25),h:4,label:'PREVIOUS PAGE',onClick:()=>route.reader.key?.({key:'ArrowLeft',code:'ArrowLeft'})});
         if(reader.page<reader.total-1)addHit({id:'bag:sheet-next',kind:'sheet-page',x:Math.floor(size.cols*.5),y:Math.max(0,size.rows-4),w:Math.floor(size.cols*.5),h:4,label:'NEXT PAGE',onClick:()=>route.reader.key?.({key:'ArrowRight',code:'ArrowRight'})});
-        route.reader.render?.();
         debug?.({ model, nav, mapNav, layout:null, selected: currentBagEntry(nav, model), route, hitRegions:hits.view(), t });
         return;
       }
@@ -975,8 +1006,11 @@ export function makeBagScene({
       }
       const skills = nav.sectionId === 'skills';
       const subview=!['root','item-actions'].includes(route.type);
+      const selected=currentBagEntry(nav,model);
+      const sectionLabel=model.sections.find((section)=>section.id===nav.sectionId)?.label||nav.sectionId;
+      const breadcrumb=`FIELD CASE / ${sectionLabel}${route.type==='item-actions'&&selected?` / ${selected.title} / ACTIONS`:''}`;
       const liveHint = guided ? '' : (notice || (nav.sectionId === 'kit'
-        ? 'ONE INVENTORY · NUMBERED READY SLOTS · SELECT AN ITEM FOR SET / USE / DROP / INSPECT'
+        ? 'ONE INVENTORY · NUMBERED QUICK SLOTS FOR FIGHTS · SELECT AN ITEM FOR SET / USE / DROP / INSPECT'
         : skills
           ? 'CHOOSE RECORDER MODIFICATIONS · THEY TAKE EFFECT WHEN THE CASE CLOSES'
           : hintSource()));
@@ -988,7 +1022,7 @@ export function makeBagScene({
           : skills
           ? (region) => drawSkillsSection({ model, layout: region, selectedId: selectedSkill()?.id || null, now: t })
           : null,
-        overrideActions:subview?[['ESC','BACK'],['B','CLOSE BAG']]:null });
+        overrideActions:subview?[['ESC','BACK'],['B','CLOSE BAG']]:null,breadcrumb });
       uiText(Math.max(outer.x+2,outer.x+outer.w-18),outer.y,'[B] CLOSE BAG','ui-amber',.9);
       registerCommonHits(outer,layout);
       if(subview)registerSubviewHits(route,layout);else registerRootHits(layout);

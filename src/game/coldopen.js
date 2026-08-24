@@ -54,6 +54,8 @@ export function makeColdOpenScene({
   id = 'cold-open',
   beats = [], opening = null, startAt = 'start', slate = '', ambient = true, lensPreset = 'booth',
   onDone, onChoice, onLine, cue, fx, audio, getAudio, replay = null,
+  blocksWorld = true, allowsLook = false, suppressesHud = false,
+  worldUnderlay = false, worldView = null,
 } = {}) {
   const convo = createConversation({
     nodes: opening, beats, startAt, sceneId: id, replay, onChoice, onLine, cue, fx, audio, getAudio,
@@ -63,8 +65,11 @@ export function makeColdOpenScene({
   return {
     id,
     blocksInput: true,
-    blocksWorld: true,
+    blocksWorld,
+    allowsLook,
+    suppressesHud,
     lensPreset,
+    worldView: typeof worldView === 'function' ? worldView : () => worldView,
 
     enter() {
       if (ambient) { audio?.startSoundtrack?.(); audio?.startBoothTone?.(); }
@@ -83,7 +88,10 @@ export function makeColdOpenScene({
         const v = convo.view();
         const { cols, rows } = uiSize();
 
-        uiFill(0, 0, cols, rows, UI_COLOR.glass);
+        // Endings remain in the world. Their transcript is an instrument panel
+        // over the physical image, not a cut to the old full-screen black
+        // monitor. Other conversations retain the opaque cold-open surface.
+        if (!worldUnderlay) uiFill(0, 0, cols, rows, UI_COLOR.glass);
 
         // A two-channel monitor needs enough width for two distinct lanes. It
         // remains centered and capped, but no longer crushes the transcript into
@@ -366,16 +374,21 @@ export function makeBoothDownbeatHoldScene({ duration = 0, onDone, scrim = 0.28 
 // every existing caller and the god menu are unchanged.
 export function makeWorldTitleScene({
   onDone, audio, cue, camera = null,
-  duration = 12.0, turn = 1.3, iris = 1.6, threshold = null,
+  duration = 12.0, turn = 1.3, iris = 1.6,
 } = {}) {
   let t = 0;
   let done = false;
   let slammed = false;
+  let entryPose = null;
   const lead = camera ? turn + iris : 0;
 
   function finish() {
     if (done) return;
     done = true;
+    // Give the head back exactly as it was handed over. The turn is the scene's
+    // to make; the direction the player is left standing in is not — leaving
+    // them a half-turn round means the only way to face front again is to walk.
+    camera?.restore?.(entryPose);
     scenes.pop();
     onDone?.();
   }
@@ -387,7 +400,10 @@ export function makeWorldTitleScene({
     lensPreset: 'calm',
 
     // The song leaves before the title does, so the door slams into an empty mix.
-    enter() { audio?.fadeSoundtrack?.({ fade: Math.max(2, lead + duration - 2.4) }); },
+    enter() {
+      entryPose = camera?.pose?.() || null;
+      audio?.fadeSoundtrack?.({ fade: Math.max(2, lead + duration - 2.4) });
+    },
     update(dt) {
       t += dt;
       // The turn is driven a frame at a time rather than set, because r3dLook
@@ -438,38 +454,10 @@ export function makeWorldTitleScene({
 
       const w = Math.min(72, cols - 4), h = Math.min(17, rows - 4);
       const x = Math.floor((cols - w) / 2), y = Math.floor((rows - h) / 2);
-      const body = drawMachinePanel(x, y, w, h, {
-        label:threshold?'THRESHOLD':'PROGRAM',source:threshold?.source||'ELLERY',meter:true,
-      });
-      if(threshold){
-        const name=String(threshold.title||'GET-IN').toUpperCase();
-        drawVfdText(Math.max(body.x,Math.floor((cols-name.length)/2)),body.y+1,name,{color:UI_COLOR.amber,alpha:up(.35,.9)});
-        const detail=String(threshold.detail||'SERVICE ENTRY / INTERIOR').toUpperCase();
-        uiText(Math.max(body.x,Math.floor((cols-detail.length)/2)),body.y+3,detail,'ui-secondary',up(.8,1.1));
-        drawVfdText(Math.max(body.x,Math.floor((cols-12)/2)),body.y+6,'CHUNK SURFER',{color:UI_COLOR.primary,alpha:up(1.8,1.4)});
-        uiText(Math.max(body.x,Math.floor((cols-30)/2)),body.y+9,'ELLERY CONSERVATOIRE OF MUSIC','ui-blue',up(3.0));
-        uiText(Math.max(body.x,Math.floor((cols-31)/2)),body.y+11,'5 ROOMS / 1 CLEAN MINUTE EACH','ui-secondary',up(4.1));
-      }else{
-        drawVfdText(Math.max(body.x, Math.floor((cols - 12) / 2)), body.y + 2, 'CHUNK SURFER', { color:UI_COLOR.primary });
-        uiText(Math.max(body.x, Math.floor((cols - 30) / 2)), body.y + 5, 'ELLERY CONSERVATOIRE OF MUSIC', 'ui-blue', up(2.4));
-        uiText(Math.max(body.x, Math.floor((cols - 31) / 2)), body.y + 7, '5 ROOMS / 1 CLEAN MINUTE EACH', 'ui-secondary', up(3.6));
-      }
+      const body = drawMachinePanel(x, y, w, h, { label:'PROGRAM', source:'ELLERY', meter:true });
+      drawVfdText(Math.max(body.x, Math.floor((cols - 12) / 2)), body.y + 2, 'CHUNK SURFER', { color:UI_COLOR.primary });
+      uiText(Math.max(body.x, Math.floor((cols - 30) / 2)), body.y + 5, 'ELLERY CONSERVATOIRE OF MUSIC', 'ui-blue', up(2.4));
+      uiText(Math.max(body.x, Math.floor((cols - 31) / 2)), body.y + 7, '5 ROOMS / 1 CLEAN MINUTE EACH', 'ui-secondary', up(3.6));
     },
   };
-}
-
-// The title is earned at a literal threshold, so the arrival gets a named
-// presenter rather than asking every caller to remember the framing contract.
-// The turn, closer, iris and threshold slate all complete before the internal
-// debrief is allowed to open.
-export function makeGetInArrivalScene(options = {}) {
-  return makeWorldTitleScene({
-    ...options,
-    threshold:{
-      title:'GET-IN',
-      detail:'SERVICE ENTRY / WEATHER CUT',
-      source:'GET-IN',
-      ...(options.threshold||{}),
-    },
-  });
 }

@@ -11,6 +11,7 @@ import { PLAN_SCALE } from '../data/floorplan/legend.js';
 import {
   SAVE_VERSION,
   META_VERSION,
+  ENDING_IDS,
   DEFAULT_SETTINGS,
   freshMeta,
   freshRunRecord,
@@ -86,6 +87,10 @@ export const freshSave = ({ settings = DEFAULT_SETTINGS, run = null } = {}) => (
   dockHaunting: freshDockHauntingState(),
   practiceHaunts: freshPracticeHauntState(),
   basementWatcher: freshBasementWatcherState(),
+  // A terminal route has already paid its physical cost, but its embodied
+  // ending has not committed the return yet. Reload starts this cutscene over;
+  // it never tries to restore a half-read line or half-fired effect.
+  endingCutscene: null,
   plantIncident: null,
   // The head from the fountain in the park, and whether the gallery has it back.
   // Normalised on read by game/marble-head.js, same as plantIncident above.
@@ -94,6 +99,9 @@ export const freshSave = ({ settings = DEFAULT_SETTINGS, run = null } = {}) => (
   // read by game/yard-vigil.js rather than here, because the whole rule lives
   // in that module and this file has no business knowing what a vigil is.
   yardVigil: null,
+  // The exterior gathering's observation ledger is optional and normalised by
+  // game/exterior-vigil.js. Old saves therefore begin with a fresh seeded deal.
+  exteriorVigil: null,
   settings: normalizeSettings(settings),
   run,
 });
@@ -112,6 +120,16 @@ const boundedMs = (value) => Math.max(0, Math.min(7 * 24 * 60 * 60 * 1000, finit
 const finitePoint = (value) => value && Number.isFinite(Number(value.x)) && Number.isFinite(Number(value.y))
   ? { x: Number(value.x), y: Number(value.y) }
   : null;
+
+const ENDING_CUTSCENE_ARRIVALS = new Set(['agreed', 'defeated', 'timed-out', 'escaped', 'carried']);
+
+export function normalizeEndingCutsceneCheckpoint(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const endingId = String(value.endingId || '');
+  const arrival = String(value.arrival || '');
+  if (!ENDING_IDS.includes(endingId) || !ENDING_CUTSCENE_ARRIVALS.has(arrival)) return null;
+  return { schema: 1, endingId, arrival };
+}
 
 function normalizeHushAudioSave(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
@@ -260,6 +278,7 @@ function normalizeSaveV4(data, meta = null) {
     dockHaunting: normalizeDockHauntingState(source.dockHaunting),
     practiceHaunts: normalizePracticeHauntState(source.practiceHaunts),
     basementWatcher: normalizeBasementWatcherState(source.basementWatcher),
+    endingCutscene: normalizeEndingCutsceneCheckpoint(source.endingCutscene),
     settings,
     run: sanitizeRun(normalizeRun(source.run, {
       meta,

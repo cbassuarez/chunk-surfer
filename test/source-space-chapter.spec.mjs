@@ -25,10 +25,6 @@ function landscapeState({injuries=1}={}){
   return apply(state,'TRANSFORMATION_COMPLETED');
 }
 
-function withTuned(state,...ids){
-  return ids.reduce((next,id)=>apply(next,'LANDMARK_TUNED',{id}),state);
-}
-
 function reachable(runtime,start,goal,maxVisited=180000){
   const key=(x,y)=>`${x},${y}`;
   const queue=[[Math.round(start.x),Math.round(start.y)]];
@@ -52,6 +48,10 @@ function reachable(runtime,start,goal,maxVisited=180000){
   // fresh, untuned state, so nothing action-gates the walk.
   const state=landscapeState();
   const runtime=createSourceSpaceRuntime({initialState:state});
+  assert.equal('tuneFocused' in runtime,false);
+  assert.equal('recordFocused' in runtime,false);
+  assert.equal(runtime.sourceObjective().schema,2);
+  assert.equal('optionalProgress' in runtime.sourceObjective(),false);
   assert.equal(reachable(runtime,POINTS.entry,POINTS.fork),true,'the entry spine reaches the Fork Gate');
   assert.notEqual(runtime.geometry.cellAt(0,-330),null,'the field is open for exploration from the start — no action walls the downstream source');
   assert.equal(reachable(runtime,POINTS.fork,POINTS.surfer),true,'the Surfer Origin loop is reachable without tuning');
@@ -76,13 +76,11 @@ function reachable(runtime,start,goal,maxVisited=180000){
 }
 
 {
-  let state=withTuned(landscapeState(),'fork-room');
+  let state=landscapeState();
   state=apply(state,'SOURCE_LIFT_COMPLETED',{id:'lift-fork',checkpointId:'landing-fork'});
   const runtime=createSourceSpaceRuntime({initialState:state});
-  // The objective names the PLACE and its elevation now, not the button: the
-  // level is legible by geometry, so the label should read like a direction
-  // rather than like a control prompt.
-  assert.match(runtime.sourceObjective().label,/TRACE IS ONE TIER UP/,'the objective no longer says where to go');
+  assert.equal(runtime.sourceObjective().label,'REACH THE FINAL HORIZON',
+    'the post-lift objective names the destination without an equipment verb');
   const diagonal={x:-22,y:-56};
   const tangent={x:-44,y:-28};
   const length=Math.hypot(tangent.x,tangent.y);
@@ -98,7 +96,7 @@ function reachable(runtime,start,goal,maxVisited=180000){
 {
   // The landing tableau is safe. The first completed lift is the explicit
   // pursuit activation seam; ordinary landscape movement cannot arm it early.
-  let state=withTuned(landscapeState(),'fork-room','recordist-loop');
+  let state=landscapeState();
   const runtime=createSourceSpaceRuntime({initialState:state});
   assert.equal(runtime.hushMode().landingTableau,true);
   assert.equal(runtime.hushMode().colliding,false);
@@ -109,18 +107,23 @@ function reachable(runtime,start,goal,maxVisited=180000){
 }
 
 {
-  let state=withTuned(landscapeState(),'fork-room','recordist-loop');
+  let state=landscapeState();
   state=apply(state,'SOURCE_LIFT_COMPLETED',{id:'lift-fork',checkpointId:'landing-fork'});
   state=apply(state,'LANDMARK_VISITED',{id:'body-room'});
   const runtime=createSourceSpaceRuntime({initialState:state});
-  assert.match(runtime.sourceObjective().label,/BODY RETURN IS ABOVE THE TRACE/);
+  assert.equal(runtime.sourceObjective().label,'REACH THE FINAL HORIZON');
   runtime.onStep({x:70,y:-552},{x:80,y:-564,facing:0});
-  assert.equal(runtime.state().phase,'landscape','merely visiting Body Return cannot satisfy an objective that asks the player to tune it');
+  assert.equal(runtime.state().phase,'final','the final page is tool-independent');
+  runtime.setPlayerPosition(POINTS.final);
+  assert.equal(runtime.finalEncounterRequest().bodyReturnAssist,true,
+    'visiting Body Return still earns its optional combat assist');
 }
 
 {
-  let state=withTuned(landscapeState(),'fork-room','recordist-loop','surfer-origin','work-order-loop','body-room');
-  state=apply(state,'LANDMARK_RECORDED',{id:'body-room'});
+  let state=landscapeState();
+  for(const id of ['fork-room','recordist-loop','surfer-origin','work-order-loop','body-room']){
+    state=apply(state,'LANDMARK_VISITED',{id});
+  }
   state=apply(state,'SOURCE_CONTACT_RESOLVED',{checkpointId:'landing-return',contact:{
     captures:3,
     insights:['music-human-name','surfer-vessel','borrowed-body-return'],
@@ -138,7 +141,9 @@ function reachable(runtime,start,goal,maxVisited=180000){
   assert.equal(runtime.finalEncounterRequest().adapter,null,'the optional battle never begins merely by reaching the horizon');
   assert.equal(runtime.finalEncounterRequest().normalExitAvailable,true);
   assert.equal(runtime.requestBossBattle().available,true);
-  assert.equal(runtime.finalEncounterRequest().adapter,'combat-v1','selecting the exposed fault opens the shared deterministic combat contract');
+  assert.equal(runtime.finalEncounterRequest().adapter,null,'the warning does not silently commit Contact');
+  assert.equal(runtime.commitContact().handled,true);
+  assert.equal(runtime.finalEncounterRequest().adapter,'combat-v1','accepting NO RETURN opens the shared deterministic combat contract');
   const result=runtime.resolveFinalEncounter({outcome:SOURCE_FINAL_OUTCOME.RESCUE,won:true,channels:{rescue:4,contain:1,submit:0},turns:9,compatibility:{fightVersion:'signal-combat'}});
   assert.equal(result.handled,true);
   assert.equal(runtime.state().completed,true);
@@ -162,11 +167,12 @@ function reachable(runtime,start,goal,maxVisited=180000){
 }
 
 {
-  let armed=withTuned(landscapeState(),'fork-room','recordist-loop');
+  let armed=landscapeState();
+  for(const id of ['fork-room','recordist-loop'])armed=apply(armed,'LANDMARK_VISITED',{id});
   armed=apply(armed,'CHECKPOINT_SET',{id:'recordist-loop'});
   armed=apply(armed,'PURSUIT_STARTED',{id:SOURCE_PURSUIT_BEAT.BODY_RUN});
-  let final=withTuned(armed,'surfer-origin','work-order-loop','body-room');
-  final=apply(final,'LANDMARK_RECORDED',{id:'body-room'});
+  let final=armed;
+  for(const id of ['surfer-origin','work-order-loop','body-room'])final=apply(final,'LANDMARK_VISITED',{id});
   final=apply(final,'PURSUIT_CLEARED',{id:SOURCE_PURSUIT_BEAT.BODY_RUN});
   final=apply(final,'PURSUIT_STARTED',{id:SOURCE_PURSUIT_BEAT.FINAL_RUN});
   const ready=apply(final,'FINAL_REACHED');

@@ -91,6 +91,55 @@ export const ENDING_ARCHIVE = Object.freeze({
       'This file is closed on the grounds that he has returned. There is no other ground available on the form.',
     ),
   }),
+
+  'open-channel-log': Object.freeze({
+    id: 'open-channel-log',
+    title: 'OPEN CHANNEL LOG · SOURCE',
+    classification: 'CONTACT / VICTORY',
+    filedBy: 'W. ELLERY · SIGNAL REVIEW',
+    body: () => list(
+      'The Source carrier terminates at contact. No further force response is present on the monitor, the field recorder or the building return.',
+      'The contractor transmits from the conservatoire after the termination. Forty-one seconds of breathing follow the last words; no further movement is recorded.',
+      'The gate ledger retains OPEN CHANNEL in the RETURNED column. The contractor did not return to the gate and no rescue is entered.',
+      'The run is filed as victory because the force ended. The channel is not evidence that its operator survived it.',
+    ),
+  }),
+  'no-return-notice': Object.freeze({
+    id: 'no-return-notice',
+    title: 'NO RETURN NOTICE · CARRIER',
+    classification: 'CONTACT / TERMINAL',
+    filedBy: 'W. ELLERY · SIGNAL REVIEW',
+    body: () => list(
+      'The contractor acknowledged the terminal carrier warning and deliberately opened contact at the Source fault.',
+      'No Horizon state, chapel transition or exterior return follows. This absence is consistent across the monitor, recorder and access log.',
+      'The Source architecture and force response persist after the carrier fails. The defeated body remains visible inside the field as the camera return recedes.',
+      'Carrier lost. The force is not closed and no further action is possible within this run.',
+    ),
+  }),
+  'cathedral-return-sheet': Object.freeze({
+    id: 'cathedral-return-sheet',
+    title: "ST BRENDAN'S · VISITOR RETURN",
+    classification: 'TOWER / EXTRACTION',
+    filedBy: 'DIOCESAN PROPERTY OFFICE',
+    body: () => list(
+      "Two men exited St Brendan's Cathedral through the ceremonial west doors before dawn. Neither is recorded as entering.",
+      'Dust and cloth marks form one clear drag route from the crossing, through the nave and over the west threshold. The abandoned visitor shop was not entered.',
+      'The six bells and frame are intact. No bell is recorded as having swung, although fresh abrasion is present on the clappers and crossing screen.',
+      'The exterior latch remains absent. Re-entry from the yard was not possible when inspected.',
+    ),
+  }),
+  'full-peal-report': Object.freeze({
+    id: 'full-peal-report',
+    title: "ST BRENDAN'S · FULL PEAL REPORT",
+    classification: 'TOWER / TERMINAL',
+    filedBy: 'DIOCESAN PROPERTY OFFICE',
+    body: () => list(
+      'Six bells were reported simultaneously from the disused cathedral. The bells were found mouth-down and the wheels at rest.',
+      'Two carrier signatures reach the crossing. Neither reaches the south porch or west door.',
+      'The waveform completes a conventional full peal only when both signatures are treated as part of the instrument.',
+      'No ringing controls were present at ground level. The matter is recorded as an unexplained structural transmission.',
+    ),
+  }),
 });
 
 export function endingArchiveEntry(id) {

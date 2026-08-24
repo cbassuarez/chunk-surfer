@@ -33,6 +33,11 @@ assert.equal(floors.lux_nova, 'u1');
 assert.ok(source.connectors.some((connector) => [connector.a.floorId, connector.b.floorId].includes('b1')));
 assert.ok(source.connectors.some((connector) => [connector.a.floorId, connector.b.floorId].includes('u1')));
 assert.ok(source.connectors.some((connector) => [connector.a.floorId, connector.b.floorId].includes('academic')));
+assert.equal(source.spaces.length, BUILDING_MAP.spaces.length, 'every authored facility space resolves into the live map');
+assert.equal(source.spaces.some((space) => !space.floorId), false, 'no named facility space is left without a structural floor');
+assert.equal(source.spaces.find((space) => space.id === 'space:ensemble-room')?.floorId, 'u1');
+assert.equal(source.spaces.filter((space) => space.floorId === 'academic').length, 15,
+  'the third-floor plan retains the loggia, gallery, circulation, classrooms and offices');
 
 const start = project(ROOM_CELLS.main_b3);
 const job = { done:0, total:5, rooms:TARGETS.map((roomId) => ({ roomId, label:roomId, notes:[], recorded:false })) };

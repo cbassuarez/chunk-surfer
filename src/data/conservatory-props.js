@@ -8,9 +8,11 @@ import {
   districtLogicalAt,
 } from './exterior-district.js';
 import { OPENING_STREET_MESHES, OPENING_STREET_PROPS } from './opening-street.js';
+import { VIGIL_MESHES, VIGIL_PART_MESHES, vigilFigures, vigilParts } from './exterior-vigil.js';
 import { YARD_PARK_MESHES, YARD_PARK_PROPS } from './yard-park.js';
 import { BASEBOARDS } from './generated/prop-geometry.js';
 import { CHURCH_COLLIDERS } from './st-brendans.js';
+import { VEGETATION_FALLBACKS, VEGETATION_MESHES } from './vegetation.js';
 
 const P = (id, mesh, x, y, yaw = 0, extra = {}) => ({ id, mesh, x, y, yaw, scale:1, ...extra });
 const CPG = (x,y) => ({x:112+x,y:125+y});
@@ -85,6 +87,7 @@ const DOCK_SHUTTER = [{worldId:'dock_shutter',fileLabel:'01'}];
 export const PROP_MESH = Object.freeze({
   ...OPENING_STREET_MESHES,
   ...YARD_PARK_MESHES,
+  ...VEGETATION_MESHES,
   school_desk:{w:.72,d:.78,blocks:true}, pew:{w:2.8,d:.72,blocks:true},
   chair:{w:.52,d:.56,blocks:false}, music_stand:{w:.45,d:.45,blocks:false},
   instrument_case:{w:1.25,d:.5,blocks:false}, equipment_cart:{w:1.2,d:.72,blocks:true},
@@ -134,7 +137,9 @@ export const PROP_MESH = Object.freeze({
   costume_rail:{w:1.6,d:.55,h:1.62,blocks:true},
   rolled_lino:{w:.62,d:.42,h:1.78,blocks:true},
   pool_lane_markings:{w:10.2,d:15.5,blocks:false},
-  bay_canopy:{w:7.4,d:7.6,blocks:false},
+  bay_canopy:{w:8.2,d:9.2,h:5.7,blocks:false},
+  getin_sightline_shell:{w:16.6,d:12.5,h:5.7,blocks:false},
+  yard_dock_access:{w:4.4,d:9.2,h:2.0,blocks:false},
   yard_booth:{w:3.4,d:3.0,blocks:false}, yard_booth_glazing:{w:3.1,d:2.7,blocks:false},
   yard_booth_interior:{w:2.7,d:2.4,blocks:false}, yard_booth_practicals:{w:2,d:2,blocks:false},
   yard_booth_guard_idle:{w:.7,d:.7,blocks:false}, yard_booth_guard_ledger:{w:.8,d:.8,blocks:false},
@@ -143,6 +148,11 @@ export const PROP_MESH = Object.freeze({
   yard_lamp_column:{w:2.4,d:.6,blocks:false}, yard_skip:{w:3.7,d:1.9,blocks:false},
   yard_clutter:{w:6.0,d:3.2,blocks:false}, yard_markings:{w:16.0,d:13.0,blocks:false},
   yard_sign:{w:1.9,d:.2,blocks:false}, yard_road:{w:34.4,d:11.0,blocks:false},
+  demolition_scaffold_run:{w:7.8,d:1.4,h:7.2,blocks:true},
+  demolition_excavator:{w:2.4,d:6.0,h:3.4,blocks:true},
+  demolition_heras_fence:{w:4.1,d:.7,h:2.15,blocks:true},
+  demolition_light_tower:{w:1.5,d:1.4,h:4.8,blocks:true},
+  demolition_generator:{w:2.5,d:3.6,h:1.55,blocks:true},
   yard_gate_piers:{w:1.0,d:14.0,blocks:false}, yard_hedge_run:{w:2.0,d:11.6,blocks:false},
   // The full depth of the yard now, not the 46.5 the yard used to be. The mesh
   // is authored in absolute local z (-7.5..84.5) and is deliberately NOT centred
@@ -188,6 +198,11 @@ export const PROP_MESH = Object.freeze({
   ambient_cyclist:{w:.7,d:1.8,h:1.75,blocks:false},
   ambient_dog_walker:{w:1.8,d:1.5,h:1.8,blocks:false},
   ambient_awning_figure:{w:.65,d:.45,h:1.78,blocks:false},
+  // The overnight vigil. These BLOCK — a crowd you can walk through is not a
+  // crowd — so the boxes are the real footprints, kit included, and the
+  // clearances in data/exterior-vigil.js are what keeps them out of the route.
+  ...VIGIL_MESHES,
+  ...VIGIL_PART_MESHES,
   exterior_bus_woman:{w:.85,d:.62,h:1.76,blocks:false},
   exterior_mews_neighbor:{w:.82,d:.60,h:1.82,blocks:false},
   exterior_pub_driver:{w:.88,d:.66,h:1.84,blocks:false},
@@ -357,6 +372,11 @@ export const CONSERVATORY_PROPS = [
   // turn round from the grey door, and what stops the conservatory's own mass
   // rendering as a black slab against the yard's sky.
   P('bay-canopy','bay_canopy',53.0,7.5,0,{interactive:false,structural:true}),
+  // Exterior observers do not receive the ray-marched interior plan. This
+  // aligned, non-colliding room shell is therefore the view through the open
+  // goods doors; prop-visibility hides it again as soon as the real Get-In
+  // becomes the active envelope.
+  P('bay-getin-sightline','getin_sightline_shell',53.0,7.5,0,{interactive:false,structural:true}),
   // The apron is a working loading throat, not four anonymous planes. These
   // shallow fixtures stay on the real floorplan walls (mount:'wall') and use
   // bay ids so the exterior visibility pass retains them on the walk in.
@@ -418,6 +438,13 @@ export const CONSERVATORY_PROPS = [
   // the opening the gate exists to be. The hedges and fences either side are
   // what actually bound the boundary.
   P('yard-markings','yard_markings',94.0,207.5,0,{interactive:false,structural:true}),
+  // The floorplan owns both pedestrian flights; this is their visible steel,
+  // paint and handrail construction. Anchor at physical (47.5,7.5), lifted
+  // from the -0.85m yard floor to apron datum so its authored negative tread
+  // heights sit exactly on the four collision risers.
+  P('yard-dock-access','yard_dock_access',97.0,207.0,0,{
+    elevation:.85,interactive:false,structural:true,blocks:false,
+  }),
   P('yard-fence-west','yard_fence_run',70.0,210.0,0,{interactive:false,structural:true,blocks:true}),
   P('yard-fence-north','yard_fence_run',83.0,201.5,Math.PI/2,{interactive:false,structural:true,blocks:true}),
   // THE LODGE, which is the only thing in the game you talk to a person through.
@@ -446,9 +473,16 @@ export const CONSERVATORY_PROPS = [
   // date is a fortnight away, or that the site notice has the wrong company on it.
   P('yard-sign','yard_sign',70.5,213.5,Math.PI/2,{
     structural:true,label:'the site notice',inspectAt:{x:71.4,y:213.5},
+    // IT USED TO SAY FOURTEEN DAYS, AND NOTHING ELSE IN THE GAME AGREED.
+    //
+    // The window slate, the closed work order and the vigil's own organiser all
+    // give the same time — 06:00 on Thursday — and this sign was the only thing
+    // on site still counting in fortnights. Ruth Mallory now says out loud that
+    // the number stopped being changed in March, which turns the disagreement
+    // from an error into the ordinary municipal fact it always was.
     inspect:inspect(
-      'DEMOLITION NOTICE. Fourteen days. The contractor is a name you have never heard of and the client is W. ELLERY HOLDINGS, which is the name on your work order.',
-      'Fourteen days. It is the only date on this site that anybody has bothered to keep current.',
+      'DEMOLITION NOTICE. Works commence 06:00 Thursday. The contractor is a name you have never heard of and the client is W. ELLERY HOLDINGS, which is the name on your work order.',
+      'Six on Thursday. The board beside it still counts down in fourteens, and stopped being changed some time in March.',
     ),
   }),
   P('yard-lamp-column','yard_lamp_column',72.0,204.0,Math.PI,{interactive:false,structural:true,blocks:true}),
@@ -465,6 +499,57 @@ export const CONSERVATORY_PROPS = [
       'Forty stacking chairs under a tarpaulin, banded and labelled for collection. Somebody catalogued these. Nobody came.',
       'Still banded. Still labelled. Still here.',
     ),
+  }),
+
+  // ── DEMOLITION PLANT ───────────────────────────────────────────────────
+  //
+  // The notice and the skip establish intent; the plant establishes scale.
+  // All positions below are on the yard's physical plan, expressed through its
+  // stable logical island (physical + 50,+200). Nothing enters the protected
+  // van-to-grey-door sightline, and every scaffold stays tight to an actual
+  // facade instead of becoming a freestanding obstacle course.
+  ...[
+    ['academic',48.0,22.0],
+    ['school',48.0,61.0],
+    ['baths',48.0,81.5],
+  ].map(([name,x,y])=>P(`conservatoire-construction-scaffold-${name}`,'demolition_scaffold_run',50+x,200+y,Math.PI/2,{
+    interactive:false,structural:true,blocks:true,
+  })),
+  P('conservatoire-construction-generator','demolition_generator',94.5,226.0,Math.PI/2,{
+    interactive:false,structural:true,blocks:true,
+  }),
+  P('conservatoire-construction-light-tower','demolition_light_tower',94.4,212.8,0,{
+    interactive:false,structural:true,blocks:true,
+  }),
+  P('conservatoire-construction-barrier','demolition_heras_fence',97.2,215.4,Math.PI/2,{
+    interactive:false,structural:true,blocks:true,
+  }),
+
+  // St Brendan's remains usable from the inside, so the temporary fence is
+  // interrupted at the west door and the south porch rather than simply drawn
+  // around the footprint. Two scaffold lifts hug the north aisle; a third sits
+  // beyond the east wall. The excavator works in the strip between cathedral
+  // and conservatoire, never across either exit's landing.
+  ...[
+    ['nave-west',7.0,64.0,Math.PI/2],
+    ['nave-east',7.0,78.0,Math.PI/2],
+    ['east-end',16.0,86.2,0],
+  ].map(([name,x,y,yaw])=>P(`cathedral-construction-scaffold-${name}`,'demolition_scaffold_run',50+x,200+y,yaw,{
+    interactive:false,structural:true,blocks:true,
+  })),
+  ...[
+    ['west-north',11.3,53.4,0],
+    ['west-south',20.7,53.4,0],
+    ['porch-west',26.0,67.0,Math.PI/2],
+    ['porch-east',26.0,80.5,Math.PI/2],
+  ].map(([name,x,y,yaw])=>P(`cathedral-construction-barrier-${name}`,'demolition_heras_fence',50+x,200+y,yaw,{
+    interactive:false,structural:true,blocks:true,
+  })),
+  P('cathedral-construction-light-tower','demolition_light_tower',55.5,254.0,-.25,{
+    interactive:false,structural:true,blocks:true,
+  }),
+  P('demolition-excavator-between-buildings','demolition_excavator',78.5,263.0,.08,{
+    interactive:false,structural:true,blocks:true,
   }),
   P('yard-road','yard_road',58.0,207.5,0,{interactive:false,structural:true}),
 
@@ -628,6 +713,10 @@ export const CONSERVATORY_PROPS = [
   P('brendan-sacristy-tomb','cathedral_tomb',CPG(22,79).x,CPG(22,79).y,0,{renderGroups:['ground'],inspect:inspect('A chest tomb pressed into the sacristy wall. Bird lime has found it even here.','A stone sleeper under dust and feathers.')}),
   P('brendan-organ-case','tower_organ_case',CPL(16,58.2).x,CPL(16,58.2).y,Math.PI,{structural:true,blocks:true,renderGroups:['cathedral']}),
   P('brendan-organ-console','organ_console',CPL(16,60).x,CPL(16,60).y,0,{renderGroups:['cathedral'],...play('lux_nova','A small loft organ. The blower cable has been cut back to the wall and every stop is in.','No power. No wind.')}),
+  P('brendan-visitor-desk','box_office_desk',CPG(21.45,72).x,CPG(21.45,72).y,Math.PI/2,{renderGroups:['ground'],inspect:inspect('A visitor desk abandoned under dust. Its shallow drawers contain rubber bands, a pencil worn to the ferrule, and no money.','The visitor desk keeps the shape of its last closing.')}),
+  P('brendan-visitor-guidebooks','program_stack',CPG(21.45,72).x,CPG(21.45,72).y,Math.PI/2,{on:'brendan-visitor-desk',renderGroups:['ground'],inspect:inspect("Guidebooks to St Brendan's, their tower diagram printed before the bell frame acquired this much dust.",'The same crossing, reduced to a clean black plan.')}),
+  P('brendan-visitor-till','cash_terminal',CPG(21.45,72.35).x,CPG(21.45,72.35).y,Math.PI/2,{on:'brendan-visitor-desk',renderGroups:['ground'],inspect:inspect('A dead donation till. The paper roll reads THANK YOU FOR HELPING US KEEP THE BELLS SOUNDING.','No power. The last receipt remains uncut.')}),
+  P('brendan-visitor-postcards','notice_board',CPG(22.45,74.35).x,CPG(22.45,74.35).y,Math.PI,{mount:'wall',elevation:1.15,renderGroups:['ground'],inspect:inspect('Postcards fade in a wire display: west front, crossing tower, six bells, cold glass.','Every card shows an entrance. None shows this way out.')}),
 
   // ── The boundary, which stands BETWEEN you and the man in the booth ──
   //
@@ -650,7 +739,10 @@ export const CONSERVATORY_PROPS = [
   // The booth stays north of the opening, so you see it PAST the ironwork.
   P('yard-gate-piers','yard_gate_piers',77.5,207.5,0,{interactive:false,structural:true}),
   P('yard-hedge-near','yard_hedge_run',78.4,216.0,0,{interactive:false,structural:true,blocks:true}),
-  P('yard-hedge-far','yard_hedge_run',78.4,227.0,0,{interactive:false,structural:true,blocks:true}),
+  P('yard-hedge-far','yard_hedge_corner',78.4,227.0,0,{fallbackMesh:VEGETATION_FALLBACKS.yard_hedge_corner,interactive:false,structural:true,blocks:true}),
+  P('yard-hedge-near-nettles','vegetation_nettle_cluster',77.75,219.4,.18,{interactive:false,structural:true,blocks:false}),
+  P('yard-hedge-far-weeds','vegetation_weed_cluster',79.05,224.4,-.52,{interactive:false,structural:true,blocks:false}),
+  P('yard-hedge-fall','vegetation_leaf_scatter',78.0,230.2,.08,{interactive:false,structural:true,blocks:false}),
 
   // THE SECOND YARD USED TO BE HERE, AND IT WAS STILL BEING DRAWN.
   //
@@ -970,7 +1062,7 @@ export const CONSERVATORY_PROPS = [
   P('academic-garden-planter-east','academic_planter',86.7,17.6,-.08,{renderGroups:['ground','academic'],interactive:false}),
   P('academic-garden-basin','academic_dry_basin',83.6,14.6,0,{renderGroups:['ground','academic'],interactive:false}),
   P('academic-garden-tree-west','academic_dead_tree',80.4,11.0,-.18,{renderGroups:['ground','academic'],interactive:false,elevation:.66}),
-  P('academic-garden-tree-east','academic_dead_tree',86.8,17.6,.28,{renderGroups:['ground','academic'],interactive:false,elevation:.66,scale:.82}),
+  P('academic-garden-tree-east','academic_dead_tree_b',86.8,17.6,.28,{fallbackMesh:VEGETATION_FALLBACKS.academic_dead_tree_b,renderGroups:['ground','academic'],interactive:false,elevation:.66,scale:.82}),
   P('academic-garden-leaves-north','academic_leaf_litter',83.0,9.0,.22,{renderGroups:['ground','academic'],interactive:false}),
   P('academic-garden-leaves-south','academic_leaf_litter',84.8,19.1,-.18,{renderGroups:['ground','academic'],interactive:false}),
   P('academic-light-emergency-west','tower_bulkhead',28.5,248.0,Math.PI/2,{
@@ -1504,7 +1596,14 @@ export const CONSERVATORY_PROPS = [
   // the take room's only practical: it was authored zoned to the dance wing and
   // therefore resolved for nobody standing in it.
   P('light-b3-work-casing','tower_bulkhead',18,6,0,{elevation:2.45,renderOffsetZ:-.25,interactive:false,structural:true,lightCircuit:'sp01',lightColor:[.78,.78,.65]}),
-  P('light-b3-emergency-casing','tower_bulkhead',23.5,20.5,Math.PI,{elevation:2.15,renderOffsetZ:.25,interactive:false,structural:true,lightCircuit:'sp01',lightColor:[1,.018,.008]}),
+  // 20.75, not 20.5. `tower_bulkhead` is a wall asset and snapToWall backs it
+  // into the masonry behind it — but propsInit drops any prop whose own cell is
+  // solid BEFORE resolveContacts gets to snap it, and 20.5 rounds onto the wall
+  // itself. B3's emergency casing was silently never placed: the fitting was
+  // invisible and its light fell through to the authored fallback (b3-emergency
+  // is at 20.75, which is this cell). A wall-mounted prop is authored on the
+  // FLOOR beside its wall.
+  P('light-b3-emergency-casing','tower_bulkhead',23.5,20.75,Math.PI,{elevation:2.15,renderOffsetZ:.25,interactive:false,structural:true,lightCircuit:'sp01',lightColor:[1,.018,.008]}),
   P('light-dance-work-casing','tower_bulkhead',32,6,0,{elevation:2.45,renderOffsetZ:-.25,interactive:false,structural:true,lightCircuit:'sp01',lightColor:[.78,.78,.65]}),
   P('light-foh-west-casing','tower_bulkhead',75,18.5,-Math.PI/2,{elevation:3.25,renderOffsetX:-.25,interactive:false,structural:true,lightCircuit:'sp03',lightColor:[.74,.82,.78]}),
   P('light-foh-east-casing','tower_bulkhead',92,10.5,Math.PI,{elevation:3.25,renderOffsetZ:.25,interactive:false,structural:true,lightCircuit:'sp03',lightColor:[.74,.82,.78]}),
@@ -1556,4 +1655,29 @@ export const CONSERVATORY_PROPS = [
   // Get-In. Runtime replaces/removes these same ids as they are collected.
   P('van-adjustable-spanner','adjustable_spanner',64.6,208.0,.18,{elevation:1.14,action:'plant-spanner',label:'blue-handled adjustable spanner',interactionPriority:5,inspect:inspect('Your blue-handled adjustable spanner, laid across the lit shelf beside the blanket.','The bright rectangle on the van shelf is bare where it lay.')}),
   P('getin-heavy-stillson','stillson_wrench',70.5,6.25,.08,{action:'plant-heavy-wrench',label:'oversized Stillson wrench',interactionPriority:4,inspect:inspect('A Stillson nearly two metres long, left across the maintenance rack.','Too large for the field case. It will have to travel on the floor.')}),
+
+  // ── THE VIGIL ────────────────────────────────────────────────────────────
+  //
+  // Twenty-four people who decided to be outside the building until six on
+  // Thursday. Six of them talk; the other eighteen are background with real
+  // collision and no interaction, which is what stops the crowd reading as six
+  // hotspots standing in a photograph.
+  //
+  // Placement, kit and every line they say are authored in
+  // data/exterior-vigil.js in YARD-PHYSICAL metres; the yard island's logical
+  // origin (50, 200) is added here and nowhere else.
+  ...vigilFigures().map((figure)=>P(
+    figure.id,figure.mesh,50+figure.x,200+figure.y,figure.yaw,
+    figure.talkable
+      ? {
+        structural:true,blocks:true,action:'exterior-vigil',vigilId:figure.voiceId,
+        label:figure.label,knownLabel:figure.knownLabel,vigilCluster:figure.cluster,vigilActionSet:figure.actionSet,interactionPriority:3,
+        inspectAt:{x:50+figure.facePoint.x,y:200+figure.facePoint.y},
+      }
+      : {interactive:false,structural:true,blocks:true,vigilCluster:figure.cluster,vigilActionSet:figure.actionSet},
+  )),
+  ...vigilParts().map((entry)=>P(
+    entry.id,entry.mesh,50+entry.x,200+entry.y,entry.yaw,
+    {interactive:false,structural:true,blocks:false,vigilActorId:entry.actorId||null,vigilCluster:entry.cluster},
+  )),
 ];

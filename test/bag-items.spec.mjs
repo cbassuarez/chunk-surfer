@@ -54,7 +54,6 @@ test('the action resolver exposes the full semantic descriptor contract', () => 
     ['radio', { present: false, dropped: true }, 'radio-show-map', 'SHOW ON MAP', BAG_ACTION_MODE.OPEN],
     ['interface', {}, 'inspect-interface', 'INSPECT', BAG_ACTION_MODE.DIALOG],
     ['tuning-fork', {}, 'inspect-tuning-fork', 'INSPECT', BAG_ACTION_MODE.DIALOG],
-    ['tuning-fork', { sourceTargetFocused: true }, 'source-tune', 'TUNE', BAG_ACTION_MODE.COMMAND],
     ['coffee', {}, 'coffee-drink', 'DRINK', BAG_ACTION_MODE.CONSUME],
     ['plant-spanner', {}, 'inspect-plant-spanner', 'INSPECT', BAG_ACTION_MODE.DIALOG],
     ['marble-eyes', {}, 'inspect-marble-eyes', 'INSPECT', BAG_ACTION_MODE.DIALOG],
@@ -80,6 +79,8 @@ test('the action resolver exposes the full semantic descriptor contract', () => 
   const missing = resolveBagItemAction('radio', { present: false, missing: true });
   assert.equal(missing.enabled, false);
   assert.equal(missing.reason, 'ITEM NOT CARRIED');
+  assert.equal(resolveBagItemAction('tuning-fork',{sourceTargetFocused:true}).id,'inspect-tuning-fork',
+    'Source focus cannot turn the combat fork into an exploration command');
 });
 
 test('ownership transitions keep each acquisition in one truthful case home', () => {
@@ -158,13 +159,13 @@ test('deployed radio stays actionable and detail copy never invents a verb', () 
   });
   const radio = bagEntry(model, 'kit', 'gear:radio');
   assert.equal(radio.present, false);
-  assert.equal(radio.compartment, 'storage', 'deployed gear is not depicted in READY NOW');
+  assert.equal(radio.compartment, 'storage', 'deployed gear is not depicted in the quick slots');
   assert.equal(radio.actions.primary.label, 'SHOW ON MAP');
-  assert.equal(radio.actions.secondary, null, 'a deployed radio cannot remain READY NOW');
+  assert.equal(radio.actions.secondary, null, 'a deployed radio cannot remain in a quick slot');
   assert.match(bagKitDetailAction(radio), /SHOW ON MAP/);
 
   const keepsake = bagEntry(model, 'kit', 'gear:unknown-keepsake');
-  assert.equal(bagKitDetailAction(keepsake), 'NO DIRECT ACTION');
+  assert.equal(bagKitDetailAction(keepsake), 'NO ACTION AVAILABLE FROM THE BAG');
   assert.doesNotMatch(bagKitDetailAction(keepsake), /\[/, 'no dead button glyph is printed');
   const map = bagEntry(model, 'kit', 'gear:map');
   assert.equal(bagKitDetailAction(map), 'ITEM NOT CARRIED');

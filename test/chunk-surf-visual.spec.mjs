@@ -45,7 +45,7 @@ function landscapeState(){
 
 function fullyOpenLandscapeState(){
   let state=landscapeState();
-  for(const id of ['fork-room','recordist-loop','body-room'])state=reduceChunkSurf(state,{type:'LANDMARK_TUNED',id});
+  for(const id of ['fork-room','recordist-loop','body-room'])state=reduceChunkSurf(state,{type:'LANDMARK_VISITED',id});
   return state;
 }
 
@@ -62,18 +62,38 @@ assert.ok(CHUNK_SURF_ROOMS.every((room) => !('lines' in room) && !('tunedLines' 
 
 const mainSource=await readFile(resolve('src/main.js'),'utf8');
 const rendererSource=await readFile(resolve('src/render/r3d.js'),'utf8');
-const crossingSource=await readFile(resolve('src/game/source-tower-transition-scene.js'),'utf8');
 assert.match(mainSource,/tickHushAudio\(dt\);\s*tickChunkSurfOffer\(\);\s*tickSourceSpace\(dt\);/,'chapel Source offer is evaluated in the live world loop');
 assert.match(mainSource,/function tickChunkSurfOffer\(\)\{[\s\S]*?return false;[\s\S]*?\}/,'proximity polling cannot auto-enter Source Space');
 assert.match(mainSource,/ENTER SOURCE/,'the chapel threshold exposes an explicit Source interaction');
 assert.match(mainSource,/if\(usingSourceSpace\(\)\)\{drawSourceHud\(cols,rows\);return;\}/,'Source uses its own HUD before any building map, battery, or takes UI');
 assert.match(mainSource,/const pressureRemainsLive=topSourceScene\?\.sourcePressureLive===true;/,'Source scenes can explicitly keep chapter pressure live');
 assert.match(mainSource,/if\(SPEECH\.isSpeaking\(\)\|\|\(scenes\.blocksInput\(\)&&!pressureRemainsLive\)\)chunkSurfRuntime\.protectMoment/,'dialogue and ordinary blocking handoffs suspend Source pursuit without turning a Source page into safety');
-assert.match(mainSource,/usingSourceSpace\(\)\)\{\s*const result=chunkSurfRuntime\.tuneFocused\([\s\S]*?if\(result\.handled\)\{[\s\S]*?return;\s*\}[\s\S]*?\}\s*if\(itemLost\('torch'\)\)/,'In Source, F tunes a focused landmark and otherwise falls through to the torch (the flashlight stays available)');
+assert.doesNotMatch(mainSource,/tuneSourceFocused|\.tuneFocused\(|\.recordFocused\(|source-tune/,
+  'Source has no tuning or landmark-recording runtime verb');
+assert.match(mainSource,/if\(bare && is\('KeyF','f'\)\)\{\s*e\.preventDefault\(\);\s*toggleTorchAction\(\);\s*return;/,
+  'F always reaches the torch in Source and the building');
+assert.match(mainSource,/if\(usingSourceSpace\(\)\)\{[\s\S]*?Source is navigated, not sampled[\s\S]*?return;\s*\}/,
+  'R performs no local landmark capture in Source');
 assert.match(mainSource,/textSpace:\s*sourceTextSpaceActive\(\)/,'only Source Space proper selects the clear text renderer');
 assert.match(mainSource,/function sourceTextSpaceActive\(\)\{[\s\S]*chunkSurfRuntime\.textSpaceActive/,'the runtime owns the physical landing to text-field boundary');
-assert.match(mainSource,/onDone:beginSourceTowerTransition/,'the completed Source endpoint feeds the tower crossing route');
-assert.match(crossingSource,/r3dBeginDatamosh\?\.\(\{\s*reducedMotion\s*\}\)/,'the endpoint route starts the authored datamosh renderer');
+// The endpoint is a fork now — CONTACT ends in Source, CHAPEL walks back to the
+// screen, and everything else crosses to the tower — so the completion card's
+// onDone is the resolved route rather than one named function. Assert the fork
+// resolves and that the tower crossing is still the default leg.
+assert.match(mainSource,/const route=completion\.route\|\|finalState\.finale\?\.route;[\s\S]*?:\s*beginSourceTowerTransition;/,'the completed Source endpoint resolves one leaving route');
+assert.match(mainSource,/presentFinale\(lines,\{slate,replayId:'chunk-surf-complete',onDone:leave\}\)/,'and the completion card owns the frame before it');
+// THE ENDPOINT ROUTE NO LONGER DATAMOSHES. It is walked (CHUNK_SURF_PHASE.BELLS),
+// so the contract is that main.js hands over to the belfry from a completed
+// chapter rather than starting an encoder effect over a warp.
+// (The datamosh renderer itself stays: the haystack still uses it, which is a
+// different beat and an honest one.)
+const towerHandover=mainSource.slice(
+  mainSource.indexOf('function beginSourceTowerTransition()'),
+  mainSource.indexOf('function resumeSourceTowerTransitionFromSave()'),
+);
+assert.ok(towerHandover.length>200,'the tower handover is where it is expected to be');
+assert.doesNotMatch(towerHandover,/Datamosh/,'the tower crossing is a place, not an encoder effect');
+assert.match(mainSource,/function beginSourceTowerTransition\(\)\{[\s\S]*?GOD_LOCATION_HOOKS\['cathedral-belfry'\]/,'and it hands over into the real bell chamber');
 assert.match(rendererSource,/if \(textSpaceActive\) \{[\s\S]*drawTextSpace\(P3\.propTargets\(\)\.color,now\);[\s\S]*return;/,'Source Space exits before the normal material and pixel-mesh stack');
 assert.match(rendererSource,/function drawTextSpace[\s\S]*runDatamoshPass\(sceneTex,now\)/,'the Text Space target is resolved through the shared datamosh pipeline');
 assert.match(rendererSource,/uHushScreen[\s\S]*uRain[\s\S]*moon/,'Text Space owns literal HUSH and weather composition');
@@ -242,9 +262,9 @@ assert.ok(new Set([0,-80,-180,-300].map((y)=>sourceTierAt(y).id)).size===4,
 {
   let state=landscapeState();
   for(const event of [
-    {type:'LANDMARK_TUNED',id:'fork-room'},
-    {type:'LANDMARK_TUNED',id:'recordist-loop'},
-    {type:'LANDMARK_TUNED',id:'body-room'},
+    {type:'LANDMARK_VISITED',id:'fork-room'},
+    {type:'LANDMARK_VISITED',id:'recordist-loop'},
+    {type:'LANDMARK_VISITED',id:'body-room'},
     {type:'FINAL_REACHED'},
   ])state=reduceChunkSurf(state,event);
   let completed=null;
@@ -254,8 +274,15 @@ assert.ok(new Set([0,-80,-180,-300].map((y)=>sourceTierAt(y).id)).size===4,
   assert.equal(runtime.finalEncounterRequest()?.adapter,null,'the terminal endpoint does not force signal combat');
   assert.equal(runtime.finalEncounterRequest()?.battleAvailable,false,'a no-contact route exposes no battle fault');
   assert.equal(runtime.finalEncounterRequest()?.normalExitAvailable,true);
+  // The normal route no longer ends the chapter where it leaves the field: it
+  // walks off into the HORIZON, and the exit chosen THERE is what completes
+  // Source and hands the snapshot on. Two beats, still no contact and no combat.
   const resolved=runtime.completeNormalExit();
-  assert.equal(resolved.handled,true,'the normal route completes Source Space without contact or combat');
+  assert.equal(resolved.handled,true,'the normal route leaves Source Space without contact or combat');
+  assert.equal(resolved.horizon,true,'and it leaves into the horizon');
+  assert.equal(runtime.state().phase,'horizon');
+  assert.equal(runtime.state().completed,false,'the chapter is not over until the horizon is answered');
+  assert.equal(runtime.chooseHorizonExit('chapel').handled,true);
   assert.equal(runtime.state().completed,true);
   assert.ok(completed?.snapshot?.sourceIds?.length,'endpoint completion produces the snapshot consumed by the datamosh route');
 }

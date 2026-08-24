@@ -28,10 +28,14 @@ assert.equal(isLoadingBaySightlineProp({id:'bay-apron-route-board'}),true);
 assert.equal(shouldHideCrossEnvelopeProp({id:'bay-west-elevation',mesh:'conservatory_west_elevation',x:50,z:7.5},outside),false);
 assert.equal(shouldHideCrossEnvelopeProp({id:'dock-chandelier-frame',mesh:'tower_frame',x:69,z:6.25},outside),false,'open loading-bay dressing survives the exterior envelope filter');
 assert.equal(shouldHideCrossEnvelopeProp({id:'bay-apron-route-board',mesh:'notice_board',x:51.5,z:4.05},outside),false,'apron wall fixtures survive the exterior envelope filter');
+assert.equal(shouldHideCrossEnvelopeProp({id:'bay-getin-sightline',mesh:'getin_sightline_shell',x:53,z:7.5},outside),false,
+  'the aligned Get-In shell closes the room through the exterior aperture');
 assert.equal(shouldHideCrossEnvelopeProp({id:'main-open-well-stair',mesh:'main_open_well_stair',x:63,z:37},outside),true,'deep interior structure cannot leak through exterior courts');
 assert.equal(shouldHideCrossEnvelopeProp({id:'yard-van',mesh:'yard_van',x:16,z:4.8},outside),false);
 assert.equal(shouldHideCrossEnvelopeProp({id:'bay-west-elevation',mesh:'conservatory_west_elevation',x:50,z:7.5},inside),true,'exterior facade cannot cross the interior camera');
 assert.equal(shouldHideCrossEnvelopeProp({id:'dock-chandelier-frame',mesh:'tower_frame',x:69,z:6.25},inside),false);
+assert.equal(shouldHideCrossEnvelopeProp({id:'bay-getin-sightline',mesh:'getin_sightline_shell',x:53,z:7.5},inside),true,
+  'the sightline stand-in yields to the real floorplan walls indoors');
 
 // THE SHELL IS NOT A POINT.
 //

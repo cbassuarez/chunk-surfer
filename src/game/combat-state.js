@@ -640,6 +640,7 @@ export function createCombatState(definition, {
   techniques = [],
   source = null,
   carriedRead = null,
+  continuation = null,
   seed = 0,
 } = {}) {
   const errors = validateCombatDefinition(definition);
@@ -772,6 +773,36 @@ export function createCombatState(definition, {
       rescueEligible: !!source?.rescueEligible,
     } : null,
   };
+  // A staged encounter may change opponent and authored movements without
+  // giving the recordist a fresh body or a fresh belt of actions. This is a
+  // continuation snapshot, not general save-state restoration: it is produced
+  // only by finishCombat and consumed immediately by the next stage.
+  if(continuation&&typeof continuation==='object'&&!Array.isArray(continuation)){
+    state.composure=clamp(integer(continuation.composure,state.composure),1,state.maxComposure);
+    state.charge=clamp(integer(continuation.charge,state.charge),0,state.maxCharge);
+    state.battery=clamp(finite(continuation.battery,state.battery),0,1);
+    state.take=continuation.take&&typeof continuation.take==='object'?clone(continuation.take):null;
+    state.snr=Object.values(SNR_STATE).includes(continuation.snr)?continuation.snr:state.snr;
+    state.ringing=!!continuation.ringing;
+    state.turns=Math.max(0,integer(continuation.turns,0));
+    state.perfectCounters=Math.max(0,integer(continuation.perfectCounters,0));
+    state.missedCounters=Math.max(0,integer(continuation.missedCounters,0));
+    state.damageTaken=Math.max(0,integer(continuation.damageTaken,0));
+    state.torchSpent=Math.max(0,finite(continuation.torchSpent,0));
+    state.toolsUsed=continuation.toolsUsed&&typeof continuation.toolsUsed==='object'?{...continuation.toolsUsed}:{};
+    state.proofs=unique(continuation.proofs);
+    state.actionLog=Array.isArray(continuation.actionLog)?continuation.actionLog.map((entry)=>clone(entry)):[];
+    state.coffeeUsed=!!continuation.coffeeUsed;
+    state.safetyRelayUsed=!!continuation.safetyRelayUsed;
+    state.feedbackLoopUsed=!!continuation.feedbackLoopUsed;
+    state.feedbackMovements=unique(continuation.feedbackMovements);
+    state.punchInMovements=unique(continuation.punchInMovements);
+    state.overdubMovements=unique(continuation.overdubMovements);
+    state.composeMovements=unique(continuation.composeMovements);
+    state.recoveryHolds=Math.max(0,integer(continuation.recoveryHolds,0));
+    state.recoveryUnlocked=!!continuation.recoveryUnlocked;
+    state.signaturePressure=Math.max(0,integer(continuation.signaturePressure,0));
+  }
   // The opponent is already decided before the player has done anything. The
   // first card is a real commitment, not a placeholder read off the script.
   commitNextIntent(state);
@@ -877,6 +908,32 @@ function finishCombat(state, result) {
       sourceReading,
       pressure: state.damageTaken + state.missedCounters,
       proofs: [...state.proofs],
+    },
+    continuation: {
+      composure: state.composure,
+      charge: state.charge,
+      battery: state.battery,
+      take: state.take ? clone(state.take) : null,
+      snr: state.snr,
+      ringing: state.ringing,
+      turns: state.turns,
+      perfectCounters: state.perfectCounters,
+      missedCounters: state.missedCounters,
+      damageTaken: state.damageTaken,
+      torchSpent: state.torchSpent,
+      toolsUsed: { ...state.toolsUsed },
+      proofs: [...state.proofs],
+      actionLog: state.actionLog.map((entry)=>clone(entry)),
+      coffeeUsed: state.coffeeUsed,
+      safetyRelayUsed: state.safetyRelayUsed,
+      feedbackLoopUsed: state.feedbackLoopUsed,
+      feedbackMovements: [...state.feedbackMovements],
+      punchInMovements: [...state.punchInMovements],
+      overdubMovements: [...state.overdubMovements],
+      composeMovements: [...state.composeMovements],
+      recoveryHolds: state.recoveryHolds,
+      recoveryUnlocked: state.recoveryUnlocked,
+      signaturePressure: state.signaturePressure,
     },
   };
 }

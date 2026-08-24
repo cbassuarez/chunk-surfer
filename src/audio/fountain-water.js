@@ -35,7 +35,13 @@ export const FOUNTAIN_SOURCE = Object.freeze({
   // Wide. It has to reach up the yard past the hedge, because arriving at the
   // park already hearing it is the entire point.
   radius: 34,
-  gain: 0.34,
+  // BROADBAND IS NOT A HUM. This was 0.34 — above every interior bed in the
+  // building (electrical-hum tops out at 0.28) — and those are 50Hz drones,
+  // while this is filtered noise sitting in the 900Hz–3kHz band the ear is most
+  // sensitive to. At the basin it stopped being ambience and became the mix.
+  // Roughly seven decibels off the peak; the reach up the yard is unchanged,
+  // because that is the falloff curve's job and the curve has not moved.
+  gain: 0.15,
 });
 
 export function fountainWaterAt(listener, { active = true } = {}) {
@@ -65,20 +71,24 @@ export function fountainWaterAt(listener, { active = true } = {}) {
 // thing in the building that reaches for it.
 //
 // The ceiling comes from the catalogue rather than from a number typed here, so
-// the fountain's loudness is authored in one place: raise fountain_water's
-// levelDb and the masking follows. −26dB against the −36dB hearing threshold is
-// ten decibels of cover directly over the water, falling off with the sound.
-const MASK_CEILING_DB = 10;
+// the fountain's loudness is authored in one place: change fountain_water's
+// levelDb and the masking follows. It used to be a bare constant that only
+// CLAIMED to follow the entry, and the two came apart the moment the water was
+// brought down in level — so it is derived now. The entry's level against the
+// hearing threshold is the cover directly over the water, falling off with the
+// sound itself.
+const HEARING_THRESHOLD_DB = -36;
 
 export function fountainMaskingDb(listener, { active = true } = {}) {
   const frame = fountainWaterAt(listener, { active });
   if (!frame.audible) return 0;
   const entry = catalogueEntry('fountain_water');
   if (!entry) return 0;
+  const ceiling = Math.max(0, Number(entry.levelDb) - HEARING_THRESHOLD_DB);
   // The bed's own falloff is the masking curve — one source of truth for how
   // far the water carries, so what you hear and what hides you never disagree.
   const reach = frame.gain / FOUNTAIN_SOURCE.gain;
-  return MASK_CEILING_DB * clamp(reach, 0, 1);
+  return ceiling * clamp(reach, 0, 1);
 }
 
 export function createFountainWaterRuntime({ context, destination } = {}) {
@@ -128,7 +138,7 @@ export function createFountainWaterRuntime({ context, destination } = {}) {
   return {
     update(frame = {}, now = context.currentTime) {
       out.gain.cancelScheduledValues(now);
-      out.gain.linearRampToValueAtTime(clamp(Number(frame.gain) || 0, 0, 0.34), now + 0.15);
+      out.gain.linearRampToValueAtTime(clamp(Number(frame.gain) || 0, 0, FOUNTAIN_SOURCE.gain), now + 0.15);
       pan.pan.cancelScheduledValues(now);
       pan.pan.linearRampToValueAtTime(clamp(Number(frame.pan) || 0, -1, 1), now + 0.15);
     },

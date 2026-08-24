@@ -17,6 +17,10 @@ const EXTERIOR_ELLERY_MESHES=new Set([
 const INTERIOR_HIDDEN_EXTERIOR_MESHES=new Set([
   'conservatory_west_elevation',
   'conservatory_stair_window',
+  // Exterior mode cannot draw the ray-marched Get-In walls, so this aligned
+  // stand-in closes the room through the open goods doors. Indoors the real
+  // floorplan shell takes over and this one must yield without doubling faces.
+  'getin_sightline_shell',
 ]);
 
 // WHICH SIDE OF THE ENVELOPE THE OBSERVER IS ON, asked of the ZONE.

@@ -131,6 +131,102 @@
         "threshold",
         "opening"
       ]
+    },
+    {
+      "id": "vigil-ruth.still",
+      "kind": "image",
+      "path": "story-art/vigil.ruth.png",
+      "tags": [
+        "document",
+        "vigil",
+        "exterior"
+      ]
+    },
+    {
+      "id": "vigil-leila.still",
+      "kind": "image",
+      "path": "story-art/vigil.leila.png",
+      "tags": [
+        "window",
+        "vigil",
+        "exterior"
+      ]
+    },
+    {
+      "id": "vigil-owen.still",
+      "kind": "image",
+      "path": "story-art/vigil.owen.png",
+      "tags": [
+        "hardware",
+        "vigil",
+        "exterior"
+      ]
+    },
+    {
+      "id": "vigil-denise.still",
+      "kind": "image",
+      "path": "story-art/vigil.denise.png",
+      "tags": [
+        "archive",
+        "vigil",
+        "exterior"
+      ]
+    },
+    {
+      "id": "vigil-malcolm.still",
+      "kind": "image",
+      "path": "story-art/vigil.malcolm.png",
+      "tags": [
+        "map",
+        "vigil",
+        "exterior"
+      ]
+    },
+    {
+      "id": "vigil-kit.still",
+      "kind": "image",
+      "path": "story-art/vigil.kit.png",
+      "tags": [
+        "equipment",
+        "vigil",
+        "exterior"
+      ]
+    },
+    {
+      "id": "vigil-ruth-notice.still",
+      "kind": "image",
+      "path": "story-art/vigil.ruth-notice.png",
+      "tags": ["document", "vigil", "exterior"]
+    },
+    {
+      "id": "vigil-leila-window.still",
+      "kind": "image",
+      "path": "story-art/vigil.leila-window.png",
+      "tags": ["window", "vigil", "exterior"]
+    },
+    {
+      "id": "vigil-owen-keys.still",
+      "kind": "image",
+      "path": "story-art/vigil.owen-keys.png",
+      "tags": ["hardware", "vigil", "exterior"]
+    },
+    {
+      "id": "vigil-denise-archive.still",
+      "kind": "image",
+      "path": "story-art/vigil.denise-archive.png",
+      "tags": ["archive", "vigil", "exterior"]
+    },
+    {
+      "id": "vigil-malcolm-line.still",
+      "kind": "image",
+      "path": "story-art/vigil.malcolm-line.png",
+      "tags": ["map", "vigil", "exterior"]
+    },
+    {
+      "id": "vigil-kit-meter.still",
+      "kind": "image",
+      "path": "story-art/vigil.kit-meter.png",
+      "tags": ["equipment", "vigil", "exterior"]
     }
   ],
   "storyArt": [
@@ -336,6 +432,126 @@
         },
         "fit": "cover"
       }
+    },
+    {
+      "id": "vigilRuth",
+      "assetId": "vigil-ruth.still",
+      "label": "Wet Rota",
+      "caption": "Numbered cups / Thursday watch",
+      "status": "VIGIL",
+      "tone": "document",
+      "mode": "hero",
+      "alt": "A rain-softened overnight rota with numbered rows and handwritten corrections."
+    },
+    {
+      "id": "vigilRuthNotice",
+      "assetId": "vigil-ruth-notice.still",
+      "label": "Corrected Notice",
+      "caption": "First strike / 06:00 Thursday",
+      "status": "VIGIL",
+      "tone": "document",
+      "mode": "hero",
+      "alt": "A wet demolition notice corrected by hand to 06:00 Thursday."
+    },
+    {
+      "id": "vigilLeila",
+      "assetId": "vigil-leila.still",
+      "label": "Practice Window",
+      "caption": "P-3 / black tape on the glass",
+      "status": "VIGIL",
+      "tone": "evidence",
+      "mode": "hero",
+      "alt": "A rain-dark practice-room window crossed with old black tape."
+    },
+    {
+      "id": "vigilLeilaWindow",
+      "assetId": "vigil-leila-window.still",
+      "label": "Window Reflection",
+      "caption": "Flask beneath P-3",
+      "status": "VIGIL",
+      "tone": "evidence",
+      "mode": "hero",
+      "alt": "A flask reflected beneath the taped practice-room window."
+    },
+    {
+      "id": "vigilOwen",
+      "assetId": "vigil-owen.still",
+      "label": "Porch Lock",
+      "caption": "Old escutcheon / new barrel",
+      "status": "VIGIL",
+      "tone": "evidence",
+      "mode": "hero",
+      "alt": "A close view of the cathedral porch lock, with old paint around a replacement barrel."
+    },
+    {
+      "id": "vigilOwenKeys",
+      "assetId": "vigil-owen-keys.still",
+      "label": "Unused Key Ring",
+      "caption": "South porch key absent",
+      "status": "VIGIL",
+      "tone": "evidence",
+      "mode": "hero",
+      "alt": "An old labelled key ring with the south porch key missing."
+    },
+    {
+      "id": "vigilDenise",
+      "assetId": "vigil-denise.still",
+      "label": "Laundry Photograph",
+      "caption": "Boundary wall / 1912",
+      "status": "VIGIL",
+      "tone": "archive",
+      "mode": "hero",
+      "alt": "A laundry-yard photograph sealed in a wet plastic sleeve."
+    },
+    {
+      "id": "vigilDeniseArchive",
+      "assetId": "vigil-denise-archive.still",
+      "label": "Archive Gap",
+      "caption": "The catalogue stops at 1986",
+      "status": "VIGIL",
+      "tone": "archive",
+      "mode": "hero",
+      "alt": "Archive cards ending at 1986 above an empty dark space."
+    },
+    {
+      "id": "vigilMalcolm",
+      "assetId": "vigil-malcolm.still",
+      "label": "Marked Street Map",
+      "caption": "Two copied chapel plans",
+      "status": "VIGIL",
+      "tone": "map",
+      "mode": "hero",
+      "alt": "A laminated street map with both chapel centres circled in red pencil."
+    },
+    {
+      "id": "vigilMalcolmLine",
+      "assetId": "vigil-malcolm-line.still",
+      "label": "Measured Chapel Line",
+      "caption": "Centre to centre / 1:2500",
+      "status": "VIGIL",
+      "tone": "map",
+      "mode": "hero",
+      "alt": "A single measured pencil line joining two chapel marks on a street map."
+    },
+    {
+      "id": "vigilKit",
+      "assetId": "vigil-kit.still",
+      "label": "Gain Log",
+      "caption": "Plant shutdown / 22:30",
+      "status": "VIGIL",
+      "tone": "equipment",
+      "mode": "hero",
+      "alt": "A field-recording gain log marked at the moment the building plant shut down."
+    },
+    {
+      "id": "vigilKitMeter",
+      "assetId": "vigil-kit-meter.still",
+      "label": "Rain-Dark Meter",
+      "caption": "Microphone unmoved / minus eleven dB",
+      "status": "VIGIL",
+      "tone": "equipment",
+      "mode": "hero",
+      "alt": "A rain-dark microphone beside a low-frequency level meter."
     }
   ]
 }

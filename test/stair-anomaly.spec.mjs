@@ -59,6 +59,15 @@ assert.equal(fresh.ledger.stairAnomaly.status, STAIR_ANOMALY_STATUS.ARMED);
 assert.equal(Object.isFrozen(fresh.environment.stairAnomaly), true, 'the run-scoped selection is immutable');
 const legacy = normalizeRun({ ...fresh, schema: 1, ledger: { ...fresh.ledger, stairAnomaly: undefined } });
 assert.deepEqual(legacy.ledger.stairAnomaly, LEGACY_STAIR_ANOMALY_LEDGER, 'old saves cannot surprise-trigger the event');
+// ...and a CURRENT run with no stair record has simply not met the stair yet.
+// Reading that as "already done" is what disarmed the event for every save that
+// had ever round-tripped without the field, permanently, with no way back except
+// the god menu. The legacy guard belongs to the old schema, not to everyone.
+const live = normalizeRun({ ...fresh, ledger: { ...fresh.ledger, stairAnomaly: undefined } });
+assert.equal(live.ledger.stairAnomaly.status, STAIR_ANOMALY_STATUS.ARMED,
+  'a run at the current schema stays armed when its ledger has no stair record');
+assert.equal(normalizeRun({ ...fresh, ledger: undefined }).ledger.stairAnomaly.status, STAIR_ANOMALY_STATUS.ARMED,
+  'and so does one with no ledger at all');
 assert.deepEqual(normalizeStairAnomalyLedger({ status: 'corrupt', stage: 999 }), LEGACY_STAIR_ANOMALY_LEDGER);
 
 let state = reduceStairAnomaly(freshStairAnomalyLedger(), { type: 'ENTER' });

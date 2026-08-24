@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 
 import {
   clearSpeech,
+  cancelEscapableSpeech,
   createSpeechDispatch,
+  hasEscapableSpeech,
   isSpeaking,
   say,
   speaking,
@@ -34,6 +36,27 @@ test('an escaped action cancels its current line and dependent tail atomically',
   action.cancel();
   assert.equal(isSpeaking(), false);
   assert.equal(speechDispatchSnapshot().queued.length, 0);
+});
+
+test('the visible optional speech shell owns Escape and cancels its whole action', () => {
+  const action = createSpeechDispatch({ id:'inspect:van' });
+  action.sayAll([
+    { who:'direction', text:'The bag comes off the shelf.' },
+    { who:'you', text:'Five rooms, then home.' },
+  ]);
+  updateSpeech(.016);
+  assert.equal(hasEscapableSpeech(), true);
+  assert.equal(cancelEscapableSpeech(), true);
+  assert.equal(isSpeaking(), false);
+  assert.equal(speechDispatchSnapshot().queued.length, 0);
+});
+
+test('required delivery leaves Escape available to the run-level pause', () => {
+  say({ who:'radio', text:'Keep the channel open.' });
+  updateSpeech(.016);
+  assert.equal(hasEscapableSpeech(), false);
+  assert.equal(cancelEscapableSpeech(), false);
+  assert.equal(isSpeaking(), true);
 });
 
 test('leaving the originating room drops the active thought and its chain', () => {

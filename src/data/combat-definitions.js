@@ -415,3 +415,68 @@ export function sourceCombatBattle(options = {}) {
     lose: [{ who: 'direction', text: 'Your monitoring path clips to silence. The page remains unresolved.' }],
   };
 }
+
+export function cathedralBellCombatDefinition({ phase = 1, carriedDamage = 0 } = {}) {
+  const source = authoredCombatProfile('source');
+  const second = Number(phase) >= 2;
+  const movements = second
+    ? [
+        movement('surfer-return', 'THE SURFER ENTERS THE PEAL', 30, [
+          B('cathedral:surfer-print', 'SURFER PRINT IN SIX BELLS', 15, { takeLabel: 'SURFER / RETURN', playbackDamage: 15 }),
+          L('cathedral:amplify', 'SIX MOUTHS PATCHED TO ONE BODY', 20),
+          O('cathedral:full-peal', 'THE FULL PEAL THROUGH THE CROSSING', 25, { effect: 'ringing' }),
+        ]),
+        movement('severance', 'THE LINE BETWEEN BODY AND BELL', 30, [
+          C('cathedral:hidden-line', 'THE RETURN HIDES IN THE FRAME', 15),
+          B('cathedral:body-line', 'BORROWED BODY UNDER THE STRIKE', 15, { takeLabel: 'BODY / BELL', takeTag: 'body', playbackDamage: 15 }),
+          O('cathedral:weight-drop', 'CLOCK WEIGHTS FALL THROUGH THE MONITOR', 25, { effect: 'ringing' }),
+        ]),
+      ]
+    : [
+        movement('bell-borne', 'THE BELLS BELOW THE BELLS', 25, [
+          B('cathedral:cold-chord', 'COLD WINDOW CHORD ON THE RETURN', 10, { takeLabel: 'WINDOW / BELL', playbackDamage: 10 }),
+          O('cathedral:clapper', 'CLAPPER THROUGH THE CROSSING PIER', 20, { effect: 'ringing' }),
+          C('cathedral:louvre', 'THE STRIKE HIDES ABOVE THE LOUVRES', 10),
+        ]),
+        movement('frame', 'THE FRAME BEGINS TO MOVE', 25, [
+          B('cathedral:timber', 'OLD TIMBER CARRIES A NEW RETURN', 15, { takeLabel: 'BELL FRAME', playbackDamage: 10 }),
+          L('cathedral:wheel', 'WHEEL TURNS OUTPUT BACK TO INPUT', 15),
+          O('cathedral:weight', 'TEN METRES OF CLOCK WEIGHT', 20, { effect: 'ringing' }),
+        ]),
+      ];
+  return {
+    id: second ? 'cathedral-surfer-final' : 'cathedral-bell-return',
+    enemy: second ? 'THE SURFER / THE FULL PEAL' : 'THE CATHEDRAL BELL RETURN',
+    art: { id: 'surfer', mode: second ? 'boss' : 'signal', caption: second ? 'Surfer / amplified return' : 'St Brendan\'s / crossing', status: second ? 'AMPLIFY' : 'STRIKE' },
+    baseComposure: Math.max(4 * GRID, 8 * GRID - Math.min(4 * GRID, Math.max(0,Number(carriedDamage)||0))),
+    kind: source.kind,
+    signature: source.signature,
+    music: { ...source.music, movementLeads: second ? ['lead-2','lead-3'] : ['lead-1','lead-2'] },
+    movements,
+    cathedralPhase: second ? 2 : 1,
+  };
+}
+
+export function cathedralBellCombatBattle(options = {}) {
+  const combat = cathedralBellCombatDefinition(options);
+  const second = combat.cathedralPhase === 2;
+  return {
+    id: combat.id,
+    enemy: combat.enemy,
+    art: combat.art,
+    combat,
+    slate: second ? 'ST BRENDAN\'S / FULL PEAL' : 'ST BRENDAN\'S / BELL RETURN',
+    intro: second ? [
+      { who: 'direction', text: 'A man drops from the crossing dark and catches the bell return before it can die.' },
+      { who: 'surfer', text: 'You brought me a cathedral.' },
+      { who: 'direction', text: 'He opens both hands. Every bell answers through him, and the pressure you spent reaching this phase remains spent.' },
+    ] : [
+      { who: 'direction', text: 'At the crossing, the six bells begin without moving. Their return comes down the clustered piers looking for a body.' },
+      { who: 'you', text: 'Not a rope. Not a pattern. Just a signal with too much stone behind it.' },
+    ],
+    win: second
+      ? [{ who: 'direction', text: 'The monitor finds the line between the Surfer and the bells. The line parts. He does not.' }]
+      : [{ who: 'direction', text: 'The first return breaks against the screen. Something alive lands inside the remaining tone.' }],
+    lose: [{ who: 'direction', text: 'The bells complete their return through both available bodies.' }],
+  };
+}

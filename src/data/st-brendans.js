@@ -40,6 +40,20 @@ export const CHURCH = freeze({
   ]),
 });
 
+export const CHURCH_EXPLORATION_EXIT_DOOR_ID = 'brendan-west-door';
+// Tower victory leaves by the ceremonial west front. This stays a named
+// contract so existing finale saves do not gain a coordinate or migration.
+export const CHURCH_TOWER_ENDING_EXIT_DOOR_ID = 'brendan-west-door';
+
+export function churchTowerCarryDoorAccess(doorId){
+  const id=String(doorId||'');
+  return freeze({
+    allowed:id===CHURCH_TOWER_ENDING_EXIT_DOOR_ID,
+    completesEnding:id===CHURCH_TOWER_ENDING_EXIT_DOOR_ID,
+    reason:id==='brendan-south-porch'?'west-door-route':null,
+  });
+}
+
 // Seventeen by thirty-one authored metres before the half-metre stone skin and
 // shallow buttress projections are applied.
 export const CHURCH_BOUNDS = freeze({ x0: 8, y0: 55, x1: 24, y1: 85 });
@@ -120,6 +134,13 @@ export const CHURCH_FURNISHINGS = freeze([
   freeze({ id: 'organ', kind: 'organ', x: 16, y: 58.3, h: 4.6 }),
   freeze({ id: 'north-monument', kind: 'monument', x: 9.8, y: 78.7, h: 0 }),
   freeze({ id: 'south-tomb', kind: 'tomb', x: 22, y: 78.7, h: 0 }),
+  // The south transept was last used as the visitor shop.  These anchors keep
+  // the ending route and the prop dressing on the same authored plan as the
+  // doorway it must clear.
+  freeze({ id: 'visitor-desk', kind: 'visitor-desk', x: 21.45, y: 72.0, h: 0 }),
+  freeze({ id: 'visitor-guidebooks', kind: 'guidebooks', x: 21.45, y: 72.0, h: 0.82 }),
+  freeze({ id: 'visitor-till', kind: 'donation-till', x: 21.45, y: 72.35, h: 0.82 }),
+  freeze({ id: 'visitor-postcards', kind: 'postcards', x: 22.45, y: 74.35, h: 1.15 }),
 ]);
 
 export const CHURCH_LIGHTS = freeze([

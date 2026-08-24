@@ -1,9 +1,10 @@
 // THE NAME THE RAIN TOOK.
 //
-// At 21:38 the guard asks for your name for the register. You give it, he
-// accepts it, and the game never learns it — see docs/story-doctrine.md, "The
-// unresolved name". No literal operator name is permitted in saves, tapes,
-// captions, diagnostics, telemetry or exports.
+// At 21:38 the guard asks for your name for the register. You give it and he
+// accepts it. With separate identity consent, a sanitized persona may exist
+// just long enough for local booth synthesis — see docs/story-doctrine.md,
+// "The unresolved name" — but no literal operator name is permitted in saves,
+// tapes, captions, transcripts, diagnostics, telemetry or exports.
 //
 // This module draws the hole where it was.
 //
@@ -104,25 +105,17 @@ export function obscuredNameShape({ runSeed = 0, token = null } = {}) {
   });
 }
 
-// ── what the rain leaves in the air ─────────────────────────────────────────
+// ── what the mask leaves in the air ─────────────────────────────────────────
 //
-// The booth beat has always been silent underneath: glyphs on the screen, the
-// caption, and 1.4 seconds of rain over nothing. This is what goes under it.
+// This is the non-personal fallback beneath the two booth rows and the ONLY
+// voice used by the later B3 pre-roll echo. The opted-in literal booth voice is
+// deliberately implemented outside this module, so neither the shape nor its
+// repeatable tape utterance can acquire a name by accident.
 //
-// IT IS NOT YOUR NAME AND IT CANNOT BECOME YOUR NAME. Same argument as the
-// glyphs above, and it is worth stating rather than assuming, because "speak the
-// player's Steam name quietly" is the obvious version of this feature and it is
-// the wrong one twice over. It would cross the line personalized-interference.js
-// draws in its own header — identity must never enter speech — and it would not
-// even be quiet: `booth.name-mask` plays a rain asset that SHIPS IN THE BUILD, at
-// a fixed rate and trim, so anyone who wanted the name could phase-invert the
-// mask out of a capture and read it. A thing you cannot confirm is not a thing
-// that is merely faint.
-//
-// So: this takes the SHAPE, not a name. There is no parameter a name can enter
-// through, the shape it reads was itself built from a one-way digest fragment,
-// and the output alphabet is a fixed table of twelve syllables. The guarantee
-// the glyph ramp makes about the screen, this makes about the speaker.
+// This function takes the SHAPE, never a name. There is no parameter a name can
+// enter through, the shape it reads was itself built from a one-way digest
+// fragment, and the output alphabet is a fixed table of twelve syllables. The
+// guarantee the glyph ramp makes about the screen, this makes about the echo.
 //
 // And it reads the shape that is ALREADY DRAWN, so the thing you half-hear and
 // the thing you half-see are the same object — one spoken group per blot, one

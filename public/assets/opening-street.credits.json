@@ -1,9 +1,9 @@
 {
   "file": "opening-street.glb",
   "pack": {
-    "sha256": "3eb8d1a327cae230fd256f24eebe1a308c94278c62d46a7bc61731d88a9b7d7c",
-    "bytes": 32984064,
-    "triangles": 30118
+    "sha256": "64639979fe4c7d3b13295714d299d851f36294f4e02098030fcb3801deef0641",
+    "bytes": 15033528,
+    "triangles": 8118
   },
   "license": {
     "id": "CC0-1.0",
@@ -20,8 +20,8 @@
       "archiveSha256": "029d10a116da565c4a2afb2a3de34daeff670d08bf4f304769b2821c887e802f",
       "sourceResolution": 4096,
       "runtimeResolution": {
-        "albedo": 2048,
-        "normalOrm": 1024
+        "albedo": 1024,
+        "normalOrm": 512
       },
       "uvScaleMetres": 3,
       "targetHeight": null,
@@ -52,8 +52,8 @@
       "archiveSha256": "40587fe3a06e4e9d171b8a560633e2b396485d9f2d64a45c4506b25313e0e506",
       "sourceResolution": 4096,
       "runtimeResolution": {
-        "albedo": 2048,
-        "normalOrm": 1024
+        "albedo": 1024,
+        "normalOrm": 512
       },
       "uvScaleMetres": 2.4,
       "targetHeight": null,
@@ -116,8 +116,8 @@
       "archiveSha256": "0c9ed23ab809e3d0afee2ecd11f93c54899b75e5999a64536b4a206e1c7ca580",
       "sourceResolution": 4096,
       "runtimeResolution": {
-        "albedo": 2048,
-        "normalOrm": 1024
+        "albedo": 1024,
+        "normalOrm": 512
       },
       "uvScaleMetres": 2,
       "targetHeight": null,
@@ -247,8 +247,8 @@
       "archiveSha256": "7297856338ec404a9153aa2c4efd4d53d9d0c99d68232051a8e1e0114f41ef35",
       "sourceResolution": 4096,
       "runtimeResolution": {
-        "albedo": 2048,
-        "normalOrm": 1024
+        "albedo": 1024,
+        "normalOrm": 512
       },
       "uvScaleMetres": 1,
       "targetHeight": null,

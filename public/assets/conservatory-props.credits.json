@@ -4,10 +4,10 @@
     "author": "Chunk Surfer project",
     "source": "tools/chunk_surfer/build-props.mjs",
     "license": "project source (mixed: see meshes)",
-    "sha256": "4bebca8781f222a78477b7e09a3b84098d972ac061e185390f7a822f933cfb08",
+    "sha256": "08044d85a30de322a7db05a7f2407e1120094300fc8e64a36cf1acfd22635b30",
     "modifications": "Metres, Y-up, ground-centred. Procedural fallback geometry plus user-supplied source meshes (unverified provenance) baked, re-axised, height-scaled, and vertex-cluster decimated under budget.",
-    "triangles": 323710,
-    "bytes": 23331436
+    "triangles": 354082,
+    "bytes": 25826860
   },
   "meshes": [
     {
@@ -3959,6 +3959,111 @@
       }
     },
     {
+      "name": "ending_body_prone",
+      "bounds": {
+        "min": [
+          -0.494,
+          -0.23,
+          -0.94
+        ],
+        "max": [
+          0.474,
+          0.61,
+          0.733
+        ]
+      },
+      "triangles": 108,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "ending_body_seated",
+      "bounds": {
+        "min": [
+          -0.509,
+          0.011,
+          -0.26
+        ],
+        "max": [
+          0.433,
+          1.25,
+          0.478
+        ]
+      },
+      "triangles": 108,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "ending_van_cabin",
+      "bounds": {
+        "min": [
+          -1.175,
+          0,
+          -1.117
+        ],
+        "max": [
+          1.175,
+          1.294,
+          0.7
+        ]
+      },
+      "triangles": 132,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "ending_van_cup",
+      "bounds": {
+        "min": [
+          -0.078,
+          0,
+          -0.076
+        ],
+        "max": [
+          0.078,
+          0.199,
+          0.076
+        ]
+      },
+      "triangles": 112,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "ending_collapse_debris",
+      "bounds": {
+        "min": [
+          -0.83,
+          -0.008,
+          -0.476
+        ],
+        "max": [
+          0.682,
+          0.368,
+          0.395
+        ]
+      },
+      "triangles": 36,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
       "name": "apparition_pose_head_turn",
       "bounds": {
         "min": [
@@ -4215,16 +4320,58 @@
       "bounds": {
         "min": [
           -3.78,
-          1.34,
-          -3.7
+          0,
+          -4.15
         ],
         "max": [
-          3.57,
-          5.53,
-          3.7
+          4.32,
+          5.5,
+          4.65
         ]
       },
-      "triangles": 508,
+      "triangles": 772,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "getin_sightline_shell",
+      "bounds": {
+        "min": [
+          4.05,
+          0,
+          -4.37
+        ],
+        "max": [
+          20.37,
+          5.5,
+          7.87
+        ]
+      },
+      "triangles": 252,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "yard_dock_access",
+      "bounds": {
+        "min": [
+          -1.61,
+          -0.85,
+          -4.19
+        ],
+        "max": [
+          2.527,
+          1.007,
+          4.19
+        ]
+      },
+      "triangles": 536,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -4739,17 +4886,17 @@
       "name": "exterior_bus_woman",
       "bounds": {
         "min": [
-          -0.36,
+          -0.39,
           0,
-          -0.31
+          -0.376
         ],
         "max": [
           0.53,
-          1.78,
-          0.255
+          1.73,
+          0.315
         ]
       },
-      "triangles": 1484,
+      "triangles": 384,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -4760,17 +4907,17 @@
       "name": "exterior_mews_neighbor",
       "bounds": {
         "min": [
-          -0.36,
+          -0.39,
           0,
-          -0.31
+          -0.376
         ],
         "max": [
-          0.302,
-          1.817,
-          0.255
+          0.383,
+          1.81,
+          0.315
         ]
       },
-      "triangles": 1276,
+      "triangles": 360,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -4781,17 +4928,647 @@
       "name": "exterior_pub_driver",
       "bounds": {
         "min": [
-          -0.36,
+          -0.39,
           0,
-          -0.31
+          -0.376
         ],
         "max": [
-          0.302,
-          1.821,
-          0.255
+          0.384,
+          1.77,
+          0.315
         ]
       },
-      "triangles": 1264,
+      "triangles": 348,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_ruth_mallory",
+      "bounds": {
+        "min": [
+          -0.391,
+          0,
+          -0.376
+        ],
+        "max": [
+          0.382,
+          1.67,
+          0.315
+        ]
+      },
+      "triangles": 336,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_leila_hart",
+      "bounds": {
+        "min": [
+          -0.402,
+          0,
+          -0.376
+        ],
+        "max": [
+          0.371,
+          1.69,
+          0.315
+        ]
+      },
+      "triangles": 348,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_owen_pryce",
+      "bounds": {
+        "min": [
+          -0.39,
+          0,
+          -0.376
+        ],
+        "max": [
+          0.382,
+          1.76,
+          0.315
+        ]
+      },
+      "triangles": 360,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_denise_okafor",
+      "bounds": {
+        "min": [
+          -0.39,
+          0,
+          -0.376
+        ],
+        "max": [
+          0.371,
+          1.65,
+          0.315
+        ]
+      },
+      "triangles": 336,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_malcolm_vey",
+      "bounds": {
+        "min": [
+          -0.395,
+          0,
+          -0.376
+        ],
+        "max": [
+          0.372,
+          1.81,
+          0.315
+        ]
+      },
+      "triangles": 348,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_kit_renshaw",
+      "bounds": {
+        "min": [
+          -0.405,
+          0,
+          -0.376
+        ],
+        "max": [
+          0.371,
+          1.69,
+          0.315
+        ]
+      },
+      "triangles": 324,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_part_ruth_binder",
+      "bounds": {
+        "min": [
+          -0.19,
+          0.888,
+          -0.276
+        ],
+        "max": [
+          0.15,
+          1.312,
+          -0.135
+        ]
+      },
+      "triangles": 24,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_part_leila_flask",
+      "bounds": {
+        "min": [
+          -0.315,
+          0.95,
+          -0.271
+        ],
+        "max": [
+          0.275,
+          1.3,
+          -0.129
+        ]
+      },
+      "triangles": 112,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_part_owen_umbrella",
+      "bounds": {
+        "min": [
+          -0.258,
+          0.892,
+          -0.398
+        ],
+        "max": [
+          0.458,
+          1.285,
+          0.318
+        ]
+      },
+      "triangles": 228,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_part_denise_photos",
+      "bounds": {
+        "min": [
+          -0.37,
+          0.25,
+          -0.26
+        ],
+        "max": [
+          0.38,
+          1.228,
+          0.02
+        ]
+      },
+      "triangles": 36,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_part_malcolm_map",
+      "bounds": {
+        "min": [
+          -0.17,
+          1.049,
+          -0.335
+        ],
+        "max": [
+          0.33,
+          1.391,
+          -0.205
+        ]
+      },
+      "triangles": 60,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_part_kit_microphone",
+      "bounds": {
+        "min": [
+          -0.177,
+          0.014,
+          -0.4
+        ],
+        "max": [
+          0.474,
+          1.685,
+          0.14
+        ]
+      },
+      "triangles": 108,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_figure_umbrella_a",
+      "bounds": {
+        "min": [
+          -0.391,
+          0,
+          -0.398
+        ],
+        "max": [
+          0.458,
+          1.71,
+          0.318
+        ]
+      },
+      "triangles": 564,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_figure_umbrella_b",
+      "bounds": {
+        "min": [
+          -0.404,
+          0,
+          -0.398
+        ],
+        "max": [
+          0.458,
+          1.71,
+          0.318
+        ]
+      },
+      "triangles": 576,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_figure_placard_a",
+      "bounds": {
+        "min": [
+          -0.39,
+          0,
+          -0.376
+        ],
+        "max": [
+          0.371,
+          1.75,
+          0.315
+        ]
+      },
+      "triangles": 348,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_figure_placard_b",
+      "bounds": {
+        "min": [
+          -0.395,
+          0,
+          -0.376
+        ],
+        "max": [
+          0.372,
+          1.75,
+          0.315
+        ]
+      },
+      "triangles": 324,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_figure_flask_a",
+      "bounds": {
+        "min": [
+          -0.39,
+          0,
+          -0.376
+        ],
+        "max": [
+          0.371,
+          1.67,
+          0.315
+        ]
+      },
+      "triangles": 448,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_figure_flask_b",
+      "bounds": {
+        "min": [
+          -0.39,
+          0,
+          -0.376
+        ],
+        "max": [
+          0.371,
+          1.79,
+          0.315
+        ]
+      },
+      "triangles": 460,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_figure_seated_a",
+      "bounds": {
+        "min": [
+          -0.404,
+          0,
+          -0.376
+        ],
+        "max": [
+          0.382,
+          1.25,
+          0.315
+        ]
+      },
+      "triangles": 444,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_figure_seated_b",
+      "bounds": {
+        "min": [
+          -0.402,
+          0,
+          -0.376
+        ],
+        "max": [
+          0.379,
+          1.37,
+          0.315
+        ]
+      },
+      "triangles": 456,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_figure_pamphlets_a",
+      "bounds": {
+        "min": [
+          -0.39,
+          0,
+          -0.376
+        ],
+        "max": [
+          0.38,
+          1.7,
+          0.315
+        ]
+      },
+      "triangles": 360,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_figure_pamphlets_b",
+      "bounds": {
+        "min": [
+          -0.395,
+          0,
+          -0.376
+        ],
+        "max": [
+          0.38,
+          1.69,
+          0.315
+        ]
+      },
+      "triangles": 384,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_figure_camera_a",
+      "bounds": {
+        "min": [
+          -0.406,
+          0,
+          -0.376
+        ],
+        "max": [
+          0.472,
+          1.72,
+          0.315
+        ]
+      },
+      "triangles": 408,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_figure_camera_b",
+      "bounds": {
+        "min": [
+          -0.404,
+          0,
+          -0.376
+        ],
+        "max": [
+          0.472,
+          1.72,
+          0.315
+        ]
+      },
+      "triangles": 432,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_part_sign_save",
+      "bounds": {
+        "min": [
+          -0.66,
+          0.579,
+          -0.272
+        ],
+        "max": [
+          0.66,
+          2.2,
+          -0.083
+        ]
+      },
+      "triangles": 1848,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_part_sign_strike",
+      "bounds": {
+        "min": [
+          -0.67,
+          0.579,
+          -0.272
+        ],
+        "max": [
+          0.67,
+          2.2,
+          -0.083
+        ]
+      },
+      "triangles": 3360,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_part_sign_chapel",
+      "bounds": {
+        "min": [
+          -0.67,
+          0.579,
+          -0.272
+        ],
+        "max": [
+          0.67,
+          2.2,
+          -0.083
+        ]
+      },
+      "triangles": 3228,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_part_sign_record",
+      "bounds": {
+        "min": [
+          -0.67,
+          0.504,
+          -0.338
+        ],
+        "max": [
+          0.67,
+          1.336,
+          -0.083
+        ]
+      },
+      "triangles": 3432,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_part_sign_signed",
+      "bounds": {
+        "min": [
+          -0.67,
+          0.504,
+          -0.338
+        ],
+        "max": [
+          0.67,
+          1.336,
+          -0.083
+        ]
+      },
+      "triangles": 3204,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "vigil_part_banner",
+      "bounds": {
+        "min": [
+          -1.9,
+          0.05,
+          -0.283
+        ],
+        "max": [
+          1.9,
+          1.07,
+          -0.193
+        ]
+      },
+      "triangles": 3396,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -5093,6 +5870,111 @@
       }
     },
     {
+      "name": "demolition_scaffold_run",
+      "bounds": {
+        "min": [
+          -3.85,
+          0,
+          -0.64
+        ],
+        "max": [
+          3.85,
+          7,
+          0.66
+        ]
+      },
+      "triangles": 1120,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "demolition_excavator",
+      "bounds": {
+        "min": [
+          -1.05,
+          0.04,
+          -4.025
+        ],
+        "max": [
+          1.08,
+          3.281,
+          1.7
+        ]
+      },
+      "triangles": 840,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "demolition_heras_fence",
+      "bounds": {
+        "min": [
+          -2.04,
+          0,
+          -0.33
+        ],
+        "max": [
+          2.04,
+          2.105,
+          0.33
+        ]
+      },
+      "triangles": 148,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "demolition_generator",
+      "bounds": {
+        "min": [
+          -1.09,
+          0.06,
+          -1.96
+        ],
+        "max": [
+          1.09,
+          1.14,
+          0.893
+        ]
+      },
+      "triangles": 364,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "demolition_light_tower",
+      "bounds": {
+        "min": [
+          -0.75,
+          0,
+          -0.654
+        ],
+        "max": [
+          0.75,
+          4.71,
+          0.654
+        ]
+      },
+      "triangles": 352,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
       "name": "yard_markings",
       "bounds": {
         "min": [
@@ -5312,11 +6194,11 @@
         ],
         "max": [
           3.854,
-          5.1,
+          5.05,
           3.854
         ]
       },
-      "triangles": 8204,
+      "triangles": 10556,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -5400,7 +6282,7 @@
           120
         ]
       },
-      "triangles": 5664,
+      "triangles": 5952,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",

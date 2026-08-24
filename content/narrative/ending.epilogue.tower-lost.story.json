@@ -1,0 +1,14 @@
+{
+  "schemaVersion":1,"id":"ending.epilogue.tower-lost","title":"Coda · six returns","status":"active","entry":"start","entries":["start"],"tags":["ending","epilogue","tower"],
+  "notes":"Institutional coda for The Full Peal.","regions":[{"id":"ending.epilogue.tower-lost.region","title":"Six returns","kind":"ending","color":"#78525a","nodeIds":["start"]}],
+  "nodes":{"start":{"type":"ending","speaker":"W. ELLERY HOLDINGS · GATE","lines":[
+    {"id":"start.line.1","who":"direction","text":"Six strikes arrive at the gate together. The cathedral tower remains still against the morning."},
+    {"id":"start.line.2","who":"guard","text":"Those are not Ellery's bells."},
+    {"id":"start.line.3","who":"direction","text":"The monitor prints two body signatures and files both under RETURN."},
+    {"id":"start.line.4","who":"direction","text":"Neither man reaches the south porch."},
+    {"id":"start.line.5","who":"direction","text":"The guard opens the ledger to the right-hand column and finds both names already entered."},
+    {"id":"start.line.6","who":"guard","text":"Not like that."},
+    {"id":"start.line.7","who":"direction","text":"There is no box for the distinction he is making."},
+    {"id":"start.line.8","who":"direction","text":"At 06:00 the full peal is accepted as a complete return."}
+  ]}}
+}

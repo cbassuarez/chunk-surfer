@@ -79,6 +79,14 @@ function fullFiles() {
   };
 }
 
+function importantSheets(){
+  const rooms=baseRooms();
+  rooms[4].notes.push(document('page-6','LOG — 02:10 / SHEET 6','lux_nova',{
+    unread:true,preview:'Front of house kept the new spare under key control.',
+  }));
+  return{id:'important-sheets',equipment:equipment(),job:{rooms,unfiled:[],done:0,total:5}};
+}
+
 function radioDropped() {
   return {
     id: 'radio-dropped',
@@ -117,5 +125,5 @@ function longLabels() {
 }
 
 export const BAG_LAB_CASES = Object.freeze([
-  freshRun(), waypoint(), midRun(), fullFiles(), radioDropped(), coffee(), complete(), empty(), longLabels(),
+  freshRun(), waypoint(), midRun(), fullFiles(), importantSheets(), radioDropped(), coffee(), complete(), empty(), longLabels(),
 ]);

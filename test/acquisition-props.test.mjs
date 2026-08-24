@@ -64,12 +64,14 @@ PROPS.propsInit(FP);
 
 const historicalProps = CONSERVATORY_PROPS.filter((prop) => prop.provenance);
 const acquisitions = historicalProps.filter((prop) => expectedMeshes.has(prop.mesh));
-// 33 since the ground-floor dead end was furnished: FOH/F-06 through F-08, the
-// three pieces of the front-of-house suite that were carried round the back and
-// left there. Same cohort and the same stamping as the pieces still out front.
-assert.equal(historicalProps.length, 33);
-assert.equal(acquisitions.length, 33);
-assert.equal(new Set(historicalProps.map((prop) => prop.provenance.assetTag)).size, 33);
+// 35 since the rewire's numbered run was completed: S/P-04 on the practice
+// landing and S/P-05 on the academic loggia join the three panels that were
+// already stamped, so the run reads 01 to 05 with no gaps in it. (33 before
+// that, when the ground-floor dead end was furnished with FOH/F-06 to F-08 —
+// the three front-of-house pieces carried round the back and left there.)
+assert.equal(historicalProps.length, 35);
+assert.equal(acquisitions.length, 35);
+assert.equal(new Set(historicalProps.map((prop) => prop.provenance.assetTag)).size, 35);
 assert.ok(historicalProps.every((prop) => PROCUREMENT_COHORTS[prop.provenance.cohort]));
 assert.ok(acquisitions.every((prop) => !prop.sampleFamily && prop.interaction !== 'play'));
 
@@ -80,7 +82,7 @@ const expectedCohorts = {
   hall_lighting_refit: 2,
   hall_lounge_replacement: 2,
   chapel_foundation_1908: 6,
-  services_rewire: 3,
+  services_rewire: 5,   // S/P-01 to S/P-05, one panel per floor of the rewire
   maintenance_purchase: 2,
 };
 for (const [cohort, count] of Object.entries(expectedCohorts)) {
@@ -109,7 +111,7 @@ for (const prop of acquisitions.filter((entry) => ['marble_bust_01', 'horse_head
   assert.equal(prop.elevation, 0.955);
   assert.ok(prop.inspectAt);
 }
-assert.equal(acquisitions.filter((prop) => prop.mesh === 'power_box_01').length, 3);
+assert.equal(acquisitions.filter((prop) => prop.mesh === 'power_box_01').length, 5);
 assert.ok(acquisitions.filter((prop) => prop.mesh === 'power_box_01').every((prop) => !prop.blocks && prop.elevation === 1.45));
 
 const foyerSofa = acquisitions.find((prop) => prop.id === 'acq-foyer-sofa-01');
@@ -167,17 +169,22 @@ for (const prop of historicalProps) {
   assert.ok(PROPS.pathToProp(spawn.x, spawn.y, prop.id, keys), `${prop.id} inspection proxy is reachable`);
 }
 
-assert.equal(PROPS.pickProp(175, 12, 0, 2.5)?.id, 'acq-foyer-console-01');
-assert.equal(PROPS.pickProp(178, 12, 0, 2.5)?.id, 'acq-foyer-horse-head');
-assert.equal(PROPS.pickProp(185, 12, 0, 2.5)?.id, 'acq-foyer-console-02');
-assert.equal(PROPS.pickProp(188, 12, 0, 2.5)?.id, 'acq-foyer-marble-bust');
+// Each console and the ornament standing on it are picked separately from the
+// floor in front of them. Sampled at y11, which is floor along the whole run:
+// row 12 is only authored as far east as x181, so the old y12 seat for the
+// second pair was a cell that does not exist rather than a failed pick.
+assert.equal(PROPS.pickProp(175, 11, 0, 2.5)?.id, 'acq-foyer-console-01');
+assert.equal(PROPS.pickProp(178, 11, 0, 2.5)?.id, 'acq-foyer-horse-head');
+assert.equal(PROPS.pickProp(185, 11, 0, 2.5)?.id, 'acq-foyer-console-02');
+assert.equal(PROPS.pickProp(188, 11, 0, 2.5)?.id, 'acq-foyer-marble-bust');
 
 const propRenderer = fs.readFileSync('src/render/props3d.js', 'utf8');
 const worldRenderer = fs.readFileSync('src/render/r3d.js', 'utf8');
 assert.match(propRenderer, /66\*Math\.PI\/180/);
 assert.match(propRenderer, /DEPTH_COMPONENT24/);
 assert.match(propRenderer, /uShadowTexel/);
-assert.match(propRenderer, /alpha\*uBaseAlpha<uAlphaCut/);
+assert.match(propRenderer, /sampledAlpha<uAlphaCut-coverageWidth/);
+assert.match(propRenderer, /fwidth\(sampledAlpha\)/,'alpha-masked props preserve coverage as they minify');
 assert.match(worldRenderer, /shadowMapSize:\s*RENDER_SCALE\s*<\s*\.75\s*\?\s*512\s*:\s*1024/);
 assert.match(worldRenderer, /lamp\s*=.*beam\s*\*\s*propShadow/);
 assert.match(worldRenderer, /conservatory-acquisitions\.glb/);

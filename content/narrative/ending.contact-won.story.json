@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "ending.contact-won",
+  "title": "Open Channel",
+  "status": "active",
+  "entry": "start",
+  "entries": ["start"],
+  "tags": ["ending", "contact"],
+  "notes": "Terminal Contact victory. Source ends, the player returns to the real building long enough to transmit, and dies on the open channel.",
+  "regions": [{"id":"ending.contact-won.region","title":"Open Channel","kind":"ending","color":"#63d6c4","nodeIds":["start"]}],
+  "nodes": {"start":{"type":"ending","speaker":"OPEN CHANNEL","lines":[
+    {"id":"start.line.1","who":"direction","text":"The Source breaks first. Its architecture folds through itself, loses the force that held it open, and becomes a field your failing sight no longer has to sustain."},
+    {"id":"start.line.2","who":"you","text":"Still here."},
+    {"id":"start.line.3","who":"direction","text":"You say it to the recorder. The sentence arrives once, through your jaw, in the ordinary dead acoustics of the conservatoire."},
+    {"id":"start.line.4","who":"you","text":"That is not proof."},
+    {"id":"start.line.5","who":"direction","text":"Your hands do not answer when asked. Your pulse cannot be counted twice the same way. The Source spent itself, and it spent the part of you that could stand up afterward."},
+    {"id":"start.line.6","who":"direction","text":"There is a wall at your back, dust under your legs and the recorder still in your hand. The room is real enough to die in."},
+    {"id":"start.line.7","who":"you","text":"Open channel. Source ended. Recordist not returning. If the gate can hear me, mark the force closed."},
+    {"id":"start.line.8","who":"direction","text":"Nothing marks you present. The recorder takes forty-one seconds of breathing after your hand has stopped moving."},
+    {"id":"start.line.9","who":"direction","text":"OPEN CHANNEL."}
+  ]}}
+}

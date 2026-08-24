@@ -34,6 +34,9 @@ function isColdOpenShotScene(sceneId = '') {
 const COLD_OPEN_ROUTE_ART = Object.freeze({
   start: { id: 'boothRain', mode: 'hero', caption: 'Vehicle gate / 21:38', status: 'STILL' },
   replay: { id: 'boothRain', mode: 'hero', caption: 'Vehicle gate / 21:38', status: 'STILL' },
+  // The greeting is the trunk choice, and it is played on the guard rather than
+  // on the weather: from here on the run is a conversation with a man.
+  greet: { id: 'guard', mode: 'hero', caption: 'Gate booth / 21:38', status: 'STILL' },
   order: { id: 'boothPen', mode: 'hero', caption: 'Requisition 4-4-1-7', status: 'UNSIGNED' },
   guard: { id: 'guard', mode: 'hero', caption: 'Gate booth / the book', status: 'STILL' },
   tape: { id: 'recordist', mode: 'hero', caption: "The previous recordist's tape", status: 'ON THE TAPE' },

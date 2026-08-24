@@ -69,9 +69,20 @@ export function makeEncounterStartScene({
   let tiles = [];
   let started = false;
 
-  const kit = () => buildBagModel({ equipment: getEquipment() || [], loadout: getLoadout() })
-    .sections.find((section) => section.id === 'kit')?.entries
-    .filter((entry) => entry.battleCapable && entry.present) || [];
+  const kit = () => {
+    const entries=buildBagModel({ equipment: getEquipment() || [], loadout: getLoadout() })
+      .sections.find((section) => section.id === 'kit')?.entries
+      .filter((entry) => entry.battleCapable && entry.present) || [];
+    // The case itself is one stable catalog. The last-chance encounter screen
+    // still groups reachable gear first so selection does not jump to an
+    // unrelated stored item when a tray item is patched out.
+    return entries.map((entry,index)=>({entry,index})).sort((a,b)=>{
+      const aTop=a.entry.compartment==='top',bTop=b.entry.compartment==='top';
+      if(aTop!==bTop)return aTop?-1:1;
+      if(aTop)return (a.entry.topIndex??99)-(b.entry.topIndex??99);
+      return a.index-b.index;
+    }).map(({entry})=>entry);
+  };
 
   const clampSel = (list) => { selected = Math.max(0, Math.min(selected, Math.max(0, list.length - 1))); };
   const move = (delta) => { const list = kit(); selected = (selected + delta + list.length) % Math.max(1, list.length); notice = ''; };

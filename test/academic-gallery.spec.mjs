@@ -154,12 +154,12 @@ const source=captureFloorplanMapSource({
 });
 const job={done:0,total:5,rooms:TARGETS.map((roomId)=>({roomId,label:roomId,notes:[],recorded:false}))};
 const before=buildMapModel({source,job,player:{...project(conservatory.spawn),x:project(conservatory.spawn).x,y:project(conservatory.spawn).z}});
-assert.equal(before.floors.some((floor)=>floor.id==='academic'),false);
-assert.equal(before.connectors.some((connector)=>connector.a.floorId==='academic'||connector.b.floorId==='academic'),false);
+assert.equal(before.floors.find((floor)=>floor.id==='academic')?.discovered,false,'the issued plan shows 3F while retaining its unvisited status');
+assert.equal(before.connectors.some((connector)=>connector.a.floorId==='academic'||connector.b.floorId==='academic'),true);
 const atAcademic=project(ACADEMIC_ENTRY);
 const after=buildMapModel({source,job,discoveredFloorIds:new Set(['academic']),player:{x:atAcademic.x,y:atAcademic.z,height:atAcademic.height,renderGroup:atAcademic.renderGroup}});
 assert.equal(after.floors.find((floor)=>floor.id==='academic')?.shortLabel,'3F');
-assert.equal(after.spaces.some((space)=>space.floorId==='academic'),false);
+assert.equal(after.spaces.some((space)=>space.floorId==='academic'),true);
 assert.ok(after.connectors.some((connector)=>connector.a.floorId==='academic'||connector.b.floorId==='academic'));
 
 const physical=FP.physicalSpanData();

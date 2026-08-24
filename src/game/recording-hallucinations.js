@@ -119,7 +119,19 @@ export function recordingHallucinationEligibility({
   const dark = !lightOn || Number(darkness) >= 0.45;
   if (!dark) return { eligible: false, reason: 'lit' };
 
-  const quiet = Number(effectiveMicRms) < Math.max(0.012, Number(spoilThreshold) * 0.75);
+  // QUIET MEANS "THE TAKE IS CLEAN", NOT "THE ROOM IS SILENT".
+  //
+  // This was `max(0.012, spoil * 0.75)`, and 0.012 sits UNDER the noise floor of
+  // an ordinary room — mic.js measures a quiet room at about 0.005 but anything
+  // with a fridge or a road outside runs well past that. So on a machine with a
+  // real microphone the gate read `noisy` forever and no hallucination ever
+  // fired; with the mic off, main.js passes 0 and they fired fine. Working only
+  // for players who declined the microphone is exactly backwards.
+  //
+  // The condition the beat actually wants is the one the game already teaches:
+  // he is holding a take and not spoiling it. That is the spoil threshold, and
+  // nothing stricter — a take can be clean and still not be silence.
+  const quiet = Number(effectiveMicRms) < Number(spoilThreshold);
   if (!quiet) return { eligible: false, reason: 'noisy' };
 
   const progress = clamp01(takeProgress);

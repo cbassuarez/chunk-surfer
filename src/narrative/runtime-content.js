@@ -19,20 +19,19 @@ const audioProject = authoringAudioProject || { triggers: [] };
 // Narrative Studio documents remain the canonical source of record. Keep this
 // intentionally small and source-id addressed: these are voice/locality edits,
 // not a general string replacement pass.
+//
+// AN ENTRY HERE OUTRANKS THE SCRIPT, SILENTLY. Seven were removed when the cold
+// open took its pre-DAG wording back, because each of them was still quietly
+// replacing a restored line with the rewrite it was restored from — including
+// `guard.line.2`, where the guard went back to "past the door is nothing to do
+// with me" on the page and kept saying the newer line on screen. Anything
+// authored in the document and also listed here does not reach the player.
 const LOCAL_ENGLISH_TEXT_POLISH = new Map([
-  ['conservatory.cold_open_dialogue:start.line.5', 'Came through about five.'],
-  ['conservatory.cold_open_dialogue:start.line.8', 'Coffee if you want it. It is not a proper brew, but it is hot. Work order is there. Keys when you sign.'],
   ['conservatory.cold_open_dialogue:order.rooms.power.line.1', 'The site office had the power cut months back — cheaper than paying for a building they are about to knock down.'],
-  ['conservatory.cold_open_dialogue:order.money.line.2', 'I saw the dispatch call come up on the call-out board at four and said yes almost before I finished reading it.'],
-  ['conservatory.cold_open_dialogue:order.client.line.2', 'No website. A landline and a registered-office post box in Croydon.'],
   ['conservatory.cold_open_dialogue:order.client.revisit.line.1', 'W. Ellery Holdings. A landline and a registered-office post box in Croydon.'],
   ['conservatory.cold_open_dialogue:order.client.worse.line.1', 'Worse, and been paid slower. A dead landline is not much of a red flag in this trade. A dead landline that pays half up front is nearly a reference.'],
-  ['conservatory.cold_open_dialogue:order.deadline.line.1', 'Thursday, six in the morning. After that there is no building to be in — only dust and the planning notice for a development.'],
-  ['conservatory.cold_open_dialogue:guard.line.2', 'Keys and forms. Past the grey door is not my patch.'],
   ['conservatory.cold_open_dialogue:guard.revisit.line.1', 'Still the door, the keyring, and the book. Ask away.'],
   ['conservatory.cold_open_dialogue:guard.revisit.line.2', 'Ask what you like. Yard is my patch. In there is not.'],
-  ['conservatory.cold_open_dialogue:guard.inside.why.line.2', 'I have a chair, a telly, and a flask. Whatever is in there is not paying me to look at it.'],
-  ['conservatory.cold_open_dialogue:guard.shift.line.2', "Nobody. Site's condemned. They stopped paying for the night watch when they stopped paying for the power. Last shift tonight."],
   ['conservatory.cold_open_dialogue:guard.shift.bell.line.1', 'And nothing. Gate code is on your sheet. It is a demolition site, mate, not a bank.'],
   ['conservatory.cold_open_dialogue:guard.radio.line.2', 'Channel two. Give us a shout on the hour if you remember. If it hisses, stop talking and let it settle.'],
   ['conservatory.cold_open_dialogue:guard.radio.line.3', 'If somebody answers and it is not me — do not get chatting.'],

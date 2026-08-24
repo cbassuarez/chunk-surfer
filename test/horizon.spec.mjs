@@ -3,8 +3,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { SOURCE_HORIZON } from '../src/data/source-level.js';
-import { HORIZON_EXIT, HORIZON_REASON } from '../src/game/chunk-surf-state.js';
+import { SOURCE_BELLS, SOURCE_HORIZON } from '../src/data/source-level.js';
+import {
+  CHUNK_SURF_PHASE, HORIZON_EXIT, HORIZON_REASON,
+  SOURCE_FINALE_ROUTE, SOURCE_FINALE_STAGE,
+} from '../src/game/chunk-surf-state.js';
 import { buildChunkSurfGodPreset, CHUNK_SURF_GOD_PRESET } from '../src/game/chunk-surf-god.js';
 import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
 import { applyRigAdvantage } from '../src/game/source-rig-bridge.js';
@@ -12,9 +15,13 @@ import { sourceCombatBattle } from '../src/data/combat-definitions.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-function onTape() {
+function onTape({marbleEyes=null,completions=null}={}) {
   const built = buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.NORMAL_EXIT, { seed: 4417 });
-  const runtime = createSourceSpaceRuntime({ initialState: built.state, onComplete: () => {} });
+  const state={...built.state,profile:{...built.state.profile,marbleEyes}};
+  const runtime = createSourceSpaceRuntime({
+    initialState: state,
+    onComplete: (completion) => { if (completions) completions.push(completion); },
+  });
   runtime.setPlayerPosition(built.position);
   runtime.completeNormalExit();
   return runtime;
@@ -22,7 +29,7 @@ function onTape() {
 
 // ── the walk is the playhead ────────────────────────────────────────────────
 {
-  const runtime = onTape();
+  const runtime = onTape({marbleEyes:'carried'});
   const origin = runtime.state().landscapeOrigin;
   const at = (depth) => {
     const y = origin.y + SOURCE_HORIZON.from - depth;
@@ -76,7 +83,8 @@ function onTape() {
 
 // ── the bust, and the detour he keeps telling you about ─────────────────────
 {
-  const runtime = onTape();
+  const completions = [];
+  const runtime = onTape({marbleEyes:'carried',completions});
   const bust = runtime.horizonBustPoint();
   const origin = runtime.state().landscapeOrigin;
   // He stands beside the walk, not across it — you can reach the chapel without
@@ -88,25 +96,60 @@ function onTape() {
   // He does not hand over the detour on the first word. He warns you first, at
   // length, which is the joke: nobody can say they were not told.
   let offered = false;
-  for (let i = 0; i < 5; i += 1) offered = offered || runtime.talkToHorizonBust().offers;
+  for (let i = 0; i < 2; i += 1) offered = offered || runtime.talkToHorizonBust().offers;
   assert.equal(offered, false, 'the bust warns you before he offers anything');
   assert.equal(runtime.talkToHorizonBust().offers, true, 'and then he offers');
+  assert.equal(runtime.decideHorizonBust(true).accepted,true,'the proposition, not the eyes, commits Tower');
 
+  // THE DETOUR OPENS A PLACE, IT DOES NOT CLOSE THE CHAPTER.
+  //
+  // It used to complete Source space on the spot and hand main.js a datamosh to
+  // play over a warp. Taking it now puts the body at the head of the bell
+  // passage and the chapter stays open — and stays ACTIVE — for the four hundred
+  // metres it takes to walk to the room at the end.
   const taken = runtime.takeHorizonBustDetour();
   assert.equal(taken.handled, true);
   assert.equal(taken.exit, HORIZON_EXIT.TOWER);
-  assert.equal(runtime.state().completed, true);
-  assert.ok(taken.completion.flags.includes('chunkSurf.horizon.exit.tower'));
+  assert.equal(taken.entered, 'bells');
+  assert.equal(taken.completion, undefined, 'nothing is reported to the world yet');
+  assert.equal(runtime.state().phase, CHUNK_SURF_PHASE.BELLS);
+  assert.equal(runtime.state().completed, false, 'the chapter is still open');
+  assert.equal(runtime.state().active, true);
+  // The route is committed at the bust, though: reloading inside the passage
+  // must not offer the choice a second time.
+  assert.equal(runtime.state().finale.route, SOURCE_FINALE_ROUTE.TOWER);
+  assert.equal(runtime.state().finale.stage, SOURCE_FINALE_STAGE.TOWER_COMMITTED);
+
+  // He is put over the seam rather than walked there, facing into the passage.
+  const bells = runtime.bellsFrame();
+  assert.equal(bells.active, true);
+  assert.ok(bells.depth >= 0 && bells.depth < 20, 'he starts at the head of the passage');
+  assert.equal(bells.resolve, 0, 'and the room is not there yet');
+
+  // Walking to the room resolves it, and walking INTO it is the commit.
+  const origin2 = runtime.state().landscapeOrigin || { x: 0, y: -252 };
+  runtime.setPlayerPosition({ x: origin2.x, y: origin2.y + SOURCE_BELLS.resolveTo, facing: 0 });
+  assert.ok(runtime.bellsFrame().resolve > 0.99, 'the room is fully arrived by the time you reach it');
+  const doorway = { x: origin2.x, y: origin2.y + SOURCE_BELLS.room.threshold - 1 };
+  runtime.onStep({ x: origin2.x, y: origin2.y + SOURCE_BELLS.room.threshold + 2 }, doorway);
+  assert.equal(runtime.state().phase, CHUNK_SURF_PHASE.COMPLETED, 'the missing wall is the end of the chapter');
+  assert.equal(completions.length, 1, 'and it reports exactly once');
+  assert.ok(completions[0].flags.includes('chunkSurf.horizon.exit.tower'));
+  assert.equal(completions[0].transitionTarget, 'cathedral');
 }
 
-// ── losing and walking away arrive in the same place, differently ───────────
+// ── Contact loss is terminal; only deliberate refusal opens Horizon ─────────
 {
   const built = buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.EXPOSED_BATTLE, { seed: 4417 });
   const runtime = createSourceSpaceRuntime({ initialState: built.state });
   runtime.setPlayerPosition(built.position);
   runtime.requestBossBattle();
+  runtime.commitContact();
   const lost = runtime.failFinalEncounter();
-  assert.equal(lost.reason, HORIZON_REASON.LOST);
+  assert.equal(lost.completion.route,SOURCE_FINALE_ROUTE.CONTACT);
+  assert.equal(lost.completion.result,'lost');
+  assert.equal(runtime.state().phase,'completed');
+  assert.equal(runtime.state().horizon.entered,false);
   assert.equal(runtime.state().finalEncounter.outcome, 'submit');
 
   const walked = onTape();

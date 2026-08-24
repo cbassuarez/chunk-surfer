@@ -181,6 +181,7 @@ export function makeCombatScene({
   // What the opponent already knows about how this recordist plays, from
   // earlier in the night. Null for the bench drill, which remembers nothing.
   carriedRead = null,
+  continuation = null,
   musicSession = null,
   director = null,
   interference = null,
@@ -202,6 +203,7 @@ export function makeCombatScene({
     tools: loadout.tools,
     techniques: loadout.techniques,
     carriedRead,
+    continuation,
     source,
   });
   let phase = 'arrival';

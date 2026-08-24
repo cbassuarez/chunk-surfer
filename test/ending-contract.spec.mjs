@@ -299,7 +299,7 @@ console.log('ending contract specs passed');
 console.log('  hall take placement flags ok');
 
 console.log('');
-console.log('  ⚠ ENDING AUDIO OUTSTANDING — all five endings play the opening title theme.');
+console.log('  ⚠ ENDING AUDIO OUTSTANDING — all nine endings play the opening title theme.');
 for (const entry of ENDING_AUDIO_TODO) {
   console.log(`     ${entry.id.padEnd(30)} ${entry.kind.padEnd(9)} ${String(entry.seconds).padStart(6)}s   ${entry.note}`);
 }

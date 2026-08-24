@@ -23,7 +23,7 @@ export const BAG_ITEM_REGISTRY = Object.freeze({
   map: Object.freeze({ role: 'navigation', automaticUse: null }),
   radio: Object.freeze({ role: 'deployable', automaticUse: null }),
   interface: Object.freeze({ role: 'combat-gear', automaticUse: null }),
-  'tuning-fork': Object.freeze({ role: 'contextual-source-tool', automaticUse: null }),
+  'tuning-fork': Object.freeze({ role: 'combat-gear', automaticUse: null }),
   coffee: Object.freeze({ role: 'consumable', automaticUse: null }),
   'plant-spanner': Object.freeze({ role: 'puzzle-tool', automaticUse: BAG_AUTOMATIC_USE['plant-spanner'] }),
   'marble-eyes': Object.freeze({ role: 'puzzle-piece', automaticUse: BAG_AUTOMATIC_USE['marble-eyes'] }),
@@ -122,9 +122,7 @@ export function resolveBagItemAction(itemId, context = {}) {
     case 'interface':
       return action('inspect-interface', 'INSPECT', BAG_ACTION_MODE.DIALOG);
     case 'tuning-fork':
-      return context.sourceTargetFocused
-        ? action('source-tune', 'TUNE', BAG_ACTION_MODE.COMMAND, { closeBefore: true })
-        : action('inspect-tuning-fork', 'INSPECT', BAG_ACTION_MODE.DIALOG);
+      return action('inspect-tuning-fork', 'INSPECT', BAG_ACTION_MODE.DIALOG);
     case 'coffee':
       return action('coffee-drink', 'DRINK', BAG_ACTION_MODE.CONSUME, {
         closeBefore: true,

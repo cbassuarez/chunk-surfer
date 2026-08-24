@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "ending.tower-lost",
+  "title": "The Full Peal",
+  "status": "active",
+  "entry": "start",
+  "entries": ["start"],
+  "tags": ["ending", "tower", "cathedral"],
+  "notes": "Terminal defeat in either Cathedral phase. It cannot fall back to Chapel.",
+  "regions": [{"id":"ending.tower-lost.region","title":"The Full Peal","kind":"ending","color":"#78525a","nodeIds":["start"]}],
+  "nodes": {"start":{"type":"ending","speaker":"THE FULL PEAL","lines":[
+    {"id":"start.line.1","who":"direction","text":"The first bell finds the crossing. The second finds the Surfer."},
+    {"id":"start.line.2","who":"direction","text":"By the third, the distinction between the two available bodies has become an acoustic problem."},
+    {"id":"start.line.3","who":"surfer","quotes":"signal","text":"That is what they were for."},
+    {"id":"start.line.4","who":"direction","text":"Four. The screen answers at the same distance as the screen in Ellery Chapel, though nobody here measures it."},
+    {"id":"start.line.5","who":"direction","text":"Five. Cold glass gives back the same chord from another building and refuses to explain the correspondence."},
+    {"id":"start.line.6","who":"you","text":"There are six."},
+    {"id":"start.line.7","who":"direction","text":"Six completes the return through both of you. The bell mouths do not move."},
+    {"id":"start.line.8","who":"direction","text":"No porch opens. No chapel inherits the run. The demolition remains paperwork for a morning that belongs to another route."},
+    {"id":"start.line.9","who":"direction","text":"THE FULL PEAL."}
+  ]}}
+}

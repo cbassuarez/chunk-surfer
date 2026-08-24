@@ -188,8 +188,11 @@ test('the prose is drawn on the top two presets and nowhere else', () => {
   const source = readFileSync(new URL('../src/game/combat.js', import.meta.url), 'utf8');
   assert.match(source, /\['full','trace'\]\.includes\(state\.difficulty\.guidance\)/);
   // And the posture is drawn regardless, because it is the floor the ladder
-  // stands on: a fight with no prose in it still has to be readable.
-  assert.match(source, /state\.stance\?\.id \|\| ''\)\.toUpperCase\(\)/);
+  // stands on: a fight with no prose in it still has to be readable. Its
+  // fallback is a NAMED posture rather than an empty string — a blank where the
+  // stance goes reads as a missing readout, not as a neutral one.
+  assert.match(source, /state\.stance\?\.id \|\| 'reading'\)\.toUpperCase\(\)/);
+  assert.doesNotMatch(source, /guidance[^\n]*stanceId/, 'the posture is never gated on the prose presets');
 });
 
 test('guided is told the mood, the chain and the charge; standard is not', () => {

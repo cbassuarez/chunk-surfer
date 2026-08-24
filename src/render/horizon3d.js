@@ -37,6 +37,29 @@ uniform mat4 uView, uProj;
 uniform float uPosScale, uSizeScale;
 uniform float uSliceFade;   // per-slice opacity, distance + collapse
 uniform float uBoil;        // sub-pixel unrest, so a still frame is not dead
+// Where the ground is. Everything below it belongs to the floor, not to the
+// picture, and fades out over the last two metres so the tape rises out of the
+// ground rather than being sliced off by a razor.
+uniform float uFloorCut;
+// ── THE BORE ────────────────────────────────────────────────────────────────
+//
+// The tape is 128 units wide and 40 tall and the body walks INSIDE it, two
+// metres from the nearest slice. Summed over forty slices that is not a
+// recording you walk through, it is a wall of colour with your face against it —
+// which is what it looked like: full-height video, no floor, no walls except
+// the edges of the picture, and no way to tell where the corridor had drifted.
+//
+// So a tube is carved out of the recording along the walkable band. Inside it
+// the tape is nearly gone; outside it the tape is untouched. What that leaves is
+// a corridor with the recording as its walls and its ceiling, a floor under it,
+// and a clear run down the middle to whatever is at the far end — which is the
+// whole point of the crossing and was the one thing you could not see.
+//
+// The axis follows the same band the floor draws, sampled at the body and a
+// hundred-odd metres on, so the tunnel bends exactly where the walking does.
+uniform vec2 uBoreCentre;   // x: at the body, y: ahead
+uniform vec2 uBoreReach;    // half-width at each
+uniform float uBoreZ, uBoreAheadZ, uBoreAxisY, uBoreHeight, uBoreAmount;
 out vec2 vQuad; out vec4 vColor; out float vKind; out float vSeed;
 
 void main(){
@@ -60,7 +83,23 @@ void main(){
   vec4 viewPos = uView * vec4(center, 1.0);
   viewPos.xy += aQuad * size;
   vQuad = aQuad;
-  vColor = vec4(aColor.rgb, aColor.a * uSliceFade);
+  float buried = smoothstep(uFloorCut - 2.2, uFloorCut + 0.6, center.y);
+  // Where the tube is at this splat's depth.
+  float along = clamp((uBoreZ - center.z) / max(1.0, uBoreAheadZ), 0.0, 1.0);
+  float axisX = mix(uBoreCentre.x, uBoreCentre.y, along);
+  float halfW = max(2.0, mix(uBoreReach.x, uBoreReach.y, along));
+  // An elliptical section: as wide as the walkable band, and tall enough to
+  // stand a vault over. Normalised so one unit is the tube's surface.
+  float ex = (center.x - axisX) / halfW;
+  // ON THE EYE, NOT ON THE FLOOR. Centring the section on floor + height/2 put
+  // the axis eighteen metres over the head with the body walking underneath its
+  // own corridor, which is why the first cut changed nothing on screen.
+  float ey = (center.y - uBoreAxisY) / max(2.0, uBoreHeight * 0.5);
+  float r = sqrt(ex * ex + ey * ey);
+  // Soft-walled, not a hole punched in a poster: the tape thins toward the axis
+  // over the last third of the radius, so the corridor has haze in it.
+  float bore = mix(1.0 - uBoreAmount, 1.0, smoothstep(0.58, 1.20, r));
+  vColor = vec4(aColor.rgb, aColor.a * uSliceFade * buried * bore);
   vKind = kind;
   vSeed = aTrim.x;
   gl_Position = uProj * viewPos;
@@ -171,8 +210,117 @@ export function horizonCamera({ camX = 0, camY = 0, camZ = 0, yaw = 0, pitch = 0
   return { view, projection, forward: fwd };
 }
 
+// ── THE GROUND THE TAPE STANDS ON ───────────────────────────────────────────
+//
+// The tape is a cloud of splats hanging in a cleared void, and for a long time
+// that was the whole of the horizon: no floor, no walls, no edges except the
+// edges of the picture. What that reads as, from inside it, is a video played at
+// full height inside a very large box — you cannot tell how tall you are, how
+// fast you are going, or which way the corridor has drifted, because there is
+// nothing under you and nothing beside you.
+//
+// So: one quad, lying at the tape's own floor, drawn BEFORE the splats.
+//
+// It does two jobs and they are both about knowing where you are.
+//
+//   THE HORIZON LINE. Ground meeting void at a fixed height in the frame is the
+//   single strongest depth cue available, and it costs one gradient.
+//
+//   THE CORRIDOR, VISIBLE. The walkable band is already authored and already
+//   drifts — horizonBand() in source-space-runtime.js returns a centre and a
+//   reach per slice. Nothing ever drew it, so the drift was something you found
+//   out about by being refused. The band is passed in here at two depths and
+//   lerped between, which is enough to make a curving path read as a path.
+//
+// It is not lit and it is not a surface. It is the same plum the void is,
+// slightly lifted, with a lit lane down it — a floor in a recording of a place,
+// not a floor in a place.
+const GROUND_VERT = `#version 300 es
+precision highp float;
+layout(location=0) in vec2 aQuad;
+uniform mat4 uView, uProj;
+uniform float uFloorY, uHalfWidth, uNear, uFar, uCamZ;
+out vec3 vLocal;
+void main(){
+  // The quad is laid out in tape space directly: x across the corridor, z back
+  // along it from just behind the body to the far fade. Following the camera in
+  // z keeps a finite quad under an infinite walk.
+  float x = aQuad.x * 2.0 * uHalfWidth;
+  float z = uCamZ + mix(uNear, uFar, aQuad.y + 0.5);
+  vLocal = vec3(x, uFloorY, z);
+  gl_Position = uProj * uView * vec4(vLocal, 1.0);
+}`;
+
+const GROUND_FRAG = `#version 300 es
+precision highp float;
+in vec3 vLocal;
+layout(location=0) out vec4 o;
+layout(location=1) out vec4 oMark;
+uniform vec3 uVoid;
+// uFadeDist is the POSITIVE run of the floor. uFar in the vertex shader is the
+// signed z offset of the far edge, and reusing it here as a scale divided by a
+// negative number — which clamped the fade to 1 everywhere and made the whole
+// floor transparent. Two names, because they are two quantities.
+uniform float uCamZ, uFadeDist, uCollapse, uExposure;
+// The band, at the body and at a slice well ahead of it. Everything between is
+// linear, which is what a recording's drift looks like anyway.
+uniform vec2 uBandHere;    // x: centre, y: half-width, in tape units
+uniform vec2 uBandAhead;
+uniform float uAheadZ;
+
+float hash21(vec2 p){ return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453); }
+
+void main(){
+  float back = uCamZ - vLocal.z;                 // metres ahead of the body
+  float t = clamp(back / max(1.0, uAheadZ), 0.0, 1.0);
+  vec2 band = mix(uBandHere, uBandAhead, t);
+  float off = abs(vLocal.x - band.x);
+
+  // Distance fade. The ground has to run out before the tape does, or the
+  // recording appears to be standing on a floor that continues past it.
+  float depth = clamp(back / max(1.0, uFadeDist), 0.0, 1.0);
+  float reach = 1.0 - smoothstep(0.62, 1.0, depth);
+  // And it has to run out UNDER the body too, or the near edge of the quad is a
+  // hard line across the bottom of the frame.
+  reach *= smoothstep(0.0, 0.035, depth);
+
+  // The lane: lit inside the walkable band, gone outside it, with the edge
+  // itself the brightest part. That edge is the only thing out here that is
+  // telling the truth about where the step will be refused.
+  float inside = 1.0 - smoothstep(band.y * 0.86, band.y * 1.04, off);
+  float edge = smoothstep(band.y * 0.72, band.y * 0.99, off) * (1.0 - smoothstep(band.y * 1.0, band.y * 1.22, off));
+
+  // Sleepers every eight metres, thin, and gone before the far fade: they are
+  // here to give the walk a rate, not to be a pattern.
+  float rungs = smoothstep(0.93, 0.995, abs(fract(vLocal.z * 0.125) * 2.0 - 1.0)) * inside
+    * (1.0 - smoothstep(0.30, 0.75, depth));
+
+  // Sleepers across the lane, every four metres, so speed is legible. Without
+  // them a flat lane gives the walk no rate at all and the whole crossing feels
+  // slower than it is.
+  // Bright enough to be a floor. The first pass at this was the void colour
+  // times a small number, which on screen is black — the ground was there and
+  // nobody could see it, which is the same as not having one.
+  // A floor in a recording of a place, not a lit floor in a place. It reads at
+  // the same value as the void it stands in and everything on it is a shade of
+  // that plum — the first tuning had glowing rails and a checkerboard on it,
+  // which is a different game.
+  vec3 col = vec3(0.036, 0.014, 0.046);
+  col += vec3(0.052, 0.020, 0.068) * inside;
+  col += vec3(0.155, 0.062, 0.180) * edge;
+  col += vec3(0.048, 0.020, 0.058) * rungs;
+  // Grain, so the floor belongs to the same failing recording as the picture.
+  col *= 0.86 + hash21(floor(vLocal.xz * 3.0)) * 0.28;
+
+  float a = reach * uExposure * (1.0 - uCollapse * 0.9) * 0.96;
+  o = vec4(col * a, a);
+  oMark = vec4(0.0);
+}`;
+
 let gl = null;
 let program = null;
+let groundProgram = null;
+let groundUniforms = new Map();
 let vao = null;
 let quadBuffer = null;
 let splatBuffer = null;
@@ -200,6 +348,11 @@ const U = (name) => {
   return uniforms.get(name);
 };
 
+const GU = (name) => {
+  if (!groundUniforms.has(name)) groundUniforms.set(name, gl.getUniformLocation(groundProgram, name));
+  return groundUniforms.get(name);
+};
+
 function compile(type, src) {
   const shader = gl.createShader(type);
   gl.shaderSource(shader, src);
@@ -219,7 +372,15 @@ export function horizonInit(context) {
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
     throw new Error(`horizon program: ${gl.getProgramInfoLog(program)}`);
   }
+  groundProgram = gl.createProgram();
+  gl.attachShader(groundProgram, compile(gl.VERTEX_SHADER, GROUND_VERT));
+  gl.attachShader(groundProgram, compile(gl.FRAGMENT_SHADER, GROUND_FRAG));
+  gl.linkProgram(groundProgram);
+  if (!gl.getProgramParameter(groundProgram, gl.LINK_STATUS)) {
+    throw new Error(`horizon ground program: ${gl.getProgramInfoLog(groundProgram)}`);
+  }
   uniforms = new Map();
+  groundUniforms = new Map();
   vao = gl.createVertexArray();
   quadBuffer = gl.createBuffer();
   gl.bindVertexArray(vao);
@@ -254,7 +415,7 @@ export async function horizonLoad({ bin = 'assets/horizon-tape.bin', json = 'ass
 // Build the bust: a plinth, a shoulder mass and a head, scattered as splats and
 // quantised into the same 16-byte record the bake uses so the existing vertex
 // attributes read it unchanged. Deterministic — the same figure every run.
-export function horizonSetBust({ x = 0, depth = 0, height = 12, centreY = null } = {}) {
+export function horizonSetBust({ x = 0, depth = 0, height = 12, centreY = null, eyes = false, eyeMode = 'untouched' } = {}) {
   if (!gl || !program || !manifest) return false;
   const posScale = manifest.posScale, sizeScale = manifest.sizeScale;
   // HE IS THE SIZE OF THE PICTURE, NOT THE SIZE OF A MAN.
@@ -304,6 +465,15 @@ export function horizonSetBust({ x = 0, depth = 0, height = 12, centreY = null }
     for (let i = 0; i < 6; i += 1) {
       push(x + side * 0.26 + (rnd() - 0.5) * 0.18, floor + height * 0.855 + (rnd() - 0.5) * 0.1,
         z + 0.44, 0.24, 0.2, [0.06, 0.05, 0.07], 2, 255);
+    }
+  }
+  if (eyes) {
+    const marble = eyeMode === 'returned' ? [0.62, 0.92, 0.90] : [0.92, 0.90, 0.82];
+    for (const side of [-1, 1]) {
+      for (let i = 0; i < 9; i += 1) {
+        push(x + side * 0.26 + (rnd() - 0.5) * 0.10, floor + height * 0.855 + (rnd() - 0.5) * 0.07,
+          z + 0.48, 0.14, 0.12, marble, 2, 255);
+      }
     }
   }
 
@@ -382,10 +552,54 @@ function pointAt(first, buffer = splatBuffer) {
 // contradicted this module's own promise to allocate nothing per frame.
 const drawOrder = [];
 
+// The floor, drawn before the tape so every splat composites over it. Called by
+// r3d ahead of horizonRender; separate because it wants the corridor band and
+// the tape does not.
+export function horizonGround({
+  view, projection, camZ = 0, floorY = null, collapse = 0, exposure = 1,
+  band = null, bandAhead = null, aheadZ = 96, far = 300, near = 6,
+} = {}) {
+  if (!gl || !groundProgram || !view || !projection) return false;
+  const here = band || { centre: 0, reach: 24 };
+  const ahead = bandAhead || here;
+  const y = floorY == null ? (Number(manifest?.floor) || 0) - (Number(manifest?.span?.y) || 40) * 0 : floorY;
+  gl.useProgram(groundProgram);
+  gl.bindVertexArray(vao);
+  gl.uniformMatrix4fv(GU('uView'), false, view);
+  gl.uniformMatrix4fv(GU('uProj'), false, projection);
+  gl.uniform1f(GU('uFloorY'), y);
+  // Wide enough that the quad's own side edges never enter the frame; the fade
+  // is what ends the floor, not the geometry.
+  gl.uniform1f(GU('uHalfWidth'), 320);
+  gl.uniform1f(GU('uNear'), near);
+  gl.uniform1f(GU('uFar'), -far);
+  gl.uniform1f(GU('uFadeDist'), far);
+  gl.uniform1f(GU('uCamZ'), camZ);
+  gl.uniform3f(GU('uVoid'), 0.035, 0.008, 0.042);
+  gl.uniform1f(GU('uCollapse'), collapse);
+  gl.uniform1f(GU('uExposure'), exposure);
+  gl.uniform2f(GU('uBandHere'), here.centre, Math.max(2, here.reach));
+  gl.uniform2f(GU('uBandAhead'), ahead.centre, Math.max(2, ahead.reach));
+  gl.uniform1f(GU('uAheadZ'), Math.max(1, aheadZ));
+  gl.disable(gl.DEPTH_TEST);
+  gl.depthMask(false);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  gl.bindVertexArray(null);
+  return true;
+}
+
 export function horizonRender({
   view, projection, slice = 0, reach = 44, behind = reach,
-  collapse = 0, boil = 0, exposure = 1, nearFade = 9,
+  collapse = 0, boil = 0, exposure = 1, nearFade = 9, floorCut = -1e9,
+  bore = null,
 } = {}) {
+  bore = {
+    centre: 0, centreAhead: 0, reach: 24, reachAhead: 24,
+    z: 0, aheadZ: 110, axisY: floorCut, height: 22, amount: 0,
+    ...(bore || {}),
+  };
   horizonStats.calls += 1;
   horizonStats.draws = 0; horizonStats.instances = 0; horizonStats.skipped = 0; horizonStats.bail = null;
   if (!ready || !gl || !program || !view || !projection) {
@@ -404,6 +618,14 @@ export function horizonRender({
   gl.uniform1f(U('uPosScale'), manifest.posScale);
   gl.uniform1f(U('uSizeScale'), manifest.sizeScale);
   gl.uniform1f(U('uBoil'), boil);
+  gl.uniform1f(U('uFloorCut'), floorCut);
+  gl.uniform2f(U('uBoreCentre'), bore.centre, bore.centreAhead);
+  gl.uniform2f(U('uBoreReach'), bore.reach, bore.reachAhead);
+  gl.uniform1f(U('uBoreZ'), bore.z);
+  gl.uniform1f(U('uBoreAheadZ'), Math.max(1, bore.aheadZ));
+  gl.uniform1f(U('uBoreAxisY'), bore.axisY);
+  gl.uniform1f(U('uBoreHeight'), Math.max(2, bore.height));
+  gl.uniform1f(U('uBoreAmount'), Math.max(0, Math.min(1, bore.amount)));
 
   // No depth buffer to fight over out here — there is no architecture, only
   // tape — so ordering is the pass's own responsibility and depth testing would

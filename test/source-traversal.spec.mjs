@@ -32,15 +32,12 @@ assert.doesNotMatch(runtimeSource,/emitNoise|MONITOR\./,'Source weather, contact
 
   const reverseFrom = { x: ORIGIN.x, y: ORIGIN.y - 41, facing: 2 };
   const reverse = runtime.geometry.canStep(reverseFrom.x, reverseFrom.y, reverseFrom.x, reverseFrom.y + 2);
-  assert.equal(reverse.via, 'lift');
-  runtime.beginTraversal({ move: reverse, from: reverseFrom });
-  for (let i = 0; i < 120 && runtime.traversalFrame().active; i += 1) runtime.tickTraversal(1 / 60);
-  assert.equal(runtime.traversalFrame().active, false, 'lifts work in reverse');
+  assert.equal(reverse.ok,false,'the first lift cannot be ridden down');
+  assert.equal(reverse.why,'one-way lift');
 }
 
-// Every authored lift commits on the first step into its volume from either
-// side. Exercise the edge lanes too: these are the routes players reach from the
-// optional spokes, and a centre-line happy path cannot prove them.
+// Every authored lift commits upward on the first step into its volume. Exercise
+// the edge lanes and a diagonal segment so controller cadence cannot skip it.
 {
   const built=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FIRST_LIFT,{seed:4417});
   const origin=built.state.landscapeOrigin;
@@ -60,14 +57,19 @@ assert.doesNotMatch(runtimeSource,/emitNoise|MONITOR\./,'Source weather, contact
       const raised=finish(upRuntime);
       assert.ok(raised.position.y<origin.y+lift.y,`${lift.id} did not land on its upper side`);
 
-      const upper={x:origin.x+lift.x+offset,y:origin.y+lift.y-lift.depth-1,facing:2};
+      const upper={x:origin.x+lift.x+offset,y:origin.y+lift.y-1,facing:2};
       const downRuntime=createSourceSpaceRuntime({initialState:built.state});
-      const down=downRuntime.geometry.canStep(upper.x,upper.y,upper.x,upper.y+1);
-      assert.deepEqual({via:down.via,feature:down.feature,travel:down.travel},{via:'lift',feature:lift.id,travel:'down'});
-      assert.equal(downRuntime.beginTraversal({move:down,from:upper}).handled,true);
-      const lowered=finish(downRuntime);
-      assert.ok(lowered.position.y>origin.y+lift.y,`${lift.id} did not land on its lower side`);
+      const down=downRuntime.geometry.canStep(upper.x,upper.y,upper.x,origin.y+lift.y+1);
+      assert.equal(down.ok,false,`${lift.id} can be ridden down`);
+      assert.equal(down.why,'one-way lift');
     }
+    const diagonalFrom={x:origin.x+lift.x+lift.halfWidth+.6,y:origin.y+lift.y+lift.depth+1,facing:0};
+    const diagonalTo={x:origin.x+lift.x+lift.halfWidth-.4,y:origin.y+lift.y+lift.depth-.2};
+    const diagonalRuntime=createSourceSpaceRuntime({initialState:built.state});
+    const diagonal=diagonalRuntime.geometry.canStep(diagonalFrom.x,diagonalFrom.y,diagonalTo.x,diagonalTo.y);
+    assert.deepEqual({via:diagonal.via,feature:diagonal.feature,travel:diagonal.travel},{via:'lift',feature:lift.id,travel:'up'});
+    assert.equal(diagonalRuntime.beginTraversal({move:diagonal,from:diagonalFrom}).handled,true);
+    finish(diagonalRuntime);
   }
 }
 
@@ -77,7 +79,7 @@ assert.doesNotMatch(runtimeSource,/emitNoise|MONITOR\./,'Source weather, contact
   const built=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FIRST_LIFT,{seed:4417});
   const origin=built.state.landscapeOrigin;
   for(const chute of SOURCE_CHUTES){
-    const top={x:origin.x+chute.x-chute.dir.x,y:origin.y+chute.y-chute.dir.y,facing:2};
+    const top={x:origin.x+chute.x,y:origin.y+chute.y,facing:2};
     const downTo={x:top.x+chute.dir.x,y:top.y+chute.dir.y};
     const runtime=createSourceSpaceRuntime({initialState:built.state});
     const down=runtime.geometry.canStep(top.x,top.y,downTo.x,downTo.y);
@@ -145,27 +147,22 @@ assert.doesNotMatch(runtimeSource,/emitNoise|MONITOR\./,'Source weather, contact
   runtime.setPlayerPosition(built.position);
   assert.equal(runtime.finalEncounterRequest().battleAvailable,true);
   const insights=[...runtime.state().sourceContacts.insights];
-  // LOSING COSTS THE CHAPTER, NOT A TIER. It used to drop him one plateau and
-  // re-arm the fight, which is the same as losing not counting. Now it submits
-  // on his behalf and puts him out past the perimeter, on the tape.
+  runtime.requestBossBattle();
+  runtime.commitContact();
+  // LOSING CONTACT COSTS THE RUN. It used to drop him one plateau and then put
+  // him on the tape; the declared no-return route now terminates where he fell.
   const loss=runtime.failFinalEncounter();
   assert.equal(loss.handled,true);
-  assert.equal(loss.horizon,true,'a lost fault puts him out on the tape');
-  assert.equal(loss.reason,'lost');
-  assert.equal(runtime.state().phase,'horizon');
+  assert.equal(loss.completion.endingId,'contact-lost');
+  assert.equal(runtime.state().phase,'completed');
+  assert.equal(runtime.state().horizon.entered,false);
   assert.deepEqual(runtime.state().sourceContacts.insights,insights,'battle loss retains contact knowledge');
   assert.equal(runtime.state().finalEncounter.status,'resolved','the fault does not stay open behind him');
   assert.equal(runtime.state().finalEncounter.won,false);
   assert.equal(runtime.state().finalEncounter.outcome,'submit','losing submits');
   assert.equal(runtime.state().bestEligible,false,'a loss cannot reach the rescue');
-  assert.equal(runtime.state().completed,false,'the chapter closes at an exit, not at the loss');
-  // And he is actually standing on it, at the head of the recording.
-  const frame=runtime.horizonFrame();
-  assert.equal(frame.active,true);
-  assert.equal(frame.depth,SOURCE_HORIZON.entryStandoff,'he arrives just past the seam, not clipping it');
-  assert.equal(frame.slice,SOURCE_HORIZON.entryStandoff/SOURCE_HORIZON.sliceMetres);
-  assert.ok(frame.seconds<5,'the tape is only just running when he gets there');
-  assert.equal(frame.collapsing,false);
+  assert.equal(runtime.state().completed,true,'Contact loss is terminal');
+  assert.equal(runtime.horizonFrame().active,false);
 }
 
 {
@@ -190,15 +187,26 @@ assert.doesNotMatch(runtimeSource,/emitNoise|MONITOR\./,'Source weather, contact
   // on the completion so main.js knows whether it owes him a tower.
   for (const exit of ['chapel','tower']) {
     const built=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.NORMAL_EXIT,{seed:4417});
+    if(exit==='tower')built.state={...built.state,profile:{...built.state.profile,marbleEyes:'carried'}};
     let completion=null;
     const runtime=createSourceSpaceRuntime({initialState:built.state,onComplete:(value)=>{completion=value;}});
     runtime.setPlayerPosition(built.position);
     runtime.completeNormalExit();
     assert.equal(completion,null,'the tape has not been walked yet');
+    if(exit==='tower'){
+      for(let beat=0;beat<3;beat+=1)runtime.talkToHorizonBust();
+      runtime.decideHorizonBust(true);
+    }
     const chosen=runtime.chooseHorizonExit(exit);
     assert.equal(chosen.handled,true);
+    if(exit==='tower'){
+      assert.equal(runtime.state().phase,'bells','the accepted bust opens the current bell passage');
+      assert.equal(runtime.state().completed,false,'the Tower route is not complete before the belfry room');
+      assert.equal(completion,null,'main.js is not handed the Tower before the bell passage is walked');
+      assert.equal(runtime.enterBellsRoom().handled,true);
+    }
     assert.equal(runtime.state().completed,true);
-    assert.equal(completion?.horizonExit,exit,'the chosen exit reaches main.js');
+    assert.equal(completion?.horizonExit,exit,'the completed route reaches main.js');
     assert.ok(completion.flags.includes(`chunkSurf.horizon.exit.${exit}`));
   }
   // And nothing else gets you off it.

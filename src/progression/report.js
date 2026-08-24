@@ -11,6 +11,10 @@ export const RETURN_DEFS = Object.freeze([
   Object.freeze({ id: 'inversion', order: 3, title: 'THE OTHER DOOR', classification: 'INVERSION', hiddenUntilSeen: true }),
   Object.freeze({ id: 'drugged', order: 4, title: 'COLD, BITTER, GONE', classification: 'CONTAMINATION', hiddenUntilSeen: true }),
   Object.freeze({ id: 'surfaced', order: 5, title: 'THE OTHER RECORDIST', classification: 'EXTRACTION', hiddenUntilSeen: true }),
+  Object.freeze({ id: 'contact-won', order: 6, family: 'CONTACT', title: 'OPEN CHANNEL', classification: 'CONTACT / VICTORY', hiddenUntilSeen: true }),
+  Object.freeze({ id: 'contact-lost', order: 7, family: 'CONTACT', title: 'NO RETURN', classification: 'CONTACT / TERMINAL', hiddenUntilSeen: true }),
+  Object.freeze({ id: 'tower-won', order: 8, family: 'TOWER', title: 'EXIT THROUGH THE GIFT SHOP', classification: 'TOWER / EXTRACTION', hiddenUntilSeen: true }),
+  Object.freeze({ id: 'tower-lost', order: 9, family: 'TOWER', title: 'THE FULL PEAL', classification: 'TOWER / TERMINAL', hiddenUntilSeen: true }),
 ]);
 
 export function returnDefinition(id) {

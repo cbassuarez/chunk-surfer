@@ -13,10 +13,29 @@ export function drawPlayerMarker(point, heading = 0, alpha = 1, { tick = true } 
   uiLine(point.x, point.y, point.x + dx, point.y + dy, themeRoleColor('counter'), alpha, 1.25);
 }
 
+// The target lozenge, drawn as real geometry rather than asked for as a
+// codepoint. '◆'/'◇' are not in every monospace face the atlas can fall back to,
+// and uiGlyph fails SILENTLY on a glyph it cannot rasterise — right cell, right
+// colour, no pixels. The waypoint was rendering as an empty pair of brackets.
+export function drawTargetLozenge(cx, cy, alpha = 1, { hollow = false, role = 'accent' } = {}) {
+  uiDraw(({ ctx, dpr, cellW, cellH }) => {
+    const x = (cx + .5) * cellW * dpr, y = (cy + .5) * cellH * dpr;
+    const rx = cellW * dpr * .42, ry = cellH * dpr * .36;
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+    ctx.beginPath();
+    ctx.moveTo(x, y - ry); ctx.lineTo(x + rx, y); ctx.lineTo(x, y + ry); ctx.lineTo(x - rx, y);
+    ctx.closePath();
+    if (hollow) { ctx.strokeStyle = themeRoleColor(role); ctx.lineWidth = Math.max(dpr, cellW * dpr * .16); ctx.stroke(); }
+    else { ctx.fillStyle = themeRoleColor(role); ctx.fill(); }
+    ctx.restore();
+  });
+}
+
 export function drawWaypointMarker(point, alpha = 1, {edgeDirection='',playerSelected=false}={}) {
   if(!point)return;
   const x=Math.round(point.x),y=Math.round(point.y);
-  uiGlyph(x,y,playerSelected?'◇':'◆','ui-blue',alpha);
+  drawTargetLozenge(x,y,alpha,{hollow:playerSelected});
   if(edgeDirection){
     const ox=edgeDirection==='→'?-1:edgeDirection==='←'?1:0;
     const oy=edgeDirection==='↓'?-1:edgeDirection==='↑'?1:0;
@@ -91,8 +110,11 @@ export function drawObjectiveMarker(command, alpha = 1) {
   // target. It is the only marker drawn hollow in the silkscreen colour.
   if (command.unknown) { uiGlyph(x, y, '?', 'ui-secondary', alpha * .55); return; }
   const cls = command.recorded ? 'ui-green' : command.waypoint ? 'ui-blue' : command.current ? 'ui-amber' : 'ui-primary';
-  const glyph = command.recorded ? '■' : command.waypoint ? '◆' : command.current ? '●' : '◇';
-  uiGlyph(x, y, glyph, cls, alpha);
+  // Rooms and targets are lozenges, drawn (see drawTargetLozenge) rather than
+  // typed: the two diamond codepoints this used to ask for are not in every
+  // fallback face, and every unnamed room on the page was coming out blank.
+  if (command.recorded || command.current) uiGlyph(x, y, command.recorded ? '■' : '●', cls, alpha);
+  else drawTargetLozenge(x, y, alpha, { hollow: !command.waypoint, role: command.waypoint ? 'accent' : 'phosphor' });
   if (command.selected) {
     uiGlyph(x - 1, y, '▸', 'ui-amber', 0.65 + alpha * 0.35);
   }

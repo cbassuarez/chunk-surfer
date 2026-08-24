@@ -66,7 +66,7 @@ assert.equal(inertRuntime.sourceScene().dynamicInstances.filter((entry)=>entry.s
   'three understood intervals visibly alter Source geometry');
 assert.equal(inertRuntime.finalEncounterRequest().exposed,true);
 assert.equal(inertRuntime.finalEncounterRequest().rigAvailable,false);
-assert.equal(inertRuntime.finalEncounterRequest().battleAvailable,false,'the exposed return fault stays inert without the rig');
+assert.equal(inertRuntime.finalEncounterRequest().battleAvailable,true,'the rig is an advantage, not a Contact traversal gate');
 assert.equal(inertRuntime.finalEncounterRequest().normalExitAvailable,true);
 assert.equal('lastChoiceId' in inertRuntime.probe().contact,false,'diagnostics never expose hidden answer choices');
 

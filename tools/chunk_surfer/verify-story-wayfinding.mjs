@@ -34,10 +34,19 @@ for(const preset of STORY_WAYFINDING_CAPTURE_PRESETS){
   if(!result?.target?.id)throw new Error(`${preset.id}: no derived target`);
   await new Promise((resolve)=>setTimeout(resolve,preset.stallMs||1100));
   const state=await page.evaluate(()=>({guidance:window.__probe.storyGuidance(),props:window.__probe.props(),scene:window.__probe.scene()}));
-  const targetRendered=!state.guidance.target?.propId||state.props.renderedIds.includes(state.guidance.target.propId);
+  const propId=state.guidance.target?.propId;
+  const doorId=state.guidance.target?.doorId;
+  const targetRendered=propId
+    ? state.props.renderedIds.includes(propId)
+    : doorId
+      ? state.props.renderedIds.some((id)=>id===doorId||id.includes(`:${doorId}:`)||id.endsWith(`:${doorId}`))
+      : true;
   const highlighted=!!state.guidance.highlight?.visible;
+  const highlightMatches=!highlighted
+    || (!!propId&&state.guidance.highlight.propId===propId)
+    || (!!doorId&&state.guidance.highlight.doorId===doorId);
   if(preset.hintMode==='off'&&highlighted)throw new Error(`${preset.id}: target illuminated in OFF mode`);
-  if((preset.hintMode==='full'||preset.hintMode==='reduced')&&state.guidance.sameRenderedSpace&&(!highlighted||!targetRendered))throw new Error(`${preset.id}: expected illuminated target object`);
+  if((preset.hintMode==='full'||preset.hintMode==='reduced')&&state.guidance.sameRenderedSpace&&(!highlighted||!highlightMatches||!targetRendered))throw new Error(`${preset.id}: expected illuminated target object`);
   await page.screenshot({path:path.join(output,preset.file)});
   console.log(preset.id.padEnd(30),result.target.id,state.scene||'world',highlighted?'object-lit':'bearing-only');
 }

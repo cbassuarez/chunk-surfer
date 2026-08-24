@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-23T04:30:10.697Z",
-  "bytes": 23331436,
-  "totalTriangles": 323710,
+  "generatedAt": "2026-08-24T01:11:12.277Z",
+  "bytes": 25826860,
+  "totalTriangles": 354082,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -755,6 +755,26 @@
       "triangles": 108,
       "vertices": 174
     },
+    "ending_body_prone": {
+      "triangles": 108,
+      "vertices": 174
+    },
+    "ending_body_seated": {
+      "triangles": 108,
+      "vertices": 174
+    },
+    "ending_van_cabin": {
+      "triangles": 132,
+      "vertices": 264
+    },
+    "ending_van_cup": {
+      "triangles": 112,
+      "vertices": 124
+    },
+    "ending_collapse_debris": {
+      "triangles": 36,
+      "vertices": 72
+    },
     "apparition_pose_head_turn": {
       "triangles": 84,
       "vertices": 168
@@ -804,8 +824,16 @@
       "vertices": 192
     },
     "bay_canopy": {
-      "triangles": 508,
-      "vertices": 964
+      "triangles": 772,
+      "vertices": 1492
+    },
+    "getin_sightline_shell": {
+      "triangles": 252,
+      "vertices": 504
+    },
+    "yard_dock_access": {
+      "triangles": 536,
+      "vertices": 1004
     },
     "district_terrace_frontage": {
       "triangles": 3600,
@@ -904,16 +932,136 @@
       "vertices": 146
     },
     "exterior_bus_woman": {
-      "triangles": 1484,
-      "vertices": 1288
+      "triangles": 384,
+      "vertices": 678
     },
     "exterior_mews_neighbor": {
-      "triangles": 1276,
-      "vertices": 1144
+      "triangles": 360,
+      "vertices": 630
     },
     "exterior_pub_driver": {
-      "triangles": 1264,
-      "vertices": 1120
+      "triangles": 348,
+      "vertices": 624
+    },
+    "vigil_ruth_mallory": {
+      "triangles": 336,
+      "vertices": 600
+    },
+    "vigil_leila_hart": {
+      "triangles": 348,
+      "vertices": 606
+    },
+    "vigil_owen_pryce": {
+      "triangles": 360,
+      "vertices": 630
+    },
+    "vigil_denise_okafor": {
+      "triangles": 336,
+      "vertices": 600
+    },
+    "vigil_malcolm_vey": {
+      "triangles": 348,
+      "vertices": 606
+    },
+    "vigil_kit_renshaw": {
+      "triangles": 324,
+      "vertices": 576
+    },
+    "vigil_part_ruth_binder": {
+      "triangles": 24,
+      "vertices": 48
+    },
+    "vigil_part_leila_flask": {
+      "triangles": 112,
+      "vertices": 130
+    },
+    "vigil_part_owen_umbrella": {
+      "triangles": 228,
+      "vertices": 456
+    },
+    "vigil_part_denise_photos": {
+      "triangles": 36,
+      "vertices": 72
+    },
+    "vigil_part_malcolm_map": {
+      "triangles": 60,
+      "vertices": 120
+    },
+    "vigil_part_kit_microphone": {
+      "triangles": 108,
+      "vertices": 216
+    },
+    "vigil_figure_umbrella_a": {
+      "triangles": 564,
+      "vertices": 1056
+    },
+    "vigil_figure_umbrella_b": {
+      "triangles": 576,
+      "vertices": 1062
+    },
+    "vigil_figure_placard_a": {
+      "triangles": 348,
+      "vertices": 606
+    },
+    "vigil_figure_placard_b": {
+      "triangles": 324,
+      "vertices": 576
+    },
+    "vigil_figure_flask_a": {
+      "triangles": 448,
+      "vertices": 730
+    },
+    "vigil_figure_flask_b": {
+      "triangles": 460,
+      "vertices": 736
+    },
+    "vigil_figure_seated_a": {
+      "triangles": 444,
+      "vertices": 816
+    },
+    "vigil_figure_seated_b": {
+      "triangles": 456,
+      "vertices": 822
+    },
+    "vigil_figure_pamphlets_a": {
+      "triangles": 360,
+      "vertices": 648
+    },
+    "vigil_figure_pamphlets_b": {
+      "triangles": 384,
+      "vertices": 678
+    },
+    "vigil_figure_camera_a": {
+      "triangles": 408,
+      "vertices": 744
+    },
+    "vigil_figure_camera_b": {
+      "triangles": 432,
+      "vertices": 774
+    },
+    "vigil_part_sign_save": {
+      "triangles": 1848,
+      "vertices": 3696
+    },
+    "vigil_part_sign_strike": {
+      "triangles": 3360,
+      "vertices": 6720
+    },
+    "vigil_part_sign_chapel": {
+      "triangles": 3228,
+      "vertices": 6456
+    },
+    "vigil_part_sign_record": {
+      "triangles": 3432,
+      "vertices": 6864
+    },
+    "vigil_part_sign_signed": {
+      "triangles": 3204,
+      "vertices": 6408
+    },
+    "vigil_part_banner": {
+      "triangles": 3396,
+      "vertices": 6792
     },
     "conservatory_west_elevation": {
       "triangles": 17808,
@@ -971,6 +1119,26 @@
       "triangles": 348,
       "vertices": 564
     },
+    "demolition_scaffold_run": {
+      "triangles": 1120,
+      "vertices": 2032
+    },
+    "demolition_excavator": {
+      "triangles": 840,
+      "vertices": 1152
+    },
+    "demolition_heras_fence": {
+      "triangles": 148,
+      "vertices": 244
+    },
+    "demolition_generator": {
+      "triangles": 364,
+      "vertices": 526
+    },
+    "demolition_light_tower": {
+      "triangles": 352,
+      "vertices": 544
+    },
     "yard_markings": {
       "triangles": 372,
       "vertices": 744
@@ -1012,8 +1180,8 @@
       "vertices": 264
     },
     "park_fountain": {
-      "triangles": 8204,
-      "vertices": 9846
+      "triangles": 10556,
+      "vertices": 14388
     },
     "park_marble_eyes": {
       "triangles": 776,
@@ -1028,8 +1196,8 @@
       "vertices": 1168
     },
     "baseboard_ground": {
-      "triangles": 5664,
-      "vertices": 11328
+      "triangles": 5952,
+      "vertices": 11904
     },
     "baseboard_hall": {
       "triangles": 2400,
@@ -3313,6 +3481,66 @@
         0.144
       ]
     },
+    "ending_body_prone": {
+      "min": [
+        -0.494,
+        -0.23,
+        -0.94
+      ],
+      "max": [
+        0.474,
+        0.61,
+        0.733
+      ]
+    },
+    "ending_body_seated": {
+      "min": [
+        -0.509,
+        0.011,
+        -0.26
+      ],
+      "max": [
+        0.433,
+        1.25,
+        0.478
+      ]
+    },
+    "ending_van_cabin": {
+      "min": [
+        -1.175,
+        0,
+        -1.117
+      ],
+      "max": [
+        1.175,
+        1.294,
+        0.7
+      ]
+    },
+    "ending_van_cup": {
+      "min": [
+        -0.078,
+        0,
+        -0.076
+      ],
+      "max": [
+        0.078,
+        0.199,
+        0.076
+      ]
+    },
+    "ending_collapse_debris": {
+      "min": [
+        -0.83,
+        -0.008,
+        -0.476
+      ],
+      "max": [
+        0.682,
+        0.368,
+        0.395
+      ]
+    },
     "apparition_pose_head_turn": {
       "min": [
         -0.4,
@@ -3460,13 +3688,37 @@
     "bay_canopy": {
       "min": [
         -3.78,
-        1.34,
-        -3.7
+        0,
+        -4.15
       ],
       "max": [
-        3.57,
-        5.53,
-        3.7
+        4.32,
+        5.5,
+        4.65
+      ]
+    },
+    "getin_sightline_shell": {
+      "min": [
+        4.05,
+        0,
+        -4.37
+      ],
+      "max": [
+        20.37,
+        5.5,
+        7.87
+      ]
+    },
+    "yard_dock_access": {
+      "min": [
+        -1.61,
+        -0.85,
+        -4.19
+      ],
+      "max": [
+        2.527,
+        1.007,
+        4.19
       ]
     },
     "district_terrace_frontage": {
@@ -3759,38 +4011,398 @@
     },
     "exterior_bus_woman": {
       "min": [
-        -0.36,
+        -0.39,
         0,
-        -0.31
+        -0.376
       ],
       "max": [
         0.53,
-        1.78,
-        0.255
+        1.73,
+        0.315
       ]
     },
     "exterior_mews_neighbor": {
       "min": [
-        -0.36,
+        -0.39,
         0,
-        -0.31
+        -0.376
       ],
       "max": [
-        0.302,
-        1.817,
-        0.255
+        0.383,
+        1.81,
+        0.315
       ]
     },
     "exterior_pub_driver": {
       "min": [
-        -0.36,
+        -0.39,
         0,
-        -0.31
+        -0.376
       ],
       "max": [
-        0.302,
-        1.821,
-        0.255
+        0.384,
+        1.77,
+        0.315
+      ]
+    },
+    "vigil_ruth_mallory": {
+      "min": [
+        -0.391,
+        0,
+        -0.376
+      ],
+      "max": [
+        0.382,
+        1.67,
+        0.315
+      ]
+    },
+    "vigil_leila_hart": {
+      "min": [
+        -0.402,
+        0,
+        -0.376
+      ],
+      "max": [
+        0.371,
+        1.69,
+        0.315
+      ]
+    },
+    "vigil_owen_pryce": {
+      "min": [
+        -0.39,
+        0,
+        -0.376
+      ],
+      "max": [
+        0.382,
+        1.76,
+        0.315
+      ]
+    },
+    "vigil_denise_okafor": {
+      "min": [
+        -0.39,
+        0,
+        -0.376
+      ],
+      "max": [
+        0.371,
+        1.65,
+        0.315
+      ]
+    },
+    "vigil_malcolm_vey": {
+      "min": [
+        -0.395,
+        0,
+        -0.376
+      ],
+      "max": [
+        0.372,
+        1.81,
+        0.315
+      ]
+    },
+    "vigil_kit_renshaw": {
+      "min": [
+        -0.405,
+        0,
+        -0.376
+      ],
+      "max": [
+        0.371,
+        1.69,
+        0.315
+      ]
+    },
+    "vigil_part_ruth_binder": {
+      "min": [
+        -0.19,
+        0.888,
+        -0.276
+      ],
+      "max": [
+        0.15,
+        1.312,
+        -0.135
+      ]
+    },
+    "vigil_part_leila_flask": {
+      "min": [
+        -0.315,
+        0.95,
+        -0.271
+      ],
+      "max": [
+        0.275,
+        1.3,
+        -0.129
+      ]
+    },
+    "vigil_part_owen_umbrella": {
+      "min": [
+        -0.258,
+        0.892,
+        -0.398
+      ],
+      "max": [
+        0.458,
+        1.285,
+        0.318
+      ]
+    },
+    "vigil_part_denise_photos": {
+      "min": [
+        -0.37,
+        0.25,
+        -0.26
+      ],
+      "max": [
+        0.38,
+        1.228,
+        0.02
+      ]
+    },
+    "vigil_part_malcolm_map": {
+      "min": [
+        -0.17,
+        1.049,
+        -0.335
+      ],
+      "max": [
+        0.33,
+        1.391,
+        -0.205
+      ]
+    },
+    "vigil_part_kit_microphone": {
+      "min": [
+        -0.177,
+        0.014,
+        -0.4
+      ],
+      "max": [
+        0.474,
+        1.685,
+        0.14
+      ]
+    },
+    "vigil_figure_umbrella_a": {
+      "min": [
+        -0.391,
+        0,
+        -0.398
+      ],
+      "max": [
+        0.458,
+        1.71,
+        0.318
+      ]
+    },
+    "vigil_figure_umbrella_b": {
+      "min": [
+        -0.404,
+        0,
+        -0.398
+      ],
+      "max": [
+        0.458,
+        1.71,
+        0.318
+      ]
+    },
+    "vigil_figure_placard_a": {
+      "min": [
+        -0.39,
+        0,
+        -0.376
+      ],
+      "max": [
+        0.371,
+        1.75,
+        0.315
+      ]
+    },
+    "vigil_figure_placard_b": {
+      "min": [
+        -0.395,
+        0,
+        -0.376
+      ],
+      "max": [
+        0.372,
+        1.75,
+        0.315
+      ]
+    },
+    "vigil_figure_flask_a": {
+      "min": [
+        -0.39,
+        0,
+        -0.376
+      ],
+      "max": [
+        0.371,
+        1.67,
+        0.315
+      ]
+    },
+    "vigil_figure_flask_b": {
+      "min": [
+        -0.39,
+        0,
+        -0.376
+      ],
+      "max": [
+        0.371,
+        1.79,
+        0.315
+      ]
+    },
+    "vigil_figure_seated_a": {
+      "min": [
+        -0.404,
+        0,
+        -0.376
+      ],
+      "max": [
+        0.382,
+        1.25,
+        0.315
+      ]
+    },
+    "vigil_figure_seated_b": {
+      "min": [
+        -0.402,
+        0,
+        -0.376
+      ],
+      "max": [
+        0.379,
+        1.37,
+        0.315
+      ]
+    },
+    "vigil_figure_pamphlets_a": {
+      "min": [
+        -0.39,
+        0,
+        -0.376
+      ],
+      "max": [
+        0.38,
+        1.7,
+        0.315
+      ]
+    },
+    "vigil_figure_pamphlets_b": {
+      "min": [
+        -0.395,
+        0,
+        -0.376
+      ],
+      "max": [
+        0.38,
+        1.69,
+        0.315
+      ]
+    },
+    "vigil_figure_camera_a": {
+      "min": [
+        -0.406,
+        0,
+        -0.376
+      ],
+      "max": [
+        0.472,
+        1.72,
+        0.315
+      ]
+    },
+    "vigil_figure_camera_b": {
+      "min": [
+        -0.404,
+        0,
+        -0.376
+      ],
+      "max": [
+        0.472,
+        1.72,
+        0.315
+      ]
+    },
+    "vigil_part_sign_save": {
+      "min": [
+        -0.66,
+        0.579,
+        -0.272
+      ],
+      "max": [
+        0.66,
+        2.2,
+        -0.083
+      ]
+    },
+    "vigil_part_sign_strike": {
+      "min": [
+        -0.67,
+        0.579,
+        -0.272
+      ],
+      "max": [
+        0.67,
+        2.2,
+        -0.083
+      ]
+    },
+    "vigil_part_sign_chapel": {
+      "min": [
+        -0.67,
+        0.579,
+        -0.272
+      ],
+      "max": [
+        0.67,
+        2.2,
+        -0.083
+      ]
+    },
+    "vigil_part_sign_record": {
+      "min": [
+        -0.67,
+        0.504,
+        -0.338
+      ],
+      "max": [
+        0.67,
+        1.336,
+        -0.083
+      ]
+    },
+    "vigil_part_sign_signed": {
+      "min": [
+        -0.67,
+        0.504,
+        -0.338
+      ],
+      "max": [
+        0.67,
+        1.336,
+        -0.083
+      ]
+    },
+    "vigil_part_banner": {
+      "min": [
+        -1.9,
+        0.05,
+        -0.283
+      ],
+      "max": [
+        1.9,
+        1.07,
+        -0.193
       ]
     },
     "conservatory_west_elevation": {
@@ -3961,6 +4573,66 @@
         1.58
       ]
     },
+    "demolition_scaffold_run": {
+      "min": [
+        -3.85,
+        0,
+        -0.64
+      ],
+      "max": [
+        3.85,
+        7,
+        0.66
+      ]
+    },
+    "demolition_excavator": {
+      "min": [
+        -1.05,
+        0.04,
+        -4.025
+      ],
+      "max": [
+        1.08,
+        3.281,
+        1.7
+      ]
+    },
+    "demolition_heras_fence": {
+      "min": [
+        -2.04,
+        0,
+        -0.33
+      ],
+      "max": [
+        2.04,
+        2.105,
+        0.33
+      ]
+    },
+    "demolition_generator": {
+      "min": [
+        -1.09,
+        0.06,
+        -1.96
+      ],
+      "max": [
+        1.09,
+        1.14,
+        0.893
+      ]
+    },
+    "demolition_light_tower": {
+      "min": [
+        -0.75,
+        0,
+        -0.654
+      ],
+      "max": [
+        0.75,
+        4.71,
+        0.654
+      ]
+    },
     "yard_markings": {
       "min": [
         -7.5,
@@ -4089,7 +4761,7 @@
       ],
       "max": [
         3.854,
-        5.1,
+        5.05,
         3.854
       ]
     },
@@ -4215,7 +4887,7 @@
     }
   },
   "baseboards": {
-    "planHash": "afa3d2233e40c55a6b7158bc110280317d0321cd2b12d67ada9663d257f8017e",
+    "planHash": "5897aadb0bfbb467c163f985ff52d0900043026af2f8793ec42d757061c7990a",
     "groups": {
       "ground": {
         "mesh": "baseboard_ground",
@@ -4399,6 +5071,10 @@
     "apparition_pose_neutral": 1.44,
     "apparition_pose_side": 1.44,
     "apparition_pose_stoop": 1.42,
+    "ending_body_prone": 0.11,
+    "ending_body_seated": 0.96,
+    "ending_van_cabin": 0.92,
+    "ending_collapse_debris": 0.31,
     "apparition_pose_head_turn": 1.44,
     "apparition_pose_arm_out": 1.44,
     "apparition_pose_weight_shift": 1.45,
@@ -4410,7 +5086,9 @@
     "tower_exit_indicator": 0.48,
     "tower_plaque": 0.76,
     "public_exit_sign": 0.62,
-    "bay_canopy": 5.33,
+    "bay_canopy": 5.15,
+    "getin_sightline_shell": 5.5,
+    "yard_dock_access": -0.3,
     "district_terrace_frontage": 13,
     "district_civic_frontage": 12.8,
     "district_workshop_frontage": 7.2,
@@ -4435,9 +5113,35 @@
     "ambient_cyclist": 0.56,
     "ambient_dog_walker": 0.61,
     "ambient_awning_figure": 1.42,
-    "exterior_bus_woman": 0.11,
-    "exterior_mews_neighbor": 0.11,
-    "exterior_pub_driver": 0.11,
+    "exterior_bus_woman": 0.69,
+    "exterior_mews_neighbor": 0.69,
+    "exterior_pub_driver": 0.69,
+    "vigil_ruth_mallory": 0.69,
+    "vigil_leila_hart": 0.69,
+    "vigil_owen_pryce": 0.69,
+    "vigil_denise_okafor": 0.69,
+    "vigil_malcolm_vey": 0.69,
+    "vigil_kit_renshaw": 0.69,
+    "vigil_part_owen_umbrella": 1.14,
+    "vigil_part_kit_microphone": 1.68,
+    "vigil_figure_umbrella_a": 1.14,
+    "vigil_figure_umbrella_b": 1.14,
+    "vigil_figure_placard_a": 0.69,
+    "vigil_figure_placard_b": 0.69,
+    "vigil_figure_flask_a": 0.69,
+    "vigil_figure_flask_b": 0.69,
+    "vigil_figure_seated_a": 0.48,
+    "vigil_figure_seated_b": 0.48,
+    "vigil_figure_pamphlets_a": 0.69,
+    "vigil_figure_pamphlets_b": 0.69,
+    "vigil_figure_camera_a": 0.69,
+    "vigil_figure_camera_b": 0.69,
+    "vigil_part_sign_save": 2.2,
+    "vigil_part_sign_strike": 2.2,
+    "vigil_part_sign_chapel": 2.2,
+    "vigil_part_sign_record": 1.34,
+    "vigil_part_sign_signed": 1.34,
+    "vigil_part_banner": 1.07,
     "conservatory_west_elevation": 8.4,
     "conservatory_stair_window": 1.04,
     "yard_booth": 0.2,
@@ -4452,6 +5156,11 @@
     "yard_lamp_column": 7.18,
     "yard_skip": 0.12,
     "yard_clutter": 1.05,
+    "demolition_scaffold_run": 2.17,
+    "demolition_excavator": 0.86,
+    "demolition_heras_fence": 0.2,
+    "demolition_generator": 1.04,
+    "demolition_light_tower": 0.68,
     "yard_markings": 0.02,
     "yard_sign": 2.44,
     "yard_road": 0.03,

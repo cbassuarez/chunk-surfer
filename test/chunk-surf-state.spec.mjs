@@ -31,9 +31,7 @@ function completeCandidate(redaction = 'body', { best = true } = {}) {
   let state = landscapeState({ best });
   for (const id of ['fork-room', 'recordist-loop', 'surfer-origin', 'work-order-loop', 'body-room']) {
     state = event(state, 'LANDMARK_VISITED', { id });
-    state = event(state, 'LANDMARK_TUNED', { id });
   }
-  state = event(state, 'LANDMARK_RECORDED', { id: 'body-room' });
   if (best) state = event(state, 'SOURCE_CONTACT_RESOLVED', {
     checkpointId: 'landing-return',
     contact: {
@@ -62,7 +60,7 @@ assert.equal(inferLegacyChunkSurf({flags:{[CHUNK_SURF_FLAGS.completed]:true}}).f
   const migrated=normalizeChunkSurfState({
     schema:2,active:true,phase:'landscape',profile:{bestEligible:true},tuned:['fork-room','surfer-origin'],recorded:['work-order-loop'],redaction:null,
   });
-  assert.equal(migrated.schema,4);
+  assert.equal(migrated.schema,5);
   assert.deepEqual(migrated.optionalTraces,['surfer-origin','work-order-loop'],'schema-2 Tune and Record evidence migrates without loss');
   assert.equal(migrated.finalEncounter.status,SOURCE_FINAL_STATUS.LOCKED);
   assert.deepEqual(migrated.checkpoint,{id:'hall-entry',facing:0});
@@ -102,9 +100,9 @@ assert.equal(inferLegacyChunkSurf({flags:{[CHUNK_SURF_FLAGS.completed]:true}}).f
 
 {
   let state=landscapeState();
-  state=event(state,'LANDMARK_RECORDED',{id:'surfer-origin'});
-  state=event(state,'LANDMARK_TUNED',{id:'work-order-loop'});
-  assert.deepEqual(state.optionalTraces,['surfer-origin','work-order-loop'],'either Record or Tune resolves an optional trace');
+  state=event(state,'LANDMARK_VISITED',{id:'surfer-origin'});
+  state=event(state,'LANDMARK_VISITED',{id:'work-order-loop'});
+  assert.deepEqual(state.optionalTraces,['surfer-origin','work-order-loop'],'visiting each authored place resolves its optional trace');
 }
 
 {
@@ -123,8 +121,7 @@ assert.equal(inferLegacyChunkSurf({flags:{[CHUNK_SURF_FLAGS.completed]:true}}).f
 
 {
   let state=landscapeState();
-  for(const id of ['fork-room','recordist-loop','body-room'])state=event(state,'LANDMARK_TUNED',{id});
-  state=event(state,'LANDMARK_RECORDED',{id:'body-room'});
+  for(const id of ['fork-room','recordist-loop','body-room'])state=event(state,'LANDMARK_VISITED',{id});
   state=event(state,'FINAL_REACHED');
   state=event(state,'FINAL_ENCOUNTER_RESOLVED',{result:{outcome:SOURCE_FINAL_OUTCOME.RESCUE,won:true}});
   state=event(state,'SOURCE_COMPLETED');
@@ -153,7 +150,10 @@ assert.equal(inferLegacyChunkSurf({flags:{[CHUNK_SURF_FLAGS.completed]:true}}).f
   assert.equal(state.attempts, 1);
   assert.equal(state.phase, CHUNK_SURF_PHASE.LANDSCAPE, 'contact preserves spatial progress');
   assert.equal(normalizeChunkSurfState({ ...state, phase: 'invalid' }).phase, CHUNK_SURF_PHASE.HALL);
-  assert.ok(chunkSurfFlagsForState(event(state, 'LANDMARK_TUNED', { id: 'fork-room' })).includes(CHUNK_SURF_FLAGS.fork));
+  assert.equal(chunkSurfFlagsForState(event(state,'LANDMARK_VISITED',{id:'fork-room'})).includes(CHUNK_SURF_FLAGS.fork),false,
+    'visiting the old fork room does not generate a Source tuning fork');
+  assert.ok(chunkSurfFlagsForState(event(state, 'LANDMARK_TUNED', { id: 'fork-room' })).includes(CHUNK_SURF_FLAGS.fork),
+    'legacy tuned saves retain their historical fork flag');
 }
 
 {
@@ -179,6 +179,11 @@ assert.equal(inferLegacyChunkSurf({flags:{[CHUNK_SURF_FLAGS.completed]:true}}).f
   assert.equal(final.state.active,true);
   assert.equal(landing.state.firstLiftCompleted,false);
   assert.equal(firstLift.state.firstLiftCompleted,true);
+  for(const preset of [firstLift,hunt,finalRun,final]){
+    assert.equal(preset.state.hasFork,false,'God presets do not generate a Source tuning fork');
+    assert.deepEqual(preset.state.tuned,[],'God presets do not generate tuned landmarks');
+    assert.deepEqual(preset.state.recorded,[],'God presets do not generate Source recordings');
+  }
   assert.equal(insights.state.sourceContacts.insights.length,3);
   assert.equal(normalExit.state.phase,CHUNK_SURF_PHASE.FINAL);
 }

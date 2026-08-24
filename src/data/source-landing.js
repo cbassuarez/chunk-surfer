@@ -3,6 +3,7 @@ import { CONSERVATORY_LIGHTS, LIGHT_KIND } from './conservatory-lights.js';
 import { CONSERVATORY_DOORS, DOOR_ARCHETYPES } from './conservatory-doors.js';
 import { conservatory } from './floorplan/conservatory.js';
 import { CELL, F, GLYPHS, MATERIAL, ZONE } from './floorplan/legend.js';
+import { SOURCE_LIFTS } from './source-level.js';
 
 const ground = conservatory.levels.find((level) => level.id === 'ground');
 if (!ground) throw new Error('Source landing requires the conservatory ground floor');
@@ -170,6 +171,8 @@ export function sourceLandingLights(origin = { x: 0, y: 0 }) {
     x: SOURCE_GET_IN_BOUNDS.minX,
     y: CENTRE.y,
   });
+  const opening = SOURCE_LANDING_OPENING_LOCAL;
+  const firstLift = SOURCE_LIFTS.find((lift) => lift.id === 'lift-fork') || { x: 0, y: -40 };
   return [{
     id: 'source-landing:getin-grey-door-seam',
     kind: LIGHT_KIND.EMERGENCY,
@@ -182,6 +185,37 @@ export function sourceLandingLights(origin = { x: 0, y: 0 }) {
     penetration: 0.9,
     castsShadow: true,
     shadowYaw: Math.PI,
+  }, {
+    // The removed wall opens onto real props and the first impossible objects.
+    // This maintained fitting establishes that they belong to the playable
+    // world without exposing the rest of the field.
+    id: 'source-landing:opening-emergency',
+    kind: LIGHT_KIND.EMERGENCY,
+    x: (Number(origin.x) + opening.x) * CELL,
+    y: 3.15,
+    z: (Number(origin.y) + opening.y - 2) * CELL,
+    color: [1, 0.012, 0.004],
+    intensity: 1.05,
+    radius: 16,
+    penetration: 0.72,
+    castsShadow: true,
+    shadowYaw: 0,
+    shadowPitch: -0.18,
+  }, {
+    // A second, tighter pool makes the first lift a destination instead of a
+    // dark collision volume. Its radius ends well before any HUSH contact site.
+    id: 'source-landing:first-lift-emergency',
+    kind: LIGHT_KIND.EMERGENCY,
+    x: (Number(origin.x) + firstLift.x) * CELL,
+    y: 3.6,
+    z: (Number(origin.y) + firstLift.y + 1.5) * CELL,
+    color: [1, 0.008, 0.002],
+    intensity: 1.2,
+    radius: 12,
+    penetration: 0.55,
+    castsShadow: true,
+    shadowYaw: 0,
+    shadowPitch: -0.32,
   }];
 }
 
@@ -198,5 +232,6 @@ export function sourceLandingContract() {
     doorIds: [...SOURCE_GET_IN_DOOR_IDS],
     forwardWallRemoved: true,
     emergencyLightId: sourceSeam?.id || null,
+    emergencyLightIds: sourceLandingLights().map((light) => light.id),
   };
 }

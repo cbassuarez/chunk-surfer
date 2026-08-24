@@ -10,11 +10,12 @@ import {
   obscuredNameUtterance,
   UTTERANCE_SYLLABLES,
 } from '../src/narrative/obscured-name.js';
+import { profileFor } from '../src/audio/sam-voice.js';
 import { vfdGlyph } from '../src/render/vfd-font.js';
 
 // THE DOCTRINE, AS A REGEX.
 //
-// docs/story-doctrine.md forbids any literal operator name reaching a
+// docs/story-doctrine.md forbids any literal operator name reaching a written
 // presentation. The shape module is the only source of glyphs for the masked
 // line, so proving its alphabet proves the screen.
 const ALPHABET = /^[░▏▯▓▮█ ]+$/u;
@@ -65,9 +66,9 @@ for (const needle of [PERSONA, 'Sebastian', 'Secret', '4F2A', 'OPERATOR']) {
 
 // ── the voice under the rain ────────────────────────────────────────────────
 //
-// The same doctrine, for the speaker instead of the screen. The utterance goes
-// under `booth.name-mask` at the gate and under the rewind on the tape in B3,
-// and the argument that it is not a name has to be as checkable as the glyphs'.
+// The non-personal fallback and B3 echo. Literal opted-in booth speech is kept
+// outside this module; this utterance must remain as non-identifying as the
+// glyphs that drive it.
 {
   const SYLLABLES = new RegExp(`^(?:(?:${UTTERANCE_SYLLABLES.join('|')})+)(?: (?:(?:${UTTERANCE_SYLLABLES.join('|')})+))*$`);
 
@@ -99,6 +100,12 @@ for (const needle of [PERSONA, 'Sebastian', 'Secret', '4F2A', 'OPERATOR']) {
     });
   }
 }
+
+const firstBoothVoice=profileFor('booth-name');
+const repeatedBoothVoice=profileFor('booth-name-repeat');
+assert.ok(repeatedBoothVoice.gain>firstBoothVoice.gain,'the requested repeat is louder');
+assert.ok(repeatedBoothVoice.lp>firstBoothVoice.lp,'the requested repeat opens more of the name band');
+assert.ok(repeatedBoothVoice.smear.mix<firstBoothVoice.smear.mix,'the requested repeat is less smeared');
 
 // The module must have no parameter a name can enter through, and must never
 // build a glyph out of one. This is a source contract because it is the property

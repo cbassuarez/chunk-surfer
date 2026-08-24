@@ -9,7 +9,7 @@ import { uiCellMetrics, uiDraw, uiFill, uiGlyph, uiText, uiSize } from './ui.js'
 import { drawMachinePanel } from './presentation.js';
 import { themeRoleColor, UI_COLOR } from './palette.js';
 import { buildMinimapCommands } from './map-commands.js';
-import { drawAnomalyMarker, drawEquipmentMarker, drawHushAwareness, drawHushMarker, drawPlayerMarker, drawWaypointMarker } from './map-icons.js';
+import { drawAnomalyMarker, drawEquipmentMarker, drawHushAwareness, drawHushMarker, drawPlayerMarker, drawTargetLozenge, drawWaypointMarker } from './map-icons.js';
 import { mapCurrentAreaLabel, mapFloor, newestMapContact } from '../game/map-model.js';
 import { shakeMode, visualEffectsEnabled } from '../game/access.js';
 
@@ -350,10 +350,18 @@ export function sightPolygon({ origin, heading, isOpen, radius }) {
 
 function drawSight(command) {
   const { origin, heading, transform, viewport, radius } = command;
-  const isOpen = visibilityLookup(command);
-  // Standing in something the map does not consider open (a doorway mid-swing,
-  // an unmapped cell) would otherwise produce a zero-length cone that flickers.
-  if (!isOpen(origin.x, origin.y)) return;
+  const sampled = visibilityLookup(command);
+  // YOU ARE STANDING HERE, SO HERE IS OPEN.
+  //
+  // The viewshed used to abandon the whole cone whenever its own predicate
+  // rejected the origin — a doorway mid-swing, a prop footprint whose map
+  // rectangle is wider than its collision box, an unmapped half-metre cell.
+  // That is not rare out in the yard, and the symptom is the map losing its
+  // sight wedge for no reason the player can see or act on. The one cell we
+  // KNOW is walkable is the one the body occupies: seed it open and let the
+  // rays leave. Everything past the first step is still the real geometry.
+  const here = { x: Math.floor(origin.x), y: Math.floor(origin.y) };
+  const isOpen = (x, y) => (Math.floor(x) === here.x && Math.floor(y) === here.y) || sampled(x, y);
   const edge = sightPolygon({ origin, heading, isOpen, radius });
   if (edge.length < 3) return;
   const apex = transform.point(origin);
@@ -558,7 +566,11 @@ export function drawMinimap(model, opts = {}) {
         ?`${targetReadout.floorDelta>0?'+':''}${targetReadout.floorDelta}F`
         :'OTHER FL';
     const room=clip(target,Math.max(4,panel.w-range.length-4));
-    uiText(panel.x,panel.y,`◆ ${room}`,'ui-blue',.9);
+    // The lozenge is drawn, not typed — see drawTargetLozenge. As a codepoint it
+    // was silently absent, so the readout began with a blank cell and the target
+    // line carried no mark at all.
+    drawTargetLozenge(panel.x,panel.y,.9);
+    uiText(panel.x+2,panel.y,room,'ui-blue',.9);
     uiText(panel.x+Math.max(0,panel.w-range.length),panel.y,range,'ui-blue',.74);
   }else{
     uiText(panel.x+Math.max(0,panel.w-floorTag.length),panel.y,floorTag,'ui-label',.5);

@@ -71,7 +71,18 @@ export function buildMapCommands({ model, nav, layout, now = 0 } = {}) {
   }
 
   if (model.player?.resolved && model.player.floorId === floor.id && model.player.position && model.policy?.showExactPlayer !== false) {
-    commands.push({ kind: 'player', point: transform.point(model.player.position), heading: model.player.heading || 0 });
+    // The page frames the plan, and the ground floor has a road and a park
+    // outside that frame. A player standing out there is still on this floor and
+    // must still be findable: pin them to the edge they are past, the same way
+    // an off-page target is pinned, rather than drawing them into the margin.
+    const view = layout.mapViewport;
+    const raw = transform.point(model.player.position);
+    const inside = insideRect(raw, view, 0.5);
+    const pinned = {
+      x: Math.max(view.x + .5, Math.min(view.x + view.w - .5, raw.x)),
+      y: Math.max(view.y + .5, Math.min(view.y + view.h - .5, raw.y)),
+    };
+    commands.push({ kind: 'player', point: inside ? raw : pinned, offPage: !inside, heading: model.player.heading || 0 });
   }
 
   if(model.hush?.active&&model.hush.visible===true&&model.hush.floorId===floor.id&&model.hush.position){

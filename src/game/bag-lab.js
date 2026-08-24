@@ -8,8 +8,10 @@
 // Query harness: ?baglab=1
 
 import { uiSize, uiText } from '../render/ui.js';
+import * as scenes from './scenes.js';
 import { makeBagScene } from './bag.js';
 import { BAG_LAB_CASES } from './bag-fixtures.js';
+import { resolveBagItemAction } from './bag-items.js';
 import { mapLabModel } from './map-fixtures.js';
 import { assignCombatGearSlot, freshCombatLoadout, moveCombatGear } from './combat-loadout.js';
 import { completeSheetInsight, freshBagSheetState } from './bag-sheets.js';
@@ -17,24 +19,42 @@ import { normalizeCombatBuild, PIN_SOURCES } from './combat-progression.js';
 
 function cloneFixture(source) {
   const copy = JSON.parse(JSON.stringify(source));
-  for (const item of copy.equipment || []) {
-    if (item && typeof item === 'object' && (item.id === 'radio' || item.id === 'coffee')) item.action = () => {};
-  }
+  const ids = {
+    light: 'light',
+    'recorder + headphones': 'recorder',
+    radio: 'radio',
+    'standard keyring': 'keyring',
+    "the guard's coffee": 'coffee',
+  };
+  copy.equipment = (copy.equipment || []).map((item) => {
+    const raw = typeof item === 'string' ? { id: ids[item] || item, label: item } : { ...item };
+    const id = ids[String(raw.id || raw.label || '').toLowerCase()] || raw.id;
+    const dropped = id === 'radio' && (raw.present === false || String(raw.value || '').toUpperCase() === 'DROPPED');
+    return {
+      ...raw,
+      id,
+      deployed: dropped || !!raw.deployed,
+      primaryAction: resolveBagItemAction(id, { present: raw.present, dropped }),
+    };
+  });
   return copy;
 }
 
 export function makeBagLabScene() {
   let caseIndex = 0;
   let compact = false;
-  let showDebug = true;
+  let showDebug = false;
   let fixture = cloneFixture(BAG_LAB_CASES[caseIndex]);
   let lastDebug = null;
   let loadout=freshCombatLoadout();
   let sheetInsights=freshBagSheetState();
   let build=normalizeCombatBuild(null,PIN_SOURCES.encounters);
   let personalWaypoint=null;
+  let labScene=null;
 
   const bag = makeBagScene({
+    embeddedHost:true,
+    onClose:()=>{if(labScene)scenes.remove(labScene);},
     getEquipment: () => fixture.equipment,
     getLoadout:()=>loadout,
     moveEquipment:(id,destination)=>{
@@ -78,7 +98,7 @@ export function makeBagLabScene() {
     bag.refresh();
   }
 
-  return {
+  labScene={
     id: 'bag-lab',
     blocksInput: true,
     blocksWorld: true,
@@ -111,4 +131,5 @@ export function makeBagLabScene() {
       lines.forEach((line, i) => uiText(Math.max(1, cols - line.length - 1), 1 + i, line, 'ui-danger', .72));
     },
   };
+  return labScene;
 }

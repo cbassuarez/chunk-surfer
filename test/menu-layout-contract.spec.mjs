@@ -15,7 +15,7 @@ assert.match(title, /THE CASE FILE IS EMPTY/, 'title has empty-profile copy inst
 assert.match(title, /rowsPerColumn = \(\) => Math\.ceil\(items\.length \/ columns\(\)\)/, 'title computes menu rows from stable menu item count');
 
 const archive = fs.readFileSync('src/game/archive.js', 'utf8');
-assert.match(archive, /NO ENTRIES FILED IN THIS CATEGORY/, 'archive has an empty category state');
+assert.match(archive, /NO ENTRIES IN THIS CATEGORY/, 'archive has an empty category state');
 assert.match(archive, /body\.h - 13/, 'archive caps description rows to body height');
 
 const returnIndex = fs.readFileSync('src/game/return-index.js', 'utf8');

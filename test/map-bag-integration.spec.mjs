@@ -28,6 +28,10 @@ assert.deepEqual(calls, [['mark', 'main_b3']]);
 const rail = mapActionRail(selected, { floorCount: 3 });
 assert.ok(rail.some(([key, label]) => key === '[ / ]' && label === 'CHANGE FLOOR'));
 assert.ok(rail.some(([key, label]) => key === 'C' && label === 'CENTER ON YOU'));
-assert.ok(rail.some(([key, label]) => key === 'SPACE' && /TARGET/.test(label)));
+// CONFIRM owns the target now: setting where you are going is the map's
+// primary verb, not the attached file.
+assert.ok(rail.some(([key, label]) => key === 'ENTER / SPACE' && /TARGET/.test(label)));
+assert.ok(!rail.some(([key, label]) => label === 'OPEN FILE' && /ENTER/.test(key)),
+  'a pinned file never occupies the map confirm key');
 
 console.log('map bag integration tests ok');

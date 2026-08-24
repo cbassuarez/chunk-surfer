@@ -1,0 +1,14 @@
+{
+  "schemaVersion":1,"id":"ending.epilogue.contact-won","title":"Coda · channel left open","status":"active","entry":"start","entries":["start"],"tags":["ending","epilogue","contact"],
+  "notes":"Institutional coda for Open Channel.","regions":[{"id":"ending.epilogue.contact-won.region","title":"Channel left open","kind":"ending","color":"#63d6c4","nodeIds":["start"]}],
+  "nodes":{"start":{"type":"ending","speaker":"W. ELLERY HOLDINGS · GATE","lines":[
+    {"id":"start.line.1","who":"direction","text":"At 06:00 the guard opens the right-hand column and waits for a name that does not arrive."},
+    {"id":"start.line.2","who":"guard","text":"Still open, then."},
+    {"id":"start.line.3","who":"direction","text":"The radio gives him forty-one seconds of breathing and one request to be marked present."},
+    {"id":"start.line.4","who":"direction","text":"He writes OPEN CHANNEL where a signature should go."},
+    {"id":"start.line.5","who":"direction","text":"Estates crosses it out because it is not a person."},
+    {"id":"start.line.6","who":"direction","text":"He writes it again in the RETURNED column."},
+    {"id":"start.line.7","who":"guard","text":"It answered. That is what the column is for."},
+    {"id":"start.line.8","who":"direction","text":"Nobody authorises the correction. Nobody removes it."}
+  ]}}
+}

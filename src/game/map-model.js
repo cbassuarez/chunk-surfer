@@ -131,8 +131,12 @@ export function captureFloorplanMapSource({
   });
   const spaces=(definition.spaces||[]).map((space)=>{
     const projected=projectLogical(space.logical);
-    const floor=floorForHeight(definition,projected.height??projected.y,{renderGroup:projected.renderGroup});
-    return{...space,floorId:floor?.id||null,position:{x:Number(projected.x)/stride,y:Number(projected.z??projected.mapY??projected.y)/stride},height:Number(projected.height??projected.y)||0};
+    const floor=definition.floors.find((candidate)=>candidate.id===space.floorId)
+      ||floorForHeight(definition,projected.height??projected.y,{renderGroup:projected.renderGroup});
+    const position=space.mapPosition
+      ? {x:Number(space.mapPosition.x),y:Number(space.mapPosition.y)}
+      : {x:Number(projected.x)/stride,y:Number(projected.z??projected.mapY??projected.y)/stride};
+    return{...space,floorId:floor?.id||null,position,height:Number(projected.height??projected.y)||0};
   });
   const landmarks=(definition.landmarks||[]).map((landmark)=>{
     const projected=projectLogical(landmark.logical),floor=floorForHeight(definition,projected.height??projected.y,{renderGroup:projected.renderGroup});
@@ -157,6 +161,34 @@ export function captureFloorplanMapSource({
         position: { x: portal.p1[0] / stride, y: portal.p1[1] / stride },
       },
     });
+  }
+
+  // THE PAGE IS THE PLAN, NOT EVERY CELL THE FLOOR OWNS.
+  //
+  // `boundsFromOpen` frames every walkable cell on a floor. That was right while
+  // the ground floor WAS the building; since the exterior civic block landed,
+  // ground also owns a street ring, a park and the arrival road — roughly four
+  // times the footprint, most of it blank tarmac. fitBounds then drew Ellery as
+  // a thumbnail in one corner of the page and the rest of the panel as nothing,
+  // which is a map that has stopped answering the question it is for.
+  //
+  // Frame what the page actually labels: the rooms, spaces and landmarks the
+  // plan carries on that floor, padded, and never larger than the floor itself.
+  // A floor with no named features (there are none today) keeps its open bounds.
+  const PAGE_PAD = 6;
+  for (const floor of floors) {
+    const points = [...targets, ...spaces, ...landmarks]
+      .filter((feature) => feature.floorId === floor.id && feature.position)
+      .map((feature) => feature.position);
+    if (points.length < 2) continue;
+    const open = floor.bounds;
+    const framed = {
+      minX: Math.max(open.minX, Math.min(...points.map((p) => p.x)) - PAGE_PAD),
+      maxX: Math.min(open.maxX, Math.max(...points.map((p) => p.x)) + PAGE_PAD),
+      minY: Math.max(open.minY, Math.min(...points.map((p) => p.y)) - PAGE_PAD),
+      maxY: Math.min(open.maxY, Math.max(...points.map((p) => p.y)) + PAGE_PAD),
+    };
+    if (framed.maxX > framed.minX && framed.maxY > framed.minY) floor.bounds = framed;
   }
 
   const source = {

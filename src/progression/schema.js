@@ -43,6 +43,10 @@ export const ENDING_IDS = Object.freeze([
   'inversion',
   'drugged',
   'surfaced',
+  'contact-won',
+  'contact-lost',
+  'tower-won',
+  'tower-lost',
 ]);
 
 export const DEFAULT_SETTINGS = Object.freeze({
@@ -325,7 +329,10 @@ export function normalizeSettings(value) {
   };
 }
 
-export function normalizeLedger(value, { legacyFlags = null } = {}) {
+// `stairMissing` decides what a ledger with no stair record means. See the note
+// on the call in normalizeRun: for a run at the current schema it means "not met
+// yet", and for an older one it means "leave that run alone".
+export function normalizeLedger(value, { legacyFlags = null, stairMissing = 'completed' } = {}) {
   const source = objectOr(value);
   const takes = objectOr(source.takes);
   const battles = objectOr(source.battles);
@@ -364,7 +371,7 @@ export function normalizeLedger(value, { legacyFlags = null } = {}) {
       recovered: uniqueStrings(equipment.recovered),
     },
     natatoriumWater: normalizeNatatoriumWaterLedger(source.natatoriumWater),
-    stairAnomaly: normalizeStairAnomalyLedger(source.stairAnomaly),
+    stairAnomaly: normalizeStairAnomalyLedger(source.stairAnomaly, { missing: stairMissing }),
     power: {
       live: uniqueStrings(power.live).filter((id) => POWER_CIRCUIT_IDS.includes(id)),
       everRestored: uniqueStrings(power.everRestored).filter((id) => POWER_CIRCUIT_IDS.includes(id)),
@@ -436,7 +443,22 @@ export function normalizeRun(value, { meta = null, settings = null, activeFallba
         fallbackStairEnvironment || DEFAULT_STAIR_ANOMALY_ENVIRONMENT,
       )),
     },
-    ledger: normalizeLedger(source.ledger, { legacyFlags }),
+    // THE IMPOSSIBLE STAIR IS ARMED UNLESS THIS RUN PREDATES IT.
+    //
+    // `normalizeStairAnomalyLedger` defaults a missing record to COMPLETED so an
+    // old save cannot surprise-trigger the event mid-run. That is right for an
+    // old save and wrong for every other one: a run at the current schema whose
+    // ledger has no stair record has simply not met the stair yet, and reading
+    // that as "already done" disarmed the feature permanently — the trigger
+    // returns false on the first line of stairTriggerCrossed and no amount of
+    // walking the main open well will ever fire it. Which is why the god menu
+    // grew a RE-ARM STAIR item.
+    //
+    // So the legacy protection keys on the schema version it was actually about.
+    ledger: normalizeLedger(source.ledger, {
+      legacyFlags,
+      stairMissing: finiteOr(source.schema, 0) >= RUN_SCHEMA_VERSION ? 'armed' : 'completed',
+    }),
     interference: normalizeInterferenceRecord(source.interference),
     // Absent on saves written before the opponent could remember anything, in
     // which case the night simply starts with it knowing nothing about you.

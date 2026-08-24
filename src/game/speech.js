@@ -163,7 +163,7 @@ function enqueue(line, state, { delayMs, gapMs } = {}) {
 // Callers that only need a contextual sequence can keep using sayAll().
 export function createSpeechDispatch({
   id = 'speech', context = 'auto', maxWaitMs = SPEECH_DISPATCH.maxWaitMs,
-  replace = true, interrupt = false, valid = null,
+  replace = true, interrupt = false, valid = null, escapable = true,
 } = {}) {
   const family = String(id || 'speech');
   if (replace) {
@@ -178,6 +178,7 @@ export function createSpeechDispatch({
     context: context === 'auto' ? contextKey() : (context == null ? null : String(context)),
     maxWaitMs: Number.isFinite(Number(maxWaitMs)) ? Math.max(0, Number(maxWaitMs)) : Infinity,
     valid: typeof valid === 'function' ? valid : null,
+    escapable: escapable !== false,
   };
   dispatches.set(token, state);
   const api = {
@@ -214,6 +215,7 @@ export function say(line, options = {}) {
     replace: options.replace ?? false,
     interrupt: options.interrupt ?? false,
     valid: options.valid,
+    escapable: options.escapable ?? transientByDefault(next),
   });
   dispatch.say(next, options);
   return dispatch;
@@ -229,6 +231,7 @@ export function sayAll(lines = [], options = {}) {
     replace: options.replace ?? false,
     interrupt: options.interrupt ?? false,
     valid: options.valid,
+    escapable: options.escapable ?? contextual,
   });
   dispatch.sayAll(normalized, options);
   return dispatch;
@@ -246,13 +249,31 @@ export function clearSpeech() {
 export function isSpeaking() { return !!cur || q.length > 0; }
 export function speaking() { return cur; }
 
+// Escape belongs to the visible small shell before it belongs to the run-level
+// pause menu. Cancelling the dispatch, rather than merely hiding its current
+// sentence, also drops every delayed/dependent line authored as part of the
+// same action. Radio and other persistent delivery can opt out with
+// `escapable:false` (and ordinary radio lines do so by default).
+export function hasEscapableSpeech() {
+  const state = dispatches.get(cur?.__dispatch?.token);
+  return !!(cur && state?.active && state.escapable);
+}
+
+export function cancelEscapableSpeech() {
+  const token = cur?.__dispatch?.token;
+  const state = dispatches.get(token);
+  if (!token || !state?.active || !state.escapable) return false;
+  return invalidateDispatch(token);
+}
+
 export function speechDispatchSnapshot() {
   return {
     current: cur?.__dispatch?.token || null,
     queued: q.map((line) => line.__dispatch?.token || null),
     dispatches: [...dispatches.values()].map((state) => ({
       id: state.token, family: state.family, active: state.active, started: state.started,
-      context: state.context, createdAt: state.createdAt, lastCompletedAt: state.lastCompletedAt,
+      context: state.context, escapable: state.escapable,
+      createdAt: state.createdAt, lastCompletedAt: state.lastCompletedAt,
     })),
   };
 }

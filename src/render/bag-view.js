@@ -53,7 +53,7 @@ export function bagListCapacity(layout, sectionId) {
   return Math.max(1, usable);
 }
 
-function drawTabs(model, nav, layout, pulse) {
+function drawTabs(model, nav, layout, pulse, breadcrumb = '') {
   const tabs = model.sections || [];
   const active = nav.sectionId;
   const compact = layout.mode === 'compact';
@@ -78,7 +78,10 @@ function drawTabs(model, nav, layout, pulse) {
   const help = layout.tabs.w >= 64
     ? `${inputPrompt('tabNext')} / ${inputPrompt('tabPrev')} SECTION`
     : `${inputPrompt('tabNext')} SECTION`;
-  uiText(layout.tabs.x, layout.tabs.y + 1, clip(help, layout.tabs.w), 'ui-label', .58);
+  const crumb=breadcrumb||`FIELD CASE / ${tabs.find((tab)=>tab.id===active)?.label||'SECTION'}`;
+  const crumbW=Math.max(8,layout.tabs.w-help.length-2);
+  uiText(layout.tabs.x,layout.tabs.y+1,clip(crumb,crumbW),'ui-label',.62);
+  rightText(layout.tabs.x,layout.tabs.y+1,layout.tabs.w,help,'ui-label',.58);
 }
 
 function sectionHeader(sectionId) {
@@ -184,7 +187,7 @@ function kitReadySlots(model, entries) {
 }
 
 function kitStorageEntries(entries) {
-  // Storage is the inventory ledger, not a second source of truth. READY NOW
+  // The item list is the inventory ledger, not a second source of truth. Quick-slot
   // items remain visible here as ASSIGNED ABOVE so players never wonder where
   // something went when they prepare it.
   return (entries || []).filter(Boolean);
@@ -208,14 +211,14 @@ function drawKitRuleStrip(region, model) {
   const y = region.y;
 
   drawMicroBox({ x: region.x, y, w: leftW, h: 2.4 }, { active: true });
-  uiText(region.x + 1, y, 'READY NOW', 'ui-amber', .90);
-  uiText(region.x + 1, y + 1, clip('WORKS DURING CONTACT', leftW - 2), 'ui-blue', .72);
+  uiText(region.x + 1, y, 'QUICK SLOTS', 'ui-amber', .90);
+  uiText(region.x + 1, y + 1, clip('AVAILABLE IN A FIGHT', leftW - 2), 'ui-blue', .72);
 
   uiText(region.x + leftW + 1, y + 1, '↑', 'ui-blue', .72);
 
   drawMicroBox({ x: region.x + leftW + 4, y, w: rightW, h: 2.4 }, {});
-  uiText(region.x + leftW + 5, y, 'BAG STORAGE', 'ui-label', .72);
-  uiText(region.x + leftW + 5, y + 1, clip('CARRYING IS NOT READINESS', rightW - 2), 'ui-secondary', .58);
+  uiText(region.x + leftW + 5, y, 'ALL ITEMS', 'ui-label', .72);
+  uiText(region.x + leftW + 5, y + 1, clip('CHOOSE SET TO ADD ONE', rightW - 2), 'ui-secondary', .58);
   return 3;
 }
 
@@ -224,13 +227,13 @@ function drawReadySlot(slot, rect, index, selected) {
   drawMicroBox(rect, { selected, dim: !entry, active: !!entry });
   uiText(rect.x + 1, rect.y, `[${index + 1}]`, entry ? 'ui-blue' : 'ui-secondary', entry ? .84 : .44);
   if (!entry) {
-    uiText(rect.x + 1, rect.y + 2, clip('EMPTY', rect.w - 2), 'ui-secondary', .42);
-    uiText(rect.x + 1, rect.y + 3, clip('PRESS T TO FILL', rect.w - 2), 'ui-label', .40);
+    uiText(rect.x + 1, rect.y + 1, clip('EMPTY', rect.w - 2), 'ui-secondary', .42);
+    if (rect.h >= 3) uiText(rect.x + 1, rect.y + 2, clip('CHOOSE SET TO FILL', rect.w - 2), 'ui-label', .40);
     return;
   }
   const titleY = rect.h >= 6 ? rect.y + 2 : rect.y + 1;
   uiText(rect.x + 1, titleY, clip(entry.title, rect.w - 2), selected ? 'ui-amber' : 'ui-primary', selected ? 1 : .82);
-  uiText(rect.x + 1, titleY + 1, clip('USABLE IN CONTACT', rect.w - 2), 'ui-amber', selected ? .90 : .66);
+  uiText(rect.x + 1, titleY + 1, clip('USE IN A FIGHT', rect.w - 2), 'ui-amber', selected ? .90 : .66);
 }
 
 function drawReadyNow(model, entries, selectedId, rect) {
@@ -238,15 +241,15 @@ function drawReadyNow(model, entries, selectedId, rect) {
   const cap = slots.length;
   const gap = 1;
   const slotW = Math.max(8, Math.floor((rect.w - gap * Math.max(0, cap - 1)) / cap));
-  uiText(rect.x, rect.y, 'READY NOW', 'ui-amber', .90);
-  rightText(rect.x, rect.y, rect.w, `SLOTS 1-${cap}`, 'ui-blue', .56);
-  uiText(rect.x, rect.y + 1, clip('Only this row is prepared for contact.', rect.w), 'ui-secondary', .58);
+  uiText(rect.x, rect.y, 'QUICK SLOTS', 'ui-amber', .90);
+  rightText(rect.x, rect.y, rect.w, `1-${cap}`, 'ui-blue', .56);
+  uiText(rect.x, rect.y + 1, clip('Items here are available when a fight starts.', rect.w), 'ui-secondary', .58);
 
   for (let i = 0; i < cap; i++) {
     const slotX = rect.x + i * (slotW + gap);
     const w = i === cap - 1 ? Math.max(8, rect.x + rect.w - slotX) : slotW;
     const entry = slots[i];
-    drawReadySlot(entry, { x: slotX, y: rect.y + 3, w, h: Math.max(4, rect.h - 3) }, i, !!entry && entry.id === selectedId);
+    drawReadySlot(entry, { x: slotX, y: rect.y + 3, w, h: Math.max(3, rect.h - 3) }, i, !!entry && entry.id === selectedId);
   }
 }
 
@@ -254,9 +257,9 @@ function storageBadge(entry) {
   if (!entry) return { text: 'EMPTY', cls: 'ui-secondary' };
   if (entry.source?.deployed) return { text: 'DEPLOYED', cls: 'ui-blue' };
   if (entry.present === false) return { text: 'MISSING', cls: 'ui-danger' };
-  if (entry.compartment === 'top') return { text: 'ASSIGNED ABOVE', cls: 'ui-amber' };
-  if (entry.battleCapable) return { text: 'PRESS T', cls: 'ui-blue' };
-  return { text: 'CARRY ONLY', cls: 'ui-secondary' };
+  if (entry.compartment === 'top') return { text: `QUICK SLOT ${entry.topIndex + 1}`, cls: 'ui-amber' };
+  if (entry.battleCapable) return { text: 'CAN BE SET', cls: 'ui-blue' };
+  return { text: 'IN BAG', cls: 'ui-secondary' };
 }
 
 function drawStorageSlot(entry, rect, selected) {
@@ -283,9 +286,9 @@ function drawBagStorage(entries, selectedId, rect) {
   const rows = Math.max(1, Math.floor((rect.h - headerH) / cellH));
   const max = Math.max(1, rows * cols);
 
-  uiText(rect.x, rect.y, 'BAG STORAGE', 'ui-label', .76);
+  uiText(rect.x, rect.y, 'ALL ITEMS', 'ui-label', .76);
   rightText(rect.x, rect.y, rect.w, `${Math.min(storage.length, max)}/${storage.length}`, 'ui-blue', .52);
-  uiText(rect.x, rect.y + 1, clip('Carry items here. Press T to ready contact gear.', rect.w), 'ui-secondary', .52);
+  uiText(rect.x, rect.y + 1, clip('Choose an item, then choose an action.', rect.w), 'ui-secondary', .52);
 
   if (!storage.length) {
     uiText(rect.x + Math.max(0, Math.floor((rect.w - 10) / 2)), rect.y + 4, 'BAG EMPTY', 'ui-secondary', .46);
@@ -311,20 +314,20 @@ function drawBagStorage(entries, selectedId, rect) {
 
 function kitVerdict(entry) {
   if (!entry) {
-    return { tone: 'empty', cls: 'ui-secondary', title: 'NOTHING HERE', copy: 'Pick a storage item and press T to put it in READY NOW.' };
+    return { tone: 'empty', cls: 'ui-secondary', title: 'NOTHING HERE', copy: 'Pick an item and choose SET to put it in a quick slot.' };
   }
   if (entry.present === false) {
     return entry.source?.deployed
-      ? { tone: 'deployed', cls: 'ui-blue', title: 'DEPLOYED / NOT READY', copy: 'The tray assignment is remembered. The item is physically in the field.' }
-      : { tone: 'missing', cls: 'ui-danger', title: 'NOT CARRIED', copy: 'The tray assignment is remembered until the item is recovered.' };
+      ? { tone: 'deployed', cls: 'ui-blue', title: 'DEPLOYED', copy: 'Its quick slot is kept. The item is where you left it.' }
+      : { tone: 'missing', cls: 'ui-danger', title: 'NOT CARRIED', copy: 'Its quick slot is kept until the item is recovered.' };
   }
   if (entry.compartment === 'top') {
-    return { tone: 'ready', cls: 'ui-amber', title: 'USABLE DURING CONTACT', copy: 'This item is in READY NOW. It can be reached when the room goes bad.' };
+    return { tone: 'ready', cls: 'ui-amber', title: 'AVAILABLE IN A FIGHT', copy: 'This item is in a quick slot.' };
   }
   if (entry.battleCapable) {
-    return { tone: 'assignable', cls: 'ui-blue', title: 'CAN BE MADE READY', copy: 'Press T to assign this item to the numbered READY NOW row.' };
+    return { tone: 'assignable', cls: 'ui-blue', title: 'CAN GO IN A QUICK SLOT', copy: 'Choose SET, then choose a numbered slot.' };
   }
-  return { tone: 'carry', cls: 'ui-secondary', title: 'CARRY ONLY', copy: 'Useful in the building, but not a quick-use contact item.' };
+  return { tone: 'carry', cls: 'ui-secondary', title: 'USED IN THE BUILDING', copy: 'This item is not used during a fight.' };
 }
 
 function drawKitDetail(entry, rect, nav, motion, now) {
@@ -351,7 +354,7 @@ function drawKitDetail(entry, rect, nav, motion, now) {
   const tx = rect.x + iconW + 3;
   const tw = Math.max(10, rect.x + rect.w - tx - 1);
   uiText(tx, rect.y + 1, 'SELECTED ITEM', 'ui-label', .58);
-  uiText(tx, rect.y + 2, clip(entry?.title || 'EMPTY READY SLOT', tw), 'ui-amber', .62 + p * .38);
+  uiText(tx, rect.y + 2, clip(entry?.title || 'EMPTY QUICK SLOT', tw), 'ui-amber', .62 + p * .38);
   uiText(tx, rect.y + 3, clip(entry?.subtitle || 'NO ITEM ASSIGNED', tw), 'ui-secondary', .58);
 
   const verdictY = rect.y + Math.max(5, iconH + 3);
@@ -373,18 +376,19 @@ function drawKitDetail(entry, rect, nav, motion, now) {
 export function bagKitDetailAction(entry) {
   if (!entry) return 'NO ITEM SELECTED';
   const actions = [];
-  if (entry.actions?.secondary?.id === 'move-storage') actions.push('[R] CLEAR READY SLOT');
-  else if (entry.actions?.secondary?.id === 'move-top') actions.push('[T] PUT IN READY NOW');
+  if (entry.actions?.secondary?.id === 'move-storage') actions.push('[R] CLEAR QUICK SLOT');
+  else if (entry.actions?.secondary?.id === 'move-top') actions.push('[T] PUT IN QUICK SLOT');
   if (entry.actions?.primary) actions.push(`[${inputPromptLabel('confirm')}] ${entry.actions.primary.label}`);
   if (actions.length) return actions.join('   ');
   if (entry.actionReason) return entry.actionReason;
   if (entry.present === false) return 'NOT CARRIED';
-  return 'NO DIRECT ACTION';
+  return 'NO ACTION AVAILABLE FROM THE BAG';
 }
 
 export function bagInventoryGeometry(model, nav, layout) {
   const region=kitRegion(layout);
-  const readyH=5;
+  // Header (2 rows), gap, and four-row cards must finish before ALL ITEMS.
+  const readyH=region.h>=18?7:6;
   const contentY=region.y+readyH+1;
   const contentH=Math.max(5,region.y+region.h-contentY);
   if(region.w>=66&&contentH>=8){
@@ -610,8 +614,8 @@ export function bagActionRail(entry, mode) {
   if (entry?.actions?.primary) out.push([inputPromptLabel('confirm'), entry.actions.primary.label]);
 
   if (entry?.kind === 'gear' && entry?.actions?.secondary) {
-    if (entry.actions.secondary.id === 'move-top') out.push(['T', 'PUT IN READY NOW']);
-    else if (entry.actions.secondary.id === 'move-storage') out.push(['R', 'CLEAR READY SLOT']);
+    if (entry.actions.secondary.id === 'move-top') out.push(['T', 'PUT IN QUICK SLOT']);
+    else if (entry.actions.secondary.id === 'move-storage') out.push(['R', 'CLEAR QUICK SLOT']);
     else out.push([inputPromptLabel('mark'), entry.actions.secondary.label]);
   } else if (entry?.actions?.secondary) {
     out.push([inputPromptLabel('mark'), entry.actions.secondary.label]);
@@ -669,10 +673,10 @@ export function drawBagGuide({ guide, region, nudge = 1 }) {
   uiText(region.x + 2, region.y + region.h - 1, clip(foot, region.w - 2), refused ? 'ui-amber' : 'ui-secondary', refused ? .95 : .6);
 }
 
-export function drawBagView({ model, nav, mapNav = null, layout, hint = '', guide = null, guideNudge = 1, motion, now, drawContent = null, overrideActions = null }) {
+export function drawBagView({ model, nav, mapNav = null, layout, hint = '', guide = null, guideNudge = 1, motion, now, drawContent = null, overrideActions = null, breadcrumb = '' }) {
   const selected = bagEntry(model, nav.sectionId, nav.selected?.[nav.sectionId]);
   const sectionPulse = acquire(now, motion.sectionChangedAt);
-  drawTabs(model, nav, layout, sectionPulse);
+  drawTabs(model,nav,layout,sectionPulse,breadcrumb);
 
   let actions = null;
   // A section may own its whole content area (the SKILLS tree does). It gets the

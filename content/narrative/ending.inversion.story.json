@@ -189,12 +189,12 @@
       "lines": [
         {
           "who": "direction",
-          "text": "You come out into the yard. The yard is not there.",
+          "text": "You come through the conservatoire's front doors into wet municipal dawn. The yard is exactly where the plans say it is.",
           "id": "out.line.1"
         },
         {
           "who": "direction",
-          "text": "A clock restarts in front of you: --:--. Further off there is another grey door, exactly like the one you just came out of, and the distance to it is the distance you have just walked.",
+          "text": "The clock over the first bus reads 06:00. Sodium lamps shut down one at a time, each wet circle giving the pavement back to the morning.",
           "id": "out.line.2"
         },
         {
@@ -204,7 +204,7 @@
         },
         {
           "who": "direction",
-          "text": "The recordist begins to laugh, low, and it does not stop when he stops. The signal has kept a usable reference of him. You did not save him. Somebody saved you.",
+          "text": "The recordist begins to laugh, low, and it stops when he stops. Birds take the next space in the mix. Somebody held a door; you are the one who crossed it.",
           "id": "out.line.4"
         },
         {
@@ -215,17 +215,17 @@
         },
         {
           "who": "direction",
-          "text": "AND THEN THE JOIN IS MISSING.",
+          "text": "A bus opens its doors at an empty stop. The join between a building ending and a town beginning is so ordinary you nearly miss it.",
           "id": "out.line.6"
         },
         {
           "who": "direction",
-          "text": "You do not walk to the gate. You do not cross a yard, or find a way round, or wake up. You are at the gate, and there is a bored man in a lit booth with a book, and the last thing you remember is a clock that had no numbers on it.",
+          "text": "Behind Heras fencing, demolition staff arrive in clean high-vis and begin the first checks of a morning shift. None of them look at you twice.",
           "id": "out.line.7"
         },
         {
           "who": "direction",
-          "text": "It is possible that hours have gone. It is possible that this is one more layer of a building that has been showing you doors all night. Nobody is going to tell you which, and the man in the booth is going to be entirely normal about it, and that is the part you will think about.",
+          "text": "You walk toward the gate under a sky with nothing hidden in it. The man in the booth is going to be entirely normal about the missing hours, and that is the part you will think about.",
           "id": "out.line.8"
         }
       ],

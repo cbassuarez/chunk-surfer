@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 
 import { CONSERVATORY_PROPS } from '../src/data/conservatory-props.js';
 import { CELL } from '../src/data/floorplan/legend.js';
@@ -51,16 +52,26 @@ assert.ok(SOURCE_LANDING_HUSH_LOCAL.y > SOURCE_LANDING_ENTRY_LOCAL.y);
 assert.ok(SOURCE_LANDING_OPENING_LOCAL.y < SOURCE_LANDING_ENTRY_LOCAL.y);
 assert.equal(SOURCE_LANDING_FIELD_EDGE_LOCAL_Y,-15,'the field begins at the removed forward wall, not behind the room');
 
-const [light] = sourceLandingLights();
+const lights = sourceLandingLights();
+const [light,openingLight,liftLight] = lights;
 assert.equal(light.kind, 'emergency');
 assert.ok(Math.abs(light.x) < .001, 'the seam light is centred on the rear plane');
 assert.ok(light.z > 6 * CELL, 'the seam light is behind the arrival position');
+assert.deepEqual(lights.map((entry)=>entry.id),[
+  'source-landing:getin-grey-door-seam',
+  'source-landing:opening-emergency',
+  'source-landing:first-lift-emergency',
+]);
+assert.equal(openingLight.kind,'emergency');
+assert.equal(liftLight.kind,'emergency');
+assert.ok(openingLight.radius<=16&&liftLight.radius<=12,'the arrival pools cannot reveal distant Source activity');
 
 const contract = sourceLandingContract();
 assert.equal(contract.forwardWallRemoved, true);
 assert.equal(contract.fieldEdgeY,SOURCE_LANDING_FIELD_EDGE_LOCAL_Y);
 assert.deepEqual(contract.propIds, physicalGetInIds);
 assert.deepEqual(contract.doorIds,SOURCE_GET_IN_DOOR_IDS);
+assert.deepEqual(contract.emergencyLightIds,lights.map((entry)=>entry.id));
 
 const built = buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.LANDING, { seed: 4417 });
 const runtime = createSourceSpaceRuntime({ initialState: built.state });
@@ -71,6 +82,15 @@ assert.equal(runtime.sourceLandingHushFrame().rear.visible, true);
 assert.equal(runtime.sourceScene().weather.rain, 1);
 assert.equal(runtime.sourceScene().weather.moon, 1);
 assert.equal(runtime.sourceScene().weather.clouds, 1);
+assert.equal(runtime.localLights().length,3,'the landing and first lift retain emergency illumination with the torch off');
+const preLiftProps=runtime.propInstances(built.position.x,built.position.y,{reducedMotion:true});
+assert.ok(preLiftProps.some((entry)=>entry.sourceConnector==='landing-opening'),'the opening has an always-on fixture casing');
+assert.ok(preLiftProps.some((entry)=>entry.sourceConnector==='lift-fork'),'the first lift is rendered before the text field activates');
+
+const mainSource=await readFile(new URL('../src/main.js',import.meta.url),'utf8');
+const sourceWorldBranch=mainSource.slice(mainSource.indexOf('function worldRenderInstances'),mainSource.indexOf('function syncSourceRender'));
+assert.match(sourceWorldBranch,/if\(usingSourceSpace\(\)\)[\s\S]*?r3dSetEmergencyShadows\?\.\(\[\]\)/,
+  'Source submits no apparition or emergency-shadow instance');
 
 const origin=built.state.landscapeOrigin;
 const world=(point)=>({x:origin.x+point.x,y:origin.y+point.y});

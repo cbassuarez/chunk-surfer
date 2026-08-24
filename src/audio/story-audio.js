@@ -17,7 +17,7 @@ import {
 // Placeholder, deliberately and visibly. Every ending currently plays the opening
 // title song under it, which is the right stand-in — it is the only piece of
 // music the player already associates with this building — and the wrong final
-// answer, because five endings that sound identical are four endings that do not
+// answer, because nine endings that sound identical are eight endings that do not
 // land. See ENDING_AUDIO_TODO in data/endings.js for the full outstanding list.
 //
 // Replacing one is a one-line change: point its key at its own file.

@@ -39,6 +39,8 @@ let RENDER_SCALE = 1;
 let localLightCount=0;
 const localLightPositions=new Float32Array(MAX_LOCAL_LIGHTS*4);
 const localLightColors=new Float32Array(MAX_LOCAL_LIGHTS*4);
+const localLightBaseIntensity=new Float32Array(MAX_LOCAL_LIGHTS);
+const localLightMunicipal=new Float32Array(MAX_LOCAL_LIGHTS);
 const localLightPenetrations=new Float32Array(MAX_LOCAL_LIGHTS);
 const localLightEmergency=new Float32Array(MAX_LOCAL_LIGHTS);
 let localShadowIndex=-1;
@@ -56,6 +58,10 @@ let bounceLampGain=2.4;
 let rainAmount=1;
 // Weather forced into a space with no sky. 0 everywhere except the source hall.
 let indoorRain=0;
+// Temporary ending light. 0 is the authored 21:30 night; positive profiles are
+// cutscene-only and are cleared before the institutional coda.
+let endingWorldLook=0;
+let municipalLightPower=1;
 // Scales the look profile's white point to the room actually being stood in. 1
 // is "use the profile as authored"; a dim interior asks for a fraction of it.
 let lightingWhitePointScale=1;
@@ -259,6 +265,7 @@ uniform float uReduceMotionOptical;
 // different one next time. Drives the moon: where it sits, how full it is, and
 // once in a while how close.
 uniform float uNightSeed;
+uniform float uEndingWorldLook;
 uniform int uLocalLightCount;
 uniform int uLocalShadowIndex;
 uniform vec4 uLocalLightPos[${MAX_LOCAL_LIGHTS}];
@@ -760,7 +767,10 @@ void surfaceSlot(int mat,int surf,vec2 uv,out int slot,out float tileM,out float
     else if(mat==MAT_TARMAC){slot=9;tileM=0.42;blend=.52;}      // carriageway → wet aggregate
     else if(mat==MAT_PAVING){slot=3;tileM=1.10;blend=.72;}      // pavement → worn civic flags
     else if(mat==MAT_SETTS){slot=1;tileM=.46;blend=.68;}        // gutter and courts → small stone setts
-    else if(mat==MAT_GRASS){slot=8;tileM=.70;blend=.44;}        // the park → rammed earth, worn thin so the green carries it
+    // The park. Rammed earth, tiled at blade scale and blended hard enough to
+    // read: at .44 over 0.70m the bank was a suggestion under a flat colour,
+    // which is a lawn with no grain in it.
+    else if(mat==MAT_GRASS){slot=8;tileM=.42;blend=.66;}
     else {slot=2;tileM=1.8;blend=.84;}                          // general → ash wood
   }
 }
@@ -851,8 +861,12 @@ vec3 materialBase(int mat, int surf, vec3 tint, vec3 biome, float rdv){
   else if(mat == MAT_PAVING) base = vec3(0.34, 0.35, 0.36);
   else if(mat == MAT_SETTS) base = vec3(0.205, 0.22, 0.24);
   // Municipal grass at night in the rain is not green, it is a dark blue-green
-  // that only admits to being green where a lamp reaches it.
-  else if(mat == MAT_GRASS) base = vec3(0.105, 0.150, 0.108);
+  // that only admits to being green where a lamp reaches it. But it was DARKER
+  // than the tarmac beside it and had almost no sheen, so at one bit the lawn
+  // came out as the emptiest thing in shot — the park read as a hole with a
+  // fountain in it. Lifted just clear of tarmac (0.145,0.156,0.180) so the
+  // boundary between path and grass is a boundary, not an absence.
+  else if(mat == MAT_GRASS) base = vec3(0.148, 0.204, 0.146);
   if(surf == 3) base *= 0.58;
   if(surf == 2) base = mix(base, mix(biome, tint, 0.35), 0.22);
   return base * (0.56 + 0.55 * rdv);
@@ -862,7 +876,10 @@ float materialSpec(int mat){
   if(mat == MAT_TARMAC) return 0.58;   // it has been raining on it all night
   if(mat == MAT_PAVING) return 0.68;
   if(mat == MAT_SETTS) return 0.61;
-  if(mat == MAT_GRASS) return 0.14;   // soaked, but it drinks the light instead of throwing it back
+  // Soaked. It drinks most of the light, but a wet blade does throw some back —
+  // and in a one-bit renderer that glint is the only thing that can draw the
+  // texture at all, so it may not be zero.
+  if(mat == MAT_GRASS) return 0.26;
   if(mat == MAT_POOL) return 0.42;
   if(mat == MAT_DOOR) return 0.48;
   if(mat == MAT_METAL) return 0.36;
@@ -1262,6 +1279,19 @@ vec3 nightSky(vec3 dir){
   float beaconB = step(0.90, fract(uTime * 0.31 + 0.5))
                 * (1.0 - smoothstep(0.0, 0.0045, length(vec2(azimuth - 2.86, up - 0.093))));
   col += vec3(1.00, 0.16, 0.10) * (beaconA + beaconB) * 1.30;
+
+  // Six o'clock municipal dawn: a cold wet deck with a pale eastern floor.
+  // Sodium is no longer tinting the sky; ordinary daylight is arriving without
+  // becoming picturesque. Van and cathedral variants use the same exterior
+  // hour and let their geometry/rain distinguish the frame.
+  if(uEndingWorldLook > 0.5){
+    float dawnHorizon=1.0-smoothstep(-0.04,0.34,abs(up));
+    vec3 dawnDeep=vec3(0.135,0.185,0.265);
+    vec3 dawnDeck=vec3(0.42,0.49,0.56);
+    vec3 dawn= mix(dawnDeck,dawnDeep,smoothstep(0.02,0.92,up));
+    dawn += vec3(0.20,0.18,0.15)*dawnHorizon*0.18;
+    col=mix(col,dawn,0.86);
+  }
 
   return col;
 }
@@ -2611,13 +2641,17 @@ export function r3dSetFear(v) { fearLevel = Math.max(0, Math.min(1, v || 0)); }
 
 export function r3dSetLocalLights(lights=[]){
   P3.setPracticalLightFrame(lights);
-  localLightPositions.fill(0);localLightColors.fill(0);localLightPenetrations.fill(0);localLightEmergency.fill(0);
+  localLightPositions.fill(0);localLightColors.fill(0);localLightBaseIntensity.fill(0);localLightMunicipal.fill(0);localLightPenetrations.fill(0);localLightEmergency.fill(0);
   localShadowIndex=-1;localShadowLight=null;
   localLightCount=Math.min(MAX_LOCAL_LIGHTS,Array.isArray(lights)?lights.length:0);
   for(let i=0;i<localLightCount;i++){
     const light=lights[i]||{},p=i*4,color=light.color||[1,.78,.52];
     localLightPositions[p]=Number(light.x)||0;localLightPositions[p+1]=Number(light.y)||0;localLightPositions[p+2]=Number(light.z)||0;localLightPositions[p+3]=Math.max(.01,Number(light.radius)||4);
-    localLightColors[p]=Number(color[0])||0;localLightColors[p+1]=Number(color[1])||0;localLightColors[p+2]=Number(color[2])||0;localLightColors[p+3]=Math.max(0,Number(light.intensity)||0);
+    localLightColors[p]=Number(color[0])||0;localLightColors[p+1]=Number(color[1])||0;localLightColors[p+2]=Number(color[2])||0;
+    localLightBaseIntensity[i]=Math.max(0,Number(light.intensity)||0);
+    const lightId=String(light.id||'');
+    localLightMunicipal[i]=lightId.includes('sodium')||/^district-.*-lamp-/.test(lightId)?1:0;
+    localLightColors[p+3]=localLightBaseIntensity[i]*(localLightMunicipal[i]>.5?municipalLightPower:1);
     localLightPenetrations[i]=Math.max(0,Math.min(1,Number(light.penetration)||0));
     // Authored kind, never inferred from the colour: a warm lamp and the
     // emergency circuit are both red-dominant and only the rig knows which.
@@ -2629,6 +2663,16 @@ export function r3dSetLocalLights(lights=[]){
   }
   return localLightCount;
 }
+
+export function r3dSetMunicipalLightPower(value=1){
+  const next=Number(value);
+  municipalLightPower=Number.isFinite(next)?Math.max(0,Math.min(1,next)):1;
+  for(let i=0;i<localLightCount;i++){
+    localLightColors[i*4+3]=localLightBaseIntensity[i]*(localLightMunicipal[i]>.5?municipalLightPower:1);
+  }
+  return municipalLightPower;
+}
+export function r3dMunicipalLightPower(){return municipalLightPower;}
 export function r3dSetLightingContext(context={}){
   const color=Array.isArray(context.ambientColor)?context.ambientColor:[.64,.65,.62];
   lightingAmbientColor=new Float32Array([
@@ -2917,7 +2961,13 @@ let sourceLook = { sunrise: 0, chroma: 1, paper: 0 };
 
 // THE HORIZON. Set by main.js from the runtime's horizonFrame(); the renderer
 // never works out where on the tape the body is, it is told.
-let horizonState = { active: false, slice: 0, lateral: 0, edge: 0, collapse: 0, exposure: 1 };
+let horizonState = {
+  active: false, slice: 0, lateral: 0, edge: 0, collapse: 0, exposure: 1,
+  // The walkable corridor, at the body and a hundred-odd metres on. The floor
+  // draws it (see drawHorizon); without it there is nothing out here telling
+  // anybody which way the recording goes.
+  band: null, bandAhead: null, bandLookahead: 110,
+};
 let horizonReadyState = false;
 
 export function r3dSetHorizon(frame = null) {
@@ -2947,8 +2997,22 @@ export function r3dSetHorizon(frame = null) {
     edge: Math.max(0, Math.min(1, Number(frame.edge) || 0)),
     collapse: Math.max(0, Math.min(1, Number(frame.collapse) || 0)),
     exposure: Math.max(0, Math.min(2, Number(frame.exposure ?? 1))),
+    // The corridor comes across in CELLS and goes onto the floor in the tape's
+    // own units, through the same mapping the body's own lateral takes. Two
+    // spaces, one scale, applied in one place.
+    band: horizonBandInTape(frame.band),
+    bandAhead: horizonBandInTape(frame.bandAhead || frame.band),
+    bandLookahead: Math.max(1, Number(frame.bandLookahead) || 110),
   };
   return true;
+}
+
+function horizonBandInTape(band) {
+  if (!band) return null;
+  return {
+    centre: (Number(band.centre) || 0) * HORIZON_LATERAL_SCALE,
+    reach: Math.max(2, (Number(band.reach) || 24) * HORIZON_LATERAL_SCALE),
+  };
 }
 
 export async function r3dLoadHorizon() {
@@ -2960,7 +3024,7 @@ export async function r3dLoadHorizon() {
     // He stands beside the walk, at the depth the runtime puts him. Built here
     // because the tape's own scales and floor are only known once the manifest
     // has landed.
-    if (horizonReadyState) HZ.horizonSetBust({ ...horizonBust, centreY: horizonEyeHeight() });
+    if (horizonReadyState) HZ.horizonSetBust({ ...horizonBust, centreY: horizonBustCentre(horizonBust.height) });
   } catch (error) {
     // The tape is a built asset. A run that has not baked it should still be
     // playable — the horizon goes dark rather than taking the renderer down.
@@ -2985,7 +3049,7 @@ export function r3dHorizonDebug() {
     ...horizonState,
     ready: horizonReadyState,
     stats: { ...HZ.horizonStats }, suppressed: horizonSuppress,
-    bust: { ...horizonBust, present: HZ.horizonBustPresent?.() || false, eyeY: horizonEyeHeight() },
+    bust: { ...horizonBust, present: HZ.horizonBustPresent?.() || false, eyeY: horizonEyeHeight(), groundY: horizonGroundHeight() },
     tape: m ? { slices: m.slices, floor: m.floor, sliceMetres: m.sliceMetres, span: m.span } : null,
     cam: { camX, camY, camZ, CELL, worldX: camX * CELL, worldY: camY * CELL, worldZ: camZ * CELL,
            yaw, planYaw, pitch },
@@ -2999,10 +3063,27 @@ const HORIZON_VOID = [0.035, 0.008, 0.042];
 // Where the eye sits up the frame, as a fraction of its height. Slightly under
 // half: dead centre reads as a screen, and a little low keeps some of the sense
 // that the recording is taller than you are without burying you under it.
-const HORIZON_EYE_AT = 0.44;
+// IT USED TO BE 0.44, AND THAT IS WHY THERE WAS NO FLOOR.
+//
+// The picture is forty metres tall and hangs with its bottom edge on the tier
+// floor, so putting the eye 44% up it stood the body seventeen and a half metres
+// in the air. Nothing was drawn down there — there was nothing to draw — and the
+// result reads exactly as reported: a video at full height with no ground under
+// it and no sense of scale anywhere in the frame.
+//
+// Low enough that the tape's bottom edge is under the feet rather than under a
+// ledge, high enough that the recording still towers. The floor is drawn at the
+// feet (drawHorizon) and the tape below it is cut, so the picture rises out of
+// the ground instead of hanging in front of it.
+const HORIZON_EYE_AT = 0.115;
 // Live tuning surface for the horizon's feel, so the values can be found by
 // looking rather than by rebuilding. See __probe.horizonTune().
-const horizonTune = { nearFade: 9, reach: 44, eyeAt: HORIZON_EYE_AT };
+const horizonTune = {
+  nearFade: 9, reach: 44, eyeAt: HORIZON_EYE_AT,
+  // How much of the tape the corridor takes out of its own volume, and how tall
+  // that corridor is. See the bore note in horizon3d.js.
+  bore: 0.96, boreHeight: 34,
+};
 // The projection's own look. Not a `glass` block and not a `vfd` block: those
 // describe an instrument, and this describes a lamp and a strip of film.
 const HORIZON_PROJECTION = { halation: 0.34, weave: 0.9, grain: 0.055, burn: 0.30 };
@@ -3011,7 +3092,7 @@ const HORIZON_PROJECTION = { halation: 0.34, weave: 0.9, grain: 0.055, burn: 0.3
 // runtime correct it rather than leaving two constants to drift.
 // Picture half-width over corridor half-width: 64 / 96.
 const HORIZON_LATERAL_SCALE = 64 / 96;
-let horizonBust = { x: -26 * HORIZON_LATERAL_SCALE, depth: 168, height: 13 };
+let horizonBust = { x: -26 * HORIZON_LATERAL_SCALE, depth: 168, height: 13, eyes: false, eyeMode: 'untouched' };
 // The height the view is centred on, in tape units — where the bust has to live
 // if he is to be looked at rather than looked over.
 function horizonEyeHeight() {
@@ -3019,14 +3100,33 @@ function horizonEyeHeight() {
   return (Number(tape?.floor) || 0) + (Number(tape?.span?.y) || 40) * horizonTune.eyeAt;
 }
 
-export function r3dSetHorizonBust({ lateral = null, depth = null, height = null } = {}) {
+// Where the floor is, in tape units — the standing eye less a standing body.
+// The ground is drawn here and the tape is cut here, so they are the same
+// number by construction rather than by two people remembering.
+function horizonGroundHeight() {
+  return horizonEyeHeight() - EYE_METERS;
+}
+
+// HE STANDS ON IT, RATHER THAN BEING CENTRED ON THE EYE.
+//
+// horizonSetBust centres the figure on whatever it is handed, and it used to be
+// handed the eye height — which was fine while the eye sat halfway up a picture
+// hanging in a void and nothing had a floor. Now there is a floor, and a
+// thirteen-metre head centred on a 1.62m eye is a head buried to the brow.
+function horizonBustCentre(height) {
+  return horizonGroundHeight() + (Number(height) || 13) * 0.5;
+}
+
+export function r3dSetHorizonBust({ lateral = null, depth = null, height = null, eyes = null, eyeMode = null } = {}) {
   horizonBust = {
     ...horizonBust,
     ...(lateral == null ? {} : { x: lateral * HORIZON_LATERAL_SCALE }),
     ...(depth == null ? {} : { depth }),
     ...(height == null ? {} : { height }),
+    ...(eyes == null ? {} : { eyes: !!eyes }),
+    ...(eyeMode == null ? {} : { eyeMode: String(eyeMode) }),
   };
-  if (horizonReadyState) HZ.horizonSetBust({ ...horizonBust, centreY: horizonEyeHeight() });
+  if (horizonReadyState) HZ.horizonSetBust({ ...horizonBust, centreY: horizonBustCentre(horizonBust.height) });
   return { ...horizonBust };
 }
 export function r3dHorizonProjection(next = {}) { Object.assign(HORIZON_PROJECTION, next); return { ...HORIZON_PROJECTION }; }
@@ -3098,14 +3198,50 @@ function drawHorizon(now) {
     // still move the view.
     const spanY = Number(tape?.span?.y) || 40;
     const eyeUpTheFrame = spanY * horizonTune.eyeAt;
+    const tapeCamY = camY * CELL - EYE_METERS + eyeUpTheFrame;
+    const tapeCamZ = -horizonState.slice * sliceMetres;
     const { view, projection } = HZ.horizonCamera({
       camX: horizonState.lateral,
-      camY: camY * CELL - EYE_METERS + eyeUpTheFrame,
-      camZ: -horizonState.slice * sliceMetres,
+      camY: tapeCamY,
+      camZ: tapeCamZ,
       yaw: yaw + planYaw, pitch,
       aspect: uniforms.sceneW / Math.max(1, uniforms.sceneH),
     });
+    // THE GROUND, FIRST, AND THE CORRIDOR ON IT.
+    //
+    // Under the feet, not under the picture's bottom edge — the recording is
+    // allowed to be buried in it and the body is not allowed to be standing on
+    // air. Drawn before the splats and without depth, so the tape composites
+    // over it in the same painter's order everything else out here uses.
+    const feetY = tapeCamY - EYE_METERS;
+    HZ.horizonGround({
+      view, projection,
+      camZ: tapeCamZ,
+      floorY: feetY,
+      collapse: horizonState.collapse,
+      exposure: horizonState.exposure,
+      band: horizonState.band,
+      bandAhead: horizonState.bandAhead,
+      // Cells along the tape are tape metres, so the lookahead needs no scale.
+      aheadZ: horizonState.bandLookahead,
+      far: horizonTune.reach * sliceMetres,
+      near: 4,
+    });
+    const band = horizonState.band || { centre: 0, reach: 24 };
+    const bandAhead = horizonState.bandAhead || band;
     HZ.horizonRender({
+      // The tape is cut off at the ground. Without this the buried bottom of
+      // every slice is drawn over the floor it is supposed to be standing in,
+      // and the floor stops being a floor again.
+      floorCut: feetY,
+      // And a corridor is carved out of it along the walking band, so the tape
+      // becomes the walls of a passage rather than the inside of a box.
+      bore: {
+        centre: band.centre, centreAhead: bandAhead.centre,
+        reach: band.reach, reachAhead: bandAhead.reach,
+        z: tapeCamZ, aheadZ: horizonState.bandLookahead,
+        axisY: tapeCamY, height: horizonTune.boreHeight, amount: horizonTune.bore,
+      },
       view, projection,
       slice: horizonState.slice,
       collapse: horizonState.collapse,
@@ -3438,6 +3574,14 @@ export function r3dSetRainAmount(v=1){rainAmount=Math.max(0,Math.min(8,Number(v)
 export function r3dRainAmount(){return rainAmount;}
 export function r3dSetIndoorRain(v=0){indoorRain=Math.max(0,Math.min(1,Number(v)||0));return indoorRain;}
 export function r3dIndoorRain(){return indoorRain;}
+export function r3dSetEndingWorldLook(id=null){
+  const key=String(id||'');
+  endingWorldLook=key?({
+    'dawn-0600':1,'conservatoire-0600':1,'cathedral-dawn':1,'van-rain-0500':2,
+  }[key]||1):0;
+  return endingWorldLook;
+}
+export function r3dEndingWorldLook(){return endingWorldLook;}
 // The screen A/B. null hands it back to the room, then to the look profile.
 export function r3dSetScreenOverride(id=null){
   screenOverrideId=isScreen(id)?id:null;
@@ -4076,6 +4220,10 @@ export function r3dInit(mapEl) {
   P3.loadPropPack(assetUrl('assets/conservatory-props.glb'))
     .then(()=>P3.addPropPack(assetUrl('assets/conservatory-acquisitions.glb')))
     .then(()=>P3.addPropPack(assetUrl('assets/opening-street.glb')))
+    // Hero vegetation deliberately overrides the conservative tree, hedge and
+    // ruined-garden meshes. A missing optional pack falls back to those names
+    // without preventing later structural packs from loading.
+    .then(()=>P3.addPropPack(assetUrl('assets/vegetation.glb')).catch((err)=>console.warn('vegetation pack unavailable; retaining procedural fallbacks',err)))
     .then(()=>P3.addPropPack(assetUrl('assets/source-structures.glb')))
     .then(()=>P3.addPropPack(assetUrl('assets/conservatory-doors.glb')))
     .then(()=>P3.addPropPack(assetUrl('assets/tuning-fork.glb')))
@@ -4589,6 +4737,7 @@ export function r3dFrame(state) {
     P3.renderPropPass({
       camX: camX * CELL, camY: camY * CELL, camZ: camZ * CELL,
       yaw: worldYaw, pitch, light: 1, fogTexture, fogOrigin, fogSize: FOG_TEX,
+      timeSec:now,reducedMotion:pixelMeshSettings.reduceMotion,
       cellMeters: CELL, zoneTints: ZONE_TINTS,
       localLightCount, localLightPositions, localLightColors, localLightPenetrations, localLightEmergency,
       localShadowIndex,shadowLight:localShadowLight,
@@ -4629,6 +4778,7 @@ export function r3dFrame(state) {
   P3.renderPropPass({
     camX: camX * CELL, camY: camY * CELL, camZ: camZ * CELL,
     yaw: worldYaw, pitch, light: torchPower, fogTexture, fogOrigin, fogSize:FOG_TEX,
+    timeSec:now,reducedMotion:pixelMeshSettings.reduceMotion,
     cellMeters:CELL, zoneTints:ZONE_TINTS,
     localLightCount,localLightPositions,localLightColors,localLightPenetrations,localLightEmergency,
     localShadowIndex,shadowLight:localShadowLight,
@@ -4673,6 +4823,7 @@ export function r3dFrame(state) {
   gl.uniform1f(U('uRainAmount'),rainAmount);
   gl.uniform1f(U('uRainIndoor'),indoorRain);
   gl.uniform1f(U('uNightSeed'),nightSeed);
+  gl.uniform1f(U('uEndingWorldLook'),endingWorldLook);
   gl.uniform1f(U('uHushSense'),hushSense);
   gl.uniform1f(U('uOpticalEffects'),opticalEffects);
   gl.uniform1f(U('uReduceMotionOptical'),pixelMeshSettings.reduceMotion?1:0);

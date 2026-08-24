@@ -181,6 +181,114 @@
     "descent.dark": {
       "x": 150,
       "y": 530
+    },
+    "greet.order": {
+      "x": -380,
+      "y": -3000
+    },
+    "greet.actually": {
+      "x": -380,
+      "y": -2700
+    },
+    "greet.somebody": {
+      "x": -380,
+      "y": -2400
+    },
+    "guard.three": {
+      "x": -40,
+      "y": -2900
+    },
+    "torch.say": {
+      "x": -40,
+      "y": -2350
+    },
+    "torch.say.first": {
+      "x": 400,
+      "y": -2500
+    },
+    "torch.say.usual": {
+      "x": 400,
+      "y": -2300
+    },
+    "torch.say.power": {
+      "x": 400,
+      "y": -2100
+    },
+    "order.rooms.big": {
+      "x": 1370,
+      "y": 670
+    },
+    "order.money.double": {
+      "x": 1370,
+      "y": 2300
+    },
+    "order.money.calendar": {
+      "x": 1370,
+      "y": 2510
+    },
+    "order.words.asis": {
+      "x": 1370,
+      "y": 2550
+    },
+    "order.words.hear": {
+      "x": 1370,
+      "y": 2760
+    },
+    "order.client.ring": {
+      "x": 1370,
+      "y": 1550
+    },
+    "order.client.box": {
+      "x": 1370,
+      "y": 1760
+    },
+    "tape.levels.better": {
+      "x": 1370,
+      "y": 2800
+    },
+    "tape.levels.diff": {
+      "x": 1370,
+      "y": 3010
+    },
+    "tape.slate.reasons": {
+      "x": 1370,
+      "y": 3300
+    },
+    "torch.cells.dies": {
+      "x": 1370,
+      "y": 3550
+    },
+    "torch.cells.spares": {
+      "x": 1370,
+      "y": 3760
+    },
+    "torch.him.time": {
+      "x": 1370,
+      "y": 4050
+    },
+    "torch.him.red": {
+      "x": 1370,
+      "y": 4260
+    },
+    "guard.last.home": {
+      "x": 1370,
+      "y": 800
+    },
+    "guard.last.left": {
+      "x": 1370,
+      "y": 1010
+    },
+    "guard.radio.loud": {
+      "x": 1240,
+      "y": 1210
+    },
+    "guard.stair": {
+      "x": 940,
+      "y": 550
+    },
+    "coffee.wife": {
+      "x": 940,
+      "y": 300
     }
   },
   "regions": {}

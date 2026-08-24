@@ -1,0 +1,14 @@
+{
+  "schemaVersion":1,"id":"ending.epilogue.contact-lost","title":"Coda · no carrier","status":"active","entry":"start","entries":["start"],"tags":["ending","epilogue","contact"],
+  "notes":"Institutional coda for No Return.","regions":[{"id":"ending.epilogue.contact-lost.region","title":"No carrier","kind":"ending","color":"#8e4f58","nodeIds":["start"]}],
+  "nodes":{"start":{"type":"ending","speaker":"W. ELLERY HOLDINGS · GATE","lines":[
+    {"id":"start.line.1","who":"direction","text":"The radio stops before dawn and does not produce static."},
+    {"id":"start.line.2","who":"guard","text":"That is worse."},
+    {"id":"start.line.3","who":"direction","text":"He calls the contractor twice by the name in the left column."},
+    {"id":"start.line.4","who":"direction","text":"No voice returns and no route opens on the plan."},
+    {"id":"start.line.5","who":"direction","text":"At 06:00 Estates asks whether the carrier can be recovered."},
+    {"id":"start.line.6","who":"guard","text":"There is no carrier."},
+    {"id":"start.line.7","who":"direction","text":"They enter NO RETURN under equipment and leave the personnel box empty."},
+    {"id":"start.line.8","who":"direction","text":"The guard copies the words into the RETURNED column so the absence cannot be filed as missing."}
+  ]}}
+}

@@ -55,6 +55,8 @@ const main=readFileSync('src/main.js','utf8');
 assert.doesNotMatch(main,/id:'story-waypoint-beacon'/,'runtime no longer creates a floating here beacon');
 assert.match(main,/storyGuidanceEmissive\(instance/,'the actual target material receives guidance emissive');
 assert.match(main,/storyGuidanceHighlightRenderKey=''/,'render-group rebuilds invalidate material guidance');
+assert.match(main,/highlight:\{\.\.\.storyGuidanceHighlight\}/,'the runtime probe reports the highlight actually submitted to materials');
+assert.match(main,/tracker:STORY_HIGHLIGHT_TRACKER\.snapshot\(\)/,'timing state remains separately inspectable');
 assert.match(main,/scenes\.suppressesHud\(\)/,'modal instruments can hide the ordinary story HUD without freezing their world');
 
 const r3d=readFileSync('src/render/r3d.js','utf8');

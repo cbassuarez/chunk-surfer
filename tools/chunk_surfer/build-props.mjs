@@ -2038,6 +2038,48 @@ addMainStairDressing('academic_stair_dressing',{rise:5.2,run:10,steps:26,runner:
   addBeam(m,[.27,1.30,-.11],[.36,.64,-.02],.12,MAT.dark);
 }
 {
+  // Ending-only bodies are ordinary weight, not HUSH silhouettes. They are
+  // separate meshes so normal apparition staging and collision remain intact.
+  const m=mesh('ending_body_prone');
+  addCylinder(m,[0,.19,-.78],.16,.30,MAT.dark,12);
+  addBox(m,[0,.19,-.22],[.50,.27,.84],MAT.dark,0,Math.PI/2);
+  addBeam(m,[-.14,.17,.10],[-.23,.13,.72],.13,MAT.dark);
+  addBeam(m,[.14,.17,.10],[.25,.13,.70],.13,MAT.dark);
+  addBeam(m,[-.25,.18,-.34],[-.44,.12,.18],.11,MAT.dark);
+  addBeam(m,[.25,.18,-.34],[.42,.12,.16],.11,MAT.dark);
+}
+{
+  const m=mesh('ending_body_seated');
+  addCylinder(m,[0,1.10,-.10],.16,.30,MAT.dark,12);
+  addBox(m,[0,.66,-.04],[.52,.68,.27],MAT.dark,0,.22);
+  addBeam(m,[-.14,.35,0],[-.28,.07,.42],.14,MAT.dark);
+  addBeam(m,[.14,.35,0],[.31,.07,.38],.14,MAT.dark);
+  addBeam(m,[-.25,.86,-.06],[-.43,.24,.22],.12,MAT.dark);
+  addBeam(m,[.25,.86,-.06],[.36,.20,.28],.12,MAT.dark);
+}
+{
+  // A cropped driver-seat cabin for Coffee Win: dashboard, wheel, seat and the
+  // reachable evidence shelf. It is submitted only by the ending runtime.
+  const m=mesh('ending_van_cabin');
+  addBox(m,[0,.55,-.90],[2.35,1.10,.10],MAT.dark);
+  addBox(m,[0,.82,-.74],[2.20,.20,.58],MAT.steel,.08);
+  addRingBeam(m,[-.48,1.02,-.43],.26,.035,MAT.dark,18);
+  addBeam(m,[-.48,.76,-.50],[-.48,1.02,-.43],.045,MAT.dark);
+  addBox(m,[-.48,.28,.34],[.70,.50,.72],MAT.dark);
+  addBox(m,[.62,.72,-.48],[.54,.08,.42],MAT.steel);
+}
+{
+  const m=mesh('ending_van_cup');
+  addCylinder(m,[0,.09,0],.075,.18,MAT.paper,14);
+  addCylinder(m,[0,.19,0],.078,.018,MAT.dark,14);
+}
+{
+  const m=mesh('ending_collapse_debris');
+  addBox(m,[-.42,.18,.05],[.74,.32,.48],MAT.stone,.18,.12);
+  addBox(m,[.30,.11,-.22],[.52,.20,.36],MAT.stone,-.30,-.08);
+  addBeam(m,[-.62,.12,.36],[.66,.28,-.34],.075,MAT.steel);
+}
+{
   const m=mesh('apparition_pose_head_turn');
   addBox(m,[.07,1.58,-.01],[.27,.29,.23],MAT.dark,.42);
   addBox(m,[0,1.03,0],[.52,.82,.25],MAT.dark);
@@ -2171,51 +2213,124 @@ for(const [name,cfg] of Object.entries(SOURCES)){
   // a mesh hung just under that plane: four portal frames across the bay, purlins
   // over them, a corrugated deck, and the fascia and shutter gear at the ends.
   //
-  // Local X runs along the bay (mouth at -3.5, building at +3.5); local Z runs
-  // across it. Origin sits on the apron.
+  // Local X runs along the bay (mouth at -3.5, goods-door wall at +4.25);
+  // local Z runs across it. Origin sits on the apron at physical (53, 7.5).
   const m=mesh('bay_canopy');
-  const z0=-3.6,z1=3.6,soffit=5.34;
-  for(const x of[-3.1,-1.05,1.0,3.05]){
+  const x0=-3.5,x1=4.25,z0=-4.05,z1=4.55,soffit=5.34;
+  for(const x of[-3.1,-1.05,1.0,3.75]){
     // Rafter with a shallow fall toward the mouth, so rain leaves the building.
-    addPlateBeamXY(m,[x,soffit-.10,z0],[x,soffit-.10,z1],.18,MAT.steel);
+    addBeam(m,[x,soffit-.10,z0],[x,soffit-.10,z1],.18,MAT.steel);
     // Haunches where a portal frame meets its stanchion.
     addBeam(m,[x,soffit-.16,z0],[x,soffit-.62,z0+.55],.13,MAT.steel);
     addBeam(m,[x,soffit-.16,z1],[x,soffit-.62,z1-.55],.13,MAT.steel);
     addBox(m,[x,soffit-1.55,z0+.08],[.22,2.6,.24],MAT.steel);
     addBox(m,[x,soffit-1.55,z1-.08],[.22,2.6,.24],MAT.steel);
   }
-  for(const z of[-3.0,-1.5,0,1.5,3.0]) addBeam(m,[-3.5,soffit+.04,z],[3.5,soffit+.04,z],.11,MAT.steel);
-  // THE SHEETING ONLY SURVIVES OVER THE DOORS.
-  //
-  // This deck used to run the full -3.5..3.5, which was right when the apron
-  // had an authored ceiling at 5.5m: it was cladding a plane that was solid
-  // anyway. The apron is open to the sky now (see F.WALLED and the 'D' glyph),
-  // and a full deck would simply be the ceiling again, three inches lower —
-  // nothing gained, and the moon still hidden behind corrugated steel.
-  //
-  // So the sheeting is kept where a bay actually needs it, over the door
-  // opening, and the rest is left as bare frames and purlins. You see cloud
-  // through the steel, which is the whole point of opening it, and a canopy
-  // that has lost most of its sheeting is entirely in character for this
-  // building. DECK_FROM is the mouth-side edge of what is left.
-  const DECK_FROM=1.55;
-  for(let z=z0;z<z1-.01;z+=.36){
-    addQuad(m,[DECK_FROM,soffit+.13,z],[3.5,soffit+.13,z],[3.5,soffit+.16,z+.18],[DECK_FROM,soffit+.16,z+.18],MAT.agedWhite);
-    addQuad(m,[DECK_FROM,soffit+.16,z+.18],[3.5,soffit+.16,z+.18],[3.5,soffit+.13,z+.36],[DECK_FROM,soffit+.13,z+.36],MAT.agedWhite);
+  // Longitudinal girders, with a visibly heavier pair carrying the roof thirds.
+  for(const z of[-3.45,-2.15,-.72,.72,2.15,3.45]){
+    addBeam(m,[x0,soffit+.04,z],[x1,soffit+.04,z],Math.abs(z)===2.15?.18:.11,MAT.steel);
   }
-  // The cut edge of the sheeting, so it reads as ending rather than as missing.
-  addBox(m,[DECK_FROM,soffit+.145,0],[.08,.09,7.2],MAT.steel);
+  for(const z of[-2.15,2.15]){
+    addBeam(m,[x0,soffit-.48,z],[x1,soffit-.48,z],.18,MAT.steel);
+    for(let x=x0+.45;x<x1-.25;x+=1.1)addBeam(m,[x,soffit-.48,z-.32],[x+.55,soffit-.08,z+.32],.07,MAT.steel);
+  }
+  // A complete corrugated roof. This is a loading room, not an uncovered
+  // court: the earlier door-only remnant made the canopy read as missing.
+  const DECK_FROM=x0;
+  for(let z=z0;z<z1-.01;z+=.36){
+    const roofMat=Math.abs(z+.18)<.55?MAT.roofGlass:MAT.agedWhite;
+    addQuad(m,[DECK_FROM,soffit+.13,z],[x1,soffit+.13,z],[x1,soffit+.16,z+.18],[DECK_FROM,soffit+.16,z+.18],roofMat);
+    addQuad(m,[DECK_FROM,soffit+.16,z+.18],[x1,soffit+.16,z+.18],[x1,soffit+.13,z+.36],[DECK_FROM,soffit+.13,z+.36],roofMat);
+  }
   // Fascia and gutter at the mouth: the edge you read the canopy by, against
   // the sky, from anywhere in the yard.
-  addBox(m,[-3.52,soffit-.30,0],[.16,.62,7.4],MAT.agedWhite);
-  addBox(m,[-3.66,soffit-.62,0],[.24,.20,7.4],MAT.steel);
-  addCylinder(m,[-3.66,soffit-1.9,3.42],.075,2.4,MAT.steel,8);   // downpipe
-  addCylinder(m,[-3.66,soffit-3.5,3.42],.075,1.0,MAT.steel,8);
-  // Roller shutter, run up and left up: the box and its guides over the door.
-  addBox(m,[3.34,soffit-.95,0],[.46,.52,4.3],MAT.steel);
-  for(const z of[-2.1,2.1]) addBox(m,[3.34,soffit-2.6,z],[.20,2.8,.16],MAT.steel);
+  addBox(m,[x0-.02,soffit-.30,(z0+z1)/2],[.16,.62,z1-z0+.2],MAT.agedWhite);
+  addBox(m,[x0-.16,soffit-.62,(z0+z1)/2],[.24,.20,z1-z0+.2],MAT.steel);
+  addCylinder(m,[x0-.16,soffit-1.9,z1-.18],.075,2.4,MAT.steel,8);   // downpipe
+  addCylinder(m,[x0-.16,soffit-3.5,z1-.18],.075,1.0,MAT.steel,8);
+  // Full-height north and south returns. Their floorplan collision already
+  // exists; these faces make that construction visible from the weather side.
+  addBox(m,[(x0+x1)/2,2.67,z0],[x1-x0,5.34,.20],MAT.glazedBrick);
+  addBox(m,[(x0+x1)/2,2.67,z1],[x1-x0,5.34,.20],MAT.glazedBrick);
+  // Roller shutter, run up and left up: the box and its guides over the ACTUAL
+  // goods-door aperture. The bay-wide canopy is centred at z 7.5m, but the
+  // canonical door is centred at z 10.25m. Keeping this gear at local z 0
+  // advertised a false doorway in the middle of a solid return wall — exactly
+  // where a player naturally tried to enter.
+  const GOODS_DOOR_Z=2.75,GOODS_DOOR_HALF=1.62;
+  addBox(m,[x1-.16,soffit-.95,GOODS_DOOR_Z],[.46,.52,GOODS_DOOR_HALF*2+.36],MAT.steel);
+  for(const z of[GOODS_DOOR_Z-GOODS_DOOR_HALF,GOODS_DOOR_Z+GOODS_DOOR_HALF]){
+    addBox(m,[x1-.16,soffit-2.6,z],[.20,2.8,.16],MAT.steel);
+  }
   // A dead lamp on the soffit, and the live one beside it.
   for(const x of[-1.9,1.9]) addBox(m,[x,soffit-.30,0],[.52,.16,.20],MAT.agedWhite);
+}
+{
+  // THE GET-IN, SEEN FROM THE WEATHER.
+  //
+  // Exterior rendering deliberately omits the ray-marched interior plan. This
+  // aligned sightline shell supplies the floor, three enclosing walls, ceiling
+  // and roof steel visible through the open goods doors. It carries no
+  // collision and prop-visibility removes it once the observer is indoors.
+  const m=mesh('getin_sightline_shell');
+  const entryX=4.25,farX=20.25,northZ=-4.25,southZ=7.75,ceiling=5.50;
+  const doorZ=2.75,doorHalf=1.62,doorA=doorZ-doorHalf,doorB=doorZ+doorHalf;
+  // The west wall contains the actual three-metre goods aperture. It lives in
+  // this visibility-switched shell rather than the always-on canopy, so it
+  // cannot z-fight the floorplan wall once the camera is indoors.
+  addBox(m,[entryX-.10,1.70,(northZ+doorA)/2],[.20,3.40,doorA-northZ],MAT.glazedBrick);
+  if(southZ>doorB)addBox(m,[entryX-.10,1.70,(doorB+southZ)/2],[.20,3.40,southZ-doorB],MAT.glazedBrick);
+  addBox(m,[entryX-.10,(3.40+ceiling)/2,(doorA+southZ)/2],[.20,ceiling-3.40,southZ-doorA],MAT.glazedBrick);
+  addBox(m,[(entryX+farX)/2,.035,(northZ+southZ)/2],[farX-entryX,.07,southZ-northZ],MAT.concrete);
+  addBox(m,[farX,ceiling/2,(northZ+southZ)/2],[.24,ceiling,southZ-northZ],MAT.glazedBrick);
+  addBox(m,[(entryX+farX)/2,ceiling/2,northZ],[farX-entryX,ceiling,.24],MAT.glazedBrick);
+  addBox(m,[(entryX+farX)/2,ceiling/2,southZ],[farX-entryX,ceiling,.24],MAT.glazedBrick);
+  addBox(m,[(entryX+farX)/2,ceiling-.05,(northZ+southZ)/2],[farX-entryX,.10,southZ-northZ],MAT.agedWhite);
+  // Deep transverse rafters and three continuous longitudinal girders keep the
+  // ceiling from reading as another unmodelled plane from the threshold.
+  for(let x=entryX+.7;x<farX-.2;x+=2.35)addBeam(m,[x,ceiling-.24,northZ+.12],[x,ceiling-.24,southZ-.12],.16,MAT.steel);
+  for(const z of[-2.6,1.75,6.1])addBeam(m,[entryX,ceiling-.42,z],[farX,ceiling-.42,z],.20,MAT.steel);
+  // A dark base course gives all three walls a readable foot in torchlight.
+  addBox(m,[farX-.14,.22,(northZ+southZ)/2],[.08,.44,southZ-northZ],MAT.brickDark);
+  addBox(m,[(entryX+farX)/2,.22,northZ+.14],[farX-entryX,.44,.08],MAT.brickDark);
+  addBox(m,[(entryX+farX)/2,.22,southZ-.14],[farX-entryX,.44,.08],MAT.brickDark);
+}
+{
+  // TWO HONEST WAYS ONTO THE DOCK.
+  //
+  // Collision and step heights are authored by YARD_STEP_BAYS in the
+  // floorplan. This mesh is their construction and wayfinding layer: inset
+  // steel treads, high-contrast nosings, continuous handrails and end posts.
+  // The centre of the dock face remains raised and clear for a lorry.
+  //
+  // Origin is physical (47.5, 7.5) at apron height. The placed prop lifts this
+  // origin 0.85m above the yard floor, so these negative tread heights land on
+  // the matching floorplan risers rather than floating above them.
+  const m=mesh('yard_dock_access');
+  const flights=[{z:-3.0,width:2.0},{z:2.5,width:3.0}];
+  const runX0=46,originX=47.5,drop=-.85,steps=4;
+  const heightAt=(i)=>drop*(1-(i+1)/(steps+1));
+  for(const {z,width} of flights){
+    for(let i=0;i<steps;i++){
+      const floor=heightAt(i),x=(runX0+i+.5)-originX;
+      addBox(m,[x,floor+.018,z],[.94,.036,width-.10],MAT.dark);
+      addBox(m,[x+.43,floor+.045,z],[.08,.055,width-.04],MAT.cone);
+    }
+    for(const edge of[z-width/2-.08,z+width/2+.08]){
+      addBeam(m,[runX0-originX,.18,edge],[50-originX,.98,edge],.055,MAT.steel);
+      for(const [x,floor] of[[runX0,drop],[48,heightAt(2)],[50,0]]){
+        addBeam(m,[x-originX,floor+.04,edge],[x-originX,floor+.94,edge],.055,MAT.steel);
+      }
+      addBox(m,[runX0-originX,drop+.08,edge],[.22,.16,.22],MAT.cone);
+    }
+  }
+  // The remaining raised loading face gets visible end protection, not an
+  // invisible collision lip. These do not add gameplay collision; the 0.85m
+  // floor rise remains the shared render/collision authority.
+  for(const z of[-1.45,.65]){
+    addCylinder(m,[2.28,.42,z],.13,.84,MAT.safetyRed,10);
+    addBox(m,[2.28,.44,z],[.29,.10,.29],MAT.agedWhite);
+  }
 }
 // ── THE ORDINARY CITY AROUND ELLERY ─────────────────────────────────────────
 //
@@ -2750,56 +2865,52 @@ buildStBrendans();
 function buildExteriorLocal(name,{
   skin=MAT.skinWarm,coat=MAT.navy,trouser=MAT.dark,hair=MAT.dark,
   height=1.74,stance=.16,hat='none',bag=false,highVis=false,scarf=null,
+  lean=0,turn=0,coatLength=.72,pose='rest',
 }={}){
-  const m=mesh(name),headY=height-.17,shoulderY=height-.48,hipY=.80;
-  // Weight-bearing legs are not parallel pegs: knees settle inward and the
-  // rain posture puts one foot half a step forward.
-  addBeam(m,[-stance,.07,-.055],[-stance*.62,hipY,0],.115,trouser);
-  addBeam(m,[ stance,.07, .055],[ stance*.62,hipY,0],.115,trouser);
-  for(const [x,z]of[[-stance,-.075],[stance,.09]])addBox(m,[x,.055,z-.035],[.24,.11,.40],MAT.black);
-  // Coat, lapels and collar create a front/back read at conversational range.
-  addBox(m,[0,(hipY+shoulderY)/2,.015],[.50,shoulderY-hipY+.18,.31],coat);
-  addBox(m,[0,hipY+.02,.03],[.42,.20,.30],coat);
-  addBox(m,[-.105,shoulderY-.14,-.165],[.17,.42,.035],coat,0,-.10);
-  addBox(m,[ .105,shoulderY-.14,-.165],[.17,.42,.035],coat,0,.10);
-  addCylinder(m,[0,headY-.20,0],.065,.15,skin,12);
-  // Arms finish in visible hands rather than disappearing into the torso.
-  addBeam(m,[-.25,shoulderY-.02,0],[-.29,hipY+.10,-.10],.105,coat);
-  addBeam(m,[ .25,shoulderY-.02,0],[ .22,hipY+.13,-.14],.105,coat);
-  addEllipsoid(m,[-.29,hipY+.08,-.11],[.07,.09,.055],skin,6,10);
-  addEllipsoid(m,[ .22,hipY+.11,-.15],[.07,.09,.055],skin,6,10);
-  // A face: cranium, ears, nose, eyes, brows and mouth all stand proud of local
-  // -Z, the direction the placed person faces. These marks survive the pixel
-  // mesh because none is thinner than roughly two centimetres.
-  addEllipsoid(m,[0,headY,0],[.145,.185,.125],skin,10,16);
-  for(const x of[-.15,.15])addEllipsoid(m,[x,headY-.005,0],[.025,.052,.026],skin,5,8);
-  addEllipsoid(m,[0,headY-.015,-.132],[.032,.052,.035],skin,6,10);
-  for(const x of[-.052,.052]){
-    addEllipsoid(m,[x,headY+.035,-.121],[.017,.013,.010],MAT.black,5,8);
-    addBox(m,[x,headY+.070,-.120],[.060,.016,.012],hair,x<0?-.07:.07);
+  const m=mesh(name),headY=height-.18,shoulderY=height-.50,hipY=Math.max(.66,shoulderY-coatLength);
+  const shoulderX=lean*.20,headX=lean*.28;
+  // Bent, unequal limbs and two differently planted feet replace the peg-leg
+  // toy grammar. Gloves are coat-dark: no pale doll hands float in the rain.
+  addBeam(m,[-stance,.07,-.12],[-stance*.45,.42,-.02],.105,trouser);
+  addBeam(m,[-stance*.45,.42,-.02],[-stance*.58,hipY+.08,.025],.105,trouser);
+  addBeam(m,[ stance,.07,.10],[ stance*.80,.44,.07],.11,trouser);
+  addBeam(m,[ stance*.80,.44,.07],[ stance*.48,hipY+.08,.015],.11,trouser);
+  addBox(m,[-stance,.055,-.16],[.25,.11,.42],MAT.black,.05);
+  addBox(m,[ stance,.055,.10],[.25,.11,.42],MAT.black,-.04);
+  // A stepped, tapered coat: broad sloped shoulders, narrower waist, uneven
+  // hem and hard faceted lapels. The silhouette does the character work.
+  addBox(m,[shoulderX,(hipY+shoulderY)/2,.02],[.49,shoulderY-hipY+.18,.34],coat,turn*.25);
+  addBox(m,[shoulderX*.45,hipY-.10,.035],[.57,.26,.37],coat,turn*.18,lean*.05);
+  addBeam(m,[-.24+shoulderX,shoulderY+.04,.02],[-.18,shoulderY-.12,.01],.15,coat);
+  addBeam(m,[ .24+shoulderX,shoulderY+.02,.02],[ .17,shoulderY-.14,.01],.15,coat);
+  addBox(m,[-.105+shoulderX,shoulderY-.15,-.18],[.17,.44,.035],coat,0,-.10);
+  addBox(m,[ .105+shoulderX,shoulderY-.15,-.18],[.17,.44,.035],coat,0,.10);
+  const hands=pose==='carry'?[[-.13,hipY+.38,-.24],[.15,hipY+.35,-.25]]
+    :pose==='watch'?[[-.28,hipY+.18,-.10],[.12,hipY+.43,-.18]]
+      :[[-.30,hipY+.12,-.10],[.23,hipY+.18,-.15]];
+  const elbows=[[-.34,shoulderY-.20,-.01],[.32,shoulderY-.16,.02]];
+  for(let i=0;i<2;i+=1){
+    const shoulder=[(i?1:-1)*.26+shoulderX,shoulderY-.02,0];
+    addBeam(m,shoulder,elbows[i],.11,coat);addBeam(m,elbows[i],hands[i],.10,coat);
+    addCylinder(m,hands[i],.065,.10,MAT.dark,6);
   }
-  addBox(m,[0,headY-.073,-.126],[.072,.014,.012],MAT.terracotta);
-  addBox(m,[0,headY+.13,.035],[.27,.10,.19],hair,0,-.12);
-  addBox(m,[0,headY+.035,.105],[.25,.20,.08],hair);
-  if(hat==='wool'){
-    addEllipsoid(m,[0,headY+.145,.01],[.165,.105,.145],MAT.mustard,7,14);
-    addBox(m,[0,headY+.09,-.02],[.34,.055,.29],MAT.mustard);
-  }else if(hat==='cap'){
-    addBox(m,[0,headY+.145,.005],[.31,.105,.25],MAT.dark,0,-.08);
-    addBox(m,[0,headY+.105,-.17],[.24,.035,.20],MAT.dark,0,-.10);
+  // An obscured six-plane head, collar and hood. There are deliberately no
+  // eyes, brows, mouth, nose, round hat or spherical cranium to resolve.
+  addCylinder(m,[headX,headY-.20,.02],.062,.14,MAT.dark,6);
+  addCylinder(m,[headX,headY,.02],.145,.30,hat==='none'?hair:coat,6);
+  addBox(m,[headX,headY-.035,-.13],[.17,.18,.018],skin,turn*.12,-.08);
+  addBox(m,[headX,headY-.205,.02],[.34,.16,.29],scarf??coat,turn*.12);
+  if(hat!=='none'){
+    addCylinder(m,[headX,headY+.04,.035],.205,.34,coat,6);
+    addBox(m,[headX,headY-.01,-.145],[.25,.27,.035],MAT.dark,turn*.12,-.10);
+  }else{
+    addBox(m,[headX-.13,headY-.12,-.025],[.11,.26,.26],coat,-.18);
   }
-  if(scarf!==null){
-    addBox(m,[0,headY-.245,-.035],[.30,.13,.25],scarf);
-    addBox(m,[.10,shoulderY-.22,-.18],[.105,.46,.055],scarf,0,-.08);
-  }
-  if(bag){
-    addBox(m,[.36,.68,.05],[.34,.52,.20],MAT.wood);
-    addBeam(m,[.20,shoulderY+.02,.02],[.42,.92,.04],.035,MAT.dark);
-  }
+  if(scarf!==null)addBox(m,[.10+shoulderX,shoulderY-.25,-.19],[.105,.42,.055],scarf,0,-.08);
+  if(bag){addBox(m,[.36,.68,.05],[.34,.52,.20],MAT.wood);addBeam(m,[.20,shoulderY+.02,.02],[.42,.92,.04],.035,MAT.dark);}
   if(highVis){
-    addBox(m,[0,shoulderY-.10,-.172],[.48,.095,.025],MAT.agedWhite);
-    addBox(m,[0,hipY+.12,-.172],[.46,.075,.025],MAT.agedWhite);
-    addBox(m,[0,shoulderY+.07,-.176],[.065,.60,.025],MAT.agedWhite);
+    addBox(m,[shoulderX,shoulderY-.10,-.182],[.48,.095,.025],MAT.agedWhite);
+    addBox(m,[shoulderX*.5,hipY+.12,-.182],[.46,.075,.025],MAT.agedWhite);
   }
 }
 
@@ -2812,6 +2923,190 @@ buildExteriorLocal('exterior_mews_neighbor',{
 buildExteriorLocal('exterior_pub_driver',{
   skin:MAT.skinWarm,coat:MAT.terracotta,trouser:MAT.denim,hair:MAT.dark,height:1.80,highVis:true,
 });
+
+// ── THE VIGIL ───────────────────────────────────────────────────────────────
+//
+// Twenty-four people standing outside Ellery until six on Thursday (see
+// data/exterior-vigil.js). Six of them have names and faces; the other eighteen
+// are six reusable kinds, each one a body from buildExteriorLocal with a piece
+// of kit that says how long the night has been.
+//
+// The kit is modelled ON THE BODY rather than as separate props for one reason:
+// these figures BLOCK. A crowd you can walk through is not a crowd, so every
+// figure's collision box is its real footprint — and an umbrella that collides
+// has to be part of the thing whose box it widens, or the two disagree the first
+// time somebody rotates.
+//
+// Nothing here is thinner than about two centimetres, which is what survives the
+// pixel mesh at conversational range.
+function vigilKit(m,{
+  kind='none',height=1.74,coat=MAT.navy,accent=MAT.mustard,
+}={}){
+  const shoulderY=height-.48,hipY=.80;
+  if(kind==='umbrella'){
+    // Lowered toward the porch, never perched over the head like a propeller
+    // hat. Its side-on broken dome is a strong silhouette at ten metres.
+    const ux=.10,uy=1.18,uz=-.04,ur=.34;
+    addBeam(m,[.22,hipY+.10,-.10],[ux,uy,uz],.028,MAT.steel);
+    for(let i=0;i<8;i+=1){
+      const a=(i/8)*Math.PI*2,b=((i+1)/8)*Math.PI*2;
+      addBeam(m,[ux,uy,uz],[ux+Math.cos(a)*ur,uy-.18,uz+Math.sin(a)*ur],.022,MAT.steel);
+      addBox(m,[ux+Math.cos((a+b)/2)*.21,uy-.07,uz+Math.sin((a+b)/2)*.21],[.25,.035,.25],MAT.black,(a+b)/2, -.10);
+    }
+    addBox(m,[ux,uy+.06,uz],[.05,.09,.05],MAT.wood);
+  }else if(kind==='placard'){
+    // Chipboard on a batten, held high, gone soft at the corners. Two boards so
+    // there is something on the back of it as well.
+    addBeam(m,[.02,hipY+.06,-.16],[.02,height+.24,-.20],.030,MAT.wood);
+    addBox(m,[.02,height+.34,-.21],[.66,.46,.026],MAT.agedWhite);
+    addBox(m,[.02,height+.34,-.235],[.62,.42,.012],accent);
+    for(const y of[height+.46,height+.34,height+.22])addBox(m,[.02,y,-.243],[.48,.045,.010],MAT.black);
+  }else if(kind==='flask'){
+    // A tartan flask and a stack of cups, held at the chest the way somebody
+    // holds a thing they are about to hand over.
+    addCylinder(m,[-.24,hipY+.30,-.20],.075,.30,accent,10);
+    addCylinder(m,[-.24,hipY+.47,-.20],.062,.06,MAT.steel,10);
+    addCylinder(m,[ .22,hipY+.26,-.19],.055,.20,MAT.agedWhite,8);
+  }else if(kind==='seated'){
+    // A folding chair, and the body already sits on it: buildExteriorLocal is
+    // called at reduced height with the legs tucked, so this is the frame and
+    // the blanket over the knees.
+    for(const x of[-.22,.22]){
+      addBeam(m,[x,.02,-.22],[x,.44,.18],.026,MAT.steel);
+      addBeam(m,[x,.02,.18],[x,.44,-.22],.026,MAT.steel);
+      addBeam(m,[x,.44,-.20],[x,.86,.14],.024,MAT.steel);
+    }
+    addBox(m,[0,.45,-.02],[.50,.05,.44],MAT.cloth);
+    addBox(m,[0,.70,.16],[.48,.44,.05],MAT.cloth);
+    addBox(m,[0,.52,-.16],[.54,.10,.40],accent);
+  }else if(kind==='pamphlets'){
+    // A carrier bag of photocopies nobody is taking, and one held out.
+    addBox(m,[.24,.46,-.06],[.28,.42,.16],MAT.agedWhite);
+    addBeam(m,[.18,.68,-.06],[.30,.68,-.06],.018,MAT.agedWhite);
+    addBox(m,[-.26,hipY+.28,-.22],[.22,.30,.014],MAT.paper,0,-.22);
+  }else if(kind==='camera'){
+    // A tripod with a small body on it and the tally light on. It has recorded
+    // nothing for six hours.
+    for(const a of[0,2.094,4.189]){
+      addBeam(m,[.22,.01,-.06],[.22+Math.cos(a)*.24,1.18,-.06+Math.sin(a)*.24],.024,MAT.dark);
+    }
+    addBeam(m,[.22,1.18,-.06],[.22,1.44,-.06],.032,MAT.dark);
+    addBox(m,[.22,1.54,-.06],[.20,.17,.30],MAT.black);
+    addBeam(m,[.22,1.54,-.19],[.22,1.54,-.27],.055,MAT.black);
+    addBox(m,[.22,1.62,-.21],[.030,.026,.020],MAT.safetyRed);
+  }else if(kind==='clipboard'){
+    // The organiser's ring binder, held against the chest under the coat.
+    addBox(m,[-.02,hipY+.30,-.20],[.34,.42,.055],MAT.dark,0,-.18);
+    addBox(m,[-.02,hipY+.30,-.235],[.30,.38,.014],MAT.agedWhite,0,-.18);
+  }else if(kind==='map'){
+    // A laminated street map with two rings and a line drawn between them, held
+    // open at arm's length because he is mid-argument.
+    addBox(m,[.08,hipY+.42,-.27],[.50,.36,.010],MAT.agedWhite,0,-.34);
+    addBox(m,[.08,hipY+.42,-.277],[.46,.32,.006],MAT.paper,0,-.34);
+    for(const x of[-.10,.24])addBox(m,[x,hipY+.44,-.286],[.11,.11,.008],MAT.safetyRed,0,-.34);
+    addBox(m,[.07,hipY+.43,-.286],[.32,.012,.008],MAT.safetyRed,0,-.34);
+  }else if(kind==='shotgun-mic'){
+    // A boom on a stand, a blimp, and headphones already on. The one person out
+    // here doing the same job the player is.
+    addBeam(m,[.28,.02,-.10],[.28,1.42,-.10],.030,MAT.dark);
+    for(const a of[.6,2.7,4.8])addBeam(m,[.28,.30,-.10],[.28+Math.cos(a)*.22,.02,-.10+Math.sin(a)*.22],.020,MAT.dark);
+    addBeam(m,[.28,1.52,-.08],[.28,1.52,-.40],.085,MAT.cloth);
+    addBox(m,[.28,1.44,-.10],[.10,.14,.10],MAT.black);
+    addBox(m,[0,height-.06,.02],[.30,.05,.24],MAT.black);
+    for(const x of[-.15,.15])addBox(m,[x,height-.14,0],[.055,.13,.10],MAT.black);
+  }
+  if(kind==='umbrella'||kind==='placard'){
+    // Whatever is held up needs an arm going to it, or the kit floats.
+    addBeam(m,[.25,shoulderY-.02,0],[.22,hipY+.16,-.10],.105,coat);
+  }
+}
+
+// Five-by-seven raised lettering, kept deliberately thick so a slogan survives
+// the pixel renderer as language at eight to twelve metres rather than texture.
+const VIGIL_GLYPHS={
+  A:['01110','10001','10001','11111','10001','10001','10001'],C:['01111','10000','10000','10000','10000','10000','01111'],
+  D:['11110','10001','10001','10001','10001','10001','11110'],E:['11111','10000','10000','11110','10000','10000','11111'],
+  F:['11111','10000','10000','11110','10000','10000','10000'],G:['01111','10000','10000','10111','10001','10001','01111'],
+  H:['10001','10001','10001','11111','10001','10001','10001'],I:['11111','00100','00100','00100','00100','00100','11111'],
+  K:['10001','10010','10100','11000','10100','10010','10001'],L:['10000','10000','10000','10000','10000','10000','11111'],
+  M:['10001','11011','10101','10101','10001','10001','10001'],N:['10001','11001','10101','10011','10001','10001','10001'],
+  O:['01110','10001','10001','10001','10001','10001','01110'],P:['11110','10001','10001','11110','10000','10000','10000'],
+  R:['11110','10001','10001','11110','10100','10010','10001'],S:['01111','10000','10000','01110','00001','00001','11110'],
+  T:['11111','00100','00100','00100','00100','00100','00100'],U:['10001','10001','10001','10001','10001','10001','01110'],
+  V:['10001','10001','10001','10001','10001','01010','00100'],W:['10001','10001','10001','10101','10101','11011','10001'],
+  Y:['10001','10001','01010','00100','00100','00100','00100'],
+  '0':['01110','10011','10101','10101','11001','10001','01110'],'1':['00100','01100','00100','00100','00100','00100','01110'],
+  '6':['00110','01000','10000','11110','10001','10001','01110'],'8':['01110','10001','10001','01110','10001','10001','01110'],
+  '9':['01110','10001','10001','01111','00001','00010','11100'],':':['00000','00100','00100','00000','00100','00100','00000'],
+  '?':['01110','10001','00001','00010','00100','00000','00100'],
+};
+function raisedVigilLine(m,text,{w,y,z,pitch=0,mat=MAT.black}){
+  const source=String(text).toUpperCase(),dot=Math.min(.038,(w-.10)/Math.max(1,source.length*6-1));
+  const total=(source.length*6-1)*dot,start=-total/2+dot/2;
+  for(let ci=0;ci<source.length;ci+=1){
+    const glyph=VIGIL_GLYPHS[source[ci]];if(!glyph)continue;
+    for(let row=0;row<7;row+=1)for(let col=0;col<5;col+=1){
+      if(glyph[row][col]!=='1')continue;
+      addBox(m,[start+(ci*6+col)*dot,y+(3-row)*dot,z],[dot*.78,dot*.78,.018],mat,0,pitch);
+    }
+  }
+}
+function buildVigilSign(name,words,{w=1.34,boardY=1.78,lean=0,banner=false}={}){
+  const m=mesh(name),lines=[...words],h=banner?1.02:.84,z=-.22;
+  if(!banner)addBeam(m,[0,.58,-.10],[0,boardY+.34,z],.035,MAT.wood);
+  addBox(m,[0,boardY,z],[w,h,.055],MAT.agedWhite,0,lean);
+  addBox(m,[-w*.34,boardY+h*.34,z-.035],[w*.22,.055,.022],MAT.terracotta,-.04,lean);
+  addBox(m,[w*.39,boardY-h*.37,z-.035],[w*.16,.05,.022],MAT.slate,.05,lean);
+  const gap=Math.min(.26,h/(lines.length+.45)),top=boardY+(lines.length-1)*gap/2;
+  lines.forEach((line,index)=>raisedVigilLine(m,line,{w,y:top-index*gap,z:z-.038,pitch:lean}));
+}
+
+// Six named bodies, six independent pieces of kit. Conversation settles the
+// relevant part without ever shifting the actor's collider or focus anchor.
+for(const [name,body] of [
+  ['vigil_ruth_mallory',{skin:MAT.skinWarm,coat:MAT.navy,trouser:MAT.dark,hair:MAT.agedWhite,height:1.70,stance:.15,scarf:MAT.pubGreen,lean:-.05,pose:'carry'}],
+  ['vigil_leila_hart',{skin:MAT.skinDeep,coat:MAT.denim,trouser:MAT.dark,hair:MAT.black,height:1.66,stance:.14,hat:'hood',turn:.35,pose:'watch'}],
+  ['vigil_owen_pryce',{skin:MAT.skinWarm,coat:MAT.dark,trouser:MAT.dark,hair:MAT.agedWhite,height:1.73,stance:.17,hat:'hood',scarf:MAT.slate,lean:.03}],
+  ['vigil_denise_okafor',{skin:MAT.skinDeep,coat:MAT.pubGreen,trouser:MAT.denim,hair:MAT.black,height:1.68,stance:.15,scarf:MAT.mustard,pose:'carry'}],
+  ['vigil_malcolm_vey',{skin:MAT.skinWarm,coat:MAT.mustard,trouser:MAT.dark,hair:MAT.dark,height:1.78,stance:.19,hat:'hood',lean:.06,pose:'carry'}],
+  ['vigil_kit_renshaw',{skin:MAT.skinWarm,coat:MAT.slate,trouser:MAT.denim,hair:MAT.terracotta,height:1.72,stance:.16,turn:-.18,pose:'watch'}],
+])buildExteriorLocal(name,body);
+
+for(const [name,kind,opts] of [
+  ['vigil_part_ruth_binder','clipboard',{height:1.70,coat:MAT.navy}],
+  ['vigil_part_leila_flask','flask',{height:1.66,coat:MAT.denim,accent:MAT.terracotta}],
+  ['vigil_part_owen_umbrella','umbrella',{height:1.73,coat:MAT.dark}],
+  ['vigil_part_denise_photos','pamphlets',{height:1.68,coat:MAT.pubGreen}],
+  ['vigil_part_malcolm_map','map',{height:1.78,coat:MAT.mustard}],
+  ['vigil_part_kit_microphone','shotgun-mic',{height:1.72,coat:MAT.slate}],
+]){const m=mesh(name);vigilKit(m,{kind,...opts});}
+
+// Twelve actual background silhouettes, not six doubled bodies. Variation is
+// coat length, hood, stance, lean and working pose—never facial decoration.
+for(const [name,kit,body] of [
+  ['vigil_figure_umbrella_a','umbrella',{coat:MAT.dark,trouser:MAT.denim,hair:MAT.dark,height:1.74,scarf:MAT.slate,lean:-.05}],
+  ['vigil_figure_umbrella_b','umbrella',{coat:MAT.navy,trouser:MAT.dark,hair:MAT.dark,height:1.68,hat:'hood',stance:.20,turn:.22}],
+  ['vigil_figure_placard_a',null,{coat:MAT.pubGreen,trouser:MAT.dark,hair:MAT.black,height:1.72,hat:'hood',skin:MAT.skinDeep,pose:'carry'}],
+  ['vigil_figure_placard_b',null,{coat:MAT.terracotta,trouser:MAT.dark,hair:MAT.black,height:1.78,stance:.21,lean:.04,pose:'carry'}],
+  ['vigil_figure_flask_a','flask',{coat:MAT.terracotta,trouser:MAT.denim,hair:MAT.agedWhite,height:1.70,scarf:MAT.mustard,pose:'carry'}],
+  ['vigil_figure_flask_b','flask',{coat:MAT.dark,trouser:MAT.denim,hair:MAT.dark,height:1.76,hat:'hood',turn:-.25,pose:'carry'}],
+  ['vigil_figure_seated_a','seated',{coat:MAT.navy,trouser:MAT.dark,hair:MAT.dark,height:1.28,stance:.10,scarf:MAT.terracotta,coatLength:.52,lean:-.06}],
+  ['vigil_figure_seated_b','seated',{coat:MAT.pubGreen,trouser:MAT.dark,hair:MAT.agedWhite,height:1.34,stance:.12,hat:'hood',coatLength:.48,turn:.18}],
+  ['vigil_figure_pamphlets_a','pamphlets',{coat:MAT.denim,trouser:MAT.dark,hair:MAT.black,height:1.73,skin:MAT.skinDeep,pose:'carry'}],
+  ['vigil_figure_pamphlets_b','pamphlets',{coat:MAT.navy,trouser:MAT.dark,hair:MAT.dark,height:1.66,hat:'hood',lean:.05,pose:'carry'}],
+  ['vigil_figure_camera_a','camera',{coat:MAT.slate,trouser:MAT.denim,hair:MAT.dark,height:1.75,turn:-.22,pose:'watch'}],
+  ['vigil_figure_camera_b','camera',{coat:MAT.dark,trouser:MAT.denim,hair:MAT.black,height:1.69,hat:'hood',stance:.13,lean:-.05,pose:'watch'}],
+]){
+  buildExteriorLocal(name,{skin:MAT.skinWarm,...body});
+  if(kit)vigilKit(meshes.get(name),{kind:kit,height:body.height,coat:body.coat,accent:MAT.mustard});
+}
+
+buildVigilSign('vigil_part_sign_save',['SAVE ELLERY'],{w:1.32});
+buildVigilSign('vigil_part_sign_strike',['NO FIRST','STRIKE','06:00']);
+buildVigilSign('vigil_part_sign_chapel',['SAVE THE','1908 CHAPEL']);
+buildVigilSign('vigil_part_sign_record',['OUR ROOMS','OUR RECORD'],{boardY:.92,lean:-.22});
+buildVigilSign('vigil_part_sign_signed',['WHO SIGNED','THIS OFF?'],{boardY:.92,lean:-.22});
+buildVigilSign('vigil_part_banner',['KEEP ELLERY','STANDING'],{w:3.80,boardY:.56,banner:true});
 
 {
   // THE BUILDING, FROM THE YARD.
@@ -3435,6 +3730,101 @@ const addBoothGuard=(m,{x=0,z=-.15,lean=0,arm='rest'}={})=>{
   addBox(m,[-2.60,.42,-.55],[.24,.84,.24],MAT.safetyRed);                      // a bollard, hit once
 }
 {
+  // Three full scaffold lifts. The outer face carries a sparse debris net, but
+  // the standards, ledgers, transoms, decks, toe boards and ladder remain
+  // legible through it in the rain.
+  const m=mesh('demolition_scaffold_run'),W=7.6,D=1.18,H=7.0;
+  const xs=[-W/2,-W/6,W/6,W/2],zs=[-D/2,D/2],lifts=[.20,2.35,4.55,6.75];
+  for(const x of xs)for(const z of zs)addCylinder(m,[x,H/2,z],.045,H,MAT.steel,8);
+  for(const y of lifts){
+    for(const z of zs)addBox(m,[0,y,z],[W+.10,.07,.07],MAT.steel);
+    for(const x of xs)addBox(m,[x,y,0],[.07,.07,D+.10],MAT.steel);
+  }
+  for(const y of[2.12,4.32,6.52]){
+    addBox(m,[0,y,0],[W,.10,D],MAT.wood);
+    for(const z of[-D/2,D/2])addBox(m,[0,y+.14,z],[W,.24,.045],MAT.safetyRed);
+  }
+  for(let bay=0;bay<3;bay++){
+    const a=xs[bay],b=xs[bay+1];
+    for(const z of zs){
+      addBeam(m,[a,.24,z],[b,2.30,z],.045,MAT.steel);
+      addBeam(m,[b,2.44,z],[a,4.50,z],.045,MAT.steel);
+      addBeam(m,[a,4.64,z],[b,6.70,z],.045,MAT.steel);
+    }
+  }
+  for(const x of[W/2-.58,W/2-.16])addBeam(m,[x,.18,D/2+.04],[x,6.60,D/2+.04],.055,MAT.steel);
+  for(let y=.45;y<6.55;y+=.34)addBox(m,[W/2-.37,y,D/2+.04],[.48,.035,.06],MAT.steel);
+  addBox(m,[0,3.55,-D/2-.035],[W-.16,6.70,.025],MAT.roofGlass);
+}
+{
+  // A compact tracked excavator: narrow enough for the service strip between
+  // the two buildings, but with a complete undercarriage, cab, articulated boom
+  // and bucket rather than a construction-coloured block.
+  const m=mesh('demolition_excavator');
+  for(const x of[-.82,.82]){
+    addBox(m,[x,.34,.05],[.42,.60,3.30],MAT.black);
+    addBox(m,[x,.34,.05],[.30,.38,3.02],MAT.steel);
+    for(const z of[-1.12,-.55,.02,.59,1.16])addCylinderX(m,[x,.34,z],.16,.46,MAT.dark,12);
+  }
+  addBox(m,[0,.72,.10],[1.72,.28,1.70],MAT.steel);
+  addCylinder(m,[0,.94,.10],.56,.30,MAT.dark,16);
+  addBox(m,[.28,1.42,.48],[1.55,.92,1.36],MAT.safetyRed);
+  addBox(m,[.72,2.08,-.25],[.72,1.18,.92],MAT.dark);
+  addBox(m,[.72,2.16,-.72],[.66,.92,.055],MAT.roofGlass);
+  addBox(m,[.33,2.17,-.24],[.055,.92,.70],MAT.roofGlass);
+  addBox(m,[.40,2.80,-.20],[1.32,.16,1.24],MAT.safetyRed);
+  addBox(m,[-.56,1.72,.66],[.62,.30,1.08],MAT.safetyRed);
+  addCylinder(m,[-.15,2.12,-.38],.18,.56,MAT.dark,14);
+  addBeam(m,[-.10,2.22,-.38],[-.16,3.18,-1.86],.24,MAT.safetyRed);
+  addBeam(m,[-.16,3.18,-1.86],[-.12,1.42,-3.18],.19,MAT.safetyRed);
+  addBeam(m,[.08,2.32,-.46],[.02,2.84,-1.76],.075,MAT.steel);
+  addBeam(m,[.02,2.84,-1.76],[-.02,1.55,-3.02],.065,MAT.steel);
+  addBox(m,[-.12,1.05,-3.48],[1.18,.48,.76],MAT.dark,-.05,.28);
+  for(const x of[-.48,-.16,.16,.48])addBox(m,[x,.78,-3.78],[.16,.34,.40],MAT.dark,0,.34);
+}
+{
+  // Standard temporary welded-mesh fencing in concrete feet. Separate panels
+  // leave real gaps at the cathedral doors.
+  const m=mesh('demolition_heras_fence'),W=3.5,H=2.05;
+  for(const x of[-W/2,W/2]){
+    addBox(m,[x,.10,0],[.58,.20,.66],MAT.concrete);
+    addCylinder(m,[x,1.08,0],.042,H,MAT.steel,8);
+  }
+  addBox(m,[0,.12,0],[W,.06,.06],MAT.steel);
+  addBox(m,[0,H-.04,0],[W,.06,.06],MAT.steel);
+  addBox(m,[0,H/2,0],[W-.10,H-.18,.024],MAT.roofGlass);
+  addBox(m,[0,1.22,-.035],[.74,.50,.035],MAT.agedWhite);
+  addBox(m,[0,1.38,-.06],[.60,.10,.025],MAT.safetyRed);
+}
+{
+  // A towable generator with its sockets and vent banks facing the work area.
+  const m=mesh('demolition_generator');
+  addBox(m,[0,.56,.20],[2.18,.95,1.34],MAT.safetyRed);
+  addBox(m,[0,1.08,.20],[2.02,.12,1.22],MAT.dark);
+  for(const x of[-.72,-.45,-.18,.18,.45,.72])addBox(m,[x,.63,-.49],[.10,.50,.025],MAT.dark);
+  addBox(m,[.72,.45,-.53],[.38,.34,.035],MAT.black);
+  for(const x of[.60,.73,.86])addCylinder(m,[x,.45,-.57],.045,.025,x===.73?MAT.brass:MAT.vfd,10);
+  for(const x of[-.92,.92])addCylinderX(m,[x,.34,.62],.28,.24,MAT.black,14);
+  addBeam(m,[0,.26,-.52],[0,.20,-1.75],.10,MAT.steel);
+  addBox(m,[0,.20,-1.82],[.36,.10,.28],MAT.steel);
+}
+{
+  // The site is shut for the night: a mast and four work heads, physically
+  // present but deliberately non-emissive. The lodge remains the only ordinary
+  // occupied exterior light.
+  const m=mesh('demolition_light_tower');
+  addBox(m,[0,.34,0],[1.32,.68,1.12],MAT.safetyRed);
+  for(const z of[-.42,.42])addCylinderX(m,[0,.30,z],.24,1.50,MAT.black,14);
+  addCylinder(m,[0,2.48,0],.075,4.20,MAT.steel,10);
+  addCylinder(m,[0,3.65,0],.045,2.12,MAT.steel,8);
+  addBox(m,[0,4.65,0],[1.28,.08,.08],MAT.steel);
+  for(const x of[-.48,-.16,.16,.48]){
+    addBox(m,[x,4.47,-.06],[.26,.30,.20],MAT.dark,-.04);
+    addBox(m,[x,4.47,-.17],[.20,.22,.025],MAT.agedWhite,-.04);
+  }
+  for(const [x,z] of[[-.62,-.50],[.62,-.50],[-.62,.50],[.62,.50]])addBeam(m,[0,.24,0],[x,.08,z],.055,MAT.steel);
+}
+{
   // MUNICIPAL PAINT. This is where the yard says which country it is in: a
   // hatched KEEP CLEAR box across the dock mouth, a loading bay marked out in
   // white, and the double yellow running along the boundary. The lettering is
@@ -3958,39 +4348,103 @@ const addBoothGuard=(m,{x=0,z=-.15,lean=0,arm='rest'}={})=>{
 
   // ── THE WATER IN THE AIR ─────────────────────────────────────────────────
   //
-  // Not fluid — geometry. A jet standing off the nozzle, and the sheets falling
-  // bowl to bowl and bowl to basin. roofGlass is the one translucent material in
-  // the palette, so it is what water is made of here.
+  // Not fluid — geometry. roofGlass is the one translucent material in the
+  // palette, so it is what water is made of here.
   //
-  // The falls are drawn as a few tapering elements rather than one column: a
-  // single cylinder reads as a glass rod, and three stepped ones read as
-  // something that is moving even before anything animates it.
+  // IT WAS FOUR GLASS SLABS. One box per fall, 55mm thick and vertical, which
+  // is a pane of glass standing between two bowls rather than water leaving
+  // one. A tiered fountain does three things this did not: the whole rim WEEPS
+  // (a thin veil all the way round, not four spouts in a void), a fall LEAVES
+  // the lip on a curve and spreads as it goes, and it BREAKS where it lands.
+  // All three are cheap in boxes and they are the whole difference between a
+  // fountain that is running and one that is switched off.
+
+  // A veil off a bowl lip — the sheet the rim spills between the heavy falls.
+  //
+  // NOT A CONTINUOUS RING. A closed band of boxes under a bowl is a drum, and
+  // at one bit it comes out as a solid white skirt, which is the opposite of
+  // water. What reads as water on this display is SEPARATION: strands with dark
+  // between them, uneven in length, thin enough that the halftone breaks them
+  // up. So the ring is drawn as a broken fringe — roughly two thirds of the
+  // segments, each a different length, and none of them touching.
+  const veil=(y,radius,drop,thickness,segments)=>{
+    const seg=radius*2*Math.tan(Math.PI/segments);
+    for(let i=0;i<segments;i++){
+      if(i%3===2)continue;                                   // the gaps are the point
+      const a=(i/segments)*Math.PI*2;
+      // Where a mask spout is, the rim above it runs dry — the flow has already
+      // been taken. Elsewhere the strand runs longer.
+      const near=Math.min(...[0,1,2,3].map((k)=>
+        Math.abs(((a-(k/4)*Math.PI*2)+Math.PI*3)%(Math.PI*2)-Math.PI)));
+      const h=drop*(.30+.70*Math.min(1,near/.55))*(.72+((i*5)%7)/7*.5);
+      addBox(m,[Math.cos(a)*radius,y-h/2,Math.sin(a)*radius],
+        [thickness,h,seg*.62],MAT.roofGlass,a);
+    }
+  };
+
+  // A fall as a real fall: stepped segments that lean out at the lip, come back
+  // under gravity, widen and thin as the sheet stretches.
+  const fall=(a,fromY,toY,fromR,width,steps)=>{
+    const span=fromY-toY;
+    for(let i=0;i<steps;i++){
+      const t=(i+.5)/steps;
+      // Projectile: out fast, then straight down. The lip throws it 0.22m clear
+      // before it is falling rather than leaving.
+      const out=fromR+.22*(1-Math.pow(1-Math.min(1,t*2.4),2));
+      const y=fromY-span*(t*t*.72+t*.28);
+      const w=width*(1+t*.38);
+      const thickness=.048*(1-t*.30);
+      addBox(m,[Math.cos(a)*out,y,Math.sin(a)*out],[thickness,span/steps*1.28,w],MAT.roofGlass,a);
+    }
+  };
+
+  // Where a fall lands: a crown, not a decal. Six shards standing off the
+  // surface plus a low collar, so the eye reads impact instead of a wet ring.
+  const crown=(cx,cz,scale)=>{
+    for(let i=0;i<7;i++){
+      const t=(i/7)*Math.PI*2+cx*.7;
+      const r=.16*scale+((i%3)*.05)*scale;
+      addBox(m,[cx+Math.cos(t)*r,DROP+.055+.10*scale,cz+Math.sin(t)*r],
+        [.035*scale,.20*scale+(i%2)*.07*scale,.035*scale],MAT.roofGlass,t,.22);
+    }
+    addCylinder(m,[cx,DROP+.075,cz],.30*scale,.05*scale,MAT.roofGlass,10);
+  };
+
+  // The jet. A column that thins, then a plume that opens: the break at the top
+  // used to be one ellipsoid, which reads as a bead on a rod.
   const JET_Y=UP_Y+.96;
-  for(let i=0;i<5;i++){
-    const t=i/5;
-    addCylinder(m,[0,JET_Y+.34+t*1.05,0],.052-t*.030,.42,MAT.roofGlass,8);
+  for(let i=0;i<6;i++){
+    const t=i/6;
+    addCylinder(m,[0,JET_Y+.30+t*1.10,0],.058-t*.034,.40,MAT.roofGlass,8);
   }
-  addEllipsoid(m,[0,JET_Y+1.62,0],[.11,.16,.11],MAT.roofGlass,6,8);     // the break at the top
-  // Upper bowl → lower bowl, off the lip on four sides.
-  for(let i=0;i<4;i++){
-    const a=(i/4)*Math.PI*2+.39;
-    const x=Math.cos(a)*(UP_R-.10), z=Math.sin(a)*(UP_R-.10);
-    addBox(m,[x,(UP_Y+LOW_Y)/2+.08,z],[.20,UP_Y-LOW_Y-.18,.055],MAT.roofGlass,a);
+  addEllipsoid(m,[0,JET_Y+1.58,0],[.10,.15,.10],MAT.roofGlass,6,8);     // the break
+  for(let i=0;i<10;i++){
+    const a=(i/10)*Math.PI*2, r=.14+(i%3)*.07;
+    // Falling away from the break, opening as it goes: the plume that makes the
+    // jet read as something under pressure.
+    addBox(m,[Math.cos(a)*r,JET_Y+1.44-((i%4)*.16),Math.sin(a)*r],[.035,.30+(i%3)*.10,.035],MAT.roofGlass,a,.30);
   }
-  // Lower bowl → basin, off the mask spouts.
+
+  // Upper bowl → lower bowl. The whole rim weeps; four heavier falls on the
+  // diagonals carry the mass.
+  veil(UP_Y+.06,UP_R-.02,.28,.024,SIDES*4);
+  for(let i=0;i<4;i++)fall((i/4)*Math.PI*2+.39,UP_Y+.02,LOW_Y+.20,UP_R-.10,.17,5);
+
+  // Lower bowl → basin, off the mask spouts, and a veil between them.
+  veil(LOW_Y+.02,LOW_R-.03,.40,.026,SIDES*6);
+  for(let i=0;i<4;i++)fall((i/4)*Math.PI*2,LOW_Y-.02,DROP+.10,LOW_R-.08,.22,7);
+
+  // And where each one lands.
   for(let i=0;i<4;i++){
     const a=(i/4)*Math.PI*2;
-    const x=Math.cos(a)*(LOW_R-.08), z=Math.sin(a)*(LOW_R-.08);
-    addBox(m,[x,(LOW_Y+DROP)/2+.02,z],[.26,LOW_Y-DROP-.20,.06],MAT.roofGlass,a);
-  }
-  // And the disturbance where each fall lands, so the surface is never a mirror.
-  for(let i=0;i<4;i++){
-    const a=(i/4)*Math.PI*2;
-    const fx=Math.cos(a)*(LOW_R-.08), fz=Math.sin(a)*(LOW_R-.08);
-    for(const [rr,ss] of [[.30,.035],[.52,.025]]){
+    crown(Math.cos(a)*(LOW_R+.12),Math.sin(a)*(LOW_R+.12),1);
+    // The rings the impact sends out. Two, as before, but they sit proud of the
+    // surface so they catch the torch instead of lying flat in it.
+    for(const [rr,ss] of [[.34,.032],[.60,.022],[.88,.016]]){
       for(let k=0;k<12;k++){
         const t=(k/12)*Math.PI*2;
-        addBox(m,[fx+Math.cos(t)*rr,DROP+.055,fz+Math.sin(t)*rr],[ss,ss,rr*2*Math.tan(Math.PI/12)],MAT.roofGlass,t);
+        addBox(m,[Math.cos(a)*(LOW_R+.12)+Math.cos(t)*rr,DROP+.07,Math.sin(a)*(LOW_R+.12)+Math.sin(t)*rr],
+          [ss,ss*1.6,rr*2*Math.tan(Math.PI/12)],MAT.roofGlass,t);
       }
     }
   }

@@ -194,8 +194,14 @@ assert.ok(spill.every((light) => light.circuit === null), 'and it needs no mains
 assert.ok(spill.some((light) => light.id === 'natatorium-roof-spill-north'));
 assert.ok(spill.some((light) => light.id === 'natatorium-roof-spill-south'));
 const emergency = natatoriumLights.filter((light) => light.kind === LIGHT_KIND.EMERGENCY);
-assert.equal(emergency.length, 4, 'the maintained egress route has four wall-mounted emergency fittings');
-assert.ok(emergency.every((light) => light.maintained && light.circuit === null && light.anchorPropId),
-  'egress lights stay maintained and resolve from their visible wall casings');
+assert.equal(emergency.length, 4, 'the egress route has four wall-mounted emergency fittings');
+// NOT battery-backed. `maintained: true` is reserved for the fittings that
+// survive a dead house circuit (the atrium exit, the hall entrance pair); the
+// pool's egress route was deliberately put on sp02, so killing the pool breaker
+// takes its emergency lamps with it — which is the whole point of the beat that
+// happens in here. Every one of them still resolves from a visible casing, so
+// moving the fitting moves its light.
+assert.ok(emergency.every((light) => !light.maintained && light.circuit === 'sp02' && light.anchorPropId),
+  'egress lights are fed by the pool circuit and resolve from their wall casings');
 
 console.log('natatorium water tests ok');

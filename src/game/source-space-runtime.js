@@ -6,9 +6,10 @@ import {
   CHUNK_SURF_HUSH_STAGE,
   CHUNK_SURF_PHASE,
   HORIZON_EXIT,
+  SOURCE_FINALE_ROUTE,
+  SOURCE_FINALE_STAGE,
   SOURCE_FINAL_OUTCOME,
   SOURCE_FINAL_STATUS,
-  SOURCE_OPTIONAL_TRACES,
   SOURCE_PURSUIT_BEAT,
   chunkSurfCompletion,
   chunkSurfProbe,
@@ -46,6 +47,12 @@ import {
   sourceChuteById, sourceFeatureAt, sourceHorizonDepth, sourceHorizonSeconds,
   sourceHorizonSlice, sourceLiftById, sourceTierAt,
   sourceTierHeightAt, sourceTraversal,
+  SOURCE_BELLS,
+  SOURCE_BELLS_ROOM,
+  SOURCE_BELL_PASSAGE,
+  inSourceBellsRoom,
+  sourceBellsDepth,
+  sourceBellsRoomResolve,
 } from '../data/source-level.js';
 import {
   SOURCE_LANDING_ENTRY_LOCAL,
@@ -104,8 +111,6 @@ const ROUTE_SEGMENTS = Object.freeze([
 const LANDMARK_PAD_RADIUS = 10;
 const SOURCE_LAYER_BY_SECTOR=Object.freeze({hall:1,fork:2,recordist:3,student:4,workOrder:5,body:6,final:7,hush:8});
 
-const checkpointForLandmark = (id) => ['fork-room', 'recordist-loop', 'body-room'].includes(id)
-  ? id : id === 'final-page' ? 'body-room' : null;
 const clamp = (value, lo, hi) => Math.max(lo, Math.min(hi, Number(value) || 0));
 const clamp01 = (value) => clamp(value, 0, 1);
 const hash32 = (value) => {
@@ -115,6 +120,15 @@ const hash32 = (value) => {
   x ^= x >>> 16; return x >>> 0;
 };
 const rand = (seed, index, salt = 0) => hash32((seed | 0) ^ Math.imul(index + 1, 1597334677) ^ salt) / 4294967295;
+
+// The eyes are evidence, never a payment. A player who put them back has done
+// at least as much as one still carrying them; merely seeing them and refusing
+// them, or never finding them, does not satisfy the Horizon proposition.
+export function horizonBustEyeEvidence(phase = null) {
+  if (phase === 'carried') return Object.freeze({ eligible: true, mode: 'carried' });
+  if (phase === 'returned') return Object.freeze({ eligible: true, mode: 'returned' });
+  return Object.freeze({ eligible: false, mode: phase === 'declined' ? 'declined' : 'untouched' });
+}
 
 function pageCount(distance) {
   const d = Math.max(0, distance);
@@ -466,7 +480,7 @@ export function sourceLandscapePlanOrigin(origin = { x: 0, y: -252 }) {
   };
 }
 
-export const SOURCE_OBJECTIVE_CONTRACT_VERSION = 1;
+export const SOURCE_OBJECTIVE_CONTRACT_VERSION = 2;
 
 function compassBearing(from, target) {
   if (!from || !target) return null;
@@ -611,6 +625,15 @@ export function createSourceSpaceRuntime({
   onState = () => {},
   onComplete = () => {},
   onScare = () => {},
+  // WHAT THE MAN OUTSIDE TOLD HIM, MONTHS BEFORE THE BUST SAYS IT.
+  //
+  // Malcolm Vey, in the rain, with a laminated map: the chapel in there and the
+  // cathedral out here are one signal path. He has no basis for it and he is
+  // right (data/exterior-vigil.js). This flag is RECOGNITION AND NOT ACCESS —
+  // the bust's offer, the exit it opens and everything past it are identical
+  // either way. All it buys is that the player already knows where the longer
+  // road goes when it is offered, instead of finding out afterwards.
+  linkedChapels = false,
 } = {}) {
   let state = normalizeChunkSurfState(initialState);
   let sourceDialogue = normalizeSourceDialogueState(state.haystackDialogue, {
@@ -630,7 +653,10 @@ export function createSourceSpaceRuntime({
   let captureMovementAnchor = null;
   let traversal = null;
   let pendingContact = null;
-  let bossRequested = false;
+  // A committed Contact resumes at the fight, never at the warning. Exact turns
+  // are deliberately not persisted; the branch commitment is.
+  let bossRequested = state.finale?.route === SOURCE_FINALE_ROUTE.CONTACT
+    && state.finale?.stage === SOURCE_FINALE_STAGE.CONTACT_COMMITTED;
   let landingRainRemaining = state.landingWeatherSpent ? 0 : 12;
   let phaseElapsed = 0;
   // SEARCH begins in the final quarter of the tunnel. It is a continuous
@@ -896,11 +922,11 @@ export function createSourceSpaceRuntime({
   }
 
   function physicalCellAt(x, y) {
-    return horizonCell(x, y) || landscapeCell(x, y) || physicalHallCell(x, y);
+    return bellsCell(x, y) || horizonCell(x, y) || landscapeCell(x, y) || physicalHallCell(x, y);
   }
 
   function renderCellAt(x, y) {
-    return horizonCell(x, y) || landscapeCell(x, y) || visualHallCell(x, y);
+    return bellsCell(x, y) || horizonCell(x, y) || landscapeCell(x, y) || visualHallCell(x, y);
   }
 
   // Internal navigation/pathfinding keeps using this alias. Rendering does not.
@@ -954,6 +980,11 @@ export function createSourceSpaceRuntime({
         const fromFeature=sourceFeatureAt(fromX-o.x,fromY-o.y);
         const toFeature=sourceFeatureAt(toX-o.x,toY-o.y);
         if(fromFeature?.kind==='chute'||toFeature?.kind==='chute')return{ok:false,why:'one-way chute'};
+        // A lift's deck is ordinary walkable floor on either landing. Only the
+        // forbidden downward tier crossing is one-way; treating the whole
+        // capture rectangle as a wall traps the rider on arrival.
+        if(Math.abs(to.floor-from.floor)<=0.45)return{ok:true,floor:to.floor};
+        if(fromFeature?.kind==='lift'||toFeature?.kind==='lift')return{ok:false,why:'one-way lift'};
         if (Math.abs(to.floor - from.floor) > 0.45) return { ok: false, why: 'too high' };
       }
       return { ok: true, floor: to.floor };
@@ -972,9 +1003,8 @@ export function createSourceSpaceRuntime({
       const landscapePlan = anchored ? sourceLandscapePlanOrigin(landscapeOrigin()) : null;
       const originX = landscapePlan?.x ?? Math.floor((x - half) / SOURCE_PLAN_SNAP) * SOURCE_PLAN_SNAP;
       const originY = landscapePlan?.y ?? Math.floor((y - half) / SOURCE_PLAN_SNAP) * SOURCE_PLAN_SNAP;
-      const routeStateKey = `${state.hasFork ? 1 : 0}:${state.tuned.includes('recordist-loop') ? 1 : 0}:${state.tuned.includes('body-room') ? 1 : 0}`;
       const o = landscapeOrigin();
-      const key = `${state.phase}:${state.pageStage}:${routeStateKey}:${o.x}:${o.y}:${originX}:${originY}`;
+      const key = `${state.phase}:${state.pageStage}:${o.x}:${o.y}:${originX}:${originY}`;
       if (lastPlan?.key === key) return lastPlan;
       const size = SOURCE_PLAN_WINDOW;
       const rgba = new Uint8Array(size * size * 4);
@@ -1066,13 +1096,12 @@ export function createSourceSpaceRuntime({
     const startFloor = geometry.floorAt(from.x, from.y);
     if (move.via === 'lift') {
       const lift = sourceLiftById(move.feature);
-      if (!lift) return { handled: false, frame: traversalFrame() };
+      if (!lift || move.travel !== 'up') return { handled: false, frame: traversalFrame() };
       const lower = SOURCE_TIER_BY_ID[lift.from]?.height ?? startFloor;
       const upper = SOURCE_TIER_BY_ID[lift.to]?.height ?? startFloor;
-      const goingUp = move.travel ? move.travel === 'up' : startFloor <= (lower + upper) * 0.5;
-      const targetLocalY = lift.y + (goingUp ? -(lift.depth + 1.25) : lift.depth + 1.25);
+      const targetLocalY = lift.y - (lift.depth + 1.25);
       const targetLocalX = clamp(local.x, lift.x - lift.halfWidth + 0.75, lift.x + lift.halfWidth - 0.75);
-      const targetFloor = goingUp ? upper : lower;
+      const targetFloor = upper;
       const travelSeconds = Math.min(1.6, Math.abs(targetFloor - startFloor) / 5.5 + 0.4);
       traversal = {
         kind: 'lift', id: lift.id, elapsed: 0, duration: travelSeconds,
@@ -1080,8 +1109,8 @@ export function createSourceSpaceRuntime({
         start: { x: Number(from.x), y: Number(from.y), floor: startFloor },
         end: { x: o.x + targetLocalX, y: o.y + targetLocalY, floor: targetFloor },
         x: Number(from.x), y: Number(from.y), floor: startFloor,
-        fromTier: move.fromTier || (goingUp ? lift.from : lift.to),
-        toTier: move.toTier || (goingUp ? lift.to : lift.from),
+        fromTier: move.fromTier || lift.from,
+        toTier: move.toTier || lift.to,
       };
     } else if (move.via === 'chute') {
       const chute = sourceChuteById(move.feature);
@@ -1142,7 +1171,6 @@ export function createSourceSpaceRuntime({
   }
 
   function sourceObjective() {
-    const optionalProgress = { resolved: state.optionalTraces.length, total: SOURCE_OPTIONAL_TRACES.length };
     const o = landscapeOrigin();
     const localPlayer = { x: player.x - o.x, y: player.y - o.y };
     let objective;
@@ -1172,12 +1200,6 @@ export function createSourceSpaceRuntime({
       objective = outside
         ? { id: 'first-lift', label: 'ENTER THE RISING SOURCE', target: { x: o.x, y: o.y - 40 }, bearingEligible: true }
         : { id: 'leave-get-in', label: 'LEAVE THE GET-IN', target: landingWorld(SOURCE_LANDING_OPENING_LOCAL), bearingEligible: true };
-    } else if (!state.hasFork) {
-      objective = { id: 'fork-gate', label: 'TUNE THE FORK', target: landmarkPoint('fork-room'), bearingEligible: true };
-    } else if (!state.tuned.includes('recordist-loop')) {
-      objective = { id: 'recordist-loop', label: 'THE TRACE IS ONE TIER UP', target: landmarkPoint('recordist-loop'), bearingEligible: true };
-    } else if (!state.tuned.includes('body-room')) {
-      objective = { id: 'body-return', label: 'BODY RETURN IS ABOVE THE TRACE', target: landmarkPoint('body-room'), bearingEligible: true };
     } else if (state.phase === CHUNK_SURF_PHASE.FINAL && state.finalEncounter.status !== SOURCE_FINAL_STATUS.RESOLVED) {
       objective = {
         id: sourceBossExposed(state.sourceContacts) ? 'return-paths' : 'normal-exit',
@@ -1200,7 +1222,6 @@ export function createSourceSpaceRuntime({
     return {
       schema: SOURCE_OBJECTIVE_CONTRACT_VERSION,
       ...objective,
-      optionalProgress,
       bearing: objective.bearingEligible ? compassBearing(player, objective.target) : null,
       distance: Number.isFinite(distance) ? distance : null,
       distanceMeters: Number.isFinite(distance) ? distance * CELL : null,
@@ -1451,11 +1472,14 @@ export function createSourceSpaceRuntime({
     const rigAvailable = !!state.profile?.bestEligible;
     const hurtBefore = state.injuriesAtEntry >= 1;
     const available = sourceBossAvailable(state);
-    const bodyReturnAssist = state.tuned.includes('body-room') || state.recorded.includes('body-room');
+    const bodyReturnAssist = state.visited.includes('body-room');
     return {
       schema: 3,
       id: 'source-final',
-      adapter: available && bossRequested ? 'combat-v1' : null,
+      adapter: available
+        && state.finale?.route === SOURCE_FINALE_ROUTE.CONTACT
+        && state.finale?.stage === SOURCE_FINALE_STAGE.CONTACT_COMMITTED
+        && bossRequested ? 'combat-v1' : null,
       outcomes: Object.values(SOURCE_FINAL_OUTCOME),
       exposed,
       hurtBefore,
@@ -1472,6 +1496,20 @@ export function createSourceSpaceRuntime({
     const exposed = sourceBossExposed(state.sourceContacts);
     const hurtBefore = state.injuriesAtEntry >= 1;
     if (!sourceBossAvailable(state)) return { handled: true, available: false, exposed, hurtBefore };
+    if (state.finale?.route && state.finale.route !== SOURCE_FINALE_ROUTE.CONTACT) {
+      return { handled: true, available: false, exposed, hurtBefore, committed: state.finale.route };
+    }
+    return { handled: true, available: true, warning: true, request: finalEncounterRequest() };
+  }
+
+  function commitContact() {
+    const exposed = sourceBossExposed(state.sourceContacts);
+    const hurtBefore = state.injuriesAtEntry >= 1;
+    if (!sourceBossAvailable(state)) return { handled: true, available: false, exposed, hurtBefore };
+    dispatch({ type: 'CONTACT_COMMITTED' }, { immediate: true });
+    if (state.finale?.route !== SOURCE_FINALE_ROUTE.CONTACT) {
+      return { handled: false, available: false, exposed, hurtBefore };
+    }
     bossRequested = true;
     protectMoment(30);
     return { handled: true, available: true, request: finalEncounterRequest() };
@@ -1506,7 +1544,13 @@ export function createSourceSpaceRuntime({
   function failFinalEncounter() {
     bossRequested = false;
     dispatch({ type: 'FINAL_ENCOUNTER_LOST' }, { immediate: true });
-    return enteredHorizon();
+    if (state.finale?.stage !== SOURCE_FINALE_STAGE.RESOLVED) return { handled: false, state };
+    if (!completionSent) {
+      completionSent = true;
+      onComplete(chunkSurfCompletion(state), exitSnapshot());
+    }
+    protectMoment(30);
+    return { handled: true, state, completion: chunkSurfCompletion(state) };
   }
 
   // Shared tail of both roads out. The body is put over the seam rather than
@@ -1544,28 +1588,25 @@ export function createSourceSpaceRuntime({
   const horizonBustLateral = () =>
     horizonBand(SOURCE_HORIZON.from - HORIZON_BUST_DEPTH).centre + HORIZON_BUST_OFFSET;
 
-  // He is a bore, and he is a bore ON PURPOSE. Every line is him not answering,
-  // and the whole time he is being perfectly straight about what he is: a
-  // detour. The punchline is that he was never lying and you asked anyway.
-  // PLACEHOLDER. Deliberately, visibly, unmistakably placeholder.
-  //
-  // Every line describes the job it is doing instead of doing it, at length and
-  // with feeling. This is scaffolding: it holds the beat's shape — six presses,
-  // the offer landing on the sixth — so the pacing can be walked and felt while
-  // the real words are written. Replace all of it.
-  //
-  // (It may also survive. A monument that can only describe the function it was
-  // installed to perform is not off-theme for this game, and the register is
-  // close enough to the Surfer's that keeping it would be a decision rather
-  // than an oversight. That is for the author to decide, not this comment.)
-  const HORIZON_BUST_LINES = Object.freeze([
-    { who: 'bust', text: '[PLACEHOLDER] What follows is an opening line: the long, unhurried kind whose task is less to say anything than to establish that a thing out here is willing to speak to you at all, and which therefore spends itself entirely on establishing that.' },
-    { who: 'bust', text: '[PLACEHOLDER] And this is the second beat, in which the speaker declines to give directions — a refusal that will be dressed, when the real words arrive, as weary honesty, and which functions here only to mark the place where the refusal goes.' },
-    { who: 'you', text: '[PLACEHOLDER] Here the recordist interrupts, briefly, because six uninterrupted paragraphs from a stone head would be a monologue and the shape being tested is a conversation.' },
-    { who: 'bust', text: '[PLACEHOLDER] The fourth line quantifies the detour. Its real version will name a number of minutes and a number of heavy objects in an order, and its purpose is to make the offer sound expensive before the offer is made.' },
-    { who: 'bust', text: '[PLACEHOLDER] The fifth exists to state the alternative, which is simply to keep walking, and to make that alternative sound both quicker and poorer — a sentence doing the work of a fork in a road that is not otherwise forked.' },
-    { who: 'bust', text: '[PLACEHOLDER] And this last one is the offer itself, the line the previous five have been buying: the point at which standing still long enough turns into a choice, and the walk either continues or does not.' },
-  ]);
+  // Appended to the bust's patter, and only when the player was told. It never
+  // becomes a fourth beat on its own: it lands on the last line, which is the
+  // line that carries the offer.
+  const HORIZON_BUST_RECOGNITION = Object.freeze(
+    { who: 'you', text: 'The man in the yellow cagoule had this on a laminated map. One instrument, he said. He could not prove a word of it.' },
+  );
+
+  const HORIZON_BUST_LINES = Object.freeze({
+    carried: Object.freeze([
+      { who: 'direction', text: 'The weight in the case shifts. Two marble eyes strike the brass catches from inside.' },
+      { who: 'bust', text: 'You carried sight out of the building. That is enough. I can show you what the bells are looking at.' },
+      { who: 'bust', text: 'It is the longer way. The machinery moves whether you understand it or not, and at the end it will hear you.' },
+    ]),
+    returned: Object.freeze([
+      { who: 'direction', text: 'Wet pupils open in the Horizon stone. They are the eyes you returned, looking here from the gallery.' },
+      { who: 'bust', text: 'You gave sight back to its proper face. It has been looking through me ever since.' },
+      { who: 'bust', text: 'I can show you what the bells are looking at. It is the longer way, and at the end it will hear you.' },
+    ]),
+  });
 
   // Where he stands, for anything that has to draw him.
   //
@@ -1574,7 +1615,13 @@ export function createSourceSpaceRuntime({
   // — the corridor is wider than the picture — so the renderer scales it, and
   // this reports the raw offset rather than guessing at the mapping.
   function horizonBustPlacement() {
-    return { lateral: horizonBustLateral(), depth: HORIZON_BUST_DEPTH };
+    const evidence = horizonBustEyeEvidence(state.profile?.marbleEyes);
+    return {
+      lateral: horizonBustLateral(),
+      depth: HORIZON_BUST_DEPTH,
+      eyes: !!state.finale?.bust?.recognized && evidence.eligible,
+      eyeMode: evidence.mode,
+    };
   }
 
   function horizonBustPoint() {
@@ -1621,12 +1668,41 @@ export function createSourceSpaceRuntime({
 
   function talkToHorizonBust() {
     if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return { handled: false, state };
-    horizonBustBeat += 1;
-    return { handled: true, beat: horizonBustBeat, offers: horizonBustBeat >= HORIZON_BUST_LINES.length };
+    const evidence = horizonBustEyeEvidence(state.profile?.marbleEyes);
+    if (!evidence.eligible) {
+      dispatch({ type: 'HORIZON_BUST_DECIDED', decision: 'declined' }, { immediate: true });
+      return {
+        handled: true,
+        eligible: false,
+        evidence,
+        line: { who: 'bust', text: 'No. You saw what sight cost and left it where it was. Keep walking.' },
+      };
+    }
+    dispatch({ type: 'HORIZON_BUST_RECOGNIZED', eligible: true }, { immediate: true });
+    const lines = HORIZON_BUST_LINES[evidence.mode];
+    horizonBustBeat = Math.min(lines.length, horizonBustBeat + 1);
+    const last = horizonBustBeat >= lines.length;
+    return {
+      handled: true,
+      eligible: true,
+      evidence,
+      beat: horizonBustBeat,
+      line: lines[horizonBustBeat - 1],
+      recognition: last && linkedChapels ? HORIZON_BUST_RECOGNITION : null,
+      linkedChapels: !!linkedChapels,
+      offers: last && !state.finale?.bust?.decision,
+    };
+  }
+
+  function decideHorizonBust(accept = false) {
+    if (state.phase !== CHUNK_SURF_PHASE.HORIZON || state.finale?.bust?.decision) return { handled: false, state };
+    dispatch({ type: 'HORIZON_BUST_DECIDED', decision: accept ? 'accepted' : 'declined' }, { immediate: true });
+    const decision = state.finale?.bust?.decision;
+    return { handled: !!decision, accepted: decision === 'accepted', decision, state };
   }
 
   function takeHorizonBustDetour() {
-    if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return { handled: false, state };
+    if (state.phase !== CHUNK_SURF_PHASE.HORIZON || state.finale?.bust?.decision !== 'accepted') return { handled: false, state };
     return chooseHorizonExit(HORIZON_EXIT.TOWER);
   }
 
@@ -1655,7 +1731,17 @@ export function createSourceSpaceRuntime({
   //
   // Six, because the piece wants to be heard and four and a half minutes of
   // holding one key is a longer ask than anything else in the game makes.
-  const HORIZON_PACE = 6;
+  // THREE, NOT SIX.
+  //
+  // Six was chosen so the whole piece could be heard once, and it made the
+  // crossing four and a half minutes of holding one key — which is a longer ask
+  // than anything else in the game makes, and it read as slow rather than as
+  // long. Three is about seventy seconds at a walk: most of the piece, a tape
+  // that plays at roughly double speed, and a crossing whose middle act you are
+  // still in rather than waiting out.
+  const HORIZON_PACE = 3;
+  // How far ahead the floor samples the corridor, in cells.
+  const HORIZON_BAND_LOOKAHEAD = 110;
   const progress01 = (depth) => Math.max(0, Math.min(1, depth / SOURCE_HORIZON.length));
 
   function horizonFrame() {
@@ -1690,6 +1776,12 @@ export function createSourceSpaceRuntime({
       // should darken and thin before the step is refused.
       edge: horizonEdge(player.x, player.y),
       band: horizonBand(local),
+      // THE SAME BAND, A HUNDRED METRES ON. The floor draws the corridor
+      // (horizon3d.js, horizonGround) and a corridor drawn only at the body's
+      // own depth is a straight lane that snaps sideways as you walk. Two
+      // samples and a lerp is enough to make the drift read as a bend.
+      bandAhead: horizonBand(local - HORIZON_BAND_LOOKAHEAD),
+      bandLookahead: HORIZON_BAND_LOOKAHEAD,
       collapse: HORIZON_COLLAPSE_FROM >= 1 ? 0
         : Math.max(0, Math.min(1, (progress01(depth) - HORIZON_COLLAPSE_FROM) / (1 - HORIZON_COLLAPSE_FROM))),
       // Declared rather than left to the renderer's `?? 1` default, so the one
@@ -1702,12 +1794,131 @@ export function createSourceSpaceRuntime({
     if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return { handled: false, state };
     dispatch({ type: 'HORIZON_EXIT_CHOSEN', exit }, { immediate: true });
     if (state.horizon.exit !== exit) return { handled: false, state };
+    // THE TOWER ROAD DOES NOT END THE CHAPTER. It opens the bell passage, and
+    // the chapter ends four hundred metres later, in a room. Nothing is
+    // reported to main.js yet — there is nothing to transition to.
+    if (state.phase === CHUNK_SURF_PHASE.BELLS) {
+      enteredBells();
+      return { handled: true, state, exit, entered: 'bells' };
+    }
     if (!completionSent) {
       completionSent = true;
       onComplete(chunkSurfCompletion(state), exitSnapshot());
     }
     protectMoment(30);
     return { handled: true, state, exit, completion: chunkSurfCompletion(state) };
+  }
+
+  // ── THE BELL PASSAGE ──────────────────────────────────────────────────────
+  //
+  // Put over the seam rather than walked there, for the same reason the horizon
+  // is: what is behind him is a recording that has finished with him.
+  function enteredBells() {
+    if (state.phase !== CHUNK_SURF_PHASE.BELLS) return { handled: false, state };
+    const o = landscapeOrigin();
+    setPlayerPosition({
+      x: o.x,
+      y: o.y + SOURCE_BELLS.from - SOURCE_BELLS.entryStandoff,
+      facing: 0,
+    });
+    protectMoment(30);
+    protectionRemaining = Math.max(protectionRemaining, 30);
+    restartGraceRemaining = Math.max(restartGraceRemaining, 10);
+    return { handled: true, state, bells: true };
+  }
+
+  // Everything the renderer and the score want to know about the crossing, in
+  // one frame, the same shape the horizon reports.
+  function bellsFrame() {
+    if (state.phase !== CHUNK_SURF_PHASE.BELLS) return { active: false };
+    const o = landscapeOrigin(), local = player.y - o.y;
+    const depth = sourceBellsDepth(local);
+    return {
+      active: true,
+      depth,
+      progress: depth / SOURCE_BELLS.length,
+      lateral: player.x - o.x,
+      // How much of the room has arrived. The far end of the walk is a shape
+      // getting closer and this is the whole of that beat.
+      resolve: sourceBellsRoomResolve(local),
+      // Metres still to walk. The audio bed rides this rather than a clock,
+      // because a man who stops walking has stopped arriving.
+      remaining: Math.max(0, SOURCE_BELLS.length - depth),
+      atRoom: inSourceBellsRoom(player.x - o.x, local),
+    };
+  }
+
+  function inBells(x, y) {
+    if (state.phase !== CHUNK_SURF_PHASE.BELLS) return false;
+    const o = landscapeOrigin(), lx = x - o.x, ly = y - o.y;
+    if (ly > SOURCE_BELLS.from || ly < SOURCE_BELLS.to) return false;
+    // Inside the room the walls are the bound; outside it the open ground is.
+    if (ly <= SOURCE_BELLS.room.threshold) return Math.abs(lx) <= SOURCE_BELLS.room.halfX - 0.6;
+    return Math.abs(lx) <= SOURCE_BELLS.halfWidth;
+  }
+
+  // Half-extent of a passage piece, by family. One number each is enough: there
+  // is nothing out here that a centimetre matters in, and the alternative is
+  // shipping a second set of hand-typed footprints that can disagree with the
+  // meshes.
+  function bellHalfExtent(entry) {
+    const scale = Number(entry.scale) || 1;
+    if (/tower_bell/.test(entry.mesh)) return 0.64 * scale;
+    if (/tower_frame/.test(entry.mesh)) return 4.5 * scale;
+    if (/tower_louvres/.test(entry.mesh)) return 3.0 * scale;
+    if (/tower_wheel/.test(entry.mesh)) return 1.06 * scale;
+    return 1.0 * scale;
+  }
+
+  // Local (landscape-relative) metres. Only the pieces that declared themselves
+  // solid, and the room's walls only once the room has actually arrived —
+  // otherwise the player collides with a building that is still 0.3 opaque.
+  function bellPassageBlockedAt(lx, ly) {
+    const resolve = sourceBellsRoomResolve(player.y - landscapeOrigin().y);
+    const consider = resolve > 0.85
+      ? [...SOURCE_BELL_PASSAGE, ...SOURCE_BELLS_ROOM]
+      : SOURCE_BELL_PASSAGE;
+    for (const entry of consider) {
+      if (!entry.blocks) continue;
+      const half = bellHalfExtent(entry);
+      const dx = lx - entry.x, dy = ly - entry.y;
+      if (Math.abs(dx) > half + 1 || Math.abs(dy) > half + 1) continue;
+      const c = Math.cos(entry.yaw || 0), sn = Math.sin(entry.yaw || 0);
+      const localX = dx * c - dy * sn, localY = dx * sn + dy * c;
+      // Louvres are a wall: long one way, thin the other.
+      const halfX = /tower_louvres/.test(entry.mesh) ? half : half;
+      const halfY = /tower_louvres/.test(entry.mesh) ? 0.35 * (Number(entry.scale) || 1) : half;
+      if (Math.abs(localX) <= halfX && Math.abs(localY) <= halfY) return entry;
+    }
+    return null;
+  }
+
+  function bellsCell(x, y) {
+    if (!inBells(x, y)) return null;
+    const o = landscapeOrigin();
+    if (bellPassageBlockedAt(x - o.x, y - o.y)) return null;
+    // Flat, open, and unlit by anything the building owns — the same ground the
+    // tape stands on, because it is the same ground.
+    return {
+      floor: SOURCE_TIER_BY_ID.bells?.height ?? 15.2,
+      ceil: null,
+      solid: false,
+      zone: ZONE.sourceSpace,
+    };
+  }
+
+  // The commit. Walking through the missing wall is the only way it fires, and
+  // it fires once.
+  function enterBellsRoom() {
+    if (state.phase !== CHUNK_SURF_PHASE.BELLS) return { handled: false, state };
+    dispatch({ type: 'BELLS_ROOM_ENTERED' }, { immediate: true });
+    if (state.phase !== CHUNK_SURF_PHASE.COMPLETED) return { handled: false, state };
+    if (!completionSent) {
+      completionSent = true;
+      onComplete(chunkSurfCompletion(state), exitSnapshot());
+    }
+    protectMoment(30);
+    return { handled: true, state, completion: chunkSurfCompletion(state) };
   }
 
   // THE SHEETS YOU CAN ACTUALLY READ.
@@ -1769,7 +1980,7 @@ export function createSourceSpaceRuntime({
         if (sourceBossExposed(state.sourceContacts)) {
           candidates.push({
             kind: 'boss-fault', id: 'source-boss-fault', x: final.x + 5, y: final.y - 4,
-            available: !!state.profile?.bestEligible, focusPriority: 9, focusRadius: 9,
+            available: sourceBossAvailable(state), focusPriority: 9, focusRadius: 9,
           });
         }
       }
@@ -1817,6 +2028,11 @@ export function createSourceSpaceRuntime({
       if (depth >= SOURCE_HORIZON.length - 1) chooseHorizonExit(HORIZON_EXIT.CHAPEL);
       return;
     }
+    if (state.phase === CHUNK_SURF_PHASE.BELLS) {
+      const local = { x: to.x - landscapeOrigin().x, y: to.y - landscapeOrigin().y };
+      if (inSourceBellsRoom(local.x, local.y)) enterBellsRoom();
+      return;
+    }
     if (state.phase === CHUNK_SURF_PHASE.HALL) {
       if (to.y > 1 && from.y <= 1) onScare({ reason: 'turned-back', at: { x: to.x, y: to.y } });
       // A retreat is a lived event, not a coordinate leak. Record only the
@@ -1857,11 +2073,11 @@ export function createSourceSpaceRuntime({
         }
       }
       const final = landmarkPoint('final-page');
-      // Movement to the horizon is free, but the final encounter only commits
-      // once Body Return is behind you — so exploring ahead early is allowed, it
-      // just doesn't skip the beat that earns the ending.
-      const bodyReached = state.tuned.includes('body-room') || state.recorded.includes('body-room');
-      if (final && Math.hypot(to.x - final.x, to.y - final.y) < 10 && bodyReached) {
+      // The final page is a place, not an equipment check. Contact knowledge is
+      // still earned only through the three authored HUSH encounters; arriving
+      // without it is the unchanged walk-away route into the Horizon.
+      if (state.phase === CHUNK_SURF_PHASE.LANDSCAPE
+          && final && Math.hypot(to.x - final.x, to.y - final.y) < 10) {
         dispatch({ type: 'FINAL_REACHED' }, { immediate: true });
         protectMoment(30);
       }
@@ -1913,18 +2129,29 @@ export function createSourceSpaceRuntime({
       return {
         handled: true,
         event: talk.offers ? 'horizon-bust-offer' : 'horizon-bust',
-        line: HORIZON_BUST_LINES[Math.min(talk.beat, HORIZON_BUST_LINES.length) - 1],
+        line: talk.line,
+        // The recognition line, when the man outside already said this. Carried
+        // beside the bust's own sentence rather than merged into it, so the
+        // presenter can put it in the player's mouth where it belongs.
+        recognition: talk.recognition || null,
+        eligible: talk.eligible,
+        evidence: talk.evidence,
         beat: talk.beat,
         text: '',
       };
     }
     if (focus.kind === 'normal-exit') {
+      // The two authored pads are one decision, not a secret safe exit beside a
+      // dangerous one. When Contact is available, either approach opens the
+      // same explicit warning; Horizon is entered only by choosing WALK AWAY.
+      const request = requestBossBattle();
+      if (request.available) return { handled: true, event: 'boss-warning', text: '' };
       const completed = completeNormalExit();
       return { ...completed, event: 'horizon', text: '' };
     }
     if (focus.kind === 'boss-fault') {
       const request = requestBossBattle();
-      if (request.available) return { handled: true, event: 'boss-requested', text: '' };
+      if (request.available) return { handled: true, event: 'boss-warning', text: '' };
       // Two ways to be inert, and they are not the same refusal. Without the
       // insights there is nothing here he knows how to address; without the
       // night having taken him, there is nothing here he believes is listening.
@@ -1937,36 +2164,6 @@ export function createSourceSpaceRuntime({
       };
     }
     return { handled: false };
-  }
-
-  function tuneFocused(px, py, facing) {
-    const focus = focusAt(px, py, facing);
-    // Unhandled (not a nagging thought) whenever there is nothing to tune, so the
-    // caller is free to fall through to the ordinary torch. The fork only speaks
-    // when a reachable landmark is actually in focus.
-    if (!focus || focus.kind !== 'landmark') return { handled: false };
-    if (!focus.available) return { handled: false };
-    if (!state.hasFork && focus.id !== 'fork-room') return { handled: false };
-    dispatch({ type: 'LANDMARK_TUNED', id: focus.id }, { immediate: true });
-    const checkpointId = checkpointForLandmark(focus.id);
-    if (checkpointId) dispatch({ type: 'CHECKPOINT_SET', id: checkpointId }, { immediate: true });
-    protectMoment(5);
-    const room = chunkSurfRoom(focus.id);
-    return { handled: true, text: room.tune, event: focus.id === 'fork-room' ? 'fork' : 'tuned' };
-  }
-
-  function recordFocused(px, py, facing) {
-    const focus = focusAt(px, py, facing);
-    // Silent (unhandled) unless there is an available landmark to record — no
-    // "nothing answers here" nag while you are just moving through the field.
-    if (!focus || focus.kind !== 'landmark') return { handled: false };
-    if (!focus.available) return { handled: false };
-    if (!state.hasFork) return { handled: false };
-    dispatch({ type: 'LANDMARK_RECORDED', id: focus.id }, { immediate: true });
-    const checkpointId = checkpointForLandmark(focus.id);
-    if (checkpointId) dispatch({ type: 'CHECKPOINT_SET', id: checkpointId }, { immediate: true });
-    protectMoment(5);
-    return { handled: true, text: chunkSurfRoom(focus.id).record, event: 'recorded' };
   }
 
   function tick(dt, { px = player.x, py = player.y, facing = player.facing } = {}) {
@@ -2557,6 +2754,121 @@ export function createSourceSpaceRuntime({
     }));
   }
 
+  // CONNECTORS HAVE TO EXIST BEFORE THE TEXT FIELD DOES.
+  //
+  // The first lift's code columns lived exclusively in sourceScene(), while
+  // textSpaceActive() deliberately stays false until that lift has completed.
+  // The result was a real traversal volume with no visible object at its mouth.
+  // These ordinary meshes are the always-on body of every lift and chute; the
+  // text architecture can grow over them after the first ascent.
+  function connectorPropInstances() {
+    const o = landscapeOrigin();
+    const out = [{
+      id: 'source-landing-opening-emergency-casing',
+      mesh: 'tower_bulkhead',
+      matrix: sourceMatrix({
+        x: (o.x + SOURCE_LANDING_OPENING_LOCAL.x) * CELL,
+        y: 3.05,
+        z: (o.y + SOURCE_LANDING_OPENING_LOCAL.y - 2) * CELL,
+        scaleX: 1.5, scaleY: 1.5, scaleZ: 1.5,
+      }),
+      emissive: [1, 0.01, 0.003, 0.82],
+      zone: ZONE.sourceSpace,
+      structural: true,
+      sourceConnector: 'landing-opening',
+    }];
+
+    for (const lift of SOURCE_LIFTS) {
+      const lower = SOURCE_TIER_BY_ID[lift.from]?.height ?? 0;
+      const upper = SOURCE_TIER_BY_ID[lift.to]?.height ?? lower;
+      const worldX = (o.x + lift.x) * CELL;
+      const worldZ = (o.y + lift.y) * CELL;
+      out.push({
+        id: `source-connector-${lift.id}-deck`,
+        mesh: 'tower_catwalk',
+        matrix: sourceMatrix({
+          x: worldX, y: lower - 0.02, z: worldZ,
+          scaleX: Math.max(0.18, lift.halfWidth * 2 * CELL / 11.87),
+          scaleY: 0.12,
+          scaleZ: Math.max(0.28, lift.depth * 2 * CELL / 7.91),
+        }),
+        emissive: [0.08, 0.44, 0.48, 0.22],
+        zone: ZONE.sourceSpace, structural: true, sourceConnector: lift.id,
+      });
+      for (const side of [-1, 1]) {
+        out.push({
+          id: `source-connector-${lift.id}-upright-${side}`,
+          mesh: 'tower_louvres',
+          matrix: sourceMatrix({
+            x: (o.x + lift.x + side * (lift.halfWidth - 0.35)) * CELL,
+            y: lower,
+            z: worldZ,
+            scaleX: Math.max(0.28, lift.depth * 2 * CELL / 6),
+            scaleY: Math.max(0.4, (upper - lower) / 3.5),
+            scaleZ: 0.42,
+            yaw: Math.PI / 2,
+          }),
+          emissive: side < 0 ? [0.02, 0.46, 0.58, 0.3] : [0.62, 0.03, 0.01, 0.3],
+          zone: ZONE.sourceSpace, structural: true, sourceConnector: lift.id,
+        });
+        out.push({
+          id: `source-connector-${lift.id}-emergency-${side}`,
+          mesh: 'tower_bulkhead',
+          matrix: sourceMatrix({
+            x: (o.x + lift.x + side * (lift.halfWidth - 0.45)) * CELL,
+            y: lower + Math.min(2.4, Math.max(1.5, (upper - lower) * 0.55)),
+            z: (o.y + lift.y + lift.depth - 0.35) * CELL,
+            scaleX: 1.35, scaleY: 1.35, scaleZ: 1.35,
+            yaw: side < 0 ? Math.PI / 2 : -Math.PI / 2,
+          }),
+          emissive: [1, 0.008, 0.002, lift.id === 'lift-fork' ? 0.95 : 0.58],
+          zone: ZONE.sourceSpace, structural: true, sourceConnector: lift.id,
+        });
+      }
+    }
+
+    for (const chute of SOURCE_CHUTES) {
+      const top = SOURCE_TIER_BY_ID[chute.from]?.height ?? 0;
+      const bottom = SOURCE_TIER_BY_ID[chute.to]?.height ?? top;
+      const length = chute.run * CELL;
+      const pitch = Math.atan2(top - bottom, Math.max(0.01, length));
+      const centreX = (o.x + chute.x + chute.dir.x * chute.run * 0.5) * CELL;
+      const centreZ = (o.y + chute.y + chute.dir.y * chute.run * 0.5) * CELL;
+      const deckYaw = Math.atan2(chute.dir.x, chute.dir.y);
+      const railYaw = Math.atan2(-chute.dir.y, chute.dir.x);
+      out.push({
+        id: `source-connector-${chute.id}-run`,
+        mesh: 'tower_catwalk',
+        matrix: sourceMatrix({
+          x: centreX, y: (top + bottom) * 0.5 - 0.02, z: centreZ,
+          scaleX: Math.max(0.18, chute.halfWidth * 2 * CELL / 11.87),
+          scaleY: 0.1,
+          scaleZ: Math.max(0.35, length / 7.91),
+          pitch, yaw: deckYaw,
+        }),
+        emissive: [0.5, 0.035, 0.008, 0.24],
+        zone: ZONE.sourceSpace, structural: true, sourceConnector: chute.id,
+      });
+      for (const side of [-1, 1]) out.push({
+        id: `source-connector-${chute.id}-rail-${side}`,
+        mesh: 'tower_loft_rail',
+        matrix: sourceMatrix({
+          x: centreX + side * chute.halfWidth * CELL,
+          y: (top + bottom) * 0.5 + 0.18,
+          z: centreZ,
+          scaleX: Math.max(0.3, length / 10.07),
+          scaleY: 0.72,
+          scaleZ: 0.65,
+          yaw: railYaw,
+          roll: -pitch,
+        }),
+        emissive: [0.52, 0.025, 0.006, 0.2],
+        zone: ZONE.sourceSpace, structural: true, sourceConnector: chute.id,
+      });
+    }
+    return out;
+  }
+
   function structurePropInstances(px, py) {
     const o = landscapeOrigin();
     const out = [];
@@ -2595,7 +2907,7 @@ export function createSourceSpaceRuntime({
   function surfaceArchitectureInstances(px, py) {
     if (![CHUNK_SURF_PHASE.TRANSFORMING, CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase)) return [];
     const o = landscapeOrigin();
-    const out = landingPropInstances();
+    const out = [...landingPropInstances(), ...connectorPropInstances()];
     if (state.phase === CHUNK_SURF_PHASE.TRANSFORMING) return out;
     out.push(...structurePropInstances(px, py));
     for (let i = 0; i < SOURCE_LEAK_COUNT; i += 1) {
@@ -2678,7 +2990,55 @@ export function createSourceSpaceRuntime({
     return out;
   }
 
+  // ── WHAT STANDS IN THE BELL PASSAGE ───────────────────────────────────────
+  //
+  // The same instancing the landscape's giants use — a mesh, a matrix, a zone —
+  // because they are the same kind of object: a real building mesh at a size the
+  // building never had. The room at the end goes through here too, so what
+  // resolves out of the far end and what the player finally walks into are one
+  // list.
+  //
+  // The room fades UP rather than appearing: `resolve` is a function of depth
+  // (sourceBellsRoomResolve), and a room that switched on at a threshold would
+  // be the cut this whole passage exists to stop being.
+  function bellPassageInstances(px, py) {
+    if (state.phase !== CHUNK_SURF_PHASE.BELLS) return [];
+    const o = landscapeOrigin();
+    const local = player.y - o.y;
+    const resolve = sourceBellsRoomResolve(local);
+    const out = [];
+    const place = (entry, { fade = 1 } = {}) => {
+      const worldX = o.x + entry.x, worldZ = o.y + entry.y;
+      if (Math.hypot((worldX - px) * CELL, (worldZ - py) * CELL) > 260) return;
+      const scale = Number(entry.scale) || 1;
+      out.push({
+        id: entry.id,
+        mesh: entry.mesh,
+        matrix: sourceMatrix({
+          x: worldX * CELL,
+          y: (SOURCE_TIER_BY_ID.bells?.height ?? 15.2)
+            + (Number(entry.elevation) || 0) - (Number(entry.sink) || 0),
+          z: worldZ * CELL,
+          scaleX: scale * fade, scaleY: scale * fade, scaleZ: scale * fade,
+          yaw: entry.yaw || 0,
+          pitch: entry.pitch || 0,
+          roll: entry.roll || 0,
+        }),
+        zone: ZONE.sourceSpace,
+        structural: true,
+        sourceStructure: 'bell-passage',
+      });
+    };
+    for (const entry of SOURCE_BELL_PASSAGE) place(entry);
+    // The room arrives by growing into itself. Below a tenth it is not drawn at
+    // all, which keeps two hundred metres of the walk honest about there being
+    // nothing out there yet.
+    if (resolve > 0.1) for (const entry of SOURCE_BELLS_ROOM) place(entry, { fade: resolve });
+    return out;
+  }
+
   function propInstances(px = player.x, py = player.y, options = {}) {
+    if (state.phase === CHUNK_SURF_PHASE.BELLS) return bellPassageInstances(px, py);
     if ([CHUNK_SURF_PHASE.HALL, CHUNK_SURF_PHASE.HAYSTACK].includes(state.phase)) return pageInstances(px, py, options);
     if ([CHUNK_SURF_PHASE.TRANSFORMING, CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase)) {
       const arch = surfaceArchitectureInstances(px, py);
@@ -2717,7 +3077,7 @@ export function createSourceSpaceRuntime({
     const maxTileY = Math.floor((o.y + LANDSCAPE_FRONT) / SOURCE_ARCH_TILE_CELLS);
     const transformBand = state.phase === CHUNK_SURF_PHASE.TRANSFORMING
       ? Math.floor(clamp01(transformElapsed / SOURCE_TRANSFORM_SECONDS) * 8) : 8;
-    const progressKey = `${state.phase}:${state.pageStage}:${transformBand}:${state.hasFork ? 1 : 0}:${state.tuned.includes('recordist-loop') ? 1 : 0}:${state.tuned.includes('body-room') ? 1 : 0}:${o.x}:${o.y}`;
+    const progressKey = `${state.phase}:${state.pageStage}:${transformBand}:${o.x}:${o.y}`;
     const tileCoords = [];
     for (let tileY = Math.max(minTileY, centerTileY - SOURCE_ARCH_TILE_RADIUS); tileY <= Math.min(maxTileY, centerTileY + SOURCE_ARCH_TILE_RADIUS); tileY += 1) {
       for (let tileX = Math.max(minTileX, centerTileX - SOURCE_ARCH_TILE_RADIUS); tileX <= Math.min(maxTileX, centerTileX + SOURCE_ARCH_TILE_RADIUS); tileX += 1) {
@@ -2890,6 +3250,10 @@ export function createSourceSpaceRuntime({
 
   function setPlayerPosition(next) {
     const candidate = { ...player, ...(next || {}) };
+    // The traversal clock already owns the exact interpolated position. Running
+    // the stationary connector normalizer over those frames snapped the body to
+    // one lip or the other while the camera was still between floors.
+    if (traversal) return;
     if ([CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase)) {
       const o = landscapeOrigin();
       const feature = sourceFeatureAt(candidate.x - o.x, candidate.y - o.y);
@@ -2939,8 +3303,6 @@ export function createSourceSpaceRuntime({
     focusAt,
     readablePagesProbe: () => readablePages().map(({ id, x, y, index }) => ({ id, x, y, index })),
     inspectFocused,
-    tuneFocused,
-    recordFocused,
     propInstances,
     structurePlacements: () => structures,
     textInstances,
@@ -2953,10 +3315,15 @@ export function createSourceSpaceRuntime({
     protectMoment,
     finalEncounterRequest,
     requestBossBattle,
+    commitContact,
     completeNormalExit,
     resolveFinalEncounter,
     failFinalEncounter,
     horizonFrame,
+    // The bell passage: the tower road, walked. See SOURCE_BELLS.
+    bellsFrame,
+    enteredBells,
+    enterBellsRoom,
     chooseHorizonExit,
     horizonBustPoint,
     horizonBustPlacement,
@@ -2964,6 +3331,7 @@ export function createSourceSpaceRuntime({
     horizonEdge,
     takeHorizonMarker,
     talkToHorizonBust,
+    decideHorizonBust,
     takeHorizonBustDetour,
     navigation,
     checkpointPosition,

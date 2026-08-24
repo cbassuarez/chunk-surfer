@@ -1,0 +1,14 @@
+{
+  "schemaVersion":1,"id":"ending.epilogue.tower-won","title":"Coda · two out","status":"active","entry":"start","entries":["start"],"tags":["ending","epilogue","tower"],
+  "notes":"Institutional coda for Exit Through the Gift Shop.","regions":[{"id":"ending.epilogue.tower-won.region","title":"Two out","kind":"ending","color":"#b89657","nodeIds":["start"]}],
+  "nodes":{"start":{"type":"ending","speaker":"W. ELLERY HOLDINGS · GATE","lines":[
+    {"id":"start.line.1","who":"direction","text":"The guard sees two men come from St Brendan's and checks the building plan for an entrance that could explain them."},
+    {"id":"start.line.2","who":"guard","text":"That door only opens out."},
+    {"id":"start.line.3","who":"direction","text":"One man is dragging the other clear of the west doors. Neither has a postcard, guidebook or receipt."},
+    {"id":"start.line.4","who":"direction","text":"The second man gives the name already waiting in the RETURNED column."},
+    {"id":"start.line.5","who":"guard","text":"I kept the line."},
+    {"id":"start.line.6","who":"direction","text":"The demolition order is still clipped under the ledger. It does not happen in this account."},
+    {"id":"start.line.7","who":"direction","text":"The guard writes WEST DOORS beside both signatures."},
+    {"id":"start.line.8","who":"direction","text":"Later, somebody adds EXIT THROUGH THE GIFT SHOP in another hand and leaves both names alone."}
+  ]}}
+}

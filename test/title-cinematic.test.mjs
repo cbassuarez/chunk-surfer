@@ -30,7 +30,9 @@ test('title screen keeps canonical menu items and keyboard activation paths', ()
     assert.match(source, new RegExp(`id: '${id}'`));
   }
   assert.match(source, /replay \? \[\{ id: 'hush-run'/);
-  assert.match(source, /COMPLETE A RETURN WITH ≤ 1 INJURY/);
+  // The HUSH row's help line is authored in post-run-copy now, so the title,
+  // the return report and the archive cannot describe one state three ways.
+  assert.match(source, /hushAvailabilityCopy\(hushAvailability/);
   assert.match(source, /function hushLabel/);
   assert.doesNotMatch(source, /just-surf|onJustSurf/);
   for (const key of ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Space']) {

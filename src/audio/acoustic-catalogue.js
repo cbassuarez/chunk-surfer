@@ -41,7 +41,11 @@ export const ACOUSTIC_CATALOGUE = Object.freeze({
   //
   // Not mimickable. The HUSH does a great many things in this building; putting
   // a municipal water supply back on is not one of them.
-  fountain_water: D({ levelDb: -26, durationMs: 1000, spectrum: S(.22, .68, .74), impulsiveness: .06, family: 'water', canBeMimicked: false }),
+  // Down from −26. It is a municipal fountain in an empty park, not a weir: at
+  // −26 it masked ten decibels of footstep standing over it and dominated the
+  // outdoor mix. Four decibels of cover is a fountain you can hide a footstep
+  // near, which is the fact this entry exists to state.
+  fountain_water: D({ levelDb: -32, durationMs: 1000, spectrum: S(.22, .68, .74), impulsiveness: .06, family: 'water', canBeMimicked: false }),
 });
 
 export function catalogueEntry(kind) {

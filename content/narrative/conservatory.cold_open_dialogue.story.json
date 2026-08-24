@@ -60,7 +60,34 @@
         "descent",
         "descent.first",
         "descent.more",
-        "descent.dark"
+        "descent.dark",
+        "greet.order",
+        "greet.actually",
+        "greet.somebody",
+        "order.rooms.big",
+        "guard.three",
+        "torch.say",
+        "torch.say.first",
+        "torch.say.usual",
+        "torch.say.power",
+        "order.money.double",
+        "order.money.calendar",
+        "order.words.asis",
+        "order.words.hear",
+        "order.client.ring",
+        "order.client.box",
+        "tape.levels.better",
+        "tape.levels.diff",
+        "tape.slate.reasons",
+        "torch.cells.dies",
+        "torch.cells.spares",
+        "torch.him.time",
+        "torch.him.red",
+        "guard.last.home",
+        "guard.last.left",
+        "guard.radio.loud",
+        "guard.stair",
+        "coffee.wife"
       ]
     }
   ],
@@ -79,32 +106,22 @@
       "lines": [
         {
           "who": "direction",
-          "text": "A lit booth at the vehicle gate. Coffee on a hotplate, key in keyrings on key hooks, a stack of forms, a small television with the sound already off.",
+          "text": "A lit booth at the vehicle gate. Coffee, key hooks, a stack of forms, a small television with the sound off.",
           "id": "start.line.1"
         },
         {
           "who": "direction",
-          "text": "There is a little perch under the booth window with a scrap of roof over it. You stand on it to keep out of the rain. Uncomfortable, to say the least.",
+          "text": "There is a little perch by the booth window covered by a small roof; you stand on it so as to keep from the rain. Uncomfortable to say the least.",
           "id": "start.line.2"
         },
         {
           "who": "guard",
-          "text": "You all right? You here for the Ellery gig? Christ. They actually sent someone tonight.",
+          "text": "You here for the Ellery gig? Christ. They actually sent someone tonight.",
           "id": "start.line.3"
         },
         {
-          "who": "me",
-          "text": "Yeah, the sound job. There should be a work order for me, no?— requisition 4-4-1-7.",
-          "id": "start.line.4"
-        },
-        {
-          "who": "guard",
-          "text": "Aye, came through around five today.",
-          "id": "start.line.5"
-        },
-        {
           "who": "direction",
-          "text": "He finds a pen, and it immediately fails to write, so he puts it back in the pot with the others.",
+          "text": "He finds a pen... it doesn't work. He puts it back in the pot with the others.",
           "id": "start.line.6",
           "cues": [
             "pens"
@@ -112,12 +129,12 @@
         },
         {
           "who": "guard",
-          "text": "My wife buys these. Twelve in a pack, and maybe three of them work if you hold them right.",
+          "text": "My wife buys these. Twelve in a pack, and not one of them works.",
           "id": "start.line.7"
         },
         {
           "who": "guard",
-          "text": "Coffee if you want it. Work order is there, keys when you sign.",
+          "text": "There's coffee if you want it. I made too much. It's not good but it's hot, and it's a long night you have ahead.",
           "id": "start.line.8"
         }
       ],
@@ -137,58 +154,180 @@
       ],
       "choices": [
         {
-          "text": "look at the work order",
-          "goto": "order",
-          "id": "start.choice.1",
-          "knowledgeId": "coldopen.route.order",
+          "text": "the job. requisition 4-4-1-7.",
+          "goto": "greet.order",
+          "id": "start.greet.paper",
+          "knowledgeId": "coldopen.trunk.paper",
+          "when": "!cold.trunk.paper && !cold.trunk.last && !cold.trunk.night",
           "mutations": {
             "set": [
-              "cold.visited.order",
+              "cold.trunk.paper",
+              "cold.trunk.taken.paper",
               "prologue.knowledge.self"
             ],
             "clear": [
+              "cold.trunk.last",
+              "cold.trunk.night",
               "prologue.knowledge.guard",
               "prologue.knowledge.tape"
             ]
           }
         },
         {
-          "text": "ask him about the building",
-          "goto": "guard",
-          "id": "start.choice.2",
-          "knowledgeId": "coldopen.route.guard",
+          "text": "\"actually\"?",
+          "goto": "greet.actually",
+          "id": "start.greet.last",
+          "knowledgeId": "coldopen.trunk.last",
+          "when": "!cold.trunk.paper && !cold.trunk.last && !cold.trunk.night",
           "mutations": {
             "set": [
-              "cold.visited.guard",
-              "prologue.knowledge.guard"
+              "cold.trunk.last",
+              "cold.trunk.taken.last",
+              "prologue.knowledge.tape"
             ],
             "clear": [
+              "cold.trunk.paper",
+              "cold.trunk.night",
+              "prologue.knowledge.self",
+              "prologue.knowledge.guard"
+            ]
+          }
+        },
+        {
+          "text": "somebody has to.",
+          "goto": "greet.somebody",
+          "id": "start.greet.night",
+          "knowledgeId": "coldopen.trunk.night",
+          "when": "!cold.trunk.paper && !cold.trunk.last && !cold.trunk.night",
+          "mutations": {
+            "set": [
+              "cold.trunk.night",
+              "cold.trunk.taken.night",
+              "prologue.knowledge.guard",
+              "cold.guard.trust"
+            ],
+            "clear": [
+              "cold.trunk.paper",
+              "cold.trunk.last",
               "prologue.knowledge.self",
               "prologue.knowledge.tape"
+            ]
+          }
+        },
+        {
+          "text": "just give me the keys.",
+          "goto": "descent",
+          "id": "start.greet.keys",
+          "knowledgeId": "coldopen.trunk.none",
+          "when": "!cold.trunk.paper && !cold.trunk.last && !cold.trunk.night",
+          "mutations": {
+            "set": [
+              "cold.exit.early"
+            ]
+          }
+        },
+        {
+          "text": "look at the work order",
+          "goto": "order",
+          "id": "start.order.paper",
+          "knowledgeId": "coldopen.route.order",
+          "when": "cold.trunk.paper",
+          "mutations": {
+            "set": [
+              "cold.visited.order"
+            ]
+          }
+        },
+        {
+          "text": "the line on the order about the man before you",
+          "goto": "order",
+          "id": "start.order.last",
+          "knowledgeId": "coldopen.route.order",
+          "when": "cold.trunk.last",
+          "mutations": {
+            "set": [
+              "cold.visited.order"
+            ]
+          }
+        },
+        {
+          "text": "ask him about the man before you",
+          "goto": "guard",
+          "id": "start.guard.last",
+          "knowledgeId": "coldopen.route.guard",
+          "when": "cold.trunk.last",
+          "mutations": {
+            "set": [
+              "cold.visited.guard"
+            ]
+          }
+        },
+        {
+          "text": "ask him how the night runs",
+          "goto": "guard",
+          "id": "start.guard.night",
+          "knowledgeId": "coldopen.route.guard",
+          "when": "cold.trunk.night",
+          "mutations": {
+            "set": [
+              "cold.visited.guard"
+            ]
+          }
+        },
+        {
+          "text": "the card the client sent — check his levels",
+          "goto": "tape",
+          "id": "start.tape.paper",
+          "knowledgeId": "coldopen.route.tape",
+          "when": "cold.trunk.paper",
+          "mutations": {
+            "set": [
+              "cold.visited.tape"
             ]
           }
         },
         {
           "text": "put the headphones on — the client sent the last man's takes",
           "goto": "tape",
-          "id": "start.choice.3",
+          "id": "start.tape.last",
           "knowledgeId": "coldopen.route.tape",
+          "when": "cold.trunk.last",
           "mutations": {
             "set": [
-              "cold.visited.tape",
-              "prologue.knowledge.tape"
-            ],
-            "clear": [
-              "prologue.knowledge.self",
-              "prologue.knowledge.guard"
+              "cold.visited.tape"
+            ]
+          }
+        },
+        {
+          "text": "put the headphones on — hear what the client sent",
+          "goto": "tape",
+          "id": "start.tape.night",
+          "knowledgeId": "coldopen.route.tape",
+          "when": "cold.trunk.night",
+          "mutations": {
+            "set": [
+              "cold.visited.tape"
+            ]
+          }
+        },
+        {
+          "text": "the torch. he had one too",
+          "goto": "torch",
+          "id": "start.torch.last",
+          "knowledgeId": "coldopen.route.torch",
+          "when": "cold.trunk.last",
+          "mutations": {
+            "set": [
+              "cold.visited.torch"
             ]
           }
         },
         {
           "text": "check the torch",
           "goto": "torch",
-          "id": "start.choice.4",
+          "id": "start.torch.night",
           "knowledgeId": "coldopen.route.torch",
+          "when": "cold.trunk.night",
           "mutations": {
             "set": [
               "cold.visited.torch"
@@ -198,26 +337,46 @@
         {
           "text": "take the coffee he offered",
           "goto": "coffee",
-          "id": "start.choice.5",
+          "id": "start.coffee",
           "knowledgeId": "coldopen.route.coffee",
+          "when": "cold.trunk.paper || cold.trunk.last || cold.trunk.night",
+          "hideWhenAsked": true,
           "mutations": {
             "set": [
               "has.coffee",
               "cold.visited.coffee"
             ]
-          },
-          "hideWhenAsked": true
+          }
+        },
+        {
+          "text": "radio procedure",
+          "goto": "guard.radio",
+          "id": "start.radio.night",
+          "knowledgeId": "coldopen.route.radio",
+          "when": "cold.trunk.night",
+          "mutations": {
+            "set": [
+              "cold.knows.radio"
+            ]
+          }
+        },
+        {
+          "text": "who's on the gate after you?",
+          "goto": "guard.shift",
+          "id": "start.shift.night",
+          "knowledgeId": "coldopen.route.shift",
+          "when": "cold.trunk.night"
         },
         {
           "text": "sign for the keyring and go in",
           "goto": "descent",
           "id": "start.choice.6",
+          "when": "cold.trunk.paper || cold.trunk.last || cold.trunk.night",
           "mutations": {
             "set": [
-              "cold.exit.early"
+              "cold.exit.prepared"
             ]
-          },
-          "when": "!cold.visited.order && !cold.visited.guard && !cold.visited.tape"
+          }
         }
       ]
     },
@@ -242,6 +401,24 @@
           "who": "guard",
           "text": "You know the form. Five rooms, one clean minute each. Anything you need before I turn you loose?",
           "id": "replay-condensed.line.2"
+        },
+        {
+          "who": "guard",
+          "text": "You never did read that order properly.",
+          "id": "replay-condensed.line.3",
+          "when": "!cold.trunk.taken.paper"
+        },
+        {
+          "who": "guard",
+          "text": "You never did ask me why I said actually.",
+          "id": "replay-condensed.line.4",
+          "when": "!cold.trunk.taken.last"
+        },
+        {
+          "who": "guard",
+          "text": "You never did show me that torch.",
+          "id": "replay-condensed.line.5",
+          "when": "!cold.trunk.taken.night"
         }
       ],
       "revisitLines": [
@@ -253,58 +430,180 @@
       ],
       "choices": [
         {
-          "text": "review the work order",
-          "goto": "order",
-          "id": "replay-condensed.choice.1",
-          "knowledgeId": "coldopen.route.order",
+          "text": "the job. requisition 4-4-1-7.",
+          "goto": "greet.order",
+          "id": "replay.greet.paper",
+          "knowledgeId": "coldopen.trunk.paper",
+          "when": "!cold.trunk.paper && !cold.trunk.last && !cold.trunk.night",
           "mutations": {
             "set": [
-              "cold.visited.order",
+              "cold.trunk.paper",
+              "cold.trunk.taken.paper",
               "prologue.knowledge.self"
             ],
             "clear": [
+              "cold.trunk.last",
+              "cold.trunk.night",
               "prologue.knowledge.guard",
               "prologue.knowledge.tape"
             ]
           }
         },
         {
-          "text": "ask about the building",
-          "goto": "guard",
-          "id": "replay-condensed.choice.2",
-          "knowledgeId": "coldopen.route.guard",
+          "text": "\"actually\"?",
+          "goto": "greet.actually",
+          "id": "replay.greet.last",
+          "knowledgeId": "coldopen.trunk.last",
+          "when": "!cold.trunk.paper && !cold.trunk.last && !cold.trunk.night",
           "mutations": {
             "set": [
-              "cold.visited.guard",
-              "prologue.knowledge.guard"
+              "cold.trunk.last",
+              "cold.trunk.taken.last",
+              "prologue.knowledge.tape"
             ],
             "clear": [
+              "cold.trunk.paper",
+              "cold.trunk.night",
+              "prologue.knowledge.self",
+              "prologue.knowledge.guard"
+            ]
+          }
+        },
+        {
+          "text": "somebody has to.",
+          "goto": "greet.somebody",
+          "id": "replay.greet.night",
+          "knowledgeId": "coldopen.trunk.night",
+          "when": "!cold.trunk.paper && !cold.trunk.last && !cold.trunk.night",
+          "mutations": {
+            "set": [
+              "cold.trunk.night",
+              "cold.trunk.taken.night",
+              "prologue.knowledge.guard",
+              "cold.guard.trust"
+            ],
+            "clear": [
+              "cold.trunk.paper",
+              "cold.trunk.last",
               "prologue.knowledge.self",
               "prologue.knowledge.tape"
             ]
           }
         },
         {
-          "text": "play the previous contractor's takes",
-          "goto": "tape",
-          "id": "replay-condensed.choice.3",
-          "knowledgeId": "coldopen.route.tape",
+          "text": "just give me the keys.",
+          "goto": "descent",
+          "id": "replay.greet.keys",
+          "knowledgeId": "coldopen.trunk.none",
+          "when": "!cold.trunk.paper && !cold.trunk.last && !cold.trunk.night",
           "mutations": {
             "set": [
-              "cold.visited.tape",
-              "prologue.knowledge.tape"
-            ],
-            "clear": [
-              "prologue.knowledge.self",
-              "prologue.knowledge.guard"
+              "cold.exit.early"
+            ]
+          }
+        },
+        {
+          "text": "look at the work order",
+          "goto": "order",
+          "id": "replay.order.paper",
+          "knowledgeId": "coldopen.route.order",
+          "when": "cold.trunk.paper",
+          "mutations": {
+            "set": [
+              "cold.visited.order"
+            ]
+          }
+        },
+        {
+          "text": "the line on the order about the man before you",
+          "goto": "order",
+          "id": "replay.order.last",
+          "knowledgeId": "coldopen.route.order",
+          "when": "cold.trunk.last",
+          "mutations": {
+            "set": [
+              "cold.visited.order"
+            ]
+          }
+        },
+        {
+          "text": "ask him about the man before you",
+          "goto": "guard",
+          "id": "replay.guard.last",
+          "knowledgeId": "coldopen.route.guard",
+          "when": "cold.trunk.last",
+          "mutations": {
+            "set": [
+              "cold.visited.guard"
+            ]
+          }
+        },
+        {
+          "text": "ask him how the night runs",
+          "goto": "guard",
+          "id": "replay.guard.night",
+          "knowledgeId": "coldopen.route.guard",
+          "when": "cold.trunk.night",
+          "mutations": {
+            "set": [
+              "cold.visited.guard"
+            ]
+          }
+        },
+        {
+          "text": "the card the client sent — check his levels",
+          "goto": "tape",
+          "id": "replay.tape.paper",
+          "knowledgeId": "coldopen.route.tape",
+          "when": "cold.trunk.paper",
+          "mutations": {
+            "set": [
+              "cold.visited.tape"
+            ]
+          }
+        },
+        {
+          "text": "put the headphones on — the client sent the last man's takes",
+          "goto": "tape",
+          "id": "replay.tape.last",
+          "knowledgeId": "coldopen.route.tape",
+          "when": "cold.trunk.last",
+          "mutations": {
+            "set": [
+              "cold.visited.tape"
+            ]
+          }
+        },
+        {
+          "text": "put the headphones on — hear what the client sent",
+          "goto": "tape",
+          "id": "replay.tape.night",
+          "knowledgeId": "coldopen.route.tape",
+          "when": "cold.trunk.night",
+          "mutations": {
+            "set": [
+              "cold.visited.tape"
+            ]
+          }
+        },
+        {
+          "text": "the torch. he had one too",
+          "goto": "torch",
+          "id": "replay.torch.last",
+          "knowledgeId": "coldopen.route.torch",
+          "when": "cold.trunk.last",
+          "mutations": {
+            "set": [
+              "cold.visited.torch"
             ]
           }
         },
         {
           "text": "check the torch",
           "goto": "torch",
-          "id": "replay-condensed.choice.4",
+          "id": "replay.torch.night",
           "knowledgeId": "coldopen.route.torch",
+          "when": "cold.trunk.night",
           "mutations": {
             "set": [
               "cold.visited.torch"
@@ -314,19 +613,41 @@
         {
           "text": "take the coffee he offered",
           "goto": "coffee",
-          "id": "replay-condensed.choice.5",
+          "id": "replay.coffee",
+          "knowledgeId": "coldopen.route.coffee",
+          "when": "cold.trunk.paper || cold.trunk.last || cold.trunk.night",
+          "hideWhenAsked": true,
           "mutations": {
             "set": [
               "has.coffee",
               "cold.visited.coffee"
             ]
-          },
-          "hideWhenAsked": true
+          }
+        },
+        {
+          "text": "radio procedure",
+          "goto": "guard.radio",
+          "id": "replay.radio.night",
+          "knowledgeId": "coldopen.route.radio",
+          "when": "cold.trunk.night",
+          "mutations": {
+            "set": [
+              "cold.knows.radio"
+            ]
+          }
+        },
+        {
+          "text": "who's on the gate after you?",
+          "goto": "guard.shift",
+          "id": "replay.shift.night",
+          "knowledgeId": "coldopen.route.shift",
+          "when": "cold.trunk.night"
         },
         {
           "text": "finish check-in and go in",
           "goto": "descent",
           "id": "replay-condensed.choice.6",
+          "when": "cold.trunk.paper || cold.trunk.last || cold.trunk.night",
           "mutations": {
             "set": [
               "cold.exit.prepared"
@@ -349,13 +670,18 @@
       "lines": [
         {
           "who": "direction",
-          "text": "A letterhead, a list, and a signature block photocopied so many times it barely passes for a smudge.",
+          "text": "A letterhead, a list, and a signature. That signature block has been photocopied so many times it barely passes for a smudge.",
           "id": "order.line.1"
         },
         {
           "who": "you",
-          "text": "Four hundred, half on acceptance. That's fine. That's more than fine, actually.",
+          "text": "You don't argue with the pay though.",
           "id": "order.line.2"
+        },
+        {
+          "who": "you",
+          "text": "Four hundred, half on acceptance. That's fine. That's more than fine.",
+          "id": "order.line.3"
         }
       ],
       "revisitLines": [
@@ -374,37 +700,43 @@
             "set": [
               "cold.visited.rooms"
             ]
-          }
+          },
+          "when": "cold.trunk.paper"
         },
         {
           "text": "the money",
           "goto": "order.money",
-          "id": "order.choice.2"
+          "id": "order.choice.2",
+          "when": "cold.trunk.paper || cold.trunk.last"
         },
         {
           "text": "the wording",
           "goto": "order.words",
-          "id": "order.choice.3"
+          "id": "order.choice.3",
+          "when": "cold.trunk.paper"
         },
         {
           "text": "the client",
           "goto": "order.client",
-          "id": "order.choice.4"
+          "id": "order.choice.4",
+          "when": "cold.trunk.paper"
         },
         {
           "text": "why Thursday",
           "goto": "order.deadline",
-          "id": "order.choice.5"
+          "id": "order.choice.5",
+          "when": "cold.trunk.paper"
         },
         {
-          "text": "the line about the prior contractor",
+          "text": "the last contractor",
           "goto": "order.last",
           "id": "order.choice.6",
           "mutations": {
             "set": [
               "cold.knows.last_recordist"
             ]
-          }
+          },
+          "when": "cold.trunk.last"
         },
         {
           "text": "fold it up and sign",
@@ -479,6 +811,11 @@
           }
         },
         {
+          "text": "how big is it in there?",
+          "goto": "order.rooms.big",
+          "id": "order.rooms.choice.5"
+        },
+        {
           "text": "back to the order",
           "goto": "order",
           "id": "order.rooms.choice.4"
@@ -501,7 +838,7 @@
           "id": "order.rooms.minute.line.2"
         }
       ],
-      "goto": "order.rooms"
+      "goto": "order"
     },
     "order.rooms.wait": {
       "id": "order.rooms.wait",
@@ -519,7 +856,7 @@
           "id": "order.rooms.wait.line.2"
         }
       ],
-      "goto": "order.rooms"
+      "goto": "order"
     },
     "order.rooms.power": {
       "id": "order.rooms.power",
@@ -537,25 +874,44 @@
           "id": "order.rooms.power.line.2"
         }
       ],
-      "goto": "order.rooms"
+      "goto": "order"
     },
     "order.money": {
       "id": "order.money",
-      "type": "dialogue",
+      "type": "choice",
       "speaker": "THE WORK ORDER",
       "lines": [
         {
           "who": "you",
-          "text": "Four hundred for a night's work in a building with no power in it. About double what I usually get.",
+          "text": "Four hundred for a night's work in a building with no power in it.",
           "id": "order.money.line.1"
         },
         {
           "who": "you",
-          "text": "I saw the dispatch call come up on the job board at four and said yes almost before I finished reading it.",
+          "text": "It's about double what I usually get. I saw the dispatch call come up on my job board at four and I said yes almost as soon as I saw it.",
           "id": "order.money.line.2"
         }
       ],
-      "goto": "order"
+      "kind": "subhub",
+      "choices": [
+        {
+          "text": "what does double usually mean",
+          "goto": "order.money.double",
+          "id": "order.money.choice.1",
+          "hideWhenAsked": true
+        },
+        {
+          "text": "the dispatch calendar",
+          "goto": "order.money.calendar",
+          "id": "order.money.choice.2",
+          "hideWhenAsked": true
+        },
+        {
+          "text": "fold that thought away",
+          "goto": "order",
+          "id": "order.money.choice.3"
+        }
+      ]
     },
     "order.words": {
       "id": "order.words",
@@ -565,12 +921,12 @@
       "lines": [
         {
           "who": "you",
-          "text": "\"The room as it is.\" \"One clean minute.\" \"If you can hear yourself on the take, you begin again.\"",
+          "text": "\"The room as it is.\" \"One clean minute.\" \"If you can hear yourself on the take, you must start again.\"",
           "id": "order.words.line.1"
         },
         {
           "who": "you",
-          "text": "That is fair. That is how I would write it myself.",
+          "text": "That's fair.",
           "id": "order.words.line.2"
         }
       ],
@@ -588,7 +944,19 @@
           "id": "order.words.choice.1"
         },
         {
-          "text": "back to the order",
+          "text": "\"the room as it is\"",
+          "goto": "order.words.asis",
+          "id": "order.words.choice.3",
+          "hideWhenAsked": true
+        },
+        {
+          "text": "\"if you can hear yourself, start again\"",
+          "goto": "order.words.hear",
+          "id": "order.words.choice.4",
+          "hideWhenAsked": true
+        },
+        {
+          "text": "that is all it says",
           "goto": "order",
           "id": "order.words.choice.2"
         }
@@ -620,13 +988,18 @@
       "lines": [
         {
           "who": "you",
-          "text": "W. Ellery Holdings. Same name as the building, which tells you nothing — they bought the name with it.",
+          "text": "W. Ellery Holdings. Same name as the building, which tells you nothing, because they bought the name with it.",
           "id": "order.client.line.1"
         },
         {
           "who": "you",
           "text": "No website. A landline and a post box in Croydon.",
           "id": "order.client.line.2"
+        },
+        {
+          "who": "you",
+          "text": "I've worked for worse and been paid slower.",
+          "id": "order.client.line.3"
         }
       ],
       "revisitLines": [
@@ -643,7 +1016,19 @@
           "id": "order.client.choice.1"
         },
         {
-          "text": "back to the order",
+          "text": "ring the landline",
+          "goto": "order.client.ring",
+          "id": "order.client.choice.3",
+          "hideWhenAsked": true
+        },
+        {
+          "text": "the post box in croydon",
+          "goto": "order.client.box",
+          "id": "order.client.choice.4",
+          "hideWhenAsked": true
+        },
+        {
+          "text": "leave it",
           "goto": "order",
           "id": "order.client.choice.2"
         }
@@ -670,8 +1055,18 @@
       "lines": [
         {
           "who": "you",
-          "text": "Thursday, six in the morning. After that there is no building to be in — only dust and the land rights to a development.",
+          "text": "Thursday, six in the morning. After that there is no building to be in, only dust and the land rights to a new development project.",
           "id": "order.deadline.line.1"
+        },
+        {
+          "who": "you",
+          "text": "So there's no coming back on Friday to pick up the ones I missed.",
+          "id": "order.deadline.line.2"
+        },
+        {
+          "who": "you",
+          "text": "Five or none. Tonight is the whole job.",
+          "id": "order.deadline.line.3"
         }
       ],
       "revisitLines": [
@@ -720,7 +1115,7 @@
         },
         {
           "who": "you",
-          "text": "Settled for four. So they got paid and they stopped. It happens — some people cannot take the dark.",
+          "text": "Settled for four. So they got paid, and they stopped. Maybe they just couldn't bare the dark? Happens all the time.",
           "id": "order.last.line.2"
         }
       ],
@@ -850,23 +1245,18 @@
       "lines": [
         {
           "who": "me",
-          "text": "Know anything about the building?",
+          "text": "You know anything about the building at all?",
           "id": "guard.line.1"
         },
         {
           "who": "guard",
-          "text": "Keys and forms. Past the grey door is not my job.",
+          "text": "Keys and forms. Past the door is nothing to do with me.",
           "id": "guard.line.2"
         },
         {
           "who": "direction",
-          "text": "He turns the television down...",
+          "text": "He turns the television down, but the sound was already off.",
           "id": "guard.line.3"
-        },
-        {
-          "id": "guard.line.4",
-          "who": "direction",
-          "text": "...but the sound was already off."
         }
       ],
       "revisitLines": [
@@ -887,7 +1277,8 @@
         {
           "text": "have you ever been inside?",
           "goto": "guard.inside",
-          "id": "guard.choice.1"
+          "id": "guard.choice.1",
+          "when": "cold.trunk.last || cold.trunk.night"
         },
         {
           "text": "was there someone here before me?",
@@ -897,26 +1288,24 @@
             "set": [
               "cold.knows.last_recordist"
             ]
-          }
+          },
+          "when": "cold.trunk.last"
         },
         {
-          "text": "what was his name?",
+          "text": "what was the other recordist's name?",
           "goto": "guard.name",
           "id": "guard.choice.3",
           "when": "cold.knows.last_recordist"
         },
         {
-          "text": "who's on the gate after you?",
-          "goto": "guard.shift",
-          "id": "guard.choice.4"
-        },
-        {
-          "text": "radio procedure",
-          "goto": "guard.radio",
-          "id": "guard.choice.5",
+          "text": "the basement stair light",
+          "goto": "guard.stair",
+          "id": "guard.choice.9",
+          "when": "cold.trunk.night",
+          "hideWhenAsked": true,
           "mutations": {
             "set": [
-              "cold.knows.radio"
+              "cold.knows.basement_dark"
             ]
           }
         },
@@ -966,7 +1355,7 @@
         },
         {
           "who": "guard",
-          "text": "Not my round. There is a difference. Nobody stops me. I have never once wanted to.",
+          "text": "Not interested.",
           "id": "guard.inside.line.4"
         },
         {
@@ -984,7 +1373,7 @@
       ],
       "choices": [
         {
-          "text": "eleven years and never a look?",
+          "text": "push him on it",
           "goto": "guard.inside.why",
           "id": "guard.inside.choice.1",
           "mutations": {
@@ -1007,18 +1396,23 @@
       "lines": [
         {
           "who": "me",
-          "text": "Eleven years on this gate and you have never once had a look?",
+          "text": "Eleven years on the gate and you have never once had a look?",
           "id": "guard.inside.why.line.1"
         },
         {
           "who": "guard",
-          "text": "I have a chair and a telly and a flask. Whatever is in there, it is not paying me to look at it.",
+          "text": "Not interested.",
           "id": "guard.inside.why.line.2"
         },
         {
           "who": "guard",
-          "text": "They had other people for that. You are the people for that, tonight.",
+          "text": "He says it exactly the same way. Same three words, same speed. It's not quite a façade.",
           "id": "guard.inside.why.line.3"
+        },
+        {
+          "who": "guard",
+          "text": "It's a building, mate. I've got me chair here, and me 'telly. No need to go inside, they had other people for that.",
+          "id": "guard.inside.why.line.4"
         }
       ],
       "goto": "guard"
@@ -1036,7 +1430,7 @@
         },
         {
           "who": "guard",
-          "text": "Nice enough. Kept his own hours.",
+          "text": "Yeah. Nice enough. Kept his own hours.",
           "id": "guard.last.line.2"
         },
         {
@@ -1051,8 +1445,18 @@
         },
         {
           "who": "guard",
-          "text": "He signed in. Look — received, in his hand. The box next to it is returned, and it is empty.",
+          "text": "Initial there as well. They want it twice now.",
           "id": "guard.last.line.5"
+        },
+        {
+          "who": "me",
+          "text": "...",
+          "id": "guard.last.line.6"
+        },
+        {
+          "who": "guard",
+          "text": "My shift ended at ten. I was home...",
+          "id": "guard.last.line.7"
         }
       ],
       "revisitLines": [
@@ -1074,12 +1478,29 @@
           }
         },
         {
+          "text": "you were home. finish the sentence",
+          "goto": "guard.last.home",
+          "id": "guard.last.choice.4",
+          "hideWhenAsked": true,
+          "mutations": {
+            "set": [
+              "cold.guard.wary"
+            ]
+          }
+        },
+        {
+          "text": "what did he leave in the booth",
+          "goto": "guard.last.left",
+          "id": "guard.last.choice.5",
+          "hideWhenAsked": true
+        },
+        {
           "text": "what was his name?",
           "goto": "guard.name",
           "id": "guard.last.choice.2"
         },
         {
-          "text": "back to the guard",
+          "text": "leave it",
           "goto": "guard",
           "id": "guard.last.choice.3"
         }
@@ -1115,7 +1536,7 @@
       "lines": [
         {
           "who": "me",
-          "text": "What was he called?",
+          "text": "What was he called, the last bloke?",
           "id": "guard.name.line.1"
         },
         {
@@ -1125,18 +1546,23 @@
         },
         {
           "who": "direction",
-          "text": "He runs a finger up the column, past tonight, past the rain, into September.",
+          "text": "He turns the book around and runs a finger up the column, past tonight, past the rain, into September.",
           "id": "guard.name.line.3"
         },
         {
           "who": "guard",
-          "text": "There. Can't read his writing. Nobody can read anybody's writing anymore.",
+          "text": "There. Received, that one. And the box next to it is empty.",
           "id": "guard.name.line.4"
         },
         {
           "who": "direction",
           "text": "It is the same ledger you are about to sign.",
           "id": "guard.name.line.5"
+        },
+        {
+          "who": "guard",
+          "text": "Can't read his writing. Nobody can read anybody's writing anymore.",
+          "id": "guard.name.line.6"
         }
       ],
       "goto": "guard"
@@ -1154,8 +1580,23 @@
         },
         {
           "who": "guard",
-          "text": "Nobody. Site's condemned. They stopped paying for the night watch when they stopped paying for the power. Tonight is my last shift.",
+          "text": "Nobody. Site's condemned. They stopped paying for the night after they stopped paying for the power. Tonight is my last night on the job.",
           "id": "guard.shift.line.2"
+        },
+        {
+          "who": "me",
+          "text": "So I ring the bell at three in the morning and.",
+          "id": "guard.shift.line.3"
+        },
+        {
+          "who": "guard",
+          "text": "And nothing. Gate code is on your sheet.",
+          "id": "guard.shift.line.4"
+        },
+        {
+          "who": "guard",
+          "text": "It's a demolition, not a bank.",
+          "id": "guard.shift.line.5"
         }
       ],
       "revisitLines": [
@@ -1172,8 +1613,8 @@
           "id": "guard.shift.choice.1"
         },
         {
-          "text": "back to the guard",
-          "goto": "guard",
+          "text": "back to the window",
+          "goto": "start",
           "id": "guard.shift.choice.2"
         }
       ]
@@ -1232,8 +1673,14 @@
           "id": "guard.radio.choice.1"
         },
         {
-          "text": "back to the guard",
-          "goto": "guard",
+          "text": "in what way does it go funny",
+          "goto": "guard.radio.loud",
+          "id": "guard.radio.choice.3",
+          "hideWhenAsked": true
+        },
+        {
+          "text": "back to the window",
+          "goto": "start",
           "id": "guard.radio.choice.2"
         }
       ]
@@ -1294,7 +1741,7 @@
       "lines": [
         {
           "who": "direction",
-          "text": "There are files on the sound card. Three are slated and clean, and take three is already cued.",
+          "text": "Four files on the card. Three are slated and clean: the previous recordist clearly announced the take number and room for each take. Take three is already running.",
           "id": "tape.line.1"
         },
         {
@@ -1304,8 +1751,18 @@
         },
         {
           "who": "direction",
-          "text": "Sixty clean seconds of bare room, then a chair. He stands up, the file cuts off.",
+          "text": "Sixty clean seconds of bare room noise.",
           "id": "tape.line.3"
+        },
+        {
+          "who": "recordist",
+          "text": "That's clean. That's three.",
+          "id": "tape.line.4"
+        },
+        {
+          "who": "direction",
+          "text": "A chair. He stands up.",
+          "id": "tape.line.5"
         }
       ],
       "revisitLines": [
@@ -1317,12 +1774,12 @@
       ],
       "choices": [
         {
-          "text": "check the levels",
+          "text": "check the levels on it",
           "goto": "tape.levels",
           "id": "tape.choice.1"
         },
         {
-          "text": "there's no slate on the fourth",
+          "text": "there's no slate on this one",
           "goto": "tape.slate",
           "id": "tape.choice.2",
           "mutations": {
@@ -1350,21 +1807,45 @@
     },
     "tape.levels": {
       "id": "tape.levels",
-      "type": "dialogue",
+      "type": "choice",
       "speaker": "THE HEADPHONES",
       "lines": [
         {
           "who": "you",
-          "text": "Floor sits at minus fifty-eight. No hum, no traffic, no handling. It is a beautiful take. I would have sent it.",
+          "text": "Floor sits at fifty-eight decibels. No hum, no traffic, no weird handling.",
           "id": "tape.levels.line.1"
         },
         {
           "who": "you",
-          "text": "He was better than me. Which means I need to make mine count.",
+          "text": "It's a beautiful take. I would have sent it.",
           "id": "tape.levels.line.2"
+        },
+        {
+          "who": "you",
+          "text": "He was better than me. I need to make these recordings count.",
+          "id": "tape.levels.line.3"
         }
       ],
-      "goto": "tape"
+      "kind": "subhub",
+      "choices": [
+        {
+          "text": "he was better than you. sit with that",
+          "goto": "tape.levels.better",
+          "id": "tape.levels.choice.1",
+          "hideWhenAsked": true
+        },
+        {
+          "text": "what would you have done differently",
+          "goto": "tape.levels.diff",
+          "id": "tape.levels.choice.2",
+          "hideWhenAsked": true
+        },
+        {
+          "text": "back",
+          "goto": "tape",
+          "id": "tape.levels.choice.3"
+        }
+      ]
     },
     "tape.slate": {
       "id": "tape.slate",
@@ -1375,13 +1856,28 @@
       "lines": [
         {
           "who": "you",
-          "text": "You slate everything. Room, take, date, out loud, after you roll. So that in eight months, when the file is only a number, somebody knows what they are hearing.",
+          "text": "You slate everything. Room, take, date. You say it out loud after you roll the take.",
           "id": "tape.slate.line.1"
         },
         {
           "who": "you",
-          "text": "He slated the first three. The fourth is bare. Either he stopped bothering — or he never got to the end of it to say so.",
+          "text": "You do it so that in eight months, when the file is a number, somebody knows what they're listening to.",
           "id": "tape.slate.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "You flip the tape over to the reverse side. Take four, unslated.",
+          "id": "tape.slate.line.3"
+        },
+        {
+          "who": "you",
+          "text": "He slated the other three.",
+          "id": "tape.slate.line.4"
+        },
+        {
+          "who": "you",
+          "text": "So either he stopped bothering, or he did not start this one.",
+          "id": "tape.slate.line.5"
         }
       ],
       "revisitLines": [
@@ -1393,7 +1889,13 @@
       ],
       "choices": [
         {
-          "text": "play the fourth",
+          "text": "reasons a man stops slating",
+          "goto": "tape.slate.reasons",
+          "id": "tape.slate.choice.3",
+          "hideWhenAsked": true
+        },
+        {
+          "text": "play take four",
           "goto": "tape.run",
           "id": "tape.slate.choice.1",
           "mutations": {
@@ -1463,7 +1965,7 @@
         },
         {
           "who": "recordist",
-          "text": "No!",
+          "text": "No! Why do you know this?! Who are you?",
           "id": "tape.run.line.10"
         },
         {
@@ -1478,7 +1980,7 @@
         },
         {
           "who": "direction",
-          "text": "Thirty seconds of room tone, at the same level as before.",
+          "text": "Thirty seconds of the room, at the same level as before.",
           "id": "tape.run.line.11"
         },
         {
@@ -1513,7 +2015,7 @@
         },
         {
           "who": "recordist",
-          "text": "Bring me another, and we will lose them together.",
+          "text": "You will bring me another, and will lose them together.",
           "id": "tape.run.line.18"
         }
       ],
@@ -1609,18 +2111,19 @@
       "lines": [
         {
           "who": "direction",
-          "text": "A three-cell Maglite, the anodising worn back to bare metal where a hand goes. You thumb it on against your palm and off again.",
+          "text": "A standard Maglite three-cell torch, the anodising worn back to bare metal where a hand goes. You thumb it on against your palm and off again.",
           "id": "torch.line.1"
         },
         {
           "who": "you",
-          "text": "Working. Cells are good. I put fresh ones in this afternoon.",
+          "text": "Working. Cells are good. I'm pretty sure I remembered to push in fresh ones in earlier today.",
           "id": "torch.line.2"
         },
         {
           "who": "guard",
-          "text": "Most of them turn up with a phone. A phone. In there.",
-          "id": "torch.line.3"
+          "text": "Most of them turn up with a phone. A phone! in there...",
+          "id": "torch.line.3",
+          "when": "!cold.trunk.night"
         }
       ],
       "revisitLines": [
@@ -1634,15 +2137,17 @@
         {
           "text": "how long will it last?",
           "goto": "torch.cells",
-          "id": "torch.choice.1"
+          "id": "torch.choice.1",
+          "when": "cold.trunk.night"
         },
         {
-          "text": "why it goes off when the tape rolls",
+          "text": "why you will not use it",
           "goto": "torch.dark",
-          "id": "torch.choice.2"
+          "id": "torch.choice.2",
+          "when": "cold.trunk.night"
         },
         {
-          "text": "did the last man have one?",
+          "text": "did the last recordist have one?",
           "goto": "torch.him",
           "id": "torch.choice.3",
           "mutations": {
@@ -1660,12 +2165,12 @@
     },
     "torch.cells": {
       "id": "torch.cells",
-      "type": "dialogue",
+      "type": "choice",
       "speaker": "THE FIELD TORCH",
       "lines": [
         {
           "who": "you",
-          "text": "Alkalines. Four, five hours of continuous light on standby — but I do not want to be anywhere near an empty charge in there.",
+          "text": "Alkalines. I've got a good, continuous four or five hours of light on standby, but I don't want to get anywhere near an empty charge.",
           "id": "torch.cells.line.1"
         },
         {
@@ -1675,11 +2180,30 @@
         },
         {
           "who": "me",
-          "text": "Everyone should bring spares. Nobody ever does.",
+          "text": "Everyone should bring spares... nobody really ever does though.",
           "id": "torch.cells.line.3"
         }
       ],
-      "goto": "torch"
+      "kind": "subhub",
+      "choices": [
+        {
+          "text": "and if it dies in there",
+          "goto": "torch.cells.dies",
+          "id": "torch.cells.choice.1",
+          "hideWhenAsked": true
+        },
+        {
+          "text": "spares",
+          "goto": "torch.cells.spares",
+          "id": "torch.cells.choice.2",
+          "hideWhenAsked": true
+        },
+        {
+          "text": "that will do",
+          "goto": "torch",
+          "id": "torch.cells.choice.3"
+        }
+      ]
     },
     "torch.dark": {
       "id": "torch.dark",
@@ -1688,7 +2212,7 @@
       "lines": [
         {
           "who": "guard",
-          "text": "You'll want it on in there. Black as anything past the foyer.",
+          "text": "You'll want it on in there. It's black as anything past the foyer.",
           "id": "torch.dark.line.1"
         },
         {
@@ -1698,18 +2222,23 @@
         },
         {
           "who": "guard",
-          "text": "Off? A torch makes no noise.",
+          "text": "Off? Why off? A torch makes no noise, it–",
           "id": "torch.dark.line.3"
         },
         {
           "who": "me",
-          "text": "It makes a noise like a hand moving. The filament buzzes, the switch clicks, and you cannot hold a beam still — you sweep it, and the sweep is on the tape, in your shoulder, in your coat, in your breath.",
+          "text": "It makes a noise like a hand moving or a filament buzzing. It clicks. I mean, you cannot hold still with a torch on. You sweep it, and the sweep is on the tape, in your shoulder, in your coat, on your breath.",
           "id": "torch.dark.line.4"
         },
         {
           "who": "me",
-          "text": "I work in the dark. It is most of the job.",
+          "text": "...right.",
           "id": "torch.dark.line.5"
+        },
+        {
+          "who": "me",
+          "text": "I work in the dark. It's part the job. It's really most of the job.",
+          "id": "torch.dark.line.6"
         }
       ],
       "goto": "torch"
@@ -1722,18 +2251,33 @@
       "lines": [
         {
           "who": "guard",
-          "text": "The last one had a head torch. Little red one, for the night vision, he said.",
+          "text": "The last one? Had a head torch. Little red one, for the night vision, he said.",
           "id": "torch.him.line.1"
         },
         {
           "who": "me",
-          "text": "That is a good bit of kit.",
+          "text": "That is a good bit of kit yeah.",
           "id": "torch.him.line.2"
         },
         {
           "who": "guard",
-          "text": "Came out the first two nights. Third night he went in at ten, and his van was still in the yard on Thursday.",
+          "text": "He came out the first two nights. Third night he went in at ten and I did my rounds and the gate was shut and his van was still there Thursday.",
           "id": "torch.him.line.3"
+        },
+        {
+          "who": "direction",
+          "text": "The rain gets briefly heavier and then lifts. It comes in patches, it's soothing white noise waxing and waning as the night slowly drags on.",
+          "id": "torch.him.line.4"
+        },
+        {
+          "who": "guard",
+          "text": "Van was gone come Friday though. Who knows.",
+          "id": "torch.him.line.5"
+        },
+        {
+          "who": "you",
+          "text": "Who knows indeed... but why are you telling me this right before I head inside?",
+          "id": "torch.him.line.6"
         }
       ],
       "revisitLines": [
@@ -1753,6 +2297,18 @@
               "cold.guard.wary"
             ]
           }
+        },
+        {
+          "text": "he went in at what time, the third night",
+          "goto": "torch.him.time",
+          "id": "torch.him.choice.4",
+          "hideWhenAsked": true
+        },
+        {
+          "text": "a red head torch. why red",
+          "goto": "torch.him.red",
+          "id": "torch.him.choice.5",
+          "hideWhenAsked": true
         },
         {
           "text": "the book — did he sign out?",
@@ -1792,7 +2348,7 @@
     },
     "coffee": {
       "id": "coffee",
-      "type": "dialogue",
+      "type": "choice",
       "speaker": "SERVICE BOOTH · 21:38",
       "art": {
         "id": "boothCoffee",
@@ -1803,7 +2359,7 @@
       "lines": [
         {
           "who": "direction",
-          "text": "He promptly fills a second cup and slides it across the booth counter.",
+          "text": "He fills a second cup without asking how you take it and slides it across the form.",
           "id": "coffee.line.1"
         },
         {
@@ -1813,11 +2369,23 @@
         },
         {
           "who": "me",
-          "text": "That is a little presum— y'know what, actually, thanks - I'll take a cuppa.",
+          "text": "Thanks?",
           "id": "coffee.line.3"
         }
       ],
-      "goto": "start"
+      "choices": [
+        {
+          "text": "ask what his wife makes of the coffee",
+          "goto": "coffee.wife",
+          "id": "coffee.choice.1",
+          "hideWhenAsked": true
+        },
+        {
+          "text": "just nod and take it",
+          "goto": "start",
+          "id": "coffee.choice.2"
+        }
+      ]
     },
     "threshold": {
       "id": "threshold",
@@ -1833,18 +2401,19 @@
       "lines": [
         {
           "who": "direction",
-          "text": "He turns the book around. Two boxes on the line above your name.",
+          "text": "He turns the book around. Two boxes on the line with your name in it.",
           "id": "threshold.line.1"
         },
         {
           "who": "guard",
           "text": "Sign where it says received.",
-          "id": "threshold.line.2"
+          "id": "threshold.line.2",
+          "when": "cold.trunk.paper"
         },
         {
           "who": "guard",
           "signalRole": "human",
-          "text": "Your name for the register?",
+          "text": "Sign received. Your name for the register?",
           "id": "threshold.line.name-request"
         },
         {
@@ -1862,7 +2431,7 @@
         {
           "who": "guard",
           "signalRole": "human",
-          "text": "Right. Got you.",
+          "text": "Sorry—again?",
           "id": "threshold.line.name-accepted"
         },
         {
@@ -1880,17 +2449,18 @@
         {
           "who": "guard",
           "signalRole": "human",
-          "text": "You're alright. It's down.",
+          "text": "Right. Got you.",
           "id": "threshold.line.name-enough"
         },
         {
           "who": "direction",
           "text": "He has written something. He is not going to check it with you and you are not going to ask.",
-          "id": "threshold.line.name-written"
+          "id": "threshold.line.name-written",
+          "when": "cold.trunk.last"
         },
         {
           "who": "direction",
-          "text": "You sign the first box. The second says returned. Under its blank box, old carbon has left 20:14 and yesterday's date, too faint to count as ink.",
+          "text": "You sign the first box. The second one says returned, and it is about the width of a fingernail; it is empty all the way up the page. Under it, old carbon has left 20:14 and yesterday's date.",
           "id": "threshold.line.3",
           "cues": [
             "signature"
@@ -1899,7 +2469,8 @@
         {
           "who": "direction",
           "text": "Above the carbon, in the name column, someone has already been written in.",
-          "id": "threshold.line.returned-name"
+          "id": "threshold.line.returned-name",
+          "when": "cold.trunk.last"
         },
         {
           "who": "direction",
@@ -1910,17 +2481,19 @@
         {
           "who": "guard",
           "signalRole": "human",
-          "text": "That'll be the last lad. Never came out and signed it. Still owes me a keyring.",
-          "id": "threshold.line.returned-grumble"
+          "text": "Last lad. Never came out to sign it. Still owes me a keyring.",
+          "id": "threshold.line.returned-grumble",
+          "when": "cold.trunk.last"
         },
         {
           "who": "guard",
           "text": "Don't sign the other one. That's for when you come back out.",
-          "id": "threshold.line.4"
+          "id": "threshold.line.4",
+          "when": "cold.trunk.paper"
         },
         {
           "who": "direction",
-          "text": "In one gesture (the toughest labour of his evening) he slides the keys and a handset under the glass and takes the form back.",
+          "text": "In one single gesture (likely the toughest amount of labour for him this evening), he slides the keys under the glass along with a radio in one hand, and takes the form back with the other.",
           "id": "threshold.line.5",
           "cues": [
             "slides"
@@ -1933,13 +2506,20 @@
         },
         {
           "who": "guard",
-          "text": "Aye. On the hour.",
-          "id": "threshold.line.7"
+          "text": "Aye. Check in on the hour.",
+          "id": "threshold.line.7",
+          "when": "cold.trunk.paper || cold.trunk.night"
         },
         {
           "who": "guard",
-          "text": "Grey door, end of the yard, is the service entrance. I'll be here till ten. If the handle sticks, don't shoulder it — main doors are through the front foyer, past the box office. Longer walk, same yard.",
+          "text": "Grey door, end of the yard is the service entrance. I'll be here till ten.",
           "id": "threshold.line.8"
+        },
+        {
+          "who": "guard",
+          "text": "If the service leaf sticks, don't shoulder it. Main doors are through the front foyer, past the box office. Longer walk, same yard.",
+          "id": "threshold.line.foyer",
+          "when": "cold.trunk.night"
         },
         {
           "who": "guard",
@@ -1968,30 +2548,27 @@
       "lines": [
         {
           "who": "guard",
-          "text": "One thing, before you take the keys. The stair down to the basement — the light's dead. Since—",
+          "text": "One thing. Basement stair's black. Board has been dead since April. Some rooms still have emergency power, but it may not be quiet enough for you.",
           "id": "descent.line.1"
         },
         {
           "who": "me",
           "text": "—let me guess. There's no power.",
-          "id": "descent.line.2"
+          "id": "descent.line.2",
+          "when": "cold.trunk.night"
         },
         {
           "who": "guard",
-          "text": "Since April. Whole sub-level runs off one board, and that board's been dead longer than I've had this chair. Cellar-black, the lot of it. Some other rooms might still have their emergency power, though it might not be quiet enough for you.",
-          "id": "descent.line.3"
+          "text": "Since April. Whole sub-level runs off one board, and that board's been dead longer than I've had this chair. Cellar-black, the lot of it.",
+          "id": "descent.line.3",
+          "when": "cold.trunk.night"
         },
         {
           "who": "you",
-          "text": "Let's get this basement out of the way first. I'd rather do it while my eyes are still adjusting to the light.",
+          "text": "Basement first, then. While the torch is full.",
           "id": "descent.line.4"
         }
       ],
-      "mutations": {
-        "set": [
-          "cold.knows.basement_dark"
-        ]
-      },
       "revisitLines": [
         {
           "who": "guard",
@@ -2021,7 +2598,12 @@
         {
           "text": "sign the form — let's get on with it.",
           "goto": "threshold",
-          "id": "descent.choice.4"
+          "id": "descent.choice.4",
+          "mutations": {
+            "set": [
+              "cold.knows.basement_dark"
+            ]
+          }
         }
       ]
     },
@@ -2083,6 +2665,731 @@
         }
       ],
       "goto": "descent"
+    },
+    "greet.order": {
+      "id": "greet.order",
+      "type": "dialogue",
+      "speaker": "SERVICE BOOTH · 21:38",
+      "art": {
+        "id": "guard",
+        "mode": "hero",
+        "caption": "Gate booth / 21:38",
+        "status": "STILL"
+      },
+      "lines": [
+        {
+          "who": "me",
+          "text": "Yeah, the sound job. Should be a work order there for me? Requisition number 4-4-1-7.",
+          "id": "greet.order.line.1"
+        },
+        {
+          "who": "guard",
+          "text": "Came through around five today.",
+          "id": "greet.order.line.2"
+        }
+      ],
+      "goto": "order.rooms"
+    },
+    "greet.actually": {
+      "id": "greet.actually",
+      "type": "dialogue",
+      "speaker": "SERVICE BOOTH · 21:38",
+      "art": {
+        "id": "guard",
+        "mode": "hero",
+        "caption": "Gate booth / 21:38",
+        "status": "STILL"
+      },
+      "lines": [
+        {
+          "who": "me",
+          "text": "You said actually. Like you had money on it.",
+          "id": "greet.actually.line.1"
+        },
+        {
+          "who": "guard",
+          "text": "Third one they've booked. First one to stand where you're standing.",
+          "id": "greet.actually.line.2"
+        },
+        {
+          "who": "me",
+          "text": "And the other two?",
+          "id": "greet.actually.line.3"
+        },
+        {
+          "who": "guard",
+          "text": "Rang in sick, the first. The other supposedly never finished. Same week.",
+          "id": "greet.actually.line.4"
+        },
+        {
+          "who": "direction",
+          "text": "He says it to you but not at you. He keeps his eyes to the forms.",
+          "id": "greet.actually.line.5"
+        }
+      ],
+      "goto": "guard.three"
+    },
+    "greet.somebody": {
+      "id": "greet.somebody",
+      "type": "dialogue",
+      "speaker": "SERVICE BOOTH · 21:38",
+      "art": {
+        "id": "guard",
+        "mode": "hero",
+        "caption": "Gate booth / 21:38",
+        "status": "STILL"
+      },
+      "lines": [
+        {
+          "who": "me",
+          "text": "Somebody has to.",
+          "id": "greet.somebody.line.1"
+        },
+        {
+          "who": "guard",
+          "text": "That's the spirit. That's what they all say and then they don't turn up.",
+          "id": "greet.somebody.line.2"
+        },
+        {
+          "who": "guard",
+          "text": "Order came through at five. It is here, whatever else.",
+          "id": "greet.somebody.line.3"
+        }
+      ],
+      "goto": "torch.say"
+    },
+    "order.rooms.big": {
+      "id": "order.rooms.big",
+      "type": "dialogue",
+      "speaker": "THE WORK ORDER",
+      "lines": [
+        {
+          "who": "me",
+          "text": "How big is it in there? Roughly.",
+          "id": "order.rooms.big.line.1"
+        },
+        {
+          "who": "guard",
+          "text": "Big. Pool, hall, practice block, the chapel at the end. All joined.",
+          "id": "order.rooms.big.line.2"
+        },
+        {
+          "who": "guard",
+          "text": "You walk it in twenty minutes if you know the way. Nobody knows the way.",
+          "id": "order.rooms.big.line.3"
+        }
+      ],
+      "goto": "order"
+    },
+    "guard.three": {
+      "id": "guard.three",
+      "type": "choice",
+      "speaker": "SERVICE BOOTH · 21:38",
+      "art": {
+        "id": "guard",
+        "mode": "hero",
+        "caption": "Gate booth / 21:38",
+        "status": "STILL"
+      },
+      "lines": [
+        {
+          "who": "me",
+          "text": "Three booked. Two gone. And you are telling me at the gate.",
+          "id": "guard.three.line.1"
+        },
+        {
+          "who": "guard",
+          "text": "I am telling you while there is still a gate between us. Ask me inside and I would not answer.",
+          "id": "guard.three.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "He squares the forms that do not need squaring.",
+          "id": "guard.three.line.3"
+        }
+      ],
+      "revisitLines": [
+        {
+          "who": "guard",
+          "text": "Three booked. Two gone. Which of them do you want.",
+          "id": "guard.three.revisit.line.1"
+        }
+      ],
+      "choices": [
+        {
+          "text": "the one who rang in sick",
+          "goto": "guard.last",
+          "id": "guard.three.choice.1",
+          "mutations": {
+            "set": [
+              "cold.visited.guard",
+              "cold.knows.last_recordist"
+            ]
+          }
+        },
+        {
+          "text": "the one who never finished",
+          "goto": "order.last",
+          "id": "guard.three.choice.2",
+          "mutations": {
+            "set": [
+              "cold.visited.order",
+              "cold.knows.last_recordist"
+            ]
+          }
+        },
+        {
+          "text": "how would you know he never finished",
+          "goto": "tape",
+          "id": "guard.three.choice.3",
+          "mutations": {
+            "set": [
+              "cold.visited.tape"
+            ]
+          }
+        }
+      ]
+    },
+    "torch.say": {
+      "id": "torch.say",
+      "type": "choice",
+      "speaker": "SERVICE BOOTH · 21:38",
+      "art": {
+        "id": "guard",
+        "mode": "hero",
+        "caption": "Gate booth / 21:38",
+        "status": "STILL"
+      },
+      "lines": [
+        {
+          "who": "guard",
+          "text": "You brought a torch? Nobody brings a torch.",
+          "id": "torch.say.line.1"
+        }
+      ],
+      "choices": [
+        {
+          "text": "not my first gig.",
+          "goto": "torch.say.first",
+          "id": "torch.say.choice.1"
+        },
+        {
+          "text": "what do they usually bring?",
+          "goto": "torch.say.usual",
+          "id": "torch.say.choice.2"
+        },
+        {
+          "text": "there's no power in there, is there.",
+          "goto": "torch.say.power",
+          "id": "torch.say.choice.3",
+          "mutations": {
+            "set": [
+              "cold.knows.power_off"
+            ]
+          }
+        }
+      ]
+    },
+    "torch.say.first": {
+      "id": "torch.say.first",
+      "type": "dialogue",
+      "speaker": "SERVICE BOOTH · 21:38",
+      "art": {
+        "id": "guard",
+        "mode": "hero",
+        "caption": "Gate booth / 21:38",
+        "status": "STILL"
+      },
+      "lines": [
+        {
+          "who": "me",
+          "text": "Not my first gig.",
+          "id": "torch.say.first.line.1"
+        },
+        {
+          "who": "guard",
+          "text": "No. You look like you've done a few.",
+          "id": "torch.say.first.line.2"
+        }
+      ],
+      "goto": "torch"
+    },
+    "torch.say.usual": {
+      "id": "torch.say.usual",
+      "type": "dialogue",
+      "speaker": "SERVICE BOOTH · 21:38",
+      "art": {
+        "id": "guard",
+        "mode": "hero",
+        "caption": "Gate booth / 21:38",
+        "status": "STILL"
+      },
+      "lines": [
+        {
+          "who": "me",
+          "text": "What do they usually bring?",
+          "id": "torch.say.usual.line.1"
+        },
+        {
+          "who": "guard",
+          "text": "A phone. A phone! In there.",
+          "id": "torch.say.usual.line.2"
+        },
+        {
+          "who": "guard",
+          "text": "Forty minutes of light and then they are standing in it with a dead brick in their hand.",
+          "id": "torch.say.usual.line.3"
+        }
+      ],
+      "goto": "torch"
+    },
+    "torch.say.power": {
+      "id": "torch.say.power",
+      "type": "dialogue",
+      "speaker": "SERVICE BOOTH · 21:38",
+      "art": {
+        "id": "guard",
+        "mode": "hero",
+        "caption": "Gate booth / 21:38",
+        "status": "STILL"
+      },
+      "lines": [
+        {
+          "who": "me",
+          "text": "There's no power in there, is there. Not since April.",
+          "id": "torch.say.power.line.1"
+        },
+        {
+          "who": "guard",
+          "text": "Not a watt. They pulled the main before the notice went up.",
+          "id": "torch.say.power.line.2"
+        },
+        {
+          "who": "me",
+          "text": "Good. Powered down is the whole job. A building with its power on has a hum, and a hum is a take spoiled.",
+          "id": "torch.say.power.line.3"
+        },
+        {
+          "who": "guard",
+          "text": "...you people hear different things than I do.",
+          "id": "torch.say.power.line.4"
+        }
+      ],
+      "goto": "torch"
+    },
+    "order.money.double": {
+      "id": "order.money.double",
+      "type": "dialogue",
+      "speaker": "THE WORK ORDER",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Double means rush, risk, or silence. Rush I understand — the building is rubble on Thursday.",
+          "id": "order.money.double.line.1"
+        },
+        {
+          "who": "you",
+          "text": "Risk is a word for insurers. Silence is the one that pays double and asks you not to notice it paying.",
+          "id": "order.money.double.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "In the booth, the guard watches a television with no sound on it.",
+          "id": "order.money.double.line.3"
+        }
+      ],
+      "goto": "order.money"
+    },
+    "order.money.calendar": {
+      "id": "order.money.calendar",
+      "type": "dialogue",
+      "speaker": "THE WORK ORDER",
+      "lines": [
+        {
+          "who": "you",
+          "text": "The job sat on the board for nine minutes before I took it. For this money it should have gone in one.",
+          "id": "order.money.calendar.line.1"
+        },
+        {
+          "who": "you",
+          "text": "Three names were above mine, crossed out. Crossed out is not declined. Declined gets an email. Crossed out gets a pen.",
+          "id": "order.money.calendar.line.2"
+        }
+      ],
+      "goto": "order.money"
+    },
+    "order.words.asis": {
+      "id": "order.words.asis",
+      "type": "dialogue",
+      "speaker": "THE WORK ORDER",
+      "lines": [
+        {
+          "who": "you",
+          "text": "\"As it is.\" Not \"as found\". Somebody wrote that carefully, or was corrected into it.",
+          "id": "order.words.asis.line.1"
+        },
+        {
+          "who": "you",
+          "text": "A room as found belongs to the finder. A room as it is belongs to the room. I am reading conveyancing law into a sound job now. Long night ahead.",
+          "id": "order.words.asis.line.2"
+        }
+      ],
+      "goto": "order.words"
+    },
+    "order.words.hear": {
+      "id": "order.words.hear",
+      "type": "dialogue",
+      "speaker": "THE WORK ORDER",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Standard note for amateurs. You can always hear yourself. The skill is getting the room to stop pointing it out.",
+          "id": "order.words.hear.line.1"
+        },
+        {
+          "who": "you",
+          "text": "Except they did not hire an amateur, and the rate says they know they did not. So the sentence is not advice. It is a specification.",
+          "id": "order.words.hear.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "Rain, on the roof, in the pause where a second thought should go.",
+          "id": "order.words.hear.line.3"
+        }
+      ],
+      "goto": "order.words"
+    },
+    "order.client.ring": {
+      "id": "order.client.ring",
+      "type": "dialogue",
+      "speaker": "THE WORK ORDER",
+      "lines": [
+        {
+          "who": "direction",
+          "text": "You dial it, because it is a landline and it is nine forty at night and you want to know.",
+          "id": "order.client.ring.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "It rings the way a phone rings in an empty office. You can hear the size of the room around the bell.",
+          "id": "order.client.ring.line.2"
+        },
+        {
+          "who": "you",
+          "text": "Eleven rings. No machine. No hold music. I put it away before somebody answers.",
+          "id": "order.client.ring.line.3"
+        },
+        {
+          "who": "guard",
+          "text": "That number only ever rings out, that one.",
+          "id": "order.client.ring.line.4"
+        }
+      ],
+      "goto": "order.client"
+    },
+    "order.client.box": {
+      "id": "order.client.box",
+      "type": "dialogue",
+      "speaker": "THE WORK ORDER",
+      "lines": [
+        {
+          "who": "you",
+          "text": "A post box can cash a cheque and sign a work order. It cannot walk five rooms in the dark with a recorder.",
+          "id": "order.client.box.line.1"
+        },
+        {
+          "who": "you",
+          "text": "That, apparently, is what I am for.",
+          "id": "order.client.box.line.2"
+        }
+      ],
+      "goto": "order.client"
+    },
+    "tape.levels.better": {
+      "id": "tape.levels.better",
+      "type": "dialogue",
+      "speaker": "THE HEADPHONES",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Fifty-eight floor, hard room, first night, no spoils on the slated three. That is not luck. That is hands.",
+          "id": "tape.levels.better.line.1"
+        },
+        {
+          "who": "you",
+          "text": "And a man with hands like that stopped slating at take four. Whatever happened, it happened between three and four.",
+          "id": "tape.levels.better.line.2"
+        }
+      ],
+      "goto": "tape.levels"
+    },
+    "tape.levels.diff": {
+      "id": "tape.levels.diff",
+      "type": "dialogue",
+      "speaker": "THE HEADPHONES",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Nothing. That is the trouble with it.",
+          "id": "tape.levels.diff.line.1"
+        },
+        {
+          "who": "you",
+          "text": "I would have stood where he stood, held what he held, and made the same take with the same silence around it. So whatever found him was not a mistake he made.",
+          "id": "tape.levels.diff.line.2"
+        }
+      ],
+      "goto": "tape.levels"
+    },
+    "tape.slate.reasons": {
+      "id": "tape.slate.reasons",
+      "type": "dialogue",
+      "speaker": "THE HEADPHONES",
+      "lines": [
+        {
+          "who": "you",
+          "text": "One: he was tired. Not this man — the first three are textbook. Two: he never meant to keep the file.",
+          "id": "tape.slate.reasons.line.1"
+        },
+        {
+          "who": "you",
+          "text": "Three: he did not want his own voice on it. Not in that room. Not at that hour.",
+          "id": "tape.slate.reasons.line.2"
+        },
+        {
+          "who": "you",
+          "text": "Three is a strange reason. Three is the one I keep arriving at.",
+          "id": "tape.slate.reasons.line.3"
+        }
+      ],
+      "goto": "tape.slate"
+    },
+    "torch.cells.dies": {
+      "id": "torch.cells.dies",
+      "type": "dialogue",
+      "speaker": "THE FIELD TORCH",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Then I stand still, and I listen, and the building tells me where its walls are. Every wall gives back a different nothing.",
+          "id": "torch.cells.dies.line.1"
+        },
+        {
+          "who": "guard",
+          "text": "You lot are not normal.",
+          "id": "torch.cells.dies.line.2"
+        },
+        {
+          "who": "me",
+          "text": "For four hundred a night you get not normal.",
+          "id": "torch.cells.dies.line.3"
+        }
+      ],
+      "goto": "torch.cells"
+    },
+    "torch.cells.spares": {
+      "id": "torch.cells.spares",
+      "type": "dialogue",
+      "speaker": "THE FIELD TORCH",
+      "lines": [
+        {
+          "who": "me",
+          "text": "Two spares in the side pocket. Ends taped.",
+          "id": "torch.cells.spares.line.1"
+        },
+        {
+          "who": "guard",
+          "text": "Taped?",
+          "id": "torch.cells.spares.line.2"
+        },
+        {
+          "who": "me",
+          "text": "Loose cells chatter. Nothing in my bag is allowed to have an opinion during a take.",
+          "id": "torch.cells.spares.line.3"
+        }
+      ],
+      "goto": "torch.cells"
+    },
+    "torch.him.time": {
+      "id": "torch.him.time",
+      "type": "dialogue",
+      "speaker": "THE FIELD TORCH",
+      "lines": [
+        {
+          "who": "guard",
+          "text": "Eight, maybe? Before me shift anyway. Paperwork says 20:10, received.",
+          "id": "torch.him.time.line.1"
+        },
+        {
+          "who": "you",
+          "text": "20:10 in. No returned. And the van gone by Friday.",
+          "id": "torch.him.time.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "The RETURNED column holds its blank the way a held breath holds.",
+          "id": "torch.him.time.line.3"
+        }
+      ],
+      "goto": "torch.him"
+    },
+    "torch.him.red": {
+      "id": "torch.him.red",
+      "type": "dialogue",
+      "speaker": "THE FIELD TORCH",
+      "lines": [
+        {
+          "who": "you",
+          "text": "Red keeps your night eyes. That is serious kit, for a man planning to do serious waiting in the dark.",
+          "id": "torch.him.red.line.1"
+        },
+        {
+          "who": "you",
+          "text": "You do not buy a red head torch to leave a job at eighty percent.",
+          "id": "torch.him.red.line.2"
+        }
+      ],
+      "goto": "torch.him"
+    },
+    "guard.last.home": {
+      "id": "guard.last.home",
+      "type": "dialogue",
+      "speaker": "THE GUARD",
+      "lines": [
+        {
+          "who": "guard",
+          "text": "I was home. And the gate log says the gate never opened after me. That is all I know and I know it twice, because I checked twice.",
+          "id": "guard.last.home.line.1"
+        },
+        {
+          "who": "me",
+          "text": "So he is still inside.",
+          "id": "guard.last.home.line.2"
+        },
+        {
+          "who": "guard",
+          "text": "Van was gone come Friday. So no. Initial there, and there.",
+          "id": "guard.last.home.line.3"
+        },
+        {
+          "who": "direction",
+          "text": "Two boxes. They want it twice now.",
+          "id": "guard.last.home.line.4"
+        }
+      ],
+      "goto": "guard.last"
+    },
+    "guard.last.left": {
+      "id": "guard.last.left",
+      "type": "dialogue",
+      "speaker": "THE GUARD",
+      "lines": [
+        {
+          "who": "guard",
+          "text": "A pencil. Good one, soft, the kind you buy on purpose. And his cup, washed, upside down on the rack there.",
+          "id": "guard.last.left.line.1"
+        },
+        {
+          "who": "you",
+          "text": "A man who washes his cup means to come back for it.",
+          "id": "guard.last.left.line.2"
+        },
+        {
+          "who": "guard",
+          "text": "You want the pencil? He's not been back for the pencil.",
+          "id": "guard.last.left.line.3"
+        }
+      ],
+      "goto": "guard.last"
+    },
+    "guard.radio.loud": {
+      "id": "guard.radio.loud",
+      "type": "dialogue",
+      "speaker": "THE GUARD",
+      "lines": [
+        {
+          "who": "me",
+          "text": "You said do not shake the radio. In what way does it go funny.",
+          "id": "guard.radio.loud.line.1"
+        },
+        {
+          "who": "guard",
+          "text": "Channel two stops being channel two.",
+          "id": "guard.radio.loud.line.2"
+        },
+        {
+          "who": "me",
+          "text": "And becomes what.",
+          "id": "guard.radio.loud.line.3"
+        },
+        {
+          "who": "guard",
+          "text": "Loud.",
+          "id": "guard.radio.loud.line.4"
+        },
+        {
+          "who": "direction",
+          "text": "He says it like a man reporting the weather. Then he turns the television up, remembers the sound is off, and turns it back down.",
+          "id": "guard.radio.loud.line.5"
+        }
+      ],
+      "goto": "guard.radio"
+    },
+    "guard.stair": {
+      "id": "guard.stair",
+      "type": "dialogue",
+      "speaker": "THE GUARD",
+      "lines": [
+        {
+          "who": "guard",
+          "text": "Light's gone in the basement stair. Which you knew by the look of you, seeing as you brought a torch.",
+          "id": "guard.stair.line.0"
+        },
+        {
+          "who": "guard",
+          "text": "Gone since spring. They stopped replacing bulbs when the demolition date came through.",
+          "id": "guard.stair.line.1"
+        },
+        {
+          "who": "me",
+          "text": "Bulbs don't know about demolition dates.",
+          "id": "guard.stair.line.2"
+        },
+        {
+          "who": "guard",
+          "text": "These ones did.",
+          "id": "guard.stair.line.3"
+        },
+        {
+          "who": "direction",
+          "text": "He does not smile when he says it, which is somehow worse than if he had.",
+          "id": "guard.stair.line.4"
+        }
+      ],
+      "goto": "guard"
+    },
+    "coffee.wife": {
+      "id": "coffee.wife",
+      "type": "dialogue",
+      "speaker": "SERVICE BOOTH · 21:38",
+      "lines": [
+        {
+          "who": "guard",
+          "text": "She says I make it like I'm punishing it.",
+          "id": "coffee.wife.line.1"
+        },
+        {
+          "who": "direction",
+          "text": "He looks pleased. It is clearly a fixed point in the marriage, like the pens.",
+          "id": "coffee.wife.line.2"
+        },
+        {
+          "who": "me",
+          "text": "It will do the job. Long night.",
+          "id": "coffee.wife.line.3"
+        }
+      ],
+      "goto": "start"
     }
   }
 }
