@@ -113,8 +113,40 @@ export function buildMapCommands({ model, nav, layout, now = 0 } = {}) {
   return commands;
 }
 
+export function localTopologyCoverage(floor, center, radius = 18) {
+  if (!(floor?.open instanceof Set) || !center) return 0;
+  const reach = Math.max(1, Math.ceil(Number(radius) || 1));
+  const x0 = Math.floor(Number(center.x) - reach);
+  const x1 = Math.ceil(Number(center.x) + reach);
+  const y0 = Math.floor(Number(center.y) - reach);
+  const y1 = Math.ceil(Number(center.y) + reach);
+  let open = 0;
+  const total = (x1 - x0 + 1) * (y1 - y0 + 1);
+  if (Array.isArray(floor.runs)) {
+    for (const run of floor.runs) {
+      if (run.y < y0 || run.y > y1 || run.x1 < x0 || run.x0 > x1) continue;
+      open += Math.max(0, Math.min(x1, run.x1) - Math.max(x0, run.x0) + 1);
+    }
+  } else {
+    for (let y = y0; y <= y1; y += 1) {
+      for (let x = x0; x <= x1; x += 1) {
+        if (floor.open.has(`${x},${y}`)) open += 1;
+      }
+    }
+  }
+  return total ? open / total : 0;
+}
+
 function localTopology(floor, transform, viewport, center, radius) {
-  return { kind: 'local-topology', floorId: floor.id, open: floor.open, runs: floor.runs || null, transform, viewport, center, radius };
+  const coverage = localTopologyCoverage(floor, center, radius);
+  return {
+    kind: 'local-topology', floorId: floor.id, open: floor.open, runs: floor.runs || null,
+    transform, viewport, center, radius, coverage,
+    // A broad exterior or hall can be walkable across the entire instrument.
+    // Filling every sampled cell then produces one featureless square. Keep the
+    // exposed boundary hairlines and sight fan, but omit that meaningless fill.
+    fillOpen: coverage < 0.94,
+  };
 }
 
 export function buildMinimapCommands({ model, viewport, radius = 18, now = 0, aspect = 1 } = {}) {

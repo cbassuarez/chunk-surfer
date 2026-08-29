@@ -40,3 +40,55 @@ export function resolveTorchLook({ on = true, battery = 1, timeSec = 0, reducedE
     reach, color, coneInner, coneOuter, spill,
   };
 }
+
+// THE TORCH INSIDE SOURCE.
+//
+// Before the body crosses the FOH threshold it is an x-ray: the screen-space
+// cone inverts the picture instead of pretending Source's paper and code are
+// ordinary surfaces a warm bulb could illuminate. The renderer owns that
+// inversion; this pure look object only names the mode and preserves the real
+// battery/failing-bulb power beneath it.
+//
+// Across the threshold, in the white nothingness and everything beyond it, the
+// torch is taken by the maintained emergency circuit. It throws red and its
+// power follows the SAME cycle as sourceEmergencyFrame. The flashlight does not
+// wait for the room-wide wash ten seconds into the crossing: it is the first red
+// thing the player carries into the blank field.
+//
+// Pure, and composes with applyHushTorchInterference rather than replacing it.
+const mix = (a, b, t) => a + (b - a) * t;
+export const SOURCE_TORCH_RED = Object.freeze([1, 0.14, 0.09]);
+export const SOURCE_TORCH_MODE = Object.freeze({
+  NONE: 'none',
+  XRAY: 'xray',
+  EMERGENCY: 'emergency',
+});
+
+export function applySourceEmergencyTorch(torch = {}, {
+  xray = false,
+  active = false,
+  cycle = 1,
+} = {}) {
+  if (xray) return {
+    ...torch,
+    sourceEmergencyTorch: SOURCE_TORCH_MODE.XRAY,
+    sourceTorchMode: SOURCE_TORCH_MODE.XRAY,
+  };
+  if (!active) return {
+    ...torch,
+    sourceEmergencyTorch: SOURCE_TORCH_MODE.NONE,
+    sourceTorchMode: SOURCE_TORCH_MODE.NONE,
+  };
+  const base = Array.isArray(torch.color) ? torch.color : [1, .94, .82];
+  const pulse = clamp(cycle, 0, 1);
+  return {
+    ...torch,
+    // Driven most of the way to the circuit's red, not all: a filament behind a
+    // red gel is still a filament, and a perfectly saturated beam reads as a UI
+    // overlay rather than as light.
+    color: base.map((channel, index) => mix(channel, SOURCE_TORCH_RED[index], .88)),
+    power: clamp((Number(torch.power) || 0) * (.34 + pulse * .66), 0, 1),
+    sourceEmergencyTorch: SOURCE_TORCH_MODE.EMERGENCY,
+    sourceTorchMode: SOURCE_TORCH_MODE.EMERGENCY,
+  };
+}

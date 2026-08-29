@@ -256,23 +256,22 @@ const submerged = createBattleMusicSession({
 });
 const dryArrival = await submerged.start();
 assert.equal(dryArrival.submersion.phase, 'dry', 'the musical pickup and battle entry remain dry');
-assert.equal(dryArrival.submersion.at, dryArrival.downbeatAt, 'the plunge begins at the exact score downbeat');
 assert.equal(dryArrival.submersion.available, true);
 assert.equal(submergedAudio.biquads[0].type, 'lowpass');
-assert.equal(submergedAudio.biquads[0].frequency.value, 720);
+assert.equal(submergedAudio.biquads[0].frequency.value, 20000);
 assert.equal(submergedAudio.biquads[0].Q.value, .8);
-const wetEnd = dryArrival.downbeatAt + .18;
-assert.ok(submergedAudio.gains[1].gain.calls.some((call) => call[0] === 'ramp' && call[1] === .08 && call[2] === wetEnd));
-assert.ok(submergedAudio.gains[2].gain.calls.some((call) => call[0] === 'ramp' && call[1] === .92 && call[2] === wetEnd));
-const wetSettled = wetEnd + .001;
-submergedAudio.context.currentTime = wetSettled;
-assert.equal(submerged.update().submersion.phase, 'submerged');
-assert.ok(Math.abs(submerged.snapshot().submersion.wetMix - .92) < 1e-9);
+submerged.setSubmersion({enabled:true,phase:'half',targetPhase:'half',progress:1,settled:true,wetMix:.5,dryMix:.5,lowpassHz:1800,serial:1});
+assert.equal(submerged.snapshot().submersion.phase,'half');
+assert.equal(submergedAudio.biquads[0].frequency.value,1800);
+assert.equal(submergedAudio.gains[1].gain.value,.5);
+assert.equal(submergedAudio.gains[2].gain.value,.5);
+submerged.setSubmersion({enabled:true,phase:'full',targetPhase:'full',progress:1,settled:true,wetMix:.92,dryMix:.08,lowpassHz:720,serial:2});
+assert.equal(submerged.snapshot().submersion.phase,'full');
+assert.equal(submerged.snapshot().submersion.wetMix,.92);
+const wetSettled=submergedAudio.context.currentTime;
 submerged.finish('win');
-const resurfacing = submerged.snapshot().submersion;
-assert.equal(resurfacing.phase, 'resurfacing');
-assert.equal(resurfacing.resurfaceEndAt, wetSettled + .6, 'victory resurfaces before the ordinary musical fade');
-assert.ok(submergedAudio.stops.every((entry) => entry.when >= wetSettled + .6 + BATTLE_BAR_SECONDS));
+assert.equal(submerged.snapshot().submersion.phase,'full','music never invents a surface transition; combat sends the dry snapshot first');
+assert.ok(submergedAudio.stops.every((entry) => entry.when >= wetSettled + BATTLE_BAR_SECONDS));
 
 const defeatAudio = fakeContext({ filters: true });
 const defeated = createBattleMusicSession({
@@ -280,9 +279,9 @@ const defeated = createBattleMusicSession({
   context: defeatAudio.context, destination: defeatAudio.context.destination, bufferBank: fixtureBank(),
 });
 await defeated.start();
-defeatAudio.context.currentTime = defeated.snapshot().downbeatAt + .18;
+defeated.setSubmersion({enabled:true,phase:'full',targetPhase:'full',progress:1,settled:true,wetMix:.92,dryMix:.08,lowpassHz:720,serial:2});
 defeated.finish('lose');
-assert.equal(defeated.snapshot().submersion.resurfaceAt, null, 'defeat remains filtered throughout its fade');
+assert.equal(defeated.snapshot().submersion.phase,'full','defeat remains filtered throughout its fade');
 
 const noFilterAudio = fakeContext();
 const noFilter = createBattleMusicSession({
@@ -291,8 +290,8 @@ const noFilter = createBattleMusicSession({
 });
 const noFilterStart = await noFilter.start();
 assert.equal(noFilterStart.submersion.available, false, 'missing filter support falls back to the dry audio graph');
-noFilterAudio.context.currentTime = noFilterStart.downbeatAt + .181;
-assert.equal(noFilter.update().submersion.phase, 'submerged', 'presentation timing survives the audio-filter fallback');
+noFilter.setSubmersion({enabled:true,phase:'full',targetPhase:'full',progress:1,settled:true,wetMix:.92,dryMix:.08,lowpassHz:720,serial:2});
+assert.equal(noFilter.update().submersion.phase, 'full', 'presentation timing survives the audio-filter fallback');
 
 const unavailableAudio = fakeContext();
 const unavailableBank = fixtureBank();
@@ -309,12 +308,10 @@ assert.deepEqual(authoredCombatProfile('natatorium').music, {
   lead: 'lead-1',
   submersion: {
     enabled: true,
-    at: 'downbeat',
-    lowpassHz: 720,
     q: .8,
-    dryLeak: .08,
-    rampSeconds: .18,
-    surfaceSeconds: .6,
+    wetMix:{dry:0,half:.5,full:.92},
+    lowpassHz:{dry:20000,half:1800,full:720},
+    transitionSeconds:{dry:0,half:1,full:1.1,win:1.35},
   },
 });
 assert.deepEqual(authoredCombatProfile('practice').music, { mode: 'fixed', lead: 'lead-2' });

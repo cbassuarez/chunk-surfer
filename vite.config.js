@@ -26,7 +26,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(import.meta.dirname, 'index.html'),
-        interferenceMonitor: resolve(import.meta.dirname, 'interference-monitor.html'),
+        fireballCast: resolve(import.meta.dirname, 'fireball-cast.html'),
       },
     },
   }

@@ -1,6 +1,7 @@
 import * as scenes from './scenes.js';
 import { uiSize, uiText, uiWrap } from '../render/ui.js';
 import { creditAtmosphereFrame, renderCreditAtmosphere } from './credit-visual.js';
+import { attachBootWeatherAudio, bootWeather, bootWeatherAudio, renderBootWeather, stepBootWeather } from './boot-weather.js';
 
 export const OPENING_CREDITS_DURATION = 23.5;
 
@@ -39,6 +40,37 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
+// WHEN THE WEATHER IS IN THE ROOM.
+//
+// It comes up on the same ramp as the optical frame, stays sparse under the two
+// credit slates so they read as slates, and thickens as the quote arrives — the
+// quote is the thing it exists to be read through. At 20.40 the emitter stops
+// and what is left is pushed out (see boot-weather.js), so the field is nearly
+// empty by the time the quote finishes going at 23.30.
+export const WEATHER_CLEAR_AT = 20.40;
+
+// SPARSE IS NOT EMPTY. This band was 0.32 and the credits read as a still frame
+// with something occasionally crossing it — the weather has to be established
+// before the quote can thicken it, or the build has nothing to build ON.
+const WEATHER_SPARSE = 0.60;
+
+function weatherPresence(t) {
+  if (t < 0.20) return 0;
+  if (t < 1.90) return smooth((t - 0.20) / 1.70) * WEATHER_SPARSE;
+  if (t < 13.60) return WEATHER_SPARSE;
+  if (t < 15.60) return WEATHER_SPARSE + smooth((t - 13.60) / 2.00) * (1 - WEATHER_SPARSE);
+  return 1;
+}
+
+// The bed thins with the field but does NOT reach zero before the cut. It is
+// still going, quietly, when the menu's own hiss comes up over it — and the
+// title then takes it the rest of the way out as the last particles settle.
+// Ending it early would put a silence between the two beds, which is a seam
+// you hear; ending it late is a dovetail, which is one you do not.
+function weatherAudioPresence(t) {
+  return weatherPresence(t) * (1 - smooth((t - WEATHER_CLEAR_AT) / 3.40) * 0.72);
+}
+
 export function openingCreditFrame(time, duration = OPENING_CREDITS_DURATION) {
   const scale = Math.max(0.01, Number(duration) || OPENING_CREDITS_DURATION) / AUTHORED_DURATION;
   const t = Math.max(0, Number(time) || 0) / scale;
@@ -59,6 +91,11 @@ export function openingCreditFrame(time, duration = OPENING_CREDITS_DURATION) {
     sound,
     quote,
     attribution,
+    weather: {
+      presence: weatherPresence(t),
+      audio: weatherAudioPresence(t),
+      clearing: t >= WEATHER_CLEAR_AT,
+    },
     atmosphere: creditAtmosphereFrame(t, {
       alpha: smooth((t - 0.20) / 1.7) * (1 - smooth((t - 22.85) / 0.65)),
       intensity: 0.72,
@@ -135,11 +172,25 @@ export function makeOpeningCreditsScene({
   onDone,
   duration = OPENING_CREDITS_DURATION,
   now = wallClockSeconds,
+  // Returns a started bed, or null if the audio context is not running yet.
+  // On a first launch the EULA keypress has already unlocked it; on later
+  // launches the EULA is skipped, so in a browser there may be no gesture
+  // before this screen and the context comes up suspended. Retried for a few
+  // seconds and then let go — silence is the honest fallback, not a bed that
+  // slams in late.
+  openAudio = null,
 } = {}) {
   let time = 0;
   let done = false;
   let scene = null;
   let lastWallAt = Number(now()) || 0;
+  let bedTries = 0;
+
+  function tryOpenAudio() {
+    if (bootWeatherAudio() || typeof openAudio !== 'function' || bedTries > 8) return;
+    bedTries += 1;
+    try { attachBootWeatherAudio(openAudio() || null); } catch (_) { attachBootWeatherAudio(null); }
+  }
 
   function finish() {
     if (done) return;
@@ -157,7 +208,10 @@ export function makeOpeningCreditsScene({
     enter() {
       lastWallAt = Number(now()) || lastWallAt;
       document.body.classList.add('opening-credits-screen');
+      tryOpenAudio();
     },
+    // The bed is deliberately NOT stopped here. It belongs to the launch and
+    // goes out under the menu hiss on the other side of the cut (title.js).
     exit() { document.body.classList.remove('opening-credits-screen'); },
     update(dt) {
       // Credits are part of boot, not an attention prompt. Use real elapsed
@@ -168,7 +222,23 @@ export function makeOpeningCreditsScene({
         ? Math.max(0, wallAt - lastWallAt)
         : 0;
       if (Number.isFinite(wallAt)) lastWallAt = wallAt;
-      time += Math.max(Math.max(0, Number(dt) || 0), wallDelta);
+      const advance = Math.max(Math.max(0, Number(dt) || 0), wallDelta);
+      time += advance;
+      const weather = bootWeather();
+      if (weather) {
+        const frame = openingCreditFrame(time, duration);
+        stepBootWeather(weather, advance, {
+          presence: frame.weather.presence,
+          settling: frame.weather.clearing,
+        });
+        // Resuming a suspended context is asynchronous, so the first attempt in
+        // enter() can legitimately come back empty. Keep asking for a couple of
+        // seconds, then stop asking.
+        if (!bootWeatherAudio() && time < 2.5) tryOpenAudio();
+        // The gust the bed rides is the gust the field is riding. Two
+        // oscillators would put the sound a beat off the leaves.
+        bootWeatherAudio()?.update?.({ presence: frame.weather.audio, wind: weather.wind });
+      }
       if (time >= duration) finish();
     },
     key() { return true; },
@@ -178,6 +248,9 @@ export function makeOpeningCreditsScene({
       const { cols, rows } = uiSize();
       const frame = openingCreditFrame(time, duration);
       renderCreditAtmosphere(frame.atmosphere);
+      // Behind the type, in front of the ground. The weather is the room the
+      // credits are in, not a layer over them.
+      renderBootWeather(bootWeather(), { alpha: frame.atmosphere.alpha });
       const layout = openingCreditLayout({ cols, rows, frame });
       for (const entry of layout.entries) {
         if (entry.alpha <= 0.01 || !entry.text) continue;

@@ -6,11 +6,23 @@ import {
   normalizeChunkSurfState,
   reduceChunkSurf,
 } from '../src/game/chunk-surf-state.js';
-import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
+import { SOURCE_LANDMARK_OFFSETS, createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
 
 const ORIGIN={x:0,y:-252};
+// Derived from the real landmark table rather than re-hardcoded. These were
+// absolute world coordinates copied by hand, and the approach extension moved
+// every one of them by 120 cells — the sort of drift that turns a reachability
+// proof into a test of nothing.
+const L=SOURCE_LANDMARK_OFFSETS;
+const at=(offset)=>({x:ORIGIN.x+offset.x,y:ORIGIN.y+offset.y});
 const POINTS={
-  entry:{x:0,y:-252},fork:{x:0,y:-294},surfer:{x:-92,y:-356},work:{x:92,y:-356},recordist:{x:0,y:-394},body:{x:0,y:-484},final:{x:80,y:-564},
+  entry:{x:ORIGIN.x,y:ORIGIN.y},
+  fork:at(L['fork-room']),
+  surfer:at(L['surfer-origin']),
+  work:at(L['work-order-loop']),
+  recordist:at(L['recordist-loop']),
+  body:at(L['body-room']),
+  final:at(L['final-page']),
 };
 const apply=(state,type,details={})=>reduceChunkSurf(state,{type,...details});
 
@@ -71,8 +83,11 @@ function reachable(runtime,start,goal,maxVisited=180000){
     if(!here||!next)continue;
     if(Math.abs(here.floor-next.floor)<=.45)continue;
     const step=runtime.geometry.canStep(0,y,0,y-1);
-    assert.ok(step.ok,`spine cliff at ${y} has no ladder or chute on it`);
-    assert.ok(step.via==='lift'||step.via==='chute',`spine cliff at ${y} is crossed by neither`);
+    assert.ok(step.ok,`spine cliff at ${y} has no staircase on it`);
+    // Nothing in the field is ridden any more. The lifts are gone and every
+    // connector is an `ascendable` staircase, so a cliff is crossed by ordinary
+    // walking or it is not crossed at all — `via` must stay absent.
+    assert.equal(step.via,undefined,`spine cliff at ${y} committed a ride instead of being walked`);
   }
 }
 
@@ -113,7 +128,8 @@ function reachable(runtime,start,goal,maxVisited=180000){
   state=apply(state,'LANDMARK_VISITED',{id:'body-room'});
   const runtime=createSourceSpaceRuntime({initialState:state});
   assert.equal(runtime.sourceObjective().label,'REACH THE FINAL HORIZON');
-  runtime.onStep({x:70,y:-552},{x:80,y:-564,facing:0});
+  // Step onto the final page wherever the field currently puts it.
+  runtime.onStep({x:POINTS.final.x-10,y:POINTS.final.y+12},{...POINTS.final,facing:0});
   assert.equal(runtime.state().phase,'final','the final page is tool-independent');
   runtime.setPlayerPosition(POINTS.final);
   assert.equal(runtime.finalEncounterRequest().bodyReturnAssist,true,
@@ -122,6 +138,7 @@ function reachable(runtime,start,goal,maxVisited=180000){
 
 {
   let state=landscapeState();
+  state=apply(state,'SOURCE_LIFT_COMPLETED',{id:'lift-fork',checkpointId:'landing-fork'});
   for(const id of ['fork-room','recordist-loop','surfer-origin','work-order-loop','body-room']){
     state=apply(state,'LANDMARK_VISITED',{id});
   }
@@ -133,7 +150,8 @@ function reachable(runtime,start,goal,maxVisited=180000){
   }});
   state=apply(state,'PURSUIT_STARTED',{id:SOURCE_PURSUIT_BEAT.FINAL_RUN});
   const runtime=createSourceSpaceRuntime({initialState:state});
-  runtime.onStep({x:70,y:-552},{x:80,y:-564,facing:0});
+  // Step onto the final page wherever the field currently puts it.
+  runtime.onStep({x:POINTS.final.x-10,y:POINTS.final.y+12},{...POINTS.final,facing:0});
   assert.equal(runtime.state().phase,'final');
   assert.equal(runtime.hushMode().colliding,false,'the final endpoint suspends HUSH collision');
   const attempts=runtime.state().attempts;

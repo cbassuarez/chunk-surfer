@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-import { SOURCE_CHUTES, SOURCE_HORIZON, SOURCE_LIFTS } from '../src/data/source-level.js';
+import { SOURCE_CHUTES, SOURCE_HORIZON, SOURCE_LIFTS, SOURCE_TIERS } from '../src/data/source-level.js';
 import { buildChunkSurfGodPreset, CHUNK_SURF_GOD_PRESET } from '../src/game/chunk-surf-god.js';
 import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
 
@@ -11,65 +11,72 @@ const runtimeSource=await readFile(new URL('../src/game/source-space-runtime.js'
 const mainSource=await readFile(new URL('../src/main.js',import.meta.url),'utf8');
 assert.doesNotMatch(runtimeSource,/emitNoise|MONITOR\./,'Source weather, contacts and traversal never enter the player-noise path');
 
+// THE FIRST TIER IS CLIMBED, NOT RIDDEN.
+//
+// This used to assert a committed lift ride out of the arrival: canStep handing
+// back {via:'lift'}, beginTraversal locking movement, ninety ticks of animation,
+// and a one-way refusal on the way back down. There are no lifts now — the way
+// up is a staircase and it is walked, in both directions, under the same step
+// rule as every other cell in Source.
 {
   const built = buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.LANDING, { seed: 4417 });
   const runtime = createSourceSpaceRuntime({ initialState: built.state });
-  const from = { x: ORIGIN.x, y: ORIGIN.y - 39, facing: 0 };
-  const step = runtime.geometry.canStep(from.x, from.y, from.x, from.y - 1);
-  assert.deepEqual({ ok: step.ok, via: step.via, feature: step.feature }, { ok: true, via: 'lift', feature: 'lift-fork' });
-  const started = runtime.beginTraversal({ move: step, from });
-  assert.equal(started.handled, true);
-  assert.equal(runtime.traversalFrame().locksMovement, true);
-  assert.equal(runtime.traversalFrame().grounded, false);
-  assert.equal(runtime.beginHushContact(), null, 'HUSH cannot capture during committed travel');
-  let result;
-  for (let i = 0; i < 120 && !result?.completed; i += 1) result = runtime.tickTraversal(1 / 60);
-  assert.equal(result.completed, true);
-  assert.ok(result.frame.active === false);
-  assert.equal(runtime.state().firstLiftCompleted, true);
-  assert.equal(runtime.state().checkpoint.id, 'landing-fork');
-  assert.ok(result.position.y < ORIGIN.y - 40);
+  const arrivalStair=SOURCE_CHUTES.find((chute)=>chute.id==='chute-fork');
+  const arrivalFoot=arrivalStair.y+arrivalStair.run;
 
-  const reverseFrom = { x: ORIGIN.x, y: ORIGIN.y - 41, facing: 2 };
-  const reverse = runtime.geometry.canStep(reverseFrom.x, reverseFrom.y, reverseFrom.x, reverseFrom.y + 2);
-  assert.equal(reverse.ok,false,'the first lift cannot be ridden down');
-  assert.equal(reverse.why,'one-way lift');
+  // Walk the whole arrival stair, one cell at a time, uphill.
+  let climbed = 0;
+  for (let step = 0; step < 15; step += 1) {
+    const y = ORIGIN.y + arrivalFoot - step;
+    const move = runtime.geometry.canStep(ORIGIN.x, y, ORIGIN.x, y - 1);
+    assert.equal(move.ok, true, `the arrival stair blocks the climb ${step} steps up`);
+    assert.equal(move.via, undefined, 'a staircase must never hand the body to a ride');
+    climbed += 1;
+  }
+  assert.equal(climbed, 15, 'the arrival stair is climbable for its whole run');
+
+  // And back down it, which a chute would have refused.
+  for (let step = 0; step < 15; step += 1) {
+    const y = ORIGIN.y + arrivalStair.y + step;
+    const move = runtime.geometry.canStep(ORIGIN.x, y, ORIGIN.x, y + 1);
+    assert.equal(move.ok, true, `the arrival stair blocks the descent ${step} steps down`);
+    assert.equal(move.via, undefined, 'a staircase is walked downhill too');
+  }
+
+  // Nothing is ever committed, so nothing ever locks movement.
+  assert.equal(runtime.traversalFrame().active, false, 'walking a staircase starts no traversal');
+  assert.equal(runtime.traversalFrame().locksMovement, false);
 }
 
-// Every authored lift commits upward on the first step into its volume. Exercise
-// the edge lanes and a diagonal segment so controller cadence cannot skip it.
+// EVERY STAIRCASE IS WALKABLE ACROSS ITS FULL WIDTH AND ON A DIAGONAL.
+//
+// This block used to exercise the lift volumes: edge lanes and a diagonal
+// segment, each committing to a ride so controller cadence could not skip the
+// capture. There are no volumes to skip into now, and the property that matters
+// is the opposite one — that the stair is ordinary walkable ground everywhere
+// across its width, including on the diagonals a controller actually produces.
 {
   const built=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FIRST_LIFT,{seed:4417});
   const origin=built.state.landscapeOrigin;
-  const finish=(runtime)=>{
-    let result;
-    for(let i=0;i<180&&!result?.completed;i+=1)result=runtime.tickTraversal(1/60);
-    assert.equal(result?.completed,true);
-    return result;
-  };
-  for(const lift of SOURCE_LIFTS){
-    for(const offset of [-lift.halfWidth+.5,0,lift.halfWidth-.5]){
-      const lower={x:origin.x+lift.x+offset,y:origin.y+lift.y+lift.depth+1,facing:0};
-      const upRuntime=createSourceSpaceRuntime({initialState:built.state});
-      const up=upRuntime.geometry.canStep(lower.x,lower.y,lower.x,lower.y-1);
-      assert.deepEqual({via:up.via,feature:up.feature,travel:up.travel},{via:'lift',feature:lift.id,travel:'up'});
-      assert.equal(upRuntime.beginTraversal({move:up,from:lower}).handled,true);
-      const raised=finish(upRuntime);
-      assert.ok(raised.position.y<origin.y+lift.y,`${lift.id} did not land on its upper side`);
-
-      const upper={x:origin.x+lift.x+offset,y:origin.y+lift.y-1,facing:2};
-      const downRuntime=createSourceSpaceRuntime({initialState:built.state});
-      const down=downRuntime.geometry.canStep(upper.x,upper.y,upper.x,origin.y+lift.y+1);
-      assert.equal(down.ok,false,`${lift.id} can be ridden down`);
-      assert.equal(down.why,'one-way lift');
+  const runtime=createSourceSpaceRuntime({initialState:built.state});
+  for(const stair of SOURCE_CHUTES){
+    for(const offset of [-stair.halfWidth+.5,0,stair.halfWidth-.5]){
+      // A cell partway up the run, so both samples are on the ramp itself.
+      const y=origin.y+stair.y+Math.floor(stair.run/2);
+      const x=origin.x+stair.x+offset;
+      const up=runtime.geometry.canStep(x,y,x,y-1);
+      assert.equal(up.ok,true,`${stair.id} blocks the climb at offset ${offset}`);
+      assert.equal(up.via,undefined,`${stair.id} committed a ride instead of being walked`);
+      const down=runtime.geometry.canStep(x,y,x,y+1);
+      assert.equal(down.ok,true,`${stair.id} blocks the descent at offset ${offset}`);
+      assert.equal(down.via,undefined,`${stair.id} committed a ride going down`);
     }
-    const diagonalFrom={x:origin.x+lift.x+lift.halfWidth+.6,y:origin.y+lift.y+lift.depth+1,facing:0};
-    const diagonalTo={x:origin.x+lift.x+lift.halfWidth-.4,y:origin.y+lift.y+lift.depth-.2};
-    const diagonalRuntime=createSourceSpaceRuntime({initialState:built.state});
-    const diagonal=diagonalRuntime.geometry.canStep(diagonalFrom.x,diagonalFrom.y,diagonalTo.x,diagonalTo.y);
-    assert.deepEqual({via:diagonal.via,feature:diagonal.feature,travel:diagonal.travel},{via:'lift',feature:lift.id,travel:'up'});
-    assert.equal(diagonalRuntime.beginTraversal({move:diagonal,from:diagonalFrom}).handled,true);
-    finish(diagonalRuntime);
+    // And a diagonal across the ramp, which is what controller cadence produces.
+    const y=origin.y+stair.y+Math.floor(stair.run/2);
+    const x=origin.x+stair.x;
+    const diagonal=runtime.geometry.canStep(x,y,x+.6,y-.8);
+    assert.equal(diagonal.ok,true,`${stair.id} blocks a diagonal step`);
+    assert.equal(diagonal.via,undefined,`${stair.id} committed a ride on a diagonal`);
   }
 }
 
@@ -79,6 +86,11 @@ assert.doesNotMatch(runtimeSource,/emitNoise|MONITOR\./,'Source weather, contact
   const built=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FIRST_LIFT,{seed:4417});
   const origin=built.state.landscapeOrigin;
   for(const chute of SOURCE_CHUTES){
+    // chute-fork is authored `ascendable` — it lands beside the FOH leaf and is
+    // the first object the player meets, so it is a staircase and is walked in
+    // both directions. The inverse contract below is about the slides, and it
+    // is asserted for the staircase separately underneath.
+    if(chute.ascendable)continue;
     const top={x:origin.x+chute.x,y:origin.y+chute.y,facing:2};
     const downTo={x:top.x+chute.dir.x,y:top.y+chute.dir.y};
     const runtime=createSourceSpaceRuntime({initialState:built.state});
@@ -94,6 +106,7 @@ assert.doesNotMatch(runtimeSource,/emitNoise|MONITOR\./,'Source weather, contact
     const uphill=createSourceSpaceRuntime({initialState:built.state}).geometry.canStep(low.x,low.y,upTo.x,upTo.y);
     assert.equal(uphill.ok,false,`${chute.id} became climbable`);
     assert.equal(uphill.why,'one-way chute');
+    void 0;
 
     let landed;
     for(let i=0;i<180&&!landed?.completed;i+=1)landed=runtime.tickTraversal(1/60);
@@ -113,33 +126,45 @@ assert.doesNotMatch(runtimeSource,/emitNoise|MONITOR\./,'Source weather, contact
   assert.doesNotMatch(sourceTick,/resetMotionInput/,'traversal completion clears the player\'s held key');
 }
 
+// NOTHING IN THE FIELD IS RIDDEN, AND THE SPINE IS WALKABLE END TO END.
+//
+// This block asserted a committed chute ride and then, separately, that the
+// arrival stair could be climbed. Both connectors are staircases now, so the
+// ride is gone and the property worth pinning is the one the lifts used to
+// provide: that walking straight down the centre line never meets a cliff.
 {
   const built = buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FIRST_LIFT, { seed: 4417 });
   const runtime = createSourceSpaceRuntime({ initialState: built.state });
-  const mouth = { x: ORIGIN.x + 12, y: ORIGIN.y - 40, facing: 2 };
-  const down = runtime.geometry.canStep(mouth.x, mouth.y, mouth.x, mouth.y + 1);
-  assert.equal(down.via, 'chute');
-  assert.equal(runtime.geometry.canStep(mouth.x, mouth.y + 1, mouth.x, mouth.y).ok, false, 'a chute remains one-way');
-  runtime.beginTraversal({ move: down, from: mouth });
-  let completed;
-  for (let i = 0; i < 90 && !completed?.completed; i += 1) completed = runtime.tickTraversal(1 / 60);
-  assert.equal(completed.completed, true);
-  assert.ok(completed.dropHeight>0&&completed.impact>0,'landing feedback is scaled from the completed drop');
-  assert.ok(completed.duration == null || completed.duration <= 1.1);
-  assert.equal(runtime.state().checkpoint.id, 'landing-arrival');
-  assert.equal(runtime.geometry.canStep(ORIGIN.x + 30, ORIGIN.y - 39, ORIGIN.x + 30, ORIGIN.y - 40).ok, false,
+
+  // From past the Scene Dock's far wall (the room ends around local -12; its
+  // only way out is the FOH leaf off the centre line) down to the perimeter.
+  for (let y = ORIGIN.y - 22; y >= ORIGIN.y - 330; y -= 1) {
+    const move = runtime.geometry.canStep(ORIGIN.x, y, ORIGIN.x, y - 1);
+    assert.equal(move.ok, true, `the spine is impassable at ${y - ORIGIN.y}`);
+    assert.equal(move.via, undefined, `the spine committed a ride at ${y - ORIGIN.y}`);
+  }
+  assert.equal(runtime.traversalFrame().active, false, 'walking the spine starts no traversal');
+
+  // A tier boundary away from any staircase is still a cliff. Sampled at the
+  // arrival/fork seam, which the approach extension moved out to -160.
+  const seam = SOURCE_TIERS.find((tier) => tier.id === 'fork').from;
+  assert.equal(runtime.geometry.canStep(ORIGIN.x + 30, ORIGIN.y + seam + 1, ORIGIN.x + 30, ORIGIN.y + seam).ok, false,
     'unsupported cliffs are impassable');
 }
 
 {
   const built = buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FIRST_CONTACT, { seed: 4417 });
   const runtime = createSourceSpaceRuntime({ initialState: built.state });
-  runtime.setPlayerPosition({ x: ORIGIN.x + 30, y: ORIGIN.y - 240, facing: 0 });
+  // Stand on the return tier, wherever the field currently puts it.
+  const returnTier = SOURCE_TIERS.find((tier) => tier.id === 'return');
+  const traceTier = SOURCE_TIERS.find((tier) => tier.id === 'trace');
+  runtime.setPlayerPosition({ x: ORIGIN.x + 30, y: ORIGIN.y + returnTier.from - 20, facing: 0 });
   const encounter = runtime.beginHushContact();
   assert.ok(encounter);
   const aligned = encounter.choices.find((choice) => choice.aligns);
   const captured = runtime.resolveHushContactChoice(aligned.id);
-  assert.equal(captured.checkpoint.y, ORIGIN.y - 128, 'return capture removes exactly one tier');
+  // One tier back: the trace checkpoint, eight cells past its own start.
+  assert.equal(captured.checkpoint.y, ORIGIN.y + traceTier.from - 8, 'return capture removes exactly one tier');
   assert.equal(runtime.state().sourceContacts.captures, 1);
   runtime.setPlayerPosition(captured.checkpoint);
   runtime.tick(6, { px: captured.checkpoint.x, py: captured.checkpoint.y, facing: 0 });

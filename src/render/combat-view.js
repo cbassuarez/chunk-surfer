@@ -7,6 +7,7 @@ import { UI_COLOR, activeTheme } from './palette.js';
 import { drawBagIcon } from './bag-icons.js';
 import { loadStoryArtImage, resolveStoryArt } from '../game/story-art.js';
 import { SNR_TRIANGLE } from '../game/combat-state.js';
+import { fireballRayPoint } from '../game/window-channel.js';
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, Number(value) || 0));
 
@@ -486,35 +487,86 @@ export function drawEnemyVoidStage(profileKey, {
   });
 }
 
-export function submergedBattleFrame({ music=null, presentation=null, movementIndex=0, intent=null }={}) {
+// THE PICTURE MUST NOT DEPEND ON THE SPEAKERS. Combat owns this snapshot; the
+// score, voice and renderer are consumers. A missing AudioContext therefore
+// changes none of the waterline, transition or result semantics.
+export function submergedBattleFrame({ submersion=null, presentation=null, movementIndex=0, intent=null }={}) {
   if(presentation?.mode!=='submerged')return null;
-  const depths=Array.isArray(presentation.movementDepths)?presentation.movementDepths:[.35,.68,1];
-  const submersion=music?.submersion||null;
+  const wetMix=clamp(submersion?.wetMix||0,0,1);
   return{
     phase:submersion?.phase||'dry',
-    wetMix:clamp(submersion?.wetMix||0,0,1),
-    plunge:clamp(submersion?.progress||0,0,1),
-    depth:clamp(depths[Math.max(0,Math.floor(movementIndex))]??depths.at(-1)??1,0,1),
+    targetPhase:submersion?.targetPhase||submersion?.phase||'dry',
+    wetMix,
+    dryMix:1-wetMix,
+    progress:clamp(submersion?.progress||0,0,1),
+    depth:clamp(submersion?.depth||0,0,1),
+    waterline:clamp(submersion?.waterline??1,-.08,1),
+    lowpassHz:Number(submersion?.lowpassHz)||20000,
     visualClass:intent?.presentation?.visualClass||'pressure-field',
+    movementIndex:Math.max(0,Math.floor(Number(movementIndex)||0)),
+    driver:submersion?.enabled?'combat':'none',
   };
 }
 
-// Natatorium-only battle volume. It is drawn over the ordinary void so combat
-// layout and opponent art stay unchanged; the downbeat simply raises a hard
-// waterline through that stage and leaves intent-specific pressure in its wake.
+// Natatorium-only battle volume. This pass happens after opponent art but
+// before hands and all HUD glyphs. It may bend and absorb the image, while type
+// is drawn afterwards at native grid resolution and remains sharp.
 export function drawSubmergedBattleField({
   x,y,w,h,frame=null,now=0,reducedMotion=false,resolveProgress=0,
 }={}){
   if(!frame||frame.wetMix<=.001)return;
   uiDraw(({ctx,dpr,cellW,cellH})=>{
     const px=x*cellW*dpr,py=y*cellH*dpr,pw=w*cellW*dpr,ph=h*cellH*dpr;
-    const waterTop=py+ph*(1-frame.plunge);
+    const waterTop=py+ph*frame.waterline;
+    const wetHeight=Math.max(0,py+ph-waterTop);
     const tick=reducedMotion?0:now;
     ctx.save();ctx.beginPath();ctx.rect(px,py,pw,ph);ctx.clip();
-    ctx.fillStyle=`rgba(3,30,25,${(.18+.22*frame.depth)*frame.wetMix})`;
-    ctx.fillRect(px,waterTop,pw,py+ph-waterTop);
-    ctx.fillStyle=`rgba(95,175,145,${.38*frame.wetMix})`;
-    ctx.fillRect(px,waterTop,pw,Math.max(dpr,ph*.014));
+    // Absorption is deliberately strong at full depth: the field should feel
+    // underwater before a player reads any label saying so.
+    ctx.fillStyle=`rgba(0,32,31,${(.22+.43*frame.depth)*frame.wetMix})`;
+    ctx.fillRect(px,waterTop,pw,wetHeight);
+    if(frame.waterline>.001&&frame.waterline<.999){
+      ctx.fillStyle=`rgba(175,230,203,${.56*frame.wetMix})`;
+      ctx.fillRect(px,waterTop,pw,Math.max(dpr*2,ph*.012));
+      ctx.fillStyle=`rgba(52,130,117,${.22*frame.wetMix})`;
+      ctx.fillRect(px,waterTop+Math.max(dpr*2,ph*.012),pw,Math.max(dpr,ph*.025));
+    }
+    // Broad non-text refraction bands. HUD is not present in this pass.
+    if(!reducedMotion&&wetHeight>0){
+      for(let band=0;band<7;band+=1){
+        const yy=waterTop+wetHeight*((band+.5)/7);
+        const sway=Math.sin(tick*1.05+band*1.7)*pw*.014;
+        ctx.fillStyle=`rgba(92,178,155,${.028*frame.wetMix})`;
+        ctx.fillRect(px+sway,yy,pw,Math.max(dpr,ph*.012));
+      }
+    }
+    // Caustic fragments, suspended particulate and bubbles all share the same
+    // deterministic layout so reduced-motion can freeze rather than erase them.
+    for(let index=0;index<34;index+=1){
+      const seedX=((index*37)%101)/101;
+      const seedY=((index*67)%97)/97;
+      const drift=reducedMotion?0:Math.sin(tick*.55+index*1.9)*.014;
+      const rise=reducedMotion?0:(tick*(.012+(index%5)*.002))%1;
+      const xx=px+(seedX+drift)*pw;
+      const yy=waterTop+((seedY-rise+1)%1)*wetHeight;
+      const size=Math.max(dpr,(index%7===0?2:1)*dpr);
+      ctx.fillStyle=index%7===0
+        ?`rgba(178,224,198,${.26*frame.wetMix})`
+        :`rgba(155,195,172,${.11*frame.wetMix})`;
+      ctx.fillRect(xx,yy,size,size);
+    }
+    if(frame.depth>.72){
+      for(let index=0;index<6;index+=1){
+        const yy=waterTop+wetHeight*(.10+index*.145);
+        const offset=(reducedMotion?0:Math.sin(tick*.7+index)*.035)*pw;
+        ctx.strokeStyle=`rgba(124,205,176,${(.10-index*.009)*frame.wetMix})`;
+        ctx.lineWidth=Math.max(dpr,ph*.006);
+        ctx.beginPath();
+        ctx.moveTo(px-pw*.05+offset,yy);
+        ctx.quadraticCurveTo(px+pw*.45-offset,yy+ph*.035,px+pw*1.05+offset,yy-ph*.018);
+        ctx.stroke();
+      }
+    }
     const line=Math.max(dpr,ph*.009),alpha=(.10+.14*resolveProgress)*frame.wetMix;
     ctx.fillStyle=`rgba(118,178,151,${alpha})`;
     const cls=frame.visualClass;
@@ -530,6 +582,295 @@ export function drawSubmergedBattleField({
       const shift=reducedMotion?0:((tick*.08)%1)*pw*.14;for(let index=-1;index<8;index+=1){const xx=px+index*pw*.16+shift;ctx.save();ctx.translate(xx,waterTop);ctx.rotate(-.28);ctx.fillRect(0,0,pw*.035,ph);ctx.restore();}
     }else{
       for(let index=0;index<42;index+=1){const hx=((index*37)%101)/101,hy=((index*67)%97)/97,drift=reducedMotion?0:Math.sin(tick*.7+index)*.012;ctx.fillRect(px+(hx+drift)*pw,waterTop+hy*Math.max(0,py+ph-waterTop),line,line);}
+    }
+    // Pressure closes around the fully submerged image without dimming the
+    // centre into illegibility.
+    if(frame.depth>.74){
+      const vignette=ctx.createRadialGradient(px+pw*.5,py+ph*.48,pw*.12,px+pw*.5,py+ph*.48,pw*.64);
+      vignette.addColorStop(0,'rgba(0,8,10,0)');
+      vignette.addColorStop(1,`rgba(0,7,10,${.62*frame.wetMix})`);
+      ctx.fillStyle=vignette;ctx.fillRect(px,py,pw,ph);
+    }
+    ctx.restore();
+  });
+}
+
+const FIREBALL_SHEET='./assets/fireball-sheet.svg';
+
+// THE COMET IS BUILT IN LAYERS, LIKE EVERYTHING ELSE ON THIS SCREEN.
+//
+// It was a sprite with seven squares dragged behind it, which reads as a sprite
+// with seven squares dragged behind it. The rest of this renderer says heat and
+// distance with ORDERED DITHER -- coverage as the density of lit cells rather
+// than as alpha -- because that is what the halftone stack downstream is going
+// to do to it anyway. So the fireball is made the same way: a pressure wake
+// dithered into the air behind it, embers that fall out of that wake and cool,
+// a corona that breathes, the authored pixel core, and the notes it sheds.
+//
+// It is a sound as much as a thing. The Surfer throws the recordist's own tape;
+// what comes off the tail is the tape's own notation, in the same glyphs the
+// enemy's attacks already use.
+const BAYER4 = Object.freeze([
+  0, 8, 2, 10,
+  12, 4, 14, 6,
+  3, 11, 1, 9,
+  15, 7, 13, 5,
+]);
+// Coverage, not alpha: at 0.5 half the cells are lit and the halftone downstream
+// still has something to resolve.
+const dithered = (cx, cy, coverage) => (BAYER4[((cy & 3) << 2) | (cx & 3)] + .5) / 16 < coverage;
+
+// Hot to cold, and the same ramp inverted for a comet that has been answered.
+const EMBER_RAMP = Object.freeze(['#FFF6AA', '#FFE15A', '#FFAD1F', '#FF6A15', '#E74712', '#A9260C', '#5C1406']);
+const RETURN_RAMP = Object.freeze(['#EAFBFF', '#BFF1FF', '#84E0FF', '#3FBEEC', '#1C86B4', '#12536F', '#08283A']);
+const rampAt = (ramp, t) => ramp[Math.max(0, Math.min(ramp.length - 1, Math.round(t * (ramp.length - 1))))];
+
+function fireHash(seed, index) {
+  let h = (Math.imul(seed | 0, 0x9e3779b1) ^ Math.imul(index + 1, 0x85ebca6b)) >>> 0;
+  h ^= h >>> 15; h = Math.imul(h, 0x2545f491) >>> 0; h ^= h >>> 13;
+  return (h >>> 0) / 4294967296;
+}
+
+// Where a comet is on its ray, plus the basis it is travelling in. Everything
+// else is drawn relative to this so no layer can disagree about which way it is
+// pointing.
+function cometFrame(ray, state, progress, box) {
+  const reversed = state === 'reversed';
+  const from = reversed ? ray.exit : ray.origin;
+  const to = reversed ? ray.origin : ray.exit;
+  const point = fireballRayPoint(ray, { state, progress });
+  const dx = (to.x - from.x) * box.w;
+  const dy = (to.y - from.y) * box.h;
+  const len = Math.hypot(dx, dy) || 1;
+  return {
+    cx: box.x + point.x * box.w,
+    cy: box.y + point.y * box.h,
+    ux: dx / len,
+    uy: dy / len,
+    // Perpendicular, for anything that scatters off the line.
+    px: -dy / len,
+    py: dx / len,
+  };
+}
+
+export function drawFireballCast({x,y,w,h,cast=null,flights=null,progress=0,now=0,reducedMotion=false}={}){
+  if(!cast?.rays?.length)return;
+  const record=loadStoryArtImage(FIREBALL_SHEET);
+  const drawn=Array.isArray(flights)&&flights.length
+    ? flights
+    : cast.rays.map((_,index)=>({index,state:cast.state,progress}));
+  uiDraw(({ctx,dpr,cellW,cellH})=>{
+    const box={x:x*cellW*dpr,y:y*cellH*dpr,w:w*cellW*dpr,h:h*cellH*dpr};
+    const unit=Math.max(1,Math.round(dpr*2));          // one dither cell
+    ctx.save();ctx.beginPath();ctx.rect(box.x,box.y,box.w,box.h);ctx.clip();ctx.imageSmoothingEnabled=false;
+    for(const flight of drawn){
+      const index=Math.max(0,Math.min(cast.rays.length-1,Number(flight.index)||0));
+      const ray=cast.rays[index];
+      const state=String(flight.state||'outbound');
+      if(state==='waiting'||state==='gone')continue;
+      const p=clamp(flight.progress,0,1);
+      const answered=state==='deflected'||state==='reversed';
+      const ramp=answered?RETURN_RAMP:EMBER_RAMP;
+      const at=cometFrame(ray,state,p,box);
+      const seed=(index+1)*2654435761;
+      // It is coming toward you the whole time it crosses the stage, so it is
+      // bigger at the edge than it was in the Surfer's hand.
+      const near=.72+p*.62;
+      // Sized against the BAND, not against min(width,height). The stage is a
+      // wide short strip, so measuring off its smaller dimension produced a
+      // comet a few pixels across -- a dot with a dotted line behind it, which
+      // is not a fireball. A fifth of the band's height is a thing with a body,
+      // and it still clears the text above and below it.
+      const head=Math.max(dpr*11,box.h*.19*near);
+
+      if(state==='impact'||state==='deflected'){
+        // ── the burst: a dithered disc thrown outward, then embers ──────────
+        const age=clamp(1-p,0,1);
+        const open=1-age;
+        const radius=head*(1+open*3.4);
+        const steps=Math.max(2,Math.round(radius/unit));
+        for(let gy=-steps;gy<=steps;gy+=1){
+          for(let gx=-steps;gx<=steps;gx+=1){
+            const dist=Math.hypot(gx,gy)/Math.max(1,steps);
+            if(dist>1)continue;
+            // A shell, not a disc: the middle has already gone.
+            const shell=1-Math.abs(dist-open*.9)*2.6;
+            if(shell<=0)continue;
+            const cellX=Math.round(at.cx/unit)+gx,cellY=Math.round(at.cy/unit)+gy;
+            if(!dithered(cellX,cellY,shell*age))continue;
+            ctx.fillStyle=rampAt(ramp,dist*.8+(1-age)*.2);
+            ctx.fillRect(cellX*unit,cellY*unit,unit,unit);
+          }
+        }
+        for(let ember=0;ember<10;ember+=1){
+          const spread=fireHash(seed,ember)*Math.PI*2;
+          const reach=radius*(.5+fireHash(seed+31,ember)*.9);
+          const size=Math.max(unit,Math.round(unit*(2-fireHash(seed+77,ember))));
+          ctx.fillStyle=rampAt(ramp,.2+fireHash(seed+13,ember)*.6);
+          ctx.globalAlpha=age;
+          ctx.fillRect(
+            Math.round(at.cx+Math.cos(spread)*reach*(1-age)),
+            Math.round(at.cy+Math.sin(spread)*reach*(1-age)),
+            size,size,
+          );
+        }
+        ctx.globalAlpha=1;
+        continue;
+      }
+
+      // ── layer 1: the pressure wake ──────────────────────────────────────
+      // A dithered corridor of heated air behind the head, widening and
+      // thinning with distance. This is the layer that makes it look fast.
+      const wake=head*5.5;
+      const wakeCells=Math.max(3,Math.round(wake/unit));
+      for(let back=1;back<=wakeCells;back+=1){
+        const along=back/wakeCells;
+        const falloff=(1-along)**1.7;
+        const spread=Math.max(1,Math.round((head*.5+head*1.15*along)/unit));
+        const baseX=at.cx-at.ux*back*unit;
+        const baseY=at.cy-at.uy*back*unit;
+        for(let side=-spread;side<=spread;side+=1){
+          const lateral=1-Math.abs(side)/(spread+1);
+          const coverage=falloff*lateral*.92;
+          if(coverage<=.03)continue;
+          const cellX=Math.round((baseX+at.px*side*unit)/unit);
+          const cellY=Math.round((baseY+at.py*side*unit)/unit);
+          if(!dithered(cellX,cellY,coverage))continue;
+          ctx.fillStyle=rampAt(ramp,.42+along*.55);
+          ctx.fillRect(cellX*unit,cellY*unit,unit,unit);
+        }
+      }
+
+      // ── layer 2: embers falling out of the wake and cooling ─────────────
+      for(let ember=0;ember<12;ember+=1){
+        const phase=reducedMotion?fireHash(seed,ember):((now*(.6+fireHash(seed+5,ember)*.9)+fireHash(seed,ember))%1);
+        const back=(.15+phase*.95)*wake;
+        const drift=(fireHash(seed+91,ember)-.5)*head*1.9*phase;
+        const size=Math.max(unit,Math.round(unit*(2.2-phase*1.4)));
+        ctx.globalAlpha=(1-phase)*.9;
+        ctx.fillStyle=rampAt(ramp,.25+phase*.7);
+        ctx.fillRect(
+          Math.round(at.cx-at.ux*back+at.px*drift),
+          Math.round(at.cy-at.uy*back+at.py*drift),
+          size,size,
+        );
+      }
+      ctx.globalAlpha=1;
+
+      // ── layer 3: the corona, breathing ──────────────────────────────────
+      const breath=reducedMotion?.5:(.5+.5*Math.sin(now*9.4+index*1.7));
+      const coronaCells=Math.max(2,Math.round(head*(1.25+breath*.3)/unit));
+      for(let gy=-coronaCells;gy<=coronaCells;gy+=1){
+        for(let gx=-coronaCells;gx<=coronaCells;gx+=1){
+          const dist=Math.hypot(gx,gy)/coronaCells;
+          if(dist<.55||dist>1)continue;
+          const cellX=Math.round(at.cx/unit)+gx,cellY=Math.round(at.cy/unit)+gy;
+          if(!dithered(cellX,cellY,(1-dist)*1.7))continue;
+          ctx.fillStyle=rampAt(ramp,.15+dist*.5);
+          ctx.fillRect(cellX*unit,cellY*unit,unit,unit);
+        }
+      }
+
+      // ── layer 4: the authored core, with a lit face and a shaded back ───
+      const frame=(reducedMotion?2:Math.floor(now*16+index*3))%8;
+      const size=head*2;
+      if(record?.loaded){
+        ctx.save();
+        ctx.translate(at.cx,at.cy);
+        ctx.rotate(Math.atan2(at.uy,at.ux)+(answered?Math.PI:0));
+        ctx.drawImage(record.image,frame*32,0,32,32,-size*.5,-size*.5,size,size);
+        ctx.restore();
+      }else{
+        ctx.fillStyle=rampAt(ramp,0);
+        ctx.fillRect(Math.round(at.cx-size*.3),Math.round(at.cy-size*.3),Math.round(size*.6),Math.round(size*.6));
+      }
+      // The leading edge is the hottest thing on screen; directly behind it is
+      // the coolest. Two blocks, and the comet stops being symmetrical.
+      ctx.fillStyle=rampAt(ramp,0);
+      ctx.fillRect(Math.round(at.cx+at.ux*head*.72),Math.round(at.cy+at.uy*head*.72),unit*2,unit*2);
+      ctx.fillStyle=rampAt(ramp,1);
+      ctx.fillRect(Math.round(at.cx-at.ux*head*.66),Math.round(at.cy-at.uy*head*.66),unit,unit);
+
+      // ── layer 5: what it is made of ─────────────────────────────────────
+      // The Surfer throws the recordist's tape back at him, so the tape's own
+      // notation comes off the tail. One glyph per comet, shed on its own
+      // phase, in the same sprites the enemy's attacks are already drawn with.
+      const shed=reducedMotion?1:2;
+      for(let note=0;note<shed;note+=1){
+        const phase=reducedMotion?.45:((now*.75+fireHash(seed+404,note))%1);
+        const back=(.3+phase)*wake*.9;
+        const rise=phase*head*2.4;
+        const alpha=Math.sin(Math.min(1,phase)*Math.PI)*.85;
+        if(alpha<=.04)continue;
+        const glyph=NOTE_SPRITES[NOTE_KINDS[(index+note)%NOTE_KINDS.length]]||NOTE_SPRITES.crotchet;
+        const px=Math.max(1,Math.round(cellH*dpr*.72/glyph.length));
+        const originX=Math.round(at.cx-at.ux*back+at.px*(fireHash(seed+808,note)-.5)*head*1.4);
+        const originY=Math.round(at.cy-at.uy*back-rise);
+        ctx.globalAlpha=alpha;
+        ctx.fillStyle=answered?RETURN_RAMP[1]:UI_COLOR.amber;
+        for(let row=0;row<glyph.length;row+=1){
+          const line=glyph[row];
+          for(let col=0;col<line.length;col+=1){
+            if(line[col]!=='#')continue;
+            ctx.fillRect(originX+col*px,originY+row*px,px,px);
+          }
+        }
+      }
+      ctx.globalAlpha=1;
+    }
+    ctx.restore();
+  });
+}
+
+// THE ENGULF, WHERE IT ACTUALLY BELONGS.
+//
+// A comet that left the frame comes back at the player and lands ON the window.
+// The first attempt at that grew the external surface until it was the size of
+// the display, which is not a fireball arriving -- it is the desktop being
+// replaced by one, and an opaque screen-sized click target between the player
+// and their own game. Out there it stays fist-sized and reads as close. The
+// arriving is drawn in here, over the frame it arrived at, in the same dither
+// as everything else: a shell of fire opening out of the point it came in at
+// until it has covered the panel, and then gone.
+export function drawFireballEngulf({
+  x, y, w, h, at = null, now = 0, seconds = .42, reducedMotion = false, answered = false,
+} = {}) {
+  if (!at) return;
+  const age = clamp((now - (Number(at.at) || 0)) / Math.max(.05, seconds), 0, 1);
+  if (age >= 1) return;
+  const ramp = answered ? RETURN_RAMP : EMBER_RAMP;
+  uiDraw(({ ctx, dpr, cellW, cellH }) => {
+    const box = { x: x * cellW * dpr, y: y * cellH * dpr, w: w * cellW * dpr, h: h * cellH * dpr };
+    const unit = Math.max(1, Math.round(dpr * 2));
+    // Where on the panel it came in. The burst opens from there, so four comets
+    // landing from four bearings do not all bloom out of the middle.
+    const cx = box.x + clamp(at.u, 0, 1) * box.w;
+    const cy = box.y + clamp(at.v, 0, 1) * box.h;
+    const reach = Math.hypot(box.w, box.h);
+    const open = reducedMotion ? .5 : age ** .62;
+    const fade = 1 - age;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(box.x, box.y, box.w, box.h); ctx.clip();
+    const cells = Math.ceil(reach / unit);
+    const originX = Math.round(cx / unit), originY = Math.round(cy / unit);
+    for (let gy = -cells; gy <= cells; gy += 1) {
+      for (let gx = -cells; gx <= cells; gx += 1) {
+        const cellX = originX + gx, cellY = originY + gy;
+        const px = cellX * unit, py = cellY * unit;
+        if (px < box.x - unit || py < box.y - unit || px > box.x + box.w || py > box.y + box.h) continue;
+        const dist = Math.hypot(gx, gy) / cells;
+        // A shell that opens outward and hollows behind itself, so the middle
+        // of the panel clears before the edge does and the fight comes back
+        // through the hole rather than from under a curtain.
+        const shell = 1 - Math.abs(dist - open) * 3.1;
+        if (shell <= 0) continue;
+        // A wash, not a curtain. The fight has to stay readable through it --
+        // the player is still being asked to answer the beat that is resolving
+        // underneath this.
+        if (!dithered(cellX, cellY, shell * (.18 + fade * .62))) continue;
+        ctx.fillStyle = rampAt(ramp, Math.min(1, dist * .7 + open * .3));
+        ctx.fillRect(px, py, unit, unit);
+      }
     }
     ctx.restore();
   });

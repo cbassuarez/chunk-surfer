@@ -13,14 +13,10 @@ import {
   profileInfluence,
 } from './psychological-profile.js';
 import {
-  advanceWindowChannelScene,
-  availableWindowReturnTier,
-  canonicalWindowChannelBattleId,
-  chargeWindowReturn,
-  compileWindowChannelScene,
-  freshWindowChannelProgress,
-  movementWindowTableau,
-  spendWindowReturn,
+  advanceFireballCastPlan,
+  canonicalFireballBattleId,
+  compileFireballCastPlan,
+  movementFireballProfile,
 } from './window-channel.js';
 
 const STAGE = Object.freeze({
@@ -131,7 +127,7 @@ export function createBattleInterferenceDirector({
   }
 
   function sidecarPayload(session, state = 'MONITOR RETURN') {
-    const tableau = movementWindowTableau({
+    const tableau = movementFireballProfile({
       battleId: session?.battleId,
       movementId: session?.movement?.id,
     });
@@ -139,7 +135,7 @@ export function createBattleInterferenceDirector({
       state,
       battleId: tableau?.battleId || session?.channelBattle || '',
       movementId: tableau?.movementId || session?.movement?.id || '',
-      title: tableau?.title || 'AUDIOCORP / WINDOW CHANNEL',
+      title: tableau?.title || 'AUDIOCORP / FIREBALL CAST',
       caption: tableau?.caption || (session?.stage === 'handoff'
         ? 'THE HANDOFF CONTINUES OUTSIDE THE FRAME.'
         : 'THE RETURN PATH HAS FOUND ANOTHER SURFACE.'),
@@ -199,8 +195,19 @@ export function createBattleInterferenceDirector({
       ...(context.choiceIds || []),
       ...(context.variantIds || []),
     ]);
+    // Window consent is its own module. Start the native prewarm before the
+    // first await so identity masking, artifact I/O, or a slow microphone query
+    // can never make a valid cast miss all of its external surfaces.
+    if (windowEnabled()) {
+      session.effectToken = effects?.begin?.({
+        stage: session.stage,
+        encounterId: session.encounterId,
+        intensity: settings().intensity,
+        reducedMotion: context.reducedMotion,
+        fullscreen: !!context.fullscreen,
+      });
+    }
     if (session.stage !== 'foreshadow') await ensureRecord(context);
-    const st = settings();
     const run = context.run || {};
     session.profileInfluence = profileInfluence(getProfileState(), {
       enabled: profile().modules.behavioralMeasurement,
@@ -208,16 +215,6 @@ export function createBattleInterferenceDirector({
       preset: run.preset || context.preset || 'contract',
       custom: !!(run.custom ?? context.custom),
     });
-    if (windowEnabled()) {
-      session.effectToken = await effects?.begin?.({
-        stage: session.stage,
-        encounterId: session.encounterId,
-        intensity: st.intensity,
-        reducedMotion: context.reducedMotion,
-        fullscreen: !!context.fullscreen,
-        profile: session.profileInfluence,
-      });
-    }
     return true;
   }
 
@@ -227,108 +224,53 @@ export function createBattleInterferenceDirector({
       index: Math.max(0, Math.floor(Number(event.index) || 0)),
       title: String(event.title || '').slice(0, 64),
     };
-    const tableau = movementWindowTableau({ battleId: session.battleId, movementId: session.movement.id });
+    const tableau = movementFireballProfile({ battleId: session.battleId, movementId: session.movement.id, movementIndex:session.movement.index });
     if (!tableau || !windowEnabled()) return tableau;
-    const context = getContext(session.encounterId, session.battleId) || {};
-    await effects?.arrangeMovement?.(tableau, {
-      token: session.effectToken,
-      forceInternal: context.inputDevice === 'controller',
-    });
+    // Surfaces are prewarmed on battle arrival. Movement changes only update
+    // the authored ray count; they never display a pane or touch main geometry.
+    void Promise.resolve(effects?.prepareFireballs?.(tableau, { token:session.effectToken })).catch(() => null);
     return tableau;
   }
 
-  async function beginChannelAttack(session, event = {}) {
-    if (!windowEnabled() || !session.channelBattle || !effects?.beginWindowChannel) return { outcome: 'skip' };
+  function beginFireballCast(session, event = {}) {
+    if (!session.channelBattle) return null;
     const movementIndex = Math.max(0, Math.floor(Number(event.movementIndex) || 0));
-    if (session.channelMovements.has(movementIndex)) return { outcome: 'skip', duplicate: true };
-    const scene = compileWindowChannelScene({
+    const context = getContext(session.encounterId, session.battleId) || {};
+    const scene = compileFireballCastPlan({
       battleId: session.battleId,
       movementId: event.movementId,
       movementIndex,
       movementTitle: event.movementTitle,
-      intentId: event.intentId,
-      intentLabel: event.intentLabel,
-      intentKind: event.intentKind,
-      windowScale: event.windowScale,
+      castSequence:session.castSequence++,
+      reducedMotion:!!context.reducedMotion,
+      stage:event.stage||null,
     });
-    if (!scene) return { outcome: 'skip' };
-    session.channelMovements.add(movementIndex);
-    session.activeChannelScene = scene;
-    session.windowEvents.push(`channel:${scene.movementId}:${scene.intentId}`);
-    const context = getContext(session.encounterId, session.battleId) || {};
-    const result = await effects.beginWindowChannel(scene, {
-      token: session.effectToken,
-      forceInternal: context.inputDevice === 'controller',
-    });
-    const eventScene = advanceWindowChannelScene(scene, {
-      phase: result?.outcome === 'cut' ? 'cut' : result?.outcome === 'timeout' ? 'damage' : 'impact',
-      outcome: result?.outcome || 'skip',
-      damage: 0,
-    }) || scene;
-    session.activeChannelScene = eventScene;
-    session.activeChannelResult = result;
-    await effects?.noteWindowChannelEvent?.(eventScene, { token: session.effectToken });
-    if (result?.outcome === 'timeout') {
-      session.missedResponses += 1;
-      session.windowEvents.push(`channel-timeout:${scene.movementId}`);
-    } else if (result?.outcome === 'cut') {
-      session.windowEvents.push(`channel-cut:${scene.movementId}`);
-    }
-    return { ...result, scene: eventScene, deadlineMs: scene.deadlineMs };
+    if (!scene) return null;
+    session.fireballCasts.set(scene.castId,scene);
+    session.windowEvents.push(`fireball:${scene.movementId}:${scene.rayCount}`);
+    if(windowEnabled())void Promise.resolve(effects?.beginFireballCast?.(scene,{token:session.effectToken})).catch(()=>null);
+    return scene;
   }
 
-  async function completeChannelDefense(session, { allowReturn = true } = {}) {
-    const scene = session.activeChannelScene;
-    if (!scene || session.activeChannelResult?.outcome !== 'cut') return { defended: false, charge: session.windowProgress.charge };
-    session.windowProgress = chargeWindowReturn(session.windowProgress, { defended: true });
-    const tier = availableWindowReturnTier(session.windowProgress);
-    if (!tier || !allowReturn || !windowEnabled() || !effects?.offerWindowReturn) {
-      return { defended: true, charge: session.windowProgress.charge, tier: 0, returned: false, hits: 0 };
-    }
-    const context = getContext(session.encounterId, session.battleId) || {};
-    const choice = await effects.offerWindowReturn(scene, {
-      token: session.effectToken,
-      tier,
-      forceInternal: context.inputDevice === 'controller',
-    });
-    if (choice?.outcome !== 'return') {
-      session.activeChannelScene = advanceWindowChannelScene(scene, {
-        phase: 'return', outcome: 'held', returnTier: tier,
-      }) || scene;
-      await effects?.noteWindowChannelEvent?.(session.activeChannelScene, { token: session.effectToken });
-      session.windowEvents.push(`return-held:${tier}`);
-      return { defended: true, charge: session.windowProgress.charge, tier, returned: false, hits: 0 };
-    }
-    const spent = spendWindowReturn(session.windowProgress);
-    session.windowProgress = spent.state;
-    session.activeChannelScene = advanceWindowChannelScene(scene, {
-      phase: 'return', outcome: 'return', returnTier: spent.tier, returnHits: spent.hits,
-    }) || scene;
-    await effects?.noteWindowChannelEvent?.(session.activeChannelScene, { token: session.effectToken });
-    session.windowEvents.push(`return-fired:${spent.tier}`);
-    return {
-      defended: true,
-      charge: session.windowProgress.charge,
-      tier: spent.tier,
-      returned: true,
-      hits: spent.hits,
-    };
+  // One call a frame for the whole volley: which comets are outside the game
+  // right now and where each of them is. Opening, moving and closing a surface
+  // are all the same statement, so they are all this.
+  function syncFireballCast(session,{castId='',rays=[],choreography=null}={}){
+    if(!windowEnabled())return null;
+    const active=session.fireballCasts.get(String(castId||''));
+    if(!active&&rays.length)return null;
+    void Promise.resolve(effects?.syncFireballCast?.(active||null,rays,{token:session.effectToken,choreography})).catch(()=>null);
+    return active||null;
   }
 
-  async function resolveChannel(session) {
-    const tableau = movementWindowTableau({ battleId: session.battleId, movementId: session.movement?.id });
-    const restored = advanceWindowChannelScene(session.activeChannelScene, {
-      phase: 'restored', outcome: session.activeChannelResult?.outcome || 'resolved',
-    });
-    if (restored) await effects?.noteWindowChannelEvent?.(restored, { token: session.effectToken });
-    session.activeChannelScene = null;
-    session.activeChannelResult = null;
-    if (!windowEnabled() || !tableau) return false;
-    const context = getContext(session.encounterId, session.battleId) || {};
-    return effects?.resolveWindowChannel?.(tableau, {
-      token: session.effectToken,
-      forceInternal: context.inputDevice === 'controller',
-    });
+  // Bookkeeping only. A ray resolving no longer touches the surfaces -- the
+  // next sync does, because its siblings are still in the air and the cast as a
+  // whole has not resolved anything.
+  function resolveFireballCast(session,{castId='',rayId='',state='impact',damage=null}={}){
+    const active=session.fireballCasts.get(String(castId||''));
+    if(!active)return null;
+    session.windowEvents.push(`fireball-${state}:${rayId||active.castId}`);
+    return advanceFireballCastPlan(active,{state,damage})||active;
   }
 
   async function impact(session, event = {}) {
@@ -336,18 +278,6 @@ export function createBattleInterferenceDirector({
     const kind = WINDOW_KIND[event.kind] || null;
     if (!kind) return null;
     const perfect = !!event.perfect || !!event.parried;
-    if (session.channelBattle && session.activeChannelScene) {
-      if (perfect) session.perfectCounters += 1;
-      session.windowEvents.push(`${perfect ? 'channel-rejected' : 'channel-landed'}:${kind}`);
-      session.activeChannelScene = advanceWindowChannelScene(session.activeChannelScene, {
-        phase: perfect ? 'parry' : 'damage',
-        outcome: perfect ? 'parried' : 'landed',
-        parried: perfect,
-        damage: Math.max(0, Number(event.received) || 0),
-      }) || session.activeChannelScene;
-      await effects?.noteWindowChannelEvent?.(session.activeChannelScene, { token: session.effectToken });
-      return perfect ? 'rejected' : kind;
-    }
     if (perfect) {
       session.perfectCounters += 1;
       session.windowEvents.push(`reject:${kind}`);
@@ -461,19 +391,14 @@ export function createBattleInterferenceDirector({
   function forBattle(encounterId, battleId = encounterId, recovery = null) {
     const stage = interferenceStageForBattle(encounterId, battleId);
     const key = `${encounterId}:${battleId}`;
-    const canonicalBattle = canonicalWindowChannelBattleId(battleId);
-    const recoveredBattle = canonicalWindowChannelBattleId(recovery?.battleId);
-    const recoveredMovements = canonicalBattle && recoveredBattle === canonicalBattle
-      ? (Array.isArray(recovery?.movements) ? recovery.movements : [])
-        .map((value) => Math.max(0, Math.floor(Number(value) || 0)))
-        .filter((value, index, list) => list.indexOf(value) === index)
-      : [];
+    const canonicalBattle = canonicalFireballBattleId(battleId);
     const session = {
       key, encounterId, battleId, stage,
       channelBattle: canonicalBattle,
-      channelMovements: new Set(recoveredMovements),
-      windowProgress: freshWindowChannelProgress(battleId, recovery),
-      movement: null, activeChannelScene: null, activeChannelResult: null,
+      // Legacy recovery.windowChannel is accepted by this call boundary and
+      // intentionally ignored: the new click-built RETURN starts fresh with
+      // each combat and owns no modal recovery state.
+      movement:null,fireballCasts:new Map(),castSequence:0,
       actionIds: [], windowEvents: [], perfectCounters: 0, missedResponses: 0, phaseBreaks: 0, variant: 0,
     };
     sessions.set(key, session);
@@ -481,10 +406,9 @@ export function createBattleInterferenceDirector({
       active: () => enabled() && !!stage,
       enter: () => enter(session),
       movement: (event) => movementChanged(session, event),
-      beginWindowChannel: (event) => beginChannelAttack(session, event),
-      completeWindowDefense: (options) => completeChannelDefense(session, options),
-      resolveWindowChannel: () => resolveChannel(session),
-      windowChannelInput: (action) => effects?.channelInput?.(action) || false,
+      beginFireballCast: (event) => beginFireballCast(session, event),
+      syncFireballCast: (event) => syncFireballCast(session, event),
+      resolveFireballCast: (event) => resolveFireballCast(session,event),
       impact: (event) => impact(session, event),
       phaseBreak: () => phaseBreak(session),
       action: (id) => { if (id) session.actionIds.push(String(id).slice(0, 64)); },
@@ -492,13 +416,7 @@ export function createBattleInterferenceDirector({
       influence: () => session.profileInfluence || profileInfluence(getProfileState(), { enabled: false }),
       line: () => liveLine && liveLine.until > Date.now() ? { ...liveLine } : null,
       statusLine: () => effects?.statusLine?.() || '',
-      channelState: () => ({
-        battleId: session.channelBattle,
-        charge: session.windowProgress.charge,
-        returned: session.windowProgress.returned,
-        movementCount: session.channelMovements.size,
-        movements: [...session.channelMovements].sort((a, b) => a - b),
-      }),
+      channelState: () => null,
     };
   }
 

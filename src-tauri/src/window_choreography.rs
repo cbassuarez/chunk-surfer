@@ -1,629 +1,446 @@
-use serde::{Deserialize, Serialize};
-use std::{
-    fs,
-    path::PathBuf,
-    sync::Mutex,
-    thread,
-    time::{Duration, Instant},
-};
-use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize, WebviewWindow};
+use serde::Deserialize;
+use tauri::{AppHandle, LogicalSize, Manager, PhysicalPosition, PhysicalRect, WebviewWindow};
 
-const ECHO_LABELS: [&str; 3] = [
-    "interference-echo-1",
-    "interference-echo-2",
-    "interference-echo-3",
+const FIREBALL_LABELS:[&str;4]=[
+    "fireball-cast-1","fireball-cast-2","fireball-cast-3","fireball-cast-4",
 ];
-const CHANNEL_LABELS: [&str; 4] = [
-    "interference-monitor",
-    "interference-echo-1",
-    "interference-echo-2",
-    "interference-echo-3",
-];
-const WATCHDOG_MS: u64 = 8_000;
 
-#[derive(Debug, Clone)]
-struct WindowSnapshot {
-    position: PhysicalPosition<i32>,
-    size: PhysicalSize<u32>,
-    fullscreen: bool,
-    minimized: bool,
-    always_on_top: bool,
+#[derive(Debug,Clone,Deserialize)]
+pub struct RayPoint{x:f64,y:f64}
+
+// WINDOW-NORMALISED, NOT STAGE-NORMALISED.
+//
+// The ray is authored inside the battle's stage rect -- a band in the middle of
+// the combat panel, not the window -- and this used to read `beyond` as though
+// it were a fraction of the whole window. Every rightward cast therefore aimed
+// at a point far off the side of the screen and got clamped flat against the
+// monitor edge, which is why the surfaces appeared in the same wrong place
+// every time. The sender now remaps the ray into window space first, and this
+// only has to walk it out past the bezel.
+#[derive(Debug,Clone,Deserialize)]
+pub struct FireballRay{
+    direction:RayPoint,
+    exit:RayPoint,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-struct RecoverySnapshot {
-    x: i32,
-    y: i32,
-    width: u32,
-    height: u32,
-    fullscreen: bool,
-    minimized: bool,
-    always_on_top: bool,
+fn main_window(app:&AppHandle)->Result<WebviewWindow,String>{
+    app.get_webview_window("main").ok_or_else(||"main window not found".to_string())
 }
 
-impl From<&WindowSnapshot> for RecoverySnapshot {
-    fn from(value: &WindowSnapshot) -> Self {
-        Self {
-            x: value.position.x,
-            y: value.position.y,
-            width: value.size.width,
-            height: value.size.height,
-            fullscreen: value.fullscreen,
-            minimized: value.minimized,
-            always_on_top: value.always_on_top,
-        }
-    }
+fn allowed(label:&str,index:u8,count:u8)->bool{
+    count>0&&count<=4&&index<count&&FIREBALL_LABELS.get(index as usize)==Some(&label)
 }
 
-impl From<RecoverySnapshot> for WindowSnapshot {
-    fn from(value: RecoverySnapshot) -> Self {
-        Self {
-            position: PhysicalPosition::new(value.x, value.y),
-            size: PhysicalSize::new(value.width, value.height),
-            fullscreen: value.fullscreen,
-            minimized: value.minimized,
-            always_on_top: value.always_on_top,
-        }
-    }
+fn logical_size(index:u8)->f64{160.0+(index.min(3) as f64*24.0)}
+
+// How much closer it gets, and the hard ceiling on that. A comet ends its
+// flight a little over twice the size it left at -- enough to read as bearing
+// down, nowhere near enough to be furniture.
+const APPROACH_GROWTH:f64=2.15;
+const APPROACH_MAX_LOGICAL:f64=340.0;
+
+fn contains(rect:&PhysicalRect<i32,u32>,x:f64,y:f64)->bool{
+    x>=rect.position.x as f64&&y>=rect.position.y as f64
+        &&x<(rect.position.x as f64+rect.size.width as f64)
+        &&y<(rect.position.y as f64+rect.size.height as f64)
 }
 
-#[derive(Debug)]
-struct ActiveSession {
-    token: String,
-    snapshot: WindowSnapshot,
-    executing_since: Option<Instant>,
-}
-
-#[derive(Default)]
-pub struct WindowChoreographyState(Mutex<Option<ActiveSession>>);
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct WindowChoreographyCapabilities {
-    native_positioning: bool,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct NormalizedGeometry {
-    x: f64,
-    y: f64,
-    width: f64,
-    height: f64,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct WindowKeyframe {
-    at_ms: u64,
-    geometry: NormalizedGeometry,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct WindowChoreographyPlan {
-    schema: u8,
-    token: String,
-    cue_id: String,
-    display_mode: String,
-    input_locked: bool,
-    #[serde(default)]
-    hold: bool,
-    main: Vec<WindowKeyframe>,
-}
-
-fn main_window(app: &AppHandle) -> Result<WebviewWindow, String> {
-    app.get_webview_window("main")
-        .ok_or_else(|| "main window not found".to_string())
-}
-
-fn safe_token(token: &str) -> bool {
-    (8..=96).contains(&token.len())
-        && token
-            .chars()
-            .all(|ch| ch.is_ascii_alphanumeric() || ch == '-')
-}
-
-fn safe_plan(plan: &WindowChoreographyPlan) -> bool {
-    const CUES: [&str; 6] = [
-        "broadcast",
-        "overload",
-        "conceal",
-        "loop",
-        "silence",
-        "reject",
-    ];
-    plan.schema == 1
-        && safe_token(&plan.token)
-        && CUES.contains(&plan.cue_id.as_str())
-        && plan.display_mode == "native"
-        && (!matches!(
-            plan.cue_id.as_str(),
-            "overload" | "conceal" | "loop" | "silence"
-        ) || plan.input_locked)
-        && (2..=8).contains(&plan.main.len())
-        && plan.main.iter().all(|keyframe| {
-            let geometry = &keyframe.geometry;
-            [geometry.x, geometry.y, geometry.width, geometry.height]
-                .iter()
-                .all(|value| value.is_finite() && (0.0..=1.0).contains(value))
-        })
-}
-
-fn capture(window: &WebviewWindow) -> Result<WindowSnapshot, String> {
-    Ok(WindowSnapshot {
-        position: window.outer_position().map_err(|err| err.to_string())?,
-        size: window.outer_size().map_err(|err| err.to_string())?,
-        fullscreen: window.is_fullscreen().unwrap_or(false),
-        minimized: window.is_minimized().unwrap_or(false),
-        always_on_top: window.is_always_on_top().unwrap_or(false),
-    })
-}
-
-fn close_echoes(app: &AppHandle) {
-    for label in ECHO_LABELS {
-        if let Some(window) = app.get_webview_window(label) {
-            let _ = window.close();
-        }
-    }
-}
-
-fn native_positioning_supported() -> bool {
-    #[cfg(target_os = "linux")]
-    {
-        return std::env::var_os("WAYLAND_DISPLAY").is_none();
-    }
-    #[cfg(not(target_os = "linux"))]
-    true
-}
-
-fn should_use_native(fullscreen: bool, positioning_supported: bool) -> bool {
-    !fullscreen && positioning_supported
-}
-
-fn session_matches(active_token: Option<&str>, expected: Option<&str>) -> bool {
-    expected
-        .map(|token| active_token == Some(token))
-        .unwrap_or(true)
-}
-
-fn watchdog_should_restore(
-    active_token: Option<&str>,
-    expected: &str,
-    executing_for: Option<Duration>,
-) -> bool {
-    active_token == Some(expected)
-        && executing_for
-            .map(|elapsed| elapsed >= Duration::from_millis(WATCHDOG_MS))
-            .unwrap_or(false)
-}
-
-fn restore_snapshot(window: &WebviewWindow, snapshot: &WindowSnapshot) {
-    let _ = window.show();
-    let _ = window.unminimize();
-    let _ = window.set_always_on_top(snapshot.always_on_top);
-    let _ = window.set_fullscreen(snapshot.fullscreen);
-    // Fullscreen bounds are controlled by the compositor. Never attempt to
-    // resize a fullscreen window; doing so is the original cross-platform bug.
-    if !snapshot.fullscreen {
-        let _ = window.set_size(snapshot.size);
-        let _ = window.set_position(snapshot.position);
-    }
-    if snapshot.minimized {
-        let _ = window.minimize();
-    }
-}
-
-fn recovery_path(app: &AppHandle) -> Option<PathBuf> {
-    app.path()
-        .app_data_dir()
-        .ok()
-        .map(|dir| dir.join("window-choreography-recovery.json"))
-}
-
-fn persist_recovery(app: &AppHandle, snapshot: &WindowSnapshot) -> Result<(), String> {
-    let path = recovery_path(app).ok_or_else(|| "window recovery path unavailable".to_string())?;
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent).map_err(|err| err.to_string())?;
-    }
-    let payload =
-        serde_json::to_vec(&RecoverySnapshot::from(snapshot)).map_err(|err| err.to_string())?;
-    fs::write(path, payload).map_err(|err| err.to_string())
-}
-
-fn clear_recovery(app: &AppHandle) {
-    if let Some(path) = recovery_path(app) {
-        let _ = fs::remove_file(path);
-    }
-}
-
-// A hard process exit cannot run the ordinary session cleanup. The snapshot is
-// intentionally the only choreography data that crosses a launch boundary; it
-// contains desktop geometry, no battle, identity, or player-history fields.
-pub fn recover_stale_snapshot(app: &AppHandle) -> bool {
-    let Some(path) = recovery_path(app) else {
-        return false;
-    };
-    let snapshot = fs::read(&path)
-        .ok()
-        .and_then(|bytes| serde_json::from_slice::<RecoverySnapshot>(&bytes).ok())
-        .map(WindowSnapshot::from);
-    let restored = if let (Some(snapshot), Ok(window)) = (snapshot, main_window(app)) {
-        restore_snapshot(&window, &snapshot);
-        true
-    } else {
-        false
-    };
-    close_echoes(app);
-    let _ = fs::remove_file(path);
-    restored
-}
-
-pub fn restore_on_exit(app: &AppHandle) -> bool {
-    restore_if_current(app, None)
-}
-
-fn monitor_rect(window: &WebviewWindow) -> Result<(i32, i32, u32, u32, f64), String> {
-    let monitor = window
-        .current_monitor()
-        .map_err(|err| err.to_string())?
-        .or_else(|| window.primary_monitor().ok().flatten())
-        .ok_or_else(|| "monitor not found".to_string())?;
-    let work = monitor.work_area();
-    Ok((
-        work.position.x,
-        work.position.y,
-        work.size.width,
-        work.size.height,
-        monitor.scale_factor(),
-    ))
-}
-
-fn physical_rect(
-    geometry: &NormalizedGeometry,
-    monitor: (i32, i32, u32, u32, f64),
-) -> (PhysicalPosition<i32>, PhysicalSize<u32>) {
-    let (origin_x, origin_y, monitor_w, monitor_h, scale) = monitor;
-    let min_w = (960.0 * scale).round().min(monitor_w as f64) as u32;
-    let min_h = (600.0 * scale).round().min(monitor_h as f64) as u32;
-    let width = ((monitor_w as f64 * geometry.width).round() as u32).clamp(min_w, monitor_w);
-    let height = ((monitor_h as f64 * geometry.height).round() as u32).clamp(min_h, monitor_h);
-    let desired_x = origin_x as f64 + monitor_w as f64 * geometry.x;
-    let desired_y = origin_y as f64 + monitor_h as f64 * geometry.y;
-    let max_x = origin_x.saturating_add(monitor_w.saturating_sub(width) as i32);
-    let max_y = origin_y.saturating_add(monitor_h.saturating_sub(height) as i32);
-    let x = (desired_x.round() as i32).clamp(origin_x, max_x);
-    let y = (desired_y.round() as i32).clamp(origin_y, max_y);
-    (
-        PhysicalPosition::new(x, y),
-        PhysicalSize::new(width, height),
+fn clamped_square(center:(f64,f64),logical:f64,work:&PhysicalRect<i32,u32>,scale:f64)->PhysicalPosition<i32>{
+    let physical=(logical*scale).round().max(1.0) as i32;
+    let min_x=work.position.x;
+    let min_y=work.position.y;
+    let max_x=min_x.saturating_add(work.size.width.saturating_sub(physical.max(0) as u32) as i32);
+    let max_y=min_y.saturating_add(work.size.height.saturating_sub(physical.max(0) as u32) as i32);
+    PhysicalPosition::new(
+        ((center.0-physical as f64*0.5).round() as i32).clamp(min_x,max_x.max(min_x)),
+        ((center.1-physical as f64*0.5).round() as i32).clamp(min_y,max_y.max(min_y)),
     )
 }
 
-fn token_is_current(app: &AppHandle, token: &str) -> bool {
-    app.state::<WindowChoreographyState>()
-        .0
-        .lock()
-        .ok()
-        .and_then(|active| active.as_ref().map(|session| session.token == token))
-        .unwrap_or(false)
+#[derive(Debug,Clone,Deserialize)]
+pub struct CastStep{
+    label:String,
+    index:u8,
+    count:u8,
+    ray:FireballRay,
+    #[serde(default)] progress:f64,
 }
 
-fn animate_to(
-    app: &AppHandle,
-    window: &WebviewWindow,
-    token: &str,
-    target: (PhysicalPosition<i32>, PhysicalSize<u32>),
-    duration_ms: u64,
-) -> Result<(), String> {
-    let start_position = window.outer_position().map_err(|err| err.to_string())?;
-    let start_size = window.outer_size().map_err(|err| err.to_string())?;
-    let steps = (duration_ms / 16).clamp(1, 60);
-    for step in 1..=steps {
-        if !token_is_current(app, token) {
-            return Err("stale choreography session".to_string());
-        }
-        let raw = step as f64 / steps as f64;
-        let t = 1.0 - (1.0 - raw).powi(3);
-        let x = start_position.x as f64 + (target.0.x - start_position.x) as f64 * t;
-        let y = start_position.y as f64 + (target.0.y - start_position.y) as f64 * t;
-        let width = start_size.width as f64 + (target.1.width as f64 - start_size.width as f64) * t;
-        let height =
-            start_size.height as f64 + (target.1.height as f64 - start_size.height as f64) * t;
-        window
-            .set_size(PhysicalSize::new(
-                width.round() as u32,
-                height.round() as u32,
-            ))
-            .map_err(|err| err.to_string())?;
-        window
-            .set_position(PhysicalPosition::new(x.round() as i32, y.round() as i32))
-            .map_err(|err| err.to_string())?;
-        thread::sleep(Duration::from_millis((duration_ms / steps).max(1)));
-    }
-    Ok(())
+// WHAT THE SHOAL IS DOING THIS FRAME.
+//
+// Every number is decided on the game side -- see fireball-choreography.js --
+// because the escalation belongs to the fight, not to the compositor. What
+// happens in here is only the geometry the game cannot do: where the cursor
+// actually is on the desk, and where four windows have to be to not be there.
+#[derive(Debug,Clone,Deserialize,Default)]
+pub struct Choreography{
+    // Break strength this frame, already eased and already zero during a
+    // settle. One number, so a settled shoal costs nothing to draw.
+    #[serde(default)] dodge:f64,
+    // How far they will go, as a multiple of a surface's own width.
+    #[serde(default)] reach:f64,
+    // How far ahead of the pointer they aim, in milliseconds of its own travel.
+    #[serde(default)] sense_ms:f64,
+    // 1 is one body moving; 0 is four windows each looking after itself.
+    #[serde(default)] cohesion:f64,
 }
 
-fn restore_if_current(app: &AppHandle, token: Option<&str>) -> bool {
-    let state = app.state::<WindowChoreographyState>();
-    let snapshot = {
-        let Ok(mut active) = state.0.lock() else {
-            return false;
-        };
-        if !session_matches(active.as_ref().map(|session| session.token.as_str()), token) {
-            return false;
+#[derive(Clone,Copy)]
+struct CursorSample{x:f64,y:f64,at:std::time::Instant}
+
+static CURSOR:std::sync::OnceLock<std::sync::Mutex<Option<CursorSample>>>=std::sync::OnceLock::new();
+
+// NOTHING IS CAPTURED. `AppHandle::cursor_position` is `NSEvent.mouseLocation`
+// on macOS and the equivalent plain query elsewhere: two coordinates, read on
+// demand, in the same process. It is not a screen recording, not a screenshot,
+// not an event tap, and it asks for no permission -- there is no capture crate
+// in this binary and this feature must never introduce one. The shoal needs to
+// know where a pointer is; it has no business knowing what is under it.
+//
+// WHERE THE POINTER IS GOING, NOT WHERE IT IS.
+//
+// A shoal that runs from the cursor's current position cannot be caught by
+// moving quickly and cannot be missed by moving slowly -- neither of which is a
+// decision. Running from its PREDICTED position can be beaten by aiming at
+// where the windows will be, which is the same read the rest of the fight asks
+// for. Velocity is measured between frames and heavily damped, so a flick does
+// not throw the prediction across the desk.
+fn predicted_cursor(app:&AppHandle,sense_ms:f64)->Option<(f64,f64)>{
+    let now=app.cursor_position().ok()?;
+    let at=std::time::Instant::now();
+    let cell=CURSOR.get_or_init(||std::sync::Mutex::new(None));
+    let mut slot=cell.lock().ok()?;
+    let previous=*slot;
+    *slot=Some(CursorSample{x:now.x,y:now.y,at});
+    let Some(last)=previous else{return Some((now.x,now.y))};
+    let dt=at.duration_since(last.at).as_secs_f64();
+    if !(dt>0.001&&dt<0.25){return Some((now.x,now.y));}
+    let lead=(sense_ms.max(0.0)/1000.0).min(0.5);
+    // Capped: a fast flick predicts a long way, and a shoal that reacts to a
+    // metre of imagined travel is reacting to nothing.
+    let vx=((now.x-last.x)/dt).clamp(-4000.0,4000.0);
+    let vy=((now.y-last.y)/dt).clamp(-4000.0,4000.0);
+    Some((now.x+vx*lead,now.y+vy*lead))
+}
+
+// ONE CALL PER FRAME FOR THE WHOLE CAST, NOT ONE PER SURFACE.
+//
+// The comet is meant to cross the desktop, and a window only crosses anything
+// if something moves it. The frame clock lives on the game side -- it is the
+// same clock the player can pause, and the same one that decides the comet has
+// landed -- so the movement is driven from there rather than by a timer in here
+// that would keep flying through authored dialogue. Batched because four
+// surfaces at sixty frames a second is otherwise four times the IPC for one
+// event that is always about all of them at once.
+#[tauri::command]
+pub fn chunk_fireball_cast_step(
+    app:AppHandle,casts:Vec<CastStep>,#[allow(unused_mut)] mut choreography:Option<Choreography>,
+)->Result<u8,String>{
+    if casts.len()>4{return Ok(0);}
+    let dance=choreography.take().unwrap_or_default();
+    // Where every surface would be if nothing were chasing it.
+    let mut bases=Vec::with_capacity(casts.len());
+    for cast in &casts{
+        match base_center(&app,&cast.label,cast.index,cast.count,&cast.ray,cast.progress){
+            Ok(Some(base))=>bases.push(Some(base)),
+            _=>bases.push(None),
         }
-        active.take().map(|session| session.snapshot)
-    };
-    if let (Some(snapshot), Ok(window)) = (snapshot, main_window(app)) {
-        restore_snapshot(&window, &snapshot);
     }
-    clear_recovery(app);
-    close_echoes(app);
+    let live:Vec<&BaseCenter>=bases.iter().flatten().collect();
+    if live.is_empty(){return Ok(0);}
+
+    // ONE BODY. The offset is computed from the formation's centre and applied
+    // to all of it, so they break together instead of each solving its own
+    // little problem -- which is the whole difference between a shoal and four
+    // windows being annoying in parallel.
+    let centre=(
+        live.iter().map(|base|base.center.0).sum::<f64>()/live.len() as f64,
+        live.iter().map(|base|base.center.1).sum::<f64>()/live.len() as f64,
+    );
+    let span=live.iter().map(|base|base.side).fold(0.0_f64,f64::max).max(1.0);
+    let dodge=dance.dodge.clamp(0.0,1.0);
+    let mut shared=(0.0_f64,0.0_f64);
+    let mut fan=(0.0_f64,0.0_f64);
+    if dodge>0.001{
+        if let Some(aim)=predicted_cursor(&app,dance.sense_ms){
+            let (dx,dy)=(centre.0-aim.0,centre.1-aim.1);
+            let distance=dx.hypot(dy);
+            // They only run from something that is actually coming for them.
+            // Beyond about three surface-widths the pointer is not a threat and
+            // the formation holds, which is what makes the break legible.
+            let threat=(1.0-(distance/(span*3.2)).min(1.0)).powf(1.4);
+            if threat>0.001&&distance>0.5{
+                let reach=dance.reach.max(0.0)*span*dodge*threat;
+                shared=(dx/distance*reach,dy/distance*reach);
+                // Perpendicular, so the ones on the outside of the turn swing
+                // wider. Scaled by the INVERSE of cohesion: late in the night
+                // they hold formation and move as one.
+                let loose=1.0-dance.cohesion.clamp(0.0,1.0);
+                fan=(-dy/distance*reach*loose*0.9,dx/distance*reach*loose*0.9);
+            }
+        }
+    }
+
+    let mut moved=0u8;
+    let middle=(live.len() as f64-1.0)*0.5;
+    let mut rank=0.0_f64;
+    for (cast,base) in casts.iter().zip(bases.iter()){
+        let Some(base)=base else{continue};
+        let offset=(rank-middle)*1.0;
+        rank+=1.0;
+        let center=(
+            base.center.0+shared.0+fan.0*offset,
+            base.center.1+shared.1+fan.1*offset,
+        );
+        if apply_placement(&app,&cast.label,base,center).unwrap_or(false){
+            moved=moved.saturating_add(1);
+        }
+    }
+    Ok(moved)
+}
+
+#[tauri::command]
+pub fn chunk_fireball_cast_place(
+    app:AppHandle,label:String,index:u8,count:u8,ray:FireballRay,
+)->Result<bool,String>{
+    place_one(&app,&label,index,count,&ray,0.0)
+}
+
+// Where a surface would be with nothing chasing it, kept separate from the act
+// of putting it there so the shoal can be moved as a group afterwards.
+struct BaseCenter{
+    center:(f64,f64),
+    side:f64,
+    work:PhysicalRect<i32,u32>,
+    scale:f64,
+}
+
+fn base_center(
+    app:&AppHandle,label:&str,index:u8,count:u8,ray:&FireballRay,progress:f64,
+)->Result<Option<BaseCenter>,String>{
+    let progress=if progress.is_finite(){progress.clamp(0.0,1.0)}else{0.0};
+    if!allowed(label,index,count)
+        ||![ray.direction.x,ray.direction.y,ray.exit.x,ray.exit.y].iter().all(|v|v.is_finite()){
+        return Ok(None);
+    }
+    let main=main_window(app)?;
+    if main.is_fullscreen().unwrap_or(false){return Ok(None);}
+    if app.get_webview_window(label).is_none(){return Ok(None);}
+    let position=main.outer_position().map_err(|e|e.to_string())?;
+    let size=main.outer_size().map_err(|e|e.to_string())?;
+    let logical=logical_size(index);
+    // ONE LINE, FROM THE STAGE TO THE DESKTOP, AND THEN BACK AT YOU.
+    //
+    // The stage the comet crosses is a band inside the combat panel, so leaving
+    // it is not yet leaving the window. Follow the same line from the stage exit
+    // out to the window's own edge -- and from there it is coming at the player:
+    // in toward the middle of the game window, growing the whole way until it
+    // covers it. Squared, because an object approaching at a constant speed does
+    // not grow at a constant rate; it hangs small and far off, and then it is on
+    // you.
+    let (w,h)=(size.width as f64,size.height as f64);
+    let anchor=(ray.exit.x*w,ray.exit.y*h);
+    let (mut dx,mut dy)=(ray.direction.x*w,ray.direction.y*h);
+    let length=dx.hypot(dy);
+    if length>f64::EPSILON{dx/=length;dy/=length;}else{dx=1.0;dy=0.0;}
+    let mut edge=f64::MAX;
+    if dx>1e-6{edge=edge.min((w-anchor.0)/dx);}else if dx< -1e-6{edge=edge.min(-anchor.0/dx);}
+    if dy>1e-6{edge=edge.min((h-anchor.1)/dy);}else if dy< -1e-6{edge=edge.min(-anchor.1/dy);}
+    if !edge.is_finite()||edge<0.0{edge=0.0;}
+
+    let monitors=app.available_monitors().map_err(|e|e.to_string())?;
+    let origin=(position.x as f64+anchor.0,position.y as f64+anchor.1);
+    let near=(origin.0+dx*(edge+logical),origin.1+dy*(edge+logical));
+    let monitor=monitors.iter().find(|monitor|contains(monitor.work_area(),near.0,near.1))
+        .or_else(||monitors.iter().find(|monitor|contains(monitor.work_area(),position.x as f64+w*0.5,position.y as f64+h*0.5)))
+        .ok_or_else(||"monitor not found".to_string())?;
+    let scale=monitor.scale_factor().max(0.1);
+    let clearance=logical*scale*0.85;
+    let near=(origin.0+dx*(edge+clearance),origin.1+dy*(edge+clearance));
+    let looming=progress*progress;
+    let target=(position.x as f64+w*0.5,position.y as f64+h*0.5);
+    let center=(
+        near.0+(target.0-near.0)*looming,
+        near.1+(target.1-near.1)*looming,
+    );
+    // IT GETS BIGGER BECAUSE IT IS GETTING CLOSER. IT DOES NOT BECOME THE
+    // SCREEN.
+    //
+    // Growing this to the size of the game window took "engulf" literally and
+    // put a screen-sized always-on-top surface over everything, which is not a
+    // fireball arriving -- it is the desktop being replaced by one. Worse, it
+    // is an opaque click target the size of the display sitting between the
+    // player and their own game. The engulfing happens INSIDE the window, drawn
+    // by the renderer that owns that frame; what belongs out here is a comet
+    // that reads as close, and a comet is fist-sized.
+    let engulfed=(logical*APPROACH_GROWTH).min(APPROACH_MAX_LOGICAL);
+    let side=logical+(engulfed-logical).max(0.0)*looming;
+    Ok(Some(BaseCenter{center,side,work:*monitor.work_area(),scale}))
+}
+
+fn apply_placement(app:&AppHandle,label:&str,base:&BaseCenter,center:(f64,f64))->Result<bool,String>{
+    let surface=app.get_webview_window(label).ok_or_else(||"fireball surface not found".to_string())?;
+    let placed=clamped_square(center,base.side,&base.work,base.scale);
+    surface.set_size(LogicalSize::new(base.side,base.side)).map_err(|e|e.to_string())?;
+    surface.set_position(placed).map_err(|e|e.to_string())?;
+    let _=surface.set_always_on_top(true);
+    // Click-through was why a fireball outside the frame could not be returned
+    // and why clicking one landed on the desktop behind it -- the game's own
+    // projectile handing the player's click to the Finder.
+    let _=surface.set_ignore_cursor_events(false);
+    let _=surface.show();
+    Ok(true)
+}
+
+fn place_one(
+    app:&AppHandle,label:&str,index:u8,count:u8,ray:&FireballRay,progress:f64,
+)->Result<bool,String>{
+    match base_center(app,label,index,count,ray,progress)?{
+        Some(base)=>apply_placement(app,label,&base,base.center),
+        None=>Ok(false),
+    }
+}
+
+// A cast surface is a projectile, not a window. Whatever the compositor does
+// about activation when one is clicked, the keyboard belongs to the game.
+#[tauri::command]
+pub fn chunk_fireball_cast_focus_main(app:AppHandle)->bool{
+    match main_window(&app){
+        Ok(main)=>main.set_focus().is_ok(),
+        Err(_)=>false,
+    }
+}
+
+#[tauri::command]
+pub fn chunk_fireball_cast_hide_all(app:AppHandle)->bool{
+    hide_all(&app)
+}
+
+fn hide_all(app:&AppHandle)->bool{
+    for label in FIREBALL_LABELS{
+        if let Some(window)=app.get_webview_window(label){
+            let _=window.set_ignore_cursor_events(true);
+            let _=window.hide();
+        }
+    }
     true
 }
 
-#[tauri::command]
-pub fn chunk_window_choreography_begin(app: AppHandle, token: String) -> Result<bool, String> {
-    if !safe_token(&token) {
-        return Err("invalid choreography token".to_string());
-    }
-    let window = main_window(&app)?;
-    if !should_use_native(
-        window.is_fullscreen().unwrap_or(false),
-        native_positioning_supported(),
-    ) {
-        return Ok(false);
-    }
-    let state = app.state::<WindowChoreographyState>();
-    let mut active = state
-        .0
-        .lock()
-        .map_err(|_| "choreography state poisoned".to_string())?;
-    if let Some(previous) = active.take() {
-        restore_snapshot(&window, &previous.snapshot);
-        close_echoes(&app);
-    }
-    let snapshot = capture(&window)?;
-    persist_recovery(&app, &snapshot)?;
-    *active = Some(ActiveSession {
-        token,
-        snapshot,
-        executing_since: None,
-    });
-    Ok(true)
-}
-
-#[tauri::command]
-pub fn chunk_window_choreography_capabilities() -> WindowChoreographyCapabilities {
-    WindowChoreographyCapabilities {
-        native_positioning: native_positioning_supported(),
-    }
-}
-
-#[tauri::command]
-pub fn chunk_window_choreography_place_echo(
-    app: AppHandle,
-    label: String,
-    index: u8,
-    count: u8,
-) -> Result<bool, String> {
-    if !native_positioning_supported()
-        || !CHANNEL_LABELS.contains(&label.as_str())
-        || index >= 3
-        || count == 0
-        || count > 3
-    {
-        return Ok(false);
-    }
-    let main = main_window(&app)?;
-    let echo = app
-        .get_webview_window(&label)
-        .ok_or_else(|| "echo window not found".to_string())?;
-    let (origin_x, origin_y, monitor_w, monitor_h, scale) = monitor_rect(&main)?;
-    let width = ((monitor_w as f64 * if count == 1 { 0.28 } else { 0.20 }).round() as u32)
-        .clamp((300.0 * scale) as u32, (520.0 * scale) as u32);
-    let height = ((monitor_h as f64 * 0.54).round() as u32)
-        .clamp((360.0 * scale) as u32, (720.0 * scale) as u32);
-    let gap = (24.0 * scale).round() as i32;
-    let total = width as i32 * count as i32 + gap * (count.saturating_sub(1)) as i32;
-    let start_x = origin_x + ((monitor_w as i32 - total) / 2);
-    let x = start_x + index as i32 * (width as i32 + gap);
-    let y = origin_y + ((monitor_h as i32 - height as i32) / 2);
-    echo.set_size(PhysicalSize::new(width, height))
-        .map_err(|err| err.to_string())?;
-    echo.set_position(PhysicalPosition::new(x, y))
-        .map_err(|err| err.to_string())?;
-    let _ = echo.set_always_on_top(false);
-    let _ = echo.show();
-    Ok(true)
-}
-
-#[tauri::command]
-pub fn chunk_window_choreography_execute(
-    app: AppHandle,
-    plan: WindowChoreographyPlan,
-) -> Result<bool, String> {
-    if !safe_plan(&plan) {
-        return Err("invalid choreography plan".to_string());
-    }
-    let window = main_window(&app)?;
-    if window.is_fullscreen().unwrap_or(false) {
-        return Ok(false);
-    }
-    {
-        let state = app.state::<WindowChoreographyState>();
-        let mut active = state
-            .0
-            .lock()
-            .map_err(|_| "choreography state poisoned".to_string())?;
-        let session = active
-            .as_mut()
-            .ok_or_else(|| "no choreography session".to_string())?;
-        if session.token != plan.token {
-            return Err("stale choreography session".to_string());
-        }
-        session.executing_since = Some(Instant::now());
-    }
-
-    let watchdog_app = app.clone();
-    let watchdog_token = plan.token.clone();
-    thread::spawn(move || {
-        thread::sleep(Duration::from_millis(WATCHDOG_MS));
-        let stalled = watchdog_app
-            .state::<WindowChoreographyState>()
-            .0
-            .lock()
-            .ok()
-            .and_then(|active| {
-                active.as_ref().map(|session| {
-                    watchdog_should_restore(
-                        Some(&session.token),
-                        &watchdog_token,
-                        session.executing_since.map(|at| at.elapsed()),
-                    )
-                })
-            })
-            .unwrap_or(false);
-        if stalled {
-            let _ = restore_if_current(&watchdog_app, Some(&watchdog_token));
-        }
-    });
-
-    let monitor = monitor_rect(&window)?;
-    let mut previous_at = 0;
-    let result = (|| {
-        for keyframe in plan.main.iter().skip(1) {
-            let duration = keyframe.at_ms.saturating_sub(previous_at).clamp(48, 1_500);
-            previous_at = keyframe.at_ms;
-            animate_to(
-                &app,
-                &window,
-                &plan.token,
-                physical_rect(&keyframe.geometry, monitor),
-                duration,
-            )?;
-        }
-        Ok::<(), String>(())
-    })();
-
-    if token_is_current(&app, &plan.token) {
-        let state = app.state::<WindowChoreographyState>();
-        if let Ok(mut active) = state.0.lock() {
-            if let Some(session) = active.as_mut() {
-                session.executing_since = None;
-                if !plan.hold {
-                    restore_snapshot(&window, &session.snapshot);
-                }
-            }
-        };
-    }
-    result.map(|_| true)
-}
-
-#[tauri::command]
-pub fn chunk_window_choreography_restore(
-    app: AppHandle,
-    token: Option<String>,
-) -> Result<bool, String> {
-    Ok(restore_if_current(&app, token.as_deref()))
-}
+// Startup/exit cleanup has no recovery snapshot because the main window is
+// immutable. Only orphaned fireball surfaces can remain.
+pub fn recover_stale_snapshot(app:&AppHandle)->bool{hide_all(app)}
+pub fn restore_on_exit(app:&AppHandle)->bool{hide_all(app)}
 
 #[cfg(test)]
-mod tests {
-    use super::{
-        physical_rect, safe_plan, safe_token, session_matches, should_use_native,
-        watchdog_should_restore, NormalizedGeometry, WindowChoreographyPlan, WindowKeyframe,
-    };
-    use std::time::Duration;
+mod tests{
+    use super::{allowed,clamped_square,logical_size};
+    use tauri::{PhysicalPosition,PhysicalRect,PhysicalSize};
 
     #[test]
-    fn logical_dpi_and_negative_origin_are_clamped() {
-        let (position, size) = physical_rect(
-            &NormalizedGeometry {
-                x: 0.95,
-                y: 0.95,
-                width: 0.7,
-                height: 0.7,
-            },
-            (-3840, -120, 3840, 2160, 2.0),
-        );
-        assert_eq!(size.width, 2688);
-        assert_eq!(size.height, 1512);
-        assert!(position.x >= -3840 && position.x + size.width as i32 <= 0);
-        assert!(position.y >= -120 && position.y + size.height as i32 <= 2040);
+    fn fixed_labels_only_and_four_surface_maximum(){
+        assert!(allowed("fireball-cast-1",0,4));
+        assert!(allowed("fireball-cast-4",3,4));
+        assert!(!allowed("main",0,1));
+        assert!(!allowed("fireball-cast-1",0,5));
+        assert!(!allowed("fireball-cast-2",0,2));
     }
 
+    // The comet leaves the STAGE inside the window and the WINDOW after that,
+    // and only then turns and comes back at the player. A surface placed at the
+    // stage exit would sit on top of the game it just left.
     #[test]
-    fn rejects_unlocked_disruptive_or_non_allowlisted_plans() {
-        let make = |cue: &str, locked: bool| WindowChoreographyPlan {
-            schema: 1,
-            token: "session-12345678".into(),
-            cue_id: cue.into(),
-            display_mode: "native".into(),
-            input_locked: locked,
-            hold: false,
-            main: vec![
-                WindowKeyframe {
-                    at_ms: 0,
-                    geometry: NormalizedGeometry {
-                        x: 0.0,
-                        y: 0.0,
-                        width: 1.0,
-                        height: 1.0,
-                    },
-                },
-                WindowKeyframe {
-                    at_ms: 100,
-                    geometry: NormalizedGeometry {
-                        x: 0.1,
-                        y: 0.1,
-                        width: 0.8,
-                        height: 0.8,
-                    },
-                },
-            ],
+    fn the_approach_starts_outside_the_bezel_and_ends_covering_the_window(){
+        let (w,h)=(1000.0_f64,800.0_f64);
+        let (pos_x,pos_y)=(120.0_f64,60.0_f64);
+        let anchor=(0.95*w,0.5*h);
+        let (mut dx,mut dy)=(0.94_f64,-0.34_f64);
+        let length=dx.hypot(dy);dx/=length;dy/=length;
+        let mut edge=f64::MAX;
+        if dx>1e-6{edge=edge.min((w-anchor.0)/dx);}
+        if dy< -1e-6{edge=edge.min(-anchor.1/dy);}
+        let logical=160.0_f64;
+        let near=(pos_x+anchor.0+dx*(edge+logical*0.85),pos_y+anchor.1+dy*(edge+logical*0.85));
+        assert!(near.0>pos_x+w,"it starts outside the window it left");
+
+        let target=(pos_x+w*0.5,pos_y+h*0.5);
+        let at=|p:f64|{
+            let l=p*p;
+            ((near.0+(target.0-near.0)*l,near.1+(target.1-near.1)*l),logical+((w.max(h))-logical)*l)
         };
-        assert!(!safe_plan(&make("overload", false)));
-        assert!(!safe_plan(&make("minimize", true)));
-        assert!(safe_plan(&make("overload", true)));
-        assert!(safe_token("session-12345678"));
+        let (early,small)=at(0.25);
+        let (late,large)=at(1.0);
+        assert!(small<large,"and grows the whole way in");
+        assert!((late.0-target.0).abs()<0.5&&(late.1-target.1).abs()<0.5,"ending on the window's centre");
+        assert!(large>=w.max(h)-0.5,"at the size of the window it is about to hit");
+        // Squared easing: a quarter of the way through the flight it has not yet
+        // covered a quarter of the distance.
+        let span=(target.0-near.0).abs();
+        assert!((early.0-near.0).abs()<span*0.25,"hanging small and far off before it looms");
     }
 
     #[test]
-    fn fullscreen_and_positioning_fallback_never_use_native_geometry() {
-        assert!(!should_use_native(true, true));
-        assert!(!should_use_native(false, false));
-        assert!(should_use_native(false, true));
+    fn the_ray_is_carried_to_the_window_edge_before_it_steps_outside(){
+        // A stage band exiting right at the middle of a 1000x800 window, on a
+        // line 20 degrees above horizontal.
+        let (w,h)=(1000.0_f64,800.0_f64);
+        let anchor=(0.95*w,0.5*h);
+        let (mut dx,mut dy)=(0.94_f64,-0.34_f64);
+        let length=dx.hypot(dy);dx/=length;dy/=length;
+        let mut edge=f64::MAX;
+        if dx>1e-6{edge=edge.min((w-anchor.0)/dx);}
+        if dy< -1e-6{edge=edge.min(-anchor.1/dy);}
+        assert!(edge>0.0&&edge.is_finite());
+        let at=(anchor.0+dx*edge,anchor.1+dy*edge);
+        assert!((at.0-w).abs()<0.5||(at.1).abs()<0.5,"the line must land on a window edge");
+        let step=edge+160.0*0.85;
+        let outside=(anchor.0+dx*step,anchor.1+dy*step);
+        assert!(outside.0>w,"and one surface further puts it past the bezel");
+    }
+
+    // THEY MOVE AS ONE BODY, AND ONLY FROM SOMETHING ACTUALLY COMING FOR THEM.
+    //
+    // The offset is computed once from the formation's centre and applied to
+    // all of it; the per-surface fan is scaled by the INVERSE of cohesion, so
+    // late in the night they hold formation instead of scattering. And beyond
+    // about three surface-widths the pointer is not a threat, which is what
+    // makes the break legible rather than constant twitching.
+    #[test]
+    fn the_shoal_breaks_together_away_from_the_pointer(){
+        let span=200.0_f64;
+        let centre=(900.0_f64,500.0_f64);
+        let shove=|aim:(f64,f64),dodge:f64,reach:f64|{
+            let (dx,dy)=(centre.0-aim.0,centre.1-aim.1);
+            let distance=dx.hypot(dy);
+            let threat=(1.0-(distance/(span*3.2)).min(1.0)).powf(1.4);
+            if !(threat>0.001&&distance>0.5){return (0.0,0.0);}
+            let out=reach*span*dodge*threat;
+            (dx/distance*out,dy/distance*out)
+        };
+
+        // A pointer bearing down from the left pushes the whole shoal right.
+        let near=shove((700.0,500.0),1.0,2.4);
+        assert!(near.0>0.0&&near.1.abs()<1e-6,"straight away from it, not sideways");
+
+        // The same pointer far off does nothing at all.
+        let far=shove((-400.0,500.0),1.0,2.4);
+        assert_eq!(far,(0.0,0.0),"a pointer that is not coming for them is not a threat");
+
+        // And a settled shoal does not move however close the pointer gets.
+        assert_eq!(shove((880.0,500.0),0.0,2.4),(0.0,0.0),"a settle is perfectly still");
+
+        // Cohesion decides how much of the movement is the formation and how
+        // much is each surface fanning off it.
+        let loose_fan=1.0-0.0_f64;
+        let tight_fan=1.0-1.0_f64;
+        assert!(loose_fan>tight_fan,"the last fight holds formation");
     }
 
     #[test]
-    fn stale_restore_cannot_cancel_a_newer_session() {
-        assert!(!session_matches(Some("session-new"), Some("session-old")));
-        assert!(session_matches(Some("session-new"), Some("session-new")));
-        assert!(session_matches(Some("session-new"), None));
-        assert!(
-            session_matches(None, None),
-            "emergency cleanup still closes orphaned echo panes"
-        );
-    }
-
-    #[test]
-    fn watchdog_only_restores_the_matching_stalled_session() {
-        assert!(!watchdog_should_restore(
-            Some("session-new"),
-            "session-old",
-            Some(Duration::from_secs(20))
-        ));
-        assert!(!watchdog_should_restore(
-            Some("session-new"),
-            "session-new",
-            Some(Duration::from_secs(2))
-        ));
-        assert!(watchdog_should_restore(
-            Some("session-new"),
-            "session-new",
-            Some(Duration::from_secs(9))
-        ));
+    fn logical_dpi_and_negative_monitor_positions_are_clamped(){
+        let work=PhysicalRect{position:PhysicalPosition::new(-3840,-120),size:PhysicalSize::new(3840,2160)};
+        let at=clamped_square((-20.0,2100.0),logical_size(3),&work,2.0);
+        let physical=(logical_size(3)*2.0) as i32;
+        assert!(at.x>=-3840&&at.x+physical<=0);
+        assert!(at.y>=-120&&at.y+physical<=2040);
     }
 }

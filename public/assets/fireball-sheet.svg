@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="32" viewBox="0 0 256 32" shape-rendering="crispEdges">
+  <defs>
+    <g id="core">
+      <rect x="10" y="8" width="14" height="16" fill="#e74712"/>
+      <rect x="8" y="12" width="18" height="8" fill="#ff7a16"/>
+      <rect x="12" y="10" width="10" height="12" fill="#ffad1f"/>
+      <rect x="14" y="12" width="6" height="8" fill="#ffe15a"/>
+      <rect x="22" y="12" width="6" height="8" fill="#ff6213"/>
+    </g>
+  </defs>
+  <g transform="translate(0)"><rect x="2" y="14" width="10" height="4" fill="#9f240c"/><rect x="6" y="10" width="8" height="12" fill="#d93b10"/><use href="#core"/></g>
+  <g transform="translate(32)"><rect x="0" y="12" width="12" height="8" fill="#8f1c0b"/><rect x="6" y="8" width="8" height="16" fill="#e14710"/><use href="#core"/><rect x="12" y="8" width="6" height="4" fill="#ffcc35"/></g>
+  <g transform="translate(64)"><rect x="2" y="8" width="6" height="4" fill="#9f240c"/><rect x="0" y="18" width="12" height="4" fill="#c02d0d"/><rect x="6" y="10" width="8" height="12" fill="#f05a13"/><use href="#core"/></g>
+  <g transform="translate(96)"><rect x="0" y="14" width="8" height="4" fill="#8f1c0b"/><rect x="4" y="8" width="8" height="6" fill="#c8320e"/><rect x="6" y="18" width="8" height="6" fill="#ed4c11"/><use href="#core"/><rect x="16" y="10" width="6" height="4" fill="#fff083"/></g>
+  <g transform="translate(128)"><rect x="2" y="10" width="8" height="4" fill="#a9260c"/><rect x="0" y="18" width="8" height="4" fill="#7c1709"/><rect x="6" y="12" width="8" height="8" fill="#ef5012"/><use href="#core"/></g>
+  <g transform="translate(160)"><rect x="0" y="14" width="10" height="4" fill="#7c1709"/><rect x="4" y="8" width="10" height="6" fill="#db3b0f"/><rect x="8" y="18" width="6" height="6" fill="#ff6a15"/><use href="#core"/><rect x="14" y="14" width="8" height="4" fill="#fff49a"/></g>
+  <g transform="translate(192)"><rect x="2" y="6" width="6" height="4" fill="#8f1c0b"/><rect x="0" y="16" width="10" height="6" fill="#ba2b0d"/><rect x="6" y="10" width="10" height="12" fill="#f35a13"/><use href="#core"/></g>
+  <g transform="translate(224)"><rect x="0" y="10" width="8" height="4" fill="#7c1709"/><rect x="2" y="20" width="10" height="4" fill="#a9260c"/><rect x="6" y="8" width="8" height="16" fill="#e74712"/><use href="#core"/><rect x="16" y="12" width="6" height="8" fill="#fff6aa"/></g>
+</svg>

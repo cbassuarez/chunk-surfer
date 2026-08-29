@@ -362,18 +362,39 @@ assert.equal(byId['atrium-sign-main-exit']?.mesh,'public_exit_sign','the atrium 
   assert.doesNotMatch(roofSource,/addTriangle\(/,'roof structure does not fall back to triangular truss geometry');
 }
 
-// The inner W rectangle must never become a lower room. Every point in it is
-// level with the surrounding deck, so there is no collision or render wall at
-// any pool edge.
+// THE BASIN IS A LOWER ROOM NOW, AND THAT IS THE POINT.
+//
+// This block used to assert the opposite — that the inner rectangle stayed flush
+// with the deck so there was no wall at any pool edge — because the basin was a
+// painted lid you looked at. It is a real 2m depression you walk down into, so
+// the contract inverts: the floor is -2 across the basin, the coping IS a wall
+// on every side, and the west access stair is the only way in or out.
+const STAIR_X = [77, 78, 79];            // the 2m-wide flight, authored at x78
+const STAIR_Y = [33, 34, 35, 36, 37];    // 0 -> -2 over five authored metres
 for(let y=33*PLAN_SCALE;y<49*PLAN_SCALE;y++)for(let x=78*PLAN_SCALE;x<90*PLAN_SCALE;x++){
-  assert.equal(FP.floorAt(x,y),0,`pool surface remains flush at ${x/PLAN_SCALE},${y/PLAN_SCALE}`);
-  assert.equal(FP.cellAt(x,y)?.flags&1,0,`pool surface is not a stair at ${x/PLAN_SCALE},${y/PLAN_SCALE}`);
+  const ax=x/PLAN_SCALE, ay=y/PLAN_SCALE;
+  if(STAIR_X.includes(Math.floor(ax))&&STAIR_Y.includes(Math.floor(ay)))continue;   // the ramp itself
+  assert.equal(FP.floorAt(x,y),-2,`basin floor is two metres down at ${ax},${ay}`);
 }
+// The stair descends the full drop and nothing else does.
+{
+  const top=rt(78,33.2), foot=rt(78,37.2);
+  assert.ok(FP.floorAt(top.x,top.y)>-.5,'the stair starts flush with the north deck');
+  assert.ok(FP.floorAt(foot.x,foot.y)<-1.5,'and arrives on the basin floor');
+}
+// Every coping edge is a wall. Walking off the deck into the water is not a step.
 for(const [deckX,deckY,poolX,poolY] of [
   [77,40,78,40],[90,40,89,40],[84,32,84,33],[84,49,84,48],
 ]){
   const a=rt(deckX,deckY),b=rt(poolX,poolY),step=FP.canStep(a.x,a.y,b.x,b.y,{keys:KEYRING});
-  assert.equal(step.ok,true,`no inner pool wall between ${deckX},${deckY} and ${poolX},${poolY}`);
+  assert.equal(step.ok,false,`the coping is a wall between ${deckX},${deckY} and ${poolX},${poolY}`);
+}
+// And the stair is genuinely walkable in both directions, which is what makes
+// the basin a room rather than a hole.
+{
+  const deck=rt(78,32.5), bottom=rt(78,38.5);
+  assert.ok(reachable(deck,bottom),'the west stair carries you down into the basin');
+  assert.ok(reachable(bottom,deck),'and back out of it');
 }
 
 // Every cell inside the one exterior wall belongs to the replacement room.

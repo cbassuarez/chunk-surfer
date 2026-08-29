@@ -394,14 +394,19 @@ test('encounter signatures materially alter pressure while remaining authored da
   fatalFeedback = reduceCombat(fatalFeedback, { type: COMBAT_ACTION.PLAYBACK });
   assert.equal(combatResult(fatalFeedback)?.result, 'lose');
 
-  let ensemble = createCombatState(definition('practice'), {});
-  ensemble.turnsInMovement = 2;
-  ensemble = runCombatTurn(ensemble, { type: COMBAT_ACTION.EXPOSE });
-  assert.equal(ensemble.last.received, 3 * GRID);
+  // ENSEMBLE STACK moved off `practice` when the wing stopped having hostile
+  // beats to stack on — nothing in that room strikes him. `chapel` still carries
+  // a signature that fires on a real blow, which is what this is checking.
+  assert.equal(definition('practice').signature, undefined,
+    'the wing claims no signature it cannot fire');
 });
 
 test('a clean regular fight lands inside the authored 8–12 decision arc', () => {
-  let state = createCombatState(definition('practice'), { tools: { torch: true, recorder: true } });
+  // `natatorium` rather than `practice`: the wing is no longer a fight you can
+  // win by playing well, because there is nothing in it to reduce. Its arc is
+  // held by test/practice-room.spec.mjs, which counts laps to the wall instead
+  // of decisions to a kill.
+  let state = createCombatState(definition('natatorium'), { tools: { torch: true, recorder: true } });
   let decisions = 0;
   while (!state.result && decisions < 30) {
     const intent = currentCombatIntent(state);
@@ -483,9 +488,17 @@ test('Story and Standard can finish every authored fight with a completely spent
       });
       state.composeMovements = [0];
       for (let guard = 0; !state.result && guard < 200; guard += 1) {
-        state = runCombatTurn(state, {
-          type: combatRecoveryStatus(state).ready ? COMBAT_ACTION.COMPOSE : COMBAT_ACTION.HOLD,
-        });
+        // The ladder is every action that needs no tool. LISTEN and PUT IT DOWN
+        // joined it with the practice wing: that room cannot be finished by
+        // bracing, but it does not ask for a device either — it asks him to play
+        // the bar back and then stop, both of which a man with an empty bag can
+        // still do. The property under test is that no fight REQUIRES equipment,
+        // not that every fight can be waited out.
+        const offered = availableCombatActions(state).filter((move) => move.enabled).map((move) => move.id);
+        const type = offered.includes(COMBAT_ACTION.PUT_IT_DOWN) ? COMBAT_ACTION.PUT_IT_DOWN
+          : offered.includes(COMBAT_ACTION.LISTEN) ? COMBAT_ACTION.LISTEN
+            : combatRecoveryStatus(state).ready ? COMBAT_ACTION.COMPOSE : COMBAT_ACTION.HOLD;
+        state = runCombatTurn(state, { type });
       }
       assert.equal(combatResult(state)?.result, 'win', `${mode}:${id}`);
     }
@@ -527,19 +540,32 @@ test('competent Standard play keeps every ordinary encounter in a deliberate dec
     let decisions = 0;
     while (!state.result && decisions < 40) {
       const intent = currentCombatIntent(state);
-      const action = state.tempo
+      // Competent play in the practice wing is not "counter the blow" — nothing
+      // in that room throws one. It is reaching the bar the file ends at and
+      // playing it back instead of winding it on, which is the whole decision
+      // the encounter offers.
+      const offered = availableCombatActions(state).filter((move) => move.enabled).map((move) => move.id);
+      const action = offered.includes(COMBAT_ACTION.PUT_IT_DOWN) ? COMBAT_ACTION.PUT_IT_DOWN
+        : offered.includes(COMBAT_ACTION.LISTEN) ? COMBAT_ACTION.LISTEN
+          : state.tempo
         // Competent play does not hand a free action back. The regulars cost
         // nothing, so there is always something better to do with a bonus beat
         // than close the channel.
-        ? state.take ? COMBAT_ACTION.PLAYBACK : COMBAT_ACTION.EXPOSE
-        : intent.kind === 'broadcast' ? COMBAT_ACTION.MONITOR
-          : intent.kind === 'conceal' ? COMBAT_ACTION.EXPOSE
-            : COMBAT_ACTION.HOLD;
+            ? state.take ? COMBAT_ACTION.PLAYBACK : COMBAT_ACTION.EXPOSE
+            : intent.kind === 'broadcast' ? COMBAT_ACTION.MONITOR
+              : intent.kind === 'conceal' ? COMBAT_ACTION.EXPOSE
+                : COMBAT_ACTION.HOLD;
       state = runCombatTurn(state, { type: action, replaceTake: true });
       decisions += 1;
     }
     assert.equal(combatResult(state)?.result, 'win', id);
-    assert.ok(decisions >= 9 && decisions <= 15, `${id} used ${decisions} decisions`);
+    // The wing runs longer, and it is meant to. Its arc is three laps of a
+    // four-bar fragment rather than a health bar coming down: walk to the bar
+    // the file ends at, play it back, and do that until there is nothing left on
+    // it to hear. Holding it to a range written for fights you win by reducing
+    // something would be shortening the one encounter whose length is the point.
+    const [low, high] = id === 'practice' ? [9, 22] : [9, 15];
+    assert.ok(decisions >= low && decisions <= high, `${id} used ${decisions} decisions`);
   }
 });
 
@@ -630,7 +656,12 @@ test('a worn bag is never a fight you cannot win', () => {
       // into a blow that would kill it. That one defensive rule is the whole of
       // what 'competent' means here: it never spends a resource, never needs a
       // technique, and is visible on the card before the beat is committed.
-      const action = state.tempo
+      // The wing's two verbs come first and cost no resource, which is exactly
+      // what this harness is testing for: it clears that room on a flat torch
+      // because the way out of it was never in the bag.
+      const action = open.includes(COMBAT_ACTION.PUT_IT_DOWN) ? COMBAT_ACTION.PUT_IT_DOWN
+        : open.includes(COMBAT_ACTION.LISTEN) ? COMBAT_ACTION.LISTEN
+        : state.tempo
         ? (state.take && open.includes(COMBAT_ACTION.PLAYBACK) ? COMBAT_ACTION.PLAYBACK
           : open.includes(COMBAT_ACTION.EXPOSE) ? COMBAT_ACTION.EXPOSE : COMBAT_ACTION.END_TEMPO)
         : intent.damage >= state.composure && open.includes(COMBAT_ACTION.HOLD) ? COMBAT_ACTION.HOLD

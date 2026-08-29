@@ -2,7 +2,12 @@ import assert from 'node:assert/strict';
 
 import { SOURCE_PAGES, sourcePageDocument, sourcePageFor, sourcePageById } from '../src/data/source-pages.js';
 if (!globalThis.document) globalThis.document = { title: '' };
-const { SOURCE_THRESHOLD, makeSourcePageScene, makeSourceThresholdScene } = await import('../src/game/source-page-scene.js');
+const {
+  SOURCE_THRESHOLD,
+  makeSourcePageScene,
+  makeSourceStillPageScene,
+  makeSourceThresholdScene,
+} = await import('../src/game/source-page-scene.js');
 import { CHUNK_SURF_PHASE, pageStageForDistance } from '../src/game/chunk-surf-state.js';
 
 // THE LONG HALL. Three things were wrong with it and these hold each one down.
@@ -80,11 +85,20 @@ import { CHUNK_SURF_PHASE, pageStageForDistance } from '../src/game/chunk-surf-s
   assert.doesNotMatch(runtime, /text: 'One sheet does not move/,
     'taking the still page answers with a caption again');
   assert.match(runtime, /event: 'page-found'/);
-  assert.match(fs.readFileSync('src/main.js', 'utf8'), /event==='page-found'\)\{ enterSourceLandscape\(\)/,
-    'the page no longer cuts to black');
+  const main = fs.readFileSync('src/main.js', 'utf8');
+  const branch = main.slice(main.indexOf("if(result.event==='page-found')"), main.indexOf("if(result.event==='horizon')"));
+  assert.match(branch, /scenes\.push\(makeSourceStillPageScene\(\)\)/,
+    'the real sheet is not presented as the transition cover');
+  assert.ok(branch.indexOf('makeSourceStillPageScene') < branch.indexOf('enterSourceLandscape()'),
+    'the world swaps before the sheet covers it');
 
-  // The threshold gives the compositor a short cover, then resolves a four
-  // second physical-to-Source mosh. It is not skippable and always finishes.
+  const still = makeSourceStillPageScene();
+  assert.equal(still.blocksInput, true);
+  assert.equal(still.blocksWorld, false);
+  assert.equal(still.transitionCover, true);
+
+  // The older macroblock threshold remains deterministic for legacy/resume
+  // callers, but the live still-page route above uses the legible sheet.
   let done = 0;
   const scene = makeSourceThresholdScene({ onDone: () => { done += 1; }, cue: () => {} });
   scene.enter();

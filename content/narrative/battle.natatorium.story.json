@@ -61,7 +61,7 @@
         },
         {
           "who": "direction",
-          "text": "And then, far off, a piano. Two notes. The wrong two notes. The downbeat lands. The coping rises past your eyes without your feet moving.",
+          "text": "And then, far off, a piano. Two notes. The wrong two notes. The downbeat lands. Nothing in the dry room moves.",
           "id": "start.line.2"
         },
         {
@@ -71,7 +71,7 @@
         },
         {
           "who": "you",
-          "text": "There is no piano in a building that has had its power off since April. My cuffs are dry. The meter bubbles anyway.",
+          "text": "There is no piano in a building that has had its power off since April. My cuffs are dry. The meter moves anyway.",
           "id": "start.line.4"
         },
         {
@@ -142,6 +142,12 @@
     "round-2": {
       "type": "battle-round",
       "lines": [
+        {
+          "who": "direction",
+          "text": "Water reaches your ribs without entering the room. Your hands are under it. Your mouth is still in air.",
+          "id": "round-2.water-rise",
+          "channel": "before"
+        },
         {
           "who": "sarah",
           "text": "Don’t record this.",
@@ -227,6 +233,12 @@
     "round-3": {
       "type": "battle-round",
       "lines": [
+        {
+          "who": "direction",
+          "text": "The surface passes over your eyes. The room tone loses its air. Every word now arrives through bone.",
+          "id": "round-3.full-submersion",
+          "channel": "before"
+        },
         {
           "who": "sarah",
           "text": "You never played me back. Not once. I used to think it was kindness.",
@@ -369,31 +381,62 @@
         "lead": "lead-1",
         "submersion": {
           "enabled": true,
-          "at": "downbeat",
-          "lowpassHz": 720,
           "q": 0.8,
-          "dryLeak": 0.08,
-          "rampSeconds": 0.18,
-          "surfaceSeconds": 0.6
+          "wetMix": {
+            "dry": 0,
+            "half": 0.5,
+            "full": 0.92
+          },
+          "lowpassHz": {
+            "dry": 20000,
+            "half": 1800,
+            "full": 720
+          },
+          "transitionSeconds": {
+            "dry": 0,
+            "half": 1,
+            "full": 1.1,
+            "win": 1.35
+          }
         }
       },
       "presentation": {
         "mode": "submerged",
-        "movementDepths": [
-          0.35,
-          0.68,
-          1
-        ]
+        "submersionPhases": [
+          "dry",
+          "half",
+          "full"
+        ],
+        "resultPhases": {
+          "win": "dry",
+          "lose": "full"
+        },
+        "wetMix": {
+          "dry": 0,
+          "half": 0.5,
+          "full": 0.92
+        },
+        "lowpassHz": {
+          "dry": 20000,
+          "half": 1800,
+          "full": 720
+        },
+        "transitionSeconds": {
+          "dry": 0,
+          "half": 1,
+          "full": 1.1,
+          "win": 1.35
+        }
       },
       "movements": [
         {
           "id": "room",
-          "title": "THE SURFACE CLOSES",
+          "title": "THE DRY ROOM LISTENS",
           "coherence": 5,
           "intents": [
             {
               "id": "natatorium:meter",
-              "label": "METER MOVES BELOW THE WATERLINE",
+              "label": "METER MOVES IN THE DRY ROOM",
               "kind": "broadcast",
               "damage": 2,
               "recordable": true,
@@ -404,7 +447,7 @@
             },
             {
               "id": "natatorium:pressure",
-              "label": "WATER HAMMERS BEHIND THE EARS",
+              "label": "ROOM TONE HAMMERS BEHIND THE EARS",
               "kind": "overload",
               "damage": 2,
               "recordable": false,
@@ -414,7 +457,7 @@
             },
             {
               "id": "natatorium:piano",
-              "label": "TWO NOTES THROUGH THE SURFACE",
+              "label": "TWO NOTES WITHOUT AIR",
               "kind": "conceal",
               "damage": 2,
               "recordable": false,
@@ -425,7 +468,7 @@
           "severeIntents": [
             {
               "id": "natatorium:pressure",
-              "label": "WATER HAMMERS BEHIND THE EARS",
+              "label": "ROOM TONE HAMMERS BEHIND THE EARS",
               "kind": "overload",
               "damage": 2,
               "recordable": false,
@@ -435,7 +478,7 @@
             },
             {
               "id": "natatorium:piano",
-              "label": "TWO NOTES THROUGH THE SURFACE",
+              "label": "TWO NOTES WITHOUT AIR",
               "kind": "conceal",
               "damage": 2,
               "recordable": false,
@@ -444,7 +487,7 @@
             },
             {
               "id": "natatorium:meter",
-              "label": "METER MOVES BELOW THE WATERLINE",
+              "label": "METER MOVES IN THE DRY ROOM",
               "kind": "broadcast",
               "damage": 2,
               "recordable": true,
@@ -457,7 +500,7 @@
           "deadAirIntents": [
             {
               "id": "natatorium:piano",
-              "label": "TWO NOTES THROUGH THE SURFACE",
+              "label": "TWO NOTES WITHOUT AIR",
               "kind": "conceal",
               "damage": 2,
               "recordable": false,
@@ -466,7 +509,7 @@
             },
             {
               "id": "natatorium:pressure",
-              "label": "WATER HAMMERS BEHIND THE EARS",
+              "label": "ROOM TONE HAMMERS BEHIND THE EARS",
               "kind": "overload",
               "damage": 2,
               "recordable": false,
@@ -476,7 +519,7 @@
             },
             {
               "id": "natatorium:meter",
-              "label": "METER MOVES BELOW THE WATERLINE",
+              "label": "METER MOVES IN THE DRY ROOM",
               "kind": "broadcast",
               "damage": 2,
               "recordable": true,

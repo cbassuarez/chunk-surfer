@@ -3,6 +3,7 @@ import { conservatory } from '../src/data/floorplan/conservatory.js';
 import * as FP from '../src/world/floorplan.js';
 import { BUILDING_MAP } from '../src/data/building-map.js';
 import { captureFloorplanMapSource, buildMapModel, mapCurrentAreaLabel } from '../src/game/map-model.js';
+import { buildMinimapCommands, localTopologyCoverage } from '../src/render/map-commands.js';
 import { ROOM_CELLS, TARGETS } from '../src/data/conservatory-script.js';
 
 FP.compile(conservatory.levels, {
@@ -38,6 +39,21 @@ assert.equal(source.spaces.some((space) => !space.floorId), false, 'no named fac
 assert.equal(source.spaces.find((space) => space.id === 'space:ensemble-room')?.floorId, 'u1');
 assert.equal(source.spaces.filter((space) => space.floorId === 'academic').length, 15,
   'the third-floor plan retains the loggia, gallery, circulation, classrooms and offices');
+
+const opening = project(conservatory.spawn);
+const openingFloor = source.floors.find((floor) => floor.id === 'g');
+const openingPosition = { x: opening.x / source.topologyStride, y: opening.z / source.topologyStride };
+assert.ok(localTopologyCoverage(openingFloor, openingPosition, 18) >= .94,
+  'the opening road is a broad, uniformly walkable exterior');
+const openingModel = buildMapModel({
+  source, job:{done:0,total:5,rooms:[]}, objectiveState:{}, doors:[], contacts:[],
+  navigation:{id:'directional',showMapTopology:true,minimapMode:'topology'},
+  player:{x:opening.x,y:opening.z,height:opening.height,renderGroup:opening.renderGroup,roomId:null,heading:0},
+});
+const openingTopology = buildMinimapCommands({model:openingModel,viewport:{x:0,y:0,w:18,h:8}})
+  .find((command)=>command.kind==='local-topology');
+assert.equal(openingTopology?.fillOpen,false,
+  'the opening minimap keeps its sight fan and boundaries instead of painting one large square');
 
 const start = project(ROOM_CELLS.main_b3);
 const job = { done:0, total:5, rooms:TARGETS.map((roomId) => ({ roomId, label:roomId, notes:[], recorded:false })) };

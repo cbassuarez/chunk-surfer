@@ -15,6 +15,7 @@ import { UI_COLOR, activeTheme } from '../render/palette.js';
 import { getMeta, hasActiveRun } from './save.js';
 import * as AUDIO from '../audio/story-audio.js';
 import { promptLine } from './bindings.js';
+import { bootWeather, bootWeatherAudio, bootWeatherSettled, endBootWeather, renderBootWeather, stepBootWeather } from './boot-weather.js';
 import { hushAvailabilityCopy } from './post-run-copy.js';
 
 const TITLE_CONFIRM_PROMPT = 'START NEW RUN? PRESS ENTER AGAIN';
@@ -266,13 +267,31 @@ export function makeTitleScene({
       return true;
     },
 
-    update(dt) { t += dt; },
+    update(dt) {
+      t += dt;
+      // THE LAST OF THE WEATHER LANDS HERE. The credits scene is removed and
+      // this one pushed inside a single scenes.update, so whatever was still in
+      // frame at 23.5s crosses the cut mid-flight. Calm brings it to rest
+      // rather than switching it off in mid-air, and then it is done for the
+      // session — backing out of a run to this menu must not start it again.
+      const weather = bootWeather();
+      if (!weather) return;
+      stepBootWeather(weather, dt, { presence: 0, settling: true, calm: true });
+      // The bed rides the same fade the last particles do, so the weather stops
+      // being audible at the moment it stops being visible — under the menu
+      // hiss, which primeAudio has already brought up. endBootWeather stops it.
+      bootWeatherAudio()?.update?.({ presence: weather.fade * 0.55, wind: weather.wind });
+      if (bootWeatherSettled(weather)) endBootWeather();
+    },
 
     render() {
       hits.reset();
 
       const { cols, rows } = uiSize();
       uiFill(0, 0, cols, rows, UI_COLOR.glass);
+      // On the ground, under the panel: the menu comes up over the end of the
+      // weather, not the other way round.
+      renderBootWeather(bootWeather());
 
       const w = Math.min(78, cols - 4);
       const estimatedBodyW = Math.max(1, w - 6);

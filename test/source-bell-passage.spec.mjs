@@ -47,8 +47,10 @@ import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
   assert.equal(tier.field, false, 'it is outside the altitude economy, like the tape');
   assert.equal(tier.height, SOURCE_TIER_BY_ID.horizon.height,
     'walking off the recording into the bells is neither a climb nor a fall');
-  assert.equal(sourceTierAt(-1000).id, 'bells');
-  assert.equal(sourceTierHeightAt(-1000), sourceTierHeightAt(-500));
+  const passageMid=(SOURCE_BELLS.from+SOURCE_BELLS.to)/2;
+  const horizonMid=(SOURCE_TIER_BY_ID.horizon.from+SOURCE_TIER_BY_ID.horizon.to)/2;
+  assert.equal(sourceTierAt(passageMid).id, 'bells');
+  assert.equal(sourceTierHeightAt(passageMid), sourceTierHeightAt(horizonMid));
   // It begins exactly where the tape stops. A gap would be undrawn ground.
   assert.equal(SOURCE_BELLS.from, SOURCE_TIER_BY_ID.horizon.to);
   assert.equal(SOURCE_TIERS.at(-1).id, 'bells', 'and nothing is authored past it');

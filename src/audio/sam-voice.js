@@ -353,10 +353,46 @@ function startBed(ctx, dest, level, lp) {
 export function createSamDialogVoice({ volume = 0.22, getAudio = null } = {}) {
   let ctx = null;
   let gain = null;
+  let dryEnvironmentGain = null;
+  let wetEnvironmentGain = null;
+  let wetEnvironmentFilter = null;
   let dest = null;
   let current = null;
   let seq = 0;
   let chains = new Map();
+  let environment = { enabled:false, wetMix:0, dryMix:1, lowpassHz:20000, phase:'dry' };
+
+  function applyEnvironment(seconds = .035) {
+    if (!ctx || !dryEnvironmentGain || !wetEnvironmentGain || !wetEnvironmentFilter) return;
+    const at = Number(ctx.currentTime) || 0;
+    const end = at + Math.max(.02, Number(seconds) || .02);
+    const values = [
+      [dryEnvironmentGain.gain, clamp(environment.dryMix, 0, 1)],
+      [wetEnvironmentGain.gain, clamp(environment.wetMix, 0, 1)],
+      [wetEnvironmentFilter.frequency, Math.max(120, Number(environment.lowpassHz) || 20000)],
+    ];
+    for (const [param, value] of values) {
+      try {
+        param.cancelScheduledValues(at);
+        param.setValueAtTime(Number(param.value) || value, at);
+        param.linearRampToValueAtTime(value, end);
+      } catch (_) { param.value = value; }
+    }
+  }
+
+  function connectEnvironment() {
+    dryEnvironmentGain = ctx.createGain();
+    wetEnvironmentGain = ctx.createGain();
+    wetEnvironmentFilter = ctx.createBiquadFilter();
+    wetEnvironmentFilter.type = 'lowpass';
+    wetEnvironmentFilter.Q.value = .8;
+    gain.connect(dryEnvironmentGain);
+    dryEnvironmentGain.connect(dest);
+    gain.connect(wetEnvironmentFilter);
+    wetEnvironmentFilter.connect(wetEnvironmentGain);
+    wetEnvironmentGain.connect(dest);
+    applyEnvironment(0);
+  }
 
   function ensureContext() {
     const provided = typeof getAudio === 'function' ? getAudio() : null;
@@ -364,13 +400,15 @@ export function createSamDialogVoice({ volume = 0.22, getAudio = null } = {}) {
       const nextCtx = provided.ctx;
       const nextDest = provided.destination || provided.bus || nextCtx.destination;
       if (ctx !== nextCtx || dest !== nextDest || !gain) {
-        try { gain?.disconnect(); } catch (_) {}
+        for (const node of [gain, dryEnvironmentGain, wetEnvironmentFilter, wetEnvironmentGain]) {
+          try { node?.disconnect(); } catch (_) {}
+        }
         ctx = nextCtx;
         dest = nextDest;
         chains = new Map();
         gain = ctx.createGain();
         gain.gain.value = volume;
-        gain.connect(dest);
+        connectEnvironment();
       }
       return ctx;
     }
@@ -382,8 +420,24 @@ export function createSamDialogVoice({ volume = 0.22, getAudio = null } = {}) {
     chains = new Map();
     gain = ctx.createGain();
     gain.gain.value = volume;
-    gain.connect(dest);
+    connectEnvironment();
     return ctx;
+  }
+
+  function setEnvironment(snapshot = null, { seconds = .035 } = {}) {
+    if (!snapshot?.enabled) environment = { enabled:false, wetMix:0, dryMix:1, lowpassHz:20000, phase:'dry' };
+    else {
+      const wetMix = clamp(Number(snapshot.wetMix) || 0, 0, 1);
+      environment = {
+        enabled:true,
+        wetMix,
+        dryMix:1-wetMix,
+        lowpassHz:Math.max(120, Number(snapshot.lowpassHz) || 20000),
+        phase:snapshot.phase || snapshot.targetPhase || 'dry',
+      };
+    }
+    applyEnvironment(seconds);
+    return { ...environment };
   }
 
   function chainFor(speaker) {
@@ -400,6 +454,22 @@ export function createSamDialogVoice({ volume = 0.22, getAudio = null } = {}) {
     if (!current) return;
     current.stop();
     current = null;
+  }
+
+  function dispose() {
+    stopCurrent();
+    for (const chain of chains.values()) {
+      try { chain.input?.disconnect?.(); } catch (_) {}
+      try { chain.output?.disconnect?.(); } catch (_) {}
+    }
+    chains.clear();
+    for (const node of [gain, dryEnvironmentGain, wetEnvironmentFilter, wetEnvironmentGain]) {
+      try { node?.disconnect?.(); } catch (_) {}
+    }
+    gain = null;
+    dryEnvironmentGain = null;
+    wetEnvironmentFilter = null;
+    wetEnvironmentGain = null;
   }
 
   function timerOnly(handle, duration) {
@@ -510,6 +580,9 @@ export function createSamDialogVoice({ volume = 0.22, getAudio = null } = {}) {
   return {
     start,
     stop: stopCurrent,
+    dispose,
+    setEnvironment,
+    environment: () => ({ ...environment }),
     warm: () => { loadSamProvider(); },
   };
 }

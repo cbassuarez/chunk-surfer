@@ -73,7 +73,13 @@ const pick = (state, preferences) => {
   return open[0]?.id || COMBAT_ACTION.WAIT;
 };
 // Reads the card, not the engine — a player only ever sees the prediction.
+// Competent play in the practice wing is not countering — nothing in that room
+// throws anything to counter. It is walking the fragment to the bar the file
+// ends at and playing it back instead of winding it on, and then stopping. Both
+// verbs are toolless, so this costs the harness nothing anywhere else.
 const competent = (state) => pick(state, [
+  COMBAT_ACTION.PUT_IT_DOWN,
+  COMBAT_ACTION.LISTEN,
   COUNTER_FOR[predictedCombatIntent(state)?.kind],
   COMBAT_ACTION.PLAYBACK, COMBAT_ACTION.EXPOSE, COMBAT_ACTION.MONITOR, COMBAT_ACTION.HOLD,
 ]);

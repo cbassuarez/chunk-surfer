@@ -197,15 +197,29 @@ function normalizedProfile(profile = {}) {
     : { mode, lead: valid[0] || 'lead-1' };
   const wet=profile.submersion;
   if(!wet?.enabled)return base;
-  const dryLeak=Number(wet.dryLeak);
+  const legacyDryLeak=Number(wet.dryLeak);
+  const legacyWet=1-Math.max(0,Math.min(.4,Number.isFinite(legacyDryLeak)?legacyDryLeak:.08));
+  const halfWet=Number(wet.wetMix?.half);
+  const fullWet=Number(wet.wetMix?.full);
   return {...base,submersion:{
     enabled:true,
-    at:wet.at==='downbeat'?'downbeat':'downbeat',
-    lowpassHz:Math.max(120,Number(wet.lowpassHz)||720),
     q:Math.max(.01,Number(wet.q)||.8),
-    dryLeak:Math.max(0,Math.min(.4,Number.isFinite(dryLeak)?dryLeak:.08)),
-    rampSeconds:Math.max(.02,Number(wet.rampSeconds)||.18),
-    surfaceSeconds:Math.max(.02,Number(wet.surfaceSeconds)||.6),
+    wetMix:{
+      dry:0,
+      half:Math.max(0,Math.min(1,Number.isFinite(halfWet)?halfWet:.5)),
+      full:Math.max(0,Math.min(1,Number.isFinite(fullWet)?fullWet:legacyWet)),
+    },
+    lowpassHz:{
+      dry:Math.max(120,Number(wet.lowpassHz?.dry)||20000),
+      half:Math.max(120,Number(wet.lowpassHz?.half)||1800),
+      full:Math.max(120,Number(wet.lowpassHz?.full)||Number(wet.lowpassHz)||720),
+    },
+    transitionSeconds:{
+      dry:Math.max(0,Number(wet.transitionSeconds?.dry)||0),
+      half:Math.max(.02,Number(wet.transitionSeconds?.half)||1),
+      full:Math.max(.02,Number(wet.transitionSeconds?.full)||Number(wet.rampSeconds)||1.1),
+      win:Math.max(.02,Number(wet.transitionSeconds?.win)||Number(wet.surfaceSeconds)||1.35),
+    },
   }};
 }
 
@@ -244,10 +258,10 @@ export function createBattleMusicSession({
   let finishing = false;
   let stopped = false;
   let intrusion = 0;
-  let submersionAt = null;
-  let submersionEndAt = null;
-  let resurfaceAt = null;
-  let resurfaceEndAt = null;
+  let submersionSnapshot = profile.submersion ? {
+    enabled:true,phase:'dry',targetPhase:'dry',progress:1,settled:true,
+    wetMix:0,dryMix:1,lowpassHz:profile.submersion.lowpassHz.dry,serial:0,
+  } : null;
 
   function now() { return Number(contextRef?.currentTime) || 0; }
   function registerNode(node) { if (node) graphNodes.add(node); return node; }
@@ -323,15 +337,16 @@ export function createBattleMusicSession({
     paramValueAt(master.gain, master.gain.value, at);
     rampParam(master.gain, masterTarget(), at + (dialogueActive ? .18 : .36));
   }
-  function scheduleSubmersion(when){
-    if(!profile.submersion)return false;
-    const start=Math.max(now(),Number(when)||now()),end=start+profile.submersion.rampSeconds;
-    submersionAt=start;submersionEndAt=end;
-    if(!dryGain||!wetGain)return false;
-    cancelParam(dryGain.gain,start);cancelParam(wetGain.gain,start);
-    paramValueAt(dryGain.gain,1,start);paramValueAt(wetGain.gain,0,start);
-    rampParam(dryGain.gain,profile.submersion.dryLeak,end);
-    rampParam(wetGain.gain,1-profile.submersion.dryLeak,end);
+  function setSubmersion(snapshot=null){
+    if(!profile.submersion||!snapshot?.enabled)return false;
+    const wetMix=Math.max(0,Math.min(1,Number(snapshot.wetMix)||0));
+    const lowpassHz=Math.max(120,Number(snapshot.lowpassHz)||profile.submersion.lowpassHz.dry);
+    submersionSnapshot={...snapshot,available:!!wetFilter,wetMix,dryMix:1-wetMix,lowpassHz};
+    if(!dryGain||!wetGain||!wetFilter||finishing)return true;
+    const at=now(),end=at+.035;
+    for(const [param,value] of [[dryGain.gain,1-wetMix],[wetGain.gain,wetMix],[wetFilter.frequency,lowpassHz]]){
+      cancelParam(param,at);paramValueAt(param,param.value,at);rampParam(param,value,end);
+    }
     return true;
   }
   function ensureLead(id, when) {
@@ -438,7 +453,7 @@ export function createBattleMusicSession({
       if(profile.submersion&&contextRef.createBiquadFilter&&contextRef.createGain){
         dryGain=registerNode(contextRef.createGain());wetGain=registerNode(contextRef.createGain());wetFilter=registerNode(contextRef.createBiquadFilter());
         paramValueAt(dryGain.gain,1,now());paramValueAt(wetGain.gain,0,now());
-        wetFilter.type='lowpass';paramValueAt(wetFilter.frequency,profile.submersion.lowpassHz,now());paramValueAt(wetFilter.Q,profile.submersion.q,now());
+        wetFilter.type='lowpass';paramValueAt(wetFilter.frequency,profile.submersion.lowpassHz.dry,now());paramValueAt(wetFilter.Q,profile.submersion.q,now());
         master.connect(dryGain);dryGain.connect(destination);
         master.connect(wetFilter);wetFilter.connect(wetGain);wetGain.connect(destination);
       }else master.connect(destination);
@@ -472,7 +487,9 @@ export function createBattleMusicSession({
       const fillSeconds = fill?.duration || 0;
       const countInBars = fillSeconds ? Math.max(1, Math.ceil(fillSeconds / BATTLE_BAR_SECONDS)) : 0;
       downbeatAt = readyAt + countInBars * BATTLE_BAR_SECONDS;
-      scheduleSubmersion(downbeatAt);
+      // The score starts dry. Combat moves the shared water controller at the
+      // authored movement edges and feeds its current snapshot into this bus.
+      setSubmersion(submersionSnapshot);
       const fillAt = downbeatAt - fillSeconds;
       if (fill) connectSource(`entry-${entryVariant}-fill`, fill, fillAt);
       connectSource('bed', bankBuffer(bank, 'bed'), downbeatAt, { loop: true });
@@ -488,14 +505,7 @@ export function createBattleMusicSession({
     finishing = true;
     status = 'fading';
     const at = now();
-    let fadeAt=at;
-    if(result==='win'&&profile.submersion&&dryGain&&wetGain){
-      const surfaceSeconds=profile.submersion.surfaceSeconds;
-      resurfaceAt=at;resurfaceEndAt=at+surfaceSeconds;fadeAt=resurfaceEndAt;
-      cancelParam(dryGain.gain,at);cancelParam(wetGain.gain,at);
-      paramValueAt(dryGain.gain,dryGain.gain.value,at);paramValueAt(wetGain.gain,wetGain.gain.value,at);
-      rampParam(dryGain.gain,1,resurfaceEndAt);rampParam(wetGain.gain,0,resurfaceEndAt);
-    }
+    const fadeAt=at;
     const endAt = fadeAt + Math.max(.02, Number(seconds) || .02);
     if (master) {
       cancelParam(master.gain, fadeAt);
@@ -514,22 +524,7 @@ export function createBattleMusicSession({
       : status === 'fading' ? 'fading'
         : activeLead && windowStartAt != null && at >= windowStartAt && at < windowEndAt ? 'solo'
           : restUntil != null && at < restUntil ? 'rest' : status;
-    let submersion=null;
-    if(profile.submersion){
-      const plungeProgress=submersionAt==null||at<submersionAt?0:Math.max(0,Math.min(1,(at-submersionAt)/Math.max(.001,profile.submersion.rampSeconds)));
-      const surfaceProgress=resurfaceAt==null?0:Math.max(0,Math.min(1,(at-resurfaceAt)/Math.max(.001,profile.submersion.surfaceSeconds)));
-      const wetMix=resurfaceAt!=null
-        ?(1-profile.submersion.dryLeak)*(1-surfaceProgress)
-        :(1-profile.submersion.dryLeak)*plungeProgress;
-      submersion={
-        available:!!wetFilter,
-        phase:resurfaceAt!=null?(surfaceProgress>=1?'dry':'resurfacing'):plungeProgress<=0?'dry':plungeProgress<1?'plunging':'submerged',
-        at:submersionAt,endAt:submersionEndAt,resurfaceAt,resurfaceEndAt,
-        progress:resurfaceAt!=null?1-surfaceProgress:plungeProgress,
-        wetMix,dryMix:1-wetMix,
-        lowpassHz:profile.submersion.lowpassHz,q:profile.submersion.q,dryLeak:profile.submersion.dryLeak,
-      };
-    }
+    const submersion=submersionSnapshot?{...submersionSnapshot,available:!!wetFilter,q:profile.submersion?.q||.8}:null;
     return {
       status,
       phase,
@@ -552,5 +547,5 @@ export function createBattleMusicSession({
       sourceCount: activeSources.size,
     };
   }
-  return { start, update, onCombatEvent, setDialogueActive, setIntrusion, finish, abort, snapshot };
+  return { start, update, onCombatEvent, setDialogueActive, setIntrusion, setSubmersion, finish, abort, snapshot };
 }

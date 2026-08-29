@@ -187,6 +187,11 @@ export const MATERIAL = {
   // wetTarmac did: without one it falls through surfaceSlot's general case and
   // a lawn is drawn as ash floorboards.
   wetGrass: 18,
+  // The FOH threshold does not open onto Source terrain. It opens onto a white
+  // absence with a floor only because the body has to cross it. Keeping this a
+  // material rather than a zone prevents the approach from acquiring a room,
+  // an acoustic identity, or a second set of collision semantics.
+  sourceVoid: 19,
 };
 
 export function materialForZone(zone) {

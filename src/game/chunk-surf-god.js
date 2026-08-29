@@ -1,5 +1,5 @@
 import { CELL } from '../data/floorplan/legend.js';
-import { SOURCE_HORIZON } from '../data/source-level.js';
+import { SOURCE_APPROACH_CELLS, SOURCE_CHUTES, SOURCE_HORIZON, SOURCE_TIER_BY_ID } from '../data/source-level.js';
 import {
   CHUNK_SURF_PHASE,
   SOURCE_PURSUIT_BEAT,
@@ -24,7 +24,16 @@ export const CHUNK_SURF_GOD_PRESET = Object.freeze({
 });
 
 const HAYSTACK_ORIGIN = Object.freeze({ x: 0, y: -224 });
+// The god presets stand the body at authored depths in the field. Every one of
+// these below the arrival tier moved out by SOURCE_APPROACH_CELLS when the red
+// approach was inserted between the Scene Dock and the first staircase.
 const LANDSCAPE_ORIGIN = Object.freeze({ x: 0, y: -252 });
+const FIRST_STAIR = SOURCE_CHUTES.find((chute) => chute.id === 'chute-fork');
+const localPosition = (x, y, facing = 0) => ({
+  x: LANDSCAPE_ORIGIN.x + x,
+  y: LANDSCAPE_ORIGIN.y + y,
+  facing,
+});
 
 const dispatch = (state, ...events) => events.reduce((next, event) => reduceChunkSurf(next, event), state);
 
@@ -76,8 +85,13 @@ export function buildChunkSurfGodPreset(id, options = {}) {
   // Apart from being the wrong review location, that was the heaviest possible
   // Source initialization path and could take the renderer down with it.
   if (id === CHUNK_SURF_GOD_PRESET.FIRST_LIFT) {
-    state = dispatch(state, { type: 'SOURCE_LANDING_DOOR_OPENED' });
-    position = { x: LANDSCAPE_ORIGIN.x, y: LANDSCAPE_ORIGIN.y - 35, facing: 0 };
+    state = dispatch(state,
+      { type: 'SOURCE_LANDING_DOOR_OPENED' },
+      { type: 'SOURCE_LANDING_DOOR_SEALED' },
+      { type: 'SOURCE_APPROACH_COMPLETED', distance: SOURCE_APPROACH_CELLS },
+    );
+    position = localPosition(FIRST_STAIR?.x || 0, (FIRST_STAIR?.y || SOURCE_TIER_BY_ID.fork.from)
+      + (FIRST_STAIR?.run || 16) + 2);
     return { state, position };
   }
 
@@ -85,7 +99,7 @@ export function buildChunkSurfGodPreset(id, options = {}) {
     { type: 'SOURCE_LIFT_COMPLETED', id: 'lift-fork', checkpointId: 'landing-fork' },
   );
   if (id === CHUNK_SURF_GOD_PRESET.FIRST_CONTACT) {
-    position = { x: LANDSCAPE_ORIGIN.x, y: LANDSCAPE_ORIGIN.y - 48, facing: 0 };
+    position = localPosition(0, SOURCE_TIER_BY_ID.fork.from - 8);
     return { state, position };
   }
 
@@ -103,7 +117,7 @@ export function buildChunkSurfGodPreset(id, options = {}) {
       },
     });
     if (id === CHUNK_SURF_GOD_PRESET.ALL_INSIGHTS) {
-      position = { x: LANDSCAPE_ORIGIN.x, y: LANDSCAPE_ORIGIN.y - 128, facing: 0 };
+      position = localPosition(0, SOURCE_TIER_BY_ID.trace.from - 8);
       return { state, position };
     }
   }
@@ -116,7 +130,7 @@ export function buildChunkSurfGodPreset(id, options = {}) {
     { type: 'PURSUIT_STARTED', id: SOURCE_PURSUIT_BEAT.BODY_RUN },
   );
   if (id === CHUNK_SURF_GOD_PRESET.HUNT) {
-    position = { x: LANDSCAPE_ORIGIN.x, y: LANDSCAPE_ORIGIN.y - 182, facing: 0 };
+    position = localPosition(0, (SOURCE_TIER_BY_ID.trace.from + SOURCE_TIER_BY_ID.trace.to) / 2);
     return { state, position };
   }
 
@@ -129,7 +143,7 @@ export function buildChunkSurfGodPreset(id, options = {}) {
     { type: 'PURSUIT_STARTED', id: SOURCE_PURSUIT_BEAT.FINAL_RUN },
   );
   if (id === CHUNK_SURF_GOD_PRESET.FINAL_RUN) {
-    position = { x: LANDSCAPE_ORIGIN.x + 44, y: LANDSCAPE_ORIGIN.y - 278, facing: 0 };
+    position = localPosition(44, SOURCE_TIER_BY_ID.return.from - 58);
     return { state, position };
   }
   state = dispatch(state,{ type: 'FINAL_REACHED' });
@@ -138,7 +152,7 @@ export function buildChunkSurfGodPreset(id, options = {}) {
     throw new Error(`unknown source-space God preset ${id}`);
   }
   const exitOffset = id === CHUNK_SURF_GOD_PRESET.EXPOSED_BATTLE ? 5 : -5;
-  position = { x: LANDSCAPE_ORIGIN.x + 80 + exitOffset, y: LANDSCAPE_ORIGIN.y - 314, facing: 0 };
+  position = localPosition(80 + exitOffset, SOURCE_TIER_BY_ID.return.to + 26);
   return { state, position };
 }
 

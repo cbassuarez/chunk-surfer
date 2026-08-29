@@ -262,6 +262,10 @@ const NEAR=.05,FAR=90;
 const uniformCache=new Map();
 const textUniformCache=new Map();
 const shadowUniformCache=new Map();
+// Source gets one bounded atlas, even on hardware advertising larger textures.
+// A 4096px allocation at the first-lift handoff was enough to stall or lose the
+// WebGL context on the target renderer. Overflow is already non-fatal below, so
+// extra lines cost a missing card instead of the entire picture.
 const SOURCE_TEXT_CELL_WIDTH=192,SOURCE_TEXT_CELL_HEIGHT=28,SOURCE_TEXT_ATLAS_CAP=2048,SOURCE_TEXT_ATLAS_MIN=256;
 export const SOURCE_TEXT_VISIBLE_CAP=1536;
 export function sourceTextVisibleBudget(requested=0,{cap=SOURCE_TEXT_VISIBLE_CAP}={}){
@@ -532,12 +536,25 @@ export function setPracticalLightFrame(lights){
     }]));
 }
 export function setSourceTextInstances(next){sourceStaticTextInstances=Array.isArray(next)?next:[];sourceStaticTextBatches=[];sourceVisibleBatchCount=0;sourceVisibleInstanceCount=0;sourceDynamicTextInstances=[];sourceTextCorpus=[];sourceCorpusKey='';sourceSceneKey='legacy';}
+export function sourceTextCorpusTransition(current={},scene={}){
+  const currentKey=String(current.key||'');
+  const currentCorpus=Array.isArray(current.corpus)?current.corpus:[];
+  const nextKey=String(scene.atlasKey||'');
+  const nextCorpus=Array.isArray(scene.corpus)?scene.corpus:[];
+  // A landing-only scene carries the HUSH wake but no text architecture. It
+  // must not reserve the eventual corpus key with an empty array: doing so made
+  // the first lift reject the real corpus under that same key and fall back to
+  // rasterising every resident card variant in the first Text Space frame.
+  if(!nextKey||!nextCorpus.length)return{key:currentKey,corpus:currentCorpus,changed:false};
+  if(nextKey===currentKey&&currentCorpus.length)return{key:currentKey,corpus:currentCorpus,changed:false};
+  return{key:nextKey,corpus:nextCorpus,changed:true};
+}
 export function setSourceScene(scene={}){
   const key=String(scene.key||'');
   if(key!==sourceSceneKey){sourceSceneKey=key;sourceStaticTextInstances=Array.isArray(scene.staticInstances)?scene.staticInstances:[];sourceStaticTextBatches=Array.isArray(scene.staticBatches)?scene.staticBatches.filter((batch)=>Array.isArray(batch?.instances)):[];}
   sourceDynamicTextInstances=Array.isArray(scene.dynamicInstances)?scene.dynamicInstances:[];
-  const atlasKey=String(scene.atlasKey||'');
-  if(atlasKey&&atlasKey!==sourceCorpusKey&&Array.isArray(scene.corpus)){sourceCorpusKey=atlasKey;sourceTextCorpus=scene.corpus;}
+  const corpus=sourceTextCorpusTransition({key:sourceCorpusKey,corpus:sourceTextCorpus},scene);
+  if(corpus.changed){sourceCorpusKey=corpus.key;sourceTextCorpus=corpus.corpus;}
 }
 // Deliberately no visual state: the active HUSH source is found by sound.
 export function setHushProp(_id){}
@@ -549,6 +566,7 @@ function textColor(instance){
   return TEXT_PALETTE[instance.colorClass]||TEXT_PALETTE.field;
 }
 function atlasSignature(values){let h=2166136261;for(const value of values){for(let i=0;i<value.length;i++){h^=value.charCodeAt(i);h=Math.imul(h,16777619);}h^=10;h=Math.imul(h,16777619);}return`${values.length}:${h>>>0}`;}
+let sourceTextAtlasOverflowWarned=false;
 export function sourceTextAtlasLayout(entryCount,maxTextureSize=SOURCE_TEXT_ATLAS_CAP){
   const count=Math.max(0,Math.floor(Number(entryCount)||0));
   const supported=Math.min(SOURCE_TEXT_ATLAS_CAP,Math.floor(Number(maxTextureSize)||0));
@@ -558,8 +576,24 @@ export function sourceTextAtlasLayout(entryCount,maxTextureSize=SOURCE_TEXT_ATLA
     const columns=Math.floor(size/SOURCE_TEXT_CELL_WIDTH),rows=Math.floor(size/SOURCE_TEXT_CELL_HEIGHT),capacity=columns*rows;
     if(count<=capacity)return{size,cellWidth:SOURCE_TEXT_CELL_WIDTH,cellHeight:SOURCE_TEXT_CELL_HEIGHT,columns,rows,capacity,entries:count};
   }
+  // OVER CAPACITY IS A DROPPED LINE, NOT A DEAD RENDERER.
+  //
+  // This threw, and it is called from the frame loop — so the moment the corpus
+  // outgrew the atlas the exception came out of the renderer every frame and the
+  // picture froze while the simulation, the audio and the HUD carried on. That
+  // is the worst failure shape available: the game looks crashed and isn't.
+  //
+  // It happened for real when the red approach made the field deeper and pulled
+  // in nine more unique source lines than a 2048px atlas holds (739 against 730).
+  // Nine lines are worth losing; the renderer is not. It reports the overflow
+  // once and fills what it can.
   const capacity=Math.floor(largest/SOURCE_TEXT_CELL_WIDTH)*Math.floor(largest/SOURCE_TEXT_CELL_HEIGHT);
-  throw new RangeError(`Source text atlas overflow: ${count} entries exceed ${capacity} at ${largest}x${largest}`);
+  const columns=Math.floor(largest/SOURCE_TEXT_CELL_WIDTH),rows=Math.floor(largest/SOURCE_TEXT_CELL_HEIGHT);
+  if(!sourceTextAtlasOverflowWarned){
+    sourceTextAtlasOverflowWarned=true;
+    console.warn(`Source text atlas overflow: ${count} entries exceed ${capacity} at ${largest}x${largest}; the remainder will not be drawn`);
+  }
+  return{size:largest,cellWidth:SOURCE_TEXT_CELL_WIDTH,cellHeight:SOURCE_TEXT_CELL_HEIGHT,columns,rows,capacity,entries:capacity,overflow:count-capacity};
 }
 function ensureTextAtlas(){
   const instances=[...sourceStaticTextInstances,...sourceDynamicTextInstances];
@@ -568,6 +602,8 @@ function ensureTextAtlas(){
   const baseKey=sourceCorpusKey?`corpus:${sourceCorpusKey}`:atlasSignature(unique),key=`${baseKey}@${layout.size}:${unique.length}`;if(key===textAtlasKey&&textAtlas)return;
   textAtlasKey=key;textAtlasEntries=new Map();textAtlasBuilds+=1;textAtlasSize=layout.size;textAtlasCapacity=layout.capacity;textAtlasEntryCount=unique.length;
   const {size,cellWidth:cellW,cellHeight:cellH,columns:cols}=layout;
+  // Never write past the atlas: layout.entries is the clamped count.
+  if(unique.length>layout.entries)unique.length=layout.entries;
   const canvas=document.createElement('canvas');canvas.width=size;canvas.height=size;
   const ctx=canvas.getContext('2d');ctx.clearRect(0,0,size,size);ctx.textBaseline='middle';ctx.fillStyle='#fff';
   unique.forEach((text,index)=>{

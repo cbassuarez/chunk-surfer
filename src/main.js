@@ -117,6 +117,7 @@ import { minimizeNativeWindow, quitNativeApp, resetNativeWindow, restoreNativeWi
 import { applyCurrentStageLayout, installViewportGuard } from './platform/viewport-guard.js';
 import { resolveDesktopPaths } from './platform/paths/desktopPaths.js';
 import { revealPath } from './platform/diagnostics/desktopDiagnostics.js';
+import { logInfo, logWarn } from './platform/diagnostics/diagnostics.js';
 import { runtimeParams, runtimeSnapshot } from './platform/launch.js';
 import { APP_COPYRIGHT, APP_LINKS, copyText, formatDiagnosticReport, normalizeAboutSnapshot } from './platform/about-system.js';
 import { createPerformanceMeter } from './platform/performance-meter.js';
@@ -134,7 +135,7 @@ import * as PB from './game/playback.js';
 import { drawPlaybackOverlay } from './render/playback-view.js';
 import { makeCombatScene } from './game/combat.js';
 import { makeEncounterStartScene } from './game/encounter-start.js';
-import { makeSourcePageScene, makeSourceThresholdScene } from './game/source-page-scene.js';
+import { makeSourcePageScene, makeSourceStillPageScene } from './game/source-page-scene.js';
 import { makeSourceContactScene } from './game/source-contact-scene.js';
 import { applySourceFearFloor, sourceFocusActionLabel } from './game/source-haystack.js';
 import { cathedralBellCombatBattle, practiceRoomHushBattle, sourceCombatBattle, trainingCombatBattle } from './data/combat-definitions.js';
@@ -161,10 +162,11 @@ import { boothCameraFrame, boothPoseForSourceId } from './game/booth-presentatio
 import { createHushTelemetry } from './game/hush-telemetry.js';
 import { createHushAudioRuntime } from './game/hush-audio-runtime.js';
 import { applyHushTorchInterference, hushAbsenceLook, inactiveHushField } from './game/hush-field.js';
+import { applySourceEmergencyTorch } from './render/lighting-model.js';
 import { roomLabel, roomToneCharacter } from './audio/manifest-map.js';
 import * as SPEECH from './game/speech.js';
 import * as TUT from './game/tutorial.js';
-import { flashMode, objectiveHintsMode, shakeMode, tutorialPromptsEnabled } from './game/access.js';
+import { flashMode, objectiveHintsMode, shakeMode, tutorialPromptsEnabled, visualEffectsEnabled } from './game/access.js';
 import { doorWinsWorldInteraction } from './game/interaction-focus.js';
 import { createInteractionLatch } from './game/interaction-latch.js';
 import { makeBagScene } from './game/bag.js';
@@ -179,6 +181,13 @@ import {
 } from './game/bag-items.js';
 import { makeArrivalScene, makeBoothDownbeatHoldScene, makeColdOpenScene, makeWorldTitleScene } from './game/coldopen.js';
 import { makeOpeningCreditsScene } from './game/opening-credits.js';
+import { beginBootWeather, bootWeatherDebug, isBootWeatherKind, pickBootWeather } from './game/boot-weather.js';
+import { createBootWeatherAudio } from './audio/boot-weather-audio.js';
+import { freshLeafFlurry, leafFlurryInstances, leafFlurrySources, leafGust, leafSourcePresence, stepLeafFlurry } from './game/leaf-flurry.js';
+import { forceStrike, freshStorm, stepStorm, stormBearing, stormFlash } from './game/storm.js';
+import { windForce } from './world/wind.js';
+import { createThunderVoice } from './audio/thunder.js';
+import { createWindHowl } from './audio/wind-howl.js';
 import {
   createGardenWatchState,
   gardenLayoutForEpoch,
@@ -230,7 +239,7 @@ import { makeWarningScene } from './game/warning.js';
 import { OBSCURED_NAME_CAPTION, obscuredNameShape, obscuredNameUtterance, obscuredShape, setObscuredShape } from './narrative/obscured-name.js';
 import { createSamDialogVoice } from './audio/sam-voice.js';
 import { createBattleInterferenceDirector } from './game/interference-director.js';
-import { compileWindowChannelScene } from './game/window-channel.js';
+import { compileFireballCastPlan } from './game/window-channel.js';
 import { createPersonalizedWindowEffects } from './platform/personalized-window-effects.js';
 import { buildWindowChoreographyLabCases, choreographyLabSummary } from './platform/window-choreography-lab.js';
 import {
@@ -523,7 +532,9 @@ const armBattleThreads=(occasion,named)=>{
     : (named?'yes':'no'));
 };
 const roomBattle=(id,occasion,named)=>{ armBattleThreads(occasion,named); return runtimeBattle(id); };
-const natatoriumBattle=(named=null,occasion)=>WATER.applyNatatoriumWaterTextVariant(roomBattle('battle.natatorium',occasion,named), getSave()?.run);
+// The combat owns its dry/half/full arc. Exploration water variants must never
+// rewrite movement one into a flooded room before the combat controller moves it.
+const natatoriumBattle=(named=null,occasion)=>roomBattle('battle.natatorium',occasion,named);
 const practiceBattle=(named=null,occasion)=>roomBattle('battle.practice',occasion,named);
 const hallBattle=(named=null,occasion)=>roomBattle('battle.hall',occasion,named);
 const hallPlayback=(named=false)=>runtimeTree(`playback.hallplayback.${authoredVariant(named)}`);
@@ -582,6 +593,20 @@ const personalWindowEffects=createPersonalizedWindowEffects({
   onEmergency:()=>{
     commitPsychObservation({kind:'window-emergency',signals:{vigilance:.82,exposure:.72,resistance:.68},weight:.7});
     void battleInterference?.emergencyDisable?.();
+  },
+  // THE ONE PLACE THIS FEATURE IS ALLOWED TO FAIL QUIETLY IS THE SCREEN.
+  //
+  // A fireball surface that cannot be built is not a player-facing error — the
+  // cast simply stays in the frame, which is the authored fallback. But it must
+  // not be silent to US: it is a native window that did not open, and the only
+  // description of why is the `tauri://error` payload, which nothing was
+  // keeping. Both lines below are diagnostic-only and name no encounter.
+  onSurfaceReport:({state,ready,reasons,intensity,fullscreen})=>{
+    const detail=`${state} · ${ready}/4 surfaces · intensity ${intensity} · fullscreen ${fullscreen?'yes':'no'}`
+      +(reasons.length?` · ${reasons.join(' · ')}`:'');
+    if(state==='ready'){void logInfo('fireball surfaces ready',detail);return;}
+    pushEvent(`// fireball surfaces ${state}: ${ready}/4.`);
+    void logWarn('fireball surfaces unavailable',detail);
   },
 });
 battleInterference=createBattleInterferenceDirector({
@@ -3442,7 +3467,7 @@ function currentMoveIntervalMs(){
     const frame=chunkSurfRuntime?.pressureFrame?.({
       reducedMotion:shakeMode()!=='full',
     });
-    if(frame&&[CHUNK_SURF_PHASE.HALL,CHUNK_SURF_PHASE.HAYSTACK,CHUNK_SURF_PHASE.HORIZON].includes(frame.phase)){
+    if(frame&&([CHUNK_SURF_PHASE.HALL,CHUNK_SURF_PHASE.HAYSTACK,CHUNK_SURF_PHASE.HORIZON].includes(frame.phase)||frame.approach)){
       // One authored pressure curve owns the legs as well as the weather/fear.
       // HAYSTACK begins at the hall's worst pace and tightens only modestly from there.
       ms *= frame.movementMultiplier;
@@ -3459,7 +3484,7 @@ function currentMoveIntervalMs(){
     // surfaced ending's carry. The horizon is the same kind of thing: a walk
     // that is allowed to be slower than a walk, because out here the legs are
     // the transport for a piece of music and the picture it was cut against.
-    if(frame?.phase===CHUNK_SURF_PHASE.HORIZON){
+    if(frame?.phase===CHUNK_SURF_PHASE.HORIZON||frame?.approach){
       // The ceiling is deliberately far above the pace actually set, so
       // HORIZON_PACE is free to be tuned by ear all the way to 1:1 with the
       // score without anyone having to discover this clamp a second time.
@@ -4055,7 +4080,12 @@ function step(dx,dy){
     updateAudio();return;
   }
   if(usingSourceSpace()){
-    chunkSurfRuntime.onStep({x:px-sx,y:py-sy},{x:px,y:py,facing:R3.r3dFacing()});
+    const sourceStep=chunkSurfRuntime.onStep({x:px-sx,y:py-sy},{x:px,y:py,facing:R3.r3dFacing()});
+    if(sourceStep?.relocate){
+      px=sourceStep.relocate.x;py=sourceStep.relocate.y;
+      R3.r3dSetFacing(Number.isFinite(sourceStep.relocate.facing)?sourceStep.relocate.facing:R3.r3dFacing());
+      renderMove=null;motionRig=null;trail=[];
+    }
     chunkSurfRuntime.setPlayerPosition({x:px,y:py,facing:R3.r3dFacing()});
     lastStepDx=sx;lastStepDy=sy;
     trail.push({x:px,y:py});if(trail.length>TRAIL_LEN)trail.shift();
@@ -4250,25 +4280,32 @@ function motionTargetPoint(){
 }
 function snapMotionRig(reason='snap-motion-rig'){
   const p=physicalPointFor(px,py);
-  motionRig={x:p.x,z:p.z,vx:0,vz:0,lastMs:performance.now(),reason};
+  motionRig={x:p.x,z:p.z,vx:0,vz:0,targetX:p.x,targetZ:p.z,lastMs:performance.now(),reason};
   return motionRig;
 }
 function ensureMotionRig(now=performance.now()){
   if(!motionRig) return snapMotionRig('init-motion-rig');
   if(!Number.isFinite(motionRig.x)||!Number.isFinite(motionRig.z)) return snapMotionRig('invalid-motion-rig');
+  if(!Number.isFinite(motionRig.targetX))motionRig.targetX=motionRig.x;
+  if(!Number.isFinite(motionRig.targetZ))motionRig.targetZ=motionRig.z;
   if(!Number.isFinite(motionRig.lastMs)) motionRig.lastMs=now;
   return motionRig;
 }
 function renderedPlayerPoint(now=performance.now()){
   const target=motionTargetPoint();
   const rig=ensureMotionRig(now);
-  const jumpDist=Math.hypot(target.x-rig.x,target.z-rig.z);
+  const targetJump=Math.hypot(target.x-rig.targetX,target.z-rig.targetZ);
   // Teleports, level repairs, scene exits and save restores must snap. Inertia
-  // is a camera feel layer, not permission to coast through walls.
-  if(jumpDist>D(3.25)){
+  // is a camera feel layer, not permission to coast through walls. Compare the
+  // new target with the previous TARGET, not with the deliberately trailing
+  // spring: sustained walking can put the camera more than this far behind
+  // without any single world step being a teleport.
+  if(targetJump>D(3.25)){
     renderMove=null;
     return snapMotionRig('motion-target-jump');
   }
+  rig.targetX=target.x;
+  rig.targetZ=target.z;
   const dt=Math.max(0,Math.min(0.05,(now-rig.lastMs)/1000));
   rig.lastMs=now;
 
@@ -4337,6 +4374,10 @@ function setGameplayPaused(next, { announce=true }={}){
   paused=next;
   if(paused){bellPealPerformance?.suspend?.('pause');towerBellDirector?.suspend?.();}
   else{towerBellDirector?.resume?.();bellPealPerformance?.resume?.('pause-resume');}
+  // A comet in flight is frozen by the pause, correctly -- but a frozen window
+  // hanging over the pause menu is not a paused game, it is a stuck one. The
+  // session survives; the next tick of the exchange puts it back mid-air.
+  if(paused)personalWindowEffects.suspendSurfaces?.();
   resetMotionInput(paused ? 'pause-enter' : 'pause-exit', {stopRenderMove:paused});
   syncPointerMode(paused ? 'pause-enter' : 'pause-exit');
   if(paused){
@@ -5530,6 +5571,8 @@ function loop(){
         tickBasementWatcher();
         tickWhisperBed(dt);
         tickStabs(dt);
+        tickStorm(performance.now()/1000);
+        tickWindHowl(performance.now()/1000);
         tickPages();
         tickRadio(dt);
         tickCathedralFinale();
@@ -5939,6 +5982,135 @@ function doorRenderInstances({leaves=false}={}){
   return out;
 }
 
+// THE YARD'S LEAVES.
+//
+// Only where the sky is: the dock, the street, the civic court and the service
+// yard. Indoors there is no wind and nothing to blow, and a leaf in the get-in
+// would be a bug rather than a detail.
+//
+// The flurry is one field that follows the player rather than a per-zone
+// emitter, because it is one night's wind over one block — walking from the
+// road into the yard should not restart the weather.
+let leafFlurry=null;
+let leafFlurryAt=0;
+let leafSources=[];
+let leafSourceGroup=null;
+const LEAF_ZONES=new Set([ZONE.dock,ZONE.street,ZONE.civicCourt,ZONE.serviceYard]);
+function currentLeafFlurryInstances(logicalX,logicalY,timeSec){
+  if(!storyMode||!usingPlan()||usingSpecialSpace())return [];
+  if(!visualEffectsEnabled())return [];
+  const outside=LEAF_ZONES.has(FP.zoneAt(logicalX,logicalY));
+  if(!outside&&!leafFlurry)return [];
+  if(!leafFlurry){
+    leafFlurry=freshLeafFlurry({
+      seed:Math.floor((R3.r3dNightSeed?.()??0.37)*1e6)+1,
+      // The night's bearing comes off the same seed the sky uses, so the wind
+      // and the cloud drift are not arguing about which way the weather is
+      // going.
+      bearing:(R3.r3dNightSeed?.()??0.37)*Math.PI*2,
+      reducedMotion:shakeMode()!=='full',
+    });
+    leafFlurryAt=timeSec;
+  }
+  const dt=Math.max(0,Math.min(0.1,timeSec-leafFlurryAt));
+  leafFlurryAt=timeSec;
+  const at=FP.logicalToPhysical(logicalX,logicalY);
+  // The tree line, taken from the props themselves so it cannot drift out of
+  // date. Cached per render group: they do not move.
+  if(leafSourceGroup!==at.renderGroup){
+    leafSourceGroup=at.renderGroup;
+    leafSources=leafFlurrySources(PROPS.allProps());
+  }
+  // Where the leaves are AND whether the wind is doing anything right now.
+  // Multiplying the two is what turns "always, everywhere" into a flurry that
+  // comes through the park and dies out again.
+  const place=leafSourcePresence(leafSources,logicalX,logicalY);
+  const gust=leafGust(windForce(timeSec));
+  stepLeafFlurry(leafFlurry,dt,{
+    origin:{x:at.x,z:at.z,y:at.y},
+    // Indoors the field empties rather than vanishing, so stepping through the
+    // grey door does not delete forty leaves in one frame behind you.
+    presence:outside?place*gust:0,
+    floorAt:(fx,fz)=>{
+      const logical=FP.logicalAtPhysical(Math.round(fx),Math.round(fz),{group:at.renderGroup,floor:at.y});
+      return logical?FP.floorAt(logical.x,logical.y):at.y;
+    },
+  });
+  if(!leafFlurry.leaves.length&&(!outside||place*gust<=0.001)){
+    // Nothing in the air and nothing asking for any: let the field go rather
+    // than stepping an empty simulation for the rest of the run.
+    if(!outside)leafFlurry=null;
+    return [];
+  }
+  return leafFlurryInstances(leafFlurry,{cell:CELL});
+}
+
+// ── the storm ───────────────────────────────────────────────────────────────
+//
+// One storm per run, ticking wherever the player is, because a storm does not
+// wait outside the door. What CHANGES with where you are standing is how much
+// of the flash reaches you:
+//
+//   under open sky   the frame goes. Twelve times ambient and the halftone's
+//                    ceiling pulled down, so the yard is a photograph for
+//                    eighty milliseconds.
+//   indoors          a fraction of it. The room lifts and the apertures throw
+//                    their shape across the floor, which is what a window in a
+//                    storm actually does — and it keeps the beat available in
+//                    rooms with no window at all without whiting them out.
+//
+// Thunder plays regardless. Being inside does not make it quieter; it is the
+// one part of a storm a building cannot keep out.
+let storm=null;
+let thunderVoice=null;
+let stormAt=0;
+const INDOOR_FLASH=0.22;
+function stormFlashStrength(){
+  if(!storm)return 0;
+  const raw=stormFlash(storm);
+  if(raw<=0.001)return 0;
+  const mode=flashMode();
+  if(mode==='off')return 0;
+  // Reduced keeps the beat and loses the assault: the room lifts, it never
+  // saturates. See the photosensitivity note on the emergency circuit — the
+  // clinical threshold is transition RATE, and a strike is one burst, but a
+  // full white-out is still not something to hand to someone who asked for
+  // less of it.
+  const ceiling=mode==='reduced'?0.20:1;
+  const sky=usingPlan()&&!usingSpecialSpace()&&(FP.flagsAt(px,py)&CELL_FLAGS.SKY);
+  return raw*ceiling*(sky?1:INDOOR_FLASH);
+}
+// THE WIND YOU CAN HEAR, wherever there is sky over you. It is the sound that
+// says a space has no roof, and it rides the same gust as the leaves — so the
+// surge you hear is the flurry you can watch cross the yard.
+let windHowl=null;
+function tickWindHowl(timeSec){
+  const open=storyMode&&usingPlan()&&!usingSpecialSpace()&&!!(FP.flagsAt(px,py)&CELL_FLAGS.SKY);
+  if(!windHowl){
+    if(!open||!actx||!sfxGain)return;
+    windHowl=createWindHowl({context:actx,destination:sfxGain});
+  }
+  windHowl.update({force:windForce(timeSec),presence:open?1:0});
+}
+
+function tickStorm(timeSec){
+  if(!storm){
+    storm=freshStorm({
+      seed:Math.floor((R3.r3dNightSeed?.()??0.37)*1e6)+7,
+      intensity:0.7,
+    });
+    stormAt=timeSec;
+  }
+  const dt=Math.max(0,Math.min(0.5,timeSec-stormAt));
+  stormAt=timeSec;
+  const {thunder}=stepStorm(storm,dt,{active:storyMode});
+  for(const event of thunder){
+    if(!thunderVoice&&actx&&sfxGain)thunderVoice=createThunderVoice({context:actx,destination:sfxGain});
+    thunderVoice?.strike?.(event);
+  }
+  R3.r3dSetStormFlash?.(stormFlashStrength());
+}
+
 function syncDoorDynamicProps({logicalX=px,logicalY=py,timeSec=performance.now()/1000}={}){
   if(usingSourceSpace()||usingStairAnomaly()||!FP.isLoaded()){R3.r3dSetDynamicProps([]);return;}
   const group=FP.logicalToPhysical(logicalX,logicalY).renderGroup;
@@ -5992,6 +6164,11 @@ function syncDoorDynamicProps({logicalX=px,logicalY=py,timeSec=performance.now()
   // light, HUSH state, save data or map presence.
   for(const apparition of recordingHallucinationPropInstances(timeSec))doorDynamicCombined[count++]=apparition;
   const zone=FP.zoneAt(logicalX,logicalY);
+  // LEAVES, WHEREVER THERE IS SKY OVER YOU. Submitted through this same dynamic
+  // pass as the apparitions and the bells, so they inherit the prop pack's
+  // shadows and occlusion for nothing — a leaf that goes behind the van is what
+  // makes the yard a place rather than an overlay.
+  for(const leaf of currentLeafFlurryInstances(logicalX,logicalY,timeSec))doorDynamicCombined[count++]=leaf;
   if(escape?.kind==='cathedral-carry'){
     const payload=escape.drag?.position||{x:px,y:py};
     const at=FP.logicalToPhysical(payload.x,payload.y);
@@ -6090,6 +6267,11 @@ const recordingHallucinations=createRecordingHallucinationDirector({
 });
 let recordingFalseHush=null;
 let recordingHallucinationProbeUntil=0;
+// Why the last live tick did or did not put a body in the room. The beat is
+// invisible by design when it declines, so without this the only way to tell a
+// gate that never opens from a placement that never lands is to sit through a
+// forty-five second take and hope.
+let recordingHallucinationWhy={reason:'idle',placed:false,started:0,placementFailures:0};
 
 // The building's practicals are AUTHORED now — see src/data/conservatory-lights.js.
 // This used to be two hardcoded blocks keyed on render group, which is why seven
@@ -6221,12 +6403,40 @@ function worldPaperIndex(instance){
   if(id==='dock-chandelier-tag')return paperAtlasIndex(ambientPaperDocumentId(4417,17));
   return -1;
 }
+// SOURCE HAS ONE LIGHTING CONTEXT, AND IT USED TO HAVE TWO.
+//
+// syncSourceRender set an ambient of .012; worldRenderInstances set .006 on the
+// very next call, every frame, and the render path ran last. Two writers, one
+// uniform. That is worth collapsing on its own — but nothing about it authors a
+// component: chasing the missing HUSH through this stack was the wrong layer
+// entirely, and the white-point dial that got added here while doing so has
+// been removed again because it was measured to change nothing.
+// WHERE THE TORCH IS IN THE SOURCE BEAT.
+//
+// X-ray/invert through the physical approach to the threshold; emergency red
+// from the instant the body crosses into the nothingness. The runtime owns that
+// spatial boundary and supplies the same contactor cycle used by the red lamps.
+function sourceEmergencyTorchFrame(){
+  if(!chunkSurfRuntime)return{};
+  return chunkSurfRuntime.sourceFlashlightFrame?.({
+    time:performance.now()/1000,
+    reducedMotion:shakeMode()!=='full',
+    flashMode:flashMode(),
+  })||{};
+}
+
+function applySourceLighting(){
+  R3.r3dSetLightingContext?.({ambientColor:[.12,.13,.12],ambientIntensity:.012});
+}
+
 function worldRenderInstances(group=null){
   if(usingSourceSpace()){
     // Source owns a void-to-paper sunrise. Do not let the room the player left
     // bleed its fluorescent ambient signature into that authored transition.
-    R3.r3dSetLightingContext?.({ambientColor:[.12,.13,.12],ambientIntensity:.006});
-    R3.r3dSetLocalLights?.(chunkSurfRuntime.localLights?.()||[]);
+    applySourceLighting();
+    R3.r3dSetLocalLights?.(chunkSurfRuntime.localLights?.({
+      time:performance.now()/1000,reducedMotion:shakeMode()!=='full',flashMode:flashMode(),
+    })||[]);
     R3.r3dSetEmergencyShadows?.([]);
     return chunkSurfRuntime.propInstances(px,py,{time:performance.now()/1000,reducedMotion:(getSave().settings?.shake||'full')!=='full'});
   }
@@ -6280,6 +6490,7 @@ function clearSourceRuntime(){
   endHorizonScore();
   R3.r3dSetHorizon?.(null);
   R3.r3dSetSourceEmergency?.(0);
+  R3.r3dSetSourceWhiteout?.(0);
   return true;
 }
 function usingStairAnomaly(){ return !!stairAnomalyRuntime; }
@@ -6569,7 +6780,15 @@ function stopBellTowerRuntime(){
   if(bellPealScene)scenes.remove(bellPealScene);
   bellPealScene=null;bellPealPerformance=null;bellPealClock=null;
   towerBellDirector?.destroy?.({cut:false});towerBellDirector=null;
-  bellTowerRuntime?.destroy?.();bellTowerRuntime=null;bellTowerAudio=null;resetTowerPlayerSweep();syncDoorDynamicProps();
+  bellTowerRuntime?.destroy?.();bellTowerRuntime=null;
+  // The runtime owns the bell bus only when there IS a runtime. The world-wash
+  // director shares that same bus and is torn down WITHOUT cutting it, so on
+  // the director-only path nothing ever stopped the strikes already scheduled
+  // onto it and the reference was simply dropped while it rang. Destroying the
+  // bus here is idempotent and is what makes "the tower is silent now" true on
+  // both paths rather than only the one the tower was played on.
+  bellTowerAudio?.destroy?.();bellTowerAudio=null;
+  resetTowerPlayerSweep();syncDoorDynamicProps();
 }
 
 function towerBellSource(){
@@ -6592,6 +6811,16 @@ function towerBellOcclusion(){
   return acousticOcclusionDb(towerBellSourceSpatial(),acousticSpatialAt(listener.x,listener.y));
 }
 function ensureTowerBellDirector({mode=null}={}){
+  // THE TOWER BELONGS TO A RUN. IT MAY NOT RING OUTSIDE ONE.
+  //
+  // This is the only place the bell bus is ever built, and it is why a peal has
+  // twice been audible over the boot log and the title. Two paths reach here
+  // from outside a run and both of them look innocent: loadBuilding() restores
+  // the transport straight off the save and runs during app boot, and the frame
+  // loop keeps ticking the world under a title scene because `inRogue` stays
+  // true — so returnToTitle's teardown was undone on the very next frame. One
+  // gate, ahead of the construction, instead of a teardown at every exit.
+  if(!storyMode)return null;
   if(towerBellDirector||bellTowerRuntime||!FP.isLoaded())return towerBellDirector;
   ensureCtx();
   if(!bellTowerAudio)bellTowerAudio=createBellTowerAudio({context:actx,destination:master||actx?.destination,origin:towerBellSource()});
@@ -6619,6 +6848,7 @@ function towerAcousticProfile({atTowerEntry=false}={}){
   return'masonry';
 }
 function tickTowerBellDirector(dt,{atTowerEntry=false}={}){
+  if(!storyMode)return;
   const tower=chapelTowerState();
   if(tower.phase===CHAPEL_TOWER_PHASE.FORESHADOW||[CHAPEL_TOWER_PHASE.TOWER_CLEARED,CHAPEL_TOWER_PHASE.CHAPEL_FINAL].includes(tower.phase))return;
   const director=ensureTowerBellDirector();if(!director)return;
@@ -6797,6 +7027,7 @@ function syncSourceRender({ force=false,x=px,y=py }={}){
   if(!usingSourceSpace()){
     R3.r3dSetHorizon?.(null);
     R3.r3dSetSourceEmergency?.(0);
+    R3.r3dSetSourceWhiteout?.(0);
     return false;
   }
   // OUT ON THE TAPE THERE IS NOTHING ELSE TO SYNC. No plan, no props, no lights
@@ -6805,6 +7036,7 @@ function syncSourceRender({ force=false,x=px,y=py }={}){
   const horizon=chunkSurfRuntime.horizonFrame?.();
   if(horizon?.active){
     R3.r3dSetSourceEmergency?.(0);
+    R3.r3dSetSourceWhiteout?.(0);
     const facing=R3.r3dFacing?.();
     R3.r3dSetHorizon?.({
       ...horizon,
@@ -6815,21 +7047,39 @@ function syncSourceRender({ force=false,x=px,y=py }={}){
     return true;
   }
   R3.r3dSetHorizon?.(null);
-  R3.r3dSetLightingContext?.({ambientColor:[.12,.13,.12],ambientIntensity:.012});
+  applySourceLighting();
   const reducedMotion=shakeMode()!=='full';
   const sourceTime=performance.now()/1000;
-  const portal=chunkSurfRuntime.landingPortalFrame?.();
-  R3.r3dSetSourceEmergency?.({enabled:true,strength:.92+(portal?.redPressure||0)*.28});
+  const sourceEmergency=chunkSurfRuntime.sourceEmergencyLightingFrame?.({
+    time:sourceTime,reducedMotion,flashMode:flashMode(),
+  });
+  const sourceVoid=chunkSurfRuntime.sourceVoidFrame?.();
+  R3.r3dSetSourceWhiteout?.(sourceVoid?.whiteout||0);
+  // The post compositor is a full-frame wash. Lamp occlusion cannot contain it,
+  // so the Scene Dock must turn it off explicitly; it becomes available only
+  // once the body is past the FOH leaf.
+  R3.r3dSetSourceEmergency?.(sourceEmergency?.active
+    ? {enabled:true,strength:sourceEmergency.strength}
+    : 0);
   R3.r3dSetLocalLights?.(chunkSurfRuntime.localLights?.({
     time:sourceTime,reducedMotion,flashMode:flashMode(),
   })||[]);
   R3.r3dSetEmergencyShadows?.([]);
   const plan=chunkSurfRuntime.geometry.renderPlanFor(x,y);
   const key=`source:${plan.key}`;
-  if(force||key!==r3dCache.physicalKey){
+  const fullUpload=force||key!==r3dCache.physicalKey;
+  if(fullUpload){
     R3.r3dSetPlan(plan.rgba,plan.w,plan.h,plan.material,{ambient:plan.ambient,originX:plan.originX,originY:plan.originY,sourceLayer:plan.sourceLayer});
     r3dCache.physicalGroup='source-space';r3dCache.physicalKey=key;r3dCache.fogSize=-1;
+  }else if(plan.patch){
+    // The FOH leaf moved. That is a dozen cells, and it used to cost a full
+    // 512x512 plan rebuild twice per swing because the door was part of the plan
+    // key — the stall landed on the door's own animation and made a two-second
+    // opening read as many. Patch the aperture instead; the mechanism already
+    // exists for a wall that moves.
+    R3.r3dPatchPlan?.(plan.rgba,plan.material,plan.patch.x,plan.patch.y,plan.patch.w,plan.patch.h);
   }
+  plan.patch=null;
   // Source architecture arrays are cached by topology. Copy before attaching
   // the per-frame silhouette so causal playback cannot contaminate that cache.
   const instances=[...chunkSurfRuntime.propInstances(x,y,{
@@ -6856,7 +7106,23 @@ function syncSourceRender({ force=false,x=px,y=py }={}){
   }
   R3.r3dSetProps(instances);
   R3.r3dSetDynamicProps([]);
-  const scene=sourceTextSpaceActive()?chunkSurfRuntime.sourceScene({
+  // THE WAKE HAS TO BE BUILT AT THE DOCK, WHICH IS WHERE IT IS FOR.
+  //
+  // densityWakeTextInstances is the HUSH in Source — never a body, a wide wake
+  // of displaced fragments around a deliberately empty centre — and it is built
+  // inside sourceScene(). sourceScene() was only called past textSpaceActive(),
+  // which requires firstLiftCompleted. So during the arrival beat, the one
+  // stretch where the HUSH is supposed to be standing behind you as you come
+  // out of the haystack corridor, the scene was the empty stub and the wake was
+  // computed nowhere at all. No amount of lighting could bring back a component
+  // that was never constructed.
+  //
+  // The text ARCHITECTURE still waits for the first lift — that gate is real and
+  // it is what textSpaceActive means. This only asks for the scene during the
+  // landing so the wake exists; the corpus and static text stay empty until the
+  // lift is done.
+  const sceneWanted=sourceTextSpaceActive()||chunkSurfRuntime.sourceLandingHushFrame?.()?.active;
+  const scene=sceneWanted?chunkSurfRuntime.sourceScene({
     px:x,py:y,presence:PRES.publicSnapshot(),time:sourceTime,reducedMotion,
   }):{key:'source:physical',corpus:[],staticInstances:[],dynamicInstances:[],look:{sunrise:0,chroma:1,paper:0}};
   R3.r3dSetSourceScene(scene);
@@ -8023,6 +8289,16 @@ const DOCK_WHISPER_SENDS=[
   {bus:()=>outputMonitor||master, gain:.26},
 ];
 
+// THE WHOLE POINT IS THAT YOU ARE NOT SURE YOU HEARD IT.
+//
+// The three sends above are a balance between each other and must stay where
+// they are; this is the one number that says how loud the mouth is against the
+// rest of the night. It was sitting at unity, which put a plainly audible voice
+// under a beat whose own comment two screens down says the words are "not meant
+// to be parsed" at that range. Roughly -7 dB: still there, still followable if
+// you stop walking, no longer the loudest thing on the dock.
+const DOCK_WHISPER_LEVEL=.44;
+
 function dockWhisperTake(){
   const takes=whisperBed?.buffers?.()||[];
   if(!takes.length){ whisperBed?.warm?.(); return null; }
@@ -8053,7 +8329,7 @@ function speakDockWhisper(pressure,{coffee=false,dry=false}={}){
     filter.Q.setValueAtTime(.7,now);
     // No onset, the same as the bed: it is faded through its own length rather
     // than started. A whisper that STARTS is a whisper somebody hears.
-    const peak=send.gain*(.16+p*.62)*whisperSettingScale(getSave().settings?.hushWhispers);
+    const peak=send.gain*DOCK_WHISPER_LEVEL*(.16+p*.62)*whisperSettingScale(getSave().settings?.hushWhispers);
     const length=Math.max(.2,buffer.duration/Math.max(.35,rate));
     gain.gain.setValueAtTime(0,now);
     gain.gain.linearRampToValueAtTime(peak,now+Math.min(.22,length*.28));
@@ -10470,15 +10746,28 @@ function interact(){
         return;
       }
       if(result.event==='landing-door-opened'){
-        CUES.playCue(CUES.CUE.door,{gain:.66,rate:.34,lowpassHz:1180});
-        CUES.playCue(CUES.CUE.light,{gain:.30,rate:.46,delay:.16});
+        // A real leaf, not a three-times-stretched machinery drone. The white
+        // practical arrives just behind the latch so sound and exposure read as
+        // one physical opening.
+        CUES.playCue(CUES.CUE.door,{gain:.66,rate:.78,lowpassHz:1480});
+        CUES.playCue(CUES.CUE.light,{gain:.34,rate:.90,delay:.12});
         pulseAgitation(1100);
-        syncSourceRender({force:true});
+        // The portal owns a small retained-plan patch. Forcing here discarded
+        // that work and uploaded the entire retained Source plan on the input
+        // frame, which is exactly where the door used to freeze.
+        syncSourceRender();
         return;
       }
-      // THE PAGE THAT MATTERS ENDS THE WALK, and it does not get a caption. Cut
-      // to black, open a door, and let the field fade up behind it.
-      if(result.event==='page-found'){ enterSourceLandscape(); return; }
+      // THE PAGE THAT MATTERS IS THE COVER. Put the real, legible A4 sheet over
+      // the world first, then replace only what is in front of the player under
+      // that opaque inspection surface. Closing it reveals the Scene Dock;
+      // turning around reveals the blocked corridor and the HUSH that survived.
+      if(result.event==='page-found'){
+        CUES.playPageTurn({gain:.12});
+        scenes.push(makeSourceStillPageScene());
+        enterSourceLandscape();
+        return;
+      }
       // WALKING PAST THE FAULT ENDS THE FIELD, NOT THE CHAPTER. Same crossing as
       // the one that opened this place, for the same reason: what is on the far
       // side of it is what the mosh has been made of all along.
@@ -12015,35 +12304,49 @@ function consumeCoffee({speak=false,source='main.consumeCoffee'}={}){
 function drinkCoffee(){return consumeCoffee({speak:true,source:'main.drinkCoffee'});}
 function consumeBattleCoffee(){return consumeCoffee({source:'main.consumeBattleCoffee'});}
 
-// THE PHYSICAL-TO-SOURCE MOSH. Taking the still page captures the last hall
-// frame, moves the stable checkpoint to the reconstructed get-in, and resolves
-// both pictures through the same compositor the later tower crossing uses.
+// THE PHYSICAL-TO-SOURCE SWAP. The still sheet is already covering the frame
+// when this runs, so rebuilding the forward world is invisible and requires no
+// teleport, black cut or full-screen encoder effect.
 function enterSourceLandscape(){
-  // The search's perceptual attacks and authored bracketing never leak into the
-  // black threshold or the later tower transition. Taking the still page is the
-  // first legitimate release in the sequence.
+  // The search's perceptual attacks do not leak past the page. The BRACKET does.
+  //
+  // The haystack stands two bodies around the player: one ahead they can never
+  // reach, one behind that paces them. Reading the page replaces the FORWARD one
+  // with the Scene Dock — that is the whole beat. The rear one carries straight
+  // on, and being unable to reach him is the point of him.
+  //
+  // This despawned the real actor outright at exactly this moment, so the half
+  // of the bracket that was supposed to survive the transition was the half
+  // destroyed by it. The tableau is released — the landing frame takes authority
+  // over the same body on the next tick — but the body itself stays.
   endSourceHaystackMosh();
-  endSourceBracketPresence({despawn:true});
+  // Nothing is done to the rear body here at all — not despawned, not even
+  // released. sourceBracketTableauActive stays true, so on the next tick
+  // syncSourceBracketPresence simply hands pose authority from the bracket frame
+  // to the landing frame over the SAME actor, with no gap and no restore. Both
+  // frames put him the same eight metres back (SOURCE_BRACKET.rearGapEndMetres),
+  // so he does not move when the room ahead does.
   sourceFearFloor=0;
   R3.r3dSetIndoorRain?.(0);
   const reducedMotion=shakeMode()!=='full';
-  // Capture the final physical hall frame before changing the camera or render
-  // plan. The generic compositor then resolves that frame into the reconstructed
-  // get-in instead of hiding the mode change behind a long black fade.
-  R3.r3dBeginDatamosh?.({ reducedMotion });
-  const landing=chunkSurfRuntime.checkpointPosition('landing-arrival');
-  px=landing.x;py=landing.y;R3.r3dSetFacing(landing.facing||0);
+  // NOTHING MOVES. THE ROOM ARRIVES.
+  //
+  // This used to datamosh, teleport the body to a fixed 'landing-arrival'
+  // checkpoint twenty-eight cells past the end of the hall, and push a threshold
+  // scene over the top. Three separate ways of hiding the fact that the player
+  // had been picked up and put somewhere else — and once they HAD been moved,
+  // the corridor at their back was a place they no longer occupied, so it had to
+  // be reconstructed, badly, forever.
+  //
+  // The dock's rear mouth is anchored to the body by
+  // sourceLandscapeOriginAfterHaystack, so the Scene Dock is built in front of
+  // where the player already stands. They lower the page into the dock; they
+  // turn around into the same corridor cells, now render-only and blocked.
   chunkSurfRuntime.setPlayerPosition({x:px,y:py,facing:R3.r3dFacing()});
   renderMove=null;motionRig=null;trail=[];
   syncSourceRender({force:true});
   saveCommit({px,py,chunkSurf:chunkSurfRuntime.state(),area:'source-space'});
   CR.fx.hold(reducedMotion?0:120);
-  scenes.push(makeSourceThresholdScene({
-    cue:()=>CUES.playCue(CUES.CUE.door,{gain:.52,rate:.42,lowpassHz:1400}),
-    renderer:R3,
-    reducedMotion,
-    onDone:()=>syncSourceRender({force:true}),
-  }));
 }
 
 // OUT PAST THE PERIMETER.
@@ -13965,6 +14268,39 @@ function playEnvironmentalTenorStrike(){
 }
 
 
+// THE MACHINE WAS STANDING IN FRONT OF THEM.
+//
+// The take overlay is opaque, it is centred, and it is on screen for the whole
+// forty-five seconds — which is precisely the window this beat is eligible in.
+// The old staging pattern put eight of its nine candidates within about thirty
+// degrees of the look axis, so the bodies were placed, lit, submitted, drawn,
+// and then covered from the shins up by the DA-1000. They have been firing all
+// along; the only part of a person ever clear of the panel was their feet.
+//
+// A body has to stand where a man staring at a meter would catch it: off to one
+// side, at the edge of the eye. Which is what `peripheral` and `doorway` were
+// describing in the first place. This asks the real projection rather than a
+// hand-computed angle, so it stays true if the FOV, the aspect ratio, or the
+// panel's own size ever move.
+function clearsTakeOverlay(logicalX,logicalY){
+  if(!REC.isRecording())return true;
+  const project=R3.r3dProjectWorld;
+  if(typeof project!=='function')return true;
+  const at=FP.logicalToPhysical(logicalX,logicalY);
+  if(!at)return true;
+  const {cols,rows}=uiSize();
+  if(!cols||!rows)return true;
+  const panel=takePanelRect({cols,rows,progress:REC.takeProgress()});
+  // Chest height. The part of a person you read first, and the part the panel
+  // was eating.
+  const point=project({x:at.x*CELL,y:at.y+1.24,z:at.z*CELL});
+  if(!point.visible)return false;
+  const margin=.015;
+  const coveredX=point.x>panel.x/cols-margin&&point.x<(panel.x+panel.w)/cols+margin;
+  const coveredY=point.y>panel.y/rows-margin&&point.y<(panel.y+panel.h)/rows+margin;
+  return !(coveredX&&coveredY);
+}
+
 function recordingFalseHushCandidate(event){
   if(!usingPlan()||usingSpecialSpace()||!event)return null;
   const yaw=R3.r3dWorldYaw?.() ?? mapHeading();
@@ -13972,12 +14308,17 @@ function recordingFalseHushCandidate(event){
   const right={x:Math.cos(yaw),y:Math.sin(yaw)};
   const listenerPhysical=FP.logicalToPhysical(px,py);
   const serial=Number(event.serial)||0;
+  // Runtime cells, half a metre each: the widest of these is a body three
+  // metres away and two and a half to the side. A room, not a field.
   const pattern=[
-    {f:6.0,r:-2.2},{f:7.5,r:2.8},{f:4.5,r:0.0},
-    {f:8.5,r:-4.0},{f:5.5,r:4.0},{f:7.0,r:0.0},
-    {f:5.0,r:-1.2},{f:6.5,r:1.4},{f:4.2,r:.6},
+    {f:5.0,r:-4.2},{f:6.0,r:4.6},{f:4.4,r:-3.4},
+    {f:7.0,r:5.4},{f:5.6,r:-5.0},{f:8.0,r:6.2},
+    {f:4.0,r:3.2},{f:6.6,r:-4.8},{f:5.2,r:4.0},
   ];
-  for(let i=0;i<pattern.length;i++){
+  // Two passes. The first will only stage a body somewhere it can actually be
+  // seen; the second accepts a covered position rather than losing the beat
+  // outright in a room with no clear floor to either side.
+  for(let pass=0;pass<2;pass++)for(let i=0;i<pattern.length;i++){
     const p=pattern[(serial+i)%pattern.length];
     const x=px+forward.x*p.f+right.x*p.r;
     const y=py+forward.y*p.f+right.y*p.r;
@@ -13986,6 +14327,7 @@ function recordingFalseHushCandidate(event){
     if(!physical)continue;
     if(physical.renderGroup!==listenerPhysical.renderGroup||Math.abs(physical.y-listenerPhysical.y)>.65)continue;
     if(!pointInSight(x,y,{maxDistance:D(12)}))continue;
+    if(pass===0&&!clearsTakeOverlay(x,y))continue;
     return{
       x,y,kind:event.kind,hard:!!event.hard,expiresAtMs:event.expiresAtMs,
       startedAtMs:event.startedAtMs,serial,eventId:event.id,stageYaw:yaw,
@@ -14001,6 +14343,7 @@ function recordingFalseHushCandidate(event){
       widthM:event.hard?.78:.68,
       glow:event.hard?2.8:2.25,
       mode:'live',
+      staging:pass===0?'clear':'covered',
     };
   }
   return null;
@@ -14063,6 +14406,7 @@ function tickRecordingHallucinations(dt){
   recordingHallucinationProbeUntil=0;
   if(!storyMode||usingSpecialSpace()||!REC.isRecording()){
     recordingFalseHush=null;
+    recordingHallucinationWhy={...recordingHallucinationWhy,reason:'not-recording',placed:false};
     return;
   }
   const settings=getSave().settings||{};
@@ -14075,9 +14419,19 @@ function tickRecordingHallucinations(dt){
     darkness:REC.lightOn()?0:1,takeProgress:REC.takeProgress(),hushPressure:pressure,
     effectiveMicRms:mic.effective.rms,spoilThreshold:MIC_LEVEL.spoil,
   });
-  if(!result.active){recordingFalseHush=null;return;}
+  if(!result.active){
+    recordingFalseHush=null;
+    recordingHallucinationWhy={...recordingHallucinationWhy,reason:result.eligibility?.reason||'declined',placed:false};
+    return;
+  }
   if(result.started||(!recordingFalseHush&&result.active)){
     recordingFalseHush=recordingFalseHushCandidate(result.active);
+    recordingHallucinationWhy={
+      reason:recordingFalseHush?'placed':'no-placement',
+      placed:!!recordingFalseHush,
+      started:recordingHallucinationWhy.started+(result.started?1:0),
+      placementFailures:recordingHallucinationWhy.placementFailures+(recordingFalseHush?0:1),
+    };
     if(recordingFalseHush&&result.started){
       CR.fx.glitch(result.active.hard ? .55 : .28,result.active.hard?360:220);
       if(result.active.hard)CR.fx.shake(.35,180);
@@ -15743,12 +16097,22 @@ async function applyPsychProfileSettingsChange({previous,next,changedKey}={}){
   if(changedKey==='master'&&!Object.values(profile.modules).some(Boolean))MIC.micStop();
 }
 
+// A CONSENT THIS REVOKES ITSELF MUST SAY SO OUT LOUD.
+//
+// This writes a permanent settings change — window choreography off, in the
+// save, for every future run — and it used to do it without a word anywhere.
+// A save was found in exactly that state on 2026-08-28: every other module on,
+// this one alone off, WINDOW INTENSITY still reading HOSTILE beside it, and no
+// record of when or why. The result looks precisely like a broken feature: the
+// in-canvas trails keep playing and no external surface ever opens again.
 function disablePersonalizedInterference(){
   const save=getSave();
   const current=currentPsychProfileSettings();
   if(!current.modules.windowChoreography)return;
   const profile={...current,modules:{...current.modules,windowChoreography:false}};
   saveCommit({settings:mirrorPsychProfileCompatibility(save.settings||{},profile)});
+  pushEvent('// WINDOW CHOREOGRAPHY DISABLED. Re-enable it in SETTINGS / PROFILE.');
+  void logWarn('window choreography self-disabled','emergency restore revoked the module consent');
 }
 
 function commitPsychObservation(observation){
@@ -16561,11 +16925,11 @@ function saveControllerSettings(controller){
 
 async function restorePsychProfileWindows(){
   await personalWindowEffects.emergencyRestore?.({notify:false});
-  pushEvent('// game windows restored.');
+  pushEvent('// fireball surfaces closed.');
   return true;
 }
 
-async function previewPsychProfileWindowChannel(battleId='hall',movementId=null){
+async function previewPsychProfileFireballCast(battleId='hall',movementId=null){
   const profile=currentPsychProfileSettings();
   const samples={
     natatorium:{movementId:'room',title:'THE EMPTY ROOM',intentId:'natatorium:meter',intentLabel:'METER MOVES WITHOUT AIR'},
@@ -16575,21 +16939,26 @@ async function previewPsychProfileWindowChannel(battleId='hall',movementId=null)
     'source-final':{movementId:'call-site',title:'THE CALL SITE',intentId:'source:call-site',intentLabel:'THE CALL RETURNS OUTSIDE ITSELF'},
   };
   const sample=samples[battleId]||samples.hall;
-  const scene=compileWindowChannelScene({
+  const scene=compileFireballCastPlan({
     battleId:samples[battleId]?battleId:'hall',movementId:movementId||sample.movementId,movementIndex:0,movementTitle:sample.title,
     intentId:sample.intentId,intentLabel:sample.intentLabel,intentKind:'broadcast',
     windowScale:1,
   });
   if(!scene)return false;
-  const forceInternal=!!document.fullscreenElement
-    ||currentDisplaySettings().displayMode==='game-mode'
-    ||profile.windowIntensity==='low'
-    ||BINDINGS.activeInputPromptDevice()==='controller';
   const result=await personalWindowEffects.previewChannel(scene,{
-    stage:'control',intensity:profile.windowIntensity,forceInternal,
+    stage:'control',intensity:profile.windowIntensity,forceInternal:false,
   });
-  pushEvent(`// window channel preview ${result?.outcome||'restored'}.`);
+  pushEvent(`// fireball cast preview ${result?.state||'complete'}.`);
   return result;
+}
+
+// Native acceptance hook: launches one non-interactive cast without requiring
+// a save, a battle, or the god menu. Development URLs only; production builds
+// tree this branch to false and ordinary players never enter it.
+if(import.meta.env?.DEV&&params().has('fireballPreview')){
+  const requested=params().get('fireballPreview')||'hall';
+  setTimeout(()=>{void previewPsychProfileFireballCast(requested);},1200);
+  setTimeout(()=>{console.warn('[fireball-preview]',personalWindowEffects.debug?.());},6500);
 }
 
 function resetPsychProfileInference(){
@@ -16672,7 +17041,7 @@ function openSettings({ inGame=false, initialTab=null }={}){
       },
       psychProfileState: ()=>getMeta().psychProfile,
       onPsychProfileChange: applyPsychProfileSettingsChange,
-      previewProfileWindows: previewPsychProfileWindowChannel,
+      previewProfileWindows: previewPsychProfileFireballCast,
       restoreProfileWindows: restorePsychProfileWindows,
       openReturnFolder: ()=>revealInterferenceFolder(),
       resetPsychProfile: resetPsychProfileInference,
@@ -17481,7 +17850,7 @@ function godTabs(){
     ]},
     {id:'scenes',name:'GAME PARTS',rows:[
       section('Presentation'),
-      {id:'window-channel-preview',label:'WINDOW CHANNEL / SAFE PREVIEW',value:'[PLAY]',closeMenu:true,activate:()=>previewPsychProfileWindowChannel('hall')},
+      {id:'fireball-cast-preview',label:'FIREBALL CAST / SAFE PREVIEW',value:'[PLAY]',closeMenu:true,activate:()=>previewPsychProfileFireballCast('hall')},
       {id:'opening-credits',label:'OPENING CREDITS',value:'[PLAY]',closeMenu:true,activate:()=>scenes.push(makeOpeningCreditsScene())},
       {id:'cold-open',label:'COLD OPEN',value:'[PLAY]',closeMenu:true,activate:godColdOpen},
       {id:'world-title',label:'WORLD TITLE',value:'[PLAY]',closeMenu:true,activate:()=>scenes.push(makeWorldTitleScene({audio:STORY}))},
@@ -18590,6 +18959,20 @@ function drawStoryHud(){
 // The take screen IS a hi ta chi DA-1000: a green LOCATION INDICATOR for the
 // progress of the minute, a pale-cyan TIME COUNTER, a level meter, and a
 // dread-closing letterbox around it. The dark room stays visible behind.
+// WHERE THE DA-1000 IS, IN ONE PLACE.
+//
+// Something other than the draw call now needs to know: the panel is opaque,
+// centred, and on screen for the whole forty-five seconds, which is exactly the
+// window the recording hallucinations are eligible in.
+function takePanelRect({cols,rows,progress=0}){
+  const bar=2+Math.round(Math.max(0,Math.min(1,Number(progress)||0))*3);
+  const w=Math.min(64, cols-10);
+  const x=Math.floor((cols-w)/2);
+  const h=15;
+  const y=Math.max(bar+1, Math.floor((rows-h)/2));
+  return{x,y,w,h,bar};
+}
+
 function drawTakeOverlay(cols, rows){
   const rec=REC.recState();
   const p=REC.takeProgress();
@@ -18605,10 +18988,7 @@ function drawTakeOverlay(cols, rows){
   uiFill(0, 0, 3, rows, 'rgba(2,3,3,0.55)');
   uiFill(cols-3, 0, 3, rows, 'rgba(2,3,3,0.55)');
 
-  const w=Math.min(64, cols-10);
-  const x=Math.floor((cols-w)/2);
-  const h=15;
-  const y=Math.max(bar+1, Math.floor((rows-h)/2));
+  const {x,y,w,h}=takePanelRect({cols,rows,progress:p});
   const dot=(Math.floor(t*2)%2===0);
   const body=drawMachinePanel(x, y, w, h, {
     theme:'green', wordmark:'hi ta chi', model:'DA-1000', label:held?'TAKE HOLD':assisted?'CLOCK HOLD':'RECORD',
@@ -18748,6 +19128,76 @@ function installProbe(){
     sourceHaystack:()=>chunkSurfRuntime?.probe?.().haystack||null,
     chunkSurfStart:()=>beginChunkSurf({forced:true}),
     sourcePreset:(preset=CHUNK_SURF_GOD_PRESET.HALL_ENTRY)=>{ godEnterSourcePreset(preset); return window.__probe.chunkSurf(); },
+    // A warp that STAYS in Source. warpRuntime deliberately exits it — a
+    // facility warp is an explicit end to the diagnostic — so it cannot be used
+    // to put the body next to a lift and try to climb it. Source coordinates,
+    // in Source, with the runtime told where the body went.
+    sourceWarp:(x,y,f=null)=>{
+      if(!usingSourceSpace())return null;
+      px=Number(x);py=Number(y);
+      if(f!=null)R3.r3dSetFacing(f);
+      renderMove=null;motionRig=null;trail=[];
+      chunkSurfRuntime.setPlayerPosition({x:px,y:py,facing:R3.r3dFacing()});
+      syncSourceRender({force:true});
+      return{x:px,y:py,facing:R3.r3dFacing(),floor:chunkSurfRuntime.geometry.floorAt(px,py)};
+    },
+    // What the Source geometry says about one step, and what the traversal
+    // system does with it. "I cannot climb this" has three possible answers and
+    // this separates them.
+    sourceStep:(dx=0,dy=-0.5)=>{
+      if(!usingSourceSpace())return null;
+      const move=chunkSurfRuntime.geometry.canStep(px,py,px+dx,py+dy,{keys:playerKeys});
+      return{move,frame:chunkSurfRuntime.traversalFrame?.()??null,pos:{x:px,y:py}};
+    },
+    // WHAT THE EMERGENCY CIRCUIT ACTUALLY DELIVERS, IN METRES.
+    // The lights are authored in Source cells and reach the shader in metres;
+    // the body is in cells. "The red is not arriving" has to be answered with a
+    // distance and a radius, not by reading the authoring twice.
+    sourceLights:()=>{
+      if(!usingSourceSpace())return null;
+      const lights=chunkSurfRuntime.localLights?.({time:performance.now()/1000,reducedMotion:false,flashMode:'full'})||[];
+      const eye={x:px*CELL,z:py*CELL,y:chunkSurfRuntime.geometry.floorAt(px,py)+1.62};
+      return{
+        eye,
+        lights:lights.map((light)=>{
+          const d=Math.hypot(light.x-eye.x,light.z-eye.z,(Number(light.y)||0)-eye.y);
+          return{id:light.id,kind:light.kind,color:light.color,intensity:light.intensity,
+            radius:light.radius,x:light.x,y:light.y,z:light.z,distance:d,
+            // What the shader's falloff leaves at the eye.
+            reach:Math.pow(Math.max(0,1-d/Math.max(.01,light.radius)),2)*light.intensity};
+        }),
+      };
+    },
+    // SIGHT AND BODY DISAGREE ON PURPOSE AT EXACTLY ONE PLANE, AND THIS SHOWS IT.
+    // The grey goods pair is solid to the body and open to the camera, so
+    // "is the corridor behind it visible" is answered by the two cells here
+    // rather than by squinting at a dark frame.
+    // What r3d is actually holding at draw time.
+    r3dLighting:()=>R3.r3dLightingDebug?.()??null,
+    sourceCell:(x,y)=>{
+      if(!usingSourceSpace())return null;
+      const g=chunkSurfRuntime.geometry;
+      return{physical:g.cellAt(x,y)||null,render:g.renderCellAt(x,y)||null};
+    },
+    // EVERY MESH SOURCE IS ACTUALLY SUBMITTING, WITH ITS REAL WORLD SIZE.
+    // A prop that is visible, enormous and not collidable is three separate
+    // bugs wearing one costume, and none of them can be found by reading the
+    // authoring — the size only exists after the matrix has been composed.
+    sourceProps:()=>{
+      if(!usingSourceSpace())return null;
+      const list=chunkSurfRuntime.propInstances(px,py,{
+        time:performance.now()/1000,reducedMotion:false,objectiveHints:objectiveHintsMode(),flashMode:flashMode(),
+      })||[];
+      const eye={x:px*CELL,z:py*CELL};
+      return list.map((entry)=>{
+        const m=entry.matrix;
+        if(!m)return{id:entry.id,mesh:entry.mesh,matrix:false};
+        const sx=Math.hypot(m[0],m[1],m[2]),sy=Math.hypot(m[4],m[5],m[6]),sz=Math.hypot(m[8],m[9],m[10]);
+        return{id:entry.id,mesh:entry.mesh,connector:entry.sourceConnector||null,
+          x:m[12],y:m[13],z:m[14],sx,sy,sz,
+          distance:Math.hypot(m[12]-eye.x,m[14]-eye.z)};
+      });
+    },
     // Out on the tape, addressed by DISTANCE rather than by a named checkpoint,
     // because the horizon is a continuum and the useful thing to warp to is how
     // far along it you are. See HORIZON_GOD_STOPS for the authored three.
@@ -19192,6 +19642,9 @@ function installProbe(){
     cueGroup:(name)=>CUES.cueGroupSize(name||'battle'),
     liveCues:()=>CUES.liveCueCount(),
     resetAudio:(reason)=>{ resetRunAudio(reason||'probe'); return CUES.liveCueCount(); },
+    // Leaving a run is half of every "why can I still hear the last one"
+    // question, and the harness has to be able to do it without walking a menu.
+    returnToTitle:()=>{ returnToTitle(); return scenes.top()?.id||null; },
     // Which rooms the recorder and the tape actually believe they hold. The dock
     // level check must appear in neither as `main_b3`.
     hasTake:(room)=>REC.hasTake(room),
@@ -19383,7 +19836,7 @@ function installProbe(){
     selfAudioMask:()=>selfAudioMask.inspect(),
     micEffective:()=>({mic:MIC.micSnapshot(),mask:selfAudioMask.inspect(),monitor:MONITOR.monitorSnapshot()}),
     recordingHallucination:()=>({
-      director:recordingHallucinations.inspect(),body:recordingFalseHush,
+      director:recordingHallucinations.inspect(),body:recordingFalseHush,why:recordingHallucinationWhy,
       propInstances:recordingHallucinationPropInstances().map((instance)=>({
         id:instance.id,mesh:instance.mesh,poseId:instance.poseId,apparitionIndex:instance.apparitionIndex,
         x:instance.x,y:instance.y,z:instance.z,scaleX:instance.scaleX,scaleY:instance.scaleY,
@@ -19437,6 +19890,40 @@ function installProbe(){
       room:practiceRoomHere()}),
     practiceDeal:(seed=null)=>godDealPracticeHaunts(seed),
     practiceFire:(kind)=>godFirePracticeHaunt(kind),
+    // Which weather this boot drew, how much of it is left, and which phase it
+    // is in — so the harness can assert the clear-out and the handoff without
+    // comparing pixels.
+    bootWeather:()=>bootWeatherDebug(),
+    // The yard's leaves: how many are in the air, which way the night is
+    // blowing, and what the gust is doing right now.
+    // The storm, and the one thing worth being able to fire by hand: a strike
+    // at a chosen distance, so the flash-to-thunder delay can be checked
+    // against a stopwatch rather than by feel.
+    storm:()=>storm?{
+      time:+storm.time.toFixed(2),
+      flash:+stormFlash(storm).toFixed(3),
+      applied:+stormFlashStrength().toFixed(3),
+      bearing:+stormBearing(storm).toFixed(3),
+      live:storm.strikes.length,
+      pending:storm.pending.length,
+      lastDistance:Math.round(storm.lastDistance),
+      sky:!!(usingPlan()&&!usingSpecialSpace()&&(FP.flagsAt(px,py)&CELL_FLAGS.SKY)),
+    }:null,
+    strike:(distance=900)=>{
+      if(!storm)tickStorm(performance.now()/1000);
+      const s=forceStrike(storm,{distance:Number(distance)||900});
+      return s?{distance:Math.round(s.distance),delay:+(s.distance/343).toFixed(2),energy:+s.energy.toFixed(2)}:null;
+    },
+    leafFlurry:()=>leafFlurry?{
+      leaves:leafFlurry.leaves.length,
+      place:+leafSourcePresence(leafSources,px,py).toFixed(3),
+      gust:+leafGust(windForce(performance.now()/1000)).toFixed(3),
+      sources:leafSources.length,
+      bearing:+leafFlurry.bearing.toFixed(3),
+      wind:+leafFlurry.wind.toFixed(3),
+      zone:FP.zoneAt(px,py),
+      sample:leafFlurry.leaves.slice(0,3).map((l)=>({mesh:l.mesh,y:+l.y.toFixed(2)})),
+    }:null,
     windowChoreographyLab:()=>choreographyLabSummary(buildWindowChoreographyLabCases()),
     windowChoreographyPreview:async(stage='recognition',cueId='broadcast',intensity='hostile')=>{
       const token=await personalWindowEffects.begin({stage,encounterId:stage==='finale'?'source-final':'',intensity,fullscreen:!!document.fullscreenElement});
@@ -19444,7 +19931,8 @@ function installProbe(){
       await personalWindowEffects.end(token);
       return result;
     },
-    windowChannelPreview:(battleId='hall',movementId=null)=>previewPsychProfileWindowChannel(battleId,movementId),
+    fireballCastPreview:(battleId='hall',movementId=null)=>previewPsychProfileFireballCast(battleId,movementId),
+    fireballWindows:()=>personalWindowEffects.debug?.()||null,
     mischiefAt:(dx,dy)=>{ mischiefHeard={x:px+(Number(dx)||0),y:py+(Number(dy)||0),at:performance.now()}; return recentMischief(); },
     // Headless Chrome keeps rAF running with the tab hidden, so a suite cannot
     // produce a real away-gap. This is the same call the long-frame path makes.
@@ -19649,9 +20137,35 @@ async function bootScenes(){
     if(firstInstall){
       metaCommit({lensRuntimeReady:LENS_RUNTIME_MARKER,lensRuntimeReadyAt:Date.now()});
     }
+    // ONE WEATHER PER LAUNCH, and never the same one twice running — three
+    // weathers that can repeat read as one effect with a variable rather than
+    // as three. `?weather=` pins it for captures and review.
+    const forced=qp.get('weather');
+    const previous=getMeta().presentation?.lastBootWeather||'';
+    const weather=isBootWeatherKind(forced)?forced:pickBootWeather(previous);
+    if(!forced)metaCommit({presentation:{...getMeta().presentation,lastBootWeather:weather}});
+    beginBootWeather(weather,{
+      seed:Date.now(),
+      // Reduced motion thins and slows the field. It never deletes it: an empty
+      // credits frame does not read as an accessibility setting.
+      reducedMotion:shakeMode()!=='full',
+      enabled:visualEffectsEnabled(),
+    });
     // Every launch gets the authored opening. Debug/lab destinations may change
     // what follows it, never the calibration -> credits ordering.
-    scenes.push(makeOpeningCreditsScene({onDone:afterCredits}));
+    scenes.push(makeOpeningCreditsScene({
+      onDone:afterCredits,
+      // The credits are the first thing after the EULA, so on a first launch a
+      // real keypress has already unlocked audio and the bed can come straight
+      // up. On later launches the EULA is skipped and a BROWSER may hand back a
+      // suspended context — desktop does not. Ask, and take silence for an
+      // answer rather than forcing one.
+      openAudio:()=>{
+        ensureCtx();
+        if(!actx||actx.state!=='running'||!sfxGain)return null;
+        return createBootWeatherAudio({context:actx,destination:sfxGain,kind:weather});
+      },
+    }));
     syncPlatform().catch(()=>{});
   };
   const activateStartupBank=async(lens)=>{
@@ -19924,9 +20438,16 @@ function render3d(){
     timeSec:performance.now()/1000,
     reducedEffects:(getSave().settings?.flash||'full')!=='full',
   });
-  const torchLook=storyMode
+  const hushTorchLook=storyMode
     ? applyHushTorchInterference(baseTorchLook,hushActiveForPlayer()?hushFieldFrame:inactiveHushField())
     : baseTorchLook;
+  // Source changes the instrument, not whether the player owns it: an inverted
+  // x-ray cone before the nothingness, then a red cone on the circuit's own
+  // duty cycle after the threshold. Composed after HUSH interference so a HUSH
+  // standing in the beam still eats the underlying torch power.
+  const torchLook=usingSourceSpace()
+    ? applySourceEmergencyTorch(hushTorchLook,sourceEmergencyTorchFrame())
+    : hushTorchLook;
   R3.r3dFrame({
     px:rendered.x, py:rendered.z, yawOffset:planYawOffset(),
     tileW:WORLD_TILE_W, tileH:WORLD_TILE_H,

@@ -13,6 +13,10 @@ import { deriveUnlocks } from '../progression/unlocks.js';
 import * as AUDIO from '../audio/story-audio.js';
 import { promptLine } from './bindings.js';
 
+// Every preset but Dead Air is open from the first run; Dead Air asks for one
+// finished night of any kind. Said on the row itself rather than in a manual.
+const LOCKED_SUBTITLE = 'COMPLETE ANY ENDING TO UNLOCK';
+
 const RULE_ORDER = Object.freeze([
   'presencePressure',
   'recordingForgiveness',
@@ -234,7 +238,10 @@ export function makeDifficultySelectScene({
         uiText(
           body.x + 3,
           menuY + index * 3 + 1,
-          locked ? 'LOCKED' : preset.subtitle,
+          // A locked row has to say what unlocks it. It read just 'LOCKED', and
+          // pressing it only plays a bump — so Dead Air was a visible dead end
+          // with no stated way in, which is the one thing showing it was for.
+          locked ? LOCKED_SUBTITLE : preset.subtitle,
           subStyle,
           locked ? 0.42 : on ? 0.9 : 0.55,
         );

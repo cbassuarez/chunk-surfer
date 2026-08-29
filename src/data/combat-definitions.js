@@ -24,12 +24,15 @@ const O = (id, label, damage = 2 * GRID, options = {}) => intent(id, label, INTE
 const L = (id, label, damage = 4 * GRID, options = {}) => intent(id, label, INTENT_KIND.LOOP, damage, options);
 const S = (id, label, options = {}) => intent(id, label, INTENT_KIND.SILENCE, 0, options);
 
-function movement(id, title, coherence, intents, { reactions = null, severeIntents = null, deadAirIntents = null } = {}) {
+function movement(id, title, coherence, intents, { reactions = null, severeIntents = null, deadAirIntents = null, formation = null } = {}) {
   return {
     id, title, coherence, intents,
     // Board-state reactions swap the cycle intent when a condition holds — the
     // opponent responding to how the fight is actually going, not a fixed loop.
     ...(reactions ? { reactions } : {}),
+    // How large a formation this movement may field. Only the hall carries it;
+    // every other encounter leaves it null and behaves exactly as before.
+    ...(formation ? { formation } : {}),
     severeIntents: severeIntents || [...intents.slice(1), intents[0]],
     deadAirIntents: deadAirIntents || [...intents].reverse(),
   };
@@ -48,14 +51,27 @@ const PROFILES = Object.freeze({
     signature: { id: 'echo', label: 'FOURTH RETURN', description: 'A missed response returns on the next hostile beat for +1 damage.' },
     music: {
       mode: 'fixed', lead: 'lead-1',
-      submersion: { enabled:true, at:'downbeat', lowpassHz:720, q:.8, dryLeak:.08, rampSeconds:.18, surfaceSeconds:.6 },
+      submersion: {
+        enabled:true,
+        q:.8,
+        wetMix:{ dry:0, half:.5, full:.92 },
+        lowpassHz:{ dry:20000, half:1800, full:720 },
+        transitionSeconds:{ dry:0, half:1, full:1.1, win:1.35 },
+      },
     },
-    presentation: { mode:'submerged', movementDepths:[.35,.68,1] },
+    presentation: {
+      mode:'submerged',
+      submersionPhases:['dry','half','full'],
+      resultPhases:{ win:'dry', lose:'full' },
+      wetMix:{ dry:0, half:.5, full:.92 },
+      lowpassHz:{ dry:20000, half:1800, full:720 },
+      transitionSeconds:{ dry:0, half:1, full:1.1, win:1.35 },
+    },
     movements: [
-      movement('room', 'THE SURFACE CLOSES', 25, [
-        B('natatorium:meter', 'METER MOVES BELOW THE WATERLINE', 10, { takeLabel: 'ROOM TONE', playbackDamage: 10, presentation:{visualClass:'meter-return'} }),
-        O('natatorium:pressure', 'WATER HAMMERS BEHIND THE EARS', 10, { effect: 'ringing', presentation:{visualClass:'pressure-field'} }),
-        C('natatorium:piano', 'TWO NOTES THROUGH THE SURFACE', 10, { presentation:{visualClass:'surface-notes'} }),
+      movement('room', 'THE DRY ROOM LISTENS', 25, [
+        B('natatorium:meter', 'METER MOVES IN THE DRY ROOM', 10, { takeLabel: 'ROOM TONE', playbackDamage: 10, presentation:{visualClass:'meter-return'} }),
+        O('natatorium:pressure', 'ROOM TONE HAMMERS BEHIND THE EARS', 10, { effect: 'ringing', presentation:{visualClass:'pressure-field'} }),
+        C('natatorium:piano', 'TWO NOTES WITHOUT AIR', 10, { presentation:{visualClass:'surface-notes'} }),
       ]),
       movement('voice', 'THE VOICE IN THE DRAIN', 25, [
         B('natatorium:voice', 'HER VOICE IN THE DRAIN RETURN', 10, { takeLabel: 'VOICE PRINT', playbackDamage: 10, presentation:{visualClass:'drain-return'} }),
@@ -91,44 +107,81 @@ const PROFILES = Object.freeze({
     signature: { id: 'feedback', label: 'HOUSE RETURN', description: 'The first Playback in Noise each phase recoils for 1 Composure.' },
     music: { mode: 'fixed', lead: 'lead-3' },
     house: { figures: null },
+    // THE ARC IS THE FORMATION GROWING.
+    //
+    // The three movements were mechanically identical before — the same one row
+    // acting, three times, with different words over the top. The authored text
+    // already said the sections were learning to coordinate; this is that text
+    // becoming true. One lead teaches you what the roles do, two teaches you
+    // that they combine, three is the fight the third movement is named after.
     movements: [
       movement('seated', 'THE HOUSE IS SEATED', 30, [
         B('hall:regard', 'A FULL HOUSE REGARDS YOU', 10, { takeLabel: 'THE REGARD', playbackDamage: 10 }),
         O('hall:shift', 'EVERY SEAT SHIFTS AT ONCE', 10, { effect: 'ringing' }),
         C('hall:gap', 'ONE SEAT EMPTIES WHEN YOU LOOK AT IT', 10),
-      ]),
+      ], { formation: { supports: 0, ovation: false } }),
       movement('attention', 'EVERY HEAD AT ONCE', 30, [
         B('hall:turn', 'THE HOUSE TURNS ON YOUR LEVEL', 10, { takeLabel: 'THE TURN', playbackDamage: 10 }),
         L('hall:loop', 'OUTPUT PATCHED TO INPUT', 15),
         O('hall:lean', 'THE WHOLE TIER LEANS IN', 20, { effect: 'ringing' }),
-      ]),
+      ], { formation: { supports: 1, ovation: false } }),
       // The old title was APPLAUSE WITHOUT HANDS. There are hands.
       movement('applause', 'APPLAUSE WITH HANDS', 30, [
         B('hall:applause', 'APPLAUSE, AND THEY MEAN IT', 15, { takeLabel: 'THE OVATION', playbackDamage: 10 }),
         C('hall:standing', 'THE ROW BEHIND YOU STANDS', 10),
         O('hall:stack', 'THE WHOLE HOUSE COMES UP AT ONCE', 20, { effect: 'ringing' }),
-      ]),
+      ], { formation: { supports: 2, ovation: true } }),
     ],
   }),
+  // NOTHING IN THIS ROOM ATTACKS HIM.
+  //
+  // Every intent below used to belong to the building — THE EMPTY CHAIR MOVES,
+  // THE PHRASE PLAYS ITSELF, THE SCORE WRITES BACK — and every one of them put
+  // the agency somewhere he could not be blamed for it, which is the move he has
+  // been making for three years. A room that wants something is a ghost story.
+  //
+  // So they are his now. Each beat is a thing he does to a file: winding it back,
+  // running it hotter, cutting the rest out, both hands on the fader. The damage
+  // is what the repetition costs him. There is no opponent to reduce, because
+  // there is nobody in here.
+  //
+  // The movement titles are the room's whole vocabulary, three times over. That
+  // repetition is the content, not a failure to vary it.
   practice: Object.freeze({
     kind: 'regular',
-    signature: { id: 'ensemble', label: 'ENSEMBLE STACK', description: 'Every third hostile beat gains +1 damage unless this movement was Tuned.' },
+    // NO SIGNATURE. It carried ENSEMBLE STACK — "every third hostile beat gains
+    // +1 damage" — and there are no hostile beats in the practice wing any more.
+    // A signature that cannot fire is a promise on the card the fight does not
+    // keep, so it is gone rather than quietly inert. What the wing has instead of
+    // a signature is the retake, and the retake is on the transport.
     music: { mode: 'fixed', lead: 'lead-2' },
+    // FOUR BARS. He is not running the piece — nobody practises that way. He is
+    // working the fragment that ends where the recording ends, which is three
+    // beats to the wall and then a decision: wind it back, or play it back.
+    practice: { bars: 4 },
     movements: [
-      movement('instrument', 'THE WRONG INSTRUMENT', 25, [
-        B('practice:two-notes', 'TWO NOTES ON THE TAKE', 10, { takeLabel: 'TWO WRONG NOTES', playbackDamage: 10 }),
-        C('practice:piano', 'PIANO HIDDEN IN A DEAD ROOM', 10),
-        O('practice:ensemble', 'EVERY STAND ANSWERS', 10, { effect: 'ringing' }),
+      // THESE NUMBERS ARE WHAT A REPETITION COSTS, not what a blow does.
+      //
+      // They were the authored 10-20, balanced against a player countering an
+      // attacker every beat. There is no attacker here and nothing to counter,
+      // so a man simply walking the fragment was dead in three beats. A pass
+      // through the bar costs a little and the later movements cost more,
+      // because the hand goes and the ear goes — which is the only escalation
+      // the wing has and the only one it needs.
+      movement('instrument', 'TAKE IT FROM THE TOP', 25, [
+        B('practice:two-notes', 'WIND IT BACK TWO BARS', 3, { takeLabel: 'TWO WRONG NOTES', playbackDamage: 10 }),
+        C('practice:piano', 'PLAY IT UNDER YOUR BREATH', 3),
+        O('practice:ensemble', 'RUN IT AT FULL LEVEL', 4, { effect: 'ringing' }),
       ]),
-      movement('player', 'THE PLAYER NOT PRESENT', 30, [
-        B('practice:breath', 'BREATH BEFORE THE PHRASE', 10, { takeLabel: 'PLAYER BREATH', playbackDamage: 10 }),
-        O('practice:downbeat', 'DOWNBEAT THROUGH THE FLOOR', 20, { effect: 'ringing' }),
-        C('practice:chair', 'THE EMPTY CHAIR MOVES', 10),
+      movement('player', 'AGAIN, FROM THE TOP', 30, [
+        B('practice:breath', 'CATCH THE BREATH BEFORE THE PHRASE', 4, { takeLabel: 'PLAYER BREATH', playbackDamage: 10 }),
+        O('practice:downbeat', 'COUNT IT IN HARDER', 5, { effect: 'ringing' }),
+        C('practice:chair', 'STOP WATCHING THE METER', 3),
       ]),
-      movement('score', 'THE SCORE WRITES BACK', 30, [
-        B('practice:phrase', 'THE PHRASE PLAYS ITSELF', 15, { takeLabel: 'SELF-PLAYING PHRASE', playbackDamage: 10 }),
-        C('practice:rest', 'REST BLACKED OUT OF THE BAR', 10),
-        O('practice:finale', 'ALL PARTS AT FULL LEVEL', 20, { effect: 'ringing' }),
+      movement('score', 'AND AGAIN', 30, [
+        B('practice:phrase', 'PLAY THE BAR ON ITS OWN', 4, { takeLabel: 'THE BAR ON ITS OWN', playbackDamage: 10 }),
+        C('practice:rest', 'CUT THE REST OUT OF IT', 3),
+        O('practice:finale', 'BOTH HANDS ON THE FADER', 6, { effect: 'ringing' }),
       ]),
     ],
   }),
@@ -287,6 +340,7 @@ export function attachCombatDefinition(battle, combat = null) {
       // Only the hall declares one. Absent everywhere else, which is what keeps
       // every other encounter on the single-opponent path unchanged.
       ...(authored.house ? { house: authored.house } : {}),
+      ...(authored.practice ? { practice: authored.practice } : {}),
       movements: authored.movements.map((movement, index) => ({
         ...movement,
         ...reworded(movement, snapshot?.movements?.[index]),

@@ -300,7 +300,13 @@ export function haystackPageGuidance({
 
 export function sourceFocusActionLabel(focus) {
   if (!focus) return null;
-  if (focus.kind === 'source-landing-door') return focus.open ? 'FOH DOOR OPEN' : 'OPEN FOH DOOR';
+  // THE ONE DOOR THAT DOES NOT SAY WHAT IT IS.
+  // Every other prompt in the game names its object, because naming it is how
+  // the player knows the verb is safe. This leaf opens onto Source, and the
+  // whole point of the beat is that nothing on the other side has a name yet —
+  // so the prompt withholds one. It is the same contract as the scene dock
+  // HUSH: the door is legible as a door and illegible as a destination.
+  if (focus.kind === 'source-landing-door') return focus.sealed ? 'SEALED' : '???';
   if (focus.kind === 'haystack-page') return 'TAKE THE STILL PAGE';
   if (focus.kind === 'normal-exit') return 'LEAVE SOURCE SPACE';
   if (focus.kind === 'boss-fault') return focus.available === false ? 'RETURN PATH EXPOSED / NO INTERFACE' : 'CONNECT THE RIG';

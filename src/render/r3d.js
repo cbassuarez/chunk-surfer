@@ -397,6 +397,7 @@ const int MAT_TARMAC = ${MATERIAL.wetTarmac};
 const int MAT_PAVING = ${MATERIAL.wetPaving};
 const int MAT_SETTS = ${MATERIAL.wetSetts};
 const int MAT_GRASS = ${MATERIAL.wetGrass};
+const int MAT_SOURCE_VOID = ${MATERIAL.sourceVoid};
 
 bool isRainGroundMat(int mat){return mat==MAT_TARMAC||mat==MAT_PAVING||mat==MAT_SETTS||mat==MAT_GRASS;}
 
@@ -1761,6 +1762,7 @@ void main(){
     vec3 toEye = ro - pos;
     vec3 toEyeM = roM - posM;
     bool sourceMaterial=isSourceMaterial(hitMat);
+    bool sourceVoidMaterial=hitMat==MAT_SOURCE_VOID;
     vec2 sourceUv=surfaceUv(surf,posM,n)*vec2(.34,.46);
     float sourceLayer=clamp(sourceLayerAt(pos.xz)-1.0,0.0,7.0);
     sourceUv=vec2(sourceUv.x,fract(sourceUv.y)/8.0+sourceLayer/8.0);
@@ -1777,7 +1779,7 @@ void main(){
       n=normalize(n+T*grad.x*1.8+B*grad.y*1.8);
       surfRough=mix(.96,.48,smoothstep(.08,.82,sourceHeight));
       surfaceOcclusion=mix(.58,1.0,sourceHeight);
-    } else if(uSurfacesReady > 0.001 && surf != 3 && surf != 4){
+    } else if(!sourceVoidMaterial && uSurfacesReady > 0.001 && surf != 3 && surf != 4){
       int sslot; float stile, sblend;
       vec2 suv = surfaceUv(surf,posM,n);
       // Read off the SAME normal surfaceUv just used. The normal map perturbs n
@@ -2061,7 +2063,9 @@ void main(){
       col=mix(col,deep,murk*.34);
     } else {
       vec3 albedo;
-      if(sourceMaterial){
+      if(sourceVoidMaterial){
+        albedo=vec3(1.0);
+      }else if(sourceMaterial){
         vec3 ink=sourceSyntaxTint(hitMat);
         albedo=ink*(.06+1.18*smoothstep(.035,.46,sourceHeight));
       }else{
@@ -2173,6 +2177,10 @@ void main(){
       }
     }
     col = col / (1.0 + col * 0.30);  // filmic-ish rolloff, tames the near field
+    // The white sea is not a brightly lit material. It is the absence of a
+    // scene, so it remains paper-white regardless of ambient, torch or tone map.
+    // Mesh props composite later and can still resolve as the distant island.
+    if(sourceVoidMaterial) col=vec3(1.0);
 
     // A handful of dust catches only the lit cone. Quantized movement keeps it
     // from reading as snowfall; reduced motion holds the same sparse field.
@@ -2409,6 +2417,9 @@ uniform float uRecordingTemporalSmear;
 uniform float uReduceFlash;
 uniform float uReduceMotion;
 uniform float uSourceEmergency;
+uniform float uSourceWhiteout;
+uniform float uSourceTorchMode;
+uniform float uSourceTorchPower;
 out vec4 o;
 void main(){
   vec2 uv = gl_FragCoord.xy / uRes;
@@ -2464,15 +2475,35 @@ void main(){
   // overwhelm the recorded medium or lift an unlit room.
   float eyeAmp=(0.003*uGlassGrain+f*0.012)*flashSafe*blackProtect;
   c+=g*(recordingAmp+eyeAmp);
+  // The FOH aperture and its white sea take the exposure before the emergency
+  // circuit arrives. Red is applied after this, so the delayed wash can truly
+  // replace white rather than tinting a dark room underneath it.
+  c=mix(c,vec3(1.0),clamp(uSourceWhiteout,0.0,1.0));
+  // SOURCE'S FLASHLIGHT IS A SCREEN OPERATION. The physical cone already lit
+  // the surfaces in the march, but Source's x-ray must invert the finished
+  // picture (props included), and its red beam must remain visible in the white
+  // sea, which is deliberately not a lit material. A crisp oval with a narrow
+  // feather reads as the same handheld lens without turning into a vignette.
+  vec2 sourceTorchUv=(uv-vec2(.5,.48))*vec2(uRes.x/uRes.y,1.0);
+  float sourceTorchCone=1.0-smoothstep(.285,.365,length(sourceTorchUv));
+  float sourceTorchRim=(1.0-smoothstep(.365,.405,length(sourceTorchUv)))-sourceTorchCone;
+  float sourceTorchMask=clamp((sourceTorchCone+sourceTorchRim*.42)*uSourceTorchPower,0.0,1.0);
+  if(uSourceTorchMode>.5&&uSourceTorchMode<1.5){
+    c=mix(c,vec3(1.0)-c,sourceTorchMask*.94);
+  }else if(uSourceTorchMode>1.5){
+    vec3 torchRed=vec3(max(.88,c.r*1.12+.16),c.g*.018,c.b*.008);
+    c=mix(c,torchRed,sourceTorchMask*.90);
+  }
   // The Scene Dock side of Source still uses the ordinary VFD chain. Apply
   // the wash after fear, glass and acquisition grain so it cannot be erased by
   // the same post stack that previously swallowed the raw emergency light.
   float ePhase=mod(uTimeP,3.2);
   float ePulse=uReduceFlash>.5?.78:(ePhase<.18?1.0:ePhase<.42?.48:ePhase<.64?.92:ePhase<.92?.56:.46+.04*sin((ePhase-.92)*2.4));
   float eLuma=dot(c,vec3(.2126,.7152,.0722));
-  float eMask=(.12+.18*(1.0-eLuma))*(.72+.28*smoothstep(.02,.92,uv.y));
-  float eWash=clamp(uSourceEmergency*ePulse*eMask,0.0,.38);
-  c=mix(c,c*vec3(1.18,.36,.20)+vec3(.22,.001,0.0)*(.38+.62*(1.0-eLuma)),eWash);
+  float eMask=(.78+.22*(1.0-eLuma))*(.88+.12*smoothstep(.02,.92,uv.y));
+  float eWash=clamp(uSourceEmergency*ePulse*eMask,0.0,.94);
+  vec3 emergencyRed=vec3(max(.82,c.r*1.18+.18),c.g*.025,c.b*.012);
+  c=mix(c,emergencyRed,eWash);
   o=vec4(c,1.0);
 }`;
 
@@ -2489,8 +2520,12 @@ uniform float uPaper;
 uniform float uTime;
 uniform float uNightSeed;
 uniform float uRain;
+uniform float uLeaves;
 uniform float uReducedMotion;
 uniform float uSourceEmergency;
+uniform float uSourceWhiteout;
+uniform float uSourceTorchMode;
+uniform float uSourceTorchPower;
 uniform vec2 uView;
 uniform vec2 uMoonCloud;
 uniform vec4 uHushScreen;
@@ -2526,6 +2561,42 @@ void main(){
     float streak=(1.0-smoothstep(.025,.12,abs(rainLocal.x-.5)))*smoothstep(.0,.16,rainLocal.y)*(1.0-smoothstep(.58,1.0,rainLocal.y));
     darkScene=mix(darkScene,vec3(.34,.43,.54),streak*admitted*uRain*.34);
   }
+  // LEAVES, IN A FIELD THAT HAS NO DEPTH.
+  //
+  // Source is a flat composited image, so leaves here cannot be objects the way
+  // the yard's are — there is nothing for them to pass behind. Making them OF
+  // the field rather than in front of it is the honest reading: this place is a
+  // recording, and what blows through it belongs to the recording.
+  //
+  // Two drifting cell layers so they do not march in step, each cell holding at
+  // most one leaf. The tumble is the trick: scaling the cell's x by |cos| of a
+  // per-leaf clock makes the shape narrow to a line and open out again, which is
+  // the only part of a leaf that reads at this size.
+  if(uLeaves>.001){
+    for(int layer=0;layer<2;layer++){
+      float depth=layer==0?1.0:1.7;
+      vec2 leafUv=uv*vec2(13.0,7.0)*depth;
+      // Across the frame on the wind, sagging as they go, and parallaxed
+      // against the head so the near layer slides over the far one.
+      float drift=uTime*(0.22+float(layer)*0.15)*(1.0-uReducedMotion);
+      leafUv.x+=drift-uView.x*(0.7+float(layer));
+      leafUv.y+=sin(leafUv.x*0.7+drift*2.1)*0.20-uView.y*0.5;
+      vec2 cell=floor(leafUv),local=fract(leafUv)-0.5;
+      float pick=sourceHash(cell+floor(uNightSeed*67.0)+float(layer)*31.0);
+      if(pick>0.90){
+        float clock=uTime*(1.6+pick*3.4)*(1.0-uReducedMotion)+pick*19.0;
+        // Edge-on it is a line; broadside it is a blade. Floored so it never
+        // vanishes completely between turns.
+        float face=max(0.16,abs(cos(clock)));
+        float lean=sin(clock*0.6)*0.9;
+        vec2 p=vec2(local.x*cos(lean)-local.y*sin(lean),local.x*sin(lean)+local.y*cos(lean));
+        p.x/=face;
+        float leaf=1.0-smoothstep(0.10,0.24,length(p*vec2(1.0,2.6)));
+        // Warm and dry against a cold field, dimmer on the far layer.
+        darkScene=mix(darkScene,vec3(.42,.32,.17),leaf*uLeaves*(layer==0?.62:.34));
+      }
+    }
+  }
   if(uHushAmount>.001&&uHushScreen.z>.001&&uHushScreen.w>.001){
     vec2 bodyUv=(uv-uHushScreen.xy)/uHushScreen.zw+vec2(.5);
     float card=min(min(bodyUv.x,1.0-bodyUv.x),min(bodyUv.y,1.0-bodyUv.y));
@@ -2544,15 +2615,31 @@ void main(){
   vec3 paperScene=mix(paper,vec3(.012,.010,.009),smoothstep(.02,.72,glyphAlpha));
   float lightMix=clamp(max(uSunrise,uPaper*.72),0.0,1.0);
   vec3 composed=mix(darkScene,paperScene,lightMix);
+  composed=mix(composed,vec3(1.0),clamp(uSourceWhiteout,0.0,1.0));
+  // Text Space bypasses the physical post pass, so it consumes the same Source
+  // torch contract here. This also means toggling the real carried flashlight
+  // remains visible after the renderer handoff instead of silently becoming an
+  // always-on white prop light.
+  vec2 sourceTorchUv=(uv-vec2(.5,.48))*vec2(uRes.x/uRes.y,1.0);
+  float sourceTorchCone=1.0-smoothstep(.285,.365,length(sourceTorchUv));
+  float sourceTorchRim=(1.0-smoothstep(.365,.405,length(sourceTorchUv)))-sourceTorchCone;
+  float sourceTorchMask=clamp((sourceTorchCone+sourceTorchRim*.42)*uSourceTorchPower,0.0,1.0);
+  if(uSourceTorchMode>.5&&uSourceTorchMode<1.5){
+    composed=mix(composed,vec3(1.0)-composed,sourceTorchMask*.94);
+  }else if(uSourceTorchMode>1.5){
+    vec3 torchRed=vec3(max(.88,composed.r*1.12+.16),composed.g*.018,composed.b*.008);
+    composed=mix(composed,torchRed,sourceTorchMask*.90);
+  }
   // Text Space bypasses the ordinary pixel mesh. Preserve the emergency
   // circuit after paper, chroma and HUSH have resolved so downstream grading
   // cannot turn the only impossible colour back into grey.
   float ePhase=mod(uTime,3.2);
   float ePulse=uReducedMotion>.5?.78:(ePhase<.18?1.0:ePhase<.42?.48:ePhase<.64?.92:ePhase<.92?.56:.46+.04*sin((ePhase-.92)*2.4));
   float eLuma=dot(composed,vec3(.2126,.7152,.0722));
-  float eMask=(.15+.20*(1.0-eLuma))*(.72+.28*smoothstep(.02,.92,uv.y));
-  float eWash=clamp(uSourceEmergency*ePulse*eMask,0.0,.42);
-  composed=mix(composed,composed*vec3(1.20,.34,.18)+vec3(.24,.001,0.0)*(.42+.58*(1.0-eLuma)),eWash);
+  float eMask=(.80+.20*(1.0-eLuma))*(.88+.12*smoothstep(.02,.92,uv.y));
+  float eWash=clamp(uSourceEmergency*ePulse*eMask,0.0,.94);
+  vec3 emergencyRed=vec3(max(.84,composed.r*1.18+.18),composed.g*.022,composed.b*.010);
+  composed=mix(composed,emergencyRed,eWash);
   o=vec4(composed,1.0);
 }`;
 
@@ -2692,6 +2779,25 @@ let nightSeed=0.37;
 // whether this is the run where it comes in close — hangs off this. It must be
 // stable for the length of a run or the moon walks across the sky between
 // loads, and it must differ between runs or nobody ever sees the other nights.
+// ── the storm ───────────────────────────────────────────────────────────────
+// A lightning flash is not a white rectangle over the frame: it is the room
+// briefly being lit, which in this renderer means moving the two dials that
+// decide what "lit" means. Ambient intensity raises the actual incident light,
+// so surfaces face-on to it brighten and the geometry keeps its shading; the
+// halftone's white point comes DOWN at the same time, so the dither saturates
+// and the frame goes to solid ink the way an over-exposed frame does.
+//
+// Driving only ambient gives a brighter dither and no drama; driving only the
+// white point gives a flat white-out with no shape in it. Both together is a
+// photograph.
+//
+// The caller decides how hard: full under open sky, a fraction of it indoors,
+// where the flash should light the room through an aperture rather than blow
+// the frame (see main.js stormFlashStrength).
+let stormFlash=0;
+export function r3dSetStormFlash(v=0){stormFlash=Math.max(0,Math.min(1,Number(v)||0));return stormFlash;}
+export function r3dStormFlash(){return stormFlash;}
+
 export function r3dSetNightSeed(v=0.37){nightSeed=Number.isFinite(+v)?((+v%1)+1)%1:0.37;return nightSeed;}
 export function r3dNightSeed(){return nightSeed;}
 export function r3dSetFear(v) { fearLevel = Math.max(0, Math.min(1, v || 0)); }
@@ -2719,6 +2825,31 @@ export function r3dSetLocalLights(lights=[]){
     }
   }
   return localLightCount;
+}
+
+// WHAT THE RENDERER IS ACTUALLY HOLDING, not what the caller believes it sent.
+// Every Source lighting bug this session has been a disagreement between those
+// two, and there was no way to read the second one.
+export function r3dLightingDebug(){
+  const lights=[];
+  for(let i=0;i<localLightCount;i++){
+    const p=i*4;
+    lights.push({
+      x:localLightPositions[p],y:localLightPositions[p+1],z:localLightPositions[p+2],
+      radius:localLightPositions[p+3],
+      color:[localLightColors[p],localLightColors[p+1],localLightColors[p+2]],
+      intensity:localLightColors[p+3],
+      emergency:localLightEmergency[i],
+    });
+  }
+  return {
+    localLightCount,
+    ambientColor:[...lightingAmbientColor],
+    ambientIntensity:lightingAmbientIntensity,
+    whitePointScale:whitePointScaleOverride??lightingWhitePointScale,
+    sourceEmergency:sourceEmergencyStrength,
+    lights,
+  };
 }
 
 export function r3dSetMunicipalLightPower(value=1){
@@ -3016,6 +3147,7 @@ let vfdPreviousX = null, vfdPreviousZ = null;
 let textSpaceActive = false;
 let sourceLook = { sunrise: 0, chroma: 1, paper: 0 };
 let sourceEmergencyStrength = 0;
+let sourceWhiteoutStrength = 0;
 
 // THE HORIZON. Set by main.js from the runtime's horizonFrame(); the renderer
 // never works out where on the tape the body is, it is told.
@@ -3323,7 +3455,7 @@ function drawHorizon(now) {
   presentProjection(resolved, now);
   lastPostSourceFbo = sceneFbo;
 }
-let sourceWeather = { rain: 0, moon: 1, clouds: 1 };
+let sourceWeather = { rain: 0, moon: 1, clouds: 1, leaves: 0 };
 const pixelMeshUniformCache = new Map();
 const postUniformCache = new Map();
 const textSpaceUniformCache = new Map();
@@ -3840,9 +3972,15 @@ function presentTexture(texture){
   gl.drawArrays(gl.TRIANGLES,0,3);
 }
 
-function drawTextSpace(texture,now) {
+function drawTextSpace(texture,now,{torchPower=0,sourceTorchMode=0}={}) {
   gl.useProgram(progTextSpace);
   gl.bindFramebuffer(gl.FRAMEBUFFER, sceneFbo);
+  // The scene framebuffer normally carries both colour and the architectural
+  // mark field. Text Space has no mark output: leaving attachment 1 active
+  // makes drawArrays INVALID_OPERATION on conforming WebGL2 drivers, so the
+  // compositor writes nothing and the last black frame remains on screen.
+  // Narrow this one draw to colour, then restore the raymarcher's two targets.
+  gl.drawBuffers([gl.COLOR_ATTACHMENT0]);
   gl.viewport(0, 0, uniforms.sceneW, uniforms.sceneH);
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -3854,8 +3992,12 @@ function drawTextSpace(texture,now) {
   gl.uniform1f(textSpaceU('uTime'),now);
   gl.uniform1f(textSpaceU('uNightSeed'),nightSeed);
   gl.uniform1f(textSpaceU('uRain'),Math.max(0,Math.min(1,Number(sourceWeather.rain)||indoorRain||0)));
+  gl.uniform1f(textSpaceU('uLeaves'),Math.max(0,Math.min(1,Number(sourceWeather.leaves)||0)));
   gl.uniform1f(textSpaceU('uReducedMotion'),pixelMeshSettings.reduceMotion?1:0);
   gl.uniform1f(textSpaceU('uSourceEmergency'),sourceEmergencyStrength);
+  gl.uniform1f(textSpaceU('uSourceWhiteout'),sourceWhiteoutStrength);
+  gl.uniform1f(textSpaceU('uSourceTorchMode'),sourceTorchMode);
+  gl.uniform1f(textSpaceU('uSourceTorchPower'),torchPower);
   gl.uniform2f(textSpaceU('uView'),yaw+planYaw,pitch);
   gl.uniform2f(textSpaceU('uMoonCloud'),Math.max(0,Math.min(1,Number(sourceWeather.moon)||0)),Math.max(0,Math.min(1,Number(sourceWeather.clouds)||0)));
   const body=sourceHushProjection();
@@ -3864,6 +4006,7 @@ function drawTextSpace(texture,now) {
   gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,hushBodyReady?hushBodyTex:texture);
   gl.uniform1i(textSpaceU('uHushBodyTex'),1);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
+  gl.drawBuffers([gl.COLOR_ATTACHMENT0,gl.COLOR_ATTACHMENT1]);
   pixelMeshStatus.enabled = false;
   const resolved=runDatamoshPass(sceneTex,now);
   presentTexture(resolved);
@@ -3880,6 +4023,7 @@ uniform float uProgress;
 uniform float uTime;
 uniform float uReducedMotion;
 uniform float uSourceEmergency;
+uniform float uSourceWhiteout;
 out vec4 outColor;
 float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
 void main(){
@@ -3905,14 +4049,16 @@ void main(){
   float chroma=.009*uProgress*(1.0-uReducedMotion);
   carried.r=mix(carried.r,texture(uTower,uv+vec2(chroma,0)).r,reveal);
   carried.b=mix(carried.b,texture(uSource,uv-vec2(chroma,0)).b,1.0-reveal);
+  carried=mix(carried,vec3(1.0),clamp(uSourceWhiteout,0.0,1.0));
   // This pass can be the final writer for both physical and Text Space Source
   // frames during a threshold. Reassert the circuit here as well, after motion
   // retention, or old non-red P-frames can cover the maintained wash.
   float ePhase=mod(uTime,3.2);
   float ePulse=uReducedMotion>.5?.78:(ePhase<.18?1.0:ePhase<.42?.48:ePhase<.64?.92:ePhase<.92?.56:.46+.04*sin((ePhase-.92)*2.4));
   float eLuma=dot(carried,vec3(.2126,.7152,.0722));
-  float eWash=clamp(uSourceEmergency*ePulse*(.10+.14*(1.0-eLuma)),0.0,.30);
-  carried=mix(carried,carried*vec3(1.16,.38,.22)+vec3(.20,.001,0.0)*(.38+.62*(1.0-eLuma)),eWash);
+  float eWash=clamp(uSourceEmergency*ePulse*(.78+.22*(1.0-eLuma)),0.0,.94);
+  vec3 emergencyRed=vec3(max(.82,carried.r*1.18+.18),carried.g*.025,carried.b*.012);
+  carried=mix(carried,emergencyRed,eWash);
   outColor=vec4(carried,1.0);
 }`;
 
@@ -3937,7 +4083,7 @@ function runDatamoshPass(towerTex,now){
   gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,datamoshSourceTex);gl.uniform1i(u('uSource'),0);
   gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,towerTex);gl.uniform1i(u('uTower'),1);
   gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,previous||datamoshSourceTex);gl.uniform1i(u('uPrevious'),2);
-  gl.uniform2f(u('uResolution'),uniforms.sceneW,uniforms.sceneH);gl.uniform1f(u('uProgress'),datamoshProgress);gl.uniform1f(u('uTime'),now);gl.uniform1f(u('uReducedMotion'),datamoshReducedMotion?1:0);gl.uniform1f(u('uSourceEmergency'),sourceEmergencyStrength);
+  gl.uniform2f(u('uResolution'),uniforms.sceneW,uniforms.sceneH);gl.uniform1f(u('uProgress'),datamoshProgress);gl.uniform1f(u('uTime'),now);gl.uniform1f(u('uReducedMotion'),datamoshReducedMotion?1:0);gl.uniform1f(u('uSourceEmergency'),sourceEmergencyStrength);gl.uniform1f(u('uSourceWhiteout'),sourceWhiteoutStrength);
   gl.drawArrays(gl.TRIANGLES,0,3);gl.bindFramebuffer(gl.FRAMEBUFFER,null);return dstTex;
 }
 
@@ -4108,7 +4254,9 @@ function runPixelMeshPass(state, now) {
   // black point at 1.3: the loading bay's walls sit at 51 with 0.2% underneath it,
   // and the get-in's at 1.3 with 63% underneath — six times below the floor at the
   // median. Nothing downstream of that can draw a mark.
-  const scale = whitePointScaleOverride ?? lightingWhitePointScale;
+  // The strike pulls the ceiling down as it raises the floor of light, so the
+  // dither runs out of headroom and the frame solidifies.
+  const scale = (whitePointScaleOverride ?? lightingWhitePointScale) / (1 + stormFlash * 3.6);
   const blend = (authored, zoned) => zoned + (authored - zoned) * (1 - whitePointZoneAmount);
   const authoredWhite = look.vfd.whitePoint ?? 1.0;
   const authoredBlack = look.vfd.blackPoint ?? 0.0;
@@ -4532,6 +4680,10 @@ export function r3dSetSourceEmergency(value = 0) {
   sourceEmergencyStrength = Math.max(0, Math.min(1.5, Number.isFinite(strength) ? strength : 0));
   return sourceEmergencyStrength;
 }
+export function r3dSetSourceWhiteout(value = 0) {
+  sourceWhiteoutStrength = Math.max(0, Math.min(1, Number(value) || 0));
+  return sourceWhiteoutStrength;
+}
 export function r3dSetHushProp(id) { P3.setHushProp(id); }
 export function r3dPropStats() { return P3.propPackStats(); }
 export function r3dPropInstanceIds() { return P3.propInstanceIds(); }
@@ -4739,6 +4891,7 @@ export function r3dFrame(state) {
   if (Math.abs(lightGoal - lightEase) < 0.004) lightEase = lightGoal;
   const torch=state.torchLook||{};
   const torchPower=lightEase*Math.max(0,Math.min(1,Number(torch.power??1)||0));
+  const sourceTorchMode=torch.sourceTorchMode==='xray'?1:torch.sourceTorchMode==='emergency'?2:0;
   const torchColor=Array.isArray(torch.color)?torch.color:[1,.94,.82];
   const torchReach=Math.max(.35,Math.min(1.1,Number(torch.reach)||1));
   const torchConeInner=Math.max(.72,Math.min(.94,Number(torch.coneInner)||.88));
@@ -4748,7 +4901,11 @@ export function r3dFrame(state) {
   const sensoryProfile=String(state.sensoryProfile||'story');
   const hushSense=sensoryProfile==='hush-prowl'?1:sensoryProfile==='hush-listen'?.75:0;
   const frameAmbientColor=hushSense>0?HUSH_AMBIENT_COLOR:lightingAmbientColor;
-  const frameAmbientIntensity=hushSense>0?Math.max(lightingAmbientIntensity,.24):lightingAmbientIntensity;
+  const baseAmbientIntensity=hushSense>0?Math.max(lightingAmbientIntensity,.24):lightingAmbientIntensity;
+  // Twelve times ambient at full strike. Interiors run .014-.043 and the bay
+  // runs .155, so this is the difference between a room you are feeling your
+  // way around and one you can read a work order in — for eighty milliseconds.
+  const frameAmbientIntensity=baseAmbientIntensity*(1+stormFlash*19);
 
   // Keep the gameplay presence authoritative while giving only its drawing a
   // short material resolve. Despawn keeps the last world position long enough
@@ -4815,16 +4972,16 @@ export function r3dFrame(state) {
   if (textSpaceActive) {
     P3.renderPropPass({
       camX: camX * CELL, camY: camY * CELL, camZ: camZ * CELL,
-      yaw: worldYaw, pitch, light: 1, fogTexture, fogOrigin, fogSize: FOG_TEX,
+      yaw: worldYaw, pitch, light: torchPower, fogTexture, fogOrigin, fogSize: FOG_TEX,
       timeSec:now,reducedMotion:pixelMeshSettings.reduceMotion,
       cellMeters: CELL, zoneTints: ZONE_TINTS,
       localLightCount, localLightPositions, localLightColors, localLightPenetrations, localLightEmergency,
       localShadowIndex,shadowLight:localShadowLight,
-      torch:{power:1,color:[1,1,1],reach:1,coneInner:.88,coneOuter:.94,spill:.05},
+      torch:{power:torchPower,color:torchColor,reach:torchReach,coneInner:torchConeInner,coneOuter:torchConeOuter,spill:torchSpill},
       ambientColor:lightingAmbientColor,ambientIntensity:lightingAmbientIntensity,
       planTexture,planSize:[planW,planH],planOrigin:[planOriginX,planOriginY],
     });
-    drawTextSpace(P3.propTargets().color,now);
+    drawTextSpace(P3.propTargets().color,now,{torchPower,sourceTorchMode});
     return;
   }
 
@@ -5039,6 +5196,9 @@ export function r3dFrame(state) {
   gl.uniform1f(postU('uReduceFlash'), pixelMeshSettings.reduceFlash?1:0);
   gl.uniform1f(postU('uReduceMotion'), pixelMeshSettings.reduceMotion?1:0);
   gl.uniform1f(postU('uSourceEmergency'),sourceEmergencyStrength);
+  gl.uniform1f(postU('uSourceWhiteout'),sourceWhiteoutStrength);
+  gl.uniform1f(postU('uSourceTorchMode'),sourceTorchMode);
+  gl.uniform1f(postU('uSourceTorchPower'),torchPower);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 }
 

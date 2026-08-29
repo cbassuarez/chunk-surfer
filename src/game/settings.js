@@ -103,19 +103,6 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
     return normalizeDisplaySettings(s().display || {});
   }
 
-  // WHETHER THE WINDOWS CAN ACTUALLY MOVE.
-  //
-  // Native choreography needs a window to move, so both the JS compiler
-  // (platform/window-choreography.js) and the Rust executor refuse while the
-  // app is fullscreen — and DISPLAY MODE / FULLSCREEN is exactly that state.
-  // The module still runs; it draws its apertures inside the frame instead.
-  // Saying only "ON" there is a lie of omission: a player testing in fullscreen
-  // turns the setting on, sees no window ever move, and concludes it is broken.
-  function windowChoreographyIsInFrameOnly() {
-    if (displaySettings().displayMode === 'game-mode') return true;
-    if (typeof document !== 'undefined' && document.fullscreenElement) return true;
-    return psychProfile().windowIntensity === 'low';
-  }
 
   function patchDisplaySettings(patch) {
     const current = displaySettings();
@@ -219,16 +206,6 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
     if (!PSYCH_PROFILE_MODULE_KEYS.includes(key)) return;
     const current = psychProfile();
     setPsychProfile({ ...current, modules: { ...current.modules, [key]: !!enabled } }, key);
-  }
-
-  function cycleWindowIntensity(d) {
-    const intensities = ['low', 'standard', 'hostile'];
-    const current = psychProfile();
-    const index = Math.max(0, intensities.indexOf(current.windowIntensity));
-    setPsychProfile({
-      ...current,
-      windowIntensity: intensities[(index + d + intensities.length) % intensities.length],
-    }, 'windowIntensity');
   }
 
   function profileSummary() {
@@ -502,21 +479,22 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           { id: 'profileAdaptive', label: 'ADAPTIVE DIFFICULTY',
             value: () => psychProfile().modules.adaptiveDifficulty ? 'ON' : 'OFF',
             adjust: () => setPsychModule('adaptiveDifficulty', !psychProfile().modules.adaptiveDifficulty) },
+          // ON OR OFF. There is no third reading.
+          //
+          // This row used to answer three ways — OFF, ON · FIREBALL SURFACES,
+          // and ON · IN FRAME ONLY — and sat above a WINDOW INTENSITY row that
+          // read HOSTILE whatever this one said, because 'hostile' is the
+          // default value of that field on a save that has consented to
+          // nothing. Between them they could report a feature as on, at full
+          // strength, while it was doing nothing at all.
           { id: 'profileWindow', label: 'WINDOW CHOREOGRAPHY',
-            value: () => (psychProfile().modules.windowChoreography
-              ? (windowChoreographyIsInFrameOnly() ? 'ON · IN FRAME ONLY' : 'ON · MOVES + FOCUSES')
-              : 'OFF'),
+            value: () => (psychProfile().modules.windowChoreography ? 'ON' : 'OFF'),
             adjust: () => setPsychModule('windowChoreography', !psychProfile().modules.windowChoreography) },
           { id: 'profileWindowNote', label: '', selectable: false,
-            value: () => (psychProfile().modules.windowChoreography && windowChoreographyIsInFrameOnly()
-              ? 'FULLSCREEN AND LOW INTENSITY KEEP IT INSIDE THE FRAME'
-              : psychProfile().modules.windowChoreography
-                ? 'FOCUS CHANGES ONLY DURING AN ACTIVE CHANNEL ATTACK'
-                : ''),
+            value: () => (psychProfile().modules.windowChoreography
+              ? 'FIXED CAST SURFACES NEVER TAKE FOCUS'
+              : ''),
           },
-          { id: 'profileWindowIntensity', label: 'WINDOW INTENSITY',
-            value: () => psychProfile().windowIntensity.toUpperCase(),
-            adjust: cycleWindowIntensity },
           { id: 'profileFiles', label: 'INTERFERENCE FILES',
             value: () => psychProfile().modules.fieldReturnFiles ? 'ON' : 'OFF',
             adjust: () => setPsychModule('fieldReturnFiles', !psychProfile().modules.fieldReturnFiles) },
@@ -526,8 +504,8 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           { id: 'profileHandling', label: 'HANDLING', value: () => 'LOCAL ONLY · NO RAW LOG', selectable: false },
           section('Controls'),
           { id: 'profileRetryMic', label: 'RETRY MICROPHONE', value: () => inputPrompt('confirm'), activate: () => hooks.enableMic?.() },
-          { id: 'profilePreviewWindows', label: 'PREVIEW WINDOW CHANNEL', value: () => inputPrompt('confirm'), activate: () => hooks.previewProfileWindows?.() },
-          { id: 'profileRestore', label: 'RESTORE WINDOWS', value: () => inputPrompt('confirm'), activate: () => hooks.restoreProfileWindows?.() },
+          { id: 'profilePreviewWindows', label: 'PREVIEW FIREBALL CAST', value: () => inputPrompt('confirm'), activate: () => hooks.previewProfileWindows?.() },
+          { id: 'profileRestore', label: 'CLOSE FIREBALL SURFACES', value: () => inputPrompt('confirm'), activate: () => hooks.restoreProfileWindows?.() },
           { id: 'profileOpenReturns', label: 'OPEN INTERFERENCE FOLDER', value: () => inputPrompt('confirm'), activate: () => hooks.openReturnFolder?.() },
           { id: 'profileResetInference', label: 'RESET INFERRED PROFILE',
             value: () => armedValue('profileResetInference'),

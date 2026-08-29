@@ -14,6 +14,7 @@ import {
   marimbaNaturalX,
 } from '../../src/data/marimba-layout.js';
 import { ELLERY_MASSING, YARD_SERVICE_RANGES } from '../../src/data/exterior-district.js';
+import { LEAF_SHAPES, leafOutline } from '../../src/world/leaf-species.js';
 import {
   CHURCH, CHURCH_BOUNDS, CHURCH_BUTTRESSES, CHURCH_HEIGHTS, CHURCH_SKIN,
   churchWallAt, churchWallExposed, churchWallHeight,
@@ -144,6 +145,28 @@ function addBox(m, c, s, mat, yaw=0, pitch=0){
     for(let i=0;i<4;i++){g.positions.push(...rot(face[i]));g.normals.push(...rn);}
     const o=base+f*4; g.indices.push(o,o+1,o+2,o,o+2,o+3);
   }
+}
+
+// A FLAT PLATE, FACING LOCAL -Z. Two triangles, no sides, no back.
+//
+// For ink: anything that is PRINTED on a surface rather than built out of it.
+// A box has six faces and twelve triangles, and five of them are never seen on a
+// letterform lying on a board — but they are lit, so raised type picks up edge
+// shading and reads as embossed pigment rather than as print.
+function addPlate(m,c,size,mat,yaw=0,pitch=0){
+  const g=group(m,mat),base=g.positions.length/3;
+  const [cx,cy,cz]=c,[w,h]=size;
+  const cy_=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
+  const put=(lx,ly)=>{
+    // pitch about X, then yaw about Y — the same order addBox uses.
+    const y1=ly*cp,z1=ly*sp;
+    g.positions.push(cx+lx*cy_,cy+y1,cz+z1+lx*sy);
+  };
+  put(-w/2,-h/2);put(w/2,-h/2);put(w/2,h/2);put(-w/2,h/2);
+  const n=[Math.sin(yaw)*0-0,-Math.sin(pitch),-Math.cos(pitch)];
+  for(let i=0;i<4;i++)g.normals.push(n[0],n[1],n[2]);
+  g.uvs.push(0,0,1,0,1,1,0,1);
+  g.indices.push(base,base+1,base+2,base,base+2,base+3);
 }
 
 function addPortraitSurface(m){
@@ -3129,14 +3152,34 @@ const VIGIL_GLYPHS={
   '9':['01110','10001','10001','01111','00001','00010','11100'],':':['00000','00100','00100','00000','00100','00100','00000'],
   '?':['01110','10001','00001','00010','00100','00000','00100'],
 };
+// ── SIGN LETTERING ─────────────────────────────────────────────────────────
+//
+// IT READ BACKWARDS, AND IT WAS BUILT OUT OF BRICKS.
+//
+// Two faults, and the first is the one that matters. Everything in this pack
+// faces LOCAL -Z: the prop matrix turns that into (sin yaw, -cos yaw), which is
+// why a placed figure looks at you and a van's windscreen points down the road.
+// A reader standing in front of that face is looking toward +Z, and for them
+// local +X runs LEFT — so a line laid out with the first character at the most
+// negative x and each one after it further along +X arrives reversed. Every sign
+// in the game was mirror-written. The layout now walks the other way.
+//
+// The second is that the ink was geometry: one twelve-triangle box per lit pixel
+// of a five-by-seven grid, standing 18mm proud of the board. Five of those six
+// faces are never visible and all six are lit, so the type picked up edge shading
+// and read as embossed rather than printed — and a two-word placard cost four
+// thousand triangles. It is rasterised now: one flat plate per pixel, two
+// triangles, coplanar with the board it is printed on. Same 5x7 grid, same
+// deliberate thickness, a sixth of the geometry, and it reads as ink.
 function raisedVigilLine(m,text,{w,y,z,pitch=0,mat=MAT.black}){
   const source=String(text).toUpperCase(),dot=Math.min(.038,(w-.10)/Math.max(1,source.length*6-1));
-  const total=(source.length*6-1)*dot,start=-total/2+dot/2;
+  const total=(source.length*6-1)*dot,start=total/2-dot/2;
   for(let ci=0;ci<source.length;ci+=1){
     const glyph=VIGIL_GLYPHS[source[ci]];if(!glyph)continue;
     for(let row=0;row<7;row+=1)for(let col=0;col<5;col+=1){
       if(glyph[row][col]!=='1')continue;
-      addBox(m,[start+(ci*6+col)*dot,y+(3-row)*dot,z],[dot*.78,dot*.78,.018],mat,0,pitch);
+      // Reading order runs toward -X, which is the reader's right.
+      addPlate(m,[start-(ci*6+col)*dot,y+(3-row)*dot,z],[dot*.78,dot*.78],mat,0,pitch);
     }
   }
 }
@@ -4562,6 +4605,45 @@ const addBoothGuard=(m,{x=0,z=-.15,lean=0,arm='rest'}={})=>{
   for(let i=0;i<17;i++){
     const a=(i*2.399), r=.95+((i*7)%9)/9*1.95;
     addBox(m,[Math.cos(a)*r,DROP+.015,Math.sin(a)*r],[.22+(i%3)*.07,.02,.14],i%3===0?MAT.soil:MAT.deadLeaf,a);
+  }
+}
+{
+  // WIND LEAVES.
+  //
+  // The same four silhouettes the credits draw (world/leaf-species.js), cut as
+  // real geometry so the yard's leaves and the boot screen's leaves are the
+  // same leaves. Two tonal variants each rather than the full five-colour
+  // palette: this renderer quantises to one bit, so out here SHAPE and VALUE
+  // survive and hue does not — five browns would be five identical greys.
+  //
+  // Each is a strip along its own outline with a fold across it, because a flat
+  // leaf turning is a coin turning. The fold is what makes the silhouette go
+  // lopsided through the tumble.
+  for (const shape of LEAF_SHAPES) {
+    const points = leafOutline(shape, { steps: 10 });
+    for (const [tone, mat] of [['pale', MAT.ivory], ['dark', MAT.deadLeaf]]) {
+      const m = mesh(`wind_leaf_${shape.id}_${tone}`);
+      // A big sycamore, not an average leaf. 0.115m is the honest size and it
+      // is below what this renderer can resolve at five metres — it came out as
+      // a dither cloud rather than as leaves. The halftone sets the floor on
+      // how small a thing is allowed to be and still be a thing.
+      const LONG = 0.225;
+      for (let i = 0; i < points.length - 1; i += 1) {
+        const a = points[i], b = points[i + 1];
+        // The fold: each rib sits a little proud of the plane, by the curl.
+        const lift = (t) => Math.sin(t * Math.PI) * shape.curl * LONG * 0.22;
+        const ya = lift(i / (points.length - 1));
+        const yb = lift((i + 1) / (points.length - 1));
+        addQuad(m,
+          [a.along * LONG, ya, a.upper * LONG],
+          [b.along * LONG, yb, b.upper * LONG],
+          [b.along * LONG, yb * 0.4, b.lower * LONG],
+          [a.along * LONG, ya * 0.4, a.lower * LONG],
+          mat);
+      }
+      // The midrib, standing proud so the torch finds an edge on it.
+      addBox(m, [0, LONG * shape.curl * 0.12, 0], [LONG * 0.94, LONG * 0.012, LONG * 0.018], MAT.dark);
+    }
   }
 }
 {

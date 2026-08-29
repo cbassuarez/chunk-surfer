@@ -90,18 +90,20 @@ function heard(id, naming, occasion) {
   return { lines, text: lines.map((line) => line.text).join('\n') };
 }
 
-test('the natatorium keeps its mechanics but reauthors every attack below the surface', () => {
+test('the natatorium keeps movement one dry before half and full submersion', () => {
   const battle = runtimeBattle('battle.natatorium');
   assert.equal(battle.combat.presentation.mode, 'submerged');
-  assert.deepEqual(battle.combat.presentation.movementDepths, [.35, .68, 1]);
+  assert.deepEqual(battle.combat.presentation.submersionPhases, ['dry','half','full']);
+  assert.deepEqual(battle.combat.presentation.resultPhases, {win:'dry',lose:'full'});
   assert.deepEqual(battle.combat.music.submersion, {
-    enabled: true, at: 'downbeat', lowpassHz: 720, q: .8, dryLeak: .08, rampSeconds: .18, surfaceSeconds: .6,
+    enabled:true,q:.8,wetMix:{dry:0,half:.5,full:.92},lowpassHz:{dry:20000,half:1800,full:720},
+    transitionSeconds:{dry:0,half:1,full:1.1,win:1.35},
   });
   const labels = Object.fromEntries(battle.combat.movements.flatMap((movement) => movement.intents.map((intent) => [intent.id, intent.label])));
   assert.deepEqual(labels, {
-    'natatorium:meter': 'METER MOVES BELOW THE WATERLINE',
-    'natatorium:pressure': 'WATER HAMMERS BEHIND THE EARS',
-    'natatorium:piano': 'TWO NOTES THROUGH THE SURFACE',
+    'natatorium:meter': 'METER MOVES IN THE DRY ROOM',
+    'natatorium:pressure': 'ROOM TONE HAMMERS BEHIND THE EARS',
+    'natatorium:piano': 'TWO NOTES WITHOUT AIR',
     'natatorium:voice': 'HER VOICE IN THE DRAIN RETURN',
     'natatorium:memory': 'SILT PASSED AS MEMORY',
     'natatorium:lean': 'UNDERTOW TAKES THE CASE',
@@ -113,7 +115,9 @@ test('the natatorium keeps its mechanics but reauthors every attack below the su
     .every((intent) => intent.presentation?.visualClass), 'every submerged intent declares a visual class');
   for (const occasion of ['recording-2', 'pre-recording-4']) {
     const text = heard('battle.natatorium', 'yes', occasion).text;
-    assert.match(text, /coping rises past your eyes/i);
+    assert.match(text, /nothing in the dry room moves/i);
+    assert.match(text, /water reaches your ribs without entering the room/i);
+    assert.match(text, /surface passes over your eyes/i);
     assert.match(text, /cuffs, case and clothes are dry/i, 'victory explicitly surfaces the player dry');
     assert.match(text, /water acquires weight/i);
     assert.match(text, /soaked through/i);

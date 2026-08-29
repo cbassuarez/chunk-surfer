@@ -291,7 +291,11 @@ export function freshMeta() {
     legacyTerminal: { opened: [], cursors: {}, lastFileId: null },
     cosmetics: { unlocked: [], selected: null },
     platform: { pendingAchievements: [], pendingStats: {}, lastSyncAt: 0 },
-    presentation: { pendingReports: [], pendingNotices: [] },
+    // lastBootWeather is which of rain/leaves/sheets the last launch drew, so
+    // the next one can be something else. `presentation` is deliberately local
+    // only — it is stripped from profile exports — which is right for a fact
+    // about this machine's last boot rather than about the player.
+    presentation: { pendingReports: [], pendingNotices: [], lastBootWeather: '' },
   };
 }
 
@@ -566,6 +570,9 @@ export function normalizeMeta(value) {
     presentation: {
       pendingReports: uniqueStrings(presentation.pendingReports),
       pendingNotices: Array.isArray(presentation.pendingNotices) ? presentation.pendingNotices.filter(Boolean) : [],
+      lastBootWeather: typeof presentation.lastBootWeather === 'string'
+        ? presentation.lastBootWeather.slice(0, 12)
+        : '',
     },
   };
 }

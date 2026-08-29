@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-24T03:15:26.198Z",
-  "bytes": 26555264,
-  "totalTriangles": 363874,
+  "generatedAt": "2026-08-25T01:37:29.876Z",
+  "bytes": 25159260,
+  "totalTriangles": 345330,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -952,12 +952,12 @@
       "vertices": 996
     },
     "scene_dock_sign_foh": {
-      "triangles": 2316,
-      "vertices": 4632
+      "triangles": 446,
+      "vertices": 892
     },
     "scene_dock_sign_services": {
-      "triangles": 2196,
-      "vertices": 4392
+      "triangles": 426,
+      "vertices": 852
     },
     "vigil_ruth_mallory": {
       "triangles": 540,
@@ -1056,28 +1056,28 @@
       "vertices": 1146
     },
     "vigil_part_sign_save": {
-      "triangles": 1848,
-      "vertices": 3696
+      "triangles": 348,
+      "vertices": 696
     },
     "vigil_part_sign_strike": {
-      "triangles": 3360,
-      "vertices": 6720
+      "triangles": 600,
+      "vertices": 1200
     },
     "vigil_part_sign_chapel": {
-      "triangles": 3228,
-      "vertices": 6456
+      "triangles": 578,
+      "vertices": 1156
     },
     "vigil_part_sign_record": {
-      "triangles": 3432,
-      "vertices": 6864
+      "triangles": 612,
+      "vertices": 1224
     },
     "vigil_part_sign_signed": {
-      "triangles": 3204,
-      "vertices": 6408
+      "triangles": 574,
+      "vertices": 1148
     },
     "vigil_part_banner": {
-      "triangles": 3396,
-      "vertices": 6792
+      "triangles": 596,
+      "vertices": 1192
     },
     "conservatory_west_elevation": {
       "triangles": 17808,
@@ -1198,6 +1198,38 @@
     "park_fountain": {
       "triangles": 10556,
       "vertices": 14388
+    },
+    "wind_leaf_blade_pale": {
+      "triangles": 32,
+      "vertices": 64
+    },
+    "wind_leaf_blade_dark": {
+      "triangles": 32,
+      "vertices": 64
+    },
+    "wind_leaf_lobed_pale": {
+      "triangles": 32,
+      "vertices": 64
+    },
+    "wind_leaf_lobed_dark": {
+      "triangles": 32,
+      "vertices": 64
+    },
+    "wind_leaf_curled_pale": {
+      "triangles": 32,
+      "vertices": 64
+    },
+    "wind_leaf_curled_dark": {
+      "triangles": 32,
+      "vertices": 64
+    },
+    "wind_leaf_skeleton_pale": {
+      "triangles": 32,
+      "vertices": 64
+    },
+    "wind_leaf_skeleton_dark": {
+      "triangles": 32,
+      "vertices": 64
     },
     "park_marble_eyes": {
       "triangles": 776,
@@ -4827,6 +4859,102 @@
         3.854,
         5.05,
         3.854
+      ]
+    },
+    "wind_leaf_blade_pale": {
+      "min": [
+        -0.113,
+        0,
+        -0.036
+      ],
+      "max": [
+        0.113,
+        0.007,
+        0.044
+      ]
+    },
+    "wind_leaf_blade_dark": {
+      "min": [
+        -0.113,
+        0,
+        -0.036
+      ],
+      "max": [
+        0.113,
+        0.007,
+        0.044
+      ]
+    },
+    "wind_leaf_lobed_pale": {
+      "min": [
+        -0.113,
+        0,
+        -0.056
+      ],
+      "max": [
+        0.113,
+        0.011,
+        0.066
+      ]
+    },
+    "wind_leaf_lobed_dark": {
+      "min": [
+        -0.113,
+        0,
+        -0.056
+      ],
+      "max": [
+        0.113,
+        0.011,
+        0.066
+      ]
+    },
+    "wind_leaf_curled_pale": {
+      "min": [
+        -0.113,
+        0,
+        -0.04
+      ],
+      "max": [
+        0.113,
+        0.042,
+        0.084
+      ]
+    },
+    "wind_leaf_curled_dark": {
+      "min": [
+        -0.113,
+        0,
+        -0.04
+      ],
+      "max": [
+        0.113,
+        0.042,
+        0.084
+      ]
+    },
+    "wind_leaf_skeleton_pale": {
+      "min": [
+        -0.113,
+        0,
+        -0.05
+      ],
+      "max": [
+        0.113,
+        0.02,
+        0.068
+      ]
+    },
+    "wind_leaf_skeleton_dark": {
+      "min": [
+        -0.113,
+        0,
+        -0.05
+      ],
+      "max": [
+        0.113,
+        0.02,
+        0.068
       ]
     },
     "park_marble_eyes": {

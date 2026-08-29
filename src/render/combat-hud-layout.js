@@ -16,6 +16,9 @@ export function combatHudLayout({
   panel = {},
   mode = 'command',
   sourceActive = false,
+  // The hall borrows the channel slot for its five-card target rail. No
+  // encounter has both, so one row of height serves whichever is present.
+  houseActive = false,
   compact = null,
 } = {}) {
   const x = finite(panel.x);
@@ -41,7 +44,7 @@ export function combatHudLayout({
       ? (isCompact ? 8.6 : 11.2)
       : mode === 'arrival'
         ? 5.2
-        : (isCompact ? 9.8 : sourceActive ? 16.2 : 13.3);
+        : (isCompact ? 9.8 : sourceActive || houseActive ? 16.2 : 13.3);
   const stageY = y + headerH;
   const stageAvailable = Math.max(6, contentBottom - stageY - 1);
   const stageMin = isCompact ? 6 : 9;
@@ -75,7 +78,7 @@ export function combatHudLayout({
   const dialogue = rect(x, bodyY, w, body.h);
   const arrival = rect(x, bodyY, w, body.h);
 
-  const channelH = sourceActive && mode === 'command' ? (isCompact ? 2.45 : 3.15) : 0;
+  const channelH = (sourceActive || houseActive) && mode === 'command' ? (isCompact ? 2.45 : 3.15) : 0;
   const channels = rect(x, bodyY, w, channelH);
   const commandY = bodyY + (channelH ? channelH + .55 : 0);
   const detailH = isCompact ? 1.55 : 1.9;

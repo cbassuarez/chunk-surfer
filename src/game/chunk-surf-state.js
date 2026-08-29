@@ -165,6 +165,18 @@ export function freshChunkSurfState({
     // is the one deliberate interaction between that room and Source: closed
     // on arrival, opened by the player, and durable across a reload.
     landingDoorOpen: false,
+    // AND IT SHUTS BEHIND YOU. The leaf used to be a one-way latch: opened once
+    // and open forever, so the room the player came from stayed advertised as a
+    // way back that Source never intended to offer. Crossing the threshold seals
+    // it — the same contract the Scene Dock HUSH beat runs on, where the door
+    // remains a door and stops being an exit.
+    landingDoorSealed: false,
+    // The white interval is measured in successful body steps, not an axis.
+    // That makes thirty seconds mean thirty seconds even when the player walks
+    // sideways into the apparent infinity. It is persisted on ordinary saves so
+    // a reload cannot restart the cinematic or skip its red onset.
+    sourceApproachDistance: 0,
+    sourceApproachComplete: false,
     firstLiftCompleted: false,
     landingWeatherSpent: false,
     hasFork: false,
@@ -296,6 +308,10 @@ export function normalizeChunkSurfState(value = null, fallback = {}) {
   }
   const legacyLandscape = value.firstLiftCompleted == null
     && [CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(phase);
+  const firstLiftCompleted = value.firstLiftCompleted == null ? legacyLandscape : !!value.firstLiftCompleted;
+  const sourceApproachComplete = value.sourceApproachComplete == null
+    ? firstLiftCompleted
+    : !!value.sourceApproachComplete;
   let checkpointId = typeof value.checkpoint?.id === 'string' && value.checkpoint.id
     ? value.checkpoint.id
     : typeof value.checkpointId === 'string' && value.checkpointId ? value.checkpointId : 'hall-entry';
@@ -328,7 +344,10 @@ export function normalizeChunkSurfState(value = null, fallback = {}) {
     interactivePageSlot: value.interactivePageSlot == null ? null : Math.max(0, Math.floor(Number(value.interactivePageSlot) || 0)),
     sourceContacts: normalizeSourceContactState(value.sourceContacts),
     landingDoorOpen: !!value.landingDoorOpen,
-    firstLiftCompleted: value.firstLiftCompleted == null ? legacyLandscape : !!value.firstLiftCompleted,
+    landingDoorSealed: !!value.landingDoorSealed,
+    sourceApproachDistance: Math.max(0, Number(value.sourceApproachDistance) || 0),
+    sourceApproachComplete,
+    firstLiftCompleted,
     landingWeatherSpent: value.landingWeatherSpent == null ? legacyLandscape : !!value.landingWeatherSpent,
     hasFork: !!value.hasFork,
     visited: unique(value.visited),
@@ -434,6 +453,8 @@ export function reduceChunkSurf(value, event = {}) {
         ...state,
         phase: CHUNK_SURF_PHASE.TRANSFORMING,
         landscapeOrigin: finitePoint(event.landscapeOrigin) || state.landscapeOrigin,
+        sourceApproachDistance: 0,
+        sourceApproachComplete: false,
         checkpointId: 'landing-arrival',
         checkpoint: { id: 'landing-arrival', facing: 0 },
       };
@@ -453,6 +474,7 @@ export function reduceChunkSurf(value, event = {}) {
       const firstLiftCompleted = state.firstLiftCompleted || event.id === 'lift-fork' || event.id === 'ladder-fork';
       return {
         ...state,
+        sourceApproachComplete: firstLiftCompleted ? true : state.sourceApproachComplete,
         firstLiftCompleted,
         checkpointId: event.checkpointId || state.checkpointId,
         checkpoint: event.checkpointId ? { id: event.checkpointId, facing: 0 } : state.checkpoint,
@@ -463,7 +485,30 @@ export function reduceChunkSurf(value, event = {}) {
     }
 
     case 'SOURCE_LANDING_DOOR_OPENED':
+      // A sealed leaf does not reopen. Refusing here rather than at the prompt
+      // keeps the rule in one place, so a reload or a god warp cannot walk
+      // around it.
+      if (state.landingDoorSealed) return state;
       return state.landingDoorOpen ? state : { ...state, landingDoorOpen: true };
+
+    case 'SOURCE_LANDING_DOOR_SEALED':
+      return state.landingDoorSealed
+        ? state
+        : { ...state, landingDoorOpen: false, landingDoorSealed: true };
+
+    case 'SOURCE_APPROACH_COMPLETED':
+      return state.sourceApproachComplete
+        ? state
+        : {
+            ...state,
+            sourceApproachDistance: Math.max(
+              state.sourceApproachDistance,
+              Math.max(0, Number(event.distance) || 0),
+            ),
+            sourceApproachComplete: true,
+            checkpointId: 'landing-approach',
+            checkpoint: { id: 'landing-approach', facing: 0 },
+          };
 
     case 'SOURCE_LANDING_WEATHER_SPENT':
       return { ...state, landingWeatherSpent: true };
@@ -888,6 +933,8 @@ export function chunkSurfProbe(value) {
     sourceContacts: {captures:sourceContacts.captures,insightIds:[...sourceContacts.insights]},
     bossExposed: sourceBossExposed(state.sourceContacts),
     firstLiftCompleted: state.firstLiftCompleted,
+    sourceApproachDistance: state.sourceApproachDistance,
+    sourceApproachComplete: state.sourceApproachComplete,
     landingWeatherSpent: state.landingWeatherSpent,
     hushStage: state.hushStage,
     pursuitBeat: state.pursuitBeat,

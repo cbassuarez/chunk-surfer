@@ -100,3 +100,56 @@ export function makeSourcePageScene({ page = null, onClose = () => {} } = {}) {
     }),
   };
 }
+
+// THE STILL SHEET IS THE WIPE.
+//
+// It already has a baked physical-paper asset (`source-real-still`); what was
+// missing was a reader. Taking it jumped straight from the floor mesh to the
+// rebuilt world, so the only legible view of the one sheet that matters was a
+// small texture under the player's feet. Present the actual A4 sheet at the
+// ordinary inspection size and make its surround fully opaque. The Source
+// runtime can replace the forward half of the corridor synchronously underneath
+// it, and the next uncovered frame is therefore the Scene Dock rather than a
+// visible world-plan pop.
+export const SOURCE_STILL_DOCUMENT = Object.freeze({
+  id: 'source-real-still',
+  title: 'ELLERY FIELD RECORDING · TAKE SHEET',
+  byline: 'W. ELLERY / WORKS',
+  decay: 0,
+  body: Object.freeze([
+    Object.freeze({ raw: 'SITE: ELLERY CONSERVATOIRE' }),
+    Object.freeze({ raw: 'ROOM: ______________________________' }),
+    Object.freeze({ raw: 'TAKE: ______' }),
+    Object.freeze({ raw: 'START: ______' }),
+    Object.freeze({ raw: 'END: ______' }),
+    Object.freeze({ rule: true }),
+    Object.freeze({ raw: 'STATUS: ______________________________' }),
+  ]),
+  paper: Object.freeze({
+    issuer: 'ellery-works',
+    template: 'take-sheet',
+    reproduction: 'original-handled',
+  }),
+});
+
+export function makeSourceStillPageScene({ onClose = () => {} } = {}) {
+  const scene = makeDocumentScene(SOURCE_STILL_DOCUMENT, {
+    id: 'source-still-page',
+    onSceneClose: onClose,
+    lookProfile: 'hush',
+  });
+  return {
+    ...scene,
+    transitionCover: true,
+    view: () => ({
+      ...scene.view(),
+      id: 'source-still-page',
+      lines: SOURCE_STILL_DOCUMENT.body.map((entry) => entry.raw || ''),
+    }),
+    render() {
+      const { cols, rows } = uiSize();
+      uiFill(0, 0, cols, rows, '#000');
+      scene.render();
+    },
+  };
+}

@@ -8,7 +8,7 @@ import { resolveMapPolicy } from '../src/game/map-policy.js';
 import { findGridRoute, findFloorPath, resolveMapRoute } from '../src/game/map-routing.js';
 import { buildMapModel, mapSpaceByRoom } from '../src/game/map-model.js';
 import { initialMapNav, reduceMapNav, selectedMapSpace } from '../src/game/map-navigation.js';
-import { buildMapCommands, buildMinimapCommands } from '../src/render/map-commands.js';
+import { buildMapCommands, buildMinimapCommands, localTopologyCoverage } from '../src/render/map-commands.js';
 import { fixtureMapSource, MAP_LAB_CASES, mapLabJob, mapLabModel } from '../src/game/map-fixtures.js';
 
 const authored = validateBuildingMap(BUILDING_MAP, { requiredRooms: REQUIRED_MAP_TARGETS });
@@ -71,6 +71,26 @@ const mini = buildMinimapCommands({ model, viewport: { x: 0, y: 0, w: 18, h: 8 }
 assert.ok(mini.some((command) => command.kind === 'player'));
 assert.ok(mini.some((command) => command.kind === 'connector-target' || command.kind === 'connector-edge' || command.kind === 'floor-target'));
 assert.equal(mini.some((command) => command.kind === 'enemy'), false);
+
+const uniformExterior = { id:'g', open:new Set() };
+for(let y=-20;y<=20;y++)for(let x=-20;x<=20;x++)uniformExterior.open.add(`${x},${y}`);
+const exteriorCoverage=localTopologyCoverage(uniformExterior,{x:0,y:0},18);
+assert.equal(exteriorCoverage,1,'a uniformly walkable exterior is recognized as such');
+const exteriorMini=buildMinimapCommands({
+  model:{...model,player:{...model.player,floorId:'g',position:{x:0,y:0}},floors:[uniformExterior],policy:{...model.policy,minimapMode:'topology',showMapTopology:true}},
+  viewport:{x:0,y:0,w:18,h:8},now:1000,
+});
+assert.equal(exteriorMini.find((command)=>command.kind==='local-topology')?.fillOpen,false,
+  'the opening exterior does not render as one solid square');
+
+const corridorFloor={id:'g',open:new Set(Array.from({length:37},(_,index)=>`0,${index-18}`))};
+assert.ok(localTopologyCoverage(corridorFloor,{x:0,y:0},18)<.1);
+const corridorMini=buildMinimapCommands({
+  model:{...model,player:{...model.player,floorId:'g',position:{x:0,y:0}},floors:[corridorFloor],policy:{...model.policy,minimapMode:'topology',showMapTopology:true}},
+  viewport:{x:0,y:0,w:18,h:8},now:1000,
+});
+assert.equal(corridorMini.find((command)=>command.kind==='local-topology')?.fillOpen,true,
+  'rooms and corridors retain their readable topology fill');
 
 const equipmentModel=buildMapModel({
   source,job:mapLabJob(testCase),player:{x:7,y:20,height:-4,roomId:null,heading:0},

@@ -18,6 +18,15 @@ export const COMBAT_ACTION = Object.freeze({
   // Point at a section of the house. Not a move: it costs no beat and the
   // opponent does not answer it, the same way arming a source channel does not.
   TARGET: 'target',
+  // THE PRACTICE WING'S TWO VERBS.
+  //
+  // LISTEN plays the bar back instead of playing over it. It costs the beat —
+  // giving up a repetition is the entire price — and it is the one thing in that
+  // room that goes anywhere. PUT IT DOWN is only offered once he has heard what
+  // is on the bar, because leaving is the hardest thing this man can do and it
+  // has to be paid for with the thing he is worst at.
+  LISTEN: 'listen',
+  PUT_IT_DOWN: 'put-it-down',
   WHITEOUT: 'whiteout',
   RADIO_DECOY: 'radio-decoy',
   STEADY_HANDS: 'steady-hands',
@@ -27,6 +36,10 @@ export const COMBAT_ACTION = Object.freeze({
   // AND reflect coherence damage on a correct read, weak on a mis-read.
   COMPOSE: 'compose',
   PARRY: 'parry',
+  // Real-time ranged RETURN. It never appears in the command deck and never
+  // advances the turn; fireball-exchange.js earns and fires it through clicks.
+  FIREBALL_RETURN: 'fireball-return',
+  FIREBALL_IMPACT: 'fireball-impact',
   // Loud once-per-encounter tool specials (model: WHITEOUT). Recorder MASTER TAKE
   // and rig RUNAWAY FEEDBACK are the finishers of their branches.
   MASTER_TAKE: 'master-take',
@@ -237,17 +250,31 @@ import {
 } from './enemy-mind.js';
 import {
   actingRow,
+  applyHouseAction,
   commitHouseBeat,
+  commitHouseFormation,
   createHouse,
+  houseCombatSnapshot,
+  rememberHouseTool,
   houseCleared,
   houseView,
   houseStrikeFor,
   isGroupSpecial,
   moveHouseTarget,
+  selectHouseTarget,
   strikeHouse,
   strikeHouseAll,
   targetRow,
 } from './battle-house.js';
+import {
+  createPracticeSession,
+  listenPracticeBar,
+  playPracticeBar,
+  practiceCanStop,
+  practiceSnapshot,
+  practiceStop,
+  windPracticeBack,
+} from './practice-room.js';
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 const hasTechnique = (state, id) => state.techniques.includes(id);
@@ -299,8 +326,16 @@ function commitNextIntent(state) {
   if (!chosen) return;
   state.committed = { id: chosen.id, index: state.intentIndex };
   maybeMisread(state, movement, intents, chosen, missedLast);
-  // Against a group, the blow and the section throwing it are one decision.
-  if (state.house) commitHouseBeat(state.house, state.cycleIndex);
+  // Against a group, the blow and the FORMATION throwing it are one decision,
+  // committed once and never recomputed. The lead, its supporters and every
+  // modifier they contribute are fixed here so the preview, the reaction track
+  // and the resolver all read the same packet — see battle-house.js.
+  if (state.house) {
+    commitHouseFormation(state.house, state.cycleIndex, {
+      ...(movement?.formation || {}),
+      difficulty: state.difficulty?.variant || 'standard',
+    });
+  }
 }
 
 // Whether the recordist reads this one wrong.
@@ -762,6 +797,12 @@ export function createCombatState(definition, {
     house: definition.house
       ? createHouse({ seed: `${definition.id || 'house'}:${integer(seed, 0)}`, ...definition.house })
       : null,
+    // The practice wing. Like `house`, absent for every other encounter, and
+    // every path behaves exactly as it did when it is null. Unlike `house` it
+    // describes no adversary — there is nobody in that room. See practice-room.js.
+    practice: definition.practice
+      ? createPracticeSession({ seed: `${definition.id || 'practice'}:${integer(seed, 0)}`, ...definition.practice })
+      : null,
     source: sourceEnabled ? {
       enabled: true,
       armed: Object.values(SOURCE_CHANNEL).includes(source?.armed) ? source.armed : SOURCE_CHANNEL.RESCUE,
@@ -942,6 +983,33 @@ function completeMovement(state) {
   const finishedIndex = state.movementIndex;
   if (state.source) addSourcePoint(state, 1);
   if (finishedIndex >= state.definition.movements.length - 1) {
+    // THE WING DOES NOT END. HE DOES.
+    //
+    // Everywhere else the last movement is the last thing and finishing it wins.
+    // There is nothing in the practice room to finish: the three movements are
+    // TAKE IT FROM THE TOP, AGAIN FROM THE TOP, and AND AGAIN, and AND AGAIN is
+    // where a man stays. So the arc loops on its final movement and the only
+    // ways out are the two he has to choose — he puts it down, or he does not
+    // and the repetition takes him.
+    if (state.practice && !state.practice.stopped) {
+      state.movementCoherence = integer(currentMovement(state)?.coherence, 1);
+      state.movementMaxCoherence = state.movementCoherence;
+      state.intentIndex = 0;
+      state.cycleIndex = 0;
+      state.turns += 1;
+      state.turnsInMovement = 0;
+      state.movementDamage = 0;
+      state.misread = null;
+      state.misreadsThisMovement = 0;
+      // IT SHOWS WHAT IT THROWS, even here. Resetting the cycle without
+      // re-committing left the card promising the intent from before the loop
+      // while a different one landed — the one contract the fight may never
+      // break, and the one enemy-intent.spec exists to catch.
+      commitNextIntent(state);
+      state.last.transition = { from: finishedIndex, to: finishedIndex };
+      state.last.notice += ' · AND AGAIN';
+      return;
+    }
     advanceIntent(state);
     finishCombat(state, 'win');
     state.last.transition = { from: finishedIndex, to: null };
@@ -981,21 +1049,52 @@ function completeMovement(state) {
 // blow went: against a group, damage is also a count of people who stop being
 // there. A loud special reaches every occupied row; anything else lands on the
 // section the cursor is pointing at, and a parry goes back at whoever threw it.
+// Composure, and the one rule that ever stands between the player and zero.
+// Returns whether the relay was what saved them, because the caller owns the
+// wording of the line that says so.
+function applyDamageToPlayer(state, damage) {
+  const amount = Math.max(0, integer(damage, 0));
+  if (amount <= 0) return false;
+  if (state.difficulty.safetyRelay && !state.safetyRelayUsed && amount >= state.composure) {
+    state.damageTaken += Math.max(0, state.composure - GRID);
+    state.composure = GRID;
+    state.safetyRelayUsed = true;
+    return true;
+  }
+  state.composure = Math.max(0, state.composure - amount);
+  state.damageTaken += amount;
+  return false;
+}
+
 function applyDamageToEnemy(state, amount, actionId = null) {
   const damage = Math.max(0, integer(amount, 0));
   state.movementCoherence = Math.max(0, state.movementCoherence - damage);
   if (state.house && damage > 0) {
-    const strike = houseStrikeFor(actionId, !!state.last?.perfect);
-    if (strike === 'group') strikeHouseAll(state.house, 1);
-    else if (strike === 'single') {
-      // A parry goes back at whoever threw it; everything else lands where the
-      // cursor is pointing.
-      const rowId = actionId === COMBAT_ACTION.PARRY
-        ? (actingRow(state.house)?.id || targetRow(state.house)?.id)
-        : targetRow(state.house)?.id;
-      if (rowId) strikeHouse(state.house, rowId, 1);
-    }
+    // EVERY DAMAGING ACTION HAS A VISIBLE HOUSE CONSEQUENCE.
+    //
+    // It used to be that only a perfect read or a loud special touched anybody,
+    // so four fifths of the bag was irrelevant to the only fight the bag exists
+    // for. applyHouseAction gives an ordinary blow somewhere to land — it
+    // unsettles a section, and the second one empties a seat — while a clean
+    // read still does it in one. The shape of the action decides where the
+    // force goes: aimed, spilling into a neighbour, damping a supporter out of
+    // the formation, or back at whoever actually threw the blow.
+    const result = applyHouseAction(state.house, {
+      actionId,
+      perfect: !!state.last?.perfect,
+      targetId: targetRow(state.house)?.id || null,
+    });
+    state.last = {
+      ...(state.last || {}),
+      house: {
+        unsettled: result.unsettled,
+        broken: result.broken,
+        cleared: result.cleared,
+        suppressed: result.suppressed,
+      },
+    };
   }
+  if (state.house) rememberHouseTool(state.house, actionId);
   return damage;
 }
 
@@ -1128,43 +1227,64 @@ function parryReflect(state) {
   return 2 * GRID + (hasTechnique(state, TECHNIQUE.RIPOSTE) ? 2 * GRID : 0);
 }
 
-// A completed hostile-window defense can be sent back through the same
-// coherence path as a perfect parry. It is deliberately a separate reducer
-// entry point: RETURN is battle-channel state, not another command-card action,
-// and therefore cannot appear in the ordinary move deck or consume a turn.
-export function applyWindowChannelReturn(input, { hits = 1, tier = 2 } = {}) {
-  const state = clone(input);
-  if (state.result || state.phase === 'done') return state;
-  const returnHits = clamp(integer(hits, 1), 1, 2);
-  const coherenceFrom = state.movementCoherence;
-  state.last = { ...(state.last || {}), transition: null };
-  const dealt = applyDamageToEnemy(
-    state,
-    parryReflect(state) * returnHits,
-    COMBAT_ACTION.PARRY,
-  );
-  state.last = {
-    ...(state.last || {}),
-    notice: `WINDOW RETURN · ${dealt} REFLECTED${returnHits > 1 ? ' · FULL CHANNEL' : ''}`,
-    action: 'window-return',
-    windowReturn: { tier: tier >= 3 ? 3 : 2, hits: returnHits },
-    dealt: integer(state.last?.dealt, 0) + dealt,
-    transition: null,
-  };
+// RETURN is a ranged side-channel, not a disguised PARRY. It applies coherence
+// damage immediately without selecting a move, consuming charge from the
+// ordinary kit, changing stance or advancing the enemy clock. Nonlethal hits
+// deliberately preserve `last`, because an ordinary beat may be resolving at
+// the same time and still owns its impact bookkeeping.
+export function applyFireballReturn(input,{damage=2*GRID,castId=''}={}){
+  const state=clone(input);
+  if(state.result||state.phase==='done')return state;
+  const priorLast=clone(state.last||{});
+  const coherenceFrom=state.movementCoherence;
+  state.last={...priorLast,perfect:true,transition:null};
+  const dealt=applyDamageToEnemy(state,Math.max(1,integer(damage,2*GRID)),COMBAT_ACTION.FIREBALL_RETURN);
+  const event={castId:String(castId||''),dealt,coherenceFrom,coherenceTo:state.movementCoherence};
+  state.fireballReturn=event;
   state.actionLog.push({
-    turn: state.turns,
-    movement: currentMovement(state)?.id || null,
-    action: 'window-return',
-    perfect: true,
-    bonus: true,
-    dealt,
-    received: 0,
+    turn:state.turns,movement:currentMovement(state)?.id||null,
+    action:COMBAT_ACTION.FIREBALL_RETURN,perfect:true,bonus:true,dealt,received:0,
   });
-  if (state.movementCoherence <= 0) completeMovement(state);
-  else state.last.transition = null;
-  state.last.windowReturn = { tier: tier >= 3 ? 3 : 2, hits: returnHits };
-  state.last.coherenceFrom = coherenceFrom;
-  state.last.coherenceTo = state.movementCoherence;
+  if(state.movementCoherence<=0){
+    state.last={...state.last,notice:`RETURN · ${dealt} RANGED`,action:COMBAT_ACTION.FIREBALL_RETURN,dealt,received:0};
+    completeMovement(state);
+    state.last.fireballReturn=event;
+  }else{
+    state.last=priorLast;
+  }
+  return state;
+}
+
+// A FIREBALL NOBODY TOUCHED LANDS.
+//
+// The ranged exchange had no losing side. An uncontested comet reached the end
+// of its flight, logged itself as `missed`, and cost exactly nothing — so three
+// clicks bought a RETURN worth ten and ignoring the thing entirely was free,
+// which makes the clicking optional and the whole beat decorative. It is a
+// projectile. If you let it through, it hits you.
+//
+// Charged against composure like an ordinary blow, including the safety relay,
+// but outside the turn: it consumes no move, advances no clock, and — like the
+// RETURN it mirrors — leaves `last` alone unless it is the blow that ends the
+// fragment, because an ordinary beat may be resolving at the same moment and
+// still owns its own bookkeeping.
+export function applyFireballImpact(input,{damage=GRID,castId=''}={}){
+  const state=clone(input);
+  if(state.result||state.phase==='done')return state;
+  const priorLast=clone(state.last||{});
+  const composureFrom=state.composure;
+  const relay=applyDamageToPlayer(state,Math.max(1,integer(damage,GRID)));
+  const received=Math.max(0,composureFrom-state.composure);
+  const event={castId:String(castId||''),received,relay};
+  state.fireballImpact=event;
+  state.actionLog.push({
+    turn:state.turns,movement:currentMovement(state)?.id||null,
+    action:COMBAT_ACTION.FIREBALL_IMPACT,perfect:false,bonus:false,dealt:0,received,
+  });
+  if(state.composure<=0){
+    state.last={...priorLast,notice:`RANGED · ${received} · COMPOSURE LOST`,action:COMBAT_ACTION.FIREBALL_IMPACT,dealt:0,received,fireballImpact:event};
+    finishCombat(state,'lose');
+  }else state.last=priorLast;
   return state;
 }
 
@@ -1263,7 +1383,40 @@ export function combatRecoveryStatus(state) {
   };
 }
 
+// THE WALL IS A PLACE HE IS LEFT STANDING, not one he passes through. Reaching
+// the end and winding back inside one beat meant the playhead was never
+// observably at the bar the recording stops at, so the one moment the craft is
+// available never existed. He arrives there and stays. Playing on FROM the wall
+// is the choice that takes it from the top, and that is the beat it costs him.
+function runPracticeBeat(state) {
+  if (!state.practice || state.practice.stopped) return 0;
+  if (state.practice.bar < state.practice.bars) {
+    playPracticeBar(state.practice);
+    return 0;
+  }
+  // THE COST OF A REPETITION IS THE BEAT'S OWN DAMAGE.
+  //
+  // It was charged separately at first, on top of the authored intent — which
+  // meant the card promised one number, a second arrived from nowhere, and the
+  // profile drifted a quarter off the pace it was balanced at. The intents in
+  // this wing ARE his repetitions (WIND IT BACK TWO BARS, BOTH HANDS ON THE
+  // FADER), so what they cost him is already on the card and already tuned. The
+  // lap is bookkeeping and a line of text, not a second bill.
+  const wound = windPracticeBack(state.practice);
+  state.last.notice += ' · AGAIN, FROM THE TOP';
+  return wound.retakes;
+}
+
 function applyEnemyIntent(state, intent, prevention) {
+  // THE PRACTICE WING TAKES ITS DAMAGE FROM NOWHERE ELSE.
+  //
+  // Nothing in that room is coming for him, so an intent there does not strike:
+  // it is a thing he does to a file, and the file simply runs. He plays forward
+  // until the bar the recording ends at, and the beat he hits that wall is the
+  // beat he winds it back — which is the only thing in the wing that costs him.
+  //
+  // Prevention has nothing to prevent. Bracing against your own hands is not a
+  // defence, and offering one would be the room pretending to swing at him.
   const signature = state.definition.signature?.id;
   const echo = Math.max(0, integer(state.signaturePressure, 0));
   state.signaturePressure = 0;
@@ -1271,20 +1424,20 @@ function applyEnemyIntent(state, intent, prevention) {
     && (state.turnsInMovement + 1) % 3 === 0
     && state.tuneUsedMovement !== state.movementIndex ? GRID : 0;
   const fragileSignal = state.snr === SNR_STATE.SIGNAL ? GRID : 0;
+  // YOU CANNOT BRACE AGAINST YOUR OWN HANDS.
+  //
+  // Prevention is a defence against something thrown at you, and nothing in the
+  // practice wing throws anything — the intents there are his own repetitions.
+  // Bracing walked the whole fragment for free, so a player who found LISTEN
+  // strolled out at full composure having felt nothing, which is the opposite of
+  // an hour in a practice room. Time in that room costs him whatever he presses;
+  // the only thing he controls is how much of it he spends.
+  const guard = state.practice && !state.practice.stopped ? 0 : Math.max(0, integer(prevention, 0));
   const damage = Math.max(0,
-    integer(intent?.damage, 0) + echo + ensemble + fragileSignal
-    - Math.max(0, integer(prevention, 0)),
+    integer(intent?.damage, 0) + echo + ensemble + fragileSignal - guard,
   );
   if (damage > 0) {
-    if (state.difficulty.safetyRelay && !state.safetyRelayUsed && damage >= state.composure) {
-      state.damageTaken += Math.max(0, state.composure - GRID);
-      state.composure = GRID;
-      state.safetyRelayUsed = true;
-      state.last.notice += ' · SAFETY RELAY REMAINS AT 1';
-    } else {
-      state.composure = Math.max(0, state.composure - damage);
-      state.damageTaken += damage;
-    }
+    if (applyDamageToPlayer(state, damage)) state.last.notice += ' · SAFETY RELAY REMAINS AT 1';
     state.movementDamage = integer(state.movementDamage, 0) + damage;
   }
   if (intent?.effect === 'ringing') state.ringing = true;
@@ -1510,6 +1663,37 @@ export function availableCombatActions(state) {
       detail: 'END BONUS ACTION',
       free: true,
     }] : []),
+    // The wing, and nowhere else. Neither of these damages anything, because
+    // there is nothing in that room to damage.
+    // Only at the wall. You cannot play back a bar you have not got to, and
+    // gating it there is what gives the repetition its job: he has to work the
+    // fragment through to the end before the craft is even on the table, and
+    // every pass after the first costs him.
+    ...(state.practice && !state.practice.stopped && state.practice.bar >= state.practice.bars ? [{
+      // SELF, not RECORDER. Playing the bar back is a faculty, not a device — and
+      // gating it on the kit meant a spent bag could never leave this room: no
+      // recorder, no listening, no putting it down, just attrition until it took
+      // him. The wing is the one fight where the way out is something he is
+      // rather than something he carries, which is also the point of it.
+      id: COMBAT_ACTION.LISTEN, tool: COMBAT_TOOL.SELF, label: 'LISTEN',
+      // IT DOES NOT ADVERTISE THE ANSWER.
+      //
+      // The tile named what the next pass would reveal, which made the way out
+      // of the room a labelled button and turned the whole wing into a puzzle
+      // with its solution printed on it. He does not know there is anything on
+      // that bar until he has played it once. After that the tile says what he
+      // is going back for, because by then he does know.
+      detail: state.practice.listens === 0
+        ? 'PLAY THE BAR BACK · FOUR SECONDS OF NOTHING · COSTS THE BEAT'
+        : practiceSnapshot(state.practice).next
+          ? `PLAY IT BACK AGAIN · ${practiceSnapshot(state.practice).next} · COSTS THE BEAT`
+          : 'PLAY THE BAR BACK · YOU HAVE HEARD ALL OF IT',
+    }] : []),
+    ...(state.practice && practiceCanStop(state.practice) && !state.practice.stopped ? [{
+      id: COMBAT_ACTION.PUT_IT_DOWN, tool: COMBAT_TOOL.SELF, label: 'PUT IT DOWN',
+      detail: 'TAKE YOUR HAND OFF THE TRANSPORT · NOTHING IS RUNNING',
+      free: true,
+    }] : []),
   ];
   return actions.map((action) => {
     const availability = actionAvailability(state, action.id);
@@ -1659,8 +1843,49 @@ export function reduceCombat(input, action = {}) {
 
   if (actionId === COMBAT_ACTION.TARGET) {
     if (state.house) {
-      moveHouseTarget(state.house, action.delta);
+      // Two ways in, one destination. Q/E and the shoulders step through the
+      // occupied sections; a pointer or a finger names one outright, which is
+      // what makes the five sections directly selectable rather than reachable
+      // only by cycling past the ones you did not want.
+      if (action.rowId) selectHouseTarget(state.house, action.rowId);
+      else moveHouseTarget(state.house, action.delta);
       state.last = { ...(state.last || {}), notice: `TARGET · ${targetRow(state.house)?.label || ''}`, action: actionId };
+    }
+    return state;
+  }
+
+  // He plays the bar back instead of playing over it. Costs the beat, damages
+  // nothing, and is the only thing in that room that goes anywhere.
+  if (actionId === COMBAT_ACTION.LISTEN) {
+    // The same gate the tile is offered behind. This branch sits ahead of the
+    // ordinary availability check (like TARGET), so it has to refuse for itself
+    // — otherwise a bound key plays back a bar he has not reached.
+    if (state.practice && !state.practice.stopped && state.practice.bar >= state.practice.bars) {
+      const reveal = listenPracticeBar(state.practice);
+      state.last = {
+        ...(state.last || {}),
+        notice: reveal ? `${reveal.label} · ${reveal.note}` : 'YOU HAVE HEARD ALL OF IT',
+        action: actionId,
+        perfect: false,
+        practiceReveal: reveal ? { id: reveal.id, label: reveal.label, line: reveal.line } : null,
+      };
+      advanceIntent(state);
+    }
+    return state;
+  }
+
+  // He takes his hand off the transport. Not a victory over anything — there is
+  // nobody in that room to beat — but it is how the wing ends, and it is the
+  // hardest thing on the board.
+  if (actionId === COMBAT_ACTION.PUT_IT_DOWN) {
+    if (state.practice && practiceStop(state.practice)) {
+      state.last = {
+        ...(state.last || {}),
+        notice: 'YOU DO NOT WIND IT BACK',
+        action: actionId,
+        perfect: false,
+      };
+      finishCombat(state, 'win');
     }
     return state;
   }
@@ -1970,6 +2195,14 @@ export function reduceCombat(input, action = {}) {
   // perfect counter, so this is the only place the opponent can notice.
   if (perfect && intent?.id) state.read = observeRefusal(state.read, intent.id);
 
+  // ONE BEAT, ONE BAR — and the beat is HIS.
+  //
+  // This lived on the enemy resolution first, which meant any beat that did not
+  // reach one (a defensive move, a skipped beat) left the playhead where it was
+  // and the file stalled. The wing's clock is the man spending a beat in the
+  // room, not the room answering him, because the room does not answer him.
+  if (state.practice && !state.practice.stopped && !bonusAction) runPracticeBeat(state);
+
   if (state.composure <= 0) {
     state.last.notice = `${notice} · COMPOSURE LOST`;
     advanceIntent(state);
@@ -2179,6 +2412,16 @@ export function runCombatTurn(state, action) {
 
 // What the battle UI draws and the thought trace talks about. Null for every
 // fight that is one thing in one room.
+// The one snapshot every consumer reads. `combatHouse` stays as the narrow
+// figures-only view for callers that never needed the formation.
+export function combatHouseSnapshot(state) {
+  return houseCombatSnapshot(state?.house || null);
+}
+
+export function combatPractice(state) {
+  return practiceSnapshot(state?.practice || null);
+}
+
 export function combatHouse(state) {
   return houseView(state?.house || null);
 }

@@ -179,7 +179,9 @@ assert.equal(inferLegacyChunkSurf({flags:{[CHUNK_SURF_FLAGS.completed]:true}}).f
   assert.equal(final.state.active,true);
   assert.equal(landing.state.firstLiftCompleted,false);
   assert.equal(firstLift.state.firstLiftCompleted,false,'FIRST LIFT is the safe lower approach, not a completed ride');
-  assert.equal(firstLift.state.landingDoorOpen,true);
+  assert.equal(firstLift.state.landingDoorOpen,false,'the FOH leaf has shut by the end of the white approach');
+  assert.equal(firstLift.state.landingDoorSealed,true,'the FIRST LIFT review point cannot reopen the Scene Dock');
+  assert.equal(firstLift.state.sourceApproachComplete,true,'FIRST LIFT begins where the thirty-second approach resolves');
   for(const preset of [firstLift,hunt,finalRun,final]){
     assert.equal(preset.state.hasFork,false,'God presets do not generate a Source tuning fork');
     assert.deepEqual(preset.state.tuned,[],'God presets do not generate tuned landmarks');

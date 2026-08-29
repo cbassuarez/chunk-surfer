@@ -3,7 +3,13 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { CHUNK_SURF_ROOMS } from '../src/data/chunk-surf-script.js';
 import { CELL, MATERIAL, ZONE } from '../src/data/floorplan/legend.js';
-import { sourceFeatureAt, sourceTierAt } from '../src/data/source-level.js';
+import {
+  SOURCE_APPROACH_CELLS,
+  SOURCE_TIERS,
+  SOURCE_TIER_BY_ID,
+  sourceFeatureAt,
+  sourceTierAt,
+} from '../src/data/source-level.js';
 import {
   freshChunkSurfState,
   reduceChunkSurf,
@@ -13,6 +19,7 @@ import {
   SOURCE_ARCH_MAX_INSTANCES,
   SOURCE_ARCH_TILE_CELLS,
   SOURCE_PLAN_SNAP,
+  SOURCE_LANDMARK_OFFSETS,
   SOURCE_PLAN_WINDOW,
   SOURCE_SEEDED_STRUCTURE_COUNT,
   createSourceSpaceRuntime,
@@ -23,6 +30,16 @@ import {
   sourceStructureRouteClearance,
   validateSourceAtlas,
 } from '../src/game/source-space-runtime.js';
+// The field's own origin in these fixtures, and the final page derived from the
+// real landmark table. These were absolute literals (-564, -566) that the red
+// approach moved by SOURCE_APPROACH_CELLS.
+const FIELD_ORIGIN={x:0,y:-252};
+const FINAL_PAGE={
+  x:FIELD_ORIGIN.x+SOURCE_LANDMARK_OFFSETS['final-page'].x,
+  y:FIELD_ORIGIN.y+SOURCE_LANDMARK_OFFSETS['final-page'].y,
+};
+const FIELD_DEPTH=Math.abs(SOURCE_TIERS.filter((tier)=>tier.field).at(-1).to);
+
 
 function hash(text) {
   let h = 2166136261;
@@ -45,6 +62,7 @@ function landscapeState(){
 
 function fullyOpenLandscapeState(){
   let state=landscapeState();
+  state=reduceChunkSurf(state,{type:'SOURCE_LIFT_COMPLETED',id:'lift-fork',checkpointId:'landing-fork'});
   for(const id of ['fork-room','recordist-loop','body-room'])state=reduceChunkSurf(state,{type:'LANDMARK_VISITED',id});
   return state;
 }
@@ -137,15 +155,21 @@ for (const entry of Object.values(SOURCE_ATLAS.entries)) {
 {
   const runtime=createSourceSpaceRuntime({initialState:fullyOpenLandscapeState()});
   const architecture=[
-    ...runtime.textInstances({px:0,py:-252}),
-    ...runtime.textInstances({px:0,py:-394}),
-    ...runtime.textInstances({px:80,py:-564}),
+    ...runtime.textInstances({px:0,py:FIELD_ORIGIN.y+SOURCE_TIER_BY_ID.fork.from-8}),
+    ...runtime.textInstances({px:0,py:FIELD_ORIGIN.y+SOURCE_LANDMARK_OFFSETS['recordist-loop'].y}),
+    ...runtime.textInstances({px:FINAL_PAGE.x,py:FINAL_PAGE.y}),
   ];
   // The long-hall page sheets end, but the open field surfaces the cathédrale
   // engloutie: real building meshes (vaults, bells, pews, the organ) leaking up
   // through the code, denser toward the end. They render via renderPropPass and
   // are composited by the text-space shader (solid stone half made of source).
-  const leaked=[[0,-320],[0,-440],[0,-540],[40,-470],[-40,-390]].flatMap(([x,y])=>runtime.propInstances(x,y,{time:2}));
+  const leaked=[
+    [0,FIELD_ORIGIN.y+SOURCE_TIER_BY_ID.fork.from-8],
+    [0,FIELD_ORIGIN.y+SOURCE_TIER_BY_ID.trace.from-20],
+    [0,FIELD_ORIGIN.y+SOURCE_TIER_BY_ID.return.from-20],
+    [40,FIELD_ORIGIN.y+SOURCE_LANDMARK_OFFSETS['body-room'].y],
+    [-40,FIELD_ORIGIN.y+SOURCE_LANDMARK_OFFSETS['surfer-origin'].y],
+  ].flatMap(([x,y])=>runtime.propInstances(x,y,{time:2}));
   assert.ok(leaked.length>0,'the open field surfaces drowned architecture as real meshes');
   assert.ok(leaked.some((entry)=>['chapel_vault','pew','altar_table','lectern','tower_bell_01','tower_bell_04','tower_frame','organ_console','organ_pipes','grand_piano','hall_structure','chapel_inner_screen'].includes(entry.mesh)),'real building geometry surfaces through the field (cathédrale engloutie)');
   assert.ok(leaked.every((entry)=>typeof entry.mesh==='string'&&entry.matrix?.length===16),'every surfaced/drift piece is a placed mesh');
@@ -166,27 +190,34 @@ for (const entry of Object.values(SOURCE_ATLAS.entries)) {
     assert.doesNotMatch(entry.text,/\/Users\//);
   }
   assert.ok(architecture.every((entry)=>entry.matrix?.length===16&&[...entry.matrix].every(Number.isFinite)),'all text architecture uses complete finite matrices');
-  assert.ok(sourceLandscapeFloorAt(0,-320)>12,'the terminal occupies the top of a substantial final ramp');
+  // Sampled on the deepest field tier itself. -320 was on it before the red
+  // approach pushed every tier below the arrival out by SOURCE_APPROACH_CELLS;
+  // afterwards it landed two tiers short and asserted the wrong ground.
+  const finalTier=SOURCE_TIERS.filter((tier)=>tier.field).at(-1);
+  assert.ok(sourceLandscapeFloorAt(0,(finalTier.from+finalTier.to)/2)>12,
+    'the terminal occupies the top of a substantial final ramp');
 // THE FIELD IS TIERED NOW, so "walkable everywhere" is no longer the contract —
 // it was the reason the space had no level design in it. The contract is that
 // every cliff is crossable BY A FEATURE and that open ground stays walkable, so
 // the player is constrained but never stuck. See data/source-level.js.
-for(let depth=0;depth<339;depth+=1){
+for(let depth=0;depth<FIELD_DEPTH-1;depth+=1){
   const a=sourceLandscapeFloorAt(0,-depth),b=sourceLandscapeFloorAt(0,-depth-1);
   if(Math.abs(b-a)<=.45)continue;
   assert.ok(sourceFeatureAt(0,-depth)||sourceFeatureAt(0,-depth-1),
     `the spine has a cliff at depth ${depth} with no ladder or chute on it`);
 }
 // And the spine really is tiered, or none of the gating means anything.
-assert.ok(new Set([0,-80,-180,-300].map((y)=>sourceTierAt(y).id)).size===4,
+// Probe each field tier at its own middle rather than at fixed depths.
+assert.ok(new Set(SOURCE_TIERS.filter((tier)=>tier.field)
+  .map((tier)=>sourceTierAt((tier.from+tier.to)/2).id)).size===4,
   'the critical spine no longer crosses four tiers');
-  assert.ok(runtime.geometry.cellAt(80,-564),'the final horizon is reachable');
+  assert.ok(runtime.geometry.cellAt(FINAL_PAGE.x,FINAL_PAGE.y),'the final horizon is reachable');
   // The field is now one open, freely-roamable ground (Oblivion-style) — off the
   // routes is walkable, not an invisible causeway wall. The routes survive only
   // as brighter path material for wayfinding; the only hard edge is the field's
   // own perimeter, rendered as a visible wall of code.
-  assert.ok(runtime.geometry.cellAt(20,-450),'off-route space remains open except where authored solid architecture occupies it');
-  assert.equal(runtime.geometry.cellAt(40,-450),null,'the colossal percussion shelf is physically present in off-route space');
+  assert.ok(runtime.geometry.cellAt(20,FIELD_ORIGIN.y+(SOURCE_TIER_BY_ID.trace.from+SOURCE_TIER_BY_ID.trace.to)/2),'off-route space remains open except where authored solid architecture occupies it');
+  assert.equal(runtime.geometry.cellAt(40,FIELD_ORIGIN.y-184-SOURCE_APPROACH_CELLS),null,'the colossal percussion shelf is physically present in off-route space');
   assert.equal(runtime.geometry.cellAt(0,-900),null,'beyond the field perimeter there is no ground (sky, not corridor)');
 }
 
@@ -198,22 +229,23 @@ assert.ok(new Set([0,-80,-180,-300].map((y)=>sourceTierAt(y).id)).size===4,
   assert.equal(first.filter((entry)=>entry.seeded).length,SOURCE_SEEDED_STRUCTURE_COUNT,'exactly fourteen seeded giants are accepted');
   assert.ok(first.filter((entry)=>entry.kind==='fractured-bust').length<=2,'fractured scatter stays rare');
   assert.ok(first.every((entry)=>sourceStructureRouteClearance(entry)>0),'every giant collider clears the authored walking routes');
-  assert.ok(sourceStructureCollisionAt(first,-24,-30),'the west stand gate has a real footprint');
-  assert.equal(sourceStructureCollisionAt(first,0,-30),null,'the stand gate leaves its central approach open');
+  assert.ok(sourceStructureCollisionAt(first,-24,-30-SOURCE_APPROACH_CELLS),'the west stand gate has a real footprint');
+  assert.equal(sourceStructureCollisionAt(first,0,-30-SOURCE_APPROACH_CELLS),null,'the stand gate leaves its central approach open');
 }
 
 {
   const runtime=createSourceSpaceRuntime({initialState:fullyOpenLandscapeState()});
   const expected=sourceLandscapePlanOrigin({x:0,y:-252});
   const near=runtime.geometry.renderPlanFor(0,-252);
-  const far=runtime.geometry.renderPlanFor(120,-540);
+  const far=runtime.geometry.renderPlanFor(120,FIELD_ORIGIN.y+(SOURCE_TIER_BY_ID.return.from+SOURCE_TIER_BY_ID.return.to)/2);
   assert.equal(near,far,'ordinary landscape movement never rebuilds or recentres the raster plan');
   assert.deepEqual({x:near.originX,y:near.originY},expected);
   assert.ok(near.originX<=-180&&near.originX+near.w>=180,'the anchored plan covers the complete landscape width');
-  assert.ok(near.originY<=-592&&near.originY+near.h>=-248,'the anchored plan covers the complete landscape depth');
+  assert.ok(near.originY<=FIELD_ORIGIN.y-FIELD_DEPTH&&near.originY+near.h>=FIELD_ORIGIN.y+18,'the anchored plan covers the complete landscape depth');
 
-  const before=runtime.sourceScene({px:127,py:-380,time:0});
-  const after=runtime.sourceScene({px:129,py:-380,time:0});
+  const batchY=FIELD_ORIGIN.y+SOURCE_TIER_BY_ID.trace.from-20;
+  const before=runtime.sourceScene({px:127,py:batchY,time:0});
+  const after=runtime.sourceScene({px:129,py:batchY,time:0});
   assert.equal(SOURCE_ARCH_TILE_CELLS,128);
   assert.ok(before.staticBatches.length>1&&after.staticBatches.length>1,'text architecture is delivered in bounded world batches');
   assert.ok(before.staticInstances.length<=SOURCE_ARCH_MAX_INSTANCES&&after.staticInstances.length<=SOURCE_ARCH_MAX_INSTANCES);
@@ -226,7 +258,7 @@ assert.ok(new Set([0,-80,-180,-300].map((y)=>sourceTierAt(y).id)).size===4,
   const beforeKeys=new Set(before.staticBatches.map((batch)=>batch.key));
   const afterKeys=new Set(after.staticBatches.map((batch)=>batch.key));
   const changed=[...before.staticBatches.filter((batch)=>!afterKeys.has(batch.key)),...after.staticBatches.filter((batch)=>!beforeKeys.has(batch.key))];
-  const playerMetres={x:129*CELL,z:-380*CELL};
+  const playerMetres={x:129*CELL,z:batchY*CELL};
   for(const batch of changed){
     const bx=Math.max(batch.bounds.minX,Math.min(playerMetres.x,batch.bounds.maxX));
     const bz=Math.max(batch.bounds.minZ,Math.min(playerMetres.z,batch.bounds.maxZ));
@@ -269,7 +301,7 @@ assert.ok(new Set([0,-80,-180,-300].map((y)=>sourceTierAt(y).id)).size===4,
   ])state=reduceChunkSurf(state,event);
   let completed=null;
   const runtime=createSourceSpaceRuntime({initialState:state,onComplete:(result,snapshot)=>{completed={result,snapshot};}});
-  const endpoint={x:80,y:-566,facing:0};
+  const endpoint={x:FINAL_PAGE.x,y:FINAL_PAGE.y-2,facing:0};
   runtime.setPlayerPosition(endpoint);
   assert.equal(runtime.finalEncounterRequest()?.adapter,null,'the terminal endpoint does not force signal combat');
   assert.equal(runtime.finalEncounterRequest()?.battleAvailable,false,'a no-contact route exposes no battle fault');

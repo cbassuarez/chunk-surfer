@@ -4,10 +4,10 @@
     "author": "Chunk Surfer project",
     "source": "tools/chunk_surfer/build-props.mjs",
     "license": "project source (mixed: see meshes)",
-    "sha256": "a6d8e3e86831115d894000acf2597b533c7548de19e0b145dfeb11a2c81e8424",
+    "sha256": "518e60e897134d0fcaa80d762fe22f3b35b3e167e5ddeb62ce4bc04c8ba79860",
     "modifications": "Metres, Y-up, ground-centred. Procedural fallback geometry plus user-supplied source meshes (unverified provenance) baked, re-axised, height-scaled, and vertex-cluster decimated under budget.",
-    "triangles": 363874,
-    "bytes": 26555264
+    "triangles": 345330,
+    "bytes": 25159260
   },
   "meshes": [
     {
@@ -5001,7 +5001,7 @@
           0.033
         ]
       },
-      "triangles": 2316,
+      "triangles": 446,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -5022,7 +5022,7 @@
           0.033
         ]
       },
-      "triangles": 2196,
+      "triangles": 426,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -5547,7 +5547,7 @@
           -0.083
         ]
       },
-      "triangles": 1848,
+      "triangles": 348,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -5568,7 +5568,7 @@
           -0.083
         ]
       },
-      "triangles": 3360,
+      "triangles": 600,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -5589,7 +5589,7 @@
           -0.083
         ]
       },
-      "triangles": 3228,
+      "triangles": 578,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -5610,7 +5610,7 @@
           -0.083
         ]
       },
-      "triangles": 3432,
+      "triangles": 612,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -5631,7 +5631,7 @@
           -0.083
         ]
       },
-      "triangles": 3204,
+      "triangles": 574,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -5652,7 +5652,7 @@
           -0.193
         ]
       },
-      "triangles": 3396,
+      "triangles": 596,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -6283,6 +6283,174 @@
         ]
       },
       "triangles": 10556,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "wind_leaf_blade_pale",
+      "bounds": {
+        "min": [
+          -0.113,
+          0,
+          -0.036
+        ],
+        "max": [
+          0.113,
+          0.007,
+          0.044
+        ]
+      },
+      "triangles": 32,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "wind_leaf_blade_dark",
+      "bounds": {
+        "min": [
+          -0.113,
+          0,
+          -0.036
+        ],
+        "max": [
+          0.113,
+          0.007,
+          0.044
+        ]
+      },
+      "triangles": 32,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "wind_leaf_lobed_pale",
+      "bounds": {
+        "min": [
+          -0.113,
+          0,
+          -0.056
+        ],
+        "max": [
+          0.113,
+          0.011,
+          0.066
+        ]
+      },
+      "triangles": 32,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "wind_leaf_lobed_dark",
+      "bounds": {
+        "min": [
+          -0.113,
+          0,
+          -0.056
+        ],
+        "max": [
+          0.113,
+          0.011,
+          0.066
+        ]
+      },
+      "triangles": 32,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "wind_leaf_curled_pale",
+      "bounds": {
+        "min": [
+          -0.113,
+          0,
+          -0.04
+        ],
+        "max": [
+          0.113,
+          0.042,
+          0.084
+        ]
+      },
+      "triangles": 32,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "wind_leaf_curled_dark",
+      "bounds": {
+        "min": [
+          -0.113,
+          0,
+          -0.04
+        ],
+        "max": [
+          0.113,
+          0.042,
+          0.084
+        ]
+      },
+      "triangles": 32,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "wind_leaf_skeleton_pale",
+      "bounds": {
+        "min": [
+          -0.113,
+          0,
+          -0.05
+        ],
+        "max": [
+          0.113,
+          0.02,
+          0.068
+        ]
+      },
+      "triangles": 32,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "wind_leaf_skeleton_dark",
+      "bounds": {
+        "min": [
+          -0.113,
+          0,
+          -0.05
+        ],
+        "max": [
+          0.113,
+          0.02,
+          0.068
+        ]
+      },
+      "triangles": 32,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",

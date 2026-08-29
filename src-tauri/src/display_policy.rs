@@ -142,6 +142,7 @@ pub fn enforce_window_floor(app: &AppHandle) {
 
 pub fn reset_main_window(app: &AppHandle) -> Result<(), String> {
     let window = main_window(app)?;
+    let _ = window.set_simple_fullscreen(false);
     let _ = window.set_fullscreen(false);
     let (width, height) = effective_default_size(&window);
     let (min_w, min_h) = effective_min_size(&window);
@@ -158,11 +159,34 @@ pub fn reset_main_window(app: &AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+// SIMPLE FULLSCREEN, NOT NATIVE FULLSCREEN.
+//
+// macOS native fullscreen moves the window into its own Space, and nothing can
+// be composited over a Space -- not an always-on-top window, not a click-through
+// one, nothing. Game mode was therefore the one display mode in which the
+// fireball surfaces could not exist, which is why choreography quietly demoted
+// itself to "in frame only" there and looked, from the outside, exactly like a
+// broken feature.
+//
+// Simple fullscreen is how fullscreen worked before Lion: the whole screen, the
+// current Space, overlays intact. Other platforms fall back to set_fullscreen,
+// where an always-on-top window is not excluded in the first place.
 pub fn set_game_mode(app: &AppHandle, enabled: bool) -> Result<(), String> {
     let window = main_window(app)?;
-    window
-        .set_fullscreen(enabled)
-        .map_err(|err| err.to_string())
+    if enabled {
+        // set_simple_fullscreen refuses outright while native fullscreen is
+        // active, so leaving it is part of entering game mode -- including for
+        // anyone already parked in a Space from a previous build.
+        let _ = window.set_fullscreen(false);
+        window
+            .set_simple_fullscreen(true)
+            .map_err(|err| err.to_string())
+    } else {
+        let _ = window.set_simple_fullscreen(false);
+        window
+            .set_fullscreen(false)
+            .map_err(|err| err.to_string())
+    }
 }
 
 #[tauri::command]
@@ -185,6 +209,7 @@ pub fn chunk_set_window_size(app: AppHandle, request: WindowSizeRequest) -> Resu
     let (width, height) = clamp_window_size(&window, request.width, request.height);
     let (min_w, min_h) = effective_min_size(&window);
 
+    let _ = window.set_simple_fullscreen(false);
     let _ = window.set_fullscreen(false);
     let _ = window.set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize {
         width: min_w,

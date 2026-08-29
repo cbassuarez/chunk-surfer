@@ -185,6 +185,13 @@ test('choosing does not outrun the balance the profiles were tuned at', () => {
   // worth making is about the fight, not about one run of one preset.
   for (const [profile, definition] of Object.entries(PROFILES)) {
     if (definition.pinnedCycle) continue;
+    // The practice wing has no opponent choosing anything — its intents are the
+    // recordist's own repetitions, and there is no mood to govern. It is also
+    // the one fight where bracing does not apply (you cannot guard against your
+    // own hands), so it ends fast under this harness and the sample goes noisy
+    // for exactly the reason the note above describes. The property this guards
+    // does not exist in that room.
+    if (definition.practice) continue;
     const damageOf = (id) => {
       for (const movement of definition.movements) {
         const intent = movement.intents.find((entry) => entry.id === id);

@@ -107,3 +107,48 @@ assert.deepEqual(
 );
 
 console.log('psychological profile contract tests passed');
+
+// ── WINDOW CHOREOGRAPHY IS OPT-OUT, AND HOSTILE IS THE ONLY INTENSITY ───────
+//
+// Every other module here reads something real about the person at the desk and
+// is off until asked for. Choreography reads nothing — it is the game drawing
+// its own fireball outside its own frame — so it is on unless somebody turns it
+// off. And it used to sit beside a WINDOW INTENSITY row that read HOSTILE on a
+// save which had consented to nothing, which made "HOSTILE" look like proof the
+// feature was running when it was not. There is one switch now.
+{
+  const fresh = normalizePsychProfileSettings(undefined);
+  assert.equal(fresh.modules.windowChoreography, true, 'a brand new save has choreography on');
+  assert.deepEqual(
+    PSYCH_PROFILE_MODULE_KEYS.filter((key) => fresh.modules[key]),
+    ['windowChoreography'],
+    'and it is the only module on by default — nothing that reads the machine is',
+  );
+
+  const declined = normalizePsychProfileSettings({
+    schema: 1, consentVersion: PSYCH_PROFILE_CONSENT_VERSION,
+    modules: { windowChoreography: false },
+  });
+  assert.equal(declined.modules.windowChoreography, false, 'one explicit toggle opts out');
+
+  const predatesTheModule = normalizePsychProfileSettings({
+    schema: 1, consentVersion: PSYCH_PROFILE_CONSENT_VERSION, modules: { steamName: true },
+  });
+  assert.equal(predatesTheModule.modules.windowChoreography, true,
+    'a save that never mentioned it was never asked, which is not a refusal');
+
+  const legacyOff = normalizePsychProfileSettings(undefined, { personalInterference: { enabled: false } });
+  assert.equal(legacyOff.modules.windowChoreography, false, 'a legacy block that says no still says no');
+
+  for (const stated of ['low', 'standard', 'hostile', 'nonsense', undefined]) {
+    assert.equal(
+      normalizePsychProfileSettings({ schema: 1, consentVersion: PSYCH_PROFILE_CONSENT_VERSION, windowIntensity: stated }).windowIntensity,
+      'hostile',
+      `windowIntensity ${String(stated)} reads back as hostile — the dial no longer exists`,
+    );
+  }
+  assert.equal(psychProfileChoice(false).windowIntensity, 'hostile',
+    'opting out turns the module off; it does not soften the intensity');
+}
+
+console.log('window choreography opt-out contract tests passed');

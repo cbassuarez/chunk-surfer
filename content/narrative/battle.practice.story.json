@@ -193,7 +193,7 @@
         },
         {
           "who": "direction",
-          "text": "The phrase stops at the same bar it stopped at before, and goes back, and takes it again.",
+          "text": "It stops at the same bar. You wind it back and start it again before you have decided to.",
           "id": "round-2.line.6",
           "channel": "after"
         }
@@ -270,7 +270,7 @@
         },
         {
           "who": "you",
-          "text": "And she is still not in this building. Both of those are true and this room only wants the one.",
+          "text": "And she is still not in this building. Both of those are true and I am only working on one of them.",
           "id": "round-3.line.7",
           "channel": "after"
         }
@@ -306,20 +306,51 @@
       "lines": [
         {
           "who": "you",
-          "text": "You are not her. What I did to her stands. You only get one of those, and it is not the one you came in here for.",
+          "text": "You are not her. You are nine minutes of her playing, with me talking over the end of it.",
           "id": "win.line.1"
         },
         {
           "who": "direction",
-          "text": "The phrase does not resolve. It stops at the bar it always stopped at, and this time nothing takes it again. You have a clean minute of eight empty rooms.",
+          "text": "The phrase does not resolve. It never did. This time you do not wind it back, and you have a clean minute of eight empty rooms.",
           "id": "win.line.2.held",
           "when": "battle.occasion == recording-2"
         },
         {
           "who": "direction",
-          "text": "The phrase does not resolve. It stops at the bar it always stopped at, and nothing takes it again, and no machine in the building can tell you it happened.",
+          "text": "The phrase does not resolve. It never did. This time you do not wind it back, and no machine in the building can tell you it happened.",
           "id": "win.line.2.ambush",
           "when": "battle.occasion == pre-recording-4"
+        },
+        {
+          "id": "win.line.3",
+          "who": "direction",
+          "text": "You take your hand off the transport. Nothing is open, nothing is cued, and the wing is eight rooms of nobody practising."
+        },
+        {
+          "id": "win.line.4.named",
+          "who": "me",
+          "when": "battle.naming == yes",
+          "prompt": "(say it)",
+          "text": "Sarah."
+        },
+        {
+          "id": "win.line.4.unnamed",
+          "who": "me",
+          "when": "battle.naming == no",
+          "prompt": "(say it)",
+          "text": "I never asked her what she wanted to be called. I asked her three hundred times and never once about that."
+        },
+        {
+          "id": "win.line.5.named",
+          "who": "direction",
+          "when": "battle.naming == yes",
+          "text": "Out loud, in a corridor of open doors, to nobody. You have said her name into a microphone a thousand times and never once like that."
+        },
+        {
+          "id": "win.line.5.unnamed",
+          "who": "direction",
+          "when": "battle.naming == no",
+          "text": "Out loud, in a corridor of open doors, to nobody. It is the first true thing you have said in this wing."
         }
       ],
       "id": "win"

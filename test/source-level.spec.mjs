@@ -2,12 +2,12 @@ import assert from 'node:assert/strict';
 
 import {
   SOURCE_CHUTES, SOURCE_FIELD_TIERS, SOURCE_HORIZON, SOURCE_LADDERS, SOURCE_LIFTS,
-  SOURCE_TIERS, SOURCE_LANDMARK_TIER,
+  SOURCE_TIERS, SOURCE_LANDMARK_TIER, SOURCE_TIER_BY_ID,
   sourceFeatureAt, sourceHorizonDepth, sourceHorizonSeconds, sourceHorizonSlice,
   sourceTierAt, sourceTierHeightAt, sourceTraversal,
 } from '../src/data/source-level.js';
 import { HORIZON_EXIT } from '../src/game/chunk-surf-state.js';
-import { sourceLandscapeFloorAt } from '../src/game/source-space-runtime.js';
+import { SOURCE_LANDMARK_OFFSETS, sourceLandscapeFloorAt } from '../src/game/source-space-runtime.js';
 
 // AN AUTHORED LEVEL THAT CANNOT BE FINISHED IS THE ONLY FATAL BUG HERE, and it
 // is machine-checkable. Everything below is either "the grammar behaves" or
@@ -33,16 +33,26 @@ import { sourceLandscapeFloorAt } from '../src/game/source-space-runtime.js';
     ['horizon', 'bells'],
     'only the horizon and the bell passage stand outside the field',
   );
-  assert.equal(sourceTierAt(0).id, 'arrival');
-  assert.equal(sourceTierAt(-100).id, 'fork');
-  assert.equal(sourceTierAt(-300).id, 'return');
-  assert.equal(sourceTierAt(-500).id, 'horizon');
-  assert.equal(sourceTierAt(-1000).id, 'bells');
-  assert.equal(sourceTierHeightAt(-1000), sourceTierHeightAt(-500), 'the bells are not a climb off the tape');
-  assert.ok(sourceTierHeightAt(-300) > sourceTierHeightAt(0), 'the field does not rise into the page');
+  // Probe each tier at its own midpoint rather than at hard-coded depths. The
+  // approach extension (SOURCE_APPROACH_CELLS) moved every boundary below the
+  // arrival by 120 cells, and literals here silently pointed at the wrong tier.
+  for (const tier of SOURCE_TIERS) {
+    const middle = (tier.from + tier.to) / 2;
+    assert.equal(sourceTierAt(middle).id, tier.id, `${tier.id} does not own its own middle`);
+  }
+  assert.equal(sourceTierAt(0).id, 'arrival', 'the field still begins on the arrival');
+  const horizon = SOURCE_TIERS.find((tier) => tier.id === 'horizon');
+  const bells = SOURCE_TIERS.find((tier) => tier.id === 'bells');
+  assert.equal(sourceTierHeightAt((bells.from + bells.to) / 2), sourceTierHeightAt((horizon.from + horizon.to) / 2),
+    'the bells are not a climb off the tape');
+  const deepest = SOURCE_TIERS.filter((tier) => tier.field).at(-1);
+  assert.ok(sourceTierHeightAt((deepest.from + deepest.to) / 2) > sourceTierHeightAt(0),
+    'the field does not rise into the page');
   // Stepping over the perimeter must not be a drop, or arriving on the tape
   // reads as falling out of the level rather than walking out of it.
-  assert.equal(sourceTierHeightAt(-500), sourceTierHeightAt(-300), 'the seam is a step, not a cliff');
+  // Sampled either side of the perimeter itself rather than at fixed depths.
+  assert.equal(sourceTierHeightAt(horizon.from - 1), sourceTierHeightAt(horizon.from + 1),
+    'the seam is a step, not a cliff');
 }
 
 {
@@ -103,11 +113,46 @@ import { sourceLandscapeFloorAt } from '../src/game/source-space-runtime.js';
     }
   }
 
-  const c = SOURCE_CHUTES[0];
-  const down = sourceTraversal(c.x, c.y, c.x, c.y + 4, 4.2, 0);
-  const up = sourceTraversal(c.x, c.y + 4, c.x, c.y, 0, 4.2);
-  assert.ok(down.ok && down.via === 'chute', 'a chute cannot be ridden down');
-  assert.equal(up.ok, false, 'a chute can be climbed back up, so it is a ramp');
+  // NO LIFTS, AND EVERY CONNECTOR IS A STAIRCASE.
+  //
+  // The field used to be climbed by five vertical lift volumes that rendered as
+  // flat plates at floor level — so the way up read as floor while the one-way
+  // chute beside it was the only object that looked like a route. Lifts are
+  // gone; every chute is `ascendable` and is walked in both directions.
+  assert.equal(SOURCE_LIFTS.length, 0, 'the field has no lifts');
+  assert.ok(SOURCE_CHUTES.length > 0 && SOURCE_CHUTES.every((chute) => chute.ascendable),
+    'every connector left in the field is a staircase');
+
+  // Nothing is ever ridden now, in either direction, on any of them.
+  for (const stair of SOURCE_CHUTES) {
+    const top = SOURCE_TIER_BY_ID[stair.from].height;
+    const bottom = SOURCE_TIER_BY_ID[stair.to].height;
+    assert.equal(sourceTraversal(stair.x, stair.y, stair.x, stair.y + 4, top, bottom).ok, false,
+      `${stair.id} is walked, not ridden, downhill`);
+    assert.equal(sourceTraversal(stair.x, stair.y + 4, stair.x, stair.y, bottom, top).ok, false,
+      `${stair.id} is walked, not ridden, uphill`);
+
+    // And the rise stays inside the ordinary step limit for its whole run,
+    // which is the entire reason it is walkable at all.
+    let previous = null;
+    for (let step = 0; step <= stair.run; step += 1) {
+      const ly = stair.y + step;
+      const floor = sourceLandscapeFloorAt(stair.x, ly);
+      if (previous !== null) {
+        assert.ok(Math.abs(floor - previous) <= 0.45,
+          `${stair.id} rises ${Math.abs(floor - previous).toFixed(2)}m at ${ly} — past the step limit it is unclimbable`);
+      }
+      previous = floor;
+    }
+  }
+
+  // THE SPINE IS WALKABLE END TO END. The lifts held the centre line; if the
+  // stairs had stayed off to one side, walking straight down the middle would
+  // meet a four-metre cliff with no way over it.
+  for (let y = -10; y >= -330; y -= 1) {
+    const rise = Math.abs(sourceLandscapeFloorAt(0, y) - sourceLandscapeFloorAt(0, y - 1));
+    assert.ok(rise <= 0.45, `the spine has an uncrossable cliff at ${y}: ${rise.toFixed(2)}m`);
+  }
 
   // And neither leaks into open field.
   assert.equal(sourceTraversal(-150, -100, -150, -101, 0, 8).ok, false,
@@ -119,13 +164,20 @@ import { sourceLandscapeFloorAt } from '../src/game/source-space-runtime.js';
 //
 // A flood fill over the landscape using ONLY legal steps, the same shape of
 // route proof test/tower-on-foot-route.spec.mjs runs for the conservatory.
+// Two cells inside the field's own perimeter (the return tier's far edge).
+const FIELD_FLOOR = SOURCE_TIERS.filter((tier) => tier.field).at(-1).to + 2;
+
 function reachable(start) {
   const STEP = 1;
   const key = (x, y) => `${Math.round(x)},${Math.round(y)}`;
   const seen = new Set([key(start.x, start.y)]);
   const queue = [{ x: start.x, y: start.y }];
   const legal = (ax, ay, bx, by) => {
-    if (Math.abs(bx) > 170 || by > 14 || by < -338) return false;
+    // The flood's own bounds, derived from the field rather than typed. -338 was
+    // the old perimeter; after the approach extension it stopped the search a
+    // hundred and twenty cells short of the deepest landmarks and reported them
+    // unreachable when they are not.
+    if (Math.abs(bx) > 170 || by > 14 || by < FIELD_FLOOR) return false;
     const a = sourceLandscapeFloorAt(ax, ay), b = sourceLandscapeFloorAt(bx, by);
     if (Math.abs(b - a) <= 0.45) return true;
     const via = sourceTraversal(ax, ay, bx, by, a, b);
@@ -153,14 +205,10 @@ function reachable(start) {
 {
   const from = { x: 0, y: 0 };
   const can = reachable(from);
-  const LANDMARKS = {
-    'fork-room': { x: 0, y: -42 },
-    'surfer-origin': { x: -92, y: -104 },
-    'work-order-loop': { x: 92, y: -104 },
-    'recordist-loop': { x: 0, y: -142 },
-    'body-room': { x: 0, y: -232 },
-    'final-page': { x: 80, y: -312 },
-  };
+  // The real table, not a copy of it. This used to be hand-duplicated here and
+  // went stale the moment the field was retuned — it kept asserting that
+  // landmarks stood on tiers they had been moved off.
+  const LANDMARKS = SOURCE_LANDMARK_OFFSETS;
   for (const [id, point] of Object.entries(LANDMARKS)) {
     assert.ok(can(point), `${id} is unreachable from the arrival point — the level cannot be finished`);
   }

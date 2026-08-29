@@ -1,4 +1,5 @@
 import SOURCE_ATLAS from '../../content/chunk-surf/source-atlas.json' with { type: 'json' };
+import { MOVE_MS } from '../config.js';
 import { CELL, EYE, F, MATERIAL, ZONE } from '../data/floorplan/legend.js';
 import { SCENE_DOCK_LABEL } from '../data/space-labels.js';
 import { encodeH } from '../world/floorplan.js';
@@ -44,7 +45,7 @@ import {
   sourceStandingPressure,
 } from './source-haystack.js';
 import {
-  SOURCE_CHUTES, SOURCE_HORIZON, SOURCE_LIFTS, SOURCE_TIER_BY_ID,
+  SOURCE_APPROACH_CELLS, SOURCE_CHUTES, SOURCE_HORIZON, SOURCE_LIFTS, SOURCE_TIER_BY_ID,
   sourceChuteById, sourceFeatureAt, sourceHorizonDepth, sourceHorizonSeconds,
   sourceHorizonSlice, sourceLiftById, sourceTierAt,
   sourceTierHeightAt, sourceTraversal,
@@ -62,6 +63,9 @@ import {
   SOURCE_LANDING_OPENING_LOCAL,
   SOURCE_LANDING_PORTAL_DOOR_ID,
   SOURCE_LANDING_PORTAL_LOCAL,
+  SOURCE_LANDING_REAR_APERTURE,
+  SOURCE_LANDING_REAR_LOCAL,
+  SOURCE_THRESHOLD_LIGHT_ID,
   sourceEmergencyFrame,
   sourceLandingCellAt,
   sourceLandingContract,
@@ -81,7 +85,11 @@ import {
   horizonBustAudience,
 } from './horizon-bust.js';
 
-export const SOURCE_PLAN_WINDOW = 384;
+// The anchored plan contains the complete 620-cell-deep Source field plus the
+// 720-cell-wide white sea. One retained upload is still cheaper than rebuilding
+// it while the FOH leaf moves; the leaf itself remains a tiny plan patch.
+export const SOURCE_PLAN_WINDOW = 768;
+
 export const SOURCE_PLAN_SNAP = 16;
 export const SOURCE_ARCH_TILE_CELLS = 128;
 export const SOURCE_ARCH_TILE_RADIUS = 2;
@@ -95,17 +103,44 @@ const HALL_HALF_WIDTH = 6; // runtime cells = three metres from centre to wall
 const HALL_CEIL = 4.5;
 export const SOURCE_HALL_END_Y = -(SOURCE_HALL_END_METRES / CELL);
 const LANDSCAPE_W = 360; // 180 metres
-const LANDSCAPE_H = 340; // 170 metres
+const SOURCE_VOID_HALF_WIDTH = 360; // cells: a 360m-wide sea for a 140m walk
+const SOURCE_VOID_W = SOURCE_VOID_HALF_WIDTH * 2;
+// The original field is 340 cells deep. The white approach moves all of Source
+// proper out intact rather than compressing any later beat.
+const LANDSCAPE_H = 340 + SOURCE_APPROACH_CELLS;
 const LANDSCAPE_FRONT = 18; // room behind the field origin, including the grey-door wall
-
-const LANDMARK_OFFSETS = Object.freeze({
-  'fork-room': { x: 0, y: -42, sector: 'fork' },
-  'surfer-origin': { x: -92, y: -104, sector: 'student' },
-  'work-order-loop': { x: 92, y: -104, sector: 'workOrder' },
-  'recordist-loop': { x: 0, y: -142, sector: 'recordist' },
-  'body-room': { x: 0, y: -232, sector: 'body' },
-  'final-page': { x: 80, y: -312, sector: 'final' },
+export const SOURCE_APPROACH_TARGET_SECONDS = 30;
+export const SOURCE_APPROACH_RED_ONSET_SECONDS = 10;
+const SOURCE_FIRST_STAIR = SOURCE_CHUTES.find((chute) => chute.id === 'chute-fork');
+if (!SOURCE_FIRST_STAIR) throw new Error('Source approach requires chute-fork');
+const SOURCE_APPROACH_STAIR_FOOT_Y = SOURCE_FIRST_STAIR.y + SOURCE_FIRST_STAIR.run;
+export const SOURCE_APPROACH_TRAVEL_CELLS = Math.abs(
+  SOURCE_LANDING_PORTAL_LOCAL.y - SOURCE_APPROACH_STAIR_FOOT_Y,
+);
+export const SOURCE_APPROACH_PACE = SOURCE_APPROACH_TARGET_SECONDS * 1000
+  / Math.max(1, SOURCE_APPROACH_TRAVEL_CELLS * MOVE_MS);
+const SOURCE_APPROACH_DESTINATION = Object.freeze({
+  x: SOURCE_FIRST_STAIR.x,
+  y: SOURCE_APPROACH_STAIR_FOOT_Y + 2,
+  facing: 0,
 });
+
+// Shifted out by SOURCE_APPROACH_CELLS with the tiers they stand on, so each
+// landmark keeps its position WITHIN its tier and the pacing past the approach
+// is exactly what it was.
+//
+// Exported because the specs were keeping a hand-copied duplicate of this table,
+// which is precisely the thing that goes quietly wrong when the field is
+// retuned: the copy kept pointing at the old tiers and asserted nothing.
+export const SOURCE_LANDMARK_OFFSETS = Object.freeze({
+  'fork-room': { x: 0, y: -42 - SOURCE_APPROACH_CELLS, sector: 'fork' },
+  'surfer-origin': { x: -92, y: -104 - SOURCE_APPROACH_CELLS, sector: 'student' },
+  'work-order-loop': { x: 92, y: -104 - SOURCE_APPROACH_CELLS, sector: 'workOrder' },
+  'recordist-loop': { x: 0, y: -142 - SOURCE_APPROACH_CELLS, sector: 'recordist' },
+  'body-room': { x: 0, y: -232 - SOURCE_APPROACH_CELLS, sector: 'body' },
+  'final-page': { x: 80, y: -312 - SOURCE_APPROACH_CELLS, sector: 'final' },
+});
+const LANDMARK_OFFSETS = SOURCE_LANDMARK_OFFSETS;
 
 const REDACTIONS = Object.freeze([
   { id: 'comfort', sourceAnchor: 'source-not-body', dx: -10 },
@@ -113,10 +148,10 @@ const REDACTIONS = Object.freeze([
   { id: 'source', sourceAnchor: 'source-you', dx: 10 },
 ]);
 const ROUTE_SEGMENTS = Object.freeze([
-  { id: 'critical-spine', kind: 'critical', halfWidth: 6, points: [{ x: 0, y: 4 }, { x: 0, y: -42 }, { x: 0, y: -142 }, { x: 0, y: -232 }] },
-  { id: 'surfer-loop', kind: 'optional', halfWidth: 4.5, points: [{ x: 0, y: -42 }, { x: -44, y: -70 }, { x: -92, y: -104 }, { x: -54, y: -132 }, { x: 0, y: -142 }] },
-  { id: 'work-order-loop', kind: 'optional', halfWidth: 4.5, points: [{ x: 0, y: -42 }, { x: 44, y: -70 }, { x: 92, y: -104 }, { x: 54, y: -132 }, { x: 0, y: -142 }] },
-  { id: 'final-causeway', kind: 'critical', halfWidth: 6, points: [{ x: 0, y: -232 }, { x: 24, y: -260 }, { x: 48, y: -282 }, { x: 80, y: -312 }] },
+  { id: 'critical-spine', kind: 'critical', halfWidth: 6, points: [{ x: 0, y: 4 }, { x: 0, y: -42 - SOURCE_APPROACH_CELLS }, { x: 0, y: -142 - SOURCE_APPROACH_CELLS }, { x: 0, y: -232 - SOURCE_APPROACH_CELLS }] },
+  { id: 'surfer-loop', kind: 'optional', halfWidth: 4.5, points: [{ x: 0, y: -42 - SOURCE_APPROACH_CELLS }, { x: -44, y: -70 - SOURCE_APPROACH_CELLS }, { x: -92, y: -104 - SOURCE_APPROACH_CELLS }, { x: -54, y: -132 - SOURCE_APPROACH_CELLS }, { x: 0, y: -142 - SOURCE_APPROACH_CELLS }] },
+  { id: 'work-order-loop', kind: 'optional', halfWidth: 4.5, points: [{ x: 0, y: -42 - SOURCE_APPROACH_CELLS }, { x: 44, y: -70 - SOURCE_APPROACH_CELLS }, { x: 92, y: -104 - SOURCE_APPROACH_CELLS }, { x: 54, y: -132 - SOURCE_APPROACH_CELLS }, { x: 0, y: -142 - SOURCE_APPROACH_CELLS }] },
+  { id: 'final-causeway', kind: 'critical', halfWidth: 6, points: [{ x: 0, y: -232 - SOURCE_APPROACH_CELLS }, { x: 24, y: -260 - SOURCE_APPROACH_CELLS }, { x: 48, y: -282 - SOURCE_APPROACH_CELLS }, { x: 80, y: -312 - SOURCE_APPROACH_CELLS }] },
 ]);
 const LANDMARK_PAD_RADIUS = 10;
 const SOURCE_LAYER_BY_SECTOR=Object.freeze({hall:1,fork:2,recordist:3,student:4,workOrder:5,body:6,final:7,hush:8});
@@ -275,7 +310,7 @@ const SEEDED_STRUCTURE_KINDS = Object.freeze([
 
 const heroStructurePlacements = () => [
   {
-    id: 'source-hero-stand-gate', kind: 'music-stand-gate', hero: true, x: 0, y: -30, yaw: 0,
+    id: 'source-hero-stand-gate', kind: 'music-stand-gate', hero: true, x: 0, y: -30 - SOURCE_APPROACH_CELLS, yaw: 0,
     components: [
       { mesh: 'music_stand', dx: -24, dz: 0, scale: 9, yaw: 0.12, roll: -0.045, sink: 0.18 },
       { mesh: 'music_stand', dx: 24, dz: 0, scale: 9.4, yaw: -0.12, roll: 0.045, sink: 0.22 },
@@ -286,7 +321,7 @@ const heroStructurePlacements = () => [
     ],
   },
   {
-    id: 'source-hero-string-fall', kind: 'string-fall', hero: true, x: -128, y: -104, yaw: -0.18,
+    id: 'source-hero-string-fall', kind: 'string-fall', hero: true, x: -128, y: -104 - SOURCE_APPROACH_CELLS, yaw: -0.18,
     components: [
       { mesh: 'cello', dx: -3, dz: 0, scale: 7.2, yaw: -0.28, roll: -0.16, sink: 0.55 },
       { mesh: 'violin', dx: 6, dz: 2, scale: 15, yaw: 0.55, pitch: -Math.PI / 2, roll: 0.22, sink: 0.32 },
@@ -295,7 +330,7 @@ const heroStructurePlacements = () => [
     colliders: [{ dx: 0, dz: -1, halfX: 10, halfY: 10, yaw: -0.18 }],
   },
   {
-    id: 'source-hero-piano-rise', kind: 'piano-rise', hero: true, x: 128, y: -112, yaw: 0.14,
+    id: 'source-hero-piano-rise', kind: 'piano-rise', hero: true, x: 128, y: -112 - SOURCE_APPROACH_CELLS, yaw: 0.14,
     components: [
       { mesh: 'grand_piano', dx: -5, dz: 1, scale: 6.8, yaw: 0.38, roll: -0.055, sink: 1.15 },
       { mesh: 'upright_piano', dx: 12, dz: -6, scale: 7.6, yaw: -0.48, roll: 0.035, sink: 0.58 },
@@ -306,7 +341,7 @@ const heroStructurePlacements = () => [
     ],
   },
   {
-    id: 'source-hero-percussion-shelf', kind: 'percussion-shelf', hero: true, x: 44, y: -184, yaw: -0.08,
+    id: 'source-hero-percussion-shelf', kind: 'percussion-shelf', hero: true, x: 44, y: -184 - SOURCE_APPROACH_CELLS, yaw: -0.08,
     components: [
       { mesh: 'marimba', dx: 0, dz: 0, scale: 8, yaw: Math.PI / 2 - 0.08, roll: -0.025, sink: 0.7 },
       { mesh: 'timpani', dx: 4, dz: -13, scale: 10, yaw: 0.24, sink: 0.9 },
@@ -321,7 +356,7 @@ const heroStructurePlacements = () => [
     ],
   },
   {
-    id: 'source-hero-bust-tribunal', kind: 'bust-tribunal', hero: true, x: -52, y: -250, yaw: 0.12,
+    id: 'source-hero-bust-tribunal', kind: 'bust-tribunal', hero: true, x: -52, y: -250 - SOURCE_APPROACH_CELLS, yaw: 0.12,
     components: [
       { mesh: 'academic_bust_plinth', dx: -8, dz: 0, scale: 12, yaw: 0.06, sink: 0.25 },
       { mesh: 'marble_bust_01', dx: -8, dz: 0, scale: 24, yaw: Math.PI + 0.06, elevation: 13.25 },
@@ -372,7 +407,10 @@ function placementRadius(placement) {
 function placementClearsAuthoredSpace(placement, accepted = []) {
   const radius = placementRadius(placement);
   if (Math.abs(placement.x) + radius > LANDSCAPE_W / 2 - SOURCE_STRUCTURE_EDGE_MARGIN) return false;
-  if (placement.y + radius > -12 || placement.y - radius < -LANDSCAPE_H + SOURCE_STRUCTURE_EDGE_MARGIN) return false;
+  // No seeded giant is allowed to puncture the white approach. Source proper
+  // begins at the fork tier and retains all of its existing architecture.
+  if (placement.y + radius > SOURCE_TIER_BY_ID.fork.from - 12
+      || placement.y - radius < -LANDSCAPE_H + SOURCE_STRUCTURE_EDGE_MARGIN) return false;
   for (const route of ROUTE_SEGMENTS) {
     if (routeDistance(placement, route) <= route.halfWidth + SOURCE_STRUCTURE_ROUTE_BUFFER + radius) return false;
   }
@@ -387,7 +425,7 @@ function seededStructure(kind, seed, index, x, y) {
   const unit = rand(seed, index, 811);
   const yaw = rand(seed, index, 823) * Math.PI * 2;
   const depth = -y;
-  const emergence = smoothstep(28, LANDSCAPE_H - 36, depth);
+  const emergence = smoothstep(Math.abs(SOURCE_TIER_BY_ID.fork.from) + 20, LANDSCAPE_H - 36, depth);
   const sink = (1.65 - emergence * 1.25) * (0.5 + rand(seed, index, 827) * 0.7);
   const make = (components, colliders) => ({
     id: `source-seeded-giant-${index}`, kind, hero: false, seeded: true, x, y, yaw, components, colliders,
@@ -450,7 +488,8 @@ export function sourceStructurePlacements(seed = 4417) {
   let fractured = 0;
   for (let candidate = 0; candidate < 800 && accepted.length < SOURCE_SEEDED_STRUCTURE_COUNT; candidate += 1) {
     const x = (rand(seed, candidate, 733) - 0.5) * (LANDSCAPE_W - SOURCE_STRUCTURE_EDGE_MARGIN * 2);
-    const y = -(24 + rand(seed, candidate, 751) * (LANDSCAPE_H - 48));
+    const minDepth = Math.abs(SOURCE_TIER_BY_ID.fork.from) + 24;
+    const y = -(minDepth + rand(seed, candidate, 751) * Math.max(1, LANDSCAPE_H - minDepth - 24));
     let kind = SEEDED_STRUCTURE_KINDS[Math.floor(rand(seed, candidate, 769) * SEEDED_STRUCTURE_KINDS.length)];
     if (kind === 'fractured-bust' && fractured >= 2) kind = 'bust';
     const placement = seededStructure(kind, seed, candidate, x, y);
@@ -465,9 +504,39 @@ export function sourceStructurePlacements(seed = 4417) {
   return [...heroes, ...accepted];
 }
 
+// A ROUND REJECT BEFORE ANY ORIENTED-BOX MATHS.
+//
+// renderPlanFor walks 384x384 = 147,456 cells and asks this for most of them.
+// Nineteen placements carrying twenty-four colliders meant up to 3.5 million
+// rotate-and-compare tests per plan rebuild — and the plan rebuilds twice while
+// the FOH leaf swings (closed -> opening -> open), which is what dropped the
+// frame to nothing for the length of the animation.
+//
+// placementRadius already exists and bounds every collider on a placement, so a
+// squared-distance test throws out all but the one or two placements a cell
+// could possibly be inside. The exact test is unchanged; it just runs almost
+// never instead of always.
+const structureRadiusCache = new WeakMap();
+function cachedPlacementRadius(placement) {
+  let radius = structureRadiusCache.get(placement);
+  if (radius === undefined) {
+    radius = placementRadius(placement);
+    structureRadiusCache.set(placement, radius);
+  }
+  return radius;
+}
+
 export function sourceStructureCollisionAt(placements, localX, localY) {
-  return (placements || []).find((placement) => (placement.colliders || [])
-    .some((collider) => pointInStructureCollider(localX, localY, placement, collider))) || null;
+  const list = placements || [];
+  for (const placement of list) {
+    const radius = cachedPlacementRadius(placement);
+    const dx = localX - placement.x, dy = localY - placement.y;
+    if (dx * dx + dy * dy > radius * radius) continue;
+    for (const collider of placement.colliders || []) {
+      if (pointInStructureCollider(localX, localY, placement, collider)) return placement;
+    }
+  }
+  return null;
 }
 
 export function sourceStructureRouteClearance(placement) {
@@ -482,10 +551,10 @@ export function sourceStructureRouteClearance(placement) {
 }
 
 export function sourceLandscapePlanOrigin(origin = { x: 0, y: -252 }) {
-  const marginX = (SOURCE_PLAN_WINDOW - LANDSCAPE_W) / 2;
+  const marginX = (SOURCE_PLAN_WINDOW - SOURCE_VOID_W) / 2;
   const marginY = (SOURCE_PLAN_WINDOW - LANDSCAPE_H) / 2;
   return {
-    x: Math.floor((Number(origin.x || 0) - LANDSCAPE_W / 2 - marginX) / SOURCE_PLAN_SNAP) * SOURCE_PLAN_SNAP,
+    x: Math.floor((Number(origin.x || 0) - SOURCE_VOID_HALF_WIDTH - marginX) / SOURCE_PLAN_SNAP) * SOURCE_PLAN_SNAP,
     y: Math.floor((Number(origin.y || 0) - LANDSCAPE_H - marginY) / SOURCE_PLAN_SNAP) * SOURCE_PLAN_SNAP,
   };
 }
@@ -528,6 +597,9 @@ function landNoise(x, y) {
 // between two tiers that are supposed to be a decision apart.
 export function sourceLandscapeFloorAt(localX, localY) {
   const lx = Number(localX) || 0, ly = Number(localY) || 0;
+  // The body needs a floor in the white absence, but the eye must never find a
+  // mound, path, seam or terrain cue in it.
+  if (ly <= SOURCE_LANDING_FIELD_EDGE_LOCAL_Y && ly >= SOURCE_APPROACH_DESTINATION.y) return 0;
   const base = sourceTierHeightAt(ly);
 
   // A field lift is a vertical volume, not a disguised ramp. Its footprint keeps
@@ -669,6 +741,7 @@ export function createSourceSpaceRuntime({
     && state.finale?.stage === SOURCE_FINALE_STAGE.CONTACT_COMMITTED;
   let landingRainRemaining = state.landingWeatherSpent ? 0 : 12;
   let landingPortalElapsed = state.landingDoorOpen ? SOURCE_LANDING_PORTAL_SECONDS : 0;
+  let landingRevealElapsed = state.landingDoorOpen ? SOURCE_LANDING_PORTAL_SECONDS : 0;
   let phaseElapsed = 0;
   // SEARCH begins in the final quarter of the tunnel. It is a continuous
   // dramatic span, so this clock does not reset at HALL -> HAYSTACK.
@@ -688,6 +761,11 @@ export function createSourceSpaceRuntime({
   let lastObjectiveId = '';
   const sceneCache = new Map();
   const sceneAssemblyCache = new Map();
+  const landingSceneCache = Object.freeze({
+    key: 'source:landing-beat',
+    instances: Object.freeze([]),
+    batches: Object.freeze([]),
+  });
   const trees = treeOffsets(state.seed);
   const structures = sourceStructurePlacements(state.seed);
   let sourceCorpusCache = null;
@@ -721,27 +799,46 @@ export function createSourceSpaceRuntime({
       seed: state.seed,
       facts: state.profile?.sourceMemoryFacts || {},
     });
-    lastPlan = null;
+    // renderPlanFor owns invalidation through its topology key. Keeping the
+    // retained plan here is what lets portal-only state changes patch a dozen
+    // cells instead of rebuilding the entire 512x512 field.
     onState(state, { immediate });
     return state;
   }
 
   function dispatch(event, options) { return setState(reduceChunkSurf(state, event), options); }
 
+  // MEMOISED, BECAUSE THE PLAN ASKS FOR IT ONCE PER CELL.
+  //
+  // renderPlanFor walks a 384x384 window — 147,456 cells — and landscapeCell
+  // consults this for every one of them. Building a fresh frozen ten-field
+  // object that many times, twice, is most of why opening the FOH leaf dropped
+  // the frame: the door's own animation is 2.2s and the stall made it read as
+  // forever. Nothing here changes between those calls; the inputs are four
+  // scalars.
+  let portalFrameCache = null;
   function landingPortalFrame() {
-    const requested = !!state.landingDoorOpen;
-    const raw = requested ? clamp01(landingPortalElapsed / SOURCE_LANDING_PORTAL_SECONDS) : 0;
+    const sealed = !!state.landingDoorSealed;
+    const requested = !!state.landingDoorOpen && !sealed;
+    const closing = sealed && landingPortalElapsed > 0;
+    const cacheKey = `${sealed}:${requested}:${closing}:${landingPortalElapsed}:${state.firstLiftCompleted}`;
+    if (portalFrameCache?.key === cacheKey) return portalFrameCache.frame;
+    const raw = (requested || closing) ? clamp01(landingPortalElapsed / SOURCE_LANDING_PORTAL_SECONDS) : 0;
     const progress = smoothstep(0, 1, raw);
-    return Object.freeze({
+    const frame = Object.freeze({
       id: SOURCE_LANDING_PORTAL_DOOR_ID,
       requested,
+      closing,
       progress,
       passable: requested && (raw >= .58 || state.firstLiftCompleted),
       complete: requested && raw >= 1,
       locksMovement: false,
+      sealed,
       redPressure: requested ? .28 + progress * .72 : 0,
       depth: requested ? progress * 7 : 0,
     });
+    portalFrameCache = { key: cacheKey, frame };
+    return frame;
   }
 
   function commitDialogue(next, { immediate = true } = {}) {
@@ -775,9 +872,41 @@ export function createSourceSpaceRuntime({
   }
 
   function sourceLandscapeOriginAfterHaystack() {
-    // Keep the later Source field anchored independently from whichever still
-    // page slot this run happened to receive.
-    return { x: 0, y: SOURCE_HALL_END_Y - 28 };
+    // THE DOCK BEGINS AT THE PAGE, AND ONLY IN FRONT OF IT.
+    //
+    // Two wrong answers came before this one, and they were wrong in opposite
+    // directions.
+    //
+    // The first put the dock at a fixed point twenty-eight cells past the end of
+    // the hall and TELEPORTED the body into it. That is what made "behind you" a
+    // place the player no longer occupied, so the corridor at their back had to
+    // be reconstructed — and every reconstruction was a second corridor standing
+    // where the first one wasn't.
+    //
+    // The second anchored it to the body. That fixed the teleport but built an
+    // eleven-metre-wide room centred on a player standing in a six-metre
+    // corridor: the dock's side walls flared out beside and behind them and the
+    // result was a room INSIDE a corridor, which is not a place.
+    //
+    // Seating the dock at the fixed end line was visually plausible and
+    // physically wrong: the still sheet can lie four to twelve metres before
+    // that line, so after the rear corridor became render-only the player could
+    // be left standing in non-walkable scenery with the room several cells away.
+    //
+    // The player's current y is the honest hinge. Put the dock's rear aperture
+    // on that line: every cell in front belongs to the room, every cell behind
+    // remains the Wile E. Coyote corridor, and the body is standing on the one
+    // traversable threshold shared by both pictures. Align the aperture to the
+    // body on x as well: the still sheet can sit at either corridor edge, and a
+    // room centred elsewhere would leave that valid interaction point inside
+    // the new rear wall.
+    return {
+      x: player.x - SOURCE_LANDING_REAR_LOCAL.x,
+      // The '+' aperture occupies two sampled rows. Seat the body on its outer
+      // row so the first step forward enters the room and the first step back is
+      // refused, rather than granting one stray cell inside the painted hall.
+      y: player.y - (SOURCE_LANDING_REAR_LOCAL.y + 1),
+    };
   }
 
   function inLandscape(x, y) {
@@ -785,7 +914,8 @@ export function createSourceSpaceRuntime({
     const o = landscapeOrigin(), lx = x - o.x, ly = y - o.y;
     const progress=state.phase===CHUNK_SURF_PHASE.TRANSFORMING?clamp01(transformElapsed/SOURCE_TRANSFORM_SECONDS):1;
     const revealedDepth=LANDSCAPE_H*clamp01((progress-.12)/.88);
-    return lx >= -LANDSCAPE_W / 2 && lx <= LANDSCAPE_W / 2 && ly <= LANDSCAPE_FRONT && ly >= -revealedDepth;
+    const halfWidth = ly >= SOURCE_APPROACH_STAIR_FOOT_Y ? SOURCE_VOID_HALF_WIDTH : LANDSCAPE_W / 2;
+    return lx >= -halfWidth && lx <= halfWidth && ly <= LANDSCAPE_FRONT && ly >= -revealedDepth;
   }
 
   // Out past the perimeter. Its own box, because the field's is 340 deep and the
@@ -884,17 +1014,20 @@ export function createSourceSpaceRuntime({
     return false;
   }
 
+  // Returned by landscapeCell for a cell the Scene Dock owns and has walled.
+  // Distinct from null, which means "nothing here — ask the next provider".
+  const OWNED_SOLID = Object.freeze({ owned: true, solid: true });
+
   function landscapeCell(x, y) {
     const o = landscapeOrigin(), lx = x - o.x, ly = y - o.y;
-    // The whole opened field is one walkable ground — free roam, Oblivion-style,
-    // no invisible causeway walls carving the space into corridors. The routes
-    // survive only as brighter path material for wayfinding, not as the edges of
-    // the floor. The only wall is the field's own perimeter (rendered as visible
-    // code, see perimeterWallInstances); beyond it is sky.
-    if (!inLandscape(x, y)) return null;
+    if (![CHUNK_SURF_PHASE.TRANSFORMING, CHUNK_SURF_PHASE.LANDSCAPE,
+      CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase)) return null;
+    // The sheet covers an instantaneous ROOM swap. The wider field may keep its
+    // authored reveal clock, but the Scene Dock itself must be complete on the
+    // first uncovered frame — especially the rear threshold under the body.
     const landing = sourceLandingCellAt(lx, ly, { portalOpen: landingPortalFrame().passable });
     if (landing?.owned) {
-      if (landing.solid) return null;
+      if (landing.solid) return OWNED_SOLID;
       return {
         floor: landing.floor,
         ceil: landing.ceil,
@@ -904,10 +1037,28 @@ export function createSourceSpaceRuntime({
         sourceLanding: true,
       };
     }
+    // The whole opened field is one walkable ground — free roam, Oblivion-style,
+    // no invisible causeway walls carving the space into corridors. The routes
+    // survive only as brighter path material for wayfinding, not as the edges of
+    // the floor. The only wall is the field's own perimeter (rendered as visible
+    // code, see perimeterWallInstances); beyond it is sky.
+    if (!inLandscape(x, y)) return null;
     // Only the room itself may project behind the field edge. Without this
     // shared terrain carve-out, the otherwise open Source ground wraps around
-    // both side walls and reaches the sealed rear of the get-in.
+    // both side walls and reaches the rear of the get-in.
+    //
+    // The corridor is the exception, and it is not generic terrain: past the
+    // rear plane the hall takes over (visualHallCell), which is bounded to its
+    // own six-cell half width and cannot wrap anything.
     if (ly > SOURCE_LANDING_FIELD_EDGE_LOCAL_Y) return null;
+    if (ly >= SOURCE_APPROACH_DESTINATION.y) return {
+      floor: 0,
+      ceil: 22,
+      flags: F.SKY,
+      zone: ZONE.sourceSpace,
+      material: MATERIAL.sourceVoid,
+      sourceVoid: true,
+    };
     if ([CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase)
         && sourceStructureCollisionAt(structures, lx, ly)) return null;
     const floor = sourceLandscapeFloorAt(lx, ly);
@@ -927,7 +1078,28 @@ export function createSourceSpaceRuntime({
   }
 
   function hallVisibleInPhase() {
-    return ![CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase);
+    // BODY: the sheet is the boundary. As soon as it is taken, the corridor at
+    // the player's back is a painted continuation only; it must never remain a
+    // temporary escape route for the 5.5-second TRANSFORMING phase.
+    return [CHUNK_SURF_PHASE.HALL, CHUNK_SURF_PHASE.HAYSTACK].includes(state.phase);
+  }
+
+  // THE CORRIDOR DOES NOT STOP EXISTING BECAUSE THE PHASE CHANGED.
+  //
+  // The player walks the haystack corridor, the room transforms around them, and
+  // they are standing in the Scene Dock — with the corridor they arrived through
+  // immediately behind them. Gating the hall on phase alone deleted it the
+  // instant the landscape began, so the dock had nothing behind it and the beat
+  // lost the one thing that made it a threshold instead of a room.
+  //
+  // The BODY contract is untouched: physicalHallCell still refuses every cell
+  // past the phase change, so there is no walking back. This is the eye's, and
+  // visualHallCell was already written for it — "there is deliberately no
+  // forward bound".
+  function hallRenderableInPhase() {
+    if (hallVisibleInPhase()) return true;
+    return [CHUNK_SURF_PHASE.TRANSFORMING, CHUNK_SURF_PHASE.LANDSCAPE].includes(state.phase)
+      && !state.firstLiftCompleted;
   }
 
   function physicalHallCell(x, y) {
@@ -940,7 +1112,7 @@ export function createSourceSpaceRuntime({
   }
 
   function visualHallCell(x, y) {
-    if (!hallVisibleInPhase()) return null;
+    if (!hallRenderableInPhase()) return null;
     if (Math.abs(x) > HALL_HALF_WIDTH || y > 3) return null;
     // EYE CONTRACT: there is deliberately no forward bound. The finite render
     // plan/far plane is the only limit, so the hall appears to continue beyond
@@ -948,19 +1120,47 @@ export function createSourceSpaceRuntime({
     return hallCellDescriptor();
   }
 
+  // A WALL IS NOT AN ABSENCE OF OPINION.
+  //
+  // landscapeCell signals "solid" by returning null — but these were `||`
+  // chains, where null does not mean WALL, it means "not my cell, ask the next
+  // provider". The next provider is the hall. So every solid cell the Scene Dock
+  // owns that happens to fall inside the hall's six-cell lateral band was being
+  // answered by visualHallCell as open hall floor, and BOTH the FOH wall and the
+  // rear plane rendered see-through — the dock drawn as a room with no walls
+  // along its centre line.
+  //
+  // It only surfaced when the corridor was kept alive past the phase change
+  // (hallRenderableInPhase): before that the hall answered null in the landscape
+  // and the bug had nothing to leak through. The body never saw it because
+  // physicalHallCell still refuses in this phase.
+  //
+  // So ownership is explicit. OWNED_SOLID means "the landing owns this cell and
+  // it is a wall" — the chain stops there, for the eye and the body alike.
+  function resolveSourceCell(x, y, hallCell) {
+    const bells = bellsCell(x, y);
+    if (bells) return bells;
+    const horizon = horizonCell(x, y);
+    if (horizon) return horizon;
+    const landscape = landscapeCell(x, y);
+    if (landscape === OWNED_SOLID) return null;
+    if (landscape) return landscape;
+    return hallCell(x, y);
+  }
+
   function physicalCellAt(x, y) {
-    return bellsCell(x, y) || horizonCell(x, y) || landscapeCell(x, y) || physicalHallCell(x, y);
+    return resolveSourceCell(x, y, physicalHallCell);
   }
 
   function renderCellAt(x, y) {
-    return bellsCell(x, y) || horizonCell(x, y) || landscapeCell(x, y) || visualHallCell(x, y);
+    return resolveSourceCell(x, y, visualHallCell);
   }
 
   // Internal navigation/pathfinding keeps using this alias. Rendering does not.
   const cellAt = physicalCellAt;
 
   function sourceLayerAtWorld(x,y,cell){
-    if(!cell||cell.material<MATERIAL.sourceField)return 0;
+    if(!cell||cell.material<MATERIAL.sourceField||cell.material===MATERIAL.sourceVoid)return 0;
     const o=landscapeOrigin(),lx=x-o.x,ly=y-o.y;
     let nearest=null;
     for(const point of Object.values(LANDMARK_OFFSETS)){
@@ -1010,6 +1210,10 @@ export function createSourceSpaceRuntime({
         if(fromFeature?.kind==='chute'||toFeature?.kind==='chute'){
           const chuteFeature=fromFeature?.kind==='chute'?fromFeature:toFeature;
           const chute=sourceChuteById(chuteFeature.id);
+          // A staircase is ordinary ground. Its ramp already rises well inside
+          // the step limit, so it falls through to the same rule every other
+          // cell in Source is walked by — up, down, or across.
+          if(chute?.ascendable)return{ok:Math.abs(to.floor-from.floor)<=.45,floor:to.floor,why:'too high'};
           const along=chute
             ? (Number(toX)-Number(fromX))*chute.dir.x+(Number(toY)-Number(fromY))*chute.dir.y
             : 0;
@@ -1043,10 +1247,21 @@ export function createSourceSpaceRuntime({
       const originX = landscapePlan?.x ?? Math.floor((x - half) / SOURCE_PLAN_SNAP) * SOURCE_PLAN_SNAP;
       const originY = landscapePlan?.y ?? Math.floor((y - half) / SOURCE_PLAN_SNAP) * SOURCE_PLAN_SNAP;
       const o = landscapeOrigin();
-      const portalPlanState = landingPortalFrame().passable ? 'open'
-        : state.landingDoorOpen ? 'opening' : 'closed';
-      const key = `${state.phase}:${state.pageStage}:${portalPlanState}:${o.x}:${o.y}:${originX}:${originY}`;
-      if (lastPlan?.key === key) return lastPlan;
+      // THE PORTAL AND FIRST LIFT ARE NOT PART OF THIS KEY.
+      //
+      // It used to be — three states, so opening the FOH leaf rebuilt the whole
+      // plan twice (closed -> opening -> open). At 768x768 that is 589,824 cells
+      // recomputed to change an aperture two cells wide, and the stall landed
+      // right on top of the door's own animation: the swing read as taking many
+      // seconds because the frame stopped twice during it.
+      //
+      // FIRST LIFT used to do the same full rebuild in the exact frame that also
+      // creates the Source glyph atlas and switches compositors. Its only plan
+      // change is the twelve-cell-wide painted rear corridor, so both mutations
+      // are narrow retained-plan patches below. Full rebuilds happen only when
+      // phase, page stage, field origin or plan origin changes.
+      const key = `${state.phase}:${state.pageStage}:${o.x}:${o.y}:${originX}:${originY}`;
+      if (lastPlan?.key === key) return withRetainedPlanPatch(lastPlan);
       const size = SOURCE_PLAN_WINDOW;
       const rgba = new Uint8Array(size * size * 4);
       const material = new Uint8Array(size * size);
@@ -1062,9 +1277,78 @@ export function createSourceSpaceRuntime({
         sourceLayer[i] = sourceLayerAtWorld(originX+px+.5,originY+py+.5,c);
       }
       lastPlan = { rgba, material, sourceLayer, w: size, h: size, originX, originY, group: 'source-space', key };
-      return lastPlan;
+      lastPortalPlanState = null;
+      lastPlanFirstLiftCompleted = !!state.firstLiftCompleted;
+      return withRetainedPlanPatch(lastPlan);
     },
   };
+
+  // The leaf's own rect in plan space, recomputed only when its state changes.
+  // `patch` on the returned plan is consumed by the caller and cleared, so an
+  // unchanged door costs one string comparison a frame.
+  let lastPortalPlanState = null;
+  let lastPlanFirstLiftCompleted = null;
+  function withRetainedPlanPatch(plan) {
+    let dirty = null;
+    const include = (x0, y0, x1, y1) => {
+      if (x1 < 0 || y1 < 0 || x0 > plan.w - 1 || y0 > plan.h - 1) return;
+      const next = {
+        x0: Math.max(0, Math.min(plan.w - 1, x0)),
+        y0: Math.max(0, Math.min(plan.h - 1, y0)),
+        x1: Math.max(0, Math.min(plan.w - 1, x1)),
+        y1: Math.max(0, Math.min(plan.h - 1, y1)),
+      };
+      if (next.x1 < next.x0 || next.y1 < next.y0) return;
+      dirty = dirty ? {
+        x0: Math.min(dirty.x0, next.x0),
+        y0: Math.min(dirty.y0, next.y0),
+        x1: Math.max(dirty.x1, next.x1),
+        y1: Math.max(dirty.y1, next.y1),
+      } : next;
+    };
+    const portalState = landingPortalFrame().passable ? 'open'
+      : state.landingDoorOpen ? 'opening' : 'closed';
+    if (portalState !== lastPortalPlanState) {
+      lastPortalPlanState = portalState;
+      const o = landscapeOrigin();
+      // A generous box around the aperture: leaf, jamb and one cell of slack.
+      const half = 6;
+      const cx = Math.round(o.x + SOURCE_LANDING_PORTAL_LOCAL.x);
+      const cy = Math.round(o.y + SOURCE_LANDING_PORTAL_LOCAL.y);
+      include(cx - half - plan.originX, cy - half - plan.originY,
+        cx + half - plan.originX, cy + half - plan.originY);
+    }
+
+    const firstLiftCompleted = !!state.firstLiftCompleted;
+    if (lastPlanFirstLiftCompleted !== firstLiftCompleted) {
+      lastPlanFirstLiftCompleted = firstLiftCompleted;
+      // The lift changes only the eye's painted corridor. It spans the retained
+      // plan in depth, but is twelve cells wide; rebuilding the other 98% is the
+      // transition spike this patch exists to prevent.
+      const hallHalf = Math.ceil(HALL_HALF_WIDTH) + 1;
+      include(-hallHalf - plan.originX, 0,
+        hallHalf - plan.originX, plan.h - 1);
+    }
+
+    if (!dirty) { plan.patch = null; return plan; }
+    for (let py = dirty.y0; py <= dirty.y1; py += 1) for (let px = dirty.x0; px <= dirty.x1; px += 1) {
+      const c = renderCellAt(plan.originX + px + 0.5, plan.originY + py + 0.5);
+      const i = py * plan.w + px;
+      plan.rgba[i * 4] = c ? encodeH(c.floor) : 0;
+      plan.rgba[i * 4 + 1] = c ? encodeH(c.ceil) : 0;
+      plan.rgba[i * 4 + 2] = c ? c.flags : F.SOLID;
+      plan.rgba[i * 4 + 3] = c ? c.zone : 0;
+      plan.material[i] = c ? c.material : 0;
+      plan.sourceLayer[i] = c ? sourceLayerAtWorld(plan.originX + px + .5, plan.originY + py + .5, c) : 0;
+    }
+    plan.patch = {
+      x: dirty.x0,
+      y: dirty.y0,
+      w: dirty.x1 - dirty.x0 + 1,
+      h: dirty.y1 - dirty.y0 + 1,
+    };
+    return plan;
+  }
 
   function haystackCheckpoint() {
     return { x: 0, y: SOURCE_HALL_END_Y + 5, facing: 0 };
@@ -1080,9 +1364,11 @@ export function createSourceSpaceRuntime({
   function tierCheckpoint(tierId) {
     const o = landscapeOrigin();
     if (tierId === 'arrival') return landingWorld();
-    if (tierId === 'fork') return { x: o.x, y: o.y - 48, facing: 0 };
-    if (tierId === 'trace') return { x: o.x, y: o.y - 128, facing: 0 };
-    if (tierId === 'return') return { x: o.x, y: o.y - 228, facing: 0 };
+    // Eight cells past the tier's own start, derived rather than typed: these
+    // were literals (-48, -128, -228) matching the old boundaries, and the
+    // approach extension moved every one of them.
+    const tier = SOURCE_TIER_BY_ID[tierId];
+    if (tier?.field) return { x: o.x, y: o.y + tier.from - 8, facing: 0 };
     // Just over the seam, facing in. Far enough that the field is behind him and
     // he cannot walk back out of it by accident.
     if (tierId === 'horizon') return { x: o.x, y: o.y + SOURCE_HORIZON.from - SOURCE_HORIZON.entryStandoff, facing: 0 };
@@ -1095,6 +1381,7 @@ export function createSourceSpaceRuntime({
     if (id === 'hall-entry') return { x: SOURCE_ENTRY.x, y: SOURCE_ENTRY.y, facing: 0 };
     if (id === 'haystack-entry' || state.phase === CHUNK_SURF_PHASE.HAYSTACK) return haystackCheckpoint();
     if (id === 'landscape-entry' || id === 'landing-arrival') return landingWorld();
+    if (id === 'landing-approach') return landingWorld(SOURCE_APPROACH_DESTINATION);
     if (id === 'landing-fork') return tierCheckpoint('fork');
     if (id === 'landing-trace') return tierCheckpoint('trace');
     if (id === 'landing-return') return tierCheckpoint('return');
@@ -1247,10 +1534,15 @@ export function createSourceSpaceRuntime({
       objective = { id: 'still-page', label: 'FIND THE STILL PAGE', target: haystackPagePoint(), bearingEligible: true };
     } else if (state.phase === CHUNK_SURF_PHASE.TRANSFORMING || !state.firstLiftCompleted) {
       const outside = localPlayer.y <= SOURCE_LANDING_OPENING_LOCAL.y + 2;
-      objective = !state.landingDoorOpen
+      const voidFrame = sourceVoidFrame();
+      objective = !state.landingDoorOpen && !state.landingDoorSealed
         ? { id: 'open-foh-door', label: 'OPEN THE FOH DOOR', target: landingWorld(SOURCE_LANDING_PORTAL_LOCAL), bearingEligible: true }
+        : voidFrame.approach
+        ? { id: 'white-walk', label: 'WALK INTO THE WHITE', target: null, bearingEligible: false, progress: voidFrame.progress }
+        : state.sourceApproachComplete
+        ? { id: 'first-stair', label: 'ENTER SOURCE SPACE', target: landingWorld(SOURCE_APPROACH_DESTINATION), bearingEligible: true }
         : outside
-        ? { id: 'first-lift', label: 'ENTER THE RISING SOURCE', target: { x: o.x, y: o.y - 40 }, bearingEligible: true }
+        ? { id: 'white-threshold', label: 'STEP INTO THE WHITE', target: landingWorld(SOURCE_LANDING_OPENING_LOCAL), bearingEligible: false }
         : { id: 'leave-get-in', label: `LEAVE THE ${SCENE_DOCK_LABEL}`, target: landingWorld(SOURCE_LANDING_OPENING_LOCAL), bearingEligible: true };
     } else if (state.phase === CHUNK_SURF_PHASE.FINAL && state.finalEncounter.status !== SOURCE_FINAL_STATUS.RESOLVED) {
       objective = {
@@ -1314,7 +1606,20 @@ export function createSourceSpaceRuntime({
   function sourceLandingHushFrame() {
     const active = [CHUNK_SURF_PHASE.TRANSFORMING, CHUNK_SURF_PHASE.LANDSCAPE].includes(state.phase)
       && !state.firstLiftCompleted;
-    const point = landingWorld(SOURCE_LANDING_HUSH_LOCAL);
+    // THE ONE BEHIND YOU DOES NOT MOVE WHEN THE ROOM DOES.
+    //
+    // This was a fixed authored point inside the reconstructed room, which made
+    // sense only while the player was being teleported into that room. With the
+    // dock built around the body instead, the same local point lands in FRONT of
+    // them — and the whole beat is that the thing behind you is still behind you.
+    //
+    // So it holds the bracket's own rear gap, in the corridor, at the player's
+    // own x. The body that paced them down the haystack is standing where it was
+    // standing; nothing about the room arriving in front of them touches it.
+    const point = {
+      x: player.x,
+      y: player.y + SOURCE_BRACKET.rearGapEndMetres / CELL,
+    };
     return {
       active,
       safe: true,
@@ -1488,7 +1793,10 @@ export function createSourceSpaceRuntime({
       // becomes expressive again, and the picture gets time to be looked at.
       // The same mechanism the hall and the haystack use; see
       // currentMoveIntervalMs.
-      movementMultiplier: state.phase === CHUNK_SURF_PHASE.HORIZON ? HORIZON_PACE : 1,
+      approach: onApproach(),
+      movementMultiplier: state.phase === CHUNK_SURF_PHASE.HORIZON
+        ? HORIZON_PACE
+        : onApproach() ? APPROACH_PACE : 1,
       fear: null,
       rain: landingRain,
       rainLatched: landingRain > 0,
@@ -1787,6 +2095,127 @@ export function createSourceSpaceRuntime({
   // that plays at roughly double speed, and a crossing whose middle act you are
   // still in rather than waiting out.
   const HORIZON_PACE = 3;
+
+  // THE APPROACH IS AN AUTHORED WALK, SO IT OWNS ITS LEGS.
+  //
+  // The multiplier is derived at module load from the actual portal-to-stair
+  // span and MOVE_MS. Changing either endpoint cannot silently turn a thirty
+  // second scene back into a sprint.
+  const APPROACH_PACE = SOURCE_APPROACH_PACE;
+
+  const sourcePhaseActive = () => [CHUNK_SURF_PHASE.TRANSFORMING, CHUNK_SURF_PHASE.LANDSCAPE,
+    CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase);
+
+  // Past the physical leaf, before Source proper resolves. Progress is body
+  // distance, not southward distance, so the sea cannot be defeated by walking
+  // sideways or in circles.
+  function onApproach() {
+    if (!sourcePhaseActive() || state.sourceApproachComplete) return false;
+    const ly = player.y - landscapeOrigin().y;
+    return ly < SOURCE_LANDING_PORTAL_LOCAL.y - 1;
+  }
+
+  function sourceVoidFrame() {
+    const sourcePhase = sourcePhaseActive();
+    const portal = landingPortalFrame();
+    const localY = player.y - landscapeOrigin().y;
+    const distance = clamp(state.sourceApproachDistance, 0, SOURCE_APPROACH_TRAVEL_CELLS);
+    const progress = clamp01(distance / SOURCE_APPROACH_TRAVEL_CELLS);
+    const elapsedSeconds = progress * SOURCE_APPROACH_TARGET_SECONDS;
+    const approach = sourcePhase && onApproach();
+    // This boundary is spatial even after the journey completes. A god warp or
+    // migrated save inside the Scene Dock must still never receive Source red.
+    const sceneDock = sourcePhase && localY >= SOURCE_LANDING_PORTAL_LOCAL.y - 1;
+    const redProgress = smoothstep(
+      SOURCE_APPROACH_RED_ONSET_SECONDS,
+      SOURCE_APPROACH_RED_ONSET_SECONDS + 3,
+      elapsedSeconds,
+    );
+
+    // Opening the real leaf peaks as a blinding intrusion, then settles into a
+    // visibly impossible white aperture if the player hesitates in the room.
+    const thresholdRise = smoothstep(.08, .82, portal.progress);
+    const thresholdSettle = 1 - .58 * smoothstep(
+      SOURCE_LANDING_PORTAL_SECONDS,
+      SOURCE_LANDING_PORTAL_SECONDS + 3.4,
+      landingRevealElapsed,
+    );
+    const thresholdWhiteout = sceneDock && portal.progress > 0
+      ? thresholdRise * thresholdSettle
+      : 0;
+    // In the sea, white owns the exposure until the maintained red circuit
+    // arrives ten authored seconds in and takes the frame away from it.
+    const whiteout = approach
+      ? .92 - redProgress * .62
+      : thresholdWhiteout * .92;
+    return Object.freeze({
+      active: sourcePhase && !state.sourceApproachComplete,
+      sceneDock,
+      approach,
+      complete: !!state.sourceApproachComplete,
+      localY,
+      distance,
+      targetDistance: SOURCE_APPROACH_TRAVEL_CELLS,
+      progress,
+      elapsedSeconds,
+      targetSeconds: SOURCE_APPROACH_TARGET_SECONDS,
+      redOnsetSeconds: SOURCE_APPROACH_RED_ONSET_SECONDS,
+      redProgress,
+      whiteout: clamp01(whiteout),
+      thresholdLight: sceneDock ? thresholdRise : (approach ? 1 : 0),
+      horizonDistanceMetres: 145 - smoothstep(0, 1, progress) * 125,
+      horizonScale: .035 + smoothstep(.04, 1, progress) * .965,
+    });
+  }
+
+  // ONE AUTHORITATIVE RED BOUNDARY.
+  //
+  // The compositor is a full-frame post effect; architectural occlusion and
+  // lamp penetration cannot keep it out of the Scene Dock. The player position
+  // therefore owns a hard semantic boundary: on or behind the FOH threshold is
+  // the neutral physical room, beyond it is Source's emergency circuit. Local
+  // lamps, the post wash and the torch all consume this same answer.
+  function sourceEmergencyLightingFrame({
+    time = phaseElapsed,
+    reducedMotion = false,
+    flashMode = 'full',
+  } = {}) {
+    const sourcePhase = sourcePhaseActive();
+    const voidFrame = sourceVoidFrame();
+    const localY = voidFrame.localY;
+    const active = sourcePhase && !voidFrame.sceneDock && (state.sourceApproachComplete
+      || (voidFrame.approach && voidFrame.elapsedSeconds >= SOURCE_APPROACH_RED_ONSET_SECONDS));
+    const emergency = sourceEmergencyFrame(time, {
+      reducedEffects: reducedMotion || flashMode !== 'full',
+    });
+    return Object.freeze({
+      active,
+      sceneDock: voidFrame.sceneDock,
+      approach: voidFrame.approach,
+      localY,
+      boundaryY: SOURCE_LANDING_PORTAL_LOCAL.y - 1,
+      cycle: emergency.cycle,
+      lightScale: emergency.lightScale,
+      strength: active
+        ? emergency.wash * (state.sourceApproachComplete ? 1 : Math.max(.28, voidFrame.redProgress))
+        : 0,
+    });
+  }
+
+  // The torch changes at the BODY boundary, not at the delayed room-light
+  // onset. Everything up to and including the Scene Dock is read as an x-ray
+  // negative. The instant the player walks into the white sea it becomes the
+  // emergency-red torch, already following the contactor duty cycle even while
+  // the first ten seconds of the room itself remain white.
+  function sourceFlashlightFrame(options = {}) {
+    const voidFrame = sourceVoidFrame();
+    const emergency = sourceEmergencyLightingFrame(options);
+    const inNothingness = voidFrame.approach
+      || (!!state.sourceApproachComplete && !voidFrame.sceneDock);
+    return Object.freeze(inNothingness
+      ? { mode: 'emergency', active: true, xray: false, cycle: emergency.cycle }
+      : { mode: 'xray', active: false, xray: true, cycle: 1 });
+  }
   // How far ahead the floor samples the corridor, in cells.
   const HORIZON_BAND_LOOKAHEAD = 110;
   const progress01 = (depth) => Math.max(0, Math.min(1, depth / SOURCE_HORIZON.length));
@@ -2009,6 +2438,7 @@ export function createSourceSpaceRuntime({
         kind: 'source-landing-door', id: SOURCE_LANDING_PORTAL_DOOR_ID,
         ...landingWorld(SOURCE_LANDING_PORTAL_LOCAL),
         open: !!state.landingDoorOpen,
+        sealed: !!state.landingDoorSealed,
         focusPriority: 12, focusRadius: 9,
       });
     }
@@ -2046,8 +2476,62 @@ export function createSourceSpaceRuntime({
     return lastFocus;
   }
 
+  // ARRIVING ON A TIER IS THE EVENT NOW, BECAUSE NOTHING IS RIDDEN ANY MORE.
+  //
+  // firstLiftCompleted and the per-tier checkpoints were both raised by a lift
+  // ride completing. With the lifts gone and every connector a staircase there
+  // is no ride to complete, so the same two things are raised by the body
+  // reaching the tier — which is what the ride was standing in for.
+  //
+  // The flag keeps its name and its id ('lift-fork'): it is load-bearing
+  // narrative state, gating the text architecture, the landing tableau and the
+  // hush stage, and every one of those means "the player has climbed out of the
+  // arrival", not "a lift ran".
+  let lastTierId = null;
+  function noteTierArrival(to) {
+    if (![CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase)) return;
+    const o = landscapeOrigin();
+    const tier = sourceTierAt(Number(to.y) - o.y);
+    if (!tier?.field || tier.id === lastTierId) return;
+    lastTierId = tier.id;
+    if (tier.id === 'arrival') return;
+    const checkpointId = tierCheckpointId(tier.id);
+    if (!state.firstLiftCompleted) {
+      dispatch({ type: 'SOURCE_LIFT_COMPLETED', id: 'lift-fork', checkpointId }, { immediate: true });
+      return;
+    }
+    if (state.checkpointId !== checkpointId) {
+      dispatch({ type: 'CHECKPOINT_SET', id: checkpointId }, { immediate: true });
+    }
+  }
+
   function onStep(from, to) {
     player = { ...player, ...to };
+    const voidBeforeStep = sourceVoidFrame();
+    if (voidBeforeStep.approach && !state.sourceApproachComplete) {
+      const travelled = Math.min(1, Math.hypot(
+        Number(to.x) - Number(from.x),
+        Number(to.y) - Number(from.y),
+      ));
+      if (travelled > 0) {
+        // Main commits the complete runtime state after every accepted movement
+        // frame, so this additive counter does not need to dispatch (and force a
+        // second save) on every footstep.
+        const distance = Math.min(
+          SOURCE_APPROACH_TRAVEL_CELLS,
+          Math.max(0, Number(state.sourceApproachDistance) || 0) + travelled,
+        );
+        state = { ...state, sourceApproachDistance: distance };
+        if (distance >= SOURCE_APPROACH_TRAVEL_CELLS) {
+          dispatch({ type: 'SOURCE_APPROACH_COMPLETED', distance }, { immediate: true });
+          const relocate = landingWorld(SOURCE_APPROACH_DESTINATION);
+          player = { ...relocate };
+          return { handled: true, event: 'source-approach-completed', relocate };
+        }
+      }
+      return { handled: true, event: 'source-approach-advanced', progress: sourceVoidFrame().progress };
+    }
+    noteTierArrival(to);
     if(captureMovementRequired){
       if(!captureMovementAnchor)captureMovementAnchor={x:Number(from.x),y:Number(from.y)};
       if(Math.hypot(Number(to.x)-captureMovementAnchor.x,Number(to.y)-captureMovementAnchor.y)>=1.5){
@@ -2144,8 +2628,12 @@ export function createSourceSpaceRuntime({
     const focus = focusAt(px, py, facing);
     if (!focus) return { handled: false };
     if (focus.kind === 'source-landing-door') {
+      if (state.landingDoorSealed) {
+        return { handled: true, event: 'landing-door-locked', text: '' };
+      }
       if (!state.landingDoorOpen) {
         landingPortalElapsed = 0;
+        landingRevealElapsed = 0;
         dispatch({ type: 'SOURCE_LANDING_DOOR_OPENED' }, { immediate: true });
         protectMoment(SOURCE_LANDING_PORTAL_SECONDS + .4);
         return { handled: true, event: 'landing-door-opened', text: '' };
@@ -2237,10 +2725,13 @@ export function createSourceSpaceRuntime({
     phaseElapsed += elapsed;
     if (state.landingDoorOpen && landingPortalElapsed < SOURCE_LANDING_PORTAL_SECONDS) {
       landingPortalElapsed = Math.min(SOURCE_LANDING_PORTAL_SECONDS, landingPortalElapsed + elapsed);
-      // The door leaf and the collision aperture both live in the render-plan
-      // cache, so invalidate it throughout the authored opening move.
-      lastPlan = null;
+      // The leaf is a dynamic prop. The collision aperture changes once, at the
+      // passable threshold, and withPortalPatch updates only that retained-plan
+      // rectangle; invalidating the whole field here was the frame-zero stall.
+    } else if (state.landingDoorSealed && landingPortalElapsed > 0) {
+      landingPortalElapsed = Math.max(0, landingPortalElapsed - elapsed);
     }
+    if (state.landingDoorOpen) landingRevealElapsed += elapsed;
     const searchActive = searchSpanActiveFor(state);
     if (searchActive) searchElapsed += elapsed;
     else if (state.phase === CHUNK_SURF_PHASE.HALL) searchElapsed = 0;
@@ -2466,7 +2957,13 @@ export function createSourceSpaceRuntime({
 
   function densityWakeTextInstances(presence = null, time = 0) {
     const runtimeHush = hushMode();
-    if (!runtimeHush.searchActive
+    // The arrival tableau is a HUSH beat in its own right: the body that walked
+    // the haystack corridor behind the player is still behind them in the dock.
+    // It carries no hushStage — the stage machine does not start until the
+    // landscape does — so gating only on the stage left the one beat the wake
+    // was written for with nothing in it.
+    const landingBeat = sourceLandingHushFrame().active;
+    if (!landingBeat && !runtimeHush.searchActive
       && ![CHUNK_SURF_HUSH_STAGE.STALK, CHUNK_SURF_HUSH_STAGE.HUNT, CHUNK_SURF_HUSH_STAGE.FINAL].includes(state.hushStage)) return [];
     const hx=Number(presence?.x),hy=Number(presence?.y);
     if(!presence?.active||!Number.isFinite(hx)||!Number.isFinite(hy))return[];
@@ -2826,32 +3323,10 @@ export function createSourceSpaceRuntime({
       sourceDoorId: placement.sourceDoorId,
     }));
     if (!portal.requested) return ordinary;
-    const o = landscapeOrigin();
-    // The leaf opens onto a sequence of thresholds which cannot all occupy the
-    // same depth. They grow out of register as the hinge moves: real meshes,
-    // impossible spacing, no camera seizure and no change to the Loading Bay
-    // wall behind the player.
-    const depthCount = Math.max(1, Math.ceil(portal.depth));
-    for (let index = 0; index < depthCount; index += 1) {
-      const t = (index + 1) / 7;
-      ordinary.push({
-        id: `source-landing-portal-depth-${index}`,
-        mesh: index % 2 ? 'tower_louvres' : 'tower_bulkhead',
-        matrix: sourceMatrix({
-          x: (o.x + SOURCE_LANDING_PORTAL_LOCAL.x + Math.sin(index * 1.7) * .34) * CELL,
-          y: .55 + index * .38,
-          z: (o.y + SOURCE_LANDING_PORTAL_LOCAL.y - 2.2 - index * 2.35) * CELL,
-          yaw: index % 2 ? Math.PI / 2 : 0,
-          roll: (index - 3) * .018,
-          scaleX: 1.15 + index * .18,
-          scaleY: 1.25 + index * .14,
-          scaleZ: 1.1 + index * .12,
-        }),
-        emissive: index % 3 === 1 ? [0.02, .28, .42, .36] : [1, .004, .001, .52 + portal.progress * .36],
-        zone: ZONE.sourceSpace, structural: true,
-        sourceConnector: 'foh-source-aperture',
-      });
-    }
+    // Nothing is fabricated behind the leaf any more. What is back there is the
+    // haystack corridor itself (visualHallCell / hallRenderableInPhase), which
+    // is the corridor the player actually walked, standing where it actually
+    // is. A hand-built stand-in here is how this went wrong twice.
     return ordinary;
   }
 
@@ -2864,20 +3339,10 @@ export function createSourceSpaceRuntime({
   // text architecture can grow over them after the first ascent.
   function connectorPropInstances() {
     const o = landscapeOrigin();
-    const out = [{
-      id: 'source-landing-opening-emergency-casing',
-      mesh: 'tower_bulkhead',
-      matrix: sourceMatrix({
-        x: (o.x + SOURCE_LANDING_OPENING_LOCAL.x) * CELL,
-        y: 3.05,
-        z: (o.y + SOURCE_LANDING_OPENING_LOCAL.y - 2) * CELL,
-        scaleX: 1.5, scaleY: 1.5, scaleZ: 1.5,
-      }),
-      emissive: [1, 0.01, 0.003, 0.82],
-      zone: ZONE.sourceSpace,
-      structural: true,
-      sourceConnector: 'landing-opening',
-    }];
+    // The FOH leaf opens onto the absence itself. The former red tower_bulkhead
+    // was literally a wall two cells behind the door, so a correct swing still
+    // revealed masonry. There is deliberately no threshold prop here.
+    const out = [];
 
     for (const lift of SOURCE_LIFTS) {
       const lower = SOURCE_TIER_BY_ID[lift.from]?.height ?? 0;
@@ -2896,6 +3361,42 @@ export function createSourceSpaceRuntime({
         emissive: [0.08, 0.44, 0.48, 0.22],
         zone: ZONE.sourceSpace, structural: true, sourceConnector: lift.id,
       });
+      // THE WAY UP HAS TO LOOK LIKE A WAY UP.
+      //
+      // The lift was a flat catwalk plate at floor level with two louvre panels
+      // beside it. That is what a landing looks like, not what a route looks
+      // like — so the only thing in the arrival tier that read as "climb me" was
+      // the chute beside it, which is one-way DOWN and can never be climbed. The
+      // report was "can't climb up stairs, they don't let me go up them", and it
+      // was true of the object the player was looking at: the traversal volume
+      // was here, on the plate, unmarked.
+      //
+      // So the lift gets a real flight. plant_grated_steps is the building's own
+      // service tread unit; four of them carry the tier gap at roughly 45
+      // degrees, which fits the volume's four metres of depth exactly and reads
+      // as a companionway rather than as scenery.
+      const riseTotal = upper - lower;
+      if (riseTotal > 0.5) {
+        const flights = 4;
+        const runEach = (lift.depth * 2 * CELL) / flights;
+        for (let tread = 0; tread < flights; tread += 1) {
+          out.push({
+            id: `source-connector-${lift.id}-flight-${tread}`,
+            mesh: 'plant_grated_steps',
+            matrix: sourceMatrix({
+              x: worldX,
+              y: lower + (riseTotal / flights) * tread,
+              z: worldZ + (lift.depth * CELL) - runEach * (tread + 0.5),
+              scaleX: Math.max(0.4, lift.halfWidth * 2 * CELL / 3),
+              scaleY: (riseTotal / flights) / 1.1,
+              scaleZ: runEach / 1.49,
+            }),
+            // The circuit pays for the route, so the route carries its colour.
+            emissive: [1, 0.02, 0.006, 0.34],
+            zone: ZONE.sourceSpace, structural: true, sourceConnector: lift.id,
+          });
+        }
+      }
       for (const side of [-1, 1]) {
         out.push({
           id: `source-connector-${lift.id}-upright-${side}`,
@@ -2950,16 +3451,53 @@ export function createSourceSpaceRuntime({
         emissive: [0.5, 0.035, 0.008, 0.24],
         zone: ZONE.sourceSpace, structural: true, sourceConnector: chute.id,
       });
+      // TREADS, BECAUSE THESE ARE STAIRS AND THEY HAVE TO LOOK CLIMBABLE.
+      //
+      // The pitched deck alone is a ramp, and a ramp beside a handrail is what
+      // used to advertise an ascent that did not exist. Now the ascent DOES
+      // exist on every one of them, so the run is stepped: plant_grated_steps is
+      // the building's own service tread and reads as "walk up me" from across
+      // the field, which is the whole reason to build it rather than tell the
+      // player about it.
+      const flights = Math.max(3, Math.round(chute.run / 4));
+      const riseTotal = top - bottom;
+      for (let tread = 0; tread < flights; tread += 1) {
+        const along = (tread + 0.5) / flights;
+        const localX = chute.x + chute.dir.x * chute.run * along;
+        const localY = chute.y + chute.dir.y * chute.run * along;
+        out.push({
+          id: `source-connector-${chute.id}-tread-${tread}`,
+          mesh: 'plant_grated_steps',
+          matrix: sourceMatrix({
+            x: (o.x + localX) * CELL,
+            y: top - riseTotal * along,
+            z: (o.y + localY) * CELL,
+            scaleX: Math.max(0.4, chute.halfWidth * 2 * CELL / 3),
+            scaleY: (riseTotal / flights) / 1.1,
+            scaleZ: (length / flights) / 1.49,
+            yaw: deckYaw,
+          }),
+          emissive: [1, 0.02, 0.006, 0.30],
+          zone: ZONE.sourceSpace, structural: true, sourceConnector: chute.id,
+        });
+      }
+      // ENCLOSURE, NOT HANDRAILS.
+      //
+      // These carried tower_loft_rail down both sides. A handrail at hand height
+      // is a promise, and for as long as these were one-way slides it was a lie.
+      // They are stairs now and the promise would be true — but slatted cheeks
+      // read as a stairwell rather than as a catwalk, which is what this place
+      // is made of, so they stay.
       for (const side of [-1, 1]) out.push({
-        id: `source-connector-${chute.id}-rail-${side}`,
-        mesh: 'tower_loft_rail',
+        id: `source-connector-${chute.id}-cheek-${side}`,
+        mesh: 'tower_louvres',
         matrix: sourceMatrix({
           x: centreX + side * chute.halfWidth * CELL,
-          y: (top + bottom) * 0.5 + 0.18,
+          y: (top + bottom) * 0.5 + 0.55,
           z: centreZ,
-          scaleX: Math.max(0.3, length / 10.07),
-          scaleY: 0.72,
-          scaleZ: 0.65,
+          scaleX: Math.max(0.3, length / 6),
+          scaleY: 0.34,
+          scaleZ: 0.5,
           yaw: railYaw,
           roll: -pitch,
         }),
@@ -2968,6 +3506,43 @@ export function createSourceSpaceRuntime({
       });
     }
     return out;
+  }
+
+  // SOURCE PROPER IS A HORIZON BEFORE IT IS A PLACE.
+  //
+  // The proxy follows the body laterally and retreats from 145m to 20m as path
+  // distance accumulates. It is assembled from the same meshes that stand in
+  // Source proper, so the final full-red handoff replaces a small distant truth
+  // with its navigable version rather than cutting to a different picture.
+  function sourceVoidHorizonInstances() {
+    const frame = sourceVoidFrame();
+    if (!frame.approach || frame.complete) return [];
+    const centreX = player.x;
+    const centreZ = player.y - frame.horizonDistanceMetres / CELL;
+    const scale = frame.horizonScale;
+    const specs = [
+      { id: 'frame', mesh: 'tower_frame', dx: 0, dz: 0, base: 8, yaw: .08 },
+      { id: 'vault', mesh: 'chapel_vault', dx: -9, dz: 5, base: 5.4, yaw: -.18 },
+      { id: 'piano', mesh: 'upright_piano', dx: 8, dz: 4, base: 4.8, yaw: .24 },
+      { id: 'stand', mesh: 'music_stand', dx: -5, dz: -3, base: 5.2, yaw: -.4 },
+      { id: 'bust', mesh: 'marble_bust_01', dx: 5, dz: -4, base: 5.8, yaw: Math.PI },
+    ];
+    return specs.map((spec) => ({
+      id: `source-void-horizon-${spec.id}`,
+      mesh: spec.mesh,
+      matrix: sourceMatrix({
+        x: (centreX + spec.dx * scale) * CELL,
+        y: .04,
+        z: (centreZ + spec.dz * scale) * CELL,
+        scaleX: spec.base * scale,
+        scaleY: spec.base * scale,
+        scaleZ: spec.base * scale,
+        yaw: spec.yaw,
+      }),
+      zone: ZONE.sourceSpace,
+      structural: true,
+      sourceVoidHorizon: true,
+    }));
   }
 
   function structurePropInstances(px, py) {
@@ -3008,8 +3583,10 @@ export function createSourceSpaceRuntime({
   function surfaceArchitectureInstances(px, py) {
     if (![CHUNK_SURF_PHASE.TRANSFORMING, CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase)) return [];
     const o = landscapeOrigin();
-    const out = [...landingPropInstances(), ...connectorPropInstances()];
+    const out = [...landingPropInstances()];
     if (state.phase === CHUNK_SURF_PHASE.TRANSFORMING) return out;
+    if (!state.sourceApproachComplete) return [...out, ...sourceVoidHorizonInstances()];
+    out.push(...connectorPropInstances());
     out.push(...structurePropInstances(px, py));
     for (let i = 0; i < SOURCE_LEAK_COUNT; i += 1) {
       const localX = (rand(state.seed, i, 71) - 0.5) * LANDSCAPE_W * 0.94;
@@ -3019,7 +3596,13 @@ export function createSourceSpaceRuntime({
       const resolution = 0.16 + 0.84 * smoothstep(40, LANDSCAPE_H - 30, depth);
       if (rand(state.seed, i, 199) > resolution) continue;
       const worldX = o.x + localX, worldZ = o.y + localY;
-      if (Math.hypot((worldX - px) * CELL, (worldZ - py) * CELL) > 108) continue;
+      // THE FAR SIDE HAS TO STAND ON THE HORIZON WHILE YOU WALK TOWARD IT.
+      //
+      // 108m hid everything past it, which was fine when the arrival was four
+      // metres long. From the near end of a sixty-metre approach it would cut
+      // the next part of Source out of the frame entirely, and watching it
+      // resolve is the whole reason the approach is there.
+      if (Math.hypot((worldX - px) * CELL, (worldZ - py) * CELL) > 150) continue;
       const floor = sourceLandscapeFloorAt(localX, localY);
       const piece = SOURCE_LEAK_MESHES[Math.floor(rand(state.seed, i, 233) * SOURCE_LEAK_MESHES.length)];
       const scale = 0.8 + rand(state.seed, i, 251) * 1.2;
@@ -3068,7 +3651,8 @@ export function createSourceSpaceRuntime({
   // non-dialogue wayfinding cue (this way finishes it). They ride the terrain and
   // loop over the field length so the stream never runs dry.
   function driftInstances(px, py, time) {
-    if (![CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase)) return [];
+    if (!state.sourceApproachComplete
+        || ![CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase)) return [];
     const o = landscapeOrigin();
     const out = [];
     const span = LANDSCAPE_H;
@@ -3219,7 +3803,21 @@ export function createSourceSpaceRuntime({
   }
 
   function sourceScene({ px = player.x, py = player.y, presence = null, time = 0, reducedMotion = false } = {}) {
-    const cached = cachedArchitecture(px, py);
+    // THE DOCK BEAT WANTS THE WAKE, NOT THE ARCHITECTURE.
+    //
+    // The HUSH in Source is densityWakeTextInstances, and it is built in here —
+    // which is why this is called during the landing beat at all. But
+    // cachedArchitecture() assembles the whole text field for a five-by-five
+    // block of 128-cell tiles, and calling it at the dock ran that enormous
+    // build somewhere it had never run before: the door's two-second swing
+    // became a multi-second stall.
+    //
+    // The text architecture is textSpaceActive()'s business and stays gated on
+    // it. Before that, the scene is the wake and nothing else.
+    const architecture = textSpaceActive();
+    const cached = architecture
+      ? cachedArchitecture(px, py)
+      : landingSceneCache;
     const dynamicInstances = [
       ...interactionTextInstances(),
       ...resolvedIntervalTextInstances(),
@@ -3228,14 +3826,39 @@ export function createSourceSpaceRuntime({
     return {
       schema: 1,
       key: cached.key,
-      atlasKey: `${SOURCE_ATLAS.schemaVersion}:${SOURCE_ATLAS.corpusHash || Object.keys(SOURCE_ATLAS.entries || {}).length}`,
-      corpus: sourceCorpus(),
+      // The landing submits the HUSH wake before Text Space exists. Do not hand
+      // that empty scene the real corpus identity: the renderer would otherwise
+      // believe the atlas was initialized and reject the populated scene at the
+      // first-lift boundary because both scenes share the same key.
+      atlasKey: architecture
+        ? `${SOURCE_ATLAS.schemaVersion}:${SOURCE_ATLAS.corpusHash || Object.keys(SOURCE_ATLAS.entries || {}).length}`
+        : '',
+      corpus: architecture ? sourceCorpus() : [],
       staticInstances: cached.instances,
       staticBatches: cached.batches,
       dynamicInstances,
       look: sourceLook(),
       objective: sourceObjective(),
-      weather: { rain: pressureFrame({ reducedMotion }).rain, moon: 1, clouds: 1 },
+      weather: {
+        rain: pressureFrame({ reducedMotion }).rain,
+        moon: 1,
+        clouds: 1,
+        // LEAVES GET INTO SOURCE, ON THE TIERS.
+        //
+        // Not in the hall and not in the haystack: the page storm owns the air
+        // in there, and leaves would be a second kind of paper fighting the
+        // first. Out on the open tiers — and on the horizon past the last page —
+        // there is nothing in the air at all, and something dry blowing through
+        // is the one detail that says this place is not sealed. The field is a
+        // recording; what gets in belongs to the recording, so they are drawn
+        // OF it rather than in front of it (see uLeaves in r3d).
+        // Only the phases the text-space shader actually draws. `uLeaves` lives
+        // in that shader, and textSpaceActive() is LANDSCAPE/FINAL/COMPLETED
+        // past the first lift — the hall, the haystack and the horizon are the
+        // raymarcher's, so asking for leaves there would set a uniform nothing
+        // reads. The horizon would need the yard's prop-instance flurry.
+        leaves: [CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase) ? 0.85 : 0,
+      },
       landing: sourceLandingContract(),
     };
   }
@@ -3362,12 +3985,29 @@ export function createSourceSpaceRuntime({
         const lift = sourceLiftById(feature.id);
         const upperSide = candidate.y - o.y <= lift.y;
         candidate.y = o.y + lift.y + (upperSide ? -(lift.depth + 1.25) : lift.depth + 1.25);
-      } else if (feature?.kind === 'chute') {
+      } else if (feature?.kind === 'chute' && !sourceChuteById(feature.id)?.ascendable) {
+        // Standing on a slide is not a position, so the body is returned to the
+        // last stable one. A staircase IS a position — yanking the player back
+        // to a checkpoint for the crime of standing on the stairs is exactly the
+        // bug this normalizer exists to prevent everywhere else.
         const stable=checkpointPosition();
         candidate.x=stable.x;candidate.y=stable.y;candidate.facing=stable.facing;
       }
     }
     player = candidate;
+    // THE THRESHOLD IS THE EVENT, SO THE BODY CROSSING IT IS THE TRIGGER.
+    // Not the prompt, not the animation finishing: the leaf shuts when the
+    // player is on the Source side of it, which is the only moment that cannot
+    // be faked by standing in the doorway and changing your mind.
+    if (state.landingDoorOpen && !state.landingDoorSealed) {
+      const o = landscapeOrigin();
+      if (candidate.y - o.y < SOURCE_LANDING_PORTAL_LOCAL.y - 1) {
+        // Preserve the fully open pose as the start of the real closing swing;
+        // collision seals immediately, but the leaf no longer snaps shut.
+        landingPortalElapsed = Math.max(landingPortalElapsed, SOURCE_LANDING_PORTAL_SECONDS);
+        dispatch({ type: 'SOURCE_LANDING_DOOR_SEALED' }, { immediate: true });
+      }
+    }
     if(captureMovementRequired&&!captureMovementAnchor){
       captureMovementAnchor={x:candidate.x,y:candidate.y};
     }
@@ -3378,14 +4018,78 @@ export function createSourceSpaceRuntime({
       && [CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase);
   }
 
+  // WHAT IS BEHIND THE LEAF DOES NOT LIGHT THE LEAF.
+  //
+  // Two of these three lamps stand on the Source side of the FOH door — the
+  // opening two cells past it, the first lift beyond that — and they were burning
+  // at full intensity from the moment the player walked into the Scene Dock. So
+  // the closed door was already red, which spent the reveal before it happened
+  // and made the red read as a property of the door rather than of the place
+  // behind it.
+  //
+  // They begin after the BODY crosses the leaf. Door progress is not enough:
+  // even a correctly occluded wide-radius light can reach back through an open
+  // aperture and tint the room. The observer boundary below is categorical.
+  // How many of the approach run are submitted at once. See localLights().
+  const SOURCE_APPROACH_LAMPS_LIT = 3;
+  const SOURCE_SIDE_LIGHT_IDS = new Set([
+    'source-landing:opening-emergency',
+    'source-landing:first-lift-emergency',
+  ]);
+  // The approach run is on the far side of the leaf too, and it is the loudest
+  // thing in the chapter — hall-strength lamps at ninety-six cells of reach.
+  const onSourceSide = (id) => SOURCE_SIDE_LIGHT_IDS.has(id)
+    || String(id).startsWith('source-approach-emergency-');
   function localLights({ time = phaseElapsed, reducedMotion = false, flashMode = 'full' } = {}) {
     const understood=normalizeSourceContactState(state.sourceContacts).insights.length;
-    const emergency=sourceEmergencyFrame(time,{reducedEffects:reducedMotion||flashMode!=='full'});
-    return sourceLandingLights(landscapeOrigin()).map((light)=>({
-      ...light,
-      intensity:(light.intensity+understood*.18)*emergency.lightScale,
-      penetration:Math.min(1,light.penetration+understood*.025),
-    }));
+    const emergency=sourceEmergencyLightingFrame({time,reducedMotion,flashMode});
+    const voidFrame=sourceVoidFrame();
+    // ONLY THE LAMPS THAT ARE ACTUALLY REACHING HIM.
+    //
+    // Each local light costs an architectural visibility raymarch PER PIXEL —
+    // up to eight cell lookups each (architecturalLightVisibility). Adding the
+    // approach run took Source from three lights to nine and tripled that cost
+    // across the whole frame; measured, it moved the frame time from ~113ms to
+    // ~161ms in the harness.
+    //
+    // The falloff is quadratic, so a lamp at forty of its forty-eight metres is
+    // contributing under three percent — it is paying a full raymarch to be
+    // invisible. Keeping the nearest few loses nothing that can be seen: at ten
+    // metres' spacing the player is always well inside the nearest three.
+    const lamps = sourceLandingLights(landscapeOrigin())
+      // No red emitter is submitted while the observer is inside the Scene
+      // Dock. This is stricter than hoping a wide-radius source happens to be
+      // occluded, and it also avoids paying the per-pixel visibility raymarch
+      // for lights whose authored contribution here is zero.
+      .filter((light)=>light.id===SOURCE_THRESHOLD_LIGHT_ID
+        ? voidFrame.thresholdLight>.01
+        : !onSourceSide(light.id)||emergency.active)
+      .map((light)=>{
+        const sourceSide=onSourceSide(light.id);
+        const threshold=light.id===SOURCE_THRESHOLD_LIGHT_ID;
+        return{
+          ...light,
+          // The dock's sodium seam is not on the emergency contactor and never
+          // pulses or receives Source-insight power boosts.
+          intensity:threshold
+            ?light.intensity*voidFrame.thresholdLight
+            :sourceSide
+            ?(light.intensity+understood*.18)*emergency.lightScale
+            :light.intensity,
+          penetration:sourceSide
+            ?Math.min(1,light.penetration+understood*.025)
+            :light.penetration,
+        };
+      });
+    const approach = lamps.filter((light)=>String(light.id).startsWith('source-approach-emergency-'));
+    if (approach.length <= SOURCE_APPROACH_LAMPS_LIT) return lamps;
+    const px = player.x * CELL, pz = player.y * CELL;
+    const nearest = new Set(approach
+      .map((light)=>({ id: light.id, d: Math.hypot(light.x - px, light.z - pz) }))
+      .sort((a, b) => a.d - b.d)
+      .slice(0, SOURCE_APPROACH_LAMPS_LIT)
+      .map((entry) => entry.id));
+    return lamps.filter((light)=>!String(light.id).startsWith('source-approach-emergency-') || nearest.has(light.id));
   }
 
   return {
@@ -3395,6 +4099,9 @@ export function createSourceSpaceRuntime({
     setPlayerPosition,
     textSpaceActive,
     localLights,
+    sourceVoidFrame,
+    sourceEmergencyLightingFrame,
+    sourceFlashlightFrame,
     landingPortalFrame,
     landingContract: sourceLandingContract,
     sourceLandingHushFrame,
@@ -3458,6 +4165,8 @@ export function createSourceSpaceRuntime({
         ...sourceLandingContract(),
         tableau: sourceLandingHushFrame(),
         portal: landingPortalFrame(),
+        void: sourceVoidFrame(),
+        flashlight: sourceFlashlightFrame(),
         textSpaceActive: textSpaceActive(),
         weatherRemaining: landingRainRemaining,
       },

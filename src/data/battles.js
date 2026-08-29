@@ -206,9 +206,9 @@ export function natatoriumBattle(named = false) {
     challenges: natatoriumChallenges(),
     intro: [
       { who: 'direction', text: 'Forty seconds into the take. Six metres of tile, no water, and the meter dead flat at the bottom of the scale.' },
-      { who: 'direction', text: 'And then, far off, a piano. Two notes. The wrong two notes.', cue: 'piano.diegetic.01' },
+      { who: 'direction', text: 'And then, far off, a piano. Two notes. The wrong two notes. The downbeat lands. Nothing in the dry room moves.', cue: 'piano.diegetic.01' },
       { who: 'you', text: 'There is no piano in a natatorium.' },
-      { who: 'you', text: 'There is no piano in a building that has had its power off since April.' },
+      { who: 'you', text: 'There is no piano in a building that has had its power off since April. My cuffs are dry. The meter moves anyway.' },
     ],
     rounds: [
       {
@@ -229,6 +229,7 @@ export function natatoriumBattle(named = false) {
         nature: 'on the tape',
         threat: 0.6,
         before: [
+          { who: 'direction', text: 'Water reaches your ribs without entering the room. Your hands are under it. Your mouth is still in air.' },
           { who: 'sarah', text: 'Don’t record this.', rate: 0.98 },
           { who: 'me', text: "I'm not recording." },
           { who: 'sarah', text: "You're always recording." },
@@ -246,6 +247,7 @@ export function natatoriumBattle(named = false) {
         nature: 'not there',
         threat: 0.72,
         before: [
+          { who: 'direction', text: 'The surface passes over your eyes. The room tone loses its air. Every word now arrives through bone.' },
           { who: 'sarah', text: 'You never played me back. Not once. I used to think it was kindness.', rate: 0.97 },
           { who: 'me', text: 'It was. You hated it.' },
           { who: 'sarah', text: 'I hated hearing myself. You liked that I hated it. It meant you got to keep me the way you kept a room.' },

@@ -10,7 +10,9 @@ test('boot hard-gates credits and title behind mandatory calibration', () => {
   assert.match(main, /makeLensCalibrationScene\(\{[\s\S]*start:calibrate[\s\S]*onReady:afterCalibration/);
   assert.match(main, /await lens\.ready/);
   assert.match(main, /await lens\.activateBank\?\.\(bank,\{transitionMs:0\}\)/);
-  assert.match(main, /scenes\.push\(makeOpeningCreditsScene\(\{onDone:afterCredits\}\)\)/);
+  // The push takes an options object now (the boot weather's audio bed comes in
+  // through it); the gate being asserted is the ordering, not the call shape.
+  assert.match(main, /scenes\.push\(makeOpeningCreditsScene\(\{[\s\S]*?onDone:afterCredits/);
   assert.match(calibration, /LOADING MATERIALS/);
   assert.match(calibration, /PREPARING TEXTURES/);
   assert.match(calibration, /FIRST LAUNCH · EXTRA CONTENT/);

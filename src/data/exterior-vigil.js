@@ -146,7 +146,7 @@ export const VIGIL_VOICES=deepFreeze({
         choices:[choice('Tell her what the room did.','confirm'),leave('Say nothing about the room.')]},
       confirm:{speaker:LEILA,art:plate('vigilLeilaWindow','Third window, second floor','PRACTICE WING'),lines:lines(
         {who:'me',prompt:'Describe it without naming a cause.',text:'The return is still there.'},
-        {who:LEILA,text:'Then the packing did not hold. That is useful, even if it is not an answer.'},
+        {who:LEILA,text:'Then maintenance packed it twice for nothing. That is useful, even if it is not an answer.'},
         {who:LEILA,text:'Write down which room before you sleep. Morning moves things around.'},
         {who:'direction',text:'She rubs the rain from the flask lid with her thumb.'},
         {who:LEILA,text:'The booking sheet called it P-3, even after the brass number came off.'},

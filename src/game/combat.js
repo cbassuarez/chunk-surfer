@@ -4,12 +4,14 @@
 // and the command band underneath spells out what every move actually does.
 
 import * as scenes from './scenes.js';
-import { uiSize, uiFill, uiText, uiStrokeRect, uiLine } from '../render/ui.js';
+import { uiCellMetrics, uiSize, uiFill, uiText, uiStrokeRect, uiLine } from '../render/ui.js';
 import { drawLocationIndicator, drawMachinePanel, drawVfdCounter, drawVfdText } from '../render/presentation.js';
 import { UI_COLOR } from '../render/palette.js';
 import { createSamDialogVoice, isVoiced } from '../audio/sam-voice.js';
 import { TYPE_GAIN, TYPE_LEVEL } from '../audio/story-audio.js';
 import { flashMode, shakeMode, textCps } from './access.js';
+import { practiceInstrument } from './practice-room.js';
+import { createPracticeClick, practiceTempo } from '../audio/practice-click.js';
 import { activeInputPromptDevice, promptLine } from './bindings.js';
 import {
   combatInjuryStage,
@@ -21,8 +23,10 @@ import {
   drawFirstPersonHands,
   drawHouse,
   drawAttackNotes,
+  drawFireballEngulf,
   drawOpponentCombatArt,
   drawSignalBeing,
+  drawFireballCast,
   drawSubmergedBattleField,
   drawStanceTriangle,
   submergedBattleFrame,
@@ -40,6 +44,8 @@ import {
   combatIntentLookahead,
   combatMoveSubtext,
   combatHouse,
+  combatHouseSnapshot,
+  combatPractice,
   combatMovesForTool,
   combatPrediction,
   combatResult,
@@ -50,7 +56,8 @@ import {
   reduceCombat,
   rivalCombatIntent,
   advanceEnemy,
-  applyWindowChannelReturn,
+  applyFireballImpact,
+  applyFireballReturn,
   selectEnemyIntents,
 } from './combat-state.js';
 import { readFidelity, thoughtTrace } from './thought-trace.js';
@@ -74,7 +81,14 @@ import {
   parryInputDecision,
   parryOpportunitySnapshot,
 } from './combat-parry.js';
-import { channelElapsedToParrySeconds } from './window-channel.js';
+import { createBattleSubmersionController } from './battle-submersion.js';
+import { createBattleWaterAudio } from '../audio/battle-water.js';
+import { createFireballExchange, FIREBALL_RETURN_DAMAGE } from './fireball-exchange.js';
+import { createFireballVoice } from '../audio/fireball-voice.js';
+
+// Five to eight seconds, cycling, so the clock is a rhythm rather than a number
+// the player learns to count against.
+const TURN_LIMIT_SECONDS = Object.freeze([7, 5, 8, 6, 7, 5, 6, 8]);
 
 // Which techniques are fired as moves in the fight (vs passives that change the
 // rules). Derived from the authored descriptor so new actives need no code here.
@@ -82,8 +96,9 @@ const ACTIVE_TECHNIQUE_IDS = new Set(TECHNIQUE_DEFS.filter((t) => t.active).map(
 
 export const ORDINARY_TURN_SECONDS = 1.2;
 
-export function combatEnemyAttackAudioShape(shape = {}, presentation = null) {
-  return presentation?.mode === 'submerged' ? { ...shape, lowpassHz: 640 } : { ...shape };
+export function combatEnemyAttackAudioShape(shape = {}, presentation = null, submersion = null) {
+  if (presentation?.mode !== 'submerged' || !submersion?.enabled || submersion.wetMix <= .001) return { ...shape };
+  return { ...shape, lowpassHz: Math.max(120, Number(submersion.lowpassHz) || 720) };
 }
 // ── the parry window ────────────────────────────────────────────────────────
 // The blow lands at IMPACT. From WINDOW_LO up to it you may guard; before that
@@ -203,6 +218,9 @@ export function makeCombatScene({
   if (!battle?.combat) throw new Error(`missing signal combat definition: ${battle?.id || 'unknown'}`);
   const voice = createSamDialogVoice({ volume: 0.26, getAudio });
   voice.warm?.();
+  const submersionController = createBattleSubmersionController({ presentation:battle.combat.presentation });
+  let submersionSnapshot = submersionController.snapshot();
+  const waterAudio = createBattleWaterAudio({ enabled:submersionSnapshot.enabled, getAudio });
   let state = createCombatState(battle.combat, {
     difficulty,
     injuries: loadout.injuries,
@@ -276,35 +294,6 @@ export function makeCombatScene({
         : tier === PARRY_TIER.GOOD ? .30 : .18;
       fx?.flash?.(70, `rgba(120,220,255,${weight})`);
       audio?.menuMove?.();
-      if (resolution.windowChannel?.outcome === 'cut' && !resolution.windowDefenseRequested) {
-        const pendingResolution = resolution;
-        pendingResolution.windowDefenseRequested = true;
-        pendingResolution.windowDefenseDone = false;
-        pendingResolution.windowDefensePending = Promise.resolve(interference?.completeWindowDefense?.({
-          // RETURN may finish this movement, but it may never be fired after an
-          // authored finale has already completed the combat.
-          allowReturn: !state.result,
-        })).then((result) => {
-          if (resolution !== pendingResolution) return result;
-          pendingResolution.windowDefense = result || null;
-          if (result?.returned && result.hits > 0 && !state.result) {
-            const beforeReturn = state;
-            state = applyWindowChannelReturn(state, { hits: result.hits, tier: result.tier });
-            pendingResolution.after = state;
-            notice = state.last?.notice || notice;
-            barGhost.coherence = { from: beforeReturn.movementCoherence, at: now };
-            spawnPopup({
-              text: result.hits > 1 ? 'FULL RETURN' : 'RETURN',
-              role: 'ui-blue',
-              anchor: 'enemy',
-            });
-          }
-          return result;
-        }).catch(() => null).finally(() => {
-          if (resolution !== pendingResolution) return;
-          pendingResolution.windowDefenseDone = true;
-        });
-      }
     }
     return true;
   }
@@ -360,23 +349,85 @@ export function makeCombatScene({
   let sceneEntered = false;
   let openingStarted = false;
   let musicBootResolved = !musicSession;
+  // The wing's metronome. Nothing else in the game has one, and it is the only
+  // clock in that room — see practice-click.js.
+  let practiceClick = null;
   let musicFinished = false;
   let toolRows = [];
   let moveRows = [];
   let channelRows = [];
+  let houseRows = [];
   let reactionRect = null;
+  let fireballRect = null;
+  let onSurfaceHit = null;
+  // Where and when a comet last landed on the frame. The engulf is drawn over
+  // the whole panel from the bearing it came in on -- see drawFireballEngulf.
+  let fireballEngulf = null;
+  // THE TURN HAS A CLOCK NOW.
+  //
+  // Five to eight seconds to read the intent and answer it. Long enough to
+  // think, short enough that you have to think on your feet; varied per turn so
+  // the rhythm cannot be learned as a count. Let it run out and the beat is the
+  // opponent's alone -- not a penalty applied to you, just the fight carrying
+  // on without your answer, which is what a forfeit is.
+  let turnClock = null;
   let skipRect = null;
   let skipArmed = false;
   let regionRects = {};
   let introElapsed = 0;
+  let resultSurfacePending = false;
   let hitstop = 0;
   let popups = [];
   let popupSeq = 0;
   let impactFx = null;
   let barGhost = { composure: null, coherence: null };
-  let interferencePause = false;
   let performanceIntrusion = Math.max(0,Math.min(.32,Number(initialPerformanceIntrusion)||0));
   let performanceStage = performanceIntrusionStage(performanceIntrusion);
+  // The comets are pitched. See fireball-voice.js: a cast is an arpeggio, a
+  // volley is that chord struck at once, a deflection answers a fifth up, and
+  // the third one -- the one that arms the RETURN -- is the only resolved sound
+  // anywhere in the exchange.
+  const fireballVoice=createFireballVoice({getAudio});
+  // `ray-3` is the third degree of the scale. The pitch belongs to the comet,
+  // so answering the second one always answers it in the same place.
+  const rayIndexOf=(rayId)=>Math.max(0,(Number(String(rayId||'').split('-')[1])||1)-1);
+  const fireballExchange=createFireballExchange({
+    battleId:battle.combat.id,
+    reducedMotion:shakeMode()!=='full',
+    returnDamage:FIREBALL_RETURN_DAMAGE,
+    beginCast:(event)=>interference?.beginFireballCast?.(event)||null,
+    resolveCast:(event)=>interference?.resolveFireballCast?.(event),
+    onReturn:({castId,damage})=>{
+      fireballVoice.returned();
+      return commitFireballReturn({castId,damage});
+    },
+    onImpact:({castId,rayId,damage})=>{
+      const ray=fireballExchange.snapshot().active?.plan?.rays?.[rayIndexOf(rayId)];
+      fireballEngulf={at:now,u:Math.max(0,Math.min(1,ray?.exit?.x??.5)),v:Math.max(0,Math.min(1,ray?.exit?.y??.5)),answered:false};
+      fireballVoice.land(rayIndexOf(rayId));
+      return commitFireballImpact({castId,damage});
+    },
+    onLaunch:({index,volley})=>fireballVoice.cast(index,{volley}),
+    // Everything drawn outside the game window comes from this, once a frame,
+    // for the whole volley. Nothing else opens, moves or closes a surface.
+    onSync:(frame)=>{void Promise.resolve(interference?.syncFireballCast?.(frame)).catch(()=>null);},
+    // Where in the night this cast is. Sampled once per cast so the shoal's
+    // behaviour is a staircase across turns rather than something that changes
+    // under the player's hand mid-flight.
+    getPressure:()=>({battleId:battle.combat.id,turn:state.turns}),
+    // The stage band, as a fraction of the game window. Every ray coordinate is
+    // relative to THIS rect, and anything drawing outside the window has to be
+    // told so -- see the note on the plan's `stage` field.
+    getStage:()=>{
+      if(!fireballRect)return null;
+      const {cols,rows}=uiSize();
+      if(!cols||!rows)return null;
+      return{
+        x:fireballRect.x/cols,y:fireballRect.y/rows,
+        w:fireballRect.w/cols,h:fireballRect.h/rows,
+      };
+    },
+  });
 
   const movement = (index = state.movementIndex) => battle.combat.movements[index] || null;
   const stopVoice = () => { handle?.stop?.(); handle = null; };
@@ -422,10 +473,33 @@ export function makeCombatScene({
     selectedMove = Math.min(Math.max(0, selectedMove), Math.max(0, moves().length - 1));
   }
 
+  // Deterministic per turn: a fight replayed from the same state gets the same
+  // clock, and the length is not a coin flip the player can feel being tossed.
+  function turnSeconds(turn = 0) {
+    return TURN_LIMIT_SECONDS[Math.abs(Math.floor(Number(turn) || 0)) % TURN_LIMIT_SECONDS.length];
+  }
+
+  function armTurnClock() {
+    const limit = turnSeconds(state.turns);
+    turnClock = { limit, left:limit, expired:false };
+  }
+
+  function disarmTurnClock() { turnClock = null; }
+
+  function forfeitTurn() {
+    disarmTurnClock();
+    notice = 'NO ANSWER · THE BEAT IS THEIRS';
+    audio?.menuMove?.();
+    fx?.flash?.(70, 'rgba(255,88,40,0.22)');
+    turnStart = state;
+    beginEnemyBeat();
+  }
+
   function beginToolSelection() {
     phase = 'tool';
     takeConfirmation = false;
     selectedMove = 0;
+    armTurnClock();
     repairSelection();
     // The exchange is over and the beat is his again: this is where a bark
     // lands, on top of the deck he is already reading.
@@ -516,6 +590,14 @@ export function makeCombatScene({
 
   function enterMovement(index = state.movementIndex) {
     const next = movement(index);
+    fireballExchange.setMovement({
+      id:next?.id||'',index,
+      title:next?.title||next?.label||next?.id||'',
+    });
+    submersionSnapshot = submersionController.setMovement(index);
+    waterAudio.setPhase(submersionSnapshot);
+    musicSession?.setSubmersion?.(submersionSnapshot);
+    voice.setEnvironment?.(submersionSnapshot);
     playSound?.({ threat: next?.threat ?? .45 + index * .1 });
     void Promise.resolve(interference?.movement?.({
       id: next?.id || '',
@@ -540,7 +622,22 @@ export function makeCombatScene({
     if (musicFinished) return;
     musicFinished = true;
     musicSession?.setDialogueActive?.(false);
-    musicSession?.finish?.(state.result?.result||'win');
+    musicSession?.finish?.(state.result?.result || 'win');
+  }
+
+  function beginResultDelivery() {
+    const result = state.result?.result || 'win';
+    submersionSnapshot = submersionController.beginResult(result);
+    waterAudio.setPhase(submersionSnapshot);
+    musicSession?.setSubmersion?.(submersionSnapshot);
+    voice.setEnvironment?.(submersionSnapshot);
+    if (result === 'win' && submersionSnapshot.enabled && !submersionSnapshot.settled) {
+      resultSurfacePending = true;
+      phase = 'submersion';
+      return;
+    }
+    finishMusic();
+    deliverResult();
   }
 
   function deliverResult() {
@@ -548,13 +645,9 @@ export function makeCombatScene({
     resultDelivered = true;
     fx?.stopCues?.();   // the last blow does not outlive the fight
     const metrics = combatResult(state) || {};
-    const windowChannelRecovery = interference?.channelState?.() || null;
     const legacyMetrics = {
       ...metrics,
-      continuation: {
-        ...(metrics.continuation || {}),
-        ...(windowChannelRecovery?.battleId ? { windowChannel: windowChannelRecovery } : {}),
-      },
+      continuation: { ...(metrics.continuation || {}) },
       attempts: Math.max(1, Number(metrics.turns) || 1),
       playerHealth: metrics.composure,
       enemyHealth: 0,
@@ -671,7 +764,13 @@ export function makeCombatScene({
       spawnPopup({ text: 'CAPTURED', role: 'ui-blue', anchor: 'enemy' });
     }
     if (enemyBeatImpact) {
-      resolution.interferencePending = Promise.resolve(interference?.impact?.({
+      waterAudio.impact({
+        received:Math.max(0,Number(last.received)||0),
+        parried:!!last.parried,
+      },submersionSnapshot);
+      // Personalized bookkeeping may write asynchronously, but presentation is
+      // never a combat fence.
+      void Promise.resolve(interference?.impact?.({
         kind: resolution.action?.kind || null,
         perfect: !!last.perfect,
         parried: !!last.parried,
@@ -683,36 +782,6 @@ export function makeCombatScene({
 
   function finishResolution() {
     if (!resolution) return;
-    if (resolution.windowDefensePending && !resolution.windowDefenseDone) return;
-    if (resolution.interferencePending && !resolution.interferenceDone) {
-      if (!resolution.interferenceWaiting) {
-        const pendingResolution = resolution;
-        pendingResolution.interferenceWaiting = true;
-        interferencePause = true;
-        pendingResolution.interferencePending.finally(() => {
-          if (resolution !== pendingResolution) return;
-          pendingResolution.interferenceDone = true;
-          pendingResolution.interferenceWaiting = false;
-          interferencePause = false;
-          finishResolution();
-        });
-      }
-      return;
-    }
-    if (resolution.windowChannel?.scene && !resolution.windowChannelResolved) {
-      if (!resolution.windowChannelResolvePending) {
-        const pendingResolution = resolution;
-        pendingResolution.windowChannelResolvePending = Promise.resolve(
-          interference?.resolveWindowChannel?.(),
-        ).catch(() => null).finally(() => {
-          if (resolution !== pendingResolution) return;
-          pendingResolution.windowChannelResolved = true;
-          pendingResolution.windowChannelResolvePending = null;
-          finishResolution();
-        });
-      }
-      return;
-    }
     // A player beat that deferred the enemy turn hands off to the enemy beat;
     // everything else (perfect, tempo, movement break, KO, or the finished
     // enemy beat) settles the whole turn.
@@ -722,6 +791,104 @@ export function makeCombatScene({
       return;
     }
     settleTurn();
+  }
+
+  function handleStateEndpoint(fallbackMovementIndex=state.movementIndex,{fromFireball=false}={}){
+    if(state.result){
+      if(!fromFireball)fireballExchange.cancel();
+      const finished=movement(state.last?.transition?.from??fallbackMovementIndex);
+      const tail=[...(finished?.after||[])];
+      if(tail.length)speak(tail,beginResultDelivery);
+      else beginResultDelivery();
+      return true;
+    }
+    if(state.last?.transition?.to!=null){
+      if(!fromFireball)fireballExchange.cancel();
+      const old=movement(state.last.transition.from);
+      const closing=old?.after||[];
+      clearBark();
+      resources.playImpact?.({transition:true});
+      void Promise.resolve(interference?.phaseBreak?.({
+        from:state.last.transition.from,
+        to:state.last.transition.to,
+      })).catch(()=>null);
+      barGhost.coherence=null;
+      const openNext=()=>enterMovement(state.movementIndex);
+      if (closing.length) speak(closing, openNext);
+      else openNext();
+      return true;
+    }
+    return false;
+  }
+
+  // ONE ANSWER FOR A STRUCK COMET, WHEREVER THE CLICK CAME FROM.
+  //
+  // The in-canvas pointer and a click on an external cast surface are the same
+  // act, so they say the same thing and make the same sound -- which is a fifth
+  // above the note that comet was thrown at, except for the third one, which is
+  // the tonic and the only time this exchange resolves.
+  function announceFireballHit(result){
+    const degree=rayIndexOf(result.rayId);
+    if(result.returned)fireballVoice.arm();
+    else fireballVoice.deflect(degree);
+    notice=result.returned
+      ? 'RETURN ARMED · RANGED IN FLIGHT'
+      : `DEFLECT · RETURN ${result.charge}/${result.threshold}`;
+    fx?.flash?.(55,result.returned?'rgba(120,220,255,0.30)':'rgba(255,188,52,0.20)');
+  }
+
+  function commitFireballReturn({castId='',damage=FIREBALL_RETURN_DAMAGE}={}){
+    if(state.result)return false;
+    const before=state;
+    const coherenceFrom=state.movementCoherence;
+    state=applyFireballReturn(state,{castId,damage});
+    const dealt=Math.max(0,coherenceFrom-state.movementCoherence);
+    if(dealt<=0)return false;
+    notice=`RETURN · ${dealt} RANGED`;
+    barGhost.coherence={from:coherenceFrom,at:now};
+    spawnPopup({text:'RETURN',role:'ui-blue',anchor:'enemy'});
+    spawnPopup({value:dealt,kind:'dealt',anchor:'enemy',delay:.08});
+    resources.playImpact?.({dealt,received:0,perfect:true,ranged:true});
+    fx?.flash?.(82,'rgba(120,220,255,0.42)');
+    if(resolution)resolution.after=state;
+    if(state.result||state.last?.transition?.to!=null){
+      const fallback=before.movementIndex;
+      resolution=null;
+      turnStart=null;
+      fx?.stopCues?.();
+      handleStateEndpoint(fallback,{fromFireball:true});
+    }
+    return true;
+  }
+
+  // A COMET NOBODY TOUCHED LANDS ON YOU.
+  //
+  // The mirror of commitFireballReturn, and the reason the RETURN is worth
+  // anything: ignoring a fireball used to be free, which made three clicks for
+  // ten damage a bonus rather than a decision. Outside the turn, like the
+  // return — no move consumed, no clock advanced.
+  function commitFireballImpact({castId='',damage=0}={}){
+    if(state.result)return false;
+    const before=state;
+    const composureFrom=state.composure;
+    state=applyFireballImpact(state,{castId,damage});
+    const received=Math.max(0,composureFrom-state.composure);
+    if(received<=0)return false;
+    notice=`RANGED · ${received}`;
+    barGhost.composure={from:composureFrom,at:now};
+    spawnPopup({value:received,kind:'received',anchor:'player'});
+    resources.playImpact?.({dealt:0,received,perfect:false,ranged:true});
+    fx?.flash?.(70,'rgba(255,140,40,0.34)');
+    if(shakeMode()==='full')fx?.shake?.(.4,180);
+    if(resolution)resolution.after=state;
+    if(state.result){
+      const fallback=before.movementIndex;
+      resolution=null;
+      turnStart=null;
+      fx?.stopCues?.();
+      handleStateEndpoint(fallback,{fromFireball:true});
+    }
+    return true;
   }
 
   function settleTurn() {
@@ -756,39 +923,7 @@ export function makeCombatScene({
       movementIndex: state.movementIndex,
     });
 
-    if (state.result) {
-      finishMusic();
-      const finished = movement(state.last?.transition?.from ?? resolved.before.movementIndex);
-      const tail = [...(finished?.after || [])];
-      if (tail.length) speak(tail, deliverResult);
-      else deliverResult();
-      return;
-    }
-    if (state.last?.transition?.to != null) {
-      const old = movement(state.last.transition.from);
-      // `after` used to be prepended to the NEXT movement's opening, so every
-      // button line in the game landed as somebody else's first line. It closes
-      // the movement it belongs to now, and the next one opens after it.
-      const closing = old?.after || [];
-      clearBark();
-      resources.playImpact?.({ transition: true });
-      interferencePause = true;
-      Promise.resolve(interference?.phaseBreak?.({
-        from: state.last.transition.from,
-        to: state.last.transition.to,
-      })).then((beat) => new Promise((resolve) => {
-        const dwell = Math.max(0, Math.min(2600, Number(beat?.dwellMs) || 0));
-        if (dwell) setTimeout(resolve, dwell);
-        else resolve();
-      })).catch(() => null).finally(() => {
-        interferencePause = false;
-        barGhost.coherence = null;
-        const openNext = () => enterMovement(state.movementIndex);
-        if (closing.length) speak(closing, openNext);
-        else openNext();
-      });
-      return;
-    }
+    if(handleStateEndpoint(resolved.before.movementIndex))return;
     beginToolSelection();
   }
 
@@ -812,6 +947,7 @@ export function makeCombatScene({
       return;
     }
     takeConfirmation = false;
+    disarmTurnClock();
     syncResourceSpend(before, next);
     turnStart = before;
     state = next;
@@ -858,6 +994,10 @@ export function makeCombatScene({
         beat,
         composure: next.composure,
         maxComposure: next.maxComposure,
+        // In the practice wing the sound is the room bleeding through the
+        // partition, not the shape of a blow. Null everywhere else, which leaves
+        // the intent mapping exactly as it was.
+        instrument: next.practice ? practiceInstrument(next.practice) : null,
       });
       // The blow is a chop off the surfer's take, and it is this beat's sound
       // and no longer: it is cut to half a bar on the way in (enemyAttackShape)
@@ -871,6 +1011,7 @@ export function makeCombatScene({
         const shape=combatEnemyAttackAudioShape(
           {group:'battle',...enemyAttackShape(cueId,beat,Math.random,lean)},
           battle.combat.presentation,
+          submersionSnapshot,
         );
         fx?.cue?.(cueId,shape);
       }
@@ -894,41 +1035,7 @@ export function makeCombatScene({
       parryWhiffed: false,
       parryEarly: false,
     };
-    const canOpenChannel = isParryableEnemyAction(primary?.kind)
-      && typeof interference?.beginWindowChannel === 'function';
-    if (!canOpenChannel) {
-      phase = 'resolve';
-      return;
-    }
-    const pendingResolution = resolution;
-    phase = 'channel';
-    pendingResolution.windowChannelPending = Promise.resolve(interference.beginWindowChannel({
-      movementIndex: before.movementIndex,
-      movementId: movement(before.movementIndex)?.id || '',
-      movementTitle: movement(before.movementIndex)?.title || movement(before.movementIndex)?.label || '',
-      intentId: primary?.id || '',
-      intentLabel: primary?.label || '',
-      intentKind: primary?.kind || '',
-      windowScale: state.difficulty?.parryWindowScale,
-    })).then((result) => {
-      if (resolution !== pendingResolution || !sceneEntered) return;
-      pendingResolution.windowChannel = result || { outcome: 'skip' };
-      if (result?.outcome === 'cut') {
-        pendingResolution.elapsed = channelElapsedToParrySeconds(result.elapsedMs, result.deadlineMs);
-        notice = 'CHANNEL CUT · PARRY THE BLOW';
-      } else if (result?.outcome === 'timeout') {
-        // The enemy reducer already applied exactly one ordinary damage packet.
-        // Spending the parry here prevents a second reaction without adding a
-        // second hit of our own.
-        pendingResolution.elapsed = PARRY_CONTACT_HOLD_SECONDS + channelElapsedToParrySeconds(1, 1);
-        pendingResolution.parryTried = true;
-        pendingResolution.parryWhiffed = true;
-        notice = 'WINDOW CHANNEL LANDED';
-      }
-      phase = 'resolve';
-    }).catch(() => {
-      if (resolution === pendingResolution && sceneEntered) phase = 'resolve';
-    });
+    phase='resolve';
   }
 
   function cycleChannel(delta) {
@@ -1007,7 +1114,26 @@ export function makeCombatScene({
 
     enter() {
       sceneEntered = true;
+      if (state.practice) {
+        const rig = getAudio?.();
+        practiceClick = createPracticeClick({ ctx: rig?.ctx, context: rig?.ctx, destination: rig?.destination });
+        practiceClick.start();
+      }
       void Promise.resolve(interference?.enter?.()).catch(() => null);
+      // A fireball that has left the frame is on a cast surface, and clicking
+      // that surface is the same act as clicking the comet on the stage. The
+      // surface reports which ray was struck; nothing else about it is trusted
+      // or needed. Bound for the life of the scene only — no fight ever hands a
+      // click to the one after it.
+      if (typeof window !== 'undefined') {
+        onSurfaceHit = (event) => {
+          if (!sceneEntered || state.result) return;
+          if (!['tool', 'move', 'resolve'].includes(phase)) return;
+          const result = fireballExchange.strike(event?.detail || {});
+          if (result.hit) announceFireballHit(result);
+        };
+        window.addEventListener('chunk-surfer:fireball-hit', onSurfaceHit);
+      }
       phase = musicSession ? 'arrival' : 'talk';
       if (!musicSession) { beginOpening(); return; }
       Promise.resolve(musicSession.start?.()).then((music) => {
@@ -1024,9 +1150,21 @@ export function makeCombatScene({
 
     exit() {
       sceneEntered = false;
+      if (onSurfaceHit && typeof window !== 'undefined') {
+        window.removeEventListener('chunk-surfer:fireball-hit', onSurfaceHit);
+        onSurfaceHit = null;
+      }
       stopVoice();
       audio?.stopTyping?.();
       fx?.stopCues?.();   // never let a stem the surfer was mid-swing with outlive the scene
+      // A metronome ticking in a corridor he has left is the same failure as a
+      // weapon stem outliving the fight.
+      practiceClick?.stop();
+      practiceClick = null;
+      fireballExchange.stop();
+      fireballVoice.dispose();
+      waterAudio.stop();
+      voice.dispose?.();
       if (!musicFinished) {
         if (state.result) finishMusic();
         else musicSession?.abort?.();
@@ -1059,9 +1197,12 @@ export function makeCombatScene({
         actions: availableCombatActions(state),
         prediction: combatPrediction(state),
         music: musicSession?.snapshot?.() || null,
+        submersion: submersionSnapshot,
+        waterAudio: waterAudio.snapshot(),
         presentation:battle.combat.presentation||null,
         performanceIntrusion,
         performanceStage,
+        fireball:fireballExchange.snapshot(),
         selectedTool,
         selectedMove,
         notice,
@@ -1071,15 +1212,7 @@ export function makeCombatScene({
           action: resolution.action.id,
           side: resolution.side,
           parry: parryWindow(),
-          windowChannel: resolution.windowChannel ? {
-            outcome: resolution.windowChannel.outcome,
-            elapsedMs: resolution.windowChannel.elapsedMs,
-            deadlineMs: resolution.windowChannel.deadlineMs,
-            reacquiredMain: !!resolution.windowChannel.reacquiredMain,
-          } : phase === 'channel' ? { outcome: 'pending' } : null,
-          windowDefense: resolution.windowDefense || null,
         } : null,
-        windowChannel: interference?.channelState?.() || null,
         statePhase: state.phase,
         tutorial: director?.snapshot?.() || null,
       };
@@ -1087,6 +1220,35 @@ export function makeCombatScene({
 
     update(dt) {
       introElapsed += dt;
+      if (practiceClick) {
+        const wing = combatPractice(state);
+        practiceClick.setRetakes(wing?.retakes || 0);
+        practiceClick.setReturnLevel(wing ? Math.max(0, 1 - wing.listens / Math.max(1, wing.listensToStop)) : 0);
+        practiceClick.tick();
+      }
+      // Advances through hitstop as well: the water is a place, not an
+      // animation, and freezing a landed hit must not un-submerge the room.
+      submersionSnapshot = submersionController.update(dt);
+      waterAudio.setPhase(submersionSnapshot);
+      musicSession?.setSubmersion?.(submersionSnapshot);
+      voice.setEnvironment?.(submersionSnapshot);
+      // The ranged exchange advances beside both sides' ordinary beats. It is
+      // paused only while authored dialogue/arrival/result presentation owns
+      // the whole screen, never because a move or parry is resolving.
+      fireballExchange.update(dt,{
+        enabled:['tool','move','resolve'].includes(phase)&&!state.result,
+      });
+      // Only while the deck is his and nothing else owns the screen. A bark, a
+      // checkpoint or an authored line is not time the player was given.
+      if(turnClock&&!state.result&&['tool','move'].includes(phase)&&!bark&&!cur){
+        turnClock.left=Math.max(0,turnClock.left-dt);
+        if(turnClock.left<=0){turnClock.expired=true;forfeitTurn();}
+      }
+      if (resultSurfacePending && submersionSnapshot.settled) {
+        resultSurfacePending = false;
+        finishMusic();
+        deliverResult();
+      }
       if (hitstop > 0) {
         // Frozen frames: the beat, the typewriter, and every animation clock
         // hold still so a landed hit visibly stops the world.
@@ -1101,10 +1263,6 @@ export function makeCombatScene({
         return;
       }
       if (phase === 'resolve' && resolution) {
-        // Choosing whether to send a charged RETURN is part of the combined
-        // defense. The ordinary parry clock and impact cannot advance behind
-        // that game-owned prompt.
-        if (resolution.windowDefensePending && !resolution.windowDefenseDone) return;
         resolution.elapsed += dt;
         const opportunity = parryWindow();
         if (opportunity?.buffered && opportunity.armed && !resolution.parryTried) {
@@ -1217,16 +1375,7 @@ export function makeCombatScene({
         }
         return true;
       }
-      if (phase === 'channel') {
-        if (e.controllerAction === 'confirm') interference?.windowChannelInput?.('confirm');
-        return true;
-      }
       if (phase === 'resolve') {
-        if (resolution?.windowDefensePending && !resolution.windowDefenseDone) {
-          if (e.controllerAction === 'confirm') interference?.windowChannelInput?.('confirm');
-          else if (back) interference?.windowChannelInput?.('decline');
-          return true;
-        }
         // A parryable enemy strike owns confirm until contact. It cannot be
         // accidentally fast-forwarded out from under the player, and an early
         // press outside the small buffer teaches WAIT without spending the try.
@@ -1275,6 +1424,20 @@ export function makeCombatScene({
       if (e.type !== 'pointerdown') return true;
       const x = Math.floor(Number(e.cellX));
       const y = Math.floor(Number(e.cellY));
+      if(['tool','move','resolve'].includes(phase)&&fireballRect
+        &&x>=fireballRect.x&&x<fireballRect.x+fireballRect.w
+        &&y>=fireballRect.y&&y<fireballRect.y+fireballRect.h){
+        const metrics=uiCellMetrics();
+        const result=fireballExchange.click({
+          x:(Number(e.cellX)-fireballRect.x)/Math.max(.001,fireballRect.w),
+          y:(Number(e.cellY)-fireballRect.y)/Math.max(.001,fireballRect.h),
+          aspect:(fireballRect.w*metrics.cellW)/Math.max(.001,fireballRect.h*metrics.cellH),
+        });
+        if(result.hit){
+          announceFireballHit(result);
+          return true;
+        }
+      }
       if (phase === 'resolve' && reactionRect
         && x >= reactionRect.x && x < reactionRect.x + reactionRect.w
         && y >= reactionRect.y && y < reactionRect.y + reactionRect.h) {
@@ -1284,6 +1447,13 @@ export function makeCombatScene({
       if (!['tool', 'move'].includes(phase)) return true;
       if (skipRect && x >= skipRect.x && x < skipRect.x + skipRect.w && y >= skipRect.y && y < skipRect.y + skipRect.h) {
         skipDrill();
+        return true;
+      }
+      const section = houseRows.find((row) => y >= row.y && y < row.y + (row.h || 1) && x >= row.x && x < row.x + row.w);
+      if (section) {
+        state = reduceCombat(state, { type: COMBAT_ACTION.TARGET, rowId: section.id });
+        notice = state.last.notice;
+        audio?.menuMove?.();
         return true;
       }
       const channel = channelRows.find((row) => y >= row.y && y < row.y + (row.h || 1) && x >= row.x && x < row.x + row.w);
@@ -1304,7 +1474,15 @@ export function makeCombatScene({
       }
       const move = moveRows.find((row) => y >= row.y && y < row.y + (row.h || 1) && x >= row.x && x < row.x + row.w);
       if (move) {
+        // CLICKING A MOVE IS ENTERING THE MOVE COLUMN.
+        //
+        // `execute` refuses anything that is not already phase 'move', and the
+        // only thing that set that phase was the DOWN key -- so a click on a
+        // move tile did nothing at all unless the player had first arrowed into
+        // the row, which is precisely the keyboard-only feel this is meant to
+        // stop. Pointing at a thing is a way of choosing it.
         selectedMove = move.index;
+        phase = 'move';
         execute(move.id);
       }
       return true;
@@ -1321,10 +1499,6 @@ export function makeCombatScene({
         : '[SPACE] PARRY';
       const footer = phase === 'arrival'
         ? '168 BPM · LOCKING DOWNBEAT'
-        : phase === 'channel'
-          ? activeInputPromptDevice() === 'controller'
-            ? `${promptLine([{ action: 'confirm', label: 'CUT / REACQUIRE' }])} · THEN PARRY`
-            : 'CUT EVERY HOSTILE WINDOW · CLICK BACK HERE · THEN PARRY'
         : phase === 'tool'
           ? activeInputPromptDevice() === 'controller'
             ? '[STICK / D-PAD ←→] TOOL · [↓] ACTIONS'
@@ -1370,7 +1544,7 @@ export function makeCombatScene({
       const hudMode = reaction ? 'reaction'
         : phase === 'talk' ? 'dialogue'
           : phase === 'arrival' ? 'arrival' : 'command';
-      const layout = combatHudLayout({ panel, mode: hudMode, sourceActive: !!state.source });
+      const layout = combatHudLayout({ panel, mode: hudMode, sourceActive: !!state.source, houseActive: !!state.house || !!state.practice });
       const compact = layout.compact;
       reactionRect = null;
       const visual = visualState();
@@ -1430,6 +1604,7 @@ export function makeCombatScene({
       // an oblique fight stance, hands rising from the near-left ──────────────
       const stageY = layout.stage.y;
       const stageH = layout.stage.h;
+      fireballRect={x:panel.x,y:stageY,w:panel.w,h:stageH};
       const reducedMotion = shakeMode() !== 'full';
       const introP = Math.min(1, introElapsed / 1.05);
       const introIn = reducedMotion ? 1 : ease(introP);
@@ -1520,16 +1695,53 @@ export function makeCombatScene({
         });
       }
 
+      const fireball=fireballExchange.snapshot();
+      // Drawn under the comets and over the room: the thing that arrived is in
+      // front of the stage it crossed, and the next one is in front of it.
+      drawFireballEngulf({
+        x:panel.x,y:panel.y,w:panel.w,h:panel.h,
+        at:fireballEngulf,now,reducedMotion,answered:!!fireballEngulf?.answered,
+      });
+      drawFireballCast({
+        x:panel.x,y:stageY,w:panel.w,h:stageH,
+        cast:fireball.active?.plan||null,
+        flights:fireball.active?.rays||null,
+        now,reducedMotion,
+      });
+
       const submerged=submergedBattleFrame({
-        music:musicSession?.snapshot?.()||null,
+        submersion:submersionSnapshot,
         presentation:battle.combat.presentation,
         movementIndex:visual.movementIndex,
         intent,
       });
       drawSubmergedBattleField({
-        x:panel.x,y:stageY,w:panel.w,h:stageH,frame:submerged,now,reducedMotion,
+        x:panel.x,y:panel.y,w:panel.w,h:panel.h,frame:submerged,now,reducedMotion,
         resolveProgress:visual.progress,
       });
+
+      // Optical water treatment has already run. RETURN is type, so it stays on
+      // the sharp HUD plane while the projectile itself refracts with the room.
+      const returnLabel=fireball.returnReady
+        ? 'RETURN / IN FLIGHT'
+        : `RETURN ${fireball.charge}/${fireball.threshold}`;
+      uiText(panel.x+Math.max(0,panel.w-returnLabel.length),stageY+.25,returnLabel,
+        fireball.returnReady?'ui-counter':'ui-amber',fireball.charge||fireball.returnReady?1:.58);
+
+      // THE CLOCK, WHERE HIS HANDS ARE.
+      //
+      // A bar rather than a number: the point is not how many seconds are left,
+      // it is that they are going. Red for the last second and a half, which is
+      // the only part anybody actually reads.
+      if(turnClock&&['tool','move'].includes(phase)){
+        const left=Math.max(0,turnClock.left),span=Math.max(.001,turnClock.limit);
+        const width=Math.max(6,Math.min(18,Math.floor(panel.w*.22)));
+        const filled=Math.max(0,Math.min(width,Math.round(width*(left/span))));
+        const urgent=left<=1.5;
+        const bar=`${'█'.repeat(filled)}${'·'.repeat(width-filled)}`;
+        const blink=urgent&&!reducedMotion?(Math.floor(now*6)%2?1:.5):1;
+        uiText(panel.x,stageY+.25,bar,urgent?'ui-danger':'ui-amber',blink);
+      }
 
       const selectedToolId = resolution?.action?.tool || activeTool().id;
       const injury = combatInjuryStage({ composure: snap.composure, maxComposure: snap.maxComposure, injuries: state.injuries });
@@ -1716,9 +1928,8 @@ export function makeCombatScene({
       regionRects.mods = layout.resourceCells.mods;
 
       const interferenceLine = interference?.line?.();
-      if (interferencePause && interferenceLine) {
+      if (interferenceLine && !bark) {
         uiText(layout.body.x, layout.body.y, String(interferenceLine.text || '').slice(0, layout.body.w), interferenceLine.stage === 'handoff' ? 'ui-danger' : 'ui-amber', .92);
-        return;
       }
 
       // A BARK, over the deck rather than in place of it.
@@ -1808,6 +2019,7 @@ export function makeCombatScene({
         toolRows = [];
         moveRows = [];
         channelRows = [];
+        houseRows = [];
         uiFill(box.x, box.y, box.w, box.h, 'rgba(7,10,13,.94)');
         uiStrokeRect(box.x, box.y, box.w, box.h, reaction.armed ? UI_COLOR.amber : UI_COLOR.frame, reaction.armed ? .88 : .42, reaction.armed ? 1.6 : 1);
         const contentY = box.y + Math.max(.25, (box.h - 6.4) / 2);
@@ -1865,6 +2077,143 @@ export function makeCombatScene({
       // ── icon-forward command deck ─────────────────────────────────────────
       let listY = layout.channels.h ? layout.channels.y : layout.tools.y;
       channelRows = [];
+      houseRows = [];
+      // ── the House target rail ─────────────────────────────────────────────
+      //
+      // The channel row is Source-only, and no encounter has both — so the hall
+      // borrows the slot for five cards, one per section. This is the whole
+      // answer to "the stage cannot explain why one section matters": each card
+      // carries the section's name, the job it does, and what it is doing right
+      // now, so the decision of where to point is made from what is on screen
+      // rather than from memory. It is also the only way a pointer or a finger
+      // can select a section at all; before this, targeting was Q/E or nothing.
+      // ── the transport ─────────────────────────────────────────────────────
+      //
+      // The practice wing borrows the same slot the House rail and the Source
+      // channels use. It draws the only three numbers in that room: where the
+      // playhead is in the fragment, how many times he has taken it from the
+      // top, and what he has managed to hear. There is no opponent gauge because
+      // there is no opponent — the bar the file ends at is the whole of it.
+      if (state.practice) {
+        const wing = combatPractice(state);
+        const cardH = Math.max(2.1, layout.channels.h - .55);
+        uiFill(panel.x, listY, panel.w, cardH, 'rgba(255,255,255,.018)');
+        uiStrokeRect(panel.x, listY, panel.w, cardH, UI_COLOR.frame, .22, 1);
+
+        // The fragment, drawn as bars. The last one is the bar it ends at and it
+        // is marked differently, because that is the one he cannot get past.
+        const slotW = 2.4;
+        const barsW = wing.bars * slotW;
+        for (let index = 0; index < wing.bars; index += 1) {
+          const bx = panel.x + .8 + index * slotW;
+          const here = index + 1 === wing.bar;
+          const last = index + 1 === wing.bars;
+          const glyph = last ? '▌' : here ? '▐' : '│';
+          const role = here ? 'ui-amber' : last ? 'ui-danger' : 'ui-label';
+          uiText(bx, listY + .34, glyph, role, here ? 1 : last ? .7 : .4);
+        }
+        uiText(panel.x + .8, listY + 1.16,
+          wing.atEnd ? 'THE FILE ENDS HERE' : `BAR ${wing.bar} OF ${wing.bars}`,
+          wing.atEnd ? 'ui-danger' : 'ui-secondary', wing.atEnd ? .9 : .6);
+
+        // THE CLICK, AND THE ONE THAT COMES BACK.
+        //
+        // Leila practised in here: "a click coming back through the partition.
+        // Not enough to count cleanly. Enough to pull the stick out of your hand
+        // if you listened to it." The room runs a metronome on the ordinary
+        // battle grid, and a second mark sits behind it — the same click,
+        // returning late off the partition.
+        //
+        // The return does not lie to him and it does not take anything: it is
+        // simply louder than the grid until he understands the room, and it
+        // fades as he does. Three passes at the bar and it is gone, which is
+        // what "maintenance packed the grille twice" was always describing.
+        const clickX = panel.x + panel.w - 12;
+        if (roomForClick) {
+        // The SAME clock the metronome is running on, rushed by exactly as much.
+        // Two clocks would have the drawn beat and the heard beat disagreeing in
+        // the one room whose whole subject is whether you can trust your time.
+        const grid = 60 / practiceTempo(wing.retakes) * 4;
+        const phase = reducedMotion ? 0 : (performance.now() / 1000 % grid) / grid;
+        const beatOn = phase < .16;
+        const returnLag = .085 / grid;                    // the partition, ~85ms behind
+        const returnOn = phase >= returnLag && phase < returnLag + .16;
+        const returnLevel = Math.max(0, 1 - wing.listens / Math.max(1, wing.listensToStop));
+        uiText(clickX, listY + .34, 'CLICK', 'ui-label', .45);
+        uiText(clickX + 6, listY + .34, beatOn ? '●' : '○', 'ui-amber', beatOn ? .95 : .3);
+        if (returnLevel > 0) {
+          uiText(clickX, listY + 1.16, 'RETURN', 'ui-label', .4 * returnLevel);
+          uiText(clickX + 6, listY + 1.16, returnOn ? '●' : '○', 'ui-blue',
+            (returnOn ? .8 : .25) * returnLevel);
+        } else {
+          uiText(clickX, listY + 1.16, 'RETURN GONE', 'ui-label', .35);
+        }
+        }
+
+        // What it has cost and what the next one will. Printed before he presses
+        // it, because the point is that he does it anyway.
+        // The click only gets a corner if there is one to give it; on a narrow
+        // deck the fragment and what he has heard come first.
+        const roomForClick = panel.w >= barsW + 30;
+        const textRight = panel.x + (roomForClick ? panel.w - 13 : panel.w - 1);
+        const right = panel.x + Math.max(barsW + 3, panel.w * .40);
+        const textW = Math.max(8, Math.floor(textRight - right));
+        uiText(right, listY + .34, `FROM THE TOP  ${wing.retakes}`, 'ui-label', .6);
+        uiText(right, listY + 1.16, (wing.heard.length
+          ? wing.heard.map((pass) => pass.label).join(' · ')
+          : 'NOTHING PLAYED BACK YET').slice(0, textW),
+        wing.heard.length ? 'ui-blue' : 'ui-label', wing.heard.length ? .75 : .45);
+        listY = layout.tools.y;
+      }
+      if (state.house) {
+        const snapshot = combatHouseSnapshot(state);
+        const gap = .8;
+        const cardH = Math.max(2.1, layout.channels.h - .55);
+        const cards = snapshot?.sections || [];
+        const cardW = (panel.w - gap * Math.max(0, cards.length - 1)) / Math.max(1, cards.length);
+        cards.forEach((card, index) => {
+          const x = panel.x + index * (cardW + gap);
+          const width = Math.max(1, Math.floor(cardW - 1));
+          // Four states, four readings: where you are pointing, who is throwing
+          // this beat, who is helping them, and who has stopped mattering.
+          const tint = card.cleared ? 'rgba(255,255,255,.012)'
+            : card.targeted ? 'rgba(242,168,30,.07)'
+              : card.lead ? 'rgba(214,64,48,.06)'
+                : card.supporting ? 'rgba(120,150,214,.05)' : 'rgba(255,255,255,.018)';
+          const edge = card.cleared ? UI_COLOR.frame
+            : card.targeted ? UI_COLOR.amber
+              : card.lead ? UI_COLOR.danger
+                : card.supporting ? UI_COLOR.blue : UI_COLOR.frame;
+          uiFill(x, listY, cardW, cardH, tint);
+          uiStrokeRect(x, listY, cardW, cardH, edge, card.targeted ? .72 : card.lead || card.supporting ? .5 : .2, card.targeted ? 1.35 : 1);
+          const nameStyle = card.cleared ? 'ui-label' : card.targeted ? 'ui-amber' : card.lead ? 'ui-danger' : 'ui-primary';
+          uiText(x + .55, listY + .3, card.label.slice(0, width), nameStyle, card.cleared ? .35 : card.targeted ? .95 : .78);
+          uiText(x + .55, listY + 1.05, card.roleLabel.slice(0, width), card.cleared ? 'ui-label' : 'ui-secondary', card.cleared ? .3 : .6);
+          const statusStyle = card.cleared ? 'ui-label'
+            : card.suppressed ? 'ui-blue'
+              : card.lead ? 'ui-danger'
+                : card.settled ? 'ui-label' : 'ui-amber';
+          uiText(x + .55, listY + 1.72, card.status.slice(0, width), statusStyle, card.cleared ? .3 : .7);
+          // A cleared section keeps its card so the rail never reflows under the
+          // player's hand, but it is not a place the cursor may land.
+          if (!card.cleared) houseRows.push({ id: card.id, x, y: listY, w: cardW, h: cardH });
+        });
+        // The committed attack, spelled out under the rail: who leads, what they
+        // brought, and what it adds up to. Suppressed contributors are struck
+        // from the sum here rather than silently dropped at resolution.
+        const packet = snapshot?.packet || null;
+        if (packet) {
+          const parts = [`LEAD ${packet.leadLabel}`];
+          for (const entry of packet.contributions) {
+            if (entry.suppressed) { parts.push(`${entry.label} CANCELLED`); continue; }
+            if (entry.effect === 'follow-up') parts.push(`${entry.label} FOLLOW-UP ${entry.amount}`);
+            else if (entry.amount > 0) parts.push(`${entry.label} +${entry.amount}`);
+          }
+          if (packet.cue) parts.push(`CUE ${packet.cue.toUpperCase()}`);
+          uiText(panel.x, listY + cardH + .2, parts.join(' · ').slice(0, panel.w), 'ui-blue', .6);
+        }
+        listY = layout.tools.y;
+      }
       if (state.source) {
         const prediction = combatPrediction(state);
         const channelGap = .8;

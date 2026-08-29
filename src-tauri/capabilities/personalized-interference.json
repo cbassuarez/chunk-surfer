@@ -1,34 +1,24 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "personalized-interference",
-  "description": "Restricts opted-in choreography to Chunk Surfer's main window and three fixed game-owned combat channels.",
-  "windows": ["main", "interference-monitor", "interference-echo-1", "interference-echo-2", "interference-echo-3"],
+  "description": "Restricts opted-in choreography to four fixed, game-owned fireball surfaces that report their clicks back to the main window.",
+  "windows": [
+    "main",
+    "fireball-cast-1",
+    "fireball-cast-2",
+    "fireball-cast-3",
+    "fireball-cast-4"
+  ],
   "permissions": [
+    "core:event:allow-emit",
     "core:event:allow-emit-to",
     "core:event:allow-listen",
     "core:event:allow-unlisten",
     "core:webview:allow-create-webview-window",
     "core:webview:allow-get-all-webviews",
-    "core:window:allow-get-all-windows",
-    "core:window:allow-title",
-    "core:window:allow-outer-position",
-    "core:window:allow-outer-size",
-    "core:window:allow-current-monitor",
-    "core:window:allow-is-focused",
-    "core:window:allow-is-fullscreen",
-    "core:window:allow-is-minimized",
-    "core:window:allow-is-always-on-top",
-    "core:window:allow-show",
     "core:window:allow-hide",
-    "core:window:allow-minimize",
-    "core:window:allow-unminimize",
     "core:window:allow-close",
-    "core:window:allow-set-title",
-    "core:window:allow-set-position",
-    "core:window:allow-set-size",
-    "core:window:allow-set-fullscreen",
-    "core:window:allow-set-always-on-top",
-    "core:window:allow-set-focus",
-    "core:window:allow-request-user-attention"
+    "core:window:allow-set-ignore-cursor-events",
+    "core:window:allow-set-focus"
   ]
 }

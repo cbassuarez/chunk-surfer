@@ -197,7 +197,7 @@ function drawFloorDeltaLed(panel, delta) {
 }
 
 function drawLocalTopology(command) {
-  const { open, runs, transform, viewport, center, radius } = command;
+  const { open, runs, transform, viewport, center, radius, fillOpen = true } = command;
   if (!Array.isArray(runs) && !(open instanceof Set)) return;
   const minX = Number(center?.x || 0) - Number(radius || 0) - 1;
   const maxX = Number(center?.x || 0) + Number(radius || 0) + 1;
@@ -219,28 +219,30 @@ function drawLocalTopology(command) {
       ctx.translate(-sc.x * cellW * dpr, -sc.y * cellH * dpr);
     }
     const project = (yaw && transform.pointFlat) ? transform.pointFlat.bind(transform) : transform.point.bind(transform);
-    ctx.fillStyle = themeRoleColor('silkscreen');
-    ctx.globalAlpha = 0.22;
-    if (Array.isArray(runs)) {
-      for (const run of runs) {
-        if (run.y < minY || run.y > maxY || run.x1 < minX || run.x0 > maxX) continue;
-        const x0 = Math.max(run.x0, minX);
-        const x1 = Math.min(run.x1 + 1, maxX);
-        const a = project({ x: x0, y: run.y });
-        const b = project({ x: x1, y: run.y + 1 });
-        ctx.fillRect(
-          a.x * cellW * dpr,
-          a.y * cellH * dpr,
-          Math.max(1, b.x - a.x) * cellW * dpr,
-          Math.max(1, b.y - a.y) * cellH * dpr,
-        );
-      }
-    } else {
-      for (const key of open) {
-        const [x, y] = key.split(',').map(Number);
-        if (x < minX || x > maxX || y < minY || y > maxY) continue;
-        const point = project({ x, y });
-        ctx.fillRect(point.x * cellW * dpr, point.y * cellH * dpr, Math.max(1, cellW * 0.48) * dpr, Math.max(1, cellH * 0.48) * dpr);
+    if (fillOpen) {
+      ctx.fillStyle = themeRoleColor('silkscreen');
+      ctx.globalAlpha = 0.22;
+      if (Array.isArray(runs)) {
+        for (const run of runs) {
+          if (run.y < minY || run.y > maxY || run.x1 < minX || run.x0 > maxX) continue;
+          const x0 = Math.max(run.x0, minX);
+          const x1 = Math.min(run.x1 + 1, maxX);
+          const a = project({ x: x0, y: run.y });
+          const b = project({ x: x1, y: run.y + 1 });
+          ctx.fillRect(
+            a.x * cellW * dpr,
+            a.y * cellH * dpr,
+            Math.max(1, b.x - a.x) * cellW * dpr,
+            Math.max(1, b.y - a.y) * cellH * dpr,
+          );
+        }
+      } else {
+        for (const key of open) {
+          const [x, y] = key.split(',').map(Number);
+          if (x < minX || x > maxX || y < minY || y > maxY) continue;
+          const point = project({ x, y });
+          ctx.fillRect(point.x * cellW * dpr, point.y * cellH * dpr, Math.max(1, cellW * 0.48) * dpr, Math.max(1, cellH * 0.48) * dpr);
+        }
       }
     }
 

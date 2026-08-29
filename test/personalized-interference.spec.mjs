@@ -166,8 +166,10 @@ assert.match(warningSource, /askProfile/, 'the durable omnibus is gated, not sho
 assert.match(warningSource, /onProfileOn/);
 assert.match(warningSource, /THIS GAME MEASURES YOU PSYCHOLOGICALLY/);
 assert.match(warningSource, /Steam display name only—never Steam ID, friends, or account enumeration/);
-assert.match(warningSource, /move, resize, and focus this game’s/);
-assert.match(warningSource, /up to three temporary game-owned channel windows/);
+assert.match(warningSource, /up to four fixed/);
+assert.match(warningSource, /never take focus or move/);
+assert.doesNotMatch(warningSource, /move, resize, and focus this game’s/);
+assert.doesNotMatch(warningSource, /temporary game-owned channel windows/);
 assert.match(warningSource, /PROFILE OFF requests nothing/);
 const mainSourceForConsent = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
 assert.match(mainSourceForConsent, /consentVersion!==PSYCH_PROFILE_CONSENT_VERSION/);
@@ -314,8 +316,8 @@ await windowEffects.apply('overload', { title: 'AUDIOCORP / OVERLOAD', inputLock
 assert.deepEqual(windowState, {
   title: 'Chunk Surfer', position: { x: 120, y: 80 }, size: { width: 1280, height: 800 },
   fullscreen: true, minimized: true, alwaysOnTop: false, focused: false, visible: true,
-}, 'every beat restores title, bounds, fullscreen, minimized, and topmost state transactionally');
-assert.ok(windowHistory.some(([kind]) => kind === 'attention'), 'an unfocused game requests attention without focusing itself');
+}, 'fireball presentation never mutates title, bounds, fullscreen, minimized, focus, or topmost state');
+assert.equal(windowHistory.length,0,'fireball presentation never requests attention or focus');
 await windowEffects.emergencyRestore();
 assert.equal(emergencyCount, 1);
 
@@ -328,14 +330,14 @@ const gitignore = readFileSync(new URL('../.gitignore', import.meta.url), 'utf8'
 assert.match(gitignore, /^steam_appid\.txt$/m);
 const directorSource = readFileSync(new URL('../src/game/interference-director.js', import.meta.url), 'utf8');
 assert.doesNotMatch(directorSource, /SPEECH|speech|console\.|analytics|telemetry/);
-const sidecarSource = readFileSync(new URL('../src/interference-monitor.js', import.meta.url), 'utf8');
+const sidecarSource = readFileSync(new URL('../src/fireball-cast.js', import.meta.url), 'utf8');
 assert.doesNotMatch(sidecarSource, /persona|hostname|micLabel|OPERATOR/,
-  'battle sidecars have no identity or generic operator-telemetry surface');
+  'fireball surfaces have no identity or generic operator-telemetry surface');
 const settingsSource = readFileSync(new URL('../src/game/settings.js', import.meta.url), 'utf8');
-assert.match(settingsSource, /ON · MOVES \+ FOCUSES/);
-assert.match(settingsSource, /PREVIEW WINDOW CHANNEL/);
+assert.match(settingsSource, /ON · FIREBALL SURFACES/);
+assert.match(settingsSource, /PREVIEW FIREBALL CAST/);
 const nativeWindowSource = readFileSync(new URL('../src-tauri/src/window_choreography.rs', import.meta.url), 'utf8');
-assert.match(nativeWindowSource, /window-choreography-recovery\.json/);
 assert.match(nativeWindowSource, /recover_stale_snapshot/);
+assert.doesNotMatch(nativeWindowSource, /set_focus|set_fullscreen|window-choreography-recovery/);
 
 console.log('personalized interference contracts passed');

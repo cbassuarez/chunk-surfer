@@ -99,7 +99,10 @@ test('opening credits have no document focus or visibility gate', () => {
 test('normal app boot always places credits before the title menu', () => {
   const source = readFileSync('src/main.js', 'utf8');
   const calibration = source.indexOf('scenes.push(makeLensCalibrationScene');
-  const credits = source.indexOf('scenes.push(makeOpeningCreditsScene({onDone:afterCredits}))');
+  // The push takes an options object now (the weather bed comes in through it),
+  // so anchor on the call and its callback rather than on one exact line.
+  const credits = source.indexOf('scenes.push(makeOpeningCreditsScene({');
+  assert.ok(source.includes('onDone:afterCredits'), 'the credits still hand off to the title');
   const title = source.indexOf('makeTitle({wantFullscreen})');
   assert.ok(calibration >= 0 && credits >= 0 && title >= 0);
   assert.ok(calibration > credits, 'calibration push is authored after the deferred credit callback declaration');

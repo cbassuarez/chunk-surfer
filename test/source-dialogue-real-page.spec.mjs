@@ -13,7 +13,11 @@ assert.doesNotMatch(realBranch, /assignSourceDialoguePage|sourceDialogue|SOURCE_
 assert.match(realBranch, /HAYSTACK_PAGE_FOUND/, 'the still page no longer commits the chapter transition');
 assert.match(realBranch, /event: 'page-found'/, 'the still page no longer takes the threshold branch');
 assert.doesNotMatch(realBranch, /kind: 'page'/, 'the still page can be rendered as a false document');
-assert.match(main, /event==='page-found'\)\{ enterSourceLandscape\(\)/, 'still-page transition no longer cuts through the threshold');
-assert.match(pageScene, /makeSourceThresholdScene/, 'threshold scene disappeared');
+const liveBranch = main.slice(main.indexOf("if(result.event==='page-found')"), main.indexOf("if(result.event==='horizon')"));
+assert.match(liveBranch, /makeSourceStillPageScene/, 'still page is not presented through its physical document reader');
+assert.match(liveBranch, /enterSourceLandscape/, 'still page no longer commits the Source swap');
+assert.ok(liveBranch.indexOf('makeSourceStillPageScene') < liveBranch.indexOf('enterSourceLandscape'),
+  'the swap can become visible before the sheet covers it');
+assert.match(pageScene, /makeSourceStillPageScene/, 'still-page cover scene disappeared');
 
 console.log('source dialogue real-page isolation specs passed');

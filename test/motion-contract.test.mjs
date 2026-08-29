@@ -44,6 +44,19 @@ test('3d camera has a spring motion rig for visual inertia', () => {
   assert.match(src, /motionRig:\s*motionRig\?/);
 });
 
+test('sustained movement does not mistake accumulated spring lag for a teleport', () => {
+  const src = readFileSync('src/main.js', 'utf8');
+  const start = src.indexOf('function renderedPlayerPoint');
+  const end = src.indexOf('function beginRenderStep', start);
+  const body = src.slice(start, end);
+  const teleportDecision = body.slice(0, body.indexOf('const dt='));
+  assert.ok(start >= 0 && end > start);
+  assert.match(body, /targetJump=Math\.hypot\(target\.x-rig\.targetX,target\.z-rig\.targetZ\)/);
+  assert.match(body, /if\(targetJump>D\(3\.25\)\)/);
+  assert.doesNotMatch(teleportDecision, /Math\.hypot\(target\.x-rig\.x,target\.z-rig\.z\)/,
+    'camera lag is not a world teleport signal');
+});
+
 test('a blocking tableau may retain look without retaining locomotion', () => {
   const main = readFileSync('src/main.js', 'utf8');
   const scenes = readFileSync('src/game/scenes.js', 'utf8');
@@ -87,6 +100,14 @@ test('window focus does not start a gesture-less pointer lock request', () => {
 test('capture and fullscreen recovery level both current and target pitch', () => {
   const main = readFileSync('src/main.js', 'utf8');
   const render = readFileSync('src/render/r3d.js', 'utf8');
-  assert.match(main, /r3dRecenterLook\?\.\(\{pitch:true,immediate:true\}\)/);
+  // The call site asks for pitch; `immediate` became the renderer's default and
+  // the explicit argument was dropped. Matching the old literal string was
+  // therefore failing on a call that behaves identically — so assert the
+  // guarantee instead: recovery recentres pitch, immediacy is the default it
+  // relies on, and immediate recentring levels the live value as well as the
+  // target. A future change to that default now fails here, which the old
+  // string match could not have caught either.
+  assert.match(main, /r3dRecenterLook\?\.\(\{\s*pitch:\s*true[^)]*\}\)/);
+  assert.match(render, /immediate\s*=\s*true/, 'immediate recentring is the default the call site omits');
   assert.match(render, /if \(resetPitch\) pitch = pitchTarget/);
 });

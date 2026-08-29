@@ -1,111 +1,69 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { compileFireballCastPlan } from '../src/game/window-channel.js';
+import { createPersonalizedWindowEffects,FIREBALL_SURFACE_LABELS } from '../src/platform/personalized-window-effects.js';
 
-import { compileWindowChannelScene } from '../src/game/window-channel.js';
-import { createPersonalizedWindowEffects } from '../src/platform/personalized-window-effects.js';
+const flush=async()=>{for(let i=0;i<8;i+=1)await Promise.resolve();};
 
-const flush = async () => {
-  for (let index = 0; index < 8; index += 1) {
-    await Promise.resolve();
-    await new Promise((resolve) => setImmediate(resolve));
+test('arrival prewarms four fixed clickable black cast surfaces and enemy beats construct none',async()=>{
+  const webviews=new Map(),created=[],calls=[],emitted=[];
+  class FakeWebviewWindow{
+    static async getByLabel(label){return webviews.get(label)||null;}
+    constructor(label,options){this.label=label;this.options=options;created.push([label,options]);webviews.set(label,this);}
+    once(_event,cb){cb();}async show(){}async hide(){}async close(){webviews.delete(this.label);}
   }
-};
-
-test('native channel cuts are tokenized, idempotent, and require an explicit main-surface click', async () => {
-  const listeners = new Map();
-  const emitted = [];
-  const webviews = new Map();
-  class FakeWebviewWindow {
-    static async getByLabel(label) { return webviews.get(label) || null; }
-    constructor(label) { this.label = label; this.focused = false; webviews.set(label, this); }
-    once(_event, callback) { callback(); }
-    async show() {}
-    async hide() {}
-    async close() { webviews.delete(this.label); }
-    async setFocus() { this.focused = true; }
+  const api={WebviewWindow:FakeWebviewWindow,invoke:async(command,payload)=>{calls.push([command,payload]);return true;},emitTo:async(label,event,payload)=>emitted.push({label,event,payload})};
+  const effects=createPersonalizedWindowEffects({runtimeApi:api,tokenFactory:()=> 'fireball-session-test',documentApi:null});
+  const token=effects.begin({intensity:'hostile'});await effects.prepareFireballs();
+  assert.deepEqual(created.map(([label])=>label),FIREBALL_SURFACE_LABELS);
+  for(const [,options] of created){assert.equal(options.resizable,false);assert.equal(options.decorations,false);assert.equal(options.focusable,true);assert.equal(options.skipTaskbar,true);assert.equal(options.visible,false);}
+  const cast=compileFireballCastPlan({battleId:'chapel',movementId:'source',movementIndex:4,intentId:'chapel:source',intentKind:'broadcast'});
+  const before=created.length;assert.equal(effects.beginFireballCast(cast,{token}),true);await flush();
+  assert.equal(created.length,before,'enemy beat never constructs a surface');
+  effects.syncFireballCast(cast,cast.rays.map((ray,index)=>({index,rayId:ray.id,state:'outbound',progress:.5})),{token});await flush();
+  const steps=calls.filter(([command])=>command==='chunk_fireball_cast_step');
+  assert.equal(steps.length,1);assert.equal(steps[0][1].casts.length,4);
+  assert.equal(calls.some(([command])=>/choreography_execute|set_focus/i.test(command)),false);
+  assert.equal(emitted.filter(({event})=>event==='fireball-cast').length,4);
+  for(const {payload} of emitted){
+    assert.deepEqual(Object.keys(payload).sort(),['castId','damage','rayCount','rays','reducedMotion','state','surfaceIndex','travelSeconds'].sort());
+    assert.equal(payload.rayCount,1);assert.equal(payload.rays.length,1);
+    assert.equal(JSON.stringify(payload).includes('chapel:source'),false,'external payload carries no authored caption or intent id');
   }
-  const api = {
-    WebviewWindow: FakeWebviewWindow,
-    async listen(event, callback) { listeners.set(event, callback); return () => listeners.delete(event); },
-    async emitTo(label, event, payload) { emitted.push({ label, event, payload }); },
-    async invoke(command) {
-      if (command === 'chunk_window_choreography_capabilities') return { nativePositioning: true };
-      if (command === 'chunk_window_choreography_begin') return true;
-      if (command === 'chunk_window_choreography_execute') return true;
-      return true;
-    },
-  };
-  const target = new EventTarget();
-  const effects = createPersonalizedWindowEffects({
-    runtimeApi: api,
-    mainWindow: {
-      async title() { return 'Chunk Surfer'; },
-      async isFocused() { return true; },
-      async setTitle() {},
-    },
-    tokenFactory: () => 'session-channel-native',
-    documentApi: { defaultView: target },
-  });
-  const token = await effects.begin({ intensity: 'hostile' });
-  const scene = compileWindowChannelScene({
-    battleId: 'hall', movementId: 'attention', movementIndex: 1,
-    movementTitle: 'EVERY HEAD AT ONCE', intentId: 'hall:turn',
-    intentLabel: 'THE HOUSE TURNS', intentKind: 'broadcast', windowScale: 1,
-  });
-  let settled = false;
-  const pending = effects.beginWindowChannel(scene, { token }).then((result) => {
-    settled = true;
-    return result;
-  });
-  await flush();
-  const panes = emitted.filter(({ event }) => event === 'window-channel-scene');
-  assert.equal(panes.length, 2);
-  assert.equal(webviews.get('interference-monitor').focused, true, 'only an active attack focuses a hostile game-owned pane');
-
-  const respond = listeners.get('window-channel-response');
-  const first = panes[0].payload;
-  const second = panes[1].payload;
-  respond({ payload: {
-    sessionToken: token, attackId: first.attackId, channelId: first.channelId, action: 'cut',
-  } });
-  respond({ payload: {
-    sessionToken: token, attackId: first.attackId, channelId: first.channelId, action: 'cut',
-  } });
-  assert.equal(settled, false, 'a duplicate close cannot count as another channel');
-  respond({ payload: {
-    sessionToken: token, attackId: second.attackId, channelId: second.channelId, action: 'cut',
-  } });
-  await flush();
-  assert.equal(settled, false, 'automatic OS focus after the last cut does not count as reacquisition');
-  target.dispatchEvent(new Event('pointerdown', { bubbles: true, cancelable: true }));
-  const result = await pending;
-  assert.deepEqual({
-    outcome: result.outcome,
-    cutCount: result.cutCount,
-    requiredCount: result.requiredCount,
-    reacquiredMain: result.reacquiredMain,
-  }, { outcome: 'cut', cutCount: 2, requiredCount: 2, reacquiredMain: true });
   await effects.end(token);
 });
 
-test('controller fallback resolves the same cut and reacquire states and emergency restore cancels once', async () => {
-  const effects = createPersonalizedWindowEffects({
-    runtimeApi: null,
-    mainWindow: null,
-    tokenFactory: () => 'session-channel-fallback',
-    documentApi: null,
-  });
-  const token = await effects.begin({ intensity: 'low', fullscreen: true });
-  const scene = compileWindowChannelScene({
-    battleId: 'natatorium', movementId: 'room', movementIndex: 0,
-    movementTitle: 'THE EMPTY ROOM', intentId: 'natatorium:meter',
-    intentLabel: 'METER MOVES WITHOUT AIR', intentKind: 'broadcast', windowScale: 1,
-  });
-  const skipped = await effects.beginWindowChannel(scene, { token, forceInternal: true });
-  assert.equal(skipped.outcome, 'skip', 'a missing display surface safely bypasses rather than trapping combat');
+test('unavailable or fullscreen surfaces fall back immediately without modal UI',async()=>{
+  const effects=createPersonalizedWindowEffects({runtimeApi:null,tokenFactory:()=> 'fireball-session-fallback',documentApi:null});
+  const token=effects.begin({intensity:'low',fullscreen:true});
+  const cast=compileFireballCastPlan({battleId:'natatorium',movementId:'room',movementIndex:0,intentId:'natatorium:meter',intentKind:'broadcast'});
+  assert.equal(effects.beginFireballCast(cast,{token}),true);assert.equal(effects.statusLine(),'');
+  assert.equal(await effects.emergencyRestore({notify:false}),true);
+});
 
-  // A session can still be cancelled idempotently even when an unavailable
-  // renderer made its logical channel fall back to skip.
-  assert.equal(await effects.emergencyRestore({ notify: false }), true);
-  assert.equal(await effects.emergencyRestore({ notify: false }), true);
+test('a fast first cast joins native surfaces on the first frame after asynchronous prewarm',async()=>{
+  const webviews=new Map(),placed=[];let release;
+  const gate=new Promise((resolve)=>{release=resolve;});
+  class Surface{static async getByLabel(label){return webviews.get(label)||null;}constructor(label){this.label=label;webviews.set(label,this);}once(_event,cb){void gate.then(cb);}async hide(){}async close(){}}
+  const api={WebviewWindow:Surface,invoke:async(command,payload)=>{
+    if(command==='chunk_fireball_cast_step')placed.push(...payload.casts);return true;
+  },emitTo:async()=>{}};
+  const effects=createPersonalizedWindowEffects({runtimeApi:api,tokenFactory:()=> 'fireball-session-race',documentApi:null});
+  const token=effects.begin({intensity:'hostile'});
+  const cast=compileFireballCastPlan({battleId:'hall',movementId:'seated',movementIndex:0,intentId:'hall:regard',intentKind:'broadcast'});
+  assert.equal(effects.beginFireballCast(cast,{token}),true);assert.equal(placed.length,0);
+  release();await effects.prepareFireballs();await flush();
+  effects.syncFireballCast(cast,cast.rays.map((ray,index)=>({index,rayId:ray.id,state:'outbound',progress:.1})),{token});await flush();
+  assert.equal(placed.length,cast.rayCount,'the active cast continues outside the frame as soon as prewarm settles');
+  await effects.end(token);
+});
+
+test('the developer preview dwells after presentation instead of closing in the same task',async()=>{
+  const webviews=new Map(),order=[];
+  class Surface{static async getByLabel(label){return webviews.get(label)||null;}constructor(label){this.label=label;webviews.set(label,this);}once(_event,cb){cb();}async hide(){order.push(`hide:${this.label}`);}async close(){order.push(`close:${this.label}`);}}
+  const effects=createPersonalizedWindowEffects({runtimeApi:{WebviewWindow:Surface,invoke:async()=>true,emitTo:async()=>order.push('emit')},documentApi:null,tokenFactory:()=> 'fireball-session-preview',wait:async(ms)=>{order.push(`wait:${ms}:start`);await flush();order.push(`wait:${ms}:end`);}});
+  const cast=compileFireballCastPlan({battleId:'natatorium',movementId:'room',movementIndex:0,intentId:'natatorium:meter',intentKind:'broadcast'});
+  await effects.previewChannel(cast,{intensity:'hostile'});
+  assert.ok(order.indexOf('emit')<order.indexOf('wait:240:end'));
+  assert.ok(order.indexOf('wait:240:end')<order.findLastIndex((entry)=>entry.startsWith('hide:')));
 });

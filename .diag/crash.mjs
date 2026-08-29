@@ -1,0 +1,20 @@
+import {boot} from './boot.mjs';
+const {browser,page,errors}=await boot();
+page.on('pageerror',(e)=>console.log('PAGEERROR:',e.message.split('\n')[0]));
+page.on('console',(m)=>{ if(m.type()==='error') console.log('CONSOLE:',m.text().slice(0,220)); });
+await page.evaluate(()=>window.__probe.sourcePreset('landing'));
+await new Promise(r=>setTimeout(r,1200));
+console.log('--- at the landing, before the stair ---');
+console.log('firstLiftCompleted:',await page.evaluate(()=>window.__probe.chunkSurf().firstLiftCompleted));
+// Walk up onto the fork tier: chute-fork top is local y -160.
+await page.evaluate(()=>window.__probe.sourceWarp(0,-252-150,0));
+await new Promise(r=>setTimeout(r,600));
+for(let i=0;i<40;i++) await page.keyboard.press('w');
+await new Promise(r=>setTimeout(r,2500));
+console.log('--- after climbing ---');
+const st=await page.evaluate(()=>({cs:window.__probe.chunkSurf(),eye:window.__probe.sourceLights()?.eye}));
+console.log('firstLiftCompleted:',st.cs.firstLiftCompleted,'| eye',JSON.stringify(st.eye));
+await new Promise(r=>setTimeout(r,1500));
+console.log('collected errors:',errors.length);
+for(const e of errors.slice(0,6)) console.log('  ERR:',String(e).slice(0,220));
+await browser.close();

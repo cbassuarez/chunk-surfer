@@ -1,228 +1,168 @@
-import { PARRY_IMPACT_SECONDS } from './combat-parry.js';
+// Fireballs replace the old modal "window channel". The immutable plan owns
+// geometry only; the independent click/RETURN clock lives in
+// fireball-exchange.js and never pauses or borrows an ordinary combat turn.
 
-// The haunted desktop is authored with the fight. It is not a random diagnostic
-// window and it is not allowed to infer new facts about the player. These five
-// profiles are the complete story-combat cast; the loading-bay drill and the
-// optional practice-room ambush deliberately stay on their existing paths.
-export const WINDOW_CHANNEL_BATTLE_IDS = Object.freeze([
-  'natatorium',
-  'hall',
-  'practice',
-  'chapel',
-  'source-final',
+export const FIREBALL_BATTLE_IDS = Object.freeze([
+  'natatorium', 'hall', 'practice', 'chapel', 'source-final',
 ]);
 
-export const WINDOW_CHANNEL_RESULT = Object.freeze({
-  CUT: 'cut',
-  RETURN: 'return',
-  TIMEOUT: 'timeout',
-  CANCEL: 'cancel',
-  SKIP: 'skip',
+// HOW MANY COME AT ONCE.
+//
+// The authored escalation is intentionally uneven: the first three encounters
+// teach one, then two, then three independent targets; Chapel reaches four;
+// Source starts at two and becomes the only three-movement 2/3/4 sequence.
+const CAST_COUNTS = Object.freeze({
+  natatorium:Object.freeze({ room:1, voice:2, hold:3 }),
+  hall:Object.freeze({ seated:1, attention:2, applause:3 }),
+  practice:Object.freeze({ instrument:1, player:2, score:3 }),
+  chapel:Object.freeze({ room:1, recordist:2, surfer:2, contract:3, source:4 }),
+  'source-final':Object.freeze({ 'call-site':2, 'borrowed-body':3, 'final-clause':4 }),
 });
 
-const STRUCK_KINDS = new Set(['broadcast', 'overload', 'loop']);
+// THE ONE MOVEMENT WHERE THEY ARRIVE TOGETHER.
+//
+// Every other cast is a phrase -- the comets leave a beat apart and can be
+// answered in the order they were thrown. The last movement of each fight
+// throws the whole volley on one frame, which is the only time the player is
+// supposed to be unable to take them one at a time.
+const VOLLEY_MOVEMENTS = Object.freeze({
+  natatorium:'hold', hall:'applause', practice:'score',
+  chapel:'source', 'source-final':'final-clause',
+});
+
 const clamp = (value, min, max) => Math.max(min, Math.min(max, Number(value) || 0));
 
-const SCENE = Object.freeze({
-  natatorium: Object.freeze({
-    title: 'NATATORIUM / BLACK-WATER RETURN',
-    palette: ['#071416', '#78beb8', '#cbd8c0', '#171f21'],
-    motifs: ['waterline', 'reflection', 'tape', 'held-take'],
-    movements: Object.freeze({
-      room: Object.freeze({ channels: 1, aperture: 'pool-reflection', caption: 'THE EMPTY ROOM IS UNDER THE GLASS', layout: [0.05, 0.29, 0.90, 0.46], attack: [0.02, 0.48, 0.78, 0.42] }),
-      voice: Object.freeze({ channels: 2, aperture: 'pool-reflection', caption: 'THE VOICE COMES BACK BELOW ITS MOUTH', layout: [0.07, 0.22, 0.76, 0.58], attack: [0.20, 0.39, 0.76, 0.50] }),
-      hold: Object.freeze({ channels: 3, aperture: 'undertow', caption: 'THE FOURTH TAKE HOLDS THE WINDOW DOWN', layout: [0.12, 0.34, 0.72, 0.54], attack: [0.03, 0.55, 0.66, 0.38] }),
-    }),
-  }),
-  hall: Object.freeze({
-    title: 'CONCERT HALL / HOUSE RETURN',
-    palette: ['#120d0b', '#b68656', '#d4be8c', '#2c1512'],
-    motifs: ['seating-tier', 'watching-heads', 'empty-seat', 'applause'],
-    movements: Object.freeze({
-      seated: Object.freeze({ channels: 1, aperture: 'proscenium', caption: 'THE HOUSE IS ALREADY LOOKING THIS WAY', layout: [0.13, 0.08, 0.74, 0.82], attack: [0.28, 0.10, 0.68, 0.80] }),
-      attention: Object.freeze({ channels: 2, aperture: 'missing-seat', caption: 'EVERY HEAD TURNS ACROSS THE BEZELS', layout: [0.08, 0.06, 0.70, 0.86], attack: [0.01, 0.12, 0.62, 0.78] }),
-      applause: Object.freeze({ channels: 3, aperture: 'standing-house', caption: 'THE APPLAUSE ARRIVES FROM ALL SIDES', layout: [0.18, 0.10, 0.78, 0.78], attack: [0.30, 0.04, 0.66, 0.84] }),
-    }),
-  }),
-  practice: Object.freeze({
-    title: 'PRACTICE RANGE / SCORE RETURN',
-    palette: ['#0b0c0a', '#9fa77c', '#d8d4af', '#251d17'],
-    motifs: ['wrong-instrument', 'music-stand', 'empty-chair', 'cross-window-score'],
-    movements: Object.freeze({
-      instrument: Object.freeze({ channels: 1, aperture: 'music-stand', caption: 'THE WRONG PART IS OPEN ON THE STAND', layout: [0.16, 0.08, 0.70, 0.84], attack: [0.06, 0.18, 0.62, 0.76] }),
-      player: Object.freeze({ channels: 2, aperture: 'empty-chair', caption: 'THE ABSENT PLAYER CROSSES THE FRAME', layout: [0.08, 0.12, 0.76, 0.76], attack: [0.32, 0.08, 0.62, 0.82] }),
-      score: Object.freeze({ channels: 3, aperture: 'score-line', caption: 'THE SCORE CONTINUES IN THE NEXT WINDOW', layout: [0.12, 0.20, 0.82, 0.62], attack: [0.03, 0.34, 0.72, 0.54] }),
-    }),
-  }),
-  chapel: Object.freeze({
-    title: 'CHAPEL / CONTESTED HANDOFF',
-    palette: ['#090708', '#9b6e64', '#d4bcb0', '#241017'],
-    motifs: ['nave', 'lancet', 'contract-clause', 'recordist', 'source'],
-    movements: Object.freeze({
-      room: Object.freeze({ channels: 1, aperture: 'lancet', caption: 'THE ROOM WRITES A BODY INTO ITS NAVE', layout: [0.20, 0.08, 0.60, 0.84], attack: [0.31, 0.06, 0.54, 0.86] }),
-      recordist: Object.freeze({ channels: 2, aperture: 'borrowed-body', caption: 'THE PREVIOUS RECORDIST OCCUPIES ANOTHER PANE', layout: [0.12, 0.07, 0.64, 0.85], attack: [0.04, 0.16, 0.58, 0.76] }),
-      surfer: Object.freeze({ channels: 2, aperture: 'surfer-print', caption: 'THE WORD SURFER WILL NOT STAY IN ONE FRAME', layout: [0.22, 0.10, 0.66, 0.80], attack: [0.36, 0.08, 0.56, 0.82] }),
-      contract: Object.freeze({ channels: 3, aperture: 'contract', caption: 'THE CLAUSE CONTINUES WHERE THE WINDOW ENDS', layout: [0.16, 0.12, 0.66, 0.76], attack: [0.03, 0.24, 0.58, 0.66] }),
-      source: Object.freeze({ channels: 3, aperture: 'source-mouth', caption: 'THE SOURCE PRESSES THROUGH EVERY RETURN', layout: [0.24, 0.08, 0.62, 0.84], attack: [0.38, 0.04, 0.56, 0.88] }),
-    }),
-  }),
-  'source-final': Object.freeze({
-    title: 'SOURCE / RETURN VALUE',
-    palette: ['#05070b', '#7889ad', '#d1d7e4', '#141527'],
-    motifs: ['call-site', 'recursive-frame', 'borrowed-body', 'final-clause'],
-    movements: Object.freeze({
-      'call-site': Object.freeze({ channels: 2, aperture: 'call-site', caption: 'THE CALL ORIGINATES OUTSIDE ITS OWN FRAME', layout: [0.10, 0.12, 0.80, 0.76], attack: [0.02, 0.20, 0.62, 0.68] }),
-      'borrowed-body': Object.freeze({ channels: 3, aperture: 'recursive-body', caption: 'THE BODY RETURNS AT THREE ADDRESSES', layout: [0.18, 0.10, 0.68, 0.80], attack: [0.32, 0.06, 0.58, 0.86] }),
-      'final-clause': Object.freeze({ channels: 3, aperture: 'final-clause', caption: 'THE RETURN VALUE IS STILL SPEAKING', layout: [0.10, 0.16, 0.72, 0.70], attack: [0.38, 0.12, 0.54, 0.76] }),
-    }),
-  }),
-});
-
-export function canonicalWindowChannelBattleId(value = '') {
+export function canonicalFireballBattleId(value = '') {
   const id = String(value || '').toLowerCase();
   if (id === 'source' || id === 'source-final') return 'source-final';
-  return WINDOW_CHANNEL_BATTLE_IDS.includes(id) ? id : null;
+  return FIREBALL_BATTLE_IDS.includes(id) ? id : null;
 }
 
-function geometry(values) {
-  const [x, y, width, height] = values;
-  return Object.freeze({ x, y, width, height });
+function hashString(value = '') {
+  let hash = 0x811c9dc5;
+  for (const char of String(value)) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619) >>> 0;
+  return hash.toString(16).padStart(8, '0');
 }
 
-export function windowChannelDeadlineMs({ battleId = '', movementIndex = 0, windowScale = 1 } = {}) {
-  const firstLesson = canonicalWindowChannelBattleId(battleId) === 'natatorium' && Number(movementIndex) === 0;
-  const base = firstLesson ? 7000 : 5000;
-  return Math.round(base * clamp(windowScale, 0.7, 1.6));
-}
-
-// Window cutting and the ordinary parry share one phrase. The desktop portion
-// consumes the same fraction of the combat approach that it consumed of its own
-// assistance-scaled deadline; timing out spends the phrase completely.
-export function channelElapsedToParrySeconds(elapsedMs, deadlineMs) {
-  const ratio = clamp(elapsedMs / Math.max(1, Number(deadlineMs) || 1), 0, 1);
-  return ratio * PARRY_IMPACT_SECONDS;
-}
-
-export function compileWindowChannelScene({
-  battleId = '', movementId = '', movementIndex = 0, movementTitle = '',
-  intentId = '', intentLabel = '', intentKind = '', windowScale = 1,
-} = {}) {
-  const canonical = canonicalWindowChannelBattleId(battleId);
-  const battle = canonical ? SCENE[canonical] : null;
-  const movement = battle?.movements?.[String(movementId || '')] || null;
-  if (!battle || !movement || !STRUCK_KINDS.has(String(intentKind || ''))) return null;
-  const deadlineMs = windowChannelDeadlineMs({ battleId: canonical, movementIndex, windowScale });
+// Project an infinite ray from a point inside the normalized game rectangle to
+// its first edge, then continue it beyond that edge. The external window uses
+// this same line, so the comet does not change direction at the game bezel.
+export function projectFireballRay({ origin = { x:.5, y:.28 }, direction = { x:1, y:0 }, beyond = .42 } = {}) {
+  const ox=clamp(origin.x,0,1),oy=clamp(origin.y,0,1);
+  let dx=Number(direction.x)||0,dy=Number(direction.y)||0;
+  const length=Math.hypot(dx,dy)||1;dx/=length;dy/=length;
+  const times=[];
+  if(dx>.0001)times.push((1-ox)/dx);else if(dx<-.0001)times.push((0-ox)/dx);
+  if(dy>.0001)times.push((1-oy)/dy);else if(dy<-.0001)times.push((0-oy)/dy);
+  const edgeTime=Math.min(...times.filter((value)=>value>=0));
+  const exit={x:clamp(ox+dx*edgeTime,0,1),y:clamp(oy+dy*edgeTime,0,1)};
   return Object.freeze({
-    schema: 1,
-    battleId: canonical,
-    movementId: String(movementId),
-    movementIndex: Math.max(0, Math.floor(Number(movementIndex) || 0)),
-    movementTitle: String(movementTitle || movementId).slice(0, 64),
-    intentId: String(intentId || '').slice(0, 64),
-    intentLabel: String(intentLabel || '').slice(0, 96),
-    intentKind: String(intentKind),
-    title: battle.title,
-    caption: movement.caption,
-    palette: Object.freeze([...battle.palette]),
-    motifs: Object.freeze([...battle.motifs]),
-    aperture: movement.aperture,
-    channelCount: Math.max(1, Math.min(3, movement.channels)),
-    layout: geometry(movement.layout),
-    attackLayout: geometry(movement.attack),
-    deadlineMs,
-    phase: 'attack',
-    timing: Object.freeze({ deadlineMs, windowScale: clamp(windowScale, 0.7, 1.6) }),
-    resolution: null,
-    firstLesson: canonical === 'natatorium' && Number(movementIndex) === 0,
-    returnEligible: canonical !== 'natatorium',
+    origin:Object.freeze({x:ox,y:oy}),
+    direction:Object.freeze({x:dx,y:dy}),
+    exit:Object.freeze(exit),
+    beyond:Object.freeze({x:exit.x+dx*beyond,y:exit.y+dy*beyond}),
   });
 }
 
-export function advanceWindowChannelScene(scene, {
-  phase = 'impact', outcome = '', parried = false, damage = 0,
-  returnTier = 0, returnHits = 0, phaseBreak = false,
-} = {}) {
-  if (!validateWindowChannelScene(scene)) return null;
-  const safePhase = [
-    'attack', 'cut', 'reacquire', 'impact', 'parry', 'damage',
-    'return', 'phase-break', 'restored',
-  ].includes(phase) ? phase : 'impact';
+export function fireballRayPoint(ray,{state='outbound',progress=0}={}){
+  const reversed=state==='reversed';
+  const from=reversed?ray?.exit:ray?.origin;
+  const to=reversed?ray?.origin:ray?.exit;
+  const travel=clamp(progress,0,1);
   return Object.freeze({
-    ...scene,
-    phase: safePhase,
-    resolution: Object.freeze({
-      outcome: String(outcome || '').slice(0, 24),
-      parried: !!parried,
-      damage: Math.max(0, Math.floor(Number(damage) || 0)),
-      returnTier: returnTier >= 3 ? 3 : returnTier >= 2 ? 2 : 0,
-      returnHits: Math.max(0, Math.min(2, Math.floor(Number(returnHits) || 0))),
-      phaseBreak: !!phaseBreak,
-    }),
+    x:Number(from?.x||0)+(Number(to?.x||0)-Number(from?.x||0))*travel,
+    y:Number(from?.y||0)+(Number(to?.y||0)-Number(from?.y||0))*travel,
   });
 }
 
-export function movementWindowTableau({ battleId = '', movementId = '' } = {}) {
-  const canonical = canonicalWindowChannelBattleId(battleId);
-  const battle = canonical ? SCENE[canonical] : null;
-  const movement = battle?.movements?.[String(movementId || '')] || null;
-  if (!battle || !movement) return null;
+function authoredCount(battleId, movementId, movementIndex) {
+  const table=CAST_COUNTS[battleId]||{};
+  const direct=Number(table[String(movementId||'')]);
+  if(Number.isInteger(direct))return direct;
+  const sequence=Object.values(table);
+  return sequence[Math.max(0,Math.floor(Number(movementIndex)||0))]||sequence.at(-1)||1;
+}
+
+// The whole window, for anything that never says otherwise.
+const FULL_FRAME=Object.freeze({x:0,y:0,w:1,h:1});
+function normalizedStage(stage){
+  const w=Number(stage?.w),h=Number(stage?.h);
+  if(!(w>0&&w<=1)||!(h>0&&h<=1))return FULL_FRAME;
   return Object.freeze({
-    schema: 1,
-    battleId: canonical,
-    movementId: String(movementId),
-    title: battle.title,
-    caption: movement.caption,
-    palette: Object.freeze([...battle.palette]),
-    motifs: Object.freeze([...battle.motifs]),
-    aperture: movement.aperture,
-    layout: geometry(movement.layout),
+    x:clamp(stage.x,0,1),y:clamp(stage.y,0,1),
+    w:clamp(w,.02,1),h:clamp(h,.02,1),
   });
 }
 
-export function freshWindowChannelProgress(battleId = '', raw = {}) {
-  const canonical = canonicalWindowChannelBattleId(battleId);
-  const rawBattle = canonicalWindowChannelBattleId(raw?.battleId);
-  const canRestore = !!canonical && rawBattle === canonical;
-  return {
-    battleId: canonical,
-    charge: canRestore ? Math.max(0, Math.min(3, Math.floor(Number(raw?.charge) || 0))) : 0,
-    returned: canRestore && !!raw?.returned,
-  };
+export function compileFireballCastPlan({
+  battleId='',movementId='',movementIndex=0,movementTitle='',
+  castSequence=0,reducedMotion=false,stage=null,
+}={}){
+  const canonical=canonicalFireballBattleId(battleId);
+  if(!canonical)return null;
+  const rayCount=Math.max(1,Math.min(4,authoredCount(canonical,movementId,movementIndex)));
+  const seed=parseInt(hashString(`${canonical}:${movementId}:${castSequence}`),16)>>>0;
+  // Thrown from the middle of the stage, where the Surfer is, not from the top
+  // of it. At .25 every comet crossed the band through the caption and the
+  // house list -- reading as an overlay on the text rather than as something
+  // travelling through the room the fight is in.
+  const origin={x:.50+(((seed>>>4)%9)-4)*.008,y:.46+((seed>>>9)%5)*.018};
+  const rays=[];
+  for(let index=0;index<rayCount;index+=1){
+    const side=index%2===0?1:-1;
+    const rank=Math.floor(index/2);
+    const angle=(side>0?-.23:Math.PI+.23)+side*rank*.22+(((seed>>>(index+1))&3)-1.5)*.025;
+    const projected=projectFireballRay({origin,direction:{x:Math.cos(angle),y:Math.sin(angle)},beyond:reducedMotion?.24:.42});
+    rays.push(Object.freeze({id:`ray-${index+1}`,...projected,surfaceIndex:index,directionSign:1}));
+  }
+  const castId=`fireball:${canonical}:${String(movementId||movementIndex)}:${Math.max(0,Math.floor(Number(castSequence)||0))}:${hashString(`${movementId}:${castSequence}`).slice(0,6)}`;
+  return Object.freeze({
+    schema:2,kind:'fireball-cast',castId,battleId:canonical,
+    movementId:String(movementId||''),movementIndex:Math.max(0,Math.floor(Number(movementIndex)||0)),
+    movementTitle:String(movementTitle||'').slice(0,64),source:'ranged',
+    state:'outbound',rayCount,rays:Object.freeze(rays),
+    // WHICH RECTANGLE THE RAY WAS MEASURED IN.
+    //
+    // Every coordinate above is a fraction of the battle's stage band, which is
+    // a strip in the middle of the combat panel and emphatically not the game
+    // window. Anything placing something outside the window against these
+    // numbers -- the native cast surfaces do exactly that -- needs the mapping
+    // or it aims at a rectangle the comet never crossed.
+    stage:normalizedStage(stage),
+    volley:VOLLEY_MOVEMENTS[canonical]===String(movementId||''),
+    reducedMotion:!!reducedMotion,travelSeconds:2.2,damage:null,
+  });
 }
 
-export function chargeWindowReturn(progress, { defended = false } = {}) {
-  const next = freshWindowChannelProgress(progress?.battleId, progress);
-  if (!defended || !next.battleId || next.battleId === 'natatorium' || next.returned) return next;
-  next.charge = Math.min(3, next.charge + 1);
-  return next;
+export function advanceFireballCastPlan(plan,{state='impact',damage=null}={}){
+  if(!validateFireballCastPlan(plan))return null;
+  const nextState=['deflected','reversed','impact'].includes(state)?state:'impact';
+  const integerDamage=Number.isFinite(Number(damage))?Math.max(0,Math.floor(Number(damage))):null;
+  return Object.freeze({
+    ...plan,state:nextState,damage:integerDamage,
+    rays:Object.freeze(plan.rays.map((ray)=>Object.freeze({...ray,directionSign:nextState==='reversed'?-1:1}))),
+  });
 }
 
-export function availableWindowReturnTier(progress) {
-  const state = freshWindowChannelProgress(progress?.battleId, progress);
-  if (state.returned || state.battleId === 'natatorium' || state.charge < 2) return 0;
-  return state.charge >= 3 ? 3 : 2;
-}
-
-export function spendWindowReturn(progress) {
-  const next = freshWindowChannelProgress(progress?.battleId, progress);
-  const tier = availableWindowReturnTier(next);
-  if (!tier) return { state: next, tier: 0, hits: 0 };
-  next.returned = true;
-  return { state: next, tier, hits: tier === 3 ? 2 : 1 };
-}
-
-export function validateWindowChannelScene(value) {
-  return !!value
-    && value.schema === 1
-    && WINDOW_CHANNEL_BATTLE_IDS.includes(value.battleId)
-    && Number.isInteger(value.channelCount)
-    && value.channelCount >= 1
-    && value.channelCount <= 3
-    && Array.isArray(value.palette)
-    && value.palette.length === 4
-    && Array.isArray(value.motifs)
-    && value.motifs.length >= 3
-    && ['layout', 'attackLayout'].every((field) => ['x', 'y', 'width', 'height'].every((key) => (
-      Number.isFinite(value[field]?.[key]) && value[field][key] >= 0 && value[field][key] <= 1
+export function validateFireballCastPlan(value){
+  return !!value&&value.schema===2&&value.kind==='fireball-cast'
+    &&value.source==='ranged'
+    &&FIREBALL_BATTLE_IDS.includes(value.battleId)
+    &&typeof value.castId==='string'&&value.castId.startsWith('fireball:')
+    &&['outbound','deflected','reversed','impact'].includes(value.state)
+    &&Number.isInteger(value.rayCount)&&value.rayCount>=1&&value.rayCount<=4
+    &&Array.isArray(value.rays)&&value.rays.length===value.rayCount
+    &&value.rays.every((ray)=>['origin','exit','beyond','direction'].every((field)=>(
+      Number.isFinite(ray[field]?.x)&&Number.isFinite(ray[field]?.y)
     )));
 }
+
+export function movementFireballProfile({battleId='',movementId='',movementIndex=0}={}){
+  const canonical=canonicalFireballBattleId(battleId);
+  if(!canonical)return null;
+  return Object.freeze({schema:2,kind:'fireball-profile',battleId:canonical,movementId:String(movementId||''),movementIndex:Math.max(0,Math.floor(Number(movementIndex)||0)),rayCount:authoredCount(canonical,movementId,movementIndex)});
+}
+
+// Old saves may still contain windowChannel continuation data. It is accepted
+// as a migration input only and never resumes presentation or reducer state.
+export function freshWindowChannelProgress(battleId=''){return{battleId:canonicalFireballBattleId(battleId),ignored:true};}

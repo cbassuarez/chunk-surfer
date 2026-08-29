@@ -143,10 +143,33 @@ export function surferAggression(composureBonus = 0, stance = null) {
 // The cue the surfer strikes with on this enemy beat: the instrument of its
 // intent (beats rotate through that instrument's stems), or — when the recordist
 // is nearly broken — the SCREAM.
-export function enemyAttackCue({ intentKind = 'broadcast', beat = 0, composure = Infinity, maxComposure = 0 } = {}) {
+export function enemyAttackCue({
+  intentKind = 'broadcast', beat = 0, composure = Infinity, maxComposure = 0,
+  // THE PRACTICE WING IS THE ONE PLACE THE SOUND IS LITERAL.
+  //
+  // Everywhere else the instrument stands for the shape of the blow, and the
+  // player learns to read it. In that wing the stems are not a metaphor for
+  // anything — people practised in those rooms, and what comes through the
+  // partition is what they were playing. So the room picks the instrument there,
+  // and the intent is still legible because enemyAttackVoice prints it as the
+  // verb. Nothing is lost and the sound stops lying about where it comes from.
+  instrument = null,
+} = {}) {
   if (maxComposure > 0 && composure <= maxComposure * SCREAM_COMPOSURE_RATIO) return SCREAM_CUE;
-  const set = INSTRUMENT_WEAPON_CUES[INSTRUMENT_BY_INTENT[intentKind] || 'piano'] || INSTRUMENT_WEAPON_CUES.piano;
+  const family = instrument || INSTRUMENT_BY_INTENT[intentKind] || 'piano';
+  const set = INSTRUMENT_WEAPON_CUES[family] || INSTRUMENT_WEAPON_CUES.piano;
   return set[wrap(beat, set.length)];
+}
+
+// Which family a cue actually belongs to, read off the cue rather than inferred
+// from the intent — see enemyAttackVoice, which was printing a label it had
+// guessed instead of the one that played.
+export function cueInstrumentFamily(cueId) {
+  if (!cueId) return null;
+  for (const [family, cues] of Object.entries(INSTRUMENT_WEAPON_CUES)) {
+    if (cues.includes(cueId)) return family;
+  }
+  return null;
 }
 
 // What the surfer just hit you with, in words, for the strike banner. The kind is
@@ -161,8 +184,14 @@ const INTENT_VERB = {
 };
 export function enemyAttackVoice(intentKind = 'broadcast', cueId = null) {
   if (cueId === SCREAM_CUE) return { verb: 'SCREAMS', instrument: 'SCREAM' };
+  // The instrument is READ OFF THE CUE. It used to be inferred from the intent
+  // kind, which was the same answer right up until the practice wing started
+  // choosing its stems by room — at which point the banner would have named an
+  // instrument that had not played. The verb still carries the kind, so the tell
+  // survives wherever the sound stops matching it.
+  const family = cueInstrumentFamily(cueId) || INSTRUMENT_BY_INTENT[intentKind] || 'piano';
   return {
     verb: INTENT_VERB[intentKind] || 'PLAYS',
-    instrument: String(INSTRUMENT_BY_INTENT[intentKind] || 'piano').toUpperCase(),
+    instrument: String(family).toUpperCase(),
   };
 }

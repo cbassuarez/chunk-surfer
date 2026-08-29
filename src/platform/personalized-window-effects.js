@@ -1,743 +1,414 @@
 import { isTauriRuntime } from './detect.js';
-import {
-  WINDOW_ECHO_LABELS,
-  compileWindowChoreography,
-} from './window-choreography.js';
 
-const SIDE_LABEL = 'interference-monitor';
-const CHANNEL_LABELS = Object.freeze([SIDE_LABEL, ...WINDOW_ECHO_LABELS.slice(0, 2)]);
-const TITLE = 'Chunk Surfer';
-const HOLD_MS = 1200;
-const RETURN_MS = 3000;
-const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+export const FIREBALL_SURFACE_LABELS=Object.freeze([
+  'fireball-cast-1','fireball-cast-2','fireball-cast-3','fireball-cast-4',
+]);
 
-// Retained as a pure compatibility helper for the existing monitor-layout lab.
-export function substantiallyOnscreenPosition({ position, size, monitor, dx = 0, dy = 0 } = {}) {
-  const next = { x: Number(position?.x) || 0, y: Number(position?.y) || 0 };
-  if (!monitor?.position || !monitor?.size || !size) return { x: next.x + dx, y: next.y + dy };
-  const minVisibleX = Math.round((Number(size.width) || 0) * 0.8);
-  const minVisibleY = Math.round((Number(size.height) || 0) * 0.8);
-  return {
-    x: Math.max(monitor.position.x - size.width + minVisibleX,
-      Math.min(monitor.position.x + monitor.size.width - minVisibleX, next.x + dx)),
-    y: Math.max(monitor.position.y - size.height + minVisibleY,
-      Math.min(monitor.position.y + monitor.size.height - minVisibleY, next.y + dy)),
+const safe=(task)=>Promise.resolve().then(task).catch(()=>null);
+const STEP_INTERVAL_MS=33;
+
+// Only the four numbers the native side actually uses to move a window. The
+// escalation, the cycle and the reasoning behind them stay on this side.
+function nativeChoreography(dance){
+  if(!dance)return null;
+  const dodge=Math.max(0,Math.min(1,Number(dance.dodge)||0));
+  if(dodge<=.001)return null;
+  return{
+    dodge,
+    reach:Math.max(0,Math.min(4,Number(dance.reach)||0)),
+    senseMs:Math.max(0,Math.min(600,Number(dance.senseMs)||0)),
+    cohesion:Math.max(0,Math.min(1,Number(dance.cohesion)||0)),
+  };
+}
+const TITLE='Chunk Surfer';
+function opaqueCastId(value=''){
+  let hash=0x811c9dc5;
+  for(const char of String(value))hash=Math.imul(hash^char.charCodeAt(0),16777619)>>>0;
+  return`cast-${hash.toString(16).padStart(8,'0')}`;
+}
+
+// THE RAY IS AUTHORED INSIDE THE BATTLE STAGE, NOT THE WINDOW.
+//
+// `stage` is that band -- a rect in the middle of the combat panel -- as a
+// fraction of the game window. Everything the native side is handed has to be
+// in window space, or the surface is placed against a rectangle that is not the
+// one the comet actually crossed.
+function windowSpaceRay(ray,stage){
+  const x=Number(stage?.x)||0,y=Number(stage?.y)||0;
+  const w=Number(stage?.w)>0?Number(stage.w):1,h=Number(stage?.h)>0?Number(stage.h):1;
+  return{
+    exit:{x:x+(Number(ray?.exit?.x)||0)*w,y:y+(Number(ray?.exit?.y)||0)*h},
+    // A direction is an angle in whatever rectangle it was measured in. Scaling
+    // it by the stage's own proportions is what keeps the line straight across
+    // the bezel instead of kinking at it.
+    direction:{x:(Number(ray?.direction?.x)||0)*w,y:(Number(ray?.direction?.y)||0)*h},
   };
 }
 
-function makeToken(cryptoApi = globalThis.crypto) {
-  const raw = cryptoApi?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  return `session-${String(raw).replace(/[^a-z0-9-]/giu, '').slice(0, 80)}`;
+function surfaceCastPayload(plan,index,flight=null){
+  const ray=plan?.rays?.[index];
+  if(!ray)return null;
+  const state=String(flight?.state||plan?.state||'outbound');
+  return{
+    castId:opaqueCastId(plan.castId),
+    state:['outbound','deflected','reversed','impact'].includes(state)?state:'outbound',
+    reducedMotion:!!plan.reducedMotion,
+    // Not the stage crossing -- that is over. This is how long the comet takes
+    // to cross one 160-pixel surface at the speed it left the frame, which is
+    // also how long the surface stays up.
+    travelSeconds:plan.reducedMotion?.26:.62,
+    damage:Number.isInteger(flight?.damage)?Math.max(0,flight.damage)
+      :Number.isInteger(plan.damage)?Math.max(0,plan.damage):null,
+    // The surface draws rays[0]; the index rides along only so a click coming
+    // back can be matched to the ray that was struck.
+    rayCount:1,surfaceIndex:index,rays:[ray],
+  };
+}
+
+// Retained for the monitor-layout lab and used by native placement tests.
+export function substantiallyOnscreenPosition({position,size,monitor,dx=0,dy=0}={}){
+  const next={x:Number(position?.x)||0,y:Number(position?.y)||0};
+  if(!monitor?.position||!monitor?.size||!size)return{x:next.x+dx,y:next.y+dy};
+  const visibleX=Math.round((Number(size.width)||0)*.8),visibleY=Math.round((Number(size.height)||0)*.8);
+  return{
+    x:Math.max(monitor.position.x-size.width+visibleX,Math.min(monitor.position.x+monitor.size.width-visibleX,next.x+dx)),
+    y:Math.max(monitor.position.y-size.height+visibleY,Math.min(monitor.position.y+monitor.size.height-visibleY,next.y+dy)),
+  };
+}
+
+function token(cryptoApi=globalThis.crypto){
+  const raw=cryptoApi?.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return`fireball-session-${String(raw).replace(/[^a-z0-9-]/giu,'').slice(0,70)}`;
 }
 
 export function createPersonalizedWindowEffects({
-  onEmergency = () => {},
-  now = () => Date.now(),
-  runtimeApi = null,
-  mainWindow = null,
-  sleep = wait,
-  tokenFactory = makeToken,
-  documentApi = globalThis.document,
-} = {}) {
-  let api = runtimeApi;
-  let main = mainWindow;
-  let sidecar = null;
-  const echoes = new Map();
-  let current = null;
-  let holdStarted = 0;
-  let holdTimer = null;
-  let keyInstalled = false;
-  let emergencyUnlisten = null;
-  let channelUnlisten = null;
-  let controlsInstalling = null;
-  let queue = Promise.resolve();
+  onEmergency=()=>{},onSurfaceReport=()=>{},runtimeApi=null,tokenFactory=token,documentApi=globalThis.document,
+  wait=(ms)=>new Promise((resolve)=>setTimeout(resolve,ms)),
+}={}){
+  let api=runtimeApi;
+  let current=null;
+  const surfaces=new Map();
+  const hideTimers=new Map();
+  let hitsBound=false;
 
-  const safe = (task) => Promise.resolve().then(task).catch(() => null);
-  const eventTarget = () => documentApi?.defaultView || globalThis.window || null;
+  const target=()=>documentApi?.defaultView||globalThis.window||null;
+  function dispatch(event,detail){
+    const CustomEventCtor=target()?.CustomEvent||globalThis.CustomEvent;
+    if(CustomEventCtor)target()?.dispatchEvent?.(new CustomEventCtor(event,{detail}));
+  }
 
-  async function loadApi() {
-    if (api) return api;
-    if (!isTauriRuntime()) return null;
-    try {
-      const windowApi = await import('@tauri-apps/api/window');
-      const webviewApi = await import('@tauri-apps/api/webviewWindow');
-      const eventApi = await import('@tauri-apps/api/event');
-      const coreApi = await import('@tauri-apps/api/core');
-      api = { ...windowApi, ...webviewApi, ...eventApi, ...coreApi };
-      main = windowApi.getCurrentWindow();
-    } catch (_) { api = null; }
+  // A struck surface reports back, and the keyboard goes home with the report.
+  // The payload is matched against the live plan here rather than trusted: the
+  // surfaces are handed an opaque cast id precisely so nothing that comes back
+  // from one can name a cast the fight is not currently running.
+  async function listenForHits(){
+    if(hitsBound||!api?.listen)return;
+    hitsBound=true;
+    await safe(()=>api.listen('fireball-cast-hit',({payload})=>{
+      // The keyboard goes home first and unconditionally. Whether the click
+      // caught a comet is a separate question from where typing should land,
+      // and getting that order wrong strands the player in a window that is
+      // 160 pixels of fireball and nothing else.
+      if(api?.invoke)void safe(()=>api.invoke('chunk_fireball_cast_focus_main'));
+      const session=current,plan=session?.activePlan;
+      if(!session||!plan)return;
+      const index=Math.floor(Number(payload?.surfaceIndex));
+      if(!(index>=0&&index<plan.rayCount&&index<FIREBALL_SURFACE_LABELS.length))return;
+      if(String(payload?.castId||'')!==opaqueCastId(plan.castId))return;
+      const ray=plan.rays[index];
+      dispatch('chunk-surfer:fireball-hit',{castId:plan.castId,rayId:ray?.id||null});
+    }));
+  }
+
+  async function loadApi(){
+    if(api)return api;
+    if(!isTauriRuntime())return null;
+    try{
+      const windowApi=await import('@tauri-apps/api/window');
+      const webviewApi=await import('@tauri-apps/api/webviewWindow');
+      const eventApi=await import('@tauri-apps/api/event');
+      const coreApi=await import('@tauri-apps/api/core');
+      api={...windowApi,...webviewApi,...eventApi,...coreApi};
+    }catch(_){api=null;}
     return api;
   }
 
-  function clearInternal() {
-    const layer = documentApi?.getElementById?.('window-choreography-layer');
-    if (layer) {
-      layer.classList.remove('active', 'interactive', 'reacquire');
-      layer.replaceChildren();
+  // Native creation reports failure as an EVENT, not a rejection, and the
+  // constructor hands back a usable-looking object either way. Whatever
+  // `tauri://error` says is the only description of why a surface does not
+  // exist, so it is kept rather than being collapsed into "not ready".
+  async function ready(webview){
+    return new Promise((resolve)=>{
+      let settled=false;
+      const done=(reason)=>{if(settled)return;settled=true;clearTimeout(timer);resolve(reason||null);};
+      const timer=setTimeout(()=>done('timeout'),1800);
+      void Promise.resolve(webview.once?.('tauri://created',()=>done(null))).catch(()=>done('listen-failed'));
+      void Promise.resolve(webview.once?.('tauri://error',(event)=>done(String(event?.payload||'create-failed')))).catch(()=>done('listen-failed'));
+    });
+  }
+
+  async function prewarmSurface(label,index,session){
+    if(!api?.WebviewWindow||current!==session)return null;
+    let surface=await api.WebviewWindow.getByLabel(label);
+    if(!surface){
+      const size=160+index*24;
+      // No max size: the comet grows a little as it closes. `focusable` has to
+      // be TRUE -- a window macOS will not make key does not reliably get a
+      // mouseDown either, and a fireball you cannot click is the one thing this
+      // whole surface exists to avoid. Focus is handed straight back on the
+      // click instead (chunk_fireball_cast_focus_main), which is a frame of
+      // borrowed focus rather than a projectile that ignores the pointer.
+      surface=new api.WebviewWindow(label,{
+        url:'fireball-cast.html',title:TITLE,
+        width:size,height:size,minWidth:64,minHeight:64,
+        resizable:false,decorations:false,transparent:false,visible:false,focus:false,focusable:true,
+        alwaysOnTop:true,skipTaskbar:true,shadow:false,
+      });
+      const failure=await ready(surface);
+      // The constructor object exists even if native creation failed. Resolve
+      // the registered label again so a failed surface cannot mark the whole
+      // fixed pool ready and then make placement fail invisibly.
+      surface=await api.WebviewWindow.getByLabel(label);
+      if(!surface){session.prewarmReasons.push(`${label}:${failure||'not-registered'}`);return null;}
     }
-    if (documentApi?.documentElement?.dataset) delete documentApi.documentElement.dataset.windowChoreography;
+    if(current!==session){await safe(()=>surface.close());return null;}
+    surfaces.set(label,surface);
+    await safe(()=>surface.hide());
+    return surface;
   }
 
-  function ensureInternalLayer() {
-    if (!documentApi?.createElement || !documentApi?.body) return null;
-    let layer = documentApi.getElementById('window-choreography-layer');
-    if (layer) return layer;
-    const style = documentApi.createElement('style');
-    style.id = 'window-choreography-style';
-    style.textContent = `
-      #window-choreography-layer{position:fixed;inset:0;z-index:2147483000;pointer-events:none;opacity:0;transition:opacity 90ms linear;overflow:hidden;font:12px/1.35 ui-monospace,SFMono-Regular,Consolas,monospace}
-      #window-choreography-layer.active{opacity:1}
-      #window-choreography-layer.interactive{pointer-events:auto;background:rgba(0,3,4,.56)}
-      #window-choreography-layer .arch{position:absolute;left:calc(var(--x)*100%);top:calc(var(--y)*100%);width:calc(var(--w)*100%);height:calc(var(--h)*100%);border:2px solid rgba(197,224,214,.7);box-shadow:0 0 0 100vmax rgba(0,4,4,.58),inset 0 0 54px rgba(188,232,216,.18);transition:all 357ms cubic-bezier(.2,.8,.2,1)}
-      #window-choreography-layer[data-aperture*="pool"] .arch,#window-choreography-layer[data-aperture="undertow"] .arch{border-radius:48% 48% 10% 10%/28% 28% 8% 8%}
-      #window-choreography-layer[data-aperture="proscenium"] .arch{border-width:12px 3px 3px;clip-path:polygon(0 0,100% 0,96% 100%,4% 100%)}
-      #window-choreography-layer[data-aperture="lancet"] .arch{border-radius:50% 50% 4% 4%/34% 34% 3% 3%}
-      #window-choreography-layer[data-aperture="occluded"] .arch{background:repeating-linear-gradient(90deg,rgba(0,0,0,.94) 0 21%,transparent 21% 29%)}
-      #window-choreography-layer .echo{position:absolute;top:9%;bottom:9%;width:18%;border:1px solid rgba(194,220,211,.55);background:linear-gradient(165deg,rgba(192,225,215,.12),rgba(0,0,0,.78));box-shadow:0 0 36px rgba(141,205,190,.1)}
-      #window-choreography-layer .echo:nth-child(2){left:3%}#window-choreography-layer .echo:nth-child(3){right:3%}
-      #window-choreography-layer .channel-pane{position:absolute;top:12%;bottom:12%;width:min(28vw,390px);padding:18px;border:1px solid var(--channel-fg);background:radial-gradient(circle at 50% 15%,color-mix(in srgb,var(--channel-fg) 15%,var(--channel-bg)),var(--channel-bg) 62%);box-shadow:0 0 50px rgba(0,0,0,.75),inset 0 0 70px rgba(0,0,0,.48);color:var(--channel-hi);display:flex;flex-direction:column;justify-content:space-between;transform:rotate(var(--channel-tilt))}
-      #window-choreography-layer .channel-pane[data-at="0"]{left:4%}#window-choreography-layer .channel-pane[data-at="1"]{left:50%;transform:translateX(-50%) rotate(var(--channel-tilt))}#window-choreography-layer .channel-pane[data-at="2"]{right:4%}
-      #window-choreography-layer .channel-title{letter-spacing:.15em;color:var(--channel-fg);border-bottom:1px solid currentColor;padding-bottom:8px}
-      #window-choreography-layer .channel-motif{font-size:clamp(18px,3vw,46px);letter-spacing:.18em;overflow:hidden;opacity:.72;white-space:pre-line;text-align:center}
-      #window-choreography-layer .channel-caption{color:var(--channel-hi);min-height:3em;white-space:pre-line}
-      #window-choreography-layer .channel-cut{align-self:center;border:1px solid var(--channel-fg);background:rgba(0,0,0,.72);color:var(--channel-hi);padding:12px 18px;font:inherit;letter-spacing:.12em;cursor:pointer}
-      #window-choreography-layer .channel-cut:hover,#window-choreography-layer .channel-cut:focus{outline:2px solid var(--channel-hi)}
-      #window-choreography-layer .channel-lesson,#window-choreography-layer .channel-reacquire{position:absolute;left:50%;bottom:3%;transform:translateX(-50%);padding:8px 14px;background:#050707e8;border:1px solid #b8874e;color:#e8c486;letter-spacing:.08em;white-space:nowrap}
-      #window-choreography-layer.reacquire{pointer-events:none;background:rgba(0,0,0,.34)}
-      #window-choreography-layer .channel-reacquire{bottom:7%;font-size:14px}
-    `;
-    layer = documentApi.createElement('div');
-    layer.id = 'window-choreography-layer';
-    documentApi.head?.append(style);
-    documentApi.body.append(layer);
-    return layer;
-  }
-
-  function applyScenePalette(layer, scene) {
-    const palette = Array.isArray(scene?.palette) ? scene.palette : ['#030606', '#74a49b', '#d5d0a3', '#160707'];
-    layer.style?.setProperty?.('--channel-bg', palette[0]);
-    layer.style?.setProperty?.('--channel-fg', palette[1]);
-    layer.style?.setProperty?.('--channel-hi', palette[2]);
-    layer.style?.setProperty?.('--channel-wound', palette[3]);
-  }
-
-  async function renderInternalPlan(plan) {
-    const layer = ensureInternalLayer();
-    if (!layer) {
-      if (!plan.hold) await sleep(plan.timing.durationMs);
+  // ONE SURFACE FAILING USED TO TAKE THE WHOLE FEATURE DOWN, IN SILENCE.
+  //
+  // Every step in here can reject on a desktop build — a denied ACL call, a
+  // page the bundle does not contain, a create that never answers — and every
+  // one of them was unguarded inside a Promise.all whose rejection was then
+  // swallowed by `.catch(() => null)` at the only call site. The session was
+  // left at `prewarmState:'pending'` with `surfacesReady:false` for the rest of
+  // the battle, so `showNative` declined every cast and no external window ever
+  // appeared, while the in-canvas trails carried on exactly as before. There
+  // was nothing anywhere to read that said so.
+  //
+  // Now: nothing here throws, the reason is kept and reported, and surfaces
+  // which did build are closed rather than orphaned so the next battle's
+  // prewarm starts from a clean pool.
+  async function prewarmAll(session){
+    if(!await loadApi()||current!==session){
+      if(current===session){session.prewarmState='unavailable';session.prewarmReasons.push('no-runtime');}
       return false;
     }
-    const target = plan.main[1];
-    const arch = documentApi.createElement('div');
-    arch.className = 'arch';
-    arch.style.setProperty('--x', target.geometry.x);
-    arch.style.setProperty('--y', target.geometry.y);
-    arch.style.setProperty('--w', target.geometry.width);
-    arch.style.setProperty('--h', target.geometry.height);
-    layer.dataset.aperture = target.aperture;
-    layer.replaceChildren(arch);
-    for (const echo of plan.echoes) {
-      const pane = documentApi.createElement('div');
-      pane.className = 'echo';
-      pane.dataset.silhouette = echo.silhouette;
-      layer.append(pane);
-    }
-    documentApi.documentElement.dataset.windowChoreography = plan.stage;
-    layer.classList.add('active');
-    const CustomEventCtor = eventTarget()?.CustomEvent || globalThis.CustomEvent;
-    if (CustomEventCtor) eventTarget()?.dispatchEvent?.(new CustomEventCtor('chunk-surfer:window-choreography', { detail: plan }));
-    if (!plan.hold) {
-      await sleep(plan.timing.durationMs);
-      if (current?.token === plan.token && !current?.channel) clearInternal();
-    }
-    return true;
-  }
-
-  function internalMotif(scene, index) {
-    const motif = scene.motifs[index % scene.motifs.length].toUpperCase().replaceAll('-', ' ');
-    const rule = scene.battleId === 'hall' ? '●  ●  ●\n  ●  ●\n●  ●  ●'
-      : scene.battleId === 'practice' ? '━━╱━━╱━━\n  ━━╱━━'
-        : scene.battleId === 'chapel' ? '  ╱╲\n ╱  ╲\n╱____╲'
-          : scene.battleId === 'source-final' ? '[ [ [ ] ] ]\n  RETURN()'
-            : '~~~~~~~~~~~\n  ▯ TAPE ▯\n~~~~~~~~~~~';
-    return `${motif}\n${rule}`;
-  }
-
-  function renderInternalChannel(scene, { mode = 'attack', tier = 0 } = {}) {
-    const layer = ensureInternalLayer();
-    if (!layer || !current?.channel) return false;
-    applyScenePalette(layer, scene);
-    layer.dataset.aperture = scene.aperture;
-    layer.replaceChildren();
-    layer.classList.add('active', 'interactive');
-    const count = mode === 'return' ? 1 : scene.channelCount;
-    for (let index = 0; index < count; index += 1) {
-      const pane = documentApi.createElement('section');
-      pane.className = 'channel-pane';
-      pane.dataset.at = count === 1 ? '1' : String(index);
-      pane.style.setProperty('--channel-tilt', `${(index - (count - 1) / 2) * 1.5}deg`);
-      const title = documentApi.createElement('div');
-      title.className = 'channel-title';
-      title.textContent = mode === 'return' ? `RETURN / ${tier}-PASS CHARGE` : `${scene.title} / ${index + 1}`;
-      const motif = documentApi.createElement('div');
-      motif.className = 'channel-motif';
-      motif.textContent = internalMotif(scene, index);
-      const caption = documentApi.createElement('div');
-      caption.className = 'channel-caption';
-      caption.textContent = mode === 'return'
-        ? (tier >= 3 ? 'THREE CLEAN PASSES. SEND THE FULL CHANNEL BACK.' : 'TWO CLEAN PASSES. RETURN IT NOW, OR HOLD FOR THREE.')
-        : `${scene.caption}\n${scene.intentLabel}`;
-      const button = documentApi.createElement('button');
-      button.className = 'channel-cut';
-      button.type = 'button';
-      button.textContent = mode === 'return' ? 'RETURN SIGNAL' : 'CUT THIS CHANNEL';
-      button.addEventListener('pointerdown', (event) => {
-        event.preventDefault?.();
-        event.stopPropagation?.();
-        handleChannelResponse({
-          sessionToken: current?.token,
-          attackId: current?.channel?.attackId,
-          channelId: mode === 'return' ? 'return' : `internal-${index}`,
-          action: mode === 'return' ? 'return' : 'cut',
-        });
-      });
-      pane.append(title, motif, caption, button);
-      layer.append(pane);
-    }
-    if (scene.firstLesson && mode === 'attack') {
-      const lesson = documentApi.createElement('div');
-      lesson.className = 'channel-lesson';
-      lesson.textContent = 'CLICK OR CLOSE EVERY CHANNEL · CLICK BACK HERE · PARRY';
-      layer.append(lesson);
-    }
-    return true;
-  }
-
-  function renderReacquirePrompt() {
-    const layer = ensureInternalLayer();
-    if (!layer) return;
-    layer.replaceChildren();
-    layer.classList.remove('interactive');
-    layer.classList.add('active', 'reacquire');
-    const prompt = documentApi.createElement('div');
-    prompt.className = 'channel-reacquire';
-    prompt.textContent = 'CLICK BACK INTO THE SIGNAL · THEN PARRY';
-    layer.append(prompt);
-  }
-
-  async function ready(webview) {
-    await new Promise((resolve) => {
-      let settled = false;
-      const timer = setTimeout(() => done(), 800);
-      const done = () => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        resolve();
-      };
-      webview.once?.('tauri://created', done);
-      webview.once?.('tauri://error', done);
+    await listenForHits();
+    const made=await Promise.all(FIREBALL_SURFACE_LABELS.map((label,index)=>(
+      Promise.resolve()
+        .then(()=>prewarmSurface(label,index,session))
+        .catch((error)=>{session.prewarmReasons.push(`${label}:${String(error?.message||error)}`);return null;})
+    )));
+    if(current!==session)return false;
+    session.readySurfaces=made.filter(Boolean).length;
+    session.surfacesReady=session.readySurfaces>0;
+    session.prewarmState=session.readySurfaces===FIREBALL_SURFACE_LABELS.length?'ready'
+      :session.readySurfaces?'partial':'unavailable';
+    // Reported on every terminal outcome, success included. "No line at all"
+    // then means the session was never begun — the module is off, or the game
+    // is fullscreen — which is a different answer from "the surfaces failed",
+    // and the two were previously indistinguishable from outside.
+    onSurfaceReport({
+      state:session.prewarmState,ready:session.readySurfaces,reasons:[...session.prewarmReasons],
+      intensity:session.intensity,fullscreen:session.fullscreen,
     });
+    // Combat never waits for this, and it does not need to: the next frame's
+    // sync draws whatever is in the air by then.
+    return session.surfacesReady;
   }
 
-  async function ensureSidecar(payload = {}, { show = true } = {}) {
-    if (!current || current.intensity === 'low' || !await loadApi() || !api.WebviewWindow) return null;
-    sidecar = await api.WebviewWindow.getByLabel(SIDE_LABEL);
-    if (!sidecar) {
-      sidecar = new api.WebviewWindow(SIDE_LABEL, {
-        url: 'interference-monitor.html?mode=monitor',
-        title: 'AUDIOCORP / MONITOR RETURN',
-        width: 460, height: 420, minWidth: 360, minHeight: 300,
-        resizable: true, center: true, focus: false, alwaysOnTop: false, skipTaskbar: true,
-      });
-      await ready(sidecar);
-    }
-    if (show) await safe(() => sidecar.show());
-    if (payload && Object.keys(payload).length) await safe(() => api.emitTo(SIDE_LABEL, 'interference-sidecar', payload));
-    return sidecar;
-  }
-
-  async function prewarmEcho(label, silhouette = 'return') {
-    if (!current || !await loadApi() || !api.WebviewWindow || !WINDOW_ECHO_LABELS.includes(label)) return null;
-    const token = current.token;
-    let echo = await api.WebviewWindow.getByLabel(label);
-    if (!echo) {
-      echo = new api.WebviewWindow(label, {
-        url: `interference-monitor.html?mode=echo&silhouette=${encodeURIComponent(silhouette)}`,
-        title: 'AUDIOCORP / ARCHITECTURAL RETURN',
-        width: 360, height: 560, minWidth: 260, minHeight: 320,
-        resizable: false, visible: false, focus: false, alwaysOnTop: false, skipTaskbar: true,
-      });
-      await ready(echo);
-    }
-    if (current?.token !== token) { await safe(() => echo.close()); return null; }
-    echoes.set(label, echo);
-    await safe(() => echo.hide());
-    return echo;
-  }
-
-  async function auxiliaryByLabel(label) {
-    if (label === SIDE_LABEL) return ensureSidecar({}, { show: false });
-    return prewarmEcho(label);
-  }
-
-  async function showEchoes(plan, payload) {
-    if (plan.displayMode !== 'native' || !plan.echoes.length) return;
-    for (const entry of plan.echoes) await prewarmEcho(entry.label, entry.silhouette);
-    for (const entry of plan.echoes) {
-      await safe(() => api.invoke('chunk_window_choreography_place_echo', {
-        label: entry.label, index: entry.index, count: plan.echoes.length,
-      }));
-      await safe(() => api.emitTo(entry.label, 'interference-sidecar', {
-        ...payload, state: entry.silhouette.toUpperCase(), echo: true,
-      }));
-    }
-  }
-
-  async function hideAuxiliary() {
-    const all = [sidecar, ...echoes.values()].filter(Boolean);
-    await Promise.all(all.map((webview) => safe(() => webview.hide())));
-  }
-
-  async function closeAuxiliary() {
-    const all = [sidecar, ...echoes.values()].filter(Boolean);
-    sidecar = null;
-    echoes.clear();
-    await Promise.all(all.map((webview) => safe(() => webview.close())));
-  }
-
-  function finishChannel(outcome, extra = {}) {
-    const channel = current?.channel;
-    if (!channel || channel.settled) return false;
-    channel.settled = true;
-    clearTimeout(channel.timer);
-    channel.removeReacquire?.();
-    const result = {
-      outcome,
-      elapsedMs: Math.max(0, now() - channel.startedAt),
-      cutCount: channel.cut.size,
-      requiredCount: channel.required.size,
-      ...extra,
+  function begin({intensity='standard',fullscreen=false,reducedMotion=false}={}){
+    const session={
+      token:tokenFactory(),intensity,fullscreen:!!fullscreen,reducedMotion:!!reducedMotion,
+      surfacesReady:false,readySurfaces:0,activePlan:null,prewarmState:'pending',
+      prewarmReasons:[],placementAttempts:0,placementFailures:0,lastStepAt:0,
+      // What each surface was last told it was drawing, so the payload is only
+      // re-sent when a comet's own state changes rather than every frame.
+      rayStates:new Map(),
     };
-    current.channel = null;
-    clearInternal();
-    void hideAuxiliary();
-    channel.resolve(result);
-    return true;
+    current=session;
+    // Arrival starts construction, but no combat beat ever awaits it or creates a
+    // missing surface. Until all four exist the complete cast stays in-canvas.
+    session.prewarm=prewarmAll(session);
+    return session.token;
   }
 
-  function installMainReacquire() {
-    const channel = current?.channel;
-    const target = eventTarget();
-    if (!channel || !target?.addEventListener) {
-      finishChannel('skip');
-      return;
-    }
-    renderReacquirePrompt();
-    const handler = (event) => {
-      if (current?.channel !== channel || channel.state !== 'reacquire') return;
-      event.preventDefault?.();
-      event.stopImmediatePropagation?.();
-      event.stopPropagation?.();
-      finishChannel('cut', { reacquiredMain: true });
-    };
-    target.addEventListener('pointerdown', handler, true);
-    channel.removeReacquire = () => target.removeEventListener?.('pointerdown', handler, true);
-  }
+  function prepareFireballs(){return current?.prewarm||Promise.resolve(false);}
 
-  function handleChannelResponse(payload = {}) {
-    const channel = current?.channel;
-    if (!channel || channel.settled) return false;
-    if (payload.sessionToken !== current.token || payload.attackId !== channel.attackId) return false;
-    if (channel.mode === 'return') {
-      if (payload.action === 'return') return finishChannel('return', { tier: channel.tier });
-      if (payload.action === 'cut' || payload.action === 'decline') return finishChannel('cut', { held: true, tier: channel.tier });
-      return false;
-    }
-    if (channel.state !== 'cut' || payload.action !== 'cut' || !channel.required.has(payload.channelId)) return false;
-    channel.cut.add(payload.channelId);
-    if (channel.cut.size < channel.required.size) return true;
-    channel.state = 'reacquire';
-    void hideAuxiliary();
-    installMainReacquire();
-    return true;
-  }
-
-  function installControls() {
-    const target = eventTarget();
-    if (!keyInstalled && target?.addEventListener) {
-      keyInstalled = true;
-      target.addEventListener('keydown', (event) => {
-        if (event.key !== 'Escape' || event.repeat || !current) return;
-        holdStarted = now();
-        clearTimeout(holdTimer);
-        holdTimer = setTimeout(() => {
-          if (current && holdStarted && now() - holdStarted >= HOLD_MS - 25) void emergencyRestore();
-        }, HOLD_MS);
-      }, true);
-      target.addEventListener('keyup', (event) => {
-        if (event.key !== 'Escape') return;
-        holdStarted = 0;
-        clearTimeout(holdTimer);
-      }, true);
-    }
-    if (!api?.listen || emergencyUnlisten && channelUnlisten) return Promise.resolve();
-    if (controlsInstalling) return controlsInstalling;
-    controlsInstalling = Promise.all([
-      emergencyUnlisten ? null : safe(async () => {
-        emergencyUnlisten = await api.listen('interference-emergency-restore', () => { void emergencyRestore(); });
-      }),
-      channelUnlisten ? null : safe(async () => {
-        channelUnlisten = await api.listen('window-channel-response', ({ payload }) => handleChannelResponse(payload));
-      }),
-    ]).finally(() => { controlsInstalling = null; });
-    return controlsInstalling;
-  }
-
-  async function begin(options = {}) {
-    if (current) await emergencyRestore({ notify: false });
-    const token = tokenFactory();
-    const intensity = ['low', 'standard', 'hostile'].includes(options.intensity) ? options.intensity : 'standard';
-    current = {
-      token,
-      intensity,
-      stage: options.encounterId === 'source-final' ? 'finale' : options.stage || 'recognition',
-      encounterId: options.encounterId || '',
-      fullscreen: !!options.fullscreen,
-      nativePositioning: false,
-      originalTitle: null,
-      lastCue: null,
-      channel: null,
-      movementScene: null,
-      lastChannelScene: null,
-    };
-    await loadApi();
-    await installControls();
-    current.originalTitle = await safe(() => main?.title?.()) || TITLE;
-    if (api?.invoke && intensity !== 'low' && !current.fullscreen) {
-      const capabilities = await safe(() => api.invoke('chunk_window_choreography_capabilities'));
-      current.nativePositioning = capabilities?.nativePositioning !== false;
-      if (current.nativePositioning) {
-        current.nativePositioning = !!await safe(() => api.invoke('chunk_window_choreography_begin', { token }));
+  // ONE FRAME OF THE VOLLEY, AS IT ACTUALLY IS.
+  //
+  // Opening a surface, moving it and closing it used to be three entry points
+  // driven by three different events, which is workable only while every comet
+  // in a cast shares one flight. They do not: they leave a beat apart, they are
+  // struck one at a time, and hitting one must leave the others exactly where
+  // they were. So there is one statement instead -- here is every comet that is
+  // outside the game right now and where each of them is -- and anything not in
+  // it is not out there.
+  function syncFireballCast(plan,rays,{token:expected=null,choreography=null}={}){
+    const session=current;
+    if(!session||(expected&&expected!==session.token))return false;
+    if(!session.surfacesReady)return false;
+    const live=Array.isArray(rays)?rays.filter((ray)=>Number.isInteger(Number(ray?.index))):[];
+    const shown=new Set();
+    if(plan&&live.length){
+      // A cast is whole or it is in-canvas: some of a volley outside the frame
+      // and the rest of it unaccounted for is a lie about where they went.
+      if(plan.rayCount<=session.readySurfaces){
+        const at=Date.now();
+        const settling=live.some((ray)=>ray.state!=='outbound');
+        const casts=[];
+        for(const ray of live){
+          const index=Math.max(0,Math.min(3,Math.floor(Number(ray.index)||0)));
+          const label=FIREBALL_SURFACE_LABELS[index];
+          if(!surfaces.get(label))continue;
+          shown.add(label);
+          const payload=surfaceCastPayload(plan,index,ray);
+          if(!payload)continue;
+          casts.push({
+            label,index,count:plan.rayCount,
+            ray:windowSpaceRay(plan.rays[index],plan.stage),
+            progress:Math.max(0,Math.min(1,Number(ray.progress)||0)),
+          });
+          // The drawing payload only changes when the comet's own state does.
+          // Position is the frequent thing and it goes through the batched step.
+          if(session.rayStates.get(label)!==payload.state){
+            session.rayStates.set(label,payload.state);
+            void safe(()=>api.emitTo(label,'fireball-cast',payload));
+          }
+        }
+        // Movement is throttled; a comet that has just been hit or has just
+        // landed is not, because that frame is the whole point of it. A shoal
+        // that is actively breaking is not throttled either -- a dodge sampled
+        // at 30Hz reads as a stutter rather than a swerve.
+        const darting=Number(choreography?.dodge)>.02;
+        if(darting)session.lastStepAt=0;
+        if(casts.length&&(settling||at-session.lastStepAt>=STEP_INTERVAL_MS)){
+          session.lastStepAt=at;
+          session.placementAttempts+=1;
+          void safe(()=>api.invoke('chunk_fireball_cast_step',{casts,choreography:nativeChoreography(choreography)})).then((moved)=>{
+            if(!Number(moved))session.placementFailures+=1;
+          });
+        }
       }
     }
-    const prewarmCount = intensity === 'hostile' && ['handoff', 'finale'].includes(current.stage) ? 2 : 0;
-    for (let index = 0; index < prewarmCount; index += 1) void prewarmEcho(WINDOW_ECHO_LABELS[index]);
-    return token;
-  }
-
-  async function executePlan(plan, { fallback = true } = {}) {
-    if (!plan || current?.token !== plan.token) return false;
-    if (plan.displayMode === 'native' && api?.invoke) {
-      const executed = await safe(() => api.invoke('chunk_window_choreography_execute', { plan }));
-      if (executed) return true;
-      if (!fallback || current?.token !== plan.token) return false;
+    for(const label of FIREBALL_SURFACE_LABELS){
+      if(shown.has(label))continue;
+      if(!session.rayStates.has(label))continue;
+      session.rayStates.delete(label);
+      const surface=surfaces.get(label);
+      if(surface)void safe(()=>surface.hide());
     }
-    return renderInternalPlan({ ...plan, displayMode: 'internal' });
-  }
-
-  async function perform(kind, payload = {}) {
-    const session = current;
-    if (!session || (payload.token && payload.token !== session.token)) return false;
-    const cueId = kind === 'loop' && session.lastCue ? 'loop' : kind;
-    const plan = compileWindowChoreography({
-      token: session.token,
-      stage: payload.stage || session.stage,
-      encounterId: session.encounterId,
-      cueId,
-      intensity: session.intensity,
-      fullscreen: session.fullscreen,
-      nativePositioning: session.nativePositioning,
-      inputLocked: payload.inputLocked === true,
-      variant: payload.variant || 0,
-    });
-    if (!plan || current?.token !== session.token) return false;
-    const focused = await safe(() => main?.isFocused?.());
-    if (focused === false) await safe(() => main?.requestUserAttention?.(2));
-    await safe(() => main?.setTitle?.(String(payload.title || `AUDIOCORP / ${cueId.toUpperCase()}`).slice(0, 96)));
-    if (cueId === 'broadcast' && plan.stage !== 'foreshadow') await ensureSidecar(payload);
-    await showEchoes(plan, payload);
-    const executed = await executePlan(plan);
-    await hideAuxiliary();
-    if (current?.token !== session.token) return false;
-    await safe(() => main?.setTitle?.(session.originalTitle || TITLE));
-    session.lastCue = cueId;
-    return executed;
-  }
-
-  function apply(kind, payload = {}) {
-    const token = current?.token;
-    queue = queue.then(
-      () => current?.token === token ? perform(kind, payload) : false,
-      () => current?.token === token ? perform(kind, payload) : false,
-    );
-    return queue;
-  }
-
-  function reject(payload = {}) {
-    return apply('reject', { ...payload, inputLocked: true });
-  }
-
-  function arrangeMovement(scene, payload = {}) {
-    const token = current?.token;
-    if (!token || !scene?.layout) return Promise.resolve(false);
-    current.movementScene = scene;
-    queue = queue.then(async () => {
-      const session = current;
-      if (!session || session.token !== token || session.channel) return false;
-      const plan = compileWindowChoreography({
-        token,
-        stage: session.stage,
-        encounterId: session.encounterId,
-        cueId: 'broadcast',
-        intensity: session.intensity,
-        fullscreen: session.fullscreen || !!payload.forceInternal,
-        nativePositioning: session.nativePositioning,
-        inputLocked: true,
-        mainGeometry: scene.layout,
-        hold: true,
-      });
-      return executePlan(plan);
-    }, () => false);
-    return queue;
-  }
-
-  async function showNativeChannelWindows(scene, channel) {
-    const labels = CHANNEL_LABELS.slice(0, scene.channelCount);
-    channel.required = new Set(labels);
-    const windows = [];
-    for (let index = 0; index < labels.length; index += 1) {
-      const label = labels[index];
-      const webview = await auxiliaryByLabel(label);
-      if (!webview) return false;
-      windows.push(webview);
-      await safe(() => api.invoke('chunk_window_choreography_place_echo', {
-        label, index, count: labels.length,
-      }));
-      await safe(() => api.emitTo(label, 'window-channel-scene', {
-        ...scene,
-        interaction: 'cut',
-        sessionToken: current.token,
-        attackId: channel.attackId,
-        channelId: label,
-        channelIndex: index,
-      }));
-    }
-    await safe(() => windows[0]?.setFocus?.());
     return true;
   }
 
-  async function runWindowChannel(scene, payload = {}) {
-    const session = current;
-    if (!session || !scene?.attackLayout || (payload.token && payload.token !== session.token)) {
-      return { outcome: 'skip', elapsedMs: 0, cutCount: 0, requiredCount: 0 };
-    }
-    if (session.channel) finishChannel('cancel');
-    const forceInternal = !!payload.forceInternal || session.fullscreen || session.intensity === 'low';
-    const plan = compileWindowChoreography({
-      token: session.token,
-      stage: session.stage,
-      encounterId: session.encounterId,
-      cueId: scene.intentKind === 'loop' ? 'loop' : 'overload',
-      intensity: session.intensity,
-      fullscreen: forceInternal,
-      nativePositioning: session.nativePositioning,
-      inputLocked: true,
-      mainGeometry: scene.attackLayout,
-      hold: true,
-    });
-    if (!plan) return { outcome: 'skip', elapsedMs: 0, cutCount: 0, requiredCount: 0 };
-    await safe(() => main?.setTitle?.(String(scene.title || TITLE).slice(0, 96)));
-    await executePlan(plan);
-    if (current?.token !== session.token) return { outcome: 'cancel', elapsedMs: 0, cutCount: 0, requiredCount: 0 };
+  function beginFireballCast(plan,{token:expected=null}={}){
+    const session=current;
+    if(!session||!plan||(expected&&expected!==session.token))return false;
+    session.activePlan=plan;
+    dispatch('chunk-surfer:fireball-cast',plan);
+    // Nothing opens here. A cast that has just left the Surfer's hand is
+    // entirely inside the frame; syncFireballCast is what says otherwise.
+    return true;
+  }
 
-    const result = new Promise((resolve) => {
-      session.channel = {
-        mode: 'attack', state: 'cut', settled: false,
-        attackId: `${session.token}-m${scene.movementIndex}`,
-        scene, startedAt: now(), resolve,
-        required: new Set(), cut: new Set(), removeReacquire: null, timer: null,
-      };
-    });
-    const channel = session.channel;
-    channel.timer = setTimeout(() => finishChannel('timeout'), Math.max(750, Number(scene.deadlineMs) || 5000));
-    const useNative = plan.displayMode === 'native' && api?.emitTo && api?.invoke;
-    if (useNative) {
-      const shown = await showNativeChannelWindows(scene, channel);
-      if (!shown && current?.channel === channel) {
-        channel.required = new Set(Array.from({ length: scene.channelCount }, (_, index) => `internal-${index}`));
-        if (!renderInternalChannel(scene)) finishChannel('skip');
+  // Narrative interference remains in the main HUD. These calls intentionally
+  // create no captioned sidecar, overlay, focus change or geometry animation.
+  function apply(kind,payload={}){dispatch('chunk-surfer:interference-line',{kind,...payload});return true;}
+  function reject(payload={}){dispatch('chunk-surfer:interference-line',{kind:'reject',...payload});return true;}
+  function arrangeMovement(profile,payload={}){return prepareFireballs(profile,payload);}
+
+  function clearTimers(){
+    for(const timer of hideTimers.values())clearTimeout(timer);
+    hideTimers.clear();
+  }
+
+  async function closeSurfaces(){
+    clearTimers();
+    const open=[...surfaces.values()];surfaces.clear();
+    await Promise.all(open.map((surface)=>safe(()=>surface.close())));
+  }
+
+  // A PAUSED FIGHT HAS A COMET FROZEN IN MID-AIR. IT MAY NOT BE FROZEN ON TOP
+  // OF THE PAUSE MENU.
+  //
+  // The flight runs on the game clock, so pausing correctly stops it moving --
+  // which left a stationary window hanging over the paused game until something
+  // resumed. Hidden, not ended: the session survives, and the next step of the
+  // exchange's clock puts it back exactly where it stopped.
+  function suspendSurfaces(){
+    const session=current;
+    if(!session)return false;
+    clearTimers();
+    session.rayStates.clear();
+    for(const surface of surfaces.values())void safe(()=>surface.hide());
+    return true;
+  }
+
+  // ENDING A FIGHT PUTS THE SURFACES AWAY. IT DOES NOT DESTROY THEM.
+  //
+  // This used to close all four, and the next battle's prewarm immediately
+  // rebuilt them under the same four labels -- a race Tauri loses in both
+  // directions. `getByLabel` can still answer with a window that is on its way
+  // out, and constructing one whose label is not yet released fails outright.
+  // Either way the pool came back broken and no cast reached a surface again
+  // for the rest of the process, which is exactly what "it stops working after
+  // I go back to the menu" looks like from a chair.
+  //
+  // They are hidden, empty, click-through-when-idle windows. Keeping them costs
+  // nothing and makes every prewarm after the first instant. Only turning the
+  // module off actually destroys them.
+  async function end(expected=null){
+    const session=current;
+    const required=typeof expected==='string'?expected:null;
+    if(!session||(required&&required!==session.token))return false;
+    current=null;
+    clearTimers();
+    await Promise.all([...surfaces.values()].map((surface)=>safe(()=>surface.hide())));
+    if(api?.invoke)await safe(()=>api.invoke('chunk_fireball_cast_hide_all'));
+    return true;
+  }
+
+  async function emergencyRestore({notify=true}={}){
+    current=null;
+    await closeSurfaces();
+    if(api?.invoke)await safe(()=>api.invoke('chunk_fireball_cast_hide_all'));
+    if(notify)onEmergency();
+    return true;
+  }
+
+  async function previewChannel(plan,payload={}){
+    const sessionToken=begin({intensity:payload.intensity||'standard',fullscreen:!!payload.forceInternal,reducedMotion:!!payload.reducedMotion});
+    try{
+      await current?.prewarm;
+      // A preview shows the part that happens outside the frame, so it flies the
+      // approach directly rather than waiting out a stage crossing that has no
+      // stage. Closing in the same microtask made the settings and god-menu
+      // previews look exactly like a failed prewarm.
+      beginFireballCast(plan,{token:sessionToken});
+      const steps=plan?.reducedMotion?6:14;
+      for(let step=0;step<=steps;step+=1){
+        syncFireballCast(plan,plan.rays.map((_,index)=>({index,state:'outbound',progress:step/steps})),{token:sessionToken});
+        await wait(plan?.reducedMotion?60:56);
       }
-    } else {
-      channel.required = new Set(Array.from({ length: scene.channelCount }, (_, index) => `internal-${index}`));
-      if (!renderInternalChannel(scene)) finishChannel('skip');
+      syncFireballCast(plan,plan.rays.map((_,index)=>({index,state:'impact',damage:null})),{token:sessionToken});
+      await wait(240);
+      return plan;
     }
-    return result;
+    finally{await end(sessionToken);}
   }
 
-  function beginWindowChannel(scene, payload = {}) {
-    const token = current?.token;
-    queue = queue.then(
-      () => current?.token === token ? runWindowChannel(scene, payload) : { outcome: 'cancel', elapsedMs: 0 },
-      () => current?.token === token ? runWindowChannel(scene, payload) : { outcome: 'cancel', elapsedMs: 0 },
-    );
-    return queue;
-  }
-
-  async function runReturnOffer(scene, { tier = 2, token = null, forceInternal = false } = {}) {
-    const session = current;
-    if (!session || !scene || (token && token !== session.token)) return { outcome: 'skip', tier: 0 };
-    if (session.channel) finishChannel('cancel');
-    const result = new Promise((resolve) => {
-      session.channel = {
-        mode: 'return', state: 'return', tier, settled: false,
-        attackId: `${session.token}-return-${now()}`,
-        scene, startedAt: now(), resolve,
-        required: new Set(['return']), cut: new Set(), removeReacquire: null, timer: null,
-      };
-    });
-    const channel = session.channel;
-    channel.timer = setTimeout(() => finishChannel('cut', { held: true, tier }), RETURN_MS);
-    const useNative = !forceInternal && !session.fullscreen && session.intensity !== 'low' && session.nativePositioning && api?.emitTo;
-    if (useNative) {
-      const webview = await ensureSidecar({}, { show: true });
-      if (webview) {
-        await safe(() => api.invoke('chunk_window_choreography_place_echo', { label: SIDE_LABEL, index: 0, count: 1 }));
-        await safe(() => api.emitTo(SIDE_LABEL, 'window-channel-scene', {
-          ...scene, interaction: 'return', tier,
-          sessionToken: session.token, attackId: channel.attackId, channelId: 'return', channelIndex: 0,
-        }));
-        await safe(() => webview.setFocus?.());
-      } else if (!renderInternalChannel(scene, { mode: 'return', tier })) finishChannel('skip');
-    } else if (!renderInternalChannel(scene, { mode: 'return', tier })) finishChannel('skip');
-    return result;
-  }
-
-  function offerWindowReturn(scene, payload = {}) {
-    const token = current?.token;
-    queue = queue.then(
-      () => current?.token === token ? runReturnOffer(scene, payload) : { outcome: 'cancel', tier: 0 },
-      () => current?.token === token ? runReturnOffer(scene, payload) : { outcome: 'cancel', tier: 0 },
-    );
-    return queue;
-  }
-
-  async function noteWindowChannelEvent(scene, payload = {}) {
-    const session = current;
-    if (!session || !scene || (payload.token && payload.token !== session.token)) return false;
-    session.lastChannelScene = scene;
-    const CustomEventCtor = eventTarget()?.CustomEvent || globalThis.CustomEvent;
-    if (CustomEventCtor) {
-      eventTarget()?.dispatchEvent?.(new CustomEventCtor('chunk-surfer:window-channel-event', { detail: scene }));
-    }
-    if (api?.emitTo) {
-      const labels = [sidecar ? SIDE_LABEL : null, ...echoes.keys()].filter(Boolean);
-      await Promise.all(labels.map((label) => safe(() => api.emitTo(label, 'window-channel-event', scene))));
-    }
-    return true;
-  }
-
-  // Controller-only play uses the same in-frame attack contract. One confirm
-  // cuts one pane, the next confirm explicitly reacquires the game surface,
-  // and the ordinary combat confirm that follows is the parry itself.
-  function channelInput(action = 'confirm') {
-    const channel = current?.channel;
-    if (!channel || channel.settled) return false;
-    if (channel.mode === 'return') {
-      return handleChannelResponse({
-        sessionToken: current.token,
-        attackId: channel.attackId,
-        channelId: 'return',
-        action: action === 'decline' ? 'decline' : 'return',
-      });
-    }
-    if (action === 'decline') return false;
-    if (channel.state === 'reacquire') return finishChannel('cut', { reacquiredMain: true, controller: true });
-    const channelId = [...channel.required].find((id) => !channel.cut.has(id));
-    if (!channelId) return false;
-    return handleChannelResponse({
-      sessionToken: current.token,
-      attackId: channel.attackId,
-      channelId,
-      action: 'cut',
-    });
-  }
-
-  async function resolveWindowChannel(scene = current?.movementScene, payload = {}) {
-    const arranged = await arrangeMovement(scene, payload);
-    const session = current;
-    if (session) await safe(() => main?.setTitle?.(session.originalTitle || TITLE));
-    return arranged;
-  }
-
-  async function end(tokenOrOptions = null) {
-    const expectedToken = typeof tokenOrOptions === 'string' ? tokenOrOptions : null;
-    const closeSidecar = typeof tokenOrOptions === 'object' && tokenOrOptions !== null
-      ? tokenOrOptions.closeSidecar !== false
-      : true;
-    const session = current;
-    if (!session || (expectedToken && expectedToken !== session.token)) return false;
-    if (session.channel) finishChannel('cancel');
-    // Cancel first. Native animation and queued JS work see the stale token
-    // before any restoration or window close is awaited.
-    current = null;
-    clearTimeout(holdTimer);
-    holdStarted = 0;
-    clearInternal();
-    await safe(() => main?.setTitle?.(session.originalTitle || TITLE));
-    if (api?.invoke) await safe(() => api.invoke('chunk_window_choreography_restore', { token: session.token }));
-    await hideAuxiliary();
-    if (closeSidecar) await closeAuxiliary();
-    return true;
-  }
-
-  async function emergencyRestore({ notify = true } = {}) {
-    const session = current;
-    if (session?.channel) finishChannel('cancel');
-    // State is invalidated before the first await: hold-Escape is an immediate
-    // abort, not another item at the back of the choreography queue.
-    current = null;
-    clearTimeout(holdTimer);
-    holdStarted = 0;
-    clearInternal();
-    await safe(() => main?.setTitle?.(session?.originalTitle || TITLE));
-    if (api?.invoke) await safe(() => api.invoke('chunk_window_choreography_restore', { token: null }));
-    await closeAuxiliary();
-    if (notify) onEmergency();
-    return true;
-  }
-
-  async function previewChannel(scene, payload = {}) {
-    const token = await begin({
-      stage: payload.stage || 'recognition',
-      encounterId: scene?.battleId === 'source-final' ? 'source-final' : '',
-      intensity: payload.intensity || 'standard',
-      fullscreen: !!payload.forceInternal,
-    });
-    try {
-      return await beginWindowChannel(scene, { token, forceInternal: !!payload.forceInternal });
-    } finally {
-      await end(token);
-    }
-  }
-
-  return {
-    begin,
-    apply,
-    reject,
-    arrangeMovement,
-    beginWindowChannel,
-    offerWindowReturn,
-    noteWindowChannelEvent,
-    channelInput,
-    resolveWindowChannel,
-    previewChannel,
-    end,
-    emergencyRestore,
-    active: () => !!current,
-    sessionToken: () => current?.token || null,
-    statusLine: () => current?.channel?.mode === 'attack'
-      ? (current.channel.state === 'reacquire' ? 'CLICK BACK · THEN PARRY' : 'CUT EVERY WINDOW CHANNEL')
-      : current ? 'HOLD ESC · RESTORE ALL GAME WINDOWS' : '',
+  return{
+    begin,apply,reject,prepareFireballs,arrangeMovement,beginFireballCast,syncFireballCast,suspendSurfaces,
+    // Compatibility preview name; there is no channel interaction behind it.
+    previewChannel,end,emergencyRestore,
+    active:()=>!!current,sessionToken:()=>current?.token||null,statusLine:()=>'',
+    debug:()=>current?{
+      active:true,surfacesReady:current.surfacesReady,readySurfaces:current.readySurfaces,prewarmState:current.prewarmState,
+      surfaceCount:surfaces.size,placementAttempts:current.placementAttempts,placementFailures:current.placementFailures,
+      fullscreen:current.fullscreen,intensity:current.intensity,reasons:[...current.prewarmReasons],
+    }:{active:false,surfacesReady:false,readySurfaces:0,prewarmState:'idle',surfaceCount:0,placementAttempts:0,placementFailures:0,reasons:[]},
   };
 }

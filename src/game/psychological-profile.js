@@ -34,10 +34,21 @@ const objectOr = (value, fallback = {}) => (
   value && typeof value === 'object' && !Array.isArray(value) ? value : fallback
 );
 
+// WINDOW CHOREOGRAPHY IS THE EXPERIENCE, NOT AN EXTRA.
+//
+// Every other module here reads something real about the person at the desk --
+// their account name, their machine, their microphone -- and each of those is
+// off until it is asked for. Choreography reads nothing. It is the game drawing
+// its own fireball outside its own frame, and it is on unless somebody turns it
+// off, which is the one toggle in this list that is an opt-OUT.
+export const PSYCH_PROFILE_DEFAULT_ON = Object.freeze(['windowChoreography']);
+
 export const DEFAULT_PSYCH_PROFILE_SETTINGS = Object.freeze({
   schema: PSYCH_PROFILE_SCHEMA,
   consentVersion: '',
-  modules: Object.freeze(Object.fromEntries(PSYCH_PROFILE_MODULE_KEYS.map((key) => [key, false]))),
+  modules: Object.freeze(Object.fromEntries(PSYCH_PROFILE_MODULE_KEYS.map(
+    (key) => [key, PSYCH_PROFILE_DEFAULT_ON.includes(key)],
+  ))),
   windowIntensity: 'hostile',
 });
 
@@ -47,7 +58,7 @@ export function psychProfileChoice(enabled, current = DEFAULT_PSYCH_PROFILE_SETT
     ...normalized,
     consentVersion: PSYCH_PROFILE_CONSENT_VERSION,
     modules: Object.fromEntries(PSYCH_PROFILE_MODULE_KEYS.map((key) => [key, !!enabled])),
-    windowIntensity: enabled ? 'hostile' : normalized.windowIntensity,
+    windowIntensity: 'hostile',
   };
 }
 
@@ -66,22 +77,30 @@ export function normalizePsychProfileSettings(value, legacy = {}) {
     microphoneLabel: !!legacyInterference.enabled && legacyInterference.sourceMic !== false,
     behavioralMeasurement: false,
     adaptiveDifficulty: false,
-    windowChoreography: !!legacyInterference.enabled,
+    // A save with no legacy block at all has not declined choreography, it has
+    // never been asked -- which for an opt-out module is a yes.
+    windowChoreography: 'enabled' in legacyInterference ? !!legacyInterference.enabled : undefined,
     fieldReturnFiles: !!legacyInterference.enabled,
   };
   const modules = {};
   for (const key of PSYCH_PROFILE_MODULE_KEYS) {
-    modules[key] = hasAuthoritativeSchema ? sourceModules[key] === true : legacyModules[key] === true;
+    const stated = hasAuthoritativeSchema ? sourceModules[key] : legacyModules[key];
+    // An opt-out module is on unless something explicitly turned it off. Saves
+    // written before it existed say nothing about it, and silence there means
+    // "never asked", not "declined".
+    modules[key] = PSYCH_PROFILE_DEFAULT_ON.includes(key) && stated === undefined
+      ? true
+      : stated === true;
   }
-  const legacyIntensity = legacyInterference.intensity;
-  const intensity = ['low', 'standard', 'hostile'].includes(source.windowIntensity)
-    ? source.windowIntensity
-    : (['low', 'standard', 'hostile'].includes(legacyIntensity) ? legacyIntensity : 'hostile');
   return {
     schema: PSYCH_PROFILE_SCHEMA,
     consentVersion: typeof source.consentVersion === 'string' ? source.consentVersion.slice(0, 48) : '',
     modules,
-    windowIntensity: intensity,
+    // ONE INTENSITY. `low` and `standard` were a dial on a beat that only means
+    // anything at full strength -- a fireball that stays politely inside the
+    // window is the thing not happening. Old saves carrying either are read as
+    // hostile rather than migrated, because the setting no longer exists.
+    windowIntensity: 'hostile',
   };
 }
 

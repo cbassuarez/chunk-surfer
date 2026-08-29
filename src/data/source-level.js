@@ -28,6 +28,24 @@
 
 // A cliff has to be taller than the 0.45m the ordinary step allows, or it is not
 // a constraint. These are comfortably past it and read as a storey.
+// THE APPROACH. An extension between the Scene Dock and the first staircase.
+//
+// The FOH leaf sits at landing-local y -16 and the arrival tier used to end at
+// -40, so the player stepped out of a room and was immediately on the stairs:
+// eight cells, four metres, under a second of walking. This is the empty ground
+// between them, and it is the arrival tier made long rather than a new concept —
+// the staircase stays the arrival's exit and the dock stays its entrance.
+//
+// 280 cells is 140 metres. Runtime cells are half-metres and the authored Source
+// pace is derived from the actual FOH-to-stair span, so this lands at roughly
+// thirty seconds instead of making a nominally long space play like a sprint.
+// Everything below the arrival tier shifts by exactly the extra 160 cells, so
+// every later tier, tape slice and bell-passage beat keeps its internal length.
+export const SOURCE_APPROACH_CELLS = 280;
+export const SOURCE_APPROACH_BASE_CELLS = 120;
+export const SOURCE_APPROACH_SHIFT = SOURCE_APPROACH_CELLS - SOURCE_APPROACH_BASE_CELLS;
+const shiftedApproachY = (value) => Number(value) - SOURCE_APPROACH_SHIFT;
+
 export const SOURCE_TIERS = Object.freeze([
   // id        from    to      height   what is on it
   // Boundaries follow where the landmarks actually stand, not the other way
@@ -39,17 +57,17 @@ export const SOURCE_TIERS = Object.freeze([
   // is that a boundary costs you a lift or a chute. The horizon is not one of
   // those and must not be checked as one — see the grammar assertion in
   // test/source-level.spec.mjs.
-  Object.freeze({ id: 'arrival',  from: 16,   to: -40,  height: 0.0, field: true }),
-  Object.freeze({ id: 'fork',     from: -40,  to: -120, height: 4.2, field: true }),
-  Object.freeze({ id: 'trace',    from: -120, to: -220, height: 9.0, field: true }),
+  Object.freeze({ id: 'arrival',  from: 16,   to: shiftedApproachY(-160), height: 0.0, field: true }),
+  Object.freeze({ id: 'fork',     from: shiftedApproachY(-160), to: shiftedApproachY(-240), height: 4.2, field: true }),
+  Object.freeze({ id: 'trace',    from: shiftedApproachY(-240), to: shiftedApproachY(-340), height: 9.0, field: true }),
   // The field's own perimeter is at -340 and the return tier ends there, because
   // that is where the ground has always actually stopped.
-  Object.freeze({ id: 'return',   from: -220, to: -340, height: 15.2, field: true }),
+  Object.freeze({ id: 'return',   from: shiftedApproachY(-340), to: shiftedApproachY(-460), height: 15.2, field: true }),
   // THE HORIZON. Same height as the return tier on purpose: there is no cliff
   // and no lift between them, because arriving here is not a climb and not a
   // fall. You walk out through the perimeter — the one wall the field has — and
   // the ground simply keeps going, and some way out there it stops being ground.
-  Object.freeze({ id: 'horizon',  from: -340, to: -852, height: 15.2, field: false }),
+  Object.freeze({ id: 'horizon',  from: shiftedApproachY(-460), to: shiftedApproachY(-972), height: 15.2, field: false }),
   // THE BELLS. Where the tower road goes, and it is not a cut.
   //
   // Taking the bust's detour used to hand the player eight and a half seconds of
@@ -61,7 +79,7 @@ export const SOURCE_TIERS = Object.freeze([
   // Same height as the horizon for the same reason the horizon shares the return
   // tier's: nothing between them is a climb. You walk out of the recording and
   // the ground keeps going.
-  Object.freeze({ id: 'bells',    from: -852, to: -1284, height: 15.2, field: false }),
+  Object.freeze({ id: 'bells',    from: shiftedApproachY(-972), to: shiftedApproachY(-1404), height: 15.2, field: false }),
 ]);
 
 // The tiered landscape proper. Altitude is the currency here and every boundary
@@ -79,8 +97,8 @@ export const SOURCE_FIELD_TIERS = Object.freeze(SOURCE_TIERS.filter((t) => t.fie
 // slice is the spacing that keeps a wall reading as a wall at eye height
 // without paying for frames nobody can resolve.
 export const SOURCE_HORIZON = Object.freeze({
-  from: -340,
-  to: -852,
+  from: shiftedApproachY(-460),
+  to: shiftedApproachY(-972),
   length: 512,
   tapeSeconds: 259.375,
   sliceMetres: 2,
@@ -125,8 +143,11 @@ export function sourceHorizonSlice(y) {
 // nothing here is timed, and the only thing to do is keep going forward until
 // the room at the end stops being a shape on the horizon.
 export const SOURCE_BELLS = Object.freeze({
-  from: -852,
-  to: -1284,
+  // Moved out with its tier when the red approach was inserted. This manifest and
+  // the `bells` entry in SOURCE_TIERS have to agree exactly — a gap between them
+  // is undrawn ground.
+  from: shiftedApproachY(-972),
+  to: shiftedApproachY(-1404),
   length: 432,
   // Where the body is put when the bust's detour is taken. Past the seam, the
   // same standoff the horizon uses, so he does not arrive with his back inside
@@ -138,7 +159,7 @@ export const SOURCE_BELLS = Object.freeze({
   // THE ROOM. Three walls of St Brendan's belfry standing in the field, with the
   // way in where the fourth wall is not. Crossing this depth is the commit.
   room: Object.freeze({
-    at: -1252,
+    at: shiftedApproachY(-1252),
     // Authored in metres about the room's own centre; the belfry chamber is
     // thirteen by nine inside its frame.
     halfX: 6.5,
@@ -146,12 +167,12 @@ export const SOURCE_BELLS = Object.freeze({
     height: 11.0,
     // Where the passage hands over. The player is standing at the threshold and
     // walking forward; this is the last metre of source space.
-    threshold: -1246,
+    threshold: shiftedApproachY(-1246),
   }),
   // How far out the room begins to resolve, and where it is unmistakable. The
   // whole third act of the walk is a shape getting closer.
-  resolveFrom: -1010,
-  resolveTo: -1210,
+  resolveFrom: shiftedApproachY(-1010),
+  resolveTo: shiftedApproachY(-1210),
 });
 
 export function sourceBellsDepth(y) {
@@ -199,52 +220,52 @@ const bell = (id, mesh, x, y, scale, extra = {}) => Object.freeze({
 
 export const SOURCE_BELL_PASSAGE = Object.freeze([
   // ── act one: architecture ────────────────────────────────────────────────
-  bell('bells-arch-west', 'tower_bell_04', -34, -880, 26, { yaw: 0.22, sink: 9.5, blocks: true }),
-  bell('bells-arch-east', 'tower_bell_01', 31, -898, 22, { yaw: -0.34, sink: 7.0, blocks: true }),
-  bell('bells-arch-far', 'tower_bell_06', -8, -946, 34, { yaw: 0.08, sink: 16.0, blocks: true }),
+  bell('bells-arch-west', 'tower_bell_04', -34, shiftedApproachY(-1000), 26, { yaw: 0.22, sink: 9.5, blocks: true }),
+  bell('bells-arch-east', 'tower_bell_01', 31, shiftedApproachY(-1018), 22, { yaw: -0.34, sink: 7.0, blocks: true }),
+  bell('bells-arch-far', 'tower_bell_06', -8, shiftedApproachY(-1066), 34, { yaw: 0.08, sink: 16.0, blocks: true }),
   Object.freeze({
-    id: 'bells-arch-frame', mesh: 'tower_frame', x: 26, y: -962, scale: 9,
+    id: 'bells-arch-frame', mesh: 'tower_frame', x: 26, y: shiftedApproachY(-1082), scale: 9,
     yaw: -0.5, elevation: 0, blocks: true,
   }),
-  bell('bells-arch-lean', 'tower_bell_01', -40, -1002, 18, { yaw: 1.1, roll: 0.42, sink: 3.2, blocks: true }),
+  bell('bells-arch-lean', 'tower_bell_01', -40, shiftedApproachY(-1122), 18, { yaw: 1.1, roll: 0.42, sink: 3.2, blocks: true }),
 
   // ── act two: the place where time is null ────────────────────────────────
   // One you walk under. The mouth clears a standing body by a metre and a half.
-  bell('bells-null-canopy', 'tower_bell_06', 2, -1036, 30, { yaw: 0.15, elevation: 33.9, blocks: false }),
+  bell('bells-null-canopy', 'tower_bell_06', 2, shiftedApproachY(-1156), 30, { yaw: 0.15, elevation: 33.9, blocks: false }),
   // A wheel with no bell in it, standing on its rim.
   Object.freeze({
-    id: 'bells-null-wheel', mesh: 'tower_wheel_01', x: -22, y: -1044, scale: 11,
+    id: 'bells-null-wheel', mesh: 'tower_wheel_01', x: -22, y: shiftedApproachY(-1164), scale: 11,
     yaw: 1.35, elevation: 11.6, blocks: true,
   }),
   // Inverted, and filling with nothing.
-  bell('bells-null-inverted', 'tower_bell_04', 24, -1058, 14, { yaw: -0.2, roll: Math.PI, elevation: 0.4, blocks: true }),
+  bell('bells-null-inverted', 'tower_bell_04', 24, shiftedApproachY(-1178), 14, { yaw: -0.2, roll: Math.PI, elevation: 0.4, blocks: true }),
   // A clapper on its own, the size of a tree.
   Object.freeze({
-    id: 'bells-null-clapper', mesh: 'tower_clapper_01', x: -13, y: -1072, scale: 16,
+    id: 'bells-null-clapper', mesh: 'tower_clapper_01', x: -13, y: shiftedApproachY(-1192), scale: 16,
     yaw: 0.6, elevation: 20.6, blocks: false,
   }),
   // And the coins: the same six bells at the size of the things people throw
   // into a fountain, scattered where you have to walk over them.
   ...[
-    [-6.4, -1078, 0.34], [-2.1, -1082, 0.28], [1.8, -1080, 0.41], [4.6, -1086, 0.31],
-    [-4.9, -1090, 0.36], [0.7, -1094, 0.26], [3.2, -1098, 0.44], [-2.8, -1102, 0.30],
-    [6.1, -1092, 0.35], [-7.7, -1096, 0.24],
+    [-6.4, shiftedApproachY(-1198), 0.34], [-2.1, shiftedApproachY(-1202), 0.28], [1.8, shiftedApproachY(-1200), 0.41], [4.6, shiftedApproachY(-1206), 0.31],
+    [-4.9, shiftedApproachY(-1210), 0.36], [0.7, shiftedApproachY(-1214), 0.26], [3.2, shiftedApproachY(-1218), 0.44], [-2.8, shiftedApproachY(-1222), 0.30],
+    [6.1, shiftedApproachY(-1212), 0.35], [-7.7, shiftedApproachY(-1216), 0.24],
   ].map(([x, y, scale], index) => bell(
     `bells-null-coin-${index + 1}`, `tower_bell_0${(index % 6) + 1}`, x, y, scale,
     { yaw: index * 0.9, blocks: false },
   )),
-  bell('bells-null-sunk', 'tower_bell_02', -30, -1108, 20, { yaw: 0.9, sink: 18.4, blocks: true }),
+  bell('bells-null-sunk', 'tower_bell_02', -30, shiftedApproachY(-1228), 20, { yaw: 0.9, sink: 18.4, blocks: true }),
 
   // ── act three: resolution ────────────────────────────────────────────────
   // Six bells, in order, at true scale, hung as they are hung. The last hundred
   // and forty metres is the passage remembering what a ring is.
   ...[1, 2, 3, 4, 5, 6].map((n, index) => bell(
     `bells-ring-${n}`, `tower_bell_0${n}`,
-    (index - 2.5) * 3.4, -1150 - index * 9, 1 + index * 0.06,
+    (index - 2.5) * 3.4, shiftedApproachY(-1270 - index * 9), 1 + index * 0.06,
     { yaw: index * 0.14 - 0.35, elevation: 3.6, blocks: false },
   )),
   Object.freeze({
-    id: 'bells-ring-frame', mesh: 'tower_frame', x: 0, y: -1196, scale: 1.35,
+    id: 'bells-ring-frame', mesh: 'tower_frame', x: 0, y: shiftedApproachY(-1316), scale: 1.35,
     yaw: 0, elevation: 0, blocks: false,
   }),
 ]);
@@ -317,15 +338,21 @@ export const SOURCE_TIER_BY_ID = Object.freeze(
 // Field lifts sit ON the critical spine, so the way up is never a hunt. The first is
 // deliberately unmissable: it is the tutorial, and the tutorial is on the
 // critical path where nobody can skip it.
-export const SOURCE_LIFTS = Object.freeze([
-  Object.freeze({ id: 'lift-fork', legacyId: 'ladder-fork', x: 0, y: -40, from: 'arrival', to: 'fork', halfWidth: 3.5, depth: 4 }),
-  Object.freeze({ id: 'lift-trace', legacyId: 'ladder-trace', x: 0, y: -120, from: 'fork', to: 'trace', halfWidth: 3.5, depth: 4 }),
-  Object.freeze({ id: 'lift-return', legacyId: 'ladder-return', x: 0, y: -220, from: 'trace', to: 'return', halfWidth: 3.5, depth: 4 }),
-  // A second way up onto the trace tier, out at the far side of each spoke, so
-  // a player who took a detour is not walked back to the spine to climb.
-  Object.freeze({ id: 'lift-student', legacyId: 'ladder-student', x: -62, y: -120, from: 'fork', to: 'trace', halfWidth: 3, depth: 3.5 }),
-  Object.freeze({ id: 'lift-work-order', legacyId: 'ladder-work-order', x: 62, y: -120, from: 'fork', to: 'trace', halfWidth: 3, depth: 3.5 }),
-]);
+// NO LIFTS. The field is climbed.
+//
+// There were five: three on the spine and two out at the spokes, each a vertical
+// capture volume that rendered as a flat catwalk plate at floor level. A plate
+// on the ground reads as ground, so the way UP was invisible while the chute
+// beside it — one-way DOWN — was the only object that looked like a route. The
+// player's report was "I cannot climb this, it is the only thing in front of
+// me", and they were right about the object they were looking at.
+//
+// Every boundary a lift served is served by a staircase at the same tier pair
+// (SOURCE_CHUTES above, all `ascendable`), so nothing is stranded. The export
+// stays as an empty list because a good deal of runtime and save-schema code
+// reads it; `firstLiftCompleted` also survives as narrative state and is now
+// raised by reaching the fork tier rather than by riding anything.
+export const SOURCE_LIFTS = Object.freeze([]);
 
 // Data consumers from schema-3 saves may still name these connectors ladders.
 // Keep the export as a read-only alias; all new runtime semantics use lifts.
@@ -334,14 +361,32 @@ export const SOURCE_LADDERS = SOURCE_LIFTS;
 // Chutes run DOWN and only down. Each spoke has one back to the spine, and each
 // tier has one beside its ladder — so the fast way back is always visible from
 // the slow way up, and a fall is never a dead loss.
+// THE FIELD IS CLIMBED, NOT RIDDEN.
+//
+// These were one-way slides with lifts standing beside them as the only way up.
+// The lifts were vertical volumes that rendered as a flat plate and read as
+// floor, so the only thing in the field that LOOKED like a route was the thing
+// you were forbidden to take — and the arrival dead-ended on it. Every chute is
+// a staircase now and the lifts are gone (SOURCE_LIFTS, below).
+//
+// Every run already spans its tier gap well inside the 0.45m step limit the
+// rest of Source walks by — 0.24m to 0.39m per cell, measured — so the geometry
+// has always supported the climb in both directions. `ascendable` lifts the
+// one-way rule; nothing about the shape of the field changes.
 export const SOURCE_CHUTES = Object.freeze([
-  Object.freeze({ id: 'chute-fork', x: 12, y: -40, from: 'fork', to: 'arrival', halfWidth: 3, run: 16, dir: { x: 0, y: 1 } }),
-  Object.freeze({ id: 'chute-trace', x: 12, y: -120, from: 'trace', to: 'fork', halfWidth: 3, run: 16, dir: { x: 0, y: 1 } }),
-  Object.freeze({ id: 'chute-return', x: 12, y: -220, from: 'return', to: 'trace', halfWidth: 3, run: 16, dir: { x: 0, y: 1 } }),
-  // The spoke returns, dropping onto the fork tier beside each trace so a detour
-  // ends by falling forward rather than by walking back.
-  Object.freeze({ id: 'chute-student', x: -78, y: -118, from: 'trace', to: 'fork', halfWidth: 3.5, run: 20, dir: { x: 0, y: 1 } }),
-  Object.freeze({ id: 'chute-work-order', x: 78, y: -118, from: 'trace', to: 'fork', halfWidth: 3.5, run: 20, dir: { x: 0, y: 1 } }),
+  // ON THE SPINE, WHERE THE LIFTS WERE.
+  //
+  // These sat at x=12 while the lifts held the centre line at x=0, because a
+  // chute was a shortcut down and the lift was the route up. With the lifts gone
+  // the staircase IS the route, so it stands on the route: walking straight down
+  // the middle of the field now meets a stair at every tier boundary instead of
+  // a four-metre cliff with the only way up six metres off to one side.
+  Object.freeze({ id: 'chute-fork', x: 0, y: shiftedApproachY(-160), from: 'fork', to: 'arrival', halfWidth: 3.5, run: 16, dir: { x: 0, y: 1 }, ascendable: true }),
+  Object.freeze({ id: 'chute-trace', x: 0, y: shiftedApproachY(-240), from: 'trace', to: 'fork', halfWidth: 3.5, run: 16, dir: { x: 0, y: 1 }, ascendable: true }),
+  Object.freeze({ id: 'chute-return', x: 0, y: shiftedApproachY(-340), from: 'return', to: 'trace', halfWidth: 3.5, run: 16, dir: { x: 0, y: 1 }, ascendable: true }),
+  // The spoke returns, beside each trace so a detour ends where it started.
+  Object.freeze({ id: 'chute-student', x: -78, y: shiftedApproachY(-238), from: 'trace', to: 'fork', halfWidth: 3.5, run: 20, dir: { x: 0, y: 1 }, ascendable: true }),
+  Object.freeze({ id: 'chute-work-order', x: 78, y: shiftedApproachY(-238), from: 'trace', to: 'fork', halfWidth: 3.5, run: 20, dir: { x: 0, y: 1 }, ascendable: true }),
 ]);
 
 // Which landmark stands on which tier. Elevation paces the authored field, but
@@ -433,6 +478,10 @@ export function sourceTraversal(fromX, fromY, toX, toY, fromFloor, toFloor) {
     + (Number(toY) - Number(fromY)) * chute.dir.y : 0;
   const chuteDefinition = chute ? sourceChuteById(chute.id) : null;
   const chuteBottom = chuteDefinition ? SOURCE_TIER_BY_ID[chuteDefinition.to]?.height ?? Number(toFloor) : Number(toFloor);
+  // An ascendable run is walked, not ridden, in BOTH directions: committing the
+  // body to a slide the moment it steps on a staircase is the same dead end
+  // wearing the opposite costume.
+  if (chuteDefinition?.ascendable) return { ok: false };
   if (chute && chuteDirection > 0.001
       && Number(toFloor) < Number(fromFloor) - 0.001
       && Number(fromFloor) > chuteBottom + 0.45) {

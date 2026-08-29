@@ -20,6 +20,7 @@ import {
   combatDeckDirection,
   combatDeckNavigation,
 } from '../src/game/combat.js';
+import { createBattleSubmersionController } from '../src/game/battle-submersion.js';
 
 const combatViewSource = readFileSync(new URL('../src/render/combat-view.js', import.meta.url), 'utf8');
 const combatSceneSource = readFileSync(new URL('../src/game/combat.js', import.meta.url), 'utf8');
@@ -241,22 +242,32 @@ test('the opponent throws note sprites while its attack plays', () => {
 
 test('the natatorium alone gets a deterministic submerged stage', () => {
   assert.equal(submergedBattleFrame({ presentation: { mode: 'ordinary' } }), null);
+  const presentation={
+    mode:'submerged',submersionPhases:['dry','half','full'],resultPhases:{win:'dry',lose:'full'},
+    wetMix:{dry:0,half:.5,full:.92},lowpassHz:{dry:20000,half:1800,full:720},
+    transitionSeconds:{dry:0,half:1,full:1.1,win:1.35},
+  };
+  const controller=createBattleSubmersionController({presentation});
   const dry = submergedBattleFrame({
-    presentation: { mode: 'submerged', movementDepths: [.35, .68, 1] },
-    music: { submersion: { phase: 'dry', wetMix: 0, progress: 0 } },
+    presentation,submersion:controller.setMovement(0),
     movementIndex: 0,
   });
-  assert.deepEqual(dry, { phase: 'dry', wetMix: 0, plunge: 0, depth: .35, visualClass: 'pressure-field' });
+  assert.equal(dry.phase,'dry');assert.equal(dry.depth,0);assert.equal(dry.waterline,1);assert.equal(dry.wetMix,0);assert.equal(dry.driver,'combat');
+  controller.setMovement(1);controller.update(1);
   const wet = submergedBattleFrame({
-    presentation: { mode: 'submerged', movementDepths: [.35, .68, 1] },
-    music: { submersion: { phase: 'submerged', wetMix: .92, progress: 1 } },
+    presentation,submersion:controller.snapshot(),
     movementIndex: 1,
     intent: { presentation: { visualClass: 'drain-return' } },
   });
-  assert.deepEqual(wet, { phase: 'submerged', wetMix: .92, plunge: 1, depth: .68, visualClass: 'drain-return' });
+  assert.equal(wet.phase,'half');assert.equal(wet.depth,.5);assert.equal(wet.waterline,.5);assert.equal(wet.wetMix,.5);
+  controller.setMovement(2);controller.update(1.1);
+  const full=submergedBattleFrame({presentation,submersion:controller.snapshot(),movementIndex:2});
+  assert.equal(full.phase,'full');assert.equal(full.depth,1);assert.equal(full.waterline,-.04);assert.equal(full.wetMix,.92);
+  assert.equal(full.driver,'combat','silent audio and available audio share the same combat snapshot');
   assert.match(combatViewSource, /const tick=reducedMotion\?0:now/,
     'reduced motion freezes the pressure and silt field without removing its static read');
-  assert.deepEqual(combatEnemyAttackAudioShape({ gain: .4 }, { mode: 'submerged' }), { gain: .4, lowpassHz: 640 });
+  assert.deepEqual(combatEnemyAttackAudioShape({ gain: .4 }, presentation, controller.snapshot()), { gain: .4, lowpassHz: 720 });
+  assert.deepEqual(combatEnemyAttackAudioShape({ gain: .4 }, presentation, {enabled:true,wetMix:0,lowpassHz:20000}), { gain: .4 });
   assert.deepEqual(combatEnemyAttackAudioShape({ gain: .4 }, { mode: 'ordinary' }), { gain: .4 },
     'every non-natatorium encounter retains its current attack audio graph');
   const field = combatSceneSource.indexOf('drawSubmergedBattleField({');

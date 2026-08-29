@@ -1,46 +1,21 @@
 import assert from 'node:assert/strict';
-import {
-  WINDOW_CUE_IDS,
-  compileWindowChoreography,
-  validateWindowChoreographyPlan,
-} from '../src/platform/window-choreography.js';
+import { readFileSync } from 'node:fs';
+import { FIREBALL_SURFACE_LABELS,substantiallyOnscreenPosition } from '../src/platform/personalized-window-effects.js';
 
-const token = 'session-12345678';
-for (const cueId of WINDOW_CUE_IDS) {
-  const plan = compileWindowChoreography({ token, stage: 'control', cueId, intensity: 'hostile', inputLocked: true });
-  assert.ok(validateWindowChoreographyPlan(plan), `${cueId} compiles to the allowlisted contract`);
-  assert.equal(plan.timing.bpm, 168);
-}
-assert.equal(compileWindowChoreography({ token, cueId: 'overload', inputLocked: false }), null);
-assert.equal(compileWindowChoreography({ token, cueId: 'conceal', intensity: 'standard', inputLocked: true }), null);
-assert.equal(compileWindowChoreography({ token, cueId: 'unowned', inputLocked: true }), null);
-
-const pool = compileWindowChoreography({ token, stage: 'recognition', cueId: 'broadcast', intensity: 'hostile', inputLocked: true });
-assert.equal(pool.main[1].aperture, 'pool-reflection');
-assert.ok(pool.main[1].geometry.width > pool.main[1].geometry.height);
-assert.equal(pool.echoes.length, 0, 'the natatorium uses the existing monitor return as its reflection');
-
-const chapel = compileWindowChoreography({ token, stage: 'handoff', cueId: 'broadcast', intensity: 'hostile', inputLocked: true });
-assert.equal(chapel.echoes.length, 2);
-const finale = compileWindowChoreography({ token, stage: 'handoff', encounterId: 'source-final', cueId: 'loop', intensity: 'hostile', inputLocked: true });
-assert.equal(finale.stage, 'finale');
-assert.equal(finale.echoes.length, 2, 'monitor plus two echoes keeps the total at four windows');
-
-const held = compileWindowChoreography({
-  token,
-  stage: 'control',
-  cueId: 'overload',
-  intensity: 'hostile',
-  inputLocked: true,
-  hold: true,
-  mainGeometry: { x: .31, y: .17, width: .54, height: .71 },
-});
-assert.equal(held.hold, true);
-assert.equal(held.main.length, 2, 'a battle-scoped composition stays displaced until explicit resolution');
-assert.deepEqual(held.main.at(-1).geometry, { x: .38, y: .23, width: .4, height: .59 });
-
-assert.equal(compileWindowChoreography({ token, stage: 'handoff', cueId: 'broadcast', intensity: 'low', inputLocked: true }).displayMode, 'internal');
-assert.equal(compileWindowChoreography({ token, stage: 'handoff', cueId: 'broadcast', intensity: 'hostile', fullscreen: true, inputLocked: true }).displayMode, 'internal');
-assert.equal(compileWindowChoreography({ token, stage: 'handoff', cueId: 'broadcast', intensity: 'hostile', nativePositioning: false, inputLocked: true }).displayMode, 'internal');
-
-console.log('window choreography compiler tests passed');
+assert.deepEqual(FIREBALL_SURFACE_LABELS,['fireball-cast-1','fireball-cast-2','fireball-cast-3','fireball-cast-4']);
+assert.deepEqual(substantiallyOnscreenPosition({position:{x:-3900,y:-200},size:{width:200,height:200},monitor:{position:{x:-3840,y:-120},size:{width:3840,height:2160}}}),{x:-3880,y:-160});
+const rust=readFileSync(new URL('../src-tauri/src/window_choreography.rs',import.meta.url),'utf8');
+const capability=readFileSync(new URL('../src-tauri/capabilities/personalized-interference.json',import.meta.url),'utf8');
+assert.doesNotMatch(rust,/set_fullscreen|chunk_window_choreography_execute|window-choreography-recovery/);
+assert.doesNotMatch(capability,/allow-set-(?:position|size|fullscreen|title)/);
+assert.match(capability,/allow-set-focus/);
+assert.match(rust,/set_ignore_cursor_events\(false\)/);assert.match(rust,/set_ignore_cursor_events\(true\)/);assert.match(rust,/count>0&&count<=4/);
+assert.match(rust,/chunk_fireball_cast_focus_main/);
+const effects=readFileSync(new URL('../src/platform/personalized-window-effects.js',import.meta.url),'utf8');
+assert.match(effects,/focusable:true/);assert.match(effects,/skipTaskbar:true/);
+assert.match(effects,/let surface=await api\.WebviewWindow\.getByLabel\(label\)/);
+assert.match(effects,/surface=new api\.WebviewWindow\(label/);
+const cast=readFileSync(new URL('../src/fireball-cast.js',import.meta.url),'utf8');
+assert.match(cast,/pointerdown[\s\S]{0,220}strike\(\)/);
+assert.match(cast,/emit\('fireball-cast-hit',payload\)/);
+console.log('fireball native surface contracts passed');
