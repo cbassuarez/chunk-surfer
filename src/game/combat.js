@@ -229,6 +229,7 @@ export function makeCombatScene({
     difficulty,
     seed,
     injuries: loadout.injuries,
+    composure: loadout.composure ?? null,
     battery: resources.battery ?? loadout.battery,
     torchDrainScale: loadout.torchDrainScale,
     tools: loadout.tools,

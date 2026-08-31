@@ -3,6 +3,7 @@
 // physical interface, under pressure.
 
 import { uiDraw, uiFill, uiLine, uiStrokeRect, uiText } from './ui.js';
+import { combatGaugeGeometry, combatGaugeState } from './meter.js';
 import { UI_COLOR, activeTheme } from './palette.js';
 import { drawBagIcon } from './bag-icons.js';
 import { loadStoryArtImage, resolveStoryArt } from '../game/story-art.js';
@@ -51,81 +52,17 @@ export function drawCombatBar({
 }
 
 // ── the fixed-resolution VFD health readout ──────────────────────────────────
-// Health is logical data, not a promise of one piece of display hardware per
-// point. The battle can carry 40+ points now, so the faceplate always exposes a
-// calibrated sixteen-element readout, banked four at a time, with the exact
-// number beside it. That is how the rest of this interface treats meters too:
-// a stable physical scale with a separate authoritative counter.
-export const COMBAT_GAUGE_SEGMENTS = 16;
-export const COMBAT_GAUGE_BANK_SIZE = 4;
-
-export function combatGaugeSegments(value, max, segments = COMBAT_GAUGE_SEGMENTS) {
-  const count = Math.max(1, Math.round(Number(segments) || COMBAT_GAUGE_SEGMENTS));
-  const maximum = Math.max(1, Number(max) || 1);
-  const current = clamp(value, 0, maximum);
-  if (current <= 0) return 0;
-  return Math.min(count, Math.max(1, Math.ceil((current / maximum) * count)));
-}
-
-export function combatGaugeState({
-  value = 0,
-  max = 1,
-  ghostFrom = null,
-  segments = COMBAT_GAUGE_SEGMENTS,
-} = {}) {
-  const maximum = Math.max(1, Number(max) || 1);
-  const currentValue = clamp(value, 0, maximum);
-  const previousValue = ghostFrom == null ? currentValue : clamp(ghostFrom, 0, maximum);
-  const filled = combatGaugeSegments(currentValue, maximum, segments);
-  const previousFilled = combatGaugeSegments(previousValue, maximum, segments);
-  const delta = currentValue - previousValue;
-  return Object.freeze({
-    segments: Math.max(1, Math.round(Number(segments) || COMBAT_GAUGE_SEGMENTS)),
-    currentValue,
-    previousValue,
-    maximum,
-    filled,
-    previousFilled,
-    lost: Math.max(0, previousFilled - filled),
-    gained: Math.max(0, filled - previousFilled),
-    sameBucketChange: delta !== 0 && previousFilled === filled,
-    delta,
-    leadingIndex: filled > 0 ? filled - 1 : 0,
-  });
-}
-
-export function combatGaugeGeometry({
-  x = 0,
-  w = 0,
-  segments = COMBAT_GAUGE_SEGMENTS,
-  bankSize = COMBAT_GAUGE_BANK_SIZE,
-  minorGap = .26,
-  majorGap = .72,
-} = {}) {
-  const count = Math.max(1, Math.round(Number(segments) || COMBAT_GAUGE_SEGMENTS));
-  const bank = Math.max(1, Math.round(Number(bankSize) || COMBAT_GAUGE_BANK_SIZE));
-  const width = Math.max(0, Number(w) || 0);
-  const gaps = Array.from({ length: Math.max(0, count - 1) }, (_, index) =>
-    (index + 1) % bank === 0 ? Math.max(0, majorGap) : Math.max(0, minorGap));
-  const gapWidth = gaps.reduce((sum, gap) => sum + gap, 0);
-  const segmentWidth = Math.max(0, (width - gapWidth) / count);
-  let cursor = Number(x) || 0;
-  const cells = [];
-  for (let index = 0; index < count; index += 1) {
-    cells.push(Object.freeze({ index, x: cursor, w: segmentWidth, bank: Math.floor(index / bank) }));
-    cursor += segmentWidth + (gaps[index] || 0);
-  }
-  return Object.freeze({
-    x: Number(x) || 0,
-    w: width,
-    segments: count,
-    bankSize: bank,
-    segmentWidth,
-    gapWidth,
-    end: cells.length ? cells.at(-1).x + cells.at(-1).w : Number(x) || 0,
-    cells: Object.freeze(cells),
-  });
-}
+// The geometry moved to render/meter.js when the audio meter needed the same
+// banked layout: a generic widget cannot import the combat screen. Re-exported
+// here so this module's callers — and both test files that import them from
+// this path — carry on unchanged.
+export {
+  COMBAT_GAUGE_SEGMENTS,
+  COMBAT_GAUGE_BANK_SIZE,
+  combatGaugeSegments,
+  combatGaugeState,
+  combatGaugeGeometry,
+} from './meter.js';
 
 export function drawCombatGauge({
   x, y, w, value, max, label, tone = 'player',

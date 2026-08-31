@@ -669,6 +669,10 @@ export function validateCombatDefinition(definition) {
 export function createCombatState(definition, {
   difficulty = {},
   injuries = 0,
+  // What the night has already taken. Null (or absent) opens at the ceiling,
+  // which is what every fight did before composure carried — the bench drill
+  // and the god menu still come in that way on purpose.
+  composure = null,
   battery = 1,
   torchDrainScale = 1,
   tools = {},
@@ -734,7 +738,14 @@ export function createCombatState(definition, {
     movementDamage: 0,
     turns: 0,
     turnsInMovement: 0,
-    composure: maxComposure,
+    // YOU BRING IN WHAT YOU HAVE LEFT.
+    //
+    // maxComposure above is the CEILING and still derives from injuries alone.
+    // This is where you actually start, which is the carried pool clamped into
+    // it. Floor of 1 rather than 0: a fight you cannot take a single beat in is
+    // not a fight, and recordist.js already refuses to hand back less than
+    // COMPOSURE_FLOOR anyway.
+    composure: composure == null ? maxComposure : clamp(integer(composure, maxComposure), 1, maxComposure),
     maxComposure,
     battery: clamp(finite(battery, 1), 0, 1),
     torchDrainScale: Math.max(0, finite(torchDrainScale, 1)),

@@ -27,6 +27,12 @@ import { uiDraw, uiFill, uiLine, uiStrokeRect, uiText } from './ui.js';
 import { UI_COLOR } from './palette.js';
 import { drawMachinePanel, drawVfdCounter, drawVfdMeter, drawVfdText, drawLocationIndicator } from './presentation.js';
 import { fitText } from './fit-text.js';
+import {
+  drawTranscript,
+  drawTranscriptChoices,
+  layoutTranscript,
+  layoutTranscriptChoices,
+} from './transcript.js';
 
 const clamp01 = (value) => Math.max(0, Math.min(1, Number(value) || 0));
 
@@ -38,6 +44,7 @@ export const TRANSPORT = Object.freeze({
   PLAY: 'play',         // a sealed tape, in the cans
   BROWSE: 'browse',     // the tapes, as a list
   CHECK: 'check',       // the room mic, before the first take
+  LISTEN: 'listen',     // the room and the authored pre-roll, on this machine
 });
 
 const LABEL = Object.freeze({
@@ -46,6 +53,7 @@ const LABEL = Object.freeze({
   [TRANSPORT.PLAY]: 'TAPE RETURN',
   [TRANSPORT.BROWSE]: 'TAKES',
   [TRANSPORT.CHECK]: 'MIC CHECK',
+  [TRANSPORT.LISTEN]: 'LISTEN / PRE-ROLL',
 });
 
 export function formatTakeTime(seconds = 0) {
@@ -238,14 +246,20 @@ export function drawRecorderFace(view = {}) {
     const check = view.check || {};
     uiText(bx, by, fitText(check.prompt || 'SAY: "CHECK, ONE TWO"', usableW), 'ui-amber', 1, usableW);
     const meterW = Math.max(10, Math.min(30, usableW - 12));
-    drawVfdMeter(bx, by + 1.4, meterW, view.roomMeter, { theme: 'green', thresholdDb: -12 });
+    // The scale, on the one screen whose entire job is teaching the player to
+    // read the needle. No marks: nothing is recording, so nothing can be
+    // spoiled, and a SPOIL line here would be the panel contradicting the
+    // promise printed along its own foot.
+    drawVfdMeter(bx, by + 1.4, meterW, view.roomMeter, {
+      theme: 'green', thresholdDb: -12, id: 'mic-check', rows: 2,
+    });
     // The held peak, and whether it is enough. Without this the panel gave no
     // sign it had heard anything until the instant it advanced, so a player who
     // spoke and saw nothing change reasonably pressed [r] again.
     uiText(bx + meterW + 2, by + 1.4, check.heard ? '✓ LEVEL OK' : (check.note || ''),
       check.heard ? 'ui-counter' : 'ui-label', check.heard ? 1 : .8,
       Math.max(6, usableW - meterW - 2));
-    uiText(bx, by + 3, fitText(check.line || '', usableW),
+    uiText(bx, by + 3.8, fitText(check.line || '', usableW),
       check.heard ? 'ui-counter' : 'ui-secondary', .85, usableW);
     return body;
   }
@@ -255,6 +269,40 @@ export function drawRecorderFace(view = {}) {
     // the body against the right bezel, and a row that runs the full width puts
     // a tape's status underneath them.
     drawTakeList({ x: bx, y: by + 2, w: usableW, h: body.h - 2 }, view);
+    return body;
+  }
+
+  // The pre-roll used to throw a second, generic plot monitor over this
+  // machine. That split the physical act in two: REC opened a dialogue box,
+  // then another REC press eventually found the recorder again. LISTEN is a
+  // transport state. The same conversation model still owns the authored
+  // words and choices, but the DA-1000 owns their presentation and never stops
+  // being the object in the player's hands.
+  if (mode === TRANSPORT.LISTEN) {
+    const guide = view.guide || {};
+    const content = { x: bx, y: by + .3, w: usableW, h: Math.max(1, body.h - .6) };
+    const choices = layoutTranscriptChoices(guide, content.w);
+    const choiceRows = choices.height ? choices.height + 1 : 0;
+    const transcriptRows = Math.max(2, Math.floor(content.h - choiceRows));
+    const transcript = layoutTranscript(guide, {
+      width: content.w,
+      maxRows: transcriptRows,
+      keep: 4,
+    });
+    drawTranscript(transcript, {
+      x: content.x,
+      y: content.y,
+      width: content.w,
+      maxRows: transcriptRows,
+    });
+    if (choices.height) {
+      drawTranscriptChoices(choices, {
+        x: content.x,
+        y: content.y + content.h - choices.height,
+        width: content.w,
+        maxRows: choices.height,
+      });
+    }
     return body;
   }
 
@@ -274,12 +322,23 @@ export function drawRecorderFace(view = {}) {
   }
 
   const bayX = bx + counterW + 1;
-  const channelsW = compact ? 0 : 9;
+  const channelsW = compact || (view.levels && view.meter) ? 0 : 9;
   const bayW = Math.max(12, usableW - counterW - 1 - channelsW);
   drawTransportBay({ x: bayX, y: by + 1.4, w: bayW, h: compact ? 2.6 : 3.4 }, view);
 
-  // The two channels, right of the bay, where a deck puts them.
-  if (!compact && view.levels) {
+  // The two channels, right of the bay, where a deck puts them — BUT ONLY WHEN
+  // THERE IS NO LEVEL METER.
+  //
+  // While a take is rolling these were a fiction: one microphone in a room, its
+  // single reading drawn twice at 0.9 and 0.82 so the pair would not sit
+  // perfectly level. The comment beside that code already said faking a stereo
+  // pair "would be the instrument lying"; the code then did it anyway, next to
+  // a LEVEL meter that now prints a calibrated dB scale. One honest instrument
+  // beats one honest instrument and two decorative ones.
+  //
+  // On playback they are real — playback.js carries genuine signalLeft and
+  // signalRight off the tape — and there is no LEVEL meter there, so they stay.
+  if (!compact && view.levels && !view.meter) {
     const meterW = Math.max(7, usableW - (bayX - bx) - bayW - 1);
     const meterX = bx + usableW - meterW;
     drawChannelMeter(meterX, by + 1.4, meterW, view.levels.left, 'L');
@@ -293,20 +352,45 @@ export function drawRecorderFace(view = {}) {
   uiText(bx, locY, 'LOCATION INDICATOR', 'ui-label', 1, body.w);
   drawLocationIndicator(bx, locY + 1, Math.max(8, body.w), clamp01(view.progress), { theme: 'green' });
 
-  // LEVEL — the one meter that means something is wrong.
+  // LEVEL, and the room mic under it — ONE SCALE, TWO NEEDLES.
+  //
+  // These used to sit at different x with different widths (bx+7 by 16, and
+  // bx+9 by 14), which meant two bars measuring the same thing in the same
+  // units could not be read against each other: the tape's level and the level
+  // of the room it is being recorded in, side by side, on two rulers. Aligned
+  // and equal-width, one printed scale serves both, and the comparison the
+  // player actually needs — is what the tape hears the room, or something else
+  // — becomes a glance.
+  //
+  // The scale row is drawn only if it clears the note line at the foot of the
+  // body. It is the first thing to go when the panel is short, which is the
+  // same rule the widget applies when the bar is narrow.
+  const meterX = bx + 10;
+  const meterW = Math.max(6, usableW - 10);
+  const lastMeterY = locY + 2 + (view.roomMeter ? 1 : 0);
+  const scaleRows = lastMeterY + 1 < by + body.h - 1 ? 2 : 1;
+
   if (view.meter) {
-    const levelY = locY + 2;
-    uiText(bx, levelY, fitText(view.meterLabel || 'LEVEL', 6), 'ui-label', 1, 6);
-    drawVfdMeter(bx + 7, levelY, Math.max(6, Math.min(16, body.w - 8)), view.meter,
-      { theme: 'green', thresholdDb: view.meterThresholdDb ?? -6 });
+    uiText(bx, locY + 2, fitText(view.meterLabel || 'LEVEL', 9), 'ui-label', 1, 9);
+    drawVfdMeter(meterX, locY + 2, meterW, view.meter, {
+      theme: 'green', id: 'take-level',
+      thresholdDb: view.meterThresholdDb ?? -6,
+      // The scale hangs off the LOWER of the two bars, so the numbers sit under
+      // the stack rather than between the needles.
+      rows: view.roomMeter ? 1 : scaleRows,
+      marks: view.roomMeter ? null : view.meterMarks || null,
+    });
   }
 
-  // A second meter, only when the player's real room is live.
   if (view.roomMeter) {
-    const roomY = locY + 3;
-    uiText(bx, roomY, 'ROOM MIC', 'ui-label', 1, 9);
-    drawVfdMeter(bx + 9, roomY, Math.max(6, Math.min(14, body.w - 10)), view.roomMeter,
-      { theme: 'green', thresholdDb: -12 });
+    uiText(bx, locY + 3, 'ROOM MIC', 'ui-label', 1, 9);
+    drawVfdMeter(meterX, locY + 3, meterW, view.roomMeter, {
+      theme: 'green', id: 'room-mic', thresholdDb: -12,
+      rows: scaleRows,
+      // The marks belong to the take, not to the room, so they are only drawn
+      // when the take's own meter is the one being scaled.
+      marks: view.meter ? view.meterMarks || null : null,
+    });
   }
 
   // The one line the machine says about itself, when it has something to say.

@@ -69,6 +69,28 @@ function spoilThreshold() {
   return ROOM_TONE.spoilNoise * Math.max(0.25, Number(difficultyRules.spoilNoiseScale) || 1);
 }
 
+// ── WHAT THE METER IS ALLOWED TO DRAW ────────────────────────────────────────
+//
+// The levels a recordist is actually working against, in the same 0..1 noise
+// scale `currentNoise()` reports, so the meter can put them on its own scale
+// without a second copy of these rules drifting away from these ones.
+//
+// SPOIL is difficulty-scaled and CATCH is not, which is exactly why they are
+// worth printing: on a forgiving difficulty the gap between "ruined" and
+// "found" is wider, and until now there was no way for a player to see that.
+export function noiseMarks() {
+  const spoil = spoilThreshold();
+  return [
+    // FLOOR appears only once there IS one — an uninjured recordist has no
+    // floor above the room's own, and a mark at zero would be furniture.
+    { level: noiseFloor(), kind: 'floor', label: 'FLOOR' },
+    { level: spoil, kind: 'spoil', label: 'SPOIL' },
+    { level: ROOM_TONE.catchNoise, kind: 'catch', label: 'CATCH' },
+  ].filter((mark) => mark.level > 0 && mark.label);
+}
+
+export { spoilThreshold };
+
 function handleRecordingNoise(level, reason, meta = {}) {
   if (state.phase !== 'recording' || state.stalled) return;
   const threshold = spoilThreshold();
@@ -92,6 +114,16 @@ const state = {
   spoilReason: '',
   spoilMeta: null,
   injuries: 0,          // permanent within a run; each one makes you louder
+  // COMPOSURE IS THE BODY, AND IT LASTS THE NIGHT.
+  //
+  // It used to be created fresh inside every fight and thrown away with the
+  // scene, which made a lost fight the one thing in the building with no
+  // consequence — you walked back in whole. It lives here now, beside the
+  // injuries that cap it and the battery that runs down the same way. Null
+  // until the first read, so a save written before this loads at its ceiling
+  // rather than at zero.
+  composure: null,
+  sheets: 0,            // sheet music carried; read one to compose yourself
   noise: 0,             // current, decaying
   worldNoise: 0,        // remote sources the presence hears but this mic does not
   lastNoiseAt: { x: 0, y: 0, t: 0 },   // where the presence goes looking
@@ -119,6 +151,52 @@ export function lightOn() { return state.light; }
 export function noiseFloor() { return state.hidden ? 0 : state.injuries * NOISE.perInjury; }
 export function currentNoise() { return state.noise; }
 export function currentWorldNoise() { return Math.max(state.noise, state.worldNoise); }
+
+// ── composure ───────────────────────────────────────────────────────────────
+// The pool every fight draws down. The CEILING is what injuries own: each one
+// costs a grid square and never comes back, floored at half so a bad night is
+// smaller but never hopeless (the same floor combat-state.js has always used
+// for maxComposure — this is that number, moved out where the world can see
+// it). The FLOOR is where a defeat leaves you: you are never stranded at zero.
+export const COMPOSURE_GRID = 5;
+export const COMPOSURE_BASE = 8 * COMPOSURE_GRID;
+export const COMPOSURE_FLOOR = 4 * COMPOSURE_GRID;
+
+export function composureCeiling() {
+  return Math.max(COMPOSURE_FLOOR, COMPOSURE_BASE - Math.max(0, state.injuries) * COMPOSURE_GRID);
+}
+export function composure() {
+  const ceiling = composureCeiling();
+  if (state.composure == null) state.composure = ceiling;
+  return Math.max(0, Math.min(ceiling, state.composure));
+}
+// Set from a finished fight. Clamped into [FLOOR, ceiling]: a fight can leave
+// you at the floor and no lower, because the next one has to be enterable.
+export function setComposure(value) {
+  state.composure = Math.max(COMPOSURE_FLOOR, Math.min(composureCeiling(), Math.round(Number(value) || 0)));
+  return state.composure;
+}
+// Recovery. Deliberately the only way up, and deliberately small: see the
+// sealed take (nominal) and sheet music (rare) in main.js.
+export function restoreComposure(amount = 0) {
+  const gain = Math.max(0, Math.round(Number(amount) || 0));
+  if (!gain) return composure();
+  state.composure = Math.min(composureCeiling(), composure() + gain);
+  return state.composure;
+}
+export function sheetsCarried() { return Math.max(0, state.sheets); }
+export function addSheet(count = 1) {
+  state.sheets = Math.max(0, state.sheets + Math.max(0, Math.round(Number(count) || 0)));
+  return state.sheets;
+}
+// Spending one is the whole transaction: it fails if there is none, and it
+// fails if it would do nothing, so a full recordist cannot burn a sheet.
+export function readSheet(amount = 3 * COMPOSURE_GRID) {
+  if (state.sheets <= 0) return { spent: false, composure: composure(), sheets: 0, reason: 'NO SHEET' };
+  if (composure() >= composureCeiling()) return { spent: false, composure: composure(), sheets: state.sheets, reason: 'ALREADY COMPOSED' };
+  state.sheets -= 1;
+  return { spent: true, composure: restoreComposure(amount), sheets: state.sheets, reason: '' };
+}
 
 // Reaching for the light mid-take is allowed, and it ruins the take. Every
 // rule in this game is a price, never a locked door — except a flat battery,
@@ -336,6 +414,9 @@ export function takeProgress() {
 
 export function injure() {
   state.injuries++;
+  // The ceiling just dropped. A recordist sitting at the old ceiling must come
+  // down with it, or the mark costs him nothing until the next fight reads it.
+  if (state.composure != null) state.composure = Math.min(state.composure, composureCeiling());
   return state.injuries;
 }
 
@@ -427,6 +508,10 @@ export function loadRecState(saved = {}) {
     : Object.fromEntries(Object.entries(saved.places || {}).filter(([id]) => rooms.includes(id)));
   Object.assign(state, {
     injuries: saved.injuries || 0,
+    // A save written before composure carried has no field. Null means "start
+    // at the ceiling", which is what every one of those nights actually did.
+    composure: saved.composure == null ? null : Number(saved.composure),
+    sheets: Math.max(0, Number(saved.sheets) || 0),
     takes: [...rooms],
     contaminated: [...new Set(dirty)],
     places,
@@ -445,6 +530,8 @@ export function saveRecState(tapes = null) {
   const fromStore = Array.isArray(tapes) ? tapes : takeSink?.serialize?.();
   return {
     injuries: state.injuries,
+    composure: composure(),
+    sheets: state.sheets,
     battery: state.battery,
     tapes: fromStore || state.takes.map((roomId) => ({
       roomId,

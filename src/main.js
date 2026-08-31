@@ -144,6 +144,7 @@ import { makeSourcePageScene, makeSourceStillPageScene } from './game/source-pag
 import { makeSourceContactScene } from './game/source-contact-scene.js';
 import { applySourceFearFloor, sourceFocusActionLabel } from './game/source-haystack.js';
 import { applySourcePs2GeometryFault, sourceFaultFrame } from './game/source-faults.js';
+import { suppressFirstB3RecordingContact } from './game/recording-contact.js';
 import { cathedralBellCombatBattle, practiceRoomHushBattle, sourceCombatBattle, trainingCombatBattle } from './data/combat-definitions.js';
 import { BREAKBEAT_CUE, SCREAM_CUE, enemyAttackShape } from './audio/piano-weapon.js';
 import { createCombatTutorialDirector } from './game/combat-tutorial.js';
@@ -360,7 +361,7 @@ import {
   plantValveAudioFrame,
 } from './game/plant-isolation.js';
 import { resolveTorchLook } from './render/lighting-model.js';
-import { BELLS_GOD_STOPS, buildBellsGodPreset, buildChunkSurfGodPreset, buildHorizonGodPreset, CHUNK_SURF_GOD_PRESET, HORIZON_GOD_STOPS } from './game/chunk-surf-god.js';
+import { BELLS_GOD_STOPS, buildBellsGodPreset, buildPreTapeGodPreset, PRE_TAPE_GOD_STOPS, buildChunkSurfGodPreset, buildHorizonGodPreset, CHUNK_SURF_GOD_PRESET, HORIZON_GOD_STOPS } from './game/chunk-surf-god.js';
 import {
   CHAPEL_TOWER_PHASE,
   TOWER_PEAL_STAGE,
@@ -2563,6 +2564,44 @@ function showHushContactFlash({reason='contact',intensity=1,durationMs=700,black
   possess('rupture', blackout ? 4 : 2);
   if(navigator.vibrate) navigator.vibrate(blackout ? [18,24,180,30,220] : [12,20,120,24,160]);
   return hit;
+}
+
+// A HUSH contact during a take is a physical event on the recording, not just
+// the pressure stinger used for proximity. Keep it short, dry and on the direct
+// SFX bus so the open monitor and the HUSH absorption field cannot erase the
+// one piece of feedback that tells the player exactly why the take broke.
+function playRecordingHushImpact({taken=false}={}){
+  ensureCtx();
+  if(!actx)return false;
+  const out=sfxDirectGain||master||actx.destination;
+  const now=actx.currentTime;
+  const duration=taken ? .18 : .13;
+  const buffer=actx.createBuffer(1,Math.max(1,Math.floor(actx.sampleRate*duration)),actx.sampleRate);
+  const data=buffer.getChannelData(0);
+  for(let i=0;i<data.length;i++){
+    const p=i/Math.max(1,data.length-1);
+    data[i]=(Math.random()*2-1)*Math.pow(1-p,2.4);
+  }
+  const blade=actx.createBufferSource(),band=actx.createBiquadFilter(),bladeGain=actx.createGain();
+  blade.buffer=buffer;
+  band.type='bandpass';band.Q.setValueAtTime(1.8,now);
+  band.frequency.setValueAtTime(taken?2100:2600,now);
+  band.frequency.exponentialRampToValueAtTime(620,now+duration);
+  bladeGain.gain.setValueAtTime(.0001,now);
+  bladeGain.gain.exponentialRampToValueAtTime(taken ? .31 : .25,now+.003);
+  bladeGain.gain.exponentialRampToValueAtTime(.0001,now+duration);
+  blade.connect(band);band.connect(bladeGain);bladeGain.connect(out);
+
+  const body=actx.createOscillator(),bodyGain=actx.createGain();
+  body.type='triangle';body.frequency.setValueAtTime(taken?118:142,now);
+  body.frequency.exponentialRampToValueAtTime(taken?34:48,now+.19);
+  bodyGain.gain.setValueAtTime(.0001,now);
+  bodyGain.gain.exponentialRampToValueAtTime(taken ? .28 : .21,now+.005);
+  bodyGain.gain.exponentialRampToValueAtTime(.0001,now+.22);
+  body.connect(bodyGain);bodyGain.connect(out);
+  blade.start(now);blade.stop(now+duration+.01);
+  body.start(now);body.stop(now+.24);
+  return true;
 }
 
 function playHushRupture(){
@@ -7152,7 +7191,10 @@ function syncSourceRender({ force=false,x=px,y=py }={}){
   // — the splat pass is the whole picture, and it only needs to know where on
   // the recording the body is standing and which way it is looking.
   const horizon=chunkSurfRuntime.horizonFrame?.();
-  if(horizon?.active){
+  // onTape, not active: the walk out of the field is in the horizon phase and is
+  // past the perimeter, but it is ordinary ground and has to go through the
+  // normal source render or its structures are never drawn.
+  if(horizon?.active&&horizon.onTape!==false){
     R3.r3dSetSourceEmergency?.(0);
     R3.r3dSetSourceWhiteout?.(0);
     R3.r3dSetSourceFault?.(0);
@@ -7175,6 +7217,7 @@ function syncSourceRender({ force=false,x=px,y=py }={}){
   const sourceVoid=chunkSurfRuntime.sourceVoidFrame?.();
   const sourceFault=sourceFaultFrame({
     sourcePhase:!!sourceVoid?.sourcePhase,horizon:false,
+    proper:!!sourceVoid?.proper,
     transitionElapsedMs:sourceFaultTransitionStartedAt?performance.now()-sourceFaultTransitionStartedAt:Infinity,
     timeMs:performance.now(),reducedMotion,flashMode:flashMode(),
   });
@@ -9574,7 +9617,7 @@ function drawMicTestOverlay(cols, rows){
   if(!micCheck) return;
   const read=micCheckReadout();
   const asking=MIC.micState()==='asking';
-  const rect=recorderPanelRect({ cols, rows, progress:0, rowsNeeded:4,
+  const rect=recorderPanelRect({ cols, rows, progress:0, rowsNeeded:5,
                                  clearBottom:SPEECH.speechPanelRows() });
   drawRecorderFace({
     mode:TRANSPORT.CHECK, rect, source:'ROOM MIC', progress:0, spin:0,
@@ -9592,7 +9635,29 @@ function drawMicTestOverlay(cols, rows){
   });
 }
 
-function firstTakeIntercept(){
+// A conversation on the recorder is still the same authored conversation: it
+// keeps replay state, choices, cues and voice. Only its presenter changes from
+// the generic thought monitor to the transport in the player's hands.
+function beginRecorderGuide(beginGuide,id,nodes,{
+  startAt='start',onDone=null,onLine=null,once=false,
+}={}){
+  if(typeof beginGuide!=='function'||!storyMode||NO_THINK)return false;
+  if(once){
+    markThought(id);
+    saveCommit({thoughts:saveThoughtState()});
+  }
+  ensureCtx();
+  return !!beginGuide({
+    id,nodes,startAt,onDone,onLine,closeOnDone:true,
+    audio:STORY,
+    getAudio:()=>({ctx:actx,destination:dialogGain||master}),
+    fx:CR.fx,cue:fireCue,
+    replay:createReplayService(once?`thought:${id}`:`conversation:${id}`),
+    onChoice:applyStoryChoice,
+  });
+}
+
+function firstTakeIntercept({beginGuide=null}={}){
   if(!storyMode || REC.isMonitoring()) return false;
   if(planName!=='conservatory') return false;
 
@@ -9610,7 +9675,11 @@ function firstTakeIntercept(){
   if(levelCheckHere() && !flagTest('setup.levels')){
     // The tree talks him through the meter, then he tests the real one, then he
     // rolls. A retry after a spoil skips both and rolls straight.
-    if(!thoughtHad('level-check')) return !!think('level-check', LEVEL_CHECK, { onDone:()=>beginMicTest(()=>beginTakeNow()) });
+    if(!thoughtHad('level-check')){
+      const done=()=>beginMicTest(()=>beginTakeNow());
+      if(beginRecorderGuide(beginGuide,'level-check',LEVEL_CHECK,{onDone:done,once:true}))return true;
+      return !!think('level-check', LEVEL_CHECK, { onDone:done });
+    }
     beginTakeNow();
     return true;
   }
@@ -9627,6 +9696,7 @@ function firstTakeIntercept(){
   if(!usingPlan() || currentWorld()!=='main_b3' || REC.hasTake('main_b3')) return false;
   if(thoughtHad('first-take')) return false;
   // If the tree declined to open, [r] must still record. Never swallow a verb.
+  if(beginRecorderGuide(beginGuide,'first-take',FIRST_TAKE,{onDone:()=>beginTakeNow(),once:true}))return true;
   return !!think('first-take', FIRST_TAKE, { onDone:()=>beginTakeNow() });
 }
 
@@ -9828,7 +9898,13 @@ function recorderRefusal(){
   if(usingSourceSpace()||usingStairAnomaly()) return { reason:'NO ROOM TO RECORD' };
   const room=recordableRoomAt(px,py);
   if(!room) return { reason:'NOT A ROOM ON THE ORDER' };
-  if(!setupComplete()) return { reason: flagTest('setup.levels') ? 'MARK STUDIO B3 IN THE PLAN' : 'LEVELS NOT SET' };
+  // REC is the entrance to the level-check transport. Do not darken the very
+  // key that opens it; only the later map mark remains a true refusal.
+  if(!setupComplete()){
+    if(levelCheckHere()&&!flagTest('setup.levels'))return null;
+    if(levelCheckHere()&&flagTest('setup.levels')&&!flagTest('combat.trained'))return null;
+    return { reason: flagTest('setup.levels') ? 'MARK STUDIO B3 IN THE PLAN' : 'LEVELS NOT SET' };
+  }
   if(room!=='main_b3'&&room!=='lux_nova'&&!REC.hasTake('main_b3')) return { reason:'STUDIO B3 FIRST' };
   if(room==='lux_nova'){
     if(finaleActive) return { reason:'THE CHAPEL IS OPEN' };
@@ -9854,7 +9930,7 @@ function recorderRefusal(){
 // LISTEN — a short, guided dialog with the room up in the cans — which ends by
 // rolling into a take. You can only record inside one of the five rooms, and
 // only one you have not already done.
-function recordAction(){
+function recordAction({beginGuide=null}={}){
   // Mid mic test, [r] is "yes, I've heard enough" — it ends the test and rolls.
   // The verb is never swallowed and the test is never a wall.
   if(micCheckActive()){ finishMicTest(null); return; }
@@ -9923,7 +9999,7 @@ function recordAction(){
     if(REC.takeIsContaminated(room))SPEECH.say({who:'you',text:'Again. Same room, this time without the building singing through it.'});
   }
   if(maybeForceRadioBreakdownForRoom(room)) return;
-  openListen(room);
+  openListen(room,{beginGuide});
 }
 
 
@@ -9943,7 +10019,7 @@ function openRecorder(){
   scenes.push(makeRecorderScene({
     getState:recorderMachineState,
     getTakes:recorderTapeRows,
-    onRecord:()=>{ if(!firstTakeIntercept()) recordAction(); },
+    onRecord:({beginGuide}={})=>{ if(!firstTakeIntercept({beginGuide})) recordAction({beginGuide}); },
     onPlay:(roomId)=>playTakeFrom(roomId),
     onStopPlayback:()=>{ PB.stopPlayback(); playbackRoom=null; },
     onClearInput:()=>{ suppressBagReopenUntilRelease=true; },
@@ -10079,7 +10155,7 @@ function emitRecorderTransport(action='transport'){
 // Headphones on. The monitor opens, the room comes up under the dialog, and the
 // tape (for playback) starts collecting what you can hear. The dialog ends on
 // "roll", and there is no other way out of it: setting a level commits you.
-function openListen(room){
+function openListen(room,{beginGuide=null}={}){
   if(!REC.startListening()) return;
   ensureCtx();
   takeRoom=room;takePlace=takePlaceAt(px,py);
@@ -10088,7 +10164,10 @@ function openListen(room){
   emitRecorderTransport('monitor-on');
   updateAudio();                                 // the monitor opens: room in the cans
   committedListen=true;
-  converse(`listen:${room}`, roomListen(room, roomLabel(room)), { onDone:()=>roll() });
+  const nodes=roomListen(room,roomLabel(room));
+  if(beginRecorderGuide(beginGuide,`listen:${room}`,nodes,{onDone:()=>roll()}))return true;
+  converse(`listen:${room}`, nodes, { onDone:()=>roll() });
+  return true;
 }
 
 // The first time — taught by the level check, and the first take in B3 — you
@@ -10368,7 +10447,9 @@ function makeHushContactSequenceScene({taken=false,reason='contact',intensity=1,
 
 function beginTaken(){
   takenActive=true;
-  if(REC.isRecording()) REC.spoilTake('it took you');
+  const hitRolling=REC.isRecording();
+  if(hitRolling)playRecordingHushImpact({taken:true});
+  if(hitRolling)REC.spoilTake('it took you');
   {const actor=PRES.presenceState();causalRecorder.recordAnchor({verb:'contact',locus:{x:actor.x,y:actor.y,roomId:currentWorld(),radius:4},payload:{contactType:'taken',position:{x:actor.x,y:actor.y}}});}
   const injuries=REC.injure();
   causalRecorder.noteInjuries(injuries);
@@ -10481,7 +10562,9 @@ function resolveHardHushContact({attempt=null,reason='presence-contact',speak=tr
   const injuries=REC.injure();
   causalRecorder.noteInjuries(injuries);
   emitProgress(EVENT_TYPES.PLAYER_INJURED, { count:injuries }, 'main.onPresenceCatch');
-  if(REC.isRecording()) REC.spoilTake('it found you');
+  const hitRolling=REC.isRecording();
+  if(hitRolling)playRecordingHushImpact();
+  if(hitRolling)REC.spoilTake('it found you');
   CR.fx.flash(140, 'rgba(10,10,12,0.9)');
   CR.fx.shake(1.4, 420);
   if(speak)SPEECH.say(LINES.caught(injuries));
@@ -11865,7 +11948,9 @@ function dispatchBagItemAction(intent){
     case 'light-toggle':
       toggleTorchAction();return {handled:true};
     case 'recorder-command':
-      if(!firstTakeIntercept())recordAction();return {handled:true};
+      if(REC.isRecording()||REC.isListening())recordAction();
+      else openRecorder();
+      return {handled:true};
     case 'map-open':
     case 'radio-show-map':
       return {handled:openMapFromBag()};
@@ -14955,6 +15040,12 @@ function tickPresence(dt){
   const flashlightOcclusionDb=usingPlan()
     ? acousticOcclusionDb(hushPresenceSnapshot(),acousticSpatialAt(px,py))
     : 0;
+  const suppressB3RecordingContact=suppressFirstB3RecordingContact({
+    recording:REC.isRecording(),
+    roomId:takeRoom||currentWorld(),
+    hasCleanB3Take:REC.hasTake('main_b3'),
+    progress:REC.takeProgress(),
+  });
   PRES.updatePresence(dt,px,py,usingSourceSpace()?onSourcePresenceCatch:onPresenceCatch,
     usingSourceSpace()
       ? {navigation:chunkSurfRuntime.navigation,catchMode:'source-checkpoint'}
@@ -14968,7 +15059,7 @@ function tickPresence(dt){
             level:.24+(1-REC.batteryLevel())*.10,
             confidence:.38,occlusionDb:flashlightOcclusionDb,
           },
-          suppressContact:hushSensationMode===HUSH_SENSATION_MODE.BRUSH||!basementWatcherSignalAllowedAt(),
+          suppressContact:hushSensationMode===HUSH_SENSATION_MODE.BRUSH||!basementWatcherSignalAllowedAt()||suppressB3RecordingContact,
         });
   // Its nearness bleeds into the room tone: the floor thickens as it closes.
   const fieldAudio=hushAudioRuntime?.currentField?.()?.absorption?.audio||0;
@@ -15603,6 +15694,23 @@ function combatSeedFor(runId){
   return hash>>>0;
 }
 
+// WHAT YOU WALK OUT WITH IS WHAT YOU WALK IN WITH NEXT TIME.
+//
+// Composure survives the scene now, so every fight that was really fought
+// writes its ending value back to the body. The bench drill and the god menu
+// must not: a daydream on the loading dock and a fight opened from a debug row
+// are not things that happened to him, and letting either one write would mean
+// a tester could quietly heal or maim a real run from the menu.
+function carryComposureHome(metrics,bench=false){
+  // godBattleOpen covers the debug rows, which reach openBattle without the
+  // bench flag: a fight opened from a menu is not a thing that happened to him.
+  if(!metrics||bench||godBattleOpen)return false;
+  const value=Number(metrics.composure);
+  if(!Number.isFinite(value))return false;
+  REC.setComposure(value);
+  return true;
+}
+
 function pushCombat(battle, { onWin, onLose, onAbort, source=null, director=null, continuation=null, bench=false, encounterId=null }={}){
   ensureCtx();
   const profileBattle=snapshotBattleIntent(battle,currentProfileInfluence(),{tutorial:bench});
@@ -15681,6 +15789,9 @@ function pushCombat(battle, { onWin, onLose, onAbort, source=null, director=null
       // The bench drill runs on house gear: torch and recorder patched in,
       // full battery, no injuries — the real bag stays untouched.
       injuries: bench?0:REC.recState().injuries,
+      // What the night has left him. The drill opens full (null) because a
+      // daydream on the loading dock cannot be walked into wounded.
+      composure: bench?null:REC.composure(),
       battery: bench?1:REC.batteryLevel(),
       torchDrainScale: currentDifficulty().torch.drainScale,
       techniques: bench?[]:normalizeCombatBuild(getSave().combatBuild, getSave().encounters?.cleared, getSave().flags).techniques,
@@ -15742,8 +15853,8 @@ function pushCombat(battle, { onWin, onLose, onAbort, source=null, director=null
     // Whatever the result, the building shuts up for a while afterwards. The
     // worst version of this game is the thing that just beat you noodling at you
     // from the next room thirty seconds later.
-    onWin: (metrics)=>{ STORY.stopTapeHiss({fade:0.8}); CUES.stopCueGroup('battle',.2); hushMischiefQuiet('win'); STAB.reportThreat(); saveCommit({rec:REC.saveRecState()}); rememberEnemyRead(metrics); onWin?.(metrics); },
-    onLose:(metrics)=>{ STORY.stopTapeHiss({fade:0.8}); CUES.stopCueGroup('battle',.2); hushMischiefQuiet('lose'); STAB.reportThreat(); saveCommit({rec:REC.saveRecState()}); rememberEnemyRead(metrics); onLose?.(metrics); },
+    onWin: (metrics)=>{ STORY.stopTapeHiss({fade:0.8}); CUES.stopCueGroup('battle',.2); hushMischiefQuiet('win'); STAB.reportThreat(); carryComposureHome(metrics,bench); saveCommit({rec:REC.saveRecState()}); rememberEnemyRead(metrics); onWin?.(metrics); },
+    onLose:(metrics)=>{ STORY.stopTapeHiss({fade:0.8}); CUES.stopCueGroup('battle',.2); hushMischiefQuiet('lose'); STAB.reportThreat(); carryComposureHome(metrics,bench); saveCommit({rec:REC.saveRecState()}); rememberEnemyRead(metrics); onLose?.(metrics); },
     onAbort:()=>{ STORY.stopTapeHiss({fade:0.3}); CUES.stopCueGroup('battle',.2); hushMischiefQuiet('abort'); STAB.reportThreat(); saveCommit({rec:REC.saveRecState()}); onAbort?.(); },
   }));
 }
@@ -18386,6 +18497,19 @@ async function godOpenCausalReturnFork(){
   }catch(error){pushEvent(`// god: causal return fixture failed. ${String(error?.message||error)}`);return false;}
 }
 
+function godEnterPreTape(depth,label){
+  godEnsureTestRun();
+  const built=buildPreTapeGodPreset(depth,{
+    drankCoffee:flagTest('drank.coffee'),hasRig:flagTest('has.interface'),marbleEyes:'returned',
+    seed:normalizeChunkSurfState(getSave().chunkSurf).seed||4417,
+    returnPoint:{x:CHAPEL_OUTER_CHECKPOINT.x,y:CHAPEL_OUTER_CHECKPOINT.y,facing:CHAPEL_OUTER_CHECKPOINT.facing},
+  });
+  activateSourceSpace(built.state,{position:built.position});
+  saveCommit({chunkSurf:built.state,px:built.position.x,py:built.position.y,area:'source-space'});
+  syncSourceRender({force:true});
+  pushEvent(`// god: ${label}.`);
+}
+
 function godEnterBells(depth,label){
   godEnsureTestRun();
   const built=buildBellsGodPreset(depth,{
@@ -18634,6 +18758,10 @@ function godTabs(){
       {id:'source-exposed-battle',label:'FINAL / EXPOSED BATTLE',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.EXPOSED_BATTLE)},
       {id:'source-normal-exit',label:'FINAL / NORMAL EXIT',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.NORMAL_EXIT)},
       section('The horizon'),
+      ...PRE_TAPE_GOD_STOPS.map((stop)=>({
+        label:stop.label,
+        run:()=>godEnterPreTape(stop.depth,stop.label),
+      })),
       ...BELLS_GOD_STOPS.map((stop)=>({
         label:stop.label,
         run:()=>godEnterBells(stop.depth,stop.label),
@@ -19949,12 +20077,33 @@ function drawTakeOverlay(cols, rows){
     counterColor: preRoll ? UI_COLOR.amber : null,
     counterLabel: preRoll ? 'PRE-ROLL' : 'TIME COUNTER',
     counterTotal: preRoll ? '' : `/ 0:${String(ROOM_TONE.takeSeconds).padStart(2,'0')}`,
-    // The level is on both channels: this is one microphone in a room, not a
-    // stereo pair, and pretending otherwise would be the instrument lying.
-    levels:{ left:nz*0.9, right:nz*0.82 },
-    meter:MONITOR.monitorSnapshotForRms(nz*0.9),
+    // Not drawn as channel meters while recording — see drawRecorderFace. This
+    // is one microphone in a room, and the two numbers below were the same
+    // reading nudged apart so a fake pair would not sit level. It survives only
+    // as the transport bay's trace amplitude, where a 0..1 is all that is
+    // wanted, so both channels now carry the same honest value.
+    levels:{ left:nz, right:nz },
+    // THE LEVEL, NOT A FRACTION OF THE LEVEL.
+    //
+    // This used to be `monitorSnapshotForRms(nz*0.9)` — `nz` being
+    // currentNoise()/spoilNoise, capped and then scaled by 0.9 for no stated
+    // reason. That is a ratio against the threshold, not a reading, and it was
+    // fine while the meter was a bar with no numbers on it. It is not fine now
+    // that the meter prints a scale: a printed −18 under a normalised bar is an
+    // instrument that lies, which is the one thing this meter is not allowed to
+    // be. `nz` still drives the bay trace, where a 0..1 amplitude is what is
+    // wanted.
+    meter:MONITOR.monitorSnapshotForRms(REC.currentNoise()),
     meterLabel:'LEVEL',
-    meterThresholdDb:-6,
+    // The marks come from the recordist, so they follow difficulty rather than
+    // being restated here.
+    // The recordist keeps its thresholds in the 0..1 noise scale it reports
+    // levels in; the meter draws decibels. Converted here, at the one boundary
+    // between them, rather than teaching either side the other's units.
+    meterMarks:REC.noiseMarks().map((mark)=>({
+      ...mark, db:MONITOR.monitorSnapshotForRms(mark.level).db,
+    })),
+    meterThresholdDb:MONITOR.monitorSnapshotForRms(REC.spoilThreshold()).db,
     roomMeter:MIC.micActive()?MONITOR.monitorSnapshotForRms(MIC.micLevel()):null,
     footer: spoiled ? `— ${rec.spoilReason.toUpperCase()} —`
       : held ? (instr?.silenced
@@ -19991,6 +20140,8 @@ function installProbe(){
     micTestNow:()=>beginMicTest(()=>beginTakeNow()),
     micDrive:(v)=>{ MIC.micTest(v); return micCheckReadout(); },
     noise:(v)=>REC.emitNoise(v, px, py, 'the room was not empty'),
+    // What the meter is allowed to print on its scale, from outside.
+    noiseMarks:()=>REC.noiseMarks(),
     injure:()=>REC.injure(),
     world:()=>currentWorld(),
     presence:()=>({...PRES.presenceState(), dist:PRES.distanceTo(px,py), pressure:PRES.pressure(px,py)}),
@@ -20145,6 +20296,9 @@ function installProbe(){
     horizonFrame:()=>chunkSurfRuntime?.horizonFrame?.()??null,
     // The bell passage, by depth. See BELLS_GOD_STOPS for the three acts.
     bellsPreset:(depth=0)=>{ godEnterBells(depth,`probe bells ${depth}m`); return window.__probe.chunkSurf(); },
+    // The walk out of the field: the horizon phase standing short of the tape.
+    // horizonPreset clamps at zero and cannot address it.
+    preTapePreset:(depth=0)=>{ godEnterPreTape(depth,`probe pre-tape ${depth}m`); return window.__probe.chunkSurf(); },
     bellsFrame:()=>chunkSurfRuntime?.bellsFrame?.()??null,
     stairAnomaly:()=>usingStairAnomaly()?{
       active:true,environment:stairAnomalyRuntime.environment,ledger:stairAnomalyRuntime.state(),player:stairAnomalyRuntime.player(),
@@ -21816,12 +21970,9 @@ function onKey(e){
       // look at now, which is the only way playback and the tapes already made
       // were ever going to be reachable.
       //
-      // The authored intercepts keep first refusal: the level check and the
-      // first take own [R] outright while they are pending, and a device menu
-      // in front of a tutorial is the worst possible place for one. A rolling
-      // or listening transport is also still the direct verb, because there the
-      // press means stop, and stop must never need a second keystroke.
-      if(firstTakeIntercept()) return;
+      // Setup, LISTEN and "kill the light and roll" now live on the recorder's
+      // own face. A rolling or listening transport remains the direct verb,
+      // because stop/roll must never need a second layer.
       if(REC.isRecording()||REC.isListening()){ recordAction(); return; }
       openRecorder();
       return;

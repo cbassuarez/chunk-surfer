@@ -21,12 +21,40 @@ import { TRANSPORT, recorderPanelRect } from '../src/render/recorder-view.js';
   assert.equal(refused[1].enabled, false, 'nothing on tape in this room');
   assert.equal(refused[2].enabled, false, 'and no tapes to browse');
 
+  const warned = recorderKeys({ refusal: { reason: 'MAINS IN THE CANS', allow: true } });
+  assert.equal(warned[0].enabled, true, 'an authored warning can leave REC available for deliberate confirmation');
+
   // Rolling, the only thing you can do is stop — and stop must never be two
   // keystrokes away.
   assert.deepEqual(recorderKeys({ recording: true }).map((k) => k.id), [RECORDER_KEY.STOP]);
   assert.deepEqual(recorderKeys({ recording: true, stalled: true }).map((k) => k.id),
     [RECORDER_KEY.RESUME, RECORDER_KEY.STOP]);
   assert.deepEqual(recorderKeys({ playing: true }).map((k) => k.id), [RECORDER_KEY.STOP]);
+}
+
+// The authored LISTEN tree is a transport state of this scene. It does not
+// push a generic thought modal, and a committed guide cannot be dismissed
+// between the setup instruction and ROLL.
+{
+  let rolled = 0;
+  const scene = makeRecorderScene({
+    getState: () => ({ playableHere: false }),
+    getTakes: () => [],
+    onRecord: ({ beginGuide }) => beginGuide({
+      id: 'b3-pre-roll',
+      nodes: { start: { lines: [{ who: 'direction', text: 'Kill the light and roll.' }] } },
+      onDone: () => { rolled += 1; },
+    }),
+  });
+  scenes.push(scene);
+  scene.key({ key: 'Enter', code: 'Enter' });
+  assert.equal(scene.debugState().guide?.id, 'b3-pre-roll');
+  scene.key({ key: 'r', code: 'KeyR' });
+  assert.equal(scenes.has('recorder'), true, 'R cannot abandon a committed pre-roll');
+  scene.update(2);
+  scene.key({ key: 'Enter', code: 'Enter' });
+  assert.equal(rolled, 1);
+  assert.equal(scenes.has('recorder'), false, 'completion returns the machine to the recording lifecycle');
 }
 
 // ── THE SCENE ────────────────────────────────────────────────────────────────
@@ -149,6 +177,18 @@ function harness(state = {}) {
   assert.doesNotMatch(overlay, /drawMachinePanel/, 'and never builds a second chassis');
   assert.match(overlay, /NOTHING IS RECORDING\. NOTHING IS KEPT\./,
     'the promise stays on the panel: this is a meter, not a take, and it is not saved');
+}
+
+// First R always produces the machine. The level-check and first-take trees
+// are selected only from the machine's REC verb.
+{
+  const main = readFileSync('src/main.js', 'utf8');
+  const rHandler = main.slice(main.indexOf("if(bare && is('KeyR','r'))"),
+    main.indexOf("if(bare && (e.code==='Space'", main.indexOf("if(bare && is('KeyR','r'))")));
+  assert.match(rHandler, /openRecorder\(\)/);
+  assert.doesNotMatch(rHandler, /firstTakeIntercept\(\)/);
+  assert.match(main, /onRecord:\(\{beginGuide\}=\{\}\)=>\{ if\(!firstTakeIntercept\(\{beginGuide\}\)\) recordAction\(\{beginGuide\}\); \}/,
+    'REC, not the global R handler, owns setup and LISTEN selection');
 }
 
 console.log('recorder scene contracts passed');

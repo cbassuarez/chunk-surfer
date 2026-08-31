@@ -1,5 +1,5 @@
 import { CELL } from '../data/floorplan/legend.js';
-import { SOURCE_APPROACH_CELLS, SOURCE_BELLS, SOURCE_CHUTES, SOURCE_HORIZON, SOURCE_TIER_BY_ID } from '../data/source-level.js';
+import { SOURCE_APPROACH_CELLS, SOURCE_BELLS, SOURCE_CHUTES, SOURCE_HORIZON, SOURCE_PRE_TAPE, SOURCE_TIER_BY_ID } from '../data/source-level.js';
 import {
   CHUNK_SURF_PHASE,
   SOURCE_PURSUIT_BEAT,
@@ -175,6 +175,29 @@ export function buildHorizonGodPreset(depth = 0, options = {}) {
     },
   };
 }
+
+// THE WALK OUT OF THE FIELD, by depth from the perimeter. Same phase as the
+// tape and short of it, which is a position buildHorizonGodPreset cannot express
+// because sourceHorizonDepth clamps at zero.
+export function buildPreTapeGodPreset(depth = 0, options = {}) {
+  const built = buildHorizonGodPreset(0, options);
+  const along = Math.max(0, Math.min(SOURCE_PRE_TAPE.length, Number(depth) || 0));
+  return {
+    state: built.state,
+    position: {
+      x: LANDSCAPE_ORIGIN.x,
+      y: LANDSCAPE_ORIGIN.y + SOURCE_PRE_TAPE.from - Math.max(SOURCE_PRE_TAPE.entryStandoff, along),
+      facing: 0,
+    },
+  };
+}
+
+export const PRE_TAPE_GOD_STOPS = Object.freeze([
+  { id: 'pre-tape-edge', label: 'OUT — THE FIELD ENDS', depth: SOURCE_PRE_TAPE.entryStandoff },
+  { id: 'pre-tape-thinning', label: 'OUT — THE OUTSKIRTS', depth: 90 },
+  { id: 'pre-tape-nothing', label: 'OUT — NOTHING', depth: 260 },
+  { id: 'pre-tape-seam', label: 'OUT — THE HEAD OF THE TAPE', depth: 352 },
+]);
 
 // THE BELL PASSAGE, addressed by depth like the tape it hangs off.
 //

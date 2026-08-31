@@ -51,6 +51,19 @@ for (const [name, w, h] of [['wide', 1280, 760], ['narrow', 960, 600]]) {
   await page.evaluate(() => window.__probe.setRecording(true));
   await sleep(1400);
   await page.screenshot({ path: `artifacts/${TAG}-${name}.png` });
+
+  // THE FRAME THAT MATTERS: the level climbing toward the mark that ends the
+  // take. Until the meter printed a scale there was no way to see how much room
+  // was left — the bar was a fraction of the spoil threshold with no threshold
+  // drawn on it. `emitNoise` is the game's own verb, so this is a real reading.
+  await page.evaluate(() => window.__probe.noise(0.14));
+  await sleep(260);
+  await page.screenshot({ path: `artifacts/${TAG}-${name}-hot.png` });
+  const hot = await page.evaluate(() => ({
+    noise: +window.__probe.rec().noise?.toFixed?.(3) || null,
+    marks: window.__probe.noiseMarks?.() || null,
+  }));
+  console.log(`${name.padEnd(7)} hot     ${JSON.stringify(hot)}  artifacts/${TAG}-${name}-hot.png`);
   const rec = await page.evaluate(() => window.__probe.rec());
   console.log(`${name.padEnd(7)} ${w}x${h}  elapsed=${(rec.takeElapsed ?? 0).toFixed(1)}  artifacts/${TAG}-${name}.png`);
   await page.evaluate(() => window.__probe.setRecording(false));

@@ -33,6 +33,7 @@ import * as scenes from './scenes.js';
 import { TRANSPORT, drawRecorderFace, recorderPanelRect } from '../render/recorder-view.js';
 import { uiSize } from '../render/ui.js';
 import { fitText } from '../render/fit-text.js';
+import { createConversation } from './conversation.js';
 
 export const RECORDER_SCENE_ID = 'recorder';
 
@@ -58,7 +59,7 @@ export function recorderKeys(state = {}) {
   }
   if (playing) return [{ id: RECORDER_KEY.STOP, label: 'STOP', enabled: true }];
   return [
-    { id: RECORDER_KEY.REC, label: 'REC', enabled: !refusal, reason: refusal?.reason || '' },
+    { id: RECORDER_KEY.REC, label: 'REC', enabled: !refusal || !!refusal?.allow, reason: refusal?.reason || '' },
     { id: RECORDER_KEY.PLAY, label: 'PLAY', enabled: playableHere, reason: playableHere ? '' : 'NOTHING ON TAPE IN THIS ROOM' },
     { id: RECORDER_KEY.TAKES, label: browsing ? 'CLOSE' : 'TAKES', enabled: tapes > 0, reason: tapes ? '' : 'NO TAPES YET' },
   ];
@@ -83,6 +84,8 @@ export function makeRecorderScene({
   let noticeUntil = 0;
   let t = 0;
   let closed = false;
+  let guide = null;
+  let guideConvo = null;
 
   const keys = () => recorderKeys({ ...state(), browsing, tapes: takes().length });
   const key = () => keys()[Math.max(0, Math.min(keys().length - 1, cursor))] || null;
@@ -100,6 +103,36 @@ export function makeRecorderScene({
     return !!removed;
   }
 
+  function beginGuide(config = {}) {
+    if (closed || !config?.nodes) return false;
+    guideConvo?.stop?.();
+    guide = config;
+    guideConvo = createConversation({
+      nodes: config.nodes,
+      startAt: config.startAt || 'start',
+      sceneId: `recorder:${config.id || 'listen'}`,
+      replay: config.replay || null,
+      onChoice: config.onChoice,
+      onLine: config.onLine,
+      cue: config.cue,
+      fx: config.fx,
+      audio: config.audio,
+      getAudio: config.getAudio,
+      volume: config.volume ?? .24,
+      onDone: () => {
+        if (!guideConvo) return;
+        const completed = guide;
+        guideConvo.stop?.();
+        guideConvo = null;
+        guide = null;
+        completed?.onDone?.();
+        if (completed?.closeOnDone !== false) close({ suppressReopen: true });
+      },
+    });
+    guideConvo.start();
+    return true;
+  }
+
   function activate() {
     const current = key();
     if (!current) return false;
@@ -115,10 +148,10 @@ export function makeRecorderScene({
       case RECORDER_KEY.RESUME:
         // One verb. The game's own gate ladder still owns what a press means,
         // so the machine can never get out of step with it.
-        onRecord?.();
+        onRecord?.({ beginGuide, close });
         // Rolling puts the machine away: he is holding still and listening now,
         // not working the transport.
-        if (current.id === RECORDER_KEY.REC) close();
+        if (current.id === RECORDER_KEY.REC && !guideConvo) close();
         return true;
       case RECORDER_KEY.PLAY:
         if (state().playing) onStopPlayback?.(); else onPlay?.(null);
@@ -152,12 +185,24 @@ export function makeRecorderScene({
     allowsLook: true,
     lensPreset: null,
 
-    update(dt) { t += dt || 0; },
+    update(dt) { t += dt || 0; guideConvo?.update?.(dt || 0); },
+
+    keyup(event) {
+      if (!guideConvo) return false;
+      return guideConvo.keyup?.(event) || false;
+    },
 
     key(event) {
       const code = event?.code || '';
       const raw = event?.key || '';
       const k = String(raw).toLowerCase();
+      if (guideConvo) {
+        // A guided pre-roll is committed once REC is pressed. Escape and R do
+        // not abandon the monitor between "kill the light" and "roll"; the
+        // conversation's own Continue/choice inputs own this transport state.
+        if (raw === 'Escape' || code === 'Escape' || k === 'r' || code === 'KeyR') return true;
+        return guideConvo.key(event);
+      }
       if (raw === 'Escape' || code === 'Escape') { close(); return true; }
       // [R] again puts it away. The key that took it out is the key that
       // returns it, which is how every other held thing in this game works.
@@ -191,11 +236,13 @@ export function makeRecorderScene({
       const list = keys();
       const active = key();
       const browsingNow = browsing && !live.recording && !live.playing;
-      const mode = browsingNow ? TRANSPORT.BROWSE
+      const mode = guideConvo ? TRANSPORT.LISTEN
+        : browsingNow ? TRANSPORT.BROWSE
         : live.recording ? TRANSPORT.RECORD
           : live.playing ? TRANSPORT.PLAY
             : TRANSPORT.MONITOR;
-      const rowsNeeded = browsingNow ? Math.max(6, Math.min(9, takes().length + 2)) : 10;
+      const rowsNeeded = guideConvo ? 15
+        : browsingNow ? Math.max(6, Math.min(9, takes().length + 2)) : 10;
       const rect = recorderPanelRect({
         cols, rows, progress: live.progress || 0, rowsNeeded, clearBottom: live.clearBottom || 0,
       });
@@ -206,6 +253,7 @@ export function makeRecorderScene({
         mode,
         rect,
         source: live.source || null,
+        guide: guideConvo?.view?.() || null,
         progress: live.progress || 0,
         // Nothing is moving on a machine sitting in your hands doing nothing.
         spin: live.recording || live.playing ? (live.spin ?? 0) : 0,
@@ -222,7 +270,9 @@ export function makeRecorderScene({
         // the machine talks about itself.
         note: showNotice ? notice : (active && !active.enabled ? active.reason : (live.note || '')),
         noteTheme: showNotice || (active && !active.enabled) ? 'amber' : (live.noteTheme || 'green'),
-        footer: browsingNow
+        footer: guideConvo
+          ? (guideConvo.view()?.pending?.options?.length ? 'SELECT · ENTER TRANSMIT' : 'ENTER CONTINUE')
+          : browsingNow
           ? 'ENTER PLAY · R CLOSE'
           : fitText(list.map((entry) => `${entry.id === active?.id ? '▶' : ' '}${entry.label}`).join('  '), Math.max(8, rect.w - 6)),
         buttons: { w: 6, keys: list.map((entry) => ({
@@ -234,13 +284,14 @@ export function makeRecorderScene({
       });
     },
 
-    exit() { closed = true; },
+    exit() { closed = true; guideConvo?.stop?.(); guideConvo = null; guide = null; },
 
     // The pattern the bag established: everything a headless test needs, and
     // nothing the game reads.
     debugState() {
       return {
         cursor, browsing, row, notice: t < noticeUntil ? notice : '',
+        guide: guide ? { id: guide.id || 'listen', view: guideConvo?.view?.() || null } : null,
         keys: keys().map((entry) => ({ id: entry.id, enabled: entry.enabled, reason: entry.reason || '' })),
         selectedKey: key()?.id || null,
       };

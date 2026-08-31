@@ -15,6 +15,10 @@ import { drawVfdGlyph } from './vfd-font.js';
 import { drawPromptParts } from './prompt-glyphs.js';
 import { fitText } from './fit-text.js';
 import { MONITOR_DANGER_THRESHOLDS, MONITOR_THRESHOLDS, monitorSnapshot } from '../audio/monitor.js';
+import {
+  METER_MIN_DB, meterGeometry, meterMarkBoxes, meterMarks, meterScaleFits, meterSegmentAt,
+  meterSegmentCount, meterState, meterTicks, unitToDb,
+} from './meter.js';
 
 export const PANEL = Object.freeze({ padX: 2, headerRows: 2, footerRows: 2 });
 
@@ -110,7 +114,9 @@ export function drawMachinePanel(x, y, w, h, {
   // can migrate one surface at a time.
   footerParts = null,
 } = {}) {
-  setActiveSurface(theme);
+  // Same guard. god-menu.js asks for theme:'red' for the whole developer panel
+  // and has always drawn amber.
+  if (THEMES[theme]) setActiveSurface(theme);
   const t = activeTheme();
   if (scrim) uiFill(0, 0, 999, 999, 'rgba(2,2,3,0.74)');
 
@@ -160,56 +166,156 @@ export function drawMachinePanel(x, y, w, h, {
 }
 
 // ── the bargraph meter (DA-1000 / Akai VOLUME scale) ─────────────────────────
+//
+// The instrument, not a texture. See render/meter.js for why it has a scale at
+// all — two authored lines describe a meter "flat at the bottom of the scale",
+// and the sound design files a flat meter as evidence the protagonist reasons
+// from rather than decoration. The arithmetic lives there, pure and tested;
+// this draws it.
+//
+// Three things this fixes that no amount of restyling would have:
+//
+//   · It was hard-capped at twelve segments. `n = min(THRESHOLDS.length, width)`
+//     and then `totalW = n * cellW`, so a caller asking for thirty cells got
+//     twelve segments in twelve cells and the rest of its budget vanished.
+//   · The peak marker was dead code everywhere but one call site. It drew only
+//     when `peakIndex >= lit`, and every recorder meter is fed
+//     `monitorSnapshotForRms(scalar)` — where `peak === rms`, so `peakIndex` is
+//     always inside the lit run. The tape has always kept peak-hold; the needle
+//     beside it never showed one.
+//   · Dormant segments were hard-coded phosphor at 0.10, ignoring the `dim`
+//     token the palette explicitly calls "dormant phosphor — the VFD tell".
+//
+// SIZE is `auto` by default: the widget takes the rows it is given and drops
+// the scale rather than overflowing a panel. The grid is not generous at the
+// extremes — uiScale runs to 1.5, so the worst case is 75x20 — and roughly
+// twenty machine-panel headers draw this in a single row.
 export function drawVfdMeter(x, y, width = 14, snapshot = monitorSnapshot(), {
   thresholdDb = -3, label = '', theme = null, bandThresholds = null,
+  rows = 1, marks = null, id = null, scaleLabel = '', over = null,
 } = {}) {
-  const t = theme ? (setActiveSurface(theme), activeTheme()) : activeTheme();
-  const n = Math.max(1, Math.min(MONITOR_THRESHOLDS.length, width));
-  const lit = Math.min(n, snapshot?.segments || 0);
-  const peakIndex = MONITOR_THRESHOLDS.reduce((p, db, i) => (snapshot?.peakDb >= db ? i : p), -1);
-  const b = uiBrightness();
+  // A bad theme name used to repaint the surface amber AND leave it amber for
+  // everything drawn afterwards, because setActiveSurface is global and sticky.
+  // drawVfdText was fixed for this; this was missed. Only amber and green are
+  // themes.
+  if (theme && THEMES[theme]) setActiveSurface(theme);
+  const t = activeTheme();
+
+  const w = Math.max(1, Number(width) || 1);
+  const count = meterSegmentCount(w);
+  const key = id || `${x}:${y}`;
+
+  // `segments` stays authoritative for how much is lit, so the HUSH pressure
+  // monitorDisplaySnapshot injects and the clip-to-full-scale rule both survive
+  // exactly — but position comes from dB, so the bar and the printed scale
+  // cannot describe different things.
+  const rawDb = Number.isFinite(Number(snapshot?.db)) ? Number(snapshot.db) : METER_MIN_DB;
+  const flooredDb = snapshot?.segments > 0
+    ? Math.max(rawDb, MONITOR_THRESHOLDS[Math.min(MONITOR_THRESHOLDS.length, snapshot.segments) - 1])
+    : rawDb;
+
+  const ballistic = meterState(key, flooredDb, nowSec() * 1000, { clipped: !!snapshot?.clipped });
+  const lit = meterSegmentAt(ballistic.needleDb, count);
+  const peakSeg = meterSegmentAt(ballistic.peakDb, count);
+  const overNow = over != null ? !!over : nowSec() * 1000 < (ballistic.overUntilMs || 0);
+
+  // Banks of four across twelve-ish segments land on the same boundaries as
+  // MONITOR_DANGER_THRESHOLDS' normal / mid-hot / hot, so the grouping and the
+  // colouring say the same thing in two languages.
+  const { shape, offset } = meterGeometry({ x, w, segments: count, bankSize: 4 });
+  const scaleRow = rows >= 2 && meterScaleFits(w);
+  const placed = scaleRow ? meterMarks(marks, w) : [];
 
   uiDraw(({ ctx, dpr, cellW, cellH, cols }) => {
-    const gap = Math.max(1, Math.round(1.4 * dpr));
-    const totalW = n * cellW * dpr;
-    const segW = Math.max(2 * dpr, (totalW - gap * (n - 1)) / n);
     const top = (y + 0.24) * cellH * dpr;
     const height = 0.44 * cellH * dpr;
 
-    for (let i = 0; i < n; i++) {
-      const px = x * cellW * dpr + i * (segW + gap);
-      const phosphor = themeRoleColor('phosphor', x + i, cols);
-      const counter = themeRoleColor('counter', x + i, cols);
+    for (const cell of shape.cells) {
+      const i = cell.index;
+      const px = (offset + cell.x) * cellW * dpr;
+      const pw = Math.max(1, cell.w * cellW * dpr);
+      const at = offset + cell.x;
+      const phosphor = themeRoleColor('phosphor', at, cols);
+      const db = unitToDb((i + 0.5) / count);
       const on = i < lit;
-      const db = MONITOR_THRESHOLDS[i];
 
       ctx.save();
       if (on) {
-        const hot = bandThresholds && db >= Number(bandThresholds.hotDb);
+        const hot = bandThresholds ? db >= Number(bandThresholds.hotDb) : db >= thresholdDb;
         const midHot = bandThresholds && !hot && db >= Number(bandThresholds.midHotDb);
-        const danger = hot || (!bandThresholds && db >= thresholdDb);
-        ctx.fillStyle = danger ? t.danger : midHot ? themeRoleColor('warning', x + i, cols) : phosphor;
-        ctx.globalAlpha = litDuty(x + i, y, danger ? 'danger' : midHot ? 'counter' : 'phosphor', 1);
+        ctx.fillStyle = hot ? t.danger : midHot ? themeRoleColor('warning', at, cols) : phosphor;
+        ctx.globalAlpha = litDuty(at, y, hot ? 'danger' : midHot ? 'counter' : 'phosphor', 1);
         ctx.shadowColor = ctx.fillStyle;
         ctx.shadowBlur = 4.5 * dpr;
       } else {
+        // Dormant. Unlit elements on a real VFD do not go black; that faint
+        // grid is the tell.
+        //
+        // NOT `themeRoleDim` — the `dim` token carries its own alpha (0.055
+        // amber / 0.06 green), which is little more than HALF the 0.10 used
+        // here, and globalAlpha cannot scale it back up. Switching to it would
+        // have quietly dimmed the dormant segments on all sixteen metered panel
+        // headers. The token is right for the unlit dot matrix under a glyph,
+        // where drawVfdGlyph applies it; it is too faint for a segment.
         ctx.fillStyle = phosphor;
         ctx.globalAlpha = 0.10;
       }
-      ctx.fillRect(px, top, segW, height);
+      ctx.fillRect(px, top, pw, height);
       ctx.restore();
+    }
 
-      if (i === peakIndex && i >= lit) {
-        ctx.save();
-        ctx.globalAlpha = 0.95 * uiFlickerAlpha(x + i, y, 'counter');
-        ctx.fillStyle = counter;
-        ctx.fillRect(px, top, segW, Math.max(1, 1.5 * dpr));
-        ctx.restore();
-      }
+    // THE HELD PEAK. A cap above the lit run that sits, then falls — which is
+    // what a microphone does, and the rule the tape already keeps: a single
+    // close pass is on the recording forever.
+    if (peakSeg > 0 && peakSeg > lit) {
+      const cell = shape.cells[Math.min(shape.cells.length - 1, peakSeg - 1)];
+      ctx.save();
+      ctx.globalAlpha = 0.95 * uiFlickerAlpha(x + peakSeg, y, 'counter');
+      ctx.fillStyle = themeRoleColor('counter', x + peakSeg, cols);
+      ctx.fillRect((offset + cell.x) * cellW * dpr, top, Math.max(1, cell.w * cellW * dpr), height);
+      ctx.restore();
+    }
+
+    // Reference marks: a hairline standing through the bar at a level the
+    // player is being asked to stay under. Drawn over the segments so the bar
+    // visibly crosses it.
+    for (const mark of placed) {
+      const mx = (x + mark.x) * cellW * dpr;
+      ctx.save();
+      // The SPOIL mark is the DA-1000's red POSITION marker, which is exactly
+      // its meaning here: the one place on the scale that matters.
+      ctx.fillStyle = mark.kind === 'spoil' || mark.kind === 'catch'
+        ? themeRoleColor('marker', x + mark.x, cols)
+        : themeRoleColor('silkscreen', x + mark.x, cols);
+      ctx.globalAlpha = mark.kind === 'floor' ? .55 : .92;
+      ctx.fillRect(mx, top - .10 * cellH * dpr, Math.max(1, dpr), height + .20 * cellH * dpr);
+      ctx.restore();
     }
   });
 
-  if (label) uiText(x - label.length - 1, y, label.toUpperCase(), 'ui-label');
+  // OVER, latched. A clip that blinks out before you look up did not tell you
+  // anything.
+  if (overNow) uiText(x + Math.max(0, w - 4), y, 'OVER', 'ui-danger', 1, 4);
+
+  if (label) uiText(Math.max(0, x - label.length - 1), y, String(label).toUpperCase(), 'ui-label');
+
+  if (!scaleRow) return { rows: 1, scale: false };
+
+  // ── the printed scale ──────────────────────────────────────────────────────
+  //
+  // Marks are placed first and the numbers step around them. A player needs to
+  // know where SPOIL is more than they need to read -12, and drawing both into
+  // the same cells produced "SPOIL12CATCH".
+  const boxes = meterMarkBoxes(marks, w);
+  for (const tick of meterTicks(w, { avoid: boxes })) {
+    uiText(x + Math.round(tick.left), y + 1, tick.label, 'ui-label', .72);
+  }
+  for (const box of boxes) {
+    uiText(x + Math.round(box.left), y + 1, box.mark.label,
+      box.mark.kind === 'floor' ? 'ui-secondary' : 'ui-marker', .85);
+  }
+  if (scaleLabel) uiText(x, y + 1, String(scaleLabel).toUpperCase(), 'ui-label', .6);
+  return { rows: 2, scale: true };
 }
 
 export function drawVfdWarningTriangle(x, y, snapshot = monitorSnapshot(), { now = null } = {}) {
@@ -245,7 +351,11 @@ export function drawVfdWarningTriangle(x, y, snapshot = monitorSnapshot(), { now
 // The DA-1000 LOCATION INDICATOR: a row of vertical bars with a red position
 // marker, used for take progress. `p` is 0..1.
 export function drawLocationIndicator(x, y, width, p, { theme = 'green' } = {}) {
-  setActiveSurface(theme);
+  // Guarded, like drawVfdText. Only amber and green are themes; setActiveSurface
+  // is global and sticky, so a bad name repainted this amber AND left the
+  // surface amber for everything drawn after it. combat.js asks for 'red' on
+  // the correction stage and has never once rendered it.
+  if (THEMES[theme]) setActiveSurface(theme);
   const t = activeTheme();
   const b = uiBrightness();
 

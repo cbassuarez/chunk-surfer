@@ -2990,7 +2990,7 @@ let meshTexA=null, meshTexB=null, meshFboA=null, meshFboB=null, meshFlip=false;
 let datamoshSourceTex=null,datamoshSourceFbo=null,datamoshTexA=null,datamoshTexB=null,datamoshFboA=null,datamoshFboB=null,datamoshFlip=false;
 let datamoshActive=false,datamoshProgress=0,datamoshReducedMotion=false,lastPostSourceFbo=null;
 let sourceFaultTexA=null,sourceFaultTexB=null,sourceFaultFboA=null,sourceFaultFboB=null,sourceFaultFlip=false,sourceFaultWarm=false;
-let sourceFaultState={active:false,nvme:0,ps2:0,transition:0,seed:0,slot:0,reduceMotion:false,flashMode:'full'};
+let sourceFaultState={active:false,nvme:0,ps2:0,transition:0,seed:0,slot:0,overflow:0,overflowHead:0,overflowLane:0,overflowDirection:1,overflowRun:0,reduceMotion:false,flashMode:'full'};
 let surfAlbedoTex=null, surfNormalTex=null, surfMaterialTex=null, surfDreamTex=null, surfDreamStageTex=null, anisoExt=null, anisoMax=1;
 // The engraving, derived from each generated tile as it arrives (see
 // render/mark-field.js). It is a strict parallel of the dream arrays — same
@@ -4107,6 +4107,11 @@ uniform float uTransition;
 uniform float uSeed;
 uniform float uSlot;
 uniform float uReduceMotion;
+uniform float uOverflow;
+uniform float uOverflowHead;
+uniform float uOverflowLane;
+uniform float uOverflowDirection;
+uniform float uOverflowRun;
 uniform int uFlashMode;
 out vec4 outColor;
 float hash21(vec2 p){p=fract(p*vec2(.1031,.1030));p+=dot(p,p.yx+33.33);return fract((p.x+p.y)*p.x);}
@@ -4137,6 +4142,32 @@ void main(){
   vec3 previous=texture(uPrevious,nvmeUv+vec2((cell-.5)*.025,0.0)).rgb;
   vec3 color=mix(current,previous,held);
 
+  // A coherent bad-sector train. The head crosses one authored lane while the
+  // tail retains displaced history in stepped packets; it is intentionally
+  // much more legible than the ambient single-sector holds above.
+  float direction=uOverflowDirection<0.0?-1.0:1.0;
+  float travel=direction>0.0?uOverflowHead:1.0-uOverflowHead;
+  float steppedRow=floor(gl_FragCoord.y/36.0);
+  float headPx=travel*uResolution.x+(hash21(vec2(steppedRow,uSeed+uOverflowRun*3.7))-.5)*72.0;
+  float behind=direction*(headPx-gl_FragCoord.x);
+  float laneCenter=(.17+clamp(uOverflowLane,0.0,3.0)*.22)*uResolution.y;
+  float laneDistance=abs(gl_FragCoord.y-laneCenter);
+  float laneMask=1.0-smoothstep(uResolution.y*.075,uResolution.y*.145,laneDistance);
+  float headMask=1.0-smoothstep(0.0,74.0,abs(behind));
+  float tailMask=step(0.0,behind)*(1.0-smoothstep(120.0,680.0,behind));
+  vec2 runSector=floor(gl_FragCoord.xy/vec2(58.0,31.0));
+  float packet=step(.24,hash21(runSector+vec2(uOverflowRun*11.0,uSeed+17.0)));
+  float runMask=uOverflow*laneMask*max(headMask*.95,tailMask*packet);
+  vec2 runUv=nvmeUv;
+  float packetShift=.035+hash21(runSector.yx+uSeed+uOverflowRun)*.115;
+  runUv.x-=direction*packetShift;
+  runUv.y+=(hash21(runSector+uSeed+41.0)-.5)*.055;
+  vec3 retained=texture(uPrevious,clamp(runUv,vec2(.001),vec2(.999))).rgb;
+  color=mix(color,retained,clamp(runMask*.96,0.0,1.0));
+  float failedPacket=runMask*step(.86,hash21(runSector.yx+vec2(uSeed,uOverflowRun+73.0)));
+  color=mix(color,vec3(.002,.003,.009),failedPacket);
+  if(headMask*uOverflow*laneMask>.72&&uFlashMode==0)color=mix(color,vec3(.78,.86,1.0),.34);
+
   float flatField=step(1.0-uPs2*.16,hash21(vec2(wedgeId,uSlot*.31+uSeed+51.0)))*wedgeGate;
   vec3 fieldColor=mix(vec3(.17,.15,.20),vec3(.46,.08,.37),step(.55,wedgeHash));
   color=mix(color,fieldColor,flatField*(.42+.35*uTransition));
@@ -4150,10 +4181,13 @@ void main(){
 }`;
 
 export function r3dSetSourceFault(value=0){
-  if(!value||value.active===false){sourceFaultState={active:false,nvme:0,ps2:0,transition:0,seed:0,slot:0,reduceMotion:false,flashMode:'full'};sourceFaultWarm=false;return sourceFaultState;}
+  if(!value||value.active===false){sourceFaultState={active:false,nvme:0,ps2:0,transition:0,seed:0,slot:0,overflow:0,overflowHead:0,overflowLane:0,overflowDirection:1,overflowRun:0,reduceMotion:false,flashMode:'full'};sourceFaultWarm=false;return sourceFaultState;}
   sourceFaultState={
     active:true,nvme:Math.max(0,Math.min(1,Number(value.nvme)||0)),ps2:Math.max(0,Math.min(1,Number(value.ps2)||0)),
     transition:Math.max(0,Math.min(1,Number(value.transition)||0)),seed:Number(value.seed)||0,slot:Math.max(0,Math.floor(Number(value.slot)||0)),
+    overflow:Math.max(0,Math.min(1,Number(value.overflow)||0)),overflowHead:Math.max(0,Math.min(1,Number(value.overflowHead)||0)),
+    overflowLane:Math.max(0,Math.min(3,Math.floor(Number(value.overflowLane)||0))),overflowDirection:Number(value.overflowDirection)<0?-1:1,
+    overflowRun:Math.max(0,Math.floor(Number(value.overflowRun)||0)),
     reduceMotion:!!value.reduceMotion,flashMode:['full','reduced','off'].includes(value.flashMode)?value.flashMode:'full',
   };
   return sourceFaultState;
@@ -4168,7 +4202,7 @@ function runSourceFaultPass(inputTex,now){
   const u=(name)=>gl.getUniformLocation(progSourceFault,name);
   gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,inputTex);gl.uniform1i(u('uCurrent'),0);
   gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,history);gl.uniform1i(u('uPrevious'),1);
-  gl.uniform2f(u('uResolution'),uniforms.sceneW,uniforms.sceneH);gl.uniform1f(u('uNvme'),sourceFaultState.nvme);gl.uniform1f(u('uPs2'),sourceFaultState.ps2);gl.uniform1f(u('uTransition'),sourceFaultState.transition);gl.uniform1f(u('uSeed'),sourceFaultState.seed);gl.uniform1f(u('uSlot'),sourceFaultState.slot);gl.uniform1f(u('uReduceMotion'),sourceFaultState.reduceMotion?1:0);gl.uniform1i(u('uFlashMode'),sourceFaultState.flashMode==='off'?2:sourceFaultState.flashMode==='reduced'?1:0);
+  gl.uniform2f(u('uResolution'),uniforms.sceneW,uniforms.sceneH);gl.uniform1f(u('uNvme'),sourceFaultState.nvme);gl.uniform1f(u('uPs2'),sourceFaultState.ps2);gl.uniform1f(u('uTransition'),sourceFaultState.transition);gl.uniform1f(u('uSeed'),sourceFaultState.seed);gl.uniform1f(u('uSlot'),sourceFaultState.slot);gl.uniform1f(u('uReduceMotion'),sourceFaultState.reduceMotion?1:0);gl.uniform1f(u('uOverflow'),sourceFaultState.overflow);gl.uniform1f(u('uOverflowHead'),sourceFaultState.overflowHead);gl.uniform1f(u('uOverflowLane'),sourceFaultState.overflowLane);gl.uniform1f(u('uOverflowDirection'),sourceFaultState.overflowDirection);gl.uniform1f(u('uOverflowRun'),sourceFaultState.overflowRun);gl.uniform1i(u('uFlashMode'),sourceFaultState.flashMode==='off'?2:sourceFaultState.flashMode==='reduced'?1:0);
   gl.drawArrays(gl.TRIANGLES,0,3);gl.bindFramebuffer(gl.FRAMEBUFFER,null);sourceFaultWarm=true;return dstTex;
 }
 

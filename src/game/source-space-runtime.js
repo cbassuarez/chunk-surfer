@@ -44,8 +44,10 @@ import {
   sourceBracketFrame as buildSourceBracketFrame,
   sourceStandingPressure,
 } from './source-haystack.js';
+import { LIGHT_KIND } from '../data/conservatory-lights.js';
 import {
   SOURCE_APPROACH_CELLS, SOURCE_CHUTES, SOURCE_HORIZON, SOURCE_LIFTS, SOURCE_TIER_BY_ID,
+  SOURCE_PRE_TAPE, sourcePreTapeProgress,
   sourceChuteById, sourceFeatureAt, sourceHorizonDepth, sourceHorizonSeconds,
   sourceHorizonSlice, sourceLiftById, sourceTierAt,
   sourceTierHeightAt, sourceTraversal,
@@ -2257,11 +2259,30 @@ export function createSourceSpaceRuntime({
   // distance by, no cast shadows, nothing to tell you where the light is coming
   // from, because there is nowhere for it to come from. Cool, so the bells read
   // warm against it.
-  const BELLS_AMBIENT = Object.freeze({ color: Object.freeze([0.52, 0.56, 0.64]), intensity: 0.11 });
+  const BELLS_AMBIENT = Object.freeze({ color: Object.freeze([0.52, 0.56, 0.64]), intensity: 0.085 });
   const SOURCE_AMBIENT = Object.freeze({ color: Object.freeze([0.12, 0.13, 0.12]), intensity: 0.012 });
 
+  // The walk out is lit like the bell passage at the field's edge — there are
+  // structures out there and they have to be visible — and goes down toward the
+  // dark across the nothing. Never all the way to Source's 0.012: that is the
+  // value that rendered forty-seven bells black, and an empty space still has to
+  // read as empty rather than as a frame that failed.
+  const PRE_TAPE_AMBIENT_FLOOR = 0.030;
+
   function sourceAmbient() {
-    return state.phase === CHUNK_SURF_PHASE.BELLS ? BELLS_AMBIENT : SOURCE_AMBIENT;
+    if (state.phase === CHUNK_SURF_PHASE.BELLS) return BELLS_AMBIENT;
+    if (state.phase === CHUNK_SURF_PHASE.HORIZON) {
+      const local = player.y - landscapeOrigin().y;
+      if (local > SOURCE_HORIZON.from) {
+        const t = sourcePreTapeProgress(local);
+        return {
+          color: BELLS_AMBIENT.color,
+          intensity: BELLS_AMBIENT.intensity
+            + (PRE_TAPE_AMBIENT_FLOOR - BELLS_AMBIENT.intensity) * t,
+        };
+      }
+    }
+    return SOURCE_AMBIENT;
   }
 
   function sourceEmergencyLightingFrame({
@@ -2335,7 +2356,17 @@ export function createSourceSpaceRuntime({
     const slice = sourceHorizonSlice(local);
     const depth = sourceHorizonDepth(local);
     return {
+      // `active` still means PAST THE PERIMETER, which is what everything
+      // outside the renderer asks it (horizonUnderfoot, the presence despawn).
+      // The walk out of the field is past the perimeter too.
       active: true,
+      // THE TAPE ITSELF, which is a narrower question and a newer one. The splat
+      // pass returns before props, marks and the march, so if it claimed the
+      // whole phase the outskirts would be rendered as a recording of somewhere
+      // else and the structures standing in them would never be drawn.
+      onTape: local <= SOURCE_HORIZON.from,
+      preTape: local > SOURCE_HORIZON.from,
+      preTapeProgress: sourcePreTapeProgress(local),
       reason: state.horizon.reason,
       depth,
       progress: depth / SOURCE_HORIZON.length,
@@ -3819,6 +3850,60 @@ export function createSourceSpaceRuntime({
   // The room fades UP rather than appearing: `resolve` is a function of depth
   // (sourceBellsRoomResolve), and a room that switched on at a threshold would
   // be the cut this whole passage exists to stop being.
+  const SOURCE_PRE_TAPE_PIECES = 90;
+
+  // ── WHAT IS STILL STANDING ON THE WAY OUT ─────────────────────────────────
+  //
+  // The field's own drowned architecture, thinning. Same meshes it is made of
+  // (SOURCE_LEAK_MESHES), because the outskirts are not a new place — they are
+  // the last of the place he has been in all chapter, running out.
+  //
+  // The density falls to nothing across the outskirts and is exactly zero for
+  // the whole of the nothing after it. There is no last landmark and no marker
+  // for where one ends and the other starts: he notices at some point that it
+  // has been a while since there was anything, and by then it has been a while.
+  function preTapeInstances(px, py) {
+    if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return [];
+    const o = landscapeOrigin();
+    const local = player.y - o.y;
+    if (local > SOURCE_PRE_TAPE.from || local < SOURCE_PRE_TAPE.to) return [];
+    const out = [];
+    const span = SOURCE_PRE_TAPE.from - SOURCE_PRE_TAPE.outskirtsTo;
+    for (let i = 0; i < SOURCE_PRE_TAPE_PIECES; i += 1) {
+      // Along the outskirts only. Nothing is placed past its far edge, so the
+      // nothing is not thinly populated — it is empty.
+      const along = rand(state.seed, i, 617);
+      const localY = SOURCE_PRE_TAPE.from - along * span;
+      // Cubed, so it is not a gentle fade: it is ordinary for a while, then
+      // suddenly it has been a long time since the last one.
+      if (rand(state.seed, i, 619) > Math.pow(1 - along, 3)) continue;
+      const localX = (rand(state.seed, i, 631) - 0.5) * SOURCE_PRE_TAPE.halfWidth * 1.9;
+      const worldX = o.x + localX, worldZ = o.y + localY;
+      if (Math.hypot((worldX - px) * CELL, (worldZ - py) * CELL) > 190) continue;
+      const piece = SOURCE_LEAK_MESHES[Math.floor(rand(state.seed, i, 641) * SOURCE_LEAK_MESHES.length)];
+      const scale = 0.9 + rand(state.seed, i, 647) * 1.6;
+      // Sunk deeper the further out they are: the ground is taking them back.
+      const sink = 0.4 + along * 2.6 + rand(state.seed, i, 653) * 1.1;
+      out.push({
+        id: `source-outskirt-${i}`,
+        mesh: piece,
+        matrix: sourceMatrix({
+          x: worldX * CELL,
+          y: (SOURCE_TIER_BY_ID.outskirts?.height ?? 15.2) - sink,
+          z: worldZ * CELL,
+          scaleX: scale, scaleY: scale, scaleZ: scale,
+          yaw: rand(state.seed, i, 659) * Math.PI * 2,
+          roll: (rand(state.seed, i, 661) - 0.5) * 0.22,
+          pitch: (rand(state.seed, i, 673) - 0.5) * 0.16,
+        }),
+        zone: ZONE.sourceSpace,
+        structural: true,
+        sourceStructure: 'outskirts',
+      });
+    }
+    return out;
+  }
+
   function bellPassageInstances(px, py, { time = phaseElapsed } = {}) {
     if (state.phase !== CHUNK_SURF_PHASE.BELLS) return [];
     const o = landscapeOrigin();
@@ -3860,6 +3945,7 @@ export function createSourceSpaceRuntime({
 
   function propInstances(px = player.x, py = player.y, options = {}) {
     if (state.phase === CHUNK_SURF_PHASE.BELLS) return bellPassageInstances(px, py);
+    if (state.phase === CHUNK_SURF_PHASE.HORIZON) return preTapeInstances(px, py);
     if ([CHUNK_SURF_PHASE.HALL, CHUNK_SURF_PHASE.HAYSTACK].includes(state.phase)) return pageInstances(px, py, options);
     if ([CHUNK_SURF_PHASE.TRANSFORMING, CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase)) {
       const arch = surfaceArchitectureInstances(px, py);
@@ -4209,7 +4295,58 @@ export function createSourceSpaceRuntime({
   // thing in the chapter — hall-strength lamps at ninety-six cells of reach.
   const onSourceSide = (id) => SOURCE_SIDE_LIGHT_IDS.has(id)
     || String(id).startsWith('source-approach-emergency-');
+  // ── LIGHT IN A PLACE WITH NOTHING IN IT TO LIGHT IT ───────────────────────
+  //
+  // The bell passage and the walk out are the two tiers with no authored lamps,
+  // and both rendered black: forty-seven bell meshes and twenty-eight drowned
+  // structures at litPct 0. Ambient was the obvious answer and it is the wrong
+  // one — measured, raising it from 0.012 to 0.45 moved the frame's luma from
+  // 2.1 to 7.96 out of 255 and never lit a single pixel. Props here are lit by
+  // local lights or they are not lit.
+  //
+  // So: ONE LAMP, AND IT IS WHERE THE OBSERVER IS. Not a torch, which is a cone
+  // he aims and a battery he spends; an omnidirectional glow centred on him with
+  // no fitting, no shadow and no falloff to read a room by. In a void with no
+  // ground plane and no horizon that reads exactly the way a void should — a
+  // thing becomes visible because you came near it, and stops when you leave —
+  // and it needs no fiction about where the light is coming from, because there
+  // is nowhere for it to come from.
+  //
+  // Ambient stays, low, doing the other half: it keeps the far shapes from being
+  // absolutely nothing so the space has depth rather than a hard edge of dark.
+  const VOID_LAMP = Object.freeze({
+    bells: Object.freeze({ radius: 44, intensity: 4.2 }),
+    // Dimmer and shorter out here, and it fades with the walk: by the nothing
+    // there is barely enough to see your own hands by.
+    preTape: Object.freeze({ radius: 40, intensity: 3.6 }),
+  });
+
+  function voidLamp() {
+    const bells = state.phase === CHUNK_SURF_PHASE.BELLS;
+    const local = player.y - landscapeOrigin().y;
+    const preTape = state.phase === CHUNK_SURF_PHASE.HORIZON && local > SOURCE_HORIZON.from;
+    if (!bells && !preTape) return null;
+    const tuning = bells ? VOID_LAMP.bells : VOID_LAMP.preTape;
+    // Across the walk out it falls away with the structures it is there to show.
+    const fade = preTape ? 1 - 0.45 * sourcePreTapeProgress(local) : 1;
+    return {
+      id: 'source-void-lamp',
+      kind: LIGHT_KIND.FITTING,
+      x: player.x * CELL,
+      y: (bells ? (SOURCE_TIER_BY_ID.bells?.height ?? 15.2) : (SOURCE_TIER_BY_ID.outskirts?.height ?? 15.2)) + 2.4,
+      z: player.y * CELL,
+      color: [0.74, 0.79, 0.88],
+      intensity: tuning.intensity * fade,
+      radius: tuning.radius,
+      // It is not in a building and there is nothing for it to be occluded by.
+      penetration: 1,
+      castsShadow: false,
+    };
+  }
+
   function localLights({ time = phaseElapsed, reducedMotion = false, flashMode = 'full' } = {}) {
+    const voidLight = voidLamp();
+    if (voidLight) return [voidLight];
     const understood=normalizeSourceContactState(state.sourceContacts).insights.length;
     const emergency=sourceEmergencyLightingFrame({time,reducedMotion,flashMode});
     const voidFrame=sourceVoidFrame();
